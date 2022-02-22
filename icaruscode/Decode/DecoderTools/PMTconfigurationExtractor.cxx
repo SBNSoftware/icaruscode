@@ -10,15 +10,10 @@
 // ICARUS libraries
 #include "icaruscode/Decode/DecoderTools/PMTconfigurationExtractor.h"
 
-// framework libraries
-#include "fhiclcpp/ParameterSet.h"
-#include "messagefacility/MessageLogger/MessageLogger.h"
-
 // C/C++ standard libraries
 #include <algorithm> // std::find_if()
-#include <optional>
 #include <memory> // std::unique_ptr<>
-#include <utility> // std::move()
+
 
 
 // -----------------------------------------------------------------------------
@@ -44,7 +39,7 @@ icarus::PMTconfigurationExtractorBase::convertConfigurationDocuments(
     
     fhicl::ParameterSet pset;
     try {
-      auto pset = fhicl::ParameterSet::make(psetStr);
+      pset = fhicl::ParameterSet::make(psetStr);
     }
     catch (cet::exception& e) {
       throw cet::exception{ "convertConfigurationDocuments", "", e }
@@ -240,53 +235,9 @@ sbn::PMTconfiguration icarus::extractPMTreadoutConfiguration
   (TFile& srcFile, icarus::PMTconfigurationExtractor extractor)
 {
   
-  /*
-   * The plan is to look in all the FHiCL configuration fragments we can find
-   * in the input file, and find all the useful configuration therein.
-   * Given that there may be multiple input files, there may also be multiple
-   * configurations for the same detector components.
-   * In that case, we will extract parameters from each and every one of the
-   * configurations, and throw an exception if they are not all consistent.
-   * 
-   * Consistency is tested only for the extracted parameters, not for the whole
-   * FHiCL configuration fragment.
-   */
+  return details::extractPMTreadoutConfigurationImpl
+    (util::readConfigurationFromArtFile(srcFile), std::move(extractor));
   
-  auto const& globalConfigColl = util::readConfigurationFromArtFile(srcFile);
-  
-  std::optional<sbn::PMTconfiguration> config;
-  
-  // look in the global configuration for all parameter sets which contain
-  // `configuration_documents` as a (direct) name;
-  for (auto const& [ id, pset ]: globalConfigColl) {
-    if (!extractor.mayHaveConfiguration(pset)) continue;
-    
-    fhicl::ParameterSet const configDocs
-      = extractor.convertConfigurationDocuments
-        (pset, "configuration_documents", { std::regex{ "icaruspmt.*" } })
-      ;
-    
-    sbn::PMTconfiguration candidateConfig = extractor.extract(configDocs);
-    if (config) {
-      if (config.value() == candidateConfig) continue;
-      mf::LogError log("extractPMTreadoutConfiguration");
-      log << "Found two candidate configurations differring:"
-        "\nFirst:\n" << config.value()
-        << "\nSecond:\n" << candidateConfig
-        ;
-      throw cet::exception("extractPMTreadoutConfiguration")
-        << "extractPMTreadoutConfiguration() found inconsistent configurations.\n";
-    } // if incompatible configurations
-    
-    config.emplace(std::move(candidateConfig));
-  } // for all configuration documents
-  
-  if (!config) {
-    throw cet::exception("extractPMTreadoutConfiguration")
-      << "extractPMTreadoutConfiguration() could not find a suitable configuration.\n";
-  }
-  
-  return extractor.finalize(std::move(config.value()));
 } // icarus::extractPMTreadoutConfiguration(TFile)
 
 

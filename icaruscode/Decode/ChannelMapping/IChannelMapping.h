@@ -73,11 +73,18 @@ namespace icarusDB
 
     virtual int BuildCRTChannelIDToHWtoSimMacAddressPairMap(CRTChannelIDToHWtoSimMacAddressPairMap&) const = 0;
 
-    /*
-    std::pair<size_t,size_t> CRTHWtoSimMacAddressPair;
-    std::map<size_t, std::pair<size_t,size_t> >  CRTChannelIDToHWtoSimMacAddressPairMap;    
-    virtual int BuildCRTChannelIDToHWtoSimMacAddressPairMap(std::map<size_t, std::pair<size_t,size_t> > &) const = 0;
-    */
+
+    using TopCRTHWtoSimMacAddressPairMap    = std::map<unsigned int, unsigned int>;
+
+    virtual int BuildTopCRTHWtoSimMacAddressPairMap(TopCRTHWtoSimMacAddressPairMap&) const = 0;
+
+    
+    using SideCRTMac5ToChannelPair = std::pair<unsigned int, unsigned int>;
+    using SideCRTGainToPedPair = std::pair<double, double>;
+    using SideCRTChannelToCalibrationMap = std::map< SideCRTMac5ToChannelPair, SideCRTGainToPedPair >;
+
+    virtual int BuildSideCRTCalibrationMap(SideCRTChannelToCalibrationMap&) const = 0;
+
 };
 
 } // namespace lar_cluster3d

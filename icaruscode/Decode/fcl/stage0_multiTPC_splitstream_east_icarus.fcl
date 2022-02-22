@@ -7,8 +7,8 @@
 process_name: stage0
 
 ## Define the paths we'll execute depending on data
-physics.pathBNB:     [ @sequence::icarus_stage0_trigger_BNB,  @sequence::icarus_stage0_pmt_BNB,  daqTPC, @sequence::icarus_stage0_multiTPC_TPC, @sequence::icarus_stage0_EastHits_TPC ]
-physics.pathNUMI:    [ @sequence::icarus_stage0_trigger_NuMI, @sequence::icarus_stage0_pmt_NuMI, daqTPC, @sequence::icarus_stage0_multiTPC_TPC, @sequence::icarus_stage0_EastHits_TPC ]
+physics.pathBNB:     [ @sequence::icarus_stage0_trigger_BNB,  @sequence::icarus_stage0_pmt_BNB,  daqTPCROI, @sequence::icarus_stage0_multiTPC_TPC, @sequence::icarus_stage0_EastHits_TPC ]
+physics.pathNUMI:    [ @sequence::icarus_stage0_trigger_NuMI, @sequence::icarus_stage0_pmt_NuMI, daqTPCROI, @sequence::icarus_stage0_multiTPC_TPC, @sequence::icarus_stage0_EastHits_TPC ]
 
 ## boiler plate...
 physics.trigger_paths: [ pathBNB, pathNUMI ]
@@ -23,13 +23,13 @@ outputs.outNUMI.dataTier:  "reconstructed"
 outputs.outNUMI.SelectEvents: [ pathNUMI ]
 
 # Drop the artdaq format files on output
-outputs.outBNB.outputCommands:  ["keep *_*_*_*", "drop *_*_*_DAQ*", "drop *_decon1droi_*_*", "drop *_decon1DroiTPC*_*_*" ]
-outputs.outNUMI.outputCommands: ["keep *_*_*_*", "drop *_*_*_DAQ*", "drop *_decon1droi_*_*", "drop *_decon1DroiTPC*_*_*" ]
+outputs.outBNB.outputCommands:  ["keep *_*_*_*", "drop *_*_*_DAQ*", "drop *_daqTPCROI_*_*", "drop *_decon1droi_*_*", "drop *_decon1DroiTPC*_*_*" ]
+outputs.outNUMI.outputCommands: ["keep *_*_*_*", "drop *_*_*_DAQ*", "drop *_daqTPCROI_*_*", "drop *_decon1droi_*_*", "drop *_decon1DroiTPC*_*_*" ]
 
 # Temporarily overrie pmt configuration for a single cryostat configuration
 physics.producers.daqPMT.DecoderTool.RequireBoardConfig: false
 
 # Set up for the single module mutliple TPC mode...
-physics.producers.daqTPC.FragmentsLabelVec:              ["daq:PHYSCRATEDATATPCEW","daq:PHYSCRATEDATATPCEE"]
-physics.producers.decon1droi.RawDigitLabelVec:           ["daqTPC:PHYSCRATEDATATPCEW","daqTPC:PHYSCRATEDATATPCEE"]
+physics.producers.daqTPCROI.FragmentsLabelVec:           ["daq:PHYSCRATEDATATPCEW","daq:PHYSCRATEDATATPCEE"]
+physics.producers.decon1droi.RawDigitLabelVec:           ["daqTPCROI:PHYSCRATEDATATPCEW","daqTPCROI:PHYSCRATEDATATPCEE"]
 physics.producers.roifinder.WireModuleLabelVec:          ["decon1droi:PHYSCRATEDATATPCEW","decon1droi:PHYSCRATEDATATPCEE"]

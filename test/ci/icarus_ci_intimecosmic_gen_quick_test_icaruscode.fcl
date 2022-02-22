@@ -1,0 +1,29 @@
+#include "messages_icarus.fcl"
+#include "prodcorsika_proton_intime_icarus_bnb_sce_on_ovb.fcl"
+
+# non-interactive output settings, but keep them verbose
+services.message: @local::icarus_message_services_prod_debug
+
+services.NuRandomService: @local::per_event_NuRandomService
+
+# the test uses an input file (empty events with set timestamp)
+source: @erase
+
+# Be as strict as possible with random seeds: GENIE is wild!
+physics.producers.generator.Seed: 63214
+
+# Override GENIE flux file configuration
+physics.producers.generator.FluxCopyMethod: "DIRECT"
+physics.producers.generator.MaxFluxFileMB: 20
+physics.producers.generator.FluxSearchPaths: "/cvmfs/sbn.osgstorage.org/pnfs/fnal.gov/usr/sbn/persistent/stash/physics/beam/GENIE/BNB/standard/v01_00/"
+
+# Override CORSIKA flux file path to be able to access them without a proxy
+physics.producers.generator.ShowerInputFiles:[
+	"/cvmfs/sbn.osgstorage.org/pnfs/fnal.gov/usr/sbn/persistent/stash/physics/cosmics/Fermilab/CORSIKA/standard/v01_00/p_*.db"
+]
+#  "/cvmfs/sbn.osgstorage.org/pnfs/fnal.gov/usr/sbn/persistent/stash/physics/cosmics/Fermilab/CORSIKA/standard/p_*.db",
+#  "/cvmfs/sbn.osgstorage.org/pnfs/fnal.gov/usr/sbn/persistent/stash/physics/cosmics/Fermilab/CORSIKA/standard/He_showers_*.db",
+#  "/cvmfs/sbn.osgstorage.org/pnfs/fnal.gov/usr/sbn/persistent/stash/physics/cosmics/Fermilab/CORSIKA/standard/N_showers_*.db",
+#  "/cvmfs/sbn.osgstorage.org/pnfs/fnal.gov/usr/sbn/persistent/stash/physics/cosmics/Fermilab/CORSIKA/standard/Mg_showers_*.db",
+#  "/cvmfs/sbn.osgstorage.org/pnfs/fnal.gov/usr/sbn/persistent/stash/physics/cosmics/Fermilab/CORSIKA/standard/Fe_showers_*.db"
+#]

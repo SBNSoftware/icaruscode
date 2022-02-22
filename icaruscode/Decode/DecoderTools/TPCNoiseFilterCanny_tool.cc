@@ -1,5 +1,5 @@
 /**
- *  @file   TPCDecoderFilterCannyMC_tool.cc
+ *  @file   TPCNoiseFilterCannyMC_tool.cc
  *
  *  @brief  This tool converts from daq to LArSoft format with noise filtering
  *
@@ -22,7 +22,7 @@
 
 #include "sbndaq-artdaq-core/Overlays/ICARUS/PhysCrateFragment.hh"
 
-#include "icaruscode/Decode/DecoderTools/IDecoderFilterMC.h"
+#include "icaruscode/Decode/DecoderTools/INoiseFilter.h"
 
 #include "icarus_signal_processing/ICARUSSigProcDefs.h"
 #include "icarus_signal_processing/WaveformTools.h"
@@ -41,11 +41,11 @@
 //------------------------------------------------------------------------------------------------------------------------------------------
 // implementation follows
 
-namespace daqMC {
+namespace daq {
 /**
- *  @brief  TPCDecoderFilterCannyMC class definiton
+ *  @brief  TPCNoiseFilterCannyMC class definiton
  */
-class TPCDecoderFilterCannyMC : virtual public IDecoderFilterMC
+class TPCNoiseFilterCannyMC : virtual public INoiseFilter
 {
 public:
     /**
@@ -53,12 +53,12 @@ public:
      *
      *  @param  pset
      */
-    explicit TPCDecoderFilterCannyMC(fhicl::ParameterSet const &pset);
+    explicit TPCNoiseFilterCannyMC(fhicl::ParameterSet const &pset);
 
     /**
      *  @brief  Destructor
      */
-    ~TPCDecoderFilterCannyMC();
+    ~TPCNoiseFilterCannyMC();
 
     /**
      *  @brief Interface for configuring the particular algorithm tool
@@ -73,8 +73,9 @@ public:
      *  @param fragment            The artdaq fragment to process
      */
     virtual void process_fragment(detinfo::DetectorClocksData const&,
-                                  const daqMC::IDecoderFilterMC::ChannelVec&,
-                                  const icarus_signal_processing::ArrayFloat&) override;
+                                  const daq::INoiseFilter::ChannelPlaneVec&,
+                                  const icarus_signal_processing::ArrayFloat&,
+                                  const size_t&) override;
 
     /**
      *  @brief Recover the channels for the processed fragment
@@ -219,7 +220,7 @@ private:
 
 };
 
-TPCDecoderFilterCannyMC::TPCDecoderFilterCannyMC(fhicl::ParameterSet const &pset)
+TPCNoiseFilterCannyMC::TPCNoiseFilterCannyMC(fhicl::ParameterSet const &pset)
 {
     this->configure(pset);
 
@@ -243,12 +244,12 @@ TPCDecoderFilterCannyMC::TPCDecoderFilterCannyMC(fhicl::ParameterSet const &pset
 
 //------------------------------------------------------------------------------------------------------------------------------------------
 
-TPCDecoderFilterCannyMC::~TPCDecoderFilterCannyMC()
+TPCNoiseFilterCannyMC::~TPCNoiseFilterCannyMC()
 {
 }
 
 //------------------------------------------------------------------------------------------------------------------------------------------
-void TPCDecoderFilterCannyMC::configure(fhicl::ParameterSet const &pset)
+void TPCNoiseFilterCannyMC::configure(fhicl::ParameterSet const &pset)
 {
     fSigmaForTruncation         = pset.get<float                   >("NSigmaForTrucation",  3.5);
     fCoherentNoiseGrouping      = pset.get<size_t                  >("CoherentGrouping",     64);
@@ -274,7 +275,6 @@ void TPCDecoderFilterCannyMC::configure(fhicl::ParameterSet const &pset)
 
     fMorphologicalFilter = std::make_unique<icarus_signal_processing::Dilation2D>(fMorph2DStructuringElementX,fMorph2DStructuringElementY);
 
-    fCoherentNoiseGrouping      = pset.get<unsigned int            >("CoherentNoiseGrouping",    32);
     fCoherentNoiseOffset        = pset.get<unsigned int            >("CoherentNoiseOffset",      24);
     fMorphologicalWindow        = pset.get<unsigned int            >("MorphologicalWindow",      10);
     fCoherentThresholdFactor    = pset.get<float                   >("CoherentThresholdFactor", 2.5);
@@ -329,9 +329,10 @@ void TPCDecoderFilterCannyMC::configure(fhicl::ParameterSet const &pset)
     return;
 }
 
-void TPCDecoderFilterCannyMC::process_fragment(detinfo::DetectorClocksData const&,
-                                               const daqMC::IDecoderFilterMC::ChannelVec&  channelVec,
-                                               const icarus_signal_processing::ArrayFloat& dataArray)
+void TPCNoiseFilterCannyMC::process_fragment(detinfo::DetectorClocksData const&,
+                                               const daq::INoiseFilter::ChannelPlaneVec&   channelPlaneVec,
+                                               const icarus_signal_processing::ArrayFloat& dataArray,
+                                               const size_t&                               coherentNoiseGrouping)
 {
     cet::cpu_timer theClockTotal;
 
@@ -357,7 +358,7 @@ void TPCDecoderFilterCannyMC::process_fragment(detinfo::DetectorClocksData const
     if (fNumTruncBins.size()     < numChannels)  fNumTruncBins.resize(numChannels);
     if (fRangeBins.size()        < numChannels)  fRangeBins.resize(numChannels);
 
-    if (fThresholdVec.size()     < numChannels)  fThresholdVec.resize(numChannels / fCoherentNoiseGrouping);
+    if (fThresholdVec.size()     < numChannels)  fThresholdVec.resize(numChannels / coherentNoiseGrouping);
 
     if (fFilterFunctionVec.size() < numChannels) fFilterFunctionVec.resize(numChannels);
 
@@ -372,7 +373,7 @@ void TPCDecoderFilterCannyMC::process_fragment(detinfo::DetectorClocksData const
         icarus_signal_processing::VectorFloat& pedCorDataVec = fPedCorWaveforms[idx];
 
         // Keep track of the channel
-        fChannelIDVec[idx] = channelVec[idx];
+        fChannelIDVec[idx] = channelPlaneVec[idx].first;
 
         // We need to recover info on which plane we have
         std::vector<geo::WireID> widVec = fGeometry->ChannelToWire(fChannelIDVec[idx]);
@@ -381,7 +382,7 @@ void TPCDecoderFilterCannyMC::process_fragment(detinfo::DetectorClocksData const
         unsigned int plane = widVec[0].Plane;
 
         // Set the threshold which toggles between planes
-        fThresholdVec[idx / fCoherentNoiseGrouping] = fThreshold[plane];
+        fThresholdVec[idx / coherentNoiseGrouping] = fThreshold[plane];
 
         switch(fFilterModeVec[plane][0])
         {
@@ -401,7 +402,7 @@ void TPCDecoderFilterCannyMC::process_fragment(detinfo::DetectorClocksData const
                 fFilterFunctionVec[idx] = std::make_unique<icarus_signal_processing::Median1D>(fStructuringElement[1]);
                 break;
             default:
-                std::cout << "***** FOUND NO MATCH FOR TYPE: " << fFilterModeVec[plane] << ", plane " << plane << " DURING INITIALIZATION OF FILTER FUNCTIONS IN TPCDecoderFilterCannyMC" << std::endl;
+                std::cout << "***** FOUND NO MATCH FOR TYPE: " << fFilterModeVec[plane] << ", plane " << plane << " DURING INITIALIZATION OF FILTER FUNCTIONS IN TPCNoiseFilterCannyMC" << std::endl;
                 break;
         }
 
@@ -424,7 +425,7 @@ void TPCDecoderFilterCannyMC::process_fragment(detinfo::DetectorClocksData const
     std::cout << "  --> calling icarus_signal_processing code" << std::endl;
 
     // Now pass the entire data array to the denoisercoherent
-    (*fROIFinder2D)(fPedCorWaveforms,fRawWaveforms,fROIVals,fWaveLessCoherent,fCorrectedMedians,fIntrinsicRMS,fMorphedWaveforms,finalErosion);
+    (*fROIFinder2D)(fPedCorWaveforms,fRawWaveforms,fROIVals); //,fWaveLessCoherent,fCorrectedMedians,fIntrinsicRMS,fMorphedWaveforms,finalErosion);
 
     std::cout << "  --> have returned from denoising" << std::endl;
 
@@ -432,11 +433,11 @@ void TPCDecoderFilterCannyMC::process_fragment(detinfo::DetectorClocksData const
 
     double totalTime = theClockTotal.accumulated_real_time();
 
-    mf::LogInfo("TPCDecoderFilterCannyMC") << "    *totalTime: " << totalTime << std::endl;
+    mf::LogInfo("TPCNoiseFilterCannyMC") << "    *totalTime: " << totalTime << std::endl;
 
     return;
 }
 
 
-DEFINE_ART_CLASS_TOOL(TPCDecoderFilterCannyMC)
+DEFINE_ART_CLASS_TOOL(TPCNoiseFilterCannyMC)
 } // namespace lar_cluster3d

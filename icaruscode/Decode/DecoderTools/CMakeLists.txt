@@ -8,6 +8,7 @@ art_make( SUBDIRS details
           LIB_LIBRARIES
                         icaruscode_Utilities
                         sbnobj_Common_PMT_Data
+                        canvas
                         ${MF_MESSAGELOGGER}
                         ${FHICLCPP}
                         cetlib_except

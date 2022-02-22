@@ -17,7 +17,11 @@
 #include "icaruscode/TPC/Utilities/tools/SignalProcessingDefs.h"
 
 namespace detinfo {
-  class DetectorPropertiesData;
+    class DetectorPropertiesData;
+}
+
+namespace geo {
+    struct PlaneID;
 }
 
 class TComplex;
@@ -37,7 +41,9 @@ namespace icarus_tool
                                    CLHEP::HepRandomEngine& cornoise_engine,
                                    icarusutil::TimeVec&,
                                    detinfo::DetectorPropertiesData const& detProp,
-                                   double, unsigned int = 0) = 0;
+                                   double, 
+                                   const geo::PlaneID&,        // Gives Cryostat, TPC and Plane
+                                   unsigned int = 0) = 0;      // board ID
     };
 }
 

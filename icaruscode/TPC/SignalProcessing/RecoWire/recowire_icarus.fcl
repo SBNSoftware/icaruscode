@@ -87,13 +87,27 @@ icarus_recowireraw:
 
 icarus_roifinder:
 {
-    module_type:        ROIFinder
-    WireModuleLabel:    "decon1droi"
+    module_type:           ROIFinder
+    WireModuleLabel:       "decon1droi"
+    OutInstanceLabelVec:   "PHYSCRATEDATA"
+    CorrectROIBaseline:    true
+    MinSizeForCorrection:  12
+    MaxSizeForCorrection:  512
+    OutputMorphed:         false
+    DaignosticOutput:      false
+    OutputHistograms:      false
     ROIFinderToolVec: {
         ROIFinderPlane0: @local::morphologicalfinder_0
         ROIFinderPlane1: @local::morphologicalfinder_1
         ROIFinderPlane2: @local::morphologicalfinder_2
     }
+}
+
+icarus_waveformintegrity:
+{
+    module_type:          WaveformIntegrity
+    NewRawDigitLabelVec:  [ "daqTPCROI" ]
+    OldRawDigitLabelVec:  [ "daqTPCROI" ]
 }
 
 END_PROLOG

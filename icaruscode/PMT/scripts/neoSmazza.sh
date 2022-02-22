@@ -35,7 +35,7 @@
 #
 
 SCRIPTNAME="$(basename "$0")"
-SCRIPTVERSION="1.6"
+SCRIPTVERSION="1.7"
 
 
 ################################################################################
@@ -51,9 +51,10 @@ SCRIPTVERSION="1.6"
 # potentially miss a bit of the volume close to the cryostat border;
 # these numbers describe the (rounded) volume of the default ICARUS geometry
 # in `icaruscode` `v09_00_00`.
+# These figures are from `icarus_v3` geometry.
 #
-declare XMin="-405" # cm
-declare XMax=" -35" # cm
+declare XMin="-395" # cm
+declare XMax=" -25" # cm
 declare YMin="-215" # cm
 declare YMax=" 170" # cm
 declare ZMin="-985" # cm
@@ -70,7 +71,7 @@ declare -i PhotonsPerVoxel=1000000
 # Job configuration for the generation in a few voxels (template):
 # icaruscode version and FHiCL name
 #
-declare -r ProductionVersion="${ICARUS_VERSION:-v09_22_01}"
+declare -r ProductionVersion="${ICARUS_VERSION:-v09_37_01}"
 declare -r ReferenceConfiguration='photonlibrary_builder_icarus.fcl'
 
 declare -ir VoxelsPerJob=814 # estimate: 70s/ 1M photons

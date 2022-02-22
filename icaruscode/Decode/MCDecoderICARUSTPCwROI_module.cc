@@ -46,9 +46,10 @@
 #include "lardataobj/RecoBase/Wire.h"         // This for outputting the ROIs
 #include "lardata/ArtDataHelper/WireCreator.h"
 
-#include "icaruscode/Decode/DecoderTools/IDecoderFilterMC.h"
+#include "icaruscode/Decode/ChannelMapping/IICARUSChannelMap.h"
+#include "icaruscode/Decode/DecoderTools/INoiseFilter.h"
 
-namespace daqMC 
+namespace daq 
 {
 
 class MCDecoderICARUSTPCwROI : public art::ReplicatedProducer
@@ -85,13 +86,13 @@ public:
     using PlaneIdxToChannelPair = std::pair<unsigned int,ChannelVec>;
     using PlaneIdxToChannelMap  = std::map<unsigned int,ChannelVec>;
 
-    using ChannelArrayPair      = std::pair<ChannelVec,icarus_signal_processing::ArrayFloat>;
+    using ChannelArrayPair      = std::pair<daq::INoiseFilter::ChannelPlaneVec,icarus_signal_processing::ArrayFloat>;
     using ChannelArrayPairVec   = std::vector<ChannelArrayPair>;
 
     // Function to do the work
-    void processSingleImage(size_t,
-                            const detinfo::DetectorClocksData&,
-                            const ChannelArrayPairVec&,
+    void processSingleImage(const detinfo::DetectorClocksData&,
+                            const ChannelArrayPair&,
+                            size_t,
                             ConcurrentRawDigitCol&,
                             ConcurrentRawDigitCol&,
                             ConcurrentRawDigitCol&,
@@ -102,7 +103,13 @@ private:
     // Function to grab the input data and package
     void processSingleLabel(art::Event&,
                             const art::InputTag&, 
-                            ChannelArrayPairVec&) const;
+                            detinfo::DetectorClocksData const&,
+                            ChannelArrayPairVec const&,
+                            size_t const&,
+                            ConcurrentRawDigitCol&,
+                            ConcurrentRawDigitCol&,
+                            ConcurrentRawDigitCol&,
+                            ConcurrentWireCol&) const;
 
     class multiThreadImageProcessing
     {
@@ -110,6 +117,7 @@ private:
         multiThreadImageProcessing(MCDecoderICARUSTPCwROI      const& parent,
                                    detinfo::DetectorClocksData const& clockData,
                                    ChannelArrayPairVec         const& channelArrayPairVec,
+                                   size_t                      const& coherentNoiseGrouping,
                                    ConcurrentRawDigitCol&             concurrentRawDigits,
                                    ConcurrentRawDigitCol&             concurrentRawRawDigits,
                                    ConcurrentRawDigitCol&             coherentRawDigits,
@@ -117,6 +125,7 @@ private:
             : fMCDecoderICARUSTPCwROI(parent),
               fClockData{clockData},
               fChannelArrayPairVec(channelArrayPairVec),
+              fCoherentNoiseGrouping(coherentNoiseGrouping),
               fConcurrentRawDigits(concurrentRawDigits),
               fConcurrentRawRawDigits(concurrentRawRawDigits),
               fCoherentRawDigits(coherentRawDigits),
@@ -126,42 +135,22 @@ private:
         void operator()(const tbb::blocked_range<size_t>& range) const
         {
             for (size_t idx = range.begin(); idx < range.end(); idx++)
-              fMCDecoderICARUSTPCwROI.processSingleImage(idx, fClockData, fChannelArrayPairVec, fConcurrentRawDigits, fConcurrentRawRawDigits, fCoherentRawDigits, fConcurrentROIs);
+            {
+                const ChannelArrayPair& channelArrayPair = fChannelArrayPairVec[idx];
+
+                fMCDecoderICARUSTPCwROI.processSingleImage(fClockData, channelArrayPair, fCoherentNoiseGrouping, fConcurrentRawDigits, fConcurrentRawRawDigits, fCoherentRawDigits, fConcurrentROIs);
+            }
         }
     private:
         const MCDecoderICARUSTPCwROI&      fMCDecoderICARUSTPCwROI;
         const detinfo::DetectorClocksData& fClockData;
         const ChannelArrayPairVec&         fChannelArrayPairVec;
+        size_t                             fCoherentNoiseGrouping;
         ConcurrentRawDigitCol&             fConcurrentRawDigits;
         ConcurrentRawDigitCol&             fConcurrentRawRawDigits;
         ConcurrentRawDigitCol&             fCoherentRawDigits;
         ConcurrentWireCol&                 fConcurrentROIs;
     };
-
-
-
-
-
-
-    // Allocate the de-noising object
-//    icarus_signal_processing::Denoiser1D           denoiser;
-//    icarus_signal_processing::WaveformTools<float> waveformTools;
-//
-//    icarus_signal_processing::ArrayFloat waveLessCoherent(numChannels,icarus_signal_processing::VectorFloat(numTicks,0.));
-//    icarus_signal_processing::ArrayFloat medianVals(numChannels,icarus_signal_processing::VectorFloat(numTicks,0.));
-//    icarus_signal_processing::ArrayFloat coherentRMS(numChannels,icarus_signal_processing::VectorFloat(numTicks,0.));
-//    icarus_signal_processing::ArrayFloat morphedWaveforms(numChannels,icarus_signal_processing::VectorFloat(numTicks,0.));
-//    icarus_signal_processing::ArrayFloat finalErosion(numChannels,icarus_signal_processing::VectorFloat(numTicks,0.));
-//    icarus_signal_processing::ArrayFloat fullEvent(numChannels,icarus_signal_processing::VectorFloat(numTicks,0.));
-//    icarus_signal_processing::ArrayBool  outputROIs(numChannels,icarus_signal_processing::VectorBool(numTicks,false));
-//
-//    (*fROIFinder2D)(dataArray,fullEvent,outputROIs,waveLessCoherent,medianVals,coherentRMS,morphedWaveforms,finalErosion);
-
-
-
-
-
-
 
     // Function to save our RawDigits
     void saveRawDigits(const icarus_signal_processing::ArrayFloat&, 
@@ -178,6 +167,7 @@ private:
     std::string                                                 fOutputRawWavePath;          ///< Path to assign to the output if asked for
     std::string                                                 fOutputCoherentPath;         ///< Path to assign to the output if asked for
     bool                                                        fDiagnosticOutput;           ///< Set this to get lots of messages
+    size_t                                                      fCoherentNoiseGrouping;      ///< # channels in common for coherent noise
 
     const std::string                                           fLogCategory;                ///< Output category when logging messages
 
@@ -194,11 +184,18 @@ private:
     ROPToNumWiresMap                                            fROPToNumWiresMap;
     unsigned int                                                fNumROPs;
 
+    using WirePlanePair              = std::pair<unsigned int, unsigned int>;
+    using BoardWirePlanePair         = std::pair<unsigned int, WirePlanePair>;
+    using ChannelToBoardWirePlaneMap = std::map<unsigned int, BoardWirePlanePair>;
+
+    ChannelToBoardWirePlaneMap                                  fChannelToBoardWirePlaneMap;
+
     // Tools for decoding fragments depending on type
-    std::vector<std::unique_ptr<IDecoderFilterMC>>              fDecoderToolVec;       ///< Decoder tools
+    std::vector<std::unique_ptr<INoiseFilter>>                  fDecoderToolVec;       ///< Decoder tools
 
     // Useful services, keep copies for now (we can update during begin run periods)
     geo::GeometryCore const*                                    fGeometry;             ///< pointer to Geometry service
+    const icarusDB::IICARUSChannelMap*                          fChannelMap;
 };
 
 DEFINE_ART_MODULE(MCDecoderICARUSTPCwROI)
@@ -214,7 +211,8 @@ MCDecoderICARUSTPCwROI::MCDecoderICARUSTPCwROI(fhicl::ParameterSet const & pset,
                         art::ReplicatedProducer(pset, frame),
                         fLogCategory("MCDecoderICARUSTPCwROI"),fNumEvent(0), fNumROPs(0)
 {
-    fGeometry = art::ServiceHandle<geo::Geometry const>{}.get();
+    fGeometry   = art::ServiceHandle<geo::Geometry const>{}.get();
+    fChannelMap = art::ServiceHandle<icarusDB::IICARUSChannelMap const>{}.get();
 
     configure(pset);
 
@@ -231,7 +229,7 @@ MCDecoderICARUSTPCwROI::MCDecoderICARUSTPCwROI(fhicl::ParameterSet const & pset,
     for(auto& decoderTool : fDecoderToolVec)
     {
         // Get instance of tool
-        decoderTool = art::make_tool<IDecoderFilterMC>(decoderToolParams);
+        decoderTool = art::make_tool<INoiseFilter>(decoderToolParams);
     }
 
     // Set up our "produces" 
@@ -292,6 +290,26 @@ MCDecoderICARUSTPCwROI::MCDecoderICARUSTPCwROI(fhicl::ParameterSet const & pset,
 
     fNumROPs++;
 
+    // We need to build a mapping fronm channel to a readout board/wire pair
+    // Get the board ids for this fragment
+    const icarusDB::TPCReadoutBoardToChannelMap& readoutBoardToChannelMap = fChannelMap->getReadoutBoardToChannelMap();
+
+    for(const auto& boardPair : readoutBoardToChannelMap)
+    {
+        // The board pair will give us the readout board and a vector of "wires"
+        unsigned int readoutBoardID = boardPair.first;
+
+        // Loop through the vector of wires on this board
+        for(unsigned int wireIdx = 0; wireIdx < boardPair.second.second.size(); wireIdx++)
+        {
+            unsigned int channelID = boardPair.second.second[wireIdx].first;
+            unsigned int planeID   = boardPair.second.second[wireIdx].second;
+
+            fChannelToBoardWirePlaneMap[channelID] = BoardWirePlanePair(readoutBoardID,WirePlanePair(wireIdx,planeID));
+        }
+    }
+
+
     // Report.
     mf::LogInfo("MCDecoderICARUSTPCwROI") << "MCDecoderICARUSTPCwROI configured\n";
 }
@@ -317,6 +335,7 @@ void MCDecoderICARUSTPCwROI::configure(fhicl::ParameterSet const & pset)
     fOutputRawWavePath          = pset.get<std::string               >("OutputRawWavePath",                   "raw");
     fOutputCoherentPath         = pset.get<std::string               >("OutputCoherentPath",                  "Cor");
     fDiagnosticOutput           = pset.get<bool                      >("DiagnosticOutput",                    false);
+    fCoherentNoiseGrouping      = pset.get<size_t                    >("CoherentGrouping",                       64);
 
 }
 
@@ -383,16 +402,16 @@ void MCDecoderICARUSTPCwROI::produce(art::Event & event, art::ProcessingFrame co
         }
 
         mf::LogDebug("MCDecoderICARUSTPCwROI") << "****> Let's get ready to rumble!" << std::endl;
-    
-        // ... repackage the input MC data to format suitable for noise processing
-        processSingleLabel(event, rawDigitLabel, channelArrayPairVec);
 
         // Now let's process the resulting images
         auto const clockData = art::ServiceHandle<detinfo::DetectorClocksService>()->DataFor(event);
+    
+        // ... repackage the input MC data to format suitable for noise processing
+        processSingleLabel(event, rawDigitLabel, clockData, channelArrayPairVec, fCoherentNoiseGrouping, concurrentRawDigits, concurrentRawRawDigits, coherentRawDigits, concurrentROIs);
 
-        multiThreadImageProcessing imageProcessing(*this, clockData, channelArrayPairVec, concurrentRawDigits, concurrentRawRawDigits, coherentRawDigits, concurrentROIs);
-
-        tbb::parallel_for(tbb::blocked_range<size_t>(0, fNumROPs), imageProcessing);
+//        multiThreadImageProcessing imageProcessing(*this, clockData, channelArrayPairVec, fCoherentNoiseGrouping, concurrentRawDigits, concurrentRawRawDigits, coherentRawDigits, concurrentROIs);
+//
+//        tbb::parallel_for(tbb::blocked_range<size_t>(0, fNumROPs), imageProcessing);
     
         // Copy the raw digits from the concurrent vector to our output vector
         RawDigitCollectionPtr rawDigitCollection = std::make_unique<std::vector<raw::RawDigit>>(std::move_iterator(concurrentRawDigits.begin()), 
@@ -457,9 +476,15 @@ void MCDecoderICARUSTPCwROI::produce(art::Event & event, art::ProcessingFrame co
     return;
 }
 
-void MCDecoderICARUSTPCwROI::processSingleLabel(art::Event&          event,
-                                                const art::InputTag& inputLabel,
-                                                ChannelArrayPairVec& channelArrayPairVec) const
+void MCDecoderICARUSTPCwROI::processSingleLabel(art::Event&                        event,
+                                                const art::InputTag&               inputLabel,
+                                                detinfo::DetectorClocksData const& clockData,
+                                                ChannelArrayPairVec         const& channelArrayPairVec,
+                                                size_t                      const& coherentNoiseGrouping,
+                                                ConcurrentRawDigitCol&             concurrentRawDigits,
+                                                ConcurrentRawDigitCol&             concurrentRawRawDigits,
+                                                ConcurrentRawDigitCol&             coherentRawDigits,
+                                                ConcurrentWireCol&                 concurrentROIs) const
 {
     cet::cpu_timer theClockProcess;
 
@@ -486,35 +511,103 @@ void MCDecoderICARUSTPCwROI::processSingleLabel(art::Event&          event,
         unsigned int               dataSize = art::Ptr<raw::RawDigit>(digitVecHandle,0)->Samples(); //size of raw data vectors
         raw::RawDigit::ADCvector_t rawDataVec(dataSize);
 
+        using BoardToChannelArrayPairMap = std::map<unsigned int, ChannelArrayPair>;
+
+        BoardToChannelArrayPairMap  boardToChannelArrayPairMap;
+        std::map<unsigned int, int> boardWireCountMap;
+        const unsigned int          MAXCHANNELS(64);
+
         // Commence looping over raw digits
         for(const auto& rawDigit : rawDigitVec)
         {
             raw::ChannelID_t channel = rawDigit->Channel();
-                
-            // Decompress data into local holder
+
+            ChannelToBoardWirePlaneMap::const_iterator channelToBoardItr = fChannelToBoardWirePlaneMap.find(channel);
+
+            if (channelToBoardItr == fChannelToBoardWirePlaneMap.end())
+            {
+                std::cout << "********************************************************************************" << std::endl;
+                std::cout << "********* We did not find channel " << channel << "*****************************" << std::endl;
+                std::cout << "********************************************************************************" << std::endl;
+                continue;
+            }
+
+            unsigned int readoutBoardID = channelToBoardItr->second.first;
+            unsigned int wireIdx        = channelToBoardItr->second.second.first;
+            unsigned int planeIdx       = channelToBoardItr->second.second.second;
+
+            BoardToChannelArrayPairMap::iterator boardMapItr = boardToChannelArrayPairMap.find(readoutBoardID);
+
+            if (boardMapItr == boardToChannelArrayPairMap.end())
+            {
+                const auto [mapItr, success] = 
+                    boardToChannelArrayPairMap.insert({readoutBoardID,{daq::INoiseFilter::ChannelPlaneVec(MAXCHANNELS,{0,3}),icarus_signal_processing::ArrayFloat(MAXCHANNELS,icarus_signal_processing::VectorFloat(dataSize))}});
+
+                if (!success) 
+                {
+                    std::cout << "+++> failed to insert data structure! " << std::endl;
+                    continue;
+                }
+
+                boardMapItr = mapItr;
+                boardWireCountMap[readoutBoardID] = 0;
+            }
+
+           // Decompress data into local holder
             raw::Uncompress(rawDigit->ADCs(), rawDataVec, rawDigit->Compression());
 
-            // Get the wireIDs for this channel
-            std::vector<geo::WireID> wids = fGeometry->ChannelToWire(channel);
+            // Fill into the data structure
+            icarus_signal_processing::VectorFloat& boardDataVec = boardMapItr->second.second[wireIdx];
 
-            // Since we work with channels we can ignore the case in the middle of the TPC where there are 
-            // wires crossing the midplane and just work with the first wire ID
-            const geo::WireID&  wireID =  wids[0];
-            const geo::PlaneID& planeID = wireID.planeID();
+            for(size_t tick = 0; tick < dataSize; tick++) boardDataVec[tick] = rawDataVec[tick];
 
-            // Ok, now store things...
-            unsigned int planeIndex = fPlaneToROPPlaneMap.find(planeID)->second;
-            unsigned int wire       = channel - fPlaneToWireOffsetMap.find(planeID)->second;
+            boardMapItr->second.first[wireIdx] = daq::INoiseFilter::ChannelPlanePair(channel,planeIdx);
 
-            if (wire >= channelArrayPairVec[planeIndex].second.size()) continue;
+            if (++boardWireCountMap[readoutBoardID] == MAXCHANNELS)
+            {
+                processSingleImage(clockData, boardMapItr->second, coherentNoiseGrouping, concurrentRawDigits, concurrentRawRawDigits, coherentRawDigits, concurrentROIs);
 
-            icarus_signal_processing::VectorFloat& dataVec = channelArrayPairVec[planeIndex].second[wire];
+                boardToChannelArrayPairMap.erase(boardMapItr);
 
-            for(size_t tick = 0; tick < dataSize; tick++) dataVec[tick] = rawDataVec[tick];
-
-            // Keep track of the channel
-            channelArrayPairVec[planeIndex].first[wire] = channel;
+                // Get the wireIDs for this channel
+//                std::vector<geo::WireID> wids = fGeometry->ChannelToWire(channel);
+//
+//                // Since we work with channels we can ignore the case in the middle of the TPC where there are 
+//                // wires crossing the midplane and just work with the first wire ID
+//                const geo::WireID&  wireID =  wids[0];
+//                const geo::PlaneID& planeID = wireID.planeID();
+//
+//                // Ok, now store things...
+//                unsigned int planeIndex = fPlaneToROPPlaneMap.find(planeID)->second;
+//                unsigned int wire       = channel - fPlaneToWireOffsetMap.find(planeID)->second;
+//
+//                if (wire >= channelArrayPairVec[planeIndex].second.size()) continue;
+//
+//                icarus_signal_processing::VectorFloat& dataVec = channelArrayPairVec[planeIndex].second[wire];
+//
+//                for(size_t tick = 0; tick < dataSize; tick++) dataVec[tick] = rawDataVec[tick];
+//
+//                // Keep track of the channel
+//                channelArrayPairVec[planeIndex].first[wire] = daq::INoiseFilter::ChannelPlanePair(channel,planeID.Plane);
+            }
         }
+
+        // Some detector simulations don't output channels that don't have any possibility of signal (ghost channels)
+        // Do a cleanup phase here to find these
+        std::cout << "Size of board map: " << boardToChannelArrayPairMap.size() << std::endl;
+        for(auto& boardInfo : boardToChannelArrayPairMap)
+        {
+            if (boardWireCountMap[boardInfo.first] < 64)
+            {
+                std::cout << "****> caught less than 64 channel remnant: " << boardWireCountMap[boardInfo.first] << std::endl;
+                std::cout << "  channels: ";
+                for(const auto& pair : boardInfo.second.first) std::cout << pair.first << " ";
+                std::cout << std::endl;
+
+                processSingleImage(clockData, boardInfo.second, boardWireCountMap[boardInfo.first], concurrentRawDigits, concurrentRawRawDigits, coherentRawDigits, concurrentROIs);
+            }
+        }
+
     }
 
     theClockProcess.stop();
@@ -526,31 +619,26 @@ void MCDecoderICARUSTPCwROI::processSingleLabel(art::Event&          event,
     return;
 }
 
-void MCDecoderICARUSTPCwROI::processSingleImage(size_t                             idx,
-                                                const detinfo::DetectorClocksData& clockData,
-                                                const ChannelArrayPairVec&         channelArrayPairVec,
+void MCDecoderICARUSTPCwROI::processSingleImage(const detinfo::DetectorClocksData& clockData,
+                                                const ChannelArrayPair&            channelArrayPair,
+                                                size_t                             coherentNoiseGrouping,
                                                 ConcurrentRawDigitCol&             concurrentRawDigitCol,
                                                 ConcurrentRawDigitCol&             concurrentRawRawDigitCol,
                                                 ConcurrentRawDigitCol&             coherentRawDigitCol,
                                                 ConcurrentWireCol&                 concurrentROIs) const
 {
-    // Which image are we processing?
-    const ChannelArrayPair& channelArrayPair = channelArrayPairVec[idx];
-
     // Let's go through and fill the output vector
-    const ChannelVec&                           channelVec = channelArrayPair.first;
+    const daq::INoiseFilter::ChannelPlaneVec&   channelVec = channelArrayPair.first;
     const icarus_signal_processing::ArrayFloat& dataArray  = channelArrayPair.second;
 
     unsigned int numChannels = dataArray.size();
     unsigned int numTicks    = dataArray[0].size();
 
-    std::cout << "Process Single Image, found: " << numChannels << " channels, begin looping over channels" << std::endl;
-
     // Recover pointer to the decoder needed here
-    IDecoderFilterMC* decoderTool = fDecoderToolVec[tbb::this_task_arena::current_thread_index()].get();
+    INoiseFilter* decoderTool = fDecoderToolVec[tbb::this_task_arena::current_thread_index()].get();
 
     //process_fragment(event, rawfrag, product_collection, header_collection);
-    decoderTool->process_fragment(clockData, channelVec, dataArray);
+    decoderTool->process_fragment(clockData, channelVec, dataArray, coherentNoiseGrouping);
 
     // Now set up for output, we need to convert back from float to short int so use this
     raw::RawDigit::ADCvector_t wvfm(numTicks);
@@ -558,11 +646,14 @@ void MCDecoderICARUSTPCwROI::processSingleImage(size_t                          
     // Loop over the channels to recover the RawDigits after filtering
     for(size_t chanIdx = 0; chanIdx < numChannels; chanIdx++)
     {
-        raw::ChannelID_t channel = channelVec[chanIdx];
+        // Skip if no channel data (plane is wrong)
+        if (channelVec[chanIdx].second > 2) continue;
+        
+        raw::ChannelID_t channel = channelVec[chanIdx].first;
 
         if (fOutputRawWaveform)
         {
-            const icarus_signal_processing::VectorFloat& waveform = decoderTool->getRawWaveforms()[chanIdx];
+            const icarus_signal_processing::VectorFloat& waveform = decoderTool->getPedCorWaveforms()[chanIdx];
 
             // Need to convert from float to short int
             std::transform(waveform.begin(),waveform.end(),wvfm.begin(),[](const auto& val){return short(std::round(val));});
@@ -597,7 +688,7 @@ void MCDecoderICARUSTPCwROI::processSingleImage(size_t                          
 
         // And, finally, the ROIs 
         const icarus_signal_processing::VectorBool& chanROIs = decoderTool->getROIVals()[chanIdx];
-        recob::Wire::RegionsOfInterest_t           ROIVec;
+        recob::Wire::RegionsOfInterest_t            ROIVec;
 
         // Go through candidate ROIs and create Wire ROIs
         size_t roiIdx = 0;
@@ -620,7 +711,7 @@ void MCDecoderICARUSTPCwROI::processSingleImage(size_t                          
 
 //        std::cout << "    ROIVec size: " << ROIVec.size() << std::endl;
 
-        concurrentROIs.push_back(recob::WireCreator(std::move(ROIVec),channel,fGeometry->View(channelVec[chanIdx])).move());
+        concurrentROIs.push_back(recob::WireCreator(std::move(ROIVec),channel,fGeometry->View(channel)).move());
     }//loop over channel indices
 
     return;

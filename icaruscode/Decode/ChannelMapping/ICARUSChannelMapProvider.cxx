@@ -19,6 +19,7 @@
 
 #include <string>
 #include <iostream>
+#include <cassert>
 
 namespace icarusDB
 {
@@ -49,7 +50,9 @@ ICARUSChannelMapProvider::ICARUSChannelMapProvider(const fhicl::ParameterSet& ps
     else if (fDiagnosticOutput)
     {
         std::cout << "FragmentID to Readout ID map has " << fFragmentToReadoutMap.size() << " elements";
-        for(const auto& pair : fFragmentToReadoutMap) std::cout << "   Frag: " << std::hex << pair.first << ", Crate: " << pair.second.first << ", # boards: " << std::dec << pair.second.second.size() << std::endl;
+	for(const auto& pair : fFragmentToReadoutMap) std::cout << "   Frag: " << std::hex << pair.first << ", Crate: " 
+								<< pair.second.first << ", # boards: " << std::dec << pair.second.second.size() << std::endl;
+	
     }
 
     theClockFragmentIDs.stop();
@@ -74,7 +77,8 @@ ICARUSChannelMapProvider::ICARUSChannelMapProvider(const fhicl::ParameterSet& ps
     else if (fDiagnosticOutput)
       {
 	std::cout << "FragmentID to Readout ID map has " << fFragmentToDigitizerMap.size() << " Fragment IDs";
-        for(const auto& pair : fFragmentToDigitizerMap) std::cout << "   Frag: " << std::hex << pair.first << ", # pairs: " << std::dec << pair.second.size() << std::endl;
+	 for(const auto& pair : fFragmentToDigitizerMap) std::cout << "   Frag: " << std::hex << pair.first << ", # pairs: " 
+								   << std::dec << pair.second.size() << std::endl;
       }
     
     // Do the channel mapping initialization for CRT
@@ -85,11 +89,42 @@ ICARUSChannelMapProvider::ICARUSChannelMapProvider(const fhicl::ParameterSet& ps
     else if (fDiagnosticOutput)
       {
 	std::cout << "ChannelID to MacAddress map has " << fCRTChannelIDToHWtoSimMacAddressPairMap.size() << " Channel IDs";
-        for(const auto& pair : fCRTChannelIDToHWtoSimMacAddressPairMap) std::cout <<" ChannelID: "<< pair.first
+	for(const auto& pair : fCRTChannelIDToHWtoSimMacAddressPairMap) std::cout <<" ChannelID: "<< pair.first
                                                                                   << ", hw mac address: " << pair.second.first
                                                                                   <<", sim mac address: " << pair.second.second << std::endl;
+	
       }
     
+    
+    // Do the channel mapping initialization for top CRT
+    if (fChannelMappingTool->BuildTopCRTHWtoSimMacAddressPairMap(fTopCRTHWtoSimMacAddressPairMap))
+      {
+        throw cet::exception("CRTDecoder") << "Cannot recover the Top CRT HW MAC Address  from the database \n";
+      }
+    else if (fDiagnosticOutput)
+      {
+	std::cout << "Top CRT MacAddress map has " << fTopCRTHWtoSimMacAddressPairMap.size() << " rows";
+        for(const auto& pair : fTopCRTHWtoSimMacAddressPairMap) std::cout << ", hw mac address: " << pair.first
+									  <<", sim mac address: " << pair.second << std::endl;
+      }
+    
+
+    // Do the CRT Charge Calibration initialization
+    if (fChannelMappingTool->BuildSideCRTCalibrationMap(fSideCRTChannelToCalibrationMap))
+      {
+	std::cout << "******* FAILED TO CONFIGURE CRT Calibration  ********" << std::endl;
+        throw cet::exception("ICARUSChannelMapProvider") << "Cannot recover the charge calibration information from the database \n";
+      }
+    else if (fDiagnosticOutput)
+      {
+	std::cout << "side crt calibration map has " << fSideCRTChannelToCalibrationMap.size() << " list of rows \n";
+
+	for(const auto& pair : fSideCRTChannelToCalibrationMap) std::cout <<" mac5: "<< pair.first.first
+									  << ", chan: " << pair.first.second
+									  << ", Gain: " << pair.second.first
+									  << ", Pedestal: " << pair.second.second << std::endl;
+
+      }    
     
     theClockReadoutIDs.stop();
 
@@ -133,6 +168,12 @@ const ReadoutIDVec& ICARUSChannelMapProvider::getReadoutBoardVec(const unsigned 
 
 }
 
+const TPCReadoutBoardToChannelMap& ICARUSChannelMapProvider::getReadoutBoardToChannelMap() const
+{
+    return fReadoutBoardToChannelMap;
+}
+
+
 bool ICARUSChannelMapProvider::hasBoardID(const unsigned int boardID)  const
 {
     return fReadoutBoardToChannelMap.find(boardID) != fReadoutBoardToChannelMap.end();
@@ -167,7 +208,7 @@ unsigned int ICARUSChannelMapProvider::getBoardSlot(const unsigned int boardID) 
 
 bool ICARUSChannelMapProvider::hasPMTDigitizerID(const unsigned int fragmentID)   const
 {
-    return fFragmentToDigitizerMap.find(fragmentID) != fFragmentToDigitizerMap.end();
+    return findPMTfragmentEntry(fragmentID) != nullptr;
 }
 
 
@@ -178,13 +219,11 @@ unsigned int ICARUSChannelMapProvider::nPMTfragmentIDs() const {
 
 const DigitizerChannelChannelIDPairVec& ICARUSChannelMapProvider::getChannelIDPairVec(const unsigned int fragmentID) const
 {
-    IChannelMapping::FragmentToDigitizerChannelMap::const_iterator digitizerItr = fFragmentToDigitizerMap.find(fragmentID);
-
-    if (digitizerItr == fFragmentToDigitizerMap.end())
-        throw cet::exception("ICARUSChannelMapProvider") << "Fragment ID " << fragmentID << " not found in lookup map when looking for PMT channel info \n";
-
-    return digitizerItr->second;
-      
+    DigitizerChannelChannelIDPairVec const* digitizerPair = findPMTfragmentEntry(fragmentID);
+    
+    if (digitizerPair) return *digitizerPair;
+    throw cet::exception("ICARUSChannelMapProvider") << "Fragment ID " << fragmentID << " not found in lookup map when looking for PMT channel info \n";
+    
 }
 
   unsigned int ICARUSChannelMapProvider::getSimMacAddress(const unsigned int hwmacaddress)  const
@@ -199,5 +238,69 @@ const DigitizerChannelChannelIDPairVec& ICARUSChannelMapProvider::getChannelIDPa
     return simmacaddress;
   }
   
+  unsigned int ICARUSChannelMapProvider::gettopSimMacAddress(const unsigned int hwmacaddress)  const
+  {
+    unsigned int   simmacaddress = 0;
+
+    for(const auto& pair : fTopCRTHWtoSimMacAddressPairMap){
+      if (pair.first == hwmacaddress)
+	simmacaddress = pair.second;
+    }
+
+    return simmacaddress;
+  }
+   
+  std::pair<double, double> ICARUSChannelMapProvider::getSideCRTCalibrationMap(int mac5, int chan) const
+  {
+    std::pair<double, double> gainandpedestal(-99, -99);
+    for(const auto& pair : fSideCRTChannelToCalibrationMap){
+      if ((int)pair.first.first == mac5 && (int)pair.first.second == chan)
+        gainandpedestal = std::make_pair(pair.second.first, pair.second.second);
+    }
+    return gainandpedestal;
+  }
+
+auto ICARUSChannelMapProvider::findPMTfragmentEntry(unsigned int fragmentID) const
+  -> DigitizerChannelChannelIDPairVec const*
+{
+  auto it = fFragmentToDigitizerMap.find(PMTfragmentIDtoDBkey(fragmentID));
+  return (it == fFragmentToDigitizerMap.end())? nullptr: &(it->second);
+}
+
+
+constexpr unsigned int ICARUSChannelMapProvider::PMTfragmentIDtoDBkey
+  (unsigned int fragmentID)
+{
+  /*
+   * PMT channel mapping database stores the board number (0-23) as key.
+   * Fragment ID are currently in the pattern 0x20xx, with xx the board number.
+   */
+  
+  // protest if this is a fragment not from the PMT;
+  // but make an exception for old PMT fragment IDs (legacy)
+  assert(((fragmentID & ~0xFF) == 0x00) || ((fragmentID & ~0xFF) == 0x20));
+  
+  return fragmentID & 0xFF;
+  
+} // ICARUSChannelMapProvider::PMTfragmentIDtoDBkey()
+
+
+constexpr unsigned int ICARUSChannelMapProvider::DBkeyToPMTfragmentID
+  (unsigned int DBkey)
+{
+  /*
+   * PMT channel mapping database stores the board number (0-23) as key.
+   * Fragment ID are currently in the pattern 0x20xx, with xx the board number.
+   */
+  
+  // protest if this is a fragment not from the PMT;
+  // but make an exception for old PMT fragment IDs (legacy)
+  assert((DBkey & 0xFF) < 24);
+  
+  return (DBkey & 0xFF) | 0x2000;
+  
+} // ICARUSChannelMapProvider::PMTfragmentIDtoDBkey()
+
+
 } // end namespace
 

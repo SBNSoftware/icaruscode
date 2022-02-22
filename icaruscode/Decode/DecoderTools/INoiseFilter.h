@@ -1,5 +1,5 @@
 /**
- *  @file   IDecoderFilter.h
+ *  @file   INoiseFilter.h
  *
  *  @brief  This provides an art tool interface definition for tools which "decode" artdaq 
  *          fragments into LArSoft data objects
@@ -7,8 +7,8 @@
  *  @author usher@slac.stanford.edu
  *
  */
-#ifndef IDecoderFilter_h
-#define IDecoderFilter_h
+#ifndef INoiseFilter_h
+#define INoiseFilter_h
 
 // Framework Includes
 #include "fhiclcpp/ParameterSet.h"
@@ -24,18 +24,18 @@ namespace detinfo {
 
 //------------------------------------------------------------------------------------------------------------------------------------------
 
-namespace daqMC
+namespace daq
 {
 /**
  *  @brief  IDecoderFilter interface class definiton
  */
-class IDecoderFilterMC
+class INoiseFilter
 {
 public:
     /**
      *  @brief  Virtual Destructor
      */
-    virtual ~IDecoderFilterMC() noexcept = default;
+    virtual ~INoiseFilter() noexcept = default;
 
     /**
      *  @brief Interface for configuring the particular algorithm tool
@@ -50,11 +50,13 @@ public:
      *  @param ChannelVec           list of channels associated to input data array
      *  @param ArrayFloat           array by channel of the waveforms
      */
-    using ChannelVec = std::vector<unsigned int>;
+    using ChannelPlanePair = std::pair<unsigned int,unsigned int>;
+    using ChannelPlaneVec  = std::vector<ChannelPlanePair>;
 
     virtual void process_fragment(detinfo::DetectorClocksData const&,
-                                  const daqMC::IDecoderFilterMC::ChannelVec&,
-                                  const icarus_signal_processing::ArrayFloat&) = 0;
+                                  const daq::INoiseFilter::ChannelPlaneVec&,
+                                  const icarus_signal_processing::ArrayFloat&,
+                                  const size_t&) = 0;
 
     /**
      *  @brief Recover the channels for the processed fragment

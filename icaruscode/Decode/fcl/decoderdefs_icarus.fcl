@@ -37,6 +37,8 @@ decodeTPCROI: {
                     OutputRawWavePath:  "RAW"
                     OutputCoherentPath: "Cor"
                     DiagnosticOutput:   false
+                    CoherentGrouping:   64
+                    DecoderTool:        @local::TPCNoiseFilter1DTool
 }
 
 decodePMT: {

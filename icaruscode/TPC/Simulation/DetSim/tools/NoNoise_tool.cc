@@ -27,7 +27,9 @@ public:
                        CLHEP::HepRandomEngine&,
                        icarusutil::TimeVec&,
                        detinfo::DetectorPropertiesData const&,
-                       double, unsigned int) override;
+                       double, 
+                       const geo::PlaneID&, 
+                       unsigned int) override;
     
 private:
 
@@ -55,7 +57,8 @@ void NoNoise::generateNoise(CLHEP::HepRandomEngine&,
                             icarusutil::TimeVec& noise,
                             detinfo::DetectorPropertiesData const&,
                             double noise_factor,
-                            unsigned int channel)
+                            const geo::PlaneID&,
+                            unsigned int)
 {
     // Set all values to 0
     std::fill(noise.begin(), noise.end(), 0.);

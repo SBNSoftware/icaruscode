@@ -165,8 +165,6 @@ Decon1DROI::Decon1DROI(fhicl::ParameterSet const & pset, art::ProcessingFrame co
     // We create a separate output instance for each input instance
     for(const auto& rawDigit : fRawDigitLabelVec)
     {
-        std::cout << "Initializing for input data: " << rawDigit << std::endl;
-
         produces< std::vector<recob::Wire> >(rawDigit.instance());
         produces<art::Assns<raw::RawDigit, recob::Wire>>(rawDigit.instance());
     }
@@ -268,8 +266,6 @@ void Decon1DROI::produce(art::Event& evt, art::ProcessingFrame const& frame)
 
         // ... and an association set
         std::unique_ptr<art::Assns<raw::RawDigit,recob::Wire>> wireDigitAssn(new art::Assns<raw::RawDigit,recob::Wire>);
-
-        std::cout << "decon1droi, looking for RawDigits: " << rawDigitLabel << std::endl;
     
         // Read in the digit List object(s). 
         art::Handle< std::vector<raw::RawDigit>> digitVecHandle;
@@ -315,9 +311,7 @@ void Decon1DROI::produce(art::Event& evt, art::ProcessingFrame const& frame)
     
         // Make sure the collection is sorted
         std::sort(wireCol->begin(), wireCol->end(), [](const auto& left, const auto& right){return left.Channel() < right.Channel();});
-
-        std::cout << "Decon1DROI is storing the wire collection, size: " << wireCol->size() << std::endl;
-        
+       
         evt.put(std::move(wireCol), rawDigitLabel.instance());
         evt.put(std::move(wireDigitAssn), rawDigitLabel.instance());
     }
@@ -442,9 +436,7 @@ void  Decon1DROI::processChannel(size_t                                  idx,
     // The following test is meant to be temporary until the "correct" solution is implemented
     if (!fChannelFilter->IsPresent(channel)) return;
 
-    // Testing an idea about rejecting channels
-    if (digitVec->GetPedestal() < 0.) return;
-
+    // The waveforms should have been set to a 0. pedestal...
     float pedestal = 0.;
         
     // Recover the plane info
@@ -482,7 +474,8 @@ void  Decon1DROI::processChannel(size_t                                  idx,
     std::transform(rawadc.begin(),rawadc.end(),rawAdcLessPedVec.begin(),std::bind(std::minus<short>(),std::placeholders::_1,pedestal));
     
     // It seems there are deviations from the pedestal when using wirecell for noise filtering
-    float raw_noise = fixTheFreakingWaveform(rawAdcLessPedVec, channel, rawAdcLessPedVec);
+    //float raw_noise = fixTheFreakingWaveform(rawAdcLessPedVec, channel, rawAdcLessPedVec);
+    float raw_noise = digitVec->GetSigma();
     
     // Recover a measure of the noise on the channel for use in the ROI finder
     //float raw_noise = getTruncatedRMS(rawAdcLessPedVec);

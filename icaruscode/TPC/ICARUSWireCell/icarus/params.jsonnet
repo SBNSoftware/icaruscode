@@ -33,10 +33,10 @@ base {
         // sides are enumerated by "s", while "n" counts the physical anodes.
         // NOTE: the actual physical volumes in ICARUS are only 4
 
-        local xanode = [-369.33*wc.cm, -71.1*wc.cm, 71.1*wc.cm, 369.33*wc.cm],
+        local xanode = [-359.33*wc.cm, -61.1*wc.cm, 61.1*wc.cm, 359.33*wc.cm],
         local offset_response = [if a%2==0 then +10*wc.cm else -10*wc.cm for a in std.range(0,3)],
         local xresponse = [xanode[a] + offset_response[a] for a in std.range(0,3)],
-        local xcathode = [-220.29*wc.cm, -220.29*wc.cm, 220.29*wc.cm, 220.29*wc.cm],
+        local xcathode = [-210.29*wc.cm, -210.29*wc.cm, 210.29*wc.cm, 210.29*wc.cm],
         volumes : [
             {
                 local world = 100,  // identify this geometry
@@ -123,9 +123,9 @@ base {
     },
 
     files: {
-        wires: "icarus-wires-dualanode-v3.json.bz2",
+        wires: "icarus-wires-dualanode-v5.json.bz2",
 
-        fields: ["garfield-icarus-fnal-commissioning.json.bz2"],
+        fields: ["garfield-icarus-fnal-rev1.json.bz2"],
 
 	noise: ["icarus_noise_model_int_TPCEE.json.bz2","icarus_noise_model_int_TPCEW.json.bz2","icarus_noise_model_int_TPCWE.json.bz2","icarus_noise_model_int_TPCWW.json.bz2"],
         coherent_noise: ["icarus_noise_model_coh_TPCEE.json.bz2","icarus_noise_model_coh_TPCEW.json.bz2","icarus_noise_model_coh_TPCWE.json.bz2","icarus_noise_model_coh_TPCWW.json.bz2"],

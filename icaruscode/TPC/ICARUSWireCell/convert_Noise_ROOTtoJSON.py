@@ -13,14 +13,13 @@ import numpy
 def get_freq_amps(hist):
         freq=[]
         amps=[]
-        #Units for the freq/amp can be changed here
-        for i in range(1,hist.GetXaxis().GetNbins()+1):
-            freq.append(hist.GetBinLowEdge(i)*pow(10,-6))
-            amps.append(hist.GetBinContent(i)*pow(10,-9))#*pow(10,-9))
-        for i in range(hist.GetXaxis().GetNbins()+1,0,-1):
-            amps.append(hist.GetBinContent(i)*pow(10,-9))#*pow(10,-9))
-        for i in range(1,hist.GetXaxis().GetNbins()+1):
-            freq.append(hist.GetBinLowEdge(hist.GetXaxis().GetNbins())*pow(10,-6)+hist.GetBinLowEdge(i)*pow(10,-6))
+        for i in range(0,hist.GetXaxis().GetNbins()):
+            freq.append(hist.GetBinLowEdge(i+1)*pow(10,-6))
+            amps.append(hist.GetBinContent(i+1)*pow(10,-9)*3.3*pow(10,3)/4095.0)#*pow(10,-9))#*pow(10,-9))
+        for i in range(hist.GetXaxis().GetNbins(),0,-1):
+            amps.append(hist.GetBinContent(i)*pow(10,-9)*3.3*pow(10,3)/4095.0)#*pow(10,-9))
+        for i in range(0,hist.GetXaxis().GetNbins()):
+            freq.append(hist.GetBinLowEdge(hist.GetXaxis().GetNbins()+1)*pow(10,-6)+hist.GetBinLowEdge(i+1)*pow(10,-6))
         return freq,amps
 
 def load_noise_spectra(filenames):
