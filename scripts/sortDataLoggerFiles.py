@@ -14,6 +14,8 @@
 # 20210602 (petrillo@slac.fnal.gov) [1.2]
 #   added optional stream name to the file name pattern;
 #   fixed a bug where first logger option value would be ignored
+# 20220222 (petrillo@slac.fnal.gov) [1.3]
+#   added support for a new file name format, and for multiple formats
 #
 
 import sys, os
@@ -44,8 +46,8 @@ for duplication altogether.
 """
 
 __author__ = 'Gianluca Petrillo (petrillo@slac.stanford.edu)'
-__date__ = 'February 26, 2021'
-__version__ = '1.2'
+__date__ = 'February 22, 2022'
+__version__ = '1.3'
 
 
 class CycleCompareClass:
@@ -58,6 +60,69 @@ class CycleCompareClass:
   def less(self, a, b): return (a < b) == ((a < self.first) == (b < self.first))
 # class CycleCompareClass
 
+
+class FileNameParser:
+  """Static object (namespace?) containing file name parsing utilities.
+  
+  All supported file name patterns are in the `Patterns` class variable.
+  The static method `match()` tries all of them, in order.
+  """
+  Patterns = [
+    {
+      'Name': 'general',
+      # pattern parameters:   data logger stream stream name run  pass  filler (timestamp)
+      #                              <1>  <2>    <3>         <4>   <5>  <6>
+      'Pattern': re.compile(r"data_dl(\d+)(_fstrm([^_]*))?_run(\d+)_(\d+)_(.*)\.root"),
+      'Parameters': {
+        'DataLogger': ( 1, int ),
+        'StreamName': ( 3, str ),
+        'RunNumber' : ( 4, int ),
+        'PassCount' : ( 5, int ),
+      },
+    }, # general
+    {
+      'Name': 'multistream',
+      # pattern parameters:   stream name data logger run  pass  filler (timestamp)
+      #                       <1>            <2>      <3>   <4>   <5>
+      'Pattern': re.compile(r"([^_]+)_data_dl(\d+)_run(\d+)_(\d+)_(.*)\.root"),
+      'Parameters': {
+        'DataLogger': ( 2, int ),
+        'StreamName': ( 1, str ),
+        'RunNumber' : ( 3, int ),
+        'PassCount' : ( 4, int ),
+      },
+    }, # general
+  ] # Patterns
+  
+  class ParsedNameClass:
+    def __init__(self, name, fields):
+      self.name = name
+      self.fields = fields
+    # __init__()
+    def __nonzero__(self): return len(self.fields) > 0
+    def get(self, *fieldNames):
+      return tuple(self.fields.get(fieldName, None) for fieldName in fieldNames)
+  # class ParsedNameClass
+  
+  def __init__(self): pass
+
+  @staticmethod
+  def match(name):
+    # the first successful pattern is used
+    for patternInfo in FileNameParser.Patterns:
+      match = patternInfo['Pattern'].match(name)
+      if match is None: continue
+      d = dict(
+          ( name, ( type_(value) if (value := match.group(index)) else None ) )
+          for name, ( index, type_ ) in patternInfo['Parameters'].items()
+        )
+      d['Name'] = patternInfo['Name']
+      return FileNameParser.ParsedNameClass(name, d)
+    else: return FileNameParser.ParsedNameClass(name, {})
+  # match()
+# class FileNameParser
+
+
 class FileInfoClass:
   """This class collects information about a input file, including a sorting
   criterium.
@@ -68,9 +133,6 @@ class FileInfoClass:
   POSIXprotocolHead = '/'
   POSIXprotocolDir = 'pnfs'
   
-  # pattern parameters:   data logger stream stream name run  pass  filler (timestamp)
-  #                              <1>  <2>    <3>         <4>   <5>  <6>
-  Pattern = re.compile(r"data_dl(\d+)(_fstrm([^_]*))?_run(\d+)_(\d+)_(.*)\.root")
   POSIXPattern = re.compile(
     POSIXprotocolHead.replace('.', r'\.')
     + POSIXprotocolDir.replace('.', r'\.')
@@ -97,12 +159,11 @@ class FileInfoClass:
     self.source = source
     self.path = line.strip()
     self.protocolAndDir, self.name = os.path.split(self.path)
-    match = FileInfoClass.Pattern.match(self.name)
-    self.is_file = match is not None
+    parsedName = FileNameParser.match(self.name)
+    self.is_file = bool(parsedName)
     if self.is_file:
-      # see Pattern above:
-      self.dataLogger, self.run, self.pass_ = map(int, match.group(1, 4, 5))
-      self.stream = match.group(3)
+      self.dataLogger, self.run, self.stream, self.pass_ \
+        = parsedName.get('DataLogger', 'RunNumber', 'StreamName', 'PassCount')
   # __init__()
   
   def __lt__(self, other):
