@@ -226,6 +226,8 @@ namespace crt {
 
     //CRT hit product vars
     int      fHitEvent;
+    int      fHitRun;
+    int      fHitSubRun;
     float    fXHit; ///< reconstructed X position of CRT hit (cm)
     float    fYHit; ///< reconstructed Y position of CRT hit (cm)
     float    fZHit; ///< reconstructed Z position of CRT hit (cm)
@@ -350,6 +352,8 @@ namespace crt {
 
     // Define the branches of our SimHit n-tuple
     fHitNtuple->Branch("event",       &fHitEvent,    "event/I");
+    fHitNtuple->Branch("run",         &fHitRun,          "run/I");
+    fHitNtuple->Branch("subrun",      &fHitSubRun,          "subrun/I");
     fHitNtuple->Branch("nHit",        &fNHit,        "nHit/I");
     fHitNtuple->Branch("x",           &fXHit,        "x/F");
     fHitNtuple->Branch("y",           &fYHit,        "y/F");
@@ -514,6 +518,8 @@ namespace crt {
         {
             fNHit++;
             fHitEvent = fEvent;
+            fHitRun = fRun;
+            fHitSubRun = fSubRun;
             fXHit    = hit.x_pos;
             fYHit    = hit.y_pos;
             fZHit    = hit.z_pos;
