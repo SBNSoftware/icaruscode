@@ -507,7 +507,8 @@ void sbn::TimeTrackTreeStorage::analyze(art::Event const& e)
     {
       //hits[allHits[ih]->WireID().Plane].push_back(ih);
       sbn::selHitInfo hinfo = makeHit(*allHits[ih], allHits[ih].key(), calorimetrycol, geom);
-      fHitStore.push_back(hinfo);
+      if(hinfo.plane == 2)
+	fHitStore.push_back(hinfo);
 
       //if (hinfo.h.plane == 2) {
       //fTrackInfo->hits2.push_back(hinfo);
@@ -515,6 +516,8 @@ void sbn::TimeTrackTreeStorage::analyze(art::Event const& e)
 
     }
     float totE = 0;
+    float totq_int = 0;
+    float totq_dqdx = 0;
     for (size_t i = 0; i < fHitStore.size(); ++i)
     {
       if(fHitStore[i].dEdx > -1)
@@ -522,8 +525,18 @@ void sbn::TimeTrackTreeStorage::analyze(art::Event const& e)
 	float E_hit = fHitStore[i].dEdx*fHitStore[i].pitch; //energy of hit, in MeV?
 	totE += E_hit;
       }
+
+      if(fHitStore[i].dqdx > -1)
+      {
+	float q_hit = fHitStore[i].integral;
+	totq_int += q_hit;
+	float q_hit_dqdx = fHitStore[i].dqdx*fHitStore[i].pitch;
+	totq_dqdx += q_hit_dqdx;
+      }
     }
     trackInfo.energy = totE;
+    trackInfo.charge_int = totq_int;
+    trackInfo.charge_dqdx = totq_dqdx;
     fTrackInfo = trackInfo;
     /*
     for(size_t trajp = 0; trajp < trackPtr->NumberTrajectoryPoints()-1; ++trajp)
@@ -613,7 +626,7 @@ float sbn::TimeTrackTreeStorage::dEdx_calc(float dQdx,
 					   float Wion,
 					   float E) 
 {
-  float LAr_density_gmL = 1.389875; //LAr density in g/L
+  float LAr_density_gmL = 1.389875; //LAr density in g/cm^3
   float alpha = A;
   float beta = B/(LAr_density_gmL*E);
   float dEdx = ((std::exp(dQdx*Wion*beta) - alpha)/beta)*3.278;
