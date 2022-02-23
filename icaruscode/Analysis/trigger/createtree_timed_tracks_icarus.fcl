@@ -8,6 +8,19 @@
 #
 #
 
+BEGIN_PROLOG
+###
+### fix settings (so that will not be overridden later);
+### these are defined in `triggeremu_data_config_icarus.fcl`
+###
+
+# do not emulate any fixed level threshold (only `pmtthr`)
+triggeremu_data_config_icarus.settings.PMTADCthresholds @protect_ignore: []
+
+
+END_PROLOG
+
+
 #include "messages_icarus.fcl"
 #include "rootoutput_icarus.fcl"
 #include "services_common_icarus.fcl"
@@ -168,6 +181,10 @@ physics: {
 
 physics.producers.calorimetryCryoE.TrackModuleLabel: "pandoraTrackGausCryoE"
 physics.producers.calorimetryCryoW.TrackModuleLabel: "pandoraTrackGausCryoW"
+
+# disable the functionality of the module without removing it from path (for convenience)
+physics.producers.pmtfixedthr.module_type: DummyProducer
+
 
 # ------------------------------------------------------------------------------
 outputs: {
