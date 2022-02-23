@@ -66,6 +66,7 @@
 #include <algorithm>
 #include <numeric>
 #include <functional>
+#include <tuple>
 
 namespace TPCPurityMonitor
 {
@@ -105,8 +106,8 @@ private:
     using HitStatusChargePairVec = std::vector<HitStatusChargePair>;
 
     // We would also like to keep tracy of the trajectory points along the track
-    using PointDirPair           = std::pair<geo::Point_t,geo::Vector_t>;
-    using HitPointDirPairMap     = std::unordered_map<const recob::Hit*,PointDirPair>;
+    using PointDirTuple          = std::tuple<geo::Point_t,geo::Vector_t,geo::Vector_t>;
+    using HitPointDirTupleMap    = std::unordered_map<const recob::Hit*,PointDirTuple>;
 
     // We also need to define a container for the output of the 2D PCA Analysis
     class PrincipalComponents2D
@@ -175,8 +176,8 @@ private:
     void reconfigure(fhicl::ParameterSet const& pset);
 
     // Compute the principle axes
-    void GetPrincipalComponents2D(const HitStatusChargePairVec& hitPairVector, PrincipalComponents2D& pca)                      const;
-    void GetPrincipalComponents3D(const HitStatusChargePairVec& hitPairVector, HitPointDirPairMap&, PrincipalComponents3D& pca) const;
+    void GetPrincipalComponents2D(const HitStatusChargePairVec& hitPairVector, PrincipalComponents2D& pca)                       const;
+    void GetPrincipalComponents3D(const HitStatusChargePairVec& hitPairVector, HitPointDirTupleMap&, PrincipalComponents3D& pca) const;
 
     // Reject outliers
     void RejectOutliers(HitStatusChargePairVec& hitPairVector, const PrincipalComponents2D& pca) const;
@@ -238,6 +239,7 @@ private:
     std::vector<int>           fDegreesOfFreeVec;   ///< Degrees of freedom
     std::vector<int>           fSnippetLengthVec;   ///< Lenght from start/end of hit
     std::vector<bool>          fGoodHitVec;         ///< Hits were considered good
+    std::vector<double>        fCosThetaYZ;         ///< cos(thetaYZ) hit trajector to wire
 
     TTree*                     fDiagnosticTree;     ///< Pointer to our tree
 
@@ -329,6 +331,7 @@ void TPCPurityMonitor::beginJob()
         fDiagnosticTree->Branch("freedomvec",  "std::vector<int>",    &fDegreesOfFreeVec);
         fDiagnosticTree->Branch("snippetvec",  "std::vector<int>",    &fSnippetLengthVec);
         fDiagnosticTree->Branch("goodhitvec",  "std::vector<bool>",   &fGoodHitVec);
+        fDiagnosticTree->Branch("costhetaYZ",  "std::vector<double>", &fCosThetaYZ);
     }
 
 
@@ -449,7 +452,7 @@ void TPCPurityMonitor::produce(art::Event& event)
             // So we should be able to now transition to computing the attenuation
             // Start by forming a vector of pairs of the time (in ticks) and the ln of charge derated by an assumed lifetime
             HitStatusChargePairVec hitStatusChargePairVec;
-            HitPointDirPairMap     hitPointDirPairMap;
+            HitPointDirTupleMap    hitPointDirTupleMap;
 
             float  firstHitTime(selectedHitMetaVec.front().first->PeakTime());
             double maxDeltaX(1.5);   // Assume a "long hit" would be no more than 1.5 cm in length
@@ -481,7 +484,7 @@ void TPCPurityMonitor::produce(art::Event& event)
                     double charge = fUseHitIntegral ? hitMetaPair.first->Integral() : hitMetaPair.first->SummedADC(); 
 
                     hitStatusChargePairVec.emplace_back(hitMetaPair,StatusChargePair(true,charge/deltaX));
-                    hitPointDirPairMap[hitMetaPair.first.get()] = PointDirPair(hitPos,hitDir);
+                    hitPointDirTupleMap[hitMetaPair.first.get()] = PointDirTuple(hitPos,hitDir,wireDir);
                 }
             }
 
@@ -521,7 +524,7 @@ void TPCPurityMonitor::produce(art::Event& event)
             // Now get the 3D PCA so we can use this to help select on track straightness
             PrincipalComponents3D pca3D;
 
-            GetPrincipalComponents3D(hitStatusChargePairVec, hitPointDirPairMap, pca3D);
+            GetPrincipalComponents3D(hitStatusChargePairVec, hitPointDirTupleMap, pca3D);
 
             const PrincipalComponents2D::EigenVectors& eigenVectors = pca.getEigenVectors();
 
@@ -633,6 +636,17 @@ void TPCPurityMonitor::produce(art::Event& event)
                     fDegreesOfFreeVec.emplace_back(hitPair.first.first->DegreesOfFreedom());
                     fSnippetLengthVec.emplace_back(hitPair.first.first->EndTick() - hitPair.first.first->StartTick());
                     fGoodHitVec.emplace_back(hitPair.second.first);
+
+                    // Want the cos(theta_yz) for this hit
+                    const geo::Vector_t& hitDir  = std::get<1>(hitPointDirTupleMap[hitPair.first.first.get()]);
+                    const geo::Vector_t& wireDir = std::get<2>(hitPointDirTupleMap[hitPair.first.first.get()]);
+
+                    // Wire will already be in the YZ plane, but need to project hitDir to that plane
+                    geo::Vector_t hitDirYZ(0.,hitDir.Y(),hitDir.Z());
+
+                    hitDirYZ /= std::sqrt(hitDirYZ.Mag2());
+
+                    fCosThetaYZ.emplace_back(hitDirYZ.Dot(wireDir));
                 }
 
                 fDiagnosticTree->Fill();
@@ -662,6 +676,7 @@ void TPCPurityMonitor::produce(art::Event& event)
                 fDegreesOfFreeVec.clear();
                 fSnippetLengthVec.clear();
                 fGoodHitVec.clear();
+                fCosThetaYZ.clear();
             }
         }
     }
@@ -818,7 +833,7 @@ void TPCPurityMonitor::GetPrincipalComponents2D(const HitStatusChargePairVec& hi
     return;
 }
 
-void TPCPurityMonitor::GetPrincipalComponents3D(const HitStatusChargePairVec& hitPairVector, HitPointDirPairMap& hitPointDirPairMap, PrincipalComponents3D& pca) const
+void TPCPurityMonitor::GetPrincipalComponents3D(const HitStatusChargePairVec& hitPairVector, HitPointDirTupleMap& hitPointDirTupleMap, PrincipalComponents3D& pca) const
 {
     // Run through the HitPairList and get the mean position of all the hits
     Eigen::Vector3d meanPos(Eigen::Vector3d::Zero());
@@ -831,7 +846,7 @@ void TPCPurityMonitor::GetPrincipalComponents3D(const HitStatusChargePairVec& hi
 
         const recob::Hit* hit = hitPair.first.first.get();
 
-        geo::Point_t hitPos = hitPointDirPairMap[hit].first;
+        geo::Point_t hitPos = std::get<0>(hitPointDirTupleMap[hit]);
 
         // Weight the hit by the peak time difference significance
         double weight = fWeightByChiSq ? 1./hit->GoodnessOfFit() : 1.; 
@@ -863,7 +878,7 @@ void TPCPurityMonitor::GetPrincipalComponents3D(const HitStatusChargePairVec& hi
 
         double weight = fWeightByChiSq ? 1./hit->GoodnessOfFit() : 1.;
 
-        geo::Point_t    hitPos         = hitPointDirPairMap[hit].first;
+        geo::Point_t    hitPos         = std::get<0>(hitPointDirTupleMap[hit]);
         Eigen::Vector3d weightedHitPos = Eigen::Vector3d(hitPos.X(),hitPos.Y(),hitPos.Z()) - meanPos;
 
         weightSum += weight * weight;
