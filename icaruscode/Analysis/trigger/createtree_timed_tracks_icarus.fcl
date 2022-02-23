@@ -173,10 +173,14 @@ physics.producers.calorimetryCryoW.TrackModuleLabel: "pandoraTrackGausCryoW"
 outputs: {
   rootoutput: {
     @table::icarus_rootoutput
+    
+    # these data products are enough to rerun this job (until hits are needed):
     outputCommands: [
-      "drop *",
-      "keep sbn::PMTconfiguration_*_*_*", "keep *_daqTrigger_*_*", "keep *_*_*_stage1",
-      "keep *_*_*_TrgEmu", "keep *_*_*_T0sel"
+      "drop *"
+      , "keep sbn::PMTconfiguration_*_*_*", "keep *_daqTrigger_*_*"
+      , "keep *_pandoraGausCryoE_*_stage1", "keep *_pandoraGausCryoW_*_stage1", "drop *recob::SpacePoint*_pandoraGausCryo*_*_stage1"
+      , "keep *_*_*_TrgEmu", "keep *_*_*_T0sel"
+      , "keep *_*_*_storeTree"
       ]
 
   }

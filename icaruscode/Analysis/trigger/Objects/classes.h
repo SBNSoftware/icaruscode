@@ -6,3 +6,4 @@
 #include "lardataobj/AnalysisBase/T0.h"
 #include "lardataobj/RecoBase/PFParticle.h"
 #include "lardataobj/Simulation/BeamGateInfo.h"
+#include "lardataobj/RawData/OpDetWaveform.h"

@@ -5,7 +5,7 @@
 # Date:    November 9, 2021
 #
 #
-# This configuration runs the trigger emulation on ime intervals ("beam gates")
+# This configuration runs the trigger emulation on time intervals ("beam gates")
 # provided as input, allegedly around the time of reconstructed cathode-crossing
 # tracks.
 # The required data products with track times (beam-gate-like intervals) must be
@@ -58,6 +58,7 @@ services: {
 services.message.destinations: {
   @table::services.message.destinations
   @table::triggeremu_data_config_icarus.messagedestinations
+  TriggerEmuSlidingORsimLog: @erase # this can get huge
 }
 
 
@@ -89,10 +90,10 @@ outputs: {
   rootoutput: {
     @table::icarus_rootoutput
     outputCommands: [
-      "drop *",
-      "keep sbn::PMTconfiguration_*_*_*", "keep *_daqTrigger_*_*",
-      "keep *_*_*_stage1",
-      "keep *_*_*_TrgEmu", "keep *_*_*_T0sel"
+      "drop *"
+      , "keep sbn::PMTconfiguration_*_*_*", "keep *_daqTrigger_*_*"
+      , "keep *_*_*_stage1", "drop *_cluster3D*_*_*", "drop *recob::SpacePoint*_*_*_*"
+      , "keep *_*_*_TrgEmu", "keep *_*_*_T0sel"
       ]
   }
 }

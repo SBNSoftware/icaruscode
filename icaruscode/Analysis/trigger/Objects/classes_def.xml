@@ -18,7 +18,6 @@
    <version ClassVersion="11" checksum="2335077475"/>
    <version ClassVersion="10" checksum="2486880499"/>
   </class>
-
   <class name="sbn::selLightInfo" ClassVersion="13">
    <version ClassVersion="13" checksum="3810861666"/>
    <version ClassVersion="12" checksum="2145002064"/>
@@ -44,6 +43,8 @@
   <class name="art::Wrapper<art::Assns<recob::PFParticle, sim::BeamGateInfo>>" />
   
   <!-- anab::T0 - sim::BeamGateInfo associations -->
+  <class name="std::pair<art::Ptr<sim::BeamGateInfo>, art::Ptr<anab::T0>>" />
+  <class name="std::pair<art::Ptr<anab::T0>, art::Ptr<sim::BeamGateInfo>>" />
   <class name="art::Assns<sim::BeamGateInfo, anab::T0>" />
   <class name="art::Assns<anab::T0, sim::BeamGateInfo>" />
   <class name="art::Wrapper<art::Assns<sim::BeamGateInfo, anab::T0>>" />

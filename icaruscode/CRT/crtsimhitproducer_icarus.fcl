@@ -2,6 +2,8 @@
 
 #include "services_icarus_simulation.fcl"
 #include "crtsimhitproducer.fcl"
+#include "channelmapping_icarus.fcl"
+#include "services_common_icarus.fcl"
 
 process_name: CRTSimHitProducer
 
@@ -12,6 +14,11 @@ services:
   TFileService:           { fileName: "crtsimhitproducer_hist.root" }
   message:                 @local::icarus_message_services_prod_debug
                            @table::icarus_common_services
+
+  IICARUSChannelMap:       @local::icarus_channelmappinggservice
+                           @table::icarus_calibration_services
+                           @table::icarus_wirecalibration_services
+
 } # services
 
 # The 'source' section tells the script to expect an input file with art::Event records.
@@ -70,6 +77,4 @@ services.message.destinations :
   }
 }
 
-#physics.producers.crthit.CrtModuleLabel: "crtdaq"
-physics.producers.crthit.HitAlg.CoinWindow: 150
-physics.producers.crthit.HitAlg.PEThresh: 6.5
+

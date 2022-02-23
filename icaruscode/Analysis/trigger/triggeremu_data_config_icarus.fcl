@@ -56,6 +56,10 @@
 # Changes
 # --------
 # 
+# 20220118 (petrillo@slac.stanford.edu) [v1.2]
+# :   added fixed discrimination thresholds
+# 20211130 (petrillo@slac.stanford.edu) [v1.1]
+# :   integrated beam gate source from data products
 # 20211109 (petrillo@slac.stanford.edu) [v1.0]
 # :   original version based on `triggersim_data_icarus.fcl` v1.1
 #     and `triggersim_icarus_data.fcl` v1.0
@@ -77,8 +81,6 @@ BEGIN_PROLOG
 # Table `triggeremu_data_config_icarus` is defined in multiple passes to allow
 # internal references.
 
-triggeremu_data_config_icarus: {}
-
 triggeremu_data_config_icarus.settings: {
 
   # bad PMT channels (off or too noisy)
@@ -96,11 +98,11 @@ triggeremu_data_config_icarus.settings: {
   }
 
   # discrimination thresholds:
-  PMTthresholds: [ "pmtthr" ]
+  PMTADCthresholds: [ 100, 150, 200, 250, 300, 350, 400, 500 ] # fixed ADC only
 
 
   # PMT discriminated signal width
-  LVDSsignalWidth: 0.160 # microseconds
+  LVDSsignalWidth: "160 ns"
 
   # special pairing for 30-PMT windows pairing the single PMT together
   trigger_channel_pairings_nosingle: [
@@ -259,12 +261,45 @@ triggeremu_data_config_icarus.producers: {
 
 
   # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  pmtfixedthr: {
+
+    module_type: DiscriminatePMTwaveforms
+
+    # input optical waveform data product tag:
+    OpticalWaveforms: "daqPMT"
+
+    # PMT baselines
+    Baselines: "pmtconfigbaselines" # from data products
+    
+    NChannels:                360 # to be safe...
+    
+    #
+    # choosing the discrimination algorithm: fixed length gates
+    #
+    TriggerGateBuilder: {
+      @table::icarus_fixedtriggergate     # from trigger_icarus.fcl
+      
+      ChannelThresholds: @local::triggeremu_data_config_icarus.settings.PMTADCthresholds
+      
+      GateDuration: @local::triggeremu_data_config_icarus.settings.LVDSsignalWidth
+      
+    } # TriggerGateBuilder
+
+
+    # message facility stream
+    OutputCategory: "TriggerEmuDiscriminatePMTwaveforms"
+
+  } # pmtfixedthr
+
+
+  # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   lvdsgatesOR: {
 
     module_type: LVDSgates
 
     # select the thresholds to process (mandatory)
-    Thresholds: [ "pmtthr:" ]
+    TriggerGatesTag: "pmtfixedthr"
+    Thresholds: [ "pmtthr:", @sequence::triggeremu_data_config_icarus.settings.PMTADCthresholds ]
 
     # CombinationMode: mostly either "AND" or "OR"
     CombinationMode: "OR"
@@ -288,7 +323,7 @@ triggeremu_data_config_icarus.producers: {
 
     TriggerGatesTag: "lvdsgatesOR"
 
-    Thresholds: @local::triggeremu_data_config_icarus.settings.PMTthresholds
+    Thresholds: [ "pmtthr", @sequence::triggeremu_data_config_icarus.settings.PMTADCthresholds ]
 
     WindowSize: 30
 
@@ -313,7 +348,7 @@ triggeremu_data_config_icarus.producers: {
 
     TriggerGatesTag: "trigtilewindowOR"
 
-    Thresholds: @local::triggeremu_data_config_icarus.settings.PMTthresholds
+    Thresholds: [ "pmtthr", @sequence::triggeremu_data_config_icarus.settings.PMTADCthresholds ]
     
     # this is M1
     Pattern: @local::triggeremu_data_config_icarus.settings.SlidingWindowTriggerPatternsSingleWindow[0]
@@ -340,64 +375,89 @@ triggeremu_data_config_icarus.producers: {
 } # triggeremu_data_config_icarus.producers
 
 
-triggeremu_data_config_icarus.simulationEast: [
+triggeremu_data_config_icarus.simulationBase: [
+  pmtconfigbaselines, pmtthr, pmtfixedthr, lvdsgatesOR
+]
+
+triggeremu_data_config_icarus.simulationPrepEast: [
   # tiling
     trigtilewindowORE
   # sliding
   , trigslidewindowORE
-  
-  # trigger simulation: tiling
-  , simTiledORM1E, simTiledORM2E, simTiledORM3E, simTiledORM4E, simTiledORM5E, simTiledORM6E
-  , simTiledORM3O3E, simTiledORM4O4E, simTiledORM5O5E, simTiledORM6O6E
-  , simTiledORS3E, simTiledORS5E, simTiledORS8E, simTiledORS10E, simTiledORS15E
-  # trigger simulation: sliding
-  , simSlidingORM1E, simSlidingORM2E, simSlidingORM3E, simSlidingORM4E, simSlidingORM5E, simSlidingORM6E
-  , simSlidingORM3O3E, simSlidingORM4O4E, simSlidingORM5O5E, simSlidingORM6O6E
-  , simSlidingORS3E, simSlidingORS5E, simSlidingORS8E, simSlidingORS10E, simSlidingORS15E
 ]
-triggeremu_data_config_icarus.simulationWest: [
+
+triggeremu_data_config_icarus.simulationPrepWest: [
   # tiling
     trigtilewindowORW
   # sliding
   , trigslidewindowORW
+]
+
+triggeremu_data_config_icarus.simulationPrepFull: [
+  # tiling
+    trigtilewindowOR
+  # sliding
+  , trigslidewindowOR
+]
+
+
+triggeremu_data_config_icarus.simulationEast: [
+
+  # trigger simulation: tiling
+  , simTiledORM1E, simTiledORM2E, simTiledORM3E, simTiledORM4E, simTiledORM5E, simTiledORM6E
+  , simTiledORM3O3E, simTiledORM4O4E, simTiledORM5O5E, simTiledORM6O6E
+  , simTiledORS3E, simTiledORS5E, simTiledORS8E, simTiledORS10E, simTiledORS15E
   
+  # trigger simulation: sliding
+  , simSlidingORM1E, simSlidingORM2E, simSlidingORM3E, simSlidingORM4E, simSlidingORM5E, simSlidingORM6E
+  , simSlidingORM3O3E, simSlidingORM4O4E, simSlidingORM5O5E, simSlidingORM6O6E
+  , simSlidingORS3E, simSlidingORS5E, simSlidingORS8E, simSlidingORS10E, simSlidingORS15E
+  
+]
+triggeremu_data_config_icarus.simulationWest: [
+
   # trigger simulation: tiling
   , simTiledORM1W, simTiledORM2W, simTiledORM3W, simTiledORM4W, simTiledORM5W, simTiledORM6W
   , simTiledORM3O3W, simTiledORM4O4W, simTiledORM5O5W, simTiledORM6O6W
   , simTiledORS3W, simTiledORS5W, simTiledORS8W, simTiledORS10W, simTiledORS15W
   # trigger simulation: sliding
+  
   , simSlidingORM1W, simSlidingORM2W, simSlidingORM3W, simSlidingORM4W, simSlidingORM5W, simSlidingORM6W
   , simSlidingORM3O3W, simSlidingORM4O4W, simSlidingORM5O5W, simSlidingORM6O6W
   , simSlidingORS3W, simSlidingORS5W, simSlidingORS8W, simSlidingORS10W, simSlidingORS15W
-]
-triggeremu_data_config_icarus.simulationFull: [
-  # tiling
-    trigtilewindowOR
-  # sliding
-  , trigslidewindowOR
   
+]
+
+triggeremu_data_config_icarus.simulationFull: [
+
   # trigger simulation: tiling
   , simTiledORM1, simTiledORM2, simTiledORM3, simTiledORM4, simTiledORM5, simTiledORM6
   , simTiledORM3O3, simTiledORM4O4, simTiledORM5O5, simTiledORM6O6
   , simTiledORS3, simTiledORS5, simTiledORS8, simTiledORS10, simTiledORS15
+  
   # trigger simulation: sliding
   , simSlidingORM1, simSlidingORM2, simSlidingORM3, simSlidingORM4, simSlidingORM5, simSlidingORM6
   , simSlidingORM3O3, simSlidingORM4O4, simSlidingORM5O5, simSlidingORM6O6
   , simSlidingORS3, simSlidingORS5, simSlidingORS8, simSlidingORS10, simSlidingORS15
+  
 ]
 
+# producer paths: discrimination (Base) + windows (Prep) + simulation and gate
 triggeremu_data_config_icarus.producerpathE: [
-  pmtconfigbaselines, pmtthr, lvdsgatesOR,
+  @sequence::triggeremu_data_config_icarus.simulationBase,
+  @sequence::triggeremu_data_config_icarus.simulationPrepEast,
   @sequence::triggeremu_data_config_icarus.simulationEast
 ]
 
 triggeremu_data_config_icarus.producerpathW: [
-  pmtconfigbaselines, pmtthr, lvdsgatesOR,
+  @sequence::triggeremu_data_config_icarus.simulationBase,
+  @sequence::triggeremu_data_config_icarus.simulationPrepWest,
   @sequence::triggeremu_data_config_icarus.simulationWest
 ]
 
 triggeremu_data_config_icarus.producerpath: [
-  pmtconfigbaselines, pmtthr, lvdsgatesOR,
+  @sequence::triggeremu_data_config_icarus.simulationBase,
+  @sequence::triggeremu_data_config_icarus.simulationPrepFull,
   @sequence::triggeremu_data_config_icarus.simulationFull
 ]
 

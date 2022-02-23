@@ -13,6 +13,7 @@ art_make(
     "TriggerEfficiencyPlots_module.cc"
     "MajorityTriggerEfficiencyPlots_module.cc"
     "SlidingWindowTriggerEfficiencyPlots_module.cc"
+    "TriggerEmulationTree_module.cc"
     "MakeTriggerSimulationTree_module.cc"
   LIB_LIBRARIES
     icaruscode_PMT_Trigger_Algorithms
@@ -203,6 +204,22 @@ simple_plugin(MakeTriggerSimulationTree module
   ${FHICLCPP}
   ${CETLIB_EXCEPT}
   ROOT::GenVector
+  ROOT::Tree
+  ROOT::Core
+  )
+
+simple_plugin(TriggerEmulationTree module
+  icaruscode_PMT_Trigger_Algorithms
+  icaruscode_PMT_Trigger_Utilities
+  art_root_io::TFileService_service
+  art_root_io::tfile_support
+  art::Framework_Services_Registry
+  art::Framework_Principal
+  art::Framework_Core
+  canvas
+  messagefacility::MF_MessageLogger
+  fhiclcpp::fhiclcpp
+  cetlib_except
   ROOT::Tree
   ROOT::Core
   )

@@ -15,7 +15,6 @@
 #include "icaruscode/PMT/Trigger/Algorithms/BeamGateMaker.h"
 #include "icaruscode/PMT/Trigger/Algorithms/TriggerTypes.h" // ADCCounts_t
 #include "icaruscode/PMT/Trigger/Algorithms/details/TriggerInfo_t.h"
-#include "sbnobj/ICARUS/PMT/Trigger/Data/MultiChannelOpticalTriggerGate.h"
 #include "sbnobj/ICARUS/PMT/Trigger/Data/OpticalTriggerGate.h"
 #include "icaruscode/PMT/Trigger/Utilities/TriggerDataUtils.h" // FillTriggerGates()
 #include "icaruscode/PMT/Trigger/Utilities/PlotSandbox.h"
@@ -585,11 +584,6 @@ class icarus::trigger::TriggerSimulationOnGates
   //@}
   
   
-  /// Reads a set of input gates from the `event`
-  /// @return trigger gates, converted into `InputTriggerGate_t`
-  static TriggerGates_t readTriggerGates
-    (art::Event const& event, art::InputTag const& dataTag);
-  
   //@{
   /// Returns the time of the event in seconds from The Epoch.
   static double eventTimestampInSeconds(art::Timestamp const& time);
@@ -656,9 +650,8 @@ icarus::trigger::TriggerSimulationOnGates::TriggerSimulationOnGates
 
   // trigger primitives
   for (art::InputTag const& inputDataTag: util::const_values(fADCthresholds)) {
-    consumes<std::vector<OpticalTriggerGateData_t>>(inputDataTag);
-    consumes<art::Assns<OpticalTriggerGateData_t, raw::OpDetWaveform>>
-      (inputDataTag);
+    icarus::trigger::TriggerGateReader<>{ inputDataTag }
+      .declareConsumes(consumesCollector());
   } // for
   
   //
@@ -1047,7 +1040,7 @@ auto icarus::trigger::TriggerSimulationOnGates::produceForThreshold(
   // get the input
   //
   art::InputTag const& dataTag = fADCthresholds.at(thrTag);
-  auto const& gates = readTriggerGates(event, dataTag);
+  auto const& gates = icarus::trigger::ReadTriggerGates(event, dataTag);
   
   
   // extract or verify the topology of the trigger windows
@@ -1209,43 +1202,17 @@ icarus::trigger::TriggerSimulationOnGates::triggerInfoToTriggerData(
 ) const {
   
   return {
-    triggerNumber,                                             // counter
-    double(detTimings.toElectronicsTime(info.info.atTick())),  // trigger time
+    triggerNumber,                      // counter
+    info.info.fired()                   // trigger time
+      ? double(detTimings.toElectronicsTime(info.info.atTick()))
+      : std::numeric_limits<double>::lowest()
+      ,
     double(detTimings.toElectronicsTime(beamGate.tickRange().start())),
                                         // beam gate in electronics time scale
-    (info.info.fired()? fBeamBits: 0)                          // bits
+    (info.info.fired()? fBeamBits: 0)   // bits
     };
   
 } // icarus::trigger::TriggerSimulationOnGates::triggerInfoToTriggerData()
-
-
-//------------------------------------------------------------------------------
-auto icarus::trigger::TriggerSimulationOnGates::readTriggerGates
-  (art::Event const& event, art::InputTag const& dataTag)
-  -> TriggerGates_t
-{
-
-  using icarus::trigger::OpticalTriggerGateData_t; // for convenience
-
-  // currently the associations are a waste of time memory...
-  auto const& gates
-    = *(event.getValidHandle<std::vector<OpticalTriggerGateData_t>>(dataTag));
-  auto const& gateToWaveforms = *(
-    event.getValidHandle
-      <art::Assns<OpticalTriggerGateData_t, raw::OpDetWaveform>>(dataTag)
-    );
-  
-  try {
-    return icarus::trigger::FillTriggerGates<InputTriggerGate_t>
-      (gates, gateToWaveforms);
-  }
-  catch (cet::exception const& e) {
-    throw cet::exception("TriggerSimulationOnGates", "", e)
-      << "Error encountered while reading data products from '"
-      << dataTag.encode() << "'\n";
-  }
-
-} // icarus::trigger::TriggerSimulationOnGates::readTriggerGates()
 
 
 //------------------------------------------------------------------------------

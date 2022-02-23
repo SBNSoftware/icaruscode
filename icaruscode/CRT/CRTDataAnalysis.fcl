@@ -1,6 +1,7 @@
 
 #include "services_common_icarus.fcl"
 #include "services_icarus_simulation.fcl"
+#include "channelmapping_icarus.fcl"
 
 process_name: CRTAnalysis
 
@@ -14,6 +15,9 @@ services:
   message:                @local::icarus_message_services_prod_debug
                           @table::icarus_common_services
 
+ IICARUSChannelMap:       @local::icarus_channelmappinggservice
+                          @table::icarus_calibration_services
+			  @table::icarus_wirecalibration_services
 } # services
 
 source:
@@ -29,7 +33,16 @@ source:
   # fileNames: ["myinput.root"]
 }
 
-outputs:{}
+outputs:{
+ out1: {
+      compressionLevel: 1
+      dataTier: "analysis"
+      fastCloning: false
+      fileName: "%ifb_%tc_ana.root"
+      module_type: "RootOutput"
+      saveMemoryObjectThreshold: 0
+   }
+}
 
 physics:
 {
@@ -38,14 +51,18 @@ physics:
     CRTDataAnalysis: 
     {
 
-      module_type:     "CRTDataAnalysis"
-
+      module_type:   "CRTDataAnalysis"
 
       CRTHitLabel:   "crthit"
 
-      CRTDAQLabel:  "crtdaq"
+      CRTDAQLabel:   "daqCRT"
 
+      TriggerLabel:  "daqTrigger"
 
+      QPed:                 60     # Pedestal offset [ADC]
+      QSlope:               70     # Pedestal slope [ADC/photon]
+      PEThresh:             7.5    # PE threshold above which charge amplitudes used
+      CrtWindow:            3e6    # time window for looking data within trigger timestamp [ns]
     }
   }
 
@@ -63,3 +80,4 @@ physics:
   end_paths: [ analysis ]
 }
 
+#services.IICARUSChannelMap.ChannelMappingTool: @local::ChannelMappingPostGres

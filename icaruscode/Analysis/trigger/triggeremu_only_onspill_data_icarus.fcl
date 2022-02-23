@@ -1,0 +1,123 @@
+#
+# File:    triggeremu_only_onspill_data_icarus.fcl
+# Purpose: Emulation of ICARUS trigger (no plots, only trigger outcome).
+# Authors: Gianluca Petrillo (petrillo@slac.stanford.edu)
+# Date:    November 9, 2021
+#
+#
+# This configuration runs the trigger emulation on a time interval ("beam gate")
+# configured to match the beam gate.
+# 
+# It uses and abuses the trigger simulation targetted to multiple tracks
+# (for the only reason that other configuration is already available for that).
+#
+#
+# Changes
+# --------
+# 
+# 20211129 (petrillo@slac.stanford.edu) [v1.0]
+# :   original version based on `triggeremu_only_data_icarus.fcl` v1.1
+# 
+
+#include "services_common_icarus.fcl"
+#include "rootoutput_icarus.fcl"
+#include "trigger_icarus.fcl"
+#include "triggeremu_data_config_icarus.fcl"
+
+
+# ------------------------------------------------------------------------------
+BEGIN_PROLOG
+
+extended_trigger_gate_30us_icarus: {
+  module_type: WriteBeamGateInfo
+  
+  BeamGates: [
+    {
+      Duration: "30 us"
+      Start: "-15 us"
+    }
+  ]
+} # extended_trigger_gate_30us_icarus
+
+END_PROLOG
+
+
+# ------------------------------------------------------------------------------
+process_name: TrgEmu
+
+
+# ------------------------------------------------------------------------------
+services: {
+  
+  # uncommon services for trigger emulation (may be overridden below)
+  @table::triggeremu_data_config_icarus.services # from triggeremu_data_config_icarus.fcl
+  
+  # this provides: file service, random management (unused),
+  #                Geometry, detector properties and clocks
+  @table::icarus_common_services
+
+  # art resource tracking services may take a lot of memory on the long run
+  MemoryTracker: @erase
+#  TimeTracker:   @erase
+
+  # currently unused (remove the line if they start mattering):
+  LArPropertiesService:      @erase
+  DetectorPropertiesService: @erase
+  
+} # services
+
+
+# customization of message destinations from trigger emulation
+services.message.destinations: {
+  @table::services.message.destinations
+  @table::triggeremu_data_config_icarus.messagedestinations
+}
+
+
+# ------------------------------------------------------------------------------
+physics: {
+
+  producers: {
+    
+    # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    
+    # not actually on tracks: it's a fixed gate!
+    gatesFromTracksE: @local::extended_trigger_gate_30us_icarus
+    gatesFromTracksW: @local::extended_trigger_gate_30us_icarus
+    
+    # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    
+    @table::triggeremu_data_config_icarus.producers # from triggeremu_data_config_icarus.fcl
+
+  } # producers
+
+  # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  triggeremuE: [ gatesFromTracksE, @sequence::triggeremu_data_config_icarus.producerpathE ]
+  triggeremuW: [ gatesFromTracksW, @sequence::triggeremu_data_config_icarus.producerpathW ]
+
+  streams: [ "rootoutput" ]
+  
+  trigger_paths: [ triggeremuE, triggeremuW ]
+  end_paths: [ streams ]
+
+  # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  
+} # physics
+
+
+# ------------------------------------------------------------------------------
+outputs: {
+  rootoutput: {
+    @table::icarus_rootoutput
+    outputCommands: [
+      "drop *"
+      , "keep sbn::PMTconfiguration_*_*_*", "keep *_daqTrigger_*_*"
+#     , "keep *_*_*_stage1"
+      , "keep *_*_*_TrgEmu"
+#     , "keep *_*_*_T0sel"
+      ]
+  }
+}
+
+
+# ------------------------------------------------------------------------------

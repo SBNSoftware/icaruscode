@@ -1,0 +1,28 @@
+###
+## This fhicl file is used to run "stage0" processing specifically for the case where all
+## TPC data is included in an artdaq data product from a single instance
+##
+#include "stage0_icarus_driver_common.fcl"
+
+process_name: stage0
+
+## Use the following to run the full defined stage0 set of modules
+physics.reco: [daqTPCROI, @sequence::icarus_stage0_multiTPC]
+
+## Use the following to run only the decoding and noise filtering
+## ==> Set as default for production processing for lifetime measurements - Jan, 2021
+#physics.reco: [ daqTPC ]
+
+
+## boiler plate...
+physics.trigger_paths: [ reco ]
+outputs.outBNB.fileName: "%ifb_%tc-%p.root"
+outputs.outBNB.dataTier: "reconstructed"
+
+# Drop the artdaq format files on output
+outputs.outBNB.outputCommands: ["keep *_*_*_*", "drop *_*_*_DAQ*", "drop *_decon1droi_*_*", "drop *_decon1DroiTPC*_*_*" ]
+
+# Set up for the single module mutliple TPC mode...
+physics.producers.daqTPCROI.FragmentsLabelVec:  ["daq:PHYSCRATEDATATPCWW","daq:PHYSCRATEDATATPCWE","daq:PHYSCRATEDATATPCEW","daq:PHYSCRATEDATATPCEE"]
+physics.producers.decon1droi.RawDigitLabelVec:  ["daqTPCROI:PHYSCRATEDATATPCWW","daqTPCROI:PHYSCRATEDATATPCWE","daqTPCROI:PHYSCRATEDATATPCEW","daqTPCROI:PHYSCRATEDATATPCEE"]
+physics.producers.roifinder.WireModuleLabelVec: ["decon1droi:PHYSCRATEDATATPCWW","decon1droi:PHYSCRATEDATATPCWE","decon1droi:PHYSCRATEDATATPCEW","decon1droi:PHYSCRATEDATATPCEE"]

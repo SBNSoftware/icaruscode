@@ -65,7 +65,7 @@ namespace icarus::trigger { class WriteBeamGateInfo; }
  *         the actual beam gate opens at;
  *     * `Type` (string, default: "unknown"): type of the gate; see online
  *         description for the configuration keys representing the values of
- *         `sim::BeamType`.
+ *         `sim::BeamType_t`.
  * * `LogCategory` (string, default: `WriteBeamGateInfo`): name of the output
  *     stream category for console messages (managed by MessageFacility
  *     library).

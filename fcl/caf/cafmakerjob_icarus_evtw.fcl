@@ -2,4 +2,4 @@
 
 services.RandomNumberGenerator: {}
 
-physics.runprod: [@sequence::caf_ana_evtw_sequence, cafmaker]
+physics.runprod: [@sequence::caf_preprocess_evtw_sequence, cafmaker]

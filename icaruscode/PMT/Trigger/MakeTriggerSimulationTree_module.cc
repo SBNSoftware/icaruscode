@@ -15,12 +15,12 @@
 #include "icaruscode/PMT/Trigger/Algorithms/details/EventInfo_t.h"
 #include "icaruscode/PMT/Trigger/Algorithms/TriggerGateBuilder.h"
 #include "icaruscode/PMT/Trigger/Algorithms/TriggerTypes.h" // ADCCounts_t
+#include "icaruscode/PMT/Trigger/Utilities/TrackedOpticalTriggerGate.h"
 #include "icaruscode/PMT/Trigger/Utilities/TriggerDataUtils.h"
 #include "icaruscode/Utilities/DetectorClocksHelpers.h" // makeDetTimings()...
 #include "icaruscode/Utilities/DataProductPointerMap.h"
 #include "icarusalg/Utilities/FHiCLutils.h" // util::fhicl::getOptionalValue()
 #include "icarusalg/Utilities/ChangeMonitor.h" // ThreadSafeChangeMonitor
-#include "sbnobj/ICARUS/PMT/Trigger/Data/SingleChannelOpticalTriggerGate.h"
 #include "sbnobj/ICARUS/PMT/Trigger/Data/OpticalTriggerGate.h"
 #include "sbnobj/ICARUS/PMT/Trigger/Data/TriggerGateData.h"
 #include "sbnobj/ICARUS/PMT/Data/WaveformBaseline.h"

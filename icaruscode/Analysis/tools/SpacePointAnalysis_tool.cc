@@ -9,16 +9,19 @@
 #include "messagefacility/MessageLogger/MessageLogger.h"
 #include "lardata/DetectorInfoServices/DetectorClocksService.h"
 #include "canvas/Persistency/Common/FindManyP.h"
+#include "canvas/Persistency/Common/FindOneP.h"
 
 #include "larcore/Geometry/Geometry.h"
 #include "lardata/DetectorInfoServices/DetectorClocksService.h"
 #include "larevt/CalibrationDBI/Interface/ChannelStatusService.h"
 #include "larevt/CalibrationDBI/Interface/ChannelStatusProvider.h"
+#include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
 
 #include "lardataobj/RawData/RawDigit.h"
 #include "lardataobj/RecoBase/Wire.h"
 #include "lardataobj/RecoBase/Hit.h"
 #include "lardataobj/RecoBase/SpacePoint.h"
+#include "lardataobj/RecoBase/PFParticle.h"
 
 // Eigen
 #include <Eigen/Dense>
@@ -57,6 +60,86 @@ using HitPtrVec       = std::vector<art::Ptr<recob::Hit>>;
 using ViewHitMap      = std::map<size_t,HitPtrVec>;
 using TrackViewHitMap = std::map<int,ViewHitMap>;
 
+// Define object to keep track of hit related tuple items
+class HitTupleObj
+{
+public:
+    HitTupleObj() : fTree(nullptr) {}
+
+    void setBranches(TTree* tree)
+    {
+        tree->Branch("TicksTotHit",       "std::vector<int>",   &fTicksTotHitVec);
+        tree->Branch("Tick",              "std::vector<int>",   &fTicksVec);
+        tree->Branch("NDF",               "std::vector<int>",   &fNDFHitVec);                //< Number of degrees of freedom of hit fit
+        tree->Branch("Multiplicity",      "std::vector<int>",   &fMultiplicityHitVec);       //< Multiplicity of the snippet the hit is on
+        tree->Branch("LocalIndex",        "std::vector<int>",   &fLocalIndexHitVec);         //< The index of the hit within the snippet
+        tree->Branch("ChiSquare",         "std::vector<float>", &fChiSquareHitVec);          //< Chi square of fit
+        tree->Branch("SummedADC",         "std::vector<float>", &fSummedADCHitVec);          //< Sum of all ADC values start/end of snippet
+        tree->Branch("Integral",          "std::vector<float>", &fIntegralHitVec);           //< Integrated charge +/- n sigma about peak center
+        tree->Branch("PulseHeight",       "std::vector<float>", &fPHHitVec);                 //< Pulse height of hit
+        tree->Branch("RMS",               "std::vector<float>", &fRMSHitVec);                //< RMS of hit (from fit)
+        tree->Branch("ClusterSize",       "std::vector<int>",   &fClusterSizeVec);           //< Number space points in cluster for this hit
+
+        fTree = tree;
+
+        return;
+    }
+
+    void fill()
+    {
+        if (fTree) fTree->Fill();
+    }
+
+    void clear()
+    {
+        fTicksTotHitVec.clear();
+        fTicksVec.clear();
+        fNDFHitVec.clear();
+        fMultiplicityHitVec.clear();
+        fLocalIndexHitVec.clear();
+        fChiSquareHitVec.clear();
+        fSummedADCHitVec.clear();
+        fIntegralHitVec.clear();
+        fPHHitVec.clear();
+        fRMSHitVec.clear();
+        fPHOrderHitVec.clear();
+        fClusterSizeVec.clear();
+    }
+
+    void fillHitInfo(const recob::Hit* hit, int hitWidth, int clusterSize)
+    {
+        fTicksTotHitVec.emplace_back(hitWidth);
+        fTicksVec.emplace_back(hit->PeakTime());
+        fNDFHitVec.emplace_back(hit->DegreesOfFreedom());
+        fMultiplicityHitVec.emplace_back(hit->Multiplicity());
+        fLocalIndexHitVec.emplace_back(hit->LocalIndex());
+        fChiSquareHitVec.emplace_back(hit->GoodnessOfFit());
+        fSummedADCHitVec.emplace_back(hit->SummedADC());
+        fIntegralHitVec.emplace_back(hit->Integral());
+        fPHHitVec.emplace_back(hit->PeakAmplitude());
+        fRMSHitVec.emplace_back(hit->RMS());
+        fClusterSizeVec.emplace_back(clusterSize);
+    }
+
+    // Define tuple values, these are public so can be diretly accessed for filling
+    std::vector<int>   fTicksTotHitVec;
+    std::vector<int>   fTicksVec;
+    std::vector<int>   fNDFHitVec;
+    std::vector<int>   fMultiplicityHitVec;
+    std::vector<int>   fLocalIndexHitVec;
+    std::vector<float> fChiSquareHitVec;
+    std::vector<float> fSummedADCHitVec;
+    std::vector<float> fIntegralHitVec;
+    std::vector<float> fPHHitVec;
+    std::vector<float> fRMSHitVec;
+
+    std::vector<int>   fPHOrderHitVec;
+    std::vector<int>   fClusterSizeVec;
+
+private:
+    TTree* fTree;
+};
+
 // Define object to keep track of hit/spacepoint related items
 class HitSpacePointObj
 {
@@ -65,6 +148,8 @@ public:
 
     void setBranches(TTree* tree)
     {
+        tree->Branch("SPCryostat",         "std::vector<int>",   &fSPCryostatVec);
+        tree->Branch("SPTPC",              "std::vector<int>",   &fSPTPCVec);
         tree->Branch("SPQuality",          "std::vector<float>", &fSPQualityVec);
         tree->Branch("SPTotalCharge",      "std::vector<float>", &fSPTotalChargeVec);
         tree->Branch("SPAsymmetry",        "std::vector<float>", &fSPAsymmetryVec);
@@ -72,21 +157,24 @@ public:
         tree->Branch("LargestPH",          "std::vector<float>", &fLargestPHVec);
         tree->Branch("AveragePH",          "std::vector<float>", &fAveragePHVec);
         tree->Branch("LargestDelT",        "std::vector<float>", &fLargestDelTVec);
+        tree->Branch("SmallestDelT",       "std::vector<float>", &fSmallestDelTVec);
+
+        tree->Branch("SP_x",               "std::vector<float>", &fSP_x);
+        tree->Branch("SP_y",               "std::vector<float>", &fSP_y);
+        tree->Branch("SP_z",               "std::vector<float>", &fSP_z);
 
         tree->Branch("NumLongHitsSP",      "std::vector<int>",   &fNumLongHitsVec);
         tree->Branch("NumPlanesSimMatch",  "std::vector<int>",   &fNumPlanesSimMatchVec);
         tree->Branch("NumIntersectSet",    "std::vector<int>",   &fNumIntersectSetVec);
+        tree->Branch("ClusterNSP",         "std::vector<int>",   &fClusterNSPVec);
 
-        tree->Branch("SimHitDeltaT0",      "std::vector<int>",   &fSimHitDeltaT0Vec);
-        tree->Branch("SimHitDeltaT1",      "std::vector<int>",   &fSimHitDeltaT1Vec);
-        tree->Branch("SimHitDeltaT2",      "std::vector<int>",   &fSimHitDeltaT2Vec);
-        tree->Branch("SimDeltaT10",        "std::vector<int>",   &fSimDelta10Vec);
-        tree->Branch("SimDeltaT11",        "std::vector<int>",   &fSimDelta21Vec);
-        tree->Branch("HitDeltaT10",        "std::vector<int>",   &fHitDelta10Vec);
-        tree->Branch("HitDeltaT11",        "std::vector<int>",   &fHitDelta21Vec);
-        tree->Branch("MaxElectronDep0",    "std::vector<float>", &fBigElecDep0Vec);
-        tree->Branch("MaxElectronDep1",    "std::vector<float>", &fBigElecDep1Vec);
-        tree->Branch("MaxElectronDep2",    "std::vector<float>", &fBigElecDep2Vec);
+        tree->Branch("HitDeltaT10",        "std::vector<float>", &fHitDelta10Vec);
+        tree->Branch("HitSigmaT10",        "std::vector<float>", &fHitSigma10Vec);
+        tree->Branch("HitDeltaT21",        "std::vector<float>", &fHitDelta21Vec);
+        tree->Branch("HitSigmaT21",        "std::vector<float>", &fHitSigma21Vec);
+        tree->Branch("HitDeltaT20",        "std::vector<float>", &fHitDelta20Vec);
+        tree->Branch("HitSigmaT20",        "std::vector<float>", &fHitSigma20Vec);
+        tree->Branch("HitMultProduct",     "std::vector<int>",   &fHitMultProductVec);
 
         fTree = tree;
     }
@@ -98,6 +186,9 @@ public:
 
     void clear()
     {
+        fSPCryostatVec.clear();
+        fSPTPCVec.clear();
+
         fSPQualityVec.clear();
         fSPTotalChargeVec.clear();
         fSPAsymmetryVec.clear();
@@ -105,24 +196,30 @@ public:
         fLargestPHVec.clear();
         fAveragePHVec.clear();
         fLargestDelTVec.clear();
+        fSmallestDelTVec.clear();
+
+        fSP_x.clear();
+        fSP_y.clear();
+        fSP_z.clear();
 
         fNumLongHitsVec.clear();
         fNumPlanesSimMatchVec.clear();
         fNumIntersectSetVec.clear();
+        fClusterNSPVec.clear();
 
-        fSimHitDeltaT0Vec.clear();
-        fSimHitDeltaT1Vec.clear();
-        fSimHitDeltaT2Vec.clear();
-        fSimDelta10Vec.clear();
-        fSimDelta21Vec.clear();
         fHitDelta10Vec.clear();
+        fHitSigma10Vec.clear();
         fHitDelta21Vec.clear();
-        fBigElecDep0Vec.clear();
-        fBigElecDep1Vec.clear();
-        fBigElecDep2Vec.clear();
+        fHitSigma21Vec.clear();
+        fHitDelta20Vec.clear();
+        fHitSigma20Vec.clear();
+        fHitMultProductVec.clear();
     }
 
     // Define tuple vars, make public for direct access
+    std::vector<int>   fSPCryostatVec;
+    std::vector<int>   fSPTPCVec;
+
     std::vector<float> fSPQualityVec;
     std::vector<float> fSPTotalChargeVec;
     std::vector<float> fSPAsymmetryVec;
@@ -130,21 +227,24 @@ public:
     std::vector<float> fLargestPHVec;
     std::vector<float> fAveragePHVec;
     std::vector<float> fLargestDelTVec;
+    std::vector<float> fSmallestDelTVec;
+
+    std::vector<float> fSP_x;
+    std::vector<float> fSP_y;
+    std::vector<float> fSP_z;
 
     std::vector<int>   fNumLongHitsVec;
     std::vector<int>   fNumPlanesSimMatchVec;
     std::vector<int>   fNumIntersectSetVec;
+    std::vector<int>   fClusterNSPVec;
 
-    std::vector<int>   fSimHitDeltaT0Vec;
-    std::vector<int>   fSimHitDeltaT1Vec;
-    std::vector<int>   fSimHitDeltaT2Vec;
-    std::vector<int>   fSimDelta10Vec;
-    std::vector<int>   fSimDelta21Vec;
-    std::vector<int>   fHitDelta10Vec;
-    std::vector<int>   fHitDelta21Vec;
-    std::vector<float> fBigElecDep0Vec;
-    std::vector<float> fBigElecDep1Vec;
-    std::vector<float> fBigElecDep2Vec;
+    std::vector<float> fHitDelta10Vec;
+    std::vector<float> fHitDelta21Vec;
+    std::vector<float> fHitDelta20Vec;
+    std::vector<float> fHitSigma10Vec;
+    std::vector<float> fHitSigma21Vec;
+    std::vector<float> fHitSigma20Vec;
+    std::vector<int>   fHitMultProductVec;
 
 private:
     TTree* fTree;
@@ -208,6 +308,8 @@ private:
     using HitPointerVec        = std::vector<const recob::Hit*>;
 
     // Fcl parameters.
+    using TickCorrectionArray = std::vector<std::vector<std::vector<float>>>;
+
     std::vector<art::InputTag>  fSpacePointLabelVec;
     art::InputTag               fBadChannelProducerLabel;
     std::vector<int>            fOffsetVec;              ///< Allow offsets for each plane
@@ -219,10 +321,15 @@ private:
     mutable std::vector<int>    fCryoVec;
     mutable std::vector<int>    fPlaneVec;
 
+    TickCorrectionArray         fTickCorrectionArray;
+
+    using HitTuplebjVec = std::vector<HitTupleObj>;
+
+    mutable HitTuplebjVec       fHitTupleObjVec;
     mutable HitSpacePointObj    fHitSpacePointObj;
 
     // Useful services, keep copies for now (we can update during begin run periods)
-    const geo::GeometryCore*           fGeometry;             ///< pointer to Geometry service
+    const geo::GeometryCore*               fGeometry;             ///< pointer to Geometry service
 };
 
 //----------------------------------------------------------------------------
@@ -256,8 +363,9 @@ SpacePointAnalysis::~SpacePointAnalysis()
 ///
 void SpacePointAnalysis::configure(fhicl::ParameterSet const & pset)
 {
-    fSpacePointLabelVec = pset.get< std::vector<art::InputTag>>("SpacePointLabelVec", std::vector<art::InputTag>() = {"cluster3d"});
-    fOffsetVec          = pset.get<std::vector<int>           >("OffsetVec",          std::vector<int>()           = {0,0,0}      );
+    fSpacePointLabelVec  = pset.get< std::vector<art::InputTag>>("SpacePointLabelVec",  {"cluster3d"});
+    fOffsetVec           = pset.get<std::vector<int>           >("OffsetVec",           {0,0,0}      );
+    fTickCorrectionArray = pset.get<TickCorrectionArray        >("TickCorrectionArray", {{{0.,0.,0.},{0.,0.,0.},{0.,0.,0.},{0.,0.,0.}},{{0.,0.,0.},{0.,0.,0.},{0.,0.,0.},{0.,0.,0.}}});
 
     return;
 }
@@ -289,6 +397,16 @@ void SpacePointAnalysis::initializeTuple(TTree* tree)
 
     fHitSpacePointObj.setBranches(locTree);
 
+    fHitTupleObjVec.resize(fGeometry->Nplanes());
+
+    for(size_t plane = 0; plane < fGeometry->Nplanes(); plane++)
+    {
+        // Set up specific branch for space points
+        locTree = tfs->makeAndRegister<TTree>("MatchedHits_P"+std::to_string(plane),"Matched Hits Tuple plane "+std::to_string(plane));
+
+        fHitTupleObjVec[plane].setBranches(locTree);
+    }
+
     clear();
 
     return;
@@ -301,6 +419,8 @@ void SpacePointAnalysis::clear() const
     fPlaneVec.clear();
 
     fHitSpacePointObj.clear();
+
+    for(auto& hitObj : fHitTupleObjVec) hitObj.clear();
 
     return;
 }
@@ -321,6 +441,8 @@ void SpacePointAnalysis::fillHistograms(const art::Event& event) const
     // Make sure the output tuples are filled
     fHitSpacePointObj.fill();
 
+    for(auto& hitObj : fHitTupleObjVec) hitObj.fill();
+
     return;
 }
 
@@ -333,22 +455,56 @@ void SpacePointAnalysis::processSpacePoints(const art::Event&                  e
 
     TripletMap tripletMap;
 
+    // detector properties
+    auto const detProp = art::ServiceHandle<detinfo::DetectorPropertiesService const>()->DataForJob();
+
     // So now we loop through the various SpacePoint sources
-    for(const auto& spacePointLabel : fSpacePointLabelVec)
+    for(const auto& collectionLabel : fSpacePointLabelVec)
     {
+        art::Handle<std::vector<recob::PFParticle>> pfParticleHandle;
+        event.getByLabel(collectionLabel, pfParticleHandle);
+
+        if (!pfParticleHandle.isValid()) continue;
+
         art::Handle< std::vector<recob::SpacePoint>> spacePointHandle;
-        event.getByLabel(spacePointLabel, spacePointHandle);
+        event.getByLabel(collectionLabel, spacePointHandle);
 
         if (!spacePointHandle.isValid()) continue;
 
-        // Look up assocations to hits
-        art::FindManyP<recob::Hit> spHitAssnVec(spacePointHandle, event, spacePointLabel);
+        // Recover the collection of associations between tracks and hits
+        art::FindManyP<recob::SpacePoint> pfPartSpacePointAssns(pfParticleHandle, event, collectionLabel);
+
+        // Look up assocations between pfparticles and space points
+        art::FindManyP<recob::Hit> spHitAssnVec(spacePointHandle, event, collectionLabel);
+
+        // Use this to build a map between PFParticles and the number of associated space points 
+        using PFParticleToNumSPMap = std::map<const recob::PFParticle*,int>;
+
+        PFParticleToNumSPMap pfParticleToNumSPMap;
+
+        for(size_t idx = 0; idx < pfParticleHandle->size(); idx++)
+        {
+            art::Ptr<recob::PFParticle> pfParticle(pfParticleHandle,idx);
+
+            std::vector<art::Ptr<recob::SpacePoint>> spacePointVec(pfPartSpacePointAssns.at(pfParticle.key()));
+
+            pfParticleToNumSPMap[pfParticle.get()] = spacePointVec.size();
+
+//            if (spacePointVec.size() > 50000) std::cout << "SpacePointAnalysis finds PFParticle with " << spacePointVec.size() << " associated space points, run/event: " << event.id() << std::endl;
+        }
+
+        // Ok now we want the reverse look up
+        art::FindManyP<recob::PFParticle> spacePointPFPartAssns(spacePointHandle, event, collectionLabel);
+
+        std::unordered_map<const recob::Hit*,int> uniqueHitMap;
 
         // And now, without further adieu, here we begin the loop that will actually produce some useful output.
         // Loop over all space points and find out their true nature
         for(size_t idx = 0; idx < spacePointHandle->size(); idx++)
         {
+            // Recover space point
             art::Ptr<recob::SpacePoint> spacePointPtr(spacePointHandle,idx);
+
             std::vector<art::Ptr<recob::Hit>> associatedHits(spHitAssnVec.at(spacePointPtr.key()));
 
             if (associatedHits.size() != 3)
@@ -357,21 +513,34 @@ void SpacePointAnalysis::processSpacePoints(const art::Event&                  e
                 continue;
             }
 
+            // Recover the PFParticle associated to this space point and get the number of associated hits
+            int nSpacePointsInPFParticle(0);
+
+            std::vector<art::Ptr<recob::PFParticle>> pfParticleVec(spacePointPFPartAssns.at(spacePointPtr.key()));
+
+            if (pfParticleVec.size() == 1) nSpacePointsInPFParticle = pfParticleToNumSPMap.at(pfParticleVec[0].get());
+
+            mf::LogDebug("SpacePointAnalysis") << "==> pfPartVec size: " << pfParticleVec.size() << ", # space points: " << nSpacePointsInPFParticle << std::endl;
+
             // Retrieve the magic numbers from the space point
-            float                       spQuality       = spacePointPtr->Chisq();
-            float                       spCharge        = spacePointPtr->ErrXYZ()[1];
-            float                       spAsymmetry     = spacePointPtr->ErrXYZ()[3];
-            float                       smallestPH      = std::numeric_limits<float>::max();
-            float                       largestPH       = 0.;
-            int                         numHits         = 0;
-            float                       averagePH       = 0.;
-            float                       averagePT       = 0.;
-            float                       largestDelT     = 0.;
-            std::vector<float>          hitPeakTimeVec  = {-100.,-100.,-100.};
-            std::vector<float>          bigElecDepVec   = {0.,0.,0.};
-            std::vector<unsigned short> bigTDCVec       = {0,0,0};
-            int                         numLongHits(0);
-            int                         numIntersections(0);
+            float              spQuality       = spacePointPtr->Chisq();
+            float              spCharge        = spacePointPtr->ErrXYZ()[1];
+            float              spAsymmetry     = spacePointPtr->ErrXYZ()[3];
+            const Double32_t*  spPosition      = spacePointPtr->XYZ();
+            float              smallestPH      = std::numeric_limits<float>::max();
+            float              largestPH       = 0.;
+            int                numHits         = 0;
+            float              averagePH       = 0.;
+            float              averagePT       = 0.;
+            float              largestDelT     = 0.;
+            float              smallestDelT    = 100000.;
+            std::vector<float> hitPeakTimeVec  = {-100.,-200.,-300.};
+            std::vector<float> hitPeakRMSVec   = {1000.,1000.,1000.};
+            int                hitMultProduct  = 1;
+            int                numLongHits(0);
+            int                numIntersections(0);
+            int                cryostat(-1);
+            int                tpc(-1);
 
             std::vector<const recob::Hit*> recobHitVec(3,nullptr);
 
@@ -380,18 +549,31 @@ void SpacePointAnalysis::processSpacePoints(const art::Event&                  e
             {
                 float peakAmplitude = hitPtr->PeakAmplitude();
                 float peakTime      = hitPtr->PeakTime();
+                float rms           = hitPtr->RMS();
                 int   plane         = hitPtr->WireID().Plane;
+
+                // Add to the set
+                uniqueHitMap[hitPtr.get()] = nSpacePointsInPFParticle;
 
                 recobHitVec[plane] = hitPtr.get();
                 numHits++;
-                averagePH += peakAmplitude;
-                averagePT += peakTime;
-                smallestPH = std::min(peakAmplitude,smallestPH);
-                largestPH  = std::max(peakAmplitude,largestPH);
+                averagePH  += peakAmplitude;
+                smallestPH  = std::min(peakAmplitude,smallestPH);
+                largestPH   = std::max(peakAmplitude,largestPH);
+
+                hitMultProduct *= hitPtr->Multiplicity();
 
                 if (hitPtr->DegreesOfFreedom() < 2) numLongHits++;
 
-                hitPeakTimeVec[plane] = clockData.TPCTick2TDC(peakTime);
+                hitPeakTimeVec[plane] = peakTime
+                                      - detProp.GetXTicksOffset(geo::PlaneID(hitPtr->WireID().Cryostat,hitPtr->WireID().TPC,plane))
+                                      + detProp.GetXTicksOffset(geo::PlaneID(hitPtr->WireID().Cryostat,hitPtr->WireID().TPC,0))
+                                      - fTickCorrectionArray[hitPtr->WireID().Cryostat][hitPtr->WireID().TPC][plane]; //clockData.TPCTick2TDC(peakTime);
+                hitPeakRMSVec[plane]  = rms;
+                averagePT            += hitPeakTimeVec[plane];
+
+                cryostat = hitPtr->WireID().Cryostat;
+                tpc      = hitPtr->WireID().TPC;
             }
             Triplet hitTriplet(recobHitVec[0],recobHitVec[1],recobHitVec[2]);
 
@@ -400,32 +582,53 @@ void SpacePointAnalysis::processSpacePoints(const art::Event&                  e
             averagePH /= float(numHits);
             averagePT /= float(numHits);
 
-            for(const auto& hitPtr : associatedHits)
+            for(size_t planeIdx = 0; planeIdx < 3; planeIdx++)
             {
-                float delT = hitPtr->PeakTime() - averagePT;
-                if (std::abs(delT) > std::abs(largestDelT)) largestDelT = delT;
+                float delT = hitPeakTimeVec[planeIdx] - averagePT;
+                if (std::abs(delT) > std::abs(largestDelT))  largestDelT  = delT;
+                if (std::abs(delT) < std::abs(smallestDelT)) smallestDelT = delT;
             }
 
             // Fill for "all" cases
-            fHitSpacePointObj.fSPQualityVec.push_back(spQuality);
-            fHitSpacePointObj.fSPTotalChargeVec.push_back(spCharge);
-            fHitSpacePointObj.fSPAsymmetryVec.push_back(spAsymmetry);
-            fHitSpacePointObj.fSmallestPHVec.push_back(smallestPH);
-            fHitSpacePointObj.fLargestPHVec.push_back(largestPH);
-            fHitSpacePointObj.fAveragePHVec.push_back(averagePH);
-            fHitSpacePointObj.fLargestDelTVec.push_back(largestDelT);
+            fHitSpacePointObj.fSPCryostatVec.emplace_back(cryostat);
+            fHitSpacePointObj.fSPTPCVec.emplace_back(tpc);
+            fHitSpacePointObj.fSPQualityVec.emplace_back(spQuality);
+            fHitSpacePointObj.fSPTotalChargeVec.emplace_back(spCharge);
+            fHitSpacePointObj.fSPAsymmetryVec.emplace_back(spAsymmetry);
+            fHitSpacePointObj.fSmallestPHVec.emplace_back(smallestPH);
+            fHitSpacePointObj.fLargestPHVec.emplace_back(largestPH);
+            fHitSpacePointObj.fAveragePHVec.emplace_back(averagePH);
+            fHitSpacePointObj.fLargestDelTVec.emplace_back(largestDelT);
+            fHitSpacePointObj.fSmallestDelTVec.emplace_back(smallestDelT);
             fHitSpacePointObj.fNumLongHitsVec.emplace_back(numLongHits);
             fHitSpacePointObj.fNumIntersectSetVec.emplace_back(numIntersections);
-            fHitSpacePointObj.fSimHitDeltaT0Vec.emplace_back(bigTDCVec[0] - hitPeakTimeVec[0]);
-            fHitSpacePointObj.fSimHitDeltaT1Vec.emplace_back(bigTDCVec[1] - hitPeakTimeVec[1]);
-            fHitSpacePointObj.fSimHitDeltaT2Vec.emplace_back(bigTDCVec[2] - hitPeakTimeVec[2]);
-            fHitSpacePointObj.fSimDelta10Vec.emplace_back(bigTDCVec[1] - bigTDCVec[0]);
-            fHitSpacePointObj.fSimDelta21Vec.emplace_back(bigTDCVec[2] - bigTDCVec[1]);
+            fHitSpacePointObj.fClusterNSPVec.emplace_back(nSpacePointsInPFParticle);
             fHitSpacePointObj.fHitDelta10Vec.emplace_back(hitPeakTimeVec[1] - hitPeakTimeVec[0]);
+            fHitSpacePointObj.fHitSigma10Vec.emplace_back(std::sqrt(std::pow(hitPeakRMSVec[1],2) + std::pow(hitPeakRMSVec[0],2)));
             fHitSpacePointObj.fHitDelta21Vec.emplace_back(hitPeakTimeVec[2] - hitPeakTimeVec[1]);
-            fHitSpacePointObj.fBigElecDep0Vec.emplace_back(bigElecDepVec[0]);
-            fHitSpacePointObj.fBigElecDep1Vec.emplace_back(bigElecDepVec[1]);
-            fHitSpacePointObj.fBigElecDep2Vec.emplace_back(bigElecDepVec[2]);
+            fHitSpacePointObj.fHitSigma21Vec.emplace_back(std::sqrt(std::pow(hitPeakRMSVec[2],2) + std::pow(hitPeakRMSVec[1],2)));
+            fHitSpacePointObj.fHitDelta20Vec.emplace_back(hitPeakTimeVec[2] - hitPeakTimeVec[0]);
+            fHitSpacePointObj.fHitSigma20Vec.emplace_back(std::sqrt(std::pow(hitPeakRMSVec[2],2) + std::pow(hitPeakRMSVec[0],2)));
+            fHitSpacePointObj.fHitMultProductVec.emplace_back(hitMultProduct);
+
+            fHitSpacePointObj.fSP_x.emplace_back(spPosition[0]);
+            fHitSpacePointObj.fSP_y.emplace_back(spPosition[1]);
+            fHitSpacePointObj.fSP_z.emplace_back(spPosition[2]);
+        }
+
+        // Now include hit information for unique hits
+        for(const auto& hitItr : uniqueHitMap)
+        {
+            // Recover hit time range (in ticks), cast a wide net here
+            const recob::Hit* hit = hitItr.first;
+
+            float peakTime  = hit->PeakTime();
+            float rms       = hit->PeakTime();
+            int   startTick = std::max(   0,int(std::floor(peakTime - 3. * rms)));
+            int   endTick   = std::min(4096,int(std::ceil( peakTime + 3. * rms)));
+
+            fHitTupleObjVec[hit->WireID().Plane].fillHitInfo(hit,endTick-startTick+1,hitItr.second);
+
         }
     }
     // Can we check to see if we have duplicates?

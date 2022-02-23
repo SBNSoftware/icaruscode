@@ -11,7 +11,8 @@
 #include "calorimetry_icarus.fcl"
 #include "particleid_icarus.fcl"
 
-#include "eventweight_genie3_sbn_A.fcl"
+#include "eventweight_genie_sbn.fcl"
+#include "eventweight_flux_sbn.fcl"
 #include "mcreco.fcl"
 #include "mcsproducer.fcl"
 #include "rangeproducer.fcl"
@@ -53,7 +54,7 @@ recoana_calo_producers.pandoraCaloGausCryoW.TrackIsFieldDistortionCorrected: tru
 recoana_calo_producers.pandoraCaloGausCryoW.FieldDistortionEfield: true
 
 # Producers for making analysis level products
-recoana_caf_ana_producers: {
+recoana_caf_preprocess_producers: {
   mcreco: @local::standard_mcreco
 
   pandoraTrackMCSCryoE: @local::mcs_sbn
@@ -69,22 +70,24 @@ recoana_caf_ana_producers: {
 
   crtconvhit: @local::crthitconverter_icarus
   rns: { module_type: "RandomNumberSaver" }
-  genieweight: @local::sbn_genie_eventweight
+  genieweight: @local::sbn_eventweight_genie
+  fluxweight: @local::sbn_eventweight_flux
 }
 
 # Overwrite labels
-recoana_caf_ana_producers.pandoraTrackMCSCryoE.TrackLabel: pandoraTrackGausCryoE
-recoana_caf_ana_producers.pandoraTrackMCSCryoW.TrackLabel: pandoraTrackGausCryoW
-recoana_caf_ana_producers.pandoraTrackRangeCryoE.TrackLabel: pandoraTrackGausCryoE
-recoana_caf_ana_producers.pandoraTrackRangeCryoW.TrackLabel: pandoraTrackGausCryoW
+recoana_caf_preprocess_producers.pandoraTrackMCSCryoE.TrackLabel: pandoraTrackGausCryoE
+recoana_caf_preprocess_producers.pandoraTrackMCSCryoW.TrackLabel: pandoraTrackGausCryoW
+recoana_caf_preprocess_producers.pandoraTrackRangeCryoE.TrackLabel: pandoraTrackGausCryoE
+recoana_caf_preprocess_producers.pandoraTrackRangeCryoW.TrackLabel: pandoraTrackGausCryoW
 
-recoana_caf_ana_producers.genieweight.weight_functions: @local::recoana_caf_ana_producers.genieweight.weight_functions_genie
+recoana_caf_preprocess_producers.genieweight.weight_functions: @local::recoana_caf_preprocess_producers.genieweight.weight_functions_genie
+recoana_caf_preprocess_producers.fluxweight.weight_functions: @local::recoana_caf_preprocess_producers.fluxweight.weight_functions_flux
 
 # Setup CaloAlg for VertexCharge
-recoana_caf_ana_producers.vertexChargeCryoE.CaloAlg: @local::icarus_calorimetryalgmc 
-recoana_caf_ana_producers.vertexChargeCryoW.CaloAlg: @local::icarus_calorimetryalgmc 
-recoana_caf_ana_producers.vertexStubCryoE.CaloAlg: @local::icarus_calorimetryalgmc 
-recoana_caf_ana_producers.vertexStubCryoW.CaloAlg: @local::icarus_calorimetryalgmc 
+recoana_caf_preprocess_producers.vertexChargeCryoE.CaloAlg: @local::icarus_calorimetryalgmc
+recoana_caf_preprocess_producers.vertexChargeCryoW.CaloAlg: @local::icarus_calorimetryalgmc
+recoana_caf_preprocess_producers.vertexStubCryoE.CaloAlg: @local::icarus_calorimetryalgmc
+recoana_caf_preprocess_producers.vertexStubCryoW.CaloAlg: @local::icarus_calorimetryalgmc
 
 # Producers for making SCE products
 recoana_sce_producers: {
@@ -106,11 +109,11 @@ recoana_sce_producers: {
   fmatchSCECryoE: @local::transfer_flashmatch_sce_icarus_cryoE
   fmatchSCECryoW: @local::transfer_flashmatch_sce_icarus_cryoW
 
-  pandoraTrackSCEMCSCryoE: @local::recoana_caf_ana_producers.pandoraTrackMCSCryoE
-  pandoraTrackSCEMCSCryoW: @local::recoana_caf_ana_producers.pandoraTrackMCSCryoW
+  pandoraTrackSCEMCSCryoE: @local::recoana_caf_preprocess_producers.pandoraTrackMCSCryoE
+  pandoraTrackSCEMCSCryoW: @local::recoana_caf_preprocess_producers.pandoraTrackMCSCryoW
 
-  pandoraTrackSCERangeCryoE: @local::recoana_caf_ana_producers.pandoraTrackRangeCryoE
-  pandoraTrackSCERangeCryoW: @local::recoana_caf_ana_producers.pandoraTrackRangeCryoW
+  pandoraTrackSCERangeCryoE: @local::recoana_caf_preprocess_producers.pandoraTrackRangeCryoE
+  pandoraTrackSCERangeCryoW: @local::recoana_caf_preprocess_producers.pandoraTrackRangeCryoW
 
   vertexChargeCryoE: @local::vertex_charge_icarus_sce_cryoE 
   vertexChargeCryoW: @local::vertex_charge_icarus_sce_cryoW
@@ -166,19 +169,19 @@ recoana_sce_producers.vertexStubCryoE.CaloAlg: @local::icarus_calorimetryalgmc
 recoana_sce_producers.vertexStubCryoW.CaloAlg: @local::icarus_calorimetryalgmc 
 
 # All the producers together
-caf_ana_producers: {
+caf_preprocess_producers: {
   @table::recoana_calo_producers
-  @table::recoana_caf_ana_producers
+  @table::recoana_caf_preprocess_producers
 }
 
-caf_ana_sce_producers: {
+caf_preprocess_sce_producers: {
   @table::recoana_calo_producers
-  @table::recoana_caf_ana_producers
+  @table::recoana_caf_preprocess_producers
   @table::recoana_sce_producers
 }
 
 # Sequences
-caf_ana_sequence: [ mcreco,
+caf_preprocess_sequence: [ mcreco,
     # Calorimetry
     pandoraCaloGausCryoE, pandoraCaloGausCryoW,
     pandoraPidGausCryoE, pandoraPidGausCryoW,
@@ -190,9 +193,21 @@ caf_ana_sequence: [ mcreco,
     # TODO: rns??
     ]
 
-caf_ana_evtw_sequence: [@sequence::caf_ana_sequence, rns, genieweight]
+caf_preprocess_data_sequence: [
+    # Calorimetry
+    pandoraCaloGausCryoE, pandoraCaloGausCryoW,
+    pandoraPidGausCryoE, pandoraPidGausCryoW,
+    # Low Energy Proton Reco
+    vertexChargeCryoE, vertexChargeCryoW, vertexStubCryoE, vertexStubCryoW,
+    # Track Momentum Estimation
+    pandoraTrackMCSCryoE, pandoraTrackMCSCryoW,
+    pandoraTrackRangeCryoE, pandoraTrackRangeCryoW
+    # TODO: rns??
+    ]
 
-caf_ana_sce_sequence: [ mcreco,
+caf_preprocess_evtw_sequence: [@sequence::caf_preprocess_sequence, rns, genieweight, fluxweight]
+
+caf_preprocess_sce_sequence: [ mcreco,
   # Run the SCE correction
   pandoraGausSCECryoE, pandoraGausSCECryoW,
   # Then remake tracks
@@ -212,7 +227,7 @@ caf_ana_sce_sequence: [ mcreco,
   # TODO: rns??
 ]
 
-caf_ana_sce_evtw_sequence: [@sequence::caf_ana_sce_sequence, rns, genieweight]
+caf_preprocess_sce_evtw_sequence: [@sequence::caf_preprocess_sce_sequence, rns, genieweight, fluxweight]
 
 # CAFMaker config
 cafmaker: @local::standard_cafmaker
@@ -243,9 +258,9 @@ cafmaker.CRTHitLabel: "crthit"
 cafmaker.CRTTrackLabel: "crttrack"
 cafmaker.FlashTrigLabel: "" # unavailable
 cafmaker.SimChannelLabel: "largeant"
-cafmaker.SystWeightLabels: ["genieweight"]
+cafmaker.SystWeightLabels: ["genieweight", "fluxweight"]
 
 # Add CAFMaker to the list of producers
-caf_ana_producers.cafmaker: @local::cafmaker
+caf_preprocess_producers.cafmaker: @local::cafmaker
 
 END_PROLOG

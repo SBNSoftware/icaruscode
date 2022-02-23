@@ -31,6 +31,7 @@
 #include "opdetsim_pmt_icarus.fcl"
 #include "crtsimmodules_icarus.fcl"
 #include "rootoutput_icarus.fcl"
+#include "channelmapping_icarus.fcl"
 
 
 # ------------------------------------------------------------------------------
@@ -38,7 +39,10 @@ process_name: DetSim
 
 
 # ------------------------------------------------------------------------------
-services: @local::icarus_detsim_services
+services: {
+    IICARUSChannelMap: @local::icarus_channelmappinggservice
+    @table::icarus_detsim_services
+}
 
 
 # ------------------------------------------------------------------------------
@@ -55,10 +59,10 @@ physics:
     
     
     # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    daq0:   @local::icarus_simwire
-    daq1:   @local::icarus_simwire
-    daq2:   @local::icarus_simwire
-    daq3:   @local::icarus_simwire
+    daq0:   @local::icarus_simreadoutboard
+    daq1:   @local::icarus_simreadoutboard
+    daq2:   @local::icarus_simreadoutboard
+    daq3:   @local::icarus_simreadoutboard
     
     # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     rns:    { module_type: "RandomNumberSaver" }

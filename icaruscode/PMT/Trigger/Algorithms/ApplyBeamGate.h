@@ -12,6 +12,7 @@
 // ICARUS libraries
 // #include "icaruscode/PMT/Trigger/Algorithms/BeamGateMaker.h"
 #include "icaruscode/PMT/Trigger/Algorithms/BeamGateStruct.h"
+#include "icaruscode/PMT/Trigger/Utilities/TriggerGateOperations.h"
 #include "sbnobj/ICARUS/PMT/Trigger/Data/OpticalTriggerGate.h"
 #include "icarusalg/Utilities/mfLoggingClass.h"
 
@@ -112,7 +113,8 @@ class icarus::trigger::ApplyBeamGateClass
   
   /// Returns a copy of `gate` in AND with this beam gate.
   template <typename Gate>
-  Gate apply(Gate gate) const { return gate.Mul(this->gate()); }
+  Gate apply(Gate gate) const
+    { return icarus::trigger::mulGates(gate, this->gate()); }
   
   /// Returns a collection of copies of the specified `gates` each in AND with
   /// this beam gate.

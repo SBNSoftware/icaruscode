@@ -1,0 +1,7 @@
+BEGIN_PROLOG
+standard_hepmcfilegen:
+{
+  module_type:   "HepMCFileGen"
+  InputFilePath: "/pnfs/icarus/persistent/users/achatter/ldm_data/10MeV_ldm.hepmc"
+}
+END_PROLOG 

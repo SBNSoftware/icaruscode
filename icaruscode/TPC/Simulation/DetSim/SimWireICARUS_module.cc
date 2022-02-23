@@ -378,8 +378,10 @@ void SimWireICARUS::produce(art::Event& evt)
             noisetmp.resize(fNTimeSamples, 0.);     //just in case
             
             //use channel number to set some useful numbers
-            std::vector<geo::WireID> widVec = fGeometry.ChannelToWire(channel);
-            size_t                   plane  = widVec[0].Plane;
+            std::vector<geo::WireID> widVec  = fGeometry.ChannelToWire(channel);
+            size_t                   plane   = widVec[0].Plane;
+            size_t                   wire    = widVec[0].Wire;
+            size_t                   board   = wire / 32;
             
             //Get pedestal with random gaussian variation
             float ped_mean = pedestalRetrievalAlg.PedMean(channel);
@@ -393,7 +395,7 @@ void SimWireICARUS::produce(art::Event& evt)
             //Generate Noise
             double noise_factor(0.);
             auto   tempNoiseVec = fSignalShapingService->GetNoiseFactVec();
-            double shapingTime  = fSignalShapingService->GetShapingTime(channel);
+            double shapingTime  = fSignalShapingService->GetShapingTime(plane);
             double gain         = fSignalShapingService->GetASICGain(channel) * sampling_rate(clockData) * 1.e-3; // Gain returned is electrons/us, this converts to electrons/tick
             int    timeOffset   = fSignalShapingService->ResponseTOffset(channel);
             
@@ -420,7 +422,8 @@ void SimWireICARUS::produce(art::Event& evt)
                                                 noisetmp,
                                                 detProp,
                                                 noise_factor,
-                                                channel);
+                                                widVec[0],
+                                                board);
             
             // Recover the SimChannel (if one) for this channel
             const sim::SimChannel* simChan = channels[channel];
