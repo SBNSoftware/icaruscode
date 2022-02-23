@@ -13,16 +13,20 @@
 // ICARUS libraries
 #include "Objects/TrackTreeStoreObj.h"
 #include "icaruscode/Analysis/trigger/details/TriggerResponseManager.h"
+#include "icaruscode/PMT/Algorithms/PMTverticalSlicingAlg.h"
 #include "icaruscode/Decode/DataProducts/ExtraTriggerInfo.h"
 
 // LArSoft libraries
 // #include "lardata/DetectorInfoServices/DetectorClocksService.h"
-// #include "larcore/Geometry/Geometry.h"
-// #include "larcorealg/Geometry/GeometryCore.h"
+#include "larcore/Geometry/Geometry.h"
+#include "larcorealg/Geometry/GeometryCore.h"
+#include "larcorealg/Geometry/OpDetGeo.h"
+#include "larcorealg/CoreUtils/counter.h"
 #include "lardataobj/AnalysisBase/T0.h"
 #include "lardataobj/RecoBase/PFParticle.h"
 #include "lardataobj/RecoBase/Track.h"
 // #include "lardataobj/RecoBase/PFParticleMetadata.h"
+#include "lardataobj/RawData/OpDetWaveform.h" // raw::Channel_t
 #include "lardataobj/Simulation/BeamGateInfo.h"
 #include "lardataobj/RawData/TriggerData.h" // raw::Trigger
 
@@ -224,6 +228,14 @@ private:
   
   // --- END ---- Tree buffers -------------------------------------------------
   
+  // --- BEGIN -- Cached information -------------------------------------------
+  
+  /// PMT geometry objects, grouped by wall (drift) coordinate.
+  std::vector<std::pair<double, std::vector<raw::Channel_t>>> fPMTwalls;
+  
+  // --- BEGIN -- Cached information -------------------------------------------
+  
+  
   TTree *fStoreTree = nullptr;
 
   unsigned int fTotalProcessed = 0;
@@ -240,6 +252,10 @@ private:
   
   // --- END ---- Trigger response branches ------------------------------------
   
+  /// Accesses detector geometry to return all PMT split by wall.
+  std::vector<std::pair<double, std::vector<raw::Channel_t>>>
+    computePMTwalls() const;
+
 }; // sbn::TimeTrackTreeStorage
 
 
@@ -270,6 +286,7 @@ sbn::TimeTrackTreeStorage::TimeTrackTreeStorage(Parameters const& p)
   , fTriggerProducer  { p().TriggerProducer() }
   , fLogCategory      { p().LogCategory() }
   // algorithms
+  , fPMTwalls         { computePMTwalls() }
   , fStoreTree {
       art::ServiceHandle<art::TFileService>()->make<TTree>
         ("TimedTrackStorage", "Timed Track Tree")
@@ -407,6 +424,37 @@ void sbn::TimeTrackTreeStorage::endJob() {
   mf::LogInfo(fLogCategory) << "Processed " << fTotalProcessed << " tracks.";
   
 } // sbn::TimeTrackTreeStorage::endJob()
+
+
+// -----------------------------------------------------------------------------
+std::vector<std::pair<double, std::vector<raw::Channel_t>>>
+sbn::TimeTrackTreeStorage::computePMTwalls() const {
+  
+  geo::GeometryCore const& geom { *lar::providerFrom<geo::Geometry>() };
+  
+  // run the algorithm to identify the PMT walls (as groups of geo::OpDetGeo)
+  std::vector<std::pair<double, std::vector<geo::OpDetGeo const*>>> opDetWalls
+    = icarus::trigger::PMTverticalSlicingAlg{}.PMTwalls(geom);
+  
+  // and weirdly, the only portable way to go from a OpDetGeo to its channel
+  // is to build a map (maybe because it's not guaranteed to be 1-to-1?)
+  std::map<geo::OpDetGeo const*, raw::Channel_t> opDetToChannel;
+  for (auto const channel: util::counter<raw::Channel_t>(geom.MaxOpChannel()))
+    opDetToChannel[&geom.OpDetGeoFromOpChannel(channel)] = channel;
+  
+  // rewrite the data structure replacing each detector with its readout channel
+  std::vector<std::pair<double, std::vector<raw::Channel_t>>> channelWalls;
+  for (auto const& [ coord, PMTs ]: opDetWalls) {
+    std::vector<raw::Channel_t> channels;
+    channels.reserve(PMTs.size());
+    for (geo::OpDetGeo const* PMT: PMTs)
+      channels.push_back(opDetToChannel.at(PMT));
+    
+    channelWalls.emplace_back(coord, std::move(channels));
+  } // for walls
+  
+  return channelWalls;
+} // sbn::TimeTrackTreeStorage::computePMTwalls()
 
 
 // -----------------------------------------------------------------------------

@@ -32,6 +32,7 @@ simple_plugin(BeamGateInfoFromTracks  module
 
 simple_plugin(TimeTrackTreeStorage module
   icaruscode_Analysis_trigger
+  icaruscode_PMT_Algorithms
   lardataobj_AnalysisBase
   lardataobj_RecoBase
   lardataobj_Simulation
