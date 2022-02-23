@@ -68,6 +68,8 @@ public:
 
     void setBranches(TTree* tree)
     {
+        tree->Branch("Cryostat",          "std::vector<int>",   &fCryostatVec);
+        tree->Branch("TPC",               "std::vector<int>",   &fTPCVec);
         tree->Branch("TicksTotHit",       "std::vector<int>",   &fTicksTotHitVec);
         tree->Branch("Tick",              "std::vector<int>",   &fTicksVec);
         tree->Branch("NDF",               "std::vector<int>",   &fNDFHitVec);                //< Number of degrees of freedom of hit fit
@@ -92,6 +94,8 @@ public:
 
     void clear()
     {
+        fCryostatVec.clear();
+        fTPCVec.clear();
         fTicksTotHitVec.clear();
         fTicksVec.clear();
         fNDFHitVec.clear();
@@ -108,6 +112,8 @@ public:
 
     void fillHitInfo(const recob::Hit* hit, int hitWidth, int clusterSize)
     {
+        fCryostatVec.emplace_back(hit->WireID().Cryostat);
+        fTPCVec.emplace_back(hit->WireID().TPC);
         fTicksTotHitVec.emplace_back(hitWidth);
         fTicksVec.emplace_back(hit->PeakTime());
         fNDFHitVec.emplace_back(hit->DegreesOfFreedom());
@@ -122,6 +128,8 @@ public:
     }
 
     // Define tuple values, these are public so can be diretly accessed for filling
+    std::vector<int>   fCryostatVec;
+    std::vector<int>   fTPCVec;
     std::vector<int>   fTicksTotHitVec;
     std::vector<int>   fTicksVec;
     std::vector<int>   fNDFHitVec;
@@ -565,10 +573,10 @@ void SpacePointAnalysis::processSpacePoints(const art::Event&                  e
 
                 if (hitPtr->DegreesOfFreedom() < 2) numLongHits++;
 
-                hitPeakTimeVec[plane] = peakTime
-                                      - detProp.GetXTicksOffset(geo::PlaneID(hitPtr->WireID().Cryostat,hitPtr->WireID().TPC,plane))
-                                      + detProp.GetXTicksOffset(geo::PlaneID(hitPtr->WireID().Cryostat,hitPtr->WireID().TPC,0))
-                                      - fTickCorrectionArray[hitPtr->WireID().Cryostat][hitPtr->WireID().TPC][plane]; //clockData.TPCTick2TDC(peakTime);
+                hitPeakTimeVec[plane] = peakTime;
+//                                      - detProp.GetXTicksOffset(geo::PlaneID(hitPtr->WireID().Cryostat,hitPtr->WireID().TPC,plane))
+//                                      + detProp.GetXTicksOffset(geo::PlaneID(hitPtr->WireID().Cryostat,hitPtr->WireID().TPC,0))
+//                                      - fTickCorrectionArray[hitPtr->WireID().Cryostat][hitPtr->WireID().TPC][plane]; //clockData.TPCTick2TDC(peakTime);
                 hitPeakRMSVec[plane]  = rms;
                 averagePT            += hitPeakTimeVec[plane];
 
