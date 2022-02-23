@@ -1680,16 +1680,16 @@ void SnippetHit3DBuilderICARUS::CollectArtHits(const art::Event& evt) const
 
             // What we want here are the relative offsets between the planes
             // Note that plane 0 is assumed the "first" plane and is the reference
-//            planeOffsetMap[geo::PlaneID(cryoIdx,tpcIdx,0)] = 0.;
-//            planeOffsetMap[geo::PlaneID(cryoIdx,tpcIdx,1)] = m_TickCorrectionArray[cryoIdx][tpcIdx][0];
-//            planeOffsetMap[geo::PlaneID(cryoIdx,tpcIdx,2)] = m_TickCorrectionArray[cryoIdx][tpcIdx][1];
-            planeOffsetMap[geo::PlaneID(cryoIdx,tpcIdx,1)] = det_prop.GetXTicksOffset(geo::PlaneID(cryoIdx,tpcIdx,1))
-                                                           - det_prop.GetXTicksOffset(geo::PlaneID(cryoIdx,tpcIdx,0))
-                                                           + m_TickCorrectionArray[cryoIdx][tpcIdx][0];
-            planeOffsetMap[geo::PlaneID(cryoIdx,tpcIdx,2)] = det_prop.GetXTicksOffset(geo::PlaneID(cryoIdx,tpcIdx,2))
-                                                           - det_prop.GetXTicksOffset(geo::PlaneID(cryoIdx,tpcIdx,0))
-                                                           + m_TickCorrectionArray[cryoIdx][tpcIdx][1];
-
+            planeOffsetMap[geo::PlaneID(cryoIdx,tpcIdx,0)] = 0.;
+            planeOffsetMap[geo::PlaneID(cryoIdx,tpcIdx,1)] = m_TickCorrectionArray[cryoIdx][tpcIdx][0];
+            planeOffsetMap[geo::PlaneID(cryoIdx,tpcIdx,2)] = m_TickCorrectionArray[cryoIdx][tpcIdx][1];
+//            planeOffsetMap[geo::PlaneID(cryoIdx,tpcIdx,1)] = det_prop.GetXTicksOffset(geo::PlaneID(cryoIdx,tpcIdx,1))
+//                                                           - det_prop.GetXTicksOffset(geo::PlaneID(cryoIdx,tpcIdx,0))
+//                                                           + m_TickCorrectionArray[cryoIdx][tpcIdx][0];
+//            planeOffsetMap[geo::PlaneID(cryoIdx,tpcIdx,2)] = det_prop.GetXTicksOffset(geo::PlaneID(cryoIdx,tpcIdx,2))
+//                                                           - det_prop.GetXTicksOffset(geo::PlaneID(cryoIdx,tpcIdx,0))
+//                                                           + m_TickCorrectionArray[cryoIdx][tpcIdx][1];
+//
             // Should we provide output?
             if (!m_weHaveAllBeenHereBefore)
             {
