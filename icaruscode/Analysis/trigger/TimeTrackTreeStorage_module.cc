@@ -250,6 +250,8 @@ public:
 
   sbn::selHitInfo makeHit(const recob::Hit &hit,
 			  unsigned hkey,
+			  const recob::Track &trk,
+			  const recob::TrackHitMeta &thm,
 			  const std::vector<art::Ptr<anab::Calorimetry>> &calo,
 			  const geo::GeometryCore *geo);
 
@@ -445,11 +447,8 @@ void sbn::TimeTrackTreeStorage::analyze(art::Event const& e)
   std::vector<recob::OpFlash> const &particleFlashes = e.getProduct<std::vector<recob::OpFlash>>(fFlashProducer);
   //art::FindOneP<recob::SpacePoint> particleSPs(pfparticles, e, fT0selProducer);
   //mf::LogTrace(fLogCategory) << "PFParticles size: " << pfparticles.size() << " art::FindOneP Tracks Size: " << particleTracks.size();
-  art::ValidHandle<std::vector<recob::Track>> allTracks = e.getValidHandle<std::vector<recob::Track>>(fTrackFitterProducer);
-  art::FindManyP<recob::Hit,recob::TrackHitMeta> trkht(allTracks,e,fTrackFitterProducer); //for track hits
-  //art::FindOneP<anab::Calorimetry> calorim(allTracks, e, fCaloProducer);
-  //art::FindManyP<recob::Hit> trkHit(allTracks, e, fTrackProducer);
-  //art::FindManyP<recob::Hit,recob::TrackHitMeta> trkht(allTracks,e,fTrackProducer); //for track hits    
+  art::ValidHandle<std::vector<recob::Track>> allTracks = e.getValidHandle<std::vector<recob::Track>>(fTrackProducer);
+  art::FindManyP<recob::Hit,recob::TrackHitMeta> trkht(allTracks,e,fTrackProducer); //for track hits
   art::FindManyP<anab::Calorimetry> calorim(allTracks, e, fCaloProducer);  
   
   // get an extractor bound to this event
@@ -458,8 +457,6 @@ void sbn::TimeTrackTreeStorage::analyze(art::Event const& e)
   unsigned int processed = 0;
   for(unsigned int iPart = 0; iPart < pfparticles.size(); ++iPart)
   {
-    //art::Ptr<recob::PFParticle> particlePtr = pfparticles[iPart];
-    //mf::LogTrace(fLogCategory) << particlePtr.key();
     fFlashInfo = {};
     fFlashStore.clear();
     fHitStore.clear();
@@ -516,7 +513,7 @@ void sbn::TimeTrackTreeStorage::analyze(art::Event const& e)
     unsigned int plane = 0; //hit plane number
 
     std::vector<art::Ptr<recob::Hit>> const& allHits = trkht.at(trackPtr.key());
-    //std::vector<art::Ptr<recob::TrackHitMeta>> const trkmetas = trkht.data(trackPtr.key());
+    std::vector<const recob::TrackHitMeta*> const& trkmetas = trkht.data(trackPtr.key());
     std::vector<art::Ptr<anab::Calorimetry>> const& calorimetrycol = calorim.at(trackPtr.key());
     std::vector<std::vector<unsigned int>> hits(plane);
 
@@ -525,13 +522,9 @@ void sbn::TimeTrackTreeStorage::analyze(art::Event const& e)
     for (size_t ih = 0; ih < allHits.size(); ++ih)
     {
       //hits[allHits[ih]->WireID().Plane].push_back(ih);
-      sbn::selHitInfo hinfo = makeHit(*allHits[ih], allHits[ih].key(), calorimetrycol, geom);
+      sbn::selHitInfo hinfo = makeHit(*allHits[ih], allHits[ih].key(), *trackPtr, *trkmetas[ih], calorimetrycol, geom);
       if(hinfo.plane == 2)
 	fHitStore.push_back(hinfo);
-
-      //if (hinfo.h.plane == 2) {
-      //fTrackInfo->hits2.push_back(hinfo);
-      //}
 
     }
     float totE = 0;
@@ -552,6 +545,12 @@ void sbn::TimeTrackTreeStorage::analyze(art::Event const& e)
 	float q_hit_dqdx = fHitStore[i].dqdx*fHitStore[i].pitch;
 	totq_dqdx += q_hit_dqdx;
       }
+      /*
+      if(fHitStore[i].pitch > 1 && fHitStore[i].dqdx < 100)
+      {
+	std::cout << "In strange peak! Event: " << fEvent << " Track ID: " << trackInfo.trackID << " Hit ID: " << i << " Total Number of hits: " << fHitStore.size() << std::endl;
+      }
+      */
     }
     trackInfo.energy = totE;
     trackInfo.charge_int = totq_int;
@@ -584,6 +583,8 @@ void sbn::TimeTrackTreeStorage::analyze(art::Event const& e)
 
 sbn::selHitInfo sbn::TimeTrackTreeStorage::makeHit(const recob::Hit &hit,
 			unsigned hkey,
+			const recob::Track &trk,
+			const recob::TrackHitMeta &thm,			   
 			const std::vector<art::Ptr<anab::Calorimetry>> &calo,
 			const geo::GeometryCore *geo)
 {
@@ -599,41 +600,46 @@ sbn::selHitInfo sbn::TimeTrackTreeStorage::makeHit(const recob::Hit &hit,
   hinfo.mult = hit.Multiplicity();
   hinfo.wire = hit.WireID().Wire;
   hinfo.plane = hit.WireID().Plane;
-  //hinfo.channel = geo->PlaneWireToChannel(hit.WireID());
+  hinfo.channel = geo->PlaneWireToChannel(hit.WireID());
   hinfo.tpc = hit.WireID().TPC;
   hinfo.end = hit.EndTick();
   hinfo.start = hit.StartTick();
   hinfo.id = (int)hkey;
 
-  /*
+  bool badhit = (thm.Index() == std::numeric_limits<unsigned int>::max()) ||
+    (!trk.HasValidPoint(thm.Index()));
+
+  //hinfo.ontraj = !badhit;
   // Save trajectory information if we can
-  geo::Point_t loc = trk.LocationAtPoint(thm.Index());
-  hinfo.h.p.x = loc.X();
-  hinfo.h.p.y = loc.Y();
-  hinfo.h.p.z = loc.Z();
+  if(!badhit)
+  {
+    geo::Point_t loc = trk.LocationAtPoint(thm.Index());
+    hinfo.px = loc.X();
+    hinfo.py = loc.Y();
+    hinfo.pz = loc.Z();
   
-  geo::Vector_t dir = trk.DirectionAtPoint(thm.Index());
-  hinfo.dir.x = dir.X();
-  hinfo.dir.y = dir.Y();
-  hinfo.dir.z = dir.Z();
-  */
+    geo::Vector_t dir = trk.DirectionAtPoint(thm.Index());
+    hinfo.dirx = dir.X();
+    hinfo.diry = dir.Y();
+    hinfo.dirz = dir.Z();
   // And determine if the Hit is on a Calorimetry object
-  for (const art::Ptr<anab::Calorimetry> &c: calo) {
-    if (c->PlaneID().Plane != hinfo.plane) continue;
-    
-    // Found the plane! Now find the hit:
-    for (unsigned i_calo = 0; i_calo < c->dQdx().size(); i_calo++) {
-      if (c->TpIndices()[i_calo] == hkey) { // "TpIndices" match to the hit key
-	// Fill the calo information associated with the hit 
-	hinfo.oncalo = true;
-	hinfo.pitch = c->TrkPitchVec()[i_calo];
-	hinfo.dqdx = c->dQdx()[i_calo];
-	hinfo.dEdx = dEdx_calc(hinfo.dqdx, fMODA, fMODB, fWion, fEfield);
-	hinfo.rr = c->ResidualRange()[i_calo];
-	break;
+    for (const art::Ptr<anab::Calorimetry> &c: calo) {
+      if (c->PlaneID().Plane != hinfo.plane) continue;
+      
+      // Found the plane! Now find the hit:
+      for (unsigned i_calo = 0; i_calo < c->dQdx().size(); i_calo++) {
+	if (c->TpIndices()[i_calo] == hkey) { // "TpIndices" match to the hit key
+	  // Fill the calo information associated with the hit 
+	  hinfo.oncalo = true;
+	  hinfo.pitch = c->TrkPitchVec()[i_calo];
+	  hinfo.dqdx = c->dQdx()[i_calo];
+	  hinfo.dEdx = dEdx_calc(hinfo.dqdx, fMODA, fMODB, fWion, fEfield);
+	  hinfo.rr = c->ResidualRange()[i_calo];
+	  break;
+	}
       }
-    }
     break;
+    }
   }
   
   return hinfo;

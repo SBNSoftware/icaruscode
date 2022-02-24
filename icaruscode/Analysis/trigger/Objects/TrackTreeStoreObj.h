@@ -66,6 +66,12 @@ namespace sbn {
     float sumadc = NoValue;
     float width = NoValue; ///< RMS
     float pk_time = NoVal;
+    float px = NoValue;
+    float py = NoValue;
+    float pz = NoValue;
+    float dirx = NoValue;
+    float diry = NoValue;
+    float dirz = NoValue;
     uint16_t mult = NoVal;
     uint16_t wire = NoVal;
     uint16_t plane = NoVal;

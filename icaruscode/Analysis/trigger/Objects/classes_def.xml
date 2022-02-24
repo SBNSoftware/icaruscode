@@ -25,7 +25,8 @@
    <version ClassVersion="10" checksum="364607587"/>
   </class>
 
-  <class name="sbn::selHitInfo" ClassVersion="11" >
+  <class name="sbn::selHitInfo" ClassVersion="12" >
+   <version ClassVersion="12" checksum="1762922906"/>
    <version ClassVersion="11" checksum="2097252913"/>
    <version ClassVersion="10" checksum="2893769828"/>
   </class>
