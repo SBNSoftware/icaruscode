@@ -80,7 +80,6 @@ public:
 private:
 
   // Declare member data here.
-  const double LAR_PROP_DELAY = 1.0/(30.0/1.38); //[ns/cm]
 
   bool HitCompare(const art::Ptr<CRTHit>& h1, const art::Ptr<CRTHit>& h2);
   void ClearVecs();
