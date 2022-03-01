@@ -136,7 +136,7 @@ fi
 # find the Doxygen configuration file
 #
 declare Doxyfile
-Doxyfile="$(FindDoxyfile "$ExperimentName")"
+Doxyfile="$(FindDoxyfile "$ExperimentName" "$(pwd)")"
 if [[ $? == 0 ]] && [[ -n "$Doxyfile" ]]; then
   echo "Doxygen configuration: '${Doxyfile}'"
 else
@@ -202,3 +202,4 @@ echo "Updating latest version link:"
 declare -r LatestLinkPath="${DestVersionsDir}/${LatestLinkName}"
 [[ -h "$LatestLinkPath" ]] && rm "$LatestLinkPath"
 ln -sfv "$(basename "$DestDir")" "$LatestLinkPath"
+
