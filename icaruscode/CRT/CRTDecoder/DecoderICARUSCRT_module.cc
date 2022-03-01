@@ -109,7 +109,9 @@ uint64_t crt::DecoderICARUSCRT::CalculateTimestamp(icarus::crt::BernCRTTranslato
       ts0 = (ts0 + FEB_delay.at(hit.mac5)) % (1'000'000'000);
     } catch(const std::out_of_range & e) {
       TLOG(TLVL_ERROR)<<"CRT MAC "<<(int)(hit.mac5)<<" not found in the FEB_delay array!!! Please update FEB_delay FHiCL file";
-      throw e;
+      //throw e;
+      throw cet::exception("DecoderICARUSCRT")
+        << "CRT MAC "<<(int)(hit.mac5)<<" not found in the FEB_delay array!!! Please update FEB_delay FHiCL file\n";
     }
     if(ts0 < 0) ts0 += 1000'000'000; //just in case the cable offset is negative (should be positive normally)
   }
@@ -158,7 +160,6 @@ void crt::DecoderICARUSCRT::produce(art::Event& evt)
   // vector: Mac5 -> its CRT data
   std::vector<icarus::crt::CRTData> allCRTdata;
   
-  std::cout << "Hit_vector.size(): " << hit_vector.size() << "\n";
   for (auto & hit : hit_vector){
 
     std::array<Recipe_t, 3U> allRecipes;
@@ -405,22 +406,13 @@ void crt::DecoderICARUSCRT::produce(art::Event& evt)
       data.fMac5  = recipe.destMac5;
       data.fTs0   = CalculateTimestamp(hit);
       data.fTs1   = hit.ts1;
-<<<<<<< HEAD
-
       data.fFlags                   = hit.flags;
       data.fThis_poll_start         = hit.this_poll_start;
       data.fLast_poll_start         = hit.last_poll_start;
       data.fHits_in_poll            = hit.hits_in_poll;
-
       data.fCoinc                   = hit.coinc;
-
       data.fLast_accepted_timestamp = hit.last_accepted_timestamp;
       data.fLost_hits               = hit.lost_hits;
-
-=======
-      
-      //data.coinc    = hit.coinc;
->>>>>>> origin
 
       unsigned destCh = recipe.firstDestChannel;
       for (unsigned srcCh = recipe.firstSourceChannel; srcCh <= recipe.lastSourceChannel; ++srcCh) {
