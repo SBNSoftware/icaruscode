@@ -409,7 +409,7 @@ namespace crt {
       }
     }
     else {
-      std::cout  << "Trigger Data product " << fTriggerLabel.label() << " not found!\n" ;
+      mf::LogError("CRTDataAnalysis") << "Trigger Data product " << fTriggerLabel.label() << " not found!" ; 
     }
 
     art::Handle<vector<icarus::crt::CRTData>> crtDAQHandle;
