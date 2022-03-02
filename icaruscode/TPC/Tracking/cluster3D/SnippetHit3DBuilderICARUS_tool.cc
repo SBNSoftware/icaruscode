@@ -163,6 +163,12 @@ private:
     void findGoodTriplets(HitMatchTripletVecMap&, HitMatchTripletVecMap&, reco::HitPairList&, bool = false) const;
 
     /**
+     * @brief This will look at storing pair "orphans" where the 2D hits are otherwise unused
+     */
+
+    int saveOrphanPairs(HitMatchTripletVecMap&, reco::HitPairList&) const;
+
+    /**
      *  @brief Make a HitPair object by checking two hits
      */
     bool makeHitPair(reco::ClusterHit3D&       pairOut,
@@ -699,6 +705,7 @@ size_t SnippetHit3DBuilderICARUS::BuildHitPairMapByTPC(PlaneSnippetHitMapItrPair
 
     size_t nTriplets(0);
     size_t nDeadChanHits(0);
+    size_t nOrphanPairs(0);
 
     //*********************************************************************************
     // Basically, we try to loop until done...
@@ -741,10 +748,15 @@ size_t SnippetHit3DBuilderICARUS::BuildHitPairMapByTPC(PlaneSnippetHitMapItrPair
         if (n12Pairs > n13Pairs) findGoodTriplets(pair12Map, pair13Map, hitPairList);
         else                     findGoodTriplets(pair13Map, pair12Map, hitPairList);
 
+        nOrphanPairs += saveOrphanPairs(pair12Map, hitPairList);
+        nOrphanPairs += saveOrphanPairs(pair13Map, hitPairList);
+
         nTriplets += hitPairList.size() - curHitListSize;
 
         snippetHitMapItrVec.front().first++;
     }
+
+    std::cout << "--> Created " << nTriplets << " triplets of which " << nOrphanPairs << " are orphans" << std::endl;
 
     return hitPairList.size();
 }
@@ -918,6 +930,44 @@ void SnippetHit3DBuilderICARUS::findGoodTriplets(HitMatchTripletVecMap& pair12Ma
     return;
 }
 
+int SnippetHit3DBuilderICARUS::saveOrphanPairs(HitMatchTripletVecMap& pairMap, reco::HitPairList& hitPairList) const
+{
+    int curTripletCount = hitPairList.size();
+
+    // Build triplets from the two lists of hit pairs
+    if (!pairMap.empty())
+    {
+        // Initial population of this map with the pair13Map hits
+        for(const auto& pair : pairMap)
+        {
+            if (pair.second.empty()) continue;
+
+            // This loop is over hit pairs that share the same first two plane wires but may have different
+            // hit times on those wires
+            for(const auto& hit2Dhit3DPair : pair.second)
+            {
+                const reco::ClusterHit2D* hit1 = std::get<0>(hit2Dhit3DPair);
+                const reco::ClusterHit2D* hit2 = std::get<1>(hit2Dhit3DPair);
+
+                // Are either of these hits already used in a triplet?
+                if (hit1->getStatusBits() & reco::ClusterHit2D::USEDINTRIPLET || hit2->getStatusBits() & reco::ClusterHit2D::USEDINTRIPLET) continue;
+
+                // Require that one of the hits is on the collection plane
+                if (hit1->WireID().Plane == 2 || hit2->WireID().Plane == 2)
+                {
+                    // Add to the list
+                    hitPairList.emplace_back(std::get<2>(hit2Dhit3DPair));
+                    hitPairList.back().setID(hitPairList.size()-1);
+                }
+            }
+        }
+    }
+
+
+
+    return hitPairList.size() - curTripletCount;
+}
+
 bool SnippetHit3DBuilderICARUS::makeHitPair(reco::ClusterHit3D&       hitPair,
                                             const reco::ClusterHit2D* hit1,
                                             const reco::ClusterHit2D* hit2,
@@ -1072,8 +1122,8 @@ bool SnippetHit3DBuilderICARUS::makeHitPair(reco::ClusterHit3D&       hitPair,
 
 
 bool SnippetHit3DBuilderICARUS::makeHitTriplet(reco::ClusterHit3D&       hitTriplet,
-                                         const reco::ClusterHit3D& pair,
-                                         const reco::ClusterHit2D* hit) const
+                                               const reco::ClusterHit3D& pair,
+                                               const reco::ClusterHit2D* hit) const
 {
     // Assume failure
     bool result(false);
@@ -1138,10 +1188,6 @@ bool SnippetHit3DBuilderICARUS::makeHitTriplet(reco::ClusterHit3D&       hitTrip
                     const reco::ClusterHit2D* hit2D = hitVector[planeIdx];
 
                     wireIDVec[planeIdx] = hit2D->WireID();
-
-                    if (hit2D->getStatusBits() & reco::ClusterHit2D::USEDINTRIPLET) hit2D->setStatusBit(reco::ClusterHit2D::SHAREDINTRIPLET);
-
-                    hit2D->setStatusBit(reco::ClusterHit2D::USEDINTRIPLET);
 
                     float hitRMS   = hit2D->getHit()->RMS();
                     float peakTime = hit2D->getTimeTicks();
@@ -1329,6 +1375,14 @@ bool SnippetHit3DBuilderICARUS::makeHitTriplet(reco::ClusterHit3D&       hitTrip
                                           hitVector,
                                           hitDelTSigVec,
                                           wireIDVec);
+                    
+                    // Since we are keeping the triplet, mark the hits as used
+                    for(const auto& hit2D : hitVector)
+                    {
+                        if (hit2D->getStatusBits() & reco::ClusterHit2D::USEDINTRIPLET) hit2D->setStatusBit(reco::ClusterHit2D::SHAREDINTRIPLET);
+
+                        hit2D->setStatusBit(reco::ClusterHit2D::USEDINTRIPLET);
+                    }
 
                     result = true;
                 }
@@ -1809,6 +1863,8 @@ void SnippetHit3DBuilderICARUS::CreateNewRecobHitCollection(art::Event&         
         for(size_t idx = 0; idx < hit3D.getHits().size(); idx++)
         {
             const reco::ClusterHit2D* hit2D = hit2DVec[idx];
+
+            if (!hit2D) continue;
 
             // Have we seen this 2D hit already?
             if (visitedHit2DSet.find(hit2D) == visitedHit2DSet.end())
