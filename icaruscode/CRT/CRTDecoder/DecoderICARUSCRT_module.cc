@@ -425,21 +425,12 @@ void crt::DecoderICARUSCRT::produce(art::Event& evt)
     } // for all recipes
 
   } // for all input data
-  std::cout << "allCRTdata.size(): " << allCRTdata.size() << "\n";
+
   // move the data which is actually present in the final data product
   auto crtdata = std::make_unique<std::vector<icarus::crt::CRTData>>();
   for (icarus::crt::CRTData& crtDataElem: allCRTdata) {
     if (crtDataElem.fMac5 == 0) continue; // not a valid Mac5, data is not present
     crtdata->push_back(std::move(crtDataElem));
-    std::cout << "fMac5:  " << std::dec <<(int)crtDataElem.fMac5 << "\n";
-    std::cout << "fEntry: " << crtDataElem.fEntry << "\n";
-    std::cout << "fTs0:   " << crtDataElem.fTs0 << "\n";
-    std::cout << "fTs1:   " << crtDataElem.fTs1 << "\n";
-    std::cout << "\t[#ch]: ADC  ";
-    for(size_t i_c=0; i_c<32; ++i_c){
-      std::cout << "\t  ["<<std::setw(2)<<i_c<<"]: " <<std::setw(4)<< crtDataElem.fAdc[i_c];
-    }
-    std::cout << "\n------\n";
   }
 
   evt.put(std::move(crtdata));
