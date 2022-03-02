@@ -123,28 +123,28 @@ namespace crt {
         };
    
       fhicl::Atom<art::InputTag> TriggerLabel {
-       Name("TriggerLabel"),
-	      Comment("Label for the Trigger fragment label")
-	      };
+        Name("TriggerLabel"),
+          Comment("Label for the Trigger fragment label")
+	  };
 
       fhicl::Atom<double> QPed {
-	     Name("QPed"),
-	      Comment("Pedestal offset [ADC]")
-	      };
+        Name("QPed"),
+	  Comment("Pedestal offset [ADC]")
+	  };
       fhicl::Atom<double> QSlope {
-	     Name("QSlope"),
-	      Comment("Pedestal slope [ADC/photon]")
-	      };
+        Name("QSlope"),
+	  Comment("Pedestal slope [ADC/photon]")
+	  };
 
       fhicl::Atom<double> PEThresh {
-	     Name("PEThresh"),
-	      Comment("threshold in photoelectrons above which charge amplitudes used in hit reco")
-	      };
+        Name("PEThresh"),
+	  Comment("threshold in photoelectrons above which charge amplitudes used in hit reco")
+	  };
 
      fhicl::Atom<uint64_t> CrtWindow {
-	     Name("CrtWindow"),
-	      Comment("window for looking data [ns]")
-	      };
+       Name("CrtWindow"),
+         Comment("window for looking data [ns]")
+	 };
     }; // Config
     
     using Parameters = art::EDAnalyzer::Table<Config>;
@@ -396,7 +396,7 @@ namespace crt {
       art::Handle<sbn::ExtraTriggerInfo> trigger_handle;
       event.getByLabel( fTriggerLabel, trigger_handle );
       if( trigger_handle.isValid() ) {
-  	    sbn::triggerSource bit = trigger_handle->sourceType;
+  	sbn::triggerSource bit = trigger_handle->sourceType;
         m_gate_type = (unsigned int)bit;
         m_gate_name = bitName(bit);
         m_trigger_timestamp = trigger_handle->triggerTimestamp;
@@ -405,7 +405,7 @@ namespace crt {
 
       }
       else{
-	      mf::LogError("CRTDataAnalysis") << "No raw::Trigger associated to label: " << fTriggerLabel.label() << "\n" ;
+        mf::LogError("CRTDataAnalysis") << "No raw::Trigger associated to label: " << fTriggerLabel.label() << "\n" ;
       }
     }
     else {
