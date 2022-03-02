@@ -316,11 +316,11 @@ private:
     using HitPointerVec        = std::vector<const recob::Hit*>;
 
     // Fcl parameters.
-    using TickCorrectionArray = std::vector<std::vector<std::vector<float>>>;
+    using PlaneToT0OffsetMap = std::map<geo::PlaneID,float>;
 
     std::vector<art::InputTag>  fSpacePointLabelVec;
     art::InputTag               fBadChannelProducerLabel;
-    std::vector<int>            fOffsetVec;              ///< Allow offsets for each plane
+    bool                        fUseT0Offsets;
 
     // TTree variables
     mutable TTree*              fTree;
@@ -329,7 +329,7 @@ private:
     mutable std::vector<int>    fCryoVec;
     mutable std::vector<int>    fPlaneVec;
 
-    TickCorrectionArray         fTickCorrectionArray;
+    mutable PlaneToT0OffsetMap  fPlaneToT0OffsetMap;
 
     using HitTuplebjVec = std::vector<HitTupleObj>;
 
@@ -337,7 +337,7 @@ private:
     mutable HitSpacePointObj    fHitSpacePointObj;
 
     // Useful services, keep copies for now (we can update during begin run periods)
-    const geo::GeometryCore*               fGeometry;             ///< pointer to Geometry service
+    const geo::GeometryCore*    fGeometry;             ///< pointer to Geometry service
 };
 
 //----------------------------------------------------------------------------
@@ -372,8 +372,7 @@ SpacePointAnalysis::~SpacePointAnalysis()
 void SpacePointAnalysis::configure(fhicl::ParameterSet const & pset)
 {
     fSpacePointLabelVec  = pset.get< std::vector<art::InputTag>>("SpacePointLabelVec",  {"cluster3d"});
-    fOffsetVec           = pset.get<std::vector<int>           >("OffsetVec",           {0,0,0}      );
-    fTickCorrectionArray = pset.get<TickCorrectionArray        >("TickCorrectionArray", {{{0.,0.,0.},{0.,0.,0.},{0.,0.,0.},{0.,0.,0.}},{{0.,0.,0.},{0.,0.,0.},{0.,0.,0.},{0.,0.,0.}}});
+    fUseT0Offsets        = pset.get< bool                      >("UseT0Offsets",        false);
 
     return;
 }
@@ -457,6 +456,32 @@ void SpacePointAnalysis::fillHistograms(const art::Event& event) const
 void SpacePointAnalysis::processSpacePoints(const art::Event&                  event,
                                             const detinfo::DetectorClocksData& clockData) const
 {
+    // One time initialization done?
+
+    // Do the one time initialization of the tick offsets. 
+    if (fPlaneToT0OffsetMap.empty())
+    {
+        // Need the detector properties which needs the clocks 
+        auto const det_prop = art::ServiceHandle<detinfo::DetectorPropertiesService const>()->DataFor(event, clockData);
+
+        for(size_t cryoIdx = 0; cryoIdx < fGeometry->Ncryostats(); cryoIdx++)
+        {
+            for(size_t tpcIdx = 0; tpcIdx < fGeometry->NTPC(); tpcIdx++)
+            {
+                for(size_t planeIdx = 0; planeIdx < fGeometry->Nplanes(); planeIdx++)
+                {
+                    geo::PlaneID planeID(cryoIdx,tpcIdx,planeIdx);
+
+//                    if (fUseT0Offsets) fPlaneToT0OffsetMap[planeID] = int(det_prop.GetXTicksOffset(planeID) - det_prop.GetXTicksOffset(geo::PlaneID(cryoIdx,tpcIdx,0)));
+                    if (fUseT0Offsets) fPlaneToT0OffsetMap[planeID] = det_prop.GetXTicksOffset(planeID) - det_prop.GetXTicksOffset(geo::PlaneID(cryoIdx,tpcIdx,0));
+                    else               fPlaneToT0OffsetMap[planeID] = 0.;
+
+                    std::cout << "--PlaneID: " << planeID << ", has T0 offset: " << fPlaneToT0OffsetMap.find(planeID)->second << std::endl;
+                }
+            }
+        }   
+    }
+
     // Diagnostics
     using Triplet    = std::tuple<const recob::Hit*, const recob::Hit*, const recob::Hit*>;
     using TripletMap = std::map<Triplet, std::vector<const recob::SpacePoint*>>;
@@ -573,10 +598,7 @@ void SpacePointAnalysis::processSpacePoints(const art::Event&                  e
 
                 if (hitPtr->DegreesOfFreedom() < 2) numLongHits++;
 
-                hitPeakTimeVec[plane] = peakTime;
-//                                      - detProp.GetXTicksOffset(geo::PlaneID(hitPtr->WireID().Cryostat,hitPtr->WireID().TPC,plane))
-//                                      + detProp.GetXTicksOffset(geo::PlaneID(hitPtr->WireID().Cryostat,hitPtr->WireID().TPC,0))
-//                                      - fTickCorrectionArray[hitPtr->WireID().Cryostat][hitPtr->WireID().TPC][plane]; //clockData.TPCTick2TDC(peakTime);
+                hitPeakTimeVec[plane] = peakTime - fPlaneToT0OffsetMap.find(hitPtr->WireID().planeID())->second;
                 hitPeakRMSVec[plane]  = rms;
                 averagePT            += hitPeakTimeVec[plane];
 

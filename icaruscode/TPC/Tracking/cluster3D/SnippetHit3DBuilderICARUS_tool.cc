@@ -250,6 +250,7 @@ private:
     std::vector<int>                        m_invalidTPCVec;
     float                                   m_wirePitchScaleFactor;  ///< Scaling factor to determine max distance allowed between candidate pairs
     float                                   m_maxHit3DChiSquare;     ///< Provide ability to select hits based on "chi square"
+    bool                                    m_useT0Offsets;          ///< If true then we will use the LArSoft interplane offsets
     bool                                    m_outputHistograms;      ///< Take the time to create and fill some histograms for diagnostics
    
     bool                                    m_enableMonitoring;      ///<
@@ -258,7 +259,9 @@ private:
    
     float                                   m_zPosOffset;
    
-    TickCorrectionArray                     m_TickCorrectionArray;
+    using PlaneToT0OffsetMap = std::map<geo::PlaneID,float>;
+
+    PlaneToT0OffsetMap                      m_PlaneToT0OffsetMap;
    
     // Define some basic histograms   
     TTree*                                  m_tupleTree;             ///< output analysis tree
@@ -337,9 +340,8 @@ void SnippetHit3DBuilderICARUS::configure(fhicl::ParameterSet const &pset)
     m_invalidTPCVec        = pset.get<std::vector<int>          >("InvalidTPCVec",         std::vector<int>());
     m_wirePitchScaleFactor = pset.get<float                     >("WirePitchScaleFactor",  1.9 );
     m_maxHit3DChiSquare    = pset.get<float                     >("MaxHitChiSquare",       6.0 );
+    m_useT0Offsets         = pset.get<bool                      >("UseT0Offsets",          true);
     m_outputHistograms     = pset.get<bool                      >("OutputHistograms",      false );
-
-    m_TickCorrectionArray  = pset.get<TickCorrectionArray       >("TickCorrectionArray",   {{{0.,0.},{0.,0.},{0.,0.},{0.,0.}},{{0.,0.},{0.,0.},{0.,0.},{0.,0.}}});
 
     m_geometry = art::ServiceHandle<geo::Geometry const>{}.get();
 
@@ -476,6 +478,29 @@ void SnippetHit3DBuilderICARUS::Hit3DBuilder(art::Event& evt, reco::HitPairList&
     m_clusterHit2DMasterList.clear();
     m_planeToSnippetHitMap.clear();
     m_planeToWireToHitSetMap.clear();
+
+    // Do the one time initialization of the tick offsets. 
+    if (m_PlaneToT0OffsetMap.empty())
+    {
+        // Need the detector properties which needs the clocks 
+        auto const clock_data = art::ServiceHandle<detinfo::DetectorClocksService const>()->DataFor(evt);
+        auto const det_prop   = art::ServiceHandle<detinfo::DetectorPropertiesService const>()->DataFor(evt, clock_data);
+
+        // Initialize the plane to hit vector map
+        for(size_t cryoIdx = 0; cryoIdx < m_geometry->Ncryostats(); cryoIdx++)
+        {
+            for(size_t tpcIdx = 0; tpcIdx < m_geometry->NTPC(); tpcIdx++)
+            {
+                for(size_t planeIdx = 0; planeIdx < m_geometry->Nplanes(); planeIdx++)
+                {
+                    geo::PlaneID planeID(cryoIdx,tpcIdx,planeIdx);
+
+                    if (m_useT0Offsets) m_PlaneToT0OffsetMap[planeID] = det_prop.GetXTicksOffset(planeID) - det_prop.GetXTicksOffset(geo::PlaneID(cryoIdx,tpcIdx,0));
+                    else                m_PlaneToT0OffsetMap[planeID] = 0.;
+                }
+            }
+        }   
+    }
 
     m_timeVector.resize(NUMTIMEVALUES, 0.);
 
@@ -1658,10 +1683,6 @@ void SnippetHit3DBuilderICARUS::CollectArtHits(const art::Event& evt) const
 
     if (m_enableMonitoring) theClockMakeHits.start();
 
-    // We'll want to correct the hit times for the plane offsets
-    // (note this is already taken care of when converting to position)
-    std::map<geo::PlaneID, double> planeOffsetMap;
-
     // Need the detector properties which needs the clocks
     auto const clock_data = art::ServiceHandle<detinfo::DetectorClocksService const>()->DataFor(evt);
     auto const det_prop   = art::ServiceHandle<detinfo::DetectorPropertiesService const>()->DataFor(evt, clock_data);
@@ -1678,26 +1699,14 @@ void SnippetHit3DBuilderICARUS::CollectArtHits(const art::Event& evt) const
             m_planeToSnippetHitMap[geo::PlaneID(cryoIdx,tpcIdx,1)] = SnippetHitMap();
             m_planeToSnippetHitMap[geo::PlaneID(cryoIdx,tpcIdx,2)] = SnippetHitMap();
 
-            // What we want here are the relative offsets between the planes
-            // Note that plane 0 is assumed the "first" plane and is the reference
-            planeOffsetMap[geo::PlaneID(cryoIdx,tpcIdx,0)] = 0.;
-            planeOffsetMap[geo::PlaneID(cryoIdx,tpcIdx,1)] = m_TickCorrectionArray[cryoIdx][tpcIdx][0];
-            planeOffsetMap[geo::PlaneID(cryoIdx,tpcIdx,2)] = m_TickCorrectionArray[cryoIdx][tpcIdx][1];
-//            planeOffsetMap[geo::PlaneID(cryoIdx,tpcIdx,1)] = det_prop.GetXTicksOffset(geo::PlaneID(cryoIdx,tpcIdx,1))
-//                                                           - det_prop.GetXTicksOffset(geo::PlaneID(cryoIdx,tpcIdx,0))
-//                                                           + m_TickCorrectionArray[cryoIdx][tpcIdx][0];
-//            planeOffsetMap[geo::PlaneID(cryoIdx,tpcIdx,2)] = det_prop.GetXTicksOffset(geo::PlaneID(cryoIdx,tpcIdx,2))
-//                                                           - det_prop.GetXTicksOffset(geo::PlaneID(cryoIdx,tpcIdx,0))
-//                                                           + m_TickCorrectionArray[cryoIdx][tpcIdx][1];
-//
             // Should we provide output?
             if (!m_weHaveAllBeenHereBefore)
             {
                 std::ostringstream outputString;
 
-                outputString << "***> plane 0 offset: " << planeOffsetMap[geo::PlaneID(cryoIdx,tpcIdx,0)] 
-                             << ", plane 1: " << planeOffsetMap[geo::PlaneID(cryoIdx,tpcIdx,1)] << "/" << m_TickCorrectionArray[cryoIdx][tpcIdx][0]
-                             << ", plane    2: " << planeOffsetMap[geo::PlaneID(cryoIdx,tpcIdx,2)] << "/" << m_TickCorrectionArray[cryoIdx][tpcIdx][1]<< "\n";
+                outputString << "***> plane 0 offset: " << m_PlaneToT0OffsetMap.find(geo::PlaneID(cryoIdx,tpcIdx,0))->second
+                             << ", plane 1: " << m_PlaneToT0OffsetMap.find(geo::PlaneID(cryoIdx,tpcIdx,1))->second
+                             << ", plane    2: " << m_PlaneToT0OffsetMap.find(geo::PlaneID(cryoIdx,tpcIdx,2))->second << "\n";
                 outputString << "     Det prop plane 0: " << det_prop.GetXTicksOffset(geo::PlaneID(cryoIdx,tpcIdx,0)) << ", plane 1: "  << det_prop.GetXTicksOffset(geo::PlaneID(cryoIdx,tpcIdx,1)) << ", plane 2: " << det_prop.GetXTicksOffset(geo::PlaneID(cryoIdx,tpcIdx,2)) << ", Trig: " << trigger_offset(clock_data) << "\n";
                 debugMessage += outputString.str();
             }
@@ -1743,7 +1752,7 @@ void SnippetHit3DBuilderICARUS::CollectArtHits(const art::Event& evt) const
             // Note that a plane ID will define cryostat, TPC and plane
             const geo::PlaneID& planeID = wireID.planeID();
 
-            double hitPeakTime(recobHit->PeakTime() - planeOffsetMap[planeID]);
+            double hitPeakTime(recobHit->PeakTime() - m_PlaneToT0OffsetMap.find(planeID)->second);
             double xPosition(det_prop.ConvertTicksToX(recobHit->PeakTime(), planeID.Plane, planeID.TPC, planeID.Cryostat));
 
             m_clusterHit2DMasterList.emplace_back(0, 0., 0., xPosition, hitPeakTime, wireID, recobHit);
