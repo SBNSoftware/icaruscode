@@ -75,11 +75,13 @@ public:
 private:
   uint64_t CalculateTimestamp(icarus::crt::BernCRTTranslator& hit);
   void     CorrectForCableDelay(icarus::crt::BernCRTTranslator & hit);
+  bool     IsSideCRT(icarus::crt::BernCRTTranslator & hit);
 
   // Declare member data here.
   const icarusDB::IICARUSChannelMap* fChannelMap = nullptr;
 
-  std::map<uint8_t, int32_t> FEB_delay; //<mac5, delay in ns>
+  std::map<uint8_t, int32_t> FEB_delay_side; //<mac5, delay in ns>
+  std::map<uint8_t, int32_t> FEB_delay_top;  //<mac5, delay in ns>
 };
 
 
@@ -89,18 +91,41 @@ crt::DecoderICARUSCRT::DecoderICARUSCRT(fhicl::ParameterSet const& p)
   fChannelMap = art::ServiceHandle<icarusDB::IICARUSChannelMap const>{}.get();
   produces< std::vector<icarus::crt::CRTData> >();
 
-  std::vector<std::vector<int32_t> > delays =  p.get<std::vector<std::vector<int32_t> > >("FEB_delay");
-  for(auto & feb : delays) {
-    int32_t & mac = feb[0];
-    int32_t & d   = feb[1];
-    FEB_delay[mac] = d;
+  {
+    std::vector<std::vector<int32_t> > delays =  p.get<std::vector<std::vector<int32_t> > >("FEB_delay_side");
+    for(auto & feb : delays) {
+      int32_t & mac = feb[0];
+      int32_t & d   = feb[1];
+      FEB_delay_side[mac] = d;
+    }
+  }
+
+  {
+    std::vector<std::vector<int32_t> > delays =  p.get<std::vector<std::vector<int32_t> > >("FEB_delay_top");
+    for(auto & feb : delays) {
+      int32_t & mac = feb[0];
+      int32_t & d   = feb[1];
+      FEB_delay_top[mac] = d;
+    }
   }
 }
 
+bool crt::DecoderICARUSCRT::IsSideCRT(icarus::crt::BernCRTTranslator & hit) {
+  /**
+   * Fragment ID described in SBN doc 16111
+   */
+  return (hit.fragment_ID & 0x3100) == 0x3100;
+}
 void crt::DecoderICARUSCRT::CorrectForCableDelay(icarus::crt::BernCRTTranslator & hit) {
   if(!hit.IsReference_TS0() && !hit.IsReference_TS1()) { //don't correct reference T0 and T1 hits for cable length
     try {
-      auto delay = FEB_delay.at(hit.mac5);
+      int32_t delay;
+      if(IsSideCRT(hit)) {
+        delay = FEB_delay_side.at(hit.mac5);
+      }
+      else {
+        delay = FEB_delay_top.at(hit.mac5);
+      }
       hit.ts0 += delay;
       hit.ts0 %= 1'000'000'000;
       if(hit.ts0 < 0) hit.ts0 += 1000'000'000; //just in case the cable offset is negative (should be positive normally)
@@ -131,11 +156,6 @@ uint64_t crt::DecoderICARUSCRT::CalculateTimestamp(icarus::crt::BernCRTTranslato
 void crt::DecoderICARUSCRT::produce(art::Event& evt)
 {
 
-  // Implementation of required member function here.'
-  //  std::unique_ptr< std::vector<icarus::crt::CRTData> > crtdata( new std::vector<icarus::crt::CRTData>);
-  //auto crtdata = std::make_unique<std::vector<icarus::crt::CRTData>>();
-  
-  //WK 09/02/21. Update to BernCRTTranslator in sbndaq_artdaq_core
   std::vector<icarus::crt::BernCRTTranslator> hit_vector;
 
   auto fragmentHandles = evt.getMany<artdaq::Fragments>();
@@ -165,271 +185,292 @@ void crt::DecoderICARUSCRT::produce(art::Event& evt)
   std::vector<icarus::crt::CRTData> allCRTdata;
   
   for (auto & hit : hit_vector){
+    CorrectForCableDelay(hit);  //add PPS cable length
 
-    std::array<Recipe_t, 3U> allRecipes;
-    //
-    // fill the recipe
-    //
-    if (!((hit.mac5 >= 88 && hit.mac5 <= 91)
-          || hit.mac5 == 96 || hit.mac5 == 97
-          || hit.mac5 ==  1 || hit.mac5 ==  3
-          || hit.mac5 ==  6 || hit.mac5 ==  7)) { // look for FEB those are not between 88 to 91
-
-      int const destMac5 = fChannelMap->getSimMacAddress(hit.mac5);
-
-      Recipe_t recipe;
+    if(IsSideCRT(hit)) {
+      std::array<Recipe_t, 3U> allRecipes;
 
       //
-      // first block of 10 channels from source
+      // fill the recipe
       //
-      recipe.destMac5 = destMac5;
+      if (!((hit.mac5 >= 88 && hit.mac5 <= 91)
+            || hit.mac5 == 96 || hit.mac5 == 97
+            || hit.mac5 ==  1 || hit.mac5 ==  3
+            || hit.mac5 ==  6 || hit.mac5 ==  7)) { // look for FEB those are not between 88 to 91
 
-      recipe.firstSourceChannel =  2;
-      recipe.lastSourceChannel  = 11;
+        int const destMac5 = fChannelMap->getSimMacAddress(hit.mac5);
 
-      recipe.firstDestChannel   =  0;
-      recipe.lastDestChannel    =  9;
-      recipe.direction          = +1;
-      allRecipes[0] = recipe;
+        Recipe_t recipe;
 
-      //
-      // second block of 10 channels from source
-      //
-      recipe.destMac5 = destMac5;
-      recipe.firstSourceChannel = 12;
-      recipe.lastSourceChannel  = 21;
+        //
+        // first block of 10 channels from source
+        //
+        recipe.destMac5 = destMac5;
 
-      recipe.firstDestChannel   = 10;
-      recipe.lastDestChannel    = 19;
-      recipe.direction          = +1;
-      allRecipes[1] = recipe;
+        recipe.firstSourceChannel =  2;
+        recipe.lastSourceChannel  = 11;
 
-      //
-      // third block of 10 channels from source
-      //
-      recipe.destMac5 = destMac5;
-      recipe.firstSourceChannel  = 22;
-      recipe.lastSourceChannel   = 31;
+        recipe.firstDestChannel   =  0;
+        recipe.lastDestChannel    =  9;
+        recipe.direction          = +1;
+        allRecipes[0] = recipe;
 
-      recipe.firstDestChannel    = 20;
-      recipe.lastDestChannel     = 29;
-      recipe.direction           = +1;
-      allRecipes[2] = recipe;
+        //
+        // second block of 10 channels from source
+        //
+        recipe.destMac5 = destMac5;
+        recipe.firstSourceChannel = 12;
+        recipe.lastSourceChannel  = 21;
 
+        recipe.firstDestChannel   = 10;
+        recipe.lastDestChannel    = 19;
+        recipe.direction          = +1;
+        allRecipes[1] = recipe;
 
-    } // "normal assignment"
-    else if (hit.mac5 ==  97) { // south wall - east side top horizontal module channels are reversed
+        //
+        // third block of 10 channels from source
+        //
+        recipe.destMac5 = destMac5;
+        recipe.firstSourceChannel  = 22;
+        recipe.lastSourceChannel   = 31;
 
-      int const destMac5 = fChannelMap->getSimMacAddress(hit.mac5);
-
-      Recipe_t recipe;
-
-      //
-      // first block of 10 channels from source
-      //
-      recipe.destMac5 = destMac5;
-
-      recipe.firstSourceChannel =  2;
-      recipe.lastSourceChannel  = 11;
-
-      recipe.firstDestChannel   =  0;
-      recipe.lastDestChannel    =  9;
-      recipe.direction          = +1;
-      allRecipes[0] = recipe;
-
-      //
-      // second block of 10 channels from source
-      //
-      recipe.destMac5 = destMac5;
-      recipe.firstSourceChannel = 12;
-      recipe.lastSourceChannel  = 21;
-
-      recipe.firstDestChannel   = 10;
-      recipe.lastDestChannel    = 19;
-      recipe.direction          = +1;
-      allRecipes[1] = recipe;
-
-      //
-      // third block of 10 channels from source
-      //
-      recipe.destMac5 = destMac5;
-      recipe.firstSourceChannel  = 22;
-      recipe.lastSourceChannel   = 31;
-
-      recipe.firstDestChannel    = 29;
-      recipe.lastDestChannel     = 20;
-      recipe.direction           = -1;
-      allRecipes[2] = recipe;
+        recipe.firstDestChannel    = 20;
+        recipe.lastDestChannel     = 29;
+        recipe.direction           = +1;
+        allRecipes[2] = recipe;
 
 
-    }
-    else if (hit.mac5 == 1 || hit.mac5 == 3 ||
-             hit.mac5 == 6 || hit.mac5 == 7 ||
-             hit.mac5 == 96) { // north wall inner layer and south wall west side top three horizontal layer orientation is reversed
+      } // "normal assignment"
+      else if (hit.mac5 ==  97) { // south wall - east side top horizontal module channels are reversed
 
-      int const destMac5 = fChannelMap->getSimMacAddress(hit.mac5);
+        int const destMac5 = fChannelMap->getSimMacAddress(hit.mac5);
 
-      Recipe_t recipe;
+        Recipe_t recipe;
 
-      //
-      // first block of 10 channels from source
-      //
-      recipe.destMac5 = destMac5;
+        //
+        // first block of 10 channels from source
+        //
+        recipe.destMac5 = destMac5;
 
-      recipe.firstSourceChannel  =  2;
-      recipe.lastSourceChannel   = 11;
+        recipe.firstSourceChannel =  2;
+        recipe.lastSourceChannel  = 11;
 
-      recipe.firstDestChannel    =  9;
-      recipe.lastDestChannel     =  0;
-      recipe.direction           = -1;
-      allRecipes[0] = recipe;
+        recipe.firstDestChannel   =  0;
+        recipe.lastDestChannel    =  9;
+        recipe.direction          = +1;
+        allRecipes[0] = recipe;
 
-      //
-      // second block of 10 channels from source
-      //
-      recipe.destMac5 = destMac5;
-      recipe.firstSourceChannel = 12;
-      recipe.lastSourceChannel  = 21;
+        //
+        // second block of 10 channels from source
+        //
+        recipe.destMac5 = destMac5;
+        recipe.firstSourceChannel = 12;
+        recipe.lastSourceChannel  = 21;
 
-      recipe.firstDestChannel   = 19;
-      recipe.lastDestChannel    = 10;
-      recipe.direction          = -1;
-      allRecipes[1] = recipe;
+        recipe.firstDestChannel   = 10;
+        recipe.lastDestChannel    = 19;
+        recipe.direction          = +1;
+        allRecipes[1] = recipe;
 
-      //
-      // third block of 10 channels from source: special mapping
-      //
-      recipe.destMac5 = destMac5;
-      recipe.firstSourceChannel = 22;
-      recipe.lastSourceChannel  = 31;
-    
-      recipe.firstDestChannel   = 29;
-      recipe.lastDestChannel    = 20;
-      recipe.direction          = -1;
-      allRecipes[2] = recipe;
+        //
+        // third block of 10 channels from source
+        //
+        recipe.destMac5 = destMac5;
+        recipe.firstSourceChannel  = 22;
+        recipe.lastSourceChannel   = 31;
 
-    }
-    else if (hit.mac5 == 88) {
+        recipe.firstDestChannel    = 29;
+        recipe.lastDestChannel     = 20;
+        recipe.direction           = -1;
+        allRecipes[2] = recipe;
 
-      int const destMac5 = fChannelMap->getSimMacAddress(hit.mac5);
-
-      Recipe_t recipe;
-
-      //
-      // first block of 10 channels from source
-      //
-      recipe.destMac5 = 79;
-
-      recipe.firstSourceChannel  =  2;
-      recipe.lastSourceChannel   = 11;
-
-      recipe.firstDestChannel    =  29;
-      recipe.lastDestChannel     =  20;
-      recipe.direction           =  -1;
-      allRecipes[0] = recipe;
-
-      //
-      // second block of 10 channels from source
-      //
-      recipe.destMac5 = destMac5;
-      recipe.firstSourceChannel = 12;
-      recipe.lastSourceChannel  = 21;
-
-      recipe.firstDestChannel   = 10;
-      recipe.lastDestChannel    = 19;
-      recipe.direction          = +1;
-      allRecipes[1] = recipe;
-
-      //
-      // third block of 10 channels from source: special mapping
-      //
-      recipe.destMac5 = destMac5;
-      recipe.firstSourceChannel = 22;
-      recipe.lastSourceChannel  = 31;
-
-       recipe.firstDestChannel   =  0;
-      recipe.lastDestChannel    =  9;
-      recipe.direction          = +1;
-      allRecipes[2] = recipe;
-
-    }
-    else if ((hit.mac5 >= 89) && (hit.mac5 <= 91)) {
-
-      int const destMac5 = fChannelMap->getSimMacAddress(hit.mac5);
-
-      Recipe_t recipe;
-
-      //
-      // first block of 10 channels from source
-      //
-      recipe.destMac5 = destMac5;
-
-      recipe.firstSourceChannel  =  2;
-      recipe.lastSourceChannel   = 11;
-
-      recipe.firstDestChannel    = 19;
-      recipe.lastDestChannel     = 10;
-      recipe.direction           = -1;
-      allRecipes[0] = recipe;
-
-      //
-      // second block of 10 channels from source
-      //
-     
-      recipe.destMac5 = destMac5;
-      recipe.firstSourceChannel = 12;
-      recipe.lastSourceChannel  = 21;
-
-      recipe.firstDestChannel   =  9;
-      recipe.lastDestChannel    =  0;
-      recipe.direction          = -1;
-      allRecipes[1] = recipe;
-
-      //
-      // third block of 10 channels from source: special mapping
-      //
-      recipe.destMac5 = destMac5 - 1;
-      recipe.firstSourceChannel  = 22;
-      recipe.lastSourceChannel   = 31;
-
-      recipe.firstDestChannel    = 29;
-      recipe.lastDestChannel     = 20;
-      recipe.direction           = -1;
-
-      allRecipes[2] = recipe;
-
-    } // if not 88
-
-    //
-    // cook the crtdata
-    //
-    for (Recipe_t const& recipe: allRecipes) {
-      if (recipe.firstSourceChannel == recipe.lastSourceChannel) continue;
-
-      icarus::crt::CRTData data;
-      data.fMac5  = recipe.destMac5;
-      CorrectForCableDelay(hit);  //add PPS cable length
-      data.fTs0   = CalculateTimestamp(hit);
-      data.fTs1   = hit.ts1;
-      data.fFlags                   = hit.flags;
-      data.fThisPollStart           = hit.this_poll_start;
-      data.fLastPollStart           = hit.last_poll_start;
-      data.fHitsInPoll              = hit.hits_in_poll;
-      data.fCoinc                   = hit.coinc;
-      data.fLastAcceptedTimestamp   = hit.last_accepted_timestamp;
-      data.fLostHits                = hit.lost_hits;
-
-      unsigned destCh = recipe.firstDestChannel;
-      for (unsigned srcCh = recipe.firstSourceChannel; srcCh <= recipe.lastSourceChannel; ++srcCh) {
-
-        data.fAdc[destCh] = hit.adc[srcCh];
-        destCh += recipe.direction; // increase or decrease the source
 
       }
-      allCRTdata.push_back(data);
-    } // for all recipes
+      else if (hit.mac5 == 1 || hit.mac5 == 3 ||
+          hit.mac5 == 6 || hit.mac5 == 7 ||
+          hit.mac5 == 96) { // north wall inner layer and south wall west side top three horizontal layer orientation is reversed
 
-  } // for all input data
+        int const destMac5 = fChannelMap->getSimMacAddress(hit.mac5);
+
+        Recipe_t recipe;
+
+        //
+        // first block of 10 channels from source
+        //
+        recipe.destMac5 = destMac5;
+
+        recipe.firstSourceChannel  =  2;
+        recipe.lastSourceChannel   = 11;
+
+        recipe.firstDestChannel    =  9;
+        recipe.lastDestChannel     =  0;
+        recipe.direction           = -1;
+        allRecipes[0] = recipe;
+
+        //
+        // second block of 10 channels from source
+        //
+        recipe.destMac5 = destMac5;
+        recipe.firstSourceChannel = 12;
+        recipe.lastSourceChannel  = 21;
+
+        recipe.firstDestChannel   = 19;
+        recipe.lastDestChannel    = 10;
+        recipe.direction          = -1;
+        allRecipes[1] = recipe;
+
+        //
+        // third block of 10 channels from source: special mapping
+        //
+        recipe.destMac5 = destMac5;
+        recipe.firstSourceChannel = 22;
+        recipe.lastSourceChannel  = 31;
+
+        recipe.firstDestChannel   = 29;
+        recipe.lastDestChannel    = 20;
+        recipe.direction          = -1;
+        allRecipes[2] = recipe;
+
+      }
+      else if (hit.mac5 == 88) {
+
+        int const destMac5 = fChannelMap->getSimMacAddress(hit.mac5);
+
+        Recipe_t recipe;
+
+        //
+        // first block of 10 channels from source
+        //
+        recipe.destMac5 = 79;
+
+        recipe.firstSourceChannel  =  2;
+        recipe.lastSourceChannel   = 11;
+
+        recipe.firstDestChannel    =  29;
+        recipe.lastDestChannel     =  20;
+        recipe.direction           =  -1;
+        allRecipes[0] = recipe;
+
+        //
+        // second block of 10 channels from source
+        //
+        recipe.destMac5 = destMac5;
+        recipe.firstSourceChannel = 12;
+        recipe.lastSourceChannel  = 21;
+
+        recipe.firstDestChannel   = 10;
+        recipe.lastDestChannel    = 19;
+        recipe.direction          = +1;
+        allRecipes[1] = recipe;
+
+        //
+        // third block of 10 channels from source: special mapping
+        //
+        recipe.destMac5 = destMac5;
+        recipe.firstSourceChannel = 22;
+        recipe.lastSourceChannel  = 31;
+
+        recipe.firstDestChannel   =  0;
+        recipe.lastDestChannel    =  9;
+        recipe.direction          = +1;
+        allRecipes[2] = recipe;
+
+      }
+      else if ((hit.mac5 >= 89) && (hit.mac5 <= 91)) {
+
+        int const destMac5 = fChannelMap->getSimMacAddress(hit.mac5);
+
+        Recipe_t recipe;
+
+        //
+        // first block of 10 channels from source
+        //
+        recipe.destMac5 = destMac5;
+
+        recipe.firstSourceChannel  =  2;
+        recipe.lastSourceChannel   = 11;
+
+        recipe.firstDestChannel    = 19;
+        recipe.lastDestChannel     = 10;
+        recipe.direction           = -1;
+        allRecipes[0] = recipe;
+
+        //
+        // second block of 10 channels from source
+        //
+
+        recipe.destMac5 = destMac5;
+        recipe.firstSourceChannel = 12;
+        recipe.lastSourceChannel  = 21;
+
+        recipe.firstDestChannel   =  9;
+        recipe.lastDestChannel    =  0;
+        recipe.direction          = -1;
+        allRecipes[1] = recipe;
+
+        //
+        // third block of 10 channels from source: special mapping
+        //
+        recipe.destMac5 = destMac5 - 1;
+        recipe.firstSourceChannel  = 22;
+        recipe.lastSourceChannel   = 31;
+
+        recipe.firstDestChannel    = 29;
+        recipe.lastDestChannel     = 20;
+        recipe.direction           = -1;
+
+        allRecipes[2] = recipe;
+
+      } // if not 88
+
+      //
+      // cook the crtdata
+      //
+      for (Recipe_t const& recipe: allRecipes) {
+        if (recipe.firstSourceChannel == recipe.lastSourceChannel) continue;
+
+        icarus::crt::CRTData data;
+        data.fMac5  = recipe.destMac5;
+        data.fTs0   = CalculateTimestamp(hit);
+        data.fTs1   = hit.ts1;
+        data.fFlags                   = hit.flags;
+        data.fThisPollStart           = hit.this_poll_start;
+        data.fLastPollStart           = hit.last_poll_start;
+        data.fHitsInPoll              = hit.hits_in_poll;
+        data.fCoinc                   = hit.coinc;
+        data.fLastAcceptedTimestamp   = hit.last_accepted_timestamp;
+        data.fLostHits                = hit.lost_hits;
+
+        unsigned destCh = recipe.firstDestChannel;
+        for (unsigned srcCh = recipe.firstSourceChannel; srcCh <= recipe.lastSourceChannel; ++srcCh) {
+
+          data.fAdc[destCh] = hit.adc[srcCh];
+          destCh += recipe.direction; // increase or decrease the source
+
+        }
+        allCRTdata.push_back(data);
+      } // for all recipes
+    }
+    else { //not side CRT, therefore top CRT
+      //this code needs review by the TOP CRT group!!!
+        icarus::crt::CRTData data;
+        data.fMac5  = hit.mac5;         //warning, new mapping needed here!!!
+        data.fTs0   = CalculateTimestamp(hit);
+        data.fTs1   = hit.ts1;
+        data.fFlags                   = hit.flags;
+        data.fThisPollStart           = hit.this_poll_start;
+        data.fLastPollStart           = hit.last_poll_start;
+        data.fHitsInPoll              = hit.hits_in_poll;
+        data.fCoinc                   = hit.coinc;
+        data.fLastAcceptedTimestamp   = hit.last_accepted_timestamp;
+        data.fLostHits                = hit.lost_hits;
+
+        memcpy(data.fAdc, hit.adc, 32*sizeof(hit.adc[0]));
+        
+        allCRTdata.push_back(data);
+    }
+
+  } // loop over all hits in an event
 
   // move the data which is actually present in the final data product
   auto crtdata = std::make_unique<std::vector<icarus::crt::CRTData>>();
