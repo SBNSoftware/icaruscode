@@ -351,7 +351,7 @@ void SnippetHit3DBuilderICARUS::configure(fhicl::ParameterSet const &pset)
     m_maxHit3DChiSquare    = pset.get<float                     >("MaxHitChiSquare",        6.0 );
     m_saveMythicalPoints   = pset.get<bool                      >("SaveMythicalPoints",     true);
     m_maxMythicalChiSquare = pset.get<float                     >("MaxMythicalChiSquare",    10.);
-    m_minMythicalPH        = pset.get<float                     >("MinMythicalPH",            8.);
+    m_minMythicalPH        = pset.get<float                     >("MinMythicalPH",           10.);
     m_useT0Offsets         = pset.get<bool                      >("UseT0Offsets",           true);
     m_outputHistograms     = pset.get<bool                      >("OutputHistograms",      false);
 
