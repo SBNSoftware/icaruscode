@@ -256,6 +256,8 @@ private:
     std::vector<int>                        m_invalidTPCVec;
     float                                   m_wirePitchScaleFactor;  ///< Scaling factor to determine max distance allowed between candidate pairs
     float                                   m_maxHit3DChiSquare;     ///< Provide ability to select hits based on "chi square"
+    bool                                    m_saveMythicalPoints;    ///< Should we save valid 2 hit space points? 
+    float                                   m_maxMythicalChiSquare;  ///< Selection cut on mythical points
     bool                                    m_useT0Offsets;          ///< If true then we will use the LArSoft interplane offsets
     bool                                    m_outputHistograms;      ///< Take the time to create and fill some histograms for diagnostics
    
@@ -334,20 +336,22 @@ void SnippetHit3DBuilderICARUS::produces(art::ProducesCollector& collector)
 
 void SnippetHit3DBuilderICARUS::configure(fhicl::ParameterSet const &pset)
 {
-    m_hitFinderTagVec      = pset.get<std::vector<art::InputTag>>("HitFinderTagVec",       {"gaushit"});
-    m_enableMonitoring     = pset.get<bool                      >("EnableMonitoring",      true);
-    m_hitWidthSclFctr      = pset.get<float                     >("HitWidthScaleFactor",   6.  );
-    m_rangeNumSig          = pset.get<float                     >("RangeNumSigma",         3.  );
-    m_LongHitStretchFctr   = pset.get<float                     >("LongHitsStretchFactor", 1.5 );
-    m_pulseHeightFrac      = pset.get<float                     >("PulseHeightFraction",   0.5 );
-    m_PHLowSelection       = pset.get<float                     >("PHLowSelection",        20. );
-    m_deltaPeakTimeSig     = pset.get<float                     >("DeltaPeakTimeSig",      1.7 );
-    m_zPosOffset           = pset.get<float                     >("ZPosOffset",            0.0 );
-    m_invalidTPCVec        = pset.get<std::vector<int>          >("InvalidTPCVec",         std::vector<int>());
-    m_wirePitchScaleFactor = pset.get<float                     >("WirePitchScaleFactor",  1.9 );
-    m_maxHit3DChiSquare    = pset.get<float                     >("MaxHitChiSquare",       6.0 );
-    m_useT0Offsets         = pset.get<bool                      >("UseT0Offsets",          true);
-    m_outputHistograms     = pset.get<bool                      >("OutputHistograms",      false );
+    m_hitFinderTagVec      = pset.get<std::vector<art::InputTag>>("HitFinderTagVec",        {"gaushit"});
+    m_enableMonitoring     = pset.get<bool                      >("EnableMonitoring",       true);
+    m_hitWidthSclFctr      = pset.get<float                     >("HitWidthScaleFactor",    6.  );
+    m_rangeNumSig          = pset.get<float                     >("RangeNumSigma",          3.  );
+    m_LongHitStretchFctr   = pset.get<float                     >("LongHitsStretchFactor",  1.5 );
+    m_pulseHeightFrac      = pset.get<float                     >("PulseHeightFraction",    0.5 );
+    m_PHLowSelection       = pset.get<float                     >("PHLowSelection",         20. );
+    m_deltaPeakTimeSig     = pset.get<float                     >("DeltaPeakTimeSig",       1.7 );
+    m_zPosOffset           = pset.get<float                     >("ZPosOffset",             0.0 );
+    m_invalidTPCVec        = pset.get<std::vector<int>          >("InvalidTPCVec",          std::vector<int>());
+    m_wirePitchScaleFactor = pset.get<float                     >("WirePitchScaleFactor",   1.9 );
+    m_maxHit3DChiSquare    = pset.get<float                     >("MaxHitChiSquare",        6.0 );
+    m_saveMythicalPoints   = pset.get<bool                      >("SaveMythicalPoints",     true);
+    m_maxMythicalChiSquare = pset.get<float                     >("MaxMythicalChiSquare",    10.);
+    m_useT0Offsets         = pset.get<bool                      >("UseT0Offsets",           true);
+    m_outputHistograms     = pset.get<bool                      >("OutputHistograms",      false);
 
     m_geometry = art::ServiceHandle<geo::Geometry const>{}.get();
 
@@ -748,8 +752,11 @@ size_t SnippetHit3DBuilderICARUS::BuildHitPairMapByTPC(PlaneSnippetHitMapItrPair
         if (n12Pairs > n13Pairs) findGoodTriplets(pair12Map, pair13Map, hitPairList);
         else                     findGoodTriplets(pair13Map, pair12Map, hitPairList);
 
-        nOrphanPairs += saveOrphanPairs(pair12Map, hitPairList);
-        nOrphanPairs += saveOrphanPairs(pair13Map, hitPairList);
+        if (m_saveMythicalPoints)
+        {
+            nOrphanPairs += saveOrphanPairs(pair12Map, hitPairList);
+            nOrphanPairs += saveOrphanPairs(pair13Map, hitPairList);
+        }
 
         nTriplets += hitPairList.size() - curHitListSize;
 
@@ -955,15 +962,17 @@ int SnippetHit3DBuilderICARUS::saveOrphanPairs(HitMatchTripletVecMap& pairMap, r
                 // Require that one of the hits is on the collection plane
                 if (hit1->WireID().Plane == 2 || hit2->WireID().Plane == 2)
                 {
-                    // Add to the list
-                    hitPairList.emplace_back(std::get<2>(hit2Dhit3DPair));
-                    hitPairList.back().setID(hitPairList.size()-1);
+                    // Allow cut on the quality of the space point
+                    if (std::get<2>(hit2Dhit3DPair).getHitChiSquare() < m_maxMythicalChiSquare)
+                    {
+                        // Add to the list
+                        hitPairList.emplace_back(std::get<2>(hit2Dhit3DPair));
+                        hitPairList.back().setID(hitPairList.size()-1);
+                    }
                 }
             }
         }
     }
-
-
 
     return hitPairList.size() - curTripletCount;
 }
