@@ -74,6 +74,7 @@ public:
 
 private:
   uint64_t CalculateTimestamp(icarus::crt::BernCRTTranslator& hit);
+  void     CorrectForCableDelay(icarus::crt::BernCRTTranslator & hit);
 
   // Declare member data here.
   const icarusDB::IICARUSChannelMap* fChannelMap = nullptr;
@@ -96,25 +97,28 @@ crt::DecoderICARUSCRT::DecoderICARUSCRT(fhicl::ParameterSet const& p)
   }
 }
 
+void crt::DecoderICARUSCRT::CorrectForCableDelay(icarus::crt::BernCRTTranslator & hit) {
+  if(!hit.IsReference_TS0() && !hit.IsReference_TS1()) { //don't correct reference T0 and T1 hits for cable length
+    try {
+      auto delay = FEB_delay.at(hit.mac5);
+      hit.ts0 += delay;
+      hit.ts0 %= 1'000'000'000;
+      if(hit.ts0 < 0) hit.ts0 += 1000'000'000; //just in case the cable offset is negative (should be positive normally)
+      hit.ts1 += delay;
+    } catch(const std::out_of_range & e) {
+      TLOG(TLVL_ERROR)<<"CRT MAC "<<(int)(hit.mac5)<<" not found in the FEB_delay array!!! Please update FEB_delay FHiCL file";
+      throw cet::exception("DecoderICARUSCRT")
+        << "CRT MAC "<<(int)(hit.mac5)<<" not found in the FEB_delay array!!! Please update FEB_delay FHiCL file\n";
+    }
+  }
+}
+
 uint64_t crt::DecoderICARUSCRT::CalculateTimestamp(icarus::crt::BernCRTTranslator& hit) {
   /**
    * Calculate timestamp based on nanosecond from FEB and poll times measured by server
    * see: https://sbn-docdb.fnal.gov/cgi-bin/private/DisplayMeeting?sessionid=7783
    */
   int32_t ts0  = hit.ts0; //must be signed int
-
-  //add PPS cable length offset modulo 1s
-  if(!hit.IsReference_TS0() && !hit.IsReference_TS1()) { //don't correct reference T0 and T1 hits for cable length
-    try {
-      ts0 = (ts0 + FEB_delay.at(hit.mac5)) % (1'000'000'000);
-    } catch(const std::out_of_range & e) {
-      TLOG(TLVL_ERROR)<<"CRT MAC "<<(int)(hit.mac5)<<" not found in the FEB_delay array!!! Please update FEB_delay FHiCL file";
-      //throw e;
-      throw cet::exception("DecoderICARUSCRT")
-        << "CRT MAC "<<(int)(hit.mac5)<<" not found in the FEB_delay array!!! Please update FEB_delay FHiCL file\n";
-    }
-    if(ts0 < 0) ts0 += 1000'000'000; //just in case the cable offset is negative (should be positive normally)
-  }
 
   uint64_t mean_poll_time = hit.last_poll_start/2 + hit.this_poll_end/2;
   int mean_poll_time_ns = mean_poll_time % (1000'000'000); 
@@ -404,6 +408,7 @@ void crt::DecoderICARUSCRT::produce(art::Event& evt)
 
       icarus::crt::CRTData data;
       data.fMac5  = recipe.destMac5;
+      CorrectForCableDelay(hit);  //add PPS cable length
       data.fTs0   = CalculateTimestamp(hit);
       data.fTs1   = hit.ts1;
       data.fFlags                   = hit.flags;
