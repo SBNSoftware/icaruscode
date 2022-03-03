@@ -1,0 +1,10 @@
+#include "dissH_corsikap_M330.fcl"
+
+physics.producers.generator.Decay.AllowPionDecay: false
+physics.producers.generator.Decay.AllowPi0Decay: false
+
+physics.producers.generator.Decay.ReferenceHiggsMixing: 3e-5
+physics.producers.generator.Flux.MixingAngle: 3e-5
+
+physics.producers.generator.RayTrace.MaxWeightFudge: 1.
+physics.producers.generator.RayTrace.ReferenceLabSolidAngle: 1e-4
