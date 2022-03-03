@@ -8,6 +8,8 @@
 # Date:   March 2021
 #
 # Changes:
+# 20220126 (petrillo@slac.stanford.edu) [1.2]
+#   added --stream options
 # 20210429 (petrillo@slac.stanford.edu) [1.1]
 #   added --max option
 # 20210411 (petrillo@slac.stanford.edu) [1.0]
@@ -23,13 +25,17 @@ declare -r DecodeType='decoded'
 declare -r XRootDschema='root'
 declare -r dCacheLocation='dcache'
 declare -r TapeLocation='enstore'
+declare -r BNBstream='bnb'
+declare -r NuMIstream='numi'
+declare -r AnyStream=''
 
 declare -r DefaultType="$DecodeType"
 declare -r DefaultSchema="$XRootDschema"
 declare -r DefaultLocation="$dCacheLocation"
 declare -r DefaultDecoderStageName="stage0" # used to be 'decoder' up to a certain time
+declare -r DefaultStream="$AnyStream"
 
-declare -r DefaultOutputPattern="%TYPE%-run%RUN%%DASHSCHEMA%%DASHLOCATION%%DASHLIMIT%.filelist"
+declare -r DefaultOutputPattern="%TYPE%-run%RUN%%DASHSTREAM%%DASHSCHEMA%%DASHLOCATION%%DASHLIMIT%.filelist"
 
 # ------------------------------------------------------------------------------
 function isFlagSet() {
@@ -92,6 +98,11 @@ Options:
 --tape , --enstore , -T
 --disk , --dcache , -C
     select the storage type
+--stream=<${BNBstream}|${NuMIstream}|...>  [${DefaultStream}]
+--bnb
+--numi
+--allstreams
+    select the stream (if empty, all streams are included)
 
 --output=OUTPUTFILE
     use OUTPUTFILE for all output file lists
@@ -102,6 +113,7 @@ Options:
 --outputpattern=PATTERN  [${DefaultOutputPattern}]
     use PATTERN for the standard output file list (see option \`-O\` above);
     the following tags in PATTERN are replaced: \`%RUN%\` by the run number;
+    \`%STREAM%\` by the name of the data stream/beam;
     \`%SCHEMA%\` by the URL schema; \`%LOCATION%\` by the storage location;
     \`%TYPE%\` by the file content type; \`%LIMIT%\` by the number of requested
     entry, only if \`--max\` option is specified;
@@ -195,7 +207,7 @@ function BuildOutputFilePath() {
   
   local -A Replacements
   local VarName VarValue
-  for VarName in Run Type Schema Location Limit ; do
+  for VarName in Run Stream Type Schema Location Limit ; do
     VarValue="${!VarName}"
     Replacements["${VarName^^}"]="$VarValue"
     Replacements["DASH${VarName^^}"]="${VarValue:+"-${VarValue}"}"
@@ -226,6 +238,7 @@ declare OutputFile
 declare Type="$DefaultType"
 declare Schema="$DefaultSchema"
 declare Location="$DefaultLocation"
+declare Stream="$DefaultStream"
 declare OutputPattern="$DefaultOutputPattern"
 declare EntryLimit=''
 declare -i iParam
@@ -244,6 +257,11 @@ for (( iParam=1 ; iParam <= $# ; ++iParam )); do
       ( '--loc='* | '--location='* )      Location="${Param#--*=}" ;;
       ( '--dcache' | '--dCache' | '-C' )  Location="$dCacheLocation" ;;
       ( '--tape' | '--enstore' | '-T' )   Location="$TapeLocation" ;;
+      
+      ( '--stream='* )                    Stream="${Param#--*=}" ;;
+      ( '--bnb' | '--BNB' )               Stream="$BNBstream" ;;
+      ( '--numi' | '--NuMI' | '--NUMI' )  Stream="$NuMIstream" ;;
+      ( '--allstreams' )                  Stream="$AnyStream" ;;
       
       ( "--output="* )                    OutputFile="${Param#--*=}" ;;
       ( "--outputpattern="* )             OutputPattern="${Param#--*=}" ;;
@@ -304,6 +322,7 @@ case "${Type,,}" in
 #   echo "Type '${Type}' not supported!" >&2
 #   exit 1
 esac
+[[ -n "$Stream" ]] && Constraints+=" and sbn_dm.beam_type=${Stream}"
 [[ "${EntryLimit:-0}" -gt 0 ]] && Constraints+=" with limit ${EntryLimit}"
 
 
