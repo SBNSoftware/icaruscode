@@ -258,6 +258,7 @@ private:
     float                                   m_maxHit3DChiSquare;     ///< Provide ability to select hits based on "chi square"
     bool                                    m_saveMythicalPoints;    ///< Should we save valid 2 hit space points? 
     float                                   m_maxMythicalChiSquare;  ///< Selection cut on mythical points
+    float                                   m_minMythicalPH;         ///< Require a minimum pulse height for mythical pairs
     bool                                    m_useT0Offsets;          ///< If true then we will use the LArSoft interplane offsets
     bool                                    m_outputHistograms;      ///< Take the time to create and fill some histograms for diagnostics
    
@@ -350,6 +351,7 @@ void SnippetHit3DBuilderICARUS::configure(fhicl::ParameterSet const &pset)
     m_maxHit3DChiSquare    = pset.get<float                     >("MaxHitChiSquare",        6.0 );
     m_saveMythicalPoints   = pset.get<bool                      >("SaveMythicalPoints",     true);
     m_maxMythicalChiSquare = pset.get<float                     >("MaxMythicalChiSquare",    10.);
+    m_minMythicalPH        = pset.get<float                     >("MinMythicalPH",            8.);
     m_useT0Offsets         = pset.get<bool                      >("UseT0Offsets",           true);
     m_outputHistograms     = pset.get<bool                      >("OutputHistograms",      false);
 
@@ -962,11 +964,13 @@ int SnippetHit3DBuilderICARUS::saveOrphanPairs(HitMatchTripletVecMap& pairMap, r
                 // Require that one of the hits is on the collection plane
                 if (hit1->WireID().Plane == 2 || hit2->WireID().Plane == 2)
                 {
+                    const reco::ClusterHit3D& hit3D = std::get<2>(hit2Dhit3DPair);
+
                     // Allow cut on the quality of the space point
-                    if (std::get<2>(hit2Dhit3DPair).getHitChiSquare() < m_maxMythicalChiSquare)
+                    if (hit3D.getHitChiSquare() < m_maxMythicalChiSquare && hit1->getHit()->PeakAmplitude() > m_minMythicalPH && hit2->getHit()->PeakAmplitude() > m_minMythicalPH)
                     {
                         // Add to the list
-                        hitPairList.emplace_back(std::get<2>(hit2Dhit3DPair));
+                        hitPairList.emplace_back(hit3D);
                         hitPairList.back().setID(hitPairList.size()-1);
                     }
                 }
