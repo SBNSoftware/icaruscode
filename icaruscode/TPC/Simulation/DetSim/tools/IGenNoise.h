@@ -39,11 +39,14 @@ namespace icarus_tool
         
         virtual void generateNoise(CLHEP::HepRandomEngine& noise_engine,
                                    CLHEP::HepRandomEngine& cornoise_engine,
+                                   CLHEP::HepRandomEngine& noise32_engine,
                                    icarusutil::TimeVec&,
                                    detinfo::DetectorPropertiesData const& detProp,
                                    double, 
                                    const geo::PlaneID&,        // Gives Cryostat, TPC and Plane
-                                   unsigned int = 0) = 0;      // board ID
+                                   unsigned int = 0, 
+int =0
+) = 0;      // board ID
     };
 }
 

@@ -75,7 +75,7 @@ SBNDataNoiseBoardTool:
     tool_type:                 SBNDataNoiseBoard
     Plane:                     2                # All default values are for induction 1 (first induction)
     MedianNumBins:             25
-    NoiseRand:                 0.
+    NoiseRand:                 0.1
     CorrelatedSeed:            1000
     UncorrelatedSeed:          5000
     StoreHistograms:           false
@@ -83,6 +83,24 @@ SBNDataNoiseBoardTool:
     NoiseHistFileName:         "dataFFTBoardHistos.root"
     CorrelatedHistogramName:   "cohFFT"
     UncorrelatedHistogramName: "intFFT"
+    TotalRMSHistoName:         "rawRMS"
+    CorrelatedRMSHistoName:    "cohRMS"
+    UncorrelatedRMSHistoName:  "intRMS"
+}
+SBNDataNoiseBoard32Tool:
+{
+    tool_type:                 SBNDataNoiseBoard32
+    Plane:                     2                # All default values are for induction 1 (first induction)
+    MedianNumBins:             25
+    NoiseRand:                 0.1
+    CorrelatedSeed:            1000
+    UncorrelatedSeed:          5000
+    StoreHistograms:           false
+
+    NoiseHistFileName:         "dataFFTBoardHistos.root"
+    CorrelatedHistogramName:   "cohFFT"
+    UncorrelatedHistogramName: "intFFT"
+  Corr32HistogramName: "cohFFT"
     TotalRMSHistoName:         "rawRMS"
     CorrelatedRMSHistoName:    "cohRMS"
     UncorrelatedRMSHistoName:  "intRMS"
@@ -115,7 +133,21 @@ icarus_standard_simwire:
     NoiseGenToolVec:    [@local::SBNDataNoiseTool, @local::SBNDataNoiseTool, @local::SBNDataNoiseTool]
 
 }
+icarus_standard_simreadoutboard32:
+{
+    module_type:        "SimReadoutBoard32ICARUS"
+    DriftEModuleLabel:  "largeant"
+    CompressionType:    "none"
+    SimDeadChannels:    false
+    SuppressNoSignal:   false
+    SmearPedestals:     true
+    MakeHistograms:     "true"
+    TPCVec:             [ [0,0], [0,1], [1,0], [1,1] ]
+    
+    # This switches to an updated model, currently under development (Jul 2021), based on FNAL running
+    NoiseGenTool:       @local::SBNDataNoiseBoard32Tool
 
+}
 icarus_standard_simreadoutboard:
 {
     module_type:        "SimReadoutBoardICARUS"
@@ -134,6 +166,7 @@ icarus_standard_simreadoutboard:
 
 icarus_simwire:         @local::icarus_standard_simwire
 icarus_simreadoutboard: @local::icarus_standard_simreadoutboard
+icarus_simreadoutboard32: @local::icarus_standard_simreadoutboard32
 
 icarus_simwire.NoiseGenToolVec[0].Plane:             0
 # Below overrides for SBN Noise tool

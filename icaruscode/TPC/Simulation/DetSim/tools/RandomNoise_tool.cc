@@ -34,11 +34,12 @@ public:
 
     void generateNoise(CLHEP::HepRandomEngine& engine,
                        CLHEP::HepRandomEngine&,
+                       CLHEP::HepRandomEngine&,
                        icarusutil::TimeVec&,
                        detinfo::DetectorPropertiesData const&,
                        double,
                        const geo::PlaneID&,
-                       unsigned int) override;
+                       unsigned int, int) override;
     
 private:
     // Member variables from the fhicl file
@@ -69,11 +70,12 @@ void RandomNoise::configure(const fhicl::ParameterSet& pset)
 
 void RandomNoise::generateNoise(CLHEP::HepRandomEngine& engine,
                                 CLHEP::HepRandomEngine&,
+                                CLHEP::HepRandomEngine&,
                                 icarusutil::TimeVec& noise,
                                 detinfo::DetectorPropertiesData const&,
                                 double noise_factor,
                                 const geo::PlaneID&,
-                                unsigned int)
+                                unsigned int, int)
 {
     CLHEP::RandGaussQ                              rGauss(engine, 0.0, noise_factor);
     

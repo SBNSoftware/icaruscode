@@ -50,11 +50,12 @@ public:
 
     void generateNoise(CLHEP::HepRandomEngine& noise_engine,
                        CLHEP::HepRandomEngine& cornoise_engine,
+                       CLHEP::HepRandomEngine& noise32_engine,
                        icarusutil::TimeVec& noise,
                        detinfo::DetectorPropertiesData const&,
                        double noise_factor,
                        const geo::PlaneID&,
-                       unsigned int) override;
+                       unsigned int, int) override;
     
 private:
     void GenerateUncorrelatedNoise(CLHEP::HepRandomEngine&, icarusutil::TimeVec&, double);
@@ -229,11 +230,12 @@ void CorrelatedNoise::nextEvent()
 
 void CorrelatedNoise::generateNoise(CLHEP::HepRandomEngine& engine_unc,
                                     CLHEP::HepRandomEngine& engine_corr,
+                                    CLHEP::HepRandomEngine& engine_32,
                                     icarusutil::TimeVec&    noise,
                                     detinfo::DetectorPropertiesData const&,
                                     double                  noise_factor,
                                     const geo::PlaneID&     planeID,
-                                    unsigned int            board)
+                                    unsigned int            board, int)
 {
     // Define a couple of vectors to hold intermediate work
     icarusutil::TimeVec noise_unc(noise.size(),0.);

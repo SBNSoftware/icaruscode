@@ -25,11 +25,12 @@ public:
 
     void generateNoise(CLHEP::HepRandomEngine&,
                        CLHEP::HepRandomEngine&,
+                       CLHEP::HepRandomEngine&,
                        icarusutil::TimeVec&,
                        detinfo::DetectorPropertiesData const&,
                        double, 
                        const geo::PlaneID&, 
-                       unsigned int) override;
+                       unsigned int, int) override;
     
 private:
 
@@ -54,11 +55,12 @@ void NoNoise::configure(const fhicl::ParameterSet& pset)
 
 void NoNoise::generateNoise(CLHEP::HepRandomEngine&,
                             CLHEP::HepRandomEngine&,
+                            CLHEP::HepRandomEngine&,
                             icarusutil::TimeVec& noise,
                             detinfo::DetectorPropertiesData const&,
                             double noise_factor,
                             const geo::PlaneID&,
-                            unsigned int)
+                            unsigned int, int)
 {
     // Set all values to 0
     std::fill(noise.begin(), noise.end(), 0.);

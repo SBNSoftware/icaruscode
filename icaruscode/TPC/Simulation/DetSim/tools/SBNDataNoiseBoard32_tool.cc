@@ -1,5 +1,5 @@
 ////////////////////////////////////////////////////////////////////////
-/// \file   SBNDataNoiseBoard.cc
+/// \file   SBNDataNoiseBoard32.cc
 /// \author F. Varanini
 ////////////////////////////////////////////////////////////////////////
 
@@ -38,16 +38,16 @@
 namespace icarus_tool
 {
 
-class SBNDataNoiseBoard : IGenNoise
+class SBNDataNoiseBoard32 : IGenNoise
 {
 public:
-    explicit SBNDataNoiseBoard(const fhicl::ParameterSet& pset);
+    explicit SBNDataNoiseBoard32(const fhicl::ParameterSet& pset);
     
-    ~SBNDataNoiseBoard();
+    ~SBNDataNoiseBoard32();
     
-    void configure(const fhicl::ParameterSet& pset) override;
+    void configure(const fhicl::ParameterSet& pset) override ;
     
-    void nextEvent() override;
+    void nextEvent() override ;
    
     void generateNoise(CLHEP::HepRandomEngine&,
                        CLHEP::HepRandomEngine& ,
@@ -56,10 +56,11 @@ public:
                        detinfo::DetectorPropertiesData const&,
                        double,
                        const geo::PlaneID&,
-                       unsigned int, int) override;
+                       unsigned int, int )  override;
     
 private:
     void GenerateCorrelatedNoise(CLHEP::HepRandomEngine&, icarusutil::TimeVec&, double, unsigned int);
+void Generate32Noise(CLHEP::HepRandomEngine&, icarusutil::TimeVec&, double, unsigned int, int);
     void GenerateUncorrelatedNoise(CLHEP::HepRandomEngine&, icarusutil::TimeVec&, double, unsigned int);
     void GenNoise(std::function<void (double[])>&, const icarusutil::TimeVec&, const icarusutil::TimeVec&, icarusutil::TimeVec&, float);
     void ComputeRMSs();
@@ -80,6 +81,7 @@ private:
     std::string                                 fHistogramName;
     std::string                                 fCorrelatedHistogramName;
     std::string                                 fUncorrelatedHistogramName;
+std::string                                 f32HistogramName;
     std::string                                 fCorrelatedRMSHistoName;
     std::string                                 fUncorrelatedRMSHistoName;
     std::string                                 fTotalRMSHistoName;
@@ -96,6 +98,8 @@ private:
     BoardToNoiseVecMap                          fIncoherentBoardToNoiseVecMap;
     BoardToNoiseVecMap                          fCoherentBoardToNoiseWidthVecMap;
      BoardToNoiseVecMap                          fIncoherentBoardToNoiseWidthVecMap;
+  BoardToNoiseVecMap                          f32BoardToNoiseVecMap;
+    BoardToNoiseVecMap                          f32BoardToNoiseWidthVecMap;
 
     std::vector<icarusutil::TimeVec>            fCoherentNoiseVec;       //< Input full noise frequency distribution
     std::vector<icarusutil::TimeVec>            fIncoherentNoiseVec;       //< Input full noise frequency distribution
@@ -126,7 +130,7 @@ private:
     
 //----------------------------------------------------------------------
 // Constructor.
-SBNDataNoiseBoard::SBNDataNoiseBoard(const fhicl::ParameterSet& pset)
+SBNDataNoiseBoard32::SBNDataNoiseBoard32(const fhicl::ParameterSet& pset)
 {
     // Recover the configuration of the tool from the input fhicl file and set up
     configure(pset);
@@ -137,13 +141,13 @@ SBNDataNoiseBoard::SBNDataNoiseBoard(const fhicl::ParameterSet& pset)
     std::cout << " after making histos " << std::endl;
 }
     
-SBNDataNoiseBoard::~SBNDataNoiseBoard()
+SBNDataNoiseBoard32::~SBNDataNoiseBoard32()
 {
     // Close the input file
     fHistogramFile->Close();
 }
     
-void SBNDataNoiseBoard::configure(const fhicl::ParameterSet& pset)
+void SBNDataNoiseBoard32::configure(const fhicl::ParameterSet& pset)
 {
 std::cout << " configuring tool " << std::endl;
     // Recover the histogram used for noise generation
@@ -157,6 +161,7 @@ std::cout << " configuring tool " << std::endl;
     fInputNoiseHistFileName         = pset.get< std::string        >("NoiseHistFileName");
     fCorrelatedHistogramName        = pset.get< std::string        >("CorrelatedHistogramName");
     fUncorrelatedHistogramName      = pset.get< std::string        >("UncorrelatedHistogramName");
+    f32HistogramName      = pset.get< std::string        >("Corr32HistogramName");
     fCorrelatedRMSHistoName         = pset.get< std::string        >("CorrelatedRMSHistoName");
     fUncorrelatedRMSHistoName       = pset.get< std::string        >("UncorrelatedRMSHistoName");
     fTotalRMSHistoName              = pset.get< std::string        >("TotalRMSHistoName");
@@ -181,7 +186,7 @@ std::cout << " configuring tool " << std::endl;
     return;
 }
 
-void SBNDataNoiseBoard::makeBoardHistos(unsigned int board)
+void SBNDataNoiseBoard32::makeBoardHistos(unsigned int board)
 {
     if (fCoherentBoardToNoiseVecMap.find(board) == fCoherentBoardToNoiseVecMap.end())
     {
@@ -201,7 +206,24 @@ void SBNDataNoiseBoard::makeBoardHistos(unsigned int board)
         for(size_t histIdx = 0; histIdx < size_t(corrHistPtr->GetNbinsX()); histIdx++) noiseVec[histIdx] = corrHistPtr->GetBinContent(histIdx+1);
         for(size_t histIdx = 0; histIdx < size_t(corrHistPtr->GetNbinsX()); histIdx++) widthVec[histIdx] = corrHistPtr->GetBinError(histIdx+1);
     }
+    if (f32BoardToNoiseVecMap.find(board) == f32BoardToNoiseVecMap.end())
+    {
+    //   std::cout << "opening input file: " << fCorrelatedHistogramName << std::endl;    
 
+        TH1D* corr32HistPtr = (TH1D*)fHistogramFile->Get((f32HistogramName+std::to_string(board)).c_str());    
+        if (!corr32HistPtr)
+            throw cet::exception("NoiseFromHist::configure") << "Unable to recover desired histogram: " << f32HistogramName+std::to_string(board) << std::endl;
+
+        icarusutil::TimeVec& noiseVec = f32BoardToNoiseVecMap[board];
+        icarusutil::TimeVec& widthVec = f32BoardToNoiseWidthVecMap[board];
+
+        noiseVec.resize(corr32HistPtr->GetNbinsX(),0.);
+        widthVec.resize(corr32HistPtr->GetNbinsX(),0.);
+  //for(size_t histIdx = 0; histIdx < size_t(corrHistPtr->GetNbinsX()); histIdx++) 
+   // std::cout << " idx " << histIdx << " histo content " << corrHistPtr->GetBinContent(histIdx+1) << " histo width " << corrHistPtr->GetBinError(histIdx+1) << std::endl;
+        for(size_t histIdx = 0; histIdx < size_t(corr32HistPtr->GetNbinsX()); histIdx++) noiseVec[histIdx] = corr32HistPtr->GetBinContent(histIdx+1);
+        for(size_t histIdx = 0; histIdx < size_t(corr32HistPtr->GetNbinsX()); histIdx++) widthVec[histIdx] = corr32HistPtr->GetBinError(histIdx+1);
+    }
     if(fIncoherentBoardToNoiseVecMap.find(board) == fIncoherentBoardToNoiseVecMap.end())
     {
         TH1D* uncorrHistPtr = (TH1D*)fHistogramFile->Get((fUncorrelatedHistogramName+std::to_string(board)).c_str());    
@@ -244,27 +266,27 @@ icarusutil::TimeVec& noiseVec = fIncoherentBoardToNoiseVecMap[board];
     //SampleCorrelatedRMSs();
 }
 
-void SBNDataNoiseBoard::nextEvent()
+void SBNDataNoiseBoard32::nextEvent()
 {
     // We update the correlated seed because we want to see different noise event-by-event
     fCorrelatedSeed   = (333 * fCorrelatedSeed) % 900000000;
     SampleCorrelatedRMSs();
-
+std::cout << " end nextevent " << std::endl;
     return;
 }
 
-void SBNDataNoiseBoard::generateNoise(CLHEP::HepRandomEngine&                engine_unc,
+void SBNDataNoiseBoard32::generateNoise(CLHEP::HepRandomEngine&                engine_unc,
                                       CLHEP::HepRandomEngine&                engine_corr,
                                       CLHEP::HepRandomEngine&                engine_32,
                                       icarusutil::TimeVec&                   noise,
                                       detinfo::DetectorPropertiesData const&,
                                       double                                 noise_factor,
                                       const geo::PlaneID&                    planeID,
-                                      unsigned int                           board, int)
+                                      unsigned int                           board, int hboard)
 {
     makeBoardHistos(board);
 
-    //std::cout << " generating noise channel " << channel << std::endl;
+    std::cout << " generating noise board " << board << std::endl;
     //GET THE GEOMETRY.
     art::ServiceHandle<geo::Geometry> geom;
 
@@ -276,6 +298,8 @@ void SBNDataNoiseBoard::generateNoise(CLHEP::HepRandomEngine&                eng
     // Define a couple of vectors to hold intermediate work
     icarusutil::TimeVec noise_unc(noise.size(),0.);
     icarusutil::TimeVec noise_corr(noise.size(),0.);
+    icarusutil::TimeVec noise_32(noise.size(),0.);
+    icarusutil::TimeVec noise_temp(noise.size(),0.);
     
     // Make sure the work vector is size right with the output
     if (fNoiseFrequencyVec.size() != noise.size()) fNoiseFrequencyVec.resize(noise.size(),std::complex<float>(0.,0.));
@@ -284,13 +308,16 @@ void SBNDataNoiseBoard::generateNoise(CLHEP::HepRandomEngine&                eng
     GenerateUncorrelatedNoise(engine_unc,noise_unc,noise_factor, board); 
 
     GenerateCorrelatedNoise(engine_corr, noise_corr, noise_factor, board);
+std::cout << " before generating 32 " << std::endl;
 
-    // std::cout <<  " summing noise " << std::endl;
+    Generate32Noise(engine_32, noise_32, noise_factor, board, hboard);
+
+    std::cout <<  " summing noise " << std::endl;
     // Take the noise as the simple sum of the two contributions
-    std::transform(noise_unc.begin(),noise_unc.end(),noise_corr.begin(),noise.begin(),std::plus<float>());
+    std::transform(noise_unc.begin(),noise_unc.end(),noise_corr.begin(),noise_temp.begin(),std::plus<float>());
+    std::transform(noise_temp.begin(),noise_temp.end(),noise_32.begin(),noise.begin(),std::plus<float>());
     
 //    float mediaNoise=0;
-//    for(unsigned int jn=0;jn<noise.size();jn++) mediaNoise+=noise.at(jn);
 
 //    mediaNoise/=(noise.size());
 
@@ -300,7 +327,7 @@ void SBNDataNoiseBoard::generateNoise(CLHEP::HepRandomEngine&                eng
     return;
 }
     
-void SBNDataNoiseBoard::GenerateUncorrelatedNoise(CLHEP::HepRandomEngine& engine, icarusutil::TimeVec &noise, double noise_factor, unsigned int board)
+void SBNDataNoiseBoard32::GenerateUncorrelatedNoise(CLHEP::HepRandomEngine& engine, icarusutil::TimeVec &noise, double noise_factor, unsigned int board)
 {
     // Here we aim to produce a waveform consisting of incoherent noise
     // Note that this is expected to be the dominate noise contribution
@@ -310,7 +337,7 @@ void SBNDataNoiseBoard::GenerateUncorrelatedNoise(CLHEP::HepRandomEngine& engine
         engine.setSeed(fUncorrelatedSeed,0);
         fNeedFirstSeed = false;
     }
-    
+    std::cout << " unc seed " << fUncorrelatedSeed << std::endl;
     // Get the generator
     CLHEP::RandFlat noiseGen(engine,0,1);
     
@@ -321,7 +348,7 @@ void SBNDataNoiseBoard::GenerateUncorrelatedNoise(CLHEP::HepRandomEngine& engine
     return;
 }
     
-void SBNDataNoiseBoard::GenerateCorrelatedNoise(CLHEP::HepRandomEngine& engine, icarusutil::TimeVec &noise, double noise_factor, unsigned int board)
+void SBNDataNoiseBoard32::GenerateCorrelatedNoise(CLHEP::HepRandomEngine& engine, icarusutil::TimeVec &noise, double noise_factor, unsigned int board)
 {    
    
     // Set the engine seed to the board being considered
@@ -335,8 +362,22 @@ void SBNDataNoiseBoard::GenerateCorrelatedNoise(CLHEP::HepRandomEngine& engine, 
     
     return;
 }
+void SBNDataNoiseBoard32::Generate32Noise(CLHEP::HepRandomEngine& engine, icarusutil::TimeVec &noise, double noise_factor, unsigned int board, int hboard)
+{    
+   
+    // Set the engine seed to the board being considered
+    engine.setSeed(fCorrelatedSeed+2*board+hboard,0);
+   // std::cout << " after setting seed " << std::endl;
+    CLHEP::RandFlat noiseGen(engine,0,1);
     
-void SBNDataNoiseBoard::GenNoise(std::function<void (double[])>& gen,const icarusutil::TimeVec& freqDist,const icarusutil::TimeVec& width, icarusutil::TimeVec& noise, float scaleFactor)
+    std::function<void (double[])> randGenFunc = [&noiseGen](double randArray[]){noiseGen.fireArray(2,randArray);};
+
+    GenNoise(randGenFunc, f32BoardToNoiseVecMap[board], f32BoardToNoiseWidthVecMap[board], noise, noise_factor);
+  // std::cout << " noise " << noise.at(0) << std::endl;
+    return;
+}
+    
+void SBNDataNoiseBoard32::GenNoise(std::function<void (double[])>& gen,const icarusutil::TimeVec& freqDist,const icarusutil::TimeVec& width, icarusutil::TimeVec& noise, float scaleFactor)
 {
     double rnd_corr[2] = {0.,0.};
     // std::cout << " noise size " << noise.size() << std::endl;
@@ -368,25 +409,25 @@ float relWidth=width[i]/freqDist[i];
     return;
 }
 
-void SBNDataNoiseBoard::makeHistograms()
+void SBNDataNoiseBoard32::makeHistograms()
 {
     
     return;
 }
    
-void SBNDataNoiseBoard::ComputeRMSs()
+void SBNDataNoiseBoard32::ComputeRMSs()
 {
 
 
 }
-void SBNDataNoiseBoard::SampleCorrelatedRMSs() 
+void SBNDataNoiseBoard32::SampleCorrelatedRMSs() 
 {
 
 }
-void SBNDataNoiseBoard::ExtractUncorrelatedRMS(float& cf, int channel, int index) const
+void SBNDataNoiseBoard32::ExtractUncorrelatedRMS(float& cf, int channel, int index) const
 {
 }
     
  
-DEFINE_ART_CLASS_TOOL(SBNDataNoiseBoard)
+DEFINE_ART_CLASS_TOOL(SBNDataNoiseBoard32)
 }

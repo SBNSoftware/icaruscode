@@ -50,11 +50,13 @@ public:
 
     void generateNoise(CLHEP::HepRandomEngine& noise_engine,
                        CLHEP::HepRandomEngine& cornoise_engine,
+                       CLHEP::HepRandomEngine& noise32_engine,
                        icarusutil::TimeVec& noise,
                        detinfo::DetectorPropertiesData const&,
                        double noise_factor,
                        const geo::PlaneID&,
-                       unsigned int board) override;
+                       unsigned int board, int)
+ override;
     
 private:
     void GenerateCorrelatedNoise(CLHEP::HepRandomEngine&, icarusutil::TimeVec&, double, unsigned int);
@@ -238,11 +240,12 @@ void SBNNoise::nextEvent()
 
 void SBNNoise::generateNoise(CLHEP::HepRandomEngine& engine_unc,
                                     CLHEP::HepRandomEngine& engine_corr,
+                                    CLHEP::HepRandomEngine& engine_32,
                                     icarusutil::TimeVec&     noise,
                              detinfo::DetectorPropertiesData const&,
                                     double                  noise_factor,
                                     const geo::PlaneID&     planeID,
-                                    unsigned int            board)
+                                    unsigned int            board, int)
 {
 noise_factor=totalRMS;
 //std::cout <<  " generating noise " << std::endl;
