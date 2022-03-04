@@ -171,6 +171,7 @@ public:
         tree->Branch("SP_y",               "std::vector<float>", &fSP_y);
         tree->Branch("SP_z",               "std::vector<float>", &fSP_z);
 
+        tree->Branch("Num2DHits",          "std::vector<int>",   &fNum2DHitsVec);
         tree->Branch("NumLongHitsSP",      "std::vector<int>",   &fNumLongHitsVec);
         tree->Branch("NumPlanesSimMatch",  "std::vector<int>",   &fNumPlanesSimMatchVec);
         tree->Branch("NumIntersectSet",    "std::vector<int>",   &fNumIntersectSetVec);
@@ -210,6 +211,7 @@ public:
         fSP_y.clear();
         fSP_z.clear();
 
+        fNum2DHitsVec.clear();
         fNumLongHitsVec.clear();
         fNumPlanesSimMatchVec.clear();
         fNumIntersectSetVec.clear();
@@ -241,6 +243,7 @@ public:
     std::vector<float> fSP_y;
     std::vector<float> fSP_z;
 
+    std::vector<int>   fNum2DHitsVec;
     std::vector<int>   fNumLongHitsVec;
     std::vector<int>   fNumPlanesSimMatchVec;
     std::vector<int>   fNumIntersectSetVec;
@@ -540,7 +543,7 @@ void SpacePointAnalysis::processSpacePoints(const art::Event&                  e
 
             std::vector<art::Ptr<recob::Hit>> associatedHits(spHitAssnVec.at(spacePointPtr.key()));
 
-            if (associatedHits.size() != 3)
+            if (associatedHits.size() < 2)
             {
                 mf::LogDebug("SpacePointAnalysis") << "I am certain this cannot happen... but here you go, space point with " << associatedHits.size() << " hits" << std::endl;
                 continue;
@@ -567,7 +570,7 @@ void SpacePointAnalysis::processSpacePoints(const art::Event&                  e
             float              averagePT       = 0.;
             float              largestDelT     = 0.;
             float              smallestDelT    = 100000.;
-            std::vector<float> hitPeakTimeVec  = {-100.,-200.,-300.};
+            std::vector<float> hitPeakTimeVec  = {-10000.,-20000.,-30000.};
             std::vector<float> hitPeakRMSVec   = {1000.,1000.,1000.};
             int                hitMultProduct  = 1;
             int                numLongHits(0);
@@ -577,6 +580,8 @@ void SpacePointAnalysis::processSpacePoints(const art::Event&                  e
 
             std::vector<const recob::Hit*> recobHitVec(3,nullptr);
 
+            std::vector<float> peakAmpVec;
+
             // Now we can use our maps to find out if the hits making up the SpacePoint are truly related...
             for(const auto& hitPtr : associatedHits)
             {
@@ -584,6 +589,8 @@ void SpacePointAnalysis::processSpacePoints(const art::Event&                  e
                 float peakTime      = hitPtr->PeakTime();
                 float rms           = hitPtr->RMS();
                 int   plane         = hitPtr->WireID().Plane;
+
+                peakAmpVec.emplace_back(peakAmplitude);
 
                 // Add to the set
                 uniqueHitMap[hitPtr.get()] = nSpacePointsInPFParticle;
@@ -605,6 +612,7 @@ void SpacePointAnalysis::processSpacePoints(const art::Event&                  e
                 cryostat = hitPtr->WireID().Cryostat;
                 tpc      = hitPtr->WireID().TPC;
             }
+
             Triplet hitTriplet(recobHitVec[0],recobHitVec[1],recobHitVec[2]);
 
             tripletMap[hitTriplet].emplace_back(spacePointPtr.get());
@@ -614,6 +622,9 @@ void SpacePointAnalysis::processSpacePoints(const art::Event&                  e
 
             for(size_t planeIdx = 0; planeIdx < 3; planeIdx++)
             {
+                // Skip if hit missing
+                if (hitPeakTimeVec[planeIdx] < 0) continue;
+
                 float delT = hitPeakTimeVec[planeIdx] - averagePT;
                 if (std::abs(delT) > std::abs(largestDelT))  largestDelT  = delT;
                 if (std::abs(delT) < std::abs(smallestDelT)) smallestDelT = delT;
@@ -630,6 +641,7 @@ void SpacePointAnalysis::processSpacePoints(const art::Event&                  e
             fHitSpacePointObj.fAveragePHVec.emplace_back(averagePH);
             fHitSpacePointObj.fLargestDelTVec.emplace_back(largestDelT);
             fHitSpacePointObj.fSmallestDelTVec.emplace_back(smallestDelT);
+            fHitSpacePointObj.fNum2DHitsVec.emplace_back(numHits);
             fHitSpacePointObj.fNumLongHitsVec.emplace_back(numLongHits);
             fHitSpacePointObj.fNumIntersectSetVec.emplace_back(numIntersections);
             fHitSpacePointObj.fClusterNSPVec.emplace_back(nSpacePointsInPFParticle);
