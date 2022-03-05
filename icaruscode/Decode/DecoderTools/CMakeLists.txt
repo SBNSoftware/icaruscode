@@ -5,6 +5,8 @@ cet_enable_asserts()
 add_subdirectory("Dumpers")
 
 art_make( SUBDIRS details
+          EXCLUDE
+                        triggerPacketParser.cxx
           LIB_LIBRARIES
                         icaruscode_Utilities
                         sbnobj_Common_PMT_Data
@@ -47,6 +49,12 @@ art_make( SUBDIRS details
                         ${FHICLCPP}
                         cetlib cetlib_except
         )
+
+cet_make_exec(NAME triggerPacketParser
+  LIBRARIES PRIVATE
+    icaruscode_Decode_DecoderTools
+    Boost::program_options
+)
 
 install_headers()
 install_fhicl()
