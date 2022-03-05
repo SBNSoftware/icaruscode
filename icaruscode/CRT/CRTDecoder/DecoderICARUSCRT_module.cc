@@ -454,7 +454,7 @@ void crt::DecoderICARUSCRT::produce(art::Event& evt)
     else { //not side CRT, therefore top CRT
       //this code needs review by the TOP CRT group!!!
         icarus::crt::CRTData data;
-        data.fMac5  = hit.mac5;         //warning, new mapping needed here!!!
+        data.fMac5  = fChannelMap->gettopSimMacAddress(hit.mac5); 
         data.fTs0   = CalculateTimestamp(hit);
         data.fTs1   = hit.ts1;
         data.fFlags                   = hit.flags;
