@@ -21,8 +21,9 @@
 #include "icaruscode/PMT/Trigger/Algorithms/details/EventInfoUtils.h"
 #include "icaruscode/PMT/Trigger/Algorithms/details/EventInfo_t.h"
 #include "icaruscode/PMT/Trigger/Utilities/PlotSandbox.h"
-#include "sbnobj/ICARUS/PMT/Trigger/Data/MultiChannelOpticalTriggerGate.h"
+#include "icaruscode/PMT/Trigger/Utilities/TrackedOpticalTriggerGate.h"
 #include "icaruscode/Utilities/DetectorClocksHelpers.h" // makeDetClockData()
+#include "icaruscode/IcarusObj/OpDetWaveformMeta.h"
 #include "icarusalg/Utilities/ChangeMonitor.h" // ThreadSafeChangeMonitor
 #include "icarusalg/Utilities/PassCounter.h"
 
@@ -375,27 +376,33 @@ struct icarus::trigger::details::PlotInfoTree: public TreeHolder {
  *       `icarus::trigger::ReadoutTriggerGate`, and many coding tools will call
  *       it in the latter way.
  * 
- * The class `icarus::trigger::OpticalTriggerGate` is currently the most
- * commonly used in the code. It adds to the information of
- * `icarus::trigger::ReadoutTriggerGate`, from which it derives, a list of
- * optical waveforms (`raw::OpDetWaveform`) it originates from.
+ * It is often convenient to track for each trigger gate object which input
+ * contributed to it, both in terms of channels and of single waveforms.
+ * The list of channels is embedded in `icarus::trigger::ReadoutTriggerGate`,
+ * while the list of source waveforms is not. An additional wrapper object,
+ * `icarus::trigger::TrackedOpticalTriggerGate`, contains a trigger gate proper
+ * (`icarus::trigger::ReadoutTriggerGate`) and a list of pointers to the source
+ * waveforms. In most of the code the source is represented by metadata
+ * (`sbn::OpDetWaveformMeta`) rather than the full waveforms
+ * (`raw::OpDetWaveform`) so that the bulk of the data is not necessary for the
+ * vast majority of the uses, and it can be dropped.
  * 
- * Finally, the classes `icarus::trigger::SingleChannelOpticalTriggerGate` and
- * `icarus::trigger::MultiChannelOpticalTriggerGate` do not add any information
- * to the `icarus::trigger::OpticalTriggerGate` they derive from, but they
- * have an interface explicitly tuned for discriminated waveforms from a single
- * channel or from multiple channels, respectively (for example, the former
- * provides a `channel()` method returning a single channel identifier, while
- * the latter provides a `channels()` method returning a list of channels).
+ * Utilities are available to manage the serialization of
+ * `icarus::trigger::TrackedOpticalTriggerGate` objects
+ * (`icaruscode/PMT/Trigger/Utilities/TriggerDataUtils.h`), which is implemented
+ * as a trigger gate collection and a association object
  * 
- * These three higher level classes, `icarus::trigger::OpticalTriggerGate` and
- * derivatives, _can't be directly saved_ in _art_ ROOT files.
  * There are utilities available in
  * `icaruscode/PMT/Trigger/Utilities/TriggerDataUtils.h` that can convert them
  * into a collection of `icarus::trigger::OpticalTriggerGateData_t` objects
  * plus a collection of _art_ associations (for writing), and the other way
- * around (for reading). The module `icarus::trigger::LVDSgates` uses both sides
- * and can be used as an illustration of the functionality.
+ * around (for reading). Additional utilities allow to bridge between
+ * the waveform metadata and their original waveforms
+ * (`icaruscode/PMT/Trigger/Utilities/OpDetWaveformMetaMatcher.h`), which is
+ * needed when a producer utilising the metadata and combining trigger gates
+ * wants to save associations not only of the gates with the metadata,
+ * but also with the original waveforms. The module `icarus::trigger::LVDSgates`
+ * uses all of them and can be used as an illustration of the functionality.
  * 
  * A module is provided, called `icarus::trigger::DumpTriggerGateData`, which
  * dumps on screen or on text file the information from a collection of
@@ -1218,7 +1225,8 @@ class icarus::trigger::TriggerEfficiencyPlotsBase {
   }; // SettingsInfo_t
   
   /// Type of trigger gate extracted from the input event.
-  using InputTriggerGate_t = icarus::trigger::MultiChannelOpticalTriggerGate;
+  using InputTriggerGate_t
+    = icarus::trigger::TrackedOpticalTriggerGate<sbn::OpDetWaveformMeta>;
   
   /// A list of trigger gates from input.
   using TriggerGates_t = std::vector<InputTriggerGate_t>;
@@ -1226,11 +1234,8 @@ class icarus::trigger::TriggerEfficiencyPlotsBase {
   /// Type of lists of gates, one list per cryostat (outer index: cryostat no).
   using TriggerGatesPerCryostat_t = std::vector<TriggerGates_t>;
   
-  /// Type of gate data without channel information.
-  using TriggerGateData_t = InputTriggerGate_t::GateData_t;
-  
   /// Type representing the unique identifier of a optical detector channel.
-  using ChannelID_t = InputTriggerGate_t::ChannelID_t;
+  using ChannelID_t = InputTriggerGate_t::TriggerGate_t::ChannelID_t;
   
   
   /// A collection of useful beam gates. Make one with `makeGatePack()`.
