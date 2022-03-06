@@ -221,6 +221,8 @@ void SimTestPulse::produce(art::Event & e)
                                geo::Point_t(chargeDepCoords.X(),chargeDepCoords.Y()+0.001,chargeDepCoords.Z()+0.001),
                                geo::Point_t(chargeDepCoords.X(),chargeDepCoords.Y()-0.001,chargeDepCoords.Z()-0.001));
 
+        geo::PlaneID collectionPlaneID(0,0,2);
+
         for(size_t plane=0; plane<3; ++plane) {
             geo::PlaneID planeID(0,0,plane);
             double       xyz[3] = {chargeDepCoords.X(),chargeDepCoords.Y(),chargeDepCoords.Z()};
@@ -245,8 +247,9 @@ void SimTestPulse::produce(art::Event & e)
                     throw std::exception();
             }
             sim::SimChannel sch(channel);
+            unsigned planeTDC = clockData.TPCTick2TDC(pulse_record.tick + detProp.GetXTicksOffset(planeID) - detProp.GetXTicksOffset(collectionPlaneID));
             sch.AddIonizationElectrons(1,   /// track id, keep 0 = invalid
-                                       (unsigned int)tdc,
+                                       (unsigned int)planeTDC,
                                        fNumElectrons_v[index],
                                        xyz,
                                        100.); /// energy, keep -1 = invalid
