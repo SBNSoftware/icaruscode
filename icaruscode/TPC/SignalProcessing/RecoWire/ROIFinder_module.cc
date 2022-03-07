@@ -185,7 +185,7 @@ void ROIFinder::reconfigure(fhicl::ParameterSet const& pset)
     // Recover the parameters
     fWireModuleLabelVec    = pset.get<std::vector<art::InputTag>>("WireModuleLabelVec",   std::vector<art::InputTag>()={"decon1droi"});
     fOutInstanceLabelVec   = pset.get<std::vector<std::string>>  ("OutInstanceLabelVec",                            {"PHYSCRATEDATA"});
-    fCorrectROIBaseline    = pset.get<bool                      >("CorrectROIBaseline",                                          true);
+    fCorrectROIBaseline    = pset.get<bool                      >("CorrectROIBaseline",                                         false);
     fMinSizeForCorrection  = pset.get<size_t                    >("MinSizeForCorrection",                                          12);
     fMaxSizeForCorrection  = pset.get<size_t                    >("MaxSizeForCorrection",                                         512);
     fOutputMorphed         = pset.get< bool                     >("OutputMorphed",                                               true);

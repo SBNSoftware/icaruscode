@@ -10,11 +10,11 @@
 #include "icaruscode/PMT/Trigger/Algorithms/BeamGateStruct.h"
 #include "icaruscode/PMT/Trigger/Algorithms/BeamGateMaker.h"
 #include "icaruscode/PMT/Trigger/Algorithms/TriggerTypes.h" // ADCCounts_t
+#include "icaruscode/PMT/Trigger/Utilities/TriggerGateOperations.h" // sumGates()
 #include "icaruscode/PMT/Trigger/Utilities/TriggerDataUtils.h" // FillTriggerGates()
 #include "icaruscode/PMT/Trigger/Utilities/PlotSandbox.h"
 #include "icarusalg/Utilities/ROOTutils.h" // util::ROOT
 #include "sbnobj/ICARUS/PMT/Trigger/Data/OpticalTriggerGate.h"
-#include "sbnobj/ICARUS/PMT/Trigger/Data/MultiChannelOpticalTriggerGate.h"
 
 // LArSoft libraries
 #include "lardata/DetectorInfoServices/DetectorClocksService.h"
@@ -583,6 +583,10 @@ namespace icarus::trigger { class TriggerEfficiencyPlots; }
 /**
  * @brief Produces plots about trigger simulation and trigger efficiency.
  * 
+ * @deprecated This module is deprecated for the ones derived from
+ * `icarus::trigger::TriggerEfficiencyPlotsBase`
+ * (e.g. `SlidingWindowTriggerEfficiencyPlots`).
+ * 
  * This module produces sets of plots based on trigger primitives given in
  * input.
  * 
@@ -652,85 +656,9 @@ namespace icarus::trigger { class TriggerEfficiencyPlots; }
  * @anchor TriggerEfficiencyPlots_Data
  * Data objects for discriminated waveforms
  * -----------------------------------------
- *
- * A discriminated waveform is the information whether the level of a waveform
- * is beyond threshold, as function of time.
- * A discriminated waveform may be binary, i.e. with only levels `0` and `1`
- * based on a single threshold, or with multiple levels.
- * Also the numerical _addition_ of two binary discriminated waveforms
- * yields a multi-level waveform (in fact, three levels -- `0`, `1` and `2`).
  * 
- * We represent this data in the forms of "events": an event is a change of
- * level happening at a certain time. The class holding this information,
- * `icarus::trigger::TriggerGateData`, covers the whole time, starting with a
- * ground level `0`. The next event will be a "opening" that increases the
- * level, usually to `1`. Other changing events may follow, and typically the
- * last one will bring the level back to `0`.
- * 
- * This information is joined by a list of _channel numbers_ in order to
- * represent a discriminated waveform e.g. from the optical detector.
- * There may be one or more channels associated to a discriminated waveform,
- * but for us there should always be at least one.
- * The discriminated waveforms from PMT readout (`raw::OpDetWaveform`) are
- * associated to a single channel, while LVDS trigger primitives are most often
- * associated to two channels (some channels are not paired and will have only
- * one channel). A sliding window will have as many channels as the PMT it
- * covers. The global trigger should have _all_ channels, while in ICARUS each
- * of the two discriminated wabeforms from a cryostat should have half the
- * channels.
- * This information is represented in the class
- * `icarus::trigger::ReadoutTriggerGate`, which inherits from
- * `icarus::trigger::TriggerGateData`.
- * This class is generic and can hold any representation for the time of the
- * level changing events, for the levels, and for the identifiers of the
- * channels. ICARUS specifies a data type for each of these quantities, and
- * the resulting `icarus::trigger::ReadoutTriggerGate` class instance is called
- * `icarus::trigger::OpticalTriggerGateData_t`.
- * 
- * @note The class `icarus::trigger::OpticalTriggerGateData_t` is the one that
- *       gets written to disk in the _art_ ROOT files.
- *       That is not a class by itself, but rather an alias of
- *       `icarus::trigger::ReadoutTriggerGate`, and many coding tools will call
- *       it in the latter way.
- * 
- * The class `icarus::trigger::OpticalTriggerGate` is currently the most
- * commonly used in the code. It adds to the information of
- * `icarus::trigger::ReadoutTriggerGate`, from which it derives, a list of
- * optical waveforms (`raw::OpDetWaveform`) it originates from.
- * 
- * Finally, the classes `icarus::trigger::SingleChannelOpticalTriggerGate` and
- * `icarus::trigger::MultiChannelOpticalTriggerGate` do not add any information
- * to the `icarus::trigger::OpticalTriggerGate` they derive from, but they
- * have an interface explicitly tuned for discriminated waveforms from a single
- * channel or from multiple channels, respectively (for example, the former
- * provides a `channel()` method returning a single channel identifier, while
- * the latter provides a `channels()` method returning a list of channels).
- * 
- * These three higher level classes, `icarus::trigger::OpticalTriggerGate` and
- * derivatives, _can't be directly saved_ in _art_ ROOT files.
- * There are utilities available in
- * `icaruscode/PMT/Trigger/Utilities/TriggerDataUtils.h` that can convert them
- * into a collection of `icarus::trigger::OpticalTriggerGateData_t` objects
- * plus a collection of _art_ associations (for writing), and the other way
- * around (for reading). The module `icarus::trigger::LVDSgates` uses both sides
- * and can be used as an illustration of the functionality.
- * 
- * A module is provided, called `icarus::trigger::DumpTriggerGateData`, which
- * dumps on screen or on text file the information from a collection of
- * discriminated waveforms in a (sort-of) human readable format.
- * An example configuration for this module is provided in `icaruscode`, called
- * `dump_triggergatedata_icarus.fcl`.
- * 
- * The main functions to manipulate the trigger gates are defined in the very
- * base class, `icarus::trigger::TriggerGateData`: these allow e.g. to find
- * events and query the level at a given time.
- * Another important set of features is also present in
- * `icarus::trigger::TriggerGateData` and replicated in the higher levels:
- * the combination of trigger gates by sum (`OR`), multiplication (_AND_),
- * minimum and maximum value.
- * 
- * @note Combining a multi-level gate via `Min()` with a binary gate results
- *       into a binary gate which is logic AND of the two gates.
+ * See the documentation of 
+ * @ref TriggerEfficiencyPlotsBase_Data "icarus::trigger::TriggerEfficiencyPlotsBase".
  * 
  * 
  * On the terminology
@@ -1397,6 +1325,10 @@ class icarus::trigger::TriggerEfficiencyPlots: public art::EDAnalyzer {
   
     private:
   
+  /// Reconstituted trigger gate type internally used.
+  using TrackedTriggerGate_t
+    = icarus::trigger::TrackedOpticalTriggerGate<sbn::OpDetWaveformMeta>;
+  
   /// Type of gate data without channel information.
   using TriggerGateData_t
     = icarus::trigger::OpticalTriggerGateData_t::GateData_t;
@@ -1549,7 +1481,7 @@ class icarus::trigger::TriggerEfficiencyPlots: public art::EDAnalyzer {
     ) const;
 
   /// Reads a set of input gates from the `event`.
-  std::vector<std::vector<icarus::trigger::MultiChannelOpticalTriggerGate>> ReadTriggerGates
+  std::vector<std::vector<TrackedTriggerGate_t>> ReadTriggerGates
     (art::Event const& event, art::InputTag const& dataTag) const;
   
   static std::string thrAndCatName
@@ -1633,9 +1565,8 @@ icarus::trigger::TriggerEfficiencyPlots::TriggerEfficiencyPlots
   
   // trigger primitives
   for (art::InputTag const& inputDataTag: util::const_values(fADCthresholds)) {
-    consumes<std::vector<OpticalTriggerGateData_t>>(inputDataTag);
-    consumes<art::Assns<OpticalTriggerGateData_t, raw::OpDetWaveform>>
-      (inputDataTag);
+    icarus::trigger::TriggerGateReader{ inputDataTag }
+      .declareConsumes(consumesCollector());
   } // for
 
   //
@@ -1728,9 +1659,10 @@ void icarus::trigger::TriggerEfficiencyPlots::analyze(art::Event const& event) {
     //
 
     std::vector<TriggerGateData_t> primitiveCounts;
-    std::vector<TriggerGateData_t> combinedTriggerPrimitives = combineTriggerPrimitives(event, threshold, dataTag);
+    std::vector<TriggerGateData_t> combinedTriggerPrimitives
+      = combineTriggerPrimitives(event, threshold, dataTag);
 
-    for (TriggerGateData_t combinedPrimitive : (combinedTriggerPrimitives)) {
+    for (TriggerGateData_t combinedPrimitive: combinedTriggerPrimitives) {
       TriggerGateData_t const primitiveCount
         = combinedPrimitive.Mul(beam_gate);
 
@@ -2256,7 +2188,7 @@ auto icarus::trigger::TriggerEfficiencyPlots::combineTriggerPrimitives(
   // simple count
   //
 
-  std::vector<std::vector<icarus::trigger::MultiChannelOpticalTriggerGate>> const& cryoGates
+  std::vector<std::vector<TrackedTriggerGate_t>> const& cryoGates
     = ReadTriggerGates(event, dataTag);
 
   std::vector<TriggerGateData_t> cryoCombinedGate;
@@ -2266,21 +2198,16 @@ auto icarus::trigger::TriggerEfficiencyPlots::combineTriggerPrimitives(
       << "Simulating trigger response with ADC threshold " << threshold
       << " from '" << dataTag.encode() << "' (" << gates.size() << " primitives)";
 
-    TriggerGateData_t combinedGate;
-
-    auto itGate = gates.begin();
-    auto const gend = gates.end();
-    if (itGate == gend) { // this is unexpected...
+    if (gates.empty()) { // this is unexpected...
       mf::LogWarning(fLogCategory)
         << "  No trigger primitive found for threshold " << threshold
         << " ('" << dataTag.encode() << "')";
       return {};
     } // if no gates
+    
+    TrackedTriggerGate_t combinedGate = icarus::trigger::sumGates(gates);
 
-    combinedGate = *itGate;
-    while (++itGate != gend) combinedGate.Sum(*itGate);
-
-    cryoCombinedGate.push_back(combinedGate) ;
+    cryoCombinedGate.push_back(std::move(combinedGate).gate()) ;
   }
 
   return cryoCombinedGate;
@@ -2509,35 +2436,14 @@ void icarus::trigger::TriggerEfficiencyPlots::plotResponses(
 
 
 //------------------------------------------------------------------------------
-std::vector<std::vector<icarus::trigger::MultiChannelOpticalTriggerGate>>
-icarus::trigger::TriggerEfficiencyPlots::ReadTriggerGates
+auto icarus::trigger::TriggerEfficiencyPlots::ReadTriggerGates
   (art::Event const& event, art::InputTag const& dataTag) const
+  -> std::vector<std::vector<TrackedTriggerGate_t>>
 {
 
-  using icarus::trigger::OpticalTriggerGateData_t; // for convenience
-
-  // currently the associations are a waste (we include it not to have
-  // potentially broken `MultiChannelOpticalTriggerGate` objects, but at the
-  // time this module was written that was not important)
-  auto const& gates
-    = *(event.getValidHandle<std::vector<OpticalTriggerGateData_t>>(dataTag));
-  auto const& gateToWaveforms = *(
-    event.getValidHandle
-      <art::Assns<OpticalTriggerGateData_t, raw::OpDetWaveform>>(dataTag)
-    );
-  try {
-    auto check = icarus::trigger::FillTriggerGates<icarus::trigger::MultiChannelOpticalTriggerGate>
-    (gates, gateToWaveforms);
-  }
-  catch (cet::exception const& e) {
-    throw cet::exception("TriggerEfficiencyPlots", "", e)
-      << "Error encountered while reading data products from '"
-      << dataTag.encode() << "'\n";
-  }
-
-  auto allGates = icarus::trigger::FillTriggerGates<icarus::trigger::MultiChannelOpticalTriggerGate>
-  (gates, gateToWaveforms);
-
+  std::vector<TrackedTriggerGate_t> allGates
+    = icarus::trigger::ReadTriggerGates(event, dataTag);
+  
   std::vector<geo::CryostatID> fChannelCryostat;
 
   fChannelCryostat.reserve(fGeom.NOpChannels());
@@ -2546,10 +2452,12 @@ icarus::trigger::TriggerEfficiencyPlots::ReadTriggerGates
     fChannelCryostat[opChannel] = fGeom.OpDetGeoFromOpChannel(opChannel).ID();
   } // for all channels
   
-  std::vector<std::vector<icarus::trigger::MultiChannelOpticalTriggerGate>> gatesPerCryostat{ fGeom.Ncryostats() };
+  std::vector<std::vector<TrackedTriggerGate_t>> gatesPerCryostat
+    { fGeom.Ncryostats() };
   for (auto& gate: allGates) {
-    assert(gate.hasChannels());
-    gatesPerCryostat[fChannelCryostat[gate.channels().front()].Cryostat].push_back(std::move(gate));
+    assert(gate.gate().hasChannels());
+    gatesPerCryostat[fChannelCryostat[gate.channels().front()].Cryostat]
+      .push_back(std::move(gate));
   }
   return gatesPerCryostat;
 
