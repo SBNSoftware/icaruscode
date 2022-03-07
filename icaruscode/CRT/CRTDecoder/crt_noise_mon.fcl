@@ -18,6 +18,7 @@ outputs:
   module_type: FileDumperOutput
   wantProductFullClassName:     true
   wantProductFriendlyClassName: false
+  dataTier : "analysis"
  }
 }
 
