@@ -45,14 +45,14 @@ vector<art::Ptr<CRTData>> CRTHitRecoAlg::PreselectCRTData(vector<art::Ptr<CRTDat
   for (size_t febdat_i=0; febdat_i<crtList.size(); febdat_i++) {
     
     uint8_t mac = crtList[febdat_i]->fMac5;
-    int adid  = fCrtutils->MacToAuxDetID(mac,0);
-    char type = fCrtutils->GetAuxDetType(adid);
+    int adid    = fCrtutils->MacToAuxDetID(mac,0);
+    char type   = fCrtutils->GetAuxDetType(adid);
 
     /// Looking for data within +/- 3ms within trigger time stamp
     /// Here t0 - trigger time -ve, only adding 1s makes the value +ve or -ve
     if (fData && (std::fabs(int64_t(crtList[febdat_i]->fTs0 - trigger_timestamp) + 1e9) > fCrtWindow)) continue;
     
-    if ( type == 'c' or type == 'm'){
+    if ( type == 'm'){
       for(int chan=0; chan<32; chan++) {
 	std::pair<double,double> const chg_cal = fChannelMap->getSideCRTCalibrationMap((int)crtList[febdat_i]->fMac5,chan);
 	float pe = (crtList[febdat_i]->fAdc[chan]-chg_cal.second)/chg_cal.first;
@@ -60,7 +60,13 @@ vector<art::Ptr<CRTData>> CRTHitRecoAlg::PreselectCRTData(vector<art::Ptr<CRTDat
 	presel = true;
 	if(fVerbose)
 	  mf::LogInfo("CRTHitRecoAlg: ") << "\nfebP (mac5, channel, gain, pedestal, adc, pe) = (" << (int)crtList[febdat_i]->fMac5 << ", " << chan << ", " 
-		    << chg_cal.first << ", " << chg_cal.second << "," << crtList[febdat_i]->fAdc[chan] << "," << pe << ")\n";
+					 << chg_cal.first << ", " << chg_cal.second << "," << crtList[febdat_i]->fAdc[chan] << "," << pe << ")\n";
+      }
+    }else if ( type == 'c' ) {
+      for(int chan=0; chan<32; chan++) {
+	float pe = (crtList[febdat_i]->fAdc[chan]-fQPed)/fQSlope;
+	if(pe<=fPEThresh) continue;
+	presel = true;
       }
     }else if ( type == 'd'){
       for(int chan=0; chan<64; chan++) {
@@ -69,21 +75,20 @@ vector<art::Ptr<CRTData>> CRTHitRecoAlg::PreselectCRTData(vector<art::Ptr<CRTDat
 	presel = true;
       }
     }
-
+  
     if (presel) crtdata.push_back(crtList[febdat_i]);
     presel = false;
     
   }
   mf::LogInfo("CRTHitRecoAlg:") << "Found " << crtdata.size() << " after preselection "<< '\n';
   return crtdata;  
-  
 }
 
 //---------------------------------------------------------------------------------------
 vector<pair<sbn::crt::CRTHit, vector<int>>> CRTHitRecoAlg::CreateCRTHits(vector<art::Ptr<CRTData>> crtList) {
-
-    vector<pair<CRTHit, vector<int>>> returnHits;
-    vector<int> dataIds;
+  
+  vector<pair<CRTHit, vector<int>>> returnHits;
+  vector<int> dataIds;
   
     uint16_t nMissC = 0, nMissD = 0, nMissM = 0, nHitC = 0, nHitD = 0, nHitM = 0;
     if (fVerbose) mf::LogInfo("CRTHitRecoAlg: ") << "Found " << crtList.size() << " FEB events" << '\n';
@@ -358,6 +363,10 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeTopHit(art::Ptr<CRTData> data){
     
     auto const& adsGeo = adGeo.SensitiveVolume(adsid_max); //trigger strip
     double thit = data->fTs0;
+    std::cout << "double thit: " << thit << "\n";
+    uint64_t thit_64 = data->fTs0;
+    std::cout << "uint64_t thit: " << thit_64 << "\n";
+
     if(adsid_max<8)
         thit -= hitpos.Z()*fPropDelay;
     else
@@ -427,8 +436,11 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeBottomHit(art::Ptr<CRTData> data){
     hitlocal[2] = 0;
 
     auto const& adsGeo = adGeo.SensitiveVolume(adsid_max); //trigger strip
-    double thit = data->fTs0 - adsGeo.HalfLength()*fPropDelay;
-
+    double thit_dub = data->fTs0 - adsGeo.HalfLength()*fPropDelay;
+    std::cout << "thit_dub: " << thit_dub << "\n";
+    uint64_t thit = data->fTs0 - adsGeo.HalfLength()*fPropDelay;
+    std::cout << "thit: " << thit << "\n";
+    
     adGeo.LocalToWorld(hitlocal,hitpoint); //tranform from module to world coords
 
     hitpointerr[0] = (xmax-xmin+2*adsGeo.HalfWidth1()*2)/sqrt(12);
@@ -823,7 +835,8 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeSideHit(vector<art::Ptr<CRTData>> coinData) 
       layer2 = true;
       mac5_2 = (int)infn.mac5s;
       t0_2 = (long int)infn.t0;
-
+      std::cout << "t0_2 (line 849) : " << t0_2 << "\n";
+      std::cout << "t0 (64?): " << uint64_t(infn.t0) << "\n";
 
       if ((int)infn.mac5s % 2 == 0) t2_1 = infn.t0;
       else t2_1 = informationB[i+1].t0;
