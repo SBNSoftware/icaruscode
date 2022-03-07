@@ -13,8 +13,7 @@
 
 // ICARUS libraries
 #include "icaruscode/PMT/Trigger/Algorithms/TriggerTypes.h" // icarus::trigger::ADCCounts_t
-#include "icaruscode/PMT/Trigger/Utilities/TrackedOpticalTriggerGate.h"
-#include "icaruscode/PMT/Trigger/Utilities/TrackedTriggerGate.h" // gatesIn()
+#include "sbnobj/ICARUS/PMT/Trigger/Data/SingleChannelOpticalTriggerGate.h"
 #include "sbnobj/ICARUS/PMT/Data/WaveformBaseline.h"
 
 // LArSoft libraries
@@ -105,24 +104,12 @@ class icarus::trigger::TriggerGateBuilder {
   
   // --- BEGIN Data types ------------------------------------------------------
   
-  using Channel_t = raw::Channel_t;
-  
-  /// Mnemonic for an invalid optical detector channel.
-  static constexpr Channel_t InvalidChannel
-    = std::numeric_limits<Channel_t>::max();
-  
-  
   /// Container of logical gates for all triggering channels for a threshold.
   class TriggerGates {
     
       public:
-    
-    // we need a gate type able to track its source, and the source here is
-    // unequivocally a waveform
-    using triggergate_t
-      = icarus::trigger::TrackedOpticalTriggerGate<raw::OpDetWaveform>;
+    using triggergate_t = icarus::trigger::SingleChannelOpticalTriggerGate;
     using GateData_t = std::vector<triggergate_t>;
-    
     
     /// Constructor: acquires data of the specified gates.
     TriggerGates(ADCCounts_t threshold, GateData_t&& gates)
@@ -149,7 +136,8 @@ class icarus::trigger::TriggerGateBuilder {
     GateData_t gates() && { return std::move(fGates); }
     
     /// Returns (and creates, if necessary) the gate for the specified waveform.
-    triggergate_t& gateFor(raw::OpDetWaveform const& waveform);
+    icarus::trigger::SingleChannelOpticalTriggerGate& gateFor
+      (raw::OpDetWaveform const& waveform);
     
     /// Dumps the content of this set of gates into the `out` stream.
     template <typename Stream>
@@ -159,9 +147,6 @@ class icarus::trigger::TriggerGateBuilder {
     bool operator< (TriggerGates const& other) const
       { return threshold() < other.threshold(); }
     
-    
-    static constexpr bool isValidChannel(Channel_t channel)
-      { return channel != InvalidChannel; }
     
       private:
     ADCCounts_t fThreshold; ///< The threshold for all the gates.
@@ -231,10 +216,6 @@ class icarus::trigger::TriggerGateBuilder {
   optical_tick timeStampToOpticalTick(raw::TimeStamp_t time) const;
 
   
-  /// Returns whether `channel` is valid.
-  static constexpr bool isValidChannel(Channel_t channel)
-    { return channel != InvalidChannel; }
-  
     protected:
   
   /// Returns a detector timings object.
@@ -286,14 +267,13 @@ void icarus::trigger::TriggerGateBuilder::TriggerGates::dump(Stream& out) const
 {
   
   auto const nOpenGates = fGates.size() - std::count_if(
-    fGates.begin(), fGates.end(),
-    [](auto const& gate){ return gate.gate().alwaysClosed(); }
+    fGates.begin(), fGates.end(), std::mem_fn(&triggergate_t::alwaysClosed)
     );
   out << nOpenGates << "/" << fGates.size() << " trigger gates on threshold "
     << fThreshold;
   if (nOpenGates) {
     out << ":";
-    for (auto const& gate: icarus::trigger::gatesIn(fGates)) {
+    for (auto const& gate: fGates) {
       if (gate.alwaysClosed()) continue;
       out << "\n  " << gate;
     }

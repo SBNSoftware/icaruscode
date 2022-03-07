@@ -223,9 +223,9 @@ void Response::calculateResponse(double sampling_rate,
                                  << "      initial response integral: " << respIntegral << std::endl;
     
     // Need two factors: 1) the detector sampling rate and 2) the response sampling rate
-    double samplingRate = sampling_rate;                 // This is input in ns/tick
-    double responseRate = fFieldResponse->getBinWidth(); // This is returned in ns
-    double rateRatio    = samplingRate / responseRate;   // This gives the ratio of time bins for full readout to response bins
+    double samplingRate = sampling_rate * 1.e-3;                 // We want this in us/bin
+    double responseRate = fFieldResponse->getBinWidth() * 1.e-3; // We want this in us/bin
+    double rateRatio    = samplingRate / responseRate;           // This gives the ratio of time bins for full readout to response bins
 
     // The idea is to step through each bin of the sampling response vector and then to
     // look up the corresponding bins in the current response vector. Since the two sample
@@ -278,38 +278,23 @@ void Response::calculateResponse(double sampling_rate,
     int timeBin = std::distance(fResponse.begin(),minMaxPair.first);
 
     if (responseType == 2) timeBin = std::distance(fResponse.begin(),minMaxPair.second);
-    else
+    
+    // Do a backwards search to find the first positive bin
+    while(1)
     {
-        std::cout << "*** plane: " << fThisPlane << ", first idx/val: " << std::distance(fResponse.begin(),minMaxPair.first) << "/" << *minMaxPair.first << ", second idx/val: " << std::distance(fResponse.begin(),minMaxPair.second) << "/" << *minMaxPair.second << std::endl;
-        double weightSum = abs(*minMaxPair.first) + abs(*minMaxPair.second);
-        double sum       = std::distance(fResponse.begin(),minMaxPair.first) * abs(*minMaxPair.first) + std::distance(fResponse.begin(),minMaxPair.second) * abs(*minMaxPair.second);
-
-        timeBin = std::round(sum/weightSum);
+        // Did we go too far?
+        if (timeBin < 0)
+            throw cet::exception("Response::configure") << "Cannot find zero-point crossover for induction response! ResponseType: " << responseType << ", plane: " << fThisPlane << std::endl;
+            
+        double content = fResponse[timeBin]; 
+        
+        if (content >= 0.) break;
+        
+        timeBin--;
     }
 
-    std::cout << "*** Response tool is setting timeBin = " << timeBin << std::endl;
-
-    if (fThisPlane == 0) timeBin = 83.;
-    if (fThisPlane == 1) timeBin = 83.;
-    
-//    // Do a backwards search to find the first positive bin
-//    while(1)
-//    {
-//        // Did we go too far?
-//        if (timeBin < 0)
-//            throw cet::exception("Response::configure") << "Cannot find zero-point crossover for induction response! ResponseType: " << responseType << ", plane: " << fThisPlane << std::endl;
-//            
-//        double content = fResponse[timeBin]; 
-//        
-//        if (content >= 0.) break;
-//        
-//        timeBin--;
-//    }
-//
-// 
+    // 
     fT0Offset = -timeBin;     // Note that this value being returned is in tick units now
-
-    std::cout << "** Response tool for plane: " << fThisPlane <<  ", T0: " << fT0Offset << std::endl;
     
     mf::LogInfo("Response_tool")  << "      final response integral: " << respIntegral << ", T0Offset: " << fT0Offset << std::endl;
 
@@ -335,8 +320,8 @@ void Response::outputHistograms(double sampling_rate,
     art::TFileDirectory        responesDir  = dir.mkdir(dirName.c_str());
     const icarusutil::TimeVec& responseVec  = fResponse;
     double                     numBins      = responseVec.size();
-    double                     samplingRate = sampling_rate; // Sampling time in us
-    double                     maxFreq      = 1. / samplingRate;   // Max frequency in MHz
+    double                     samplingRate = 1.e-3 * sampling_rate; // Sampling time in us
+    double                     maxFreq      = 1.e3 / samplingRate;   // Max frequency in MHz
     double                     minFreq      = maxFreq / numBins;
     std::string                histName     = "Response_Plane_" + std::to_string(fThisPlane);
     TProfile*                  hist         = dir.make<TProfile>(histName.c_str(), "Response;Time(us)", numBins, 0., numBins * sampling_rate * 1.e-3);

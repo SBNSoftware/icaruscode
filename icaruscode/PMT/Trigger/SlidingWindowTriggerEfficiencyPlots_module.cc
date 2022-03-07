@@ -15,7 +15,6 @@
 #include "icaruscode/PMT/Trigger/Algorithms/WindowPattern.h"
 #include "icaruscode/PMT/Trigger/Utilities/PlotSandbox.h"
 #include "icaruscode/PMT/Trigger/Utilities/TriggerGateOperations.h"
-#include "icaruscode/PMT/Trigger/Utilities/TrackedTriggerGate.h" // gatesIn()
 #include "icarusalg/Utilities/ROOTutils.h" // util::ROOT
 #include "icarusalg/Utilities/sortBy.h" // also icarus::util::sortCollBy()
 
@@ -764,8 +763,7 @@ void icarus::trigger::SlidingWindowTriggerEfficiencyPlots::simulateAndPlot(
     log << "Input for threshold " << threshold << ": " << inBeamGates.size()
       << " primitives. After beam gate:";
     unsigned int nOpen = 0U;
-    using icarus::trigger::gatesIn;
-    for (auto const& [ iWindow, gate ]: util::enumerate(gatesIn(inBeamGates))) {
+    for (auto const& [ iWindow, gate ]: util::enumerate(inBeamGates)) {
       auto const maxTick = gate.findMaxOpen();
       if (maxTick == gate.MinTick) continue;
       ++nOpen;

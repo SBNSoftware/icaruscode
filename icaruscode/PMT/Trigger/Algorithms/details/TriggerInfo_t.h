@@ -9,7 +9,6 @@
 #define ICARUSCODE_PMT_TRIGGER_ALGORITHMS_DETAILS_TRIGGERINFO_T_H
 
 // ICARUS libraries
-#include "icaruscode/PMT/Trigger/Utilities/TrackedTriggerGate.h" // gateIn()
 #include "lardataalg/DetectorInfo/DetectorTimingTypes.h" // optical_tick
 #include "sbnobj/ICARUS/PMT/Trigger/Data/OpticalTriggerGate.h" // 
 
@@ -20,7 +19,6 @@
 #include <utility> // std::pair, std::tie()
 #include <limits> // std::numeric_limits<>
 #include <utility> // std::forward()
-#include <type_traits> // std::decay_t
 #include <cassert>
 
 
@@ -236,11 +234,10 @@ struct icarus::trigger::details::TriggerInfo_t {
 template <typename Gate>
 class icarus::trigger::details::GateOpeningInfoExtractor {
   using Gate_t = Gate;
-  using GateData_t = std::decay_t<decltype(gateDataIn(std::declval<Gate_t>()))>;
   
     public:
-  using ClockTick_t = typename GateData_t::ClockTick_t;
-  using OpeningCount_t = icarus::trigger::details::TriggerInfo_t::Opening_t;
+  using ClockTick_t = typename Gate_t::ClockTick_t;
+  using OpeningCount_t = typename Gate_t::OpeningCount_t;
   using OpeningInfo_t = icarus::trigger::details::TriggerInfo_t::OpeningInfo_t;
   using LocationID_t = icarus::trigger::details::TriggerInfo_t::LocationID_t;
   
@@ -287,7 +284,7 @@ class icarus::trigger::details::GateOpeningInfoExtractor {
    * @param config configuration of the algorithm (see `configure()`)
    */
   GateOpeningInfoExtractor(Gate_t const& gate, Config_t config)
-    : gateSrc(gate), config(std::move(config)), gate(gateDataIn(gateSrc))
+    : gate(gate), config(std::move(config))
     { restart(); }
   
   /**
@@ -321,12 +318,12 @@ class icarus::trigger::details::GateOpeningInfoExtractor {
   std::optional<OpeningInfo_t> findNextOpening();
   //@}
   
-  bool atEnd() const { return nextStart == MaxTick; }
+  bool atEnd() const { return nextStart == Gate_t::MaxTick; }
   operator bool() const { return !atEnd(); }
   bool operator! () const { return atEnd(); }
   
   /// Resets the search from the specified time tick (beginning by default).
-  void restart(ClockTick_t fromTick = MinTick)
+  void restart(ClockTick_t fromTick = Gate_t::MinTick)
     { nextStart = findOpen(fromTick); }
   
   
@@ -348,19 +345,13 @@ class icarus::trigger::details::GateOpeningInfoExtractor {
   
     private:
   
-  static constexpr ClockTick_t MinTick = GateData_t::MinTick;
-  static constexpr ClockTick_t MaxTick = GateData_t::MaxTick;
-  
-  
   // --- BEGIN -- Configuration ------------------------------------------------
-  Gate_t const& gateSrc;
+  Gate_t const& gate;
   Config_t config;
   // --- END ---- Configuration ------------------------------------------------
   
-//   GateData_t const& gate() { return gateDataIn(gateSrc); }
-  GateData_t const& gate;
   
-  ClockTick_t nextStart = MinTick;
+  ClockTick_t nextStart = Gate_t::MinTick;
   
   
   ClockTick_t findOpen(ClockTick_t start) const
@@ -425,7 +416,7 @@ auto icarus::trigger::details::GateOpeningInfoExtractor<Gate>::findNextOpening()
   ClockTick_t closing;
   do {
     std::tie(closing, nextStart) = findNextCloseAndOpen(nextStart);
-    if (nextStart == MaxTick) break;
+    if (nextStart == Gate_t::MaxTick) break;
   } while(
     (closing - start < static_cast<ClockDiff_t>(minWidth()))
     || (nextStart - closing < static_cast<ClockDiff_t>(minGap()))

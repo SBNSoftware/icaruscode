@@ -68,8 +68,6 @@ public:
 
     void setBranches(TTree* tree)
     {
-        tree->Branch("Cryostat",          "std::vector<int>",   &fCryostatVec);
-        tree->Branch("TPC",               "std::vector<int>",   &fTPCVec);
         tree->Branch("TicksTotHit",       "std::vector<int>",   &fTicksTotHitVec);
         tree->Branch("Tick",              "std::vector<int>",   &fTicksVec);
         tree->Branch("NDF",               "std::vector<int>",   &fNDFHitVec);                //< Number of degrees of freedom of hit fit
@@ -94,8 +92,6 @@ public:
 
     void clear()
     {
-        fCryostatVec.clear();
-        fTPCVec.clear();
         fTicksTotHitVec.clear();
         fTicksVec.clear();
         fNDFHitVec.clear();
@@ -112,8 +108,6 @@ public:
 
     void fillHitInfo(const recob::Hit* hit, int hitWidth, int clusterSize)
     {
-        fCryostatVec.emplace_back(hit->WireID().Cryostat);
-        fTPCVec.emplace_back(hit->WireID().TPC);
         fTicksTotHitVec.emplace_back(hitWidth);
         fTicksVec.emplace_back(hit->PeakTime());
         fNDFHitVec.emplace_back(hit->DegreesOfFreedom());
@@ -128,8 +122,6 @@ public:
     }
 
     // Define tuple values, these are public so can be diretly accessed for filling
-    std::vector<int>   fCryostatVec;
-    std::vector<int>   fTPCVec;
     std::vector<int>   fTicksTotHitVec;
     std::vector<int>   fTicksVec;
     std::vector<int>   fNDFHitVec;
@@ -171,7 +163,6 @@ public:
         tree->Branch("SP_y",               "std::vector<float>", &fSP_y);
         tree->Branch("SP_z",               "std::vector<float>", &fSP_z);
 
-        tree->Branch("Num2DHits",          "std::vector<int>",   &fNum2DHitsVec);
         tree->Branch("NumLongHitsSP",      "std::vector<int>",   &fNumLongHitsVec);
         tree->Branch("NumPlanesSimMatch",  "std::vector<int>",   &fNumPlanesSimMatchVec);
         tree->Branch("NumIntersectSet",    "std::vector<int>",   &fNumIntersectSetVec);
@@ -211,7 +202,6 @@ public:
         fSP_y.clear();
         fSP_z.clear();
 
-        fNum2DHitsVec.clear();
         fNumLongHitsVec.clear();
         fNumPlanesSimMatchVec.clear();
         fNumIntersectSetVec.clear();
@@ -243,7 +233,6 @@ public:
     std::vector<float> fSP_y;
     std::vector<float> fSP_z;
 
-    std::vector<int>   fNum2DHitsVec;
     std::vector<int>   fNumLongHitsVec;
     std::vector<int>   fNumPlanesSimMatchVec;
     std::vector<int>   fNumIntersectSetVec;
@@ -319,11 +308,11 @@ private:
     using HitPointerVec        = std::vector<const recob::Hit*>;
 
     // Fcl parameters.
-    using PlaneToT0OffsetMap = std::map<geo::PlaneID,float>;
+    using TickCorrectionArray = std::vector<std::vector<std::vector<float>>>;
 
     std::vector<art::InputTag>  fSpacePointLabelVec;
     art::InputTag               fBadChannelProducerLabel;
-    bool                        fUseT0Offsets;
+    std::vector<int>            fOffsetVec;              ///< Allow offsets for each plane
 
     // TTree variables
     mutable TTree*              fTree;
@@ -332,7 +321,7 @@ private:
     mutable std::vector<int>    fCryoVec;
     mutable std::vector<int>    fPlaneVec;
 
-    mutable PlaneToT0OffsetMap  fPlaneToT0OffsetMap;
+    TickCorrectionArray         fTickCorrectionArray;
 
     using HitTuplebjVec = std::vector<HitTupleObj>;
 
@@ -340,7 +329,7 @@ private:
     mutable HitSpacePointObj    fHitSpacePointObj;
 
     // Useful services, keep copies for now (we can update during begin run periods)
-    const geo::GeometryCore*    fGeometry;             ///< pointer to Geometry service
+    const geo::GeometryCore*               fGeometry;             ///< pointer to Geometry service
 };
 
 //----------------------------------------------------------------------------
@@ -375,7 +364,8 @@ SpacePointAnalysis::~SpacePointAnalysis()
 void SpacePointAnalysis::configure(fhicl::ParameterSet const & pset)
 {
     fSpacePointLabelVec  = pset.get< std::vector<art::InputTag>>("SpacePointLabelVec",  {"cluster3d"});
-    fUseT0Offsets        = pset.get< bool                      >("UseT0Offsets",        false);
+    fOffsetVec           = pset.get<std::vector<int>           >("OffsetVec",           {0,0,0}      );
+    fTickCorrectionArray = pset.get<TickCorrectionArray        >("TickCorrectionArray", {{{0.,0.,0.},{0.,0.,0.},{0.,0.,0.},{0.,0.,0.}},{{0.,0.,0.},{0.,0.,0.},{0.,0.,0.},{0.,0.,0.}}});
 
     return;
 }
@@ -459,32 +449,6 @@ void SpacePointAnalysis::fillHistograms(const art::Event& event) const
 void SpacePointAnalysis::processSpacePoints(const art::Event&                  event,
                                             const detinfo::DetectorClocksData& clockData) const
 {
-    // One time initialization done?
-
-    // Do the one time initialization of the tick offsets. 
-    if (fPlaneToT0OffsetMap.empty())
-    {
-        // Need the detector properties which needs the clocks 
-        auto const det_prop = art::ServiceHandle<detinfo::DetectorPropertiesService const>()->DataFor(event, clockData);
-
-        for(size_t cryoIdx = 0; cryoIdx < fGeometry->Ncryostats(); cryoIdx++)
-        {
-            for(size_t tpcIdx = 0; tpcIdx < fGeometry->NTPC(); tpcIdx++)
-            {
-                for(size_t planeIdx = 0; planeIdx < fGeometry->Nplanes(); planeIdx++)
-                {
-                    geo::PlaneID planeID(cryoIdx,tpcIdx,planeIdx);
-
-//                    if (fUseT0Offsets) fPlaneToT0OffsetMap[planeID] = int(det_prop.GetXTicksOffset(planeID) - det_prop.GetXTicksOffset(geo::PlaneID(cryoIdx,tpcIdx,0)));
-                    if (fUseT0Offsets) fPlaneToT0OffsetMap[planeID] = det_prop.GetXTicksOffset(planeID) - det_prop.GetXTicksOffset(geo::PlaneID(cryoIdx,tpcIdx,0));
-                    else               fPlaneToT0OffsetMap[planeID] = 0.;
-
-                    std::cout << "--PlaneID: " << planeID << ", has T0 offset: " << fPlaneToT0OffsetMap.find(planeID)->second << std::endl;
-                }
-            }
-        }   
-    }
-
     // Diagnostics
     using Triplet    = std::tuple<const recob::Hit*, const recob::Hit*, const recob::Hit*>;
     using TripletMap = std::map<Triplet, std::vector<const recob::SpacePoint*>>;
@@ -543,7 +507,7 @@ void SpacePointAnalysis::processSpacePoints(const art::Event&                  e
 
             std::vector<art::Ptr<recob::Hit>> associatedHits(spHitAssnVec.at(spacePointPtr.key()));
 
-            if (associatedHits.size() < 2)
+            if (associatedHits.size() != 3)
             {
                 mf::LogDebug("SpacePointAnalysis") << "I am certain this cannot happen... but here you go, space point with " << associatedHits.size() << " hits" << std::endl;
                 continue;
@@ -570,7 +534,7 @@ void SpacePointAnalysis::processSpacePoints(const art::Event&                  e
             float              averagePT       = 0.;
             float              largestDelT     = 0.;
             float              smallestDelT    = 100000.;
-            std::vector<float> hitPeakTimeVec  = {-10000.,-20000.,-30000.};
+            std::vector<float> hitPeakTimeVec  = {-100.,-200.,-300.};
             std::vector<float> hitPeakRMSVec   = {1000.,1000.,1000.};
             int                hitMultProduct  = 1;
             int                numLongHits(0);
@@ -580,8 +544,6 @@ void SpacePointAnalysis::processSpacePoints(const art::Event&                  e
 
             std::vector<const recob::Hit*> recobHitVec(3,nullptr);
 
-            std::vector<float> peakAmpVec;
-
             // Now we can use our maps to find out if the hits making up the SpacePoint are truly related...
             for(const auto& hitPtr : associatedHits)
             {
@@ -589,8 +551,6 @@ void SpacePointAnalysis::processSpacePoints(const art::Event&                  e
                 float peakTime      = hitPtr->PeakTime();
                 float rms           = hitPtr->RMS();
                 int   plane         = hitPtr->WireID().Plane;
-
-                peakAmpVec.emplace_back(peakAmplitude);
 
                 // Add to the set
                 uniqueHitMap[hitPtr.get()] = nSpacePointsInPFParticle;
@@ -605,14 +565,16 @@ void SpacePointAnalysis::processSpacePoints(const art::Event&                  e
 
                 if (hitPtr->DegreesOfFreedom() < 2) numLongHits++;
 
-                hitPeakTimeVec[plane] = peakTime - fPlaneToT0OffsetMap.find(hitPtr->WireID().planeID())->second;
+                hitPeakTimeVec[plane] = peakTime
+                                      - detProp.GetXTicksOffset(geo::PlaneID(hitPtr->WireID().Cryostat,hitPtr->WireID().TPC,plane))
+                                      + detProp.GetXTicksOffset(geo::PlaneID(hitPtr->WireID().Cryostat,hitPtr->WireID().TPC,0))
+                                      - fTickCorrectionArray[hitPtr->WireID().Cryostat][hitPtr->WireID().TPC][plane]; //clockData.TPCTick2TDC(peakTime);
                 hitPeakRMSVec[plane]  = rms;
                 averagePT            += hitPeakTimeVec[plane];
 
                 cryostat = hitPtr->WireID().Cryostat;
                 tpc      = hitPtr->WireID().TPC;
             }
-
             Triplet hitTriplet(recobHitVec[0],recobHitVec[1],recobHitVec[2]);
 
             tripletMap[hitTriplet].emplace_back(spacePointPtr.get());
@@ -622,9 +584,6 @@ void SpacePointAnalysis::processSpacePoints(const art::Event&                  e
 
             for(size_t planeIdx = 0; planeIdx < 3; planeIdx++)
             {
-                // Skip if hit missing
-                if (hitPeakTimeVec[planeIdx] < 0) continue;
-
                 float delT = hitPeakTimeVec[planeIdx] - averagePT;
                 if (std::abs(delT) > std::abs(largestDelT))  largestDelT  = delT;
                 if (std::abs(delT) < std::abs(smallestDelT)) smallestDelT = delT;
@@ -641,7 +600,6 @@ void SpacePointAnalysis::processSpacePoints(const art::Event&                  e
             fHitSpacePointObj.fAveragePHVec.emplace_back(averagePH);
             fHitSpacePointObj.fLargestDelTVec.emplace_back(largestDelT);
             fHitSpacePointObj.fSmallestDelTVec.emplace_back(smallestDelT);
-            fHitSpacePointObj.fNum2DHitsVec.emplace_back(numHits);
             fHitSpacePointObj.fNumLongHitsVec.emplace_back(numLongHits);
             fHitSpacePointObj.fNumIntersectSetVec.emplace_back(numIntersections);
             fHitSpacePointObj.fClusterNSPVec.emplace_back(nSpacePointsInPFParticle);

@@ -13,6 +13,7 @@
 
 // ICARUS libraries
 #include "icaruscode/PMT/Trigger/Algorithms/TriggerGateBuilder.h"
+#include "sbnobj/ICARUS/PMT/Trigger/Data/SingleChannelOpticalTriggerGate.h"
 
 // LArSoft libraries
 #include "lardataobj/RawData/OpDetWaveform.h"
@@ -67,18 +68,13 @@ class icarus::trigger::ManagedTriggerGateBuilder
     
       protected:
     struct GateInfoBase {
-      // OpticalTriggerGateData_t:
-      using TriggerGate_t = Base_t::TriggerGates::triggergate_t;
-      // icarus::trigger::ReadoutTriggerGate:
-      using TriggerGateData_t = TriggerGate_t::TriggerGate_t;
+      using TriggerGate_t = icarus::trigger::SingleChannelOpticalTriggerGate;
       
       TriggerGate_t* pGate = nullptr; ///< Pointer to the gate.
       
       GateInfoBase(TriggerGate_t& gate): pGate(&gate) {}
-      TriggerGateData_t* operator->() const { return &gate(); }
-      TriggerGateData_t& gate() const { return pGate->gate(); }
-      void addTrackingInfo(raw::OpDetWaveform const& waveform) const
-        { return pGate->tracking().add(&waveform); }
+      TriggerGate_t* operator->() const { return pGate; }
+      TriggerGate_t& gate() const { return *pGate; }
       
       void belowThresholdAt(optical_tick tick); // undefined: don't call!
       void aboveThresholdAt(optical_tick tick); // undefined: don't call!

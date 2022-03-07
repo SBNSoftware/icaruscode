@@ -14,11 +14,9 @@ icarus_snippethit3dbuilder:
   PHLowSelection:        10.   #
   DeltaPeakTimeSig:      1.75  # "Significance" of agreement between 2 hit peak times
   WirePitchScaleFactor:  1.9
-  SaveMythicalPoints:    true
-  MaxMythicalChiSquare:  10.
-  UseT0Offsets:          false
   MaxHitChiSquare:       6.0
   OutputHistograms:      false
+  TickCorrectionArray:   [[[0.,0.],[0.,0.],[0.,0.],[0.,0.]],[[0.,0.],[0.,0.],[0.,0.],[0.,0.]]]
 }
 
 END_PROLOG

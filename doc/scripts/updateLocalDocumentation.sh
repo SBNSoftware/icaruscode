@@ -365,8 +365,7 @@ function RunDoxygen() {
   local -a AdditionalRepositories=( "$@" )
   
   local MasterDoxyfile
-  # search for a Doxyfile in the current directory first
-  MasterDoxyfile="$(FindDoxyfile "$ExperimentName" "$(pwd)" )"
+  MasterDoxyfile="$(FindDoxyfile "$ExperimentName")"
   LASTFATAL "Can't find a doxygen configuration file for '${ExperimentName}'"
   
   local ExperimentCodeName="$(ExperimentCodeProduct "$ExperimentName" )"
@@ -454,7 +453,7 @@ Experiment      = '${ExperimentName}'
 Date            = '$(date)'
 Host            = '$(hostname)'
 User            = '$(whoami)'
-Configuration   = '${MasterDoxyfile}'
+Configuration   = '${Doxyfile}'
 ExperimentCode  = '${ExperimentCodeName}'
 CodeVersion     = '${ExperimentCodeVersion:-"n/a"}'
 GITreference    = '${GitDescription:-"n/a"}'

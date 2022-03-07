@@ -72,7 +72,7 @@ class icarus::trigger::FixedTriggerGateBuilder
     
     struct FixedGateInfo: public GateInfoBase {
       /// Activity ignored up to this tick excluded.
-      optical_tick openUntil { TriggerGateData_t::MinTick };
+      optical_tick openUntil { TriggerGate_t::MinTick };
       
       /// Ticks to keep the gate open.
       optical_time_ticks gateDuration;

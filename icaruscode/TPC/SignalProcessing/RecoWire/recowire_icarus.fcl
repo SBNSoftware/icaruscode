@@ -90,7 +90,7 @@ icarus_roifinder:
     module_type:           ROIFinder
     WireModuleLabel:       "decon1droi"
     OutInstanceLabelVec:   "PHYSCRATEDATA"
-    CorrectROIBaseline:    false
+    CorrectROIBaseline:    true
     MinSizeForCorrection:  12
     MaxSizeForCorrection:  512
     OutputMorphed:         false

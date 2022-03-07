@@ -267,6 +267,8 @@ void SimReadoutBoardICARUS::produce(art::Event& evt)
     // get the geometry to be able to figure out signal types and chan -> plane mappings
     const raw::ChannelID_t maxChannel = fGeometry.Nchannels();
 
+    std::cout << "**** Det Sim has maxChannel: " << maxChannel << std::endl;
+
     //--------------------------------------------------------------------
     //
     // Get the SimChannels, which we will use to produce RawDigits
@@ -334,6 +336,8 @@ void SimReadoutBoardICARUS::produce(art::Event& evt)
         {
             wireIDVec = fGeometry.ChannelToWire(channelPair.first);
 
+//            if (wireIDVec.empty()) std::cout << "--> Readout board: " << boardPair.first << ", channel: " << channelPair.first << std::endl;
+
             if (wireIDVec.size() > 0) break;
         }
 
@@ -355,6 +359,16 @@ void SimReadoutBoardICARUS::produce(art::Event& evt)
         }
 
         if (!goodBoard) continue;
+
+//        if (cryostat == 0 && tpc == 0) std::cout << "*** Processing board " << boardPair.first << ", bourdCount: " << boardCount << std::endl;
+
+//        if (!(boardPair.first == 708 || boardPair.first == 800))
+//        {
+//            boardCount++;
+//            continue;
+//        }
+
+//        int wireIdx(0);
 
         // For this board loop over channels
         for(const auto& channelPair : boardPair.second.second)
@@ -440,9 +454,7 @@ void SimReadoutBoardICARUS::produce(art::Event& evt)
                 // loop over the tdcs and grab the number of electrons for each
                 for(size_t tick = 0; tick < fNTimeSamples; tick++)
                 {
-                    // Note that we attempt to explicitly remove the time offsets between the planes and leave it to the response
-                    // functions to handle this. So we reference the time to the first plane
-                    int tdc = clockData.TPCTick2TDC(tick + detProp.GetXTicksOffset(planeID) - detProp.GetXTicksOffset(geo::PlaneID(cryostat,tpc,0)));
+                    int tdc = clockData.TPCTick2TDC(tick);
 
                     // continue if tdc < 0
                     if( tdc < 0 ) continue;
@@ -489,6 +501,13 @@ void SimReadoutBoardICARUS::produce(art::Event& evt)
 
         boardCount++;
     }
+
+    std::cout << "**** Processed " << channelIDSet.size() << " unique channels, output collection size: " << digcol->size() << std::endl;
+    raw::ChannelID_t firstChannel = *channelIDSet.begin();
+    raw::ChannelID_t lastChannel  = firstChannel;
+    for(const auto& channel : channelIDSet) lastChannel = channel;
+    std::cout << "     min: " << firstChannel << ", max: " << lastChannel << std::endl;
+
     evt.put(std::move(digcol), fOutInstanceLabel);
     
     return;
