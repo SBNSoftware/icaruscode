@@ -196,6 +196,24 @@ simple_plugin(CRTDataAnalysis module
               ${ROOT_XMLIO}
               ${ROOT_GDML}
 )
+simple_plugin(CRTCalibrationAnalysis module
+              icaruscode_CRTData
+              icaruscode_CRT
+              sbnobj_Common_CRT
+              icaruscode_CRTUtils
+              larcore_Geometry_Geometry_service
+              larcorealg_Geometry
+              nusimdata_SimulationBase
+              ${ART_FRAMEWORK_SERVICES_REGISTRY}
+              ${ART_ROOT_IO_TFILE_SUPPORT} ${ROOT_CORE}
+              ${ART_ROOT_IO_TFILESERVICE_SERVICE}
+              ${MF_MESSAGELOGGER}
+              ${MF_UTILITIES}
+              ${ROOT_BASIC_LIB_LIST}
+              ${ROOT_GEOM}
+              ${ROOT_XMLIO}
+              ${ROOT_GDML}
+)
 
 simple_plugin(CrtOpHitMatchAnalysis module
               icaruscode_CRTData
