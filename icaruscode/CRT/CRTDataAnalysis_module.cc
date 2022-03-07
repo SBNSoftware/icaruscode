@@ -124,27 +124,27 @@ namespace crt {
    
       fhicl::Atom<art::InputTag> TriggerLabel {
         Name("TriggerLabel"),
-          Comment("Label for the Trigger fragment label")
+	  Comment("Label for the Trigger fragment label")
 	  };
 
       fhicl::Atom<double> QPed {
-        Name("QPed"),
+	Name("QPed"),
 	  Comment("Pedestal offset [ADC]")
 	  };
       fhicl::Atom<double> QSlope {
-        Name("QSlope"),
+	Name("QSlope"),
 	  Comment("Pedestal slope [ADC/photon]")
 	  };
 
       fhicl::Atom<double> PEThresh {
-        Name("PEThresh"),
+	Name("PEThresh"),
 	  Comment("threshold in photoelectrons above which charge amplitudes used in hit reco")
 	  };
 
-     fhicl::Atom<uint64_t> CrtWindow {
-       Name("CrtWindow"),
-         Comment("window for looking data [ns]")
-	 };
+      fhicl::Atom<uint64_t> CrtWindow {
+	Name("CrtWindow"),
+	  Comment("window for looking data [ns]")
+	  };
     }; // Config
     
     using Parameters = art::EDAnalyzer::Table<Config>;
@@ -396,7 +396,7 @@ namespace crt {
       art::Handle<sbn::ExtraTriggerInfo> trigger_handle;
       event.getByLabel( fTriggerLabel, trigger_handle );
       if( trigger_handle.isValid() ) {
-  	sbn::triggerSource bit = trigger_handle->sourceType;
+	sbn::triggerSource bit = trigger_handle->sourceType;
         m_gate_type = (unsigned int)bit;
         m_gate_name = bitName(bit);
         m_trigger_timestamp = trigger_handle->triggerTimestamp;
@@ -405,11 +405,11 @@ namespace crt {
 
       }
       else{
-        mf::LogError("CRTDataAnalysis") << "No raw::Trigger associated to label: " << fTriggerLabel.label() << "\n" ;
+	mf::LogError("CRTDataAnalysis") << "No raw::Trigger associated to label: " << fTriggerLabel.label() << "\n" ;
       }
     }
     else {
-      mf::LogError("CRTDataAnalysis") << "Trigger Data product " << fTriggerLabel.label() << " not found!" ; 
+      std::cout  << "Trigger Data product " << fTriggerLabel.label() << " not found!\n" ;
     }
 
     art::Handle<vector<icarus::crt::CRTData>> crtDAQHandle;

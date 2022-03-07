@@ -363,10 +363,6 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeTopHit(art::Ptr<CRTData> data){
     
     auto const& adsGeo = adGeo.SensitiveVolume(adsid_max); //trigger strip
     double thit = data->fTs0;
-    std::cout << "double thit: " << thit << "\n";
-    uint64_t thit_64 = data->fTs0;
-    std::cout << "uint64_t thit: " << thit_64 << "\n";
-
     if(adsid_max<8)
         thit -= hitpos.Z()*fPropDelay;
     else
@@ -436,11 +432,8 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeBottomHit(art::Ptr<CRTData> data){
     hitlocal[2] = 0;
 
     auto const& adsGeo = adGeo.SensitiveVolume(adsid_max); //trigger strip
-    double thit_dub = data->fTs0 - adsGeo.HalfLength()*fPropDelay;
-    std::cout << "thit_dub: " << thit_dub << "\n";
-    uint64_t thit = data->fTs0 - adsGeo.HalfLength()*fPropDelay;
-    std::cout << "thit: " << thit << "\n";
-    
+    double thit = data->fTs0 - adsGeo.HalfLength()*fPropDelay;
+
     adGeo.LocalToWorld(hitlocal,hitpoint); //tranform from module to world coords
 
     hitpointerr[0] = (xmax-xmin+2*adsGeo.HalfWidth1()*2)/sqrt(12);
@@ -835,8 +828,7 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeSideHit(vector<art::Ptr<CRTData>> coinData) 
       layer2 = true;
       mac5_2 = (int)infn.mac5s;
       t0_2 = (long int)infn.t0;
-      std::cout << "t0_2 (line 849) : " << t0_2 << "\n";
-      std::cout << "t0 (64?): " << uint64_t(infn.t0) << "\n";
+
 
       if ((int)infn.mac5s % 2 == 0) t2_1 = infn.t0;
       else t2_1 = informationB[i+1].t0;
