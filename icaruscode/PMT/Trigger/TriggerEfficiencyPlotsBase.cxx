@@ -1323,7 +1323,6 @@ auto icarus::trigger::TriggerEfficiencyPlotsBase::splitByCryostat
   TriggerGatesPerCryostat_t gatesPerCryostat{ fGeom.Ncryostats() };
   
   for (auto& gate: gates) {
-    assert(gate.hasChannels());
     gatesPerCryostat[fChannelCryostat.at(gate.channels().front()).Cryostat]
       .push_back(std::move(gate));
   } // for gates
