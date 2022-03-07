@@ -5,29 +5,4 @@
   </class>
   <class name="art::Wrapper<icarus::SimEnergyDepositSummary>"/>
 
-  <class name="sbn::OpDetWaveformMeta" ClassVersion="10" >
-   <version ClassVersion="10" checksum="1457230748"/>
-  </class>
-
-  <class name="art::Ptr<sbn::OpDetWaveformMeta>" />
-  <class name="std::vector<sbn::OpDetWaveformMeta>" />
-  <class name="art::Wrapper<std::vector<sbn::OpDetWaveformMeta>>" />
-  
-  <!-- sbn::OpDetWaveformMeta - raw::OpDetWaveform associations -->
-  <class name="std::pair<art::Ptr<sbn::OpDetWaveformMeta>, art::Ptr<raw::OpDetWaveform>>" />
-  <class name="std::pair<art::Ptr<raw::OpDetWaveform>, art::Ptr<sbn::OpDetWaveformMeta>>" />
-  <class name="art::Assns<sbn::OpDetWaveformMeta, raw::OpDetWaveform>" />
-  <class name="art::Assns<raw::OpDetWaveform, sbn::OpDetWaveformMeta>" />
-  <class name="art::Wrapper<art::Assns<sbn::OpDetWaveformMeta, raw::OpDetWaveform>>" />
-  <class name="art::Wrapper<art::Assns<raw::OpDetWaveform, sbn::OpDetWaveformMeta>>" />
-  
-  <!-- sbn::OpDetWaveformMeta - icarus::trigger::OpticalTriggerGate::GateData_t associations -->
-  <class name="std::pair<art::Ptr<sbn::OpDetWaveformMeta>, art::Ptr<icarus::trigger::OpticalTriggerGate::GateData_t>>" />
-  <class name="std::pair<art::Ptr<icarus::trigger::OpticalTriggerGate::GateData_t>, art::Ptr<sbn::OpDetWaveformMeta>>" />
-  <class name="art::Assns<sbn::OpDetWaveformMeta, icarus::trigger::OpticalTriggerGate::GateData_t>" />
-  <class name="art::Assns<icarus::trigger::OpticalTriggerGate::GateData_t, sbn::OpDetWaveformMeta>" />
-  <class name="art::Wrapper<art::Assns<sbn::OpDetWaveformMeta, icarus::trigger::OpticalTriggerGate::GateData_t>>" />
-  <class name="art::Wrapper<art::Assns<icarus::trigger::OpticalTriggerGate::GateData_t, sbn::OpDetWaveformMeta>>" />
-  
-  
 </lcgdict>

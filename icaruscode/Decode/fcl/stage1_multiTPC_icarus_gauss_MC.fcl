@@ -70,10 +70,6 @@ services.SpaceChargeService: {
 services.BackTrackerService:        @local::standard_backtrackerservice
 services.ParticleInventoryService:  @local::standard_particleinventoryservice
 
-# Use this to take out the interplane offsets that are put in during the G4 stage
-physics.producers.cluster3DCryoE.Hit3DBuilderAlg.UseT0Offsets: true
-physics.producers.cluster3DCryoW.Hit3DBuilderAlg.UseT0Offsets: true
-
 physics.producers.mcassociationsGausCryoE.HitParticleAssociations.HitModuleLabelVec: ["cluster3DCryoE"]
 physics.producers.mcassociationsGausCryoW.HitParticleAssociations.HitModuleLabelVec: ["cluster3DCryoW"]
 

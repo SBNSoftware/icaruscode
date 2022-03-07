@@ -19,6 +19,7 @@
 
 // ICARUS libraries
 #include "icaruscode/PMT/Trigger/Algorithms/TriggerTypes.h" // icarus::trigger::ADCCounts_t
+#include "sbnobj/ICARUS/PMT/Trigger/Data/SingleChannelOpticalTriggerGate.h"
 #include "icarusalg/Utilities/WaveformOperations.h"
 
 // LArSoft libraries
@@ -59,7 +60,7 @@ auto icarus::trigger::ManagedTriggerGateBuilder::unifiedBuild
   // thresholds are kept relative
   std::vector<TriggerGates> allGates = prepareAllGates();
   
-  raw::Channel_t channel = InvalidChannel;
+  raw::Channel_t channel = raw::InvalidChannel;
   
   // now group the waveforms by channel (must be already sorted!)
   // and process waveforms channel by channel
@@ -76,7 +77,7 @@ auto icarus::trigger::ManagedTriggerGateBuilder::unifiedBuild
     // assert that the waveforms are sorted by channel and then by time
     // and not overlapping
     assert(
-      !isValidChannel(channel)
+      !raw::isValidChannel(channel)
       || (firstWaveform.ChannelNumber() >= channel)
       );
     if (firstWaveform.ChannelNumber() != channel)
@@ -172,7 +173,7 @@ void icarus::trigger::ManagedTriggerGateBuilder::buildChannelGates(
     auto const tend = channelThresholds().end();
     
     // register this waveform with the gates (this feature is unused here)
-    for (auto& gateInfo: channelGates) gateInfo.addTrackingInfo(waveform);
+    for (auto& gateInfo: channelGates) gateInfo.gate().add(waveform);
     
     // all gates start closed; this gate is not necessarily closed, but the
     // waveform is not above the gate threshold any more.

@@ -11,7 +11,6 @@
 
 // C++ standard libraries
 #include <ostream>
-#include <cassert>
 #include <cctype> // std::isspace()
 
 
@@ -21,7 +20,7 @@
 // -----------------------------------------------------------------------------
 auto icarus::details::KeyValuesData::makeItem(std::string key) -> Item& {
   
-  if (hasItem(key)) throw DuplicateKey{ key };
+  if (hasItem(key)) throw DuplicateKey{ std::move(key) };
   
   fItems.emplace_back(std::move(key));
   
@@ -33,7 +32,7 @@ auto icarus::details::KeyValuesData::makeItem(std::string key) -> Item& {
 auto icarus::details::KeyValuesData::findItem
   (std::string const& key) const noexcept -> Item const*
 {
-  for (auto const& item: fItems) if (key == item.key()) return &item;
+  for (auto const& item: fItems) if (key == item.key) return &item;
   return nullptr;
 } // icarus::details::KeyValuesData::findItem()
 
@@ -66,6 +65,11 @@ std::size_t icarus::details::KeyValuesData::size() const noexcept
 
 
 // -----------------------------------------------------------------------------
+decltype(auto) icarus::details::KeyValuesData::items() const noexcept
+  { return fItems; }
+
+
+// -----------------------------------------------------------------------------
 std::ostream& icarus::details::operator<<
   (std::ostream& out, KeyValuesData const& data)
 {
@@ -73,10 +77,10 @@ std::ostream& icarus::details::operator<<
   if (!data.empty()) {
     out << ':';
     for (auto const& item: data.items()) {
-      out << "\n  '" << item.key() << "' (" << item.values().size() << ")";
-      if (item.values().empty()) continue;
+      out << "\n  '" << item.key << "' (" << item.values.size() << ")";
+      if (item.values.empty()) continue;
       out << ':';
-      for (auto const& value: item.values()) out << " '" << value << '\'';
+      for (auto const& value: item.values) out << " '" << value << '\'';
     } // for
   } // if has data
   return out << "\n";
@@ -94,66 +98,13 @@ void icarus::details::KeyedCSVparser::parse
   
   ParsedData_t::Item* currentItem = nullptr;
   
-  // this many tokens will be assigned to the current key:
-  int forcedValues = -1; // 0 would force the first entry to be a key
-  
   while (!stream.empty()) {
     
     auto const token = extractToken(stream);
     
     std::string tokenStr { cbegin(token), cend(token) };
     
-    // if there are values pending, this is not a key, period.
-    bool bKey = false;
-    do {
-      
-      if (forcedValues >= 0) {
-        bKey = (forcedValues == 0); // if no more forced values, next is key
-        --forcedValues;
-        break;
-      }
-      
-      // if the key may still be a key
-      for (auto const& [ pattern, values ]: fPatterns) {
-        if (!std::regex_match(begin(token), end(token), pattern)) continue;
-        bKey = true; // matching a pattern implies this is a key
-        std::string const& key = tokenStr;
-        // how many values to expect:
-        switch (values) {
-          case FixedSize: // read the next token immediately as fixed size
-            {
-              if (stream.empty()) throw MissingSize(key);
-              
-              auto const sizeToken = peekToken(stream);
-              if (empty(sizeToken)) throw MissingSize(key);
-              
-              // the value is loaded in `forcedValues` and already excludes
-              // the size token just read
-              char const *b = begin(sizeToken), *e = end(sizeToken);
-              if (std::from_chars(b, e, forcedValues).ptr != e)
-                throw MissingSize(key, std::string{ sizeToken });
-              
-              ++forcedValues; // the size will be forced in the values anyway
-              
-            } // FixedSize
-            break;
-          case DynamicSize:
-            // nothing to do, the normal algorithm rules will follow
-            break;
-          default:
-            forcedValues = values;
-            break;
-        } // switch
-        break;
-      } // for pattern
-      if (bKey) break;
-      
-      // let the "standard" pattern decide
-      bKey = isKey(token);
-      
-    } while (false);
-    
-    if (bKey) currentItem = &(data.makeItem(std::move(tokenStr)));
+    if (isKey(token)) currentItem = &(data.makeItem(std::move(tokenStr)));
     else {
       if (!currentItem) {
         throw InvalidFormat(
@@ -165,33 +116,7 @@ void icarus::details::KeyedCSVparser::parse
     
   } // while
   
-  if (forcedValues > 0) {
-    assert(currentItem);
-    throw MissingValues(currentItem->key(), forcedValues);
-  }
-  
 } // icarus::KeyedCSVparser::parse()
-
-
-// -----------------------------------------------------------------------------
-auto icarus::details::KeyedCSVparser::addPatterns
-  (std::initializer_list<std::pair<std::regex, unsigned int>> patterns)
-  -> KeyedCSVparser&
-{
-  for (auto& pattern: patterns) fPatterns.emplace_back(std::move(pattern));
-  return *this;
-} // icarus::details::KeyedCSVparser::addPatterns()
-
-
-// -----------------------------------------------------------------------------
-auto icarus::details::KeyedCSVparser::addPatterns
-  (std::initializer_list<std::pair<std::string, unsigned int>> patterns)
-  -> KeyedCSVparser&
-{
-  for (auto& pattern: patterns)
-    fPatterns.emplace_back(std::regex{ pattern.first }, pattern.second);
-  return *this;
-} // icarus::details::KeyedCSVparser::addPatterns()
 
 
 // -----------------------------------------------------------------------------
@@ -201,39 +126,9 @@ auto icarus::details::KeyedCSVparser::parse
 
 
 // -----------------------------------------------------------------------------
-std::size_t icarus::details::KeyedCSVparser::findTokenLength
-  (Buffer_t const& buffer) const noexcept
-{
-  
-  auto const start = cbegin(buffer), bend = cend(buffer);
-  auto finish = start;
-  while (finish != bend) {
-    if (*finish == fSep) break;
-    ++finish;
-  } // for
-  
-  return std::distance(start, finish);
-} // icarus::details::KeyedCSVparser::findTokenLength()
-
-
-// -----------------------------------------------------------------------------
-auto icarus::details::KeyedCSVparser::peekToken
-  (Buffer_t const& buffer) const noexcept -> SubBuffer_t
-{
-  return strip({ cbegin(buffer), findTokenLength(buffer) });
-} // icarus::details::KeyedCSVparser::peekToken()
-
-
-// -----------------------------------------------------------------------------
 auto icarus::details::KeyedCSVparser::extractToken
   (Buffer_t& buffer) const noexcept -> SubBuffer_t
 {
-#if 1
-  auto const start = cbegin(buffer), bend = cend(buffer);
-  std::size_t const length = findTokenLength(buffer);
-  moveBufferHead(buffer, length + ((start + length == bend)? 0: 1));
-  return strip({ start, length });
-#else
   
   auto const start = cbegin(buffer), bend = cend(buffer);
   auto finish = start;
@@ -247,7 +142,7 @@ auto icarus::details::KeyedCSVparser::extractToken
   moveBufferHead(buffer, tokenLength + ((finish == bend)? 0: 1));
   
   return strip({ start, tokenLength });
-#endif
+  
 } // icarus::details::KeyedCSVparser::extractToken()
 
 

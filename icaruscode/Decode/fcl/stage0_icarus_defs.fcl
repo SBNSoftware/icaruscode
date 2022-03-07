@@ -20,12 +20,12 @@ icarus_stage0_analyzers:
 {
   purityinfoana0: { module_type:     "TPCPurityInfoAna"
                     PurityInfoLabel: "purityana0"
-                    PrintInfo:       false
+                    PrintInfo:       true
                     SelectEvents:    [ reco ]
                   }
   purityinfoana1: { module_type:     "TPCPurityInfoAna"
                     PurityInfoLabel: "purityana1"
-                    PrintInfo:       false
+                    PrintInfo:       true
                     SelectEvents:    [ reco ]
                   }
 }

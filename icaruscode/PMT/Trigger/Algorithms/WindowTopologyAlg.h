@@ -13,9 +13,11 @@
 
 // ICARUS libraries
 #include "icaruscode/PMT/Trigger/Algorithms/WindowChannelMap.h"
-#include "icaruscode/PMT/Trigger/Utilities/TrackedOpticalTriggerGate.h"
-#include "icaruscode/IcarusObj/OpDetWaveformMeta.h" // sbn::OpDetWaveformMeta
 #include "icarusalg/Utilities/mfLoggingClass.h"
+#include "sbnobj/ICARUS/PMT/Trigger/Data/MultiChannelOpticalTriggerGate.h"
+
+// LArSoft libraries
+#include "lardataobj/RawData/OpDetWaveform.h" // raw::Channel_t
 
 // framework libraries
 #include "cetlib_except/exception.h"
@@ -54,8 +56,7 @@ class icarus::trigger::WindowTopologyAlg
     public:
   
   /// Type of trigger gate extracted from the input event.
-  using InputTriggerGate_t
-    = icarus::trigger::TrackedOpticalTriggerGate<sbn::OpDetWaveformMeta>;
+  using InputTriggerGate_t = icarus::trigger::MultiChannelOpticalTriggerGate;
   
   /// A list of trigger gates from input.
   using TriggerGates_t = std::vector<InputTriggerGate_t>;

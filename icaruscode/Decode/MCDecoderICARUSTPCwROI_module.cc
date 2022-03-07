@@ -594,10 +594,16 @@ void MCDecoderICARUSTPCwROI::processSingleLabel(art::Event&                     
 
         // Some detector simulations don't output channels that don't have any possibility of signal (ghost channels)
         // Do a cleanup phase here to find these
+        std::cout << "Size of board map: " << boardToChannelArrayPairMap.size() << std::endl;
         for(auto& boardInfo : boardToChannelArrayPairMap)
         {
             if (boardWireCountMap[boardInfo.first] < 64)
             {
+                std::cout << "****> caught less than 64 channel remnant: " << boardWireCountMap[boardInfo.first] << std::endl;
+                std::cout << "  channels: ";
+                for(const auto& pair : boardInfo.second.first) std::cout << pair.first << " ";
+                std::cout << std::endl;
+
                 processSingleImage(clockData, boardInfo.second, boardWireCountMap[boardInfo.first], concurrentRawDigits, concurrentRawRawDigits, coherentRawDigits, concurrentROIs);
             }
         }
@@ -702,6 +708,8 @@ void MCDecoderICARUSTPCwROI::processSingleImage(const detinfo::DetectorClocksDat
 
             roiIdx++;
         }
+
+//        std::cout << "    ROIVec size: " << ROIVec.size() << std::endl;
 
         concurrentROIs.push_back(recob::WireCreator(std::move(ROIVec),channel,fGeometry->View(channel)).move());
     }//loop over channel indices

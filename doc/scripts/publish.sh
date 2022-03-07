@@ -6,10 +6,6 @@
 # Changes
 # --------
 #
-# 20220301 (petrillo@slac.stanford.edu) [v1.2]
-#   * added `--overwrite` option and reworked the internals of the update mode
-#   * added `--force` option (affects only `--overwrite` so far)
-#   * added current directory as priority source for the location of  Doxyfile
 # 20200520 (petrillo@slac.stanford.edu) [v1.1]
 #   * added script argument parsing
 #   * added `--update` option
@@ -31,14 +27,10 @@ unset LibraryToLoad
 # -- END -- boilerplate settings and library loading ---------------------------
 
 # ------------------------------------------------------------------------------
-SCRIPTVERSION="1.2"
+SCRIPTVERSION="1.1"
 
 
 declare -r RepoDir="./"
-
-declare -r UpdateMode='update'
-declare -r OverwriteMode='overwrite'
-declare -r CleanPublishMode='newonly'
 
 
 # ------------------------------------------------------------------------------
@@ -61,10 +53,6 @@ Supported options:
     if there is already documentation for the same version, update it
     instead of refusing to proceed; the existing directory is not removed
     before publishing
---overwrite
-    destination directory is fully removed before the copy proceeds
---force
-    in options like \`--overwrite\` it does not ask for confirmation
 --version , -V
     prints the script version and exits (hint: it's version ${SCRIPTVERSION}
 --help , -h , -?
@@ -88,7 +76,7 @@ function printVersion() {
 #
 declare -i NoMoreOptions
 declare -i DoVersion=0 DoHelp=0
-declare PublishMode="$CleanPublishMode"
+declare -i CleanOutputArea=0 UpdateOutputArea=0
 declare ExitWithCode
 declare Param
 for (( iParam = 1 ; iParam <= $# ; ++iParam )); do
@@ -98,9 +86,7 @@ for (( iParam = 1 ; iParam <= $# ; ++iParam )); do
       ( '--experiment='* )         ExperimentName="${Param#--*=}" ;;
       ( '--srcdocdir='* )          SourceDir="${Param#--*=}" ;;
       ( '--codeversion='* )        Version="${Param#--*=}" ;;
-      ( '--update' )               PublishMode="$UpdateMode" ;;
-      ( '--overwrite' )            PublishMode="$OverwriteMode" ;;
-      ( '--force' )                FORCE=1 ;;
+      ( '--update' )               UpdateOutputArea=1 ;;
       ( '--version' | '-V' )       DoVersion=1 ;;
       ( '--help' | '-h' | '-?' )   DoHelp=1 ;;
       ( '-' | '--' )               NoMoreOptions=1 ;;
@@ -150,7 +136,7 @@ fi
 # find the Doxygen configuration file
 #
 declare Doxyfile
-Doxyfile="$(FindDoxyfile "$ExperimentName" "$(pwd)")"
+Doxyfile="$(FindDoxyfile "$ExperimentName")"
 if [[ $? == 0 ]] && [[ -n "$Doxyfile" ]]; then
   echo "Doxygen configuration: '${Doxyfile}'"
 else
@@ -192,27 +178,15 @@ declare -r DestVersionsDir="${PublishBaseDir:+${PublishBaseDir%/}/}${ExperimentC
 mkdir -p "$DestVersionsDir"
 declare -r DestDir="${DestVersionsDir}/${Version}"
 if [[ -d "$DestDir" ]]; then
-  case "$PublishMode" in
-    ( "$OverwriteMode" )
-      echo "The existing content in '${DestDir}' will be removed before proceeding."
-      if isFlagUnset FORCE ; then
-        ConfirmOpt='-I'
-        echo "Please confirm the removal of its content:"
-      fi
-      rm -Rf $ConfirmOpt "$DestDir"
-      [[ -d "$DestDir" ]] && FATAL 1 "output directory won't be overwritten."
-      ;;
-    ( "$UpdateMode" )
-      echo "The existing content in '${DestDir}' will be updated."
-      # no action actually needed
-      ;;
-    ( "$CleanPublishMode" )
-      FATAL 1 "Output directory '${DestDir}' already exists: remove it first!"
-      ;;
-    ( * )
-      FATAL 1 "INTERNAL ERROR: PublishMode='${PublishMode}' not recognised."
-      ;;
-  esac
+  if isFlagSet CleanOutputArea ; then
+    echo "The existing content in '${DestDir}' will be removed before proceeding."
+    rm -Rf "$DestDir"
+  elif isFlagSet UpdateOutputArea ; then
+    echo "The existing content in '${DestDir}' will be updated."
+    # no action actually needed
+  else
+    FATAL 1 "Output directory '${DestDir}' already exists: remove it first!"
+  fi
 fi
 declare -a Cmd=( rsync -av "${SourceDir%/}/" "${DestDir%/}/" ">&" "$TransferLogFile")
 
@@ -228,4 +202,3 @@ echo "Updating latest version link:"
 declare -r LatestLinkPath="${DestVersionsDir}/${LatestLinkName}"
 [[ -h "$LatestLinkPath" ]] && rm "$LatestLinkPath"
 ln -sfv "$(basename "$DestDir")" "$LatestLinkPath"
-

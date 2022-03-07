@@ -6,13 +6,11 @@
  */
 
 // ICARUS libraries
-#include "icaruscode/PMT/Trigger/Utilities/TriggerGateOperations.h" // OpGates
-#include "icaruscode/PMT/Trigger/Utilities/TriggerDataUtils.h"
-#include "icaruscode/PMT/Trigger/Utilities/TrackedOpticalTriggerGate.h"
-#include "icaruscode/PMT/Trigger/Utilities/OpDetWaveformMetaMatcher.h"
-#include "icaruscode/PMT/Trigger/Algorithms/TriggerTypes.h" // ADCCounts_t
-#include "icaruscode/IcarusObj/OpDetWaveformMeta.h" // sbn::OpDetWaveformMeta
+#include "sbnobj/ICARUS/PMT/Trigger/Data/MultiChannelOpticalTriggerGate.h"
+#include "sbnobj/ICARUS/PMT/Trigger/Data/SingleChannelOpticalTriggerGate.h"
 #include "sbnobj/ICARUS/PMT/Trigger/Data/OpticalTriggerGate.h"
+#include "icaruscode/PMT/Trigger/Utilities/TriggerDataUtils.h"
+#include "icaruscode/PMT/Trigger/Algorithms/TriggerTypes.h" // ADCCounts_t
 
 // LArSoft libraries
 #include "larcore/Geometry/Geometry.h"
@@ -66,7 +64,7 @@ namespace icarus::trigger { class LVDSgates; }
  * * `std::vector<icarus::trigger::OpticalTriggerGateData_t>` (labels out of
  *   `TriggerGatesTag` and `Thresholds`): full sets of discriminated waveforms,
  *   each waveform possibly covering multiple optical channels,
- *   and their associations to optical waveform metadata. One set per threshold.
+ *   and their associations to optical waveforms. One set per threshold.
  *
  *
  * Requirements
@@ -87,19 +85,9 @@ namespace icarus::trigger { class LVDSgates; }
  *   concatenation of input module label and instance name of the input gates;
  *   the former is omitted if it is `TriggerGatesTag`): sets of gates combined
  *   according to the configuration; one set per input threshold.
- * * `art::Assns<icarus::trigger::OpticalTriggerGateData_t, sbn::OpDetWaveformMeta>`
- *   (instance name: same as above): associations between each
- *   produced gate and the metadata of the optical waveforms providing the
- *   original data.
  * * `art::Assns<icarus::trigger::OpticalTriggerGateData_t, raw::OpDetWaveform>`
- *   (instance name: same as above; optional): associations between each
+ *   (instance name: same as above): associations between each
  *   produced gate and the optical waveforms providing the original data.
- *   It is produced only if `ProduceWaveformAssns` configuration parameter is
- *   `true`, and it relies on the assumption that there is an association
- *   available between each `sbn::OpDetWaveformMeta` and its
- *   `raw::OpDetWaveform`, produced by the same module (i.e. with the same input
- *   tag) as the one of the original `sbn::OpDetWaveformMeta` data product
- *   itself.
  * 
  * 
  * Configuration parameters
@@ -154,8 +142,6 @@ namespace icarus::trigger { class LVDSgates; }
  *     All pairings undergo the same operation (it is not possible, for example,
  *     disabling only one group of channels and combining the other groups with
  *     a `AND`).
- * * `ProduceWaveformAssns` (flag, default: `true`): produce also associations
- *     between each gate and the `raw::OpDetWaveform` which contributed to it.
  * * `LogCategory` (string): name of the output stream category for console
  *     messages (managed by MessageFacility library).
  *
@@ -216,13 +202,6 @@ class icarus::trigger::LVDSgates: public art::EDProducer {
       Comment("channel combination mode: " + CombinationModeSelector.optionListString())
       };
     
-    fhicl::Atom<bool> ProduceWaveformAssns {
-      Name("ProduceWaveformAssns"),
-      Comment
-        ("also produce gate/waveform associations together with gate/metadata"),
-      true
-      };
-    
     fhicl::Atom<std::string> LogCategory {
       Name("LogCategory"),
       Comment("name of the category used for the output"),
@@ -276,10 +255,6 @@ class icarus::trigger::LVDSgates: public art::EDProducer {
   using BinaryCombinationFunc_t
     = OpticalTriggerGate& (OpticalTriggerGate::*)(OpticalTriggerGate const&);
   
-  /// Reconstituted trigger gate type internally used.
-  using TrackedTriggerGate_t
-    = icarus::trigger::TrackedOpticalTriggerGate<sbn::OpDetWaveformMeta>;
-  
   
   // --- BEGIN Configuration variables -----------------------------------------
   
@@ -298,9 +273,6 @@ class icarus::trigger::LVDSgates: public art::EDProducer {
 
   std::vector<raw::Channel_t> fIgnoreChannels;
   
-  /// Whether to produce gate/waveform associations.
-  bool fProduceWaveformAssns;
-  
   std::string fLogCategory; ///< Message facility stream category for output.
   
   // --- END Configuration variables -------------------------------------------
@@ -309,7 +281,7 @@ class icarus::trigger::LVDSgates: public art::EDProducer {
   /// Completely processes the data for the specified threshold.
   void produceThreshold(
     art::Event& event,
-    icarus::trigger::OpDetWaveformMetaDataProductMap_t& waveformMap,
+    icarus::trigger::OpDetWaveformDataProductMap_t& waveformMap,
     std::string const& thresholdStr,
     SourceInfo_t const& srcInfo
     ) const;
@@ -328,28 +300,27 @@ class icarus::trigger::LVDSgates: public art::EDProducer {
   
   // --- BEGIN -- Combination modes --------------------------------------------
   /// Combination function for the `disable` mode.
-  TrackedTriggerGate_t discardChannels(
-    std::vector<TrackedTriggerGate_t> const&,
+  icarus::trigger::MultiChannelOpticalTriggerGate discardChannels(
+    std::vector<icarus::trigger::SingleChannelOpticalTriggerGate> const&,
     std::vector<raw::Channel_t> const& pairing
     ) const;
   
   /// Combination function for the `input1` and `input2` modes.
-  TrackedTriggerGate_t selectChannel(
-    std::vector<TrackedTriggerGate_t> const&,
+  icarus::trigger::MultiChannelOpticalTriggerGate selectChannel(
+    std::vector<icarus::trigger::SingleChannelOpticalTriggerGate> const&,
     std::vector<raw::Channel_t> const& pairing, std::size_t chosenIndex
     ) const;
   
-  /// Combination function for the `AND` and `OR` modes; `op` is from `GateOps`.
-  template <typename Op>
-  TrackedTriggerGate_t binaryCombineChannel(
-    std::vector<TrackedTriggerGate_t> const& gates,
+  /// Combination function for the `AND` and `OR` modes.
+  icarus::trigger::MultiChannelOpticalTriggerGate binaryCombineChannel(
+    std::vector<icarus::trigger::SingleChannelOpticalTriggerGate> const& gates,
     std::vector<raw::Channel_t> const& pairing,
-    Op combine
+    BinaryCombinationFunc_t combine
     ) const;
   
   /// Performs the combination of a group of channels.
-  TrackedTriggerGate_t combineChannels(
-    std::vector<TrackedTriggerGate_t> const& gates,
+  icarus::trigger::MultiChannelOpticalTriggerGate combineChannels(
+    std::vector<icarus::trigger::SingleChannelOpticalTriggerGate> const& gates,
     std::vector<raw::Channel_t> const& pairing,
     ComboMode comboMode
     ) const;
@@ -363,21 +334,24 @@ class icarus::trigger::LVDSgates: public art::EDProducer {
   unsigned int checkPairings() const;
 
   /// Input requirement check. Throws if requirements fail.
-  void checkInput(std::vector<TrackedTriggerGate_t> const&  gates) const;
+  void checkInput(
+    std::vector<icarus::trigger::SingleChannelOpticalTriggerGate> const&  gates
+    ) const;
   
   // --- END -- Checks ---------------------------------------------------------
   
   
   /// Adds the associated waveforms into the map.
   static void UpdateWaveformMap(
-    icarus::trigger::OpDetWaveformMetaDataProductMap_t& map,
-    art::Assns<TriggerGateData_t, sbn::OpDetWaveformMeta> const& assns
+    icarus::trigger::OpDetWaveformDataProductMap_t& map,
+    art::Assns<TriggerGateData_t, raw::OpDetWaveform> const& assns
     );
   
   /// Assembles trigger gates from `dataTag` data products in `event`.
-  static std::vector<TrackedTriggerGate_t> ReadTriggerGates(
+  static std::vector<icarus::trigger::SingleChannelOpticalTriggerGate>
+  ReadTriggerGates(
     art::Event const& event, art::InputTag const& dataTag,
-    icarus::trigger::OpDetWaveformMetaDataProductMap_t& waveformMap
+    icarus::trigger::OpDetWaveformDataProductMap_t& waveformMap
     );
 
   /// Converts a threshold string into an input tag.
@@ -402,7 +376,6 @@ icarus::trigger::LVDSgates::LVDSgates
   , fChannelPairing(config().ChannelPairing())
   , fComboMode(config().getCombinationMode())
   , fIgnoreChannels(config().IgnoreChannels())
-  , fProduceWaveformAssns(config().ProduceWaveformAssns())
   , fLogCategory(config().LogCategory())
 {
   //
@@ -444,7 +417,7 @@ icarus::trigger::LVDSgates::LVDSgates
   //
   for (auto const& [ inputTag, outName ]: util::const_values(fADCthresholds)) {
     consumes<std::vector<OpticalTriggerGateData_t>>(inputTag);
-    consumes<art::Assns<OpticalTriggerGateData_t, sbn::OpDetWaveformMeta>>
+    consumes<art::Assns<OpticalTriggerGateData_t, raw::OpDetWaveform>>
       (inputTag);
   } // for
   
@@ -455,10 +428,6 @@ icarus::trigger::LVDSgates::LVDSgates
   for (auto const& [ inputTag, outName ]: util::const_values(fADCthresholds)) {
     produces<std::vector<OpticalTriggerGateData_t>>(outName);
     produces<art::Assns<OpticalTriggerGateData_t, raw::OpDetWaveform>>(outName);
-    if (fProduceWaveformAssns) {
-      produces<art::Assns<OpticalTriggerGateData_t, sbn::OpDetWaveformMeta>>
-        (outName);
-    }
   } // for
   
   
@@ -468,7 +437,7 @@ icarus::trigger::LVDSgates::LVDSgates
 //------------------------------------------------------------------------------
 void icarus::trigger::LVDSgates::produce(art::Event& event) {
   
-  icarus::trigger::OpDetWaveformMetaDataProductMap_t waveformMap;
+  icarus::trigger::OpDetWaveformDataProductMap_t waveformMap;
   
   for (auto const& [ thresholdStr, srcInfo ]: fADCthresholds) {
     
@@ -480,11 +449,29 @@ void icarus::trigger::LVDSgates::produce(art::Event& event) {
 
 
 //------------------------------------------------------------------------------
+std::vector<std::vector<raw::Channel_t>> icarus::trigger::LVDSgates::removeChannels(
+  std::vector<std::vector<raw::Channel_t>> channelPairing,
+  std::vector<raw::Channel_t> const& ignoreChannels
+  ) const {
+
+  for (std::vector<raw::Channel_t>& channels: channelPairing) {
+    for (unsigned int j = channels.size(); j-- > 0; ) {
+      std::vector<raw::Channel_t>::const_iterator const it = find(ignoreChannels.begin(), ignoreChannels.end(), channels[j]);
+      if (it != fIgnoreChannels.end()) {
+        channels.erase(channels.begin() + j);
+      }
+    }
+  }
+
+  return channelPairing;
+
+} // icarus::trigger::LVDSgates::removeChannels()
+
 
 //------------------------------------------------------------------------------
 void icarus::trigger::LVDSgates::produceThreshold(
   art::Event& event,
-  icarus::trigger::OpDetWaveformMetaDataProductMap_t& waveformMap,
+  icarus::trigger::OpDetWaveformDataProductMap_t& waveformMap,
   std::string const& thresholdStr,
   SourceInfo_t const& srcInfo
 ) const {
@@ -494,18 +481,16 @@ void icarus::trigger::LVDSgates::produceThreshold(
   mf::LogDebug(fLogCategory)
     << "Processing threshold " << thresholdStr
     << " from '" << dataTag.encode() << "'";
-  
+
   using icarus::trigger::OpticalTriggerGateData_t; // for convenience
   
-  std::vector<TrackedTriggerGate_t> const& gates
+  std::vector<icarus::trigger::SingleChannelOpticalTriggerGate> const& gates
     = ReadTriggerGates(event, dataTag, waveformMap);
-
+  
   checkInput(gates);
   
-  std::vector<TrackedTriggerGate_t> combinedGates;
-  
-  std::vector<std::vector<raw::Channel_t>> const cleanedChannels
-    = removeChannels(fChannelPairing, fIgnoreChannels);
+  std::vector<icarus::trigger::MultiChannelOpticalTriggerGate> combinedGates;
+  std::vector<std::vector<raw::Channel_t>> const cleanedChannels = removeChannels(fChannelPairing, fIgnoreChannels);
 
   for (std::vector<raw::Channel_t> const& pairing: cleanedChannels) {
     if (pairing.empty()) continue; // ???
@@ -519,7 +504,7 @@ void icarus::trigger::LVDSgates::produceThreshold(
     (event, outputInstanceName);
   auto [ outputGates, outputAssns ]
     = icarus::trigger::transformIntoOpticalTriggerGate
-    (std::move(combinedGates), makeGatePtr, waveformMap);
+    (combinedGates, makeGatePtr, waveformMap);
   
   mf::LogTrace(fLogCategory)
     << "Threshold " << thresholdStr << " ('" << dataTag.encode() << "'): "
@@ -529,31 +514,13 @@ void icarus::trigger::LVDSgates::produceThreshold(
     << moduleDescription().moduleLabel() << ":" << outputInstanceName << "'"
     ;
 
-  
-  if (fProduceWaveformAssns) {
-    
-    // produce one gate-waveform association for each gate-metadata one;
-    // do it now while the gate/metadata association is still locally available
-    icarus::trigger::OpDetWaveformMetaMatcher waveformMetaMatcher{ event };
-    art::Assns<OpticalTriggerGateData_t, raw::OpDetWaveform> outputWaveAssns;
-    for (auto const [ gatePtr, metaPtr ]: outputAssns)
-      outputWaveAssns.addSingle(gatePtr, waveformMetaMatcher(metaPtr));
-    
-    event.put(
-      std::make_unique<art::Assns<OpticalTriggerGateData_t, raw::OpDetWaveform>>
-        (std::move(outputWaveAssns)),
-      outputInstanceName
-      );
-    
-  } // if fProduceWaveformAssns
-  
   event.put(
     std::make_unique<std::vector<OpticalTriggerGateData_t>>
       (std::move(outputGates)),
     outputInstanceName
     );
   event.put(
-    std::make_unique<art::Assns<OpticalTriggerGateData_t, sbn::OpDetWaveformMeta>>
+    std::make_unique<art::Assns<OpticalTriggerGateData_t, raw::OpDetWaveform>>
       (std::move(outputAssns)),
     outputInstanceName
     );
@@ -562,21 +529,19 @@ void icarus::trigger::LVDSgates::produceThreshold(
 
 
 //------------------------------------------------------------------------------
-auto icarus::trigger::LVDSgates::combineChannels(
-  std::vector<TrackedTriggerGate_t> const& gates,
+icarus::trigger::MultiChannelOpticalTriggerGate
+icarus::trigger::LVDSgates::combineChannels(
+  std::vector<icarus::trigger::SingleChannelOpticalTriggerGate> const& gates,
   std::vector<raw::Channel_t> const& pairing,
   ComboMode comboMode
-) const -> TrackedTriggerGate_t {
-  
-  namespace GateOps = icarus::trigger::GateOps;
-  
+) const {
   switch (comboMode) {
     case ComboMode::disable:
       return discardChannels(gates, pairing);
     case ComboMode::AND:
-      return binaryCombineChannel(gates, pairing, GateOps::Min);
+      return binaryCombineChannel(gates, pairing, &OpticalTriggerGate::Min);
     case ComboMode::OR:
-      return binaryCombineChannel(gates, pairing, GateOps::Max);
+      return binaryCombineChannel(gates, pairing, &OpticalTriggerGate::Max);
     case ComboMode::Input1:
       return selectChannel(gates, pairing, 0U);
     case ComboMode::Input2:
@@ -586,104 +551,69 @@ auto icarus::trigger::LVDSgates::combineChannels(
         << "Unexpected combination mode (#" << static_cast<int>(comboMode)
         << ").\n";
   } // switch(comboMode)
-} // icarus::trigger::LVDSgates::combineChannels()
+} // icarus::trigger::LVDSgates::discardChannels()
 
 
 //------------------------------------------------------------------------------
-std::vector<std::vector<raw::Channel_t>> icarus::trigger::LVDSgates::removeChannels(
-  std::vector<std::vector<raw::Channel_t>> channelPairing,
-  std::vector<raw::Channel_t> const& ignoreChannels
-  ) const {
-
-  for (std::vector<raw::Channel_t>& channels: channelPairing) {
-    for (unsigned int j = channels.size(); j-- > 0; ) {
-      std::vector<raw::Channel_t>::const_iterator const it
-        = find(ignoreChannels.begin(), ignoreChannels.end(), channels[j]);
-      if (it != fIgnoreChannels.end()) {
-        channels.erase(channels.begin() + j);
-      }
-    }
-  }
-
-  return channelPairing;
-
-} // icarus::trigger::LVDSgates::removeChannels()
-
-
-//------------------------------------------------------------------------------
-auto icarus::trigger::LVDSgates::discardChannels(
-  std::vector<TrackedTriggerGate_t> const& gates,
+icarus::trigger::MultiChannelOpticalTriggerGate
+icarus::trigger::LVDSgates::discardChannels(
+  std::vector<icarus::trigger::SingleChannelOpticalTriggerGate> const&,
   std::vector<raw::Channel_t> const& pairing
-) const -> TrackedTriggerGate_t {
-  TrackedTriggerGate_t gate;
-  for (raw::Channel_t channel: pairing) gate.gate().addChannel(channel);
-  for (auto const& srcGate: gates) gate.tracking().add(srcGate.tracking());
+) const {
+  icarus::trigger::MultiChannelOpticalTriggerGate gate;
+  for (raw::Channel_t channel: pairing) gate.addChannel(channel);
   return gate;
 } // icarus::trigger::LVDSgates::combineChannels()
 
 
 //------------------------------------------------------------------------------
-auto icarus::trigger::LVDSgates::selectChannel(
-  std::vector<TrackedTriggerGate_t> const& gates,
+icarus::trigger::MultiChannelOpticalTriggerGate
+icarus::trigger::LVDSgates::selectChannel(
+  std::vector<icarus::trigger::SingleChannelOpticalTriggerGate> const& gates,
   std::vector<raw::Channel_t> const& pairing,
   std::size_t chosenIndex
-) const -> TrackedTriggerGate_t {
+) const {
   // requiring that gates are at an index matching their channel number
-  TrackedTriggerGate_t gate { gates[pairing[chosenIndex]] };
+  icarus::trigger::MultiChannelOpticalTriggerGate gate {
+    static_cast<icarus::trigger::OpticalTriggerGate const&>
+      (gates[pairing[chosenIndex]])
+    };
   for (raw::Channel_t channel: pairing) {
-    mf::LogTrace(fLogCategory) << "Input:  " << gates[channel].gate();
-    gate.gate().addChannel(channel);
+    mf::LogTrace(fLogCategory) << "Input:  " << gates[channel];
+    gate.addChannel(channel);
   }
-  mf::LogTrace(fLogCategory) << "Output: " << gate.gate();
-  for (auto const& srcGate: gates) gate.tracking().add(srcGate.tracking());
+  mf::LogTrace(fLogCategory) << "Output: " << gate;
   return gate;
 } // icarus::trigger::LVDSgates::selectChannel()
 
 
 //------------------------------------------------------------------------------
-template <typename Op>
-auto icarus::trigger::LVDSgates::binaryCombineChannel(
-  std::vector<TrackedTriggerGate_t> const& gates,
+icarus::trigger::MultiChannelOpticalTriggerGate
+icarus::trigger::LVDSgates::binaryCombineChannel(
+  std::vector<icarus::trigger::SingleChannelOpticalTriggerGate> const& gates,
   std::vector<raw::Channel_t> const& pairing,
-  Op combine
-) const -> TrackedTriggerGate_t {
+  BinaryCombinationFunc_t combine
+  ) const
+{
   if (pairing.empty()) return discardChannels(gates, pairing);
 
-#if 1
-  
-  auto byIndex = [&gates](std::size_t index) -> TrackedTriggerGate_t const&
-    { return gates[index]; };
-  
-# if 0
-  // C++20: the following loses the debug output:
-  
-  return icarus::trigger::OpGateColl
-    (combine, pairing | std::ranges::views::transform(byIndex));
-# else
-  
-  return icarus::trigger::OpGateColl
-    (combine, util::make_transformed_span(pairing, byIndex));
-  
-# endif // 0
-  
-#else
   auto iChannel = pairing.begin();
   auto cend = pairing.end();
 
   // requiring that gates are at an index matching their channel number
-  TrackedTriggerGate_t gate { gates[*iChannel] };
+  icarus::trigger::MultiChannelOpticalTriggerGate gate
+    {static_cast<icarus::trigger::OpticalTriggerGate const&>(gates[*iChannel])};
 
-  mf::LogTrace(fLogCategory) << "Input:  " << gates[*iChannel].gate();
+  mf::LogTrace(fLogCategory) << "Input:  " << gates[*iChannel];
   while (++iChannel != cend) {
 
-    mf::LogTrace(fLogCategory) << "Input:  " << gates[*iChannel].gate();
-    gate = icarus::trigger::OpGates(combine, gate, gates[*iChannel]);
+    mf::LogTrace(fLogCategory) << "Input:  " << gates[*iChannel];
+    (gate.*combine)(gates[*iChannel]);
 
   } // while
-  mf::LogTrace(fLogCategory) << "Output: " << gate.gate();
+  mf::LogTrace(fLogCategory) << "Output: " << gate;
 
   return gate;
-#endif // 0
 } // icarus::trigger::LVDSgates::binaryCombineChannel()
 
 
@@ -778,18 +708,15 @@ unsigned int icarus::trigger::LVDSgates::checkPairings() const {
 
 //------------------------------------------------------------------------------
 void icarus::trigger::LVDSgates::checkInput
-  (std::vector<TrackedTriggerGate_t> const& gates) const
+  (std::vector<icarus::trigger::SingleChannelOpticalTriggerGate> const&  gates)
+  const
 {
   /*
    * check that 
    *  * each gate has a single channel
    *  * each gate is in the position matching its channel number
    */
-  
-  using icarus::trigger::gatesIn;
-  
-  for (auto const& [ iGate, gate ]: util::enumerate(gatesIn(gates))) {
-    // gate is a OpticalTriggerGateData_t
+  for (auto const& [ iGate, gate ]: util::enumerate(gates)) {
     
     auto const expectedChannel = static_cast<raw::Channel_t>(iGate);
     
@@ -799,7 +726,10 @@ void icarus::trigger::LVDSgates::checkInput
       if (!gate.hasChannels())
         e << "no channels";
       else {
-        auto const& channels = gate.channels();
+        // we are cheating here, because `SingleChannelOpticalTriggerGate`
+        // actually does not want more than one channel;
+        // having them is sort of a logic error
+        auto const& channels = gate.OpticalTriggerGate::channels();
         auto iChannel = channels.begin();
         auto const cend = channels.end();
         e << gate.nChannels() << " channels (" << *iChannel;
@@ -827,32 +757,32 @@ void icarus::trigger::LVDSgates::checkInput
 
 //------------------------------------------------------------------------------
 void icarus::trigger::LVDSgates::UpdateWaveformMap(
-  icarus::trigger::OpDetWaveformMetaDataProductMap_t& map,
-  art::Assns<TriggerGateData_t, sbn::OpDetWaveformMeta> const& assns
+  icarus::trigger::OpDetWaveformDataProductMap_t& map,
+  art::Assns<TriggerGateData_t, raw::OpDetWaveform> const& assns
 ) {
   
-  for (art::Ptr<sbn::OpDetWaveformMeta> const& wave: util::get_elements<1U>(assns))
+  for (art::Ptr<raw::OpDetWaveform> const& wave: util::get_elements<1U>(assns))
     map.emplace(wave.get(), wave);
   
 } // icarus::trigger::LVDSgates::UpdateWaveformMap()
 
 
 //------------------------------------------------------------------------------
-auto icarus::trigger::LVDSgates::ReadTriggerGates(
+std::vector<icarus::trigger::SingleChannelOpticalTriggerGate>
+icarus::trigger::LVDSgates::ReadTriggerGates(
   art::Event const& event,
   art::InputTag const& dataTag,
-  icarus::trigger::OpDetWaveformMetaDataProductMap_t& waveformMap
-) -> std::vector<TrackedTriggerGate_t> {
+  icarus::trigger::OpDetWaveformDataProductMap_t& waveformMap
+) {
   using icarus::trigger::OpticalTriggerGateData_t;
   
   auto const& assns =
-    event.getProduct<art::Assns<OpticalTriggerGateData_t, sbn::OpDetWaveformMeta>>
-    (dataTag);
+    *(event.getValidHandle<art::Assns<OpticalTriggerGateData_t, raw::OpDetWaveform>>(dataTag));
   
   UpdateWaveformMap(waveformMap, assns);
   
-  return icarus::trigger::FillTriggerGates
-    (event.getProduct<std::vector<OpticalTriggerGateData_t>>(dataTag), assns);
+  return icarus::trigger::FillTriggerGates<icarus::trigger::SingleChannelOpticalTriggerGate>
+    (*(event.getValidHandle<std::vector<OpticalTriggerGateData_t>>(dataTag)), assns);
   
 } // icarus::trigger::LVDSgates::ReadTriggerGates()
 

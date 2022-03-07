@@ -15,10 +15,10 @@
 #include "icaruscode/PMT/Trigger/Algorithms/BeamGateMaker.h"
 #include "icaruscode/PMT/Trigger/Algorithms/TriggerTypes.h" // ADCCounts_t
 #include "icaruscode/PMT/Trigger/Algorithms/details/TriggerInfo_t.h"
+#include "sbnobj/ICARUS/PMT/Trigger/Data/MultiChannelOpticalTriggerGate.h"
 #include "sbnobj/ICARUS/PMT/Trigger/Data/OpticalTriggerGate.h"
 #include "icaruscode/PMT/Trigger/Utilities/TriggerDataUtils.h" // FillTriggerGates()
 #include "icaruscode/PMT/Trigger/Utilities/PlotSandbox.h"
-#include "icaruscode/IcarusObj/OpDetWaveformMeta.h" // sbn::OpDetWaveformMeta
 #include "icarusalg/Utilities/ROOTutils.h" // util::ROOT
 #include "icaruscode/Utilities/DetectorClocksHelpers.h" // makeDetTimings()...
 #include "icarusalg/Utilities/FixedBins.h"
@@ -556,7 +556,7 @@ icarus::trigger::SlidingWindowTriggerSimulation::SlidingWindowTriggerSimulation
   // trigger primitives
   for (art::InputTag const& inputDataTag: util::const_values(fADCthresholds)) {
     consumes<std::vector<OpticalTriggerGateData_t>>(inputDataTag);
-    consumes<art::Assns<OpticalTriggerGateData_t, sbn::OpDetWaveformMeta>>
+    consumes<art::Assns<OpticalTriggerGateData_t, raw::OpDetWaveform>>
       (inputDataTag);
   } // for
   
@@ -915,12 +915,15 @@ auto icarus::trigger::SlidingWindowTriggerSimulation::readTriggerGates
 
   // currently the associations are a waste of time memory...
   auto const& gates
-    = event.getProduct<std::vector<OpticalTriggerGateData_t>>(dataTag);
-  auto const& gateToWaveforms = event.getProduct
-    <art::Assns<OpticalTriggerGateData_t, sbn::OpDetWaveformMeta>>(dataTag);
+    = *(event.getValidHandle<std::vector<OpticalTriggerGateData_t>>(dataTag));
+  auto const& gateToWaveforms = *(
+    event.getValidHandle
+      <art::Assns<OpticalTriggerGateData_t, raw::OpDetWaveform>>(dataTag)
+    );
   
   try {
-    return icarus::trigger::FillTriggerGates(gates, gateToWaveforms);
+    return icarus::trigger::FillTriggerGates<InputTriggerGate_t>
+      (gates, gateToWaveforms);
   }
   catch (cet::exception const& e) {
     throw cet::exception("SlidingWindowTriggerSimulation", "", e)
