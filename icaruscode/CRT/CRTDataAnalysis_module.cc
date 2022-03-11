@@ -74,33 +74,7 @@ namespace icarus {
 namespace crt {
 
   //-----------------------------------------------------------------------
-  //-----------------------------------------------------------------------
-  // class definition
-  /**
-   * @brief Example analyzer
-   * 
-   * This class extracts information from the generated and reconstructed
-   * particles.
-   *
-   * It produces histograms for the simulated particles in the input file:
-   * - PDG ID (flavor) of all particles
-   * - momentum of the primary particles selected to have a specific PDG ID
-   * - length of the selected particle trajectory
-   * 
-   * It also produces two ROOT trees.
-   *
-   * The first ROOT tree contains information on the simulated
-   * particles, including "dEdx", a binned histogram of collected
-   * charge as function of track range.
-   * 
-   * Configuration parameters
-   * =========================
-   * 
-   * - *SimulationLabel* (string, default: "largeant"): tag of the input data
-   *   product with the detector simulation information (typically an instance
-   *   of the LArG4 module)
-   *
-   */
+
   class CRTDataAnalysis : public art::EDAnalyzer
   {
   public:
@@ -124,27 +98,27 @@ namespace crt {
    
       fhicl::Atom<art::InputTag> TriggerLabel {
         Name("TriggerLabel"),
-          Comment("Label for the Trigger fragment label")
+	  Comment("Label for the Trigger fragment label")
 	  };
 
       fhicl::Atom<double> QPed {
-        Name("QPed"),
+	Name("QPed"),
 	  Comment("Pedestal offset [ADC]")
 	  };
       fhicl::Atom<double> QSlope {
-        Name("QSlope"),
+	Name("QSlope"),
 	  Comment("Pedestal slope [ADC/photon]")
 	  };
 
       fhicl::Atom<double> PEThresh {
-        Name("PEThresh"),
+	Name("PEThresh"),
 	  Comment("threshold in photoelectrons above which charge amplitudes used in hit reco")
 	  };
 
-     fhicl::Atom<uint64_t> CrtWindow {
-       Name("CrtWindow"),
-         Comment("window for looking data [ns]")
-	 };
+      fhicl::Atom<uint64_t> CrtWindow {
+	Name("CrtWindow"),
+	  Comment("window for looking data [ns]")
+	  };
     }; // Config
     
     using Parameters = art::EDAnalyzer::Table<Config>;
@@ -234,9 +208,6 @@ namespace crt {
     float    fZErrHit; ///< stat error of CRT hit reco Z (cm)
     uint64_t    fT0Hit; ///< hit time w.r.t. PPS
     uint64_t    fT1Hit; ///< hit time w.r.t. global event time
-    //double    fT0CorrHit;
-    //double    fT1CorrHit;
-    //string ftagger;
     int       fHitReg; ///< region code of CRT hit
     int       fHitSubSys;
     int       fNHit; ///< number of CRT hits for this event
@@ -296,8 +267,8 @@ namespace crt {
     searchPath.find_file("feb_map.txt",fullFileName);
     std::ifstream fin;
     fin.open(fullFileName,std::ios::in);
-    if(fin.good()) std::cout << "opened file 'feb_map.txt' for reading..." << std::endl;
-    else //std::cout << "could not open file 'feb_map.txt' for reading!" << std::endl;
+    if(fin.good())  mf::LogError("CRTDataAnalysis") << "opened file 'feb_map.txt' for reading..." << std::endl;
+    else // mf::LogError("CRTDataAnalysis") << "could not open file 'feb_map.txt' for reading!" << std::endl;
         throw cet::exception("CRTDataAnalysis::FillFebMap") << "Unable to find/open file 'feb_map.txt'" << std::endl;
     std::vector<std::string> row;
     std::string line, word;
@@ -313,7 +284,7 @@ namespace crt {
         if(row.size()>3)
             (this->fFebMap)[mod].push_back(std::make_pair(std::stoi(row[3]),std::stoi(row[4])));
     }
-    std::cout << "filled febMap with " << (this->fFebMap).size() << " entries" << std::endl;
+    // mf::LogError("CRTDataAnalysis") << "filled febMap with " << (this->fFebMap).size() << " entries" << std::endl;
     fin.close();
   }
 
@@ -321,7 +292,7 @@ namespace crt {
   //-----------------------------------------------------------------------
   void CRTDataAnalysis::beginJob()
   {
-    std::cout << " starting analysis job" << std::endl;
+     mf::LogError("CRTDataAnalysis") << " starting analysis job" << std::endl;
 
     // Access ART's TFileService, which will handle creating and writing
     // histograms and n-tuples for us. 
@@ -381,7 +352,7 @@ namespace crt {
   //-----------------------------------------------------------------------
   void CRTDataAnalysis::analyze(const art::Event& event) 
   {
-    MF_LOG_DEBUG("CRT") << "beginning analyis" << '\n';
+    MF_LOG_DEBUG("CRTDataAnalysis") << "beginning analyis" << '\n';
 
     // Start by fetching some basic event information for our n-tuple.
     fEvent  = event.id().event(); 
@@ -396,7 +367,7 @@ namespace crt {
       art::Handle<sbn::ExtraTriggerInfo> trigger_handle;
       event.getByLabel( fTriggerLabel, trigger_handle );
       if( trigger_handle.isValid() ) {
-  	sbn::triggerSource bit = trigger_handle->sourceType;
+	sbn::triggerSource bit = trigger_handle->sourceType;
         m_gate_type = (unsigned int)bit;
         m_gate_name = bitName(bit);
         m_trigger_timestamp = trigger_handle->triggerTimestamp;
@@ -405,11 +376,11 @@ namespace crt {
 
       }
       else{
-        mf::LogError("CRTDataAnalysis") << "No raw::Trigger associated to label: " << fTriggerLabel.label() << "\n" ;
+	mf::LogError("CRTDataAnalysis") << "No raw::Trigger associated to label: " << fTriggerLabel.label() << "\n" ;
       }
     }
     else {
-      mf::LogError("CRTDataAnalysis") << "Trigger Data product " << fTriggerLabel.label() << " not found!" ; 
+       mf::LogError("CRTDataAnalysis")  << "Trigger Data product " << fTriggerLabel.label() << " not found!\n" ;
     }
 
     art::Handle<vector<icarus::crt::CRTData>> crtDAQHandle;
@@ -419,29 +390,32 @@ namespace crt {
     
     vector<art::Ptr<icarus::crt::CRTData>> crtData;
     bool presel = false;
-    //    float fQPed = 60.0;
-    //float fQSlope = 70.0;
-    //float fPEThresh = 2.5;
-    //uint64_t fCrtWindow = 3e6;
+
     for (size_t febdat_i=0; febdat_i<crtList.size(); febdat_i++) {
       
       uint8_t mac = crtList[febdat_i]->fMac5;
       int adid  = fCrtutils->MacToAuxDetID(mac,0);
       char type = fCrtutils->GetAuxDetType(adid);
-      
+      /*
+      for(int chan=0; chan<32; chan++) {
+	 mf::LogError("CRTDataAnalysis") << "\nfebP (mac5, channel, adc, type, adid) = (" << (int)crtList[febdat_i]->fMac5 << " , " << chan << " , "
+		  << crtList[febdat_i]->fAdc[chan]  << " , " << type << " , " << adid << ")\n";
+      }      
+      */
       /// Looking for data within +/- 3ms within trigger time stamp
       /// Here t0 - trigger time -ve, only adding 1s makes the value +ve or -ve
-      if (std::fabs(int64_t(crtList[febdat_i]->fTs0 - m_trigger_timestamp) + 1e9) > fCrtWindow) continue;
-      if ( type == 'c' or type == 'm'){
+      //    if (std::fabs(int64_t(crtList[febdat_i]->fTs0 - m_trigger_timestamp) + 1e9) > fCrtWindow) continue;
+      if ( type == 'm'){
 	for(int chan=0; chan<32; chan++) {
 	  std::pair<double,double> const chg_cal = fChannelMap->getSideCRTCalibrationMap((int)crtList[febdat_i]->fMac5,chan);
 	  float pe = (crtList[febdat_i]->fAdc[chan]-chg_cal.second)/chg_cal.first;
 	  if(pe<=fPEThresh) continue;
 	  presel = true;
-	  // if(fVerbose)
-	  //   std::cout << "\nfebP (mac5, channel, gain, pedestal, adc, pe) = (" << (int)crtList[febdat_i]->fMac5 << ", " << chan << ", "
-	  //	      << chg_cal.first << ", " << chg_cal.second << "," << crtList[febdat_i]->fAdc[chan] << "," << pe << ")\n";
 	}
+      }else if ( type == 'c' ) {
+
+	  presel = true;
+
       }else if ( type == 'd'){
 	for(int chan=0; chan<64; chan++) {
 	  float pe = (crtList[febdat_i]->fAdc[chan]-fQPed)/fQSlope;
@@ -454,9 +428,9 @@ namespace crt {
       presel = false;
     } // end of crtList
     
-    std::cout << "size of the crtdata after removing unwanted charges: " << crtData.size() << std::endl;  
+    //     mf::LogError("CRTDataAnalysis") << "size of the crtdata after removing unwanted charges: " << crtData.size() << std::endl;  
     
-    std::cout << "about to loop over CRTDAQ entries" << std::endl;
+    // mf::LogError("CRTDataAnalysis") << "about to loop over CRTDAQ entries" << std::endl;
     for (size_t febdat_i=0; febdat_i<crtData.size(); febdat_i++) {
       
       
@@ -470,14 +444,7 @@ namespace crt {
       fDetSubSys = fCrtutils->MacToTypeCode(fMac5);
       fT0 = crtData[febdat_i]->fTs0;
       fT1 = crtData[febdat_i]->fTs1;
-      /*
-	if (fFEBReg == 46){
-	m_gate_crt_diff = m_gate_start_timestamp - crtData[febdat_i]->fTs0;
-	std::cout << "m_gate_start_timestamp: " << m_gate_start_timestamp << " t0 "<< crtData[febdat_i]->fTs0 
-	<< " gate start timestamp - crt daq t0: " << m_gate_crt_diff << "\n";
-	}
-      */
-      //      std::cout << "[" << febdat_i <<"] ,  Event : "<< fDetEvent <<   std::endl;
+      
       int maxchan =0;
       if(fDetSubSys!=2) maxchan=32;
       else maxchan = 64;
@@ -485,10 +452,17 @@ namespace crt {
       for(int ch=0; ch<maxchan; ch++) {
 	fADC[ch] = crtData[febdat_i]->fAdc[ch]; 
 	std::pair<double,double> const chg_cal = fChannelMap->getSideCRTCalibrationMap((int)fMac5,ch);
-	float pe = (fADC[ch]-chg_cal.second)/chg_cal.first;
-	if (pe < 0) continue;
-	fPE[ch] = pe;
-      } 
+	if (fDetSubSys == 0){
+	  float pe = (fADC[ch]-chg_cal.second)/chg_cal.first;
+	  if (pe < 0) continue;
+	  fPE[ch] = pe;
+	}else{
+	  float pe = (fADC[ch]-fQPed)/fQSlope;
+	  if (pe < 0) continue;
+          fPE[ch] = pe;
+	} 
+	
+      }
             
       fDAQNtuple->Fill();
       
@@ -504,58 +478,50 @@ namespace crt {
     std::vector<int> ids;
     fNHit = 0;
     if (isCRTHit) {
-
-      //art::fill_ptr_vector(crtSimHits,crtSimHitHandle);
-      // art::FindManyP<icarus::crt::CRTData> findManyData(crtHitHandle, event, fCRTHitProducerLabel);
-      //std::vector<art::Ptr<icarus::crt::CRTData>> data = findManyData.at(0);
-
-        std::cout << "looping over reco hits..." << std::endl;
-        for ( auto const& hit : *crtHitHandle )
+      
+       mf::LogError("CRTDataAnalysis") << "looping over reco hits..." << std::endl;
+      for ( auto const& hit : *crtHitHandle )
         {
-            fNHit++;
-            fHitEvent = fEvent;
-            fXHit    = hit.x_pos;
-            fYHit    = hit.y_pos;
-            fZHit    = hit.z_pos;
-            fXErrHit = hit.x_err;
-            fYErrHit = hit.y_err;
-            fZErrHit = hit.z_err;
-            fT0Hit   = hit.ts0_ns;
-            fT1Hit   = hit.ts1_ns;
-
-	
-	    fNHitFeb  = hit.feb_id.size();
-            fHitTotPe = hit.peshit;
-            int mactmp = hit.feb_id[0];
-	    fHitReg  = fCrtutils->AuxDetRegionNameToNum(fCrtutils->MacToRegion(mactmp));
-            fHitSubSys =  fCrtutils->MacToTypeCode(mactmp);
-
-	    // if (fHitReg == 46){
-	    m_gate_crt_diff = m_gate_start_timestamp - hit.ts0_ns;
-	    //std::cout << "m_gate_start_timestamp: " << m_gate_start_timestamp << " t0 "<< hit.ts0_ns << " gate start timestamp - crt hit t0: " << m_gate_crt_diff << "\n";
-	    //}
-            auto ittmp = hit.pesmap.find(mactmp);
-            if (ittmp==hit.pesmap.end()) {
-                std::cout << "hitreg: " << fHitReg << std::endl;
-                std::cout << "fHitSubSys: "<< fHitSubSys << std::endl;
-                std::cout << "mactmp = " << mactmp << std::endl;
-                std::cout << "could not find mac in pesmap!" << std::endl;
-                continue;
-            }
-
-            int chantmp = (*ittmp).second[0].first;
-
-	    // fHitMod  = MacToAuxDetID(this->fFebMap, mactmp, chantmp);
-	    // fHitStrip = ChannelToAuxDetSensitiveID(mactmp, chantmp);
-
-	    fHitMod  = fCrtutils->MacToAuxDetID(mactmp, chantmp);
-	    fHitStrip = fCrtutils->ChannelToAuxDetSensitiveID(mactmp, chantmp);
-
-            fHitNtuple->Fill();
+	  fNHit++;
+	  fHitEvent = fEvent;
+	  fXHit    = hit.x_pos;
+	  fYHit    = hit.y_pos;
+	  fZHit    = hit.z_pos;
+	  fXErrHit = hit.x_err;
+	  fYErrHit = hit.y_err;
+	  fZErrHit = hit.z_err;
+	  fT0Hit   = hit.ts0_ns;
+	  fT1Hit   = hit.ts1_ns;
+	  
+	  
+	  fNHitFeb  = hit.feb_id.size();
+	  fHitTotPe = hit.peshit;
+	  int mactmp = hit.feb_id[0];
+	  fHitReg  = fCrtutils->AuxDetRegionNameToNum(fCrtutils->MacToRegion(mactmp));
+	  fHitSubSys =  fCrtutils->MacToTypeCode(mactmp);
+	  
+	  
+	  m_gate_crt_diff = m_gate_start_timestamp - hit.ts0_ns;
+	  
+	  auto ittmp = hit.pesmap.find(mactmp);
+	  if (ittmp==hit.pesmap.end()) {
+	     mf::LogError("CRTDataAnalysis") << "hitreg: " << fHitReg << std::endl;
+	     mf::LogError("CRTDataAnalysis") << "fHitSubSys: "<< fHitSubSys << std::endl;
+	     mf::LogError("CRTDataAnalysis") << "mactmp = " << mactmp << std::endl;
+	     mf::LogError("CRTDataAnalysis") << "could not find mac in pesmap!" << std::endl;
+	    continue;
+	  }
+	  
+	  int chantmp = (*ittmp).second[0].first;
+	  
+	  fHitMod  = fCrtutils->MacToAuxDetID(mactmp, chantmp);
+	  fHitStrip = fCrtutils->ChannelToAuxDetSensitiveID(mactmp, chantmp);
+	  
+	  fHitNtuple->Fill();
         }//for CRT Hits
     }//if CRT Hits
-
-    else std::cout << "CRTHit products not found! (expected if decoder step)" << std::endl;
+    
+    else  mf::LogError("CRTDataAnalysis") << "CRTHit products not found! (expected if decoder step)" << std::endl;
 
 
   } // CRTDataAnalysis::analyze()
