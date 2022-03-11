@@ -18,7 +18,7 @@ ElectronicsResponseTool:
 {
     tool_type:                ElectronicsResponse
     Plane:                    0
-    FCperADCMicroS:           0.027
+    FCperADCMicroS:           0.02269  # Scaling to match data, from electronics tests it was 0.027
     ASICShapingTime:          1.3
     ADCPerPCAtLowestASICGain: 5500.
 }
