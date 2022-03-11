@@ -51,14 +51,19 @@ public:
   
 
 private:
-  std::map<uint8_t,std::vector<float>> macToRate;
-  std::map<uint8_t,std::vector<uint64_t>> macToRateTime;
+  //  std::map<uint8_t,std::vector<float>> macToRate;
+  //std::map<uint8_t,std::vector<uint64_t>> macToRateTime;
+  bool     IsSideCRT(icarus::crt::BernCRTTranslator & hit);
+  std::map<uint8_t,std::vector<float>> macToRateSide;
+  std::map<uint8_t,std::vector<uint64_t>> macToRateSideTime;
+  std::map<uint8_t,std::vector<float>> macToRateTop;
+  std::map<uint8_t,std::vector<uint64_t>> macToRateTopTime;
 
   //AA: this list will need to be updated (and perhaps moved to a separate file)
-  const uint8_t macsWestIn[6]   = {21,19,17,22,23,24};
-  const uint8_t macsWestOut[6]  = {13,11,10,14,15,16};
-  const uint8_t macsNorthIn[4]  = {7,6,3,1};
-  const uint8_t macsNorthOut[4] = {9,8,5,4};
+  //  const uint8_t macsWestIn[6]   = {21,19,17,22,23,24};
+  //const uint8_t macsWestOut[6]  = {13,11,10,14,15,16};
+  //const uint8_t macsNorthIn[4]  = {7,6,3,1};
+  //const uint8_t macsNorthOut[4] = {9,8,5,4};
 
   //TTree * tree;
   //std::map<std::pair<short,short>,TH1F*>> macChanToHist;
@@ -130,6 +135,13 @@ icarus::crt::CrtNoiseMonTool::~CrtNoiseMonTool()
 {
 }
 
+bool icarus::crt::CrtNoiseMonTool::IsSideCRT(icarus::crt::BernCRTTranslator & hit) {
+  /**
+   * Fragment ID described in SBN doc 16111
+   **/
+  return (hit.fragment_ID & 0x3100) == 0x3100;
+}
+
 void icarus::crt::CrtNoiseMonTool::analyze(art::Event const & evt) {
 
   //WK 09/02/21. Update to BernCRTTranslator in sbndaq_artdaq_core
@@ -156,9 +168,19 @@ void icarus::crt::CrtNoiseMonTool::analyze(art::Event const & evt) {
     const double   dt      = (hit.this_poll_start-hit.last_poll_start)*1.0e-9; //interval between consecutive polls [s]
     const float    rate    = 1.0e-3*hit.hits_in_poll/dt; //poll-averaged event rate [kHz]
 
-    if(macToRateTime[mac5].size()!=0 && macToRateTime[mac5].back() == runtime) continue; //avoid processing the same poll multiple times (they all have the same 
-    macToRateTime[mac5].push_back(runtime);
-    macToRate[mac5].push_back(rate);
+    //avoid processing the same poll multiple times (they all have the same
+    //    if(macToRateTime[mac5].size()!=0 && macToRateTime[mac5].back() == runtime) continue;
+    if(IsSideCRT(hit)){
+      //avoid processing the same poll multiple times (they all have the same
+      if(macToRateSideTime[mac5].size()!=0 && macToRateSideTime[mac5].back() == runtime) continue;
+      macToRateSideTime[mac5].push_back(runtime);
+      macToRateSide[mac5].push_back(rate);
+    }else{
+      //avoid processing the same poll multiple times (they all have the same
+      if(macToRateTopTime[mac5].size()!=0 && macToRateTopTime[mac5].back() == runtime) continue;
+      macToRateTopTime[mac5].push_back(runtime);
+      macToRateTop[mac5].push_back(rate);
+    }
   }
 }//end analyze
 
@@ -166,7 +188,7 @@ void icarus::crt::CrtNoiseMonTool::analyze(art::Event const & evt) {
 void icarus::crt::CrtNoiseMonTool::endJob(){
 
   art::ServiceHandle<art::TFileService> tfs; //pointer to a file named tfs
-
+  /*
   std::string hviewName = "hview_";
   std::string hviewTitle = "noise rates: ";
   char reg ='e';//, lay='e';
@@ -216,28 +238,28 @@ void icarus::crt::CrtNoiseMonTool::endJob(){
       hview->GetYaxis()->SetBinLabel(1,"pit");
       hview->GetYaxis()->SetBinLabel(2,"mezz");
   }
-
+  */
   //size_t imac=0;
-  for(auto it=macToRate.begin(); it!=macToRate.end(); it++){
+  for(auto it=macToRateSide.begin(); it!=macToRateSide.end(); it++){
 
       uint8_t mac = (*it).first;
 
-      std::string hname = "h_"+std::to_string(mac);
-      std::string htitle = "noise rate: mac5 "+std::to_string(mac);
-      TH1F *h = tfs->make<TH1F>(hname.c_str(),htitle.c_str(),3000,0.0,30.0);
+      std::string hname = "hside_"+std::to_string(mac);
+      std::string htitle = "noise rate: mac5 "+std::to_string(mac)+" [Side CRT]";
+      TH1F *h = tfs->make<TH1F>(hname.c_str(),htitle.c_str(),4000,0.0,40.0);
       h->GetXaxis()->SetTitle("rate [kHz]");
       h->GetXaxis()->SetTitleSize(0.04);
       h->GetXaxis()->SetLabelSize(0.04);
       h->GetYaxis()->SetLabelSize(0.04);
       h->SetLineWidth(2);
 
-      const size_t n = macToRate[mac].size();
+      const size_t n = macToRateSide[mac].size();
       float* rate = new float[n];
       float* time = new float[n];
       float meanRate =0.0;
       for(size_t i=0; i<n; i++){
-         rate[i] = macToRate[mac][i];
-	 time[i] = macToRateTime[mac][i];
+         rate[i] = macToRateSide[mac][i];
+	 time[i] = macToRateSideTime[mac][i];
 	 meanRate+=rate[i];
 
          h->Fill(rate[i]);
@@ -248,27 +270,61 @@ void icarus::crt::CrtNoiseMonTool::endJob(){
       meanRate*=1.0/30;
 
       std::cout << "relative (to 30kHz) average "+htitle << " = " << meanRate << std::endl;
+ 
+      std::string gname = "gside_"+std::to_string(mac);
+      std::string gtitle = "noise rate: mac5 "+std::to_string(mac)+" [Side CRT]";
+      TGraph *g = tfs->make<TGraph>(n,time,rate);
+      g->SetName(gname.c_str());
+      g->SetTitle(gtitle.c_str());
+      g->GetXaxis()->SetTitle("run time [s]");
+      g->GetYaxis()->SetTitle("rate [kHz]");
+      g->GetXaxis()->SetTitleSize(0.04);
+      g->GetYaxis()->SetTitleSize(0.04);
+      g->GetXaxis()->SetLabelSize(0.04);
+      g->GetYaxis()->SetLabelSize(0.04);
 
-      if(reg=='w'){
-          for(size_t i=0; i<6; i++){
-                  if(mac==macsWestIn[i]||mac==macsWestOut[i]) {
-                      hview->SetBinContent(i/3+1,i%3+1,meanRate);
-                      break;
-                  }
-          }
+      g->SetMarkerStyle(8);
+
+      h->Write();
+      g->Write();
+
+      delete[] rate;
+      delete[] time;
+  }
+
+ for(auto it=macToRateTop.begin(); it!=macToRateTop.end(); it++){
+
+      uint8_t mac = (*it).first;
+
+      std::string hname = "htop_"+std::to_string(mac);
+      std::string htitle = "noise rate: mac5 "+std::to_string(mac)+" [Top CRT]";
+      TH1F *h = tfs->make<TH1F>(hname.c_str(),htitle.c_str(),4000,0.0,40.0);
+      h->GetXaxis()->SetTitle("rate [kHz]");
+      h->GetXaxis()->SetTitleSize(0.04);
+      h->GetXaxis()->SetLabelSize(0.04);
+      h->GetYaxis()->SetLabelSize(0.04);
+      h->SetLineWidth(2);
+
+      const size_t n = macToRateTop[mac].size();
+      float* rate = new float[n];
+      float* time = new float[n];
+      float meanRate =0.0;
+      for(size_t i=0; i<n; i++){
+         rate[i] = macToRateTop[mac][i];
+	 time[i] = macToRateTopTime[mac][i];
+	 meanRate+=rate[i];
+
+         h->Fill(rate[i]);
       }
+      std::cout << "mean rate before division: " << meanRate << std::endl;
+      meanRate*=1.0/n;
+      std::cout << "mean rate averaged over " << n << " points: " << meanRate << std::endl;
+      meanRate*=1.0/30;
 
-      if(reg=='n'){
-          for(size_t i=0; i<4; i++){
-                  if(mac==macsNorthIn[i]||mac==macsNorthOut[i]) {
-                      hview->SetBinContent(i/2+1,i%2+1,meanRate);
-                      break;
-                  }
-          }
-      }
-
-      std::string gname = "g_"+std::to_string(mac);
-      std::string gtitle = "noise rate: mac5 "+std::to_string(mac);
+      std::cout << "relative (to 30kHz) average "+htitle << " = " << meanRate << std::endl;
+ 
+      std::string gname = "gtop_"+std::to_string(mac);
+      std::string gtitle = "noise rate: mac5 "+std::to_string(mac)+" [Top CRT]";
       TGraph *g = tfs->make<TGraph>(n,time,rate);
       g->SetName(gname.c_str());
       g->SetTitle(gtitle.c_str());
@@ -288,7 +344,7 @@ void icarus::crt::CrtNoiseMonTool::endJob(){
       delete[] time;
   }
   
-  hview->Write();
+  // hview->Write();
 
 } //endJob
 
