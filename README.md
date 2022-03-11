@@ -31,3 +31,4 @@ ICARUS software is in great part based on LArSoft. Here are some shortcuts to it
 * [`larsim`](https://github.com/LArSoft/larsim), detector simulation (esp. GEANT4)
 * [`larana`](https://github.com/LArSoft/larana), including calorimetry and optical reconstruction
 * [`larreco`](https://github.com/LArSoft/larreco), most reconstruction algorithms and modules
+* [`art`](https://github.com/art-framework-suite/art), framework underpinning data processing (many support libraries are also in [art-framework-suite](https://github.com/art-framework-suite))
