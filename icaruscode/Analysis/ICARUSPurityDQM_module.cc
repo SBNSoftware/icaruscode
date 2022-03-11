@@ -958,15 +958,20 @@ if(delta_sample_selected>1900)
 			    
 			    TH1F *h111 = new TH1F("h111","delta aree",200,-10,10);
 			    float sum_per_rms_test=0;
+                            int quanti_in_h111=0;
 			    for(int k=0;k<(int)hitareagood->size();k++)
 			      {
 				h111->Fill(area[k]-slope_purity*tempo[k]-intercetta_purezza);
 				sum_per_rms_test+=(area[k]-slope_purity*tempo[k]-intercetta_purezza)*(area[k]-slope_purity*tempo[k]-intercetta_purezza);
+                                if((area[k]-slope_purity*tempo[k]-intercetta_purezza)>-10 && (area[k]-slope_purity*tempo[k]-intercetta_purezza)<10)quanti_in_h111+=1;
 			      }
                        
+                        float error=100.;
+                        if(quanti_in_h111>1){
                         h111->Fit("gaus","Q");
                         TF1 *fitg = h111->GetFunction("gaus");
-                        float error=fitg->GetParameter(2);
+                        error=fitg->GetParameter(2);
+                        }
                         //std::cout << " error " << error << std::endl;
                         //float error_2=sqrt(sum_per_rms_test/(hitareagood->size()-2));
                         //std::cout << " error vero" << error_2 << std::endl;
@@ -981,29 +986,32 @@ if(delta_sample_selected>1900)
 		      intercetta_purezza=fite->GetParameter(0);
                       float mean_hit_area=0;
                       float size_hit_area=hitareagood->size();
+                      int quanti_in_h111e=0;
 		      TH1F *h111e = new TH1F("h111e","delta aree",100,-1000.,1000.);
 		      for(int k=0;k<(int)hitareagood->size();k++)
 			{
 			  h111e->Fill(nologarea[k]-exp(slope_purity*tempo[k]+intercetta_purezza));
                           mean_hit_area+=nologarea[k]/size_hit_area;
+                          if((nologarea[k]-exp(slope_purity*tempo[k]+intercetta_purezza))>-1000. && (nologarea[k]-exp(slope_purity*tempo[k]+intercetta_purezza))<1000)quanti_in_h111e+=1; 
 			  //cout << nologarea[k]-exp(slope_purity*tempo[k]+intercetta_purezza) << endl;
 			}
-                       
+                      
+                      float error_expo=1000.;
+                      if(quanti_in_h111e>1)
+                      { 
 		      h111e->Fit("gaus","Q");
 		      TF1 *fitge = h111e->GetFunction("gaus");
-		      float error_expo=fitge->GetParameter(2);
+		      error_expo=fitge->GetParameter(2);
+                      }
 		      std::cout << " errors " << error << " " << error_expo << std::endl;
 		      h_errors->Fill(error_expo);
 		      h111e->Delete();//fitge->Delete();fite->Delete();
 
                         for(int k=0;k<(int)hitareagood->size();k++)
                           {
-                            if((*hittimegood)[k]<=2240)
-                              {
                                 ek[k]=error_expo;
                                 ez[k]=error_expo;
                                 ey[k]=error;
-                              }
                           }
 			//std::cout<<""<<std::endl;
 			//std::cout<<"HERE line 906"<<std::endl;
