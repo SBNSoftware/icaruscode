@@ -40,7 +40,8 @@ public:
 
 private:
   TTree * hits;
-
+  bool     IsSideCRT(icarus::crt::BernCRTTranslator & hit);
+  bool     IsTopCRT(icarus::crt::BernCRTTranslator & hit);
 //data payload
   uint8_t mac5; //last 8 bits of FEB mac5 address
   uint16_t flags;
@@ -50,6 +51,8 @@ private:
   uint32_t ts1;
   uint16_t adc[32];
   uint32_t coinc;
+  int subSys;  // Top CRT 0, Side CRT 1, Bottom 2
+
 
 //metadata
   uint64_t  run_start_time;
@@ -64,7 +67,6 @@ private:
 //information from fragment header
   uint32_t  sequence_id;
   uint64_t  fragment_timestamp;
-
   uint64_t  last_accepted_timestamp;
   uint16_t  lost_hits;
   uint16_t  hits_in_fragment;
@@ -87,6 +89,7 @@ sbndaq::BernCRTAna::BernCRTAna(fhicl::ParameterSet const & pset)
   hits->Branch("ts1",         &ts1,           "ts1/i");
   hits->Branch("adc",         &adc,           "adc[32]/s");
   hits->Branch("coinc",       &coinc,         "coinc/i");
+  hits->Branch("subSys",         &subSys,           "subSys/i");
 
   hits->Branch("run_start_time",            &run_start_time,              "run_start_time/l");
   hits->Branch("this_poll_start",           &this_poll_start,             "this_poll_start/l");
@@ -104,6 +107,19 @@ sbndaq::BernCRTAna::BernCRTAna(fhicl::ParameterSet const & pset)
   hits->Branch("lost_hits",                 &lost_hits,                    "lost_hits/s");
   hits->Branch("hits_in_fragment",          &hits_in_fragment,             "hits_in_fragment/s");
 
+}
+
+bool sbndaq::BernCRTAna::IsSideCRT(icarus::crt::BernCRTTranslator & hit) {
+  /**
+ *    * Fragment ID described in SBN doc 16111
+ *       */
+ return (hit.fragment_ID & 0x3100) == 0x3100;
+}
+bool sbndaq::BernCRTAna::IsTopCRT(icarus::crt::BernCRTTranslator & hit) {
+  /**
+ *  *    * Fragment ID described in SBN doc 16111
+ *   *       */
+  return (hit.fragment_ID & 0x3200) == 0x3200;
 }
 
 sbndaq::BernCRTAna::~BernCRTAna()
@@ -127,8 +143,17 @@ void sbndaq::BernCRTAna::analyze(art::Event const & evt) {
   }
 
   for(auto & hit : hit_vector) {
-    TLOG(TLVL_INFO)<<hit;
-
+   // TLOG(TLVL_INFO)<<hit;
+    
+    if(IsSideCRT(hit)){
+      subSys    = 1;
+    }
+    else if(IsTopCRT(hit)){
+      subSys    = 0;
+    }
+    else{
+      subSys    = 2;
+    }
     fragment_timestamp        = hit.timestamp;
     sequence_id               = hit.sequence_id;
 

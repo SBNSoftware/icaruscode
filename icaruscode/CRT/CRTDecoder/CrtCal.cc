@@ -37,6 +37,8 @@ CrtCal::CrtCal(const vector<TH1F*>* histos) : fHistos(histos) {
         fThreshPE     = new float[32];
         fNabove       = new int[32];
 
+	fChanStats    = new long[32];
+
         fPeakNorm     = new float*[32];
         fPeakNormErr  = new float*[32];
         fPeakSigma    = new float*[32];
@@ -45,6 +47,17 @@ CrtCal::CrtCal(const vector<TH1F*>* histos) : fHistos(histos) {
         fPeakMeanErr  = new float*[32];
         fPeakXsqr     = new float*[32];
 	fPeakNdf      = new short*[32];
+
+	fLangausWidth 		= new double[32];
+	fLangausWidthErr	= new double[32];
+	fLangausLandauMP	= new double[32];
+	fLangausLandauMPErr	= new double[32];
+	fLangausArea		= new double[32];
+	fLangausAreaErr		= new double[32];
+	fLangausGaussSigma	= new double[32];
+	fLangausGaussSigmaErr	= new double[32];
+	fLangausXsqr		= new double[32];
+	fLangausNdf		= new double[32];
 
 	for(size_t i=0; i<32; i++){
         	fPeakNorm[i] = new float[5];
@@ -80,6 +93,19 @@ CrtCal::CrtCal(const vector<TH1F*>* histos) : fHistos(histos) {
  		fThreshADC[ch]    =  INT_MAX;
  		fThreshPE[ch]     =  FLT_MAX;
  		fNabove[ch]       =  INT_MAX;
+		fChanStats[ch]	  =  LONG_MAX;
+
+		fLangausWidth[ch] 		= DBL_MAX;
+		fLangausWidthErr[ch] 		= DBL_MAX;
+		fLangausLandauMP[ch] 		= DBL_MAX;
+		fLangausLandauMPErr[ch] 	= DBL_MAX;
+		fLangausArea[ch] 		= DBL_MAX;
+		fLangausAreaErr[ch] 		= DBL_MAX;
+		fLangausGaussSigma[ch] 		= DBL_MAX;
+		fLangausGaussSigmaErr[ch] 	= DBL_MAX;
+		fLangausXsqr[ch] 		= DBL_MAX;
+		fLangausNdf[ch] 		= DBL_MAX;
+
 
 		for(size_t p=0; p<5; p++){
 			fPeakNorm[ch][p]     =  FLT_MAX;
@@ -118,6 +144,7 @@ CrtCal::~CrtCal(){
         delete[] fThreshADC;
         delete[] fThreshPE;
         delete[] fNabove;
+	delete[] fChanStats;
 
         for(size_t i=0; i<32; i++){
                 delete[] fPeakNorm[i];
@@ -138,6 +165,17 @@ CrtCal::~CrtCal(){
         delete[] fPeakMeanErr;
         delete[] fPeakXsqr;
         delete[] fPeakNdf;
+
+	delete[] fLangausWidth;
+	delete[] fLangausWidthErr;
+	delete[] fLangausLandauMP;
+	delete[] fLangausArea;
+	delete[] fLangausGaussSigma;
+	delete[] fLangausLandauMPErr;
+	delete[] fLangausAreaErr;
+	delete[] fLangausGaussSigmaErr;
+	delete[] fLangausXsqr;
+	delete[] fLangausNdf;
 }
 
 void CrtCal::IndexToMacChan(){
@@ -273,6 +311,7 @@ void CrtCal::GainCal(){
 		if(!fActive[chan]) continue;
 		//std::cout << "channel " << chan << std::endl;
 		TH1F* h = (TH1F*)fHistos->at(i)->Clone();
+		fChanStats[chan]=h->GetEntries();
 		//std::cout << "call to GainFit()" << std::endl;
         	GainFit(h,chan,statarr,true);
 		//std::cout << "ParseGainStats()..." << std::endl;
@@ -280,6 +319,12 @@ void CrtCal::GainCal(){
                             fGainPed[chan], fGainPedErr[chan], fNpeak[chan], fPeakXsqr[chan],
                             fPeakMean[chan], fPeakMeanErr[chan], fPeakNorm[chan], fPeakNormErr[chan],
                             fPeakSigma[chan], fPeakSigmaErr[chan], fPeakNdf[chan]);
+		langaus_fit(h,fLangausWidth[chan],fLangausWidthErr[chan],
+			    fLangausLandauMP[chan],fLangausLandauMPErr[chan],
+			    fLangausArea[chan],fLangausAreaErr[chan],
+			    fLangausGaussSigma[chan],fLangausGaussSigmaErr[chan],
+			    fLangausXsqr[chan],fLangausNdf[chan]);
+
 		delete h;
 	}
 
@@ -787,8 +832,136 @@ void CrtCal::ParseGainStats(float** statarr, float& gainXsqr, short& gainNdf, fl
 	return;
 }
 
+Double_t langaufun(Double_t *x, Double_t *par) {
+ 
+    //Fit parameters:
+    //par[0]=Width (scale) parameter of Landau density
+    //par[1]=Most Probable (MP, location) parameter of Landau density
+    //par[2]=Total area (integral -inf to inf, normalization constant)
+    //par[3]=Width (sigma) of convoluted Gaussian function
+    //
+    //In the Landau distribution (represented by the CERNLIB approximation),
+    //the maximum is located at x=-0.22278298 with the location parameter=0.
+    //This shift is corrected within this function, so that the actual
+    //maximum is identical to the MP parameter.
+ 
+       // Numeric constants
+       Double_t invsq2pi = 0.3989422804014;   // (2 pi)^(-1/2)
+       Double_t mpshift  = -0.22278298;       // Landau maximum location
+ 
+       // Control constants
+       Double_t np = 100.0;      // number of convolution steps
+       Double_t sc =   5.0;      // convolution extends to +-sc Gaussian sigmas
+ 
+       // Variables
+       Double_t xx;
+       Double_t mpc;
+       Double_t fland;
+       Double_t sum = 0.0;
+       Double_t xlow,xupp;
+       Double_t step;
+       Double_t i;
+ 
+ 
+       // MP shift correction
+       mpc = par[1] - mpshift * par[0];
+ 
+       // Range of convolution integral
+       xlow = x[0] - sc * par[3];
+       xupp = x[0] + sc * par[3];
+ 
+       step = (xupp-xlow) / np;
+ 
+       // Convolution integral of Landau and Gaussian by sum
+       for(i=1.0; i<=np/2; i++) {
+          xx = xlow + (i-.5) * step;
+          fland = TMath::Landau(xx,mpc,par[0]) / par[0];
+          sum += fland * TMath::Gaus(x[0],xx,par[3]);
+ 
+          xx = xupp - (i-.5) * step;
+          fland = TMath::Landau(xx,mpc,par[0]) / par[0];
+          sum += fland * TMath::Gaus(x[0],xx,par[3]);
+       }
+ 
+       return (par[2] * step * sum * invsq2pi / par[3]);
+ }
+ 
+ 
+ 
+ TF1* CrtCal::langaufit(TH1F *his, Double_t *fitrange, Double_t *startvalues, Double_t *parlimitslo, Double_t *parlimitshi, Double_t *fitparams, Double_t *fiterrors, Double_t *ChiSqr, Int_t *NDF)
+ {
+    // Once again, here are the Landau * Gaussian parameters:
+    //   par[0]=Width (scale) parameter of Landau density
+    //   par[1]=Most Probable (MP, location) parameter of Landau density
+    //   par[2]=Total area (integral -inf to inf, normalization constant)
+    //   par[3]=Width (sigma) of convoluted Gaussian function
+    //
+    // Variables for langaufit call:
+    //   his             histogram to fit
+    //   fitrange[2]     lo and hi boundaries of fit range
+    //   startvalues[4]  reasonable start values for the fit
+    //   parlimitslo[4]  lower parameter limits
+    //   parlimitshi[4]  upper parameter limits
+    //   fitparams[4]    returns the final fit parameters
+    //   fiterrors[4]    returns the final fit errors
+    //   ChiSqr          returns the chi square
+    //   NDF             returns ndf
+ 
+    Int_t i;
+    Char_t FunName[100];
+ 
+    sprintf(FunName,"Fitfcn_%s",his->GetName());
+ 
+//    TF1 *ffitold = (TF1*)ROOT->GetListOfFunctions()->FindObject(FunName);
+//    if (ffitold) delete ffitold;
+ 
+    TF1 *ffit = new TF1(FunName,langaufun,fitrange[0],fitrange[1],4);
+    ffit->SetParameters(startvalues);
+    ffit->SetParNames("Width","MP","Area","GSigma");
+ 
+    for (i=0; i<4; i++) {
+       ffit->SetParLimits(i, parlimitslo[i], parlimitshi[i]);
+    }
+ 
+    his->Fit(FunName,"RB0");   // fit within specified range, use ParLimits, do not plot
+ 
+    ffit->GetParameters(fitparams);    // obtain fit parameters
+    for (i=0; i<4; i++) {
+       fiterrors[i] = ffit->GetParError(i);     // obtain fit parameter errors
+    }
+    ChiSqr[0] = ffit->GetChisquare();  // obtain chi^2
+    NDF[0] = ffit->GetNDF();           // obtain ndf
+ 
+    return (ffit);              // return fit function
+ 
+ }
+
+void CrtCal::langaus_fit(TH1F* h, double& lang_lan_wid, double& lang_lan_wid_err, double& lang_lan_mp, double& lang_lan_mp_err, double& lang_area, double& lang_area_err, double& lang_gauss_sigma, double& lang_gauss_sigma_err, double& lang_chisq, double& lang_ndf){
+
+	//set up bounds, initial guesses for fit
+	Double_t my_fitrange[2] = { 800,4000 };
+	Double_t my_startvalues[4] = { 3, 200, 10000, 150 };
+	Double_t my_parlimitslo[4] = { 0, 100, 1000, 100 };
+	Double_t my_parlimitshi[4] = { 1000, 10000, 10000000, 1000 };
+
+	//set up receptacles for relevant fit information
+	Double_t my_fitparams[4], my_fiterrors[4], my_ChiSqr; 
+	Int_t my_NDF;
+
+	TF1 *my_langaus = langaufit(h, my_fitrange, my_startvalues, my_parlimitslo, my_parlimitshi, my_fitparams, my_fiterrors, &my_ChiSqr, &my_NDF);
+
+	lang_lan_wid = my_fitparams[0]; lang_lan_wid_err = my_fiterrors[0];
+	lang_lan_mp = my_fitparams[1]; lang_lan_mp_err = my_fiterrors[1];
+	lang_area = my_fitparams[2]; lang_area_err = my_fiterrors[2];
+	lang_gauss_sigma = my_fitparams[3]; lang_gauss_sigma_err = my_fiterrors[3];
+	lang_chisq = my_ChiSqr; lang_ndf = my_NDF;
+
+
+	delete my_langaus;
+}
+
+
 //Lots of getters
-//
 bool*  CrtCal::GetActive() const {
 	if(!fHasActive)
 		return nullptr;
@@ -907,6 +1080,12 @@ int*  CrtCal::GetNabove() const{
 
         return fNabove;
 }
+long*  CrtCal::GetChanStats() const{
+        if(!fHasGainCal)
+                return nullptr;
+
+        return fChanStats;
+}
 float** CrtCal::GetPeakNorm() const{
         if(!fHasGainCal)
                 return nullptr;
@@ -954,6 +1133,66 @@ short** CrtCal::GetPeakNdf() const{
                 return nullptr;
 
         return fPeakNdf;
+}
+double*  CrtCal::GetLangausWidth() const {
+        if(!fHasGainCal)
+                return nullptr;
+
+        return fLangausWidth;
+}
+double*  CrtCal::GetLangausLandauMP() const {
+        if(!fHasGainCal)
+                return nullptr;
+
+        return fLangausLandauMP;
+}
+double*  CrtCal::GetLangausArea() const {
+        if(!fHasGainCal)
+                return nullptr;
+
+        return fLangausArea;
+}
+double*  CrtCal::GetLangausGaussSigma() const {
+        if(!fHasGainCal)
+                return nullptr;
+
+        return fLangausGaussSigma;
+}
+double*  CrtCal::GetLangausWidthErr() const {
+        if(!fHasGainCal)
+                return nullptr;
+
+        return fLangausWidthErr;
+}
+double*  CrtCal::GetLangausLandauMPErr() const {
+        if(!fHasGainCal)
+                return nullptr;
+
+        return fLangausLandauMPErr;
+}
+double*  CrtCal::GetLangausAreaErr() const {
+        if(!fHasGainCal)
+                return nullptr;
+
+        return fLangausAreaErr;
+}
+double*  CrtCal::GetLangausGaussSigmaErr() const {
+        if(!fHasGainCal)
+                return nullptr;
+
+        return fLangausGaussSigmaErr;
+}
+double*  CrtCal::GetLangausXsqr() const {
+        if(!fHasGainCal)
+                return nullptr;
+
+        return fLangausXsqr;
+}
+double*  CrtCal::GetLangausNdf() const {
+        if(!fHasGainCal)
+                return nullptr;
+
+        return fLangausNdf;
 }
 
 #endif
