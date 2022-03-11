@@ -362,10 +362,7 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeTopHit(art::Ptr<CRTData> data){
     hitlocal[2] = hitpos.Z();
     
     auto const& adsGeo = adGeo.SensitiveVolume(adsid_max); //trigger strip
-    double thit = data->fTs0;
-    std::cout << "double thit: " << thit << "\n";
-    uint64_t thit_64 = data->fTs0;
-    std::cout << "uint64_t thit: " << thit_64 << "\n";
+    uint64_t thit = data->fTs0;
 
     if(adsid_max<8)
         thit -= hitpos.Z()*fPropDelay;
@@ -436,10 +433,7 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeBottomHit(art::Ptr<CRTData> data){
     hitlocal[2] = 0;
 
     auto const& adsGeo = adGeo.SensitiveVolume(adsid_max); //trigger strip
-    double thit_dub = data->fTs0 - adsGeo.HalfLength()*fPropDelay;
-    std::cout << "thit_dub: " << thit_dub << "\n";
     uint64_t thit = data->fTs0 - adsGeo.HalfLength()*fPropDelay;
-    std::cout << "thit: " << thit << "\n";
     
     adGeo.LocalToWorld(hitlocal,hitpoint); //tranform from module to world coords
 
@@ -459,7 +453,7 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeSideHit(vector<art::Ptr<CRTData>> coinData) 
 
     vector<uint8_t> macs;
     map< uint8_t, vector< pair<int,float> > > pesmap;
-    //map< uint8_t, vector< pair<int,TVector3> > > chantopos;
+
 
     struct infoA {
       uint8_t mac5s;
@@ -834,9 +828,7 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeSideHit(vector<art::Ptr<CRTData>> coinData) 
 
       layer2 = true;
       mac5_2 = (int)infn.mac5s;
-      t0_2 = (long int)infn.t0;
-      std::cout << "t0_2 (line 849) : " << t0_2 << "\n";
-      std::cout << "t0 (64?): " << uint64_t(infn.t0) << "\n";
+      t0_2 = (uint64_t)infn.t0;
 
       if ((int)infn.mac5s % 2 == 0) t2_1 = infn.t0;
       else t2_1 = informationB[i+1].t0;
@@ -863,21 +855,6 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeSideHit(vector<art::Ptr<CRTData>> coinData) 
       }
       
     }
-
-    /*
-    for (auto const&  infna: informationA) {
-      for (auto const&  infnb: informationB) {
-	if(fVerbose)
-	  mf::LogInfo("CRTHitRecoAlg: ")<< "macs a "<< (int)infna.mac5s  //<< '\n';
-		   << " ,chal a "<< infna.channel
-		   << " ,macs b "<< (int)infnb.mac5s
-		   << " ,chal b "<< infnb.channel
-		   << " ,  position a ("<<infna.pos[0] << ", " << infna.pos[1] << " , " << infna.pos[2]<< ")"
-		   << " ,  position b ("<<infnb.pos[0] << ", " << infnb.pos[1] << " , " << infnb.pos[2]<< ")" 
-		   << " , slope: "<< (infnb.pos[1] - infna.pos[1])/(infnb.pos[0] - infna.pos[0])<< '\n';
-      }
-    }
-    */
 
     int crossfeb = std::abs(mac5_1 - mac5_2);
 
