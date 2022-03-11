@@ -523,6 +523,9 @@ void  ROIFinder::processPlane(size_t                          idx,
 
                 if (wireIDVec.size() > 1)
                 {
+                    // First get a lock to make sure we don't conflict
+                    tbb::spin_mutex::scoped_lock lock(roifinderSpinMutex);
+
                     std::vector<recob::Wire>::iterator wireItr = std::find_if(wireColVec.begin(),wireColVec.end(),[channel](const auto& wire){return wire.Channel() == channel;});
 
                     if (wireItr != wireColVec.end()) 
