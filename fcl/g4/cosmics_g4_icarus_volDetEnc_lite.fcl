@@ -1,0 +1,24 @@
+#-------------------------------------------------------------------
+#
+# Name: cosmics_g4_icarus_volDetEnc_lite.fcl
+#
+# Purpose: Lite version of cosmics_g4_icarus_volDetEnc.fcl
+#
+# Created: 11-Mar-2022  H. Greenlee
+#
+# Automatically generated.
+#
+#-------------------------------------------------------------------
+
+#include "cosmics_g4_icarus_volDetEnc.fcl"
+
+# Enable SimPhotonsLite.
+
+services.LArG4Parameters.UseLitePhotons: true
+
+# Drop truth data products.
+
+outputs.rootoutput.saveMemoryObjectThreshold: 0
+outputs.rootoutput.outputCommands: [ "keep *_*_*_*",
+                                     "drop sim::SimEnergyDeposits_*_*_*",
+                                     "drop sim::OpDetBacktrackerRecords_*_*_*" ]
