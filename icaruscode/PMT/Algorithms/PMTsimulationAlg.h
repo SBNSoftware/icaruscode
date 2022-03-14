@@ -505,7 +505,8 @@ class icarus::opdet::PMTsimulationAlg {
    * the `photons` contributing to any of the waveforms.
    */
   std::tuple<std::vector<raw::OpDetWaveform>, std::optional<sim::SimPhotons>>
-    simulate(sim::SimPhotons const& photons);
+    simulate(sim::SimPhotons const& photons,
+             sim::SimPhotonsLite const& lite_photons);
 
   /// Prints the configuration into the specified output stream.
   template <typename Stream>
@@ -606,6 +607,7 @@ class icarus::opdet::PMTsimulationAlg {
    */
   Waveform_t CreateFullWaveform(
     sim::SimPhotons const& photons,
+    sim::SimPhotonsLite const& lite_photons,
     std::optional<sim::SimPhotons>& photons_used
     ) const;
   
