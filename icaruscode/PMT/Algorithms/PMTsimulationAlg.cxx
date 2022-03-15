@@ -247,6 +247,32 @@ auto icarus::opdet::PMTsimulationAlg::CreateFullWaveform
 //     std::cout << "\tcollected pes... " << photons.OpChannel() << " " << diff.count() << std::endl;
 //     start=std::chrono::high_resolution_clock::now();
 
+    // Add SimPhotonsLite.  Loop over geant ticks (=ns).
+
+    for(auto const& [ time_ns, nphotons ]: lite_photons.DetectedPhotons) {
+
+      // Count photoelectrons.
+
+      unsigned int nPE = 0;
+      for(int i=0; i<nphotons; ++i) {
+        if(KicksPhotoelectron())
+          ++nPE;
+      }
+
+      // Convert photon time bin to ticks.
+
+      simulation_time const photonTime { time_ns + 0.5 };
+      trigger_time const mytime
+        = timings.toTriggerTime(photonTime)
+        - fParams.triggerOffsetPMT;
+      if ((mytime < 0.0_us) || (mytime >= fParams.readoutEnablePeriod)) continue;
+
+      auto const [ tick, subtick ]
+        = toTickAndSubtick(mytime.quantity() * fSampling);
+      if (tick < endSample)
+        peMaps[subtick][tick] += nPE;
+    }
+
     //
     // add the collected photoelectrons to the waveform
     //
@@ -273,6 +299,7 @@ auto icarus::opdet::PMTsimulationAlg::CreateFullWaveform
           subsample, waveform, startTick,
           static_cast<WaveformValue_t>(nEffectivePE)
           );
+        //        std::cout << "Channel=" << photons.OpChannel() << ", subsample=" << iSubsample << ", tick=" << startTick << ", nPE=" << nPE << ", ePE=" << nEffectivePE << std::endl;
 
       } // for sample
     } // for subsamples
@@ -284,40 +311,6 @@ auto icarus::opdet::PMTsimulationAlg::CreateFullWaveform
          )
       << " times in channel " << photons.OpChannel()
       ;
-
-    // Add SimPhotonsLite.  Loop over geant ticks (=ns).
-
-    for(auto const& [ time_ns, nphotons ]: lite_photons.DetectedPhotons) {
-
-      // Count photoelectrons.
-
-      unsigned int nPE = 0;
-      for(int i=0; i<nphotons; ++i) {
-        if(KicksPhotoelectron())
-          ++nPE;
-      }
-      nTotalPE += nPE;
-
-      double const nEffectivePE = gainFluctuation(nPE);
-      nTotalEffectivePE += nEffectivePE;
-
-      // Convert photon time bin to ticks.
-
-      simulation_time const photonTime { time_ns + 0.5 };
-      trigger_time const mytime
-        = timings.toTriggerTime(photonTime)
-        - fParams.triggerOffsetPMT;
-      if ((mytime < 0.0_us) || (mytime >= fParams.readoutEnablePeriod)) continue;
-
-      auto const [ tick, subtick ]
-        = toTickAndSubtick(mytime.quantity() * fSampling);
-      auto const& subsample = wsp.subsample(subtick);
-
-      AddPhotoelectrons(
-          subsample, waveform, tick,
-          static_cast<WaveformValue_t>(nphotons)
-          );
-    }
 
 //       end=std::chrono::high_resolution_clock::now(); diff = end-start;
 //       std::cout << "\tadded pes... " << photons.OpChannel() << " " << diff.count() << std::endl;
