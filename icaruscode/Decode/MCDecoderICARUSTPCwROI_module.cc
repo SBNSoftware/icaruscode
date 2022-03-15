@@ -499,8 +499,9 @@ void MCDecoderICARUSTPCwROI::processSingleLabel(art::Event&                     
     // Require a valid handle
     if (digitVecHandle.isValid() && digitVecHandle->size()>0 )
     {
+        const unsigned int dataSize = art::Ptr<raw::RawDigit>(digitVecHandle,0)->Samples(); //size of raw data vectors
 
-        std::map<unsigned int, std::vector<const raw::RawDigit*> > boardToRawDigitMap;
+	std::map<unsigned int, std::vector<const raw::RawDigit*> > boardToRawDigitMap;
 	for(size_t idx = 0; idx < digitVecHandle->size(); idx++) {
 	  const raw::RawDigit* rawDigit = &digitVecHandle->at(idx);
 	  raw::ChannelID_t channel = rawDigit->Channel();
@@ -521,11 +522,13 @@ void MCDecoderICARUSTPCwROI::processSingleLabel(art::Event&                     
 	  }
 	}
 	std::cout << "boardToRawDigitMap.size()=" << boardToRawDigitMap.size() << std::endl;
-	for (auto elem : boardToRawDigitMap) {
-	  std::cout << "board=" << elem.first << " nch=" << elem.second.size() << " first=" << elem.second[0]->Channel() << " last=" << elem.second[elem.second.size()-1]->Channel() << std::endl;
-	  const unsigned int dataSize = art::Ptr<raw::RawDigit>(digitVecHandle,0)->Samples(); //size of raw data vectors
+	//for (auto elem : boardToRawDigitMap) {
+	tbb::parallel_for (static_cast<std::size_t>(0),boardToRawDigitMap.size(),[&](size_t& r) {
+	  auto elem = std::next(boardToRawDigitMap.begin(),r);
 
-	  std::vector<const raw::RawDigit*>& rawDigitVec = elem.second;
+	  //std::cout << "board=" << elem->first << " nch=" << elem->second.size() << " first=" << elem->second[0]->Channel() << " last=" << elem->second[elem->second.size()-1]->Channel() << std::endl;
+
+	  std::vector<const raw::RawDigit*>& rawDigitVec = elem->second;
 	  // Sort (use a lambda to sort by channel id)
 	  std::sort(rawDigitVec.begin(),rawDigitVec.end(),[](const raw::RawDigit* left, const raw::RawDigit* right) {return left->Channel() < right->Channel();});
           ChannelArrayPair chanArr;
@@ -543,7 +546,7 @@ void MCDecoderICARUSTPCwROI::processSingleLabel(art::Event&                     
 	    chanArr.second.push_back(boardDataVec);
 	  }
           processSingleImage(clockData, chanArr, coherentNoiseGrouping, concurrentRawDigits, concurrentRawRawDigits, coherentRawDigits, concurrentROIs);
-	}
+	});
 
 	    /*
         // Sadly, the RawDigits come to us in an unsorted condition which is not optimal for
