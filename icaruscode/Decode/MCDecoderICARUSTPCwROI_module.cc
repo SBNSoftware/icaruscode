@@ -380,7 +380,7 @@ void MCDecoderICARUSTPCwROI::produce(art::Event & event, art::ProcessingFrame co
     {
         art::Handle<artdaq::Fragments> daq_handle;
         event.getByLabel(rawDigitLabel, daq_handle);
-	std::cout << "\nLabel=" << rawDigitLabel << std::endl;
+	//std::cout << "\nLabel=" << rawDigitLabel << std::endl;
 
         ConcurrentRawDigitCol concurrentRawDigits;
         ConcurrentRawDigitCol concurrentRawRawDigits;
@@ -521,7 +521,7 @@ void MCDecoderICARUSTPCwROI::processSingleLabel(art::Event&                     
 	    boardToRawDigitMap.insert({board,std::vector<const raw::RawDigit*>{rawDigit}});
 	  }
 	}
-	std::cout << "boardToRawDigitMap.size()=" << boardToRawDigitMap.size() << std::endl;
+	//std::cout << "boardToRawDigitMap.size()=" << boardToRawDigitMap.size() << std::endl;
 	//for (auto elem : boardToRawDigitMap) {
 	tbb::parallel_for (static_cast<std::size_t>(0),boardToRawDigitMap.size(),[&](size_t& r) {
 	  auto elem = std::next(boardToRawDigitMap.begin(),r);
@@ -588,8 +588,6 @@ void MCDecoderICARUSTPCwROI::processSingleLabel(art::Event&                     
             unsigned int wireIdx        = channelToBoardItr->second.second.first;
             unsigned int planeIdx       = channelToBoardItr->second.second.second;
 
-	    std::cout << "channel=" << channel << " boardID=" << readoutBoardID << " wire=" << wireIdx << " plane=" << planeIdx << std::endl;
-
             BoardToChannelArrayPairMap::iterator boardMapItr = boardToChannelArrayPairMap.find(readoutBoardID);
 
             if (boardMapItr == boardToChannelArrayPairMap.end())
@@ -619,7 +617,6 @@ void MCDecoderICARUSTPCwROI::processSingleLabel(art::Event&                     
 
             if (++boardWireCountMap[readoutBoardID] == MAXCHANNELS)
             {
-	      std::cout << "processSingleImage" << std::endl;
                 processSingleImage(clockData, boardMapItr->second, coherentNoiseGrouping, concurrentRawDigits, concurrentRawRawDigits, coherentRawDigits, concurrentROIs);
 
                 boardToChannelArrayPairMap.erase(boardMapItr);
