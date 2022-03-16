@@ -12,7 +12,8 @@ art_make( MODULE_LIBRARIES larcorealg_Geometry
                            lardataobj_RawData
                            larevt_CalibrationDBI_Providers
                            nurandom_RandomUtils_NuRandomService_service
-			   sbnobj_Common_Analysis
+			                     sbnobj_Common_Analysis
+                           sbndaq_artdaq_core::sbndaq-artdaq-core_Overlays_ICARUS
                            ${ART_FRAMEWORK_CORE}
                            ${ART_FRAMEWORK_PRINCIPAL}
                            ${ART_FRAMEWORK_SERVICES_REGISTRY}
