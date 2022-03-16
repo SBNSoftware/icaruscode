@@ -1,0 +1,84 @@
+#
+# File:    discriminatePMT_icarus_data.fcl
+# Purpose: Emulation of ICARUS trigger (no plots, only trigger outcome).
+# Authors: Gianluca Petrillo (petrillo@slac.stanford.edu)
+# Date:    November 9, 2021
+#
+#
+# This configuration runs the trigger emulation on a time interval ("beam gate")
+# configured to match the beam gate.
+# 
+# It uses and abuses the trigger simulation targetted to multiple tracks
+# (for the only reason that other configuration is already available for that).
+#
+#
+# Changes
+# --------
+# 
+# 20211129 (petrillo@slac.stanford.edu) [v1.0]
+# :   original version based on `triggeremu_only_data_icarus.fcl` v1.1
+# 
+
+#include "services_common_icarus.fcl"
+#include "rootoutput_icarus.fcl"
+#include "trigger_emulation_icarus.fcl"
+
+
+# ------------------------------------------------------------------------------
+process_name: PMTthr
+
+
+# ------------------------------------------------------------------------------
+services: {
+  
+  # uncommon services for trigger emulation (may be overridden below)
+# @table::triggeremu_data_config_icarus.services # from triggeremu_data_config_icarus.fcl
+  
+  # this provides: file service, random management (unused),
+  #                Geometry, detector properties and clocks
+  @table::icarus_common_services
+
+  # art resource tracking services may take a lot of memory on the long run
+  MemoryTracker: {}
+  TimeTracker:   {}
+
+  # currently unused (remove the line if they start mattering):
+  LArPropertiesService:      @erase
+  DetectorPropertiesService: @erase
+  
+  message: @local::icarus_message_services_interactive
+  
+} # services
+
+
+# ------------------------------------------------------------------------------
+physics: {
+
+  producers: {
+    
+    # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    
+    pmtconfigbaselines: @local::icarus_pmtconfigbaselines
+
+    
+    pmtthr: @local::icarus_pmtdiscrimitatethr
+
+    # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    
+  } # producers
+
+  # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  discriminate: [ pmtconfigbaselines, pmtthr ]
+  
+  streams: [ "rootoutput" ]
+  
+  # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  
+} # physics
+
+
+# ------------------------------------------------------------------------------
+outputs.rootoutput: @local::icarus_rootoutput
+
+
+# ------------------------------------------------------------------------------
