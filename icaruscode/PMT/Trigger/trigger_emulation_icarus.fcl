@@ -4,6 +4,12 @@
 # Authors: Gianluca Petrillo (petrillo@slac.stanford.edu)
 # Date:    March 15, 2022
 #
+# Currently included:
+#  * PMT configured baseline extraction (data)
+#  * PMT discrimination with readout-configured thresholds (data)
+#  * PMT discrimination with fixed thresholds
+# 
+# 
 #
 # Changes
 # --------
@@ -105,6 +111,97 @@ icarus_pmtdiscriminatethr: {
   OutputCategory: "DiscriminatePMTwaveforms"
 
 } # icarus_pmtdiscriminatethr
+
+
+# ------------------------------------------------------------------------------
+# 
+# [DATA] Discrimination of PMT waveforms with fixed thresholds.
+# 
+# This module applies discrimination based on fixed threshold specified in the
+# configuration.
+# The baseline is learnt from the readout configuration.
+# It produces discriminated waveforms ("ReadoutTriggerGate" objects)
+# and complimentary waveform summary data (all the waveform information that
+# is not sample values: `sbn::OpDetWaveformMeta` objects).
+# 
+# This module does requires `Geometry` and `DetectorClocksService` services.
+# 
+# Usually this module is usually run only once; standard label: "pmtfixedthr":
+#     
+#     physics.producers.pmtfixedthr: @local::icarus_pmtdiscriminatethr_fixed
+#     
+# 
+icarus_pmtdiscriminatethr_fixed: {
+
+  module_type: DiscriminatePMTwaveforms
+
+  # input optical waveform data product tag:
+  OpticalWaveforms: "daqPMT"
+
+  # PMT baselines
+  Baselines: "pmtconfigbaselines" # from data products
+  
+  NChannels:                  360 # to be safe...
+  
+  #
+  # choosing the discrimination algorithm: fixed length gates
+  #
+  TriggerGateBuilder: {
+    @table::icarus_fixedtriggergate     # from trigger_icarus.fcl
+    
+    ChannelThresholds: [ 100, 200, 300, 400, 500, 600 ] # ADC
+    
+    GateDuration: "160 ns"
+    
+  } # TriggerGateBuilder
+
+
+  # message facility stream
+  OutputCategory: "DiscriminatePMTwaveforms"
+
+} # icarus_pmtdiscriminatethr_fixed
+
+
+# ------------------------------------------------------------------------------
+# 
+# [MC] Discrimination of PMT waveforms with fixed thresholds.
+# 
+# This module applies discrimination based on fixed threshold specified in the
+# configuration.
+# The baseline is fixed.
+# It produces discriminated waveforms ("ReadoutTriggerGate" objects)
+# and complimentary waveform summary data (all the waveform information that
+# is not sample values: `sbn::OpDetWaveformMeta` objects).
+# 
+# This module does requires `Geometry` and `DetectorClocksService` services.
+# 
+# Usually this module is usually run only once; standard label: "pmtfixedthr":
+#     
+#     physics.producers.pmtfixedthr: @local::icarus_pmtdiscriminatethr_fixed_MC
+#     
+# 
+icarus_pmtdiscriminatethr_fixed_MC: {
+
+  @table::icarus_pmtdiscriminatethr_fixed
+
+  # input optical waveform data product tag:
+  OpticalWaveforms: "opdaq"
+
+  # PMT baseline (from standard simulation configuration)
+  Baselines: @erase
+  Baseline: @local::icarus_pmtsimulationalg_standard.Baseline
+  
+  #
+  # choosing the discrimination algorithm: fixed length gates
+  #
+  TriggerGateBuilder: {
+    @table::icarus_pmtdiscriminatethr_fixed.TriggerGateBuilder # as above
+    
+    ChannelThresholds: [ 100, 200, 300, 400, 500, 600 ] # ADC
+    
+  } # TriggerGateBuilder
+
+} # icarus_pmtdiscriminatethr_fixed_MC
 
 
 # ------------------------------------------------------------------------------

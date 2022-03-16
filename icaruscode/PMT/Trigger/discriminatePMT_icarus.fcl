@@ -1,0 +1,80 @@
+#
+# File:    discriminatePMT_icarus.fcl
+# Authors: Gianluca Petrillo (petrillo@slac.stanford.edu)
+# Date:    March 15, 2022
+#
+#
+# This configuration runs PMT waveform discrimination on several thresholds
+# fixed in this configuration.
+# 
+# The configuration is written for simulation. For detector data, a different
+# preset configuration may be needed (`icarus_pmtdiscriminatethr_fixed`
+# is provided, and minimum bias events are recommended).
+# 
+#
+# Changes
+# --------
+# 
+# 20220315 (petrillo@slac.stanford.edu) [v1.0]
+# :   original version, based on discriminatePMT_icarus_data.fcl v1.0
+# 
+
+#include "services_common_icarus.fcl"
+#include "rootoutput_icarus.fcl"
+#include "trigger_emulation_icarus.fcl"
+
+
+# ------------------------------------------------------------------------------
+process_name: PMTthr
+
+
+# ------------------------------------------------------------------------------
+services: {
+  
+  # this provides: file service, random management (unused),
+  #                Geometry, detector properties and clocks
+  @table::icarus_common_services
+
+  # art resource tracking services may take a lot of memory on the long run
+  MemoryTracker: {}
+#  TimeTracker:   {}
+
+  # currently unused (remove the line if they start mattering):
+  LArPropertiesService:      @erase
+  DetectorPropertiesService: @erase
+  
+  message: @local::icarus_message_services_interactive
+  
+} # services
+
+
+# ------------------------------------------------------------------------------
+physics: {
+
+  producers: {
+    
+    # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    
+    pmtfixedthr: @local::icarus_pmtdiscriminatethr_fixed_MC
+
+    # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    
+  } # producers
+
+  # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  discriminate: [ pmtfixedthr ]
+  
+  streams: [ "rootoutput" ]
+  
+  # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  
+} # physics
+
+physics.producers.pmtfixedthr.OpticalWaveforms: "opdaq"  # for simulation
+
+
+# ------------------------------------------------------------------------------
+outputs.rootoutput: @local::icarus_rootoutput
+
+
+# ------------------------------------------------------------------------------
