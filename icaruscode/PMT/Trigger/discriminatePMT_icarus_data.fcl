@@ -1,22 +1,20 @@
 #
 # File:    discriminatePMT_icarus_data.fcl
-# Purpose: Emulation of ICARUS trigger (no plots, only trigger outcome).
+# Purpose: Runs PMT waveform discrimination on a readout-driven threshold.
 # Authors: Gianluca Petrillo (petrillo@slac.stanford.edu)
-# Date:    November 9, 2021
+# Date:    March 15, 2022
 #
 #
-# This configuration runs the trigger emulation on a time interval ("beam gate")
-# configured to match the beam gate.
+# This configuration runs PMT waveform discrimination channel by channel,
+# using the same threshold that was configured in the PMT readout boards
+# for the trigger evaluation (regardless whether the trigger was actually
+# used or even evaluated).
 # 
-# It uses and abuses the trigger simulation targetted to multiple tracks
-# (for the only reason that other configuration is already available for that).
-#
-#
 # Changes
 # --------
 # 
-# 20211129 (petrillo@slac.stanford.edu) [v1.0]
-# :   original version based on `triggeremu_only_data_icarus.fcl` v1.1
+# 20220315 (petrillo@slac.stanford.edu) [v1.0]
+# :   original version
 # 
 
 #include "services_common_icarus.fcl"
@@ -31,16 +29,13 @@ process_name: PMTthr
 # ------------------------------------------------------------------------------
 services: {
   
-  # uncommon services for trigger emulation (may be overridden below)
-# @table::triggeremu_data_config_icarus.services # from triggeremu_data_config_icarus.fcl
-  
   # this provides: file service, random management (unused),
   #                Geometry, detector properties and clocks
   @table::icarus_common_services
 
   # art resource tracking services may take a lot of memory on the long run
   MemoryTracker: {}
-  TimeTracker:   {}
+#  TimeTracker:   {}
 
   # currently unused (remove the line if they start mattering):
   LArPropertiesService:      @erase
@@ -61,7 +56,7 @@ physics: {
     pmtconfigbaselines: @local::icarus_pmtconfigbaselines
 
     
-    pmtthr: @local::icarus_pmtdiscrimitatethr
+    pmtthr: @local::icarus_pmtdiscriminatethr
 
     # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     

@@ -78,7 +78,7 @@ icarus_stage0_producers:
 
   ### trigger emulation foundation
   pmtconfigbaselines:             @local::icarus_pmtconfigbaselines
-  pmtthr:                         @local::icarus_pmtdiscrimitatethr
+  pmtthr:                         @local::icarus_pmtdiscriminatethr
   
   ### Optical hit finder
   ophit:                          @local::icarus_ophit_data
