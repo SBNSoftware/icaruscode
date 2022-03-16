@@ -1,0 +1,112 @@
+#
+# File:    trigger_emulation_icarus.fcl
+# Purpose: Configurations for steps of ICARUS trigger emulation.
+# Authors: Gianluca Petrillo (petrillo@slac.stanford.edu)
+# Date:    March 15, 2022
+#
+#
+# Changes
+# --------
+# 
+# 20220315 (petrillo@slac.stanford.edu) [v1.0]
+# :   original version
+#
+
+#include "trigger_icarus.fcl"
+
+
+BEGIN_PROLOG
+
+# ------------------------------------------------------------------------------
+#
+# [DATA] Extracts channel baselines from the run configuration.
+#
+# This step is necessary to discriminate PMT waveforms with the baseline
+# set by the PMT readout. It writes `icarus::WaveformBaseline` objects.
+# Note that the readout uses an absolute number for the threshold,
+# that is set by the configuration at the start of the run.
+# Therefore even if the baseline changes, the threshold will be still the same
+# (and still represented by the nominal threshold over this baseline).
+# 
+# This module does not require any service.
+# 
+# This module should be run only once; standard label: "pmtconfigbaselines":
+#     
+#     physics.producers.pmtconfigbaselines: @local::icarus_pmtconfigbaselines
+#     
+#
+icarus_pmtconfigbaselines: {
+
+  module_type: PMTWaveformBaselinesFromReadoutConfiguration
+
+  # label of input digitized optical waveform data product
+  OpticalWaveforms: "daqPMT"
+  
+  # label of PMT configuration
+  PMTconfigurationTag: "pmtconfig"
+
+  # produce plots on the extracted baseline
+  PlotBaselines: false # default
+  
+  # print on screen the baselines (good for debugging)
+  PrintBaselines: false
+  
+  # tag of the module output to console via message facility
+  OutputCategory: "PMTWaveformBaselines"
+
+} # icarus_pmtconfigbaselines
+
+
+# ------------------------------------------------------------------------------
+# 
+# [DATA] Discrimination of PMT waveforms.
+# 
+# This module applies discrimination based on the hardware thresholds
+# (described in `pmtconfig` and presumably originating from the PMT readout
+# board configuration).
+# It produces discriminated waveforms ("ReadoutTriggerGate" objects)
+# and complimentary waveform summary data (all the waveform information that
+# is not sample values: `sbn::OpDetWaveformMeta` objects).
+# 
+# This module does requires `Geometry` and `DetectorClocksService` services.q
+# 
+# Usually this module is run only once; standard label: "pmtthr":
+#     
+#     physics.producers.pmtthr: @local::icarus_pmtdiscrimitatethr
+#     
+# 
+icarus_pmtdiscrimitatethr: {
+
+  module_type: DiscriminatePMTwaveformsByChannel
+
+  # input optical waveform data product tag:
+  OpticalWaveforms: "daqPMT"
+
+  # PMT baselines
+  Baselines: "pmtconfigbaselines" # from data products
+  
+  # threshold configuration
+  ThresholdsFromPMTconfig: "pmtconfig"
+  NChannels:                360 # to be safe...
+  
+  #
+  # choosing the discrimination algorithm: fixed length gates
+  #
+  TriggerGateBuilder: {
+    @table::icarus_fixedtriggergate     # from trigger_icarus.fcl
+    
+    ChannelThresholds: [ 0 ]  # ignored: overridden by module
+    
+    GateDuration: "160 ns"
+    
+  } # TriggerGateBuilder
+
+  # message facility stream
+  OutputCategory: "DiscriminatePMTwaveforms"
+
+} # icarus_pmtdiscrimitatethr
+
+
+# ------------------------------------------------------------------------------
+
+END_PROLOG

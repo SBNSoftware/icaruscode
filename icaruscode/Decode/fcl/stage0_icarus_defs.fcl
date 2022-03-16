@@ -10,6 +10,7 @@
 #include "hitfindermodules_icarus.fcl"
 #include "icarus_ophitfinder.fcl"
 #include "icarus_flashfinder.fcl"
+#include "trigger_emulation_icarus.fcl"
 #include "crt_decoderdefs_icarus.fcl"
 #include "wcls-decode-to-sig-base.fcl"
 
@@ -75,6 +76,10 @@ icarus_stage0_producers:
   gaushitTPCEW:                   @local::gaus_hitfinder_icarus
   gaushitTPCEE:                   @local::gaus_hitfinder_icarus
 
+  ### trigger emulation foundation
+  pmtconfigbaselines:             @local::icarus_pmtconfigbaselines
+  pmtthr:                         @local::icarus_pmtdiscrimitatethr
+  
   ### Optical hit finder
   ophit:                          @local::icarus_ophit_data
   ophitfull:                      @local::icarus_ophitdebugger_data
@@ -180,6 +185,8 @@ icarus_purity_monitor:             [
 icarus_stage0_PMT:                 [ daqTrigger,
                                      pmtconfig,
                                      daqPMT,
+                                     pmtconfigbaselines,
+                                     pmtthr,
                                      ophit,
                                      opflashCryoE,
                                      opflashCryoW
