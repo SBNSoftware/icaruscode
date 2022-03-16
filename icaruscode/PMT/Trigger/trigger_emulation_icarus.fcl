@@ -59,7 +59,7 @@ icarus_pmtconfigbaselines: {
 
 # ------------------------------------------------------------------------------
 # 
-# [DATA] Discrimination of PMT waveforms.
+# [DATA] Discrimination of PMT waveforms with channel-by-channel thresholds.
 # 
 # This module applies discrimination based on the hardware thresholds
 # (described in `pmtconfig` and presumably originating from the PMT readout
@@ -68,14 +68,14 @@ icarus_pmtconfigbaselines: {
 # and complimentary waveform summary data (all the waveform information that
 # is not sample values: `sbn::OpDetWaveformMeta` objects).
 # 
-# This module does requires `Geometry` and `DetectorClocksService` services.q
+# This module does requires `Geometry` and `DetectorClocksService` services.
 # 
 # Usually this module is run only once; standard label: "pmtthr":
 #     
-#     physics.producers.pmtthr: @local::icarus_pmtdiscrimitatethr
+#     physics.producers.pmtthr: @local::icarus_pmtdiscriminatethr
 #     
 # 
-icarus_pmtdiscrimitatethr: {
+icarus_pmtdiscriminatethr: {
 
   module_type: DiscriminatePMTwaveformsByChannel
 
@@ -104,7 +104,7 @@ icarus_pmtdiscrimitatethr: {
   # message facility stream
   OutputCategory: "DiscriminatePMTwaveforms"
 
-} # icarus_pmtdiscrimitatethr
+} # icarus_pmtdiscriminatethr
 
 
 # ------------------------------------------------------------------------------
