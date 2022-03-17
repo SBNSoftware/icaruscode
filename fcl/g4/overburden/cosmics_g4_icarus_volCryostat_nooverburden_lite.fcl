@@ -4,7 +4,7 @@
 #
 # Purpose: Lite version of cosmics_g4_icarus_volCryostat_nooverburden.fcl
 #
-# Created: 15-Mar-2022  H. Greenlee
+# Created: 17-Mar-2022  H. Greenlee
 #
 # Automatically generated.
 #
@@ -21,5 +21,4 @@ services.LArG4Parameters.UseLitePhotons: true
 outputs.rootoutput.saveMemoryObjectThreshold: 0
 outputs.rootoutput.outputCommands: [ "keep *_*_*_*",
                                      "drop sim::SimEnergyDeposits_*_*_*",
-                                     "drop sim::OpDetBacktrackerRecords_*_*_*",
-                                     "drop simb::MCParticles_*_*_*" ]
+                                     "drop sim::OpDetBacktrackerRecords_*_*_*" ]
