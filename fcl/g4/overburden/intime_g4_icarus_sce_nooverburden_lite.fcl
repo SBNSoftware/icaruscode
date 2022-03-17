@@ -1,0 +1,20 @@
+#-------------------------------------------------------------------
+#
+# Name: intime_g4_icarus_sce_nooverburden_lite.fcl
+#
+# Purpose: Lite version of intime_g4_icarus_sce_nooverburden.fcl
+#
+# Created: 17-Mar-2022  H. Greenlee
+#
+# Automatically generated.
+#
+#-------------------------------------------------------------------
+
+#include "intime_g4_icarus_sce_nooverburden.fcl"
+
+# Drop truth data products.
+
+outputs.out1.saveMemoryObjectThreshold: 0
+outputs.out1.outputCommands: [ "keep *_*_*_*",
+                               "drop sim::SimEnergyDeposits_*_*_*",
+                               "drop simb::MCParticles_*_*_*" ]
