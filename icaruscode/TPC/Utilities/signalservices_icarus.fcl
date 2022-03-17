@@ -72,7 +72,8 @@ icarus_signalshapingservice:
     PrintResponses:        "false"
     DeconNorm:             1.
     InitialFFTSize:        4096
-    NoiseFactVec:          [ [ 2.3, 2.3, 2.3, 2.3 ], [ 2.3, 2.3, 2.3, 2.3], [ 2.3, 2.3, 2.3, 2.3 ] ]
+                           # Setting the default scaling as per Justin Mueller study (3/17/22)
+    NoiseFactVec:          [ [ 1.151, 1.151, 1.151, 1.151 ], [ 1.152, 1.152, 1.152, 1.152], [ 1.096, 1.096, 1.096, 1.096 ] ]
     StoreHistograms:       true
 
     ResponseTools:
