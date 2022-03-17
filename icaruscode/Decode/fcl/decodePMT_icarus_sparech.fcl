@@ -1,0 +1,64 @@
+#include "services_common_icarus.fcl"
+#include "channelmapping_icarus.fcl"
+
+#include "rootoutput_icarus.fcl"
+#include "decoderdefs_icarus.fcl"
+
+#include "pmt-calibration.fcl"
+
+# ------------------------------------------------------------------------------
+process_name: DecodePMT
+
+
+# ------------------------------------------------------------------------------
+services: {
+  
+  #TFileService: { fileName: "calo-pmt.root" }
+
+  IICARUSLaserMap:   @local::icarus_lasermapping_service
+                     @table::icarus_art_services
+  message:           @local::icarus_message_services_interactive_debug
+  
+}
+
+services.IICARUSLaserMap.ChannelMappingTool: @local::ChannelMappingPostGres
+
+
+# ------------------------------------------------------------------------------
+physics: {
+  
+  producers: {
+    
+    daqPMTSpareChannel: @local::decodePMTSpareChannel
+
+    
+  }
+
+  analyzers: {
+
+
+    }
+  
+  decoding: [ daqPMTSpareChannel ]
+  
+  streams: [ rootoutput ]
+
+}
+
+
+# ------------------------------------------------------------------------------
+outputs: {
+  rootoutput: {
+                      @table::icarus_rootoutput
+    dataTier:        "decoded"
+    fileProperties:   { maxInputFiles: 1 }
+    checkFileName:    false
+    compressionLevel: 501
+    
+    outputCommands:  [ "drop *_*_*_*", "keep *_*_*_DecodePMT" ]
+  } # rootoutput
+} # outputs 
+
+
+pysics.producers.daqPMTSpareChannel.PMTconfigTag:     @erase # not needed
+pysics.producers.daqPMTSpareChannel.TriggerTag:       @erase # not needed
