@@ -15,7 +15,6 @@
 #include "icaruscode/Decode/DataProducts/ExtraTriggerInfo.h"
 // #include "sbnobj/Common/Trigger/BeamBits.h" // future location of:
 #include "icaruscode/Decode/BeamBits.h" // sbn::triggerSource
-#include "icarusalg/Utilities/FHiCLutils.h" // util::fhicl::getOptionalValue()
 #include "icarusalg/Utilities/BinaryDumpUtils.h" // icarus::ns::util::bin()
 
 #include "sbnobj/Common/PMT/Data/PMTconfiguration.h" // sbn::PMTconfiguration
@@ -985,10 +984,9 @@ namespace icarus {
     (DaqDecoderICARUSPMT::BoardSetupConfig const& config)
   {
     
-    using ::util::fhicl::getOptionalValue;
     return {
         config.Name()                                          // name
-      , getOptionalValue(config.FragmentID) 
+      , config.FragmentID()
           .value_or(daq::details::BoardSetup_t::NoFragmentID)  // fragmentID
       , config.TriggerDelay()                                  // triggerDelay
       , config.TTTresetDelay()                                 // TTTresetDelay
@@ -1094,12 +1092,10 @@ icarus::DaqDecoderICARUSPMT::DaqDecoderICARUSPMT(Parameters const& params)
   , fPacketDump{ params().PacketDump() }
   , fRequireKnownBoards{ params().RequireKnownBoards() }
   , fRequireBoardConfig{ params().RequireBoardConfig() }
-  , fPMTconfigTag{ ::util::fhicl::getOptionalValue(params().PMTconfigTag) }
-  , fTriggerTag{ ::util::fhicl::getOptionalValue(params().TriggerTag) }
-  , fTTTresetEverySecond{
-    ::util::fhicl::getOptionalValue(params().TTTresetEverySecond)
-      .value_or(fTriggerTag.has_value())
-    }
+  , fPMTconfigTag{ params().PMTconfigTag() }
+  , fTriggerTag{ params().TriggerTag() }
+  , fTTTresetEverySecond
+    { params().TTTresetEverySecond().value_or(fTriggerTag.has_value()) }
   , fBoardSetup{ params().BoardSetup() }
   , fLogCategory{ params().LogCategory() }
   , fDetTimings
@@ -1485,8 +1481,8 @@ auto icarus::DaqDecoderICARUSPMT::matchBoardConfigurationAndSetup
       return ppBoardConfig->second;
     }; // findPMTconfig()
   
-  // the filling is driven by boards configured in the tool
-  // (which is how a setup entry is mandatory)
+  // the filling is driven by boards configured in the module
+  // (which is the reason a setup entry is mandatory)
   daq::details::BoardInfoLookup::Database_t boardInfoByFragment;
   
   for (daq::details::BoardSetup_t const& boardSetup: fBoardSetup) {
