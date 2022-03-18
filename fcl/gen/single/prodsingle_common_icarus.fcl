@@ -61,5 +61,6 @@ outputs:
    fileName:    "single_gen_icarus.root"
    dataTier:    "generated"
    compressionLevel: 1
+   saveMemoryObjectThreshold: 0
  }
 }
