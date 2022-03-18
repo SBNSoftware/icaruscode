@@ -123,6 +123,7 @@ outputs:
    compressionLevel: 1
    fastCloning: false
    SelectEvents: [simulate]
+   saveMemoryObjectThreshold: 0
  }
 }
 
