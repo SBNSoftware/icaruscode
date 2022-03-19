@@ -2,7 +2,7 @@
 #include "icarus_spe.fcl"
 BEGIN_PROLOG
 #
-# Pedestal estimation alogrithms
+# Pedestal estimation algorithms
 #
 icarus_opreco_pedestal_edges: @local::standard_algo_pedestal_edges
 icarus_opreco_pedestal_edges.NumSampleFront:  3
@@ -27,6 +27,21 @@ icarus_opreco_pedestal_rmsslider.PedRangeMax:       8003
 icarus_opreco_pedestal_rmsslider.PedRangeMin:       7995
 icarus_opreco_pedestal_rmsslider.NumPreSample:      10
 icarus_opreco_pedestal_rmsslider.NumPostSample:     20
+
+##
+## ICARUS tuning: see SBN DocDB 24969
+##
+icarus_opreco_pedestal_DocDB24969: {
+  Name:          "RollingMean"   # was "UB"
+  SampleSize:              20    # unchanged
+  NPrePostSamples:          5    # unchanged
+  Threshold:                1.5  # was: 4
+  MaxSigma:                 5    # was: 5
+  DiffADCCounts:            2    # unchanged
+  DiffBetweenGapsThreshold: 2    # unchanged
+  PedRangeMax:          16000    # was: 15200
+  PedRangeMin:          14000    # was: 14640
+} # icarus_opreco_pedestal_DocDB24969
 
 
 #
@@ -78,8 +93,7 @@ icarus_ophit:
    UseStartTime:   true  # record pulse start time rather than peak (max) time
    reco_man:       @local::standard_preco_manager
    HitAlgoPset:    @local::icarus_opreco_hit_slidingwindow
-   PedAlgoPset:    @local::icarus_opreco_pedestal_rmsslider
-   #PedAlgoPset:    @local::icarus_opreco_pedestal_rollingmean
+   PedAlgoPset:    @local::icarus_opreco_pedestal_DocDB24969
 }
 
 icarus_ophitdebugger: @local::icarus_ophit
@@ -88,14 +102,6 @@ icarus_ophitdebugger.OutputFile:  "ophit_debug.root"
 
 icarus_ophit_data: @local::icarus_ophit
 icarus_ophit_data.InputModule: "daqPMT"
-icarus_ophit_data.PedAlgoPset.Threshold: 4.0
-icarus_ophit_data.PedAlgoPset.MaxSigma: 4.0
-icarus_ophit_data.PedAlgoPset.PedRangeMax: 15200
-icarus_ophit_data.PedAlgoPset.PedRangeMin: 14640
-icarus_ophit_data.HitAlgoPset.ADCThreshold: 10
-icarus_ophit_data.HitAlgoPset.TailADCThreshold: 6
-icarus_ophit_data.HitAlgoPset.EndADCThreshold: 2
-icarus_ophit_data.HitAlgoPset.MinPulseWidth: 5
 
 icarus_ophitdebugger_data: @local::icarus_ophit_data
 icarus_ophitdebugger_data.module_type: "FullOpHitFinder"
