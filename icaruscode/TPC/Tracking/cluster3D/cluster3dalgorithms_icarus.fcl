@@ -16,7 +16,7 @@ icarus_snippethit3dbuilder:
   WirePitchScaleFactor:  1.9
   SaveMythicalPoints:    false
   MaxMythicalChiSquare:  10.
-  UseT0Offsets:          false
+  UseT0Offsets:          true
   MaxHitChiSquare:       6.0
   OutputHistograms:      false
 }
