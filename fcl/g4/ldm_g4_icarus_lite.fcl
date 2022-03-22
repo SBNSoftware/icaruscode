@@ -4,7 +4,7 @@
 #
 # Purpose: Lite version of ldm_g4_icarus.fcl
 #
-# Created: 17-Mar-2022  H. Greenlee
+# Created: 22-Mar-2022  H. Greenlee
 #
 # Automatically generated.
 #
@@ -16,5 +16,4 @@
 
 outputs.out1.saveMemoryObjectThreshold: 0
 outputs.out1.outputCommands: [ "keep *_*_*_*",
-                               "drop sim::SimEnergyDeposits_*_*_*",
-                               "drop simb::MCParticles_*_*_*" ]
+                               "drop sim::SimEnergyDeposits_*_*_*" ]
