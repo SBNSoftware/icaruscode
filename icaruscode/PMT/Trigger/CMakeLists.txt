@@ -5,6 +5,7 @@ add_subdirectory(scripts)
 art_make(
   EXCLUDE
     "WriteBeamGateInfo_module.cc"
+    "FixBeamGateInfo_module.cc"
     "DiscriminatePMTwaveformsByChannel_module.cc"
     "MajorityTriggerSimulation_module.cc"
     "SlidingWindowTrigger_module.cc"
@@ -60,6 +61,10 @@ art_make(
   )
 
 simple_plugin(WriteBeamGateInfo module
+  lardataobj_Simulation
+  )
+
+simple_plugin(FixBeamGateInfo module
   lardataobj_Simulation
   )
 
