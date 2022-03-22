@@ -1,0 +1,79 @@
+#
+# File:    discriminatePMT_icarus_data.fcl
+# Purpose: Runs PMT waveform discrimination on a readout-driven threshold.
+# Authors: Gianluca Petrillo (petrillo@slac.stanford.edu)
+# Date:    March 15, 2022
+#
+#
+# This configuration runs PMT waveform discrimination channel by channel,
+# using the same threshold that was configured in the PMT readout boards
+# for the trigger evaluation (regardless whether the trigger was actually
+# used or even evaluated).
+# 
+# Changes
+# --------
+# 
+# 20220315 (petrillo@slac.stanford.edu) [v1.0]
+# :   original version
+# 
+
+#include "services_common_icarus.fcl"
+#include "rootoutput_icarus.fcl"
+#include "trigger_emulation_icarus.fcl"
+
+
+# ------------------------------------------------------------------------------
+process_name: PMTthr
+
+
+# ------------------------------------------------------------------------------
+services: {
+  
+  # this provides: file service, random management (unused),
+  #                Geometry, detector properties and clocks
+  @table::icarus_common_services
+
+  # art resource tracking services may take a lot of memory on the long run
+  MemoryTracker: {}
+#  TimeTracker:   {}
+
+  # currently unused (remove the line if they start mattering):
+  LArPropertiesService:      @erase
+  DetectorPropertiesService: @erase
+  
+  message: @local::icarus_message_services_interactive
+  
+} # services
+
+
+# ------------------------------------------------------------------------------
+physics: {
+
+  producers: {
+    
+    # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    
+    pmtconfigbaselines: @local::icarus_pmtconfigbaselines
+
+    
+    pmtthr: @local::icarus_pmtdiscriminatethr
+
+    # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    
+  } # producers
+
+  # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  discriminate: [ pmtconfigbaselines, pmtthr ]
+  
+  streams: [ "rootoutput" ]
+  
+  # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  
+} # physics
+
+
+# ------------------------------------------------------------------------------
+outputs.rootoutput: @local::icarus_rootoutput
+
+
+# ------------------------------------------------------------------------------
