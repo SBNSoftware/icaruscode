@@ -38,6 +38,7 @@
 
 #include <cstdlib>
 #include <iostream>
+#include <iomanip> // std::setw(), std::setfill()
 #include <string_view>
 #include <memory>
 
@@ -46,26 +47,6 @@ using namespace std::string_literals;
 
 namespace daq 
 {
-  
-  // --- BEGIN -- TEMPORARY ----------------------------------------------------
-  // remove when SBNSoftware/sbndaq-artdaq-core pull request #31 is in:
-  // https://github.com/SBNSoftware/sbndaq-artdaq-core/pull/31
-  std::uint64_t getNanoseconds_since_UTC_epoch_fix
-    (icarus::ICARUSTriggerInfo const& info)
-  {
-    
-    if(info.wr_seconds == -2 || info.wr_nanoseconds == -3)
-      return 0;
-    int correction = 0;
-    if(info.wr_seconds >= 1483228800)
-      correction = 37;
-    uint64_t const corrected_ts
-      { (info.wr_seconds-correction)*1000000000ULL + info.wr_nanoseconds };
-    return corrected_ts;
-
-  } // getNanoseconds_since_UTC_epoch_fix()
-  // --- END ---- TEMPORARY ----------------------------------------------------
-  
   
   /**
    * @brief Tool decoding the trigger information from DAQ.
@@ -132,6 +113,18 @@ namespace daq
    * trigger DAQ. If no previous trigger is available, this collection will be
    * empty.
    * 
+   * 
+   * Timestamps and corrections
+   * ---------------------------
+   * 
+   * The reference trigger time is driven by the trigger fragment time, which
+   * is expected to have been derived from the actual trigger time from the
+   * White Rabbit system properly corrected to UTC by the board reader.
+   * 
+   * All absolute timestamps are corrected to be on that same scale.
+   * The absolute timestamps related to the White Rabbit time are added an
+   * offset to achieve this correction; this offset is stored in the data
+   * product (`sbn::ExtraTriggerInfo::WRtimeToTriggerTime`).
    * 
    */
   class TriggerDecoder : public IDecoder
@@ -234,7 +227,7 @@ namespace daq
   {
     fDiagnosticOutput = pset.get<bool>("DiagnosticOutput", false);
     fDebug = pset.get<bool>("Debug", false);
-    fOffset = pset.get<long long int>("TAIOffset", 2000000000);
+    fOffset = pset.get<long long int>("TimeOffset", 0);
     return;
   }
   
@@ -298,17 +291,25 @@ namespace daq
 
   void TriggerDecoder::process_fragment(const artdaq::Fragment &fragment)
   {
-    uint64_t artdaq_ts = fragment.timestamp();
+    // artdaq_ts is reworked by the trigger board reader to match the corrected
+    // trigger time; to avoid multiple (potentially inconsistent) corrections,
+    // the decoder trusts it and references all the times with respect to it.
+    uint64_t const artdaq_ts = fragment.timestamp();
     icarus::ICARUSTriggerUDPFragment frag { makeTriggerFragment(fragment) };
     std::string data = frag.GetDataString();
     char *buffer = const_cast<char*>(data.c_str());
-    // --- BEGIN -- TEMPORARY --------------------------------------------------
-    // restore OLD CODE when SBNSoftware/sbndaq-artdaq-core pull request #31 is in:
-    // https://github.com/SBNSoftware/sbndaq-artdaq-core/pull/31
+
     icarus::ICARUSTriggerInfo datastream_info = parseTriggerString(buffer);
-    uint64_t wr_ts = getNanoseconds_since_UTC_epoch_fix(datastream_info) + fOffset;
-    // OLD CODE:
-//     uint64_t wr_ts = datastream_info.getNanoseconds_since_UTC_epoch() + fOffset;
+    uint64_t const raw_wr_ts // this is raw, unadultered, uncorrected
+      = makeTimestamp(frag.getWRSeconds(), frag.getWRNanoSeconds());
+    
+    // correction (explicitly converted to signed)
+    int64_t const WRtimeToTriggerTime
+      = static_cast<int64_t>(artdaq_ts) - raw_wr_ts;
+    auto const correctWRtime = [WRtimeToTriggerTime](uint64_t time)
+      { return time + WRtimeToTriggerTime; };
+    assert(correctWRtime(raw_wr_ts) == artdaq_ts);
+    
     // --- END ---- TEMPORARY --------------------------------------------------
     int gate_type = datastream_info.gate_type;
     long delta_gates_bnb [[maybe_unused]] = frag.getDeltaGatesBNB();
@@ -318,11 +319,10 @@ namespace daq
     
     // --- BEGIN -- TEMPORARY --------------------------------------------------
     // remove this part when the beam gate timestamp is available via fragment
-    // or via the parser; the beam gate (`beamgate_ts`) is supposed to undergo
-    // the same correction as the trigger time (`wr_ts`)
+    // or via the parser
     auto const parsedData = icarus::details::KeyedCSVparser{}(firstLine(data));
     unsigned int beamgate_count { std::numeric_limits<unsigned int>::max() };
-    std::uint64_t beamgate_ts { wr_ts }; // we cheat
+    std::uint64_t beamgate_ts { artdaq_ts }; // we cheat
     /* [20210717, petrillo@slac.stanford.edu] `(pBeamGateInfo->nValues() == 3)`:
      * this is an attempt to "support" a few Run0 runs (6017 to roughly 6043)
      * which have the beam gate information truncated; this workaround should
@@ -334,30 +334,26 @@ namespace daq
     ) {
       // if gate information is found, it must be complete
       beamgate_count = pBeamGateInfo->getNumber<unsigned int>(0U);
-      // use the same linear correction for the beam gate timestamp as it was
-      // used for the trigger one; here we assume that wr_ts
-      // (current value of beamgate_ts) is corrected, while
-      // `getWRSeconds()` and `getWRNanoSeconds()` are as corrected as `Beam_TS`
-      // (i.e. both not corrected)
-      beamgate_ts += makeTimestamp(
+      
+      uint64_t const raw_bg_ts = makeTimestamp( // raw and uncorrected too
         pBeamGateInfo->getNumber<unsigned int>(1U),
         pBeamGateInfo->getNumber<unsigned int>(2U)
-        )
-        - makeTimestamp(frag.getWRSeconds(), frag.getWRNanoSeconds())
-        ;
+        );
+      
+      // assuming the raw times from the fragment are on the same time scale
+      // (same offset corrections)
+      beamgate_ts += raw_bg_ts - raw_wr_ts;
+      
     } // if has gate information
     // --- END ---- TEMPORARY --------------------------------------------------
     
     if(fDiagnosticOutput || fDebug)
     {
-      std::cout << "Full Timestamp = " << wr_ts << std::endl;
-      auto const cross_check = static_cast<signed long long int>(wr_ts)
-        - static_cast<signed long long int>(artdaq_ts);
-      if(abs(cross_check) > 1000)
-        std::cout << "Loaded artdaq TS and fragment data TS are > 1 ms different! They are " << cross_check << " nanoseconds different!" << std::endl;
-      std::cout << "Beam gate " << beamgate_count << " at "
-        << (beamgate_ts/1'000'000'000) << "." << (beamgate_ts%1'000'000'000)
-        << " s (" << timestampDiff(beamgate_ts, wr_ts)
+      std::cout << "Full Timestamp = " << artdaq_ts
+        << "\nBeam gate " << beamgate_count << " at "
+        << (beamgate_ts/1'000'000'000) << "." << std::setfill('0')
+        << std::setw(9) << (beamgate_ts%1'000'000'000) << std::setfill(' ')
+        << " s (" << timestampDiff(beamgate_ts, artdaq_ts)
         << " ns relative to trigger)" << std::endl;
       
       // note that this parsing is independent from the one used above
@@ -395,11 +391,11 @@ namespace daq
     } // switch gate_type
     
     fTriggerExtra->sourceType = beamGateBit;
-    fTriggerExtra->triggerTimestamp = wr_ts;
+    fTriggerExtra->triggerTimestamp = artdaq_ts;
     fTriggerExtra->beamGateTimestamp = beamgate_ts;
     fTriggerExtra->triggerID = datastream_info.wr_event_no;
     fTriggerExtra->gateID = datastream_info.gate_id;
-    /* TODO:
+    /* TODO (may need to add WRtimeToTriggerTime to some timestamps):
     fTriggerExtra->triggerCount
     fTriggerExtra->gateCount
     fTriggerExtra->gateCountFromPreviousTrigger
@@ -410,6 +406,7 @@ namespace daq
     fTriggerExtra->previousTriggerTimestamp
     fTriggerExtra->anyPreviousTriggerTimestamp
     */
+    fTriggerExtra->WRtimeToTriggerTime = WRtimeToTriggerTime;
     
     //
     // absolute time trigger (raw::ExternalTrigger)

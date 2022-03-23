@@ -50,6 +50,10 @@ struct sbn::ExtraTriggerInfo {
   static constexpr std::uint64_t NoTimestamp
     = std::numeric_limits<std::uint64_t>::max();
   
+  /// Special timestamp correction value indicating an unknown correction.
+  static constexpr std::int64_t UnknownCorrection
+    = std::numeric_limits<std::int64_t>::max();
+  
   
   /// Type of this gate (`sbn::triggerSource::NBits` marks this object invalid).
   sbn::triggerSource sourceType { sbn::triggerSource::NBits };
@@ -132,6 +136,17 @@ struct sbn::ExtraTriggerInfo {
   
   /// @}
   // --- END ---- Additional timestamps ----------------------------------------
+  
+  
+  // --- BEGIN -- Decoding information -----------------------------------------
+  /// @name Decoding information
+  /// @{
+  
+  /// Correction added to the White Rabbit time to get the trigger time.
+  std::int64_t WRtimeToTriggerTime { UnknownCorrection };
+  
+  /// @}
+  // --- END ---- Decoding information -----------------------------------------
   
   
   /// Returns whether this object contains any valid information.
