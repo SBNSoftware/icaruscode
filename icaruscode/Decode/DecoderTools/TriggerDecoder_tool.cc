@@ -13,9 +13,10 @@
 #include "art/Framework/Principal/Handle.h"
 #include "art/Framework/Services/Registry/ServiceHandle.h"
 #include "art/Persistency/Common/PtrMaker.h"
+#include "art/Utilities/ToolConfigTable.h"
 #include "art/Utilities/ToolMacros.h"
 #include "cetlib/cpu_timer.h"
-#include "fhiclcpp/ParameterSet.h"
+#include "fhiclcpp/types/Atom.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
 
 #include "lardata/DetectorInfoServices/DetectorClocksService.h"
@@ -114,6 +115,20 @@ namespace daq
    * empty.
    * 
    * 
+   * Configuration
+   * --------------
+   * 
+   * The tool configuration can be printed online with
+   * `lar --print-description TriggerDecoder`.
+   * The parameters are also documented here:
+   * * `DiagnosticOutput` (flag, default: `false`): if enabled, it will print
+   *   a bit of information for each decoded trigger.
+   * * `Debug` (flag, default: `false`): if enabled, it will print the same
+   *   information as `DiagnosticOutput`, plus a full dump of the trigger data
+   *   fragment.
+   * 
+   * 
+   * 
    * Timestamps and corrections
    * ---------------------------
    * 
@@ -131,7 +146,27 @@ namespace daq
   {
     using nanoseconds = util::quantities::nanosecond;
   public:
-    explicit TriggerDecoder(fhicl::ParameterSet const &pset);
+    
+    struct Config {
+      
+      fhicl::Atom<bool> DiagnosticOutput {
+        fhicl::Name{ "DiagnosticOutput" },
+        fhicl::Comment
+          { "prints on screen some information for each decoded trigger" },
+        false // default
+        };
+      fhicl::Atom<bool> Debug {
+        fhicl::Name{ "Debug" },
+        fhicl::Comment
+          { "dumps extensive debugging information and trigger fragment" },
+        false // default
+        };
+      
+    }; // Config
+    
+    using Parameters = art::ToolConfigTable<Config>;
+    
+    explicit TriggerDecoder(Parameters const &params);
     
     virtual void produces(art::ProducesCollector&) override;
     virtual void configure(const fhicl::ParameterSet&) override;
@@ -139,6 +174,8 @@ namespace daq
     virtual void process_fragment(const artdaq::Fragment &fragment) override;
     virtual void outputDataProducts(art::Event &event) override;
    
+    void configure(const Parameters&);
+    
   private: 
     using TriggerCollection = std::vector<raw::ExternalTrigger>;
     using TriggerPtr = std::unique_ptr<TriggerCollection>;
@@ -153,7 +190,6 @@ namespace daq
     BeamGateInfoPtr fBeamGateInfo; 
     bool fDiagnosticOutput; //< Produces large number of diagnostic messages, use with caution!
     bool fDebug; //< Use this for debugging this tool
-    int fOffset; //< Use this to determine additional correction needed for TAI->UTC conversion from White Rabbit timestamps. Needs to be changed if White Rabbit firmware is changed and the number of leap seconds changes! 
     //Add in trigger data member information once it is selected, current LArSoft object likely not enough as is
     
     // uint64_t fLastTimeStamp = 0;
@@ -205,11 +241,11 @@ namespace daq
   std::string const TriggerDecoder::PreviousTriggerInstanceName { "previous" };
   
 
-  TriggerDecoder::TriggerDecoder(fhicl::ParameterSet const &pset)
+  TriggerDecoder::TriggerDecoder(Parameters const &params)
     : fDetTimings
       { art::ServiceHandle<detinfo::DetectorClocksService>()->DataForJob() }
   {
-    this->configure(pset);
+    this->configure(params);
   }
 
   
@@ -224,10 +260,12 @@ namespace daq
     
 
   void TriggerDecoder::configure(fhicl::ParameterSet const &pset) 
+    { configure(Parameters{ pset }); }
+  
+  void TriggerDecoder::configure(Parameters const &params)
   {
-    fDiagnosticOutput = pset.get<bool>("DiagnosticOutput", false);
-    fDebug = pset.get<bool>("Debug", false);
-    fOffset = pset.get<long long int>("TimeOffset", 0);
+    fDiagnosticOutput = params().DiagnosticOutput();
+    fDebug = params().Debug();
     return;
   }
   
