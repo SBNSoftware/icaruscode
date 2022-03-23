@@ -47,8 +47,16 @@ namespace sbn {
     // --- BEGIN -- Generic bit functions --------------------------------------
     /// @name Generic bit functions
     /// @{
+    
+    /// Type for bit masks.
+    /// @note This is a glorified integral type.
     template <typename EnumType>
-    using mask_t = std::underlying_type_t<EnumType>;
+    struct mask_t {
+      using bits_t = EnumType; ///< Enumeration type of the bits.
+      using maskbits_t = std::underlying_type_t<EnumType>; ///< Bit data type.
+      maskbits_t bits { 0 };
+      operator maskbits_t() const { return bits; }
+    }; // mask_t
     
     /// Returns the value of specified `bit` (conversion like `enum` to `int`).
     template <typename EnumType>
@@ -90,6 +98,8 @@ namespace sbn {
       NBits    ///< Number of bits currently supported.
     }; // triggerSource
     
+    using triggerSourceMask = mask_t<triggerSource>;
+    
     /// Returns a mnemonic short name of the beam type.
     std::string bitName(triggerSource bit);
     
@@ -99,6 +109,7 @@ namespace sbn {
   } // namespace bits
   
   using bits::triggerSource; // import symbol
+  using bits::triggerSourceMask; // import symbol
   
 } // namespace sbn
 
@@ -118,7 +129,7 @@ constexpr auto sbn::bits::mask(EnumType bit, OtherBits... otherBits)
 {
   unsigned int m { 1U << value(bit) };
   if constexpr(sizeof...(OtherBits) > 0U) m |= mask(otherBits...);
-  return m;
+  return { m };
 } // sbn::mask()
 
 

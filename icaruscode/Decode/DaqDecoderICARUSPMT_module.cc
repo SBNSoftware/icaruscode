@@ -556,7 +556,7 @@ class icarus::DaqDecoderICARUSPMT: public art::EDProducer {
   struct TriggerInfo_t {
     SplitTimestamp_t time; ///< Time of the trigger (absolute).
     long int relBeamGateTime; ///< Time of beam gate relative to trigger [ns].
-    unsigned int bits = 0x0; ///< Trigger bits.
+    sbn::triggerSourceMask bits; ///< Trigger bits.
     unsigned int gateCount = 0U; ///< Gate number from the beginning of run.
   }; // TriggerInfo_t
 
@@ -1234,14 +1234,10 @@ void icarus::DaqDecoderICARUSPMT::produce(art::Event& event) {
     else
       log << "Trigger from event timestamp: ";
     log << triggerInfo.time << " s, bits: "
-        << icarus::ns::util::bin(triggerInfo.bits);
+        << icarus::ns::util::bin(triggerInfo.bits.bits);
     if (triggerInfo.bits) {
       log << " {";
-      for (std::string const& name
-        : sbn::bits::names<sbn::triggerSource>(triggerInfo.bits))
-      {
-        log << ' ' << name;
-      }
+      for (std::string const& name: names(triggerInfo.bits)) log << ' ' << name;
       log << " }";
     } // if
     if (fTriggerTag) log << ", spill count: " << triggerInfo.gateCount;
