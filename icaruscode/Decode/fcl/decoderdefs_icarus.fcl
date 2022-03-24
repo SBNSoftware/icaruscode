@@ -2,6 +2,9 @@
 
 BEGIN_PROLOG
 
+extractTriggerConfig: { 
+                    module_type: TriggerConfigurationExtraction
+}
 
 extractPMTconfig: {
                     module_type:        PMTconfigurationExtraction

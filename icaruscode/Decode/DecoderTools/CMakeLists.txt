@@ -10,6 +10,7 @@ art_make( SUBDIRS details
           LIB_LIBRARIES
                         icaruscode_Utilities
                         sbnobj_Common_PMT_Data
+                        icaruscode_Decode_DataProducts
                         canvas
                         ${MF_MESSAGELOGGER}
                         ${FHICLCPP}

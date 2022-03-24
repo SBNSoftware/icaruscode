@@ -4,6 +4,7 @@ cet_find_library(LIBWDA NAMES wda PATHS ENV LIBWDA_LIB NO_DEFAULT_PATH)
 
 art_make(
           EXCLUDE
+                        TriggerConfigurationExtraction_module.cc
                         PMTconfigurationExtraction_module.cc
                         DumpPMTconfiguration_module.cc
                         DumpArtDAQfragments_module.cc
@@ -59,6 +60,14 @@ simple_plugin(DaqDecoderICARUSPMT module
 simple_plugin(PMTconfigurationExtraction module
   icaruscode_Decode_DecoderTools
   sbnobj_Common_PMT_Data
+  art_Framework_Services_Registry
+  fhiclcpp
+  cetlib_except
+  )
+
+simple_plugin(TriggerConfigurationExtraction module
+  icaruscode_Decode_DecoderTools
+  icaruscode_Decode_DataProducts
   art_Framework_Services_Registry
   fhiclcpp
   cetlib_except

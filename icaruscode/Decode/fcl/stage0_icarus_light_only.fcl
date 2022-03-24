@@ -1,0 +1,103 @@
+#include "services_common_icarus.fcl"
+#include "channelmapping_icarus.fcl"
+#include "decoderdefs_icarus.fcl"
+#include "icarus_ophitfinder.fcl"
+#include "icarus_flashfinder.fcl"
+#include "icarus_opana_modules.fcl"
+#include "rootoutput_icarus.fcl"
+
+process_name: lightAna
+
+services:
+{
+   TFileService:            { fileName: "%ifb_%tc-%p.root" }
+   @table::icarus_geometry_services
+   @table::icarus_basic_services
+   IICARUSChannelMap: @local::icarus_channelmappinggservice
+}
+
+services.IICARUSChannelMap.ChannelMappingTool: @local::ChannelMappingPostGres
+
+#Look at the input files
+source:
+{
+  module_type: RootInput
+  fileNames:  [ "data.root" ]
+  maxEvents:   -1       # Number of events to create
+}
+
+# Make sure to get rid of NuRandomSvc (not thread save)
+services.NuRandomService: @erase
+
+physics:
+{
+
+    // now also have something produce the digits and headers
+    producers:
+    {
+
+        triggerConfig: @local::extractTriggerConfig 
+
+	    daqTrigger: @local::decodeTrigger
+
+        PMTconfig: @local::extractPMTconfig 
+
+        daqPMT: @local::decodePMT
+
+        ophit: @local::icarus_ophit_data
+
+        opflashCryoE: @local::ICARUSSimpleFlashDataCryoE
+
+        opflashCryoW: @local::ICARUSSimpleFlashDataCryoW
+
+    }
+
+    analyzers: 
+    {
+        simpleLightAna: @local::ICARUSFlashAssAna 
+    }
+
+    my_producer_modules: [ triggerConfig, daqTrigger, PMTconfig, daqPMT, ophit, opflashCryoE, opflashCryoW ]
+
+    ana: [ rootoutput ]
+
+    end_paths: [ana]
+}
+ 
+
+outputs: {
+  rootoutput: {
+                      @table::icarus_rootoutput
+    dataTier:        "decoded"
+    fileProperties:   { maxInputFiles: 1 }
+    checkFileName:    false
+    compressionLevel: 501
+    
+    outputCommands:  [ "drop *_*_*_*", "keep *_*_*_DecodePMT" ]
+  } # rootoutput
+} # outputs 
+
+
+physics.producers.triggerConfig.Verbose: true
+physics.producers.triggerConfig.LogCategory: "debug"
+
+physics.producers.daqPMT.PMTconfigTag: PMTconfig # required
+physics.producers.daqPMT.TriggerTag:   daqTrigger # required
+
+#
+# customization of PMT decoding
+#
+
+physics.producers.daqPMT.SurviveExceptions: true
+physics.producers.daqPMT.DiagnosticOutput:  false
+physics.producers.daqPMT.PacketDump:        false
+physics.producers.daqPMT.RequireKnownBoards: false
+physics.producers.daqPMT.RequireBoardConfig: false
+physics.producers.daqPMT.DataTrees: [ "PMTfragments" ]
+
+physics.producers.daqTrigger.DecoderTool.DiagnosticOutput: false
+physics.producers.daqTrigger.DecoderTool.Debug: false
+
+physics.analyzers.simpleLightAna.DumpWaveformsInfo: false
+physics.analyzers.simpleLightAna.DumpOpHitInfo: false
+physics.analyzers.simpleLightAna.DumpFlashInfo: true
