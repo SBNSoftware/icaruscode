@@ -99,8 +99,8 @@ auto icarus::TriggerConfigurationExtractor::extractTriggerConfiguration
   -> icarus::TriggerConfiguration
 {
   
-  //auto const& boardParams
-  //  = pset.get<fhicl::ParameterSet>("daq.fragment_receiver");
+  auto const& boardParams
+    = pset.get<fhicl::ParameterSet>("daq.fragment_receiver");
 
   auto const& fpgaParams
     = pset.get<fhicl::ParameterSet>("daq.fragment_receiver.fpga_init_params");
@@ -109,11 +109,45 @@ auto icarus::TriggerConfigurationExtractor::extractTriggerConfiguration
     = pset.get<fhicl::ParameterSet>("daq.fragment_receiver.spexi_init_params");
  
   icarus::TriggerConfiguration rc; // readout config, for friends
+
+
+  rc.UseWrTime              = boardParams.get<bool>("use_wr_time");
+  rc.WrTimeOffset           = boardParams.get<unsigned int>("wr_time_offset_ns");
   
-  rc.VetoDelay  = fpgaParams.get<unsigned int>("Veto.value");
-  rc.BNBBeamWidth = spexiParams.get<unsigned int>("BNBBeamWidth.value");
+  rc.VetoDelay              = fpgaParams.get<unsigned int>("Veto.value");
+  rc.MajLevelBeamCryoEAST   = fpgaParams.get<unsigned int>("MajLevelBeamCryo1.value");   
+  rc.MajLevelEnableCryoEAST = fpgaParams.get<unsigned int>("MajLevelEnableCryo1.value");   
+  rc.SlidingWindowCryoEAST  = fpgaParams.get<std::string>("SlidingWindowCryo1.value");   
+  rc.MajLevelBeamCryoWEST   = fpgaParams.get<unsigned int>("MajLevelBeamCryo2.value");   
+  rc.MajLevelEnableCryoWEST = fpgaParams.get<unsigned int>("MajLevelEnableCryo2.value");   
+  rc.SlidingWindowCryoWEST  = fpgaParams.get<std::string>("SlidingWindowCryo2.value");   
+  rc.MajorityTriggerType    = fpgaParams.get<std::string>( "MajorityTriggerType.value");
+  rc.RunType                = fpgaParams.get<std::string>( "RunType.value");
+
+  rc.TPCTriggerDelay        = spexiParams.get<unsigned int>("TPCTriggerDelay.value");
+  rc.GateSelection          = spexiParams.get<std::string>("GateSelection.value");
+  rc.BNBBeamWidth           = spexiParams.get<unsigned int>("BNBBeamWidth.value");
+  rc.BNBEnableWidth         = spexiParams.get<unsigned int>("BNBEnableWidth.value");
+  rc.NuMIBeamWidth          = spexiParams.get<unsigned int>("NuMIBeamWidth.value");
+  rc.NuMIEnableWidth        = spexiParams.get<unsigned int>("NuMIEnableWidth.value");
+  rc.PreScaleBNBNuMI        = spexiParams.get<std::string>("PreScaleBNBNuMI.value");
+  rc.OffBeamBNBBeamWidth    = spexiParams.get<unsigned int>("OffBeamBNBBeamWidth.value");
+  rc.OffBeamBNBEnableWidth  = spexiParams.get<unsigned int>("OffBeamBNBEnableWidth.value");
+  rc.OffBeamNuMIBeamWidth   = spexiParams.get<unsigned int>("OffBeamNuMIBeamWidth.value");
+  rc.OffBeamNuMIEnableWidth = spexiParams.get<unsigned int>("OffBeamNuMIEnableWidth.value");
+  rc.OffBeamGateRate        = spexiParams.get<std::string>("OffBeamGateRate.value");
+  rc.PreScaleOffBeam        = spexiParams.get<std::string>("PreScaleOffBeam.value");
+  rc.ZeroBiasWidth          = spexiParams.get<unsigned int>("ZeroBiasWidth.value");
+  rc.ZeroBiasEnableWidth    = spexiParams.get<unsigned int>("ZeroBiasEnableWidth.value");
+  rc.ZeroBiasFreq           = spexiParams.get<unsigned int>("ZeroBiasFreq.value");
+  rc.PrescaleZeroBias       = spexiParams.get<std::string>("PrescaleZeroBias.value");
+  rc.BNBBESOffset           = spexiParams.get<unsigned int>("BNBBESOffset.value");
+  rc.BNB1DOffset            = spexiParams.get<unsigned int>("BNB1DOffset.value");
+  rc.NuMIMIBSOffset         = spexiParams.get<unsigned int>("NuMIMIBSOffset.value");
+  rc.NuMIADOffset           = spexiParams.get<unsigned int>("NuMIADOffset.value") ;    
       
   return rc;
+
 } // icarus::TriggerConfigurationExtractor::extractTriggerConfiguration()
 
 

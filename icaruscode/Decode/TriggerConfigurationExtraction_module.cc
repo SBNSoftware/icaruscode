@@ -72,7 +72,7 @@ class icarus::TriggerConfigurationExtraction: public art::EDProducer {
   
   
   /// Constructor: just reads the configuration.
-  ICARUSTriggerConfigurationExtraction(Parameters const& config);
+  TriggerConfigurationExtraction(Parameters const& config);
   
   
   /// Action on new run: configuration is written.

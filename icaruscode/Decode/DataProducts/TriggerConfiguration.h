@@ -29,7 +29,13 @@ struct icarus::TriggerConfiguration {
 
 	// --- BEGIN -- Data members -------------------------------------------------
   
-  	// NOTE when adding data members, remember to add an element to the comparison
+  // NOTE when adding data members, remember to add an element to the comparison
+
+  // Use the WR time reference
+  bool UseWrTime = true;
+
+  // Add an offset between the npt and tai time as used in the wr reference (normally it is 1 or 2 leap seconds)
+  unsigned int WrTimeOffset = 1e9;
  
  	// Veto (delay on the leading edge of the beam gate)
  	unsigned int VetoDelay = std::numeric_limits<unsigned int>::max();
@@ -41,7 +47,7 @@ struct icarus::TriggerConfiguration {
  	unsigned int MajLevelEnableCryoEAST = std::numeric_limits<unsigned int>::max();
 
  	// Sliding window option cryo 1 (EAST)
- 	unsigned int SlidingWindowCryoEAST = std::numeric_limits<unsigned int>::max();
+ 	std::string SlidingWindowCryoEAST;
 
  	// Majority level in-time cryo 2 (WEST)
  	unsigned int MajLevelBeamCryoWEST = std::numeric_limits<unsigned int>::max();
@@ -50,7 +56,7 @@ struct icarus::TriggerConfiguration {
  	unsigned int MajLevelEnableCryoWEST = std::numeric_limits<unsigned int>::max();
 
  	// Sliding window option cryo 2 (WEST)
- 	unsigned int SlidingWindowCryoWEST = std::numeric_limits<unsigned int>::max();
+ 	std::string SlidingWindowCryoWEST;
 
  	// Majority trigger type ( consider trigger from one cryostats, either cryostats, or both cryostats )
  	std::string MajorityTriggerType;
@@ -62,7 +68,7 @@ struct icarus::TriggerConfiguration {
  	unsigned int TPCTriggerDelay = std::numeric_limits<unsigned int>::max();
 
  	// GateSelection: available gates to produce triggers: see registers 0x00000 in SBNDOCDB: 
- 	unsigned int GateSelection = 0x00; 
+ 	std::string GateSelection ; 
 
  	// Duration of the conincidence gate synchronous with the BNB beam
  	unsigned int BNBBeamWidth = std::numeric_limits<unsigned int>::max();
@@ -77,7 +83,7 @@ struct icarus::TriggerConfiguration {
  	unsigned int NuMIEnableWidth = std::numeric_limits<unsigned int>::max();
 
  	// Ratio of spills to be collected ignoring the light coincidence ( MinBias ) compared to the total number of spills sent
- 	unsigned int PreScaleBNBNuMI = 0x00;
+ 	std::string PreScaleBNBNuMI; 
 
  	// Duration of the conincidence gate synchronous gate opened 33 ms after a BNB extraction
  	unsigned int OffBeamBNBBeamWidth = std::numeric_limits<unsigned int>::max();
@@ -92,10 +98,10 @@ struct icarus::TriggerConfiguration {
  	unsigned int OffBeamNuMIEnableWidth = std::numeric_limits<unsigned int>::max();
 
  	// Rate of gates opened outside the extraction
- 	unsigned int OffBeamGateRate = 0x00;
+ 	std::string OffBeamGateRate;
 
  	// Ratio of gates to be collected ignoring the light coincidence ( MinBias ) compared to the total number of offbeam gate produced
- 	unsigned int PreScaleOffBeam = 0x00;
+ 	std::string PreScaleOffBeam;
 
  	// Duration of the gate opened using a periodic signal (random trigger)
  	unsigned int ZeroBiasWidth = std::numeric_limits<unsigned int>::max();
@@ -107,7 +113,7 @@ struct icarus::TriggerConfiguration {
  	unsigned int ZeroBiasFreq = std::numeric_limits<unsigned int>::max();
 
  	// Ratio of gates to be collected ignoring the light coincidence ( MinBias ) compared to the total number of gates produced
- 	unsigned int PrescaleZeroBias = 0x00;
+ 	std::string PrescaleZeroBias;
 
  	// Additional offset to be added to the Gated-BES delay set in the WR network
  	unsigned int BNBBESOffset = std::numeric_limits<unsigned int>::max();
@@ -145,7 +151,7 @@ struct icarus::TriggerConfiguration {
 
     // -- BEGIN -- Dump facility -------------------------------------------------
   	/// Maximum supported verbosity level supported by `dump()`.
-  	static constexpr unsigned int MaxDumpVerbosity = 1U;
+  	static constexpr unsigned int MaxDumpVerbosity = 2U;
   
   	/// Default verbosity level for `dump()`.
   	static constexpr unsigned int DefaultDumpVerbosity = MaxDumpVerbosity;
@@ -164,9 +170,9 @@ struct icarus::TriggerConfiguration {
    		* 
    		* The amount of information printed depends on the `verbosity` level:
    		* 
-   		* * `0`: gate selection, timing information ( veto, and duration of the gates )
-   		* * `1`: trigger logic configuration
-   		* * `2`: all remaining information
+   		* * `0`: Boardreader configuration
+   		* * `1`: FPGA configuration
+   		* * `2`: SPEXI configuration
    		* 
    	*/
 
@@ -212,7 +218,9 @@ struct icarus::TriggerConfiguration {
 inline bool icarus::TriggerConfiguration::operator==
   (icarus::TriggerConfiguration const& other) const
 {
-  
+
+ if ( UseWrTime              != other.UseWrTime            )   return false;
+ if ( WrTimeOffset           != other.WrTimeOffset         )   return false;
  if ( VetoDelay              != other.VetoDelay            )   return false;
  if ( MajLevelBeamCryoEAST   !=other.MajLevelBeamCryoEAST )    return false;
  if ( MajLevelEnableCryoEAST !=other.MajLevelEnableCryoEAST )  return false;

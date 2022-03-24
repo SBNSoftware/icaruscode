@@ -36,25 +36,53 @@ void icarus::TriggerConfiguration::dump(std::ostream& out,
     
     // --- verbosity: 0+ -------------------------------------------------------
     out << firstIndent
-      << "Gate Selection register " << std::hex << GateSelection << " ,"
-      << "Veto Delay: '" << VetoDelay << " ns, " 
-      << "BNB Beam Gate Width " << BNBBeamWidth << " ns, "
-      << "NuMI Beam Gate Width " << NuMIBeamWidth << " ns, "
-      << "OffbeamBNB Gate Width " << OffBeamBNBBeamWidth << " ns, "
-      << "OffbeamNuMI Gate Width " << OffBeamNuMIBeamWidth << " ns, "
-      << "ZeroBias  Gate Width " << ZeroBiasWidth << " ns, ";
+      << "\nBasic board configuration:\n "
+      << " Use Wr time "    << UseWrTime << " \n"
+      << " WR time offset " << WrTimeOffset << " ns \n"; 
     
     if (++level > verbosity) break;
     // --- verbosity: 1+ -------------------------------------------------------
     outnl()
-      << "Higher verbosity information to be implemented ";
-    out << '\n';
-    
+      << " FPGA Configuration: \n "
+      << " Veto Delay:            "  << VetoDelay << " ns,\n"
+      << " MajLevelBeamCryoEAST   "  <<  MajLevelBeamCryoEAST   << " \n"
+      << " MajLevelEnableCryoEAST "  <<  MajLevelEnableCryoEAST    << " \n"
+      << " SlidingWindowCryoEAST  "  <<  SlidingWindowCryoEAST  << " \n"
+      << " MajLevelBeamCryoWEST   "  <<  MajLevelBeamCryoWEST   << " \n"
+      << " MajLevelEnableCryoWEST "  <<  MajLevelEnableCryoWEST    << " \n"
+      << " SlidingWindowCryoWEST  "  <<  SlidingWindowCryoWEST << " \n"
+      << " MajorityTriggerType    "  <<  MajorityTriggerType << " \n"
+      << " RunType                "  <<  RunType << " ";
+
+    out << "\n";
+
     if (++level > verbosity) return;
     // --- verbosity: 2+ -------------------------------------------------------
     
     out << indent // absorb the newline from the previous level
-      << " Highest verbosity information to be implemented " ;
+      << "\nSPEXI Configuration: \n "
+      << "TPCTriggerDelay"         << TPCTriggerDelay << " /400 ns \n"
+      << "GateSelection "          << GateSelection << " \n "
+      << "BNBBeamWidth "           << BNBBeamWidth << " ns \n "
+      << "BNBEnableWidth "         << BNBEnableWidth << " ns \n "
+      << "NuMIBeamWidth "          << NuMIBeamWidth << " ns \n "
+      << "NuMIEnableWidth "        << NuMIEnableWidth << " ns \n "
+      << "PreScaleBNBNuMI "        << PreScaleBNBNuMI << " ns \n "
+      << "OffBeamBNBBeamWidth "    << OffBeamBNBBeamWidth << " ns \n "
+      << "OffBeamBNBEnableWidth "  << OffBeamBNBEnableWidth << " ns \n "
+      << "OffBeamNuMIBeamWidth "   << OffBeamNuMIBeamWidth << " ns \n "
+      << "OffBeamNuMIEnableWidth " << OffBeamNuMIEnableWidth << " ns \n "
+      << "OffBeamGateRate "        << OffBeamGateRate << " \n "
+      << "PreScaleOffBeam "        << PreScaleOffBeam << " \n "
+      << "ZeroBiasWidth "          << ZeroBiasWidth << " ns \n "
+      << "ZeroBiasEnableWidth "    << ZeroBiasEnableWidth << " ns \n "
+      << "ZeroBiasFreq "           << ZeroBiasFreq << " ns \n "
+      << "PrescaleZeroBias "       << PrescaleZeroBias << " \n "
+      << "BNBBESOffset "           << BNBBESOffset << " ns \n "
+      << "BNB1DOffset "            << BNB1DOffset << " ns \n "
+      << "NuMIMIBSOffset "         << NuMIMIBSOffset << " ns \n "
+      << "NuMIADOffset "           << NuMIADOffset << " ns \n ";
+
     
     if (++level > verbosity) break;
     // --- verbosity: 3+ -------------------------------------------------------
@@ -68,4 +96,4 @@ void icarus::TriggerConfiguration::dump(std::ostream& out,
   
   out << "\n";
   
-} // sbn::V1730Configuration::dump()
+} // icarus::TriggerConfiguration::dump()
