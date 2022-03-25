@@ -1050,6 +1050,10 @@ class icarus::DaqDecoderICARUSPMT: public art::EDProducer {
   /// Returns all the instance names we will produce.
   std::set<std::string> getAllInstanceNames() const;
   
+  /// Throws an exception if the configuration of boards shows errors.
+  void checkBoardSetup
+    (std::vector<daq::details::BoardSetup_t> const& allBoardSetup) const;
+  
   
   // --- BEGIN -- Tree-related methods -----------------------------------------
   
@@ -1298,6 +1302,11 @@ icarus::DaqDecoderICARUSPMT::DaqDecoderICARUSPMT(Parameters const& params)
   , fOpticalTick{ fDetTimings.OpticalClockPeriod() }
   , fNominalTriggerTime{ fDetTimings.TriggerTime() }
 {
+  //
+  // configuration check
+  //
+  checkBoardSetup(fBoardSetup); // throws on error
+  
   //
   // consumed data products declaration
   //
@@ -2602,6 +2611,39 @@ std::set<std::string> icarus::DaqDecoderICARUSPMT::getAllInstanceNames() const {
   } // for all boards
   return names;
 } // icarus::DaqDecoderICARUSPMT::getAllInstanceNames()
+
+
+//------------------------------------------------------------------------------
+void icarus::DaqDecoderICARUSPMT::checkBoardSetup
+  (std::vector<daq::details::BoardSetup_t> const& allBoardSetup) const
+{
+  //
+  // duplicate special channel ID check
+  //
+  std::unordered_map<raw::Channel_t, unsigned int> assignedChannels;
+  bool hasDuplicates = false;
+  for (daq::details::BoardSetup_t const& setup: allBoardSetup) {
+    for (daq::details::BoardSetup_t::ChannelSetup_t const& chSetup
+      : setup.channelSettings
+    ) {
+      if (chSetup.mustSkip()) continue; // skipped channels do not matter anyway
+      // special channels by definition have a non-empty category
+      if (!chSetup.hasChannel() || chSetup.category.empty()) continue;
+      if (++assignedChannels[chSetup.channelID] > 1) hasDuplicates = true;
+    } // for all channels
+  } // for all boards
+  if (!hasDuplicates) return;
+  
+  art::Exception e { art::errors::Configuration };
+  e << "Some channel ID are specified in multiple board special channel setup:";
+  for (auto [ channelID, entries ]: assignedChannels) {
+    if (entries <= 1) continue; // not a duplicate
+    e << "\n - channel ID 0x" << std::hex << channelID << std::dec << ": "
+      << entries << " times";
+  } // for
+  
+  throw e;
+} // icarus::DaqDecoderICARUSPMT::checkBoardSetup()
 
 
 //------------------------------------------------------------------------------
