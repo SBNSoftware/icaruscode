@@ -133,6 +133,20 @@ icarus_V1730_16thChannel_BES_setup_Run1: {
   OnlyOnGlobalTrigger: true
   InstanceName:          "BES"
 }
+icarus_V1730_16thChannel_BNBbeam_setup_Run1: {
+  ChannelIndex:          15  # the last one
+  Channel:             @nil  # needs to be customized on each board
+  MinSpan:              100  # needs to span at least 100 ADC peak-to-peak
+  OnlyOnGlobalTrigger: true
+  InstanceName:          "BNB"
+}
+icarus_V1730_16thChannel_NuMIbeam_setup_Run1: {
+  ChannelIndex:          15  # the last one
+  Channel:             @nil  # needs to be customized on each board
+  MinSpan:              100  # needs to span at least 100 ADC peak-to-peak
+  OnlyOnGlobalTrigger: true
+  InstanceName:          "NuMI"
+}
 icarus_V1730_16thChannel_misc_setup_Run1: {
   ChannelIndex:          15  # the last one
   Channel:             @nil  # needs to be customized on each board
@@ -157,7 +171,9 @@ icarus_V1730_16thChannel_misc_setup_Run1: {
 #     * 0: PMT signal (routed into data product with empty instance name)
 #     * 1: trigger primitive signal (routed into "trgprim" data product instance name)
 #     * 2: RWM signal (routed into "RWM" data product instance name)
-#     * 3: GatedBES signal (routed into "BES" data product instance name)
+#     * 3: early warning signal (routed into "earlw" data product instance name)
+#     * 4: BNB beam signal (either RWM or early warning, routed into "BNB" data product instance name)
+#     * 5: NuMI beam signal (either RWM or early warning, routed into "NuMI" data product instance name)
 #     * 7: unknown/unspecified (routed into "unknwn" data product instance name)
 # * `C`: identifier of the crate (containing three boards), in three bits `cts`:
 #     * `c`: cryostat bit: `0` for east cryostat ("e"), `1` for west cryostat ("w")
@@ -174,30 +190,30 @@ icarus_V1730_West_setup_Run1: [
   #
   # top
   #
-  { Name: "icaruspmtwwtop01"  TriggerDelay: " 0 ns"  SpecialChannels: [ { @table::icarus_V1730_16thChannel_trgprim_setup_Run1  Channel: 0x1071 } ] },
-  { Name: "icaruspmtwwtop02"  TriggerDelay: "43 ns"  SpecialChannels: [ { @table::icarus_V1730_16thChannel_BES_setup_Run1      Channel: 0x3072 } ] },
-  { Name: "icaruspmtwwtop03"  TriggerDelay: "86 ns"  SpecialChannels: [ { @table::icarus_V1730_16thChannel_misc_setup_Run1     Channel: 0x7073 } ] },
+  { Name: "icaruspmtwwtop01"  TriggerDelay: " 0 ns"  SpecialChannels: [ { @table::icarus_V1730_16thChannel_trgprim_setup_Run1   Channel: 0x1071 } ] },
+  { Name: "icaruspmtwwtop02"  TriggerDelay: "43 ns"  SpecialChannels: [ { @table::icarus_V1730_16thChannel_BNBbeam_setup_Run1   Channel: 0x4072 } ] },
+  { Name: "icaruspmtwwtop03"  TriggerDelay: "86 ns"  SpecialChannels: [ { @table::icarus_V1730_16thChannel_NuMIbeam_setup_Run1  Channel: 0x5073 } ] },
   #
   # bottom
   #
-  { Name: "icaruspmtwwbot01"  TriggerDelay: " 0 ns"  SpecialChannels: [ { @table::icarus_V1730_16thChannel_trgprim_setup_Run1  Channel: 0x1061 } ] },
-  { Name: "icaruspmtwwbot02"  TriggerDelay: "43 ns"  SpecialChannels: [ { @table::icarus_V1730_16thChannel_misc_setup_Run1     Channel: 0x7062 } ] },
-  { Name: "icaruspmtwwbot03"  TriggerDelay: "86 ns"  SpecialChannels: [ { @table::icarus_V1730_16thChannel_misc_setup_Run1     Channel: 0x7063 } ] },
+  { Name: "icaruspmtwwbot01"  TriggerDelay: " 0 ns"  SpecialChannels: [ { @table::icarus_V1730_16thChannel_trgprim_setup_Run1   Channel: 0x1061 } ] },
+  { Name: "icaruspmtwwbot02"  TriggerDelay: "43 ns"  SpecialChannels: [ { @table::icarus_V1730_16thChannel_BNBbeam_setup_Run1   Channel: 0x4062 } ] },
+  { Name: "icaruspmtwwbot03"  TriggerDelay: "86 ns"  SpecialChannels: [ { @table::icarus_V1730_16thChannel_NuMIbeam_setup_Run1  Channel: 0x5063 } ] },
   ### --------------------------------------------------------------------------
   ### WE
   ### --------------------------------------------------------------------------
   #
   # top
   #
-  { Name: "icaruspmtwetop01"  TriggerDelay: " 0 ns"  SpecialChannels: [ { @table::icarus_V1730_16thChannel_trgprim_setup_Run1  Channel: 0x1051 } ] },
-  { Name: "icaruspmtwetop02"  TriggerDelay: "43 ns"  SpecialChannels: [ { @table::icarus_V1730_16thChannel_BES_setup_Run1      Channel: 0x3052 } ] },
-  { Name: "icaruspmtwetop03"  TriggerDelay: "86 ns"  SpecialChannels: [ { @table::icarus_V1730_16thChannel_misc_setup_Run1     Channel: 0x7053 } ] },
+  { Name: "icaruspmtwetop01"  TriggerDelay: " 0 ns"  SpecialChannels: [ { @table::icarus_V1730_16thChannel_trgprim_setup_Run1   Channel: 0x1051 } ] },
+  { Name: "icaruspmtwetop02"  TriggerDelay: "43 ns"  SpecialChannels: [ { @table::icarus_V1730_16thChannel_BNBbeam_setup_Run1   Channel: 0x4052 } ] },
+  { Name: "icaruspmtwetop03"  TriggerDelay: "86 ns"  SpecialChannels: [ { @table::icarus_V1730_16thChannel_NuMIbeam_setup_Run1  Channel: 0x5053 } ] },
   #
   # bottom
   #
-  { Name: "icaruspmtwebot01"  TriggerDelay: " 0 ns"  SpecialChannels: [ { @table::icarus_V1730_16thChannel_trgprim_setup_Run1  Channel: 0x1041 } ] },
-  { Name: "icaruspmtwebot02"  TriggerDelay: "43 ns"  SpecialChannels: [ { @table::icarus_V1730_16thChannel_misc_setup_Run1     Channel: 0x7042 } ] },
-  { Name: "icaruspmtwebot03"  TriggerDelay: "86 ns"  SpecialChannels: [ { @table::icarus_V1730_16thChannel_misc_setup_Run1     Channel: 0x7043 } ] }
+  { Name: "icaruspmtwebot01"  TriggerDelay: " 0 ns"  SpecialChannels: [ { @table::icarus_V1730_16thChannel_trgprim_setup_Run1   Channel: 0x1041 } ] },
+  { Name: "icaruspmtwebot02"  TriggerDelay: "43 ns"  SpecialChannels: [ { @table::icarus_V1730_16thChannel_BNBbeam_setup_Run1   Channel: 0x4042 } ] },
+  { Name: "icaruspmtwebot03"  TriggerDelay: "86 ns"  SpecialChannels: [ { @table::icarus_V1730_16thChannel_NuMIbeam_setup_Run1  Channel: 0x5043 } ] }
   ### --------------------------------------------------------------------------
 
 ] # icarus_V1730_West_setup_Run1
@@ -210,30 +226,30 @@ icarus_V1730_East_setup_Run1: [
   #
   # top
   #
-  { Name: "icaruspmtewtop01"  TriggerDelay: " 0 ns"  SpecialChannels: [ { @table::icarus_V1730_16thChannel_trgprim_setup_Run1  Channel: 0x1031 } ] },
-  { Name: "icaruspmtewtop02"  TriggerDelay: "43 ns"  SpecialChannels: [ { @table::icarus_V1730_16thChannel_misc_setup_Run1     Channel: 0x7032 } ] },
-  { Name: "icaruspmtewtop03"  TriggerDelay: "86 ns"  SpecialChannels: [ { @table::icarus_V1730_16thChannel_misc_setup_Run1     Channel: 0x7033 } ] },
+  { Name: "icaruspmtewtop01"  TriggerDelay: " 0 ns"  SpecialChannels: [ { @table::icarus_V1730_16thChannel_trgprim_setup_Run1   Channel: 0x1031 } ] },
+  { Name: "icaruspmtewtop02"  TriggerDelay: "43 ns"  SpecialChannels: [ { @table::icarus_V1730_16thChannel_BNBbeam_setup_Run1   Channel: 0x4032 } ] },
+  { Name: "icaruspmtewtop03"  TriggerDelay: "86 ns"  SpecialChannels: [ { @table::icarus_V1730_16thChannel_NuMIbeam_setup_Run1  Channel: 0x5033 } ] },
   #
   # bottom
   #
-  { Name: "icaruspmtewbot01"  TriggerDelay: " 0 ns"  SpecialChannels: [ { @table::icarus_V1730_16thChannel_trgprim_setup_Run1  Channel: 0x1021 } ] },
-  { Name: "icaruspmtewbot02"  TriggerDelay: "43 ns"  SpecialChannels: [ { @table::icarus_V1730_16thChannel_misc_setup_Run1     Channel: 0x7022 } ] },
-  { Name: "icaruspmtewbot03"  TriggerDelay: "86 ns"  SpecialChannels: [ { @table::icarus_V1730_16thChannel_misc_setup_Run1     Channel: 0x7023 } ] },
+  { Name: "icaruspmtewbot01"  TriggerDelay: " 0 ns"  SpecialChannels: [ { @table::icarus_V1730_16thChannel_trgprim_setup_Run1   Channel: 0x1021 } ] },
+  { Name: "icaruspmtewbot02"  TriggerDelay: "43 ns"  SpecialChannels: [ { @table::icarus_V1730_16thChannel_BNBbeam_setup_Run1   Channel: 0x4022 } ] },
+  { Name: "icaruspmtewbot03"  TriggerDelay: "86 ns"  SpecialChannels: [ { @table::icarus_V1730_16thChannel_NuMIbeam_setup_Run1  Channel: 0x5023 } ] },
   ### --------------------------------------------------------------------------
   ### EE
   ### --------------------------------------------------------------------------
   #
   # top
   #
-  { Name: "icaruspmteetop01"  TriggerDelay: " 0 ns"  SpecialChannels: [ { @table::icarus_V1730_16thChannel_trgprim_setup_Run1  Channel: 0x1011 } ] },
-  { Name: "icaruspmteetop02"  TriggerDelay: "43 ns"  SpecialChannels: [ { @table::icarus_V1730_16thChannel_misc_setup_Run1     Channel: 0x7012 } ] },
-  { Name: "icaruspmteetop03"  TriggerDelay: "86 ns"  SpecialChannels: [ { @table::icarus_V1730_16thChannel_misc_setup_Run1     Channel: 0x7013 } ] },
+  { Name: "icaruspmteetop01"  TriggerDelay: " 0 ns"  SpecialChannels: [ { @table::icarus_V1730_16thChannel_trgprim_setup_Run1   Channel: 0x1011 } ] },
+  { Name: "icaruspmteetop02"  TriggerDelay: "43 ns"  SpecialChannels: [ { @table::icarus_V1730_16thChannel_BNBbeam_setup_Run1   Channel: 0x4012 } ] },
+  { Name: "icaruspmteetop03"  TriggerDelay: "86 ns"  SpecialChannels: [ { @table::icarus_V1730_16thChannel_NuMIbeam_setup_Run1  Channel: 0x5013 } ] },
   #
   # bottom
   #
-  { Name: "icaruspmteebot01"  TriggerDelay: " 0 ns"  SpecialChannels: [ { @table::icarus_V1730_16thChannel_trgprim_setup_Run1  Channel: 0x1001 } ] },
-  { Name: "icaruspmteebot02"  TriggerDelay: "43 ns"  SpecialChannels: [ { @table::icarus_V1730_16thChannel_misc_setup_Run1     Channel: 0x7002 } ] },
-  { Name: "icaruspmteebot03"  TriggerDelay: "86 ns"  SpecialChannels: [ { @table::icarus_V1730_16thChannel_misc_setup_Run1     Channel: 0x7003 } ] }
+  { Name: "icaruspmteebot01"  TriggerDelay: " 0 ns"  SpecialChannels: [ { @table::icarus_V1730_16thChannel_trgprim_setup_Run1   Channel: 0x1001 } ] },
+  { Name: "icaruspmteebot02"  TriggerDelay: "43 ns"  SpecialChannels: [ { @table::icarus_V1730_16thChannel_BNBbeam_setup_Run1   Channel: 0x4002 } ] },
+  { Name: "icaruspmteebot03"  TriggerDelay: "86 ns"  SpecialChannels: [ { @table::icarus_V1730_16thChannel_NuMIbeam_setup_Run1  Channel: 0x5003 } ] }
   ### --------------------------------------------------------------------------
   
 ] # icarus_V1730_East_setup_Run1
