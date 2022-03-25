@@ -11,11 +11,12 @@
 #include "icaruscode/PMT/Trigger/Algorithms/BeamGateMaker.h"
 #include "icaruscode/PMT/Trigger/Algorithms/TriggerTypes.h" // ADCCounts_t
 #include "icaruscode/PMT/Trigger/Algorithms/details/TriggerInfo_t.h"
-#include "sbnobj/ICARUS/PMT/Trigger/Data/MultiChannelOpticalTriggerGate.h"
 #include "sbnobj/ICARUS/PMT/Trigger/Data/OpticalTriggerGate.h"
-#include "icaruscode/PMT/Trigger/Utilities/TriggerDataUtils.h" // FillTriggerGates()
+#include "icaruscode/PMT/Trigger/Utilities/TrackedOpticalTriggerGate.h"
+#include "icaruscode/PMT/Trigger/Utilities/TriggerDataUtils.h" // ReadTriggerGates()
 #include "icaruscode/PMT/Trigger/Utilities/TriggerGateOperations.h"
 #include "icaruscode/PMT/Trigger/Utilities/PlotSandbox.h"
+#include "icaruscode/IcarusObj/OpDetWaveformMeta.h"
 #include "icaruscode/Utilities/DetectorClocksHelpers.h" // makeDetTimings()...
 #include "icarusalg/Utilities/ROOTutils.h" // util::ROOT
 #include "icarusalg/Utilities/mfLoggingClass.h"
@@ -189,7 +190,6 @@ icarus::trigger::GeometryChannelSplitter::byCryostat
   std::vector<std::vector<GateObj>> gatesPerCryostat{ fNCryostats };
   
   for (auto& gate: gates) {
-    assert(gate.hasChannels());
     gatesPerCryostat[fChannelCryostat.at(gate.channels().front()).Cryostat]
       .push_back(std::move(gate));
   } // for gates
@@ -430,13 +430,11 @@ class icarus::trigger::MajorityTriggerSimulation
   using TriggerInfo_t = details::TriggerInfo_t; ///< Type alias.
   
   /// Type of trigger gate extracted from the input event.
-  using InputTriggerGate_t = icarus::trigger::MultiChannelOpticalTriggerGate;
+  using InputTriggerGate_t
+    = icarus::trigger::TrackedOpticalTriggerGate<sbn::OpDetWaveformMeta>;
   
   /// A list of trigger gates from input.
   using TriggerGates_t = std::vector<InputTriggerGate_t>;
-
-  /// Type of gate data without channel information.
-  using TriggerGateData_t = InputTriggerGate_t::GateData_t;
   
   
   // --- BEGIN Configuration variables -----------------------------------------
@@ -596,12 +594,6 @@ class icarus::trigger::MajorityTriggerSimulation
   //@}
   
   
-  /// Reads a set of input gates from the `event`
-  /// @return trigger gates, converted into `InputTriggerGate_t`
-  static TriggerGates_t readTriggerGates
-    (art::Event const& event, art::InputTag const& dataTag);
-  
-
 }; // icarus::trigger::MajorityTriggerSimulation
 
 
@@ -801,7 +793,7 @@ auto icarus::trigger::MajorityTriggerSimulation::produceForThreshold(
   // get the input
   //
   art::InputTag const dataTag = fADCthresholds.at(thr);
-  auto const& gates = readTriggerGates(event, dataTag);
+  auto const& gates = icarus::trigger::ReadTriggerGates(event, dataTag);
   
   //
   // simulate the trigger response
@@ -944,35 +936,6 @@ icarus::trigger::MajorityTriggerSimulation::triggerInfoToTriggerData
     };
   
 } // icarus::trigger::MajorityTriggerSimulation::triggerInfoToTriggerData()
-
-
-//------------------------------------------------------------------------------
-auto icarus::trigger::MajorityTriggerSimulation::readTriggerGates
-  (art::Event const& event, art::InputTag const& dataTag)
-  -> TriggerGates_t
-{
-
-  using icarus::trigger::OpticalTriggerGateData_t; // for convenience
-
-  // currently the associations are a waste of time memory...
-  auto const& gates
-    = *(event.getValidHandle<std::vector<OpticalTriggerGateData_t>>(dataTag));
-  auto const& gateToWaveforms = *(
-    event.getValidHandle
-      <art::Assns<OpticalTriggerGateData_t, raw::OpDetWaveform>>(dataTag)
-    );
-  
-  try {
-    return icarus::trigger::FillTriggerGates<InputTriggerGate_t>
-      (gates, gateToWaveforms);
-  }
-  catch (cet::exception const& e) {
-    throw cet::exception("MajorityTriggerSimulation", "", e)
-      << "Error encountered while reading data products from '"
-      << dataTag.encode() << "'\n";
-  }
-
-} // icarus::trigger::MajorityTriggerSimulation::readTriggerGates()
 
 
 //------------------------------------------------------------------------------

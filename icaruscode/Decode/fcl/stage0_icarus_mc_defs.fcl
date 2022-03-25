@@ -1,4 +1,5 @@
 #include "decoderTools_icarus.fcl"
+#include "trigger_emulation_icarus.fcl"
 #include "icarus_ophitfinder.fcl"
 #include "icarus_flashfinder.fcl"
 #include "icarus_opana_modules.fcl"
@@ -24,7 +25,9 @@ icarus_stage0_mc_producers:
                            CoherentGrouping:    64
                            DecoderTool:         @local::TPCNoiseFilter1DTool
                        }
-  
+
+    pmtfixedthr:       @local::icarus_pmtdiscriminatethr_fixed_MC
+
     mcophit:           @local::ICARUSMCOpHit
 
     ## crt producer   
@@ -34,7 +37,8 @@ icarus_stage0_mc_producers:
 }  
 
 # make the following modifications to job flow for MC vs the data
-icarus_stage0_mc_PMT:  [ ophit,
+icarus_stage0_mc_PMT:  [ pmtfixedthr,
+                         ophit,
                          mcophit,
                          opflashCryoE,
                          opflashCryoW
