@@ -42,6 +42,7 @@ icarus_rootoutput: {
   fileName:         "%ifb_%tc-%p.root"
   compressionLevel:  1
   dataTier:         "simulated" # still parroting something I don't understand
+  saveMemoryObjectThreshold: 0
 } # icarus_rootoutput
 
 
