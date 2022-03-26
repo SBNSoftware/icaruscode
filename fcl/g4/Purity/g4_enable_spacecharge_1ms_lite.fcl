@@ -1,0 +1,19 @@
+#-------------------------------------------------------------------
+#
+# Name: g4_enable_spacecharge_1ms_lite.fcl
+#
+# Purpose: Lite version of g4_enable_spacecharge_1ms.fcl
+#
+# Created: 22-Mar-2022  H. Greenlee
+#
+# Automatically generated.
+#
+#-------------------------------------------------------------------
+
+#include "g4_enable_spacecharge_1ms.fcl"
+
+# Drop truth data products.
+
+outputs.rootoutput.saveMemoryObjectThreshold: 0
+outputs.rootoutput.outputCommands: [ "keep *_*_*_*",
+                                     "drop sim::SimEnergyDeposits_*_*_*" ]
