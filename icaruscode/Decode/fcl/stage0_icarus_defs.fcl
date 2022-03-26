@@ -350,4 +350,10 @@ icarus_stage0_producers.purityana1.FillAnaTuple:                                
 icarus_stage0_producers.purityana1.PersistPurityInfo:                                          false
 icarus_stage0_producers.purityana1.FillAnaTuple:                                               false
 
+# output
+icarus_data_dropping_rawdigits:  [ "drop raw::RawDigits_*_*_*" ]
+icarus_data_dropping_rawopdetwf: [ "drop raw::OpDetWaveforms_*_*_*" ]
+icarus_data_dropping_rawstuff:   [ @sequence::icarus_data_dropping_rawdigits, @sequence::icarus_data_dropping_rawopdetwf ]
+
+
 END_PROLOG
