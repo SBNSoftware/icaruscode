@@ -34,7 +34,47 @@
 // -----------------------------------------------------------------------------
 namespace icarus { class TriggerConfigurationExtraction; }
 /**
- * Some opportune doxygen documentation
+ * @brief Writes PMT configuration from FHiCL into a data product.
+ * 
+ * This module reads the configuration related to the Trigger from the FHiCL
+ * configuration of the input runs and puts it into each run as a data product.
+ * 
+ * Input
+ * ------
+ * 
+ * This module requires any input with _art_ run objects in it.
+ * The format expected for that configuration is defined in
+ * `icarus::TriggerConfigurationExtractor`, which is the utility used for the actual
+ * extraction.
+ * 
+ * 
+ * Output
+ * -------
+ * 
+ * A data product of type `icarus::TriggerConfiguration` is placed in each run.
+ * Note that the module itself does not enforce any coherence in the
+ * configuration.
+ * 
+ * 
+ * Configuration parameters
+ * -------------------------
+ * 
+ * The following configuration parameters are supported:
+ * 
+ * * **Verbose** (flag, default: `false`): if set to `true`, it will print in
+ *     full the configuration of the PMT the first time it is read and each time
+ *     a different one is found.
+ * * **LogCategory** (string, default: `ICARUSConfigurationExtraction`):
+ *     category tag used for messages to message facility.
+ * 
+ * 
+ * Multithreading
+ * ---------------
+ * 
+ * This module does not support multithreading, and _art_ does not provide
+ * multithreading for its functionality anyway: the only action is performed
+ * at run and input file level, and the only concurrency in _art_ is currently
+ * (_art_ 3.7) at event level.
  * 
  */
 class icarus::TriggerConfigurationExtraction: public art::EDProducer {
