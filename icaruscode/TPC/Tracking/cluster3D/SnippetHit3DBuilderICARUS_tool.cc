@@ -253,6 +253,7 @@ private:
     float                                   m_LongHitStretchFctr;
     float                                   m_pulseHeightFrac;
     float                                   m_PHLowSelection;
+    float                                   m_minPHFor2HitPoints;    ///< Set a minimum pulse height for 2 hit space point candidates
     std::vector<int>                        m_invalidTPCVec;
     float                                   m_wirePitchScaleFactor;  ///< Scaling factor to determine max distance allowed between candidate pairs
     float                                   m_maxHit3DChiSquare;     ///< Provide ability to select hits based on "chi square"
@@ -300,6 +301,10 @@ private:
     mutable std::vector<float>              m_qualityMetricVec;
     mutable std::vector<float>              m_spacePointChargeVec;
     mutable std::vector<float>              m_hitAsymmetryVec;
+    mutable std::vector<float>              m_2hit1stPHVec;
+    mutable std::vector<float>              m_2hit2ndPHVec;
+    mutable std::vector<float>              m_2hitDeltaPHVec;
+    mutable std::vector<float>              m_2hitSumPHVec;
    
     // Get instances of the primary data structures needed
     mutable Hit2DList                       m_clusterHit2DMasterList;
@@ -343,6 +348,7 @@ void SnippetHit3DBuilderICARUS::configure(fhicl::ParameterSet const &pset)
     m_LongHitStretchFctr   = pset.get<float                     >("LongHitsStretchFactor",  1.5 );
     m_pulseHeightFrac      = pset.get<float                     >("PulseHeightFraction",    0.5 );
     m_PHLowSelection       = pset.get<float                     >("PHLowSelection",         20. );
+    m_minPHFor2HitPoints   = pset.get<float                     >("MinPHFor2HitPoints",     15. );
     m_deltaPeakTimeSig     = pset.get<float                     >("DeltaPeakTimeSig",       1.7 );
     m_zPosOffset           = pset.get<float                     >("ZPosOffset",             0.0 );
     m_invalidTPCVec        = pset.get<std::vector<int>          >("InvalidTPCVec",          std::vector<int>());
@@ -396,6 +402,12 @@ void SnippetHit3DBuilderICARUS::configure(fhicl::ParameterSet const &pset)
         m_tupleTree->Branch("QualityMetric",   "std::vector<float>", &m_qualityMetricVec);
         m_tupleTree->Branch("SPCharge",        "std::vector<float>", &m_spacePointChargeVec);
         m_tupleTree->Branch("HitAsymmetry",    "std::vector<float>", &m_hitAsymmetryVec);
+
+        m_tupleTree->Branch("2hit1stPH",       "std::vector<float>", &m_2hit1stPHVec);
+        m_tupleTree->Branch("2hit2ndPH",       "std::vector<float>", &m_2hit2ndPHVec);
+        m_tupleTree->Branch("2hitDeltaPH",     "std::vector<float>", &m_2hitDeltaPHVec);
+        m_tupleTree->Branch("2hitSumPH",       "std::vector<float>", &m_2hitSumPHVec);
+
     }
 
     return;
@@ -429,6 +441,11 @@ void SnippetHit3DBuilderICARUS::clear()
     m_qualityMetricVec.clear();
     m_spacePointChargeVec.clear();
     m_hitAsymmetryVec.clear();
+
+    m_2hit1stPHVec.clear();
+    m_2hit2ndPHVec.clear();
+    m_2hitDeltaPHVec.clear();
+    m_2hitSumPHVec.clear();
 
     return;
 }
@@ -940,6 +957,7 @@ void SnippetHit3DBuilderICARUS::findGoodTriplets(HitMatchTripletVecMap& pair12Ma
 int SnippetHit3DBuilderICARUS::saveOrphanPairs(HitMatchTripletVecMap& pairMap, reco::HitPairList& hitPairList) const
 {
     int curTripletCount = hitPairList.size();
+    int nRejectedSpacePoints(0);
 
     // Build triplets from the two lists of hit pairs
     if (!pairMap.empty())
@@ -953,17 +971,32 @@ int SnippetHit3DBuilderICARUS::saveOrphanPairs(HitMatchTripletVecMap& pairMap, r
             // hit times on those wires
             for(const auto& hit2Dhit3DPair : pair.second)
             {
+                const reco::ClusterHit3D& hit3D = std::get<2>(hit2Dhit3DPair);
+
+                // No point considering a 3D hit that has been used to make a space point already
+                if (hit3D.getStatusBits() & reco::ClusterHit3D::MADESPACEPOINT)
+                {
+                    nRejectedSpacePoints++;
+                    continue;
+                }
+
                 const reco::ClusterHit2D* hit1 = std::get<0>(hit2Dhit3DPair);
                 const reco::ClusterHit2D* hit2 = std::get<1>(hit2Dhit3DPair);
 
-                // Are either of these hits already used in a triplet?
-                if (hit1->getStatusBits() & reco::ClusterHit2D::USEDINTRIPLET || hit2->getStatusBits() & reco::ClusterHit2D::USEDINTRIPLET) continue;
+                if (m_outputHistograms)
+                {
+                    m_2hit1stPHVec.emplace_back(hit1->getHit()->PeakAmplitude());
+                    m_2hit2ndPHVec.emplace_back(hit2->getHit()->PeakAmplitude());
+                    m_2hitDeltaPHVec.emplace_back(hit2->getHit()->PeakAmplitude() - hit1->getHit()->PeakAmplitude());
+                    m_2hitSumPHVec.emplace_back(hit2->getHit()->PeakAmplitude() + hit1->getHit()->PeakAmplitude());
+                }
+
+                // If both hits already appear in a triplet then there is no gain here so reject
+                if (hit1->getHit()->PeakAmplitude() < m_minPHFor2HitPoints || hit2->getHit()->PeakAmplitude() < m_minPHFor2HitPoints) continue;
 
                 // Require that one of the hits is on the collection plane
                 if (hit1->WireID().Plane == 2 || hit2->WireID().Plane == 2)
                 {
-                    const reco::ClusterHit3D& hit3D = std::get<2>(hit2Dhit3DPair);
-
                     // Allow cut on the quality of the space point
                     if (hit3D.getHitChiSquare() < m_maxMythicalChiSquare)
                     {
@@ -975,6 +1008,8 @@ int SnippetHit3DBuilderICARUS::saveOrphanPairs(HitMatchTripletVecMap& pairMap, r
             }
         }
     }
+
+    std::cout << "--> Added " << hitPairList.size() - curTripletCount << " 2 hit points, rejected " << nRejectedSpacePoints << std::endl;
 
     return hitPairList.size() - curTripletCount;
 }
@@ -1160,6 +1195,9 @@ bool SnippetHit3DBuilderICARUS::makeHitTriplet(reco::ClusterHit3D&       hitTrip
         if (hitWireDist < wirePitch)
         {
             if (m_outputHistograms) m_pairWireDistVec.push_back(hitWireDist);
+
+            // Let's mark that this pair had a valid 3 wire combination
+            pair.setStatusBit(reco::ClusterHit3D::MADESPACEPOINT);
 
             // Use the existing code to see the U and W hits are willing to pair with the V hit
             reco::ClusterHit3D pair0h;
@@ -1392,6 +1430,9 @@ bool SnippetHit3DBuilderICARUS::makeHitTriplet(reco::ClusterHit3D&       hitTrip
 
                         hit2D->setStatusBit(reco::ClusterHit2D::USEDINTRIPLET);
                     }
+
+                    // Mark the input pair
+                    pair.setStatusBit(reco::ClusterHit3D::MADESPACEPOINT);
 
                     result = true;
                 }
