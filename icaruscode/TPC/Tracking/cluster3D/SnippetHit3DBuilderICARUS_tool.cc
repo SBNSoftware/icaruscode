@@ -957,7 +957,6 @@ void SnippetHit3DBuilderICARUS::findGoodTriplets(HitMatchTripletVecMap& pair12Ma
 int SnippetHit3DBuilderICARUS::saveOrphanPairs(HitMatchTripletVecMap& pairMap, reco::HitPairList& hitPairList) const
 {
     int curTripletCount = hitPairList.size();
-    int nRejectedSpacePoints(0);
 
     // Build triplets from the two lists of hit pairs
     if (!pairMap.empty())
@@ -974,11 +973,7 @@ int SnippetHit3DBuilderICARUS::saveOrphanPairs(HitMatchTripletVecMap& pairMap, r
                 const reco::ClusterHit3D& hit3D = std::get<2>(hit2Dhit3DPair);
 
                 // No point considering a 3D hit that has been used to make a space point already
-                if (hit3D.getStatusBits() & reco::ClusterHit3D::MADESPACEPOINT)
-                {
-                    nRejectedSpacePoints++;
-                    continue;
-                }
+                if (hit3D.getStatusBits() & reco::ClusterHit3D::MADESPACEPOINT) continue;
 
                 const reco::ClusterHit2D* hit1 = std::get<0>(hit2Dhit3DPair);
                 const reco::ClusterHit2D* hit2 = std::get<1>(hit2Dhit3DPair);
@@ -1008,8 +1003,6 @@ int SnippetHit3DBuilderICARUS::saveOrphanPairs(HitMatchTripletVecMap& pairMap, r
             }
         }
     }
-
-    std::cout << "--> Added " << hitPairList.size() - curTripletCount << " 2 hit points, rejected " << nRejectedSpacePoints << std::endl;
 
     return hitPairList.size() - curTripletCount;
 }
