@@ -1,0 +1,27 @@
+#-------------------------------------------------------------------
+#
+# Name: stage0_icarus_driver_common_lite.fcl
+#
+# Purpose: Lite version of stage0_icarus_driver_common.fcl
+#
+# Created: 31-Mar-2022  H. Greenlee
+#
+# Automatically generated.
+#
+#-------------------------------------------------------------------
+
+#include "reco_drops.fcl"
+#include "stage0_icarus_driver_common.fcl"
+
+# Drop truth data products.
+
+outputs.outBNB.outputCommands: [ "keep *_*_*_*",
+                                 @sequence::reco_drops ]
+outputs.outNUMI.outputCommands: [ "keep *_*_*_*",
+                                  @sequence::reco_drops ]
+outputs.outOffbeamBNB.outputCommands: [ "keep *_*_*_*",
+                                        @sequence::reco_drops ]
+outputs.outOffbeamNUMI.outputCommands: [ "keep *_*_*_*",
+                                         @sequence::reco_drops ]
+outputs.outUnknown.outputCommands: [ "keep *_*_*_*",
+                                     @sequence::reco_drops ]
