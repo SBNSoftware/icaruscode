@@ -1,0 +1,27 @@
+#=============================================================================
+#
+# Name: detsim_drops.fcl
+#
+# Purpose: Sequence of RootOutput drop commands to drop data products after detsim.
+#
+# Created: 28-Mar-2022  H. Greenlee
+#
+# Notes.
+#
+# 1.  Keeping SimChannels by choice, for now.
+#
+# 2.  Icarus stage0 reco requires SimPhotons[Lite], so not dropping at detsim.
+#
+# 3.  As a consequence of above items, nothing additional being dropped at detsim,
+#     compared to g4.
+#
+#=============================================================================
+
+#include "g4_drops.fcl"
+
+BEGIN_PROLOG
+
+detsim_drops: [ @sequence::g4_drops ]
+
+END_PROLOG
+
