@@ -1,0 +1,19 @@
+#-------------------------------------------------------------------
+#
+# Name: multitpc_detsim_icarus_sbnnoise_lite.fcl
+#
+# Purpose: Lite version of multitpc_detsim_icarus_sbnnoise.fcl
+#
+# Created: 31-Mar-2022  H. Greenlee
+#
+# Automatically generated.
+#
+#-------------------------------------------------------------------
+
+#include "detsim_drops.fcl"
+#include "multitpc_detsim_icarus_sbnnoise.fcl"
+
+# Drop truth data products.
+
+outputs.out1.outputCommands: [ "keep *_*_*_*",
+                               @sequence::detsim_drops ]
