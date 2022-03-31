@@ -1,0 +1,19 @@
+#-------------------------------------------------------------------
+#
+# Name: intime_g4_icarus_sce_overburden_lite.fcl
+#
+# Purpose: Lite version of intime_g4_icarus_sce_overburden.fcl
+#
+# Created: 31-Mar-2022  H. Greenlee
+#
+# Automatically generated.
+#
+#-------------------------------------------------------------------
+
+#include "g4_drops.fcl"
+#include "intime_g4_icarus_sce_overburden.fcl"
+
+# Drop truth data products.
+
+outputs.out1.outputCommands: [ @sequence::outputs.out1.outputCommands,
+                               @sequence::g4_drops ]
