@@ -28,6 +28,39 @@ icarus_opreco_pedestal_rmsslider.PedRangeMin:       7995
 icarus_opreco_pedestal_rmsslider.NumPreSample:      10
 icarus_opreco_pedestal_rmsslider.NumPostSample:     20
 
+##
+## ICARUS "old" baseline settings: see SBN DocDB 24969
+## Labelled as "MC" here because at this time they appear to work better for MC.
+##
+icarus_opreco_pedestal_MC_DocDB24969: { # based on icarus_opreco_pedestal_rmsslider
+  Name:             "UB"
+  BeamGateSamples:    1
+  SampleSize:        20
+  Threshold:          4
+  MaxSigma:           4
+  NumPreSample:      10
+  NumPostSample:     20
+  PedRangeMax:    15200
+  PedRangeMin:    14640
+  NWaveformsToFile:   0
+  Verbose:        false
+} # icarus_opreco_pedestal_MC_DocDB24969
+
+##
+## ICARUS tuning: see SBN DocDB 24969
+##
+icarus_opreco_pedestal_DocDB24969: {
+  Name:          "RollingMean"   # was "UB"
+  SampleSize:              20    # unchanged
+  NPrePostSamples:          5    # unchanged
+  Threshold:                1.5  # was: 4
+  MaxSigma:                 5    # was: 4
+  DiffADCCounts:            2    # unchanged
+  DiffBetweenGapsThreshold: 2    # unchanged
+  PedRangeMax:          16000    # was: 15200
+  PedRangeMin:          14000    # was: 14640
+} # icarus_opreco_pedestal_DocDB24969
+
 
 #
 # Hit Algorithms
@@ -55,6 +88,23 @@ icarus_opreco_hit_slidingwindow.EndNSigmaThreshold:  1 # ADC threshold (N*pedeta
 icarus_opreco_hit_slidingwindow.MinPulseWidth:       2 # The width of a pulse needs to be equal or larger than this to be recorded
 icarus_opreco_hit_slidingwindow.Verbosity:           false
 
+
+icarus_opreco_hit_slidingwindow_201910: { # based on icarus_opreco_hit_slidingwindow
+  @table::standard_algo_slidingwindow
+  PositivePolarity:    false
+  NumPreSample:        5
+  NumPostSample:      10
+  ADCThreshold:       10 # ADC threshold (absolute) above pedestal mean to fire a pulse
+  NSigmaThreshold:     3 # ADC threshold (N*pedestal sigma) above pedestal mean to fire a pulse
+  TailADCThreshold:    6 # ADC threshold (absolute) below which next pulse is allowed to fire
+  TailNSigmaThreshold: 2 # ADC threshold (N*pedestal sigma) below which next pulse is allowed to fire
+  EndADCThreshold:     2 # ADC threshold (absolute) at which the pulse ends
+  EndNSigmaThreshold:  1 # ADC threshold (N*pedetal sigma) at which the pulse ends
+  MinPulseWidth:       5 # The width of a pulse needs to be equal or larger than this to be recorded
+  Verbosity:           false
+} # icarus_opreco_hit_slidingwindow_201910
+
+
 icarus_opreco_hit_cfd: @local::standard_algo_cfd
 icarus_opreco_hit_cfd.Fraction:    0.9
 icarus_opreco_hit_cfd.Delay:       2
@@ -62,7 +112,7 @@ icarus_opreco_hit_cfd.PeakThresh:  7.5
 icarus_opreco_hit_cfd.StartThresh: 5.0
 icarus_opreco_hit_cfd.EndThresh:   1.5
 
-icarus_ophit:
+icarus_ophit: # some basic configuration
 {
    module_type:    "OpHitFinder"
    GenModule:      "generator"
@@ -77,15 +127,23 @@ icarus_ophit:
                          # PE = arae / SPEArea + SPEShift
    UseStartTime:   true  # record pulse start time rather than peak (max) time
    reco_man:       @local::standard_preco_manager
-   HitAlgoPset:    @local::icarus_opreco_hit_slidingwindow
-   PedAlgoPset:    @local::icarus_opreco_pedestal_rmsslider
-   #PedAlgoPset:    @local::icarus_opreco_pedestal_rollingmean
+   HitAlgoPset:    @local::icarus_opreco_hit_slidingwindow_201910
+   PedAlgoPset:    @local::icarus_opreco_pedestal_MC_DocDB24969
 }
 
 icarus_ophitdebugger: @local::icarus_ophit
 icarus_ophitdebugger.module_type: "FullOpHitFinder"
 icarus_ophitdebugger.OutputFile:  "ophit_debug.root"
 
+# this is the "standard" ICARUS configuration for MC optical hit reconstruction:
+icarus_ophit_MC: @local::icarus_ophit
+icarus_ophit_MC.InputModule: "opdaq"
+
+icarus_ophitdebugger_MC: @local::icarus_ophit_MC
+icarus_ophitdebugger_MC.module_type: "FullOpHitFinder"
+icarus_ophitdebugger_MC.OutputFile:  "ophit_debug.root"
+
+# this is the "standard" ICARUS configuration for data optical hit reconstruction:
 icarus_ophit_data: @local::icarus_ophit
 icarus_ophit_data.InputModule: "daqPMT"
 icarus_ophit_data.PedAlgoPset.Threshold: 4.0
@@ -96,6 +154,7 @@ icarus_ophit_data.HitAlgoPset.ADCThreshold: 10
 icarus_ophit_data.HitAlgoPset.TailADCThreshold: 6
 icarus_ophit_data.HitAlgoPset.EndADCThreshold: 2
 icarus_ophit_data.HitAlgoPset.MinPulseWidth: 5
+icarus_ophit_data.PedAlgoPset: @local::icarus_opreco_pedestal_DocDB24969
 
 icarus_ophitdebugger_data: @local::icarus_ophit_data
 icarus_ophitdebugger_data.module_type: "FullOpHitFinder"
