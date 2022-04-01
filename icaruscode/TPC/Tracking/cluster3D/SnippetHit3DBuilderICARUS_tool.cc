@@ -1087,7 +1087,7 @@ bool SnippetHit3DBuilderICARUS::makeHitPair(reco::ClusterHit3D&       hitPair,
             {
                 float oneOverWghts  = hit1SigSq * hit2SigSq / (hit1SigSq + hit2SigSq);
                 float avePeakTime   = (hit1Peak / hit1SigSq + hit2Peak / hit2SigSq) * oneOverWghts;
-                float totalCharge   = hit1->getHit()->Integral() + hit2->getHit()->Integral();
+                float averageCharge = 0.5 * (hit1->getHit()->Integral() + hit2->getHit()->Integral());
                 float hitChiSquare  = std::pow((hit1Peak - avePeakTime),2) / hit1SigSq
                                     + std::pow((hit2Peak - avePeakTime),2) / hit2SigSq;
 
@@ -1135,7 +1135,7 @@ bool SnippetHit3DBuilderICARUS::makeHitPair(reco::ClusterHit3D&       hitPair,
                 hitPair.initialize(hitPairCntr,
                                    statusBits,
                                    position,
-                                   totalCharge,
+                                   averageCharge,
                                    avePeakTime,
                                    deltaPeakTime,
                                    sigmaPeakTime,
