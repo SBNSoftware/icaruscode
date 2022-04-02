@@ -153,7 +153,6 @@ namespace daq
     BeamGateInfoPtr fBeamGateInfo; 
     bool fDiagnosticOutput; //< Produces large number of diagnostic messages, use with caution!
     bool fDebug; //< Use this for debugging this tool
-    int fOffset; //< Use this to determine additional correction needed for TAI->UTC conversion from White Rabbit timestamps. Needs to be changed if White Rabbit firmware is changed and the number of leap seconds changes! 
     //Add in trigger data member information once it is selected, current LArSoft object likely not enough as is
     
     // uint64_t fLastTimeStamp = 0;
@@ -227,7 +226,6 @@ namespace daq
   {
     fDiagnosticOutput = pset.get<bool>("DiagnosticOutput", false);
     fDebug = pset.get<bool>("Debug", false);
-    fOffset = pset.get<long long int>("TimeOffset", 0);
     return;
   }
   
