@@ -1011,7 +1011,7 @@ if(delta_sample_selected>1900)
 			////std::cout<<""<<std::endl;
 
                         TGraphErrors *gr32 = new TGraphErrors(hitareagood->size(),tempo,area,ex,ey);
-                        gr32->Fit("pol1");
+                        gr32->Fit("pol1","Q");
                   
                         TF1 *fit2 = gr32->GetFunction("pol1");
                         float slope_purity_2=fit2->GetParameter(1);
@@ -1025,7 +1025,7 @@ if(delta_sample_selected>1900)
                         ////std::cout << -1/(slope_purity_2+error_slope_purity_2)+1/slope_purity_2 << std::endl;
                         ////std::cout << 1/slope_purity_2-1/(slope_purity_2-error_slope_purity_2) << std::endl;
                         TGraphAsymmErrors *gr41 = new TGraphAsymmErrors (hitareagood->size(),tempo,nologarea,ex,ex,ez,ek);
-                        gr41->Fit("expo");
+                        gr41->Fit("expo","Q");
                         TF1 *fitexo = gr41->GetFunction("expo");
                         float slope_purity_exo=fitexo->GetParameter(1);
                         float error_slope_purity_exo=fitexo->GetParError(1);
