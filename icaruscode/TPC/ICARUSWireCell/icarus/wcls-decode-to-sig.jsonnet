@@ -124,8 +124,8 @@ local chndb = [{
   type: 'OmniChannelNoiseDB',
   name: 'ocndbperfect%d' % n,
   // data: perfect(params, tools.anodes[n], tools.field, n),
-  data: base(params, tools.anodes[n], tools.field, n),
-  uses: [tools.anodes[n], tools.field],  // pnode extension
+  data: base(params, tools.anodes[n], tools.field, n){dft:wc.tn(tools.dft)},
+  uses: [tools.anodes[n], tools.field, tools.dft],  // pnode extension
 } for n in std.range(0, std.length(tools.anodes) - 1)];
 
 local nf_maker = import 'pgrapher/experiment/icarus/nf.jsonnet';
