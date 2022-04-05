@@ -70,6 +70,8 @@ private:
   uint64_t  last_accepted_timestamp;
   uint16_t  lost_hits;
   uint16_t  hits_in_fragment;
+
+  uint64_t  event_timestamp;
 };
 
 //Define the constructor
@@ -107,6 +109,7 @@ sbndaq::BernCRTAna::BernCRTAna(fhicl::ParameterSet const & pset)
   hits->Branch("lost_hits",                 &lost_hits,                    "lost_hits/s");
   hits->Branch("hits_in_fragment",          &hits_in_fragment,             "hits_in_fragment/s");
 
+  hits->Branch("event_timestamp",           &event_timestamp,             "event_timestamp/l");
 }
 
 bool sbndaq::BernCRTAna::IsSideCRT(icarus::crt::BernCRTTranslator & hit) {
@@ -131,10 +134,20 @@ void sbndaq::BernCRTAna::analyze(art::Event const & evt) {
   //WK 09/02/21. Update to BernCRTTranslator in sbndaq_artdaq_core
   std::vector<icarus::crt::BernCRTTranslator> hit_vector;
 
+  event_timestamp = 0; //if trigger fragment is not found, the value is set to 0
+
   auto fragmentHandles = evt.getMany<artdaq::Fragments>();
   for (auto  handle : fragmentHandles) {
     if (!handle.isValid() || handle->size() == 0)
       continue;
+
+    //get event timestamp
+    if (handle->front().type() == sbndaq::detail::FragmentType::ICARUSTriggerUDP) {
+      for (auto fragment : *handle) {
+        event_timestamp = fragment.timestamp();
+        break;
+      }   
+    } 
 
     auto this_hit_vector = icarus::crt::BernCRTTranslator::getCRTData(*handle);
 
