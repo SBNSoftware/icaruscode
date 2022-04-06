@@ -5,11 +5,13 @@ BEGIN_PROLOG
 icarus_calorimetryalgdata:	@local::standard_calorimetryalgdata
 icarus_calorimetryalgmc:	  @local::standard_calorimetryalgmc
 
-# Calorimetry constants from G. Putnam (Dec 2021)
-# Informed by truth based study on ICARUS MC -- docdb 23856
+# Calorimetry constants from G. Putnam (Mar 2022)
+# Informed by truth based study on ICARUS MC
+# docdb 23856 discusses the methodology for a different iteration of 
+# these constants
 # The method to obtain these was a bit of a hack and will
 # need to be revisted if/when the data processing is updated
-icarus_calorimetryalgmc.CalAreaConstants: [0.01343, 0.01338, 0.01475]
+icarus_calorimetryalgmc.CalAreaConstants: [0.01118, 0.01112, 0.01233]
 
 standard_caloicarusdata:
 {
