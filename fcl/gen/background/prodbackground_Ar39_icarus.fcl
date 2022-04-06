@@ -52,5 +52,6 @@ outputs: {
     module_type:  RootOutput
     fileName:    "prodbackground_Ar39_icarus_%tc-%p.root"
     dataTier:    "simulated"
+    saveMemoryObjectThreshold: 0
   } # rootoutput
 } # outputs

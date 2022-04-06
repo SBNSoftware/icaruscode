@@ -93,6 +93,7 @@ outputs:
    outputCommands:  [ "keep *_*_*_*" ]
    compressionLevel: 1
    fastCloning: false
+   saveMemoryObjectThreshold: 0
  }
 }
 
