@@ -118,7 +118,7 @@ physics.producers.daqPMT.TriggerTag:   daqTrigger # required
 #
 
 physics.producers.daqPMT.SurviveExceptions: false
-physics.producers.daqPMT.DiagnosticOutput:  false
+physics.producers.daqPMT.DiagnosticOutput:  true
 physics.producers.daqPMT.PacketDump:        false
 physics.producers.daqPMT.RequireKnownBoards: true
 physics.producers.daqPMT.RequireBoardConfig: true
