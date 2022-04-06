@@ -11,6 +11,7 @@
 
 // ICARUS/SBN libraries
 #include "sbnobj/Common/PMT/Data/PMTconfiguration.h" // sbn::PMTconfiguration
+#include "sbnobj/Common/PMT/Data/V1730channelConfiguration.h"
 
 // LArSoft libraries
 #include "lardataalg/Utilities/quantities/spacetime.h" // nanoseconds
@@ -19,6 +20,8 @@
 #include <ostream>
 #include <algorithm> // std::lower_bound(), std::sort()
 #include <vector>
+#include <array>
+#include <optional>
 #include <string>
 #include <utility> // std::move()
 #include <tuple>
@@ -37,9 +40,55 @@ namespace daq::details {
   /// Information of the setup of a V1730 readout board.
   struct BoardSetup_t {
     
+    ///< V1730B has 16 channels (can become a template parameter).
+    static constexpr std::size_t NBoardChannels = 16U;
+    
     /// Special value to mark the absence of fragment ID information.
     static constexpr unsigned int NoFragmentID
       = std::numeric_limits<unsigned int>::max();
+    
+    /// Special settings for one channel on the board.
+    struct ChannelSetup_t {
+      
+      /// Associated off-line (LArSoft) channel ID.
+      raw::Channel_t channelID = sbn::V1730channelConfiguration::NoChannelID;
+      
+      /// Whether the channel should be forcedly ignored or acquired.
+      std::optional<bool> forcedSkip;
+      
+      /// Save the channel only when including the global trigger time.
+      bool onGlobalOnly = false;
+      
+      std::uint16_t minSpan = 0; ///< Minimum acceptable waveform span.
+      
+      /// Category of this channel (will become instance name).
+      std::string category;
+      
+      /// Returns if this channel is associated to a off-line channel number.
+      bool hasChannel() const { return isChannel(channelID); }
+      
+      /// Whether this channel is requested to be skipped.
+      bool mustSkip() const { return forcedSkip.value_or(false); }
+      
+      /// Whether this channel is requested to be saved.
+      bool mustSave() const { return !forcedSkip.value_or(true); }
+      
+      /// Returns whether this is the default configuration.
+      bool isDefault() const
+        {
+          // C++20: equality operator might be automatically generated
+          // return *this == ChannelSetup_t{}; 
+          return !hasChannel()
+            && !forcedSkip && !onGlobalOnly && category.empty();
+        }
+      
+      /// Returns if `channel` is a valid channel ID.
+      static bool isChannel(raw::Channel_t channel)
+        { return channel != sbn::V1730channelConfiguration::NoChannelID; }
+      
+    }; // ChannelSetup_t
+    
+    using AllChannelSetup_t = std::array<ChannelSetup_t, NBoardChannels>;
     
     std::string name; ///< Board name as specified in DAQ configuration.
     
@@ -50,11 +99,16 @@ namespace daq::details {
     
     nanoseconds TTTresetDelay = 0_ns; ///< Delay from TTT reset issue to enact.
     
+    /// Set of settings channel by channel.
+    AllChannelSetup_t channelSettings;
+    
     /// Returns whether this object contains a valid fragment ID.
     constexpr bool hasFragmentID() const { return fragmentID != NoFragmentID; }
     
   }; // struct BoardSetup_t
 
+  std::ostream& operator<< (std::ostream&, BoardSetup_t::ChannelSetup_t const&);
+  
   /// Derivative information of a V1730 readout board.
   struct BoardFacts_t {
     nanoseconds preTriggerTime; ///< How long from waveform start to PMT board trigger.

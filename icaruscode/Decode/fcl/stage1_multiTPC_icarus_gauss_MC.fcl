@@ -85,7 +85,7 @@ services.message.destinations :
      threshold: "DEBUG"     #tells the message service that this destination applies to WARNING and higher level messages
      categories:
      {
-       Cluster3D:
+       Cluster3DICARUS:
        {
          limit: -1
          reportEvery: 1

@@ -1,0 +1,19 @@
+#-------------------------------------------------------------------
+#
+# Name: standard_g4_icarus_edep_lite.fcl
+#
+# Purpose: Lite version of standard_g4_icarus_edep.fcl
+#
+# Created: 31-Mar-2022  H. Greenlee
+#
+# Automatically generated.
+#
+#-------------------------------------------------------------------
+
+#include "g4_drops.fcl"
+#include "standard_g4_icarus_edep.fcl"
+
+# Drop truth data products.
+
+outputs.rootoutput.outputCommands: [ "keep *_*_*_*",
+                                     @sequence::g4_drops ]
