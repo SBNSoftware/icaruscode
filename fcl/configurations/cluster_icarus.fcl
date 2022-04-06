@@ -21,6 +21,7 @@ icarus_cluster3dparallelhitsseedfinderalg:                                  @loc
 icarus_cluster3dkdtree:                                                     @local::standard_cluster3dkdTree
 
 icarus_cluster3d:                                                           @local::standard_cluster3d
+icarus_cluster3d.module_type:                                               "Cluster3DICARUS"
 icarus_cluster3d.Hit3DBuilderAlg:                                           @local::icarus_snippethit3dbuilder
 icarus_cluster3d.ClusterAlg:                                                @local::icarus_cluster3ddbscanalg
 icarus_cluster3d.PrincipalComponentsAlg:                                    @local::icarus_cluster3dprincipalcomponentsalg

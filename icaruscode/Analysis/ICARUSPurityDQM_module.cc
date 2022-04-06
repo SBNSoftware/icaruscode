@@ -196,13 +196,6 @@ namespace icarus{
       produces< std::vector<anab::TPCPurityInfo> >("",art::Persistable::Yes);
     else
       produces< std::vector<anab::TPCPurityInfo> >("",art::Persistable::No);      
-
-    
-    for(const auto& digitlabel2 : fDigitModuleLabel)
-      {
-	
-	std::cout<<"fDigitModuleLabel "<<digitlabel2<<"\n";
-      }
  
   }
   
@@ -326,7 +319,7 @@ std::sort(usedhere->begin(),usedhere->end(), [](float &c, float &d){ return c<d;
 
 /*        
     int punto_taglio=a->size()*(1-b)+0.5;
-    /////std::cout << punto_taglio << " e " << a->size() << std::endl;
+    ///////std::cout << punto_taglio << " e " << a->size() << std::endl;
     //if(punto_taglio==0)punto_taglio=1;
     std::vector<float>* usedhere=new std::vector<float>;
     for(int jj=0;jj<punto_taglio+1;jj++)
@@ -351,7 +344,7 @@ std::sort(usedhere->begin(),usedhere->end(), [](float &c, float &d){ return c<d;
   void ICARUSPurityDQM::produce(art::Event& evt)
   {
     
-      std::cout << " Inizia Purity ICARUS Ana - upgraded by C.FARNESE, WES and OLIVIA " << std::endl;
+//      //std::cout << " Inizia Purity ICARUS Ana - upgraded by C.FARNESE, WES and OLIVIA " << std::endl;
       // code stolen from TrackAna_module.cc
       art::ServiceHandle<geo::Geometry>      geom;
       unsigned int  fDataSize;
@@ -361,7 +354,7 @@ std::sort(usedhere->begin(),usedhere->end(), [](float &c, float &d){ return c<d;
       
       //to get run and event info, you use this "eventAuxillary()" object.
       //art::Timestamp ts = evt.time();
-      std::cout << "Processing for Purity " << " Run " << evt.run() << ", " << "Event " << evt.event() << " and Time " << evt.time().timeHigh() << std::endl;
+//      //std::cout << "Processing for Purity " << " Run " << evt.run() << ", " << "Event " << evt.event() << " and Time " << evt.time().timeHigh() << std::endl;
     
       //fRun->Fill(evt.run());
       //fRunSub->Fill(evt.run(),evt.subRun());
@@ -414,7 +407,7 @@ std::sort(usedhere->begin(),usedhere->end(), [](float &c, float &d){ return c<d;
 	for(const auto& rawDigit : rawDigitVec)
 	  {
 	    raw::ChannelID_t channel = rawDigit->Channel();
-	    //std::cout << channel << std::endl;
+	    ////std::cout << channel << std::endl;
 	    std::vector<geo::WireID> wids = geom->ChannelToWire(channel);
 	    // for now, just take the first option returned from ChannelToWire
 	    geo::WireID wid  = wids[0];
@@ -425,7 +418,7 @@ std::sort(usedhere->begin(),usedhere->end(), [](float &c, float &d){ return c<d;
 	    int cryostat=wid.Cryostat;
 	    size_t tpc=wid.TPC;
 	    size_t iWire=wid.Wire;
-	    //std::cout << channel << " INFO CHANNEL " << plane << " " << tpc << " " << cryostat << " " << iWire << std::endl;
+	    ////std::cout << channel << " INFO CHANNEL " << plane << " " << tpc << " " << cryostat << " " << iWire << std::endl;
 	    fDataSize = rawDigit->Samples();
 	    rawadc.resize(fDataSize);
 	    
@@ -435,7 +428,7 @@ std::sort(usedhere->begin(),usedhere->end(), [](float &c, float &d){ return c<d;
 	    float pedestal2 = rawDigit->GetPedestal();
 	    float sigma_pedestal = rawDigit->GetSigma();
 	    raw::Uncompress(rawDigit->ADCs(), rawadc, pedestal, rawDigit->Compression());
-	    //std::cout << pedestal2 << " " << fDataSize << " " << rawadc.size() << " " << sigma_pedestal << std::endl;
+	    ////std::cout << pedestal2 << " " << fDataSize << " " << rawadc.size() << " " << sigma_pedestal << std::endl;
 	    float massimo=0;
 	    float quale_sample_massimo;
 	    //    if (plane==0) {
@@ -523,7 +516,7 @@ std::sort(usedhere->begin(),usedhere->end(), [](float &c, float &d){ return c<d;
                 }
             }
 	  }
-//std::cout << "SIZE " << www0->size() << " " << www1->size() << " " << www2->size() << " " << www3->size() << std::endl;	
+////std::cout << "SIZE " << www0->size() << " " << www1->size() << " " << www2->size() << " " << www3->size() << std::endl;	
 	for (unsigned int ijk=0; ijk<www0->size(); ijk++)
 	  {
 	    for (unsigned int ijk2=0; ijk2<www0->size(); ijk2++)
@@ -557,7 +550,7 @@ std::sort(usedhere->begin(),usedhere->end(), [](float &c, float &d){ return c<d;
 	
 	for (unsigned int ijk=0; ijk<www2->size(); ijk++)
 	  {
-            //std::cout << " WWW2 " << ijk << std::endl;
+            ////std::cout << " WWW2 " << ijk << std::endl;
 	    for (unsigned int ijk2=0; ijk2<www2->size(); ijk2++)
 	      {
 		if (fabs((*www2)[ijk]-(*www2)[ijk2])<fdwclusfcl && ijk!=ijk2 && fabs((*sss2)[ijk]-(*sss2)[ijk2])<fdsclusfcl)
@@ -653,7 +646,7 @@ std::sort(usedhere->begin(),usedhere->end(), [](float &c, float &d){ return c<d;
           for (unsigned int ijk2=0; ijk2<30000; ijk2++) {
 	    if(clusters_creation[ijk][ijk2]>50)
               {
-		std::cout<<clusters_creation[ijk][ijk2] << " CLUSTER MINE " << clusters_swire[ijk][ijk2] << " " << clusters_lwire[ijk][ijk2] << " " << clusters_ssample[ijk][ijk2] << " " << clusters_lsample[ijk][ijk2] << std::endl;
+		////std::cout<<clusters_creation[ijk][ijk2] << " CLUSTER MINE " << clusters_swire[ijk][ijk2] << " " << clusters_lwire[ijk][ijk2] << " " << clusters_ssample[ijk][ijk2] << " " << clusters_lsample[ijk][ijk2] << std::endl;
 		clusters_qq[quanti_clusters]=clusters_creation[ijk][ijk2];
 		clusters_vi[quanti_clusters]=ijk;
 		clusters_nn[quanti_clusters]=ijk2;
@@ -670,7 +663,7 @@ std::sort(usedhere->begin(),usedhere->end(), [](float &c, float &d){ return c<d;
 	
 	for(int icl = 0; icl < quanti_clusters; ++icl){
 	  if (clusters_qq[icl]>0) {
-	    std::cout << " CLUSTER INFO " << icl << " " << clusters_qq[icl] << " " << clusters_vi[icl] << " " << clusters_dw[icl] << " " << clusters_ds[icl] << " " << clusters_nn[icl] << std::endl;
+	    //std::cout << " CLUSTER INFO " << icl << " " << clusters_qq[icl] << " " << clusters_vi[icl] << " " << clusters_dw[icl] << " " << clusters_ds[icl] << " " << clusters_nn[icl] << std::endl;
 	    int tpc_number=clusters_vi[icl];//qui andrebbe messo il numero di TPC
 	    
 	    if (clusters_ds[icl]>2250 && clusters_dw[icl]>100)
@@ -705,7 +698,7 @@ std::sort(usedhere->begin(),usedhere->end(), [](float &c, float &d){ return c<d;
 		}
 		
 		
-		//std::cout << " CLUSTER INFO " << icl << " " << clusters_qq[icl] << " " << whc->size() << std::endl;
+		////std::cout << " CLUSTER INFO " << icl << " " << clusters_qq[icl] << " " << whc->size() << std::endl;
 		
 		
 		if(whc->size()>100)//prima 0
@@ -740,7 +733,7 @@ if(((*shc)[j]-clusters_mintime[icl]<200) || ((*shc)[j]-clusters_mintime[icl])>21
 				    quanti+=1;
 				  }
 			      }
-			    //////std::cout << quanti << std::endl;
+			    ////////std::cout << quanti << std::endl;
 			    TGraphErrors *gr3 = new TGraphErrors(quanti,wires,samples,ex,ey);
 			    gr3->Fit("pol1","Q");
 			    TF1 *fitfunc = gr3->GetFunction("pol1");
@@ -762,7 +755,7 @@ if(((*shc)[j]-clusters_mintime[icl]<200) || ((*shc)[j]-clusters_mintime[icl])>21
 			    if(found_max==0)found_ok=1;
 			  }
 		      }
-		    //std::cout << escluse->size() << " escluse " << whc->size() << " " << found_ok << std::endl;
+		    ////std::cout << escluse->size() << " escluse " << whc->size() << " " << found_ok << std::endl;
 		    delete escluse;
 		    std::vector<float> *hittime=new std::vector<float>;
 		    std::vector<float> *hitwire=new std::vector<float>;
@@ -770,9 +763,9 @@ if(((*shc)[j]-clusters_mintime[icl]<200) || ((*shc)[j]-clusters_mintime[icl])>21
 		    std::vector<float> *hittimegood=new std::vector<float>;
 		    std::vector<float> *hitareagood=new std::vector<float>;
 		    std::vector<float> *hitwiregood=new std::vector<float>;
-		    /////std::cout <<  found_ok << std::endl;
-		    /////std::cout <<  pendenza << std::endl;
-		    /////std::cout <<  intercetta << std::endl;
+		    ///////std::cout <<  found_ok << std::endl;
+		    ///////std::cout <<  pendenza << std::endl;
+		    ///////std::cout <<  intercetta << std::endl;
 		    if(found_ok==1)
 		      {
 			for(int kkk=0;kkk<(int)whc->size();kkk++)
@@ -794,7 +787,7 @@ if(((*shc)[j]-clusters_mintime[icl]<200) || ((*shc)[j]-clusters_mintime[icl])>21
 			      }
 			  }
 			//float result_rms=0.14;
-			//std::cout << result_rms << endl;
+			////std::cout << result_rms << endl;
 			Double_t area[10000];
 			Double_t nologarea[10000];
 			Double_t tempo[10000];
@@ -803,11 +796,11 @@ if(((*shc)[j]-clusters_mintime[icl]<200) || ((*shc)[j]-clusters_mintime[icl])>21
 			Double_t ey[10000];
 			Double_t ek[10000];
 			Double_t ez[10000];
-			//std::cout <<  hitarea->size() << " dimensione hitarea" << std::endl;
+			////std::cout <<  hitarea->size() << " dimensione hitarea" << std::endl;
 
-			//std::cout<<""<<std::endl;
-			//std::cout<<"HERE line 802"<<std::endl;
-			//std::cout<<""<<std::endl;
+			////std::cout<<""<<std::endl;
+			////std::cout<<"HERE line 802"<<std::endl;
+			////std::cout<<""<<std::endl;
                         //std::ofstream purh("dump_purity_hits.out",std::ios::app);
 
 			if(hitarea->size()>100)//prima 30
@@ -815,7 +808,7 @@ if(((*shc)[j]-clusters_mintime[icl]<200) || ((*shc)[j]-clusters_mintime[icl])>21
 			    h_ratio->Fill(((float)whc->size())/((float)clusters_dw[icl]));
                             h_ratio_3->Fill(clusters_ds[icl],((float)whc->size())/((float)clusters_dw[icl]));
 
-                            //std::cout << "RATIO INFO 1 " << (float)hitarea->size() << " " << (float)clusters_dw[icl] << " " << (((float)hitarea->size())/((float)clusters_dw[icl])) << std::endl;	
+                            ////std::cout << "RATIO INFO 1 " << (float)hitarea->size() << " " << (float)clusters_dw[icl] << " " << (((float)hitarea->size())/((float)clusters_dw[icl])) << std::endl;	
 			    float minimo=100000;
 			    float massimo=0;
                             float wire_minimo=100000;
@@ -869,53 +862,53 @@ quante_hit_nel_range_tempo+=1;
                             h_ratio_after_2->Fill(((float)quante_hit_nel_range_tempo)/fabs(wire_massimo-wire_minimo+1));
                             h_ratio_after_3->Fill(delta_sample_selected,((float)quante_hit_nel_range_tempo)/fabs(wire_massimo-wire_minimo+1));
 
-                            //std::cout << "RATIO INFO 2 " << (float)hitarea->size() << " " << fabs(delta_wire_selected) << " " << (((float)hitarea->size())/fabs(delta_wire_selected)) << std::endl;
+                            ////std::cout << "RATIO INFO 2 " << (float)hitarea->size() << " " << fabs(delta_wire_selected) << " " << (((float)hitarea->size())/fabs(delta_wire_selected)) << std::endl;
 
-			    //std::cout << hitarea->size() << std::endl;
+			    ////std::cout << hitarea->size() << std::endl;
 			    //int gruppi=hitarea->size()/50;
 			    int gruppi=fgruppifcl;//originale 8
-			    //std::cout << gruppi << std::endl;
+			    ////std::cout << gruppi << std::endl;
 			    
 			    float steptime=(massimo-minimo)/(gruppi+1);
-			    //std::cout << steptime << " steptime " << minimo << " " << massimo << std::endl;
+			    ////std::cout << steptime << " steptime " << minimo << " " << massimo << std::endl;
 			    float starting_value_tau=fValoretaufcl;
 			    
-			    //std::cout << starting_value_tau << " VALORE INDICATIVO TAU " << std::endl;
+			    ////std::cout << starting_value_tau << " VALORE INDICATIVO TAU " << std::endl;
 			    //if(tpc_number==2 || tpc_number==5)starting_value_tau=6500;
 			    //if(tpc_number==10 || tpc_number==13)starting_value_tau=5700;
 			    for(int stp=0;stp<=gruppi;stp++)
 			      {
 				std::vector<float>* hitpertaglio=new std::vector<float>;
-				//std::cout << 500+stp*steptime << " time " << 500+(stp+1)*(steptime) << std::endl;
-				/////////std::cout << minimo+stp*steptime << " " << minimo+(stp+1)*(steptime) << std::endl;
+				////std::cout << 500+stp*steptime << " time " << 500+(stp+1)*(steptime) << std::endl;
+				///////////std::cout << minimo+stp*steptime << " " << minimo+(stp+1)*(steptime) << std::endl;
 				for(int kk=0;kk<(int)hitarea->size();kk++)
 				  {
 				    if((*hittime)[kk]>=(minimo+stp*steptime) && (*hittime)[kk]<=(minimo+(stp+1)*(steptime))) 
 				      hitpertaglio->push_back((*hitarea)[kk]*exp((*hittime)[kk]/starting_value_tau));
 				  }
-				/////////std::cout << hitpertaglio->size() << std::endl;
+				///////////std::cout << hitpertaglio->size() << std::endl;
 				float tagliomax=FoundMeanLog(hitpertaglio,fmaxfcl);//0.9
 				float tagliomin=FoundMeanLog(hitpertaglio,fminfcl);//0.05
 				//float tagliomin=0;
 				//float tagliomax=1000000;
 				delete hitpertaglio;
-				//std::cout << tagliomax << " t " << std::endl;
+				////std::cout << tagliomax << " t " << std::endl;
 				for(int kk=0;kk<(int)hitarea->size();kk++)
 				  {
-				    //std::cout << (*hittime)[kk] << " " << (*hitwire)[kk] << " " << (*hitarea)[kk] << " " << (minimo+stp*steptime) << " " << (minimo+(stp+1)*steptime) << " " << (*hitarea)[kk]*exp((*hittime)[kk]/starting_value_tau) << std::endl;
+				    ////std::cout << (*hittime)[kk] << " " << (*hitwire)[kk] << " " << (*hitarea)[kk] << " " << (minimo+stp*steptime) << " " << (minimo+(stp+1)*steptime) << " " << (*hitarea)[kk]*exp((*hittime)[kk]/starting_value_tau) << std::endl;
 				    if((*hittime)[kk]>(minimo+stp*steptime) && 
 				       (*hittime)[kk]<(minimo+(stp+1)*steptime) &&
 				       (*hitarea)[kk]*exp((*hittime)[kk]/starting_value_tau)<tagliomax && 
 				       (*hitarea)[kk]*exp((*hittime)[kk]/starting_value_tau)>tagliomin)
 				      {
-					//std::cout << ((*hitarea)[kk]*exp((*hittime)[kk]/1400)) << " GOOD " << (*hitarea)[kk] << " " << (*hittime)[kk] << std::endl;
+					////std::cout << ((*hitarea)[kk]*exp((*hittime)[kk]/1400)) << " GOOD " << (*hitarea)[kk] << " " << (*hittime)[kk] << std::endl;
 					hitareagood->push_back((*hitarea)[kk]);
 					hittimegood->push_back((*hittime)[kk]);
 					hitwiregood->push_back((*hitwire)[kk]);
 				      }
 				  }
 			      }
-			    //std::cout << hitareagood->size() << " hitareagood" << std::endl;    
+			    ////std::cout << hitareagood->size() << " hitareagood" << std::endl;    
 if(delta_sample_selected>1900)
 {
                     for(int k=0;k<(int)whc->size();k++)
@@ -939,15 +932,15 @@ if(delta_sample_selected>1900)
 				//if((*hittimegood)[k]-600*0.4<=1000)//correzione 15/08
 				    tempo[k]=(*hittimegood)[k];
 				    area[k]=log((*hitareagood)[k]);
-				    //std::cout << (*hitareagood)[k] << " " << area[k] << std::endl;
+				    ////std::cout << (*hitareagood)[k] << " " << area[k] << std::endl;
 				    nologarea[k]=((*hitareagood)[k]);
 				    ex[k]=0;
 				    ez[k]=60;
 				    ey[k]=0.23;
 			      }
-			    //std::cout<<""<<std::endl;
-			    //std::cout<<"HERE line 872"<<std::endl;
-			    //std::cout<<""<<std::endl;
+			    ////std::cout<<""<<std::endl;
+			    ////std::cout<<"HERE line 872"<<std::endl;
+			    ////std::cout<<""<<std::endl;
 			    TGraphErrors *gr31 = new TGraphErrors(hitareagood->size(),tempo,area,ex,ey);
 			    //TGraphErrors *gr4 = new TGraphErrors(hitareagood->size(),tempo,nologarea,ex,ey);
 			    gr31->Fit("pol1","Q");
@@ -972,9 +965,9 @@ if(delta_sample_selected>1900)
                         TF1 *fitg = h111->GetFunction("gaus");
                         error=fitg->GetParameter(2);
                         }
-                        //std::cout << " error " << error << std::endl;
+                        ////std::cout << " error " << error << std::endl;
                         //float error_2=sqrt(sum_per_rms_test/(hitareagood->size()-2));
-                        //std::cout << " error vero" << error_2 << std::endl;
+                        ////std::cout << " error vero" << error_2 << std::endl;
                         h111->Delete();
 
 
@@ -1003,7 +996,7 @@ if(delta_sample_selected>1900)
 		      TF1 *fitge = h111e->GetFunction("gaus");
 		      error_expo=fitge->GetParameter(2);
                       }
-		      std::cout << " errors " << error << " " << error_expo << std::endl;
+		      //std::cout << " errors " << error << " " << error_expo << std::endl;
 		      h_errors->Fill(error_expo);
 		      h111e->Delete();//fitge->Delete();fite->Delete();
 
@@ -1013,12 +1006,12 @@ if(delta_sample_selected>1900)
                                 ez[k]=error_expo;
                                 ey[k]=error;
                           }
-			//std::cout<<""<<std::endl;
-			//std::cout<<"HERE line 906"<<std::endl;
-			//std::cout<<""<<std::endl;
+			////std::cout<<""<<std::endl;
+			////std::cout<<"HERE line 906"<<std::endl;
+			////std::cout<<""<<std::endl;
 
                         TGraphErrors *gr32 = new TGraphErrors(hitareagood->size(),tempo,area,ex,ey);
-                        gr32->Fit("pol1");
+                        gr32->Fit("pol1","Q");
                   
                         TF1 *fit2 = gr32->GetFunction("pol1");
                         float slope_purity_2=fit2->GetParameter(1);
@@ -1028,20 +1021,20 @@ if(delta_sample_selected>1900)
 			std::ofstream goodpuro("purity_results.out",std::ios::app);
                         std::ofstream goodpuro2("purity_results2.out",std::ios::app);
 			
-                        //std::cout << -1/slope_purity_2 << std::endl;
-                        //std::cout << -1/(slope_purity_2+error_slope_purity_2)+1/slope_purity_2 << std::endl;
-                        //std::cout << 1/slope_purity_2-1/(slope_purity_2-error_slope_purity_2) << std::endl;
+                        ////std::cout << -1/slope_purity_2 << std::endl;
+                        ////std::cout << -1/(slope_purity_2+error_slope_purity_2)+1/slope_purity_2 << std::endl;
+                        ////std::cout << 1/slope_purity_2-1/(slope_purity_2-error_slope_purity_2) << std::endl;
                         TGraphAsymmErrors *gr41 = new TGraphAsymmErrors (hitareagood->size(),tempo,nologarea,ex,ex,ez,ek);
-                        gr41->Fit("expo");
+                        gr41->Fit("expo","Q");
                         TF1 *fitexo = gr41->GetFunction("expo");
                         float slope_purity_exo=fitexo->GetParameter(1);
                         float error_slope_purity_exo=fitexo->GetParError(1);
                         //fRunSubPurity2->Fill(evt.run(),evt.subRun(),-slope_purity_exo*1000.);
                         //fRunSubPurity->Fill(evt.run(),evt.subRun(),-slope_purity_2*1000.);
-                        //std::cout << -1/slope_purity_exo << std::endl;
-                        //std::cout << -1/(slope_purity_exo+error_slope_purity_exo)+1/slope_purity_exo << std::endl;
-                        //std::cout << 1/slope_purity_exo-1/(slope_purity_exo-error_slope_purity_exo) << std::endl;
-                        //std::cout << fitexo->GetChisquare()/(hitareagood->size()-2) << std::endl;
+                        ////std::cout << -1/slope_purity_exo << std::endl;
+                        ////std::cout << -1/(slope_purity_exo+error_slope_purity_exo)+1/slope_purity_exo << std::endl;
+                        ////std::cout << 1/slope_purity_exo-1/(slope_purity_exo-error_slope_purity_exo) << std::endl;
+                        ////std::cout << fitexo->GetChisquare()/(hitareagood->size()-2) << std::endl;
 			
 			
                         if(fabs(slope_purity_2)<0.01 || fabs(slope_purity_exo)<0.01)
@@ -1117,18 +1110,18 @@ if(delta_sample_selected>1900)
 			if(fFillAnaTuple)
 			  purityTuple->Fill(purity_info.Run,purity_info.Event,purity_info.TPC,purity_info.Wires,purity_info.Ticks,purity_info.Attenuation);
 
-			//std::cout << "Calling again after filling attenuation … " << std::endl;
+			////std::cout << "Calling again after filling attenuation … " << std::endl;
 			purity_info.Print();
 			outputPtrVector->push_back(purity_info);
                         }
-			//std::cout << ts << " is time event " << std::endl;
+			////std::cout << ts << " is time event " << std::endl;
                         //goodpur << -1/slope_purity_exo << std::endl;
                         //goodpur << -1/(slope_purity_exo+error_slope_purity_exo)+1/slope_purity_exo << std::endl;
                         //goodpur << 1/slope_purity_exo-1/(slope_purity_exo-error_slope_purity_exo) << std::endl;
                         //goodpur << timeevent << " is time event " << std::endl;
 			  }
 		      }
-		    //std::cout << "Delete hit stuff." << std::endl;
+		    ////std::cout << "Delete hit stuff." << std::endl;
 
 		    delete hittime;
 		    delete hitarea;
@@ -1138,7 +1131,7 @@ if(delta_sample_selected>1900)
 		    delete hitwire;
 		  }
 		
-		//std::cout << "Delete cluster stuff." << std::endl;
+		////std::cout << "Delete cluster stuff." << std::endl;
 		
 		delete shc;
 		delete ahc;
@@ -1149,7 +1142,7 @@ if(delta_sample_selected>1900)
 	  }
 	}
 
-	//std::cout << "Delete big stuff." << std::endl;
+	////std::cout << "Delete big stuff." << std::endl;
 
 	delete www0;
 	delete sss0;
@@ -1166,8 +1159,8 @@ if(delta_sample_selected>1900)
 
       }
 
-    std::cout << "Checking everything in the output..." << std::endl;
-    std::cout << "There are " << outputPtrVector->size() << " objects in the output vector." << std::endl;
+    //std::cout << "Checking everything in the output..." << std::endl;
+    //std::cout << "There are " << outputPtrVector->size() << " objects in the output vector." << std::endl;
     /* //don't need this printed here.    
     for (size_t i_info = 0; i_info<outputPtrVector->size(); ++i_info){
       auto info = outputPtrVector->at(i_info);
