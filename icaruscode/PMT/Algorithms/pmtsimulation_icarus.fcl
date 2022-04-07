@@ -112,6 +112,20 @@ icarus_photoelectronresponse_exponentials: {
 
 
 #
+# Single photoelectron response from data.
+# 
+icarus_photoelectronresponse_202202: {
+  
+  tool_type: SampledWaveformFunctionTool
+  
+  WaveformData: "Responses/SPR202202.txt"
+  TransitTime:  "55.1 ns"
+  Gain:          7.0e6
+  
+} # icarus_photoelectronresponse_exponentials
+
+
+#
 # Custom photoelectron response.
 # 
 # This is just an example for an arbitrary function shape; the example tries to
