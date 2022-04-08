@@ -32,7 +32,12 @@ outputs.outBNB.dataTier: "reconstructed"
 outputs.outBNB.outputCommands: ["keep *_*_*_*", "drop *_MCDecodeTPCROI_*_*", "drop *_decon1droi_*_*","drop raw::RawDigits_*_*_*" ]
 
 # Set the expected input for ophit
-physics.producers.ophit.InputModule: "opdaq"
+# physics.producers.ophit.InputModule: "opdaq"
+# temporary for a while: use a special MC configuration different from data;
+# data configuration is described in SBN DocDB 24969; MC configuration below
+# is the one used for data before that one
+physics.producers.ophit: @local::icarus_ophit_MC
+physics.producers.ophitfull: @local::icarus_ophitdebugger_MC
 
 # Set up for the single module mutliple TPC mode...
 physics.producers.MCDecodeTPCROI.FragmentsLabelVec:   ["daq3:PHYSCRATEDATATPCWW","daq2:PHYSCRATEDATATPCWE","daq1:PHYSCRATEDATATPCEW","daq0:PHYSCRATEDATATPCEE"]
