@@ -403,8 +403,8 @@ namespace crt {
       }      
       */
       /// Looking for data within +/- 3ms within trigger time stamp
-      /// Here t0 - trigger time -ve, only adding 1s makes the value +ve or -ve
-      //    if (std::fabs(int64_t(crtList[febdat_i]->fTs0 - m_trigger_timestamp) + 1e9) > fCrtWindow) continue;
+      /// Here t0 - trigger time -ve
+      //    if (std::fabs(int64_t(crtList[febdat_i]->fTs0 - m_trigger_timestamp)) > fCrtWindow) continue;
       if ( type == 'm'){
 	for(int chan=0; chan<32; chan++) {
 	  std::pair<double,double> const chg_cal = fChannelMap->getSideCRTCalibrationMap((int)crtList[febdat_i]->fMac5,chan);

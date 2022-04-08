@@ -256,6 +256,8 @@ cafmaker.TrackMCSLabel: "pandoraTrackMCS"
 cafmaker.TrackRangeLabel: "pandoraTrackRange"
 cafmaker.CRTHitLabel: "crthit"
 cafmaker.CRTTrackLabel: "crttrack"
+cafmaker.CRTSimT0Offset: 1600000 # ns, https://github.com/SBNSoftware/icaruscode/blob/v09_37_02_01/icaruscode/CRT/crtsimmodules_icarus.fcl#L11
+cafmaker.TriggerLabel: "daqTrigger"
 cafmaker.FlashTrigLabel: "" # unavailable
 cafmaker.SimChannelLabel: "largeant"
 cafmaker.SystWeightLabels: ["genieweight", "fluxweight"]
