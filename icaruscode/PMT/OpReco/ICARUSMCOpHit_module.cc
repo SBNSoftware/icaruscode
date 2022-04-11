@@ -66,18 +66,55 @@ void ICARUSMCOpHit::produce(art::Event& e)
 {
   auto oph_v = std::unique_ptr<std::vector<recob::OpHit> >(new std::vector<recob::OpHit>());
 
+  // Get SimPhotons.
+
   art::Handle< std::vector< sim::SimPhotons > > simph_h;
   e.getByLabel(_simph_producer,simph_h);
-  if(!simph_h.isValid()) {
-    std::cerr << "Could not retrieve sim::SimPhotons from producer label: " << _simph_producer << std::endl;
+
+  // Get SimPhotonsLite.
+
+  art::Handle< std::vector< sim::SimPhotonsLite > > simphlite_h;
+  e.getByLabel(_simph_producer,simphlite_h);
+
+  // At least one, but not both, of the handles should be valid.
+
+  if(!simph_h.isValid() && !simphlite_h.isValid()) {
+    std::cerr << "Could not retrieve sim::SimPhotons or sim::SimPhotonsLite from producer label: " << _simph_producer << std::endl;
+    throw std::exception();
+  }
+  if(simph_h.isValid() && simphlite_h.isValid()) {
+    std::cerr << "Found both sim::SimPhotons and sim::SimPhotonsLite from producer label: " << _simph_producer << std::endl;
     throw std::exception();
   }
 
+  // Combine the two handles into a single vector so that they can be processed in one loop.
+
+  typedef std::variant<const sim::SimPhotons*, const sim::SimPhotonsLite*> EitherSimPhoton;
+  std::vector<EitherSimPhoton> sim_photons;
+  if(simph_h.isValid()) {
+    sim_photons.reserve(simph_h->size());
+    for(auto const& simph : *simph_h) {
+      sim_photons.push_back(&simph);
+    }
+  }
+  else if(simphlite_h.isValid()) {
+    sim_photons.reserve(simphlite_h->size());
+    for(auto const& simphlite : *simphlite_h) {
+      sim_photons.push_back(&simphlite);
+    }
+  }
+
+  // Loop over SimPhotons[Lite]
+
   std::vector<bool> processed_v;
   auto const clockData = art::ServiceHandle<detinfo::DetectorClocksService const>()->DataFor(e);
-  for(auto const& simph : *simph_h) {
+  for(auto const& simph : sim_photons) {
     // Make sure channel number is unique (e.g. one sim::SimPhotons per op channel)
-    size_t opch = simph.OpChannel();
+    size_t opch = -1;
+    if(simph_h.isValid())
+      opch = std::get<const sim::SimPhotons*>(simph)->OpChannel();
+    else if(simphlite_h.isValid())
+      opch = std::get<const sim::SimPhotonsLite*>(simph)->OpChannel;
 
     if(opch >= processed_v.size()) processed_v.resize(opch+1,false);
     if(processed_v[opch]) {
@@ -91,15 +128,24 @@ void ICARUSMCOpHit::produce(art::Event& e)
     double pe = 0.;
     // Insert photon times into a sorted set
     std::map<double,size_t> time_m;
-    for(auto const& oneph : simph) {
-      double this_time = clockData.G4ToElecTime(oneph.Time) - clockData.TriggerTime();
-      time_m[this_time] += 1;
+    if(simph_h.isValid()) {
+      for(auto const& oneph : *std::get<const sim::SimPhotons*>(simph)) {
+        double this_time = clockData.G4ToElecTime(oneph.Time) - clockData.TriggerTime();
+        time_m[this_time] += 1;
+      }
+    }
+    else if(simphlite_h.isValid()) {
+      for(auto const& [ time_ns, nphotons ] : std::get<const sim::SimPhotonsLite*>(simph)->DetectedPhotons) {
+        double this_time = clockData.G4ToElecTime(time_ns + 0.5) - clockData.TriggerTime();
+        time_m[this_time] += nphotons;
+      }
     }
 
     // Loop over the time vector, emplace photons
     for(auto const& time_photon_pair : time_m) {
 
       auto const& this_time = time_photon_pair.first;
+      std::cout << "Channel=" << opch << ", time=" << this_time << ", " << time_m[this_time] << std::endl;
 
       if(this_time > (oph_time + _merge_period) && in_window) {
 	recob::OpHit oph(opch, 

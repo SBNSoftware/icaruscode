@@ -148,11 +148,12 @@ icarus::opdet::PMTsimulationAlg::PMTsimulationAlg
 
 // -----------------------------------------------------------------------------
 std::tuple<std::vector<raw::OpDetWaveform>, std::optional<sim::SimPhotons>>
-  icarus::opdet::PMTsimulationAlg::simulate(sim::SimPhotons const& photons)
+  icarus::opdet::PMTsimulationAlg::simulate(sim::SimPhotons const& photons,
+                                            sim::SimPhotonsLite const& lite_photons)
 {
   std::optional<sim::SimPhotons> photons_used;
 
-  Waveform_t const waveform = CreateFullWaveform(photons, photons_used);
+  Waveform_t const waveform = CreateFullWaveform(photons, lite_photons, photons_used);
 
   return {
     CreateFixedSizeOpDetWaveforms(photons.OpChannel(), waveform),
@@ -179,7 +180,9 @@ auto icarus::opdet::PMTsimulationAlg::makeGainFluctuator() const {
 
 //------------------------------------------------------------------------------
 auto icarus::opdet::PMTsimulationAlg::CreateFullWaveform
-  (sim::SimPhotons const& photons, std::optional<sim::SimPhotons>& photons_used)
+  (sim::SimPhotons const& photons,
+   sim::SimPhotonsLite const& lite_photons,
+   std::optional<sim::SimPhotons>& photons_used)
   const -> Waveform_t
 {
 
@@ -244,6 +247,32 @@ auto icarus::opdet::PMTsimulationAlg::CreateFullWaveform
 //     std::cout << "\tcollected pes... " << photons.OpChannel() << " " << diff.count() << std::endl;
 //     start=std::chrono::high_resolution_clock::now();
 
+    // Add SimPhotonsLite.  Loop over geant ticks (=ns).
+
+    for(auto const& [ time_ns, nphotons ]: lite_photons.DetectedPhotons) {
+
+      // Count photoelectrons.
+
+      unsigned int nPE = 0;
+      for(int i=0; i<nphotons; ++i) {
+        if(KicksPhotoelectron())
+          ++nPE;
+      }
+
+      // Convert photon time bin to ticks.
+
+      simulation_time const photonTime { time_ns + 0.5 };
+      trigger_time const mytime
+        = timings.toTriggerTime(photonTime)
+        - fParams.triggerOffsetPMT;
+      if ((mytime < 0.0_us) || (mytime >= fParams.readoutEnablePeriod)) continue;
+
+      auto const [ tick, subtick ]
+        = toTickAndSubtick(mytime.quantity() * fSampling);
+      if (tick < endSample)
+        peMaps[subtick][tick] += nPE;
+    }
+
     //
     // add the collected photoelectrons to the waveform
     //
@@ -270,6 +299,7 @@ auto icarus::opdet::PMTsimulationAlg::CreateFullWaveform
           subsample, waveform, startTick,
           static_cast<WaveformValue_t>(nEffectivePE)
           );
+        //        std::cout << "Channel=" << photons.OpChannel() << ", subsample=" << iSubsample << ", tick=" << startTick << ", nPE=" << nPE << ", ePE=" << nEffectivePE << std::endl;
 
       } // for sample
     } // for subsamples
