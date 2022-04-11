@@ -103,17 +103,21 @@ void icarus::details::KeyedCSVparser::parse
     
     std::string tokenStr { cbegin(token), cend(token) };
     
-    // if there are values pending, this is not a key, period.
     bool bKey = false;
     do {
       
+      // if there are values pending, this is not a key, period;
+      // if all required values have been assigned, the next token is a key.
       if (forcedValues >= 0) {
         bKey = (forcedValues == 0); // if no more forced values, next is key
         --forcedValues;
-        break;
+        // if we know the token is a key, we still need to check for matching
+        // patterns to assign required values
+        if (!bKey) break;
       }
       
-      // if the key may still be a key
+      // the token may still be a key (if `bKey` is true, it is for sure: we can
+      // decide that a non-key (!bKey) is actually a key, but not the opposite)
       for (auto const& [ pattern, values ]: fPatterns) {
         if (!std::regex_match(begin(token), end(token), pattern)) continue;
         bKey = true; // matching a pattern implies this is a key
