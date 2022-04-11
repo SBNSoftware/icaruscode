@@ -35,7 +35,7 @@ boost::program_options::variables_map parseCommandLine(int argc, char** argv) {
   //
   // Declare the supported options.
   //
-  po::options_description inputopt("Inpot/output");
+  po::options_description inputopt("Input/output");
   inputopt.add_options()
     ("input", po::value<std::vector<std::string>>(), "input file")
     ;
@@ -130,7 +130,7 @@ int processTriggerData(std::string const& triggerString) {
       "hex64", {
           "Cryo1 EAST Connector 0 and 1"
         , "Cryo1 EAST Connector 2 and 3"
-        , "Cyo2 WEST Connector 0 and 1" // note the typo
+        , "Cryo2 WEST Connector 0 and 1"
         , "Cryo2 WEST Connector 2 and 3"
       }
     }
