@@ -41,6 +41,7 @@
 #include <iomanip> // std::setw(), std::setfill()
 #include <string_view>
 #include <memory>
+#include <array>
 
 
 using namespace std::string_literals;
@@ -183,6 +184,7 @@ namespace daq
       static constexpr int NuMI { 2 };
       static constexpr int OffbeamBNB { 3 };
       static constexpr int OffbeamNuMI { 4 };
+      static constexpr int Calib { 5 };
     }; 
     
     static constexpr nanoseconds BNBgateDuration { 1600. };
@@ -197,6 +199,11 @@ namespace daq
     /// Returns the difference `a - b`.
     static long long int timestampDiff(std::uint64_t a, std::uint64_t b)
       { return static_cast<long long int>(a) - static_cast<long long int>(b); }
+
+    /// Encodes the `connectorWord` LVDS bits from the specified `cryostat`
+    /// and `connector` into the format required by `sbn::ExtraTriggerInfo`.
+    static std::uint64_t encodeLVDSbits
+    (short int cryostat, short int connector, std::uint64_t connectorWord);
     
   };
 
@@ -313,8 +320,10 @@ namespace daq
     // --- END ---- TEMPORARY --------------------------------------------------
     int gate_type = datastream_info.gate_type;
     long delta_gates_bnb [[maybe_unused]] = frag.getDeltaGatesBNB();
-    long delta_gates_numi [[maybe_unused]] = frag.getDeltaGatesOther(); //this is actually NuMI due to abrupt changes in trigger board logic
-    long delta_gates_other [[maybe_unused]] = frag.getDeltaGatesNuMI();
+    long delta_gates_numi [[maybe_unused]] = frag.getDeltaGatesNuMI();
+    long delta_gates_offbeam_bnb [[maybe_unused]] = frag.getDeltaGatesBNBOff();
+    long delta_gates_offbeam_numi [[maybe_unused]] = frag.getDeltaGatesNuMIOff();
+    long delta_gates_other [[maybe_unused]] = frag.getDeltaGatesOther();
     uint64_t lastTrigger = 0;
     
     // --- BEGIN -- TEMPORARY --------------------------------------------------
@@ -383,18 +392,47 @@ namespace daq
     //
     sbn::triggerSource beamGateBit;
     switch (gate_type) {
-      case TriggerGateTypes::BNB:         beamGateBit = sbn::triggerSource::BNB;         break;
-      case TriggerGateTypes::NuMI:        beamGateBit = sbn::triggerSource::NuMI;        break;
-      case TriggerGateTypes::OffbeamBNB:  beamGateBit = sbn::triggerSource::OffbeamBNB;  break;
-      case TriggerGateTypes::OffbeamNuMI: beamGateBit = sbn::triggerSource::OffbeamNuMI; break;
+      case TriggerGateTypes::BNB:{         
+	beamGateBit = sbn::triggerSource::BNB;
+	fTriggerExtra->gateCountFromPreviousTrigger = frag.getDeltaGatesBNB();
+	fTriggerExtra->previousTriggerTimestamp = frag.getLastTimestampBNB();
+	break;
+      }
+      case TriggerGateTypes::NuMI:{        
+	beamGateBit = sbn::triggerSource::NuMI;
+	fTriggerExtra->gateCountFromPreviousTrigger = frag.getDeltaGatesNuMI();
+	fTriggerExtra->previousTriggerTimestamp= frag.getLastTimestampNuMI();
+	break;
+      }
+      case TriggerGateTypes::OffbeamBNB:{  
+	beamGateBit = sbn::triggerSource::OffbeamBNB;
+	fTriggerExtra->gateCountFromPreviousTrigger = frag.getDeltaGatesBNBOff();
+	fTriggerExtra->previousTriggerTimestamp= frag.getLastTimestampBNBOff();
+	break;
+      }
+      case TriggerGateTypes::OffbeamNuMI:{ 
+	beamGateBit = sbn::triggerSource::OffbeamNuMI;
+	fTriggerExtra->gateCountFromPreviousTrigger = frag.getDeltaGatesNuMIOff();
+	fTriggerExtra->previousTriggerTimestamp= frag.getLastTimestampNuMIOff();
+	break;
+      }
+      case TriggerGateTypes::Calib:{       
+	beamGateBit = sbn::triggerSource::Calib;
+	fTriggerExtra->gateCountFromPreviousTrigger = frag.getDeltaGatesCalib();
+	fTriggerExtra->previousTriggerTimestamp = frag.getLastTimestampCalib();
+	break;
+      }
       default:                            beamGateBit = sbn::triggerSource::Unknown;
     } // switch gate_type
     
     fTriggerExtra->sourceType = beamGateBit;
     fTriggerExtra->triggerTimestamp = artdaq_ts;
     fTriggerExtra->beamGateTimestamp = beamgate_ts;
-    fTriggerExtra->triggerID = datastream_info.wr_event_no;
-    fTriggerExtra->gateID = datastream_info.gate_id;
+    fTriggerExtra->triggerID = datastream_info.wr_event_no; //all triggers (event ID)
+    fTriggerExtra->gateID = datastream_info.gate_id; //all gate types (gate ID)
+    fTriggerExtra->anyGateCountFromAnyPreviousTrigger = frag.getDeltaGates();
+    fTriggerExtra->anyPreviousTriggerTimestamp = frag.getLastTimestamp();
+    
     /* TODO (may need to add WRtimeToTriggerTime to some timestamps):
     fTriggerExtra->triggerCount
     fTriggerExtra->gateCount
@@ -407,6 +445,56 @@ namespace daq
     fTriggerExtra->anyPreviousTriggerTimestamp
     */
     fTriggerExtra->WRtimeToTriggerTime = WRtimeToTriggerTime;
+
+    // trigger location: 0x01=EAST; 0x02=WEST; 0x07=ALL                                                                           
+
+    int const triggerLocation = parsedData.getItem("Trigger Source").getNumber<int>(0);
+    fTriggerExtra->cryostats[sbn::ExtraTriggerInfo::EastCryostat]
+      = {
+      // triggerCount                                                                                                           
+      (fTriggerExtra->triggerID <= 1)
+      ? 0UL: parsedData.getItem("Cryo1 EAST counts").getNumber<unsigned long int>(0),
+      // LVDSstatus                                                                                                             
+      {
+	(triggerLocation & 1) // EE                                                                                             
+	? encodeLVDSbits(
+			 sbn::ExtraTriggerInfo::EastCryostat, 2, /* any of the connectors */
+			 parsedData.getItem("Cryo1 EAST Connector 2 and 3").getNumber<std::uint64_t>(0, 16)
+			 )
+	: 0ULL,
+	(triggerLocation & 1) // EW                                                                                             
+	? encodeLVDSbits(
+			 sbn::ExtraTriggerInfo::EastCryostat, 0, /* any of the connectors */
+			 parsedData.getItem("Cryo1 EAST Connector 0 and 1").getNumber<std::uint64_t>(0, 16)
+			 )
+	: 0ULL
+      }
+    };
+    fTriggerExtra->cryostats[sbn::ExtraTriggerInfo::WestCryostat]
+      = {
+      // triggerCount                                                                                                           
+      (fTriggerExtra->triggerID <= 1)
+      ? 0UL: parsedData.getItem("Cryo2 WEST counts").getNumber<unsigned long int>(0),
+      // LVDSstatus                                                                                                             
+      {
+	(triggerLocation & 2) // WE                                                                                             
+	? encodeLVDSbits(
+			 sbn::ExtraTriggerInfo::WestCryostat, 2, /* any of the connectors */
+			 parsedData.getItem("Cryo2 WEST Connector 2 and 3").getNumber<std::uint64_t>(0, 16)
+			 )
+	: 0ULL,
+	(triggerLocation & 2) // WW                                                                                             
+	? encodeLVDSbits(
+			 sbn::ExtraTriggerInfo::WestCryostat, 0, /* any of the connectors */
+			 parsedData.getItem("Cryo2 WEST Connector 0 and 1").getNumber<std::uint64_t>(0, 16)
+			 )
+	: 0ULL
+      }
+    };
+    // we expect the LVDS status bits                                                                                             
+    for (auto const& cryoInfo [[maybe_unused]]: fTriggerExtra->cryostats)
+      for (auto LVDS [[maybe_unused]]: cryoInfo.LVDSstatus)
+	assert((LVDS & 0xFF000000FF000000) == 0);             
     
     //
     // absolute time trigger (raw::ExternalTrigger)
@@ -491,6 +579,27 @@ namespace daq
     return { s.data(), std::min(s.find_first_of(endl), s.size()) };
   }
   
+
+  std::uint64_t TriggerDecoder::encodeLVDSbits
+  (short int cryostat, short int connector, std::uint64_t connectorWord)
+  {
+    /*                                                     
+     * Encoding of the LVDS channels from the trigger:
+     * * east wall:  `00<C0P2><C0P1><C0P0>00<C1P2><C1P1><C1P0>`
+     * * west wall:  `00<C2P2><C2P1><C2P0>00<C3P2><C3P1><C3P0>`                                                                               
+     * The prescription from `sbn::ExtraTriggerInfo` translates into:
+     * * east wall:  `00<C3P2><C3P1><C3P0>00<C2P2><C2P1><C2P0>`
+     * * west wall:  `00<C1P2><C1P1><C1P0>00<C0P2><C0P1><C0P0>`                                                                               
+     * Therefore, the two 32-bit half-words need to be swapped
+     * This holds for both cryostats, and both walls.  
+     */
+
+    std::uint64_t lsw = connectorWord & 0xFFFFFFFFULL;
+    std::uint64_t msw = connectorWord >> 32ULL;
+    assert(connectorWord == ((msw << 32ULL) | lsw));
+    std::swap(lsw, msw);
+    return (msw << 32ULL) | lsw;
+  } // TriggerDecoder::encodeLVDSbits()       
   
   DEFINE_ART_CLASS_TOOL(TriggerDecoder)
 

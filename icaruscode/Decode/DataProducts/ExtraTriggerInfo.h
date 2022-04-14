@@ -15,6 +15,7 @@
 #include "icaruscode/Decode/BeamBits.h"
 
 // C/C++ standard libraries
+#include <array>
 #include <iosfwd> // std::ostream
 #include <limits> // std::numeric_limits<>
 #include <cstdint> // std::uint64_t
@@ -147,6 +148,103 @@ struct sbn::ExtraTriggerInfo {
   
   /// @}
   // --- END ---- Decoding information -----------------------------------------
+
+  // --- BEGIN -- Trigger topology ---------------------------------------------
+  /**
+   * @name Trigger topology
+   * 
+   * The information is represented in groups of cryostats and, within each of
+   * them, of PMT "walls", that is groups of PMT lying on the same geometric
+   * plane (in SBN detectors that is behind each anode).
+   * 
+   * Currently the information is represented by fixed size arrays, because the
+   * overhead of a variable length container (`std::vector`) is comparable to
+   * the data itself.
+   */
+  /// @{
+  
+  /// Maximum number of cryostats in the detector.
+  static constexpr std::size_t MaxCryostats { 2 };
+  
+  /// Maximum number of PMT "walls" in a cryostat.
+  static constexpr std::size_t MaxWalls { 2 };
+
+  /// Mnemonic index for the east cryostat.
+  static constexpr std::size_t EastCryostat { 0 };
+  
+  /// Mnemonic index for the west cryostat.
+  static constexpr std::size_t WestCryostat { 1 };
+  
+  /// Mnemonic index for the east PMT wall within a cryostat.
+  static constexpr std::size_t EastPMTwall { 0 };
+  
+  /// Mnemonic index for the west PMT wall within a cryostat.
+  static constexpr std::size_t WestPMTwall { 1 };
+  
+  
+  /// Trigger data pertaining a single cryostat.
+  struct CryostatInfo {
+    /// Count of triggers in this cryostat.
+    unsigned long int triggerCount { 0 };
+    
+    /**
+     * @brief Status of LVDS signals from PMT pairs at the time of the trigger.
+     * 
+     * There is one status per PMT wall (index mnemonic constants: `EastPMTwall`
+     * and `WestPMTwall`).
+     * 
+     * 
+     * ICARUS
+     * -------
+     * 
+     * Bits are 48 per wall, 8 pairs from each on 6 PMT readout boards.
+     * For the position of the PMT generating a LVDS channel, refer to the
+     * configuration of the trigger emulation.
+     * 
+     * The 48 bits are distributed in the value as follow:
+     * * the south part (lower _z_, lower channel number) is in the first 32-bit
+     * * the north part (upper _z_, higher channel number) is in the last 32-bit
+     * 
+     * The 8 most significant bits of each 32-bit half-word are zeroed.
+     * Then the most significant bits match the lowest channel numbers (lower
+     * _z_). Splitting the detector in six regions (of 15 PMT each) so that it
+     * looks, from south to north: `AA|BB|CC|DD|EE|FF`, the bit mask of the six
+     * parts (each with 15 PMT, 8 LVDS channels, 8 bits) looks like:
+     * `00AABBCC'00DDEEFF`.
+     */
+    std::array<std::uint64_t, MaxWalls> LVDSstatus { 0U, 0U };
+    
+    /// Returns whether there is some recorded LVDS activity.
+    constexpr bool hasLVDS() const;
+    
+  }; // CryostatInfo
+  
+  
+  /// Bits for the trigger location (@see `triggerLocation()`).
+  unsigned int triggerLocationBits { 0U };
+  
+  /// Status of each LVDS channel in each PMT wall at trigger time.
+  std::array<CryostatInfo, MaxCryostats> cryostats;
+  
+  /**
+   * @brief Returns the location of the trigger.
+   * 
+   * The returned value is a mask of `sbn::bits::triggerLocation` bits.
+   * To test the state of a bit, it needs to be converted into a mask, e.g.:
+   * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~{.cpp}
+   * bool onTPCEE
+   *   = extraTriggerInfo.triggerLocation() & mask(sbn::triggerLocation::TPCEE);
+   * bool onTPCxE = extraTriggerInfo.triggerLocation()
+   *   & mask(sbn::triggerLocation::TPCEE, sbn::triggerLocation::TPCWE);
+   * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   */
+  sbn::bits::triggerLocationMask triggerLocation() const
+    { return { triggerLocationBits }; }
+  
+  
+  /// @}
+  // --- END ---- Trigger topology ---------------------------------------------
+  
   
   
   /// Returns whether this object contains any valid information.
