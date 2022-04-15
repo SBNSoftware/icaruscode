@@ -28,7 +28,7 @@ namespace {
   
   template <typename T>
   std::ostream& operator<< (std::ostream& out, TimestampDumper<T> wrapper) {
-    std::uint64_t const timestamp = wrapper.timestamp;
+    T const timestamp = wrapper.timestamp;
     if (sbn::ExtraTriggerInfo::isValidTimestamp(timestamp)) {
       out << (timestamp / 1'000'000'000) << "."
         << std::setfill('0') << std::setw(9) << (timestamp % 1'000'000'000)
