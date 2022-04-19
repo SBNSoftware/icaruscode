@@ -139,12 +139,16 @@ recoana_sce_producers.pandoraGausSCECryoW.CorrectNoT0Tag: true
 
 recoana_sce_producers.pandoraTrackGausSCECryoE.PFParticleLabel: pandoraGausSCECryoE
 recoana_sce_producers.pandoraTrackGausSCECryoW.PFParticleLabel: pandoraGausSCECryoW
+recoana_sce_producers.pandoraTrackGausSCECryoE.UseAllParticles: true
+recoana_sce_producers.pandoraTrackGausSCECryoW.UseAllParticles: true
 
 recoana_sce_producers.SBNShowerGausSCECryoE.PFParticleLabel:                                   "pandoraGausSCECryoE"
+recoana_sce_producers.SBNShowerGausSCECryoE.UseAllParticles: 				       true
 recoana_sce_producers.SBNShowerGausSCECryoE.ShowerFinderTools[7].SCECorrectEField:             true
 recoana_sce_producers.SBNShowerGausSCECryoE.ShowerFinderTools[7].SCECorrectPitch:              true
 recoana_sce_producers.SBNShowerGausSCECryoE.ShowerFinderTools[7].SCEInputCorrected:            true
 recoana_sce_producers.SBNShowerGausSCECryoW.PFParticleLabel:                                   "pandoraGausSCECryoW"
+recoana_sce_producers.SBNShowerGausSCECryoE.UseAllParticles: 				       true
 recoana_sce_producers.SBNShowerGausSCECryoW.ShowerFinderTools[7].SCECorrectEField:             true
 recoana_sce_producers.SBNShowerGausSCECryoW.ShowerFinderTools[7].SCECorrectPitch:              true
 recoana_sce_producers.SBNShowerGausSCECryoW.ShowerFinderTools[7].SCEInputCorrected:            true
