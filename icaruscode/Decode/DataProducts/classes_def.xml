@@ -34,10 +34,23 @@
   <!-- sbn::ICARUSTriggerConfiguration -->
 
   <!--   class -->
-  <class name="icarus::TriggerConfiguration" ClassVersion="11" >
+  <class name="icarus::TriggerConfiguration" ClassVersion="16" >
+   <version ClassVersion="16" checksum="1633995712"/>
+   <version ClassVersion="15" checksum="187304178"/>
+   <version ClassVersion="14" checksum="3403749121"/>
+   <version ClassVersion="13" checksum="2282621699"/>
+   <version ClassVersion="12" checksum="3424825933"/>
    <version ClassVersion="11" checksum="1285543607"/>
    <version ClassVersion="10" checksum="1190620765"/>
   </class>
+
+    <!-- dependencies -->
+    <class name="icarus::TriggerConfiguration::CryoConfig_t" ClassVersion="10">
+     <version ClassVersion="10" checksum="1568534835"/>
+    </class>
+    <class name="icarus::TriggerConfiguration::GateConfig_t" ClassVersion="10">
+     <version ClassVersion="10" checksum="1661163347"/>
+    </class>
 
     <!-- art pointers and wrappers -->
     <class name="art::Ptr<icarus::TriggerConfiguration>"/>

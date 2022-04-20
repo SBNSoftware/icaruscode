@@ -366,6 +366,16 @@ class icarus::TriggerConfigurationExtractor
   std::optional<fhicl::ParameterSet> readBoardConfig
     (fhicl::ParameterSet const& pset, std::string const& key) const;
 
+  static constexpr std::size_t kEast        = icarus::TriggerConfiguration::kEast;
+  static constexpr std::size_t kWest        = icarus::TriggerConfiguration::kWest;
+  static constexpr std::size_t kBNB         = icarus::TriggerConfiguration::kBNB;
+  static constexpr std::size_t kNuMI        = icarus::TriggerConfiguration::kNuMI;
+  static constexpr std::size_t kOffBeamBNB  = icarus::TriggerConfiguration::kOffBeamBNB;
+  static constexpr std::size_t kOffBeamNuMI = icarus::TriggerConfiguration::kOffBeamNuMI;
+  static constexpr std::size_t kCalibration = icarus::TriggerConfiguration::kCalibration;
+
+
+   std::array<unsigned long, 2U> parsePrescaleString( std::string prescaleString ) const;
   
 }; // icarus::TriggerConfigurationExtractor
 

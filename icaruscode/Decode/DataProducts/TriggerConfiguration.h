@@ -13,6 +13,7 @@
 // C/C++ standard libraries
 #include <iosfwd> // std::ostream
 #include <string>
+#include <array>
 #include <vector>
 
 namespace icarus {
@@ -27,111 +28,100 @@ namespace icarus {
 
 struct icarus::TriggerConfiguration {
 
-	// --- BEGIN -- Data members -------------------------------------------------
-  
+
+  static constexpr std::size_t kEast        = 0;
+  static constexpr std::size_t kWest        = 1;
+
+  static constexpr std::size_t kBNB         = 0;
+  static constexpr std::size_t kNuMI        = 1;
+  static constexpr std::size_t kOffBeamBNB  = 2;
+  static constexpr std::size_t kOffBeamNuMI = 3;
+  static constexpr std::size_t kCalibration = 4;
+
+  struct CryoConfig_t {
+
+    // Majority Level for in-time activity
+    unsigned int majLevelInTime = 0U;
+
+    // Majority Level for out-of-time activity
+    unsigned int majLevelDrift = 0U;
+
+    // Window selection "Fixed" or "Overlapping"
+    std::string slidingWindow = "Fixed";
+
+  };
+
+  struct GateConfig_t {
+
+    // Duration of the coincidence gate for in-time activity
+    unsigned int inTimeWidth = 0U;
+
+    // Duration of the coincidence gate for the out-of-time activity
+    unsigned int driftWidth = 0U;
+
+    // Prescale for the MinBias triggers 
+    unsigned long prescaleMinBias=0U;
+
+  };
+
+  // --- BEGIN -- Data members -------------------------------------------------
+ 
   // NOTE when adding data members, remember to add an element to the comparison
 
   // Use the WR time reference
-  bool UseWrTime = true;
+  bool useWrTime = false;
 
   // Add an offset between the npt and tai time as used in the wr reference (normally it is 1 or 2 leap seconds)
-  unsigned int WrTimeOffset = 1e9;
+  unsigned int wrTimeOffset = 1'000'000'000;
  
- 	// Veto (delay on the leading edge of the beam gate)
- 	unsigned int VetoDelay = std::numeric_limits<unsigned int>::max();
+  // Veto (delay on the leading edge of the beam gate)
+  unsigned int vetoDelay = 0;
 
- 	// Majority level in-time cryo 1 (EAST)
- 	unsigned int MajLevelBeamCryoEAST = std::numeric_limits<unsigned int>::max();
-
- 	// Majority level out-of-time cryo 1 (EAST)
- 	unsigned int MajLevelEnableCryoEAST = std::numeric_limits<unsigned int>::max();
-
- 	// Sliding window option cryo 1 (EAST)
- 	std::string SlidingWindowCryoEAST;
-
- 	// Majority level in-time cryo 2 (WEST)
- 	unsigned int MajLevelBeamCryoWEST = std::numeric_limits<unsigned int>::max();
-
- 	// Majority level out-of-time cryo 2 (WEST)
- 	unsigned int MajLevelEnableCryoWEST = std::numeric_limits<unsigned int>::max();
-
- 	// Sliding window option cryo 2 (WEST)
- 	std::string SlidingWindowCryoWEST;
+  // Cryostat configuration
+  std::array<CryoConfig_t, 2U> cryoConfig; 
 
  	// Majority trigger type ( consider trigger from one cryostats, either cryostats, or both cryostats )
- 	std::string MajorityTriggerType;
+ 	std::string majorityTriggerType;
 
  	// Run type ( MinBias: ignoring the light in-time or Majority: which applies a logic based on combination of distriminated light signals )
- 	std::string RunType;
+ 	std::string runType;
 
  	// TPCTriggerDelay: distance between the Global trigger time and the output for the TPC. NB: It is in units of 400 ns 
- 	unsigned int TPCTriggerDelay = std::numeric_limits<unsigned int>::max();
+ 	unsigned int tpcTriggerDelay = 0;
 
  	// GateSelection: available gates to produce triggers: see registers 0x00000 in SBNDOCDB: 
- 	std::string GateSelection ; 
+ 	std::string gateSelection ; 
 
- 	// Duration of the conincidence gate synchronous with the BNB beam
- 	unsigned int BNBBeamWidth = std::numeric_limits<unsigned int>::max();
+  // Beam Configuration 
+  std::array<GateConfig_t, 5U> gateConfig;
 
- 	// Duration of the drift window gate ( for out-of-time light activity ) synchronous with the BNB beam
- 	unsigned int BNBEnableWidth = std::numeric_limits<unsigned int>::max();
 
- 	// Duration of the conincidence gate synchronous with the NuMI beam
- 	unsigned int NuMIBeamWidth = std::numeric_limits<unsigned int>::max();
+  // Early warning offset {BNB, NuMI} {GatedBES, $MIBS74}
+  std::array<unsigned long, 2U> earlyWarningOffset = {0U, 0U}; 
 
- 	// Duration of the drift window gate ( for out-of-time light activity ) synchronous with the NuMI beam
- 	unsigned int NuMIEnableWidth = std::numeric_limits<unsigned int>::max();
+  // Early Early warning offset {BNB, NuMI} {$1D, $AE}
+  std::array<unsigned long, 2U> earlyEarlyWarningOffset = {0U, 0U}; 
 
- 	// Ratio of spills to be collected ignoring the light coincidence ( MinBias ) compared to the total number of spills sent
- 	std::string PreScaleBNBNuMI; 
+ 	// Rate of gates opened outside the extraction. 
+  // Two 16 bits words: one for BNB and one for NuMI
+ 	std::array<unsigned long, 2U> offBeamGateRate = {1U, 1U};
 
- 	// Duration of the conincidence gate synchronous gate opened 33 ms after a BNB extraction
- 	unsigned int OffBeamBNBBeamWidth = std::numeric_limits<unsigned int>::max();
 
-	// Duration of the drift gate ( for out-of-time light activity ) synchronous gate opened 33 ms after a BNB extraction
- 	unsigned int OffBeamBNBEnableWidth = std::numeric_limits<unsigned int>::max();
+  // Period of two consecutive pulses from the internal pulse generator (Oscillatore)
+  unsigned int period = 0U;
 
- 	// Duration of the conincidence gate synchronous gate opened 33 ms after a NuMI extraction
- 	unsigned int OffBeamNuMIBeamWidth = std::numeric_limits<unsigned int>::max();
+ 	
+  // --- END ---- Data members -------------------------------------------------
 
-	// Duration of the drift gate ( for out-of-time light activity ) synchronous gate opened 33 ms after a NuMI extraction
- 	unsigned int OffBeamNuMIEnableWidth = std::numeric_limits<unsigned int>::max();
 
- 	// Rate of gates opened outside the extraction
- 	std::string OffBeamGateRate;
+  // --- BEGIN -- Derived quantities -------------------------------------------
 
- 	// Ratio of gates to be collected ignoring the light coincidence ( MinBias ) compared to the total number of offbeam gate produced
- 	std::string PreScaleOffBeam;
-
- 	// Duration of the gate opened using a periodic signal (random trigger)
- 	unsigned int ZeroBiasWidth = std::numeric_limits<unsigned int>::max();
-
- 	// Duration of the drift gate (for out-of-time activity) opened using a periodic signal (random trigger)
- 	unsigned int ZeroBiasEnableWidth = std::numeric_limits<unsigned int>::max();
-
- 	// Frequency of the random trigger in ns
- 	unsigned int ZeroBiasFreq = std::numeric_limits<unsigned int>::max();
-
- 	// Ratio of gates to be collected ignoring the light coincidence ( MinBias ) compared to the total number of gates produced
- 	std::string PrescaleZeroBias;
-
- 	// Additional offset to be added to the Gated-BES delay set in the WR network
- 	unsigned int BNBBESOffset = std::numeric_limits<unsigned int>::max();
-
- 	// Additional offset to be added to the $1D delay set in the WR network
- 	unsigned int BNB1DOffset = std::numeric_limits<unsigned int>::max();
-
- 	// Additional offset to be added to the MIBS$74 delay set in the WR network
- 	unsigned int NuMIMIBSOffset = std::numeric_limits<unsigned int>::max();
-
- 	// Additional offset to be added to the $AD delay set in the WR network
- 	unsigned int NuMIADOffset = std::numeric_limits<unsigned int>::max();
   
-  	// --- END ---- Data members -------------------------------------------------
 
 
-  	// --- BEGIN -- Derived quantities -------------------------------------------
-  	// --- END ---- Derived quantities -------------------------------------------
+  // --- END ---- Derived quantities -------------------------------------------
+
+
 
  	#if __cplusplus < 202004L
   	//@{
@@ -219,38 +209,20 @@ inline bool icarus::TriggerConfiguration::operator==
   (icarus::TriggerConfiguration const& other) const
 {
 
- if ( UseWrTime              != other.UseWrTime            )   return false;
- if ( WrTimeOffset           != other.WrTimeOffset         )   return false;
- if ( VetoDelay              != other.VetoDelay            )   return false;
- if ( MajLevelBeamCryoEAST   !=other.MajLevelBeamCryoEAST )    return false;
- if ( MajLevelEnableCryoEAST !=other.MajLevelEnableCryoEAST )  return false;
- if ( SlidingWindowCryoEAST  !=other.SlidingWindowCryoEAST )   return false;
- if ( MajLevelBeamCryoWEST   !=other.MajLevelBeamCryoWEST )    return false;
- if ( MajLevelEnableCryoWEST !=other.MajLevelEnableCryoWEST )  return false;
- if ( SlidingWindowCryoWEST  !=other.SlidingWindowCryoWEST )   return false;
- if ( MajorityTriggerType    !=other.MajorityTriggerType )     return false;
- if ( RunType                !=other.RunType )                 return false;
- if ( TPCTriggerDelay        != other.TPCTriggerDelay )        return false; 
- if ( GateSelection 	     != other.GateSelection )          return false; 
- if ( BNBBeamWidth 			 != other.BNBBeamWidth )           return false; 
- if ( BNBEnableWidth 		 != other.BNBEnableWidth )         return false; 
- if ( NuMIBeamWidth 		 != other.NuMIBeamWidth )          return false; 
- if ( NuMIEnableWidth 		 != other.NuMIEnableWidth )        return false; 
- if ( PreScaleBNBNuMI 		 != other.PreScaleBNBNuMI )        return false; 
- if ( OffBeamBNBBeamWidth 	 != other.OffBeamBNBBeamWidth )    return false; 
- if ( OffBeamBNBEnableWidth  != other.OffBeamBNBEnableWidth )  return false; 
- if ( OffBeamNuMIBeamWidth 	 != other.OffBeamNuMIBeamWidth )   return false; 
- if ( OffBeamNuMIEnableWidth != other.OffBeamNuMIEnableWidth ) return false; 
- if ( OffBeamGateRate 		 != other.OffBeamGateRate )        return false; 
- if ( PreScaleOffBeam 		 != other.PreScaleOffBeam )        return false; 
- if ( ZeroBiasWidth 		 != other.ZeroBiasWidth )          return false; 
- if ( ZeroBiasEnableWidth 	 != other.ZeroBiasEnableWidth )    return false; 
- if ( ZeroBiasFreq 			 != other.ZeroBiasFreq )           return false; 
- if ( PrescaleZeroBias 		 != other.PrescaleZeroBias )       return false; 
- if ( BNBBESOffset 			 != other.BNBBESOffset )           return false; 
- if ( BNB1DOffset 			 != other.BNB1DOffset )            return false; 
- if ( NuMIMIBSOffset 		 != other.NuMIMIBSOffset )         return false; 
- if ( NuMIADOffset 			 != other.NuMIADOffset )           return false; 
+ if ( useWrTime              != other.useWrTime              )   return false;
+ if ( wrTimeOffset           != other.wrTimeOffset           )   return false;
+ if ( vetoDelay              != other.vetoDelay              )   return false;
+ //if ( cryoConfig             != other.cryoConfig             )   return false;
+ //if ( gateConfig             != other.gateConfig             )   return false;
+ if ( earlyWarningOffset     != other.earlyWarningOffset     )   return false;
+ if ( earlyEarlyWarningOffset!= other.earlyEarlyWarningOffset)   return false;
+ if ( majorityTriggerType    != other.majorityTriggerType    )   return false;
+ if ( runType                != other.runType                )   return false;
+ if ( tpcTriggerDelay        != other.tpcTriggerDelay        )   return false; 
+ if ( gateSelection 	       != other.gateSelection          )   return false; 
+ if ( offBeamGateRate 		   != other.offBeamGateRate        )   return false; 
+ if ( period 			           != other.period                 )   return false; 
+
   
  return true;
 

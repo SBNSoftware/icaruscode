@@ -37,22 +37,22 @@ void icarus::TriggerConfiguration::dump(std::ostream& out,
     // --- verbosity: 0+ -------------------------------------------------------
     out << firstIndent
       << "\nBasic board configuration:\n "
-      << " Use Wr time "    << UseWrTime << " \n"
-      << " WR time offset " << WrTimeOffset << " ns \n"; 
+      << " Use Wr time "    << useWrTime << " \n"
+      << " WR time offset " << wrTimeOffset << " ns \n"; 
     
     if (++level > verbosity) break;
     // --- verbosity: 1+ -------------------------------------------------------
     outnl()
       << " FPGA Configuration: \n "
-      << " Veto Delay:            "  << VetoDelay << " ns,\n"
-      << " MajLevelBeamCryoEAST   "  <<  MajLevelBeamCryoEAST   << " \n"
-      << " MajLevelEnableCryoEAST "  <<  MajLevelEnableCryoEAST    << " \n"
-      << " SlidingWindowCryoEAST  "  <<  SlidingWindowCryoEAST  << " \n"
-      << " MajLevelBeamCryoWEST   "  <<  MajLevelBeamCryoWEST   << " \n"
-      << " MajLevelEnableCryoWEST "  <<  MajLevelEnableCryoWEST    << " \n"
-      << " SlidingWindowCryoWEST  "  <<  SlidingWindowCryoWEST << " \n"
-      << " MajorityTriggerType    "  <<  MajorityTriggerType << " \n"
-      << " RunType                "  <<  RunType << " ";
+      << " Veto Delay:            "  <<  vetoDelay << " ns,\n"
+      << " MajLevelBeamCryoEAST   "  <<  cryoConfig[kEast].majLevelInTime    << " \n"
+      << " MajLevelEnableCryoEAST "  <<  cryoConfig[kEast].majLevelDrift  << " \n"
+      << " SlidingWindowCryoEAST  "  <<  cryoConfig[kEast].slidingWindow   << " \n"
+      << " MajLevelBeamCryoWEST   "  <<  cryoConfig[kWest].majLevelInTime    << " \n"
+      << " MajLevelEnableCryoWEST "  <<  cryoConfig[kWest].majLevelDrift  << " \n"
+      << " SlidingWindowCryoWEST  "  <<  cryoConfig[kWest].slidingWindow   << " \n"
+      << " MajorityTriggerType    "  <<  majorityTriggerType                << " \n"
+      << " RunType                "  <<  runType << " ";
 
     out << "\n";
 
@@ -61,27 +61,30 @@ void icarus::TriggerConfiguration::dump(std::ostream& out,
     
     out << indent // absorb the newline from the previous level
       << "\nSPEXI Configuration: \n "
-      << "TPCTriggerDelay"         << TPCTriggerDelay << " /400 ns \n"
-      << "GateSelection "          << GateSelection << " \n "
-      << "BNBBeamWidth "           << BNBBeamWidth << " ns \n "
-      << "BNBEnableWidth "         << BNBEnableWidth << " ns \n "
-      << "NuMIBeamWidth "          << NuMIBeamWidth << " ns \n "
-      << "NuMIEnableWidth "        << NuMIEnableWidth << " ns \n "
-      << "PreScaleBNBNuMI "        << PreScaleBNBNuMI << " ns \n "
-      << "OffBeamBNBBeamWidth "    << OffBeamBNBBeamWidth << " ns \n "
-      << "OffBeamBNBEnableWidth "  << OffBeamBNBEnableWidth << " ns \n "
-      << "OffBeamNuMIBeamWidth "   << OffBeamNuMIBeamWidth << " ns \n "
-      << "OffBeamNuMIEnableWidth " << OffBeamNuMIEnableWidth << " ns \n "
-      << "OffBeamGateRate "        << OffBeamGateRate << " \n "
-      << "PreScaleOffBeam "        << PreScaleOffBeam << " \n "
-      << "ZeroBiasWidth "          << ZeroBiasWidth << " ns \n "
-      << "ZeroBiasEnableWidth "    << ZeroBiasEnableWidth << " ns \n "
-      << "ZeroBiasFreq "           << ZeroBiasFreq << " ns \n "
-      << "PrescaleZeroBias "       << PrescaleZeroBias << " \n "
-      << "BNBBESOffset "           << BNBBESOffset << " ns \n "
-      << "BNB1DOffset "            << BNB1DOffset << " ns \n "
-      << "NuMIMIBSOffset "         << NuMIMIBSOffset << " ns \n "
-      << "NuMIADOffset "           << NuMIADOffset << " ns \n ";
+      << "TPCTriggerDelay"         << tpcTriggerDelay << " /400 ns \n "
+      << "GateSelection "          << gateSelection << " \n "
+      << "BNBBeamWidth "           << gateConfig[kBNB].inTimeWidth << " ns \n "
+      << "BNBEnableWidth "         << gateConfig[kBNB].driftWidth  << " ns \n "
+      << "NuMIBeamWidth "          << gateConfig[kNuMI].inTimeWidth << " ns \n "
+      << "NuMIEnableWidth "        << gateConfig[kNuMI].driftWidth << " ns \n "
+      << "PreScaleBNB "            << gateConfig[kBNB].prescaleMinBias << " \n "
+      << "PreScaleNuMI"            << gateConfig[kNuMI].prescaleMinBias << "\n"
+      << "OffBeamBNBBeamWidth "    << gateConfig[kOffBeamBNB].inTimeWidth<< " ns \n "
+      << "OffBeamBNBEnableWidth "  << gateConfig[kOffBeamBNB].driftWidth << " ns \n "
+      << "OffBeamNuMIBeamWidth "   << gateConfig[kOffBeamNuMI].inTimeWidth << " ns \n "
+      << "OffBeamNuMIEnableWidth " << gateConfig[kOffBeamNuMI].driftWidth << " ns \n "
+      << "OffBeamGateRateBNB "     << offBeamGateRate[kBNB] << " \n "
+      << "OffBeamGateRateNuMI"     << offBeamGateRate[kNuMI] << " \n "
+      << "PreScaleOffBeamBNB "     << gateConfig[kOffBeamBNB].prescaleMinBias << " \n "
+      << "PreScaleOffBeamNuMI"     << gateConfig[kOffBeamNuMI].prescaleMinBias << " \n "
+      << "ZeroBiasWidth "          << gateConfig[kCalibration].inTimeWidth << " ns \n "
+      << "ZeroBiasEnableWidth "    << gateConfig[kCalibration].driftWidth << " ns \n "
+      << "ZeroBiasFreq "           << period << " ns \n "
+      << "PrescaleZeroBias "       << gateConfig[kCalibration].prescaleMinBias << " \n "
+      << "BNBBESOffset "           << earlyWarningOffset[kBNB] << " ns \n "
+      << "BNB1DOffset "            << earlyEarlyWarningOffset[kBNB] << " ns \n "
+      << "NuMIMIBSOffset "         << earlyWarningOffset[kNuMI] << " ns \n "
+      << "NuMIADOffset "           << earlyEarlyWarningOffset[kNuMI] << " ns \n ";
 
     
     if (++level > verbosity) break;
