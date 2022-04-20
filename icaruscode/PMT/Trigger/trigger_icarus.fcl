@@ -203,8 +203,8 @@ icarus_fixedtriggergate: {
   
   @table::icarus_triggergate_basic
   
-  # minimum duration of a trigger gate [us]
-  GateDuration: 0.2
+  # minimum duration of a trigger gate
+  GateDuration: "200 ns"
   
 } # icarus_fixedtriggergate
 

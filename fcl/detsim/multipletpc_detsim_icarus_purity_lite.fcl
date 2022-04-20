@@ -1,0 +1,19 @@
+#-------------------------------------------------------------------
+#
+# Name: multipletpc_detsim_icarus_purity_lite.fcl
+#
+# Purpose: Lite version of multipletpc_detsim_icarus_purity.fcl
+#
+# Created: 31-Mar-2022  H. Greenlee
+#
+# Automatically generated.
+#
+#-------------------------------------------------------------------
+
+#include "detsim_drops.fcl"
+#include "multipletpc_detsim_icarus_purity.fcl"
+
+# Drop truth data products.
+
+outputs.out1.outputCommands: [ "keep *_*_*_*",
+                               @sequence::detsim_drops ]

@@ -1,0 +1,27 @@
+#-------------------------------------------------------------------
+#
+# Name: stage0_multiTPC_splitstream_nofilter_raw_icarus_lite.fcl
+#
+# Purpose: Lite version of stage0_multiTPC_splitstream_nofilter_raw_icarus.fcl
+#
+# Created: 31-Mar-2022  H. Greenlee
+#
+# Automatically generated.
+#
+#-------------------------------------------------------------------
+
+#include "reco_drops.fcl"
+#include "stage0_multiTPC_splitstream_nofilter_raw_icarus.fcl"
+
+# Drop truth data products.
+
+outputs.outBNB.outputCommands: [ @sequence::outputs.outBNB.outputCommands,
+                                 @sequence::reco_drops ]
+outputs.outNUMI.outputCommands: [ @sequence::outputs.outNUMI.outputCommands,
+                                  @sequence::reco_drops ]
+outputs.outOffbeamBNB.outputCommands: [ @sequence::outputs.outOffbeamBNB.outputCommands,
+                                        @sequence::reco_drops ]
+outputs.outOffbeamNUMI.outputCommands: [ @sequence::outputs.outOffbeamNUMI.outputCommands,
+                                         @sequence::reco_drops ]
+outputs.outUnknown.outputCommands: [ @sequence::outputs.outUnknown.outputCommands,
+                                     @sequence::reco_drops ]

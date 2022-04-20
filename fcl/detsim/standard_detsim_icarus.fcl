@@ -93,8 +93,3 @@ physics.producers.daq3.TPCVec:              [ [1, 2], [1, 3] ]
 
 # ------------------------------------------------------------------------------
 outputs.rootoutput: @local::icarus_rootoutput
-
-
-# Temporarily tone down the noise level
-#
-services.SignalShapingICARUSService.NoiseFactVec:  [ [ 1.0, 1.0, 1.0 ], [ 1.0, 1.0, 1.0 ], [ 1.0, 1.0, 1.0 ] ]

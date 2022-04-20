@@ -19,13 +19,16 @@
 namespace {
   
   // ---------------------------------------------------------------------------
-  struct TimestampDumper { std::uint64_t timestamp; };
+  template <typename T = std::uint64_t>
+  struct TimestampDumper { T timestamp; };
   
-  TimestampDumper dumpTimestamp(std::uint64_t timestamp)
+  template <typename T>
+  TimestampDumper<T> dumpTimestamp(T timestamp)
     { return { timestamp }; }
   
-  std::ostream& operator<< (std::ostream& out, TimestampDumper wrapper) {
-    std::uint64_t const timestamp = wrapper.timestamp;
+  template <typename T>
+  std::ostream& operator<< (std::ostream& out, TimestampDumper<T> wrapper) {
+    T const timestamp = wrapper.timestamp;
     if (sbn::ExtraTriggerInfo::isValidTimestamp(timestamp)) {
       out << (timestamp / 1'000'000'000) << "."
         << std::setfill('0') << std::setw(9) << (timestamp % 1'000'000'000)
@@ -123,6 +126,11 @@ std::ostream& sbn::operator<< (std::ostream& out, ExtraTriggerInfo const& info)
       << dumpTriggerCount(info.anyGateCountFromAnyPreviousTrigger)
       << " gates from any source have opened since"
     ;
+  if (info.WRtimeToTriggerTime != ExtraTriggerInfo::UnknownCorrection) {
+    out << "\nCorrection applied to the timestamps: "
+      << dumpTimestamp(info.WRtimeToTriggerTime);
+  }
+  
   
   return out;
 } // sbn::operator<< (ExtraTriggerInfo)
