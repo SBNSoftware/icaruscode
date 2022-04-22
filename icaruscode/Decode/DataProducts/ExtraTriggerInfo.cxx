@@ -73,6 +73,40 @@ namespace {
   
   
   // ---------------------------------------------------------------------------
+
+  struct LVDSmaskDumper { std::uint64_t bits; };
+
+  LVDSmaskDumper dumpLVDSmask(std::uint64_t bits) { return { bits }; }
+
+  std::ostream& operator<< (std::ostream& out, LVDSmaskDumper wrapper) {
+    std::uint64_t const bits { wrapper.bits };
+
+    auto dumpBoard = [&out](std::uint8_t bits)
+      {
+        static constexpr char symbols[2] = { '-', 'x' };
+	std::uint8_t mask = 0x80;
+        do { out << symbols[(bits & mask)? 1: 0]; } while (mask >>= 1);
+      };
+    auto boardBits = [](std::uint64_t bits, short int board) -> std::uint8_t
+      { return static_cast<std::uint8_t>((bits >> (board * 8)) & 0xFF); };
+
+    // positions 3 and 7 are empty 
+    dumpBoard(boardBits(bits, 6));
+    out << ' ';
+    dumpBoard(boardBits(bits, 5));
+    out << ' ';
+    dumpBoard(boardBits(bits, 4));
+    out << ' ';
+    out << ' ';
+    dumpBoard(boardBits(bits, 2));
+    out << ' ';
+    dumpBoard(boardBits(bits, 1));
+    out << ' ';
+    dumpBoard(boardBits(bits, 0));
+
+    return out;
+  } // operator<< (LVDSmaskDumper)            
+
   
 } // local namespace
 
@@ -130,7 +164,39 @@ std::ostream& sbn::operator<< (std::ostream& out, ExtraTriggerInfo const& info)
     out << "\nCorrection applied to the timestamps: "
       << dumpTimestamp(info.WRtimeToTriggerTime);
   }
-  
+  if (info.triggerLocationBits != 0) {
+    out << "\nLocation(s) of trigger:";
+    for (std::string const& bitName: names(info.triggerLocation()))
+      out << " " << bitName;
+  }
+  out << "\nWest cryostat: "
+      << info.cryostats[ExtraTriggerInfo::WestCryostat].triggerCount
+      << " triggers";
+  if (auto const& cryo = info.cryostats[ExtraTriggerInfo::WestCryostat];
+      cryo.hasLVDS()
+      ) {
+    out
+      << "\n  west wall:  "
+      << dumpLVDSmask(cryo.LVDSstatus[ExtraTriggerInfo::WestPMTwall])
+      << "\n  east wall:  "
+      << dumpLVDSmask(cryo.LVDSstatus[ExtraTriggerInfo::EastPMTwall])
+      ;
+  }
+
+  out << "\nEast cryostat: "
+      << info.cryostats[ExtraTriggerInfo::EastCryostat].triggerCount
+      << " triggers";
+  if (auto const& cryo = info.cryostats[ExtraTriggerInfo::EastCryostat];
+      cryo.hasLVDS()
+      ) {
+    out
+      << "\n  west wall:  "
+      << dumpLVDSmask(cryo.LVDSstatus[ExtraTriggerInfo::WestPMTwall])
+      << "\n  east wall:  "
+      << dumpLVDSmask(cryo.LVDSstatus[ExtraTriggerInfo::EastPMTwall])
+      ;
+  }
+
   
   return out;
 } // sbn::operator<< (ExtraTriggerInfo)

@@ -329,7 +329,13 @@ namespace daq
     // --- BEGIN -- TEMPORARY --------------------------------------------------
     // remove this part when the beam gate timestamp is available via fragment
     // or via the parser
-    auto const parsedData = icarus::details::KeyedCSVparser{}(firstLine(data));
+    icarus::details::KeyedCSVparser parser;
+    parser.addPatterns({
+	{ "Cryo. (EAST|WEST) Connector . and .", 1U }
+	, { "Trigger Type", 1U }
+      });
+    //auto const parsedData = icarus::details::KeyedCSVparser{}(firstLine(data));
+    auto const parsedData = parser(firstLine(data)); 
     unsigned int beamgate_count { std::numeric_limits<unsigned int>::max() };
     std::uint64_t beamgate_ts { artdaq_ts }; // we cheat
     /* [20210717, petrillo@slac.stanford.edu] `(pBeamGateInfo->nValues() == 3)`:
@@ -354,10 +360,20 @@ namespace daq
       beamgate_ts += raw_bg_ts - raw_wr_ts;
       
     } // if has gate information
+
+    auto connectorInfoE_01 = parsedData.findItem("Cryo1 EAST Connector 0 and 1");    
+    uint64_t connectorLVDS_E_01 = connectorInfoE_01->getNumber<uint64_t>(0,16);
+    auto connectorInfoE_23 = parsedData.findItem("Cryo1 EAST Connector 2 and 3");
+    uint64_t connectorLVDS_E_23 = connectorInfoE_23->getNumber<uint64_t>(0,16);
+    auto connectorInfoW_01 = parsedData.findItem("Cryo2 WEST Connector 0 and 1");
+    uint64_t connectorLVDS_W_01 = connectorInfoW_01->getNumber<uint64_t>(0,16);
+    auto connectorInfoW_23 = parsedData.findItem("Cryo2 WEST Connector 2 and 3");
+    uint64_t connectorLVDS_W_23 = connectorInfoW_23->getNumber<uint64_t>(0,16);
+
     // --- END ---- TEMPORARY --------------------------------------------------
     
-    if(fDiagnosticOutput || fDebug)
-    {
+    //if(fDiagnosticOutput || fDebug)
+    //{
       std::cout << "Full Timestamp = " << artdaq_ts
         << "\nBeam gate " << beamgate_count << " at "
         << (beamgate_ts/1'000'000'000) << "." << std::setfill('0')
@@ -368,7 +384,8 @@ namespace daq
       // note that this parsing is independent from the one used above
       std::string_view const dataLine = firstLine(data);
       try {
-        auto const parsedData = icarus::details::KeyedCSVparser{}(dataLine);
+        //auto const parsedData = icarus::details::KeyedCSVparser{}(dataLine);
+	auto const parsedData = parser(dataLine);
         std::cout << "Parsed data (from " << dataLine.size() << " characters): "
           << parsedData << std::endl;
       }
@@ -385,8 +402,7 @@ namespace daq
           << "\nFull trigger fragment dump:"
           << sbndaq::dumpFragment(fragment) << std::endl;
       }
-    }
-    
+      //}
     //
     // extra trigger info
     //
@@ -432,37 +448,34 @@ namespace daq
     fTriggerExtra->gateID = datastream_info.gate_id; //all gate types (gate ID)
     fTriggerExtra->anyGateCountFromAnyPreviousTrigger = frag.getDeltaGates();
     fTriggerExtra->anyPreviousTriggerTimestamp = frag.getLastTimestamp();
+
+    std::cout << datastream_info.gate_id_BNB << " " << frag.getDeltaGatesBNB() << " " << gate_type << std::endl;
+    std::cout << connectorLVDS_E_01 << " " << connectorLVDS_E_23 << " " << connectorLVDS_W_01 << " " << connectorLVDS_W_23 << " " << std::hex << connectorLVDS_E_01 << " " << connectorLVDS_E_23 << " " << connectorLVDS_W_01 << " " << connectorLVDS_W_23 << std::dec << std::endl;
     
     /* TODO (may need to add WRtimeToTriggerTime to some timestamps):
     fTriggerExtra->triggerCount
     fTriggerExtra->gateCount
-    fTriggerExtra->gateCountFromPreviousTrigger
     fTriggerExtra->anyTriggerCountFromPreviousTrigger
-    fTriggerExtra->anyGateCountFromPreviousTrigger
     fTriggerExtra->anyPreviousTriggerSourceType
-    fTriggerExtra->anyGateCountFromAnyPreviousTrigger
-    fTriggerExtra->previousTriggerTimestamp
-    fTriggerExtra->anyPreviousTriggerTimestamp
     */
     fTriggerExtra->WRtimeToTriggerTime = WRtimeToTriggerTime;
 
-    // trigger location: 0x01=EAST; 0x02=WEST; 0x07=ALL                                                                           
-
+    // trigger location: 0x01=EAST; 0x02=WEST; 0x07=ALL                                                                  
     int const triggerLocation = parsedData.getItem("Trigger Source").getNumber<int>(0);
     fTriggerExtra->cryostats[sbn::ExtraTriggerInfo::EastCryostat]
       = {
-      // triggerCount                                                                                                           
+      // triggerCount      
       (fTriggerExtra->triggerID <= 1)
       ? 0UL: parsedData.getItem("Cryo1 EAST counts").getNumber<unsigned long int>(0),
-      // LVDSstatus                                                                                                             
+      // LVDSstatus
       {
-	(triggerLocation & 1) // EE                                                                                             
+	(triggerLocation & 1) // EE
 	? encodeLVDSbits(
 			 sbn::ExtraTriggerInfo::EastCryostat, 2, /* any of the connectors */
 			 parsedData.getItem("Cryo1 EAST Connector 2 and 3").getNumber<std::uint64_t>(0, 16)
 			 )
 	: 0ULL,
-	(triggerLocation & 1) // EW                                                                                             
+	(triggerLocation & 1) // EW
 	? encodeLVDSbits(
 			 sbn::ExtraTriggerInfo::EastCryostat, 0, /* any of the connectors */
 			 parsedData.getItem("Cryo1 EAST Connector 0 and 1").getNumber<std::uint64_t>(0, 16)
@@ -472,18 +485,18 @@ namespace daq
     };
     fTriggerExtra->cryostats[sbn::ExtraTriggerInfo::WestCryostat]
       = {
-      // triggerCount                                                                                                           
+      // triggerCount      
       (fTriggerExtra->triggerID <= 1)
       ? 0UL: parsedData.getItem("Cryo2 WEST counts").getNumber<unsigned long int>(0),
-      // LVDSstatus                                                                                                             
+      // LVDSstatus
       {
-	(triggerLocation & 2) // WE                                                                                             
+	(triggerLocation & 2) // WE
 	? encodeLVDSbits(
 			 sbn::ExtraTriggerInfo::WestCryostat, 2, /* any of the connectors */
 			 parsedData.getItem("Cryo2 WEST Connector 2 and 3").getNumber<std::uint64_t>(0, 16)
 			 )
 	: 0ULL,
-	(triggerLocation & 2) // WW                                                                                             
+	(triggerLocation & 2) // WW
 	? encodeLVDSbits(
 			 sbn::ExtraTriggerInfo::WestCryostat, 0, /* any of the connectors */
 			 parsedData.getItem("Cryo2 WEST Connector 0 and 1").getNumber<std::uint64_t>(0, 16)
@@ -491,7 +504,8 @@ namespace daq
 	: 0ULL
       }
     };
-    // we expect the LVDS status bits                                                                                             
+    // we expect the LVDS status bits
+
     for (auto const& cryoInfo [[maybe_unused]]: fTriggerExtra->cryostats)
       for (auto LVDS [[maybe_unused]]: cryoInfo.LVDSstatus)
 	assert((LVDS & 0xFF000000FF000000) == 0);             

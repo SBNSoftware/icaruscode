@@ -274,5 +274,14 @@ namespace sbn {
 
 // -----------------------------------------------------------------------------
 
+constexpr bool sbn::ExtraTriggerInfo::CryostatInfo::hasLVDS() const {
+  // C++20:
+  //  return std::ranges::any_of(LVDSstatus, std::identity{});   
+  for (std::uint64_t bits: LVDSstatus) if (bits) return true;
+  return false;
+} // sbn::ExtraTriggerInfo::CryostatInfo::empty()
+
+
+
 
 #endif // SBNOBJ_COMMON_TRIGGER_EXTRATRIGGERINFO_H
