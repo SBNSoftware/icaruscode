@@ -1172,11 +1172,10 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeSideHitPerModule(vector<art::Ptr<CRTData>>& 
   }
 
   //==== When no channel with pe>thrh, return an empty hit
-  if(nChAboveThsh==0){
+  if(nChAboveThsh==0 || pe_sum==0.){
     return FillCRTHit({},{},0,0,0,0,0,0,0,0,0,0,"");
   }
 
-  //hitpos *= 1./nChAboveThsh; // simple average
   hitpos *= 1./pe_sum; // pe-weighted
   t0_avg /= nFEBs;
   t1_avg /= nFEBs;
@@ -1343,8 +1342,7 @@ sbn::crt::CRTHit CRTHitRecoAlg::MergeSideHits(const vector<sbn::crt::CRTHit>& cr
   }
   //==== North
   //==== both horizontal
-  else if(regionNum==46){
-
+  else if(regionNum==47){
     pos_x = (crtHits[0].x_pos + crtHits[1].x_pos)/2.;
     pos_y = (crtHits[0].y_pos + crtHits[1].y_pos)/2.;
     pos_z = (crtHits[0].z_pos + crtHits[1].z_pos)/2.;
@@ -1352,6 +1350,10 @@ sbn::crt::CRTHit CRTHitRecoAlg::MergeSideHits(const vector<sbn::crt::CRTHit>& cr
     pos_x_err = std::sqrt( crtHits[0].x_err*crtHits[0].x_err + crtHits[1].x_err*crtHits[1].x_err );
     pos_y_err = std::sqrt( crtHits[0].y_err*crtHits[0].y_err + crtHits[1].y_err*crtHits[1].y_err );
     pos_z_err = std::sqrt( crtHits[0].z_err*crtHits[0].z_err + crtHits[1].z_err*crtHits[1].z_err );
+  }
+  else{
+    mf::LogInfo("CRTHitRecoAlg:") << "This is side CRT, but regionNum = " << regionNum << "\n";
+    abort();
   }
 
 
