@@ -135,16 +135,15 @@ class icarus::crt::CRTHitRecoAlg {
   void reconfigure(const Config& config);
 
   //produce CRTHits with associated data indices from input vector of CRTData
-  vector<pair<CRTHit, vector<int>>> CreateCRTHits(vector<art::Ptr<CRTData>> crtList);
+  vector<pair<CRTHit, vector<int>>> CreateCRTHits(vector<art::Ptr<CRTData>>& crtList);
 
   //preselection based on charge in a CRTData
-  vector<art::Ptr<CRTData>> PreselectCRTData(vector<art::Ptr<CRTData>> crtList, uint64_t trigger_timestamp);
+  vector<art::Ptr<CRTData>> PreselectCRTData(vector<art::Ptr<CRTData>>& crtList, uint64_t trigger_timestamp);
 
   // Function to make filling a CRTHit a bit faster
   CRTHit FillCRTHit(vector<uint8_t> tfeb_id, map<uint8_t, vector<pair<int,float>>> tpesmap,
                     float peshit, uint64_t time0, uint64_t time1, int plane,
                     double x, double ex, double y, double ey, double z, double ez, string tagger);
-
 
  private:
 
@@ -173,6 +172,10 @@ class icarus::crt::CRTHitRecoAlg {
   CRTHit MakeBottomHit(art::Ptr<CRTData> data);
   //Given vector of side CRTData products, produce CRTHit
   CRTHit MakeSideHit(vector<art::Ptr<CRTData>> coinData);
+  CRTHit MakeSideHitTest(vector<art::Ptr<CRTData>>& crtList, vector<int>& idxList);
+  CRTHit MakeSideHitPerModule(vector<art::Ptr<CRTData>>& crtList, vector<int>& idxList);
+  CRTHit MergeSideHits(const vector<CRTHit>& crtHits);
+
   // Check if a hit is empty
   bool IsEmptyHit(CRTHit hit);
 
