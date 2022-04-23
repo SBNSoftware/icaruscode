@@ -1074,9 +1074,35 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeSideHitTest(vector<art::Ptr<CRTData>>& crtLi
   //==== merge per-layer information here
   sbn::crt::CRTHit out_hit = MergeSideHits( {hitFromLayer0,hitFromLayer1} );
 
+  //==== per-layer info
+  out_hit.nLayer = 2;
+  out_hit.layerHits = new sbn::crt::CRTLayerHit[2];
+  out_hit.layerHits[0] = {
+    hitFromLayer0.peshit,
+    hitFromLayer0.ts0_ns,
+    hitFromLayer0.ts1_ns,
+    hitFromLayer0.x_pos,
+    hitFromLayer0.x_err,
+    hitFromLayer0.y_pos,
+    hitFromLayer0.y_err,
+    hitFromLayer0.z_pos,
+    hitFromLayer0.z_err
+  };
+  out_hit.layerHits[1] = {
+    hitFromLayer1.peshit,
+    hitFromLayer1.ts0_ns,
+    hitFromLayer1.ts1_ns,
+    hitFromLayer1.x_pos,
+    hitFromLayer1.x_err,
+    hitFromLayer1.y_pos,
+    hitFromLayer1.y_err,
+    hitFromLayer1.z_pos,
+    hitFromLayer1.z_err
+  };
+
   //==== direction : outside-in vector
   //==== East wall : layer0 = outer
-  //==== Other : layer1 = outer 
+  //==== Other : layer1 = outer
   TVector3 vec_dir(
     hitFromLayer0.x_pos - hitFromLayer1.x_pos,
     hitFromLayer0.y_pos - hitFromLayer1.y_pos,
@@ -1085,7 +1111,6 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeSideHitTest(vector<art::Ptr<CRTData>>& crtLi
   vec_dir = vec_dir.Unit();
   //==== If East, flip the direction to make it outside-in
   if(hitFromLayer0.plane>=43 && hitFromLayer0.plane<=45) vec_dir *= -1.;
-  out_hit.hasDirection = true;
   out_hit.x_dir = vec_dir.X();
   out_hit.y_dir = vec_dir.Y();
   out_hit.z_dir = vec_dir.Z();

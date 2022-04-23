@@ -204,7 +204,7 @@ namespace crt {
     float    fXErrHit; ///< stat error of CRT hit reco X (cm)
     float    fYErrHit; ///< stat error of CRT hit reco Y (cm)
     float    fZErrHit; ///< stat error of CRT hit reco Z (cm)
-    bool     fHitHasDir; ///< hit has direction variable?
+    int      fNLayer; ///< number of layer
     float    fXHitDir; ///< hit direction in x
     float    fYHitDir; ///< hit direction in y
     float    fZHitDir; ///< hit direction in z
@@ -330,7 +330,7 @@ namespace crt {
     fHitNtuple->Branch("xErr",        &fXErrHit,     "xErr/F");
     fHitNtuple->Branch("yErr",        &fYErrHit,     "yErr/F");
     fHitNtuple->Branch("zErr",        &fZErrHit,     "zErr/F");
-    fHitNtuple->Branch("hasDir",      &fHitHasDir,   "hasDir/O");
+    fHitNtuple->Branch("nLayer",      &fNLayer,   "nLayer/I");
     fHitNtuple->Branch("x_dir",       &fXHitDir,     "x_dir/F");
     fHitNtuple->Branch("y_dir",       &fYHitDir,     "y_dir/F");
     fHitNtuple->Branch("z_dir",       &fZHitDir,     "z_dir/F");
@@ -497,7 +497,7 @@ namespace crt {
       fYHit    = hit.y_pos;
       fZHit    = hit.z_pos;
 
-    fHitHasDir = hit.hasDirection;
+    fNLayer = hit.nLayer;
     fXHitDir = hit.x_dir;
     fYHitDir = hit.y_dir;
     fZHitDir = hit.z_dir;
