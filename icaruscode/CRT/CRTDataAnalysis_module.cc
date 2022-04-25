@@ -208,6 +208,10 @@ namespace crt {
     float    fXHitDir; ///< hit direction in x
     float    fYHitDir; ///< hit direction in y
     float    fZHitDir; ///< hit direction in z
+    float    fLayerHitX[2]; ///< per-layer hit position x
+    float    fLayerHitY[2];  ///< per-layer hit position y
+    float    fLayerHitZ[2];  ///< per-layer hit position z
+    float    fLayerHitPE[2];  ///< per-layer hit pe
     uint64_t    fT0Hit; ///< hit time w.r.t. PPS
     uint64_t    fT1Hit; ///< hit time w.r.t. global event time
     int       fHitReg; ///< region code of CRT hit
@@ -334,6 +338,11 @@ namespace crt {
     fHitNtuple->Branch("x_dir",       &fXHitDir,     "x_dir/F");
     fHitNtuple->Branch("y_dir",       &fYHitDir,     "y_dir/F");
     fHitNtuple->Branch("z_dir",       &fZHitDir,     "z_dir/F");
+    fHitNtuple->Branch("layerHitX",             fLayerHitX,           "layerHitX[nLayer]/F");
+    fHitNtuple->Branch("layerHitY",             fLayerHitY,           "layerHitY[nLayer]/F");
+    fHitNtuple->Branch("layerHitZ",             fLayerHitZ,           "layerHitZ[nLayer]/F");
+    fHitNtuple->Branch("layerHitPE",            fLayerHitPE,          "layerHitPE[nLayer]/F");
+
     fHitNtuple->Branch("t0",          &fT0Hit,       "t0/l");
     fHitNtuple->Branch("t1",          &fT1Hit,       "t1/l");
     fHitNtuple->Branch("region",      &fHitReg,      "region/I");  
@@ -497,10 +506,26 @@ namespace crt {
       fYHit    = hit.y_pos;
       fZHit    = hit.z_pos;
 
-    fNLayer = hit.nLayer;
-    fXHitDir = hit.x_dir;
-    fYHitDir = hit.y_dir;
-    fZHitDir = hit.z_dir;
+      fNLayer = hit.nLayer;
+      fXHitDir = hit.x_dir;
+      fYHitDir = hit.y_dir;
+      fZHitDir = hit.z_dir;
+      if(fNLayer>0){
+        for(int il=0; il<fNLayer; il++){
+          fLayerHitX[il] = hit.layerHits[il].x_pos;
+          fLayerHitY[il] = hit.layerHits[il].y_pos;
+          fLayerHitZ[il] = hit.layerHits[il].z_pos;
+          fLayerHitPE[il] = hit.layerHits[il].peshit;
+        }
+      }
+      else{
+        for(int il=0; il<2; il++){
+          fLayerHitX[il] = 0.;
+          fLayerHitY[il] = 0.;
+          fLayerHitZ[il] = 0.;
+          fLayerHitPE[il] = 0.;
+        }
+      }
 
       fXErrHit = hit.x_err;
       fYErrHit = hit.y_err;
