@@ -171,8 +171,7 @@ class icarus::crt::CRTHitRecoAlg {
   //Given bottom CRTData product, produce CRTHit
   CRTHit MakeBottomHit(art::Ptr<CRTData> data);
   //Given vector of side CRTData products, produce CRTHit
-  CRTHit MakeSideHit(vector<art::Ptr<CRTData>> coinData);
-  CRTHit MakeSideHitTest(vector<art::Ptr<CRTData>>& crtList, vector<int>& idxList);
+  CRTHit MakeSideHit(vector<art::Ptr<CRTData>>& crtList, vector<int>& idxList);
   CRTHit MakeSideHitPerModule(vector<art::Ptr<CRTData>>& crtList, vector<int>& idxList);
   CRTHit MergeSideHits(const vector<CRTHit>& crtHits);
 
