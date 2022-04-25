@@ -641,9 +641,19 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeSideHitPerModule(vector<art::Ptr<CRTData>>& 
         auto ii = &idx - idxList.data();
         int this_mac5_int = (int)crtList[idx]->fMac5;
         if(abs(prev_mac5_int-this_mac5_int)==1){
+          //==== "ro" stands for readout
+          //==== By definition, t0_ro1>=t0_ro0
           uint64_t t0_ro0 = crtList[idx-1]->fTs0;
           uint64_t t0_ro1 = crtList[idx]->fTs0;
+          //==== We should check which FEB is in South/North-end
+          //==== https://sbn-docdb.fnal.gov/cgi-bin/sso/RetrieveFile?docid=19760&filename=CRTInstallation23Sep20.pdf&version=4
+          //==== Even mac5 : South end / Odd mac5 : North end
           float zaxixpos = 0.5*(int64_t(t0_ro1 - t0_ro0)/fPropDelay);
+          //==== If ro0(=prev) FEB is South (i.e., prev_mac5%2==0)
+          //==== this means we have signals in the South Readout earlier than North,
+          //==== i.e., hit is closer to the South-end
+          //==== So, the z-position value is smaller than the center -> so multiply -1 in this case
+          if(prev_mac5_int%2==0) zaxixpos *= -1.;
           relZPosFromCeneter = zaxixpos;
 
           int this_adid  = fCrtutils->MacToAuxDetID(crtList[idx]->fMac5,0);
