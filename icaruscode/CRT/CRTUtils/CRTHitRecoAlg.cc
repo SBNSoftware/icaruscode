@@ -502,7 +502,6 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeSideHit(vector<art::Ptr<CRTData>>& crtList, 
 
   //==== per-layer info
   out_hit.nLayer = 2;
-  out_hit.layerHits = new sbn::crt::CRTLayerHit[2];
   out_hit.layerHits[0] = {
     hitFromLayer0.peshit,
     hitFromLayer0.ts0_ns,
