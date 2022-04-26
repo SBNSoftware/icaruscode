@@ -510,16 +510,15 @@ namespace crt {
       fXHitDir = hit.x_dir;
       fYHitDir = hit.y_dir;
       fZHitDir = hit.z_dir;
-      if(fNLayer>0){
-        for(int il=0; il<fNLayer; il++){
+
+      for(int il=0; il<2; il++){
+        if(fNLayer>0){
           fLayerHitX[il] = hit.layerHits[il].x_pos;
           fLayerHitY[il] = hit.layerHits[il].y_pos;
           fLayerHitZ[il] = hit.layerHits[il].z_pos;
           fLayerHitPE[il] = hit.layerHits[il].peshit;
         }
-      }
-      else{
-        for(int il=0; il<2; il++){
+        else{
           fLayerHitX[il] = 0.;
           fLayerHitY[il] = 0.;
           fLayerHitZ[il] = 0.;
