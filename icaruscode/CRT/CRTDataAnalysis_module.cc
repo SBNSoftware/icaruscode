@@ -342,7 +342,6 @@ namespace crt {
     fHitNtuple->Branch("layerHitY",             fLayerHitY,           "layerHitY[2]/F");
     fHitNtuple->Branch("layerHitZ",             fLayerHitZ,           "layerHitZ[2]/F");
     fHitNtuple->Branch("layerHitPE",            fLayerHitPE,          "layerHitPE[2]/F");
-
     fHitNtuple->Branch("t0",          &fT0Hit,       "t0/l");
     fHitNtuple->Branch("t1",          &fT1Hit,       "t1/l");
     fHitNtuple->Branch("region",      &fHitReg,      "region/I");  
