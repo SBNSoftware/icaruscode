@@ -338,10 +338,10 @@ namespace crt {
     fHitNtuple->Branch("x_dir",       &fXHitDir,     "x_dir/F");
     fHitNtuple->Branch("y_dir",       &fYHitDir,     "y_dir/F");
     fHitNtuple->Branch("z_dir",       &fZHitDir,     "z_dir/F");
-    fHitNtuple->Branch("layerHitX",             fLayerHitX,           "layerHitX[nLayer]/F");
-    fHitNtuple->Branch("layerHitY",             fLayerHitY,           "layerHitY[nLayer]/F");
-    fHitNtuple->Branch("layerHitZ",             fLayerHitZ,           "layerHitZ[nLayer]/F");
-    fHitNtuple->Branch("layerHitPE",            fLayerHitPE,          "layerHitPE[nLayer]/F");
+    fHitNtuple->Branch("layerHitX",             fLayerHitX,           "layerHitX[2]/F");
+    fHitNtuple->Branch("layerHitY",             fLayerHitY,           "layerHitY[2]/F");
+    fHitNtuple->Branch("layerHitZ",             fLayerHitZ,           "layerHitZ[2]/F");
+    fHitNtuple->Branch("layerHitPE",            fLayerHitPE,          "layerHitPE[2]/F");
 
     fHitNtuple->Branch("t0",          &fT0Hit,       "t0/l");
     fHitNtuple->Branch("t1",          &fT1Hit,       "t1/l");
