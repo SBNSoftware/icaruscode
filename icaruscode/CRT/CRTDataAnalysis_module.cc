@@ -382,20 +382,19 @@ namespace crt {
       art::Handle<sbn::ExtraTriggerInfo> trigger_handle;
       event.getByLabel( fTriggerLabel, trigger_handle );
       if( trigger_handle.isValid() ) {
-    sbn::triggerSource bit = trigger_handle->sourceType;
+        sbn::triggerSource bit = trigger_handle->sourceType;
         m_gate_type = (unsigned int)bit;
         m_gate_name = bitName(bit);
         m_trigger_timestamp = trigger_handle->triggerTimestamp;
         m_gate_start_timestamp =  trigger_handle->beamGateTimestamp;
         m_trigger_gate_diff = trigger_handle->triggerTimestamp - trigger_handle->beamGateTimestamp;
-
       }
       else{
-    mf::LogError("CRTDataAnalysis") << "No raw::Trigger associated to label: " << fTriggerLabel.label() << "\n" ;
+        mf::LogError("CRTDataAnalysis") << "No raw::Trigger associated to label: " << fTriggerLabel.label() << "\n" ;
       }
     }
     else {
-       mf::LogError("CRTDataAnalysis")  << "Trigger Data product " << fTriggerLabel.label() << " not found!\n" ;
+      mf::LogError("CRTDataAnalysis")  << "Trigger Data product " << fTriggerLabel.label() << " not found!\n" ;
     }
 
     art::Handle<vector<icarus::crt::CRTData>> crtDAQHandle;
@@ -407,50 +406,45 @@ namespace crt {
     bool presel = false;
 
     for (size_t febdat_i=0; febdat_i<crtList.size(); febdat_i++) {
-      
+
       uint8_t mac = crtList[febdat_i]->fMac5;
       int adid  = fCrtutils->MacToAuxDetID(mac,0);
       char type = fCrtutils->GetAuxDetType(adid);
       /*
       for(int chan=0; chan<32; chan++) {
-     mf::LogError("CRTDataAnalysis") << "\nfebP (mac5, channel, adc, type, adid) = (" << (int)crtList[febdat_i]->fMac5 << " , " << chan << " , "
-          << crtList[febdat_i]->fAdc[chan]  << " , " << type << " , " << adid << ")\n";
+        mf::LogError("CRTDataAnalysis") << "\nfebP (mac5, channel, adc, type, adid) = (" << (int)crtList[febdat_i]->fMac5 << " , " << chan << " , "
+        << crtList[febdat_i]->fAdc[chan]  << " , " << type << " , " << adid << ")\n";
       }      
       */
       /// Looking for data within +/- 3ms within trigger time stamp
       /// Here t0 - trigger time -ve, only adding 1s makes the value +ve or -ve
       //    if (std::fabs(int64_t(crtList[febdat_i]->fTs0 - m_trigger_timestamp) + 1e9) > fCrtWindow) continue;
       if ( type == 'm'){
-    for(int chan=0; chan<32; chan++) {
-      std::pair<double,double> const chg_cal = fChannelMap->getSideCRTCalibrationMap((int)crtList[febdat_i]->fMac5,chan);
-      float pe = (crtList[febdat_i]->fAdc[chan]-chg_cal.second)/chg_cal.first;
-      if(pe<=fPEThresh) continue;
-      presel = true;
-    }
+        for(int chan=0; chan<32; chan++) {
+          std::pair<double,double> const chg_cal = fChannelMap->getSideCRTCalibrationMap((int)crtList[febdat_i]->fMac5,chan);
+          float pe = (crtList[febdat_i]->fAdc[chan]-chg_cal.second)/chg_cal.first;
+          if(pe<=fPEThresh) continue;
+          presel = true;
+        }
       }else if ( type == 'c' ) {
-
-      presel = true;
-
+        presel = true;
       }else if ( type == 'd'){
-    for(int chan=0; chan<64; chan++) {
-      float pe = (crtList[febdat_i]->fAdc[chan]-fQPed)/fQSlope;
-      if(pe<=fPEThresh) continue;
-      presel = true;
-    }
+        for(int chan=0; chan<64; chan++) {
+          float pe = (crtList[febdat_i]->fAdc[chan]-fQPed)/fQSlope;
+          if(pe<=fPEThresh) continue;
+          presel = true;
+        }
       }
       //std:: cout << "presel just before filling: " << presel << std::endl;
       if (presel) crtData.push_back(crtList[febdat_i]);
       presel = false;
     } // end of crtList
     
-    //     mf::LogError("CRTDataAnalysis") << "size of the crtdata after removing unwanted charges: " << crtData.size() << std::endl;  
+    //mf::LogError("CRTDataAnalysis") << "size of the crtdata after removing unwanted charges: " << crtData.size() << std::endl;  
     
-    // mf::LogError("CRTDataAnalysis") << "about to loop over CRTDAQ entries" << std::endl;
-
-
+    //mf::LogError("CRTDataAnalysis") << "about to loop over CRTDAQ entries" << std::endl;
 
     for (size_t febdat_i=0; febdat_i<crtData.size(); febdat_i++) {
-      
       
       fDetEvent       = fEvent;
       fDetRun         = fRun;
@@ -468,96 +462,89 @@ namespace crt {
       else maxchan = 64;
       fNMaxCh = maxchan;
       for(int ch=0; ch<maxchan; ch++) {
-    fADC[ch] = crtData[febdat_i]->fAdc[ch]; 
-    std::pair<double,double> const chg_cal = fChannelMap->getSideCRTCalibrationMap((int)fMac5,ch);
-    if (fDetSubSys == 0){
-      float pe = (fADC[ch]-chg_cal.second)/chg_cal.first;
-      if (pe < 0) continue;
-      fPE[ch] = pe;
-    }else{
-      float pe = (fADC[ch]-fQPed)/fQSlope;
-      if (pe < 0) continue;
+        fADC[ch] = crtData[febdat_i]->fAdc[ch]; 
+        std::pair<double,double> const chg_cal = fChannelMap->getSideCRTCalibrationMap((int)fMac5,ch);
+        if (fDetSubSys == 0){
+          float pe = (fADC[ch]-chg_cal.second)/chg_cal.first;
+          if (pe < 0) continue;
           fPE[ch] = pe;
-    } 
-    
+        }else{
+          float pe = (fADC[ch]-fQPed)/fQSlope;
+          if (pe < 0) continue;
+          fPE[ch] = pe;
+        } 
       }
             
       fDAQNtuple->Fill();
       
     } //for CRT FEB events
     
-  
-
-  
-
     art::Handle<std::vector<sbn::crt::CRTHit>> crtHitHandle;
-    
     bool isCRTHit = event.getByLabel(fCRTHitProducerLabel, crtHitHandle);
     std::vector<int> ids;
     fNHit = 0;
     if (isCRTHit) {
       
-       mf::LogError("CRTDataAnalysis") << "looping over reco hits..." << std::endl;
-      for ( auto const& hit : *crtHitHandle )
-        {
-      fNHit++;
-      fHitEvent = fEvent;
-      fXHit    = hit.x_pos;
-      fYHit    = hit.y_pos;
-      fZHit    = hit.z_pos;
+      mf::LogError("CRTDataAnalysis") << "looping over reco hits..." << std::endl;
+      for ( auto const& hit : *crtHitHandle ){
+        fNHit++;
+        fHitEvent = fEvent;
+        fXHit    = hit.x_pos;
+        fYHit    = hit.y_pos;
+        fZHit    = hit.z_pos;
 
-      fNLayer = hit.nLayer;
-      fXHitDir = hit.x_dir;
-      fYHitDir = hit.y_dir;
-      fZHitDir = hit.z_dir;
+        fNLayer = hit.nLayer;
+        fXHitDir = hit.x_dir;
+        fYHitDir = hit.y_dir;
+        fZHitDir = hit.z_dir;
 
-      for(int il=0; il<2; il++){
-        if(fNLayer>0){
-          fLayerHitX[il] = hit.layerHits[il].x_pos;
-          fLayerHitY[il] = hit.layerHits[il].y_pos;
-          fLayerHitZ[il] = hit.layerHits[il].z_pos;
-          fLayerHitPE[il] = hit.layerHits[il].peshit;
+        for(int il=0; il<2; il++){
+          if(fNLayer>0){
+            fLayerHitX[il] = hit.layerHits[il].x_pos;
+            fLayerHitY[il] = hit.layerHits[il].y_pos;
+            fLayerHitZ[il] = hit.layerHits[il].z_pos;
+            fLayerHitPE[il] = hit.layerHits[il].peshit;
+          }
+          else{
+            fLayerHitX[il] = 0.;
+            fLayerHitY[il] = 0.;
+            fLayerHitZ[il] = 0.;
+            fLayerHitPE[il] = 0.;
+          }
         }
-        else{
-          fLayerHitX[il] = 0.;
-          fLayerHitY[il] = 0.;
-          fLayerHitZ[il] = 0.;
-          fLayerHitPE[il] = 0.;
-        }
-      }
 
-      fXErrHit = hit.x_err;
-      fYErrHit = hit.y_err;
-      fZErrHit = hit.z_err;
-      fT0Hit   = hit.ts0_ns;
-      fT1Hit   = hit.ts1_ns;
-      
-      
-      fNHitFeb  = hit.feb_id.size();
-      fHitTotPe = hit.peshit;
-      int mactmp = hit.feb_id[0];
-      fHitReg  = fCrtutils->AuxDetRegionNameToNum(fCrtutils->MacToRegion(mactmp));
-      fHitSubSys =  fCrtutils->MacToTypeCode(mactmp);
-      
-      
-      m_gate_crt_diff = m_gate_start_timestamp - hit.ts0_ns;
-      
-      auto ittmp = hit.pesmap.find(mactmp);
-      if (ittmp==hit.pesmap.end()) {
-         mf::LogError("CRTDataAnalysis") << "hitreg: " << fHitReg << std::endl;
-         mf::LogError("CRTDataAnalysis") << "fHitSubSys: "<< fHitSubSys << std::endl;
-         mf::LogError("CRTDataAnalysis") << "mactmp = " << mactmp << std::endl;
-         mf::LogError("CRTDataAnalysis") << "could not find mac in pesmap!" << std::endl;
-        continue;
-      }
-      
-      int chantmp = (*ittmp).second[0].first;
-      
-      fHitMod  = fCrtutils->MacToAuxDetID(mactmp, chantmp);
-      fHitStrip = fCrtutils->ChannelToAuxDetSensitiveID(mactmp, chantmp);
-      
-      fHitNtuple->Fill();
-        }//for CRT Hits
+        fXErrHit = hit.x_err;
+        fYErrHit = hit.y_err;
+        fZErrHit = hit.z_err;
+        fT0Hit   = hit.ts0_ns;
+        fT1Hit   = hit.ts1_ns;
+        
+        
+        fNHitFeb  = hit.feb_id.size();
+        fHitTotPe = hit.peshit;
+        int mactmp = hit.feb_id[0];
+        fHitReg  = fCrtutils->AuxDetRegionNameToNum(fCrtutils->MacToRegion(mactmp));
+        fHitSubSys =  fCrtutils->MacToTypeCode(mactmp);
+        
+        
+        m_gate_crt_diff = m_gate_start_timestamp - hit.ts0_ns;
+        
+        auto ittmp = hit.pesmap.find(mactmp);
+        if (ittmp==hit.pesmap.end()) {
+           mf::LogError("CRTDataAnalysis") << "hitreg: " << fHitReg << std::endl;
+           mf::LogError("CRTDataAnalysis") << "fHitSubSys: "<< fHitSubSys << std::endl;
+           mf::LogError("CRTDataAnalysis") << "mactmp = " << mactmp << std::endl;
+           mf::LogError("CRTDataAnalysis") << "could not find mac in pesmap!" << std::endl;
+          continue;
+        }
+        
+        int chantmp = (*ittmp).second[0].first;
+        
+        fHitMod  = fCrtutils->MacToAuxDetID(mactmp, chantmp);
+        fHitStrip = fCrtutils->ChannelToAuxDetSensitiveID(mactmp, chantmp);
+        
+        fHitNtuple->Fill();
+      }//for CRT Hits
     }//if CRT Hits
     
     else  mf::LogError("CRTDataAnalysis") << "CRTHit products not found! (expected if decoder step)" << std::endl;
