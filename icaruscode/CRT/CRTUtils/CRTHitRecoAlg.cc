@@ -637,13 +637,17 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeSideHitPerModule(vector<art::Ptr<CRTData>>& 
 
       int prev_mac5_int(-999);
       double relZPosFromCeneter(-999.);
+      //==== note : idxList is a vector of index, e.g., {234,236,237,247,...};
       for(auto const& idx : idxList){
+        //==== note : idx = idxList[ii]
+        //==== note : e.g., when idx = 236, ii = 1
         auto ii = &idx - idxList.data();
         int this_mac5_int = (int)crtList[idx]->fMac5;
         if(abs(prev_mac5_int-this_mac5_int)==1){
           //==== "ro" stands for readout
           //==== By definition, t0_ro1>=t0_ro0
-          uint64_t t0_ro0 = crtList[idx-1]->fTs0;
+          //==== note : the previous index = idxList[ii-1]
+          uint64_t t0_ro0 = crtList[ idxList[ii-1] ]->fTs0;
           uint64_t t0_ro1 = crtList[idx]->fTs0;
           //==== We should check which FEB is in South/North-end
           //==== https://sbn-docdb.fnal.gov/cgi-bin/sso/RetrieveFile?docid=19760&filename=CRTInstallation23Sep20.pdf&version=4
@@ -658,7 +662,7 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeSideHitPerModule(vector<art::Ptr<CRTData>>& 
 
           int this_adid  = fCrtutils->MacToAuxDetID(crtList[idx]->fMac5,0);
           auto const& adGeo = fGeometryService->AuxDet(this_adid);
-          int adsid = fCrtutils->ChannelToAuxDetSensitiveID(crtList[idx-1]->fMac5,vec_maxPEChanNumber[ii-1]);
+          int adsid = fCrtutils->ChannelToAuxDetSensitiveID(crtList[ idxList[ii-1] ]->fMac5,vec_maxPEChanNumber[ii-1]);
           auto const& adsGeo = adGeo.SensitiveVolume(adsid);
 
           geo::Point_t tmp_pos = adsGeo.GetCenter() + geo::Zaxis() * zaxixpos;
