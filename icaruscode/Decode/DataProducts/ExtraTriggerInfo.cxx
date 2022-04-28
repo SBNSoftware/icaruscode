@@ -28,7 +28,8 @@ namespace {
   
   template <typename T>
   std::ostream& operator<< (std::ostream& out, TimestampDumper<T> wrapper) {
-    std::uint64_t const timestamp = wrapper.timestamp;
+    T const timestamp = wrapper.timestamp;
+    //std::uint64_t const timestamp = wrapper.timestamp;
     if (sbn::ExtraTriggerInfo::isValidTimestamp(timestamp)) {
       out << (timestamp / 1'000'000'000) << "."
         << std::setfill('0') << std::setw(9) << (timestamp % 1'000'000'000)
@@ -128,6 +129,10 @@ std::ostream& sbn::operator<< (std::ostream& out, ExtraTriggerInfo const& info)
       << " at " << dumpTimestamp(info.beamGateTimestamp)
       << " (diff: "
       << timestampDiff(info.beamGateTimestamp, info.triggerTimestamp) << " ns)"
+    << "\n"
+    << "enable gate opened at " << dumpTimestamp(info.enableGateTimestamp)
+    << " (" << timestampDiff(info.beamGateTimestamp, info.enableGateTimestamp)
+    << " ns before the gate)"
     << "\n"
       << "counts from this source: trigger="
         << dumpTriggerCount(info.triggerCount)

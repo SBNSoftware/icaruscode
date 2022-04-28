@@ -372,8 +372,8 @@ namespace daq
 
     // --- END ---- TEMPORARY --------------------------------------------------
     
-    //if(fDiagnosticOutput || fDebug)
-    //{
+    if(fDiagnosticOutput || fDebug)
+    {
       std::cout << "Full Timestamp = " << artdaq_ts
         << "\nBeam gate " << beamgate_count << " at "
         << (beamgate_ts/1'000'000'000) << "." << std::setfill('0')
@@ -402,7 +402,7 @@ namespace daq
           << "\nFull trigger fragment dump:"
           << sbndaq::dumpFragment(fragment) << std::endl;
       }
-      //}
+    }
     //
     // extra trigger info
     //
@@ -412,30 +412,45 @@ namespace daq
 	beamGateBit = sbn::triggerSource::BNB;
 	fTriggerExtra->gateCountFromPreviousTrigger = frag.getDeltaGatesBNB();
 	fTriggerExtra->previousTriggerTimestamp = frag.getLastTimestampBNB();
+	fTriggerExtra->gateCount = datastream_info.gate_id_BNB;
+	fTriggerExtra->triggerCount = frag.getTotalTriggerBNB();
+	fTriggerExtra->anyTriggerCountFromPreviousTrigger = frag.getLastTriggerBNB();
 	break;
       }
       case TriggerGateTypes::NuMI:{        
 	beamGateBit = sbn::triggerSource::NuMI;
 	fTriggerExtra->gateCountFromPreviousTrigger = frag.getDeltaGatesNuMI();
-	fTriggerExtra->previousTriggerTimestamp= frag.getLastTimestampNuMI();
+	fTriggerExtra->previousTriggerTimestamp = frag.getLastTimestampNuMI();
+	fTriggerExtra->gateCount = datastream_info.gate_id_NuMI;
+	fTriggerExtra->triggerCount = frag.getTotalTriggerNuMI();
+	fTriggerExtra->anyTriggerCountFromPreviousTrigger = frag.getLastTriggerNuMI();
 	break;
       }
       case TriggerGateTypes::OffbeamBNB:{  
 	beamGateBit = sbn::triggerSource::OffbeamBNB;
 	fTriggerExtra->gateCountFromPreviousTrigger = frag.getDeltaGatesBNBOff();
 	fTriggerExtra->previousTriggerTimestamp= frag.getLastTimestampBNBOff();
+	fTriggerExtra->gateCount = datastream_info.gate_id_BNBOff;
+	fTriggerExtra->triggerCount = frag.getTotalTriggerBNBOff();
+	fTriggerExtra->anyTriggerCountFromPreviousTrigger = frag.getLastTriggerBNBOff();
 	break;
       }
       case TriggerGateTypes::OffbeamNuMI:{ 
 	beamGateBit = sbn::triggerSource::OffbeamNuMI;
 	fTriggerExtra->gateCountFromPreviousTrigger = frag.getDeltaGatesNuMIOff();
 	fTriggerExtra->previousTriggerTimestamp= frag.getLastTimestampNuMIOff();
+	fTriggerExtra->gateCount = datastream_info.gate_id_NuMIOff;
+	fTriggerExtra->triggerCount = frag.getTotalTriggerNuMIOff();
+	fTriggerExtra->anyTriggerCountFromPreviousTrigger = frag.getLastTriggerNuMIOff();
 	break;
       }
       case TriggerGateTypes::Calib:{       
 	beamGateBit = sbn::triggerSource::Calib;
 	fTriggerExtra->gateCountFromPreviousTrigger = frag.getDeltaGatesCalib();
 	fTriggerExtra->previousTriggerTimestamp = frag.getLastTimestampCalib();
+	//fTriggerExtra->gateCount = datastream_info.gate_id_calib;
+	fTriggerExtra->triggerCount = frag.getTotalTriggerCalib();
+	fTriggerExtra->anyTriggerCountFromPreviousTrigger = frag.getLastTriggerCalib();
 	break;
       }
       default:                            beamGateBit = sbn::triggerSource::Unknown;
@@ -448,20 +463,39 @@ namespace daq
     fTriggerExtra->gateID = datastream_info.gate_id; //all gate types (gate ID)
     fTriggerExtra->anyGateCountFromAnyPreviousTrigger = frag.getDeltaGates();
     fTriggerExtra->anyPreviousTriggerTimestamp = frag.getLastTimestamp();
+    //fTriggerExtra->anyPreviousTriggerSourceType = frag.getLastTriggerType();
+    sbn::triggerSource previousTriggerSourceBit;
+    if(frag.getLastTriggerType() == 1)
+      previousTriggerSourceBit = sbn::triggerSource::BNB;
+    else if(frag.getLastTriggerType() == 2)
+      previousTriggerSourceBit = sbn::triggerSource::NuMI;
+    else if(frag.getLastTriggerType() == 3)
+      previousTriggerSourceBit = sbn::triggerSource::OffbeamBNB;
+    else if(frag.getLastTriggerType() == 4)
+      previousTriggerSourceBit = sbn::triggerSource::OffbeamNuMI;
+    else if(frag.getLastTriggerType() == 5)
+      previousTriggerSourceBit = sbn::triggerSource::Calib;
+    else
+      previousTriggerSourceBit = sbn::triggerSource::Unknown;
+    fTriggerExtra->anyPreviousTriggerSourceType = previousTriggerSourceBit;
 
     std::cout << datastream_info.gate_id_BNB << " " << frag.getDeltaGatesBNB() << " " << gate_type << std::endl;
     std::cout << connectorLVDS_E_01 << " " << connectorLVDS_E_23 << " " << connectorLVDS_W_01 << " " << connectorLVDS_W_23 << " " << std::hex << connectorLVDS_E_01 << " " << connectorLVDS_E_23 << " " << connectorLVDS_W_01 << " " << connectorLVDS_W_23 << std::dec << std::endl;
     
     /* TODO (may need to add WRtimeToTriggerTime to some timestamps):
-    fTriggerExtra->triggerCount
-    fTriggerExtra->gateCount
-    fTriggerExtra->anyTriggerCountFromPreviousTrigger
     fTriggerExtra->anyPreviousTriggerSourceType
     */
     fTriggerExtra->WRtimeToTriggerTime = WRtimeToTriggerTime;
-
+    sbn::bits::triggerLocationMask locationMask;
     // trigger location: 0x01=EAST; 0x02=WEST; 0x07=ALL                                                                  
     int const triggerLocation = parsedData.getItem("Trigger Source").getNumber<int>(0);
+    if(triggerLocation == 1)
+      locationMask = mask(sbn::triggerLocation::CryoEast);
+    else if(triggerLocation == 2)
+      locationMask = mask(sbn::triggerLocation::CryoWest);
+    else if(triggerLocation == 7)
+      locationMask = mask(sbn::triggerLocation::CryoEast, sbn::triggerLocation::CryoWest);
+    fTriggerExtra->triggerLocationBits = locationMask;
     fTriggerExtra->cryostats[sbn::ExtraTriggerInfo::EastCryostat]
       = {
       // triggerCount      
@@ -526,7 +560,7 @@ namespace daq
     else 
     {
       fLastEvent = fTriggerExtra->triggerID - 1;
-      lastTrigger = frag.getLastTimestampBNB();
+      lastTrigger = fTriggerExtra->anyPreviousTriggerTimestamp;
       fPrevTrigger->emplace_back(fLastEvent, lastTrigger);
     }
     
