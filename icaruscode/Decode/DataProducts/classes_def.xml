@@ -19,9 +19,8 @@
   <!-- sbn::ExtraTriggerInfo -->
 
   <!--   class -->
-  <class name="sbn::ExtraTriggerInfo" ClassVersion="13" >
-   <version ClassVersion="13" checksum="1967722932"/>
-   <version ClassVersion="12" checksum="2254850881"/>
+  <class name="sbn::ExtraTriggerInfo" ClassVersion="12" >
+   <version ClassVersion="12" checksum="1967722932"/>
    <version ClassVersion="11" checksum="2691428079"/>
    <version ClassVersion="10" checksum="2751074963"/>
   </class>

@@ -317,7 +317,7 @@ namespace daq
       { return time + WRtimeToTriggerTime; };
     assert(correctWRtime(raw_wr_ts) == artdaq_ts);
     
-    // --- END ---- TEMPORARY --------------------------------------------------
+    // --- BEGIN -- TEMPORARY --------------------------------------------------
     int gate_type = datastream_info.gate_type;
     long delta_gates_bnb [[maybe_unused]] = frag.getDeltaGatesBNB();
     long delta_gates_numi [[maybe_unused]] = frag.getDeltaGatesNuMI();
@@ -326,7 +326,6 @@ namespace daq
     long delta_gates_other [[maybe_unused]] = frag.getDeltaGatesOther();
     uint64_t lastTrigger = 0;
     
-    // --- BEGIN -- TEMPORARY --------------------------------------------------
     // remove this part when the beam gate timestamp is available via fragment
     // or via the parser
     icarus::details::KeyedCSVparser parser;
@@ -479,8 +478,10 @@ namespace daq
       previousTriggerSourceBit = sbn::triggerSource::Unknown;
     fTriggerExtra->anyPreviousTriggerSourceType = previousTriggerSourceBit;
 
-    std::cout << datastream_info.gate_id_BNB << " " << frag.getDeltaGatesBNB() << " " << gate_type << std::endl;
-    std::cout << connectorLVDS_E_01 << " " << connectorLVDS_E_23 << " " << connectorLVDS_W_01 << " " << connectorLVDS_W_23 << " " << std::hex << connectorLVDS_E_01 << " " << connectorLVDS_E_23 << " " << connectorLVDS_W_01 << " " << connectorLVDS_W_23 << std::dec << std::endl;
+    if (fDebug) {
+      std::cout << datastream_info.gate_id_BNB << " " << frag.getDeltaGatesBNB() << " " << gate_type << std::endl;
+      std::cout << connectorLVDS_E_01 << " " << connectorLVDS_E_23 << " " << connectorLVDS_W_01 << " " << connectorLVDS_W_23 << " " << std::hex << connectorLVDS_E_01 << " " << connectorLVDS_E_23 << " " << connectorLVDS_W_01 << " " << connectorLVDS_W_23 << std::dec << std::endl;
+    }
     
     /* TODO (may need to add WRtimeToTriggerTime to some timestamps):
     fTriggerExtra->anyPreviousTriggerSourceType
