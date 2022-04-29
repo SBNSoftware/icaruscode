@@ -658,7 +658,7 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeSideHitPerModule(vector<art::Ptr<CRTData>>& 
           //==== i.e., hit is closer to the South-end
           //==== So, the z-position value is smaller than the center -> so multiply -1 in this case
           if(prev_mac5_int%2==0) zaxixpos *= -1.;
-          relZPosFromCeneter = zaxixpos;
+          relZPosFromCeneter = fabs(zaxixpos);
 
           int this_adid  = fCrtutils->MacToAuxDetID(crtList[idx]->fMac5,0);
           auto const& adGeo = fGeometryService->AuxDet(this_adid);
@@ -777,19 +777,22 @@ sbn::crt::CRTHit CRTHitRecoAlg::MergeSideHits(const vector<sbn::crt::CRTHit>& cr
     pos_y_err = std::sqrt( crtHits[0].y_err*crtHits[0].y_err + crtHits[1].y_err*crtHits[1].y_err );
 
     //==== From MakeSideHitPerModule(), z_err is set to negative when the two-readout method failed
+    //==== case1) When both are good
     if(crtHits[0].z_err>0 && crtHits[1].z_err>0){
       pos_z = (crtHits[0].z_pos + crtHits[1].z_pos)/2.;
       //==== TODO how should we add the errs from two layers?
       pos_z_err = std::sqrt( crtHits[0].z_err*crtHits[0].z_err + crtHits[1].z_err*crtHits[1].z_err );
     }
-    else if(crtHits[0].z_err<=0 || crtHits[1].z_err<=0){
-      pos_z = crtHits[0].z_err<=0 ? crtHits[1].z_pos : crtHits[0].z_pos;
-      pos_z_err = crtHits[0].z_err<=0 ? crtHits[1].z_err : crtHits[0].z_err;
-    }
-    else{
+    //==== case2) When both are bad; still doing the same thing as case1..
+    else if(crtHits[0].z_err<=0 && crtHits[1].z_err<=0){
       pos_z = (crtHits[0].z_pos + crtHits[1].z_pos)/2.;
       //==== TODO how should we add the errs from two layers?
       pos_z_err = std::sqrt( crtHits[0].z_err*crtHits[0].z_err + crtHits[1].z_err*crtHits[1].z_err );
+    }
+    //==== case3) When only one is bad, the other is good; use the good layer
+    else{
+      pos_z = crtHits[0].z_err<=0 ? crtHits[1].z_pos : crtHits[0].z_pos;
+      pos_z_err = crtHits[0].z_err<=0 ? crtHits[1].z_err : crtHits[0].z_err;
     }
   }
   //==== South
