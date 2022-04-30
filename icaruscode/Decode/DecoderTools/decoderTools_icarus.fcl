@@ -105,6 +105,7 @@ PMTDecoderTool: {
 
 TriggerDecoderTool: {
    tool_type:          TriggerDecoder
+   BeamGateOffset:     4000
 }
 
 

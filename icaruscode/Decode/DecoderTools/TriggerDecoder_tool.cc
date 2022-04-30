@@ -157,6 +157,9 @@ namespace daq
     int fOffset; //< Use this to determine additional correction needed for TAI->UTC conversion from White Rabbit timestamps. Needs to be changed if White Rabbit firmware is changed and the number of leap seconds changes! 
     //Add in trigger data member information once it is selected, current LArSoft object likely not enough as is
     
+    /// Offset to be added to the start of the beam gate timestamp.
+    long long int fBeamGateOffset = 0;
+    
     // uint64_t fLastTimeStamp = 0;
    
     long fLastEvent = 0;
@@ -235,6 +238,14 @@ namespace daq
     fDiagnosticOutput = pset.get<bool>("DiagnosticOutput", false);
     fDebug = pset.get<bool>("Debug", false);
     fOffset = pset.get<long long int>("TimeOffset", 0);
+    fBeamGateOffset = pset.get<long long int>("BeamGateOffset", 0);
+    
+    if (fBeamGateOffset != 0) {
+      mf::LogInfo("TriggerDecoder")
+        << "Trigger decoder will add " << fBeamGateOffset << " ns to beam gate.";
+    }
+    
+    
     return;
   }
   
@@ -357,6 +368,9 @@ namespace daq
       // assuming the raw times from the fragment are on the same time scale
       // (same offset corrections)
       beamgate_ts += raw_bg_ts - raw_wr_ts;
+      
+      // also correcting for the user offset
+      beamgate_ts += fBeamGateOffset;
       
     } // if has gate information
 
