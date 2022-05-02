@@ -47,8 +47,16 @@ namespace sbn {
     // --- BEGIN -- Generic bit functions --------------------------------------
     /// @name Generic bit functions
     /// @{
+    
+    /// Type for bit masks.
+    /// @note This is a glorified integral type.
     template <typename EnumType>
-    using mask_t = std::underlying_type_t<EnumType>;
+    struct mask_t {
+      using bits_t = EnumType; ///< Enumeration type of the bits.
+      using maskbits_t = std::underlying_type_t<EnumType>; ///< Bit data type.
+      maskbits_t bits { 0 };
+      operator maskbits_t() const { return bits; }
+    }; // mask_t
     
     /// Returns the value of specified `bit` (conversion like `enum` to `int`).
     template <typename EnumType>
@@ -84,21 +92,66 @@ namespace sbn {
       Unknown,     ///< Type of beam unknown.
       BNB,         ///< Type of beam: BNB.
       NuMI,        ///< Type of beam: NuMI.
-      OffbeamBNB,  ///< Type of Offbeam: BNB
-      OffbeamNuMI, ///< Type of Offbeam: NuMI
+      OffbeamBNB,  ///< Type of Offbeam: BNB.
+      OffbeamNuMI, ///< Type of Offbeam: NuMI.
+      Calibration, ///< Type of source: calibration trigger.
       // ==> add here if more are needed <==
       NBits    ///< Number of bits currently supported.
     }; // triggerSource
     
+    /// Type of mask with `triggerSource` bits.
+    using triggerSourceMask = mask_t<triggerSource>;
+    
+    
+    /// Location or locations generating a trigger.
+    enum class triggerLocation: unsigned int {
+      CryoEast,    ///< A trigger happened in the east cryostat.
+      CryoWest,    ///< A trigger happened in the west cryostat.
+      TPCEE,       ///< A trigger happened in the east cryostat, east TPC.
+      TPCEW,       ///< A trigger happened in the east cryostat, west TPC.
+      TPCWE,       ///< A trigger happened in the west cryostat, east TPC.
+      TPCWW,       ///< A trigger happened in the west cryostat, west TPC.
+      // ==> add here if more are needed <==
+      NBits    ///< Number of bits currently supported.
+    }; // triggerLocation
+    
+    /// Type of mask with `triggerLocation` bits.
+    using triggerLocationMask = mask_t<triggerLocation>;
+    
+    
+    /// Type representing the type(s) of this trigger.
+    enum class triggerType: unsigned int {
+      Majority,    ///< A minimum number of close-by PMT pairs above threshold was reached.
+      MinimumBias, ///< Data collected at gate opening with no further requirement imposed.
+      // ==> add here if more are needed <==
+      NBits    ///< Number of bits currently supported.
+    }; // triggerType
+    
+    /// Type of mask with `triggerType` bits.
+    using triggerTypeMask = mask_t<triggerType>;
+    
+    
     /// Returns a mnemonic short name of the beam type.
     std::string bitName(triggerSource bit);
+    
+    /// Returns a mnemonic short name of the trigger location.
+    std::string bitName(triggerLocation bit);
+    
+    /// Returns a mnemonic short name of the trigger type.
+    std::string bitName(triggerType bit);
     
     /// @}
     // --- END ---- Beam bits --------------------------------------------------
 
   } // namespace bits
   
-  using bits::triggerSource; // import symbol
+  // import symbols
+  using bits::triggerSource;
+  using bits::triggerSourceMask;
+  using bits::triggerType;
+  using bits::triggerTypeMask;
+  using bits::triggerLocation;
+  using bits::triggerLocationMask;
   
 } // namespace sbn
 
@@ -118,7 +171,7 @@ constexpr auto sbn::bits::mask(EnumType bit, OtherBits... otherBits)
 {
   unsigned int m { 1U << value(bit) };
   if constexpr(sizeof...(OtherBits) > 0U) m |= mask(otherBits...);
-  return m;
+  return { m };
 } // sbn::mask()
 
 
@@ -168,11 +221,42 @@ inline std::string sbn::bits::bitName(triggerSource bit) {
     case triggerSource::NuMI:        return "NuMI"s;
     case triggerSource::OffbeamBNB:  return "OffbeamBNB"s;
     case triggerSource::OffbeamNuMI: return "OffbeamNuMI"s;
+    case triggerSource::Calibration: return "calibration"s;
     case triggerSource::NBits:       return "<invalid>"s;
   } // switch
   throw std::runtime_error("sbn::bits::bitName(triggerSource{ "s
     + std::to_string(value(bit)) + " }): unknown bit"s);
-} // sbn::bitName()
+} // sbn::bitName(triggerSource)
+
+// -----------------------------------------------------------------------------
+inline std::string sbn::bits::bitName(triggerLocation bit) {
+  
+  using namespace std::string_literals;
+  switch (bit) {
+    case triggerLocation::CryoEast: return "Cryo E"s;
+    case triggerLocation::CryoWest: return "Cryo W"s;
+    case triggerLocation::TPCEE:    return "TPC EE"s;
+    case triggerLocation::TPCEW:    return "TPC EW"s;
+    case triggerLocation::TPCWE:    return "TPC WE"s;
+    case triggerLocation::TPCWW:    return "TPC WW"s;
+    case triggerLocation::NBits:    return "<invalid>"s;
+  } // switch
+  throw std::runtime_error("sbn::bits::bitName(triggerLocation{ "s
+    + std::to_string(value(bit)) + " }): unknown bit"s);
+} // sbn::bitName(triggerLocation)
+
+// -----------------------------------------------------------------------------
+inline std::string sbn::bits::bitName(triggerType bit) {
+  
+  using namespace std::string_literals;
+  switch (bit) {
+    case triggerType::Majority:    return "majority"s;
+    case triggerType::MinimumBias: return "minimum bias"s;
+    case triggerType::NBits:       return "<invalid>"s;
+  } // switch
+  throw std::runtime_error("sbn::bits::bitName(triggerType{ "s
+    + std::to_string(value(bit)) + " }): unknown bit"s);
+} // sbn::bitName(triggerType)
 
 // -----------------------------------------------------------------------------
 
