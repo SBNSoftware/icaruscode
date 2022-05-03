@@ -16,6 +16,8 @@
 #include <array>
 #include <vector>
 
+#include "icaruscode/Decode/BeamBits.h" // sbn::triggerSource
+
 namespace icarus {
 
 	struct TriggerConfiguration;
@@ -28,17 +30,7 @@ namespace icarus {
 
 struct icarus::TriggerConfiguration {
 
-
-  static constexpr std::size_t kEast        = 0;
-  static constexpr std::size_t kWest        = 1;
-
-  static constexpr std::size_t kBNB         = 0;
-  static constexpr std::size_t kNuMI        = 1;
-  static constexpr std::size_t kOffBeamBNB  = 2;
-  static constexpr std::size_t kOffBeamNuMI = 3;
-  static constexpr std::size_t kCalibration = 4;
-
-  struct CryoConfig_t {
+  struct CryoConfig {
 
     // Majority Level for in-time activity
     unsigned int majLevelInTime = 0U;
@@ -51,16 +43,40 @@ struct icarus::TriggerConfiguration {
 
   };
 
-  struct GateConfig_t {
+  struct GateConfig {
+
+    // Return gate activation
+    bool hasGate = 0U;
+
+    // Return drift gate activation status 
+    bool hasDriftGate = 0U; 
+
+    // Return MinBias gate activation status 
+    bool hasMinBiasGate = 0U;
+
+    // Return MinBias drift gate activation status 
+    bool hasMinBiasDriftGate = 0U;
 
     // Duration of the coincidence gate for in-time activity
-    unsigned int inTimeWidth = 0U;
+    unsigned int gateWidth = 0U;
 
     // Duration of the coincidence gate for the out-of-time activity
-    unsigned int driftWidth = 0U;
+    unsigned int driftGateWidth = 0U;
 
     // Prescale for the MinBias triggers 
     unsigned long prescaleMinBias=0U;
+
+    // Rate of gates opened outside the extraction
+    unsigned long offBeamGateRate = 1U;
+
+    // Early warning offset for the BNB (NuMI) GatedBES ($MIBS74)
+    unsigned long earlyWarningOffset = 0U; 
+
+    // Early Early warning offset for the BNB (NuMI) $1D ($AE)
+    unsigned long earlyEarlyWarningOffset = 0U; 
+
+    // Period of two consecutive pulses from the internal pulse generator (valid for calibration gate)
+    unsigned int period = 0U;
 
   };
 
@@ -78,7 +94,7 @@ struct icarus::TriggerConfiguration {
   unsigned int vetoDelay = 0;
 
   // Cryostat configuration
-  std::array<CryoConfig_t, 2U> cryoConfig; 
+  std::array<CryoConfig, icarus::kNTriggerLocation> cryoConfig; 
 
  	// Majority trigger type ( consider trigger from one cryostats, either cryostats, or both cryostats )
  	std::string majorityTriggerType;
@@ -92,36 +108,62 @@ struct icarus::TriggerConfiguration {
  	// GateSelection: available gates to produce triggers: see registers 0x00000 in SBNDOCDB: 
  	std::string gateSelection ; 
 
-  // Beam Configuration 
-  std::array<GateConfig_t, 5U> gateConfig;
+  // Gate Configuration 
+  std::array<GateConfig, icarus::kNTriggerSource> gateConfig;
 
-
-  // Early warning offset {BNB, NuMI} {GatedBES, $MIBS74}
-  std::array<unsigned long, 2U> earlyWarningOffset = {0U, 0U}; 
-
-  // Early Early warning offset {BNB, NuMI} {$1D, $AE}
-  std::array<unsigned long, 2U> earlyEarlyWarningOffset = {0U, 0U}; 
-
- 	// Rate of gates opened outside the extraction. 
-  // Two 16 bits words: one for BNB and one for NuMI
- 	std::array<unsigned long, 2U> offBeamGateRate = {1U, 1U};
-
-
-  // Period of two consecutive pulses from the internal pulse generator (Oscillatore)
-  unsigned int period = 0U;
-
- 	
   // --- END ---- Data members -------------------------------------------------
-
 
   // --- BEGIN -- Derived quantities -------------------------------------------
 
-  
+  unsigned int getBeamGateWidth( std::size_t source ){
 
+    // Get the duration of the Gate corrected by the Veto time
+    using namespace std::string_literals;
+    if( gateConfig[source].hasGate ){
+      return gateConfig[source].gateWidth - vetoDelay;
+    } else {
+      return 0U;
+    }
+
+  }
+
+
+  unsigned int getDriftGateWidth( std::size_t source ){
+
+    // Get the duration of the Drift Gate 
+    if( gateConfig[source].hasDriftGate ){
+      return gateConfig[source].driftGateWidth;
+    } else {
+      return 0U;
+    }
+
+  }
+
+
+  unsigned int getOffBeamRate( std::size_t source ){
+
+    // Get the duration of the Drift Gate 
+    if( gateConfig[source].hasGate ){
+      return gateConfig[source].offBeamGateRate;
+    } else {
+      return 0U;
+    }
+
+  }
+
+
+  unsigned int getMinBiasPrescale( std::size_t source ){
+
+    // Get the duration of the Drift Gate 
+    if( gateConfig[source].hasGate ){
+      return gateConfig[source].prescaleMinBias;
+    } else {
+      return 0U;
+    }
+
+  }
 
   // --- END ---- Derived quantities -------------------------------------------
-
-
 
  	#if __cplusplus < 202004L
   	//@{
@@ -214,14 +256,9 @@ inline bool icarus::TriggerConfiguration::operator==
  if ( vetoDelay              != other.vetoDelay              )   return false;
  //if ( cryoConfig             != other.cryoConfig             )   return false;
  //if ( gateConfig             != other.gateConfig             )   return false;
- if ( earlyWarningOffset     != other.earlyWarningOffset     )   return false;
- if ( earlyEarlyWarningOffset!= other.earlyEarlyWarningOffset)   return false;
  if ( majorityTriggerType    != other.majorityTriggerType    )   return false;
  if ( runType                != other.runType                )   return false;
  if ( tpcTriggerDelay        != other.tpcTriggerDelay        )   return false; 
- if ( gateSelection 	       != other.gateSelection          )   return false; 
- if ( offBeamGateRate 		   != other.offBeamGateRate        )   return false; 
- if ( period 			           != other.period                 )   return false; 
 
   
  return true;

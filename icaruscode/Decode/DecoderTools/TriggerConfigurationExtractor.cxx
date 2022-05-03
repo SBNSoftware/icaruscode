@@ -72,8 +72,8 @@ bool icarus::TriggerConfigurationExtractor::isGoodConfiguration
 
 
 // -----------------------------------------------------------------------------
- std::array<unsigned long, 2U> icarus::TriggerConfigurationExtractor::parsePrescaleString
-   ( std::string prescaleString ) const 
+unsigned long icarus::TriggerConfigurationExtractor::parsePrescaleString
+   ( std::string prescaleString, std::size_t source ) const 
 {
 
     /* 
@@ -84,18 +84,17 @@ bool icarus::TriggerConfigurationExtractor::isGoodConfiguration
     * prescale associated to the calibration gate
     */
 
-    if( prescaleString.size() == 4 ){
-      return {  
-        std::stoul( prescaleString, nullptr ,16), 
-        0U
-      };
+    using namespace std::string_literals;
+    switch( source ){
+      case icarus::kBNB:          return std::stoul( prescaleString.substr(4,8), nullptr, 16);   
+      case icarus::kNuMI:         return std::stoul( prescaleString.substr(0,4), nullptr, 16);
+      case icarus::kOffBeamBNB:   return std::stoul( prescaleString.substr(4,8), nullptr, 16); 
+      case icarus::kOffBeamNuMI:  return std::stoul( prescaleString.substr(0,4), nullptr, 16);
+      case icarus::kCalibration:  return std::stoul( prescaleString, nullptr ,16);
     }
-    else{
-      return{ 
-        std::stoul( prescaleString.substr(4,8), nullptr, 16),  // LSB ( on the right )
-        std::stoul( prescaleString.substr(0,4), nullptr, 16)   // MSB ( on the left  )
-      };
-    }
+    throw std::runtime_error(" icarus::TriggerConfigurationExtractor::parsePrescaleString triggerSource{"s
+    + std::to_string(source) + "}): unknown value"s);
+
 }
 
 
@@ -140,84 +139,133 @@ auto icarus::TriggerConfigurationExtractor::extractTriggerConfiguration
   icarus::TriggerConfiguration rc; // readout config, for friends
 
 
-  rc.useWrTime                        = boardParams.get<bool>("use_wr_time");
-  rc.wrTimeOffset                     = boardParams.get<unsigned int>("wr_time_offset_ns");
+  rc.useWrTime                        
+    = boardParams.get<bool>("use_wr_time");
+  rc.wrTimeOffset                     
+    = boardParams.get<unsigned int>("wr_time_offset_ns");
   
-  rc.vetoDelay                        = fpgaParams.get<unsigned int>("Veto.value");
-  rc.cryoConfig[kEast].majLevelInTime = fpgaParams.get<unsigned int>("MajLevelBeamCryo1.value");   
-  rc.cryoConfig[kEast].majLevelDrift  = fpgaParams.get<unsigned int>("MajLevelEnableCryo1.value");   
-  rc.cryoConfig[kEast].slidingWindow  = fpgaParams.get<std::string>("SlidingWindowCryo1.value");   
-  rc.cryoConfig[kWest].majLevelInTime = fpgaParams.get<unsigned int>("MajLevelBeamCryo2.value");   
-  rc.cryoConfig[kWest].majLevelDrift  = fpgaParams.get<unsigned int>("MajLevelEnableCryo2.value");   
-  rc.cryoConfig[kWest].slidingWindow  = fpgaParams.get<std::string>("SlidingWindowCryo2.value");   
-  rc.majorityTriggerType              = fpgaParams.get<std::string>( "MajorityTriggerType.value");
-  rc.runType                          = fpgaParams.get<std::string>( "RunType.value");
+  rc.vetoDelay                        
+    = fpgaParams.get<unsigned int>("Veto.value");
 
-  rc.tpcTriggerDelay        = spexiParams.get<unsigned int>("TPCTriggerDelay.value");
-  rc.gateSelection          = spexiParams.get<std::string>("GateSelection.value");
-    
+  rc.cryoConfig[icarus::kEast].majLevelInTime 
+    = fpgaParams.get<unsigned int>("MajLevelBeamCryo1.value");   
+  rc.cryoConfig[icarus::kEast].majLevelDrift  
+    = fpgaParams.get<unsigned int>("MajLevelEnableCryo1.value");   
+  rc.cryoConfig[icarus::kEast].slidingWindow  
+    = fpgaParams.get<std::string>("SlidingWindowCryo1.value");   
+  rc.cryoConfig[icarus::kWest].majLevelInTime 
+    = fpgaParams.get<unsigned int>("MajLevelBeamCryo2.value");   
+  rc.cryoConfig[icarus::kWest].majLevelDrift  
+    = fpgaParams.get<unsigned int>("MajLevelEnableCryo2.value");   
+  rc.cryoConfig[icarus::kWest].slidingWindow  
+    = fpgaParams.get<std::string>("SlidingWindowCryo2.value");   
+  rc.majorityTriggerType              
+    = fpgaParams.get<std::string>( "MajorityTriggerType.value");
+  rc.runType                          
+    = fpgaParams.get<std::string>( "RunType.value");
+
+  rc.tpcTriggerDelay        
+    = spexiParams.get<unsigned int>("TPCTriggerDelay.value");
+
+  sbn::bits::mask_t<sbn::gateSelection> gateSelection          
+    = std::stoul( spexiParams.get<std::string>("GateSelection.value"), nullptr, 16);
+  
+  // Read the prescale configuraton as string for now 
   auto prescaleMinBiasBeam = 
-    parsePrescaleString( spexiParams.get<std::string>("PreScaleBNBNuMI.value") ); 
-
+    spexiParams.get<std::string>("PreScaleBNBNuMI.value"); 
   auto prescaleMinBiasOffBeam = 
-    parsePrescaleString( spexiParams.get<std::string>("PreScaleOffBeam.value") ); 
-
-  rc.offBeamGateRate = 
-    parsePrescaleString( spexiParams.get<std::string>("OffBeamGateRate.value") ); 
+    spexiParams.get<std::string>("PreScaleOffBeam.value"); 
+  auto offBeamGateRate = 
+    spexiParams.get<std::string>("OffBeamGateRate.value"); 
+  auto prescaleMinBiasCalibration =
+    spexiParams.get<std::string>("PrescaleZeroBias.value");
 
   // BNB Full Config
-  rc.gateConfig[kBNB].inTimeWidth 
+  rc.gateConfig[icarus::kBNB].hasGate
+    = sbn::bits::hasBitSet(gateSelection, sbn::bits::gateSelection::gateBNB);
+  rc.gateConfig[icarus::kBNB].hasDriftGate
+    = sbn::bits::hasBitSet(gateSelection, sbn::bits::gateSelection::driftGateBNB);
+  rc.gateConfig[icarus::kBNB].hasMinBiasGate
+    = sbn::bits::hasBitSet(gateSelection, sbn::bits::gateSelection::minbiasGateBNB);
+  rc.gateConfig[icarus::kBNB].hasMinBiasDriftGate
+    = sbn::bits::hasBitSet(gateSelection, sbn::bits::gateSelection::minbiasDriftGateBNB);
+  rc.gateConfig[icarus::kBNB].gateWidth 
     = spexiParams.get<unsigned int>("BNBBeamWidth.value");
-  rc.gateConfig[kBNB].driftWidth          
+  rc.gateConfig[icarus::kBNB].driftGateWidth          
     = spexiParams.get<unsigned int>("BNBEnableWidth.value");
-  rc.gateConfig[kBNB].prescaleMinBias 
-    = prescaleMinBiasOffBeam[kBNB];
-
-  // OffBeamBNB config
-  rc.gateConfig[kOffBeamBNB].inTimeWidth            
-    = spexiParams.get<unsigned int>("OffBeamBNBBeamWidth.value");
-  rc.gateConfig[kOffBeamBNB].driftWidth             
-    = spexiParams.get<unsigned int>("OffBeamBNBEnableWidth.value");
-  rc.gateConfig[kOffBeamBNB].prescaleMinBias
-    = prescaleMinBiasOffBeam[kBNB];
-
-  // NuMI Configuration
-  rc.gateConfig[kNuMI].inTimeWidth         
-    = spexiParams.get<unsigned int>("NuMIBeamWidth.value");
-  rc.gateConfig[kNuMI].driftWidth          
-    = spexiParams.get<unsigned int>("NuMIEnableWidth.value");
-  rc.gateConfig[kNuMI].prescaleMinBias
-    = prescaleMinBiasBeam[kNuMI];
-
-  // OffbeamNuMI config 
-  rc.gateConfig[kOffBeamNuMI].inTimeWidth            
-    = spexiParams.get<unsigned int>("OffBeamNuMIBeamWidth.value");
-  rc.gateConfig[kOffBeamNuMI].driftWidth             
-    = spexiParams.get<unsigned int>("OffBeamNuMIEnableWidth.value");
-  rc.gateConfig[kOffBeamNuMI].prescaleMinBias 
-    = prescaleMinBiasOffBeam[kNuMI];
-
-  // Calibration configuration
-  rc.gateConfig[kCalibration].inTimeWidth 
-    = spexiParams.get<unsigned int>("ZeroBiasWidth.value");
-  rc.gateConfig[kCalibration].driftWidth 
-    = spexiParams.get<unsigned int>("ZeroBiasEnableWidth.value");
-  rc.gateConfig[kCalibration].prescaleMinBias
-    = parsePrescaleString(spexiParams.get<std::string>("PrescaleZeroBias.value"))[0];
-  rc.period 
-    = spexiParams.get<unsigned int>("ZeroBiasFreq.value"); //it is actually a period 
-
-  // Beam early warning offsets   
-  rc.earlyWarningOffset[kBNB] 
+  rc.gateConfig[icarus::kBNB].prescaleMinBias 
+    = parsePrescaleString(prescaleMinBiasBeam, icarus::kBNB);
+  rc.gateConfig[icarus::kBNB].earlyWarningOffset
     = spexiParams.get<unsigned int>("BNBBESOffset.value");
-  rc.earlyEarlyWarningOffset[kBNB]
+  rc.gateConfig[icarus::kBNB].earlyEarlyWarningOffset
     = spexiParams.get<unsigned int>("BNB1DOffset.value");
 
-  rc.earlyWarningOffset[kNuMI] 
+  // OffBeamBNB config
+  rc.gateConfig[icarus::kOffBeamBNB].hasGate
+    = sbn::bits::hasBitSet(gateSelection, sbn::bits::gateSelection::gateOffbeamBNB);
+  rc.gateConfig[icarus::kOffBeamBNB].hasDriftGate
+    = sbn::bits::hasBitSet(gateSelection, sbn::bits::gateSelection::driftGateOffbeamBNB);
+  rc.gateConfig[icarus::kOffBeamBNB].hasMinBiasGate
+    = sbn::bits::hasBitSet(gateSelection, sbn::bits::gateSelection::minbiasGateOffbeamBNB);
+  rc.gateConfig[icarus::kOffBeamBNB].hasMinBiasDriftGate
+    = sbn::bits::hasBitSet(gateSelection, sbn::bits::gateSelection::minbiasDriftGateOffbeamBNB);
+  rc.gateConfig[icarus::kOffBeamBNB].gateWidth            
+    = spexiParams.get<unsigned int>("OffBeamBNBBeamWidth.value");
+  rc.gateConfig[icarus::kOffBeamBNB].driftGateWidth             
+    = spexiParams.get<unsigned int>("OffBeamBNBEnableWidth.value");
+  rc.gateConfig[icarus::kOffBeamBNB].prescaleMinBias
+    = parsePrescaleString(prescaleMinBiasOffBeam, icarus::kOffBeamBNB);
+  rc.gateConfig[icarus::kOffBeamBNB].offBeamGateRate
+    = parsePrescaleString( offBeamGateRate, icarus::kOffBeamBNB );
+
+  // NuMI Configuration
+  rc.gateConfig[icarus::kNuMI].hasGate
+    = sbn::bits::hasBitSet(gateSelection, sbn::bits::gateSelection::gateNuMI);
+  rc.gateConfig[icarus::kNuMI].hasDriftGate
+    = sbn::bits::hasBitSet(gateSelection, sbn::bits::gateSelection::driftGateNuMI);
+  rc.gateConfig[icarus::kNuMI].hasMinBiasGate
+    = sbn::bits::hasBitSet(gateSelection, sbn::bits::gateSelection::minbiasGateBNB);
+  rc.gateConfig[icarus::kNuMI].hasMinBiasDriftGate
+    = sbn::bits::hasBitSet(gateSelection, sbn::bits::gateSelection::minbiasDriftGateNuMI);
+  rc.gateConfig[icarus::kNuMI].gateWidth         
+    = spexiParams.get<unsigned int>("NuMIBeamWidth.value");
+  rc.gateConfig[icarus::kNuMI].driftGateWidth          
+    = spexiParams.get<unsigned int>("NuMIEnableWidth.value");
+  rc.gateConfig[icarus::kNuMI].prescaleMinBias
+    = parsePrescaleString(prescaleMinBiasBeam, icarus::kNuMI);
+  rc.gateConfig[icarus::kNuMI].earlyWarningOffset
     = spexiParams.get<unsigned int>("NuMIMIBSOffset.value");
-  rc.earlyEarlyWarningOffset[kNuMI]
-    = spexiParams.get<unsigned int>("NuMIADOffset.value"); 
-      
+  rc.gateConfig[icarus::kNuMI].earlyEarlyWarningOffset
+    = spexiParams.get<unsigned int>("NuMIADOffset.value");
+
+  // OffbeamNuMI config 
+  rc.gateConfig[icarus::kOffBeamNuMI].hasGate
+    = sbn::bits::hasBitSet(gateSelection, sbn::bits::gateSelection::gateOffbeamNuMI);
+  rc.gateConfig[icarus::kOffBeamNuMI].hasDriftGate
+    = sbn::bits::hasBitSet(gateSelection, sbn::bits::gateSelection::driftGateOffbeamNuMI);
+  rc.gateConfig[icarus::kOffBeamNuMI].hasMinBiasGate
+    = sbn::bits::hasBitSet(gateSelection, sbn::bits::gateSelection::minbiasGateOffbeamNuMI);
+  rc.gateConfig[icarus::kOffBeamNuMI].hasMinBiasDriftGate
+    = sbn::bits::hasBitSet(gateSelection, sbn::bits::gateSelection::minbiasDriftGateOffbeamNuMI);
+  rc.gateConfig[icarus::kOffBeamNuMI].gateWidth            
+    = spexiParams.get<unsigned int>("OffBeamNuMIBeamWidth.value");
+  rc.gateConfig[icarus::kOffBeamNuMI].driftGateWidth             
+    = spexiParams.get<unsigned int>("OffBeamNuMIEnableWidth.value");
+  rc.gateConfig[icarus::kOffBeamNuMI].prescaleMinBias 
+    = parsePrescaleString(prescaleMinBiasOffBeam, icarus::kOffBeamNuMI);
+  rc.gateConfig[icarus::kOffBeamNuMI].offBeamGateRate
+    = parsePrescaleString( offBeamGateRate, icarus::kOffBeamNuMI );
+
+  // Calibration configuration
+  rc.gateConfig[icarus::kCalibration].gateWidth 
+    = spexiParams.get<unsigned int>("ZeroBiasWidth.value");
+  rc.gateConfig[icarus::kCalibration].driftGateWidth 
+    = spexiParams.get<unsigned int>("ZeroBiasEnableWidth.value");
+  rc.gateConfig[icarus::kCalibration].prescaleMinBias
+    = parsePrescaleString( prescaleMinBiasCalibration, icarus::kCalibration );
+  rc.gateConfig[icarus::kCalibration].period 
+    = spexiParams.get<unsigned int>("ZeroBiasFreq.value"); //it is actually a period 
+
   return rc;
 
 } // icarus::TriggerConfigurationExtractor::extractTriggerConfiguration()

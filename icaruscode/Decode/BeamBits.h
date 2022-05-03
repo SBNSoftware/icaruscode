@@ -86,12 +86,50 @@ namespace sbn {
       NuMI,        ///< Type of beam: NuMI.
       OffbeamBNB,  ///< Type of Offbeam: BNB
       OffbeamNuMI, ///< Type of Offbeam: NuMI
+      Calibration, ///< Type of source: calibration trigger
       // ==> add here if more are needed <==
       NBits    ///< Number of bits currently supported.
     }; // triggerSource
     
     /// Returns a mnemonic short name of the beam type.
     std::string bitName(triggerSource bit);
+
+
+    /// Location of the trigger inside the detector 
+    enum class triggerLocation: unsigned int {
+      CryoEast,   ///< Identification of the East cryostat 
+      CryoWest,   ///< Identification of the West cryostat 
+      // ==> add here if more are needed <==
+      NBits       ///< Number of Bits currently supported 
+    }; // triggerLocation 
+
+
+    /// Types of available gates as set in the trigger run-time configuration
+    enum class gateSelection: unsigned int {
+      gateBNB,                 ///BNB early warning signal (gatedBES)
+      driftGateBNB,       ///BNB early-early warning signal ($1D)
+      gateNuMI,          ///NuMI early warning signal (MIBS$74)
+      driftGateNuMI,     ///NuMI early-early warning signal ($AD)
+      gateOffbeamBNB,            ///Offbeam gate BNB 
+      driftGateOffbeamBNB,       ///Offbeam drift gate BNB (ena)
+      gateOffbeamNuMI,           ///Offbeam gate NuMI (enable NuMI offbeam triggers)
+      driftGateOffbeamNuMI,      ///Offbeam drift gate NuMI (enables light out-of-time for offbeam )
+      gateCalibration,
+      driftGateCalibration,
+      minbiasGateBNB,
+      minbiasGateNuMI,
+      minbiasGateOffbeamBNB,
+      minbiasGateOffbeamNuMI,
+      minbiasGateCalibration,
+      minbiasDriftGateBNB, 
+      minbiasDriftGateNuMI, 
+      minbiasDriftGateOffbeamBNB, 
+      minbiasDriftGateOffbeamNuMI, 
+      minbiasDriftGateCalibration, 
+      // ==> add here if more are needed <==
+      NBits
+    }; // gateSelection
+
     
     /// @}
     // --- END ---- Beam bits --------------------------------------------------
@@ -99,6 +137,8 @@ namespace sbn {
   } // namespace bits
   
   using bits::triggerSource; // import symbol
+  using bits::triggerLocation;
+  using bits::gateSelection;
   
 } // namespace sbn
 
@@ -168,6 +208,7 @@ inline std::string sbn::bits::bitName(triggerSource bit) {
     case triggerSource::NuMI:        return "NuMI"s;
     case triggerSource::OffbeamBNB:  return "OffbeamBNB"s;
     case triggerSource::OffbeamNuMI: return "OffbeamNuMI"s;
+    case triggerSource::Calibration: return "Calibration"s;
     case triggerSource::NBits:       return "<invalid>"s;
   } // switch
   throw std::runtime_error("sbn::bits::bitName(triggerSource{ "s
@@ -175,5 +216,25 @@ inline std::string sbn::bits::bitName(triggerSource bit) {
 } // sbn::bitName()
 
 // -----------------------------------------------------------------------------
+
+namespace icarus {
+
+  
+  using triggerLocation = sbn::triggerLocation;
+  using triggerSource   = sbn::triggerSource;
+
+  static constexpr std::size_t kEast = sbn::bits::value<triggerLocation>(triggerLocation::CryoEast);
+  static constexpr std::size_t kWest = sbn::bits::value<triggerLocation>(triggerLocation::CryoWest);
+  static constexpr std::size_t kNTriggerLocation = sbn::bits::value<triggerLocation>(triggerLocation::NBits);
+
+  static constexpr std::size_t kBNB         = sbn::bits::value<triggerSource>(triggerSource::BNB);
+  static constexpr std::size_t kNuMI        = sbn::bits::value<triggerSource>(triggerSource::NuMI);
+  static constexpr std::size_t kOffBeamBNB  = sbn::bits::value<triggerSource>(triggerSource::OffbeamBNB);
+  static constexpr std::size_t kOffBeamNuMI = sbn::bits::value<triggerSource>(triggerSource::OffbeamNuMI);
+  static constexpr std::size_t kCalibration = sbn::bits::value<triggerSource>(triggerSource::Calibration);
+  static constexpr std::size_t kNTriggerSource = sbn::bits::value<triggerSource>(triggerSource::NBits);
+
+
+}
 
 #endif // SBNOBJ_COMMON_TRIGGER_BEAMBITS_H

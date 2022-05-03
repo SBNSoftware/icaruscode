@@ -13,6 +13,7 @@
 // ICARUS libraries
 #include "icaruscode/Utilities/ReadArtConfiguration.h" // util::readConfigurationFromArtPrincipal()
 #include "icaruscode/Decode/DataProducts/TriggerConfiguration.h"
+#include "icaruscode/Decode/BeamBits.h"
 
 // framework libraries
 #include "art/Framework/Principal/DataViewImpl.h"
@@ -366,16 +367,7 @@ class icarus::TriggerConfigurationExtractor
   std::optional<fhicl::ParameterSet> readBoardConfig
     (fhicl::ParameterSet const& pset, std::string const& key) const;
 
-  static constexpr std::size_t kEast        = icarus::TriggerConfiguration::kEast;
-  static constexpr std::size_t kWest        = icarus::TriggerConfiguration::kWest;
-  static constexpr std::size_t kBNB         = icarus::TriggerConfiguration::kBNB;
-  static constexpr std::size_t kNuMI        = icarus::TriggerConfiguration::kNuMI;
-  static constexpr std::size_t kOffBeamBNB  = icarus::TriggerConfiguration::kOffBeamBNB;
-  static constexpr std::size_t kOffBeamNuMI = icarus::TriggerConfiguration::kOffBeamNuMI;
-  static constexpr std::size_t kCalibration = icarus::TriggerConfiguration::kCalibration;
-
-
-   std::array<unsigned long, 2U> parsePrescaleString( std::string prescaleString ) const;
+   unsigned long parsePrescaleString( std::string prescaleString, std::size_t source ) const;
   
 }; // icarus::TriggerConfigurationExtractor
 
