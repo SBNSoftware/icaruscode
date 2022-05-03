@@ -148,7 +148,7 @@ recoana_sce_producers.SBNShowerGausSCECryoE.ShowerFinderTools[7].SCECorrectEFiel
 recoana_sce_producers.SBNShowerGausSCECryoE.ShowerFinderTools[7].SCECorrectPitch:              true
 recoana_sce_producers.SBNShowerGausSCECryoE.ShowerFinderTools[7].SCEInputCorrected:            true
 recoana_sce_producers.SBNShowerGausSCECryoW.PFParticleLabel:                                   "pandoraGausSCECryoW"
-recoana_sce_producers.SBNShowerGausSCECryoE.UseAllParticles: 				       true
+recoana_sce_producers.SBNShowerGausSCECryoW.UseAllParticles: 				       true
 recoana_sce_producers.SBNShowerGausSCECryoW.ShowerFinderTools[7].SCECorrectEField:             true
 recoana_sce_producers.SBNShowerGausSCECryoW.ShowerFinderTools[7].SCECorrectPitch:              true
 recoana_sce_producers.SBNShowerGausSCECryoW.ShowerFinderTools[7].SCEInputCorrected:            true
