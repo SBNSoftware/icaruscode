@@ -32,50 +32,50 @@ struct icarus::TriggerConfiguration {
 
   struct CryoConfig {
 
-    // Majority Level for in-time activity
+    /// Majority Level for in-time activity
     unsigned int majLevelInTime = 0U;
 
-    // Majority Level for out-of-time activity
+    /// Majority Level for out-of-time activity
     unsigned int majLevelDrift = 0U;
 
-    // Window selection "Fixed" or "Overlapping"
+    /// Window selection "Fixed" or "Overlapping"
     std::string slidingWindow = "Fixed";
 
   };
 
   struct GateConfig {
 
-    // Return gate activation
+    /// Return gate activation
     bool hasGate = 0U;
 
-    // Return drift gate activation status 
+    /// Return drift gate activation status (for out-of-time light)
     bool hasDriftGate = 0U; 
 
-    // Return MinBias gate activation status 
+    /// Return MinBias triggers activation status
     bool hasMinBiasGate = 0U;
 
-    // Return MinBias drift gate activation status 
+    /// Return MinBias drift gate activation status (for out-of-time light)
     bool hasMinBiasDriftGate = 0U;
 
-    // Duration of the coincidence gate for in-time activity
+    /// Duration of the gate for the in-time activity
     unsigned int gateWidth = 0U;
 
-    // Duration of the coincidence gate for the out-of-time activity
+    /// Duration of the drift gate for the out-of-time activity
     unsigned int driftGateWidth = 0U;
 
-    // Prescale for the MinBias triggers 
-    unsigned long prescaleMinBias=0U;
+    /// Prescale for the MinBias triggers (calculated with respect to the number of gates opened)
+    unsigned long prescaleMinBias=1U;
 
-    // Rate of gates opened outside the extraction
+    /// Rate of gates opened outside the extraction (calculated with respect to the number of gates opened)
     unsigned long offBeamGateRate = 1U;
 
-    // Early warning offset for the BNB (NuMI) GatedBES ($MIBS74)
+    /// Early warning offset for the BNB (NuMI) GatedBES ($MIBS74)
     unsigned long earlyWarningOffset = 0U; 
 
-    // Early Early warning offset for the BNB (NuMI) $1D ($AE)
+    /// Early Early warning offset for the BNB (NuMI) $1D ($AE)
     unsigned long earlyEarlyWarningOffset = 0U; 
 
-    // Period of two consecutive pulses from the internal pulse generator (valid for calibration gate)
+    /// Period of two consecutive pulses from the internal pulse generator (valid for calibration gate)
     unsigned int period = 0U;
 
   };
@@ -84,40 +84,42 @@ struct icarus::TriggerConfiguration {
  
   // NOTE when adding data members, remember to add an element to the comparison
 
-  // Use the WR time reference
+  /// Use the WR time reference
   bool useWrTime = false;
 
-  // Add an offset between the npt and tai time as used in the wr reference (normally it is 1 or 2 leap seconds)
+  /// Add an offset between the npt and tai time as used in the wr reference (normally it is 1 or 2 leap seconds)
   unsigned int wrTimeOffset = 1'000'000'000;
  
-  // Veto (delay on the leading edge of the beam gate)
+  /// Veto (this delay has to be subtracted to the gate width in order to)
   unsigned int vetoDelay = 0;
 
-  // Cryostat configuration
+  /// Cryostat configuration
   std::array<CryoConfig, icarus::kNTriggerLocation> cryoConfig; 
 
- 	// Majority trigger type ( consider trigger from one cryostats, either cryostats, or both cryostats )
+ 	/// Majority trigger type (consider triggers from one cryostats, either cryostats, or both cryostats)
  	std::string majorityTriggerType;
 
- 	// Run type ( MinBias: ignoring the light in-time or Majority: which applies a logic based on combination of distriminated light signals )
+ 	/// Run type (MinBias: ignoring the light in-time or Majority: which applies a logic based on a combination of distriminated light signals)
  	std::string runType;
 
- 	// TPCTriggerDelay: distance between the Global trigger time and the output for the TPC. NB: It is in units of 400 ns 
+ 	/// TPCTriggerDelay: distance between the Global trigger time and the output for the TPC. NB: It is in units of 400 ns 
  	unsigned int tpcTriggerDelay = 0;
 
- 	// GateSelection: available gates to produce triggers: see registers 0x00000 in SBNDOCDB: 
- 	std::string gateSelection ; 
-
-  // Gate Configuration 
+  /// Gate Configuration 
   std::array<GateConfig, icarus::kNTriggerSource> gateConfig;
 
   // --- END ---- Data members -------------------------------------------------
 
   // --- BEGIN -- Derived quantities -------------------------------------------
 
-  unsigned int getBeamGateWidth( std::size_t source ){
+  unsigned int getGateWidth( std::size_t source ){
 
-    // Get the duration of the Gate corrected by the Veto time
+  /**
+      * @brief returns the effective gate width corrected for the veto delay 
+      * @param source is the value of the sbn::bits::triggerSource enum type corresponding to the type of gate 
+      *
+   */
+
     using namespace std::string_literals;
     if( gateConfig[source].hasGate ){
       return gateConfig[source].gateWidth - vetoDelay;
@@ -127,10 +129,13 @@ struct icarus::TriggerConfiguration {
 
   }
 
-
   unsigned int getDriftGateWidth( std::size_t source ){
 
-    // Get the duration of the Drift Gate 
+  /**
+      * @brief returns the width of the drift gate used for out-of-time light activity       
+      * @param source is the value of the sbn::bits::triggerSource enum type corresponding to the type of gate 
+      *
+   */
     if( gateConfig[source].hasDriftGate ){
       return gateConfig[source].driftGateWidth;
     } else {
@@ -139,10 +144,15 @@ struct icarus::TriggerConfiguration {
 
   }
 
-
   unsigned int getOffBeamRate( std::size_t source ){
 
-    // Get the duration of the Drift Gate 
+  /**
+      * @brief returns the prescale value used to open the offbeam gates with respect to the total number of 
+      * beam gates seen       
+      * @param source is the value of the sbn::bits::triggerSource enum type corresponding to the type of gate 
+      *
+   */
+     
     if( gateConfig[source].hasGate ){
       return gateConfig[source].offBeamGateRate;
     } else {
@@ -151,10 +161,14 @@ struct icarus::TriggerConfiguration {
 
   }
 
-
   unsigned int getMinBiasPrescale( std::size_t source ){
 
-    // Get the duration of the Drift Gate 
+  /**
+      * @brief returns the prescale value used to collect MinBias triggers with respect to the total number of 
+      * gates seen of a particula type   
+      * @param source is the value of the sbn::bits::triggerSource enum type corresponding to the type of gate 
+      *
+   */
     if( gateConfig[source].hasGate ){
       return gateConfig[source].prescaleMinBias;
     } else {
@@ -162,6 +176,7 @@ struct icarus::TriggerConfiguration {
     }
 
   }
+
 
   // --- END ---- Derived quantities -------------------------------------------
 
@@ -182,6 +197,7 @@ struct icarus::TriggerConfiguration {
 
 
     // -- BEGIN -- Dump facility -------------------------------------------------
+
   	/// Maximum supported verbosity level supported by `dump()`.
   	static constexpr unsigned int MaxDumpVerbosity = 2U;
   
@@ -251,14 +267,14 @@ inline bool icarus::TriggerConfiguration::operator==
   (icarus::TriggerConfiguration const& other) const
 {
 
- if ( useWrTime              != other.useWrTime              )   return false;
- if ( wrTimeOffset           != other.wrTimeOffset           )   return false;
- if ( vetoDelay              != other.vetoDelay              )   return false;
- //if ( cryoConfig             != other.cryoConfig             )   return false;
- //if ( gateConfig             != other.gateConfig             )   return false;
- if ( majorityTriggerType    != other.majorityTriggerType    )   return false;
- if ( runType                != other.runType                )   return false;
- if ( tpcTriggerDelay        != other.tpcTriggerDelay        )   return false; 
+ if ( useWrTime                             != other.useWrTime                             )   return false;
+ if ( wrTimeOffset                          != other.wrTimeOffset                          )   return false;
+ if ( vetoDelay                             != other.vetoDelay                             )   return false;
+ //if ( cryoConfig                            != other.cryoConfig                            )   return false;
+ //if ( gateConfig                            != other.gateConfig                            )   return false;
+ if ( majorityTriggerType                   != other.majorityTriggerType                   )   return false;
+ if ( runType                               != other.runType                               )   return false;
+ if ( tpcTriggerDelay                       != other.tpcTriggerDelay                       )   return false; 
 
   
  return true;

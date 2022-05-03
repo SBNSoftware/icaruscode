@@ -169,7 +169,7 @@ auto icarus::TriggerConfigurationExtractor::extractTriggerConfiguration
 
   sbn::bits::mask_t<sbn::gateSelection> gateSelection          
     = std::stoul( spexiParams.get<std::string>("GateSelection.value"), nullptr, 16);
-  
+
   // Read the prescale configuraton as string for now 
   auto prescaleMinBiasBeam = 
     spexiParams.get<std::string>("PreScaleBNBNuMI.value"); 
@@ -182,13 +182,13 @@ auto icarus::TriggerConfigurationExtractor::extractTriggerConfiguration
 
   // BNB Full Config
   rc.gateConfig[icarus::kBNB].hasGate
-    = sbn::bits::hasBitSet(gateSelection, sbn::bits::gateSelection::gateBNB);
+    = sbn::bits::hasBitSet(gateSelection, sbn::bits::gateSelection::GateBNB);
   rc.gateConfig[icarus::kBNB].hasDriftGate
-    = sbn::bits::hasBitSet(gateSelection, sbn::bits::gateSelection::driftGateBNB);
+    = sbn::bits::hasBitSet(gateSelection, sbn::bits::gateSelection::DriftGateBNB);
   rc.gateConfig[icarus::kBNB].hasMinBiasGate
-    = sbn::bits::hasBitSet(gateSelection, sbn::bits::gateSelection::minbiasGateBNB);
+    = sbn::bits::hasBitSet(gateSelection, sbn::bits::gateSelection::MinbiasGateBNB);
   rc.gateConfig[icarus::kBNB].hasMinBiasDriftGate
-    = sbn::bits::hasBitSet(gateSelection, sbn::bits::gateSelection::minbiasDriftGateBNB);
+    = sbn::bits::hasBitSet(gateSelection, sbn::bits::gateSelection::MinbiasDriftGateBNB);
   rc.gateConfig[icarus::kBNB].gateWidth 
     = spexiParams.get<unsigned int>("BNBBeamWidth.value");
   rc.gateConfig[icarus::kBNB].driftGateWidth          
@@ -202,13 +202,13 @@ auto icarus::TriggerConfigurationExtractor::extractTriggerConfiguration
 
   // OffBeamBNB config
   rc.gateConfig[icarus::kOffBeamBNB].hasGate
-    = sbn::bits::hasBitSet(gateSelection, sbn::bits::gateSelection::gateOffbeamBNB);
+    = sbn::bits::hasBitSet(gateSelection, sbn::bits::gateSelection::GateOffbeamBNB);
   rc.gateConfig[icarus::kOffBeamBNB].hasDriftGate
-    = sbn::bits::hasBitSet(gateSelection, sbn::bits::gateSelection::driftGateOffbeamBNB);
+    = sbn::bits::hasBitSet(gateSelection, sbn::bits::gateSelection::DriftGateOffbeamBNB);
   rc.gateConfig[icarus::kOffBeamBNB].hasMinBiasGate
-    = sbn::bits::hasBitSet(gateSelection, sbn::bits::gateSelection::minbiasGateOffbeamBNB);
+    = sbn::bits::hasBitSet(gateSelection, sbn::bits::gateSelection::MinbiasGateOffbeamBNB);
   rc.gateConfig[icarus::kOffBeamBNB].hasMinBiasDriftGate
-    = sbn::bits::hasBitSet(gateSelection, sbn::bits::gateSelection::minbiasDriftGateOffbeamBNB);
+    = sbn::bits::hasBitSet(gateSelection, sbn::bits::gateSelection::MinbiasDriftGateOffbeamBNB);
   rc.gateConfig[icarus::kOffBeamBNB].gateWidth            
     = spexiParams.get<unsigned int>("OffBeamBNBBeamWidth.value");
   rc.gateConfig[icarus::kOffBeamBNB].driftGateWidth             
@@ -220,13 +220,13 @@ auto icarus::TriggerConfigurationExtractor::extractTriggerConfiguration
 
   // NuMI Configuration
   rc.gateConfig[icarus::kNuMI].hasGate
-    = sbn::bits::hasBitSet(gateSelection, sbn::bits::gateSelection::gateNuMI);
+    = sbn::bits::hasBitSet(gateSelection, sbn::bits::gateSelection::GateNuMI);
   rc.gateConfig[icarus::kNuMI].hasDriftGate
-    = sbn::bits::hasBitSet(gateSelection, sbn::bits::gateSelection::driftGateNuMI);
+    = sbn::bits::hasBitSet(gateSelection, sbn::bits::gateSelection::DriftGateNuMI);
   rc.gateConfig[icarus::kNuMI].hasMinBiasGate
-    = sbn::bits::hasBitSet(gateSelection, sbn::bits::gateSelection::minbiasGateBNB);
+    = sbn::bits::hasBitSet(gateSelection, sbn::bits::gateSelection::MinbiasGateNuMI);
   rc.gateConfig[icarus::kNuMI].hasMinBiasDriftGate
-    = sbn::bits::hasBitSet(gateSelection, sbn::bits::gateSelection::minbiasDriftGateNuMI);
+    = sbn::bits::hasBitSet(gateSelection, sbn::bits::gateSelection::MinbiasDriftGateNuMI);
   rc.gateConfig[icarus::kNuMI].gateWidth         
     = spexiParams.get<unsigned int>("NuMIBeamWidth.value");
   rc.gateConfig[icarus::kNuMI].driftGateWidth          
@@ -240,13 +240,13 @@ auto icarus::TriggerConfigurationExtractor::extractTriggerConfiguration
 
   // OffbeamNuMI config 
   rc.gateConfig[icarus::kOffBeamNuMI].hasGate
-    = sbn::bits::hasBitSet(gateSelection, sbn::bits::gateSelection::gateOffbeamNuMI);
+    = sbn::bits::hasBitSet(gateSelection, sbn::bits::gateSelection::GateOffbeamNuMI);
   rc.gateConfig[icarus::kOffBeamNuMI].hasDriftGate
-    = sbn::bits::hasBitSet(gateSelection, sbn::bits::gateSelection::driftGateOffbeamNuMI);
+    = sbn::bits::hasBitSet(gateSelection, sbn::bits::gateSelection::DriftGateOffbeamNuMI);
   rc.gateConfig[icarus::kOffBeamNuMI].hasMinBiasGate
-    = sbn::bits::hasBitSet(gateSelection, sbn::bits::gateSelection::minbiasGateOffbeamNuMI);
+    = sbn::bits::hasBitSet(gateSelection, sbn::bits::gateSelection::MinbiasGateOffbeamNuMI);
   rc.gateConfig[icarus::kOffBeamNuMI].hasMinBiasDriftGate
-    = sbn::bits::hasBitSet(gateSelection, sbn::bits::gateSelection::minbiasDriftGateOffbeamNuMI);
+    = sbn::bits::hasBitSet(gateSelection, sbn::bits::gateSelection::MinbiasDriftGateOffbeamNuMI);
   rc.gateConfig[icarus::kOffBeamNuMI].gateWidth            
     = spexiParams.get<unsigned int>("OffBeamNuMIBeamWidth.value");
   rc.gateConfig[icarus::kOffBeamNuMI].driftGateWidth             
@@ -257,6 +257,14 @@ auto icarus::TriggerConfigurationExtractor::extractTriggerConfiguration
     = parsePrescaleString( offBeamGateRate, icarus::kOffBeamNuMI );
 
   // Calibration configuration
+  rc.gateConfig[icarus::kCalibration].hasGate
+    = sbn::bits::hasBitSet(gateSelection, sbn::bits::gateSelection::GateCalibration);
+  rc.gateConfig[icarus::kCalibration].hasDriftGate
+    = sbn::bits::hasBitSet(gateSelection, sbn::bits::gateSelection::DriftGateCalibration);
+  rc.gateConfig[icarus::kCalibration].hasMinBiasGate
+    = sbn::bits::hasBitSet(gateSelection, sbn::bits::gateSelection::MinbiasGateCalibration);
+  rc.gateConfig[icarus::kCalibration].hasMinBiasDriftGate
+    = sbn::bits::hasBitSet(gateSelection, sbn::bits::gateSelection::MinbiasDriftGateCalibration);
   rc.gateConfig[icarus::kCalibration].gateWidth 
     = spexiParams.get<unsigned int>("ZeroBiasWidth.value");
   rc.gateConfig[icarus::kCalibration].driftGateWidth 

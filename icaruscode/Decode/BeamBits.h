@@ -104,28 +104,28 @@ namespace sbn {
     }; // triggerLocation 
 
 
-    /// Types of available gates as set in the trigger run-time configuration
+    /// Enabled gates in the trigger configuration. See register 0X00050008 in docdb SBN-doc-23778-v1
     enum class gateSelection: unsigned int {
-      gateBNB,                 ///BNB early warning signal (gatedBES)
-      driftGateBNB,       ///BNB early-early warning signal ($1D)
-      gateNuMI,          ///NuMI early warning signal (MIBS$74)
-      driftGateNuMI,     ///NuMI early-early warning signal ($AD)
-      gateOffbeamBNB,            ///Offbeam gate BNB 
-      driftGateOffbeamBNB,       ///Offbeam drift gate BNB (ena)
-      gateOffbeamNuMI,           ///Offbeam gate NuMI (enable NuMI offbeam triggers)
-      driftGateOffbeamNuMI,      ///Offbeam drift gate NuMI (enables light out-of-time for offbeam )
-      gateCalibration,
-      driftGateCalibration,
-      minbiasGateBNB,
-      minbiasGateNuMI,
-      minbiasGateOffbeamBNB,
-      minbiasGateOffbeamNuMI,
-      minbiasGateCalibration,
-      minbiasDriftGateBNB, 
-      minbiasDriftGateNuMI, 
-      minbiasDriftGateOffbeamBNB, 
-      minbiasDriftGateOffbeamNuMI, 
-      minbiasDriftGateCalibration, 
+      GateBNB,                     ///<Enable receiving BNB early warning signal (gatedBES) to open BNB gates 
+      DriftGateBNB,                ///<Enable BNB early-early warning signal ($1D) for light out-of-time in BNB gates
+      GateNuMI,                    ///<Enable NuMI early warning signal (MIBS$74) to open NuMI gates 
+      DriftGateNuMI,               ///<Enable receiving NuMI early-early warning signal ($AD) for light out-of-time in NuMI gates
+      GateOffbeamBNB,              ///<Enable Offbeam gate for BNB 
+      DriftGateOffbeamBNB,         ///<Enable Offbeam drift gate BNB (for light out-of-time in offbeam gates)
+      GateOffbeamNuMI,             ///<Enable Offbeam gate for NuMI 
+      DriftGateOffbeamNuMI,        ///<Enable Offbeam drift gate NuMI (for light out-of-time in offbeam gates)
+      GateCalibration,             ///<Enable Calibration gate  
+      DriftGateCalibration,        ///<Enable Calibration drift gate (for light out-of-time in calibration gates)
+      MinbiasGateBNB,              ///<Enable MinBias triggers for the BNB stream 
+      MinbiasGateNuMI,             ///<Enable MinBias triggers for the NuMI stream 
+      MinbiasGateOffbeamBNB,       ///<Enabke MinBias triggers for the Offbeam BNB stream
+      MinbiasGateOffbeamNuMI,      ///<Enable MinBias triggers for the Offbeam NuMI stream
+      MinbiasGateCalibration,      ///<Enable MinBias triggers for the Calibration stream
+      MinbiasDriftGateBNB,         ///<Enable light out-of-time for MinBias triggers in BNB stream
+      MinbiasDriftGateNuMI,        ///<Enable light out-of-time for MinBias triggers in NuMI stream
+      MinbiasDriftGateOffbeamBNB,  ///<Enable light out-of-time for MinBias triggers in Offbeam BNB stream 
+      MinbiasDriftGateOffbeamNuMI, ///<Enable light out-of-time for MinBias triggers in Offbeam NuMI stream
+      MinbiasDriftGateCalibration, ///<Enable light out-of-time for MinBias triggers in Calibration stream
       // ==> add here if more are needed <==
       NBits
     }; // gateSelection

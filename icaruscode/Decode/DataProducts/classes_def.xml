@@ -35,7 +35,8 @@
   <!-- sbn::ICARUSTriggerConfiguration -->
 
   <!--   class -->
-  <class name="icarus::TriggerConfiguration" ClassVersion="19" >
+  <class name="icarus::TriggerConfiguration" ClassVersion="20" >
+   <version ClassVersion="20" checksum="3222464842"/>
    <version ClassVersion="19" checksum="568646292"/>
    <version ClassVersion="18" checksum="1921029856"/>
    <version ClassVersion="17" checksum="2548149651"/>
