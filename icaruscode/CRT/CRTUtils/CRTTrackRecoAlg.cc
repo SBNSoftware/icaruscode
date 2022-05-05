@@ -1,4 +1,5 @@
 #include "CRTTrackRecoAlg.h"
+#include "larcore/CoreUtils/ServiceUtil.h" // lar::providerFrom()
 
 using namespace icarus::crt;
 

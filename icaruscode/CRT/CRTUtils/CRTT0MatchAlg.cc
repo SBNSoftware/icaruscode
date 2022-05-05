@@ -1,4 +1,5 @@
 #include "CRTT0MatchAlg.h"
+#include "larcore/CoreUtils/ServiceUtil.h" // lar::providerFrom()
 
 namespace icarus{
 

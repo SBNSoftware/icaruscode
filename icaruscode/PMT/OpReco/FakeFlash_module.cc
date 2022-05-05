@@ -25,6 +25,7 @@
 #include "lardataobj/Simulation/SimPhotons.h"
 #include "lardata/DetectorInfoServices/DetectorClocksService.h"
 #include "larcore/Geometry/Geometry.h"
+#include "larcore/CoreUtils/ServiceUtil.h" // lar::providerFrom()
 #include "larsim/PhotonPropagation/PhotonVisibilityService.h"
 
 #include "nusimdata/SimulationBase/MCTruth.h"
