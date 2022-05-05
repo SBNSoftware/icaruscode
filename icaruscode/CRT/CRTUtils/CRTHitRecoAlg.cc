@@ -49,7 +49,7 @@ vector<art::Ptr<CRTData>> CRTHitRecoAlg::PreselectCRTData(vector<art::Ptr<CRTDat
     char type   = fCrtutils->GetAuxDetType(adid);
 
     /// Looking for data within +/- 3ms within trigger time stamp
-    /// Here t0 - trigger time -ve, only adding 1s makes the value +ve or -ve
+    /// Here t0 - trigger time -ve
     if (fData && (std::fabs(int64_t(crtList[febdat_i]->fTs0 - trigger_timestamp)) > fCrtWindow)) continue;
     
     if ( type == 'm'){
