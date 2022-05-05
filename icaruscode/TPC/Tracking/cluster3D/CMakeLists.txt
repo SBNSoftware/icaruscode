@@ -28,6 +28,13 @@ art_make(LIB_LIBRARIES
            cetlib_except::cetlib_except
         TOOL_LIBRARIES 
            larreco_RecoAlg_Cluster3DAlgs
+           lardataalg_DetectorInfo
+           lardataobj_RecoBase
+           lardata_ArtDataHelper
+           art::Framework_Services_Registry
+           art_root_io::tfile_support
+           art_root_io::TFileService_service
+           ROOT::Tree
         MODULE_LIBRARIES
           larreco_Calorimetry
           larreco_RecoAlg_Cluster3DAlgs
