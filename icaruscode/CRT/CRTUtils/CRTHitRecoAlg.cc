@@ -1,4 +1,5 @@
 #include "CRTHitRecoAlg.h"
+#include "larcore/CoreUtils/ServiceUtil.h" // lar::providerFrom()
 #include <algorithm>
 using namespace icarus::crt;
 

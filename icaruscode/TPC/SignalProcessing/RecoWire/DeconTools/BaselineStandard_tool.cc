@@ -11,6 +11,7 @@
 #include "messagefacility/MessageLogger/MessageLogger.h"
 #include "cetlib_except/exception.h"
 #include "icaruscode/TPC/Utilities/SignalShapingICARUSService_service.h"
+#include "larcore/CoreUtils/ServiceUtil.h" // lar::providerFrom()
 
 #include "TH1D.h"
 

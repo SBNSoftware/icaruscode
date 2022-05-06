@@ -2,7 +2,7 @@ art_make_library(
   SOURCE
     "ICARUSPhotonMappingTransformations.cxx"
   LIBRARIES
-    larsim_PhotonPropagation_LibraryMappingTools
+    larsim::PhotonMappingTransformations
     larcore_Geometry_Geometry_service
     larcorealg_Geometry
     ${ART_FRAMEWORK_SERVICES_REGISTRY}
@@ -18,7 +18,6 @@ art_make_library(
 
 simple_plugin(ICARUSPhotonMappingTransformations "tool"
   icaruscode_PMT_LibraryMappingTools
-  larsim_PhotonPropagation_LibraryMappingTools
   )
 
 install_headers()

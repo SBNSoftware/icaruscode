@@ -2,6 +2,7 @@
 #define ICARUS_CRTTRUEHITRECOALG_CC
 
 #include "icaruscode/CRT/CRTUtils/CRTTrueHitRecoAlg.h"
+#include "larcore/CoreUtils/ServiceUtil.h" // lar::providerFrom()
 
 using namespace icarus::crt;
 

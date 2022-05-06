@@ -12,6 +12,7 @@
 #include "cetlib_except/exception.h"
 #include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
 #include "larcore/Geometry/Geometry.h"
+#include "larcore/CoreUtils/ServiceUtil.h" // lar::providerFrom()
 #include "icarus_signal_processing/WaveformTools.h"
 
 #include "TH1F.h"

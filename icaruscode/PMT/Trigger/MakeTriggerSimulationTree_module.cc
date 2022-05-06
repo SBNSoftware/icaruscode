@@ -28,6 +28,7 @@
 // LArSoft libraries
 #include "lardata/DetectorInfoServices/DetectorClocksService.h"
 #include "larcore/Geometry/Geometry.h"
+#include "larcore/CoreUtils/ServiceUtil.h" // lar::providerFrom()
 #include "lardataalg/DetectorInfo/DetectorTimings.h"
 #include "lardataalg/DetectorInfo/DetectorTimingTypes.h" // simulation_time, ...
 #include "lardataalg/Utilities/intervals_fhicl.h" // microseconds from FHiCL

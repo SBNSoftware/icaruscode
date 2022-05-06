@@ -33,6 +33,7 @@
 #include "larcoreobj/SimpleTypesAndConstants/RawTypes.h" // raw::ChannelID_t
 #include "larcorealg/CoreUtils/enumerate.h"
 #include "larcore/Geometry/Geometry.h"
+#include "larcore/CoreUtils/ServiceUtil.h" // lar::providerFrom()
 #include "lardataobj/RecoBase/Wire.h"
 #include "lardataobj/RawData/RawDigit.h"
 #include "lardata/DetectorInfoServices/DetectorClocksService.h"
