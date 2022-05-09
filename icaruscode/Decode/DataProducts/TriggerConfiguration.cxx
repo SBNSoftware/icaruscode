@@ -18,6 +18,25 @@
 static_assert(icarus::TriggerConfiguration::DefaultDumpVerbosity <= icarus::TriggerConfiguration::MaxDumpVerbosity);
 
 //------------------------------------------------------------------------------
+void icarus::TriggerConfiguration::dumpGateConfig
+  (std::ostream& out, icarus::TriggerConfiguration::GateConfig const& gateConfig, std::string const& indent) const
+{
+  out << std::boolalpha
+    << indent << "Gate Active:              " << gateConfig.hasGate << "\n"
+    << indent << "Drift gate Active         " << gateConfig.hasDriftGate << "\n"
+    << indent << "MinBias Gate Active:      " << gateConfig.hasMinBiasGate << "\n"
+    << indent << "MinBias Drift Gate Active " << gateConfig.hasMinBiasDriftGate << "\n"
+    << indent << "BeamWidth                 " << gateConfig.gateWidth << " ns\n"
+    << indent << "EnableWidth               " << gateConfig.driftGateWidth  << " ns\n"
+    << indent << "EarlyWarningOffset        " << gateConfig.earlyWarningOffset << " ns\n"
+    << indent << "EarlyWarningOffset        " << gateConfig.earlyEarlyWarningOffset << " ns\n"
+    << indent << "PreScale                  " << gateConfig.prescaleMinBias << "\n"
+    << std::noboolalpha
+    ;
+}
+
+
+//------------------------------------------------------------------------------
 void icarus::TriggerConfiguration::dump(std::ostream& out,
   std::string const& indent, std::string const& firstIndent,
   unsigned int verbosity /* = MaxDumpVerbosity */
@@ -36,21 +55,21 @@ void icarus::TriggerConfiguration::dump(std::ostream& out,
     
     // --- verbosity: 0+ -------------------------------------------------------
     out << firstIndent
-      << "\nBasic board configuration:\n "
-      << " Use Wr time "    << useWrTime << " \n"
-      << " WR time offset " << wrTimeOffset << " ns \n"; 
+      << "\nBasic trigger configuration:\n ";
+      outnl() << " Use Wr time "    << useWrTime << " \n";
+      outnl() << " WR time offset " << wrTimeOffset << " ns \n"; 
     
     if (++level > verbosity) break;
     // --- verbosity: 1+ -------------------------------------------------------
     outnl()
       << " FPGA Configuration: \n "
       << " Veto Delay:            "  <<  vetoDelay << " ns,\n"
-      << " MajLevelBeamCryoEAST   "  <<  cryoConfig[icarus::kEast].majLevelInTime    << " \n"
-      << " MajLevelEnableCryoEAST "  <<  cryoConfig[icarus::kEast].majLevelDrift  << " \n"
-      << " SlidingWindowCryoEAST  "  <<  cryoConfig[icarus::kEast].slidingWindow   << " \n"
-      << " MajLevelBeamCryoWEST   "  <<  cryoConfig[icarus::kWest].majLevelInTime    << " \n"
-      << " MajLevelEnableCryoWEST "  <<  cryoConfig[icarus::kWest].majLevelDrift  << " \n"
-      << " SlidingWindowCryoWEST  "  <<  cryoConfig[icarus::kWest].slidingWindow   << " \n"
+      << " MajLevelBeamCryoEAST   "  <<  cryoConfig[icarus::trigger::kEast].majLevelInTime    << " \n"
+      << " MajLevelEnableCryoEAST "  <<  cryoConfig[icarus::trigger::kEast].majLevelDrift  << " \n"
+      << " WindowCryoEAST         "  <<  cryoConfig[icarus::trigger::kEast].slidingWindow   << " \n"
+      << " MajLevelBeamCryoWEST   "  <<  cryoConfig[icarus::trigger::kWest].majLevelInTime    << " \n"
+      << " MajLevelEnableCryoWEST "  <<  cryoConfig[icarus::trigger::kWest].majLevelDrift  << " \n"
+      << " WindowCryoWEST         "  <<  cryoConfig[icarus::trigger::kWest].slidingWindow   << " \n"
       << " MajorityTriggerType    "  <<  majorityTriggerType                << " \n"
       << " RunType                "  <<  runType << " ";
 
@@ -60,54 +79,27 @@ void icarus::TriggerConfiguration::dump(std::ostream& out,
     // --- verbosity: 2+ -------------------------------------------------------
     
     out << indent // absorb the newline from the previous level
-      << "\nSPEXI Configuration: \n "
-      << "TPCTriggerDelay"                        << tpcTriggerDelay << " /400 ns \n "
-      << "BNB Gate Active: "                      << gateConfig[icarus::kBNB].hasGate << "\n "
-      << "BNB Drift gate Active "                 << gateConfig[icarus::kBNB].hasDriftGate << "\n "
-      << "BNB MinBias Gate Active: "              << gateConfig[icarus::kBNB].hasMinBiasGate << "\n "
-      << "BNB MinBias Drift Gate Active "         << gateConfig[icarus::kBNB].hasMinBiasDriftGate << "\n "
-      << "BNBBeamWidth "                          << gateConfig[icarus::kBNB].gateWidth << " ns \n "
-      << "BNBEnableWidth "                        << gateConfig[icarus::kBNB].driftGateWidth  << " ns \n "
-      << "BNBBESOffset "                          << gateConfig[icarus::kBNB].earlyWarningOffset << " ns \n "
-      << "BNB1DOffset "                           << gateConfig[icarus::kBNB].earlyEarlyWarningOffset << " ns \n "
-      << "PreScaleBNB "                           << gateConfig[icarus::kBNB].prescaleMinBias << " \n "
-      << "NuMI Gate Active: "                     << gateConfig[icarus::kNuMI].hasGate << "\n "
-      << "NuMI Drift gate Active "                << gateConfig[icarus::kNuMI].hasDriftGate << "\n "
-      << "NuMI MinBias Gate Active: "             << gateConfig[icarus::kNuMI].hasMinBiasGate << "\n "
-      << "NuMI MinBias Drift Gate Active "        << gateConfig[icarus::kNuMI].hasMinBiasDriftGate << "\n "
-      << "NuMIBeamWidth "                         << gateConfig[icarus::kNuMI].gateWidth << " ns \n "
-      << "NuMIEnableWidth "                       << gateConfig[icarus::kNuMI].driftGateWidth << " ns \n "
-      << "NuMIMIBSOffset "                        << gateConfig[icarus::kNuMI].earlyWarningOffset << " ns \n "
-      << "NuMIADOffset "                          << gateConfig[icarus::kNuMI].earlyEarlyWarningOffset << " ns \n "
-      << "PreScaleNuMI "                          << gateConfig[icarus::kNuMI].prescaleMinBias << "\n "
-      << "OffBeamBNB Gate Active: "               << gateConfig[icarus::kOffBeamBNB].hasGate << "\n "
-      << "OffBeamBNB Drift gate Active "          << gateConfig[icarus::kOffBeamBNB].hasDriftGate << "\n "
-      << "OffBeamBNB MinBias Gate Active: "       << gateConfig[icarus::kOffBeamBNB].hasMinBiasGate << "\n "
-      << "OffBeamBNB MinBias Drift Gate Active "  << gateConfig[icarus::kOffBeamBNB].hasMinBiasDriftGate << "\n "
-      << "OffBeamBNBBeamWidth "                   << gateConfig[icarus::kOffBeamBNB].gateWidth<< " ns \n "
-      << "OffBeamBNBEnableWidth "                 << gateConfig[icarus::kOffBeamBNB].driftGateWidth << " ns \n "
-      << "OffBeamGateRateBNB "                    << gateConfig[icarus::kOffBeamBNB].offBeamGateRate << " \n "
-      << "PreScaleOffBeamBNB "                    << gateConfig[icarus::kOffBeamBNB].prescaleMinBias << " \n "
-      << "OffBeamNuMI Gate Active: "              << gateConfig[icarus::kOffBeamNuMI].hasGate << "\n "
-      << "OffBeamNuMI Drift gate Active "         << gateConfig[icarus::kOffBeamNuMI].hasDriftGate << "\n "
-      << "OffBeamNuMI MinBias Gate Active: "      << gateConfig[icarus::kOffBeamNuMI].hasMinBiasGate << "\n "
-      << "OffBeamNuMI MinBias Drift Gate Active " << gateConfig[icarus::kOffBeamNuMI].hasMinBiasDriftGate << "\n "
-      << "OffBeamNuMIBeamWidth "                  << gateConfig[icarus::kOffBeamNuMI].gateWidth << " ns \n "
-      << "OffBeamNuMIEnableWidth "                << gateConfig[icarus::kOffBeamNuMI].driftGateWidth << " ns \n "
-      << "OffBeamGateRateNuMI"                    << gateConfig[icarus::kOffBeamNuMI].offBeamGateRate << " \n "
-      << "PreScaleOffBeamNuMI"                    << gateConfig[icarus::kOffBeamNuMI].prescaleMinBias << " \n "
-      << "Calibration Gate Active: "              << gateConfig[icarus::kCalibration].hasGate << "\n "
-      << "Calibration Drift gate Active "         << gateConfig[icarus::kCalibration].hasDriftGate << "\n "
-      << "Calibration MinBias Gate Active: "      << gateConfig[icarus::kCalibration].hasMinBiasGate << "\n "
-      << "Calibration MinBias Drift Gate Active " << gateConfig[icarus::kCalibration].hasMinBiasDriftGate << "\n "
-      << "Calibration Width "                     << gateConfig[icarus::kCalibration].gateWidth << " ns \n "
-      << "Calibration EnableWidth "               << gateConfig[icarus::kCalibration].driftGateWidth << " ns \n "
-      << "Calibration Frequency "                 << gateConfig[icarus::kCalibration].period << " ns \n "
-      << "Prescale Calibration "                  << gateConfig[icarus::kCalibration].prescaleMinBias << " \n ";
+      << "\nSPEXI Configuration: \n ";
+      
+      out << "TPCTriggerDelay" << tpcTriggerDelay << " /400 ns \n ";
+      
+      out << indent << " BNB:\n";
+      dumpGateConfig( out, gateConfig[icarus::trigger::kBNB], indent+" - " );
+
+      out << indent << " NuMI:\n";
+      dumpGateConfig( out, gateConfig[icarus::trigger::kNuMI], indent+" - " );
+
+      out << indent << " Offbeam BNB:\n";
+      dumpGateConfig( out, gateConfig[icarus::trigger::kOffBeamBNB], indent + " - " );
+
+      out << indent << " Offbeam NuMI:\n";
+      dumpGateConfig(out, gateConfig[icarus::trigger::kOffBeamNuMI], indent + " - " );
 
 
+      out << indent << " Calibration:\n";
+      dumpGateConfig(out, gateConfig[icarus::trigger::kCalibration], indent + " - ");
+      out << indent +" - " << "Period                    " << gateConfig[icarus::trigger::kCalibration].period << " ns\n";
 
-    
     if (++level > verbosity) break;
     // --- verbosity: 3+ -------------------------------------------------------
     

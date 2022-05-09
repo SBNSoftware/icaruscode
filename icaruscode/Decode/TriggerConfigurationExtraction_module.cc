@@ -34,7 +34,7 @@
 // -----------------------------------------------------------------------------
 namespace icarus { class TriggerConfigurationExtraction; }
 /**
- * @brief Writes PMT configuration from FHiCL into a data product.
+ * @brief Writes trigger configuration from FHiCL into a data product.
  * 
  * This module reads the configuration related to the Trigger from the FHiCL
  * configuration of the input runs and puts it into each run as a data product.
@@ -62,7 +62,7 @@ namespace icarus { class TriggerConfigurationExtraction; }
  * The following configuration parameters are supported:
  * 
  * * **Verbose** (flag, default: `false`): if set to `true`, it will print in
- *     full the configuration of the PMT the first time it is read and each time
+ *     full the configuration of the trigger the first time it is read and each time
  *     a different one is found.
  * * **LogCategory** (string, default: `ICARUSConfigurationExtraction`):
  *     category tag used for messages to message facility.
@@ -82,7 +82,7 @@ class icarus::TriggerConfigurationExtraction: public art::EDProducer {
   /// Current Trigger configuration (may be still unassigned).
   std::optional<icarus::TriggerConfiguration> fTriggerConfig;
   
-  /// Whether PMT configuration inconsistency is fatal.
+  /// Whether trigger configuration inconsistency is fatal.
   bool fRequireConsistency = true;
   
   bool fVerbose = false; ///< Whether to print the configuration we read.
@@ -103,7 +103,7 @@ class icarus::TriggerConfigurationExtraction: public art::EDProducer {
     fhicl::Atom<std::string> LogCategory {
       fhicl::Name("LogCategory"),
       fhicl::Comment("category tag used for messages to message facility"),
-      "PMTconfigurationExtraction" // default
+      "TriggerConfigurationExtraction" // default
       };
     
   }; // struct Config

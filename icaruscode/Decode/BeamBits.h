@@ -103,6 +103,16 @@ namespace sbn {
       NBits       ///< Number of Bits currently supported 
     }; // triggerLocation 
 
+    /// Trigger window mode 
+    enum class triggerWindowMode: unsigned int {
+      Separated,    ///< Separated, non-overlapping contigous window
+      Overlapping,  ///< Overlaping windows
+      //==> add here if more are needed <==
+      NBits     ///< Number of Bits currently supported
+    };
+
+    /// Returns a mnemonic short name for the trigger window mode.
+    std::string bitName(triggerWindowMode bit);
 
     /// Enabled gates in the trigger configuration. See register 0X00050008 in docdb SBN-doc-23778-v1
     enum class gateSelection: unsigned int {
@@ -130,7 +140,9 @@ namespace sbn {
       NBits
     }; // gateSelection
 
-    
+    /// Returns a mnemonic short name for the trigger window mode.
+    std::string bitName(gateSelection bit);
+
     /// @}
     // --- END ---- Beam bits --------------------------------------------------
 
@@ -138,6 +150,7 @@ namespace sbn {
   
   using bits::triggerSource; // import symbol
   using bits::triggerLocation;
+  using bits::triggerWindowMode;
   using bits::gateSelection;
   
 } // namespace sbn
@@ -215,26 +228,76 @@ inline std::string sbn::bits::bitName(triggerSource bit) {
     + std::to_string(value(bit)) + " }): unknown bit"s);
 } // sbn::bitName()
 
+
+inline std::string sbn::bits::bitName(triggerWindowMode bit) {
+
+  using namespace std::string_literals;
+  switch (bit) {
+    case sbn::bits::triggerWindowMode::Separated:    return "Separated Window"s;
+    case sbn::bits::triggerWindowMode::Overlapping:  return "Overlapping Window"s;
+    case sbn::bits::triggerWindowMode::NBits:    return "<invalid>"s;
+  } // switch
+  throw std::runtime_error("sbn::bits::bitName(triggerWindowMode{ "s
+    + std::to_string(value(bit)) + " }): unknown bit"s);
+} // triggerWindowMode
+
+
+inline std::string sbn::bits::bitName(gateSelection bit) {
+
+  using namespace std::string_literals;
+  switch (bit) {
+    case gateSelection::GateBNB:                     return "GateBNB"s;
+    case gateSelection::DriftGateBNB:                return "DriftGateBNB"s;
+    case gateSelection::GateNuMI:                    return "GateNuMI"s;
+    case gateSelection::DriftGateNuMI:               return "DriftGateNuMI"s;
+    case gateSelection::GateOffbeamBNB:              return "GateOffbeamBNB"s;
+    case gateSelection::DriftGateOffbeamBNB:         return "DriftGateOffbeamBNB"s;
+    case gateSelection::GateOffbeamNuMI:             return "GateOffbeamNuMI"s;
+    case gateSelection::DriftGateOffbeamNuMI:        return "DriftGateOffbeamNuMI"s;
+    case gateSelection::GateCalibration:             return "GateCalibration"s;
+    case gateSelection::DriftGateCalibration:        return "DriftGateCalibration"s;
+    case gateSelection::MinbiasGateBNB:              return "MinbiasGateBNB"s;
+    case gateSelection::MinbiasGateNuMI:             return "MinbiasGateNuMI"s;
+    case gateSelection::MinbiasGateOffbeamBNB:       return "MinbiasGateOffbeamBNB"s;
+    case gateSelection::MinbiasGateOffbeamNuMI:      return "MinbiasGateOffbeamNuMI"s;
+    case gateSelection::MinbiasGateCalibration:      return "MinbiasGateCalibration"s;
+    case gateSelection::MinbiasDriftGateBNB:         return "MinbiasDriftGateBNB"s;
+    case gateSelection::MinbiasDriftGateNuMI:        return "MinbiasDriftGateNuMI"s;
+    case gateSelection::MinbiasDriftGateOffbeamBNB:  return "MinbiasDriftGateOffbeamBNB"s;
+    case gateSelection::MinbiasDriftGateOffbeamNuMI: return "MinbiasDriftGateOffbeamNuMI"s;
+    case gateSelection::MinbiasDriftGateCalibration: return "MinbiasDriftGateCalibration"s;
+    case gateSelection::NBits:                       return "NBits"s;
+  } // switch
+  throw std::runtime_error("sbn::bits::bitName(gateSelection{ "s
+    + std::to_string(value(bit)) + " }): unknown bit"s);
+} // sbn::bitName()
+
+
 // -----------------------------------------------------------------------------
 
 namespace icarus {
 
+  namespace trigger {
+
   
-  using triggerLocation = sbn::triggerLocation;
-  using triggerSource   = sbn::triggerSource;
+    using triggerLocation = sbn::triggerLocation;
+    using triggerSource   = sbn::triggerSource;
 
-  static constexpr std::size_t kEast = sbn::bits::value<triggerLocation>(triggerLocation::CryoEast);
-  static constexpr std::size_t kWest = sbn::bits::value<triggerLocation>(triggerLocation::CryoWest);
-  static constexpr std::size_t kNTriggerLocation = sbn::bits::value<triggerLocation>(triggerLocation::NBits);
+    static constexpr std::size_t kEast             = sbn::bits::value<triggerLocation>(triggerLocation::CryoEast);
+    static constexpr std::size_t kWest             = sbn::bits::value<triggerLocation>(triggerLocation::CryoWest);
+    static constexpr std::size_t kNTriggerLocation = sbn::bits::value<triggerLocation>(triggerLocation::NBits);
 
-  static constexpr std::size_t kBNB         = sbn::bits::value<triggerSource>(triggerSource::BNB);
-  static constexpr std::size_t kNuMI        = sbn::bits::value<triggerSource>(triggerSource::NuMI);
-  static constexpr std::size_t kOffBeamBNB  = sbn::bits::value<triggerSource>(triggerSource::OffbeamBNB);
-  static constexpr std::size_t kOffBeamNuMI = sbn::bits::value<triggerSource>(triggerSource::OffbeamNuMI);
-  static constexpr std::size_t kCalibration = sbn::bits::value<triggerSource>(triggerSource::Calibration);
-  static constexpr std::size_t kNTriggerSource = sbn::bits::value<triggerSource>(triggerSource::NBits);
+    static constexpr std::size_t kBNB            = sbn::bits::value<triggerSource>(triggerSource::BNB);
+    static constexpr std::size_t kNuMI           = sbn::bits::value<triggerSource>(triggerSource::NuMI);
+    static constexpr std::size_t kOffBeamBNB     = sbn::bits::value<triggerSource>(triggerSource::OffbeamBNB);
+    static constexpr std::size_t kOffBeamNuMI    = sbn::bits::value<triggerSource>(triggerSource::OffbeamNuMI);
+    static constexpr std::size_t kCalibration    = sbn::bits::value<triggerSource>(triggerSource::Calibration);
+    static constexpr std::size_t kNTriggerSource = sbn::bits::value<triggerSource>(triggerSource::NBits);
+
+  }
 
 
 }
 
 #endif // SBNOBJ_COMMON_TRIGGER_BEAMBITS_H
+

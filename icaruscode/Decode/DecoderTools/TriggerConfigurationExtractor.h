@@ -364,10 +364,12 @@ class icarus::TriggerConfigurationExtractor
    * @param key key of the Trigger readout configuration candidate
    * @return the configuration, or an empty object if key does not represent one
    */
-  std::optional<fhicl::ParameterSet> readBoardConfig
+  std::optional<fhicl::ParameterSet> readTriggerConfig
     (fhicl::ParameterSet const& pset, std::string const& key) const;
 
    unsigned long parsePrescaleString( std::string prescaleString, std::size_t source ) const;
+
+   unsigned int parseWindowMode(std::string bitStr) const;
   
 }; // icarus::TriggerConfigurationExtractor
 

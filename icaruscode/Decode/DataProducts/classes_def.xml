@@ -50,7 +50,8 @@
   </class>
 
     <!-- dependencies -->
-    <class name="icarus::TriggerConfiguration::CryoConfig" ClassVersion="11">
+    <class name="icarus::TriggerConfiguration::CryoConfig" ClassVersion="12">
+     <version ClassVersion="12" checksum="2289895201"/>
      <version ClassVersion="11" checksum="857421274"/>
      <version ClassVersion="10" checksum="1568534835"/>
     </class>
