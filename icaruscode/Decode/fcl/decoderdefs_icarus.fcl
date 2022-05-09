@@ -55,4 +55,10 @@ decodeTrigger: {
                     DecoderTool:        @local::TriggerDecoderTool
 }
 
+decodeTriggerV2: {
+		   module_type:	        DaqDecoderICARUSTriggerV2
+		   FragmentsLabel:	"daq:ICARUSTriggerV2"
+		   DecoderTool:		@local::TriggerDecoderV2Tool
+}
+
 END_PROLOG

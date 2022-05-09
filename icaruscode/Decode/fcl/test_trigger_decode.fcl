@@ -48,6 +48,8 @@ services.FileCatalogMetadata: {}
 
 # Use this to setup the decoder module
 
+physics.producers.daqTrigger.DiagnosticOutput:  true
+
 physics.producers.ophit.InputModule: "daqPMT"
 physics.producers.ophit.InputLabels: []
 
