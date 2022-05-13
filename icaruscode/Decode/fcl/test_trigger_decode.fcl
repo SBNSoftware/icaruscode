@@ -32,7 +32,7 @@ physics:
     producers:
     {
         #daqPMT:      @local::decodePMT
-	daqTrigger:  @local::decodeTrigger
+	daqTrigger:  @local::decodeTriggerV2
 	
     }
 

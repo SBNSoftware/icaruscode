@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////
 //   
-//    File: TriggerDecoderV22_tool.cc
+//    File: TriggerDecoderV2_tool.cc
 //       
 //    Description: Extracting ICARUS trigger fragment information from new fragment necessary after trigger information  
 //
@@ -277,7 +277,7 @@ namespace daq
     (std::string_view data) const
   {
     try {
-      return icarus::parse_ICARUSTriggerString(data.data());
+      return icarus::parse_ICARUSTriggerV2String(data.data());
     }
     catch(std::exception const& e) {
       mf::LogSystem("TriggerDecoder")
