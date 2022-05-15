@@ -19,9 +19,8 @@
   <!-- sbn::ExtraTriggerInfo -->
 
   <!--   class -->
-  <class name="sbn::ExtraTriggerInfo" ClassVersion="11" >
-   <version ClassVersion="11" checksum="2691428079"/>
-   <version ClassVersion="10" checksum="2751074963"/>
+  <class name="sbn::ExtraTriggerInfo" ClassVersion="10" >
+   <version ClassVersion="10" checksum="2691428079"/>
   </class>
   
     <!-- dependencies -->
@@ -30,6 +29,26 @@
     <!-- art pointers and wrappers -->
     <class name="art::Ptr<sbn::ExtraTriggerInfo>"/>
     <class name="art::Wrapper<sbn::ExtraTriggerInfo>"/>
+
+  <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
+  <!-- sbn::ICARUSTriggerConfiguration -->
+
+  <!--   class -->
+  <class name="icarus::TriggerConfiguration" ClassVersion="10" >
+   <version ClassVersion="10" checksum="3222464842"/>
+  </class>
+
+    <!-- dependencies -->
+    <class name="icarus::TriggerConfiguration::CryoConfig" ClassVersion="10">
+     <version ClassVersion="10" checksum="2289895201"/>
+    </class>
+    <class name="icarus::TriggerConfiguration::GateConfig" ClassVersion="10">
+     <version ClassVersion="10" checksum="3995620982"/>
+    </class>
+
+    <!-- art pointers and wrappers -->
+    <class name="art::Ptr<icarus::TriggerConfiguration>"/>
+    <class name="art::Wrapper<icarus::TriggerConfiguration>"/>
 
 
   <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
