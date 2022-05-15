@@ -124,8 +124,8 @@ local perfect = import 'pgrapher/experiment/icarus/chndb-base.jsonnet';
 local chndb = [{
   type: 'OmniChannelNoiseDB',
   name: 'ocndbperfect%d' % n,
-  data: perfect(params, tools.anodes[n], tools.field, n),
-  uses: [tools.anodes[n], tools.field],  // pnode extension
+  data: perfect(params, tools.anodes[n], tools.field, n){dft:wc.tn(tools.dft)},
+  uses: [tools.anodes[n], tools.field, tools.dft],
 } for n in anode_iota];
 
 
@@ -166,38 +166,39 @@ local make_noise_model = function(anode,n, csdb=null) {
     name: "empericalnoise-" + anode.name,
     data: {
         anode: wc.tn(anode),
+        dft: wc.tn(tools.dft),
         chanstat: if std.type(csdb) == "null" then "" else wc.tn(csdb),
         spectra_file: params.files.noise[n],
         nsamples: params.daq.nticks,
         period: params.daq.tick,
         wire_length_scale: 1.0*wc.cm, // optimization binning
     },
-    uses: [anode] + if std.type(csdb) == "null" then [] else [csdb],
+    uses: [anode, tools.dft] + if std.type(csdb) == "null" then [] else [csdb],
 };
 
 local noise_model = [make_noise_model(mega_anode,n) for n in std.range(0,3)];
-
 local add_noise = function(model, n) g.pnode({
     type: "AddNoise",
     name: "addnoise%d-" %n + model.name,
     data: {
         rng: wc.tn(tools.random),
+        dfg: wc.tn(tools.dft),
         model: wc.tn(model),
   nsamples: params.daq.nticks,
         replacement_percentage: 0.02, // random optimization
-    }}, nin=1, nout=1, uses=[model]);
+    }}, nin=1, nout=1, uses=[tools.random, tools.dft, model]);
 local noises = [add_noise(noise_model[n], n) for n in std.range(0,3)];
 local add_coherent_noise = function(n) g.pnode({
-      type: "AddCoherentNoise",
-      name: "addcoherentnoise%d" %n,
+      type: "AddGroupNoise",
+      name: "addgroupnoise%d" %n,
       data: {
-          spectra_file: params.files.coherent_noise[n],
+          spectra_file: params.files.noisegroups[n],
+          map_file: params.files.wiregroups,
           rng: wc.tn(tools.random),
+          dft: wc.tn(tools.dft),
           nsamples: params.daq.nticks,
-          random_fluctuation_amplitude: 0.1,
-          period: params.daq.tick,
-          normalization: 1
-      }}, nin=1, nout=1, uses=[]);
+          spec_scale: 1.1,
+      }}, nin=1, nout=1, uses=[tools.random, tools.dft]);
 local coherent_noises = [add_coherent_noise(n) for n in std.range(0,3)];
 
 // local digitizer = sim.digitizer(mega_anode, name="digitizer", tag="orig");
