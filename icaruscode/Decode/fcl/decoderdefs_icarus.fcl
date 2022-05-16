@@ -56,7 +56,7 @@ decodeTrigger: {
 }
 
 decodeTriggerV2: {
-		   module_type:	        DaqDecoderICARUSTriggerV2
+		   module_type:	        DaqDecoderICARUSTrigger
 		   FragmentsLabel:	"daq:ICARUSTriggerV2"
 		   DecoderTool:		@local::TriggerDecoderV2Tool
 }
