@@ -77,6 +77,17 @@ icarus_stage1_analyzers:
   caloskimE: @local::caloskim_cryoe_nodigits_goldentracks
   caloskimW: @local::caloskim_cryow_nodigits_goldentracks
   simpleLightAna: @local::ICARUSFlashAssAna
+  CRTDataAnalysis: 
+  {
+    module_type:   "CRTDataAnalysis"
+    CRTHitLabel:   "crthit"
+    CRTDAQLabel:   "daqCRT"
+    TriggerLabel:  "daqTrigger"
+    QPed:                 60     # Pedestal offset [ADC]
+    QSlope:               70     # Pedestal slope [ADC/photon]
+    PEThresh:             7.5    # PE threshold above which charge amplitudes used
+    CrtWindow:            3e6    # time window for looking data within trigger timestamp [ns]
+  }
 }
 
 icarus_stage1_analyzers.caloskimE.SelectEvents: [reco]
