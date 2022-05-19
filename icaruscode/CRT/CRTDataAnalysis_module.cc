@@ -200,6 +200,8 @@ namespace crt {
     vector<vector<int>> fDetPDG; /// signal inducing particle(s)' PDG code
 
     //CRT hit product vars
+    int      fHitRun;
+    int      fHitSubRun;
     int      fHitEvent;
     float    fXHit; ///< reconstructed X position of CRT hit (cm)
     float    fYHit; ///< reconstructed Y position of CRT hit (cm)
@@ -321,6 +323,8 @@ namespace crt {
     fDAQNtuple->Branch("gate_start_timestamp", &m_gate_start_timestamp, "gate_start_timestamp/l");
 
     // Define the branches of our SimHit n-tuple
+    fHitNtuple->Branch("Run",         &fHitRun,         "Run/I");
+    fHitNtuple->Branch("SubRun",      &fHitSubRun,      "SubRun/I");
     fHitNtuple->Branch("event",       &fHitEvent,    "event/I");
     fHitNtuple->Branch("nHit",        &fNHit,        "nHit/I");
     fHitNtuple->Branch("x",           &fXHit,        "x/F");
@@ -484,6 +488,8 @@ namespace crt {
       for ( auto const& hit : *crtHitHandle )
         {
 	  fNHit++;
+	  fHitRun = fRun;
+	  fHitSubRun = fSubRun;
 	  fHitEvent = fEvent;
 	  fXHit    = hit.x_pos;
 	  fYHit    = hit.y_pos;
