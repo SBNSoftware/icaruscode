@@ -1426,7 +1426,7 @@ void icarus::DaqDecoderICARUSPMT::produce(art::Event& event) {
     if (triggerInfo.bits) {
       log << " {";
       for (std::string const& name
-        : sbn::bits::names<sbn::triggerSource>(triggerInfo.bits))
+        : names(sbn::triggerSourceMask{triggerInfo.bits}))
       {
         log << ' ' << name;
       }
