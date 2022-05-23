@@ -260,9 +260,9 @@ sbn::crt::CRTHit CRTHitRecoAlg::FillCRTHit(vector<uint8_t> tfeb_id, map<uint8_t,
     crtHit.pesmap      = tpesmap;
     crtHit.peshit      = peshit;
     crtHit.ts0_s_corr  = time0 / 1'000'000'000; 
-    crtHit.ts0_ns      = time0;
+    crtHit.ts0_ns      = time0 % 1'000'000'000;
     crtHit.ts0_ns_corr = time0; 
-    crtHit.ts1_ns      = time1;
+    crtHit.ts1_ns      = time1 % 1'000'000'000;
     crtHit.ts0_s       = time0 / 1'000'000'000;
     crtHit.plane       = plane;
     crtHit.x_pos       = x;
