@@ -115,6 +115,14 @@ class icarus::crt::CRTHitRecoAlg {
       Name("PEThresh"),
 	Comment("threshold in photoelectrons above which charge amplitudes used in hit reco")
 	};
+    fhicl::Atom<double> topGain {
+      Name("topGain"),
+        Comment("Dummy Gain value for Top CRT")
+        };
+    fhicl::Atom<double> topPed {
+      Name("topPed"),
+        Comment("Dummy Pedestal value for Top CRT")
+        };
     fhicl::Atom<uint64_t> CoinWindow {
       Name("CoinWindow"),
 	Comment("window for finding side CRT trigger coincidences [ns]")
@@ -161,6 +169,8 @@ class icarus::crt::CRTHitRecoAlg {
   double fQSlope;         ///< Pedestal slope of SiPMs [ADC/photon]
   double fPropDelay;      ///< propegation time [ns/cm]
   double fPEThresh;       ///< threshold[PE] above which charge amplitudes used in hit reco
+  double ftopGain;        ///< Dummy Top CRT Gain Value
+  double ftopPed;         ///< Dummy Top CRT Pedestal Value
   uint64_t fCoinWindow;   ///< Coincidence window used for grouping side CRT triggers [ns]
   uint64_t fCrtWindow;    ///< Looking data window within trigger timestamp [ns]
   std::ofstream filecsv;

@@ -21,6 +21,8 @@ standard_crthitrecoalg:
     Verbose:              false  # dump runtime info
     QPed:                 60     # Pedestal offset [ADC]
     QSlope:               70     # Pedestal slope [ADC/photon]
+    topGain:              110    # Dummy value for Top CRT Gain [ADC]
+    topPed:               160    # Dummy value for Top CRT Pedestal [ADC]
     UseReadoutWindow:     false  # Only reconstruct hits within readout window
     PropDelay:            0.062 # group velocity in WLS fiber [ns/cm]
     PEThresh:             7.5    # PE threshold above which charge amplitudes used
