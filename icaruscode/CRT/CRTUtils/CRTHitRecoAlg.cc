@@ -986,8 +986,8 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeSideHit(vector<art::Ptr<CRTData>> coinData) 
     //    t1hit = std::accumulate(t1trigs.begin(), t1trigs.end()) / (uint64_t)t1trigs.size();
 
     for(uint64_t const t : ttrigs){
-      if (region=="North" || region=="South") /*thit += t;*/ thit += t-uint64_t(200.*fPropDelay);
-      else /*thit += t;*/thit += t-uint64_t(400.*fPropDelay);
+      if (region=="North" || region=="South") /*thit += t;*/ thit += t-uint64_t(200.*fPropDelay)-fSiPMtoFEBdelay;
+      else /*thit += t;*/thit += t-uint64_t(400.*fPropDelay)-fSiPMtoFEBdelay;
       //thit += t;
       //thit += t-uint64_t(400.*fPropDelay);
       if (fVerbose) 
@@ -998,7 +998,7 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeSideHit(vector<art::Ptr<CRTData>> coinData) 
     thit=thit/uint64_t(ttrigs.size());
 
     for(double const t1 : t1trigs)
-      t1hit +=   t1-uint64_t(400.*fPropDelay);
+      t1hit +=   t1-uint64_t(400.*fPropDelay)-fSiPMtoFEBdelay;
          
 
     t1hit=t1hit/uint64_t(t1trigs.size());
