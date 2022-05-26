@@ -23,7 +23,7 @@ standard_crthitrecoalg:
     QSlope:               70     # Pedestal slope [ADC/photon]
     topGain:              110    # Dummy value for Top CRT Gain [ADC]
     topPed:               160    # Dummy value for Top CRT Pedestal [ADC]
-    SiPMtoFEBdelay        12     # Delay correction for signal propagation from SiPM to FEB, measured value is 11.6 [ns]
+    SiPMtoFEBdelay:        12     # Delay correction for signal propagation from SiPM to FEB, measured value is 11.6 [ns]
     UseReadoutWindow:     false  # Only reconstruct hits within readout window
     PropDelay:            0.062 # group velocity in WLS fiber [ns/cm]
     PEThresh:             7.5    # PE threshold above which charge amplitudes used
