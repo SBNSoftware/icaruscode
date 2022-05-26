@@ -29,6 +29,7 @@ void CRTHitRecoAlg::reconfigure(const Config& config){
     fPEThresh = config.PEThresh();
     ftopGain = config.topGain();
     ftopPed = config.topPed();
+    fSiPMtoFEBdelay = config.SiPMtoFEBdelay();
     fCoinWindow = config.CoinWindow();
     fCrtWindow = config.CrtWindow();
     foutCSVFile = config.outCSVFile();
@@ -372,14 +373,14 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeTopHit(art::Ptr<CRTData> data){
     if(adsid_max<8){
         thit -= (uint64_t)round(abs((92+hitpos.X())*fPropDelay));
         thit1 -= (uint64_t)round(abs((92+hitpos.X())*fPropDelay));
-	thit -= 11; //Correction for 11 ns signal cable from SiPM to FEB
-	thit1 -= 11; //Correction for 11 ns signal cable from SiPM to FEB
+	thit -= fSiPMtoFEBdelay; //Correction for 12 ns signal cable from SiPM to FEB
+	thit1 -= fSiPMtoFEBdelay; //Correction for 12 ns signal cable from SiPM to FEB
     }
     else{
         thit -= (uint64_t)round(abs((92+hitpos.Z())*fPropDelay));
         thit1 -= (uint64_t)round(abs((92+hitpos.Z())*fPropDelay));
-	thit -= 11; //Correction for 11 ns signal cable from SiPM to FEB
-	thit1 -= 11; //Correction for 11 ns signal cable from SiPM to FEB
+	thit -= fSiPMtoFEBdelay; //Correction for 12 ns signal cable from SiPM to FEB
+	thit1 -= fSiPMtoFEBdelay; //Correction for 12 ns signal cable from SiPM to FEB
     }
  
     adGeo.LocalToWorld(hitlocal,hitpoint); //tranform from module to world coords

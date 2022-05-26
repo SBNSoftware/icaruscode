@@ -30,9 +30,6 @@ source:
   maxEvents:  -1 
 }
 
-services.Geometry.GDML: "icarus_complete_overburden_20220518.gdml"
-services.Geometry.ROOT: "icarus_complete_overburden_20220518.gdml"
-
 # This is empty, because we're not writing an output file with art::Event objects.
 outputs:
 {
