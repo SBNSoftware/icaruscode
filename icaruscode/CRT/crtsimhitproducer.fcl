@@ -8,6 +8,9 @@ standard_crtsimhitrecoalg:
     UseReadoutWindow:     false  # Only reconstruct hits within readout window
     PropDelay:            0.062 # group velocity in WLS fiber [ns/cm]
     PEThresh:             7.5    # PE threshold above which charge amplitudes used
+    topGain:              110    # Dummy value for Top CRT Gain [ADC]
+    topPed:		  160    # Dummy value for Top CRT Pedestal [ADC]
+    SiPMtoFEBdelay:       0      # Delay correction for signal propagation from SiPM to FEB, set 0 for Simulation, tbd [ns] 
     CoinWindow:           150    # time window for finding side CRT trigger coincidences [ns]
     CrtWindow:            3e6    # time window for looking data within trigger timestamp [ns]
     outCSVFile:           false  # write the information in to a csv file
