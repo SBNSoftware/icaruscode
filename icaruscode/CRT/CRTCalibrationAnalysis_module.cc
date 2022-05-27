@@ -128,7 +128,7 @@ namespace crt {
     auto const clockData = art::ServiceHandle<detinfo::DetectorClocksService const>()->DataForJob();
     fTriggerOffset = trigger_offset(clockData);
 
-    for(int i=1; i<94; i++){
+    for(int i=1; i<232; i++){
       
       macToHistos[i] = new vector<TH1F*>();
       

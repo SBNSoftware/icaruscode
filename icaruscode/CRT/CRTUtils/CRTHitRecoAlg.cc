@@ -27,6 +27,9 @@ void CRTHitRecoAlg::reconfigure(const Config& config){
     fQSlope = config.QSlope();
     fPropDelay = config.PropDelay(); 
     fPEThresh = config.PEThresh();
+    ftopGain = config.topGain();
+    ftopPed = config.topPed();
+    fSiPMtoFEBdelay = config.SiPMtoFEBdelay();
     fCoinWindow = config.CoinWindow();
     fCrtWindow = config.CrtWindow();
     foutCSVFile = config.outCSVFile();
@@ -65,8 +68,8 @@ vector<art::Ptr<CRTData>> CRTHitRecoAlg::PreselectCRTData(vector<art::Ptr<CRTDat
       }
     }else if ( type == 'c' ) {
       for(int chan=0; chan<32; chan++) {
-	float pe = (crtList[febdat_i]->fAdc[chan]-fQPed)/fQSlope;
-	if(pe<=fPEThresh) continue;
+	//float pe = (crtList[febdat_i]->fAdc[chan]-fQPed)/fQSlope;
+	//if(pe<=fPEThresh) continue;
 	presel = true;
       }
     }else if ( type == 'd'){
@@ -300,9 +303,10 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeTopHit(art::Ptr<CRTData> data){
     int maxx=0, maxz=0;
 
     for(int chan=0; chan<32; chan++) {
-
-        float pe = (data->fAdc[chan]-fQPed)/fQSlope;
-        if(pe<=fPEThresh) continue;
+//        std::cout<<"Top Gain: "<<ftopGain<<"  Top Pedestal: "<<ftopPed<< '\n';
+        float pe = (data->fAdc[chan]-ftopPed)/ftopGain;
+//        float pe = (data->fAdc[chan]-fQPed)/fQSlope;
+//        if(pe<=fPEThresh) continue;
         nabove++;
         int adsid = fCrtutils->ChannelToAuxDetSensitiveID(mac,chan);
         petot += pe;
@@ -310,7 +314,7 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeTopHit(art::Ptr<CRTData> data){
 
         //TVector3 postmp = fCrtutils->ChanToLocalCoords(mac,chan);
         //strip along z-direction
-        if(adsid < 8 && adsid > -1){
+        if(adsid >= 0 && adsid < 8){
             //hitpos.SetX(pe*postmp.X()+hitpos.X());
             //hitpos.SetX(postmp.X()+hitpos.X());
             if(pe>pemaxx){
@@ -320,7 +324,7 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeTopHit(art::Ptr<CRTData> data){
             findx = true;   
         }
         //strip along x-direction
-        else if(adsid > -1 && adsid < 16 ){
+        else if(adsid >= 8 && adsid < 16 ){
             //hitpos.SetZ(pe*postmp.Z()+hitpos.Z());
             //hitpos.SetZ(postmp.Z()+hitpos.Z());
             if(pe > pemaxz) {
@@ -364,19 +368,28 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeTopHit(art::Ptr<CRTData> data){
     
     auto const& adsGeo = adGeo.SensitiveVolume(adsid_max); //trigger strip
     uint64_t thit = data->fTs0;
+    uint64_t thit1 = data->fTs1;
 
-    if(adsid_max<8)
-        thit -= hitpos.Z()*fPropDelay;
-    else
-        thit -= hitpos.X()*fPropDelay;
-
+    if(adsid_max<8){
+        thit -= (uint64_t)round(abs((92+hitpos.X())*fPropDelay));
+        thit1 -= (uint64_t)round(abs((92+hitpos.X())*fPropDelay));
+	thit -= fSiPMtoFEBdelay; //Correction for 12 ns signal cable from SiPM to FEB
+	thit1 -= fSiPMtoFEBdelay; //Correction for 12 ns signal cable from SiPM to FEB
+    }
+    else{
+        thit -= (uint64_t)round(abs((92+hitpos.Z())*fPropDelay));
+        thit1 -= (uint64_t)round(abs((92+hitpos.Z())*fPropDelay));
+	thit -= fSiPMtoFEBdelay; //Correction for 12 ns signal cable from SiPM to FEB
+	thit1 -= fSiPMtoFEBdelay; //Correction for 12 ns signal cable from SiPM to FEB
+    }
+ 
     adGeo.LocalToWorld(hitlocal,hitpoint); //tranform from module to world coords
 
     hitpointerr[0] = adsGeo.HalfWidth1()*2/sqrt(12);
     hitpointerr[1] = adGeo.HalfHeight();
     hitpointerr[2] = adsGeo.HalfWidth1()*2/sqrt(12);
 
-    CRTHit hit = FillCRTHit({mac},pesmap,petot,thit,thit,plane,hitpoint[0],hitpointerr[0],
+    CRTHit hit = FillCRTHit({mac},pesmap,petot,thit,thit1,plane,hitpoint[0],hitpointerr[0],
                             hitpoint[1],hitpointerr[1],hitpoint[2],hitpointerr[2],region);
 
     return hit;
@@ -973,8 +986,8 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeSideHit(vector<art::Ptr<CRTData>> coinData) 
     //    t1hit = std::accumulate(t1trigs.begin(), t1trigs.end()) / (uint64_t)t1trigs.size();
 
     for(uint64_t const t : ttrigs){
-      if (region=="North" || region=="South") /*thit += t;*/ thit += t-uint64_t(200.*fPropDelay);
-      else /*thit += t;*/thit += t-uint64_t(400.*fPropDelay);
+      if (region=="North" || region=="South") /*thit += t;*/ thit += t-uint64_t(200.*fPropDelay)-fSiPMtoFEBdelay;
+      else /*thit += t;*/thit += t-uint64_t(400.*fPropDelay)-fSiPMtoFEBdelay;
       //thit += t;
       //thit += t-uint64_t(400.*fPropDelay);
       if (fVerbose) 
@@ -985,7 +998,7 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeSideHit(vector<art::Ptr<CRTData>> coinData) 
     thit=thit/uint64_t(ttrigs.size());
 
     for(double const t1 : t1trigs)
-      t1hit +=   t1-uint64_t(400.*fPropDelay);
+      t1hit +=   t1-uint64_t(400.*fPropDelay)-fSiPMtoFEBdelay;
          
 
     t1hit=t1hit/uint64_t(t1trigs.size());
