@@ -1,6 +1,0 @@
-#include "reco_icarus_driver_reco_multitpc_gauss.fcl"
-
-   services: {
-     @table::services
-     @table::icarus_split_induction_overburden_geometry_services
-   } # services
