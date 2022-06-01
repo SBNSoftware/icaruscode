@@ -6,4 +6,10 @@ driftnorm: {
   URL: "https://dbdata0vm.fnal.gov:9443/icarus_con_prod/app/data?f=tpc_elifetime_data&t="
 }
 
+wirenorm: {
+  tool_type: NormalizeWire
+  Timeout: 200
+  URL: "https://dbdata0vm.fnal.gov:9443/icarus_con_prod/app/data?f=tpc_dqdxcalibration_data&t="
+}
+
 END_PROLOG
