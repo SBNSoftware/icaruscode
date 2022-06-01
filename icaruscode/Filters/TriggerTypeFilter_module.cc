@@ -49,6 +49,7 @@ filter::TriggerTypeFilter::TriggerTypeFilter(fhicl::ParameterSet const &pset)
     if (fTriggerType == "NuMI")           fTriggerBits = value(sbn::triggerSource::NuMI);
     if (fTriggerType == "OffbeamBNB")     fTriggerBits = value(sbn::triggerSource::OffbeamBNB);
     if (fTriggerType == "OffbeamNuMI")    fTriggerBits = value(sbn::triggerSource::OffbeamNuMI);
+    if (fTriggerType == "Calib")          fTriggerBits = value(sbn::triggerSource::Calib);
     if (fTriggerType == "Unknown")        fTriggerBits = value(sbn::triggerSource::Unknown);
 
     return;

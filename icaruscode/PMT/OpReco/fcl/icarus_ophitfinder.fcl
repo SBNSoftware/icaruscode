@@ -2,7 +2,7 @@
 #include "icarus_spe.fcl"
 BEGIN_PROLOG
 #
-# Pedestal estimation alogrithms
+# Pedestal estimation algorithms
 #
 icarus_opreco_pedestal_edges: @local::standard_algo_pedestal_edges
 icarus_opreco_pedestal_edges.NumSampleFront:  3

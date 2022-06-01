@@ -62,7 +62,7 @@ Samples:+1.8 1.6 1.2 0.8 0.8 0.7 0.7 0.6
   if (data.hasItem("Description")) {
     icarus::KeyValuesData::Item const& item = data.getItem("Description");
     BOOST_TEST(item.nValues() == 1);
-    BOOST_TEST(item.values[0] == "\n"
+    BOOST_TEST(item.values()[0] == "\n"
       "This is a test for the key-values parser with default settings.\n"
       "It is expected to be used to describe the Single Photoelectron Response.\n"
       );
@@ -72,9 +72,9 @@ Samples:+1.8 1.6 1.2 0.8 0.8 0.7 0.7 0.6
   if (data.hasItem("Contact")) {
     icarus::KeyValuesData::Item const& item = data.getItem("Contact");
     BOOST_TEST(item.nValues() == 3);
-    BOOST_TEST(item.values[0] == "Gianluca");
-    BOOST_TEST(item.values[1] == "Petrillo");
-    BOOST_TEST(item.values[2] == "(petrillo@slac.stanford.edu)");
+    BOOST_TEST(item.values()[0] == "Gianluca");
+    BOOST_TEST(item.values()[1] == "Petrillo");
+    BOOST_TEST(item.values()[2] == "(petrillo@slac.stanford.edu)");
   }
   
   BOOST_TEST(data.hasItem("Gain"));
@@ -89,7 +89,7 @@ Samples:+1.8 1.6 1.2 0.8 0.8 0.7 0.7 0.6
   if (data.hasItem("Tick")) {
     icarus::KeyValuesData::Item const& item = data.getItem("Tick");
     BOOST_TEST(item.nValues() == 1);
-    BOOST_TEST(item.values[0] == "2 ns");
+    BOOST_TEST(item.values()[0] == "2 ns");
   }
   
   BOOST_TEST(data.hasItem("Samples"));

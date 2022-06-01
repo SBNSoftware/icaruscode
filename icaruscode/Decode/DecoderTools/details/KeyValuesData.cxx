@@ -36,7 +36,7 @@ auto icarus::KeyValuesData::makeOrFetchItem(std::string const& key) -> Item& {
 auto icarus::KeyValuesData::findItem
   (std::string const& key) const noexcept -> Item const*
 {
-  for (auto const& item: fItems) if (key == item.key) return &item;
+  for (auto const& item: fItems) if (key == item.key()) return &item;
   return nullptr;
 } // icarus::KeyValuesData<>::findItem() const
 
@@ -79,15 +79,23 @@ std::size_t icarus::KeyValuesData::size() const noexcept
 
 
 // -----------------------------------------------------------------------------
-decltype(auto) icarus::KeyValuesData::items() const noexcept
-  { return fItems; }
-
-
-// -----------------------------------------------------------------------------
 auto icarus::KeyValuesData::makeItemImpl(std::string key) -> Item& {
   fItems.emplace_back(std::move(key));
   return fItems.back();
 } // icarus::KeyValuesData<>::makeItemImpl()
+
+
+// -----------------------------------------------------------------------------
+std::ostream& icarus::operator<<
+  (std::ostream& out, KeyValuesData::Item const& item)
+{
+  out << "'" << item.key() << "' (" << item.nValues() << ")";
+  if (!item.values().empty()) {
+    out << ':';
+    for (auto const& value: item.values()) out << " '" << value << '\'';
+  }
+  return out;
+} // icarus::operator<< (KeyValuesData::Item)
 
 
 // -----------------------------------------------------------------------------
@@ -96,12 +104,7 @@ std::ostream& icarus::operator<< (std::ostream& out, KeyValuesData const& data)
   out << data.size() << " items";
   if (!data.empty()) {
     out << ':';
-    for (auto const& item: data.items()) {
-      out << "\n  '" << item.key << "' (" << item.values.size() << ")";
-      if (item.values.empty()) continue;
-      out << ':';
-      for (auto const& value: item.values) out << " '" << value << '\'';
-    } // for
+    for (auto const& item: data.items()) out << "\n  " << item;
   } // if has data
   return out << "\n";
 } // icarus::operator<< (KeyValuesData)

@@ -14,9 +14,11 @@
 // ICARUS libraries
 #include "icaruscode/PMT/Trigger/Algorithms/ManagedTriggerGateBuilder.h"
 #include "icaruscode/PMT/Trigger/Algorithms/TriggerTypes.h"
+#include "icaruscode/PMT/Trigger/Algorithms/TriggerTypes.h"
 
 // LArSoft libraries
 #include "lardataobj/RawData/OpDetWaveform.h"
+#include "lardataalg/Utilities/quantities_fhicl.h" // for microsecond parameter
 #include "lardataalg/Utilities/quantities/electronics.h"
 
 // framework libraries
@@ -72,7 +74,7 @@ class icarus::trigger::FixedTriggerGateBuilder
     
     struct FixedGateInfo: public GateInfoBase {
       /// Activity ignored up to this tick excluded.
-      optical_tick openUntil { TriggerGate_t::MinTick };
+      optical_tick openUntil { TriggerGateData_t::MinTick };
       
       /// Ticks to keep the gate open.
       optical_time_ticks gateDuration;
@@ -142,9 +144,9 @@ class icarus::trigger::FixedTriggerGateBuilder
     using Comment = fhicl::Comment;
     
     
-    fhicl::Atom<microsecond::value_t> GateDuration {
+    fhicl::Atom<microsecond> GateDuration {
       Name("GateDuration"),
-      Comment("duration of a trigger gate [us]")
+      Comment("duration of a trigger gate")
       };
     
     fhicl::Atom<bool> ExtendGate {

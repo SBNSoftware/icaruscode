@@ -18,19 +18,53 @@
 #include <vector>
 #include <string>
 #include <optional>
+#include <regex>
+#include <initializer_list>
 #include <stdexcept> // std::runtime_error
-#include <utility> // std::move()
+#include <utility> // std::move(), std::pair
+#include <limits>
+#include <type_traits> // std::is_constructible_v, std::is_arithmetic_v, ...
 #include <charconv> // std::from_chars()
 #include <cstddef> // std::size_t
 
 
 // -----------------------------------------------------------------------------
 namespace icarus::details { class KeyedCSVparser; }
+
 /**
  * @class icarus::details::KeyedCSVparser
  * @brief Parser to fill a `KeyValuesData` structure out of a character buffer.
  * 
  * It currently supports only single-line buffer.
+ * 
+ * The parser operates one "line" at a time, returning a `KeyValuesData` with
+ * the values assigned to each detected key. No data type is implied: all
+ * elements are treated as strings, either a key or a value.
+ * The parser separates the elements according to a separator, strips them of
+ * trailing and heading spaces, then it decides whether each element is a value
+ * to be assigned to the last key found, or a new key.
+ * Keys are elements that have letters in them, values are anything else.
+ * This simple (and arguable) criterion can be broken with specific parser
+ * configuration: a pattern can be specified that when matched to an element
+ * will make it a key; the pattern can also set the number of values that key
+ * will require.
+ * 
+ * For example:
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~{.cpp}
+ * icarus::details::KeyedCSVparser parser;
+ * parser.addPatterns({
+ *       { "TriggerType", 1U } // expect one value (even if contains letters)
+ *     , { "TriggerWindows", 1U } // expect one value (even if contains letters)
+ *     , { "TPChitTimes", icarus::details::KeyedCSVparser::FixedSize }
+ *          // the first value is an integer, count of how many other values
+ *   });
+ * 
+ * icarus::details::KeyValuesData data = parser(
+ *   "TriggerType, S5, Triggers, TriggerWindows, 0C0B,"
+ *   " TPChits, 12, 130, 0, 0, TPChitTimes, 3, -1.1, -0.3, 0.1, PMThits, 8"
+ *   );
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ * will return `data` with 6 items.
  */
 class icarus::details::KeyedCSVparser {
   
@@ -40,8 +74,20 @@ class icarus::details::KeyedCSVparser {
   
   /// Base of all errors by KeyedCSVparser.
   using Error = icarus::KeyValuesData::Error;
+  /// Base of some errors.
+  using ErrorOnKey = icarus::KeyValuesData::ErrorOnKey;
   struct ParserError; ///< Generic error: base of all errors by KeyedCSVparser.
   struct InvalidFormat; ///< Parsing format is not understood.
+  /// Expected number of values is missing.
+  using MissingSize = KeyValuesData::MissingSize;
+  struct MissingValues; ///< Expected values are missing.
+  
+  /// Mnemonic size value used in `addPattern()` calls.
+  static constexpr unsigned int FixedSize
+    = std::numeric_limits<unsigned int>::max();
+  /// Mnemonic size value used in `addPattern()` calls.
+  static constexpr unsigned int DynamicSize = FixedSize - 1U;
+  
   
   /// Constructor: specifies the separator character.
   KeyedCSVparser(char sep = ','): fSep(sep) {}
@@ -64,13 +110,74 @@ class icarus::details::KeyedCSVparser {
   void parse(std::string_view const& s, ParsedData_t& data) const;
   //@}
   
+  /**
+   * @name Know patterns
+   * 
+   * The parser normally treats as a value everything that does not start with a
+   * letter.
+   * Known patterns may override this behaviour: if a token matches a known
+   * pattern, it is considered a key and it is possible to specify the expected
+   * number of values.
+   * 
+   * The number of values can be:
+   * * a number: exactly that number of values are required; an exception will
+   *   be thrown if not enough tokens are available;
+   * * `FixedSize`: the next token must be a non-negative integer specifying how
+   *   many other values to add (read this with `Item::getSizedVector()`);
+   *   an exception will be thrown if not enough tokens are available;
+   * * `DynamicSize`: the standard algorithm is used and values are added as
+   *   long as they don't look like keys; the token matching the pattern is
+   *   interpreted as a key though.
+   * 
+   * Patterns are considered in the order they were added.
+   */
+  /// @{
+  
+  //@{
+  /**
+   * @brief Adds a single known pattern.
+   * @param pattern the regular expression matching the key for this pattern
+   * @param values the number of values for this pattern
+   * @return this parser (`addPattern()` calls may be chained)
+   */
+  KeyedCSVparser& addPattern(std::regex pattern, unsigned int values)
+    { fPatterns.emplace_back(std::move(pattern), values); return *this; }
+  KeyedCSVparser& addPattern(std::string const& pattern, unsigned int values)
+    { return addPattern(std::regex{ pattern }, values); }
+  //@}
+  
+  //@{
+  /**
+   * @brief Adds known patterns.
+   * @param patterns sequence of patterns to be added
+   * @return this parser (`addPatterns()` calls may be chained)
+   * 
+   * Each pattern is a pair key regex/number of values, like in `addPattern()`.
+   */
+  KeyedCSVparser& addPatterns
+    (std::initializer_list<std::pair<std::regex, unsigned int>> patterns);
+  KeyedCSVparser& addPatterns
+    (std::initializer_list<std::pair<std::string, unsigned int>> patterns);
+  //@}
+  
+  /// @}
+  
     private:
   using Buffer_t = std::string_view;
   using SubBuffer_t = std::string_view;
   
   char const fSep = ','; ///< Character used as token separator.
   
+  /// List of known patterns for matching keys, and how many values they hold.
+  std::vector<std::pair<std::regex, unsigned int>> fPatterns;
   
+  /// Returns the length of the next toke, up to the next separator (excluded).
+  std::size_t findTokenLength(Buffer_t const& buffer) const noexcept;
+
+  /// Returns the value of the next token, stripped.
+  SubBuffer_t peekToken(Buffer_t const& buffer) const noexcept;
+  
+  /// Extracts the next token from the `buffer` and returns its value, stripped.
   SubBuffer_t extractToken(Buffer_t& buffer) const noexcept;
   
   /// Is content of `buffer` a key (as opposed to a value)?
@@ -101,7 +208,7 @@ struct icarus::details::KeyedCSVparser::ParserError: public Error {
   
   ParserError(std::string msg): Error(std::move(msg)) {}
   
-}; // icarus::details::KeyedCSVparser::Error()
+}; // icarus::details::KeyedCSVparser::ParseError
 
 
 // -----------------------------------------------------------------------------
@@ -109,7 +216,19 @@ struct icarus::details::KeyedCSVparser::InvalidFormat: public ParserError {
   
   InvalidFormat(std::string const& msg): ParserError("Format error: " + msg) {}
   
-}; // icarus::details::KeyedCSVparser::InvalidFormat()
+}; // icarus::details::KeyedCSVparser::InvalidFormat
+
+
+// -----------------------------------------------------------------------------
+struct icarus::details::KeyedCSVparser::MissingValues: public ErrorOnKey {
+  
+  MissingValues(std::string const& key, unsigned int values)
+    : ErrorOnKey(key,
+      "data ended while expecting " + std::to_string(values) + " more values"
+      )
+    {}
+  
+}; // icarus::details::KeyedCSVparser::MissingValues
 
 
 // -----------------------------------------------------------------------------

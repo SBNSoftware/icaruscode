@@ -1,4 +1,5 @@
 #include "decoderTools_icarus.fcl"
+#include "trigger_emulation_icarus.fcl"
 #include "icarus_ophitfinder.fcl"
 #include "icarus_flashfinder.fcl"
 #include "icarus_opana_modules.fcl"
@@ -21,9 +22,12 @@ icarus_stage0_mc_producers:
                            OutputRawWavePath:   "RAW"
                            OutputCoherentPath:  "Cor"
                            DiagnosticOutput:    false
+                           CoherentGrouping:    64
                            DecoderTool:         @local::TPCNoiseFilter1DTool
                        }
-  
+
+    pmtfixedthr:       @local::icarus_pmtdiscriminatethr_fixed_MC
+
     mcophit:           @local::ICARUSMCOpHit
 
     ## crt producer   
@@ -33,7 +37,8 @@ icarus_stage0_mc_producers:
 }  
 
 # make the following modifications to job flow for MC vs the data
-icarus_stage0_mc_PMT:  [ ophit,
+icarus_stage0_mc_PMT:  [ pmtfixedthr,
+                         ophit,
                          mcophit,
                          opflashCryoE,
                          opflashCryoW
@@ -44,5 +49,10 @@ icarus_stage0_mc_crt:  [ crttruehit,
                          #crttzero 
                          crttrack 
                        ]
+
+# output
+icarus_mc_dropping_rawdigits:  [ "drop raw::RawDigits_*_*_*" ]
+icarus_mc_dropping_rawopdetwf: [ "drop raw::OpDetWaveforms_*_*_*" ]
+icarus_mc_dropping_rawstuff:   [ @sequence::icarus_mc_dropping_rawdigits, @sequence::icarus_mc_dropping_rawopdetwf ]
 
 END_PROLOG

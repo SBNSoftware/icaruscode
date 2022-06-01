@@ -19,13 +19,17 @@
 namespace {
   
   // ---------------------------------------------------------------------------
-  struct TimestampDumper { std::uint64_t timestamp; };
+  template <typename T = std::uint64_t>
+  struct TimestampDumper { T timestamp; };
   
-  TimestampDumper dumpTimestamp(std::uint64_t timestamp)
+  template <typename T>
+  TimestampDumper<T> dumpTimestamp(T timestamp)
     { return { timestamp }; }
   
-  std::ostream& operator<< (std::ostream& out, TimestampDumper wrapper) {
-    std::uint64_t const timestamp = wrapper.timestamp;
+  template <typename T>
+  std::ostream& operator<< (std::ostream& out, TimestampDumper<T> wrapper) {
+    T const timestamp = wrapper.timestamp;
+    //std::uint64_t const timestamp = wrapper.timestamp;
     if (sbn::ExtraTriggerInfo::isValidTimestamp(timestamp)) {
       out << (timestamp / 1'000'000'000) << "."
         << std::setfill('0') << std::setw(9) << (timestamp % 1'000'000'000)
@@ -70,6 +74,40 @@ namespace {
   
   
   // ---------------------------------------------------------------------------
+
+  struct LVDSmaskDumper { std::uint64_t bits; };
+
+  LVDSmaskDumper dumpLVDSmask(std::uint64_t bits) { return { bits }; }
+
+  std::ostream& operator<< (std::ostream& out, LVDSmaskDumper wrapper) {
+    std::uint64_t const bits { wrapper.bits };
+
+    auto dumpBoard = [&out](std::uint8_t bits)
+      {
+        static constexpr char symbols[2] = { '-', 'x' };
+	std::uint8_t mask = 0x80;
+        do { out << symbols[(bits & mask)? 1: 0]; } while (mask >>= 1);
+      };
+    auto boardBits = [](std::uint64_t bits, short int board) -> std::uint8_t
+      { return static_cast<std::uint8_t>((bits >> (board * 8)) & 0xFF); };
+
+    // positions 3 and 7 are empty 
+    dumpBoard(boardBits(bits, 6));
+    out << ' ';
+    dumpBoard(boardBits(bits, 5));
+    out << ' ';
+    dumpBoard(boardBits(bits, 4));
+    out << ' ';
+    out << ' ';
+    dumpBoard(boardBits(bits, 2));
+    out << ' ';
+    dumpBoard(boardBits(bits, 1));
+    out << ' ';
+    dumpBoard(boardBits(bits, 0));
+
+    return out;
+  } // operator<< (LVDSmaskDumper)            
+
   
 } // local namespace
 
@@ -91,6 +129,10 @@ std::ostream& sbn::operator<< (std::ostream& out, ExtraTriggerInfo const& info)
       << " at " << dumpTimestamp(info.beamGateTimestamp)
       << " (diff: "
       << timestampDiff(info.beamGateTimestamp, info.triggerTimestamp) << " ns)"
+    << "\n"
+    << "enable gate opened at " << dumpTimestamp(info.enableGateTimestamp)
+    << " (" << timestampDiff(info.beamGateTimestamp, info.enableGateTimestamp)
+    << " ns before the gate)"
     << "\n"
       << "counts from this source: trigger="
         << dumpTriggerCount(info.triggerCount)
@@ -123,6 +165,43 @@ std::ostream& sbn::operator<< (std::ostream& out, ExtraTriggerInfo const& info)
       << dumpTriggerCount(info.anyGateCountFromAnyPreviousTrigger)
       << " gates from any source have opened since"
     ;
+  if (info.WRtimeToTriggerTime != ExtraTriggerInfo::UnknownCorrection) {
+    out << "\nCorrection applied to the timestamps: "
+      << dumpTimestamp(info.WRtimeToTriggerTime);
+  }
+  if (info.triggerLocationBits != 0) {
+    out << "\nLocation(s) of trigger:";
+    for (std::string const& bitName: names(info.triggerLocation()))
+      out << " " << bitName;
+  }
+  out << "\nWest cryostat: "
+      << info.cryostats[ExtraTriggerInfo::WestCryostat].triggerCount
+      << " triggers";
+  if (auto const& cryo = info.cryostats[ExtraTriggerInfo::WestCryostat];
+      cryo.hasLVDS()
+      ) {
+    out
+      << "\n  west wall:  "
+      << dumpLVDSmask(cryo.LVDSstatus[ExtraTriggerInfo::WestPMTwall])
+      << "\n  east wall:  "
+      << dumpLVDSmask(cryo.LVDSstatus[ExtraTriggerInfo::EastPMTwall])
+      ;
+  }
+
+  out << "\nEast cryostat: "
+      << info.cryostats[ExtraTriggerInfo::EastCryostat].triggerCount
+      << " triggers";
+  if (auto const& cryo = info.cryostats[ExtraTriggerInfo::EastCryostat];
+      cryo.hasLVDS()
+      ) {
+    out
+      << "\n  west wall:  "
+      << dumpLVDSmask(cryo.LVDSstatus[ExtraTriggerInfo::WestPMTwall])
+      << "\n  east wall:  "
+      << dumpLVDSmask(cryo.LVDSstatus[ExtraTriggerInfo::EastPMTwall])
+      ;
+  }
+
   
   return out;
 } // sbn::operator<< (ExtraTriggerInfo)

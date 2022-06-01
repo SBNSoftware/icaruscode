@@ -10,6 +10,7 @@
 #include "hitfindermodules_icarus.fcl"
 #include "icarus_ophitfinder.fcl"
 #include "icarus_flashfinder.fcl"
+#include "trigger_emulation_icarus.fcl"
 #include "crt_decoderdefs_icarus.fcl"
 #include "wcls-decode-to-sig-base.fcl"
 
@@ -20,12 +21,12 @@ icarus_stage0_analyzers:
 {
   purityinfoana0: { module_type:     "TPCPurityInfoAna"
                     PurityInfoLabel: "purityana0"
-                    PrintInfo:       true
+                    PrintInfo:       false
                     SelectEvents:    [ reco ]
                   }
   purityinfoana1: { module_type:     "TPCPurityInfoAna"
                     PurityInfoLabel: "purityana1"
-                    PrintInfo:       true
+                    PrintInfo:       false
                     SelectEvents:    [ reco ]
                   }
 }
@@ -53,7 +54,7 @@ icarus_stage0_producers:
 
   daqCRT:                         @local::crtdaq_icarus
 
-  daqTrigger:                     @local::decodeTrigger
+  daqTrigger:                     @local::decodeTriggerV2
 
   ### calwire producers
   decon1droi:                     @local::icarus_decon1droi
@@ -75,6 +76,10 @@ icarus_stage0_producers:
   gaushitTPCEW:                   @local::gaus_hitfinder_icarus
   gaushitTPCEE:                   @local::gaus_hitfinder_icarus
 
+  ### trigger emulation foundation
+  pmtconfigbaselines:             @local::icarus_pmtconfigbaselines
+  pmtthr:                         @local::icarus_pmtdiscriminatethr
+  
   ### Optical hit finder
   ophit:                          @local::icarus_ophit_data
   ophitfull:                      @local::icarus_ophitdebugger_data
@@ -123,6 +128,10 @@ icarus_stage0_filters:
                                 TriggerType:        "OffbeamNuMI"
                              }
 
+   triggerfilterCalib: { module_type:	"TriggerTypeFilter"
+   		       	 TriggerDataLabel:	"daqTrigger"
+			 TriggerType:		"Calib"
+                       }			 
 
    triggerfilterUnknown:  {  module_type:        "TriggerTypeFilter"
                              TriggerDataLabel:   "daqTrigger"
@@ -149,15 +158,23 @@ icarus_stage0_trigger_OffbeamNuMI: [ daqTrigger,
                                      triggerfilterOffbeamNuMI 
                                    ]
 
+icarus_stage0_trigger_Calib  :     [ daqTrigger,
+                                     triggerfilterCalib
+                                   ]
+
+
 icarus_stage0_trigger_Unknown:     [ daqTrigger,
                                      triggerfilterUnknown
                                    ]
 
 icarus_stage0_multiTPC_TPC:        [ decon1droi,
-#                                     decon2droiEE,
-#                                     decon2droiEW,
-#                                     decon2droiWE,
-#                                     decon2droiWW,
+                                     roifinder
+                                   ]
+
+icarus_stage0_multiTPC_2d_TPC:     [ decon2droiEE,
+                                     decon2droiEW,
+                                     decon2droiWE,
+                                     decon2droiWW,
                                      roifinder
                                    ]
 
@@ -177,6 +194,8 @@ icarus_purity_monitor:             [
 icarus_stage0_PMT:                 [ daqTrigger,
                                      pmtconfig,
                                      daqPMT,
+                                     pmtconfigbaselines,
+                                     pmtthr,
                                      ophit,
                                      opflashCryoE,
                                      opflashCryoW
@@ -196,6 +215,12 @@ icarus_stage0_multiTPC:            [ @sequence::icarus_stage0_multiTPC_TPC,
                                      @sequence::icarus_purity_monitor
                                    ]
 
+icarus_stage0_2d_multiTPC:         [ @sequence::icarus_stage0_multiTPC_2d_TPC,
+                                     @sequence::icarus_stage0_EastHits_TPC,
+                                     @sequence::icarus_stage0_WestHits_TPC,
+                                     @sequence::icarus_purity_monitor
+                                   ]
+
 icarus_stage0_crt:                 [
                                      daqCRT
                                    ]
@@ -204,6 +229,13 @@ icarus_stage0_data:                [
                                      @sequence::icarus_stage0_PMT, 
                                      daqTPCROI, 
                                      @sequence::icarus_stage0_multiTPC,
+                                     @sequence::icarus_stage0_crt
+                                   ]
+
+icarus_stage0_2d_data:             [
+                                     @sequence::icarus_stage0_PMT, 
+                                     daqTPCROI, 
+                                     @sequence::icarus_stage0_2d_multiTPC,
                                      @sequence::icarus_stage0_crt
                                    ]
 
@@ -228,25 +260,25 @@ icarus_stage0_producers.decon2droi.wcls_main.params.signal_output_form:         
 
 icarus_stage0_producers.decon2droiEE.wcls_main.inputers:                                       ["wclsRawFrameSource:rfsrc0"]
 icarus_stage0_producers.decon2droiEE.wcls_main.outputers:                                      ["wclsFrameSaver:spsaver0"]
-icarus_stage0_producers.decon2droiEE.wcls_main.params.raw_input_label:                         "daqTPC:PHYSCRATEDATATPCEE"
+icarus_stage0_producers.decon2droiEE.wcls_main.params.raw_input_label:                         "daqTPCROI:PHYSCRATEDATATPCEE"
 icarus_stage0_producers.decon2droiEE.wcls_main.params.tpc_volume_label:                        0
 icarus_stage0_producers.decon2droiEE.wcls_main.params.signal_output_form:                      "dense"
 
 icarus_stage0_producers.decon2droiEW.wcls_main.inputers:                                       ["wclsRawFrameSource:rfsrc1"]
 icarus_stage0_producers.decon2droiEW.wcls_main.outputers:                                      ["wclsFrameSaver:spsaver1"]
-icarus_stage0_producers.decon2droiEW.wcls_main.params.raw_input_label:                         "daqTPC:PHYSCRATEDATATPCEW"
+icarus_stage0_producers.decon2droiEW.wcls_main.params.raw_input_label:                         "daqTPCROI:PHYSCRATEDATATPCEW"
 icarus_stage0_producers.decon2droiEW.wcls_main.params.tpc_volume_label:                        1
 icarus_stage0_producers.decon2droiEW.wcls_main.params.signal_output_form:                      "dense"
 
 icarus_stage0_producers.decon2droiWE.wcls_main.inputers:                                       ["wclsRawFrameSource:rfsrc2"]
 icarus_stage0_producers.decon2droiWE.wcls_main.outputers:                                      ["wclsFrameSaver:spsaver2"]
-icarus_stage0_producers.decon2droiWE.wcls_main.params.raw_input_label:                         "daqTPC:PHYSCRATEDATATPCWE"
+icarus_stage0_producers.decon2droiWE.wcls_main.params.raw_input_label:                         "daqTPCROI:PHYSCRATEDATATPCWE"
 icarus_stage0_producers.decon2droiWE.wcls_main.params.tpc_volume_label:                        2
 icarus_stage0_producers.decon2droiWE.wcls_main.params.signal_output_form:                      "dense"
 
 icarus_stage0_producers.decon2droiWW.wcls_main.inputers:                                       ["wclsRawFrameSource:rfsrc3"]
 icarus_stage0_producers.decon2droiWW.wcls_main.outputers:                                      ["wclsFrameSaver:spsaver3"]
-icarus_stage0_producers.decon2droiWW.wcls_main.params.raw_input_label:                         "daqTPC:PHYSCRATEDATATPCWW"
+icarus_stage0_producers.decon2droiWW.wcls_main.params.raw_input_label:                         "daqTPCROI:PHYSCRATEDATATPCWW"
 icarus_stage0_producers.decon2droiWW.wcls_main.params.tpc_volume_label:                        3
 icarus_stage0_producers.decon2droiWW.wcls_main.params.signal_output_form:                      "dense"
 
@@ -326,5 +358,11 @@ icarus_stage0_producers.purityana1.PersistPurityInfo:                           
 icarus_stage0_producers.purityana1.FillAnaTuple:                                               false
 icarus_stage0_producers.purityana1.PersistPurityInfo:                                          false
 icarus_stage0_producers.purityana1.FillAnaTuple:                                               false
+
+# output
+icarus_data_dropping_rawdigits:  [ "drop raw::RawDigits_*_*_*" ]
+icarus_data_dropping_rawopdetwf: [ "drop raw::OpDetWaveforms_*_*_*" ]
+icarus_data_dropping_rawstuff:   [ @sequence::icarus_data_dropping_rawdigits, @sequence::icarus_data_dropping_rawopdetwf ]
+
 
 END_PROLOG

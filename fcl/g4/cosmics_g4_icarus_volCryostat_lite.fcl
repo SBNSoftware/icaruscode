@@ -1,0 +1,19 @@
+#-------------------------------------------------------------------
+#
+# Name: cosmics_g4_icarus_volCryostat_lite.fcl
+#
+# Purpose: Lite version of cosmics_g4_icarus_volCryostat.fcl
+#
+# Created: 22-Mar-2022  H. Greenlee
+#
+# Automatically generated.
+#
+#-------------------------------------------------------------------
+
+#include "cosmics_g4_icarus_volCryostat.fcl"
+
+# Drop truth data products.
+
+outputs.rootoutput.saveMemoryObjectThreshold: 0
+outputs.rootoutput.outputCommands: [ "keep *_*_*_*",
+                                     "drop sim::SimEnergyDeposits_*_*_*" ]

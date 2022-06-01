@@ -166,11 +166,11 @@ ROIFinder::ROIFinder(fhicl::ParameterSet const& pset) : EDProducer{pset}
 {
     this->reconfigure(pset);
 
-    for(const auto& wireLabel : fWireModuleLabelVec)
+    for(const auto& wireLabel : fOutInstanceLabelVec)
     {
-        produces< std::vector<recob::Wire>>(wireLabel.instance());
+        produces< std::vector<recob::Wire>>(wireLabel);
 
-        if (fOutputMorphed) produces<std::vector<recob::Wire>>(wireLabel.instance() + "M");
+        if (fOutputMorphed) produces<std::vector<recob::Wire>>(wireLabel+ "M");
     }
 }
 
@@ -185,7 +185,7 @@ void ROIFinder::reconfigure(fhicl::ParameterSet const& pset)
     // Recover the parameters
     fWireModuleLabelVec    = pset.get<std::vector<art::InputTag>>("WireModuleLabelVec",   std::vector<art::InputTag>()={"decon1droi"});
     fOutInstanceLabelVec   = pset.get<std::vector<std::string>>  ("OutInstanceLabelVec",                            {"PHYSCRATEDATA"});
-    fCorrectROIBaseline    = pset.get<bool                      >("CorrectROIBaseline",                                          true);
+    fCorrectROIBaseline    = pset.get<bool                      >("CorrectROIBaseline",                                         false);
     fMinSizeForCorrection  = pset.get<size_t                    >("MinSizeForCorrection",                                          12);
     fMaxSizeForCorrection  = pset.get<size_t                    >("MaxSizeForCorrection",                                         512);
     fOutputMorphed         = pset.get< bool                     >("OutputMorphed",                                               true);

@@ -87,7 +87,6 @@ TPCNoiseFilter1DTool: {
     tool_type:          TPCNoiseFilter1D
     fragment_id_offset: 0
     NSigmaForTrucation: 3.5
-    CoherentGrouping:   64
     StructuringElement: 16
     FilterWindow:       10
     Threshold:          [12.0, 12.0, 12.0] #[8., 7.0 , 8.0] #[2.75, 2.75, 2.75] # changing threshold scheme from dynamic to static
@@ -106,6 +105,10 @@ PMTDecoderTool: {
 
 TriggerDecoderTool: {
    tool_type:          TriggerDecoder
+}
+
+TriggerDecoderV2Tool: {
+   tool_type:          TriggerDecoderV2
 }
 
 

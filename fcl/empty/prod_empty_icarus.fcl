@@ -49,6 +49,7 @@ outputs: {
   artroot: {
     module_type: RootOutput
     fileName:   "EmptyEvents.root"
+    saveMemoryObjectThreshold: 0
   }
 }
 

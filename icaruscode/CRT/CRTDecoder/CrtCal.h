@@ -84,6 +84,19 @@ class icarus::crt::CrtCal {
         float** GetPeakMeanErr() const;
         float** GetPeakXsqr() const;
 	short** GetPeakNdf() const;
+	long*   GetChanStats() const;
+
+	double* GetLangausWidth() const;
+	double* GetLangausWidthErr() const;
+	double* GetLangausLandauMP() const;
+	double* GetLangausLandauMPErr() const;
+	double* GetLangausArea() const;
+	double* GetLangausAreaErr() const;
+	double* GetLangausGaussSigma() const;
+	double* GetLangausGaussSigmaErr() const;
+	double* GetLangausXsqr() const;
+	double* GetLangausNdf() const;
+
 
   private:
         void IndexToMacChan();
@@ -126,6 +139,23 @@ class icarus::crt::CrtCal {
 	int*  fThreshADC;
 	float*   fThreshPE;
 	int*  fNabove;
+	long* fChanStats;
+
+	double* fLangausWidth;
+	double* fLangausWidthErr;
+	double* fLangausLandauMP;
+	double* fLangausLandauMPErr;
+	double* fLangausArea;
+	double* fLangausAreaErr;
+	double* fLangausGaussSigma;
+	double* fLangausGaussSigmaErr;
+	double* fLangausXsqr;
+	double* fLangausNdf;
+
+
+	TF1 *langaufit(TH1F *his, Double_t *fitrange, Double_t *startvalues, Double_t *parlimitslo, Double_t *parlimitshi, Double_t *fitparams, Double_t *fiterrors, Double_t *ChiSqr, Int_t *NDF);
+	void langaus_fit(TH1F* h, double& lang_lan_wid, double& lang_lan_wid_err, double& lang_lan_mp, double& lang_lan_mp_err, double& lang_area, double& lang_area_err, double& lang_gauss_sigma, double& lang_gauss_sigma_err, double& lang_chisq, double& lang_ndf);
+
 
 
 };

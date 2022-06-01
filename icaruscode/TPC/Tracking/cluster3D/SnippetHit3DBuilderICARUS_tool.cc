@@ -163,6 +163,12 @@ private:
     void findGoodTriplets(HitMatchTripletVecMap&, HitMatchTripletVecMap&, reco::HitPairList&, bool = false) const;
 
     /**
+     * @brief This will look at storing pair "orphans" where the 2D hits are otherwise unused
+     */
+
+    int saveOrphanPairs(HitMatchTripletVecMap&, reco::HitPairList&) const;
+
+    /**
      *  @brief Make a HitPair object by checking two hits
      */
     bool makeHitPair(reco::ClusterHit3D&       pairOut,
@@ -250,6 +256,9 @@ private:
     std::vector<int>                        m_invalidTPCVec;
     float                                   m_wirePitchScaleFactor;  ///< Scaling factor to determine max distance allowed between candidate pairs
     float                                   m_maxHit3DChiSquare;     ///< Provide ability to select hits based on "chi square"
+    bool                                    m_saveMythicalPoints;    ///< Should we save valid 2 hit space points? 
+    float                                   m_maxMythicalChiSquare;  ///< Selection cut on mythical points
+    bool                                    m_useT0Offsets;          ///< If true then we will use the LArSoft interplane offsets
     bool                                    m_outputHistograms;      ///< Take the time to create and fill some histograms for diagnostics
    
     bool                                    m_enableMonitoring;      ///<
@@ -258,7 +267,9 @@ private:
    
     float                                   m_zPosOffset;
    
-    TickCorrectionArray                     m_TickCorrectionArray;
+    using PlaneToT0OffsetMap = std::map<geo::PlaneID,float>;
+
+    PlaneToT0OffsetMap                      m_PlaneToT0OffsetMap;
    
     // Define some basic histograms   
     TTree*                                  m_tupleTree;             ///< output analysis tree
@@ -325,21 +336,22 @@ void SnippetHit3DBuilderICARUS::produces(art::ProducesCollector& collector)
 
 void SnippetHit3DBuilderICARUS::configure(fhicl::ParameterSet const &pset)
 {
-    m_hitFinderTagVec      = pset.get<std::vector<art::InputTag>>("HitFinderTagVec",       {"gaushit"});
-    m_enableMonitoring     = pset.get<bool                      >("EnableMonitoring",      true);
-    m_hitWidthSclFctr      = pset.get<float                     >("HitWidthScaleFactor",   6.  );
-    m_rangeNumSig          = pset.get<float                     >("RangeNumSigma",         3.  );
-    m_LongHitStretchFctr   = pset.get<float                     >("LongHitsStretchFactor", 1.5 );
-    m_pulseHeightFrac      = pset.get<float                     >("PulseHeightFraction",   0.5 );
-    m_PHLowSelection       = pset.get<float                     >("PHLowSelection",        20. );
-    m_deltaPeakTimeSig     = pset.get<float                     >("DeltaPeakTimeSig",      1.7 );
-    m_zPosOffset           = pset.get<float                     >("ZPosOffset",            0.0 );
-    m_invalidTPCVec        = pset.get<std::vector<int>          >("InvalidTPCVec",         std::vector<int>());
-    m_wirePitchScaleFactor = pset.get<float                     >("WirePitchScaleFactor",  1.9 );
-    m_maxHit3DChiSquare    = pset.get<float                     >("MaxHitChiSquare",       6.0 );
-    m_outputHistograms     = pset.get<bool                      >("OutputHistograms",      false );
-
-    m_TickCorrectionArray  = pset.get<TickCorrectionArray       >("TickCorrectionArray",   {{{0.,0.},{0.,0.},{0.,0.},{0.,0.}},{{0.,0.},{0.,0.},{0.,0.},{0.,0.}}});
+    m_hitFinderTagVec      = pset.get<std::vector<art::InputTag>>("HitFinderTagVec",        {"gaushit"});
+    m_enableMonitoring     = pset.get<bool                      >("EnableMonitoring",       true);
+    m_hitWidthSclFctr      = pset.get<float                     >("HitWidthScaleFactor",    6.  );
+    m_rangeNumSig          = pset.get<float                     >("RangeNumSigma",          3.  );
+    m_LongHitStretchFctr   = pset.get<float                     >("LongHitsStretchFactor",  1.5 );
+    m_pulseHeightFrac      = pset.get<float                     >("PulseHeightFraction",    0.5 );
+    m_PHLowSelection       = pset.get<float                     >("PHLowSelection",         20. );
+    m_deltaPeakTimeSig     = pset.get<float                     >("DeltaPeakTimeSig",       1.7 );
+    m_zPosOffset           = pset.get<float                     >("ZPosOffset",             0.0 );
+    m_invalidTPCVec        = pset.get<std::vector<int>          >("InvalidTPCVec",          std::vector<int>());
+    m_wirePitchScaleFactor = pset.get<float                     >("WirePitchScaleFactor",   1.9 );
+    m_maxHit3DChiSquare    = pset.get<float                     >("MaxHitChiSquare",        6.0 );
+    m_saveMythicalPoints   = pset.get<bool                      >("SaveMythicalPoints",     true);
+    m_maxMythicalChiSquare = pset.get<float                     >("MaxMythicalChiSquare",    10.);
+    m_useT0Offsets         = pset.get<bool                      >("UseT0Offsets",           true);
+    m_outputHistograms     = pset.get<bool                      >("OutputHistograms",      false);
 
     m_geometry = art::ServiceHandle<geo::Geometry const>{}.get();
 
@@ -476,6 +488,29 @@ void SnippetHit3DBuilderICARUS::Hit3DBuilder(art::Event& evt, reco::HitPairList&
     m_clusterHit2DMasterList.clear();
     m_planeToSnippetHitMap.clear();
     m_planeToWireToHitSetMap.clear();
+
+    // Do the one time initialization of the tick offsets. 
+    if (m_PlaneToT0OffsetMap.empty())
+    {
+        // Need the detector properties which needs the clocks 
+        auto const clock_data = art::ServiceHandle<detinfo::DetectorClocksService const>()->DataFor(evt);
+        auto const det_prop   = art::ServiceHandle<detinfo::DetectorPropertiesService const>()->DataFor(evt, clock_data);
+
+        // Initialize the plane to hit vector map
+        for(size_t cryoIdx = 0; cryoIdx < m_geometry->Ncryostats(); cryoIdx++)
+        {
+            for(size_t tpcIdx = 0; tpcIdx < m_geometry->NTPC(); tpcIdx++)
+            {
+                for(size_t planeIdx = 0; planeIdx < m_geometry->Nplanes(); planeIdx++)
+                {
+                    geo::PlaneID planeID(cryoIdx,tpcIdx,planeIdx);
+
+                    if (m_useT0Offsets) m_PlaneToT0OffsetMap[planeID] = det_prop.GetXTicksOffset(planeID) - det_prop.GetXTicksOffset(geo::PlaneID(cryoIdx,tpcIdx,0));
+                    else                m_PlaneToT0OffsetMap[planeID] = 0.;
+                }
+            }
+        }   
+    }
 
     m_timeVector.resize(NUMTIMEVALUES, 0.);
 
@@ -674,6 +709,7 @@ size_t SnippetHit3DBuilderICARUS::BuildHitPairMapByTPC(PlaneSnippetHitMapItrPair
 
     size_t nTriplets(0);
     size_t nDeadChanHits(0);
+    size_t nOrphanPairs(0);
 
     //*********************************************************************************
     // Basically, we try to loop until done...
@@ -716,10 +752,18 @@ size_t SnippetHit3DBuilderICARUS::BuildHitPairMapByTPC(PlaneSnippetHitMapItrPair
         if (n12Pairs > n13Pairs) findGoodTriplets(pair12Map, pair13Map, hitPairList);
         else                     findGoodTriplets(pair13Map, pair12Map, hitPairList);
 
+        if (m_saveMythicalPoints)
+        {
+            nOrphanPairs += saveOrphanPairs(pair12Map, hitPairList);
+            nOrphanPairs += saveOrphanPairs(pair13Map, hitPairList);
+        }
+
         nTriplets += hitPairList.size() - curHitListSize;
 
         snippetHitMapItrVec.front().first++;
     }
+
+    mf::LogDebug("Cluster3D") << "--> Created " << nTriplets << " triplets of which " << nOrphanPairs << " are orphans" << std::endl;
 
     return hitPairList.size();
 }
@@ -893,6 +937,48 @@ void SnippetHit3DBuilderICARUS::findGoodTriplets(HitMatchTripletVecMap& pair12Ma
     return;
 }
 
+int SnippetHit3DBuilderICARUS::saveOrphanPairs(HitMatchTripletVecMap& pairMap, reco::HitPairList& hitPairList) const
+{
+    int curTripletCount = hitPairList.size();
+
+    // Build triplets from the two lists of hit pairs
+    if (!pairMap.empty())
+    {
+        // Initial population of this map with the pair13Map hits
+        for(const auto& pair : pairMap)
+        {
+            if (pair.second.empty()) continue;
+
+            // This loop is over hit pairs that share the same first two plane wires but may have different
+            // hit times on those wires
+            for(const auto& hit2Dhit3DPair : pair.second)
+            {
+                const reco::ClusterHit2D* hit1 = std::get<0>(hit2Dhit3DPair);
+                const reco::ClusterHit2D* hit2 = std::get<1>(hit2Dhit3DPair);
+
+                // Are either of these hits already used in a triplet?
+                if (hit1->getStatusBits() & reco::ClusterHit2D::USEDINTRIPLET || hit2->getStatusBits() & reco::ClusterHit2D::USEDINTRIPLET) continue;
+
+                // Require that one of the hits is on the collection plane
+                if (hit1->WireID().Plane == 2 || hit2->WireID().Plane == 2)
+                {
+                    const reco::ClusterHit3D& hit3D = std::get<2>(hit2Dhit3DPair);
+
+                    // Allow cut on the quality of the space point
+                    if (hit3D.getHitChiSquare() < m_maxMythicalChiSquare)
+                    {
+                        // Add to the list
+                        hitPairList.emplace_back(hit3D);
+                        hitPairList.back().setID(hitPairList.size()-1);
+                    }
+                }
+            }
+        }
+    }
+
+    return hitPairList.size() - curTripletCount;
+}
+
 bool SnippetHit3DBuilderICARUS::makeHitPair(reco::ClusterHit3D&       hitPair,
                                             const reco::ClusterHit2D* hit1,
                                             const reco::ClusterHit2D* hit2,
@@ -1037,9 +1123,7 @@ bool SnippetHit3DBuilderICARUS::makeHitPair(reco::ClusterHit3D&       hitPair,
                 result = true;
             }
         }
-//        else std::cout << "-MakeHitPair, deltaPeakTime: " << deltaPeakTime << ", scl fctr: " << m_deltaPeakTimeSig << ", sigmaPeakTime: " << sigmaPeakTime << std::endl;
     }
-//    else std::cout << "-MakeHitPair, delta peak: " << hit1Peak - hit2Peak << ", hit1Width: " << hit1Width << ", hit2Width: " << hit2Width << std::endl;
 
     // Send it back
     return result;
@@ -1047,8 +1131,8 @@ bool SnippetHit3DBuilderICARUS::makeHitPair(reco::ClusterHit3D&       hitPair,
 
 
 bool SnippetHit3DBuilderICARUS::makeHitTriplet(reco::ClusterHit3D&       hitTriplet,
-                                         const reco::ClusterHit3D& pair,
-                                         const reco::ClusterHit2D* hit) const
+                                               const reco::ClusterHit3D& pair,
+                                               const reco::ClusterHit2D* hit) const
 {
     // Assume failure
     bool result(false);
@@ -1113,10 +1197,6 @@ bool SnippetHit3DBuilderICARUS::makeHitTriplet(reco::ClusterHit3D&       hitTrip
                     const reco::ClusterHit2D* hit2D = hitVector[planeIdx];
 
                     wireIDVec[planeIdx] = hit2D->WireID();
-
-                    if (hit2D->getStatusBits() & reco::ClusterHit2D::USEDINTRIPLET) hit2D->setStatusBit(reco::ClusterHit2D::SHAREDINTRIPLET);
-
-                    hit2D->setStatusBit(reco::ClusterHit2D::USEDINTRIPLET);
 
                     float hitRMS   = hit2D->getHit()->RMS();
                     float peakTime = hit2D->getTimeTicks();
@@ -1304,6 +1384,14 @@ bool SnippetHit3DBuilderICARUS::makeHitTriplet(reco::ClusterHit3D&       hitTrip
                                           hitVector,
                                           hitDelTSigVec,
                                           wireIDVec);
+                    
+                    // Since we are keeping the triplet, mark the hits as used
+                    for(const auto& hit2D : hitVector)
+                    {
+                        if (hit2D->getStatusBits() & reco::ClusterHit2D::USEDINTRIPLET) hit2D->setStatusBit(reco::ClusterHit2D::SHAREDINTRIPLET);
+
+                        hit2D->setStatusBit(reco::ClusterHit2D::USEDINTRIPLET);
+                    }
 
                     result = true;
                 }
@@ -1658,10 +1746,6 @@ void SnippetHit3DBuilderICARUS::CollectArtHits(const art::Event& evt) const
 
     if (m_enableMonitoring) theClockMakeHits.start();
 
-    // We'll want to correct the hit times for the plane offsets
-    // (note this is already taken care of when converting to position)
-    std::map<geo::PlaneID, double> planeOffsetMap;
-
     // Need the detector properties which needs the clocks
     auto const clock_data = art::ServiceHandle<detinfo::DetectorClocksService const>()->DataFor(evt);
     auto const det_prop   = art::ServiceHandle<detinfo::DetectorPropertiesService const>()->DataFor(evt, clock_data);
@@ -1678,26 +1762,14 @@ void SnippetHit3DBuilderICARUS::CollectArtHits(const art::Event& evt) const
             m_planeToSnippetHitMap[geo::PlaneID(cryoIdx,tpcIdx,1)] = SnippetHitMap();
             m_planeToSnippetHitMap[geo::PlaneID(cryoIdx,tpcIdx,2)] = SnippetHitMap();
 
-            // What we want here are the relative offsets between the planes
-            // Note that plane 0 is assumed the "first" plane and is the reference
-//            planeOffsetMap[geo::PlaneID(cryoIdx,tpcIdx,0)] = 0.;
-//            planeOffsetMap[geo::PlaneID(cryoIdx,tpcIdx,1)] = m_TickCorrectionArray[cryoIdx][tpcIdx][0];
-//            planeOffsetMap[geo::PlaneID(cryoIdx,tpcIdx,2)] = m_TickCorrectionArray[cryoIdx][tpcIdx][1];
-            planeOffsetMap[geo::PlaneID(cryoIdx,tpcIdx,1)] = det_prop.GetXTicksOffset(geo::PlaneID(cryoIdx,tpcIdx,1))
-                                                           - det_prop.GetXTicksOffset(geo::PlaneID(cryoIdx,tpcIdx,0))
-                                                           + m_TickCorrectionArray[cryoIdx][tpcIdx][0];
-            planeOffsetMap[geo::PlaneID(cryoIdx,tpcIdx,2)] = det_prop.GetXTicksOffset(geo::PlaneID(cryoIdx,tpcIdx,2))
-                                                           - det_prop.GetXTicksOffset(geo::PlaneID(cryoIdx,tpcIdx,0))
-                                                           + m_TickCorrectionArray[cryoIdx][tpcIdx][1];
-
             // Should we provide output?
             if (!m_weHaveAllBeenHereBefore)
             {
                 std::ostringstream outputString;
 
-                outputString << "***> plane 0 offset: " << planeOffsetMap[geo::PlaneID(cryoIdx,tpcIdx,0)] 
-                             << ", plane 1: " << planeOffsetMap[geo::PlaneID(cryoIdx,tpcIdx,1)] << "/" << m_TickCorrectionArray[cryoIdx][tpcIdx][0]
-                             << ", plane    2: " << planeOffsetMap[geo::PlaneID(cryoIdx,tpcIdx,2)] << "/" << m_TickCorrectionArray[cryoIdx][tpcIdx][1]<< "\n";
+                outputString << "***> plane 0 offset: " << m_PlaneToT0OffsetMap.find(geo::PlaneID(cryoIdx,tpcIdx,0))->second
+                             << ", plane 1: " << m_PlaneToT0OffsetMap.find(geo::PlaneID(cryoIdx,tpcIdx,1))->second
+                             << ", plane    2: " << m_PlaneToT0OffsetMap.find(geo::PlaneID(cryoIdx,tpcIdx,2))->second << "\n";
                 outputString << "     Det prop plane 0: " << det_prop.GetXTicksOffset(geo::PlaneID(cryoIdx,tpcIdx,0)) << ", plane 1: "  << det_prop.GetXTicksOffset(geo::PlaneID(cryoIdx,tpcIdx,1)) << ", plane 2: " << det_prop.GetXTicksOffset(geo::PlaneID(cryoIdx,tpcIdx,2)) << ", Trig: " << trigger_offset(clock_data) << "\n";
                 debugMessage += outputString.str();
             }
@@ -1743,7 +1815,7 @@ void SnippetHit3DBuilderICARUS::CollectArtHits(const art::Event& evt) const
             // Note that a plane ID will define cryostat, TPC and plane
             const geo::PlaneID& planeID = wireID.planeID();
 
-            double hitPeakTime(recobHit->PeakTime() - planeOffsetMap[planeID]);
+            double hitPeakTime(recobHit->PeakTime() - m_PlaneToT0OffsetMap.find(planeID)->second);
             double xPosition(det_prop.ConvertTicksToX(recobHit->PeakTime(), planeID.Plane, planeID.TPC, planeID.Cryostat));
 
             m_clusterHit2DMasterList.emplace_back(0, 0., 0., xPosition, hitPeakTime, wireID, recobHit);
@@ -1800,6 +1872,8 @@ void SnippetHit3DBuilderICARUS::CreateNewRecobHitCollection(art::Event&         
         for(size_t idx = 0; idx < hit3D.getHits().size(); idx++)
         {
             const reco::ClusterHit2D* hit2D = hit2DVec[idx];
+
+            if (!hit2D) continue;
 
             // Have we seen this 2D hit already?
             if (visitedHit2DSet.find(hit2D) == visitedHit2DSet.end())
