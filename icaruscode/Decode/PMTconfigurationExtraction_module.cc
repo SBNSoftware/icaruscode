@@ -11,10 +11,6 @@
 #include "sbnobj/Common/PMT/Data/PMTconfiguration.h"
 
 // framework libraries
-#include "canvas/Persistency/Provenance/ProcessConfiguration.h"
-#include "canvas/Persistency/Provenance/ProcessHistory.h"
-#include "fhiclcpp/ParameterSet.h"
-
 #include "art/Framework/Services/Registry/ServiceHandle.h" 
 #include "art/Framework/Core/EDProducer.h"
 #include "art/Framework/Core/ModuleMacros.h"
@@ -38,12 +34,13 @@ namespace icarus { class PMTconfigurationExtraction; }
  * @brief Writes PMT configuration from FHiCL into a data product.
  * 
  * This module reads the configuration related to PMT from the FHiCL
- * configuration of the input runs and puts it into each run as a data product.
+ * configuration of the input files and puts it into each run as a data product.
  * 
  * Input
  * ------
  * 
- * This module requires any input with _art_ run objects in it.
+ * This module requires a _art_ ROOT file as input, which contains FHiCL
+ * configuration with PMT information.
  * The format expected for that configuration is defined in
  * `icarus::PMTconfigurationExtractor`, which is the utility used for the actual
  * extraction.
@@ -143,18 +140,14 @@ class icarus::PMTconfigurationExtraction: public art::EDProducer {
   PMTconfigurationExtraction(Parameters const& config);
   
   
+  /// Action on new file: configuration is read.
+  virtual void respondToOpenInputFile(art::FileBlock const& fileInfo) override;
+  
   /// Action on new run: configuration is written.
   virtual void beginRun(art::Run& run) override;
   
   /// Mandatory method, unused.
   virtual void produce(art::Event&) override {}
-  
-  
-    private:
-  
-  /// Throws an exception if the `newConfig` is not compatible with the current.
-  bool checkConsistency
-    (sbn::PMTconfiguration const& newConfig, std::string const& srcName) const;
   
   
 }; // icarus::PMTconfigurationExtraction
@@ -181,46 +174,54 @@ icarus::PMTconfigurationExtraction::PMTconfigurationExtraction
 
 
 // -----------------------------------------------------------------------------
-void icarus::PMTconfigurationExtraction::beginRun(art::Run& run) {
+void icarus::PMTconfigurationExtraction::respondToOpenInputFile
+  (art::FileBlock const& fileInfo)
+{
+
+  icarus::PMTconfigurationExtractor extractor { *fChannelMap };
   
-  sbn::PMTconfiguration config = extractPMTreadoutConfiguration
-    (run, icarus::PMTconfigurationExtractor{ *fChannelMap });
+  sbn::PMTconfiguration config
+    = extractPMTreadoutConfiguration(fileInfo.fileName(), extractor);
+
+  mf::LogDebug(fLogCategory) << "Input file '"
+    << fileInfo.fileName() << "' contains PMT readout configuration: "
+    << config
+    ;
   
-  checkConsistency(config, "run " + std::to_string(run.run()));
+  if (fPMTconfig.has_value() && (fPMTconfig != config)) {
+    // see debug information for more details
+    if (fRequireConsistency) {
+      throw cet::exception("PMTconfigurationExtraction")
+        << "Configuration from input file '" << fileInfo.fileName()
+        << "' is incompatible with the previously found configuration.\n"
+        ;
+    }
+    else {
+      mf::LogWarning(fLogCategory)
+        << "Configuration from input file '" << fileInfo.fileName()
+        << "' is incompatible with the previously found configuration.\n"
+        ;
+      if (fVerbose) mf::LogVerbatim(fLogCategory) << "PMT readout:" << config;
+    }
+  }
+  
   if (!fPMTconfig.has_value() && fVerbose)
     mf::LogInfo(fLogCategory) << "PMT readout:" << config;
   
   fPMTconfig = std::move(config);
   
+} // icarus::PMTconfigurationExtraction::respondToOpenInputFile()
+
+
+// -----------------------------------------------------------------------------
+void icarus::PMTconfigurationExtraction::beginRun(art::Run& run) {
+  
+  assert(fPMTconfig);
+  
   // put a copy of the current configuration
   run.put(std::make_unique<sbn::PMTconfiguration>(fPMTconfig.value()));
   
 } // icarus::PMTconfigurationExtraction::beginRun()
-
-
-// -----------------------------------------------------------------------------
-bool icarus::PMTconfigurationExtraction::checkConsistency
-  (sbn::PMTconfiguration const& config, std::string const& srcName) const
-{
-  if (!fPMTconfig.has_value() || (*fPMTconfig == config)) return true;
-  
-  // see debug information for more details
-  if (fRequireConsistency) {
-    throw cet::exception("PMTconfigurationExtraction")
-      << "Configuration from " << srcName
-      << " is incompatible with the previously found configuration.\n"
-      ;
-  } // if consistency is required
-  
-  mf::LogWarning(fLogCategory)
-    << "Configuration from " << srcName
-    << " is incompatible with the previously found configuration.\n"
-    ;
-  if (fVerbose) mf::LogVerbatim(fLogCategory) << "PMT readout:" << config;
-  return false;
-  
-  
-} // icarus::PMTconfigurationExtraction::checkConsistency()
 
 
 // -----------------------------------------------------------------------------

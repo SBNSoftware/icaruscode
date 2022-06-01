@@ -1,0 +1,15 @@
+#include "stage1_multiTPC_icarus_gauss_numi_MC.fcl"
+process_name: Calib
+
+physics: {
+  analyzers: @local::physics.analyzers
+  outana: @local::physics.outana
+}
+
+physics.analyzers.caloskimE.SelectEvents: @erase
+physics.analyzers.caloskimW.SelectEvents: @erase
+
+outputs: @erase
+source: @erase
+
+services.message: @local::icarus_message_services_interactive

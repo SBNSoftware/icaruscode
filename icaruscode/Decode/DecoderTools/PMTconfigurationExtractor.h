@@ -9,9 +9,6 @@
  * class hierarchy to be used for other components as well, but not getting
  * quite there.
  * 
- * Extra linking is required for `extractPMTreadoutConfiguration(Principal)`
- * to pick up the class used as `Principal`.
- * 
  */
 
 #ifndef ICARUSCODE_DECODE_DECODERTOOLS_PMTCONFIGURATIONEXTRACTOR_H
@@ -20,13 +17,11 @@
 
 // ICARUS libraries
 #include "icaruscode/Decode/ChannelMapping/IICARUSChannelMap.h"
-#include "icaruscode/Utilities/ReadArtConfiguration.h" // util::readConfigurationFromArtPrincipal()
+#include "icaruscode/Utilities/ReadArtConfiguration.h" // util::readConfigurationFromArtFile()
 #include "sbnobj/Common/PMT/Data/PMTconfiguration.h"
 #include "sbnobj/Common/PMT/Data/V1730Configuration.h"
 
 // framework libraries
-#include "art/Framework/Principal/DataViewImpl.h"
-#include "messagefacility/MessageLogger/MessageLogger.h"
 #include "fhiclcpp/ParameterSet.h"
 #include "cetlib_except/exception.h"
 
@@ -36,8 +31,6 @@
 // C/C++ standard libraries
 #include <regex>
 #include <string>
-#include <optional>
-#include <utility> // std::move(), std::pair<>
 #include <initializer_list>
 
 
@@ -52,9 +45,6 @@ namespace icarus {
     (std::string const& srcFileName, icarus::PMTconfigurationExtractor extractor);
   sbn::PMTconfiguration extractPMTreadoutConfiguration
     (TFile& srcFile, icarus::PMTconfigurationExtractor extractor);
-  template <typename Principal>
-  sbn::PMTconfiguration extractPMTreadoutConfiguration
-    (Principal const& data, icarus::PMTconfigurationExtractor extractor);
   
 } // namespace icarus
 
@@ -399,84 +389,17 @@ class icarus::PMTconfigurationExtractor
 }; // icarus::PMTconfigurationExtractor
 
 
-// -----------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
 // --- Inline implementation
-// -----------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
 icarus::PMTconfigurationExtractor::PMTconfigurationExtractor
   (icarusDB::IICARUSChannelMap const& channelMappingService)
   : fChannelMap(&channelMappingService)
   {}
 
 
-// -----------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
 // ---  Template implementation
-// -----------------------------------------------------------------------------
-namespace icarus::details {
-  
-  template <typename ConfigMap>
-  sbn::PMTconfiguration extractPMTreadoutConfigurationImpl
-    (ConfigMap const& configMap, icarus::PMTconfigurationExtractor extractor)
-  {
-    
-    /*
-    * Requirements: ConfigMap is a mapping type supporting iteration and whose
-    * elements support structured assignment into a pair, the first element
-    * being an identifier (process name, parameter set ID...) and the second
-    * being a `fhicl::ParameterSet` with the configuration (or something
-    * offering the same interface).
-    * 
-    * The plan is to look in all the FHiCL configuration fragments we can find
-    * in the input config, and find all the useful configuration therein.
-    * Given that there may be multiple input files, there may also be multiple
-    * configurations for the same detector components.
-    * In that case, we will extract parameters from each and every one of the
-    * configurations, and throw an exception if they are not all consistent.
-    * 
-    * Consistency is tested only for the extracted parameters, not for the whole
-    * FHiCL configuration fragment.
-    */
-    
-    using Key_t = std::tuple_element_t<0U, typename ConfigMap::value_type>;
-    
-    std::optional<std::pair<Key_t, sbn::PMTconfiguration>> config;
-    
-    // look in the global configuration for all parameter sets which contain
-    // `configuration_documents` as a (direct) name;
-    for (auto const& [ id, pset ]: configMap) {
-      if (!extractor.mayHaveConfiguration(pset)) continue;
-      
-      fhicl::ParameterSet const configDocs
-        = extractor.convertConfigurationDocuments
-          (pset, "configuration_documents", { std::regex{ "icaruspmt.*" } })
-        ;
-      
-      sbn::PMTconfiguration candidateConfig = extractor.extract(configDocs);
-      if (config) {
-        if (config->second == candidateConfig) continue;
-        mf::LogError log("extractPMTreadoutConfiguration");
-        log << "Found two candidate configurations differring:"
-          "\nFirst [" << config->first << "]:\n" << config->second
-          << "\nSecond [" << id << "]:\n" << candidateConfig
-          ;
-        throw cet::exception("extractPMTreadoutConfiguration")
-          << "extractPMTreadoutConfiguration() found inconsistent configurations.\n";
-      } // if incompatible configurations
-      
-      config.emplace(std::move(id), std::move(candidateConfig));
-    } // for all configuration documents
-    
-    if (!config) {
-      throw cet::exception("extractPMTreadoutConfiguration")
-        << "extractPMTreadoutConfiguration() could not find a suitable configuration.\n";
-    }
-    
-    return extractor.finalize(std::move(config->second));
-  } // extractPMTreadoutConfigurationImpl(ConfigMap)
-  
-  
-} // namespace icarus::details
-
-
 // -----------------------------------------------------------------------------
 template <typename RBegin, typename REnd>
 bool icarus::PMTconfigurationExtractorBase::matchKey
@@ -486,18 +409,6 @@ bool icarus::PMTconfigurationExtractorBase::matchKey
     if (std::regex_match(key, *iRegex)) return true;
   return false;
 } // icarus::PMTconfigurationExtractorBase::matchKey()
-
-
-// -----------------------------------------------------------------------------
-template <typename Principal>
-sbn::PMTconfiguration icarus::extractPMTreadoutConfiguration
-  (Principal const& principal, icarus::PMTconfigurationExtractor extractor)
-{
-  
-  return details::extractPMTreadoutConfigurationImpl
-    (util::readConfigurationFromArtPrincipal(principal), std::move(extractor));
-  
-} // icarus::extractPMTreadoutConfiguration(Principal)
 
 
 // ---------------------------------------------------------------------------

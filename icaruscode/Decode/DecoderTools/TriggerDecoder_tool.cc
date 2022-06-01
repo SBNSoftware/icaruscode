@@ -38,34 +38,16 @@
 
 #include <cstdlib>
 #include <iostream>
+#include <iomanip> // std::setw(), std::setfill()
 #include <string_view>
 #include <memory>
+#include <array>
 
 
 using namespace std::string_literals;
 
 namespace daq 
 {
-  
-  // --- BEGIN -- TEMPORARY ----------------------------------------------------
-  // remove when SBNSoftware/sbndaq-artdaq-core pull request #31 is in:
-  // https://github.com/SBNSoftware/sbndaq-artdaq-core/pull/31
-  std::uint64_t getNanoseconds_since_UTC_epoch_fix
-    (icarus::ICARUSTriggerInfo const& info)
-  {
-    
-    if(info.wr_seconds == -2 || info.wr_nanoseconds == -3)
-      return 0;
-    int correction = 0;
-    if(info.wr_seconds >= 1483228800)
-      correction = 37;
-    uint64_t const corrected_ts
-      { (info.wr_seconds-correction)*1000000000ULL + info.wr_nanoseconds };
-    return corrected_ts;
-
-  } // getNanoseconds_since_UTC_epoch_fix()
-  // --- END ---- TEMPORARY ----------------------------------------------------
-  
   
   /**
    * @brief Tool decoding the trigger information from DAQ.
@@ -133,6 +115,18 @@ namespace daq
    * empty.
    * 
    * 
+   * Timestamps and corrections
+   * ---------------------------
+   * 
+   * The reference trigger time is driven by the trigger fragment time, which
+   * is expected to have been derived from the actual trigger time from the
+   * White Rabbit system properly corrected to UTC by the board reader.
+   * 
+   * All absolute timestamps are corrected to be on that same scale.
+   * The absolute timestamps related to the White Rabbit time are added an
+   * offset to achieve this correction; this offset is stored in the data
+   * product (`sbn::ExtraTriggerInfo::WRtimeToTriggerTime`).
+   * 
    */
   class TriggerDecoder : public IDecoder
   {
@@ -190,6 +184,7 @@ namespace daq
       static constexpr int NuMI { 2 };
       static constexpr int OffbeamBNB { 3 };
       static constexpr int OffbeamNuMI { 4 };
+      static constexpr int Calib { 5 };
     }; 
     
     static constexpr nanoseconds BNBgateDuration { 1600. };
@@ -204,6 +199,11 @@ namespace daq
     /// Returns the difference `a - b`.
     static long long int timestampDiff(std::uint64_t a, std::uint64_t b)
       { return static_cast<long long int>(a) - static_cast<long long int>(b); }
+
+    /// Encodes the `connectorWord` LVDS bits from the specified `cryostat`
+    /// and `connector` into the format required by `sbn::ExtraTriggerInfo`.
+    static std::uint64_t encodeLVDSbits
+    (short int cryostat, short int connector, std::uint64_t connectorWord);
     
   };
 
@@ -234,7 +234,7 @@ namespace daq
   {
     fDiagnosticOutput = pset.get<bool>("DiagnosticOutput", false);
     fDebug = pset.get<bool>("Debug", false);
-    fOffset = pset.get<long long int>("TAIOffset", 2000000000);
+    fOffset = pset.get<long long int>("TimeOffset", 0);
     return;
   }
   
@@ -298,31 +298,46 @@ namespace daq
 
   void TriggerDecoder::process_fragment(const artdaq::Fragment &fragment)
   {
-    uint64_t artdaq_ts = fragment.timestamp();
+    // artdaq_ts is reworked by the trigger board reader to match the corrected
+    // trigger time; to avoid multiple (potentially inconsistent) corrections,
+    // the decoder trusts it and references all the times with respect to it.
+    uint64_t const artdaq_ts = fragment.timestamp();
     icarus::ICARUSTriggerUDPFragment frag { makeTriggerFragment(fragment) };
     std::string data = frag.GetDataString();
     char *buffer = const_cast<char*>(data.c_str());
-    // --- BEGIN -- TEMPORARY --------------------------------------------------
-    // restore OLD CODE when SBNSoftware/sbndaq-artdaq-core pull request #31 is in:
-    // https://github.com/SBNSoftware/sbndaq-artdaq-core/pull/31
+
     icarus::ICARUSTriggerInfo datastream_info = parseTriggerString(buffer);
-    uint64_t wr_ts = getNanoseconds_since_UTC_epoch_fix(datastream_info) + fOffset;
-    // OLD CODE:
-//     uint64_t wr_ts = datastream_info.getNanoseconds_since_UTC_epoch() + fOffset;
+    uint64_t const raw_wr_ts // this is raw, unadultered, uncorrected
+      = makeTimestamp(frag.getWRSeconds(), frag.getWRNanoSeconds());
+    
+    // correction (explicitly converted to signed)
+    int64_t const WRtimeToTriggerTime
+      = static_cast<int64_t>(artdaq_ts) - raw_wr_ts;
+    auto const correctWRtime = [WRtimeToTriggerTime](uint64_t time)
+      { return time + WRtimeToTriggerTime; };
+    assert(correctWRtime(raw_wr_ts) == artdaq_ts);
+    
     // --- END ---- TEMPORARY --------------------------------------------------
     int gate_type = datastream_info.gate_type;
     long delta_gates_bnb [[maybe_unused]] = frag.getDeltaGatesBNB();
-    long delta_gates_numi [[maybe_unused]] = frag.getDeltaGatesOther(); //this is actually NuMI due to abrupt changes in trigger board logic
-    long delta_gates_other [[maybe_unused]] = frag.getDeltaGatesNuMI();
+    long delta_gates_numi [[maybe_unused]] = frag.getDeltaGatesNuMI();
+    //long delta_gates_offbeam_bnb [[maybe_unused]] = frag.getDeltaGatesBNBOff();
+    //long delta_gates_offbeam_numi [[maybe_unused]] = frag.getDeltaGatesNuMIOff();
+    long delta_gates_other [[maybe_unused]] = frag.getDeltaGatesOther();
     uint64_t lastTrigger = 0;
     
     // --- BEGIN -- TEMPORARY --------------------------------------------------
     // remove this part when the beam gate timestamp is available via fragment
-    // or via the parser; the beam gate (`beamgate_ts`) is supposed to undergo
-    // the same correction as the trigger time (`wr_ts`)
-    auto const parsedData = icarus::details::KeyedCSVparser{}(firstLine(data));
+    // or via the parser
+    icarus::details::KeyedCSVparser parser;
+    parser.addPatterns({
+	{ "Cryo. (EAST|WEST) Connector . and .", 1U }
+	, { "Trigger Type", 1U }
+      });
+    //auto const parsedData = icarus::details::KeyedCSVparser{}(firstLine(data));
+    auto const parsedData = parser(firstLine(data)); 
     unsigned int beamgate_count { std::numeric_limits<unsigned int>::max() };
-    std::uint64_t beamgate_ts { wr_ts }; // we cheat
+    std::uint64_t beamgate_ts { artdaq_ts }; // we cheat
     /* [20210717, petrillo@slac.stanford.edu] `(pBeamGateInfo->nValues() == 3)`:
      * this is an attempt to "support" a few Run0 runs (6017 to roughly 6043)
      * which have the beam gate information truncated; this workaround should
@@ -334,36 +349,43 @@ namespace daq
     ) {
       // if gate information is found, it must be complete
       beamgate_count = pBeamGateInfo->getNumber<unsigned int>(0U);
-      // use the same linear correction for the beam gate timestamp as it was
-      // used for the trigger one; here we assume that wr_ts
-      // (current value of beamgate_ts) is corrected, while
-      // `getWRSeconds()` and `getWRNanoSeconds()` are as corrected as `Beam_TS`
-      // (i.e. both not corrected)
-      beamgate_ts += makeTimestamp(
+      
+      uint64_t const raw_bg_ts = makeTimestamp( // raw and uncorrected too
         pBeamGateInfo->getNumber<unsigned int>(1U),
         pBeamGateInfo->getNumber<unsigned int>(2U)
-        )
-        - makeTimestamp(frag.getWRSeconds(), frag.getWRNanoSeconds())
-        ;
+        );
+      
+      // assuming the raw times from the fragment are on the same time scale
+      // (same offset corrections)
+      beamgate_ts += raw_bg_ts - raw_wr_ts;
+      
     } // if has gate information
+    /*
+    auto connectorInfoE_01 = parsedData.findItem("Cryo1 EAST Connector 0 and 1");    
+    uint64_t connectorLVDS_E_01 = connectorInfoE_01->getNumber<uint64_t>(0,16);
+    auto connectorInfoE_23 = parsedData.findItem("Cryo1 EAST Connector 2 and 3");
+    uint64_t connectorLVDS_E_23 = connectorInfoE_23->getNumber<uint64_t>(0,16);
+    auto connectorInfoW_01 = parsedData.findItem("Cryo2 WEST Connector 0 and 1");
+    uint64_t connectorLVDS_W_01 = connectorInfoW_01->getNumber<uint64_t>(0,16);
+    auto connectorInfoW_23 = parsedData.findItem("Cryo2 WEST Connector 2 and 3");
+    uint64_t connectorLVDS_W_23 = connectorInfoW_23->getNumber<uint64_t>(0,16);
+    */
     // --- END ---- TEMPORARY --------------------------------------------------
     
     if(fDiagnosticOutput || fDebug)
     {
-      std::cout << "Full Timestamp = " << wr_ts << std::endl;
-      auto const cross_check = static_cast<signed long long int>(wr_ts)
-        - static_cast<signed long long int>(artdaq_ts);
-      if(abs(cross_check) > 1000)
-        std::cout << "Loaded artdaq TS and fragment data TS are > 1 ms different! They are " << cross_check << " nanoseconds different!" << std::endl;
-      std::cout << "Beam gate " << beamgate_count << " at "
-        << (beamgate_ts/1'000'000'000) << "." << (beamgate_ts%1'000'000'000)
-        << " s (" << timestampDiff(beamgate_ts, wr_ts)
+      std::cout << "Full Timestamp = " << artdaq_ts
+        << "\nBeam gate " << beamgate_count << " at "
+        << (beamgate_ts/1'000'000'000) << "." << std::setfill('0')
+        << std::setw(9) << (beamgate_ts%1'000'000'000) << std::setfill(' ')
+        << " s (" << timestampDiff(beamgate_ts, artdaq_ts)
         << " ns relative to trigger)" << std::endl;
       
       // note that this parsing is independent from the one used above
       std::string_view const dataLine = firstLine(data);
       try {
-        auto const parsedData = icarus::details::KeyedCSVparser{}(dataLine);
+        //auto const parsedData = icarus::details::KeyedCSVparser{}(dataLine);
+	auto const parsedData = parser(dataLine);
         std::cout << "Parsed data (from " << dataLine.size() << " characters): "
           << parsedData << std::endl;
       }
@@ -381,36 +403,149 @@ namespace daq
           << sbndaq::dumpFragment(fragment) << std::endl;
       }
     }
-    
     //
     // extra trigger info
     //
     sbn::triggerSource beamGateBit;
     switch (gate_type) {
-      case TriggerGateTypes::BNB:         beamGateBit = sbn::triggerSource::BNB;         break;
-      case TriggerGateTypes::NuMI:        beamGateBit = sbn::triggerSource::NuMI;        break;
-      case TriggerGateTypes::OffbeamBNB:  beamGateBit = sbn::triggerSource::OffbeamBNB;  break;
-      case TriggerGateTypes::OffbeamNuMI: beamGateBit = sbn::triggerSource::OffbeamNuMI; break;
+      case TriggerGateTypes::BNB:{         
+	beamGateBit = sbn::triggerSource::BNB;
+	fTriggerExtra->gateCountFromPreviousTrigger = frag.getDeltaGatesBNB();
+	fTriggerExtra->previousTriggerTimestamp = frag.getLastTimestampBNB();
+	fTriggerExtra->gateCount = datastream_info.gate_id;
+	//fTriggerExtra->triggerCount = frag.getTotalTriggerBNB();
+	//fTriggerExtra->anyTriggerCountFromPreviousTrigger = frag.getLastTriggerBNB();
+	break;
+      }
+      case TriggerGateTypes::NuMI:{        
+	beamGateBit = sbn::triggerSource::NuMI;
+	fTriggerExtra->gateCountFromPreviousTrigger = frag.getDeltaGatesNuMI();
+	fTriggerExtra->previousTriggerTimestamp = frag.getLastTimestampNuMI();
+	fTriggerExtra->gateCount = datastream_info.gate_id;
+	//fTriggerExtra->triggerCount = frag.getTotalTriggerNuMI();
+	//fTriggerExtra->anyTriggerCountFromPreviousTrigger = frag.getLastTriggerNuMI();
+	break;
+      }
+	/*
+      case TriggerGateTypes::OffbeamBNB:{  
+	beamGateBit = sbn::triggerSource::OffbeamBNB;
+	fTriggerExtra->gateCountFromPreviousTrigger = frag.getDeltaGatesBNBOff();
+	fTriggerExtra->previousTriggerTimestamp= frag.getLastTimestampBNBOff();
+	fTriggerExtra->gateCount = datastream_info.gate_id_BNBOff;
+	fTriggerExtra->triggerCount = frag.getTotalTriggerBNBOff();
+	fTriggerExtra->anyTriggerCountFromPreviousTrigger = frag.getLastTriggerBNBOff();
+	break;
+      }
+      case TriggerGateTypes::OffbeamNuMI:{ 
+	beamGateBit = sbn::triggerSource::OffbeamNuMI;
+	fTriggerExtra->gateCountFromPreviousTrigger = frag.getDeltaGatesNuMIOff();
+	fTriggerExtra->previousTriggerTimestamp= frag.getLastTimestampNuMIOff();
+	fTriggerExtra->gateCount = datastream_info.gate_id_NuMIOff;
+	fTriggerExtra->triggerCount = frag.getTotalTriggerNuMIOff();
+	fTriggerExtra->anyTriggerCountFromPreviousTrigger = frag.getLastTriggerNuMIOff();
+	break;
+      }
+      case TriggerGateTypes::Calib:{       
+	beamGateBit = sbn::triggerSource::Calib;
+	fTriggerExtra->gateCountFromPreviousTrigger = frag.getDeltaGatesCalib();
+	fTriggerExtra->previousTriggerTimestamp = frag.getLastTimestampCalib();
+	//fTriggerExtra->gateCount = datastream_info.gate_id_calib;
+	fTriggerExtra->triggerCount = frag.getTotalTriggerCalib();
+	fTriggerExtra->anyTriggerCountFromPreviousTrigger = frag.getLastTriggerCalib();
+	break;
+      }
+	*/
       default:                            beamGateBit = sbn::triggerSource::Unknown;
     } // switch gate_type
     
     fTriggerExtra->sourceType = beamGateBit;
-    fTriggerExtra->triggerTimestamp = wr_ts;
+    fTriggerExtra->triggerTimestamp = artdaq_ts;
     fTriggerExtra->beamGateTimestamp = beamgate_ts;
-    fTriggerExtra->triggerID = datastream_info.wr_event_no;
-    fTriggerExtra->gateID = datastream_info.gate_id;
-    /* TODO:
-    fTriggerExtra->triggerCount
-    fTriggerExtra->gateCount
-    fTriggerExtra->gateCountFromPreviousTrigger
-    fTriggerExtra->anyTriggerCountFromPreviousTrigger
-    fTriggerExtra->anyGateCountFromPreviousTrigger
-    fTriggerExtra->anyPreviousTriggerSourceType
-    fTriggerExtra->anyGateCountFromAnyPreviousTrigger
-    fTriggerExtra->previousTriggerTimestamp
-    fTriggerExtra->anyPreviousTriggerTimestamp
-    */
+    fTriggerExtra->triggerID = datastream_info.wr_event_no; //all triggers (event ID)
+    fTriggerExtra->gateID = datastream_info.gate_id; //all gate types (gate ID)
+    fTriggerExtra->anyGateCountFromAnyPreviousTrigger = frag.getDeltaGates();
+    fTriggerExtra->anyPreviousTriggerTimestamp = frag.getLastTimestamp();
+    //fTriggerExtra->anyPreviousTriggerSourceType = frag.getLastTriggerType();
+    /*
+    sbn::triggerSource previousTriggerSourceBit;
+    if(frag.getLastTriggerType() == 1)
+      previousTriggerSourceBit = sbn::triggerSource::BNB;
+    else if(frag.getLastTriggerType() == 2)
+      previousTriggerSourceBit = sbn::triggerSource::NuMI;
+    else if(frag.getLastTriggerType() == 3)
+      previousTriggerSourceBit = sbn::triggerSource::OffbeamBNB;
+    else if(frag.getLastTriggerType() == 4)
+      previousTriggerSourceBit = sbn::triggerSource::OffbeamNuMI;
+    else if(frag.getLastTriggerType() == 5)
+      previousTriggerSourceBit = sbn::triggerSource::Calib;
+    else
+      previousTriggerSourceBit = sbn::triggerSource::Unknown;
+    fTriggerExtra->anyPreviousTriggerSourceType = previousTriggerSourceBit;
     
+    std::cout << datastream_info.gate_id_BNB << " " << frag.getDeltaGatesBNB() << " " << gate_type << std::endl;
+    std::cout << connectorLVDS_E_01 << " " << connectorLVDS_E_23 << " " << connectorLVDS_W_01 << " " << connectorLVDS_W_23 << " " << std::hex << connectorLVDS_E_01 << " " << connectorLVDS_E_23 << " " << connectorLVDS_W_01 << " " << connectorLVDS_W_23 << std::dec << std::endl;
+    TODO (may need to add WRtimeToTriggerTime to some timestamps):
+    fTriggerExtra->anyPreviousTriggerSourceType
+    
+    fTriggerExtra->WRtimeToTriggerTime = WRtimeToTriggerTime;
+    sbn::bits::triggerLocationMask locationMask;
+    // trigger location: 0x01=EAST; 0x02=WEST; 0x07=ALL                                                                  
+    int const triggerLocation = parsedData.getItem("Trigger Source").getNumber<int>(0);
+    if(triggerLocation == 1)
+      locationMask = mask(sbn::triggerLocation::CryoEast);
+    else if(triggerLocation == 2)
+      locationMask = mask(sbn::triggerLocation::CryoWest);
+    else if(triggerLocation == 7)
+      locationMask = mask(sbn::triggerLocation::CryoEast, sbn::triggerLocation::CryoWest);
+    fTriggerExtra->triggerLocationBits = locationMask;
+    fTriggerExtra->cryostats[sbn::ExtraTriggerInfo::EastCryostat]
+      = {
+      // triggerCount      
+      (fTriggerExtra->triggerID <= 1)
+      ? 0UL: parsedData.getItem("Cryo1 EAST counts").getNumber<unsigned long int>(0),
+      // LVDSstatus
+      {
+	(triggerLocation & 1) // EE
+	? encodeLVDSbits(
+			 sbn::ExtraTriggerInfo::EastCryostat, 2, 
+			 parsedData.getItem("Cryo1 EAST Connector 2 and 3").getNumber<std::uint64_t>(0, 16)
+			 )
+	: 0ULL,
+	(triggerLocation & 1) // EW
+	? encodeLVDSbits(
+			 sbn::ExtraTriggerInfo::EastCryostat, 0, 
+			 parsedData.getItem("Cryo1 EAST Connector 0 and 1").getNumber<std::uint64_t>(0, 16)
+			 )
+	: 0ULL
+      }
+    };
+    fTriggerExtra->cryostats[sbn::ExtraTriggerInfo::WestCryostat]
+      = {
+      // triggerCount      
+      (fTriggerExtra->triggerID <= 1)
+      ? 0UL: parsedData.getItem("Cryo2 WEST counts").getNumber<unsigned long int>(0),
+      // LVDSstatus
+      {
+	(triggerLocation & 2) // WE
+	? encodeLVDSbits(
+			 sbn::ExtraTriggerInfo::WestCryostat, 2,  
+			 parsedData.getItem("Cryo2 WEST Connector 2 and 3").getNumber<std::uint64_t>(0, 16)
+			 )
+	: 0ULL,
+	(triggerLocation & 2) // WW
+	? encodeLVDSbits(
+			 sbn::ExtraTriggerInfo::WestCryostat, 0, 
+			 parsedData.getItem("Cryo2 WEST Connector 0 and 1").getNumber<std::uint64_t>(0, 16)
+			 )
+	: 0ULL
+      }
+    };
+    // we expect the LVDS status bits
+
+    for (auto const& cryoInfo [[maybe_unused]]: fTriggerExtra->cryostats)
+      for (auto LVDS [[maybe_unused]]: cryoInfo.LVDSstatus)
+	assert((LVDS & 0xFF000000FF000000) == 0);             
+    */
     //
     // absolute time trigger (raw::ExternalTrigger)
     //
@@ -427,7 +562,7 @@ namespace daq
     else 
     {
       fLastEvent = fTriggerExtra->triggerID - 1;
-      lastTrigger = frag.getLastTimestampBNB();
+      lastTrigger = fTriggerExtra->anyPreviousTriggerTimestamp;
       fPrevTrigger->emplace_back(fLastEvent, lastTrigger);
     }
     
@@ -494,6 +629,27 @@ namespace daq
     return { s.data(), std::min(s.find_first_of(endl), s.size()) };
   }
   
+
+  std::uint64_t TriggerDecoder::encodeLVDSbits
+  (short int cryostat, short int connector, std::uint64_t connectorWord)
+  {
+    /*                                                     
+     * Encoding of the LVDS channels from the trigger:
+     * * east wall:  `00<C0P2><C0P1><C0P0>00<C1P2><C1P1><C1P0>`
+     * * west wall:  `00<C2P2><C2P1><C2P0>00<C3P2><C3P1><C3P0>`                                                                               
+     * The prescription from `sbn::ExtraTriggerInfo` translates into:
+     * * east wall:  `00<C3P2><C3P1><C3P0>00<C2P2><C2P1><C2P0>`
+     * * west wall:  `00<C1P2><C1P1><C1P0>00<C0P2><C0P1><C0P0>`                                                                               
+     * Therefore, the two 32-bit half-words need to be swapped
+     * This holds for both cryostats, and both walls.  
+     */
+
+    std::uint64_t lsw = connectorWord & 0xFFFFFFFFULL;
+    std::uint64_t msw = connectorWord >> 32ULL;
+    assert(connectorWord == ((msw << 32ULL) | lsw));
+    std::swap(lsw, msw);
+    return (msw << 32ULL) | lsw;
+  } // TriggerDecoder::encodeLVDSbits()       
   
   DEFINE_ART_CLASS_TOOL(TriggerDecoder)
 

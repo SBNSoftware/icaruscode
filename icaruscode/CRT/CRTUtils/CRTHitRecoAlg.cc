@@ -49,8 +49,8 @@ vector<art::Ptr<CRTData>> CRTHitRecoAlg::PreselectCRTData(vector<art::Ptr<CRTDat
     char type   = fCrtutils->GetAuxDetType(adid);
 
     /// Looking for data within +/- 3ms within trigger time stamp
-    /// Here t0 - trigger time -ve, only adding 1s makes the value +ve or -ve
-    if (fData && (std::fabs(int64_t(crtList[febdat_i]->fTs0 - trigger_timestamp) + 1e9) > fCrtWindow)) continue;
+    /// Here t0 - trigger time -ve
+    if (fData && (std::fabs(int64_t(crtList[febdat_i]->fTs0 - trigger_timestamp)) > fCrtWindow)) continue;
     
     if ( type == 'm'){
       for(int chan=0; chan<32; chan++) {
@@ -260,9 +260,9 @@ sbn::crt::CRTHit CRTHitRecoAlg::FillCRTHit(vector<uint8_t> tfeb_id, map<uint8_t,
     crtHit.pesmap      = tpesmap;
     crtHit.peshit      = peshit;
     crtHit.ts0_s_corr  = time0 / 1'000'000'000; 
-    crtHit.ts0_ns      = time0;
+    crtHit.ts0_ns      = time0 % 1'000'000'000;
     crtHit.ts0_ns_corr = time0; 
-    crtHit.ts1_ns      = time1;
+    crtHit.ts1_ns      = time1 % 1'000'000'000;
     crtHit.ts0_s       = time0 / 1'000'000'000;
     crtHit.plane       = plane;
     crtHit.x_pos       = x;

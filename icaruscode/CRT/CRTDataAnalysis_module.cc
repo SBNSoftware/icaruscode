@@ -199,6 +199,8 @@ namespace crt {
     vector<vector<int>> fDetPDG; /// signal inducing particle(s)' PDG code
 
     //CRT hit product vars
+    int      fHitRun;
+    int      fHitSubRun;
     int      fHitEvent;
     float    fXHit; ///< reconstructed X position of CRT hit (cm)
     float    fYHit; ///< reconstructed Y position of CRT hit (cm)
@@ -320,6 +322,8 @@ namespace crt {
     fDAQNtuple->Branch("gate_start_timestamp", &m_gate_start_timestamp, "gate_start_timestamp/l");
 
     // Define the branches of our SimHit n-tuple
+    fHitNtuple->Branch("Run",         &fHitRun,         "Run/I");
+    fHitNtuple->Branch("SubRun",      &fHitSubRun,      "SubRun/I");
     fHitNtuple->Branch("event",       &fHitEvent,    "event/I");
     fHitNtuple->Branch("nHit",        &fNHit,        "nHit/I");
     fHitNtuple->Branch("x",           &fXHit,        "x/F");
@@ -403,8 +407,8 @@ namespace crt {
       }      
       */
       /// Looking for data within +/- 3ms within trigger time stamp
-      /// Here t0 - trigger time -ve, only adding 1s makes the value +ve or -ve
-      //    if (std::fabs(int64_t(crtList[febdat_i]->fTs0 - m_trigger_timestamp) + 1e9) > fCrtWindow) continue;
+      /// Here t0 - trigger time -ve
+      //    if (std::fabs(int64_t(crtList[febdat_i]->fTs0 - m_trigger_timestamp)) > fCrtWindow) continue;
       if ( type == 'm'){
 	for(int chan=0; chan<32; chan++) {
 	  std::pair<double,double> const chg_cal = fChannelMap->getSideCRTCalibrationMap((int)crtList[febdat_i]->fMac5,chan);

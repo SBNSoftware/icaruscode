@@ -110,7 +110,7 @@ local wcls_output = {
       // frame_tags: ['gauss', 'wiener', 'looseLf'],
       // frame_scale: [0.1, 0.1, 0.1],
       frame_tags: ['looseLf'],
-      frame_scale: [0.009],
+      frame_scale: [0.1],
       // nticks: params.daq.nticks,
       chanmaskmaps: [],
       nticks: -1,

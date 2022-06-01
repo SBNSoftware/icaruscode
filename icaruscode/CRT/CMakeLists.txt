@@ -16,6 +16,7 @@ art_make(
         CRTTzeroProducer_module.cc
         CRTTrackProducer_module.cc
         CRTSimAnalysis_module.cc
+        CRTCalibrationAnalysis_module.cc
         CRTDataAnalysis_module.cc
         CrtOpHitMatchAnalysis_module.cc
         CRTTruthMatchAnalysis_module.cc

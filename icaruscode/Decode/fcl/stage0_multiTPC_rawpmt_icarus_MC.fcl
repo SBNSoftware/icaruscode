@@ -1,0 +1,51 @@
+###
+## This fhicl file is used to run "stage0" processing specifically for the case where all
+## TPC data is included in an artdaq data product from a single instance
+##
+#include "stage0_icarus_mc_defs.fcl"
+#include "stage0_icarus_driver_common.fcl"
+
+process_name: MCstage0
+
+## Add the MC module to the list of producers
+physics.producers: {  @table::icarus_stage0_producers
+                      @table::icarus_stage0_mc_producers
+                   }
+
+## Use the following to run the full defined stage0 set of modules
+physics.reco: [   @sequence::icarus_stage0_mc_PMT, 
+                  MCDecodeTPCROI, 
+                  @sequence::icarus_stage0_multiTPC,
+                  @sequence::icarus_stage0_mc_crt
+              ]
+
+## boiler plate...
+physics.outana:        [ purityinfoana0, purityinfoana1 ]
+physics.trigger_paths: [ reco ]
+physics.end_paths:     [ outana, streamBNB ]
+
+## Note that for output we hijack the "outBNB" definition (but change the naming convention to make more generic for MC)
+outputs.outBNB.fileName: "%ifb_%tc-%p.root"
+outputs.outBNB.dataTier: "reconstructed"
+
+# Drop the artdaq format files on output
+outputs.outBNB.outputCommands: ["keep *_*_*_*", "drop *_MCDecodeTPCROI_*_*", "drop *_decon1droi_*_*","drop raw::RawDigits_*_*_*" ]
+
+# Set the expected input for ophit
+# physics.producers.ophit.InputModule: "opdaq"
+# temporary for a while: use a special MC configuration different from data;
+# data configuration is described in SBN DocDB 24969; MC configuration below
+# is the one used for data before that one
+physics.producers.ophit: @local::icarus_ophit_MC
+physics.producers.ophitfull: @local::icarus_ophitdebugger_MC
+
+# Set up for the single module mutliple TPC mode...
+physics.producers.MCDecodeTPCROI.FragmentsLabelVec:   ["daq3:PHYSCRATEDATATPCWW","daq2:PHYSCRATEDATATPCWE","daq1:PHYSCRATEDATATPCEW","daq0:PHYSCRATEDATATPCEE"]
+physics.producers.MCDecodeTPCROI.OutInstanceLabelVec: ["PHYSCRATEDATATPCWW",     "PHYSCRATEDATATPCWE",     "PHYSCRATEDATATPCEW",     "PHYSCRATEDATATPCEE"]
+physics.producers.decon1droi.RawDigitLabelVec:        ["MCDecodeTPCROI:PHYSCRATEDATATPCWW","MCDecodeTPCROI:PHYSCRATEDATATPCWE","MCDecodeTPCROI:PHYSCRATEDATATPCEW","MCDecodeTPCROI:PHYSCRATEDATATPCEE"]
+
+physics.producers.roifinder.WireModuleLabelVec: ["decon1droi:PHYSCRATEDATATPCWW","decon1droi:PHYSCRATEDATATPCWE","decon1droi:PHYSCRATEDATATPCEW","decon1droi:PHYSCRATEDATATPCEE"]
+
+## Need overrides for the purity monitor
+physics.producers.purityana0.RawModuleLabel:  ["MCDecodeTPCROI:PHYSCRATEDATATPCWW","MCDecodeTPCROI:PHYSCRATEDATATPCWE","MCDecodeTPCROI:PHYSCRATEDATATPCEW","MCDecodeTPCROI:PHYSCRATEDATATPCEE"]
+physics.producers.purityana1.RawModuleLabel:  ["MCDecodeTPCROI:PHYSCRATEDATATPCWW","MCDecodeTPCROI:PHYSCRATEDATATPCWE","MCDecodeTPCROI:PHYSCRATEDATATPCEW","MCDecodeTPCROI:PHYSCRATEDATATPCEE"]

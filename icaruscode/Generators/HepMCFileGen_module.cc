@@ -92,7 +92,8 @@
 #include "nusimdata/SimulationBase/MCTruth.h"
 #include "nusimdata/SimulationBase/MCParticle.h"
 #include "ifdh.h"
-#include "ifdh_art/IFDHService/IFDH_service.h" // ifdh_ns::IFDH
+//#include "ifdh_art/IFDHService/IFDH_service.h" // ifdh_ns::IFDH
+#include "IFDH_service.h" // ifdh_ns::IFDH
 #undef USE_IFDH_SERVICE // ifdh for now
 
 namespace evgen {

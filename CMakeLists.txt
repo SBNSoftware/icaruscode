@@ -15,7 +15,9 @@
 
 cmake_minimum_required(VERSION 3.19 FATAL_ERROR)
 
-project(icaruscode VERSION 09.46.00 LANGUAGES CXX)
+set(${PROJECT_NAME}_CMAKE_PROJECT_VERSION_STRING 09.37.02.06)
+
+project(icaruscode LANGUAGES CXX)
 
 message(STATUS
   "\n-- ============================================================================="
@@ -50,7 +52,6 @@ find_ups_product( larevt )
 find_ups_product( larsim )
 find_ups_product( larreco )
 find_ups_product( larana )
-find_ups_product( larvecutils )
 find_ups_product( nusimdata )
 find_ups_product( nug4 )
 find_ups_product( art )
