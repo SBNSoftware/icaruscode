@@ -61,7 +61,10 @@ icarus::calo::NormalizeDrift::NormalizeDrift(fhicl::ParameterSet const &pset) {
   this->configure(pset);
 }
 
-void icarus::calo::NormalizeDrift::configure(const fhicl::ParameterSet& pset) {}
+void icarus::calo::NormalizeDrift::configure(const fhicl::ParameterSet& pset) {
+  fURL = pset.get<std::string>("URL");
+  fTimeout = pset.get<unsigned>("Timeout");
+}
 
 std::string icarus::calo::NormalizeDrift::URL(uint32_t run) {
   return fURL + std::to_string(run);
