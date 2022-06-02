@@ -46,10 +46,6 @@ namespace icarus::opdet {
  * The peak time is assigned to the sample with the largest value.
  * 
  * See more details in the constructor.
- * 
- * @note Currently the shape is hard-coded; it is possible to extend this object
- *       to receive the sample data from a text file with proper format
- *       (which needs to include all the information for `WaveformSpecs_t`).
  */
 template <typename T>
 class icarus::opdet::SampledWaveformFunction
