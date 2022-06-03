@@ -18,9 +18,6 @@ struct icarus::PMTTimeCorrection {
 
     // --- BEGIN -- Data members ----------------------------------------------------------------------------------
 
-    /// VME Crate
-    unsigned int vmeCrate     = 0U; // from 0 to 8 
-
     /// Fragment ID
     unsigned int fragmentId   = 0U; // from 0 to 24
 
@@ -82,7 +79,6 @@ struct icarus::PMTTimeCorrection {
 inline bool icarus::PMTTimeCorrection::operator==
     (icarus::PMTTimeCorrection const& other) const noexcept
 {
-    if( vmeCrate          != other.vmeCrate          ) return false;
     if( fragmentId        != other.fragmentId        ) return false;
     if( cryostat          != other.cryostat          ) return false;
     if( timeCorrection    != other.timeCorrection    ) return false;

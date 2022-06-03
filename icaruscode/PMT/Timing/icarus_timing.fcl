@@ -1,0 +1,13 @@
+BEGIN_PROLOG
+
+daqPMTTiming: {
+    
+    module_type:         TimingCorrectionExtraction
+    InputLabels:         ["daqPMT:trgprim"]
+    WaveformsLabel:      "daqPMT"
+    RegenerateWaveforms: true
+    Verbose:             false
+
+}
+
+END_PROLOG
