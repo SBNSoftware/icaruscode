@@ -33,8 +33,6 @@
 #include "lardata/DetectorInfoServices/DetectorClocksService.h"
 #include "lardataalg/DetectorInfo/DetectorTimings.h"
 #include "lardataalg/DetectorInfo/DetectorClocks.h"
-#include "lardataalg/Utilities/quantities/spacetime.h" // nanoseconds
-#include "lardataalg/Utilities/intervals_fhicl.h" // for nanoseconds in FHiCL
 #include "larcorealg/CoreUtils/enumerate.h"
 #include "larcorealg/CoreUtils/counter.h"
 
@@ -45,9 +43,6 @@
 #include <utility> // std::move()
 #include <cassert>
 
-// -----------------------------------------------------------------------------
-using namespace util::quantities::time_literals;
-using detinfo::timescales::electronics_time;
 
 // -----------------------------------------------------------------------------
 namespace icarus { class TimingCorrectionExtraction; }
@@ -77,59 +72,7 @@ namespace icarus { class TimingCorrectionExtraction; }
  */
 class icarus::TimingCorrectionExtraction: public art::EDProducer {
   
-
-  private:
-  
-  std::vector<art::InputTag> fInputLabels;
-
-  art::InputTag fWaveformsLabel;
-
-  bool fRegenerateWaveforms = true; 
-
-  bool fVerbose = false; ///< Whether to print the configuration we read.
-  
-  std::string fLogCategory; ///< Category tag for messages.
-
-  using nanoseconds = util::quantities::intervals::nanoseconds; ///< Alias
-
-  /// Interface to LArSoft configuration for detector timing.
-  detinfo::DetectorTimings const fDetTimings;
-
-  /// Pointer to the online channel mapping service.
-  icarusDB::IICARUSChannelMap const& fChannelMap;
-
-  /// Duration of the optical detector readout sampling tick (i.e. 2 ns; hush!).
-  nanoseconds const fOpticalTick;
-
-  /// Trigger time as reported by `detinfo::DetectorClocks` service.
-  electronics_time const fNominalTriggerTime;
-
-  // To be ported to data product ? 
-  struct PMTTimeCorrection { 
-
-    std::map<std::string, double> timeCorrection;
-
-  };
-
-
-  std::vector<PMTTimeCorrection> corrections;
-
-
-
-  std::map<unsigned int, std::vector<unsigned int>> fCrateFragmentMap {
-
-    {0x1070 , { 0 , 1 , 2  }}, 
-    {0x1060 , { 3 , 4 , 5  }}, 
-    {0x1050 , { 6 , 7 , 8  }}, 
-    {0x1040 , { 9 , 10, 11 }},
-    {0x1030 , { 12, 13, 14 }}, 
-    {0x1020 , { 15, 16, 17 }}, 
-    {0x1010 , { 18, 19, 20 }}, 
-    {0x1000 , { 21, 22, 23 }}, 
-
-  }; 
-
-  public:
+public:
   
   /// Configuration of the module.
   struct Config {
@@ -171,6 +114,46 @@ class icarus::TimingCorrectionExtraction: public art::EDProducer {
   /// process the event
   void produce(art::Event& event ) override;
 
+private:
+  
+  std::vector<art::InputTag> fInputLabels;
+
+  art::InputTag fWaveformsLabel;
+
+  bool fRegenerateWaveforms = true; 
+
+  bool fVerbose = false; ///< Whether to print the configuration we read.
+  
+  std::string fLogCategory; ///< Category tag for messages.
+
+  /// Interface to LArSoft configuration for detector timing.
+  detinfo::DetectorClocksData const fClocksData;
+
+  /// Pointer to the online channel mapping service.
+  icarusDB::IICARUSChannelMap const& fChannelMap;
+
+  // To be ported to data product ? 
+  struct PMTTimeCorrection { 
+
+    std::map<std::string, double> timeCorrection;
+
+  };
+
+  std::vector<PMTTimeCorrection> corrections;
+
+  std::map<unsigned int, std::vector<unsigned int>> fCrateFragmentMap {
+
+    {0x1070 , { 0 , 1 , 2  }}, 
+    {0x1060 , { 3 , 4 , 5  }}, 
+    {0x1050 , { 6 , 7 , 8  }}, 
+    {0x1040 , { 9 , 10, 11 }},
+    {0x1030 , { 12, 13, 14 }}, 
+    {0x1020 , { 15, 16, 17 }}, 
+    {0x1010 , { 18, 19, 20 }}, 
+    {0x1000 , { 21, 22, 23 }}, 
+
+  }; 
+
   template<typename T>
     size_t getMaxBin( std::vector<T> vv, size_t startElement, size_t endElement);
 
@@ -183,7 +166,8 @@ class icarus::TimingCorrectionExtraction: public art::EDProducer {
   void findTimeCorrection( 
     raw::OpDetWaveform const & wave, 
     std::vector<PMTTimeCorrection> & corrs, 
-    std::string const & instance );
+    std::string const & instance ) ;
+
 
 }; // icarus::TimingCorrectionExtractor
 
@@ -196,11 +180,9 @@ icarus::TimingCorrectionExtraction::TimingCorrectionExtraction( Parameters const
     , fRegenerateWaveforms{ config().RegenerateWaveforms() }
     , fVerbose{ config().Verbose() }
     , fLogCategory{ config().LogCategory() }
-    , fDetTimings
+    , fClocksData
         { art::ServiceHandle<detinfo::DetectorClocksService const>()->DataForJob() }
     , fChannelMap{ *(art::ServiceHandle<icarusDB::IICARUSChannelMap const>{}) }
-    , fOpticalTick{ fDetTimings.OpticalClockPeriod() }
-    , fNominalTriggerTime{ fDetTimings.TriggerTime() }
 {
 
     /// Consumes
@@ -281,14 +263,14 @@ void icarus::TimingCorrectionExtraction::findTimeCorrection(
                                 raw::OpDetWaveform const & wave, 
                                 std::vector<PMTTimeCorrection> & corrs, 
                                 std::string const & instance 
-){
+) {
 
     unsigned int channelID = wave.ChannelNumber() & 0xFFF0;
 
     if( fCrateFragmentMap.find(channelID) == fCrateFragmentMap.end() ){ 
 
         mf::LogError(fLogCategory) << 
-            "Invalid channel number. Please make sure it is mapped to a value in fCrateFragmentMap" << std::endl;
+            "Invalid channel number. Verify fCrateFragmentMap" << std::endl;
         throw;
     }
 
@@ -296,23 +278,22 @@ void icarus::TimingCorrectionExtraction::findTimeCorrection(
     // Which corresponds to the global trigger time. 
     int startSampleSignal = static_cast<int>( getStartSample( wave ) );
     
-    double triggerTime = wave.TimeStamp() + startSampleSignal * 0.02;
+    double newTriggerTime = wave.TimeStamp() 
+                                + startSampleSignal * fClocksData.OpticalClock().TickPeriod();
 
     // we now access the channels that we need
     for( auto const & fragId : fCrateFragmentMap[channelID] ){
       for( auto const & mapRow : fChannelMap.getChannelIDPairVec(fragId) ){
         
         corrs[std::get<1U>(mapRow)].timeCorrection[instance] = 
-                                        1500 - triggerTime;
+                                        fClocksData.TriggerTime() - newTriggerTime;
 
         if(fVerbose){
-            std::cout << std::get<1U>(mapRow)              << ", " 
-                      << instance                          << ", " 
-                      << startSampleSignal*fOpticalTick    << "," 
-                      << triggerTime                       << ", " 
-                      << fOpticalTick                      << ", "
-                      << fNominalTriggerTime               << ", " 
-                      << 1500 - triggerTime << std::endl;
+            std::cout << std::get<1U>(mapRow)                                         << ", " 
+                      << instance                                                     << ", " 
+                      << startSampleSignal*fClocksData.OpticalClock().TickPeriod()    << ", " 
+                      << newTriggerTime                                               << ", " 
+                      << fClocksData.TriggerTime() - newTriggerTime                   << std::endl;
         }
 
       }
