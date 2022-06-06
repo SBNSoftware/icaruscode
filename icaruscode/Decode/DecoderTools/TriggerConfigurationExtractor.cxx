@@ -177,8 +177,10 @@ auto icarus::TriggerConfigurationExtractor::extractTriggerConfiguration
   rc.tpcTriggerDelay        
     = spexiParams.get<unsigned int>("TPCTriggerDelay.value");
 
-  sbn::bits::mask_t<sbn::gateSelection> gateSelection          
-    = std::stoul( spexiParams.get<std::string>("GateSelection.value"), nullptr, 16);
+
+  
+  sbn::bits::mask_t<sbn::gateSelection> gateSelection
+    { (unsigned int) std::stoul( spexiParams.get<std::string>("GateSelection.value"), nullptr, 16) };  
 
   // Read the prescale configuraton as string for now 
   auto prescaleMinBiasBeam = 
@@ -294,7 +296,7 @@ std::optional<fhicl::ParameterSet>
 icarus::TriggerConfigurationExtractor::readTriggerConfig
   (fhicl::ParameterSet const& pset, std::string const& key) const
 {
-  static std::string const ExpectedFragmentType = "ICARUSTriggerUDP";
+  static std::string const ExpectedFragmentType = "ICARUSTriggerV2";
   
   std::optional<fhicl::ParameterSet> config;
   
