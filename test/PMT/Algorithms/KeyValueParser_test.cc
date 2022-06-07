@@ -62,7 +62,7 @@ Samples:+1.8 1.6 1.2 0.8 0.8 0.7 0.7 0.6
   if (data.hasItem("Description")) {
     icarus::KeyValuesData::Item const& item = data.getItem("Description");
     BOOST_TEST(item.nValues() == 1);
-    BOOST_TEST(item.values()[0] == "\n"
+    BOOST_TEST(item.value() == "\n"
       "This is a test for the key-values parser with default settings.\n"
       "It is expected to be used to describe the Single Photoelectron Response.\n"
       );
@@ -72,9 +72,9 @@ Samples:+1.8 1.6 1.2 0.8 0.8 0.7 0.7 0.6
   if (data.hasItem("Contact")) {
     icarus::KeyValuesData::Item const& item = data.getItem("Contact");
     BOOST_TEST(item.nValues() == 3);
-    BOOST_TEST(item.values()[0] == "Gianluca");
-    BOOST_TEST(item.values()[1] == "Petrillo");
-    BOOST_TEST(item.values()[2] == "(petrillo@slac.stanford.edu)");
+    BOOST_TEST(item.value(0) == "Gianluca");
+    BOOST_TEST(item.value(1) == "Petrillo");
+    BOOST_TEST(item.value(2) == "(petrillo@slac.stanford.edu)");
   }
   
   BOOST_TEST(data.hasItem("Gain"));
@@ -89,7 +89,7 @@ Samples:+1.8 1.6 1.2 0.8 0.8 0.7 0.7 0.6
   if (data.hasItem("Tick")) {
     icarus::KeyValuesData::Item const& item = data.getItem("Tick");
     BOOST_TEST(item.nValues() == 1);
-    BOOST_TEST(item.values()[0] == "2 ns");
+    BOOST_TEST(item.value() == "2 ns");
   }
   
   BOOST_TEST(data.hasItem("Samples"));
@@ -97,11 +97,11 @@ Samples:+1.8 1.6 1.2 0.8 0.8 0.7 0.7 0.6
     icarus::KeyValuesData::Item const& item = data.getItem("Samples");
     std::array const samples
       { 0.0, 1.0, 2.5, 4.5, 3.0, 2.5, 1.8, 1.6, 1.2, 0.8, 0.8, 0.7, 0.7, 0.6 };
-    std::vector<double> values;
-    for (std::size_t i = 0; i < item.nValues(); ++i)
-      values.push_back(item.getNumber<double>(i));
+    std::vector<double> const values = item.getVector<double>();
     BOOST_CHECK_EQUAL_COLLECTIONS
-      (values.cbegin(), values.cend(), samples.cbegin(), samples.cend());
+      (values.begin(), values.end(), samples.cbegin(), samples.cend());
+    BOOST_CHECK_THROW
+      (item.getVector<int>(), icarus::KeyValuesData::ConversionFailed);
   }
   
 } // SPR_test()

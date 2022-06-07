@@ -43,7 +43,7 @@ icarus_stage0_producers:
   pmtconfig:                      { module_type: PMTconfigurationExtraction }
 
   ### Decoder definitions
-  daqTrigger:                     @local::decodeTrigger
+  daqTrigger:                     @local::decodeTriggerV2
 
   daqTPC:                         @local::decodeTPC
 
@@ -53,8 +53,6 @@ icarus_stage0_producers:
   daqPMT:                         @local::decodePMT
 
   daqCRT:                         @local::crtdaq_icarus
-
-  daqTrigger:                     @local::decodeTriggerV2
 
   ### calwire producers
   decon1droi:                     @local::icarus_decon1droi

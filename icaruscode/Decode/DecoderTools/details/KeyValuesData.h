@@ -208,6 +208,11 @@ struct icarus::KeyValuesData {
       { while (begin != end) addValue(*begin++); return *this; }
     //@}
     
+    //@{
+    /// Removes all the values.
+    void clear() { values().clear(); }
+    //@}
+    
     /// @}
     // --- END ---- Setting ----------------------------------------------------
     
@@ -218,13 +223,24 @@ struct icarus::KeyValuesData {
     
     //@{
     /// Returns the key of the item.
-    std::string const& key() const { return first; }
+    std::string const& key() const noexcept { return first; }
     //@}
     
     //@{
     /// Returns all item values, as strings.
-    std::vector<std::string>& values() { return second; }
-    std::vector<std::string> const& values() const { return second; }
+    std::vector<std::string>& values() noexcept { return second; }
+    std::vector<std::string> const& values() const noexcept { return second; }
+    //@}
+    
+    //@{
+    /// Returns the value at `index` (unchecked) with no conversion.
+    std::string const& value(std::size_t index = 0) const noexcept
+      { return values()[index]; }
+    //@}
+    
+    //@{
+    /// Returns the value at `index` with no conversion, no value if not present.
+    std::optional<std::string> optionalValue(std::size_t index) const noexcept;
     //@}
     
     //@{
@@ -539,6 +555,11 @@ struct icarus::KeyValuesData::ConversionFailed: public ErrorOnKey {
   static ConversionFailed makeFor(std::string const& key, std::string const& s)
     { return { key, s, typeid(T).name() }; }
   
+  template <typename T>
+  static ConversionFailed makeFor
+    (std::string const& key, std::size_t index, std::string const& s)
+    { return makeFor<T>(key + "[" + std::to_string(index) + "]", s); }
+  
 }; // icarus::KeyValuesData::ConversionFailed()
 
 
@@ -607,6 +628,14 @@ namespace icarus::details {
 
 // -----------------------------------------------------------------------------
 // ---  icarus::KeyValuesData::Item
+// -----------------------------------------------------------------------------
+inline std::optional<std::string> icarus::KeyValuesData::Item::optionalValue
+  (std::size_t index) const noexcept
+{
+  return (index < nValues())? std::optional{ values()[index] }: std::nullopt;
+}
+
+
 // -----------------------------------------------------------------------------
 template <typename T, typename Conv>
 T icarus::KeyValuesData::Item::getAs
@@ -722,11 +751,15 @@ std::vector<T> icarus::KeyValuesData::Item::convertVector
   data.reserve(std::distance(begin, end));
   Iter it = begin;
   while (it != end) {
-    std::string const& valueStr = *it++;
-    std::optional const number = converter(valueStr);
-    if (!number) throw ConversionFailed::makeFor<T>(key(), valueStr);
-    data.push_back(*number);
-  }
+    std::string const& valueStr = *it;
+    if (std::optional const number = converter(valueStr))
+      data.push_back(*number);
+    else {
+      throw ConversionFailed::makeFor<T>
+        (key(), std::distance(begin, it), valueStr);
+    }
+    ++it;
+  } // while
   return data;
 } // icarus::KeyValuesData::Item::convertVector()
 

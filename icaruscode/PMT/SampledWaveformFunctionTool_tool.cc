@@ -175,7 +175,7 @@ auto icarus::opdet::SampledWaveformFunctionTool::extractWaveformSpecification
       throw makeException() << "'Name' must have exactly 1 entry, not "
         << item->nValues() << "!\n";
     }
-    specs.name = item->values()[0];
+    specs.name = item->value();
   }
   
   if (auto const* item = data.findItem("Description")) {
@@ -184,7 +184,7 @@ auto icarus::opdet::SampledWaveformFunctionTool::extractWaveformSpecification
         << "'Description' must have exactly 1 entry (possibly quoted), not "
         << item->nValues() << "!\n";
     }
-    specs.description = item->values()[0];
+    specs.description = item->value();
   }
   
   if (auto const* item = data.findItem("Date")) {
@@ -193,7 +193,7 @@ auto icarus::opdet::SampledWaveformFunctionTool::extractWaveformSpecification
         << "'Date' must have exactly 1 entry (possibly quoted), not "
         << item->nValues() << "!\n";
     }
-    specs.date = item->values()[0];
+    specs.date = item->value();
   }
   
   if (auto const* item = data.findItem("Version")) {
@@ -220,11 +220,11 @@ auto icarus::opdet::SampledWaveformFunctionTool::extractWaveformSpecification
     }
     try {
       specs.sampleDuration
-        = util::quantities::makeQuantity<nanoseconds>(item->values()[0]);
+        = util::quantities::makeQuantity<nanoseconds>(item->value());
     }
     catch(std::runtime_error const& e) {
       throw makeException()
-        << "Failed to parse 'Tick' ('" << item->values()[0] << "') as a time:\n"
+        << "Failed to parse 'Tick' ('" << item->value() << "') as a time:\n"
         << e.what() << "\n";
     }
   }
@@ -239,7 +239,7 @@ auto icarus::opdet::SampledWaveformFunctionTool::extractWaveformSpecification
       specs.gain = item->getNumber<float>(0);
     }
     catch (icarus::KeyValuesData::Error const& e) {
-      throw makeException() << "value in 'Gain' ('" << item->values()[0]
+      throw makeException() << "value in 'Gain' ('" << item->value()
         << "') can't be interpreted as a gain factor:\n"
         << e.what() << "\n";
     }
@@ -251,17 +251,14 @@ auto icarus::opdet::SampledWaveformFunctionTool::extractWaveformSpecification
       throw makeException()
         << "'Samples' has only " << item->nValues() << " values!!\n";
     }
-    specs.samples.resize(item->nValues());
-    for (std::size_t const i: util::counter(item->nValues())) {
-      try {
-        specs.samples[i] = item->getNumber<float>(i);
-      }
-      catch (icarus::KeyValuesData::Error const& e) {
-        throw makeException() << "value #" << i << " in 'Samples' ('"
-          << item->values()[i] << "') can't be interpreted as a voltage:\n"
-          << e.what() << "\n";
-      }
-    } // for
+    try {
+      specs.samples = item->getVector<float>();
+    }
+    catch(icarus::KeyValuesData::Error const& e) {
+      throw makeException()
+        << "Error converting values in 'Samples' into voltage:\n"
+        << e.what() << "\n";
+    }
   }
   else throw makeException() << "'Samples' entry is mandatory.\n";
   
@@ -277,7 +274,7 @@ auto icarus::opdet::SampledWaveformFunctionTool::extractWaveformSpecification
       nSamples = item->getNumber<unsigned int>(0);
     }
     catch (icarus::KeyValuesData::Error const& e) {
-      throw makeException() << "value in 'NSamples' ('" << item->values()[0]
+      throw makeException() << "value in 'NSamples' ('" << item->value()
         << "') can't be interpreted as a sample number (unsigned int):\n"
         << e.what() << "\n";
     }
