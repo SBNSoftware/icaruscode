@@ -97,6 +97,11 @@ struct icarus::KeyValuesData {
     Item& addValues(BIter begin, EIter end)
       { while (begin != end) addValue(*begin++); return *this; }
     
+    //@{
+    /// Removes all the values.
+    void clear() { values().clear(); }
+    //@}
+    
     /// @}
     // --- END ---- Setting ----------------------------------------------------
     
@@ -105,6 +110,30 @@ struct icarus::KeyValuesData {
     /// @name Query interface
     /// @{
     
+    //@{
+    /// Returns the key of the item.
+    std::string const& key() const noexcept { return first; }
+    //@}
+    
+    //@{
+    /// Returns all item values, as strings.
+    std::vector<std::string>& values() noexcept { return second; }
+    std::vector<std::string> const& values() const noexcept { return second; }
+    //@}
+    
+    //@{
+    /// Returns the value at `index` (unchecked) with no conversion.
+    std::string const& value(std::size_t index = 0) const noexcept
+      { return values()[index]; }
+    //@}
+    
+    //@{
+    /// Returns the value at `index` with no conversion, no value if not present.
+    std::optional<std::string> optionalValue(std::size_t index) const noexcept;
+    //@}
+    
+    //@{
+
     /// Returns the number of values currently present.
     std::size_t nValues() const noexcept { return values.size(); }
     
@@ -226,6 +255,11 @@ struct icarus::KeyValuesData::ConversionFailed: public Error {
   static ConversionFailed makeFor(std::string const& s)
     { return { s, typeid(T).name() }; }
   
+  template <typename T>
+  static ConversionFailed makeFor
+    (std::string const& key, std::size_t index, std::string const& s)
+    { return makeFor<T>(key + "[" + std::to_string(index) + "]", s); }
+  
 }; // icarus::KeyValuesData::ConversionFailed()
 
 
@@ -253,6 +287,29 @@ struct icarus::KeyValuesData::ValueNotAvailable: public Error {
 // -----------------------------------------------------------------------------
 // ---  icarus::KeyValuesData::Item
 // -----------------------------------------------------------------------------
+inline std::optional<std::string> icarus::KeyValuesData::Item::optionalValue
+  (std::size_t index) const noexcept
+{
+  return (index < nValues())? std::optional{ values()[index] }: std::nullopt;
+}
+
+
+// -----------------------------------------------------------------------------
+template <typename T, typename Conv>
+T icarus::KeyValuesData::Item::getAs
+  (std::size_t index, Conv converter) const
+{
+  
+  if (index >= values().size()) throw ValueNotAvailable(key(), index);
+  
+  auto const& valueStr = values()[index];
+  auto const number = converter(valueStr);
+  return number? *number: throw ConversionFailed::makeFor<T>(key(), valueStr);
+  
+} // icarus::details::KeyValuesData::Item::getAs<>()
+
+
+// -----------------------------------------------------------------------------
 template <typename T>
 T icarus::KeyValuesData::Item::getNumber(std::size_t index) const {
   
@@ -277,7 +334,65 @@ std::optional<T> icarus::KeyValuesData::Item::getOptionalNumber
   return (number || ignoreFormatErrors)
     ? number: throw ConversionFailed::makeFor<T>(valueStr);
 
-} // icarus::KeyValuesData<>::Item::getOptionalNumber()
+// -----------------------------------------------------------------------------
+template <typename T>
+std::optional<T> icarus::KeyValuesData::Item::getOptionalNumber
+  (std::size_t index) const
+  { return getOptionalAs<T>(index, details::KeyValuesConverter<T>{}); }
+
+
+// -----------------------------------------------------------------------------
+template <typename T, typename Conv>
+std::vector<T> icarus::KeyValuesData::Item::getVector
+  (Conv converter /* = {} */) const
+{
+  return
+    convertVector<T>(values().begin(), values().end(), std::move(converter));
+}
+
+
+// -----------------------------------------------------------------------------
+template <typename T, typename Conv>
+std::vector<T> icarus::KeyValuesData::Item::getSizedVector
+  (Conv converter /* = {} */) const
+{
+  
+  if (values().empty()) throw MissingSize(key());
+  
+  std::size_t const n = getNumber<std::size_t>(0U);
+  if (n != values().size() - 1)
+    throw WrongSize(key(), n, values().size() - 1);
+  
+  return convertVector<T>
+    (std::next(values().begin()), values().end(), std::move(converter));
+} // icarus::KeyValuesData::Item::getSizedVector()
+
+
+// -----------------------------------------------------------------------------
+template <typename T, typename Iter, typename Conv>
+std::vector<T> icarus::KeyValuesData::Item::convertVector
+  (Iter begin, Iter end, Conv converter) const
+{
+  std::vector<T> data;
+  data.reserve(std::distance(begin, end));
+  Iter it = begin;
+  while (it != end) {
+    std::string const& valueStr = *it;
+    if (std::optional const number = converter(valueStr))
+      data.push_back(*number);
+    else {
+      throw ConversionFailed::makeFor<T>
+        (key(), std::distance(begin, it), valueStr);
+    }
+    ++it;
+  } // while
+  return data;
+} // icarus::KeyValuesData::Item::convertVector()
+
+
+// -----------------------------------------------------------------------------
+inline decltype(auto) icarus::KeyValuesData::items() const noexcept
+  { return fItems; }
 
 
 // -----------------------------------------------------------------------------

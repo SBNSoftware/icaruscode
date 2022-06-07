@@ -362,6 +362,24 @@ namespace icarus { class DaqDecoderICARUSPMT; }
  * putting the actual waveform into the _art_ event.
  * 
  * 
+ * ### Processing pipeline
+ * 
+ * Processing happens according to the following structure (in `produce()`):
+ * 1. pre-processing: currently nothing
+ * 2. processing of each board data independently: at this level, all the
+ *    buffers from the 16 channels of a single board are processed together
+ *    (`processBoardFragments()`)
+ *     1. the configuration and parameters specific to this board are fetched
+ *     2. each data fragment is processed independently: at this level, data
+ *        from all 16 channels _at a given time_ are processed together,
+ *        producing up to 16 proto-waveforms
+ *     3. merging of contiguous waveforms is performed
+ * 3. post-processing of proto-waveforms:
+ *     * sorting by time (as opposed as roughly by channel, as they come)
+ * 4. conversion to data products and output
+ * 
+ * 
+ * 
  * Glossary
  * ---------
  * 
@@ -1515,7 +1533,7 @@ void icarus::DaqDecoderICARUSPMT::produce(art::Event& event) {
   //
   sortWaveforms(protoWaveforms);
   
-  std::vector<ProtoWaveform_t const*> waveformsWithTrigger
+  std::vector<ProtoWaveform_t const*> const waveformsWithTrigger
     = findWaveformsWithNominalTrigger(protoWaveforms);
   mf::LogTrace(fLogCategory) << waveformsWithTrigger.size() << "/"
     << protoWaveforms.size() << " decoded waveforms include trigger time ("
