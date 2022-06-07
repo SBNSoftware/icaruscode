@@ -135,11 +135,9 @@ private:
   // To be ported to data product ? 
   struct PMTTimeCorrection { 
 
-    std::map<std::string, double> timeCorrection;
+    double time;
 
   };
-
-  std::vector<PMTTimeCorrection> corrections;
 
   std::map<unsigned int, std::vector<unsigned int>> fCrateFragmentMap {
 
@@ -165,8 +163,7 @@ private:
 
   void findTimeCorrection( 
     raw::OpDetWaveform const & wave, 
-    std::vector<PMTTimeCorrection> & corrs, 
-    std::string const & instance ) ;
+    std::vector<PMTTimeCorrection> & corrs ) ;
 
 
 }; // icarus::TimingCorrectionExtractor
@@ -231,8 +228,6 @@ template<typename T>
   size_t icarus::TimingCorrectionExtraction::getStartSample( std::vector<T> vv ){
 
     // We are thinking in inverted polarity
-      // Todo: restric the reagion over wich the max is searched: 
-      // depends on the readout settings 
     size_t minbin = getMinBin( vv, 0, vv.size() );
 
     //Search only a cropped region of the waveform backward from the min
@@ -261,8 +256,7 @@ template<typename T>
 // -----------------------------------------------------------------------------
 void icarus::TimingCorrectionExtraction::findTimeCorrection( 
                                 raw::OpDetWaveform const & wave, 
-                                std::vector<PMTTimeCorrection> & corrs, 
-                                std::string const & instance 
+                                    std::vector<PMTTimeCorrection> & corrections 
 ) {
 
     unsigned int channelID = wave.ChannelNumber() & 0xFFF0;
@@ -283,14 +277,13 @@ void icarus::TimingCorrectionExtraction::findTimeCorrection(
 
     // we now access the channels that we need
     for( auto const & fragId : fCrateFragmentMap[channelID] ){
+      
       for( auto const & mapRow : fChannelMap.getChannelIDPairVec(fragId) ){
         
-        corrs[std::get<1U>(mapRow)].timeCorrection[instance] = 
-                                        fClocksData.TriggerTime() - newTriggerTime;
+        corrections[std::get<1U>(mapRow)].time = newTriggerTime - fClocksData.TriggerTime() ;
 
         if(fVerbose){
             std::cout << std::get<1U>(mapRow)                                         << ", " 
-                      << instance                                                     << ", " 
                       << startSampleSignal*fClocksData.OpticalClock().TickPeriod()    << ", " 
                       << newTriggerTime                                               << ", " 
                       << fClocksData.TriggerTime() - newTriggerTime                   << std::endl;
@@ -305,7 +298,8 @@ void icarus::TimingCorrectionExtraction::findTimeCorrection(
 // -----------------------------------------------------------------------------
 void icarus::TimingCorrectionExtraction::produce( art::Event& event ) {
 
-    corrections.reserve(360); // book enough room on the corrections array
+    std::vector<PMTTimeCorrection> corrections;
+    corrections.resize(360);
 
     if( !fInputLabels.empty() ){
         
@@ -321,7 +315,7 @@ void icarus::TimingCorrectionExtraction::produce( art::Event& event ) {
                 for(  auto const & specialWaveform : *specialWaveformHandle  ){
 
                      // Extract the time corrections from the special waveforms
-                    findTimeCorrection( specialWaveform, corrections, label.instance() );
+                    findTimeCorrection( specialWaveform, corrections );
 
                 }
 
@@ -333,6 +327,7 @@ void icarus::TimingCorrectionExtraction::produce( art::Event& event ) {
             }
 
         }
+
     } else {
         mf::LogError(fLogCategory) 
             << " InputLabels array should contain more than 1 valid entry " << std::endl;
@@ -340,7 +335,7 @@ void icarus::TimingCorrectionExtraction::produce( art::Event& event ) {
     }
 
     // Create a copy of the waveforms 
-    std::vector<raw::OpDetWaveform> corrWaveforms;
+    std::vector<raw::OpDetWaveform> correctedWaveforms;
 
     // Now we read the opdet waveform collection and re-apply the timing corrections 
     // A new collection is hence created 
@@ -355,11 +350,11 @@ void icarus::TimingCorrectionExtraction::produce( art::Event& event ) {
             raw::OpDetWaveform waveform = (*waveformHandle)[iWave];
 
             // Recalculate the timestamp
-            raw::TimeStamp_t tCorrection = 
-                waveform.TimeStamp() - corrections[ waveform.ChannelNumber() ].timeCorrection["trgprim"];
-            waveform.SetTimeStamp( tCorrection );
+            raw::TimeStamp_t correctT = 
+                waveform.TimeStamp() + corrections[waveform.ChannelNumber()].time;
+            waveform.SetTimeStamp( correctT );
 
-            corrWaveforms.push_back( waveform );
+            correctedWaveforms.push_back( waveform );
         }
 
     } else {
@@ -371,12 +366,10 @@ void icarus::TimingCorrectionExtraction::produce( art::Event& event ) {
 
     // The new waveform collection is also saved in the event stream
     event.put(
-      std::make_unique<std::vector<raw::OpDetWaveform>>(std::move(corrWaveforms)) 
+      std::make_unique<std::vector<raw::OpDetWaveform>>(std::move(correctedWaveforms)) 
     );
 
-    corrections.clear(); // Free the memory 
-
-} //produce
+} //icarus::TimingCorrectionExtraction::produce
 
 
 // -----------------------------------------------------------------------------
