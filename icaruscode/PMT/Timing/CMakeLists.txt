@@ -12,6 +12,7 @@ simple_plugin(TimingCorrectionExtraction "module"
   ${CETLIB}
   cetlib_except
   ${ROOT_BASIC_LIB_LIST}
+  LIBWDA
   ${Boost_SYSTEM_LIBRARY}
   ${ART_UTILITIES}
   art_Persistency_Common canvas

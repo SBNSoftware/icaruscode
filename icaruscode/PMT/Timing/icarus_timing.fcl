@@ -6,6 +6,8 @@ daqPMTTiming: {
     InputLabels:         ["daqPMT:trgprim"]
     WaveformsLabel:      "daqPMT"
     RegenerateWaveforms: true
+    Timeout:             2000
+    CorrectCablesDelay:  true
     Verbose:             false
 
 }
