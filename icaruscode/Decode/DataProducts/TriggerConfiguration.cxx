@@ -22,15 +22,15 @@ void icarus::TriggerConfiguration::dumpGateConfig
   (std::ostream& out, icarus::TriggerConfiguration::GateConfig const& gateConfig, std::string const& indent) const
 {
   out << std::boolalpha
-    << indent << "Gate Active:              " << gateConfig.hasGate << "\n"
-    << indent << "Drift gate Active         " << gateConfig.hasDriftGate << "\n"
-    << indent << "MinBias Gate Active:      " << gateConfig.hasMinBiasGate << "\n"
-    << indent << "MinBias Drift Gate Active " << gateConfig.hasMinBiasDriftGate << "\n"
-    << indent << "BeamWidth                 " << gateConfig.gateWidth << " ns\n"
-    << indent << "EnableWidth               " << gateConfig.driftGateWidth  << " ns\n"
-    << indent << "EarlyWarningOffset        " << gateConfig.earlyWarningOffset << " ns\n"
-    << indent << "EarlyWarningOffset        " << gateConfig.earlyEarlyWarningOffset << " ns\n"
-    << indent << "PreScale                  " << gateConfig.prescaleMinBias << "\n"
+    << indent << "Gate Active:               " << gateConfig.hasGate << "\n"
+    << indent << "Drift gate Active:         " << gateConfig.hasDriftGate << "\n"
+    << indent << "MinBias Gate Active:       " << gateConfig.hasMinBiasGate << "\n"
+    << indent << "MinBias Drift Gate Active: " << gateConfig.hasMinBiasDriftGate << "\n"
+    << indent << "BeamWidth:                 " << gateConfig.gateWidth << " ns\n"
+    << indent << "EnableWidth:               " << gateConfig.driftGateWidth  << " ns\n"
+    << indent << "EarlyWarningOffset:        " << gateConfig.earlyWarningOffset << " ns\n"
+    << indent << "EarlyEarlyWarningOffset:   " << gateConfig.earlyEarlyWarningOffset << " ns\n"
+    << indent << "PreScale:                  " << gateConfig.prescaleMinBias << "\n"
     << std::noboolalpha
     ;
 }
@@ -55,23 +55,22 @@ void icarus::TriggerConfiguration::dump(std::ostream& out,
     
     // --- verbosity: 0+ -------------------------------------------------------
     out << firstIndent
-      << "\nBasic trigger configuration:\n ";
-      outnl() << " Use Wr time "    << useWrTime << " \n";
-      outnl() << " WR time offset " << wrTimeOffset << " ns \n"; 
+      << "Basic trigger configuration:";
+      outnl() << " Use WR time:    " << std::boolalpha << useWrTime << std::noboolalpha;
+      outnl() << " WR time offset: " << wrTimeOffset;
     
     if (++level > verbosity) break;
     // --- verbosity: 1+ -------------------------------------------------------
-    outnl()
-      << " FPGA Configuration: \n "
-      << " Veto Delay:            "  <<  vetoDelay << " ns,\n"
-      << " MajLevelBeamCryoEAST   "  <<  cryoConfig[icarus::trigger::kEast].majLevelInTime    << " \n"
-      << " MajLevelEnableCryoEAST "  <<  cryoConfig[icarus::trigger::kEast].majLevelDrift  << " \n"
-      << " WindowCryoEAST         "  <<  cryoConfig[icarus::trigger::kEast].slidingWindow   << " \n"
-      << " MajLevelBeamCryoWEST   "  <<  cryoConfig[icarus::trigger::kWest].majLevelInTime    << " \n"
-      << " MajLevelEnableCryoWEST "  <<  cryoConfig[icarus::trigger::kWest].majLevelDrift  << " \n"
-      << " WindowCryoWEST         "  <<  cryoConfig[icarus::trigger::kWest].slidingWindow   << " \n"
-      << " MajorityTriggerType    "  <<  majorityTriggerType                << " \n"
-      << " RunType                "  <<  runType << " ";
+    outnl() << "FPGA Configuration:";
+    outnl() << " Veto Delay:             "  <<  vetoDelay << " ns";
+    outnl() << " MajLevelBeamCryoEAST:   "  <<  cryoConfig[icarus::trigger::kEast].majLevelInTime;
+    outnl() << " MajLevelEnableCryoEAST: "  <<  cryoConfig[icarus::trigger::kEast].majLevelDrift;
+    outnl() << " WindowCryoEAST:         "  <<  cryoConfig[icarus::trigger::kEast].slidingWindow;
+    outnl() << " MajLevelBeamCryoWEST:   "  <<  cryoConfig[icarus::trigger::kWest].majLevelInTime;
+    outnl() << " MajLevelEnableCryoWEST: "  <<  cryoConfig[icarus::trigger::kWest].majLevelDrift;
+    outnl() << " WindowCryoWEST:         "  <<  cryoConfig[icarus::trigger::kWest].slidingWindow;
+    outnl() << " MajorityTriggerType:   '"  <<  majorityTriggerType << "'";
+    outnl() << " RunType:               '"  <<  runType << "'";
 
     out << "\n";
 
@@ -79,26 +78,27 @@ void icarus::TriggerConfiguration::dump(std::ostream& out,
     // --- verbosity: 2+ -------------------------------------------------------
     
     out << indent // absorb the newline from the previous level
-      << "\nSPEXI Configuration: \n ";
+      << "SPEXI Configuration:\n";
       
-      out << "TPCTriggerDelay" << tpcTriggerDelay << " /400 ns \n ";
+      out << indent << " TPCTriggerDelay: " << (tpcTriggerDelay * 0.0004) << " ms ("
+        << tpcTriggerDelay << " x 400 ns)\n";
       
       out << indent << " BNB:\n";
-      dumpGateConfig( out, gateConfig[icarus::trigger::kBNB], indent+" - " );
+      dumpGateConfig( out, gateConfig[icarus::trigger::kBNB], indent+"  - " );
 
       out << indent << " NuMI:\n";
-      dumpGateConfig( out, gateConfig[icarus::trigger::kNuMI], indent+" - " );
+      dumpGateConfig( out, gateConfig[icarus::trigger::kNuMI], indent+"  - " );
 
       out << indent << " Offbeam BNB:\n";
-      dumpGateConfig( out, gateConfig[icarus::trigger::kOffBeamBNB], indent + " - " );
+      dumpGateConfig( out, gateConfig[icarus::trigger::kOffBeamBNB], indent + "  - " );
 
       out << indent << " Offbeam NuMI:\n";
-      dumpGateConfig(out, gateConfig[icarus::trigger::kOffBeamNuMI], indent + " - " );
+      dumpGateConfig(out, gateConfig[icarus::trigger::kOffBeamNuMI], indent + "  - " );
 
 
       out << indent << " Calibration:\n";
-      dumpGateConfig(out, gateConfig[icarus::trigger::kCalibration], indent + " - ");
-      out << indent +" - " << "Period                    " << gateConfig[icarus::trigger::kCalibration].period << " ns\n";
+      dumpGateConfig(out, gateConfig[icarus::trigger::kCalibration], indent + "  - ");
+      out << indent << "  - " << "Period:                    " << gateConfig[icarus::trigger::kCalibration].period << " ns\n";
 
     if (++level > verbosity) break;
     // --- verbosity: 3+ -------------------------------------------------------
