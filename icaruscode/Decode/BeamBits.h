@@ -51,12 +51,18 @@ namespace sbn {
     //using mask_t = std::underlying_type_t<EnumType>;
     
     template <typename EnumType>
-      struct mask_t {
-	using bits_t = EnumType; ///< Enumeration type of the bits.
-	using maskbits_t = std::underlying_type_t<EnumType>; ///< Bit data type.   
-	maskbits_t bits { 0 };
-	operator maskbits_t() const { return bits; }
-      }; // mask_t   
+    struct mask_t {
+      using bits_t = EnumType; ///< Enumeration type of the bits.
+      using maskbits_t = std::underlying_type_t<EnumType>; ///< Bit data type.
+      maskbits_t bits { 0 };
+      operator maskbits_t() const { return bits; }
+    }; // mask_t
+
+    /// Converts a integral type into a mask.
+    template <typename EnumType>
+    mask_t<EnumType> makeMask
+      (typename mask_t<EnumType>::maskbits_t bits) noexcept;
+    
     
     /// Returns the value of specified `bit` (conversion like `enum` to `int`).
     template <typename EnumType>
@@ -197,6 +203,13 @@ namespace sbn {
 
 // -----------------------------------------------------------------------------
 // ---  inline and template implementation
+// -----------------------------------------------------------------------------
+template <typename EnumType>
+auto sbn::bits::makeMask  (typename mask_t<EnumType>::maskbits_t bits) noexcept
+  -> mask_t<EnumType>
+  { return { bits }; }
+
+
 // -----------------------------------------------------------------------------
 template <typename EnumType>
 constexpr auto sbn::bits::value(EnumType bit)

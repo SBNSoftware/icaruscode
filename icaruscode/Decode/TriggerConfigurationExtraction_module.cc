@@ -61,6 +61,9 @@ namespace icarus { class TriggerConfigurationExtraction; }
  * 
  * The following configuration parameters are supported:
  * 
+ * * **TriggerFragmentType** (string, default: `ICARUSTriggerV2`):
+ *     name of the type of trigger fragment, used to identify the configuration
+ *     of the trigger.
  * * **Verbose** (flag, default: `false`): if set to `true`, it will print in
  *     full the configuration of the trigger the first time it is read and each time
  *     a different one is found.
@@ -85,6 +88,8 @@ class icarus::TriggerConfigurationExtraction: public art::EDProducer {
   /// Whether trigger configuration inconsistency is fatal.
   bool fRequireConsistency = true;
   
+  std::string fTriggerFragmentType; ///< Name of the trigger fragment type.
+  
   bool fVerbose = false; ///< Whether to print the configuration we read.
   
   std::string fLogCategory; ///< Category tag for messages.
@@ -93,6 +98,12 @@ class icarus::TriggerConfigurationExtraction: public art::EDProducer {
   
   /// Configuration of the module.
   struct Config {
+    
+    fhicl::Atom<std::string> TriggerFragmentType {
+      fhicl::Name("TriggerFragmentType"),
+      fhicl::Comment("the name of the type of trigger fragment from DAQ"),
+      "ICARUSTriggerV2" // default
+      };
     
     fhicl::Atom<bool> Verbose {
       fhicl::Name("Verbose"),
@@ -136,6 +147,7 @@ class icarus::TriggerConfigurationExtraction: public art::EDProducer {
 icarus::TriggerConfigurationExtraction::TriggerConfigurationExtraction
   (Parameters const& config)
   : art::EDProducer(config)
+  , fTriggerFragmentType(config().TriggerFragmentType())
   , fVerbose(config().Verbose())
   , fLogCategory(config().LogCategory())
 {
@@ -151,7 +163,7 @@ icarus::TriggerConfigurationExtraction::TriggerConfigurationExtraction
 void icarus::TriggerConfigurationExtraction::beginRun(art::Run& run) {
   
   icarus::TriggerConfiguration config = extractTriggerReadoutConfiguration
-    (run, icarus::TriggerConfigurationExtractor{});
+    (run, icarus::TriggerConfigurationExtractor{ fTriggerFragmentType });
   
   checkConsistency(config, "run " + std::to_string(run.run()));
   if (!fTriggerConfig.has_value() && fVerbose)
