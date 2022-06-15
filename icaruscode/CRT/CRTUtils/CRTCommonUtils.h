@@ -2,6 +2,8 @@
 #define IC_CRTCOMMONUTILS_H
 
 #include "messagefacility/MessageLogger/MessageLogger.h"
+#include "canvas/Persistency/Common/Ptr.h" 
+#include "canvas/Persistency/Common/PtrVector.h" 
 
 #include "lardataobj/Simulation/AuxDetSimChannel.h"
 #include "larcore/Geometry/Geometry.h"

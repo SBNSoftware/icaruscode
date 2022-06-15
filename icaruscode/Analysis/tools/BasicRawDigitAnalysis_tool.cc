@@ -10,6 +10,7 @@
 #include "messagefacility/MessageLogger/MessageLogger.h"
 
 #include "larcore/Geometry/Geometry.h"
+#include "larcore/CoreUtils/ServiceUtil.h" // lar::providerFrom()
 #include "icaruscode/TPC/Utilities/SignalShapingICARUSService_service.h"
 #include "lardataalg/DetectorInfo/DetectorClocks.h"
 #include "lardata/DetectorInfoServices/DetectorPropertiesService.h"

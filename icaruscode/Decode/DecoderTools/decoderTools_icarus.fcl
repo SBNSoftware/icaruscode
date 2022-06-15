@@ -107,5 +107,9 @@ TriggerDecoderTool: {
    tool_type:          TriggerDecoder
 }
 
+TriggerDecoderV2Tool: {
+   tool_type:          TriggerDecoderV2
+}
+
 
 END_PROLOG

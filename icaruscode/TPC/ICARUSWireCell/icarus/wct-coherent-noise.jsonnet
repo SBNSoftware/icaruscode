@@ -48,8 +48,8 @@ local perfect = import 'pgrapher/experiment/icarus/chndb-base.jsonnet';
 local chndb = [{
   type: 'OmniChannelNoiseDB',
   name: 'ocndbperfect%d' % n,
-  data: perfect(params, tools.anodes[n], tools.field, n),
-  uses: [tools.anodes[n], tools.field],  // pnode extension
+  data: perfect(params, tools.anodes[n], tools.field, n){dft:wc.tn(tools.dft)},
+  uses: [tools.anodes[n], tools.field, tools.dft],  // pnode extension
 } for n in anode_iota];
 
 local nf_maker = import 'pgrapher/experiment/icarus/nf.jsonnet';
@@ -72,13 +72,14 @@ local make_noise_model = function(anode, csdb=null) {
     name: "empericalnoise-" + anode.name,
     data: {
         anode: wc.tn(anode),
+        dft: wc.tn(tools.dft),
         chanstat: if std.type(csdb) == "null" then "" else wc.tn(csdb),
         spectra_file: params.files.noise,
         nsamples: params.daq.nticks,
         period: params.daq.tick,
         wire_length_scale: 1.0*wc.cm, // optimization binning
     },
-    uses: [anode] + if std.type(csdb) == "null" then [] else [csdb],
+    uses: [anode, tools.dft] + if std.type(csdb) == "null" then [] else [csdb],
 };
 local noise_model = make_noise_model(mega_anode);
 local add_noise = function(model, n) g.pnode({
@@ -92,17 +93,17 @@ local add_noise = function(model, n) g.pnode({
     }}, nin=1, nout=1, uses=[model]);
 local noises = [add_noise(noise_model, n) for n in std.range(0,3)];
 
-local add_coherent_noise = function(n) g.pnode({
-      type: "AddCoherentNoise",
-      name: "addcoherentnoise%d" %n,
+local add_coherent_noise = = function(n) g.pnode({
+      type: "AddGroupNoise",
+      name: "addgroupnoise%d" %n,
       data: {
-          spectra_file: params.files.coherent_noise,
+          spectra_file: params.files.noisegroups[n],
+          map_file: params.files.wiregroups,
           rng: wc.tn(tools.random),
+          dft: wc.tn(tools.dft),
           nsamples: params.daq.nticks,
-          random_fluctuation_amplitude: 0.1,
-          period: params.daq.tick,
-          normalization: 1
-      }}, nin=1, nout=1, uses=[]);
+          spec_scale: 1.1,
+      }}, nin=1, nout=1, uses=[tools.random, tools.dft]);
 local coherent_noises = [add_coherent_noise(n) for n in std.range(0,3)];
 
 // local digitizer = sim.digitizer(mega_anode, name="digitizer", tag="orig");
