@@ -83,10 +83,10 @@ struct icarus::TriggerConfiguration {
     /// Rate of gates opened outside the extraction (calculated with respect to the number of gates opened) 
     unsigned long offBeamGateRate = 1U;
 
-    /// Early warning offset for the BNB (NuMI) GatedBES ($MIBS74) in ns 
+    /// Early warning offset for the BNB (NuMI) GatedBES ($MIBS74) in ns; used for the beam gate.
     unsigned long earlyWarningOffset = 0U; 
 
-    /// Early Early warning offset for the BNB (NuMI) $1D ($AE) in ns
+    /// Early Early warning offset for the BNB (NuMI) $1D ($AE) in ns; used for the drift gate.
     unsigned long earlyEarlyWarningOffset = 0U; 
 
     /// Period of two consecutive pulses from the internal pulse generator (valid for calibration gate) in ns
@@ -255,15 +255,15 @@ struct icarus::TriggerConfiguration {
       { dump(out, indent, indent); }
   
     /**
-      * @brief Dumps the content of the configuration into `out` stream.
+      * @brief Dumps the content of the gate configuration into `out` stream.
       * @param out stream to dump the information into
+      * @param gateConfig the gate to be dumped
       * @param indent (default: none) indentation string
       * @see `dump(std::ostream&, std::string const&, std::string const&, unsigned int) const`
       * 
       * Version of `dump()` with the specified `verbosity` level and same first
       * indentation level as the rest.
-   */
-
+      */
     void dumpGateConfig(std::ostream& out, 
       icarus::TriggerConfiguration::GateConfig const& gateConfig, 
       std::string const& indent
