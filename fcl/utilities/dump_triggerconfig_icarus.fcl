@@ -1,0 +1,65 @@
+#
+# File:     dump_triggerconfig_icarus.fcl
+# Purpose:  Dump on screen trigger configuration from DAQ.
+# Author:   Gianluca Petrillo (petrillo@slac.stanford.edu)
+# Date:     June 13, 2022
+# Version:  1.0
+#
+# This module extracts and then dumps the trigger configuration stored in the
+# FHiCL configuration of that file(s), one per run.
+# All output is poured into standard output.
+#
+#
+# Input: (data) files with FHiCL configuration of trigger.
+#
+# Service dependencies:
+# - message facility
+# 
+# Changes:
+# 20220611 (petrillo@slac.stanford.edu) [v1.0]
+#   first version (from `dump_pmtconfig_icarus.fcl` 1.0)
+#
+
+#include "messages_icarus.fcl"
+
+
+# ------------------------------------------------------------------------------
+process_name: DumpTrgCfg
+
+
+# ------------------------------------------------------------------------------
+services: {
+  
+  message: @local::icarus_message_services_interactive
+  
+} # services
+
+
+# ------------------------------------------------------------------------------
+physics: {
+  # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  producers: {
+    trgconfig: { module_type: TriggerConfigurationExtraction }
+  }
+  
+  # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  analyzers: {
+  
+    dumptrgconfig: {
+    
+      module_type:  DumpTriggerConfiguration
+      
+      TriggerConfigurationTag: "trgconfig"
+      
+    } # dumptrgconfig
+
+  } # analyzers
+  
+  # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  extractors: [ trgconfig ]
+  dumpers:    [ dumptrgconfig ]
+  
+} # physics
+
+
+# ------------------------------------------------------------------------------

@@ -51,12 +51,18 @@ namespace sbn {
     //using mask_t = std::underlying_type_t<EnumType>;
     
     template <typename EnumType>
-      struct mask_t {
-	using bits_t = EnumType; ///< Enumeration type of the bits.
-	using maskbits_t = std::underlying_type_t<EnumType>; ///< Bit data type.   
-	maskbits_t bits { 0 };
-	operator maskbits_t() const { return bits; }
-      }; // mask_t   
+    struct mask_t {
+      using bits_t = EnumType; ///< Enumeration type of the bits.
+      using maskbits_t = std::underlying_type_t<EnumType>; ///< Bit data type.
+      maskbits_t bits { 0 };
+      operator maskbits_t() const { return bits; }
+    }; // mask_t
+
+    /// Converts a integral type into a mask.
+    template <typename EnumType>
+    mask_t<EnumType> makeMask
+      (typename mask_t<EnumType>::maskbits_t bits) noexcept;
+    
     
     /// Returns the value of specified `bit` (conversion like `enum` to `int`).
     template <typename EnumType>
@@ -99,71 +105,71 @@ namespace sbn {
       NBits    ///< Number of bits currently supported.
     }; // triggerSource
 
-    /// Type of mask with `triggerSource` bits.                                                                                 
+    /// Type of mask with `triggerSource` bits.
     using triggerSourceMask = mask_t<triggerSource>;
 
     
-    /// Location or locations generating a trigger.                                                                                 
+    /// Location or locations generating a trigger.
     enum class triggerLocation: unsigned int {
-        CryoEast,    ///< A trigger happened in the east cryostat.
-	CryoWest,    ///< A trigger happened in the west cryostat.
-	TPCEE,       ///< A trigger happened in the east cryostat, east TPC.
-	TPCEW,       ///< A trigger happened in the east cryostat, west TPC.
-	TPCWE,       ///< A trigger happened in the west cryostat, east TPC.
-	TPCWW,       ///< A trigger happened in the west cryostat, west TPC.   
-	// ==> add here if more are needed <==
-	NBits    ///< Number of bits currently supported. 
-	}; // triggerLocation                    
-                                                                                 
+      CryoEast,    ///< A trigger happened in the east cryostat.
+      CryoWest,    ///< A trigger happened in the west cryostat.
+      TPCEE,       ///< A trigger happened in the east cryostat, east TPC.
+      TPCEW,       ///< A trigger happened in the east cryostat, west TPC.
+      TPCWE,       ///< A trigger happened in the west cryostat, east TPC.
+      TPCWW,       ///< A trigger happened in the west cryostat, west TPC.
+      // ==> add here if more are needed <==
+      NBits    ///< Number of bits currently supported.
+    }; // triggerLocation
+
     /// Type of mask with `triggerLocation` bits.
     using triggerLocationMask = mask_t<triggerLocation>;
 
     /// Type representing the type(s) of this trigger.
     enum class triggerType: unsigned int {
-        Majority,    ///< A minimum number of close-by PMT pairs above threshold was reached.
-	MinimumBias, ///< Data collected at gate opening with no further requirement imposed.
-	// ==> add here if more are needed <==
-	NBits    ///< Number of bits currently supported.
-	}; // triggerType
+      Majority,    ///< A minimum number of close-by PMT pairs above threshold was reached.
+      MinimumBias, ///< Data collected at gate opening with no further requirement imposed.
+      // ==> add here if more are needed <==
+      NBits    ///< Number of bits currently supported.
+    }; // triggerType
 
-    /// Type of mask with `triggerType` bits. 
+    /// Type of mask with `triggerType` bits.
     using triggerTypeMask = mask_t<triggerType>;
     
-    /// Trigger window mode 
+    /// Trigger window mode
     enum class triggerWindowMode: unsigned int {
       Separated,    ///< Separated, non-overlapping contigous window
-	Overlapping,  ///< Overlaping windows
-	//==> add here if more are needed <==
-	NBits     ///< Number of Bits currently supported
-	};
+      Overlapping,  ///< Overlaping windows
+      //==> add here if more are needed <==
+      NBits     ///< Number of Bits currently supported
+    };
 
     
 
     /// Enabled gates in the trigger configuration. See register 0X00050008 in docdb SBN-doc-23778-v1
     enum class gateSelection: unsigned int {
-      GateBNB,                     ///<Enable receiving BNB early warning signal (gatedBES) to open BNB gates 
-	DriftGateBNB,                ///<Enable BNB early-early warning signal ($1D) for light out-of-time in BNB gates
-	GateNuMI,                    ///<Enable NuMI early warning signal (MIBS$74) to open NuMI gates 
-	DriftGateNuMI,               ///<Enable receiving NuMI early-early warning signal ($AD) for light out-of-time in NuMI gates
-	GateOffbeamBNB,              ///<Enable Offbeam gate for BNB 
-	DriftGateOffbeamBNB,         ///<Enable Offbeam drift gate BNB (for light out-of-time in offbeam gates)
-	GateOffbeamNuMI,             ///<Enable Offbeam gate for NuMI 
-	DriftGateOffbeamNuMI,        ///<Enable Offbeam drift gate NuMI (for light out-of-time in offbeam gates)
-	GateCalibration,             ///<Enable Calibration gate  
-	DriftGateCalibration,        ///<Enable Calibration drift gate (for light out-of-time in calibration gates)
-	MinbiasGateBNB,              ///<Enable MinBias triggers for the BNB stream 
-	MinbiasGateNuMI,             ///<Enable MinBias triggers for the NuMI stream 
-	MinbiasGateOffbeamBNB,       ///<Enabke MinBias triggers for the Offbeam BNB stream
-	MinbiasGateOffbeamNuMI,      ///<Enable MinBias triggers for the Offbeam NuMI stream
-	MinbiasGateCalibration,      ///<Enable MinBias triggers for the Calibration stream
-	MinbiasDriftGateBNB,         ///<Enable light out-of-time for MinBias triggers in BNB stream
-	MinbiasDriftGateNuMI,        ///<Enable light out-of-time for MinBias triggers in NuMI stream
-	MinbiasDriftGateOffbeamBNB,  ///<Enable light out-of-time for MinBias triggers in Offbeam BNB stream 
-	MinbiasDriftGateOffbeamNuMI, ///<Enable light out-of-time for MinBias triggers in Offbeam NuMI stream
-	MinbiasDriftGateCalibration, ///<Enable light out-of-time for MinBias triggers in Calibration stream
-	// ==> add here if more are needed <==
+      GateBNB,                     ///<Enable receiving BNB early warning signal (gatedBES) to open BNB gates
+      DriftGateBNB,                ///<Enable BNB early-early warning signal ($1D) for light out-of-time in BNB gates
+      GateNuMI,                    ///<Enable NuMI early warning signal (MIBS$74) to open NuMI gates
+      DriftGateNuMI,               ///<Enable receiving NuMI early-early warning signal ($AD) for light out-of-time in NuMI gates
+      GateOffbeamBNB,              ///<Enable Offbeam gate for BNB
+      DriftGateOffbeamBNB,         ///<Enable Offbeam drift gate BNB (for light out-of-time in offbeam gates)
+      GateOffbeamNuMI,             ///<Enable Offbeam gate for NuMI
+      DriftGateOffbeamNuMI,        ///<Enable Offbeam drift gate NuMI (for light out-of-time in offbeam gates)
+      GateCalibration,             ///<Enable Calibration gate
+      DriftGateCalibration,        ///<Enable Calibration drift gate (for light out-of-time in calibration gates)
+      MinbiasGateBNB,              ///<Enable MinBias triggers for the BNB stream
+      MinbiasGateNuMI,             ///<Enable MinBias triggers for the NuMI stream
+      MinbiasGateOffbeamBNB,       ///<Enabke MinBias triggers for the Offbeam BNB stream
+      MinbiasGateOffbeamNuMI,      ///<Enable MinBias triggers for the Offbeam NuMI stream
+      MinbiasGateCalibration,      ///<Enable MinBias triggers for the Calibration stream
+      MinbiasDriftGateBNB,         ///<Enable light out-of-time for MinBias triggers in BNB stream
+      MinbiasDriftGateNuMI,        ///<Enable light out-of-time for MinBias triggers in NuMI stream
+      MinbiasDriftGateOffbeamBNB,  ///<Enable light out-of-time for MinBias triggers in Offbeam BNB stream
+      MinbiasDriftGateOffbeamNuMI, ///<Enable light out-of-time for MinBias triggers in Offbeam NuMI stream
+      MinbiasDriftGateCalibration, ///<Enable light out-of-time for MinBias triggers in Calibration stream
+      // ==> add here if more are needed <==
       NBits
-	}; // gateSelection
+    }; // gateSelection
 
     using gateSelectionMask = mask_t<gateSelection>;
 
@@ -197,6 +203,13 @@ namespace sbn {
 
 // -----------------------------------------------------------------------------
 // ---  inline and template implementation
+// -----------------------------------------------------------------------------
+template <typename EnumType>
+auto sbn::bits::makeMask  (typename mask_t<EnumType>::maskbits_t bits) noexcept
+  -> mask_t<EnumType>
+  { return { bits }; }
+
+
 // -----------------------------------------------------------------------------
 template <typename EnumType>
 constexpr auto sbn::bits::value(EnumType bit)
@@ -267,47 +280,47 @@ inline std::string sbn::bits::bitName(triggerSource bit) {
     + std::to_string(value(bit)) + " }): unknown bit"s);
 } // sbn::bitName()
 
-// -----------------------------------------------------------------------------                                              
+// -----------------------------------------------------------------------------
 
 inline std::string sbn::bits::bitName(triggerLocation bit) {
 
   using namespace std::string_literals;
   switch (bit) {
-  case triggerLocation::CryoEast: return "Cryo E"s;
-  case triggerLocation::CryoWest: return "Cryo W"s;
-  case triggerLocation::TPCEE:    return "TPC EE"s;
-  case triggerLocation::TPCEW:    return "TPC EW"s;
-  case triggerLocation::TPCWE:    return "TPC WE"s;
-  case triggerLocation::TPCWW:    return "TPC WW"s;
-  case triggerLocation::NBits:    return "<invalid>"s;
-  } // switch 
+    case triggerLocation::CryoEast: return "Cryo E"s;
+    case triggerLocation::CryoWest: return "Cryo W"s;
+    case triggerLocation::TPCEE:    return "TPC EE"s;
+    case triggerLocation::TPCEW:    return "TPC EW"s;
+    case triggerLocation::TPCWE:    return "TPC WE"s;
+    case triggerLocation::TPCWW:    return "TPC WW"s;
+    case triggerLocation::NBits:    return "<invalid>"s;
+  } // switch
   throw std::runtime_error("sbn::bits::bitName(triggerLocation{ "s
-			   + std::to_string(value(bit)) + " }): unknown bit"s);
-} // sbn::bitName(triggerLocation)                                                                                                
+    + std::to_string(value(bit)) + " }): unknown bit"s);
+} // sbn::bitName(triggerLocation)
 
-// -----------------------------------------------------------------------------                                  
+// -----------------------------------------------------------------------------
 inline std::string sbn::bits::bitName(triggerType bit) {
 
   using namespace std::string_literals;
   switch (bit) {
-  case triggerType::Majority:    return "majority"s;
-  case triggerType::MinimumBias: return "minimum bias"s;
-  case triggerType::NBits:       return "<invalid>"s;
+    case triggerType::Majority:    return "majority"s;
+    case triggerType::MinimumBias: return "minimum bias"s;
+    case triggerType::NBits:       return "<invalid>"s;
   } // switch
   throw std::runtime_error("sbn::bits::bitName(triggerType{ "s
-			   + std::to_string(value(bit)) + " }): unknown bit"s);
+    + std::to_string(value(bit)) + " }): unknown bit"s);
 } // sbn::bitName(triggerType)
 
 inline std::string sbn::bits::bitName(triggerWindowMode bit) {
 
   using namespace std::string_literals;
   switch (bit) {
-  case sbn::bits::triggerWindowMode::Separated:    return "Separated Window"s;
-  case sbn::bits::triggerWindowMode::Overlapping:  return "Overlapping Window"s;
-  case sbn::bits::triggerWindowMode::NBits:    return "<invalid>"s;
+    case sbn::bits::triggerWindowMode::Separated:    return "Separated Window"s;
+    case sbn::bits::triggerWindowMode::Overlapping:  return "Overlapping Window"s;
+    case sbn::bits::triggerWindowMode::NBits:    return "<invalid>"s;
   } // switch
   throw std::runtime_error("sbn::bits::bitName(triggerWindowMode{ "s
-			   + std::to_string(value(bit)) + " }): unknown bit"s);
+    + std::to_string(value(bit)) + " }): unknown bit"s);
 } // triggerWindowMode
 
 
@@ -315,53 +328,48 @@ inline std::string sbn::bits::bitName(gateSelection bit) {
 
   using namespace std::string_literals;
   switch (bit) {
-  case gateSelection::GateBNB:                     return "GateBNB"s;
-  case gateSelection::DriftGateBNB:                return "DriftGateBNB"s;
-  case gateSelection::GateNuMI:                    return "GateNuMI"s;
-  case gateSelection::DriftGateNuMI:               return "DriftGateNuMI"s;
-  case gateSelection::GateOffbeamBNB:              return "GateOffbeamBNB"s;
-  case gateSelection::DriftGateOffbeamBNB:         return "DriftGateOffbeamBNB"s;
-  case gateSelection::GateOffbeamNuMI:             return "GateOffbeamNuMI"s;
-  case gateSelection::DriftGateOffbeamNuMI:        return "DriftGateOffbeamNuMI"s;
-  case gateSelection::GateCalibration:             return "GateCalibration"s;
-  case gateSelection::DriftGateCalibration:        return "DriftGateCalibration"s;
-  case gateSelection::MinbiasGateBNB:              return "MinbiasGateBNB"s;
-  case gateSelection::MinbiasGateNuMI:             return "MinbiasGateNuMI"s;
-  case gateSelection::MinbiasGateOffbeamBNB:       return "MinbiasGateOffbeamBNB"s;
-  case gateSelection::MinbiasGateOffbeamNuMI:      return "MinbiasGateOffbeamNuMI"s;
-  case gateSelection::MinbiasGateCalibration:      return "MinbiasGateCalibration"s;
-  case gateSelection::MinbiasDriftGateBNB:         return "MinbiasDriftGateBNB"s;
-  case gateSelection::MinbiasDriftGateNuMI:        return "MinbiasDriftGateNuMI"s;
-  case gateSelection::MinbiasDriftGateOffbeamBNB:  return "MinbiasDriftGateOffbeamBNB"s;
-  case gateSelection::MinbiasDriftGateOffbeamNuMI: return "MinbiasDriftGateOffbeamNuMI"s;
-  case gateSelection::MinbiasDriftGateCalibration: return "MinbiasDriftGateCalibration"s;
-  case gateSelection::NBits:                       return "NBits"s;
+    case gateSelection::GateBNB:                     return "GateBNB"s;
+    case gateSelection::DriftGateBNB:                return "DriftGateBNB"s;
+    case gateSelection::GateNuMI:                    return "GateNuMI"s;
+    case gateSelection::DriftGateNuMI:               return "DriftGateNuMI"s;
+    case gateSelection::GateOffbeamBNB:              return "GateOffbeamBNB"s;
+    case gateSelection::DriftGateOffbeamBNB:         return "DriftGateOffbeamBNB"s;
+    case gateSelection::GateOffbeamNuMI:             return "GateOffbeamNuMI"s;
+    case gateSelection::DriftGateOffbeamNuMI:        return "DriftGateOffbeamNuMI"s;
+    case gateSelection::GateCalibration:             return "GateCalibration"s;
+    case gateSelection::DriftGateCalibration:        return "DriftGateCalibration"s;
+    case gateSelection::MinbiasGateBNB:              return "MinbiasGateBNB"s;
+    case gateSelection::MinbiasGateNuMI:             return "MinbiasGateNuMI"s;
+    case gateSelection::MinbiasGateOffbeamBNB:       return "MinbiasGateOffbeamBNB"s;
+    case gateSelection::MinbiasGateOffbeamNuMI:      return "MinbiasGateOffbeamNuMI"s;
+    case gateSelection::MinbiasGateCalibration:      return "MinbiasGateCalibration"s;
+    case gateSelection::MinbiasDriftGateBNB:         return "MinbiasDriftGateBNB"s;
+    case gateSelection::MinbiasDriftGateNuMI:        return "MinbiasDriftGateNuMI"s;
+    case gateSelection::MinbiasDriftGateOffbeamBNB:  return "MinbiasDriftGateOffbeamBNB"s;
+    case gateSelection::MinbiasDriftGateOffbeamNuMI: return "MinbiasDriftGateOffbeamNuMI"s;
+    case gateSelection::MinbiasDriftGateCalibration: return "MinbiasDriftGateCalibration"s;
+    case gateSelection::NBits:                       return "NBits"s;
   } // switch
   throw std::runtime_error("sbn::bits::bitName(gateSelection{ "s
-			   + std::to_string(value(bit)) + " }): unknown bit"s);
+    + std::to_string(value(bit)) + " }): unknown bit"s);
 } // sbn::bitName()
 
-namespace icarus {
 
-  namespace trigger {
+namespace icarus::trigger {
 
-  
-    using triggerLocation = sbn::triggerLocation;
-    using triggerSource   = sbn::triggerSource;
+  using triggerLocation = sbn::triggerLocation;
+  using triggerSource   = sbn::triggerSource;
 
-    static constexpr std::size_t kEast             = sbn::bits::value<triggerLocation>(triggerLocation::CryoEast);
-    static constexpr std::size_t kWest             = sbn::bits::value<triggerLocation>(triggerLocation::CryoWest);
-    static constexpr std::size_t kNTriggerLocation = sbn::bits::value<triggerLocation>(triggerLocation::NBits);
+  static constexpr std::size_t kEast             = sbn::bits::value<triggerLocation>(triggerLocation::CryoEast);
+  static constexpr std::size_t kWest             = sbn::bits::value<triggerLocation>(triggerLocation::CryoWest);
+  static constexpr std::size_t kNTriggerLocation = sbn::bits::value<triggerLocation>(triggerLocation::NBits);
 
-    static constexpr std::size_t kBNB            = sbn::bits::value<triggerSource>(triggerSource::BNB);
-    static constexpr std::size_t kNuMI           = sbn::bits::value<triggerSource>(triggerSource::NuMI);
-    static constexpr std::size_t kOffBeamBNB     = sbn::bits::value<triggerSource>(triggerSource::OffbeamBNB);
-    static constexpr std::size_t kOffBeamNuMI    = sbn::bits::value<triggerSource>(triggerSource::OffbeamNuMI);
-    static constexpr std::size_t kCalibration    = sbn::bits::value<triggerSource>(triggerSource::Calib);
-    static constexpr std::size_t kNTriggerSource = sbn::bits::value<triggerSource>(triggerSource::NBits);
-
-  }
-
+  static constexpr std::size_t kBNB            = sbn::bits::value<triggerSource>(triggerSource::BNB);
+  static constexpr std::size_t kNuMI           = sbn::bits::value<triggerSource>(triggerSource::NuMI);
+  static constexpr std::size_t kOffBeamBNB     = sbn::bits::value<triggerSource>(triggerSource::OffbeamBNB);
+  static constexpr std::size_t kOffBeamNuMI    = sbn::bits::value<triggerSource>(triggerSource::OffbeamNuMI);
+  static constexpr std::size_t kCalibration    = sbn::bits::value<triggerSource>(triggerSource::Calib);
+  static constexpr std::size_t kNTriggerSource = sbn::bits::value<triggerSource>(triggerSource::NBits);
 
 }
 
