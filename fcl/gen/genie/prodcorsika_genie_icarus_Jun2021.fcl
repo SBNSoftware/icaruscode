@@ -35,8 +35,6 @@ source:
   firstEvent:      1           # number of first event in the file
 }
 
-#include "use_overburden_geometry_icarus.fcl"
-
 # Define and configure some modules to do work on each event.
 # First modules are defined; they are scheduled later.
 # Modules are grouped by type.
