@@ -47,8 +47,22 @@ namespace sbn {
     // --- BEGIN -- Generic bit functions --------------------------------------
     /// @name Generic bit functions
     /// @{
+    //template <typename EnumType>
+    //using mask_t = std::underlying_type_t<EnumType>;
+    
     template <typename EnumType>
-    using mask_t = std::underlying_type_t<EnumType>;
+    struct mask_t {
+      using bits_t = EnumType; ///< Enumeration type of the bits.
+      using maskbits_t = std::underlying_type_t<EnumType>; ///< Bit data type.
+      maskbits_t bits { 0 };
+      operator maskbits_t() const { return bits; }
+    }; // mask_t
+
+    /// Converts a integral type into a mask.
+    template <typename EnumType>
+    mask_t<EnumType> makeMask
+      (typename mask_t<EnumType>::maskbits_t bits) noexcept;
+    
     
     /// Returns the value of specified `bit` (conversion like `enum` to `int`).
     template <typename EnumType>
@@ -86,24 +100,42 @@ namespace sbn {
       NuMI,        ///< Type of beam: NuMI.
       OffbeamBNB,  ///< Type of Offbeam: BNB
       OffbeamNuMI, ///< Type of Offbeam: NuMI
-      Calibration, ///< Type of source: calibration trigger
+      Calib,     ///< Type of Offbeam: Calibration
       // ==> add here if more are needed <==
       NBits    ///< Number of bits currently supported.
     }; // triggerSource
+
+    /// Type of mask with `triggerSource` bits.
+    using triggerSourceMask = mask_t<triggerSource>;
+
     
-    /// Returns a mnemonic short name of the beam type.
-    std::string bitName(triggerSource bit);
-
-
-    /// Location of the trigger inside the detector 
+    /// Location or locations generating a trigger.
     enum class triggerLocation: unsigned int {
-      CryoEast,   ///< Identification of the East cryostat 
-      CryoWest,   ///< Identification of the West cryostat 
+      CryoEast,    ///< A trigger happened in the east cryostat.
+      CryoWest,    ///< A trigger happened in the west cryostat.
+      TPCEE,       ///< A trigger happened in the east cryostat, east TPC.
+      TPCEW,       ///< A trigger happened in the east cryostat, west TPC.
+      TPCWE,       ///< A trigger happened in the west cryostat, east TPC.
+      TPCWW,       ///< A trigger happened in the west cryostat, west TPC.
       // ==> add here if more are needed <==
-      NBits       ///< Number of Bits currently supported 
-    }; // triggerLocation 
+      NBits    ///< Number of bits currently supported.
+    }; // triggerLocation
 
-    /// Trigger window mode 
+    /// Type of mask with `triggerLocation` bits.
+    using triggerLocationMask = mask_t<triggerLocation>;
+
+    /// Type representing the type(s) of this trigger.
+    enum class triggerType: unsigned int {
+      Majority,    ///< A minimum number of close-by PMT pairs above threshold was reached.
+      MinimumBias, ///< Data collected at gate opening with no further requirement imposed.
+      // ==> add here if more are needed <==
+      NBits    ///< Number of bits currently supported.
+    }; // triggerType
+
+    /// Type of mask with `triggerType` bits.
+    using triggerTypeMask = mask_t<triggerType>;
+    
+    /// Trigger window mode
     enum class triggerWindowMode: unsigned int {
       Separated,    ///< Separated, non-overlapping contigous window
       Overlapping,  ///< Overlaping windows
@@ -111,35 +143,44 @@ namespace sbn {
       NBits     ///< Number of Bits currently supported
     };
 
-    /// Returns a mnemonic short name for the trigger window mode.
-    std::string bitName(triggerWindowMode bit);
+    
 
     /// Enabled gates in the trigger configuration. See register 0X00050008 in docdb SBN-doc-23778-v1
     enum class gateSelection: unsigned int {
-      GateBNB,                     ///<Enable receiving BNB early warning signal (gatedBES) to open BNB gates 
+      GateBNB,                     ///<Enable receiving BNB early warning signal (gatedBES) to open BNB gates
       DriftGateBNB,                ///<Enable BNB early-early warning signal ($1D) for light out-of-time in BNB gates
-      GateNuMI,                    ///<Enable NuMI early warning signal (MIBS$74) to open NuMI gates 
+      GateNuMI,                    ///<Enable NuMI early warning signal (MIBS$74) to open NuMI gates
       DriftGateNuMI,               ///<Enable receiving NuMI early-early warning signal ($AD) for light out-of-time in NuMI gates
-      GateOffbeamBNB,              ///<Enable Offbeam gate for BNB 
+      GateOffbeamBNB,              ///<Enable Offbeam gate for BNB
       DriftGateOffbeamBNB,         ///<Enable Offbeam drift gate BNB (for light out-of-time in offbeam gates)
-      GateOffbeamNuMI,             ///<Enable Offbeam gate for NuMI 
+      GateOffbeamNuMI,             ///<Enable Offbeam gate for NuMI
       DriftGateOffbeamNuMI,        ///<Enable Offbeam drift gate NuMI (for light out-of-time in offbeam gates)
-      GateCalibration,             ///<Enable Calibration gate  
+      GateCalibration,             ///<Enable Calibration gate
       DriftGateCalibration,        ///<Enable Calibration drift gate (for light out-of-time in calibration gates)
-      MinbiasGateBNB,              ///<Enable MinBias triggers for the BNB stream 
-      MinbiasGateNuMI,             ///<Enable MinBias triggers for the NuMI stream 
+      MinbiasGateBNB,              ///<Enable MinBias triggers for the BNB stream
+      MinbiasGateNuMI,             ///<Enable MinBias triggers for the NuMI stream
       MinbiasGateOffbeamBNB,       ///<Enabke MinBias triggers for the Offbeam BNB stream
       MinbiasGateOffbeamNuMI,      ///<Enable MinBias triggers for the Offbeam NuMI stream
       MinbiasGateCalibration,      ///<Enable MinBias triggers for the Calibration stream
       MinbiasDriftGateBNB,         ///<Enable light out-of-time for MinBias triggers in BNB stream
       MinbiasDriftGateNuMI,        ///<Enable light out-of-time for MinBias triggers in NuMI stream
-      MinbiasDriftGateOffbeamBNB,  ///<Enable light out-of-time for MinBias triggers in Offbeam BNB stream 
+      MinbiasDriftGateOffbeamBNB,  ///<Enable light out-of-time for MinBias triggers in Offbeam BNB stream
       MinbiasDriftGateOffbeamNuMI, ///<Enable light out-of-time for MinBias triggers in Offbeam NuMI stream
       MinbiasDriftGateCalibration, ///<Enable light out-of-time for MinBias triggers in Calibration stream
       // ==> add here if more are needed <==
       NBits
     }; // gateSelection
 
+    using gateSelectionMask = mask_t<gateSelection>;
+
+    /// Returns a mnemonic short name of the beam type.
+    std::string bitName(triggerSource bit);
+    /// Returns a mnemonic short name of the trigger location.
+    std::string bitName(triggerLocation bit);
+    /// Returns a mnemonic short name of the trigger type.
+    std::string bitName(triggerType bit);
+    /// Returns a mnemonic short name for the trigger window mode.
+    std::string bitName(triggerWindowMode bit);
     /// Returns a mnemonic short name for the trigger window mode.
     std::string bitName(gateSelection bit);
 
@@ -149,7 +190,11 @@ namespace sbn {
   } // namespace bits
   
   using bits::triggerSource; // import symbol
+  using bits::triggerSourceMask;
+  using bits::triggerType;
+  using bits::triggerTypeMask;
   using bits::triggerLocation;
+  using bits::triggerLocationMask;
   using bits::triggerWindowMode;
   using bits::gateSelection;
   
@@ -158,6 +203,13 @@ namespace sbn {
 
 // -----------------------------------------------------------------------------
 // ---  inline and template implementation
+// -----------------------------------------------------------------------------
+template <typename EnumType>
+auto sbn::bits::makeMask  (typename mask_t<EnumType>::maskbits_t bits) noexcept
+  -> mask_t<EnumType>
+  { return { bits }; }
+
+
 // -----------------------------------------------------------------------------
 template <typename EnumType>
 constexpr auto sbn::bits::value(EnumType bit)
@@ -171,7 +223,7 @@ constexpr auto sbn::bits::mask(EnumType bit, OtherBits... otherBits)
 {
   unsigned int m { 1U << value(bit) };
   if constexpr(sizeof...(OtherBits) > 0U) m |= mask(otherBits...);
-  return m;
+  return { m };
 } // sbn::mask()
 
 
@@ -221,13 +273,43 @@ inline std::string sbn::bits::bitName(triggerSource bit) {
     case triggerSource::NuMI:        return "NuMI"s;
     case triggerSource::OffbeamBNB:  return "OffbeamBNB"s;
     case triggerSource::OffbeamNuMI: return "OffbeamNuMI"s;
-    case triggerSource::Calibration: return "Calibration"s;
+    case triggerSource::Calib:       return "Calib"s;
     case triggerSource::NBits:       return "<invalid>"s;
   } // switch
   throw std::runtime_error("sbn::bits::bitName(triggerSource{ "s
     + std::to_string(value(bit)) + " }): unknown bit"s);
 } // sbn::bitName()
 
+// -----------------------------------------------------------------------------
+
+inline std::string sbn::bits::bitName(triggerLocation bit) {
+
+  using namespace std::string_literals;
+  switch (bit) {
+    case triggerLocation::CryoEast: return "Cryo E"s;
+    case triggerLocation::CryoWest: return "Cryo W"s;
+    case triggerLocation::TPCEE:    return "TPC EE"s;
+    case triggerLocation::TPCEW:    return "TPC EW"s;
+    case triggerLocation::TPCWE:    return "TPC WE"s;
+    case triggerLocation::TPCWW:    return "TPC WW"s;
+    case triggerLocation::NBits:    return "<invalid>"s;
+  } // switch
+  throw std::runtime_error("sbn::bits::bitName(triggerLocation{ "s
+    + std::to_string(value(bit)) + " }): unknown bit"s);
+} // sbn::bitName(triggerLocation)
+
+// -----------------------------------------------------------------------------
+inline std::string sbn::bits::bitName(triggerType bit) {
+
+  using namespace std::string_literals;
+  switch (bit) {
+    case triggerType::Majority:    return "majority"s;
+    case triggerType::MinimumBias: return "minimum bias"s;
+    case triggerType::NBits:       return "<invalid>"s;
+  } // switch
+  throw std::runtime_error("sbn::bits::bitName(triggerType{ "s
+    + std::to_string(value(bit)) + " }): unknown bit"s);
+} // sbn::bitName(triggerType)
 
 inline std::string sbn::bits::bitName(triggerWindowMode bit) {
 
@@ -273,31 +355,25 @@ inline std::string sbn::bits::bitName(gateSelection bit) {
 } // sbn::bitName()
 
 
-// -----------------------------------------------------------------------------
+namespace icarus::trigger {
 
-namespace icarus {
+  using triggerLocation = sbn::triggerLocation;
+  using triggerSource   = sbn::triggerSource;
 
-  namespace trigger {
+  static constexpr std::size_t kEast             = sbn::bits::value<triggerLocation>(triggerLocation::CryoEast);
+  static constexpr std::size_t kWest             = sbn::bits::value<triggerLocation>(triggerLocation::CryoWest);
+  static constexpr std::size_t kNTriggerLocation = sbn::bits::value<triggerLocation>(triggerLocation::NBits);
 
-  
-    using triggerLocation = sbn::triggerLocation;
-    using triggerSource   = sbn::triggerSource;
-
-    static constexpr std::size_t kEast             = sbn::bits::value<triggerLocation>(triggerLocation::CryoEast);
-    static constexpr std::size_t kWest             = sbn::bits::value<triggerLocation>(triggerLocation::CryoWest);
-    static constexpr std::size_t kNTriggerLocation = sbn::bits::value<triggerLocation>(triggerLocation::NBits);
-
-    static constexpr std::size_t kBNB            = sbn::bits::value<triggerSource>(triggerSource::BNB);
-    static constexpr std::size_t kNuMI           = sbn::bits::value<triggerSource>(triggerSource::NuMI);
-    static constexpr std::size_t kOffBeamBNB     = sbn::bits::value<triggerSource>(triggerSource::OffbeamBNB);
-    static constexpr std::size_t kOffBeamNuMI    = sbn::bits::value<triggerSource>(triggerSource::OffbeamNuMI);
-    static constexpr std::size_t kCalibration    = sbn::bits::value<triggerSource>(triggerSource::Calibration);
-    static constexpr std::size_t kNTriggerSource = sbn::bits::value<triggerSource>(triggerSource::NBits);
-
-  }
-
+  static constexpr std::size_t kBNB            = sbn::bits::value<triggerSource>(triggerSource::BNB);
+  static constexpr std::size_t kNuMI           = sbn::bits::value<triggerSource>(triggerSource::NuMI);
+  static constexpr std::size_t kOffBeamBNB     = sbn::bits::value<triggerSource>(triggerSource::OffbeamBNB);
+  static constexpr std::size_t kOffBeamNuMI    = sbn::bits::value<triggerSource>(triggerSource::OffbeamNuMI);
+  static constexpr std::size_t kCalibration    = sbn::bits::value<triggerSource>(triggerSource::Calib);
+  static constexpr std::size_t kNTriggerSource = sbn::bits::value<triggerSource>(triggerSource::NBits);
 
 }
 
-#endif // SBNOBJ_COMMON_TRIGGER_BEAMBITS_H
 
+// -----------------------------------------------------------------------------
+
+#endif // SBNOBJ_COMMON_TRIGGER_BEAMBITS_H

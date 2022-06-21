@@ -54,7 +54,7 @@ icarus_stage0_producers:
 
   daqCRT:                         @local::crtdaq_icarus
 
-  daqTrigger:                     @local::decodeTriggerV2
+  daqTrigger:                     @local::decodeTrigger
 
   ### calwire producers
   decon1droi:                     @local::icarus_decon1droi

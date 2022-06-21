@@ -114,20 +114,41 @@ icarus::TriggerConfiguration icarus::TriggerConfigurationExtractor::extract
   (fhicl::ParameterSet const& pset) const
 {
   
-  icarus::TriggerConfiguration config;
+  std::optional<icarus::TriggerConfiguration> config;
   
   for (std::string const& key: pset.get_names()) {
     
-    std::optional<fhicl::ParameterSet> boardConfig
+    std::optional<fhicl::ParameterSet> triggerConfigPset
       = readTriggerConfig(pset, key);
     
-    if (!boardConfig) continue;
+    if (!triggerConfigPset) continue;
     
-    config = extractTriggerConfiguration(*boardConfig);
+    std::optional triggerConfig
+      = extractTriggerConfiguration(*triggerConfigPset);
+    
+    if (config) {
+      throw cet::exception{ "TriggerConfigurationExtractor" }
+        << "Found multiple configurations for the trigger:"
+        << "\n" << std::string(80, '-') << "\n"
+        << *config
+        << "\n" << std::string(80, '-') << "\n"
+        << "and"
+        << "\n" << std::string(80, '-') << "\n"
+        << *triggerConfig
+        << "\n" << std::string(80, '-') << "\n"
+        ;
+    }
+    
+    config = std::move(triggerConfig);
     
   } // for
+  if (!config) {
+    throw cet::exception{ "TriggerConfigurationExtractor" }
+      << "No trigger configuration found (fragment type: '"
+      << fExpectedFragmentType << "').\n";
+  }
   
-  return config;
+  return *config;
 } // icarus::PMTconfigurationExtractor::extract()
 
 
@@ -177,8 +198,8 @@ auto icarus::TriggerConfigurationExtractor::extractTriggerConfiguration
   rc.tpcTriggerDelay        
     = spexiParams.get<unsigned int>("TPCTriggerDelay.value");
 
-  sbn::bits::mask_t<sbn::gateSelection> gateSelection          
-    = std::stoul( spexiParams.get<std::string>("GateSelection.value"), nullptr, 16);
+  auto gateSelection = sbn::bits::makeMask<sbn::gateSelection>         
+    (std::stoul( spexiParams.get<std::string>("GateSelection.value"), nullptr, 16));
 
   // Read the prescale configuraton as string for now 
   auto prescaleMinBiasBeam = 
@@ -294,8 +315,6 @@ std::optional<fhicl::ParameterSet>
 icarus::TriggerConfigurationExtractor::readTriggerConfig
   (fhicl::ParameterSet const& pset, std::string const& key) const
 {
-  static std::string const ExpectedFragmentType = "ICARUSTriggerUDP";
-  
   std::optional<fhicl::ParameterSet> config;
   
   do { // fake loop for fast exit
@@ -309,7 +328,7 @@ icarus::TriggerConfigurationExtractor::readTriggerConfig
     std::string fragmentType;
     if (!boardPSet.get_if_present("daq.fragment_receiver.generator", fragmentType))
       break;
-    if (fragmentType != ExpectedFragmentType) break;
+    if (fragmentType != fExpectedFragmentType) break;
     
     config.emplace(std::move(boardPSet)); // success
   } while (false);

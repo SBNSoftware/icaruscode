@@ -9,6 +9,5 @@ install_source( EXTRAS ${fcl_files} )
 
 # add subdirectories
 add_subdirectory(FlashMatchSimple)
-add_subdirectory(overburden)
 add_subdirectory(archive)
 

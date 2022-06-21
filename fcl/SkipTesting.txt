@@ -13,6 +13,9 @@ g4_only_energydeposits.fcl
 detectorclocks_icarus_run5837pre09_22_03_01.fcl
 detectorclocks_icarus_run5252.fcl
 services_compat_icarus-v09_18_00-v09_24_02_02.fcl
+services_compat_icarus_v3.fcl
+services_compat_no_overburden_icarus_v3.fcl
+services_compat_overburden_icarus_v3.fcl
 
 
 ################################################################################

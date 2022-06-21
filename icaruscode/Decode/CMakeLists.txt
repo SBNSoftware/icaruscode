@@ -6,6 +6,7 @@ art_make(
           EXCLUDE
                         TriggerConfigurationExtraction_module.cc
                         PMTconfigurationExtraction_module.cc
+                        DumpTriggerConfiguration_module.cc
                         DumpPMTconfiguration_module.cc
                         DumpArtDAQfragments_module.cc
                         DaqDecoderICARUSPMT_module.cc
@@ -75,6 +76,13 @@ simple_plugin(TriggerConfigurationExtraction module
 
 simple_plugin(DumpPMTconfiguration module
   sbnobj_Common_PMT_Data
+  ${MF_MESSAGELOGGER}
+  fhiclcpp
+  cetlib_except
+  )
+
+simple_plugin(DumpTriggerConfiguration module
+  icaruscode_Decode_DataProducts
   ${MF_MESSAGELOGGER}
   fhiclcpp
   cetlib_except
