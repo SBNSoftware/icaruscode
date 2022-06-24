@@ -1,0 +1,6 @@
+higgsM: 0.10
+physics.producers.generator.Flux.KDIFandBeamline: true
+physics.producers.generator.Decay.ReferenceHiggsMixing: 2e-4
+physics.producers.generator.Flux.MixingAngle: 2e-4
+
+#include "set_higgsM.fcl"
