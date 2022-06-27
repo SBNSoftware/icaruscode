@@ -51,6 +51,7 @@
 #include "larcoreobj/SimpleTypesAndConstants/PhysicalConstants.h"
 #include "lardataobj/AnalysisBase/ParticleID.h"
 #include "larsim/MCCheater/BackTrackerService.h"
+#include "icaruscode/Decode/DataProducts/ExtraTriggerInfo.h"
 
 // ROOT
 #include "TVector3.h"
@@ -85,11 +86,19 @@ namespace icarus {
   private:
 
     // Params got from fcl file.......
-    art::InputTag fTpcTrackModuleLabel; ///< name of track producer
-    //std::vector<art::InputTag> fTpcTrackModuleLabel; ///< name of track producer
-    art::InputTag fCrtHitModuleLabel;   ///< name of crt producer
-
+    //    art::InputTag fTpcTrackModuleLabel; ///< name of track producer
+    std::vector<art::InputTag> fTpcTrackModuleLabel; ///< name of track producer
+    art::InputTag              fCrtHitModuleLabel;   ///< name of crt producer
+    art::InputTag              fTriggerLabel;        ///< labels for trigger
     CRTT0MatchAlg t0Alg;
+
+    //add trigger data product vars
+    unsigned int m_gate_type;
+    std::string  m_gate_name;
+    uint64_t     m_trigger_timestamp;
+    uint64_t     m_gate_start_timestamp;
+    uint64_t     m_trigger_gate_diff;
+    uint64_t     m_gate_crt_diff;
 
   }; // class CRTT0Matching
 
@@ -112,10 +121,10 @@ namespace icarus {
   void CRTT0Matching::reconfigure(fhicl::ParameterSet const & p)
   {
 
-    fTpcTrackModuleLabel = (p.get<art::InputTag> ("TpcTrackModuleLabel"));
-    // fTpcTrackModuleLabel = p.get< std::vector<art::InputTag>>("TpcTrackModuleLabel",std::vector<art::InputTag>() = {"pandoraTrackGausCryoE"});
-    fCrtHitModuleLabel   = (p.get<art::InputTag> ("CrtHitModuleLabel")); 
-
+    //fTpcTrackModuleLabel = (p.get<art::InputTag> ("TpcTrackModuleLabel"));
+    fTpcTrackModuleLabel = p.get< std::vector<art::InputTag>>("TpcTrackModuleLabel", {"pandoraTrackGausCryoE"});
+    fCrtHitModuleLabel   = p.get<art::InputTag> ("CrtHitModuleLabel", "crthit"); 
+    fTriggerLabel        = p.get<art::InputTag>("TriggerLabel","daqTrigger");
   } // CRTT0Matching::reconfigure()
 
 
@@ -132,6 +141,28 @@ namespace icarus {
     std::unique_ptr< art::Assns<recob::Track, anab::T0> > Trackassn( new art::Assns<recob::Track, anab::T0>);
     std::unique_ptr< art::Assns <sbn::crt::CRTHit, anab::T0> > t0_crthit_assn( new art::Assns<sbn::crt::CRTHit, anab::T0> );
 
+    //add trigger info
+    if( !fTriggerLabel.empty() ) {
+
+      art::Handle<sbn::ExtraTriggerInfo> trigger_handle;
+      event.getByLabel( fTriggerLabel, trigger_handle );
+      if( trigger_handle.isValid() ) {
+	sbn::triggerSource bit = trigger_handle->sourceType;
+	m_gate_type = (unsigned int)bit;
+	m_gate_name = bitName(bit);
+	m_trigger_timestamp = trigger_handle->triggerTimestamp;
+	m_gate_start_timestamp =  trigger_handle->beamGateTimestamp;
+	m_trigger_gate_diff = trigger_handle->triggerTimestamp - trigger_handle->beamGateTimestamp;
+
+      }
+      else{
+	mf::LogError("CRTT0Matching:") << "No raw::Trigger associated to label: " << fTriggerLabel.label() << "\n" ;
+      }
+    }
+    else {
+      mf::LogError("CRTT0Matching:") << "Trigger Data product " << fTriggerLabel.label() << " not found!\n" ;
+    }
+
     // Retrieve CRT hit list
     art::Handle<std::vector<sbn::crt::CRTHit>> crtListHandle;
     std::vector<art::Ptr<sbn::crt::CRTHit>> crtList;
@@ -144,13 +175,12 @@ namespace icarus {
     }
 
     // Retrieve track list
-    //for(const auto& trackLabel : fTpcTrackModuleLabel){
+    for(const auto& trackLabel : fTpcTrackModuleLabel){
       art::Handle< std::vector<recob::Track> > trackListHandle;
       std::vector<art::Ptr<recob::Track> > trackList;
-      //if (event.getByLabel(trackLabel,trackListHandle))
-      if (event.getByLabel(fTpcTrackModuleLabel,trackListHandle))
-	art::fill_ptr_vector(trackList, trackListHandle);   
-      
+      if (event.getByLabel(trackLabel,trackListHandle))
+      	art::fill_ptr_vector(trackList, trackListHandle);   
+      //  if (event.getByLabel(fTpcTrackModuleLabel,trackListHandle))
       //    std::cout << "crtlabel: " << fCrtHitModuleLabel << " , Tpctrklabel: " << fTpcTrackModuleLabel << std::endl;
       mf::LogInfo("CRTT0Matching")
 	<<"Number of reconstructed tracks = "<<trackList.size()<<"\n"
@@ -159,13 +189,15 @@ namespace icarus {
       if (trackListHandle.isValid() && crtListHandle.isValid() ){
 	
 	auto const detProp = art::ServiceHandle<detinfo::DetectorPropertiesService const>()->DataFor(event);
-	
+	art::FindManyP<recob::Hit> findManyHits(trackListHandle, event, trackLabel);
 	// Loop over all the reconstructed tracks 
 	for(size_t track_i = 0; track_i < trackList.size(); track_i++) {
-	  
+		  std::vector<art::Ptr<recob::Hit>> hits = findManyHits.at(trackList[track_i]->ID());
 	  // std::pair<double, double> matchedTime = t0Alg.T0AndDCAFromCRTHits(detProp, *trackList[track_i], crtHits, event);
-	  matchCand closest = t0Alg.GetClosestCRTHit(detProp, *trackList[track_i], crtHits, event);
-	  
+	  matchCand closest = t0Alg.GetClosestCRTHit(detProp, *trackList[track_i], hits, crtHits,  m_gate_start_timestamp, false);
+	  // std::vector <matchCand> closestvec = t0Alg.GetClosestCRTHit(detProp, *trackList[track_i], crtHits, event);
+	  // matchCand closest = closestvec.back();	  
+
 	  if(closest.dca >=0 ){
 	    mf::LogInfo("CRTT0Matching")
 	      <<"Matched time = "<<closest.t0<<" [us] to track "<<trackList[track_i]->ID()<<" with DCA = "<<closest.dca;
@@ -192,7 +224,7 @@ namespace icarus {
 	
       } // Validity check
 
-      //    } // all track labels in a vector 
+    } // all track labels in a vector 
     event.put(std::move(T0col));
     event.put(std::move(Trackassn));
     event.put(std::move(t0_crthit_assn));

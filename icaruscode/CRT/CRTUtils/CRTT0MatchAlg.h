@@ -74,6 +74,8 @@ namespace icarus{
   class CRTT0MatchAlg {
   public:
 
+
+    /**
     struct Config {
       using Name = fhicl::Name;
       using Comment = fhicl::Comment;
@@ -93,7 +95,7 @@ namespace icarus{
       fhicl::Atom<int> TSMode {
         Name("TSMode"),
 	  Comment(""),
-	  1 /* Value for SBND */
+	  1 // Value for SBND 
 	  }; 
 
       fhicl::Atom<double> TimeCorrection {
@@ -107,13 +109,16 @@ namespace icarus{
 	  Comment(""),
         100.
 	  };
-
+      */
+      /**
       fhicl::Atom<art::InputTag> TPCTrackLabel {
         Name("TPCTrackLabel"),
 	  Comment("")
 	  };
+      */
 
 
+    /*
       fhicl::Atom<int> DirMethod {
 	Name("DirMethod"),
           Comment("1=endpoints (default), 2=average;  must use endpoints if applying SCE position corrections"),
@@ -155,30 +160,45 @@ namespace icarus{
           Comment("Only consider CRT hits with position uncertainties below this value (cm)"),
           1000.0
 	  };
-
+    */
       /* fhicl::Atom<double> DistEndpointAVedge { */
       /*   Name("DistEndpointAVedge"), */
       /*     Comment("Max distance allowed from track endpoint to edge of FV along track extrapolation to CRT hit (cm)"), */
       /*     200.0 */
       /*   }; */
 
+    /*
+      fhicl::Sequence<art::InputTag> TPCTrackLabel {
+	Name("TPCTrackLabel"), 
+	  {"pandoraTrackGausCryoE", "pandoraTrackGausCryoW"}
+      };
+
     };
-          
+    */     
 
-    CRTT0MatchAlg(const Config& config);
-    CRTT0MatchAlg(const Config& config, geo::GeometryCore const *GeometryService, spacecharge::SpaceCharge  const* SCE);
-
+    //    CRTT0MatchAlg(const Config& config);
+    //CRTT0MatchAlg(const Config& config, geo::GeometryCore const *GeometryService, spacecharge::SpaceCharge  const* SCE);
+    /*
   CRTT0MatchAlg(const fhicl::ParameterSet& pset) :
     CRTT0MatchAlg(fhicl::Table<Config>(pset, {})()) {}
     
   CRTT0MatchAlg(const fhicl::ParameterSet& pset, geo::GeometryCore const *GeometryService, spacecharge::SpaceCharge const* SCE) :
     CRTT0MatchAlg(fhicl::Table<Config>(pset, {})(), GeometryService, SCE) {}
+   
+
+  CRTT0MatchAlg(const fhicl::ParameterSet& pset) :
+    CRTT0MatchAlg() {}
     
+  CRTT0MatchAlg(const fhicl::ParameterSet& pset, geo::GeometryCore const *GeometryService, spacecharge::SpaceCharge const* SCE) :
+    CRTT0MatchAlg(pset, GeometryService, SCE) {}
+    */
+
+    explicit CRTT0MatchAlg(const fhicl::ParameterSet& pset);
     CRTT0MatchAlg();
     
-    void reconfigure(const Config& config);
-    
-
+    //void reconfigure(const Config& config);
+     
+    void reconfigure(const fhicl::ParameterSet& pset);
 
     // Utility function that determines the possible x range of a track
     std::pair<double, double> TrackT0Range(detinfo::DetectorPropertiesData const& detProp,
@@ -189,39 +209,56 @@ namespace icarus{
                                  TVector3 trackPos, TVector3 trackDir, sbn::crt::CRTHit crtHit, int driftDirection, double t0);
 
     std::pair<TVector3, TVector3> TrackDirectionAverage(recob::Track track, double frac);
-    std::pair<TVector3, TVector3> TrackDirection(detinfo::DetectorPropertiesData const& detProp,recob::Track track, double frac, double CRTtime, int driftDirection);
+
+    std::pair<TVector3, TVector3> TrackDirection(detinfo::DetectorPropertiesData const& detProp,recob::Track track, 
+						 double frac, double CRTtime, int driftDirection);
+
     std::pair<TVector3, TVector3> TrackDirectionAverageFromPoints(recob::Track track, double frac);
 
     // Keeping ClosestCRTHit function for backwards compatibility
     // *** use GetClosestCRTHit instead
     std::pair<sbn::crt::CRTHit, double> ClosestCRTHit(detinfo::DetectorPropertiesData const& detProp,
-						      recob::Track tpcTrack, std::pair<double, double> t0MinMax, std::vector<sbn::crt::CRTHit> crtHits, int driftDirection);
+						      recob::Track tpcTrack, std::pair<double, double> t0MinMax, 
+						      std::vector<sbn::crt::CRTHit> crtHits, int driftDirection, uint64_t trigger_timestamp);
+
+    std::vector<std::pair<sbn::crt::CRTHit, double> >ClosestCRTHit(detinfo::DetectorPropertiesData const& detProp,
+								   recob::Track tpcTrack, std::vector<sbn::crt::CRTHit> crtHits, 
+								   const art::Event& event, uint64_t trigger_timestamp);
+
     std::pair<sbn::crt::CRTHit, double> ClosestCRTHit(detinfo::DetectorPropertiesData const& detProp,
-						      recob::Track tpcTrack, std::vector<sbn::crt::CRTHit> crtHits, const art::Event& event);
-    std::pair<sbn::crt::CRTHit, double> ClosestCRTHit(detinfo::DetectorPropertiesData const& detProp,
-						      recob::Track tpcTrack, std::vector<art::Ptr<recob::Hit>> hits, std::vector<sbn::crt::CRTHit> crtHits);
+						      recob::Track tpcTrack, std::vector<art::Ptr<recob::Hit>> hits, 
+						      std::vector<sbn::crt::CRTHit> crtHits, uint64_t trigger_timestamp);
 
     // Return the closest CRT hit to a TPC track and the DCA
     matchCand GetClosestCRTHit(detinfo::DetectorPropertiesData const& detProp,
-			       recob::Track tpcTrack, std::pair<double, double> t0MinMax, std::vector<sbn::crt::CRTHit> crtHits, int driftDirection);
+			       recob::Track tpcTrack, std::pair<double, double> t0MinMax, 
+			       std::vector<sbn::crt::CRTHit> crtHits, int driftDirection, uint64_t& trigger_timestamp, bool fIsData);
+
+    std::vector<matchCand> GetClosestCRTHit(detinfo::DetectorPropertiesData const& detProp,
+					    recob::Track tpcTrack, std::vector<sbn::crt::CRTHit> crtHits, 
+					    const art::Event& event, uint64_t trigger_timestamp);
 
     matchCand GetClosestCRTHit(detinfo::DetectorPropertiesData const& detProp,
-			       recob::Track tpcTrack, std::vector<sbn::crt::CRTHit> crtHits, const art::Event& event);
-
-    matchCand GetClosestCRTHit(detinfo::DetectorPropertiesData const& detProp,
-			       recob::Track tpcTrack, std::vector<art::Ptr<recob::Hit>> hits, std::vector<sbn::crt::CRTHit> crtHits);
+			       recob::Track tpcTrack, std::vector<art::Ptr<recob::Hit>> hits, 
+			       std::vector<sbn::crt::CRTHit> crtHits, uint64_t trigger_timestamp, bool fIsData);
 
     // Match track to T0 from CRT hits
+    std::vector<double> T0FromCRTHits(detinfo::DetectorPropertiesData const& detProp,
+				      recob::Track tpcTrack, std::vector<sbn::crt::CRTHit> crtHits, 
+				      const art::Event& event, uint64_t trigger_timestamp);
+
     double T0FromCRTHits(detinfo::DetectorPropertiesData const& detProp,
-			 recob::Track tpcTrack, std::vector<sbn::crt::CRTHit> crtHits, const art::Event& event);
-    double T0FromCRTHits(detinfo::DetectorPropertiesData const& detProp,
-			 recob::Track tpcTrack, std::vector<art::Ptr<recob::Hit>> hits, std::vector<sbn::crt::CRTHit> crtHits);
+			 recob::Track tpcTrack, std::vector<art::Ptr<recob::Hit>> hits, 
+			 std::vector<sbn::crt::CRTHit> crtHits, uint64_t& trigger_timestamp);
     
     // Match track to T0 from CRT hits, also return the DCA
+    std::vector<std::pair<double, double> >  T0AndDCAFromCRTHits(detinfo::DetectorPropertiesData const& detProp,
+								 recob::Track tpcTrack, std::vector<sbn::crt::CRTHit> crtHits, 
+								 const art::Event& event, uint64_t trigger_timestamp);
+
     std::pair<double, double>  T0AndDCAFromCRTHits(detinfo::DetectorPropertiesData const& detProp,
-						   recob::Track tpcTrack, std::vector<sbn::crt::CRTHit> crtHits, const art::Event& event);
-    std::pair<double, double>  T0AndDCAFromCRTHits(detinfo::DetectorPropertiesData const& detProp,
-						   recob::Track tpcTrack, std::vector<art::Ptr<recob::Hit>> hits, std::vector<sbn::crt::CRTHit> crtHits);
+						   recob::Track tpcTrack, std::vector<art::Ptr<recob::Hit>> hits, 
+						   std::vector<sbn::crt::CRTHit> crtHits, uint64_t& trigger_timestamp);
  
     // Simple distance of closest approach between infinite track and centre of hit
     double SimpleDCA(sbn::crt::CRTHit hit, TVector3 start, TVector3 direction);
@@ -245,18 +282,17 @@ namespace icarus{
     double fMinTrackLength;
     double fTrackDirectionFrac;
     double fDistanceLimit;
-    int fTSMode;
+    int    fTSMode;
     double fTimeCorrection;
-    int fDirMethod;
-    bool fSCEposCorr;
-    bool fDCAuseBox;
-    bool fDCAoverLength;
+    int    fDirMethod;
+    bool   fSCEposCorr;
+    bool   fDCAuseBox;
+    bool   fDCAoverLength;
     double fDoverLLimit;
     double fPEcut;
     double fMaxUncert;
     //    double fDistEndpointAVedge;
-
-    art::InputTag fTPCTrackLabel;
+    std::vector<art::InputTag> fTPCTrackLabel;
 
   };
 

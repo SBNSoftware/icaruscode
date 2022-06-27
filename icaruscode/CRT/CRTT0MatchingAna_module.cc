@@ -37,6 +37,7 @@
 #include "canvas/Utilities/Exception.h"
 #include "larsim/MCCheater/BackTrackerService.h"
 #include "larsim/MCCheater/ParticleInventoryService.h"
+#include "icaruscode/Decode/DataProducts/ExtraTriggerInfo.h"
 
 // Utility libraries
 #include "messagefacility/MessageLogger/MessageLogger.h"
@@ -61,7 +62,8 @@ namespace icarus {
  
   class CRTT0MatchingAna : public art::EDAnalyzer {
   public:
-    
+
+    /*    
     // Describes configuration parameters of the module
     struct Config {
       using Name = fhicl::Name;
@@ -77,12 +79,18 @@ namespace icarus {
         Name("CRTHitLabel"),
 	  Comment("tag of CRT hit producer data product")
 	  };
-      
+    */
+      /**      
       fhicl::Atom<art::InputTag> TPCTrackLabel {
         Name("TPCTrackLabel"),
 	  Comment("tag of tpc track producer data product")
 	  };
       
+
+      fhicl::Sequence<art::InputTag> TPCTrackLabel {
+        Name("TPCTrackLabel"), {"pandoraTrackGausCryoE", "pandoraTrackGausCryoW"}
+      };
+
       fhicl::Atom<bool> Verbose {
         Name("Verbose"),
 	  Comment("Print information about what's going on")
@@ -97,11 +105,13 @@ namespace icarus {
         };
       
     }; // Config
+     */
+
+    //using Parameters = art::EDAnalyzer::Table<Config>;
     
-    using Parameters = art::EDAnalyzer::Table<Config>;
-    
+    explicit CRTT0MatchingAna(fhicl::ParameterSet const& p);
     // Constructor: configures module
-    explicit CRTT0MatchingAna(Parameters const& config);
+    //explicit CRTT0MatchingAna(Parameters const& config);
     
     // Called once, at start of the job
     virtual void beginJob() override;
@@ -115,13 +125,16 @@ namespace icarus {
     // Calculate the distance from the track crossing point to CRT overlap coordinates
     double DistToCrtHit(TVector3 trackPos, sbn::crt::CRTHit crtHit);
     
+    void reconfigure(fhicl::ParameterSet const & p);
+
   private:
     
     // fcl file parameters
-    art::InputTag fSimModuleLabel;      ///< name of detsim producer
-    art::InputTag fCRTHitLabel;   ///< name of CRT producer
-    art::InputTag fTPCTrackLabel; ///< name of CRT producer
-    bool          fVerbose;             ///< print information about what's going on
+    art::InputTag              fSimModuleLabel;///< name of detsim producer
+    art::InputTag              fCRTHitLabel;   ///< name of CRT producer
+    std::vector<art::InputTag> fTPCTrackLabel; ///< name of CRT producer
+    art::InputTag              fTriggerLabel;  ///< labels for trigger
+    bool                       fVerbose;       ///< print information about what's going on
     
     CRTT0MatchAlg t0Alg;
     
@@ -158,24 +171,39 @@ namespace icarus {
     std::map<std::string, TH1D*> hPurityDoLReco;
     std::map<std::string, TH1D*> hPurityLengthTotal;
     std::map<std::string, TH1D*> hPurityLengthReco;
-    
+
+    //add trigger data product vars
+    unsigned int m_gate_type;
+    std::string  m_gate_name;
+    uint64_t     m_trigger_timestamp;
+    uint64_t     m_gate_start_timestamp;
+    uint64_t     m_trigger_gate_diff;
+    uint64_t     m_gate_crt_diff;    
   }; // class CRTT0MatchingAna
 
 
-  // Constructor
-  CRTT0MatchingAna::CRTT0MatchingAna(Parameters const& config)
-    : EDAnalyzer(config)
-    , fSimModuleLabel      (config().SimModuleLabel())
-    , fCRTHitLabel         (config().CRTHitLabel())
-    , fTPCTrackLabel       (config().TPCTrackLabel())
-    , fVerbose             (config().Verbose())
-    , t0Alg                (config().CRTT0Alg())
+  CRTT0MatchingAna::CRTT0MatchingAna(fhicl::ParameterSet const& p)
+    : EDAnalyzer{p}  // ,
+    , t0Alg(p.get<fhicl::ParameterSet>("t0Alg"))
     , fCrtutils(new icarus::crt::CRTCommonUtils())
-    , bt                   (config().CRTBackTrack())
-      //, bt(config.get<fhicl::ParameterSet>("CRTBackTrack")) 
+    , bt(p.get<fhicl::ParameterSet>("CRTBackTrack"))
+    // More initializers here.
+    {
+      // Call appropriate consumes<>() for any products to be retrieved by this module.
+      fGeometryService = lar::providerFrom<geo::Geometry>();
+      reconfigure(p);
+    }
 
+
+  // Constructor
+  void CRTT0MatchingAna::reconfigure(fhicl::ParameterSet const& p)
   {
-    fGeometryService = lar::providerFrom<geo::Geometry>();
+    
+    fSimModuleLabel     =  p.get<art::InputTag> ("SimModuleLabel", "largeant");
+    fCRTHitLabel        =  p.get<art::InputTag> ("CRTHitLabel", "crthit");
+    fTPCTrackLabel      =  p.get< std::vector<art::InputTag> >("TPCTrackLabel",             {""});
+    fTriggerLabel       =  p.get<art::InputTag>("TriggerLabel","daqTrigger");
+    fVerbose            =  p.get<bool>("Verbose");
   } //CRTT0MatchingAna()
 
 
@@ -238,6 +266,28 @@ namespace icarus {
     //                                          GETTING PRODUCTS
     //----------------------------------------------------------------------------------------------------------
 
+    //add trigger info
+    if( !fTriggerLabel.empty() ) {
+
+      art::Handle<sbn::ExtraTriggerInfo> trigger_handle;
+      event.getByLabel( fTriggerLabel, trigger_handle );
+      if( trigger_handle.isValid() ) {
+	sbn::triggerSource bit = trigger_handle->sourceType;
+	m_gate_type = (unsigned int)bit;
+	m_gate_name = bitName(bit);
+	m_trigger_timestamp = trigger_handle->triggerTimestamp;
+	m_gate_start_timestamp =  trigger_handle->beamGateTimestamp;
+	m_trigger_gate_diff = trigger_handle->triggerTimestamp - trigger_handle->beamGateTimestamp;
+
+      }
+      else{
+	mf::LogError("CRTT0MatchingAna:") << "No raw::Trigger associated to label: " << fTriggerLabel.label() << "\n" ;
+      }
+    }
+    else {
+      mf::LogError("CRTT0MatchingAna:") << "Trigger Data product " << fTriggerLabel.label() << " not found!\n" ;
+    }
+
     // Get g4 particles
     art::ServiceHandle<cheat::ParticleInventoryService> pi_serv;
     auto particleHandle = event.getValidHandle<std::vector<simb::MCParticle>>(fSimModuleLabel);
@@ -249,8 +299,8 @@ namespace icarus {
       art::fill_ptr_vector(crtHitList, crtHitHandle);
 
     // Get reconstructed tracks from the event
-    auto tpcTrackHandle = event.getValidHandle<std::vector<recob::Track>>(fTPCTrackLabel);
-    art::FindManyP<recob::Hit> findManyHits(tpcTrackHandle, event, fTPCTrackLabel);
+    //auto tpcTrackHandle = event.getValidHandle<std::vector<recob::Track>>(fTPCTrackLabel);
+    //    art::FindManyP<recob::Hit> findManyHits(tpcTrackHandle, event, fTPCTrackLabel);
 
     // fCrtBackTrack.Initialize(event);
 
@@ -276,7 +326,9 @@ namespace icarus {
     double maxHitTime = -99999;
 
     for(auto const& hit : (*crtHitHandle)){
-      double hitTime = (double)(int)hit.ts1_ns * 1e-3;
+      double hitTime = double(m_gate_start_timestamp - hit.ts0_ns)/1e3;
+      hitTime = -hitTime+1e6;
+      //      double hitTime = (double)(int)hit.ts1_ns * 1e-3;
       if(hitTime < minHitTime) minHitTime = hitTime;
       if(hitTime > maxHitTime) maxHitTime = hitTime;
 
@@ -301,184 +353,194 @@ namespace icarus {
     auto const detProp = art::ServiceHandle<detinfo::DetectorPropertiesService const>()->DataFor(event, clockData);
 
     // if(fVerbose) std::cout<<"----------------- DCA Analysis -------------------"<<std::endl;
-    // Loop over reconstructed tracks
-    for (auto const& tpcTrack : (*tpcTrackHandle)){
-      //      std::cout<<"----------------- why only 4 times -------------------" <<std::endl;
-      // if(fVerbose) std::cout<<"----------------- # track -------------------" << (*tpcTrackHandle).size()<<std::endl;
-      // Get the associated hits
-      std::vector<art::Ptr<recob::Hit>> hits = findManyHits.at(tpcTrack.ID());
-      int trackTrueID = RecoUtils::TrueParticleIDFromTotalRecoHits(clockData, hits, false);
-      if(particles.find(trackTrueID) == particles.end()) continue;
-      // Only consider primary muons
-      if(!(std::abs(particles[trackTrueID].PdgCode()) == 13 && particles[trackTrueID].Mother() == 0)) continue;
+    for(const auto& trackLabel : fTPCTrackLabel)
+      {
+	auto tpcTrackHandle = event.getValidHandle<std::vector<recob::Track>>(trackLabel);
+	if (!tpcTrackHandle.isValid()) continue;
+	
+	art::FindManyP<recob::Hit> findManyHits(tpcTrackHandle, event, trackLabel);
 
-      // Only consider particles inside the reco hit time window
-      double trueTime = particles[trackTrueID].T() * 1e-3;
-      if(trueTime < minHitTime || trueTime > maxHitTime) continue;
-      //if(fVerbose) std::cout<<"----------------- line 315 -------------------"<<std::endl;
-      std::cout << "new track " << trueTime << std::endl;
-      // Calculate t0 from CRT Hit matching
-      matchCand closest = t0Alg.GetClosestCRTHit(detProp, tpcTrack, crtHits, event);
-      //std::cout << "closest match " << closest.t0 << std::endl;
-      //std::cout << "closest dca " << closest.dca << " ,tagger: "<< closest.thishit.tagger << " , sin angele: \t" << closest.dca/closest.extrapLen << std::endl;
-      double sin_angle = -99999;
-      if(closest.dca != -99999){ 
-        hDCA[closest.thishit.tagger]->Fill(closest.dca);
-        //hDCA["All"]->Fill(closest.dca);
-	sin_angle = closest.dca/closest.extrapLen;
-        hDoL[closest.thishit.tagger]->Fill(sin_angle);
-	// hDoL["All"]->Fill(sin_angle);
-	hT0[closest.thishit.tagger]->Fill(closest.t0);
-	//hT0["All"]->Fill(closest.t0);
-	//std::cout<< "tagger: "<< closest.thishit.tagger << " , sin angele: \t" << sin_angle << std::endl;
-
-	// Is hit matched to that track
-        int hitTrueID = bt.TrueIdFromTotalEnergy(event, closest.thishit);
-        if(hitTrueID == trackTrueID && hitTrueID != -99999){
-          hMatchDCA[closest.thishit.tagger]->Fill(closest.dca);
-          //hMatchDCA["All"]->Fill(closest.dca);
-	  hMatchDoL[closest.thishit.tagger]->Fill(sin_angle);
-	  //hMatchDoL["All"]->Fill(sin_angle);
-	  hMatchT0[closest.thishit.tagger]->Fill(closest.t0);
-	  //hMatchT0["All"]->Fill(closest.t0);
-        }
-        else{
-          hNoMatchDCA[closest.thishit.tagger]->Fill(closest.dca);
-          //hNoMatchDCA["All"]->Fill(closest.dca);
-	  hNoMatchDoL[closest.thishit.tagger]->Fill(sin_angle);
-	  // hNoMatchDoL["All"]->Fill(sin_angle);
-	  hNoMatchT0[closest.thishit.tagger]->Fill(closest.t0);
-	  // hNoMatchT0["All"]->Fill(closest.t0);
-        }
-	//std::cout<< "---------> 2nd line tagger: "<< closest.thishit.tagger << " , sin angele: \t" << sin_angle << std::endl;
-      }else continue;
-      //if(fVerbose) std::cout<<"----------------- line 350 -------------------"<<std::endl;
-      int nbins = hEffDCATotal.begin()->second->GetNbinsX();
-      for(int i = 0; i < nbins; i++){
-        double DCAcut = hEffDCATotal.begin()->second->GetBinCenter(i);
-
-        // Fill total efficiency histogram with each cut if track matches any hits
-        if(crtTaggerMap.find(trackTrueID) != crtTaggerMap.end()){
-          for(auto const& tagger : crtTaggerMap[trackTrueID]){
-            hEffDCATotal[tagger]->Fill(DCAcut);
-
-            // If closest hit is below limit and track matches any hits then fill efficiency
-            if(closest.dca < DCAcut && closest.dca != -99999){
-              hEffDCAReco[tagger]->Fill(DCAcut);
-            }
-          }
-          // Fill total efficiency histograms
-	  // hEffDCATotal["All"]->Fill(DCAcut);
-          if(closest.dca < DCAcut && closest.dca != -99999){
-	    // hEffDCAReco["All"]->Fill(DCAcut);
-          }
-        }
-
-        // Fill total purity histogram with each cut if closest hit is below limit
-        if(closest.dca < DCAcut && closest.dca != -99999){
-          hPurityDCATotal[closest.thishit.tagger]->Fill(DCAcut);
-	  // hPurityDCATotal["All"]->Fill(DCAcut);
-
-          // If closest hit is below limit and matched time is correct then fill purity
-          double hitTime = closest.thishit.ts1_ns * 1e-3;
-          if(particles.find(trackTrueID) != particles.end()){
-            if(std::abs(hitTime - trueTime) < 2.){
-              hPurityDCAReco[closest.thishit.tagger]->Fill(DCAcut);
-	      //  hPurityDCAReco["All"]->Fill(DCAcut);
-            }
-          }
-
-        }
-      }
-
-      nbins = hEffDoLTotal.begin()->second->GetNbinsX();
-      //if(fVerbose) std::cout<<"----------------- line 390 -------------------"<<std::endl;
-      for(int i = 0; i < nbins; i++){
-        double DCAcut = hEffDoLTotal.begin()->second->GetBinCenter(i);
-
-        // Fill total efficiency histogram with each cut if track matches any hits
-        if(crtTaggerMap.find(trackTrueID) != crtTaggerMap.end()){
-          for(auto const& tagger : crtTaggerMap[trackTrueID]){
-            hEffDoLTotal[tagger]->Fill(DCAcut);
-
-            // If closest hit is below limit and track matches any hits then fill efficiency
-            if(sin_angle < DCAcut && closest.dca != -99999){
-              hEffDoLReco[tagger]->Fill(DCAcut);
-            }
-          }
-          // Fill total efficiency histograms
-	  //  hEffDoLTotal["All"]->Fill(DCAcut);
-          if(sin_angle < DCAcut && closest.dca != -99999){
-	    // hEffDoLReco["All"]->Fill(DCAcut);
-          }
-        }
-
-        // Fill total purity histogram with each cut if closest hit is below limit
-        if(sin_angle < DCAcut && closest.dca != -99999){
-          hPurityDoLTotal[closest.thishit.tagger]->Fill(DCAcut);
-	  // hPurityDoLTotal["All"]->Fill(DCAcut);
-
-          // If closest hit is below limit and matched time is correct then fill purity
-          double hitTime = closest.thishit.ts1_ns * 1e-3;
-          if(particles.find(trackTrueID) != particles.end()){
-            if(std::abs(hitTime - trueTime) < 2.){
-              hPurityDoLReco[closest.thishit.tagger]->Fill(DCAcut);
-	      //  hPurityDoLReco["All"]->Fill(DCAcut);
-            }
-          }
-
-        }
-      }
-
-      double fixedCut = 30.;
-
-      // Fill total efficiency histogram with each cut if track matches any hits
-      if(crtTaggerMap.find(trackTrueID) != crtTaggerMap.end()){
-        for(auto const& tagger : crtTaggerMap[trackTrueID]){
-          hEffLengthTotal[tagger]->Fill(tpcTrack.Length());
-
-          // If closest hit is below limit and track matches any hits then fill efficiency
-          if(closest.dca < fixedCut && closest.dca >=0 ){
-            hEffLengthReco[tagger]->Fill(tpcTrack.Length());
-          }
-        }
-        // Fill total efficiency histograms
-	// hEffLengthTotal["All"]->Fill(tpcTrack.Length());
-        if(closest.dca < fixedCut && closest.dca >=0){
-          //hEffLengthReco["All"]->Fill(tpcTrack.Length());
-        }
-      }
-
-      // Fill total purity histogram with each cut if closest hit is below limit
-      if(closest.dca < fixedCut && closest.dca >= 0){
-        hPurityLengthTotal[closest.thishit.tagger]->Fill(tpcTrack.Length());
-	// hPurityLengthTotal["All"]->Fill(tpcTrack.Length());
-
-        // If closest hit is below limit and matched time is correct then fill purity
-        double hitTime = closest.thishit.ts1_ns * 1e-3;
-        if(particles.find(trackTrueID) != particles.end()){
-          double trueTime = particles[trackTrueID].T() * 1e-3;
-          if(std::abs(hitTime - trueTime) < 2.){
-            hPurityLengthReco[closest.thishit.tagger]->Fill(tpcTrack.Length());
-	    //  hPurityLengthReco["All"]->Fill(tpcTrack.Length());
-          }
-        }
-
-      }
-      // if(fVerbose) std::cout<<"----------------- line 463 -------------------"<<std::endl;
-    }
-
-    // if(fVerbose) std::cout<<"----------------- line 466 -------------------"<<std::endl;
+	// Loop over reconstructed tracks
+	for (auto const& tpcTrack : (*tpcTrackHandle)){
+	  //      std::cout<<"----------------- why only 4 times -------------------" <<std::endl;
+	  // if(fVerbose) std::cout<<"----------------- # track -------------------" << (*tpcTrackHandle).size()<<std::endl;
+	  // Get the associated hits
+	  std::vector<art::Ptr<recob::Hit>> hits = findManyHits.at(tpcTrack.ID());
+	  int trackTrueID = RecoUtils::TrueParticleIDFromTotalRecoHits(clockData, hits, false);
+	  if(particles.find(trackTrueID) == particles.end()) continue;
+	  // Only consider primary muons
+	  if(!(std::abs(particles[trackTrueID].PdgCode()) == 13 && particles[trackTrueID].Mother() == 0)) continue;
+	  
+	  // Only consider particles inside the reco hit time window
+	  double trueTime = particles[trackTrueID].T() * 1e-3;
+	  if(trueTime < minHitTime || trueTime > maxHitTime) continue;
+	  //if(fVerbose) std::cout<<"----------------- line 315 -------------------"<<std::endl;
+	  std::cout << "new track " << trueTime << std::endl;
+	  // Calculate t0 from CRT Hit matching
+	  matchCand closest = t0Alg.GetClosestCRTHit(detProp, tpcTrack, hits, crtHits, m_gate_start_timestamp, false);
+	  // matchCand closest = t0Alg.GetClosestCRTHit(detProp, tpcTrack, crtHits, event);
+	  //std::vector <matchCand> closestvec = t0Alg.GetClosestCRTHit(detProp, tpcTrack, crtHits, event);
+          //matchCand closest = closestvec.back();
+	  //std::cout << "closest match " << closest.t0 << std::endl;
+	  //std::cout << "closest dca " << closest.dca << " ,tagger: "<< closest.thishit.tagger << " , sin angele: \t" << closest.dca/closest.extrapLen << std::endl;
+	  double sin_angle = -99999;
+	  if(closest.dca != -99999){ 
+	    hDCA[closest.thishit.tagger]->Fill(closest.dca);
+	    //hDCA["All"]->Fill(closest.dca);
+	    sin_angle = closest.dca/closest.extrapLen;
+	    hDoL[closest.thishit.tagger]->Fill(sin_angle);
+	    // hDoL["All"]->Fill(sin_angle);
+	    hT0[closest.thishit.tagger]->Fill(closest.t0);
+	    //hT0["All"]->Fill(closest.t0);
+	    //std::cout<< "tagger: "<< closest.thishit.tagger << " , sin angele: \t" << sin_angle << std::endl;
+	    
+	    // Is hit matched to that track
+	    int hitTrueID = bt.TrueIdFromTotalEnergy(event, closest.thishit);
+	    if(hitTrueID == trackTrueID && hitTrueID != -99999){
+	      hMatchDCA[closest.thishit.tagger]->Fill(closest.dca);
+	      //hMatchDCA["All"]->Fill(closest.dca);
+	      hMatchDoL[closest.thishit.tagger]->Fill(sin_angle);
+	      //hMatchDoL["All"]->Fill(sin_angle);
+	      hMatchT0[closest.thishit.tagger]->Fill(closest.t0);
+	      //hMatchT0["All"]->Fill(closest.t0);
+	    }
+	    else{
+	      hNoMatchDCA[closest.thishit.tagger]->Fill(closest.dca);
+	      //hNoMatchDCA["All"]->Fill(closest.dca);
+	      hNoMatchDoL[closest.thishit.tagger]->Fill(sin_angle);
+	      // hNoMatchDoL["All"]->Fill(sin_angle);
+	      hNoMatchT0[closest.thishit.tagger]->Fill(closest.t0);
+	      // hNoMatchT0["All"]->Fill(closest.t0);
+	    }
+	    //std::cout<< "---------> 2nd line tagger: "<< closest.thishit.tagger << " , sin angele: \t" << sin_angle << std::endl;
+	  }else continue;
+	  //if(fVerbose) std::cout<<"----------------- line 350 -------------------"<<std::endl;
+	  int nbins = hEffDCATotal.begin()->second->GetNbinsX();
+	  for(int i = 0; i < nbins; i++){
+	    double DCAcut = hEffDCATotal.begin()->second->GetBinCenter(i);
+	    
+	    // Fill total efficiency histogram with each cut if track matches any hits
+	    if(crtTaggerMap.find(trackTrueID) != crtTaggerMap.end()){
+	      for(auto const& tagger : crtTaggerMap[trackTrueID]){
+		hEffDCATotal[tagger]->Fill(DCAcut);
+		
+		// If closest hit is below limit and track matches any hits then fill efficiency
+		if(closest.dca < DCAcut && closest.dca != -99999){
+		  hEffDCAReco[tagger]->Fill(DCAcut);
+		}
+	      }
+	      // Fill total efficiency histograms
+	      // hEffDCATotal["All"]->Fill(DCAcut);
+	      if(closest.dca < DCAcut && closest.dca != -99999){
+		// hEffDCAReco["All"]->Fill(DCAcut);
+	      }
+	    }
+	    
+	    // Fill total purity histogram with each cut if closest hit is below limit
+	    if(closest.dca < DCAcut && closest.dca != -99999){
+	      hPurityDCATotal[closest.thishit.tagger]->Fill(DCAcut);
+	      // hPurityDCATotal["All"]->Fill(DCAcut);
+	      
+	      // If closest hit is below limit and matched time is correct then fill purity
+	      double hitTime = closest.thishit.ts1_ns * 1e-3;
+	      if(particles.find(trackTrueID) != particles.end()){
+		if(std::abs(hitTime - trueTime) < 2.){
+		  hPurityDCAReco[closest.thishit.tagger]->Fill(DCAcut);
+		  //  hPurityDCAReco["All"]->Fill(DCAcut);
+		}
+	      }
+	      
+	    }
+	  }
+	  
+	  nbins = hEffDoLTotal.begin()->second->GetNbinsX();
+	  //if(fVerbose) std::cout<<"----------------- line 390 -------------------"<<std::endl;
+	  for(int i = 0; i < nbins; i++){
+	    double DCAcut = hEffDoLTotal.begin()->second->GetBinCenter(i);
+	    
+	    // Fill total efficiency histogram with each cut if track matches any hits
+	    if(crtTaggerMap.find(trackTrueID) != crtTaggerMap.end()){
+	      for(auto const& tagger : crtTaggerMap[trackTrueID]){
+		hEffDoLTotal[tagger]->Fill(DCAcut);
+		
+		// If closest hit is below limit and track matches any hits then fill efficiency
+		if(sin_angle < DCAcut && closest.dca != -99999){
+		  hEffDoLReco[tagger]->Fill(DCAcut);
+		}
+	      }
+	      // Fill total efficiency histograms
+	      //  hEffDoLTotal["All"]->Fill(DCAcut);
+	      if(sin_angle < DCAcut && closest.dca != -99999){
+		// hEffDoLReco["All"]->Fill(DCAcut);
+	      }
+	    }
+	    
+	    // Fill total purity histogram with each cut if closest hit is below limit
+	    if(sin_angle < DCAcut && closest.dca != -99999){
+	      hPurityDoLTotal[closest.thishit.tagger]->Fill(DCAcut);
+	      // hPurityDoLTotal["All"]->Fill(DCAcut);
+	      
+	      // If closest hit is below limit and matched time is correct then fill purity
+	      double hitTime = closest.thishit.ts1_ns * 1e-3;
+	      if(particles.find(trackTrueID) != particles.end()){
+		if(std::abs(hitTime - trueTime) < 2.){
+		  hPurityDoLReco[closest.thishit.tagger]->Fill(DCAcut);
+		  //  hPurityDoLReco["All"]->Fill(DCAcut);
+		}
+	      }
+	      
+	    }
+	  }
+	  
+	  double fixedCut = 30.;
+	  
+	  // Fill total efficiency histogram with each cut if track matches any hits
+	  if(crtTaggerMap.find(trackTrueID) != crtTaggerMap.end()){
+	    for(auto const& tagger : crtTaggerMap[trackTrueID]){
+	      hEffLengthTotal[tagger]->Fill(tpcTrack.Length());
+	      
+	      // If closest hit is below limit and track matches any hits then fill efficiency
+	      if(closest.dca < fixedCut && closest.dca >=0 ){
+		hEffLengthReco[tagger]->Fill(tpcTrack.Length());
+	      }
+	    }
+	    // Fill total efficiency histograms
+	    // hEffLengthTotal["All"]->Fill(tpcTrack.Length());
+	    if(closest.dca < fixedCut && closest.dca >=0){
+	      //hEffLengthReco["All"]->Fill(tpcTrack.Length());
+	    }
+	  }
+	  
+	  // Fill total purity histogram with each cut if closest hit is below limit
+	  if(closest.dca < fixedCut && closest.dca >= 0){
+	    hPurityLengthTotal[closest.thishit.tagger]->Fill(tpcTrack.Length());
+	    // hPurityLengthTotal["All"]->Fill(tpcTrack.Length());
+	    
+	    // If closest hit is below limit and matched time is correct then fill purity
+	    double hitTime = closest.thishit.ts1_ns * 1e-3;
+	    if(particles.find(trackTrueID) != particles.end()){
+	      double trueTime = particles[trackTrueID].T() * 1e-3;
+	      if(std::abs(hitTime - trueTime) < 2.){
+		hPurityLengthReco[closest.thishit.tagger]->Fill(tpcTrack.Length());
+		//  hPurityLengthReco["All"]->Fill(tpcTrack.Length());
+	      }
+	    }
+	    
+	  }
+	  // if(fVerbose) std::cout<<"----------------- line 463 -------------------"<<std::endl;
+	}
+      } // track lable
+	// if(fVerbose) std::cout<<"----------------- line 466 -------------------"<<std::endl;
     
   } // CRTT0MatchingAna::analyze()
-
-
-  void CRTT0MatchingAna::endJob(){
   
+  
+  void CRTT0MatchingAna::endJob(){
+    
     
   } // CRTT0MatchingAna::endJob()
-
-
+  
+  
   DEFINE_ART_MODULE(CRTT0MatchingAna)
 } // namespace icarus
 
