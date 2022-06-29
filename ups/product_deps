@@ -2,7 +2,7 @@
 
 # The *parent* line must the first non-commented line and defines this product and version
 # The version must be of the form vxx_yy_zz (e.g. v01_02_03)
-parent icaruscode v09_37_02_08
+parent icaruscode v09_37_02_09
 
 defaultqual e20
 
@@ -38,7 +38,7 @@ table_fragment_end
 
 product                   version
 sbncode                   v09_37_02_07
-icarusalg                 v09_37_02_01
+icarusalg                 v09_37_02_09
 icarusutil                v09_37_01
 icarus_signal_processing  v09_37_01
 icarus_data               v09_52_00
