@@ -15,6 +15,7 @@
 ### JCZ: Add simple flashmatch to this area
 #include "flashmatch_simple_icarus.fcl"
 #include "crtsimhitproducer.fcl"
+#include "crttrackproducer_icarus.fcl"
 
 BEGIN_PROLOG
 
@@ -54,7 +55,9 @@ icarus_stage1_producers:
   fmatchCryoE:                    @local::icarus_simple_flashmatch_0
   fmatchCryoW:                    @local::icarus_simple_flashmatch_1
 
-  crthit: @local::standard_crthitproducer	
+ ## crt producer
+  crthit:            @local::standard_crthitproducer	
+  crttrack:          @local::standard_crttrackproducer
 }
 
 icarus_stage1_filters:
@@ -78,17 +81,17 @@ icarus_stage1_analyzers:
   caloskimW: @local::caloskim_cryow_nodigits_goldentracks
   simpleLightAna: @local::ICARUSFlashAssAna
   CRTDataAnalysis: 
-  {
-    module_type:   "CRTDataAnalysis"
-    CRTHitLabel:   "crthit"
-    CRTDAQLabel:   "daqCRT"
-    TriggerLabel:  "daqTrigger"
-    QPed:                 60     # Pedestal offset [ADC]
-    QSlope:               70     # Pedestal slope [ADC/photon]
-    PEThresh:             7.5    # PE threshold above which charge amplitudes used
-    CrtWindow:            3e6    # time window for looking data within trigger timestamp [ns]
-  }
-}
+   {
+     module_type:   "CRTDataAnalysis"
+     CRTHitLabel:   "crthit"
+     CRTDAQLabel:   "daqCRT"
+     TriggerLabel:  "daqTrigger"
+     QPed:                 60     # Pedestal offset [ADC]
+     QSlope:               70     # Pedestal slope [ADC/photon]
+     PEThresh:             7.5    # PE threshold above which charge amplitudes used
+     CrtWindow:            3e6    # time window for looking data within trigger timestamp [ns]
+   }
+ }
 
 icarus_stage1_analyzers.caloskimE.SelectEvents: [reco]
 icarus_stage1_analyzers.caloskimE.CALOproducer: caloskimCalorimetryCryoE 
@@ -146,7 +149,7 @@ icarus_pandora_Gauss:              [
 icarus_reco_fm:                    [ fmatchCryoE,
                                      fmatchCryoW ]
 
-icarus_crthit:                     [crthit]
+icarus_crthit:                     [crthit, crttrack]
 
 ### Below we include overrides for the modules above
 
