@@ -30,6 +30,8 @@ namespace icarus {
   namespace details {
     template <typename T, typename Enable = void>
     struct KeyValuesConverter;
+    template <typename T, unsigned int Base = 10U>
+    struct BaseWrapper;
   }
   
   struct KeyValuesData;
@@ -44,9 +46,107 @@ namespace icarus {
  * @class icarus::KeyValuesData
  * @brief Collection of items with key/values structure.
  * 
- * This data type is a collection of `Item` objects that contain unparsed
- * strings. Each `Item` has a key and a sequence of values. The values can be
- * queried as strings or as other data types. Conversions are performed by
+ * This class collects `Item` objects, each being a string key and a sequence
+ * of zero or more values. An specific item can be accessed by its key
+ * (`findItem()`, `getItem()`) or all items may be iterated through (`items()`).
+ * 
+ * 
+ * Value type conversions
+ * -----------------------
+ * 
+ * The `Item` objects in this class contain unparsed strings. Each `Item` has a
+ * key and a sequence of values. The values can be queried as strings or as
+ * other data types. Conversions are performed by
+ * `icarus::details::KeyValuesConverter`, which can be specialized with
+ * the needed conversion logic. Only one type of conversion to any given type
+ * is supported. Alternative conversions may be achieved using type wrappers
+ * (e.g. specializing for a `CaseInsensitive<S>` object that contains a string
+ * of type `S` and reading/converting into the string the result of the
+ * conversion).
+ * 
+ * Each converter object specialization for a type `T` should support a call
+ * with argument `std::string` returning a `std::optional<T>`.
+ * 
+ * 
+ * Initialization and updates
+ * ---------------------------
+ * 
+ * A `KeyValuesData` object always starts empty (implicit default constructor).
+ * A new item is also always created empty (`makeItem()`, `makeOrFetchItem()`)
+ * and with a set key.
+ * 
+ * After an empty item (i.e. an item with a key but no values) is created,
+ * values can be added using the `Item` subclass interface (`addValue()`).
+ * Item values and keys can be modified by changing `Item` data members
+ * directly. The item to be modified is immediately returned by `makeItem()`;
+ * afterwards, an existing item may be still retrieved for changes with
+ * `makeOrFetchItem()` and `findItem()`.
+ * 
+ * This object will refuse to create a new item with the same key as an existing
+ * one. However, the key of the item may be changed to any value after
+ * `makeItem()` is called, although the interface does not encourage that.
+ * If this introduces a duplicate key, the query functions will systematically
+ * retrieve only one of the items with the repeated key (which one and whether
+ * always the same one are undefined).
+ * 
+ * Example:
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~{.cpp}
+ * icarus::KeyValuesData data;
+ * data.makeItem("TriggerType").addValue("S5");
+ * data.makeItem("Triggers");
+ * data.makeItem("TriggerWindows").addValue("0C0B");
+ * data.makeItem("TPChits")
+ *   .addValue("12").addValue("130").addValue("0").addValue("0");
+ * data.makeItem("TPChitTimes")
+ *   .addValue("3").addValue("-1.1").addValue("-0.3").addValue("0.1");
+ * data.makeItem("PMThits").addValue("8");
+ * data.makeOrFetchItem("TPChits").addValue("115");
+ * data.makeOrFetchItem("TPChitTimes").addValue("-0.7");
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ * creates a `data` object with four items, a `TriggerType` one with one value,
+ * a `Triggers` one with no values, a `TriggerWindows` with a single value
+ * (expressed as a hexadecimal number), a `TPChits` one with four values,
+ * a `TPChitTimes` with four values (the first meant to be the number of
+ * remaining ones) and a `PMThits` with one. Finally, it adds one value to
+ * `TPChits` and one to `TPChitTimes`, which will both have five afterwards.
+ * 
+ * 
+ * Query
+ * ------
+ * 
+ * The interface is quite terse.
+ * 
+ * General query methods reports whether there is no item in the object
+ * (`empty()`) and how many items there are (`size()`).
+ * 
+ * A item with a known key can be retrieved (`getItem()`, `findItem()`), or
+ * its existence may be tested (`hasItem()`).
+ * 
+ * Finally, all items can be iterated (`items()`). In this case, the items
+ * are presented in the creation order.
+ * 
+ * The `Item` interface is documented in that subclass.
+ * 
+ * Example using the `data` object from the previous example:
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~{.cpp}
+ * std::string triggerType = data.getItem("TriggerType").values()[0];
+ * std::vector<int> triggers = data.getItem("Triggers").getVector<int>();
+ * std::uint32_t triggerWindowBits
+ *  = data.getItem("TriggerWindows").getNumber<std::uint32_t>(0, 16); // base 16
+ * std::vector<int> TPChits = data.getItem("TPChits").getVector<int>();
+ * std::vector<float> TPCtimes
+ *  = data.getItem("TPChitTimes").getSizedVector<float>();
+ * std::vector<int> CRThits;
+ * if (auto const* item = data.findItem("CRThits"))
+ *   CRThits = item->getVector<int>();
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ *
+ *
+ * Type conversion customization
+ * ------------------------------
+ *
+ * The values in a `Item` object can be queried as strings or as other data
+ * types using the `GetAs()` interface. Conversions are performed by
  * `icarus::details::KeyValuesConverter`, which can be specialized with
  * the needed conversion logic. Only one type of conversion to any given type
  * is supported.
@@ -62,22 +162,60 @@ struct icarus::KeyValuesData {
   /// @{
   
   struct Error;
+  struct ErrorOnKey;
   struct DuplicateKey;
   struct ConversionFailed;
   struct ItemNotFound;
   struct ValueNotAvailable;
+  struct MissingSize;
+  struct WrongSize;
   
   /// @}
   // --- END ----- Exception definition ----------------------------------------
   
-  /// Representation of a single item of data: a key and several values.
-  struct Item {
-    std::string key;
-    std::vector<std::string> values;
+  /**
+   * @brief Representation of a single item of data: a key and several values.
+   * 
+   * Values can be added directly accessing the `values` data member, or
+   * with `addValue()` method call.
+   * 
+   * Access to the values happens by index, with `nValues()` indices starting
+   * from `0` available. Direct access to `values()` is expected, and additional
+   * shortcuts are available:
+   * * `getAs()`, `getOptionalAs()` to convert to an arbitrary type; the
+   *     standard conversion uses `from_chars()`, and specialization is
+   *     possible
+   * * `getNumber()`, `getOptionalNumber()` to convert to a number
+   * * `getVector()` to convert to a vector of values (each like in `getAs()`)
+   * * `getSizedVector()` to convert to a vector of values; the first value is
+   *   the size of the actual values.
+   */
+  struct Item: public std::pair<std::string, std::vector<std::string>> {
     
+    using pair_t = std::pair<std::string, std::vector<std::string>>;
+    
+    /**
+     * @brief Alias for numerical base conversion.
+     * @tparam T type of the number to be converted
+     * 
+     * Example of usage:
+     * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~{.cpp}
+     * auto const i16
+     *   = item.getAs<int>(0U, icarus::KeyValuesData::Item::UseBase<int>{ 16 });
+     * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     * converts the first value of `item` into an integer (`int`) with base 16.
+     */
+    template <typename T>
+    using UseBase
+      = icarus::details::KeyValuesConverter<icarus::details::BaseWrapper<T>>;
+    
+    
+    // --- BEGIN -- Constructors -----------------------------------------------
     
     /// Constructs a new item assigning it a key (which should not be changed).
-    Item(std::string key): key(std::move(key)) {}
+    Item(std::string key): pair_t{ std::move(key), {} } {}
+    
+    // --- END ---- Constructors -----------------------------------------------
     
     
     // --- BEGIN -- Setting ----------------------------------------------------
@@ -85,9 +223,10 @@ struct icarus::KeyValuesData {
     /// @{
     
     //@{
-    /// Appends a value to this key.
+    /// Appends a string value to the list of values.
+    /// @return this same object (allows queueing calls in the same statement)
     Item& addValue(std::string value)
-      { values.push_back(std::move(value)); return *this; }
+      { values().push_back(std::move(value)); return *this; }
     Item& addValue(std::string_view value)
       { return addValue(std::string{ value }); }
     //@}
@@ -106,8 +245,8 @@ struct icarus::KeyValuesData {
     // --- END ---- Setting ----------------------------------------------------
     
     
-    // --- BEGIN -- Query ------------------------------------------------------
-    /// @name Query interface
+    // --- BEGIN -- Direct access ----------------------------------------------
+    /// @name Direct access to key and values
     /// @{
     
     //@{
@@ -135,17 +274,192 @@ struct icarus::KeyValuesData {
     //@{
 
     /// Returns the number of values currently present.
-    std::size_t nValues() const noexcept { return values.size(); }
+    std::size_t nValues() const noexcept { return values().size(); }
     
-    /// Converts the value to `T`, throws on failure.
+    /// @}
+    // --- END ---- Direct access ----------------------------------------------
+    
+    
+    // --- BEGIN -- Query ------------------------------------------------------
+    /// @name Query interface
+    /// @{
+    
+    //@{
+    /**
+     * @brief Returns the requested value, converted into type `T`
+     * @tparam T type to convert the value into
+     * @tparam Conv type of a functor for conversion of the value into type `T`
+     * @param index the index of the requested value
+     * @param converter a functor for conversion of the value into type `T`
+     * @return the requested value as an object of type `T`
+     * @throw ValueNotAvailable if no value is available with that index
+     * @throw ConversionFailed if the value could not be converted to type `T`
+     * 
+     * Conversion is performed via `converter` object, functor taking a string
+     * and returning an object of type `std::optional<T>`. The functor can
+     * decline the conversion by returning an empty `std::optional`, or directly
+     * throw an exception on error.
+     */
+    template <typename T, typename Conv>
+    T getAs(std::size_t index, Conv converter) const;
+    //@}
+    
+    //@{
+    /**
+     * @brief Returns the requested value, converted into type `T`
+     * @tparam T type to convert the value into
+     * @param index the index of the requested value
+     * @return the requested value as an object of type `T`
+     * @throw ValueNotAvailable if no value is available with that index
+     * @throw ConversionFailed if the value could not be converted to type `T`
+     * 
+     * Conversion is performed via an helper class
+     * `icarus::details::KeyValuesConverter` which can be specialized if needed,
+     * and that uses `from_chars()` for conversion.
+     */
+    template <typename T>
+    T getAs(std::size_t index) const;
+    //@}
+    
+    
+    //@{
+    /**
+     * @brief Returns the requested value, converted into type `T`
+     * @tparam T type to convert the value into
+     * @tparam IgnoreFormatErrors (default: `true`) how to treat conversion
+     *                            errors
+     * @tparam Conv type of a functor for conversion of the value into type `T`
+     * @param index the index of the requested value
+     * @param converter a functor for conversion of the value into type `T`
+     * @return the requested value, or an empty optional on failure
+     * @throw ConversionFailed if the value could not be converted to type `T`
+     * 
+     * Conversion is performed via `converter` object, functor taking a string
+     * and returning an object of type `std::optional<T>`. The functor can
+     * decline the conversion by returning an empty `std::optional`, or directly
+     * throw an exception on error.
+     * 
+     * If no value is available for the specified `index`, an empty optional
+     * is returned.
+     * 
+     * An exception is thrown on conversion failures unless `IgnoreFormatErrors`
+     * is `true`, in which case an empty optional is also returned.
+     */
+    template <typename T, bool IgnoreFormatErrors = false, typename Conv>
+    std::optional<T> getOptionalAs(std::size_t index, Conv converter) const;
+    //@}
+    
+    //@{
+    /**
+     * @brief Returns the requested value, converted into type `T`
+     * @tparam T type to convert the value into
+     * @tparam IgnoreFormatErrors (default: `true`) how to treat conversion
+     *                            errors
+     * @param index the index of the requested value
+     * @param ignoreFormatErrors (default: `false`) ignore conversion errors
+     * @return the requested value, or an empty optional on failure
+     * @throw ConversionFailed if the value could not be converted to type `T`
+     * 
+     * Conversion is performed via `converter` object, functor taking a string
+     * and returning an object of type `std::optional<T>`. The functor can
+     * decline the conversion by returning an empty `std::optional`, or directly
+     * throw an exception on error.
+     * 
+     * If no value is available for the specified `index`, an empty optional
+     * is returned.
+     * 
+     * An exception is thrown on conversion failures unless `IgnoreFormatErrors`
+     * is `true`, in which case an empty optional is also returned.
+     */
+    template <typename T, bool IgnoreFormatErrors = false>
+    std::optional<T> getOptionalAs(std::size_t index) const;
+    //@}
+    
+    
+    //@{
+    /**
+     * @brief Returns the requested value, converted into a number of type `T`
+     * @tparam T type of number to convert the value into
+     * @param index the index of the requested value
+     * @param base (default: `10`) numerical base of the input number
+     * @return the requested value as a number of type `T`
+     * @throw ValueNotAvailable if no value is available with that index
+     * @throw ConversionFailed if the value could not be converted to type `T`
+     * 
+     * See `getAs()` for details.
+     * 
+     * Note that the number must have no base prefix (e.g. `"F5"` for
+     * hexadecimal rather than `"0xF5"`).
+     */
+    template <typename T>
+    T getNumber(std::size_t index, unsigned int base) const;
     template <typename T>
     T getNumber(std::size_t index) const;
+    //@}
     
-    /// Converts the value to `T`, throws on conversion failures
-    /// unless `ignoreFormatErrors` is `true`.
+    // TODO do we need to propagate the IgnoreFormatErrors option?
+    //@{
+    /**
+     * @brief Returns the requested value, converted into a number of type `T`
+     * @tparam T type of number to convert the value into
+     * @param index the index of the requested value
+     * @param base (default: `10`) numerical base of the input number
+     * @return the requested value, or an empty optional on failure
+     * @throw ConversionFailed if the value could not be converted to type `T`
+     * 
+     * See `getOptionalAs()` for details.
+     * 
+     * Note that the number must have no base prefix (e.g. `"F5"` for
+     * hexadecimal rather than `"0xF5"`).
+     */
     template <typename T>
     std::optional<T> getOptionalNumber
-      (std::size_t index, bool ignoreFormatErrors = false) const;
+      (std::size_t index, unsigned int base) const;
+    template <typename T>
+    std::optional<T> getOptionalNumber(std::size_t index) const;
+    //@}
+    
+    
+    //@{
+    /**
+     * @brief Returns all the values, each converted into type `T`
+     * @tparam T type to convert the value into
+     * @tparam Conv type of a functor for conversion of the value into type `T`
+     * @param converter a functor for conversion of the value into type `T`
+     * @return a vector with all the converted values
+     * @throw ConversionFailed if any value could not be converted to type `T`
+     * 
+     * Conversion of each element is performed by `getAs<T, Conv>()`.
+     * 
+     * An exception is thrown on any conversion failure.
+     */
+    template <typename T, typename Conv = details::KeyValuesConverter<T>>
+    std::vector<T> getVector(Conv converter = {}) const;
+    //@}
+    
+    //@{
+    /**
+     * @brief Returns all the values, each converted into type `T`
+     * @tparam T type to convert the value into
+     * @tparam Conv type of a functor for conversion of the value into type `T`
+     * @param converter a functor for conversion of the value into type `T`
+     * @return a vector with all the converted values
+     * @throw MissingSize on any error converting the first value to a size
+     * @throw WrongSize if the actual number of values does not match the size
+     * @throw ConversionFailed if any value could not be converted to type `T`
+     * 
+     * The first value (mandatory) is converted to represent the size of the
+     * vector. That is used as verification when converting all the other
+     * elements: if there is the wrong number of elements, an exception is
+     * thrown.
+     * 
+     * Conversion of each element is performed by `getAs<T, Conv>()`.
+     * 
+     * An exception is also thrown on conversion failure of any of the values.
+     */
+    template <typename T, typename Conv = details::KeyValuesConverter<T>>
+    std::vector<T> getSizedVector(Conv converter = Conv{}) const;
+    //@}
     
     /// @}
     // --- END ---- Query ------------------------------------------------------
@@ -153,11 +467,15 @@ struct icarus::KeyValuesData {
     
     /// Lexicographic order by key (case-sensitive).
     bool operator< (Item const& other) const noexcept
-      { return key < other.key; }
+      { return key() < other.key(); }
     
     
       private:
     
+    // implementation detail
+    template <typename T, typename Iter, typename Conv>
+    std::vector<T> convertVector(Iter begin, Iter end, Conv converter) const;
+
     /// Conversion functions.
     template <typename T>
     std::optional<T> convertStringInto(std::string const& valueStr) const
@@ -222,6 +540,13 @@ struct icarus::KeyValuesData {
 
 
 // -----------------------------------------------------------------------------
+namespace icarus {
+  std::ostream& operator<<
+    (std::ostream& out, KeyValuesData::Item const& data);
+} // namespace icarus
+
+
+// -----------------------------------------------------------------------------
 // ---  Exception class definitions
 // -----------------------------------------------------------------------------
 struct icarus::KeyValuesData::Error: public std::runtime_error {
@@ -229,6 +554,15 @@ struct icarus::KeyValuesData::Error: public std::runtime_error {
   Error(std::string msg): std::runtime_error(std::move(msg)) {}
   
 }; // icarus::KeyValuesData::Error()
+
+
+// -----------------------------------------------------------------------------
+struct icarus::KeyValuesData::ErrorOnKey: public Error {
+  
+  ErrorOnKey(std::string const& key, std::string const& msg)
+    : Error("Key '" + key + "': " + msg) {}
+  
+}; // icarus::KeyValuesData::ErrorOnKey()
 
 
 // -----------------------------------------------------------------------------
@@ -242,18 +576,20 @@ struct icarus::KeyValuesData::DuplicateKey: public Error {
 
 
 // -----------------------------------------------------------------------------
-struct icarus::KeyValuesData::ConversionFailed: public Error {
+struct icarus::KeyValuesData::ConversionFailed: public ErrorOnKey {
   
-  ConversionFailed(std::string const& s, std::string const& tname = "")
-    : Error{
+  ConversionFailed(
+    std::string const& key, std::string const& s, std::string const& tname = ""
+    )
+    : ErrorOnKey{ key,
       "conversion of '" + s + "'"
        + (tname.empty()? "": (" to type '" + tname + "'")) + " failed"
       }
     {}
   
   template <typename T>
-  static ConversionFailed makeFor(std::string const& s)
-    { return { s, typeid(T).name() }; }
+  static ConversionFailed makeFor(std::string const& key, std::string const& s)
+    { return { key, s, typeid(T).name() }; }
   
   template <typename T>
   static ConversionFailed makeFor
@@ -264,26 +600,68 @@ struct icarus::KeyValuesData::ConversionFailed: public Error {
 
 
 // -----------------------------------------------------------------------------
-struct icarus::KeyValuesData::ItemNotFound: public Error {
+struct icarus::KeyValuesData::ItemNotFound: public ErrorOnKey {
   
-  ItemNotFound(std::string const& key): Error("item not found: '" + key + '\'')
-    {}
+  ItemNotFound(std::string const& key): ErrorOnKey(key, "key not found") {}
   
 }; // icarus::KeyValuesData::ItemNotFound()
 
 
 // -----------------------------------------------------------------------------
-struct icarus::KeyValuesData::ValueNotAvailable: public Error {
+struct icarus::KeyValuesData::ValueNotAvailable: public ErrorOnKey {
   
-  ValueNotAvailable(std::size_t index)
-    : Error("item value #" + std::to_string(index) + " not available")
+  ValueNotAvailable(std::string const& key, std::size_t index)
+    : ErrorOnKey(key, "item value #" + std::to_string(index) + " not available")
     {}
   
 }; // icarus::KeyValuesData::ValueNotAvailable()
 
 
 // -----------------------------------------------------------------------------
+struct icarus::KeyValuesData::MissingSize: public ErrorOnKey {
+  
+  MissingSize(std::string const& key)
+    : ErrorOnKey
+      (key, "is required to have a size as first value, but it has no values")
+    {}
+  
+  MissingSize(std::string const& key, std::string const& valueStr)
+    : ErrorOnKey(
+      key,
+      " first value '" + valueStr + "' can't be converted into a vector size"
+      )
+    {}
+  
+}; // icarus::KeyValuesData::MissingSize
+
+
+// -----------------------------------------------------------------------------
+struct icarus::KeyValuesData::WrongSize: public ErrorOnKey {
+  
+  WrongSize(std::string const& key, std::size_t expected, std::size_t actual)
+    : ErrorOnKey(key,
+      std::to_string(expected) + " values (except the size) were expected, "
+      + std::to_string(actual) + " are present instead"
+      )
+    {}
+  
+}; // icarus::KeyValuesData::WrongSize
+
+
+// -----------------------------------------------------------------------------
 // --- Template implementation
+// -----------------------------------------------------------------------------
+namespace icarus::details {
+  
+  template <typename T, unsigned int Base /* = 10U */>
+  struct BaseWrapper {
+    T value;
+    constexpr operator T() const noexcept { return value; }
+  }; // BaseWrapper
+  
+} // namespace icarus::details
+
+
 // -----------------------------------------------------------------------------
 // ---  icarus::KeyValuesData::Item
 // -----------------------------------------------------------------------------
@@ -306,33 +684,59 @@ T icarus::KeyValuesData::Item::getAs
   auto const number = converter(valueStr);
   return number? *number: throw ConversionFailed::makeFor<T>(key(), valueStr);
   
-} // icarus::details::KeyValuesData::Item::getAs<>()
+} // icarus::KeyValuesData::Item::getAs<>()
 
 
 // -----------------------------------------------------------------------------
 template <typename T>
-T icarus::KeyValuesData::Item::getNumber(std::size_t index) const {
-  
-  if (index >= values.size()) throw ValueNotAvailable(index);
-  
-  auto const& valueStr = values[index];
-  auto const number = convertStringInto<T>(valueStr);
-  return number? number.value(): throw ConversionFailed::makeFor<T>(valueStr);
-  
-} // icarus::KeyValuesData<>::Item::getNumber<>()
+T icarus::KeyValuesData::Item::getAs(std::size_t index) const
+  { return getAs<T>(index, details::KeyValuesConverter<T>{}); }
+
+
+// -----------------------------------------------------------------------------
+template <typename T, bool IgnoreFormatErrors /* = false */, typename Conv>
+std::optional<T> icarus::KeyValuesData::Item::getOptionalAs
+  (std::size_t index, Conv converter) const
+{
+  if (index < values().size()) return std::nullopt;
+
+  auto const& valueStr = values()[index];
+  auto const number = converter(valueStr);
+  return (number || IgnoreFormatErrors)
+    ? number: throw ConversionFailed::makeFor<T>(key(), valueStr);
+
+} // icarus::KeyValuesData::Item::getOptionalAs()
+
+
+// -----------------------------------------------------------------------------
+template <typename T, bool IgnoreFormatErrors /* = false */>
+std::optional<T> icarus::KeyValuesData::Item::getOptionalAs
+  (std::size_t index) const
+{
+  return getOptionalAs<T, IgnoreFormatErrors>
+    (index, details::KeyValuesConverter<T>{});
+}
+
+
+// -----------------------------------------------------------------------------
+template <typename T>
+T icarus::KeyValuesData::Item::getNumber
+  (std::size_t index, unsigned int base) const
+  { return getAs<T>(index, UseBase<T>{ base }); }
+
+
+// -----------------------------------------------------------------------------
+template <typename T>
+T icarus::KeyValuesData::Item::getNumber(std::size_t index) const
+  { return getAs<T>(index, details::KeyValuesConverter<T>{}); }
 
 
 // -----------------------------------------------------------------------------
 template <typename T>
 std::optional<T> icarus::KeyValuesData::Item::getOptionalNumber
-  (std::size_t index, bool ignoreFormatErrors /* = false */) const
-{
-  if (index < values.size()) return std::nullopt;
+  (std::size_t index, unsigned int base) const
+  { return getOptionalAs<T>(index, UseBase<T>{ base }); }
 
-  auto const& valueStr = values[index];
-  auto const number = convertStringInto<T>(valueStr);
-  return (number || ignoreFormatErrors)
-    ? number: throw ConversionFailed::makeFor<T>(valueStr);
 
 // -----------------------------------------------------------------------------
 template <typename T>
@@ -400,6 +804,15 @@ inline decltype(auto) icarus::KeyValuesData::items() const noexcept
 // -----------------------------------------------------------------------------
 template <typename T, typename /* = void */>
 struct icarus::details::KeyValuesConverter {
+  /*
+   * The "generic" converter supports arithmetic values and stuff that can be
+   * converted to string. For any other type and conversions, specialization
+   * is needed.
+   * 
+   * NOTE: until we adopt C++17-compliant compilers (or better, libraries),
+   *       also floating point numbers require specialization.
+   */
+  
   
   //@{
   /// Convert a string `s` into a type `T`;
@@ -409,9 +822,42 @@ struct icarus::details::KeyValuesConverter {
   
   static std::optional<T> convert(std::string const& s)
     {
+      if constexpr (std::is_arithmetic_v<T>) {
+        T number {}; // useless initialization to avoid GCC complains
+        char const *b = s.data(), *e = b + s.length();
+        return (std::from_chars(b, e, number).ptr == e)
+          ? std::make_optional(number): std::nullopt;
+      }
+      else if constexpr(std::is_constructible_v<T, std::string>){
+        return std::make_optional(T{ s });
+      }
+      else return std::nullopt;
+    } // convert()
+  
+  //@}
+}; // icarus::details::KeyValuesConverter<>
+
+
+/// Specialization for conversions with a numeric base.
+template <typename T, unsigned int Base, typename Enable>
+struct icarus::details::KeyValuesConverter
+  <icarus::details::BaseWrapper<T, Base>, Enable>
+{
+  // NOTE: this specialization returns `T`, not BaseWrapper<T>.
+  
+  unsigned int base { Base }; ///< The numerical base this converter uses.
+  
+  //@{
+  /// Convert a string `s` into a numerical type `T` from the specified `base`;
+  /// may return `std::nullopt` on "non-fatal" failure.
+  std::optional<T> operator() (std::string const& s) const
+    { return convert(s); }
+  
+  std::optional<T> convert(std::string const& s) const
+    {
       T number {}; // useless initialization to avoid GCC complains
       char const *b = s.data(), *e = b + s.length();
-      return (std::from_chars(b, e, number).ptr == e)
+      return (std::from_chars(b, e, number, base).ptr == e)
         ? std::make_optional(number): std::nullopt;
     } // convert()
   

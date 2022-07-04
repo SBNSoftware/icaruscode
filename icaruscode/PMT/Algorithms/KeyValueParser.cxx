@@ -103,7 +103,7 @@ auto icarus::details::KeyValueParser::parse(std::istream& s) const
     
     switch (kType) {
       case keyType::create:
-        item.values.clear();
+        item.clear();
         [[fallthrough]];
       case keyType::add:
         item.addValues

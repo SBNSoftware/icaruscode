@@ -58,7 +58,7 @@ namespace icarus::details { class KeyedCSVparser; }
  *          // the first value is an integer, count of how many other values
  *   });
  * 
- * icarus::details::KeyValuesData data = parser(
+ * icarus::KeyValuesData data = parser(
  *   "TriggerType, S5, Triggers, TriggerWindows, 0C0B,"
  *   " TPChits, 12, 130, 0, 0, TPChitTimes, 3, -1.1, -0.3, 0.1, PMThits, 8"
  *   );
@@ -73,6 +73,7 @@ class icarus::details::KeyedCSVparser {
   
   /// Base of all errors by KeyedCSVparser.
   using Error = icarus::KeyValuesData::Error;
+  using ErrorOnKey = icarus::KeyValuesData::ErrorOnKey;
   struct ParserError; ///< Generic error: base of all errors by KeyedCSVparser.
   struct InvalidFormat; ///< Parsing format is not understood.
   /// Expected number of values is missing.

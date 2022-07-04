@@ -206,7 +206,7 @@ auto icarus::opdet::SampledWaveformFunctionTool::extractWaveformSpecification
       specs.version = item->getNumber<unsigned int>(0);
     }
     catch (icarus::KeyValuesData::Error const& e) {
-      throw makeException() << "value in 'Version' ('" << item->values[0]
+      throw makeException() << "value in 'Version' ('" << item->value()
         << "') can't be interpreted as version number (unsigned int):\n"
         << e.what() << "\n";
     }
