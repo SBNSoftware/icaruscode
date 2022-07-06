@@ -16,7 +16,7 @@ physics: {
 
   producers: {
     crtdaq:         @local::icarus_crtsim
-     opdaq:         @local::icarus_simpmt_nonoise # turn off the noise so it runs more quickly
+     opdaq:         @local::icarus_simpmt
        daq:         @local::icarus_simwire_wirecell
 
        rns:         { module_type: "RandomNumberSaver" }

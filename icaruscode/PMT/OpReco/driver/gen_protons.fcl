@@ -37,7 +37,7 @@ physics:
  {
    generator: @local::icarus_singlep
    largeant: @local::icarus_largeant
-   opdaq:    @local::icarus_simpmt_nonoise
+   opdaq:    @local::icarus_simpmt
    rns:      { module_type: "RandomNumberSaver" }
  }
  analyzers: {}
