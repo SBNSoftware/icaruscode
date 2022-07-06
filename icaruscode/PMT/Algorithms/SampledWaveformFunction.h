@@ -216,14 +216,6 @@ void icarus::opdet::SampledWaveformFunction<T>::doDump(
     << '\n'
     ;
   
-  // === BEGIN DEBUG FIXME DELME ===============================================
-  out << "\n" << indent << "  samples:";
-  for (std::size_t iSample = 0; iSample < fSamples.size(); ++iSample) {
-    out << "\n" << indent << "   [" << iSample << "]  " << fSamples[iSample];
-  }
-  out << "\n";
-  // === END DEBUG =============================================================
-  
 } // icarus::opdet::SampledWaveformFunction<>::doDump()
 
 

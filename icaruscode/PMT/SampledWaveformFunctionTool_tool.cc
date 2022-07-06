@@ -51,7 +51,29 @@ namespace icarus::opdet { struct SampledWaveformFunctionTool; }
  * Waveform specification file format
  * -----------------------------------
  * 
- * TODO
+ * The response must be described in a plain text file following the syntax from
+ * `icarus::details::KeyValueParser`.
+ * The following fields are supported:
+ * 
+ * * `"FileFormat"` (integer, implied: `1`) represents the version of the data
+ *   format, i.e. the list of the supported fields and their meaning.
+ *   Currently it's only a formal parameter, which is ignored.
+ * * `"Name"` (string): short name identifying this response
+ * * `"Description"` (string): the description of this response; may be long and
+ *   spanning multiple lines (always adhering `icarus::details::KeyValueParser`
+ *   syntax)
+ * * `"Date"` (string): the date of this response; free-form.
+ * * `"Version"` (positive integer): the version of this response; it may
+ *   describe updates for the same response `Name`.
+ * * `"Tick"` (time quantity string, mandatory): the duration of one tick in the
+ *   response sampling, in time quantity format (e.g. `"2 ns"` or "0.4 us").
+ * * `"Gain"` (real number): the PMT gain associated to this response.
+ *   If provided, it will allow rescaling to different gains.
+ * * `"Samples"` (sequence of samples in mV, mandatory): values of the samples
+ *   in the response, one per tick. No reference time is needed (the algorithms
+ *   will look for the peak sample to be used as reference time).
+ * * `"NSamples"` (positive integer): the number of samples in the `Samples`
+ *   array; used to validate the input.
  * 
  * 
  * Configuration
