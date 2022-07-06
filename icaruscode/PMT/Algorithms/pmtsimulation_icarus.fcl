@@ -49,7 +49,8 @@ BEGIN_PROLOG
 
 icarus_settings_opdet: {
   
-  nominalPMTgain: 7.0e6  # PMT multiplication gain factor
+  nominalPMTgain: 9.7e6  # PMT multiplication gain factor
+                         # this one is chosen to have a 4 mV SPR (202202, see also icarus_spe.fcl)
   
 } # icarus_settings_opdet
 
@@ -158,7 +159,7 @@ icarus_photoelectronresponse_customexample: {
 #
 # pick one
 #
-icarus_photoelectronresponse_standard: @local::icarus_photoelectronresponse_exponentials
+icarus_photoelectronresponse_standard: @local::icarus_photoelectronresponse_202202
 
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -310,7 +311,7 @@ icarus_pmtsimulationalg_2018_nonoise: {
 #
 # Includes noise.
 #
-icarus_pmtsimulationalg_standard: @local::icarus_pmtsimulationalg_2018_noise
+icarus_pmtsimulationalg_standard: @local::icarus_pmtsimulationalg_202202
 
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
