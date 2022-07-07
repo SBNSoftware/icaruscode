@@ -124,7 +124,7 @@ Options:
     is not empty
 --max=LIMIT
     retrieves only the first LIMIT files from SAM (only when querying run numbers);
-    in all cases, it translates only LIMIT files into a location
+    in all cases, it translates only LIMIT files into a location; 0 means no limit
 --quiet , -q
     do not print non-fatal information on screen while running
 --debug[=LEVEL]
@@ -242,7 +242,7 @@ declare Schema="$DefaultSchema"
 declare Location="$DefaultLocation"
 declare Stream="$DefaultStream"
 declare OutputPattern="$DefaultOutputPattern"
-declare EntryLimit=''
+declare EntryLimit=0 # 0 = no limits'
 declare -i iParam
 for (( iParam=1 ; iParam <= $# ; ++iParam )); do
   Param="${!iParam}"
@@ -308,7 +308,7 @@ fi
 
 trap Cleanup EXIT
 
-[[ "${EntryLimit:-0}" -gt 0 ]] && Limit="max${EntryLimit}"
+[[ "$EntryLimit" -gt 0 ]] && Limit="max${EntryLimit}"
 
 declare Constraints=''
 case "${Type,,}" in
@@ -325,7 +325,7 @@ case "${Type,,}" in
 #   exit 1
 esac
 [[ -n "$Stream" ]] && Constraints+=" and sbn_dm.beam_type=${Stream}"
-[[ "${EntryLimit:-0}" -gt 0 ]] && Constraints+=" with limit ${EntryLimit}"
+[[ "$EntryLimit" -gt 0 ]] && Constraints+=" with limit ${EntryLimit}"
 
 
 declare -i nErrors=0
@@ -376,7 +376,7 @@ for Spec in "${Specs[@]}" ; do
   declare -a FileURL
   INFO "${JobTag}: ${nFiles} files${OutputFile:+" => '${OutputFile}'"}"
   while read FileName ; do
-    [[ $iFile -ge "$EntryLimit" ]] && INFO "Limit of ${EntryLimit} reached." && break
+    [[ "$EntryLimit" -gt 0 ]] && [[ $iFile -ge "$EntryLimit" ]] && INFO "Limit of ${EntryLimit} reached." && break
     INFO "[$((++iFile))/${nFiles}] '${FileName}'"
     FileURL=( $(RunSAM get-file-access-url ${Schema:+"--schema=${Schema}"} ${Location:+"--location=${Location}"} "$FileName") )
     LASTFATAL "getting file '${FileName}' location from SAM."
