@@ -286,7 +286,9 @@ def detectFirstLogger(fileInfo):
     if not len(files): continue
     for info in files:
       firstEvent = extractFirstEvent(info.pathToXRootD())
-      if firstEvent is not None: lowestEvent.add(info, key=firstEvent)
+      if firstEvent is not None:
+        lowestEvent.add(info, key=firstEvent)
+        if firstEvent == 1: break # can't get lower than this!
     # for files
   # for 
   try: firstLogger = lowestEvent.min().dataLogger
