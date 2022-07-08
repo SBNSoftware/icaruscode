@@ -17,6 +17,7 @@ icarus_simple_flashmatch_0: {
   SelectNeutrino: false # TODO: decide if true is better
   OnlyCollectionWires: false
   ForceConcurrence: true
+  CorrectDriftDistance: false // TODO: test and change to true
   UseOppVolMetric: true
   InputFileName: "FlashMatch/fm_metrics_icarus.root"
   NoAvailableMetrics: false
