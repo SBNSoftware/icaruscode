@@ -49,13 +49,13 @@ icarus_simple_flashmatch_0: {
   # block for Y and Z ophit distributions, used for unbiassing
   # TODO: find adequate values, these are NOT OK!
   YBins: 5
-  YLow: -135.
-  YHigh: 85.
   YBiasSlope: 0. # TODO: find adequate value, currently no Y unbiassing
+  YLow: -155.45
+  YHigh: 108.55
   ZBins: 18
-  ZLow: -900.
-  YHigh: 900.
   ZBiasSlope: 0. # TODO: find adequate value, currently no Z unbiassing
+  ZLow: -897.84
+  YHigh: 897.84
 
   dy_bins: 75
   dy_low: -200.
