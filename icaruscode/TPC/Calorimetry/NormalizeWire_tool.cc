@@ -136,7 +136,7 @@ icarus::calo::NormalizeWire::ScaleInfo icarus::calo::NormalizeWire::GetScaleInfo
 double icarus::calo::NormalizeWire::Normalize(double dQdx, const art::Event &e, 
     const recob::Hit &hit, const geo::Point_t &location, const geo::Vector_t &direction, double t0) {
   // Get the info
-  ScaleInfo i = GetScaleInfo(e.time().value());
+  ScaleInfo i = GetScaleInfo(e.time().timeHigh());
 
   // Lookup the channel
   unsigned channel = hit.Channel();
