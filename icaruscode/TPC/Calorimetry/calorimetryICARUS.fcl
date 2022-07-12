@@ -25,9 +25,9 @@ standard_gnocchicaloicarus:
   Cryostat: 0
   CaloAlg: @local::standard_calorimetryalgdata
   NormTools: [
-    @local::driftnorm
+    @local::driftnorm,
+    @local::yznorm
   ]
-
 }
 
 
