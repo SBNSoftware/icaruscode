@@ -49,9 +49,6 @@ icarus_stage1_producers:
   caloskimCalorimetryCryoE:       @local::caloskim_calorimetry
   caloskimCalorimetryCryoW:       @local::caloskim_calorimetry
 
-  anodeCrossT0CryoE:              @local::anodeCrossT0CryoE
-  anodeCrossT0CryoW:              @local::anodeCrossT0CryoW
-
   ## Attempt to include simple flash matching here
   ## Simple Flash Matching, right now cryo0 and 1 are identical
   fmatchCryoE:                    @local::icarus_simple_flashmatch_0
