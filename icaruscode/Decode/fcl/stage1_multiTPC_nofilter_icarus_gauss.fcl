@@ -6,7 +6,7 @@ physics.reco: [ @sequence::icarus_filter_cluster3D,
                 @sequence::icarus_pandora_Gauss,
 		@sequence::icarus_reco_fm,
                 @sequence::icarus_crthit,
-                caloskimCalorimetryCryoE, caloskimCalorimetryCryoW]
+                caloskimCalorimetryCryoE, caloskimCalorimetryCryoW, anodeCrossT0CryoE, anodeCrossT0CryoW]
 
 physics.outana:            [ caloskimE, caloskimW, simpleLightAna, CRTDataAnalysis]
 physics.trigger_paths:     [ reco ]

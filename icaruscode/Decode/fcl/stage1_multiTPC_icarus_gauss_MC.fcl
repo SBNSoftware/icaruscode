@@ -33,7 +33,7 @@ physics.reco: [
                 @sequence::icarus_reco_Gauss_CryoE ,
                 @sequence::icarus_reco_Gauss_CryoW ,
 		@sequence::icarus_reco_fm,
-                caloskimCalorimetryCryoE, caloskimCalorimetryCryoW,
+                caloskimCalorimetryCryoE, caloskimCalorimetryCryoW, anodeCrossT0CryoE, anodeCrossT0CryoW,
                 mcassociationsGausCryoE,  mcassociationsGausCryoW
               ]
 
