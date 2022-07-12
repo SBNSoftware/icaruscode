@@ -1,0 +1,136 @@
+#include "mcreco.fcl"
+#include "services_icarus_simulation.fcl"
+#include "singles_icarus.fcl"
+#include "largeantmodules_icarus.fcl"
+#include "detsimmodules_ICARUS.fcl"
+#include "opdetsim_pmt_icarus.fcl"
+#include "crtsimmodules_icarus.fcl"
+#include "rootoutput_icarus.fcl"
+#include "multipartvertex_icarus.fcl"
+#include "icarus_ophitfinder.fcl"
+#include "icarus_flashfinder.fcl"
+#include "icarus_opana_modules.fcl"
+
+process_name: Custom
+
+services: {
+  @table::icarus_g4_services
+  #@table::icarus_simulation_services
+} # services
+
+source:
+{
+  module_type: EmptyEvent
+  timestampPlugin: { plugin_type: "GeneratedEventTimestamp" }
+  maxEvents:   100
+  firstRun:    1
+  firstEvent:  1
+    #module_type: RootInput
+}
+
+
+physics: {
+
+  producers: {
+    #generator:  @local::MultiPartRain
+    generator:  @local::icarus_singlep
+    largeant:   @local::icarus_largeant
+    mcreco:     @local::standard_mcreco
+    ionization: {
+                 module_type: "larsim/ElectronDrift/ShiftEdepSCE"
+                 EDepTag:     "largeant:TPCActive"
+                 MakeAnaTree: false
+                }
+    #crtdaq:     @local::icarus_crtsim
+    #opdaq:      @local::icarus_simpmt
+    opdaq:      @local::icarus_simpmt_nonoise # turn off the noise so it runs more quickly
+    #daq:        @local::icarus_simwire
+    mcophit:    @local::ICARUSMCOpHit
+    ophit:      @local::icarus_ophit
+    ophitdebugger: @local::icarus_ophitdebugger
+    mcflash:    @local::ICARUSMCOpFlashCryoE
+    opflash:    @local::ICARUSSimpleFlashCryoE
+    
+    rns:        { module_type: "RandomNumberSaver" }
+  }
+
+  analyzers: { 
+    ophittuple: @local::ICARUSOpHitTuple
+    opflashana: @local::ICARUSOpFlashAna
+    partana:    @local::ICARUSParticleAna
+  }
+  #produce: [ rns, generator, largeant, mcreco, opdaq, mcophit, ophit, mcflash, opflash]
+  produce: [ rns, generator, largeant, mcreco, opdaq, mcophit, ophit, ophitdebugger, mcflash, opflash]
+  analyze: [ ophittuple, opflashana, partana ]
+  store:   [ rootoutput ]
+  trigger_paths: [ produce ]
+  end_paths:     [ analyze , store ]
+} # physics
+
+
+outputs: {
+  rootoutput: @local::icarus_rootoutput
+}
+
+outputs.rootoutput.fileName: "larsoft.root"
+
+physics.producers.mcophit.SimPhotonsProducer: "largeant"
+physics.producers.mcophit.TimeStart: -1000
+physics.producers.mcophit.TimeEnd:    1000
+physics.producers.mcopflash.TimeStart: -1000
+physics.producers.mcopflash.TimeEnd:    1000
+physics.producers.ophit.UseStartTime: true
+physics.analyzers.ophittuple.OpDetWaveformProducer: "opdaq"
+physics.analyzers.ophittuple.OpHitProducerList: ["ophit","mcophit"]
+physics.analyzers.opflashana.MCOpFlashProducer: "mcflash"
+physics.analyzers.opflashana.OpFlashProducerList: ["opflash"]
+
+physics.producers.largeant.KeepParticlesInVolumes: ["volCryostat"] #only keep MCParticles that cross the cryostat
+physics.producers.mcreco.SimChannelLabel: "largeant:TPCActive"
+physics.producers.mcreco.MCParticleLabel: "largeant"
+physics.producers.mcreco.UseSimEnergyDeposit: true
+physics.producers.mcreco.MCRecoPart.SavePathPDGList: [13,-13,211,-211,111,311,310,130,321,-321,2212,2112,2224,2214,2114,1114,3122,1000010020,1000010030,1000020030,1000020040]
+
+physics.producers.generator.PDG: [ 13,13,13,13,13,13 ]            # e-
+physics.producers.generator.PosDist: 0             # Flat position dist.
+physics.producers.generator.X0: [ -210.21, -210.21, -210.21, -210.21, -210.21, -210.21 ]
+physics.producers.generator.Y0: [ -23.45, -23.45, -23.45, -23.45, -23.45, -23.45 ]
+physics.producers.generator.Z0: [ 0, 0, 0, 0, 0, 0 ]
+physics.producers.generator.T0: [ 0, 0, 0, 0, 0, 0 ]
+physics.producers.generator.SigmaX: [ 145, 145, 145, 145, 145, 145 ]      # x = (0, 256)
+physics.producers.generator.SigmaY: [ 155, 155, 155, 155, 155, 155 ]      # y = (-116.5, 116.5)
+physics.producers.generator.SigmaZ: [ 890, 890, 890, 890, 890, 890 ]      # z = (0, 1037)
+physics.producers.generator.SigmaT: [ 1000000, 1000000, 1000000, 1000000, 1000000, 1000000 ]        # In time
+physics.producers.generator.PDist: 0               # Flat momentum dist. (0.05-2.0 GeV)
+physics.producers.generator.P0: [ 1.025, 1.025, 1.025, 1.025, 1.025, 1.025 ]
+physics.producers.generator.SigmaP: [ 0.975, 0.975, 0.975, 0.975, 0.975, 0.975 ]
+physics.producers.generator.AngleDist: 0           # Flat angle dist.
+physics.producers.generator.Theta0XZ: [ 0., 0., 0., 0., 0., 0. ]       # y-azimuth
+physics.producers.generator.Theta0YZ: [ 0., 0., 0., 0., 0., 0. ]       # y-latitude
+physics.producers.generator.SigmaThetaXZ: [ 180., 180., 180., 180., 180., 180. ] # Quasi-isotropic
+physics.producers.generator.SigmaThetaYZ: [ 90., 90., 90., 90., 90., 90. ]
+
+services.LArG4Parameters.FillSimEnergyDeposits: true
+services.LArG4Parameters.KeepEMShowerDaughters: false
+#services.LArG4Parameters.NoElectronPropagation: true
+#services.LArG4Parameters.ParticleKineticEnergyCut: 0.0005
+#services.LArG4Parameters.DisableWireplanes: true
+#services.LArG4Parameters.EnabledPhysics: ["Em","Ion","FastOptical"]
+services.LArG4Parameters.EnabledPhysics: ["Em","SynchrotronAndGN","Ion","Stopping","FastOptical"]
+#services.LArG4Parameters.EnabledPhysics: ["Em","SynchrotronAndGN","Ion","Hadron","Decay","HadronElastic","Stopping"]
+#services.LArG4Parameters.EnabledPhysics: ["Em","SynchrotronAndGN","Ion","Hadron","Decay","HadronElastic","Stopping","Optical"]
+#services.LArPropertiesService.ScintYield: 0
+#services.LArPropertiesService.ScintByParticleType: false
+
+physics.producers.mcreco.SimEnergyDepositLabel: "largeant:TPCActive"
+physics.producers.mcreco.SimChannelLabel: "largeant:TPCActive"
+physics.producers.mcreco.MCParticleLabel: "largeant"
+physics.producers.mcreco.UseSimEnergyDeposit: true
+physics.producers.mcreco.MCRecoPart.SavePathPDGList: [13,-13,211,-211,111,311,310,130,321,-321,2212,2112,2224,2214,2114,1114,3122,1000010020,1000010030,1000020030,1000020040]
+
+#
+# customisation
+#
+
+# we are suppressing channels with no signal in the TPC
+#physics.producers.daq.SuppressNoSignal: true
