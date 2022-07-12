@@ -16,18 +16,15 @@ physics:
 {
     producers:
     {
-        calorimetry:    @local::standard_caloicarusmc
-        calorimetryFit: @local::standard_caloicarusmcfit
-        gnocchiCal:     @local::standard_gnocchicaloicarus
-        
+        gnocchiCal: @local::standard_gnocchicaloicarus
     }
 
     #define the producer and filter modules for this path, order matters,
     #filters reject all following items.  see lines starting physics.producers below
-    reco: [ calorimetry , calorimetryFit, gnocchiCal]
+    reco: [ gnocchiCal]
 
     #define the output stream, there could be more than one if using filters
-    stream1:  [ roooutput ]
+    stream1:  [ rootoutput ]
 
 }
 
@@ -36,14 +33,5 @@ physics:
 #entry in the output stream you want those to go to, where XXX is the label of the filter module(s)
 outputs.rootoutput: @local::icarus_rootoutput
 
-services.DetectorPropertiesService.Electronlifetime: 10000
-#calorimetry constants from I. Ginnett (docdb18991) - Lariat method:
-physics.producers.calorimetry.CaloAlg.CalAreaConstants: [ 1.56e-2, 1.35e-2, 1.59e-2 ]
-
-physics.producers.calorimetryfit.CaloAlg.CalAreaConstants: [ 1.56e-2, 1.35e-2, 1.59e-2 ]
-
 physics.producers.gnocchiCal.TrackModuleLabel:      "pandoraTrackGausCryoE"
 physics.producers.gnocchiCal.CaloAlg.CalAreaConstants: [ 1.56e-2, 1.35e-2, 1.59e-2 ]
-
-
-

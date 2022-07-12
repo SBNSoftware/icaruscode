@@ -36,6 +36,7 @@ private:
   // Configuration
   int fTimeout;
   std::string fURL;
+  bool fVerbose;
 
   // Class to hold data from DB
   class RunInfo {
@@ -53,6 +54,9 @@ private:
   // Cache run requests
   std::map<uint32_t, RunInfo> fRunInfos;
 };
+
+DEFINE_ART_CLASS_TOOL(NormalizeDrift)
+
   } // end namespace calo
 } // end namespace icarus
 
@@ -64,6 +68,7 @@ icarus::calo::NormalizeDrift::NormalizeDrift(fhicl::ParameterSet const &pset) {
 void icarus::calo::NormalizeDrift::configure(const fhicl::ParameterSet& pset) {
   fURL = pset.get<std::string>("URL");
   fTimeout = pset.get<unsigned>("Timeout");
+  fVerbose = pset.get<bool>("Verbose", false);
 }
 
 std::string icarus::calo::NormalizeDrift::URL(uint32_t run) {
@@ -79,15 +84,23 @@ icarus::calo::NormalizeDrift::RunInfo icarus::calo::NormalizeDrift::GetRunInfo(u
   // Otherwise, look it up
   int error = 0;
   std::string url = URL(run);
+
+  if (fVerbose) std::cout << "NormalizeDrift Tool -- New Run info, requesting data from url:\n" << url << std::endl;
+
   Dataset d = getDataWithTimeout(url.c_str(), "", fTimeout, &error);
+
   if (error) {
     throw cet::exception("NormalizeDrift") << "Calibration Database access failed. URL: (" << url << ") Error Code: " << error;
   }
+
+  if (fVerbose) std::cout << "NormalizeDrift Tool -- Received HTTP response:\n" << getHTTPmessage(d) << std::endl;
+
   if (getHTTPstatus(d) != 200) {
     throw cet::exception("NormalizeDrift") 
       << "Calibration Database access failed. URL: (" << url
       << "). HTTP error status: " << getHTTPstatus(d) << ". HTTP error message: " << getHTTPmessage(d);
   }
+
 
   // Check all the TPC's are set
   std::vector<bool> tpc_set(4, false);
@@ -95,7 +108,8 @@ icarus::calo::NormalizeDrift::RunInfo icarus::calo::NormalizeDrift::GetRunInfo(u
 
   // Iterate over the rows
   // Should be 4: one for each TPC
-  for (unsigned row = 0; row < 4; row++) {
+  // The first 4 rows are metadata
+  for (unsigned row = 4; row < 8; row++) {
     Tuple tup = getTuple(d, row);
 
     int err = 0;
@@ -124,6 +138,8 @@ icarus::calo::NormalizeDrift::RunInfo icarus::calo::NormalizeDrift::GetRunInfo(u
     if (ch == 2) thisrun.tau_WE = tau;
     if (ch == 3) thisrun.tau_WW = tau;
   }
+
+  if (fVerbose) std::cout << "NormalizeDrift Tool -- Lifetime Data:" << "\nTPC EE: " << thisrun.tau_EE << "\nTPC EW: " << thisrun.tau_EW << "\nTPC WE: " << thisrun.tau_WE << "\nTPC WW: " << thisrun.tau_WW << std::endl;
  
   // Make sure all the channels are set
   for (unsigned tpc = 0; tpc < 4; tpc++) {
@@ -133,7 +149,7 @@ icarus::calo::NormalizeDrift::RunInfo icarus::calo::NormalizeDrift::GetRunInfo(u
   }
 
   // Set the cache
-  fRunInfos.at(run) = thisrun;
+  fRunInfos[run] = thisrun;
 
   return thisrun;
 }
@@ -162,6 +178,8 @@ double icarus::calo::NormalizeDrift::Normalize(double dQdx, const art::Event &e,
   
   // Get the hit time
   double thit = clock_data.TPCTick2TrigTime(hit.PeakTime()) - t0;
+
+  if (fVerbose) std::cout << "NormalizeDrift Tool -- Norm factor: " << exp(thit / thiselifetime) << " at TPC: " << tpc << " Cryo: " << cryo << " Time: " << thit << " Track T0: " << t0 << std::endl;
 
   // Scale
   if (thiselifetime > 0) {
