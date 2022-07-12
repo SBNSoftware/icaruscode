@@ -4,12 +4,14 @@ driftnorm: {
   tool_type: NormalizeDrift
   Timeout: 200
   URL: "https://dbdata0vm.fnal.gov:9443/icarus_con_prod/app/data?f=tpc_elifetime_data&t="
+  Verbose: true
 }
 
 wirenorm: {
   tool_type: NormalizeWire
   Timeout: 200
   URL: "https://dbdata0vm.fnal.gov:9443/icarus_con_prod/app/data?f=tpc_dqdxcalibration_data&t="
+  Verbose: true
 }
 
 END_PROLOG

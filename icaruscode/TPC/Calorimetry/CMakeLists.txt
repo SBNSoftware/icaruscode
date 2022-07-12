@@ -1,5 +1,3 @@
-add_subdirectory(Algorithms)
-
 cet_find_library(LIBWDA NAMES wda PATHS ENV LIBWDA_LIB NO_DEFAULT_PATH)
 
 # Build the module

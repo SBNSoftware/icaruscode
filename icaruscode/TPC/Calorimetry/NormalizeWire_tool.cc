@@ -36,6 +36,7 @@ private:
   // Configuration
   int fTimeout;
   std::string fURL;
+  bool fVerbose;
 
   // Class to hold data from DB
   class ScaleInfo {
@@ -50,6 +51,9 @@ private:
   // Cache timestamp requests
   std::map<uint64_t, ScaleInfo> fScaleInfos;
 };
+
+DEFINE_ART_CLASS_TOOL(NormalizeWire)
+
   } // end namespace calo
 } // end namespace icarus
 
@@ -61,6 +65,7 @@ icarus::calo::NormalizeWire::NormalizeWire(fhicl::ParameterSet const &pset) {
 void icarus::calo::NormalizeWire::configure(const fhicl::ParameterSet& pset) {
   fURL = pset.get<std::string>("URL");
   fTimeout = pset.get<unsigned>("Timeout");
+  fVerbose = pset.get<bool>("Verbose", false);
 }
 
 std::string icarus::calo::NormalizeWire::URL(uint64_t timestamp) {
@@ -76,10 +81,16 @@ icarus::calo::NormalizeWire::ScaleInfo icarus::calo::NormalizeWire::GetScaleInfo
   // Otherwise, look it up
   int error = 0;
   std::string url = URL(timestamp);
+
+  if (fVerbose) std::cout << "NormalizeWire Tool -- New Scale info, requesting data from url:\n" << url << std::endl;
+
   Dataset d = getDataWithTimeout(url.c_str(), "", fTimeout, &error);
   if (error) {
     throw cet::exception("NormalizeWire") << "Calibration Database access failed. URL: (" << url << ") Error Code: " << error;
   }
+
+  if (fVerbose) std::cout << "NormalizeWire Tool -- Received HTTP response:\n" << getHTTPmessage(d) << std::endl;
+
   if (getHTTPstatus(d) != 200) {
     throw cet::exception("NormalizeWire") 
       << "Calibration Database access failed. URL: (" << url
@@ -96,7 +107,8 @@ icarus::calo::NormalizeWire::ScaleInfo icarus::calo::NormalizeWire::GetScaleInfo
   }
 
   // Iterate over the rows
-  for (unsigned row = 0; row < (unsigned)n_tuple; row++) {
+  // The first 4 are metadata
+  for (unsigned row = 4; row < (unsigned)n_tuple; row++) {
     Tuple tup = getTuple(d, row);
 
     int err = 0;
@@ -112,11 +124,11 @@ icarus::calo::NormalizeWire::ScaleInfo icarus::calo::NormalizeWire::GetScaleInfo
       throw cet::exception("NormalizeWire") << "Calibration Database access failed. URL: (" << url << ") Failed on tuple access, row: " << row << ", col 1. Error Code: " << error;
     }
 
-    thisscale.scale.at(ch) = scale;
+    thisscale.scale[ch] = scale;
   }
 
   // Set the cache
-  fScaleInfos.at(timestamp) = thisscale;
+  fScaleInfos[timestamp] = thisscale;
 
   return thisscale;
 }
@@ -133,6 +145,8 @@ double icarus::calo::NormalizeWire::Normalize(double dQdx, const art::Event &e,
 
   // TODO: what to do if no lifetime is found? throw an exception??
   if (i.scale.count(channel)) scale = i.scale.at(channel);
+
+  if (fVerbose) std::cout << "NormalizeWire Tool -- Data at channel: " << channel << " scale: " << scale << std::endl;
 
   return dQdx / scale;
 }
