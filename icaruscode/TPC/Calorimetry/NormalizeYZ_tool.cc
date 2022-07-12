@@ -57,7 +57,7 @@ private:
   };
 
   // Helpers
-  ScaleInfo GetScaleInfo(uint64_t timestamp);
+  const ScaleInfo& GetScaleInfo(uint64_t timestamp);
   std::string URL(uint64_t timestamp);
 
   // Cache timestamp requests
@@ -84,7 +84,7 @@ std::string icarus::calo::NormalizeYZ::URL(uint64_t timestamp) {
   return fURL + std::to_string(timestamp);
 }
 
-icarus::calo::NormalizeYZ::ScaleInfo icarus::calo::NormalizeYZ::GetScaleInfo(uint64_t timestamp) {
+const icarus::calo::NormalizeYZ::ScaleInfo& icarus::calo::NormalizeYZ::GetScaleInfo(uint64_t timestamp) {
   // check the cache
   if (fScaleInfos.count(timestamp)) {
     return fScaleInfos.at(timestamp);
@@ -140,7 +140,7 @@ icarus::calo::NormalizeYZ::ScaleInfo icarus::calo::NormalizeYZ::GetScaleInfo(uin
 
   if (found_scale_t0) {
     fScaleInfos[timestamp] = thisscale;
-    return thisscale;
+    return fScaleInfos.at(timestamp);
   }
 
   // We haven't seen this timestamp before and we haven't seen the valid t0 before.
@@ -214,8 +214,7 @@ icarus::calo::NormalizeYZ::ScaleInfo icarus::calo::NormalizeYZ::GetScaleInfo(uin
 
   // Set the cache
   fScaleInfos[timestamp] = thisscale;
-
-  return thisscale;
+  return fScaleInfos.at(timestamp);
 }
 
 double icarus::calo::NormalizeYZ::Normalize(double dQdx, const art::Event &e, 
@@ -228,8 +227,8 @@ double icarus::calo::NormalizeYZ::Normalize(double dQdx, const art::Event &e,
 
   // compute itpc
   int cryo = hit.WireID().Cryostat;
-  int tpc = hit.WireID().TPC / 2;
-  int itpc = cryo*2 + tpc;
+  int tpc = hit.WireID().TPC;
+  int itpc = cryo*2 + tpc/2;
   // position
   double y = location.y();
   double z = location.z();
