@@ -1,10 +1,14 @@
 #include "stage1_multiTPC_nofilter_icarus_gauss.fcl"
+
 process_name: Calib
 
 physics: {
+  producers: @local::physics.producers
   analyzers: @local::physics.analyzers
+  prepare: [ caloskimCalorimetryCryoE, caloskimCalorimetryCryoW ]
   outana: @local::physics.outana
 }
+
 
 physics.analyzers.caloskimE.SelectEvents: @erase
 physics.analyzers.caloskimW.SelectEvents: @erase
