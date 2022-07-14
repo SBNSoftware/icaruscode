@@ -2,7 +2,12 @@
 process_name: Calib
 
 physics: {
+  producers: {
+    caloskimCalorimetryCryoE: @local::physics.producers.caloskimCalorimetryCryoE
+    caloskimCalorimetryCryoW: @local::physics.producers.caloskimCalorimetryCryoW
+  }
   analyzers: @local::physics.analyzers
+  prepare: [ caloskimCalorimetryCryoE, caloskimCalorimetryCryoW ]
   outana: @local::physics.outana
 }
 
