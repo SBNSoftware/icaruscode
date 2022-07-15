@@ -66,6 +66,9 @@ outputs:
    dataTier: "reconstructed"
    compressionLevel: 1
    saveMemoryObjectThreshold: 0
+   fileName: "%ifb_%tc-%p.root"
+   fileProperties: {maxInputFiles: 1}
+   checkFileName: false
  }
  outBNB:
  {
