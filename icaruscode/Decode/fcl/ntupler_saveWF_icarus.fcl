@@ -14,8 +14,8 @@ outputs.out1.outputCommands: [
   "drop *_*_*_*"
 ]
 
-physics.analyzers.caloskimE: @local::caloskim_cryoe_nodigits_goldentracks_not0
-physics.analyzers.caloskimW: @local::caloskim_cryow_nodigits_goldentracks_not0
+physics.analyzers.caloskimE: @local::caloskim_cryoe_goldentracks_not0
+physics.analyzers.caloskimW: @local::caloskim_cryow_goldentracks_not0
 
 # Disabled Space-Charge service for calorimetry
 services.SpaceChargeService: {
