@@ -178,6 +178,9 @@ namespace icarus { class DaqDecoderICARUSPMT; }
  *     option is set to `true` unless `TriggerTag` is specified empty.
  * * `DataTrees` (list of strings, default: none): list of data trees to be
  *     produced; if none (default), then `TFileService` is not required.
+ * * `SkipWaveforms` (flag, default: `false`) if set, waveforms won't be
+ *     produced; this is intended as a debugging option for jobs where only the
+ *     `DataTrees` are desired.
  * * `LogCategory` (string, default: `DaqDecoderICARUSPMT`): name of the message
  *     facility category where the output is sent.
  * 
@@ -603,6 +606,12 @@ class icarus::DaqDecoderICARUSPMT: public art::EDProducer {
       std::vector<std::string>{} // default
       };
     
+    fhicl::Atom<bool> SkipWaveforms {
+      Name("SkipWaveforms"),
+      Comment("do not decode and produce waveforms"),
+      false // default
+      };
+    
     fhicl::Atom<std::string> LogCategory {
       Name("LogCategory"),
       Comment("name of the category for message stream"),
@@ -671,7 +680,7 @@ class icarus::DaqDecoderICARUSPMT: public art::EDProducer {
   struct TriggerInfo_t {
     SplitTimestamp_t time; ///< Time of the trigger (absolute).
     long int relBeamGateTime; ///< Time of beam gate relative to trigger [ns].
-    unsigned int bits = 0x0; ///< Trigger bits.
+    sbn::triggerSourceMask bits; ///< Trigger bits.
     unsigned int gateCount = 0U; ///< Gate number from the beginning of run.
   }; // TriggerInfo_t
   
@@ -729,6 +738,8 @@ class icarus::DaqDecoderICARUSPMT: public art::EDProducer {
   
   /// All board setup settings.
   std::vector<daq::details::BoardSetup_t> const fBoardSetup;
+  
+  bool const fSkipWaveforms; ///< Whether to skip waveform decoding.
   
   std::string const fLogCategory; ///< Message facility category.
   
@@ -1313,6 +1324,7 @@ icarus::DaqDecoderICARUSPMT::DaqDecoderICARUSPMT(Parameters const& params)
   , fTTTresetEverySecond
     { params().TTTresetEverySecond().value_or(fTriggerTag.has_value()) }
   , fBoardSetup{ params().BoardSetup() }
+  , fSkipWaveforms{ params().SkipWaveforms() }
   , fLogCategory{ params().LogCategory() }
   , fDetTimings
     { art::ServiceHandle<detinfo::DetectorClocksService const>()->DataForJob() }
@@ -1340,8 +1352,10 @@ icarus::DaqDecoderICARUSPMT::DaqDecoderICARUSPMT(Parameters const& params)
   //
   // produced data products declaration
   //
-  for (std::string const& instanceName: getAllInstanceNames())
-    produces<std::vector<raw::OpDetWaveform>>(instanceName);
+  if (!fSkipWaveforms) {
+    for (std::string const& instanceName: getAllInstanceNames())
+      produces<std::vector<raw::OpDetWaveform>>(instanceName);
+  }
   
   //
   // additional initialization
@@ -1394,7 +1408,9 @@ icarus::DaqDecoderICARUSPMT::DaqDecoderICARUSPMT(Parameters const& params)
       << params().PMTconfigTag.name() << "`"
       ;
   }
-  
+  if (fSkipWaveforms) {
+    log << "\n * PMT WAVEFORMS WILL NOT BE DECODED AND STORED";
+  }
   
   //
   // sanity checks
@@ -1440,14 +1456,10 @@ void icarus::DaqDecoderICARUSPMT::produce(art::Event& event) {
     else
       log << "Trigger from event timestamp: ";
     log << triggerInfo.time << " s, bits: "
-        << icarus::ns::util::bin(triggerInfo.bits);
+        << icarus::ns::util::bin(triggerInfo.bits.bits);
     if (triggerInfo.bits) {
       log << " {";
-      for (std::string const& name
-        : sbn::bits::names<sbn::triggerSource>({(unsigned int) triggerInfo.bits }))
-      {
-        log << ' ' << name;
-      }
+      for (std::string const& name: names(triggerInfo.bits)) log << ' ' << name;
       log << " }";
     } // if
     if (fTriggerTag) log << ", spill count: " << triggerInfo.gateCount;
@@ -1463,7 +1475,7 @@ void icarus::DaqDecoderICARUSPMT::produce(art::Event& event) {
   //
   // output data product initialization
   //
-  std::vector<ProtoWaveform_t> protoWaveforms;
+  std::vector<ProtoWaveform_t> protoWaveforms; // empty if `fSkipWaveforms`
   
   
   // ---------------------------------------------------------------------------
@@ -1533,44 +1545,49 @@ void icarus::DaqDecoderICARUSPMT::produce(art::Event& event) {
   //
   sortWaveforms(protoWaveforms);
   
-  std::vector<ProtoWaveform_t const*> const waveformsWithTrigger
-    = findWaveformsWithNominalTrigger(protoWaveforms);
-  mf::LogTrace(fLogCategory) << waveformsWithTrigger.size() << "/"
-    << protoWaveforms.size() << " decoded waveforms include trigger time ("
-    << fNominalTriggerTime << ").";
+  if (!fSkipWaveforms) {
+    std::vector<ProtoWaveform_t const*> const waveformsWithTrigger
+      = findWaveformsWithNominalTrigger(protoWaveforms);
+    mf::LogTrace(fLogCategory) << waveformsWithTrigger.size() << "/"
+      << protoWaveforms.size() << " decoded waveforms include trigger time ("
+      << fNominalTriggerTime << ").";
+  } // if !fSkipWaveforms
   
   // ---------------------------------------------------------------------------
   // output
   //
   
-  // split the waveforms by destination
-  std::map<std::string, std::vector<raw::OpDetWaveform>> waveformProducts;
-  for (std::string const& instanceName: getAllInstanceNames())
-    waveformProducts.emplace(instanceName, std::vector<raw::OpDetWaveform>{});
-  for (ProtoWaveform_t& waveform: protoWaveforms) {
+  if (!fSkipWaveforms) {
+    // split the waveforms by destination
+    std::map<std::string, std::vector<raw::OpDetWaveform>> waveformProducts;
+    for (std::string const& instanceName: getAllInstanceNames())
+      waveformProducts.emplace(instanceName, std::vector<raw::OpDetWaveform>{});
+    for (ProtoWaveform_t& waveform: protoWaveforms) {
+      
+      // on-global and span requirements override even `mustSave()` requirement;
+      // if this is not good, user should not set `mustSave()`!
+      bool const keep =
+        (waveform.onGlobal || !waveform.channelSetup->onGlobalOnly)
+        && (waveform.span() >= waveform.channelSetup->minSpan)
+        ;
+      
+      if (!keep) continue;
+      waveformProducts.at(waveform.channelSetup->category).push_back
+        (std::move(waveform.waveform));
+    } // for
     
-    // on-global and span requirements overrides even `mustSave()` requirement;
-    // if this is not good, user should not set `mustSave()`!
-    bool const keep =
-      (waveform.onGlobal || !waveform.channelSetup->onGlobalOnly)
-      && (waveform.span() >= waveform.channelSetup->minSpan)
-      ;
-    
-    if (!keep) continue;
-    waveformProducts.at(waveform.channelSetup->category).push_back
-      (std::move(waveform.waveform));
-  } // for
-  
-  // put all the categories
-  for (auto&& [ category, waveforms ]: waveformProducts) {
-    mf::LogTrace(fLogCategory)
-      << waveforms.size() << " PMT waveforms saved for "
-      << (category.empty()? "standard": category) << " instance.";
-    event.put(
-      std::make_unique<std::vector<raw::OpDetWaveform>>(std::move(waveforms)),
-      category // the instance name is the category the waveforms belong to
-      );
-  }
+    // put all the categories
+    for (auto&& [ category, waveforms ]: waveformProducts) {
+      mf::LogTrace(fLogCategory)
+        << waveforms.size() << " PMT waveforms saved for "
+        << (category.empty()? "standard": category) << " instance.";
+      event.put(
+        std::make_unique<std::vector<raw::OpDetWaveform>>(std::move(waveforms)),
+        category // the instance name is the category the waveforms belong to
+        );
+    }
+  } // if !fSkipWaveforms
+
   
 } // icarus::DaqDecoderICARUSPMT::produce()
 
@@ -2003,7 +2020,7 @@ auto icarus::DaqDecoderICARUSPMT::processFragment(
     
   if (fTreeFragment) fillPMTfragmentTree(fragInfo, triggerInfo, timeStamp);
   
-  return (timeStamp != NoTimestamp)
+  return ((timeStamp != NoTimestamp) && !fSkipWaveforms)
     ? createFragmentWaveforms(fragInfo, boardInfo.channelSetup(), timeStamp)
     : std::vector<ProtoWaveform_t>{}
     ;

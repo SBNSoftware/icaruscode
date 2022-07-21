@@ -14,7 +14,7 @@
 # cryostat 0 ("east module") and only cryostat 1 ("west module").
 # Also, for each configuration, several trigger patterns are simulated including
 # single window requirements (M1 to M6), main and opposite window (M3O3 to M6O6)
-# and total of main and opposite window (M2S4, M4S8, M5S10, M6S12).
+# and total of main and opposite window (S3, S5, S8, S10, S15).
 #
 #
 # The steps are:
@@ -127,16 +127,17 @@ SlidingWindowTriggerPatternsSingleWindow: [
 
 
 SlidingWindowTriggerPatternsWindowPair: [
-  { inMainWindow: 1   inOppositeWindow: 1 },
-  { inMainWindow: 2   inOppositeWindow: 2 },
-  { inMainWindow: 3   inOppositeWindow: 3 },
-  { inMainWindow: 4   inOppositeWindow: 4 },
-  { inMainWindow: 5   inOppositeWindow: 5 },
-  { inMainWindow: 6   inOppositeWindow: 6 },
-  { inMainWindow: 2   sumOfOppositeWindows:  4 },
-  { inMainWindow: 4   sumOfOppositeWindows:  8 },
-  { inMainWindow: 5   sumOfOppositeWindows: 10 },
-  { inMainWindow: 6   sumOfOppositeWindows: 12 }
+  { inMainWindow: 1   inOppositeWindow: 1 },       # [0]
+  { inMainWindow: 2   inOppositeWindow: 2 },       # [1]
+  { inMainWindow: 3   inOppositeWindow: 3 },       # [2]
+  { inMainWindow: 4   inOppositeWindow: 4 },       # [3]
+  { inMainWindow: 5   inOppositeWindow: 5 },       # [4]
+  { inMainWindow: 6   inOppositeWindow: 6 },       # [5]
+  { inMainWindow: 2   sumOfOppositeWindows:  3 },  # [6]
+  { inMainWindow: 3   sumOfOppositeWindows:  5 },  # [7]
+  { inMainWindow: 4   sumOfOppositeWindows:  8 },  # [8]
+  { inMainWindow: 5   sumOfOppositeWindows: 10 },  # [9]
+  { inMainWindow: 8   sumOfOppositeWindows: 15 }   # [10]
 ] # SlidingWindowTriggerPatternsWindowPair
 
 
@@ -355,7 +356,6 @@ physics: {
     
     
     # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
   } # analyzers
 
@@ -372,11 +372,11 @@ physics: {
     # trigger simulation: tiling
     simTiledORM1, simTiledORM2, simTiledORM3, simTiledORM4, simTiledORM5, simTiledORM6,
     simTiledORM3O3, simTiledORM4O4, simTiledORM5O5, simTiledORM6O6,
-    simTiledORM2S4, simTiledORM4S8, simTiledORM5S10, simTiledORM6S12,
+    simTiledORS3, simTiledORS5, simTiledORS8, simTiledORS10, simTiledORS15,
     # trigger simulation: sliding
     simSlidingORM1, simSlidingORM2, simSlidingORM3, simSlidingORM4, simSlidingORM5, simSlidingORM6,
     simSlidingORM3O3, simSlidingORM4O4, simSlidingORM5O5, simSlidingORM6O6,
-    simSlidingORM2S4, simSlidingORM4S8, simSlidingORM5S10, simSlidingORM6S12
+    simSlidingORS3, simSlidingORS5, simSlidingORS8, simSlidingORS10, simSlidingORS15
     ]
   
   plotsOR:  [
@@ -501,24 +501,29 @@ physics.producers.simTiledORM6O6: {
   Pattern: @local::SlidingWindowTriggerPatternsWindowPair[5]  # M6O6
 }
 
-physics.producers.simTiledORM2S4: {
+physics.producers.simTiledORS3: {
   @table::physics.producers.simTiledORM1
-  Pattern: @local::SlidingWindowTriggerPatternsWindowPair[6]  # M2S4
+  Pattern: @local::SlidingWindowTriggerPatternsWindowPair[6]  # S3
 }
 
-physics.producers.simTiledORM4S8: {
+physics.producers.simTiledORS5: {
   @table::physics.producers.simTiledORM1
-  Pattern: @local::SlidingWindowTriggerPatternsWindowPair[7]  # M4S8
+  Pattern: @local::SlidingWindowTriggerPatternsWindowPair[7]  # S5
 }
 
-physics.producers.simTiledORM5S10: {
+physics.producers.simTiledORS8: {
   @table::physics.producers.simTiledORM1
-  Pattern: @local::SlidingWindowTriggerPatternsWindowPair[8]  # M5S10
+  Pattern: @local::SlidingWindowTriggerPatternsWindowPair[8]  # S8
 }
 
-physics.producers.simTiledORM6S12: {
+physics.producers.simTiledORS10: {
   @table::physics.producers.simTiledORM1
-  Pattern: @local::SlidingWindowTriggerPatternsWindowPair[9]  # M6S12
+  Pattern: @local::SlidingWindowTriggerPatternsWindowPair[9]  # S10
+}
+
+physics.producers.simTiledORS15: {
+  @table::physics.producers.simTiledORM1
+  Pattern: @local::SlidingWindowTriggerPatternsWindowPair[10]  # S15
 }
 
 physics.producers.simSlidingORM1: {
@@ -571,24 +576,29 @@ physics.producers.simSlidingORM6O6: {
   Pattern: @local::SlidingWindowTriggerPatternsWindowPair[5]  # M6O6
 }
 
-physics.producers.simSlidingORM2S4: {
+physics.producers.simSlidingORS3: {
   @table::physics.producers.simSlidingORM1
-  Pattern: @local::SlidingWindowTriggerPatternsWindowPair[6]  # M2S4
+  Pattern: @local::SlidingWindowTriggerPatternsWindowPair[6]  # S3
 }
 
-physics.producers.simSlidingORM4S8: {
+physics.producers.simSlidingORS5: {
   @table::physics.producers.simSlidingORM1
-  Pattern: @local::SlidingWindowTriggerPatternsWindowPair[7]  # M4S8
+  Pattern: @local::SlidingWindowTriggerPatternsWindowPair[7]  # S5
 }
 
-physics.producers.simSlidingORM5S10: {
+physics.producers.simSlidingORS8: {
   @table::physics.producers.simSlidingORM1
-  Pattern: @local::SlidingWindowTriggerPatternsWindowPair[8]  # M5S10
+  Pattern: @local::SlidingWindowTriggerPatternsWindowPair[8]  # S8
 }
 
-physics.producers.simSlidingORM6S12: {
+physics.producers.simSlidingORS10: {
   @table::physics.producers.simSlidingORM1
-  Pattern: @local::SlidingWindowTriggerPatternsWindowPair[9]  # M6S12
+  Pattern: @local::SlidingWindowTriggerPatternsWindowPair[9]  # S10
+}
+
+physics.producers.simSlidingORS15: {
+  @table::physics.producers.simSlidingORM1
+  Pattern: @local::SlidingWindowTriggerPatternsWindowPair[10]  # S15
 }
 
 
