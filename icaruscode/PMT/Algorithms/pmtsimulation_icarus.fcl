@@ -183,9 +183,29 @@ icarus_pmtsimulation.disable_noise: {
 ###  * based on SPR202202
 ###  * gain: 9.7 x 10^6
 ###  * electronics noise included
-###  * readout closer to the data one (at beam gate it's still importantly
-###    different, and in particular it only includes 3 us of pre-gate instead
-###    of 7 us)
+###  * readout is fundamentally different from the real one: the hardwware readout
+###    collects channels in groups of 180 (full cryostat in Run1, may change in future)
+###    based on a trigger logic (channels above a O(10) p.e. threshold); the simulation
+###    instead does not assume a readout trigger logic and tries to read out every
+###    photoelectron (each channel independently, against a << 1 p.e. threshold);
+###    the part that is not included in the simulation but would be included in data
+###    is comprised only of noise (and exceptionally low response fluctuations of single
+###    photoelectrons), so post-processing can trim and extend the this simulation to
+###    reflect the real readout by removing the channels in the regions (cryostats)
+###    that would not be triggered, and generating the missing waveforms with noise.
+###    The single photoelectron response 202202 used in the simulation is 800 samples
+###    (1.6 us) long; since every single photoelectron "triggers" the simulation, each
+###    waveform will end with pure noise. With the current setting of a 4 us buffer
+###    we have about 1 us of noise in the pre-trigger buffer, 1.6 us of signal and then
+###    1.4 us of noise (additional photoelectrons in these 4 us would just effectively
+###    extend the "signal" part). All this considered, we keep the PMT readout buffer
+###    in the simulation 1+3 us, sizeably smaller than the 3+7 us used in the hardware
+###    for Run1, to save space (using 3+7, we would still have 1.6 us of signal,
+###    and the 3 us before and 5.4 us after it would still be pure noise).
+###    Likewise, we don't attempt to cover the full beam gate time like in hardware
+###    (7+21 us in Run1 settings), since all the signal will be included anyway.
+###    But we do force all 360 channels to take data at beam gate time ("only" for
+###    1+21 us around the beam gate opening though).
 ###
 
 icarus_pmtsimulationalg_202202_noise: {
@@ -198,10 +218,10 @@ icarus_pmtsimulationalg_202202_noise: {
   DarkNoiseRate:             "1.6 kHz"      # per channel, from CERN test stand measurement
 
   ## This is the readout window size for each "trigger" on the electronics
-  ReadoutWindowSize:         5000           # ticks (2 ns each --> 10 us)
+  ReadoutWindowSize:         2000           # ticks (2 ns each --> 4 us)
 
   ##fraction of readout window size that should come before the "trigger" on the electronics
-  PreTrigFraction:           0.3            # fraction (3+7 us)
+  PreTrigFraction:           0.25           # fraction (1+3 us)
 
   ##Threshold in ADC counts for a PMT self-trigger.
   # 15 ADC = 5x 3 ADC (RMS, see AmpNoise above),~45% of standard SPR (4 mV, 33 ADC);
@@ -214,8 +234,8 @@ icarus_pmtsimulationalg_202202_noise: {
   TriggerOffsetPMT:          "-1.0 ms"      # PMT enable gate start: time relative to trigger when readout begins
   ReadoutEnablePeriod:       "2.0 ms"       # PMT enable gate duration: time for which PMT readout is enabled
   CreateBeamGateTriggers:    true           #Option to create unbiased readout around beam spill
-  BeamGateTriggerRepPeriod:  "7.0 us"       # Repetition period and number of repetitions for BeamGateTriggers:
-  BeamGateTriggerNReps:      3              # should cover -7/+21 us, instead we go 0/14 (-3<[0]>+7, +4<[7]>+14, +11<[14)
+  BeamGateTriggerRepPeriod:  "2.0 us"       # Repetition period and number of repetitions for BeamGateTriggers:
+  BeamGateTriggerNReps:      10             # should cover -7/+21 us, instead just goes -1 to 21 us)
   QE:                        @local::icarus_opticalproperties.ScintPreScale # from opticalproperties_icarus.fcl
   FluctuateGain:             true           # apply per-photoelectron gain fluctuations
   
