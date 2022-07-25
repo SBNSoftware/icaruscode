@@ -145,7 +145,6 @@ void ICARUSMCOpHit::produce(art::Event& e)
     for(auto const& time_photon_pair : time_m) {
 
       auto const& this_time = time_photon_pair.first;
-      std::cout << "Channel=" << opch << ", time=" << this_time << ", " << time_m[this_time] << std::endl;
 
       if(this_time > (oph_time + _merge_period) && in_window) {
 	recob::OpHit oph(opch, 
