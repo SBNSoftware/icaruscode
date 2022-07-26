@@ -196,12 +196,11 @@ namespace crt {
     int      fNMaxCh;/// Max number of channel
     int      fADC[64];///< signal amplitude
     float    fPE[64];///< signal amplitude
+    int      fFlags;///< Flags
     vector<vector<int>> fTrackID;///< track ID(s) of particle that produced the signal
     vector<vector<int>> fDetPDG; /// signal inducing particle(s)' PDG code
 
     //CRT hit product vars
-    int      fHitRun;
-    int      fHitSubRun;
     int      fHitEvent;
     float    fXHit; ///< reconstructed X position of CRT hit (cm)
     float    fYHit; ///< reconstructed Y position of CRT hit (cm)
@@ -312,6 +311,7 @@ namespace crt {
     fDAQNtuple->Branch("nChan",                 &fNChan,             "nChan/I");
     fDAQNtuple->Branch("t0",                    &fT0,                "t0/l");
     fDAQNtuple->Branch("t1",                    &fT1,                "t1/l");
+    fDAQNtuple->Branch("flags",                 &fFlags,             "flags/I");
     fDAQNtuple->Branch("nmaxch",                &fNMaxCh,            "nmaxch/I");
     fDAQNtuple->Branch("adc",                   fADC,                "adc[nmaxch]/I");
     fDAQNtuple->Branch("pe",                    fPE,                "pe[nmaxch]/F");
@@ -323,8 +323,6 @@ namespace crt {
     fDAQNtuple->Branch("gate_start_timestamp", &m_gate_start_timestamp, "gate_start_timestamp/l");
 
     // Define the branches of our SimHit n-tuple
-    fHitNtuple->Branch("Run",         &fHitRun,         "Run/I");
-    fHitNtuple->Branch("SubRun",      &fHitSubRun,      "SubRun/I");
     fHitNtuple->Branch("event",       &fHitEvent,    "event/I");
     fHitNtuple->Branch("nHit",        &fNHit,        "nHit/I");
     fHitNtuple->Branch("x",           &fXHit,        "x/F");
@@ -449,7 +447,7 @@ namespace crt {
       fDetSubSys = fCrtutils->MacToTypeCode(fMac5);
       fT0 = crtData[febdat_i]->fTs0;
       fT1 = crtData[febdat_i]->fTs1;
-      
+      fFlags = crtData[febdat_i]->fFlags;     
       int maxchan =0;
       if(fDetSubSys!=2) maxchan=32;
       else maxchan = 64;
@@ -488,8 +486,6 @@ namespace crt {
       for ( auto const& hit : *crtHitHandle )
         {
 	  fNHit++;
-	  fHitRun = fRun;
-	  fHitSubRun = fSubRun;
 	  fHitEvent = fEvent;
 	  fXHit    = hit.x_pos;
 	  fYHit    = hit.y_pos;
@@ -499,8 +495,7 @@ namespace crt {
 	  fZErrHit = hit.z_err;
 	  fT0Hit   = hit.ts0_ns;
 	  fT1Hit   = hit.ts1_ns;
-	  
-	  
+	   
 	  fNHitFeb  = hit.feb_id.size();
 	  fHitTotPe = hit.peshit;
 	  int mactmp = hit.feb_id[0];

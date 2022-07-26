@@ -8,6 +8,7 @@
 #include "decoderdefs_icarus.fcl"
 #include "recowire_icarus.fcl"
 #include "hitfindermodules_icarus.fcl"
+#include "icarus_timing.fcl"
 #include "icarus_ophitfinder.fcl"
 #include "icarus_flashfinder.fcl"
 #include "trigger_emulation_icarus.fcl"
@@ -51,6 +52,7 @@ icarus_stage0_producers:
 
   pmtconfig:                      @local::extractPMTconfig
   daqPMT:                         @local::decodePMT
+  daqPMTCorr:                     @local::daqPMTTiming
 
   daqCRT:                         @local::crtdaq_icarus
 
@@ -185,6 +187,7 @@ icarus_purity_monitor:             [
 icarus_stage0_PMT:                 [ daqTrigger,
                                      pmtconfig,
                                      daqPMT,
+				     daqPMTCorr,
                                      pmtconfigbaselines,
                                      pmtthr,
                                      ophit,
@@ -326,7 +329,7 @@ icarus_stage0_producers.gaushitTPCEE.HitFinderToolVec.CandidateHitsPlane2.Plane:
 icarus_stage0_producers.gaushitTPCEE.HitFinderToolVec.CandidateHitsPlane2.RoiThreshold:        9.
 
 ### Optical hit finding
-icarus_stage0_producers.ophit.InputModule:                                                     "daqPMT"
+icarus_stage0_producers.ophit.InputModule:                                                     "daqPMTCorr"
 icarus_stage0_producers.ophit.InputLabels:                                                     []
 
 ### Default purity monitor settings (single TPC readout assumed)
@@ -349,5 +352,6 @@ icarus_stage0_producers.purityana1.PersistPurityInfo:                           
 icarus_stage0_producers.purityana1.FillAnaTuple:                                               false
 icarus_stage0_producers.purityana1.PersistPurityInfo:                                          false
 icarus_stage0_producers.purityana1.FillAnaTuple:                                               false
+
 
 END_PROLOG
