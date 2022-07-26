@@ -1,0 +1,14 @@
+BEGIN_PROLOG
+
+standard_crtt0producer:
+{
+   module_type:         "icaruscode/CRT/CRTT0Matching"
+   CrtHitModuleLabel:   "crthit"           # name of crt hit producer
+   TpcTrackModuleLabel: ["pandoraTrackGausCryoE", "pandoraTrackGausCryoW"]     # name of tpc track producer
+   PFParticleLabel:     ["pandoraGausCryoE", "pandoraGausCryoW"] # PFParticle producer module label
+   TriggerLabel:        "daqTrigger"
+   T0Alg:               @local::standard_crtt0matchingalg
+   CRTBackTrack:        @local::standard_crtbacktracker
+}
+
+END_PROLOG

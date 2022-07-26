@@ -15,6 +15,7 @@
 ##include "backtrackerservice.fcl"
 ##include "particleinventoryservice.fcl"
 
+#include "crtt0producer_icarus.fcl"
 
 ##include "rootoutput_icarus.fcl"
 
@@ -72,15 +73,16 @@ physics:
 {
   producers:
   {
-    CRTT0Matching:
-    {
-      module_type:         "icaruscode/CRT/CRTT0Matching"
-      CrtHitModuleLabel:   "crthit"           # name of crt hit producer
+    CRTT0Matching: @local::standard_crtt0producer
+    #{
+     # module_type:         "icaruscode/CRT/CRTT0Matching"
+      #CrtHitModuleLabel:   "crthit"           # name of crt hit producer
       #TpcTrackModuleLabel: ["pandoraTrackGausCryoE", "pandoraTrackGausCryoW"]     # name of tpc track producer
-      TpcTrackModuleLabel: "pandoraTrackGausCryoE"     # name of tpc track producer	
-      T0Alg:                @local::standard_crtt0matchingalg
-      CRTBackTrack: @local::standard_crtbacktracker	
-    }
+      #TpcTrackModuleLabel: "pandoraTrackGausCryoE"     # name of tpc track producer	
+      #TriggerLabel:  "daqTrigger"
+      #T0Alg:                @local::standard_crtt0matchingalg
+      #CRTBackTrack: @local::standard_crtbacktracker	
+    #}
   }
 
   # Schedule job step(s) for execution by defining the analysis module for this job.
