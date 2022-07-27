@@ -71,7 +71,7 @@ namespace crt {
   
       // Declare member data here.
       string       fDataLabelHits;
-      string       fDataLabelTZeros;
+    //string       fDataLabelTZeros;
       int          fTrackMethodType;
       int          fStoreTrack;
       bool         fUseTopPlane;
@@ -117,7 +117,7 @@ namespace crt {
   {  
       // Initialize member data here.
       fDataLabelHits      = p.get<string>("DataLabelHits");      // CRTHit producer module name
-      fDataLabelTZeros    = p.get<string>("DataLabelTZeros");    // CRTTzero producer module name
+      // fDataLabelTZeros    = p.get<string>("DataLabelTZeros");    // CRTTzero producer module name
       fStoreTrack         = p.get<int>   ("StoreTrack");         // method 1 = all, method 2 = ave, method 3 = pure, method 4 = top plane
       fTrackMethodType    = p.get<int>   ("TrackMethodType");    // Print stuff
       fUseTopPlane        = p.get<bool>  ("UseTopPlane");        // Use hits from the top plane (SBND specific)
@@ -227,7 +227,8 @@ namespace crt {
           }
     
       }//end if sbnd option
-    
+
+       /*   
       //Older track reconstruction methods from MicroBooNE
       else{
           //Get list of tzeros             
@@ -368,15 +369,15 @@ namespace crt {
             
           }// loop over tzeros
       }//uBooNE method
-      
+      */
       //store track collection into event
       if(fStoreTrack == 1){
           evt.put(std::move(CRTTrackCol));
           evt.put(std::move(Trackassn));
       }
       mf::LogInfo("CRTTrackProducer")
-        <<"Number of tracks            = "<<"\n"
-        <<"Number of complete tracks   = "<<"\n"
+        <<"Number of tracks            = "<<nTrack<<"\n"
+        <<"Number of complete tracks   = "<<nCompTrack<<"\n"
         <<"Number of incomplete tracks = "<<nIncTrack;
       
   } // CRTTrackProducer::produce()

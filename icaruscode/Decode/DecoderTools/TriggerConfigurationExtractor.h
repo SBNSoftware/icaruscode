@@ -312,8 +312,11 @@ class icarus::TriggerConfigurationExtractor
   
     public:
   
-  /// Default constructor is sufficient : 
-  TriggerConfigurationExtractor() = default;
+  /// Learns the name of the trigger fragment type.
+  TriggerConfigurationExtractor
+    (std::string const& expectedFragmentType = "ICARUSTriggerUDP")
+    : fExpectedFragmentType{ expectedFragmentType }
+    {}
 
   // --- BEGIN -- Interface ----------------------------------------------------
   /// @name Interface
@@ -342,6 +345,8 @@ class icarus::TriggerConfigurationExtractor
   // --- END ---- Interface ----------------------------------------------------
   
     private:
+  
+  std::string const fExpectedFragmentType;
   
   /// Regular expressions matching all names of supported Trigger configurations.
   static std::vector<std::regex> const ConfigurationNames;

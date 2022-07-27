@@ -1,11 +1,5 @@
 #include "prodsingle_common_icarus.fcl"
 
-services: {
-       @table::services
-       @table::icarus_overburden_geometry_services
-       #@table::icarus_nooverburden_geometry_services
-}
-
 process_name: SinglesGen
 
 outputs.out1.fileName: "prod_muon_4GeV_up_top_crt_icarus_%tc_gen.root"

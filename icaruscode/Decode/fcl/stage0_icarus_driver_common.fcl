@@ -45,6 +45,7 @@ physics:
 
  #reco sequence and trigger_paths to be defined elsewhere
 
+ streamCommon:         [ outCommon ]
  streamBNB:            [ outBNB ]
  streamNUMI:           [ outNUMI ]
  streamOffbeamBNB:     [ outOffbeamBNB ]
@@ -59,6 +60,16 @@ physics:
 #entry in the output stream you want those to go to, where XXX is the label of the filter module(s)
 outputs:
 {
+ outCommon:
+ {
+   module_type: RootOutput
+   dataTier: "reconstructed"
+   compressionLevel: 1
+   saveMemoryObjectThreshold: 0
+   fileName: "%ifb_%tc-%p.root"
+   fileProperties: {maxInputFiles: 1}
+   checkFileName: false
+ }
  outBNB:
  {
    module_type: RootOutput
