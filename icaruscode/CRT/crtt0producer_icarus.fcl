@@ -1,3 +1,9 @@
+#include "services_icarus_simulation.fcl"
+#include "services_common_icarus.fcl"
+#include "crtbacktracker_icarus.fcl"
+#include "crtt0matchingalg_icarus.fcl"
+#include "simulationservices_icarus.fcl"
+
 BEGIN_PROLOG
 
 standard_crtt0producer:
