@@ -37,7 +37,7 @@ public:
     void configure(const fhicl::ParameterSet& pset) override;
     void initializeHistograms(art::TFileDirectory&) override {return;}
     
-    void FindROIs(const art::Event&, const ArrayFloat&, const geo::PlaneID&, ArrayFloat&, ArrayBool&) override;
+    void FindROIs(const art::Event&, const ArrayFloat&, const std::vector<raw::ChannelID_t>&, const geo::PlaneID&, ArrayFloat&, ArrayBool&) override;
     
 private:
 
@@ -154,7 +154,7 @@ void ROICannyEdgeDetection::configure(const fhicl::ParameterSet& pset)
     return;
 }
 
-void ROICannyEdgeDetection::FindROIs(const art::Event& event, const ArrayFloat& inputImage, const geo::PlaneID& planeID, ArrayFloat& output, ArrayBool& outputROIs)
+void ROICannyEdgeDetection::FindROIs(const art::Event& event, const ArrayFloat& inputImage, const std::vector<raw::ChannelID_t>& channelVec, const geo::PlaneID& planeID, ArrayFloat& output, ArrayBool& outputROIs)
 {
     cet::cpu_timer theClockTotal;
 
