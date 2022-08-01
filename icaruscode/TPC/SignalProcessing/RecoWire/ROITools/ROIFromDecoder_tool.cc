@@ -157,22 +157,11 @@ void ROIFromDecoder::FindROIs(const art::Event& event, const ArrayFloat& inputIm
                     // What we need to do is find the ROIs in the input wire data and then translate to the output
                     const recob::Wire::RegionsOfInterest_t signalROIs = wireData.SignalROI();
 
-                    if (planeID.Cryostat == 0 && planeID.TPC == 0 && planeID.Plane == 0)
-                    {
-                        std::cout << "  - Finder tool, channel: " << channel << ", idx: " << channelIdx << ", wireID: " << wireID << ", # ROIs: " << signalROIs.get_ranges().size() << std::endl;
-                        std::cout << "    start/len: ";
-                    }
-
                     for(const auto& range : signalROIs.get_ranges())
                     {
                         size_t startTick = range.begin_index();
                         size_t roiLen    = range.data().size();
                         size_t stopTick  = startTick + roiLen;
-
-                        if (planeID.Cryostat == 0 && planeID.TPC == 0 && planeID.Plane == 0)
-                        {
-                            std::cout << startTick << "/" << roiLen << " ";
-                        }
 
                         if (startTick > channelData.size())
                         {
