@@ -277,8 +277,8 @@ void TPCNoiseFilter1DMC::process_fragment(detinfo::DetectorClocksData const&,
 
     if (fFilterFunctionVec.size() < numChannels) fFilterFunctionVec.resize(numChannels);
 
-    icarus_signal_processing::Denoiser1D_Protect   denoiser;
-//    icarus_signal_processing::Denoiser1D           denoiser;
+//    icarus_signal_processing::Denoiser1D_Protect   denoiser;
+    icarus_signal_processing::Denoiser1D           denoiser;
     icarus_signal_processing::WaveformTools<float> waveformTools;
 
     // Make a pass throught to do pedestal corrections and get raw waveform information
