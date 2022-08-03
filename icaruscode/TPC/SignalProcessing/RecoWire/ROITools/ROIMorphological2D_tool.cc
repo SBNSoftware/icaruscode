@@ -37,7 +37,7 @@ public:
     void configure(const fhicl::ParameterSet& pset) override;
     void initializeHistograms(art::TFileDirectory&) override;
     
-    void FindROIs(const art::Event&, const ArrayFloat&, const geo::PlaneID&, ArrayFloat&, ArrayBool&) override;
+    void FindROIs(const art::Event&, const ArrayFloat&, const std::vector<raw::ChannelID_t>&, const geo::PlaneID&, ArrayFloat&, ArrayBool&) override;
     
 private:
     // This is for the baseline...
@@ -91,7 +91,7 @@ void ROIMorphological2D::configure(const fhicl::ParameterSet& pset)
     return;
 }
 
-void ROIMorphological2D::FindROIs(const art::Event& event, const ArrayFloat& constInputImage, const geo::PlaneID& planeID, ArrayFloat& morphedWaveforms, ArrayBool& outputROIs)
+void ROIMorphological2D::FindROIs(const art::Event& event, const ArrayFloat& constInputImage, const std::vector<raw::ChannelID_t>& channelVec, const geo::PlaneID& planeID, ArrayFloat& morphedWaveforms, ArrayBool& outputROIs)
 {
     if (morphedWaveforms.size() != constInputImage.size()) morphedWaveforms.resize(constInputImage.size(),icarus_signal_processing::VectorFloat(constInputImage[0].size()));
 

@@ -68,6 +68,7 @@ icarus_stage0_producers:
 
   ### ROI finding on complete deconvolved waveforms
   roifinder:                      @local::icarus_roifinder
+  roifinder2d:                    @local::icarus_roifinder
 
   ### hit-finder producers
   gaushit:                        @local::gaus_hitfinder_icarus
@@ -162,11 +163,13 @@ icarus_stage0_multiTPC_TPC:        [ decon1droi,
                                      roifinder
                                    ]
 
-icarus_stage0_multiTPC_2d_TPC:     [ decon2droiEE,
+icarus_stage0_multiTPC_2d_TPC:     [ decon1droi,
+                                     roifinder,
+                                     decon2droiEE,
                                      decon2droiEW,
                                      decon2droiWE,
                                      decon2droiWW,
-                                     roifinder
+                                     roifinder2d
                                    ]
 
 icarus_stage0_EastHits_TPC:        [ gaushitTPCEW,
@@ -274,10 +277,20 @@ icarus_stage0_producers.decon2droiWW.wcls_main.params.tpc_volume_label:         
 icarus_stage0_producers.decon2droiWW.wcls_main.params.signal_output_form:                      "dense"
 
 ### Set up to output ROIs from full waveforms
-
 icarus_stage0_producers.roifinder.WireModuleLabelVec:                                          ["decon1droi:PHYSCRATEDATATPCWW","decon1droi:PHYSCRATEDATATPCWE","decon1droi:PHYSCRATEDATATPCEW","decon1droi:PHYSCRATEDATATPCEE"]
 icarus_stage0_producers.roifinder.OutInstanceLabelVec:                                         ["PHYSCRATEDATATPCWW","PHYSCRATEDATATPCWE","PHYSCRATEDATATPCEW","PHYSCRATEDATATPCEE"]
 icarus_stage0_producers.roifinder.OutputMorphed:                                               false
+
+icarus_stage0_producers.roifinder2d.ROIFinderToolVec:                                          { ROIFinderPlane0: @local::decoderroifinder_0
+                                                                                                 ROIFinderPlane1: @local::decoderroifinder_1
+                                                                                                 ROIFinderPlane2: @local::decoderroifinder_2
+                                                                                               }
+icarus_stage0_producers.roifinder2d.ROIFinderToolVec.ROIFinderPlane0.ROILabelVec:              ["roifinder:PHYSCRATEDATATPCWW","roifinder:PHYSCRATEDATATPCWE","roifinder:PHYSCRATEDATATPCEW","roifinder:PHYSCRATEDATATPCEE"]
+icarus_stage0_producers.roifinder2d.ROIFinderToolVec.ROIFinderPlane0.ROILabelVec:              ["roifinder:PHYSCRATEDATATPCWW","roifinder:PHYSCRATEDATATPCWE","roifinder:PHYSCRATEDATATPCEW","roifinder:PHYSCRATEDATATPCEE"]
+icarus_stage0_producers.roifinder2d.ROIFinderToolVec.ROIFinderPlane0.ROILabelVec:              ["roifinder:PHYSCRATEDATATPCWW","roifinder:PHYSCRATEDATATPCWE","roifinder:PHYSCRATEDATATPCEW","roifinder:PHYSCRATEDATATPCEE"]
+icarus_stage0_producers.roifinder2d.WireModuleLabelVec:                                        ["decon2droiWW:looseLf","decon2droiWE:looseLf","decon2droiEW:looseLf","decon2droiEE:looseLf"]
+icarus_stage0_producers.roifinder2d.OutInstanceLabelVec:                                       ["PHYSCRATEDATATPCWW","PHYSCRATEDATATPCWE","PHYSCRATEDATATPCEW","PHYSCRATEDATATPCEE"]
+icarus_stage0_producers.roifinder2d.OutputMorphed:                                             false
 
 ### Set up hit finding for multiple TPC readout
 icarus_stage0_producers.gaushitTPCWW.CalDataModuleLabel:                                       "roifinder:PHYSCRATEDATATPCWW"

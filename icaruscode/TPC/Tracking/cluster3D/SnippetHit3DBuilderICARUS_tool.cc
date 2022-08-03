@@ -1787,6 +1787,9 @@ void SnippetHit3DBuilderICARUS::CollectArtHits(const art::Event& evt) const
     // Try to output a formatted string
     std::string debugMessage("");
 
+    // Keep track of x position limits
+    std::map<geo::PlaneID,double> planeIDToPositionMap;
+
     // Initialize the plane to hit vector map
     for(size_t cryoIdx = 0; cryoIdx < m_geometry->Ncryostats(); cryoIdx++)
     {
@@ -1805,13 +1808,26 @@ void SnippetHit3DBuilderICARUS::CollectArtHits(const art::Event& evt) const
                              << ", plane 1: " << m_PlaneToT0OffsetMap.find(geo::PlaneID(cryoIdx,tpcIdx,1))->second
                              << ", plane    2: " << m_PlaneToT0OffsetMap.find(geo::PlaneID(cryoIdx,tpcIdx,2))->second << "\n";
                 outputString << "     Det prop plane 0: " << det_prop.GetXTicksOffset(geo::PlaneID(cryoIdx,tpcIdx,0)) << ", plane 1: "  << det_prop.GetXTicksOffset(geo::PlaneID(cryoIdx,tpcIdx,1)) << ", plane 2: " << det_prop.GetXTicksOffset(geo::PlaneID(cryoIdx,tpcIdx,2)) << ", Trig: " << trigger_offset(clock_data) << "\n";
-                debugMessage += outputString.str();
+                debugMessage += outputString.str() + "\n";
             }
+
+            double xPosition(det_prop.ConvertTicksToX(0., 2, tpcIdx, cryoIdx));
+
+            planeIDToPositionMap[geo::PlaneID(cryoIdx,tpcIdx,2)] = xPosition;
         }
     }
 
     if (!m_weHaveAllBeenHereBefore)
     {
+        for(const auto& planeToPositionPair : planeIDToPositionMap)
+        {
+            std::ostringstream outputString;
+
+            outputString << "***> Plane " << planeToPositionPair.first << " has time=0 position: " << planeToPositionPair.second << "\n";
+
+            debugMessage += outputString.str();
+        }
+
         mf::LogDebug("Cluster3D") << debugMessage << std::endl;
 
         m_weHaveAllBeenHereBefore = true;
