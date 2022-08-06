@@ -109,6 +109,7 @@ TriggerDecoderTool: {
 
 TriggerDecoderV2Tool: {
    tool_type:          TriggerDecoderV2
+   TriggerConfigLabel: @nil # must override
 }
 
 

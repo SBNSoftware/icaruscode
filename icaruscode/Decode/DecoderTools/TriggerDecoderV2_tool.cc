@@ -9,6 +9,9 @@
 ///////////////////////////////////////////////
 
 #include "art/Framework/Core/EDProducer.h"
+#include "art/Framework/Core/ConsumesCollector.h"
+#include "art/Framework/Core/ProducesCollector.h"
+#include "art/Framework/Principal/Run.h"
 #include "art/Framework/Principal/Event.h"
 #include "art/Framework/Principal/Handle.h"
 #include "art/Framework/Services/Registry/ServiceHandle.h"
@@ -29,6 +32,7 @@
 
 // #include "sbnobj/Common/Trigger/ExtraTriggerInfo.h" // maybe future location of:
 #include "icaruscode/Decode/DataProducts/ExtraTriggerInfo.h"
+#include "icaruscode/Decode/DataProducts/TriggerConfiguration.h"
 #include "icaruscode/Decode/DecoderTools/IDecoder.h"
 // #include "sbnobj/Common/Trigger/BeamBits.h" // maybe future location of:
 #include "icaruscode/Decode/BeamBits.h" // sbn::triggerSource
@@ -130,13 +134,16 @@ namespace daq
    */
   class TriggerDecoder : public IDecoder
   {
+    using microseconds = util::quantities::microsecond;
     using nanoseconds = util::quantities::nanosecond;
   public:
     explicit TriggerDecoder(fhicl::ParameterSet const &pset);
     
+    virtual void consumes(art::ConsumesCollector& collector) override;
     virtual void produces(art::ProducesCollector&) override;
     virtual void configure(const fhicl::ParameterSet&) override;
     virtual void initializeDataProducts() override;
+    virtual void setupRun(art::Run const& run) override;
     virtual void process_fragment(const artdaq::Fragment &fragment) override;
     virtual void outputDataProducts(art::Event &event) override;
    
@@ -152,6 +159,7 @@ namespace daq
     std::unique_ptr<RelativeTriggerCollection> fRelTrigger;
     ExtraInfoPtr fTriggerExtra;
     BeamGateInfoPtr fBeamGateInfo; 
+    art::InputTag fTriggerConfigTag; ///< Data product with hardware trigger configuration.
     bool fDiagnosticOutput; //< Produces large number of diagnostic messages, use with caution!
     bool fDebug; //< Use this for debugging this tool
     int fOffset; //< Use this to determine additional correction needed for TAI->UTC conversion from White Rabbit timestamps. Needs to be changed if White Rabbit firmware is changed and the number of leap seconds changes! 
@@ -162,6 +170,10 @@ namespace daq
     long fLastEvent = 0;
     
     detinfo::DetectorTimings const fDetTimings; ///< Detector clocks and timings.
+    
+    /// Cached pointer to the trigger configuration of the current run, if any.
+    icarus::TriggerConfiguration const* fTriggerConfiguration = nullptr;
+    
     
     /// Creates a `ICARUSTriggerInfo` from a generic fragment.
     icarus::ICARUSTriggerV2Fragment makeTriggerFragment
@@ -220,6 +232,11 @@ namespace daq
   }
 
   
+  void TriggerDecoder::consumes(art::ConsumesCollector& collector) {
+    collector.consumes<icarus::TriggerConfiguration, art::InRun>
+      (fTriggerConfigTag);
+  }
+  
   void TriggerDecoder::produces(art::ProducesCollector& collector) 
   {
     collector.produces<TriggerCollection>(CurrentTriggerInstanceName);
@@ -232,6 +249,7 @@ namespace daq
 
   void TriggerDecoder::configure(fhicl::ParameterSet const &pset) 
   {
+    fTriggerConfigTag = pset.get<std::string>("TrigConfigLabel");
     fDiagnosticOutput = pset.get<bool>("DiagnosticOutput", false);
     fDebug = pset.get<bool>("Debug", false);
     fOffset = pset.get<long long int>("TimeOffset", 0);
@@ -296,6 +314,16 @@ namespace daq
 
   
 
+  void TriggerDecoder::setupRun(art::Run const& run) {
+    
+    fTriggerConfiguration = fTriggerConfigTag.empty()
+      ? nullptr
+      : &(run.getProduct<icarus::TriggerConfiguration>(fTriggerConfigTag))
+      ;
+    
+  } // TriggerDecoder::setupRun()
+  
+  
   void TriggerDecoder::process_fragment(const artdaq::Fragment &fragment)
   {
     // artdaq_ts is reworked by the trigger board reader to match the corrected
@@ -347,13 +375,36 @@ namespace daq
     if (auto pBeamGateInfo = parsedData.findItem("Beam_TS");
       pBeamGateInfo && (pBeamGateInfo->nValues() == 3)
     ) {
+      /*
+       * The Veto Business:
+       * 
+       * to better cover the pre-spill time, a trigger primitive is issued
+       * in advance of the actual beam gate, but during the additional time
+       * the global trigger is vetoed.
+       * So the physical beam gate signal starts in advance of the beam gate,
+       * and teh actual beam gate is expected after the veto time has passed.
+       * The hardware tagging the beam gate time does not know of this, and it
+       * marks the beam gate to start at the opening of the physical signal
+       * (at the beginning of the vetoed time).
+       * This is all a trick for PMT readout, nothing should depend on it,
+       * so we correct that as soon as we can and then forget it.
+       * The amount of veto time is written in the trigger configuration;
+       * if that configuration is not available, this code assumes there was
+       * no veto.
+       */
+      int64_t const triggerVetoDurationNS
+        = fTriggerConfiguration? fTriggerConfiguration->vetoDelay: 0LL;
+      
+      
       // if gate information is found, it must be complete
       beamgate_count = pBeamGateInfo->getNumber<unsigned int>(0U);
       
-      uint64_t const raw_bg_ts = makeTimestamp( // raw and uncorrected too
+      uint64_t const raw_bg_ts = makeTimestamp( // raw and uncorrected too...
         pBeamGateInfo->getNumber<unsigned int>(1U),
         pBeamGateInfo->getNumber<unsigned int>(2U)
-        );
+        )
+        + triggerVetoDurationNS // ... but remove the veto time
+        ;
       
       // assuming the raw times from the fragment are on the same time scale
       // (same offset corrections)
@@ -585,6 +636,13 @@ namespace daq
     //
     // beam gate
     //
+    
+    // beam gate width (read in microseconds, but we use it in nanoseconds)
+    nanoseconds const gateWidth = microseconds{ fTriggerConfiguration
+      ? fTriggerConfiguration->getGateWidth(value(beamGateBit))
+      : 0.0
+      };
+    
     // beam gate - trigger: hope it's negative...
     nanoseconds const gateStartFromTrigger{
       static_cast<double>(timestampDiff
@@ -596,19 +654,19 @@ namespace daq
     switch (gate_type) {
       case TriggerGateTypes::BNB:
         fBeamGateInfo->emplace_back
-          (simGateStart.value(), BNBgateDuration.value(), sim::kBNB);
+          (simGateStart.value(), gateWidth.value(), sim::kBNB);
         break;
       case TriggerGateTypes::NuMI:
         fBeamGateInfo->emplace_back
-          (simGateStart.value(), NuMIgateDuration.value(), sim::kNuMI);
+          (simGateStart.value(), gateWidth.value(), sim::kNuMI);
         break;
       case TriggerGateTypes::OffbeamBNB:
         fBeamGateInfo->emplace_back
-          (simGateStart.value(), BNBgateDuration.value(), sim::kBNB);
+          (simGateStart.value(), gateWidth.value(), sim::kBNB);
         break;
       case TriggerGateTypes::OffbeamNuMI:
         fBeamGateInfo->emplace_back
-          (simGateStart.value(), NuMIgateDuration.value(), sim::kNuMI);
+          (simGateStart.value(), gateWidth.value(), sim::kNuMI);
         break;
       default:
         mf::LogWarning("TriggerDecoder") << "Unsupported gate type #" << gate_type;
