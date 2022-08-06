@@ -328,7 +328,17 @@ namespace daq
     fTriggerConfigTag = pset.get<std::string>("TrigConfigLabel");
     fDiagnosticOutput = pset.get<bool>("DiagnosticOutput", false);
     fDebug = pset.get<bool>("Debug", false);
-    fOffset = pset.get<long long int>("TimeOffset", 0);
+    if (pset.has_key("TimeOffset")) {
+      if (auto offset = pset.get<long long int>("TimeOffset"); offset == 0) {
+        mf::LogWarning("TriggerDecoder")
+          << "Configuration parameter 'TimeOffset' has been dropped.\n";
+      }
+      else { // unforgiving: dropping non-zero offset changes output
+        throw art::Exception(art::errors::Configuration)
+          << "Adding offset (configuration parameter 'TimeOffset', here set to "
+          << offset << " seconds) is not supported any more.\n";
+      }
+    }
     return;
   }
   
