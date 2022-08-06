@@ -331,8 +331,8 @@ namespace daq
     // or via the parser
     icarus::details::KeyedCSVparser parser;
     parser.addPatterns({
-	{ "Cryo. (EAST|WEST) Connector . and .", 1U }
-	, { "Trigger Type", 1U }
+        { "Cryo. (EAST|WEST) Connector . and .", 1U }
+        , { "Trigger Type", 1U }
       });
     //auto const parsedData = icarus::details::KeyedCSVparser{}(firstLine(data));
     auto const parsedData = parser(firstLine(data)); 
@@ -362,15 +362,15 @@ namespace daq
     } // if has gate information
     std::uint64_t enablegate_ts { artdaq_ts };
     if (auto pEnableGateInfo = parsedData.findItem("Enable_TS");
-	pEnableGateInfo && (pEnableGateInfo->nValues() == 3)
-	) {
+        pEnableGateInfo && (pEnableGateInfo->nValues() == 3)
+        ) {
       // if gate information is found, it must be complete
       //enablegate_count = pEnableGateInfo->getNumber<unsigned int>(0U);
 
       uint64_t const raw_en_ts = makeTimestamp( // raw and uncorrected too
-					       pEnableGateInfo->getNumber<unsigned int>(1U),
-					       pEnableGateInfo->getNumber<unsigned int>(2U)
-						);
+                                               pEnableGateInfo->getNumber<unsigned int>(1U),
+                                               pEnableGateInfo->getNumber<unsigned int>(2U)
+                                                );
 
       // assuming the raw times from the fragment are on the same time scale 
       // (same offset corrections)
@@ -402,7 +402,7 @@ namespace daq
       std::string_view const dataLine = firstLine(data);
       try {
         //auto const parsedData = icarus::details::KeyedCSVparser{}(dataLine);
-	auto const parsedData = parser(dataLine);
+        auto const parsedData = parser(dataLine);
         std::cout << "Parsed data (from " << dataLine.size() << " characters): "
           << parsedData << std::endl;
       }
@@ -426,49 +426,49 @@ namespace daq
     sbn::triggerSource beamGateBit;
     switch (gate_type) {
       case TriggerGateTypes::BNB:{         
-	beamGateBit = sbn::triggerSource::BNB;
-	fTriggerExtra->gateCountFromPreviousTrigger = frag.getDeltaGatesBNB();
-	fTriggerExtra->previousTriggerTimestamp = frag.getLastTimestampBNB();
-	fTriggerExtra->gateCount = datastream_info.gate_id_BNB;
-	fTriggerExtra->triggerCount = frag.getTotalTriggerBNB();
-	fTriggerExtra->anyTriggerCountFromPreviousTrigger = frag.getLastTriggerBNB();
-	break;
+        beamGateBit = sbn::triggerSource::BNB;
+        fTriggerExtra->gateCountFromPreviousTrigger = frag.getDeltaGatesBNB();
+        fTriggerExtra->previousTriggerTimestamp = frag.getLastTimestampBNB();
+        fTriggerExtra->gateCount = datastream_info.gate_id_BNB;
+        fTriggerExtra->triggerCount = frag.getTotalTriggerBNB();
+        fTriggerExtra->anyTriggerCountFromPreviousTrigger = frag.getLastTriggerBNB();
+        break;
       }
       case TriggerGateTypes::NuMI:{        
-	beamGateBit = sbn::triggerSource::NuMI;
-	fTriggerExtra->gateCountFromPreviousTrigger = frag.getDeltaGatesNuMI();
-	fTriggerExtra->previousTriggerTimestamp = frag.getLastTimestampNuMI();
-	fTriggerExtra->gateCount = datastream_info.gate_id_NuMI;
-	fTriggerExtra->triggerCount = frag.getTotalTriggerNuMI();
-	fTriggerExtra->anyTriggerCountFromPreviousTrigger = frag.getLastTriggerNuMI();
-	break;
+        beamGateBit = sbn::triggerSource::NuMI;
+        fTriggerExtra->gateCountFromPreviousTrigger = frag.getDeltaGatesNuMI();
+        fTriggerExtra->previousTriggerTimestamp = frag.getLastTimestampNuMI();
+        fTriggerExtra->gateCount = datastream_info.gate_id_NuMI;
+        fTriggerExtra->triggerCount = frag.getTotalTriggerNuMI();
+        fTriggerExtra->anyTriggerCountFromPreviousTrigger = frag.getLastTriggerNuMI();
+        break;
       }
       case TriggerGateTypes::OffbeamBNB:{  
-	beamGateBit = sbn::triggerSource::OffbeamBNB;
-	fTriggerExtra->gateCountFromPreviousTrigger = frag.getDeltaGatesBNBOff();
-	fTriggerExtra->previousTriggerTimestamp= frag.getLastTimestampBNBOff();
-	fTriggerExtra->gateCount = datastream_info.gate_id_BNBOff;
-	fTriggerExtra->triggerCount = frag.getTotalTriggerBNBOff();
-	fTriggerExtra->anyTriggerCountFromPreviousTrigger = frag.getLastTriggerBNBOff();
-	break;
+        beamGateBit = sbn::triggerSource::OffbeamBNB;
+        fTriggerExtra->gateCountFromPreviousTrigger = frag.getDeltaGatesBNBOff();
+        fTriggerExtra->previousTriggerTimestamp= frag.getLastTimestampBNBOff();
+        fTriggerExtra->gateCount = datastream_info.gate_id_BNBOff;
+        fTriggerExtra->triggerCount = frag.getTotalTriggerBNBOff();
+        fTriggerExtra->anyTriggerCountFromPreviousTrigger = frag.getLastTriggerBNBOff();
+        break;
       }
       case TriggerGateTypes::OffbeamNuMI:{ 
-	beamGateBit = sbn::triggerSource::OffbeamNuMI;
-	fTriggerExtra->gateCountFromPreviousTrigger = frag.getDeltaGatesNuMIOff();
-	fTriggerExtra->previousTriggerTimestamp= frag.getLastTimestampNuMIOff();
-	fTriggerExtra->gateCount = datastream_info.gate_id_NuMIOff;
-	fTriggerExtra->triggerCount = frag.getTotalTriggerNuMIOff();
-	fTriggerExtra->anyTriggerCountFromPreviousTrigger = frag.getLastTriggerNuMIOff();
-	break;
+        beamGateBit = sbn::triggerSource::OffbeamNuMI;
+        fTriggerExtra->gateCountFromPreviousTrigger = frag.getDeltaGatesNuMIOff();
+        fTriggerExtra->previousTriggerTimestamp= frag.getLastTimestampNuMIOff();
+        fTriggerExtra->gateCount = datastream_info.gate_id_NuMIOff;
+        fTriggerExtra->triggerCount = frag.getTotalTriggerNuMIOff();
+        fTriggerExtra->anyTriggerCountFromPreviousTrigger = frag.getLastTriggerNuMIOff();
+        break;
       }
       case TriggerGateTypes::Calib:{       
-	beamGateBit = sbn::triggerSource::Calib;
-	fTriggerExtra->gateCountFromPreviousTrigger = frag.getDeltaGatesCalib();
-	fTriggerExtra->previousTriggerTimestamp = frag.getLastTimestampCalib();
-	//fTriggerExtra->gateCount = datastream_info.gate_id_calib;
-	fTriggerExtra->triggerCount = frag.getTotalTriggerCalib();
-	fTriggerExtra->anyTriggerCountFromPreviousTrigger = frag.getLastTriggerCalib();
-	break;
+        beamGateBit = sbn::triggerSource::Calib;
+        fTriggerExtra->gateCountFromPreviousTrigger = frag.getDeltaGatesCalib();
+        fTriggerExtra->previousTriggerTimestamp = frag.getLastTimestampCalib();
+        //fTriggerExtra->gateCount = datastream_info.gate_id_calib;
+        fTriggerExtra->triggerCount = frag.getTotalTriggerCalib();
+        fTriggerExtra->anyTriggerCountFromPreviousTrigger = frag.getLastTriggerCalib();
+        break;
       }
       default:                            beamGateBit = sbn::triggerSource::Unknown;
     } // switch gate_type
@@ -521,18 +521,18 @@ namespace daq
       ? 0UL: parsedData.getItem("Cryo1 EAST counts").getNumber<unsigned long int>(0),
       // LVDSstatus
       {
-	(triggerLocation & 1) // EE
-	? encodeLVDSbits(
-			 sbn::ExtraTriggerInfo::EastCryostat, 2, /* any of the connectors */
-			 parsedData.getItem("Cryo1 EAST Connector 2 and 3").getNumber<std::uint64_t>(0, 16)
-			 )
-	: 0ULL,
-	(triggerLocation & 1) // EW
-	? encodeLVDSbits(
-			 sbn::ExtraTriggerInfo::EastCryostat, 0, /* any of the connectors */
-			 parsedData.getItem("Cryo1 EAST Connector 0 and 1").getNumber<std::uint64_t>(0, 16)
-			 )
-	: 0ULL
+        (triggerLocation & 1) // EE
+        ? encodeLVDSbits(
+                         sbn::ExtraTriggerInfo::EastCryostat, 2, /* any of the connectors */
+                         parsedData.getItem("Cryo1 EAST Connector 2 and 3").getNumber<std::uint64_t>(0, 16)
+                         )
+        : 0ULL,
+        (triggerLocation & 1) // EW
+        ? encodeLVDSbits(
+                         sbn::ExtraTriggerInfo::EastCryostat, 0, /* any of the connectors */
+                         parsedData.getItem("Cryo1 EAST Connector 0 and 1").getNumber<std::uint64_t>(0, 16)
+                         )
+        : 0ULL
       }
     };
     fTriggerExtra->cryostats[sbn::ExtraTriggerInfo::WestCryostat]
@@ -542,25 +542,25 @@ namespace daq
       ? 0UL: parsedData.getItem("Cryo2 WEST counts").getNumber<unsigned long int>(0),
       // LVDSstatus
       {
-	(triggerLocation & 2) // WE
-	? encodeLVDSbits(
-			 sbn::ExtraTriggerInfo::WestCryostat, 2, /* any of the connectors */
-			 parsedData.getItem("Cryo2 WEST Connector 2 and 3").getNumber<std::uint64_t>(0, 16)
-			 )
-	: 0ULL,
-	(triggerLocation & 2) // WW
-	? encodeLVDSbits(
-			 sbn::ExtraTriggerInfo::WestCryostat, 0, /* any of the connectors */
-			 parsedData.getItem("Cryo2 WEST Connector 0 and 1").getNumber<std::uint64_t>(0, 16)
-			 )
-	: 0ULL
+        (triggerLocation & 2) // WE
+        ? encodeLVDSbits(
+                         sbn::ExtraTriggerInfo::WestCryostat, 2, /* any of the connectors */
+                         parsedData.getItem("Cryo2 WEST Connector 2 and 3").getNumber<std::uint64_t>(0, 16)
+                         )
+        : 0ULL,
+        (triggerLocation & 2) // WW
+        ? encodeLVDSbits(
+                         sbn::ExtraTriggerInfo::WestCryostat, 0, /* any of the connectors */
+                         parsedData.getItem("Cryo2 WEST Connector 0 and 1").getNumber<std::uint64_t>(0, 16)
+                         )
+        : 0ULL
       }
     };
     // we expect the LVDS status bits
 
     for (auto const& cryoInfo [[maybe_unused]]: fTriggerExtra->cryostats)
       for (auto LVDS [[maybe_unused]]: cryoInfo.LVDSstatus)
-	assert((LVDS & 0xFF000000FF000000) == 0);             
+        assert((LVDS & 0xFF000000FF000000) == 0);
     
     //
     // absolute time trigger (raw::ExternalTrigger)
