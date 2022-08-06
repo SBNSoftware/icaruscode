@@ -668,6 +668,10 @@ namespace daq
         fBeamGateInfo->emplace_back
           (simGateStart.value(), gateWidth.value(), sim::kNuMI);
         break;
+      case TriggerGateTypes::Calib:
+        fBeamGateInfo->emplace_back
+          (simGateStart.value(), gateWidth.value(), sim::kUnknown);
+        break;
       default:
         mf::LogWarning("TriggerDecoder") << "Unsupported gate type #" << gate_type;
     } // switch gate_type
