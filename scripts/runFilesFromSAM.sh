@@ -59,6 +59,7 @@ function DBG() { DBGN 1 "$*" ; }
 
 function STDERR() { echo "$*" >&2 ; }
 
+function ERROR() { STDERR "ERROR: $*" ; }
 function WARN() { STDERR "WARNING: $*" ; }
 function INFO() { isFlagSet DoQuiet || STDERR "$*" ; }
 
