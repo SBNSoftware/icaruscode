@@ -248,16 +248,18 @@ const DigitizerChannelChannelIDPairVec& ICARUSChannelMapProvider::getChannelIDPa
     }
 
     return simmacaddress;
+    
+    /* untested:
+    auto const it = fTopCRTHWtoSimMacAddressPairMap.find(hwmacaddress);
+    return (it == fTopCRTHWtoSimMacAddressPairMap.end())? 0: it->second;
+    */
   }
    
   std::pair<double, double> ICARUSChannelMapProvider::getSideCRTCalibrationMap(int mac5, int chan) const
   {
-    std::pair<double, double> gainandpedestal(-99, -99);
-    for(const auto& pair : fSideCRTChannelToCalibrationMap){
-      if ((int)pair.first.first == mac5 && (int)pair.first.second == chan)
-        gainandpedestal = std::make_pair(pair.second.first, pair.second.second);
-    }
-    return gainandpedestal;
+    auto const itGainAndPedestal = fSideCRTChannelToCalibrationMap.find({ mac5, chan });
+    return (itGainAndPedestal == fSideCRTChannelToCalibrationMap.cend())
+      ? std::pair{ -99., -99. }: itGainAndPedestal->second;
   }
 
 auto ICARUSChannelMapProvider::findPMTfragmentEntry(unsigned int fragmentID) const

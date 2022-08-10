@@ -208,13 +208,16 @@ DaqDecoderICARUSTPCwROI::DaqDecoderICARUSTPCwROI(fhicl::ParameterSet const & pse
     // Check the concurrency 
     int max_concurrency = tbb::this_task_arena::max_concurrency();
 
+    // ****** TEMPORARY ******
+    max_concurrency = 1;
+
     mf::LogDebug("DaqDecoderICARUSTPCwROI") << "     ==> concurrency: " << max_concurrency << std::endl;
 
     // Recover the vector of fhicl parameters for the ROI tools
     const fhicl::ParameterSet& decoderToolParams = pset.get<fhicl::ParameterSet>("DecoderTool");
     
     fDecoderToolVec.resize(max_concurrency);
-    
+   
     for(auto& decoderTool : fDecoderToolVec)
     {
         // Get instance of tool
@@ -527,11 +530,6 @@ void DaqDecoderICARUSTPCwROI::processSingleFragment(size_t                      
     // Now set up for output, we need to convert back from float to short int so use this
     raw::RawDigit::ADCvector_t wvfm(nSamplesPerChannel);
 
-//    int cryoIdx = crateName.find("W",0,1) != std::string::npos ? 1 : 0;
-//    int tpcIdx  = cryoIdx + (crateName.find("W",1,1) != std::string::npos ? 1 : 0);
-
-//    std::cout << "***** Fragment ID: " << fragmentID << ", crateName: " << crateName << ", cryoIdx: " << cryoIdx << ", tpcIdx: " << tpcIdx << ", indices: " << crateName.find("W",0,1) << ", " << crateName.find("W",1,1) << std::endl;
-
     // The first task is to recover the data from the board data block, determine and subtract the pedestals
     // and store into vectors useful for the next steps
     for(size_t board = 0; board < boardIDVec.size(); board++)
@@ -559,19 +557,13 @@ void DaqDecoderICARUSTPCwROI::processSingleFragment(size_t                      
         // Copy to input data array
         for(size_t chanIdx = 0; chanIdx < nChannelsPerBoard; chanIdx++)
         {
-            // Get the channel number on the Fragment
-//            raw::ChannelID_t channel = channelPlanePairVec[chanIdx].first;
-
-            icarus_signal_processing::VectorFloat& rawDataVec = channelArrayPair.second[chanIdx];
+           icarus_signal_processing::VectorFloat& rawDataVec = channelArrayPair.second[chanIdx];
 
             for(size_t tick = 0; tick < nSamplesPerChannel; tick++)
                 rawDataVec[tick] = -dataBlock[chanIdx + tick * nChannelsPerBoard];
 
             // Keep track of the channel
             channelArrayPair.first[chanIdx] = channelPlanePairVec[chanIdx];
-
-//            std::vector<geo::WireID> widVec = fGeometry->ChannelToWire(channel);
-//            std::cout << "      board: " << board << ", channel: " << channel << ", plane: " << channelPlanePairVec[chanIdx].second << ", size: " << widVec.size() << std::endl;
         }
 
         //process_fragment(event, rawfrag, product_collection, header_collection);
@@ -636,7 +628,8 @@ void DaqDecoderICARUSTPCwROI::processSingleFragment(size_t                      
                                                        localRangeBins);
 
             // Need to convert from float to short int
-            std::transform(denoised[chanIdx].begin(),denoised[chanIdx].end(),wvfm.begin(),[](const auto& val){return short(std::round(val));});
+//            std::transform(denoised[chanIdx].begin(),denoised[chanIdx].end(),wvfm.begin(),[](const auto& val){return short(std::round(val));});
+            std::transform(pedCorWaveforms.begin(),pedCorWaveforms.end(),wvfm.begin(),[](const auto& val){return short(std::round(val));});
 
             ConcurrentRawDigitCol::iterator newObjItr = concurrentRawDigitCol.emplace_back(channel,wvfm.size(),wvfm); 
 
