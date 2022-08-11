@@ -20,7 +20,7 @@ physics:
 {
  
   producers: {
-    @table::caf_preprocess_producers
+    @table::caf_preprocess_data_producers
   }
 
   runprod: [ @sequence::caf_preprocess_data_sequence, cafmaker]
@@ -31,3 +31,5 @@ physics.producers.cafmaker.G4Label: ""
 physics.producers.cafmaker.GenLabel: ""
 physics.producers.cafmaker.SimChannelLabel: ""
 physics.producers.cafmaker.SystWeightLabels: []
+
+#include "icarus_data_recombination.fcl"
