@@ -14,6 +14,9 @@ icarus_calorimetryalgmc:	  @local::standard_calorimetryalgmc
 # need to be revisted if/when the data processing is updated
 icarus_calorimetryalgmc.CalAreaConstants: [0.01118, 0.01112, 0.01233]
 
+icarus_calorimetryalgdata.CalAreaConstants: @local::icarus_data_calconst
+icarus_calorimetryalgdata.CaloDoLifeTimeCorrection: false # handled by NormTools
+
 standard_gnocchicaloicarus:
 {
   module_type: "GnocchiCalorimetry"
@@ -25,11 +28,8 @@ standard_gnocchicaloicarus:
   FieldDistortionEfield: false
   TrackIsFieldDistortionCorrected: false
   Cryostat: 0
-  CaloAlg: @local::standard_calorimetryalgdata
-  NormTools: [
-    @local::driftnorm,
-    @local::yznorm
-  ]
+  CaloAlg: @local::icarus_calorimetryalgdata
+  NormTools: @local::icarus_calonormtools
 }
 
 
