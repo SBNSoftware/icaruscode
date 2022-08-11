@@ -33,6 +33,7 @@
 #include "canvas/Persistency/Common/Assns.h"
 
 #include "larcore/Geometry/Geometry.h"
+#include "larcore/CoreUtils/ServiceUtil.h" // lar::providerFrom()
 #include "lardataobj/RawData/OpDetWaveform.h"
 #include "lardataobj/RecoBase/OpHit.h"
 #include "lardataobj/RecoBase/OpFlash.h"
@@ -628,7 +629,14 @@ void opana::ICARUSFlashAssAna::analyze(art::Event const& e) {
       e.getByLabel( label, flash_handle );
 
       // We want our flashes to be valid and not empty
-      if( flash_handle.isValid() && !flash_handle->empty()) {
+      if( !flash_handle.isValid() ) {
+        mf::LogError("ICARUSFlashAssAna")
+           << "Not found a recob::OpFlash with label '" << label.encode() << "'"; 
+      } else if ( flash_handle->empty() ) {
+        mf::LogWarning("ICARUSFlashAssAna")
+           << "No recob::OpFlash in collection with label '" << label.encode() << "'"; 
+      }
+      else {
 
         art::FindManyP<recob::OpHit> ophitsPtr( flash_handle, e, label );
 
@@ -678,12 +686,6 @@ void opana::ICARUSFlashAssAna::analyze(art::Event const& e) {
 
           fOpFlashTrees[iFlashLabel]->Fill();
         }
-      }
-
-      else {
-
-        mf::LogError("ICARUSFlashAssAna")
-           << "Not found a recob::OpFlash with label '" << label.encode() << "'"; 
       }
     } 
 

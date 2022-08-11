@@ -2,7 +2,8 @@
 
 #include "services_icarus_simulation.fcl"
 #include "crttrackproducer_icarus.fcl"
-#
+#include "channelmapping_icarus.fcl"
+
 process_name: CRTTrackProducer
 
 services:
@@ -12,6 +13,10 @@ services:
   TFileService:           { fileName: "crttrackproducer_hist.root" }
   message:                 @local::icarus_message_services_prod_debug
                            @table::icarus_common_services
+
+  IICARUSChannelMap:       @local::icarus_channelmappinggservice
+                           @table::icarus_calibration_services
+                           @table::icarus_wirecalibration_services
 } # services
 
 # The 'source' section tells the script to expect an input file with art::Event records.

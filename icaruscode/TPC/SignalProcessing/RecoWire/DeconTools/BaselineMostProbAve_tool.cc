@@ -11,6 +11,7 @@
 #include "art_root_io/TFileService.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
 #include "cetlib_except/exception.h"
+#include "larcore/CoreUtils/ServiceUtil.h" // lar::providerFrom()
 #include "icaruscode/TPC/Utilities/SignalShapingICARUSService_service.h"
 #include "icarus_signal_processing/WaveformTools.h"
 

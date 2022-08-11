@@ -1,5 +1,4 @@
 # add underlying subfolders
-add_subdirectory(overburden)
 add_subdirectory(SBNNoise)
 add_subdirectory(commissioning)
 add_subdirectory(archive)

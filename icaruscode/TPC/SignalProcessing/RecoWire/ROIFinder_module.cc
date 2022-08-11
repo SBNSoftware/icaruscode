@@ -33,6 +33,7 @@
 #include "larcoreobj/SimpleTypesAndConstants/RawTypes.h" // raw::ChannelID_t
 #include "larcorealg/CoreUtils/enumerate.h"
 #include "larcore/Geometry/Geometry.h"
+#include "larcore/CoreUtils/ServiceUtil.h" // lar::providerFrom()
 #include "lardataobj/RecoBase/Wire.h"
 #include "lardataobj/RawData/RawDigit.h"
 #include "lardata/DetectorInfoServices/DetectorClocksService.h"
@@ -387,7 +388,7 @@ void  ROIFinder::processPlane(size_t                      idx,
     icarus_signal_processing::ArrayFloat outputArray(dataArray.size(),icarus_signal_processing::VectorFloat(dataArray[0].size(),0.));
     icarus_signal_processing::ArrayBool  selectedVals(dataArray.size(),icarus_signal_processing::VectorBool(dataArray[0].size(),false));
 
-    fROIToolMap.at(planeID.Plane)->FindROIs(event, dataArray, mapItr->first, outputArray, selectedVals);
+    fROIToolMap.at(planeID.Plane)->FindROIs(event, dataArray, channelVec, mapItr->first, outputArray, selectedVals);
 
 //    icarus_signal_processing::ArrayFloat morphedWaveforms(dataArray.size());
 
@@ -463,7 +464,7 @@ void  ROIFinder::processPlane(size_t                      idx,
 
             // Loop through candidate roi's
             size_t startRoi = candidateROIVec.front().first;
-            size_t stopRoi  = startRoi;
+            size_t stopRoi  = candidateROIVec.front().second;    //startRoi;
 
             for(auto& roi : candidateROIVec)
             {

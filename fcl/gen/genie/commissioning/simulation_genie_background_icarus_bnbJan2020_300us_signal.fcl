@@ -132,6 +132,7 @@ outputs: {
     dataTier:    "simulated"
     
     compressionLevel: 1
+    saveMemoryObjectThreshold: 0
     
     # SelectEvents: [ filterLabel ]
     

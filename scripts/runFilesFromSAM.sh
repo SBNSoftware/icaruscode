@@ -8,6 +8,8 @@
 # Date:   March 2021
 #
 # Changes:
+# 20220406 (petrillo@slac.stanford.edu) [1.3]
+#   --max option now only converts that many files
 # 20220126 (petrillo@slac.stanford.edu) [1.2]
 #   added --stream options
 # 20210429 (petrillo@slac.stanford.edu) [1.1]
@@ -18,7 +20,7 @@
 #
 
 SCRIPTNAME="$(basename "$0")"
-SCRIPTVERSION="1.1"
+SCRIPTVERSION="1.3"
 
 declare -r RawType='raw'
 declare -r DecodeType='decoded'
@@ -121,8 +123,8 @@ Options:
     by a dash (\`-\`) and the value of the tag only if the content of that tag
     is not empty
 --max=LIMIT
-    retrieves only the first LIMIT files from SAM (only when querying run numbers)
-
+    retrieves only the first LIMIT files from SAM (only when querying run numbers);
+    in all cases, it translates only LIMIT files into a location
 --quiet , -q
     do not print non-fatal information on screen while running
 --debug[=LEVEL]
@@ -374,6 +376,7 @@ for Spec in "${Specs[@]}" ; do
   declare -a FileURL
   INFO "${JobTag}: ${nFiles} files${OutputFile:+" => '${OutputFile}'"}"
   while read FileName ; do
+    [[ $iFile -ge "$EntryLimit" ]] && INFO "Limit of ${EntryLimit} reached." && break
     INFO "[$((++iFile))/${nFiles}] '${FileName}'"
     FileURL=( $(RunSAM get-file-access-url ${Schema:+"--schema=${Schema}"} ${Location:+"--location=${Location}"} "$FileName") )
     LASTFATAL "getting file '${FileName}' location from SAM."

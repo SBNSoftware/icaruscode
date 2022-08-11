@@ -12,6 +12,7 @@
 #include "canvas/Persistency/Common/FindOneP.h"
 
 #include "larcore/Geometry/Geometry.h"
+#include "larcore/CoreUtils/ServiceUtil.h" // lar::providerFrom()
 #include "lardata/DetectorInfoServices/DetectorClocksService.h"
 #include "larevt/CalibrationDBI/Interface/ChannelStatusService.h"
 #include "larevt/CalibrationDBI/Interface/ChannelStatusProvider.h"
@@ -173,7 +174,6 @@ public:
 
         tree->Branch("Num2DHits",          "std::vector<int>",   &fNum2DHitsVec);
         tree->Branch("NumLongHitsSP",      "std::vector<int>",   &fNumLongHitsVec);
-        tree->Branch("NumPlanesSimMatch",  "std::vector<int>",   &fNumPlanesSimMatchVec);
         tree->Branch("NumIntersectSet",    "std::vector<int>",   &fNumIntersectSetVec);
         tree->Branch("ClusterNSP",         "std::vector<int>",   &fClusterNSPVec);
 
@@ -213,7 +213,6 @@ public:
 
         fNum2DHitsVec.clear();
         fNumLongHitsVec.clear();
-        fNumPlanesSimMatchVec.clear();
         fNumIntersectSetVec.clear();
         fClusterNSPVec.clear();
 
@@ -245,7 +244,6 @@ public:
 
     std::vector<int>   fNum2DHitsVec;
     std::vector<int>   fNumLongHitsVec;
-    std::vector<int>   fNumPlanesSimMatchVec;
     std::vector<int>   fNumIntersectSetVec;
     std::vector<int>   fClusterNSPVec;
 

@@ -12,6 +12,7 @@ icarus_snippethit3dbuilder:
   LongHitsStretchFactor: 1.5   # Allows to stretch long hits widths if desired
   PulseHeightFraction:   0.4   #
   PHLowSelection:        10.   #
+  MinPHFor2HitPoints:    12.
   DeltaPeakTimeSig:      1.75  # "Significance" of agreement between 2 hit peak times
   WirePitchScaleFactor:  1.9
   SaveMythicalPoints:    true

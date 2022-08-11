@@ -1,0 +1,19 @@
+#-------------------------------------------------------------------
+#
+# Name: standard_opdetsim_icarus_lite.fcl
+#
+# Purpose: Lite version of standard_opdetsim_icarus.fcl
+#
+# Created: 31-Mar-2022  H. Greenlee
+#
+# Automatically generated.
+#
+#-------------------------------------------------------------------
+
+#include "detsim_drops.fcl"
+#include "standard_opdetsim_icarus.fcl"
+
+# Drop truth data products.
+
+outputs.stream.outputCommands: [ "keep *_*_*_*",
+                                 @sequence::detsim_drops ]

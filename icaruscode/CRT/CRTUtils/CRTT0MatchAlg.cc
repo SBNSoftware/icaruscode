@@ -1,42 +1,42 @@
 #include "CRTT0MatchAlg.h"
+#include "larcore/CoreUtils/ServiceUtil.h" // lar::providerFrom()
 
 namespace icarus{
 
-  CRTT0MatchAlg::CRTT0MatchAlg(const Config& config) : CRTT0MatchAlg(config, lar::providerFrom<geo::Geometry>(), 
-								     lar::providerFrom<spacecharge::SpaceChargeService>()) {}
 
-  CRTT0MatchAlg::CRTT0MatchAlg(const Config& config, geo::GeometryCore const *GeometryService,  spacecharge::SpaceCharge const *SCE){
-  
-  
-    this->reconfigure(config);
-    fGeometryService = GeometryService;
-    fSCE = SCE;
+  CRTT0MatchAlg::CRTT0MatchAlg(const fhicl::ParameterSet& pset)
+  {
+    this->reconfigure(pset);
+    return;
   }
+
   CRTT0MatchAlg::CRTT0MatchAlg() = default;
   
 
- 
-  
-  void CRTT0MatchAlg::reconfigure(const Config& config){
-    
-    fMinTrackLength = config.MinTrackLength();
-    fTrackDirectionFrac = config.TrackDirectionFrac();
-    fDistanceLimit = config.DistanceLimit();
-    fTSMode = config.TSMode();
-    fTimeCorrection = config.TimeCorrection();
-    fTPCTrackLabel = config.TPCTrackLabel();
-    fSCEposCorr = config.SCEposCorr();
-    fDirMethod = config.DirMethod();
-    fDCAuseBox = config.DCAuseBox();
-    fDCAoverLength = config.DCAoverLength();
-    fDoverLLimit = config.DoverLLimit();
-    fPEcut = config.PEcut();
-    fMaxUncert = config.MaxUncert();
-    //  fDistEndpointAVedge = config.DistEndpointAVedge();
+  void CRTT0MatchAlg::reconfigure(const fhicl::ParameterSet& pset){
 
+    fMinTrackLength     = pset.get<double>("MinTrackLength", 20.0);
+    fTrackDirectionFrac = pset.get<double>("TrackDirectionFrac", 0.5);
+    fDistanceLimit      = pset.get<double>("DistanceLimit", 100);
+    fTSMode             = pset.get<int>("TSMode", 2);
+    fTimeCorrection     = pset.get<double>("TimeCorrection", 0.);
+    fSCEposCorr         = pset.get<bool>("SCEposCorr", true);
+    fDirMethod          = pset.get<int>("DirMethod", 1);
+    fDCAuseBox          = pset.get<bool>("DCAuseBox",false);
+    fDCAoverLength      = pset.get<bool>("DCAoverLength", false);
+    fDoverLLimit        = pset.get<double>("DoverLLimit", 1);
+    fPEcut              = pset.get<double>("PEcut", 0.0);
+    fMaxUncert          = pset.get<double>("MaxUncert", 1000.);
+    fTPCTrackLabel      = pset.get<std::vector<art::InputTag> >("TPCTrackLabel", {""});
+    //  fDistEndpointAVedge = pset.get<double>(.DistEndpointAVedge();
+
+    fGeometryService    = lar::providerFrom<geo::Geometry>();//GeometryService;
+    fSCE                = lar::providerFrom<spacecharge::SpaceChargeService>();
+    //fSCE = SCE;
     return;
 
   }
+ 
 
   matchCand makeNULLmc (){
     sbn::crt::CRTHit hit;
@@ -52,13 +52,16 @@ namespace icarus{
 
   // Utility function that determines the possible t0 range of a track
   std::pair<double, double> CRTT0MatchAlg::TrackT0Range(detinfo::DetectorPropertiesData const& detProp,
-							double startX, double endX, int driftDirection, std::pair<double, double> xLimits){
+							double startX, double endX, int driftDirection, 
+							std::pair<double, double> xLimits){
 
     // If track is stitched return zeros
     if(driftDirection == 0) return std::make_pair(0, 0);
 
     //std::pair<double, double> result; // unused
     double Vd = driftDirection * detProp.DriftVelocity();
+
+    //std::cout << " [ driftdirn, vd ] = [ " << driftDirection << " , " << Vd << " ]" << std::endl;
 
     // Shift the most postive end to the most positive limit
     double maxX = std::max(startX, endX);
@@ -72,6 +75,12 @@ namespace icarus{
     double t0max = maxShift/Vd;
     double t0min = minShift/Vd;
 
+    /*    
+    std::cout << "[ driftdirn, vd, startx , endx, xlimits, xlimite, maxx, minx, maxl, minl, maxs, mins, t0max, t0min ] = [ "
+	      << driftDirection << " , " << Vd << " , " << startX << " ," <<  endX << " ," << xLimits.first << " ," << xLimits.second 
+	      << " ," << maxX <<" ," << minX << " ," <<maxLimit << " ," << minLimit << " ," <<maxShift << " ," <<minShift
+	      << " ," << t0max << " ," << t0min << " ]"<< std::endl;
+    */
     //  if (t0min>2500)  std::cout << " t0 min " << t0min << " t0max " << t0max << std::endl;
     return std::make_pair(std::min(t0min, t0max), std::max(t0min, t0max));
 
@@ -80,7 +89,8 @@ namespace icarus{
 
 
   double CRTT0MatchAlg::DistOfClosestApproach(detinfo::DetectorPropertiesData const& detProp,
-					      TVector3 trackPos, TVector3 trackDir, sbn::crt::CRTHit crtHit, int driftDirection, double t0){
+					      TVector3 trackPos, TVector3 trackDir, 
+					      sbn::crt::CRTHit crtHit, int driftDirection, double t0){
 
     //double minDist = 99999;
 
@@ -98,6 +108,24 @@ namespace icarus{
     }
 
     TVector3 end = trackPos + trackDir;
+    /*
+    std::cout << "[trackPosx, y, z, trackDirx, y, z, endx, y, z ] = [ "
+	      << trackPos.X() << " , " << trackPos.Y() << " , " << trackPos.Z() << " , "
+	      << trackDir.X() << " , " << trackDir.Y() << " , " << trackDir.Z() << " , " 
+	      << end.X()      << " , " << end.Y()      << " , " << end.Z() << " ]" << std::endl;
+    */
+    //-------- ADDED BY ME----------
+    TVector3 pos (crtHit.x_pos, crtHit.y_pos, crtHit.z_pos);
+    //double denominator = trackDir.Mag();
+    //double numerator = (pos - trackPos).Cross(pos - end).Mag();
+    /*
+    std::cout << "[ crt x, y, z, startx, directionx, endx, num, denom, distance, altnative, altdist ] = [ "
+	      << crtHit.x_pos << " , "  << crtHit.y_pos << " , " << crtHit.z_pos << " , "
+	      << trackPos.X() << " , "  << trackDir.X() << " , "  << end.X() << " , "
+	      << numerator << " , "  << denominator << " , "  << numerator/denominator << " , "
+	      << (pos - trackPos).Cross(trackDir).Mag() << " , "  << ( pos - trackPos).Cross(trackDir).Mag()/denominator << " ] " << std::endl;
+    */
+    //-----------------------
 
     // calculate distance of closest approach (DCA)
     //  default is the distance to the point specified by the CRT hit (Simple DCA)
@@ -145,7 +173,9 @@ namespace icarus{
   } // CRTT0MatchAlg::TrackDirectionAverage()
 
 
-  std::pair<TVector3, TVector3> CRTT0MatchAlg::TrackDirection(detinfo::DetectorPropertiesData const& detProp,recob::Track track, double frac, double CRTtime, int driftDirection){
+  std::pair<TVector3, TVector3> CRTT0MatchAlg::TrackDirection(detinfo::DetectorPropertiesData const& detProp,
+							      recob::Track track, double frac, 
+							      double CRTtime, int driftDirection){
           
     size_t nTrackPoints = track.NPoints();
     int midPt = (int)floor(nTrackPoints*frac);
@@ -157,16 +187,27 @@ namespace icarus{
     TVector3  startPoint = {startP.X()+xshift,startP.Y(),startP.Z()};
     TVector3  endPoint = {endP.X()+xshift,endP.Y(),endP.Z()};
     TVector3  midPoint = {midP.X()+xshift,midP.Y(),midP.Z()};
+
+    //    std::cout <<"[ nTrackPoints, midPt, startP, endP, midP, xshift, CRTtime, startPoint, endPoint,  midPoint ] = [ " 
+    //	      << nTrackPoints << " , "  << midPt << " , "  << startP.X() << " , "  << endP.X() << " , "  << midP.X() << " , "  
+    //	      << xshift << " , "  << CRTtime<< " , "  << startPoint.X() << " , "  << endPoint.X() << " , "  << midPoint.X() << " ]"<<std::endl;
+
     if (fSCE->EnableCalSpatialSCE() && fSCEposCorr) {
 
       // Apply the shift depending on which TPC the track is in                                 
       geo::Point_t fTrackPos = startP;
+      //std::cout <<" before set fTrackPos " << fTrackPos.X() <<std::endl;
       fTrackPos.SetX(startPoint.X());
+
       geo::TPCID tpcid = fGeometryService->PositionToTPCID(fTrackPos);                        
       geo::Vector_t fPosOffsets = fSCE->GetCalPosOffsets(geo::Point_t{fTrackPos.X(),fTrackPos.Y(),fTrackPos.Z()},tpcid.TPC);
+
       startPoint.SetX(fTrackPos.X() + fPosOffsets.X());                                       
       startPoint.SetY(fTrackPos.Y() + fPosOffsets.Y());                                       
       startPoint.SetZ(fTrackPos.Z() + fPosOffsets.Z());                                       
+      // std::cout <<" [ after set fTrackPos, tpcid, offset x, offset y, offset z, startx, starty, startz ] = [ " << fTrackPos.X()  << " , "  << tpcid.TPC
+      //	<< " , "  << fPosOffsets.X() << " , "  << fPosOffsets.Y() << " , "  << fPosOffsets.Z()
+      //	<< " , "  << startPoint.X()<< " , "  << startPoint.Y() << " , "  << startPoint.Z() << " ]" <<std::endl;
       fTrackPos = endP;
       fTrackPos.SetX(endPoint.X());
       tpcid = fGeometryService->PositionToTPCID(fTrackPos);
@@ -175,6 +216,10 @@ namespace icarus{
       endPoint.SetX(fTrackPos.X() + fPosOffsets.X());
       endPoint.SetY(fTrackPos.Y() + fPosOffsets.Y());
       endPoint.SetZ(fTrackPos.Z() + fPosOffsets.Z());
+      //std::cout <<" [ after set end fTrackPos, tpcid, offset x, offset y, offset z, startx, starty, startz ] = [ " << fTrackPos.X() << " , "  << tpcid.TPC
+      //	<< " , "  << fPosOffsets.X() << " , "  << fPosOffsets.Y() << " , "  << fPosOffsets.Z()
+      //	<< " , "  << endPoint.X()<< " , "  << endPoint.Y() << " , "  << endPoint.Z() << " ]" <<std::endl;
+
       fTrackPos = midP;
       fTrackPos.SetX(midPoint.X());
       tpcid = fGeometryService->PositionToTPCID(fTrackPos);
@@ -183,15 +228,27 @@ namespace icarus{
       midPoint.SetX(fTrackPos.X() + fPosOffsets.X());
       midPoint.SetY(fTrackPos.Y() + fPosOffsets.Y());
       midPoint.SetZ(fTrackPos.Z() + fPosOffsets.Z());
+      //std::cout <<" [ after set mid fTrackPos, tpcid, offset x, offset y, offset z, startx, starty, startz ] = [ " << fTrackPos.X()  << " , "  << tpcid.TPC
+      //        << " , "  << fPosOffsets.X() << " , "  << fPosOffsets.Y() << " , "  << fPosOffsets.Z()
+      //	<< " , "  << midPoint.X()<< " , "  << midPoint.Y() << " , "  << midPoint.Z() << " ]" <<std::endl;
     }
     
     TVector3 startDir = {midPoint.X()-startPoint.X(),midPoint.Y()-startPoint.Y(),midPoint.Z()-startPoint.Z()};
     float norm = startDir.Mag();
     if (norm>0)  startDir *=(1.0/norm);
+    /*
+    std::cout <<" [ startDirx, startDiry, startDirz, mag, xcap, ycap, zcap ] = [ " 
+	      << midPoint.X()-startPoint.X() << " , "  << midPoint.Y()-startPoint.Y() << " , "  << midPoint.Z()-startPoint.Z()
+	      << " , "  << norm << " , "  << startDir.X()<< " , "  << startDir.Y() << " , "  << startDir.Z() << " ]" <<std::endl;
+    */
     TVector3 endDir = {midPoint.X()-endPoint.X(),midPoint.Y()-endPoint.Y(),midPoint.Z()-endPoint.Z()};    
     norm = endDir.Mag();
     if (norm>0)  endDir *=(1.0/norm);
-    
+    /*
+    std::cout <<" [ endDirx, endDiry, endDirz, mag, xcap, ycap, zcap ] = [ "
+	      << midPoint.X()-endPoint.X() << " , "  << midPoint.Y()-endPoint.Y() << " , "  << midPoint.Z()-endPoint.Z()
+              << " , "  << norm<< " , "  << endDir.X()<< " , "  << endDir.Y() << " , "  << endDir.Z() << " ]" <<std::endl;
+    */
     return std::make_pair(startDir, endDir);
     
   } // CRTT0MatchAlg::TrackDirection()                                                                  
@@ -220,17 +277,36 @@ namespace icarus{
   // Keeping ClosestCRTHit function for backward compatibility only
   // *** use GetClosestCRTHit instead
 
-  std::pair<sbn::crt::CRTHit, double> CRTT0MatchAlg::ClosestCRTHit(detinfo::DetectorPropertiesData const& detProp,
-								   recob::Track tpcTrack, std::vector<sbn::crt::CRTHit> crtHits, const art::Event& event) {
-    auto tpcTrackHandle = event.getValidHandle<std::vector<recob::Track>>(fTPCTrackLabel);
-    art::FindManyP<recob::Hit> findManyHits(tpcTrackHandle, event, fTPCTrackLabel);
-    std::vector<art::Ptr<recob::Hit>> hits = findManyHits.at(tpcTrack.ID());
-    return ClosestCRTHit(detProp, tpcTrack, hits, crtHits);
+  std::vector<std::pair<sbn::crt::CRTHit, double> > CRTT0MatchAlg::ClosestCRTHit(detinfo::DetectorPropertiesData const& detProp,
+										 recob::Track tpcTrack, std::vector<sbn::crt::CRTHit> crtHits, 
+										 const art::Event& event, uint64_t trigger_timestamp) {
+    //    matchCand newmc = makeNULLmc();
+    std::vector<std::pair<sbn::crt::CRTHit, double> > crthitpair;
+    
+    for(const auto& trackLabel : fTPCTrackLabel){
+      auto tpcTrackHandle = event.getValidHandle<std::vector<recob::Track>>(trackLabel);
+      if (!tpcTrackHandle.isValid()) continue;
+      
+      art::FindManyP<recob::Hit> findManyHits(tpcTrackHandle, event, trackLabel);
+      for (auto const& tpcTrack : (*tpcTrackHandle)){
+	std::vector<art::Ptr<recob::Hit>> hits = findManyHits.at(tpcTrack.ID());
+	
+	crthitpair.push_back(ClosestCRTHit(detProp, tpcTrack, hits, crtHits, trigger_timestamp));
+	//	return ClosestCRTHit(detProp, tpcTrack, hits, crtHits);
+      }
+    }
+
+    return crthitpair;
+    //for(const auto& crthit : crthitpair)
+    //return std::make_pair(crthit.first, crthit.second);
+
+    //return std::make_pair( newmc.thishit, -9999);
   }
 
 
   std::pair<sbn::crt::CRTHit, double>  CRTT0MatchAlg::ClosestCRTHit(detinfo::DetectorPropertiesData const& detProp,
-								    recob::Track tpcTrack, std::vector<art::Ptr<recob::Hit>> hits, std::vector<sbn::crt::CRTHit> crtHits) {
+								    recob::Track tpcTrack, std::vector<art::Ptr<recob::Hit>> hits, 
+								    std::vector<sbn::crt::CRTHit> crtHits, uint64_t trigger_timestamp) {
 
     auto start = tpcTrack.Vertex<TVector3>();
     auto end = tpcTrack.End<TVector3>();
@@ -240,51 +316,82 @@ namespace icarus{
     // Get the allowed t0 range
     std::pair<double, double> t0MinMax = TrackT0Range(detProp, start.X(), end.X(), driftDirection, xLimits);
 
-    return ClosestCRTHit(detProp, tpcTrack, t0MinMax, crtHits, driftDirection);
+    return ClosestCRTHit(detProp, tpcTrack, t0MinMax, crtHits, driftDirection, trigger_timestamp);
   }
 
   std::pair<sbn::crt::CRTHit, double> CRTT0MatchAlg::ClosestCRTHit(detinfo::DetectorPropertiesData const& detProp,
-								   recob::Track tpcTrack, std::pair<double, double> t0MinMax, std::vector<sbn::crt::CRTHit> crtHits, int driftDirection) {
-    matchCand bestmatch = GetClosestCRTHit(detProp, tpcTrack,t0MinMax,crtHits,driftDirection);
+								   recob::Track tpcTrack, std::pair<double, double> t0MinMax, 
+								   std::vector<sbn::crt::CRTHit> crtHits, int driftDirection, uint64_t trigger_timestamp) {
+
+    matchCand bestmatch = GetClosestCRTHit(detProp, tpcTrack,t0MinMax,crtHits,driftDirection, trigger_timestamp);
     return std::make_pair(bestmatch.thishit,bestmatch.dca);
 
   }
 
 
   matchCand CRTT0MatchAlg::GetClosestCRTHit(detinfo::DetectorPropertiesData const& detProp,
-					    recob::Track tpcTrack, std::vector<art::Ptr<recob::Hit>> hits, std::vector<sbn::crt::CRTHit> crtHits) {
+					    recob::Track tpcTrack, std::vector<art::Ptr<recob::Hit>> hits, 
+					    std::vector<sbn::crt::CRTHit> crtHits, uint64_t trigger_timestamp) {
 
     auto start = tpcTrack.Vertex<TVector3>();
-    auto end = tpcTrack.End<TVector3>();
+    auto end   = tpcTrack.End<TVector3>();
+
+
+
     // Get the drift direction from the TPC
     int driftDirection = TPCGeoUtil::DriftDirectionFromHits(fGeometryService, hits);
+    //std::cout << "size of hit in a track: " << hits.size() << ", driftDirection: "<< driftDirection 
+    //	      << " , tpc: "<< hits[0]->WireID().TPC << std::endl; //<< " , intpc: "<< icarus::TPCGeoUtil::DetectedInTPC(hits) << std::endl;
     std::pair<double, double> xLimits = TPCGeoUtil::XLimitsFromHits(fGeometryService, hits);
     // Get the allowed t0 range
     std::pair<double, double> t0MinMax = TrackT0Range(detProp, start.X(), end.X(), driftDirection, xLimits);
 
-    return GetClosestCRTHit(detProp, tpcTrack, t0MinMax, crtHits, driftDirection);
+    return GetClosestCRTHit(detProp, tpcTrack, t0MinMax, crtHits, driftDirection, trigger_timestamp);
+
   }
 
-  matchCand CRTT0MatchAlg::GetClosestCRTHit(detinfo::DetectorPropertiesData const& detProp,
-					    recob::Track tpcTrack, std::vector<sbn::crt::CRTHit> crtHits, const art::Event& event) {
-    auto tpcTrackHandle = event.getValidHandle<std::vector<recob::Track>>(fTPCTrackLabel);
-    art::FindManyP<recob::Hit> findManyHits(tpcTrackHandle, event, fTPCTrackLabel);
-    std::vector<art::Ptr<recob::Hit>> hits = findManyHits.at(tpcTrack.ID());
-    return GetClosestCRTHit(detProp, tpcTrack, hits, crtHits);
+  std::vector<matchCand> CRTT0MatchAlg::GetClosestCRTHit(detinfo::DetectorPropertiesData const& detProp,
+							 recob::Track tpcTrack, std::vector<sbn::crt::CRTHit> crtHits, 
+							 const art::Event& event, uint64_t trigger_timestamp) {
+    //    matchCand nullmatch = makeNULLmc();
+    std::vector<matchCand> matchcanvec;
+    //std::vector<std::pair<sbn::crt::CRTHit, double> > matchedCan;
+    for(const auto& trackLabel : fTPCTrackLabel){
+      auto tpcTrackHandle = event.getValidHandle<std::vector<recob::Track>>(trackLabel);
+      if (!tpcTrackHandle.isValid()) continue;
+
+      art::FindManyP<recob::Hit> findManyHits(tpcTrackHandle, event, trackLabel);
+      for (auto const& tpcTrack : (*tpcTrackHandle)){
+	std::vector<art::Ptr<recob::Hit>> hits = findManyHits.at(tpcTrack.ID());
+        matchcanvec.push_back(GetClosestCRTHit(detProp, tpcTrack, hits, crtHits, trigger_timestamp));
+	//return ClosestCRTHit(detProp, tpcTrack, hits, crtHits);
+	//matchCand closestHit = GetClosestCRTHit(detProp, tpcTrack, hits, crtHits);
+
+      }
+    }
+    return matchcanvec;
+    //auto tpcTrackHandle = event.getValidHandle<std::vector<recob::Track>>(fTPCTrackLabel);
+    //art::FindManyP<recob::Hit> findManyHits(tpcTrackHandle, event, fTPCTrackLabel);
+    //std::vector<art::Ptr<recob::Hit>> hits = findManyHits.at(tpcTrack.ID());
+    //return GetClosestCRTHit(detProp, tpcTrack, hits, crtHits);
+    //    for (const auto& match : matchedCan)
+    //return match;
+    //return nullmatch;
   }
 
 
   matchCand CRTT0MatchAlg::GetClosestCRTHit(detinfo::DetectorPropertiesData const& detProp,
-					    recob::Track tpcTrack, std::pair<double, double> t0MinMax, std::vector<sbn::crt::CRTHit> crtHits, int driftDirection) {
+					    recob::Track tpcTrack, std::pair<double, double> t0MinMax, 
+					    std::vector<sbn::crt::CRTHit> crtHits, int driftDirection, uint64_t& trigger_timestamp) {
+
     auto start = tpcTrack.Vertex<TVector3>();
-    auto end = tpcTrack.End<TVector3>();
+    auto end   = tpcTrack.End<TVector3>();
 
     // ====================== Matching Algorithm ========================== //
     //  std::vector<std::pair<sbn::crt::CRTHit, double>> t0Candidates;
     std::vector<matchCand> t0Candidates;
 
-
-
+    //    if (crtHits.size() == 0) continue;
     // Loop over all the CRT hits
     for(auto &crtHit : crtHits){
       // Check if hit is within the allowed t0 range
@@ -293,12 +400,27 @@ namespace icarus{
 	crtTime = ((double)(int)crtHit.ts1_ns) * 1e-3 + fTimeCorrection;
       }
       else {
-	crtTime = ((double)(int)crtHit.ts0_ns) * 1e-3 + fTimeCorrection;
+	//std::cout << "trigger_timestamp: "<< trigger_timestamp << " , t0 " << (uint64_t)crtHit.ts0_ns << std::endl;
+	crtTime = double(crtHit.ts0_ns - trigger_timestamp%1'000'000'000)/1e3;
+        //'
+        if(crtTime<-0.5e6)      crtTime+=1e6;
+        else if(crtTime>0.5e6)  crtTime-=1e6;    
+	//'//	std::cout << "(trigger - t0)/1e3: " << crtTime << std::endl;
+	//crtTime = -crtTime+1e6;
+	//std::cout << "-crtTime+1e6: " << crtTime << std::endl;
+	//crtTime = ((double)(int)crtHit.ts0_ns) * 1e-3 + fTimeCorrection;
       }
-      //    if (crtTime>3000) std::cout << "crt hit times " << crtTime << std::endl;
+      //      if (crtTime < 3000 && crtTime > -3000) std::cout << "crt hit times " << crtTime << std::endl;
+      //      std::cout << "[ tpc t0 min , tpc t0 max ] = [ "<< t0MinMax.first << " , " << t0MinMax.second << " ]" << std::endl; 
       // If track is stitched then try all hits
       if (!((crtTime >= t0MinMax.first - 10. && crtTime <= t0MinMax.second + 10.) 
             || t0MinMax.first == t0MinMax.second)) continue;
+
+      //std::cout << "[ tpc t0 min , tpc t0 max, crttime ] = [ "<< t0MinMax.first << " , " << t0MinMax.second 
+      //	<<  " , " << crtTime << " ]" << std::endl;
+
+      //std::cout << "passed ....................... " << std::endl;
+
       // cut on CRT hit PE value
       if (crtHit.peshit<fPEcut) continue;
       if (crtHit.x_err>fMaxUncert) continue;
@@ -306,7 +428,9 @@ namespace icarus{
       if (crtHit.z_err>fMaxUncert) continue;
 
       TVector3 crtPoint(crtHit.x_pos, crtHit.y_pos, crtHit.z_pos);
-  
+
+      //std::cout << "[ tpc t0 min , tpc t0 max, crttime, crtx, crty, crtz ] = [ "<< t0MinMax.first << " , " << t0MinMax.second
+      //	<<  " , " << crtTime << " , " <<  crtHit.x_pos << " , " <<  crtHit.y_pos << " , " << crtHit.z_pos << " ]" << std::endl;
       //Calculate Track direction
       std::pair<TVector3, TVector3> startEndDir;
       // dirmethod=2 is original algorithm, dirmethod=1 is simple algorithm for which SCE corrections are possible
@@ -352,13 +476,17 @@ namespace icarus{
 	// std::cout << " distS " << distS << " distE " << distE << std::endl;
 	// std::cout << "startdis " << startDist << " endDist " << endDist << " dca "  << std::endl;
 	// std::cout << " doL start " << startDist/distS << " doL end " << endDist/distE << std::endl;
-
+	/*
+	std::cout << " distS "   << distS     << " distE "   << distE
+                  << "startdis " << startDist << " endDist " << endDist << " dca "  << std::endl;
+	*/
 	if (distS < distE){ 
 	  newmc.thishit = crtHit;
 	  newmc.t0= crtTime;
 	  newmc.dca = startDist;
 	  newmc.extrapLen = distS;
 	  t0Candidates.push_back(newmc);
+	  // std::cout << " hello inside the distS < distE, found "   << t0Candidates.size() << " candidates"<< std::endl;
 	}
 	else{
 	  newmc.thishit = crtHit;
@@ -366,12 +494,13 @@ namespace icarus{
 	  newmc.dca = endDist;
 	  newmc.extrapLen = distE;
 	  t0Candidates.push_back(newmc);
+	  //std::cout << " hello outside the distS < distE, found "   << t0Candidates.size() << " candidates"<< std::endl;
 	}
       }
     }
 
 
-    //  std::cout << " found " << t0Candidates.size() << " candidates" << std::endl;
+      //std::cout << " found " << t0Candidates.size() << " candidates" << std::endl;
     matchCand bestmatch = makeNULLmc();
     if(t0Candidates.size() > 0){
       // Find candidate with shortest DCA or DCA/L value
@@ -386,32 +515,51 @@ namespace icarus{
       }
       else { // use Dca to judge best
 	for(auto &thisCand : t0Candidates){
+	  //std::cout << "[bestmatch, thiscand] = [ " << bestmatch.dca << " , " << thisCand.dca << " ] " << std::endl; 
 	  if (bestmatch.dca<0 )bestmatch=thisCand;
 	  else if (thisCand.dca<bestmatch.dca && thisCand.dca>=0)bestmatch=thisCand;
 	}
       }
     }
 
-    //  std::cout << "best match has dca of " << bestmatch.dca << std::endl;
+    //std::cout << "best match has dca of " << bestmatch.dca << std::endl;
     return bestmatch;
 
   }
 
 
-  double CRTT0MatchAlg::T0FromCRTHits(detinfo::DetectorPropertiesData const& detProp,
-				      recob::Track tpcTrack, std::vector<sbn::crt::CRTHit> crtHits, const art::Event& event){
-    auto tpcTrackHandle = event.getValidHandle<std::vector<recob::Track>>(fTPCTrackLabel);
-    art::FindManyP<recob::Hit> findManyHits(tpcTrackHandle, event, fTPCTrackLabel);
-    std::vector<art::Ptr<recob::Hit>> hits = findManyHits.at(tpcTrack.ID());
-    return T0FromCRTHits(detProp, tpcTrack, hits, crtHits);
+  std::vector<double> CRTT0MatchAlg::T0FromCRTHits(detinfo::DetectorPropertiesData const& detProp,
+						   recob::Track tpcTrack, std::vector<sbn::crt::CRTHit> crtHits, 
+						   const art::Event& event, uint64_t trigger_timestamp){
+    std::vector<double> ftime;
+    for(const auto& trackLabel : fTPCTrackLabel){
+      auto tpcTrackHandle = event.getValidHandle<std::vector<recob::Track>>(trackLabel);
+      if (!tpcTrackHandle.isValid()) continue;
+
+      art::FindManyP<recob::Hit> findManyHits(tpcTrackHandle, event, trackLabel);
+      for (auto const& tpcTrack : (*tpcTrackHandle)){
+	std::vector<art::Ptr<recob::Hit>> hits = findManyHits.at(tpcTrack.ID());
+	ftime.push_back(T0FromCRTHits(detProp, tpcTrack, hits, crtHits, trigger_timestamp));
+	// return T0FromCRTHits(detProp, tpcTrack, hits, crtHits);
+      }
+    }
+    return ftime;
+    //auto tpcTrackHandle = event.getValidHandle<std::vector<recob::Track>>(fTPCTrackLabel);
+    //art::FindManyP<recob::Hit> findManyHits(tpcTrackHandle, event, fTPCTrackLabel);
+    //std::vector<art::Ptr<recob::Hit>> hits = findManyHits.at(tpcTrack.ID());
+    //return T0FromCRTHits(detProp, tpcTrack, hits, crtHits);
+
+    //    for(const auto& t0 : ftime) return t0;
+    //return -99999;
   }
 
   double CRTT0MatchAlg::T0FromCRTHits(detinfo::DetectorPropertiesData const& detProp,
-				      recob::Track tpcTrack, std::vector<art::Ptr<recob::Hit>> hits, std::vector<sbn::crt::CRTHit> crtHits) {
+				      recob::Track tpcTrack, std::vector<art::Ptr<recob::Hit>> hits, 
+				      std::vector<sbn::crt::CRTHit> crtHits, uint64_t& trigger_timestamp) {
 
     if (tpcTrack.Length() < fMinTrackLength) return -99999; 
 
-    matchCand closestHit = GetClosestCRTHit(detProp, tpcTrack, hits, crtHits);
+    matchCand closestHit = GetClosestCRTHit(detProp, tpcTrack, hits, crtHits, trigger_timestamp);
     if(closestHit.dca <0) return -99999;
 
     double crtTime;
@@ -427,20 +575,38 @@ namespace icarus{
 
   }
 
-  std::pair<double, double>  CRTT0MatchAlg::T0AndDCAFromCRTHits(detinfo::DetectorPropertiesData const& detProp,
-								recob::Track tpcTrack, std::vector<sbn::crt::CRTHit> crtHits, const art::Event& event){
-    auto tpcTrackHandle = event.getValidHandle<std::vector<recob::Track>>(fTPCTrackLabel);
-    art::FindManyP<recob::Hit> findManyHits(tpcTrackHandle, event, fTPCTrackLabel);
-    std::vector<art::Ptr<recob::Hit>> hits = findManyHits.at(tpcTrack.ID());
-    return T0AndDCAFromCRTHits(detProp, tpcTrack, hits, crtHits);
+  std::vector<std::pair<double, double> > CRTT0MatchAlg::T0AndDCAFromCRTHits(detinfo::DetectorPropertiesData const& detProp,
+									     recob::Track tpcTrack, std::vector<sbn::crt::CRTHit> crtHits, 
+									     const art::Event& event, uint64_t trigger_timestamp){
+   
+    std::vector<std::pair<double, double> > ft0anddca;
+    for(const auto& trackLabel : fTPCTrackLabel){
+      auto tpcTrackHandle = event.getValidHandle<std::vector<recob::Track>>(trackLabel);
+      if (!tpcTrackHandle.isValid()) continue;
+
+      art::FindManyP<recob::Hit> findManyHits(tpcTrackHandle, event, trackLabel);
+      for (auto const& tpcTrack : (*tpcTrackHandle)){
+	std::vector<art::Ptr<recob::Hit>> hits = findManyHits.at(tpcTrack.ID());
+	ft0anddca.push_back(T0AndDCAFromCRTHits(detProp, tpcTrack, hits, crtHits, trigger_timestamp));
+	//        return T0AndDCAFromCRTHits(detProp, tpcTrack, hits, crtHits);
+      }
+    }
+    return ft0anddca;
+    // auto tpcTrackHandle = event.getValidHandle<std::vector<recob::Track>>(fTPCTrackLabel);
+    //art::FindManyP<recob::Hit> findManyHits(tpcTrackHandle, event, fTPCTrackLabel);
+    //std::vector<art::Ptr<recob::Hit>> hits = findManyHits.at(tpcTrack.ID());
+    //return T0AndDCAFromCRTHits(detProp, tpcTrack, hits, crtHits);
+    //    for(const auto& t0anddca : ft0anddca) return std::make_pair(t0anddca.first, t0anddca.second);
+    //return  std::make_pair(-9999., -9999.);
   }
 
   std::pair<double, double> CRTT0MatchAlg::T0AndDCAFromCRTHits(detinfo::DetectorPropertiesData const& detProp,
-							       recob::Track tpcTrack, std::vector<art::Ptr<recob::Hit>> hits, std::vector<sbn::crt::CRTHit> crtHits) {
+							       recob::Track tpcTrack, std::vector<art::Ptr<recob::Hit>> hits, 
+							       std::vector<sbn::crt::CRTHit> crtHits, uint64_t& trigger_timestamp) {
 
     if (tpcTrack.Length() < fMinTrackLength) return std::make_pair(-9999., -9999.);
 
-    matchCand closestHit = GetClosestCRTHit(detProp, tpcTrack, hits, crtHits);
+    matchCand closestHit = GetClosestCRTHit(detProp, tpcTrack, hits, crtHits, trigger_timestamp);
 
     if(closestHit.dca < 0 ) return std::make_pair(-9999., -9999.);
     if (closestHit.dca < fDistanceLimit && (closestHit.dca/closestHit.extrapLen) < fDoverLLimit) return std::make_pair(closestHit.t0, closestHit.dca);

@@ -6,9 +6,10 @@ physics.reco: [ @sequence::icarus_filter_cluster3D,
                 @sequence::icarus_pandora_Gauss,
 		@sequence::icarus_reco_fm,
                 @sequence::icarus_crthit,
+		@sequence::icarus_crtt0match,
                 caloskimCalorimetryCryoE, caloskimCalorimetryCryoW]
 
-physics.outana:            [ caloskimE, caloskimW, simpleLightAna]
+physics.outana:            [ caloskimE, caloskimW, simpleLightAna, CRTDataAnalysis]
 physics.trigger_paths:     [ reco ]
 physics.end_paths:         [ outana, stream1 ]
 outputs.out1.fileName:     "%ifb_%tc-%p.root"

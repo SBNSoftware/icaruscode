@@ -15,7 +15,6 @@
 #include "icaruscode/Decode/DataProducts/ExtraTriggerInfo.h"
 // #include "sbnobj/Common/Trigger/BeamBits.h" // future location of:
 #include "icaruscode/Decode/BeamBits.h" // sbn::triggerSource
-#include "icarusalg/Utilities/FHiCLutils.h" // util::fhicl::getOptionalValue()
 #include "icarusalg/Utilities/BinaryDumpUtils.h" // icarus::ns::util::bin()
 
 #include "sbnobj/Common/PMT/Data/PMTconfiguration.h" // sbn::PMTconfiguration
@@ -52,6 +51,7 @@
 #include "canvas/Utilities/InputTag.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
 #include "fhiclcpp/types/TableAs.h"
+#include "fhiclcpp/types/OptionalSequence.h"
 #include "fhiclcpp/types/Sequence.h"
 #include "fhiclcpp/types/OptionalAtom.h"
 #include "fhiclcpp/types/Atom.h"
@@ -64,6 +64,8 @@
 #include <memory>
 #include <ostream>
 #include <unordered_map>
+#include <map>
+#include <set>
 #include <vector>
 #include <string>
 #include <optional>
@@ -123,6 +125,35 @@ namespace icarus { class DaqDecoderICARUSPMT; }
  *     * `TriggerDelay` (nanoseconds, default: 0 ns): measured delay from the
  *       primitive trigger time to the execution of the PMT trigger; specify
  *       the unit! (e.g. `"43 ns"`).
+ *     * `SpecialChannels` (list of configurations): each entry described
+ *       special features and settings of a specific channel, identified by
+ *       its V1730B board channel number (`0` to `15`). The supported keys are:
+ *         * `ChannelIndex` (integer, mandatory) the index of the channel in
+ *           the board, from `0` to `15`; note that for this module to decode
+ *           this channel index, the channel itself must be enabled on the
+ *           readout board.
+ *         * `Skip` (flag, optional): if specified, tells whether to always skip
+ *           this channel or whether always store it. If not specified, a
+ *           channel will be always stored unless it is not associated to any
+ *           channel number (see `Channel` below). Note that if the channel is
+ *           not enabled in the readout board, this option has no effect.
+ *         * `OnlyOnGlobalTrigger` (flag, default: `false`): if set, waveforms
+ *           are saved from this channel only when it includes the global
+ *           trigger time; if no trigger time is available, such channels will
+ *           never be saved.
+ *         * `MinSpan` (integer, default: `0`): waveforms which have a span
+ *           (highest sample minus lowest sample) smaller than this limit are
+ *           not saved (unless `Skip` is set to `false`).
+ *         * `Channel` (integral, optional): if specified, it overrides the
+ *           channel number used for the waveforms on this channel; if not
+ *           specified, the channel number is obtained from the channel mapping
+ *           database. Note that insisting to save a waveform without an
+ *           assigned channel number (from database or from this configuration)
+ *           will trigger an exception.
+ *         * `InstanceName` (string, default: empty): the waveform will be
+ *           stored in a collection of `raw::OpDetWaveform` with the specified
+ *           instance name; the default is an empty name, which is the standard
+ *           data product where all the normal waveforms are saved.
  * * `RequireKnownBoards` (flag, default: `true`): if set, the readout boards
  *     in input must each have a setup configuration (`BoardSetup`) *and* must
  *     be present in the PMT DAQ configuration, or an exception is thrown;
@@ -302,29 +333,42 @@ namespace icarus { class DaqDecoderICARUSPMT; }
  * depending of the time stamping mode; in both cases, the delays need to be
  * measured.
  * The first category of information, from readout board configuration, are read
- * from the input file (`sbn::PMTconfiguration`), while the second category 
- * needs to be specified in the tool FHiCL configuration.
+ * from the input file (`sbn::PMTconfiguration`), while the second category
+ * needs to be specified in the module FHiCL configuration.
  * 
  * PMT configuration is optional, in the sense that it can be omitted; in that
  * case, some standard values will be used for it. This kind of setup may be
  * good for monitoring, but it does not meet the requirements for physics
  * analyses.
  * For a board to be served, an entry of that board must be present in the
- * tool configuration (`BoardSetup`). It is an error for a fragment in input not
- * to have an entry for the corresponding board setup.
+ * module configuration (`BoardSetup`). It is an error for a fragment in input
+ * not to have an entry for the corresponding board setup.
  * 
  * The module extracts the needed information and matches it into a
  * sort-of-database keyed by fragment ID, so that it can be quickly applied
  * when decoding a fragment. The matching is performed by board name.
  * 
  * 
+ * ### Proto-waveforms
+ * 
+ * The module has grown complex enough that some decisions need to be taken much
+ * later after a waveform is created, but using information available only
+ * during the creation. For example, a waveform can be ultimately routed to a
+ * different data product depending on which readout board it comes from,
+ * but that information is lost by the time the waveform needs to be written.
+ * Rather than attempting to recreate that information, it is saved when still
+ * available and travels together with the waveform itself in a data structure
+ * called "proto-waveform". The extra-information is eventually discarded when
+ * putting the actual waveform into the _art_ event.
+ * 
+ * 
  * Glossary
  * ---------
  * 
- * * **setup**, **[PMT] configuration**: this is jargon specific to this tool.
+ * * **setup**, **[PMT] configuration**: this is jargon specific to this module.
  *     Information about a readout board can come from two sources: the "setup"
  *     is information included in the `BoardSetup` configuration list of this
- *     tool; the "PMT configuration" is information included in the DAQ
+ *     module; the "PMT configuration" is information included in the DAQ
  *     configuration that is delivered via `PMTconfigTag`.
  * * **TAI** (International Atomic Time): a time standard defining a universal
  *     time with a precision higher than it will ever matter for ICARUS.
@@ -333,9 +377,6 @@ namespace icarus { class DaqDecoderICARUSPMT; }
  * * **trigger delay**: time point when a V1730 board processes a (PMT) trigger
  *     signal (and increments the TTT register) with respect to the time of the
  *     time stamp of the (SPEXi) global trigger that acquired the event.
- * 
- * 
- * @todo Merge contiguous waveforms on the same channel
  * 
  */
 class icarus::DaqDecoderICARUSPMT: public art::EDProducer {
@@ -389,6 +430,54 @@ class icarus::DaqDecoderICARUSPMT: public art::EDProducer {
   /// Configuration of the V1730 readout board setup.
   struct BoardSetupConfig {
     
+    struct ChannelSetupConfig {
+      
+      fhicl::Atom<unsigned short int> ChannelIndex {
+        fhicl::Name("ChannelIndex"),
+        fhicl::Comment
+          ("index of the channel on the board these settings pertain")
+        // mandatory
+        };
+      
+      fhicl::OptionalAtom<bool> Skip {
+        fhicl::Name("Skip"),
+        fhicl::Comment(
+          "set to true to force skipping this channel, false to force saving it"
+          )
+        };
+      
+      fhicl::Atom<bool> OnlyOnGlobalTrigger {
+        fhicl::Name("OnlyOnGlobalTrigger"),
+        fhicl::Comment
+          ("save this channel only if its data includes global trigger time"),
+        false // default
+        };
+      
+      fhicl::Atom<std::uint16_t> MinSpan {
+        fhicl::Name("MinSpan"),
+        fhicl::Comment(
+          "discard this channel if its span (maximum minus minimum)"
+          " is smallerthan this"
+          ),
+        0 // default
+        };
+      
+      fhicl::Atom<raw::Channel_t> Channel {
+        fhicl::Name("Channel"),
+        fhicl::Comment("Off-line channel ID associated to this board channel"),
+        sbn::V1730channelConfiguration::NoChannelID
+        };
+      
+      fhicl::Atom<std::string> InstanceName {
+        fhicl::Name("InstanceName"),
+        fhicl::Comment
+          ("name of the data product instance where to add this channel"),
+        "" // default
+        };
+      
+    }; // struct ChannelSetupConfig
+    
+    
     fhicl::Atom<std::string> Name {
       fhicl::Name("Name"),
       fhicl::Comment("board name, as specified in the DAQ configuration")
@@ -413,10 +502,15 @@ class icarus::DaqDecoderICARUSPMT: public art::EDProducer {
       0_ns
       };
     
+    fhicl::OptionalSequence<fhicl::Table<ChannelSetupConfig>> SpecialChannels {
+      fhicl::Name("SpecialChannels"),
+      fhicl::Comment("special settings for selected channels on the board")
+      };
+    
   }; // struct BoardSetupConfig
   
   
-  /// Main tool configuration.
+  /// Main module configuration.
   struct Config {
     
     using Name = fhicl::Name;
@@ -431,7 +525,7 @@ class icarus::DaqDecoderICARUSPMT: public art::EDProducer {
     fhicl::Atom<bool> SurviveExceptions {
       Name("SurviveExceptions"),
       Comment
-        ("when the decoding tool throws an exception, print a message and move on"),
+        ("when the decoding module throws an exception, print a message and move on"),
       true // default
       };
     
@@ -524,6 +618,9 @@ class icarus::DaqDecoderICARUSPMT: public art::EDProducer {
   
     private:
   
+  /// Type of setup of all channels in a readout board.
+  using AllChannelSetup_t = daq::details::BoardSetup_t::AllChannelSetup_t;
+  
   /// Collection of useful information from fragment data.
   struct FragmentInfo_t {
     artdaq::Fragment::fragment_id_t fragmentID
@@ -538,12 +635,19 @@ class icarus::DaqDecoderICARUSPMT: public art::EDProducer {
   
   /// Information used in decoding from a board.
   struct NeededBoardInfo_t {
+    static AllChannelSetup_t const DefaultChannelSetup; // default-initialized
+    
     std::string const name;
     nanoseconds bufferLength;
     nanoseconds preTriggerTime;
     nanoseconds PMTtriggerDelay;
     nanoseconds TTTresetDelay;
-  };
+    AllChannelSetup_t const* specialChannelSetup = nullptr;
+    
+    AllChannelSetup_t const& channelSetup() const
+      { return specialChannelSetup? *specialChannelSetup: DefaultChannelSetup; }
+    
+  }; // NeededBoardInfo_t
   
   /// Collection of information about the global trigger.
   struct TriggerInfo_t {
@@ -552,6 +656,32 @@ class icarus::DaqDecoderICARUSPMT: public art::EDProducer {
     unsigned int bits = 0x0; ///< Trigger bits.
     unsigned int gateCount = 0U; ///< Gate number from the beginning of run.
   }; // TriggerInfo_t
+  
+  /// All the information collected about a waveform (with the waveform itself).
+  struct ProtoWaveform_t {
+    
+    raw::OpDetWaveform waveform; ///< The complete waveform.
+    
+    /// Pointer to the settings for the channel this waveform belongs to.
+    daq::details::BoardSetup_t::ChannelSetup_t const* channelSetup = nullptr;
+    
+    /// Whether the waveform includes the global trigger time.
+    bool onGlobal = false;
+    
+    ///< Lowest sample in the original waveform.
+    std::uint16_t minSample = std::numeric_limits<std::uint16_t>::max();
+    ///< Highest sample in the original waveform.
+    std::uint16_t maxSample =  std::numeric_limits<std::uint16_t>::max();
+    
+    ///< Returns the span of the waveform (cached, not computed anew!).
+    std::uint16_t span() const
+      { return (maxSample > minSample)? (maxSample - minSample): 0; }
+    
+    /// Ordering: the same as the contained waveform.
+    bool operator< (ProtoWaveform_t const& than) const
+      { return waveform < than.waveform; }
+    
+  }; // struct ProtoWaveform_t
 
   // --- BEGIN -- Configuration parameters -------------------------------------
   
@@ -634,7 +764,7 @@ class icarus::DaqDecoderICARUSPMT: public art::EDProducer {
    * @param PMTconfig the PMT configuration, if available
    * @return an object working like lookup table for all fragment information
    * 
-   * This method merges the setup information from the tool configuration with
+   * This method merges the setup information from the module configuration with
    * the PMT configuration specified in the argument, and returns an object
    * that can look up all the information as a single record, with the
    * fragment ID as key. In addition, a few intermediate quantities ("facts",
@@ -820,7 +950,7 @@ class icarus::DaqDecoderICARUSPMT: public art::EDProducer {
     (artdaq::Fragment const& sourceFragment) const;
 
   /// Extracts waveforms from the specified fragments from a board.
-  std::vector<raw::OpDetWaveform> processBoardFragments(
+  std::vector<ProtoWaveform_t> processBoardFragments(
     artdaq::FragmentPtrs const& artdaqFragment,
     TriggerInfo_t const& triggerInfo
     );
@@ -832,14 +962,14 @@ class icarus::DaqDecoderICARUSPMT: public art::EDProducer {
   
   /// Merges "in place" `waveforms` based on timestamp.
   /// @return the number of original waveforms merged into another
-  unsigned int mergeWaveforms(std::vector<raw::OpDetWaveform>& waveforms) const;
+  unsigned int mergeWaveforms(std::vector<ProtoWaveform_t>& waveforms) const;
 
   /// Sorts in place the specified waveforms in channel order, then in time.
-  void sortWaveforms(std::vector<raw::OpDetWaveform>& waveforms) const;
+  void sortWaveforms(std::vector<ProtoWaveform_t>& waveforms) const;
   
   /// Returns pointers to all waveforms including the nominal trigger time.
-  std::vector<raw::OpDetWaveform const*> findWaveformsWithNominalTrigger
-    (std::vector<raw::OpDetWaveform> const& waveforms) const;
+  std::vector<ProtoWaveform_t const*> findWaveformsWithNominalTrigger
+    (std::vector<ProtoWaveform_t> const& waveforms) const;
   
   /// Returns whether `waveform` includes the tick of the nominal trigger time.
   bool containsGlobalTrigger(raw::OpDetWaveform const& waveform) const;
@@ -849,16 +979,22 @@ class icarus::DaqDecoderICARUSPMT: public art::EDProducer {
   
   /// Returns a waveform merging of the `indices` ones from `allWaveforms`.
   /// The merged waveforms are emptied of their content.
-  raw::OpDetWaveform mergeWaveformGroup(
-    std::vector<raw::OpDetWaveform>& allWaveforms,
+  ProtoWaveform_t mergeWaveformGroup(
+    std::vector<ProtoWaveform_t>& allWaveforms,
     std::vector<std::size_t> const& indices
     ) const;
 
   electronics_time waveformStartTime(raw::OpDetWaveform const& wf) const
     { return electronics_time{ wf.TimeStamp() }; }
 
+  electronics_time waveformStartTime(ProtoWaveform_t const& wf) const
+    { return waveformStartTime(wf.waveform); }
+  
   electronics_time waveformEndTime(raw::OpDetWaveform const& wf) const
     { return waveformStartTime(wf) + fOpticalTick * wf.size(); }
+  
+  electronics_time waveformEndTime(ProtoWaveform_t const& wf) const
+    { return waveformEndTime(wf.waveform); }
   
   // --- END ---- Output waveforms ---------------------------------------------
   
@@ -876,7 +1012,7 @@ class icarus::DaqDecoderICARUSPMT: public art::EDProducer {
    * (`fillPMTfragmentTree()`) and creates PMT waveforms from the fragment data
    * (`createFragmentWaveforms()`).
    */
-  std::vector<raw::OpDetWaveform> processFragment(
+  std::vector<ProtoWaveform_t> processFragment(
     artdaq::Fragment const& artdaqFragment,
     NeededBoardInfo_t const& boardInfo,
     TriggerInfo_t const& triggerInfo
@@ -886,6 +1022,7 @@ class icarus::DaqDecoderICARUSPMT: public art::EDProducer {
   /**
    * @brief Creates `raw::OpDetWaveform` objects from the fragment data.
    * @param fragInfo information extracted from the fragment
+   * @param channelSetup settings channel by channel
    * @param timeStamp timestamp of the waveforms in the fragment
    * @return collection of newly created `raw::OpDetWaveform`
    * 
@@ -893,8 +1030,11 @@ class icarus::DaqDecoderICARUSPMT: public art::EDProducer {
    * (`extractFragmentInfo()`). The timestamp can be obtained with a call to
    * `fragmentWaveformTimestamp()`.
    */
-  std::vector<raw::OpDetWaveform> createFragmentWaveforms
-    (FragmentInfo_t const& fragInfo, electronics_time const timeStamp) const;
+  std::vector<ProtoWaveform_t> createFragmentWaveforms(
+    FragmentInfo_t const& fragInfo,
+    AllChannelSetup_t const& channelSetup,
+    electronics_time const timeStamp
+    ) const;
   
   /// Extracts useful information from fragment data.
   FragmentInfo_t extractFragmentInfo
@@ -907,7 +1047,14 @@ class icarus::DaqDecoderICARUSPMT: public art::EDProducer {
   NeededBoardInfo_t neededBoardInfo
     (artdaq::Fragment::fragment_id_t fragment_id) const;
   
-    
+  /// Returns all the instance names we will produce.
+  std::set<std::string> getAllInstanceNames() const;
+  
+  /// Throws an exception if the configuration of boards shows errors.
+  void checkBoardSetup
+    (std::vector<daq::details::BoardSetup_t> const& allBoardSetup) const;
+  
+  
   // --- BEGIN -- Tree-related methods -----------------------------------------
   
   /// Declares the use of event information.
@@ -946,6 +1093,8 @@ class icarus::DaqDecoderICARUSPMT: public art::EDProducer {
   
   // --- END ---- Tree-related methods -----------------------------------------
   
+  friend struct dumpChannel;
+  friend std::ostream& operator<< (std::ostream&, ProtoWaveform_t const&);
   
 }; // icarus::DaqDecoderICARUSPMT
 
@@ -985,15 +1134,54 @@ namespace icarus {
     (DaqDecoderICARUSPMT::BoardSetupConfig const& config)
   {
     
-    using ::util::fhicl::getOptionalValue;
-    return {
+    daq::details::BoardSetup_t bs {
         config.Name()                                          // name
-      , getOptionalValue(config.FragmentID) 
+      , config.FragmentID()
           .value_or(daq::details::BoardSetup_t::NoFragmentID)  // fragmentID
       , config.TriggerDelay()                                  // triggerDelay
       , config.TTTresetDelay()                                 // TTTresetDelay
       };
+    
+    // set the special configuration for the board channels that have one;
+    // the others will stay with the default one (which implies that a channel
+    // is saved in the standard data product, and only if it has a channel ID
+    // entry from the database)
+    for (
+      DaqDecoderICARUSPMT::BoardSetupConfig::ChannelSetupConfig const& chConfig
+      : config.SpecialChannels().value_or(
+        std::vector<DaqDecoderICARUSPMT::BoardSetupConfig::ChannelSetupConfig>{}
+        )
+    ) {
+      try {
+        bs.channelSettings.at(chConfig.ChannelIndex()) = {
+            chConfig.Channel()              // channelID
+          , chConfig.Skip()                 // forcedSkip
+          , chConfig.OnlyOnGlobalTrigger()  // onGlobalOnly
+          , chConfig.MinSpan()              // minSpan
+          , chConfig.InstanceName()         // category
+          };
+      }
+      catch (std::out_of_range const&) {
+        throw art::Exception(art::errors::Configuration)
+          << "Configuration requested for invalid channel index "
+          << chConfig.ChannelIndex() << " of the board '"
+          << config.Name() << "'\n";
+      }
+    } // for
+    
+    return bs;
   } // convert(BoardSetupConfig)
+
+
+  struct dumpChannel {
+    DaqDecoderICARUSPMT::ProtoWaveform_t const& wf;
+    dumpChannel(DaqDecoderICARUSPMT::ProtoWaveform_t const& wf): wf{ wf } {}
+  };
+  
+  std::ostream& operator<< (std::ostream& out, dumpChannel const& d) {
+    return out << (d.wf.channelSetup->category.empty()? std::dec: std::hex)
+      << d.wf.waveform.ChannelNumber() << std::dec;
+  }
 
 } // namespace icarus
 
@@ -1054,6 +1242,12 @@ icarus::DaqDecoderICARUSPMT::setBitIndices(T value) noexcept {
 
 
 //------------------------------------------------------------------------------
+// --- static definitions
+//------------------------------------------------------------------------------
+icarus::DaqDecoderICARUSPMT::AllChannelSetup_t const
+icarus::DaqDecoderICARUSPMT::NeededBoardInfo_t::DefaultChannelSetup;
+
+//------------------------------------------------------------------------------
 icarus::DaqDecoderICARUSPMT::TreeNameList_t const
 icarus::DaqDecoderICARUSPMT::TreeNames
   = icarus::DaqDecoderICARUSPMT::initTreeNames();
@@ -1086,6 +1280,8 @@ std::string icarus::DaqDecoderICARUSPMT::listTreeNames
 
 
 //------------------------------------------------------------------------------
+// --- implementation
+//------------------------------------------------------------------------------
 icarus::DaqDecoderICARUSPMT::DaqDecoderICARUSPMT(Parameters const& params)
   : art::EDProducer(params)
   , fInputTags{ params().FragmentsLabels() }
@@ -1094,12 +1290,10 @@ icarus::DaqDecoderICARUSPMT::DaqDecoderICARUSPMT(Parameters const& params)
   , fPacketDump{ params().PacketDump() }
   , fRequireKnownBoards{ params().RequireKnownBoards() }
   , fRequireBoardConfig{ params().RequireBoardConfig() }
-  , fPMTconfigTag{ ::util::fhicl::getOptionalValue(params().PMTconfigTag) }
-  , fTriggerTag{ ::util::fhicl::getOptionalValue(params().TriggerTag) }
-  , fTTTresetEverySecond{
-    ::util::fhicl::getOptionalValue(params().TTTresetEverySecond)
-      .value_or(fTriggerTag.has_value())
-    }
+  , fPMTconfigTag{ params().PMTconfigTag() }
+  , fTriggerTag{ params().TriggerTag() }
+  , fTTTresetEverySecond
+    { params().TTTresetEverySecond().value_or(fTriggerTag.has_value()) }
   , fBoardSetup{ params().BoardSetup() }
   , fLogCategory{ params().LogCategory() }
   , fDetTimings
@@ -1108,6 +1302,11 @@ icarus::DaqDecoderICARUSPMT::DaqDecoderICARUSPMT(Parameters const& params)
   , fOpticalTick{ fDetTimings.OpticalClockPeriod() }
   , fNominalTriggerTime{ fDetTimings.TriggerTime() }
 {
+  //
+  // configuration check
+  //
+  checkBoardSetup(fBoardSetup); // throws on error
+  
   //
   // consumed data products declaration
   //
@@ -1123,7 +1322,8 @@ icarus::DaqDecoderICARUSPMT::DaqDecoderICARUSPMT(Parameters const& params)
   //
   // produced data products declaration
   //
-  produces<std::vector<raw::OpDetWaveform>>();
+  for (std::string const& instanceName: getAllInstanceNames())
+    produces<std::vector<raw::OpDetWaveform>>(instanceName);
   
   //
   // additional initialization
@@ -1226,7 +1426,7 @@ void icarus::DaqDecoderICARUSPMT::produce(art::Event& event) {
     if (triggerInfo.bits) {
       log << " {";
       for (std::string const& name
-        : sbn::bits::names<sbn::triggerSource>(triggerInfo.bits))
+        : sbn::bits::names<sbn::triggerSource>({(unsigned int) triggerInfo.bits }))
       {
         log << ' ' << name;
       }
@@ -1245,7 +1445,7 @@ void icarus::DaqDecoderICARUSPMT::produce(art::Event& event) {
   //
   // output data product initialization
   //
-  std::vector<raw::OpDetWaveform> opDetWaveforms;
+  std::vector<ProtoWaveform_t> protoWaveforms;
   
   
   // ---------------------------------------------------------------------------
@@ -1279,7 +1479,7 @@ void icarus::DaqDecoderICARUSPMT::produce(art::Event& event) {
       if (++boardCounts[boardID] > 1U) duplicateBoards = true;
       
       appendTo(
-        opDetWaveforms,
+        protoWaveforms,
         processBoardFragments(fragmentCollection, triggerInfo)
         );
       
@@ -1290,14 +1490,14 @@ void icarus::DaqDecoderICARUSPMT::produce(art::Event& event) {
     if (!fSurviveExceptions) throw;
     mf::LogError("DaqDecoderICARUSPMT")
       << "Error while attempting to decode PMT data:\n" << e.what() << '\n';
-    opDetWaveforms.clear();
+    protoWaveforms.clear();
     ++fNFailures;
   }
   catch (...) {
     if (!fSurviveExceptions) throw;
     mf::LogError("DaqDecoderICARUSPMT")
       << "Error while attempting to decode PMT data.\n";
-    opDetWaveforms.clear();
+    protoWaveforms.clear();
     ++fNFailures;
   }
   
@@ -1313,20 +1513,46 @@ void icarus::DaqDecoderICARUSPMT::produce(art::Event& event) {
   //
   // post-processing
   //
-  sortWaveforms(opDetWaveforms);
+  sortWaveforms(protoWaveforms);
   
-  std::vector<raw::OpDetWaveform const*> waveformsWithTrigger
-    = findWaveformsWithNominalTrigger(opDetWaveforms);
+  std::vector<ProtoWaveform_t const*> waveformsWithTrigger
+    = findWaveformsWithNominalTrigger(protoWaveforms);
   mf::LogTrace(fLogCategory) << waveformsWithTrigger.size() << "/"
-    << opDetWaveforms.size() << " decoded waveforms include trigger time ("
+    << protoWaveforms.size() << " decoded waveforms include trigger time ("
     << fNominalTriggerTime << ").";
   
   // ---------------------------------------------------------------------------
   // output
   //
-  event.put(
-    std::make_unique<std::vector<raw::OpDetWaveform>>(std::move(opDetWaveforms))
-    );
+  
+  // split the waveforms by destination
+  std::map<std::string, std::vector<raw::OpDetWaveform>> waveformProducts;
+  for (std::string const& instanceName: getAllInstanceNames())
+    waveformProducts.emplace(instanceName, std::vector<raw::OpDetWaveform>{});
+  for (ProtoWaveform_t& waveform: protoWaveforms) {
+    
+    // on-global and span requirements overrides even `mustSave()` requirement;
+    // if this is not good, user should not set `mustSave()`!
+    bool const keep =
+      (waveform.onGlobal || !waveform.channelSetup->onGlobalOnly)
+      && (waveform.span() >= waveform.channelSetup->minSpan)
+      ;
+    
+    if (!keep) continue;
+    waveformProducts.at(waveform.channelSetup->category).push_back
+      (std::move(waveform.waveform));
+  } // for
+  
+  // put all the categories
+  for (auto&& [ category, waveforms ]: waveformProducts) {
+    mf::LogTrace(fLogCategory)
+      << waveforms.size() << " PMT waveforms saved for "
+      << (category.empty()? "standard": category) << " instance.";
+    event.put(
+      std::make_unique<std::vector<raw::OpDetWaveform>>(std::move(waveforms)),
+      category // the instance name is the category the waveforms belong to
+      );
+  }
   
 } // icarus::DaqDecoderICARUSPMT::produce()
 
@@ -1384,14 +1610,13 @@ artdaq::Fragments const& icarus::DaqDecoderICARUSPMT::readInputFragments
 
 
 //------------------------------------------------------------------------------
-std::vector<raw::OpDetWaveform const*>
-icarus::DaqDecoderICARUSPMT::findWaveformsWithNominalTrigger
-  (std::vector<raw::OpDetWaveform> const& waveforms) const
+auto icarus::DaqDecoderICARUSPMT::findWaveformsWithNominalTrigger
+  (std::vector<ProtoWaveform_t> const& waveforms) const
+  -> std::vector<ProtoWaveform_t const*>
 {
-  std::vector<raw::OpDetWaveform const*> matchedWaveforms;
-  for (raw::OpDetWaveform const& waveform: waveforms) {
-    if (!containsGlobalTrigger(waveform)) continue;
-    matchedWaveforms.push_back(&waveform);
+  std::vector<ProtoWaveform_t const*> matchedWaveforms;
+  for (ProtoWaveform_t const& waveform: waveforms) {
+    if (waveform.onGlobal) matchedWaveforms.push_back(&waveform);
   } // for
   return matchedWaveforms;
 } // icarus::DaqDecoderICARUSPMT::findWaveformsWithNominalTrigger()
@@ -1479,14 +1704,16 @@ auto icarus::DaqDecoderICARUSPMT::matchBoardConfigurationAndSetup
         throw cet::exception("DaqDecoderICARUSPMT")
           << "No DAQ configuration found for PMT readout board '"
           << name << "'\n"
-          << "If this is expected, you may skip this check by setting "
-          << "PMTDecoder tool configuration `RequireBoardConfig` to `false`.\n";
+            "If this is expected, you may skip this check by setting "
+            "DaqDecoderICARUSPMT module configuration `RequireBoardConfig`"
+            " to `false`.\n"
+          ;
       }
       return ppBoardConfig->second;
     }; // findPMTconfig()
   
-  // the filling is driven by boards configured in the tool
-  // (which is how a setup entry is mandatory)
+  // the filling is driven by boards configured in the module
+  // (which is the reason a setup entry is mandatory)
   daq::details::BoardInfoLookup::Database_t boardInfoByFragment;
   
   for (daq::details::BoardSetup_t const& boardSetup: fBoardSetup) {
@@ -1522,7 +1749,7 @@ auto icarus::DaqDecoderICARUSPMT::matchBoardConfigurationAndSetup
           << "' can't be associated to a fragment ID;"
             " its time stamp corrections will be skipped.";
         // to avoid this, add a `BoardSetup.FragmentID` entry for it in the
-        // configuration of this tool, or make a PMT configuration available
+        // configuration of this module, or make a PMT configuration available
         continue; // no entry for this board at all
       }
     }
@@ -1579,6 +1806,8 @@ auto icarus::DaqDecoderICARUSPMT::fetchNeededBoardInfo(
     // TTTresetDelay
     , ((boardInfo && boardInfo->setup)
         ? boardInfo->setup->TTTresetDelay: nanoseconds{ 0.0 })
+    , ((boardInfo && boardInfo->setup)?
+        &(boardInfo->setup->channelSettings): nullptr)
     };
       
 } // icarus::DaqDecoderICARUSPMT::fetchNeededBoardInfo()
@@ -1705,7 +1934,7 @@ void icarus::DaqDecoderICARUSPMT::checkFragmentType
 auto icarus::DaqDecoderICARUSPMT::processBoardFragments(
   artdaq::FragmentPtrs const& artdaqFragments,
   TriggerInfo_t const& triggerInfo
-) -> std::vector<raw::OpDetWaveform> {
+) -> std::vector<ProtoWaveform_t> {
   
   if (artdaqFragments.empty()) return {};
   
@@ -1721,7 +1950,7 @@ auto icarus::DaqDecoderICARUSPMT::processBoardFragments(
     << " - " << boardInfo.name << ": " << artdaqFragments.size()
     << " fragments";
   
-  std::vector<raw::OpDetWaveform> waveforms;
+  std::vector<ProtoWaveform_t> waveforms;
   for (artdaq::FragmentPtr const& fragment: artdaqFragments)
     appendTo(waveforms, processFragment(*fragment, boardInfo, triggerInfo));
   
@@ -1737,7 +1966,7 @@ auto icarus::DaqDecoderICARUSPMT::processFragment(
   artdaq::Fragment const& artdaqFragment,
   NeededBoardInfo_t const& boardInfo,
   TriggerInfo_t const& triggerInfo
-) -> std::vector<raw::OpDetWaveform> {
+) -> std::vector<ProtoWaveform_t> {
   
   checkFragmentType(artdaqFragment);
   
@@ -1757,25 +1986,23 @@ auto icarus::DaqDecoderICARUSPMT::processFragment(
   if (fTreeFragment) fillPMTfragmentTree(fragInfo, triggerInfo, timeStamp);
   
   return (timeStamp != NoTimestamp)
-    ? createFragmentWaveforms(fragInfo, timeStamp)
-    : std::vector<raw::OpDetWaveform>{}
+    ? createFragmentWaveforms(fragInfo, boardInfo.channelSetup(), timeStamp)
+    : std::vector<ProtoWaveform_t>{}
     ;
   
 } // icarus::DaqDecoderICARUSPMT::processFragment()
 
 
 //------------------------------------------------------------------------------
-auto icarus::DaqDecoderICARUSPMT::createFragmentWaveforms
-  (FragmentInfo_t const& fragInfo, electronics_time const timeStamp) const
-  -> std::vector<raw::OpDetWaveform>
+auto icarus::DaqDecoderICARUSPMT::createFragmentWaveforms(
+  FragmentInfo_t const& fragInfo, AllChannelSetup_t const& channelSetup,
+  electronics_time const timeStamp
+) const -> std::vector<ProtoWaveform_t>
 {
 
   assert(timeStamp != NoTimestamp);
   
-  auto const [ chDataMap, nEnabledChannels ]
-    = setBitIndices<16U>(fragInfo.enabledChannels);
-
-  std::vector<raw::OpDetWaveform> opDetWaveforms; // output collection
+  std::vector<ProtoWaveform_t> protoWaveforms; // output collection
     
   std::optional<mf::LogVerbatim> diagOut;
   if (fDiagnosticOutput) diagOut.emplace(fLogCategory);
@@ -1785,79 +2012,133 @@ auto icarus::DaqDecoderICARUSPMT::createFragmentWaveforms
       (effectivePMTboardFragmentID(fragInfo.fragmentID))
     ;
   
+  // allocate the vector outside the loop since we'll reuse it over and over
+  std::vector<std::uint16_t> wvfm(fragInfo.nSamplesPerChannel);
+  
+  // all waveforms share the same timestamp,
+  // so either all contain the global trigger, or they all do not
+  bool const onGlobal = containsGlobalTrigger(timeStamp, wvfm.size());
+  
+  auto channelNumberToChannel
+    = [&digitizerChannelVec](unsigned short int channelNumber) -> raw::Channel_t
+    {
+      for (auto const [ chNo, chID ]: digitizerChannelVec)
+        if (chNo == channelNumber) return chID;
+      return sbn::V1730channelConfiguration::NoChannelID;
+    };
+  
   if (diagOut)
     (*diagOut) << "      " << digitizerChannelVec.size() << " channels:";
   
-  // allocate the vector outside the loop since we'll reuse it over and over
-  std::vector<std::uint16_t> wvfm(fragInfo.nSamplesPerChannel);
-
-  // track what we do and what we want to
-  std::uint16_t attemptedChannels = 0;
-  
-  // loop over the channels that we know might be in the fragment
-  for(auto const [ digitizerChannel, channelID ]: digitizerChannelVec) {
+  std::size_t iNextChunk = 0;
+  for (unsigned short int const channelNumber: util::counter(16U)) {
     
-    if (diagOut)
-      (*diagOut) << " " << digitizerChannel << " [=> " << channelID << "];";
-    
-    attemptedChannels |= (1 << digitizerChannel);
-    
-    // find where this channel is in the data fragment
-    std::size_t const channelPosInData = chDataMap[digitizerChannel];
-    if (channelPosInData >= nEnabledChannels) {
-      mf::LogTrace(fLogCategory)
-        << "Digitizer channel " << digitizerChannel
-        << " [=> " << channelID << "] skipped because not enabled.";
+    if ((fragInfo.enabledChannels & (1 << channelNumber)) == 0) {
+      if (diagOut)
+        (*diagOut) << " " << channelNumber << " [disabled];";
       continue;
     }
     
-    std::size_t const ch_offset
-      = channelPosInData * fragInfo.nSamplesPerChannel;
+    std::size_t const iChunk = iNextChunk++;
     
+    daq::details::BoardSetup_t::ChannelSetup_t const& thisChannelSetup
+      = channelSetup.at(channelNumber); // this setup must be available
+      
+    if (thisChannelSetup.mustSkip()) {
+      mf::LogTrace(fLogCategory)
+        << "Channel number " << channelNumber << " of board 0x"
+        << std::hex << fragInfo.fragmentID << std::dec
+        << " is enabled but is requested to be skipped.";
+      continue;
+    }
+    
+    //
+    // assign the offline channel ID
+    //
+    raw::Channel_t channel = thisChannelSetup.hasChannel()
+      ? thisChannelSetup.channelID: channelNumberToChannel(channelNumber);
+    
+    if (!thisChannelSetup.isChannel(channel)) {
+      if (thisChannelSetup.mustSave()) {
+        /*
+         * Assuming that there are no errors in the database and in the logic
+         * of this function, this is a "special" channel not connected to a PMT,
+         * and the configuration of the module is explicitly asking for it to
+         * be saved but it does not specify a channel ID for it
+         * (the module configuration is the only source of ID for such channels)
+         * Together with the request for saving the channel is,
+         * the configuration should also provide the ID to save it with.
+         */
+        throw cet::exception("DaqDecoderICARUSPMT")
+          << "Channel number " << channelNumber << " of board 0x"
+          << std::hex << fragInfo.fragmentID << std::dec 
+          << " is not associated to any channel ID"
+          << " but was demanded to be saved.\n"
+          ;
+      }
+      mf::LogTrace(fLogCategory)
+        << "Channel number " << channelNumber << " of board 0x"
+        << std::hex << fragInfo.fragmentID << std::dec
+        << " is enabled but not associated to any channel ID:"
+           " it will be skipped.";
+      continue;
+    } // if no channel ID
+    assert(thisChannelSetup.isChannel(channel));
+    
+    //
+    // global trigger
+    //
+    
+    // we never skip waveforms not on global trigger here, because after merging
+    // they may become part of a waveform that is on it; same about minimum span
+    
+    
+    //
+    // fill the waveform data
+    //
+    std::size_t const ch_offset = iChunk * fragInfo.nSamplesPerChannel;
     std::copy_n(fragInfo.data + ch_offset, wvfm.size(), wvfm.begin());
     
-    opDetWaveforms.emplace_back(timeStamp.value(), channelID, wvfm);
+    //
+    // create the proto-waveform
+    //
+    auto const [ itMin, itMax ] = std::minmax_element(wvfm.begin(), wvfm.end());
+    protoWaveforms.push_back({ // create the waveform and its ancillary info
+        raw::OpDetWaveform{ timeStamp.value(), channel, wvfm }  // waveform
+      , &thisChannelSetup                                       // channelSetup
+      , onGlobal                                                // onGlobal
+      , *itMin                                                  // minSample
+      , *itMax                                                  // maxSample
+      });
     
-    mf::LogTrace(fLogCategory)
-      << "PMT channel " << channelID << " has " << wvfm.size()
-      << " samples (read from entry #" << channelPosInData
-      << " in fragment data) starting at electronics time " << timeStamp;
-  } // for channels
-  
-  if (diagOut) diagOut.reset(); // destroys and therefore prints out
-  if (attemptedChannels != fragInfo.enabledChannels) {
-    // this is mostly a warning; regularly, for example,
-    // we effectively have 15 channels per board; but all 16 are enabled,
-    // so one channel is not decoded at all
     mf::LogTrace log(fLogCategory);
-    log << "Not all data read:";
-    for (int const bit: util::counter(16U)) {
-      std::uint16_t const mask = (1 << bit);
-      bool const attempted = bool(attemptedChannels & mask);
-      bool const enabled = bool(fragInfo.enabledChannels & mask);
-      if (attempted == enabled) continue;
-      if (!enabled) // and attempted
-        log << "\n  requested channel " << bit << " was not enabled";
-      if (!attempted) // and enabled
-        log << "\n  data for enabled channel " << bit << " was ignored";
-    } // for bits
-  } // if request and availability did not match
-
+    log << "PMT channel " << dumpChannel(protoWaveforms.back())
+      << " has " << wvfm.size() << " samples (read from entry #" << iChunk
+      << " in fragment data) starting at electronics time " << timeStamp;
+    if (protoWaveforms.back().onGlobal) log << ", on global trigger";
+    if (!protoWaveforms.back().channelSetup->category.empty()) {
+      log << "; category: '" << protoWaveforms.back().channelSetup->category
+        << "'";
+    }
+    
+  } // for all channels in the board
+  
+  
   if (diagOut) {
     (*diagOut)
-      << "      - number of waveforms decoded: " << opDetWaveforms.size();
-    if (!opDetWaveforms.empty() && containsGlobalTrigger(opDetWaveforms.back()))
+      << "      - number of waveforms decoded: " << protoWaveforms.size();
+    if (!protoWaveforms.empty() && protoWaveforms.back().onGlobal)
       (*diagOut) << "      - matches global trigger!";
   } // if diagnostics
   
-  return opDetWaveforms;
+  return protoWaveforms;
   
 } // icarus::DaqDecoderICARUSPMT::createFragmentWaveforms()
 
 
 //------------------------------------------------------------------------------
 unsigned int icarus::DaqDecoderICARUSPMT::mergeWaveforms
-  (std::vector<raw::OpDetWaveform>& waveforms) const
+  (std::vector<ProtoWaveform_t>& waveforms) const
 {
   std::size_t const nWaveforms = waveforms.size();
   if (nWaveforms < 2) return 0U;
@@ -1878,9 +2159,10 @@ unsigned int icarus::DaqDecoderICARUSPMT::mergeWaveforms
     
     // merge all following waveforms contiguous to this group
     electronics_time currentEnd = waveformEndTime(waveforms[iWave]);
-    raw::Channel_t const currentChannel = waveforms[iWave].ChannelNumber();
+    raw::Channel_t const currentChannel
+      = waveforms[iWave].waveform.ChannelNumber();
     while (++iWave < nWaveforms) {
-      raw::OpDetWaveform const& waveform = waveforms[iWave];
+      raw::OpDetWaveform const& waveform = waveforms[iWave].waveform;
       if (waveform.ChannelNumber() != currentChannel) break;
       if (!matchTimes(currentEnd, waveformStartTime(waveform))) break;
       group.push_back(iWave);
@@ -1890,7 +2172,7 @@ unsigned int icarus::DaqDecoderICARUSPMT::mergeWaveforms
     waveformGroups.push_back(std::move(group));
   } while (iWave < nWaveforms);
   
-  std::vector<raw::OpDetWaveform> mergedWaveforms;
+  std::vector<ProtoWaveform_t> mergedWaveforms;
   mergedWaveforms.reserve(waveformGroups.size());
   for (auto const& group: waveformGroups)
     mergedWaveforms.push_back(mergeWaveformGroup(waveforms, group));
@@ -1900,10 +2182,10 @@ unsigned int icarus::DaqDecoderICARUSPMT::mergeWaveforms
 
 
 //------------------------------------------------------------------------------
-raw::OpDetWaveform icarus::DaqDecoderICARUSPMT::mergeWaveformGroup(
-  std::vector<raw::OpDetWaveform>& allWaveforms,
+auto icarus::DaqDecoderICARUSPMT::mergeWaveformGroup(
+  std::vector<ProtoWaveform_t>& allWaveforms,
   std::vector<std::size_t> const& indices
-) const {
+) const -> ProtoWaveform_t {
   
   if (indices.empty()) {
     throw std::logic_error
@@ -1912,48 +2194,75 @@ raw::OpDetWaveform icarus::DaqDecoderICARUSPMT::mergeWaveformGroup(
   
   auto itIndex = indices.begin();
   auto const iend = indices.end();
-  raw::OpDetWaveform mergedWaveform{ std::move(allWaveforms.at(*itIndex)) };
+  ProtoWaveform_t mergedWaveform{ std::move(allWaveforms.at(*itIndex)) };
   /*
   mf::LogTrace("DaqDecoderICARUSPMT")
     << "Extending waveform [#" << (*itIndex) << "] channel="
-    << mergedWaveform.ChannelNumber() << " time="
+    << dumpChannel(mergedWaveform) << " time="
     << waveformStartTime(mergedWaveform) << " -- "
-    << waveformEndTime(mergedWaveform) << " (" << mergedWaveform.size()
+    << waveformEndTime(mergedWaveform) << " (" << mergedWaveform.waveform.size()
     << " samples)"
     ;
   */
   while (++itIndex != iend) {
-    auto& waveform = allWaveforms.at(*itIndex);
+    ProtoWaveform_t& wf = allWaveforms.at(*itIndex);
     mf::LogTrace("DaqDecoderICARUSPMT")
-      << " - extending waveform channel=" << mergedWaveform.ChannelNumber()
-      << " time=" << waveformStartTime(mergedWaveform) << " -- "
-      << waveformEndTime(mergedWaveform) << " (" << mergedWaveform.size()
+      << " - extending waveform channel=" << dumpChannel(mergedWaveform)
+      << " time=" << waveformStartTime(mergedWaveform)
+      << " -- " << waveformEndTime(mergedWaveform)
+      << " (" << mergedWaveform.waveform.size()
       << " samples) with waveform [#" << (*itIndex) << "] channel="
-      << waveform.ChannelNumber() << " at time=" << waveformStartTime(waveform)
-      << " (" << waveform.size() << " samples)"
+      << dumpChannel(wf) << " at time=" << waveformStartTime(wf.waveform)
+      << " (" << wf.waveform.size() << " samples)"
       ;
-    if (mergedWaveform.ChannelNumber() != waveform.ChannelNumber()) {
+    if (mergedWaveform.waveform.ChannelNumber() != wf.waveform.ChannelNumber())
+    {
       throw std::logic_error{
         "DaqDecoderICARUSPMT::mergeWaveformGroup(): "
         "attempt to merge waveforms from channels "
-        + std::to_string(mergedWaveform.ChannelNumber())
-        + " and " + std::to_string(waveform.ChannelNumber())
+        + std::to_string(mergedWaveform.waveform.ChannelNumber())
+        + " and " + std::to_string(wf.waveform.ChannelNumber())
         };
     }
-    if (waveform.empty()) {
+    if (wf.waveform.empty()) {
       throw std::logic_error{
         "DaqDecoderICARUSPMT::mergeWaveformGroup(): "
         "attempt to merge a waveform (channel "
-        + std::to_string(mergedWaveform.ChannelNumber())
-        + ", timestamp " + std::to_string(waveform.TimeStamp()) + " again"
+        + std::to_string(mergedWaveform.waveform.ChannelNumber())
+        + ", timestamp " + std::to_string(wf.waveform.TimeStamp()) + " again"
+        };
+    }
+    if (wf.channelSetup->category != mergedWaveform.channelSetup->category) {
+      throw std::logic_error{
+        "DaqDecoderICARUSPMT::mergeWaveformGroup(): "
+        "attempt to merge a waveform (channel "
+        + std::to_string(mergedWaveform.waveform.ChannelNumber())
+        + " of category '" + mergedWaveform.channelSetup->category
+        + "' with a waveform (channel "
+        + std::to_string(wf.waveform.ChannelNumber())
+        + " of the different category '" + wf.channelSetup->category + "'"
+        };
+    }
+    if (wf.channelSetup != mergedWaveform.channelSetup) {
+      throw std::logic_error{
+        "DaqDecoderICARUSPMT::mergeWaveformGroup(): "
+        "attempt to merge a waveform (channel "
+        + std::to_string(mergedWaveform.waveform.ChannelNumber())
+        + " with channel settings different than the other waveform (channel "
+        + std::to_string(wf.waveform.ChannelNumber())
         };
     }
     // raw::OpDetWaveform happen to be `std::vector`, so this will work:
     std::size_t const expectedSize [[maybe_unused]]
-      = mergedWaveform.size() + waveform.size();
-    appendTo(mergedWaveform, std::move(waveform));
-    assert(waveform.empty());
-    assert(mergedWaveform.size() == expectedSize);
+      = mergedWaveform.waveform.size() + wf.waveform.size();
+    appendTo(mergedWaveform.waveform, std::move(wf.waveform));
+    mergedWaveform.onGlobal |= wf.onGlobal;
+    if (wf.minSample < mergedWaveform.minSample)
+      mergedWaveform.minSample = wf.minSample;
+    if (wf.maxSample > mergedWaveform.maxSample)
+      mergedWaveform.maxSample = wf.maxSample;
+    assert(wf.waveform.empty());
+    assert(mergedWaveform.waveform.size() == expectedSize);
   } // while
   return mergedWaveform;
 } // icarus::DaqDecoderICARUSPMT::mergeWaveformGroup()
@@ -2290,6 +2599,54 @@ auto icarus::DaqDecoderICARUSPMT::neededBoardInfo
 
 
 //------------------------------------------------------------------------------
+std::set<std::string> icarus::DaqDecoderICARUSPMT::getAllInstanceNames() const {
+  std::set<std::string> names;
+  for (daq::details::BoardSetup_t const& setup: fBoardSetup) {
+    for (daq::details::BoardSetup_t::ChannelSetup_t const& chSetup
+      : setup.channelSettings
+    ) {
+      if (chSetup.mustSkip()) continue;
+      names.insert(chSetup.category);
+    } // for all channels
+  } // for all boards
+  return names;
+} // icarus::DaqDecoderICARUSPMT::getAllInstanceNames()
+
+
+//------------------------------------------------------------------------------
+void icarus::DaqDecoderICARUSPMT::checkBoardSetup
+  (std::vector<daq::details::BoardSetup_t> const& allBoardSetup) const
+{
+  //
+  // duplicate special channel ID check
+  //
+  std::unordered_map<raw::Channel_t, unsigned int> assignedChannels;
+  bool hasDuplicates = false;
+  for (daq::details::BoardSetup_t const& setup: allBoardSetup) {
+    for (daq::details::BoardSetup_t::ChannelSetup_t const& chSetup
+      : setup.channelSettings
+    ) {
+      if (chSetup.mustSkip()) continue; // skipped channels do not matter anyway
+      // special channels by definition have a non-empty category
+      if (!chSetup.hasChannel() || chSetup.category.empty()) continue;
+      if (++assignedChannels[chSetup.channelID] > 1) hasDuplicates = true;
+    } // for all channels
+  } // for all boards
+  if (!hasDuplicates) return;
+  
+  art::Exception e { art::errors::Configuration };
+  e << "Some channel ID are specified in multiple board special channel setup:";
+  for (auto [ channelID, entries ]: assignedChannels) {
+    if (entries <= 1) continue; // not a duplicate
+    e << "\n - channel ID 0x" << std::hex << channelID << std::dec << ": "
+      << entries << " times";
+  } // for
+  
+  throw e;
+} // icarus::DaqDecoderICARUSPMT::checkBoardSetup()
+
+
+//------------------------------------------------------------------------------
 unsigned int icarus::DaqDecoderICARUSPMT::extractTriggerTimeTag
   (artdaq::Fragment const& fragment)
 {
@@ -2304,14 +2661,14 @@ unsigned int icarus::DaqDecoderICARUSPMT::extractTriggerTimeTag
 
 //------------------------------------------------------------------------------
 void icarus::DaqDecoderICARUSPMT::sortWaveforms
-  (std::vector<raw::OpDetWaveform>& waveforms) const
+  (std::vector<ProtoWaveform_t>& waveforms) const
 {
   auto byChannelThenTime = []
-    (raw::OpDetWaveform const& left, raw::OpDetWaveform const& right)
+    (ProtoWaveform_t const& left, ProtoWaveform_t const& right)
     {
-      return (left.ChannelNumber() != right.ChannelNumber())
-        ? left.ChannelNumber() < right.ChannelNumber()
-        : left.TimeStamp() < right.TimeStamp();
+      return (left.waveform.ChannelNumber() != right.waveform.ChannelNumber())
+        ? left.waveform.ChannelNumber() < right.waveform.ChannelNumber()
+        : left.waveform.TimeStamp() < right.waveform.TimeStamp();
     };
   
   std::sort(waveforms.begin(), waveforms.end(), byChannelThenTime);

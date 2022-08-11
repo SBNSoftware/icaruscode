@@ -18,6 +18,7 @@ art_make(LIB_LIBRARIES
            ROOT::Matrix
            ROOT::Physics
            ROOT::Tree
+           art_root_io::tfile_support
            art_root_io::TFileService_service
            art::Persistency_Provenance
            canvas::canvas
@@ -25,8 +26,33 @@ art_make(LIB_LIBRARIES
            fhiclcpp::fhiclcpp
            cetlib::cetlib
            cetlib_except::cetlib_except
-          TOOL_LIBRARIES larreco_RecoAlg_Cluster3DAlgs
-        )
+        TOOL_LIBRARIES 
+           larreco_RecoAlg_Cluster3DAlgs
+           lardataalg_DetectorInfo
+           lardataobj_RecoBase
+           lardata_ArtDataHelper
+           art::Framework_Services_Registry
+           art_root_io::tfile_support
+           art_root_io::TFileService_service
+           ROOT::Tree
+        MODULE_LIBRARIES
+          larreco_Calorimetry
+          larreco_RecoAlg_Cluster3DAlgs
+          larreco_RecoAlg_TCAlg
+          larreco_RecoAlg
+          larreco_ClusterFinder
+          larsim_MCCheater_ParticleInventoryService_service
+          lardataobj_AnalysisBase
+          lardataobj_RecoBase
+          nurandom::RandomUtils_NuRandomService_service
+          nusimdata::SimulationBase
+          art::Framework_Services_Registry
+          art_root_io::tfile_support
+          ROOT::Core
+          ROOT::Physics
+          art_root_io::TFileService_service
+          messagefacility::MF_MessageLogger
+       )
 
 install_headers()
 install_fhicl()
