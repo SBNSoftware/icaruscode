@@ -21,6 +21,9 @@ local params = base {
     // Electron drift speed, assumes a certain applied E-field
     // drift_speed: std.extVar('driftSpeed') * wc.mm / wc.us,
   },
+  files: super.files {
+    fields: [ std.extVar('files_fields'), ],
+  },
 };
 
 local tools = tools_maker(params);

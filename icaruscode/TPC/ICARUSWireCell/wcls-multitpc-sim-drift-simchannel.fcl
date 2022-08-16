@@ -45,6 +45,7 @@ physics :{
 
             // Make available parameters via Jsonnet's std.extVar()
             params: {
+		files_fields: "garfield-icarus-fnal-rev1.json.bz2"
             }
             structs: {
               # load values from simulationservices_icarus.fcl
