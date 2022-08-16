@@ -34,6 +34,7 @@ namespace daq
     DaqDecoderICARUSTrigger & operator = (DaqDecoderICARUSTrigger const &) = delete;
     DaqDecoderICARUSTrigger & operator = (DaqDecoderICARUSTrigger &&) = delete;
 
+    void beginRun(art::Run& run) override;
     void produce(art::Event & e) override;
     
   private:
@@ -46,11 +47,19 @@ namespace daq
   
   DaqDecoderICARUSTrigger::DaqDecoderICARUSTrigger(fhicl::ParameterSet const & params): art::EDProducer{params}, fInputTag(params.get<std::string>("FragmentsLabel", "daq:ICARUSTriggerUDP"))
   {
+    consumes<artdaq::Fragments>(fInputTag);
+    
     fDecoderTool = art::make_tool<IDecoder>(params.get<fhicl::ParameterSet>("DecoderTool"));
     fDecoderTool->produces(producesCollector());
 
     return;
   }
+  
+  void DaqDecoderICARUSTrigger::beginRun(art::Run& run)
+  {
+    fDecoderTool->setupRun(run);
+  }
+  
   
   void DaqDecoderICARUSTrigger::produce(art::Event & event)
   {

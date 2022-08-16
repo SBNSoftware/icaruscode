@@ -79,15 +79,16 @@ physics: {
   
   producers: {
     
-    PMTconfig:  @local::extractPMTconfig
+    triggerconfig: @local::extractTriggerConfig
+    pmtconfig:     @local::extractPMTconfig
     
-    daqTrigger: @local::decodeTrigger
+    daqTrigger:    @local::decodeTriggerV2
     
-    daqPMT:     @local::decodePMT
+    daqPMT:        @local::decodePMT
     
   }
   
-  decoding: [ PMTconfig, daqTrigger, daqPMT ]
+  decoding: [ triggerconfig, pmtconfig, daqTrigger, daqPMT ]
   streams: [ rootoutput ]
 }
 
@@ -108,7 +109,8 @@ outputs: {
 
 # ------------------------------------------------------------------------------
 
-physics.producers.daqPMT.PMTconfigTag: PMTconfig # required
+physics.producers.daqTrigger.DecoderTool.TrigConfigLabel: triggerconfig # required
+physics.producers.daqPMT.PMTconfigTag: pmtconfig # required
 physics.producers.daqPMT.TriggerTag:   daqTrigger # required
 
 # services.Geometry.Name: icarus_splitwires # for runs < 548x
