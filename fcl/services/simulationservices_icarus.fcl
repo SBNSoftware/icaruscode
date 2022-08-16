@@ -67,6 +67,11 @@ icarus_largeantparameters: {
     LarqlChi0D: 0.000129379
     LarqlAlpha: 0.0372
     LarqlBeta: 0.0124
+    
+    #* ion+excitation work function in eV
+    #* https://doi.org/10.1016/0168-9002(90)90011-T
+    Wph: 19.5
+ 
     # adopt the "correlated" model for ionization and scintillation (SBN DocDB 17964)
     IonAndScintCalculator: "Correlated"
     # this enables some improvements on top of the correlated model
