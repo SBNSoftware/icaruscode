@@ -255,6 +255,10 @@ namespace daq
     /// Parses the trigger data packet with the "standard" parser.
     icarus::ICARUSTriggerInfo parseTriggerString(std::string_view data) const;
     
+    /// Parses the trigger data packet with a CSV parser.
+    icarus::details::KeyValuesData parseTriggerStringAsCSV
+      (std::string const& data) const;
+    
     /// Name of the data product instance for the current trigger.
     static std::string const CurrentTriggerInstanceName;
     
@@ -374,7 +378,7 @@ namespace daq
           << sbndaq::dumpFragment(fragment);
       throw;
     }
-  } // TriggerDecoder::parseTriggerString()
+  } // TriggerDecoder::makeTriggerFragment()
 
   
   icarus::ICARUSTriggerInfo TriggerDecoder::parseTriggerString
@@ -398,6 +402,27 @@ namespace daq
     }
   } // TriggerDecoder::parseTriggerString()
 
+
+  icarus::details::KeyValuesData TriggerDecoder::parseTriggerStringAsCSV
+    (std::string const& data) const
+  {
+    icarus::details::KeyedCSVparser parser;
+    parser.addPatterns({
+        { "Cryo. (EAST|WEST) Connector . and .", 1U }
+        , { "Trigger Type", 1U }
+      });
+    std::string_view const dataLine = firstLine(data);
+    try {
+      return parser(dataLine);
+    }
+    catch(icarus::details::KeyedCSVparser::Error const& e) {
+      mf::LogError("TriggerDecoder")
+        << "Error parsing " << dataLine.length()
+        << "-char long trigger string:\n==>|" << dataLine
+        << "|<==\nError message: " << e.what() << std::endl;
+      throw;
+    }
+  } // TriggerDecoder::parseTriggerStringAsCSV()
   
 
   void TriggerDecoder::setupRun(art::Run const& run) {
@@ -435,12 +460,7 @@ namespace daq
     // we parse again the trigger string for information that was not saved
     // by the board reader in the trigger fragment nor in `datastream_info`
     //
-    icarus::details::KeyedCSVparser parser;
-    parser.addPatterns({
-        { "Cryo. (EAST|WEST) Connector . and .", 1U }
-        , { "Trigger Type", 1U }
-      });
-    auto const parsedData = parser(firstLine(data)); 
+    auto const parsedData = parseTriggerStringAsCSV(data); 
     
     unsigned int beamgate_count { std::numeric_limits<unsigned int>::max() };
     std::uint64_t beamgate_ts { artdaq_ts }; // we cheat
@@ -515,26 +535,12 @@ namespace daq
         << (beamgate_ts/1'000'000'000) << "." << std::setfill('0')
         << std::setw(9) << (beamgate_ts%1'000'000'000) << std::setfill(' ')
         << " s (" << timestampDiff(beamgate_ts, artdaq_ts)
-        << " ns relative to trigger)" << std::endl;
-      
-      // note that this parsing is independent from the one used above
-      std::string_view const dataLine = firstLine(data);
-      try {
-        //auto const parsedData = icarus::details::KeyedCSVparser{}(dataLine);
-        auto const parsedData = parser(dataLine);
-        std::cout << "Parsed data (from " << dataLine.size() << " characters): "
-          << parsedData << std::endl;
-      }
-      catch(icarus::details::KeyedCSVparser::Error const& e) {
-        mf::LogError("TriggerDecoder")
-          << "Error parsing " << dataLine.length()
-          << "-char long trigger string:\n==>|" << dataLine
-          << "|<==\nError message: " << e.what() << std::endl;
-        throw;
-      }
+        << " ns relative to trigger)"
+        << "\nParsed data (from " << data.size() << " characters): "
+        << parsedData << std::endl;
       
       if (fDebug) { // this grows tiresome quickly when processing many events
-        std::cout << "Trigger packet content:\n" << dataLine
+        std::cout << "Trigger packet content:\n" << data
           << "\nFull trigger fragment dump:"
           << sbndaq::dumpFragment(fragment) << std::endl;
       }
