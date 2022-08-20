@@ -16,6 +16,7 @@
 // #include "sbnobj/Common/Trigger/BeamBits.h" // future location of:
 #include "icaruscode/Decode/BeamBits.h" // sbn::triggerSource
 #include "icarusalg/Utilities/BinaryDumpUtils.h" // icarus::ns::util::bin()
+#include "icaruscode/Utilities/ArtHandleTrackerManager.h"
 
 #include "sbnobj/Common/PMT/Data/PMTconfiguration.h" // sbn::PMTconfiguration
 #include "sbndaq-artdaq-core/Overlays/Common/CAENV1730Fragment.hh"
@@ -972,6 +973,10 @@ class icarus::DaqDecoderICARUSPMT: public art::EDProducer {
   
   // --- BEGIN -- Input data management ----------------------------------------
   
+  /// Tracks _art_ data products and removes their cached data on demand.
+  // As often happens, caches need to be mutable. Also, not thread-safe.
+  mutable util::ArtHandleTrackerManager<art::Event> fDataCacheRemover;
+  
   /// Reads the fragments to be processed.
   artdaq::Fragments const& readInputFragments(art::Event const& event) const;
   
@@ -1459,6 +1464,8 @@ void icarus::DaqDecoderICARUSPMT::produce(art::Event& event) {
   // preparation
   //
   
+  fDataCacheRemover.useEvent(event);
+  
   //
   // global trigger
   //
@@ -1553,6 +1560,11 @@ void icarus::DaqDecoderICARUSPMT::produce(art::Event& event) {
       log << " " << std::hex << boardID << std::dec << " (x" << count << ");";
     } // for
   } // if duplicate board fragments
+  
+  
+  // we are done with the input: drop the caches
+  // (if we were asked not to, no data is registered)
+  fDataCacheRemover.removeCachedProducts();
   
   //
   // post-processing
@@ -1651,6 +1663,8 @@ artdaq::Fragments const& icarus::DaqDecoderICARUSPMT::readInputFragments
       e << " '" << inputTag.encode() << "'";
     throw e << "\n";
   }
+  
+  if (fDropRawDataAfterUse) fDataCacheRemover.registerHandle(handle);
   
   return *handle;
 } // icarus::DaqDecoderICARUSPMT::readInputFragments()
