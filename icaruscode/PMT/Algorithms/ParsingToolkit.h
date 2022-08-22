@@ -54,7 +54,7 @@ namespace icarus { struct ParsingToolkit; }
 struct icarus::ParsingToolkit {
   
   /// Base type for errors in the toolkit.
-  class Error;
+  struct Error;
   
   /// Record of a split token: pre-separator, separator and post-separator.
   struct SplitView_t { std::string_view pre, sep, post; };
