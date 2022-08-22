@@ -28,6 +28,7 @@
 #include "art/Framework/Services/Registry/ServiceHandle.h"
 #include "art_root_io/TFileService.h"
 #include "art/Framework/Core/ModuleMacros.h"
+#include "art/Utilities/Globals.h"
 #include "art/Utilities/make_tool.h"
 #include "canvas/Persistency/Common/Ptr.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
@@ -206,10 +207,7 @@ DaqDecoderICARUSTPCwROI::DaqDecoderICARUSTPCwROI(fhicl::ParameterSet const & pse
     configure(pset);
 
     // Check the concurrency 
-    int max_concurrency = tbb::this_task_arena::max_concurrency();
-
-    // ****** TEMPORARY ******
-    max_concurrency = 1;
+    int max_concurrency = art::Globals::instance()->nthreads(); //tbb::this_task_arena::max_concurrency();
 
     mf::LogDebug("DaqDecoderICARUSTPCwROI") << "     ==> concurrency: " << max_concurrency << std::endl;
 
@@ -541,18 +539,18 @@ void DaqDecoderICARUSTPCwROI::processSingleFragment(size_t                      
             continue;
         }
 
-        const icarusDB::ChannelPlanePairVec& channelPlanePairVec = fChannelMap->getChannelPlanePair(boardIDVec[board]);
-
         uint32_t boardSlot = physCrateFragment.DataTileHeader(board)->StatusReg_SlotID();
+
+        const icarusDB::ChannelPlanePairVec& channelPlanePairVec = fChannelMap->getChannelPlanePair(boardIDVec[boardSlot]);
 
         std::stringstream outputString;
         outputString << "********************************************************************************\n"
-                     << "FragmentID: " << std::hex << fragmentID << ", Crate: " << crateName << std::dec << ", boardID: " << boardSlot << "/" << nBoardsPerFragment << ", size " << channelPlanePairVec.size() << "/" << nChannelsPerBoard;
+                     << "FragmentID: " << std::hex << fragmentID << std::dec << ", Crate: " << crateName << ", boardID: " << boardSlot << "/" << nBoardsPerFragment << ", size " << channelPlanePairVec.size() << "/" << nChannelsPerBoard;
 
         mf::LogDebug("TPCDecoderFilter1D") << outputString.str();
 
         // Get the pointer to the start of this board's block of data
-        const icarus::A2795DataBlock::data_t* dataBlock = physCrateFragment.BoardData(board);
+        const icarus::A2795DataBlock::data_t* dataBlock = physCrateFragment.BoardData(boardSlot);
 
         // Copy to input data array
         for(size_t chanIdx = 0; chanIdx < nChannelsPerBoard; chanIdx++)
