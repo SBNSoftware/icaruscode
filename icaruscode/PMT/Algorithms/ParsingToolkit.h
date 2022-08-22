@@ -23,7 +23,7 @@
 
 
 // -----------------------------------------------------------------------------
-namespace icarus { class ParsingToolkit; }
+namespace icarus { struct ParsingToolkit; }
 /**
  * @brief Utilities for text parsing.
  * 
