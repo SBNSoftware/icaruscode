@@ -550,7 +550,7 @@ void DaqDecoderICARUSTPCwROI::processSingleFragment(size_t                      
         mf::LogDebug("TPCDecoderFilter1D") << outputString.str();
 
         // Get the pointer to the start of this board's block of data
-        const icarus::A2795DataBlock::data_t* dataBlock = physCrateFragment.BoardData(boardSlot);
+        const icarus::A2795DataBlock::data_t* dataBlock = physCrateFragment.BoardData(board);
 
         // Copy to input data array
         for(size_t chanIdx = 0; chanIdx < nChannelsPerBoard; chanIdx++)
