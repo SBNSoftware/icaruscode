@@ -4,5 +4,6 @@ BEGIN_PROLOG
 
 icarus_gnewcalomc:              @local::standard_gnocchicaloicarus
 icarus_gnewcalomc.CaloAlg:      @local::icarus_calorimetryalgmc
+icarus_gnewcalomc.NormTools:    []
 
 END_PROLOG
