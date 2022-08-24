@@ -7,10 +7,12 @@
 # * `PMTsimulationAlg` algorithm:
 #     * `icarus_pmtsimulationalg_standard`: main configuration, expected to be
 #       used in production and by the general user
-#     * `icarus_pmtsimulationalg_noise`: a general use configuration,
-#       including dark and electronics noise disabled
-#     * `icarus_pmtsimulationalg_nonoise`: as `icarus_pmtsimulationalg_noise`
-#       but with dark and electronics noise disabled
+#     * `icarus_pmtsimulationalg_202202`: a general use configuration,
+#       including dark and electronics noise; `noise` and `nonoise` variants
+#       (the latter with dark and electronics noise disabled)
+#     * `icarus_pmtsimulationalg_2018`: legacy configuration (until June 2022),
+#       including dark and electronics noise; `noise` and `nonoise` variants
+#       (the latter with dark and electronics noise disabled)
 # 
 # Usage:
 # 
@@ -29,6 +31,8 @@
 #   updated baseline to reflect the one in data
 # 20210615 (petrillo@slac.stanford.edu)
 #  updated PMT readout enable window to 2 ms
+# 20220706 (petrillo@slac.stanford.edu)
+#  introduced configuration for SPR 202202
 #
 
 #include "opticalproperties_icarus.fcl"
@@ -112,6 +116,20 @@ icarus_photoelectronresponse_exponentials: {
 
 
 #
+# Single photoelectron response from data.
+# 
+icarus_photoelectronresponse_202202: {
+  
+  tool_type: SampledWaveformFunctionTool
+  
+  WaveformData: "Responses/SPR202202.txt"
+  TransitTime:  "55.1 ns"
+  Gain:          @local::icarus_settings_opdet.nominalPMTgain
+  
+} # icarus_photoelectronresponse_202202
+
+
+#
 # Custom photoelectron response.
 # 
 # This is just an example for an arbitrary function shape; the example tries to
@@ -134,7 +152,7 @@ icarus_photoelectronresponse_customexample: {
     ADC:                       -11.1927
   } # parameters
   
-} # icarus_photoelectronresponse_standard
+} # icarus_photoelectronresponse_customexample
 
 
 #
@@ -145,11 +163,108 @@ icarus_photoelectronresponse_standard: @local::icarus_photoelectronresponse_expo
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 ###
-### Standard configuration: `icarus_pmtsimulationalg_standard`
+### Configuration preset components
 ###
+icarus_pmtsimulation.disable_noise: {
+  AmpNoise:      0.0     # RMS in ADC counts
+  DarkNoiseRate: "0 kHz"
+} # icarus_pmtsimulation.disable_noise
+
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+###
+### The standard configuration (`icarus_pmtsimulationalg_standard`) is chosen
+### below.
+###
+###
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+### Configuration "2022":
+###  * based on SPR202202
+###  * gain: 9.7 x 10^6
+###  * electronics noise included
+###  * readout is fundamentally different from the real one: the hardwware readout
+###    collects channels in groups of 180 (full cryostat in Run1, may change in future)
+###    based on a trigger logic (channels above a O(10) p.e. threshold); the simulation
+###    instead does not assume a readout trigger logic and tries to read out every
+###    photoelectron (each channel independently, against a << 1 p.e. threshold);
+###    the part that is not included in the simulation but would be included in data
+###    is comprised only of noise (and exceptionally low response fluctuations of single
+###    photoelectrons), so post-processing can trim and extend the this simulation to
+###    reflect the real readout by removing the channels in the regions (cryostats)
+###    that would not be triggered, and generating the missing waveforms with noise.
+###    The single photoelectron response 202202 used in the simulation is 800 samples
+###    (1.6 us) long; since every single photoelectron "triggers" the simulation, each
+###    waveform will end with pure noise. With the current setting of a 4 us buffer
+###    we have about 1 us of noise in the pre-trigger buffer, 1.6 us of signal and then
+###    1.4 us of noise (additional photoelectrons in these 4 us would just effectively
+###    extend the "signal" part). All this considered, we keep the PMT readout buffer
+###    in the simulation 1+3 us, sizeably smaller than the 3+7 us used in the hardware
+###    for Run1, to save space (using 3+7, we would still have 1.6 us of signal,
+###    and the 3 us before and 5.4 us after it would still be pure noise).
+###    Likewise, we don't attempt to cover the full beam gate time like in hardware
+###    (7+21 us in Run1 settings), since all the signal will be included anyway.
+###    But we do force all 360 channels to take data at beam gate time ("only" for
+###    1+21 us around the beam gate opening though).
 ###
 
-icarus_pmtsimulationalg_noise: {
+icarus_pmtsimulationalg_202202_noise: {
+
+  Baseline:                  14999.5        # in ADC; try to distribute rounding errors
+  
+  SinglePhotonResponse: @local::icarus_photoelectronresponse_standard
+  
+  AmpNoise:                  3.0            # in ADC; temporary value, see SBN DocDB 19187
+  DarkNoiseRate:             "1.6 kHz"      # per channel, from CERN test stand measurement
+
+  ## This is the readout window size for each "trigger" on the electronics
+  ReadoutWindowSize:         2000           # ticks (2 ns each --> 4 us)
+
+  ##fraction of readout window size that should come before the "trigger" on the electronics
+  PreTrigFraction:           0.25           # fraction (1+3 us)
+
+  ##Threshold in ADC counts for a PMT self-trigger.
+  # 15 ADC = 5x 3 ADC (RMS, see AmpNoise above),~45% of standard SPR (4 mV, 33 ADC);
+  # number of noise samples above 15 ADC: ~206 samples for 2 ms x 360 channels (300 Hz)
+  # number of noise samples above 18 ADC: ~0.36 samples for 2 ms x 360 channels (0.5 Hz)
+  ##NOTE this is assumed to be positive-going and ABOVE BASELINE! Pulse polarity is corrected before determining trigger.
+  ThresholdADC:              18             # ADC counts
+
+  PulsePolarity:             -1             #Pulse polarity (1 = positive, -1 = negative)
+  TriggerOffsetPMT:          "-1.0 ms"      # PMT enable gate start: time relative to trigger when readout begins
+  ReadoutEnablePeriod:       "2.0 ms"       # PMT enable gate duration: time for which PMT readout is enabled
+  CreateBeamGateTriggers:    true           #Option to create unbiased readout around beam spill
+  BeamGateTriggerRepPeriod:  "2.0 us"       # Repetition period and number of repetitions for BeamGateTriggers:
+  BeamGateTriggerNReps:      10             # should cover -7/+21 us, instead just goes -1 to 21 us)
+  QE:                        @local::icarus_opticalproperties.ScintPreScale # from opticalproperties_icarus.fcl
+  FluctuateGain:             true           # apply per-photoelectron gain fluctuations
+  
+  PMTspecs: {
+    DynodeK:                   0.75           # gain on a PMT multiplication stage
+                                              # is proportional to dV^k
+    # relative multiplication stage resistors in Hamamatsu 5912,
+    # from their datasheet; if the resistor on first stage is 17.4 R, the one on
+    # the second stage is 3.4 R, etc. The value of R is not necessary.
+    # Only multiplication stages are included.
+    VoltageDistribution:    [ 17.4, 3.4, 5.0, 3.33, 1.67, 1.0, 1.2, 1.5, 2.2, 3.0 ]
+    Gain:                   @local::icarus_settings_opdet.nominalPMTgain  # total typical PMT gain
+  } # PMTspecs
+
+} # icarus_pmtsimulationalg_202202_noise
+
+
+icarus_pmtsimulationalg_202202_nonoise: {
+  @table::icarus_pmtsimulationalg_202202_noise
+  @table::icarus_pmtsimulation.disable_noise
+}
+
+icarus_pmtsimulationalg_202202: @local::icarus_pmtsimulationalg_202202_noise
+
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+###
+### Legacy configuration, pre-2022
+###
+icarus_pmtsimulationalg_2018: {
 
   Baseline:                  14999.5         #in ADC
   
@@ -181,32 +296,32 @@ icarus_pmtsimulationalg_noise: {
   FluctuateGain:             true           # apply per-photoelectron gain fluctuations
   
   PMTspecs: {
-    DynodeK:                   0.75           # gain on a PMT multiplication stage
-                                              # is proportional to dV^k
-    # relative multiplication stage resistors in Hamamatsu 5912,
-    # from their datasheet; if the resistor on first stage is 17.4 R, the one on
-    # the second stage is 3.4 R, etc. The value of R is not necessary.
+    DynodeK:                 0.75           # gain on a PMT multiplication stage
+                                            # is proportional to dV^k
+    # relative multiplication stage resistors in Hamamatsu 5912, from
+    # JINST 13 (2018) 10, P10030 (https://doi.org/10.1088/1748-0221/13/10/P10030);
+    # if the resistor on first stage is 17.4 R, the one on the second stage is 3.4 R,
+    # etc. The value of R is not necessary.
     # Only multiplication stages are included.
     VoltageDistribution:    [ 17.4, 3.4, 5.0, 3.33, 1.67, 1.0, 1.2, 1.5, 2.2, 3.0 ]
     Gain:                   @local::icarus_settings_opdet.nominalPMTgain  # total typical PMT gain
   } # PMTspecs
 
-} # icarus_pmtsimulationalg_noise
+} # icarus_pmtsimulationalg_2018
+
+
+icarus_pmtsimulationalg_2018_noise: @local::icarus_pmtsimulationalg_2018
 
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 ###
-### No-noise configuration: `icarus_pmtsimulationalg_nonoise`
+### Legacy no-noise configuration: `icarus_pmtsimulationalg_2018_nonoise`
 ###
 ###
-icarus_pmtsimulationalg_nonoise: {
-  
-  @table::icarus_pmtsimulationalg_noise
-  
-  AmpNoise:      0.0     # RMS in ADC counts
-  DarkNoiseRate: "0 kHz"
-  
-} # icarus_pmtsimulationalg_nonoise
+icarus_pmtsimulationalg_2018_nonoise: {
+  @table::icarus_pmtsimulationalg_2018
+  @table::icarus_pmtsimulation.disable_noise
+} # icarus_pmtsimulationalg_2018_nonoise
 
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -216,7 +331,7 @@ icarus_pmtsimulationalg_nonoise: {
 #
 # Includes noise.
 #
-icarus_pmtsimulationalg_standard: @local::icarus_pmtsimulationalg_noise
+icarus_pmtsimulationalg_standard: @local::icarus_pmtsimulationalg_2018_nonoise
 
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
