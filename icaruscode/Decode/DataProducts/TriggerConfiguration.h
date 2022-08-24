@@ -16,7 +16,8 @@
 #include <array>
 #include <cassert>
 
-#include "icaruscode/Decode/BeamBits.h" // sbn::triggerSource
+//#include "icaruscode/Decode/BeamBits.h" // sbn::triggerSource
+#include "sbnobj/Common/Trigger/BeamBits.h"
 
 namespace icarus {
 

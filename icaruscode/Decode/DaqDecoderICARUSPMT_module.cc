@@ -11,10 +11,10 @@
 #include "icaruscode/Decode/DecoderTools/details/PMTDecoderUtils.h"
 #include "icaruscode/Decode/DecoderTools/Dumpers/FragmentDumper.h"
 #include "icaruscode/Decode/ChannelMapping/IICARUSChannelMap.h"
-// #include "sbnobj/Common/Trigger/ExtraTriggerInfo.h" // future location of:
-#include "icaruscode/Decode/DataProducts/ExtraTriggerInfo.h"
-// #include "sbnobj/Common/Trigger/BeamBits.h" // future location of:
-#include "icaruscode/Decode/BeamBits.h" // sbn::triggerSource
+ #include "sbnobj/Common/Trigger/ExtraTriggerInfo.h" // future location of:
+//#include "icaruscode/Decode/DataProducts/ExtraTriggerInfo.h"
+ #include "sbnobj/Common/Trigger/BeamBits.h" // future location of:
+//#include "icaruscode/Decode/BeamBits.h" // sbn::triggerSource
 #include "icarusalg/Utilities/BinaryDumpUtils.h" // icarus::ns::util::bin()
 
 #include "sbnobj/Common/PMT/Data/PMTconfiguration.h" // sbn::PMTconfiguration

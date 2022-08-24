@@ -257,6 +257,7 @@ cafmaker.TrackRangeLabel: "pandoraTrackRange"
 cafmaker.CRTHitLabel: "crthit"
 cafmaker.CRTTrackLabel: "crttrack"
 cafmaker.OpFlashLabel: "opflash"
+cafmaker.TriggerLabel: "daqTrigger"
 cafmaker.FlashTrigLabel: "" # unavailable
 cafmaker.SimChannelLabel: "largeant"
 cafmaker.SystWeightLabels: ["genieweight", "fluxweight"]

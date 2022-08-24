@@ -42,6 +42,7 @@ art_make(
 
 simple_plugin(DaqDecoderICARUSPMT module
   sbnobj_Common_PMT_Data
+  sbnobj_Common_Trigger
   icaruscode_Decode_DecoderTools_Dumpers
   icaruscode_Decode_DataProducts # should become sbnobj_Common_Trigger
   icaruscode_Decode_DecoderTools
@@ -69,6 +70,7 @@ simple_plugin(PMTconfigurationExtraction module
 simple_plugin(TriggerConfigurationExtraction module
   icaruscode_Decode_DecoderTools
   icaruscode_Decode_DataProducts
+  sbnobj_Common_Trigger
   art_Framework_Services_Registry
   fhiclcpp
   cetlib_except
@@ -83,6 +85,7 @@ simple_plugin(DumpPMTconfiguration module
 
 simple_plugin(DumpTriggerConfiguration module
   icaruscode_Decode_DataProducts
+  sbnobj_Common_Trigger
   ${MF_MESSAGELOGGER}
   fhiclcpp
   cetlib_except
