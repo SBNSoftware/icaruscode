@@ -11,6 +11,8 @@
 #include "icarusalg/Utilities/SimpleClustering.h" // util::clusterBy()
 
 // LArSoft libraries
+#include "lardataalg/Utilities/StatCollector.h"
+#include "larcorealg/Geometry/GeometryCore.h"
 #include "larcorealg/Geometry/CryostatGeo.h"
 #include "larcorealg/Geometry/OpDetGeo.h"
 #include "larcorealg/CoreUtils/counter.h"
@@ -20,26 +22,59 @@
 // C/C++ standard library
 #include <vector>
 #include <functional> // std::less
+#include <iterator> // std::make_move_iterator(), std::back_inserter()
+#include <limits>
 #include <cmath> // std::abs()
 #include <cassert>
 
 
 //------------------------------------------------------------------------------
+namespace {
+  
+  // Use the projection of the PMT center on the specified direction as
+  // clustering key; we need a reference point to project... we pick `origin()`.
+  struct PMTprojectorClass {
+    geo::Vector_t const dir; ///< Projection direction.
+    double operator() (geo::OpDetGeo const* opDet) const
+      { return (opDet->GetCenter() - geo::origin()).Dot(dir); };
+  }; // PMTprojectorClass
+  
+  // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  /**
+   * @brief Moves the content of `source` into the end of `dest`.
+   * @tparam T type of objects contained in the collections
+   * @tparam Src type of source collection
+   * @param dest vector to be added elements
+   * @param source container with all the elements to be appended to `dest`
+   * @return a reference to `dest` itself
+   * 
+   * The content of `source` is moved away, and `source` itself is moved.
+   */
+  template <typename T, typename Src>
+  std::vector<T>& append(std::vector<T>& dest, Src&& src) {
+    
+    using std::size;
+    using std::begin;
+    using std::end;
+    
+    dest.reserve(dest.size() + size(src));
+    dest.insert(dest.end(),
+      std::make_move_iterator(begin(src)), std::make_move_iterator(end(src))
+      );
+    Src{ std::move(src) }; // move src into a temporary (which we don't care of)
+    return dest;
+  } // append()
+  
+} // local namespace
+
+
+//------------------------------------------------------------------------------
+//--- icarus::trigger::PMTverticalSlicingAlg
+//------------------------------------------------------------------------------
 icarus::trigger::PMTverticalSlicingAlg::PMTverticalSlicingAlg
  (std::string logCategory /* = "PMTverticalSlicingAlg" */)
  : fLogCategory(std::move(logCategory))
  {}
-
-
-//------------------------------------------------------------------------------
-auto icarus::trigger::PMTverticalSlicingAlg::getCryoPMTs
-  (geo::CryostatGeo const& cryo) -> PMTlist_t
-{
-  PMTlist_t opDets;
-  for (auto iOpDet: util::counter(cryo.NOpDet()))
-    opDets.push_back(&cryo.OpDet(iOpDet));
-  return opDets;
-} // icarus::trigger::PMTverticalSlicingAlg::getCryoPMTs()
 
 
 //------------------------------------------------------------------------------
@@ -50,6 +85,24 @@ void icarus::trigger::PMTverticalSlicingAlg::appendCryoSlices
   geo::Vector_t const& widthDir = determineLengthDir(cryo.IterateTPCs());
   appendSlices(slices, getCryoPMTs(cryo), driftDir, widthDir);
 } // icarus::trigger::PMTverticalSlicingAlg::appendCryoSlices()
+
+
+//------------------------------------------------------------------------------
+auto icarus::trigger::PMTverticalSlicingAlg::PMTwalls
+  (geo::CryostatGeo const& cryo) const
+  -> std::vector<std::pair<double, PMTlist_t>>
+{
+  return PMTwalls(getCryoPMTs(cryo), determineDriftDir(cryo.IterateTPCs()));
+} // icarus::trigger::PMTverticalSlicingAlg::PMTwalls(CryostatGeo)
+
+
+//------------------------------------------------------------------------------
+auto icarus::trigger::PMTverticalSlicingAlg::PMTwalls
+  (geo::GeometryCore const& geom) const
+  -> std::vector<std::pair<double, PMTlist_t>>
+{
+  return PMTwalls(getPMTs(geom), determineDriftDir(geom.IterateTPCs()));
+} // icarus::trigger::PMTverticalSlicingAlg::PMTwalls(GeometryCore)
 
 
 //------------------------------------------------------------------------------
@@ -86,7 +139,7 @@ void icarus::trigger::PMTverticalSlicingAlg::appendSlices(
   //
   // 2. group PMT in each plane by width coordinate (cluster by width direction)
   //
-  unsigned int NClusteredPMTs [[gnu::unused]] = 0U;
+  unsigned int NClusteredPMTs [[maybe_unused]] = 0U;
   for (auto const& PMTplane: PMTplanes) {
     slices.push_back(clusterPMTby(PMTplane, clusterDir));
 
@@ -110,14 +163,54 @@ void icarus::trigger::PMTverticalSlicingAlg::appendSlices(
 
 
 //------------------------------------------------------------------------------
+auto icarus::trigger::PMTverticalSlicingAlg::PMTwalls
+  (PMTlist_t const& PMTs, geo::Vector_t const& dir) const
+  -> std::vector<std::pair<double, PMTlist_t>>
+{
+  // fill the walls with PMTs
+  std::vector<PMTlist_t> walls = clusterPMTby(PMTs, dir);
+  
+  // determine their coordinate
+  std::vector<std::pair<double, PMTlist_t>> posAndWalls;
+  posAndWalls.reserve(walls.size());
+  for (PMTlist_t& wall: walls)
+    posAndWalls.emplace_back(PMTwallPosition(wall, dir), std::move(wall));
+  
+  // sort by coordinate
+  std::sort(posAndWalls.begin(), posAndWalls.end()); // sort by std::pair::first
+  
+  return posAndWalls;
+  
+} // icarus::trigger::PMTverticalSlicingAlg::PMTwalls(CryostatGeo)
+
+
+//------------------------------------------------------------------------------
+double icarus::trigger::PMTverticalSlicingAlg::PMTwallPosition
+  (PMTlist_t const& PMTs, geo::Vector_t const& dir)
+{
+  if (PMTs.empty()) return std::numeric_limits<double>::lowest(); // arbitrary
+  
+  PMTprojectorClass const PMTcenterProjection { dir };
+  lar::util::StatCollector<double> stats;
+  for (geo::OpDetGeo const* PMT: PMTs) stats.add(PMTcenterProjection(PMT));
+  return stats.Average();
+  
+} // icarus::trigger::PMTverticalSlicingAlg::PMTwallPosition()
+
+
+//------------------------------------------------------------------------------
 auto icarus::trigger::PMTverticalSlicingAlg::clusterPMTby
   (PMTlist_t const& PMTs, geo::Vector_t const& dir) -> std::vector<PMTlist_t>
 {
+#if 0
   // use the projection of the PMT center on the specified direction as
   // clustering key; we need a reference point to project... we pick `origin()`.
   auto const PMTcenterProjection = [dir](geo::OpDetGeo const* opDet)
     { return (opDet->GetCenter() - geo::origin()).Dot(dir); };
-
+#endif // 0
+  
+  PMTprojectorClass const PMTcenterProjection { dir };
+  
   // PMTs with a coordinate within 5 cm (kind of) will be clustered together
   constexpr double tol = 5.0; // cm
   auto const closeEnough
@@ -126,6 +219,28 @@ auto icarus::trigger::PMTverticalSlicingAlg::clusterPMTby
   return util::clusterBy(PMTs, PMTcenterProjection, closeEnough, std::less<>());
 
 } // icarus::trigger::PMTverticalSlicingAlg::clusterPMTby()
+
+
+//------------------------------------------------------------------------------
+auto icarus::trigger::PMTverticalSlicingAlg::getCryoPMTs
+  (geo::CryostatGeo const& cryo) -> PMTlist_t
+{
+  PMTlist_t opDets;
+  for (auto iOpDet: util::counter(cryo.NOpDet()))
+    opDets.push_back(&cryo.OpDet(iOpDet));
+  return opDets;
+} // icarus::trigger::PMTverticalSlicingAlg::getCryoPMTs()
+
+
+//------------------------------------------------------------------------------
+auto icarus::trigger::PMTverticalSlicingAlg::getPMTs
+  (geo::GeometryCore const& geom) -> PMTlist_t
+{
+  PMTlist_t opDets;
+  for (geo::CryostatGeo const& cryo: geom.IterateCryostats())
+    append(opDets, getCryoPMTs(cryo));
+  return opDets;
+} // icarus::trigger::PMTverticalSlicingAlg::getCryoPMTs()
 
 
 //------------------------------------------------------------------------------
