@@ -26,6 +26,7 @@
 #include "lardataobj/RawData/OpDetWaveform.h"
 #include "larcorealg/CoreUtils/values.h" // util::const_values()
 #include "larcorealg/CoreUtils/enumerate.h"
+#include "larcorealg/CoreUtils/zip.h"
 #include "larcorealg/CoreUtils/StdUtils.h" // util::to_string()
 
 // framework libraries
@@ -50,6 +51,7 @@
 #include <map>
 #include <vector>
 #include <string>
+#include <cassert>
 
 
 //------------------------------------------------------------------------------
@@ -104,7 +106,7 @@ namespace icarus::trigger { class DiscriminatePMTwaveforms; }
  *      optical detector activity; the activity belongs to a single channel, but
  *      there may be multiple waveforms on the same channel. The time stamp is
  *      expected to be from the
- *      @anchor DetectorClocksElectronicsTime "electronics time scale"
+ *      @ref DetectorClocksElectronicsTime "electronics time scale"
  *      and therefore expressed in microseconds.
  * 
  * 
@@ -223,8 +225,6 @@ class icarus::trigger::DiscriminatePMTwaveforms: public art::EDProducer {
   
   
   // --- BEGIN Framework hooks -------------------------------------------------
-  /// Prepares the plots to be filled.
-  virtual void beginJob() override;
   
   /// Creates the data products.
   virtual void produce(art::Event& event) override;
@@ -392,22 +392,15 @@ icarus::trigger::DiscriminatePMTwaveforms::DiscriminatePMTwaveforms
 
 
 //------------------------------------------------------------------------------
-void icarus::trigger::DiscriminatePMTwaveforms::beginJob() {
-  
-} // icarus::trigger::DiscriminatePMTwaveforms::beginJob()
-
-
-//------------------------------------------------------------------------------
 void icarus::trigger::DiscriminatePMTwaveforms::produce(art::Event& event) {
   
   //
   // set up the algorithm to create the trigger gates
   //
-  fTriggerGateBuilder->resetup(
-    detinfo::DetectorTimings{
-      art::ServiceHandle<detinfo::DetectorClocksService const>()->DataFor(event)
-      }
-    );
+  detinfo::DetectorTimings const detTimings {
+    art::ServiceHandle<detinfo::DetectorClocksService const>()->DataFor(event)
+    };
+  fTriggerGateBuilder->resetup(detTimings);
   
   //
   // fetch input
@@ -544,10 +537,6 @@ void icarus::trigger::DiscriminatePMTwaveforms::produce(art::Event& event) {
   // add a simple one-to-one PMT coverage - waveform association just in case
   if (fSavePMTcoverage) {
     assert(makePMTinfoPtr);
-    
-    detinfo::DetectorTimings const detTimings {
-      art::ServiceHandle<detinfo::DetectorClocksService const>()->DataFor(event)
-      };
     
     sbn::OpDetWaveformMetaMaker const makePMTinfo { detTimings };
     

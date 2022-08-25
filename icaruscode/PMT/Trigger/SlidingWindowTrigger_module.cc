@@ -14,6 +14,7 @@
 #include "icaruscode/PMT/Trigger/Utilities/OpDetWaveformMetaMatcher.h"
 #include "icaruscode/PMT/Trigger/Utilities/TrackedOpticalTriggerGate.h"
 #include "icaruscode/PMT/Trigger/Utilities/TriggerDataUtils.h"
+#include "icaruscode/PMT/Trigger/Utilities/TriggerGateDataFormatting.h"
 #include "icaruscode/PMT/Algorithms/PMTverticalSlicingAlg.h"
 #include "icaruscode/IcarusObj/OpDetWaveformMeta.h" // sbn::OpDetWaveformMeta
 #include "icarusalg/Utilities/FHiCLutils.h" // util::fhicl::getOptionalValue()
@@ -539,13 +540,19 @@ void icarus::trigger::SlidingWindowTrigger::produceThreshold(
     = icarus::trigger::transformIntoOpticalTriggerGate
     (std::move(combinedGates), makeGatePtr, waveformMap);
 
-  mf::LogTrace(fLogCategory)
-    << "Threshold " << threshold << " ('" << dataTag.encode() << "'): "
-    << gates.size() << " input channels, "
-    << outputGates.size() << " output channels (+"
-    << outputAssns.size() << " associations to waveforms) into '"
-    << moduleDescription().moduleLabel() << ":" << dataTag.instance() << "'"
-    ;
+  {
+    mf::LogTrace log { fLogCategory };
+    log
+      << "Threshold " << threshold << " ('" << dataTag.encode() << "'): "
+      << gates.size() << " input channels, "
+      << outputGates.size() << " output channels (+"
+      << outputAssns.size() << " associations to waveforms) into '"
+      << moduleDescription().moduleLabel() << ":" << dataTag.instance() << "'"
+      ;
+    for (auto const& [ iGate, gate ]: util::enumerate(outputGates)) {
+      log << "\n [#" << iGate << "] " << compactdump(gate);
+    } // for
+  } // local scope
 
   if (fProduceWaveformAssns) {
     

@@ -30,4 +30,24 @@
   <class name="art::Wrapper<art::Assns<icarus::trigger::OpticalTriggerGate::GateData_t, sbn::OpDetWaveformMeta>>" />
   
   
+  <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
+  <!-- LArSoft object associations that are missing from LArSoft             -->
+  
+  <!-- recob::PFParticle - sim::BeamGateInfo associations -->
+  <class name="art::Assns<sim::BeamGateInfo, recob::PFParticle>" />
+  <class name="art::Assns<recob::PFParticle, sim::BeamGateInfo>" />
+  <class name="art::Wrapper<art::Assns<sim::BeamGateInfo, recob::PFParticle>>" />
+  <class name="art::Wrapper<art::Assns<recob::PFParticle, sim::BeamGateInfo>>" />
+  
+  <!-- anab::T0 - sim::BeamGateInfo associations -->
+  <class name="std::pair<art::Ptr<sim::BeamGateInfo>, art::Ptr<anab::T0>>" />
+  <class name="std::pair<art::Ptr<anab::T0>, art::Ptr<sim::BeamGateInfo>>" />
+  <class name="art::Assns<sim::BeamGateInfo, anab::T0>" />
+  <class name="art::Assns<anab::T0, sim::BeamGateInfo>" />
+  <class name="art::Wrapper<art::Assns<sim::BeamGateInfo, anab::T0>>" />
+  <class name="art::Wrapper<art::Assns<anab::T0, sim::BeamGateInfo>>" />
+  
+  <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
+  
+  
 </lcgdict>

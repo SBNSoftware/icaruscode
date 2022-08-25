@@ -1,6 +1,6 @@
 /**
- * @file   SlidingWindowTriggerSimulation_module.cc
- * @brief  Production of triggers data products based on PMT sliding windows.
+ * @file   TriggerSimulationOnGates_module.cc
+ * @brief  Plots of efficiency for triggers based on PMT sliding windows.
  * @author Gianluca Petrillo (petrillo@slac.stanford.edu)
  * @date   March 27, 2021
  */
@@ -18,11 +18,11 @@
 #include "sbnobj/ICARUS/PMT/Trigger/Data/OpticalTriggerGate.h"
 #include "icaruscode/PMT/Trigger/Utilities/TriggerDataUtils.h" // FillTriggerGates()
 #include "icaruscode/PMT/Trigger/Utilities/PlotSandbox.h"
-#include "icaruscode/IcarusObj/OpDetWaveformMeta.h" // sbn::OpDetWaveformMeta
 #include "icarusalg/Utilities/ROOTutils.h" // util::ROOT
 #include "icarusalg/Utilities/BinningSpecs.h"
 #include "icaruscode/Utilities/DetectorClocksHelpers.h" // makeDetTimings()...
 #include "icarusalg/Utilities/FixedBins.h"
+#include "icarusalg/Utilities/PassCounter.h"
 #include "icarusalg/Utilities/mfLoggingClass.h"
 #include "icarusalg/Utilities/ChangeMonitor.h" // ThreadSafeChangeMonitor
 #include "icarusalg/Utilities/rounding.h" // icarus::ns::util::roundup()
@@ -43,6 +43,7 @@
 #include "larcorealg/CoreUtils/get_elements.h" // util::get_elements()
 #include "larcorealg/CoreUtils/UncopiableAndUnmovableClass.h"
 #include "larcorealg/CoreUtils/StdUtils.h" // util::to_string()
+#include "lardataobj/Simulation/BeamGateInfo.h"
 #include "lardataobj/RawData/TriggerData.h" // raw::Trigger
 #include "lardataobj/RawData/OpDetWaveform.h" // raw::ADC_Count_t
 #include "larcoreobj/SimpleTypesAndConstants/geo_types.h" // geo::CryostatID
@@ -87,12 +88,19 @@ using namespace util::quantities::time_literals;
 
 
 //------------------------------------------------------------------------------
-namespace icarus::trigger { class SlidingWindowTriggerSimulation; }
+namespace icarus::trigger { class TriggerSimulationOnGates; }
 /**
- * @brief Simulates a sliding window trigger.
+ * @brief Simulates a sliding window trigger at specified gate times.
  * 
  * This module produces `raw::Trigger` objects each representing the outcome of
- * some trigger logic applied to a discriminated input ("trigger primitives").
+ * some trigger logic applied to discriminated optical detector input
+ * ("trigger primitives").
+ * The logic is applied to each event at multiple times, according to a list
+ * of time intervals read from each event.
+ * 
+ * The main purpose of this module is to simulate the trigger logic at times of
+ * special interest, typically the times some track is believed to have crossed
+ * the detector.
  * 
  * A trigger primitive is a two-level function of time which describes when
  * that primitive is on and when it is off. Trigger primitives are given as
@@ -146,21 +154,27 @@ namespace icarus::trigger { class SlidingWindowTriggerSimulation; }
  * * `Pattern` (configuration table, mandatory): describes the sliding window
  *     pattern; the configuration format for a pattern is described under
  *     `icarus::trigger::ns::fhicl::WindowPatternConfig`.
- * * `BeamGateDuration` (time, _mandatory_): the duration of the beam
- *     gate; _the time requires the unit to be explicitly specified_: use
- *     `"1.6 us"` for BNB, `9.5 us` for NuMI (also available as
- *     `BNB_settings.spill_duration` and `NuMI_settings.spill_duration` in
- *     `trigger_icarus.fcl`);
- * * `BeamGateStart` (time, default: `0_us`): how long after the
- * *   @ref DetectorClocksBeamGateOpening "nominal beam gate opening time"
- *     the actual beam gate opens at;
+ * * `BeamGates` (input tag, _mandatory_): the data product with the beam gates
+ * *   to run the simulation in;
  * * `BeamBits` (bitmask as 32-bit integral number): bits to be set in the
  *     produced `raw::Trigger` objects (see also `daq::TriggerDecoder` tool).
- * * `LogCategory` (string, default `SlidingWindowTriggerSimulation`): name of
+ * * `LogCategory` (string, default `TriggerSimulationOnGates`): name of
  *     category used to stream messages from this module into message facility.
  * 
  * An example job configuration is provided as
  * `simulate_sliding_window_trigger_icarus.fcl`.
+ * 
+ * 
+ * Input data products
+ * ====================
+ * 
+ * * `TriggerGatesTag` + `Thresholds`: input gate collections.
+ * * `BeamGates` (`std::vector<sim::BeamGateInfo>`): the beam gate intervals
+ *     to run the simulation on; one trigger result is produced and saved for
+ *     each of the gates in this data product. The gates are interpreted
+ *     following LArSoft convention for the simulation, with the times in
+ *     nanoseconds and in
+ *     @ref DetectorClocksSimulationTime "simulation time reference".
  * 
  * 
  * Output data products
@@ -172,19 +186,21 @@ namespace icarus::trigger { class SlidingWindowTriggerSimulation; }
  *   data product has the same instance name as the input data one, unless
  *   there is only one threshold (see `TriggerGatesTag`, `Thresholds` and
  *   `KeepThresholdName` configuration parameters);
- *   currently only at most one trigger is emitted, with time stamp matching
- *   the first time the trigger criteria are satisfied. All triggers feature
- *   the bits specified in `BeamBits` configuration parameter.
+ *   one trigger object is produced for each of the beam gates found in the
+ *   input data product specified by the `BeamGates` parameter.
+ *   Each trigger object has the time stamp matching the first time the trigger
+ *   criteria are satisfied. All triggers feature the bits specified in
+ *   `BeamBits` configuration parameter.
  * 
  * 
  * 
  * Trigger logic algorithm
  * ========================
  * 
- * @anchor SlidingWindowTriggerSimulation_Algorithm
+ * @anchor TriggerSimulationOnGates_Algorithm
  * 
  * This section describes the trigger logic algorithm used in
- * `icarus::trigger::SlidingWindowTriggerSimulation` and its assumptions.
+ * `icarus::trigger::TriggerSimulationOnGates` and its assumptions.
  * Nevertheless, more up-to-date information can be found in
  * `SlidingWindowTrigger` module (for the combination of the LVDS signals into
  * window-wide gates) and in `icarus::trigger::SlidingWindowPatternAlg`,
@@ -201,11 +217,10 @@ namespace icarus::trigger { class SlidingWindowTriggerSimulation; }
  * 
  * All multi-level gates are set in coincidence with the beam gate by
  * multiplying the multi-level and the beam gates. Because of this, trigger
- * gates are suppressed everywhere except than during the beam gate.
- * The beam gate opens at a time configured in `DetectorClocks` service provider
- * (`detinfo::DetectorClocks::BeamGateTime()`), optionally offset
- * (`BeamGateStart`), and has a duration configured in this module
- * (`BeamGateDuration`).
+ * gates are suppressed everywhere except than during the beam gate (see below).
+ * The reference time for the beam gates is the time configured in
+ * `DetectorClocks` service provider
+ * (`detinfo::DetectorClocks::BeamGateTime()`).
  * 
  * The algorithm handles independently multiple trigger patterns.
  * On each input, each configured pattern is applied based on the window
@@ -233,10 +248,26 @@ namespace icarus::trigger { class SlidingWindowTriggerSimulation; }
  * configured in `Thresholds`.
  * 
  * 
+ * Beam gates
+ * -----------
+ * 
+ * A single instance of this module can perform the simulation on several beam
+ * gates. The values of these beam gates are picked from the data product
+ * specified in `BeamGates`, event by event. The specified beam gate times are
+ * on beam gate time scale, i.e. their reference time `0` is the time of the
+ * beam gate as known by `detinfo::DetectorClocks::BeamGateTime()`.
+ * In case the same beam gate is desired for all events, such data product can
+ * be produced by `icarus::trigger::WriteBeamGateInfo` module.
+ * The trigger data product collection produced by this module has the same
+ * number of entries as the beam gates in the data product, and they match
+ * one-to-one.
+ * 
+ * 
+ * 
  * Technical aspects of the module
  * --------------------------------
  * 
- * @anchor SlidingWindowTriggerSimulation_Tech
+ * @anchor TriggerSimulationOnGates_Tech
  * 
  * This module does not build the trigger gates of the sliding windows, but
  * rather it takes them as input (see e.g. `SlidingWindowTrigger` module).
@@ -249,8 +280,11 @@ namespace icarus::trigger { class SlidingWindowTriggerSimulation; }
  * `icarus::trigger::ns::fhicl::WindowPatternConfig` respectively. Trigger
  * simulation is delegated to `icarus::trigger::SlidingWindowPatternAlg`.
  * 
+ * 
+ * @todo Plots need to be thought and implemented.
+ * 
  */
-class icarus::trigger::SlidingWindowTriggerSimulation
+class icarus::trigger::TriggerSimulationOnGates
   : public art::EDProducer
   , private lar::UncopiableAndUnmovableClass
 {
@@ -288,17 +322,11 @@ class icarus::trigger::SlidingWindowTriggerSimulation
       Comment("trigger requirements as a trigger window pattern")
       };
  
-    fhicl::Atom<microseconds> BeamGateDuration {
-      Name("BeamGateDuration"),
-      Comment("length of time interval when optical triggers are accepted")
+    fhicl::Atom<art::InputTag> BeamGates {
+      Name("BeamGates"),
+      Comment("data product with all beam gates to run simulation into")
       };
-
-    fhicl::Atom<microseconds> BeamGateStart {
-      Name("BeamGateStart"),
-      Comment("open the beam gate this long after the nominal beam gate time"),
-      microseconds{ 0.0 }
-      };
-
+    
     fhicl::Atom<std::uint32_t> BeamBits {
       Name("BeamBits"),
       Comment("bits to be set in the trigger object as beam identified")
@@ -319,7 +347,7 @@ class icarus::trigger::SlidingWindowTriggerSimulation
     fhicl::Atom<std::string> LogCategory {
       Name("LogCategory"),
       Comment("name of the category used for the output"),
-      "SlidingWindowTriggerSimulation" // default
+      "TriggerSimulationOnGates" // default
       };
     
   }; // struct Config
@@ -329,7 +357,7 @@ class icarus::trigger::SlidingWindowTriggerSimulation
 
 
   // --- BEGIN Constructors ----------------------------------------------------
-  explicit SlidingWindowTriggerSimulation(Parameters const& config);
+  explicit TriggerSimulationOnGates(Parameters const& config);
 
   // --- END Constructors ------------------------------------------------------
 
@@ -375,6 +403,9 @@ class icarus::trigger::SlidingWindowTriggerSimulation
     BinnedContent_t triggerTimesVsBeam;
   };
   
+  /// Type of list of gates to simulate trigger into.
+  using BeamGates_t = std::vector<sim::BeamGateInfo>;
+  
   
   // --- BEGIN Configuration variables -----------------------------------------
   
@@ -384,11 +415,7 @@ class icarus::trigger::SlidingWindowTriggerSimulation
   /// Configured sliding window requirement pattern.
   WindowPattern const fPattern;
   
-  /// Duration of the gate during with global optical triggers are accepted.
-  microseconds fBeamGateDuration;
-  
-  /// Start of the beam gate with respect to `BeamGate()`.
-  microseconds fBeamGateStart;
+  art::InputTag const fBeamGateTag; ///< Data product of beam gates to simulate.
   
   std::uint32_t fBeamBits; ///< Bits for the beam gate being simulated.
   
@@ -433,13 +460,9 @@ class icarus::trigger::SlidingWindowTriggerSimulation
 
   ///< Count of fired triggers, per threshold.
   std::vector<std::atomic<unsigned int>> fTriggerCount;
-  std::atomic<unsigned int> fTotalEvents { 0U }; ///< Count of opened gates.
+  std::atomic<unsigned int> fTotalGates { 0U }; ///< Count of opened gates.
   
   
-  /// Functor returning whether a gate has changed.
-  icarus::ns::util::ThreadSafeChangeMonitor<icarus::trigger::ApplyBeamGateClass>
-    fGateChangeCheck;
-
   // --- END Internal variables ------------------------------------------------
   
 
@@ -463,8 +486,10 @@ class icarus::trigger::SlidingWindowTriggerSimulation
   void makeEventPlots();
   
   /// Fills event-wide plots.
-  void plotEvent
-    (art::Event const& event, detinfo::DetectorTimings const& detTimings);
+  void plotEvent(
+    art::Event const& event, detinfo::DetectorTimings const& detTimings,
+    std::vector<icarus::trigger::ApplyBeamGateClass> const& gates
+    );
   
   /// Fills the plots for threshold index `iThr` with trigger information.
   void plotTriggerResponse(
@@ -478,8 +503,11 @@ class icarus::trigger::SlidingWindowTriggerSimulation
   /**
    * @brief Performs the simulation for the specified ADC threshold.
    * @param event _art_ event to read data from and put results into
+   * @param detTimings detector clocks service provider proxy
+   * @param beamGates list of all beam gates to evaluate
    * @param iThr index of the threshold in the configuration
    * @param thr value of the threshold (ADC counts)
+   * @param firstTriggerNumber the next unassigned trigger number
    * @return the trigger response information
    * 
    * For the given threshold, the simulation of the configured trigger is
@@ -492,11 +520,12 @@ class icarus::trigger::SlidingWindowTriggerSimulation
    * 
    * The simulation itself is performed by the `simulate()` method.
    */
-  WindowTriggerInfo_t produceForThreshold(
+  std::vector<WindowTriggerInfo_t> produceForThreshold(
     art::Event& event,
     detinfo::DetectorTimings const& detTimings,
-    ApplyBeamGateClass const& beamGate,
-    std::size_t const iThr, std::string const& thrTag
+    std::vector<ApplyBeamGateClass> const& beamGates,
+    std::size_t const iThr, std::string const& thrTag,
+    unsigned int firstTriggerNumber
     );
   
   /**
@@ -510,6 +539,7 @@ class icarus::trigger::SlidingWindowTriggerSimulation
    */
   raw::Trigger triggerInfoToTriggerData(
     detinfo::DetectorTimings const& detTimings,
+    ApplyBeamGateClass const& beamGate,
     unsigned int triggerNumber, WindowTriggerInfo_t const& info
     ) const;
   
@@ -524,29 +554,38 @@ class icarus::trigger::SlidingWindowTriggerSimulation
     BinnedContent_t const& binnedContent
     ) const;
 
-  //@{ 
-  /// Shortcut to create an `ApplyBeamGate` with the current configuration.
+  /// Shortcut to create an `ApplyBeamGate` with the specified `gate`.
   icarus::trigger::ApplyBeamGateClass makeMyBeamGate
-    (detinfo::DetectorClocksData data) const
+    (detinfo::DetectorTimings const& detTimings, sim::BeamGateInfo const& gate) const
     {
+      // the input gate is assumed to be relative to the global beam gate
+      // opening (which is the implicit convention of simulation time and of
+      // sim::BeamGateInfo in my understanding - [petrillo@slac.stanford.edu])
+      // so it does not need further processing here
       return makeApplyBeamGate(
-        fBeamGateDuration, fBeamGateStart,
-        std::move(data),
-        fLogCategory
+        nanoseconds{ gate.Width() }, nanoseconds{ gate.Start() },
+        detTimings.clockData(), fLogCategory
         );
     }
-  icarus::trigger::ApplyBeamGateClass makeMyBeamGate
-    (art::Event const* event = nullptr) const
-    { return makeMyBeamGate(icarus::ns::util::makeDetClockData(event)); }
-  icarus::trigger::ApplyBeamGateClass makeMyBeamGate
-    (art::Event const& event) const { return makeMyBeamGate(&event); }
+  
+  //@{ 
+  /// Shortcut to create `ApplyBeamGate` from a list of gates.
+  std::vector<icarus::trigger::ApplyBeamGateClass> makeMyBeamGates
+    (detinfo::DetectorTimings const& detTimings, BeamGates_t const& gates) const
+    {
+      std::vector<icarus::trigger::ApplyBeamGateClass> applyGates;
+      for (sim::BeamGateInfo const& gate: gates)
+        applyGates.push_back(makeMyBeamGate(detTimings, gate));
+      return applyGates;
+    }
+  std::vector<icarus::trigger::ApplyBeamGateClass> makeMyBeamGates
+    (art::Event const* event, BeamGates_t const& gates) const
+    { return makeMyBeamGates(icarus::ns::util::makeDetTimings(event), gates); }
+  std::vector<icarus::trigger::ApplyBeamGateClass> makeMyBeamGates
+    (art::Event const& event, BeamGates_t const& gates) const
+    { return makeMyBeamGates(&event, gates); }
   //@}
   
-  
-  /// Reads a set of input gates from the `event`
-  /// @return trigger gates, converted into `InputTriggerGate_t`
-  static TriggerGates_t readTriggerGates
-    (art::Event const& event, art::InputTag const& dataTag);
   
   //@{
   /// Returns the time of the event in seconds from The Epoch.
@@ -554,20 +593,19 @@ class icarus::trigger::SlidingWindowTriggerSimulation
   static double eventTimestampInSeconds(art::Event const& event);
   //@}
 
-}; // icarus::trigger::SlidingWindowTriggerSimulation
+}; // icarus::trigger::TriggerSimulationOnGates
 
 
 
 //------------------------------------------------------------------------------
 //--- Implementation
 //------------------------------------------------------------------------------
-icarus::trigger::SlidingWindowTriggerSimulation::SlidingWindowTriggerSimulation
+icarus::trigger::TriggerSimulationOnGates::TriggerSimulationOnGates
   (Parameters const& config)
   : art::EDProducer       (config)
   // configuration
   , fPattern              (config().Pattern())
-  , fBeamGateDuration     (config().BeamGateDuration())
-  , fBeamGateStart        (config().BeamGateStart())
+  , fBeamGateTag          (config().BeamGates())
   , fBeamBits             (config().BeamBits())
   , fTriggerTimeResolution(config().TriggerTimeResolution())
   , fEventTimeBinning     (config().EventTimeBinning())
@@ -615,9 +653,8 @@ icarus::trigger::SlidingWindowTriggerSimulation::SlidingWindowTriggerSimulation
 
   // trigger primitives
   for (art::InputTag const& inputDataTag: util::const_values(fADCthresholds)) {
-    consumes<std::vector<OpticalTriggerGateData_t>>(inputDataTag);
-    consumes<art::Assns<OpticalTriggerGateData_t, sbn::OpDetWaveformMeta>>
-      (inputDataTag);
+    icarus::trigger::TriggerGateReader<>{ inputDataTag }
+      .declareConsumes(consumesCollector());
   } // for
   
   //
@@ -650,68 +687,96 @@ icarus::trigger::SlidingWindowTriggerSimulation::SlidingWindowTriggerSimulation
   } // local block
   
   
-} // icarus::trigger::SlidingWindowTriggerSimulation::SlidingWindowTriggerSimulation()
+} // icarus::trigger::TriggerSimulationOnGates::TriggerSimulationOnGates()
 
 
 //------------------------------------------------------------------------------
-void icarus::trigger::SlidingWindowTriggerSimulation::beginJob() {
+void icarus::trigger::TriggerSimulationOnGates::beginJob() {
   
   initializePlots();
   
-} // icarus::trigger::SlidingWindowTriggerSimulation::beginJob()
+} // icarus::trigger::TriggerSimulationOnGates::beginJob()
 
 
 //------------------------------------------------------------------------------
-void icarus::trigger::SlidingWindowTriggerSimulation::produce(art::Event& event)
+void icarus::trigger::TriggerSimulationOnGates::produce(art::Event& event)
 {
   
-  detinfo::DetectorClocksData const clockData
-    = art::ServiceHandle<detinfo::DetectorClocksService const>()->DataFor(event);
-  detinfo::DetectorTimings const detTimings{clockData};
-  auto const beamGate = makeMyBeamGate(clockData);
+  //
+  // prepare all the gates to run the simulation on
+  //
+  detinfo::DetectorTimings const detTimings {
+    art::ServiceHandle<detinfo::DetectorClocksService const>()->DataFor(event)
+    };
+  
+  std::vector<icarus::trigger::ApplyBeamGateClass> const beamGates {
+    makeMyBeamGates(
+      detTimings,
+      event.getProduct<std::vector<sim::BeamGateInfo>>(fBeamGateTag)
+      )
+    };
 
-  if (auto oldGate = fGateChangeCheck(beamGate); oldGate) {
-    MF_LOG_DEBUG(fLogCategory)
-      << "Beam gate has changed from " << *oldGate << " to " << beamGate;
-  }
-
-
+  
+  { // BEGIN local block
+    mf::LogDebug log { fLogCategory };
+    log << "Trigger simulation for " << beamGates.size() << " gates";
+    if (!beamGates.empty()) {
+      log << " ('" << fBeamGateTag.encode() << "'):";
+      for (auto const& [iGate, gate]: util::enumerate(beamGates)) {
+        log << "\n [" << iGate << "]  " << gate;
+      } // for
+    } // if
+  } // END local block
+  
+  
+  //
+  // run the simulation on each threshold in turn
+  //
   mf::LogDebug log(fLogCategory); // this will print at the end of produce()
   log << "Event " << event.id() << ":";
+  
+  // FIXME these two operations should be atomic
+  unsigned int const firstTriggerNumber
+    = fTotalGates.fetch_add(beamGates.size());
   
   for (auto const& [ iThr, thrTag ]
     : util::enumerate(util::get_elements<0U>(fADCthresholds))
   ) {
     
-    WindowTriggerInfo_t const triggerInfo
-      = produceForThreshold(event, detTimings, beamGate, iThr, thrTag);
+    std::vector<WindowTriggerInfo_t> const triggers = produceForThreshold
+      (event, detTimings, beamGates, iThr, thrTag, firstTriggerNumber);
     
     log << "\n * threshold " << thrTag << ": ";
-    if (triggerInfo) log << "trigger at " << triggerInfo.info.atTick();
-    else             log << "not triggered";
+    icarus::ns::util::PassCounter gateResults;
+    for (WindowTriggerInfo_t const& triggerInfo: triggers)
+      gateResults.add(triggerInfo.info.fired());
+    log << gateResults.passed() << "/" << gateResults.total()
+      << " gates triggered";
     
   } // for
   
-  plotEvent(event, detTimings);
+  //
+  // event-level plots
+  //
+  plotEvent(event, detTimings, beamGates);
   
-  ++fTotalEvents;
-  
-} // icarus::trigger::SlidingWindowTriggerSimulation::produce()
+} // icarus::trigger::TriggerSimulationOnGates::produce()
 
 
 //------------------------------------------------------------------------------
-void icarus::trigger::SlidingWindowTriggerSimulation::endJob() {
+void icarus::trigger::TriggerSimulationOnGates::endJob() {
   
   finalizePlots();
   
   printSummary();
   
-} // icarus::trigger::SlidingWindowTriggerSimulation::endJob()
+} // icarus::trigger::TriggerSimulationOnGates::endJob()
 
 
 //------------------------------------------------------------------------------
-void icarus::trigger::SlidingWindowTriggerSimulation::initializePlots() {
+void icarus::trigger::TriggerSimulationOnGates::initializePlots() {
   
+#if 0
   //
   // overview plots with different settings
   //
@@ -722,7 +787,6 @@ void icarus::trigger::SlidingWindowTriggerSimulation::initializePlots() {
     thresholdLabels.push_back(std::move(thr));
   
   auto const beamGate = makeMyBeamGate();
-  fGateChangeCheck(beamGate);
   mf::LogInfo(fLogCategory)
     << "Beam gate for plots: " << beamGate.asSimulationTime()
     << " (simulation time), " << beamGate.tickRange()
@@ -850,11 +914,15 @@ void icarus::trigger::SlidingWindowTriggerSimulation::initializePlots() {
     }
     );
   
-} // icarus::trigger::SlidingWindowTriggerSimulation::initializePlots()
+#endif // 0
+  
+} // icarus::trigger::TriggerSimulationOnGates::initializePlots()
 
 
 //------------------------------------------------------------------------------
-void icarus::trigger::SlidingWindowTriggerSimulation::finalizePlots() {
+void icarus::trigger::TriggerSimulationOnGates::finalizePlots() {
+  
+#if 0
   
   for (auto const& [ thr, info ]
     : util::zip(util::get_elements<0U>(fADCthresholds), fThresholdPlots))
@@ -866,15 +934,19 @@ void icarus::trigger::SlidingWindowTriggerSimulation::finalizePlots() {
   
   makeEventPlots();
   
-} // icarus::trigger::SlidingWindowTriggerSimulation::finalizePlots()
+#endif // 0
+
+} // icarus::trigger::TriggerSimulationOnGates::finalizePlots()
 
 
 //------------------------------------------------------------------------------
-void icarus::trigger::SlidingWindowTriggerSimulation::makeThresholdPlots(
+void icarus::trigger::TriggerSimulationOnGates::makeThresholdPlots(
   std::string const& threshold,
   icarus::trigger::PlotSandbox& plots,
   ThresholdPlotInfo_t const& plotInfo
 ) {
+  
+#if 0
   
   BinnedContent_t const* content;
   
@@ -918,12 +990,16 @@ void icarus::trigger::SlidingWindowTriggerSimulation::makeThresholdPlots(
     *content
     );
   
-} // icarus::trigger::SlidingWindowTriggerSimulation::makeThresholdPlots()
+#endif // 0
+  
+} // icarus::trigger::TriggerSimulationOnGates::makeThresholdPlots()
 
 
 
 //------------------------------------------------------------------------------
-void icarus::trigger::SlidingWindowTriggerSimulation::makeEventPlots() {
+void icarus::trigger::TriggerSimulationOnGates::makeEventPlots() {
+  
+#if 0
   
   BinnedContent_t const* content;
   
@@ -947,24 +1023,27 @@ void icarus::trigger::SlidingWindowTriggerSimulation::makeEventPlots() {
     *content
     );
   
-} // icarus::trigger::SlidingWindowTriggerSimulation::makeEventPlots()
+#endif // 0
+  
+} // icarus::trigger::TriggerSimulationOnGates::makeEventPlots()
 
 
 //------------------------------------------------------------------------------
-auto icarus::trigger::SlidingWindowTriggerSimulation::produceForThreshold(
+auto icarus::trigger::TriggerSimulationOnGates::produceForThreshold(
   art::Event& event,
   detinfo::DetectorTimings const& detTimings,
-  ApplyBeamGateClass const& beamGate,
-  std::size_t const iThr, std::string const& thrTag
-) -> WindowTriggerInfo_t {
+  std::vector<ApplyBeamGateClass> const& beamGates,
+  std::size_t const iThr, std::string const& thrTag,
+  unsigned int firstTriggerNumber
+) -> std::vector<WindowTriggerInfo_t> {
   
-  auto& plotInfo = fThresholdPlots[iThr];
+//   auto& plotInfo = fThresholdPlots[iThr];
   
   //
   // get the input
   //
   art::InputTag const& dataTag = fADCthresholds.at(thrTag);
-  auto const& gates = readTriggerGates(event, dataTag);
+  auto const& gates = icarus::trigger::ReadTriggerGates(event, dataTag);
   
   
   // extract or verify the topology of the trigger windows
@@ -973,39 +1052,51 @@ auto icarus::trigger::SlidingWindowTriggerSimulation::produceForThreshold(
   assert(fPatternAlg);
   
   //
-  // simulate the trigger response
+  // simulate the trigger response on all beam gates
   //
-  WindowTriggerInfo_t const triggerInfo
-    = fPatternAlg->simulateResponse(beamGate.applyToAll(gates));
-  if (triggerInfo) {
-    ++fTriggerCount[iThr]; // keep the unique count
-    plotInfo.eventTimes.add(eventTimestampInSeconds(event));
-  }
-  
-  //
-  // fill the plots
-  //
-  plotTriggerResponse(iThr, thrTag, triggerInfo, detTimings);
-
-  //
-  // create and store the data product
-  //
+  std::vector<WindowTriggerInfo_t> allTriggerInfo; // one per gate
   auto triggers = std::make_unique<std::vector<raw::Trigger>>();
-  if (triggerInfo.info.fired()) {
-    triggers->push_back
-      (triggerInfoToTriggerData(detTimings, fTriggerCount[iThr], triggerInfo));
-  } // if
+  unsigned int triggerNumber = firstTriggerNumber;
+  for (auto const& beamGate: beamGates) {
+    WindowTriggerInfo_t const triggerInfo
+      = fPatternAlg->simulateResponse(beamGate.applyToAll(gates));
+    
+    // FIXME what do we do with statistics and plots?
+    if (triggerInfo) {
+      ++fTriggerCount[iThr]; // keep the unique count
+//       plotInfo.eventTimes.add(eventTimestampInSeconds(event));
+    }
+    
+    //
+    // fill the plots
+    //
+    plotTriggerResponse(iThr, thrTag, triggerInfo, detTimings);
+
+    //
+    // create and store the data product
+    //
+    triggers->push_back(
+      triggerInfoToTriggerData
+        (detTimings, beamGate, triggerNumber++, triggerInfo)
+      );
+    allTriggerInfo.push_back(std::move(triggerInfo));
+    
+  } // for beam gates
+  
   event.put(std::move(triggers), fOutputInstances[iThr]);
   
-  return triggerInfo;
+  return allTriggerInfo;
   
-} // icarus::trigger::SlidingWindowTriggerSimulation::produceForThreshold()
+} // icarus::trigger::TriggerSimulationOnGates::produceForThreshold()
 
 
 //------------------------------------------------------------------------------
-void icarus::trigger::SlidingWindowTriggerSimulation::plotEvent
-  (art::Event const& event, detinfo::DetectorTimings const& detTimings)
-{
+void icarus::trigger::TriggerSimulationOnGates::plotEvent(
+  art::Event const& event, detinfo::DetectorTimings const& detTimings,
+  std::vector<icarus::trigger::ApplyBeamGateClass> const& gates
+) {
+  
+#if 0
   
   detinfo::timescales::trigger_time const beamGateTime
     { detTimings.toTriggerTime(detTimings.BeamGateTime()) };
@@ -1013,15 +1104,22 @@ void icarus::trigger::SlidingWindowTriggerSimulation::plotEvent
   fEventPlotInfo.eventTimes.add(eventTimestampInSeconds(event));
   fEventPlotInfo.HWtrigTimeVsBeam.add(-beamGateTime.value());
   
-} // icarus::trigger::SlidingWindowTriggerSimulation::plotEvent()
+  // `gates` is currently unused; it may be used e.g. to show how many gates
+  // were tested in each event
+  
+#endif // 0
+  
+} // icarus::trigger::TriggerSimulationOnGates::plotEvent()
 
 
 //------------------------------------------------------------------------------
-void icarus::trigger::SlidingWindowTriggerSimulation::plotTriggerResponse(
+void icarus::trigger::TriggerSimulationOnGates::plotTriggerResponse(
   std::size_t iThr, std::string const& thrTag,
   WindowTriggerInfo_t const& triggerInfo,
   detinfo::DetectorTimings const& detTimings
 ) {
+  
+#if 0
   
   bool const fired = triggerInfo.info.fired();
   
@@ -1067,11 +1165,13 @@ void icarus::trigger::SlidingWindowTriggerSimulation::plotTriggerResponse(
     
   }
   
-} // icarus::trigger::SlidingWindowTriggerSimulation::plotTriggerResponse()
+#endif // 0
+  
+} // icarus::trigger::TriggerSimulationOnGates::plotTriggerResponse()
 
 
 //------------------------------------------------------------------------------
-void icarus::trigger::SlidingWindowTriggerSimulation::printSummary() const {
+void icarus::trigger::TriggerSimulationOnGates::printSummary() const {
   
   //
   // summary from our internal counters
@@ -1086,63 +1186,41 @@ void icarus::trigger::SlidingWindowTriggerSimulation::printSummary() const {
   {
     log << "\n  threshold " << thr
       << ": " << count;
-    if (fTotalEvents > 0U) {
-      log << "/" << fTotalEvents
-        << " (" << (double(count) / fTotalEvents * 100.0) << "%)";
+    if (fTotalGates > 0U) {
+      log << "/" << fTotalGates
+        << " (" << (double(count) / fTotalGates * 100.0) << "%)";
     }
-    else log << " events triggered";
+    else log << " gates triggered";
   } // for
   
-} // icarus::trigger::SlidingWindowTriggerSimulation::printSummary()
+} // icarus::trigger::TriggerSimulationOnGates::printSummary()
 
 
 //------------------------------------------------------------------------------
 raw::Trigger
-icarus::trigger::SlidingWindowTriggerSimulation::triggerInfoToTriggerData
-  (detinfo::DetectorTimings const& detTimings,
-   unsigned int triggerNumber, WindowTriggerInfo_t const& info) const
-{
-  assert(info.info.fired());
+icarus::trigger::TriggerSimulationOnGates::triggerInfoToTriggerData(
+  detinfo::DetectorTimings const& detTimings,
+  ApplyBeamGateClass const& beamGate,
+  unsigned int triggerNumber, WindowTriggerInfo_t const& info
+) const {
   
   return {
-    triggerNumber,                                            // counter
-    double(detTimings.toElectronicsTime(info.info.atTick())), // trigger time
-    double(detTimings.BeamGateTime()), // beam gate in electronics time scale
-    fBeamBits                                                 // bits 
+    triggerNumber,                      // counter
+    info.info.fired()                   // trigger time
+      ? double(detTimings.toElectronicsTime(info.info.atTick()))
+      : std::numeric_limits<double>::lowest()
+      ,
+    double(detTimings.toElectronicsTime(beamGate.tickRange().start())),
+                                        // beam gate in electronics time scale
+    (info.info.fired()? fBeamBits: 0)   // bits
     };
   
-} // icarus::trigger::SlidingWindowTriggerSimulation::triggerInfoToTriggerData()
-
-
-//------------------------------------------------------------------------------
-auto icarus::trigger::SlidingWindowTriggerSimulation::readTriggerGates
-  (art::Event const& event, art::InputTag const& dataTag)
-  -> TriggerGates_t
-{
-
-  using icarus::trigger::OpticalTriggerGateData_t; // for convenience
-
-  // currently the associations are a waste of time memory...
-  auto const& gates
-    = event.getProduct<std::vector<OpticalTriggerGateData_t>>(dataTag);
-  auto const& gateToWaveforms = event.getProduct
-    <art::Assns<OpticalTriggerGateData_t, sbn::OpDetWaveformMeta>>(dataTag);
-  
-  try {
-    return icarus::trigger::FillTriggerGates(gates, gateToWaveforms);
-  }
-  catch (cet::exception const& e) {
-    throw cet::exception("SlidingWindowTriggerSimulation", "", e)
-      << "Error encountered while reading data products from '"
-      << dataTag.encode() << "'\n";
-  }
-
-} // icarus::trigger::SlidingWindowTriggerSimulation::readTriggerGates()
+} // icarus::trigger::TriggerSimulationOnGates::triggerInfoToTriggerData()
 
 
 //------------------------------------------------------------------------------
 TH1*
-icarus::trigger::SlidingWindowTriggerSimulation::makeHistogramFromBinnedContent(
+icarus::trigger::TriggerSimulationOnGates::makeHistogramFromBinnedContent(
   icarus::trigger::PlotSandbox& plots,
   std::string const& name, std::string const& title,
   BinnedContent_t const& binnedContent
@@ -1163,28 +1241,28 @@ icarus::trigger::SlidingWindowTriggerSimulation::makeHistogramFromBinnedContent(
   }
   hist->SetEntries(static_cast<double>(total));
   return hist;
-} // icarus::trigger::SlidingWindowTriggerSimulation::makeHistogramFromBinnedContent
+} // icarus::trigger::TriggerSimulationOnGates::makeHistogramFromBinnedContent
 
 
 //------------------------------------------------------------------------------
-double icarus::trigger::SlidingWindowTriggerSimulation::eventTimestampInSeconds
+double icarus::trigger::TriggerSimulationOnGates::eventTimestampInSeconds
   (art::Timestamp const& time)
 {
   // high value: seconds from the Epoch (Jan 1, 1970 UTC?);
   // low value: nanoseconds after that the start of that second
   return static_cast<double>(time.timeHigh())
     + static_cast<double>(time.timeHigh()) * 1e-9;
-} // icarus::trigger::SlidingWindowTriggerSimulation::eventTimestampInSeconds()
+} // icarus::trigger::TriggerSimulationOnGates::eventTimestampInSeconds()
 
 
 //------------------------------------------------------------------------------
-double icarus::trigger::SlidingWindowTriggerSimulation::eventTimestampInSeconds
+double icarus::trigger::TriggerSimulationOnGates::eventTimestampInSeconds
   (art::Event const& event)
   { return eventTimestampInSeconds(event.time()); }
 
 
 //------------------------------------------------------------------------------
-DEFINE_ART_MODULE(icarus::trigger::SlidingWindowTriggerSimulation)
+DEFINE_ART_MODULE(icarus::trigger::TriggerSimulationOnGates)
 
 
 //------------------------------------------------------------------------------
