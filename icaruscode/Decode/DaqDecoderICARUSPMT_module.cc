@@ -1919,7 +1919,7 @@ auto icarus::DaqDecoderICARUSPMT::fetchTriggerTimestamp
       SplitTimestamp_t
         { static_cast<long long int>(extraTrigger.triggerTimestamp) }
     , relBeamGate
-    , trigger.TriggerBits()
+    , {trigger.TriggerBits()}
     , gateCount
     };
   
