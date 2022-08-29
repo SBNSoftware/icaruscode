@@ -37,7 +37,7 @@ void KeyedCSVparser_documentation_test() {
    *          // the first value is an integer, count of how many other values
    *   });
    * 
-   * icarus::details::KeyValuesData data = parser(
+   * icarus::KeyValuesData data = parser(
    *   "TriggerType, S5, Triggers, TriggerWindows, 0C0B,"
    *   " TPChits, 12, 130, 0, 0, TPChitTimes, 3, -1.1, -0.3, 0.1, PMThits, 8"sv
    *   );
@@ -53,7 +53,7 @@ void KeyedCSVparser_documentation_test() {
            // the first value is an integer, count of how many other values
     });
   
-  icarus::details::KeyValuesData data = parser(
+  icarus::KeyValuesData data = parser(
     "TriggerType, S5, Triggers, TriggerWindows, 0C0B,"
     " TPChits, 12, 130, 0, 0, TPChitTimes, 3, -1.1, -0.3, 0.1, PMThits, 8"s
     );
@@ -62,7 +62,7 @@ void KeyedCSVparser_documentation_test() {
   std::vector<int> const expectedTPChits { 12, 130, 0, 0 };
   std::vector<float> const expectedTPCtimes { -1.1, -0.3, 0.1 };
   
-  icarus::details::KeyValuesData::Item const* item = nullptr;
+  icarus::KeyValuesData::Item const* item = nullptr;
   
   std::cout << data << std::endl;
   
@@ -70,8 +70,8 @@ void KeyedCSVparser_documentation_test() {
   item = data.findItem("TriggerType");
   BOOST_TEST(item);
   BOOST_TEST(&(data.getItem("TriggerType")) == item);
-  BOOST_TEST(item->values().size() == 1);
-  BOOST_TEST(item->values()[0] == "S5");
+  BOOST_TEST(item->nValues() == 1);
+  BOOST_TEST(item->value() == "S5");
   
   BOOST_TEST(data.hasItem("Triggers"));
   item = data.findItem("Triggers");
@@ -84,30 +84,30 @@ void KeyedCSVparser_documentation_test() {
   item = data.findItem("TriggerWindows");
   BOOST_TEST(item);
   BOOST_TEST(&(data.getItem("TriggerWindows")) == item);
-  BOOST_TEST(item->values().size() == 1);
-  BOOST_TEST(item->values()[0] == "0C0B");
+  BOOST_TEST(item->nValues() == 1);
+  BOOST_TEST(item->value(0) == "0C0B");
   BOOST_TEST(item->getNumber<std::uint32_t>(0, 16) == 0x0C0B);
   
   BOOST_TEST(data.hasItem("TPChits"));
   item = data.findItem("TPChits");
   BOOST_TEST(item);
   BOOST_TEST(&(data.getItem("TPChits")) == item);
-  BOOST_TEST(item->values().size() == 4);
-  BOOST_TEST(item->values()[0] == "12");
-  BOOST_TEST(item->values()[1] == "130");
-  BOOST_TEST(item->values()[2] == "0");
-  BOOST_TEST(item->values()[3] == "0");
+  BOOST_TEST(item->nValues() == 4);
+  BOOST_TEST(item->value(0) == "12");
+  BOOST_TEST(item->value(1) == "130");
+  BOOST_TEST(item->value(2) == "0");
+  BOOST_TEST(item->value(3) == "0");
   BOOST_TEST(item->getVector<int>() == expectedTPChits);
   
   BOOST_TEST(data.hasItem("TPChitTimes"));
   item = data.findItem("TPChitTimes");
   BOOST_TEST(item);
   BOOST_TEST(&(data.getItem("TPChitTimes")) == item);
-  BOOST_TEST(item->values().size() == 4);
-  BOOST_TEST(item->values()[0] == "3");
-  BOOST_TEST(item->values()[1] == "-1.1");
-  BOOST_TEST(item->values()[2] == "-0.3");
-  BOOST_TEST(item->values()[3] == "0.1");
+  BOOST_TEST(item->nValues() == 4);
+  BOOST_TEST(item->value(0) == "3");
+  BOOST_TEST(item->value(1) == "-1.1");
+  BOOST_TEST(item->value(2) == "-0.3");
+  BOOST_TEST(item->value(3) == "0.1");
   BOOST_TEST(item->getSizedVector<float>() == expectedTPCtimes);
   
   BOOST_TEST(!data.hasItem("CRThits"));
@@ -116,7 +116,7 @@ void KeyedCSVparser_documentation_test() {
   
   /*
    * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-   * std::string triggerType = data.getItem("TriggerType").values()[0];
+   * std::string triggerType = data.getItem("TriggerType").value(0);
    * std::vector<int> triggers = data.getItem("Triggers").getVector<int>();
    * std::uint32_t triggerWindowBits
    *  = data.getItem("TriggerWindows").getNumber<std::uint32_t>(0, 16); // base 16
@@ -129,7 +129,7 @@ void KeyedCSVparser_documentation_test() {
    * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
    */
   
-  std::string triggerType = data.getItem("TriggerType").values()[0];
+  std::string triggerType = data.getItem("TriggerType").value(0);
   BOOST_TEST(triggerType == "S5");
   
   std::vector<int> triggers = data.getItem("Triggers").getVector<int>();

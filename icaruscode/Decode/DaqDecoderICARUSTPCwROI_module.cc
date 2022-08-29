@@ -47,6 +47,7 @@
 
 #include "sbndaq-artdaq-core/Overlays/ICARUS/PhysCrateFragment.hh"
 
+#include "icaruscode/Utilities/ArtHandleTrackerManager.h"
 #include "icaruscode/Decode/DecoderTools/INoiseFilter.h"
 #include "icaruscode/Decode/ChannelMapping/IICARUSChannelMap.h"
 
@@ -115,7 +116,7 @@ private:
     public:
         multiThreadFragmentProcessing(DaqDecoderICARUSTPCwROI const&     parent,
                                       detinfo::DetectorClocksData const& clockData,
-                                      art::Handle<artdaq::Fragments>&    fragmentsHandle,
+                                      art::Handle<artdaq::Fragments> const&    fragmentsHandle,
                                       ConcurrentRawDigitCol&             concurrentRawRawDigits,
                                       ConcurrentRawDigitCol&             concurrentRawDigits,
                                       ConcurrentRawDigitCol&             coherentRawDigits,
@@ -137,7 +138,7 @@ private:
     private:
         const DaqDecoderICARUSTPCwROI&     fDaqDecoderICARUSTPCwROI;
         detinfo::DetectorClocksData const& fClockData;
-        art::Handle<artdaq::Fragments>&    fFragmentsHandle;
+        art::Handle<artdaq::Fragments> const& fFragmentsHandle;
         ConcurrentRawDigitCol&             fConcurrentRawRawDigits;
         ConcurrentRawDigitCol&             fConcurrentRawDigits;
         ConcurrentRawDigitCol&             fCoherentRawDigits;
@@ -161,6 +162,8 @@ private:
     float                                                       fSigmaForTruncation;         ///< Cut for truncated rms calc
     size_t                                                      fCoherentNoiseGrouping;      ///< Grouping for removing coherent noise
 
+    bool fDropRawDataAfterUse;   ///< Clear fragment data product cache after use.
+  
     const std::string                                           fLogCategory;                ///< Output category when logging messages
 
     // We need to give to the denoiser the "threshold vector" we will fill during our data loop
@@ -305,6 +308,7 @@ void DaqDecoderICARUSTPCwROI::configure(fhicl::ParameterSet const & pset)
     fDiagnosticOutput      = pset.get<bool                      >("DiagnosticOutput",                                                false);
     fSigmaForTruncation    = pset.get<float                     >("NSigmaForTrucation",                                                3.5);
     fCoherentNoiseGrouping = pset.get<size_t                    >("CoherentGrouping",                                                   64);
+    fDropRawDataAfterUse   = pset.get<bool                      >("DropRawDataAfterUse",                                              true);
 }
 
 //----------------------------------------------------------------------------
@@ -328,6 +332,9 @@ void DaqDecoderICARUSTPCwROI::produce(art::Event & event, art::ProcessingFrame c
     ++fNumEvent;
 
     mf::LogDebug("DaqDecoderICARUSTPCwROI") << "**** Processing raw data fragments ****" << std::endl;
+    
+    util::LocalArtHandleTrackerManager dataCacheRemover
+        (event, fDropRawDataAfterUse);
 
     // Check the concurrency 
     int max_concurrency = tbb::this_task_arena::max_concurrency();
@@ -343,8 +350,8 @@ void DaqDecoderICARUSTPCwROI::produce(art::Event & event, art::ProcessingFrame c
     // overall memory usage at this level. We'll multi thread internally...
     for(const auto& fragmentLabel : fFragmentsLabelVec)
     {
-        art::Handle<artdaq::Fragments> daq_handle;
-        event.getByLabel(fragmentLabel, daq_handle);
+        art::Handle<artdaq::Fragments> const& daq_handle
+          = dataCacheRemover.getHandle<artdaq::Fragments>(fragmentLabel);
 
         ConcurrentRawDigitCol concurrentRawDigits;
         ConcurrentRawDigitCol concurrentRawRawDigits;

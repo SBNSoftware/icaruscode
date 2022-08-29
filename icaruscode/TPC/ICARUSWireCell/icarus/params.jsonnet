@@ -127,10 +127,10 @@ base {
 
         fields: ["garfield-icarus-fnal-rev1.json.bz2"],
 
-       noise: ["icarus_noise_model_int_TPCEE.json.bz2","icarus_noise_model_int_TPCEW.json.bz2","icarus_noise_model_int_TPCWE.json.bz2","icarus_noise_model_int_TPCWW.json.bz2"],
+       // noise: ["icarus_noise_model_int_TPCEE.json.bz2","icarus_noise_model_int_TPCEW.json.bz2","icarus_noise_model_int_TPCWE.json.bz2","icarus_noise_model_int_TPCWW.json.bz2"],
        // coherent_noise: ["icarus_noise_model_coh_TPCEE.json.bz2","icarus_noise_model_coh_TPCEW.json.bz2","icarus_noise_model_coh_TPCWE.json.bz2","icarus_noise_model_coh_TPCWW.json.bz2"],	
 	wiregroups: "icarus_group_to_channel_map.json.bz2",
-	noisegroups: ["icarus_noise_model_coh_by_board_TPCEE.json.bz2","icarus_noise_model_coh_by_board_TPCEW.json.bz2","icarus_noise_model_coh_by_board_TPCWE.json.bz2","icarus_noise_model_coh_by_board_TPCWW.json.bz2"],
+	noisegroups: ["icarus_noise_model_int_by_board_TPCEE.json.bz2","icarus_noise_model_int_by_board_TPCEW.json.bz2","icarus_noise_model_int_by_board_TPCWE.json.bz2","icarus_noise_model_int_by_board_TPCWW.json.bz2","icarus_noise_model_coh_by_board_TPCEE.json.bz2","icarus_noise_model_coh_by_board_TPCEW.json.bz2","icarus_noise_model_coh_by_board_TPCWE.json.bz2","icarus_noise_model_coh_by_board_TPCWW.json.bz2"],
         chresp: null,
     },
 

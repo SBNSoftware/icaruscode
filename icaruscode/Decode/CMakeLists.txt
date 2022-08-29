@@ -9,6 +9,7 @@ art_make(
                         DumpTriggerConfiguration_module.cc
                         DumpPMTconfiguration_module.cc
                         DumpArtDAQfragments_module.cc
+                        DumpTrigger_module.cc
                         DaqDecoderICARUSPMT_module.cc
           MODULE_LIBRARIES
                         icarus_signal_processing
@@ -97,6 +98,16 @@ simple_plugin(DumpArtDAQfragments module
   ${MF_MESSAGELOGGER}
   fhiclcpp
   cetlib_except
+  )
+
+simple_plugin(DumpTrigger module
+  icaruscode_Decode_DataProducts
+  sbnobj_Common_Trigger
+  lardataobj::Simulation
+  lardataobj::RawData
+  messagefacility::MF_MessageLogger
+  fhiclcpp
+  cetlib_except::cetlib_except
   )
 
 install_headers()
