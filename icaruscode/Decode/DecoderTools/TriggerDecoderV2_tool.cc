@@ -38,6 +38,7 @@
 #include "icaruscode/Decode/BeamBits.h" // sbn::triggerSource
 #include "icaruscode/Decode/DecoderTools/Dumpers/FragmentDumper.h" // dumpFragment()
 #include "icaruscode/Decode/DecoderTools/details/KeyedCSVparser.h"
+#include "icaruscode/Decode/DecoderTools/details/KeyValuesData.h"
 #include "icarusalg/Utilities/BinaryDumpUtils.h" // hexdump() DEBUG
 
 #include <cstdlib>
@@ -256,7 +257,7 @@ namespace daq
     icarus::ICARUSTriggerInfo parseTriggerString(std::string_view data) const;
     
     /// Parses the trigger data packet with a CSV parser.
-    icarus::details::KeyValuesData parseTriggerStringAsCSV
+    icarus::KeyValuesData parseTriggerStringAsCSV
       (std::string const& data) const;
     
     /// Name of the data product instance for the current trigger.
@@ -403,7 +404,7 @@ namespace daq
   } // TriggerDecoder::parseTriggerString()
 
 
-  icarus::details::KeyValuesData TriggerDecoder::parseTriggerStringAsCSV
+  icarus::KeyValuesData TriggerDecoder::parseTriggerStringAsCSV
     (std::string const& data) const
   {
     icarus::details::KeyedCSVparser parser;
