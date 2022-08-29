@@ -61,7 +61,9 @@ physics :{
 
               # Electron drift speed, assumes a certain applied E-field [mm/us]
               # driftSpeed: 1.565
-            }
+              int_noise_scale: 1.0
+              coh_noise_scale: 1.09
+	        }
 
          }
       }
