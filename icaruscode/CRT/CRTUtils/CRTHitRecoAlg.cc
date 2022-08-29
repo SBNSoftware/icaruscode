@@ -85,6 +85,7 @@ vector<art::Ptr<CRTData>> CRTHitRecoAlg::PreselectCRTData(vector<art::Ptr<CRTDat
     
   }
   mf::LogInfo("CRTHitRecoAlg:") << "Found " << crtdata.size() << " after preselection "<< '\n';
+  //std::cout<<trigger_timestamp<<std::endl;
   return crtdata;  
 }
 
@@ -103,22 +104,37 @@ vector<pair<sbn::crt::CRTHit, vector<int>>> CRTHitRecoAlg::CreateCRTHits(vector<
     
     // sort by the time 
     std::sort(crtList.begin(), crtList.end(), compareBytime);        
-    
+
+    std::map<int, struct FEB_delay> FEBs;    
+    FEBs = LoadFEBMap();
+    std::vector<ULong64_t> CRTReset;
+    for (size_t crtdat_i=0; crtdat_i<crtList.size(); crtdat_i++) {
+	uint8_t mac = crtList[crtdat_i]->fMac5;
+	int adid  = fCrtutils->MacToAuxDetID(mac,0);
+	char type = fCrtutils->GetAuxDetType(adid);
+	
+	if (type == 'c' && crtList[crtdat_i]->fFlags == 9) {
+	    ULong64_t ResetTs0Corr = crtList[crtdat_i]->fTs0 + FEBs[ (int) mac+ 73].T0_delay - FEBs[(int) mac + 73].T1_delay;
+	    CRTReset.push_back(ResetTs0Corr);
+	}
+    }
+    ULong64_t GlobalTrigger = GetMode(CRTReset);
+    //std::cout<<"Global Trigger "<<GlobalTrigger<<std::endl;
     //loop over time-ordered CRTData
     for (size_t febdat_i=0; febdat_i<crtList.size(); febdat_i++) {
-  
+
         uint8_t mac = crtList[febdat_i]->fMac5;
         int adid  = fCrtutils->MacToAuxDetID(mac,0); //module ID
         
         string region = fCrtutils->GetAuxDetRegion(adid);
         char type = fCrtutils->GetAuxDetType(adid);
         CRTHit hit;
-
+	
 	dataIds.clear();
   
         //CERN modules (intramodule coincidence)
         if ( type == 'c' ) {
-            hit = MakeTopHit(crtList[febdat_i]);
+            hit = MakeTopHit(crtList[febdat_i], GlobalTrigger);
             if(IsEmptyHit(hit))
                 nMissC++;
             else {
@@ -211,7 +227,7 @@ vector<pair<sbn::crt::CRTHit, vector<int>>> CRTHitRecoAlg::CreateCRTHits(vector<
 	      mf::LogInfo("CRTHitRecoAlg: ") << "attempting to produce MINOS hit from " << coinData.size() 
 			<< " data products..." << '\n';
 	    
-	    CRTHit hit = MakeSideHit(coinData);
+	    CRTHit hit = MakeSideHit(coinData, GlobalTrigger);
             
 	    if(IsEmptyHit(hit)){
 	      unusedDataIndex.push_back(indices[index_i]);
@@ -257,7 +273,7 @@ vector<pair<sbn::crt::CRTHit, vector<int>>> CRTHitRecoAlg::CreateCRTHits(vector<
 //--------------------------------------------------------------------------------------------
 // Function to make filling a CRTHit a bit faster
 sbn::crt::CRTHit CRTHitRecoAlg::FillCRTHit(vector<uint8_t> tfeb_id, map<uint8_t,vector<pair<int,float>>> tpesmap,
-                            float peshit, uint64_t time0, uint64_t time1, int plane, 
+                            float peshit, uint64_t time0, Long64_t time1, int plane, 
                             double x, double ex, double y, double ey, double z, double ez, string tagger){
     CRTHit crtHit;
     crtHit.feb_id      = tfeb_id;
@@ -266,7 +282,7 @@ sbn::crt::CRTHit CRTHitRecoAlg::FillCRTHit(vector<uint8_t> tfeb_id, map<uint8_t,
     crtHit.ts0_s_corr  = time0 / 1'000'000'000; 
     crtHit.ts0_ns      = time0 % 1'000'000'000;
     crtHit.ts0_ns_corr = time0; 
-    crtHit.ts1_ns      = time1 % 1'000'000'000;
+    crtHit.ts1_ns      = time1 /*% 1'000'000'000*/;
     crtHit.ts0_s       = time0 / 1'000'000'000;
     crtHit.plane       = plane;
     crtHit.x_pos       = x;
@@ -282,7 +298,7 @@ sbn::crt::CRTHit CRTHitRecoAlg::FillCRTHit(vector<uint8_t> tfeb_id, map<uint8_t,
 } // CRTHitRecoAlg::FillCRTHit()
 
 //------------------------------------------------------------------------------------------
-sbn::crt::CRTHit CRTHitRecoAlg::MakeTopHit(art::Ptr<CRTData> data){
+sbn::crt::CRTHit CRTHitRecoAlg::MakeTopHit(art::Ptr<CRTData> data, ULong64_t GlobalTrigger){
 
     uint8_t mac = data->fMac5;
     if(fCrtutils->MacToType(mac)!='c')
@@ -301,8 +317,9 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeTopHit(art::Ptr<CRTData> data){
     TVector3 postrig;
     bool findx = false, findz = false;
     int maxx=0, maxz=0;
-
+    double sum=0;
     for(int chan=0; chan<32; chan++) {
+	sum=sum+data->fAdc[chan];
 //        std::cout<<"Top Gain: "<<ftopGain<<"  Top Pedestal: "<<ftopPed<< '\n';
         float pe = (data->fAdc[chan]-ftopPed)/ftopGain;
 //        float pe = (data->fAdc[chan]-fQPed)/fQSlope;
@@ -368,7 +385,7 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeTopHit(art::Ptr<CRTData> data){
     
     auto const& adsGeo = adGeo.SensitiveVolume(adsid_max); //trigger strip
     uint64_t thit = data->fTs0;
-    uint64_t thit1 = data->fTs1;
+    Long64_t thit1 = data->fTs1;
 
     if(adsid_max<8){
         thit -= (uint64_t)round(abs((92+hitpos.X())*fPropDelay));
@@ -388,6 +405,9 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeTopHit(art::Ptr<CRTData> data){
     hitpointerr[0] = adsGeo.HalfWidth1()*2/sqrt(12);
     hitpointerr[1] = adGeo.HalfHeight();
     hitpointerr[2] = adsGeo.HalfWidth1()*2/sqrt(12);
+    thit1 = (Long64_t)(thit-GlobalTrigger);
+
+    if((sum<10000 && thit1<2'001'000 && thit1>2'000'000)||data->fFlags==9 || data->fFlags==7) return FillCRTHit({},{},0,0,0,0,0,0,0,0,0,0,"");
 
     CRTHit hit = FillCRTHit({mac},pesmap,petot,thit,thit1,plane,hitpoint[0],hitpointerr[0],
                             hitpoint[1],hitpointerr[1],hitpoint[2],hitpointerr[2],region);
@@ -463,7 +483,7 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeBottomHit(art::Ptr<CRTData> data){
 } // CRTHitRecoAlg::MakeBottomHit
 
 //-----------------------------------------------------------------------------------
-sbn::crt::CRTHit CRTHitRecoAlg::MakeSideHit(vector<art::Ptr<CRTData>> coinData) {
+sbn::crt::CRTHit CRTHitRecoAlg::MakeSideHit(vector<art::Ptr<CRTData>> coinData, ULong64_t GlobalTrigger) {
 
     vector<uint8_t> macs;
     map< uint8_t, vector< pair<int,float> > > pesmap;
@@ -1032,9 +1052,9 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeSideHit(vector<art::Ptr<CRTData>> coinData) 
       hitpointerr[2] = (zmax-zmin)/sqrt(12);
     }
     
-
+    Long64_t thit1=(Long64_t)(thit-GlobalTrigger);
     //generate hit
-    CRTHit hit = FillCRTHit(macs,pesmap,petot,thit,t1hit,plane,hitpoint[0],hitpointerr[0],
+    CRTHit hit = FillCRTHit(macs,pesmap,petot,thit,thit1,plane,hitpoint[0],hitpointerr[0],
                             hitpoint[1],hitpointerr[1],hitpoint[2],hitpointerr[2],region);
     
     return hit;
