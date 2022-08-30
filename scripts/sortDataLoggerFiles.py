@@ -187,6 +187,11 @@ class FileInfoClass:
     
   # __lt__()
   
+  def __str__(self):
+    s = f"Run {self.run} cycle {self.pass_} data logger {self.dataLogger}"
+    if self.stream: s += f" stream {self.stream}"
+    return s
+  
   def pathToXRootD(self) -> "stored file path in XRootD format":
     if not self.is_file:
       raise RuntimeError(
@@ -286,7 +291,9 @@ def detectFirstLogger(fileInfo):
     if not len(files): continue
     for info in files:
       firstEvent = extractFirstEvent(info.pathToXRootD())
-      if firstEvent is not None: lowestEvent.add(info, key=firstEvent)
+      if firstEvent is not None:
+        lowestEvent.add(info, key=firstEvent)
+        if firstEvent == 1: break # can't get lower than this!
     # for files
   # for 
   try: firstLogger = lowestEvent.min().dataLogger
@@ -433,9 +440,7 @@ if __name__ == "__main__":
         if duplicateFiles is not None: duplicateFiles.extend(fileList[1:])
         if printDuplicates:
           firstSource = mainInfo.source[0]
-          msg = f"Run {mainInfo.run} cycle {mainInfo.pass_} data logger {mainInfo.dataLogger}"
-          if mainInfo.stream: msg += f" stream {mainInfo.stream}"
-          msg += f" with {len(fileList) - 1} duplicates of"
+          msg += f"{mainInfo} with {len(fileList) - 1} duplicates of"
           
           if len(sources) > 1: msg += f" {sources[mainInfo.source[0]]}"
           if mainInfo.source[1] is not None: msg += f" line {mainInfo.source[1]}"
