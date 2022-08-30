@@ -11,6 +11,7 @@
 
 // sbndcode includes
 #include "sbnobj/Common/CRT/CRTHit.hh"
+#include "icaruscode/IcarusObj/CRTTPCMatchingInfo.h"
 #include "icaruscode/CRT/CRTUtils/CRTT0MatchAlg.h"
 
 // Framework includes
@@ -153,9 +154,9 @@ namespace icarus {
   {
 
     // Call appropriate produces<>() functions here.
-    produces< std::vector<anab::T0>                  >();
-    produces< art::Assns<recob::Track , anab::T0>    >();
-    produces< art::Assns<sbn::crt::CRTHit, anab::T0> >();
+    produces< std::vector<anab::T0>                                              >();
+    produces< art::Assns<recob::Track , anab::T0, icarus::CRTTPCMatchingInfo>    >();
+    produces< art::Assns<sbn::crt::CRTHit, anab::T0, icarus::CRTTPCMatchingInfo> >();
 
     fGeometryService = lar::providerFrom<geo::Geometry>();
     reconfigure(p);
@@ -237,8 +238,8 @@ namespace icarus {
 
     // Create anab::T0 objects and make association with recob::Track
     auto T0col = std::make_unique< std::vector<anab::T0> > ();
-    auto Trackassn = std::make_unique< art::Assns<recob::Track, anab::T0> >();
-    auto t0_crthit_assn = std::make_unique< art::Assns<sbn::crt::CRTHit, anab::T0> >();
+    auto Trackassn = std::make_unique< art::Assns<recob::Track, anab::T0, icarus::CRTTPCMatchingInfo> >();
+    auto t0_crthit_assn = std::make_unique< art::Assns <sbn::crt::CRTHit, anab::T0, icarus::CRTTPCMatchingInfo> >();
 
     //add trigger info
     if( !fTriggerLabel.empty() ) {
@@ -337,11 +338,16 @@ namespace icarus {
 
 	  if(closest.dca >=0 ){
 	    
+	    icarus::CRTTPCMatchingInfo matchInfo {
+	        closest.dca       // DCA
+	      , closest.extrapLen // extrapLength
+	    };
+	    
 	    mf::LogInfo("CRTT0Matching")
 	      <<"Matched time = "<<closest.t0<<" [us] to track "<<trackList[track_i]->ID()<<" with DCA = "<<closest.dca;
 	    T0col->push_back(anab::T0(closest.t0*1e3, trackList[track_i]->ID(),  closest.thishit.plane, (int)closest.extrapLen, closest.dca));
 	    art::Ptr<anab::T0> const T0ptr = makeT0Ptr(T0col->size() - 1);
-	    Trackassn->addSingle(trackList[track_i], T0ptr);
+	    Trackassn->addSingle(trackList[track_i], T0ptr, matchInfo);
 	    
 	    //std::cout << "---------------------- line #156 "  << std::endl;
 	    double sin_angle = -99999;
@@ -378,7 +384,7 @@ namespace icarus {
 	    }
 	    if (CRThitIndex != std::numeric_limits<unsigned>::max()){
 	      //  std::cout <<"CRThitIndex: " << CRThitIndex << "  passed......: \t"  << std::endl;
-	      t0_crthit_assn->addSingle(crtList[CRThitIndex], T0ptr);
+	      t0_crthit_assn->addSingle(crtList[CRThitIndex], T0ptr, matchInfo);
 	    }
 	  } // DCA check
 	  

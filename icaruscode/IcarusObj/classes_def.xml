@@ -30,4 +30,23 @@
   <class name="art::Wrapper<art::Assns<icarus::trigger::OpticalTriggerGate::GateData_t, sbn::OpDetWaveformMeta>>" />
   
   
+  <!-- CRT matching metadata -->
+  <class name="icarus::CRTTPCMatchingInfo" ClassVersion="10" >
+   <version ClassVersion="10" checksum="3174835328"/>
+  </class>
+  <class name="std::vector<icarus::CRTTPCMatchingInfo>" />
+  
+  <!-- recob::Track - anab::T0 associations with CRT matching metadata -->
+  <class name="art::Assns<recob::Track, anab::T0, icarus::CRTTPCMatchingInfo>" />
+  <class name="art::Assns<anab::T0, recob::Track, icarus::CRTTPCMatchingInfo>" />
+  <class name="art::Wrapper<art::Assns<recob::Track, anab::T0, icarus::CRTTPCMatchingInfo>>" />
+  <class name="art::Wrapper<art::Assns<anab::T0, recob::Track, icarus::CRTTPCMatchingInfo>>" />
+  
+  <!-- sbn::crt::CRTHit - anab::T0 associations with CRT matching metadata -->
+  <class name="art::Assns<sbn::crt::CRTHit, anab::T0, icarus::CRTTPCMatchingInfo>" />
+  <class name="art::Assns<anab::T0, sbn::crt::CRTHit, icarus::CRTTPCMatchingInfo>" />
+  <class name="art::Wrapper<art::Assns<sbn::crt::CRTHit, anab::T0, icarus::CRTTPCMatchingInfo>>" />
+  <class name="art::Wrapper<art::Assns<anab::T0, sbn::crt::CRTHit, icarus::CRTTPCMatchingInfo>>" />
+  
+  
 </lcgdict>
