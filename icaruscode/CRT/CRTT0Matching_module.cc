@@ -21,6 +21,7 @@
 #include "art/Framework/Principal/Event.h" 
 #include "canvas/Persistency/Common/Ptr.h" 
 #include "canvas/Persistency/Common/PtrVector.h" 
+#include "art/Persistency/Common/PtrMaker.h"
 #include "art/Framework/Principal/Run.h"
 #include "art/Framework/Principal/SubRun.h"
 #include "art_root_io/TFileService.h"
@@ -45,7 +46,6 @@
 #include "lardataobj/RecoBase/Hit.h"
 #include "lardataobj/RecoBase/Track.h"
 #include "larcore/CoreUtils/ServiceUtil.h" // lar::providerFrom()
-#include "lardata/Utilities/AssociationUtil.h"
 #include "lardata/DetectorInfoServices/LArPropertiesService.h"
 #include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
 #include "lardataobj/RawData/ExternalTrigger.h"
@@ -236,9 +236,9 @@ namespace icarus {
     fSubRun = event.subRun();
 
     // Create anab::T0 objects and make association with recob::Track
-    std::unique_ptr< std::vector<anab::T0> > T0col( new std::vector<anab::T0>);
-    std::unique_ptr< art::Assns<recob::Track, anab::T0> > Trackassn( new art::Assns<recob::Track, anab::T0>);
-    std::unique_ptr< art::Assns <sbn::crt::CRTHit, anab::T0> > t0_crthit_assn( new art::Assns<sbn::crt::CRTHit, anab::T0> );
+    auto T0col = std::make_unique< std::vector<anab::T0> > ();
+    auto Trackassn = std::make_unique< art::Assns<recob::Track, anab::T0> >();
+    auto t0_crthit_assn = std::make_unique< art::Assns<sbn::crt::CRTHit, anab::T0> >();
 
     //add trigger info
     if( !fTriggerLabel.empty() ) {
@@ -306,6 +306,9 @@ namespace icarus {
 	
 	auto const detProp = art::ServiceHandle<detinfo::DetectorPropertiesService const>()->DataFor(event);
 	art::FindManyP<recob::Hit> findManyHits(trackListHandle, event, trackLabel);
+	
+	// will create art pointers to the new T0 objects:
+	art::PtrMaker<anab::T0> const makeT0Ptr{ event };
 
 	// Loop over all the reconstructed tracks 
 	for(size_t track_i = 0; track_i < trackList.size(); track_i++) {
@@ -333,10 +336,12 @@ namespace icarus {
 	  // matchCand closest = closestvec.back();	  
 
 	  if(closest.dca >=0 ){
+	    
 	    mf::LogInfo("CRTT0Matching")
 	      <<"Matched time = "<<closest.t0<<" [us] to track "<<trackList[track_i]->ID()<<" with DCA = "<<closest.dca;
 	    T0col->push_back(anab::T0(closest.t0*1e3, trackList[track_i]->ID(),  closest.thishit.plane, (int)closest.extrapLen, closest.dca));
-	    util::CreateAssn(*this, event, *T0col, trackList[track_i], *Trackassn);
+	    art::Ptr<anab::T0> const T0ptr = makeT0Ptr(T0col->size() - 1);
+	    Trackassn->addSingle(trackList[track_i], T0ptr);
 	    
 	    //std::cout << "---------------------- line #156 "  << std::endl;
 	    double sin_angle = -99999;
@@ -373,7 +378,7 @@ namespace icarus {
 	    }
 	    if (CRThitIndex != std::numeric_limits<unsigned>::max()){
 	      //  std::cout <<"CRThitIndex: " << CRThitIndex << "  passed......: \t"  << std::endl;
-	      util::CreateAssn(*this, event, *T0col, crtList[CRThitIndex], *t0_crthit_assn);
+	      t0_crthit_assn->addSingle(crtList[CRThitIndex], T0ptr);
 	    }
 	  } // DCA check
 	  
