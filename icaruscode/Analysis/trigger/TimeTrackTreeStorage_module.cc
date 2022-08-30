@@ -463,9 +463,9 @@ void sbn::TimeTrackTreeStorage::analyze(art::Event const& e)
   fRun = e.run();
   fBeamInfo = {};
   
-  std::vector<art::Ptr<recob::PFParticle>> const& pfparticles = e.getProduct<std::vector<art::Ptr<recob::PFParticle>>> (fT0selProducer);
-  if(pfparticles.empty()) {
-    mf::LogDebug(fLogCategory) << "No particles in '" << fT0selProducer.encode() << "'.";
+  std::vector<art::Ptr<recob::Track>> const& tracks = e.getProduct<std::vector<art::Ptr<recob::Track>>> (fT0selProducer);
+  if(tracks.empty()) {
+    mf::LogDebug(fLogCategory) << "No tracks in '" << fT0selProducer.encode() << "'.";
     return;
   }
 
@@ -489,29 +489,29 @@ void sbn::TimeTrackTreeStorage::analyze(art::Event const& e)
   fTriggerInfo.gateID = triggerinfo.gateID;
   
   //mf::LogTrace(fLogCategory) << "HERE!";
-  art::FindOneP<recob::Track> particleTracks(pfparticles,e,fTrackProducer);
-  art::FindOneP<anab::T0> t0Tracks(pfparticles,e,fT0Producer);  
+  //art::FindOneP<recob::Track> particleTracks(pfparticles,e,fTrackProducer);
+  art::FindOneP<anab::T0> t0Tracks(tracks,e,fT0Producer);  
   std::vector<recob::OpFlash> const &particleFlashes = e.getProduct<std::vector<recob::OpFlash>>(fFlashProducer);
   //art::FindOneP<recob::SpacePoint> particleSPs(pfparticles, e, fT0selProducer);
   //mf::LogTrace(fLogCategory) << "PFParticles size: " << pfparticles.size() << " art::FindOneP Tracks Size: " << particleTracks.size();
-  art::ValidHandle<std::vector<recob::Track>> allTracks = e.getValidHandle<std::vector<recob::Track>>(fTrackProducer);
-  art::FindManyP<recob::Hit,recob::TrackHitMeta> trkht(allTracks,e,fTrackProducer); //for track hits
-  art::FindManyP<anab::Calorimetry> calorim(allTracks, e, fCaloProducer);  
+  //art::ValidHandle<std::vector<recob::Track>> allTracks = e.getValidHandle<std::vector<recob::Track>>(fTrackProducer);
+  art::FindManyP<recob::Hit,recob::TrackHitMeta> trkht(tracks,e,fT0selProducer); //for track hits
+  art::FindManyP<anab::Calorimetry> calorim(tracks, e, fCaloProducer);  
   
   // get an extractor bound to this event
   sbn::details::TriggerResponseManager::Extractors triggerResponseExtractors
     = fTriggerResponses.extractorsFor(e);
   unsigned int processed = 0;
-  for(unsigned int iPart = 0; iPart < pfparticles.size(); ++iPart)
+  for(unsigned int iTrack = 0; iTrack < tracks.size(); ++iTrack)
   {
-    art::Ptr<recob::Track> const& trackPtr = particleTracks.at(iPart);
+    art::Ptr<recob::Track> const& trackPtr = tracks.at(iTrack);
     if(trackPtr.isNull()) continue;
     
     fFlashInfo = {};
     fFlashStore.clear();
     fHitStore.clear();
     
-    art::Ptr<anab::T0> const& t0Ptr = t0Tracks.at(iPart);
+    art::Ptr<anab::T0> const& t0Ptr = t0Tracks.at(iTrack);
     float const track_t0 = t0Ptr->Time();
     if(!particleFlashes.empty())
     {
@@ -680,7 +680,7 @@ void sbn::TimeTrackTreeStorage::analyze(art::Event const& e)
     }
     */
     
-    triggerResponseExtractors.fetch(iPart); // TODO no check performed; need to find a way
+    triggerResponseExtractors.fetch(iTrack); // TODO no check performed; need to find a way
   
     ++processed;
     ++fTotalProcessed;

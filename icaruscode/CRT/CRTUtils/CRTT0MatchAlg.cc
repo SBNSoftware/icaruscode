@@ -397,7 +397,7 @@ namespace icarus{
       // Check if hit is within the allowed t0 range
       double crtTime = -99999.;  // units are us
       if (fTSMode == 1) {
-	crtTime = ((double)(int)crtHit.ts1_ns) * 1e-3 + fTimeCorrection;
+	crtTime = ((double)(int)crtHit.ts1_ns) * 1e-3; //+ fTimeCorrection;
       }
       else {
 	//std::cout << "trigger_timestamp: "<< trigger_timestamp << " , t0 " << (uint64_t)crtHit.ts0_ns << std::endl;
@@ -564,7 +564,7 @@ namespace icarus{
 
     double crtTime;
     if (fTSMode == 1) {
-      crtTime = ((double)(int)closestHit.thishit.ts1_ns) * 1e-3 + fTimeCorrection;
+      crtTime = ((double)(int)closestHit.thishit.ts1_ns) * 1e-3; //+ fTimeCorrection;
     }
     else {
       crtTime = ((double)(int)closestHit.thishit.ts0_ns) * 1e-3 + fTimeCorrection;

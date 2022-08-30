@@ -15,7 +15,7 @@ BEGIN_PROLOG
 
 gatesFromTracks_icarus: {
 
-  module_type: BeamGateInfoFromTracks
+  module_type: BeamGateInfoFromTracksCRT
   
   GateStartOffset: "-15 us"
   GateEndOffset:   "+15 us"
@@ -72,13 +72,13 @@ physics: {
       module_type: TimedTrackSelector
       
       #TrackTimeTags: [ pandoraGausCryoW, pandoraGausCryoE ]
-      TrackTimeTags: [ "pandoraGausCryoW" ] 
+      TrackTimeTags: [ "CRTT0Matching::CRTT0Matching" ] #pandoraGausCryoW
       
     } # t0selectorW
 
     t0selectorE: {
       module_type: TimedTrackSelector
-      TrackTimeTags: [ "pandoraGausCryoE" ]
+      TrackTimeTags: [ "CRTT0Matching::CRTT0Matching" ] #pandoraGausCryoE
     }
     
     

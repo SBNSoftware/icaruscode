@@ -11,6 +11,8 @@
 #include "messages_icarus.fcl"
 #include "rootoutput_icarus.fcl"
 #include "services_common_icarus.fcl"
+#include "icarus_trackcalo_skimmer.fcl"
+#include "calorimetry_icarus.fcl"
 
 BEGIN_PROLOG
 
@@ -30,6 +32,7 @@ process_name: storeTree
 services: {
   message:     @local::icarus_message_services_interactive_debug
   TimeTracker: {}
+  @table::icarus_common_services
   TFileService: {
     fileName: "timedtracks_store_test.root"
   }
@@ -44,6 +47,9 @@ physics: {
       T0Producer: "pandoraGausCryoW"
       T0selProducer: "t0selectorW"
       TrackProducer: "pandoraTrackGausCryoW"
+      TrackFitterProducer: "pandoraTrackGausCryoW"
+      CaloProducer: "calorimetryCryoW"
+      FlashProducer: "opflashCryoW"
       EmulatedTriggers: [
         { Name:       "M1"    TriggerTag:  "simTiledORM1W" },
         { Name:       "S3"    TriggerTag:  "simTiledORS3W" },
@@ -61,6 +67,9 @@ physics: {
       T0Producer: "pandoraGausCryoE"
       T0selProducer: "t0selectorE"
       TrackProducer: "pandoraTrackGausCryoE"
+      TrackFitterProducer: "pandoraTrackGausCryoW"
+      CaloProducer: "calorimetryCryoW"
+      FlashProducer: "opflashCryoW"
       EmulatedTriggers: [
         { Name:       "M1"    TriggerTag:  "simTiledORM1E" },
         { Name:       "S3"    TriggerTag:  "simTiledORS3E" },
