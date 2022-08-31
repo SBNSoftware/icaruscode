@@ -31,6 +31,7 @@
 #include "sbndaq-artdaq-core/Overlays/Common/BernCRTTranslator.hh"
 
 #include "icaruscode/Utilities/ArtDataProductSelectors.h"
+#include "icaruscode/Utilities/ArtHandleTrackerManager.h"
 #include "icaruscode/Decode/DecoderTools/IDecoder.h"
 #include "icaruscode/Decode/ChannelMapping/IICARUSChannelMap.h"
 
@@ -84,6 +85,7 @@ private:
   
   /// Selector object detecting all the suitable data products.
   util::RegexDataProductSelector const fInputTagPatterns;
+  bool fDropRawDataAfterUse; ///< Clear fragment data product cache after use.
   
   std::map<uint8_t, int32_t> FEB_delay_side; //<mac5, delay in ns>
   std::map<uint8_t, int32_t> FEB_delay_top;  //<mac5, delay in ns>
@@ -98,6 +100,7 @@ crt::DecoderICARUSCRT::DecoderICARUSCRT(fhicl::ParameterSet const& p)
       std::vector<std::string>{ "daq:(Container)?BERNCRT.*" }
       ))
     }
+  , fDropRawDataAfterUse{ p.get<bool>("DropRawDataAfterUse", true) }
 {
   fChannelMap = art::ServiceHandle<icarusDB::IICARUSChannelMap const>{}.get();
   produces< std::vector<icarus::crt::CRTData> >();
@@ -169,6 +172,9 @@ uint64_t crt::DecoderICARUSCRT::CalculateTimestamp(icarus::crt::BernCRTTranslato
 void crt::DecoderICARUSCRT::produce(art::Event& evt)
 {
 
+  util::LocalArtHandleTrackerManager dataCacheRemover
+    (evt, fDropRawDataAfterUse);
+  
   std::vector<art::Handle<artdaq::Fragments>> fragmentHandles
      = evt.getMany<artdaq::Fragments>(fInputTagPatterns);
   
@@ -183,8 +189,11 @@ void crt::DecoderICARUSCRT::produce(art::Event& evt)
   std::vector<icarus::crt::BernCRTTranslator> hit_vector;
 
   for (auto const& handle : fragmentHandles) {
-    if (!handle.isValid() || handle->empty())
-      continue;
+    if (!handle.isValid()) continue;
+    
+    dataCacheRemover.registerHandle(handle);
+    
+    if (handle->empty()) continue;
 
     auto this_hit_vector = icarus::crt::BernCRTTranslator::getCRTData(*handle);
 
