@@ -30,6 +30,7 @@
 #include "sbndaq-artdaq-core/Overlays/FragmentType.hh"
 #include "sbndaq-artdaq-core/Overlays/Common/BernCRTTranslator.hh"
 
+#include "icaruscode/Utilities/ArtDataProductSelectors.h"
 #include "icaruscode/Decode/DecoderTools/IDecoder.h"
 #include "icaruscode/Decode/ChannelMapping/IICARUSChannelMap.h"
 
@@ -51,6 +52,7 @@
 #include <iostream>
 #include<stdlib.h>
 #include <map>
+
 
 namespace crt {
   class DecoderICARUSCRT;
@@ -79,7 +81,10 @@ private:
 
   // Declare member data here.
   const icarusDB::IICARUSChannelMap* fChannelMap = nullptr;
-
+  
+  /// Selector object detecting all the suitable data products.
+  util::RegexDataProductSelector const fInputTagPatterns;
+  
   std::map<uint8_t, int32_t> FEB_delay_side; //<mac5, delay in ns>
   std::map<uint8_t, int32_t> FEB_delay_top;  //<mac5, delay in ns>
 };
@@ -87,9 +92,17 @@ private:
 
 crt::DecoderICARUSCRT::DecoderICARUSCRT(fhicl::ParameterSet const& p)
   : EDProducer{p}
+  , fInputTagPatterns{
+    util::RegexDataProductSelector::makePatterns(p.get(
+      "FragmentTagPatterns",
+      std::vector<std::string>{ "daq:(Container)?BERNCRT.*" }
+      ))
+    }
 {
   fChannelMap = art::ServiceHandle<icarusDB::IICARUSChannelMap const>{}.get();
   produces< std::vector<icarus::crt::CRTData> >();
+  
+  mayConsumeMany<artdaq::Fragments>();
 
   {
     std::vector<std::vector<int32_t> > delays =  p.get<std::vector<std::vector<int32_t> > >("FEB_delay_side");
@@ -156,11 +169,21 @@ uint64_t crt::DecoderICARUSCRT::CalculateTimestamp(icarus::crt::BernCRTTranslato
 void crt::DecoderICARUSCRT::produce(art::Event& evt)
 {
 
+  std::vector<art::Handle<artdaq::Fragments>> fragmentHandles
+     = evt.getMany<artdaq::Fragments>(fInputTagPatterns);
+  
+  {
+    mf::LogDebug log { "DecoderICARUSCRT" };
+    log << "Found " << fragmentHandles.size()
+      << " CRT fragment data product candidates:";
+    for (auto const& handle: fragmentHandles)
+      log << "\n - '" << handle.provenance()->inputTag().encode() << '"';
+  }
+  
   std::vector<icarus::crt::BernCRTTranslator> hit_vector;
 
-  auto fragmentHandles = evt.getMany<artdaq::Fragments>();
-  for (auto  handle : fragmentHandles) {
-    if (!handle.isValid() || handle->size() == 0)
+  for (auto const& handle : fragmentHandles) {
+    if (!handle.isValid() || handle->empty())
       continue;
 
     auto this_hit_vector = icarus::crt::BernCRTTranslator::getCRTData(*handle);
