@@ -10,6 +10,7 @@
 
 #include "messages_icarus.fcl"
 #include "rootoutput_icarus.fcl"
+#include "services_common_icarus.fcl"
 
 BEGIN_PROLOG
 
@@ -36,6 +37,7 @@ process_name: T0sel
 # ------------------------------------------------------------------------------
 services: {
   message:     @local::icarus_message_services_interactive_debug
+  @table::icarus_common_services
   TimeTracker: {}
 }
 
@@ -49,14 +51,14 @@ physics: {
     gatesFromTracksE: {
       @table::gatesFromTracks_icarus
     
-      T0Producer:    pandoraGausCryoE
+      T0Producer:    "CRTT0Matching::CRTT0Matching"
       T0selProducer: t0selectorE
     }
     
     gatesFromTracksW: {
       @table::gatesFromTracks_icarus
       
-      T0Producer:    pandoraGausCryoW
+      T0Producer:    "CRTT0Matching::CRTT0Matching"
       T0selProducer: t0selectorW
     }
     
@@ -69,7 +71,7 @@ physics: {
     
     # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     t0selectorW: {
-      module_type: TimedTrackSelector
+      module_type: TimedTrackSelectorCRT
       
       #TrackTimeTags: [ pandoraGausCryoW, pandoraGausCryoE ]
       TrackTimeTags: [ "CRTT0Matching::CRTT0Matching" ] #pandoraGausCryoW
@@ -77,7 +79,7 @@ physics: {
     } # t0selectorW
 
     t0selectorE: {
-      module_type: TimedTrackSelector
+      module_type: TimedTrackSelectorCRT
       TrackTimeTags: [ "CRTT0Matching::CRTT0Matching" ] #pandoraGausCryoE
     }
     

@@ -430,7 +430,7 @@ sbn::TimeTrackTreeStorage::TimeTrackTreeStorage(Parameters const& p)
   //
   
   // consumes<std::vector<recob::PFParticle>>(fPFPproducer); // not yet?
-  consumes<std::vector<art::Ptr<recob::PFParticle>>>(fT0selProducer);
+  consumes<std::vector<art::Ptr<recob::Track>>>(fT0selProducer);
   consumes<sbn::ExtraTriggerInfo>(fTriggerProducer);
   consumes<std::vector<sim::BeamGateInfo>>(fBeamGateProducer);
   consumes<art::Assns<recob::PFParticle, recob::Track>>(fTrackProducer);
@@ -494,14 +494,15 @@ void sbn::TimeTrackTreeStorage::analyze(art::Event const& e)
   std::vector<recob::OpFlash> const &particleFlashes = e.getProduct<std::vector<recob::OpFlash>>(fFlashProducer);
   //art::FindOneP<recob::SpacePoint> particleSPs(pfparticles, e, fT0selProducer);
   //mf::LogTrace(fLogCategory) << "PFParticles size: " << pfparticles.size() << " art::FindOneP Tracks Size: " << particleTracks.size();
-  //art::ValidHandle<std::vector<recob::Track>> allTracks = e.getValidHandle<std::vector<recob::Track>>(fTrackProducer);
-  art::FindManyP<recob::Hit,recob::TrackHitMeta> trkht(tracks,e,fT0selProducer); //for track hits
-  art::FindManyP<anab::Calorimetry> calorim(tracks, e, fCaloProducer);  
+  art::ValidHandle<std::vector<recob::Track>> allTracks = e.getValidHandle<std::vector<recob::Track>>(fTrackProducer);
+  art::FindManyP<recob::Hit,recob::TrackHitMeta> trkht(allTracks,e,fTrackProducer); //for track hits
+  art::FindManyP<anab::Calorimetry> calorim(allTracks, e, fCaloProducer);  
   
   // get an extractor bound to this event
   sbn::details::TriggerResponseManager::Extractors triggerResponseExtractors
     = fTriggerResponses.extractorsFor(e);
   unsigned int processed = 0;
+  
   for(unsigned int iTrack = 0; iTrack < tracks.size(); ++iTrack)
   {
     art::Ptr<recob::Track> const& trackPtr = tracks.at(iTrack);

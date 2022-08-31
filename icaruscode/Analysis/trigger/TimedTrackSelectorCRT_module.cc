@@ -96,8 +96,8 @@ namespace sbn { class TimedTrackSelector; }
  *     "passes" the event only if at most these many tracks are selected.
  * * `OnlyPandoraTracks` (flag, default: `true`): saves only the particles which
  *     have been recognised as track-like. The definition was taken from
- *     Pandora (`larpandoracontent` `v03_26_01`) and includes charged pions and
- *     kaons, protons and muons. Note that Pandora itself does not do a full
+   *     Pandora (`larpandoracontent` `v03_26_01`) and includes charged pions and
+   *     kaons, protons and muons. Note that Pandora itself does not do a full
  *     particle type identification and it uses only the codes for muons and
  *     electrons, to distinguish track-like and shower-like topologies, plus
  *     neutrino codes.
@@ -110,13 +110,13 @@ namespace sbn { class TimedTrackSelector; }
  */
 class sbn::TimedTrackSelector: public art::SharedFilter {
   
-    public:
+public:
   
   static constexpr double NoMinTime { std::numeric_limits<double>::lowest() };
   static constexpr double NoMaxTime { std::numeric_limits<double>::max() };
   static constexpr unsigned int NoMinTracks { 0U };
   static constexpr unsigned int NoMaxTracks
-    { std::numeric_limits<unsigned int>::max() };
+  { std::numeric_limits<unsigned int>::max() };
   
   
   /// Module configuration parameters.
@@ -128,53 +128,53 @@ class sbn::TimedTrackSelector: public art::SharedFilter {
     
     fhicl::Sequence<art::InputTag> TrackTimeTags {
       Name{ "TrackTimeTags" },
-      Comment{ "data products with trach time information (and associations)" }
-      };
+	Comment{ "data products with trach time information (and associations)" }
+    };
     
     fhicl::Atom<double> MinT0 {
       Name{ "MinT0" },
-      Comment{ "Select only tracks not earlier than this time [ns]" },
+	Comment{ "Select only tracks not earlier than this time [ns]" },
       NoMinTime
-      };
+	};
     
     fhicl::Atom<double> MaxT0 {
       Name{ "MaxT0" },
-      Comment{ "Select only tracks earlier than this time [ns]" },
+	Comment{ "Select only tracks earlier than this time [ns]" },
       NoMaxTime
-      };
+	};
     
     fhicl::Atom<unsigned int> MinTracks {
       Name{ "MinTracks" },
-      Comment{ "Pass only events with at least these many selected tracks" },
+	Comment{ "Pass only events with at least these many selected tracks" },
       1U
-      };
+	};
     
     fhicl::Atom<unsigned int> MaxTracks {
       Name{ "MaxTracks" },
-      Comment{ "Pass only events with at most these many selected tracks" },
+	Comment{ "Pass only events with at most these many selected tracks" },
       NoMaxTracks
-      };
+	};
     
     fhicl::Atom<bool> OnlyPandoraTracks {
       Name{ "OnlyPandoraTracks" },
-      Comment{
+	Comment{
         "Select a \"track\" only if its particle flow object"
         " has the particle ID of a track"
-        },
+	  },
       true
-      };
+	};
     
     fhicl::Atom<bool> SaveTracks {
       Name{ "SaveTracks" },
-      Comment{ "Whether to write the list of selected tracks" },
+	Comment{ "Whether to write the list of selected tracks" },
       true
-      };
+	};
     
     fhicl::Atom<std::string> LogCategory {
       Name{ "LogCategory" },
-      Comment{ "name of a message facility stream for this module" },
+	Comment{ "name of a message facility stream for this module" },
       "TimedTrackSelector"
-      };
+	};
     
   }; // Config
   
@@ -182,7 +182,7 @@ class sbn::TimedTrackSelector: public art::SharedFilter {
   using Parameters = art::SharedFilter::Table<Config>;
   
   explicit TimedTrackSelector
-    (Parameters const& params, art::ProcessingFrame const&);
+  (Parameters const& params, art::ProcessingFrame const&);
   
   bool filter(art::Event& event, art::ProcessingFrame const&) override;
   
@@ -190,7 +190,7 @@ class sbn::TimedTrackSelector: public art::SharedFilter {
   void endJob(art::ProcessingFrame const&) override;
   
 
-    private:
+private:
 
   // --- BEGIN -- Configuration parameters -------------------------------------
   
@@ -227,13 +227,13 @@ class sbn::TimedTrackSelector: public art::SharedFilter {
    * @return the number of qualifying tracks found in `timeTracks` and added
    */
   unsigned int selectTracks(
-    art::Assns<recob::Track, anab::T0> const& timeTracks, std::vector<art::Ptr<recob::Track>>& selectedTracks
-    ) const;
+			    art::Assns<recob::Track, anab::T0> const& timeTracks, std::vector<art::Ptr<recob::Track>>& selectedTracks
+			    ) const;
   
   
   /// Returns whether the specified track (with specified time) qualifies.
   bool isTrackSelected
-    (recob::Track const& track, anab::T0 const& time) const;
+  (recob::Track const& track, anab::T0 const& time) const;
 
   /// Returns whether the specified `particle` flow object is a track.
   //static bool isTrack(recob::Track const& particle);
@@ -252,7 +252,7 @@ class sbn::TimedTrackSelector: public art::SharedFilter {
 int fTotalTracks = 0;
 
 sbn::TimedTrackSelector::TimedTrackSelector
-  (Parameters const& params, art::ProcessingFrame const&)
+(Parameters const& params, art::ProcessingFrame const&)
   : art::SharedFilter{ params }
   , fTrackTimeTags{ params().TrackTimeTags() }
   , fMinT0{ params().MinT0() }
@@ -274,7 +274,7 @@ sbn::TimedTrackSelector::TimedTrackSelector
   {
     mf::LogInfo log{ fLogCategory };
     log << "Configuration:"
-      << "\n  * tracks required to be associated to a time (cathode-crossers)"
+	<< "\n  * tracks required to be associated to a time (cathode-crossers)"
       ;
     log << "\n  * track time:";
     if (fMinT0 == NoMinTime) {
@@ -297,7 +297,7 @@ sbn::TimedTrackSelector::TimedTrackSelector
       else log << "between " << fMinTracks << " and " << fMaxTracks;
     }
     log << "\n  * selected tracks will" << (fSaveTracks? "": " not")
-      << " be saved";
+	<< " be saved";
   } // end local scope
   
 } // sbn::TimedTrackSelector::TimedTrackSelector()
@@ -305,7 +305,7 @@ sbn::TimedTrackSelector::TimedTrackSelector
 
 // -----------------------------------------------------------------------------
 bool sbn::TimedTrackSelector::filter
-  (art::Event& event, art::ProcessingFrame const&)
+(art::Event& event, art::ProcessingFrame const&)
 {
   
   mf::LogDebug(fLogCategory) << "Processing " << event.id();
@@ -336,14 +336,14 @@ bool sbn::TimedTrackSelector::filter
   // after this, selectedTracks may be empty. JCZ: Not quite, I think the access to selectedTracks[0] in the log statement throws a segfault it it's empty, now fixed
   if (fSaveTracks) {
     event.put(
-      std::make_unique<std::vector<art::Ptr<recob::Track>>>(selectedTracks)
-      );
+	      std::make_unique<std::vector<art::Ptr<recob::Track>>>(selectedTracks)
+	      );
     if(selectedTracks.size() > 0)
-    {
-      mf::LogTrace(fLogCategory)
-        << "InputTag for this product is: "
-        << event.getProductDescription(selectedTracks[0].id())->inputTag();
-    }
+      {
+	mf::LogTrace(fLogCategory)
+	  << "InputTag for this product is: "
+	  << event.getProductDescription(selectedTracks[0].id())->inputTag();
+      }
   }
   
   
@@ -354,8 +354,8 @@ bool sbn::TimedTrackSelector::filter
   bool const passed = selectedTracksRequirement(nSelectedTracks);
   fPassRate.add(passed);
   mf::LogTrace(fLogCategory) << event.id()
-    << ' ' << (passed? "passed": "rejected") << " (" << nSelectedTracks
-    << " selected tracks)."; // funny fact: we don't know the total track count, JCZ: I think I fixed that fact although I could be completely wrong
+			     << ' ' << (passed? "passed": "rejected") << " (" << nSelectedTracks
+			     << " selected tracks)."; // funny fact: we don't know the total track count, JCZ: I think I fixed that fact although I could be completely wrong
   
   
   mf::LogDebug(fLogCategory) << "Completed " << event.id();
@@ -371,15 +371,15 @@ bool sbn::TimedTrackSelector::filter
 void sbn::TimedTrackSelector::endJob(art::ProcessingFrame const&) {
   
   mf::LogInfo(fLogCategory) << "Selected " << fPassRate.passed()
-    << '/' << fPassRate.total() << " events with qualifying tracks.";
+			    << '/' << fPassRate.total() << " events with qualifying tracks.";
   
 } // sbn::TimedTrackSelector::endJob()
 
 
 // -----------------------------------------------------------------------------
 unsigned int sbn::TimedTrackSelector::selectTracks(
-  art::Assns<recob::Track, anab::T0> const& timeTracks, std::vector<art::Ptr<recob::Track>>& selectedTracks
-) const {
+						   art::Assns<recob::Track, anab::T0> const& timeTracks, std::vector<art::Ptr<recob::Track>>& selectedTracks
+						   ) const {
   
   unsigned int nSelectedTracks { 0U };
   for (auto const& [ trackPtr, t0Ptr ]: timeTracks) {
@@ -405,21 +405,21 @@ unsigned int sbn::TimedTrackSelector::selectTracks(
 
 // -----------------------------------------------------------------------------
 bool sbn::TimedTrackSelector::isTrackSelected
-  (recob::Track const& track, anab::T0 const& time) const
+(recob::Track const& track, anab::T0 const& time) const
 {
   
   double const T0 = time.Time();
   MF_LOG_TRACE(fLogCategory) << "Track time: " << T0;
   /*
   if (fOnlyPandoraTracks && !isTrack(track)) {
-    MF_LOG_TRACE(fLogCategory) << "Not a track (ID=" << track.PdgCode()
-      << ") => discarded!";
+  MF_LOG_TRACE(fLogCategory) << "Not a track (ID=" << track.PdgCode()
+  << ") => discarded!";
     return false;
   }
   */
   if ((T0 < fMinT0) || (T0 >= fMaxT0)) {
     MF_LOG_TRACE(fLogCategory) << "Time out of range [ " << fMinT0 << "; "
-      << fMaxT0 << " ] => discarded!";
+			       << fMaxT0 << " ] => discarded!";
     return false;
   }
   
@@ -446,7 +446,7 @@ bool sbn::TimedTrackSelector::isTrack(recob::Track const& track) {
 
 // -----------------------------------------------------------------------------
 bool sbn::TimedTrackSelector::selectedTracksRequirement
-  (unsigned int nTracks) const
+(unsigned int nTracks) const
 {
   return (nTracks >= fMinTracks) && (nTracks <= fMaxTracks);
 } // sbn::TimedTrackSelector::selectedTracks()

@@ -44,9 +44,9 @@ physics: {
     t0TreeStoreW: {
       @table::timetracktreestorage_base
       PFPproducer: "pandoraGausCryoW"
-      T0Producer: "pandoraGausCryoW"
+      T0Producer: "CRTT0Matching::CRTT0Matching"
       T0selProducer: "t0selectorW"
-      TrackProducer: "pandoraTrackGausCryoW"
+      TrackProducer: "t0selectorW"
       TrackFitterProducer: "pandoraTrackGausCryoW"
       CaloProducer: "calorimetryCryoW"
       FlashProducer: "opflashCryoW"
@@ -64,12 +64,12 @@ physics: {
     t0TreeStoreE: {
       @table::timetracktreestorage_base
       PFPproducer: "pandoraGausCryoE"
-      T0Producer: "pandoraGausCryoE"
+      T0Producer: "CRTT0Matching::CRTT0Matching"
       T0selProducer: "t0selectorE"
-      TrackProducer: "pandoraTrackGausCryoE"
-      TrackFitterProducer: "pandoraTrackGausCryoW"
-      CaloProducer: "calorimetryCryoW"
-      FlashProducer: "opflashCryoW"
+      TrackProducer: "t0selectorE"
+      TrackFitterProducer: "pandoraTrackGausCryoE"
+      CaloProducer: "calorimetryCryoE"
+      FlashProducer: "opflashCryoE"
       EmulatedTriggers: [
         { Name:       "M1"    TriggerTag:  "simTiledORM1E" },
         { Name:       "S3"    TriggerTag:  "simTiledORS3E" },
