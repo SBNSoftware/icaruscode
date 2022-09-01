@@ -1,4 +1,32 @@
-art_dictionary()
+cet_make_library(SOURCE 
+                 ChannelROI.cxx
+                 LIBRARIES
+                 PUBLIC 
+                 lardataobj::RawData
+                 lardataobj::RecoBase
+                 lardataobj::AnalysisBase
+                 larcorealg::Geometry
+                 larcoreobj::SimpleTypesAndConstants
+                 larcoreobj::geo_vectors
+                 larcore::Geometry_Geometry_service
+                 larcore::ServiceUtil
+                 art::Framework_Core
+                 art::Framework_Principal
+                 art::Framework_Services_Registry
+                 art::Persistency_Common
+                 art::Persistency_Provenance
+                 art::Utilities
+                 ROOT::Core
+                 ROOT::Physics
+                 PRIVATE
+                 messagefacility::MF_MessageLogger
+                )
+
+##art_dictionary()
+build_dictionary(DICTIONARY_LIBRARIES
+                 icaruscode::IcarusObj
+                 canvas::canvas 
+                )
 
 install_headers()
 install_source()
