@@ -308,7 +308,7 @@ sbn::crt::CRTHit CRTHitRecoAlg::FillCRTHit(vector<uint8_t> tfeb_id, map<uint8_t,
 } // CRTHitRecoAlg::FillCRTHit()
 
 //------------------------------------------------------------------------------------------
-sbn::crt::CRTHit CRTHitRecoAlg::MakeTopHit(art::Ptr<CRTData> data){
+sbn::crt::CRTHit CRTHitRecoAlg::MakeTopHit(art::Ptr<CRTData>& data){
 
     uint8_t mac = data->fMac5;
     if(fCrtutils->MacToType(mac)!='c')
@@ -423,7 +423,7 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeTopHit(art::Ptr<CRTData> data){
 } // CRTHitRecoAlg::MakeTopHit
 
 //------------------------------------------------------------------------------------------
-sbn::crt::CRTHit CRTHitRecoAlg::MakeBottomHit(art::Ptr<CRTData> data){
+sbn::crt::CRTHit CRTHitRecoAlg::MakeBottomHit(art::Ptr<CRTData>& data){
 
     uint8_t mac = data->fMac5;
     map< uint8_t, vector< pair<int,float> > > pesmap;

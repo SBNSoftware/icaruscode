@@ -183,9 +183,9 @@ class icarus::crt::CRTHitRecoAlg {
   const icarusDB::IICARUSChannelMap* fChannelMap = nullptr;
 
   //Given top CRTData product, produce CRTHit
-  CRTHit MakeTopHit(art::Ptr<CRTData> data);
+  CRTHit MakeTopHit(art::Ptr<CRTData>& data);
   //Given bottom CRTData product, produce CRTHit
-  CRTHit MakeBottomHit(art::Ptr<CRTData> data);
+  CRTHit MakeBottomHit(art::Ptr<CRTData>& data);
   //Given vector of side CRTData products, produce CRTHit
   CRTHit MakeSideHit(vector<art::Ptr<CRTData>>& crtList, vector<int>& idxList);
   CRTHit MakeSideHitPerModule(vector<art::Ptr<CRTData>>& crtList, vector<int>& idxList);
