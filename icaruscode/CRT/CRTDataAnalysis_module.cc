@@ -211,10 +211,16 @@ namespace crt {
     vector<float> fHit_vec_Layer0_x_pos; ///< reconstructed X position of CRT hit in layer id 0 (cm)
     vector<float> fHit_vec_Layer0_y_pos; ///< reconstructed Y position of CRT hit in layer id 0 (cm)
     vector<float> fHit_vec_Layer0_z_pos; ///< reconstructed Z position of CRT hit in layer id 0 (cm)
+    vector<float> fHit_vec_Layer0_x_err; ///< stat error of CRT hit reco X in layer id 0 (cm)
+    vector<float> fHit_vec_Layer0_y_err; ///< stat error of CRT hit reco Y in layer id 0 (cm)
+    vector<float> fHit_vec_Layer0_z_err; ///< stat error of CRT hit reco Z in layer id 0 (cm)
     vector<float> fHit_vec_Layer0_pe; ///< pe of CRT hit in layer id 0 (cm)
     vector<float> fHit_vec_Layer1_x_pos; ///< reconstructed X position of CRT hit in layer id 1 (cm)
     vector<float> fHit_vec_Layer1_y_pos; ///< reconstructed Y position of CRT hit in layer id 1 (cm)
     vector<float> fHit_vec_Layer1_z_pos; ///< reconstructed Z position of CRT hit in layer id 1 (cm)
+    vector<float> fHit_vec_Layer1_x_err; ///< stat error of CRT hit reco X in layer id 1 (cm)
+    vector<float> fHit_vec_Layer1_y_err; ///< stat error of CRT hit reco Y in layer id 1 (cm)
+    vector<float> fHit_vec_Layer1_z_err; ///< stat error of CRT hit reco Z in layer id 1 (cm)
     vector<float> fHit_vec_Layer1_pe; ///< pe of CRT hit in layer id 0 (cm)
     vector<uint64_t> fHit_vec_T0; ///< hit time w.r.t. PPS
     vector<uint64_t> fHit_vec_T1; ///< hit time w.r.t. PPS
@@ -340,10 +346,16 @@ namespace crt {
     fHitNtuple->Branch("Layer0_x_pos", "vector<float>", &fHit_vec_Layer0_x_pos);
     fHitNtuple->Branch("Layer0_y_pos", "vector<float>", &fHit_vec_Layer0_y_pos);
     fHitNtuple->Branch("Layer0_z_pos", "vector<float>", &fHit_vec_Layer0_z_pos);
+    fHitNtuple->Branch("Layer0_x_err", "vector<float>", &fHit_vec_Layer0_x_err);
+    fHitNtuple->Branch("Layer0_y_err", "vector<float>", &fHit_vec_Layer0_y_err);
+    fHitNtuple->Branch("Layer0_z_err", "vector<float>", &fHit_vec_Layer0_z_err);
     fHitNtuple->Branch("Layer0_pe", "vector<float>", &fHit_vec_Layer0_pe);
     fHitNtuple->Branch("Layer1_x_pos", "vector<float>", &fHit_vec_Layer1_x_pos);
     fHitNtuple->Branch("Layer1_y_pos", "vector<float>", &fHit_vec_Layer1_y_pos);
     fHitNtuple->Branch("Layer1_z_pos", "vector<float>", &fHit_vec_Layer1_z_pos);
+    fHitNtuple->Branch("Layer1_x_err", "vector<float>", &fHit_vec_Layer1_x_err);
+    fHitNtuple->Branch("Layer1_y_err", "vector<float>", &fHit_vec_Layer1_y_err);
+    fHitNtuple->Branch("Layer1_z_err", "vector<float>", &fHit_vec_Layer1_z_err);
     fHitNtuple->Branch("Layer1_pe", "vector<float>", &fHit_vec_Layer1_pe);
     fHitNtuple->Branch("T0", "vector<uint64_t>", &fHit_vec_T0);
     fHitNtuple->Branch("T1", "vector<uint64_t>", &fHit_vec_T1);
@@ -496,10 +508,16 @@ namespace crt {
     fHit_vec_Layer0_x_pos.clear();
     fHit_vec_Layer0_y_pos.clear();
     fHit_vec_Layer0_z_pos.clear();
+    fHit_vec_Layer0_x_err.clear();
+    fHit_vec_Layer0_y_err.clear();
+    fHit_vec_Layer0_z_err.clear();
     fHit_vec_Layer0_pe.clear();
     fHit_vec_Layer1_x_pos.clear();
     fHit_vec_Layer1_y_pos.clear();
     fHit_vec_Layer1_z_pos.clear();
+    fHit_vec_Layer1_x_err.clear();
+    fHit_vec_Layer1_y_err.clear();
+    fHit_vec_Layer1_z_err.clear();
     fHit_vec_Layer1_pe.clear();
     fHit_vec_T0.clear();
     fHit_vec_T1.clear();
@@ -530,20 +548,32 @@ namespace crt {
           fHit_vec_Layer0_x_pos.push_back(hit.layerHits[0].x_pos);
           fHit_vec_Layer0_y_pos.push_back(hit.layerHits[0].y_pos);
           fHit_vec_Layer0_z_pos.push_back(hit.layerHits[0].z_pos);
+          fHit_vec_Layer0_x_err.push_back(hit.layerHits[0].x_err);
+          fHit_vec_Layer0_y_err.push_back(hit.layerHits[0].y_err);
+          fHit_vec_Layer0_z_err.push_back(hit.layerHits[0].z_err);
           fHit_vec_Layer0_pe.push_back(hit.layerHits[0].peshit);
           fHit_vec_Layer1_x_pos.push_back(hit.layerHits[1].x_pos);
           fHit_vec_Layer1_y_pos.push_back(hit.layerHits[1].y_pos);
           fHit_vec_Layer1_z_pos.push_back(hit.layerHits[1].z_pos);
+          fHit_vec_Layer1_x_err.push_back(hit.layerHits[1].x_err);
+          fHit_vec_Layer1_y_err.push_back(hit.layerHits[1].y_err);
+          fHit_vec_Layer1_z_err.push_back(hit.layerHits[1].z_err);
           fHit_vec_Layer1_pe.push_back(hit.layerHits[1].peshit);
         }
         else{
           fHit_vec_Layer0_x_pos.push_back(0.);
           fHit_vec_Layer0_y_pos.push_back(0.);
           fHit_vec_Layer0_z_pos.push_back(0.);
+          fHit_vec_Layer0_x_err.push_back(-999.);
+          fHit_vec_Layer0_y_err.push_back(-999.);
+          fHit_vec_Layer0_z_err.push_back(-999.);
           fHit_vec_Layer0_pe.push_back(0.);
           fHit_vec_Layer1_x_pos.push_back(0.);
           fHit_vec_Layer1_y_pos.push_back(0.);
           fHit_vec_Layer1_z_pos.push_back(0.);
+          fHit_vec_Layer1_x_err.push_back(-999.);
+          fHit_vec_Layer1_y_err.push_back(-999.);
+          fHit_vec_Layer1_z_err.push_back(-999.);
           fHit_vec_Layer1_pe.push_back(0.);
         }
 
