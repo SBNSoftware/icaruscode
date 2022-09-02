@@ -47,9 +47,9 @@ namespace sbn {
     // --- BEGIN -- Generic bit functions --------------------------------------
     /// @name Generic bit functions
     /// @{
-    //template <typename EnumType>
-    //using mask_t = std::underlying_type_t<EnumType>;
     
+    /// Type for bit masks.
+    /// @note This is a glorified integral type.
     template <typename EnumType>
     struct mask_t {
       using bits_t = EnumType; ///< Enumeration type of the bits.
