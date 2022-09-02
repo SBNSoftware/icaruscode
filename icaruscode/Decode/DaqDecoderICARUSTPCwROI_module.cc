@@ -549,6 +549,11 @@ void DaqDecoderICARUSTPCwROI::processSingleFragment(size_t                      
 
         mf::LogDebug("TPCDecoderFilter1D") << outputString.str();
 
+        if (board != boardSlot)
+        {
+            mf::LogInfo("TPCDecoderFilter1D") << "==> Found board/boardSlot mismatch, crate: " << crateName << ", board: " << board << ", boardSlot: " << boardSlot << " channelPlanePair: " << fChannelMap->getChannelPlanePair(boardIDVec[board]).front().first << "/"  << fChannelMap->getChannelPlanePair(boardIDVec[board]).front().second << ", slot: " << channelPlanePairVec[0].first << "/" << channelPlanePairVec[0].second << std::endl;
+        }
+
         // Get the pointer to the start of this board's block of data
         const icarus::A2795DataBlock::data_t* dataBlock = physCrateFragment.BoardData(board);
 
