@@ -141,9 +141,9 @@ struct icarus::TriggerConfiguration {
   // --- BEGIN -- Derived quantities -------------------------------------------
 
   /**
-      * @brief returns the effective gate width corrected for the veto delay in us 
-      * @param source is the value of the sbn::bits::triggerSource enum type corresponding to the type of gate 
-      *
+   * @brief returns the effective gate width corrected for the veto delay in us 
+   * @param source is the value of the sbn::bits::triggerSource enum type corresponding to the type of gate 
+   *
    */
   float getGateWidth( std::size_t source ) const {
 
@@ -157,9 +157,9 @@ struct icarus::TriggerConfiguration {
 
 
   /**
-      * @brief returns the width of the drift gate used for out-of-time light activity in us       
-      * @param source is the value of the sbn::bits::triggerSource enum type corresponding to the type of gate 
-      *
+   * @brief returns the width of the drift gate used for out-of-time light activity in us       
+   * @param source is the value of the sbn::bits::triggerSource enum type corresponding to the type of gate 
+   *
    */
   float getDriftGateWidth( std::size_t source ) const {
 
@@ -169,10 +169,10 @@ struct icarus::TriggerConfiguration {
   }
 
   /**
-      * @brief returns the prescale value used to open the offbeam gates with respect to the total number of 
-      * beam gates seen       
-      * @param source is the value of the sbn::bits::triggerSource enum type corresponding to the type of gate 
-      *
+   * @brief returns the prescale value used to open the offbeam gates with respect to the total number of 
+   * beam gates seen       
+   * @param source is the value of the sbn::bits::triggerSource enum type corresponding to the type of gate 
+   *
    */
   unsigned int getOffBeamRate( std::size_t source ) const {
      
@@ -181,10 +181,10 @@ struct icarus::TriggerConfiguration {
   }
 
   /**
-      * @brief returns the prescale value used to collect MinBias triggers with respect to the total number of 
-      * gates seen of a particula type   
-      * @param source is the value of the sbn::bits::triggerSource enum type corresponding to the type of gate 
-      *
+   * @brief returns the prescale value used to collect MinBias triggers with respect to the total number of 
+   * gates seen of a particula type   
+   * @param source is the value of the sbn::bits::triggerSource enum type corresponding to the type of gate 
+   *
    */
   unsigned int getMinBiasPrescale( std::size_t source ) const {
 
@@ -219,65 +219,65 @@ struct icarus::TriggerConfiguration {
   
   
   /**
-    * @brief Dumps the content of the configuration into `out` stream.
-    * @param out stream to dump the information into
-    * @param indent indentation string
-    * @param firstIndent special indentation string for the first line
-    * @param verbosity (default: `DefaultDumpVerbosity`) level of verbosity
-    * 
-    * The indentation string is prepended to each new line of the dump.
-    * The first line indentation string is prepended before the first line of
-    * the dump. The dump ends on a new empty line.
-    * 
-    * The amount of information printed depends on the `verbosity` level:
-    * 
-    * * `0`: Boardreader configuration
-    * * `1`: FPGA configuration
-    * * `2`: SPEXI configuration
-    * 
-  */
-
-    void dump(std::ostream& out,
-      std::string const& indent, std::string const& firstIndent,
-      unsigned int verbosity = MaxDumpVerbosity
-    ) const;
-  
-    /**
-      * @brief Dumps the content of the configuration into `out` stream.
-      * @param out stream to dump the information into
-      * @param indent indentation level
-      * @see `dump(std::ostream&, std::string const&, std::string const&, unsigned int) const`
-      * 
-      * Version of `dump()` with same first indentation level as the rest, and
-      * default verbosity.
+   * @brief Dumps the content of the configuration into `out` stream.
+   * @param out stream to dump the information into
+   * @param indent indentation string
+   * @param firstIndent special indentation string for the first line
+   * @param verbosity (default: `DefaultDumpVerbosity`) level of verbosity
+   * 
+   * The indentation string is prepended to each new line of the dump.
+   * The first line indentation string is prepended before the first line of
+   * the dump. The dump ends on a new empty line.
+   * 
+   * The amount of information printed depends on the `verbosity` level:
+   * 
+   * * `0`: Boardreader configuration
+   * * `1`: FPGA configuration
+   * * `2`: SPEXI configuration
+   * 
    */
-    void dump(std::ostream& out, std::string const& indent = "") const
-      { dump(out, indent, indent); }
-  
-    /**
-      * @brief Dumps the content of the gate configuration into `out` stream.
-      * @param out stream to dump the information into
-      * @param gateConfig the gate to be dumped
-      * @param indent (default: none) indentation string
-      * @see `dump(std::ostream&, std::string const&, std::string const&, unsigned int) const`
-      * 
-      * Version of `dump()` with the specified `verbosity` level and same first
-      * indentation level as the rest.
-      */
-    void dumpGateConfig(std::ostream& out, 
-      icarus::TriggerConfiguration::GateConfig const& gateConfig, 
-      std::string const& indent
-    ) const;
 
-    void dump(std::ostream& out,
-      unsigned int verbosity,
-      std::string const& indent = ""
-      ) const
-    { dump(out, indent, indent, verbosity); }
+  void dump(std::ostream& out,
+    std::string const& indent, std::string const& firstIndent,
+    unsigned int verbosity = MaxDumpVerbosity
+  ) const;
   
-    // -- END ---- Dump facility -------------------------------------------------
+  /**
+   * @brief Dumps the content of the configuration into `out` stream.
+   * @param out stream to dump the information into
+   * @param indent indentation level
+   * @see `dump(std::ostream&, std::string const&, std::string const&, unsigned int) const`
+   * 
+   * Version of `dump()` with same first indentation level as the rest, and
+   * default verbosity.
+   */
+   void dump(std::ostream& out, std::string const& indent = "") const
+     { dump(out, indent, indent); }
   
- 
+  /**
+   * @brief Dumps the content of the gate configuration into `out` stream.
+   * @param out stream to dump the information into
+   * @param gateConfig the gate to be dumped
+   * @param indent (default: none) indentation string
+   * @see `dump(std::ostream&, std::string const&, std::string const&, unsigned int) const`
+   * 
+   * Version of `dump()` with the specified `verbosity` level and same first
+   * indentation level as the rest.
+   */
+  void dumpGateConfig(std::ostream& out, 
+    icarus::TriggerConfiguration::GateConfig const& gateConfig, 
+    std::string const& indent
+  ) const;
+
+  void dump(std::ostream& out,
+    unsigned int verbosity,
+    std::string const& indent = ""
+    ) const
+  { dump(out, indent, indent, verbosity); }
+  
+  // -- END ---- Dump facility -------------------------------------------------
+  
+  
 }; // sbn::ICARUSTriggerConfiguration
 
 //------------------------------------------------------------------------------
