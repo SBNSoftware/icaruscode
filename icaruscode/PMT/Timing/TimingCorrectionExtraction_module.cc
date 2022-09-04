@@ -8,7 +8,7 @@
 // ICARUS/SBN libraries
 #include "sbnobj/Common/PMT/Data/PMTconfiguration.h" // sbn::PMTconfiguration
 #include "icaruscode/Decode/ChannelMapping/IICARUSChannelMap.h"
-//#include "icaruscode/PMT/Timing/PMTTimeCorrection.h" // data product holding the corrections
+#include "icaruscode/Timing/PMTTimingCorrections.h"
 
 // framework libraries
 #include "canvas/Persistency/Provenance/ProcessConfiguration.h"
@@ -96,17 +96,6 @@ public:
         fhicl::Comment("")
     };
 
-    fhicl::Atom<std::string> DatabaseURL {
-        fhicl::Name("DatabaseURL"),
-        fhicl::Comment("The entry point url for the calibration database"),
-        "https://dbdata0vm.fnal.gov:9443/icarus_con_prod/app/data?" //default
-    };
-
-    fhicl::Atom<unsigned int> Timeout {
-        fhicl::Name("Timeout"),
-        fhicl::Comment("Database query timeout"),
-    };
-
     fhicl::Atom<bool> CorrectCablesDelay {
         fhicl::Name("CorrectCablesDelay"),
         fhicl::Comment("Use the calibration database to correct for the cables delays"),
@@ -146,10 +135,6 @@ private:
 
   bool fRegenerateWaveforms = true; 
 
-  std::string fUrl;
-
-  unsigned int fTimeout;
-
   bool fCorrectCablesDelay;
 
   bool fVerbose = false; ///< Whether to print the configuration we read.
@@ -161,6 +146,9 @@ private:
 
   /// Pointer to the online channel mapping service.
   icarusDB::IICARUSChannelMap const& fChannelMap;
+
+  /// Pointer to the online pmt corrections service
+  icarusDB::PMTTimingCorrections & fPMTTimingCorrectionsService;
 
   // To be ported to data product ? 
   struct PMTTimeCorrection { 
@@ -185,15 +173,6 @@ private:
 
   }; 
 
-  std::map< unsigned int, std::tuple<double, double, double> > fDatabaseTimingCorrections;
-
-  int GetDataset(
-    const std::string& name, const uint32_t &run, Dataset& dataset ) const;
-
-  void GetCablesDelay( const uint32_t & run ) ;
-
-  void GetLaserDelay( const uint32_t & run ) ;
-
   template<typename T>
     size_t getMaxBin( std::vector<T> vv, size_t startElement, size_t endElement);
 
@@ -205,7 +184,7 @@ private:
 
   void findTimeCorrection( 
     raw::OpDetWaveform const & wave, 
-    std::vector<PMTTimeCorrection> & corrs ) ;
+    std::vector<PMTTimeCorrection> & corrections) ;
 
 }; // icarus::TimingCorrectionExtractor
 
@@ -216,14 +195,13 @@ icarus::TimingCorrectionExtraction::TimingCorrectionExtraction( Parameters const
     , fInputLabels{ config().InputLabels() }
     , fWaveformsLabel{ config().WaveformsLabel() }
     , fRegenerateWaveforms{ config().RegenerateWaveforms() }
-    , fUrl{ config().DatabaseURL() }
-    , fTimeout{ config().Timeout() }
     , fCorrectCablesDelay{ config().CorrectCablesDelay() }  
     , fVerbose{ config().Verbose() }
     , fLogCategory{ config().LogCategory() }
     , fClocksData
         { art::ServiceHandle<detinfo::DetectorClocksService const>()->DataForJob() }
     , fChannelMap{ *(art::ServiceHandle<icarusDB::IICARUSChannelMap const>{}) }
+    , fPMTTimingCorrectionsService{ *(art::ServiceHandle<icarusDB::PMTTimingCorrections>{}) }
 {
 
     /// Consumes
@@ -239,105 +217,6 @@ icarus::TimingCorrectionExtraction::TimingCorrectionExtraction( Parameters const
 
 }
 
-
-// -----------------------------------------------------------------------------
-int icarus::TimingCorrectionExtraction::GetDataset(
-    const std::string& name, const uint32_t &run, Dataset& dataset ) const {
-
-    int error = 0;
-    std::string url = fUrl + "f="+name +"&t="+std::to_string(run);
-    dataset = getDataWithTimeout( url.c_str(), "", fTimeout, &error );
-    if ( error ){
-        throw cet::exception(fLogCategory) 
-          << "Calibration database access failed. URL (" << url 
-          << ") Error code: " << error;
-    }
-    if ( getHTTPstatus(dataset) !=200 ){
-        throw cet::exception(fLogCategory)
-            << "Calibration database access failed. URL (" << url
-            << "). HTTP error status: " << getHTTPstatus(dataset) 
-            << ". HTTP error message: " << getHTTPmessage(dataset); 
-    }
-
-    return error;
-
-}
-
-
-// -----------------------------------------------------------------------------
-void icarus::TimingCorrectionExtraction::GetCablesDelay( const uint32_t & run ) { 
-
-    // pmt_cables_delay: delays of the cables relative to trigger 
-    // and reset distribution
-    const std::string name("pmt_cables_delays_data");
-    Dataset dataset;
-    int error = GetDataset( name, run, dataset );
-
-    if (error) throw(std::exception());
-
-    for( int row=4; row < getNtuples(dataset); row++ ) {
-
-        Tuple tuple = getTuple(dataset, row);
-
-        if( tuple != NULL ) {
-
-            unsigned int channel_id = getLongValue( tuple, 0, &error );
-            if( error ) throw std::runtime_error( "Encountered error while trying to access 'channel_id' on table " + name );
-            
-            // PPS reset correction
-            double reset_distribution_delay = getDoubleValue( tuple, 11, &error );
-            if( error ) throw std::runtime_error( "Encountered error '" + std::to_string(error) + "' while trying to access 'reset_distribution_delay' on table " + name );
-
-            // Trigger cable delay
-            double trigger_reference_delay = getDoubleValue( tuple, 10, &error );
-            if( error ) throw std::runtime_error( "Encountered error while trying to access 'trigger_reference_delay' on table " + name );
-
-            // Phase correction
-            double phase_correction = getDoubleValue( tuple, 13, &error );
-            if( error ) throw std::runtime_error( "Encountered error while trying to access 'phase_correction' on table " + name );
-
-            std::tuple rowValues = std::make_tuple( trigger_reference_delay/1000., (reset_distribution_delay-phase_correction)/1000., 0 );
-            fDatabaseTimingCorrections[channel_id] = rowValues;
-
-            releaseTuple(tuple);
-        }
-
-    }
-
-}
-
-
-void icarus::TimingCorrectionExtraction::GetLaserDelay( const uint32_t & run ) { 
-
-    // pmt_laser_delay: delay from the Electron Transit time inside the PMT 
-    // and the PMT signal cable 
-
-    const std::string name("pmt_laser_timing_data");
-    Dataset dataset;
-    int error = GetDataset( name, run, dataset );
-
-    if (error) throw(std::exception());
-
-    for( int row=4; row < getNtuples(dataset); row++ ) {
-
-        Tuple tuple = getTuple(dataset, row);
-        if( tuple != NULL ) {
-
-            unsigned int channel_id = getLongValue( tuple, 0, &error );
-            if( error ) throw std::runtime_error( "Encountered error while trying to access channel_id on table " + name );
-
-            double t_signal = getDoubleValue( tuple, 5, &error );
-            if( error ) throw std::runtime_error( "Encountered error while trying to access 't_signal' on table " + name );
-
-            std::get<2u>(fDatabaseTimingCorrections[channel_id]) = t_signal/1000.;
-
-            releaseTuple(tuple);
-        }
-
-    }
-
-
-}
 
 // -----------------------------------------------------------------------------
 template<typename T>
@@ -398,8 +277,8 @@ template<typename T>
 
 // -----------------------------------------------------------------------------
 void icarus::TimingCorrectionExtraction::findTimeCorrection( 
-                                raw::OpDetWaveform const & wave, 
-                                    std::vector<PMTTimeCorrection> & corrections 
+                                raw::OpDetWaveform const & wave,
+                                std::vector<PMTTimeCorrection> & corrections 
 ) {
 
     unsigned int channelID = wave.ChannelNumber() & 0xFFF0;
@@ -422,15 +301,11 @@ void icarus::TimingCorrectionExtraction::findTimeCorrection(
         
         unsigned int channel_id = std::get<1U>(mapRow);
 
-        corrections[channel_id].triggerReferenceDelay = std::get<0U>(fDatabaseTimingCorrections[channel_id]);
-
-        corrections[channel_id].cablesDelay = std::get<1U>(fDatabaseTimingCorrections[channel_id]);
-
-        corrections[channel_id].laserDelay = std::get<2U>(fDatabaseTimingCorrections[channel_id]);
+        double triggerReferenceDelay = fPMTTimingCorrectionsService.getTriggerCableDelay(channel_id);
 
         double newTriggerTime = wave.TimeStamp() 
                     + startSampleSignal * fClocksData.OpticalClock().TickPeriod() 
-                    - corrections[channel_id].triggerReferenceDelay;
+                    + triggerReferenceDelay; // << The correction is saved already with a minus sign
 
         corrections[channel_id].startTime = fClocksData.TriggerTime() - newTriggerTime;
 
@@ -443,7 +318,6 @@ void icarus::TimingCorrectionExtraction::findTimeCorrection(
                       << newTriggerTime                                               << ", " 
                       << fClocksData.TriggerTime() - newTriggerTime                   << std::endl;
         }
-
       }
     }
 
@@ -453,22 +327,7 @@ void icarus::TimingCorrectionExtraction::findTimeCorrection(
 // -----------------------------------------------------------------------------
 void icarus::TimingCorrectionExtraction::beginRun( art::Run& run ) {
 
-    GetCablesDelay( run.id().run() );
-    GetLaserDelay ( run.id().run() );
-
-    if( fVerbose ) {
-
-        std::cout << "Dump information from database " << std::endl;
-        std::cout << "channel_id, trigger_reference_delay, reset_distribution_delay-phase_shift, t_signal" << std::endl;
-
-        for( auto const & [key, values] : fDatabaseTimingCorrections ){
-            std::cout << key << " " 
-                  << std::get<0U>(values) << "," 
-                  << std::get<1U>(values) << ", " 
-                  << std::get<2U>(values) << ", "
-                  << std::endl; 
-        }
-    }
+    fPMTTimingCorrectionsService.readTimeCorrectionDatabase(run);
 
 }
 
