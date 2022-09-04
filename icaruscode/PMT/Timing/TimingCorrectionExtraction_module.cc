@@ -415,9 +415,6 @@ void icarus::TimingCorrectionExtraction::findTimeCorrection(
     // Which corresponds to the global trigger time. 
     int startSampleSignal = static_cast<int>( getStartSample( wave ) );
     
-    double newTriggerTime = wave.TimeStamp() 
-                    + startSampleSignal * fClocksData.OpticalClock().TickPeriod();
-
     // we now access the channels that we need
     for( auto const & fragId : fCrateFragmentMap[channelID] ){
       
@@ -431,8 +428,11 @@ void icarus::TimingCorrectionExtraction::findTimeCorrection(
 
         corrections[channel_id].laserDelay = std::get<2U>(fDatabaseTimingCorrections[channel_id]);
 
-        corrections[channel_id].startTime = fClocksData.TriggerTime() - 
-                            ( newTriggerTime + corrections[channel_id].triggerReferenceDelay );
+        double newTriggerTime = wave.TimeStamp() 
+                    + startSampleSignal * fClocksData.OpticalClock().TickPeriod() 
+                    - corrections[channel_id].triggerReferenceDelay;
+
+        corrections[channel_id].startTime = fClocksData.TriggerTime() - newTriggerTime;
 
         if(fVerbose){
             std::cout << channel_id                                                   << ", " 
@@ -532,14 +532,19 @@ void icarus::TimingCorrectionExtraction::produce( art::Event& event ) {
             raw::TimeStamp_t correctT = 
                 waveform.TimeStamp() + corrections[channel_id].startTime;
 
+            /*
             if ( fCorrectCablesDelay ){
                 correctT += 
                     ( corrections[channel_id].cablesDelay - corrections[channel_id].laserDelay );
             }
+            */
 
             waveform.SetTimeStamp( correctT );
 
             correctedWaveforms.push_back( waveform );
+
+            //std::cout << (*waveformHandle)[iWave].TimeStamp() << " " << waveform.TimeStamp() << std::endl;
+
         }
 
     } else {

@@ -129,6 +129,7 @@ class opana::ICARUSFlashAssAna : public art::EDAnalyzer {
                         float *xyz, 
                         std::vector<double> &pmt_start_time,
                         std::vector<double> &pmt_pe,
+                        std::vector<double> &pmt_max_amplitude,
                         TTree *ophittree   ); 
 
     static std::string_view firstLine(std::string const& s, const char* endl = "\r");
@@ -167,6 +168,8 @@ class opana::ICARUSFlashAssAna : public art::EDAnalyzer {
     uint64_t m_trigger_timestamp;
     uint64_t m_gate_start_timestamp;
     uint64_t m_trigger_gate_diff;
+    uint64_t lvdsCryoE[2];
+    uint64_t lvdsCryoW[2];
 
     int m_flash_id;
     int m_multiplicity;
@@ -184,6 +187,7 @@ class opana::ICARUSFlashAssAna : public art::EDAnalyzer {
     float m_flash_width_z;
     std::vector<double> m_pmt_time;
     std::vector<double> m_pmt_pe;
+    std::vector<double> m_pmt_max_amplitude;
 
     int m_channel_id;
     float m_integral; // in ADC x tick
@@ -255,6 +259,8 @@ void opana::ICARUSFlashAssAna::beginJob() {
   fEventTree->Branch("trigger_timestamp", &m_trigger_timestamp, "trigger_timestamp/l");
   fEventTree->Branch("gate_start_timestamp", &m_gate_start_timestamp, "gate_start_timestamp/l");
   fEventTree->Branch("trigger_gate_diff", &m_trigger_gate_diff, "trigger_gate_diff/l");
+  fEventTree->Branch("lvdsCryoE", &lvdsCryoE, "lvdsCryoE[2]/l");
+  fEventTree->Branch("lvdsCryoW", &lvdsCryoW, "lvdsCryoW[2]/l");
   
   // This tree will hold some aggregated optical waveform information
   // The flag must be enabled to have the information saved
@@ -301,7 +307,7 @@ void opana::ICARUSFlashAssAna::beginJob() {
       ttree->Branch("pe", &m_pe, "pe/F");
       ttree->Branch("width", &m_width, "width/F");
       ttree->Branch("fast_to_total", &m_fast_to_total, "fast_to_total/F");
-
+ 
       fOpHitTrees.push_back(ttree);
 
   }
@@ -338,6 +344,7 @@ void opana::ICARUSFlashAssAna::beginJob() {
         ttree->Branch("pmt_z",&m_pmt_z);
         ttree->Branch("time_pmt", & m_pmt_time);
         ttree->Branch("pe_pmt", & m_pmt_pe );
+        ttree->Branch("amplitude_pmt", &m_pmt_max_amplitude);
 
         fOpFlashTrees.push_back( ttree );
 
@@ -472,6 +479,7 @@ void opana::ICARUSFlashAssAna::processOpHitsFlash( std::vector<art::Ptr<recob::O
                                               float *xyz, 
                                               std::vector<double> &pmt_start_time,
                                               std::vector<double> &pmt_pe,
+                                              std::vector<double> &pmt_max_amplitude,
                                               TTree *ophittree  ) {
 
 
@@ -501,6 +509,7 @@ void opana::ICARUSFlashAssAna::processOpHitsFlash( std::vector<art::Ptr<recob::O
       pmt_start_time[channel_id] = ophit->PeakTime();
     }else if ( pmt_start_time[channel_id] > ophit->PeakTime() ){
       pmt_start_time[channel_id] = ophit->PeakTime();
+      pmt_max_amplitude[channel_id] = ophit->Amplitude();
     }
 
 
@@ -588,6 +597,10 @@ void opana::ICARUSFlashAssAna::analyze(art::Event const& e) {
         m_trigger_timestamp = trigger_handle->triggerTimestamp;
         m_gate_start_timestamp =  trigger_handle->beamGateTimestamp;
         m_trigger_gate_diff = trigger_handle->triggerTimestamp - trigger_handle->beamGateTimestamp;
+        lvdsCryoE[0] = trigger_handle->cryostats[0].LVDSstatus[0];
+        lvdsCryoE[1] = trigger_handle->cryostats[0].LVDSstatus[1];
+        lvdsCryoW[0] = trigger_handle->cryostats[1].LVDSstatus[0];
+        lvdsCryoW[1] = trigger_handle->cryostats[1].LVDSstatus[1];
 
       }
       else{
@@ -665,6 +678,7 @@ void opana::ICARUSFlashAssAna::analyze(art::Event const& e) {
 
           m_pmt_pe.resize(360);
           m_pmt_time.resize(360);
+          m_pmt_max_amplitude.resize(360);
 
           m_flash_id = idx;
           auto const & flash = (*flash_handle)[idx];
@@ -686,7 +700,9 @@ void opana::ICARUSFlashAssAna::analyze(art::Event const& e) {
           float xyz[3] = {0.0, 0.0, 0.0};
           processOpHitsFlash( ophits, 
                               m_multiplicity_left, m_multiplicity_right, 
-                                m_sum_pe_left, m_sum_pe_right, xyz, m_pmt_time, m_pmt_pe, fOpHitFlashTrees[iFlashLabel] );
+                              m_sum_pe_left, m_sum_pe_right, xyz, 
+                              m_pmt_time, m_pmt_pe, m_pmt_max_amplitude, 
+                              fOpHitFlashTrees[iFlashLabel] );
 
           m_multiplicity = m_multiplicity_left+m_multiplicity_right;
 
