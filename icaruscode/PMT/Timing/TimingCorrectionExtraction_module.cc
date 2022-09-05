@@ -160,35 +160,6 @@ private:
 
   };
 
-  std::map<unsigned int, std::vector<unsigned int>> fCrateFragmentMap {
-
-    {0x1070 , { 0 , 1 , 2  }}, 
-    {0x1060 , { 3 , 4 , 5  }}, 
-    {0x1050 , { 6 , 7 , 8  }}, 
-    {0x1040 , { 9 , 10, 11 }},
-    {0x1030 , { 12, 13, 14 }}, 
-    {0x1020 , { 15, 16, 17 }}, 
-    {0x1010 , { 18, 19, 20 }}, 
-    {0x1000 , { 21, 22, 23 }}, 
-
-  }; 
-
-  template<typename T>
-    size_t getMaxBin( std::vector<T> vv, size_t startElement, size_t endElement);
-
-  template<typename T>
-    size_t getMinBin( std::vector<T> vv, size_t startElement, size_t endElement);
-
-  template<typename T>
-    size_t getStartSample( std::vector<T> vv );
-
-  void findTimeCorrection( 
-    raw::OpDetWaveform const & wave, 
-    std::vector<PMTTimeCorrection> & corrections) ;
-
-}; // icarus::TimingCorrectionExtractor
-
-
 // -----------------------------------------------------------------------------
 icarus::TimingCorrectionExtraction::TimingCorrectionExtraction( Parameters const& config ) 
     : art::EDProducer(config)
@@ -198,8 +169,7 @@ icarus::TimingCorrectionExtraction::TimingCorrectionExtraction( Parameters const
     , fCorrectCablesDelay{ config().CorrectCablesDelay() }  
     , fVerbose{ config().Verbose() }
     , fLogCategory{ config().LogCategory() }
-    , fClocksData
-        { art::ServiceHandle<detinfo::DetectorClocksService const>()->DataForJob() }
+    , fClocksData{ art::ServiceHandle<detinfo::DetectorClocksService const>()->DataForJob() }
     , fChannelMap{ *(art::ServiceHandle<icarusDB::IICARUSChannelMap const>{}) }
     , fPMTTimingCorrectionsService{ *(art::ServiceHandle<icarusDB::PMTTimingCorrections>{}) }
 {
@@ -217,7 +187,7 @@ icarus::TimingCorrectionExtraction::TimingCorrectionExtraction( Parameters const
 
 }
 
-
+/*
 // -----------------------------------------------------------------------------
 template<typename T>
   size_t icarus::TimingCorrectionExtraction::getMinBin( 
@@ -322,7 +292,7 @@ void icarus::TimingCorrectionExtraction::findTimeCorrection(
     }
 
 } // icarus::TimingCorrectionExtraction::findTimeCorrection 
-
+*/
 
 // -----------------------------------------------------------------------------
 void icarus::TimingCorrectionExtraction::beginRun( art::Run& run ) {
