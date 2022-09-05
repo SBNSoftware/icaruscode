@@ -50,6 +50,8 @@ decodePMT: {
                     PMTconfigTag:       @nil # must override
                     TriggerTag:         @nil # must override
                     BoardSetup:         @local::icarus_V1730_setup
+                    CorrectionInstance: "trgprim"
+
 }
 
 decodeTrigger: {

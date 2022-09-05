@@ -19,19 +19,21 @@ art_make(
 	SERVICE_LIBRARIES
 		icaruscode_Timing
 		icaruscode_Timing_DataProducts
-		art_Framework_Core
-		art_Framework_Principal
-		art_Framework_Services_Registry
-		art_Persistency_Common canvas
-		art_Persistency_Provenance canvas
-		${ART_FRAMEWORK_SERVICES_BASIC}
-		${ART_FRAMEWORK_SERVICES_SYSTEM_FILECATALOGMETADATA_SERVICE}
-		art_Utilities canvas
-		messagefacility::MF_MessageLogger
-		cetlib
-		cetlib_except
-		${ROOT_BASIC_LIB_LIST}
-		LIBWDA
+        ${ROOT_BASIC_LIB_LIST}
+        LIBWDA
+        ${ART_FRAMEWORK_CORE}
+        ${ART_FRAMEWORK_PRINCIPAL}
+        ${ART_FRAMEWORK_SERVICES_REGISTRY}
+        ${ART_ROOT_IO_TFILE_SUPPORT}
+        ${ART_ROOT_IO_TFILESERVICE_SERVICE}
+        ${ART_UTILITIES}
+        art_Persistency_Common canvas
+        art_Persistency_Provenance canvas
+        art_Utilities canvas
+        ${MF_MESSAGELOGGER}
+        ${MF_UTILITIES}
+        ${FHICLCPP}
+        cetlib cetlib_except
 
 )
 install_headers()
