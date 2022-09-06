@@ -118,6 +118,20 @@ namespace icarus {
     vector<double>            fcrtx;    // x-position from crt
     vector<double>            fcrty;    // y-position from crt
     vector<double>            fcrtz;    // z-position from crt
+    vector<double> fcrt_Layer0_x_pos; ///< reconstructed X position of CRT hit in layer id 0 (cm)
+    vector<double> fcrt_Layer0_y_pos; ///< reconstructed Y position of CRT hit in layer id 0 (cm)
+    vector<double> fcrt_Layer0_z_pos; ///< reconstructed Z position of CRT hit in layer id 0 (cm)
+    vector<double> fcrt_Layer0_x_err; ///< stat error of CRT hit reco X in layer id 0 (cm)
+    vector<double> fcrt_Layer0_y_err; ///< stat error of CRT hit reco Y in layer id 0 (cm)
+    vector<double> fcrt_Layer0_z_err; ///< stat error of CRT hit reco Z in layer id 0 (cm)
+    vector<double> fcrt_Layer0_pe; ///< pe of CRT hit in layer id 0 (cm)
+    vector<double> fcrt_Layer1_x_pos; ///< reconstructed X position of CRT hit in layer id 1 (cm)
+    vector<double> fcrt_Layer1_y_pos; ///< reconstructed Y position of CRT hit in layer id 1 (cm)
+    vector<double> fcrt_Layer1_z_pos; ///< reconstructed Z position of CRT hit in layer id 1 (cm)
+    vector<double> fcrt_Layer1_x_err; ///< stat error of CRT hit reco X in layer id 1 (cm)
+    vector<double> fcrt_Layer1_y_err; ///< stat error of CRT hit reco Y in layer id 1 (cm)
+    vector<double> fcrt_Layer1_z_err; ///< stat error of CRT hit reco Z in layer id 1 (cm)
+    vector<double> fcrt_Layer1_pe; ///< pe of CRT hit in layer id 0 (cm)
     vector<double>         fpandorat0;    ///< Track T0 based on Pandora (Cathode Crossing Track)
     vector<int>            fcryo;         ///< cryo number
     vector<int>            fntracks;      ///< total number of tracks
@@ -192,6 +206,20 @@ namespace icarus {
     fTree->Branch("crtx",     "std::vector<double>",   &fcrtx);
     fTree->Branch("crty",     "std::vector<double>",   &fcrty);
     fTree->Branch("crtz",     "std::vector<double>",   &fcrtz);
+    fTree->Branch("crt_Layer0_x_pos", "std::vector<double>", &fcrt_Layer0_x_pos);
+    fTree->Branch("crt_Layer0_y_pos", "std::vector<double>", &fcrt_Layer0_y_pos);
+    fTree->Branch("crt_Layer0_z_pos", "std::vector<double>", &fcrt_Layer0_z_pos);
+    fTree->Branch("crt_Layer0_x_err", "std::vector<double>", &fcrt_Layer0_x_err);
+    fTree->Branch("crt_Layer0_y_err", "std::vector<double>", &fcrt_Layer0_y_err);
+    fTree->Branch("crt_Layer0_z_err", "std::vector<double>", &fcrt_Layer0_z_err);
+    fTree->Branch("crt_Layer0_pe", "std::vector<double>", &fcrt_Layer0_pe);
+    fTree->Branch("crt_Layer1_x_pos", "std::vector<double>", &fcrt_Layer1_x_pos);
+    fTree->Branch("crt_Layer1_y_pos", "std::vector<double>", &fcrt_Layer1_y_pos);
+    fTree->Branch("crt_Layer1_z_pos", "std::vector<double>", &fcrt_Layer1_z_pos);
+    fTree->Branch("crt_Layer1_x_err", "std::vector<double>", &fcrt_Layer1_x_err);
+    fTree->Branch("crt_Layer1_y_err", "std::vector<double>", &fcrt_Layer1_y_err);
+    fTree->Branch("crt_Layer1_z_err", "std::vector<double>", &fcrt_Layer1_z_err);
+    fTree->Branch("crt_Layer1_pe", "std::vector<double>", &fcrt_Layer1_pe);
     fTree->Branch("cryo",            "std::vector<int>",      &fcryo);
     fTree->Branch("ntracks",            "std::vector<int>",      &fntracks);
     fTree->Branch("pandorat0",       "std::vector<double>", &fpandorat0);
@@ -224,6 +252,20 @@ namespace icarus {
     fcrtx.clear();
     fcrty.clear();
     fcrtz.clear();
+    fcrt_Layer0_x_pos.clear();
+    fcrt_Layer0_y_pos.clear();
+    fcrt_Layer0_z_pos.clear();
+    fcrt_Layer0_x_err.clear();
+    fcrt_Layer0_y_err.clear();
+    fcrt_Layer0_z_err.clear();
+    fcrt_Layer0_pe.clear();
+    fcrt_Layer1_x_pos.clear();
+    fcrt_Layer1_y_pos.clear();
+    fcrt_Layer1_z_pos.clear();
+    fcrt_Layer1_x_err.clear();
+    fcrt_Layer1_y_err.clear();
+    fcrt_Layer1_z_err.clear();
+    fcrt_Layer1_pe.clear();
     ftpcx.clear();
     ftpcy.clear();
     ftpcz.clear();
@@ -360,6 +402,40 @@ namespace icarus {
 	      fcrtx.push_back(closest.thishit.x_pos);
 	      fcrty.push_back(closest.thishit.y_pos);
 	      fcrtz.push_back(closest.thishit.z_pos);
+
+        if(closest.thishit.nLayer==2){
+          fcrt_Layer0_x_pos.push_back(closest.thishit.layerHits[0].x_pos);
+          fcrt_Layer0_y_pos.push_back(closest.thishit.layerHits[0].y_pos);
+          fcrt_Layer0_z_pos.push_back(closest.thishit.layerHits[0].z_pos);
+          fcrt_Layer0_x_err.push_back(closest.thishit.layerHits[0].x_err);
+          fcrt_Layer0_y_err.push_back(closest.thishit.layerHits[0].y_err);
+          fcrt_Layer0_z_err.push_back(closest.thishit.layerHits[0].z_err);
+          fcrt_Layer0_pe.push_back(closest.thishit.layerHits[0].peshit);
+          fcrt_Layer1_x_pos.push_back(closest.thishit.layerHits[1].x_pos);
+          fcrt_Layer1_y_pos.push_back(closest.thishit.layerHits[1].y_pos);
+          fcrt_Layer1_z_pos.push_back(closest.thishit.layerHits[1].z_pos);
+          fcrt_Layer1_x_err.push_back(closest.thishit.layerHits[1].x_err);
+          fcrt_Layer1_y_err.push_back(closest.thishit.layerHits[1].y_err);
+          fcrt_Layer1_z_err.push_back(closest.thishit.layerHits[1].z_err);
+          fcrt_Layer1_pe.push_back(closest.thishit.layerHits[1].peshit);
+        }
+        else{
+          fcrt_Layer0_x_pos.push_back(0.);
+          fcrt_Layer0_y_pos.push_back(0.);
+          fcrt_Layer0_z_pos.push_back(0.);
+          fcrt_Layer0_x_err.push_back(-999.);
+          fcrt_Layer0_y_err.push_back(-999.);
+          fcrt_Layer0_z_err.push_back(-999.);
+          fcrt_Layer0_pe.push_back(0.);
+          fcrt_Layer1_x_pos.push_back(0.);
+          fcrt_Layer1_y_pos.push_back(0.);
+          fcrt_Layer1_z_pos.push_back(0.);
+          fcrt_Layer1_x_err.push_back(-999.);
+          fcrt_Layer1_y_err.push_back(-999.);
+          fcrt_Layer1_z_err.push_back(-999.);
+          fcrt_Layer1_pe.push_back(0.);
+        }
+
 	      // fCrtRegion.push_back(closest.thishit.tagger);
 	      fCrtRegion.push_back(fCrtutils->AuxDetRegionNameToNum(closest.thishit.tagger));	    
 	    }
