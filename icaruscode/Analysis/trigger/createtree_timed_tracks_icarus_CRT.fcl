@@ -87,13 +87,13 @@ physics: {
       module_type: TimedTrackSelectorCRT
 
       #TrackTimeTags: [ pandoraGausCryoW, pandoraGausCryoE ]
-      TrackTimeTags: [ "CRTT0MatchingW::CRTT0Matching" ]
+      TrackTimeTags: [ "CRTT0MatchingW" ]
 
     } # t0selectorW
 
     t0selectorE: {
       module_type: TimedTrackSelectorCRT
-      TrackTimeTags: [ "CRTT0MatchingE::CRTT0Matching" ]
+      TrackTimeTags: [ "CRTT0MatchingE" ]
     }
   }
 
@@ -102,14 +102,14 @@ physics: {
     gatesFromTracksE: {
       @table::gatesFromTracks_icarus
     
-      T0Producer:    "CRTT0MatchingE::CRTT0Matching"
+      T0Producer:    "CRTT0MatchingE"
       T0selProducer: t0selectorE
     }
     
     gatesFromTracksW: {
       @table::gatesFromTracks_icarus
       
-      T0Producer:    "CRTT0MatchingW::CRTT0Matching"
+      T0Producer:    "CRTT0MatchingW"
       T0selProducer: t0selectorW
     }
   
@@ -126,7 +126,7 @@ physics: {
     t0TreeStoreW: {
       @table::timetracktreestorage_base
       PFPproducer: "pandoraGausCryoW"
-      T0Producer: "CRTT0MatchingW::CRTT0Matching"
+      T0Producer: "CRTT0MatchingW"
       T0selProducer: "t0selectorW"
       TrackProducer: "pandoraTrackGausCryoW"
       TrackFitterProducer: "pandoraTrackGausCryoW"
@@ -153,7 +153,7 @@ physics: {
     t0TreeStoreE: {
       @table::timetracktreestorage_base
       PFPproducer: "pandoraGausCryoE"
-      T0Producer: "CRTT0MatchingE::CRTT0Matching"
+      T0Producer: "CRTT0MatchingE"
       T0selProducer: "t0selectorE"
       TrackProducer: "pandoraTrackGausCryoE"
       TrackFitterProducer: "pandoraTrackGausCryoE"

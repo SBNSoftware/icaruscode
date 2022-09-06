@@ -15,7 +15,7 @@
 ##include "backtrackerservice.fcl"
 ##include "particleinventoryservice.fcl"
 
-#include "crtt0producer_EWsep_icarus.fcl"
+#include "crtt0producer_icarus.fcl"
 
 ##include "rootoutput_icarus.fcl"
 

@@ -114,6 +114,8 @@ public:
   
   static constexpr double NoMinTime { std::numeric_limits<double>::lowest() };
   static constexpr double NoMaxTime { std::numeric_limits<double>::max() };
+  static constexpr double NoMinAngle {std::numeric_limits<double>::lowest() };
+  static constexpr double NoMaxAngle {std::numeric_limits<double>::max() };
   static constexpr unsigned int NoMinTracks { 0U };
   static constexpr unsigned int NoMaxTracks
   { std::numeric_limits<unsigned int>::max() };
@@ -154,6 +156,19 @@ public:
 	Comment{ "Pass only events with at most these many selected tracks" },
       NoMaxTracks
 	};
+
+    fhicl::Atom<double> MinAngle {
+      Name{ "MinAngle" },
+	Comment{ "Select only tracks with an angle wrt vertical greater than this angle [deg]" },
+      NoMinAngle
+	};
+
+    fhicl::Atom<double> MaxAngle {
+      Name{ "MaxAngle" },
+        Comment{ "Select only tracks with an angle wrt vertical less than this angle [deg]" },
+      NoMaxAngle
+        };
+	  
     
     fhicl::Atom<bool> OnlyPandoraTracks {
       Name{ "OnlyPandoraTracks" },
@@ -199,6 +214,9 @@ private:
   
   double const fMinT0;  ///< Minimum track time for track selection.
   double const fMaxT0;  ///< Maximum track time for track selection.
+
+  double const fMinAngle; ///< Minimum track angle wrt vertical for track selection
+  double const fMaxAngle; ///< Maximum track angle wrt vertical for track selection
   
   /// Minimum selected tracks for event selection.
   unsigned int const fMinTracks;
@@ -422,6 +440,8 @@ bool sbn::TimedTrackSelector::isTrackSelected
 			       << fMaxT0 << " ] => discarded!";
     return false;
   }
+
+  
   
   return true;
 } // sbn::TimedTrackSelector::isTrackSelected()
