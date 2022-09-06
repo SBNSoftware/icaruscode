@@ -546,9 +546,7 @@ void  ROIFinder::processPlane(size_t                          idx,
             }
 
             if (ROIVec.size() != intROIVec.size())
-            {
-                std::cout << "===> ROIVec mismatch to intROIVec, ROIVec size: " << ROIVec.size() << ", intROIVec size: " << intROIVec.size() << std::endl;
-            }
+                throw art::Exception(art::errors::LogicError) << "===> ROIVec mismatch to intROIVec, ROIVec size: " << ROIVec.size() << ", intROIVec size: " << intROIVec.size() << "\n";
 
             const icarus_signal_processing::VectorFloat& waveform = dataArray[waveIdx];
 
@@ -612,9 +610,7 @@ void  ROIFinder::processPlane(size_t                          idx,
                 std::vector<geo::WireID> wireIDVec = fGeometry->ChannelToWire(channel);
 
                 if (channelROIVec.size() != wireColVec.size())
-                {
-                    std::cout << "===> ROI output mismatch, channelROIVec, size: " << channelROIVec.size() << ", wireColVec, size: " << wireColVec.size() << std::endl;
-                }
+                    throw art::Exception(art::errors::LogicError) << "===> ROI output mismatch, channelROIVec, size: " << channelROIVec.size() << ", wireColVec, size: " << wireColVec.size() << "\n";
 
                 channelROIVec.push_back(recob::ChannelROICreator(std::move(intROIVec),channel).move());
                 wireColVec.push_back(recob::WireCreator(std::move(ROIVec),channel,view).move());

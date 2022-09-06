@@ -25,29 +25,8 @@ namespace recob {
   /**
    * @brief Class managing the creation of a new recob::Wire object
    *
-   * In order to be as simple as possible (Plain Old Data), data products like
-   * recob::Wire need to be stripped of most of their functions, including the
-   * ability to communicate whether a value we try to store is invalid
-   * (that would require a art::Exception -- art -- or at least a message on the
-   * screen -- MessageFacility) and the ability to read things from event,
-   * services (e.g. geometry) etc.
-   *
-   * A Creator is a class that creates a temporary data product, and at the
-   * end it yields it to the caller for storage.
-   * This last step should be by move construction, although a copy method is
-   * also provided.
-   *
-   * An example of creating a Wire object:
-   *
-   *     // let RoIsignal be a recob::Wire::RegionsOfInterest_t already filled
-   *     // with the signal regions, and rawdigit the raw::RawDigit of the
-   *     // channel; RoIsignal will become empty
-   *     recob::ChannelROICreator wire(std::move(RoIsignal), rawdigit);
-   *     wires.push_back(wire.move()); // wire content is not valid any more
-   *
-   * This is a one-step creation object: the wire is constructed at the same
-   * time the ChannelROICreator is, and no facility is offered to modify the
-   * constructed wire, or to create another one.
+   * As Gianluca Petrillo points out, the same considerations described in 
+   * `recob::WireCreator` apply here as well
    */
   class ChannelROICreator {
     public:

@@ -19,7 +19,8 @@
   <class name="std::vector<sbn::OpDetWaveformMeta>" />
   <class name="art::Wrapper<std::vector<sbn::OpDetWaveformMeta>>" />
 
-  <class name="recob::ChannelROI" ClassVersion="-1" >
+  <class name="recob::ChannelROI" ClassVersion="10" >
+   <version ClassVersion="10" checksum="1609503266"/>
   </class>
 
   <class name="art::Ptr<recob::ChannelROI>" />

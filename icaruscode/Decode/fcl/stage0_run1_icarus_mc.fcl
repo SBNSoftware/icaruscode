@@ -11,20 +11,16 @@ process_name: MCstage0
 services.Geometry:               @local::icarus_legacy_base_geometry
 services.ExptGeoHelperInterface: @local::icarus_legacy_base_geometry_helper
 
-services.Geometry.Name: icarus_v3
-services.Geometry.GDML: "icarus_complete_20210527_overburden.gdml"
-services.Geometry.ROOT: "icarus_complete_20210527_overburden.gdml"
-
 ## Add the MC module to the list of producers
 physics.producers: {  @table::icarus_stage0_producers
                       @table::icarus_stage0_mc_producers
                    }
 
 ## Use the following to run the full defined stage0 set of modules
-physics.path: [   #@sequence::icarus_stage0_mc_PMT, 
+physics.path: [   @sequence::icarus_stage0_mc_PMT, 
                   MCDecodeTPCROI, 
-                  @sequence::icarus_stage0_multiTPC #,
-                  #@sequence::icarus_stage0_mc_crt
+                  @sequence::icarus_stage0_multiTPC,
+                  @sequence::icarus_stage0_mc_crt
               ]
 
 ## boiler plate...

@@ -37,8 +37,8 @@ namespace recob {
 
   /**
    * @brief Class holding the regions of interest of signal from a channel.
-   * @note Despite the name, this class is associated to a readout channel, not
-   *       just a ChannelROI
+   * @note This class is associated to an entire channel, not just a single
+   *       logical Wire on a given logical plane
    *
    * The channel content is expected to have been filtered from noise and
    * corrected for electronics response, a process often called in jargon
@@ -66,7 +66,7 @@ namespace recob {
    * which lack signal are indicated by the overall size of the content, while
    * the last region of interest ends earlier.
    * 
-   * What is different in this data object from the recob::ChannelROI data that 
+   * What is different in this data object from the recob::Wire data that 
    * precedes it is that we store the information as short ints rather than floats.
    * This is because the initial data is a short int to start with but, more
    * important, storing as an int will improve compressibility and save output
@@ -103,26 +103,6 @@ namespace recob {
    * Each channel is associated with a `raw::RawDigit` object. These
    * associations should be stored together with `recob::ChannelROI` by the producer
    * in a `art::Assns` data product.
-   * 
-   * 
-   * Creating `recob::ChannelROI` objects
-   * ===============================
-   * 
-   * ***** THIS NEEDS TO BE REVIEWED *****
-   * LArSoft "protocol" prescribes:
-   * 
-   * * creation of an association of each `recob::ChannelROI` with the `raw::RawDigit`
-   *   it comes from; the association should be created by the same _art_ module
-   *   producing the `recob::ChannelROI` collection
-   * * `recob::ChannelROI` time span should be the same as its `raw::RawDigit`
-   * 
-   * Two patterns can be followed for creating a `recob::ChannelROI`:
-   * 
-   * 1. direct construction: see the constructor documentation
-   * 2. with `recob::ChannelROICreator`, which extracts some relevant information from
-   *    the source `raw::RawDigit` but _does not help with their association_
-   * 
-   * In both cases, please read the documentation of `recob::ChannelROI` constructors.
    */
   class ChannelROI {
     public:

@@ -210,7 +210,7 @@ DaqDecoderICARUSTPCwROI::DaqDecoderICARUSTPCwROI(fhicl::ParameterSet const & pse
     configure(pset);
 
     // Check the concurrency 
-    int max_concurrency = art::Globals::instance()->nthreads(); //tbb::this_task_arena::max_concurrency();
+    int max_concurrency = art::Globals::instance()->nthreads(); 
 
     mf::LogDebug("DaqDecoderICARUSTPCwROI") << "     ==> concurrency: " << max_concurrency << std::endl;
 
@@ -554,11 +554,11 @@ void DaqDecoderICARUSTPCwROI::processSingleFragment(size_t                      
         outputString << "********************************************************************************\n"
                      << "FragmentID: " << std::hex << fragmentID << std::dec << ", Crate: " << crateName << ", boardID: " << boardSlot << "/" << nBoardsPerFragment << ", size " << channelPlanePairVec.size() << "/" << nChannelsPerBoard;
 
-        mf::LogDebug("TPCDecoderFilter1D") << outputString.str();
+        mf::LogDebug(fLogCategory) << outputString.str();
 
         if (board != boardSlot)
         {
-            mf::LogInfo("TPCDecoderFilter1D") << "==> Found board/boardSlot mismatch, crate: " << crateName << ", board: " << board << ", boardSlot: " << boardSlot << " channelPlanePair: " << fChannelMap->getChannelPlanePair(boardIDVec[board]).front().first << "/"  << fChannelMap->getChannelPlanePair(boardIDVec[board]).front().second << ", slot: " << channelPlanePairVec[0].first << "/" << channelPlanePairVec[0].second << std::endl;
+            mf::LogInfo(fLogCategory) << "==> Found board/boardSlot mismatch, crate: " << crateName << ", board: " << board << ", boardSlot: " << boardSlot << " channelPlanePair: " << fChannelMap->getChannelPlanePair(boardIDVec[board]).front().first << "/"  << fChannelMap->getChannelPlanePair(boardIDVec[board]).front().second << ", slot: " << channelPlanePairVec[0].first << "/" << channelPlanePairVec[0].second;
         }
 
         // Get the pointer to the start of this board's block of data

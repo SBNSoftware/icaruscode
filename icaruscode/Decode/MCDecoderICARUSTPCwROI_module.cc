@@ -218,7 +218,7 @@ MCDecoderICARUSTPCwROI::MCDecoderICARUSTPCwROI(fhicl::ParameterSet const & pset,
     configure(pset);
 
     // Check the concurrency 
-    int max_concurrency = art::Globals::instance()->nthreads(); //tbb::this_task_arena::max_concurrency();
+    int max_concurrency = art::Globals::instance()->nthreads(); 
 
     mf::LogDebug("MCDecoderICARUSTPCwROI") << "     ==> concurrency: " << max_concurrency << std::endl;
 

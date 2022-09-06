@@ -11,9 +11,6 @@
 #include <vector>
 #include <utility> // std::pair<>
 #include <memory> // std::unique_ptr<>
-#include <iomanip>
-#include <fstream>
-#include <random>
 
 // framework libraries
 #include "fhiclcpp/ParameterSet.h" 
@@ -22,38 +19,22 @@
 #include "art/Framework/Core/EDProducer.h"
 #include "art/Framework/Principal/Event.h" 
 #include "art/Framework/Principal/Handle.h" 
-#include "art/Utilities/make_tool.h"
-#include "canvas/Persistency/Common/Ptr.h" 
-#include "canvas/Persistency/Common/PtrVector.h" 
 #include "art/Framework/Services/Registry/ServiceHandle.h" 
-#include "art_root_io/TFileService.h" 
 #include "canvas/Utilities/Exception.h"
-
-#include "cetlib_except/coded_exception.h"
+#include "canvas/Utilities/InputTag.h"
 
 // LArSoft libraries
 #include "larcoreobj/SimpleTypesAndConstants/RawTypes.h" // raw::ChannelID_t
-#include "larcorealg/CoreUtils/enumerate.h"
 #include "larcore/Geometry/Geometry.h"
 #include "larcore/CoreUtils/ServiceUtil.h" // lar::providerFrom()
+#include "larcorealg/CoreUtils/zip.h"
 #include "lardataobj/RecoBase/Wire.h"
-#include "lardataobj/RawData/RawDigit.h"
-#include "lardata/DetectorInfoServices/DetectorClocksService.h"
 #include "lardata/ArtDataHelper/WireCreator.h"
-#include "lardata/Utilities/AssociationUtil.h"
 
 #include "icaruscode/IcarusObj/ChannelROI.h"
 
-#include "tbb/parallel_for.h"
-#include "tbb/blocked_range.h"
-#include "tbb/task_arena.h"
-#include "tbb/spin_mutex.h"
-#include "tbb/concurrent_hash_map.h"
-
 ///creation of calibrated signals on wires
 namespace caldata {
-
-tbb::spin_mutex ROIConvertSpinMutex;
 
 class ROIConvert : public art::EDProducer
 {
@@ -61,7 +42,6 @@ public:
 // create calibrated signals on wires. this class runs 
 // an fft to remove the electronics shaping.     
     explicit ROIConvert(fhicl::ParameterSet const& pset);
-    virtual ~ROIConvert();
     void     produce(art::Event& evt); 
     void     beginJob(); 
     void     endJob();                 
@@ -90,11 +70,6 @@ ROIConvert::ROIConvert(fhicl::ParameterSet const& pset) : EDProducer{pset}
     }
 }
 
-//-------------------------------------------------
-ROIConvert::~ROIConvert()
-{
-}
-
 //////////////////////////////////////////////////////
 void ROIConvert::reconfigure(fhicl::ParameterSet const& pset)
 {
@@ -121,65 +96,56 @@ void ROIConvert::endJob()
 void ROIConvert::produce(art::Event& evt)
 {
     // We need to loop through the list of Wire data we have been given
-    for(size_t labelIdx = 0; labelIdx < fWireModuleLabelVec.size(); labelIdx++)
+    // This construct from Gianluca Petrillo who invented it and should be given all credit for it! 
+    for(auto const& [channelLabel, instanceName] : util::zip(fWireModuleLabelVec, fOutInstanceLabelVec))
     {
-        const art::InputTag& channelLabel = fWireModuleLabelVec[labelIdx];
-
         // make a collection of Wires
-        std::unique_ptr<std::vector<recob::Wire>> wireCol(new std::vector<recob::Wire>);
+        std::unique_ptr<std::vector<recob::Wire>> wireCol = std::make_unique<std::vector<recob::Wire>>();
 
-        mf::LogInfo("ROIConvert") << "ROIConvert, looking for ChannelROI data at " << channelLabel << std::endl;
+        mf::LogInfo("ROIConvert") << "ROIConvert, looking for ChannelROI data at " << channelLabel.encode();
     
         // Read in the collection of full length deconvolved waveforms
-        // Note we assume this list is sorted in increasing channel number!
-        art::Handle< std::vector<recob::ChannelROI>> channelVecHandle;
-        
-        evt.getByLabel(channelLabel, channelVecHandle);
+       const std::vector<recob::ChannelROI>& channelVec = evt.getProduct<std::vector<recob::ChannelROI>>(channelLabel);
 
-        mf::LogInfo("ROIConvert") << "--> Recovered ChannelROI data, size: " << channelVecHandle->size() << std::endl;
+        mf::LogInfo("ROIConvert") << "--> Recovered ChannelROI data, size: " << channelVec.size();
     
-        if (!channelVecHandle->size())
+        if (!channelVec.empty())
         {
-            evt.put(std::move(wireCol), channelLabel.instance());
-            fEventCount++;
-            
-            return;
-        }
-   
-        // Reserve the room for the output
-        wireCol->reserve(channelVecHandle->size());
+            // Reserve the room for the output
+            wireCol->reserve(channelVec.size());
 
-        // Loop through the input ChannelROI collection
-        for(const auto& channelROI : *channelVecHandle)
-        {
-            // Recover the channel and the view
-            raw::ChannelID_t channel = channelROI.Channel();
-            geo::View_t      view    = fGeometry->View(channel);
-
-            // Create an ROI vector for output
-            recob::Wire::RegionsOfInterest_t ROIVec;
- 
-            // Loop through the ROIs for this channel
-            const recob::ChannelROI::RegionsOfInterest_t& channelROIs = channelROI.SignalROI();
-
-            for(const auto& range : channelROIs.get_ranges())
+            // Loop through the input ChannelROI collection
+            for(const auto& channelROI : channelVec)
             {
-                size_t startTick = range.begin_index();
+                // Recover the channel and the view
+                raw::ChannelID_t channel = channelROI.Channel();
+                geo::View_t      view    = fGeometry->View(channel);
 
-                std::vector<float> dataVec(range.data().size());
+                // Create an ROI vector for output
+                recob::Wire::RegionsOfInterest_t ROIVec;
+    
+                // Loop through the ROIs for this channel
+                const recob::ChannelROI::RegionsOfInterest_t& channelROIs = channelROI.SignalROI();
 
-                for(size_t binIdx = 0; binIdx < range.data().size(); binIdx++) dataVec[binIdx] = range.data()[binIdx];
+                for(const auto& range : channelROIs.get_ranges())
+                {
+                    size_t startTick = range.begin_index();
 
-                ROIVec.add_range(startTick, std::move(dataVec));
+                    std::vector<float> dataVec(range.data().size());
+
+                    for(size_t binIdx = 0; binIdx < range.data().size(); binIdx++) dataVec[binIdx] = range.data()[binIdx];
+
+                    ROIVec.add_range(startTick, std::move(dataVec));
+                }
+
+                wireCol->push_back(recob::WireCreator(std::move(ROIVec),channel,view).move());
             }
 
-            wireCol->push_back(recob::WireCreator(std::move(ROIVec),channel,view).move());
+            // Time to stroe everything
+            if(wireCol->empty()) mf::LogWarning("ROIConvert") << "No wires made for this event.";
         }
 
-        // Time to stroe everything
-        if(wireCol->size() == 0) mf::LogWarning("ROIConvert") << "No wires made for this event.";
-
-        evt.put(std::move(wireCol), fOutInstanceLabelVec[labelIdx]);
+        evt.put(std::move(wireCol), instanceName);
     }
 
     fEventCount++;
