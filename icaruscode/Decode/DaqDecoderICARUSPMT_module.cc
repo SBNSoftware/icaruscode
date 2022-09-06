@@ -1351,8 +1351,10 @@ icarus::DaqDecoderICARUSPMT::DaqDecoderICARUSPMT(Parameters const& params)
   //
   // produced data products declaration
   //
-  for (std::string const& instanceName: getAllInstanceNames())
+  for (std::string const& instanceName: getAllInstanceNames()){
+    if( instanceName.empty() ) continue;
     produces<std::vector<icarus::timing::PMTWaveformTimeCorrection>>(instanceName);
+  }
 
   produces<std::vector<raw::OpDetWaveform>>();
   
@@ -1565,6 +1567,12 @@ void icarus::DaqDecoderICARUSPMT::produce(art::Event& event) {
   // Time corrections
   //
   std::map<std::string, std::vector<icarus::timing::PMTWaveformTimeCorrection>> timeCorrectionProducts;
+  for (std::string const& instanceName: getAllInstanceNames()){
+    if( instanceName.empty() ) continue;
+        timeCorrectionProducts.emplace(instanceName, 
+        std::vector<icarus::timing::PMTWaveformTimeCorrection>{}
+    );
+  }
   for (ProtoWaveform_t& waveform: protoWaveforms) {
     
     // on-global and span requirements overrides even `mustSave()` requirement;
@@ -1586,9 +1594,7 @@ void icarus::DaqDecoderICARUSPMT::produce(art::Event& event) {
         (waveform.channelSetup->category == fCorrectionInstance ? true : false),
         corrections);
 
-    timeCorrectionProducts.emplace(waveform.channelSetup->category, 
-        std::move(corrections)
-    );
+    timeCorrectionProducts.at(waveform.channelSetup->category) = corrections;
 
   }
 
@@ -1614,13 +1620,14 @@ void icarus::DaqDecoderICARUSPMT::produce(art::Event& event) {
 
     if( !fCorrectionInstance.empty() ){
         auto waveformCorrection = timeCorrectionProducts.at(fCorrectionInstance);
+        
         correctTimeStamp = waveform.waveform.TimeStamp() 
-            + waveformCorrection.at(waveform.channelSetup->channelID).startTime;
+            + waveformCorrection.at(waveform.waveform.ChannelNumber()).startTime;
     }
     else{
         correctTimeStamp 
             = waveform.waveform.TimeStamp() 
-            + fPMTTimingCorrectionsService.getResetCableDelay(waveform.channelSetup->channelID);   
+            + fPMTTimingCorrectionsService.getResetCableDelay(waveform.waveform.ChannelNumber());   
     }
 
     // Set a new Timestamp
