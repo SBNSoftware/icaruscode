@@ -2,33 +2,8 @@
 
 BEGIN_PROLOG
 
-icarus_calodata:                  @local::standard_caloicarusdata
-icarus_calodata.CaloAlg:          @local::icarus_calorimetryalgdata
-
-icarus_calomc:                    @local::standard_calomc
-icarus_calomc.CaloAlg:            @local::icarus_calorimetryalgmc
-icarus_calomc.CaloAlg.CaloUseModBox: true
-icarus_calomc.UseArea: true
-
-icarus_generalcalomc:
-{
- module_type:            "GeneralCalorimetry"
- TrackModuleLabel:       "track3d"
- CaloAlg:	             @local::icarus_calorimetryalgmc
-}
-
 icarus_gnewcalomc:              @local::standard_gnocchicaloicarus
 icarus_gnewcalomc.CaloAlg:      @local::icarus_calorimetryalgmc
-
-icarus_trackcalorimetryalg:                @local::standard_trackcalorimetryalg
-icarus_trackcalorimetryalg.CalorimetryAlg: @local::icarus_calorimetryalgmc
-
-icarus_trackcalorimetry:                     @local::standard_trackcalorimetry
-icarus_trackcalorimetry.TrackCalorimetryAlg: @local::icarus_trackcalorimetryalg
-
-icarus_trackcalorimetry.TrackModuleLabel: "pmAlgTracker"
-icarus_trackcalorimetry.SpacePointModuleLabel: "pmAlgTracker"
-icarus_trackcalorimetry.HitModuleLabel: "gaushit"
-
+icarus_gnewcalomc.NormTools:    []
 
 END_PROLOG
