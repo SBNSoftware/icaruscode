@@ -201,22 +201,37 @@ namespace crt {
     vector<vector<int>> fDetPDG; /// signal inducing particle(s)' PDG code
 
     //CRT hit product vars
-    int      fHitEvent;
-    float    fXHit; ///< reconstructed X position of CRT hit (cm)
-    float    fYHit; ///< reconstructed Y position of CRT hit (cm)
-    float    fZHit; ///< reconstructed Z position of CRT hit (cm)
-    float    fXErrHit; ///< stat error of CRT hit reco X (cm)
-    float    fYErrHit; ///< stat error of CRT hit reco Y (cm)
-    float    fZErrHit; ///< stat error of CRT hit reco Z (cm)
-    uint64_t    fT0Hit; ///< hit time w.r.t. PPS
-    uint64_t    fT1Hit; ///< hit time w.r.t. global event time
-    int       fHitReg; ///< region code of CRT hit
-    int       fHitSubSys;
-    int       fNHit; ///< number of CRT hits for this event
-    int       fHitStrip;
-    int       fHitMod;
-    int       fNHitFeb;
-    float     fHitTotPe;
+    int      fHit_Event;
+    vector<float> fHit_vec_x_pos; ///< reconstructed X position of CRT hit (cm)
+    vector<float> fHit_vec_y_pos; ///< reconstructed Y position of CRT hit (cm)
+    vector<float> fHit_vec_z_pos; ///< reconstructed Z position of CRT hit (cm)
+    vector<float> fHit_vec_x_err; ///< stat error of CRT hit reco X (cm)
+    vector<float> fHit_vec_y_err; ///< stat error of CRT hit reco Y (cm)
+    vector<float> fHit_vec_z_err; ///< stat error of CRT hit reco Z (cm)
+    vector<int> fHit_vec_nLayer; ///< number of layer of each hit
+    vector<float> fHit_vec_x_dir; ///< reconstructed X direction of CRT hit (cm)
+    vector<float> fHit_vec_y_dir; ///< reconstructed Y direction of CRT hit (cm)
+    vector<float> fHit_vec_z_dir; ///< reconstructed Z direction of CRT hit (cm)
+    vector<float> fHit_vec_Layer0_x_pos; ///< reconstructed X position of CRT hit in layer id 0 (cm)
+    vector<float> fHit_vec_Layer0_y_pos; ///< reconstructed Y position of CRT hit in layer id 0 (cm)
+    vector<float> fHit_vec_Layer0_z_pos; ///< reconstructed Z position of CRT hit in layer id 0 (cm)
+    vector<float> fHit_vec_Layer0_x_err; ///< stat error of CRT hit reco X in layer id 0 (cm)
+    vector<float> fHit_vec_Layer0_y_err; ///< stat error of CRT hit reco Y in layer id 0 (cm)
+    vector<float> fHit_vec_Layer0_z_err; ///< stat error of CRT hit reco Z in layer id 0 (cm)
+    vector<float> fHit_vec_Layer0_pe; ///< pe of CRT hit in layer id 0 (cm)
+    vector<float> fHit_vec_Layer1_x_pos; ///< reconstructed X position of CRT hit in layer id 1 (cm)
+    vector<float> fHit_vec_Layer1_y_pos; ///< reconstructed Y position of CRT hit in layer id 1 (cm)
+    vector<float> fHit_vec_Layer1_z_pos; ///< reconstructed Z position of CRT hit in layer id 1 (cm)
+    vector<float> fHit_vec_Layer1_x_err; ///< stat error of CRT hit reco X in layer id 1 (cm)
+    vector<float> fHit_vec_Layer1_y_err; ///< stat error of CRT hit reco Y in layer id 1 (cm)
+    vector<float> fHit_vec_Layer1_z_err; ///< stat error of CRT hit reco Z in layer id 1 (cm)
+    vector<float> fHit_vec_Layer1_pe; ///< pe of CRT hit in layer id 0 (cm)
+    vector<uint64_t> fHit_vec_T0; ///< hit time w.r.t. PPS
+    vector<uint64_t> fHit_vec_T1; ///< hit time w.r.t. PPS
+    vector<int> fHit_vec_RegionNumber; ///< region number of CRT hit
+    vector<int> fHit_vec_SubSys;
+    vector<float> fHit_vec_pe;
+
     
     // Other variables that will be shared between different methods.
     geo::GeometryCore const* fGeometryService;   ///< pointer to Geometry provider
@@ -323,29 +338,43 @@ namespace crt {
     fDAQNtuple->Branch("gate_start_timestamp", &m_gate_start_timestamp, "gate_start_timestamp/l");
 
     // Define the branches of our SimHit n-tuple
-    fHitNtuple->Branch("event",       &fHitEvent,    "event/I");
-    fHitNtuple->Branch("nHit",        &fNHit,        "nHit/I");
-    fHitNtuple->Branch("x",           &fXHit,        "x/F");
-    fHitNtuple->Branch("y",           &fYHit,        "y/F");
-    fHitNtuple->Branch("z",           &fZHit,        "z/F");
-    fHitNtuple->Branch("xErr",        &fXErrHit,     "xErr/F");
-    fHitNtuple->Branch("yErr",        &fYErrHit,     "yErr/F");
-    fHitNtuple->Branch("zErr",        &fZErrHit,     "zErr/F");
-    fHitNtuple->Branch("t0",          &fT0Hit,       "t0/l");
-    fHitNtuple->Branch("t1",          &fT1Hit,       "t1/l");
-    fHitNtuple->Branch("region",      &fHitReg,      "region/I");  
-    //    fHitNtuple->Branch("tagger",      &ftagger,      "tagger/C");  
-    fHitNtuple->Branch("subSys",      &fHitSubSys,   "subSys/I");
-    fHitNtuple->Branch("modID",       &fHitMod,      "modID/I");
-    fHitNtuple->Branch("stripID",     &fHitStrip,    "stripID/I");
-    fHitNtuple->Branch("nFeb",        &fNHitFeb,     "nFeb/I");
-    fHitNtuple->Branch("totPe",       &fHitTotPe,    "totPe/F");
+    fHitNtuple->Branch("event", &fHit_Event, "event/I");
+    fHitNtuple->Branch("x_pos", "vector<float>", &fHit_vec_x_pos);
+    fHitNtuple->Branch("y_pos", "vector<float>", &fHit_vec_y_pos);
+    fHitNtuple->Branch("z_pos", "vector<float>", &fHit_vec_z_pos);
+    fHitNtuple->Branch("x_err", "vector<float>", &fHit_vec_x_err);
+    fHitNtuple->Branch("y_err", "vector<float>", &fHit_vec_y_err);
+    fHitNtuple->Branch("z_err", "vector<float>", &fHit_vec_z_err);
+    fHitNtuple->Branch("nLayer", "vector<int>", &fHit_vec_nLayer);
+    fHitNtuple->Branch("x_dir", "vector<float>", &fHit_vec_x_dir);
+    fHitNtuple->Branch("y_dir", "vector<float>", &fHit_vec_y_dir);
+    fHitNtuple->Branch("z_dir", "vector<float>", &fHit_vec_z_dir);
+    fHitNtuple->Branch("Layer0_x_pos", "vector<float>", &fHit_vec_Layer0_x_pos);
+    fHitNtuple->Branch("Layer0_y_pos", "vector<float>", &fHit_vec_Layer0_y_pos);
+    fHitNtuple->Branch("Layer0_z_pos", "vector<float>", &fHit_vec_Layer0_z_pos);
+    fHitNtuple->Branch("Layer0_x_err", "vector<float>", &fHit_vec_Layer0_x_err);
+    fHitNtuple->Branch("Layer0_y_err", "vector<float>", &fHit_vec_Layer0_y_err);
+    fHitNtuple->Branch("Layer0_z_err", "vector<float>", &fHit_vec_Layer0_z_err);
+    fHitNtuple->Branch("Layer0_pe", "vector<float>", &fHit_vec_Layer0_pe);
+    fHitNtuple->Branch("Layer1_x_pos", "vector<float>", &fHit_vec_Layer1_x_pos);
+    fHitNtuple->Branch("Layer1_y_pos", "vector<float>", &fHit_vec_Layer1_y_pos);
+    fHitNtuple->Branch("Layer1_z_pos", "vector<float>", &fHit_vec_Layer1_z_pos);
+    fHitNtuple->Branch("Layer1_x_err", "vector<float>", &fHit_vec_Layer1_x_err);
+    fHitNtuple->Branch("Layer1_y_err", "vector<float>", &fHit_vec_Layer1_y_err);
+    fHitNtuple->Branch("Layer1_z_err", "vector<float>", &fHit_vec_Layer1_z_err);
+    fHitNtuple->Branch("Layer1_pe", "vector<float>", &fHit_vec_Layer1_pe);
+    fHitNtuple->Branch("T0", "vector<uint64_t>", &fHit_vec_T0);
+    fHitNtuple->Branch("T1", "vector<uint64_t>", &fHit_vec_T1);
+    fHitNtuple->Branch("RegionNumber", "vector<int>", &fHit_vec_RegionNumber);
+    fHitNtuple->Branch("SubSys", "vector<int>", &fHit_vec_SubSys);
+    fHitNtuple->Branch("pe", "vector<float>", &fHit_vec_pe);
     fHitNtuple->Branch("gate_type", &m_gate_type, "gate_type/b");
     fHitNtuple->Branch("gate_name", &m_gate_name);
     fHitNtuple->Branch("trigger_timestamp", &m_trigger_timestamp, "trigger_timestamp/l");
     fHitNtuple->Branch("gate_start_timestamp", &m_gate_start_timestamp, "gate_start_timestamp/l");
     fHitNtuple->Branch("trigger_gate_diff", &m_trigger_gate_diff, "trigger_gate_diff/l");
     fHitNtuple->Branch("gate_crt_diff",&m_gate_crt_diff, "gate_crt_diff/l");
+
 }
    
   void CRTDataAnalysis::beginRun(const art::Run&)
@@ -472,59 +501,108 @@ namespace crt {
     } //for CRT FEB events
     
   
-
-  
-
     art::Handle<std::vector<sbn::crt::CRTHit>> crtHitHandle;
-    
     bool isCRTHit = event.getByLabel(fCRTHitProducerLabel, crtHitHandle);
-    std::vector<int> ids;
-    fNHit = 0;
-    if (isCRTHit) {
-      
-       mf::LogError("CRTDataAnalysis") << "looping over reco hits..." << std::endl;
-      for ( auto const& hit : *crtHitHandle )
-        {
-	  fNHit++;
-	  fHitEvent = fEvent;
-	  fXHit    = hit.x_pos;
-	  fYHit    = hit.y_pos;
-	  fZHit    = hit.z_pos;
-	  fXErrHit = hit.x_err;
-	  fYErrHit = hit.y_err;
-	  fZErrHit = hit.z_err;
-	  fT0Hit   = hit.ts0_ns;
-	  fT1Hit   = hit.ts1_ns;
-	   
-	  fNHitFeb  = hit.feb_id.size();
-	  fHitTotPe = hit.peshit;
-	  int mactmp = hit.feb_id[0];
-	  fHitReg  = fCrtutils->AuxDetRegionNameToNum(fCrtutils->MacToRegion(mactmp));
-	  fHitSubSys =  fCrtutils->MacToTypeCode(mactmp);
-	  
-	  
-	  m_gate_crt_diff = m_gate_start_timestamp - hit.ts0_ns;
-	  
-	  auto ittmp = hit.pesmap.find(mactmp);
-	  if (ittmp==hit.pesmap.end()) {
-	     mf::LogError("CRTDataAnalysis") << "hitreg: " << fHitReg << std::endl;
-	     mf::LogError("CRTDataAnalysis") << "fHitSubSys: "<< fHitSubSys << std::endl;
-	     mf::LogError("CRTDataAnalysis") << "mactmp = " << mactmp << std::endl;
-	     mf::LogError("CRTDataAnalysis") << "could not find mac in pesmap!" << std::endl;
-	    continue;
-	  }
-	  
-	  int chantmp = (*ittmp).second[0].first;
-	  
-	  fHitMod  = fCrtutils->MacToAuxDetID(mactmp, chantmp);
-	  fHitStrip = fCrtutils->ChannelToAuxDetSensitiveID(mactmp, chantmp);
-	  
-	  fHitNtuple->Fill();
-        }//for CRT Hits
+
+    fHit_Event = fEvent;
+
+    fHit_vec_x_pos.clear();
+    fHit_vec_y_pos.clear();
+    fHit_vec_z_pos.clear();
+    fHit_vec_x_err.clear();
+    fHit_vec_y_err.clear();
+    fHit_vec_z_err.clear();
+    fHit_vec_nLayer.clear();
+    fHit_vec_x_dir.clear();
+    fHit_vec_y_dir.clear();
+    fHit_vec_z_dir.clear();
+    fHit_vec_Layer0_x_pos.clear();
+    fHit_vec_Layer0_y_pos.clear();
+    fHit_vec_Layer0_z_pos.clear();
+    fHit_vec_Layer0_x_err.clear();
+    fHit_vec_Layer0_y_err.clear();
+    fHit_vec_Layer0_z_err.clear();
+    fHit_vec_Layer0_pe.clear();
+    fHit_vec_Layer1_x_pos.clear();
+    fHit_vec_Layer1_y_pos.clear();
+    fHit_vec_Layer1_z_pos.clear();
+    fHit_vec_Layer1_x_err.clear();
+    fHit_vec_Layer1_y_err.clear();
+    fHit_vec_Layer1_z_err.clear();
+    fHit_vec_Layer1_pe.clear();
+    fHit_vec_T0.clear();
+    fHit_vec_T1.clear();
+    fHit_vec_RegionNumber.clear();
+    fHit_vec_SubSys.clear();
+    fHit_vec_pe.clear();
+
+    if(isCRTHit) {
+
+      mf::LogError("CRTDataAnalysis") << "looping over reco hits..." << std::endl;
+      for ( auto const& hit : *crtHitHandle ){
+
+        fHit_vec_x_pos.push_back(hit.x_pos);
+        fHit_vec_y_pos.push_back(hit.y_pos);
+        fHit_vec_z_pos.push_back(hit.z_pos);
+
+        fHit_vec_x_err.push_back(hit.x_err);
+        fHit_vec_y_err.push_back(hit.y_err);
+        fHit_vec_z_err.push_back(hit.z_err);
+
+        fHit_vec_nLayer.push_back(hit.nLayer);
+
+        fHit_vec_x_dir.push_back(hit.x_dir);
+        fHit_vec_y_dir.push_back(hit.y_dir);
+        fHit_vec_z_dir.push_back(hit.z_dir);
+
+        if(hit.nLayer==2){
+          fHit_vec_Layer0_x_pos.push_back(hit.layerHits[0].x_pos);
+          fHit_vec_Layer0_y_pos.push_back(hit.layerHits[0].y_pos);
+          fHit_vec_Layer0_z_pos.push_back(hit.layerHits[0].z_pos);
+          fHit_vec_Layer0_x_err.push_back(hit.layerHits[0].x_err);
+          fHit_vec_Layer0_y_err.push_back(hit.layerHits[0].y_err);
+          fHit_vec_Layer0_z_err.push_back(hit.layerHits[0].z_err);
+          fHit_vec_Layer0_pe.push_back(hit.layerHits[0].peshit);
+          fHit_vec_Layer1_x_pos.push_back(hit.layerHits[1].x_pos);
+          fHit_vec_Layer1_y_pos.push_back(hit.layerHits[1].y_pos);
+          fHit_vec_Layer1_z_pos.push_back(hit.layerHits[1].z_pos);
+          fHit_vec_Layer1_x_err.push_back(hit.layerHits[1].x_err);
+          fHit_vec_Layer1_y_err.push_back(hit.layerHits[1].y_err);
+          fHit_vec_Layer1_z_err.push_back(hit.layerHits[1].z_err);
+          fHit_vec_Layer1_pe.push_back(hit.layerHits[1].peshit);
+        }
+        else{
+          fHit_vec_Layer0_x_pos.push_back(0.);
+          fHit_vec_Layer0_y_pos.push_back(0.);
+          fHit_vec_Layer0_z_pos.push_back(0.);
+          fHit_vec_Layer0_x_err.push_back(-999.);
+          fHit_vec_Layer0_y_err.push_back(-999.);
+          fHit_vec_Layer0_z_err.push_back(-999.);
+          fHit_vec_Layer0_pe.push_back(0.);
+          fHit_vec_Layer1_x_pos.push_back(0.);
+          fHit_vec_Layer1_y_pos.push_back(0.);
+          fHit_vec_Layer1_z_pos.push_back(0.);
+          fHit_vec_Layer1_x_err.push_back(-999.);
+          fHit_vec_Layer1_y_err.push_back(-999.);
+          fHit_vec_Layer1_z_err.push_back(-999.);
+          fHit_vec_Layer1_pe.push_back(0.);
+        }
+
+        fHit_vec_T0.push_back(hit.ts0());
+        fHit_vec_T1.push_back(hit.ts1());
+
+        int mactmp = hit.feb_id[0];
+
+        fHit_vec_RegionNumber.push_back( fCrtutils->AuxDetRegionNameToNum(fCrtutils->MacToRegion(mactmp)) );
+        fHit_vec_SubSys.push_back( fCrtutils->MacToTypeCode(mactmp) );
+
+        fHit_vec_pe.push_back(hit.peshit);
+
+      }//for CRT Hits
     }//if CRT Hits
-    
     else  mf::LogError("CRTDataAnalysis") << "CRTHit products not found! (expected if decoder step)" << std::endl;
 
+    fHitNtuple->Fill();
 
   } // CRTDataAnalysis::analyze()
   
