@@ -128,14 +128,11 @@ void icarus::timing::PMTWaveformTimeCorrectionExtractor::findWaveformTimeCorrect
 
     unsigned int crateSignalID = waveChannelID & 0x00F0;
 
-    std::cout << cateogry << " " << crateSignalID << " " << crateSignalID << std::endl;
-
     if( fCrateFragmentMap.find(crateSignalID) == fCrateFragmentMap.end() ){ 
 
-        std::cout << "!!! " << cateogry << " " << crateSignalID << " " << crateSignalID << std::endl;
-
         mf::LogError("icarus::timing::PMTWaveformTimeCorrectionExtractor") << 
-            "Invalid special channel number: " << std::hex << waveChannelID;
+            "Invalid special channel number: " << std::hex << waveChannelID << 
+            "And category: " << cateogry;
 
         throw;
     }
