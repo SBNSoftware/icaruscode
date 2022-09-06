@@ -363,6 +363,8 @@ class opdet::factory::FWInterfacedIF {
   using Event_t = typename FWTraits::Event_t;
   using Module_t = typename FWTraits::Module_t;
   
+  virtual ~FWInterfacedIF() = default;
+  
   /// Access to the algorithm.
   Algo_t& algo() const { return *getAlgo(); }
   
@@ -433,6 +435,8 @@ struct opdet::factory::AlgorithmFactory<Base>::AlgoMaker {
   std::string name; ///< The name associated to this algorithm.
   
   AlgoMaker(std::string name): name{ std::move(name) } {}
+  
+  virtual ~AlgoMaker() = default;
   
   /**
    * @brief Algorithm class construction.

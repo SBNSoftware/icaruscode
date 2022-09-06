@@ -777,7 +777,7 @@ unsigned int icarus::PMTWaveformBaselinesFromChannelData::removeWaveformsAround
     = detinfo::timescales::electronics_time::interval_t{ fOpticalTick }.value();
   
   auto const hasTriggerTime
-    = [this,tickDuration,time](raw::OpDetWaveform const* waveform)
+    = [tickDuration,time](raw::OpDetWaveform const* waveform)
     {
       double const relTime = time - waveform->TimeStamp();
       return (relTime >= 0.0) && (relTime < (waveform->size() * tickDuration));
