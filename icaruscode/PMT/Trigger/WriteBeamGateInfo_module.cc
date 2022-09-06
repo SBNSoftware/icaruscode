@@ -238,7 +238,7 @@ icarus::trigger::WriteBeamGateInfo::WriteBeamGateInfo
     log << "Writing " << fBeamGates.size() << " gates in each event:";
     for (sim::BeamGateInfo const& gate: fBeamGates) {
       auto const& beamType = Config::GateConfig::BeamTypeSelector.get
-        (Config::GateConfig::BeamType_t{ gate.BeamType() });
+        (Config::GateConfig::BeamType_t(gate.BeamType()));
       log << "\n *  [ " << gate.Start() << " -- " << gate.Start() + gate.Width()
         << " ] ns (duration: " << gate.Width() << " ns), type: "
         << beamType.name() << " (" << gate.BeamType() << ")"
