@@ -275,6 +275,8 @@ sbn::TimedTrackSelector::TimedTrackSelector
   , fTrackTimeTags{ params().TrackTimeTags() }
   , fMinT0{ params().MinT0() }
   , fMaxT0{ params().MaxT0() }
+  , fMinAngle{ params().MinAngle() }
+  , fMaxAngle{ params().MaxAngle() }
   , fMinTracks{ params().MinTracks() }
   , fMaxTracks{ params().MaxTracks() }
   , fOnlyPandoraTracks{ params().OnlyPandoraTracks() }
