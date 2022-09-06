@@ -811,8 +811,8 @@ sbn::crt::CRTHit CRTHitRecoAlg::MergeSideHits(const vector<sbn::crt::CRTHit>& cr
     mac5s.insert(mac5s.end(), crtHit.feb_id.begin(), crtHit.feb_id.end());
     pe_map.insert(crtHit.pesmap.begin(), crtHit.pesmap.end());
     pe_sum += crtHit.peshit;
-    t0 += crtHit.ts0_ns;
-    t1 += crtHit.ts1_ns;
+    t0 += crtHit.ts0();
+    t1 += crtHit.ts1();
     regionNum = crtHit.plane;
     regionName = crtHit.tagger;
   }
