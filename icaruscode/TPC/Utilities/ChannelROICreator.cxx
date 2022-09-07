@@ -10,10 +10,6 @@
 // declaration header
 #include "icaruscode/TPC/Utilities/ChannelROICreator.h"
 
-// art libraries
-//#include "art/Framework/Principal/Handle.h" 
-//#include "art/Framework/Services/Registry/ServiceHandle.h"
-
 // LArSoft libraries
 #include "lardataobj/RawData/RawDigit.h"
 
