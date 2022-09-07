@@ -77,7 +77,14 @@ void ROIConvert::reconfigure(fhicl::ParameterSet const& pset)
     fWireModuleLabelVec    = pset.get<std::vector<art::InputTag>>("WireModuleLabelVec",   std::vector<art::InputTag>()={"decon1droi"});
     fOutInstanceLabelVec   = pset.get<std::vector<std::string>>  ("OutInstanceLabelVec",                            {"PHYSCRATEDATA"});
     fDiagnosticOutput      = pset.get< bool                     >("DaignosticOutput",                                           false);
-    
+
+    if (fWireModuleLabelVec.size() != fWireModuleLabelVec.size()) 
+    {
+        throw art::Exception(art::errors::Configuration) << " Configured " << fOutInstanceLabelVec.size()
+          << " instance names (`OutInstanceLabelVec`) for " << fWireModuleLabelVec.size()
+          << " input products (`WireModuleLabelVec`)\n";
+    }
+
     return;
 }
 
