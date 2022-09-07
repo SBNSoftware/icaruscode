@@ -1570,7 +1570,7 @@ void icarus::DaqDecoderICARUSPMT::produce(art::Event& event) {
   for (std::string const& instanceName: getAllInstanceNames()){
     if( instanceName.empty() ) continue;
         timeCorrectionProducts.emplace(instanceName, 
-        std::vector<icarus::timing::PMTWaveformTimeCorrection>{}
+        std::vector<icarus::timing::PMTWaveformTimeCorrection>{360}
     );
   }
   for (ProtoWaveform_t& waveform: protoWaveforms) {
@@ -1585,22 +1585,29 @@ void icarus::DaqDecoderICARUSPMT::produce(art::Event& event) {
     
     if (!keep) continue;
 
-    std::vector<icarus::timing::PMTWaveformTimeCorrection> corrections{360};
+    //std::vector<icarus::timing::PMTWaveformTimeCorrection> corrections{360};
 
     fPMTWaveformTimeCorrectionManager->findWaveformTimeCorrections(
         waveform.waveform, 
         waveform.channelSetup->category,
         waveform.channelSetup->channelID,
         (waveform.channelSetup->category == fCorrectionInstance ? true : false),
-        corrections);
-
-    timeCorrectionProducts.at(waveform.channelSetup->category) = corrections;
+        timeCorrectionProducts.at(waveform.channelSetup->category) );
+    
+    //..timeCorrectionProducts.at(waveform.channelSetup->category) = corrections;
 
   }
 
   // ---------------------------------------------------------------------------
   // output
   //
+
+  //std::cout << "---Begin Print the corrections for category " << fCorrectionInstance << " -----" << std::endl;
+  //auto const & corrections = timeCorrectionProducts.at(fCorrectionInstance); 
+  //for( auto const & corr : corrections )
+  //      std::cout << corr.startTime << std::endl;
+  //std::cout << "---END Print the corrections for category " << fCorrectionInstance << " -----" << std::endl;
+
   
   // split the waveforms by destination
   std::vector<raw::OpDetWaveform> waveformProducts;
@@ -1623,6 +1630,12 @@ void icarus::DaqDecoderICARUSPMT::produce(art::Event& event) {
         
         correctTimeStamp = waveform.waveform.TimeStamp() 
             + waveformCorrection.at(waveform.waveform.ChannelNumber()).startTime;
+
+        //std::cout << " ** " << waveform.waveform.ChannelNumber() << ", "
+        //    << waveform.waveform.TimeStamp() << ", "
+        //    << waveformCorrection.at(waveform.waveform.ChannelNumber()).startTime << ", "
+        //    << correctTimeStamp << std::endl;
+
     }
     else{
         correctTimeStamp 

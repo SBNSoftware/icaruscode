@@ -7,4 +7,13 @@ icarus_pmttimingservice:
     Timeout:   1000
 }
 
+icarus_ophit_timing_correction:
+{
+    module_type:         OpHitTimingCorrection
+    InputLabels:         ["ophit"]
+    CorrectLaser:        true
+    CorrectCosmics:      true
+    Verbose:             false
+}
+
 END_PROLOG

@@ -3,6 +3,18 @@ cet_enable_asserts()
 add_subdirectory(DataProducts)
 
 art_make(
+    MODULE_LIBRARIES
+        art_Framework_Core
+        art_Framework_Principal
+        ${ART_FRAMEWORK_SERVICES_BASIC}
+        ${ART_FRAMEWORK_SERVICES_SYSTEM_FILECATALOGMETADATA_SERVICE}
+        art_Utilities
+        canvas
+        ${FHICLCPP}
+        ${MF_MESSAGELOGGER}
+        cetlib_except
+        cetlib 
+        lardataobj_RecoBase
 	LIB_LIBRARIES
 		art_Framework_Core
 		art_Framework_Principal

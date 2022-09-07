@@ -169,6 +169,7 @@ void icarus::timing::PMTWaveformTimeCorrectionExtractor::findWaveformTimeCorrect
                     << fClocksData.OpticalClock().TickPeriod()                      << ", "
                     << startSampleSignal*fClocksData.OpticalClock().TickPeriod()    << ", " 
                     << newStartTime                                                 << ", " 
+                    << cableDelay                                                   << ", "
                     << fClocksData.TriggerTime() - newStartTime                     << std::endl;
             }
         }
