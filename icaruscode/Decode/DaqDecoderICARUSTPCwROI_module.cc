@@ -550,11 +550,8 @@ void DaqDecoderICARUSTPCwROI::processSingleFragment(size_t                      
 
         const icarusDB::ChannelPlanePairVec& channelPlanePairVec = fChannelMap->getChannelPlanePair(boardIDVec[boardSlot]);
 
-        std::stringstream outputString;
-        outputString << "********************************************************************************\n"
-                     << "FragmentID: " << std::hex << fragmentID << std::dec << ", Crate: " << crateName << ", boardID: " << boardSlot << "/" << nBoardsPerFragment << ", size " << channelPlanePairVec.size() << "/" << nChannelsPerBoard;
-
-        mf::LogDebug(fLogCategory) << outputString.str();
+        mf::LogDebug(fLogCategory) << "********************************************************************************\n"
+                                   << "FragmentID: " << std::hex << fragmentID << std::dec << ", Crate: " << crateName << ", boardID: " << boardSlot << "/" << nBoardsPerFragment << ", size " << channelPlanePairVec.size() << "/" << nChannelsPerBoard;
 
         if (board != boardSlot)
         {
