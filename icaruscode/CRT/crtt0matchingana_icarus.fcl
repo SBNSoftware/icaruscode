@@ -85,8 +85,9 @@ physics:
       # The input parameters	   
       SimModuleLabel:      "largeant"         # Simulation producer module label
       CRTHitLabel:         "crthit"           # CRT producer module label
-      #TPCTrackLabel:       ["pandoraTrackGausCryoE", "pandoraTrackGausCryoW"]     # Track producer module label
-      TPCTrackLabel:       "pandoraTrackGausCryoE"     # Track producer module label  
+      TPCTrackLabel:       ["pandoraTrackGausCryoE", "pandoraTrackGausCryoW"]     # Track producer module label
+      #TPCTrackLabel:       "pandoraTrackGausCryoE"     # Track producer module label  
+      TriggerLabel:  "daqTrigger"
       Verbose:             true              # Print extra information about what's going on
       CRTT0Alg:            @local::standard_crtt0matchingalg
       CRTBackTrack:        @local::standard_crtbacktracker

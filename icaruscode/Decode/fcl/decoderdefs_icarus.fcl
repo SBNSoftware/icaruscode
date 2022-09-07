@@ -3,7 +3,7 @@
 BEGIN_PROLOG
 
 extractTriggerConfig: { 
-		    module_type: TriggerConfigurationExtraction
+                    module_type:        TriggerConfigurationExtraction
 }
 
 extractPMTconfig: {
@@ -61,9 +61,9 @@ decodeTrigger: {
 }
 
 decodeTriggerV2: {
-		   module_type:	        DaqDecoderICARUSTrigger
-		   FragmentsLabel:	"daq:ICARUSTriggerV2"
-		   DecoderTool:		@local::TriggerDecoderV2Tool
+                    module_type:        DaqDecoderICARUSTrigger
+                    FragmentsLabel:     "daq:ICARUSTriggerV2"
+                    DecoderTool:        @local::TriggerDecoderV2Tool
 }
 
 END_PROLOG

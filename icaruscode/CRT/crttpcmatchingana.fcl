@@ -4,7 +4,7 @@
 #include "services_common_icarus.fcl"
 #include "crtt0matchingalg_icarus.fcl"
 #include "simulationservices_icarus.fcl"
-
+###include "crteventdisplay_icarus.fcl"
 
 process_name: CRTTPCMatchingAna
 
@@ -64,10 +64,13 @@ physics:
       module_type:         "icaruscode/CRT/CRTTPCMatchingAna"
       # The input parameters	   
       CRTHitLabel:         "crthit"           # CRT producer module label
-      #TPCTrackLabel:       ["pandoraTrackGausCryoE", "pandoraTrackGausCryoW"]     # Track producer module label
-      TPCTrackLabel:       "pandoraTrackGausCryoE"     # Track producer module label  
+      TPCTrackLabel:       ["pandoraTrackGausCryoE", "pandoraTrackGausCryoW"]     # Track producer module label
+      PFParticleLabel: 	   ["pandoraGausCryoE", "pandoraGausCryoW"] # PFParticle producer module label
+      #TPCTrackLabel:       "pandoraTrackGausCryoE"     # Track producer module label  
+      TriggerLabel:        "daqTrigger"
       Verbose:             true              # Print extra information about what's going on
       t0Alg:            @local::standard_crtt0matchingalg
+#      evd:              @local::standard_crteventdisplay
     }
   }
 

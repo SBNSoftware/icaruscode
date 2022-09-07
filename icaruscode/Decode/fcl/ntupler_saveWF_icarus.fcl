@@ -1,26 +1,21 @@
 #include "stage1_icarus_driver_common.fcl"
 
-process_name: stage1
+process_name: caloskim
 
-physics.reco: [ flashfilter,
-                @sequence::icarus_filter_cluster3D,
-		@sequence::icarus_pandora_Gauss,
-		@sequence::icarus_reco_fm,
-                @sequence::icarus_crthit,
-		@sequence::icarus_crtt0match,
-                caloskimCalorimetryCryoE, caloskimCalorimetryCryoW]
+physics.reco: [ caloskimCalorimetryCryoE, caloskimCalorimetryCryoW ]
 
 physics.outana:            [ caloskimE, caloskimW, simpleLightAna, CRTDataAnalysis]
 physics.trigger_paths:     [ reco ]
-physics.end_paths:         [ outana, stream1 ]
-outputs.out1.fileName:     "%ifb_%tc-%p.root"
-outputs.out1.dataTier:     "reconstructed"
+physics.end_paths:         [ outana ]
+outputs.out1.fileName:     "artroot.root"
+outputs.out1.dataTier:     "caloskim"
 outputs.out1.SelectEvents: [ reco ]
 outputs.out1.outputCommands: [
-  "keep *_*_*_*",
-  "drop *_caloskimCalorimetryCryoE_*_*",
-  "drop *_caloskimCalorimetryCryoW_*_*"
+  "drop *_*_*_*"
 ]
+
+physics.analyzers.caloskimE: @local::caloskim_cryoe_goldentracks_not0
+physics.analyzers.caloskimW: @local::caloskim_cryow_goldentracks_not0
 
 # Disabled Space-Charge service for calorimetry
 services.SpaceChargeService: {
@@ -38,7 +33,7 @@ services.message.destinations :
 {
   STDCOUT:
   {
-     type:      "cout"      #tells the message service to output this destination to cout
+     type:      "cerr"      #tells the message service to output this destination to cout
      threshold: "DEBUG"     #tells the message service that this destination applies to WARNING and higher level messages
      categories:
      {
@@ -54,10 +49,9 @@ services.message.destinations :
        }
        default:
        {
-         limit: 0  #don't print anything at the infomsg level except the explicitly named categories
-         reportEvery: 0
+         limit: -1  #don't print anything at the infomsg level except the explicitly named categories
+         reportEvery: 1
        }
      }
   }
 }
-

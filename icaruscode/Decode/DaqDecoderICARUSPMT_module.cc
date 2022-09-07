@@ -20,6 +20,7 @@
 // #include "sbnobj/Common/Trigger/BeamBits.h" // future location of:
 #include "icaruscode/Decode/BeamBits.h" // sbn::triggerSource
 #include "icarusalg/Utilities/BinaryDumpUtils.h" // icarus::ns::util::bin()
+#include "icaruscode/Utilities/ArtHandleTrackerManager.h"
 
 #include "sbnobj/Common/PMT/Data/PMTconfiguration.h" // sbn::PMTconfiguration
 #include "sbndaq-artdaq-core/Overlays/Common/CAENV1730Fragment.hh"
@@ -182,6 +183,13 @@ namespace icarus { class DaqDecoderICARUSPMT; }
  *     option is set to `true` unless `TriggerTag` is specified empty.
  * * `DataTrees` (list of strings, default: none): list of data trees to be
  *     produced; if none (default), then `TFileService` is not required.
+ * * `SkipWaveforms` (flag, default: `false`) if set, waveforms won't be
+ *     produced; this is intended as a debugging option for jobs where only the
+ *     `DataTrees` are desired.
+ * * `DropRawDataAfterUse` (flag, default: `true`): at the end of processing,
+ *     the framework will be asked to remove the PMT data fragment from memory.
+ *     Set this to `false` in the unlikely case where raw PMT fragments are
+ *     still needed after decoding.
  * * `LogCategory` (string, default: `DaqDecoderICARUSPMT`): name of the message
  *     facility category where the output is sent.
  * 
@@ -364,6 +372,24 @@ namespace icarus { class DaqDecoderICARUSPMT; }
  * available and travels together with the waveform itself in a data structure
  * called "proto-waveform". The extra-information is eventually discarded when
  * putting the actual waveform into the _art_ event.
+ * 
+ * 
+ * ### Processing pipeline
+ * 
+ * Processing happens according to the following structure (in `produce()`):
+ * 1. pre-processing: currently nothing
+ * 2. processing of each board data independently: at this level, all the
+ *    buffers from the 16 channels of a single board are processed together
+ *    (`processBoardFragments()`)
+ *     1. the configuration and parameters specific to this board are fetched
+ *     2. each data fragment is processed independently: at this level, data
+ *        from all 16 channels _at a given time_ are processed together,
+ *        producing up to 16 proto-waveforms
+ *     3. merging of contiguous waveforms is performed
+ * 3. post-processing of proto-waveforms:
+ *     * sorting by time (as opposed as roughly by channel, as they come)
+ * 4. conversion to data products and output
+ * 
  * 
  * 
  * Glossary
@@ -596,6 +622,18 @@ class icarus::DaqDecoderICARUSPMT: public art::EDProducer {
       std::vector<std::string>{} // default
       };
     
+    fhicl::Atom<bool> SkipWaveforms {
+      Name("SkipWaveforms"),
+      Comment("do not decode and produce waveforms"),
+      false // default
+      };
+    
+    fhicl::Atom<bool> DropRawDataAfterUse {
+      Name("DropRawDataAfterUse"),
+      Comment("drop PMT data fragments from memory after use"),
+      true // default
+      };
+    
     fhicl::Atom<std::string> LogCategory {
       Name("LogCategory"),
       Comment("name of the category for message stream"),
@@ -664,7 +702,7 @@ class icarus::DaqDecoderICARUSPMT: public art::EDProducer {
   struct TriggerInfo_t {
     SplitTimestamp_t time; ///< Time of the trigger (absolute).
     long int relBeamGateTime; ///< Time of beam gate relative to trigger [ns].
-    unsigned int bits = 0x0; ///< Trigger bits.
+    sbn::triggerSourceMask bits; ///< Trigger bits.
     unsigned int gateCount = 0U; ///< Gate number from the beginning of run.
   }; // TriggerInfo_t
   
@@ -725,6 +763,11 @@ class icarus::DaqDecoderICARUSPMT: public art::EDProducer {
   
   /// All board setup settings.
   std::vector<daq::details::BoardSetup_t> const fBoardSetup;
+  
+  bool const fSkipWaveforms; ///< Whether to skip waveform decoding.
+  
+  /// Clear fragment data product cache after use.
+  bool const fDropRawDataAfterUse;
   
   std::string const fLogCategory; ///< Message facility category.
   
@@ -945,6 +988,10 @@ class icarus::DaqDecoderICARUSPMT: public art::EDProducer {
   
   
   // --- BEGIN -- Input data management ----------------------------------------
+  
+  /// Tracks _art_ data products and removes their cached data on demand.
+  // As often happens, caches need to be mutable. Also, not thread-safe.
+  mutable util::ArtHandleTrackerManager<art::Event> fDataCacheRemover;
   
   /// Reads the fragments to be processed.
   artdaq::Fragments const& readInputFragments(art::Event const& event) const;
@@ -1321,6 +1368,8 @@ icarus::DaqDecoderICARUSPMT::DaqDecoderICARUSPMT(Parameters const& params)
   , fTTTresetEverySecond
     { params().TTTresetEverySecond().value_or(fTriggerTag.has_value()) }
   , fBoardSetup{ params().BoardSetup() }
+  , fSkipWaveforms{ params().SkipWaveforms() }
+  , fDropRawDataAfterUse{ params().DropRawDataAfterUse() }
   , fLogCategory{ params().LogCategory() }
   , fDetTimings
     { art::ServiceHandle<detinfo::DetectorClocksService const>()->DataForJob() }
@@ -1409,7 +1458,9 @@ icarus::DaqDecoderICARUSPMT::DaqDecoderICARUSPMT(Parameters const& params)
       << params().PMTconfigTag.name() << "`"
       ;
   }
-  
+  if (fSkipWaveforms) {
+    log << "\n * PMT WAVEFORMS WILL NOT BE DECODED AND STORED";
+  }
   
   //
   // sanity checks
@@ -1453,6 +1504,8 @@ void icarus::DaqDecoderICARUSPMT::produce(art::Event& event) {
   // preparation
   //
   
+  fDataCacheRemover.useEvent(event);
+  
   //
   // global trigger
   //
@@ -1464,14 +1517,10 @@ void icarus::DaqDecoderICARUSPMT::produce(art::Event& event) {
     else
       log << "Trigger from event timestamp: ";
     log << triggerInfo.time << " s, bits: "
-        << icarus::ns::util::bin(triggerInfo.bits);
+        << icarus::ns::util::bin(triggerInfo.bits.bits);
     if (triggerInfo.bits) {
       log << " {";
-      for (std::string const& name
-        : sbn::bits::names<sbn::triggerSource>({(unsigned int) triggerInfo.bits }))
-      {
-        log << ' ' << name;
-      }
+      for (std::string const& name: names(triggerInfo.bits)) log << ' ' << name;
       log << " }";
     } // if
     if (fTriggerTag) log << ", spill count: " << triggerInfo.gateCount;
@@ -1487,7 +1536,7 @@ void icarus::DaqDecoderICARUSPMT::produce(art::Event& event) {
   //
   // output data product initialization
   //
-  std::vector<ProtoWaveform_t> protoWaveforms;
+  std::vector<ProtoWaveform_t> protoWaveforms; // empty if `fSkipWaveforms`
   
   
   // ---------------------------------------------------------------------------
@@ -1552,16 +1601,23 @@ void icarus::DaqDecoderICARUSPMT::produce(art::Event& event) {
     } // for
   } // if duplicate board fragments
   
+  
+  // we are done with the input: drop the caches
+  // (if we were asked not to, no data is registered)
+  fDataCacheRemover.removeCachedProducts();
+  
   //
   // post-processing
   //
   sortWaveforms(protoWaveforms);
   
-  std::vector<ProtoWaveform_t const*> waveformsWithTrigger
-    = findWaveformsWithNominalTrigger(protoWaveforms);
-  mf::LogTrace(fLogCategory) << waveformsWithTrigger.size() << "/"
-    << protoWaveforms.size() << " decoded waveforms include trigger time ("
-    << fNominalTriggerTime << ").";
+  if (!fSkipWaveforms) {
+    std::vector<ProtoWaveform_t const*> const waveformsWithTrigger
+      = findWaveformsWithNominalTrigger(protoWaveforms);
+    mf::LogTrace(fLogCategory) << waveformsWithTrigger.size() << "/"
+      << protoWaveforms.size() << " decoded waveforms include trigger time ("
+      << fNominalTriggerTime << ").";
+  } // if !fSkipWaveforms
   
   // ---------------------------------------------------------------------------
   // Time corrections
@@ -1688,8 +1744,7 @@ artdaq::Fragments const& icarus::DaqDecoderICARUSPMT::readInputFragments
       << "DaqDecoderICARUSPMT trying data product: '" << inputTag.encode()
       << "'";
     
-    art::Handle<artdaq::Fragments> thisHandle;
-    if (!event.getByLabel<artdaq::Fragments>(inputTag, thisHandle)) continue;
+    auto const& thisHandle = event.getHandle<artdaq::Fragments>(inputTag);
     if (!thisHandle.isValid() || thisHandle->empty()) continue;
     
     mf::LogTrace(fLogCategory)
@@ -1712,6 +1767,8 @@ artdaq::Fragments const& icarus::DaqDecoderICARUSPMT::readInputFragments
       e << " '" << inputTag.encode() << "'";
     throw e << "\n";
   }
+  
+  if (fDropRawDataAfterUse) fDataCacheRemover.registerHandle(handle);
   
   return *handle;
 } // icarus::DaqDecoderICARUSPMT::readInputFragments()
@@ -1966,7 +2023,7 @@ auto icarus::DaqDecoderICARUSPMT::fetchTriggerTimestamp
       SplitTimestamp_t
         { static_cast<long long int>(extraTrigger.triggerTimestamp) }
     , relBeamGate
-    , trigger.TriggerBits()
+    , {trigger.TriggerBits()}
     , gateCount
     };
   
@@ -2093,7 +2150,7 @@ auto icarus::DaqDecoderICARUSPMT::processFragment(
     
   if (fTreeFragment) fillPMTfragmentTree(fragInfo, triggerInfo, timeStamp);
   
-  return (timeStamp != NoTimestamp)
+  return ((timeStamp != NoTimestamp) && !fSkipWaveforms)
     ? createFragmentWaveforms(fragInfo, boardInfo.channelSetup(), timeStamp)
     : std::vector<ProtoWaveform_t>{}
     ;

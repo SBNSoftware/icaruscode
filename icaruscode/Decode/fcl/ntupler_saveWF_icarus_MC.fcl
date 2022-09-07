@@ -1,0 +1,8 @@
+#include "ntupler_saveWF_icarus.fcl"
+
+# can't run CRT data analysis on MC
+physics.outana: [caloskimE, caloskimW, simpleLightAna]
+
+physics.analyzers.caloskimE.RawDigitproducers: ["MCDecodeTPCROI:PHYSCRATEDATATPCEE", "MCDecodeTPCROI:PHYSCRATEDATATPCEW"]
+physics.analyzers.caloskimW.RawDigitproducers: ["MCDecodeTPCROI:PHYSCRATEDATATPCWE", "MCDecodeTPCROI:PHYSCRATEDATATPCWW"]
+

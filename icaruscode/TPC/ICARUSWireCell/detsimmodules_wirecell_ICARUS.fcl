@@ -32,7 +32,9 @@ icarus_simwire_wirecell:
             //   "wclsFrameSaver:spthresholds"
         ]
         // Make available parameters via Jsonnet's std.extVar()
-        params: {}
+        params: {
+	    files_fields: "garfield-icarus-fnal-rev1.json.bz2"
+	}
         structs: {
             # load values from simulationservices_icarus.fcl
             # Longitudinal diffusion constant [cm2/ns]
@@ -44,6 +46,9 @@ icarus_simwire_wirecell:
             lifetime: @local::icarus_detproperties.Electronlifetime
             # Electron drift speed, assumes a certain applied E-field [mm/us]
             # driftSpeed: 1.565
+            # Scaling Parameters from int and coh noise components
+	    int_noise_scale: 1.0
+	    coh_noise_scale: 1.09
         }
     }
 }

@@ -16,6 +16,10 @@
 #include "flashmatch_simple_icarus.fcl"
 #include "crtsimhitproducer.fcl"
 #include "crttrackproducer_icarus.fcl"
+#include "crtbacktracker_icarus.fcl"
+#include "crtt0matchingalg_icarus.fcl"
+#include "crtt0producer_icarus.fcl"
+
 
 BEGIN_PROLOG
 
@@ -58,6 +62,7 @@ icarus_stage1_producers:
  ## crt producer
   crthit:            @local::standard_crthitproducer	
   crttrack:          @local::standard_crttrackproducer
+  CRTT0Matching:     @local::standard_crtt0producer
 }
 
 icarus_stage1_filters:
@@ -150,6 +155,8 @@ icarus_reco_fm:                    [ fmatchCryoE,
                                      fmatchCryoW ]
 
 icarus_crthit:                     [crthit, crttrack]
+
+icarus_crtt0match:                 [CRTT0Matching]
 
 ### Below we include overrides for the modules above
 

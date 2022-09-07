@@ -17,3 +17,7 @@
 
 outputs.rootoutput.outputCommands: [ "keep *_*_*_*",
                                      @sequence::detsim_drops ]
+
+# Field Responce input customisation
+# physics.producers.daq.wcls_main.params.files_fields: "icarus_testFR_1.json.bz2"
+
