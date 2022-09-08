@@ -5,11 +5,11 @@ cet_make_library(SOURCE
                  messagefacility::MF_MessageLogger
                 )
 
-##art_dictionary()
-build_dictionary(DICTIONARY_LIBRARIES
+art_dictionary(DICTIONARY_LIBRARIES
                  icaruscode::IcarusObj
+                 lardataobj_RecoBase
                  canvas::canvas 
-                )
+              )
 
 install_headers()
 install_source()
