@@ -7,6 +7,7 @@
 #include "icaruscode/Timing/PMTTimingCorrectionsProvider.h"
 
 // framework libraries
+#include "art/Framework/Principal/Run.h"
 #include "art/Framework/Services/Registry/ActivityRegistry.h"
 #include "art/Framework/Services/Registry/ServiceDefinitionMacros.h"
 #include "art/Framework/Services/Registry/ServiceDeclarationMacros.h"
@@ -18,20 +19,31 @@
 namespace icarusDB { class PMTTimingCorrectionService; }
 class icarusDB::PMTTimingCorrectionService: public PMTTimingCorrectionsProvider {
     
+      void preBeginRun(const art::Run& run);
+    
     public:
   
       PMTTimingCorrectionService(const fhicl::ParameterSet& pset, art::ActivityRegistry& reg);
   
-}; // class icarusDB::ICARUSChannelMap
+}; // class icarusDB::PMTTimingCorrectionService
 
 
 // -----------------------------------------------------------------------------
 // ---  Implementation
 // -----------------------------------------------------------------------------
 icarusDB::PMTTimingCorrectionService::PMTTimingCorrectionService
-  (const fhicl::ParameterSet& pset, art::ActivityRegistry& /* reg */)
+  (const fhicl::ParameterSet& pset, art::ActivityRegistry& reg)
   : PMTTimingCorrectionsProvider(pset)
-  {}
+{
+  reg.sPreBeginRun.watch(this, &PMTTimingCorrectionService::preBeginRun);
+}
+
+
+// -----------------------------------------------------------------------------
+void icarusDB::PMTTimingCorrectionService::preBeginRun(const art::Run& run)
+{
+  readTimeCorrectionDatabase(run);
+}
 
 
 // -----------------------------------------------------------------------------

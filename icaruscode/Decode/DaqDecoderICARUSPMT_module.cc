@@ -1485,8 +1485,6 @@ void icarus::DaqDecoderICARUSPMT::beginRun(art::Run& run) {
   
   UpdatePMTConfiguration(PMTconfig);
 
-  fPMTTimingCorrectionsService.readTimeCorrectionDatabase(run);
-
   fPMTWaveformTimeCorrectionManager = 
     new icarus::timing::PMTWaveformTimeCorrectionExtractor(
         fClocksData, 

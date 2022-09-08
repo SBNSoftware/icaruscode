@@ -25,8 +25,6 @@ namespace icarusDB {
 			
 			virtual ~PMTTimingCorrections() noexcept = default;
 			
-			virtual void readTimeCorrectionDatabase(const art::Run& run) = 0;
-			
 			virtual double getTriggerCableDelay( const unsigned int & channelID ) = 0;
     		
     		virtual double getResetCableDelay( const unsigned int & channelID ) = 0;

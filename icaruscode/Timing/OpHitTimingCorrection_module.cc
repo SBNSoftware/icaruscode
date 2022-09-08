@@ -17,7 +17,6 @@
 #include "art/Framework/Core/EDProducer.h"
 #include "art/Framework/Core/ModuleMacros.h"
 #include "art/Framework/Core/FileBlock.h"
-#include "art/Framework/Principal/Run.h"
 #include "art/Framework/Principal/Event.h"
 #include "art/Framework/Principal/Handle.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
@@ -111,9 +110,6 @@ public:
   /// Constructor: just reads the configuration.
   explicit OpHitTimingCorrection(Parameters const& config);
     
-  /// process the run
-  void beginRun(art::Run& run) override;
-
   /// process the event
   void produce(art::Event& event ) override;
 
@@ -152,13 +148,6 @@ icarus::OpHitTimingCorrection::OpHitTimingCorrection( Parameters const& config )
         consumes<std::vector<recob::OpHit>>(tag);
 
     produces<std::vector<recob::OpHit>>();
-
-}
-
-// -----------------------------------------------------------------------------
-void icarus::OpHitTimingCorrection::beginRun( art::Run& run ) {
-
-    fPMTTimingCorrectionsService.readTimeCorrectionDatabase(run);
 
 }
 
