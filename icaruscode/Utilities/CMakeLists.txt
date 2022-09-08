@@ -4,9 +4,12 @@ art_make(
     "SaveConfigurationIntoTFile_module.cc"
     "DummyFilter_module.cc"
     "DummyProducer_module.cc"
+    "DummyAnalyzer_module.cc"
+    "FilterOnArtPathOutcome_module.cc"
     "DuplicateEventTracker_service.cc"
   LIB_LIBRARIES
     ${ART_ROOT_IO_ROOTDB}
+    canvas::canvas
     SQLite::SQLite3
     cetlib_except
     cetlib
@@ -40,6 +43,8 @@ simple_plugin(DuplicateEventTracker "service"
 
 simple_plugin(DummyFilter "module")
 simple_plugin(DummyProducer "module")
+simple_plugin(DummyAnalyzer "module")
+simple_plugin(FilterOnArtPathOutcome "module")
 
 
 install_headers()

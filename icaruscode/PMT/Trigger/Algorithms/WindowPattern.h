@@ -65,33 +65,46 @@ struct icarus::trigger::WindowPattern {
   /// Whether a window location with no downstream window should be discarded.
   bool requireDownstreamWindow = false;
   
+  /// Returns whether the main requirement (`M`) contributes to specification.
+  /// This is not the case when `S` is specified that is twice `M` or when its
+  /// value is `0`.
+  bool isMainRequirementRelevant() const;
+  
+  /// Returns whether the sum requirement (`S`) contributes to specification.
+  /// This is not the case when `S` is not larger than the sum of `M` and `O`.
+  bool isSumRequirementRelevant() const;
+  
+  
   /**
-    * @brief Returns a tag summarizing the pattern.
-    * 
-    * The tag encodes the requirements on the main window (_R(M)_), its
-    * opposite window (_R(O)_), their minimum sum (_R(S)_) and downstream
-    * (_R(D)_) and upstream (_R(U)_) windows.
-    * A requirement _R(X)_ is in the format `X##[req]`, where `X` is the tag
-    * letter of the requirement, `##` is the requirement level for that window,
-    * and the optional `req` tag means that if for a main window this window
-    * does not exist, that main window is not considered (e.g. the downstream
-    * window of a main window which is the most downstream in the detector).
-    * 
-    * For example, `M5O2D2reqU1` requires 5 openings in the main window (`M5`),
-    * 2 in the window opposite to the main one (`O2`) and also 2 on the window
-    * downstream of the main one (`D2req`) and also 1 on the window
-    * upstream of the main one (`U1`); in addition, if the main window
-    * has no downstream window (i.e. it's at the "far end" of the detector),
-    * the downstream requirement is never satisfied and the trigger is
-    * considered to never fire. Instead, if there is no upstream window (i.e.
-    * the main window is in the "near end" of the detector) the upstream window
-    * requirement is considered to be satisfied (or ignored).
-    * 
-    */
+   * @brief Returns a tag summarizing the pattern.
+   * 
+   * The tag encodes the requirements on the main window (_R(M)_), its
+   * opposite window (_R(O)_), their minimum sum (_R(S)_) and downstream
+   * (_R(D)_) and upstream (_R(U)_) windows.
+   * A requirement _R(X)_ is in the format `X##[req]`, where `X` is the tag
+   * letter of the requirement, `##` is the requirement level for that window,
+   * and the optional `req` tag means that if for a main window this window
+   * does not exist, that main window is not considered (e.g. the downstream
+   * window of a main window which is the most downstream in the detector).
+   * 
+   * For example, `M5O2D2reqU1` requires 5 openings in the main window (`M5`),
+   * 2 in the window opposite to the main one (`O2`) and also 2 on the window
+   * downstream of the main one (`D2req`) and also 1 on the window
+   * upstream of the main one (`U1`); in addition, if the main window
+   * has no downstream window (i.e. it's at the "far end" of the detector),
+   * the downstream requirement is never satisfied and the trigger is
+   * considered to never fire. Instead, if there is no upstream window (i.e.
+   * the main window is in the "near end" of the detector) the upstream window
+   * requirement is considered to be satisfied (or ignored).
+   * 
+   * Redundant requirements are omitted (except for `M0` if not superseded by a
+   * sum requirement).
+   */
   std::string tag() const;
   
   /// Returns a description of the pattern.
   std::string description() const;
+  
   
 }; // icarus::triggerWindowPattern
 
