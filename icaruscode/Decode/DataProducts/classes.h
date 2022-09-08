@@ -11,7 +11,6 @@
  */
 
 // SBN libraries
-// #include "sbnobj/Common/Trigger/ExtraTriggerInfo.h"
 #include "icaruscode/Decode/DataProducts/TriggerConfiguration.h"
 
 // framework libraries

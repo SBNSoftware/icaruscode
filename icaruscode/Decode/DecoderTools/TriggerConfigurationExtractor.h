@@ -13,7 +13,6 @@
 // ICARUS libraries
 #include "icaruscode/Utilities/ReadArtConfiguration.h" // util::readConfigurationFromArtPrincipal()
 #include "icaruscode/Decode/DataProducts/TriggerConfiguration.h"
-//#include "icaruscode/Decode/BeamBits.h"
 #include "sbnobj/Common/Trigger/BeamBits.h"
 
 // framework libraries

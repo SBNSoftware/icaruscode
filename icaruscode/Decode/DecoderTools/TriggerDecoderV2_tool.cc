@@ -30,12 +30,10 @@
 
 #include "sbndaq-artdaq-core/Overlays/ICARUS/ICARUSTriggerV2Fragment.hh"
 
- #include "sbnobj/Common/Trigger/ExtraTriggerInfo.h" // maybe future location of:
-//#include "icaruscode/Decode/DataProducts/ExtraTriggerInfo.h"
+#include "sbnobj/Common/Trigger/ExtraTriggerInfo.h"
 #include "icaruscode/Decode/DataProducts/TriggerConfiguration.h"
 #include "icaruscode/Decode/DecoderTools/IDecoder.h"
- #include "sbnobj/Common/Trigger/BeamBits.h" // maybe future location of:
-//#include "icaruscode/Decode/BeamBits.h" // sbn::triggerSource
+#include "sbnobj/Common/Trigger/BeamBits.h"
 #include "icaruscode/Decode/DecoderTools/Dumpers/FragmentDumper.h" // dumpFragment()
 #include "icaruscode/Decode/DecoderTools/details/KeyedCSVparser.h"
 #include "icarusalg/Utilities/BinaryDumpUtils.h" // hexdump() DEBUG
