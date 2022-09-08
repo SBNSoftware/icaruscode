@@ -28,6 +28,7 @@
 #include "art/Framework/Services/Registry/ServiceHandle.h"
 #include "art_root_io/TFileService.h"
 #include "art/Framework/Core/ModuleMacros.h"
+#include "art/Utilities/Globals.h"
 #include "art/Utilities/make_tool.h"
 #include "canvas/Persistency/Common/Ptr.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
@@ -217,7 +218,7 @@ MCDecoderICARUSTPCwROI::MCDecoderICARUSTPCwROI(fhicl::ParameterSet const & pset,
     configure(pset);
 
     // Check the concurrency 
-    int max_concurrency = tbb::this_task_arena::max_concurrency();
+    int max_concurrency = art::Globals::instance()->nthreads(); 
 
     mf::LogDebug("MCDecoderICARUSTPCwROI") << "     ==> concurrency: " << max_concurrency << std::endl;
 

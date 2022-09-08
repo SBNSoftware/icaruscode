@@ -1,8 +1,11 @@
+cet_enable_asserts()
+
 add_subdirectory(tools)
 
 add_definitions(-DEIGEN_FFTW_DEFAULT)
 
 set( icarus_util_lib_list
+                        icaruscode_IcarusObj
                         larcorealg_Geometry
                         larevt_CalibrationDBI_IOVData
                         larevt_CalibrationDBI_Providers
@@ -12,21 +15,22 @@ set( icarus_util_lib_list
                         lardata_Utilities
                         nurandom_RandomUtils_NuRandomService_service
                         ${ICARUS_FFTW_LIBRARIES}
-                        ${ART_FRAMEWORK_CORE}
-                        ${ART_FRAMEWORK_PRINCIPAL}
-                        ${ART_FRAMEWORK_SERVICES_REGISTRY}
-                        art_Persistency_Common
-                        art_Framework_IO
-                        art_Framework_IO_detail
-                        art_Persistency_Provenance
+                        art::Framework_Core
+                        art::Framework_Principal
+                        art::Framework_Services_Registry
+                        art::Persistency_Common
+                        art::Framework_IO
+                        art::Framework_IO_detail
+                        art::Persistency_Provenance
                         ${ART_FRAMEWORK_SERVICES_BASIC}
                         ${ART_ROOT_IO_TFILE_SUPPORT} ${ROOT_CORE}
                         ${ART_FRAMEWORK_SERVICES_OPTIONAL_RANDOMNUMBERGENERATOR_SERVICE}
                         ${ART_ROOT_IO_TFILESERVICE_SERVICE}
                         ${ART_FRAMEWORK_SERVICES_SYSTEM_FILECATALOGMETADATA_SERVICE}
                         art_Framework_Services_System_TriggerNamesService_service
-                        art_Utilities
-                        canvas
+                        art::Utilities
+                        canvas::canvas
+                        cetlib_except::cetlib_except
                         ${MF_MESSAGELOGGER}
                         ${MF_UTILITIES}
                         ${FHICLCPP}
@@ -39,7 +43,8 @@ set( icarus_util_lib_list
 
 art_make( 
 #          LIBRARY_NAME  icaruscode_TPC_Utilities
-#          LIB_LIBRARIES ${icarus_util_lib_list}
+          LIB_LIBRARIES 
+                        ${icarus_util_lib_list}
 #
           SERVICE_LIBRARIES 
                         ${icarus_util_lib_list}

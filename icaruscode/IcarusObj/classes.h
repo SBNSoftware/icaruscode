@@ -3,6 +3,7 @@
 #include "canvas/Persistency/Common/Assns.h"
 #include "icaruscode/IcarusObj/SimEnergyDepositSummary.h"
 #include "icaruscode/IcarusObj/OpDetWaveformMeta.h"
+#include "icaruscode/IcarusObj/ChannelROI.h"
 #include "sbnobj/ICARUS/PMT/Trigger/Data/OpticalTriggerGate.h"
 #include "sbnobj/ICARUS/PMT/Trigger/Data/TriggerGateData.h"
 #include "lardataobj/AnalysisBase/T0.h"

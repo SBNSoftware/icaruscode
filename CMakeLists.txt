@@ -76,6 +76,9 @@ find_ups_product( icarus_data )
 find_ups_product( artdaq_core )
 find_ups_product( sbndaq_artdaq_core )
 
+find_package( cetlib_except REQUIRED EXPORT )
+find_package( cetlib REQUIRED EXPORT )
+
 cet_find_library( NURANDOM_RANDOMUTILS_NURANDOMSERVICE_SERVICE
                   NAMES nurandom_RandomUtils_NuRandomService_service
                   PATHS ENV NURANDOM_LIB NO_DEFAULT_PATH )
