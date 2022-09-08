@@ -1404,12 +1404,15 @@ icarus::DaqDecoderICARUSPMT::DaqDecoderICARUSPMT(Parameters const& params)
   //
   // produced data products declaration
   //
+  if (!fSkipWaveforms) {
+    for (std::string const& instanceName: getAllInstanceNames())
+      produces<std::vector<raw::OpDetWaveform>>(instanceName);
+  }
+
   for (std::string const& instanceName: getAllInstanceNames()){
     if( instanceName.empty() ) continue;
     produces<std::vector<icarus::timing::PMTWaveformTimeCorrection>>(instanceName);
   }
-
-  produces<std::vector<raw::OpDetWaveform>>();
   
   //
   // additional initialization
@@ -1659,53 +1662,63 @@ void icarus::DaqDecoderICARUSPMT::produce(art::Event& event) {
   //      std::cout << corr.startTime << std::endl;
   //std::cout << "---END Print the corrections for category " << fCorrectionInstance << " -----" << std::endl;
 
-  
-  // split the waveforms by destination
-  std::vector<raw::OpDetWaveform> waveformProducts;
-  for (ProtoWaveform_t& waveform: protoWaveforms) {
-    
-    // on-global and span requirements overrides even `mustSave()` requirement;
-    // if this is not good, user should not set `mustSave()`!
-    bool const keep =
-      (waveform.onGlobal || !waveform.channelSetup->onGlobalOnly)
-      && (waveform.span() >= waveform.channelSetup->minSpan)
-      && waveform.channelSetup->category.empty()
-      ;
-    
-    if (!keep) continue;
+  if (!fSkipWaveforms) {
+    // split the waveforms by destination
+    std::map<std::string, std::vector<raw::OpDetWaveform>> waveformProducts;
+    for (std::string const& instanceName: getAllInstanceNames())
+      waveformProducts.emplace(instanceName, std::vector<raw::OpDetWaveform>{});
+    for (ProtoWaveform_t& waveform: protoWaveforms) {
+      
+      // on-global and span requirements override even `mustSave()` requirement;
+      // if this is not good, user should not set `mustSave()`!
+      bool const keep =
+        (waveform.onGlobal || !waveform.channelSetup->onGlobalOnly)
+        && (waveform.span() >= waveform.channelSetup->minSpan)
+        && waveform.channelSetup->category.empty() // TODO add option to selectively save
+        ;
+      
+      if (!keep) continue;
+      
+      
+      double correctTimeStamp = 0;
 
-    double correctTimeStamp = 0;
-
-    if( !fCorrectionInstance.empty() ){
+      if( !fCorrectionInstance.empty() ){
         auto waveformCorrection = timeCorrectionProducts.at(fCorrectionInstance);
         
         correctTimeStamp = waveform.waveform.TimeStamp() 
-            + waveformCorrection.at(waveform.waveform.ChannelNumber()).startTime;
+          + waveformCorrection.at(waveform.waveform.ChannelNumber()).startTime;
 
         //std::cout << " ** " << waveform.waveform.ChannelNumber() << ", "
-        //    << waveform.waveform.TimeStamp() << ", "
-        //    << waveformCorrection.at(waveform.waveform.ChannelNumber()).startTime << ", "
-        //    << correctTimeStamp << std::endl;
+        //  << waveform.waveform.TimeStamp() << ", "
+        //  << waveformCorrection.at(waveform.waveform.ChannelNumber()).startTime << ", "
+        //  << correctTimeStamp << std::endl;
 
-    }
-    else{
+      }
+      else{
         correctTimeStamp 
-            = waveform.waveform.TimeStamp() 
-            + fPMTTimingCorrectionsService.getResetCableDelay(waveform.waveform.ChannelNumber());   
+          = waveform.waveform.TimeStamp() 
+          + fPMTTimingCorrectionsService.getResetCableDelay(waveform.waveform.ChannelNumber());
+      }
+      
+      // Set a new Timestamp
+      waveform.waveform.SetTimeStamp(correctTimeStamp);
+      waveformProducts.at(waveform.channelSetup->category).push_back
+        (std::move(waveform.waveform));
+    } // for
+    
+    // put all the categories
+    for (auto&& [ category, waveforms ]: waveformProducts) {
+      mf::LogTrace(fLogCategory)
+        << waveforms.size() << " PMT waveforms saved for "
+        << (category.empty()? "standard": category) << " instance.";
+      event.put(
+        std::make_unique<std::vector<raw::OpDetWaveform>>(std::move(waveforms)),
+        category // the instance name is the category the waveforms belong to
+        );
     }
-
-    // Set a new Timestamp
-    waveform.waveform.SetTimeStamp(correctTimeStamp);
-    waveformProducts.push_back(std::move(waveform.waveform));
-
-  } // for
+  } // if !fSkipWaveforms
   
-  // put all the categories
-  event.put(
-      std::make_unique<std::vector<raw::OpDetWaveform>>(std::move(waveformProducts)),
-      "" // the instance name is the category the waveforms belong to
-  );
-
+  // put all the categories of corrections
   for( auto&& [category, correction] : timeCorrectionProducts ){
     event.put(
       std::make_unique<std::vector<icarus::timing::PMTWaveformTimeCorrection>>(std::move(correction)),
