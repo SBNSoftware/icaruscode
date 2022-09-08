@@ -43,7 +43,7 @@
 icarus::timing::PMTWaveformTimeCorrectionExtractor::PMTWaveformTimeCorrectionExtractor(
             detinfo::DetectorClocksData const detTimingService,
             icarusDB::IICARUSChannelMap const & channelMapService,
-            icarusDB::PMTTimingCorrections & pmtTimingCorrectionsService, 
+            icarusDB::PMTTimingCorrections const& pmtTimingCorrectionsService, 
             bool const & verbose )
 : fClocksData( detTimingService )
 , fChannelMap( channelMapService )
@@ -123,12 +123,13 @@ void icarus::timing::PMTWaveformTimeCorrectionExtractor::findWaveformTimeCorrect
     std::string const & cateogry, 
     unsigned int const & waveChannelID, 
     bool const & correctCableDelay,
-    std::vector<PMTWaveformTimeCorrection> & corrections  )
+    std::vector<PMTWaveformTimeCorrection> & corrections  ) const
 {
 
     unsigned int crateSignalID = waveChannelID & 0x00F0;
 
-    if( fCrateFragmentMap.find(crateSignalID) == fCrateFragmentMap.end() ){ 
+    auto const itCrateFragment = fCrateFragmentMap.find(crateSignalID);
+    if( itCrateFragment == fCrateFragmentMap.end() ){ 
 
         mf::LogError("icarus::timing::PMTWaveformTimeCorrectionExtractor") << 
             "Invalid special channel number: " << std::hex << waveChannelID << 
@@ -142,7 +143,7 @@ void icarus::timing::PMTWaveformTimeCorrectionExtractor::findWaveformTimeCorrect
     int startSampleSignal = static_cast<int>( getStartSample( wave ) );
     
     // we now access the channels that we need
-    for( auto const & crateFragID : fCrateFragmentMap[crateSignalID] ){
+    for( auto const & crateFragID : itCrateFragment->second ){
       
         for( auto const & mapRow : fChannelMap.getChannelIDPairVec(crateFragID) ){
         

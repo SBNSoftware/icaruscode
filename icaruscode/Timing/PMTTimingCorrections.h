@@ -25,13 +25,13 @@ namespace icarusDB {
 			
 			virtual ~PMTTimingCorrections() noexcept = default;
 			
-			virtual double getTriggerCableDelay( const unsigned int & channelID ) = 0;
+			virtual double getTriggerCableDelay( const unsigned int & channelID ) const = 0;
     		
-    		virtual double getResetCableDelay( const unsigned int & channelID ) = 0;
+    		virtual double getResetCableDelay( const unsigned int & channelID ) const = 0;
 
-    		virtual double getLaserCorrections( const unsigned int & channelID ) = 0;
+    		virtual double getLaserCorrections( const unsigned int & channelID ) const = 0;
 
-    		virtual double getCosmicsCorrections( const unsigned int & channelID ) = 0;
+    		virtual double getCosmicsCorrections( const unsigned int & channelID ) const = 0;
 
 	}; // end class
 

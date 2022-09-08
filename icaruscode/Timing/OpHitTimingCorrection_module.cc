@@ -126,7 +126,7 @@ private:
   std::string fLogCategory; ///< Category tag for messages.
 
   /// Pointer to the online pmt corrections service
-  icarusDB::PMTTimingCorrections & fPMTTimingCorrectionsService;
+  icarusDB::PMTTimingCorrections const& fPMTTimingCorrectionsService;
 
 };
 
@@ -140,7 +140,7 @@ icarus::OpHitTimingCorrection::OpHitTimingCorrection( Parameters const& config )
     , fVerbose{ config().Verbose() }
     , fLogCategory{ config().LogCategory() }
     , fPMTTimingCorrectionsService
-    { *(art::ServiceHandle<icarusDB::PMTTimingCorrections>{}) }
+    { *(art::ServiceHandle<icarusDB::PMTTimingCorrections const>{}) }
 {
 
     /// Consumes

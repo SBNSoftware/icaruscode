@@ -1162,7 +1162,7 @@ class icarus::DaqDecoderICARUSPMT: public art::EDProducer {
   // --- BEGIN ---- Timing corrections -----------------------------------------
 
   /// Pointer to the online pmt corrections service
-  icarusDB::PMTTimingCorrections & fPMTTimingCorrectionsService;
+  icarusDB::PMTTimingCorrections const& fPMTTimingCorrectionsService;
 
   icarus::timing::PMTWaveformTimeCorrectionExtractor *fPMTWaveformTimeCorrectionManager;
 

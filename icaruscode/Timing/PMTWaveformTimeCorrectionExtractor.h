@@ -36,7 +36,7 @@ class icarus::timing::PMTWaveformTimeCorrectionExtractor {
         PMTWaveformTimeCorrectionExtractor(
             detinfo::DetectorClocksData const detTimingService,
             icarusDB::IICARUSChannelMap const & channelMapService,
-            icarusDB::PMTTimingCorrections & pmtTimingCorrectionsService, 
+            icarusDB::PMTTimingCorrections const& pmtTimingCorrectionsService, 
             bool const & verbose );
 
         ~PMTWaveformTimeCorrectionExtractor(){};
@@ -46,7 +46,7 @@ class icarus::timing::PMTWaveformTimeCorrectionExtractor {
             std::string const & cateogry, 
             unsigned int const & waveChannelID, 
             bool const & correctCableDelay,
-            std::vector<PMTWaveformTimeCorrection> & corrections );
+            std::vector<PMTWaveformTimeCorrection> & corrections ) const;
 
 
 	private:
@@ -55,7 +55,7 @@ class icarus::timing::PMTWaveformTimeCorrectionExtractor {
 
         icarusDB::IICARUSChannelMap const & fChannelMap;
 
-        icarusDB::PMTTimingCorrections & fPMTTimingCorrectionsService;
+        icarusDB::PMTTimingCorrections const& fPMTTimingCorrectionsService;
 
         bool const & fVerbose;
 
@@ -72,19 +72,19 @@ class icarus::timing::PMTWaveformTimeCorrectionExtractor {
             }; 
 
         template<typename T>
-            size_t getMaxBin( 
+            static size_t getMaxBin( 
                 std::vector<T> vv, 
                 size_t startElement, 
                 size_t endElement);
 
         template<typename T>
-            size_t getMinBin( 
+            static size_t getMinBin( 
                 std::vector<T> vv, 
                 size_t startElement, 
                 size_t endElement);
 
         template<typename T>
-            size_t getStartSample( std::vector<T> vv );
+            static size_t getStartSample( std::vector<T> vv );
 
 };
 
