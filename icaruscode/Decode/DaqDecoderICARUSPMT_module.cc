@@ -32,7 +32,7 @@
 #include "larcore/CoreUtils/ServiceUtil.h" // lar::providerFrom()
 
 #include "lardataalg/DetectorInfo/DetectorTimings.h"
-#include "lardataalg/DetectorInfo/DetectorClocks.h"
+#include "lardataalg/DetectorInfo/DetectorClocksData.h"
 #include "lardataalg/Utilities/quantities/spacetime.h" // nanoseconds
 #include "lardataalg/Utilities/intervals_fhicl.h" // for nanoseconds in FHiCL
 #include "larcorealg/CoreUtils/enumerate.h"
@@ -781,8 +781,6 @@ class icarus::DaqDecoderICARUSPMT: public art::EDProducer {
   /// Interface to LArSoft configuration for detector timing.
   detinfo::DetectorTimings const fDetTimings;
 
-  detinfo::DetectorClocksData const fClocksData;
-  
   /// Fragment/channel mapping database.
   icarusDB::IICARUSChannelMap const& fChannelMap;
 
@@ -792,6 +790,13 @@ class icarus::DaqDecoderICARUSPMT: public art::EDProducer {
   // --- END ---- Services -----------------------------------------------------
 
 
+  // --- BEGIN ---- Timing corrections -----------------------------------------
+
+  icarus::timing::PMTWaveformTimeCorrectionExtractor const fPMTWaveformTimeCorrectionManager;
+
+  // --- END ---- Timing corrections -------------------------------------------
+  
+  
   // --- BEGIN -- Cached values ------------------------------------------------
   
   /// Duration of the optical detector readout sampling tick (i.e. 2 ns; hush!).
@@ -1160,15 +1165,9 @@ class icarus::DaqDecoderICARUSPMT: public art::EDProducer {
   static TreeNameList_t initTreeNames();
   
   // --- END ---- Tree-related methods -----------------------------------------
-  
+
   friend struct dumpChannel;
   friend std::ostream& operator<< (std::ostream&, ProtoWaveform_t const&);
-
-  // --- BEGIN ---- Timing corrections -----------------------------------------
-
-  icarus::timing::PMTWaveformTimeCorrectionExtractor *fPMTWaveformTimeCorrectionManager;
-
-  // --- END ---- Timing corrections -------------------------------------------
   
 }; // icarus::DaqDecoderICARUSPMT
 
@@ -1375,11 +1374,13 @@ icarus::DaqDecoderICARUSPMT::DaqDecoderICARUSPMT(Parameters const& params)
   , fLogCategory{ params().LogCategory() }
   , fDetTimings
     { art::ServiceHandle<detinfo::DetectorClocksService const>()->DataForJob() }
-  , fClocksData
-  { art::ServiceHandle<detinfo::DetectorClocksService const>()->DataForJob() }
   , fChannelMap{ *(art::ServiceHandle<icarusDB::IICARUSChannelMap const>{}) }
   , fPMTTimingCorrectionsService
     { *(lar::providerFrom<icarusDB::IPMTTimingCorrectionService const>()) }
+  , fPMTWaveformTimeCorrectionManager{
+      fDetTimings.clockData(), fChannelMap,
+      fPMTTimingCorrectionsService, fDiagnosticOutput
+      }
   , fOpticalTick{ fDetTimings.OpticalClockPeriod() }
   , fNominalTriggerTime{ fDetTimings.TriggerTime() }
 {
@@ -1488,13 +1489,6 @@ void icarus::DaqDecoderICARUSPMT::beginRun(art::Run& run) {
   
   UpdatePMTConfiguration(PMTconfig);
 
-  fPMTWaveformTimeCorrectionManager = 
-    new icarus::timing::PMTWaveformTimeCorrectionExtractor(
-        fClocksData, 
-        fChannelMap, 
-        fPMTTimingCorrectionsService, 
-        fDiagnosticOutput);
-  
 } // icarus::DaqDecoderICARUSPMT::beginRun()
 
 
@@ -1644,7 +1638,7 @@ void icarus::DaqDecoderICARUSPMT::produce(art::Event& event) {
 
     //std::vector<icarus::timing::PMTWaveformTimeCorrection> corrections{360};
 
-    fPMTWaveformTimeCorrectionManager->findWaveformTimeCorrections(
+    fPMTWaveformTimeCorrectionManager.findWaveformTimeCorrections(
         waveform.waveform, 
         waveform.channelSetup->category,
         waveform.channelSetup->channelID,

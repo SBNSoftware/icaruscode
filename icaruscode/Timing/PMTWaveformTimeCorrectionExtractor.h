@@ -59,7 +59,7 @@ class icarus::timing::PMTWaveformTimeCorrectionExtractor {
 
         bool const & fVerbose;
 
-        std::map<unsigned int, std::vector<unsigned int>> 
+        std::map<unsigned int, std::vector<unsigned int>> const
             fCrateFragmentMap {
                 {0x0070 , { 0 , 1 , 2  }}, 
                 {0x0060 , { 3 , 4 , 5  }}, 
