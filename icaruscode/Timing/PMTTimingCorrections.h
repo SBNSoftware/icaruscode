@@ -14,12 +14,14 @@
 #define PMTTIMINGCORRECTIONS_H
 
 
+#include "larcorealg/CoreUtils/UncopiableAndUnmovableClass.h"
+
 #include "art/Framework/Services/Registry/ServiceDeclarationMacros.h"
 #include "art/Framework/Principal/Run.h"
 
 namespace icarusDB {
 
-	class PMTTimingCorrections
+	class PMTTimingCorrections: lar::UncopiableClass
 	{
 		public: 
 			

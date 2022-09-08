@@ -6,6 +6,7 @@
  */
 
 #include "icaruscode/Timing/PMTTimingCorrections.h"
+#include "icaruscode/Timing/IPMTTimingCorrectionService.h"
 
 // framework libraries
 #include "canvas/Persistency/Provenance/ProcessConfiguration.h"
@@ -25,6 +26,7 @@
 #include "cetlib_except/exception.h"
 
 // LArSoft libraries
+#include "larcore/CoreUtils/ServiceUtil.h"
 #include "lardataobj/RecoBase/OpHit.h"
 #include "larcorealg/CoreUtils/enumerate.h"
 #include "larcorealg/CoreUtils/counter.h"
@@ -140,7 +142,7 @@ icarus::OpHitTimingCorrection::OpHitTimingCorrection( Parameters const& config )
     , fVerbose{ config().Verbose() }
     , fLogCategory{ config().LogCategory() }
     , fPMTTimingCorrectionsService
-    { *(art::ServiceHandle<icarusDB::PMTTimingCorrections const>{}) }
+    { *(lar::providerFrom<icarusDB::IPMTTimingCorrectionService const>()) }
 {
 
     /// Consumes

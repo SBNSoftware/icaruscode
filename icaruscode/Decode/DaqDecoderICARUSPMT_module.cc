@@ -13,6 +13,7 @@
 #include "icaruscode/Decode/ChannelMapping/IICARUSChannelMap.h"
 #include "icaruscode/Timing/DataProducts/PMTWaveformTimeCorrection.h"
 #include "icaruscode/Timing/PMTWaveformTimeCorrectionExtractor.h"
+#include "icaruscode/Timing/IPMTTimingCorrectionService.h"
 #include "icaruscode/Timing/PMTTimingCorrections.h"
 
 // #include "sbnobj/Common/Trigger/ExtraTriggerInfo.h" // future location of:
@@ -28,6 +29,7 @@
 
 // LArSoft libraries
 #include "lardata/DetectorInfoServices/DetectorClocksService.h"
+#include "larcore/CoreUtils/ServiceUtil.h" // lar::providerFrom()
 
 #include "lardataalg/DetectorInfo/DetectorTimings.h"
 #include "lardataalg/DetectorInfo/DetectorClocks.h"
@@ -784,6 +786,9 @@ class icarus::DaqDecoderICARUSPMT: public art::EDProducer {
   /// Fragment/channel mapping database.
   icarusDB::IICARUSChannelMap const& fChannelMap;
 
+  /// The online PMT corrections service provider.
+  icarusDB::PMTTimingCorrections const& fPMTTimingCorrectionsService;
+
   // --- END ---- Services -----------------------------------------------------
 
 
@@ -1161,9 +1166,6 @@ class icarus::DaqDecoderICARUSPMT: public art::EDProducer {
 
   // --- BEGIN ---- Timing corrections -----------------------------------------
 
-  /// Pointer to the online pmt corrections service
-  icarusDB::PMTTimingCorrections const& fPMTTimingCorrectionsService;
-
   icarus::timing::PMTWaveformTimeCorrectionExtractor *fPMTWaveformTimeCorrectionManager;
 
   // --- END ---- Timing corrections -------------------------------------------
@@ -1376,9 +1378,10 @@ icarus::DaqDecoderICARUSPMT::DaqDecoderICARUSPMT(Parameters const& params)
   , fClocksData
   { art::ServiceHandle<detinfo::DetectorClocksService const>()->DataForJob() }
   , fChannelMap{ *(art::ServiceHandle<icarusDB::IICARUSChannelMap const>{}) }
+  , fPMTTimingCorrectionsService
+    { *(lar::providerFrom<icarusDB::IPMTTimingCorrectionService const>()) }
   , fOpticalTick{ fDetTimings.OpticalClockPeriod() }
   , fNominalTriggerTime{ fDetTimings.TriggerTime() }
-  , fPMTTimingCorrectionsService{ *(art::ServiceHandle<icarusDB::PMTTimingCorrections>{}) }
 {
   //
   // configuration check
