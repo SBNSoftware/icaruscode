@@ -90,6 +90,15 @@ namespace icarus { class PMTWaveformBaselinesFromReadoutConfiguration; }
  *      optical detector activity; the activity belongs to a single channel, but
  *      there may be multiple waveforms on the same channel.
  * 
+ * @note This module needs only the information of the channel of each waveform;
+ *       because _art_ is not capable of selective readout, though, the whole
+ *       optical detector readout data is loaded. When this module is the first
+ *       one in the job accessing the PMT waveforms, the data loading time is
+ *       accounted to it; the time the module needs to perform its specific
+ *       operations is tiny in comparison. Anyway, since it is likely that
+ *       another module in the job will then use PMT waveform data, this loading
+ *       time is not wasted.
+ * 
  * 
  * Service requirements
  * ---------------------

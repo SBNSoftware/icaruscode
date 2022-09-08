@@ -35,6 +35,11 @@
 
 
 //------------------------------------------------------------------------------
+// forward declarartions
+class TGraph;
+
+
+//------------------------------------------------------------------------------
 namespace icarus::trigger::details {
   
   // TODO it seems make_transformed_span() does not support nesting properly;
@@ -298,10 +303,10 @@ class icarus::trigger::PlotSandbox {
    * 
    * The name and title are processed with `processName()` and `processTitle()`
    * method respectively, before the object is created.
-   * 
    */
   template <typename Obj, typename... Args>
   Obj* make(std::string const& name, std::string const& title, Args&&... args);
+  
   
   /// @}
   // --- END -- ROOT object management -----------------------------------------
@@ -427,6 +432,159 @@ class icarus::trigger::PlotSandbox {
     (Stream&& out, std::string indent, std::string firstIndent) const;
   
   
+  // --- BEGIN -- Object creation specializations ------------------------------
+  /**
+   * @name Object creation specializations
+   * 
+   * These are implementation details.
+   * 
+   * `PlotSandbox` manages the creation of objects to be put into ROOT
+   * directories and acts as an interface between `art::TFileDirectory` and
+   * user code. In particular it takes the responsibility of constructing new
+   * objects to be stored in the directory. There are special arguments to
+   * these objects, that are the name and, to a lesser extent, a title.
+   * `PlotSandbox` manipulates the name of the object to make it unique, and
+   * therefore it has to have full control of everywhere a name is set.
+   * The name is crucial in ROOT because it is the key for searching the object.
+   * So it has a double role of the name of the object (property of the object
+   * itself) and the key of the container that hosts that object.
+   * Some ROOT objects can and must be constructed with a name, and usually a
+   * title too (e.g. `TH1` and `TTree` hierarchies), and their constructor takes
+   * these as the first two arguments. Other object, though, do not follow that
+   * pattern (e.g. `TGraph`), and worse, these object might accept strings as
+   * first constructor arguments, assigning them a different meaning.
+   * For these objects a different initialization pattern is necessary, where
+   * the object is constructed with user-specified arguments first, and then
+   * the name (and, if supported, the title) are set.
+   * 
+   * `PlotSandbox` interface attempts to save the user from this hassle,
+   * but because specific actions are needed for specific objects, it needs to
+   * know these needs case by case. This implementation tries to give the
+   * necessary flexibility to easily implement special cases.
+   * 
+   * A few basic tools are provided, which support specific _types_ of objects:
+   * * `makeWithNameTitle()` supports the objects which can be constructed
+   *   with a name and a title (e.g. `TH1`);
+   * * `makeAndSetNameTitle()`, support objects which are known not to use
+   *   name and title as first constructor arguments, but do provide `SetName()`
+   *   (safe bet, coming from `TObject`) and `SetTitle()`.
+   * 
+   * Building on that, different overloads of `doConstruct()` use one or another
+   * of these utilities, or none, to create the correct type of object.
+   * The overload is entrusted to C++ via the pointer type (which C++ matches
+   * with a pointer to a base class).
+   * 
+   * Note that in this strategy it is not possible to use a constructor without
+   * name and title for an object that _also_ supports the construction with
+   * name and title: as long as `PlotSandbox` recognizes an object as falling in
+   * that category, it will always construct it by calling a constructor with
+   * name and title as first arguments.
+   * 
+   * Also note that no name decoration happens at this level: all object names
+   * and titles are expected to be final (processing happens e.g. in `make()`).
+   */
+  /// @{
+  
+  /**
+   * @brief Creates, stores and returns a new object.
+   * @tparam Obj type of the new object to create
+   * @tparam Args type of the additional arguments to `Obj` constructor
+   * @param destDir the `art::TFileDirectory` where the object is stored
+   * @param name final name of the object to be created
+   * @param title final title of the object to be created
+   * @param args additional arguments to `Obj` constructor, if any
+   * @return a pointer to the registered object
+   * @see `makeAndSetNameTitle()`
+   * 
+   * This method registers a new object into `destDir` via
+   * `art::TFileDirectory::makeAndRegister()`, using the `name` and `title`
+   * as the first arguments of the constructor.
+   */
+  template <typename Obj, typename... Args>
+  Obj* makeWithNameTitle(
+    art::TFileDirectory& destDir,
+    std::string const& name, std::string const& title, Args&&... args
+    ) const;
+
+  /**
+   * @brief Creates, stores and returns a new object.
+   * @tparam Obj type of the new object to create
+   * @tparam Args type of the additional arguments to `Obj` constructor
+   * @param destDir the `art::TFileDirectory` where the object is stored
+   * @param name final name of the object to be created
+   * @param title final title of the object to be created
+   * @param args additional arguments to `Obj` constructor, if any
+   * @return a pointer to the registered object
+   * @see `makeAndRegister()`
+   * 
+   * This method registers a new object into `destDir` via
+   * `art::TFileDirectory::makeAndRegister()`, using only the constructor
+   * arguments specified in `args`. The `name` and `title` are set afterwards
+   * via `SetName()` and `SetTitle()`.
+   */
+  template <typename Obj, typename... Args>
+  Obj* makeAndSetNameTitle(
+    art::TFileDirectory& destDir,
+    std::string const& name, std::string const& title, Args&&... args
+    ) const;
+
+  /**
+   * @brief General implementation: creates and registers an `Obj`
+   *        (name and title used in `Obj` constructor).
+   * @tparam Obj type of the object to construct
+   * @tparam Args type of additional arguments to `Obj` constructor, if any
+   * @param destDir `art::TFileDirectory` where to store the object
+   * @param obj pointer to `Obj`; unused except to direct C++ overloading
+   * @param name final name of the object
+   * @param title final title of the object
+   * @param args additional arguments to `Obj` constructor
+   * 
+   * This is the most fundamental method constructing an object, which is used
+   * as fallback for all `TObject`-derived objects if nothing more appropriate
+   * is available. It is also the best option in general, when `Obj` supports
+   * it.
+   * It requires `Obj` to have a constructor whose first two arguments are
+   * name and title of the object.
+   */
+  template <typename Obj, typename... Args>
+  Obj* doConstruct(
+    art::TFileDirectory& destDir,
+    TObject*,
+    std::string const& name, std::string const& title,
+    Args&&... args
+  ) const;
+  
+  /**
+   * @brief Implementation for `TGraph`-derived objects.
+   * @tparam GraphObj type of `TGraph`-derived object to construct
+   * @tparam Args type of arguments to `GraphObj` constructor, if any
+   * @param destDir `art::TFileDirectory` where to store the object
+   * @param graph pointer to `GraphObj`; unused except to direct C++ overloading
+   * @param name final name of the graph object
+   * @param title final title of the graph object
+   * @param args arguments to `GraphObj` constructor
+   * 
+   * This method manages the creation of objects derived from `TGraph`.
+   * Note that `TGraph` itself does feature a constructor with two strings as
+   * first arguments, but that is not the standard name/title constructor
+   * (in fact, there is no such standard constructor for `TGraph`, and that
+   * matching one takes a text file path for input and an option string...).
+   * 
+   * The name and title of the graph are still set, via `SetName()` and
+   * `SetTitle()` (this action is delegated to
+   * `TFileDirectory::makeAndRegister()`).
+   */
+  template <typename GraphObj, typename... Args>
+  GraphObj* doConstruct(
+    art::TFileDirectory& destDir,
+    TGraph*,
+    std::string const& name, std::string const& title,
+    Args&&... args
+    ) const;
+  
+  // --- END -- Object creation specializations --------------------------------
+  
+  
   /// Retrieves or, if not present, creates a ROOT subdirectory in the sandbox.
   /// Returns a pair with the directory and the name part of `path`.
   /// The directory part may be empty.
@@ -550,10 +708,10 @@ Obj* icarus::trigger::PlotSandbox::make
   art::TFileDirectory destDir
     = objDir.empty()? fData.outputDir.fDir: fData.outputDir.fDir.mkdir(objDir);
   
-  // see Redmine issue #23075
-  return destDir.makeAndRegister<Obj>(
-    processedName.c_str(), processedTitle.c_str(),
-    processedName.c_str(), processedTitle.c_str(), std::forward<Args>(args)...
+  using ObjPtr_t = Obj*;
+  return doConstruct<Obj>(
+    destDir, ObjPtr_t{},
+    processedName, processedTitle, std::forward<Args>(args)...
     );
 } // icarus::trigger::PlotSandbox::make()
 
@@ -609,6 +767,53 @@ auto& icarus::trigger::PlotSandbox::demandSandbox
 
 } // icarus::trigger::PlotSandbox::demandSandbox(SandboxType)
 
+
+
+//------------------------------------------------------------------------------
+template <typename Obj, typename... Args>
+Obj* icarus::trigger::PlotSandbox::makeWithNameTitle(
+  art::TFileDirectory& destDir,
+  std::string const& name, std::string const& title, Args&&... args
+) const {
+  return destDir.makeAndRegister<Obj>
+    (name, title, name.c_str(), title.c_str(), std::forward<Args>(args)...);
+} // icarus::trigger::PlotSandbox::makeWithNameTitle()
+
+
+//------------------------------------------------------------------------------
+template <typename Obj, typename... Args>
+Obj* icarus::trigger::PlotSandbox::makeAndSetNameTitle(
+  art::TFileDirectory& destDir,
+  std::string const& name, std::string const& title, Args&&... args
+) const {
+  return destDir.makeAndRegister<Obj>(name, title, std::forward<Args>(args)...);
+} // icarus::trigger::PlotSandbox::justMake()
+
+
+//------------------------------------------------------------------------------
+template <typename Obj, typename... Args>
+Obj* icarus::trigger::PlotSandbox::doConstruct(
+  art::TFileDirectory& destDir,
+  TObject*,
+  std::string const& name, std::string const& title,
+  Args&&... args
+) const {
+  return
+    makeWithNameTitle<Obj>(destDir, name, title, std::forward<Args>(args)...);
+} // icarus::trigger::PlotSandbox::doConstruct()
+
+
+//------------------------------------------------------------------------------
+template <typename GraphObj, typename... Args>
+GraphObj* icarus::trigger::PlotSandbox::doConstruct(
+  art::TFileDirectory& destDir,
+  TGraph*,
+  std::string const& name, std::string const& title,
+  Args&&... args
+) const {
+  return makeAndSetNameTitle<GraphObj>
+      (destDir, name, title, std::forward<Args>(args)...);
+} // icarus::trigger::PlotSandbox::doConstruct(TGraph)
 
 
 //------------------------------------------------------------------------------
