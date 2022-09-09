@@ -349,8 +349,8 @@ icarus_stage0_producers.gaushitTPCEE.HitFinderToolVec.CandidateHitsPlane2.Plane:
 icarus_stage0_producers.gaushitTPCEE.HitFinderToolVec.CandidateHitsPlane2.RoiThreshold:        9.
 
 ### OpFlashFinder: overrride ophit input label to use the timing corrections
-physics.producers.opflashCryoE.OpHitProducer: "ophitcorr"
-physics.producers.opflashCryoW.OpHitProducer: "ophitcorr"
+icarus_stage0_producers.opflashCryoE.OpHitProducer: "ophitcorr"
+icarus_stage0_producers.opflashCryoW.OpHitProducer: "ophitcorr"
 
 ### Default purity monitor settings (single TPC readout assumed)
 icarus_stage0_producers.purityana0.RawModuleLabel:                                             ["daqTPCROI:PHYSCRATEDATATPCWW","daqTPCROI:PHYSCRATEDATATPCWE","daqTPCROI:PHYSCRATEDATATPCEW","daqTPCROI:PHYSCRATEDATATPCEE"]
