@@ -15,7 +15,7 @@
 
 cmake_minimum_required(VERSION 3.19 FATAL_ERROR)
 
-project(icaruscode VERSION 09.56.00.01 LANGUAGES CXX)
+project(icaruscode VERSION 09.58.01 LANGUAGES CXX)
 
 message(STATUS
   "\n-- ============================================================================="
@@ -75,6 +75,9 @@ find_ups_product( icarus_data )
 
 find_ups_product( artdaq_core )
 find_ups_product( sbndaq_artdaq_core )
+
+find_package( cetlib_except REQUIRED EXPORT )
+find_package( cetlib REQUIRED EXPORT )
 
 cet_find_library( NURANDOM_RANDOMUTILS_NURANDOMSERVICE_SERVICE
                   NAMES nurandom_RandomUtils_NuRandomService_service

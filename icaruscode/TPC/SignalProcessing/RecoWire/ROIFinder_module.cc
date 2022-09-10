@@ -29,6 +29,8 @@
 #include "art_root_io/TFileService.h" 
 #include "canvas/Utilities/Exception.h"
 
+#include "cetlib_except/coded_exception.h"
+
 // LArSoft libraries
 #include "larcoreobj/SimpleTypesAndConstants/RawTypes.h" // raw::ChannelID_t
 #include "larcorealg/CoreUtils/enumerate.h"
@@ -40,10 +42,15 @@
 #include "lardata/ArtDataHelper/WireCreator.h"
 #include "lardata/Utilities/AssociationUtil.h"
 
+#include "icaruscode/IcarusObj/ChannelROI.h"
+#include "icaruscode/TPC/Utilities/ChannelROICreator.h"
+
 #include "icaruscode/TPC/SignalProcessing/RecoWire/ROITools/IROILocator.h"
 
 #include "icarus_signal_processing/WaveformTools.h"
 #include "icarus_signal_processing/Denoising.h"
+
+#include "icaruscode/IcarusObj/ChannelROI.h"
 
 #include "tbb/parallel_for.h"
 #include "tbb/blocked_range.h"
@@ -106,31 +113,34 @@ private:
     class multiThreadDeconvolutionProcessing 
     {
     public:
-        multiThreadDeconvolutionProcessing(ROIFinder const&            parent,
-                                           art::Event&                 event,
-                                           const PlaneIDVec&           planeIDVec,
-                                           const PlaneIDToDataPairMap& planeIDToDataPairMap, 
-                                           std::vector<recob::Wire>&   wireColVec,
-                                           std::vector<recob::Wire>&   morphedVec)
+        multiThreadDeconvolutionProcessing(ROIFinder const&                parent,
+                                           art::Event&                     event,
+                                           const PlaneIDVec&               planeIDVec,
+                                           const PlaneIDToDataPairMap&     planeIDToDataPairMap, 
+                                           std::vector<recob::Wire>&       wireColVec,
+                                           std::vector<recob::Wire>&       morphedVec,
+                                           std::vector<recob::ChannelROI>& channelROIVec)
             : fROIFinder(parent),
               fEvent(event),
               fPlaneIDVec(planeIDVec),
               fPlaneIDToDataPairMap(planeIDToDataPairMap),
               fWireColVec(wireColVec),
-              fMorphedVec(morphedVec)
+              fMorphedVec(morphedVec),
+              fChannelROIVec(channelROIVec)
         {}
         void operator()(const tbb::blocked_range<size_t>& range) const
         {
             for (size_t idx = range.begin(); idx < range.end(); idx++)
-                fROIFinder.processPlane(idx, fEvent, fPlaneIDVec, fPlaneIDToDataPairMap, fWireColVec, fMorphedVec);
+                fROIFinder.processPlane(idx, fEvent, fPlaneIDVec, fPlaneIDToDataPairMap, fWireColVec, fMorphedVec, fChannelROIVec);
         }
     private:
-        const ROIFinder&            fROIFinder;
-        art::Event&                 fEvent;
-        const PlaneIDVec&           fPlaneIDVec;
-        const PlaneIDToDataPairMap& fPlaneIDToDataPairMap;
-        std::vector<recob::Wire>&   fWireColVec;
-        std::vector<recob::Wire>&   fMorphedVec;
+        const ROIFinder&                fROIFinder;
+        art::Event&                     fEvent;
+        const PlaneIDVec&               fPlaneIDVec;
+        const PlaneIDToDataPairMap&     fPlaneIDToDataPairMap;
+        std::vector<recob::Wire>&       fWireColVec;
+        std::vector<recob::Wire>&       fMorphedVec;
+        std::vector<recob::ChannelROI>& fChannelROIVec;
     };
 
     // Function to do the work
@@ -139,7 +149,8 @@ private:
                        const PlaneIDVec&,
                        const PlaneIDToDataPairMap&, 
                        std::vector<recob::Wire>&,
-                       std::vector<recob::Wire>&) const;
+                       std::vector<recob::Wire>&,
+                       std::vector<recob::ChannelROI>&) const;
 
     // This is for the baseline...
     float getMedian(const icarus_signal_processing::VectorFloat, const unsigned int) const;
@@ -170,6 +181,7 @@ ROIFinder::ROIFinder(fhicl::ParameterSet const& pset) : EDProducer{pset}
     for(const auto& wireLabel : fOutInstanceLabelVec)
     {
         produces< std::vector<recob::Wire>>(wireLabel);
+        produces< std::vector<recob::ChannelROI>>(wireLabel);
 
         if (fOutputMorphed) produces<std::vector<recob::Wire>>(wireLabel+ "M");
     }
@@ -245,6 +257,9 @@ void ROIFinder::produce(art::Event& evt)
         std::unique_ptr<std::vector<recob::Wire>> wireCol(new std::vector<recob::Wire>);
     
         std::unique_ptr<std::vector<recob::Wire>> morphedCol(new std::vector<recob::Wire>);
+
+        // make a collection of ChannelROI objects
+        std::unique_ptr<std::vector<recob::ChannelROI>> channelROICol(new std::vector<recob::ChannelROI>);
 
         mf::LogInfo("ROIFinder") << "ROIFinder, looking for decon1droi data at " << wireLabel << std::endl;
     
@@ -343,7 +358,7 @@ void ROIFinder::produce(art::Event& evt)
         wireCol->reserve(wireVecHandle->size());
     
         // ... Launch multiple threads with TBB to do the deconvolution and find ROIs in parallel
-        multiThreadDeconvolutionProcessing deconvolutionProcessing(*this, evt, planeIDVec, planeIDToDataPairMap, *wireCol, *morphedCol);
+        multiThreadDeconvolutionProcessing deconvolutionProcessing(*this, evt, planeIDVec, planeIDToDataPairMap, *wireCol, *morphedCol, *channelROICol);
     
         tbb::parallel_for(tbb::blocked_range<size_t>(0, planeIDVec.size()), deconvolutionProcessing);
         
@@ -351,6 +366,7 @@ void ROIFinder::produce(art::Event& evt)
         if(wireCol->size() == 0) mf::LogWarning("ROIFinder") << "No wires made for this event.";
 
         evt.put(std::move(wireCol), fOutInstanceLabelVec[labelIdx]);
+        evt.put(std::move(channelROICol), fOutInstanceLabelVec[labelIdx]);
 
         if (fOutputMorphed) evt.put(std::move(morphedCol), fOutInstanceLabelVec[labelIdx]+"M");
     }
@@ -360,12 +376,13 @@ void ROIFinder::produce(art::Event& evt)
     return;
 } // produce
 
-void  ROIFinder::processPlane(size_t                      idx,
-                              art::Event&                 event,
-                              const PlaneIDVec&           planeIDVec,
-                              const PlaneIDToDataPairMap& planeIDToDataPairMap, 
-                              std::vector<recob::Wire>&   wireColVec,
-                              std::vector<recob::Wire>&   morphedVec) const
+void  ROIFinder::processPlane(size_t                          idx,
+                              art::Event&                     event,
+                              const PlaneIDVec&               planeIDVec,
+                              const PlaneIDToDataPairMap&     planeIDToDataPairMap, 
+                              std::vector<recob::Wire>&       wireColVec,
+                              std::vector<recob::Wire>&       morphedVec,
+                              std::vector<recob::ChannelROI>& channelROIVec) const
 {
     // Recover the planeID for this thread
     const geo::PlaneID& planeID = planeIDVec[idx];
@@ -494,7 +511,8 @@ void  ROIFinder::processPlane(size_t                      idx,
         if (!candidateROIVec.empty())
         {
             // vector that will be moved into the Wire object
-            recob::Wire::RegionsOfInterest_t ROIVec;
+            recob::Wire::RegionsOfInterest_t       ROIVec;
+            recob::ChannelROI::RegionsOfInterest_t intROIVec;
 
             // Check if we have possible overlap wires where we need to merge the previous results with new results
             if (planeID.Plane > 0)
@@ -514,8 +532,21 @@ void  ROIFinder::processPlane(size_t                      idx,
                         // Avoid duplicate entries by erasing the previous instance
                         wireColVec.erase(wireItr);
                     }
+
+                    std::vector<recob::ChannelROI>::iterator channelItr = std::find_if(channelROIVec.begin(),channelROIVec.end(),[channel](const auto& channelROI){return channelROI.Channel() == channel;});
+
+                    if (channelItr != channelROIVec.end()) 
+                    {
+                        intROIVec = channelItr->SignalROI();
+
+                        // Avoid duplicate entries by erasing the previous instance
+                        channelROIVec.erase(channelItr);
+                    }
                 }
             }
+
+            if (ROIVec.size() != intROIVec.size())
+                throw art::Exception(art::errors::LogicError) << "===> ROIVec mismatch to intROIVec, ROIVec size: " << ROIVec.size() << ", intROIVec size: " << intROIVec.size() << "\n";
 
             const icarus_signal_processing::VectorFloat& waveform = dataArray[waveIdx];
 
@@ -555,9 +586,15 @@ void  ROIFinder::processPlane(size_t                      idx,
                     holder.resize(newSize);
                 }
 
+                // Now make the short int version
+                icarus_signal_processing::VectorShort intHolder(holder.size());
+
+                for(size_t binIdx = 0; binIdx < holder.size(); binIdx++) intHolder[binIdx] = std::round(holder[binIdx]);
+ 
                 // add the range into ROIVec
                 ROIVec.add_range(firstBin, std::move(holder));
-            }
+                intROIVec.add_range(firstBin, std::move(intHolder));
+           }
 
             // Check for emptiness
             if (!ROIVec.empty())
@@ -572,6 +609,10 @@ void  ROIFinder::processPlane(size_t                      idx,
                 // We can do that by checking to see if a channel has already been added...
                 std::vector<geo::WireID> wireIDVec = fGeometry->ChannelToWire(channel);
 
+                if (channelROIVec.size() != wireColVec.size())
+                    throw art::Exception(art::errors::LogicError) << "===> ROI output mismatch, channelROIVec, size: " << channelROIVec.size() << ", wireColVec, size: " << wireColVec.size() << "\n";
+
+                channelROIVec.push_back(recob::ChannelROICreator(std::move(intROIVec),channel).move());
                 wireColVec.push_back(recob::WireCreator(std::move(ROIVec),channel,view).move());
             }
         }

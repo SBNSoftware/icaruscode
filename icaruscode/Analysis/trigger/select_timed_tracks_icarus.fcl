@@ -1,0 +1,113 @@
+#
+# File:    select_timed_tracks_icarus.fcl
+# Purpose: Add selection of tracks with time information to the events.
+# Authors: Animesh Chatterjee (ANC238@pitt.edu),
+#          Gianluca Petrillo (petrillo@slac.stanford.edu),
+#          Jacob Zettlemoyer (jzettle@fnal.gov)
+# Date:    September 17, 2021
+#
+#
+
+#include "messages_icarus.fcl"
+#include "rootoutput_icarus.fcl"
+
+BEGIN_PROLOG
+
+gatesFromTracks_icarus: {
+
+  module_type: BeamGateInfoFromTracks
+  
+  GateStartOffset: "-15 us"
+  GateEndOffset:   "+15 us"
+  
+  T0Producer:    @nil  # must override
+  T0selProducer: @nil  # must override
+  
+} # gatesFromTracks_icarus
+
+
+END_PROLOG
+
+
+# ------------------------------------------------------------------------------
+process_name: T0sel
+
+
+# ------------------------------------------------------------------------------
+services: {
+  message:     @local::icarus_message_services_interactive_debug
+  TimeTracker: {}
+}
+
+
+# ------------------------------------------------------------------------------
+physics: {
+
+  producers: {
+    # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    
+    gatesFromTracksE: {
+      @table::gatesFromTracks_icarus
+    
+      T0Producer:    pandoraGausCryoE
+      T0selProducer: t0selectorE
+    }
+    
+    gatesFromTracksW: {
+      @table::gatesFromTracks_icarus
+      
+      T0Producer:    pandoraGausCryoW
+      T0selProducer: t0selectorW
+    }
+    
+    # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    
+  } # producers
+  
+  
+  filters: {
+    
+    # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    t0selectorW: {
+      module_type: TimedTrackSelector
+      
+      #TrackTimeTags: [ pandoraGausCryoW, pandoraGausCryoE ]
+      TrackTimeTags: [ pandoraGausCryoW ]
+      
+    } # t0selectorW
+
+    t0selectorE: {
+      module_type: TimedTrackSelector
+      TrackTimeTags: [ pandoraGausCryoE ]
+    }
+    
+    
+    # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    
+  } # filters
+  
+  # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  selectionW: [ "t0selectorW", "gatesFromTracksW" ]
+  selectionE: [ "t0selectorE", "gatesFromTracksE" ]
+  
+  streams: [ "rootoutput" ]
+  
+} # physics
+
+
+# ------------------------------------------------------------------------------
+outputs: {
+  rootoutput: {
+    @table::icarus_rootoutput
+    outputCommands: [
+      "drop *", "keep *_pmtconfig_*_stage0",
+      "keep *_daqTrigger_*_stage0",
+      "keep *_daqPMT_*_stage0",
+      "keep *_*_*_stage1",
+      "keep *_*_*_T0sel"
+      ]
+  }
+}
+
+
+# ------------------------------------------------------------------------------

@@ -15,6 +15,7 @@ art_make(
                         icarus_signal_processing
                         icarus_signal_processing_Detection
                         icarus_signal_processing_Filters
+                        icaruscode_TPC_Utilities
                         sbndaq_artdaq_core::sbndaq-artdaq-core_Overlays_ICARUS 
                         artdaq_core::artdaq-core_Utilities
                         larcorealg_Geometry

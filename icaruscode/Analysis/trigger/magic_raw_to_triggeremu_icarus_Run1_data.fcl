@@ -1,0 +1,389 @@
+#
+# File:    magic_raw_to_triggeremu_icarus_Run1_data.fcl
+# Purpose: Writes a trigger emulation tree out of a ICARUS raw data file.
+# Authors: Gianluca Petrillo (petrillo@slac.stanford.edu),
+# Date:    July 28, 2022
+#
+# Kind of nuts.
+# Runs the regular Stage0, Stage1 and then the rest that it takes.
+#
+# Enabling art/ROOT output will write files on which the emulation can be run on
+# again. This is to enable that output:
+#     
+#     physics.end_paths: [ @sequence::physics.end_paths, streams ]
+#     
+# 
+#
+
+# ==============================================================================
+# trigger emulation settings, chapter 1: The Untouchables
+# ==============================================================================
+
+BEGIN_PROLOG
+###
+### fix settings (so that will not be overridden later);
+### these are defined in `triggeremu_data_config_icarus.fcl`
+###
+
+# do not emulate any fixed level threshold (only `pmtthr`)
+triggeremu_data_config_icarus.settings.PMTADCthresholds @protect_ignore: []
+
+END_PROLOG
+
+
+# ==============================================================================
+# ===  configuration inclusion
+# ==============================================================================
+
+#include "stage0_icarus_defs.fcl"
+#include "stage1_icarus_defs.fcl"
+
+#include "services_common_icarus.fcl"
+#include "channelmapping_icarus.fcl"
+
+#include "trigger_icarus.fcl"
+#include "triggeremu_data_config_icarus.fcl"
+#include "icarus_trackcalo_skimmer.fcl"
+#include "calorimetry_icarus.fcl"
+#include "rootoutput_icarus.fcl"
+
+
+# ==============================================================================
+# trigger emulation settings, chapter 2: The Great Override
+# ==============================================================================
+
+BEGIN_PROLOG
+
+timetracktreestorage_base: {
+  module_type: "TimeTrackTreeStorage"
+  BeamGateProducer: "daqTrigger"
+  TriggerProducer:  "daqTrigger"
+}
+
+gatesFromTracks_icarus: {
+
+  module_type: BeamGateInfoFromTracks
+  
+  GateStartOffset: "-15 us"
+  GateEndOffset:   "+5 us"
+  
+  T0Producer:    @nil  # must override
+  T0selProducer: @nil  # must override
+  
+} # gatesFromTracks_icarus
+
+
+t0TreeStore_icarus: {
+
+  @table::timetracktreestorage_base
+  
+  MODA: 0.930
+  MODB: 0.212
+  Wion: 0.0000236016
+  Efield: 0.5
+  ForceDowngoing: true
+  
+} # t0TreeStore_icarus
+
+
+END_PROLOG
+
+# ==============================================================================
+# === Stage 0
+# ==============================================================================
+
+services: {
+  IICARUSChannelMap:      @local::icarus_channelmappinggservice
+                          @table::icarus_wirecalibration_minimum_services
+}
+
+physics.producers: {
+  @table::icarus_stage0_producers
+}
+physics.filters: {
+  @table::icarus_stage0_filters
+}
+physics.stage0base: [
+    @sequence::icarus_stage0_PMT
+  , @sequence::icarus_stage0_crt
+  , daqTPCROI
+  , @sequence::icarus_stage0_multiTPC_TPC
+  ]
+physics.pathE: [
+    @sequence::physics.stage0base, opflashCryoE
+  , @sequence::icarus_stage0_EastHits_TPC
+  ]
+physics.pathW: [
+    @sequence::physics.stage0base, opflashCryoW
+  , @sequence::icarus_stage0_WestHits_TPC 
+  ]
+
+# "remove" unused modules
+physics.producers.purityana0.module_type: DummyProducer
+physics.producers.purityana1.module_type: DummyProducer
+
+
+# ==============================================================================
+# === Stage 1
+# ==============================================================================
+
+services: {
+                      @table::services
+  SpaceChargeService: @local::icarus_spacecharge
+}
+
+physics.producers: {
+  @table::physics.producers
+  @table::icarus_stage1_producers
+}
+physics.filters: {
+  @table::physics.filters
+  @table::icarus_stage1_filters
+}
+
+# from `stage1_multiTPC_nofilter_icarus_gauss.fcl` (v09_55_01)
+
+physics.pathE: [
+    @sequence::physics.pathE
+  , @sequence::icarus_filter_cluster3DCryoE
+  , @sequence::icarus_reco_pandoraGausCryoE
+  , fmatchCryoE
+  , @sequence::icarus_crthit
+  , caloskimCalorimetryCryoE
+  ]
+physics.pathW: [
+    @sequence::physics.pathW
+  , @sequence::icarus_filter_cluster3DCryoW
+  , @sequence::icarus_reco_pandoraGausCryoW
+  , fmatchCryoW
+  , @sequence::icarus_crthit
+  , caloskimCalorimetryCryoW
+  ]
+physics.path:
+  [ @sequence::physics.pathE, @sequence::physics.pathW ]
+
+
+# ==============================================================================
+# trigger emulation part
+# ==============================================================================
+services: {
+  @table::services
+  
+                      @table::triggeremu_data_config_icarus.services # from triggeremu_data_config_icarus.fcl
+  
+  TimeTracker:        {}
+  TFileService:       { fileName: "timedtracks_store_triggeremu.root" }
+  
+} # services
+
+# customization of message destinations from trigger emulation (if needed)
+# services.message.destinations: {
+#   @table::services.message.destinations
+#   @table::triggeremu_data_config_icarus.messagedestinations
+# }
+
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+physics.producers: {
+  @table::physics.producers
+  
+  gatesFromTracksE: {
+    @table::gatesFromTracks_icarus
+  
+    T0Producer:    pandoraGausCryoE
+    T0selProducer: t0selectorE
+  }
+  
+  gatesFromTracksW: {
+    @table::gatesFromTracks_icarus
+    
+    T0Producer:    pandoraGausCryoW
+    T0selProducer: t0selectorW
+  }
+
+  @table::triggeremu_data_config_icarus.producers # from triggeremu_data_config_icarus.fcl
+
+} # producers
+
+
+# we only discriminate against the native PMT thresholds, no fixed one is used;
+# the fixed threshold discriminator requires thresholds to be present,
+# so it can't be run in dummy mode; removing it from the existing path sequence
+# is error-prone in FHiCL, so we rather turn it into a different (dummy) module:
+physics.producers.pmtfixedthr.module_type: DummyProducer
+
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+physics.filters: {
+  @table::physics.filters
+  
+  t0selectorW: {
+    module_type: TimedTrackSelector
+    TrackTimeTags: [ pandoraGausCryoW ]
+  } # t0selectorW
+
+  t0selectorE: {
+    module_type: TimedTrackSelector
+    TrackTimeTags: [ pandoraGausCryoE ]
+  }
+  
+} # filters
+
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+physics.analyzers: {
+
+  t0TreeStoreW: {
+    @table::t0TreeStore_icarus
+    
+    PFPproducer:         "pandoraGausCryoW"
+    T0Producer:          "pandoraGausCryoW"
+    T0selProducer:       "t0selectorW"
+    TrackProducer:       "pandoraTrackGausCryoW"
+    TrackFitterProducer: "pandoraTrackGausCryoW"
+    CaloProducer:        "caloskimCalorimetryCryoW"
+    FlashProducer:       "opflashCryoW"
+    EmulatedTriggers:    [
+      { Name:       "M1"    TriggerTag: "simTiledORM1W" },
+      { Name:       "S3"    TriggerTag: "simTiledORS3W" },
+      { Name:       "S5"    TriggerTag: "simTiledORS5W" },
+      { Name:       "S8"    TriggerTag: "simTiledORS8W" },
+      { Name:      "S10"    TriggerTag: "simTiledORS10W" },
+      { Name:      "S15"    TriggerTag: "simTiledORS15W" },
+      { Name:       "M1s"   TriggerTag: "simSlidingORM1W" },
+      { Name:       "S3s"   TriggerTag: "simSlidingORS3W" },
+      { Name:       "S5s"   TriggerTag: "simSlidingORS5W" },
+      { Name:       "S8s"   TriggerTag: "simSlidingORS8W" },
+      { Name:      "S10s"   TriggerTag: "simSlidingORS10W" },
+      { Name:      "S15s"   TriggerTag: "simSlidingORS15W" }
+    ]
+    LogCategory:         "TimeTrackTreeStorageCryoW"
+    
+    # do not process the events which did not complete the West processing path
+    SelectEvents: [ 'processpathW' ]
+    
+  } # t0TreeStoreW
+
+
+  t0TreeStoreE: {
+    @table::t0TreeStore_icarus
+  
+    PFPproducer:         "pandoraGausCryoE"
+    T0Producer:          "pandoraGausCryoE"
+    T0selProducer:       "t0selectorE"
+    TrackProducer:       "pandoraTrackGausCryoE"
+    TrackFitterProducer: "pandoraTrackGausCryoE"
+    CaloProducer:        "caloskimCalorimetryCryoE"
+    FlashProducer:       "opflashCryoE"
+    EmulatedTriggers:    [
+      { Name:       "M1"    TriggerTag: "simTiledORM1E" },
+      { Name:       "S3"    TriggerTag: "simTiledORS3E" },
+      { Name:       "S5"    TriggerTag: "simTiledORS5E" },
+      { Name:       "S8"    TriggerTag: "simTiledORS8E" },
+      { Name:      "S10"    TriggerTag: "simTiledORS10E" },
+      { Name:      "S15"    TriggerTag: "simTiledORS15E" },
+      { Name:       "M1s"   TriggerTag: "simSlidingORM1E" },
+      { Name:       "S3s"   TriggerTag: "simSlidingORS3E" },
+      { Name:       "S5s"   TriggerTag: "simSlidingORS5E" },
+      { Name:       "S8s"   TriggerTag: "simSlidingORS8E" },
+      { Name:      "S10s"   TriggerTag: "simSlidingORS10E" },
+      { Name:      "S15s"   TriggerTag: "simSlidingORS15E" }
+    ]
+    LogCategory:         "TimeTrackTreeStorageCryoE"
+    
+    # do not process the events which did not complete the East processing path
+    SelectEvents: [ 'processpathE' ]
+    
+  } # t0TreeStoreE
+
+} # analyzers
+
+
+physics.selectionW: [
+    "t0selectorW"
+  , "gatesFromTracksW"
+  , @sequence::triggeremu_data_config_icarus.producerpathW
+]
+
+physics.selectionE: [
+    "t0selectorE"
+  , "gatesFromTracksE"
+  , @sequence::triggeremu_data_config_icarus.producerpathE
+]
+
+physics.processpathE:
+  [ @sequence::physics.pathE, @sequence::physics.selectionE ]
+physics.processpathW:
+  [ @sequence::physics.pathW, @sequence::physics.selectionW ]
+
+physics.emutreesE: [ t0TreeStoreE ]
+physics.emutreesW: [ t0TreeStoreW ]
+physics.emutrees: [ @sequence::physics.emutreesE, @sequence::physics.emutreesW ]
+
+
+# ==============================================================================
+# ===  Wrap up
+# ==============================================================================
+
+process_name: TrgEmu
+
+# ------------------------------------------------------------------------------
+services.message: @local::icarus_message_services_interactive
+
+
+# ------------------------------------------------------------------------------
+physics.streams: [ "rootoutput" ]
+
+physics.trigger_paths: [ processpathE, processpathW ]  # only one cryostat
+# physics.trigger_paths: [ processpathE  ]
+
+physics.end_paths: [ "emutrees", "streams" ]
+# physics.end_paths: [ "emutreesE", "streams" ]        # only one cryostat
+# physics.end_paths: [ "emutrees" ]                    # no art/ROOT output
+
+
+# ------------------------------------------------------------------------------
+outputs: {
+  rootoutput: {
+    @table::icarus_rootoutput
+    
+    fileProperties: { maxInputFiles: 1 }
+    checkFileName: false
+    
+    # these data products are enough to rerun this job (until hits are needed):
+    outputCommands: [
+      "drop *"
+      
+      # stage 0
+      , "keep sbn::PMTconfiguration_*_*_*"
+      , "keep *_daqTrigger_*_*"
+      , "keep *_pmtthr_*_*"
+      , "keep *_opflashCryo*_*_*"
+      
+      # stage 1
+      , "keep *_pandoraGausCryo*_*_*", "drop *recob::SpacePoint*_pandoraGausCryo*_*_*"
+      , "keep *_pandoraTrackGausCryo*_*_*"
+      , "keep *_pandoraKalmanTrackGausCryo*_*_*"
+      , "keep *_cluster3DCryo*_*_*", "drop *recob::SpacePoint*_cluster3DCryo*_*_*"
+      , "keep *_caloskimCalorimetryCryo*_*_*"
+      , "keep *_fmatchCryo*_*_*"
+      
+      # trigger emulation
+      , "keep *_lvdsgates*_*_*"
+      , "keep *_t0selector*_*_*"
+      , "keep *_gatesFromTracks*_*_*"
+      , "keep *_trig*_*_*"
+      , "keep *_simTiled*_*_*", "keep *_simSliding*_*_*"
+    ]
+
+  }
+}
+
+
+# ==============================================================================
+# ===  Afterthoughts
+# ==============================================================================
+
+# FIXME for development and DEBUG only:
+# services.message: @local::icarus_message_services_interactive_debug
+
