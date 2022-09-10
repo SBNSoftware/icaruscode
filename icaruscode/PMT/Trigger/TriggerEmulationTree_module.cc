@@ -10,7 +10,7 @@
 
 // ICARUS libraries
 #include "icaruscode/PMT/Trigger/Utilities/TriggerResponseManager.h"
-#include "icaruscode/Decode/DataProducts/ExtraTriggerInfo.h"
+#include "sbnobj/Common/Trigger/ExtraTriggerInfo.h"
 
 // LArSoft libraries
 #include "lardataobj/RawData/TriggerData.h" // raw::Trigger
