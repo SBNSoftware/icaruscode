@@ -2,7 +2,6 @@
 #include "channelmapping_icarus.fcl"
 
 #include "correctionservices_icarus.fcl"
-#include "seedservice.fcl"
 
 #include "cafmaker_defs.fcl"
 
@@ -10,10 +9,9 @@ process_name: CAFmaker
 
 services:
 {
-  @table::icarus_wirecalibration_minimum_services
+  @table::icarus_wirecalibration_services
 
   SpaceChargeService: @local::icarus_spacecharge
-  NuRandomService: @local::per_event_NuRandomService
 }
 
 physics:
