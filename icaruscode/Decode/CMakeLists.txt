@@ -15,6 +15,7 @@ art_make(
                         icarus_signal_processing
                         icarus_signal_processing_Detection
                         icarus_signal_processing_Filters
+                        icaruscode_TPC_Utilities
                         sbndaq_artdaq_core::sbndaq-artdaq-core_Overlays_ICARUS 
                         artdaq_core::artdaq-core_Utilities
                         larcorealg_Geometry
@@ -43,8 +44,8 @@ art_make(
 
 simple_plugin(DaqDecoderICARUSPMT module
   sbnobj_Common_PMT_Data
+  sbnobj_Common_Trigger
   icaruscode_Decode_DecoderTools_Dumpers
-  icaruscode_Decode_DataProducts # should become sbnobj_Common_Trigger
   icaruscode_Decode_DecoderTools
   icaruscode_Timing
   icaruscode_Timing_DataProducts
@@ -79,14 +80,14 @@ simple_plugin(TriggerConfigurationExtraction module
 
 simple_plugin(DumpPMTconfiguration module
   sbnobj_Common_PMT_Data
-  ${MF_MESSAGELOGGER}
+  messagefacility::MF_MessageLogger
   fhiclcpp
   cetlib_except
   )
 
 simple_plugin(DumpTriggerConfiguration module
   icaruscode_Decode_DataProducts
-  ${MF_MESSAGELOGGER}
+  messagefacility::MF_MessageLogger
   fhiclcpp
   cetlib_except
   )
@@ -94,13 +95,13 @@ simple_plugin(DumpTriggerConfiguration module
 simple_plugin(DumpArtDAQfragments module
   icaruscode_Decode_DecoderTools_Dumpers
   artdaq_core::artdaq-core_Data
-  ${MF_MESSAGELOGGER}
+  messagefacility::MF_MessageLogger
   fhiclcpp
   cetlib_except
   )
 
 simple_plugin(DumpTrigger module
-  icaruscode_Decode_DataProducts
+  sbnobj_Common_Trigger
   lardataobj::Simulation
   lardataobj::RawData
   messagefacility::MF_MessageLogger

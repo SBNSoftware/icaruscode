@@ -14,11 +14,8 @@
 #include "icaruscode/Timing/DataProducts/PMTWaveformTimeCorrection.h"
 #include "icaruscode/Timing/PMTWaveformTimeCorrectionExtractor.h"
 #include "icaruscode/Timing/PMTTimingCorrections.h"
-
-// #include "sbnobj/Common/Trigger/ExtraTriggerInfo.h" // future location of:
-#include "icaruscode/Decode/DataProducts/ExtraTriggerInfo.h"
-// #include "sbnobj/Common/Trigger/BeamBits.h" // future location of:
-#include "icaruscode/Decode/BeamBits.h" // sbn::triggerSource
+#include "sbnobj/Common/Trigger/ExtraTriggerInfo.h" 
+#include "sbnobj/Common/Trigger/BeamBits.h"
 #include "icarusalg/Utilities/BinaryDumpUtils.h" // icarus::ns::util::bin()
 #include "icaruscode/Utilities/ArtHandleTrackerManager.h"
 

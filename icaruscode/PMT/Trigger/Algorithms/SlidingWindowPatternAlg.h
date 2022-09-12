@@ -83,9 +83,11 @@ class icarus::trigger::SlidingWindowPatternAlg
   
   /// Complete information from this algorithm, standard + non-standard (extra).
   struct AllTriggerInfo_t {
-    TriggerInfo_t info;
-    MoreInfo_t extra;
+    TriggerInfo_t info; ///< Standard trigger information.
+    MoreInfo_t extra; ///< Extra trigger information.
+    /// Returns whether this trigger fired.
     operator bool() const { return info.fired(); }
+    /// Returns whether this trigger did not fire.
     bool operator!() const { return !info.fired(); }
   }; // AllTriggerInfo_t
   

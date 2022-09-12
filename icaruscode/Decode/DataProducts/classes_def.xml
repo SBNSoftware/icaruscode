@@ -15,24 +15,7 @@
 
 
 <lcgdict>
-  <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
-  <!-- sbn::ExtraTriggerInfo -->
-
-  <!--   class -->
-  <class name="sbn::ExtraTriggerInfo" ClassVersion="13" >
-   <version ClassVersion="13" checksum="1967722932"/>
-   <version ClassVersion="12" checksum="2254850881"/>
-   <version ClassVersion="11" checksum="2691428079"/>
-   <version ClassVersion="10" checksum="2751074963"/>
-  </class>
-  
-    <!-- dependencies -->
-    <enum name="sbn::bits::triggerSource" ClassVersion="10" />
-    <enum name="sbn::bits::triggerLocation" ClassVersion="10" />
-    <enum name="sbn::bits::triggerType" ClassVersion="10" />
-    <class name="sbn::ExtraTriggerInfo::CryostatInfo" ClassVersion="10" >
-     <version ClassVersion="10" checksum="313789291"/>
-    </class>
+  <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->  
 
      <class name="icarus::TriggerConfiguration" ClassVersion="11" >
       <version ClassVersion="11" checksum="2294188438"/>
@@ -50,11 +33,6 @@
     <!-- art pointers and wrappers -->
     <class name="art::Ptr<icarus::TriggerConfiguration>"/>
     <class name="art::Wrapper<icarus::TriggerConfiguration>"/>
-
-    <!-- art pointers and wrappers -->
-    <class name="art::Ptr<sbn::ExtraTriggerInfo>"/>
-    <class name="art::Wrapper<sbn::ExtraTriggerInfo>"/>
-
 
   <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
   <!-- copy&paste templates for: -->

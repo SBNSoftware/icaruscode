@@ -1,0 +1,43 @@
+<lcgdict>
+
+  <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
+
+  <class name="sbn::selTrackInfo" ClassVersion="15">
+   <version ClassVersion="15" checksum="352409387"/>
+   <version ClassVersion="14" checksum="4105307536"/>
+   <version ClassVersion="13" checksum="471742515"/>
+   <version ClassVersion="12" checksum="249868847"/>
+   <version ClassVersion="11" checksum="2588527011"/>
+   <version ClassVersion="10" checksum="1586061224"/>
+  </class>
+  
+  <class name="sbn::selBeamInfo" ClassVersion="12">
+   <version ClassVersion="12" checksum="880284339"/>
+   <version ClassVersion="11" checksum="3281323980"/>
+   <version ClassVersion="10" checksum="4079645487"/>
+  </class>
+
+  <class name="sbn::selTriggerInfo" ClassVersion="11">
+   <version ClassVersion="11" checksum="2335077475"/>
+   <version ClassVersion="10" checksum="2486880499"/>
+  </class>
+  <class name="sbn::selLightInfo" ClassVersion="13">
+   <version ClassVersion="13" checksum="3810861666"/>
+   <version ClassVersion="12" checksum="2145002064"/>
+   <version ClassVersion="11" checksum="4227899354"/>
+   <version ClassVersion="10" checksum="364607587"/>
+  </class>
+
+  <class name="sbn::selHitInfo" ClassVersion="12" >
+   <version ClassVersion="12" checksum="1762922906"/>
+   <version ClassVersion="11" checksum="2097252913"/>
+   <version ClassVersion="10" checksum="2893769828"/>
+  </class>
+
+  <class name="std::vector<sbn::selTrackInfo>" />    
+  <class name="std::vector<sbn::selBeamInfo>" />
+  <class name="std::vector<sbn::selTriggerInfo>" />
+  <class name="std::vector<sbn::selLightInfo>" />
+  <class name="std::vector<sbn::selHitInfo>" />
+  
+</lcgdict>

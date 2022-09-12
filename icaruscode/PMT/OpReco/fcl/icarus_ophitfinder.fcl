@@ -1,68 +1,137 @@
 #include "opticaldetectormodules.fcl"
 #include "icarus_spe.fcl"
 BEGIN_PROLOG
-#
-# Pedestal estimation alogrithms
-#
-icarus_opreco_pedestal_edges: @local::standard_algo_pedestal_edges
-icarus_opreco_pedestal_edges.NumSampleFront:  3
-icarus_opreco_pedestal_edges.NumSampleTail:   3
-icarus_opreco_pedestal_edges.NumSampleMethod: 2
+# ==============================================================================
+#  Pedestal estimation algorithms
+# ==============================================================================
+icarus_opreco_pedestal_edges: {
+  @table::standard_algo_pedestal_edges
+  NumSampleFront:  3
+  NumSampleTail:   3
+  NumSampleMethod: 2
+}
 
-icarus_opreco_pedestal_rollingmean: @local::standard_algo_pedestal_rollingmean
-icarus_opreco_pedestal_rollingmean.SampleSize:  20
-icarus_opreco_pedestal_rollingmean.Threshold:   2
-icarus_opreco_pedestal_rollingmean.MaxSigma:    1.5
-icarus_opreco_pedestal_rollingmean.PedRangeMax: 8010
-icarus_opreco_pedestal_rollingmean.PedRangeMin: 0
+icarus_opreco_pedestal_rollingmean: {
+  @table::standard_algo_pedestal_rollingmean
+  SampleSize:  20
+  Threshold:   2
+  MaxSigma:    1.5
+  PedRangeMax: 8010
+  PedRangeMin: 0
+}
 
-icarus_opreco_pedestal_rmsslider: @local::standard_algo_pedestal_ub
-icarus_opreco_pedestal_rmsslider.BeamGateSamples:   1
-icarus_opreco_pedestal_rmsslider.SampleSize:        20
-icarus_opreco_pedestal_rmsslider.Threshold:         1.5
-icarus_opreco_pedestal_rmsslider.Verbose:           false
-icarus_opreco_pedestal_rmsslider.NWaveformsToFile:  0
-icarus_opreco_pedestal_rmsslider.MaxSigma:          1.5
-icarus_opreco_pedestal_rmsslider.PedRangeMax:       8003
-icarus_opreco_pedestal_rmsslider.PedRangeMin:       7995
-icarus_opreco_pedestal_rmsslider.NumPreSample:      10
-icarus_opreco_pedestal_rmsslider.NumPostSample:     20
+icarus_opreco_pedestal_rmsslider: {
+  @table::standard_algo_pedestal_ub
+  BeamGateSamples:   1
+  SampleSize:        20
+  Threshold:         1.5
+  Verbose:           false
+  NWaveformsToFile:  0
+  MaxSigma:          1.5
+  PedRangeMax:       8003
+  PedRangeMin:       7995
+  NumPreSample:      10
+  NumPostSample:     20
+}
+
+##
+## ICARUS "old" baseline settings: see SBN DocDB 24969
+## Labelled as "MC" here because at this time they appear to work better for MC.
+##
+icarus_opreco_pedestal_MC_DocDB24969: { # based on icarus_opreco_pedestal_rmsslider
+  Name:             "UB"
+  BeamGateSamples:    1
+  SampleSize:        20
+  Threshold:          4
+  MaxSigma:           4
+  NumPreSample:      10
+  NumPostSample:     20
+  PedRangeMax:    15200
+  PedRangeMin:    14640
+  NWaveformsToFile:   0
+  Verbose:        false
+} # icarus_opreco_pedestal_MC_DocDB24969
+
+##
+## ICARUS tuning: see SBN DocDB 24969
+##
+icarus_opreco_pedestal_DocDB24969: {
+  Name:          "RollingMean"   # was "UB"
+  SampleSize:              20    # unchanged
+  NPrePostSamples:          5    # unchanged
+  Threshold:                1.5  # was: 4
+  MaxSigma:                 5    # was: 4
+  DiffADCCounts:            2    # unchanged
+  DiffBetweenGapsThreshold: 2    # unchanged
+  PedRangeMax:          16000    # was: 15200
+  PedRangeMin:          14000    # was: 14640
+} # icarus_opreco_pedestal_DocDB24969
 
 
-#
-# Hit Algorithms
-#
-icarus_opreco_hit_threshold: @local::standard_algo_threshold
-icarus_opreco_hit_threshold.StartADCThreshold    : 5
-icarus_opreco_hit_threshold.EndADCThreshold      : 2
-icarus_opreco_hit_threshold.NSigmaThresholdStart : 5
-icarus_opreco_hit_threshold.NSigmaThresholdEnd   : 3
+# ==============================================================================
+#  Hit Algorithms
+# ==============================================================================
+icarus_opreco_hit_threshold: {
+  @table::standard_algo_threshold
+  StartADCThreshold    : 5
+  EndADCThreshold      : 2
+  NSigmaThresholdStart : 5
+  NSigmaThresholdEnd   : 3
+}
 
-icarus_opreco_hit_fixedwindow: @local::standard_algo_fixedwindow
-icarus_opreco_hit_fixedwindow.StartIndex: 0
-icarus_opreco_hit_fixedwindow.EndIndex:   20
+icarus_opreco_hit_fixedwindow: {
+  @table::standard_algo_fixedwindow
+  StartIndex: 0
+  EndIndex:   20
+}
 
-icarus_opreco_hit_slidingwindow: @local::standard_algo_slidingwindow
-icarus_opreco_hit_slidingwindow.PositivePolarity:    false
-icarus_opreco_hit_slidingwindow.NumPreSample:        5
-icarus_opreco_hit_slidingwindow.NumPostSample:       10
-icarus_opreco_hit_slidingwindow.ADCThreshold:        5 # ADC threshold (absolute) above pedestal mean to fire a pulse
-icarus_opreco_hit_slidingwindow.NSigmaThreshold:     3 # ADC threshold (N*pedestal sigma) above pedestal mean to fire a pulse
-icarus_opreco_hit_slidingwindow.TailADCThreshold:    2 # ADC threshold (absolute) below which next pulse is allowed to fire
-icarus_opreco_hit_slidingwindow.TailNSigmaThreshold: 2 # ADC threshold (N*pedestal sigma) below which next pulse is allowed to fire
-icarus_opreco_hit_slidingwindow.EndADCThreshold:     1 # ADC threshold (absolute) at which the pulse ends
-icarus_opreco_hit_slidingwindow.EndNSigmaThreshold:  1 # ADC threshold (N*pedetal sigma) at which the pulse ends
-icarus_opreco_hit_slidingwindow.MinPulseWidth:       2 # The width of a pulse needs to be equal or larger than this to be recorded
-icarus_opreco_hit_slidingwindow.Verbosity:           false
+icarus_opreco_hit_slidingwindow: {
+  @table::standard_algo_slidingwindow
+  PositivePolarity:    false
+  NumPreSample:        5
+  NumPostSample:       10
+  ADCThreshold:        5 # ADC threshold (absolute) above pedestal mean to fire a pulse
+  NSigmaThreshold:     3 # ADC threshold (N*pedestal sigma) above pedestal mean to fire a pulse
+  TailADCThreshold:    2 # ADC threshold (absolute) below which next pulse is allowed to fire
+  TailNSigmaThreshold: 2 # ADC threshold (N*pedestal sigma) below which next pulse is allowed to fire
+  EndADCThreshold:     1 # ADC threshold (absolute) at which the pulse ends
+  EndNSigmaThreshold:  1 # ADC threshold (N*pedetal sigma) at which the pulse ends
+  MinPulseWidth:       2 # The width of a pulse needs to be equal or larger than this to be recorded
+  Verbosity:           false
+}
 
-icarus_opreco_hit_cfd: @local::standard_algo_cfd
-icarus_opreco_hit_cfd.Fraction:    0.9
-icarus_opreco_hit_cfd.Delay:       2
-icarus_opreco_hit_cfd.PeakThresh:  7.5
-icarus_opreco_hit_cfd.StartThresh: 5.0
-icarus_opreco_hit_cfd.EndThresh:   1.5
 
-icarus_ophit:
+icarus_opreco_hit_slidingwindow_201910: { # based on icarus_opreco_hit_slidingwindow
+  @table::standard_algo_slidingwindow
+  PositivePolarity:    false
+  NumPreSample:        5
+  NumPostSample:      10
+  ADCThreshold:       10 # ADC threshold (absolute) above pedestal mean to fire a pulse
+  NSigmaThreshold:     3 # ADC threshold (N*pedestal sigma) above pedestal mean to fire a pulse
+  TailADCThreshold:    6 # ADC threshold (absolute) below which next pulse is allowed to fire
+  TailNSigmaThreshold: 2 # ADC threshold (N*pedestal sigma) below which next pulse is allowed to fire
+  EndADCThreshold:     2 # ADC threshold (absolute) at which the pulse ends
+  EndNSigmaThreshold:  1 # ADC threshold (N*pedetal sigma) at which the pulse ends
+  MinPulseWidth:       5 # The width of a pulse needs to be equal or larger than this to be recorded
+  Verbosity:           false
+} # icarus_opreco_hit_slidingwindow_201910
+
+
+icarus_opreco_hit_cfd: {
+  @table::standard_algo_cfd
+  Fraction:    0.9
+  Delay:       2
+  PeakThresh:  7.5
+  StartThresh: 5.0
+  EndThresh:   1.5
+}
+
+
+# ==============================================================================
+#  module configurations
+# ==============================================================================
+
+icarus_ophit: # some basic configuration
 {
    module_type:    "OpHitFinder"
    GenModule:      "generator"
@@ -74,32 +143,41 @@ icarus_ophit:
    SPEArea:        @local::SPE.Area # If AreaToPE is true, this number is
                          # used as single PE area (in ADC counts)
    SPEShift:       @local::SPE.Shift # Used by PhotonCalibratorStandard to compute
-                         # PE = arae / SPEArea + SPEShift
+                         # PE = area / SPEArea + SPEShift
    UseStartTime:   true  # record pulse start time rather than peak (max) time
    reco_man:       @local::standard_preco_manager
-   HitAlgoPset:    @local::icarus_opreco_hit_slidingwindow
-   PedAlgoPset:    @local::icarus_opreco_pedestal_rmsslider
-   #PedAlgoPset:    @local::icarus_opreco_pedestal_rollingmean
+   HitAlgoPset:    @local::icarus_opreco_hit_slidingwindow_201910
+   PedAlgoPset:    @local::icarus_opreco_pedestal_MC_DocDB24969
 }
 
 icarus_ophitdebugger: @local::icarus_ophit
 icarus_ophitdebugger.module_type: "FullOpHitFinder"
 icarus_ophitdebugger.OutputFile:  "ophit_debug.root"
 
-icarus_ophit_data: @local::icarus_ophit
-icarus_ophit_data.InputModule: "daqPMT"
-icarus_ophit_data.PedAlgoPset.Threshold: 4.0
-icarus_ophit_data.PedAlgoPset.MaxSigma: 4.0
-icarus_ophit_data.PedAlgoPset.PedRangeMax: 15200
-icarus_ophit_data.PedAlgoPset.PedRangeMin: 14640
-icarus_ophit_data.HitAlgoPset.ADCThreshold: 10
-icarus_ophit_data.HitAlgoPset.TailADCThreshold: 6
-icarus_ophit_data.HitAlgoPset.EndADCThreshold: 2
-icarus_ophit_data.HitAlgoPset.MinPulseWidth: 5
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# this is the "standard" ICARUS configuration for MC optical hit reconstruction:
+icarus_ophit_MC: {
+  @table::icarus_ophit
+  InputModule: "opdaq"
+}
+
+icarus_ophitdebugger_MC: @local::icarus_ophit_MC
+icarus_ophitdebugger_MC.module_type: "FullOpHitFinder"
+icarus_ophitdebugger_MC.OutputFile:  "ophit_debug.root"
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# this is the "standard" ICARUS configuration for data optical hit reconstruction:
+icarus_ophit_data: {
+  @table::icarus_ophit
+  InputModule: "daqPMT"
+#  PedAlgoPset: @local::icarus_opreco_pedestal_DocDB24969
+}
 
 icarus_ophitdebugger_data: @local::icarus_ophit_data
 icarus_ophitdebugger_data.module_type: "FullOpHitFinder"
 icarus_ophitdebugger_data.OutputFile:  "ophit_debug.root"
 
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 END_PROLOG

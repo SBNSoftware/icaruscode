@@ -11,17 +11,43 @@
 
 
 //------------------------------------------------------------------------------
+bool icarus::trigger::WindowPattern::isMainRequirementRelevant() const {
+  
+  /*
+   * If the main window requirement is no larger than half the requested sum
+   * (rounded up) then the requirement is not relevant, although in the special
+   * cases where `S` is odd and `M` is its half rounded up (e.g. `M3S5`), the
+   * main window requirement may be used to decide to which side of the TPC
+   * the trigger should be assigned.
+   */
+  
+  unsigned int const maxIrrelevant
+    = minSumInOppositeWindows - (minSumInOppositeWindows / 2);
+  
+   return minInMainWindow > maxIrrelevant;
+  
+} // icarus::trigger::WindowPattern::isMainRequirementRelevant()
+  
+  
+//------------------------------------------------------------------------------
+bool icarus::trigger::WindowPattern::isSumRequirementRelevant() const {
+  
+  return minSumInOppositeWindows > (minInMainWindow + minInOppositeWindow);
+  
+} // icarus::trigger::WindowPattern::isSumRequirementRelevant()
+  
+  
+//------------------------------------------------------------------------------
 std::string icarus::trigger::WindowPattern::tag() const {
   using namespace std::string_literals;
   
   std::string s;
   
-  s += "M"s + std::to_string(minInMainWindow);
-  
+  // `M` is added last, because it may be needed even if irrelevant
   if (minInOppositeWindow > 0U)
     s += "O"s + std::to_string(minInOppositeWindow);
   
-  if (minSumInOppositeWindows > 0U)
+  if (isSumRequirementRelevant())
     s += "S"s + std::to_string(minSumInOppositeWindows);
   
   if ((minInDownstreamWindow > 0U) || requireDownstreamWindow) {
@@ -34,6 +60,9 @@ std::string icarus::trigger::WindowPattern::tag() const {
     if (requireUpstreamWindow) s+= "req"s;
   } // if upstream
   
+  if (isMainRequirementRelevant() || s.empty())
+    s = "M"s + std::to_string(minInMainWindow) + s;
+  
   return s;
 } // icarus::trigger::WindowPattern::description()
 
@@ -42,14 +71,20 @@ std::string icarus::trigger::WindowPattern::tag() const {
 std::string icarus::trigger::WindowPattern::description() const {
   using namespace std::string_literals;
   
+  bool const useMain = isMainRequirementRelevant();
+  bool const useSum = isSumRequirementRelevant();
+  
   std::string s = "required:";
   
-  s += " "s + std::to_string(minInMainWindow);
+  if (useMain || !useSum)
+    s += " "s + std::to_string(minInMainWindow);
+  else
+    s += " "s + std::to_string(minSumInOppositeWindows) + " (main+opposite)"s;
   
   if (minInOppositeWindow > 0U)
     s += " + "s + std::to_string(minInOppositeWindow) + " (opposite)"s;
   
-  if (minSumInOppositeWindows > 0U)
+  if (useMain && useSum)
     s += " (and "s + std::to_string(minSumInOppositeWindows) + " main+opposite)"s;
   
   if ((minInDownstreamWindow > 0U) || requireDownstreamWindow) {

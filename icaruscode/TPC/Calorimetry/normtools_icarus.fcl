@@ -1,0 +1,36 @@
+BEGIN_PROLOG
+
+driftnorm: {
+  tool_type: NormalizeDrift
+  Timeout: 200
+  URL: "https://dbdata0vm.fnal.gov:9443/icarus_con_prod/app/data?f=tpc_elifetime_data&t="
+  Verbose: false
+}
+
+wirenorm: {
+  tool_type: NormalizeWire
+  Timeout: 200
+  URL: "https://dbdata0vm.fnal.gov:9443/icarus_con_prod/app/data?f=tpc_dqdxcalibration_data&t="
+  Verbose: false
+}
+
+yznorm: {
+  tool_type: NormalizeYZ
+  Timeout: 200
+  URL: "https://dbdata0vm.fnal.gov:9443/icarus_con_prod/app/data?f=test_tpc_yz_correction_data&t="
+  Verbose: false
+}
+
+tpcgain: {
+  tool_type: NormalizeTPC
+  Timeout: 200
+  URL: "https://dbdata0vm.fnal.gov:9443/icarus_con_prod/app/data?f=tpc_dqdxcalibration_data&t="
+  Verbose: false
+}
+
+icarus_calonormtools: [@local::driftnorm, @local::yznorm, @local::tpcgain]
+
+# The norm tools already take care of this
+icarus_data_calconst: [1., 1., 1.]
+
+END_PROLOG

@@ -37,7 +37,7 @@
 #include "sbnobj/Common/CRT/CRTTrack.hh"
 #include "icaruscode/CRT/CRTUtils/CRTCommonUtils.h"
 #include "icaruscode/CRT/CRTUtils/CRTBackTracker.h"
-#include "icaruscode/Decode/DataProducts/ExtraTriggerInfo.h"
+#include "sbnobj/Common/Trigger/ExtraTriggerInfo.h"
 
 //C++ includes
 #include <vector>

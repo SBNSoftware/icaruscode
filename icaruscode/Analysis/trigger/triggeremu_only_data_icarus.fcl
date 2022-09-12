@@ -1,0 +1,102 @@
+#
+# File:    triggeremu_only_data_icarus.fcl
+# Purpose: Emulation of ICARUS trigger (no plots, only trigger outcome).
+# Authors: Gianluca Petrillo (petrillo@slac.stanford.edu)
+# Date:    November 9, 2021
+#
+#
+# This configuration runs the trigger emulation on time intervals ("beam gates")
+# provided as input, allegedly around the time of reconstructed cathode-crossing
+# tracks.
+# The required data products with track times (beam-gate-like intervals) must be
+# called `gatesFromTracksE` and `gatesFromTracksW`.
+#
+#
+# Changes
+# --------
+# 
+# 20211109 (petrillo@slac.stanford.edu) [v1.0]
+# :   original version based on `triggersim_data_icarus.fcl` v1.1
+#     and `triggersim_icarus_data.fcl` v1.0
+# 20211122 (petrillo@slac.stanford.edu) [v2.0]
+# :   using TriggerSimulationOnGates instead of SlidingWindowTriggerSimulation;
+#     requires non-standard external input
+# 
+
+#include "services_common_icarus.fcl"
+#include "rootoutput_icarus.fcl"
+#include "trigger_icarus.fcl"
+#include "triggeremu_data_config_icarus.fcl"
+
+
+# ------------------------------------------------------------------------------
+process_name: TrgEmu
+
+
+# ------------------------------------------------------------------------------
+services: {
+  
+  # uncommon services for trigger emulation (may be overridden below)
+  @table::triggeremu_data_config_icarus.services # from triggeremu_data_config_icarus.fcl
+  
+  # this provides: file service, random management (unused),
+  #                Geometry, detector properties and clocks
+  @table::icarus_common_services
+
+  # art resource tracking services may take a lot of memory on the long run
+  MemoryTracker: @erase
+#  TimeTracker:   @erase
+
+  # currently unused (remove the line if they start mattering):
+  LArPropertiesService:      @erase
+  DetectorPropertiesService: @erase
+  
+} # services
+
+
+# customization of message destinations from trigger emulation
+services.message.destinations: {
+  @table::services.message.destinations
+  @table::triggeremu_data_config_icarus.messagedestinations
+  TriggerEmuSlidingORsimLog: @erase # this can get huge
+}
+
+
+# ------------------------------------------------------------------------------
+physics: {
+
+  producers: {
+    
+    @table::triggeremu_data_config_icarus.producers # from triggeremu_data_config_icarus.fcl
+
+  } # producers
+
+  # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  triggeremuE: @local::triggeremu_data_config_icarus.producerpathE
+  triggeremuW: @local::triggeremu_data_config_icarus.producerpathW
+
+  streams: [ "rootoutput" ]
+  
+  trigger_paths: [ triggeremuE, triggeremuW ]
+  end_paths: [ streams ]
+
+  # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  
+} # physics
+
+
+# ------------------------------------------------------------------------------
+outputs: {
+  rootoutput: {
+    @table::icarus_rootoutput
+    outputCommands: [
+      "drop *"
+      , "keep sbn::PMTconfiguration_*_*_*", "keep *_daqTrigger_*_*"
+      , "keep *_*_*_stage1", "drop *_cluster3D*_*_*", "drop *recob::SpacePoint*_*_*_*"
+      , "keep *_*_*_TrgEmu", "keep *_*_*_T0sel"
+      ]
+  }
+}
+
+
+# ------------------------------------------------------------------------------

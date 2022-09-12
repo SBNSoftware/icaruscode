@@ -46,8 +46,10 @@ namespace icarus::trigger { class OpDetWaveformMetaMaker; }
  * This module writes a list of `sbn::OpDetWaveformMeta` objects matching the
  * information of each optical detector waveform.
  * 
- * It may be used as input to modules which require to operate on beam gates,
- * to select time(s) around the reconstructed (and selected) tracks.
+ * It may be used as input to modules which require all the information of a
+ * PMT waveform except the actual content of the waveform. For such uses,
+ * the large waveforms may be dropped and this summary information be kept
+ * instead.
  * 
  * 
  * Input data products
@@ -210,12 +212,16 @@ void icarus::trigger::OpDetWaveformMetaMaker::produce
   auto const& waveformHandle
     = event.getValidHandle<std::vector<raw::OpDetWaveform>>(fWaveformTag);
 
-  mf::LogDebug(fLogCategory) << "Event " << event.id()
-    << " has beam gate starting at " << detTimings.BeamGateTime()
-    << " and trigger at " << detTimings.TriggerTime() << "."
-    << "\nNow extracting information from " << waveformHandle->size()
-      << " waveforms."
-    ;
+  {
+    electronics_time const triggerTime = detTimings.TriggerTime();
+    electronics_time const beamGateTime = detTimings.BeamGateTime();
+    mf::LogDebug(fLogCategory)
+      << "Event " << event.id() << " has beam gate starting at " << beamGateTime
+      << " and trigger at " << triggerTime << "."
+      << "\nNow extracting information from " << waveformHandle->size()
+        << " waveforms."
+      ;
+  }
 
   //
   // create the content
@@ -233,18 +239,19 @@ void icarus::trigger::OpDetWaveformMetaMaker::produce
     assert(iWaveform == PMTinfo.size());
     
     PMTinfo.push_back(makeOpDetWaveformMeta(waveform));
-    infoToWaveform.addSingle
-      (makeInfoPtr(iWaveform), makeWaveformPtr(iWaveform));
     
     {
       sbn::OpDetWaveformMeta const& info = PMTinfo.back();
       mf::LogTrace log{ fLogCategory };
       log << "Coverage for waveform #" << iWaveform
-        << " on channel " << waveform.ChannelNumber() << ": "
+        << " on channel " << info.channel << ": "
         << info.startTime << " -- " << info.endTime;
       if (info.withTrigger()) log << "; includes trigger";
       if (info.withBeamGate()) log << "; includes beam gate start";
     }
+    
+    infoToWaveform.addSingle
+      (makeInfoPtr(iWaveform), makeWaveformPtr(iWaveform));
     
   } // for
   
