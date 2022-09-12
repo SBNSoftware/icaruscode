@@ -1,0 +1,25 @@
+#include "calibrationtools.fcl"
+
+BEGIN_PROLOG
+
+pmt_laser_calibration:
+{
+  module_type: 	      PMTLaserCalibration
+  SpareChannelLabel:  "daqPMT:trgprim"
+  OpDetWaveformLabel: "daqPMT"
+  FilterNoise:        false
+  LaserChannel:       1
+  WaveformAnalysis :  @local::laser_pulse_configuration
+}
+
+pmt_bkgphotons_calibration:
+{
+  module_type: 	PMTBackgroundphotonsCalibration
+  OpHitModule: "ophit"
+  AmplitudeThreshold: 2.0 
+  ADCmV: 0.122      
+  ADCpC: 0.00488  
+  ChannelMasks: [  ]  
+}
+
+END_PROLOG

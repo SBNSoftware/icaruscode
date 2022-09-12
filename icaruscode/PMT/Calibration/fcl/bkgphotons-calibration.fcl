@@ -1,0 +1,86 @@
+#include "services_common_icarus.fcl"
+#include "services_common_icarus.fcl"
+#include "channelmapping_icarus.fcl"
+#include "decoderdefs_icarus.fcl"
+#include "icarus_ophitfinder.fcl"
+#include "icarus_flashfinder.fcl"
+#include "pmt-calibration.fcl"
+#include "icarus_opana_modules.fcl"
+
+process_name: BkgphotonsCalibration
+
+services:
+{
+   TFileService:            { fileName: "%ifb_%tc-%p.root" }
+   @table::icarus_geometry_services
+   @table::icarus_basic_services
+   IICARUSChannelMap: @local::icarus_channelmappinggservice
+}
+
+services.IICARUSChannelMap.ChannelMappingTool: @local::ChannelMappingPostGres
+
+services.DetectorClocksService.DefaultBeamTime: 0
+services.DetectorClocksService.DefaultTrigTime: 0
+services.DetectorClocksService.InheritClockConfig: false
+
+services.Geometry.Name: icarus_v2
+
+#Look at the input files
+source:
+{
+  module_type: RootInput
+  fileNames:  [ "data.root" ]
+  maxEvents:   -1       # Number of events to create
+}
+
+# Make sure to get rid of NuRandomSvc (not thread save)
+services.NuRandomService: @erase
+
+physics:
+{
+
+    // now also have something produce the digits and headers
+    producers:
+    {
+
+        #PMTconfig: @local::extractPMTconfig 
+
+	    #daqTrigger: @local::decodeTrigger
+
+        daqPMT: @local::decodePMT
+
+        ophit: @local::icarus_ophit_data
+
+        opflashCryoE: @local::ICARUSSimpleFlashDataCryoE
+
+        opflashCryoW: @local::ICARUSSimpleFlashDataCryoW
+
+    }
+
+    analyzers: 
+    {
+
+        simpleLightAna: @local::ICARUSFlashAssAna
+
+    	bkgcalibration: @local::pmt_bkgphotons_calibration 
+    }
+
+    my_producer_modules: [ daqPMT, ophit, opflashCryoE, opflashCryoW ]
+
+    ana: [ simpleLightAna, bkgcalibration ]
+
+    end_paths: [ana]
+}
+
+physics.producers.daqPMT.RequireBoardConfig: false
+physics.producers.daqPMT.RequireKnownBoards: false
+
+
+physics.producers.daqPMT.TriggerTag:   @erase 
+physics.producers.daqPMT.PMTconfigTag: @erase # required
+
+
+## CALIBRATION CONFIGURATION
+physics.analyzers.bkgcalibration.OpHitModule: "ophit"  
+
+
