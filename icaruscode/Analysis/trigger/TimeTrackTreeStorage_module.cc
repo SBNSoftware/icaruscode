@@ -13,8 +13,8 @@
 #include "icaruscode/Analysis/trigger/details/CathodeCrossingUtils.h"
 #include "icaruscode/Analysis/trigger/Objects/TrackTreeStoreObj.h"
 #include "icaruscode/PMT/Algorithms/PMTverticalSlicingAlg.h"
-#include "icaruscode/Decode/DataProducts/ExtraTriggerInfo.h"
 #include "icaruscode/Utilities/TrajectoryUtils.h"
+#include "sbnobj/Common/Trigger/ExtraTriggerInfo.h"
 
 // LArSoft libraries
 // #include "lardata/DetectorInfoServices/DetectorClocksService.h"

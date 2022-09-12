@@ -16,7 +16,8 @@
 #include "larcorealg/Geometry/GeometryCore.h"
 #include "larcorealg/Geometry/AuxDetGeometryCore.h"
 #include "larcoreobj/SimpleTypesAndConstants/geo_types.h"
-#include "icaruscode/Decode/DataProducts/ExtraTriggerInfo.h"
+//#include "icaruscode/Decode/DataProducts/ExtraTriggerInfo.h"
+#include "sbnobj/Common/Trigger/ExtraTriggerInfo.h"
 //#include "icaruscode/CRT/CRTUtils/CRTHitRecoAlg.h"
 
 // Framework includes

@@ -37,7 +37,7 @@
 #include "canvas/Utilities/Exception.h"
 #include "larsim/MCCheater/BackTrackerService.h"
 #include "larsim/MCCheater/ParticleInventoryService.h"
-#include "icaruscode/Decode/DataProducts/ExtraTriggerInfo.h"
+#include "sbnobj/Common/Trigger/ExtraTriggerInfo.h"
 
 // Utility libraries
 #include "messagefacility/MessageLogger/MessageLogger.h"
