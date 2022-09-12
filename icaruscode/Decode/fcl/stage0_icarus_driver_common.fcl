@@ -4,6 +4,7 @@
 #include "stage0_icarus_defs.fcl"
 #include "services_common_icarus.fcl"
 #include "channelmapping_icarus.fcl"
+#include "timing_icarus.fcl"
 
 process_name: Stage0
 
@@ -12,6 +13,7 @@ services:
   TFileService:           { }
   IICARUSChannelMap:      @local::icarus_channelmappinggservice
                           @table::icarus_wirecalibration_minimum_services
+  PMTTimingCorrections:   @local::icarus_pmttimingservice
 }
 
 #source is a root file

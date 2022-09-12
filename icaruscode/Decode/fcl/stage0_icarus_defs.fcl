@@ -8,6 +8,7 @@
 #include "decoderdefs_icarus.fcl"
 #include "recowire_icarus.fcl"
 #include "hitfindermodules_icarus.fcl"
+#include "timing_icarus.fcl"
 #include "icarus_ophitfinder.fcl"
 #include "icarus_flashfinder.fcl"
 #include "trigger_emulation_icarus.fcl"
@@ -84,6 +85,7 @@ icarus_stage0_producers:
   
   ### Optical hit finder
   ophit:                          @local::icarus_ophit_data
+  ophitcorr:                      @local::icarus_ophit_timing_correction
   ophitfull:                      @local::icarus_ophitdebugger_data
   opflashCryoE:                   @local::ICARUSSimpleFlashDataCryoE
   opflashCryoW:                   @local::ICARUSSimpleFlashDataCryoW
@@ -198,6 +200,7 @@ icarus_stage0_PMT:                 [ triggerconfig,
                                      pmtconfigbaselines,
                                      pmtthr,
                                      ophit,
+                                     ophitcorr,
                                      opflashCryoE,
                                      opflashCryoW
                                    ]
@@ -345,9 +348,9 @@ icarus_stage0_producers.gaushitTPCEE.HitFinderToolVec.CandidateHitsPlane2:      
 icarus_stage0_producers.gaushitTPCEE.HitFinderToolVec.CandidateHitsPlane2.Plane:               2
 icarus_stage0_producers.gaushitTPCEE.HitFinderToolVec.CandidateHitsPlane2.RoiThreshold:        9.
 
-### Optical hit finding
-icarus_stage0_producers.ophit.InputModule:                                                     "daqPMT"
-icarus_stage0_producers.ophit.InputLabels:                                                     []
+### OpFlashFinder: overrride ophit input label to use the timing corrections
+icarus_stage0_producers.opflashCryoE.OpHitProducer: "ophitcorr"
+icarus_stage0_producers.opflashCryoW.OpHitProducer: "ophitcorr"
 
 ### Default purity monitor settings (single TPC readout assumed)
 icarus_stage0_producers.purityana0.RawModuleLabel:                                             ["daqTPCROI:PHYSCRATEDATATPCWW","daqTPCROI:PHYSCRATEDATATPCWE","daqTPCROI:PHYSCRATEDATATPCEW","daqTPCROI:PHYSCRATEDATATPCEE"]
@@ -369,5 +372,6 @@ icarus_stage0_producers.purityana1.PersistPurityInfo:                           
 icarus_stage0_producers.purityana1.FillAnaTuple:                                               false
 icarus_stage0_producers.purityana1.PersistPurityInfo:                                          false
 icarus_stage0_producers.purityana1.FillAnaTuple:                                               false
+
 
 END_PROLOG

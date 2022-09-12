@@ -11,6 +11,9 @@
 #include "icaruscode/Decode/DecoderTools/details/PMTDecoderUtils.h"
 #include "icaruscode/Decode/DecoderTools/Dumpers/FragmentDumper.h"
 #include "icaruscode/Decode/ChannelMapping/IICARUSChannelMap.h"
+#include "icaruscode/Timing/DataProducts/PMTWaveformTimeCorrection.h"
+#include "icaruscode/Timing/PMTWaveformTimeCorrectionExtractor.h"
+#include "icaruscode/Timing/PMTTimingCorrections.h"
 #include "sbnobj/Common/Trigger/ExtraTriggerInfo.h" 
 #include "sbnobj/Common/Trigger/BeamBits.h"
 #include "icarusalg/Utilities/BinaryDumpUtils.h" // icarus::ns::util::bin()
@@ -578,6 +581,13 @@ class icarus::DaqDecoderICARUSPMT: public art::EDProducer {
         ("all readout boards in setup must have a matching PMT configuration"),
       true
       };
+
+    fhicl::Atom<std::string> CorrectionInstance {
+        Name("CorrectionInstance"),
+        Comment
+            ("The instance name for the signal to use as reference for the time corrections"),
+        ""
+    };
     
     fhicl::OptionalAtom<art::InputTag> PMTconfigTag {
       Name("PMTconfigTag"),
@@ -736,6 +746,9 @@ class icarus::DaqDecoderICARUSPMT: public art::EDProducer {
   
   /// Whether setup info on all boards is required.
   bool const fRequireBoardConfig;
+
+  /// String of the instance to use for the time corrections
+  std::string fCorrectionInstance;
   
   /// Input tag of the PMT configuration.
   std::optional<art::InputTag> const fPMTconfigTag;
@@ -762,6 +775,8 @@ class icarus::DaqDecoderICARUSPMT: public art::EDProducer {
   
   /// Interface to LArSoft configuration for detector timing.
   detinfo::DetectorTimings const fDetTimings;
+
+  detinfo::DetectorClocksData const fClocksData;
   
   /// Fragment/channel mapping database.
   icarusDB::IICARUSChannelMap const& fChannelMap;
@@ -1140,6 +1155,15 @@ class icarus::DaqDecoderICARUSPMT: public art::EDProducer {
   
   friend struct dumpChannel;
   friend std::ostream& operator<< (std::ostream&, ProtoWaveform_t const&);
+
+  // --- BEGIN ---- Timing corrections -----------------------------------------
+
+  /// Pointer to the online pmt corrections service
+  icarusDB::PMTTimingCorrections & fPMTTimingCorrectionsService;
+
+  icarus::timing::PMTWaveformTimeCorrectionExtractor *fPMTWaveformTimeCorrectionManager;
+
+  // --- END ---- Timing corrections -------------------------------------------
   
 }; // icarus::DaqDecoderICARUSPMT
 
@@ -1335,6 +1359,7 @@ icarus::DaqDecoderICARUSPMT::DaqDecoderICARUSPMT(Parameters const& params)
   , fPacketDump{ params().PacketDump() }
   , fRequireKnownBoards{ params().RequireKnownBoards() }
   , fRequireBoardConfig{ params().RequireBoardConfig() }
+  , fCorrectionInstance{ params().CorrectionInstance() }
   , fPMTconfigTag{ params().PMTconfigTag() }
   , fTriggerTag{ params().TriggerTag() }
   , fTTTresetEverySecond
@@ -1345,9 +1370,12 @@ icarus::DaqDecoderICARUSPMT::DaqDecoderICARUSPMT(Parameters const& params)
   , fLogCategory{ params().LogCategory() }
   , fDetTimings
     { art::ServiceHandle<detinfo::DetectorClocksService const>()->DataForJob() }
+  , fClocksData
+  { art::ServiceHandle<detinfo::DetectorClocksService const>()->DataForJob() }
   , fChannelMap{ *(art::ServiceHandle<icarusDB::IICARUSChannelMap const>{}) }
   , fOpticalTick{ fDetTimings.OpticalClockPeriod() }
   , fNominalTriggerTime{ fDetTimings.TriggerTime() }
+  , fPMTTimingCorrectionsService{ *(art::ServiceHandle<icarusDB::PMTTimingCorrections>{}) }
 {
   //
   // configuration check
@@ -1369,10 +1397,12 @@ icarus::DaqDecoderICARUSPMT::DaqDecoderICARUSPMT(Parameters const& params)
   //
   // produced data products declaration
   //
-  if (!fSkipWaveforms) {
-    for (std::string const& instanceName: getAllInstanceNames())
-      produces<std::vector<raw::OpDetWaveform>>(instanceName);
+  for (std::string const& instanceName: getAllInstanceNames()){
+    if( instanceName.empty() ) continue;
+    produces<std::vector<icarus::timing::PMTWaveformTimeCorrection>>(instanceName);
   }
+
+  produces<std::vector<raw::OpDetWaveform>>();
   
   //
   // additional initialization
@@ -1451,6 +1481,15 @@ void icarus::DaqDecoderICARUSPMT::beginRun(art::Run& run) {
     ? run.getHandle<sbn::PMTconfiguration>(*fPMTconfigTag).product(): nullptr;
   
   UpdatePMTConfiguration(PMTconfig);
+
+  fPMTTimingCorrectionsService.readTimeCorrectionDatabase(run);
+
+  fPMTWaveformTimeCorrectionManager = 
+    new icarus::timing::PMTWaveformTimeCorrectionExtractor(
+        fClocksData, 
+        fChannelMap, 
+        fPMTTimingCorrectionsService, 
+        fDiagnosticOutput);
   
 } // icarus::DaqDecoderICARUSPMT::beginRun()
 
@@ -1578,39 +1617,103 @@ void icarus::DaqDecoderICARUSPMT::produce(art::Event& event) {
   } // if !fSkipWaveforms
   
   // ---------------------------------------------------------------------------
+  // Time corrections
+  //
+  std::map<std::string, std::vector<icarus::timing::PMTWaveformTimeCorrection>> timeCorrectionProducts;
+  for (std::string const& instanceName: getAllInstanceNames()){
+    if( instanceName.empty() ) continue;
+        timeCorrectionProducts.emplace(instanceName, 
+        std::vector<icarus::timing::PMTWaveformTimeCorrection>{360}
+    );
+  }
+  for (ProtoWaveform_t& waveform: protoWaveforms) {
+    
+    // on-global and span requirements overrides even `mustSave()` requirement;
+    // if this is not good, user should not set `mustSave()`!
+    bool const keep =
+      (waveform.onGlobal || !waveform.channelSetup->onGlobalOnly)
+      && (waveform.span() >= waveform.channelSetup->minSpan)
+      && !waveform.channelSetup->category.empty()
+      ;
+    
+    if (!keep) continue;
+
+    //std::vector<icarus::timing::PMTWaveformTimeCorrection> corrections{360};
+
+    fPMTWaveformTimeCorrectionManager->findWaveformTimeCorrections(
+        waveform.waveform, 
+        waveform.channelSetup->category,
+        waveform.channelSetup->channelID,
+        (waveform.channelSetup->category == fCorrectionInstance ? true : false),
+        timeCorrectionProducts.at(waveform.channelSetup->category) );
+    
+    //..timeCorrectionProducts.at(waveform.channelSetup->category) = corrections;
+
+  }
+
+  // ---------------------------------------------------------------------------
   // output
   //
+
+  //std::cout << "---Begin Print the corrections for category " << fCorrectionInstance << " -----" << std::endl;
+  //auto const & corrections = timeCorrectionProducts.at(fCorrectionInstance); 
+  //for( auto const & corr : corrections )
+  //      std::cout << corr.startTime << std::endl;
+  //std::cout << "---END Print the corrections for category " << fCorrectionInstance << " -----" << std::endl;
+
   
-  if (!fSkipWaveforms) {
-    // split the waveforms by destination
-    std::map<std::string, std::vector<raw::OpDetWaveform>> waveformProducts;
-    for (std::string const& instanceName: getAllInstanceNames())
-      waveformProducts.emplace(instanceName, std::vector<raw::OpDetWaveform>{});
-    for (ProtoWaveform_t& waveform: protoWaveforms) {
-      
-      // on-global and span requirements override even `mustSave()` requirement;
-      // if this is not good, user should not set `mustSave()`!
-      bool const keep =
-        (waveform.onGlobal || !waveform.channelSetup->onGlobalOnly)
-        && (waveform.span() >= waveform.channelSetup->minSpan)
-        ;
-      
-      if (!keep) continue;
-      waveformProducts.at(waveform.channelSetup->category).push_back
-        (std::move(waveform.waveform));
-    } // for
+  // split the waveforms by destination
+  std::vector<raw::OpDetWaveform> waveformProducts;
+  for (ProtoWaveform_t& waveform: protoWaveforms) {
     
-    // put all the categories
-    for (auto&& [ category, waveforms ]: waveformProducts) {
-      mf::LogTrace(fLogCategory)
-        << waveforms.size() << " PMT waveforms saved for "
-        << (category.empty()? "standard": category) << " instance.";
-      event.put(
-        std::make_unique<std::vector<raw::OpDetWaveform>>(std::move(waveforms)),
-        category // the instance name is the category the waveforms belong to
-        );
+    // on-global and span requirements overrides even `mustSave()` requirement;
+    // if this is not good, user should not set `mustSave()`!
+    bool const keep =
+      (waveform.onGlobal || !waveform.channelSetup->onGlobalOnly)
+      && (waveform.span() >= waveform.channelSetup->minSpan)
+      && waveform.channelSetup->category.empty()
+      ;
+    
+    if (!keep) continue;
+
+    double correctTimeStamp = 0;
+
+    if( !fCorrectionInstance.empty() ){
+        auto waveformCorrection = timeCorrectionProducts.at(fCorrectionInstance);
+        
+        correctTimeStamp = waveform.waveform.TimeStamp() 
+            + waveformCorrection.at(waveform.waveform.ChannelNumber()).startTime;
+
+        //std::cout << " ** " << waveform.waveform.ChannelNumber() << ", "
+        //    << waveform.waveform.TimeStamp() << ", "
+        //    << waveformCorrection.at(waveform.waveform.ChannelNumber()).startTime << ", "
+        //    << correctTimeStamp << std::endl;
+
     }
-  } // if !fSkipWaveforms
+    else{
+        correctTimeStamp 
+            = waveform.waveform.TimeStamp() 
+            + fPMTTimingCorrectionsService.getResetCableDelay(waveform.waveform.ChannelNumber());   
+    }
+
+    // Set a new Timestamp
+    waveform.waveform.SetTimeStamp(correctTimeStamp);
+    waveformProducts.push_back(std::move(waveform.waveform));
+
+  } // for
+  
+  // put all the categories
+  event.put(
+      std::make_unique<std::vector<raw::OpDetWaveform>>(std::move(waveformProducts)),
+      "" // the instance name is the category the waveforms belong to
+  );
+
+  for( auto&& [category, correction] : timeCorrectionProducts ){
+    event.put(
+      std::make_unique<std::vector<icarus::timing::PMTWaveformTimeCorrection>>(std::move(correction)),
+      category // the instance name is the category the waveforms belong to
+      );
+  }
   
 } // icarus::DaqDecoderICARUSPMT::produce()
 
@@ -2081,7 +2184,7 @@ auto icarus::DaqDecoderICARUSPMT::createFragmentWaveforms(
   auto channelNumberToChannel
     = [&digitizerChannelVec](unsigned short int channelNumber) -> raw::Channel_t
     {
-      for (auto const [ chNo, chID ]: digitizerChannelVec)
+      for (auto const [ chNo, chID, _ ]: digitizerChannelVec) // too pythonic? 
         if (chNo == channelNumber) return chID;
       return sbn::V1730channelConfiguration::NoChannelID;
     };
