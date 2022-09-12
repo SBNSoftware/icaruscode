@@ -21,6 +21,7 @@ function(params, tools, override = {}) {
     data: {
       // Many parameters omitted here.
       anode: wc.tn(anode),
+      dft: wc.tn(tools.dft),
       field_response: wc.tn(tools.field),
       ftoffset: 0.0, // default 0.0
       ctoffset: 0.0*wc.microsecond, // default -8.0
@@ -28,7 +29,7 @@ function(params, tools, override = {}) {
       fft_flag: 0,  // 1 is faster but higher memory, 0 is slightly slower but lower memory
       elecresponse : wc.tn(tools.elec_resp),
       postgain: 1,  // default 1.2
-      ADC_mV: 4096 / (1400.0 * wc.mV),  // default 4096/2000
+      ADC_mV: 4096 / (3300.0 * wc.mV),  // default 4096/2000
       troi_col_th_factor: 5.0,  // default 5
       troi_ind_th_factor: 3.0,  // default 3
       lroi_rebin: 6, // default 6
@@ -51,6 +52,7 @@ function(params, tools, override = {}) {
       gauss_tag: 'gauss%d' % anode.data.ident,
 
       use_roi_debug_mode: false,
+      use_roi_refinement: false, // default: true
       tight_lf_tag: 'tight_lf%d' % anode.data.ident,
       loose_lf_tag: 'loose_lf%d' % anode.data.ident,
       cleanup_roi_tag: 'cleanup_roi%d' % anode.data.ident,
@@ -67,6 +69,6 @@ function(params, tools, override = {}) {
       process_planes: [0, util.anode_split(anode.data.ident)], // balance the left and right split
 
     } + override,
-  }, nin=1, nout=1, uses=[anode, tools.field, tools.elec_resp] + pc.uses + spfilt),
+  }, nin=1, nout=1, uses=[anode, tools.dft, tools.field, tools.elec_resp] + pc.uses + spfilt),
 
 }

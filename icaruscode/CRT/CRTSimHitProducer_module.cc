@@ -2,6 +2,7 @@
 #include "sbnobj/ICARUS/CRT/CRTData.hh"
 #include "sbnobj/Common/CRT/CRTHit.hh"
 #include "icaruscode/CRT/CRTUtils/CRTHitRecoAlg.h"
+#include "sbnobj/Common/Trigger/ExtraTriggerInfo.h"
 
 // Framework includes
 #include "art/Framework/Core/EDProducer.h"
@@ -21,6 +22,7 @@
 #include "canvas/Utilities/InputTag.h"
 #include "fhiclcpp/ParameterSet.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
+#include "canvas/Utilities/Exception.h"
 
 // C++ includes
 #include <memory>
@@ -87,8 +89,11 @@ namespace crt {
 
     // Params from fcl file.......
     art::InputTag fCrtModuleLabel;      ///< name of crt producer
-   
+    art::InputTag fTriggerLabel;        ///< name of trigger producer
     CRTHitRecoAlg hitAlg;
+
+    uint64_t m_trigger_timestamp;
+
   }; // class CRTSimHitProducer
 
   CRTSimHitProducer::CRTSimHitProducer(fhicl::ParameterSet const & p)
@@ -107,6 +112,7 @@ namespace crt {
   void CRTSimHitProducer::reconfigure(fhicl::ParameterSet const & p)
   {
     fCrtModuleLabel = (p.get<art::InputTag> ("CrtModuleLabel")); 
+    fTriggerLabel   = (p.get<art::InputTag> ("TriggerLabel")); 
   } // CRTSimHitProducer::reconfigure()
 
   void CRTSimHitProducer::beginJob()
@@ -130,10 +136,26 @@ namespace crt {
     if (event.getByLabel(fCrtModuleLabel, crtListHandle))
       art::fill_ptr_vector(crtList, crtListHandle);
 
+    //add trigger info
+    if( !fTriggerLabel.empty() ) {
+
+      art::Handle<sbn::ExtraTriggerInfo> trigger_handle;
+      event.getByLabel( fTriggerLabel, trigger_handle );
+      if( trigger_handle.isValid() )
+	m_trigger_timestamp = trigger_handle->triggerTimestamp; 
+      else
+	mf::LogError("CRTSimHitProducer") << "No raw::Trigger associated to label: " << fTriggerLabel.label() << "\n" ;
+    } else{ 
+      std::cout  << "Trigger Data product " << fTriggerLabel.label() << " not found!\n" ;
+    }
+
     mf::LogInfo("CRTSimHitProducer")
       <<"Number of SiPM hits = "<<crtList.size();
 
-    vector<std::pair<CRTHit, vector<int>>> crtHitPairs = hitAlg.CreateCRTHits(crtList);
+    vector<art::Ptr<CRTData>> crtData = hitAlg.PreselectCRTData(crtList, m_trigger_timestamp);
+
+    vector<std::pair<CRTHit, vector<int>>> crtHitPairs = hitAlg.CreateCRTHits(crtData);
+    //vector<std::pair<CRTHit, vector<int>>> crtHitPairs = hitAlg.CreateCRTHits(crtList);
 
     mf::LogInfo("CRTSimHitProducer")
       << "Number of CRTHit,data indices pairs = " << crtHitPairs.size();

@@ -252,7 +252,7 @@ function PrepareRepository() {
     GIToldCommit="$(cd "$CodeRepoPath" && git reflog -n 1 --format='format:%H')"
     local OldScriptChecksum="$(md5sum < "$0")"
     
-    git -C "$CodeRepoPath" checkout "$CodeBranch"
+    git -c 'advice.detachedHead=false' -C "$CodeRepoPath" checkout "$CodeBranch"
     local -i res=$?
     if [[ $res != 0 ]]; then
       RestoreGITrepository "$CodeRepoPath" "$GIToldCommit" "$GITstashed"
@@ -263,7 +263,7 @@ function PrepareRepository() {
       fi
     fi
     
-    if [[ -n "$CodeBranch" ]] && ! isGITtag "$CodeBranch" ; then
+    if [[ -n "$CodeBranch" ]] && ! hasGITtag "$CodeBranch" ; then
       echo "Updating the GIT branch..."
       git -C "$CodeRepoPath" rebase
       if [[ $res != 0 ]]; then
@@ -365,7 +365,8 @@ function RunDoxygen() {
   local -a AdditionalRepositories=( "$@" )
   
   local MasterDoxyfile
-  MasterDoxyfile="$(FindDoxyfile "$ExperimentName")"
+  # search for a Doxyfile in the current directory first
+  MasterDoxyfile="$(FindDoxyfile "$ExperimentName" "$(pwd)" )"
   LASTFATAL "Can't find a doxygen configuration file for '${ExperimentName}'"
   
   local ExperimentCodeName="$(ExperimentCodeProduct "$ExperimentName" )"
@@ -453,7 +454,7 @@ Experiment      = '${ExperimentName}'
 Date            = '$(date)'
 Host            = '$(hostname)'
 User            = '$(whoami)'
-Configuration   = '${Doxyfile}'
+Configuration   = '${MasterDoxyfile}'
 ExperimentCode  = '${ExperimentCodeName}'
 CodeVersion     = '${ExperimentCodeVersion:-"n/a"}'
 GITreference    = '${GitDescription:-"n/a"}'

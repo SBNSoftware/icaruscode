@@ -16,13 +16,15 @@
 #include "art/Framework/Principal/Run.h"
 #include "art/Framework/Principal/SubRun.h"
 #include "art_root_io/TFileService.h"
-//#include "art/Utilities/InputTag.h"
+
 #include "lardata/DetectorInfoServices/DetectorClocksService.h"
+#include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
 #include "fhiclcpp/ParameterSet.h"
 #include "larcoreobj/SummaryData/RunData.h"
 #include <memory>
 
 #include "lardataobj/Simulation/SimChannel.h"
+#include "lardataobj/Simulation/SimEnergyDeposit.h"
 #include "lardataobj/RawData/TriggerData.h"
 #include "larcore/Geometry/Geometry.h"
 #include "larcorealg/Geometry/GeometryCore.h"
@@ -90,6 +92,7 @@ SimTestPulse::SimTestPulse(fhicl::ParameterSet const & p)
 // Initialize member data here.
 {
     produces< std::vector<sim::SimChannel> >();
+    produces< std::vector<sim::SimEnergyDeposit> >();
     produces< std::vector<raw::Trigger> >();
     produces< sumdata::RunData, art::InRun >();
     
@@ -104,8 +107,8 @@ SimTestPulse::SimTestPulse(fhicl::ParameterSet const & p)
     fVerbose        = p.get< bool>                ("Verbose",false);
     
     assert( fSimTime_v.size() == fY_v.size() &&
-           fSimTime_v.size() == fZ_v.size() &&
-           fSimTime_v.size() == fNumElectrons_v.size() );
+            fSimTime_v.size() == fZ_v.size() &&
+            fSimTime_v.size() == fNumElectrons_v.size() );
 }
 
 void SimTestPulse::beginJob()
@@ -155,11 +158,15 @@ void SimTestPulse::produce(art::Event & e)
     trigger_v->push_back(raw::Trigger(0,fTriggerTime,fTriggerTime,1));
     
     std::unique_ptr<std::vector<sim::SimChannel> > simch_v(new std::vector<sim::SimChannel> );
+
+    std::unique_ptr<std::vector<sim::SimEnergyDeposit>> simDep_v(new std::vector<sim::SimEnergyDeposit>);
     
-    double xyz[3] = {0., 0., 0.};
+    geo::Point_t chargeDepCoords = {0., 0., 0.};
 
     auto const clockData = art::ServiceHandle<detinfo::DetectorClocksService const>()->DataFor(e);
     art::ServiceHandle<geo::Geometry> geo;
+
+    auto const detProp = art::ServiceHandle<detinfo::DetectorPropertiesService const>()->DataForJob(clockData);
     
     fPlane0Channel_v.clear();
     fPlane1Channel_v.clear();
@@ -187,17 +194,47 @@ void SimTestPulse::produce(art::Event & e)
             << " as it results in negative TDC (invalid)" << std::endl;
             continue;
         }
-        
-        xyz[1] = fY_v[index];
-        xyz[2] = fZ_v[index];
+
+        const geo::PlaneGeo& planeGeo = geo->Plane(geo::PlaneID(0,0,0)); // Get the coordinates of the first wire plane
+
+        TVector3 planeCoords = planeGeo.GetCenter();
+        TVector3 planeNormal = planeGeo.GetNormalDirection();
+
+        // Assume C=0, T=1
+        chargeDepCoords = geo::Point_t(planeCoords[0] + 1. * planeNormal[0],fY_v[index],fZ_v[index]);
         
         alternative::TruthHit pulse_record;
         pulse_record.tdc = tdc;
         pulse_record.num_electrons = fNumElectrons_v[index];
         pulse_record.tick = clockData.TPCTDC2Tick(tdc);
+
+        double nElecADC = detProp.ElectronsToADC() * fNumElectrons_v[index];
+        double eDeposit = 23.6 * fNumElectrons_v[index] / 1000.;    // This is a guesstimate for now but hopefully not far off, note we assume wirecell will handle recombination
+
+        std::cout << "==> x position of plane 0: " << planeCoords[0] << ", normal: " << planeNormal[0] << ", nElec: " << fNumElectrons_v[index] << ", nElecADC: " << nElecADC << ", edep: " << eDeposit << std::endl;
+        std::cout << "    x position of charge deposit: " << chargeDepCoords.X() << std::endl;
+
+        simDep_v->emplace_back(0,
+                               fNumElectrons_v[index],
+                               0.,
+                               eDeposit,
+                               geo::Point_t(chargeDepCoords.X(),chargeDepCoords.Y()+0.001,chargeDepCoords.Z()+0.001),
+                               geo::Point_t(chargeDepCoords.X(),chargeDepCoords.Y()-0.001,chargeDepCoords.Z()-0.001));
+
+        geo::PlaneID collectionPlaneID(0,0,2);
+
         for(size_t plane=0; plane<3; ++plane) {
+            geo::PlaneID planeID(0,0,plane);
+            double       xyz[3] = {chargeDepCoords.X(),chargeDepCoords.Y(),chargeDepCoords.Z()};
+
+            std::cout << "++ Searching for nearest wire id for planeID: " << planeID << ", xyz: "  << xyz[0] << "," << xyz[1] << "," << xyz[2] << std::endl;
+            geo::WireID nearestID = geo->NearestWireID(xyz,plane);
+            std::cout << "   WireID: " << nearestID << std::endl;
+            std::cout << "** Searching for nearest channel with plane: " << plane << ", xyz: " << xyz[0] << "," << xyz[1] << "," << xyz[2] << std::endl;
             auto channel = geo->NearestChannel(xyz,plane);
+            std::cout << "   Returned with channel: " << channel << std::endl;
             auto wire = geo->ChannelToWire(channel).front().Wire;
+            std::cout << "   which gives wire: " << wire << std::endl;
             if(fVerbose) std::cout << "[BUFFOON!]    plane " << plane << " channel "
                 << channel << " ... wire " << wire << std::endl;
             pulse_record.channel_list[plane] = channel;
@@ -210,8 +247,9 @@ void SimTestPulse::produce(art::Event & e)
                     throw std::exception();
             }
             sim::SimChannel sch(channel);
+            unsigned planeTDC = clockData.TPCTick2TDC(pulse_record.tick + detProp.GetXTicksOffset(planeID) - detProp.GetXTicksOffset(collectionPlaneID));
             sch.AddIonizationElectrons(1,   /// track id, keep 0 = invalid
-                                       (unsigned int)tdc,
+                                       (unsigned int)planeTDC,
                                        fNumElectrons_v[index],
                                        xyz,
                                        100.); /// energy, keep -1 = invalid
@@ -226,6 +264,7 @@ void SimTestPulse::produce(art::Event & e)
     
     fTupleTree->Fill();
     e.put(std::move(simch_v));
+    e.put(std::move(simDep_v));
     e.put(std::move(trigger_v));
     
     return;

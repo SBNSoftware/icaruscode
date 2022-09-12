@@ -27,6 +27,8 @@ namespace geo{
 
     void SortAuxDets (std::vector<geo::AuxDetGeo>& adgeo) const;
     void SortAuxDetSensitive(std::vector<geo::AuxDetSensitiveGeo>& adsgeo) const;
+    void SortCRTs (std::vector<geo::AuxDetGeo>& adgeo) const;
+    void SortCRTSensitive (std::vector<std::pair< int, geo::AuxDetSensitiveGeo> >& adsgeo) const;
 
   };
 

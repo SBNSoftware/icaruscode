@@ -13,6 +13,8 @@
 
 // ICARUS libraries
 #include "icaruscode/PMT/Trigger/Utilities/TriggerGateOperations.h"
+#include "icaruscode/PMT/Trigger/Utilities/TriggerDataUtils.h" // gateIn()
+#include "icaruscode/PMT/Trigger/Utilities/TriggerGateDataFormatting.h"
 
 // LArSoft libraries
 #include "larcorealg/CoreUtils/enumerate.h"
@@ -24,6 +26,7 @@
 // C/C++ standard libraries
 #include <algorithm> // std::binary_search()
 #include <utility> // std::pair<>, std::move()
+#include <optional>
 #include <cassert>
 
 
@@ -79,17 +82,35 @@ auto icarus::trigger::SlidingWindowPatternAlg::simulateResponse
     
     if (!windowResponse) continue;
     
-    mfLogTrace()
-      << "Pattern fired on window #" << iWindow
-      << " at tick " << windowResponse.atTick()
-      ;
+    assert(windowResponse.hasLocation());
+    assert(windowResponse.location() == iWindow);
+    if (windowResponse.nTriggers() == 1U) {
+      mfLogTrace() << "Pattern fired on window #" << iWindow
+        << " at tick " << windowResponse.atTick();
+    }
+    else {
+      std::vector<TriggerInfo_t::OpeningInfo_t> const& triggers
+        = windowResponse.all();
+      TriggerInfo_t::OpeningInfo_t const* pMain = &(windowResponse.main());
+      auto log = mfLogTrace();
+      log << "Pattern fired " << triggers.size()
+        << " times on window #" << iWindow << ":";
+      for (auto const& [ iTrigger, trigger ]: util::enumerate(triggers)) {
+        log << " [#" << iTrigger << "] " << " on " << trigger.tick
+          << " (";
+        if (&trigger == pMain) log << "main; ";
+        log << "lvl=" << trigger.level << ")";
+      } // for
+    }
     
     //
     // 2.2. pick the main window with the earliest successful response, if any;
     //      that defines location and time of the trigger
     //
-    if (!triggerInfo || triggerInfo.info.atTick() > windowResponse.atTick())
+    if (!triggerInfo || triggerInfo.info.atTick() > windowResponse.atTick()) {
+      if (!triggerInfo) mfLogTrace() << "  (new global trigger)";
       triggerInfo.emplace(iWindow, windowResponse);
+    }
     
   } // main window choice
   
@@ -114,7 +135,9 @@ void icarus::trigger::SlidingWindowPatternAlg::clearBeamGate()
 
 
 //------------------------------------------------------------------------------
-void icarus::trigger::SlidingWindowPatternAlg::verifyInputTopology(TriggerGates_t const& gates) const {
+void icarus::trigger::SlidingWindowPatternAlg::verifyInputTopology
+  (TriggerGates_t const& gates) const
+{
   /*
    * Verifies that the `gates` are in the expected order and have
    * the expected channel content.
@@ -183,7 +206,7 @@ auto icarus::trigger::SlidingWindowPatternAlg::applyWindowPattern(
   WindowTopology_t::WindowInfo_t const& windowInfo,
   WindowPattern_t const& pattern,
   TriggerGates_t const& gates
-  ) -> TriggerInfo_t
+  ) const -> TriggerInfo_t
 {
   
   /*
@@ -194,7 +217,11 @@ auto icarus::trigger::SlidingWindowPatternAlg::applyWindowPattern(
    */
   TriggerInfo_t res; // no trigger by default
   assert(!res);
-
+  
+  // undress the gate to get its data
+  auto const gateAt = [&gates](std::size_t index) -> TriggerGateData_t const&
+    { return gateIn(gates[index]); };
+  
   //
   // 1. check that the pattern can be applied; if not, return no trigger
   //
@@ -211,39 +238,87 @@ auto icarus::trigger::SlidingWindowPatternAlg::applyWindowPattern(
   // 3. combine them in AND
   //
   
-  // main window
+  mfLogTrace()
+    << "Window info #" << windowInfo.index << " pattern " << pattern.tag();
+  
+  // we have two different "modes" depending on whether we are constraining
+  // the sum of main and opposite window, or not;
+  std::optional<TriggerGateData_t> const mainPlusOpposite
+    = (pattern.minSumInOppositeWindows > 0U)
+    ? std::optional{
+      windowInfo.hasOppositeWindow()
+        ? sumGates(gateAt(windowInfo.index), gateAt(windowInfo.opposite))
+        : gateAt(windowInfo.index)
+    }
+    : std::nullopt
+    ;
+  
+  // the basic trigger primitive gate has the levels of the main or
+  // main+opposite window depending on the requirements
   TriggerGateData_t trigPrimitive
-    = discriminate(gates[windowInfo.index], pattern.minInMainWindow);
+    = mainPlusOpposite? *mainPlusOpposite: gateAt(windowInfo.index);
+    
+  mfLogTrace() << "  base: " << compactdump(trigPrimitive);
+  
+  // main window
+  if (pattern.minInMainWindow > 0U) {
+    trigPrimitive.Mul
+      (discriminate(gateAt(windowInfo.index), pattern.minInMainWindow));
+    mfLogTrace()
+      << "  main >= " << pattern.minInMainWindow << ": "
+      << compactdump(trigPrimitive);
+  } // if
   
   // add opposite window requirement (if any)
   if ((pattern.minInOppositeWindow > 0U) && windowInfo.hasOppositeWindow()) {
     trigPrimitive.Mul
-      (discriminate(gates[windowInfo.opposite], pattern.minInOppositeWindow));
+      (discriminate(gateAt(windowInfo.opposite), pattern.minInOppositeWindow));
+    mfLogTrace() << "  opposite [#" << windowInfo.opposite << "]: "
+      << compactdump(gateAt(windowInfo.opposite))
+      << "\n  => " << compactdump(trigPrimitive);
+  } // if
+  
+  // add main plus opposite window requirement (if any)
+  if (pattern.minSumInOppositeWindows > 0U) {
+    assert(mainPlusOpposite.has_value());
+    trigPrimitive.Mul
+      (discriminate(*mainPlusOpposite, pattern.minSumInOppositeWindows));
+    mfLogTrace() << "  sum [+ #" << windowInfo.opposite << "]: "
+      << compactdump(*mainPlusOpposite)
+      << "\n  => " << compactdump(trigPrimitive);
+    
   } // if
   
   // add upstream window requirement (if any)
   if ((pattern.minInUpstreamWindow > 0U) && windowInfo.hasUpstreamWindow()) {
     trigPrimitive.Mul
-      (discriminate(gates[windowInfo.upstream], pattern.minInUpstreamWindow));
+      (discriminate(gateAt(windowInfo.upstream), pattern.minInUpstreamWindow));
   } // if
   
   // add downstream window requirement (if any)
   if ((pattern.minInDownstreamWindow > 0U) && windowInfo.hasDownstreamWindow())
   {
     trigPrimitive.Mul(
-      discriminate(gates[windowInfo.downstream], pattern.minInDownstreamWindow)
+      discriminate(gateAt(windowInfo.downstream), pattern.minInDownstreamWindow)
       );
   } // if
+  
+  mfLogTrace() << "  final: " << compactdump(trigPrimitive);
   
   //
   // 4. find the trigger time, fill the trigger information accordingly
   //
-  auto const trigTick = trigPrimitive.findOpen(); // first trigger
-  if (trigTick != trigPrimitive.MaxTick) {
-    res.emplace(detinfo::timescales::optical_tick{ trigTick });
-    assert(res);
-  }
-  
+  icarus::trigger::details::GateOpeningInfoExtractor extractOpeningInfo
+    { trigPrimitive };
+
+  extractOpeningInfo.setLocation
+    (TriggerInfo_t::LocationID_t{ windowInfo.index });
+
+  while (extractOpeningInfo) {
+    auto info = extractOpeningInfo();
+    if (info) res.add(info.value());
+  } // while
+
   return res;
   
 } // icarus::trigger::SlidingWindowTriggerEfficiencyPlots::applyWindowPattern()

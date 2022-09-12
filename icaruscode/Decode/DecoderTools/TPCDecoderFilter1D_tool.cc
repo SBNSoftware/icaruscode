@@ -191,6 +191,7 @@ private:
 
 TPCDecoderFilter1D::TPCDecoderFilter1D(fhicl::ParameterSet const &pset)
 {
+    std::cout << "TPCDecoderFilter1D is calling configure method" << std::endl;
     this->configure(pset);
 
     fSelectVals.clear();
@@ -247,8 +248,10 @@ void TPCDecoderFilter1D::configure(fhicl::ParameterSet const &pset)
     {
         for(int plane = 0; plane < 3; plane++)
         {
-            if (plane < 2) fFFTFilterFunctionVec.emplace_back(std::make_unique<icarus_signal_processing::WindowFFTFilter>(fFFTSigmaValsVec[plane], fFFTCutoffValsVec[plane]));
+            if (plane < 3) fFFTFilterFunctionVec.emplace_back(std::make_unique<icarus_signal_processing::WindowFFTFilter>(fFFTSigmaValsVec[plane], fFFTCutoffValsVec[plane]));
             else           fFFTFilterFunctionVec.emplace_back(std::make_unique<icarus_signal_processing::NoFFTFilter>());
+
+            mf::LogInfo("TPCDecoderFilter1D") << "FFT setup for plane " << plane << ", SigmaVals: " << fFFTSigmaValsVec[plane].first << "/" << fFFTSigmaValsVec[plane].second << ", cutoff: " << fFFTCutoffValsVec[plane].first << "/" << fFFTCutoffValsVec[plane].second << std::endl;
         }
     }
 
@@ -465,6 +468,7 @@ void TPCDecoderFilter1D::process_fragment(detinfo::DetectorClocksData const&,
                 else std::cout << fChannelIDVec[channelOnBoard] << "-" << widVec[0].Cryostat << "/" << widVec[0].TPC << "/" << widVec[0].Plane << "/" << widVec[0].Wire << "=" << fFullRMSVals[channelOnBoard] << " * ";
             }
         }
+
         if (fDiagnosticOutput) std::cout << std::endl;
     
         // Run the coherent filter
@@ -563,7 +567,7 @@ void TPCDecoderFilter1D::process_fragment(detinfo::DetectorClocksData const&,
 
     double totalTime = theClockTotal.accumulated_real_time();
 
-    mf::LogInfo("TPCDecoderFilter1D") << "    *totalTime: " << totalTime << ", pedestal: " << pedestalTime << ", noise: " << denoiseTime << ", ped cor: " << cohPedSubTime << std::endl;
+    mf::LogDebug("TPCDecoderFilter1D") << "    *totalTime: " << totalTime << ", pedestal: " << pedestalTime << ", noise: " << denoiseTime << ", ped cor: " << cohPedSubTime << std::endl;
 
     return;
 }

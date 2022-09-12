@@ -19,7 +19,6 @@
 
 // ICARUS libraries
 #include "icaruscode/PMT/Trigger/Algorithms/TriggerTypes.h" // icarus::trigger::ADCCounts_t
-#include "sbnobj/ICARUS/PMT/Trigger/Data/SingleChannelOpticalTriggerGate.h"
 #include "icarusalg/Utilities/WaveformOperations.h"
 
 // LArSoft libraries
@@ -60,7 +59,7 @@ auto icarus::trigger::ManagedTriggerGateBuilder::unifiedBuild
   // thresholds are kept relative
   std::vector<TriggerGates> allGates = prepareAllGates();
   
-  raw::Channel_t channel = raw::InvalidChannel;
+  raw::Channel_t channel = InvalidChannel;
   
   // now group the waveforms by channel (must be already sorted!)
   // and process waveforms channel by channel
@@ -77,7 +76,7 @@ auto icarus::trigger::ManagedTriggerGateBuilder::unifiedBuild
     // assert that the waveforms are sorted by channel and then by time
     // and not overlapping
     assert(
-      !raw::isValidChannel(channel)
+      !isValidChannel(channel)
       || (firstWaveform.ChannelNumber() >= channel)
       );
     if (firstWaveform.ChannelNumber() != channel)
@@ -173,7 +172,7 @@ void icarus::trigger::ManagedTriggerGateBuilder::buildChannelGates(
     auto const tend = channelThresholds().end();
     
     // register this waveform with the gates (this feature is unused here)
-    for (auto& gateInfo: channelGates) gateInfo.gate().add(waveform);
+    for (auto& gateInfo: channelGates) gateInfo.addTrackingInfo(waveform);
     
     // all gates start closed; this gate is not necessarily closed, but the
     // waveform is not above the gate threshold any more.
@@ -182,10 +181,33 @@ void icarus::trigger::ManagedTriggerGateBuilder::buildChannelGates(
     // we keep track of whether we have no lower or higher thresholds available
     // to simplify the checks;
     // we name them "pp" because they behave (almost) like pointers to pointers
+    #if defined( __GNUC__ )
+    # pragma GCC diagnostic push
+    # if (__GNUC__ <= 9) // last tested with: GCC 9.3.0
+    #  pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
+    # else
+    #  error "Maintenance required here. See comments in the code"
+    /* [20210715 petrillo@slac.stanford.edu] The comments in the code:
+     * GCC 9.3.0 erroneously thinks that `ppXxxerThreshold` value _might_ be
+     * used before initialization. Due to the logic of the program, that is
+     * not the case (unless I am wrong!), and the only "solution" I have found
+     * is to disable the warning; Clang 7 on the other end does not complain.
+     * When GCC is updated and support for GCC 9 is dropped, this situation
+     * should be revisited by attempting the compilation with the warning
+     * still enabled (by just commenting out the #error directive).
+     * If compilation succeeds, this whole block and the `pop` directive below
+     * have become unnecessary and should be removed. Otherwise, the GCC version
+     * in the check above should be bumped up to cover the last tested GCC
+     * (here I went lazy and stuck to just the major version).
+     * I do not know which newer GCC version, if any, solves this issue so far.
+     */
+    # endif // GCC version
+    #endif // GCC
     using ThresholdIterPtr_t
       = std::optional<std::vector<ADCCounts_t>::const_iterator>;
-    ThresholdIterPtr_t ppLowerThreshold; // start at bottom with no lower threshold
-    ThresholdIterPtr_t ppUpperThreshold;
+    // start at bottom with no lower threshold:
+    ThresholdIterPtr_t ppLowerThreshold = std::nullopt;
+    ThresholdIterPtr_t ppUpperThreshold = std::nullopt;
     if (!channelThresholds().empty())
       ppUpperThreshold = channelThresholds().begin(); // std::optional behavior
     
@@ -281,6 +303,10 @@ void icarus::trigger::ManagedTriggerGateBuilder::buildChannelGates(
       } // if opening gate
       
     } // for threshold
+
+    #if defined( __GNUC__ )
+    # pragma GCC diagnostic pop
+    #endif // __clang__
     
   } // for waveforms
   

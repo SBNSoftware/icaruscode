@@ -6,7 +6,6 @@ art_make(
 	CRTRawTree.cc
 	CRTPreProcessTree.cc
 	CRTMergePreProcessTrees.cxx
-        BernCRTTranslator.cc
 	
  NO_PLUGINS # WAnt different link lists for modues
  BASENAME_ONLY
@@ -104,22 +103,6 @@ art_make_library(
 	CRT_PREPROCESS_TREE
 )
 
-art_make_library(
-    LIBRARY_NAME
-        BERN_CRT_TRANSLATOR
-    SOURCE
-        BernCRTTranslator.cc
-    LIBRARIES 
-        cetlib_except
-        ${CANVAS}
-        ${ARTDAQ_DAQDATA}
-        ${ART_FRAMEWORK_PRINCIPAL}
-        sbndaq-artdaq-core_Overlays
-        sbndaq-artdaq-core_Overlays_Common
-        ${ART_PERSISTENCY_PROVENANCE}
-        artdaq-core_Data
-)
-
 install_headers()
 install_source()
 
@@ -129,9 +112,8 @@ simple_plugin( BernCRTAna "module"
   art_root_io_TFileService_service
   ${ROOT_BASIC_LIB_LIST}
         ${ARTDAQ-CORE_UTILITIES}
-  sbndaq-artdaq-core_Overlays_Common 
-  artdaq-core_Data
-  BERN_CRT_TRANSLATOR
+  sbndaq_artdaq_core::sbndaq-artdaq-core_Overlays_Common 
+  artdaq_core::artdaq-core_Data
 )
 
 simple_plugin( CrtNoiseMonTool "module"
@@ -142,9 +124,8 @@ simple_plugin( CrtNoiseMonTool "module"
   #art_Framework_Services_Optional_TFileService_service
   ${ROOT_BASIC_LIB_LIST}
         ${ARTDAQ-CORE_UTILITIES}
-  sbndaq-artdaq-core_Overlays_Common 
-  artdaq-core_Data
-  BERN_CRT_TRANSLATOR
+  sbndaq_artdaq_core::sbndaq-artdaq-core_Overlays_Common 
+  artdaq_core::artdaq-core_Data
 )
 
 simple_plugin( CrtCalAnalysis "module"
@@ -155,10 +136,9 @@ simple_plugin( CrtCalAnalysis "module"
   #art_Framework_Services_Optional_TFileService_service
   ${ROOT_BASIC_LIB_LIST}
         ${ARTDAQ-CORE_UTILITIES}
-  sbndaq-artdaq-core_Overlays_Common 
-  artdaq-core_Data
+  sbndaq_artdaq_core::sbndaq-artdaq-core_Overlays_Common 
+  artdaq_core::artdaq-core_Data
   CRT_CAL
-  BERN_CRT_TRANSLATOR
 )
 
 simple_plugin( AnaProducer "module"
@@ -169,13 +149,12 @@ simple_plugin( AnaProducer "module"
   #art_Framework_Services_Optional_TFileService_service
   ${ROOT_BASIC_LIB_LIST}
         ${ARTDAQ-CORE_UTILITIES}
-  sbndaq-artdaq-core_Overlays_Common 
-  artdaq-core_Data
+  sbndaq_artdaq_core::sbndaq-artdaq-core_Overlays_Common 
+  artdaq_core::artdaq-core_Data
   CRT_CAL
   CRT_CAL_TREE
   CRT_RAW_TREE
   CRT_TIMING
-  BERN_CRT_TRANSLATOR
 )
 
 simple_plugin( CRTEventProducer "module"
@@ -187,6 +166,18 @@ simple_plugin( CRTEventProducer "module"
   #${ROOT_BASIC_LIB_LIST}
   CRT_PREPROCESS_TREE
   #CRT_CAL_TREE
+  sbnobj_Common_CRT
+)
+
+simple_plugin( DecoderICARUSCRT "module"
+  icaruscode_Utilities
+  art_Framework_Services_Registry
+  art_root_io_tfile_support
+  art_root_io_TFileService_service
+  ${ROOT_BASIC_LIB_LIST}
+  ${ARTDAQ-CORE_UTILITIES}
+  sbndaq_artdaq_core::sbndaq-artdaq-core_Overlays_Common
+  artdaq_core::artdaq-core_Data
   sbnobj_Common_CRT
 )
 

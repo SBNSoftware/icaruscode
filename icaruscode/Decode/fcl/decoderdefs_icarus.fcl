@@ -1,7 +1,10 @@
-#include "decodertools.fcl"
+#include "decoderTools_icarus.fcl"
 
 BEGIN_PROLOG
 
+extractTriggerConfig: { 
+                    module_type:        TriggerConfigurationExtraction
+}
 
 extractPMTconfig: {
                     module_type:        PMTconfigurationExtraction
@@ -31,21 +34,34 @@ decodeTPC: {
 
 decodeTPCROI: {
                     module_type:        DaqDecoderICARUSTPCwROI
-                    FragmentsLabel:     "daq:PHYSCRATEDATA"
+                    FragmentsLabelVec:  [ "daq:PHYSCRATEDATA" ]
                     OutputRawWaveform:  false
                     OutputCorrection:   false
                     OutputRawWavePath:  "RAW"
                     OutputCoherentPath: "Cor"
                     DiagnosticOutput:   false
+                    CoherentGrouping:   64
+                    DecoderTool:        @local::TPCNoiseFilter1DTool
 }
 
 decodePMT: {
                     module_type:        DaqDecoderICARUSPMT
-                    FragmentsLabel:     "daq:CAENV1730"
-                    DecoderTool: {
-                                    @table::PMTDecoderTool
-                      PMTconfigTag: @nil # must override
-                    }
+                    FragmentsLabels:  [ "daq:CAENV1730", "daq:ContainerCAENV1730" ]
+                    PMTconfigTag:       @nil # must override
+                    TriggerTag:         @nil # must override
+                    BoardSetup:         @local::icarus_V1730_setup
+}
+
+decodeTrigger: {
+                    module_type:        DaqDecoderICARUSTrigger
+                    FragmentsLabel:     "daq:ICARUSTriggerUDP"
+                    DecoderTool:        @local::TriggerDecoderTool
+}
+
+decodeTriggerV2: {
+                    module_type:        DaqDecoderICARUSTrigger
+                    FragmentsLabel:     "daq:ICARUSTriggerV2"
+                    DecoderTool:        @local::TriggerDecoderV2Tool
 }
 
 END_PROLOG

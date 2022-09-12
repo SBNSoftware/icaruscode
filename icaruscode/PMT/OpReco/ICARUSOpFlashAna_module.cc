@@ -19,11 +19,14 @@
 
 #include "nusimdata/SimulationBase/MCTruth.h"
 #include "larcore/Geometry/Geometry.h"
+#include "larcore/CoreUtils/ServiceUtil.h" // lar::providerFrom()
 #include "lardataobj/RawData/OpDetWaveform.h"
 #include "lardataobj/RecoBase/OpFlash.h"
 #include <TTree.h>
 #include <TFile.h>
 #include <TLorentzVector.h>
+
+#include <numeric> // std::accumulate
 
 class ICARUSOpFlashAna;
 

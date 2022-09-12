@@ -1,0 +1,27 @@
+#include "cafmakerjob_icarus.fcl"
+
+# Turn on SpaceCharge in services
+services.SpaceChargeService.EnableCalEfieldSCE: true
+services.SpaceChargeService.EnableCalSpatialSCE: true
+services.SpaceChargeService.EnableCorrSCE: true
+services.SpaceChargeService.EnableSimEfieldSCE: true
+services.SpaceChargeService.EnableSimSpatialSCE: true
+
+# More producers
+physics.producers: {
+  @table::physics.producers
+  @table::recoana_sce_producers # also overwrites some, which is ok
+}
+
+# Different sequence
+physics.runprod: [ @sequence::caf_preprocess_sce_sequence, cafmaker]
+
+# change all the labels we need to
+physics.producers.cafmaker.PFParticleLabel:   "pandoraGausSCE"
+physics.producers.cafmaker.RecoShowerLabel:   "SBNShowerGausSCE"
+physics.producers.cafmaker.RecoTrackLabel:    "pandoraTrackGausSCE"
+physics.producers.cafmaker.TrackCaloLabel:    "pandoraCaloGausSCE"
+physics.producers.cafmaker.TrackChi2PidLabel: "pandoraPidGausSCE"
+physics.producers.cafmaker.TrackMCSLabel:     "pandoraTrackSCEMCS"
+physics.producers.cafmaker.TrackRangeLabel:   "pandoraTrackSCERange"
+physics.producers.cafmaker.FlashMatchLabel:   "fmatchSCE"

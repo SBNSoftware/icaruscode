@@ -1,10 +1,18 @@
 
 BEGIN_PROLOG
 
-SPE: {
+SPEorig: {
   Area: 212.
   Amplitude: 49.18
   Shift: 0.
 }
+
+SPE202202: {  # amplitude set to 4 mV, gain 9.7x10^6 with R = 50 ohm
+  Area: 318.256      # ADC x (2 ns)
+  Amplitude: 32.768  # ADC (= 4 mV / 2 V x 2^14 bit)
+  Shift: 0.
+}
+
+SPE: @local::SPEorig
 
 END_PROLOG

@@ -1,0 +1,38 @@
+#
+# File:    prodcorsika_standard_icarus_ROOTinput.fcl
+# Purpose: Overlay of CMC model cosmic rays onto signal events.
+# Author:  Jamie Dyer (jamie.dyer@colostate.edu)
+# Date:    December 20, 2021
+#
+#This job configuration uses 'prodcorsika_standard_icarus.fcl' to overlay 
+#cosmic ray events onto signal events provided in RootInput (as opposed to 
+#empty events).
+#
+#
+# 
+# Output
+# -------
+# 
+# See `prodcorsika_standard_icarus.fcl`.
+# The main output is an _art_ ROOT file with content:
+#  * `generator`: generated cosmic rays from CORSIKA (`simb::MCTruth` collection)
+# 
+
+#include "prodcorsika_standard_icarus.fcl"
+
+
+process_name: Corsika
+
+source:
+{
+	module_type: RootInput
+#	skipEvents: 0
+}
+
+#
+# output file names
+#
+
+services.TFileService.fileName: "Supplemental-%ifb_%tc-%p.root"
+outputs.out1.fileName:    "%ifb_%tc-%p.root"
+

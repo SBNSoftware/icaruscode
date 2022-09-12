@@ -12,6 +12,7 @@
 
 #include <cmath>
 #include <algorithm>
+#include <numeric> // std::accumulate and std::inner_product
 
 #include "TVirtualFFT.h"
 

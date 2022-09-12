@@ -1,0 +1,10 @@
+#
+# File:    simulation_genie_icarus_numi_NuEElastic.fcl
+# Purpose: Generating NuE-Elastic with otherwise standard NuMI configuration
+# Date:    September 20, 2021 (Editing the previous workflow of Nick Suarez)
+# Version: 1.0
+#
+
+#include "simulation_genie_icarus_numi.fcl"
+
+physics.producers.generator.EventGeneratorList: "NuEElastic"

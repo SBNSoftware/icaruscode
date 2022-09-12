@@ -355,7 +355,7 @@ function checkoutGITtagIfExists() {
   local -r Tag="$1"
   local -r Directory="$2"
   
-  hasGITtag && git${Directory:+ -C "$Directory"} checkout "$Tag"
+  hasGITtag "$Tag" && git${Directory:+ -C "$Directory"} checkout "$Tag"
   
   git${Directory:+ -C "$Directory"} rebase
 
@@ -364,14 +364,17 @@ function checkoutGITtagIfExists() {
 
 # ------------------------------------------------------------------------------
 function FindDoxyfile() {
+  # looks for a Doxygen file in the repository directories;
   
   local -r ExptName="$1"
+  shift
+  local -a PriorityDirs=( "$@" )
   
   local -r ExptCodeName="$(ExperimentCodeProduct "$ExptName" )"
   
   local -a CandidateDoxyfiles
   local GITrepoPath
-  for GITrepoPath in "$(GITrepositoryPath)" "$(GITrepositoryPath "$0")" ; do
+  for GITrepoPath in "${PriorityDirs[@]}" "$(GITrepositoryPath)" "$(GITrepositoryPath "$0")" ; do
     [[ -n "$GITrepoPath" ]] || continue
     CandidateDoxyfiles+=(
       "${GITrepoPath}/${RepoDocSubdir}/${ExptCodeName}.doxy"

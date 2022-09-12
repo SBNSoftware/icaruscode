@@ -11,6 +11,8 @@
 #include "larcorealg/Geometry/AuxDetChannelMapAlg.h"
 #include "larcorealg/Geometry/AuxDetGeometryCore.h"
 #include "larcorealg/Geometry/AuxDetGeo.h"
+#include "art/Framework/Services/Registry/ServiceDefinitionMacros.h"
+#include "fhiclcpp/ParameterSet.h"
 #include "icaruscode/CRT/CRTGeometryHelper.h"
 #include "icaruscode/CRT/CRTChannelMapAlg.h"
 #include <memory>

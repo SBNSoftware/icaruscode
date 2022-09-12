@@ -38,6 +38,7 @@
 		<MvaName>NeutrinoId</MvaName>
 		<MinimumNeutrinoProbability>0</MinimumNeutrinoProbability>
 		<MaximumNeutrinos>999</MaximumNeutrinos>
+		<PersistFeatures>true</PersistFeatures>
 	    </tool>
         </SliceIdTools>
         <InputHitListName>Input</InputHitListName>
@@ -49,14 +50,6 @@
         <VisualizeOverallRecoStatus>false</VisualizeOverallRecoStatus>
     </algorithm>
 
-    <algorithm type = "LArTrackParticleBuilding">
-        <PfoListName>RecreatedPfos</PfoListName>
-        <VertexListName>RecreatedVertices</VertexListName>
-    </algorithm>
-    <algorithm type = "LArPcaShowerParticleBuilding">
-        <PfoListName>RecreatedPfos</PfoListName>
-        <VertexListName>RecreatedVertices</VertexListName>
-    </algorithm>
     <algorithm type = "LArVisualMonitoring">
         <ShowCurrentPfos>true</ShowCurrentPfos>
         <ShowDetector>true</ShowDetector>

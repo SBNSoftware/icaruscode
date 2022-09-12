@@ -20,7 +20,8 @@ process_name: BackgroundGen
 
 services: {
   
-  @table::icarus_common_services # from services_common_icarus.fcl
+                   @table::icarus_common_services # from services_common_icarus.fcl
+  NuRandomService: @local::per_event_NuRandomService  
   
 } # services
 
@@ -51,5 +52,6 @@ outputs: {
     module_type:  RootOutput
     fileName:    "prodbackground_Ar39_icarus_%tc-%p.root"
     dataTier:    "simulated"
+    saveMemoryObjectThreshold: 0
   } # rootoutput
 } # outputs

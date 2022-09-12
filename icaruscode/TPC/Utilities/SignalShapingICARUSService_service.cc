@@ -9,6 +9,7 @@
 #include <cmath>
 #include "SignalShapingICARUSService_service.h"
 #include "art/Framework/Services/Registry/ServiceHandle.h"
+#include "art/Framework/Services/Registry/ServiceDefinitionMacros.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
 #include "cetlib_except/exception.h"
 #include "larcore/CoreUtils/ServiceUtil.h" // lar::providerFrom<>()
@@ -173,22 +174,21 @@ void SignalShapingICARUSService::SetDecon(double const samplingRate,
 }
 
 //-----Give Gain Settings to SimWire-----
-double SignalShapingICARUSService::GetASICGain(unsigned int  channel) const
+double SignalShapingICARUSService::GetASICGain(unsigned int channel) const
 {
     static const double fcToElectrons(6241.50975);
-    
+
     art::ServiceHandle<geo::Geometry> geom;
     size_t planeIdx = geom->ChannelToWire(channel)[0].Plane;
-    double gain     = fPlaneToResponseMap.at(planeIdx).front()->getElectronicsResponse()->getFCperADCMicroS() * fcToElectrons;
+    
+    double gain = fPlaneToResponseMap.at(planeIdx).front()->getElectronicsResponse()->getFCperADCMicroS() * fcToElectrons;
     
     return gain;
 }
 
 //-----Give Shaping time to SimWire-----
-double SignalShapingICARUSService::GetShapingTime(unsigned int  channel) const
+double SignalShapingICARUSService::GetShapingTime(unsigned int planeIdx) const
 {
-    art::ServiceHandle<geo::Geometry> geom;
-    size_t planeIdx     = geom->ChannelToWire(channel)[0].Plane;
     double shaping_time = fPlaneToResponseMap.at(planeIdx).front()->getElectronicsResponse()->getASICShapingTime();
 
     return shaping_time;
@@ -198,7 +198,7 @@ double SignalShapingICARUSService::GetRawNoise(unsigned int const channel) const
 {
     art::ServiceHandle<geo::Geometry> geom;
     size_t planeIdx = geom->ChannelToWire(channel)[0].Plane;
-    
+
     double gain         = fPlaneToResponseMap.at(planeIdx).front()->getElectronicsResponse()->getFCperADCMicroS();
     double shaping_time = fPlaneToResponseMap.at(planeIdx).front()->getElectronicsResponse()->getASICShapingTime();
     int    temp;

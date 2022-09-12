@@ -181,7 +181,7 @@ class icarus::opdet::DiscretePhotoelectronPulse {
     * @tparam Stream type of stream to write into
     * @param out the stream to write into
     * @param indent indentation string, prepended to all lines except first
-    * @param indentFirst indentation string prepended to the first line
+    * @param firstIndent indentation string prepended to the first line
     */
   template <typename Stream>
   void dump(Stream&& out,

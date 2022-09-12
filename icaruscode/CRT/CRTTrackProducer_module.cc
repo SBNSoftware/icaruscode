@@ -37,6 +37,7 @@
 #include <utility>
 #include <cmath> 
 #include <memory>
+#include <numeric> // std::accumulate
 
 using std::string;
 using std::vector;
@@ -70,7 +71,7 @@ namespace crt {
   
       // Declare member data here.
       string       fDataLabelHits;
-      string       fDataLabelTZeros;
+    //string       fDataLabelTZeros;
       int          fTrackMethodType;
       int          fStoreTrack;
       bool         fUseTopPlane;
@@ -116,7 +117,7 @@ namespace crt {
   {  
       // Initialize member data here.
       fDataLabelHits      = p.get<string>("DataLabelHits");      // CRTHit producer module name
-      fDataLabelTZeros    = p.get<string>("DataLabelTZeros");    // CRTTzero producer module name
+      // fDataLabelTZeros    = p.get<string>("DataLabelTZeros");    // CRTTzero producer module name
       fStoreTrack         = p.get<int>   ("StoreTrack");         // method 1 = all, method 2 = ave, method 3 = pure, method 4 = top plane
       fTrackMethodType    = p.get<int>   ("TrackMethodType");    // Print stuff
       fUseTopPlane        = p.get<bool>  ("UseTopPlane");        // Use hits from the top plane (SBND specific)
@@ -173,12 +174,14 @@ namespace crt {
           for(size_t i = 0; i<CRTTzeroVect.size(); i++){
     
               //loop over hits for this tzero, sort by tagger
-              map<string, vector<art::Ptr<sbn::crt::CRTHit>>> hits;
+              //map<string, vector<art::Ptr<sbn::crt::CRTHit>>> hits;
+	    map<int, vector<art::Ptr<sbn::crt::CRTHit>>> hits;
     
               for (size_t ah = 0; ah< CRTTzeroVect[i].size(); ++ah){        
     
-                  string ip = CRTTzeroVect[i][ah]->tagger;       
-                  hits[ip].push_back(CRTTzeroVect[i][ah]);
+		//string ip = CRTTzeroVect[i][ah]->tagger;       
+		int ip = CRTTzeroVect[i][ah]->plane;       
+		hits[ip].push_back(CRTTzeroVect[i][ah]);
               } // loop over hits
               
               //loop over planes and calculate average hits
@@ -186,9 +189,13 @@ namespace crt {
     
               for (auto &keyVal : hits){
     
-                  string ip = keyVal.first;
-                  vector<pair<sbn::crt::CRTHit, vector<int>>> ahits = trackAlg.AverageHits(hits[ip], hitIds);
+		// string ip = keyVal.first;
+		int ip = keyVal.first;
+		vector<pair<sbn::crt::CRTHit, vector<int>>> ahits = trackAlg.AverageHits(hits[ip], hitIds);
+
+		allHits.insert(allHits.end(), ahits.begin(), ahits.end());
     
+		/*
                   if(fUseTopPlane && ip == "volTaggerTopHigh_0"){ 
                       allHits.insert(allHits.end(), ahits.begin(), ahits.end());
                   }
@@ -196,6 +203,7 @@ namespace crt {
                   else if(ip != "volTaggerTopHigh_0"){ 
                       allHits.insert(allHits.end(), ahits.begin(), ahits.end());
                   }
+		*/
               }
     
               //Create tracks with hits at the same tzero
@@ -219,7 +227,8 @@ namespace crt {
           }
     
       }//end if sbnd option
-    
+
+       /*   
       //Older track reconstruction methods from MicroBooNE
       else{
           //Get list of tzeros             
@@ -360,15 +369,15 @@ namespace crt {
             
           }// loop over tzeros
       }//uBooNE method
-      
+      */
       //store track collection into event
       if(fStoreTrack == 1){
           evt.put(std::move(CRTTrackCol));
           evt.put(std::move(Trackassn));
       }
       mf::LogInfo("CRTTrackProducer")
-        <<"Number of tracks            = "<<"\n"
-        <<"Number of complete tracks   = "<<"\n"
+        <<"Number of tracks            = "<<nTrack<<"\n"
+        <<"Number of complete tracks   = "<<nCompTrack<<"\n"
         <<"Number of incomplete tracks = "<<nIncTrack;
       
   } // CRTTrackProducer::produce()

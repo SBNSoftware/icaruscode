@@ -15,7 +15,6 @@
 #include "canvas/Persistency/Common/FindMany.h"
 #include "canvas/Persistency/Common/FindOne.h"
 #include "fhiclcpp/ParameterSet.h"
-#include "fhiclcpp/make_ParameterSet.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
 
 #include "lardataobj/RawData/RawDigit.h"

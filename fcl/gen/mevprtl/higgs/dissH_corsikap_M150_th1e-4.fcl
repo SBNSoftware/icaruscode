@@ -1,0 +1,7 @@
+#include "dissonant_higgs_corsika_p_gen.fcl"
+
+physics.producers.generator.Decay.ReferenceHiggsMixing: 1e-4
+physics.producers.generator.Flux.MixingAngle: 1e-4
+
+higgsM: 0.15
+#include "set_higgsM.fcl"

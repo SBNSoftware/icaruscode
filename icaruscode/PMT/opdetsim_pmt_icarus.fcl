@@ -16,12 +16,11 @@ icarus_simpmt:
 
 icarus_simpmt_nonoise: {
   @table::icarus_simpmt
-  @table::icarus_pmtsimulationalg_nonoise
+  @table::icarus_pmtsimulation.disable_noise
 }
 
 icarus_simpmt_noise: {
   @table::icarus_simpmt
-  @table::icarus_pmtsimulationalg_noise
 }
 
 

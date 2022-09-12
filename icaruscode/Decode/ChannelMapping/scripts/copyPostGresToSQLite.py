@@ -71,6 +71,63 @@ pmtPlacementColumns = ['pmt_id integer',
                        'channel_id integer',
                        'fragment_id integer']
 
+crtFEBChannelsColumns = ['feb_id text',
+                         'feb_channel integer',
+                         'pedestal float',
+                         'threshold_adjust integer',
+                         'bias integer',
+                         'hg integer',
+                         'create_time text',
+                         'update_user text',
+                         'update_time text',
+                         'create_user text',
+                         'channel_id integer',
+                         'feb_index integer',
+                         'mac_address integer']
+
+topcrtFEBColumns = ['feb_barcode text',
+                    'serialnum integer',
+                    'mac_add8b text',
+                    'mac_add integer',
+                    'voltage float',
+                    'ch0 integer',
+                    'ch1 integer',
+                    'ch2 integer',
+                    'ch3 integer',
+                    'ch4 integer',
+                    'ch5 integer',
+                    'ch6 integer',
+                    'ch7 integer',
+                    'ch8 integer',
+                    'ch9 integer',
+                    'ch10 integer',
+                    'ch11 integer',
+                    'ch12 integer',
+                    'ch13 integer',
+                    'ch14 integer',
+                    'ch15 integer',
+                    'ch16 integer',
+                    'ch17 integer',
+                    'ch18 integer',
+                    'ch19 integer',
+                    'ch20 integer',
+                    'ch21 integer',
+                    'ch22 integer',
+                    'ch23 integer',
+                    'ch24 integer',
+                    'ch25 integer',
+                    'ch26 integer',
+                    'ch27 integer',
+                    'ch28 integer',
+                    'ch29 integer',
+                    'ch30 integer',
+                    'ch31 integer',
+                    'create_time text',
+                    'update_user text',
+                    'update_time text',
+                    'create_user text',
+                    'feb_index integer']
+
 # Define the function to create and fill each table
 def copyTable(postGres, dbCurs, dbName, table, columns):
     createString = "CREATE TABLE " + table + " ("
@@ -103,7 +160,11 @@ def copyTable(postGres, dbCurs, dbName, table, columns):
                     fieldEntry = rowList[idx].upper()
                 insertString += "\'" + fieldEntry + "\'"
             else:
-                insertString += rowList[idx]
+                if "none" in rowList[idx]:
+                    #print("Found none in column data, field:",columns[idx],", value: ",rowList[idx])
+                    insertString += '0'
+                else:
+                    insertString += "\'" +rowList[idx]+ "\'"
         insertString += ")"
         if table == "daq_channels":
             print("idx:",rowIdx,"  -->",insertString)
@@ -116,12 +177,13 @@ dataQuery = DataQuery(queryurl)
 
 print(dataQuery)
 
-dbName             = "icarus_hardware_dev"
+dbName             = "icarus_hardware_prd"
 readoutBoardsTable = "readout_boards"
 daqChannelsTable   = "daq_channels"
 flangesTable       = "flanges"
 pmtPlacementTable  = "pmt_placements"
-
+crtfebchannelsTable= "feb_channels"
+topcrtfebTable     = "crtfeb"
 ##################################################################################
 
 # Start by creating the new database and setting up the first table
@@ -137,6 +199,10 @@ copyTable(dataQuery, dbCurs, dbName, daqChannelsTable, daqChannelsColumns)
 copyTable(dataQuery, dbCurs, dbName, flangesTable, flangesColumns)
 
 copyTable(dataQuery, dbCurs, dbName, pmtPlacementTable, pmtPlacementColumns)
+
+copyTable(dataQuery, dbCurs, dbName, crtfebchannelsTable, crtFEBChannelsColumns)
+
+copyTable(dataQuery, dbCurs, dbName, topcrtfebTable, topcrtFEBColumns)
 
 ###################################################################################
 

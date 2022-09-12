@@ -1,0 +1,20 @@
+#include "prodcorsika_standard_icarus.fcl"
+
+physics.producers.generator: @local::icarus_corsika_p
+physics.producers.generator.ProjectToHeight:  1850  #height to which particles are projected in cm
+physics.producers.generator.ShowerAreaExtension: 1000
+
+services.PhotonVisibilityService.Mapping.CryostatChannelRemap: @erase
+services.GeometryConfigurationWriter: {}
+
+services.AuxDetExpGeoHelperInterface: @local::icarus_crt_channelmapping_services.AuxDetExptGeoHelperInterface
+services.AuxDetGeometry: @local::icarus_crt_channelmapping_services.AuxDetGeometry
+
+
+# Geometry with no-overburden
+services.Geometry.GDML: "icarus_complete_no_overburden_20210511.gdml"
+services.Geometry.ROOT: "icarus_complete_no_overburden_20210511.gdml"
+
+# Geometry with no-overburden
+services.AuxDetGeometry.GDML: "icarus_complete_no_overburden_20210511.gdml"
+services.AuxDetGeometry.ROOT: "icarus_complete_no_overburden_20210511.gdml"

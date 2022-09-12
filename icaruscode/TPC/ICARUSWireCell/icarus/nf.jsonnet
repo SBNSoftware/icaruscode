@@ -3,23 +3,29 @@
 local g = import 'pgraph.jsonnet';
 local wc = import 'wirecell.jsonnet';
 
-function(params, anode, chndbobj, n, name='')
+local default_dft = { type: 'FftwDFT' };
+
+function(params, anode, chndbobj, n, name='', dft=default_dft)
   {
 
     local single = {
       type: 'pdOneChannelNoise',
       name: name,
+      uses: [dft, chndbobj, anode],
       data: {
         noisedb: wc.tn(chndbobj),
         anode: wc.tn(anode),
+        dft: wc.tn(dft),
       },
     },
     local grouped = {
       type: 'mbCoherentNoiseSub',
       name: name,
+      uses: [dft, chndbobj, anode],
       data: {
         noisedb: wc.tn(chndbobj),
         anode: wc.tn(anode),
+        dft: wc.tn(dft),
         rms_threshold: 0.0,
       },
     },

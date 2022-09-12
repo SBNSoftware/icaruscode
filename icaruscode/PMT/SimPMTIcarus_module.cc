@@ -299,8 +299,11 @@ SimPMTIcarus::SimPMTIcarus(Parameters const& config)
     //
     // prepare the output
     //
-    auto const& pmtVector
-      = *(e.getValidHandle< std::vector<sim::SimPhotons> >(fInputModuleName));
+    art::Handle<std::vector<sim::SimPhotons> > pmtVector;
+    art::Handle<std::vector<sim::SimPhotonsLite> > pmtLiteVector;
+    pmtVector = e.getHandle< std::vector<sim::SimPhotons> >(fInputModuleName);
+    if(!pmtVector.isValid())
+      pmtLiteVector = e.getHandle< std::vector<sim::SimPhotonsLite> >(fInputModuleName);
     
     auto const clockData =
       art::ServiceHandle<detinfo::DetectorClocksService const>()->DataFor(e);
@@ -326,21 +329,46 @@ SimPMTIcarus::SimPMTIcarus(Parameters const& config)
     //
     // run the algorithm
     //
-    for(auto const& photons : pmtVector) {
+    unsigned int nopch = 0;
+    if(pmtVector.isValid()) {
+      nopch = pmtVector->size();
+      for(auto const& photons : *pmtVector) {
       
-      auto const& [ channelWaveforms, photons_used ]
-        = PMTsimulator->simulate(photons);
-      std::move(
-        channelWaveforms.cbegin(), channelWaveforms.cend(),
-        std::back_inserter(*pulseVecPtr)
-        );
-      if (simphVecPtr && photons_used)
-        simphVecPtr->emplace_back(std::move(photons_used.value()));
+        // Make an empty SimPhotonsLite with the same channel number.
+
+        sim::SimPhotonsLite lite_photons(photons.OpChannel());
+
+        auto const& [ channelWaveforms, photons_used ]
+          = PMTsimulator->simulate(photons, lite_photons);
+        std::move(
+          channelWaveforms.cbegin(), channelWaveforms.cend(),
+          std::back_inserter(*pulseVecPtr)
+          );
+        if (simphVecPtr && photons_used)
+          simphVecPtr->emplace_back(std::move(photons_used.value()));
+
+      } // for
+    }
+    else if(pmtLiteVector.isValid()) {
+      nopch = pmtLiteVector->size();
+      for(auto const& lite_photons : *pmtLiteVector) {
+
+        // Make an empty SimPhotons with the same channel number.
+
+        sim::SimPhotons photons(lite_photons.OpChannel);
       
-    } // for
+        auto const& [ channelWaveforms, photons_used ]
+          = PMTsimulator->simulate(photons, lite_photons);
+        std::move(
+          channelWaveforms.cbegin(), channelWaveforms.cend(),
+          std::back_inserter(*pulseVecPtr)
+          );
+
+      } // for
+    }
 
     mf::LogInfo("SimPMTIcarus") << "Generated " << pulseVecPtr->size()
-      << " waveforms out of " << pmtVector.size() << " optical channels.";
+      << " waveforms out of " << nopch << " optical channels.";
     
     //
     // save the result

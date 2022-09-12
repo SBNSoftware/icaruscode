@@ -41,6 +41,9 @@
 #include "sbnobj/ICARUS/CRT/CRTData.hh"
 #include "icaruscode/CRT/CRTUtils/CRTCommonUtils.h"
 
+#include "icaruscode/Decode/ChannelMapping/IChannelMapping.h"
+#include "icaruscode/Decode/ChannelMapping/IICARUSChannelMap.h"
+#include "icaruscode/Decode/ChannelMapping/ICARUSChannelMapProvider.h"
 // c++
 #include <iostream>
 #include <stdio.h>
@@ -50,7 +53,7 @@
 #include <utility>
 #include <cmath> 
 #include <memory>
-
+#include <cstdint>
 // ROOT
 #include "TVector3.h"
 #include "TGeoManager.h"
@@ -78,32 +81,60 @@ class icarus::crt::CRTHitRecoAlg {
     using Comment = fhicl::Comment;
     fhicl::Atom<bool> UseReadoutWindow {
       Name("UseReadoutWindow"),
-      Comment("Only reconstruct hits within readout window")
-    };
+	Comment("Only reconstruct hits within readout window")
+	};
     fhicl::Atom<double> QPed {
       Name("QPed"),
-      Comment("Pedestal offset [ADC]")
-    };
+	Comment("Pedestal offset [ADC]")
+	};
     fhicl::Atom<double> QSlope {
       Name("QSlope"),
-      Comment("Pedestal slope [ADC/photon]")
-    };
+	Comment("Pedestal slope [ADC/photon]")
+	};
     fhicl::Atom<bool> Verbose {
       Name("Verbose"),
-      Comment("Output verbosity")
-    };
+	Comment("Output verbosity")
+	};
+    fhicl::Atom<bool> Data {
+      Name("Data"),
+	Comment("choose data/mc")
+	};
+    fhicl::Atom<bool> outCSVFile {
+      Name("outCSVFile"),
+	Comment("Output a csv file")
+	};
+    fhicl::Atom<std::string> CSVFile {
+      Name("CSVFile"),
+	Comment("file name for output CSV File")
+        };
     fhicl::Atom<double> PropDelay {
       Name("PropDelay"),
-      Comment("group velocity in WLS fiber [ns/cm]")
-    };
+	Comment("group velocity in WLS fiber [ns/cm]")
+	};
     fhicl::Atom<double> PEThresh {
       Name("PEThresh"),
-      Comment("threshold in photoelectrons above which charge amplitudes used in hit reco")
-    };
-    fhicl::Atom<uint32_t> CoinWindow {
+	Comment("threshold in photoelectrons above which charge amplitudes used in hit reco")
+	};
+    fhicl::Atom<double> topGain {
+      Name("topGain"),
+        Comment("Dummy Gain value for Top CRT")
+        };
+    fhicl::Atom<double> topPed {
+      Name("topPed"),
+        Comment("Dummy Pedestal value for Top CRT")
+        };
+    fhicl::Atom<uint64_t> SiPMtoFEBdelay {
+      Name("SiPMtoFEBdelay"),
+	Comment("Delay for SiPM to FEB signal correction 11.6 [ns]")
+	};
+    fhicl::Atom<uint64_t> CoinWindow {
       Name("CoinWindow"),
-      Comment("window for finding side CRT trigger coincidences [ns]")
-    };
+	Comment("window for finding side CRT trigger coincidences [ns]")
+	};
+    fhicl::Atom<uint64_t> CrtWindow {
+      Name("CrtWindow"),
+	Comment("window for looking data [ns]")
+	};
   };//Config
 
   //constructors
@@ -114,11 +145,16 @@ class icarus::crt::CRTHitRecoAlg {
 
   //configure module from fcl file
   void reconfigure(const Config& config);
+
   //produce CRTHits with associated data indices from input vector of CRTData
   vector<pair<CRTHit, vector<int>>> CreateCRTHits(vector<art::Ptr<CRTData>> crtList);
+
+  //preselection based on charge in a CRTData
+  vector<art::Ptr<CRTData>> PreselectCRTData(vector<art::Ptr<CRTData>> crtList, uint64_t trigger_timestamp);
+
   // Function to make filling a CRTHit a bit faster
   CRTHit FillCRTHit(vector<uint8_t> tfeb_id, map<uint8_t, vector<pair<int,float>>> tpesmap,
-                    float peshit, double time0, double time1, int plane,
+                    float peshit, uint64_t time0, uint64_t time1, int plane,
                     double x, double ex, double y, double ey, double z, double ez, string tagger);
 
 
@@ -130,12 +166,21 @@ class icarus::crt::CRTHitRecoAlg {
 
   //Params from fcl file
   bool fVerbose;          ///< print info
+  bool foutCSVFile;       ///<FCL input: Write a CSV File?
+  std::string fCSVFile;   ///<FCL input: file name for output CSV File
   bool fUseReadoutWindow; ///< Only reconstruct hits within TPC readout window
   double fQPed;           ///< Pedestal offset of SiPMs [ADC]
   double fQSlope;         ///< Pedestal slope of SiPMs [ADC/photon]
   double fPropDelay;      ///< propegation time [ns/cm]
   double fPEThresh;       ///< threshold[PE] above which charge amplitudes used in hit reco
-  uint32_t fCoinWindow;   ///< Coincidence window used for grouping side CRT triggers [ns]
+  double ftopGain;        ///< Dummy Top CRT Gain Value
+  double ftopPed;         ///< Dummy Top CRT Pedestal Value
+  uint64_t fSiPMtoFEBdelay; ///< SiPM to FEB cable induced delay: 11.6 [ns]
+  uint64_t fCoinWindow;   ///< Coincidence window used for grouping side CRT triggers [ns]
+  uint64_t fCrtWindow;    ///< Looking data window within trigger timestamp [ns]
+  std::ofstream filecsv;
+  bool fData;             ///< look for only data
+  const icarusDB::IICARUSChannelMap* fChannelMap = nullptr;
 
   //Given top CRTData product, produce CRTHit
   CRTHit MakeTopHit(art::Ptr<CRTData> data);
@@ -146,6 +191,9 @@ class icarus::crt::CRTHitRecoAlg {
   // Check if a hit is empty
   bool IsEmptyHit(CRTHit hit);
 
+  static  bool compareBytime(art::Ptr<CRTData> const &a, art::Ptr<CRTData> const &b){
+    return a->fTs0 < b->fTs0;
+  }
 }; //class CRTHitRecoAlg
 
 #endif

@@ -13,8 +13,9 @@
 # Input
 # ------
 # 
-# * artDAQ fragments from all 24 PMT readout boards, named `daq:CAENV1730`
-# * no trigger fragments required yet (it may change in the future)
+# * artDAQ fragments from all 24 PMT readout boards, named
+#   `daq:ContainerCAENV1730`
+# * trigger fragment `daq:ICARUSTriggerUDP` (will be decoded as well)
 # * DAQ configuration as FHiCL in the art/ROOT input file
 # 
 # This configuration requires a data fragment for each PMT readout board
@@ -78,16 +79,16 @@ physics: {
   
   producers: {
     
-    PMTconfig:  @local::extractPMTconfig
+    triggerconfig: @local::extractTriggerConfig
+    pmtconfig:     @local::extractPMTconfig
     
-//     daqTrigger: @local::decodeTrigger
+    daqTrigger:    @local::decodeTriggerV2
     
-    daqPMT:     @local::decodePMT
+    daqPMT:        @local::decodePMT
     
   }
   
-//   decoding: [ PMTconfig, daqTrigger, daqPMT ]
-  decoding: [ PMTconfig, daqPMT ]
+  decoding: [ triggerconfig, pmtconfig, daqTrigger, daqPMT ]
   streams: [ rootoutput ]
 }
 
@@ -108,7 +109,9 @@ outputs: {
 
 # ------------------------------------------------------------------------------
 
-physics.producers.daqPMT.DecoderTool.PMTconfigTag: PMTconfig # required
+physics.producers.daqTrigger.DecoderTool.TrigConfigLabel: triggerconfig # required
+physics.producers.daqPMT.PMTconfigTag: pmtconfig # required
+physics.producers.daqPMT.TriggerTag:   daqTrigger # required
 
 # services.Geometry.Name: icarus_splitwires # for runs < 548x
 
@@ -117,17 +120,18 @@ physics.producers.daqPMT.DecoderTool.PMTconfigTag: PMTconfig # required
 #
 
 physics.producers.daqPMT.SurviveExceptions: false
-physics.producers.daqPMT.DecoderTool.DiagnosticOutput:  false
-physics.producers.daqPMT.DecoderTool.RequireKnownBoards: true
-physics.producers.daqPMT.DecoderTool.RequireBoardConfig: true
-physics.producers.daqPMT.DecoderTool.DataTrees: [ "PMTfragments" ]
+physics.producers.daqPMT.DiagnosticOutput:  true
+physics.producers.daqPMT.PacketDump:        false
+physics.producers.daqPMT.RequireKnownBoards: true
+physics.producers.daqPMT.RequireBoardConfig: true
+physics.producers.daqPMT.DataTrees: [ "PMTfragments" ]
 
 #
 # customization of trigger decoding
 #
 
-# physics.producers.daqTrigger.DecoderTool.DiagnosticOutput: true
-# physics.producers.daqTrigger.DecoderTool.Debug: true
+physics.producers.daqTrigger.DecoderTool.DiagnosticOutput: true
+physics.producers.daqTrigger.DecoderTool.Debug: false
 
 
 # ------------------------------------------------------------------------------

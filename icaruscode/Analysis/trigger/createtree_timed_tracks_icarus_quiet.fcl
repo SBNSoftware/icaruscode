@@ -1,0 +1,27 @@
+#
+# File:    createtree_timed_tracks_icarus_quiet.fcl
+# Purpose: Store selected timed tracks with energy estimation and trigger
+#          emulation into flat ROOT trees.
+# Authors: Animesh Chatterjee (ANC238@pitt.edu),
+#          Gianluca Petrillo (petrillo@slac.stanford.edu),
+#          Jacob Zettlemoyer (jzettle@fnal.gov)
+# Date:    September 22, 2021
+#
+# This is a customization of `createtree_timed_tracks_icarus.fcl` which produces
+# much smaller logs, suitable for production of large samples.
+#
+#
+
+#include "createtree_timed_tracks_icarus.fcl"
+
+# also save art/ROOT file
+physics.end_paths: [ @sequence::physics.end_paths, streams ]
+
+# the info stream is kept, as it contains trigger summary.
+services.message: @local::icarus_message_services_interactive
+
+# the memory database can get huge with many events
+services.MemoryTracker: @erase
+
+# needed to process Run0 data
+services.Geometry.SkipConfigurationCheck: true

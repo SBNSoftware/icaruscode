@@ -218,8 +218,9 @@ run = evt.id().run();
 subrun = evt.id().subRun();
 event = evt.id().event();
 
-std::vector< art::Handle< std::vector<simb::MCTruth> > > type;
-evt.getManyByType(type);
+//std::vector< art::Handle< std::vector<simb::MCTruth> > > type;
+//evt.getManyByType(type);
+auto type = evt.getMany< std::vector<simb::MCTruth> >();
       art::Handle< std::vector<simb::MCParticle> > particleVecHandle;
       evt.getByLabel("largeant", particleVecHandle);
 

@@ -99,4 +99,7 @@ services.RecoDrawingOptions.OpHitModuleLabels:     ["ophit"]
 services.RecoDrawingOptions.DrawOpFlashes:         0
 services.RecoDrawingOptions.OpFlashModuleLabels:   ["opflashTPC0", "opflashTPC1", "opflashTPC2", "opflashTPC3"]
 
+#Turn off DuplicateEventTracker
+services.DuplicateEventTracker: @erase
+
 

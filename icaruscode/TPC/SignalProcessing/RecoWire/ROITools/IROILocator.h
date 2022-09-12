@@ -15,6 +15,10 @@
 
 #include "fhiclcpp/ParameterSet.h"
 #include "larcore/Geometry/Geometry.h"
+#include "art/Framework/Principal/Event.h" 
+#include "larcoreobj/SimpleTypesAndConstants/RawTypes.h"
+
+namespace art { class TFileDirectory; }
 
 namespace icarus_tool
 {
@@ -23,7 +27,8 @@ namespace icarus_tool
     public:
         virtual ~IROILocator() noexcept = default;
         
-        virtual void   configure(const fhicl::ParameterSet& pset) = 0;
+        virtual void configure(const fhicl::ParameterSet& pset) = 0;
+        virtual void initializeHistograms(art::TFileDirectory&) = 0;
         
         // Define the waveform container
         using VectorBool  = std::vector<bool>;
@@ -34,7 +39,7 @@ namespace icarus_tool
         using PlaneIDVec  = std::vector<geo::PlaneID>;
         
         // Find the ROI's
-        virtual void FindROIs(const ArrayFloat&, const geo::PlaneID&, ArrayFloat&, ArrayBool&) const = 0;
+        virtual void FindROIs(const art::Event&, const ArrayFloat&, const std::vector<raw::ChannelID_t>&, const geo::PlaneID&, ArrayFloat&, ArrayBool&) = 0;
     };
 }
 

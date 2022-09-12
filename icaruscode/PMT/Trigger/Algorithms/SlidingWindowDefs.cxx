@@ -11,6 +11,9 @@
 // library header
 #include "icaruscode/PMT/Trigger/Algorithms/SlidingWindowDefs.h"
 
+// ICARUS libraries
+#include "icarusalg/Utilities/IntegerRanges.h"
+
 // LArSoft libraries
 #include "larcorealg/CoreUtils/enumerate.h"
 
@@ -35,12 +38,8 @@ void icarus::trigger::printTriggerWindowChannels
    * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
    */
   out << window.size() << " channels";
-  if (window.empty()) return;
-  auto iChannel = window.begin();
-  auto const cend = window.end();
-  out << " ( " << *iChannel;
-  while (++iChannel != cend) out << ", " << *iChannel;
-  out << " )";
+  if (!window.empty())
+    out << " (" << icarus::makeIntegerRanges(window) << ")";
   
 } // icarus::trigger::printTriggerWindowChannels()
 

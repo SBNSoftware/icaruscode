@@ -752,26 +752,19 @@
 
     <!-- ** GEANT4 Style Rotation Matrix ** -->
     <beamdir type="newxyz">
-      [   0.921228671    0.0226872648   0.388359401  ]
-      [   0.00136256111  0.998103714   -0.061539578  ]
-      [  -0.389019125    0.0572211871   0.919450845  ]
+      [   0.921035925    0.022715103    0.388814672  ]
+      [             0    0.998297825   -0.058321970  ]
+      [  -0.389477631    0.053716629    0.919468161  ]
     </beamdir>
+    <!-- value from SBN-doc-22998 -->
 
     <!-- position of beam -->
     <!-- this is a translation from ( user coords ) to ( beam coords ) -->
     <!-- basically a statement of the origin in the detector coordinate system
          has the corresponding value in the beam coordinate system -->
     <!-- XML config must have already set the rotation matrix -->
-    <beampos> ( 0.0, 0.0, 0.0 ) = (4.8195, 79.5800, 794.3955)</beampos>
-    <!-- the value above is a middle point between
-         point1 = (8.718, 79.043, 785.190) [m], and
-         point2 = (0.921 80.117 803.601) [m],
-         which are *design* upstream and downstream points in the center of the
-         ICARUS cryostat upstream and downstream faces in NuMI beam line coordinates.
-         The values were obtained in Jul 2019 from V.Bocean (FNAL Alignment and Metrology Dept.)
-         This value might be slightly innacurate as:
-          - the cryostat was actually installed slightly more to the downstream (tens of cm)
-          - center of the two TPC system might not be precisely in the center of the cryostat -->
+    <beampos> ( 0.0, 0.0, 0.0 ) = (4.503730, 80.153901, 795.112945)</beampos>
+    <!-- value from SBN-doc-22998 -->
       
     <!-- define flux window in detector coords -->
     <!-- need 3 positions to define a rectoid -->

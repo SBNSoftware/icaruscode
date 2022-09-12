@@ -21,6 +21,9 @@ local params = base {
     // Electron drift speed, assumes a certain applied E-field
     // drift_speed: std.extVar('driftSpeed') * wc.mm / wc.us,
   },
+  files: super.files {
+    fields: [ std.extVar('files_fields'), ],
+  },
 };
 
 local tools = tools_maker(params);
@@ -69,7 +72,7 @@ local duoanodes = [
   }, 
 }
 for n in std.range(0,3)];
-
+local volname = ["EE", "EW", "WE", "WW"];
 local wcls_output = {
   // ADC output from simulation
   // sim_digits: wcls.output.digits(name="simdigits", tags=["orig"]),
@@ -81,7 +84,8 @@ local wcls_output = {
       // anode: wc.tn(tools.anode),
       anode: wc.tn(duoanodes[n]),
       digitize: true,  // true means save as RawDigit, else recob::Wire
-      frame_tags: ['daq%d' %n],
+      //frame_tags: ['daq%d' %n],
+      frame_tags: ['TPC%s' %volname[n]],
       // Three options for nticks:
       // - If nonzero, force number of ticks in output waveforms.
       // - If zero, use whatever input data has. (default)
@@ -123,8 +127,8 @@ local perfect = import 'pgrapher/experiment/icarus/chndb-base.jsonnet';
 local chndb = [{
   type: 'OmniChannelNoiseDB',
   name: 'ocndbperfect%d' % n,
-  data: perfect(params, tools.anodes[n], tools.field, n),
-  uses: [tools.anodes[n], tools.field],  // pnode extension
+  data: perfect(params, tools.anodes[n], tools.field, n){dft:wc.tn(tools.dft)},
+  uses: [tools.anodes[n], tools.field, tools.dft],
 } for n in anode_iota];
 
 
@@ -160,47 +164,38 @@ local wcls_simchannel_sink = g.pnode({
   },
 }, nin=1, nout=1, uses=tools.anodes);
 
-local make_noise_model = function(anode, csdb=null) {
-    type: "EmpiricalNoiseModel",
-    name: "empericalnoise-" + anode.name,
-    data: {
-        anode: wc.tn(anode),
-        chanstat: if std.type(csdb) == "null" then "" else wc.tn(csdb),
-        spectra_file: params.files.noise,
-        nsamples: params.daq.nticks,
-        period: params.daq.tick,
-        wire_length_scale: 1.0*wc.cm, // optimization binning
-    },
-    uses: [anode] + if std.type(csdb) == "null" then [] else [csdb],
-};
-local noise_model = make_noise_model(mega_anode);
-local add_noise = function(model, n) g.pnode({
-    type: "AddNoise",
+local nicks = ["incoTPCEE","incoTPCEW","incoTPCWE","incoTPCWW", "coheTPCEE","coheTPCEW","coheTPCWE","coheTPCWW"];
+local scale_int = std.extVar('int_noise_scale');
+local scale_coh = std.extVar('coh_noise_scale');
+local models = [
+    {
+        type: "GroupNoiseModel",
+        name: nicks[n],
+        data: {
+            // This can also be given as a JSON/Jsonnet file
+            spectra: params.files.noisegroups[n],
+            groups: params.files.wiregroups,
+            scale: if n<4 then scale_int else scale_coh,
+            nsamples: params.daq.nticks,
+            tick: params.daq.tick,
+        }
+    } for n in std.range(0,7)];
+
+local add_noise = function(model, n,t) g.pnode({
+    type: t,
     name: "addnoise%d-" %n + model.name,
     data: {
         rng: wc.tn(tools.random),
+        dft: wc.tn(tools.dft),
         model: wc.tn(model),
-  nsamples: params.daq.nticks,
-        replacement_percentage: 0.02, // random optimization
-    }}, nin=1, nout=1, uses=[model]);
-local noises = [add_noise(noise_model, n) for n in std.range(0,3)];
-
-local add_coherent_noise = function(n) g.pnode({
-      type: "AddCoherentNoise",
-      name: "addcoherentnoise%d" %n,
-      data: {
-          spectra_file: params.files.coherent_noise,
-          rng: wc.tn(tools.random),
-          nsamples: params.daq.nticks,
-          random_fluctuation_amplitude: 0.1,
-          period: params.daq.tick,
-          normalization: 1
-      }}, nin=1, nout=1, uses=[]);
-local coherent_noises = [add_coherent_noise(n) for n in std.range(0,3)];
+        nsamples: params.daq.nticks,
+    }}, nin=1, nout=1, uses=[tools.random, tools.dft, model]);
+local noises = [add_noise(models[n], n,"IncoherentAddNoise") for n in std.range(0,3)];
+local coh_noises = [add_noise(models[n],n,"CoherentAddNoise") for n in std.range(4,7)];
 
 // local digitizer = sim.digitizer(mega_anode, name="digitizer", tag="orig");
 local digitizers = [
-    sim.digitizer(mega_anode, name="digitizer%d-" %n + mega_anode.name, tag="daq%d"%n)
+    sim.digitizer(mega_anode, name="digitizer%d-" %n + mega_anode.name, tag="TPC%s"%volname[n])
     for n in std.range(0,3)];
 
 local retaggers = [
@@ -233,7 +228,7 @@ local frame_summers = [
         },
     }, nin=2, nout=1) for n in std.range(0, 3)];
 
-local actpipes = [g.pipeline([noises[n], /*coherent_noises[n],*/ digitizers[n], /*retaggers[n],*/ wcls_output.sim_digits[n]], name="noise-digitizer%d" %n) for n in std.range(0,3)];
+local actpipes = [g.pipeline([noises[n], coh_noises[n], digitizers[n], /*retaggers[n],*/ wcls_output.sim_digits[n]], name="noise-digitizer%d" %n) for n in std.range(0,3)];
 local util = import 'pgrapher/experiment/icarus/funcs.jsonnet';
 local outtags = ['orig%d' % n for n in std.range(0, 3)];
 local pipe_reducer = util.fansummer('DepoSetFanout', analog_pipes, frame_summers, actpipes, 'FrameFanin', 'fansummer', outtags);

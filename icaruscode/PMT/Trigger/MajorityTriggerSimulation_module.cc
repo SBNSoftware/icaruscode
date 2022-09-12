@@ -11,13 +11,14 @@
 #include "icaruscode/PMT/Trigger/Algorithms/BeamGateMaker.h"
 #include "icaruscode/PMT/Trigger/Algorithms/TriggerTypes.h" // ADCCounts_t
 #include "icaruscode/PMT/Trigger/Algorithms/details/TriggerInfo_t.h"
-#include "sbnobj/ICARUS/PMT/Trigger/Data/MultiChannelOpticalTriggerGate.h"
 #include "sbnobj/ICARUS/PMT/Trigger/Data/OpticalTriggerGate.h"
-#include "icaruscode/PMT/Trigger/Utilities/TriggerDataUtils.h" // FillTriggerGates()
+#include "icaruscode/PMT/Trigger/Utilities/TrackedOpticalTriggerGate.h"
+#include "icaruscode/PMT/Trigger/Utilities/TriggerDataUtils.h" // ReadTriggerGates()
 #include "icaruscode/PMT/Trigger/Utilities/TriggerGateOperations.h"
 #include "icaruscode/PMT/Trigger/Utilities/PlotSandbox.h"
-#include "icarusalg/Utilities/ROOTutils.h" // util::ROOT
+#include "icaruscode/IcarusObj/OpDetWaveformMeta.h"
 #include "icaruscode/Utilities/DetectorClocksHelpers.h" // makeDetTimings()...
+#include "icarusalg/Utilities/ROOTutils.h" // util::ROOT
 #include "icarusalg/Utilities/mfLoggingClass.h"
 #include "icarusalg/Utilities/ChangeMonitor.h" // ThreadSafeChangeMonitor
 #include "icarusalg/Utilities/rounding.h" // icarus::ns::util::roundup()
@@ -189,7 +190,6 @@ icarus::trigger::GeometryChannelSplitter::byCryostat
   std::vector<std::vector<GateObj>> gatesPerCryostat{ fNCryostats };
   
   for (auto& gate: gates) {
-    assert(gate.hasChannels());
     gatesPerCryostat[fChannelCryostat.at(gate.channels().front()).Cryostat]
       .push_back(std::move(gate));
   } // for gates
@@ -430,13 +430,11 @@ class icarus::trigger::MajorityTriggerSimulation
   using TriggerInfo_t = details::TriggerInfo_t; ///< Type alias.
   
   /// Type of trigger gate extracted from the input event.
-  using InputTriggerGate_t = icarus::trigger::MultiChannelOpticalTriggerGate;
+  using InputTriggerGate_t
+    = icarus::trigger::TrackedOpticalTriggerGate<sbn::OpDetWaveformMeta>;
   
   /// A list of trigger gates from input.
   using TriggerGates_t = std::vector<InputTriggerGate_t>;
-
-  /// Type of gate data without channel information.
-  using TriggerGateData_t = InputTriggerGate_t::GateData_t;
   
   
   // --- BEGIN Configuration variables -----------------------------------------
@@ -540,6 +538,8 @@ class icarus::trigger::MajorityTriggerSimulation
   
   /**
    * @brief Simulates the trigger response within a single cryostat.
+   * @param beamGate the beam gate to be applied
+   * @param iCryo index of the cryostat being processed
    * @param gates the trigger primitives to be considered
    * @return the outcome and details of the trigger simulation
    * 
@@ -549,8 +549,11 @@ class icarus::trigger::MajorityTriggerSimulation
    * configured (`MinimumPrimitives`).
    * The time is the earliest one when that requirement is met.
    */
-  TriggerInfo_t simulateCryostat(ApplyBeamGateClass const& clockData,
-                                 TriggerGates_t const& gates) const;
+  TriggerInfo_t simulateCryostat(
+    ApplyBeamGateClass const& beamGate,
+    std::size_t iCryo,
+    TriggerGates_t const& gates
+    ) const;
   
   
   /**
@@ -591,12 +594,6 @@ class icarus::trigger::MajorityTriggerSimulation
   //@}
   
   
-  /// Reads a set of input gates from the `event`
-  /// @return trigger gates, converted into `InputTriggerGate_t`
-  static TriggerGates_t readTriggerGates
-    (art::Event const& event, art::InputTag const& dataTag);
-  
-
 }; // icarus::trigger::MajorityTriggerSimulation
 
 
@@ -796,7 +793,7 @@ auto icarus::trigger::MajorityTriggerSimulation::produceForThreshold(
   // get the input
   //
   art::InputTag const dataTag = fADCthresholds.at(thr);
-  auto const& gates = readTriggerGates(event, dataTag);
+  auto const& gates = icarus::trigger::ReadTriggerGates(event, dataTag);
   
   //
   // simulate the trigger response
@@ -839,13 +836,15 @@ auto icarus::trigger::MajorityTriggerSimulation::simulate
   // to use the splitter we need a *copy* of the gates
   auto const& cryoGates = fChannelSplitter.byCryostat(TriggerGates_t{ gates });
   
-  // NOTE to allow for distinction between cryostats, the logic needs to be reworked
   TriggerInfo_t triggerInfo; // not fired by default
-  for (auto const& gatesInCryo: cryoGates) {
+  for (auto const& [ iCryo, gatesInCryo ]: util::enumerate(cryoGates)) {
     
-    triggerInfo.replaceIfEarlier(simulateCryostat(beamGate, gatesInCryo));
+    triggerInfo.addAndReplaceIfEarlier
+      (simulateCryostat(beamGate, iCryo, gatesInCryo));
     
   } // for gates in cryostat
+  
+  triggerInfo.sortOpenings();
   
   return triggerInfo;
   
@@ -853,11 +852,14 @@ auto icarus::trigger::MajorityTriggerSimulation::simulate
 
 
 //------------------------------------------------------------------------------
-auto icarus::trigger::MajorityTriggerSimulation::simulateCryostat
-  (ApplyBeamGateClass const& beamGate, TriggerGates_t const& gates) const
+auto icarus::trigger::MajorityTriggerSimulation::simulateCryostat(
+  ApplyBeamGateClass const& beamGate,
+  std::size_t iCryo, TriggerGates_t const& gates
+  ) const
   -> TriggerInfo_t
 {
-
+  using detinfo::timescales::optical_tick;
+  
   /* 
    * 1. combine the trigger primitives
    * 2. apply the beam gate on the combination
@@ -866,13 +868,15 @@ auto icarus::trigger::MajorityTriggerSimulation::simulateCryostat
   
   auto const combinedCount = beamGate.apply(fCombiner.combine(gates));
   
-  // the first tick with enough opened gates:
-  TriggerGateData_t::ClockTick_t const tick
-    = combinedCount.findOpen(fMinimumPrimitives);
-  bool const fired = (tick != TriggerGateData_t::MaxTick);
-  
   TriggerInfo_t triggerInfo;
-  if (fired) triggerInfo.emplace(optical_tick{ tick });
+  icarus::trigger::details::GateOpeningInfoExtractor extractOpeningInfo
+    { combinedCount, fMinimumPrimitives };
+  extractOpeningInfo.setLocation(iCryo);
+  while (extractOpeningInfo) {
+    auto info = extractOpeningInfo();
+    if (info) triggerInfo.add(info.value());
+  } // while
+  
   return triggerInfo;
   
 } // icarus::trigger::MajorityTriggerSimulation::simulateCryostat()
@@ -932,35 +936,6 @@ icarus::trigger::MajorityTriggerSimulation::triggerInfoToTriggerData
     };
   
 } // icarus::trigger::MajorityTriggerSimulation::triggerInfoToTriggerData()
-
-
-//------------------------------------------------------------------------------
-auto icarus::trigger::MajorityTriggerSimulation::readTriggerGates
-  (art::Event const& event, art::InputTag const& dataTag)
-  -> TriggerGates_t
-{
-
-  using icarus::trigger::OpticalTriggerGateData_t; // for convenience
-
-  // currently the associations are a waste of time memory...
-  auto const& gates
-    = *(event.getValidHandle<std::vector<OpticalTriggerGateData_t>>(dataTag));
-  auto const& gateToWaveforms = *(
-    event.getValidHandle
-      <art::Assns<OpticalTriggerGateData_t, raw::OpDetWaveform>>(dataTag)
-    );
-  
-  try {
-    return icarus::trigger::FillTriggerGates<InputTriggerGate_t>
-      (gates, gateToWaveforms);
-  }
-  catch (cet::exception const& e) {
-    throw cet::exception("MajorityTriggerSimulation", "", e)
-      << "Error encountered while reading data products from '"
-      << dataTag.encode() << "'\n";
-  }
-
-} // icarus::trigger::MajorityTriggerSimulation::readTriggerGates()
 
 
 //------------------------------------------------------------------------------

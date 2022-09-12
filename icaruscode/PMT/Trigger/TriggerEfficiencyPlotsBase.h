@@ -21,8 +21,9 @@
 #include "icaruscode/PMT/Trigger/Algorithms/details/EventInfoUtils.h"
 #include "icaruscode/PMT/Trigger/Algorithms/details/EventInfo_t.h"
 #include "icaruscode/PMT/Trigger/Utilities/PlotSandbox.h"
-#include "sbnobj/ICARUS/PMT/Trigger/Data/MultiChannelOpticalTriggerGate.h"
+#include "icaruscode/PMT/Trigger/Utilities/TrackedOpticalTriggerGate.h"
 #include "icaruscode/Utilities/DetectorClocksHelpers.h" // makeDetClockData()
+#include "icaruscode/IcarusObj/OpDetWaveformMeta.h"
 #include "icarusalg/Utilities/ChangeMonitor.h" // ThreadSafeChangeMonitor
 #include "icarusalg/Utilities/PassCounter.h"
 
@@ -375,27 +376,33 @@ struct icarus::trigger::details::PlotInfoTree: public TreeHolder {
  *       `icarus::trigger::ReadoutTriggerGate`, and many coding tools will call
  *       it in the latter way.
  * 
- * The class `icarus::trigger::OpticalTriggerGate` is currently the most
- * commonly used in the code. It adds to the information of
- * `icarus::trigger::ReadoutTriggerGate`, from which it derives, a list of
- * optical waveforms (`raw::OpDetWaveform`) it originates from.
+ * It is often convenient to track for each trigger gate object which input
+ * contributed to it, both in terms of channels and of single waveforms.
+ * The list of channels is embedded in `icarus::trigger::ReadoutTriggerGate`,
+ * while the list of source waveforms is not. An additional wrapper object,
+ * `icarus::trigger::TrackedOpticalTriggerGate`, contains a trigger gate proper
+ * (`icarus::trigger::ReadoutTriggerGate`) and a list of pointers to the source
+ * waveforms. In most of the code the source is represented by metadata
+ * (`sbn::OpDetWaveformMeta`) rather than the full waveforms
+ * (`raw::OpDetWaveform`) so that the bulk of the data is not necessary for the
+ * vast majority of the uses, and it can be dropped.
  * 
- * Finally, the classes `icarus::trigger::SingleChannelOpticalTriggerGate` and
- * `icarus::trigger::MultiChannelOpticalTriggerGate` do not add any information
- * to the `icarus::trigger::OpticalTriggerGate` they derive from, but they
- * have an interface explicitly tuned for discriminated waveforms from a single
- * channel or from multiple channels, respectively (for example, the former
- * provides a `channel()` method returning a single channel identifier, while
- * the latter provides a `channels()` method returning a list of channels).
+ * Utilities are available to manage the serialization of
+ * `icarus::trigger::TrackedOpticalTriggerGate` objects
+ * (`icaruscode/PMT/Trigger/Utilities/TriggerDataUtils.h`), which is implemented
+ * as a trigger gate collection and a association object
  * 
- * These three higher level classes, `icarus::trigger::OpticalTriggerGate` and
- * derivatives, _can't be directly saved_ in _art_ ROOT files.
  * There are utilities available in
  * `icaruscode/PMT/Trigger/Utilities/TriggerDataUtils.h` that can convert them
  * into a collection of `icarus::trigger::OpticalTriggerGateData_t` objects
  * plus a collection of _art_ associations (for writing), and the other way
- * around (for reading). The module `icarus::trigger::LVDSgates` uses both sides
- * and can be used as an illustration of the functionality.
+ * around (for reading). Additional utilities allow to bridge between
+ * the waveform metadata and their original waveforms
+ * (`icaruscode/PMT/Trigger/Utilities/OpDetWaveformMetaMatcher.h`), which is
+ * needed when a producer utilising the metadata and combining trigger gates
+ * wants to save associations not only of the gates with the metadata,
+ * but also with the original waveforms. The module `icarus::trigger::LVDSgates`
+ * uses all of them and can be used as an illustration of the functionality.
  * 
  * A module is provided, called `icarus::trigger::DumpTriggerGateData`, which
  * dumps on screen or on text file the information from a collection of
@@ -594,14 +601,21 @@ struct icarus::trigger::details::PlotInfoTree: public TreeHolder {
  * primitives `XX`.
  * 
  * * `EffVsEnergyInSpill`: trigger efficiency as function of the total energy
- *   deposited during the beam gate;
+ *   deposited during the beam gate.
  * * `EffVsEnergyInSpillActive`: trigger efficiency as function of the energy
- *   deposited in the TPC active volumes during the beam gate;
+ *   deposited in the TPC active volumes during the beam gate.
  * * `EffVsNeutrinoEnergy`, `EffVsLeptonEnergy`: trigger efficiency as function
  *   of the true energy of the first interacting neutrino, and of the outgoing
- *   lepton in the final state of the interaction, respectively;
- * * `TriggerTick`: time of the earliest trigger. Only triggering events
- *   contribute.
+ *   lepton in the final state of the interaction, respectively.
+ * * `TriggerTick`: time of the earliest trigger, in ticks. Only triggering
+ *   events contribute.
+ * * `TriggerTime`: the time (relative to the nominal beam gate opening) of the
+ *   "main" trigger (the earliest in the triggering window). Only triggering
+ *   events contribute.
+ * * `OpeningTimes`: the time (relative to the nominal beam gate opening) of
+ *   all the times the trigger requirements were satisfied (limited to the
+ *   time interval where the trigger emulation is performed). Only triggering
+ *   events contribute.
  * 
  * The parameters are defined in the same way as in the
  * @ref TriggerEfficiencyPlotsBase_SelectionPlots "selection plots", unless stated
@@ -658,7 +672,12 @@ struct icarus::trigger::details::PlotInfoTree: public TreeHolder {
  * * `EnergyDepositTags`
  *     (list of input tags, default: `[ "largeant:TPCActive" ]`): a list of
  *     data products with energy depositions; if empty, plots or categories
- *     requiring energy deposition information will be omitted;
+ *     requiring energy deposition information will be omitted; in alternative,
+ *     `EnergyDepositSummaryTag` can be specified with the same purpose;
+ * * `EnergyDepositSummaryTag` (input tags, optional): if specified, overrides
+ *     `EnergyDepositTags` and uses for the energy deposition the information
+ *     from the summary in the specified data product; such summary may be
+ *     created for example by `ExtractEnergyDepositionSummary` module;
  * * `BeamGateDuration` (time, _mandatory_): the duration of the beam
  *     gate; _the time requires the unit to be explicitly specified_: use
  *     `"1.6 us"` for BNB, `9.5 us` for NuMI (also available as
@@ -985,6 +1004,11 @@ class icarus::trigger::TriggerEfficiencyPlotsBase {
       std::vector<art::InputTag>{ "largeant:TPCActive" }
       };
 
+    fhicl::OptionalAtom<art::InputTag> EnergyDepositSummaryTag {
+      Name("EnergyDepositSummaryTag"),
+      Comment("label of energy deposition summary data product")
+      };
+
     fhicl::Atom<std::string> TriggerGatesTag {
       Name("TriggerGatesTag"),
       Comment("label of the input trigger gate data product (no instance name)")
@@ -1201,7 +1225,8 @@ class icarus::trigger::TriggerEfficiencyPlotsBase {
   }; // SettingsInfo_t
   
   /// Type of trigger gate extracted from the input event.
-  using InputTriggerGate_t = icarus::trigger::MultiChannelOpticalTriggerGate;
+  using InputTriggerGate_t
+    = icarus::trigger::TrackedOpticalTriggerGate<sbn::OpDetWaveformMeta>;
   
   /// A list of trigger gates from input.
   using TriggerGates_t = std::vector<InputTriggerGate_t>;
@@ -1209,11 +1234,8 @@ class icarus::trigger::TriggerEfficiencyPlotsBase {
   /// Type of lists of gates, one list per cryostat (outer index: cryostat no).
   using TriggerGatesPerCryostat_t = std::vector<TriggerGates_t>;
   
-  /// Type of gate data without channel information.
-  using TriggerGateData_t = InputTriggerGate_t::GateData_t;
-  
   /// Type representing the unique identifier of a optical detector channel.
-  using ChannelID_t = InputTriggerGate_t::ChannelID_t;
+  using ChannelID_t = InputTriggerGate_t::TriggerGate_t::ChannelID_t;
   
   
   /// A collection of useful beam gates. Make one with `makeGatePack()`.
@@ -1376,7 +1398,7 @@ class icarus::trigger::TriggerEfficiencyPlotsBase {
   
   /**
    * @brief Creates a `GatePack_t` from the specified event
-   * @param event the event to extract beam for (if `nullptr`, uses job info(
+   * @param event the event to extract beam for (if `nullptr`, uses job info)
    * @return a set of relevant gates
    * 
    * Use it C++17-fancy!
@@ -1534,6 +1556,11 @@ class icarus::trigger::TriggerEfficiencyPlotsBase {
     (PlotSandbox const& box, std::string const& category)
     { return thrAndCatName(box.name(), category); }
   
+  /// Creates a `EDepTags_t` out of the module configuration.
+  static icarus::trigger::details::EventInfoExtractor::EDepTags_t makeEdepTag(
+    fhicl::Sequence<art::InputTag> const& EnergyDepositTags,
+    fhicl::OptionalAtom<art::InputTag> const& EnergyDepositSummaryTag
+    );
   
 }; // icarus::trigger::TriggerEfficiencyPlotsBase
 

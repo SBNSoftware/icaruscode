@@ -58,7 +58,7 @@ private:
 ana::TPCPurityInfoAna::TPCPurityInfoAna(fhicl::ParameterSet const& p)
   : EDAnalyzer{p}  // ,
   , fPurityInfoLabel(p.get<art::InputTag>("PurityInfoLabel"))
-  , fPrintInfo(p.get<bool>("PrintInfo",true))
+  , fPrintInfo(p.get<bool>("PrintInfo",false))
 {
   consumes< std::vector<anab::TPCPurityInfo> >(fPurityInfoLabel);
 }

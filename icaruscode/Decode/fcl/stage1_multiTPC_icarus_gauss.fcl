@@ -3,19 +3,36 @@
 process_name: stage1
 
 physics.reco: [ flashfilter,
-                @sequence::icarus_reco_Gauss_CryoE ,
-                @sequence::icarus_reco_Gauss_CryoW ] 
+                @sequence::icarus_filter_cluster3D,
+		@sequence::icarus_pandora_Gauss,
+		@sequence::icarus_reco_fm,
+                @sequence::icarus_crthit,
+		@sequence::icarus_crtt0match,
+                caloskimCalorimetryCryoE, caloskimCalorimetryCryoW]
 
-physics.outana:            [ purityinfoana0, purityinfoana1 ]
+physics.outana:            [ caloskimE, caloskimW, simpleLightAna, CRTDataAnalysis]
 physics.trigger_paths:     [ reco ]
 physics.end_paths:         [ outana, stream1 ]
 outputs.out1.fileName:     "%ifb_%tc-%p.root"
 outputs.out1.dataTier:     "reconstructed"
 outputs.out1.SelectEvents: [ reco ]
+outputs.out1.outputCommands: [
+  "keep *_*_*_*",
+  "drop *_caloskimCalorimetryCryoE_*_*",
+  "drop *_caloskimCalorimetryCryoW_*_*"
+]
 
-## Need overrides for the purity monitor
-physics.producers.purityana0.RawModuleLabel:  ["daqTPC:PHYSCRATEDATATPCWW","daqTPC:PHYSCRATEDATATPCWE","daqTPC:PHYSCRATEDATATPCEW","daqTPC:PHYSCRATEDATATPCEE"]
-physics.producers.purityana1.RawModuleLabel:  ["daqTPC:PHYSCRATEDATATPCWW","daqTPC:PHYSCRATEDATATPCWE","daqTPC:PHYSCRATEDATATPCEW","daqTPC:PHYSCRATEDATATPCEE"]
+# Disabled Space-Charge service for calorimetry
+services.SpaceChargeService: {
+    EnableCalEfieldSCE: false
+    EnableCalSpatialSCE: false
+    EnableCorrSCE: false
+    EnableSimEfieldSCE: false
+    EnableSimSpatialSCE: false
+    InputFilename: "SCEoffsets/SCEoffsets_ICARUS_E500_voxelTH3.root"
+    RepresentationType: "Voxelized_TH3"
+    service_provider: "SpaceChargeServiceICARUS"
+}
 
 services.message.destinations :
 {

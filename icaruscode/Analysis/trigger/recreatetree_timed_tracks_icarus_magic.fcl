@@ -1,0 +1,59 @@
+#
+# File:    recreatetree_timed_tracks_icarus_magic.fcl
+# Purpose: Store selected timed tracks with energy estimation and trigger
+#          emulation into flat ROOT trees.
+# Authors: Animesh Chatterjee (ANC238@pitt.edu),
+#          Gianluca Petrillo (petrillo@slac.stanford.edu),
+#          Jacob Zettlemoyer (jzettle@fnal.gov)
+# Date:    July 29, 2022
+#
+# This is a variation of `createtree_timed_tracks_icarus.fcl` intended to be
+# run on the art/ROOT file output of
+# `magic_raw_to_triggeremu_icarus_Run1_data.fcl` job.
+# The main differences compared to running on Stage1 files are that calorimetry
+# is already saved, and dropping the data products can't be based on process
+# name any more.
+# 
+# Here only the trigger emulation is rerun.
+# The emulation window extraction is also rerun (even if it's available from
+# the input tree).
+# If the windowing also needs to be reperformed, the
+# `triggeremu_data_config_icarus.simulationPrepXxxx` sequences needs to be added
+# to the paths `selectionX`. There is not enough information in the input files
+# to rerun the discrimination.
+# Also optical hit information is not saved, so re-reconstructing the optical
+# sector is also not possible.
+#
+
+#include "createtree_timed_tracks_icarus.fcl"
+
+
+# ------------------------------------------------------------------------------
+process_name: TrgEmuAgain
+
+
+# ------------------------------------------------------------------------------
+source.inputCommands: [
+    "keep *"
+  , "drop *_gatesFromTracks*_*_*"
+  , "drop simTiled*_*_*_*", "drop simSliding*_*_*_*"
+]
+
+
+# ------------------------------------------------------------------------------
+physics.analyzers.t0TreeStoreE.CaloProducer: "caloskimCalorimetryCryoE"
+physics.analyzers.t0TreeStoreW.CaloProducer: "caloskimCalorimetryCryoW"
+
+physics.selectionE: [
+  "gatesFromTracksE", @sequence::triggeremu_data_config_icarus.simulationEast
+  ]
+physics.selectionW: [
+  "gatesFromTracksW", @sequence::triggeremu_data_config_icarus.simulationWest
+  ]
+
+physics.trigger_paths: [ selectionE, selectionW ]
+
+
+# ------------------------------------------------------------------------------
+# no need for ROOT output at this time:
+outputs.rootoutput.outputCommands: @erase

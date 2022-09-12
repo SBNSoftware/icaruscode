@@ -59,7 +59,7 @@ physics:
 {
 producers:
 {
-  calorimetry: @local::icarus_calomc
+  calorimetry: @local::icarus_gnewcalomc
 }
 
  #define the producer and filter modules for this path, order matters, 
@@ -93,6 +93,7 @@ outputs:
    outputCommands:  [ "keep *_*_*_*" ]
    compressionLevel: 1
    fastCloning: false
+   saveMemoryObjectThreshold: 0
  }
 }
 

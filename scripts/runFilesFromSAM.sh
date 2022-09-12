@@ -8,6 +8,12 @@
 # Date:   March 2021
 #
 # Changes:
+# 20220720 (petrillo@slac.stanford.edu) [1.4]
+#   added --locate option
+# 20220406 (petrillo@slac.stanford.edu) [1.3]
+#   --max option now only converts that many files
+# 20220126 (petrillo@slac.stanford.edu) [1.2]
+#   added --stream options
 # 20210429 (petrillo@slac.stanford.edu) [1.1]
 #   added --max option
 # 20210411 (petrillo@slac.stanford.edu) [1.0]
@@ -16,20 +22,25 @@
 #
 
 SCRIPTNAME="$(basename "$0")"
-SCRIPTVERSION="1.1"
+SCRIPTVERSION="1.3"
 
 declare -r RawType='raw'
 declare -r DecodeType='decoded'
 declare -r XRootDschema='root'
+declare -r LocateSchema='locate'
 declare -r dCacheLocation='dcache'
 declare -r TapeLocation='enstore'
+declare -r BNBstream='bnb'
+declare -r NuMIstream='numi'
+declare -r AnyStream=''
 
 declare -r DefaultType="$DecodeType"
 declare -r DefaultSchema="$XRootDschema"
 declare -r DefaultLocation="$dCacheLocation"
 declare -r DefaultDecoderStageName="stage0" # used to be 'decoder' up to a certain time
+declare -r DefaultStream="$AnyStream"
 
-declare -r DefaultOutputPattern="%TYPE%-run%RUN%%DASHSCHEMA%%DASHLOCATION%%DASHLIMIT%.filelist"
+declare -r DefaultOutputPattern="%TYPE%-run%RUN%%DASHSTREAM%%DASHSCHEMA%%DASHLOCATION%%DASHLIMIT%.filelist"
 
 # ------------------------------------------------------------------------------
 function isFlagSet() {
@@ -51,6 +62,7 @@ function DBG() { DBGN 1 "$*" ; }
 
 function STDERR() { echo "$*" >&2 ; }
 
+function ERROR() { STDERR "ERROR: $*" ; }
 function WARN() { STDERR "WARNING: $*" ; }
 function INFO() { isFlagSet DoQuiet || STDERR "$*" ; }
 
@@ -87,11 +99,20 @@ Options:
     if the stage is explicitly selected, it is used as constraint in SAM query
 --schema=<${XRootDschema}|...>  [${DefaultSchema}]
 --xrootd , --root , -X
-    select the type of URL (XRootD, ...)
+--locate
+    select the type of URL (XRootD, ...); the option \`--locate\` and the
+    special schema value <${LocateSchema}> will cause the query to be done via
+    SAM \`locate-file\` command instead of the default \`get-file-access-url\`
 --location=<${dCacheLocation}|${TapeLocation}>  [${DefaultLocation}]
 --tape , --enstore , -T
 --disk , --dcache , -C
-    select the storage type
+    select the storage type (no effect for \`locate\` schema)
+--stream=<${BNBstream}|${NuMIstream}|...>  [${DefaultStream}]
+--bnb
+--numi
+--allstreams
+    select the stream (if empty, all streams are included)
+
 
 --output=OUTPUTFILE
     use OUTPUTFILE for all output file lists
@@ -102,6 +123,7 @@ Options:
 --outputpattern=PATTERN  [${DefaultOutputPattern}]
     use PATTERN for the standard output file list (see option \`-O\` above);
     the following tags in PATTERN are replaced: \`%RUN%\` by the run number;
+    \`%STREAM%\` by the name of the data stream/beam;
     \`%SCHEMA%\` by the URL schema; \`%LOCATION%\` by the storage location;
     \`%TYPE%\` by the file content type; \`%LIMIT%\` by the number of requested
     entry, only if \`--max\` option is specified;
@@ -109,8 +131,10 @@ Options:
     by a dash (\`-\`) and the value of the tag only if the content of that tag
     is not empty
 --max=LIMIT
-    retrieves only the first LIMIT files from SAM (only when querying run numbers)
-
+    retrieves only the first LIMIT files from SAM (only when querying run numbers);
+    in all cases, it translates only LIMIT files into a location; 0 means no limit
+--experiment=NAME
+    experiment name (and SAM station) passed to SAM
 --quiet , -q
     do not print non-fatal information on screen while running
 --debug[=LEVEL]
@@ -195,7 +219,7 @@ function BuildOutputFilePath() {
   
   local -A Replacements
   local VarName VarValue
-  for VarName in Run Type Schema Location Limit ; do
+  for VarName in Run Stream Type Schema Location Limit ; do
     VarValue="${!VarName}"
     Replacements["${VarName^^}"]="$VarValue"
     Replacements["DASH${VarName^^}"]="${VarValue:+"-${VarValue}"}"
@@ -211,7 +235,7 @@ function BuildOutputFilePath() {
 
 # ------------------------------------------------------------------------------
 function RunSAM() {
-  local -a Cmd=( 'samweb' "$@" )
+  local -a Cmd=( 'samweb' ${Experiment:+--experiment="$Experiment"} "$@" )
   
   DBG "${Cmd[@]}"
   "${Cmd[@]}"
@@ -220,14 +244,35 @@ function RunSAM() {
 
 
 # ------------------------------------------------------------------------------
+function getFileAccessURL() {
+  local FileName="$1"
+  local Schema="$2"
+  local Location="$3"
+
+  RunSAM get-file-access-url ${Schema:+"--schema=${Schema}"} ${Location:+"--location=${Location}"} "$FileName"
+  
+} # getFileAccessURL()
+
+
+# ------------------------------------------------------------------------------
+function locateFile() {
+  local FileName="$1"
+
+  RunSAM locate-file "$FileName"
+  
+} # locateFile()
+
+
+# ------------------------------------------------------------------------------
 declare -a Specs
 declare -i UseDefaultOutputFile=0 DoQuiet=0
-declare OutputFile
+declare OutputFile Experiment
 declare Type="$DefaultType"
 declare Schema="$DefaultSchema"
 declare Location="$DefaultLocation"
+declare Stream="$DefaultStream"
 declare OutputPattern="$DefaultOutputPattern"
-declare EntryLimit=''
+declare EntryLimit=0 # 0 = no limits'
 declare -i iParam
 for (( iParam=1 ; iParam <= $# ; ++iParam )); do
   Param="${!iParam}"
@@ -240,16 +285,24 @@ for (( iParam=1 ; iParam <= $# ; ++iParam )); do
       
       ( '--schema='* | '--scheme='* )     Schema="${Param#--*=}" ;;
       ( '--xrootd' | '--XRootD' | '--root' | '--ROOT' | '-X' ) Schema="$XRootDschema" ;;
+      ( '--locate' )                      Schema="$LocateSchema" ;;
       
       ( '--loc='* | '--location='* )      Location="${Param#--*=}" ;;
       ( '--dcache' | '--dCache' | '-C' )  Location="$dCacheLocation" ;;
       ( '--tape' | '--enstore' | '-T' )   Location="$TapeLocation" ;;
+      
+      
+      ( '--stream='* )                    Stream="${Param#--*=}" ;;
+      ( '--bnb' | '--BNB' )               Stream="$BNBstream" ;;
+      ( '--numi' | '--NuMI' | '--NUMI' )  Stream="$NuMIstream" ;;
+      ( '--allstreams' )                  Stream="$AnyStream" ;;
       
       ( "--output="* )                    OutputFile="${Param#--*=}" ;;
       ( "--outputpattern="* )             OutputPattern="${Param#--*=}" ;;
       ( "--outputdir="* )                 OutputDir="${Param#--*=}" ;;
       ( "-O" )                            UseDefaultOutputFile=1 ;;
       ( "--max="* | "--limit="* )         EntryLimit="${Param#--*=}" ;;
+      ( "--experiment="* )                Experiment="${Param#--*=}" ;;
       
       ( '--debug' )                       DEBUG=1 ;;
       ( '--debug='* )                     DEBUG="${Param#--*=}" ;;
@@ -288,7 +341,7 @@ fi
 
 trap Cleanup EXIT
 
-[[ "${EntryLimit:-0}" -gt 0 ]] && Limit="max${EntryLimit}"
+[[ "$EntryLimit" -gt 0 ]] && Limit="max${EntryLimit}"
 
 declare Constraints=''
 case "${Type,,}" in
@@ -304,7 +357,8 @@ case "${Type,,}" in
 #   echo "Type '${Type}' not supported!" >&2
 #   exit 1
 esac
-[[ "${EntryLimit:-0}" -gt 0 ]] && Constraints+=" with limit ${EntryLimit}"
+[[ -n "$Stream" ]] && Constraints+=" and sbn_dm.beam_type=${Stream}"
+[[ "$EntryLimit" -gt 0 ]] && Constraints+=" with limit ${EntryLimit}"
 
 
 declare -i nErrors=0
@@ -355,8 +409,16 @@ for Spec in "${Specs[@]}" ; do
   declare -a FileURL
   INFO "${JobTag}: ${nFiles} files${OutputFile:+" => '${OutputFile}'"}"
   while read FileName ; do
+    [[ "$EntryLimit" -gt 0 ]] && [[ $iFile -ge "$EntryLimit" ]] && INFO "Limit of ${EntryLimit} reached." && break
     INFO "[$((++iFile))/${nFiles}] '${FileName}'"
-    FileURL=( $(RunSAM get-file-access-url ${Schema:+"--schema=${Schema}"} ${Location:+"--location=${Location}"} "$FileName") )
+    case "$Schema" in
+      ( "$LocateSchema" )
+        FileURL=( $(locateFile "$FileName" ) )
+        ;;
+      ( * )
+        FileURL=( $(getFileAccessURL "$FileName" "$Schema" "$Location" ) )
+        ;;
+    esac
     LASTFATAL "getting file '${FileName}' location from SAM."
     [[ "${#FileURL[@]}" == 0 ]] && FATAL 2 "failed getting file '${FileName}' location from SAM."
     [[ "${#FileURL[@]}" -gt 1 ]] && WARN "File '${FileName}' matched ${#FileURL[@]} locations (only the first one included):$(printf -- "\n- '%s'" "${FileURL[@]}")"

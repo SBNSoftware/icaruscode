@@ -35,13 +35,23 @@ physics:
 
  filters:
  {
-     @table::icarus_reco_filters
+     @table::icarus_stage0_filters
+ }
+
+ analyzers:
+ {
+     @table::icarus_stage0_analyzers
  }
 
  #reco sequence and trigger_paths to be defined elsewhere
 
- stream1:  [ out1 ]
- end_paths:     [stream1]
+ streamCommon:         [ outCommon ]
+ streamBNB:            [ outBNB ]
+ streamNUMI:           [ outNUMI ]
+ streamOffbeamBNB:     [ outOffbeamBNB ]
+ streamOffbeamNUMI:    [ outOffbeamNUMI ]
+ streamUnknown:        [ outUnknown ]
+ end_paths:            [ streamBNB ]
 
 }
 
@@ -50,7 +60,45 @@ physics:
 #entry in the output stream you want those to go to, where XXX is the label of the filter module(s)
 outputs:
 {
- out1:
+ outCommon:
+ {
+   module_type: RootOutput
+   dataTier: "reconstructed"
+   compressionLevel: 1
+   saveMemoryObjectThreshold: 0
+   fileName: "%ifb_%tc-%p.root"
+   fileProperties: {maxInputFiles: 1}
+   checkFileName: false
+ }
+ outBNB:
+ {
+   module_type: RootOutput
+   dataTier: "reconstructed"
+   compressionLevel: 1
+   saveMemoryObjectThreshold: 0
+ }
+ outNUMI:
+ {
+   module_type: RootOutput
+   dataTier: "reconstructed"
+   compressionLevel: 1
+   saveMemoryObjectThreshold: 0
+ }
+ outOffbeamBNB:
+ {
+   module_type: RootOutput
+   dataTier: "reconstructed"
+   compressionLevel: 1
+   saveMemoryObjectThreshold: 0
+ }
+ outOffbeamNUMI:
+ {
+   module_type: RootOutput
+   dataTier: "reconstructed"
+   compressionLevel: 1
+   saveMemoryObjectThreshold: 0
+ }
+ outUnknown:
  {
    module_type: RootOutput
    dataTier: "reconstructed"
@@ -60,7 +108,7 @@ outputs:
 }
 
 # Include this as per directive of Kazu and Andrea (circa March 25, 2021) for introduction of the filter
-services.DetectorClocksService.InheritClockConfig: false
+#services.DetectorClocksService.InheritClockConfig: false
 
 ### Here we try to suppress known and pointless messages
 ### See https://cdcvs.fnal.gov/redmine/projects/messagefacility/wiki for details

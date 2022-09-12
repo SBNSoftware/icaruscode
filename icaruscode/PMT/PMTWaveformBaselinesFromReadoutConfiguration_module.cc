@@ -14,6 +14,7 @@
 
 // LArSoft libraries
 #include "larcore/Geometry/Geometry.h"
+#include "larcore/CoreUtils/ServiceUtil.h" // lar::providerFrom()
 #include "lardataobj/RawData/OpDetWaveform.h"
 #include "larcorealg/Geometry/GeometryCore.h"
 #include "larcorealg/CoreUtils/enumerate.h"
@@ -23,6 +24,7 @@
 #include "art/Framework/Core/ModuleMacros.h"
 #include "art/Framework/Core/EDProducer.h"
 #include "art/Framework/Principal/Event.h"
+#include "art/Framework/Principal/Run.h"
 #include "art/Framework/Principal/Handle.h"
 #include "art/Persistency/Common/PtrMaker.h"
 #include "canvas/Persistency/Common/Assns.h"
@@ -87,6 +89,15 @@ namespace icarus { class PMTWaveformBaselinesFromReadoutConfiguration; }
  * * `std::vector<raw::OpDetWaveform>`: a single waveform for each recorded
  *      optical detector activity; the activity belongs to a single channel, but
  *      there may be multiple waveforms on the same channel.
+ * 
+ * @note This module needs only the information of the channel of each waveform;
+ *       because _art_ is not capable of selective readout, though, the whole
+ *       optical detector readout data is loaded. When this module is the first
+ *       one in the job accessing the PMT waveforms, the data loading time is
+ *       accounted to it; the time the module needs to perform its specific
+ *       operations is tiny in comparison. Anyway, since it is likely that
+ *       another module in the job will then use PMT waveform data, this loading
+ *       time is not wasted.
  * 
  * 
  * Service requirements
@@ -323,7 +334,7 @@ void icarus::PMTWaveformBaselinesFromReadoutConfiguration::beginRun
   (art::Run& run)
 {
   auto const& PMTconfig
-    = run.getByLabel<sbn::PMTconfiguration>(fPMTconfigurationTag);
+    = run.getProduct<sbn::PMTconfiguration>(fPMTconfigurationTag);
   
   std::vector<Baseline_t> newBaselines;
   std::tie(fConfigured, newBaselines)

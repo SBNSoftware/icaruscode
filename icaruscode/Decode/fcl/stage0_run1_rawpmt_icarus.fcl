@@ -1,0 +1,25 @@
+###
+## This fhicl file is used to run "stage0" processing specifically for the case where all
+## TPC data is included in an artdaq data product from a single instance
+## 
+## It drops TPC raw digits but not the PMT ones.
+##
+#include "stage0_icarus_driver_common.fcl"
+
+process_name: stage0
+
+## Define the paths we'll execute depending on data
+#physics.pathOptical: [ @sequence::icarus_stage0_pmt ]
+physics.path:         [ @sequence::icarus_stage0_data ]
+
+## boiler plate...
+physics.outana:        [ purityinfoana0, purityinfoana1 ]
+physics.trigger_paths: [ path ]
+physics.end_paths:     [ outana, streamCommon ]
+
+# Drop the artdaq format files on output
+outputs.outCommon.outputCommands:         ["keep *_*_*_*", "drop *_*_*_DAQ*", "drop *_daqTPCROI_*_*", "drop *_decon1droi_*_*", "drop *_decon1DroiTPC*_*_*" ]
+
+## Modify the event selection for the purity analyzers
+physics.analyzers.purityinfoana0.SelectEvents:    [ path ]
+physics.analyzers.purityinfoana1.SelectEvents:    [ path ]

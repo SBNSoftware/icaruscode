@@ -13,6 +13,7 @@
 #include "lardataobj/RecoBase/Cluster.h"
 #include "lardata/DetectorInfoServices/DetectorClocksService.h"
 #include "larcore/Geometry/Geometry.h"
+#include "larcore/CoreUtils/ServiceUtil.h" // lar::providerFrom()
 #include "larcorealg/Geometry/GeometryCore.h"
 #include "larcorealg/Geometry/AuxDetGeometryCore.h"
 #include "larcoreobj/SimpleTypesAndConstants/geo_types.h"
@@ -1384,8 +1385,10 @@ namespace crt {
             fSimTrackHitEnd[1] = trkhits[ihit_end]->y_pos;
             fSimTrackHitEnd[2] = trkhits[ihit_end]->z_pos;
             fSimTrackHitEnd[3] = tend-1.6e6;
-            fSimTrackRegStart = fCrtutils->AuxDetRegionNameToNum(trkhits[ihit_start]->tagger);
-            fSimTrackRegEnd   = fCrtutils->AuxDetRegionNameToNum(trkhits[ihit_end]->tagger);
+            //fSimTrackRegStart = fCrtutils->AuxDetRegionNameToNum(trkhits[ihit_start]->tagger);
+            //fSimTrackRegEnd   = fCrtutils->AuxDetRegionNameToNum(trkhits[ihit_end]->tagger);
+	    fSimTrackRegStart = trk->plane1;
+            fSimTrackRegEnd   = trk->plane2;
             
             fSimTrackNtuple->Fill();
         }

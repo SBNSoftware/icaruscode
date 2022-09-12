@@ -1,0 +1,35 @@
+#include "services_common_icarus.fcl"
+#include "channelmapping_icarus.fcl"
+
+#include "correctionservices_icarus.fcl"
+#include "seedservice.fcl"
+
+#include "cafmaker_defs.fcl"
+
+process_name: CAFmaker
+
+services:
+{
+  @table::icarus_wirecalibration_minimum_services
+
+  SpaceChargeService: @local::icarus_spacecharge
+  NuRandomService: @local::per_event_NuRandomService
+}
+
+physics:
+{
+ 
+  producers: {
+    @table::caf_preprocess_data_producers
+  }
+
+  runprod: [ @sequence::caf_preprocess_data_sequence, cafmaker]
+  trigger_paths: [ runprod ] 
+}
+
+physics.producers.cafmaker.G4Label: ""
+physics.producers.cafmaker.GenLabel: ""
+physics.producers.cafmaker.SimChannelLabel: ""
+physics.producers.cafmaker.SystWeightLabels: []
+
+#include "icarus_data_recombination.fcl"

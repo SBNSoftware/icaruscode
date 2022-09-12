@@ -28,6 +28,7 @@
 #include "art/Framework/Services/Registry/ServiceHandle.h"
 #include "art_root_io/TFileService.h"
 #include "art/Framework/Core/ModuleMacros.h"
+#include "art/Utilities/Globals.h"
 #include "art/Utilities/make_tool.h"
 #include "canvas/Persistency/Common/Ptr.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
@@ -42,10 +43,13 @@
 #include "larcore/Geometry/Geometry.h"
 #include "lardata/DetectorInfoServices/DetectorClocksService.h"
 #include "lardataobj/RawData/RawDigit.h"
+#include "icaruscode/IcarusObj/ChannelROI.h"
+#include "icaruscode/TPC/Utilities/ChannelROICreator.h"
 
 #include "sbndaq-artdaq-core/Overlays/ICARUS/PhysCrateFragment.hh"
 
-#include "icaruscode/Decode/DecoderTools/IDecoderFilter.h"
+#include "icaruscode/Utilities/ArtHandleTrackerManager.h"
+#include "icaruscode/Decode/DecoderTools/INoiseFilter.h"
 #include "icaruscode/Decode/ChannelMapping/IICARUSChannelMap.h"
 
 #include "icarus_signal_processing/ICARUSSigProcDefs.h"
@@ -75,9 +79,12 @@ public:
     virtual void endJob(art::ProcessingFrame const& frame);
 
     // Define the RawDigit collection
-    using RawDigitCollection    = std::vector<raw::RawDigit>;
-    using RawDigitCollectionPtr = std::unique_ptr<RawDigitCollection>;
-    using ConcurrentRawDigitCol = tbb::concurrent_vector<raw::RawDigit>;
+    using RawDigitCollection      = std::vector<raw::RawDigit>;
+    using RawDigitCollectionPtr   = std::unique_ptr<RawDigitCollection>;
+    using ChannelROICollection    = std::vector<recob::ChannelROI>;
+    using ChannelROICollectionPtr = std::unique_ptr<ChannelROICollection>;
+    using ConcurrentRawDigitCol   = tbb::concurrent_vector<raw::RawDigit>;
+    using ConcurrentChannelROICol = tbb::concurrent_vector<recob::ChannelROI>;
 
     // Define data structures for organizing the decoded fragments
     // The idea is to form complete "images" organized by "logical" TPC. Here we are including
@@ -91,7 +98,7 @@ public:
     using PlaneIdxToChannelPair = std::pair<unsigned int,ChannelVec>;
     using PlaneIdxToChannelMap  = std::map<unsigned int,ChannelVec>;
 
-    using ChannelArrayPair      = std::pair<ChannelVec,icarus_signal_processing::ArrayFloat>;
+    using ChannelArrayPair      = std::pair<daq::INoiseFilter::ChannelPlaneVec,icarus_signal_processing::ArrayFloat>;
     using ChannelArrayPairVec   = std::vector<ChannelArrayPair>;
 
 
@@ -99,71 +106,44 @@ public:
     void processSingleFragment(size_t,
                                detinfo::DetectorClocksData const& clockData,
                                art::Handle<artdaq::Fragments>, 
-                               ChannelArrayPairVec&) const;
-
-    // Function to do the work
-    void processSingleImage(size_t,
-                            const detinfo::DetectorClocksData&,
-                            const ChannelArrayPairVec&,
-                            ConcurrentRawDigitCol&,
-                            ConcurrentRawDigitCol&,
-                            ConcurrentRawDigitCol&) const;
+                               ConcurrentRawDigitCol&,
+                               ConcurrentRawDigitCol&,
+                               ConcurrentRawDigitCol&,
+                               ConcurrentChannelROICol&) const;
 
 private:
     class multiThreadFragmentProcessing
     {
     public:
-        multiThreadFragmentProcessing(DaqDecoderICARUSTPCwROI const&     parent,
-                                      detinfo::DetectorClocksData const& clockData,
-                                      art::Handle<artdaq::Fragments>&    fragmentsHandle,
-                                      ChannelArrayPairVec&               channelArrayPairVec)
+        multiThreadFragmentProcessing(DaqDecoderICARUSTPCwROI const&        parent,
+                                      detinfo::DetectorClocksData const&    clockData,
+                                      art::Handle<artdaq::Fragments> const& fragmentsHandle,
+                                      ConcurrentRawDigitCol&                concurrentRawRawDigits,
+                                      ConcurrentRawDigitCol&                concurrentRawDigits,
+                                      ConcurrentRawDigitCol&                coherentRawDigits,
+                                      ConcurrentChannelROICol&              concurrentROIs)
             : fDaqDecoderICARUSTPCwROI(parent),
               fClockData{clockData},
               fFragmentsHandle(fragmentsHandle),
-              fChannelArrayPairVec(channelArrayPairVec)
-        {}
-
-        void operator()(const tbb::blocked_range<size_t>& range) const
-        {
-            for (size_t idx = range.begin(); idx < range.end(); idx++)
-              fDaqDecoderICARUSTPCwROI.processSingleFragment(idx, fClockData, fFragmentsHandle, fChannelArrayPairVec);
-        }
-    private:
-        const DaqDecoderICARUSTPCwROI&     fDaqDecoderICARUSTPCwROI;
-        detinfo::DetectorClocksData const& fClockData;
-        art::Handle<artdaq::Fragments>&    fFragmentsHandle;
-        ChannelArrayPairVec&               fChannelArrayPairVec;
-    };
-
-    class multiThreadImageProcessing
-    {
-    public:
-        multiThreadImageProcessing(DaqDecoderICARUSTPCwROI     const& parent,
-                                   detinfo::DetectorClocksData const& clockData,
-                                   ChannelArrayPairVec         const& channelArrayPairVec,
-                                   ConcurrentRawDigitCol&             concurrentRawDigits,
-                                   ConcurrentRawDigitCol&             concurrentRawRawDigits,
-                                   ConcurrentRawDigitCol&             coherentRawDigits)
-            : fDaqDecoderICARUSTPCwROI(parent),
-              fClockData{clockData},
-              fChannelArrayPairVec(channelArrayPairVec),
-              fConcurrentRawDigits(concurrentRawDigits),
               fConcurrentRawRawDigits(concurrentRawRawDigits),
-              fCoherentRawDigits(coherentRawDigits)
+              fConcurrentRawDigits(concurrentRawDigits),
+              fCoherentRawDigits(coherentRawDigits),
+              fConcurrentROIs(concurrentROIs)
         {}
 
         void operator()(const tbb::blocked_range<size_t>& range) const
         {
             for (size_t idx = range.begin(); idx < range.end(); idx++)
-              fDaqDecoderICARUSTPCwROI.processSingleImage(idx, fClockData, fChannelArrayPairVec, fConcurrentRawDigits, fConcurrentRawRawDigits, fCoherentRawDigits);
+              fDaqDecoderICARUSTPCwROI.processSingleFragment(idx, fClockData, fFragmentsHandle, fConcurrentRawRawDigits, fConcurrentRawDigits, fCoherentRawDigits, fConcurrentROIs);
         }
     private:
-        const DaqDecoderICARUSTPCwROI&     fDaqDecoderICARUSTPCwROI;
-        const detinfo::DetectorClocksData& fClockData;
-        const ChannelArrayPairVec&         fChannelArrayPairVec;
-        ConcurrentRawDigitCol&             fConcurrentRawDigits;
-        ConcurrentRawDigitCol&             fConcurrentRawRawDigits;
-        ConcurrentRawDigitCol&             fCoherentRawDigits;
+        const DaqDecoderICARUSTPCwROI&        fDaqDecoderICARUSTPCwROI;
+        detinfo::DetectorClocksData const&    fClockData;
+        art::Handle<artdaq::Fragments> const& fFragmentsHandle;
+        ConcurrentRawDigitCol&                fConcurrentRawRawDigits;
+        ConcurrentRawDigitCol&                fConcurrentRawDigits;
+        ConcurrentRawDigitCol&                fCoherentRawDigits;
+        ConcurrentChannelROICol&              fConcurrentROIs;
     };
 
     // Function to save our RawDigits
@@ -180,36 +160,12 @@ private:
     std::string                                                 fOutputRawWavePath;          ///< Path to assign to the output if asked for
     std::string                                                 fOutputCoherentPath;         ///< Path to assign to the output if asked for
     bool                                                        fDiagnosticOutput;           ///< Set this to get lots of messages
+    float                                                       fSigmaForTruncation;         ///< Cut for truncated rms calc
+    size_t                                                      fCoherentNoiseGrouping;      ///< Grouping for removing coherent noise
 
-    // fhicl parameters
-    std::vector<size_t>                                         fStructuringElement;         ///< Structuring element for morphological filter
-    std::vector<float>                                          fThreshold;                  ///< Threshold to apply for saving signal
-
-    // Start with parameters for Butterworth Filter
-    unsigned int                                                fButterworthOrder;           ///< Order parameter for Butterworth filter
-    unsigned int                                                fButterworthThreshold;       ///< Threshold for Butterworth filter
-
-    // Parameters for the 2D morphological filter
-    unsigned int                                                fMorph2DStructuringElementX; ///< Structuring element in X
-    unsigned int                                                fMorph2DStructuringElementY; ///< Structuring element in Y
-
-    // Parameters for the denoiser
-    unsigned int                                                fCoherentNoiseGrouping;      ///< Number of consecutive channels in coherent noise subtraction
-    unsigned int                                                fCoherentNoiseOffset;        ///< Offset for the midplane...
-    unsigned int                                                fMorphologicalWindow;        ///< Window size for filter
-    bool                                                        fOutputStats;                ///< Output of timiing statistics?
-    float                                                       fCoherentThresholdFactor;    ///< Threshold factor for coherent noise removal
-
-    // Parameters for the ROI finding
-    unsigned int                                                fADFilter_SX;                ///< 
-    unsigned int                                                fADFilter_SY;                ///< 
-    float                                                       fSigma_x;                    ///<
-    float                                                       fSigma_y;                    ///<
-    float                                                       fSigma_r;                    ///<
-    float                                                       fLowThreshold;               ///<
-    float                                                       fHighThreshold;              ///<
-    unsigned int                                                fBinaryDilation_SX;          ///<
-    unsigned int                                                fBinaryDilation_SY;          ///<
+    bool fDropRawDataAfterUse;   ///< Clear fragment data product cache after use.
+  
+    const std::string                                           fLogCategory;                ///< Output category when logging messages
 
     // We need to give to the denoiser the "threshold vector" we will fill during our data loop
     icarus_signal_processing::VectorFloat  fThresholdVec;  ///< "threshold vector" filled during decoding loop
@@ -227,13 +183,8 @@ private:
     ROPToNumWiresMap                                            fROPToNumWiresMap;
     unsigned int                                                fNumROPs;
 
-    // Our functions
-    std::unique_ptr<icarus_signal_processing::HighPassButterworthFilter> fButterworthFilter;
-    std::unique_ptr<icarus_signal_processing::IMorphologicalFunctions2D> fMorphologicalFilter;
-    std::unique_ptr<icarus_signal_processing::IDenoiser2D>               fDenoiser2D;
-    std::unique_ptr<icarus_signal_processing::BilateralFilters>          fBilateralFilters;
-    std::unique_ptr<icarus_signal_processing::EdgeDetection>             fEdgeDetection;
-    std::unique_ptr<icarus_signal_processing::IROIFinder2D>              fROIFinder2D;
+    // Tools for decoding fragments depending on type
+    std::vector<std::unique_ptr<INoiseFilter>>                  fDecoderToolVec;       ///< Decoder tools
 
     // Useful services, keep copies for now (we can update during begin run periods)
     geo::GeometryCore const*                                    fGeometry;             ///< pointer to Geometry service
@@ -251,7 +202,7 @@ DEFINE_ART_MODULE(DaqDecoderICARUSTPCwROI)
 ///
 DaqDecoderICARUSTPCwROI::DaqDecoderICARUSTPCwROI(fhicl::ParameterSet const & pset, art::ProcessingFrame const& frame) :
                           art::ReplicatedProducer(pset, frame),
-                          fNumEvent(0), fNumROPs(0)
+                          fLogCategory("DaqDecoderICARUSTPCwROI"),fNumEvent(0), fNumROPs(0)
 {
     fGeometry   = art::ServiceHandle<geo::Geometry const>{}.get();
     fChannelMap = art::ServiceHandle<icarusDB::IICARUSChannelMap const>{}.get();
@@ -259,16 +210,28 @@ DaqDecoderICARUSTPCwROI::DaqDecoderICARUSTPCwROI(fhicl::ParameterSet const & pse
     configure(pset);
 
     // Check the concurrency 
-    int max_concurrency = tbb::this_task_arena::max_concurrency();
+    int max_concurrency = art::Globals::instance()->nthreads(); 
 
     mf::LogDebug("DaqDecoderICARUSTPCwROI") << "     ==> concurrency: " << max_concurrency << std::endl;
 
-    // Set up our "produces" 
+    // Recover the vector of fhicl parameters for the ROI tools
+    const fhicl::ParameterSet& decoderToolParams = pset.get<fhicl::ParameterSet>("DecoderTool");
+    
+    fDecoderToolVec.resize(max_concurrency);
+   
+    for(auto& decoderTool : fDecoderToolVec)
+    {
+        // Get instance of tool
+        decoderTool = art::make_tool<INoiseFilter>(decoderToolParams);
+    }
+
+    // Set up our "producers" 
     // Note that we can have multiple instances input to the module
     // Our convention will be to create a similar number of outputs with the same instance names
     for(const auto& fragmentLabel : fFragmentsLabelVec)
     {
         produces<std::vector<raw::RawDigit>>(fragmentLabel.instance());
+        produces<std::vector<recob::ChannelROI>>(fragmentLabel.instance());
 
         if (fOutputRawWaveform)
             produces<std::vector<raw::RawDigit>>(fragmentLabel.instance() + fOutputRawWavePath);
@@ -278,6 +241,8 @@ DaqDecoderICARUSTPCwROI::DaqDecoderICARUSTPCwROI(fhicl::ParameterSet const & pse
     }
 
     // Set up a WireID to ROP plane number table
+    PlaneToWireOffsetMap planeToLastWireOffsetMap; 
+
     for(size_t cryoIdx = 0; cryoIdx < 2; cryoIdx++)
     {
         for(size_t logicalTPCIdx = 0; logicalTPCIdx < 4; logicalTPCIdx++)
@@ -290,12 +255,10 @@ DaqDecoderICARUSTPCwROI::DaqDecoderICARUSTPCwROI(fhicl::ParameterSet const & pse
 
                 readout::ROPID ropID = fGeometry->ChannelToROP(channel);
 
-                fPlaneToROPPlaneMap[planeID]   = ropID.ROP;
-                fPlaneToWireOffsetMap[planeID] = channel;
-                fROPToNumWiresMap[ropID.ROP]   = fGeometry->Nwires(planeID);
-
-                // Special case handling
-                if (ropID.ROP > 1) fROPToNumWiresMap[ropID.ROP] *= 2;
+                fPlaneToROPPlaneMap[planeID]      = ropID.ROP;
+                fPlaneToWireOffsetMap[planeID]    = channel;
+                planeToLastWireOffsetMap[planeID] = fGeometry->PlaneWireToChannel(planeID.Plane, fGeometry->Nwires(planeID), planeID.TPC, planeID.Cryostat);
+                fROPToNumWiresMap[ropID.ROP]      = fGeometry->Nwires(planeID);
 
                 if (ropID.ROP > fNumROPs) fNumROPs = ropID.ROP;
 
@@ -305,10 +268,11 @@ DaqDecoderICARUSTPCwROI::DaqDecoderICARUSTPCwROI(fhicl::ParameterSet const & pse
                     geo::PlaneID tempID(cryoIdx,logicalTPCIdx-1,planeIdx);
 
                     fPlaneToWireOffsetMap[planeID] = fPlaneToWireOffsetMap[tempID];
+                    fROPToNumWiresMap[ropID.ROP]   = planeToLastWireOffsetMap[planeID] - fPlaneToWireOffsetMap[planeID];
                 }
 
                 // Diagnostic output if requested
-                if (fDiagnosticOutput) std::cout << "Initializing C/T/P: " << planeID.Cryostat << "/" << planeID.TPC << "/" << planeID.Plane << ", base channel: " << fPlaneToWireOffsetMap[planeID] << ", ROP: " << ropID << ", index: " << ropID.ROP << std::endl;
+                mf::LogDebug(fLogCategory) << "Initializing C/T/P: " << planeID.Cryostat << "/" << planeID.TPC << "/" << planeID.Plane << ", base channel: " << fPlaneToWireOffsetMap[planeID] << ", ROP: " << ropID << ", index: " << ropID.ROP;
 
             }
         }
@@ -334,65 +298,15 @@ DaqDecoderICARUSTPCwROI::~DaqDecoderICARUSTPCwROI()
 ///
 void DaqDecoderICARUSTPCwROI::configure(fhicl::ParameterSet const & pset)
 {
-    fFragmentsLabelVec          = pset.get<std::vector<art::InputTag>>("FragmentsLabelVec",  std::vector<art::InputTag>()={"daq:PHYSCRATEDATA"});
-    fOutputRawWaveform          = pset.get<bool                      >("OutputRawWaveform",                                               false);
-    fOutputCorrection           = pset.get<bool                      >("OutputCorrection",                                                false);
-    fOutputRawWavePath          = pset.get<std::string               >("OutputRawWavePath",                                               "raw");
-    fOutputCoherentPath         = pset.get<std::string               >("OutputCoherentPath",                                              "Cor");
-    fDiagnosticOutput           = pset.get<bool                      >("DiagnosticOutput",                                                false);
-
-    // Recover parameters for noise/ROI
-    fStructuringElement         = pset.get<std::vector<size_t>       >("StructuringElement",                       std::vector<size_t>()={8,16});
-    fThreshold                  = pset.get<std::vector<float>        >("Threshold",                       std::vector<float>()={2.75,2.75,2.75});
-
-    fButterworthOrder           = pset.get<unsigned int              >("ButterworthOrder",     2);
-    fButterworthThreshold       = pset.get<unsigned int              >("ButterworthThreshld", 30);
-
-    fButterworthFilter = std::make_unique<icarus_signal_processing::HighPassButterworthFilter>(fButterworthThreshold,fButterworthOrder,4096);
-
-    fMorph2DStructuringElementX = pset.get<unsigned int              >("Morph2DStructuringElementX", 7);
-    fMorph2DStructuringElementY = pset.get<unsigned int              >("Morph2DStructuringElementX", 28);
-
-    fMorphologicalFilter = std::make_unique<icarus_signal_processing::Dilation2D>(fMorph2DStructuringElementX,fMorph2DStructuringElementY);
-
-    fCoherentNoiseGrouping      = pset.get<unsigned int              >("CoherentNoiseGrouping",    32);
-    fCoherentNoiseOffset        = pset.get<unsigned int              >("CoherentNoiseOffset",      24);
-    fMorphologicalWindow        = pset.get<unsigned int              >("MorphologicalWindow",      10);
-    fCoherentThresholdFactor    = pset.get<float                     >("CoherentThresholdFactor", 2.5);
-
-    fThresholdVec.resize(6560/fCoherentNoiseGrouping,fCoherentThresholdFactor);
-
-    fDenoiser2D = std::make_unique<icarus_signal_processing::Denoiser2D_Hough>(fMorphologicalFilter.get(), fThresholdVec, fCoherentNoiseGrouping, fCoherentNoiseOffset, fMorphologicalWindow);
-
-    fADFilter_SX                = pset.get<unsigned int              >("ADFilter_SX",         7);
-    fADFilter_SY                = pset.get<unsigned int              >("ADFilter_SY",         7);
-    fSigma_x                    = pset.get<float                     >("Sigma_x",          10.0);
-    fSigma_y                    = pset.get<float                     >("Sigma_y",          10.0);
-    fSigma_r                    = pset.get<float                     >("Sigma_r",          30.0);
-                   
-    fLowThreshold               = pset.get<float                     >("LowThreshold",     10.0);
-    fHighThreshold              = pset.get<float                     >("HighThreshold",    20.0); 
-                   
-    fBinaryDilation_SX          = pset.get<unsigned int              >("BinaryDilation_SX",  31);
-    fBinaryDilation_SY          = pset.get<unsigned int              >("BinaryDilation_SY",  31);
-
-    fBilateralFilters = std::make_unique<icarus_signal_processing::BilateralFilters>();
-    fEdgeDetection    = std::make_unique<icarus_signal_processing::EdgeDetection>();
-
-    fROIFinder2D = std::make_unique<icarus_signal_processing::ROICannyFilter>(fButterworthFilter.get(), 
-                                                                              fDenoiser2D.get(), 
-                                                                              fBilateralFilters.get(),
-                                                                              fEdgeDetection.get(), 
-                                                                              fADFilter_SX,
-                                                                              fADFilter_SY,
-                                                                              fSigma_x,
-                                                                              fSigma_y,
-                                                                              fSigma_r,
-                                                                              fLowThreshold,
-                                                                              fHighThreshold,
-                                                                              fBinaryDilation_SX,
-                                                                              fBinaryDilation_SY);
-
+    fFragmentsLabelVec     = pset.get<std::vector<art::InputTag>>("FragmentsLabelVec",  std::vector<art::InputTag>()={"daq:PHYSCRATEDATA"});
+    fOutputRawWaveform     = pset.get<bool                      >("OutputRawWaveform",                                               false);
+    fOutputCorrection      = pset.get<bool                      >("OutputCorrection",                                                false);
+    fOutputRawWavePath     = pset.get<std::string               >("OutputRawWavePath",                                               "raw");
+    fOutputCoherentPath    = pset.get<std::string               >("OutputCoherentPath",                                              "Cor");
+    fDiagnosticOutput      = pset.get<bool                      >("DiagnosticOutput",                                                false);
+    fSigmaForTruncation    = pset.get<float                     >("NSigmaForTrucation",                                                3.5);
+    fCoherentNoiseGrouping = pset.get<size_t                    >("CoherentGrouping",                                                   64);
+    fDropRawDataAfterUse   = pset.get<bool                      >("DropRawDataAfterUse",                                              true);
 }
 
 //----------------------------------------------------------------------------
@@ -416,15 +330,14 @@ void DaqDecoderICARUSTPCwROI::produce(art::Event & event, art::ProcessingFrame c
     ++fNumEvent;
 
     mf::LogDebug("DaqDecoderICARUSTPCwROI") << "**** Processing raw data fragments ****" << std::endl;
+    
+    util::LocalArtHandleTrackerManager dataCacheRemover
+        (event, fDropRawDataAfterUse);
 
     // Check the concurrency 
     int max_concurrency = tbb::this_task_arena::max_concurrency();
 
     mf::LogDebug("DaqDecoderICARUSTPCwROI") << "     ==> concurrency: " << max_concurrency << std::endl;
-
-
-    std::cout << "------------------------------------------------------------------------------------------" << std::endl;
-    std::cout << "===> Run: " << event.id().run() << ", subrn: " << event.id().subRun() << ", event: " << event.id().event() << std::endl;
 
     cet::cpu_timer theClockTotal;
 
@@ -435,12 +348,13 @@ void DaqDecoderICARUSTPCwROI::produce(art::Event & event, art::ProcessingFrame c
     // overall memory usage at this level. We'll multi thread internally...
     for(const auto& fragmentLabel : fFragmentsLabelVec)
     {
-        art::Handle<artdaq::Fragments> daq_handle;
-        event.getByLabel(fragmentLabel, daq_handle);
+        art::Handle<artdaq::Fragments> const& daq_handle
+          = dataCacheRemover.getHandle<artdaq::Fragments>(fragmentLabel);
 
-        ConcurrentRawDigitCol concurrentRawDigits;
-        ConcurrentRawDigitCol concurrentRawRawDigits;
-        ConcurrentRawDigitCol coherentRawDigits;
+        ConcurrentRawDigitCol   concurrentRawDigits;
+        ConcurrentRawDigitCol   concurrentRawRawDigits;
+        ConcurrentRawDigitCol   coherentRawDigits;
+        ConcurrentChannelROICol concurrentROIs;
 
         PlaneIdxToImageMap   planeIdxToImageMap;
         PlaneIdxToChannelMap planeIdxToChannelMap;
@@ -455,22 +369,22 @@ void DaqDecoderICARUSTPCwROI::produce(art::Event & event, art::ProcessingFrame c
             channelArrayPair.first.resize(fROPToNumWiresMap[ropIdx]);
             channelArrayPair.second.resize(fROPToNumWiresMap[ropIdx],icarus_signal_processing::VectorFloat(4096));
 
-            std::cout << "**> Initializing ropIdx: " << ropIdx << " channelPairVec to " << channelArrayPair.first.size() << " channels with " << channelArrayPair.second[0].size() << " ticks" << std::endl;
+            mf::LogDebug("DaqDecoderICARUSTPCwROI") << "**> Initializing ropIdx: " << ropIdx << " channelPairVec to " << channelArrayPair.first.size() << " channels with " << channelArrayPair.second[0].size() << " ticks" << std::endl;
         }
 
-        std::cout << "****> Let's get ready to rumble!" << std::endl;
+        mf::LogDebug("DaqDecoderICARUSTPCwROI") << "****> Let's get ready to rumble!" << std::endl;
     
         // ... Launch multiple threads with TBB to do the deconvolution and find ROIs in parallel
         auto const clockData = art::ServiceHandle<detinfo::DetectorClocksService>()->DataFor(event);
 
-        multiThreadFragmentProcessing fragmentProcessing(*this, clockData, daq_handle, channelArrayPairVec);
+        multiThreadFragmentProcessing fragmentProcessing(*this, clockData, daq_handle, concurrentRawRawDigits, concurrentRawDigits, coherentRawDigits, concurrentROIs);
 
         tbb::parallel_for(tbb::blocked_range<size_t>(0, daq_handle->size()), fragmentProcessing);
 
         // Now let's process the resulting images
-        multiThreadImageProcessing imageProcessing(*this, clockData, channelArrayPairVec, concurrentRawDigits, concurrentRawRawDigits, coherentRawDigits);
+    //    multiThreadImageProcessing imageProcessing(*this, clockData, channelArrayPairVec, concurrentRawDigits, coherentRawDigits, concurrentROIs);
 
-        tbb::parallel_for(tbb::blocked_range<size_t>(0, fNumROPs), imageProcessing);
+    //    tbb::parallel_for(tbb::blocked_range<size_t>(0, fNumROPs), imageProcessing);
     
         // Copy the raw digits from the concurrent vector to our output vector
         RawDigitCollectionPtr rawDigitCollection = std::make_unique<std::vector<raw::RawDigit>>(std::move_iterator(concurrentRawDigits.begin()), 
@@ -480,14 +394,23 @@ void DaqDecoderICARUSTPCwROI::produce(art::Event & event, art::ProcessingFrame c
         std::sort(rawDigitCollection->begin(),rawDigitCollection->end(),[](const auto& left,const auto&right){return left.Channel() < right.Channel();});
 
         // What did we get back?
-        std::cout << "****> Total size of map: " << planeIdxToImageMap.size() << std::endl;
+        mf::LogDebug("DaqDecoderICARUSTPCwROI") << "****> Total size of map: " << planeIdxToImageMap.size() << std::endl;
         for(const auto& planeImagePair : planeIdxToImageMap)
         {
-            std::cout << "      - plane: " << planeImagePair.first << " has " << planeImagePair.second.size() << " wires" << std::endl;
+            mf::LogDebug("DaqDecoderICARUSTPCwROI") << "      - plane: " << planeImagePair.first << " has " << planeImagePair.second.size() << " wires" << std::endl;
         }
     
         // Now transfer ownership to the event store
         event.put(std::move(rawDigitCollection), fragmentLabel.instance());
+
+        // Do the same to output the candidate ROIs
+        ChannelROICollectionPtr channelROICollection = std::make_unique<std::vector<recob::ChannelROI>>(std::move_iterator(concurrentROIs.begin()),
+                                                                                                        std::move_iterator(concurrentROIs.end()));
+
+        std::sort(channelROICollection->begin(),channelROICollection->end(),[](const auto& left, const auto& right){return left.Channel() < right.Channel();});
+
+        event.put(std::move(channelROICollection), fragmentLabel.instance());
+    
     
         if (fOutputRawWaveform)
         {
@@ -520,7 +443,7 @@ void DaqDecoderICARUSTPCwROI::produce(art::Event & event, art::ProcessingFrame c
 
     double totalTime = theClockTotal.accumulated_real_time();
 
-    mf::LogInfo("DaqDecoderICARUSTPCwROI") << "==> DaqDecoderICARUSTPCwROI total time: " << totalTime << std::endl;
+    mf::LogInfo(fLogCategory) << "==> DaqDecoderICARUSTPCwROI total time: " << totalTime << std::endl;
 
     return;
 }
@@ -528,7 +451,10 @@ void DaqDecoderICARUSTPCwROI::produce(art::Event & event, art::ProcessingFrame c
 void DaqDecoderICARUSTPCwROI::processSingleFragment(size_t                             idx,
                                                     detinfo::DetectorClocksData const& clockData,
                                                     art::Handle<artdaq::Fragments>     fragmentHandle,
-                                                    ChannelArrayPairVec&               channelArrayPairVec) const
+                                                    ConcurrentRawDigitCol&             concurrentRawRawDigitCol,
+                                                    ConcurrentRawDigitCol&             concurrentRawDigitCol,
+                                                    ConcurrentRawDigitCol&             coherentRawDigitCol,
+                                                    ConcurrentChannelROICol&           concurrentROIs) const
 {
     cet::cpu_timer theClockProcess;
 
@@ -554,7 +480,7 @@ void DaqDecoderICARUSTPCwROI::processSingleFragment(size_t                      
     // Recover the Fragment id:
     artdaq::detail::RawFragmentHeader::fragment_id_t fragmentID = fragmentPtr->fragmentID();
 
-    if (fDiagnosticOutput) std::cout << "==> Recovered fragmentID: " << std::hex << fragmentID << std::dec << std::endl;
+    mf::LogDebug(fLogCategory) << "==> Recovered fragmentID: " << std::hex << fragmentID << std::dec << std::endl;
 
     // Look for special case of diagnostic running
     if (!fChannelMap->hasFragmentID(fragmentID))
@@ -576,11 +502,8 @@ void DaqDecoderICARUSTPCwROI::processSingleFragment(size_t                      
         // Look up the channels associated to this board
         if (!fChannelMap->hasBoardID(boardID))
         {
-            if (fDiagnosticOutput)
-            {
-                std::cout << "*** COULD NOT FIND BOARD ***" << std::endl;
-                std::cout << "    - boardID: " << std::hex << boardID << ", board map size: " << readoutIDVec.size() << ", nBoardsPerFragment: " << nBoardsPerFragment << std::endl;
-            }
+            mf::LogDebug(fLogCategory) << "*** COULD NOT FIND BOARD ***\n" <<
+                                          "    - boardID: " << std::hex << boardID << ", board map size: " << readoutIDVec.size() << ", nBoardsPerFragment: " << nBoardsPerFragment;
 
             return;
         }
@@ -590,16 +513,27 @@ void DaqDecoderICARUSTPCwROI::processSingleFragment(size_t                      
         boardIDVec[boardSlot] = boardID;
     }
 
-    if (fDiagnosticOutput)
-    {
-        std::cout << "   - # boards: " << boardIDVec.size() << ", boards: ";
-        for(const auto& id : boardIDVec) std::cout << id << " ";
-        std::cout << std::endl;
-    }
+    std::string boardIDs = "";
+
+    for(const auto& id : boardIDVec) boardIDs += std::to_string(id) + " ";
+
+    mf::LogDebug(fLogCategory) << "   - # boards: " << boardIDVec.size() << ", boards: " << boardIDs;
 
     cet::cpu_timer theClockPedestal;
 
     theClockPedestal.start();
+
+    // Recover pointer to the decoder needed here
+    INoiseFilter* decoderTool = fDecoderToolVec[tbb::this_task_arena::current_thread_index()].get();
+
+    // Create a local channel pair  to hold at most a boards worth of info (64 channels x 4096 ticks)
+    ChannelArrayPair channelArrayPair;
+
+    channelArrayPair.first.resize(nChannelsPerBoard);
+    channelArrayPair.second.resize(nChannelsPerBoard,icarus_signal_processing::VectorFloat(nSamplesPerChannel));
+
+    // Now set up for output, we need to convert back from float to short int so use this
+    raw::RawDigit::ADCvector_t wvfm(nSamplesPerChannel);
 
     // The first task is to recover the data from the board data block, determine and subtract the pedestals
     // and store into vectors useful for the next steps
@@ -612,14 +546,16 @@ void DaqDecoderICARUSTPCwROI::processSingleFragment(size_t                      
             continue;
         }
 
-        const icarusDB::ChannelPlanePairVec& channelPlanePairVec = fChannelMap->getChannelPlanePair(boardIDVec[board]);
-
         uint32_t boardSlot = physCrateFragment.DataTileHeader(board)->StatusReg_SlotID();
 
-        if (fDiagnosticOutput)
+        const icarusDB::ChannelPlanePairVec& channelPlanePairVec = fChannelMap->getChannelPlanePair(boardIDVec[boardSlot]);
+
+        mf::LogDebug(fLogCategory) << "********************************************************************************\n"
+                                   << "FragmentID: " << std::hex << fragmentID << std::dec << ", Crate: " << crateName << ", boardID: " << boardSlot << "/" << nBoardsPerFragment << ", size " << channelPlanePairVec.size() << "/" << nChannelsPerBoard;
+
+        if (board != boardSlot)
         {
-            std::cout << "********************************************************************************" << std::endl;
-            std::cout << "FragmentID: " << std::hex << fragmentID << ", Crate: " << crateName << std::dec << ", boardID: " << boardSlot << "/" << nBoardsPerFragment << ", size " << channelPlanePairVec.size() << "/" << nChannelsPerBoard << std::endl;
+            mf::LogInfo(fLogCategory) << "==> Found board/boardSlot mismatch, crate: " << crateName << ", board: " << board << ", boardSlot: " << boardSlot << " channelPlanePair: " << fChannelMap->getChannelPlanePair(boardIDVec[board]).front().first << "/"  << fChannelMap->getChannelPlanePair(boardIDVec[board]).front().second << ", slot: " << channelPlanePairVec[0].first << "/" << channelPlanePairVec[0].second;
         }
 
         // Get the pointer to the start of this board's block of data
@@ -628,39 +564,111 @@ void DaqDecoderICARUSTPCwROI::processSingleFragment(size_t                      
         // Copy to input data array
         for(size_t chanIdx = 0; chanIdx < nChannelsPerBoard; chanIdx++)
         {
-            // Get the channel number on the Fragment
-            raw::ChannelID_t channel = channelPlanePairVec[chanIdx].first;
-
-            if (fDiagnosticOutput) std::cout << channel << "-";
-            
-            std::vector<geo::WireID> wireIDVec = fGeometry->ChannelToWire(channel);
-
-            // Skip the channels which are not physically connected
-            if (wireIDVec.empty())
-            {
-                if (fDiagnosticOutput) std::cout << "skip * ";
-                continue;
-            }
-
-            // Some contortions here... the horizontal wires are split and so independent,
-            // the angled wires are logically split but we do want them put back together here... 
-            const geo::PlaneID& planeID    = wireIDVec[0].planeID();
-            unsigned int        planeIndex = fPlaneToROPPlaneMap.find(planeID)->second;
-            unsigned int        wire       = channel - fPlaneToWireOffsetMap.find(planeID)->second;
-
-            icarus_signal_processing::VectorFloat& rawDataVec = channelArrayPairVec[planeIndex].second[wire];
+           icarus_signal_processing::VectorFloat& rawDataVec = channelArrayPair.second[chanIdx];
 
             for(size_t tick = 0; tick < nSamplesPerChannel; tick++)
                 rawDataVec[tick] = -dataBlock[chanIdx + tick * nChannelsPerBoard];
 
             // Keep track of the channel
-            channelArrayPairVec[planeIndex].first[wire] = channel;
-
-            if (fDiagnosticOutput)
-                std::cout << wireIDVec[0].Cryostat << "/" << wireIDVec[0].TPC << "/" << wireIDVec[0].Plane << "/" << wireIDVec[0].Wire  
-                          << " idx/wire: " << planeIndex << "/" << wire << " * ";
+            channelArrayPair.first[chanIdx] = channelPlanePairVec[chanIdx];
         }
-        if (fDiagnosticOutput) std::cout << std::endl;
+
+        //process_fragment(event, rawfrag, product_collection, header_collection);
+        decoderTool->process_fragment(clockData, channelArrayPair.first, channelArrayPair.second, fCoherentNoiseGrouping);
+
+        // We need to recalculate pedestals for the noise corrected waveforms
+        icarus_signal_processing::WaveformTools<float> waveformTools;
+
+        // Local storage for recomputing the the pedestals for the noise corrected data
+        float localPedestal(0.);
+        float localFullRMS(0.);
+        float localTruncRMS(0.);
+        int   localNumTruncBins(0);
+        int   localRangeBins(0);
+
+        float sigmaCut(fSigmaForTruncation);
+
+        // Recover the denoised waveform
+        const icarus_signal_processing::ArrayFloat& denoised = decoderTool->getWaveLessCoherent();
+
+        icarus_signal_processing::VectorFloat       pedCorWaveforms(denoised[0].size());
+
+        for(size_t chanIdx = 0; chanIdx < nChannelsPerBoard; chanIdx++)
+        {
+            // Get the channel number on the Fragment
+            raw::ChannelID_t channel = channelPlanePairVec[chanIdx].first;
+
+            // Are we storing the raw waveforms?
+            if (fOutputRawWaveform)
+            {
+                const icarus_signal_processing::VectorFloat& waveform = decoderTool->getPedCorWaveforms()[chanIdx];
+
+                // Need to convert from float to short int
+                std::transform(waveform.begin(),waveform.end(),wvfm.begin(),[](const auto& val){return short(std::round(val));});
+    
+                ConcurrentRawDigitCol::iterator newRawObjItr = concurrentRawRawDigitCol.emplace_back(channel,wvfm.size(),wvfm); 
+
+                newRawObjItr->SetPedestal(decoderTool->getPedestalVals()[chanIdx],decoderTool->getFullRMSVals()[chanIdx]);
+            }
+
+            if (fOutputCorrection)
+            {
+                const icarus_signal_processing::VectorFloat& corrections = decoderTool->getCorrectedMedians()[chanIdx];
+
+                // Need to convert from float to short int
+                std::transform(corrections.begin(),corrections.end(),wvfm.begin(),[](const auto& val){return short(std::round(val));});
+
+                //ConcurrentRawDigitCol::iterator newRawObjItr = coherentRawDigitCol.emplace_back(channel,wvfm.size(),wvfm); 
+                ConcurrentRawDigitCol::iterator newRawObjItr = coherentRawDigitCol.push_back(raw::RawDigit(channel,wvfm.size(),wvfm)); 
+
+                newRawObjItr->SetPedestal(0.,0.);
+            }
+
+            // Now determine the pedestal and correct for it
+            waveformTools.getPedestalCorrectedWaveform(denoised[chanIdx],
+                                                       pedCorWaveforms,
+                                                       sigmaCut,
+                                                       localPedestal,
+                                                       localFullRMS,
+                                                       localTruncRMS,
+                                                       localNumTruncBins,
+                                                       localRangeBins);
+
+            // Need to convert from float to short int
+//            std::transform(denoised[chanIdx].begin(),denoised[chanIdx].end(),wvfm.begin(),[](const auto& val){return short(std::round(val));});
+            std::transform(pedCorWaveforms.begin(),pedCorWaveforms.end(),wvfm.begin(),[](const auto& val){return short(std::round(val));});
+
+            ConcurrentRawDigitCol::iterator newObjItr = concurrentRawDigitCol.emplace_back(channel,wvfm.size(),wvfm); 
+
+            newObjItr->SetPedestal(localPedestal,localFullRMS);
+
+            // And, finally, the ROIs 
+            const icarus_signal_processing::VectorBool& chanROIs = decoderTool->getROIVals()[chanIdx];
+            recob::ChannelROI::RegionsOfInterest_t      ROIVec;
+
+            // Go through candidate ROIs and create Wire ROIs
+            size_t roiIdx = 0;
+
+            while(roiIdx < chanROIs.size())
+            {
+                size_t roiStartIdx = roiIdx;
+
+                while(roiIdx < chanROIs.size() && chanROIs[roiIdx]) roiIdx++;
+
+                if (roiIdx > roiStartIdx)
+                {
+                    std::vector<short> holder(roiIdx - roiStartIdx);
+
+                    for(size_t idx = 0; idx < holder.size(); idx++) holder[idx] = wvfm[roiStartIdx+idx];
+
+                    ROIVec.add_range(roiStartIdx, std::move(holder));
+                }
+
+                roiIdx++;
+            }
+        
+            concurrentROIs.push_back(recob::ChannelROICreator(std::move(ROIVec),channel).move());
+        }
     }
 
     // We need to make sure the channelID information is not preserved when less than 9 boards in the fragment
@@ -674,138 +682,7 @@ void DaqDecoderICARUSTPCwROI::processSingleFragment(size_t                      
 
     double totalTime = theClockProcess.accumulated_real_time();
 
-    mf::LogDebug("DaqDecoderICARUSTPCwROI") << "--> Exiting fragment processing for thread: " << tbb::this_task_arena::current_thread_index() << ", time: " << totalTime << std::endl;
-    return;
-}
-
-void DaqDecoderICARUSTPCwROI::processSingleImage(size_t                             idx,
-                                                 const detinfo::DetectorClocksData& clockData,
-                                                 const ChannelArrayPairVec&         channelArrayPairVec,
-                                                 ConcurrentRawDigitCol&             concurrentRawDigitCol,
-                                                 ConcurrentRawDigitCol&             concurrentRawRawDigitCol,
-                                                 ConcurrentRawDigitCol&             coherentRawDigitCol) const
-{
-    // Tools. We love tools
-    icarus_signal_processing::WaveformTools<float> waveformTools;
-
-    // Which image are we processing?
-    const ChannelArrayPair& channelArrayPair = channelArrayPairVec[idx];
-
-    // Let's go through and fill the output vector
-    const ChannelVec&                           channelVec = channelArrayPair.first;
-    const icarus_signal_processing::ArrayFloat& dataArray  = channelArrayPair.second;
-
-    unsigned int numChannels = dataArray.size();
-    unsigned int numTicks    = dataArray[0].size();
-
-    icarus_signal_processing::ArrayFloat waveLessCoherent(numChannels,icarus_signal_processing::VectorFloat(numTicks,0.));
-    icarus_signal_processing::ArrayFloat medianVals(numChannels,icarus_signal_processing::VectorFloat(numTicks,0.));
-    icarus_signal_processing::ArrayFloat coherentRMS(numChannels,icarus_signal_processing::VectorFloat(numTicks,0.));
-    icarus_signal_processing::ArrayFloat morphedWaveforms(numChannels,icarus_signal_processing::VectorFloat(numTicks,0.));
-    icarus_signal_processing::ArrayFloat finalErosion(numChannels,icarus_signal_processing::VectorFloat(numTicks,0.));
-    icarus_signal_processing::ArrayFloat fullEvent(numChannels,icarus_signal_processing::VectorFloat(numTicks,0.));
-    icarus_signal_processing::ArrayBool  outputROIs(numChannels,icarus_signal_processing::VectorBool(numTicks,false));
-
-    (*fROIFinder2D)(dataArray,fullEvent,outputROIs,waveLessCoherent,medianVals,coherentRMS,morphedWaveforms,finalErosion);
-
-    // Now set up for output
-    raw::RawDigit::ADCvector_t wvfm(dataArray[0].size());
-
-    // Placeholders
-    icarus_signal_processing::VectorFloat pedCorDataVec(dataArray[0].size());
-    float pedestal;
-    float fullRMS;
-    float truncRMS;
-    int   numTruncBins;
-    int   rangeBins;
-    float sigmaForTruncation(3.5);
-
-    // Loop over the channels to recover the RawDigits after filtering
-    for(size_t chanIdx = 0; chanIdx != dataArray.size(); chanIdx++)
-    {
-        if (fOutputRawWaveform)
-        {
-            const icarus_signal_processing::VectorFloat& dataVec = dataArray[chanIdx];
-
-            // Get the pedestal corrections
-            waveformTools.getPedestalCorrectedWaveform(dataVec, pedCorDataVec, sigmaForTruncation, pedestal, fullRMS, truncRMS, numTruncBins, rangeBins);
-
-            // Need to convert from float to short int
-            std::transform(pedCorDataVec.begin(),pedCorDataVec.end(),wvfm.begin(),[](const auto& val){return short(std::round(val));});
-            //std::copy(dataVec.begin(),dataVec.end(),wvfm.begin());
-
-            ConcurrentRawDigitCol::iterator newRawObjItr = concurrentRawRawDigitCol.emplace_back(channelVec[chanIdx],wvfm.size(),wvfm); 
-
-            newRawObjItr->SetPedestal(0.,truncRMS);
-        }
-
-        if (fOutputCorrection)
-        {
-            const icarus_signal_processing::VectorFloat& dataVec = medianVals[chanIdx];
-
-            // Need to convert from float to short int
-            std::transform(dataVec.begin(),dataVec.end(),wvfm.begin(),[](const auto& val){return short(std::round(val));});
-            //std::copy(dataVec.begin(),dataVec.end(),wvfm.begin());
-
-            ConcurrentRawDigitCol::iterator newRawObjItr = coherentRawDigitCol.emplace_back(channelVec[chanIdx],wvfm.size(),wvfm); 
-
-            newRawObjItr->SetPedestal(0.,0.);
-        }
-
-         // Now the coherent subtracted 
-        const icarus_signal_processing::VectorFloat& coherentVec = waveLessCoherent[chanIdx];
-
-         // Need to convert from float to short int
-        std::transform(coherentVec.begin(),coherentVec.end(),wvfm.begin(),[](const auto& val){return short(std::round(val));});
-        //std::copy(dataVec.begin(),dataVec.end(),wvfm.begin());
-
-         ConcurrentRawDigitCol::iterator newObjItr = concurrentRawDigitCol.emplace_back(channelVec[chanIdx],wvfm.size(),wvfm); 
-
-         newObjItr->SetPedestal(0.,0.);
-
-    }//loop over channel indices
-
-    return;
-}
-
-void DaqDecoderICARUSTPCwROI::saveRawDigits(const icarus_signal_processing::ArrayFloat&  dataArray, 
-                                            const icarus_signal_processing::VectorFloat& pedestalVec,
-                                            const icarus_signal_processing::VectorFloat& rmsVec,
-                                            const icarus_signal_processing::VectorInt&   channelVec,
-                                            ConcurrentRawDigitCol&                       rawDigitCol) const
-{
-    if (!dataArray.empty())
-    {
-        cet::cpu_timer theClockSave;
-
-        theClockSave.start();
-
-        raw::RawDigit::ADCvector_t wvfm(dataArray[0].size());
-
-        mf::LogDebug("DaqDecoderICARUSTPCwROI") << "    --> saving rawdigits for " << dataArray.size() << " channels" << std::endl;
-
-        // Loop over the channels to recover the RawDigits after filtering
-        for(size_t chanIdx = 0; chanIdx != dataArray.size(); chanIdx++)
-        {
-            // Protect against case where there was no readout 
-            if (channelVec[chanIdx] < 0) continue;
-
-            const icarus_signal_processing::VectorFloat& dataVec = dataArray[chanIdx];
-
-            // Need to convert from float to short int
-            std::transform(dataVec.begin(),dataVec.end(),wvfm.begin(),[](const auto& val){return short(std::round(val));});
-
-            ConcurrentRawDigitCol::iterator newObjItr = rawDigitCol.emplace_back(channelVec[chanIdx],wvfm.size(),wvfm); 
-            newObjItr->SetPedestal(pedestalVec[chanIdx],rmsVec[chanIdx]);
-        }//loop over channel indices
-
-        theClockSave.stop();
-
-        double totalTime = theClockSave.accumulated_real_time();
-
-        mf::LogDebug("DaqDecoderICARUSTPCwROI") << "    --> done with save, time: " << totalTime << std::endl;
-    }
-
+    mf::LogDebug(fLogCategory) << "--> Exiting fragment processing for thread: " << tbb::this_task_arena::current_thread_index() << ", time: " << totalTime << std::endl;
     return;
 }
 
@@ -813,7 +690,7 @@ void DaqDecoderICARUSTPCwROI::saveRawDigits(const icarus_signal_processing::Arra
 /// End job method.
 void DaqDecoderICARUSTPCwROI::endJob(art::ProcessingFrame const&)
 {
-    mf::LogInfo("DaqDecoderICARUSTPCwROI") << "Looked at " << fNumEvent << " events" << std::endl;
+    mf::LogInfo(fLogCategory) << "Looked at " << fNumEvent << " events" << std::endl;
 }
 
 } // end of namespace

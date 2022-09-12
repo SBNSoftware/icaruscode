@@ -1,0 +1,10 @@
+# file: ci_simulation_genie_nue_icarus.fcl
+# author: chilgenb@fnal.gov
+# created: Nov 1 2021
+# description: wrapper around simulation_genie_icarus_Mar2019_nue.fcl
+#              that enables IFDH access of the GENIE flux
+#              files instead of DIRECT, required to run on grid
+
+#include "simulation_genie_icarus_Mar2019_nue.fcl"
+
+physics.producers.generator.FluxCopyMethod:       "IFDH"

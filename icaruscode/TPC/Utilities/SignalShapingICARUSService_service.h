@@ -82,7 +82,7 @@
 #include <map>
 #include "fhiclcpp/ParameterSet.h"
 #include "art/Framework/Services/Registry/ActivityRegistry.h"
-#include "art/Framework/Services/Registry/ServiceMacros.h"
+#include "art/Framework/Services/Registry/ServiceDeclarationMacros.h"
 #include "art/Framework/Services/Registry/ServiceHandle.h"
 
 #include "icaruscode/TPC/Utilities/tools/IResponse.h"
@@ -108,7 +108,7 @@ public:
     DoubleVec2                    GetNoiseFactVec() { return fNoiseFactVec; }
     
     double                        GetASICGain(unsigned int const channel)            const;
-    double                        GetShapingTime(unsigned int const channel)         const;
+    double                        GetShapingTime(unsigned int const planeIdx)        const;
     
     double                        GetRawNoise(unsigned int const channel)            const;
     double                        GetDeconNoise(unsigned int const channel)          const;

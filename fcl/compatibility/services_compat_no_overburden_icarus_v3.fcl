@@ -1,0 +1,66 @@
+# 
+# File:    services_compat_icarus_v3_no_overburden.fcl
+# Purpose: Configuration override for legacy samples using geometry icarus_v3.
+# Author:  Gianluca Petrillo (petrillo@slac.stanford.edu)
+# Date:    May 26, 2022
+# 
+# This configuration override will set for samples to be processed with
+# `icarus_v3` geometry without overburden, which went on until `icaruscode`
+# `v09_52_00`. This is also the last geometry supporting no overburden.
+# 
+# The identifier of this legacy configuration is: `icarus_v3`
+# 
+# In that period, the geometry definition was `icarus_v3`; the updated geometry
+# `icarus_v4` rotated some of the top CRT modules and dropped support for
+# no-overburden geometries.
+# This configuration runs the default `icarus_v3` geometry, which was without
+# overburden at the time. Explicit setting of the overburden option is provided
+# in the `services_compat_icarus_v3_overburden.fcl` drop-in configuration.
+# 
+# 
+# Configured services
+# --------------------
+# 
+# The services configured here include:
+# 
+# * `Geometry` (and related services)
+# 
+# 
+# Target samples
+# ---------------
+# 
+# The targeted samples can be recognized for using the geometry DetectorName:
+# `icarus_v3`.
+# 
+# 
+# Usage
+# ------
+# 
+# This is a configuration override file: it needs to be included at the end of
+# the configuration file that needs to be amended. Since it overwrites values
+# quite blindly, configurations with special customizations should make sure
+# that these customizations are not lost.
+# 
+# Example of turning a standard GEANT4 configuration into a legacy one:
+#     
+#     #include "standard_g4_icarus.fcl"
+#     
+#     # legacy configuration for older samples:
+#     #include "services_compat_icarus_v3_no_overburden.fcl"
+#     
+# 
+# Requirements
+# -------------
+# 
+# The base job configuration (`standard_g4_icarus.fcl` in the
+# example) must have included the geometry service configuration file
+# (`geometry_icarus.fcl`).
+# 
+# 
+# Last recorded check: v09_52_00
+#
+
+services: {
+  @table::services
+  @table::icarus_geometry_services_no_overburden_legacy_icarus_v3
+} # services

@@ -32,10 +32,11 @@
 // C++ standard libaries
 #include <chrono> // std::chrono::high_resolution_clock
 #include <unordered_map>
-#include <algorithm> // std::accumulate()
+#include <algorithm>
 #include <utility> // std::move(), std::cref(), ...
 #include <limits> // std::numeric_limits
 #include <cmath> // std::signbit(), std::pow()
+#include <numeric> // std::accumulate
 
 
 // -----------------------------------------------------------------------------
@@ -140,6 +141,8 @@ icarus::opdet::PMTsimulationAlg::PMTsimulationAlg
   // check that the sampled waveform has a sufficiently large range, so that
   // tails are below 10^-3 ADC counts (absolute value);
   // if this test fails, it's better to reduce the threshold in wsp constructor
+  // (for analytical pulses converging to 0) or have a longer sampling that does
+  // converge to 0 (10^-3 ADC is quite low though).
   wsp.checkRange(1.0e-3_ADCf, "PMTsimulationAlg");
 
 } // icarus::opdet::PMTsimulationAlg::PMTsimulationAlg()
@@ -147,11 +150,12 @@ icarus::opdet::PMTsimulationAlg::PMTsimulationAlg
 
 // -----------------------------------------------------------------------------
 std::tuple<std::vector<raw::OpDetWaveform>, std::optional<sim::SimPhotons>>
-  icarus::opdet::PMTsimulationAlg::simulate(sim::SimPhotons const& photons)
+  icarus::opdet::PMTsimulationAlg::simulate(sim::SimPhotons const& photons,
+                                            sim::SimPhotonsLite const& lite_photons)
 {
   std::optional<sim::SimPhotons> photons_used;
 
-  Waveform_t const waveform = CreateFullWaveform(photons, photons_used);
+  Waveform_t const waveform = CreateFullWaveform(photons, lite_photons, photons_used);
 
   return {
     CreateFixedSizeOpDetWaveforms(photons.OpChannel(), waveform),
@@ -178,7 +182,9 @@ auto icarus::opdet::PMTsimulationAlg::makeGainFluctuator() const {
 
 //------------------------------------------------------------------------------
 auto icarus::opdet::PMTsimulationAlg::CreateFullWaveform
-  (sim::SimPhotons const& photons, std::optional<sim::SimPhotons>& photons_used)
+  (sim::SimPhotons const& photons,
+   sim::SimPhotonsLite const& lite_photons,
+   std::optional<sim::SimPhotons>& photons_used)
   const -> Waveform_t
 {
 
@@ -243,6 +249,32 @@ auto icarus::opdet::PMTsimulationAlg::CreateFullWaveform
 //     std::cout << "\tcollected pes... " << photons.OpChannel() << " " << diff.count() << std::endl;
 //     start=std::chrono::high_resolution_clock::now();
 
+    // Add SimPhotonsLite.  Loop over geant ticks (=ns).
+
+    for(auto const& [ time_ns, nphotons ]: lite_photons.DetectedPhotons) {
+
+      // Count photoelectrons.
+
+      unsigned int nPE = 0;
+      for(int i=0; i<nphotons; ++i) {
+        if(KicksPhotoelectron())
+          ++nPE;
+      }
+
+      // Convert photon time bin to ticks.
+
+      simulation_time const photonTime { time_ns + 0.5 };
+      trigger_time const mytime
+        = timings.toTriggerTime(photonTime)
+        - fParams.triggerOffsetPMT;
+      if ((mytime < 0.0_us) || (mytime >= fParams.readoutEnablePeriod)) continue;
+
+      auto const [ tick, subtick ]
+        = toTickAndSubtick(mytime.quantity() * fSampling);
+      if (tick < endSample)
+        peMaps[subtick][tick] += nPE;
+    }
+
     //
     // add the collected photoelectrons to the waveform
     //
@@ -269,6 +301,7 @@ auto icarus::opdet::PMTsimulationAlg::CreateFullWaveform
           subsample, waveform, startTick,
           static_cast<WaveformValue_t>(nEffectivePE)
           );
+        //        std::cout << "Channel=" << photons.OpChannel() << ", subsample=" << iSubsample << ", tick=" << startTick << ", nPE=" << nPE << ", ePE=" << nEffectivePE << std::endl;
 
       } // for sample
     } // for subsamples
@@ -620,14 +653,13 @@ void icarus::opdet::PMTsimulationAlg::AddDarkNoise(Waveform_t& wave) const {
 auto icarus::opdet::PMTsimulationAlg::saturationRange() const
   -> std::pair<ADCcount, ADCcount>
 {
-  ADCcount const saturationLevel
-    = fParams.baseline + fParams.saturation*wsp.peakAmplitude();
-  return std::make_pair(
-    ((fParams.pulsePolarity > 0)
-      ? std::numeric_limits<ADCcount>::min(): saturationLevel),
-    ((fParams.pulsePolarity > 0)
-      ? saturationLevel: std::numeric_limits<ADCcount>::max())
-    );
+  std::pair<ADCcount, ADCcount> range = fParams.ADCrange();
+  if (fParams.saturation > 0) {
+    ADCcount const saturationLevel
+      = fParams.baseline + fParams.saturation*wsp.peakAmplitude();
+    ((fParams.pulsePolarity > 0)? range.second: range.first) = saturationLevel;
+  }
+  return range;
 } // icarus::opdet::PMTsimulationAlg::saturationRange()
 
 
@@ -667,20 +699,20 @@ void icarus::opdet::PMTsimulationAlg::ApplySaturation
 void icarus::opdet::PMTsimulationAlg::ClipWaveform
   (Waveform_t& waveform, ADCcount min, ADCcount max)
 {
-  auto const clamper =
+  using ClamperFunc_t = std::function<ADCcount(ADCcount)>;
+  ClamperFunc_t const clamper =
     (min == std::numeric_limits<ADCcount>::min())
       ? ((max == std::numeric_limits<ADCcount>::max())
-        ? std::function{ [](ADCcount s){ return s; } }
-        : std::function{ [max](ADCcount s){ return std::min(s, max); } }
+        ? ClamperFunc_t{ [](ADCcount s){ return s; } }
+        : ClamperFunc_t{ [max](ADCcount s){ return std::min(s, max); } }
         )
       : ((max == std::numeric_limits<ADCcount>::max())
-        ? std::function{ [min](ADCcount s){ return std::max(s, min); } }
-        : std::function{ [min,max](ADCcount s){ return std::clamp(s, min, max); } }
+        ? ClamperFunc_t{ [min](ADCcount s){ return std::max(s, min); } }
+        : ClamperFunc_t{ [min,max](ADCcount s){ return std::clamp(s, min, max); } }
         )
       ;
   
-  std::for_each(waveform.begin(), waveform.end(),
-    [clamper](ADCcount& s){ s = clamper(s); });
+  std::transform(waveform.cbegin(), waveform.cend(), waveform.begin(), clamper);
   
 } // icarus::opdet::PMTsimulationAlg::ClipWaveform()
 
@@ -702,7 +734,10 @@ auto icarus::opdet::PMTsimulationAlg::TimeToTickAndSubtickConverter::operator()
 template <typename Rand>
 double icarus::opdet::PMTsimulationAlg::GainFluctuator<Rand>::operator()
   (double const n)
-  { return fRandomGain? (n * fRandomGain->fire() / fReferenceGain): n; }
+{
+  return fRandomGain
+    ? (fRandomGain->fire(n * fReferenceGain) / fReferenceGain): n; 
+}
 
 
 // -----------------------------------------------------------------------------
@@ -733,7 +768,7 @@ icarus::opdet::PMTsimulationAlgMaker::PMTsimulationAlgMaker
   // PMT settings
   //
   auto const& PMTspecs = config.PMTspecs();
-  fBaseConfig.saturation               = config.Saturation();
+  fBaseConfig.saturation               = config.Saturation().value_or(0);
   fBaseConfig.QEbase                   = config.QE();
   fBaseConfig.PMTspecs.dynodeK         = PMTspecs.DynodeK();
   fBaseConfig.PMTspecs.setVoltageDistribution

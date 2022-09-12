@@ -45,6 +45,7 @@ services:
   #FileCatalogMetadata:  @local::art_file_catalog_mc
   @table::icarus_gen_services
   @table::icarus_g4_services 
+  NuRandomService: @local::random_NuRandomService
 }
 
 #Start each new event with an empty event.
@@ -122,6 +123,7 @@ outputs:
    compressionLevel: 1
    fastCloning: false
    SelectEvents: [simulate]
+   saveMemoryObjectThreshold: 0
  }
 }
 

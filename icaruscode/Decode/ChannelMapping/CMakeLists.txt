@@ -3,6 +3,7 @@ cet_enable_asserts()
 art_make(
           EXCLUDE "PMTChannelMapDumper.cxx"
           LIB_LIBRARIES
+                        larevt_CalibrationDBI_IOVData
                         art_Utilities
                         canvas
                         ${FHICLCPP}
@@ -13,8 +14,9 @@ art_make(
                         icaruscode_Decode_ChannelMapping
                         lardata_Utilities
                         lardata_ArtDataHelper
+                        larevt_CalibrationDBI_IOVData
                         ${ROOT_BASIC_LIB_LIST}
-                        ${LIBWDA}
+                        LIBWDA
                         ${ART_FRAMEWORK_CORE}
                         ${ART_FRAMEWORK_PRINCIPAL}
                         ${ART_FRAMEWORK_SERVICES_REGISTRY}
@@ -28,12 +30,13 @@ art_make(
                         ${MF_UTILITIES}
                         ${FHICLCPP}
                         cetlib cetlib_except
-                        ${TBB}
           TOOL_LIBRARIES
+                        larevt_CalibrationDBI_IOVData
+                        larevt_CalibrationDBI_Providers
                         lardata_Utilities
                         lardata_ArtDataHelper
                         ${ROOT_BASIC_LIB_LIST}
-                        ${LIBWDA}
+                        LIBWDA
                         ${ART_FRAMEWORK_CORE}
                         ${ART_FRAMEWORK_PRINCIPAL}
                         ${ART_FRAMEWORK_SERVICES_REGISTRY}
@@ -47,8 +50,7 @@ art_make(
                         ${MF_UTILITIES}
                         ${FHICLCPP}
                         cetlib cetlib_except
-                        ${SQLITE3}
-                        ${TBB}
+                        SQLite::SQLite3
         )
 
 art_make_exec(NAME "PMTChannelMapDumper"

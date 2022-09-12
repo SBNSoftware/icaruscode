@@ -7,6 +7,7 @@
  */
 
 // ICARUS libraries
+#include "icaruscode/PMT/Trigger/Utilities/TriggerGateDataFormatting.h" // compactdump()
 #include "sbnobj/ICARUS/PMT/Trigger/Data/OpticalTriggerGate.h"
 
 // LArSoft libraries
@@ -20,6 +21,7 @@
 #include "art/Framework/Principal/Event.h"
 #include "art/Framework/Principal/Handle.h"
 #include "canvas/Utilities/InputTag.h"
+#include "canvas/Persistency/Common/Assns.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
 #include "fhiclcpp/types/Atom.h"
 
@@ -47,7 +49,7 @@ namespace icarus::trigger { class DumpTriggerGateData; }
  *      optical detector activity; the activity belongs to a single channel, but
  *      there may be multiple waveforms on the same channel. The time stamp is
  *      expected to be from the
- *      @anchor DetectorClocksElectronicsTime "electronics time scale"
+ *      @ref DetectorClocksElectronicsTime "electronics time scale"
  *      and therefore expressed in microseconds.
  * * `std::vector<simb::MCTruth>`: generator information, used for categorising
  *      the events for plot sets
@@ -108,14 +110,6 @@ class icarus::trigger::DumpTriggerGateData: public art::EDAnalyzer {
       Comment("name of the category used for the output"),
       "DumpTriggerGateData"
       };
-
-    /*
-    fhicl::Atom<art::InputTag> OpticalWaveforms{
-      Name("OpticalWaveforms"),
-      Comment("label of input digitized optical waveform data product"),
-      "opdaq" // tradition demands
-      };
-    */
 
   }; // struct Config
   
@@ -201,21 +195,20 @@ void icarus::trigger::DumpTriggerGateData::analyze(art::Event const& event) {
   auto const& gates =
    *(event.getValidHandle<std::vector<TriggerGateData_t>>(fTriggerGateDataTag));
   auto const* gateToWaveforms = fPrintChannels
-    ? event.getPointerByLabel<art::Assns<TriggerGateData_t, raw::OpDetWaveform>>
-      (fTriggerGateDataTag)
+    ? event.getHandle<art::Assns<TriggerGateData_t, raw::OpDetWaveform>>
+      (fTriggerGateDataTag).product()
     : nullptr
     ;
   
-  using AssnIter_t = std::decay_t<decltype(*gateToWaveforms)>::const_iterator;
   auto maybeItOpDetWave { gateToWaveforms
-    ? std::make_optional<AssnIter_t>(gateToWaveforms->begin()): std::nullopt
+    ? std::make_optional(gateToWaveforms->begin()): std::nullopt
     };
 
   mf::LogVerbatim log(fOutputCategory);
   log << event.id() << ": '" << fTriggerGateDataTag.encode() << "' has "
     << gates.size() << " trigger gates:";
   for (auto const& [ iGate, gate ]: util::enumerate(gates)) {
-    log << "\n[#" << iGate << "] " << gate;
+    log << "\n[#" << iGate << "] " << compactdump(gate);
     if (gateToWaveforms) {
       auto& itOpDetWave = maybeItOpDetWave.value();
       auto const owend = gateToWaveforms->end();

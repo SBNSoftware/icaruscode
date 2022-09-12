@@ -1,5 +1,6 @@
-
+if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
 cet_add_compiler_flags(CXX -Wno-maybe-uninitialized)
+endif()
 
 # Add the subfolder containing the deconvolution tools
 add_subdirectory(DeconTools)
@@ -17,6 +18,8 @@ art_make(
             ${CETLIB}
             ${ROOT_BASIC_LIB_LIST}
           MODULE_LIBRARIES 
+            icaruscode_TPC_Utilities
+            icaruscode_IcarusObj
             icarus_signal_processing
             icarus_signal_processing_Detection
             icarus_signal_processing_Filters

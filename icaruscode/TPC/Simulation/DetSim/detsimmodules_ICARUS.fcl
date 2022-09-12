@@ -1,6 +1,12 @@
 BEGIN_PROLOG
 
 
+icarus_CoherentNoiseFactorService:
+{
+    service_provider:   CoherentNoiseFactor
+    DiagnosticOutput:   false
+}
+
 NoiseFromHistTool:
 {
     tool_type:         NoiseFromHist
@@ -45,6 +51,43 @@ SBNNoiseTool:
     UncorrelatedRMSHistoName:  "RMSUhisto"
 }
 
+# Define the SBN Data noise tool with defaults for the collection plane.
+# set overrides below for induction planes
+SBNDataNoiseTool:
+{
+    tool_type:                 SBNDataNoise
+    Plane:                     2                 # All default values are for induction 1 (first induction)
+    MedianNumBins:             25
+    NoiseRand:                 0.
+    CorrelatedSeed:            1000
+    UncorrelatedSeed:          5000
+    StoreHistograms:           true
+    NoiseHistFileName:         [ "dataFFTHistosEE.root", "dataFFTHistosEW.root", "dataFFTHistosWE.root", "dataFFTHistosWW.root" ]
+    CorrelatedHistogramName:   "cohpowerC"
+    UncorrelatedHistogramName: "intpowerC"
+    TotalRMSHistoName:         "rawRMSC"
+    CorrelatedRMSHistoName:    "cohRMSC"
+    UncorrelatedRMSHistoName:  "intRMSC"
+}
+
+SBNDataNoiseBoardTool:
+{
+    tool_type:                 SBNDataNoiseBoard
+    Plane:                     2                # All default values are for induction 1 (first induction)
+    MedianNumBins:             25
+    NoiseRand:                 0.
+    CorrelatedSeed:            1000
+    UncorrelatedSeed:          5000
+    StoreHistograms:           false
+
+    NoiseHistFileName:         "dataFFTBoardHistos.root"
+    CorrelatedHistogramName:   "cohFFT"
+    UncorrelatedHistogramName: "intFFT"
+    TotalRMSHistoName:         "rawRMS"
+    CorrelatedRMSHistoName:    "cohRMS"
+    UncorrelatedRMSHistoName:  "intRMS"
+}
+
 WhiteNoiseTool:
 {
     tool_type:         RandomNoise
@@ -61,29 +104,45 @@ icarus_standard_simwire:
     DriftEModuleLabel:  "largeant"
     CompressionType:    "none"
     SimDeadChannels:    false
-    SuppressNoSignal:   true
+    SuppressNoSignal:   false
     SmearPedestals:     true
     MakeHistograms:     "true"
     TPCVec:             [ [0,0], [0,1], [1,0], [1,1] ]
     
     # current default (Sep 2019) is to run the noise model based on Gran Sasso experience
-    NoiseGenToolVec:    [@local::CorrelatedNoiseTool, @local::CorrelatedNoiseTool, @local::CorrelatedNoiseTool]
-    # This switches to an updated model, currently under development (Sep 2019), based on FNAL running
-    #NoiseGenToolVec:    [@local::SBNNoiseTool, @local::SBNNoiseTool, @local::SBNNoiseTool]
+    #NoiseGenToolVec:    [@local::CorrelatedNoiseTool, @local::CorrelatedNoiseTool, @local::CorrelatedNoiseTool]
+    # This switches to an updated model, currently under development (Jul 2021), based on FNAL running
+    NoiseGenToolVec:    [@local::SBNDataNoiseTool, @local::SBNDataNoiseTool, @local::SBNDataNoiseTool]
+
 }
 
-icarus_simwire:  @local::icarus_standard_simwire
+icarus_standard_simreadoutboard:
+{
+    module_type:        "SimReadoutBoardICARUS"
+    DriftEModuleLabel:  "largeant"
+    CompressionType:    "none"
+    SimDeadChannels:    false
+    SuppressNoSignal:   false
+    SmearPedestals:     true
+    MakeHistograms:     "true"
+    TPCVec:             [ [0,0], [0,1], [1,0], [1,1] ]
+    
+    # This switches to an updated model, currently under development (Jul 2021), based on FNAL running
+    NoiseGenTool:       @local::SBNDataNoiseBoardTool
+
+}
+
+icarus_simwire:         @local::icarus_standard_simwire
+icarus_simreadoutboard: @local::icarus_standard_simreadoutboard
 
 icarus_simwire.NoiseGenToolVec[0].Plane:             0
 # Below overrides for SBN Noise tool
-#icarus_simwire.NoiseGenToolVec[0].NoiseHistFileName: "FFTww01m.root"
 
 icarus_simwire.NoiseGenToolVec[1].Plane:             1
 # Below overrides for SBN Noise model
-#icarus_simwire.NoiseGenToolVec[1].NoiseHistFileName: "FFTwe10.root"
 
 icarus_simwire.NoiseGenToolVec[2].Plane:             2
 # Below overrides for SBN Noise model
-#icarus_simwire.NoiseGenToolVec[2].NoiseHistFileName: "FFTwe10.root"
+
 
 END_PROLOG
