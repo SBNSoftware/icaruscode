@@ -33,6 +33,7 @@
 
 #include "icaruscode/Decode/ChannelMapping/IICARUSChannelMap.h"
 #include "lardata/DetectorInfoServices/DetectorClocksService.h"
+#include "icaruscode/Timing/DataProducts/PMTWaveformTimeCorrection.h"
 #include "icaruscode/PMT/Calibration/CaloTools/LaserPulse.h"
 
 
@@ -59,23 +60,19 @@ public:
 
   void analyze(art::Event const& event) override;
 
-  bool isIlluminated( unsigned int channel );
-
-  template<typename T> 
-    T mean( std::vector<T> data, size_t start_sample, size_t end_sample );
-
-  void clean();
-
 private:
 
+  art::InputTag fOpDetWaveformLabel;
 
-  art::InputTag m_opdetwaveform_label;
+  art::InputTag fTimingCorrectionInputLabel;
 
   bool m_filter_noise;
 
   unsigned int fLaserChannel = 0U;
 
   fhicl::ParameterSet m_waveform_config;
+
+  bool fDebugMessages;
 
   std::size_t fExpectedReadoutSize = 5000;
 
@@ -119,6 +116,9 @@ private:
   std::vector<double> *m_ndf = NULL;
   std::vector<double> *m_fitstatus = NULL; // O:good, >0: bad,  < 0: not working
 
+  bool isIlluminated( unsigned int channel );
+
+  void clean();
 
 };
 
@@ -128,14 +128,24 @@ private:
 
 pmtcalo::PMTLaserCalibration::PMTLaserCalibration(fhicl::ParameterSet const& pset)
   : art::EDAnalyzer(pset)  // ,
-  , m_opdetwaveform_label{ pset.get<art::InputTag>("OpDetWaveformLabel", "daqPMTLaser") }
-  , m_filter_noise{ pset.get<bool>("FilterNoise", false) }
+  , fOpDetWaveformLabel{ pset.get<art::InputTag>("OpDetWaveformLabel", "daqPMTLaser") }
+  , fTimingCorrectionInputLabel
+    { pset.get<art::InputTag>("PMTWaveformTimingCorrectionLabel", "daqPMT:trgprim") }
   , fLaserChannel{ pset.get<unsigned int>("LaserChannel", 1) }
   , m_waveform_config{ pset.get<fhicl::ParameterSet>("WaveformAnalysis") }
+  , fDebugMessages{ pset.get<bool>("DebugMessage", false) }
   , fChannelMap{ *(art::ServiceHandle<icarusDB::IICARUSChannelMap const>{}) }
   , fClocksData
-      { art::ServiceHandle<detinfo::DetectorClocksService const>()->DataForJob() }
+    { art::ServiceHandle<detinfo::DetectorClocksService const>()->DataForJob() }
 { 
+
+
+  // If the time corrections are already applied at decoder level
+  //  fTimingCorrectionInputLabel should remain empty.
+  if( fTimingCorrectionInputLabel.empty() ){
+    mf::LogError("PMTLaserCalibration")
+      << "Timing correction InputLabel not set: timing correction will not be applied"; 
+  }
 
 
   myWaveformAna = new LaserPulse(m_waveform_config);
@@ -203,17 +213,6 @@ bool pmtcalo::PMTLaserCalibration::isIlluminated( unsigned int channel ) {
 }
 
 
-//-----------------------------------------------------------------------------
-
-
-template<typename T>
-T pmtcalo::PMTLaserCalibration::mean( std::vector<T> data, size_t start_sample, size_t end_sample ) {
-
-  auto sum = std::accumulate(data.begin()+start_sample, data.begin()+end_sample, 0);
-  return sum / (end_sample-start_sample);
-
-}
-
 
 //-----------------------------------------------------------------------------
 
@@ -225,9 +224,34 @@ void pmtcalo::PMTLaserCalibration::analyze(art::Event const& event)
   
   m_event = event.id().event();
 
+  std::vector<double> startTimeCorrection{360, 0};
+  if( !fTimingCorrectionInputLabel.empty() ){
+
+    art::Handle<std::vector<icarus::timing::PMTWaveformTimeCorrection>> pmtTimeCorrectionHandle;
+    event.getByLabel(fTimingCorrectionInputLabel , pmtTimeCorrectionHandle);
+
+    if( !pmtTimeCorrectionHandle.isValid() || pmtTimeCorrectionHandle->empty() ) {
+      
+      for( size_t channelId=0; channelId<(*pmtTimeCorrectionHandle).size(); channelId++ ){
+
+        auto waveformCorr = (*pmtTimeCorrectionHandle)[channelId];
+        startTimeCorrection[channelId] = waveformCorr.startTime;
+
+      }
+
+    } else {
+      mf::LogError("PMTLaserCalibration")
+        << "Invalid input label for product std::vector<icarus::timing::PMTWaveformTimeCorrection>";
+      throw; 
+    }
+     
+
+  } 
+
+
   art::Handle< std::vector< raw::OpDetWaveform > > rawWaveformHandle;
   
-  if( event.getByLabel(m_opdetwaveform_label, rawWaveformHandle) ) {
+  if( event.getByLabel(fOpDetWaveformLabel, rawWaveformHandle) ) {
 
 
     for( auto const& raw_waveform : (*rawWaveformHandle) ) {
@@ -239,34 +263,30 @@ void pmtcalo::PMTLaserCalibration::analyze(art::Event const& event)
 
       m_channel_id->push_back( channelId );
      
-      myWaveformAna->loadData( raw_waveform );
-      
-      if( m_filter_noise ){ myWaveformAna->filterNoise(); }
 
+      myWaveformAna->loadData( raw_waveform );
       auto pulse = myWaveformAna->getLaserPulse();
       
       // Mostly here we fill up our TTrees
-
       m_peak_time->push_back( pulse.time_peak );
-
+      
       m_amplitude->push_back( pulse.amplitude );
-
+      
       m_integral->push_back( pulse.integral );
-
+      
       m_total_charge->push_back( myWaveformAna->getTotalCharge() );
 
-      // Given with respect to the waveform start
-      // NB not super elegant: sampling period should be taken from services
+      // NB sampling period should be taken from services
       double laser_time = raw_waveform.TimeStamp() + pulse.fit_start_time/1000.; 
 
-      double corr_laser_time = laser_time - fClocksData.TriggerTime();
+      double corr_laser_time = laser_time + startTimeCorrection[channelId];
       
       m_fit_start_time->push_back(laser_time);
       
       // We want the laser position with respect to the trigger time 
       m_corr_start_time->push_back( corr_laser_time );
       
-      if ( pulse.amplitude > 100 && false ){
+      if ( pulse.amplitude > 100 && fDebugMessages ){
 
         std::cout << channelId
                   << ", " << pulse.fit_start_time  
@@ -313,7 +333,7 @@ void pmtcalo::PMTLaserCalibration::analyze(art::Event const& event)
   else {
 
     mf::LogError("PMTLaserCalibration") 
-      << " No OpDetWaveform information with label " << m_opdetwaveform_label.label() << "\n";
+      << " No OpDetWaveform information with label " << fOpDetWaveformLabel.label() << "\n";
       throw;
 
   }

@@ -7,6 +7,7 @@ add_subdirectory(CaloTools)
 add_subdirectory(fcl)
 
 simple_plugin(PMTLaserCalibration "module"
+                icaruscode_Timing_DataProducts
                 icaruscode_PMT_Algorithms
                 icaruscode_PMT_Calibration_CaloTools
                 lardataobj_RawData

@@ -4,12 +4,12 @@ BEGIN_PROLOG
 
 pmt_laser_calibration:
 {
-  module_type: 	      PMTLaserCalibration
-  SpareChannelLabel:  "daqPMT:trgprim"
+  module_type: PMTLaserCalibration
   OpDetWaveformLabel: "daqPMT"
-  FilterNoise:        false
+  PMTWaveformTimingCorrectionLabel:  ""  #or "daqPMT:trgprim" if the corrections are applied at decoder level already 
   LaserChannel:       1
   WaveformAnalysis :  @local::laser_pulse_configuration
+  DebugMessage:       false 
 }
 
 pmt_bkgphotons_calibration:
