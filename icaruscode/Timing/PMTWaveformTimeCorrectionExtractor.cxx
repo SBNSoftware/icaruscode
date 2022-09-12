@@ -38,6 +38,26 @@
 #include <tuple>
 
 // -----------------------------------------------------------------------------
+icarus::timing::PMTWaveformTimeCorrectionExtractor::Error::Error
+  (std::string const& msg /* == "" */)
+    : cet::exception{
+      "PMTWaveformTimeCorrectionExtractor::MultipleCorrectionsForChannel", msg
+      }
+{}
+
+
+icarus::timing::PMTWaveformTimeCorrectionExtractor::MultipleCorrectionsForChannel
+::MultipleCorrectionsForChannel
+  (unsigned int existing, unsigned int additional)
+    : Error{
+      "Attempt to overwrite correction from channel "
+      + std::to_string(existing) + " with one from channel "
+      + std::to_string(additional) + "\n"
+      }
+{}
+
+
+// -----------------------------------------------------------------------------
 
 
 icarus::timing::PMTWaveformTimeCorrectionExtractor::PMTWaveformTimeCorrectionExtractor(
@@ -133,14 +153,22 @@ void icarus::timing::PMTWaveformTimeCorrectionExtractor::findWaveformTimeCorrect
 
         mf::LogError("icarus::timing::PMTWaveformTimeCorrectionExtractor") << 
             "Invalid special channel number: " << std::hex << waveChannelID << 
-            "And category: " << cateogry;
+            " And category: " << cateogry;
 
-        throw;
+        throw; // FIXME
     }
 
     // This will be the first sample of the falling edge of the special channel signal
     // Which corresponds to the global trigger time. 
     int startSampleSignal = static_cast<int>( getStartSample( wave ) );
+    
+    // allocates room for correction for `channel`; intermediate ones are defaulted
+    auto correctionFor
+      = [&corrections](unsigned int channel) -> PMTWaveformTimeCorrection& 
+      {
+        if (channel >= corrections.size()) corrections.resize(channel + 1);
+        return corrections[channel];
+      };
     
     // we now access the channels that we need
     for( auto const & crateFragID : itCrateFragment->second ){
@@ -155,13 +183,22 @@ void icarus::timing::PMTWaveformTimeCorrectionExtractor::findWaveformTimeCorrect
                 cableDelay = fPMTTimingCorrectionsService.getTriggerCableDelay(channelID);
             }
 
+            // time in electronics scale when trigger signal arrived to readout;
+            // ideally, it would be fClocksData.TriggerTime()
             double newStartTime = wave.TimeStamp() 
                     + startSampleSignal * fClocksData.OpticalClock().TickPeriod() 
                     + cableDelay; // << The correction is saved already with a minus sign
 
-            corrections[channelID].channelID = waveChannelID;
-            corrections[channelID].sample = startSampleSignal * fClocksData.OpticalClock().TickPeriod();
-            corrections[channelID].startTime = fClocksData.TriggerTime() - newStartTime;
+            PMTWaveformTimeCorrection& correction = correctionFor(channelID);
+            if (correction.isValid()) {
+              throw MultipleCorrectionsForChannel
+                { correction.channelID, waveChannelID };
+            }
+            
+            correction.channelID = waveChannelID;
+            correction.sample = startSampleSignal * fClocksData.OpticalClock().TickPeriod();
+            correction.startTime = fClocksData.TriggerTime() - newStartTime;
+            // TODO add check that we are not overwriting a correction
 
             if(fVerbose){
                 std::cout << channelID                                              << ", " 

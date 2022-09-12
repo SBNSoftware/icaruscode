@@ -33,6 +33,14 @@ class icarus::timing::PMTWaveformTimeCorrectionExtractor {
 	
 	public: 
 
+        /// Exception thrown when trying to overwrite a correction.
+        struct Error: cet::exception { Error(std::string const& msg = ""); };
+        
+        /// Exception thrown when trying to overwrite a correction.
+        struct MultipleCorrectionsForChannel: Error {
+            MultipleCorrectionsForChannel(unsigned int existing, unsigned int additional);
+        };
+
         PMTWaveformTimeCorrectionExtractor(
             detinfo::DetectorClocksData const detTimingService,
             icarusDB::IICARUSChannelMap const & channelMapService,
