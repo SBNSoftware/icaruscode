@@ -1,6 +1,6 @@
 ///////////////////////////////////////////////////////////////////////
 ///
-/// \file   PMTTimingCorrections
+/// \file   icaruscode/Timing/PMTTimingCorrections.h
 ///
 /// \brief  Interface class between the calibration database and the PMT time corrections
 ///
@@ -10,8 +10,8 @@
 ///
 ////////////////////////////////////////////////////////////////////////
 
-#ifndef PMTTIMINGCORRECTIONS_H
-#define PMTTIMINGCORRECTIONS_H
+#ifndef ICARUSCODE_TIMING_PMTTIMINGCORRECTIONS_H
+#define ICARUSCODE_TIMING_PMTTIMINGCORRECTIONS_H
 
 
 #include "larcorealg/CoreUtils/UncopiableAndUnmovableClass.h"
@@ -27,13 +27,13 @@ namespace icarusDB {
 			
 			virtual ~PMTTimingCorrections() noexcept = default;
 			
-			virtual double getTriggerCableDelay( const unsigned int & channelID ) const = 0;
+			virtual double getTriggerCableDelay( unsigned int channelID ) const = 0;
 			
-			virtual double getResetCableDelay( const unsigned int & channelID ) const = 0;
+			virtual double getResetCableDelay( unsigned int channelID ) const = 0;
 
-			virtual double getLaserCorrections( const unsigned int & channelID ) const = 0;
+			virtual double getLaserCorrections( unsigned int channelID ) const = 0;
 
-			virtual double getCosmicsCorrections( const unsigned int & channelID ) const = 0;
+			virtual double getCosmicsCorrections( unsigned int channelID ) const = 0;
 
 	}; // end class
 

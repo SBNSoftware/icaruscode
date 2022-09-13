@@ -1,5 +1,5 @@
 /**
- * @file   icaruscode/Timing/ICARUSPMTTimingCorrections_service.cc
+ * @file   icaruscode/Timing/PMTTimingCorrectionsProvider.cxx
  * @brief  Service for the PMT timing corrections.
  * @author Andrea Scarpelli (ascarpell@bnl.gov)
  */
@@ -43,7 +43,7 @@ icarusDB::PMTTimingCorrectionsProvider::PMTTimingCorrectionsProvider
 /// Access the PostgreSQL calibration database for icarus
 /// Query depends on the run 
 int icarusDB::PMTTimingCorrectionsProvider::ConnectToDataset(
-    const std::string& name, const uint32_t &run, Dataset& dataset ) const {
+    const std::string& name, uint32_t run, Dataset& dataset ) const {
 
     int error = 0;
     std::string url = fUrl + "f="+name +"&t="+std::to_string(run);
@@ -68,7 +68,7 @@ int icarusDB::PMTTimingCorrectionsProvider::ConnectToDataset(
 // -----------------------------------------------------------------------------
 
 /// Function to look up the calibration database at the table holding the pmt hardware cables corrections
-void icarusDB::PMTTimingCorrectionsProvider::ReadPMTCablesCorrections( const uint32_t & run ) { 
+void icarusDB::PMTTimingCorrectionsProvider::ReadPMTCablesCorrections( uint32_t run ) { 
 
     // pmt_cables_delay: delays of the cables relative to trigger 
     // and reset distribution
@@ -126,7 +126,7 @@ void icarusDB::PMTTimingCorrectionsProvider::ReadPMTCablesCorrections( const uin
 // -----------------------------------------------------------------------------
 
 /// Function to look up the calibration database at the table holding the pmt timing corrections measured using the laser
-void icarusDB::PMTTimingCorrectionsProvider::ReadLaserCorrections( const uint32_t & run ) { 
+void icarusDB::PMTTimingCorrectionsProvider::ReadLaserCorrections( uint32_t run ) { 
 
     const std::string name("pmt_laser_timing_data");
     Dataset dataset;
@@ -162,7 +162,7 @@ void icarusDB::PMTTimingCorrectionsProvider::ReadLaserCorrections( const uint32_
 
 /*
 /// Function to look up the calibration database at the table holding the pmt timing corrections measured using cosmic muons
-void icarus::PMTTimingCorrectionsProvider::ReadCosmicsCorrections( const uint32_t & run ) { 
+void icarus::PMTTimingCorrectionsProvider::ReadCosmicsCorrections( uint32_t run ) { 
 
     const std::string name("pmt_muons_timing_data");
     Dataset dataset;

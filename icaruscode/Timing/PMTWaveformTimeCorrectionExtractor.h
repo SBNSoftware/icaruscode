@@ -1,5 +1,5 @@
 /**
- * @file   TimingCorrectionExtraction_module.cc
+ * @file   icaruscode/Timing/PMTWaveformTimeCorrectionExtractor.h
  * @brief  Extract timing correction and adjust waveform starting point.
  * @author Andrea Scarpelli (ascarpell@bnl.gov)
  * @date   June 03, 2022
@@ -63,9 +63,11 @@ class icarus::timing::PMTWaveformTimeCorrectionExtractor {
 	
 	public: 
 
+        // --- BEGIN -- Exceptions ---------------------------------------------
+
         /// Exception thrown when trying to overwrite a correction.
         struct Error: cet::exception { Error(std::string const& msg = ""); };
-        
+
         /// Exception thrown when trying to overwrite a correction.
         struct MultipleCorrectionsForChannel: Error {
             MultipleCorrectionsForChannel(unsigned int existing, unsigned int additional);
@@ -83,13 +85,14 @@ class icarus::timing::PMTWaveformTimeCorrectionExtractor {
             private: static Error makeBaseException(unsigned int channel);
         };
 
+        // --- END ---- Exceptions ---------------------------------------------
+
+
         PMTWaveformTimeCorrectionExtractor(
             detinfo::DetectorClocksData const detTimingService,
             icarusDB::IICARUSChannelMap const & channelMapService,
             icarusDB::PMTTimingCorrections const* pmtTimingCorrectionsService, 
-            bool const & verbose );
-
-        ~PMTWaveformTimeCorrectionExtractor(){};
+            bool verbose );
 
         /**
          * @brief Extracts a correction from `wave` and assigns it to channels.
@@ -123,7 +126,7 @@ class icarus::timing::PMTWaveformTimeCorrectionExtractor {
          */
         void findWaveformTimeCorrections(   
             raw::OpDetWaveform const & wave,
-            bool const & correctCableDelay,
+            bool correctCableDelay,
             std::vector<PMTWaveformTimeCorrection> & corrections ) const;
 
 
@@ -135,7 +138,7 @@ class icarus::timing::PMTWaveformTimeCorrectionExtractor {
 
         icarusDB::PMTTimingCorrections const* fPMTTimingCorrectionsService = nullptr;
 
-        bool const & fVerbose;
+        bool const fVerbose;
 
         std::map<unsigned int, std::vector<unsigned int>> const
             fCrateFragmentMap {
@@ -151,19 +154,20 @@ class icarus::timing::PMTWaveformTimeCorrectionExtractor {
 
         template<typename T>
             static size_t getMaxBin( 
-                std::vector<T> vv, 
+                std::vector<T> const& vv,
                 size_t startElement, 
                 size_t endElement);
 
         template<typename T>
             static size_t getMinBin( 
-                std::vector<T> vv, 
+                std::vector<T> const& vv,
                 size_t startElement, 
                 size_t endElement);
 
         template<typename T>
-            static size_t getStartSample( std::vector<T> vv );
+            static size_t getStartSample( std::vector<T> const& vv );
 
 };
+
 
 #endif //ICARUSCODE_TIMING_PMTWAVEFORMTIMECORRECTIONEXTRACTOR_H

@@ -807,7 +807,7 @@ class icarus::DaqDecoderICARUSPMT: public art::EDProducer {
   bool const fRequireBoardConfig;
 
   /// String of the instance to use for the time corrections
-  std::string fCorrectionInstance;
+  std::string const fCorrectionInstance;
   
   /// Whether to apply cable delay corrections.
   bool const fApplyCableDelayCorrection;

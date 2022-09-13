@@ -1,5 +1,5 @@
 /**
- * @file   TimingCorrectionExtraction_module.cc
+ * @file   icaruscode/Timing/PMTWaveformTimeCorrectionExtractor.cxx
  * @brief  Extract timing correction and adjust waveform starting point.
  * @author Andrea Scarpelli (ascarpell@bnl.gov)
  * @date   June 03, 2022
@@ -95,7 +95,7 @@ icarus::timing::PMTWaveformTimeCorrectionExtractor::PMTWaveformTimeCorrectionExt
             detinfo::DetectorClocksData const detTimingService,
             icarusDB::IICARUSChannelMap const & channelMapService,
             icarusDB::PMTTimingCorrections const* pmtTimingCorrectionsService, 
-            bool const & verbose )
+            bool verbose )
 : fClocksData( detTimingService )
 , fChannelMap( channelMapService )
 , fPMTTimingCorrectionsService( pmtTimingCorrectionsService )
@@ -108,7 +108,7 @@ icarus::timing::PMTWaveformTimeCorrectionExtractor::PMTWaveformTimeCorrectionExt
 
 template<typename T>
   size_t icarus::timing::PMTWaveformTimeCorrectionExtractor::getMinBin( 
-        std::vector<T> vv, size_t startElement, size_t endElement ){
+        std::vector<T> const& vv, size_t startElement, size_t endElement ){
 
     auto minel = 
         std::min_element( vv.begin()+startElement, vv.begin()+endElement );
@@ -123,7 +123,7 @@ template<typename T>
 
 template<typename T>
   size_t icarus::timing::PMTWaveformTimeCorrectionExtractor::getMaxBin( 
-            std::vector<T> vv, size_t startElement, size_t endElement){
+            std::vector<T> const& vv, size_t startElement, size_t endElement){
 
     auto maxel = 
         std::max_element( vv.begin()+startElement, vv.begin()+endElement );
@@ -138,7 +138,7 @@ template<typename T>
 
 
 template<typename T>
-  size_t icarus::timing::PMTWaveformTimeCorrectionExtractor::getStartSample( std::vector<T> vv ){
+  size_t icarus::timing::PMTWaveformTimeCorrectionExtractor::getStartSample( std::vector<T> const& vv ){
     
     // NOTE: when changing this algorithm, also update the documentation
     // in the section "Signal timing extraction" of the class documentation
@@ -174,7 +174,7 @@ template<typename T>
 
 void icarus::timing::PMTWaveformTimeCorrectionExtractor::findWaveformTimeCorrections
 (   raw::OpDetWaveform const & wave,
-    bool const & correctCableDelay,
+    bool correctCableDelay,
     std::vector<PMTWaveformTimeCorrection> & corrections  ) const
 {
     if (!fPMTTimingCorrectionsService && correctCableDelay) {

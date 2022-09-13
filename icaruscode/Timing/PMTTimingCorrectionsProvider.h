@@ -1,5 +1,5 @@
 /**
- * @file   icaruscode/Timing/ICARUSPMTTimingCorrections_service.cc
+ * @file   icaruscode/Timing/PMTTimingCorrectionsProvider.h
  * @brief  Service for the PMT timing corrections.
  * @author Andrea Scarpelli (ascarpell@bnl.gov)
  */
@@ -83,19 +83,19 @@ class icarusDB::PMTTimingCorrectionsProvider : public PMTTimingCorrections {
 
         void readTimeCorrectionDatabase(const art::Run& run);
 
-        double getTriggerCableDelay( const unsigned int & channelID ) const override {
+        double getTriggerCableDelay( unsigned int channelID ) const override {
             return getChannelCorrOrDefault(channelID).triggerCableDelay;
         };
 
-        double getResetCableDelay( const unsigned int & channelID ) const override {
+        double getResetCableDelay( unsigned int channelID ) const override {
             return getChannelCorrOrDefault(channelID).resetCableDelay;
         };
 
-        double getLaserCorrections( const unsigned int & channelID ) const override {
+        double getLaserCorrections( unsigned int channelID ) const override {
             return getChannelCorrOrDefault(channelID).laserCableDelay;
         };
 
-        double getCosmicsCorrections( const unsigned int & channelID ) const override {
+        double getCosmicsCorrections( unsigned int channelID ) const override {
             return getChannelCorrOrDefault(channelID).cosmicsCorrections;
         };
 
@@ -124,20 +124,20 @@ class icarusDB::PMTTimingCorrectionsProvider : public PMTTimingCorrections {
         
         /// Internal access to the channel correction record; returns defaults if not present.
         PMTTimeCorrectionsDB const& getChannelCorrOrDefault
-            (const unsigned int & channelID) const
+            (unsigned int channelID) const
             {
                 auto const it = fDatabaseTimingCorrections.find(channelID);
                 return (it == fDatabaseTimingCorrections.end())? CorrectionDefaults: it->second;
             }
 
         int ConnectToDataset(const std::string& name, 
-            const uint32_t &run, Dataset& dataset ) const;
+            uint32_t run, Dataset& dataset ) const;
 
-        void ReadPMTCablesCorrections(const uint32_t & run);
+        void ReadPMTCablesCorrections(uint32_t run);
 
-        void ReadLaserCorrections(const uint32_t & run);
+        void ReadLaserCorrections(uint32_t run);
 
-        void ReadCosmicsCorrections(const uint32_t & run);
+        void ReadCosmicsCorrections(uint32_t run);
 
 }; // services class
 
