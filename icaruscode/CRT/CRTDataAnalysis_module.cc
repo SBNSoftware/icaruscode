@@ -209,7 +209,7 @@ namespace crt {
     float    fYErrHit; ///< stat error of CRT hit reco Y (cm)
     float    fZErrHit; ///< stat error of CRT hit reco Z (cm)
     uint64_t    fT0Hit; ///< hit time w.r.t. PPS
-    uint64_t    fT1Hit; ///< hit time w.r.t. global event time
+    Long64_t    fT1Hit; ///< hit time w.r.t. global trigger
     int       fHitReg; ///< region code of CRT hit
     int       fHitSubSys;
     int       fNHit; ///< number of CRT hits for this event
@@ -412,7 +412,7 @@ namespace crt {
 	for(int chan=0; chan<32; chan++) {
 	  std::pair<double,double> const chg_cal = fChannelMap->getSideCRTCalibrationMap((int)crtList[febdat_i]->fMac5,chan);
 	  float pe = (crtList[febdat_i]->fAdc[chan]-chg_cal.second)/chg_cal.first;
-	  if(pe<=fPEThresh) continue;
+	  if(pe<=fPEThresh && crtList[febdat_i]->fFlags==3) continue;
 	  presel = true;
 	}
       }else if ( type == 'c' ) {
@@ -501,7 +501,6 @@ namespace crt {
 	  int mactmp = hit.feb_id[0];
 	  fHitReg  = fCrtutils->AuxDetRegionNameToNum(fCrtutils->MacToRegion(mactmp));
 	  fHitSubSys =  fCrtutils->MacToTypeCode(mactmp);
-	  
 	  
 	  m_gate_crt_diff = m_gate_start_timestamp - hit.ts0_ns;
 	  

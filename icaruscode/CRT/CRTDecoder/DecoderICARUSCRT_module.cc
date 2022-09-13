@@ -217,6 +217,7 @@ void crt::DecoderICARUSCRT::produce(art::Event& evt)
   std::vector<icarus::crt::CRTData> allCRTdata;
   
   for (auto & hit : hit_vector){
+
     CorrectForCableDelay(hit);  //add PPS cable length
 
     if(IsSideCRT(hit)) {
@@ -472,7 +473,6 @@ void crt::DecoderICARUSCRT::produce(art::Event& evt)
         data.fCoinc                   = hit.coinc;
         data.fLastAcceptedTimestamp   = hit.last_accepted_timestamp;
         data.fLostHits                = hit.lost_hits;
-
         unsigned destCh = recipe.firstDestChannel;
         for (unsigned srcCh = recipe.firstSourceChannel; srcCh <= recipe.lastSourceChannel; ++srcCh) {
 
