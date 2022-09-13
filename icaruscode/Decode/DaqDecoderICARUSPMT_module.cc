@@ -630,11 +630,11 @@ class icarus::DaqDecoderICARUSPMT: public art::EDProducer {
       };
 
     fhicl::Atom<std::string> CorrectionInstance {
-        Name("CorrectionInstance"),
-        Comment
-            ("The instance name for the signal to use as reference for the time corrections"),
-        ""
-    };
+      Name("CorrectionInstance"),
+      Comment
+        ("The instance name for the signal to use as reference for the time corrections"),
+      ""
+      };
     
     fhicl::Atom<bool> ApplyCableDelayCorrection {
       Name("ApplyCableDelayCorrection"),
