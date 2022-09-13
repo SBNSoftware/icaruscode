@@ -183,6 +183,8 @@ namespace icarus { class DaqDecoderICARUSPMT; }
  *     if this option is set to `false`, all PMT readout boards are assumed to
  *     have been triggered at the time of the global trigger. By default, this
  *     option is set to `true` unless `TriggerTag` is specified empty.
+ * * `ApplyCableDelayCorrection` (flag, default: `true`): if set, applies the
+ *     cable delay corrections from a database.
  * * `DataTrees` (list of strings, default: none): list of data trees to be
  *     produced; if none (default), then `TFileService` is not required.
  * * `SkipWaveforms` (flag, default: `false`) if set, waveforms won't be
@@ -216,6 +218,9 @@ namespace icarus { class DaqDecoderICARUSPMT; }
  * * `IICARUSChannelMap` for the association of fragments to LArSoft channel ID;
  * * `DetectorClocksService` for the correct decoding of the time stamps
  *   (always required, even when dumbed-down timestamp decoding is requested);
+ * * `IPMTTimingCorrectionService` for the
+ *   @ref icarus_PMTDecoder_TimeCorr "cable delay timing corrections"
+ *   (if `ApplyCableDelayCorrection` is set);
  * * `TFileService` only if the production of trees or plots is requested.
  * 
  * 
@@ -305,10 +310,15 @@ namespace icarus { class DaqDecoderICARUSPMT; }
  *   are all synchronized and when the primitive trigger arrives (via daisy
  *   chain) the TTT value at that instant is already including the delay.
  * 
+ * 
  * ### Further time corrections
  * @anchor icarus_PMTDecoder_TimeCorr
  * 
  * TODO
+ * Time corrections are also applied for cable delays unless 
+ * `ApplyCableDelayCorrection` is unset. These corrections are learned via
+ * `IPMTTimingCorrectionService` service.
+ * 
  * 
  * 
  * Data trees
@@ -610,6 +620,12 @@ class icarus::DaqDecoderICARUSPMT: public art::EDProducer {
         ""
     };
     
+    fhicl::Atom<bool> ApplyCableDelayCorrection {
+      Name("ApplyCableDelayCorrection"),
+      Comment("apply cable delay corrections from the database channel-wise"),
+      true
+      };
+
     fhicl::OptionalAtom<art::InputTag> PMTconfigTag {
       Name("PMTconfigTag"),
       Comment("input tag for the PMT readout board configuration information")
@@ -777,6 +793,9 @@ class icarus::DaqDecoderICARUSPMT: public art::EDProducer {
   /// String of the instance to use for the time corrections
   std::string fCorrectionInstance;
   
+  /// Whether to apply cable delay corrections.
+  bool const fApplyCableDelayCorrection;
+  
   /// Input tag of the PMT configuration.
   std::optional<art::InputTag> const fPMTconfigTag;
   
@@ -811,7 +830,7 @@ class icarus::DaqDecoderICARUSPMT: public art::EDProducer {
   icarusDB::IICARUSChannelMap const& fChannelMap;
 
   /// The online PMT corrections service provider.
-  icarusDB::PMTTimingCorrections const& fPMTTimingCorrectionsService;
+  icarusDB::PMTTimingCorrections const* const fPMTTimingCorrectionsService;
 
   // --- END ---- Services -----------------------------------------------------
 
@@ -1390,6 +1409,7 @@ icarus::DaqDecoderICARUSPMT::DaqDecoderICARUSPMT(Parameters const& params)
   , fRequireKnownBoards{ params().RequireKnownBoards() }
   , fRequireBoardConfig{ params().RequireBoardConfig() }
   , fCorrectionInstance{ params().CorrectionInstance() }
+  , fApplyCableDelayCorrection{ params().ApplyCableDelayCorrection() }
   , fPMTconfigTag{ params().PMTconfigTag() }
   , fTriggerTag{ params().TriggerTag() }
   , fTTTresetEverySecond
@@ -1409,8 +1429,11 @@ icarus::DaqDecoderICARUSPMT::DaqDecoderICARUSPMT(Parameters const& params)
   , fDetTimings
     { art::ServiceHandle<detinfo::DetectorClocksService const>()->DataForJob() }
   , fChannelMap{ *(art::ServiceHandle<icarusDB::IICARUSChannelMap const>{}) }
-  , fPMTTimingCorrectionsService
-    { *(lar::providerFrom<icarusDB::IPMTTimingCorrectionService const>()) }
+  , fPMTTimingCorrectionsService{
+      fApplyCableDelayCorrection
+        ? lar::providerFrom<icarusDB::IPMTTimingCorrectionService const>()
+        : nullptr
+    }
   , fPMTWaveformTimeCorrectionManager{
       fDetTimings.clockData(), fChannelMap,
       fPMTTimingCorrectionsService, fDiagnosticOutput
@@ -1522,6 +1545,8 @@ icarus::DaqDecoderICARUSPMT::DaqDecoderICARUSPMT(Parameters const& params)
     while (++it != fSaveCorrectionsFrom.end())
       log << ", '" << *it << "'";
   }
+  log << "\n *" << (fApplyCableDelayCorrection? " will": " will not")
+    << " apply cable delay corrections from database";
   
   //
   // sanity checks
@@ -1674,8 +1699,6 @@ void icarus::DaqDecoderICARUSPMT::produce(art::Event& event) {
   // ---------------------------------------------------------------------------
   // Time corrections
   //
-  bool const useCableDelay = true; // hook for a future option to disable it
-  
   std::map<std::string, std::vector<icarus::timing::PMTWaveformTimeCorrection>> timeCorrectionProducts;
   for (std::string const& instanceName: fSaveCorrectionsFrom)
     timeCorrectionProducts[instanceName] = {};
@@ -1704,7 +1727,7 @@ void icarus::DaqDecoderICARUSPMT::produce(art::Event& event) {
     try {
       fPMTWaveformTimeCorrectionManager.findWaveformTimeCorrections(
           waveform.waveform, 
-          (waveform.channelSetup->category == fCorrectionInstance ? useCableDelay : false),
+          (waveform.channelSetup->category == fCorrectionInstance ? fApplyCableDelayCorrection : false),
           itCorr->second );
     }
     catch (icarus::timing::PMTWaveformTimeCorrectionExtractor::MultipleCorrectionsForChannel const& e) {
@@ -1781,8 +1804,8 @@ void icarus::DaqDecoderICARUSPMT::produce(art::Event& event) {
         //  << correctTimeStamp << std::endl;
 
       }
-      else if (useCableDelay) {
-        correctTimeStamp +=  fPMTTimingCorrectionsService.getResetCableDelay(waveform.waveform.ChannelNumber());
+      else if (fApplyCableDelayCorrection) {
+        correctTimeStamp +=  fPMTTimingCorrectionsService->getResetCableDelay(waveform.waveform.ChannelNumber());
       }
       
       // Set a new Timestamp

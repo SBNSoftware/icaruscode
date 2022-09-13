@@ -94,7 +94,7 @@ auto icarus::timing::PMTWaveformTimeCorrectionExtractor::UnknownCrate::makeBaseE
 icarus::timing::PMTWaveformTimeCorrectionExtractor::PMTWaveformTimeCorrectionExtractor(
             detinfo::DetectorClocksData const detTimingService,
             icarusDB::IICARUSChannelMap const & channelMapService,
-            icarusDB::PMTTimingCorrections const& pmtTimingCorrectionsService, 
+            icarusDB::PMTTimingCorrections const* pmtTimingCorrectionsService, 
             bool const & verbose )
 : fClocksData( detTimingService )
 , fChannelMap( channelMapService )
@@ -210,7 +210,7 @@ void icarus::timing::PMTWaveformTimeCorrectionExtractor::findWaveformTimeCorrect
             double cableDelay = 0; 
 
             if( correctCableDelay ){
-                cableDelay = fPMTTimingCorrectionsService.getTriggerCableDelay(channelID);
+                cableDelay = fPMTTimingCorrectionsService->getTriggerCableDelay(channelID);
             }
 
             // time in electronics scale when trigger signal arrived to readout;

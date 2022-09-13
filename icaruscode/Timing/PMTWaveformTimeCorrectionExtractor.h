@@ -18,6 +18,7 @@
 #include "lardata/DetectorInfoServices/DetectorClocksService.h"
 #include "lardataalg/DetectorInfo/DetectorTimings.h"
 #include "lardataalg/DetectorInfo/DetectorClocks.h"
+#include "cetlib_except/exception.h"
 
 // C/C++ standard libraries
 #include <memory> // std::unique_ptr<>
@@ -56,7 +57,7 @@ class icarus::timing::PMTWaveformTimeCorrectionExtractor {
         PMTWaveformTimeCorrectionExtractor(
             detinfo::DetectorClocksData const detTimingService,
             icarusDB::IICARUSChannelMap const & channelMapService,
-            icarusDB::PMTTimingCorrections const& pmtTimingCorrectionsService, 
+            icarusDB::PMTTimingCorrections const* pmtTimingCorrectionsService, 
             bool const & verbose );
 
         ~PMTWaveformTimeCorrectionExtractor(){};
@@ -73,7 +74,7 @@ class icarus::timing::PMTWaveformTimeCorrectionExtractor {
 
         icarusDB::IICARUSChannelMap const & fChannelMap;
 
-        icarusDB::PMTTimingCorrections const& fPMTTimingCorrectionsService;
+        icarusDB::PMTTimingCorrections const* fPMTTimingCorrectionsService = nullptr;
 
         bool const & fVerbose;
 
