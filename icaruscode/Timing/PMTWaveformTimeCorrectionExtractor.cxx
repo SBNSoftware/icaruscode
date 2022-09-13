@@ -139,6 +139,9 @@ template<typename T>
 
 template<typename T>
   size_t icarus::timing::PMTWaveformTimeCorrectionExtractor::getStartSample( std::vector<T> vv ){
+    
+    // NOTE: when changing this algorithm, also update the documentation
+    // in the section "Signal timing extraction" of the class documentation
 
     // We are thinking in inverted polarity
     size_t minbin = getMinBin( vv, 0, vv.size() );

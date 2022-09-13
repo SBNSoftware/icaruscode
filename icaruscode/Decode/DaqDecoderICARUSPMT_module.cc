@@ -183,6 +183,11 @@ namespace icarus { class DaqDecoderICARUSPMT; }
  *     if this option is set to `false`, all PMT readout boards are assumed to
  *     have been triggered at the time of the global trigger. By default, this
  *     option is set to `true` unless `TriggerTag` is specified empty.
+ * * `CorrectionInstance` (string, default: empty): the category name of the
+ *     waveforms to use for @ref icarus_PMTDecoder_TimeCorr "timing correction".
+ *     Categories are defined in the `BoardSetup` configuration (each instance
+ *     name, `InstanceName`, defines also a category). If empty, no
+ *     waveform-based timing correction is used.
  * * `ApplyCableDelayCorrection` (flag, default: `true`): if set, applies the
  *     cable delay corrections from a database.
  * * `DataTrees` (list of strings, default: none): list of data trees to be
@@ -314,10 +319,21 @@ namespace icarus { class DaqDecoderICARUSPMT; }
  * ### Further time corrections
  * @anchor icarus_PMTDecoder_TimeCorr
  * 
- * TODO
  * Time corrections are also applied for cable delays unless 
  * `ApplyCableDelayCorrection` is unset. These corrections are learned via
  * `IPMTTimingCorrectionService` service.
+ * 
+ * Also, a timing correction can be applied to the waveforms based on a special
+ * waveform digitizing a trigger signal. The correction is the same for all the
+ * channels sharing the trigger signal, and more precisely, for all the channels
+ * in the same readout crate (which have the trigger signal propagate in chain
+ * from one to the next). The algorithm used to extract the correction from the
+ * special waveforms is `icarus::timing::PMTWaveformTimeCorrectionExtractor`.
+ * The decoder allows the extraction and saving of corrections from different
+ * types ("categories", as defined in the `BoardSetup` configuration) of special
+ * waveforms (see `SaveCorrectionsFrom`), but only the correction from a single
+ * category, chosen by `CorrectionInstance`, are applied to all the "standard"
+ * waveforms. Special waveforms have their time not corrected.
  * 
  * 
  * 

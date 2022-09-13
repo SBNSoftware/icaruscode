@@ -30,6 +30,35 @@
 
 namespace icarus::timing { class PMTWaveformTimeCorrectionExtractor; }
 
+/**
+ * @brief Extracts timing corrections from a waveform.
+ * 
+ * This algorithm extracts a time correction from a reference signal, and
+ * associates that correction with all the channels in the same PMT readout
+ * crate.
+ * 
+ * The correction extraction is performed by `findWaveformTimeCorrections()`.
+ * That method analyzes a reference waveform searching for a reference signal
+ * assumed to have been generated in time with the global trigger, and emits
+ * a correction so that this signal would appear at exactly the time of the
+ * global trigger (`detinfo::DetectorClocks::TriggerTime()`).
+ * 
+ * 
+ * Signal timing extraction
+ * -------------------------
+ * 
+ * The detection algorithm is currently quite unsophisticated.
+ * 
+ * The reference signal is expected to be a sharp square wave in negative
+ * polarity. The time of the correction is based on the front side of that wave:
+ * 
+ *  * the absolute minimum of the waveform is found
+ *  * an interval starting 20 ticks before that minimum is considered
+ *  * the baseline level is defined as the value at the start of that interval
+ *  * the start time is set to the exact tick with an amplitude exceeding 20%
+ *    of the maximum of the signal from the baseline
+ * 
+ */
 class icarus::timing::PMTWaveformTimeCorrectionExtractor {
 	
 	public: 
@@ -62,6 +91,36 @@ class icarus::timing::PMTWaveformTimeCorrectionExtractor {
 
         ~PMTWaveformTimeCorrectionExtractor(){};
 
+        /**
+         * @brief Extracts a correction from `wave` and assigns it to channels.
+         * @param wave the reference waveform to extract the correction from
+         * @param correctCableDelay whether to apply the correction for cable delays
+         * @param[in,out] corrections where to add the newly extracted corrections
+         * @throw NotASpecialChannel if `wave` is not a special channel
+         * @throw UnknownCrate if `wave` is from an unexpected readout crate
+         * @throw MultipleCorrectionsForChannel if `corrections` already contains
+         *   a correction for any of the channels we are associating to the new correction
+         * 
+         * This function performs the analysis of the reference waveform `wave`,
+         * extracts the correction out of it and associates it in `corrections`
+         * for all the channels that are in the same readout crate as the
+         * reference waveform itself.
+         * 
+         * The `corrections` list is extended as needed. Since `corrections`
+         * is a dense structure with as index the channel ID, it may happen that
+         * the extension produces correction information for channels not in
+         * this readout crate: in this case, these correction values are invalid
+         * (as in `PMTTimingCorrections::isValid()` returning `false`).
+         * Any attempt to overwrite a valid correction already in `corrections`
+         * will cause throwing an exception.
+         * 
+         * The channel ID in each stored correction is the one of the reference
+         * waveform the correction was extracted from, and likewise the `sample`
+         * data member is where the reference signal can be found within that
+         * waveform. The `startTime` correction is an offset to be _added_ to
+         * the waveform timestamps to correct them.
+         * 
+         */
         void findWaveformTimeCorrections(   
             raw::OpDetWaveform const & wave,
             bool const & correctCableDelay,

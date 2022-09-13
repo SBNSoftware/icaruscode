@@ -4,7 +4,7 @@
 ///
 /// \brief  Interface class between the calibration database and the PMT time corrections
 ///
-/// \author A. Scarpell
+/// \author A. Scarpelli
 ///
 /// \mailto ascarpell@bnl.gov
 ///

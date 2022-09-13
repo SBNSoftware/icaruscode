@@ -46,27 +46,45 @@
 // -----------------------------------------------------------------------------
 namespace icarus { class OpHitTimingCorrection; }
 /**
- * @brief 
+ * @brief Creates a new collection of optical hits with corrected time.
  * 
- * This module reads 
+ * This module reads reconstructed optical detector hits and applies time
+ * corrections from laser and cosmic ray analyses as found in the
+ * `icarusDB::IPMTTimingCorrectionService` service. The corrections are based
+ * solely on the PMT channel the hits were reconstructed from.
+ * 
+ * A new collection of hits is produced containing a corrected copy of all the
+ * hits from the input collections.
+ * 
  * 
  * Input
  * ------
+ * 
+ * * `std::vector<recob::OpHit>` data products (as for `InputLabels`)
  * 
  * 
  * Output
  * -------
  * 
+ * * a single `std::vector<recob::OpHit>` data product with the hits from the
+ *   input collections, all with corrected times; the hits are in the order of
+ *   the data products specified in input.
  * 
  * 
  * Configuration parameters
  * -------------------------
  * 
- * 
- * 
- * Multithreading
- * ---------------
- * 
+ * * `InputLabels` (list of input tags, mandatory): the list of optical hit data
+ *   products to apply the time corrections on. It must be non-empty.
+ * * `CorrectLaser` (flag, default: `true`): if set, applies the correction
+ *   extracted from laser runs.
+ * * `CorrectCosmics` (flag, default: `true`): if set, applies the correction
+ *   extracted from cosmic ray analysis. This is a correction on top of the one
+ *   from the laser, so `CorrectLaser` must also be set.
+ * * `Verbose` (flag, default: `false`): prints on screen the corrections being
+ *   applied.
+ * * `LogCategory` (string, default: `OpHitTimingCorrection`): name of the
+ *   message stream for console output.
  * 
  */
 class icarus::OpHitTimingCorrection: public art::EDProducer {
