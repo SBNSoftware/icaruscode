@@ -13,7 +13,7 @@
 #include "canvas/Utilities/InputTag.h"
 
 #include "art/Framework/Services/Registry/ServiceHandle.h" 
-#include "art/Framework/Core/EDProducer.h"
+#include "art/Framework/Core/SharedProducer.h"
 #include "art/Framework/Core/ModuleMacros.h"
 #include "art/Framework/Principal/Event.h"
 #include "art/Framework/Principal/Handle.h"
@@ -76,7 +76,7 @@ namespace icarus { class OpHitTimingCorrection; }
  *   message stream for console output.
  * 
  */
-class icarus::OpHitTimingCorrection: public art::EDProducer {
+class icarus::OpHitTimingCorrection: public art::SharedProducer {
   
 public:
   
@@ -114,13 +114,13 @@ public:
     
   }; // struct Config
 
-  using Parameters = art::EDProducer::Table<Config>;
+  using Parameters = art::SharedProducer::Table<Config>;
 
   /// Constructor: just reads the configuration.
-  explicit OpHitTimingCorrection(Parameters const& config);
+  explicit OpHitTimingCorrection(Parameters const& config, art::ProcessingFrame const&);
     
   /// process the event
-  void produce(art::Event& event ) override;
+  void produce(art::Event& event, art::ProcessingFrame const&) override;
 
 private:
 
@@ -141,8 +141,9 @@ private:
 
 
 // -----------------------------------------------------------------------------
-icarus::OpHitTimingCorrection::OpHitTimingCorrection( Parameters const& config ) 
-    : art::EDProducer(config)
+icarus::OpHitTimingCorrection::OpHitTimingCorrection
+    ( Parameters const& config, art::ProcessingFrame const& )
+    : art::SharedProducer(config)
     , fInputLabels{ config().InputLabels() }
     , fCorrectLaser{ config().CorrectLaser() }
     , fCorrectCosmics{ config().CorrectCosmics() }
@@ -151,6 +152,7 @@ icarus::OpHitTimingCorrection::OpHitTimingCorrection( Parameters const& config )
     , fPMTTimingCorrectionsService
     { *(lar::providerFrom<icarusDB::IPMTTimingCorrectionService const>()) }
 {
+    async<art::InEvent>();
     
     // configuration checks
     if (fInputLabels.empty()) {
@@ -180,7 +182,7 @@ icarus::OpHitTimingCorrection::OpHitTimingCorrection( Parameters const& config )
 }
 
 // -----------------------------------------------------------------------------
-void icarus::OpHitTimingCorrection::produce( art::Event& event ) {
+void icarus::OpHitTimingCorrection::produce( art::Event& event, art::ProcessingFrame const& ) {
 
     // Create a copy of the OpHits 
     std::vector<recob::OpHit> correctedOpHits;
