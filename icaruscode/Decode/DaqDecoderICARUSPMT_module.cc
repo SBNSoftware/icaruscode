@@ -1704,21 +1704,22 @@ void icarus::DaqDecoderICARUSPMT::produce(art::Event& event) {
     try {
       fPMTWaveformTimeCorrectionManager.findWaveformTimeCorrections(
           waveform.waveform, 
-          waveform.channelSetup->category,
-          waveform.channelSetup->channelID,
           (waveform.channelSetup->category == fCorrectionInstance ? useCableDelay : false),
           itCorr->second );
     }
     catch (icarus::timing::PMTWaveformTimeCorrectionExtractor::MultipleCorrectionsForChannel const& e) {
-      throw cet::exception{
-        "DaqDecoderICARUSPMT",
-        "Error computing waveform time corrections for category '"
-          + waveform.channelSetup->category
-        + "'\nPossible reason: make sure that there is only one waveform of"
+      throw cet::exception{ "DaqDecoderICARUSPMT", "", e }
+        << "Error computing waveform time corrections for category '"
+        << waveform.channelSetup->category
+        << "'\nPossible reason: make sure that there is only one waveform of"
         " this category per channel per event, or that they are configured to"
-        " use only one (e.g. the one on the global trigger)\n",
-        e
-        }; // ... or it's a bug.
+        " use only one (e.g. the one on the global trigger).\n";
+    }
+    catch (icarus::timing::PMTWaveformTimeCorrectionExtractor::Error const& e) {
+      throw cet::exception{ "DaqDecoderICARUSPMT", "", e }
+        << "Error computing waveform time corrections from channel "
+        << waveform.channelSetup->channelID << " for category '"
+        << waveform.channelSetup->category << "'.\n";
     }
     
   }

@@ -41,6 +41,18 @@ class icarus::timing::PMTWaveformTimeCorrectionExtractor {
             MultipleCorrectionsForChannel(unsigned int existing, unsigned int additional);
         };
 
+        /// Exception thrown when correction requested from a non-special channel.
+        struct NotASpecialChannel: Error {
+            NotASpecialChannel(unsigned int channel);
+            private: static Error makeBaseException(unsigned int channel);
+        };
+
+        /// Exception thrown when PMT readout crate not recognised.
+        struct UnknownCrate: Error {
+            UnknownCrate(unsigned int channel);
+            private: static Error makeBaseException(unsigned int channel);
+        };
+
         PMTWaveformTimeCorrectionExtractor(
             detinfo::DetectorClocksData const detTimingService,
             icarusDB::IICARUSChannelMap const & channelMapService,
@@ -51,8 +63,6 @@ class icarus::timing::PMTWaveformTimeCorrectionExtractor {
 
         void findWaveformTimeCorrections(   
             raw::OpDetWaveform const & wave,
-            std::string const & cateogry, 
-            unsigned int const & waveChannelID, 
             bool const & correctCableDelay,
             std::vector<PMTWaveformTimeCorrection> & corrections ) const;
 

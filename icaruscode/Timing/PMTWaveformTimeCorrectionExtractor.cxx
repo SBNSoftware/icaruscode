@@ -57,6 +57,37 @@ icarus::timing::PMTWaveformTimeCorrectionExtractor::MultipleCorrectionsForChanne
 {}
 
 
+icarus::timing::PMTWaveformTimeCorrectionExtractor::NotASpecialChannel::NotASpecialChannel
+  (unsigned int channel)
+    : Error{ makeBaseException(channel) }
+    {}
+    
+
+auto icarus::timing::PMTWaveformTimeCorrectionExtractor::NotASpecialChannel::makeBaseException
+  (unsigned int channel) -> Error
+{
+    return Error{}
+      << "PMT readout channel ID " << channel
+      << " (0x" << std::hex << channel << ") is not a special channel.\n";
+}
+
+
+icarus::timing::PMTWaveformTimeCorrectionExtractor::UnknownCrate::UnknownCrate
+  (unsigned int channel)
+    : Error{ makeBaseException(channel) }
+    {}
+    
+
+auto icarus::timing::PMTWaveformTimeCorrectionExtractor::UnknownCrate::makeBaseException
+  (unsigned int channel) -> Error
+{
+    return Error{}
+      << "PMT readout crate for special channel ID " << channel
+      << " (0x" << std::hex << channel << ") not known.\n";
+}
+
+
+
 // -----------------------------------------------------------------------------
 
 
@@ -140,23 +171,22 @@ template<typename T>
 
 void icarus::timing::PMTWaveformTimeCorrectionExtractor::findWaveformTimeCorrections
 (   raw::OpDetWaveform const & wave,
-    std::string const & cateogry, 
-    unsigned int const & waveChannelID, 
     bool const & correctCableDelay,
     std::vector<PMTWaveformTimeCorrection> & corrections  ) const
 {
+    if (!fPMTTimingCorrectionsService && correctCableDelay) {
+      throw Error{ "Requested cable delay correction without providing a correction database!\n" };
+    }
 
+    unsigned int const waveChannelID = wave.ChannelNumber();
+    if ((waveChannelID & 0xF000) == 0)
+      throw NotASpecialChannel{ waveChannelID };
+    
     unsigned int crateSignalID = waveChannelID & 0x00F0;
 
     auto const itCrateFragment = fCrateFragmentMap.find(crateSignalID);
-    if( itCrateFragment == fCrateFragmentMap.end() ){ 
-
-        mf::LogError("icarus::timing::PMTWaveformTimeCorrectionExtractor") << 
-            "Invalid special channel number: " << std::hex << waveChannelID << 
-            " And category: " << cateogry;
-
-        throw; // FIXME
-    }
+    if( itCrateFragment == fCrateFragmentMap.end() )
+        throw UnknownCrate{ waveChannelID };
 
     // This will be the first sample of the falling edge of the special channel signal
     // Which corresponds to the global trigger time. 
@@ -198,7 +228,6 @@ void icarus::timing::PMTWaveformTimeCorrectionExtractor::findWaveformTimeCorrect
             correction.channelID = waveChannelID;
             correction.sample = startSampleSignal * fClocksData.OpticalClock().TickPeriod();
             correction.startTime = fClocksData.TriggerTime() - newStartTime;
-            // TODO add check that we are not overwriting a correction
 
             if(fVerbose){
                 std::cout << channelID                                              << ", " 
