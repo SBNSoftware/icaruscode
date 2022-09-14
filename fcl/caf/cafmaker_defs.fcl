@@ -27,31 +27,60 @@
 BEGIN_PROLOG
 
 # Producers for making Calo objects
-recoana_calo_producers: {
+recoana_mccalo_producers: {
   pandoraCaloGausCryoE: @local::icarus_gnewcalomc
   pandoraCaloGausCryoW: @local::icarus_gnewcalomc
 
-  pandoraPidGausCryoE: @local::icarus_chi2pid
-  pandoraPidGausCryoW: @local::icarus_chi2pid
+  vertexChargeCryoE: @local::vertex_charge_icarus_cryoE 
+  vertexChargeCryoW: @local::vertex_charge_icarus_cryoW
+
+  vertexStubCryoE: @local::vertex_stub_icarus_cryoE
+  vertexStubCryoW: @local::vertex_stub_icarus_cryoW
 }
 
 # Overwrite Labels
-recoana_calo_producers.pandoraCaloGausCryoE.TrackModuleLabel: "pandoraTrackGausCryoE"
-recoana_calo_producers.pandoraCaloGausCryoW.TrackModuleLabel: "pandoraTrackGausCryoW"
+recoana_mccalo_producers.pandoraCaloGausCryoE.TrackModuleLabel: "pandoraTrackGausCryoE"
+recoana_mccalo_producers.pandoraCaloGausCryoW.TrackModuleLabel: "pandoraTrackGausCryoW"
 
-recoana_calo_producers.pandoraPidGausCryoE.TrackModuleLabel: "pandoraTrackGausCryoE"
-recoana_calo_producers.pandoraPidGausCryoE.CalorimetryModuleLabel: "pandoraCaloGausCryoE"
-recoana_calo_producers.pandoraPidGausCryoW.TrackModuleLabel: "pandoraTrackGausCryoW"
-recoana_calo_producers.pandoraPidGausCryoW.CalorimetryModuleLabel: "pandoraCaloGausCryoW"
+# Setup CaloAlg for VertexCharge
+recoana_mccalo_producers.vertexChargeCryoE.CaloAlg: @local::icarus_calorimetryalgmc
+recoana_mccalo_producers.vertexChargeCryoW.CaloAlg: @local::icarus_calorimetryalgmc
+recoana_mccalo_producers.vertexStubCryoE.CaloAlg: @local::icarus_calorimetryalgmc
+recoana_mccalo_producers.vertexStubCryoW.CaloAlg: @local::icarus_calorimetryalgmc
 
 # Turn on SCE corrections in the Calorimetry
 # The Space Charge service will disable SCE for the "no-sce" config
-recoana_calo_producers.pandoraCaloGausCryoE.FieldDistortion: true
-recoana_calo_producers.pandoraCaloGausCryoE.TrackIsFieldDistortionCorrected: true
-recoana_calo_producers.pandoraCaloGausCryoE.FieldDistortionEfield: true
-recoana_calo_producers.pandoraCaloGausCryoW.FieldDistortion: true
-recoana_calo_producers.pandoraCaloGausCryoW.TrackIsFieldDistortionCorrected: true
-recoana_calo_producers.pandoraCaloGausCryoW.FieldDistortionEfield: true
+recoana_mccalo_producers.pandoraCaloGausCryoE.FieldDistortion: true
+recoana_mccalo_producers.pandoraCaloGausCryoE.TrackIsFieldDistortionCorrected: true
+recoana_mccalo_producers.pandoraCaloGausCryoE.FieldDistortionEfield: true
+recoana_mccalo_producers.pandoraCaloGausCryoW.FieldDistortion: true
+recoana_mccalo_producers.pandoraCaloGausCryoW.TrackIsFieldDistortionCorrected: true
+recoana_mccalo_producers.pandoraCaloGausCryoW.FieldDistortionEfield: true
+
+recoana_datacalo_producers: {
+  pandoraCaloGausCryoE: @local::standard_gnocchicaloicarus
+  pandoraCaloGausCryoW: @local::standard_gnocchicaloicarus
+
+  vertexChargeCryoE: @local::vertex_charge_icarus_cryoE 
+  vertexChargeCryoW: @local::vertex_charge_icarus_cryoW
+
+  vertexStubCryoE: @local::vertex_stub_icarus_cryoE
+  vertexStubCryoW: @local::vertex_stub_icarus_cryoW
+}
+
+# Overwrite Labels
+recoana_datacalo_producers.pandoraCaloGausCryoE.TrackModuleLabel: "pandoraTrackGausCryoE"
+recoana_datacalo_producers.pandoraCaloGausCryoW.TrackModuleLabel: "pandoraTrackGausCryoW"
+
+# Setup CaloAlg for VertexCharge
+recoana_datacalo_producers.vertexChargeCryoE.CaloAlg: @local::icarus_calorimetryalgdata
+recoana_datacalo_producers.vertexChargeCryoW.CaloAlg: @local::icarus_calorimetryalgdata
+recoana_datacalo_producers.vertexStubCryoE.CaloAlg: @local::icarus_calorimetryalgdata
+recoana_datacalo_producers.vertexStubCryoW.CaloAlg: @local::icarus_calorimetryalgdata
+recoana_datacalo_producers.vertexChargeCryoE.NormTools: @local::icarus_calonormtools
+recoana_datacalo_producers.vertexChargeCryoW.NormTools: @local::icarus_calonormtools
+recoana_datacalo_producers.vertexStubCryoE.NormTools: @local::icarus_calonormtools
+recoana_datacalo_producers.vertexStubCryoW.NormTools: @local::icarus_calonormtools
 
 # Producers for making analysis level products
 recoana_caf_preprocess_producers: {
@@ -63,10 +92,8 @@ recoana_caf_preprocess_producers: {
   pandoraTrackRangeCryoE: @local::range_sbn
   pandoraTrackRangeCryoW: @local::range_sbn
 
-  vertexChargeCryoE: @local::vertex_charge_icarus_cryoE 
-  vertexChargeCryoW: @local::vertex_charge_icarus_cryoW
-  vertexStubCryoE: @local::vertex_stub_icarus_cryoE
-  vertexStubCryoW: @local::vertex_stub_icarus_cryoW
+  pandoraPidGausCryoE: @local::icarus_chi2pid
+  pandoraPidGausCryoW: @local::icarus_chi2pid
 
   crtconvhit: @local::crthitconverter_icarus
   rns: { module_type: "RandomNumberSaver" }
@@ -80,14 +107,13 @@ recoana_caf_preprocess_producers.pandoraTrackMCSCryoW.TrackLabel: pandoraTrackGa
 recoana_caf_preprocess_producers.pandoraTrackRangeCryoE.TrackLabel: pandoraTrackGausCryoE
 recoana_caf_preprocess_producers.pandoraTrackRangeCryoW.TrackLabel: pandoraTrackGausCryoW
 
+recoana_caf_preprocess_producers.pandoraPidGausCryoE.TrackModuleLabel: "pandoraTrackGausCryoE"
+recoana_caf_preprocess_producers.pandoraPidGausCryoE.CalorimetryModuleLabel: "pandoraCaloGausCryoE"
+recoana_caf_preprocess_producers.pandoraPidGausCryoW.TrackModuleLabel: "pandoraTrackGausCryoW"
+recoana_caf_preprocess_producers.pandoraPidGausCryoW.CalorimetryModuleLabel: "pandoraCaloGausCryoW"
+
 recoana_caf_preprocess_producers.genieweight.weight_functions: @local::recoana_caf_preprocess_producers.genieweight.weight_functions_genie
 recoana_caf_preprocess_producers.fluxweight.weight_functions: @local::recoana_caf_preprocess_producers.fluxweight.weight_functions_flux
-
-# Setup CaloAlg for VertexCharge
-recoana_caf_preprocess_producers.vertexChargeCryoE.CaloAlg: @local::icarus_calorimetryalgmc
-recoana_caf_preprocess_producers.vertexChargeCryoW.CaloAlg: @local::icarus_calorimetryalgmc
-recoana_caf_preprocess_producers.vertexStubCryoE.CaloAlg: @local::icarus_calorimetryalgmc
-recoana_caf_preprocess_producers.vertexStubCryoW.CaloAlg: @local::icarus_calorimetryalgmc
 
 # Producers for making SCE products
 recoana_sce_producers: {
@@ -99,11 +125,11 @@ recoana_sce_producers: {
   SBNShowerGausSCECryoW:          @local::icarus_pandorashower_3dTraj
 
   # Calo on SCE stuff
-  pandoraCaloGausSCECryoE: @local::recoana_calo_producers.pandoraCaloGausCryoE
-  pandoraCaloGausSCECryoW: @local::recoana_calo_producers.pandoraCaloGausCryoW
+  pandoraCaloGausSCECryoE: @local::recoana_mccalo_producers.pandoraCaloGausCryoE
+  pandoraCaloGausSCECryoW: @local::recoana_mccalo_producers.pandoraCaloGausCryoW
 
-  pandoraPidGausSCECryoE: @local::recoana_calo_producers.pandoraPidGausCryoE
-  pandoraPidGausSCECryoW: @local::recoana_calo_producers.pandoraPidGausCryoW
+  pandoraPidGausSCECryoE: @local::recoana_caf_preprocess_producers.pandoraPidGausCryoE
+  pandoraPidGausSCECryoW: @local::recoana_caf_preprocess_producers.pandoraPidGausCryoW
 
   # Analysis on SCE stuff
   fmatchSCECryoE: @local::transfer_flashmatch_sce_icarus_cryoE
@@ -170,12 +196,17 @@ recoana_sce_producers.vertexStubCryoW.CaloAlg: @local::icarus_calorimetryalgmc
 
 # All the producers together
 caf_preprocess_producers: {
-  @table::recoana_calo_producers
+  @table::recoana_mccalo_producers
+  @table::recoana_caf_preprocess_producers
+}
+
+caf_preprocess_data_producers: {
+  @table::recoana_datacalo_producers
   @table::recoana_caf_preprocess_producers
 }
 
 caf_preprocess_sce_producers: {
-  @table::recoana_calo_producers
+  @table::recoana_mccalo_producers
   @table::recoana_caf_preprocess_producers
   @table::recoana_sce_producers
 }
@@ -257,11 +288,13 @@ cafmaker.TrackRangeLabel: "pandoraTrackRange"
 cafmaker.CRTHitLabel: "crthit"
 cafmaker.CRTTrackLabel: "crttrack"
 cafmaker.OpFlashLabel: "opflash"
+cafmaker.TriggerLabel: "daqTrigger"
 cafmaker.FlashTrigLabel: "" # unavailable
 cafmaker.SimChannelLabel: "largeant"
 cafmaker.SystWeightLabels: ["genieweight", "fluxweight"]
 
 # Add CAFMaker to the list of producers
 caf_preprocess_producers.cafmaker: @local::cafmaker
+caf_preprocess_data_producers.cafmaker: @local::cafmaker
 
 END_PROLOG
