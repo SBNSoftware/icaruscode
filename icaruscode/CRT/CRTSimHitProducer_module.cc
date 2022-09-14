@@ -2,7 +2,8 @@
 #include "sbnobj/ICARUS/CRT/CRTData.hh"
 #include "sbnobj/Common/CRT/CRTHit.hh"
 #include "icaruscode/CRT/CRTUtils/CRTHitRecoAlg.h"
-#include "icaruscode/Decode/DataProducts/ExtraTriggerInfo.h"
+//#include "icaruscode/Decode/DataProducts/ExtraTriggerInfo.h"
+#include "sbnobj/Common/Trigger/ExtraTriggerInfo.h"
 
 // Framework includes
 #include "art/Framework/Core/EDProducer.h"
@@ -154,7 +155,7 @@ namespace crt {
 
     vector<art::Ptr<CRTData>> crtData = hitAlg.PreselectCRTData(crtList, m_trigger_timestamp);
 
-    vector<std::pair<CRTHit, vector<int>>> crtHitPairs = hitAlg.CreateCRTHits(crtData);
+    vector<std::pair<CRTHit, vector<int>>> crtHitPairs = hitAlg.CreateCRTHits(crtData, m_trigger_timestamp);
     //vector<std::pair<CRTHit, vector<int>>> crtHitPairs = hitAlg.CreateCRTHits(crtList);
 
     mf::LogInfo("CRTSimHitProducer")
