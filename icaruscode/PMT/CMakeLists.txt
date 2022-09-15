@@ -1,3 +1,4 @@
+add_subdirectory(Data)
 add_subdirectory(OpticalTools)
 add_subdirectory(OpReco)
 add_subdirectory(Algorithms)
@@ -64,6 +65,20 @@ simple_plugin(PMTWaveformBaselinesFromReadoutConfiguration "module"
   ROOT::Core
   )
 
+simple_plugin(PMTWaveformBaselinesFromChannelData "module"
+  icaruscode_PMT_Algorithms
+  sbnobj_ICARUS_PMT_Data
+  sbnobj_Common_PMT_Data
+  larcore_Geometry_Geometry_service
+  larcorealg_Geometry
+  lardataobj_RawData
+  art_root_io::TFileService_service
+  art_root_io::tfile_support
+  art::Framework_Services_Registry
+  messagefacility::MF_MessageLogger
+  ROOT::Hist
+  ROOT::Core
+  )
 
 simple_plugin(AsymGaussPulseFunctionTool "tool"
   icaruscode_PMT_Algorithms
@@ -71,6 +86,11 @@ simple_plugin(AsymGaussPulseFunctionTool "tool"
 
 simple_plugin(AsymExpPulseFunctionTool "tool"
   icaruscode_PMT_Algorithms
+  )
+
+simple_plugin(SampledWaveformFunctionTool "tool"
+  icaruscode_PMT_Algorithms
+  icaruscode_Decode_DecoderTools
   )
 
 simple_plugin(CustomPulseFunctionTool "tool"
@@ -85,8 +105,10 @@ art_make(
     "OpDetWaveformMetaMaker_module.cc"
     "PMTWaveformBaselines_module.cc"
     "PMTWaveformBaselinesFromReadoutConfiguration_module.cc"
+    "PMTWaveformBaselinesFromChannelData_module.cc"
     "AsymGaussPulseFunctionTool_tool.cc"
     "AsymExpPulseFunctionTool_tool.cc"
+    "SampledWaveformFunctionTool_tool.cc"
     "CustomPulseFunctionTool_tool.cc"
           LIB_LIBRARIES 
             lardataobj_RawData

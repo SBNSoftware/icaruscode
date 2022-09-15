@@ -13,7 +13,7 @@
 #include "fhiclcpp/ParameterSet.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
 #include "lardataobj/RawData/TriggerData.h" // raw::Trigger
-#include "icaruscode/Decode/BeamBits.h"
+#include "sbnobj/Common/Trigger/BeamBits.h"
 
 ///filters for events, etc
 namespace filter

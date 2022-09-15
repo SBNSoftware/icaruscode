@@ -6,9 +6,10 @@
  */
 
 // SBN libraries
-#include "icaruscode/Decode/DataProducts/ExtraTriggerInfo.h"
-#include "icaruscode/Decode/BeamBits.h" // sbn::triggerSource
+
 #include "icaruscode/Utilities/StreamIndenter.h" // util::addIndent()
+#include "sbnobj/Common/Trigger/ExtraTriggerInfo.h"
+#include "sbnobj/Common/Trigger/BeamBits.h" // sbn::triggerSource
 
 // LArSoft libraries
 #include "lardataalg/DetectorInfo/DetectorTimingTypes.h" // simulation_time

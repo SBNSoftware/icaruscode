@@ -170,6 +170,7 @@ simple_plugin( CRTEventProducer "module"
 )
 
 simple_plugin( DecoderICARUSCRT "module"
+  icaruscode_Utilities
   art_Framework_Services_Registry
   art_root_io_tfile_support
   art_root_io_TFileService_service

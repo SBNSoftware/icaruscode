@@ -141,6 +141,8 @@ icarus::opdet::PMTsimulationAlg::PMTsimulationAlg
   // check that the sampled waveform has a sufficiently large range, so that
   // tails are below 10^-3 ADC counts (absolute value);
   // if this test fails, it's better to reduce the threshold in wsp constructor
+  // (for analytical pulses converging to 0) or have a longer sampling that does
+  // converge to 0 (10^-3 ADC is quite low though).
   wsp.checkRange(1.0e-3_ADCf, "PMTsimulationAlg");
 
 } // icarus::opdet::PMTsimulationAlg::PMTsimulationAlg()
@@ -651,14 +653,13 @@ void icarus::opdet::PMTsimulationAlg::AddDarkNoise(Waveform_t& wave) const {
 auto icarus::opdet::PMTsimulationAlg::saturationRange() const
   -> std::pair<ADCcount, ADCcount>
 {
-  ADCcount const saturationLevel
-    = fParams.baseline + fParams.saturation*wsp.peakAmplitude();
-  return std::make_pair(
-    ((fParams.pulsePolarity > 0)
-      ? std::numeric_limits<ADCcount>::min(): saturationLevel),
-    ((fParams.pulsePolarity > 0)
-      ? saturationLevel: std::numeric_limits<ADCcount>::max())
-    );
+  std::pair<ADCcount, ADCcount> range = fParams.ADCrange();
+  if (fParams.saturation > 0) {
+    ADCcount const saturationLevel
+      = fParams.baseline + fParams.saturation*wsp.peakAmplitude();
+    ((fParams.pulsePolarity > 0)? range.second: range.first) = saturationLevel;
+  }
+  return range;
 } // icarus::opdet::PMTsimulationAlg::saturationRange()
 
 
@@ -767,7 +768,7 @@ icarus::opdet::PMTsimulationAlgMaker::PMTsimulationAlgMaker
   // PMT settings
   //
   auto const& PMTspecs = config.PMTspecs();
-  fBaseConfig.saturation               = config.Saturation();
+  fBaseConfig.saturation               = config.Saturation().value_or(0);
   fBaseConfig.QEbase                   = config.QE();
   fBaseConfig.PMTspecs.dynodeK         = PMTspecs.DynodeK();
   fBaseConfig.PMTspecs.setVoltageDistribution

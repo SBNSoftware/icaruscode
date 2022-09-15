@@ -45,7 +45,7 @@
 //#include "icaruscode/CRT/CRTUtils/CRTBackTracker.h"
 //#include "icaruscode/CRT/CRTUtils/CRTEventDisplay.h"
 #include "icaruscode/CRT/CRTUtils/CRTCommonUtils.h"
-#include "icaruscode/Decode/DataProducts/ExtraTriggerInfo.h"
+#include "sbnobj/Common/Trigger/ExtraTriggerInfo.h"
 
 #include "canvas/Persistency/Common/FindMany.h"
 #include "canvas/Persistency/Common/FindManyP.h"
