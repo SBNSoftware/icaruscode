@@ -30,12 +30,10 @@
 
 #include "sbndaq-artdaq-core/Overlays/ICARUS/ICARUSTriggerV2Fragment.hh"
 
-// #include "sbnobj/Common/Trigger/ExtraTriggerInfo.h" // maybe future location of:
-#include "icaruscode/Decode/DataProducts/ExtraTriggerInfo.h"
+#include "sbnobj/Common/Trigger/ExtraTriggerInfo.h"
 #include "icaruscode/Decode/DataProducts/TriggerConfiguration.h"
 #include "icaruscode/Decode/DecoderTools/IDecoder.h"
-// #include "sbnobj/Common/Trigger/BeamBits.h" // maybe future location of:
-#include "icaruscode/Decode/BeamBits.h" // sbn::triggerSource
+#include "sbnobj/Common/Trigger/BeamBits.h"
 #include "icaruscode/Decode/DecoderTools/Dumpers/FragmentDumper.h" // dumpFragment()
 #include "icaruscode/Decode/DecoderTools/details/KeyedCSVparser.h"
 #include "icaruscode/Decode/DecoderTools/details/KeyValuesData.h"
@@ -471,9 +469,7 @@ namespace daq
      * be removed when there is enough ICARUS data that these runs become
      * uninteresting.
      */
-    if (auto pBeamGateInfo = parsedData.findItem("Beam_TS");
-      pBeamGateInfo && (pBeamGateInfo->nValues() == 3)
-    ) {
+    if (auto pBeamGateInfo = parsedData.findItem("Beam_TS")) {
       /*
        * The Veto Business:
        * 
@@ -685,7 +681,7 @@ namespace daq
     // absolute time trigger (raw::ExternalTrigger)
     //
     fTrigger->emplace_back
-      (fTriggerExtra->triggerID, fTriggerExtra->triggerTimestamp);
+      (fTriggerExtra->triggerID, artdaq_ts);//fTriggerExtra->triggerTimestamp);
     
     //
     // previous absolute time trigger (raw::ExternalTrigger)

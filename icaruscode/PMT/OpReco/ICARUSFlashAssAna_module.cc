@@ -39,7 +39,7 @@
 #include "lardataobj/RecoBase/OpFlash.h"
 #include "lardataobj/Simulation/BeamGateInfo.h"
 #include "lardataobj/RawData/TriggerData.h"
-#include "icaruscode/Decode/DataProducts/ExtraTriggerInfo.h"
+#include "sbnobj/Common/Trigger/ExtraTriggerInfo.h"
 
 #include "TTree.h"
 
