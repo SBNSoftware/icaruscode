@@ -106,8 +106,7 @@ vector<pair<sbn::crt::CRTHit, vector<int>>> CRTHitRecoAlg::CreateCRTHits(vector<
     std::sort(crtList.begin(), crtList.end(), compareBytime);        
 
     //Load Delays map for Top CRT
-    CRT_delay_map FEB_delay_map;    
-    FEB_delay_map = LoadFEBMap();
+    CRT_delay_map const FEB_delay_map = LoadFEBMap();
     std::vector<std::pair<int,ULong64_t>> CRTReset;
     ULong64_t TriggerArray[305]={0};
     for (size_t crtdat_i=0; crtdat_i<crtList.size(); crtdat_i++) {
@@ -115,21 +114,19 @@ vector<pair<sbn::crt::CRTHit, vector<int>>> CRTHitRecoAlg::CreateCRTHits(vector<
 	int adid  = fCrtutils->MacToAuxDetID(mac,0);
 	char type = fCrtutils->GetAuxDetType(adid);
 	//For the time being, Only Top CRT delays are loaded, nothing to do for Side CRT yet
-	// Flags=9 -> TS0Present & TS1Reference
 	if (type == 'c' && crtList[crtdat_i]->IsReference_TS1()) {
-	    ULong64_t ResetTs0Corr = crtList[crtdat_i]->fTs0 + FEB_delay_map[ (int) mac+ 73].T0_delay - FEB_delay_map[(int) mac + 73].T1_delay;
-	    TriggerArray[(int) mac]=ResetTs0Corr;
-	    CRTReset.push_back(std::make_pair((int) mac,ResetTs0Corr));
+	    ULong64_t Ts0T1ResetEvent = crtList[crtdat_i]->fTs0 + FEB_delay_map.at((int)mac+73).T0_delay - FEB_delay_map.at((int)mac+73).T1_delay;
+	    TriggerArray[(int) mac]=Ts0T1ResetEvent;
+	    CRTReset.emplace_back((int) mac,Ts0T1ResetEvent);
 	}
     }
-    const ULong64_t trigger_offset= 60; //ns
+    const int trigger_offset= 60; //Average distance between Global Trigger and Trigger_timestamp (ns)
     ULong64_t GlobalTrigger= trigger_timestamp;
-    if (CRTReset.size() != 0 ) GlobalTrigger = GetMode(CRTReset);
+    if (!CRTReset.empty()) GlobalTrigger = GetMode(CRTReset);
     //Add average difference between trigger_timestamp and Global trigger
     else GlobalTrigger=GlobalTrigger-trigger_offset;// In this event, the T1 Reset was probably "vetoed" by the T0 Reset
-    for (int i=0; i<305; i++){
+    for (int i=0; i<304; i++){
 	if (TriggerArray[i]==0) TriggerArray[i]=GlobalTrigger;
-	//std::cout<<"FEB: "<<i<<"  Trigger: "<<TriggerArray[i]<<std::endl;
     }
     //std::cout<<"Global Trigger "<<GlobalTrigger<<std::endl;
     //loop over time-ordered CRTData
@@ -294,7 +291,7 @@ sbn::crt::CRTHit CRTHitRecoAlg::FillCRTHit(vector<uint8_t> tfeb_id, map<uint8_t,
     crtHit.ts0_s_corr  = time0 / 1'000'000'000; 
     crtHit.ts0_ns      = time0 % 1'000'000'000;
     crtHit.ts0_ns_corr = time0; 
-    crtHit.ts1_ns      = time1 /*% 1'000'000'000*/;
+    crtHit.ts1_ns      = time1 /*% 1'000'000'000*/; //TODO: Update the CRTHit data product /sbnobj/common/CRT . Discussion with SBND people needed
     crtHit.ts0_s       = time0 / 1'000'000'000;
     crtHit.plane       = plane;
     crtHit.x_pos       = x;
@@ -332,10 +329,8 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeTopHit(art::Ptr<CRTData> data, ULong64_t Glo
     double sum=0;
     for(int chan=0; chan<32; chan++) {
 	sum=sum+data->fAdc[chan];
-//        std::cout<<"Top Gain: "<<ftopGain<<"  Top Pedestal: "<<ftopPed<< '\n';
         float pe = (data->fAdc[chan]-ftopPed)/ftopGain;
-//        float pe = (data->fAdc[chan]-fQPed)/fQSlope;
-//        if(pe<=fPEThresh) continue;
+//      if(pe<=fPEThresh) continue;
         nabove++;
         int adsid = fCrtutils->ChannelToAuxDetSensitiveID(mac,chan);
         petot += pe;
@@ -1084,4 +1079,38 @@ bool CRTHitRecoAlg::IsEmptyHit(CRTHit hit) {
         return true;
 
     return false;
+}
+
+//-----------------------------------------------------------------------------
+ULong64_t GetMode(std::vector<std::pair<int, ULong64_t>> vector) {
+
+        sort(vector.begin(), vector.end(), icarus::crt::sortbytime);
+
+        int modecounter = 0;
+        int isnewmodecounter = 0;
+        ULong64_t Mode = 0;
+        ULong64_t isnewMode = 0;
+        bool isFirst = true;
+        for (auto i : vector) {
+                if (!isFirst) {
+                        if (i.second == Mode) modecounter++;
+                        else if (i.second !=isnewMode) {
+                                isnewMode = i.second;
+                                isnewmodecounter = 1;
+                        }
+                        else if (i.second == isnewMode) {
+                                isnewmodecounter++;
+                                if (isnewmodecounter > modecounter) {
+                                        Mode = isnewMode;
+                                        modecounter = isnewmodecounter;
+                                }
+                        }
+                }
+                else {
+                        isFirst = false;
+                        Mode = i.second;
+                        modecounter++;
+                }
+        }
+        return Mode;
 }

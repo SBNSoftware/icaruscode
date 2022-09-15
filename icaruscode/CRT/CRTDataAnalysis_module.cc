@@ -16,7 +16,6 @@
 #include "larcorealg/Geometry/GeometryCore.h"
 #include "larcorealg/Geometry/AuxDetGeometryCore.h"
 #include "larcoreobj/SimpleTypesAndConstants/geo_types.h"
-//#include "icaruscode/Decode/DataProducts/ExtraTriggerInfo.h"
 #include "sbnobj/Common/Trigger/ExtraTriggerInfo.h"
 //#include "icaruscode/CRT/CRTUtils/CRTHitRecoAlg.h"
 
@@ -413,6 +412,13 @@ namespace crt {
 	for(int chan=0; chan<32; chan++) {
 	  std::pair<double,double> const chg_cal = fChannelMap->getSideCRTCalibrationMap((int)crtList[febdat_i]->fMac5,chan);
 	  float pe = (crtList[febdat_i]->fAdc[chan]-chg_cal.second)/chg_cal.first;
+	  // In order to have Reset TS1 hits in CRTData from Side CRT, we have to explicitly include them
+	  // The current threshold cut (6.5 PE) was applied to filter out noise, but this also filters out
+	  // Reset events which are random trigger around the pedestal. These Reset hits are removed in 
+	  // CRT Hit reconstruction. Top CRT has in internal triggering logic and threshold  that screens
+	  // from the noise (hence presel = true for all the hits).
+	  // Please revise this in the future if also T0 Reset hits need to be kept in CRTData. 
+	  // To do so, include !0crtList[febdat_i]->IsReference_TS0()
 	  if(pe<=fPEThresh && !crtList[febdat_i]->IsReference_TS1()) continue;
 	  presel = true;
 	}

@@ -137,17 +137,7 @@ namespace crt {
       art::fill_ptr_vector(crtList, crtListHandle);
 
     //add trigger info
-    if( !fTriggerLabel.empty() ) {
-
-      art::Handle<sbn::ExtraTriggerInfo> trigger_handle;
-      event.getByLabel( fTriggerLabel, trigger_handle );
-      if( trigger_handle.isValid() )
-	m_trigger_timestamp = trigger_handle->triggerTimestamp; 
-      else
-	mf::LogError("CRTSimHitProducer") << "No raw::Trigger associated to label: " << fTriggerLabel.label() << "\n" ;
-    } else{ 
-      std::cout  << "Trigger Data product " << fTriggerLabel.label() << " not found!\n" ;
-    }
+    m_trigger_timestamp = event.getProduct<sbn::ExtraTriggerInfo>(fTriggerLabel).triggerTimestamp;
 
     mf::LogInfo("CRTSimHitProducer")
       <<"Number of SiPM hits = "<<crtList.size();

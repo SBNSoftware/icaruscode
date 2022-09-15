@@ -66,6 +66,11 @@ using std::string;
 namespace icarus {
  namespace crt {
     class CRTHitRecoAlg;
+    inline bool sortbytime(const pair<int,ULong64_t> &a,
+              const pair<int,ULong64_t> &b)
+    {
+      return (a.second < b.second);
+    } 
  }
 }
 
@@ -196,52 +201,15 @@ class icarus::crt::CRTHitRecoAlg {
   }
 }; //class CRTHitRecoAlg
 
-inline bool sortbysec(const pair<int,ULong64_t> &a,
-              const pair<int,ULong64_t> &b)
-{
-    return (a.second < b.second);
-}
+ULong64_t GetMode(std::vector<std::pair<int, ULong64_t>> vector);
 
-inline ULong64_t GetMode(std::vector<std::pair<int, ULong64_t>> vector) {
-
-	sort(vector.begin(), vector.end(), sortbysec);
-
-	int modecounter = 0;
-	int isnewmodecounter = 0;
-	ULong64_t Mode = 0;
-	ULong64_t isnewMode = 0;
-	bool isFirst = true;
-	for (auto i : vector) {
-		if (!isFirst) {
-			if (i.second == Mode) modecounter++;
-			else if (i.second !=isnewMode) {
-				isnewMode = i.second;
-				isnewmodecounter = 1;
-			}
-			else if (i.second == isnewMode) {
-				isnewmodecounter++;
-				if (isnewmodecounter > modecounter) {
-					Mode = isnewMode;
-					modecounter = isnewmodecounter;
-				}
-			}
-		}
-		else {
-			isFirst = false;
-			Mode = i.second;
-			modecounter++;
-		}
-	}
-	return Mode;
-}
-
-typedef struct FEB_delay {
-	int HW_mac;
-	int SW_mac;
-	int SW_modID;
-	ULong64_t T0_delay;
-	ULong64_t T1_delay;
-} FEB_delay;
+struct FEB_delay {
+	int HW_mac=-1;
+	int SW_mac=-1;
+	int SW_modID=-1;
+	ULong64_t T0_delay=0; //[ns]
+	ULong64_t T1_delay=0; //[ns]
+};
 
 typedef int feb_index;
 typedef std::map<feb_index, FEB_delay> CRT_delay_map;
@@ -250,750 +218,129 @@ inline CRT_delay_map LoadFEBMap() {
 
 	CRT_delay_map FEBs;
 
-	struct FEB_delay FEB;
-	FEB.HW_mac = 81;
-	FEB.SW_mac = 198;
-	FEB.SW_modID = 271;
-	FEB.T0_delay = 283;
-	FEB.T1_delay = 2000309;
-	FEBs.insert({ 271, FEB });
-	FEB.HW_mac = 119;
-	FEB.SW_mac = 197;
-	FEB.SW_modID = 270;
-	FEB.T0_delay = 298;
-	FEB.T1_delay = 2000324;
-	FEBs.insert({ 270, FEB });
-	FEB.HW_mac = 87;
-	FEB.SW_mac = 196;
-	FEB.SW_modID = 269;
-	FEB.T0_delay = 313;
-	FEB.T1_delay = 2000339;
-	FEBs.insert({ 269, FEB });
-	FEB.HW_mac = 92;
-	FEB.SW_mac = 195;
-	FEB.SW_modID = 268;
-	FEB.T0_delay = 329;
-	FEB.T1_delay = 2000355;
-	FEBs.insert({ 268, FEB });
-	FEB.HW_mac = 180;
-	FEB.SW_mac = 194;
-	FEB.SW_modID = 267;
-	FEB.T0_delay = 344;
-	FEB.T1_delay = 2000370;
-	FEBs.insert({ 267, FEB });
-	FEB.HW_mac = 97;
-	FEB.SW_mac = 193;
-	FEB.SW_modID = 266;
-	FEB.T0_delay = 359;
-	FEB.T1_delay = 2000385;
-	FEBs.insert({ 266, FEB });
-	FEB.HW_mac = 174;
-	FEB.SW_mac = 192;
-	FEB.SW_modID = 265;
-	FEB.T0_delay = 374;
-	FEB.T1_delay = 2000400;
-	FEBs.insert({ 265, FEB });
-	FEB.HW_mac = 238;
-	FEB.SW_mac = 178;
-	FEB.SW_modID = 251;
-	FEB.T0_delay = 390;
-	FEB.T1_delay = 2000416;
-	FEBs.insert({ 251, FEB });
-	FEB.HW_mac = 234;
-	FEB.SW_mac = 164;
-	FEB.SW_modID = 237;
-	FEB.T0_delay = 405;
-	FEB.T1_delay = 2000431;
-	FEBs.insert({ 237, FEB });
-	FEB.HW_mac = 189;
-	FEB.SW_mac = 224;
-	FEB.SW_modID = 297;
-	FEB.T0_delay = 420;
-	FEB.T1_delay = 2000446;
-	FEBs.insert({ 297, FEB });
-	FEB.HW_mac = 190;
-	FEB.SW_mac = 223;
-	FEB.SW_modID = 296;
-	FEB.T0_delay = 436;
-	FEB.T1_delay = 2000462;
-	FEBs.insert({ 296, FEB });
-	FEB.HW_mac = 80;
-	FEB.SW_mac = 222;
-	FEB.SW_modID = 295;
-	FEB.T0_delay = 451;
-	FEB.T1_delay = 2000477;
-	FEBs.insert({ 295, FEB });
-	FEB.HW_mac = 162;
-	FEB.SW_mac = 221;
-	FEB.SW_modID = 294;
-	FEB.T0_delay = 466;
-	FEB.T1_delay = 2000492;
-	FEBs.insert({ 294, FEB });
-	FEB.HW_mac = 64;
-	FEB.SW_mac = 220;
-	FEB.SW_modID = 293;
-	FEB.T0_delay = 482;
-	FEB.T1_delay = 2000508;
-	FEBs.insert({ 293, FEB });
-	FEB.HW_mac = 172;
-	FEB.SW_mac = 182;
-	FEB.SW_modID = 255;
-	FEB.T0_delay = 298;
-	FEB.T1_delay = 2000324;
-	FEBs.insert({ 255, FEB });
-	FEB.HW_mac = 114;
-	FEB.SW_mac = 181;
-	FEB.SW_modID = 254;
-	FEB.T0_delay = 313;
-	FEB.T1_delay = 2000339;
-	FEBs.insert({ 254, FEB });
-	FEB.HW_mac = 100;
-	FEB.SW_mac = 180;
-	FEB.SW_modID = 253;
-	FEB.T0_delay = 328;
-	FEB.T1_delay = 2000355;
-	FEBs.insert({ 253, FEB });
-	FEB.HW_mac = 150;
-	FEB.SW_mac = 179;
-	FEB.SW_modID = 252;
-	FEB.T0_delay = 344;
-	FEB.T1_delay = 2000370;
-	FEBs.insert({ 252, FEB });
-	FEB.HW_mac = 176;
-	FEB.SW_mac = 165;
-	FEB.SW_modID = 238;
-	FEB.T0_delay = 359;
-	FEB.T1_delay = 2000385;
-	FEBs.insert({ 238, FEB });
-	FEB.HW_mac = 67;
-	FEB.SW_mac = 151;
-	FEB.SW_modID = 224;
-	FEB.T0_delay = 374;
-	FEB.T1_delay = 2000400;
-	FEBs.insert({ 224, FEB });
-	FEB.HW_mac = 138;
-	FEB.SW_mac = 150;
-	FEB.SW_modID = 223;
-	FEB.T0_delay = 390;
-	FEB.T1_delay = 2000416;
-	FEBs.insert({ 223, FEB });
-	FEB.HW_mac = 170;
-	FEB.SW_mac = 136;
-	FEB.SW_modID = 209;
-	FEB.T0_delay = 405;
-	FEB.T1_delay = 2000431;
-	FEBs.insert({ 209, FEB });
-	FEB.HW_mac = 101;
-	FEB.SW_mac = 122;
-	FEB.SW_modID = 195;
-	FEB.T0_delay = 420;
-	FEB.T1_delay = 2000446;
-	FEBs.insert({ 195, FEB });
-	FEB.HW_mac = 142;
-	FEB.SW_mac = 108;
-	FEB.SW_modID = 181;
-	FEB.T0_delay = 435;
-	FEB.T1_delay = 2000462;
-	FEBs.insert({ 181, FEB });
-	FEB.HW_mac = 139;
-	FEB.SW_mac = 206;
-	FEB.SW_modID = 279;
-	FEB.T0_delay = 451;
-	FEB.T1_delay = 2000477;
-	FEBs.insert({ 279, FEB });
-	FEB.HW_mac = 185;
-	FEB.SW_mac = 207;
-	FEB.SW_modID = 280;
-	FEB.T0_delay = 466;
-	FEB.T1_delay = 2000492;
-	FEBs.insert({ 280, FEB });
-	FEB.HW_mac = 6;
-	FEB.SW_mac = 109;
-	FEB.SW_modID = 182;
-	FEB.T0_delay = 481;
-	// TEMPORARY
-//	FEB.T1_delay = 2000447;
-	FEB.T1_delay = 2000508;
-	FEBs.insert({ 182, FEB });
-	FEB.HW_mac = 177;
-	FEB.SW_mac = 123;
-	FEB.SW_modID = 196;
-	FEB.T0_delay = 497;
-	FEB.T1_delay = 2000523;
-	FEBs.insert({ 196, FEB });
-	FEB.HW_mac = 61;
-	FEB.SW_mac = 137;
-	FEB.SW_modID = 210;
-	FEB.T0_delay = 512;
-	FEB.T1_delay = 2000538;
-	FEBs.insert({ 210, FEB });
-	FEB.HW_mac = 125;
-	FEB.SW_mac = 183;
-	FEB.SW_modID = 256;
-	FEB.T0_delay = 298;
-	FEB.T1_delay = 2000325;
-	FEBs.insert({ 256, FEB });
-	FEB.HW_mac = 116;
-	FEB.SW_mac = 169;
-	FEB.SW_modID = 242;
-	FEB.T0_delay = 314;
-	FEB.T1_delay = 2000340;
-	FEBs.insert({ 242, FEB });
-	FEB.HW_mac = 104;
-	FEB.SW_mac = 168;
-	FEB.SW_modID = 241;
-	FEB.T0_delay = 329;
-	FEB.T1_delay = 2000355;
-	FEBs.insert({ 241, FEB });
-	FEB.HW_mac = 91;
-	FEB.SW_mac = 167;
-	FEB.SW_modID = 240;
-	FEB.T0_delay = 344;
-	FEB.T1_delay = 2000371;
-	FEBs.insert({ 240, FEB });
-	FEB.HW_mac = 88;
-	FEB.SW_mac = 166;
-	FEB.SW_modID = 239;
-	FEB.T0_delay = 360;
-	FEB.T1_delay = 2000386;
-	FEBs.insert({ 239, FEB });
-	FEB.HW_mac = 120;
-	FEB.SW_mac = 152;
-	FEB.SW_modID = 225;
-	FEB.T0_delay = 375;
-	FEB.T1_delay = 2000401;
-	FEBs.insert({ 225, FEB });
-	FEB.HW_mac = 132;
-	FEB.SW_mac = 138;
-	FEB.SW_modID = 211;
-	FEB.T0_delay = 390;
-	FEB.T1_delay = 2000417;
-	FEBs.insert({ 211, FEB });
-	FEB.HW_mac = 95;
-	FEB.SW_mac = 124;
-	FEB.SW_modID = 197;
-	FEB.T0_delay = 405;
-	FEB.T1_delay = 2000432;
-	FEBs.insert({ 197, FEB });
-	FEB.HW_mac = 232;
-	FEB.SW_mac = 110;
-	FEB.SW_modID = 183;
-	FEB.T0_delay = 421;
-	FEB.T1_delay = 2000447;
-	FEBs.insert({ 183, FEB });
-	FEB.HW_mac = 165;
-	FEB.SW_mac = 208;
-	FEB.SW_modID = 281;
-	FEB.T0_delay = 436;
-	FEB.T1_delay = 2000463;
-	FEBs.insert({ 281, FEB });
-	FEB.HW_mac = 148;
-	FEB.SW_mac = 209;
-	FEB.SW_modID = 282;
-	FEB.T0_delay = 451;
-	FEB.T1_delay = 2000478;
-	FEBs.insert({ 282, FEB });
-	FEB.HW_mac = 237;
-	FEB.SW_mac = 111;
-	FEB.SW_modID = 184;
-	FEB.T0_delay = 467;
-	FEB.T1_delay = 2000493;
-	FEBs.insert({ 184, FEB });
-	FEB.HW_mac = 102;
-	FEB.SW_mac = 125;
-	FEB.SW_modID = 198;
-	FEB.T0_delay = 482;
-	FEB.T1_delay = 2000508;
-	FEBs.insert({ 198, FEB });
-	FEB.HW_mac = 94;
-	FEB.SW_mac = 139;
-	FEB.SW_modID = 212;
-	FEB.T0_delay = 497;
-	FEB.T1_delay = 2000524;
-	FEBs.insert({ 212, FEB });
-	FEB.HW_mac = 130;
-	FEB.SW_mac = 153;
-	FEB.SW_modID = 226;
-	FEB.T0_delay = 513;
-	FEB.T1_delay = 2000539;
-	FEBs.insert({ 226, FEB });
-	FEB.HW_mac = 181;
-	FEB.SW_mac = 184;
-	FEB.SW_modID = 257;
-	FEB.T0_delay = 284;
-	FEB.T1_delay = 2000310;
-	FEBs.insert({ 257, FEB });
-	FEB.HW_mac = 124;
-	FEB.SW_mac = 170;
-	FEB.SW_modID = 243;
-	FEB.T0_delay = 299;
-	FEB.T1_delay = 2000325;
-	FEBs.insert({ 243, FEB });
-	FEB.HW_mac = 152;
-	FEB.SW_mac = 156;
-	FEB.SW_modID = 229;
-	FEB.T0_delay = 314;
-	FEB.T1_delay = 2000341;
-	FEBs.insert({ 229, FEB });
-	FEB.HW_mac = 98;
-	FEB.SW_mac = 155;
-	FEB.SW_modID = 228;
-	FEB.T0_delay = 329;
-	FEB.T1_delay = 2000356;
-	FEBs.insert({ 228, FEB });
-	FEB.HW_mac = 173;
-	FEB.SW_mac = 154;
-	FEB.SW_modID = 227;
-	FEB.T0_delay = 345;
-	FEB.T1_delay = 2000371;
-	FEBs.insert({ 227, FEB });
-	FEB.HW_mac = 169;
-	FEB.SW_mac = 140;
-	FEB.SW_modID = 213;
-	FEB.T0_delay = 360;
-	FEB.T1_delay = 2000387;
-	FEBs.insert({ 213, FEB });
-	FEB.HW_mac = 144;
-	FEB.SW_mac = 126;
-	FEB.SW_modID = 199;
-	FEB.T0_delay = 375;
-	FEB.T1_delay = 2000402;
-	FEBs.insert({ 199, FEB });
-	FEB.HW_mac = 239;
-	FEB.SW_mac = 112;
-	FEB.SW_modID = 185;
-	FEB.T0_delay = 391;
-	FEB.T1_delay = 2000417;
-	FEBs.insert({ 185, FEB });
-	FEB.HW_mac = 147;
-	FEB.SW_mac = 210;
-	FEB.SW_modID = 283;
-	FEB.T0_delay = 406;
-	FEB.T1_delay = 2000433;
-	FEBs.insert({ 283, FEB });
-	FEB.HW_mac = 105;
-	FEB.SW_mac = 211;
-	FEB.SW_modID = 284;
-	FEB.T0_delay = 421;
-	FEB.T1_delay = 2000448;
-	FEBs.insert({ 284, FEB });
-	FEB.HW_mac = 231;
-	FEB.SW_mac = 113;
-	FEB.SW_modID = 186;
-	FEB.T0_delay = 437;
-	FEB.T1_delay = 2000463;
-	FEBs.insert({ 186, FEB });
-	FEB.HW_mac = 117;
-	FEB.SW_mac = 127;
-	FEB.SW_modID = 200;
-	FEB.T0_delay = 452;
-	FEB.T1_delay = 2000478;
-	FEBs.insert({ 200, FEB });
-	FEB.HW_mac = 126;
-	FEB.SW_mac = 141;
-	FEB.SW_modID = 214;
-	FEB.T0_delay = 467;
-	FEB.T1_delay = 2000494;
-	FEBs.insert({ 214, FEB });
-	FEB.HW_mac = 90;
-	FEB.SW_mac = 142;
-	FEB.SW_modID = 215;
-	FEB.T0_delay = 482;
-	FEB.T1_delay = 2000509;
-	FEBs.insert({ 215, FEB });
-	FEB.HW_mac = 183;
-	FEB.SW_mac = 128;
-	FEB.SW_modID = 201;
-	FEB.T0_delay = 498;
-	FEB.T1_delay = 2000524;
-	FEBs.insert({ 201, FEB });
-	FEB.HW_mac = 241;
-	FEB.SW_mac = 114;
-	FEB.SW_modID = 187;
-	FEB.T0_delay = 513;
-	FEB.T1_delay = 2000540;
-	FEBs.insert({ 187, FEB });
-	FEB.HW_mac = 113;
-	FEB.SW_mac = 212;
-	FEB.SW_modID = 285;
-	FEB.T0_delay = 528;
-	FEB.T1_delay = 2000555;
-	FEBs.insert({ 285, FEB });
-	FEB.HW_mac = 233;
-	FEB.SW_mac = 185;
-	FEB.SW_modID = 258;
-	FEB.T0_delay = 283;
-	FEB.T1_delay = 2000310;
-	FEBs.insert({ 258, FEB });
-	FEB.HW_mac = 164;
-	FEB.SW_mac = 171;
-	FEB.SW_modID = 244;
-	FEB.T0_delay = 299;
-	FEB.T1_delay = 2000325;
-	FEBs.insert({ 244, FEB });
-	FEB.HW_mac = 161;
-	FEB.SW_mac = 157;
-	FEB.SW_modID = 230;
-	FEB.T0_delay = 314;
-	FEB.T1_delay = 2000341;
-	FEBs.insert({ 230, FEB });
-	FEB.HW_mac = 203;
-	FEB.SW_mac = 158;
-	FEB.SW_modID = 231;
-	FEB.T0_delay = 329;
-	FEB.T1_delay = 2000356;
-	FEBs.insert({ 231, FEB });
-	FEB.HW_mac = 122;
-	FEB.SW_mac = 159;
-	FEB.SW_modID = 232;
-	FEB.T0_delay = 345;
-	FEB.T1_delay = 2000371;
-	FEBs.insert({ 232, FEB });
-	FEB.HW_mac = 2;
-	FEB.SW_mac = 145;
-	FEB.SW_modID = 218;
-	FEB.T0_delay = 360;
-	FEB.T1_delay = 2000387;
-	FEBs.insert({ 218, FEB });
-	FEB.HW_mac = 112;
-	FEB.SW_mac = 131;
-	FEB.SW_modID = 204;
-	FEB.T0_delay = 375;
-	FEB.T1_delay = 2000402;
-	FEBs.insert({ 204, FEB });
-	FEB.HW_mac = 62;
-	FEB.SW_mac = 117;
-	FEB.SW_modID = 190;
-	FEB.T0_delay = 391;
-	FEB.T1_delay = 2000417;
-	FEBs.insert({ 190, FEB });
-	FEB.HW_mac = 133;
-	FEB.SW_mac = 215;
-	FEB.SW_modID = 288;
-	FEB.T0_delay = 406;
-	FEB.T1_delay = 2000432;
-	FEBs.insert({ 288, FEB });
-	FEB.HW_mac = 168;
-	FEB.SW_mac = 214;
-	FEB.SW_modID = 287;
-	FEB.T0_delay = 421;
-	FEB.T1_delay = 2000448;
-	FEBs.insert({ 287, FEB });
-	FEB.HW_mac = 182;
-	FEB.SW_mac = 116;
-	FEB.SW_modID = 189;
-	FEB.T0_delay = 436;
-	FEB.T1_delay = 2000463;
-	FEBs.insert({ 189, FEB });
-	FEB.HW_mac = 107;
-	FEB.SW_mac = 130;
-	FEB.SW_modID = 203;
-	FEB.T0_delay = 452;
-	FEB.T1_delay = 2000478;
-	FEBs.insert({ 203, FEB });
-	FEB.HW_mac = 252;
-	FEB.SW_mac = 144;
-	FEB.SW_modID = 217;
-	FEB.T0_delay = 467;
-	FEB.T1_delay = 2000494;
-	FEBs.insert({ 217, FEB });
-	FEB.HW_mac = 141;
-	FEB.SW_mac = 143;
-	FEB.SW_modID = 216;
-	FEB.T0_delay = 482;
-	FEB.T1_delay = 2000509;
-	FEBs.insert({ 216, FEB });
-	FEB.HW_mac = 160;
-	FEB.SW_mac = 129;
-	FEB.SW_modID = 202;
-	FEB.T0_delay = 498;
-	// TEMPORARY
-	//FEB.T1_delay = 2000424;
-	FEB.T1_delay = 2000524;
-	FEBs.insert({ 202, FEB });
-	FEB.HW_mac = 137;
-	FEB.SW_mac = 115;
-	FEB.SW_modID = 188;
-	FEB.T0_delay = 513;
-	FEB.T1_delay = 2000540;
-	FEBs.insert({ 188, FEB });
-	FEB.HW_mac = 179;
-	FEB.SW_mac = 213;
-	FEB.SW_modID = 286;
-	FEB.T0_delay = 528;
-	FEB.T1_delay = 2000555;
-	FEBs.insert({ 286, FEB });
-	FEB.HW_mac = 66;
-	FEB.SW_mac = 186;
-	FEB.SW_modID = 259;
-	FEB.T0_delay = 298;
-	FEB.T1_delay = 2000325;
-	FEBs.insert({ 259, FEB });
-	FEB.HW_mac = 247;
-	FEB.SW_mac = 172;
-	FEB.SW_modID = 245;
-	FEB.T0_delay = 314;
-	FEB.T1_delay = 2000340;
-	FEBs.insert({ 245, FEB });
-	FEB.HW_mac = 198;
-	FEB.SW_mac = 173;
-	FEB.SW_modID = 246;
-	FEB.T0_delay = 329;
-	FEB.T1_delay = 2000356;
-	FEBs.insert({ 246, FEB });
-	FEB.HW_mac = 243;
-	FEB.SW_mac = 174;
-	FEB.SW_modID = 247;
-	FEB.T0_delay = 344;
-	FEB.T1_delay = 2000371;
-	FEBs.insert({ 247, FEB });
-	FEB.HW_mac = 72;
-	FEB.SW_mac = 175;
-	FEB.SW_modID = 248;
-	FEB.T0_delay = 360;
-	FEB.T1_delay = 2000386;
-	FEBs.insert({ 248, FEB });
-	FEB.HW_mac = 250;
-	FEB.SW_mac = 161;
-	FEB.SW_modID = 234;
-	FEB.T0_delay = 375;
-	FEB.T1_delay = 2000401;
-	FEBs.insert({ 234, FEB });
-	FEB.HW_mac = 249;
-	FEB.SW_mac = 147;
-	FEB.SW_modID = 220;
-	FEB.T0_delay = 390;
-	FEB.T1_delay = 2000417;
-	FEBs.insert({ 220, FEB });
-	FEB.HW_mac = 248;
-	FEB.SW_mac = 133;
-	FEB.SW_modID = 206;
-	FEB.T0_delay = 405;
-	FEB.T1_delay = 2000432;
-	FEBs.insert({ 206, FEB });
-	FEB.HW_mac = 60;
-	FEB.SW_mac = 119;
-	FEB.SW_modID = 192;
-	FEB.T0_delay = 421;
-	FEB.T1_delay = 2000447;
-	FEBs.insert({ 192, FEB });
-	FEB.HW_mac = 145;
-	FEB.SW_mac = 217;
-	FEB.SW_modID = 290;
-	FEB.T0_delay = 436;
-	FEB.T1_delay = 2000463;
-	FEBs.insert({ 290, FEB });
-	FEB.HW_mac = 110;
-	FEB.SW_mac = 216;
-	FEB.SW_modID = 289;
-	FEB.T0_delay = 451;
-	FEB.T1_delay = 2000478;
-	FEBs.insert({ 289, FEB });
-	FEB.HW_mac = 59;
-	FEB.SW_mac = 118;
-	FEB.SW_modID = 191;
-	FEB.T0_delay = 467;
-	FEB.T1_delay = 2000493;
-	FEBs.insert({ 191, FEB });
-	FEB.HW_mac = 202;
-	FEB.SW_mac = 132;
-	FEB.SW_modID = 205;
-	FEB.T0_delay = 482;
-	FEB.T1_delay = 2000509;
-	FEBs.insert({ 205, FEB });
-	FEB.HW_mac = 135;
-	FEB.SW_mac = 146;
-	FEB.SW_modID = 219;
-	FEB.T0_delay = 497;
-	FEB.T1_delay = 2000524;
-	FEBs.insert({ 219, FEB });
-	FEB.HW_mac = 246;
-	FEB.SW_mac = 160;
-	FEB.SW_modID = 233;
-	FEB.T0_delay = 513;
-	FEB.T1_delay = 2000539;
-	FEBs.insert({ 233, FEB });
-	FEB.HW_mac = 253;
-	FEB.SW_mac = 187;
-	FEB.SW_modID = 260;
-	FEB.T0_delay = 342;
-	FEB.T1_delay = 2000369;
-	FEBs.insert({ 260, FEB });
-	FEB.HW_mac = 245;
-	FEB.SW_mac = 188;
-	FEB.SW_modID = 261;
-	FEB.T0_delay = 358;
-	FEB.T1_delay = 2000384;
-	FEBs.insert({ 261, FEB });
-	FEB.HW_mac = 65;
-	FEB.SW_mac = 189;
-	FEB.SW_modID = 262;
-	FEB.T0_delay = 373;
-	FEB.T1_delay = 2000400;
-	FEBs.insert({ 262, FEB });
-	FEB.HW_mac = 57;
-	FEB.SW_mac = 190;
-	FEB.SW_modID = 263;
-	FEB.T0_delay = 388;
-	FEB.T1_delay = 2000415;
-	FEBs.insert({ 263, FEB });
-	FEB.HW_mac = 63;
-	FEB.SW_mac = 176;
-	FEB.SW_modID = 249;
-	FEB.T0_delay = 404;
-	FEB.T1_delay = 2000430;
-	FEBs.insert({ 249, FEB });
-	FEB.HW_mac = 251;
-	FEB.SW_mac = 177;
-	FEB.SW_modID = 250;
-	FEB.T0_delay = 419;
-	FEB.T1_delay = 2000445;
-	FEBs.insert({ 250, FEB });
-	FEB.HW_mac = 70;
-	FEB.SW_mac = 163;
-	FEB.SW_modID = 236;
-	FEB.T0_delay = 434;
-	FEB.T1_delay = 2000461;
-	FEBs.insert({ 236, FEB });
-	FEB.HW_mac = 155;
-	FEB.SW_mac = 149;
-	FEB.SW_modID = 222;
-	FEB.T0_delay = 449;
-	FEB.T1_delay = 2000476;
-	FEBs.insert({ 222, FEB });
-	FEB.HW_mac = 154;
-	FEB.SW_mac = 135;
-	FEB.SW_modID = 208;
-	FEB.T0_delay = 465;
-	FEB.T1_delay = 2000491;
-	FEBs.insert({ 208, FEB });
-	FEB.HW_mac = 85;
-	FEB.SW_mac = 121;
-	FEB.SW_modID = 194;
-	FEB.T0_delay = 480;
-	FEB.T1_delay = 2000507;
-	FEBs.insert({ 194, FEB });
-	FEB.HW_mac = 134;
-	FEB.SW_mac = 219;
-	FEB.SW_modID = 292;
-	FEB.T0_delay = 495;
-	FEB.T1_delay = 2000522;
-	FEBs.insert({ 292, FEB });
-	FEB.HW_mac = 129;
-	FEB.SW_mac = 218;
-	FEB.SW_modID = 291;
-	FEB.T0_delay = 511;
-	FEB.T1_delay = 2000537;
-	FEBs.insert({ 291, FEB });
-	FEB.HW_mac = 115;
-	FEB.SW_mac = 120;
-	FEB.SW_modID = 193;
-	FEB.T0_delay = 526;
-	FEB.T1_delay = 2000553;
-	FEBs.insert({ 193, FEB });
-	FEB.HW_mac = 204;
-	FEB.SW_mac = 134;
-	FEB.SW_modID = 207;
-	FEB.T0_delay = 541;
-	FEB.T1_delay = 2000568;
-	FEBs.insert({ 207, FEB });
-	FEB.HW_mac = 244;
-	FEB.SW_mac = 148;
-	FEB.SW_modID = 221;
-	FEB.T0_delay = 557;
-	FEB.T1_delay = 2000583;
-	FEBs.insert({ 221, FEB });
-	FEB.HW_mac = 82;
-	FEB.SW_mac = 162;
-	FEB.SW_modID = 235;
-	FEB.T0_delay = 572;
-	FEB.T1_delay = 2000598;
-	FEBs.insert({ 235, FEB });
-	FEB.HW_mac = 186;
-	FEB.SW_mac = 199;
-	FEB.SW_modID = 272;
-	FEB.T0_delay = 284;
-	FEB.T1_delay = 2000310;
-	FEBs.insert({ 272, FEB });
-	FEB.HW_mac = 83;
-	FEB.SW_mac = 200;
-	FEB.SW_modID = 273;
-	FEB.T0_delay = 299;
-	FEB.T1_delay = 2000326;
-	FEBs.insert({ 273, FEB });
-	FEB.HW_mac = 254;
-	FEB.SW_mac = 201;
-	FEB.SW_modID = 274;
-	FEB.T0_delay = 314;
-	FEB.T1_delay = 2000341;
-	FEBs.insert({ 274, FEB });
-	FEB.HW_mac = 166;
-	FEB.SW_mac = 202;
-	FEB.SW_modID = 275;
-	FEB.T0_delay = 330;
-	FEB.T1_delay = 2000356;
-	FEBs.insert({ 275, FEB });
-	FEB.HW_mac = 178;
-	FEB.SW_mac = 203;
-	FEB.SW_modID = 276;
-	FEB.T0_delay = 345;
-	FEB.T1_delay = 2000371;
-	FEBs.insert({ 276, FEB });
-	FEB.HW_mac = 136;
-	FEB.SW_mac = 204;
-	FEB.SW_modID = 277;
-	FEB.T0_delay = 360;
-	FEB.T1_delay = 2000387;
-	FEBs.insert({ 277, FEB });
-	FEB.HW_mac = 184;
-	FEB.SW_mac = 205;
-	FEB.SW_modID = 278;
-	FEB.T0_delay = 375;
-	FEB.T1_delay = 2000402;
-	FEBs.insert({ 278, FEB });
-	FEB.HW_mac = 187;
-	FEB.SW_mac = 191;
-	FEB.SW_modID = 264;
-	FEB.T0_delay = 391;
-	FEB.T1_delay = 2000417;
-	FEBs.insert({ 264, FEB });
-	FEB.HW_mac = 240;
-	FEB.SW_mac = 231;
-	FEB.SW_modID = 304;
-	FEB.T0_delay = 406;
-	FEB.T1_delay = 2000433;
-	FEBs.insert({ 304, FEB });
-	FEB.HW_mac = 242;
-	FEB.SW_mac = 230;
-	FEB.SW_modID = 303;
-	FEB.T0_delay = 421;
-	FEB.T1_delay = 2000448;
-	FEBs.insert({ 303, FEB });
-	FEB.HW_mac = 188;
-	FEB.SW_mac = 229;
-	FEB.SW_modID = 302;
-	FEB.T0_delay = 437;
-	FEB.T1_delay = 2000463;
-	FEBs.insert({ 302, FEB });
-	FEB.HW_mac = 58;
-	FEB.SW_mac = 228;
-	FEB.SW_modID = 301;
-	FEB.T0_delay = 452;
-	FEB.T1_delay = 2000479;
-	FEBs.insert({ 301, FEB });
-	FEB.HW_mac = 143;
-	FEB.SW_mac = 227;
-	FEB.SW_modID = 300;
-	FEB.T0_delay = 467;
-	FEB.T1_delay = 2000494;
-	FEBs.insert({ 300, FEB });
-	FEB.HW_mac = 235;
-	FEB.SW_mac = 226;
-	FEB.SW_modID = 299;
-	FEB.T0_delay = 483;
-	FEB.T1_delay = 2000509;
-	FEBs.insert({ 299, FEB });
-
+	FEBs={{271, {81, 198, 271, 283ull, 2000309ull}},
+		{270, {119, 197, 270, 298ull, 2000324ull}},
+		{269, {87, 196, 269, 313ull, 2000339ull}},
+		{268, {92, 195, 268, 329ull, 2000355ull}},
+		{267, {180, 194, 267, 344ull, 2000370ull}},
+		{266, {97, 193, 266, 359ull, 2000385ull}},
+		{265, {174, 192, 265, 374ull, 2000400ull}},
+		{251, {238, 178, 251, 390ull, 2000416ull}},
+		{237, {234, 164, 237, 405ull, 2000431ull}},
+		{297, {189, 224, 297, 420ull, 2000446ull}},
+		{296, {190, 223, 296, 436ull, 2000462ull}},
+		{295, {80, 222, 295, 451ull, 2000477ull}},
+		{294, {162, 221, 294, 466ull, 2000492ull}},
+		{293, {64, 220, 293, 482ull, 2000508ull}},
+		{255, {172, 182, 255, 298ull, 2000324ull}},
+		{254, {114, 181, 254, 313ull, 2000339ull}},
+		{253, {100, 180, 253, 328ull, 2000355ull}},
+		{252, {150, 179, 252, 344ull, 2000370ull}},
+		{238, {176, 165, 238, 359ull, 2000385ull}},
+		{224, {67, 151, 224, 374ull, 2000400ull}},
+		{223, {138, 150, 223, 390ull, 2000416ull}},
+		{209, {170, 136, 209, 405ull, 2000431ull}},
+		{195, {101, 122, 195, 420ull, 2000446ull}},
+		{181, {142, 108, 181, 435ull, 2000462ull}},
+		{279, {139, 206, 279, 451ull, 2000477ull}},
+		{280, {185, 207, 280, 466ull, 2000492ull}},
+		{182, {6, 109, 182, 481ull, 2000508ull}},
+		{196, {177, 123, 196, 497ull, 2000523ull}},
+		{210, {61, 137, 210, 512ull, 2000538ull}},
+		{256, {123, 183, 256, 298ull, 2000325ull}},
+		{242, {116, 169, 242, 314ull, 2000340ull}},
+		{241, {104, 168, 241, 329ull, 2000355ull}},
+		{240, {91, 167, 240, 344ull, 2000371ull}},
+		{239, {88, 166, 239, 360ull, 2000386ull}},
+		{225, {120, 152, 225, 375ull, 2000401ull}},
+		{211, {132, 138, 211, 390ull, 2000417ull}},
+		{197, {95, 124, 197, 405ull, 2000432ull}},
+		{183, {232, 110, 183, 421ull, 2000447ull}},
+		{281, {165, 208, 281, 436ull, 2000463ull}},
+		{282, {148, 209, 282, 451ull, 2000478ull}},
+		{184, {237, 111, 184, 467ull, 2000493ull}},
+		{198, {102, 125, 198, 482ull, 2000508ull}},
+		{212, {94, 139, 212, 497ull, 2000524ull}},
+		{226, {130, 153, 226, 513ull, 2000539ull}},
+		{257, {181, 184, 257, 284ull, 2000310ull}},
+		{243, {124, 170, 243, 299ull, 2000325ull}},
+		{229, {152, 156, 229, 314ull, 2000341ull}},
+		{228, {98, 155, 228, 329ull, 2000356ull}},
+		{227, {173, 154, 227, 345ull, 2000371ull}},
+		{213, {169, 140, 213, 360ull, 2000387ull}},
+		{199, {144, 126, 199, 375ull, 2000402ull}},
+		{185, {239, 112, 185, 391ull, 2000417ull}},
+		{283, {147, 210, 283, 306ull, 2000433ull}},
+		{284, {105, 211, 284, 421ull, 2000448ull}},
+		{186, {231, 114, 186, 437ull, 2000463ull}},
+		{200, {117, 127, 200, 452ull, 2000478ull}},
+		{214, {126, 141, 214, 467ull, 2000494ull}},
+		{215, {90, 142, 215, 482ull, 2000509ull}},
+		{201, {183, 128, 201, 498ull, 2000524ull}},
+		{187, {241, 114, 187, 513ull, 2000540ull}},
+		{285, {113, 212, 285, 528ull, 200055ull}},
+		{258, {233, 185, 258, 283ull, 2000310ull}},
+		{244, {164, 171, 244, 299ull, 2000325ull}},
+		{230, {161, 157, 230, 314ull, 2000341ull}},
+		{231, {203, 158, 231, 329ull, 2000356ull}},
+		{232, {122, 159, 232, 345ull, 2000371ull}},
+		{218, {2, 145, 218, 360ull, 2000387ull}},
+		{204, {112, 131, 204, 375ull, 2000402ull}},
+		{190, {62, 117, 190, 391ull, 2000417ull}},
+		{288, {133, 215, 288, 406ull, 2000432ull}},
+		{287, {168, 214, 287, 421ull, 2000448ull}},
+		{189, {182, 116, 189, 436ull, 2000463ull}},
+		{203, {107, 130, 203, 452ull, 2000478ull}},
+		{217, {252, 144, 217, 467ull, 2000494ull}},
+		{216, {141, 143, 216, 482ull, 2000509ull}},
+		{202, {160, 129, 202, 498ull, 2000524ull}},
+		{188, {137, 115, 188, 513ull, 2000540ull}},
+		{286, {179, 213, 286, 528ull, 2000555ull}},
+		{259, {66, 186, 259, 298ull, 2000325ull}},
+		{245, {247, 172, 245, 314ull, 2000340ull}},
+		{246, {198, 173, 246, 329ull, 2000356ull}},
+		{247, {243, 174, 247, 344ull, 2000371ull}},
+		{248, {72, 175, 248, 360ull, 2000386ull}},
+		{234, {250, 161, 234, 375ull, 2000401ull}},
+		{220, {249, 147, 220, 390ull, 2000417ull}},
+		{206, {248, 133, 206, 405ull, 2000432ull}},
+		{192, {60, 119, 192, 421ull, 2000447ull}},
+		{290, {145, 217, 290, 436ull, 2000463ull}},
+		{289, {110, 216, 289, 451ull, 2000478ull}},
+		{191, {59, 118, 191, 467ull, 2000493ull}},
+		{205, {202, 132, 205, 482ull, 2000509ull}},
+		{219, {135, 146, 219, 497ull, 2000524ull}},
+		{233, {246, 160, 233, 513ull, 2000539ull}},
+		{260, {253, 187, 260, 342ull, 2000369ull}},
+		{261, {245, 188, 261, 358ull, 2000384ull}},
+		{262, {65, 189, 262, 373ull, 2000400ull}},
+		{263, {57, 190, 263, 388ull, 2000415ull}},
+		{249, {63, 176, 249, 404ull, 2000430ull}}, 
+		{250, {251, 177, 250, 419ull, 2000445ull}},
+		{236, {70, 163, 236, 434ull, 2000461ull}},
+		{222, {155, 149, 222, 449ull, 2000476ull}},
+		{208, {154, 135, 208, 465ull, 2000491ull}},
+		{194, {85, 121, 194, 480ull, 2000507ull}},
+		{292, {134, 219, 292, 495ull, 2000522ull}},
+		{291, {129, 218, 291, 511ull, 2000537ull}},
+		{193, {115, 120, 193, 526ull, 2000553ull}},
+		{207, {204, 134, 207, 541ull, 2000568ull}},
+		{221, {244, 148, 221, 557ull, 2000583ull}},
+		{235, {82, 162, 235, 572ull, 2000598ull}},
+		{272, {186, 199, 272, 284ull, 2000310ull}},
+		{273, {83, 200, 273, 299ull, 2000326ull}},
+		{274, {254, 201, 274, 314ull, 2000341ull}},
+		{275, {166, 202, 275, 330ull, 2000356ull}},
+		{276, {178, 203, 276, 345ull, 2000371ull}},
+		{277, {136, 204, 277, 360ull, 2000387ull}},
+		{278, {184, 205, 278, 375ull, 2000402ull}},
+		{264, {187, 191, 264, 391ull, 2000417ull}},
+		{304, {240, 231, 304, 406ull, 2000433ull}},
+		{303, {242, 230, 303, 421ull, 2000448ull}},
+		{302, {188, 229, 302, 437ull, 2000463ull}},
+		{301, {58, 228, 301, 452ull, 2000479ull}},
+		{300, {143, 227, 300, 467ull, 2000494ull}},
+		{299, {235, 226, 299, 483ull, 2000509ull}}};
 	return FEBs;
 }
 
