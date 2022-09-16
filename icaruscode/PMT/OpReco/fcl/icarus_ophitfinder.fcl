@@ -158,6 +158,7 @@ icarus_ophitdebugger.OutputFile:  "ophit_debug.root"
 # this is the "standard" ICARUS configuration for MC optical hit reconstruction:
 icarus_ophit_MC: {
   @table::icarus_ophit
+  PedAlgoPset:    @local::icarus_opreco_pedestal_MC_DocDB24969
   InputModule: "opdaq"
 }
 
