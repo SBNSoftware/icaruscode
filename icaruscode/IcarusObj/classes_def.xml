@@ -1,8 +1,14 @@
 <lcgdict>
+  <!-- for lar::sparse_vector -->
+  <class name="std::pair<unsigned int, std::vector<short>>"/>
+  <class name="std::vector<std::pair<unsigned int, std::vector<short>>>"/>
+  <class name="lar::sparse_vector<short>::datarange_t"/>
+  <class name="std::vector< lar::sparse_vector<short>::datarange_t>"/>
 
   <class name="icarus::SimEnergyDepositSummary" ClassVersion="10" >
    <version ClassVersion="10" checksum="1932250066"/>
   </class>
+
   <class name="art::Wrapper<icarus::SimEnergyDepositSummary>"/>
 
   <class name="sbn::OpDetWaveformMeta" ClassVersion="10" >
@@ -12,6 +18,17 @@
   <class name="art::Ptr<sbn::OpDetWaveformMeta>" />
   <class name="std::vector<sbn::OpDetWaveformMeta>" />
   <class name="art::Wrapper<std::vector<sbn::OpDetWaveformMeta>>" />
+
+  <class name="recob::ChannelROI" ClassVersion="10" >
+   <version ClassVersion="10" checksum="1609503266"/>
+  </class>
+
+  <class name="art::Ptr<recob::ChannelROI>" />
+  <class name="std::vector<recob::ChannelROI>" />
+  <class name="art::Wrapper< std::vector< recob::ChannelROI>>"/>
+
+  <class name="lar::sparse_vector<short>"/>
+
   
   <!-- sbn::OpDetWaveformMeta - raw::OpDetWaveform associations -->
   <class name="std::pair<art::Ptr<sbn::OpDetWaveformMeta>, art::Ptr<raw::OpDetWaveform>>" />
@@ -28,6 +45,26 @@
   <class name="art::Assns<icarus::trigger::OpticalTriggerGate::GateData_t, sbn::OpDetWaveformMeta>" />
   <class name="art::Wrapper<art::Assns<sbn::OpDetWaveformMeta, icarus::trigger::OpticalTriggerGate::GateData_t>>" />
   <class name="art::Wrapper<art::Assns<icarus::trigger::OpticalTriggerGate::GateData_t, sbn::OpDetWaveformMeta>>" />
+  
+  
+  <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
+  <!-- LArSoft object associations that are missing from LArSoft             -->
+  
+  <!-- recob::PFParticle - sim::BeamGateInfo associations -->
+  <class name="art::Assns<sim::BeamGateInfo, recob::PFParticle>" />
+  <class name="art::Assns<recob::PFParticle, sim::BeamGateInfo>" />
+  <class name="art::Wrapper<art::Assns<sim::BeamGateInfo, recob::PFParticle>>" />
+  <class name="art::Wrapper<art::Assns<recob::PFParticle, sim::BeamGateInfo>>" />
+  
+  <!-- anab::T0 - sim::BeamGateInfo associations -->
+  <class name="std::pair<art::Ptr<sim::BeamGateInfo>, art::Ptr<anab::T0>>" />
+  <class name="std::pair<art::Ptr<anab::T0>, art::Ptr<sim::BeamGateInfo>>" />
+  <class name="art::Assns<sim::BeamGateInfo, anab::T0>" />
+  <class name="art::Assns<anab::T0, sim::BeamGateInfo>" />
+  <class name="art::Wrapper<art::Assns<sim::BeamGateInfo, anab::T0>>" />
+  <class name="art::Wrapper<art::Assns<anab::T0, sim::BeamGateInfo>>" />
+  
+  <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
   
   
 </lcgdict>

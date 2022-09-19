@@ -1,0 +1,200 @@
+#
+# File:    triggeremu_settings_icarus.fcl
+# Purpose: Collection of settings for trigger emulation.
+# Author:  Gianluca Petrillo (petrillo@slac.stanford.edu)
+# Date:    July 28, 2022
+#
+# This is an attempt to centralize the definition of as many settings for
+# trigger emulation as possible.
+# The usage model is the following:
+#  1. users preemptively assign final values to the settings they want to customize
+#  2. the configuration includes this file, completing with defaults
+#  3. the template trigger configurations use those settings
+#  4. eventually users can override the settings one last time
+#
+# The pattern is chosen because there are several parameters that are used
+# multiple times in the configuration, and customizing them at step 4 requires
+# multiple overrides and the detailed knowledge of where to.
+# To implement step 1, user configuration will look like:
+#     
+#     ###
+#     ### Step 1: preemptively assign final values to custom settings
+#     ###
+#     BEGIN_PROLOG
+#     
+#     # choose only four fixed discrimination thresholds
+#     triggeremu_config_icarus.settings.PMTADCthresholds @protect_ignore:
+#       [ 200, 300, 400, 500 ]
+#     
+#     END_PROLOG
+#     
+#     ###
+#     ### Step 3: include FHiCL configuration (including the trigger preset)
+#     ###
+#     #include "triggeremu_data_config.fcl"
+#     
+#     ###
+#     ### Step 4: override settings as needed
+#     ###
+#     BEGIN_PROLOG
+#     
+#     
+#     
+#     END_PROLOG
+#     
+#     ###
+#     ### no more prolog from now on
+#     ###
+#     
+#     process_name: Ana
+#     # ...
+#     
+# 
+# The definitions are all in `triggeremu_config_icarus` table.
+# 
+# 
+# DEVELOPER NOTE: special care needs to be used when adding settings to this
+# file: limitations/quirks on FHiCL library `@protect_ignore:` assignment make
+# its use straightforward only when assigning single atoms, as opposed to tables
+# or sequences. See the note below.
+# 
+#
+
+#include "trigger_icarus.fcl"
+
+# ------------------------------------------------------------------------------
+BEGIN_PROLOG
+
+# All settings are enclosed in `triggeremu_config_icarus`, structured in:
+#  * `settings`: general settings, like a common PROLOG
+#  * `services`: table of required services
+#  * `producers`: table of producer configurations
+#  * `producerpath`: list of producers
+#  * `messagedestinations`: message facility destinations for logging
+# Table `triggeremu_config_icarus` is defined in multiple passes to allow
+# internal references.
+
+# settings in triggeremu_config_icarus.settings are set individually
+# so that each can be ignored by setting it with `@protect_ignore:` before
+# including this configuration file
+# (setting the whole `settings: { ... }` block would just get rid of the whole
+#  content of `settings` regardless the protection level of each item within)
+# So for example:
+#     
+#     triggeremu_config_icarus.BNBgate: { # BAD!
+#       Start:    "-0.05 us"
+#       Duration: "1.7 us"
+#     }
+#     
+# must be avoided in favour of:
+#     
+#     triggeremu_config_icarus.BNBgate.Start:    "-0.05 us"
+#     triggeremu_config_icarus.BNBgate.Duration: "1.7 us"
+#     
+# The first form would override any assignment to `Start` and `Duration`, even
+# if they were assigned with "@protect_ignore:".
+# 
+
+# bad PMT channels (off or too noisy)
+triggeremu_config_icarus.settings.missing_pmt_channels:
+  @local::icarus_trigger_channel_ignore_202101  # from trigger_icarus.fcl
+
+# beam gate window for trigger emulation:
+#  - duration (BNB: 1.6 us; NuMI: 9.5 us; and some buffer)
+triggeremu_config_icarus.settings.BeamGate.Duration: "1.70 us"
+#  - window start offset
+triggeremu_config_icarus.settings.BeamGate.Start:    "-0.05 us"
+
+# discrimination thresholds (only fixed ADC listed here)
+triggeremu_config_icarus.settings.PMTADCthresholds:
+  [ 100, 150, 200, 250, 300, 350, 400, 500 ]
+
+# PMT discriminated signal width
+triggeremu_config_icarus.settings.LVDSsignalWidth: "160 ns"
+
+# special pairing for 30-PMT windows pairing the single PMT together
+triggeremu_config_icarus.settings.trigger_channel_pairings_nosingle: [
+
+  # behind C:0 S:0
+  [   0,  2 ], [   1,  4 ], [   3,  6 ], [   5,  8 ], [   7,  9 ], [  10, 12 ], [  11, 14 ], [  13, 16 ],
+  [  15, 18 ],              [  17, 19 ], [  20, 22 ], [  21, 24 ], [  23, 26 ], [  25, 28 ], [  27, 29 ],
+  [  30, 32 ], [  31, 34 ], [  33, 36 ], [  35, 38 ], [  37, 39 ], [  40, 42 ], [  41, 44 ], [  43, 46 ],
+  [  45, 48 ],              [  47, 49 ], [  50, 52 ], [  51, 54 ], [  53, 56 ], [  55, 58 ], [  57, 59 ],
+  [  60, 62 ], [  61, 64 ], [  63, 66 ], [  65, 68 ], [  67, 69 ], [  70, 72 ], [  71, 74 ], [  73, 76 ],
+  [  75, 78 ],              [  77, 79 ], [  80, 82 ], [  81, 84 ], [  83, 86 ], [  85, 88 ], [  87, 89 ],
+  
+  # behind C:0 S:1
+  [  90, 92 ], [  91, 94 ], [  93, 96 ], [  95, 98 ], [  97, 99 ], [ 100,102 ], [ 101,104 ], [ 103,106 ],
+  [ 105,108 ],              [ 107,109 ], [ 110,112 ], [ 111,114 ], [ 113,116 ], [ 115,118 ], [ 117,119 ],
+  [ 120,122 ], [ 121,124 ], [ 123,126 ], [ 125,128 ], [ 127,129 ], [ 130,132 ], [ 131,134 ], [ 133,136 ],
+  [ 135,138 ],              [ 137,139 ], [ 140,142 ], [ 141,144 ], [ 143,146 ], [ 145,148 ], [ 147,149 ],
+  [ 150,152 ], [ 151,154 ], [ 153,156 ], [ 155,158 ], [ 157,159 ], [ 160,162 ], [ 161,164 ], [ 163,166 ],
+  [ 165,168 ],              [ 167,169 ], [ 170,172 ], [ 171,174 ], [ 173,176 ], [ 175,178 ], [ 177,179 ],
+  
+  # behind C:1 S:0
+  [ 180,182 ], [ 181,184 ], [ 183,186 ], [ 185,188 ], [ 187,189 ], [ 190,192 ], [ 191,194 ], [ 193,196 ],
+  [ 195,198 ],              [ 197,199 ], [ 200,202 ], [ 201,204 ], [ 203,206 ], [ 205,208 ], [ 207,209 ],
+  [ 210,212 ], [ 211,214 ], [ 213,216 ], [ 215,218 ], [ 217,219 ], [ 220,222 ], [ 221,224 ], [ 223,226 ],
+  [ 225,228 ],              [ 227,229 ], [ 230,232 ], [ 231,234 ], [ 233,236 ], [ 235,238 ], [ 237,239 ],
+  [ 240,242 ], [ 241,244 ], [ 243,246 ], [ 245,248 ], [ 247,249 ], [ 250,252 ], [ 251,254 ], [ 253,256 ],
+  [ 255,258 ],              [ 257,259 ], [ 260,262 ], [ 261,264 ], [ 263,266 ], [ 265,268 ], [ 267,269 ],
+  
+  # behind C:1 S:1
+  [ 270,272 ], [ 271,274 ], [ 273,276 ], [ 275,278 ], [ 277,279 ], [ 280,282 ], [ 281,284 ], [ 283,286 ],
+  [ 285,288 ],              [ 287,289 ], [ 290,292 ], [ 291,294 ], [ 293,296 ], [ 295,298 ], [ 297,299 ],
+  [ 300,302 ], [ 301,304 ], [ 303,306 ], [ 305,308 ], [ 307,309 ], [ 310,312 ], [ 311,314 ], [ 313,316 ],
+  [ 315,318 ],              [ 317,319 ], [ 320,322 ], [ 321,324 ], [ 323,326 ], [ 325,328 ], [ 327,329 ],
+  [ 330,332 ], [ 331,334 ], [ 333,336 ], [ 335,338 ], [ 337,339 ], [ 340,342 ], [ 341,344 ], [ 343,346 ],
+  [ 345,348 ],              [ 347,349 ], [ 350,352 ], [ 351,354 ], [ 353,356 ], [ 355,358 ], [ 357,359 ]
+  
+] # trigger_channel_pairings_nosingle
+
+
+# settings for plotting efficiency under patterns of sliding window triggers
+# firing during beam time
+triggeremu_config_icarus.settings.SlidingWindowTriggerPatternsSingleWindow: [
+  { inMainWindow: 1                       },
+  { inMainWindow: 2                       },
+  { inMainWindow: 3                       },
+  { inMainWindow: 4                       },
+  { inMainWindow: 5                       },
+  { inMainWindow: 6                       }
+] # SlidingWindowTriggerPatternsSingleWindow
+
+
+triggeremu_config_icarus.settings.SlidingWindowTriggerPatternsWindowPair: [
+  { inMainWindow: 1   inOppositeWindow: 1 },       # [0]
+  { inMainWindow: 2   inOppositeWindow: 2 },       # [1]
+  { inMainWindow: 3   inOppositeWindow: 3 },       # [2]
+  { inMainWindow: 4   inOppositeWindow: 4 },       # [3]
+  { inMainWindow: 5   inOppositeWindow: 5 },       # [4]
+  { inMainWindow: 6   inOppositeWindow: 6 },       # [5]
+  { inMainWindow: 2   sumOfOppositeWindows:  3 },  # [6]
+  { inMainWindow: 3   sumOfOppositeWindows:  5 },  # [7]
+  { inMainWindow: 4   sumOfOppositeWindows:  8 },  # [8]
+  { inMainWindow: 5   sumOfOppositeWindows: 10 },  # [9]
+  { inMainWindow: 8   sumOfOppositeWindows: 15 }   # [10]
+] # SlidingWindowTriggerPatternsWindowPair
+
+
+# list of the sliding windows that are enabled (all others are disabled)
+
+# * configuration with 3 windows per PMT wall (12 windows overall)
+triggeremu_config_icarus.settings.EnabledWindowsTilingE:
+  [  0,  1,  2,  3,  4,  5 ]
+triggeremu_config_icarus.settings.EnabledWindowsTilingW:
+  [  6,  7,  8,  9, 10, 11 ]
+  
+# * configuration with 5 windows per PMT wall, overlapping (20 windows overall)
+triggeremu_config_icarus.settings.EnabledWindowsSlidingE:
+  [  0,  1,  2,  3,  4,  5,  6,  7,  8,  9 ]
+triggeremu_config_icarus.settings.EnabledWindowsSlidingW:
+  [ 10, 11, 12, 13, 14, 15, 16, 17, 18, 19 ]
+
+triggeremu_config_icarus.settings.SlidingWindowTriggerPatterns: [
+  @sequence::triggeremu_config_icarus.settings.SlidingWindowTriggerPatternsSingleWindow,
+  @sequence::triggeremu_config_icarus.settings.SlidingWindowTriggerPatternsWindowPair
+]
+
+
+END_PROLOG

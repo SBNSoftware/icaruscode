@@ -36,6 +36,7 @@
 // framework libraries
 #include "messagefacility/MessageLogger/MessageLogger.h"
 #include "fhiclcpp/types/Atom.h"
+#include "fhiclcpp/types/OptionalAtom.h"
 #include "fhiclcpp/types/Sequence.h"
 #include "fhiclcpp/types/Table.h"
 
@@ -770,7 +771,7 @@ class icarus::opdet::PMTsimulationAlg {
   std::pair<ADCcount, ADCcount> saturationRange() const;
   
   /// Applies the configured photoelectron saturation on the `waveform`,
-  /// only if the saturation is cutting into the digitisation range.
+  /// only if the saturation is cutting into the digitisation `range`.
   void ApplySaturation
     (Waveform_t& waveform, std::pair<ADCcount, ADCcount> const& range) const;
   
@@ -862,10 +863,9 @@ class icarus::opdet::PMTsimulationAlgMaker {
     //
     // PMT settings
     //
-    fhicl::Atom<float> Saturation {
+    fhicl::OptionalAtom<float> Saturation {
       Name("Saturation"),
       Comment("photomultiplier saturation (as number of photoelectrons)")
-      // mandatory
       };
     fhicl::Atom<double> QE {
       Name("QE"),

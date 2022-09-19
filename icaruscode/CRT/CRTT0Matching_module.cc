@@ -52,7 +52,7 @@
 #include "larcoreobj/SimpleTypesAndConstants/PhysicalConstants.h"
 #include "lardataobj/AnalysisBase/ParticleID.h"
 #include "larsim/MCCheater/BackTrackerService.h"
-#include "icaruscode/Decode/DataProducts/ExtraTriggerInfo.h"
+#include "sbnobj/Common/Trigger/ExtraTriggerInfo.h"
 #include "lardataobj/RecoBase/PFParticle.h"
 #include "lardataobj/AnalysisBase/T0.h"
 #include "lardataobj/RecoBase/PFParticleMetadata.h"

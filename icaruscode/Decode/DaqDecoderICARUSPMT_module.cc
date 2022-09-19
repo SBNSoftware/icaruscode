@@ -15,14 +15,11 @@
 #include "icaruscode/Timing/PMTWaveformTimeCorrectionExtractor.h"
 #include "icaruscode/Timing/IPMTTimingCorrectionService.h"
 #include "icaruscode/Timing/PMTTimingCorrections.h"
-
-// #include "sbnobj/Common/Trigger/ExtraTriggerInfo.h" // future location of:
-#include "icaruscode/Decode/DataProducts/ExtraTriggerInfo.h"
-// #include "sbnobj/Common/Trigger/BeamBits.h" // future location of:
-#include "icaruscode/Decode/BeamBits.h" // sbn::triggerSource
 #include "icarusalg/Utilities/BinaryDumpUtils.h" // icarus::ns::util::bin()
 #include "icaruscode/Utilities/ArtHandleTrackerManager.h"
 
+#include "sbnobj/Common/Trigger/ExtraTriggerInfo.h" 
+#include "sbnobj/Common/Trigger/BeamBits.h"
 #include "sbnobj/Common/PMT/Data/PMTconfiguration.h" // sbn::PMTconfiguration
 #include "sbndaq-artdaq-core/Overlays/Common/CAENV1730Fragment.hh"
 #include "sbndaq-artdaq-core/Overlays/FragmentType.hh" // sbndaq::FragmentType

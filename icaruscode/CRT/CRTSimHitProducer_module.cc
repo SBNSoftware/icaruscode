@@ -2,7 +2,7 @@
 #include "sbnobj/ICARUS/CRT/CRTData.hh"
 #include "sbnobj/Common/CRT/CRTHit.hh"
 #include "icaruscode/CRT/CRTUtils/CRTHitRecoAlg.h"
-#include "icaruscode/Decode/DataProducts/ExtraTriggerInfo.h"
+#include "sbnobj/Common/Trigger/ExtraTriggerInfo.h"
 
 // Framework includes
 #include "art/Framework/Core/EDProducer.h"

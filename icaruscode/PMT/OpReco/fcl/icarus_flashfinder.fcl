@@ -9,7 +9,7 @@ ICARUSSimpleFlash:
   FlashFinderAlgo : "SimpleFlashAlgo"
   AlgoConfig      : @local::SimpleFlashStandard
   OpHitProducer   : "ophit"
-  PECalib         : @local::NoCalib
+  PECalib         : @local::icarus_pmt_calibration.CalibStandard
 }
 
 ICARUSSimpleFlashCryoE: @local::ICARUSSimpleFlash

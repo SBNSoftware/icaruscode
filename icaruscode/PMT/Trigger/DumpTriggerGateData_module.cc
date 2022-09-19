@@ -49,7 +49,7 @@ namespace icarus::trigger { class DumpTriggerGateData; }
  *      optical detector activity; the activity belongs to a single channel, but
  *      there may be multiple waveforms on the same channel. The time stamp is
  *      expected to be from the
- *      @anchor DetectorClocksElectronicsTime "electronics time scale"
+ *      @ref DetectorClocksElectronicsTime "electronics time scale"
  *      and therefore expressed in microseconds.
  * * `std::vector<simb::MCTruth>`: generator information, used for categorising
  *      the events for plot sets

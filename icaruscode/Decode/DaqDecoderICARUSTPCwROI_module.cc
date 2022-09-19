@@ -28,6 +28,7 @@
 #include "art/Framework/Services/Registry/ServiceHandle.h"
 #include "art_root_io/TFileService.h"
 #include "art/Framework/Core/ModuleMacros.h"
+#include "art/Utilities/Globals.h"
 #include "art/Utilities/make_tool.h"
 #include "canvas/Persistency/Common/Ptr.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
@@ -42,8 +43,8 @@
 #include "larcore/Geometry/Geometry.h"
 #include "lardata/DetectorInfoServices/DetectorClocksService.h"
 #include "lardataobj/RawData/RawDigit.h"
-#include "lardataobj/RecoBase/Wire.h"         // This for outputting the ROIs
-#include "lardata/ArtDataHelper/WireCreator.h"
+#include "icaruscode/IcarusObj/ChannelROI.h"
+#include "icaruscode/TPC/Utilities/ChannelROICreator.h"
 
 #include "sbndaq-artdaq-core/Overlays/ICARUS/PhysCrateFragment.hh"
 
@@ -78,12 +79,12 @@ public:
     virtual void endJob(art::ProcessingFrame const& frame);
 
     // Define the RawDigit collection
-    using RawDigitCollection    = std::vector<raw::RawDigit>;
-    using RawDigitCollectionPtr = std::unique_ptr<RawDigitCollection>;
-    using WireCollection        = std::vector<recob::Wire>;
-    using WireCollectionPtr     = std::unique_ptr<WireCollection>;
-    using ConcurrentRawDigitCol = tbb::concurrent_vector<raw::RawDigit>;
-    using ConcurrentWireCol     = tbb::concurrent_vector<recob::Wire>;
+    using RawDigitCollection      = std::vector<raw::RawDigit>;
+    using RawDigitCollectionPtr   = std::unique_ptr<RawDigitCollection>;
+    using ChannelROICollection    = std::vector<recob::ChannelROI>;
+    using ChannelROICollectionPtr = std::unique_ptr<ChannelROICollection>;
+    using ConcurrentRawDigitCol   = tbb::concurrent_vector<raw::RawDigit>;
+    using ConcurrentChannelROICol = tbb::concurrent_vector<recob::ChannelROI>;
 
     // Define data structures for organizing the decoded fragments
     // The idea is to form complete "images" organized by "logical" TPC. Here we are including
@@ -108,19 +109,19 @@ public:
                                ConcurrentRawDigitCol&,
                                ConcurrentRawDigitCol&,
                                ConcurrentRawDigitCol&,
-                               ConcurrentWireCol&) const;
+                               ConcurrentChannelROICol&) const;
 
 private:
     class multiThreadFragmentProcessing
     {
     public:
-        multiThreadFragmentProcessing(DaqDecoderICARUSTPCwROI const&     parent,
-                                      detinfo::DetectorClocksData const& clockData,
-                                      art::Handle<artdaq::Fragments> const&    fragmentsHandle,
-                                      ConcurrentRawDigitCol&             concurrentRawRawDigits,
-                                      ConcurrentRawDigitCol&             concurrentRawDigits,
-                                      ConcurrentRawDigitCol&             coherentRawDigits,
-                                      ConcurrentWireCol&                 concurrentROIs)
+        multiThreadFragmentProcessing(DaqDecoderICARUSTPCwROI const&        parent,
+                                      detinfo::DetectorClocksData const&    clockData,
+                                      art::Handle<artdaq::Fragments> const& fragmentsHandle,
+                                      ConcurrentRawDigitCol&                concurrentRawRawDigits,
+                                      ConcurrentRawDigitCol&                concurrentRawDigits,
+                                      ConcurrentRawDigitCol&                coherentRawDigits,
+                                      ConcurrentChannelROICol&              concurrentROIs)
             : fDaqDecoderICARUSTPCwROI(parent),
               fClockData{clockData},
               fFragmentsHandle(fragmentsHandle),
@@ -136,13 +137,13 @@ private:
               fDaqDecoderICARUSTPCwROI.processSingleFragment(idx, fClockData, fFragmentsHandle, fConcurrentRawRawDigits, fConcurrentRawDigits, fCoherentRawDigits, fConcurrentROIs);
         }
     private:
-        const DaqDecoderICARUSTPCwROI&     fDaqDecoderICARUSTPCwROI;
-        detinfo::DetectorClocksData const& fClockData;
+        const DaqDecoderICARUSTPCwROI&        fDaqDecoderICARUSTPCwROI;
+        detinfo::DetectorClocksData const&    fClockData;
         art::Handle<artdaq::Fragments> const& fFragmentsHandle;
-        ConcurrentRawDigitCol&             fConcurrentRawRawDigits;
-        ConcurrentRawDigitCol&             fConcurrentRawDigits;
-        ConcurrentRawDigitCol&             fCoherentRawDigits;
-        ConcurrentWireCol&                 fConcurrentROIs;
+        ConcurrentRawDigitCol&                fConcurrentRawRawDigits;
+        ConcurrentRawDigitCol&                fConcurrentRawDigits;
+        ConcurrentRawDigitCol&                fCoherentRawDigits;
+        ConcurrentChannelROICol&              fConcurrentROIs;
     };
 
     // Function to save our RawDigits
@@ -209,10 +210,7 @@ DaqDecoderICARUSTPCwROI::DaqDecoderICARUSTPCwROI(fhicl::ParameterSet const & pse
     configure(pset);
 
     // Check the concurrency 
-    int max_concurrency = tbb::this_task_arena::max_concurrency();
-
-    // ****** TEMPORARY ******
-    max_concurrency = 1;
+    int max_concurrency = art::Globals::instance()->nthreads(); 
 
     mf::LogDebug("DaqDecoderICARUSTPCwROI") << "     ==> concurrency: " << max_concurrency << std::endl;
 
@@ -233,7 +231,7 @@ DaqDecoderICARUSTPCwROI::DaqDecoderICARUSTPCwROI(fhicl::ParameterSet const & pse
     for(const auto& fragmentLabel : fFragmentsLabelVec)
     {
         produces<std::vector<raw::RawDigit>>(fragmentLabel.instance());
-        produces<std::vector<recob::Wire>>(fragmentLabel.instance());
+        produces<std::vector<recob::ChannelROI>>(fragmentLabel.instance());
 
         if (fOutputRawWaveform)
             produces<std::vector<raw::RawDigit>>(fragmentLabel.instance() + fOutputRawWavePath);
@@ -353,10 +351,10 @@ void DaqDecoderICARUSTPCwROI::produce(art::Event & event, art::ProcessingFrame c
         art::Handle<artdaq::Fragments> const& daq_handle
           = dataCacheRemover.getHandle<artdaq::Fragments>(fragmentLabel);
 
-        ConcurrentRawDigitCol concurrentRawDigits;
-        ConcurrentRawDigitCol concurrentRawRawDigits;
-        ConcurrentRawDigitCol coherentRawDigits;
-        ConcurrentWireCol     concurrentROIs;
+        ConcurrentRawDigitCol   concurrentRawDigits;
+        ConcurrentRawDigitCol   concurrentRawRawDigits;
+        ConcurrentRawDigitCol   coherentRawDigits;
+        ConcurrentChannelROICol concurrentROIs;
 
         PlaneIdxToImageMap   planeIdxToImageMap;
         PlaneIdxToChannelMap planeIdxToChannelMap;
@@ -406,12 +404,12 @@ void DaqDecoderICARUSTPCwROI::produce(art::Event & event, art::ProcessingFrame c
         event.put(std::move(rawDigitCollection), fragmentLabel.instance());
 
         // Do the same to output the candidate ROIs
-        WireCollectionPtr wireCollection = std::make_unique<std::vector<recob::Wire>>(std::move_iterator(concurrentROIs.begin()),
-                                                                                      std::move_iterator(concurrentROIs.end()));
+        ChannelROICollectionPtr channelROICollection = std::make_unique<std::vector<recob::ChannelROI>>(std::move_iterator(concurrentROIs.begin()),
+                                                                                                        std::move_iterator(concurrentROIs.end()));
 
-        std::sort(wireCollection->begin(),wireCollection->end(),[](const auto& left, const auto& right){return left.Channel() < right.Channel();});
+        std::sort(channelROICollection->begin(),channelROICollection->end(),[](const auto& left, const auto& right){return left.Channel() < right.Channel();});
 
-        event.put(std::move(wireCollection), fragmentLabel.instance());
+        event.put(std::move(channelROICollection), fragmentLabel.instance());
     
     
         if (fOutputRawWaveform)
@@ -456,7 +454,7 @@ void DaqDecoderICARUSTPCwROI::processSingleFragment(size_t                      
                                                     ConcurrentRawDigitCol&             concurrentRawRawDigitCol,
                                                     ConcurrentRawDigitCol&             concurrentRawDigitCol,
                                                     ConcurrentRawDigitCol&             coherentRawDigitCol,
-                                                    ConcurrentWireCol&                 concurrentROIs) const
+                                                    ConcurrentChannelROICol&           concurrentROIs) const
 {
     cet::cpu_timer theClockProcess;
 
@@ -548,15 +546,17 @@ void DaqDecoderICARUSTPCwROI::processSingleFragment(size_t                      
             continue;
         }
 
-        const icarusDB::ChannelPlanePairVec& channelPlanePairVec = fChannelMap->getChannelPlanePair(boardIDVec[board]);
-
         uint32_t boardSlot = physCrateFragment.DataTileHeader(board)->StatusReg_SlotID();
 
-        std::stringstream outputString;
-        outputString << "********************************************************************************\n"
-                     << "FragmentID: " << std::hex << fragmentID << ", Crate: " << crateName << std::dec << ", boardID: " << boardSlot << "/" << nBoardsPerFragment << ", size " << channelPlanePairVec.size() << "/" << nChannelsPerBoard;
+        const icarusDB::ChannelPlanePairVec& channelPlanePairVec = fChannelMap->getChannelPlanePair(boardIDVec[boardSlot]);
 
-        mf::LogDebug("TPCDecoderFilter1D") << outputString.str();
+        mf::LogDebug(fLogCategory) << "********************************************************************************\n"
+                                   << "FragmentID: " << std::hex << fragmentID << std::dec << ", Crate: " << crateName << ", boardID: " << boardSlot << "/" << nBoardsPerFragment << ", size " << channelPlanePairVec.size() << "/" << nChannelsPerBoard;
+
+        if (board != boardSlot)
+        {
+            mf::LogInfo(fLogCategory) << "==> Found board/boardSlot mismatch, crate: " << crateName << ", board: " << board << ", boardSlot: " << boardSlot << " channelPlanePair: " << fChannelMap->getChannelPlanePair(boardIDVec[board]).front().first << "/"  << fChannelMap->getChannelPlanePair(boardIDVec[board]).front().second << ", slot: " << channelPlanePairVec[0].first << "/" << channelPlanePairVec[0].second;
+        }
 
         // Get the pointer to the start of this board's block of data
         const icarus::A2795DataBlock::data_t* dataBlock = physCrateFragment.BoardData(board);
@@ -644,7 +644,7 @@ void DaqDecoderICARUSTPCwROI::processSingleFragment(size_t                      
 
             // And, finally, the ROIs 
             const icarus_signal_processing::VectorBool& chanROIs = decoderTool->getROIVals()[chanIdx];
-            recob::Wire::RegionsOfInterest_t           ROIVec;
+            recob::ChannelROI::RegionsOfInterest_t      ROIVec;
 
             // Go through candidate ROIs and create Wire ROIs
             size_t roiIdx = 0;
@@ -657,9 +657,9 @@ void DaqDecoderICARUSTPCwROI::processSingleFragment(size_t                      
 
                 if (roiIdx > roiStartIdx)
                 {
-                    std::vector<float> holder(roiIdx - roiStartIdx);
+                    std::vector<short> holder(roiIdx - roiStartIdx);
 
-                    for(size_t idx = 0; idx < holder.size(); idx++) holder[idx] = denoised[chanIdx][roiStartIdx+idx];
+                    for(size_t idx = 0; idx < holder.size(); idx++) holder[idx] = wvfm[roiStartIdx+idx];
 
                     ROIVec.add_range(roiStartIdx, std::move(holder));
                 }
@@ -667,7 +667,7 @@ void DaqDecoderICARUSTPCwROI::processSingleFragment(size_t                      
                 roiIdx++;
             }
         
-            concurrentROIs.push_back(recob::WireCreator(std::move(ROIVec),channel,fGeometry->View(channel)).move());
+            concurrentROIs.push_back(recob::ChannelROICreator(std::move(ROIVec),channel).move());
         }
     }
 
