@@ -412,7 +412,7 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeTopHit(art::Ptr<CRTData> data, ULong64_t Glo
     hitpointerr[0] = adsGeo.HalfWidth1()*2/sqrt(12);
     hitpointerr[1] = adGeo.HalfHeight();
     hitpointerr[2] = adsGeo.HalfWidth1()*2/sqrt(12);
-    thit1 = (Long64_t)(thit-GlobalTrigger[(int)mac]);
+    thit1 = (Long64_t)(thit-GlobalTrigger[(int)mac+73]);
  
     //Remove T1 Reset event not correctly flagged, remove T1 reset events, remove T0 reset events
     if((sum<10000 && thit1<2'001'000 && thit1>2'000'000)||data->IsReference_TS1() || data->IsReference_TS0()) return FillCRTHit({},{},0,0,0,0,0,0,0,0,0,0,"");
