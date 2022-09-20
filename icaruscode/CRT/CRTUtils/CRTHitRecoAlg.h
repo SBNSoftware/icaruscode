@@ -63,15 +63,13 @@ using std::map;
 using std::pair;
 using std::string;
 
-namespace icarus {
- namespace crt {
-    class CRTHitRecoAlg;
-    inline bool sortbytime(const pair<int,ULong64_t> &a,
-              const pair<int,ULong64_t> &b)
-    {
-      return (a.second < b.second);
-    } 
- }
+namespace icarus::crt {
+  class CRTHitRecoAlg;
+  inline bool sortbytime(const pair<int,ULong64_t> &a,
+            const pair<int,ULong64_t> &b)
+  {
+    return (a.second < b.second);
+  } 
 }
 
 class icarus::crt::CRTHitRecoAlg {
@@ -201,20 +199,26 @@ class icarus::crt::CRTHitRecoAlg {
   }
 }; //class CRTHitRecoAlg
 
-ULong64_t GetMode(std::vector<std::pair<int, ULong64_t>> vector);
 
-struct FEB_delay {
-	int HW_mac=-1;
-	int SW_mac=-1;
-	int SW_modID=-1;
-	ULong64_t T0_delay=0; //[ns]
-	ULong64_t T1_delay=0; //[ns]
-};
+namespace icarus::crt {
+	ULong64_t GetMode(std::vector<std::pair<int, ULong64_t>> vector);
 
-typedef int feb_index;
-typedef std::map<feb_index, FEB_delay> CRT_delay_map;
+	struct FEB_delay {
+		int HW_mac=-1;
+		int SW_mac=-1;
+		int SW_modID=-1;
+		ULong64_t T0_delay=0; //[ns]
+		ULong64_t T1_delay=0; //[ns]
+	};
 
-inline CRT_delay_map LoadFEBMap() {
+	typedef int feb_index;
+	typedef std::map<feb_index, FEB_delay> CRT_delay_map;
+
+	CRT_delay_map LoadFEBMap();
+}
+
+
+inline icarus::crt::CRT_delay_map icarus::crt::LoadFEBMap() {
 
 	CRT_delay_map FEBs;
 

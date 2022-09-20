@@ -1082,7 +1082,7 @@ bool CRTHitRecoAlg::IsEmptyHit(CRTHit hit) {
 }
 
 //-----------------------------------------------------------------------------
-ULong64_t GetMode(std::vector<std::pair<int, ULong64_t>> vector) {
+ULong64_t icarus::crt::GetMode(std::vector<std::pair<int, ULong64_t>> vector) {
 
         sort(vector.begin(), vector.end(), icarus::crt::sortbytime);
 
