@@ -10,6 +10,7 @@
 #include "icaruscode/PMT/SinglePhotonPulseFunctionTool.h"
 #include "icaruscode/PMT/Algorithms/PMTsimulationAlg.h"
 #include "icaruscode/PMT/Algorithms/PhotoelectronPulseFunction.h"
+#include "icaruscode/Utilities/ArtHandleTrackerManager.h"
 
 // LArSoft libraries
 #include "larcore/CoreUtils/ServiceUtil.h"
@@ -65,6 +66,10 @@ namespace icarus::opdet {
    *   `sim::SimPhotons` collection to be digitized;
    * * **SinglePhotonResponse** (configuration table): configuration of the
    *   _art_ tool delivering the single photon response function (see below);
+   * * **DropRawDataAfterUse** (flag, default: `true`): at the end of
+   *     processing, the framework will be asked to remove the simulated photons
+   *     from memory. Set this to `false` in the unlikely case that information
+   *     is still needed in the job after digitization.
    * * **EfficiencySeed**, **DarkNoiseSeed** and **ElectronicsNoiseSeed**
    *   (integers, optional): if specified, each number is used to seed the
    *   pertaining random engine; otherwise, the seed is assigned by
@@ -171,6 +176,12 @@ namespace icarus::opdet {
           false
       };
       
+      fhicl::Atom<bool> DropRawDataAfterUse {
+        Name("DropRawDataAfterUse"),
+        Comment("drop simulated photon data from memory after use"),
+        true // default
+        };
+    
       rndm::SeedAtom EfficiencySeed {
         Name("EfficiencySeed"),
         Comment("fix the seed for stochastic photon detection efficiency")
@@ -225,6 +236,9 @@ namespace icarus::opdet {
     
     bool fWritePhotons { false }; ///< Whether to save contributing photons.
     
+    /// Clear photon data product cache after use.
+    bool const fDropRawDataAfterUse;
+    
     /// Single photoelectron response function.
     std::unique_ptr<SinglePhotonResponseFunc_t> const fSinglePhotonResponseFunc;
     
@@ -252,6 +266,7 @@ SimPMTIcarus::SimPMTIcarus(Parameters const& config)
     : EDProducer{config}
     , fInputModuleName(config().inputModuleLabel())
     , fWritePhotons(config().writePhotons())
+    , fDropRawDataAfterUse{ config().DropRawDataAfterUse() }
     , fSinglePhotonResponseFunc{
         art::make_tool<icarus::opdet::SinglePhotonPulseFunctionTool>
           (config().SinglePhotonResponse.get<fhicl::ParameterSet>())
@@ -287,6 +302,9 @@ SimPMTIcarus::SimPMTIcarus(Parameters const& config)
   {
     mf::LogDebug("SimPMTIcarus") << e.id();
     
+    util::LocalArtHandleTrackerManager dataCacheRemover
+      (e, fDropRawDataAfterUse);
+    
     //
     // fetch the input
     //
@@ -302,8 +320,13 @@ SimPMTIcarus::SimPMTIcarus(Parameters const& config)
     art::Handle<std::vector<sim::SimPhotons> > pmtVector;
     art::Handle<std::vector<sim::SimPhotonsLite> > pmtLiteVector;
     pmtVector = e.getHandle< std::vector<sim::SimPhotons> >(fInputModuleName);
-    if(!pmtVector.isValid())
+    if(pmtVector.isValid()) {
+      dataCacheRemover.registerHandle(pmtVector);
+    }
+    else {
       pmtLiteVector = e.getHandle< std::vector<sim::SimPhotonsLite> >(fInputModuleName);
+      dataCacheRemover.registerHandle(pmtLiteVector);
+    }
     
     auto const clockData =
       art::ServiceHandle<detinfo::DetectorClocksService const>()->DataFor(e);

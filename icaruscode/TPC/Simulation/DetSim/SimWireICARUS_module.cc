@@ -61,6 +61,7 @@
 #include "larevt/CalibrationDBI/Interface/ChannelStatusProvider.h"
 #include "tools/IGenNoise.h"
 #include "icarus_signal_processing/Filters/ICARUSFFT.h"
+#include "icaruscode/Utilities/ArtHandleTrackerManager.h"
 
 using namespace util;
 ///Detector simulation of raw signals on wires
@@ -100,6 +101,8 @@ private:
     bool                         fSuppressNoSignal;  ///< If no signal on wire (simchannel) then suppress the channel
     bool                         fSmearPedestals;    ///< If True then we smear the pedestals
     int                          fNumChanPerMB;      ///< Number of channels per motherboard
+    
+    bool                         fDropRawDataAfterUse; ///< Clear photon data product cache after use.
     
     std::vector<std::unique_ptr<icarus_tool::IGenNoise>> fNoiseToolVec; ///< Tool for generating noise
     
@@ -174,6 +177,7 @@ void SimWireICARUS::reconfigure(fhicl::ParameterSet const& p)
     fMakeHistograms    = p.get< bool                >("MakeHistograms",                     false);
     fSmearPedestals    = p.get< bool                >("SmearPedestals",                      true);
     fNumChanPerMB      = p.get< int                 >("NumChanPerMB",                          32);
+    fDropRawDataAfterUse = p.get< bool              >("DropRawDataAfterUse",                 true);
     fTest              = p.get< bool                >("Test",                               false);
     fTestWire          = p.get< size_t              >("TestWire",                               0);
     fTestIndex         = p.get< std::vector<size_t> >("TestIndex",          std::vector<size_t>());
@@ -256,6 +260,9 @@ void SimWireICARUS::produce(art::Event& evt)
     //
     //--------------------------------------------------------------------
     
+    util::LocalArtHandleTrackerManager dataCacheRemover
+      (evt, fDropRawDataAfterUse);
+    
     //get pedestal conditions
     const lariov::DetPedestalProvider& pedestalRetrievalAlg = art::ServiceHandle<lariov::DetPedestalService>()->GetPedestalProvider();
     
@@ -279,10 +286,11 @@ void SimWireICARUS::produce(art::Event& evt)
     std::vector<const sim::SimChannel*> channels(maxChannel,nullptr);
     if(!fTest)
     {
-        std::vector<const sim::SimChannel*> chanHandle;
-        evt.getView(fDriftEModuleLabel,chanHandle);
+        auto chanHandle
+          = dataCacheRemover.getHandle<std::vector<sim::SimChannel>>(fDriftEModuleLabel);
         
-        for(const auto& simChannel : chanHandle) channels.at(simChannel->Channel()) = simChannel;
+        for(const auto& simChannel : *chanHandle) channels.at(simChannel.Channel()) = &simChannel;
+        
     }
     else
         for(const auto& testChannel : fTestSimChannel_v) channels.at(testChannel.Channel()) = &testChannel;

@@ -12,6 +12,7 @@ add_subdirectory(Trigger)
 
 simple_plugin(SimPMTIcarus "module"
   icaruscode_PMT_Algorithms
+  icaruscode_Utilities
   lardataobj_RawData
   lardataobj_Simulation
   nurandom_RandomUtils_NuRandomService_service
