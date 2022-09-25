@@ -92,6 +92,8 @@ namespace daq
    *         `sbn::triggerSource` (equivalent to `raw::Trigger::TriggerBits()`,
    *         but in the form of an enumerator rather than a bit mask).
    *         Also called gate type.
+   *     * `triggerType`: the type of trigger logic applied, a value from
+   *         `sbn::triggerType`, e.g. minimum bias or majority.
    *     * `triggerTimestamp`: same as `raw::ExternalTrigger::GetTrigTime()`
    *         (nanoseconds from the Epoch, Coordinated Universal Time).
    *     * `beamGateTimestamp`: absolute time of the beam gate opening as
@@ -596,6 +598,7 @@ namespace daq
     } // switch gate type
     
     fTriggerExtra->sourceType = beamGateBit;
+    fTriggerExtra->triggerType = static_cast<sbn::triggerType>(datastream_info.trigger_type);
     fTriggerExtra->triggerTimestamp = artdaq_ts;
     fTriggerExtra->beamGateTimestamp = beamgate_ts;
     fTriggerExtra->enableGateTimestamp = enablegate_ts;
