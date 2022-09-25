@@ -84,9 +84,10 @@ icarus_stage0_producers:
   pmtthr:                         @local::icarus_pmtdiscriminatethr
   
   ### Optical hit finder
-  ophit:                          @local::icarus_ophit_data
-  ophitcorr:                      @local::icarus_ophit_timing_correction
-  ophitfull:                      @local::icarus_ophitdebugger_data
+  ophituncorrected:               @local::icarus_ophit_data
+  ophit:                          @local::icarus_ophit_timing_correction
+  ophitfulluncorrected:           @local::icarus_ophitdebugger_data
+  ophitfull:                      @local::icarus_ophit_timing_correction
   opflashCryoE:                   @local::ICARUSSimpleFlashDataCryoE
   opflashCryoW:                   @local::ICARUSSimpleFlashDataCryoW
 
@@ -199,8 +200,8 @@ icarus_stage0_PMT:                 [ triggerconfig,
                                      daqPMT,
                                      pmtconfigbaselines,
                                      pmtthr,
+                                     ophituncorrected,
                                      ophit,
-                                     ophitcorr,
                                      opflashCryoE,
                                      opflashCryoW
                                    ]
@@ -348,10 +349,6 @@ icarus_stage0_producers.gaushitTPCEE.HitFinderToolVec.CandidateHitsPlane2:      
 icarus_stage0_producers.gaushitTPCEE.HitFinderToolVec.CandidateHitsPlane2.Plane:               2
 icarus_stage0_producers.gaushitTPCEE.HitFinderToolVec.CandidateHitsPlane2.RoiThreshold:        9.
 
-### OpFlashFinder: overrride ophit input label to use the timing corrections
-physics.producers.opflashCryoE.OpHitProducer: "ophitcorr"
-physics.producers.opflashCryoW.OpHitProducer: "ophitcorr"
-
 ### Default purity monitor settings (single TPC readout assumed)
 icarus_stage0_producers.purityana0.RawModuleLabel:                                             ["daqTPCROI:PHYSCRATEDATATPCWW","daqTPCROI:PHYSCRATEDATATPCWE","daqTPCROI:PHYSCRATEDATATPCEW","daqTPCROI:PHYSCRATEDATATPCEE"]
 icarus_stage0_producers.purityana0.ValoreTauFCL:                                               600000.
@@ -372,6 +369,13 @@ icarus_stage0_producers.purityana1.PersistPurityInfo:                           
 icarus_stage0_producers.purityana1.FillAnaTuple:                                               false
 icarus_stage0_producers.purityana1.PersistPurityInfo:                                          false
 icarus_stage0_producers.purityana1.FillAnaTuple:                                               false
+
+
+###
+### Optical detector
+###
+icarus_stage0_producers.ophit.InputLabels:     [ "ophituncorrected" ]
+icarus_stage0_producers.ophitfull.InputLabels: [ "ophitfulluncorrected" ]
 
 
 END_PROLOG
