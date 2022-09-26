@@ -292,9 +292,9 @@ void icarus::crt::CRTPMTMatchingAna::analyze(art::Event const& e)
     xyzt.push_back(rcrt.X());
     xyzt.push_back(rcrt.Y());
     xyzt.push_back(rcrt.Z());
-
-    double tcrt = double(m_gate_start_timestamp - crt->ts0_ns)/1e3;
-    tcrt = -tcrt+1e6;
+    double tcrt = crt->ts1_ns/1e3;
+    /*double tcrt = double(m_gate_start_timestamp - crt->ts0_ns)/1e3;
+      tcrt = -tcrt+1e6;*/
 
     //    double tcrt = (int32_t)crt->ts0_ns;// - fCrtDelay;
     //uint64_t tcrt = crt->ts0_ns;
@@ -331,7 +331,7 @@ void icarus::crt::CRTPMTMatchingAna::analyze(art::Event const& e)
 	}
 
 	double tflash = flash->Time();//*1e3;//-fOpDelay;
-
+	//std::cout << "tflash: " << tflash << "\n";
 	TVector3 rflash(0,flash->YCenter(),flash->ZCenter());
 	TVector3 vdiff = rcrt-rflash;
 	//std::cout << "flash time: "<<flash->Time() << " absdiff : "<< abs(tcrt-tflash)<< std::endl;
@@ -346,8 +346,8 @@ void icarus::crt::CRTPMTMatchingAna::analyze(art::Event const& e)
 	  xyzt.push_back(tflash);
 	  matched = true;
 	  matchtpc = flashList.first;
-
 	  vector<art::Ptr<recob::OpHit>> hits = findManyHits.at(iflash);
+	  std::cout << "Flash matched! tcrt: " << tcrt << ", tflash: " << tflash << ", tdiff: " << tdiff << "\n";
 	  for(auto const& hit : hits) {
 	    double tPmt = hit->PeakTime();//*1.e3;//-fOpDelay;
 	    if( tPmt < flashHitT) {
@@ -395,10 +395,11 @@ void icarus::crt::CRTPMTMatchingAna::analyze(art::Event const& e)
     double pemax = 0.;
     for(auto const& hit : opHitList) {
       double thit = hit->PeakTime();//*1e3-fOpDelay;
+
       if(hit->PE()<fHitPeThresh){
 	continue;
       }
-
+      //std::cout << "thit: " << thit << "\n";
 
       //if(abs(tcrt-thit)<abs(tdiff)) {
       if(abs(tcrt-thit)<fCoinWindow && hit->PE()>pemax) {
@@ -419,7 +420,8 @@ void icarus::crt::CRTPMTMatchingAna::analyze(art::Event const& e)
 	xyzt.push_back(thit);
 
 	matched = true;
-	std::cout << "thit: "<<thit << " , tcrt: " << tcrt << " , tdiff " << tdiff  << std::endl;
+	std::cout << "Hit matched! tcrt: " << tcrt << ", thit: " << thit << ", tdiff: " << tdiff << "\n";
+	//std::cout << "thit: "<<thit << " , tcrt: " << tcrt << " , tdiff " << tdiff  << std::endl;
       }//if min tof
     }//for OpHits
     if(!matched) {
