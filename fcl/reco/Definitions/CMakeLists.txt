@@ -1,5 +1,3 @@
 cet_enable_asserts()
 
-add_subdirectory(Definitions)
-
 install_fhicl()
