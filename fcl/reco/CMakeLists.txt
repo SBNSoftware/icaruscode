@@ -8,7 +8,8 @@ FILE(GLOB fcl_files *.fcl)
 install_source( EXTRAS ${fcl_files} )
 
 # add subdirectories
-#add_subdirectory(FlashMatchSimple)
+add_subdirectory(FlashMatchSimple)
+add_subdirectory(ForCITests)
 #add_subdirectory(archive)
 add_subdirectory(Definitions)
 add_subdirectory(Stage0)
