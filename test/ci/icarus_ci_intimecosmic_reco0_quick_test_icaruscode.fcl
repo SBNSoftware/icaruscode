@@ -1,1 +1,1 @@
-#include "stage0_multiTPC_icarus_MC.fcl"
+#include "stage0_run2_icarus_MC.fcl"
