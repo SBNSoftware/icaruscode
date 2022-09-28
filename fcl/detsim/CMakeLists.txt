@@ -1,6 +1,6 @@
 # add underlying subfolders
 #add_subdirectory(SBNNoise)
-#add_subdirectory(commissioning)
+add_subdirectory(commissioning)
 #add_subdirectory(archive)
 
 # Install fcl files in /job subdirectory.
