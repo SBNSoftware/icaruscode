@@ -51,4 +51,3 @@ outputs: {
 
 }
 
-services.NuRandomService.policy: "random"

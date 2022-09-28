@@ -32,4 +32,3 @@ physics:
 
 phyiscs.producers.hnl.RayTrace: @local::wgtraytrace
 
-services.NuRandomService.policy: "random"
