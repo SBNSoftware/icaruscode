@@ -12,6 +12,7 @@
 #include "particleid_icarus.fcl"
 
 #include "eventweight_genie_sbn.fcl"
+#include "eventweight_genie_systtools.fcl"
 #include "eventweight_flux_sbn.fcl"
 #include "mcreco.fcl"
 #include "mcsproducer.fcl"
@@ -98,6 +99,7 @@ recoana_caf_preprocess_producers: {
   crtconvhit: @local::crthitconverter_icarus
   rns: { module_type: "RandomNumberSaver" }
   genieweight: @local::sbn_eventweight_genie
+  systtools: @local::sbn_systtools
   fluxweight: @local::sbn_eventweight_flux
 }
 
