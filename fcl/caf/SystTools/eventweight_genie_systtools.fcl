@@ -4,7 +4,7 @@ BEGIN_PROLOG
 
 sbn_systtools: {
 
-  module_type: TEMPMODULENAME
+  module_type: SystToolsEventWeight
 
   genie_module_label: "generator"
 
