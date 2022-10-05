@@ -126,7 +126,7 @@ vector<pair<sbn::crt::CRTHit, vector<int>>> CRTHitRecoAlg::CreateCRTHits(vector<
     //Add average difference between trigger_timestamp and Global trigger
     else GlobalTrigger=GlobalTrigger-trigger_offset;// In this event, the T1 Reset was probably "vetoed" by the T0 Reset
     for (int i=0; i<305; i++){
-	if (TriggerArr5ay[i]==0) TriggerArray[i]=GlobalTrigger;
+	if (TriggerArray[i]==0) TriggerArray[i]=GlobalTrigger;
     }
     //std::cout<<"Global Trigger "<<GlobalTrigger<<std::endl;
     //loop over time-ordered CRTData
