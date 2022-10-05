@@ -68,7 +68,7 @@ icarus_simple_flashmatch_0: {
   YBins:       5
   YLow:      -155.45
   YHigh:      108.55
-  fit_func_z:    "pol1"
+  fit_func_z:    "pol2"
   ZBins:      18
   ZLow:     -897.84
   ZHigh:     897.84
