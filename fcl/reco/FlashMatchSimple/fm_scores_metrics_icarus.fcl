@@ -1,22 +1,19 @@
-#include "simulationservices_icarus.fcl"
-
 #include "fm_scores_icarus.fcl"
 
-services.BackTrackerService:        @local::standard_backtrackerservice
-services.ParticleInventoryService:  @local::standard_particleinventoryservice
-
-physics.producers.fmatchCryo0.MakeTree:       true
-physics.producers.fmatchCryo0.StoreTrueNus:   true
-physics.producers.fmatchCryo0.StoreCheatMCT0: true
-physics.producers.fmatchCryo0.SelectNeutrino: true
-physics.producers.fmatchCryo0.MaxFlashes:     1
+physics.producers.fmatchCryo0.MakeTree:              true
+physics.producers.fmatchCryo0.StoreMCInfo:           true
+physics.producers.fmatchCryo0.SelectNeutrino:        true
+physics.producers.fmatchCryo0.CorrectDriftDistance:  false
+physics.producers.fmatchCryo0.MinInTimeFlashes:      2
+physics.producers.fmatchCryo0.MaxFlashes:            2
 physics.producers.fmatchCryo0.FlashFindingTimeStart: @local::icarus_simple_flashmatch_0.BeamSpillTimeStart
 physics.producers.fmatchCryo0.FlashFindingTimeEnd:   @local::icarus_simple_flashmatch_0.BeamSpillTimeEnd
 
-physics.producers.fmatchCryo1.MakeTree:       true
-physics.producers.fmatchCryo1.StoreTrueNus:   true
-physics.producers.fmatchCryo1.StoreCheatMCT0: true
-physics.producers.fmatchCryo1.SelectNeutrino: true
-physics.producers.fmatchCryo1.MaxFlashes:     1
+physics.producers.fmatchCryo1.MakeTree:              true
+physics.producers.fmatchCryo1.StoreMCInfo:           true
+physics.producers.fmatchCryo1.SelectNeutrino:        true
+physics.producers.fmatchCryo1.CorrectDriftDistance:  false
+physics.producers.fmatchCryo1.MinInTimeFlashes:      2
+physics.producers.fmatchCryo1.MaxFlashes:            2
 physics.producers.fmatchCryo1.FlashFindingTimeStart: @local::icarus_simple_flashmatch_1.BeamSpillTimeStart
 physics.producers.fmatchCryo1.FlashFindingTimeEnd:   @local::icarus_simple_flashmatch_1.BeamSpillTimeEnd

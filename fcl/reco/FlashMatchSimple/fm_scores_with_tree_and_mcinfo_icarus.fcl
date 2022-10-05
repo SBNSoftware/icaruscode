@@ -1,0 +1,9 @@
+#include "fm_scores_icarus.fcl"
+
+physics.producers.fmatchCryo0.MakeTree:       true
+physics.producers.fmatchCryo0.StoreMCInfo:    true
+# physics.producers.fmatchCryo0.SelectNeutrino: false
+
+physics.producers.fmatchCryo1.MakeTree:       true
+physics.producers.fmatchCryo1.StoreMCInfo:    true
+# physics.producers.fmatchCryo1.SelectNeutrino: false
