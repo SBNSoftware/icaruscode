@@ -225,13 +225,11 @@ void SimTestPulse::produce(art::Event & e)
 
         for(size_t plane=0; plane<3; ++plane) {
             geo::PlaneID planeID(0,0,plane);
-            double       xyz[3] = {chargeDepCoords.X(),chargeDepCoords.Y(),chargeDepCoords.Z()};
-
-            std::cout << "++ Searching for nearest wire id for planeID: " << planeID << ", xyz: "  << xyz[0] << "," << xyz[1] << "," << xyz[2] << std::endl;
-            geo::WireID nearestID = geo->NearestWireID(xyz,plane);
+            std::cout << "++ Searching for nearest wire id for planeID: " << planeID << ", xyz: "  << chargeDepCoords.X() << "," << chargeDepCoords.Y() << "," << chargeDepCoords.Z() << std::endl;
+            geo::WireID nearestID = geo->NearestWireID(chargeDepCoords,planeID);
             std::cout << "   WireID: " << nearestID << std::endl;
-            std::cout << "** Searching for nearest channel with plane: " << plane << ", xyz: " << xyz[0] << "," << xyz[1] << "," << xyz[2] << std::endl;
-            auto channel = geo->NearestChannel(xyz,plane);
+            std::cout << "** Searching for nearest channel with plane: " << plane << ", xyz: " << chargeDepCoords.X() << "," << chargeDepCoords.Y() << "," << chargeDepCoords.Z() << std::endl;
+            auto channel = geo->NearestChannel(chargeDepCoords,planeID);
             std::cout << "   Returned with channel: " << channel << std::endl;
             auto wire = geo->ChannelToWire(channel).front().Wire;
             std::cout << "   which gives wire: " << wire << std::endl;
@@ -248,6 +246,7 @@ void SimTestPulse::produce(art::Event & e)
             }
             sim::SimChannel sch(channel);
             unsigned planeTDC = clockData.TPCTick2TDC(pulse_record.tick + detProp.GetXTicksOffset(planeID) - detProp.GetXTicksOffset(collectionPlaneID));
+            double const xyz[3] = {chargeDepCoords.X(), chargeDepCoords.Y(), chargeDepCoords.Z()};
             sch.AddIonizationElectrons(1,   /// track id, keep 0 = invalid
                                        (unsigned int)planeTDC,
                                        fNumElectrons_v[index],
