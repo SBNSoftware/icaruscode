@@ -25,16 +25,10 @@ outputs.rootOutput.outputCommands:         ["keep *_*_*_*",
                                             "drop *_*_*_DAQ*", 
                                             "drop *_daqTPCROI_*_*", 
                                             "drop *_decon1droi_*_*", 
-                                            "drop *_decon2Droi*_*_*", 
-                                            "drop *_roifinder_*_*",
+                                            "drop *_decon2droi*_*_*", 
+                                            "drop recob::Wire*_roifinder_*_*",
                                             "drop recob::Wire*_roifinder2d_*_*" 
                                            ]
-
-# Override the hit finder input 
-physics.producers.gaushitTPCWW.CalDataModuleLabel: "roifinder2d:PHYSCRATEDATATPCWW"
-physics.producers.gaushitTPCWE.CalDataModuleLabel: "roifinder2d:PHYSCRATEDATATPCWE"
-physics.producers.gaushitTPCEW.CalDataModuleLabel: "roifinder2d:PHYSCRATEDATATPCEW"
-physics.producers.gaushitTPCEE.CalDataModuleLabel: "roifinder2d:PHYSCRATEDATATPCEE"
 
 ## Modify the event selection for the purity analyzers
 physics.analyzers.purityinfoana0.SelectEvents:    [ path ]

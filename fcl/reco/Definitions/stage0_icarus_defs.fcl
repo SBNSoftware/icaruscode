@@ -72,11 +72,15 @@ icarus_stage0_producers:
   roifinder2d:                    @local::icarus_roifinder
 
   ### hit-finder producers
-  gaushit:                        @local::gaus_hitfinder_icarus
   gaushitTPCWW:                   @local::gaus_hitfinder_icarus
   gaushitTPCWE:                   @local::gaus_hitfinder_icarus
   gaushitTPCEW:                   @local::gaus_hitfinder_icarus
   gaushitTPCEE:                   @local::gaus_hitfinder_icarus
+
+  gaushit2dTPCWW:                 @local::gaus_hitfinder_icarus
+  gaushit2dTPCWE:                 @local::gaus_hitfinder_icarus
+  gaushit2dTPCEW:                 @local::gaus_hitfinder_icarus
+  gaushit2dTPCEE:                 @local::gaus_hitfinder_icarus
 
   ### trigger emulation foundation
   pmtconfigbaselines:             @local::icarus_pmtconfigbaselines
@@ -191,6 +195,14 @@ icarus_stage0_WestHits_TPC:        [ gaushitTPCWW,
                                      gaushitTPCWE
                                    ]
 
+icarus_stage0_EastHits2d_TPC:      [ gaushit2dTPCEW,
+                                     gaushit2dTPCEE
+                                   ]
+
+icarus_stage0_WestHits2d_TPC:      [ gaushit2dTPCWW,
+                                     gaushit2dTPCWE
+                                   ]
+
 icarus_purity_monitor:             [
                                      purityana0,
                                      purityana1
@@ -224,6 +236,8 @@ icarus_stage0_multiTPC:            [ @sequence::icarus_stage0_multiTPC_TPC,
 icarus_stage0_2d_multiTPC:         [ @sequence::icarus_stage0_multiTPC_2d_TPC,
                                      @sequence::icarus_stage0_EastHits_TPC,
                                      @sequence::icarus_stage0_WestHits_TPC,
+                                     @sequence::icarus_stage0_EastHits2d_TPC,
+                                     @sequence::icarus_stage0_WestHits2d_TPC,
                                      @sequence::icarus_purity_monitor
                                    ]
 
@@ -349,6 +363,51 @@ icarus_stage0_producers.gaushitTPCEE.HitFinderToolVec.CandidateHitsPlane1.RoiThr
 icarus_stage0_producers.gaushitTPCEE.HitFinderToolVec.CandidateHitsPlane2:                     @local::candhitfinder_standard      # Sets hit finding for plane 2
 icarus_stage0_producers.gaushitTPCEE.HitFinderToolVec.CandidateHitsPlane2.Plane:               2
 icarus_stage0_producers.gaushitTPCEE.HitFinderToolVec.CandidateHitsPlane2.RoiThreshold:        9.
+
+icarus_stage0_producers.gaushit2dTPCWW.CalDataModuleLabel:                                     "roifinder:PHYSCRATEDATATPCWW"
+icarus_stage0_producers.gaushit2dTPCWE.CalDataModuleLabel:                                     "roifinder:PHYSCRATEDATATPCWE"
+icarus_stage0_producers.gaushit2dTPCEW.CalDataModuleLabel:                                     "roifinder:PHYSCRATEDATATPCEW"
+icarus_stage0_producers.gaushit2dTPCEE.CalDataModuleLabel:                                     "roifinder:PHYSCRATEDATATPCEE"
+
+icarus_stage0_producers.gaushit2dTPCWW.HitFinderToolVec.CandidateHitsPlane0:                   @local::candhitfinder_standard      # Sets hit finding for plane 0
+icarus_stage0_producers.gaushit2dTPCWW.HitFinderToolVec.CandidateHitsPlane0.Plane:             0
+icarus_stage0_producers.gaushit2dTPCWW.HitFinderToolVec.CandidateHitsPlane0.RoiThreshold:      9.
+icarus_stage0_producers.gaushit2dTPCWW.HitFinderToolVec.CandidateHitsPlane1:                   @local::candhitfinder_standard      # Sets hit finding for plane 1
+icarus_stage0_producers.gaushit2dTPCWW.HitFinderToolVec.CandidateHitsPlane1.Plane:             1
+icarus_stage0_producers.gaushit2dTPCWW.HitFinderToolVec.CandidateHitsPlane1.RoiThreshold:      9.5
+icarus_stage0_producers.gaushit2dTPCWW.HitFinderToolVec.CandidateHitsPlane2:                   @local::candhitfinder_standard      # Sets hit finding for plane 2
+icarus_stage0_producers.gaushit2dTPCWW.HitFinderToolVec.CandidateHitsPlane2.Plane:             2
+icarus_stage0_producers.gaushit2dTPCWW.HitFinderToolVec.CandidateHitsPlane2.RoiThreshold:      9.
+
+icarus_stage0_producers.gaushit2dTPCWE.HitFinderToolVec.CanditeHitsPlane0:                   @local::candhitfinder_standard      # Sets hit finding for plane 0
+icarus_stage0_producers.gaushit2dTPCWE.HitFinderToolVec.CandidateHitsPlane0.Plane:             0
+icarus_stage0_producers.gaushit2dTPCWE.HitFinderToolVec.CandidateHitsPlane0.RoiThreshold:      9.
+icarus_stage0_producers.gaushit2dTPCWE.HitFinderToolVec.CandidateHitsPlane1:                   @local::candhitfinder_standard      # Sets hit finding for plane 1
+icarus_stage0_producers.gaushit2dTPCWE.HitFinderToolVec.CandidateHitsPlane1.Plane:             1
+icarus_stage0_producers.gaushit2dTPCWE.HitFinderToolVec.CandidateHitsPlane1.RoiThreshold:      9.5
+icarus_stage0_producers.gaushit2dTPCWE.HitFinderToolVec.CandidateHitsPlane2:                   @local::candhitfinder_standard      # Sets hit finding for plane 2
+icarus_stage0_producers.gaushit2dTPCWE.HitFinderToolVec.CandidateHitsPlane2.Plane:             2
+icarus_stage0_producers.gaushit2dTPCWE.HitFinderToolVec.CandidateHitsPlane2.RoiThreshold:      9.
+
+icarus_stage0_producers.gaushit2dTPCEW.HitFinderToolVec.CanditeHitsPlane0:                   @local::candhitfinder_standard      # Sets hit finding for plane 0
+icarus_stage0_producers.gaushit2dTPCEW.HitFinderToolVec.CandidateHitsPlane0.Plane:             0
+icarus_stage0_producers.gaushit2dTPCEW.HitFinderToolVec.CandidateHitsPlane0.RoiThreshold:      9.
+icarus_stage0_producers.gaushit2dTPCEW.HitFinderToolVec.CandidateHitsPlane1:                   @local::candhitfinder_standard      # Sets hit finding for plane 1
+icarus_stage0_producers.gaushit2dTPCEW.HitFinderToolVec.CandidateHitsPlane1.Plane:             1
+icarus_stage0_producers.gaushit2dTPCEW.HitFinderToolVec.CandidateHitsPlane1.RoiThreshold:      9.5
+icarus_stage0_producers.gaushit2dTPCEW.HitFinderToolVec.CandidateHitsPlane2:                   @local::candhitfinder_standard      # Sets hit finding for plane 2
+icarus_stage0_producers.gaushit2dTPCEW.HitFinderToolVec.CandidateHitsPlane2.Plane:             2
+icarus_stage0_producers.gaushit2dTPCEW.HitFinderToolVec.CandidateHitsPlane2.RoiThreshold:      9.
+
+icarus_stage0_producers.gaushit2dTPCEE.HitFinderToolVec.CanditeHitsPlane0:                   @local::candhitfinder_standard      # Sets hit finding for plane 0
+icarus_stage0_producers.gaushit2dTPCEE.HitFinderToolVec.CandidateHitsPlane0.Plane:             0
+icarus_stage0_producers.gaushit2dTPCEE.HitFinderToolVec.CandidateHitsPlane0.RoiThreshold:      9.
+icarus_stage0_producers.gaushit2dTPCEE.HitFinderToolVec.CandidateHitsPlane1:                   @local::candhitfinder_standard      # Sets hit finding for plane 1
+icarus_stage0_producers.gaushit2dTPCEE.HitFinderToolVec.CandidateHitsPlane1.Plane:             1
+icarus_stage0_producers.gaushit2dTPCEE.HitFinderToolVec.CandidateHitsPlane1.RoiThreshold:      9.5
+icarus_stage0_producers.gaushit2dTPCEE.HitFinderToolVec.CandidateHitsPlane2:                   @local::candhitfinder_standard      # Sets hit finding for plane 2
+icarus_stage0_producers.gaushit2dTPCEE.HitFinderToolVec.CandidateHitsPlane2.Plane:             2
+icarus_stage0_producers.gaushit2dTPCEE.HitFinderToolVec.CandidateHitsPlane2.RoiThreshold:      9.
 
 ### Optical hit finding
 icarus_stage0_producers.ophit.InputModule:                                                     "daqPMT"
