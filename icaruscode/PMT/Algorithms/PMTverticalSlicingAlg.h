@@ -26,6 +26,7 @@
 // --- forward declarations
 // ---
 namespace geo {
+  class GeometryCore;
   class CryostatGeo;
   class OpDetGeo;
 } // namespace geo
@@ -65,8 +66,34 @@ class icarus::trigger::PMTverticalSlicingAlg {
   /// Computes slices from all PMT in `cryo` and appends them to `slices`.
   void appendCryoSlices(Slices_t& slices, geo::CryostatGeo const& cryo) const;
 
+  /**
+   * @brief Groups optical detectors under the specified cryostat into walls.
+   * @param cryo the cryostat containing the optical detectors
+   * @return a list of pairs: each an absolute drift coordinate and PMT list
+   * 
+   * The algorithm returns a list of walls, with as first element a coordinate
+   * representing the wall (drift coordinate) and the second the list of
+   * optical detectors in that wall, in no particular order.
+   * The walls are sorted by increasing drift coordinate.
+   */
+  std::vector<std::pair<double, PMTlist_t>> PMTwalls
+    (geo::CryostatGeo const& cryo) const;
+
+  /**
+   * @brief Groups optical detectors in all the detector into walls.
+   * @param geom the geometry description of the detector
+   * @return a list of pairs: each an absolute drift coordinate and PMT list
+   * @see `PMTwalls(geo::CryostatGeo const&) const`
+   * 
+   * PMT walls are extracted for each of the cryostats in the detector, and
+   * the result is merged into a single collection.
+   */
+  std::vector<std::pair<double, PMTlist_t>> PMTwalls
+    (geo::GeometryCore const& geom) const;
+
 
     private:
+  
   std::string fLogCategory; ///< Category for message streaming.
 
   /// Computes slices and appends them to an existing list.
@@ -74,6 +101,26 @@ class icarus::trigger::PMTverticalSlicingAlg {
     Slices_t& slices, PMTlist_t const& PMTs,
     geo::Vector_t const& planeNorm, geo::Vector_t const& clusterDir
     ) const;
+
+  /**
+   * @brief Groups the specifies optical detectors into walls.
+   * @param PMTs the list of PMT to be grouped
+   * @param dir the direction normal to the walls
+   * @return a list of pairs: each an absolute wall coordinate and PMT list
+   * 
+   * The algorithm returns a list of walls, with as first element a coordinate
+   * representing the wall and the second the list of optical detectors in that
+   * wall, in no particular order.
+   * The walls are sorted by increasing coordinate.
+   */
+  std::vector<std::pair<double, PMTlist_t>> PMTwalls
+    (PMTlist_t const& PMTs, geo::Vector_t const& dir) const;
+
+
+  /// Returns an (arbitrary) coordinate along `dir` representing the PMT list.
+  static double PMTwallPosition
+    (PMTlist_t const& PMTs, geo::Vector_t const& dir);
+
 
   template <typename TPCCont>
   static geo::Vector_t determineDriftDir(TPCCont const& TPCcont);
@@ -87,6 +134,9 @@ class icarus::trigger::PMTverticalSlicingAlg {
 
   /// Returns a list of all `geo::OpDetGeo` in cryostat `cryo`.
   static PMTlist_t getCryoPMTs(geo::CryostatGeo const& cryo);
+
+  /// Returns a list of all `geo::OpDetGeo` in the whole geometry.
+  static PMTlist_t getPMTs(geo::GeometryCore const& geom);
 
   // pretty sure this is already in some feature branch if not in LArSoft...
   /// Returns whether `a` and `b` are parallel.

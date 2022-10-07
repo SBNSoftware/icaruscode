@@ -16,7 +16,7 @@
 #include "larcorealg/Geometry/GeometryCore.h"
 #include "larcorealg/Geometry/AuxDetGeometryCore.h"
 #include "larcoreobj/SimpleTypesAndConstants/geo_types.h"
-#include "icaruscode/Decode/DataProducts/ExtraTriggerInfo.h"
+#include "sbnobj/Common/Trigger/ExtraTriggerInfo.h"
 //#include "icaruscode/CRT/CRTUtils/CRTHitRecoAlg.h"
 
 // Framework includes
@@ -196,12 +196,11 @@ namespace crt {
     int      fNMaxCh;/// Max number of channel
     int      fADC[64];///< signal amplitude
     float    fPE[64];///< signal amplitude
+    int      fFlags;///< Flags
     vector<vector<int>> fTrackID;///< track ID(s) of particle that produced the signal
     vector<vector<int>> fDetPDG; /// signal inducing particle(s)' PDG code
 
     //CRT hit product vars
-    int      fHitRun;
-    int      fHitSubRun;
     int      fHitEvent;
     float    fXHit; ///< reconstructed X position of CRT hit (cm)
     float    fYHit; ///< reconstructed Y position of CRT hit (cm)
@@ -210,7 +209,7 @@ namespace crt {
     float    fYErrHit; ///< stat error of CRT hit reco Y (cm)
     float    fZErrHit; ///< stat error of CRT hit reco Z (cm)
     uint64_t    fT0Hit; ///< hit time w.r.t. PPS
-    uint64_t    fT1Hit; ///< hit time w.r.t. global event time
+    Long64_t    fT1Hit; ///< hit time w.r.t. global trigger
     int       fHitReg; ///< region code of CRT hit
     int       fHitSubSys;
     int       fNHit; ///< number of CRT hits for this event
@@ -312,6 +311,7 @@ namespace crt {
     fDAQNtuple->Branch("nChan",                 &fNChan,             "nChan/I");
     fDAQNtuple->Branch("t0",                    &fT0,                "t0/l");
     fDAQNtuple->Branch("t1",                    &fT1,                "t1/l");
+    fDAQNtuple->Branch("flags",                 &fFlags,             "flags/I");
     fDAQNtuple->Branch("nmaxch",                &fNMaxCh,            "nmaxch/I");
     fDAQNtuple->Branch("adc",                   fADC,                "adc[nmaxch]/I");
     fDAQNtuple->Branch("pe",                    fPE,                "pe[nmaxch]/F");
@@ -323,8 +323,6 @@ namespace crt {
     fDAQNtuple->Branch("gate_start_timestamp", &m_gate_start_timestamp, "gate_start_timestamp/l");
 
     // Define the branches of our SimHit n-tuple
-    fHitNtuple->Branch("Run",         &fHitRun,         "Run/I");
-    fHitNtuple->Branch("SubRun",      &fHitSubRun,      "SubRun/I");
     fHitNtuple->Branch("event",       &fHitEvent,    "event/I");
     fHitNtuple->Branch("nHit",        &fNHit,        "nHit/I");
     fHitNtuple->Branch("x",           &fXHit,        "x/F");
@@ -334,7 +332,7 @@ namespace crt {
     fHitNtuple->Branch("yErr",        &fYErrHit,     "yErr/F");
     fHitNtuple->Branch("zErr",        &fZErrHit,     "zErr/F");
     fHitNtuple->Branch("t0",          &fT0Hit,       "t0/l");
-    fHitNtuple->Branch("t1",          &fT1Hit,       "t1/l");
+    fHitNtuple->Branch("t1",          &fT1Hit,       "t1/L");
     fHitNtuple->Branch("region",      &fHitReg,      "region/I");  
     //    fHitNtuple->Branch("tagger",      &ftagger,      "tagger/C");  
     fHitNtuple->Branch("subSys",      &fHitSubSys,   "subSys/I");
@@ -414,7 +412,14 @@ namespace crt {
 	for(int chan=0; chan<32; chan++) {
 	  std::pair<double,double> const chg_cal = fChannelMap->getSideCRTCalibrationMap((int)crtList[febdat_i]->fMac5,chan);
 	  float pe = (crtList[febdat_i]->fAdc[chan]-chg_cal.second)/chg_cal.first;
-	  if(pe<=fPEThresh) continue;
+	  // In order to have Reset TS1 hits in CRTData from Side CRT, we have to explicitly include them
+	  // The current threshold cut (6.5 PE) was applied to filter out noise, but this also filters out
+	  // Reset events which are random trigger around the pedestal. These Reset hits are removed in 
+	  // CRT Hit reconstruction. Top CRT has in internal triggering logic and threshold  that screens
+	  // from the noise (hence presel = true for all the hits).
+	  // Please revise this in the future if also T0 Reset hits need to be kept in CRTData. 
+	  // To do so, include !0crtList[febdat_i]->IsReference_TS0()
+	  if(pe<=fPEThresh && !crtList[febdat_i]->IsReference_TS1()) continue;
 	  presel = true;
 	}
       }else if ( type == 'c' ) {
@@ -449,7 +454,7 @@ namespace crt {
       fDetSubSys = fCrtutils->MacToTypeCode(fMac5);
       fT0 = crtData[febdat_i]->fTs0;
       fT1 = crtData[febdat_i]->fTs1;
-      
+      fFlags = crtData[febdat_i]->fFlags;     
       int maxchan =0;
       if(fDetSubSys!=2) maxchan=32;
       else maxchan = 64;
@@ -488,8 +493,6 @@ namespace crt {
       for ( auto const& hit : *crtHitHandle )
         {
 	  fNHit++;
-	  fHitRun = fRun;
-	  fHitSubRun = fSubRun;
 	  fHitEvent = fEvent;
 	  fXHit    = hit.x_pos;
 	  fYHit    = hit.y_pos;
@@ -499,14 +502,12 @@ namespace crt {
 	  fZErrHit = hit.z_err;
 	  fT0Hit   = hit.ts0_ns;
 	  fT1Hit   = hit.ts1_ns;
-	  
-	  
+	   
 	  fNHitFeb  = hit.feb_id.size();
 	  fHitTotPe = hit.peshit;
 	  int mactmp = hit.feb_id[0];
 	  fHitReg  = fCrtutils->AuxDetRegionNameToNum(fCrtutils->MacToRegion(mactmp));
 	  fHitSubSys =  fCrtutils->MacToTypeCode(mactmp);
-	  
 	  
 	  m_gate_crt_diff = m_gate_start_timestamp - hit.ts0_ns;
 	  
@@ -517,8 +518,7 @@ namespace crt {
 	     mf::LogError("CRTDataAnalysis") << "mactmp = " << mactmp << std::endl;
 	     mf::LogError("CRTDataAnalysis") << "could not find mac in pesmap!" << std::endl;
 	    continue;
-	  }
-	  
+	  }	  
 	  int chantmp = (*ittmp).second[0].first;
 	  
 	  fHitMod  = fCrtutils->MacToAuxDetID(mactmp, chantmp);

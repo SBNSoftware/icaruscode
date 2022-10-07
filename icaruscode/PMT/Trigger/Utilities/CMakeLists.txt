@@ -4,11 +4,16 @@ endif()
 
 art_make(
   LIB_LIBRARIES
-    ${ART_ROOT_IO_TFILE_SUPPORT}
-    ${MF_MESSAGELOGGER}
-    ${CETLIB_EXCEPT}
-    ${ROOT_RIO}
-    ${ROOT_CORE}
+    lardataobj_RawData
+    art_root_io::tfile_support
+    art::Framework_Principal
+    art::Framework_Core
+    canvas
+    messagefacility::MF_MessageLogger
+    cetlib_except
+    ROOT::Tree
+    ROOT::RIO
+    ROOT::Core
   )
 
 install_headers()

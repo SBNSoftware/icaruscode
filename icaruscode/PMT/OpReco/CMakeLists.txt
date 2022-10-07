@@ -1,5 +1,19 @@
+simple_plugin(ICARUSOpHitFinder "module"
+  icaruscode_PMT_OpReco_Algorithms
+  larana_OpticalDetector_OpHitFinder
+  larcore_Geometry_Geometry_service
+  larcorealg_Geometry
+  lardataobj_RecoBase
+  lardataobj_Simulation
+  lardataobj_RawData
+  art::Framework_Services_Registry
+  messagefacility::MF_MessageLogger
+  )
+
 
 art_make(
+		EXCLUDE
+			"ICARUSOpHitFinder_module.cc"
 	  MODULE_LIBRARIES larcorealg_Geometry
 	  		larcore_Geometry_Geometry_service
 			lardataobj_RecoBase
@@ -34,5 +48,6 @@ art_make(
 install_headers()
 install_source()
 add_subdirectory(FlashFinder)
+add_subdirectory(Algorithms)
 add_subdirectory(fcl)
 add_subdirectory(driver)

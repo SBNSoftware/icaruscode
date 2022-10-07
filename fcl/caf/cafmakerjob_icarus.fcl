@@ -19,7 +19,6 @@ services:
   @table::icarus_wirecalibration_minimum_services
 
   SpaceChargeService: @local::icarus_spacecharge
-  NuRandomService: @local::per_event_NuRandomService
 }
 
 

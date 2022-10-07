@@ -31,7 +31,8 @@ icarus_stage0_analyzers:
                   }
 }
 
-# set the name of our `extractPMTconfig` and trigger decoder modules
+# set the name of our `extractPMTconfig` and `extractTriggerConfig` for our decoders
+decodeTriggerV2.DecoderTool.TrigConfigLabel: triggerconfig
 decodePMT.PMTconfigTag: pmtconfig
 decodePMT.TriggerTag:   daqTrigger
 
@@ -40,7 +41,8 @@ icarus_stage0_producers:
 {
 
   ### configuration extraction
-  pmtconfig:                      { module_type: PMTconfigurationExtraction }
+  triggerconfig:                  @local::extractTriggerConfig
+  pmtconfig:                      @local::extractPMTconfig
 
   ### Decoder definitions
   daqTrigger:                     @local::decodeTrigger
@@ -49,7 +51,6 @@ icarus_stage0_producers:
 
   daqTPCROI:                      @local::decodeTPCROI
 
-  pmtconfig:                      @local::extractPMTconfig
   daqPMT:                         @local::decodePMT
 
   daqCRT:                         @local::crtdaq_icarus
@@ -139,23 +140,28 @@ icarus_stage0_filters:
 
 ### Below are a list of convenient sequences that can be used for production/typical users. ###
 
-icarus_stage0_trigger_BNB:         [ daqTrigger,
+icarus_stage0_trigger_BNB:         [ triggerconfig,
+                                     daqTrigger,
                                      triggerfilterBNB 
                                    ]
 
-icarus_stage0_trigger_NuMI:        [ daqTrigger,
+icarus_stage0_trigger_NuMI:        [ triggerconfig,
+                                     daqTrigger,
                                      triggerfilterNuMI 
                                    ]
 
-icarus_stage0_trigger_OffbeamBNB:  [ daqTrigger,
+icarus_stage0_trigger_OffbeamBNB:  [ triggerconfig,
+                                     daqTrigger,
                                      triggerfilterOffbeamBNB 
                                    ]
 
-icarus_stage0_trigger_OffbeamNuMI: [ daqTrigger,
+icarus_stage0_trigger_OffbeamNuMI: [ triggerconfig,
+                                     daqTrigger,
                                      triggerfilterOffbeamNuMI 
                                    ]
 
-icarus_stage0_trigger_Unknown:     [ daqTrigger,
+icarus_stage0_trigger_Unknown:     [ triggerconfig,
+                                     daqTrigger,
                                      triggerfilterUnknown
                                    ]
 
@@ -185,7 +191,8 @@ icarus_purity_monitor:             [
                                      purityana1
                                    ]
 
-icarus_stage0_PMT:                 [ daqTrigger,
+icarus_stage0_PMT:                 [ triggerconfig,
+                                     daqTrigger,
                                      pmtconfig,
                                      daqPMT,
                                      pmtconfigbaselines,

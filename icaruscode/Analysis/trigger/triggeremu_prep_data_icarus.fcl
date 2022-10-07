@@ -1,0 +1,92 @@
+#
+# File:    triggeremu_prep_data_icarus.fcl
+# Purpose: Preparation for emulation of ICARUS trigger.
+# Authors: Gianluca Petrillo (petrillo@slac.stanford.edu)
+# Date:    November 9, 2021
+#
+#
+# This configuration runs the first stage of trigger emulation, that is the
+# waveform discrimination. Its output does not retain the full PMT waveform
+# information, reducing the size of the data.
+# 
+# At this point, low level PMT readout-related choices are set, like the
+# discrimination thresholds and the PMT channel pairing (LVDS) logic and map.
+# 
+#
+# Changes
+# --------
+# 
+# 20220118 (petrillo@slac.stanford.edu) [v1.0]
+# :   original version based on `triggeremu_only_data_icarus.fcl` v2.0
+# 
+
+#include "services_common_icarus.fcl"
+#include "rootoutput_icarus.fcl"
+#include "trigger_icarus.fcl"
+#include "triggeremu_data_config_icarus.fcl"
+
+
+# ------------------------------------------------------------------------------
+process_name: TrgPrep
+
+
+# ------------------------------------------------------------------------------
+services: {
+  
+  # uncommon services for trigger emulation (may be overridden below)
+  @table::triggeremu_data_config_icarus.services # from triggeremu_data_config_icarus.fcl
+  
+  # this provides: file service, random management (unused),
+  #                Geometry, detector properties and clocks
+  @table::icarus_common_services
+
+  # art resource tracking services may take a lot of memory on the long run
+  MemoryTracker: @erase
+#  TimeTracker:   @erase
+
+  # currently unused (remove the line if they start mattering):
+  LArPropertiesService:      @erase
+  DetectorPropertiesService: @erase
+  
+} # services
+
+
+# customization of message destinations from trigger emulation
+services.message.destinations.TriggerEmuTriggerThresholdLog: @local::triggeremu_data_config_icarus.messagedestinations.TriggerEmuTriggerThresholdLog
+services.message.destinations.TriggerEmuLVDSORLog: @local::triggeremu_data_config_icarus.messagedestinations.TriggerEmuLVDSORLog
+
+
+# ------------------------------------------------------------------------------
+physics: {
+
+  producers: {
+    
+    @table::triggeremu_data_config_icarus.producers # from triggeremu_data_config_icarus.fcl
+
+  } # producers
+
+  # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  triggeremuprep: @local::triggeremu_data_config_icarus.simulationBase
+
+  streams: [ "rootoutput" ]
+  
+  # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  
+} # physics
+
+
+# ------------------------------------------------------------------------------
+outputs: {
+  rootoutput: {
+    @table::icarus_rootoutput
+    outputCommands: [
+      "drop *"
+      , "keep sbn::PMTconfiguration_*_*_*", "keep *_daqTrigger_*_*"
+      , "keep *_*_*_stage1", "drop *_cluster3D*_*_*", "drop *recob::SpacePoint*_*_*_*"
+      , "keep *_*_*_TrgPrep", "keep *_*_*_TrgEmu", "keep *_*_*_T0sel"
+      ]
+  }
+}
+
+
+# ------------------------------------------------------------------------------

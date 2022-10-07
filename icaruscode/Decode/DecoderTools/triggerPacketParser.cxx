@@ -103,7 +103,7 @@ int processTriggerData(std::string const& triggerString) {
     , { "Trigger Type", 1U }
     });
   
-  icarus::details::KeyValuesData parsedData;
+  icarus::KeyValuesData parsedData;
   try {
     parsedData = parser(triggerString);
   }
@@ -145,7 +145,7 @@ int processTriggerData(std::string const& triggerString) {
     << "Trigger data (" << triggerString.length() << " char):"
     << "\n" << triggerString
     << "\nParsed as:";
-  for (icarus::details::KeyValuesData::Item const& item: parsedData.items()) {
+  for (icarus::KeyValuesData::Item const& item: parsedData.items()) {
     
     std::cout << "\n '" << item.key() << "':";
     
@@ -154,9 +154,8 @@ int processTriggerData(std::string const& triggerString) {
     
     if (type == "hex64") {
       
-      std::vector<std::uint64_t> const& values = item.getVector<std::uint64_t>(
-        icarus::details::KeyValuesData::Item::StringConverter<std::uint64_t>(16)
-        );
+      std::vector<std::uint64_t> const& values = item.getVector<std::uint64_t>
+        (icarus::KeyValuesData::Item::UseBase<int>{ 16 });
       if (values.empty()) std::cout << " <no number>";
       else if (values.size() == 1) std::cout << " " << std::hex << values[0];
       else {
@@ -185,7 +184,7 @@ int processTriggerData(std::string const& triggerString) {
         continue;
         
       }
-      catch (icarus::details::KeyValuesData::Error const& e) { // ... nope
+      catch (icarus::KeyValuesData::Error const& e) { // ... nope
         if (type == "int") {
           std::cout << " <error: not int>";
         }

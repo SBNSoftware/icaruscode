@@ -1,6 +1,6 @@
 /**
  * @file   SlidingWindowTriggerSimulation_module.cc
- * @brief  Plots of efficiency for triggers based on PMT sliding windows.
+ * @brief  Production of triggers data products based on PMT sliding windows.
  * @author Gianluca Petrillo (petrillo@slac.stanford.edu)
  * @date   March 27, 2021
  */
@@ -20,6 +20,7 @@
 #include "icaruscode/PMT/Trigger/Utilities/PlotSandbox.h"
 #include "icaruscode/IcarusObj/OpDetWaveformMeta.h" // sbn::OpDetWaveformMeta
 #include "icarusalg/Utilities/ROOTutils.h" // util::ROOT
+#include "icarusalg/Utilities/BinningSpecs.h"
 #include "icaruscode/Utilities/DetectorClocksHelpers.h" // makeDetTimings()...
 #include "icarusalg/Utilities/FixedBins.h"
 #include "icarusalg/Utilities/mfLoggingClass.h"
@@ -31,7 +32,7 @@
 #include "larcore/Geometry/Geometry.h"
 #include "larcore/CoreUtils/ServiceUtil.h" // lar::providerFrom()
 #include "lardataalg/DetectorInfo/DetectorTimings.h"
-#include "lardataalg/DetectorInfo/DetectorClocks.h"
+#include "lardataalg/DetectorInfo/DetectorClocksData.h"
 #include "lardataalg/DetectorInfo/DetectorTimingTypes.h" // optical_tick...
 #include "lardataalg/Utilities/quantities/spacetime.h" // microseconds, ...
 #include "lardataalg/Utilities/intervals_fhicl.h" // microseconds from FHiCL
@@ -57,12 +58,14 @@
 #include "canvas/Utilities/Exception.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
 #include "fhiclcpp/types/Sequence.h"
+#include "fhiclcpp/types/OptionalAtom.h"
 #include "fhiclcpp/types/Atom.h"
 
 // ROOT libraries
 #include "TEfficiency.h"
 #include "TH1F.h"
 #include "TH2F.h"
+#include "TGraph.h"
 
 // C/C++ standard libraries
 #include <ostream>
@@ -131,6 +134,15 @@ namespace icarus::trigger { class SlidingWindowTriggerSimulation; }
  *     `"60"`, supposedly 60 ADC counts, and with `TriggerGatesTag` set to
  *     `"TrigSlidingWindows"`, the data product tag would be
  *     `TrigSlidingWindows:60`).
+ * * `KeepThresholdName` (flag, optional): by default, output data products have
+ *     each an instance name according to their threshold (from the `Threshold`
+ *     parameter), unless there is only one threshold specified. If this
+ *     parameter is specified as `true`, the output data product always
+ *     includes the threshold instance name, even when there is only one
+ *     threshold specified. If this parameter is specified as `false`, if there
+ *     is only one threshold the default behaviour (of not adding an instance
+ *     name) is confirmed; otherwise, it is a configuration error to have this
+ *     parameter set to `false`.
  * * `Pattern` (configuration table, mandatory): describes the sliding window
  *     pattern; the configuration format for a pattern is described under
  *     `icarus::trigger::ns::fhicl::WindowPatternConfig`.
@@ -142,7 +154,8 @@ namespace icarus::trigger { class SlidingWindowTriggerSimulation; }
  * * `BeamGateStart` (time, default: `0_us`): how long after the
  * *   @ref DetectorClocksBeamGateOpening "nominal beam gate opening time"
  *     the actual beam gate opens at;
- * * `BeamBits` (TODO): bits to be set in the produced `raw::Trigger` objects.
+ * * `BeamBits` (bitmask as 32-bit integral number): bits to be set in the
+ *     produced `raw::Trigger` objects (see also `daq::TriggerDecoder` tool).
  * * `LogCategory` (string, default `SlidingWindowTriggerSimulation`): name of
  *     category used to stream messages from this module into message facility.
  * 
@@ -156,10 +169,12 @@ namespace icarus::trigger { class SlidingWindowTriggerSimulation; }
  * * `std::vector<raw::Trigger>` (one instance per ADC threshold):
  *   list of triggers fired according to the configured trigger definition;
  *   there is one collection (and data product) per ADC threshold, and the
- *   data product has the same instance name as the input data one
- *   (see `TriggerGatesTag` and `Thresholds` configuration parameters);
+ *   data product has the same instance name as the input data one, unless
+ *   there is only one threshold (see `TriggerGatesTag`, `Thresholds` and
+ *   `KeepThresholdName` configuration parameters);
  *   currently only at most one trigger is emitted, with time stamp matching
- *   the first time the trigger criteria are satisfied.
+ *   the first time the trigger criteria are satisfied. All triggers feature
+ *   the bits specified in `BeamBits` configuration parameter.
  * 
  * 
  * 
@@ -262,6 +277,12 @@ class icarus::trigger::SlidingWindowTriggerSimulation
       Comment("tags of the thresholds to consider")
       };
 
+    fhicl::OptionalAtom<bool> KeepThresholdName {
+      Name("KeepThresholdName"),
+      Comment
+        ("add threshold to output product tag even with only one threshold")
+      };
+
     icarus::trigger::ns::fhicl::WindowPatternTable Pattern {
       Name("Pattern"),
       Comment("trigger requirements as a trigger window pattern")
@@ -343,9 +364,15 @@ class icarus::trigger::SlidingWindowTriggerSimulation
   using WindowTriggerInfo_t
     = icarus::trigger::SlidingWindowPatternAlg::AllTriggerInfo_t;
   
+  /// Content for future histograms, binned.
+  using BinnedContent_t = icarus::ns::util::FixedBins<double>;
+  
   /// All information needed to generate plots for a specific threshold.
   struct ThresholdPlotInfo_t {
-    icarus::ns::util::FixedBins<double> eventTimes;
+    BinnedContent_t eventTimes;
+    BinnedContent_t HWtrigTimeVsBeam;
+    BinnedContent_t triggerTimesVsHWtrig;
+    BinnedContent_t triggerTimesVsBeam;
   };
   
   
@@ -385,6 +412,9 @@ class icarus::trigger::SlidingWindowTriggerSimulation
   
   // --- BEGIN Internal variables ----------------------------------------------
   
+  /// Output data product instance names (same order as `fADCthresholds`).
+  std::vector<std::string> fOutputInstances;
+  
   /// Mapping of each sliding window with location and topological information.
   // mutable = not thread-safe
   mutable icarus::trigger::WindowTopologyManager fWindowMapMan;
@@ -395,7 +425,7 @@ class icarus::trigger::SlidingWindowTriggerSimulation
   /// All plots in one practical sandbox.
   icarus::trigger::PlotSandbox fPlots;
   
-  /// Proto-histogram information in a not-so-practical array; event-wide.
+  /// Proto-histogram information in a convenient packet; event-wide.
   ThresholdPlotInfo_t fEventPlotInfo;
   
   /// Proto-histogram information in a not-so-practical array; per threshold.
@@ -403,7 +433,7 @@ class icarus::trigger::SlidingWindowTriggerSimulation
 
   ///< Count of fired triggers, per threshold.
   std::vector<std::atomic<unsigned int>> fTriggerCount;
-  std::atomic<unsigned int> fTotalEvents { 0U }; ///< Count of fired triggers.
+  std::atomic<unsigned int> fTotalEvents { 0U }; ///< Count of opened gates.
   
   
   /// Functor returning whether a gate has changed.
@@ -413,6 +443,7 @@ class icarus::trigger::SlidingWindowTriggerSimulation
   // --- END Internal variables ------------------------------------------------
   
 
+  // --- BEGIN --- Plot infrastructure -----------------------------------------
   
   /// @brief Initializes the full set of plots (all ADC thresholds).
   void initializePlots();
@@ -431,6 +462,18 @@ class icarus::trigger::SlidingWindowTriggerSimulation
   /// Creates in the main sandbox all event-wide plots.
   void makeEventPlots();
   
+  /// Fills event-wide plots.
+  void plotEvent
+    (art::Event const& event, detinfo::DetectorTimings const& detTimings);
+  
+  /// Fills the plots for threshold index `iThr` with trigger information.
+  void plotTriggerResponse(
+    std::size_t iThr, std::string const& thrTag,
+    WindowTriggerInfo_t const& triggerInfo,
+    detinfo::DetectorTimings const& detTimings
+    );
+  
+  // --- END ----- Plot infrastructure -----------------------------------------
   
   /**
    * @brief Performs the simulation for the specified ADC threshold.
@@ -456,9 +499,6 @@ class icarus::trigger::SlidingWindowTriggerSimulation
     std::size_t const iThr, std::string const& thrTag
     );
   
-  /// Fills event-wide plots.
-  void plotEvent(art::Event const& event);
-  
   /**
    * @brief Converts the trigger information into a `raw::Trigger` object.
    * @param triggerNumber the unique number to assign to this trigger
@@ -468,30 +508,36 @@ class icarus::trigger::SlidingWindowTriggerSimulation
    * The trigger described by `info` is encoded into a `raw::Trigger` object.
    * The trigger _must_ have fired.
    */
-  raw::Trigger triggerInfoToTriggerData
-    (detinfo::DetectorTimings const& detTimings,
-     unsigned int triggerNumber, WindowTriggerInfo_t const& info) const;
-  
-  /// Fills the plots for threshold index `iThr` with trigger information.
-  void plotTriggerResponse
-    (std::size_t iThr, WindowTriggerInfo_t const& triggerInfo) const;
+  raw::Trigger triggerInfoToTriggerData(
+    detinfo::DetectorTimings const& detTimings,
+    unsigned int triggerNumber, WindowTriggerInfo_t const& info
+    ) const;
   
   
   /// Prints the summary of fired triggers on screen.
   void printSummary() const;
   
-  
+  /// Creates and returns a 1D histogram filled with `binnedContent`.
+  TH1* makeHistogramFromBinnedContent(
+    icarus::trigger::PlotSandbox& plots,
+    std::string const& name, std::string const& title,
+    BinnedContent_t const& binnedContent
+    ) const;
+
   //@{ 
   /// Shortcut to create an `ApplyBeamGate` with the current configuration.
   icarus::trigger::ApplyBeamGateClass makeMyBeamGate
-    (art::Event const* event = nullptr) const
+    (detinfo::DetectorClocksData data) const
     {
       return makeApplyBeamGate(
         fBeamGateDuration, fBeamGateStart,
-        icarus::ns::util::makeDetClockData(event),
+        std::move(data),
         fLogCategory
         );
     }
+  icarus::trigger::ApplyBeamGateClass makeMyBeamGate
+    (art::Event const* event = nullptr) const
+    { return makeMyBeamGate(icarus::ns::util::makeDetClockData(event)); }
   icarus::trigger::ApplyBeamGateClass makeMyBeamGate
     (art::Event const& event) const { return makeMyBeamGate(&event); }
   //@}
@@ -534,7 +580,21 @@ icarus::trigger::SlidingWindowTriggerSimulation::SlidingWindowTriggerSimulation
   , fPlots(
      fOutputDir, "", "requirement: " + fPattern.description()
     )
-  , fEventPlotInfo{ icarus::ns::util::FixedBins{ fEventTimeBinning } }
+  , fEventPlotInfo{
+        BinnedContent_t{ fEventTimeBinning }  // eventTimes
+      , BinnedContent_t{                      // HWtrigTimeVsBeam
+          fTriggerTimeResolution.convertInto
+            <detinfo::timescales::trigger_time::interval_t>().value()
+        }
+      , BinnedContent_t{                      // triggerTimesVsHWtrig
+          fTriggerTimeResolution.convertInto
+            <detinfo::timescales::trigger_time::interval_t>().value()
+        }
+      , BinnedContent_t{                      // triggerTimesVsBeam
+          fTriggerTimeResolution.convertInto
+            <detinfo::timescales::trigger_time::interval_t>().value()
+        }
+    }
 {
   
   //
@@ -563,8 +623,23 @@ icarus::trigger::SlidingWindowTriggerSimulation::SlidingWindowTriggerSimulation
   //
   // output data declaration
   //
-  for (art::InputTag const& inputDataTag: util::const_values(fADCthresholds))
-    produces<std::vector<raw::Trigger>>(inputDataTag.instance());
+  // keepThresholdName is true if we write instance name in output data products
+  bool const keepThresholdName
+    = config().KeepThresholdName().value_or(config().Thresholds().size() > 1);
+  if (!keepThresholdName && (config().Thresholds().size() > 1)) {
+    throw art::Exception(art::errors::Configuration)
+      << config().KeepThresholdName.name()
+      << " can be set to `true` only when a single threshold is specified ("
+      << config().Thresholds.name() << " has " << config().Thresholds().size()
+      << ")";
+  }
+  
+  for (auto const& inputDataTag: util::const_values(fADCthresholds)) {
+    std::string const outputInstance
+      = keepThresholdName? inputDataTag.instance(): "";
+    produces<std::vector<raw::Trigger>>(outputInstance);
+    fOutputInstances.push_back(outputInstance);
+  }
   
   {
     mf::LogInfo log(fLogCategory);
@@ -590,14 +665,14 @@ void icarus::trigger::SlidingWindowTriggerSimulation::beginJob() {
 void icarus::trigger::SlidingWindowTriggerSimulation::produce(art::Event& event)
 {
   
-  auto const clockData
+  detinfo::DetectorClocksData const clockData
     = art::ServiceHandle<detinfo::DetectorClocksService const>()->DataFor(event);
   detinfo::DetectorTimings const detTimings{clockData};
-  auto const beamGate = makeMyBeamGate(event);
+  auto const beamGate = makeMyBeamGate(clockData);
 
   if (auto oldGate = fGateChangeCheck(beamGate); oldGate) {
-    mf::LogWarning(fLogCategory)
-      << "Beam gate has changed from " << *oldGate << " to " << beamGate << "!";
+    MF_LOG_DEBUG(fLogCategory)
+      << "Beam gate has changed from " << *oldGate << " to " << beamGate;
   }
 
 
@@ -617,7 +692,7 @@ void icarus::trigger::SlidingWindowTriggerSimulation::produce(art::Event& event)
     
   } // for
   
-  plotEvent(event);
+  plotEvent(event, detTimings);
   
   ++fTotalEvents;
   
@@ -701,9 +776,78 @@ void icarus::trigger::SlidingWindowTriggerSimulation::initializePlots() {
   util::ROOT::applyAxisLabels(TrigTime->GetYaxis(), thresholdLabels);
   
   
+  // we allow some fixed margin in the plot, just in case:
+  constexpr microseconds beamPlotPadding { 4_us };
+  
+  using detinfo::timescales::trigger_time;
+  
+  // hardware trigger may happen at any place within the beam gate,
+  // and in this plot range I want to include the full beam gate;
+  // so I take a beam gate worth of time before the trigger time,
+  // and as much after it; since this plot is relative to the hardware trigger,
+  // the hardware trigger time itself is 0
+  icarus::ns::util::BinningSpecs const HWtrigBinning = alignBinningTo(
+    icarus::ns::util::BinningSpecs{
+      (- beamGate.length() - beamPlotPadding).value(),
+      (beamGate.length() + beamPlotPadding).value(),
+      fTriggerTimeResolution.convertInto<trigger_time::interval_t>().value()
+      },
+      0.0
+    );
+  fPlots.make<TH2F>(
+    "TriggerTimeVsHWTrig",
+    "Time of the trigger"
+      ";trigger time (relative to hardware trigger)  [ #mus ]"
+      ";PMT discrimination threshold  [ ADC counts ]"
+      ";triggers",
+    HWtrigBinning.nBins(), HWtrigBinning.lower(), HWtrigBinning.upper(),
+    thresholdLabels.size(), 0.0, double(thresholdLabels.size())
+    );
+
+  icarus::ns::util::BinningSpecs const beamGateBinning = alignBinningTo(
+    icarus::ns::util::BinningSpecs{
+      (-beamPlotPadding).value(),
+      (beamGate.length() + beamPlotPadding).value(),
+      fTriggerTimeResolution.convertInto<trigger_time::interval_t>().value()
+      },
+      0.0
+    );
+  fPlots.make<TH2F>(
+    "TriggerTimeVsBeamGate",
+    "Time of the trigger"
+      ";trigger time (relative to beam gate opening)  [ #mus ]"
+      ";PMT discrimination threshold  [ ADC counts ]"
+      ";triggers",
+    beamGateBinning.nBins(), beamGateBinning.lower(), beamGateBinning.upper(),
+    thresholdLabels.size(), 0.0, double(thresholdLabels.size())
+    );
+
+  // 
+  // per-threshold plots; should this initialization be set into its own method?
+  // 
+  for (auto const& [ thr, info ]
+    : util::zip(util::get_elements<0U>(fADCthresholds), fThresholdPlots))
+  {
+    icarus::trigger::PlotSandbox& plots
+      = fPlots.addSubSandbox("Thr" + thr, "Threshold: " + thr);
+    
+    plots.make<TGraph>(
+      "TriggerTimeVsHWTrigVsBeam",
+      "Time of the trigger: emulated vs. hardware"
+        ";hardware trigger time (relative to beam gate opening)  [ #mus ]"
+        ";emulated trigger time (relative to beam gate opening)  [ #mus ]"
+      );
+    
+  } // for thresholds
+  
   fThresholdPlots.resize(
     size(fADCthresholds),
-    { icarus::ns::util::FixedBins{ fEventTimeBinning } }
+    {
+      BinnedContent_t{ fEventTimeBinning },         // eventTimes
+      BinnedContent_t{ HWtrigBinning.binWidth() },  // HWtrigTimeVsBeam
+      BinnedContent_t{ HWtrigBinning.binWidth() },  // triggerTimesVsHWtrig
+      BinnedContent_t{ beamGateBinning.binWidth() } // triggerTimesVsBeam
+    }
     );
   
 } // icarus::trigger::SlidingWindowTriggerSimulation::initializePlots()
@@ -715,8 +859,7 @@ void icarus::trigger::SlidingWindowTriggerSimulation::finalizePlots() {
   for (auto const& [ thr, info ]
     : util::zip(util::get_elements<0U>(fADCthresholds), fThresholdPlots))
   {
-    icarus::trigger::PlotSandbox& plots
-      = fPlots.addSubSandbox("Thr" + thr, "Threshold: " + thr);
+    icarus::trigger::PlotSandbox& plots = fPlots.demandSandbox("Thr" + thr);
     makeThresholdPlots(thr, plots, info);
     if (plots.empty()) fPlots.deleteSubSandbox(plots.name());
   } // for thresholds
@@ -733,51 +876,76 @@ void icarus::trigger::SlidingWindowTriggerSimulation::makeThresholdPlots(
   ThresholdPlotInfo_t const& plotInfo
 ) {
   
-  auto const& triggerTimeBins = plotInfo.eventTimes;
-  if (!triggerTimeBins.empty()) {
-    TH1* triggerTimes = plots.make<TH1F>(
-      "TriggerTime",
-      "Time of the triggered events"
-        ";time"
-        ";triggered events  [ / " + std::to_string(triggerTimeBins.binWidth())
-          + "\" ]",
-      triggerTimeBins.nBins(), triggerTimeBins.min(), triggerTimeBins.max()
-      );
-    
-    // directly transfer the content bin by bin
-    unsigned int total = 0U;
-    for (auto [ iBin, count ]: util::enumerate(triggerTimeBins)) {
-      triggerTimes->SetBinContent(iBin + 1, count);
-      total += count;
-    }
-    triggerTimes->SetEntries(static_cast<double>(total));
-  } // if trigger times
+  BinnedContent_t const* content;
+  
+  content = &(plotInfo.eventTimes);
+  makeHistogramFromBinnedContent(plots,
+    "TriggerTime",
+    "Time of the triggered events"
+      ";time"
+      ";triggered events  [ / " + std::to_string(content->binWidth())
+        + "\" ]",
+    *content
+    );
+  
+  content = &(plotInfo.HWtrigTimeVsBeam);
+  makeHistogramFromBinnedContent(plots,
+    "HWTrigVsBeam",
+    "Time of the hardware trigger"
+      ";trigger time (relative to beam gate)  [ #mus ]"
+      ";events  [ / " + std::to_string(content->binWidth())
+        + " #mus ]",
+    *content
+    );
+  
+  content = &(plotInfo.triggerTimesVsHWtrig);
+  makeHistogramFromBinnedContent(plots,
+    "TriggerTimeVsHWTrig",
+    "Time of the trigger"
+      ";trigger time (relative to hardware trigger)  [ #mus ]"
+      ";triggers  [ / " + std::to_string(content->binWidth())
+        + " #mus ]",
+    *content
+    );
+  
+  content = &(plotInfo.triggerTimesVsBeam);
+  makeHistogramFromBinnedContent(plots,
+    "TriggerTimeVsBeamGate",
+    "Time of the trigger"
+      ";trigger time (relative to beam gate opening)  [ #mus ]"
+      ";triggers  [ / " + std::to_string(content->binWidth())
+        + " #mus ]",
+    *content
+    );
   
 } // icarus::trigger::SlidingWindowTriggerSimulation::makeThresholdPlots()
+
 
 
 //------------------------------------------------------------------------------
 void icarus::trigger::SlidingWindowTriggerSimulation::makeEventPlots() {
   
-  auto const& triggerTimeBins = fEventPlotInfo.eventTimes;
-  if (!triggerTimeBins.empty()) {
-    TH1* triggerTimes = fPlots.make<TH1F>(
-      "EventTime",
-      "Time of the events"
-        ";time"
-        ";events  [ / " + std::to_string(triggerTimeBins.binWidth())
-          + "\" ]",
-      triggerTimeBins.nBins(), triggerTimeBins.min(), triggerTimeBins.max()
-      );
-    
-    // directly transfer the content bin by bin
-    unsigned int total = 0U;
-    for (auto [ iBin, count ]: util::enumerate(triggerTimeBins)) {
-      triggerTimes->SetBinContent(iBin + 1, count);
-      total += count;
-    }
-    triggerTimes->SetEntries(static_cast<double>(total));
-  } // if trigger times
+  BinnedContent_t const* content;
+  
+  content = &(fEventPlotInfo.eventTimes);
+  makeHistogramFromBinnedContent(fPlots,
+    "EventTime",
+    "Time of the events"
+      ";time"
+      ";events  [ / " + std::to_string(content->binWidth())
+        + "\" ]",
+    *content
+    );
+  
+  content = &(fEventPlotInfo.HWtrigTimeVsBeam);
+  makeHistogramFromBinnedContent(fPlots,
+    "HWTrigVsBeam",
+    "Time of the hardware trigger"
+      ";trigger time (relative to beam gate)  [ #mus ]"
+      ";events  [ / " + std::to_string(content->binWidth())
+        + " #mus ]",
+    *content
+    );
   
 } // icarus::trigger::SlidingWindowTriggerSimulation::makeEventPlots()
 
@@ -817,7 +985,7 @@ auto icarus::trigger::SlidingWindowTriggerSimulation::produceForThreshold(
   //
   // fill the plots
   //
-  plotTriggerResponse(iThr, triggerInfo);
+  plotTriggerResponse(iThr, thrTag, triggerInfo, detTimings);
 
   //
   // create and store the data product
@@ -827,7 +995,7 @@ auto icarus::trigger::SlidingWindowTriggerSimulation::produceForThreshold(
     triggers->push_back
       (triggerInfoToTriggerData(detTimings, fTriggerCount[iThr], triggerInfo));
   } // if
-  event.put(std::move(triggers), dataTag.instance());
+  event.put(std::move(triggers), fOutputInstances[iThr]);
   
   return triggerInfo;
   
@@ -836,26 +1004,67 @@ auto icarus::trigger::SlidingWindowTriggerSimulation::produceForThreshold(
 
 //------------------------------------------------------------------------------
 void icarus::trigger::SlidingWindowTriggerSimulation::plotEvent
-  (art::Event const& event)
+  (art::Event const& event, detinfo::DetectorTimings const& detTimings)
 {
   
+  detinfo::timescales::trigger_time const beamGateTime
+    { detTimings.toTriggerTime(detTimings.BeamGateTime()) };
+  
   fEventPlotInfo.eventTimes.add(eventTimestampInSeconds(event));
+  fEventPlotInfo.HWtrigTimeVsBeam.add(-beamGateTime.value());
   
 } // icarus::trigger::SlidingWindowTriggerSimulation::plotEvent()
 
 
 //------------------------------------------------------------------------------
-void icarus::trigger::SlidingWindowTriggerSimulation::plotTriggerResponse
-  (std::size_t iThr, WindowTriggerInfo_t const& triggerInfo) const
-{
+void icarus::trigger::SlidingWindowTriggerSimulation::plotTriggerResponse(
+  std::size_t iThr, std::string const& thrTag,
+  WindowTriggerInfo_t const& triggerInfo,
+  detinfo::DetectorTimings const& detTimings
+) {
+  
   bool const fired = triggerInfo.info.fired();
   
   fPlots.demand<TEfficiency>("Eff").Fill(fired, iThr);
   
   if (fired) {
+    using namespace detinfo::timescales;
+    
+    // time of the beam gate in hardware trigger time scale
+    trigger_time const beamGateTime
+      { detTimings.toTriggerTime(detTimings.BeamGateTime()) };
+    
+    optical_tick const thisTriggerTick { triggerInfo.info.atTick() };
+    trigger_time const thisTriggerTimeVsHWtrig
+      { detTimings.toTriggerTime(thisTriggerTick) };
+    time_interval const thisTriggerTimeVsBeamGate
+      { thisTriggerTimeVsHWtrig - beamGateTime };
+    
+    mf::LogTrace(fLogCategory)
+      << "Trigger " << fPattern.tag() << " at tick " << thisTriggerTick
+      << " (" << thisTriggerTimeVsHWtrig << " vs. HW trigger, "
+      << thisTriggerTimeVsBeamGate << " vs. beam gate)"
+      ;
+    
     fPlots.demand<TH1>("NTriggers").Fill(iThr);
-    fPlots.demand<TH2>("TriggerTick").Fill
-      (triggerInfo.info.atTick().value(), iThr);
+    fPlots.demand<TH2>("TriggerTick").Fill(thisTriggerTick.value(), iThr);
+    fPlots.demand<TH2>("TriggerTimeVsHWTrig").Fill
+      (thisTriggerTimeVsHWtrig.value(), iThr);
+    fPlots.demand<TH2>("TriggerTimeVsBeamGate").Fill
+      (thisTriggerTimeVsBeamGate.value(), iThr);
+    
+    icarus::trigger::PlotSandbox& plots{ fPlots.demandSandbox("Thr" + thrTag) };
+//     plots.demand<TGraph>("TriggerTimeVsHWTrigVsBeam").AddPoint( // ROOT 6.24?
+    TGraph& graph = plots.demand<TGraph>("TriggerTimeVsHWTrigVsBeam");
+    graph.SetPoint(graph.GetN(),
+      -beamGateTime.value(), thisTriggerTimeVsBeamGate.value()
+      );
+    
+    ThresholdPlotInfo_t& plotInfo { fThresholdPlots[iThr] };
+    plotInfo.HWtrigTimeVsBeam.add(-beamGateTime.value());
+    plotInfo.triggerTimesVsHWtrig.add(thisTriggerTimeVsHWtrig.value());
+    plotInfo.triggerTimesVsBeam.add(thisTriggerTimeVsBeamGate.value());
+    
   }
   
 } // icarus::trigger::SlidingWindowTriggerSimulation::plotTriggerResponse()
@@ -929,6 +1138,32 @@ auto icarus::trigger::SlidingWindowTriggerSimulation::readTriggerGates
   }
 
 } // icarus::trigger::SlidingWindowTriggerSimulation::readTriggerGates()
+
+
+//------------------------------------------------------------------------------
+TH1*
+icarus::trigger::SlidingWindowTriggerSimulation::makeHistogramFromBinnedContent(
+  icarus::trigger::PlotSandbox& plots,
+  std::string const& name, std::string const& title,
+  BinnedContent_t const& binnedContent
+) const {
+  
+  if (binnedContent.empty()) return nullptr;
+  
+  TH1* hist = plots.make<TH1F>(
+    name, title,
+    binnedContent.nBins(), binnedContent.min(), binnedContent.max()
+    );
+  
+  // directly transfer the content bin by bin
+  unsigned int total = 0U;
+  for (auto [ iBin, count ]: util::enumerate(binnedContent)) {
+    hist->SetBinContent(iBin + 1, count);
+    total += count;
+  }
+  hist->SetEntries(static_cast<double>(total));
+  return hist;
+} // icarus::trigger::SlidingWindowTriggerSimulation::makeHistogramFromBinnedContent
 
 
 //------------------------------------------------------------------------------

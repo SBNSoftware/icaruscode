@@ -59,7 +59,7 @@ physics:
 {
 producers:
 {
-  calorimetry: @local::icarus_calomc
+  calorimetry: @local::icarus_gnewcalomc
 }
 
  #define the producer and filter modules for this path, order matters, 
