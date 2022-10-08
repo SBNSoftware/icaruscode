@@ -688,7 +688,7 @@ namespace daq
     // absolute time trigger (raw::ExternalTrigger)
     //
     fTrigger->emplace_back
-      (fTriggerExtra->triggerID, artdaq_ts);//fTriggerExtra->triggerTimestamp);
+      (fTriggerExtra->triggerID, fTriggerExtra->triggerTimestamp);
     
     //
     // previous absolute time trigger (raw::ExternalTrigger)
