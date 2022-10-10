@@ -22,6 +22,7 @@ art_make( MODULE_LIBRARIES
            ROOT::Physics
            ${MF_MESSAGELOGGER}
 	TOOL_LIBRARIES
+	   larevt_CalibrationDBI_Providers
            larcorealg_Geometry
            larreco_Calorimetry
            lardataobj_RecoBase
