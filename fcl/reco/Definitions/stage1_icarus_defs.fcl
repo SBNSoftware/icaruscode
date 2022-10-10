@@ -75,7 +75,6 @@ icarus_stage1_filters:
                   WindowEndTime:   -1488.4 # 11.2 -1500 us offset + 0.4us safe margin
                 }
 
-   TPCHitFilter:      @local::icarus_FilterNumberTPCHits
    TPCHitFilterCryoW: @local::icarus_FilterNumberTPCHits
    TPCHitFilterCryoE: @local::icarus_FilterNumberTPCHits
 }
