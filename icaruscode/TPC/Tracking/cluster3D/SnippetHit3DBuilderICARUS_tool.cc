@@ -261,6 +261,7 @@ private:
     float                                   m_maxMythicalChiSquare;  ///< Selection cut on mythical points
     bool                                    m_useT0Offsets;          ///< If true then we will use the LArSoft interplane offsets
     bool                                    m_outputHistograms;      ///< Take the time to create and fill some histograms for diagnostics
+    bool                                    m_makeAssociations;      ///< Do we make wire/rawdigit associations to space points?
    
     bool                                    m_enableMonitoring;      ///<
     float                                   m_wirePitch[3];
@@ -358,6 +359,7 @@ void SnippetHit3DBuilderICARUS::configure(fhicl::ParameterSet const &pset)
     m_maxMythicalChiSquare = pset.get<float                     >("MaxMythicalChiSquare",    10.);
     m_useT0Offsets         = pset.get<bool                      >("UseT0Offsets",           true);
     m_outputHistograms     = pset.get<bool                      >("OutputHistograms",      false);
+    m_makeAssociations     = pset.get<bool                      >("MakeAssociations",      false);
 
     m_geometry = art::ServiceHandle<geo::Geometry const>{}.get();
 
@@ -553,12 +555,12 @@ void SnippetHit3DBuilderICARUS::Hit3DBuilder(art::Event& evt, reco::HitPairList&
     /// Associations with wires.
     std::unique_ptr<art::Assns<recob::Wire, recob::Hit>> wireAssns(new art::Assns<recob::Wire, recob::Hit>);
 
-    makeWireAssns(evt, *wireAssns, clusterHitToArtPtrMap);
+    if (m_makeAssociations) makeWireAssns(evt, *wireAssns, clusterHitToArtPtrMap);
 
     /// Associations with raw digits.
     std::unique_ptr<art::Assns<raw::RawDigit, recob::Hit>> rawDigitAssns(new art::Assns<raw::RawDigit, recob::Hit>);
 
-    makeRawDigitAssns(evt, *rawDigitAssns, clusterHitToArtPtrMap);
+    if (m_makeAssociations) makeRawDigitAssns(evt, *rawDigitAssns, clusterHitToArtPtrMap);
 
     // Move everything into the event
     evt.put(std::move(outputHitPtrVec));
