@@ -168,15 +168,15 @@ icarus_stage1_filters.TPCHitFilterCryoE.MaximumHits:     60000
 
 ## Definitions for running the 3D clustering by Cryostat
 icarus_stage1_producers.cluster3DCryoW.Hit3DBuilderAlg.HitFinderTagVec:                          ["gaushitTPCWW", "gaushitTPCWE"]
-icarus_stage1_producers.cluster3DCryoW.MakeSpacePointsOnly:                                      true
+#icarus_stage1_producers.cluster3DCryoW.MakeSpacePointsOnly:                                      true
 icarus_stage1_producers.cluster3DCryoW.Hit3DBuilderAlg.PulseHeightFraction:                      0. #0.75 #0.25
 icarus_stage1_producers.cluster3DCryoW.Hit3DBuilderAlg.PHLowSelection:                           0. #4.0 # 20.
 icarus_stage1_producers.cluster3DCryoW.Hit3DBuilderAlg.MaxHitChiSquare:                          1000000.
-icarus_stage1_producers.cluster3DCryoW.MaxMythicalChiSquare:                                     30.
+icarus_stage1_producers.cluster3DCryoW.Hit3DBuilderAlg.MaxMythicalChiSquare:                     30.
 icarus_stage1_producers.cluster3DCryoW.Hit3DBuilderAlg.OutputHistograms:                         false
 
 icarus_stage1_producers.cluster3DCryoE.Hit3DBuilderAlg.HitFinderTagVec:                          ["gaushitTPCEW", "gaushitTPCEE"]
-icarus_stage1_producers.cluster3DCryoE.MakeSpacePointsOnly:                                      true
+#icarus_stage1_producers.cluster3DCryoE.MakeSpacePointsOnly:                                      true
 icarus_stage1_producers.cluster3DCryoE.Hit3DBuilderAlg.PulseHeightFraction:                      0. #0.75 #0.25
 icarus_stage1_producers.cluster3DCryoE.Hit3DBuilderAlg.PHLowSelection:                           0. #4.0 # 20.
 icarus_stage1_producers.cluster3DCryoE.Hit3DBuilderAlg.MaxHitChiSquare:                          1000000.
