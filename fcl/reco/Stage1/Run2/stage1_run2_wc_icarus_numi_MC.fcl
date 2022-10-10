@@ -1,0 +1,4 @@
+#include "stage1_run2_wc_icarus_MC.fcl"
+
+physics.producers.pandoraGausCryoE.ConfigFile:   "PandoraSettings_Master_ICARUS_NuMI.xml"
+physics.producers.pandoraGausCryoW.ConfigFile:   "PandoraSettings_Master_ICARUS_NuMI.xml"
