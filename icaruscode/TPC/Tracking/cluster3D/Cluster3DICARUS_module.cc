@@ -563,35 +563,38 @@ namespace lar_cluster3d {
     // Handle special case of Space Point building outputting a new hit collection
     m_hit3DBuilderAlg->produces(producesCollector());
 
-    produces<std::vector<recob::PCAxis>>();
-    produces<std::vector<recob::PFParticle>>();
-    produces<std::vector<recob::Cluster>>();
-    produces<std::vector<recob::Seed>>();
-    produces<std::vector<recob::Edge>>();
+    if (!m_onlyMakSpacePoints)
+    {
+      produces<std::vector<recob::PCAxis>>();
+      produces<std::vector<recob::PFParticle>>();
+      produces<std::vector<recob::Cluster>>();
+      produces<std::vector<recob::Seed>>();
+      produces<std::vector<recob::Edge>>();
 
-    produces<art::Assns<recob::PFParticle, recob::PCAxis>>();
-    produces<art::Assns<recob::PFParticle, recob::Cluster>>();
-    produces<art::Assns<recob::PFParticle, recob::Seed>>();
-    produces<art::Assns<recob::Edge, recob::PFParticle>>();
-    produces<art::Assns<recob::Seed, recob::Hit>>();
-    produces<art::Assns<recob::Cluster, recob::Hit>>();
+      produces<art::Assns<recob::PFParticle, recob::PCAxis>>();
+      produces<art::Assns<recob::PFParticle, recob::Cluster>>();
+      produces<art::Assns<recob::PFParticle, recob::Seed>>();
+      produces<art::Assns<recob::Edge, recob::PFParticle>>();
+      produces<art::Assns<recob::Seed, recob::Hit>>();
+      produces<art::Assns<recob::Cluster, recob::Hit>>();
 
-    produces<std::vector<recob::SpacePoint>>();
-    produces<art::Assns<recob::SpacePoint, recob::PFParticle>>();
-    produces<art::Assns<recob::Hit, recob::SpacePoint>>();
-    produces<art::Assns<recob::SpacePoint, recob::Edge>>();
+      produces<std::vector<recob::SpacePoint>>();
+      produces<art::Assns<recob::SpacePoint, recob::PFParticle>>();
+      produces<art::Assns<recob::Hit, recob::SpacePoint>>();
+      produces<art::Assns<recob::SpacePoint, recob::Edge>>();
 
-    produces<std::vector<recob::SpacePoint>>(m_pathInstance);
-    produces<std::vector<recob::Edge>>(m_pathInstance);
-    produces<art::Assns<recob::SpacePoint, recob::PFParticle>>(m_pathInstance);
-    produces<art::Assns<recob::Edge, recob::PFParticle>>(m_pathInstance);
-    produces<art::Assns<recob::Hit, recob::SpacePoint>>(m_pathInstance);
-    produces<art::Assns<recob::SpacePoint, recob::Edge>>(m_pathInstance);
+      produces<std::vector<recob::SpacePoint>>(m_pathInstance);
+      produces<std::vector<recob::Edge>>(m_pathInstance);
+      produces<art::Assns<recob::SpacePoint, recob::PFParticle>>(m_pathInstance);
+      produces<art::Assns<recob::Edge, recob::PFParticle>>(m_pathInstance);
+      produces<art::Assns<recob::Hit, recob::SpacePoint>>(m_pathInstance);
+      produces<art::Assns<recob::SpacePoint, recob::Edge>>(m_pathInstance);
 
-    produces<std::vector<recob::Edge>>(m_vertexInstance);
-    produces<std::vector<recob::SpacePoint>>(m_vertexInstance);
+      produces<std::vector<recob::Edge>>(m_vertexInstance);
+      produces<std::vector<recob::SpacePoint>>(m_vertexInstance);
 
-    produces<std::vector<recob::SpacePoint>>(m_extremeInstance);
+      produces<std::vector<recob::SpacePoint>>(m_extremeInstance);
+    }
   }
 
   //------------------------------------------------------------------------------------------------------------------------------------------
@@ -628,8 +631,7 @@ namespace lar_cluster3d {
     // Get instances of the primary data structures needed
     reco::ClusterParametersList clusterParametersList;
     IHit3DBuilder::RecobHitToPtrMap clusterHitToArtPtrMap;
-    std::unique_ptr<reco::HitPairList> hitPairList(
-      new reco::HitPairList); // Potentially lots of hits, use heap instead of stack
+    std::unique_ptr<reco::HitPairList> hitPairList(new reco::HitPairList); // Potentially lots of hits, use heap instead of stack
 
     // Call the algorithm that builds 3D hits and stores the hit collection
     m_hit3DBuilderAlg->Hit3DBuilder(evt, *hitPairList, clusterHitToArtPtrMap);
@@ -644,23 +646,24 @@ namespace lar_cluster3d {
 
       // Run the path finding
       m_clusterPathAlg->ModifyClusters(clusterParametersList);
+
+      if (m_enableMonitoring) theClockFinish.start();
+
+      // Get the art ouput object
+      ArtOutputHandler output(evt, m_pathInstance, m_vertexInstance, m_extremeInstance);
+
+      // Call the module that does the end processing (of which there is quite a bit of work!)
+      // This goes here to insure that something is always written to the data store
+      auto const clockData = art::ServiceHandle<detinfo::DetectorClocksService const>()->DataFor(evt);
+      auto const detProp =
+        art::ServiceHandle<detinfo::DetectorPropertiesService const>()->DataFor(evt, clockData);
+      util::GeometryUtilities const gser{*lar::providerFrom<geo::Geometry>(), clockData, detProp};
+      ProduceArtClusters(gser, output, *hitPairList, clusterParametersList, clusterHitToArtPtrMap);
+
+      // Output to art
+      output.outputObjects();
     }
-
-    if (m_enableMonitoring) theClockFinish.start();
-
-    // Get the art ouput object
-    ArtOutputHandler output(evt, m_pathInstance, m_vertexInstance, m_extremeInstance);
-
-    // Call the module that does the end processing (of which there is quite a bit of work!)
-    // This goes here to insure that something is always written to the data store
-    auto const clockData = art::ServiceHandle<detinfo::DetectorClocksService const>()->DataFor(evt);
-    auto const detProp =
-      art::ServiceHandle<detinfo::DetectorPropertiesService const>()->DataFor(evt, clockData);
-    util::GeometryUtilities const gser{*lar::providerFrom<geo::Geometry>(), clockData, detProp};
-    ProduceArtClusters(gser, output, *hitPairList, clusterParametersList, clusterHitToArtPtrMap);
-
-    // Output to art
-    output.outputObjects();
+    else if (m_enableMonitoring) theClockFinish.start();
 
     // If monitoring then deal with the fallout
     if (m_enableMonitoring) {
@@ -672,14 +675,20 @@ namespace lar_cluster3d {
       m_totalTime = theClockTotal.accumulated_real_time();
       m_artHitsTime = m_hit3DBuilderAlg->getTimeToExecute(IHit3DBuilder::COLLECTARTHITS);
       m_makeHitsTime = m_hit3DBuilderAlg->getTimeToExecute(IHit3DBuilder::BUILDTHREEDHITS);
-      m_buildNeighborhoodTime = m_clusterAlg->getTimeToExecute(IClusterAlg::BUILDHITTOHITMAP);
-      m_dbscanTime = m_clusterAlg->getTimeToExecute(IClusterAlg::RUNDBSCAN) +
-                     m_clusterAlg->getTimeToExecute(IClusterAlg::BUILDCLUSTERINFO);
-      m_clusterMergeTime = m_clusterMergeAlg->getTimeToExecute();
-      m_pathFindingTime = m_clusterPathAlg->getTimeToExecute();
+
+      if (!m_onlyMakSpacePoints)
+      {
+        m_buildNeighborhoodTime = m_clusterAlg->getTimeToExecute(IClusterAlg::BUILDHITTOHITMAP);
+        m_dbscanTime = m_clusterAlg->getTimeToExecute(IClusterAlg::RUNDBSCAN) +
+                       m_clusterAlg->getTimeToExecute(IClusterAlg::BUILDCLUSTERINFO);
+        m_clusterMergeTime = m_clusterMergeAlg->getTimeToExecute();
+        m_pathFindingTime = m_clusterPathAlg->getTimeToExecute();
+      }
+
       m_finishTime = theClockFinish.accumulated_real_time();
       m_hits = static_cast<int>(clusterHitToArtPtrMap.size());
       m_hits3D = static_cast<int>(hitPairList->size());
+
       m_pRecoTree->Fill();
 
       mf::LogDebug("Cluster3DICARUS") << "*** Cluster3DICARUS total time: " << m_totalTime
