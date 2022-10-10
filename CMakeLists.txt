@@ -15,7 +15,7 @@
 
 cmake_minimum_required(VERSION 3.19 FATAL_ERROR)
 
-project(icaruscode VERSION 09.59.00 LANGUAGES CXX)
+project(icaruscode VERSION 09.60.00 LANGUAGES CXX)
 
 message(STATUS
   "\n-- ============================================================================="
