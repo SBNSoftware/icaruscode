@@ -601,7 +601,7 @@ void SnippetHit3DBuilderICARUS::BuildHit3D(reco::HitPairList& hitPairList) const
         m_timeVector[BUILDTHREEDHITS] = theClockMakeHits.accumulated_real_time();
     }
 
-    mf::LogDebug("Cluster3D") << ">>>>> 3D hit building done, found " << numHitPairs << " 3D Hits" << std::endl;
+    mf::LogDebug("SnippetHit3D") << ">>>>> 3D hit building done, found " << numHitPairs << " 3D Hits" << std::endl;
 
     return;
 }
@@ -686,9 +686,9 @@ size_t SnippetHit3DBuilderICARUS::BuildHitPairMap(PlaneToSnippetHitMap& planeToS
     hitPairList.sort(SetPairStartTimeOrder);
 
     // Where are we?
-    mf::LogDebug("Cluster3D") << "Total number hits: " << totalNumHits << std::endl;
-    mf::LogDebug("Cluster3D") << "Created a total of " << hitPairList.size() << " hit pairs, counted: " << hitPairCntr << std::endl;
-    mf::LogDebug("Cluster3D") << "-- Triplets: " << nTriplets << ", dead channel pairs: " << nDeadChanHits << std::endl;
+    mf::LogDebug("SnippetHit3D") << "Total number hits: " << totalNumHits << std::endl;
+    mf::LogDebug("SnippetHit3D") << "Created a total of " << hitPairList.size() << " hit pairs, counted: " << hitPairCntr << std::endl;
+    mf::LogDebug("SnippetHit3D") << "-- Triplets: " << nTriplets << ", dead channel pairs: " << nDeadChanHits << std::endl;
 
     return hitPairList.size();
 }
@@ -782,7 +782,7 @@ size_t SnippetHit3DBuilderICARUS::BuildHitPairMapByTPC(PlaneSnippetHitMapItrPair
         snippetHitMapItrVec.front().first++;
     }
 
-    mf::LogDebug("Cluster3D") << "--> Created " << nTriplets << " triplets of which " << nOrphanPairs << " are orphans" << std::endl;
+    mf::LogDebug("SnippetHit3D") << "--> Created " << nTriplets << " triplets of which " << nOrphanPairs << " are orphans" << std::endl;
 
     return hitPairList.size();
 }
@@ -1830,7 +1830,7 @@ void SnippetHit3DBuilderICARUS::CollectArtHits(const art::Event& evt) const
             debugMessage += outputString.str();
         }
 
-        mf::LogDebug("Cluster3D") << debugMessage << std::endl;
+        mf::LogDebug("SnippetHit3D") << debugMessage << std::endl;
 
         m_weHaveAllBeenHereBefore = true;
     }
@@ -1888,7 +1888,7 @@ void SnippetHit3DBuilderICARUS::CollectArtHits(const art::Event& evt) const
         m_timeVector[COLLECTARTHITS] = theClockMakeHits.accumulated_real_time();
     }
 
-    mf::LogDebug("Cluster3D") << ">>>>> Number of ART hits: " << m_clusterHit2DMasterList.size() << std::endl;
+    mf::LogDebug("SnippetHit3D") << ">>>>> Number of ART hits: " << m_clusterHit2DMasterList.size() << std::endl;
 }
 
 //------------------------------------------------------------------------------------------------------------------------------------------
@@ -1956,7 +1956,7 @@ void SnippetHit3DBuilderICARUS::CreateNewRecobHitCollection(art::Event&         
         m_timeVector[BUILDNEWHITS] = theClockBuildNewHits.accumulated_real_time();
     }
 
-    mf::LogDebug("Cluster3D") << ">>>>> New output recob::Hit size: " << numNewHits << " (vs " << m_clusterHit2DMasterList.size() << " input)" << std::endl;
+    mf::LogDebug("SnippetHit3D") << ">>>>> New output recob::Hit size: " << numNewHits << " (vs " << m_clusterHit2DMasterList.size() << " input)" << std::endl;
 
     return;
 }
@@ -1997,7 +1997,7 @@ void SnippetHit3DBuilderICARUS::makeWireAssns(const art::Event& evt, art::Assns<
 
         if (!(chanWireItr != channelToWireMap.end()))
         {
-            //mf::LogDebug("Cluster3D") << "** Did not find channel to wire match! Skipping..." << std::endl;
+            //mf::LogDebug("SnippetHit3D") << "** Did not find channel to wire match! Skipping..." << std::endl;
             continue;
         }
 
@@ -2043,7 +2043,7 @@ void SnippetHit3DBuilderICARUS::makeRawDigitAssns(const art::Event& evt, art::As
 
         if (chanRawDigitItr == channelToRawDigitMap.end())
         {
-            //mf::LogDebug("Cluster3D") << "** Did not find channel to wire match! Skipping..." << std::endl;
+            //mf::LogDebug("SnippetHit3D") << "** Did not find channel to wire match! Skipping..." << std::endl;
            continue;
         }
 
