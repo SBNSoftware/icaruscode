@@ -42,9 +42,14 @@ services.message.destinations :
      threshold: "DEBUG"     #tells the message service that this destination applies to WARNING and higher level messages
      categories:
      {
-       Cluster3D:
+       Cluster3DICARUS:
        {
-         limit: -1
+         limit: 5
+         reportEvery: 1
+       }
+       SnippetHit3D:
+       {
+         limit: 5
          reportEvery: 1
        }
        default:
