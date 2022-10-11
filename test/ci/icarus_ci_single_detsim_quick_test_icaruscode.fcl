@@ -1,1 +1,1 @@
-#include "multitpc_detsim_icarus.fcl"
+#include "detsim_2d_icarus.fcl"

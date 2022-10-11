@@ -325,6 +325,8 @@ namespace icarus { class DaqDecoderICARUSPMT; }
  *     * `onGlobalTrigger` (boolean): whether the waveform covers the nominal
  *       trigger time (which should be equivalent to whether the fragment was
  *       triggered by the global trigger).
+ *     * `minimumBias` (boolean): whether the event was triggered via minimum
+ *       bias selection.
  * 
  * 
  * Technical notes
@@ -691,6 +693,7 @@ class icarus::DaqDecoderICARUSPMT: public art::EDProducer {
     long int relBeamGateTime; ///< Time of beam gate relative to trigger [ns].
     sbn::triggerSourceMask bits; ///< Trigger bits.
     unsigned int gateCount = 0U; ///< Gate number from the beginning of run.
+    sbn::triggerType triggerType; ///< Type of trigger (minimum bias, majority).
   }; // TriggerInfo_t
   
   /// All the information collected about a waveform (with the waveform itself).
@@ -893,9 +896,10 @@ class icarus::DaqDecoderICARUSPMT: public art::EDProducer {
       
       unsigned int gateCount = 0U; ///< The number of gate from run start.
       
-      ///< Whether waveforms cover nominal trigger time.
+      /// Whether waveforms cover nominal trigger time.
       bool onGlobalTrigger = false;
       
+      bool minimumBias = false; ///< Whether this trigger was from minimum bias.
       
     }; // Data_t
     
@@ -1481,6 +1485,7 @@ void icarus::DaqDecoderICARUSPMT::produce(art::Event& event) {
       for (std::string const& name: names(triggerInfo.bits)) log << ' ' << name;
       log << " }";
     } // if
+    log << ", type: " << name(triggerInfo.triggerType);
     if (fTriggerTag) log << ", spill count: " << triggerInfo.gateCount;
   } // local block
   
@@ -1919,6 +1924,7 @@ auto icarus::DaqDecoderICARUSPMT::fetchTriggerTimestamp
     , relBeamGate
     , {trigger.TriggerBits()}
     , gateCount
+    , extraTrigger.triggerType
     };
   
 } // icarus::DaqDecoderICARUSPMT::fetchTriggerTimestamp()
@@ -2349,6 +2355,8 @@ void icarus::DaqDecoderICARUSPMT::fillPMTfragmentTree(
   fTreeFragment->data.gateCount = triggerInfo.gateCount;
   fTreeFragment->data.onGlobalTrigger
     = containsGlobalTrigger(waveformTimestamp, fragInfo.nSamplesPerChannel);
+  fTreeFragment->data.minimumBias
+    = triggerInfo.triggerType == sbn::bits::triggerType::MinimumBias;
   assignEventInfo(fTreeFragment->data);
   fTreeFragment->tree->Fill();
   
@@ -2805,6 +2813,7 @@ void icarus::DaqDecoderICARUSPMT::initFragmentsTree() {
   tree->Branch("triggerBits", &data.triggerBits);
   tree->Branch("gateCount", &data.gateCount);
   tree->Branch("onGlobal", &data.onGlobalTrigger);
+  tree->Branch("minimumBias", &data.minimumBias);
   
 } // icarus::DaqDecoderICARUSPMT::initFragmentsTree()
 
