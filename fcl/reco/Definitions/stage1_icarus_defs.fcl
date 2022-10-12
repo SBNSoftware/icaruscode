@@ -197,6 +197,9 @@ icarus_stage1_producers.pandoraKalmanTrackGausCryoE.trackInputTag:              
 icarus_stage1_producers.caloskimCalorimetryCryoE.TrackModuleLabel:                               "pandoraTrackGausCryoE"
 icarus_stage1_producers.caloskimCalorimetryCryoW.TrackModuleLabel:                               "pandoraTrackGausCryoW"
 
+icarus_stage1_producers.pandoraTrackGausCryoW.UseAllParticles:                                   true
+icarus_stage1_producers.pandoraTrackGausCryoE.UseAllParticles:                                   true
+
 ## Switch pandora back to just gaushits?
 #icarus_stage1_producers.pandoraGausCryoW.ConfigFile:                                             "PandoraSettings_Master_ICARUS_RawICARUS.xml"
 #icarus_stage1_producers.pandoraGausCryoE.ConfigFile:                                             "PandoraSettings_Master_ICARUS_RawICARUS.xml"
@@ -204,5 +207,7 @@ icarus_stage1_producers.caloskimCalorimetryCryoW.TrackModuleLabel:              
 ## Definitions for shower finding (both single and by cryostat)
 icarus_stage1_producers.SBNShowerGausCryoW.PFParticleLabel:                                      "pandoraGausCryoW"
 icarus_stage1_producers.SBNShowerGausCryoE.PFParticleLabel:                                      "pandoraGausCryoE"
+icarus_stage1_producers.SBNShowerGausCryoW.UseAllParticles: 				         true
+icarus_stage1_producers.SBNShowerGausCryoE.UseAllParticles: 				         true
 
 END_PROLOG
