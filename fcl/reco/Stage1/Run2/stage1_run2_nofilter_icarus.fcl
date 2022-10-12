@@ -4,9 +4,9 @@ process_name: stage1
 
 physics.reco: [ @sequence::icarus_filter_cluster3D,
                 @sequence::icarus_pandora_Gauss,
-		@sequence::icarus_reco_fm,
+		            @sequence::icarus_reco_fm,
                 @sequence::icarus_crthit,
-		@sequence::icarus_crtt0match,
+		            @sequence::icarus_crtt0match,
                 caloskimCalorimetryCryoE, caloskimCalorimetryCryoW]
 
 physics.outana:            [ caloskimE, caloskimW, simpleLightAna, CRTDataAnalysis]
@@ -41,14 +41,14 @@ services.message.destinations :
      threshold: "DEBUG"     #tells the message service that this destination applies to WARNING and higher level messages
      categories:
      {
-       Cluster3D:
+       Cluster3DICARUS:
        {
-         limit: -1
+         limit: 5
          reportEvery: 1
        }
-       PMAlgTracker:
+       SnippetHit3D:
        {
-         limit: -1
+         limit: 5
          reportEvery: 1
        }
        default:

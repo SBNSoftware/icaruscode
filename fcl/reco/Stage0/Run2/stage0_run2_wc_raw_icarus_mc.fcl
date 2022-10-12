@@ -25,7 +25,13 @@ physics.trigger_paths: [ path ]
 physics.end_paths:     [ outana, streamROOT ]
 
 # Drop the artdaq format files on output
-outputs.rootOutput.outputCommands: ["keep *_*_*_*", "drop *_daq_*_*", "drop *_MCDecodeTPCROI_*_*", "drop *_decon1droi_*_*", "drop *_decon2Droi*_*_*", "drop recob::Wire*_roifinder_*_*" ]
+outputs.rootOutput.outputCommands: ["keep *_*_*_*", 
+                                    "drop *_daq_*_*", 
+                                    "drop recob::Wire*_MCDecodeTPCROI_*_*", 
+                                    "drop *_decon1droi_*_*", 
+                                    "drop *_decon2Droi*_*_*", 
+                                    "drop recob::Wire*_roifinder_*_*",
+                                    "drop recob::Wire*_roifinder2d_*_*" ]
 
 # Drop the daq format files on output, 
 # Drop all output from the TPC decoder stage
