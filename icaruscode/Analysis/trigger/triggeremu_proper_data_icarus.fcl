@@ -1,0 +1,104 @@
+#
+# File:    triggeremu_proper_data_icarus.fcl
+# Purpose: Emulation of ICARUS trigger (on top of "prepared" input).
+# Authors: Gianluca Petrillo (petrillo@slac.stanford.edu)
+# Date:    November 9, 2021
+#
+# This configuration runs the second and last stage of trigger emulation,
+# that is the waveform discrimination. Its output does not retain the full PMT
+# waveform information, reducing the size of the data.
+#
+# Changes
+# --------
+# 
+# 20220118 (petrillo@slac.stanford.edu) [v1.0]
+# :   original version based on `triggeremu_only_data_icarus.fcl` v2.0
+# 
+
+#include "services_common_icarus.fcl"
+#include "rootoutput_icarus.fcl"
+#include "trigger_icarus.fcl"
+#include "triggeremu_data_config_icarus.fcl"
+
+
+# ------------------------------------------------------------------------------
+process_name: TrgEmu
+
+
+# ------------------------------------------------------------------------------
+services: {
+  
+  # uncommon services for trigger emulation (may be overridden below)
+  @table::triggeremu_data_config_icarus.services # from triggeremu_data_config_icarus.fcl
+  
+  # this provides: file service, random management (unused),
+  #                Geometry, detector properties and clocks
+  @table::icarus_common_services
+
+  # art resource tracking services may take a lot of memory on the long run
+  MemoryTracker: @erase
+#  TimeTracker:   @erase
+
+  # currently unused (remove the line if they start mattering):
+  LArPropertiesService:      @erase
+  DetectorPropertiesService: @erase
+  
+} # services
+
+
+# customization of message destinations from trigger emulation
+services.message.destinations.TriggerEmuSlidingWindowORLog: @local::triggeremu_data_config_icarus.messagedestinations.TriggerEmuSlidingWindowORLog
+
+
+# ------------------------------------------------------------------------------
+physics: {
+
+  producers: {
+    
+    @table::triggeremu_data_config_icarus.producers # from triggeremu_data_config_icarus.fcl
+
+  } # producers
+
+  # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  triggeremuprep: @local::triggeremu_data_config_icarus.simulationBase
+
+  triggeremuE: [
+    @sequence::triggeremu_data_config_icarus.simulationPrepEast,
+    @sequence::triggeremu_data_config_icarus.simulationEast
+  ]
+  
+  triggeremuW: [
+    @sequence::triggeremu_data_config_icarus.simulationPrepWest,
+    @sequence::triggeremu_data_config_icarus.simulationWest
+  ]
+  
+  triggeremu: [
+    @sequence::triggeremu_data_config_icarus.simulationPrepFull,
+    @sequence::triggeremu_data_config_icarus.simulationFull
+  ]
+  
+  streams: [ "rootoutput" ]
+  
+  trigger_paths: [ triggeremuE, triggeremuW ]
+  end_paths: [ streams ]
+  
+  # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  
+} # physics
+
+
+# ------------------------------------------------------------------------------
+outputs: {
+  rootoutput: {
+    @table::icarus_rootoutput
+    outputCommands: [
+      "drop *"
+      , "keep sbn::PMTconfiguration_*_*_*", "keep *_daqTrigger_*_*"
+      , "keep *_*_*_stage1", "drop *_cluster3D*_*_*", "drop *recob::SpacePoint*_*_*_*"
+      , "keep *_*_*_TrgPrep", "keep *_*_*_TrgEmu", "keep *_*_*_T0sel"
+      ]
+  }
+}
+
+
+# ------------------------------------------------------------------------------

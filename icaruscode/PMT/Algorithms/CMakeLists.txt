@@ -2,7 +2,8 @@
 # cet_set_compiler_flags(EXTRA_CXX_FLAGS -mavx)
 
 art_make(
-  LIB_LIBRARIES 
+  LIB_LIBRARIES
+    icaruscode_Decode_DecoderTools
     larcorealg_Geometry
     lardataobj_RawData
     icarusalg_Utilities

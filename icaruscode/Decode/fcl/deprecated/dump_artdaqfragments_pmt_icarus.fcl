@@ -1,0 +1,75 @@
+#
+# File:     dump_artdaqfragments_pmt_icarus.fcl
+# Purpose:  Dump on screen ICARUS PMT art fragments from DAQ.
+# Author:   Gianluca Petrillo (petrillo@slac.stanford.edu)
+# Date:     June 10, 2021
+# Version:  1.0
+#
+# This module extracts and then dumps the specified PMT data fragments.
+#
+# Input: (data) files with FHiCL configuration of PMT.
+#
+# Service dependencies:
+# - message facility
+# 
+# Changes:
+# 20210610 (petrillo@slac.stanford.edu) [v1.0]
+#   first version
+#
+
+#include "messages_icarus.fcl"
+
+
+# ------------------------------------------------------------------------------
+process_name: DumpPMTcfg
+
+
+# ------------------------------------------------------------------------------
+services: {
+  
+  message: @local::icarus_message_services_interactive
+  
+} # services
+
+
+services.message.destinations.LogStandardOut.categories.DumpArtDAQfragments: { limit: 0 }
+services.message.destinations.DumpLog: {
+  type:      file
+  filename: "DumpArtDAQfragments.log"
+  threshold: INFO
+  categories: {
+    DumpArtDAQfragments: { limit: -1 }
+    default:             { limit: 0 }
+  }
+} # services.message.destinations.DumpLog
+
+
+# ------------------------------------------------------------------------------
+source: {
+  module_type: RootInput
+  maxEvents:  -1            # number of events to read
+} # source
+
+
+# ------------------------------------------------------------------------------
+physics: {
+
+  # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  analyzers: {
+    dumppmtdata: {
+      module_type: DumpArtDAQfragments
+      
+      FragmentTags: [ "daq:CAENV1730", "daq:ContainerCAENV1730" ]
+      
+      OutputCategory: "DumpArtDAQfragments"
+      
+    } # dumppmtdata
+  } # analyzers
+  
+  # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  dumpers:    [ dumppmtdata ]
+  
+} # physics
+
+
+# ------------------------------------------------------------------------------

@@ -18,6 +18,8 @@ art_make(
             ${CETLIB}
             ${ROOT_BASIC_LIB_LIST}
           MODULE_LIBRARIES 
+            icaruscode_TPC_Utilities
+            icaruscode_IcarusObj
             icarus_signal_processing
             icarus_signal_processing_Detection
             icarus_signal_processing_Filters

@@ -61,6 +61,7 @@ ResponseTool:
     Plane:               0
     Correction3D:        1.
     TimeScaleFactor:     1.
+    UseEmpiricalOffsets: true
     FieldResponse:       @local::FieldResponseTool
     ElectronicsResponse: @local::ElectronicsResponseBesselApproxTool
     Filter:              @local::FilterTool

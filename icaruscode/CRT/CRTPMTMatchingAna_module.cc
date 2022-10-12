@@ -37,7 +37,7 @@
 #include "sbnobj/Common/CRT/CRTTrack.hh"
 #include "icaruscode/CRT/CRTUtils/CRTCommonUtils.h"
 #include "icaruscode/CRT/CRTUtils/CRTBackTracker.h"
-#include "icaruscode/Decode/DataProducts/ExtraTriggerInfo.h"
+#include "sbnobj/Common/Trigger/ExtraTriggerInfo.h"
 
 //C++ includes
 #include <vector>
@@ -292,9 +292,11 @@ void icarus::crt::CRTPMTMatchingAna::analyze(art::Event const& e)
     xyzt.push_back(rcrt.X());
     xyzt.push_back(rcrt.Y());
     xyzt.push_back(rcrt.Z());
+    
+    double tcrt = crt->ts1_ns/1e3;
 
-    double tcrt = double(m_gate_start_timestamp - crt->ts0_ns)/1e3;
-    tcrt = -tcrt+1e6;
+    /*double tcrt = double(m_gate_start_timestamp - crt->ts0_ns)/1e3;
+      tcrt = -tcrt+1e6;*/
 
     //    double tcrt = (int32_t)crt->ts0_ns;// - fCrtDelay;
     //uint64_t tcrt = crt->ts0_ns;

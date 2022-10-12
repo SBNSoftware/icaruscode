@@ -1,0 +1,704 @@
+#
+# File:    triggeremu_data_config_icarus.fcl
+# Purpose: Settings for emulation of ICARUS trigger (only trigger outcome).
+# Authors: Gianluca Petrillo (petrillo@slac.stanford.edu)
+# Date:    November 9, 2021
+#
+# This configuration can be included in a art job as follows:
+# 
+#     
+#     services: {
+#       
+#       @table::triggeremu_data_config_icarus.services
+#       
+#       @table::icarus_common_services
+#       
+#       # ...
+#     
+#     }
+#     
+#     services.message.destinations: {
+#       @table::services.message.destinations
+#       @table::triggeremu_data_config_icarus.messagedestinations
+#     }
+#     
+#     physics: {
+#       producers: {
+#         
+#         # ...
+#         
+#         @table::triggeremu_data_config_icarus.producers
+#         
+#       }
+#       
+#       triggeremu: [ @sequence::triggeremu_data_config_icarus.producerpath ]
+#       trigger_paths: [ triggeremu # ... ]
+#     
+#     }
+#     
+# 
+# 
+# Additional settings of the job configuration file must include:
+# 
+# * services: `Geometry` and `DetectorClocksService` are required;
+#    `LArPropertiesService` and `DetectorPropertiesService` are not required;
+#    `MemoryTracker` is not recommended for jobs spanning many thousand events
+#    a reasonable starting point is `icarus_common_services` bundle
+# 
+# Expected input:
+# 
+# * selection of tracks to consider:
+#     * in the full detector: `gatesFromTracks`
+#         (or override "triggeremu_data_config_icarus.input.gatesForTrigger")
+#     * in cryostat 0 (east): `gatesFromTracksE`
+#         (or override "triggeremu_data_config_icarus.input.gatesForTriggerE")
+#     * in cryostat 1 (west): `gatesFromTracksW`
+#         (or override "triggeremu_data_config_icarus.input.gatesForTriggerW")
+# 
+#
+# Changes
+# --------
+# 
+# 20220118 (petrillo@slac.stanford.edu) [v1.2]
+# :   added fixed discrimination thresholds
+# 20211130 (petrillo@slac.stanford.edu) [v1.1]
+# :   integrated beam gate source from data products
+# 20211109 (petrillo@slac.stanford.edu) [v1.0]
+# :   original version based on `triggersim_data_icarus.fcl` v1.1
+#     and `triggersim_icarus_data.fcl` v1.0
+# 
+
+#include "trigger_icarus.fcl"
+#include "channelmapping_icarus.fcl"
+#include "triggeremu_settings_icarus.fcl"
+
+# ------------------------------------------------------------------------------
+BEGIN_PROLOG
+
+# All settings are enclosed in `triggeremu_data_config_icarus`, structured in:
+#  * `settings`: general settings, like a common PROLOG (inherited)
+#  * `services`: table of required services
+#  * `producers`: table of producer configurations
+#  * `producerpath`: list of producers
+#  * `messagedestinations`: message facility destinations for logging
+# Table `triggeremu_data_config_icarus` is defined in multiple passes to allow
+# internal references.
+
+# settings in triggeremu_data_config_icarus.settings are set individually
+# so that each can be ignored by setting it with `@protect_ignore:` before
+# including this configuration file
+# (setting the whole `settings: { ... }` block would just get rid of the whole
+#  content of `settings` regardless the protection level of each item within)
+
+triggeremu_data_config_icarus.settings.missing_pmt_channels                    : @local::triggeremu_config_icarus.settings.missing_pmt_channels
+triggeremu_data_config_icarus.settings.BeamGate.Duration                       : @local::triggeremu_config_icarus.settings.BeamGate.Duration
+triggeremu_data_config_icarus.settings.BeamGate.Start                          : @local::triggeremu_config_icarus.settings.BeamGate.Start
+triggeremu_data_config_icarus.settings.PMTADCthresholds                        : @local::triggeremu_config_icarus.settings.PMTADCthresholds
+triggeremu_data_config_icarus.settings.LVDSsignalWidth                         : @local::triggeremu_config_icarus.settings.LVDSsignalWidth
+triggeremu_data_config_icarus.settings.trigger_channel_pairings_nosingle       : @local::triggeremu_config_icarus.settings.trigger_channel_pairings_nosingle
+triggeremu_data_config_icarus.settings.SlidingWindowTriggerPatternsSingleWindow: @local::triggeremu_config_icarus.settings.SlidingWindowTriggerPatternsSingleWindow
+triggeremu_data_config_icarus.settings.SlidingWindowTriggerPatternsWindowPair  : @local::triggeremu_config_icarus.settings.SlidingWindowTriggerPatternsWindowPair
+triggeremu_data_config_icarus.settings.EnabledWindowsTilingE                   : @local::triggeremu_config_icarus.settings.EnabledWindowsTilingE
+triggeremu_data_config_icarus.settings.EnabledWindowsTilingW                   : @local::triggeremu_config_icarus.settings.EnabledWindowsTilingW
+triggeremu_data_config_icarus.settings.EnabledWindowsSlidingE                  : @local::triggeremu_config_icarus.settings.EnabledWindowsSlidingE
+triggeremu_data_config_icarus.settings.EnabledWindowsSlidingW                  : @local::triggeremu_config_icarus.settings.EnabledWindowsSlidingW
+triggeremu_data_config_icarus.settings.SlidingWindowTriggerPatterns            : @local::triggeremu_config_icarus.settings.SlidingWindowTriggerPatterns
+
+
+# input tags with the gate for the evaluation of the trigger"
+triggeremu_data_config_icarus.input.gatesForTriggerE: "gatesFromTracksE"
+triggeremu_data_config_icarus.input.gatesForTriggerW: "gatesFromTracksW"
+triggeremu_data_config_icarus.input.gatesForTrigger:  "gatesFromTracks"
+
+END_PROLOG
+
+
+# ------------------------------------------------------------------------------
+# ---  drop-in pieces:
+# ------------------------------------------------------------------------------
+BEGIN_PROLOG
+
+  # ------------------------------------------------------------------------------
+triggeremu_data_config_icarus.services: {
+
+  IICARUSChannelMap: @local::icarus_channelmappinggservice # from channelmapping_icarus.fcl
+
+} # triggeremu_data_config_icarus_services
+
+
+# ------------------------------------------------------------------------------
+triggeremu_data_config_icarus.producers: {
+
+  # this became part of stage0 in Run1;
+  # use this configuration only when processing older data
+  pmtconfigbaselines: {
+
+    module_type: PMTWaveformBaselinesFromReadoutConfiguration
+
+    # label of input digitized optical waveform data product
+    OpticalWaveforms: "daqPMT"
+    
+    # label of PMT configuration
+    PMTconfigurationTag: "pmtconfig"
+
+    # produce plots on the extracted baseline
+    PlotBaselines: true  # default
+    
+    # print on screen the baselines (good for debugging)
+    PrintBaselines: true
+    
+    # tag of the module output to console via message facility
+    OutputCategory: "TriggerEmuPMTWaveformBaselines"  # default
+
+  } # pmtconfigbaselines
+
+
+  # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  # this became part of stage0 in Run1;
+  # use this configuration only when processing older data
+  pmtthr: {
+
+    module_type: DiscriminatePMTwaveformsByChannel
+
+    # input optical waveform data product tag:
+    OpticalWaveforms: "daqPMT"
+
+    # PMT baselines
+    Baselines: "pmtconfigbaselines" # from data products
+    
+    # threshold configuration
+    ThresholdsFromPMTconfig: "pmtconfig"
+    NChannels:                360 # to be safe...
+    
+    #
+    # choosing the discrimination algorithm: fixed length gates
+    #
+    TriggerGateBuilder: {
+      @table::icarus_fixedtriggergate     # from trigger_icarus.fcl
+      
+      ChannelThresholds: [ 0 ]  # ignored: overridden by module
+      
+      GateDuration: @local::triggeremu_data_config_icarus.settings.LVDSsignalWidth
+      
+    } # TriggerGateBuilder
+
+
+    # message facility stream
+    OutputCategory: "TriggerEmuDiscriminatePMTwaveforms"
+
+  } # pmtthr
+
+
+  # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  pmtfixedthr: {
+
+    module_type: DiscriminatePMTwaveforms
+
+    # input optical waveform data product tag:
+    OpticalWaveforms: "daqPMT"
+
+    # PMT baselines
+    Baselines: "pmtconfigbaselines" # from data products
+    
+    NChannels:                360 # to be safe...
+    
+    #
+    # choosing the discrimination algorithm: fixed length gates
+    #
+    TriggerGateBuilder: {
+      @table::icarus_fixedtriggergate     # from trigger_icarus.fcl
+      
+      ChannelThresholds: @local::triggeremu_data_config_icarus.settings.PMTADCthresholds
+      
+      GateDuration: @local::triggeremu_data_config_icarus.settings.LVDSsignalWidth
+      
+    } # TriggerGateBuilder
+
+
+    # message facility stream
+    OutputCategory: "TriggerEmuDiscriminatePMTwaveforms"
+
+  } # pmtfixedthr
+
+
+  # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  lvdsgatesOR: {
+
+    module_type: LVDSgates
+
+    # select the thresholds to process (mandatory)
+    TriggerGatesTag: "pmtfixedthr"
+    Thresholds: [ "pmtthr:", @sequence::triggeremu_data_config_icarus.settings.PMTADCthresholds ]
+
+    # CombinationMode: mostly either "AND" or "OR"
+    CombinationMode: "OR"
+
+    # use the standard ICARUS pairing
+    ChannelPairing: @local::icarus_trigger_channel_pairings # from trigger_icarus.fcl
+
+    # input does not include these channels:
+    IgnoreChannels: @local::triggeremu_data_config_icarus.settings.missing_pmt_channels
+
+    # message facility stream
+    LogCategory: "TriggerEmuLVDSgatesOR"
+
+  } # lvdsgatesOR
+
+
+  # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  trigtilewindowOR: {
+
+    module_type: SlidingWindowTrigger
+
+    TriggerGatesTag: "lvdsgatesOR"
+
+    Thresholds: [ "pmtthr", @sequence::triggeremu_data_config_icarus.settings.PMTADCthresholds ]
+
+    WindowSize: 30
+
+    # number of optical channel used as offset for sliding window [as WindowSize]
+    # Stride: 30
+    
+    MissingChannels: @local::triggeremu_data_config_icarus.settings.missing_pmt_channels
+    
+    # name of the category used for the output
+    LogCategory: "TriggerEmuSlidingWindowTriggerOR"
+
+  } # trigtilewindowOR
+
+
+  # defined later:  trigtilewindowORE, trigtilewindowORW,
+  # trigslidewindowOR, trigslidewindowORE, trigslidewindowORW
+  
+  
+  # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  simTiledORM1: {
+    module_type: TriggerSimulationOnGates
+
+    TriggerGatesTag: "trigtilewindowOR"
+
+    Thresholds: [ "pmtthr", @sequence::triggeremu_data_config_icarus.settings.PMTADCthresholds ]
+    
+    # this is M1
+    Pattern: @local::triggeremu_data_config_icarus.settings.SlidingWindowTriggerPatternsSingleWindow[0]
+
+    # Beam gate:
+    BeamGates: @local::triggeremu_data_config_icarus.input.gatesForTrigger
+    
+    # Bits set into the raw::Trigger objects
+    BeamBits:         @local::BNB_settings.trigger_bits   # from trigger_icarus.fcl
+
+    # for trigger time plots:
+    EventTimeBinning: 900 # seconds-> 15'
+    
+    # for... nothing
+    TriggerTimeResolution: "25 ns"
+
+    # name of the category used for the output
+    LogCategory: "TriggerEmuSlidingWindowTriggerSimulationOR"
+  
+  } # simTiledORM1
+
+  # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+} # triggeremu_data_config_icarus.producers
+
+
+triggeremu_data_config_icarus.simulationBase: [
+  pmtfixedthr, lvdsgatesOR
+]
+
+triggeremu_data_config_icarus.simulationPrepEast: [
+  # tiling
+    trigtilewindowORE
+  # sliding
+  , trigslidewindowORE
+]
+
+triggeremu_data_config_icarus.simulationPrepWest: [
+  # tiling
+    trigtilewindowORW
+  # sliding
+  , trigslidewindowORW
+]
+
+triggeremu_data_config_icarus.simulationPrepFull: [
+  # tiling
+    trigtilewindowOR
+  # sliding
+  , trigslidewindowOR
+]
+
+
+triggeremu_data_config_icarus.simulationEast: [
+
+  # trigger simulation: tiling
+  , simTiledORM1E, simTiledORM2E, simTiledORM3E, simTiledORM4E, simTiledORM5E, simTiledORM6E
+  , simTiledORM3O3E, simTiledORM4O4E, simTiledORM5O5E, simTiledORM6O6E
+  , simTiledORS3E, simTiledORS5E, simTiledORS8E, simTiledORS10E, simTiledORS15E
+  
+  # trigger simulation: sliding
+  , simSlidingORM1E, simSlidingORM2E, simSlidingORM3E, simSlidingORM4E, simSlidingORM5E, simSlidingORM6E
+  , simSlidingORM3O3E, simSlidingORM4O4E, simSlidingORM5O5E, simSlidingORM6O6E
+  , simSlidingORS3E, simSlidingORS5E, simSlidingORS8E, simSlidingORS10E, simSlidingORS15E
+  
+]
+triggeremu_data_config_icarus.simulationWest: [
+
+  # trigger simulation: tiling
+  , simTiledORM1W, simTiledORM2W, simTiledORM3W, simTiledORM4W, simTiledORM5W, simTiledORM6W
+  , simTiledORM3O3W, simTiledORM4O4W, simTiledORM5O5W, simTiledORM6O6W
+  , simTiledORS3W, simTiledORS5W, simTiledORS8W, simTiledORS10W, simTiledORS15W
+  # trigger simulation: sliding
+  
+  , simSlidingORM1W, simSlidingORM2W, simSlidingORM3W, simSlidingORM4W, simSlidingORM5W, simSlidingORM6W
+  , simSlidingORM3O3W, simSlidingORM4O4W, simSlidingORM5O5W, simSlidingORM6O6W
+  , simSlidingORS3W, simSlidingORS5W, simSlidingORS8W, simSlidingORS10W, simSlidingORS15W
+  
+]
+
+triggeremu_data_config_icarus.simulationFull: [
+
+  # trigger simulation: tiling
+  , simTiledORM1, simTiledORM2, simTiledORM3, simTiledORM4, simTiledORM5, simTiledORM6
+  , simTiledORM3O3, simTiledORM4O4, simTiledORM5O5, simTiledORM6O6
+  , simTiledORS3, simTiledORS5, simTiledORS8, simTiledORS10, simTiledORS15
+  
+  # trigger simulation: sliding
+  , simSlidingORM1, simSlidingORM2, simSlidingORM3, simSlidingORM4, simSlidingORM5, simSlidingORM6
+  , simSlidingORM3O3, simSlidingORM4O4, simSlidingORM5O5, simSlidingORM6O6
+  , simSlidingORS3, simSlidingORS5, simSlidingORS8, simSlidingORS10, simSlidingORS15
+  
+]
+
+# producer paths: discrimination (Base) + windows (Prep) + simulation and gate
+triggeremu_data_config_icarus.producerpathE: [
+  @sequence::triggeremu_data_config_icarus.simulationBase,
+  @sequence::triggeremu_data_config_icarus.simulationPrepEast,
+  @sequence::triggeremu_data_config_icarus.simulationEast
+]
+
+triggeremu_data_config_icarus.producerpathW: [
+  @sequence::triggeremu_data_config_icarus.simulationBase,
+  @sequence::triggeremu_data_config_icarus.simulationPrepWest,
+  @sequence::triggeremu_data_config_icarus.simulationWest
+]
+
+triggeremu_data_config_icarus.producerpath: [
+  @sequence::triggeremu_data_config_icarus.simulationBase,
+  @sequence::triggeremu_data_config_icarus.simulationPrepFull,
+  @sequence::triggeremu_data_config_icarus.simulationFull
+]
+
+
+# ------------------------------------------------------------------------------
+# additional regional definitions for OR pairing
+
+triggeremu_data_config_icarus.producers.trigtilewindowORE: {
+  @table::triggeremu_data_config_icarus.producers.trigtilewindowOR
+  EnableOnlyWindows: @local::triggeremu_data_config_icarus.settings.EnabledWindowsTilingE
+}
+
+triggeremu_data_config_icarus.producers.trigtilewindowORW: {
+  @table::triggeremu_data_config_icarus.producers.trigtilewindowOR
+  EnableOnlyWindows: @local::triggeremu_data_config_icarus.settings.EnabledWindowsTilingW
+}
+
+
+triggeremu_data_config_icarus.producers.trigslidewindowOR: {
+  @table::triggeremu_data_config_icarus.producers.trigtilewindowOR
+  
+  Stride: 15
+}
+
+triggeremu_data_config_icarus.producers.trigslidewindowORE: {
+  @table::triggeremu_data_config_icarus.producers.trigslidewindowOR
+  EnableOnlyWindows: @local::triggeremu_data_config_icarus.settings.EnabledWindowsSlidingE
+}
+
+triggeremu_data_config_icarus.producers.trigslidewindowORW: {
+  @table::triggeremu_data_config_icarus.producers.trigslidewindowOR
+  EnableOnlyWindows: @local::triggeremu_data_config_icarus.settings.EnabledWindowsSlidingW
+}
+
+
+#
+# trigger objects are produced only for some selected combinations:
+# requirement of 3 to 6 open LVDS gates, with and without opposite window,
+# and requirement on the sum of open LVDS gates;
+# for sliding and tiled 30-PMT windows,
+# across the whole detector and separately on east and west cryostat
+#
+triggeremu_data_config_icarus.producers.simTiledORM2: {
+  @table::triggeremu_data_config_icarus.producers.simTiledORM1
+  Pattern: @local::triggeremu_data_config_icarus.settings.SlidingWindowTriggerPatternsSingleWindow[1]  # M2
+}
+
+triggeremu_data_config_icarus.producers.simTiledORM3: {
+  @table::triggeremu_data_config_icarus.producers.simTiledORM1
+  Pattern: @local::triggeremu_data_config_icarus.settings.SlidingWindowTriggerPatternsSingleWindow[2]  # M3
+}
+
+triggeremu_data_config_icarus.producers.simTiledORM4: {
+  @table::triggeremu_data_config_icarus.producers.simTiledORM1
+  Pattern: @local::triggeremu_data_config_icarus.settings.SlidingWindowTriggerPatternsSingleWindow[3]  # M4
+}
+
+triggeremu_data_config_icarus.producers.simTiledORM5: {
+  @table::triggeremu_data_config_icarus.producers.simTiledORM1
+  Pattern: @local::triggeremu_data_config_icarus.settings.SlidingWindowTriggerPatternsSingleWindow[4]  # M5
+}
+
+triggeremu_data_config_icarus.producers.simTiledORM6: {
+  @table::triggeremu_data_config_icarus.producers.simTiledORM1
+  Pattern: @local::triggeremu_data_config_icarus.settings.SlidingWindowTriggerPatternsSingleWindow[5]  # M6
+}
+
+triggeremu_data_config_icarus.producers.simTiledORM3O3: {
+  @table::triggeremu_data_config_icarus.producers.simTiledORM1
+  Pattern: @local::triggeremu_data_config_icarus.settings.SlidingWindowTriggerPatternsWindowPair[2]  # M3O3
+}
+
+triggeremu_data_config_icarus.producers.simTiledORM4O4: {
+  @table::triggeremu_data_config_icarus.producers.simTiledORM1
+  Pattern: @local::triggeremu_data_config_icarus.settings.SlidingWindowTriggerPatternsWindowPair[3]  # M4O4
+}
+
+triggeremu_data_config_icarus.producers.simTiledORM5O5: {
+  @table::triggeremu_data_config_icarus.producers.simTiledORM1
+  Pattern: @local::triggeremu_data_config_icarus.settings.SlidingWindowTriggerPatternsWindowPair[4]  # M5O5
+}
+
+triggeremu_data_config_icarus.producers.simTiledORM6O6: {
+  @table::triggeremu_data_config_icarus.producers.simTiledORM1
+  Pattern: @local::triggeremu_data_config_icarus.settings.SlidingWindowTriggerPatternsWindowPair[5]  # M6O6
+}
+
+triggeremu_data_config_icarus.producers.simTiledORS3: {
+  @table::triggeremu_data_config_icarus.producers.simTiledORM1
+  Pattern: @local::triggeremu_data_config_icarus.settings.SlidingWindowTriggerPatternsWindowPair[6]  # S3
+}
+
+triggeremu_data_config_icarus.producers.simTiledORS5: {
+  @table::triggeremu_data_config_icarus.producers.simTiledORM1
+  Pattern: @local::triggeremu_data_config_icarus.settings.SlidingWindowTriggerPatternsWindowPair[7]  # S5
+}
+
+triggeremu_data_config_icarus.producers.simTiledORS8: {
+  @table::triggeremu_data_config_icarus.producers.simTiledORM1
+  Pattern: @local::triggeremu_data_config_icarus.settings.SlidingWindowTriggerPatternsWindowPair[8]  # S8
+}
+
+triggeremu_data_config_icarus.producers.simTiledORS10: {
+  @table::triggeremu_data_config_icarus.producers.simTiledORM1
+  Pattern: @local::triggeremu_data_config_icarus.settings.SlidingWindowTriggerPatternsWindowPair[9]  # S10
+}
+
+triggeremu_data_config_icarus.producers.simTiledORS15: {
+  @table::triggeremu_data_config_icarus.producers.simTiledORM1
+  Pattern: @local::triggeremu_data_config_icarus.settings.SlidingWindowTriggerPatternsWindowPair[10]  # S15
+}
+
+triggeremu_data_config_icarus.producers.simSlidingORM1: {
+  @table::triggeremu_data_config_icarus.producers.simTiledORM1
+  TriggerGatesTag: trigslidewindowOR
+}
+
+triggeremu_data_config_icarus.producers.simSlidingORM2: {
+  @table::triggeremu_data_config_icarus.producers.simSlidingORM1
+  Pattern: @local::triggeremu_data_config_icarus.settings.SlidingWindowTriggerPatternsSingleWindow[1]  # M2
+}
+
+triggeremu_data_config_icarus.producers.simSlidingORM3: {
+  @table::triggeremu_data_config_icarus.producers.simSlidingORM1
+  Pattern: @local::triggeremu_data_config_icarus.settings.SlidingWindowTriggerPatternsSingleWindow[2]  # M3
+}
+
+triggeremu_data_config_icarus.producers.simSlidingORM4: {
+  @table::triggeremu_data_config_icarus.producers.simSlidingORM1
+  Pattern: @local::triggeremu_data_config_icarus.settings.SlidingWindowTriggerPatternsSingleWindow[3]  # M4
+}
+
+triggeremu_data_config_icarus.producers.simSlidingORM5: {
+  @table::triggeremu_data_config_icarus.producers.simSlidingORM1
+  Pattern: @local::triggeremu_data_config_icarus.settings.SlidingWindowTriggerPatternsSingleWindow[4]  # M5
+}
+
+triggeremu_data_config_icarus.producers.simSlidingORM6: {
+  @table::triggeremu_data_config_icarus.producers.simSlidingORM1
+  Pattern: @local::triggeremu_data_config_icarus.settings.SlidingWindowTriggerPatternsSingleWindow[5]  # M6
+}
+
+triggeremu_data_config_icarus.producers.simSlidingORM3O3: {
+  @table::triggeremu_data_config_icarus.producers.simSlidingORM1
+  Pattern: @local::triggeremu_data_config_icarus.settings.SlidingWindowTriggerPatternsWindowPair[2]  # M3O3
+}
+
+triggeremu_data_config_icarus.producers.simSlidingORM4O4: {
+  @table::triggeremu_data_config_icarus.producers.simSlidingORM1
+  Pattern: @local::triggeremu_data_config_icarus.settings.SlidingWindowTriggerPatternsWindowPair[3]  # M4O4
+}
+
+triggeremu_data_config_icarus.producers.simSlidingORM5O5: {
+  @table::triggeremu_data_config_icarus.producers.simSlidingORM1
+  Pattern: @local::triggeremu_data_config_icarus.settings.SlidingWindowTriggerPatternsWindowPair[4]  # M5O5
+}
+
+triggeremu_data_config_icarus.producers.simSlidingORM6O6: {
+  @table::triggeremu_data_config_icarus.producers.simSlidingORM1
+  Pattern: @local::triggeremu_data_config_icarus.settings.SlidingWindowTriggerPatternsWindowPair[5]  # M6O6
+}
+
+triggeremu_data_config_icarus.producers.simSlidingORS3: {
+  @table::triggeremu_data_config_icarus.producers.simSlidingORM1
+  Pattern: @local::triggeremu_data_config_icarus.settings.SlidingWindowTriggerPatternsWindowPair[6]  # S3
+}
+
+triggeremu_data_config_icarus.producers.simSlidingORS5: {
+  @table::triggeremu_data_config_icarus.producers.simSlidingORM1
+  Pattern: @local::triggeremu_data_config_icarus.settings.SlidingWindowTriggerPatternsWindowPair[7]  # S5
+}
+
+triggeremu_data_config_icarus.producers.simSlidingORS8: {
+  @table::triggeremu_data_config_icarus.producers.simSlidingORM1
+  Pattern: @local::triggeremu_data_config_icarus.settings.SlidingWindowTriggerPatternsWindowPair[8]  # S8
+}
+
+triggeremu_data_config_icarus.producers.simSlidingORS10: {
+  @table::triggeremu_data_config_icarus.producers.simSlidingORM1
+  Pattern: @local::triggeremu_data_config_icarus.settings.SlidingWindowTriggerPatternsWindowPair[9]  # S10
+}
+
+triggeremu_data_config_icarus.producers.simSlidingORS15: {
+  @table::triggeremu_data_config_icarus.producers.simSlidingORM1
+  Pattern: @local::triggeremu_data_config_icarus.settings.SlidingWindowTriggerPatternsWindowPair[10]  # S15
+}
+
+
+#
+# East cryostat only
+#
+
+triggeremu_data_config_icarus.producers.simTiledORM1E    : { @table::triggeremu_data_config_icarus.producers.simTiledORM1       TriggerGatesTag: "trigtilewindowORE"   BeamGates: @local::triggeremu_data_config_icarus.input.gatesForTriggerE }
+triggeremu_data_config_icarus.producers.simTiledORM2E    : { @table::triggeremu_data_config_icarus.producers.simTiledORM2       TriggerGatesTag: "trigtilewindowORE"   BeamGates: @local::triggeremu_data_config_icarus.input.gatesForTriggerE }
+triggeremu_data_config_icarus.producers.simTiledORM3E    : { @table::triggeremu_data_config_icarus.producers.simTiledORM3       TriggerGatesTag: "trigtilewindowORE"   BeamGates: @local::triggeremu_data_config_icarus.input.gatesForTriggerE }
+triggeremu_data_config_icarus.producers.simTiledORM4E    : { @table::triggeremu_data_config_icarus.producers.simTiledORM4       TriggerGatesTag: "trigtilewindowORE"   BeamGates: @local::triggeremu_data_config_icarus.input.gatesForTriggerE }
+triggeremu_data_config_icarus.producers.simTiledORM5E    : { @table::triggeremu_data_config_icarus.producers.simTiledORM5       TriggerGatesTag: "trigtilewindowORE"   BeamGates: @local::triggeremu_data_config_icarus.input.gatesForTriggerE }
+triggeremu_data_config_icarus.producers.simTiledORM6E    : { @table::triggeremu_data_config_icarus.producers.simTiledORM6       TriggerGatesTag: "trigtilewindowORE"   BeamGates: @local::triggeremu_data_config_icarus.input.gatesForTriggerE }
+triggeremu_data_config_icarus.producers.simTiledORM3O3E  : { @table::triggeremu_data_config_icarus.producers.simTiledORM3O3     TriggerGatesTag: "trigtilewindowORE"   BeamGates: @local::triggeremu_data_config_icarus.input.gatesForTriggerE }
+triggeremu_data_config_icarus.producers.simTiledORM4O4E  : { @table::triggeremu_data_config_icarus.producers.simTiledORM4O4     TriggerGatesTag: "trigtilewindowORE"   BeamGates: @local::triggeremu_data_config_icarus.input.gatesForTriggerE }
+triggeremu_data_config_icarus.producers.simTiledORM5O5E  : { @table::triggeremu_data_config_icarus.producers.simTiledORM5O5     TriggerGatesTag: "trigtilewindowORE"   BeamGates: @local::triggeremu_data_config_icarus.input.gatesForTriggerE }
+triggeremu_data_config_icarus.producers.simTiledORM6O6E  : { @table::triggeremu_data_config_icarus.producers.simTiledORM6O6     TriggerGatesTag: "trigtilewindowORE"   BeamGates: @local::triggeremu_data_config_icarus.input.gatesForTriggerE }
+triggeremu_data_config_icarus.producers.simTiledORS3E    : { @table::triggeremu_data_config_icarus.producers.simTiledORS3       TriggerGatesTag: "trigtilewindowORE"   BeamGates: @local::triggeremu_data_config_icarus.input.gatesForTriggerE }
+triggeremu_data_config_icarus.producers.simTiledORS5E    : { @table::triggeremu_data_config_icarus.producers.simTiledORS5       TriggerGatesTag: "trigtilewindowORE"   BeamGates: @local::triggeremu_data_config_icarus.input.gatesForTriggerE }
+triggeremu_data_config_icarus.producers.simTiledORS8E    : { @table::triggeremu_data_config_icarus.producers.simTiledORS8       TriggerGatesTag: "trigtilewindowORE"   BeamGates: @local::triggeremu_data_config_icarus.input.gatesForTriggerE }
+triggeremu_data_config_icarus.producers.simTiledORS10E   : { @table::triggeremu_data_config_icarus.producers.simTiledORS10      TriggerGatesTag: "trigtilewindowORE"   BeamGates: @local::triggeremu_data_config_icarus.input.gatesForTriggerE }
+triggeremu_data_config_icarus.producers.simTiledORS15E   : { @table::triggeremu_data_config_icarus.producers.simTiledORS15      TriggerGatesTag: "trigtilewindowORE"   BeamGates: @local::triggeremu_data_config_icarus.input.gatesForTriggerE }
+triggeremu_data_config_icarus.producers.simSlidingORM1E  : { @table::triggeremu_data_config_icarus.producers.simSlidingORM1     TriggerGatesTag: "trigslidewindowORE"  BeamGates: @local::triggeremu_data_config_icarus.input.gatesForTriggerE }
+triggeremu_data_config_icarus.producers.simSlidingORM2E  : { @table::triggeremu_data_config_icarus.producers.simSlidingORM2     TriggerGatesTag: "trigslidewindowORE"  BeamGates: @local::triggeremu_data_config_icarus.input.gatesForTriggerE }
+triggeremu_data_config_icarus.producers.simSlidingORM3E  : { @table::triggeremu_data_config_icarus.producers.simSlidingORM3     TriggerGatesTag: "trigslidewindowORE"  BeamGates: @local::triggeremu_data_config_icarus.input.gatesForTriggerE }
+triggeremu_data_config_icarus.producers.simSlidingORM4E  : { @table::triggeremu_data_config_icarus.producers.simSlidingORM4     TriggerGatesTag: "trigslidewindowORE"  BeamGates: @local::triggeremu_data_config_icarus.input.gatesForTriggerE }
+triggeremu_data_config_icarus.producers.simSlidingORM5E  : { @table::triggeremu_data_config_icarus.producers.simSlidingORM5     TriggerGatesTag: "trigslidewindowORE"  BeamGates: @local::triggeremu_data_config_icarus.input.gatesForTriggerE }
+triggeremu_data_config_icarus.producers.simSlidingORM6E  : { @table::triggeremu_data_config_icarus.producers.simSlidingORM6     TriggerGatesTag: "trigslidewindowORE"  BeamGates: @local::triggeremu_data_config_icarus.input.gatesForTriggerE }
+triggeremu_data_config_icarus.producers.simSlidingORM3O3E: { @table::triggeremu_data_config_icarus.producers.simSlidingORM3O3   TriggerGatesTag: "trigslidewindowORE"  BeamGates: @local::triggeremu_data_config_icarus.input.gatesForTriggerE }
+triggeremu_data_config_icarus.producers.simSlidingORM4O4E: { @table::triggeremu_data_config_icarus.producers.simSlidingORM4O4   TriggerGatesTag: "trigslidewindowORE"  BeamGates: @local::triggeremu_data_config_icarus.input.gatesForTriggerE }
+triggeremu_data_config_icarus.producers.simSlidingORM5O5E: { @table::triggeremu_data_config_icarus.producers.simSlidingORM5O5   TriggerGatesTag: "trigslidewindowORE"  BeamGates: @local::triggeremu_data_config_icarus.input.gatesForTriggerE }
+triggeremu_data_config_icarus.producers.simSlidingORM6O6E: { @table::triggeremu_data_config_icarus.producers.simSlidingORM6O6   TriggerGatesTag: "trigslidewindowORE"  BeamGates: @local::triggeremu_data_config_icarus.input.gatesForTriggerE }
+triggeremu_data_config_icarus.producers.simSlidingORS3E  : { @table::triggeremu_data_config_icarus.producers.simSlidingORS3     TriggerGatesTag: "trigslidewindowORE"  BeamGates: @local::triggeremu_data_config_icarus.input.gatesForTriggerE }
+triggeremu_data_config_icarus.producers.simSlidingORS5E  : { @table::triggeremu_data_config_icarus.producers.simSlidingORS5     TriggerGatesTag: "trigslidewindowORE"  BeamGates: @local::triggeremu_data_config_icarus.input.gatesForTriggerE }
+triggeremu_data_config_icarus.producers.simSlidingORS8E  : { @table::triggeremu_data_config_icarus.producers.simSlidingORS8     TriggerGatesTag: "trigslidewindowORE"  BeamGates: @local::triggeremu_data_config_icarus.input.gatesForTriggerE }
+triggeremu_data_config_icarus.producers.simSlidingORS10E : { @table::triggeremu_data_config_icarus.producers.simSlidingORS10    TriggerGatesTag: "trigslidewindowORE"  BeamGates: @local::triggeremu_data_config_icarus.input.gatesForTriggerE }
+triggeremu_data_config_icarus.producers.simSlidingORS15E : { @table::triggeremu_data_config_icarus.producers.simSlidingORS15    TriggerGatesTag: "trigslidewindowORE"  BeamGates: @local::triggeremu_data_config_icarus.input.gatesForTriggerE }
+
+
+#
+# West cryostat only
+#
+
+triggeremu_data_config_icarus.producers.simTiledORM1W    : { @table::triggeremu_data_config_icarus.producers.simTiledORM1       TriggerGatesTag: "trigtilewindowORW"   BeamGates: @local::triggeremu_data_config_icarus.input.gatesForTriggerW }
+triggeremu_data_config_icarus.producers.simTiledORM2W    : { @table::triggeremu_data_config_icarus.producers.simTiledORM2       TriggerGatesTag: "trigtilewindowORW"   BeamGates: @local::triggeremu_data_config_icarus.input.gatesForTriggerW }
+triggeremu_data_config_icarus.producers.simTiledORM3W    : { @table::triggeremu_data_config_icarus.producers.simTiledORM3       TriggerGatesTag: "trigtilewindowORW"   BeamGates: @local::triggeremu_data_config_icarus.input.gatesForTriggerW }
+triggeremu_data_config_icarus.producers.simTiledORM4W    : { @table::triggeremu_data_config_icarus.producers.simTiledORM4       TriggerGatesTag: "trigtilewindowORW"   BeamGates: @local::triggeremu_data_config_icarus.input.gatesForTriggerW }
+triggeremu_data_config_icarus.producers.simTiledORM5W    : { @table::triggeremu_data_config_icarus.producers.simTiledORM5       TriggerGatesTag: "trigtilewindowORW"   BeamGates: @local::triggeremu_data_config_icarus.input.gatesForTriggerW }
+triggeremu_data_config_icarus.producers.simTiledORM6W    : { @table::triggeremu_data_config_icarus.producers.simTiledORM6       TriggerGatesTag: "trigtilewindowORW"   BeamGates: @local::triggeremu_data_config_icarus.input.gatesForTriggerW }
+triggeremu_data_config_icarus.producers.simTiledORM3O3W  : { @table::triggeremu_data_config_icarus.producers.simTiledORM3O3     TriggerGatesTag: "trigtilewindowORW"   BeamGates: @local::triggeremu_data_config_icarus.input.gatesForTriggerW }
+triggeremu_data_config_icarus.producers.simTiledORM4O4W  : { @table::triggeremu_data_config_icarus.producers.simTiledORM4O4     TriggerGatesTag: "trigtilewindowORW"   BeamGates: @local::triggeremu_data_config_icarus.input.gatesForTriggerW }
+triggeremu_data_config_icarus.producers.simTiledORM5O5W  : { @table::triggeremu_data_config_icarus.producers.simTiledORM5O5     TriggerGatesTag: "trigtilewindowORW"   BeamGates: @local::triggeremu_data_config_icarus.input.gatesForTriggerW }
+triggeremu_data_config_icarus.producers.simTiledORM6O6W  : { @table::triggeremu_data_config_icarus.producers.simTiledORM6O6     TriggerGatesTag: "trigtilewindowORW"   BeamGates: @local::triggeremu_data_config_icarus.input.gatesForTriggerW }
+triggeremu_data_config_icarus.producers.simTiledORS3W    : { @table::triggeremu_data_config_icarus.producers.simTiledORS3       TriggerGatesTag: "trigtilewindowORW"   BeamGates: @local::triggeremu_data_config_icarus.input.gatesForTriggerW }
+triggeremu_data_config_icarus.producers.simTiledORS5W    : { @table::triggeremu_data_config_icarus.producers.simTiledORS5       TriggerGatesTag: "trigtilewindowORW"   BeamGates: @local::triggeremu_data_config_icarus.input.gatesForTriggerW }
+triggeremu_data_config_icarus.producers.simTiledORS8W    : { @table::triggeremu_data_config_icarus.producers.simTiledORS8       TriggerGatesTag: "trigtilewindowORW"   BeamGates: @local::triggeremu_data_config_icarus.input.gatesForTriggerW }
+triggeremu_data_config_icarus.producers.simTiledORS10W   : { @table::triggeremu_data_config_icarus.producers.simTiledORS10      TriggerGatesTag: "trigtilewindowORW"   BeamGates: @local::triggeremu_data_config_icarus.input.gatesForTriggerW }
+triggeremu_data_config_icarus.producers.simTiledORS15W   : { @table::triggeremu_data_config_icarus.producers.simTiledORS15      TriggerGatesTag: "trigtilewindowORW"   BeamGates: @local::triggeremu_data_config_icarus.input.gatesForTriggerW }
+triggeremu_data_config_icarus.producers.simSlidingORM1W  : { @table::triggeremu_data_config_icarus.producers.simSlidingORM1     TriggerGatesTag: "trigslidewindowORW"  BeamGates: @local::triggeremu_data_config_icarus.input.gatesForTriggerW }
+triggeremu_data_config_icarus.producers.simSlidingORM2W  : { @table::triggeremu_data_config_icarus.producers.simSlidingORM2     TriggerGatesTag: "trigslidewindowORW"  BeamGates: @local::triggeremu_data_config_icarus.input.gatesForTriggerW }
+triggeremu_data_config_icarus.producers.simSlidingORM3W  : { @table::triggeremu_data_config_icarus.producers.simSlidingORM3     TriggerGatesTag: "trigslidewindowORW"  BeamGates: @local::triggeremu_data_config_icarus.input.gatesForTriggerW }
+triggeremu_data_config_icarus.producers.simSlidingORM4W  : { @table::triggeremu_data_config_icarus.producers.simSlidingORM4     TriggerGatesTag: "trigslidewindowORW"  BeamGates: @local::triggeremu_data_config_icarus.input.gatesForTriggerW }
+triggeremu_data_config_icarus.producers.simSlidingORM5W  : { @table::triggeremu_data_config_icarus.producers.simSlidingORM5     TriggerGatesTag: "trigslidewindowORW"  BeamGates: @local::triggeremu_data_config_icarus.input.gatesForTriggerW }
+triggeremu_data_config_icarus.producers.simSlidingORM6W  : { @table::triggeremu_data_config_icarus.producers.simSlidingORM6     TriggerGatesTag: "trigslidewindowORW"  BeamGates: @local::triggeremu_data_config_icarus.input.gatesForTriggerW }
+triggeremu_data_config_icarus.producers.simSlidingORM3O3W: { @table::triggeremu_data_config_icarus.producers.simSlidingORM3O3   TriggerGatesTag: "trigslidewindowORW"  BeamGates: @local::triggeremu_data_config_icarus.input.gatesForTriggerW }
+triggeremu_data_config_icarus.producers.simSlidingORM4O4W: { @table::triggeremu_data_config_icarus.producers.simSlidingORM4O4   TriggerGatesTag: "trigslidewindowORW"  BeamGates: @local::triggeremu_data_config_icarus.input.gatesForTriggerW }
+triggeremu_data_config_icarus.producers.simSlidingORM5O5W: { @table::triggeremu_data_config_icarus.producers.simSlidingORM5O5   TriggerGatesTag: "trigslidewindowORW"  BeamGates: @local::triggeremu_data_config_icarus.input.gatesForTriggerW }
+triggeremu_data_config_icarus.producers.simSlidingORM6O6W: { @table::triggeremu_data_config_icarus.producers.simSlidingORM6O6   TriggerGatesTag: "trigslidewindowORW"  BeamGates: @local::triggeremu_data_config_icarus.input.gatesForTriggerW }
+triggeremu_data_config_icarus.producers.simSlidingORS3W  : { @table::triggeremu_data_config_icarus.producers.simSlidingORS3     TriggerGatesTag: "trigslidewindowORW"  BeamGates: @local::triggeremu_data_config_icarus.input.gatesForTriggerW }
+triggeremu_data_config_icarus.producers.simSlidingORS5W  : { @table::triggeremu_data_config_icarus.producers.simSlidingORS5     TriggerGatesTag: "trigslidewindowORW"  BeamGates: @local::triggeremu_data_config_icarus.input.gatesForTriggerW }
+triggeremu_data_config_icarus.producers.simSlidingORS8W  : { @table::triggeremu_data_config_icarus.producers.simSlidingORS8     TriggerGatesTag: "trigslidewindowORW"  BeamGates: @local::triggeremu_data_config_icarus.input.gatesForTriggerW }
+triggeremu_data_config_icarus.producers.simSlidingORS10W : { @table::triggeremu_data_config_icarus.producers.simSlidingORS10    TriggerGatesTag: "trigslidewindowORW"  BeamGates: @local::triggeremu_data_config_icarus.input.gatesForTriggerW }
+triggeremu_data_config_icarus.producers.simSlidingORS15W : { @table::triggeremu_data_config_icarus.producers.simSlidingORS15    TriggerGatesTag: "trigslidewindowORW"  BeamGates: @local::triggeremu_data_config_icarus.input.gatesForTriggerW }
+
+
+
+# ------------------------------------------------------------------------------
+# add debug output to its own file
+#
+triggeremu_data_config_icarus.messagedestinations: {
+
+  TriggerEmuTriggerThresholdLog: {
+    type:       file
+    filename:  "TriggerEmuTriggerThresholds.log"
+    threshold:  DEBUG
+    categories: {
+      TriggerEmuDiscriminatePMTwaveforms: { limit: -1 }
+      default: { limit: 0 }
+    }
+  }
+
+  TriggerEmuLVDSORLog: {
+    type:       file
+    filename:  "TriggerEmuLVDS-OR.log"
+    threshold:  DEBUG
+    categories: {
+      TriggerEmuLVDSgatesOR: { limit: -1 }
+      default:   { limit: 0 }
+    }
+  }
+
+  TriggerEmuSlidingWindowORLog: {
+    type:       file
+    filename:  "TriggerEmuSlidingWindowTrigger-OR.log"
+    threshold:  DEBUG
+    categories: {
+      TriggerEmuSlidingWindowTriggerOR: { limit: -1 }
+      default:   { limit: 0 }
+    }
+  }
+
+  TriggerEmuSlidingORsimLog: {
+    type:       file
+    filename:  "TriggerEmuSlidingWindowTriggerSimulationOR.log"
+    threshold:  DEBUG
+    categories: {
+      TriggerEmuSlidingWindowTriggerSimulationOR:                            { limit: -1 }
+      TriggerEmuSlidingWindowTriggerSimulationOR_WindowMapManager:           { limit: -1 }
+      TriggerEmuSlidingWindowTriggerSimulationOR_WindowMapManager_Extractor: { limit: -1 }
+      default:                                                               { limit: 0 }
+    }
+  }
+
+} # triggeremu_data_config_icarus.messagedestinations
+
+
+# ------------------------------------------------------------------------------
+END_PROLOG
+# ------------------------------------------------------------------------------
+

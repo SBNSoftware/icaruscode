@@ -1,0 +1,373 @@
+##
+##  ICARUS definitions for the first stage of data processing
+##  modeled on standard version
+##
+
+#include "services_common_icarus.fcl"
+
+#include "decoderdefs_icarus.fcl"
+#include "recowire_icarus.fcl"
+#include "hitfindermodules_icarus.fcl"
+#include "icarus_ophitfinder.fcl"
+#include "icarus_flashfinder.fcl"
+#include "trigger_emulation_icarus.fcl"
+#include "crt_decoderdefs_icarus.fcl"
+#include "wcls-decode-to-sig-base.fcl"
+
+BEGIN_PROLOG
+
+### Analyzers employed during stage 0 processing ###
+icarus_stage0_analyzers:
+{
+  purityinfoana0: { module_type:     "TPCPurityInfoAna"
+                    PurityInfoLabel: "purityana0"
+                    PrintInfo:       false
+                    SelectEvents:    [ reco ]
+                  }
+  purityinfoana1: { module_type:     "TPCPurityInfoAna"
+                    PurityInfoLabel: "purityana1"
+                    PrintInfo:       false
+                    SelectEvents:    [ reco ]
+                  }
+}
+
+# set the name of our `extractPMTconfig` and `extractTriggerConfig` for our decoders
+decodeTriggerV2.DecoderTool.TrigConfigLabel: triggerconfig
+decodePMT.PMTconfigTag: pmtconfig
+decodePMT.TriggerTag:   daqTrigger
+
+### This is the complete list of all producers! ###
+icarus_stage0_producers:
+{
+
+  ### configuration extraction
+  triggerconfig:                  @local::extractTriggerConfig
+  pmtconfig:                      @local::extractPMTconfig
+
+  ### Decoder definitions
+  daqTrigger:                     @local::decodeTrigger
+
+  daqTPC:                         @local::decodeTPC
+
+  daqTPCROI:                      @local::decodeTPCROI
+
+  daqPMT:                         @local::decodePMT
+
+  daqCRT:                         @local::crtdaq_icarus
+
+  daqTrigger:                     @local::decodeTriggerV2
+
+  ### calwire producers
+  decon1droi:                     @local::icarus_decon1droi
+
+  ### wire-cell decon producers
+  decon2droi:                     @local::standard_wirecell_sigproc
+  decon2droiEE:                   @local::standard_wirecell_sigproc
+  decon2droiEW:                   @local::standard_wirecell_sigproc
+  decon2droiWE:                   @local::standard_wirecell_sigproc
+  decon2droiWW:                   @local::standard_wirecell_sigproc
+
+  ### ROI finding on complete deconvolved waveforms
+  roifinder:                      @local::icarus_roifinder
+  roifinder2d:                    @local::icarus_roifinder
+
+  ### hit-finder producers
+  gaushit:                        @local::gaus_hitfinder_icarus
+  gaushitTPCWW:                   @local::gaus_hitfinder_icarus
+  gaushitTPCWE:                   @local::gaus_hitfinder_icarus
+  gaushitTPCEW:                   @local::gaus_hitfinder_icarus
+  gaushitTPCEE:                   @local::gaus_hitfinder_icarus
+
+  ### trigger emulation foundation
+  pmtconfigbaselines:             @local::icarus_pmtconfigbaselines
+  pmtthr:                         @local::icarus_pmtdiscriminatethr
+  
+  ### Optical hit finder
+  ophit:                          @local::icarus_ophit_data
+  ophitfull:                      @local::icarus_ophitdebugger_data
+  opflashCryoE:                   @local::ICARUSSimpleFlashDataCryoE
+  opflashCryoW:                   @local::ICARUSSimpleFlashDataCryoW
+
+  ### Purity monitoring
+  purityana0:                     { module_type: "ICARUSPurityDQM" }
+  purityana1:                     { module_type: "ICARUSPurityDQM" }
+}
+
+icarus_stage0_filters:
+{
+   flashfilterBNB: { module_type:         "FilterOpFlash" 
+                     OpFlashProducerList: ["opflashCryoE","opflashCryoW"] 
+#                     WindowStartTime:     -1489.6 # -1489.4 - 0.2us safe margin
+#                     WindowEndTime:       -1487.6 # -1487.8 + 0.2us safe margin
+#                     WindowStartTime:     -1490.8 # 9.6 us - 1500 us offset - 0.4us safe margin
+#                     WindowEndTime:       -1488.4 # 11.2 -1500 us offset + 0.4us safe margin
+                     WindowStartTime:     -0.2 # Gate is now recentered by Gianluca/Andrea
+                     WindowEndTime:        1.8 
+                   }
+   flashfilterNuMI: { module_type:         "FilterOpFlash" 
+                      OpFlashProducerList: ["opflashCryoE","opflashCryoW"] 
+                      WindowStartTime:     -0.2 
+                      WindowEndTime:        9.8 
+                    }
+
+   triggerfilterBNB:       {  module_type:        "TriggerTypeFilter"
+                              TriggerDataLabel:   "daqTrigger"
+                              TriggerType:        "BNB"
+                           }
+
+   triggerfilterNuMI:      {  module_type:        "TriggerTypeFilter"
+                              TriggerDataLabel:   "daqTrigger"
+                              TriggerType:        "NuMI"
+                           }
+
+   triggerfilterOffbeamBNB:  {  module_type:        "TriggerTypeFilter"
+                                TriggerDataLabel:   "daqTrigger"
+                                TriggerType:        "OffbeamBNB"
+                             }
+
+   triggerfilterOffbeamNuMI: {  module_type:        "TriggerTypeFilter"
+                                TriggerDataLabel:   "daqTrigger"
+                                TriggerType:        "OffbeamNuMI"
+                             }
+
+
+   triggerfilterUnknown:  {  module_type:        "TriggerTypeFilter"
+                             TriggerDataLabel:   "daqTrigger"
+                             TriggerType:        "Unknown"
+                          }
+}
+
+
+### Below are a list of convenient sequences that can be used for production/typical users. ###
+
+icarus_stage0_trigger_BNB:         [ triggerconfig,
+                                     daqTrigger,
+                                     triggerfilterBNB 
+                                   ]
+
+icarus_stage0_trigger_NuMI:        [ triggerconfig,
+                                     daqTrigger,
+                                     triggerfilterNuMI 
+                                   ]
+
+icarus_stage0_trigger_OffbeamBNB:  [ triggerconfig,
+                                     daqTrigger,
+                                     triggerfilterOffbeamBNB 
+                                   ]
+
+icarus_stage0_trigger_OffbeamNuMI: [ triggerconfig,
+                                     daqTrigger,
+                                     triggerfilterOffbeamNuMI 
+                                   ]
+
+icarus_stage0_trigger_Unknown:     [ triggerconfig,
+                                     daqTrigger,
+                                     triggerfilterUnknown
+                                   ]
+
+icarus_stage0_multiTPC_TPC:        [ decon1droi,
+                                     roifinder
+                                   ]
+
+icarus_stage0_multiTPC_2d_TPC:     [ decon1droi,
+                                     roifinder,
+                                     decon2droiEE,
+                                     decon2droiEW,
+                                     decon2droiWE,
+                                     decon2droiWW,
+                                     roifinder2d
+                                   ]
+
+icarus_stage0_EastHits_TPC:        [ gaushitTPCEW,
+                                     gaushitTPCEE
+                                   ]
+
+icarus_stage0_WestHits_TPC:        [ gaushitTPCWW,
+                                     gaushitTPCWE
+                                   ]
+
+icarus_purity_monitor:             [
+                                     purityana0,
+                                     purityana1
+                                   ]
+
+icarus_stage0_PMT:                 [ triggerconfig,
+                                     daqTrigger,
+                                     pmtconfig,
+                                     daqPMT,
+                                     pmtconfigbaselines,
+                                     pmtthr,
+                                     ophit,
+                                     opflashCryoE,
+                                     opflashCryoW
+                                   ]
+
+icarus_stage0_PMT_BNB:             [ @sequence::icarus_stage0_PMT,
+                                     flashfilterBNB
+                                   ]
+
+icarus_stage0_PMT_NuMI:            [ @sequence::icarus_stage0_PMT,
+                                     flashfilterNuMI
+                                   ]
+
+icarus_stage0_multiTPC:            [ @sequence::icarus_stage0_multiTPC_TPC,
+                                     @sequence::icarus_stage0_EastHits_TPC,
+                                     @sequence::icarus_stage0_WestHits_TPC,
+                                     @sequence::icarus_purity_monitor
+                                   ]
+
+icarus_stage0_2d_multiTPC:         [ @sequence::icarus_stage0_multiTPC_2d_TPC,
+                                     @sequence::icarus_stage0_EastHits_TPC,
+                                     @sequence::icarus_stage0_WestHits_TPC,
+                                     @sequence::icarus_purity_monitor
+                                   ]
+
+icarus_stage0_crt:                 [
+                                     daqCRT
+                                   ]
+
+icarus_stage0_data:                [
+                                     @sequence::icarus_stage0_PMT, 
+                                     daqTPCROI, 
+                                     @sequence::icarus_stage0_multiTPC,
+                                     @sequence::icarus_stage0_crt
+                                   ]
+
+icarus_stage0_2d_data:             [
+                                     @sequence::icarus_stage0_PMT, 
+                                     daqTPCROI, 
+                                     @sequence::icarus_stage0_2d_multiTPC,
+                                     @sequence::icarus_stage0_crt
+                                   ]
+
+### Below we include overrides for the modules above
+
+### Handle multiple TPC readout with single instances
+icarus_stage0_producers.daqTPC.FragmentsLabelVec:                                              ["daq:PHYSCRATEDATATPCWW","daq:PHYSCRATEDATATPCWE","daq:PHYSCRATEDATATPCEW","daq:PHYSCRATEDATATPCEE"]
+icarus_stage0_producers.daqTPCROI.FragmentsLabelVec:                                           ["daq:PHYSCRATEDATATPCWW","daq:PHYSCRATEDATATPCWE","daq:PHYSCRATEDATATPCEW","daq:PHYSCRATEDATATPCEE"]
+
+### Set up for the 1D deconvolution - turn OFF ROI finding
+icarus_stage0_producers.decon1droi.RawDigitLabelVec:                                           ["daqTPCROI:PHYSCRATEDATATPCWW","daqTPCROI:PHYSCRATEDATATPCWE","daqTPCROI:PHYSCRATEDATATPCEW","daqTPCROI:PHYSCRATEDATATPCEE"]
+icarus_stage0_producers.decon1droi.ROIFinderToolVec.ROIFinderToolPlane0:                       @local::icarus_noproifinder_0
+icarus_stage0_producers.decon1droi.ROIFinderToolVec.ROIFinderToolPlane1:                       @local::icarus_noproifinder_1
+icarus_stage0_producers.decon1droi.ROIFinderToolVec.ROIFinderToolPlane2:                       @local::icarus_noproifinder_2
+
+### Set up for the 2D deconvolution
+icarus_stage0_producers.decon2droi.wcls_main.inputers:                                         ["wclsRawFrameSource:rfsrc0"]
+icarus_stage0_producers.decon2droi.wcls_main.outputers:                                        ["wclsFrameSaver:spsaver0"]
+icarus_stage0_producers.decon2droi.wcls_main.params.raw_input_label:                           "daqTPC"
+icarus_stage0_producers.decon2droi.wcls_main.params.tpc_volume_label:                          0
+icarus_stage0_producers.decon2droi.wcls_main.params.signal_output_form:                        "dense"
+
+icarus_stage0_producers.decon2droiEE.wcls_main.inputers:                                       ["wclsRawFrameSource:rfsrc0"]
+icarus_stage0_producers.decon2droiEE.wcls_main.outputers:                                      ["wclsFrameSaver:spsaver0"]
+icarus_stage0_producers.decon2droiEE.wcls_main.params.raw_input_label:                         "daqTPCROI:PHYSCRATEDATATPCEE"
+icarus_stage0_producers.decon2droiEE.wcls_main.params.tpc_volume_label:                        0
+icarus_stage0_producers.decon2droiEE.wcls_main.params.signal_output_form:                      "dense"
+
+icarus_stage0_producers.decon2droiEW.wcls_main.inputers:                                       ["wclsRawFrameSource:rfsrc1"]
+icarus_stage0_producers.decon2droiEW.wcls_main.outputers:                                      ["wclsFrameSaver:spsaver1"]
+icarus_stage0_producers.decon2droiEW.wcls_main.params.raw_input_label:                         "daqTPCROI:PHYSCRATEDATATPCEW"
+icarus_stage0_producers.decon2droiEW.wcls_main.params.tpc_volume_label:                        1
+icarus_stage0_producers.decon2droiEW.wcls_main.params.signal_output_form:                      "dense"
+
+icarus_stage0_producers.decon2droiWE.wcls_main.inputers:                                       ["wclsRawFrameSource:rfsrc2"]
+icarus_stage0_producers.decon2droiWE.wcls_main.outputers:                                      ["wclsFrameSaver:spsaver2"]
+icarus_stage0_producers.decon2droiWE.wcls_main.params.raw_input_label:                         "daqTPCROI:PHYSCRATEDATATPCWE"
+icarus_stage0_producers.decon2droiWE.wcls_main.params.tpc_volume_label:                        2
+icarus_stage0_producers.decon2droiWE.wcls_main.params.signal_output_form:                      "dense"
+
+icarus_stage0_producers.decon2droiWW.wcls_main.inputers:                                       ["wclsRawFrameSource:rfsrc3"]
+icarus_stage0_producers.decon2droiWW.wcls_main.outputers:                                      ["wclsFrameSaver:spsaver3"]
+icarus_stage0_producers.decon2droiWW.wcls_main.params.raw_input_label:                         "daqTPCROI:PHYSCRATEDATATPCWW"
+icarus_stage0_producers.decon2droiWW.wcls_main.params.tpc_volume_label:                        3
+icarus_stage0_producers.decon2droiWW.wcls_main.params.signal_output_form:                      "dense"
+
+### Set up to output ROIs from full waveforms
+icarus_stage0_producers.roifinder.WireModuleLabelVec:                                          ["decon1droi:PHYSCRATEDATATPCWW","decon1droi:PHYSCRATEDATATPCWE","decon1droi:PHYSCRATEDATATPCEW","decon1droi:PHYSCRATEDATATPCEE"]
+icarus_stage0_producers.roifinder.OutInstanceLabelVec:                                         ["PHYSCRATEDATATPCWW","PHYSCRATEDATATPCWE","PHYSCRATEDATATPCEW","PHYSCRATEDATATPCEE"]
+icarus_stage0_producers.roifinder.OutputMorphed:                                               false
+
+icarus_stage0_producers.roifinder2d.ROIFinderToolVec:                                          { ROIFinderPlane0: @local::decoderroifinder_0
+                                                                                                 ROIFinderPlane1: @local::decoderroifinder_1
+                                                                                                 ROIFinderPlane2: @local::decoderroifinder_2
+                                                                                               }
+icarus_stage0_producers.roifinder2d.ROIFinderToolVec.ROIFinderPlane0.ROILabelVec:              ["roifinder:PHYSCRATEDATATPCWW","roifinder:PHYSCRATEDATATPCWE","roifinder:PHYSCRATEDATATPCEW","roifinder:PHYSCRATEDATATPCEE"]
+icarus_stage0_producers.roifinder2d.ROIFinderToolVec.ROIFinderPlane0.ROILabelVec:              ["roifinder:PHYSCRATEDATATPCWW","roifinder:PHYSCRATEDATATPCWE","roifinder:PHYSCRATEDATATPCEW","roifinder:PHYSCRATEDATATPCEE"]
+icarus_stage0_producers.roifinder2d.ROIFinderToolVec.ROIFinderPlane0.ROILabelVec:              ["roifinder:PHYSCRATEDATATPCWW","roifinder:PHYSCRATEDATATPCWE","roifinder:PHYSCRATEDATATPCEW","roifinder:PHYSCRATEDATATPCEE"]
+icarus_stage0_producers.roifinder2d.WireModuleLabelVec:                                        ["decon2droiWW:looseLf","decon2droiWE:looseLf","decon2droiEW:looseLf","decon2droiEE:looseLf"]
+icarus_stage0_producers.roifinder2d.OutInstanceLabelVec:                                       ["PHYSCRATEDATATPCWW","PHYSCRATEDATATPCWE","PHYSCRATEDATATPCEW","PHYSCRATEDATATPCEE"]
+icarus_stage0_producers.roifinder2d.OutputMorphed:                                             false
+
+### Set up hit finding for multiple TPC readout
+icarus_stage0_producers.gaushitTPCWW.CalDataModuleLabel:                                       "roifinder:PHYSCRATEDATATPCWW"
+icarus_stage0_producers.gaushitTPCWE.CalDataModuleLabel:                                       "roifinder:PHYSCRATEDATATPCWE"
+icarus_stage0_producers.gaushitTPCEW.CalDataModuleLabel:                                       "roifinder:PHYSCRATEDATATPCEW"
+icarus_stage0_producers.gaushitTPCEE.CalDataModuleLabel:                                       "roifinder:PHYSCRATEDATATPCEE"
+
+icarus_stage0_producers.gaushitTPCWW.HitFinderToolVec.CandidateHitsPlane0:                     @local::candhitfinder_standard      # Sets hit finding for plane 0
+icarus_stage0_producers.gaushitTPCWW.HitFinderToolVec.CandidateHitsPlane0.Plane:               0
+icarus_stage0_producers.gaushitTPCWW.HitFinderToolVec.CandidateHitsPlane0.RoiThreshold:        9.
+icarus_stage0_producers.gaushitTPCWW.HitFinderToolVec.CandidateHitsPlane1:                     @local::candhitfinder_standard      # Sets hit finding for plane 1
+icarus_stage0_producers.gaushitTPCWW.HitFinderToolVec.CandidateHitsPlane1.Plane:               1
+icarus_stage0_producers.gaushitTPCWW.HitFinderToolVec.CandidateHitsPlane1.RoiThreshold:        9.5
+icarus_stage0_producers.gaushitTPCWW.HitFinderToolVec.CandidateHitsPlane2:                     @local::candhitfinder_standard      # Sets hit finding for plane 2
+icarus_stage0_producers.gaushitTPCWW.HitFinderToolVec.CandidateHitsPlane2.Plane:               2
+icarus_stage0_producers.gaushitTPCWW.HitFinderToolVec.CandidateHitsPlane2.RoiThreshold:        9.
+
+icarus_stage0_producers.gaushitTPCWE.HitFinderToolVec.CandidateHitsPlane0:                     @local::candhitfinder_standard      # Sets hit finding for plane 0
+icarus_stage0_producers.gaushitTPCWE.HitFinderToolVec.CandidateHitsPlane0.Plane:               0
+icarus_stage0_producers.gaushitTPCWE.HitFinderToolVec.CandidateHitsPlane0.RoiThreshold:        9.
+icarus_stage0_producers.gaushitTPCWE.HitFinderToolVec.CandidateHitsPlane1:                     @local::candhitfinder_standard      # Sets hit finding for plane 1
+icarus_stage0_producers.gaushitTPCWE.HitFinderToolVec.CandidateHitsPlane1.Plane:               1
+icarus_stage0_producers.gaushitTPCWE.HitFinderToolVec.CandidateHitsPlane1.RoiThreshold:        9.5
+icarus_stage0_producers.gaushitTPCWE.HitFinderToolVec.CandidateHitsPlane2:                     @local::candhitfinder_standard      # Sets hit finding for plane 2
+icarus_stage0_producers.gaushitTPCWE.HitFinderToolVec.CandidateHitsPlane2.Plane:               2
+icarus_stage0_producers.gaushitTPCWE.HitFinderToolVec.CandidateHitsPlane2.RoiThreshold:        9.
+
+icarus_stage0_producers.gaushitTPCEW.HitFinderToolVec.CandidateHitsPlane0:                     @local::candhitfinder_standard      # Sets hit finding for plane 0
+icarus_stage0_producers.gaushitTPCEW.HitFinderToolVec.CandidateHitsPlane0.Plane:               0
+icarus_stage0_producers.gaushitTPCEW.HitFinderToolVec.CandidateHitsPlane0.RoiThreshold:        9.
+icarus_stage0_producers.gaushitTPCEW.HitFinderToolVec.CandidateHitsPlane1:                     @local::candhitfinder_standard      # Sets hit finding for plane 1
+icarus_stage0_producers.gaushitTPCEW.HitFinderToolVec.CandidateHitsPlane1.Plane:               1
+icarus_stage0_producers.gaushitTPCEW.HitFinderToolVec.CandidateHitsPlane1.RoiThreshold:        9.5
+icarus_stage0_producers.gaushitTPCEW.HitFinderToolVec.CandidateHitsPlane2:                     @local::candhitfinder_standard      # Sets hit finding for plane 2
+icarus_stage0_producers.gaushitTPCEW.HitFinderToolVec.CandidateHitsPlane2.Plane:               2
+icarus_stage0_producers.gaushitTPCEW.HitFinderToolVec.CandidateHitsPlane2.RoiThreshold:        9.
+
+icarus_stage0_producers.gaushitTPCEE.HitFinderToolVec.CandidateHitsPlane0:                     @local::candhitfinder_standard      # Sets hit finding for plane 0
+icarus_stage0_producers.gaushitTPCEE.HitFinderToolVec.CandidateHitsPlane0.Plane:               0
+icarus_stage0_producers.gaushitTPCEE.HitFinderToolVec.CandidateHitsPlane0.RoiThreshold:        9.
+icarus_stage0_producers.gaushitTPCEE.HitFinderToolVec.CandidateHitsPlane1:                     @local::candhitfinder_standard      # Sets hit finding for plane 1
+icarus_stage0_producers.gaushitTPCEE.HitFinderToolVec.CandidateHitsPlane1.Plane:               1
+icarus_stage0_producers.gaushitTPCEE.HitFinderToolVec.CandidateHitsPlane1.RoiThreshold:        9.5
+icarus_stage0_producers.gaushitTPCEE.HitFinderToolVec.CandidateHitsPlane2:                     @local::candhitfinder_standard      # Sets hit finding for plane 2
+icarus_stage0_producers.gaushitTPCEE.HitFinderToolVec.CandidateHitsPlane2.Plane:               2
+icarus_stage0_producers.gaushitTPCEE.HitFinderToolVec.CandidateHitsPlane2.RoiThreshold:        9.
+
+### Optical hit finding
+icarus_stage0_producers.ophit.InputModule:                                                     "daqPMT"
+icarus_stage0_producers.ophit.InputLabels:                                                     []
+
+### Default purity monitor settings (single TPC readout assumed)
+icarus_stage0_producers.purityana0.RawModuleLabel:                                             ["daqTPCROI:PHYSCRATEDATATPCWW","daqTPCROI:PHYSCRATEDATATPCWE","daqTPCROI:PHYSCRATEDATATPCEW","daqTPCROI:PHYSCRATEDATATPCEE"]
+icarus_stage0_producers.purityana0.ValoreTauFCL:                                               600000.
+icarus_stage0_producers.purityana0.CryostatFCL:                                                0
+icarus_stage0_producers.purityana0.PlaneFCL:                                                   2
+icarus_stage0_producers.purityana0.ThresholdFCL:                                               3
+icarus_stage0_producers.purityana0.PersistPurityInfo:                                          false
+icarus_stage0_producers.purityana0.FillAnaTuple:                                               false
+icarus_stage0_producers.purityana0.PersistPurityInfo:                                          false
+icarus_stage0_producers.purityana0.FillAnaTuple:                                               false
+
+icarus_stage0_producers.purityana1.RawModuleLabel:                                             ["daqTPCROI:PHYSCRATEDATATPCWW","daqTPCROI:PHYSCRATEDATATPCWE","daqTPCROI:PHYSCRATEDATATPCEW","daqTPCROI:PHYSCRATEDATATPCEE"]
+icarus_stage0_producers.purityana1.ValoreTauFCL:                                               600000.
+icarus_stage0_producers.purityana1.CryostatFCL:                                                1
+icarus_stage0_producers.purityana1.PlaneFCL:                                                   2
+icarus_stage0_producers.purityana1.ThresholdFCL:                                               3
+icarus_stage0_producers.purityana1.PersistPurityInfo:                                          false
+icarus_stage0_producers.purityana1.FillAnaTuple:                                               false
+icarus_stage0_producers.purityana1.PersistPurityInfo:                                          false
+icarus_stage0_producers.purityana1.FillAnaTuple:                                               false
+
+END_PROLOG

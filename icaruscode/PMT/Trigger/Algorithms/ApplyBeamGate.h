@@ -34,6 +34,14 @@ namespace icarus::trigger {
   
   class ApplyBeamGateClass;
   
+  /**
+   * @brief Returns a new `ApplyBeamGateClass` object with the specified gate.
+   * @param duration the desired duration of the gate
+   * @param delay the delay of gate start relative to the global beam gate time
+   * @param clockData the current detector clocks service provider data
+   * @param logCategory message category the returned object will use
+   * @return a new `ApplyBeamGateClass` object with the specified parameters
+   */
   ApplyBeamGateClass makeApplyBeamGate(
     util::quantities::intervals::microseconds duration,
     util::quantities::intervals::microseconds delay,
@@ -41,6 +49,15 @@ namespace icarus::trigger {
     std::string const& logCategory = "ApplyBeamGateClass"
     );
   
+  /**
+   * @brief Returns a new `ApplyBeamGateClass` object with the specified gate.
+   * @param duration the desired duration of the gate
+   * @param clockData the current detector clocks service provider data
+   * @param logCategory message category the returned object will use
+   * @return a new `ApplyBeamGateClass` object with the specified parameters
+   * 
+   * The gate starts at the nominal beam gate time as reported by `clockData`.
+   */
   ApplyBeamGateClass makeApplyBeamGate(
     util::quantities::intervals::microseconds duration,
     detinfo::DetectorClocksData const& clockData,
@@ -60,6 +77,10 @@ namespace icarus::trigger {
  * 
  * The assumption that the optical tick clock starts with the electronics time
  * is used.
+ * 
+ * Access to beam gate range may happen in a few ways: in simulation time scale
+ * and in optical time ticks. In all cases, the returned object supports the
+ * calls to `start()`, `stop()` and `duration()`.
  */
 class icarus::trigger::ApplyBeamGateClass
   : protected icarus::ns::util::mfLoggingClass

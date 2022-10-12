@@ -227,15 +227,15 @@ void TPCNoiseFilter1DMC::configure(fhicl::ParameterSet const &pset)
 
     fFFTFilterFunctionVec.clear();
 
-    std::cout << "TPCDecoderFilter1D configure, fUseFFTFilter: " << fUseFFTFilter << std::endl;
+    std::cout << "TPCNoiseFilter1D configure, fUseFFTFilter: " << fUseFFTFilter << std::endl;
 
     if (fUseFFTFilter)
     {
         for(int plane = 0; plane < 3; plane++)
         {
-//            if (plane < 2) fFFTFilterFunctionVec.emplace_back(std::make_unique<icarus_signal_processing::WindowFFTFilter>(fFFTSigmaValsVec[plane], fFFTCutoffValsVec[plane]));
-            if (plane < 5) fFFTFilterFunctionVec.emplace_back(std::make_unique<icarus_signal_processing::WindowFFTFilter>(fFFTSigmaValsVec[plane], fFFTCutoffValsVec[plane]));
-            else           fFFTFilterFunctionVec.emplace_back(std::make_unique<icarus_signal_processing::NoFFTFilter>());
+            //if (plane < 2) fFFTFilterFunctionVec.emplace_back(std::make_unique<icarus_signal_processing::WindowFFTFilter>(fFFTSigmaValsVec[plane], fFFTCutoffValsVec[plane]));
+            //else           fFFTFilterFunctionVec.emplace_back(std::make_unique<icarus_signal_processing::NoFFTFilter>());
+            fFFTFilterFunctionVec.emplace_back(std::make_unique<icarus_signal_processing::WindowFFTFilter>(fFFTSigmaValsVec[plane], fFFTCutoffValsVec[plane]));
 
             std::cout << "TPCDecoderFilter1D FFT setup for plane " << plane << ", SigmaVals: " << fFFTSigmaValsVec[plane].first << "/" << fFFTSigmaValsVec[plane].second << ", cutoff: " << fFFTCutoffValsVec[plane].first << "/" << fFFTCutoffValsVec[plane].second << std::endl;
         }

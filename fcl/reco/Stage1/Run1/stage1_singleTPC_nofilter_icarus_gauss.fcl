@@ -1,0 +1,96 @@
+#include "stage1_icarus_driver_common.fcl"
+
+process_name: stage1
+
+physics.producers.cluster3d: @local::icarus_cluster3d
+physics.producers.pandoraGaus: @local::icarus_pandora
+physics.producers.pandoraTrackGaus: @local::icarus_pandoraTrackCreation
+physics.producers.pandoraKalmanTrackGaus: @local::icarus_pandora_kalmantrack
+physics.producers.caloskimCalorimetry: @local::caloskim_calorimetry
+
+physics.analyzers.caloskim: {
+  module_type: TrackCaloSkimmer
+  CALOproducer: "caloskimCalorimetry"
+  TRKproducer:  "pandoraTrackGaus"
+  T0producer: "pandoraGaus"
+  PFPproducer: "pandoraGaus"
+  G4producer: ""
+  SimChannelproducer: ""
+  HITproducer: "cluster3d"
+  RawDigitproducers: [ ]
+  RequireT0: true
+  HitRawDigitsTickCollectWidth: 50
+  DoTailFit: false
+  SilenceMissingDataProducts: true
+  SelectionTools: [@local::stopping_selection, @local::a2c_selection, @local::throughgoing_selection]
+  SelectEvents: [reco]
+}
+
+physics.reco: [ TPCHitFilter, cluster3d, pandoraGaus, pandoraTrackGaus, pandoraKalmanTrackGaus, caloskimCalorimetry ]
+
+physics.outana:            [ caloskim ]
+physics.trigger_paths:     [ reco ]
+physics.end_paths:         [ outana, stream1 ]
+outputs.out1.fileName:     "%ifb_%tc-%p.root"
+outputs.out1.dataTier:     "reconstructed"
+outputs.out1.SelectEvents: [ reco ]
+outputs.out1.outputCommands: [
+  "keep *_*_*_*",
+  "drop *_caloskimCalorimetry_*_*"
+]
+
+# Disabled Space-Charge service for calorimetry
+services.SpaceChargeService: {
+    EnableCalEfieldSCE: false
+    EnableCalSpatialSCE: false
+    EnableCorrSCE: false
+    EnableSimEfieldSCE: false
+    EnableSimSpatialSCE: false
+    InputFilename: "SCEoffsets/SCEoffsets_ICARUS_E500_voxelTH3.root"
+    RepresentationType: "Voxelized_TH3"
+    service_provider: "SpaceChargeServiceICARUS"
+}
+
+services.message.destinations :
+{
+  STDCOUT:
+  {
+     type:      "cout"      #tells the message service to output this destination to cout
+     threshold: "DEBUG"     #tells the message service that this destination applies to WARNING and higher level messages
+     categories:
+     {
+       Cluster3D:
+       {
+         limit: -1
+         reportEvery: 1
+       }
+       PMAlgTracker:
+       {
+         limit: -1
+         reportEvery: 1
+       }
+       default:
+       {
+         limit: 0  #don't print anything at the infomsg level except the explicitly named categories
+         reportEvery: 0
+       }
+     }
+  }
+}
+
+physics.filters.TPCHitFilter.HitDataLabelVec:  ["gaushit"]
+physics.filters.TPCHitFilter.MaximumHits:  500000
+
+physics.producers.cluster3d.Hit3DBuilderAlg:                                               @local::standard_snippethit3dbuilder
+physics.producers.cluster3d.Hit3DBuilderAlg.HitFinderTagVec:                               ["gaushit"]
+physics.producers.cluster3d.Hit3DBuilderAlg.PulseHeightFraction:                           0. #0.75 #0.25
+physics.producers.cluster3d.Hit3DBuilderAlg.PHLowSelection:                                0. #4.0 # 20.
+physics.producers.cluster3d.Hit3DBuilderAlg.MaxHitChiSquare:                               1000000.
+physics.producers.cluster3d.Hit3DBuilderAlg.OutputHistograms:                              false
+
+physics.producers.pandoraGaus.HitFinderModuleLabel:                                        "cluster3d"
+physics.producers.pandoraTrackGaus.PFParticleLabel:                                        "pandoraGaus"
+physics.producers.pandoraKalmanTrackGaus.inputCollection:                             	   "pandoraGaus"
+physics.producers.pandoraKalmanTrackGaus.trackInputTag:                               	   "pandoraTrackGaus"
+
+physics.producers.caloskimCalorimetry.TrackModuleLabel:					   "pandoraTrackGaus"
