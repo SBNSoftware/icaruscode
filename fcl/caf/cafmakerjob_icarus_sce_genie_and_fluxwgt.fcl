@@ -1,6 +1,9 @@
 #include "cafmakerjob_icarus_sce.fcl"
 
-services.RandomNumberGenerator: {}
+services: {
+  @table::services
+  @table::icarus_random_services  # from services_common_icarus.fcl
+}
 
 physics.runprod: [ @sequence::caf_preprocess_sce_evtw_sequence, cafmaker ]
 
