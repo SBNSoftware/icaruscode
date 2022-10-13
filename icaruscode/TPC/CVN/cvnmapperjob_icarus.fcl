@@ -56,23 +56,26 @@ physics:
   # Declare the modules  
   producers:
   { 
-    cvnmap_icarus: @local::standard_cvnmapper
+    cvnmap: @local::standard_cvnmapper
   }
   analyzers:
   {  
     zlib: @local::standard_cvnzlibmaker
   }
   # Build the paths
-  map:       [ cvnmap_icarus ]
+  map:       [ cvnmap ]
   ana:       [ zlib ]
   end_paths: [ ana ]
 }
 
 # CVNMapper configuration
-physics.producers.cvnmap_icarus.PixelMapProducer.TimeResolution: 1500
-physics.producers.cvnmap_icarus.PixelMapProducer.Threshold: 0.6
-physics.producers.cvnmap_icarus.HitsModuleLabel: "gaushit"
-physics.producers.cvnmap_icarus.MinClusterHits: 50
-physics.producers.cvnmap_icarus.TimeResolution: 1600
-physics.producers.cvnmap_icarus.PlaneLength: 500
-physics.producers.cvnmap_icarus.TdcWidth: 500
+physics.producers.cvnmap.PixelMapProducer.TimeResolution: 1500
+physics.producers.cvnmap.PixelMapProducer.Threshold: 0.6
+physics.producers.cvnmap.HitsModuleLabel: "gaushit"
+physics.producers.cvnmap.MinClusterHits: 50
+physics.producers.cvnmap.TimeResolution: 1600
+physics.producers.cvnmap.PlaneLength: 500
+physics.producers.cvnmap.TdcWidth: 500
+
+# ZlibMaker configuration
+physics.analyzers.zlib.PixelMapInput: "cvnmap"
