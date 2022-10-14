@@ -1,0 +1,29 @@
+<!--
+  
+  ROOT dictionary generation for:
+  
+  * `icarus::timing::PMTWaveformTimeCorrection`
+  
+  
+  Reminder:
+  
+  * include `art::Wrapper` lines for objects that we would like to put into the event
+  * include the non-wrapper lines for all objects on the `art::Wrapper` lines
+    and for all objects that are data members of those objects.
+  
+  -->
+
+
+<lcgdict>
+  <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
+  <!-- icarus::timing::PMTWaveformTimeCorrection -->
+
+  <!--   class -->
+  <class name="icarus::timing::PMTWaveformTimeCorrection" ClassVersion="10" >
+   <version ClassVersion="10" checksum="849345931"/>
+  </class>
+  <class name="std::vector<icarus::timing::PMTWaveformTimeCorrection>"/>
+  <class name="art::Wrapper<icarus::timing::PMTWaveformTimeCorrection>"/>
+  <class name="art::Wrapper<std::vector<icarus::timing::PMTWaveformTimeCorrection> >"/>
+  
+</lcgdict>
