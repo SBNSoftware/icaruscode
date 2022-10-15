@@ -1,13 +1,13 @@
 /**
- * @file   icaruscode/Timing/DataProducts/PMTWaveformTimeCorrection.h
+ * @file   icaruscode/IcarusObj/PMTWaverformTimeCorrection.h
  * @brief  Holds the event-by-event waveform timing adjustment.
  * @author Andrea Scarpelli (ascarpell@bnl.gov)
  * @date   March 23 2021
  * @see    icaruscode/Timing/DataProducts/PMTWaveformTimeCorrection.cxx
  */
 
-#ifndef ICARUSCODE_TIMING_DATAPRODUCTS_PMTWAVEFORMTIMECORRECTION_H
-#define ICARUSCODE_TIMING_DATAPRODUCTS_PMTWAVEFORMTIMECORRECTION_H
+#ifndef ICARUSCODE_ICARUSOBJ_PMTWAVEFORMTIMECORRECTION_H
+#define ICARUSCODE_ICARUSOBJ_PMTWAVEFORMTIMECORRECTION_H
 
 // C/C++ standard libraries
 #include <limits>

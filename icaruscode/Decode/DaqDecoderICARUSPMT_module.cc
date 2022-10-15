@@ -11,7 +11,7 @@
 #include "icaruscode/Decode/DecoderTools/details/PMTDecoderUtils.h"
 #include "icaruscode/Decode/DecoderTools/Dumpers/FragmentDumper.h"
 #include "icaruscode/Decode/ChannelMapping/IICARUSChannelMap.h"
-#include "icaruscode/Timing/DataProducts/PMTWaveformTimeCorrection.h"
+#include "icaruscode/IcarusObj/PMTWaveformTimeCorrection.h"
 #include "icaruscode/Timing/PMTWaveformTimeCorrectionExtractor.h"
 #include "icaruscode/Timing/IPMTTimingCorrectionService.h"
 #include "icaruscode/Timing/PMTTimingCorrections.h"

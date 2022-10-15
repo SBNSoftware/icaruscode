@@ -9,7 +9,6 @@
 #include "sbnobj/Common/PMT/Data/PMTconfiguration.h" // sbn::PMTconfiguration
 #include "icaruscode/Decode/ChannelMapping/IICARUSChannelMap.h"
 #include "icaruscode/Timing/PMTTimingCorrections.h"
-#include "icaruscode/Timing/DataProducts/PMTWaveformTimeCorrection.h"
 #include "icaruscode/Timing/PMTWaveformTimeCorrectionExtractor.h"
 
 // framework libraries

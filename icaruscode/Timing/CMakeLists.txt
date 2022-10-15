@@ -1,7 +1,5 @@
 cet_enable_asserts()
 
-add_subdirectory(DataProducts)
-
 art_make(
     MODULE_LIBRARIES
         art_Framework_Core
@@ -27,10 +25,10 @@ art_make(
         cetlib_except
         cetlib 
         LIBWDA
-        icaruscode_Timing_DataProducts
+        icaruscode_IcarusObj
 	SERVICE_LIBRARIES
 		icaruscode_Timing
-		icaruscode_Timing_DataProducts
+        icaruscode_IcarusObj
         ${ROOT_BASIC_LIB_LIST}
         LIBWDA
         ${ART_FRAMEWORK_CORE}

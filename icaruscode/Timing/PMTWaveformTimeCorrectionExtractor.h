@@ -11,7 +11,7 @@
 // ICARUS/SBN libraries
 #include "icaruscode/Decode/ChannelMapping/IICARUSChannelMap.h"
 #include "icaruscode/Timing/PMTTimingCorrections.h"
-#include "icaruscode/Timing/DataProducts/PMTWaveformTimeCorrection.h"
+#include "icaruscode/IcarusObj/PMTWaveformTimeCorrection.h"
 
 // LArSoft libraries
 #include "lardataobj/RawData/OpDetWaveform.h"
