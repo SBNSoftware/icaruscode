@@ -276,7 +276,6 @@ void icarus::crt::CRTPMTMatchingAna::analyze(art::Event const& e)
             art::fill_ptr_vector(opFlashLists[i], flashHandles[i]);
     }
 
-
     //CRTHits
     art::Handle< std::vector<CRTHit> > crtHitListHandle;
     std::vector< art::Ptr<CRTHit> >    crtHitList;
