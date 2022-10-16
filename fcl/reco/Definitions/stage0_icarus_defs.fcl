@@ -60,8 +60,6 @@ icarus_stage0_producers:
   pmtconfig:                      @local::extractPMTconfig
 
   ### Decoder definitions
-  daqTrigger:                     @local::decodeTrigger
-
   daqTPC:                         @local::decodeTPC
 
   daqTPCROI:                      @local::decodeTPCROI
@@ -282,6 +280,8 @@ icarus_stage0_2d_data:             [
                                    ]
 
 ### Below we include overrides for the modules above
+
+physics.producers.daqTrigger.DecoderTool.TrigConfigLabel:                                      triggerconfig
 
 ### Handle multiple TPC readout with single instances
 icarus_stage0_producers.daqTPC.FragmentsLabelVec:                                              ["daq:PHYSCRATEDATATPCWW","daq:PHYSCRATEDATATPCWE","daq:PHYSCRATEDATATPCEW","daq:PHYSCRATEDATATPCEE"]
