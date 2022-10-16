@@ -174,47 +174,47 @@ icarus::crt::CRTPMTMatchingAna::CRTPMTMatchingAna(fhicl::ParameterSet const& p)
   ,crtutil(new CRTCommonUtils())
   // More initializers here.
 {
-  // Call appropriate consumes<>() for any products to be retrieved by this module.
-  fFlashLabels[0] = fOpFlashModuleLabel0;
-  fFlashLabels[1] = fOpFlashModuleLabel1;
-  fFlashLabels[2] = fOpFlashModuleLabel2;
-  fFlashLabels[3] = fOpFlashModuleLabel3;
+    // Call appropriate consumes<>() for any products to be retrieved by this module.
+    fFlashLabels[0] = fOpFlashModuleLabel0;
+    fFlashLabels[1] = fOpFlashModuleLabel1;
+    fFlashLabels[2] = fOpFlashModuleLabel2;
+    fFlashLabels[3] = fOpFlashModuleLabel3;
 
-  // Get a pointer to the geometry service provider.
-  fGeometryService = lar::providerFrom<geo::Geometry>();
+    // Get a pointer to the geometry service provider.
+    fGeometryService = lar::providerFrom<geo::Geometry>();
 
-  art::ServiceHandle<art::TFileService> tfs;
+    art::ServiceHandle<art::TFileService> tfs;
 
-  fMatchTree = tfs->make<TTree>("matchTree","CRTHit - OpHit/Flash matching analysis");
+    fMatchTree = tfs->make<TTree>("matchTree","CRTHit - OpHit/Flash matching analysis");
 
-  fMatchTree->Branch("event",        &fEvent,          "event/I");
-  fMatchTree->Branch("run",          &fRun,            "run/I");
-  fMatchTree->Branch("subrun",       &fSubRun,         "subrun/I");
-  fMatchTree->Branch("ncrt",         &fNCrt,      "nCrtHit/I");
-  fMatchTree->Branch("crtXYZT",      &fCrtXYZT);
-  fMatchTree->Branch("crtXYZErr",    &fCrtXYZErr);
-  fMatchTree->Branch("crtPE",        &fCrtPE);
-  fMatchTree->Branch("crtRegion",    &fCrtRegion);
-  fMatchTree->Branch("tofHit",       &fTofHit);
-  fMatchTree->Branch("tofFlash",     &fTofFlash);
-  fMatchTree->Branch("tofFlashHit",  &fTofFlashHit);
-  fMatchTree->Branch("peHit",        &fTofPeHit);
-  fMatchTree->Branch("peFlash",      &fTofPeFlash);
-  fMatchTree->Branch("peFlashHit",   &fTofPeFlashHit);
-  fMatchTree->Branch("xyztHit",      &fTofXYZTHit);
-  fMatchTree->Branch("xyztFlash",    &fTofXYZTFlash);
-  fMatchTree->Branch("xyztFlashHit", &fTofXYZTFlashHit);
-  fMatchTree->Branch("distHit",      &fDistHit);
-  fMatchTree->Branch("distFlash",    &fDistFlash);
-  fMatchTree->Branch("distFlashHit", &fDistFlashHit);
-  fMatchTree->Branch("tpcHit",       &fTofTpcHit);
-  fMatchTree->Branch("tpcFlash",     &fTofTpcFlash);
-  fMatchTree->Branch("gate_type", &m_gate_type, "gate_type/b");
-  fMatchTree->Branch("gate_name", &m_gate_name);
-  fMatchTree->Branch("trigger_timestamp", &m_trigger_timestamp, "trigger_timestamp/l");
-  fMatchTree->Branch("gate_start_timestamp", &m_gate_start_timestamp, "gate_start_timestamp/l");
-  fMatchTree->Branch("trigger_gate_diff", &m_trigger_gate_diff, "trigger_gate_diff/l");
-  fMatchTree->Branch("gate_crt_diff",&m_gate_crt_diff, "gate_crt_diff/l");
+    fMatchTree->Branch("event",                &fEvent,          "event/I");
+    fMatchTree->Branch("run",                  &fRun,            "run/I");
+    fMatchTree->Branch("subrun",               &fSubRun,         "subrun/I");
+    fMatchTree->Branch("ncrt",                 &fNCrt,      "nCrtHit/I");
+    fMatchTree->Branch("crtXYZT",              &fCrtXYZT);
+    fMatchTree->Branch("crtXYZErr",            &fCrtXYZErr);
+    fMatchTree->Branch("crtPE",                &fCrtPE);
+    fMatchTree->Branch("crtRegion",            &fCrtRegion);
+    fMatchTree->Branch("tofHit",               &fTofHit);
+    fMatchTree->Branch("tofFlash",             &fTofFlash);
+    fMatchTree->Branch("tofFlashHit",          &fTofFlashHit);
+    fMatchTree->Branch("peHit",                &fTofPeHit);
+    fMatchTree->Branch("peFlash",              &fTofPeFlash);
+    fMatchTree->Branch("peFlashHit",           &fTofPeFlashHit);
+    fMatchTree->Branch("xyztHit",              &fTofXYZTHit);
+    fMatchTree->Branch("xyztFlash",            &fTofXYZTFlash);
+    fMatchTree->Branch("xyztFlashHit",         &fTofXYZTFlashHit);
+    fMatchTree->Branch("distHit",              &fDistHit);
+    fMatchTree->Branch("distFlash",            &fDistFlash);
+    fMatchTree->Branch("distFlashHit",         &fDistFlashHit);
+    fMatchTree->Branch("tpcHit",               &fTofTpcHit);
+    fMatchTree->Branch("tpcFlash",             &fTofTpcFlash);
+    fMatchTree->Branch("gate_type",            &m_gate_type, "gate_type/b");
+    fMatchTree->Branch("gate_name",            &m_gate_name);
+    fMatchTree->Branch("trigger_timestamp",    &m_trigger_timestamp, "trigger_timestamp/l");
+    fMatchTree->Branch("gate_start_timestamp", &m_gate_start_timestamp, "gate_start_timestamp/l");
+    fMatchTree->Branch("trigger_gate_diff",    &m_trigger_gate_diff, "trigger_gate_diff/l");
+    fMatchTree->Branch("gate_crt_diff",        &m_gate_crt_diff, "gate_crt_diff/l");
 }
 
 void icarus::crt::CRTPMTMatchingAna::analyze(art::Event const& e)
