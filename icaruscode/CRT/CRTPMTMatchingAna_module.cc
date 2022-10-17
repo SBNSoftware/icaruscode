@@ -293,8 +293,10 @@ void icarus::crt::CRTPMTMatchingAna::analyze(art::Event const& e)
         xyzt.push_back(rcrt.Y());
         xyzt.push_back(rcrt.Z());
 
-        double tcrt = double(m_gate_start_timestamp - crt->ts0_ns)/1e3;
-        tcrt = -tcrt+1e6;
+        double tcrt = crt->ts1_ns/1e3;
+
+        //double tcrt = double(m_gate_start_timestamp - crt->ts0_ns)/1e3;
+        //tcrt = -tcrt+1e6;
 
         //    double tcrt = (int32_t)crt->ts0_ns;// - fCrtDelay;
         //uint64_t tcrt = crt->ts0_ns;
