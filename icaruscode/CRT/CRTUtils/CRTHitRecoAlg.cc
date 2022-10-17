@@ -393,7 +393,7 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeTopHit(art::Ptr<CRTData> data, ULong64_t Glo
     auto const& adsGeo = adGeo.SensitiveVolume(adsid_max); //trigger strip
     uint64_t thit = data->fTs0;
     Long64_t thit1 = data->fTs1;
-
+    /*
     if(adsid_max<8){
         thit -= (uint64_t)round(abs((92+hitpos.X())*fPropDelay));
         thit1 -= (uint64_t)round(abs((92+hitpos.X())*fPropDelay));
@@ -406,7 +406,18 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeTopHit(art::Ptr<CRTData> data, ULong64_t Glo
 	thit -= fSiPMtoFEBdelay; //Correction for 12 ns signal cable from SiPM to FEB
 	thit1 -= fSiPMtoFEBdelay; //Correction for 12 ns signal cable from SiPM to FEB
     }
- 
+    */
+
+    if((92-hitpos.X())<=(92+hitpos.Z())) {
+      //std::cout<<"  Thit raw: "<<thit<<" Correction (-hitposX) "<<thit - (uint64_t)round(abs((92+hitpos.X())*fPropDelay))<<"  Bar: "<<maxx*2<<"  "<<maxz*2<<std::endl;
+      thit -= (uint64_t)round(abs((92+hitpos.Z())*fPropDelay));
+      thit1 -= (uint64_t)round(abs((92+hitpos.Z())*fPropDelay));
+    }
+    else {
+      //std::cout<<"  Thit raw: "<<thit<<" Correction (-hitposZ) "<<thit - (uint64_t)round(abs((92+hitpos.Z())*fPropDelay))<<"  Bar: "<<maxx*2<<"  "<<maxz*2<<std::endl;
+      thit -= (uint64_t)round(abs((92-hitpos.X())*fPropDelay));
+      thit1 -= (uint64_t)round(abs((92-hitpos.X())*fPropDelay));
+    }
     adGeo.LocalToWorld(hitlocal,hitpoint); //tranform from module to world coords
 
     hitpointerr[0] = adsGeo.HalfWidth1()*2/sqrt(12);
