@@ -63,7 +63,7 @@ art_make(
                   lardataobj_RawData    
                   lardataobj_RecoBase
                   lardataobj_AnalysisBase
-                  IFDH_service
+                  ifdh_art::IFDH_service
                   ${ART_FRAMEWORK_CORE}
                   ${ART_FRAMEWORK_BASIC}
                   ${ART_FRAMEWORK_IO_PRODUCTMIX}
