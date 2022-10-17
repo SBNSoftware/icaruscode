@@ -128,7 +128,6 @@ vector<pair<sbn::crt::CRTHit, vector<int>>> CRTHitRecoAlg::CreateCRTHits(vector<
     for (int i=0; i<305; i++){
 	if (TriggerArray[i]==0) TriggerArray[i]=GlobalTrigger;
     }
-    //std::cout<<"Global Trigger "<<GlobalTrigger<<std::endl;
     //loop over time-ordered CRTData
     for (size_t febdat_i=0; febdat_i<crtList.size(); febdat_i++) {
 
@@ -393,38 +392,41 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeTopHit(art::Ptr<CRTData> data, ULong64_t Glo
     auto const& adsGeo = adGeo.SensitiveVolume(adsid_max); //trigger strip
     uint64_t thit = data->fTs0;
     Long64_t thit1 = data->fTs1;
-    /*
-    if(adsid_max<8){
-        thit -= (uint64_t)round(abs((92+hitpos.X())*fPropDelay));
-        thit1 -= (uint64_t)round(abs((92+hitpos.X())*fPropDelay));
+    thit -= fSiPMtoFEBdelay;
+    thit1 -= fSiPMtoFEBdelay;
+    //thit1 = (Long64_t)(thit-GlobalTrigger[(int)mac+73]);
+    //thit -= (uint64_t)round(abs((92+hitpos.Z())*fPropDelay));
+    //std::cout<<"Hit position local: X "<<hitpos.X()<<" Z "<<hitpos.Z();
+    if((92-hitpos.X())<=(92+hitpos.Z())) {
+	//std::cout<<"  Thit raw: "<<thit<<" Correction (-hitposX) "<<thit - (uint64_t)round(abs((92+hitpos.X())*fPropDelay))<<"  Bar: "<<maxx*2<<"  "<<maxz*2<<std::endl;
+	thit -= (uint64_t)round(abs((92+hitpos.Z())*fPropDelay));
+	thit1 -= (uint64_t)round(abs((92+hitpos.Z())*fPropDelay));
+    }
+    else {
+	//std::cout<<"  Thit raw: "<<thit<<" Correction (-hitposZ) "<<thit - (uint64_t)round(abs((92+hitpos.Z())*fPropDelay))<<"  Bar: "<<maxx*2<<"  "<<maxz*2<<std::endl; 
+	thit -= (uint64_t)round(abs((92-hitpos.X())*fPropDelay));
+	thit1 -= (uint64_t)round(abs((92-hitpos.X())*fPropDelay));
+    }
+    /*if(adsid_max<8){
+       // thit -= (uint64_t)round(abs((92+hitpos.X())*fPropDelay));
+       // thit1 -= (uint64_t)round(abs((92+hitpos.X())*fPropDelay));
 	thit -= fSiPMtoFEBdelay; //Correction for 12 ns signal cable from SiPM to FEB
 	thit1 -= fSiPMtoFEBdelay; //Correction for 12 ns signal cable from SiPM to FEB
     }
     else{
-        thit -= (uint64_t)round(abs((92+hitpos.Z())*fPropDelay));
-        thit1 -= (uint64_t)round(abs((92+hitpos.Z())*fPropDelay));
+        //thit -= (uint64_t)round(abs((92+hitpos.Z())*fPropDelay));
+        //thit1 -= (uint64_t)round(abs((92+hitpos.Z())*fPropDelay));
 	thit -= fSiPMtoFEBdelay; //Correction for 12 ns signal cable from SiPM to FEB
 	thit1 -= fSiPMtoFEBdelay; //Correction for 12 ns signal cable from SiPM to FEB
-    }
-    */
-
-    if((92-hitpos.X())<=(92+hitpos.Z())) {
-      //std::cout<<"  Thit raw: "<<thit<<" Correction (-hitposX) "<<thit - (uint64_t)round(abs((92+hitpos.X())*fPropDelay))<<"  Bar: "<<maxx*2<<"  "<<maxz*2<<std::endl;
-      thit -= (uint64_t)round(abs((92+hitpos.Z())*fPropDelay));
-      thit1 -= (uint64_t)round(abs((92+hitpos.Z())*fPropDelay));
-    }
-    else {
-      //std::cout<<"  Thit raw: "<<thit<<" Correction (-hitposZ) "<<thit - (uint64_t)round(abs((92+hitpos.Z())*fPropDelay))<<"  Bar: "<<maxx*2<<"  "<<maxz*2<<std::endl;
-      thit -= (uint64_t)round(abs((92-hitpos.X())*fPropDelay));
-      thit1 -= (uint64_t)round(abs((92-hitpos.X())*fPropDelay));
-    }
+    }*/
+ 
     adGeo.LocalToWorld(hitlocal,hitpoint); //tranform from module to world coords
 
     hitpointerr[0] = adsGeo.HalfWidth1()*2/sqrt(12);
     hitpointerr[1] = adGeo.HalfHeight();
     hitpointerr[2] = adsGeo.HalfWidth1()*2/sqrt(12);
-    thit1 = (Long64_t)(thit-GlobalTrigger[(int)mac+73]);
- 
+    //thit1 = (Long64_t)(thit-GlobalTrigger[(int)mac+73]);
+    thit1 = (Long64_t)(thit-GlobalTrigger[(int)mac]);
     //Remove T1 Reset event not correctly flagged, remove T1 reset events, remove T0 reset events
     if((sum<10000 && thit1<2'001'000 && thit1>2'000'000)||data->IsReference_TS1() || data->IsReference_TS0()) return FillCRTHit({},{},0,0,0,0,0,0,0,0,0,0,"");
 
