@@ -11,85 +11,92 @@
 #  make install
 #  make package (builds distribution tarfile)
 # ======================================================================
-
-
 cmake_minimum_required(VERSION 3.19 FATAL_ERROR)
+cmake_policy(VERSION 3.18)
 
+
+
+find_package(cetmodules 2.25.04 REQUIRED)
 project(icaruscode VERSION 09.60.01 LANGUAGES CXX)
+
 
 message(STATUS
   "\n-- ============================================================================="
   "\n-- === *** Start of configuration of ${PROJECT_NAME} ***"
   "\n-- ===")
 
-# cetbuildtools contains our cmake modules
-find_package(cetbuildtools REQUIRED)
 
-list(APPEND CMAKE_MODULE_PATH $ENV{CANVAS_ROOT_IO_DIR}/Modules $ENV{ART_DIR}/Modules )
+list(APPEND CMAKE_MODULE_PATH $ENV{CANVAS_ROOT_IO_DIR}/Modules $ENV{ART_DIR}/Modules)
 
 include(CetCMakeEnv)
 cet_cmake_env()
 
 cet_set_compiler_flags(DIAGS CAUTIOUS
-  WERROR
-  NO_UNDEFINED
-  EXTRA_FLAGS -pedantic -I $ENV{CLANG_FQ_DIR}/include/c++/v1 
+	WERROR
+	NO_UNDEFINED
+	EXTRA_FLAGS -pedantic -I$ENV{CLANG_FQ_DIR}/include/c++/v1
 )
 
-cet_report_compiler_flags()
+cet_report_compiler_flags(REPORT_THRESHOLD VERBOSE)
 
-# these are minimum required versions, not the actual product versions
-find_ups_product( larsoft )
-find_ups_product( larcoreobj )
-find_ups_product( larcorealg )
-find_ups_product( lardataobj )
-find_ups_product( lardataalg )
-find_ups_product( larcore )
-find_ups_product( lardata )
-find_ups_product( larevt )
-find_ups_product( larsim )
-find_ups_product( larreco )
-find_ups_product( larana )
-find_ups_product( larvecutils )
-find_ups_product( nusimdata )
-find_ups_product( nug4 )
-find_ups_product( art )
-find_ups_product( canvas )
-find_ups_product( messagefacility )
-find_ups_product( libwda )
-find_ups_product( postgresql )
-find_ups_product( sqlite )
-find_ups_product( eigen )
-find_ups_product( fftw )
-find_ups_product( libwda )
-find_ups_product( ifdh_art )
-find_ups_product( guideline_sl )
-find_ups_root()
+#these are minimum required versions,not thea ctual product versions
+find_package(larsoft)
+find_package(libwda)
+find_package(PostgreSQL)
+find_package(Eigen3)
+find_package(ifbeam)
+find_package(ifdhc)
+find_package(ifdh_art)
+find_package(guideline_sl)
+find_package(range-v3)
+find_package(sbnobj)
+find_package(sbndaq-artdaq-core)
+find_package(icarus_signal_processing)
+find_package(icarusalg)
+find_package(icarusutil)
+find_package(icarus_data)
 
-find_ups_product( sbnobj )
-find_ups_product( sbncode )
-find_ups_product( icarus_signal_processing )
-find_ups_product( icarusalg )
-find_ups_product( icarusutil )
-find_ups_product( icarus_data )
+find_package(artdaq_core)
 
-find_ups_product( artdaq_core )
-find_ups_product( sbndaq_artdaq_core )
+find_package(larcoreobj)
+find_package(larcorealg)
+find_package(lardataobj)
+find_package(lardataalg)
+find_package(larcore)
+find_package(lardata)
+find_package(larsim)
+find_package(larevt)
+find_package(larreco)
+find_package(larana)
+find_package(larpandora)
+find_package(larpandoracontent)
+find_package(nusimdata)
+find_package(nurandom)
+find_package(nug4)
+find_package(art)
+find_package(canvas)
+find_package(messagefacility)
+find_package(FFTW3)
+find_package(libwda)
+find_package(ifdh_art)
+find_package(ROOT)
+find_package(Boost COMPONENTS system)
+find_package(protobuf)
+find_package(PandoraSDK)
+find_package(PandoraMonitoring)
+find_package(SQLite3)
+find_package(artdaq_core)
+find_package(sbndaq_artdaq_core)
+find_package(sbndaq-artdaq-core)
+find_package(PostgreSQL)
 
-find_package( cetlib_except REQUIRED EXPORT )
-find_package( cetlib REQUIRED EXPORT )
+cet_find_library(PQ NAMES pq )
 
-cet_find_library( NURANDOM_RANDOMUTILS_NURANDOMSERVICE_SERVICE
-                  NAMES nurandom_RandomUtils_NuRandomService_service
-                  PATHS ENV NURANDOM_LIB NO_DEFAULT_PATH )
+#deal with fftw
+find_package( PkgConfig REQUIRED)
+pkg_search_module(FFTW3 REQUIRED IMPORTED_TARGET GLOBAL fftw3f fftw3 fftw3q fftw3l fftw3_threads fftw3f_threeads fftw3q_threads)
+set(ICARUS_FFTW_LIBRARIES PkgConfig::FFTW3)
 
-# deal with fftw
-cet_find_library(ICARUS_FFTW3_LIBRARY  NAMES fftw3  PATHS ENV FFTW_LIBRARY NO_DEFAULT_PATH )
-cet_find_library(ICARUS_FFTW3F_LIBRARY NAMES fftw3f PATHS ENV FFTW_LIBRARY NO_DEFAULT_PATH )
-cet_find_library(ICARUS_FFTW3L_LIBRARY NAMES fftw3l PATHS ENV FFTW_LIBRARY NO_DEFAULT_PATH )
-cet_find_library(ICARUS_FFTW3Q_LIBRARY NAMES fftw3q PATHS ENV FFTW_LIBRARY NO_DEFAULT_PATH )
-set(ICARUS_FFTW_LIBRARIES ICARUS_FFTW3_LIBRARY ICARUS_FFTW3F_LIBRARY ICARUS_FFTW3L_LIBRARY ICARUS_FFTW3Q_LIBRARY)
-include_directories( $ENV{EIGEN_INC} )
 
 # macros for dictionary and simple_plugin
 include(ArtDictionary)
@@ -108,10 +115,8 @@ add_subdirectory(test)
 add_subdirectory(fcl)
 
 # ups - table and config files
-add_subdirectory(ups)
 
 # packaging utility
-include(UseCPack)
 
 message(STATUS
   "\n-- ==="
@@ -121,3 +126,4 @@ message(STATUS
   "\n-- "
   )
 
+cet_cmake_config()

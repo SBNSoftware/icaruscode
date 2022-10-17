@@ -2,40 +2,42 @@ add_subdirectory(tools)
 add_subdirectory(overburden)
 add_subdirectory(trigger)
 
-art_make( MODULE_LIBRARIES larcorealg_Geometry
-                           larcore_Geometry_Geometry_service
-                           larsim_Simulation nug4_ParticleNavigation
-                           lardataobj_Simulation
-                           lardata_Utilities
-                           larevt_Filters
-                           larsim_MCCheater_BackTrackerService_service
-                           larsim_MCCheater_ParticleInventoryService_service
-                           lardataobj_RawData
-                           larevt_CalibrationDBI_Providers
-                           nurandom_RandomUtils_NuRandomService_service
-			   sbnobj_Common_Analysis
-                           ${ART_FRAMEWORK_CORE}
-                           ${ART_FRAMEWORK_PRINCIPAL}
-                           ${ART_FRAMEWORK_SERVICES_REGISTRY}
-                           ${ART_ROOT_IO_TFILE_SUPPORT} ${ROOT_CORE}
-                           ${ART_FRAMEWORK_SERVICES_OPTIONAL_RANDOMNUMBERGENERATOR_SERVICE}
-                           ${ART_ROOT_IO_TFILESERVICE_SERVICE}
-                           art_Persistency_Common
-                           art_Persistency_Provenance
-                           art_Utilities
-                           canvas
-                           ${MF_MESSAGELOGGER}
-                           ${MF_UTILITIES}
-                           ${FHICLCPP}
-                           ${CETLIB}
-                           cetlib_except
-                           ${CLHEP}
-                           ${ROOT_GEOM}
-                           ${ROOT_XMLIO}
-                           ${ROOT_GDML}
-                           ${ROOT_BASIC_LIB_LIST}
-                           icaruscode_RecoUtils
-        )
+art_make(MODULE_LIBRARIES larcorealg::Geometry
+		larcore::Geometry_Geometry_service
+		larsim::Simulation
+		nug4::ParticleNavigation
+		lardataobj::Simulation
+		lardata::Utilities
+		larevt::Filters
+		larsim::MCCheater_BackTrackerService_service
+		larsim::MCCheater_ParticleInventoryService_service
+		lardataobj::RawData
+		larevt::CalibrationDBI_Providers
+		nurandom::RandomUtils_NuRandomService_service
+		sbnobj::Common_Analysis
+		art::Framework_Core
+		art::Framework_Principal
+		art::Framework_Services_Registry
+		art_root_io::tfile_support
+		ROOT::Core
+		art::Framework_Services_Optional_RandomNumberGenerator_service
+		art_root_io::TFileService_service
+		art::Persistency_Common
+		art::Persistency_Provenance
+		art::Utilities
+		canvas::canvas
+		messagefacility::MF_MessageLogger
+		messagefacility::headers
+		fhiclcpp::fhiclcpp
+		cetlib::cetlib
+		cetlib_except::cetlib_except
+		CLHEP::Random
+		ROOT::Geom
+		ROOT::XMLIO
+		ROOT::Gdml
+		icaruscode::RecoUtils
+		Eigen3::Eigen
+		)
 
 #install_headers()
 install_fhicl()

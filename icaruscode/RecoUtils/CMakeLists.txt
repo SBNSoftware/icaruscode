@@ -1,34 +1,33 @@
 art_make(
-             LIB_LIBRARIES larcorealg_Geometry
-                           larcore_Geometry_Geometry_service
-                           larsim_Simulation lardataobj_Simulation
-                           larsim_MCCheater_BackTrackerService_service
-                           larsim_MCCheater_ParticleInventoryService_service
-                           lardata_Utilities
-                           larevt_Filters
-                           lardataobj_RawData
-                           lardataobj_RecoBase
-                           lardata_RecoObjects
-                           larpandora_LArPandoraInterface
-                           nusimdata_SimulationBase
-                           cetlib cetlib_except
-                           ${ART_FRAMEWORK_CORE}
-                           ${ART_FRAMEWORK_PRINCIPAL}
-                           ${ART_FRAMEWORK_SERVICES_REGISTRY}
-                           ${ART_ROOT_IO_TFILE_SUPPORT} ${ROOT_CORE}
-                           ${ART_ROOT_IO_TFILESERVICE_SERVICE}
-                           art_Persistency_Common canvas
-                           art_Persistency_Provenance canvas
-                           art_Utilities canvas
-                           ${MF_MESSAGELOGGER}
-                           ${MF_UTILITIES}
-                           ${FHICLCPP}
-                           ${ROOT_GEOM}
-                           ${ROOT_XMLIO}
-                           ${ROOT_GDML}
-                           ${ROOT_BASIC_LIB_LIST}
-                           ${Boost_SYSTEM_LIBRARY}
-        )
+     LIB_LIBRARIES larcorealg::Geometry
+          larcore::Geometry_Geometry_service
+          larsim::Simulation lardataobj::Simulation
+          larsim::MCCheater_BackTrackerService_service
+          larsim::MCCheater_ParticleInventoryService_service
+          lardata::Utilities
+          larevt::Filters
+          lardataobj::RawData
+          lardataobj::RecoBase
+          lardata::RecoObjects
+          larpandora::LArPandoraInterface
+          nusimdata::SimulationBase
+          cetlib::cetlib cetlib_except::cetlib_except
+          art::Framework_Core
+          art::Framework_Principal
+          art::Framework_Services_Registry
+          art_root_io::tfile_support ROOT::Core
+          art_root_io::TFileService_service
+          art::Persistency_Common canvas::canvas
+          art::Persistency_Provenance
+          art::Utilities
+          messagefacility::MF_MessageLogger
+          messagefacility::headers
+          fhiclcpp::fhiclcpp
+          ROOT::Geom
+          ROOT::XMLIO
+          ROOT::Gdml
+          Boost::system
+)
 
 install_headers()
 install_fhicl()
@@ -36,39 +35,39 @@ install_source()
 
 
 #art_make(
-#	  LIB_LIBRARIES larcorealg_Geometry
-#	  	        larcore_Geometry_Geometry_service
-#		        larsim_Simulation nurandom_ParticleNavigation lardataobj_Simulation
-# 	  	        larsim_MCCheater_BackTracker_service
-#	  	        lardata_Utilities
-#larevt_Filters
-#	  	        lardataobj_RawData
-#	  	        lardataobj_RecoBase
-#	  	        lardata_RecoObjects
+#     LIB_LIBRARIES larcorealg::Geometry
+#          larcore::Geometry_Geometry_service
+#          larsim_Simulationnurandom_ParticleNavigation lardataobj::Simulation
+#          larsim::MCCheater_BackTracker_service
+#          lardata::Utilities
+#larevt::Filters
+#          lardataobj::RawData
+#          lardataobj::RecoBase
+#          lardata::RecoObjects
 #larreco_RecoAlg
 #larreco_Calorimetry
 #larpandora_LArPandoraInterface
-#          	        nusimdata_SimulationBase
-#          	        ${LARRECO_LIB}
-#          	        ${LARDATA_LIB}
-#	  	        ${MF_MESSAGELOGGER}
-#	  	        ${MF_UTILITIES}
-#	  	        ${FHICLCPP}
-#	  	        cetlib cetlib_except
-#          	        ${ROOT_GEOM}
-#          	        ${ROOT_XMLIO}
-#          	        ${ROOT_GDML}
-#	  	        ${ROOT_BASIC_LIB_LIST}
-#	  MODULE_LIBRARIES RecoUtils
-#          	           ${ART_FRAMEWORK_CORE}
-#	  	           ${ART_FRAMEWORK_PRINCIPAL}
-#		       	   ${ART_FRAMEWORK_SERVICES_REGISTRY}
-#	  	       	   ${ART_ROOT_IO_TFILE_SUPPORT} ${ROOT_CORE}
-#			   ${ART_ROOT_IO_TFILESERVICE_SERVICE}
-#	  	           art_Persistency_Common canvas
-#	  	           art_Persistency_Provenance canvas
-#	  	           art_Utilities canvas
-#        )
+#     nusimdata::SimulationBase
+#     ${LARRECO_LIB}
+#     ${LARDATA_LIB}
+#          messagefacility::MF_MessageLogger
+#          messagefacility::headers
+#          fhiclcpp::fhiclcpp
+#          cetlib::cetlib cetlib_except::cetlib_except
+#     ROOT::Geom
+#     ROOT::XMLIO
+#     ROOT::Gdml
+#          
+#     MODULE_LIBRARIES RecoUtils
+#     art::Framework_Core
+#          art::Framework_Principal
+#               art::Framework_Services_Registry
+#               art_root_io::tfile_support ROOT::Core
+#               art_root_io::TFileService_service
+#          art::Persistency_Commoncanvas
+#          art::Persistency_Provenancecanvas
+#          art::Utilitiescanvas
+#)
 #
 #install_headers()
 ##install_fhicl()

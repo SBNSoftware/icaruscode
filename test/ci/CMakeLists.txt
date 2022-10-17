@@ -6,7 +6,7 @@
 # 
 # In order to achieve that:
 # 
-# 1. there is no way (I know of) with cetbuildtools of installing the scripts
+# 1. there is no way (I know of) with cetbuildtools of installing the scripts ### MIGRATE-ACTION-REQUIRED: remove
 #    into `${ICARUSCODE_DIR}/test/ci` directory: `install_scripts(AS_TEST)`
 #    installs all directly into `${ICARUSCODE_DIR}/test`
 # 2. the integration test configuration (`ci_tests.cfg`) stores the command for

@@ -1,8 +1,5 @@
-
 include_directories(${FFTW3_INCLUDE_DIRS})
 link_directories(${FFTW3_LIBRARY_DIRS})
-
-add_definitions(-DEIGEN_FFTW_DEFAULT)
 
 art_make(
 	LIB_LIBRARIES
@@ -10,8 +7,7 @@ art_make(
 		lardataobj::RecoBase
 		lardata::Utilities
 		fhiclcpp::fhiclcpp
-		cetlib::cetlib
-		cetlib_except::cetlib_except
+		cetlib::cetlib cetlib_except::cetlib_except
 		larcorealg::Geometry
 		larcore::Geometry_Geometry_service
 		lardata::Utilities
@@ -19,31 +15,29 @@ art_make(
 		lardataobj::RawData
 		larevt::CalibrationDBI_IOVData
 		larevt::CalibrationDBI_Providers
+		lardataalg::DetectorInfo
 		lardataobj::RecoBase
 		icaruscode::TPC_Utilities_SignalShapingICARUSService_service
 		${ICARUS_FFTW_LIBRARIES}
-                icarus_signal_processing::icarus_signal_processing
 		art::Framework_Core
 		art::Framework_Principal
 		art::Framework_Services_Registry
 		art_root_io::tfile_support ROOT::Core
 		art_root_io::TFileService_service
 		art::Persistency_Common canvas::canvas
-		art::Persistency_Provenance
-		art::Utilities
+		art::Persistency_Provenance canvas::canvas
+		art::Utilities canvas::canvas
 		messagefacility::MF_MessageLogger
 		messagefacility::headers
 		fhiclcpp::fhiclcpp
-		cetlib::cetlib
-		cetlib_except::cetlib_except
+		cetlib::cetlib cetlib_except::cetlib_except
 		ROOT::Geom
 		ROOT::XMLIO
 		ROOT::Gdml
 		ROOT::FFTW
-		Eigen3::Eigen
 
 	TOOL_LIBRARIES
-		icaruscode::TPC_SignalProcessing_RawDigitFilter_Algorithms
+		icaruscode::TPC_Calorimetry_Algorithms
 		icaruscode::TPC_Utilities_SignalShapingICARUSService_service
 		lardataobj::RawData
 		lardataobj::RecoBase
@@ -61,16 +55,15 @@ art_make(
 		art_root_io::tfile_support ROOT::Core
 		art_root_io::TFileService_service
 		art::Persistency_Common canvas::canvas
-		art::Persistency_Provenance
-		art::Utilities
+		art::Persistency_Provenance canvas::canvas
+		art::Utilities canvas::canvas
 		messagefacility::MF_MessageLogger
 		messagefacility::headers
 		fhiclcpp::fhiclcpp
 		cetlib::cetlib cetlib_except::cetlib_except
 		ROOT::Geom
 		ROOT::FFTW
-
-)
+	)
 
 install_headers()
 install_fhicl()

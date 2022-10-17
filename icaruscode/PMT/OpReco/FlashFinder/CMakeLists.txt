@@ -1,60 +1,61 @@
-include_directories( ${CMAKE_CURRENT_SOURCE_DIR} )
+include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
-art_make( 
-	  LIB_LIBRARIES
-		   icarusalg_Geometry
-		   larcore_Geometry_Geometry_service
-		   larcorealg_Geometry
-		   lardataobj_RecoBase
-		   ${LARDATA_LIB}
-		   canvas
-		   cetlib
-		   cetlib_except
-		   ${ART_FRAMEWORK_ART}
-		   ${ART_FRAMEWORK_CORE}
-		   ${ART_FRAMEWORK_PRINCIPAL}
-		   ${ART_FRAMEWORK_UTILITIES}
-                   ${ART_FRAMEWORK_BASIC}
-		   ${ART_FRAMEWORK_SERVICES_REGISTRY}
-		   ${ART_ROOT_IO_TFILE_SUPPORT} ${ROOT_CORE}
-		   ${ART_ROOT_IO_TFILESERVICE_SERVICE}
-		   art_Persistency_Common
-		   art_Persistency_Provenance
-		   art_Utilities
-		   ${MF_MESSAGELOGGER}
-		   ${FHICLCPP}
-		   ${ROOT_GEOM}
-		   ${ROOT_XMLIO}
-		   ${ROOT_GDML}
-		   ${ROOT_BASIC_LIB_LIST}
-          MODULE_LIBRARIES
-		   icaruscode_PMT_OpReco_FlashFinder
-		   icarusalg_Geometry
-		   larcore_Geometry_Geometry_service
-		   larcorealg_Geometry
-		   lardataobj_RecoBase
-		   ${LARDATA_LIB}
-		   canvas
-		   cetlib
-		   cetlib_except
-		   ${ART_FRAMEWORK_ART}
-		   ${ART_FRAMEWORK_CORE}
-		   ${ART_FRAMEWORK_PRINCIPAL}
-                   ${ART_FRAMEWORK_BASIC}
-		   ${ART_FRAMEWORK_SERVICES_REGISTRY}
-		   ${ART_ROOT_IO_TFILE_SUPPORT} ${ROOT_CORE}
-		   ${ART_ROOT_IO_TFILESERVICE_SERVICE}
-		   art_Persistency_Common
-		   art_Persistency_Provenance
-		   art_Utilities
-		   ${MF_MESSAGELOGGER}
-		   ${FHICLCPP}
-		   ${ROOT_GEOM}
-		   ${ROOT_XMLIO}
-		   ${ROOT_GDML}
-		   ${ROOT_BASIC_LIB_LIST}
-
-        )							   
+art_make(
+	LIB_LIBRARIES
+		icarusalg::Geometry
+		larcore::Geometry_Geometry_service
+		larcorealg::Geometry
+		lardataobj::RecoBase
+		${LARDATA_LIB}
+		canvas::canvas
+		cetlib::cetlib
+		cetlib_except::cetlib_except
+		${ART_FRAMEWORK_ART}
+		art::Framework_Core
+		art::Framework_Principal
+		${ART_FRAMEWORK_UTILITIES}
+		${ART_FRAMEWORK_BASIC}
+		art::Framework_Services_Registry
+		art_root_io::tfile_support ROOT::Core
+		art_root_io::TFileService_service
+		art::Persistency_Common
+		art::Persistency_Provenance
+		art::Utilities
+		messagefacility::MF_MessageLogger
+		fhiclcpp::fhiclcpp
+		ROOT::Geom
+		ROOT::XMLIO
+		ROOT::Gdml
+		
+	MODULE_LIBRARIES
+		icaruscode::PMT_OpReco_FlashFinder
+		icarusalg::Geometry
+		larcore::Geometry_Geometry_service
+		larcorealg::Geometry
+		lardataobj::RecoBase
+		${LARDATA_LIB}
+                lardata::Utilities
+                larcore::Geometry_AuxDetGeometry_service
+		canvas::canvas
+		cetlib::cetlib
+		cetlib_except::cetlib_except
+		${ART_FRAMEWORK_ART}
+		art::Framework_Core
+		art::Framework_Principal
+		${ART_FRAMEWORK_BASIC}
+		art::Framework_Services_Registry
+		art_root_io::tfile_support
+		art_root_io::TFileService_service
+		art::Persistency_Common
+		art::Persistency_Provenance
+		art::Utilities
+		messagefacility::MF_MessageLogger
+		fhiclcpp::fhiclcpp
+		ROOT::Geom
+		ROOT::XMLIO
+		ROOT::Gdml
+		ROOT::Core
+)							
 
 install_headers()
 install_source()

@@ -8,7 +8,7 @@ cet_make_library(SOURCE
 
 art_dictionary(DICTIONARY_LIBRARIES
                  icaruscode::IcarusObj
-                 lardataobj_RecoBase
+                 lardataobj::RecoBase
                  canvas::canvas 
               )
 

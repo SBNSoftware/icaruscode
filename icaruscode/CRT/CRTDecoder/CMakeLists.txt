@@ -1,127 +1,129 @@
+include_directories(${TRACE_INC})
+
 art_make(
- EXCLUDE
-        CrtCal.cc
-        CrtCalTree.cxx
+	EXCLUDE
+		CrtCal.cc
+		CrtCalTree.cxx
 	CRTTiming.cc
 	CRTRawTree.cc
 	CRTPreProcessTree.cc
 	CRTMergePreProcessTrees.cxx
 	
- NO_PLUGINS # WAnt different link lists for modues
- BASENAME_ONLY
- LIBRARY_NAME sbndaq-artdaq_ArtModules_Common
- LIB_LIBRARIES sbndaq-artdaq-core_Overlays
-               sbndaq-artdaq-core_Overlays_Common
-
+	NO_PLUGINS
+	BASENAME_ONLY
+	LIBRARY_NAME sbndaq-artdaq_ArtModules_Common
+	LIB_LIBRARIES sbndaq_artdaq_core::sbndaq-artdaq-core_Overlays
+		sbndaq_artdaq_core::sbndaq-artdaq-core_Overlays_Common
+                canvas::canvas
 )
 
 art_make_library(
-    LIBRARY_NAME
-        CRT_CAL
-    SOURCE
-        CrtCal.cc
-    LIBRARIES 
-        cetlib_except
-        ${ROOT_BASIC_LIB_LIST}
-        ${ROOT_SPECTRUM}
-        ${ROOT_GEOM}
-        ${ROOT_CORE}
-        ${CETLIB}
+	LIBRARY_NAME
+		CRT_CAL
+	SOURCE
+		CrtCal.cc
+	LIBRARIES
+		cetlib_except::cetlib_except
+                ROOT::Graf
+		ROOT::Spectrum
+		ROOT::Geom
+		ROOT::Core
+                ROOT::Gpad
+		cetlib::cetlib
 )
 
 art_make_library(
-    LIBRARY_NAME
-        CRT_CAL_TREE
-    SOURCE
-        CrtCalTree.cxx
-    LIBRARIES 
-        cetlib_except
-        ${ROOT_CORE}
-        ${ROOT_BASIC_LIB_LIST}
-        ${ROOT_SPECTRUM}
-        ${ROOT_GEOM}
-        ${CETLIB}
-)
+	LIBRARY_NAME
+		CRT_CAL_TREE
+	SOURCE
+		CrtCalTree.cxx
+	LIBRARIES
+		cetlib_except::cetlib_except
+		ROOT::Core
+		ROOT::Spectrum
+		ROOT::Geom
+		cetlib::cetlib
+	)
 
 art_make_library(
-    LIBRARY_NAME
-        CRT_RAW_TREE
-    SOURCE
-        CRTRawTree.cc
-    LIBRARIES 
-        cetlib_except
-        ${ROOT_CORE}
-        ${ROOT_BASIC_LIB_LIST}
-        ${ROOT_SPECTRUM}
-        ${ROOT_GEOM}
-        ${CETLIB}
-)
+	LIBRARY_NAME
+		CRT_RAW_TREE
+	SOURCE
+		CRTRawTree.cc
+	LIBRARIES
+		cetlib_except::cetlib_except
+		ROOT::Core
+		ROOT::Spectrum
+		ROOT::Geom
+		cetlib::cetlib
+	)
 
 art_make_library(
-    LIBRARY_NAME
-        CRT_TIMING
-    SOURCE
-        CRTTiming.cc
-    LIBRARIES 
-        cetlib_except
-        ${ROOT_CORE}
-        ${ROOT_BASIC_LIB_LIST}
-        ${ROOT_SPECTRUM}
-        ${ROOT_GEOM}
-        ${CETLIB}
-	CRT_RAW_TREE
-	CRT_PREPROCESS_TREE
-)
+	LIBRARY_NAME
+		CRT_TIMING
+	SOURCE
+		CRTTiming.cc
+	LIBRARIES
+		cetlib_except::cetlib_except
+		ROOT::Core
+		ROOT::Spectrum
+		ROOT::Geom
+		cetlib::cetlib ROOT::Tree
+		CRT_RAW_TREE
+		CRT_PREPROCESS_TREE
+	)
 
 art_make_library(
-    LIBRARY_NAME
-        CRT_PREPROCESS_TREE
-    SOURCE
-        CRTPreProcessTree.cc
-    LIBRARIES 
-        cetlib_except
-        ${ROOT_CORE}
-        ${ROOT_BASIC_LIB_LIST}
-        ${ROOT_SPECTRUM}
-        ${ROOT_GEOM}
-        ${CETLIB}
-)
+	LIBRARY_NAME
+		CRT_PREPROCESS_TREE
+	SOURCE
+		CRTPreProcessTree.cc
+	LIBRARIES
+		cetlib_except::cetlib_except
+		ROOT::Core
+		ROOT::Spectrum
+		ROOT::Geom
+		cetlib::cetlib
+	)
 
 art_make_library(
-    LIBRARY_NAME
-        CRT_MERGE_PREPROCESS_TREE
-    SOURCE
-        CRTMergePreProcessTrees.cxx
-    LIBRARIES 
-        cetlib_except
-        ${ROOT_CORE}
-        ${ROOT_BASIC_LIB_LIST}
-        ${ROOT_SPECTRUM}
-        ${ROOT_GEOM}
-        ${CETLIB}
-	CRT_TIMING
-	CRT_PREPROCESS_TREE
+	LIBRARY_NAME
+		CRT_MERGE_PREPROCESS_TREE
+	SOURCE
+		CRTMergePreProcessTrees.cxx
+	LIBRARIES
+		cetlib_except::cetlib_except
+		ROOT::Core
+		ROOT::Spectrum
+		ROOT::Geom
+                ROOT::Tree
+		cetlib::cetlib
+		CRT_TIMING
+		CRT_PREPROCESS_TREE
 )
 
 install_headers()
 install_source()
 
-simple_plugin( BernCRTAna "module"
-  art_Framework_Services_Registry
-  art_root_io_tfile_support
-  art_root_io_TFileService_service
-  ${ROOT_BASIC_LIB_LIST}
+cet_build_plugin( BernCRTAna art::module
+  LIBRARIES
+  art::Framework_Services_Registry
+  art_root_io::tfile_support
+  art_root_io::TFileService_service
+  ROOT::Core ROOT::Tree
+  canvas::canvas
         ${ARTDAQ-CORE_UTILITIES}
   sbndaq_artdaq_core::sbndaq-artdaq-core_Overlays_Common 
   artdaq_core::artdaq-core_Data
 )
 
 simple_plugin( CrtNoiseMonTool "module"
-  art_Framework_Services_Registry
-  art_root_io_tfile_support
-  art_root_io_TFileService_service
-  #art_Framework_Services_Optional
-  #art_Framework_Services_Optional_TFileService_service
+  art::Framework_Services_Registry
+  art_root_io::tfile_support
+  art_root_io::TFileService_service
+  #art::Framework_Services_Optional
+  #art::Framework_Services_Optional_TFileService_service
+  ROOT::Core ROOT::Tree ROOT::Hist
   ${ROOT_BASIC_LIB_LIST}
         ${ARTDAQ-CORE_UTILITIES}
   sbndaq_artdaq_core::sbndaq-artdaq-core_Overlays_Common 
@@ -129,11 +131,12 @@ simple_plugin( CrtNoiseMonTool "module"
 )
 
 simple_plugin( CrtCalAnalysis "module"
-  art_Framework_Services_Registry
-  art_root_io_tfile_support
-  art_root_io_TFileService_service
-  #art_Framework_Services_Optional
-  #art_Framework_Services_Optional_TFileService_service
+  art::Framework_Services_Registry
+  art_root_io::tfile_support
+  art_root_io::TFileService_service
+  #art::Framework_Services_Optional
+  #art::Framework_Services_Optional_TFileService_service
+  ROOT::Core ROOT::Tree ROOT::Hist
   ${ROOT_BASIC_LIB_LIST}
         ${ARTDAQ-CORE_UTILITIES}
   sbndaq_artdaq_core::sbndaq-artdaq-core_Overlays_Common 
@@ -142,11 +145,12 @@ simple_plugin( CrtCalAnalysis "module"
 )
 
 simple_plugin( AnaProducer "module"
-  art_Framework_Services_Registry
-  art_root_io_tfile_support
-  art_root_io_TFileService_service
-  #art_Framework_Services_Optional
-  #art_Framework_Services_Optional_TFileService_service
+  art::Framework_Services_Registry
+  art_root_io::tfile_support
+  art_root_io::TFileService_service
+  #art::Framework_Services_Optional
+  #art::Framework_Services_Optional_TFileService_service
+  ROOT::Core ROOT::Tree ROOT::Hist
   ${ROOT_BASIC_LIB_LIST}
         ${ARTDAQ-CORE_UTILITIES}
   sbndaq_artdaq_core::sbndaq-artdaq-core_Overlays_Common 
@@ -158,27 +162,33 @@ simple_plugin( AnaProducer "module"
 )
 
 simple_plugin( CRTEventProducer "module"
-  art_Framework_Services_Registry
-  art_root_io_tfile_support
-  art_root_io_TFileService_service
-  #art_Framework_Services_Optional
-  #art_Framework_Services_Optional_TFileService_service
+  art::Framework_Services_Registry
+  art_root_io::tfile_support
+  art_root_io::TFileService_service
+  #art::Framework_Services_Optional
+  #art::Framework_Services_Optional_TFileService_service
   #${ROOT_BASIC_LIB_LIST}
   CRT_PREPROCESS_TREE
   #CRT_CAL_TREE
-  sbnobj_Common_CRT
+  sbnobj::Common_CRT
+  lardata::headers
+  larcore::headers
+  larcorealg::headers
+  larcoreobj::headers
+  lardataalg::headers
 )
 
 simple_plugin( DecoderICARUSCRT "module"
   icaruscode_Utilities
-  art_Framework_Services_Registry
-  art_root_io_tfile_support
-  art_root_io_TFileService_service
+  art::Framework_Services_Registry
+  art_root_io::tfile_support
+  art_root_io::TFileService_service
+  ROOT::Core ROOT::Tree ROOT::Hist
   ${ROOT_BASIC_LIB_LIST}
   ${ARTDAQ-CORE_UTILITIES}
   sbndaq_artdaq_core::sbndaq-artdaq-core_Overlays_Common
   artdaq_core::artdaq-core_Data
-  sbnobj_Common_CRT
+  sbnobj::Common_CRT
 )
 
 install_fhicl()

@@ -1,46 +1,46 @@
 if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
-cet_add_compiler_flags(CXX -Wno-maybe-uninitialized)
+	cet_add_compiler_flags(CXX -Wno-maybe-uninitialized)
 endif()
-art_make(    LIBRARY_NAME icaruscode_CRTUtils
-             LIB_LIBRARIES larcorealg_Geometry
-                           larcore_Geometry_Geometry_service
-                           larsim_Simulation lardataobj_Simulation
-                           larsim_MCCheater_BackTrackerService_service
-                           larsim_MCCheater_ParticleInventoryService_service
-                           lardata_Utilities
-                           larevt_Filters
-                           lardataobj_RawData
-                           lardataobj_RecoBase
-                           lardata_RecoObjects  
-                           lardataalg_DetectorInfo
-                           larpandora_LArPandoraInterface
-                           nusimdata_SimulationBase
-                           cetlib cetlib_except
-                           ${ART_FRAMEWORK_CORE}
-                           ${ART_FRAMEWORK_PRINCIPAL}
-                           ${ART_FRAMEWORK_SERVICES_REGISTRY}
-                           ${ART_ROOT_IO_TFILE_SUPPORT} ${ROOT_CORE}
-                           ${ART_ROOT_IO_TFILESERVICE_SERVICE}
-                           ${ART_FRAMEWORK_SERVICES_OPTIONAL_RANDOMNUMBERGENERATOR_SERVICE}
-                           art_Persistency_Common canvas
-                           art_Persistency_Provenance canvas
-                           art_Utilities canvas
-                           ${MF_MESSAGELOGGER}
-                           ${CLHEP}
-                           ${FHICLCPP}
-                           ${ROOT_GEOM}
-                           ${ROOT_XMLIO}
-                           ${ROOT_GDML}
-                           ${ROOT_GENVECTOR}
-                           ${ROOT_BASIC_LIB_LIST}
-                           ${Boost_SYSTEM_LIBRARY}
-                           icaruscode_CRT
-                           sbnobj_Common_CRT
-                           icaruscode_CRTData
-                           lardata_DetectorInfoServices_DetectorClocksServiceStandard_service
-                           nurandom_RandomUtils_NuRandomService_service
-        )
+art_make(LIBRARY_NAME icaruscode_CRTUtils
+	LIB_LIBRARIES larcorealg::Geometry
+	larcore::Geometry_Geometry_service
+	larsim::Simulation
+	lardataobj::Simulation
+	larsim::MCCheater_BackTrackerService_service
+	larsim::MCCheater_ParticleInventoryService_service
+	lardata::Utilities
+	larevt::Filters
+	lardataobj::RawData
+	lardataobj::RecoBase
+	lardata::RecoObjects
+	lardataalg::DetectorInfo
+	larpandora::LArPandoraInterface
+	nusimdata::SimulationBase
+	cetlib::cetlib cetlib_except::cetlib_except
+	art::Framework_Core
+	art::Framework_Principal
+	art::Framework_Services_Registry
+	art_root_io::tfile_support ROOT::Core
+	art_root_io::TFileService_service
+	art::Framework_Services_Optional_RandomNumberGenerator_service
+	art::Persistency_Common
+	art::Persistency_Provenance
+	art::Utilities canvas::canvas
+	messagefacility::MF_MessageLogger
+	CLHEP::CLHEP
+	fhiclcpp::fhiclcpp
+	ROOT::Geom
+	ROOT::XMLIO
+	ROOT::Gdml
+	ROOT::GenVector
+	Boost::system
+	sbnobj::ICARUS_CRT
+	sbnobj::Common_CRT
+	lardata::DetectorInfoServices_DetectorClocksServiceStandard_service
+	nurandom::RandomUtils_NuRandomService_service
+	)
 
 install_headers()
 install_fhicl()
 install_source()
+

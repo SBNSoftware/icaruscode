@@ -1,72 +1,71 @@
+include_directories(${TRACE_INC})
+
 cet_enable_asserts()
 
-cet_find_library(LIBWDA NAMES wda PATHS ENV LIBWDA_LIB NO_DEFAULT_PATH)
+cet_find_library(LIBWDA NAMES wda PATHS ENV LIBWDA_LIB)
 
 art_make(
-          EXCLUDE
-                        TriggerConfigurationExtraction_module.cc
-                        PMTconfigurationExtraction_module.cc
-                        DumpTriggerConfiguration_module.cc
-                        DumpPMTconfiguration_module.cc
-                        DumpArtDAQfragments_module.cc
-                        DumpTrigger_module.cc
-                        DaqDecoderICARUSPMT_module.cc
-          MODULE_LIBRARIES
-                        icarus_signal_processing
-                        icarus_signal_processing_Detection
-                        icarus_signal_processing_Filters
-                        icaruscode_TPC_Utilities
-                        sbndaq_artdaq_core::sbndaq-artdaq-core_Overlays_ICARUS 
-                        artdaq_core::artdaq-core_Utilities
-                        larcorealg_Geometry
-                        larcore_Geometry_Geometry_service
-                        lardata_Utilities
-                        larevt_Filters
-                        lardataobj_RawData
-                        lardata_ArtDataHelper
-                        ${ROOT_BASIC_LIB_LIST}
-                        LIBWDA
-                        ${ART_FRAMEWORK_CORE}
-                        ${ART_FRAMEWORK_PRINCIPAL}
-                        ${ART_FRAMEWORK_SERVICES_REGISTRY}
-                        ${ART_ROOT_IO_TFILE_SUPPORT}
-                        ${ART_ROOT_IO_TFILESERVICE_SERVICE}
-                        ${ART_UTILITIES}
-                        art_Persistency_Common canvas
-                        art_Persistency_Provenance canvas
-                        art_Utilities canvas
-                        ${MF_MESSAGELOGGER}
-                        ${MF_UTILITIES}
-                        ${FHICLCPP}
-                        cetlib cetlib_except
-                        ${TBB}
-        )
+	EXCLUDE
+		PMTconfigurationExtraction_module.cc
+		DumpPMTconfiguration_module.cc
+		DumpArtDAQfragments_module.cc
+		DaqDecoderICARUSPMT_module.cc
+	MODULE_LIBRARIES
+	icarus_signal_processing::icarus_signal_processing
+	icarus_signal_processing::Detection
+	icarus_signal_processing::Filters
+	sbndaq_artdaq_core::sbndaq-artdaq-core_Overlays_ICARUS
+	artdaq_core::artdaq-core_Utilities
+	larcorealg::Geometry
+	larcore::Geometry_Geometry_service
+	lardata::Utilities
+	larevt::Filters
+	lardataobj::RawData
+	lardata::ArtDataHelper
+	LIBWDA
+	art::Framework_Core
+	art::Framework_Principal
+	art::Framework_Services_Registry
+	art_root_io::tfile_support
+	art_root_io::TFileService_service
+	art::Utilities
+	art::Persistency_Common canvas::canvas
+	art::Persistency_Provenance
+	art::Utilities
+	messagefacility::MF_MessageLogger
+	messagefacility::headers
+	fhiclcpp::fhiclcpp
+	cetlib::cetlib cetlib_except::cetlib_except
+	${TBB}
+	)
 
 simple_plugin(DaqDecoderICARUSPMT module
-  sbnobj_Common_PMT_Data
-  sbnobj_Common_Trigger
-  icaruscode_Decode_DecoderTools_Dumpers
-  icaruscode_Decode_DecoderTools
-  sbndaq_artdaq_core::sbndaq-artdaq-core_Overlays_Common
-  sbndaq_artdaq_core::sbndaq-artdaq-core_Overlays
-  lardataobj_RawData
-  artdaq_core::artdaq-core_Data
-  ${ART_ROOT_IO_TFILESERVICE_SERVICE}
-  ${ART_ROOT_IO_TFILE_SUPPORT}
-  ${ART_FRAMEWORK_SERVICES_REGISTRY}
-  ${MF_MESSAGELOGGER}
-  ${FHICLCPP}
-  cetlib_except
-  ROOT::Tree
-  )
+	sbnobj::Common_PMT_Data
+	icaruscode::Decode_DecoderTools_Dumpers
+	icaruscode::Decode_DataProducts # should become sbnobj::Common_Trigger
+	icaruscode::Decode_DecoderTools
+	sbndaq_artdaq_core::sbndaq-artdaq-core_Overlays_Common
+	sbndaq_artdaq_core::sbndaq-artdaq-core_Overlays
+	lardataobj::RawData
+	larcore::Geometry_Geometry_service
+	artdaq_core::artdaq-core_Data
+	art_root_io::TFileService_service
+	art_root_io::tfile_support
+	art::Framework_Services_Registry
+	messagefacility::MF_MessageLogger
+	fhiclcpp::fhiclcpp
+	cetlib_except::cetlib_except
+	ROOT::Tree
+	lardata::Utilities
+	)
 
 simple_plugin(PMTconfigurationExtraction module
-  icaruscode_Decode_DecoderTools
-  sbnobj_Common_PMT_Data
-  art_Framework_Services_Registry
-  fhiclcpp
-  cetlib_except
-  )
+	icaruscode::Decode_DecoderTools
+	sbnobj::Common_PMT_Data
+	art::Framework_Services_Registry
+	fhiclcpp::fhiclcpp
+	cetlib_except::cetlib_except
+	)
 
 simple_plugin(TriggerConfigurationExtraction module
   icaruscode_Decode_DecoderTools
@@ -77,26 +76,27 @@ simple_plugin(TriggerConfigurationExtraction module
   )
 
 simple_plugin(DumpPMTconfiguration module
-  sbnobj_Common_PMT_Data
-  messagefacility::MF_MessageLogger
-  fhiclcpp
-  cetlib_except
-  )
+	sbnobj::Common_PMT_Data
+	messagefacility::MF_MessageLogger
+	fhiclcpp::fhiclcpp
+	cetlib_except::cetlib_except
+	)
+
 
 simple_plugin(DumpTriggerConfiguration module
   icaruscode_Decode_DataProducts
   messagefacility::MF_MessageLogger
-  fhiclcpp
-  cetlib_except
+  fhiclcpp::fhiclcpp
+  cetlib_except::cetlib_except
   )
 
 simple_plugin(DumpArtDAQfragments module
-  icaruscode_Decode_DecoderTools_Dumpers
-  artdaq_core::artdaq-core_Data
-  messagefacility::MF_MessageLogger
-  fhiclcpp
-  cetlib_except
-  )
+	icaruscode::Decode_DecoderTools_Dumpers
+	artdaq_core::artdaq-core_Data
+	messagefacility::MF_MessageLogger
+	fhiclcpp::fhiclcpp
+	cetlib_except::cetlib_except
+	)
 
 simple_plugin(DumpTrigger module
   sbnobj_Common_Trigger

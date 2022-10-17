@@ -1,5 +1,5 @@
 
-# where should the scripts/..xml file be installed?  Perhaps in bin?
+#where should the scripts/..xml file be installed? Perhaps in bin?
 
 install_fhicl()
 

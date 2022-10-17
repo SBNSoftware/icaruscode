@@ -43,7 +43,6 @@ art_make( MODULE_LIBRARIES
            ${MF_MESSAGELOGGER}
 	   LIBWDA
          )
-
 install_headers()
 install_fhicl()
 install_source()

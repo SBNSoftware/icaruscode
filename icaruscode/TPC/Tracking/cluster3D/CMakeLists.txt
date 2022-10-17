@@ -53,7 +53,6 @@ art_make(LIB_LIBRARIES
           art_root_io::TFileService_service
           messagefacility::MF_MessageLogger
        )
-
 install_headers()
 install_fhicl()
 install_source()
