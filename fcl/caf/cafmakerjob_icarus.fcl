@@ -46,3 +46,6 @@ physics:
   trigger_paths: [ runprod ] 
   end_paths:     [ stream1 ]
 }
+
+# Blinding not needed for MC
+physics.producers.cafmaker.CreateBlindedCAF: false
