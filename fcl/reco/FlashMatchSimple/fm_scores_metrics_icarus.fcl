@@ -1,19 +1,19 @@
 #include "fm_scores_icarus.fcl"
 
-physics.producers.fmatchCryo0.MakeTree:              true
-physics.producers.fmatchCryo0.StoreMCInfo:           true
-physics.producers.fmatchCryo0.SelectNeutrino:        true
-physics.producers.fmatchCryo0.CorrectDriftDistance:  false
-physics.producers.fmatchCryo0.MinInTimeFlashes:      2
-physics.producers.fmatchCryo0.MaxFlashes:            2
-physics.producers.fmatchCryo0.FlashFindingTimeStart: @local::icarus_simple_flashmatch_0.BeamSpillTimeStart
-physics.producers.fmatchCryo0.FlashFindingTimeEnd:   @local::icarus_simple_flashmatch_0.BeamSpillTimeEnd
+physics.producers.fmatchCryoE.MakeTree:              true
+physics.producers.fmatchCryoE.StoreMCInfo:           true
+physics.producers.fmatchCryoE.SelectNeutrino:        true
+physics.producers.fmatchCryoE.CorrectDriftDistance:  false
+physics.producers.fmatchCryoE.MinInTimeFlashes:      2
+physics.producers.fmatchCryoE.MaxFlashes:            2
+physics.producers.fmatchCryoE.FlashFindingTimeStart: @local::icarus_simple_flashmatch_E.BeamSpillTimeStart
+physics.producers.fmatchCryoE.FlashFindingTimeEnd:   @local::icarus_simple_flashmatch_E.BeamSpillTimeEnd
 
-physics.producers.fmatchCryo1.MakeTree:              true
-physics.producers.fmatchCryo1.StoreMCInfo:           true
-physics.producers.fmatchCryo1.SelectNeutrino:        true
-physics.producers.fmatchCryo1.CorrectDriftDistance:  false
-physics.producers.fmatchCryo1.MinInTimeFlashes:      2
-physics.producers.fmatchCryo1.MaxFlashes:            2
-physics.producers.fmatchCryo1.FlashFindingTimeStart: @local::icarus_simple_flashmatch_1.BeamSpillTimeStart
-physics.producers.fmatchCryo1.FlashFindingTimeEnd:   @local::icarus_simple_flashmatch_1.BeamSpillTimeEnd
+physics.producers.fmatchCryoW.MakeTree:              true
+physics.producers.fmatchCryoW.StoreMCInfo:           true
+physics.producers.fmatchCryoW.SelectNeutrino:        true
+physics.producers.fmatchCryoW.CorrectDriftDistance:  false
+physics.producers.fmatchCryoW.MinInTimeFlashes:      2
+physics.producers.fmatchCryoW.MaxFlashes:            2
+physics.producers.fmatchCryoW.FlashFindingTimeStart: @local::icarus_simple_flashmatch_W.BeamSpillTimeStart
+physics.producers.fmatchCryoW.FlashFindingTimeEnd:   @local::icarus_simple_flashmatch_W.BeamSpillTimeEnd

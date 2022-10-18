@@ -1,6 +1,6 @@
 BEGIN_PROLOG #comment to run generate_simple_weighted_template.py
 
-icarus_simple_flashmatch_0: {
+icarus_simple_flashmatch_E: {
   module_type: FlashPredict
   Cryostat: 0
   PandoraProducer:     "pandoraGausCryoE"
@@ -108,11 +108,24 @@ icarus_simple_flashmatch_0: {
   # ratio_TF1_fit: "pol3" # LEGACY, not used in the normal operation but helpful for diagnostics
 }
 
-icarus_simple_flashmatch_1: @local::icarus_simple_flashmatch_0
-icarus_simple_flashmatch_1.Cryostat: 1
-icarus_simple_flashmatch_1.PandoraProducer:    "pandoraGausCryoW"
-icarus_simple_flashmatch_1.TrackProducer:      "pandoraTrackGausCryoW"
-# icarus_simple_flashmatch_1.CaloProducer:     "pandoraGausCaloCryoW"
-icarus_simple_flashmatch_1.SpacePointProducer: "pandoraGausCryoW"
+icarus_simple_flashmatch_W: @local::icarus_simple_flashmatch_E
+icarus_simple_flashmatch_W.Cryostat: 1
+icarus_simple_flashmatch_W.PandoraProducer:    "pandoraGausCryoW"
+icarus_simple_flashmatch_W.TrackProducer:      "pandoraTrackGausCryoW"
+# icarus_simple_flashmatch_W.CaloProducer:     "pandoraGausCaloCryoW"
+icarus_simple_flashmatch_W.SpacePointProducer: "pandoraGausCryoW"
+
+# SCE definitions
+icarus_simple_flashmatch_sce_E: @local::icarus_simple_flashmatch_E
+icarus_simple_flashmatch_sce_E.PandoraProducer:    "pandoraGausSCECryoE"
+icarus_simple_flashmatch_sce_E.TrackProducer:      "pandoraTrackGausSCECryoE"
+# icarus_simple_flashmatch_sce_E.CaloProducer:     "pandoraGausSCECaloCryoE"
+icarus_simple_flashmatch_sce_E.SpacePointProducer: "pandoraGausSCECryoE"
+
+icarus_simple_flashmatch_sce_W: @local::icarus_simple_flashmatch_W
+icarus_simple_flashmatch_sce_W.PandoraProducer:    "pandoraGausSCECryoW"
+icarus_simple_flashmatch_sce_W.TrackProducer:      "pandoraTrackGausSCECryoW"
+# icarus_simple_flashmatch_sce_W.CaloProducer:     "pandoraGausSCECaloCryoW"
+icarus_simple_flashmatch_sce_W.SpacePointProducer: "pandoraGausSCECryoW"
 
 END_PROLOG #comment to run generate_simple_weighted_template.py

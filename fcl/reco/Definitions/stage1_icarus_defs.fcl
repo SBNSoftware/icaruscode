@@ -56,8 +56,8 @@ icarus_stage1_producers:
 
   ## Attempt to include simple flash matching here
   ## Simple Flash Matching, right now cryo0 and 1 are identical
-  fmatchCryoE:                    @local::icarus_simple_flashmatch_0
-  fmatchCryoW:                    @local::icarus_simple_flashmatch_1
+  fmatchCryoE:                    @local::icarus_simple_flashmatch_E
+  fmatchCryoW:                    @local::icarus_simple_flashmatch_W
 
  ## crt producer
   crthit:            @local::standard_crthitproducer	
