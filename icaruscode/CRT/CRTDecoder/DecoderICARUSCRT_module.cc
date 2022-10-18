@@ -55,6 +55,8 @@
 #include <map>
 
 
+//Kickoff modifica CRTDecoder
+
 namespace crt {
   class DecoderICARUSCRT;
 }
