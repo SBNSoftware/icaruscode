@@ -21,7 +21,7 @@
 
 namespace icarus {
   namespace TPCGeoUtil {
-    int DetectedInTPC(std::vector<art::Ptr<recob::Hit>> hits);
+    int DetectedInTPC(std::vector<art::Ptr<recob::Hit>> hits, const geo::GeometryCore *GeometryService);
     // Work out the drift limits for a collection of hits
     std::pair<double, double> XLimitsFromHits(const geo::GeometryCore *GeometryService, std::vector<art::Ptr<recob::Hit>> hits);
     // Is point inside given TPC

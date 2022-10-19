@@ -331,7 +331,7 @@ namespace icarus {
 	  //if(fVerbose) std::cout<<"----------------- line 315 -------------------"<<std::endl;
 	  std::cout << "new track " << trueTime << std::endl;
 	  // Calculate t0 from CRT Hit matching
-	  matchCand closest = t0Alg.GetClosestCRTHit(detProp, tpcTrack, hits, crtHits, m_gate_start_timestamp);
+	  matchCand closest = t0Alg.GetClosestCRTHit(detProp, tpcTrack, hits, crtHits, m_gate_start_timestamp, false);
 	  // matchCand closest = t0Alg.GetClosestCRTHit(detProp, tpcTrack, crtHits, event);
 	  //std::vector <matchCand> closestvec = t0Alg.GetClosestCRTHit(detProp, tpcTrack, crtHits, event);
           //matchCand closest = closestvec.back();
