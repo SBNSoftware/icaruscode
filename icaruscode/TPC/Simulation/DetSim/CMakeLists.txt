@@ -5,7 +5,7 @@ include_directories(${FFTW3_INCLUDE_DIRS})
 art_make(
 	EXCLUDE
 		SimWireICARUS_module.cc
-	MODULE_LIBRARIES 
+	MODULE_LIBRARIES
 		larcorealg::Geometry
 		larcore::Geometry_Geometry_service
 		larsim::Simulation
@@ -43,7 +43,7 @@ simple_plugin(SimWireICARUS "module"
 		larcore::Geometry_Geometry_service
 		larsim::Simulation
 		nug4::ParticleNavigation
-                lardataobj::Simulation
+		lardataobj::Simulation
 		lardata::Utilities
 		lardataalg::DetectorInfo
 		larevt::Filters

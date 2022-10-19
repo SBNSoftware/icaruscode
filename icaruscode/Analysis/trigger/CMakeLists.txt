@@ -8,8 +8,8 @@ art_make(
     "BeamGateInfoFromTracks_module.cc"
     "TimeTrackTreeStorage_module.cc"
   LIB_LIBRARIES
-    larcorealg_Geometry
-    lardataobj_RawData
+    larcorealg::Geometry
+    lardataobj::RawData
     art::Framework_Principal
     art::Framework_Core
     canvas::canvas
@@ -17,28 +17,29 @@ art_make(
   )
 
 simple_plugin(TimedTrackSelector module
-  lardataobj_AnalysisBase
-  lardataobj_RecoBase
+  lardataobj::AnalysisBase
+  lardataobj::RecoBase
   messagefacility::MF_MessageLogger
   ROOT::Core
   )
 
 simple_plugin(BeamGateInfoFromTracks  module
-  lardataobj_Simulation
-  lardataobj_AnalysisBase
-  lardataobj_RecoBase
+  lardataobj::Simulation
+  lardataobj::AnalysisBase
+  lardataobj::RecoBase
+  lardata::DetectorInfoServices_DetectorClocksServiceStandard_service
   )
 
 simple_plugin(TimeTrackTreeStorage module
   icaruscode_Analysis_trigger
   icaruscode_PMT_Algorithms
   icaruscode_Decode_DataProducts
-  larcore_Geometry_Geometry_service
-  larcorealg_Geometry
-  lardataobj_AnalysisBase
-  lardataobj_RecoBase
-  lardataobj_RawData
-  lardataobj_Simulation
+  larcore::Geometry_Geometry_service
+  larcorealg::Geometry
+  lardataobj::AnalysisBase
+  lardataobj::RecoBase
+  lardataobj::RawData
+  lardataobj::Simulation
   ROOT::Tree
   ROOT::Core
   art_root_io::TFileService_service

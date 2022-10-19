@@ -4,8 +4,10 @@ endif()
 
 art_make(
 	LIB_LIBRARIES
-                larcorealg::CoreUtils
+		lardataobj::RawData
+		larcorealg::CoreUtils
 		art_root_io::tfile_support
+		art::Framework_Core
 		messagefacility::MF_MessageLogger
 		cetlib_except::cetlib_except
 		ROOT::RIO

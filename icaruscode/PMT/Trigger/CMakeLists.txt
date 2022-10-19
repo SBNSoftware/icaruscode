@@ -24,7 +24,7 @@ art_make(
 		lardataalg::MCDumpers
 		larcorealg::Geometry
 		lardataobj::RawData
-                lardata::Utilities
+		lardata::Utilities
 		lardata::DetectorInfoServices_DetectorClocksServiceStandard_service
 		nusimdata::SimulationBase
 		art_root_io::TFileService_service
@@ -47,7 +47,7 @@ art_make(
 		sbnobj::ICARUS_PMT_Trigger_Data
 		lardataalg::DetectorInfo
 		lardataobj::RawData
-                lardata::Utilities
+		lardata::Utilities
 		larcore::Geometry_Geometry_service
 		art::Framework_Services_Registry
 		messagefacility::MF_MessageLogger
@@ -63,14 +63,23 @@ art_make(
 		messagefacility::MF_MessageLogger
 		fhiclcpp::fhiclcpp
 		larcore::Geometry_Geometry_service
+	TOOL_LIBRARIES
+		icaruscode_PMT_Trigger_Algorithms
+		sbnobj::ICARUS_PMT_Trigger_Data
+		lardataalg::DetectorInfo
+		lardataobj::RawData
 	)
 
 simple_plugin(WriteBeamGateInfo module
-  lardataobj_Simulation
+  lardataobj::Simulation
+  larcorealg::headers
+  lardataalg::headers
   )
 
 simple_plugin(FixBeamGateInfo module
-  lardataobj_Simulation
+  lardataobj::Simulation
+  larcorealg::headers
+  lardataalg::headers
   )
 
 simple_plugin(DiscriminatePMTwaveformsByChannel module
@@ -82,7 +91,7 @@ simple_plugin(DiscriminatePMTwaveformsByChannel module
 		icaruscode::PMT_Trigger_Utilities
 		icaruscode::PMT_Algorithms
 		lardataobj::RawData
-                lardata::Utilities
+		lardata::Utilities
 		lardata::DetectorInfoServices_DetectorClocksServiceStandard_service
 		larcore::Geometry_Geometry_service
 		art::Framework_Services_Registry
@@ -100,10 +109,11 @@ simple_plugin(SlidingWindowTrigger module
 		icaruscode::PMT_Trigger_Algorithms
 		sbnobj::ICARUS_PMT_Trigger_Data
 		icaruscode::PMT_Trigger_Utilities
+		icaruscode::PMT_Trigger_Utilities
 		icaruscode::PMT_Algorithms
 		larcore::Geometry_Geometry_service
 		larcorealg::Geometry
-                lardata::Utilities
+		lardata::Utilities
 		lardata::DetectorInfoServices_DetectorClocksServiceStandard_service
 		lardataobj::RawData
 		art::Framework_Services_Registry
@@ -123,7 +133,7 @@ simple_plugin(MajorityTriggerSimulation module
 		icaruscode::PMT_Trigger_Utilities
 		larcore::Geometry_Geometry_service
 		larcorealg::Geometry
-                lardata::Utilities
+		lardata::Utilities
 		lardataobj::RawData
 		lardata::DetectorInfoServices_DetectorClocksServiceStandard_service
 		art_root_io::TFileService_service
@@ -147,7 +157,7 @@ simple_plugin(SlidingWindowTriggerSimulation module
 		larcore::Geometry_Geometry_service
 		larcorealg::Geometry
 		lardataobj::RawData
-                lardata::Utilities
+		lardata::Utilities
 		lardata::DetectorInfoServices_DetectorClocksServiceStandard_service
 		art_root_io::TFileService_service
 		art_root_io::tfile_support
@@ -163,20 +173,20 @@ simple_plugin(SlidingWindowTriggerSimulation module
 		)
 
 simple_plugin(TriggerSimulationOnGates module
-  icaruscode_PMT_Trigger_Algorithms
-  icarusalg_Utilities
-  sbnobj_ICARUS_PMT_Trigger_Data
-  icaruscode_PMT_Trigger_Utilities
-  larcore_Geometry_Geometry_service
-  larcorealg_Geometry
-  lardataobj_Simulation
-  lardataobj_RawData
+  icaruscode::PMT_Trigger_Algorithms
+  icarusalg::Utilities
+  sbnobj::ICARUS_PMT_Trigger_Data
+  icaruscode::PMT_Trigger_Utilities
+  larcore::Geometry_Geometry_service
+  larcorealg::Geometry
+  lardataobj::Simulation
+  lardataobj::RawData
   art_root_io::TFileService_service
   art_root_io::tfile_support
   art::Framework_Services_Registry
   art::Framework_Principal
   art::Framework_Core
-  canvas
+  canvas::canvas
   messagefacility::MF_MessageLogger
   fhiclcpp::fhiclcpp
   cetlib_except
@@ -186,14 +196,14 @@ simple_plugin(TriggerSimulationOnGates module
 
 simple_plugin(TriggerEfficiencyPlots module
                 LIBRARIES
-                icarusalg::Utilities
+		icarusalg::Utilities
 		icaruscode::PMT_Trigger_Utilities
 		sbnobj::ICARUS_PMT_Trigger_Data
 		larcore::Geometry_Geometry_service
 		lardataalg::MCDumpers
 		larcorealg::Geometry
 		lardataobj::RawData
-                lardata::Utilities
+		lardata::Utilities
 		lardata::DetectorInfoServices_DetectorClocksServiceStandard_service
 		nusimdata::SimulationBase
 		art_root_io::TFileService_service
@@ -218,7 +228,7 @@ simple_plugin(MakeTriggerSimulationTree module
 		sbnobj::ICARUS_PMT_Trigger_Data
 		larcore::Geometry_Geometry_service
 		lardataalg::MCDumpers
-                lardata::Utilities
+		lardata::Utilities
 		lardata::DetectorInfoServices_DetectorClocksServiceStandard_service
 		larcorealg::Geometry
 		nusimdata::SimulationBase
@@ -244,10 +254,10 @@ simple_plugin(TriggerEmulationTree module
   art::Framework_Services_Registry
   art::Framework_Principal
   art::Framework_Core
-  canvas
+  canvas::canvas
   messagefacility::MF_MessageLogger
   fhiclcpp::fhiclcpp
-  cetlib_except
+  cetlib_except::cetlib_except
   ROOT::Tree
   ROOT::Core
   )
@@ -266,7 +276,7 @@ foreach(TriggerEfficiencyPlotsModule
 		sbnobj::ICARUS_PMT_Trigger_Data
 		larcore::Geometry_Geometry_service
 		lardataalg::MCDumpers
-                lardata::Utilities
+		lardata::Utilities
 		lardata::DetectorInfoServices_DetectorClocksServiceStandard_service
 		larcorealg::Geometry
 		lardataobj::RawData

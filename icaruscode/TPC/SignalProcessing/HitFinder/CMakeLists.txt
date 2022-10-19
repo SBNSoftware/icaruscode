@@ -7,7 +7,7 @@ art_make(
 			lardata::Utilities
 			fhiclcpp::fhiclcpp
 			cetlib::cetlib
-			
+
 		MODULE_LIBRARIES
 			larcorealg::Geometry
 			larcore::Geometry_Geometry_service
@@ -36,7 +36,7 @@ art_make(
 			ROOT::XMLIO
 			ROOT::Gdml
 			ROOT::FFTW
-			
+
 	)
 
 install_headers()

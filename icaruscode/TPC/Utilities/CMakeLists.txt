@@ -13,6 +13,7 @@ set(icarus_util_lib_list
 	larevt::CalibrationDBI_Providers
 	larreco::HitFinder
 	lardataobj::RecoBase
+	lardataobj::RawData
 	larcore::Geometry_Geometry_service
 	lardata::Utilities
 	nurandom::RandomUtils_NuRandomService_service
@@ -24,7 +25,7 @@ set(icarus_util_lib_list
 	art::Framework_IO
 	art::Framework_IO_detail
 	art::Persistency_Provenance
-	
+	icaruscode_IcarusObj
 	art_root_io::tfile_support ROOT::Core
 	art::Framework_Services_Optional_RandomNumberGenerator_service
 	art_root_io::TFileService_service
@@ -39,12 +40,13 @@ set(icarus_util_lib_list
 	Boost::filesystem
 	Boost::system
 	CLHEP::Random
+        larcoreobj::headers
 )
 
 art_make(
 # LIBRARY_NAME icaruscode_TPC_Utilities
-# LIB_LIBRARIES$ {icarus_util_lib_list}
-#
+        LIB_LIBRARIES ${icarus_util_lib_list}
+
 	SERVICE_LIBRARIES
 		${icarus_util_lib_list}
 

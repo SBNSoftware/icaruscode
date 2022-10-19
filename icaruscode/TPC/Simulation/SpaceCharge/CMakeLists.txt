@@ -3,10 +3,10 @@ art_make(NO_PLUGINS
 		lardataobj::RecoBase
 		lardata::Utilities
 		lardataalg::DetectorInfo
-		larevt::SpaceCharge	
+		larevt::SpaceCharge
 		larcorealg::Geometry
-                larsim::MCCheater_BackTracker
-                larcore::Geometry_Geometry_service
+		larsim::MCCheater_BackTracker
+		larcore::Geometry_Geometry_service
 		messagefacility::MF_MessageLogger
 		cetlib::cetlib cetlib_except::cetlib_except
 		art::Framework_Core

@@ -11,7 +11,7 @@ set(hitfinder_tool_lib_list
 			art::Framework_Principal
 			art::Framework_Services_Registry
 			art::Persistency_Common
-			art::Persistency_Provenance		
+			art::Persistency_Provenance
 			art_root_io::tfile_support ROOT::Core
 			art::Framework_Services_Optional_RandomNumberGenerator_service
 			art_root_io::TFileService_service
@@ -24,7 +24,7 @@ set(hitfinder_tool_lib_list
 			cetlib::cetlib
 			Boost::filesystem
 			Boost::system
-			CLHEP::Random			
+			CLHEP::Random
 )
 
 art_make(TOOL_LIBRARIES ${hitfinder_tool_lib_list})

@@ -10,7 +10,7 @@ simple_plugin(SpaceChargeServiceICARUS "service"
 	art_root_io::TFileService_service
 	art::Framework_Services_System_FileCatalogMetadata_service
 	art::Utilities canvas::canvas
-	messagefacility::MF_MessageLogger								
+	messagefacility::MF_MessageLogger
 	cetlib::cetlib cetlib_except::cetlib_except
 )
 install_headers()

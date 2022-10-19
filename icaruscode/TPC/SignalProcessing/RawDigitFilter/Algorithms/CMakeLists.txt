@@ -22,7 +22,7 @@ art_make(
 		lardataobj::RecoBase
 		icaruscode::TPC_Utilities_SignalShapingICARUSService_service
 		${ICARUS_FFTW_LIBRARIES}
-                icarus_signal_processing::icarus_signal_processing
+		icarus_signal_processing::icarus_signal_processing
 		art::Framework_Core
 		art::Framework_Principal
 		art::Framework_Services_Registry

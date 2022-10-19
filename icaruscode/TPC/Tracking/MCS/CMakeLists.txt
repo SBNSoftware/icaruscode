@@ -21,7 +21,7 @@ art_make(
 		larreco::RecoAlg_CMTool_CMTAlgPriority
 		larreco::RecoAlg_CMTool_CMTAlgMatch
 		larreco::RecoAlg_CMTool_CMToolApp
-		${ROOT_MATHCORE}
+		ROOT::MathCore
 		ROOT::GenVector
 		ROOT::Geom
 		larreco::RecoAlg_TCAlg
@@ -31,20 +31,19 @@ art_make(
 		art::Framework_Core
 		art::Framework_Principal
 		art::Framework_Services_Registry
-		
-		${ART_FRAMEWORK_SERVICES_OPTIONAL}
-		${ART_FRAMEWORK_SERVICES_OPTIONAL_TFILESERVICE_SERVICE}
 		art::Framework_Services_Optional_RandomNumberGenerator_service
 		art::Persistency_Common
 		art::Persistency_Provenance
 		art::Utilities
+                art_root_io::tfile_support
+                art_root_io::TFileService_service
 		canvas::canvas
 		messagefacility::MF_MessageLogger
 		fhiclcpp::fhiclcpp
 		cetlib::cetlib cetlib_except::cetlib_except
 		CLHEP::Random
-		${ROOT_MINUIT}
-		${ROOT_MINUIT2}
+		ROOT::Minuit
+		ROOT::Minuit2
 	MODULE_LIBRARIES
 		icaruscode::TPC_Tracking_MCS
 		larsim::MCCheater_BackTrackerService_service
@@ -67,7 +66,7 @@ art_make(
 		larreco::RecoAlg_CMTool_CMTAlgPriority
 		larreco::RecoAlg_CMTool_CMTAlgMatch
 		larreco::RecoAlg_CMTool_CMToolApp
-		${ROOT_MATHCORE}
+		ROOT::MathCore
 		ROOT::GenVector
 		ROOT::Geom
 		larreco::RecoAlg_TCAlg
@@ -77,21 +76,20 @@ art_make(
 		art::Framework_Core
 		art::Framework_Principal
 		art::Framework_Services_Registry
-		
-		${ART_FRAMEWORK_SERVICES_OPTIONAL}
-		${ART_FRAMEWORK_SERVICES_OPTIONAL_TFILESERVICE_SERVICE}
 		art::Framework_Services_Optional_RandomNumberGenerator_service
 		art::Persistency_Common
 		art::Persistency_Provenance
 		art::Utilities
+                art_root_io::tfile_support
+                art_root_io::TFileService_service
 		canvas::canvas
 		messagefacility::MF_MessageLogger
 		fhiclcpp::fhiclcpp
 		cetlib::cetlib
 		cetlib_except::cetlib_except
 		CLHEP::Random
-		${ROOT_MINUIT}
-		${ROOT_MINUIT2}
+		ROOT::Minuit
+		ROOT::Minuit2
 	)
 
 

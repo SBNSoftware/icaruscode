@@ -43,6 +43,7 @@ art_make(	LIB_LIBRARIES
 			fhiclcpp::fhiclcpp
 			cetlib::cetlib
 			ROOT::FFTW
+			ROOT::Tree
 )
 
 install_fhicl()

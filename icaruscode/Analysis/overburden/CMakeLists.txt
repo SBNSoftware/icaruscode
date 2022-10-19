@@ -2,7 +2,7 @@ art_make(
 MODULE_LIBRARIES larcorealg::Geometry
 	larcore::Geometry_Geometry_service
 	larsim::Simulation
-        lardataobj::Simulation
+	lardataobj::Simulation
 	larsim::MCCheater_BackTrackerService_service
 	larsim::MCCheater_ParticleInventoryService_service
 	lardata::Utilities
@@ -30,6 +30,6 @@ MODULE_LIBRARIES larcorealg::Geometry
 	icaruscode::RecoUtils
 	)
 
-#install_headers()
+# install_headers()
 install_fhicl()
 install_source()

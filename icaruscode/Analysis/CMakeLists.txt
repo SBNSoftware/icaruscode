@@ -2,7 +2,7 @@ add_subdirectory(tools)
 add_subdirectory(overburden)
 add_subdirectory(trigger)
 
-art_make(MODULE_LIBRARIES larcorealg::Geometry
+art_make( MODULE_LIBRARIES larcorealg::Geometry
 		larcore::Geometry_Geometry_service
 		larsim::Simulation
 		nug4::ParticleNavigation
@@ -19,7 +19,6 @@ art_make(MODULE_LIBRARIES larcorealg::Geometry
 		art::Framework_Principal
 		art::Framework_Services_Registry
 		art_root_io::tfile_support
-		ROOT::Core
 		art::Framework_Services_Optional_RandomNumberGenerator_service
 		art_root_io::TFileService_service
 		art::Persistency_Common
@@ -35,6 +34,8 @@ art_make(MODULE_LIBRARIES larcorealg::Geometry
 		ROOT::Geom
 		ROOT::XMLIO
 		ROOT::Gdml
+		ROOT::Core
+		ROOT::Tree
 		icaruscode::RecoUtils
 		Eigen3::Eigen
 		)

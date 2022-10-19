@@ -6,36 +6,8 @@
 #     ${IFDH_SERVICE} )
 #include_directories ( . )
 
-cet_make_library(
-      LIBRARY_NAME     
-                  icaruscode_hepmc
-      LIB_LIBRARIES
-                  larcorealg::Geometry
-                  larcore::Geometry_Geometry_service
-                  lardataobj::RecoBase
-                  lardataobj::AnalysisBase 
-                  lardataobj::RawData
-                  lardata::RecoObjects 
-                  lardata::Utilities
-                  lardataobj::Simulation
-                  nusimdata::SimulationBase
-                  larcoreobj::SummaryData
-                  lardataobj::RawData
-                  lardataobj::RecoBase
-                  lardataobj::AnalysisBase
-                  ifdh_art::IFDH_service
-                  art::Persistency_Provenance
-                  art::Persistency_Common
-                  art::Utilities
-                  canvas::canvas
-                  cetlib::cetlib
-                  cetlib_except::cetlib_except
-                  ROOT::Core
-                  ROOT::Core ROOT::Physics
-)
-
-cet_build_plugin(HepMCFileGen art::module 
-         SOURCE HepMCFileGen_module.cc 
+cet_build_plugin(HepMCFileGen art::module
+         SOURCE HepMCFileGen_module.cc
       LIBRARIES larcorealg::Geometry
                 larcore::Geometry_Geometry_service
                 lardataobj::RecoBase
@@ -59,7 +31,7 @@ cet_build_plugin(HepMCFileGen art::module
                 ROOT::Core
                 ROOT::Physics
 )
-     
+
 install_headers()
 install_source()
 install_fhicl()

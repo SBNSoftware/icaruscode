@@ -20,7 +20,7 @@ add_definitions(-DEIGEN_FFTW_DEFAULT)
 #			art::Framework_Services_Registry
 #			art::Persistency_Common
 #			art::Persistency_Provenance
-#			icarus_signal_processing::icarus_signal_processing	
+#			icarus_signal_processing::icarus_signal_processing
 #			art_root_io::tfile_support ROOT::Core
 #			art::Framework_Services_Optional_RandomNumberGenerator_service
 #			art_root_io::TFileService_service
@@ -34,16 +34,17 @@ add_definitions(-DEIGEN_FFTW_DEFAULT)
 #			Boost::filesystem
 #			Boost::system
 #			CLHEP::Random
-#                        Eigen3::Eigen
+#			Eigen3::Eigen
 #)
 
-art_make_library(                
+art_make_library( 
         SOURCE
           CoherentNoiseFactorProvider.cxx
         LIBRARIES
           art::Framework_Services_Registry
-     	larcore::Geometry_Geometry_service
-) 
+          larcore::Geometry_Geometry_service
+          messagefacility::MF_MessageLogger
+)
 
 foreach ( TOOL
 CorrelatedNoise
@@ -69,7 +70,8 @@ SBNNoise
   art::Framework_Services_System_FileCatalogMetadata_service art::Utilities
   canvas::canvas messagefacility::MF_MessageLogger messagefacility::headers
   fhiclcpp::fhiclcpp cetlib::cetlib Boost::filesystem Boost::system
-  CLHEP::Random Eigen3::Eigen SOURCE
+  CLHEP::Random Eigen3::Eigen messagefacility::MF_MessageLogger
+  SOURCE
   ${TOOL}_tool.cc )
 endforeach()
 
@@ -89,6 +91,7 @@ endforeach()
   canvas::canvas messagefacility::MF_MessageLogger messagefacility::headers
   fhiclcpp::fhiclcpp cetlib::cetlib Boost::filesystem Boost::system
   CLHEP::Random Eigen3::Eigen icaruscode_TPC_Simulation_DetSim_tools
+  messagefacility::MF_MessageLogger
   SOURCE
   CoherentNoiseFactor_service.cc) 
 

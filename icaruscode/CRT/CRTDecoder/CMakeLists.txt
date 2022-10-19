@@ -4,10 +4,10 @@ art_make(
 	EXCLUDE
 		CrtCal.cc
 		CrtCalTree.cxx
-	CRTTiming.cc
-	CRTRawTree.cc
-	CRTPreProcessTree.cc
-	CRTMergePreProcessTrees.cxx
+		CRTTiming.cc
+		CRTRawTree.cc
+		CRTPreProcessTree.cc
+		CRTMergePreProcessTrees.cxx
 	
 	NO_PLUGINS
 	BASENAME_ONLY
@@ -24,11 +24,11 @@ art_make_library(
 		CrtCal.cc
 	LIBRARIES
 		cetlib_except::cetlib_except
-                ROOT::Graf
+		ROOT::Graf
 		ROOT::Spectrum
 		ROOT::Geom
 		ROOT::Core
-                ROOT::Gpad
+		ROOT::Gpad
 		cetlib::cetlib
 )
 
@@ -96,7 +96,7 @@ art_make_library(
 		ROOT::Core
 		ROOT::Spectrum
 		ROOT::Geom
-                ROOT::Tree
+		ROOT::Tree
 		cetlib::cetlib
 		CRT_TIMING
 		CRT_PREPROCESS_TREE
@@ -112,8 +112,8 @@ cet_build_plugin( BernCRTAna art::module
   art_root_io::TFileService_service
   ROOT::Core ROOT::Tree
   canvas::canvas
-        ${ARTDAQ-CORE_UTILITIES}
-  sbndaq_artdaq_core::sbndaq-artdaq-core_Overlays_Common 
+  artdaq_core::artdaq-core_Utilities
+  sbndaq_artdaq_core::sbndaq-artdaq-core_Overlays_Common
   artdaq_core::artdaq-core_Data
 )
 
@@ -121,12 +121,9 @@ simple_plugin( CrtNoiseMonTool "module"
   art::Framework_Services_Registry
   art_root_io::tfile_support
   art_root_io::TFileService_service
-  #art::Framework_Services_Optional
-  #art::Framework_Services_Optional_TFileService_service
   ROOT::Core ROOT::Tree ROOT::Hist
-  ${ROOT_BASIC_LIB_LIST}
-        ${ARTDAQ-CORE_UTILITIES}
-  sbndaq_artdaq_core::sbndaq-artdaq-core_Overlays_Common 
+  artdaq_core::artdaq-core_Utilities
+  sbndaq_artdaq_core::sbndaq-artdaq-core_Overlays_Common
   artdaq_core::artdaq-core_Data
 )
 
@@ -134,12 +131,9 @@ simple_plugin( CrtCalAnalysis "module"
   art::Framework_Services_Registry
   art_root_io::tfile_support
   art_root_io::TFileService_service
-  #art::Framework_Services_Optional
-  #art::Framework_Services_Optional_TFileService_service
   ROOT::Core ROOT::Tree ROOT::Hist
-  ${ROOT_BASIC_LIB_LIST}
-        ${ARTDAQ-CORE_UTILITIES}
-  sbndaq_artdaq_core::sbndaq-artdaq-core_Overlays_Common 
+  artdaq_core::artdaq-core_Utilities
+  sbndaq_artdaq_core::sbndaq-artdaq-core_Overlays_Common
   artdaq_core::artdaq-core_Data
   CRT_CAL
 )
@@ -148,12 +142,9 @@ simple_plugin( AnaProducer "module"
   art::Framework_Services_Registry
   art_root_io::tfile_support
   art_root_io::TFileService_service
-  #art::Framework_Services_Optional
-  #art::Framework_Services_Optional_TFileService_service
   ROOT::Core ROOT::Tree ROOT::Hist
-  ${ROOT_BASIC_LIB_LIST}
-        ${ARTDAQ-CORE_UTILITIES}
-  sbndaq_artdaq_core::sbndaq-artdaq-core_Overlays_Common 
+  artdaq_core::artdaq-core_Utilities
+  sbndaq_artdaq_core::sbndaq-artdaq-core_Overlays_Common
   artdaq_core::artdaq-core_Data
   CRT_CAL
   CRT_CAL_TREE
@@ -165,9 +156,6 @@ simple_plugin( CRTEventProducer "module"
   art::Framework_Services_Registry
   art_root_io::tfile_support
   art_root_io::TFileService_service
-  #art::Framework_Services_Optional
-  #art::Framework_Services_Optional_TFileService_service
-  #${ROOT_BASIC_LIB_LIST}
   CRT_PREPROCESS_TREE
   #CRT_CAL_TREE
   sbnobj::Common_CRT
@@ -184,8 +172,7 @@ simple_plugin( DecoderICARUSCRT "module"
   art_root_io::tfile_support
   art_root_io::TFileService_service
   ROOT::Core ROOT::Tree ROOT::Hist
-  ${ROOT_BASIC_LIB_LIST}
-  ${ARTDAQ-CORE_UTILITIES}
+  artdaq_core::artdaq-core_Utilities
   sbndaq_artdaq_core::sbndaq-artdaq-core_Overlays_Common
   artdaq_core::artdaq-core_Data
   sbnobj::Common_CRT

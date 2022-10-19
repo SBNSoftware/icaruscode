@@ -36,6 +36,8 @@ art_make(LIBRARY_NAME icaruscode_CRTUtils
 	Boost::system
 	sbnobj::ICARUS_CRT
 	sbnobj::Common_CRT
+	icaruscode_CRT
+	icaruscode_CRTData
 	lardata::DetectorInfoServices_DetectorClocksServiceStandard_service
 	nurandom::RandomUtils_NuRandomService_service
 	)
@@ -43,4 +45,3 @@ art_make(LIBRARY_NAME icaruscode_CRTUtils
 install_headers()
 install_fhicl()
 install_source()
-

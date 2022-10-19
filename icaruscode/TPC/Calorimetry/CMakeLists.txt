@@ -1,47 +1,46 @@
-cet_find_library(LIBWDA NAMES wda PATHS ENV LIBWDA_LIB NO_DEFAULT_PATH)
 
 # Build the module
 art_make( MODULE_LIBRARIES
-           icaruscode_TPC_Calorimetry_Algorithms
-           larcorealg_Geometry
-           larreco_Calorimetry
-           lardataobj_RecoBase
-           lardata_ArtDataHelper
-           lardataalg_DetectorInfo
-           larcorealg_Geometry
-           lardataobj_AnalysisBase
-           ${ART_FRAMEWORK_SERVICES_REGISTRY}
-           ${ART_UTILITIES}
-           canvas
-           ${FHICLCPP}
-           cetlib_except
+           icaruscode::TPC_Calorimetry_Algorithms
+           larcorealg::Geometry
+           larreco::Calorimetry
+           lardataobj::RecoBase
+           lardata::ArtDataHelper
+           lardataalg::DetectorInfo
+           larcorealg::Geometry
+           lardataobj::AnalysisBase
+           art::Framework_Services_Registry
+           art::Utilities
+           canvas::canvas
+           fhiclcpp::fhiclcpp
+           cetlib_except::cetlib_except
            ROOT::Core
            ROOT::Physics
            ROOT::Core
            ROOT::Hist
            ROOT::Physics
-           ${MF_MESSAGELOGGER}
-	TOOL_LIBRARIES
-	   larevt_CalibrationDBI_Providers
-           larcorealg_Geometry
-           larreco_Calorimetry
-           lardataobj_RecoBase
-           lardata_ArtDataHelper
-           lardataalg_DetectorInfo
-           larcorealg_Geometry
-           lardataobj_AnalysisBase
-           ${ART_FRAMEWORK_SERVICES_REGISTRY}
-           ${ART_UTILITIES}
-           canvas
-           ${FHICLCPP}
-           cetlib_except
+           messagefacility::MF_MessageLogger
+        TOOL_LIBRARIES
+           larevt::CalibrationDBI_Providers
+           larcorealg::Geometry
+           larreco::Calorimetry
+           lardataobj::RecoBase
+           lardata::ArtDataHelper
+           lardataalg::DetectorInfo
+           larcorealg::Geometry
+           lardataobj::AnalysisBase
+           art::Framework_Services_Registry
+           art::Utilities
+           canvas::canvas
+           fhiclcpp::fhiclcpp
+           cetlib_except::cetlib_except
            ROOT::Core
            ROOT::Physics
            ROOT::Core
            ROOT::Hist
            ROOT::Physics
-           ${MF_MESSAGELOGGER}
-	   LIBWDA
+           messagefacility::MF_MessageLogger
+           wda::wda
          )
 install_headers()
 install_fhicl()

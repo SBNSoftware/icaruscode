@@ -1,12 +1,12 @@
 #
 # The intention is to
-# 
+#
 # 1. keep the integration test scripts in their own directory
 # 2. have the tests run in both development (`mrbsetenv`) and run environments
-# 
+#
 # In order to achieve that:
-# 
-# 1. there is no way (I know of) with cetbuildtools of installing the scripts ### MIGRATE-ACTION-REQUIRED: remove
+#
+# 1. there is no way (I know of) with cetbuildtools of installing the scripts
 #    into `${ICARUSCODE_DIR}/test/ci` directory: `install_scripts(AS_TEST)`
 #    installs all directly into `${ICARUSCODE_DIR}/test`
 # 2. the integration test configuration (`ci_tests.cfg`) stores the command for
@@ -37,9 +37,9 @@
 #    and available under execution environment
 # 8. the test job configuration files (FHiCL) must also be stored in a location
 #    known by the FHiCL parsers, which is achieved by `install_fhicl()`
-#    
+#
 # Points 1-5 are relevant only when a custom script is needed.
-# 
+#
 
 # install_scripts() # see point 5 above
 install_scripts(AS_TEST)

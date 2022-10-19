@@ -19,6 +19,8 @@ art_make(
 			cetlib::cetlib
 
 		MODULE_LIBRARIES
+			icaruscode_TPC_Utilities
+			icaruscode_IcarusObj
 			icarus_signal_processing::icarus_signal_processing
 			icarus_signal_processing::Detection
 			icarus_signal_processing::Filters
@@ -47,7 +49,6 @@ art_make(
 			fhiclcpp::fhiclcpp
 			cetlib::cetlib
 			ROOT::FFTW
-			${TBB}
 		)
 
 install_headers()

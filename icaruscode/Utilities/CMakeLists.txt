@@ -4,13 +4,13 @@ art_make(
 		"SaveConfigurationIntoTFile_module.cc"
 		"DummyFilter_module.cc"
 		"DummyProducer_module.cc"
-                "DummyAnalyzer_module.cc"
-                "FilterOnArtPathOutcome_module.cc"
+		"DummyAnalyzer_module.cc"
+		"FilterOnArtPathOutcome_module.cc"
 		"DuplicateEventTracker_service.cc"
 	LIB_LIBRARIES
 		art_root_io::RootDB
 		SQLite::SQLite3
-                lardata::Utilities
+		lardata::Utilities
 		canvas::canvas
 		cetlib_except::cetlib_except
 		cetlib::cetlib

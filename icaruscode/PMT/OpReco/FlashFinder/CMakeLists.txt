@@ -6,15 +6,11 @@ art_make(
 		larcore::Geometry_Geometry_service
 		larcorealg::Geometry
 		lardataobj::RecoBase
-		${LARDATA_LIB}
 		canvas::canvas
 		cetlib::cetlib
 		cetlib_except::cetlib_except
-		${ART_FRAMEWORK_ART}
 		art::Framework_Core
 		art::Framework_Principal
-		${ART_FRAMEWORK_UTILITIES}
-		${ART_FRAMEWORK_BASIC}
 		art::Framework_Services_Registry
 		art_root_io::tfile_support ROOT::Core
 		art_root_io::TFileService_service
@@ -26,23 +22,20 @@ art_make(
 		ROOT::Geom
 		ROOT::XMLIO
 		ROOT::Gdml
-		
+
 	MODULE_LIBRARIES
 		icaruscode::PMT_OpReco_FlashFinder
 		icarusalg::Geometry
 		larcore::Geometry_Geometry_service
 		larcorealg::Geometry
 		lardataobj::RecoBase
-		${LARDATA_LIB}
-                lardata::Utilities
-                larcore::Geometry_AuxDetGeometry_service
+		lardata::Utilities
+		larcore::Geometry_AuxDetGeometry_service
 		canvas::canvas
 		cetlib::cetlib
 		cetlib_except::cetlib_except
-		${ART_FRAMEWORK_ART}
 		art::Framework_Core
 		art::Framework_Principal
-		${ART_FRAMEWORK_BASIC}
 		art::Framework_Services_Registry
 		art_root_io::tfile_support
 		art_root_io::TFileService_service
@@ -55,7 +48,7 @@ art_make(
 		ROOT::XMLIO
 		ROOT::Gdml
 		ROOT::Core
-)							
+)
 
 install_headers()
 install_source()

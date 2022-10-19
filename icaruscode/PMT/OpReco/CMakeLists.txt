@@ -1,13 +1,16 @@
 simple_plugin(ICARUSOpHitFinder "module"
   icaruscode_PMT_OpReco_Algorithms
-  larana_OpticalDetector_OpHitFinder
-  larcore_Geometry_Geometry_service
-  larcorealg_Geometry
-  lardataobj_RecoBase
-  lardataobj_Simulation
-  lardataobj_RawData
+  larana::OpticalDetector_OpHitFinder
+  larcore::Geometry_Geometry_service
+  larcorealg::Geometry
+  lardataobj::RecoBase
+  lardataobj::Simulation
+  lardataobj::RawData
+  larreco::Calorimetry
   art::Framework_Services_Registry
   messagefacility::MF_MessageLogger
+  ROOT::Core
+  lardata::Utilities
   )
 
 
@@ -20,8 +23,8 @@ art_make(
 			lardataobj::Simulation
 			larcoreobj::SummaryData
 			larana::OpticalDetector_OpHitFinder
-                        larreco::Calorimetry
-                        lardata::Utilities
+			larreco::Calorimetry
+			lardata::Utilities
 			nusimdata::SimulationBase
 			nurandom::RandomUtils_NuRandomService_service
 			larsim::PhotonPropagation_PhotonVisibilityService_service
@@ -44,6 +47,7 @@ art_make(
 			ROOT::Gdml
 			ROOT::FFTW
 			ROOT::Core
+                        ROOT::Tree
 )
 
 install_headers()

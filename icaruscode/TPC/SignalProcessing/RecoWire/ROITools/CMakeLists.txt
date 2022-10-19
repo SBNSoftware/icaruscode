@@ -21,7 +21,7 @@ art_make(
 		art::Framework_Services_Registry
 		art::Persistency_Common
 		art::Persistency_Provenance
-	        ROOT::Tree
+		ROOT::Tree
 		art_root_io::tfile_support ROOT::Core
 		art::Framework_Services_Optional_RandomNumberGenerator_service
 		art_root_io::TFileService_service

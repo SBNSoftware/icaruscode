@@ -1,5 +1,5 @@
 
-set(IFDH_ART_DIR$ENV{IFDH_ART_DIR})
+set( IFDH_ART_DIR $ENV{IFDH_ART_DIR} )
 
 add_subdirectory(Calorimetry)
 add_subdirectory(Utilities)

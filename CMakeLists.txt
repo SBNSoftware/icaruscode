@@ -11,30 +11,30 @@
 #  make install
 #  make package (builds distribution tarfile)
 # ======================================================================
+
+
 cmake_minimum_required(VERSION 3.19 FATAL_ERROR)
-cmake_policy(VERSION 3.18)
 
-
-
-find_package(cetmodules 2.25.04 REQUIRED)
+find_package(cetmodules 3.19.02 REQUIRED)
 project(icaruscode VERSION 09.60.01 LANGUAGES CXX)
-
 
 message(STATUS
   "\n-- ============================================================================="
   "\n-- === *** Start of configuration of ${PROJECT_NAME} ***"
   "\n-- ===")
 
+# cetbuildtools contains our cmake modules
+#find_package(cetbuildtools REQUIRED)
 
-list(APPEND CMAKE_MODULE_PATH $ENV{CANVAS_ROOT_IO_DIR}/Modules $ENV{ART_DIR}/Modules)
+#list(APPEND CMAKE_MODULE_PATH $ENV{CANVAS_ROOT_IO_DIR}/Modules $ENV{ART_DIR}/Modules )
 
 include(CetCMakeEnv)
 cet_cmake_env()
 
 cet_set_compiler_flags(DIAGS CAUTIOUS
-	WERROR
-	NO_UNDEFINED
-	EXTRA_FLAGS -pedantic -I$ENV{CLANG_FQ_DIR}/include/c++/v1
+  WERROR
+  NO_UNDEFINED
+  EXTRA_FLAGS -pedantic -I $ENV{CLANG_FQ_DIR}/include/c++/v1
 )
 
 cet_report_compiler_flags(REPORT_THRESHOLD VERBOSE)
@@ -55,9 +55,7 @@ find_package(icarus_signal_processing)
 find_package(icarusalg)
 find_package(icarusutil)
 find_package(icarus_data)
-
 find_package(artdaq_core)
-
 find_package(larcoreobj)
 find_package(larcorealg)
 find_package(lardataobj)
@@ -80,7 +78,7 @@ find_package(FFTW3)
 find_package(libwda)
 find_package(ifdh_art)
 find_package(ROOT)
-find_package(Boost COMPONENTS system)
+find_package(Boost COMPONENTS system program_options REQUIRED)
 find_package(protobuf)
 find_package(PandoraSDK)
 find_package(PandoraMonitoring)
@@ -115,8 +113,10 @@ add_subdirectory(test)
 add_subdirectory(fcl)
 
 # ups - table and config files
+#add_subdirectory(ups)
 
 # packaging utility
+#include(UseCPack)
 
 message(STATUS
   "\n-- ==="

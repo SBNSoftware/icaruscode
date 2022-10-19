@@ -42,8 +42,7 @@ art_make(
 			ROOT::Gdml
 			ROOT::FFTW
 			ROOT::Core
-                        ROOT::Tree
-			${TBB}
+			ROOT::Tree
 	)
 
 install_headers()

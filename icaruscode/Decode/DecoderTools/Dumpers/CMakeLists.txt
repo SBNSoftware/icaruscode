@@ -4,5 +4,5 @@ art_make_library(
 	LIBRARIES
 		artdaq_core::artdaq-core_Data
 		cetlib_except::cetlib_except
-                icarusalg::Utilities
+		icarusalg::Utilities
 	)
