@@ -1,9 +1,9 @@
 art_make(
   LIB_LIBRARIES
-    larana_OpticalDetector_OpHitFinder
-    sbnobj_ICARUS_PMT_Data
-    lardataobj_RecoBase
-    lardataobj_RawData
+    larana::OpticalDetector_OpHitFinder
+    sbnobj::ICARUS_PMT_Data
+    lardataobj::RecoBase
+    lardataobj::RawData
     messagefacility::MF_MessageLogger
     fhiclcpp::fhiclcpp
     cetlib_except::cetlib_except

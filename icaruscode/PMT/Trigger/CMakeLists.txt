@@ -189,7 +189,7 @@ simple_plugin(TriggerSimulationOnGates module
   canvas::canvas
   messagefacility::MF_MessageLogger
   fhiclcpp::fhiclcpp
-  cetlib_except
+  cetlib_except::cetlib_except
   ROOT::Hist
   ROOT::Core
   )
