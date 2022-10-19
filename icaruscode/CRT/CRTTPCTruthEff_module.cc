@@ -83,7 +83,7 @@ namespace icarus {
     CRTTPCTruthEff & operator = (CRTTPCTruthEff &&) = delete;
 
     // Required functions.
-    void analyze(art::Event & e) override;
+    void analyze(const art::Event & e) override;
 
     // Selected optional functions.
     void beginJob() override;
