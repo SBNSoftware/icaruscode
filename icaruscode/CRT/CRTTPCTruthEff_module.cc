@@ -11,7 +11,7 @@
 
 // sbndcode includes
 #include "sbnobj/Common/CRT/CRTHit.hh"
-//#include "icaruscode/IcarusObj/CRTTPCMatchingInfo.h"
+#include "icaruscode/IcarusObj/CRTTPCMatchingInfo.h"
 #include "icaruscode/CRT/CRTUtils/CRTT0MatchAlg.h"
 #include "icaruscode/CRT/CRTUtils/CRTBackTracker.h"
 #include "icaruscode/CRT/CRTUtils/RecoUtils.h"

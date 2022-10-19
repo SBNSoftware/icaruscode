@@ -5,7 +5,6 @@
 #include "crtt0matchingalg_icarus.fcl"
 #include "simulationservices_icarus.fcl"
 #include "crtbacktracker_icarus.fcl"
-#include "crtt0producer_icarus.fcl"
 
 process_name: CRTTPCTruthEff
 
@@ -71,6 +70,7 @@ physics:
       TriggerLabel:        "daqTrigger"
       Verbose:             true              # Print extra information about what's going on
 #      t0Alg:               @local::standard_crtt0matchingalg
+      T0Alg:               @local::standard_crtt0matchingalg
       IsData:		   true
       #SimModuleLabel:	   "largeant"
       CRTBackTrack: @local::standard_crtbacktracker
