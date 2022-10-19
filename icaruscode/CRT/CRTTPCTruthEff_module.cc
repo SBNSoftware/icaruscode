@@ -1,12 +1,12 @@
 /////////////////////////////////////////////////////////////////////////////
 /// Class:       CRTTPCTruthEff
-/// Module Type: producer
+/// Module Type: analyzer
 /// File:        CRTTPCTruthEff_module.cc
 ///
-/// Author:         Thomas Brooks
-/// E-mail address: tbrooks@fnal.gov
+/// Author:         Tyler Boone
+/// E-mail address: tboone@FNAL.gov
 ///
-/// Modified from CRTTPCTruthEff by Thomas Warburton.
+/// Modified from CRTT0Matching_module by Tyler Boone
 /////////////////////////////////////////////////////////////////////////////
 
 // sbndcode includes
@@ -17,7 +17,7 @@
 #include "icaruscode/CRT/CRTUtils/RecoUtils.h"
 
 // Framework includes
-#include "art/Framework/Core/EDProducer.h"
+#include "art/Framework/Core/EDAnalyzer.h"
 #include "art/Framework/Core/ModuleMacros.h"
 #include "canvas/Persistency/Common/FindManyP.h"
 #include "art/Framework/Principal/Handle.h"
@@ -68,7 +68,7 @@
 
 namespace icarus {
   
-  class CRTTPCTruthEff : public art::EDProducer {
+  class CRTTPCTruthEff : public art::EDAnalyzer {
   public:
 
     explicit CRTTPCTruthEff(fhicl::ParameterSet const & p);
@@ -83,7 +83,7 @@ namespace icarus {
     CRTTPCTruthEff & operator = (CRTTPCTruthEff &&) = delete;
 
     // Required functions.
-    void produce(art::Event & e) override;
+    void analyze(art::Event & e) override;
 
     // Selected optional functions.
     void beginJob() override;
@@ -172,7 +172,7 @@ namespace icarus {
 
 
   CRTTPCTruthEff::CRTTPCTruthEff(fhicl::ParameterSet const & p)
-    : EDProducer(p), t0Alg(p.get<fhicl::ParameterSet>("T0Alg"))
+    : EDAnalyzer(p), t0Alg(p.get<fhicl::ParameterSet>("T0Alg"))
     , fCrtutils(new icarus::crt::CRTCommonUtils())
       // Initialize member data here, if know don't want to reconfigure on the fly
   {
@@ -270,7 +270,7 @@ namespace icarus {
 
   } // CRTTPCTruthEff::beginJob()
 
-  void CRTTPCTruthEff::produce(art::Event & event)
+  void CRTTPCTruthEff::analyze(const art::Event & event)
   {
 
     fEvent  = event.id().event();
