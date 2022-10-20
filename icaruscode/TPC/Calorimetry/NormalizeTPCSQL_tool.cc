@@ -50,6 +50,9 @@ private:
 
   // Helpers
   ScaleInfo GetScaleInfo(uint64_t timestamp);
+
+  // Cache timestamp requests
+  std::map<uint64_t, ScaleInfo> fScaleInfos;
 };
 
 DEFINE_ART_CLASS_TOOL(NormalizeTPCSQL)
@@ -67,6 +70,11 @@ icarus::calo::NormalizeTPCSQL::NormalizeTPCSQL(fhicl::ParameterSet const &pset):
 void icarus::calo::NormalizeTPCSQL::configure(const fhicl::ParameterSet& pset) {}
 
 icarus::calo::NormalizeTPCSQL::ScaleInfo icarus::calo::NormalizeTPCSQL::GetScaleInfo(uint64_t timestamp) {
+  // check the cache
+  if (fScaleInfos.count(timestamp)) {
+    return fScaleInfos.at(timestamp);
+  }
+
   // Lookup the data
   fDB.UpdateData(timestamp*1e9);
 
@@ -80,6 +88,8 @@ icarus::calo::NormalizeTPCSQL::ScaleInfo icarus::calo::NormalizeTPCSQL::GetScale
 
     thisscale.scale[ch] = scale;
   }
+  // Set the cache
+  fScaleInfos[timestamp] = thisscale;
 
   return thisscale;
 }
