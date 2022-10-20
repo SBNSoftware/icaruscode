@@ -1,4 +1,4 @@
-#include "ICARUSv1.ParamHeaders.fcl"
+#include "syst_params_icarus_v1.fcl"
 
 BEGIN_PROLOG
 
@@ -6,11 +6,9 @@ sbn_systtools: {
 
   module_type: SystToolsEventWeight
 
-  genie_module_label: "generator"
-
-  AllowMissingTruth: true # Allow running over cosmics. The alternative approach is genie_module_label: ""
-
-  debugMode: false
+  GeneratorModuleLabel: "generator"
+  AllowMissingTruth: false
+  DebugMode: false
 
   ## systool
   generated_systematic_provider_configuration: @local::generated_systematic_provider_configuration
