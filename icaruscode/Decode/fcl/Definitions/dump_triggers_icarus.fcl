@@ -1,0 +1,68 @@
+#
+# File:     dump_triggers_icarus.fcl
+# Purpose:  Dump on screen ICARUS data products from trigger decoding.
+# Author:   Gianluca Petrillo (petrillo@slac.stanford.edu)
+# Date:     March 22, 2022
+# Version:  1.0
+#
+# This module dumps the specified trigger data products.
+#
+# Input: (data) files with decoded trigger information.
+#
+# Service dependencies:
+# - message facility
+# 
+# Changes:
+# 20220322 (petrillo@slac.stanford.edu) [v1.0]
+#   first version
+#
+
+#include "messages_icarus.fcl"
+
+
+# ------------------------------------------------------------------------------
+process_name: DumpTrg
+
+
+# ------------------------------------------------------------------------------
+services: {
+  
+  message: @local::icarus_message_services_interactive
+  
+} # services
+
+
+services.message.destinations.LogStandardOut.categories.DumpTrigger: { limit: 0 }
+services.message.destinations.DumpLog: {
+  type:      file
+  filename: "DumpTriggers.log"
+  threshold: INFO
+  categories: {
+    DumpTrigger: { limit: -1 }
+    default:     { limit: 0 }
+  }
+} # services.message.destinations.DumpLog
+
+
+# ------------------------------------------------------------------------------
+physics: {
+
+  # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  analyzers: {
+    dumptrigger: {
+      module_type: DumpTrigger
+      
+      TriggerTag: "daqTrigger"
+      
+      OutputCategory: "DumpTrigger"
+      
+    } # dumptrigger
+  } # analyzers
+  
+  # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  dumpers:    [ dumptrigger ]
+  
+} # physics
+
+
+# ------------------------------------------------------------------------------

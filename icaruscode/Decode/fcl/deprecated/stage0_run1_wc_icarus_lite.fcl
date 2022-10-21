@@ -1,0 +1,19 @@
+#-------------------------------------------------------------------
+#
+# Name: stage0_run1_wc_icarus_lite.fcl
+#
+# Purpose: Lite version of stage0_run1_wc_icarus.fcl
+#
+# Created: 31-Mar-2022  H. Greenlee
+#
+# Automatically generated.
+#
+#-------------------------------------------------------------------
+
+#include "reco_drops.fcl"
+#include "stage0_run1_wc_icarus.fcl"
+
+# Drop truth data products.
+
+outputs.outCommon.outputCommands: [ @sequence::outputs.outCommon.outputCommands,
+                                    @sequence::reco_drops ]

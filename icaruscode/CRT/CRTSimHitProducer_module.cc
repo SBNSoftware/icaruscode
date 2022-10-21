@@ -142,19 +142,23 @@ namespace crt {
       art::Handle<sbn::ExtraTriggerInfo> trigger_handle;
       event.getByLabel( fTriggerLabel, trigger_handle );
       if( trigger_handle.isValid() )
-	m_trigger_timestamp = trigger_handle->triggerTimestamp; 
+      	m_trigger_timestamp = trigger_handle->triggerTimestamp; 
       else
-	mf::LogError("CRTSimHitProducer") << "No raw::Trigger associated to label: " << fTriggerLabel.label() << "\n" ;
+      	mf::LogError("CRTSimHitProducer") << "No raw::Trigger associated to label: " << fTriggerLabel.label() << "\n" ;
     } else{ 
       std::cout  << "Trigger Data product " << fTriggerLabel.label() << " not found!\n" ;
     }
 
     mf::LogInfo("CRTSimHitProducer")
       <<"Number of SiPM hits = "<<crtList.size();
+    //m_trigger_timestamp = event.getProduct<sbn::ExtraTriggerInfo>(fTriggerLabel).triggerTimestamp;
+
+    mf::LogInfo("CRTSimHitProducer")
+      <<"Number of SiPM hits = "<<crtList.size();
 
     vector<art::Ptr<CRTData>> crtData = hitAlg.PreselectCRTData(crtList, m_trigger_timestamp);
 
-    vector<std::pair<CRTHit, vector<int>>> crtHitPairs = hitAlg.CreateCRTHits(crtData);
+    vector<std::pair<CRTHit, vector<int>>> crtHitPairs = hitAlg.CreateCRTHits(crtData, m_trigger_timestamp);
     //vector<std::pair<CRTHit, vector<int>>> crtHitPairs = hitAlg.CreateCRTHits(crtList);
 
     mf::LogInfo("CRTSimHitProducer")
