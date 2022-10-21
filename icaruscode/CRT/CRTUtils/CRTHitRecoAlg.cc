@@ -394,32 +394,15 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeTopHit(art::Ptr<CRTData> data, ULong64_t Glo
     Long64_t thit1 = data->fTs1;
     thit -= fSiPMtoFEBdelay;
     thit1 -= fSiPMtoFEBdelay;
-    //thit1 = (Long64_t)(thit-GlobalTrigger[(int)mac+73]);
-    //thit -= (uint64_t)round(abs((92+hitpos.Z())*fPropDelay));
-    //std::cout<<"Hit position local: X "<<hitpos.X()<<" Z "<<hitpos.Z();
-    if((92-hitpos.X())<=(92+hitpos.Z())) {
-	//std::cout<<"  Thit raw: "<<thit<<" Correction (-hitposX) "<<thit - (uint64_t)round(abs((92+hitpos.X())*fPropDelay))<<"  Bar: "<<maxx*2<<"  "<<maxz*2<<std::endl;
-	thit -= (uint64_t)round(abs((92+hitpos.Z())*fPropDelay));
-	thit1 -= (uint64_t)round(abs((92+hitpos.Z())*fPropDelay));
-    }
-    else {
-	//std::cout<<"  Thit raw: "<<thit<<" Correction (-hitposZ) "<<thit - (uint64_t)round(abs((92+hitpos.Z())*fPropDelay))<<"  Bar: "<<maxx*2<<"  "<<maxz*2<<std::endl; 
-	thit -= (uint64_t)round(abs((92-hitpos.X())*fPropDelay));
-	thit1 -= (uint64_t)round(abs((92-hitpos.X())*fPropDelay));
-    }
-    /*if(adsid_max<8){
-       // thit -= (uint64_t)round(abs((92+hitpos.X())*fPropDelay));
-       // thit1 -= (uint64_t)round(abs((92+hitpos.X())*fPropDelay));
-	thit -= fSiPMtoFEBdelay; //Correction for 12 ns signal cable from SiPM to FEB
-	thit1 -= fSiPMtoFEBdelay; //Correction for 12 ns signal cable from SiPM to FEB
-    }
-    else{
-        //thit -= (uint64_t)round(abs((92+hitpos.Z())*fPropDelay));
-        //thit1 -= (uint64_t)round(abs((92+hitpos.Z())*fPropDelay));
-	thit -= fSiPMtoFEBdelay; //Correction for 12 ns signal cable from SiPM to FEB
-	thit1 -= fSiPMtoFEBdelay; //Correction for 12 ns signal cable from SiPM to FEB
-    }*/
- 
+
+    //92.0 is the middle of one of the Top CRT modules (each of them is 184 cm)    
+    //TO DO: Move hardcoded numbers to parameter fcl files.
+    //Another possibility is using object values from GDML, but I (Francesco Poppi) found weird numbers some months ago and needed to double check.
+    double const corrPos = std::max(-hitpos.X(), hitpos.Z());
+    uint64_t const corr = (uint64_t)round(abs((92.0+corrPos)*fPropDelay));
+    thit -= corr;
+    thit1 -= corr;
+
     adGeo.LocalToWorld(hitlocal,hitpoint); //tranform from module to world coords
 
     hitpointerr[0] = adsGeo.HalfWidth1()*2/sqrt(12);
