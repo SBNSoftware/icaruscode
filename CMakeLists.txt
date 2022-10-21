@@ -87,6 +87,7 @@ find_package(artdaq_core)
 find_package(sbndaq_artdaq_core)
 find_package(sbndaq-artdaq-core)
 find_package(PostgreSQL)
+find_package(Microsoft.GSL HINTS $ENV{GUIDELINE_SL_DIR})
 
 cet_find_library(PQ NAMES pq )
 

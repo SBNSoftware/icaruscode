@@ -10,8 +10,6 @@ add_subdirectory(Trigger)
 # AVX is not so relevant after the last commit anyway
 # cet_set_compiler_flags(EXTRA_CXX_FLAGS -mavx)
 
-#include_directories(${CPPGSL_INC})
-
 simple_plugin(SimPMTIcarus "module"
 			icaruscode_PMT_Algorithms
 			lardataobj::RawData

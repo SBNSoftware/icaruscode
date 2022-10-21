@@ -17,6 +17,7 @@ art_make(
                         sbndaq_artdaq_core::sbndaq-artdaq-core_Overlays_ICARUS
                         artdaq_core::artdaq-core_Utilities
                         larcorealg::Geometry
+                        lardataobj::RawData
                         larcore::Geometry_Geometry_service
                         lardata::Utilities
                         larevt::Filters
@@ -63,6 +64,7 @@ simple_plugin(TriggerConfigurationExtraction module
 
 simple_plugin(DumpPMTconfiguration module
 	sbnobj::Common_PMT_Data
+        lardataobj::RawData
 	messagefacility::MF_MessageLogger
 	fhiclcpp::fhiclcpp
 	cetlib_except::cetlib_except
@@ -78,6 +80,7 @@ simple_plugin(DumpTriggerConfiguration module
 
 simple_plugin(DumpArtDAQfragments module
 	icaruscode::Decode_DecoderTools_Dumpers
+        larcorealg::headers
 	artdaq_core::artdaq-core_Data
 	messagefacility::MF_MessageLogger
 	fhiclcpp::fhiclcpp

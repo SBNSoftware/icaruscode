@@ -164,6 +164,7 @@ simple_plugin( CRTEventProducer "module"
   larcorealg::headers
   larcoreobj::headers
   lardataalg::headers
+  lardataobj::RawData
 )
 
 simple_plugin( DecoderICARUSCRT "module"

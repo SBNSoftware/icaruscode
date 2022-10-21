@@ -8,6 +8,7 @@ art_make(
 		larcorealg::Geometry
 		lardataobj::RawData
 		icarusalg::Utilities
+                Microsoft.GSL::GSL
 		canvas::canvas
 		messagefacility::MF_MessageLogger
 		messagefacility::headers
