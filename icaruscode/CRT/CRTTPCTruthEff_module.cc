@@ -359,7 +359,7 @@ namespace icarus {
 	art::FindManyP<recob::Hit> findManyHits(trackListHandle, event, trackLabel);
 	
 	// will create art pointers to the new T0 objects:
-	art::PtrMaker<anab::T0> const makeT0Ptr{ event };
+//	art::PtrMaker<anab::T0> const makeT0Ptr{ event };
 
 	// Loop over all the reconstructed tracks 
 	for(size_t track_i = 0; track_i < trackList.size(); track_i++) {
