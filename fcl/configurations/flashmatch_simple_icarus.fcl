@@ -8,8 +8,8 @@ icarus_simple_flashmatch_E: {
   #CaloProducer:       "pandoraGausCaloCryoE"
   SpacePointProducer:  "pandoraGausCryoE"
   OpHitProducer: "ophit"
-  BeamSpillTimeStart:       0.0  # us, with some tolerance # TODO: update this when time gets zeroed
-  BeamSpillTimeEnd:         1.65 # us, with some tolerance # TODO: update this when time gets zeroed
+  BeamSpillTimeStart:      -1.7  # us, with some tolerance # TODO: workaround to accomodate MC and Data different times
+  BeamSpillTimeEnd:         1.7  # us, with some tolerance # TODO: workaround to accomodate MC and Data different times
   FlashFindingTimeStart: -100.   # us # TODO: tune
   FlashFindingTimeEnd:    100.   # us # TODO: tune
   FlashStart:              -0.02 # us, wrt flash time
