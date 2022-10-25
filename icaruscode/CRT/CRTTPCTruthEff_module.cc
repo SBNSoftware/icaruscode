@@ -142,20 +142,31 @@ namespace icarus {
     double crt_x, crt_y, crt_z;					///< Matched CRT Hit XYZ
 
     //Simulation-only variables
-    int crt_pdg, trk_pdg;  			///< PDG codes of the CRT Hit andd TPC track
+    int crt_pdg, trk_pdg;  			///< PDG codes of the CRT Hit and TPC track
     int track_trueID, crt_trueID;		///< Truth IDs of the TPC track and matched CRT Hit
     int track_mother, crt_mother; 		///< First mother of the CRT Hit/TPC track simulated particle truth ID
     int track_ancestor, crt_ancestor;		///< Truth ID of the CRT Hit/TPC Track ancestor, which I define as the ID that returns itself when querying the Mother ID
     int crt_motherlayers, track_motherlayers;   ///< Number of times the track/hit mother was queried before returning itself or 0
     //End simulation-only variables
 
+    //These vectors contain the relevant matched CRT Hit information, with each entry across the vectors representing a FEB mac5, channel, and PE of one of the constituent hits, think of them 
+    //as parallel column vectors
+    std::vector<int> matched_hit_mac5, matched_hit_chan;
+    std::vector<double> matched_hit_pes;
 
     //These vectors contain the information for all CRT Hit candidates that were considered valid to be matched with the TPC track, including the one that was matched
     std::vector<int> all_crt_candidate_trueIDs, all_crt_candidate_motherIDs, all_crt_candidate_ancestorIDs;
     std::vector<int> all_crt_regions, all_crt_pdg, all_crt_candidate_motherlayers;
     std::vector<double> all_crt_candidate_x, all_crt_candidate_y, all_crt_candidate_z;
     std::vector<double> crt_start_dca, crt_end_dca, crt_timestamp;
+    std::vector<int> all_crt_hitcode_map;//<refers above vectors to hitcodes for all CRT Hit candidate vectors below
     int best_dca_pos;			///<Contains position of "best match" for the vectors above
+
+    //These vectors attempt to preserve all of the information about the hit candidate PE breakdown, using 
+    std::vector<int> all_crt_mac5s, all_crt_chans, all_crt_hitcode;//"hitcode" allows for vectors to be searched by individual hits among the several in the candidates
+    std::vector<double> all_crt_pes;
+
+
 
     //These may need to be commented out until I can edit sbnobj to expand what's contained in CRTHits
     std::vector<int> triggered_FEBs_mac5s; std::vector<double> triggered_FEBs_pes, triggered_FEBs_timestamps; ///<for by-FEB analysis of the matched CRT Hit
@@ -194,6 +205,11 @@ namespace icarus {
     fCrtHitModuleLabel   = p.get<art::InputTag> ("CrtHitModuleLabel", "crthit"); 
     fPFParticleLabel    =  p.get< std::vector<art::InputTag> >("PFParticleLabel",             {""});
     fTriggerLabel        = p.get<art::InputTag>("TriggerLabel","daqTrigger");
+    
+    fVerbose = p.get<bool>("Verbose");
+    fIsData = p.get<bool>("IsData");
+    bt = p.get<fhicl::ParameterSet>("CRTBackTrack");				
+    if(!fIsData) fSimModuleLabel = p.get<art::InputTag>("SimModuleLabel","largeant");
   } // CRTTPCTruthEff::reconfigure()
 
 
@@ -266,7 +282,14 @@ namespace icarus {
     tr_crttpc->Branch("triggered_FEBs_mac5s",&triggered_FEBs_mac5s);
     tr_crttpc->Branch("triggered_FEBs_pes",&triggered_FEBs_pes);
     tr_crttpc->Branch("triggered_FEBs_timestamps",&triggered_FEBs_timestamps);
-
+    tr_crttpc->Branch("matched_hit_mac5",&matched_hit_mac5);
+    tr_crttpc->Branch("matched_hit_chan",&matched_hit_chan);
+    tr_crttpc->Branch("matched_hit_pes",&matched_hit_pes);
+    tr_crttpc->Branch("all_crt_hitcode_map",&all_crt_hitcode_map);
+    tr_crttpc->Branch("all_crt_mac5s",&all_crt_mac5s);
+    tr_crttpc->Branch("all_crt_chans",&all_crt_chans);
+    tr_crttpc->Branch("all_crt_hitcode",&all_crt_hitcode);
+    tr_crttpc->Branch("all_crt_pes",&all_crt_pes);
 
   } // CRTTPCTruthEff::beginJob()
 
@@ -432,7 +455,6 @@ namespace icarus {
 
 		driftdir =  closest.driftdir; //TPCGeoUtil::DriftDirectionFromHits(fGeometryService, hits);
 		simple_catcross = closest.simple_cathodecrosser;
-
 		best_dca_pos = closest.best_DCA_pos;
 		crttime = closest.t0;
 		crt_pes= closest.thishit.peshit;
@@ -460,6 +482,18 @@ namespace icarus {
 
 		t0min = closest.t0min;
 		t0max = closest.t0max;
+
+		//extract all info about CRT Hit's mac5+channel+pes into vectors
+	    	std::map< uint8_t, std::vector<std::pair<int,float> > > crthit_pes = closest.thishit.pesmap; ///< Saves signal hit information (FEB, local-channel and PE) .
+		for(uint8_t i=1; i<232; i++){
+			if(crthit_pes[i].size()>0){
+				for(int j=0; j<(int)crthit_pes[i].size(); j++){
+					matched_hit_mac5.push_back(i);
+					matched_hit_chan.push_back(crthit_pes[i][j].first);
+					matched_hit_pes.push_back(crthit_pes[i][j].second);
+				}//end for(int j=0; j<crt_pes[i].size(); j++)
+			}//end if(crthit_pes[i].size()>0)
+		}//end loop searching for FEBs connected to the hit
 
  		std::vector<icarus::match_geometry> all_crt_candidates = t0Alg.GetClosestCRTHit_geo(detProp, *trackList[track_i], hits, crtHits, m_trigger_timestamp, fIsData);
 
@@ -502,6 +536,19 @@ namespace icarus {
 				crt_start_dca.push_back(thiscand.simpleDCA_startDir);	
 				crt_end_dca.push_back(thiscand.simpleDCA_endDir);	
 
+				all_crt_hitcode_map.push_back(i);//Gives ID to each hit for the FEB+channel+pes breakdown below to allow cross-referencing between vectors
+
+			    	std::map< uint8_t, std::vector<std::pair<int,float> > > thishit_pes = crtcandidate.pesmap; ///< Saves signal hit information (FEB, local-channel and PE) .
+				for(uint8_t k=1; k<232; k++){
+					if(thishit_pes[k].size()>0){
+						for(int j=0; j<(int)thishit_pes[k].size(); j++){
+							all_crt_mac5s.push_back(k);
+							all_crt_hitcode.push_back(i);
+							all_crt_chans.push_back(thishit_pes[k][j].first);
+							all_crt_pes.push_back(thishit_pes[k][j].second);
+						}//end for(int j=0; j<crt_pes[k].size(); j++)
+					}//end if(thishit_pes[k].size()>0)
+				}//end loop searching for FEBs connected to the hit
 			}//end loop over CRT candidates
 		}//end if(num_crt_candidates>0)
 
