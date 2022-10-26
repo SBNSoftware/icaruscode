@@ -71,7 +71,7 @@ physics:
       #TPCTrackLabel:       "pandoraTrackGausCryoE"     # Track producer module label  
       TriggerLabel:        "daqTrigger"
       Verbose:             true              # Print extra information about what's going on
-#      t0Alg:               @local::standard_crtt0matchingalg
+      T0Alg:               @local::standard_crtt0matchingalg
       IsData:		   false
       SimModuleLabel:	   "largeant"
       CRTBackTrack: @local::standard_crtbacktracker
