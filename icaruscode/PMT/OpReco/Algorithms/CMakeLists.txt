@@ -1,5 +1,5 @@
-art_make(
-  LIB_LIBRARIES
+art_make_library(
+  LIBRARIES
     larana::OpticalDetector_OpHitFinder
     sbnobj::ICARUS_PMT_Data
     lardataobj::RecoBase

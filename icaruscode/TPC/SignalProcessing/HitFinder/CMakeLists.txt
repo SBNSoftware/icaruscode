@@ -1,14 +1,15 @@
 add_subdirectory(HitFinderTools)
 
-art_make(
-		LIB_LIBRARIES
+art_make_library(
+		LIBRARIES
 			lardataobj::RawData
 			lardataobj::RecoBase
 			lardata::Utilities
 			fhiclcpp::fhiclcpp
 			cetlib::cetlib
-
-		MODULE_LIBRARIES
+)
+set(		MODULE_LIBRARIES
+			larcorealg::Geometry
 			larcorealg::Geometry
 			larcore::Geometry_Geometry_service
 			lardata::Utilities
@@ -38,6 +39,9 @@ art_make(
 			ROOT::FFTW
 
 	)
+cet_build_plugin(HitMerger art::module LIBRARIES ${MODULE_LIBRARIES})
+cet_build_plugin(HitSelector art::module LIBRARIES ${MODULE_LIBRARIES})
+cet_build_plugin(ICARUSHitFinder art::module LIBRARIES ${MODULE_LIBRARIES})
 
 install_headers()
 install_fhicl()

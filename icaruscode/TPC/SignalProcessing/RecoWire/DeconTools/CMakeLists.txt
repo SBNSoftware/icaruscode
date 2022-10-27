@@ -3,8 +3,7 @@ cet_enable_asserts()
 add_definitions(-DEIGEN_FFTW_DEFAULT)
 include_directories(${FFTW3_INCLUDE_DIRS})
 
-art_make(
-	TOOL_LIBRARIES
+set(	TOOL_LIBRARIES
 			larcorealg::Geometry
 			larevt::CalibrationDBI_IOVData
 			larevt::CalibrationDBI_Providers
@@ -34,6 +33,14 @@ art_make(
 			Boost::system
 			CLHEP::Random
 )
+cet_build_plugin(BaselineMostProbAve art::tool LIBRARIES ${TOOL_LIBRARIES})
+cet_build_plugin(BaselineStandard art::tool LIBRARIES ${TOOL_LIBRARIES})
+cet_build_plugin(NoBaseline art::tool LIBRARIES ${TOOL_LIBRARIES})
+cet_build_plugin(ROIDeconvolution art::tool LIBRARIES ${TOOL_LIBRARIES})
+cet_build_plugin(ROIFinderDifferential art::tool LIBRARIES ${TOOL_LIBRARIES})
+cet_build_plugin(ROIFinderMorphological art::tool LIBRARIES ${TOOL_LIBRARIES})
+cet_build_plugin(ROIFinderNOP art::tool LIBRARIES ${TOOL_LIBRARIES})
+cet_build_plugin(ROIFinderStandard art::tool LIBRARIES ${TOOL_LIBRARIES})
 
 install_headers()
 install_source()

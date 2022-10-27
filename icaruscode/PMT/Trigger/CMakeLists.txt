@@ -2,7 +2,7 @@ add_subdirectory(Algorithms)
 add_subdirectory(Utilities)
 add_subdirectory(scripts)
 
-art_make(
+art_make_library(
 	EXCLUDE
     "WriteBeamGateInfo_module.cc"
     "FixBeamGateInfo_module.cc"
@@ -16,7 +16,7 @@ art_make(
     "SlidingWindowTriggerEfficiencyPlots_module.cc"
     "TriggerEmulationTree_module.cc"
     "MakeTriggerSimulationTree_module.cc"
-	LIB_LIBRARIES
+	LIBRARIES
 		icaruscode::PMT_Trigger_Algorithms
 		icaruscode::PMT_Trigger_Utilities
 		sbnobj::ICARUS_PMT_Trigger_Data
@@ -42,7 +42,8 @@ art_make(
 		ROOT::Hist
 		ROOT::Tree
 		ROOT::Core
-	MODULE_LIBRARIES
+)
+set(	MODULE_LIBRARIES
 		icaruscode::PMT_Trigger_Algorithms
 		sbnobj::ICARUS_PMT_Trigger_Data
 		lardataalg::DetectorInfo
@@ -63,26 +64,35 @@ art_make(
 		messagefacility::MF_MessageLogger
 		fhiclcpp::fhiclcpp
 		larcore::Geometry_Geometry_service
-	TOOL_LIBRARIES
+)
+set(	TOOL_LIBRARIES
 		icaruscode_PMT_Trigger_Algorithms
 		sbnobj::ICARUS_PMT_Trigger_Data
 		lardataalg::DetectorInfo
 		lardataobj::RawData
 	)
 
-simple_plugin(WriteBeamGateInfo module
+cet_build_plugin(DiscriminatePMTwaveforms art::module LIBRARIES ${MODULE_LIBRARIES})
+cet_build_plugin(DumpTriggerGateData art::module LIBRARIES ${MODULE_LIBRARIES})
+cet_build_plugin(DynamicTriggerGateBuilderTool art::tool LIBRARIES ${TOOL_LIBRARIES})
+cet_build_plugin(ExtractEnergyDepositionSummary art::module LIBRARIES ${MODULE_LIBRARIES})
+cet_build_plugin(FixedTriggerGateBuilderTool art::tool LIBRARIES ${TOOL_LIBRARIES})
+cet_build_plugin(LVDSgates art::module LIBRARIES ${TOOL_LIBRARIES})
+
+
+cet_build_plugin(WriteBeamGateInfo art::module LIBRARIES
   lardataobj::Simulation
   larcorealg::headers
   lardataalg::headers
-  )
+  ) 
 
-simple_plugin(FixBeamGateInfo module
+cet_build_plugin(FixBeamGateInfo art::module LIBRARIES
   lardataobj::Simulation
   larcorealg::headers
   lardataalg::headers
-  )
+  ) 
 
-simple_plugin(DiscriminatePMTwaveformsByChannel module
+cet_build_plugin(DiscriminatePMTwaveformsByChannel art::module
                 LIBRARIES
 		icaruscode::PMT_Trigger_Algorithms
 		sbnobj::ICARUS_PMT_Trigger_Data
@@ -102,9 +112,9 @@ simple_plugin(DiscriminatePMTwaveformsByChannel module
 		fhiclcpp::fhiclcpp
 		cetlib_except::cetlib_except
 		ROOT::Core
-		)
+		) 
 
-simple_plugin(SlidingWindowTrigger module
+cet_build_plugin(SlidingWindowTrigger art::module
                 LIBRARIES
 		icaruscode::PMT_Trigger_Algorithms
 		sbnobj::ICARUS_PMT_Trigger_Data
@@ -124,9 +134,9 @@ simple_plugin(SlidingWindowTrigger module
 		fhiclcpp::fhiclcpp
 		cetlib_except::cetlib_except
 		ROOT::Core
-		)
+		) 
 
-simple_plugin(MajorityTriggerSimulation module
+cet_build_plugin(MajorityTriggerSimulation art::module
                 LIBRARIES
 		icaruscode::PMT_Trigger_Algorithms
 		sbnobj::ICARUS_PMT_Trigger_Data
@@ -147,9 +157,9 @@ simple_plugin(MajorityTriggerSimulation module
 		cetlib_except::cetlib_except
 		ROOT::Hist
 		ROOT::Core
-		)
+		) 
 
-simple_plugin(SlidingWindowTriggerSimulation module
+cet_build_plugin(SlidingWindowTriggerSimulation art::module
                 LIBRARIES
 		icaruscode::PMT_Trigger_Algorithms
 		sbnobj::ICARUS_PMT_Trigger_Data
@@ -170,9 +180,9 @@ simple_plugin(SlidingWindowTriggerSimulation module
 		cetlib_except::cetlib_except
 		ROOT::Hist
 		ROOT::Core
-		)
+		) 
 
-simple_plugin(TriggerSimulationOnGates module
+cet_build_plugin(TriggerSimulationOnGates art::module LIBRARIES
   icaruscode::PMT_Trigger_Algorithms
   icarusalg::Utilities
   sbnobj::ICARUS_PMT_Trigger_Data
@@ -192,9 +202,9 @@ simple_plugin(TriggerSimulationOnGates module
   cetlib_except::cetlib_except
   ROOT::Hist
   ROOT::Core
-  )
+  ) 
 
-simple_plugin(TriggerEfficiencyPlots module
+cet_build_plugin(TriggerEfficiencyPlots art::module
                 LIBRARIES
 		icarusalg::Utilities
 		icaruscode::PMT_Trigger_Utilities
@@ -219,9 +229,9 @@ simple_plugin(TriggerEfficiencyPlots module
 		ROOT::Hist
 		ROOT::Tree
 		ROOT::Core
-		)
+		) 
 
-simple_plugin(MakeTriggerSimulationTree module
+cet_build_plugin(MakeTriggerSimulationTree art::module
                 LIBRARIES
 		icaruscode::PMT_Trigger_Algorithms
 		icaruscode::PMT_Trigger_Utilities
@@ -244,9 +254,9 @@ simple_plugin(MakeTriggerSimulationTree module
 		ROOT::GenVector
 		ROOT::Tree
 		ROOT::Core
-		)
+		) 
 
-simple_plugin(TriggerEmulationTree module
+cet_build_plugin(TriggerEmulationTree art::module LIBRARIES
   icaruscode_PMT_Trigger_Algorithms
   icaruscode_PMT_Trigger_Utilities
   art_root_io::TFileService_service
@@ -260,7 +270,7 @@ simple_plugin(TriggerEmulationTree module
   cetlib_except::cetlib_except
   ROOT::Tree
   ROOT::Core
-  )
+  ) 
 
 # trigger efficiency plot modules with the same build configuration:
 foreach(TriggerEfficiencyPlotsModule
@@ -268,7 +278,7 @@ foreach(TriggerEfficiencyPlotsModule
 	SlidingWindowTriggerEfficiencyPlots
 	)
 
-	simple_plugin(${TriggerEfficiencyPlotsModule} module
+	cet_build_plugin(${TriggerEfficiencyPlotsModule} art::module
                 LIBRARIES
 		icaruscode::PMT_Trigger_Algorithms
 		icaruscode::PMT_Trigger
@@ -295,7 +305,7 @@ foreach(TriggerEfficiencyPlotsModule
 		ROOT::Hist
 		ROOT::Tree
 		ROOT::Core
-		)
+		) 
 
 endforeach()
 

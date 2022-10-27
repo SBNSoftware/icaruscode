@@ -1,6 +1,6 @@
 
-art_make(
-	SERVICE_LIBRARIES
+art_make_library()
+set(	SERVICE_LIBRARIES
 		icarusalg::Geometry
 		larcorealg::Geometry
 		larcore::Geometry_Geometry_service
@@ -12,8 +12,8 @@ art_make(
 		ROOT::Geom
 		ROOT::XMLIO
 		ROOT::Gdml
-
-	TOOL_LIBRARIES
+)
+set(	TOOL_LIBRARIES
 		icarusalg::Geometry
 		larcorealg::Geometry
 		larcore::Geometry_Geometry_service
@@ -27,4 +27,7 @@ art_make(
 		ROOT::Gdml
 
 	)
+
+cet_build_plugin(ICARUSsplitInductionChannelMapSetupTool art::tool LIBRARIES ${TOOL_LIBRARIES})
+cet_build_plugin(IcarusGeometryHelper art::service LIBRARIES ${SERVICE_LIBRARIES})
 

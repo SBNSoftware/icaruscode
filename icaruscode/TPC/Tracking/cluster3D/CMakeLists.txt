@@ -1,7 +1,8 @@
 
 # where should the scripts/..xml file be installed?  Perhaps in bin?
 
-art_make(LIB_LIBRARIES
+art_make_library(
+        LIBRARIES
            larevt::Filters
            lardataalg::DetectorInfo
            lardataobj::RecoBase
@@ -26,8 +27,8 @@ art_make(LIB_LIBRARIES
            messagefacility::MF_MessageLogger
            fhiclcpp::fhiclcpp
            cetlib::cetlib
-           cetlib_except::cetlib_except
-        TOOL_LIBRARIES
+           cetlib_except::cetlib_except)
+set(    TOOL_LIBRARIES
            larevt::Filters
            larreco::RecoAlg_Cluster3DAlgs
            lardataalg::DetectorInfo
@@ -36,8 +37,8 @@ art_make(LIB_LIBRARIES
            art::Framework_Services_Registry
            art_root_io::tfile_support
            art_root_io::TFileService_service
-           ROOT::Tree
-        MODULE_LIBRARIES
+           ROOT::Tree)
+set(    MODULE_LIBRARIES
           larreco::Calorimetry
           larreco::RecoAlg_Cluster3DAlgs
           larreco::RecoAlg_TCAlg
@@ -55,6 +56,9 @@ art_make(LIB_LIBRARIES
           art_root_io::TFileService_service
           messagefacility::MF_MessageLogger
        )
+cet_build_plugin(Cluster3DICARUS art::module LIBRARIES ${MODULE_LIBRARIES})
+cet_build_plugin(SnippetHit3DBuilderICARUS art::tool LIBRARIES ${TOOL_LIBRARIES})
+
 install_headers()
 install_fhicl()
 install_source()

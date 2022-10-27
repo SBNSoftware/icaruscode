@@ -1,7 +1,6 @@
-include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
-art_make(
-	LIB_LIBRARIES
+art_make_library(
+	LIBRARIES
 		icarusalg::Geometry
 		larcore::Geometry_Geometry_service
 		larcorealg::Geometry
@@ -22,8 +21,8 @@ art_make(
 		ROOT::Geom
 		ROOT::XMLIO
 		ROOT::Gdml
-
-	MODULE_LIBRARIES
+)
+set(	MODULE_LIBRARIES
 		icaruscode::PMT_OpReco_FlashFinder
 		icarusalg::Geometry
 		larcore::Geometry_Geometry_service
@@ -49,6 +48,8 @@ art_make(
 		ROOT::Gdml
 		ROOT::Core
 )
+cet_build_plugin(ICARUSFlashFinder art::module LIBRARIES ${MODULE_LIBRARIES})
+
 
 install_headers()
 install_source()

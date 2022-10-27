@@ -1,6 +1,6 @@
 include_directories(${TRACE_INC})
 
-art_make(
+art_make_library(
 	EXCLUDE
 		CrtCal.cc
 		CrtCalTree.cxx
@@ -12,7 +12,7 @@ art_make(
 	NO_PLUGINS
 	BASENAME_ONLY
 	LIBRARY_NAME sbndaq-artdaq_ArtModules_Common
-	LIB_LIBRARIES sbndaq_artdaq_core::sbndaq-artdaq-core_Overlays
+	LIBRARIES sbndaq_artdaq_core::sbndaq-artdaq-core_Overlays
 		sbndaq_artdaq_core::sbndaq-artdaq-core_Overlays_Common
                 canvas::canvas
 )
@@ -117,7 +117,8 @@ cet_build_plugin( BernCRTAna art::module
   artdaq_core::artdaq-core_Data
 )
 
-simple_plugin( CrtNoiseMonTool "module"
+cet_build_plugin( CrtNoiseMonTool art::module
+  LIBRARIES
   art::Framework_Services_Registry
   art_root_io::tfile_support
   art_root_io::TFileService_service
@@ -127,7 +128,8 @@ simple_plugin( CrtNoiseMonTool "module"
   artdaq_core::artdaq-core_Data
 )
 
-simple_plugin( CrtCalAnalysis "module"
+cet_build_plugin( CrtCalAnalysis art::module
+  LIBRARIES
   art::Framework_Services_Registry
   art_root_io::tfile_support
   art_root_io::TFileService_service
@@ -138,7 +140,8 @@ simple_plugin( CrtCalAnalysis "module"
   CRT_CAL
 )
 
-simple_plugin( AnaProducer "module"
+cet_build_plugin( AnaProducer art::module
+  LIBRARIES
   art::Framework_Services_Registry
   art_root_io::tfile_support
   art_root_io::TFileService_service
@@ -152,7 +155,8 @@ simple_plugin( AnaProducer "module"
   CRT_TIMING
 )
 
-simple_plugin( CRTEventProducer "module"
+cet_build_plugin( CRTEventProducer art::module
+  LIBRARIES
   art::Framework_Services_Registry
   art_root_io::tfile_support
   art_root_io::TFileService_service
@@ -167,7 +171,8 @@ simple_plugin( CRTEventProducer "module"
   lardataobj::RawData
 )
 
-simple_plugin( DecoderICARUSCRT "module"
+cet_build_plugin( DecoderICARUSCRT art::module
+  LIBRARIES
   icaruscode_Utilities
   art::Framework_Services_Registry
   art_root_io::tfile_support

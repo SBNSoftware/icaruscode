@@ -2,7 +2,7 @@ cet_enable_asserts()
 
 add_definitions(-DEIGEN_FFTW_DEFAULT)
 
-art_make(
+set(
 	TOOL_LIBRARIES
 		larcorealg::Geometry
 		icarus_signal_processing::icarus_signal_processing
@@ -36,6 +36,9 @@ art_make(
 		Boost::system
 		CLHEP::Random
 )
+
+cet_build_plugin(ROIFromDecoder art::tool LIBRARIES ${TOOL_LIBRARIES})
+cet_build_plugin(ROIMorphological2D art::tool LIBRARIES ${TOOL_LIBRARIES})
 
 install_headers()
 install_source()

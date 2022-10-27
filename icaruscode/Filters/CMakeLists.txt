@@ -1,5 +1,5 @@
-art_make(
-	MODULE_LIBRARIES
+art_make_library()
+set(	MODULE_LIBRARIES
 		icarusalg::Utilities
 		larcorealg::Geometry
 		larcore::Geometry_Geometry_service
@@ -31,6 +31,11 @@ art_make(
 		ROOT::Gdml
 		ROOT::GenVector
 	)
+cet_build_plugin(FilterNeutrinosActiveVolume art::module LIBRARIES ${MODULE_LIBRARIES})
+cet_build_plugin(FilterNumberTPCHits art::module LIBRARIES ${MODULE_LIBRARIES})
+cet_build_plugin(FilterOpFlash art::module LIBRARIES ${MODULE_LIBRARIES})
+cet_build_plugin(FilterParticlesActiveVolume art::module LIBRARIES ${MODULE_LIBRARIES})
+cet_build_plugin(TriggerTypeFilter art::module LIBRARIES ${MODULE_LIBRARIES})
 
 # install_headers()
 install_fhicl()

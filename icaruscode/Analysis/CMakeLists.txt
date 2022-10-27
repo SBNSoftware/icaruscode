@@ -2,7 +2,8 @@ add_subdirectory(tools)
 add_subdirectory(overburden)
 add_subdirectory(trigger)
 
-art_make( MODULE_LIBRARIES larcorealg::Geometry
+set(         MODULE_LIBRARIES
+                larcorealg::Geometry
 		larcore::Geometry_Geometry_service
 		larsim::Simulation
 		nug4::ParticleNavigation
@@ -38,7 +39,17 @@ art_make( MODULE_LIBRARIES larcorealg::Geometry
 		ROOT::Tree
 		icaruscode::RecoUtils
 		Eigen3::Eigen
-		)
+	)
+
+cet_build_plugin(AnalysisTree art::module LIBRARIES ${MODULE_LIBRARIES})
+cet_build_plugin(HitEfficiencyAna art::module LIBRARIES ${MODULE_LIBRARIES})
+cet_build_plugin(ICARUSPurityDQM art::module LIBRARIES ${MODULE_LIBRARIES})
+cet_build_plugin(RawDigitAna art::module LIBRARIES ${MODULE_LIBRARIES})
+cet_build_plugin(TPCPurityInfoAna art::module LIBRARIES ${MODULE_LIBRARIES})
+cet_build_plugin(TPCPurityMonitor art::module LIBRARIES ${MODULE_LIBRARIES})
+cet_build_plugin(ThroughgoingmuonAnalyzer art::module LIBRARIES ${MODULE_LIBRARIES})
+cet_build_plugin(TrackHitAna art::module LIBRARIES ${MODULE_LIBRARIES})
+cet_build_plugin(WireAna art::module LIBRARIES ${MODULE_LIBRARIES})
 
 #install_headers()
 install_fhicl()

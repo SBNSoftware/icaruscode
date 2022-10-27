@@ -10,15 +10,15 @@ add_subdirectory(SimTestPulse)
 add_definitions(-DEIGEN_FFTW_DEFAULT)
 include_directories(${FFTW3_INCLUDE_DIRS})
 
-art_make(
-		LIB_LIBRARIES
+art_make_library(
+		LIBRARIES
 			lardataobj::RawData
 			lardataobj::RecoBase
 			lardata::Utilities
 			fhiclcpp::fhiclcpp
 			cetlib::cetlib
-
-		MODULE_LIBRARIES
+)
+set(		MODULE_LIBRARIES
 			icaruscode_TPC_Utilities
 			icaruscode_IcarusObj
 			icarus_signal_processing::icarus_signal_processing
@@ -50,6 +50,14 @@ art_make(
 			cetlib::cetlib
 			ROOT::FFTW
 		)
+cet_build_plugin(Decon1DROI art::module LIBRARIES ${MODULE_LIBRARIES})
+cet_build_plugin(ROIConverter art::module LIBRARIES ${MODULE_LIBRARIES})
+cet_build_plugin(ROIFinder art::module LIBRARIES ${MODULE_LIBRARIES})
+cet_build_plugin(RecoWireICARUSRaw art::module LIBRARIES ${MODULE_LIBRARIES})
+cet_build_plugin(RecoWireICARUS art::module LIBRARIES ${MODULE_LIBRARIES})
+cet_build_plugin(RecoWireROIICARUS art::module LIBRARIES ${MODULE_LIBRARIES})
+cet_build_plugin(RecoWireROI art::module LIBRARIES ${MODULE_LIBRARIES})
+cet_build_plugin(WaveformIntegrity art::module LIBRARIES ${MODULE_LIBRARIES})
 
 install_headers()
 install_fhicl()

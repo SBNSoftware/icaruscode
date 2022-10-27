@@ -7,7 +7,6 @@
 #include_directories ( . )
 
 cet_build_plugin(HepMCFileGen art::module
-         SOURCE HepMCFileGen_module.cc
       LIBRARIES larcorealg::Geometry
                 larcore::Geometry_Geometry_service
                 lardataobj::RecoBase

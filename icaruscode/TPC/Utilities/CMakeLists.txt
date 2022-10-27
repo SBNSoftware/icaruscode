@@ -43,14 +43,14 @@ set(icarus_util_lib_list
         larcoreobj::headers
 )
 
-art_make(
+art_make_library(
 # LIBRARY_NAME icaruscode_TPC_Utilities
-        LIB_LIBRARIES ${icarus_util_lib_list}
-
-	SERVICE_LIBRARIES
+        LIBRARIES ${icarus_util_lib_list}
+)
+set(	SERVICE_LIBRARIES
 		${icarus_util_lib_list}
-
-	MODULE_LIBRARIES
+)
+set(	MODULE_LIBRARIES
 		art_root_io::TFileService_service
 		art_root_io::tfile_support ROOT::Core
 		art::Framework_Services_Registry
@@ -63,6 +63,9 @@ art_make(
 		cetlib::cetlib
 		ROOT::Core
 	)
+cet_build_plugin(FileCatalogMetadataICARUS art::service LIBRARIES ${SERVICE_LIBRARIES})
+cet_build_plugin(SignalShapingICARUSService art::service LIBRARIES ${SERVICE_LIBRARIES})
+cet_build_plugin(TFileMetadataICARUS art::service LIBRARIES ${SERVICE_LIBRARIES})
 
 
 install_headers()

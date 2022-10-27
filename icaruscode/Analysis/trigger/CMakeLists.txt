@@ -1,13 +1,11 @@
 add_subdirectory(Objects)
 add_subdirectory(scripts)
 
-art_make(
-  SUBDIRS details
-  EXCLUDE
-    "TimedTrackSelector_module.cc"
-    "BeamGateInfoFromTracks_module.cc"
-    "TimeTrackTreeStorage_module.cc"
-  LIB_LIBRARIES
+file(GLOB lib_srcs *.cxx details/*.cxx)
+
+art_make_library(
+  SOURCE ${lib_srcs}
+  LIBRARIES
     larcorealg::Geometry
     lardataobj::RawData
     art::Framework_Principal
@@ -16,21 +14,24 @@ art_make(
     ROOT::Tree
   )
 
-simple_plugin(TimedTrackSelector module
+cet_build_plugin(TimedTrackSelector art::module
+  LIBRARIES
   lardataobj::AnalysisBase
   lardataobj::RecoBase
   messagefacility::MF_MessageLogger
   ROOT::Core
   )
 
-simple_plugin(BeamGateInfoFromTracks  module
+cet_build_plugin(BeamGateInfoFromTracks  art::module
+  LIBRARIES
   lardataobj::Simulation
   lardataobj::AnalysisBase
   lardataobj::RecoBase
   lardata::DetectorInfoServices_DetectorClocksServiceStandard_service
   )
 
-simple_plugin(TimeTrackTreeStorage module
+cet_build_plugin(TimeTrackTreeStorage art::module
+  LIBRARIES
   icaruscode_Analysis_trigger
   icaruscode_PMT_Algorithms
   icaruscode_Decode_DataProducts

@@ -1,6 +1,6 @@
 cet_enable_asserts()
 
-art_make(MODULE_LIBRARIES lardataobj::RecoBase
+set(MODULE_LIBRARIES lardataobj::RecoBase
 		larcorealg::Geometry
 		larcore::Geometry_Geometry_service
 		lardata::RecoObjects
@@ -27,8 +27,9 @@ art_make(MODULE_LIBRARIES lardataobj::RecoBase
 		Boost::filesystem
 		Boost::system
 		CLHEP::Random
+)
 
-	TOOL_LIBRARIES lardataobj::RecoBase
+set(TOOL_LIBRARIES lardataobj::RecoBase
 		larcorealg::Geometry
 		larcore::Geometry_Geometry_service
 		lardata::RecoObjects
@@ -56,6 +57,10 @@ art_make(MODULE_LIBRARIES lardataobj::RecoBase
 		Boost::system
 		CLHEP::Random
 	)
+
+cet_build_plugin(AssociationsTruth art::tool LIBRARIES ${TOOL_LIBRARIES})
+cet_build_plugin(BackTrackerTruth art::tool LIBRARIES ${TOOL_LIBRARIES})
+cet_build_plugin(MCTruthTestAna art::module LIBRARIES ${MODULE_LIBRARIES})
 
 install_headers()
 install_source()

@@ -1,4 +1,5 @@
-simple_plugin(ICARUSOpHitFinder "module"
+cet_build_plugin(ICARUSOpHitFinder art::module
+  LIBRARIES
   icaruscode_PMT_OpReco_Algorithms
   larana::OpticalDetector_OpHitFinder
   larcore::Geometry_Geometry_service
@@ -14,10 +15,7 @@ simple_plugin(ICARUSOpHitFinder "module"
   )
 
 
-art_make(
-		EXCLUDE
-			"ICARUSOpHitFinder_module.cc"
-	MODULE_LIBRARIES larcorealg::Geometry
+set(	MODULE_LIBRARIES larcorealg::Geometry
 			larcore::Geometry_Geometry_service
 			lardataobj::RecoBase
 			lardataobj::Simulation
@@ -49,6 +47,17 @@ art_make(
 			ROOT::Core
                         ROOT::Tree
 )
+cet_build_plugin(FakeFlash art::module LIBRARIES ${MODULE_LIBRARIES})
+cet_build_plugin(FakePhotoS art::module LIBRARIES ${MODULE_LIBRARIES})
+cet_build_plugin(FullOpHitFinder art::module LIBRARIES ${MODULE_LIBRARIES})
+cet_build_plugin(ICARUSFlashAssAna art::module LIBRARIES ${MODULE_LIBRARIES})
+cet_build_plugin(ICARUSMCOpFlash art::module LIBRARIES ${MODULE_LIBRARIES})
+cet_build_plugin(ICARUSMCOpHit art::module LIBRARIES ${MODULE_LIBRARIES})
+cet_build_plugin(ICARUSOpFlashAna art::module LIBRARIES ${MODULE_LIBRARIES})
+cet_build_plugin(ICARUSOpHitAna art::module LIBRARIES ${MODULE_LIBRARIES})
+cet_build_plugin(ICARUSOpHitTuple art::module LIBRARIES ${MODULE_LIBRARIES})
+cet_build_plugin(ICARUSParticleAna art::module LIBRARIES ${MODULE_LIBRARIES})
+
 
 install_headers()
 install_source()

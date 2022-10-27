@@ -4,8 +4,8 @@ link_directories(${FFTW3_LIBRARY_DIRS})
 
 add_definitions(-DEIGEN_FFTW_DEFAULT)
 
-art_make(
-	LIB_LIBRARIES
+art_make_library(
+	LIBRARIES
 		lardataobj::RawData
 		lardataobj::RecoBase
 		lardata::Utilities
@@ -41,8 +41,8 @@ art_make(
 		ROOT::Gdml
 		ROOT::FFTW
 		Eigen3::Eigen
-
-	TOOL_LIBRARIES
+)
+set(	TOOL_LIBRARIES
 		icaruscode::TPC_SignalProcessing_RawDigitFilter_Algorithms
 		icaruscode::TPC_Utilities_SignalShapingICARUSService_service
 		lardataobj::RawData
@@ -71,6 +71,9 @@ art_make(
 		ROOT::FFTW
 
 )
+cet_build_plugin(MorphologicalFilter art::tool LIBRARIES ${TOOL_LIBRARIES})
+cet_build_plugin(RawDigitFilterAlg art::tool LIBRARIES ${TOOL_LIBRARIES})
+
 
 install_headers()
 install_fhicl()

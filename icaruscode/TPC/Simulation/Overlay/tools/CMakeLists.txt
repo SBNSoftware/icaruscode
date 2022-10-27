@@ -1,8 +1,8 @@
 cet_enable_asserts()
 include_directories(${FFTW3_INCLUDE_DIRS})
 
-art_make(
-	TOOL_LIBRARIES
+art_make_library()
+set(	TOOL_LIBRARIES
 			larcorealg::Geometry
 			larevt::CalibrationDBI_IOVData
 			larevt::CalibrationDBI_Providers
@@ -34,6 +34,7 @@ art_make(
 			CLHEP::Random
 			Eigen3::Eigen
 	)
+cet_build_plugin(Overlay1D art::tool LIBRARIES ${TOOL_LIBRARIES})
 
 install_headers()
 install_source()

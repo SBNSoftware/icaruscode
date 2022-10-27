@@ -1,6 +1,7 @@
 
 # Build the module
-art_make( MODULE_LIBRARIES
+art_make_library()
+set( MODULE_LIBRARIES
            icaruscode::TPC_Calorimetry_Algorithms
            larcorealg::Geometry
            larreco::Calorimetry
@@ -19,8 +20,8 @@ art_make( MODULE_LIBRARIES
            ROOT::Core
            ROOT::Hist
            ROOT::Physics
-           messagefacility::MF_MessageLogger
-        TOOL_LIBRARIES
+           messagefacility::MF_MessageLogger)
+set( TOOL_LIBRARIES
            larevt::CalibrationDBI_Providers
            larcorealg::Geometry
            larreco::Calorimetry
@@ -42,6 +43,15 @@ art_make( MODULE_LIBRARIES
            messagefacility::MF_MessageLogger
            wda::wda
          )
+cet_build_plugin(NormalizeDriftSQLite art::tool LIBRARIES ${TOOL_LIBRARIES})
+cet_build_plugin(NormalizeDrift art::tool LIBRARIES ${TOOL_LIBRARIES})
+cet_build_plugin(NormalizeTPCSQL art::tool LIBRARIES ${TOOL_LIBRARIES})
+cet_build_plugin(NormalizeTPC art::tool LIBRARIES ${TOOL_LIBRARIES})
+cet_build_plugin(NormalizeWire art::tool LIBRARIES ${TOOL_LIBRARIES})
+cet_build_plugin(NormalizeYZSQL art::tool LIBRARIES ${TOOL_LIBRARIES})
+cet_build_plugin(NormalizeYZ art::tool LIBRARIES ${TOOL_LIBRARIES})
+
+
 install_headers()
 install_fhicl()
 install_source()

@@ -4,14 +4,14 @@ add_definitions(-DEIGEN_FFTW_DEFAULT)
 
 include_directories(${FFTW3_INCLUDE_DIRS})
 
-art_make(
-		LIB_LIBRARIES
+art_make_library(
+		LIBRARIES
 			lardataobj::RawData
 			lardataobj::RecoBase
 			lardata::Utilities
 			fhiclcpp::fhiclcpp
-			cetlib::cetlib cetlib_except::cetlib_except
-		MODULE_LIBRARIES
+			cetlib::cetlib cetlib_except::cetlib_except)
+set(		MODULE_LIBRARIES
 			larcorealg::Geometry
 			icaruscode::TPC_SignalProcessing_RawDigitFilter_Algorithms
 			larcore::Geometry_Geometry_service
@@ -44,6 +44,12 @@ art_make(
 			ROOT::Core
 			ROOT::Tree
 	)
+cet_build_plugin(RawDigitFilterICARUS art::module LIBRARIES ${MODULE_LIBRARIES})
+cet_build_plugin(RawDigitSmoother art::module LIBRARIES ${MODULE_LIBRARIES})
+cet_build_plugin(TPCNoiseMC art::module LIBRARIES ${MODULE_LIBRARIES})
+cet_build_plugin(TPCNoise art::module LIBRARIES ${MODULE_LIBRARIES})
+cet_build_plugin(mtRawDigitFilterICARUS art::module LIBRARIES ${MODULE_LIBRARIES})
+
 
 install_headers()
 install_fhicl()

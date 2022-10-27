@@ -1,6 +1,6 @@
 cet_enable_asserts()
 
-art_make(
+art_make_library(
           EXCLUDE
                         TriggerConfigurationExtraction_module.cc
                         PMTconfigurationExtraction_module.cc
@@ -9,7 +9,9 @@ art_make(
                         DumpArtDAQfragments_module.cc
                         DumpTrigger_module.cc
                         DaqDecoderICARUSPMT_module.cc
-          MODULE_LIBRARIES
+)
+
+set(          MODULE_LIBRARIES
                         icarus_signal_processing
                         icarus_signal_processing_Detection
                         icarus_signal_processing_Filters
@@ -25,7 +27,16 @@ art_make(
                         lardata::ArtDataHelper
 )
 
-simple_plugin(DaqDecoderICARUSPMT module
+cet_build_plugin(DaqDecoderICARUSPMTnotThatOld art::module LIBRARIES ${MODULE_LIBRARIES})
+cet_build_plugin(DaqDecoderICARUSPMTold art::module LIBRARIES ${MODULE_LIBRARIES})
+cet_build_plugin(DaqDecoderICARUSTPC art::module LIBRARIES ${MODULE_LIBRARIES})
+cet_build_plugin(DaqDecoderICARUSTPCwROI art::module LIBRARIES ${MODULE_LIBRARIES})
+cet_build_plugin(DaqDecoderICARUSTrigger art::module LIBRARIES ${MODULE_LIBRARIES})
+cet_build_plugin(FilterNoiseICARUS art::module LIBRARIES ${MODULE_LIBRARIES})
+cet_build_plugin(MCDecoderICARUSTPCwROI art::module LIBRARIES ${MODULE_LIBRARIES})
+
+
+cet_build_plugin(DaqDecoderICARUSPMT art::module LIBRARIES
 	sbnobj::Common_PMT_Data
 	sbnobj::Common_Trigger
 	icaruscode_Decode_DecoderTools_Dumpers
@@ -45,7 +56,7 @@ simple_plugin(DaqDecoderICARUSPMT module
 	lardata::Utilities
 	)
 
-simple_plugin(PMTconfigurationExtraction module
+cet_build_plugin(PMTconfigurationExtraction art::module LIBRARIES
 	icaruscode::Decode_DecoderTools
 	sbnobj::Common_PMT_Data
 	sbnobj::Common_Trigger
@@ -54,7 +65,7 @@ simple_plugin(PMTconfigurationExtraction module
 	cetlib_except::cetlib_except
 	)
 
-simple_plugin(TriggerConfigurationExtraction module
+cet_build_plugin(TriggerConfigurationExtraction art::module LIBRARIES
   icaruscode_Decode_DecoderTools
   icaruscode_Decode_DataProducts
   art::Framework_Services_Registry
@@ -62,7 +73,7 @@ simple_plugin(TriggerConfigurationExtraction module
   cetlib_except::cetlib_except
   )
 
-simple_plugin(DumpPMTconfiguration module
+cet_build_plugin(DumpPMTconfiguration art::module LIBRARIES
 	sbnobj::Common_PMT_Data
         lardataobj::RawData
 	messagefacility::MF_MessageLogger
@@ -71,14 +82,14 @@ simple_plugin(DumpPMTconfiguration module
 	)
 
 
-simple_plugin(DumpTriggerConfiguration module
+cet_build_plugin(DumpTriggerConfiguration art::module LIBRARIES
   icaruscode_Decode_DataProducts
   messagefacility::MF_MessageLogger
   fhiclcpp::fhiclcpp
   cetlib_except::cetlib_except
   )
 
-simple_plugin(DumpArtDAQfragments module
+cet_build_plugin(DumpArtDAQfragments art::module LIBRARIES
 	icaruscode::Decode_DecoderTools_Dumpers
         larcorealg::headers
 	artdaq_core::artdaq-core_Data
@@ -87,7 +98,7 @@ simple_plugin(DumpArtDAQfragments module
 	cetlib_except::cetlib_except
 	)
 
-simple_plugin(DumpTrigger module
+cet_build_plugin(DumpTrigger art::module LIBRARIES
   sbnobj::Common_Trigger
   lardataobj::Simulation
   lardataobj::RawData

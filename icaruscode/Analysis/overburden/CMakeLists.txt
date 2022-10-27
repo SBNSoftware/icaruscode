@@ -1,5 +1,5 @@
-art_make(
-MODULE_LIBRARIES larcorealg::Geometry
+cet_build_plugin(OBAnaICARUS art::module LIBRARIES
+        larcorealg::Geometry
 	larcore::Geometry_Geometry_service
 	larsim::Simulation
 	lardataobj::Simulation

@@ -1,8 +1,8 @@
 cet_enable_asserts()
 
-art_make(
+art_make_library(
 	EXCLUDE "PMTChannelMapDumper.cxx"
-	LIB_LIBRARIES
+	LIBRARIES
 		art::Utilities
 		canvas::canvas
 		fhiclcpp::fhiclcpp
@@ -10,7 +10,9 @@ art_make(
 		cetlib_except::cetlib_except
 		cetlib::cetlib
 		larcorealg::CoreUtils
-	SERVICE_LIBRARIES
+)
+
+set(	SERVICE_LIBRARIES
 		icaruscode::Decode_ChannelMapping
 		lardata::Utilities
 		lardata::ArtDataHelper
@@ -31,7 +33,8 @@ art_make(
 		cetlib::cetlib cetlib_except::cetlib_except
 		larevt::CalibrationDBI_IOVData
 		larevt::CalibrationDBI_Providers
-	TOOL_LIBRARIES
+)
+set(	TOOL_LIBRARIES
 		larcorealg::CoreUtils
 		lardata::Utilities
 		lardata::ArtDataHelper
@@ -54,7 +57,12 @@ art_make(
 		larevt::CalibrationDBI_Providers
 	)
 
-art_make_exec(NAME "PMTChannelMapDumper"
+cet_build_plugin(ChannelMapPostGres art::tool LIBRARIES ${TOOL_LIBRARIES})
+cet_build_plugin(ChannelMapSQLite art::tool LIBRARIES ${TOOL_LIBRARIES})
+cet_build_plugin(ICARUSChannelMap art::service LIBRARIES ${SERVICE_LIBRARIES})
+
+
+cet_make_exec(NAME "PMTChannelMapDumper"
 	LIBRARIES
 		icaruscode::Decode_ChannelMapping
 		larevt::CalibrationDBI_IOVData
@@ -63,7 +71,7 @@ art_make_exec(NAME "PMTChannelMapDumper"
 		cetlib::cetlib
 		cetlib_except::cetlib_except
 		Boost::filesystem
-	)
+	) 
 
 install_headers()
 install_fhicl()

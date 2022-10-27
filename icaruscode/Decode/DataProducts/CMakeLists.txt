@@ -1,6 +1,4 @@
-cet_make(
-NO_DICTIONARY
-)
+art_make_library()
 
 art_dictionary(DICTIONARY_LIBRARIES icaruscode::Decode_DataProducts)
 

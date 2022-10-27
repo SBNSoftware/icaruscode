@@ -1,13 +1,13 @@
 
 
-art_make(	LIB_LIBRARIES
+art_make_library(LIBRARIES
 			lardataobj::RawData
 			lardataobj::RecoBase
 			lardata::Utilities
 			fhiclcpp::fhiclcpp
 			cetlib::cetlib
-
-		MODULE_LIBRARIES
+)
+set(		MODULE_LIBRARIES
 			icaruscode::TPC_SignalProcessing_RecoWire_SimTestPulse
 			icaruscode::TPC_Utilities_SignalShapingICARUSService_service
 			lardata::Utilities
@@ -45,6 +45,9 @@ art_make(	LIB_LIBRARIES
 			ROOT::FFTW
 			ROOT::Tree
 )
+cet_build_plugin(SimTestPulseAna art::module LIBRARIES ${MODULE_LIBRARIES})
+cet_build_plugin(SimTestPulseWire art::module LIBRARIES ${MODULE_LIBRARIES})
+cet_build_plugin(SimTestPulse art::module LIBRARIES ${MODULE_LIBRARIES})
 
 install_fhicl()
 

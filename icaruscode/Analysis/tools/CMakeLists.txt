@@ -4,7 +4,8 @@ add_subdirectory(MCTruth)
 add_definitions(-DEIGEN_FFTW_DEFAULT)
 include_directories(${FFTW3_INCLUDE_DIRS})
 
-art_make(TOOL_LIBRARIES lardataobj::RecoBase
+set(         TOOL_LIBRARIES
+                lardataobj::RecoBase
 		lardataobj::Simulation
 		lardataalg::DetectorInfo
 		icaruscode::TPC_SignalProcessing_RawDigitFilter_Algorithms
@@ -34,6 +35,16 @@ art_make(TOOL_LIBRARIES lardataobj::RecoBase
 		CLHEP::Random
 		ROOT::Minuit ROOT::Tree
 		)
+
+cet_build_plugin(BasicHitAnalysis art::tool LIBRARIES ${TOOL_LIBRARIES})
+cet_build_plugin(BasicRawDigitAnalysis art::tool LIBRARIES ${TOOL_LIBRARIES})
+cet_build_plugin(BasicTrackAnalysis art::tool LIBRARIES ${TOOL_LIBRARIES})
+cet_build_plugin(BasicWireAnalysis art::tool LIBRARIES ${TOOL_LIBRARIES})
+cet_build_plugin(HitEfficiencyAnalysis art::tool LIBRARIES ${TOOL_LIBRARIES})
+cet_build_plugin(HitFinderAnalysis art::tool LIBRARIES ${TOOL_LIBRARIES})
+cet_build_plugin(SpacePointAnalysisMC art::tool LIBRARIES ${TOOL_LIBRARIES})
+cet_build_plugin(SpacePointAnalysis art::tool LIBRARIES ${TOOL_LIBRARIES})
+cet_build_plugin(TrackHitEfficiencyAnalysis art::tool LIBRARIES ${TOOL_LIBRARIES})
 
 install_headers()
 install_source()

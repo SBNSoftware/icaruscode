@@ -1,7 +1,7 @@
 cet_enable_asserts()
 
-art_make(
-		TOOL_LIBRARIES
+art_make_library()
+set(		TOOL_LIBRARIES
 			icaruscode::TPC_Utilities_SignalShapingICARUSService_service
 			larcorealg::Geometry
 			larevt::CalibrationDBI_IOVData
@@ -31,6 +31,8 @@ art_make(
 			Boost::system
 			CLHEP::Random
 )
+cet_build_plugin(OpHitFinderStandard art::tool LIBRARIES ${TOOL_LIBRARIES})
+cet_build_plugin(OpHitFinder art::tool LIBRARIES ${TOOL_LIBRARIES})
 
 install_headers()
 install_source()

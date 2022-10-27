@@ -1,4 +1,4 @@
-cet_make(
+art_make_library(
 	SUBDIRS
 		"details"
 	LIBRARIES

@@ -1,13 +1,6 @@
 
-art_make(
-	EXCLUDE
-		"SaveConfigurationIntoTFile_module.cc"
-		"DummyFilter_module.cc"
-		"DummyProducer_module.cc"
-		"DummyAnalyzer_module.cc"
-		"FilterOnArtPathOutcome_module.cc"
-		"DuplicateEventTracker_service.cc"
-	LIB_LIBRARIES
+art_make_library(
+	LIBRARIES
 		art_root_io::RootDB
 		SQLite::SQLite3
 		lardata::Utilities
@@ -21,7 +14,7 @@ art_make(
 		ROOT::RIO
 	)
 
-simple_plugin(SaveConfigurationIntoTFile "module"
+cet_build_plugin(SaveConfigurationIntoTFile art::module LIBRARIES
 		art_root_io::TFileService_service
 		art_root_io::tfile_support
 		art::Framework_Services_Registry
@@ -36,16 +29,16 @@ simple_plugin(SaveConfigurationIntoTFile "module"
 	)
 
 
-simple_plugin(DuplicateEventTracker "service"
+cet_build_plugin(DuplicateEventTracker art::service LIBRARIES
 		icaruscode::Utilities
 		art::Framework_Principal
 		messagefacility::MF_MessageLogger
 	)
 
-simple_plugin(DummyFilter "module")
-simple_plugin(DummyProducer "module")
-simple_plugin(DummyAnalyzer "module")
-simple_plugin(FilterOnArtPathOutcome "module")
+cet_build_plugin(DummyFilter art::module)
+cet_build_plugin(DummyProducer art::module)
+cet_build_plugin(DummyAnalyzer art::module)
+cet_build_plugin(FilterOnArtPathOutcome art::module)
 
 
 install_headers()

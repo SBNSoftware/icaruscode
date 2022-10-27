@@ -1,4 +1,4 @@
-simple_plugin(SpaceChargeServiceICARUS "service"
+cet_build_plugin(SpaceChargeServiceICARUS art::service LIBRARIES
 	icaruscode::TPC_Simulation_SpaceCharge
 	lardataalg::DetectorInfo
 	art::Framework_Core

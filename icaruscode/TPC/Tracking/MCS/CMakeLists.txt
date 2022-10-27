@@ -1,6 +1,6 @@
 
-art_make(
-	LIB_LIBRARIES
+art_make_library(
+	LIBRARIES
 		larsim::MCCheater_BackTrackerService_service
 		larsim::MCCheater_ParticleInventoryService_service
 		lardataobj::RecoBase
@@ -43,8 +43,8 @@ art_make(
 		cetlib::cetlib cetlib_except::cetlib_except
 		CLHEP::Random
 		ROOT::Minuit
-		ROOT::Minuit2
-	MODULE_LIBRARIES
+		ROOT::Minuit2)
+set(	MODULE_LIBRARIES
 		icaruscode::TPC_Tracking_MCS
 		larsim::MCCheater_BackTrackerService_service
 		larsim::MCCheater_ParticleInventoryService_service
@@ -91,6 +91,7 @@ art_make(
 		ROOT::Minuit
 		ROOT::Minuit2
 	)
+cet_build_plugin(MCSFitProducerICARUS art::module LIBRARIES ${MODULE_LIBRARIES})
 
 
 install_headers()

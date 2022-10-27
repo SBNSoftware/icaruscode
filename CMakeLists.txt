@@ -13,7 +13,8 @@
 # ======================================================================
 
 
-cmake_minimum_required(VERSION 3.19 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.20 FATAL_ERROR)
+# cmake_policy(VERSION 3.19)
 
 find_package(cetmodules 3.19.02 REQUIRED)
 project(icaruscode VERSION 09.60.01 LANGUAGES CXX)
@@ -47,10 +48,8 @@ find_package(Eigen3)
 find_package(ifbeam)
 find_package(ifdhc)
 find_package(ifdh_art)
-find_package(guideline_sl)
-find_package(range-v3)
+find_package(Range-v3)
 find_package(sbnobj)
-find_package(sbndaq-artdaq-core)
 find_package(icarus_signal_processing)
 find_package(icarusalg)
 find_package(icarusutil)
@@ -79,22 +78,23 @@ find_package(libwda)
 find_package(ifdh_art)
 find_package(ROOT)
 find_package(Boost COMPONENTS system program_options REQUIRED)
-find_package(protobuf)
+find_package(Protobuf)
 find_package(PandoraSDK)
 find_package(PandoraMonitoring)
 find_package(SQLite3)
 find_package(artdaq_core)
 find_package(sbndaq_artdaq_core)
-find_package(sbndaq-artdaq-core)
 find_package(PostgreSQL)
 find_package(Microsoft.GSL HINTS $ENV{GUIDELINE_SL_DIR})
 
-cet_find_library(PQ NAMES pq )
 
 #deal with fftw
 find_package( PkgConfig REQUIRED)
-pkg_search_module(FFTW3 REQUIRED IMPORTED_TARGET GLOBAL fftw3f fftw3 fftw3q fftw3l fftw3_threads fftw3f_threeads fftw3q_threads)
-set(ICARUS_FFTW_LIBRARIES PkgConfig::FFTW3)
+pkg_search_module(FFTW3F REQUIRED IMPORTED_TARGET GLOBAL fftw3f)
+pkg_search_module(FFTW3 REQUIRED IMPORTED_TARGET GLOBAL fftw3)
+pkg_search_module(FFTW3Q REQUIRED IMPORTED_TARGET GLOBAL ffftw3q)
+pkg_search_module(FFTW3L REQUIRED IMPORTED_TARGET GLOBAL fftw3l)
+set(ICARUS_FFTW_LIBRARIES PkgConfig::FFTW3F PkgConfig::FFTW3 PkgConfig::FFTW3Q PkgConfig::FFTW3L)
 
 
 # macros for dictionary and simple_plugin
@@ -112,12 +112,6 @@ add_subdirectory(test)
 
 # Top level fcl files.
 add_subdirectory(fcl)
-
-# ups - table and config files
-#add_subdirectory(ups)
-
-# packaging utility
-#include(UseCPack)
 
 message(STATUS
   "\n-- ==="

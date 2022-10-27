@@ -1,5 +1,5 @@
-art_make(NO_PLUGINS
-	LIB_LIBRARIES
+art_make_library(
+	LIBRARIES
 		lardataobj::RecoBase
 		lardata::Utilities
 		lardataalg::DetectorInfo

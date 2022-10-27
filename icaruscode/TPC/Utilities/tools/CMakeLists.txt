@@ -5,8 +5,8 @@ link_directories(${FFTW3_LIBRARY_DIRS})
 
 add_definitions(-DEIGEN_FFTW_DEFAULT)
 
-art_make(
-	TOOL_LIBRARIES
+art_make_library()
+set(	TOOL_LIBRARIES
 		larcorealg::Geometry
 		larevt::CalibrationDBI_IOVData
 		larevt::CalibrationDBI_Providers
@@ -35,6 +35,13 @@ art_make(
 		Boost::system
 		CLHEP::Random
 	)
+
+cet_build_plugin(ElectronicsResponseBesselApprox art::tool LIBRARIES ${TOOL_LIBRARIES})
+cet_build_plugin(ElectronicsResponse art::tool LIBRARIES LIBRARIES ${TOOL_LIBRARIES})
+cet_build_plugin(FieldResponse art::tool LIBRARIES ${TOOL_LIBRARIES})
+cet_build_plugin(Filter art::tool LIBRARIES ${TOOL_LIBRARIES})
+cet_build_plugin(Response art::tool LIBRARIES ${TOOL_LIBRARIES})
+
 
 install_headers()
 install_source()

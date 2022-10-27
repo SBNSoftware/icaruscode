@@ -4,10 +4,10 @@ include_directories(${FFTW3_INCLUDE_DIRS})
 
 add_subdirectory("Dumpers")
 
-art_make(SUBDIRS details
+art_make_library(SUBDIRS details
         EXCLUDE
                 triggerPacketParser.cxx
-        LIB_LIBRARIES
+        LIBRARIES
                 lardataalg::DetectorInfo
                 icaruscode::Utilities
                 icaruscode::Decode_DataProducts
@@ -19,7 +19,9 @@ art_make(SUBDIRS details
                 ROOT::RIO
                 ROOT::Core
                 art::Framework_Services_Registry
-        TOOL_LIBRARIES
+)
+
+set(        TOOL_LIBRARIES
                 sbndaq_artdaq_core::sbndaq-artdaq-core_Overlays_ICARUS
                 artdaq_core::artdaq-core_Utilities
                 icarus_signal_processing::icarus_signal_processing
@@ -53,6 +55,17 @@ art_make(SUBDIRS details
                 cetlib::cetlib cetlib_except::cetlib_except
                 Boost::program_options
         )
+
+cet_build_plugin(FakeParticle art::tool LIBRARIES ${TOOL_LIBRARIES})
+cet_build_plugin(PMTDecoder art::tool LIBRARIES ${TOOL_LIBRARIES})
+cet_build_plugin(TPCDecoderFilter1D art::tool LIBRARIES ${TOOL_LIBRARIES})
+cet_build_plugin(TPCDecoderFilter2D art::tool LIBRARIES ${TOOL_LIBRARIES})
+cet_build_plugin(TPCDecoder art::tool LIBRARIES ${TOOL_LIBRARIES})
+cet_build_plugin(TPCNoiseFilter1D art::tool LIBRARIES ${TOOL_LIBRARIES})
+cet_build_plugin(TPCNoiseFilterCanny art::tool LIBRARIES ${TOOL_LIBRARIES})
+cet_build_plugin(TriggerDecoderV2 art::tool LIBRARIES ${TOOL_LIBRARIES})
+
+
 
 cet_make_exec(NAME triggerPacketParser
   LIBRARIES

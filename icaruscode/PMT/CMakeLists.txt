@@ -10,7 +10,8 @@ add_subdirectory(Trigger)
 # AVX is not so relevant after the last commit anyway
 # cet_set_compiler_flags(EXTRA_CXX_FLAGS -mavx)
 
-simple_plugin(SimPMTIcarus "module"
+cet_build_plugin(SimPMTIcarus art::module
+                    LIBRARIES
 			icaruscode_PMT_Algorithms
 			lardataobj::RawData
 			lardataobj::Simulation
@@ -32,7 +33,8 @@ simple_plugin(SimPMTIcarus "module"
 			Boost::system
 			)
 
-simple_plugin(OpDetWaveformMetaMaker "module"
+cet_build_plugin(OpDetWaveformMetaMaker art::module
+                    LIBRARIES
 			icaruscode_PMT_Algorithms
 			lardataalg::DetectorInfo
 			lardataobj::RawData
@@ -40,7 +42,8 @@ simple_plugin(OpDetWaveformMetaMaker "module"
 			larcore::Geometry_Geometry_service
 			)
 
-simple_plugin(PMTWaveformBaselines "module"
+cet_build_plugin(PMTWaveformBaselines art::module
+                    LIBRARIES
 			icaruscode_PMT_Algorithms
 			sbnobj::ICARUS_PMT_Data
 			larcore::Geometry_Geometry_service
@@ -55,7 +58,8 @@ simple_plugin(PMTWaveformBaselines "module"
 			ROOT::Core
 			)
 
-simple_plugin(PMTWaveformBaselinesFromReadoutConfiguration "module"
+cet_build_plugin(PMTWaveformBaselinesFromReadoutConfiguration art::module
+                    LIBRARIES
 			sbnobj::ICARUS_PMT_Data
 			sbnobj::Common_PMT_Data
 			larcore::Geometry_Geometry_service
@@ -70,7 +74,8 @@ simple_plugin(PMTWaveformBaselinesFromReadoutConfiguration "module"
 			ROOT::Core
 			)
 
-simple_plugin(PMTWaveformBaselinesFromChannelData "module"
+cet_build_plugin(PMTWaveformBaselinesFromChannelData art::module
+                    LIBRARIES
 			icaruscode_PMT_Algorithms
 			sbnobj::ICARUS_PMT_Data
 			sbnobj::Common_PMT_Data
@@ -85,25 +90,29 @@ simple_plugin(PMTWaveformBaselinesFromChannelData "module"
 			ROOT::Core
 			)
 
-simple_plugin(AsymGaussPulseFunctionTool "tool"
+cet_build_plugin(AsymGaussPulseFunctionTool art::tool
+        LIBRARIES
 	icaruscode_PMT_Algorithms
 	)
 
-simple_plugin(AsymExpPulseFunctionTool "tool"
+cet_build_plugin(AsymExpPulseFunctionTool art::tool
+        LIBRARIES
 	icaruscode_PMT_Algorithms
 	)
 
-simple_plugin(SampledWaveformFunctionTool "tool"
+cet_build_plugin(SampledWaveformFunctionTool art::tool
+        LIBRARIES
 	icaruscode_PMT_Algorithms
 	icaruscode_Decode_DecoderTools
   )
 
-simple_plugin(CustomPulseFunctionTool "tool"
+cet_build_plugin(CustomPulseFunctionTool art::tool
+        LIBRARIES
 	icaruscode_PMT_Algorithms
 	ROOT::Hist
 	)
 
-art_make(
+art_make_library(
   EXCLUDE
     "SimPMTIcarus_module.cc"
     "OpDetWaveformMetaMaker_module.cc"
@@ -114,11 +123,11 @@ art_make(
     "AsymExpPulseFunctionTool_tool.cc"
     "SampledWaveformFunctionTool_tool.cc"
     "CustomPulseFunctionTool_tool.cc"
-          LIB_LIBRARIES
+          LIBRARIES
             lardataobj::RawData
             lardataobj::RecoBase
-            lardata::Utilities
-          MODULE_LIBRARIES
+            lardata::Utilities)
+set(      MODULE_LIBRARIES
             larcorealg::Geometry
             larana::OpticalDetector
             larcore::Geometry_Geometry_service
@@ -153,6 +162,12 @@ art_make(
             ROOT::Tree
             Boost::system
         )
+cet_build_plugin(OpHitFinderICARUS art::module LIBRARIES ${MODULE_LIBRARIES})
+cet_build_plugin(PMTStartCalibTime art::module LIBRARIES ${MODULE_LIBRARIES})
+cet_build_plugin(PMTcoordinates art::module LIBRARIES ${MODULE_LIBRARIES})
+cet_build_plugin(PhotonPropogationICARUS art::module LIBRARIES ${MODULE_LIBRARIES})
+cet_build_plugin(TrigInfo art::module LIBRARIES ${MODULE_LIBRARIES})
+cet_build_plugin(wvfAnaicarus art::module LIBRARIES ${MODULE_LIBRARIES})
 
 
 install_headers()

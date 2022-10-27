@@ -3,29 +3,12 @@ include_directories(${TRACE_INC})
 add_subdirectory(CRTUtils)
 add_subdirectory(CRTDecoder)
 
-art_make(
-    NO_PLUGINS
-    EXCLUDE
-        CRTChannelMapAlg.cxx
-        CRTGeometryHelper_service.cc
-        CRTDetSim_module.cc
-        CRTSimHitProducer_module.cc
-        CRTTrueHitProducer_module.cc
-        CRTTzeroProducer_module.cc
-        CRTTrackProducer_module.cc
-        CRTSimAnalysis_module.cc
-        CRTDataAnalysis_module.cc
-        CrtOpHitMatchAnalysis_module.cc
-        CRTTruthMatchAnalysis_module.cc
-        CRTAutoVeto_module.cc
-        FlashResAna_module.cc
-        PhotBackground_module.cc
-        CRTT0Matching_module.cc
-        CRTTPCMatchingAna_module.cc
-        CRTPMTMatchingAna_module.cc
+art_make_library(
     LIBRARY_NAME
         icaruscode_CRTData
-    LIB_LIBRARIES
+    SOURCE
+        CRTGeoObjectSorter.cxx
+    LIBRARIES
         larcorealg::Geometry
         larcore::Geometry_Geometry_service
         canvas::canvas
@@ -59,7 +42,8 @@ art_make_library(
                 cetlib::cetlib
         )
 
-simple_plugin(CRTGeometryHelper service
+cet_build_plugin(CRTGeometryHelper art::service
+     LIBRARIES
         larcorealg::Geometry
         larcore::Geometry_Geometry_service
         icaruscode_CRT
@@ -69,7 +53,8 @@ simple_plugin(CRTGeometryHelper service
         messagefacility::headers
         )
 
-simple_plugin(CRTDetSim module
+cet_build_plugin(CRTDetSim art::module
+     LIBRARIES
         larcorealg::Geometry
         icaruscode_CRT
         sbnobj::ICARUS_CRT
@@ -85,7 +70,8 @@ simple_plugin(CRTDetSim module
         CLHEP::CLHEP
         )
 
-simple_plugin(CRTSimHitProducer module
+cet_build_plugin(CRTSimHitProducer art::module
+     LIBRARIES
         larcorealg::Geometry
         icaruscode_CRT
         sbnobj::ICARUS_CRT
@@ -101,7 +87,8 @@ simple_plugin(CRTSimHitProducer module
         CLHEP::CLHEP
         )
 
-simple_plugin( CRTTrueHitProducer module
+cet_build_plugin( CRTTrueHitProducer art::module
+     LIBRARIES
         larcorealg::Geometry
         icaruscode_CRT
         sbnobj::ICARUS_CRT
@@ -122,7 +109,8 @@ simple_plugin( CRTTrueHitProducer module
         cetlib::cetlib
         )
 
-simple_plugin(CRTTzeroProducer module
+cet_build_plugin(CRTTzeroProducer art::module
+     LIBRARIES
         larcorealg::Geometry
         icaruscode_CRT
         sbnobj::ICARUS_CRT
@@ -138,7 +126,8 @@ simple_plugin(CRTTzeroProducer module
         lardata::Utilities
         )
 
-simple_plugin(CRTTrackProducer module
+cet_build_plugin(CRTTrackProducer art::module
+     LIBRARIES
         larcorealg::Geometry
         icaruscode_CRT
         sbnobj::ICARUS_CRT
@@ -155,7 +144,8 @@ simple_plugin(CRTTrackProducer module
         CLHEP::CLHEP
         )
 
-simple_plugin(CRTSimAnalysis module
+cet_build_plugin(CRTSimAnalysis art::module
+     LIBRARIES
         sbnobj::ICARUS_CRT
         icaruscode_CRT
         sbnobj::Common_CRT
@@ -175,7 +165,8 @@ simple_plugin(CRTSimAnalysis module
         ROOT::Tree
         )
 
-simple_plugin(CRTDataAnalysis module
+cet_build_plugin(CRTDataAnalysis art::module
+     LIBRARIES
         artdaq_core::artdaq-core_Data
         sbnobj::ICARUS_CRT
         icaruscode_CRT
@@ -196,7 +187,8 @@ simple_plugin(CRTDataAnalysis module
         ROOT::Gdml
         )
 
-simple_plugin(CRTCalibrationAnalysis module
+cet_build_plugin(CRTCalibrationAnalysis art::module
+     LIBRARIES
         icaruscode_CRTData
         icaruscode_CRT
         sbnobj::Common_CRT
@@ -217,7 +209,8 @@ simple_plugin(CRTCalibrationAnalysis module
 )
 
 
-simple_plugin(CrtOpHitMatchAnalysis module
+cet_build_plugin(CrtOpHitMatchAnalysis art::module
+     LIBRARIES
         sbnobj::ICARUS_CRT
         icaruscode_CRT
         sbnobj::Common_CRT
@@ -236,7 +229,8 @@ simple_plugin(CrtOpHitMatchAnalysis module
         ROOT::Tree
         )
 
-simple_plugin(CRTPMTMatchingAna module
+cet_build_plugin(CRTPMTMatchingAna art::module
+     LIBRARIES
         sbnobj::ICARUS_CRT
         icaruscode_CRT
         sbnobj::Common_CRT
@@ -256,7 +250,8 @@ simple_plugin(CRTPMTMatchingAna module
         ROOT::Tree
 )
 
-simple_plugin(CRTTruthMatchAnalysis module
+cet_build_plugin(CRTTruthMatchAnalysis art::module
+     LIBRARIES
         sbnobj::ICARUS_CRT
         icaruscode_CRT
         sbnobj::Common_CRT
@@ -276,7 +271,8 @@ simple_plugin(CRTTruthMatchAnalysis module
         ROOT::Gdml
         )
 
-simple_plugin( CRTAutoVeto module
+cet_build_plugin( CRTAutoVeto art::module
+     LIBRARIES
         sbnobj::ICARUS_CRT
         icaruscode_CRT
         sbnobj::Common_CRT
@@ -303,7 +299,8 @@ simple_plugin( CRTAutoVeto module
         ROOT::Gdml
         )
 
-simple_plugin( FlashResAna module
+cet_build_plugin( FlashResAna art::module
+     LIBRARIES
         larcore::Geometry_Geometry_service
         larcorealg::Geometry
         nusimdata::SimulationBase
@@ -327,7 +324,8 @@ simple_plugin( FlashResAna module
         ROOT::Gdml
         )
 
-simple_plugin( PhotBackground module
+cet_build_plugin( PhotBackground art::module
+     LIBRARIES
         larcore::Geometry_Geometry_service
         larcorealg::Geometry
         nusimdata::SimulationBase
@@ -350,7 +348,8 @@ simple_plugin( PhotBackground module
         ROOT::Tree
         )
 
-simple_plugin(CRTT0Matching module
+cet_build_plugin(CRTT0Matching art::module
+     LIBRARIES
               icaruscode_CRTData
               icaruscode_CRT
               sbnobj::Common_CRT
@@ -388,7 +387,8 @@ simple_plugin(CRTT0Matching module
 )
 
 
-simple_plugin(CRTT0MatchingAna module
+cet_build_plugin(CRTT0MatchingAna art::module
+     LIBRARIES
               sbnobj::ICARUS_CRT
               icaruscode_CRT
               sbnobj::Common_CRT
@@ -420,7 +420,8 @@ simple_plugin(CRTT0MatchingAna module
               ROOT::RooFitCore
 )
 
-simple_plugin(CRTTPCMatchingAna module
+cet_build_plugin(CRTTPCMatchingAna art::module
+     LIBRARIES
               sbnobj::ICARUS_CRT
               icaruscode_CRT
               sbnobj::Common_CRT
