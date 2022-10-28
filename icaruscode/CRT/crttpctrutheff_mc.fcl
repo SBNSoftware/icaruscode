@@ -7,7 +7,6 @@
 #include "crtbacktracker_icarus.fcl"
 #include "crtt0producer_icarus.fcl"
 
-
 process_name: CRTTPCTruthEff
 
 services:
