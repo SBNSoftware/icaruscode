@@ -1,5 +1,6 @@
 art_make_library()
 set(	MODULE_LIBRARIES
+		sbnobj::Common_Trigger
 		icarusalg::Utilities
 		larcorealg::Geometry
 		larcore::Geometry_Geometry_service

@@ -13,6 +13,7 @@ art_dictionary(DICTIONARY_LIBRARIES
                  lardataobj::RecoBase
                  lardataalg::headers
                  canvas::canvas
+                 sbnobj::ICARUS_PMT_Trigger_Data
               )
 
 install_headers()

@@ -1,4 +1,4 @@
-art_make_library()
+art_make_library(LIBRARIES sbnobj::Common_Trigger)
 
 art_dictionary(DICTIONARY_LIBRARIES icaruscode::Decode_DataProducts)
 

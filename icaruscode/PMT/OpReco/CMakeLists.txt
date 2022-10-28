@@ -15,7 +15,9 @@ cet_build_plugin(ICARUSOpHitFinder art::module
   )
 
 
-set(	MODULE_LIBRARIES larcorealg::Geometry
+set(	MODULE_LIBRARIES
+			sbnobj::Common_Trigger
+			larcorealg::Geometry
 			larcore::Geometry_Geometry_service
 			lardataobj::RecoBase
 			lardataobj::Simulation
