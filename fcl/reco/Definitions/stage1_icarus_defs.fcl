@@ -81,8 +81,8 @@ icarus_stage1_filters:
 
 icarus_stage1_analyzers:
 {
-  caloskimE: @local::caloskim_cryoe_nodigits_goldentracks
-  caloskimW: @local::caloskim_cryow_nodigits_goldentracks
+  caloskimE: @local::caloskim_cryoe_goldentracks_not0
+  caloskimW: @local::caloskim_cryow_goldentracks_not0
   simpleLightAna: @local::ICARUSFlashAssAna
   CRTDataAnalysis: 
    {
@@ -99,9 +99,11 @@ icarus_stage1_analyzers:
 
 icarus_stage1_analyzers.caloskimE.SelectEvents: [reco]
 icarus_stage1_analyzers.caloskimE.CALOproducer: caloskimCalorimetryCryoE 
+icarus_stage1_analyzers.caloskimE.SilenceMissingDataProducts: true
 
 icarus_stage1_analyzers.caloskimW.SelectEvents: [reco]
 icarus_stage1_analyzers.caloskimW.CALOproducer: caloskimCalorimetryCryoW 
+icarus_stage1_analyzers.caloskimW.SilenceMissingDataProducts: true
 
 ### Below are a list of convenient sequences that can be used for production/typical users. ###
 
