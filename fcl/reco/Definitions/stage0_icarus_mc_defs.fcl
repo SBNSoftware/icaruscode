@@ -28,6 +28,7 @@ icarus_stage0_mc_producers:
 
     pmtfixedthr:       @local::icarus_pmtdiscriminatethr_fixed_MC
 
+    ophit:             @local::icarus_ophit_data
     mcophit:           @local::ICARUSMCOpHit
 
     ## crt producer   
