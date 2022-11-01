@@ -8,6 +8,46 @@
 #  * PMT configured baseline extraction (data)
 #  * PMT discrimination with readout-configured thresholds (data)
 #  * PMT discrimination with fixed thresholds
+#  * PMT discrimination with fixed thresholds
+# 
+# 
+# Configuration parameters
+# -------------------------
+# 
+# The following parameters can be overridden by setting them with `@ignore:`
+# before including this configuration file. Unless otherwise specified,
+# the default definition is in `trigger_icarus.fcl`.
+# 
+# * icarus_triggergate_basic.ChannelThresholds: the set of thresholds emulated
+#     in the trigger.
+# 
+# 
+# Naming conventions
+# -------------------
+# 
+# The preset configurations may have a "standard" name for the input that their
+# module needs. That also creates a "standard" output name expectation.
+# If a workflow does not adhere to these "standards", the input names may need
+# to be overridden.
+# Some configurations are designed for data or for simulation, and they may
+# have different standards, but still lead to the same output label.
+# 
+# * PMT configuration (input): `pmtconfig`
+# * PMT baselines from configuration (icarus_pmtconfigbaselines, for data):
+#     `pmtconfigbaselines`
+# * PMT waveforms (input): `daqPMT` (for data), `opdaq` (for MC)
+# * discriminated waveform: there are two possible choices: a fixed threshold
+#     with respect to the baseline, and a absolute, channel dependent threshold;
+#     the former can be applied on both data (`icarus_pmtdiscriminatethr_fixed`)
+#     and MC (`icarus_pmtdiscriminatethr_fixed_MC`), while the latter is applied
+#     only with the thresholds configured in the PMT readout for data
+#     (`icarus_pmtdiscriminatethr`).
+#     The default for MC is `pmtthr` and data products have instance names
+#     according to the discriminated thresholds (e.g. `pmtthr:400`).
+#     Data default (`pmtthrfixed`?) is a TODO here.
+# * paired (LVDS) PMT signals (`icarus_lvdsgates`): `pmtlvdsgates`
+# * window combination of LVDS signals (`icarus_trigslidewindow`):
+#     `pmttriggerwindows`
 # 
 # 
 #
@@ -16,9 +56,12 @@
 # 
 # 20220315 (petrillo@slac.stanford.edu) [v1.0]
 # :   original version
+# 20221104 (petrillo@slac.stanford.edu) [v2.0]
+# :   added many configurations, and rationalized (?) their names
 #
 
 #include "trigger_icarus.fcl"
+#include "triggerwindowdefs_icarus.fcl"
 
 
 BEGIN_PROLOG
@@ -93,7 +136,7 @@ icarus_pmtdiscriminatethr: {
   
   # threshold configuration
   ThresholdsFromPMTconfig: "pmtconfig"
-  NChannels:                360 # to be safe...
+  NChannels:                360
   
   #
   # choosing the discrimination algorithm: fixed length gates
@@ -141,7 +184,7 @@ icarus_pmtdiscriminatethr_fixed: {
   # PMT baselines
   Baselines: "pmtconfigbaselines" # from data products
   
-  NChannels:                  360 # to be safe...
+  NChannels: 360
   
   #
   # choosing the discrimination algorithm: fixed length gates
@@ -149,7 +192,7 @@ icarus_pmtdiscriminatethr_fixed: {
   TriggerGateBuilder: {
     @table::icarus_fixedtriggergate     # from trigger_icarus.fcl
     
-    ChannelThresholds: [ 100, 200, 300, 400, 500, 600 ] # ADC
+    ChannelThresholds: @local::icarus_triggergate_basic.ChannelThresholds
     
     GateDuration: "160 ns"
     
@@ -168,16 +211,16 @@ icarus_pmtdiscriminatethr_fixed: {
 # 
 # This module applies discrimination based on fixed threshold specified in the
 # configuration.
-# The baseline is fixed.
+# The baseline is fixed and read from global settings.
 # It produces discriminated waveforms ("ReadoutTriggerGate" objects)
 # and complimentary waveform summary data (all the waveform information that
 # is not sample values: `sbn::OpDetWaveformMeta` objects).
 # 
 # This module does requires `Geometry` and `DetectorClocksService` services.
 # 
-# Usually this module is usually run only once; standard label: "pmtfixedthr":
+# Usually this module is usually run only once; standard label: "pmtthr":
 #     
-#     physics.producers.pmtfixedthr: @local::icarus_pmtdiscriminatethr_fixed_MC
+#     physics.producers.pmtthr: @local::icarus_pmtdiscriminatethr_fixed_MC
 #     
 # 
 icarus_pmtdiscriminatethr_fixed_MC: {
@@ -191,17 +234,72 @@ icarus_pmtdiscriminatethr_fixed_MC: {
   Baselines: @erase
   Baseline: @local::icarus_pmtsimulationalg_standard.Baseline
   
-  #
-  # choosing the discrimination algorithm: fixed length gates
-  #
-  TriggerGateBuilder: {
-    @table::icarus_pmtdiscriminatethr_fixed.TriggerGateBuilder # as above
-    
-    ChannelThresholds: [ 100, 200, 300, 400, 500, 600 ] # ADC
-    
-  } # TriggerGateBuilder
-
 } # icarus_pmtdiscriminatethr_fixed_MC
+
+
+# ------------------------------------------------------------------------------
+# 
+# PMT channel combination (LVDS).
+# 
+# This configuration applies the default data pairing, including the elimination
+# of noisy/dead channels. If the list of these channels change, this step needs
+# to be repeated.
+# 
+# Gates are combined in OR, as by ICARUS readout the hardware.
+#
+# Usually this module is usually run once (twice if both AND and OR
+# configurations are desired); standard label: "pmtlvdsgates".
+# 
+#
+icarus_lvdsgates: {
+  
+  module_type: LVDSgates
+  
+  TriggerGatesTag: pmtthr
+  
+  # select the thresholds to process (mandatory)
+  Thresholds: @local::icarus_triggergate_basic.ChannelThresholds # from trigger_icarus.fcl
+  
+  # combination mode: disable, input1, input2, AND, OR.
+  CombinationMode: "OR"
+  
+  # use the standard ICARUS pairing
+  ChannelPairing: @local::icarus_trigger_channel_pairings
+  
+  # ignore these problem channels (high noise/not turned on)
+  IgnoreChannels: @local::icarus_trigger_channel_ignore
+  
+  # message facility stream
+  LogCategory: "LVDSgates"
+  
+} # icarus_lvdsgates
+
+
+# ------------------------------------------------------------------------------
+#
+# Trigger window combination of gates.
+#
+# Windows are created in the "overlapping" configuration with 30 PMT per window,
+# 5 windows per PMT "wall" (and 10 per cryostat, 20 in total).
+# Combination of the two sides of the cathode does not happen here.
+# 
+# Usually this module is usually run for each relevant LVDS pairing (see above);
+# if both tiled and overlapping windows are desired, this module needs to be
+# run once for each. The standard label: "pmttriggerwindows".
+#
+icarus_trigslidewindow: {
+
+  module_type: SlidingWindowTrigger
+
+  TriggerGatesTag: pmtlvdsgates
+
+  Thresholds: @local::icarus_triggergate_basic.ChannelThresholds # from trigger_icarus.fcl
+
+  MissingChannels: @local::icarus_trigger_channel_ignore
+
+  @table::icarus_trigslidewindow_standard_size
+
+} # icarus_trigslidewindow
 
 
 # ------------------------------------------------------------------------------

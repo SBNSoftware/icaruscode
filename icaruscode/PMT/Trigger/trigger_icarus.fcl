@@ -1,10 +1,10 @@
 #
 # File:    trigger_icarus.fcl
-# Purpose: Configurations of ICARUS trigger related algorithm.
+# Purpose: Parameters of ICARUS trigger related algorithm.
 # Author:  Gianluca Petrillo (petrillo@slac.stanford.edu)
 # Date:    April 2, 2019
 #
-# Configurations are provided for algorithms related to triggering.
+# Settings and paramteters are provided for algorithms related to triggering.
 # 
 # Current offer includes:
 # 
@@ -14,6 +14,9 @@
 # Changes:
 # 20210727 (petrillo@slac.stanford.edu)
 #   updated the selection of thresholds
+# 20221104 (petrillo@slac.stanford.edu)
+#   overhaul of the configuration to just host settings and parameters;
+#   module configurations are now in `trigger_emulation_icarus.fcl`
 # 
 #
 
@@ -72,19 +75,31 @@ NuMI_settings: {
 #   algorithm configuration
 # 
 # It includes the threshold and a single "universal" baseline level.
+# For Monte Carlo, it may be good to bind it to the simulated value
+# (`icarus_pmtsimulationalg_standard.Baseline`)
 #
-icarus_triggergate_basic: {
-  
-  # waveform baseline [ADC counts]
-#  Baseline: 15000
-  
-  # thresholds for channel trigger gate opening [ADC counts]
-  # roughly equivalent to the amplitudes of
-  # [ 0.5, 4.0, 7.0, 12.0 ] photoelectrons or
-  # [ 3.5, 25.0, 50.0, 75.0 ] mV
-  ChannelThresholds: [ 30, 200, 400, 600 ]
-  
-} # icarus_triggergate_basic
+# waveform baseline [ADC counts]
+icarus_triggergate_basic.Baseline: 15000
+
+# This is the primary PMT discrimination threshold, chosen for the hardware.
+icarus_triggergate_basic.SelectedThreshold: 400 # ADC
+
+
+# thresholds for channel trigger gate opening [ADC counts]
+# in this default, we have a 1-photoelectron threshold, a loose-but-reachable
+# one, the selected one defined above, and a tight one.
+# Roughly equivalent to the amplitudes of
+# [ 0.6, 10.0, 13.5, 20.0 ] photoelectrons or
+# [ 2.2, 37, 50, 75 ] mV;
+icarus_triggergate_basic.ChannelThresholds:
+  [ 18, 300, @local::icarus_triggergate_basic.SelectedThreshold, 600 ]
+
+
+# When a PMT signal crosses the discrimination threshold, the readout board
+# (V1730B) will open a gate signal for some amount of time in order to evaluate
+# the LVDS pair signal. This value determines that amount of time.
+icarus_triggergate_basic.PMTdiscrGateWidth: "160 ns"
+
 
 #
 # the pairing scheme is:
@@ -188,7 +203,10 @@ icarus_dynamictriggergate: {
   
   tool_type: DynamicTriggerGateBuilderTool
   
-  @table::icarus_triggergate_basic
+  ChannelThresholds: @local::icarus_triggergate_basic.ChannelThresholds
+  
+  # minimum duration of a trigger gate
+  GateDuration: @local::icarus_triggergate_basic.PMTdiscrGateWidth
   
 } # icarus_dynamictriggergate
 
@@ -201,10 +219,10 @@ icarus_fixedtriggergate: {
   
   tool_type: FixedTriggerGateBuilderTool
   
-  @table::icarus_triggergate_basic
+  ChannelThresholds: @local::icarus_triggergate_basic.ChannelThresholds
   
   # minimum duration of a trigger gate
-  GateDuration: "200 ns"
+  GateDuration: @local::icarus_triggergate_basic.PMTdiscrGateWidth
   
 } # icarus_fixedtriggergate
 
@@ -214,7 +232,7 @@ icarus_fixedtriggergate: {
 icarus_region_finder: {
   
   # waveform baseline [ADC counts]
-  Baseline: 15000
+  Baseline: @local::icarus_triggergate_basic.Baseline
   
   # minimum sampled value for a region to start
   EnablingThreshold: @local::icarus_triggergate_basic.ChannelThresholds[0]
@@ -288,6 +306,39 @@ icarus_trigger_channel_pairings_single_wire_geo: [
 
 ] # icarus_trigger_channel_pairings_single_wire_geo
 
+
+################################################################################
+###
+### Trigger patterns: definition of majority and a bit of topology of a trigger.
+###
+
+# M1 p
+icarus_triggergate_basic.patterns.M1: {
+  inMainWindow: 1
+}
+
+icarus_triggergate_basic.patterns.S3: {
+  sumOfOppositeWindows: 3
+  inMainWindow:         2  # relevant only to disambiguate the location
+}
+
+icarus_triggergate_basic.patterns.S5: {
+  sumOfOppositeWindows: 5
+  inMainWindow:         3  # relevant only to disambiguate the location
+}
+
+icarus_triggergate_basic.patterns.S8: {
+  sumOfOppositeWindows: 8
+  inMainWindow:         4  # irrelevant
+}
+
+icarus_triggergate_basic.patterns.S10: {
+  sumOfOppositeWindows: 10
+  inMainWindow:          5 # irrelevant
+}
+
+
+icarus_triggergate_basic.SelectedPattern: @local::icarus_triggergate_basic.patterns.S5
 
 ################################################################################
 
