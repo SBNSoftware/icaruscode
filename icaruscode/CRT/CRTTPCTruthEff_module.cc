@@ -166,11 +166,6 @@ namespace icarus {
     std::vector<int> all_crt_mac5s, all_crt_chans, all_crt_hitcode;//"hitcode" allows for vectors to be searched by individual hits among the several in the candidates
     std::vector<double> all_crt_pes;
 
-
-
-    //These may need to be commented out until I can edit sbnobj to expand what's contained in CRTHits
-    std::vector<int> triggered_FEBs_mac5s; std::vector<double> triggered_FEBs_pes, triggered_FEBs_timestamps; ///<for by-FEB analysis of the matched CRT Hit
-
     //add trigger data product vars
     unsigned int m_gate_type;
     std::string  m_gate_name;
@@ -279,9 +274,6 @@ namespace icarus {
     tr_crttpc->Branch("crt_end_dca",&crt_end_dca);
     tr_crttpc->Branch("crt_timestamp",&crt_timestamp);
     tr_crttpc->Branch("track_t0",&track_t0,"track_t0/D");
-    tr_crttpc->Branch("triggered_FEBs_mac5s",&triggered_FEBs_mac5s);
-    tr_crttpc->Branch("triggered_FEBs_pes",&triggered_FEBs_pes);
-    tr_crttpc->Branch("triggered_FEBs_timestamps",&triggered_FEBs_timestamps);
     tr_crttpc->Branch("matched_hit_mac5",&matched_hit_mac5);
     tr_crttpc->Branch("matched_hit_chan",&matched_hit_chan);
     tr_crttpc->Branch("matched_hit_pes",&matched_hit_pes);
@@ -308,9 +300,9 @@ namespace icarus {
    	 bt.Initialize(event);
     	    auto particleHandle = event.getValidHandle<std::vector<simb::MCParticle>>(fSimModuleLabel);
     	    for (auto const& particle: (*particleHandle)){
-      
               // Make map with ID
               int partID = particle.TrackId();
+	      std::cout << "ParticleID:\t" << partID << "\n";//adding while trying to debug sim related issues
 	      particles[partID] = particle;
 	    }//end loop over particles in particleHandle
      }//end(!fIsData)
@@ -400,6 +392,14 @@ namespace icarus {
 	  crt_start_dca.clear();
 	  crt_end_dca.clear();
 	  crt_timestamp.clear();
+	  all_crt_hitcode_map.clear();
+	  all_crt_mac5s.clear();
+	  all_crt_chans.clear();
+	  all_crt_hitcode.clear();
+	  all_crt_pes.clear();
+	  matched_hit_mac5.clear();
+	  matched_hit_chan.clear();
+	  matched_hit_pes.clear();
 
 	  //Set certain output variables to defaults
 	  crt_tpc_dca = DBL_MAX; crt_trueID = INT_MAX; 
@@ -434,6 +434,8 @@ namespace icarus {
 	  if(!fIsData){
 		track_trueID = RecoUtils::TrueParticleIDFromTotalRecoHits(clockData,hits,false);
 		GetAncestorID(track_trueID, track_mother, track_ancestor, track_motherlayers, particles);
+		std::cout << "track::{trueID,motherID,ancestorID,motherlayers}:\n";
+		std::cout << track_trueID << "," << track_mother << "," << track_ancestor << "," << track_motherlayers << "\n";
 		trk_pdg = particles[track_trueID].PdgCode();
 	  }//end if(!fIsData)
 
@@ -502,9 +504,12 @@ namespace icarus {
 			crt_trueID =  bt.TrueIdFromTotalEnergy(event, checkhit);// std::cout << temp_crt_trueID << std::endl;
 			GetAncestorID(crt_trueID, crt_mother, crt_ancestor, crt_motherlayers, particles);
 			crt_pdg = particles[crt_trueID].PdgCode();
+			std::cout << "crt::{trueID,motherID,ancestorID,motherlayers}:\n";
+			std::cout << crt_trueID << "," << crt_mother << "," << crt_ancestor << "," << crt_motherlayers << "\n";
 	    	}//end if(!fIsData)
 
 		has_crtmatch=false;
+		std::cout << "Number of CRT candidates:\t" << (int)all_crt_candidates.size() << std::endl;
 		num_crt_candidates = (int)all_crt_candidates.size();
 		if(num_crt_candidates>0){
 			has_crtmatch=true;
