@@ -2,7 +2,6 @@
 #include "channelmapping_icarus.fcl"
 
 #include "correctionservices_icarus.fcl"
-#include "seedservice.fcl"
 #include "particleinventoryservice.fcl"
 #include "backtrackerservice.fcl"
 #include "photonbacktrackerservice.fcl"
@@ -17,6 +16,7 @@ services:
   ParticleInventoryService:  @local::standard_particleinventoryservice
   BackTrackerService:        @local::standard_backtrackerservice
   @table::icarus_wirecalibration_minimum_services
+  @table::icarus_random_services  # from services_common_icarus.fcl
 
   SpaceChargeService: @local::icarus_spacecharge
 }
