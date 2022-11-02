@@ -514,11 +514,7 @@ namespace crt {
 	  
 	  m_gate_crt_diff = m_gate_start_timestamp - hit.ts0_ns;
 	  m_crt_global_trigger = hit.ts0_ns - hit.ts1_ns;
-	  m_crtGT_trig_diff = m_crt_global_trigger - (m_trigger_timestamp%1'000'000'000);//'
-	  std::cout << "CRT Global Trigger: t0 - t1 = " << fT0Hit << " - " << fT1Hit << " = " << m_crt_global_trigger << "\n";
-	  std::cout << "trigger_timestamp = " << m_trigger_timestamp << " / 1e9 = " << m_trigger_timestamp%1'000'000'000 << "\n";//'
-	  std::cout << "Trigger Timestamp - CRT Global Trigger = " << (m_trigger_timestamp%1'000'000'000)-m_crt_global_trigger << "\n";//'
-	  std::cout << "CRT Global Trigger - Trigger Timestamp = " << m_crtGT_trig_diff << "\n";
+	  m_crtGT_trig_diff = m_crt_global_trigger - (m_trigger_timestamp%1'000'000'000);
 	  auto ittmp = hit.pesmap.find(mactmp);
 	  if (ittmp==hit.pesmap.end()) {
 	     mf::LogError("CRTDataAnalysis") << "hitreg: " << fHitReg << std::endl;
