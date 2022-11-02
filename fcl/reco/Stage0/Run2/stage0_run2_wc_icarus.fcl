@@ -11,7 +11,7 @@ process_name: stage0
 physics.path:         [ @sequence::icarus_stage0_2d_data ]
 
 ## boiler plate...
-physics.outana:        [ purityinfoana0, purityinfoana1 ]
+physics.outana:        [ CRTPMTMatching, purityinfoana0, purityinfoana1 ]
 physics.trigger_paths: [ path ]
 physics.end_paths:     [ outana, streamROOT ]
 
@@ -33,3 +33,25 @@ outputs.rootOutput.outputCommands:         ["keep *_*_*_*",
 ## Modify the event selection for the purity analyzers
 physics.analyzers.purityinfoana0.SelectEvents:    [ path ]
 physics.analyzers.purityinfoana1.SelectEvents:    [ path ]
+
+services.message.destinations :
+{
+  STDCOUT:
+  {
+     type:      "cout"      #tells the message service to output this destination to cout
+     threshold: "DEBUG"     #tells the message service that this destination applies to WARNING and higher level messages
+     categories:
+     {
+       CRTSimHitProducer:
+       {
+         limit: 5
+         reportEvery: 1
+       }
+       default:
+       {
+         limit: 0  #don't print anything at the infomsg level except the explicitly named categories
+         reportEvery: 0
+       }
+     }
+  }
+}

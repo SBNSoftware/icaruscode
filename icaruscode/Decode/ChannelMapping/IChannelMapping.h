@@ -56,7 +56,7 @@ namespace icarusDB
      *         and the related crate and readout information. 
      *         Then define the function interface to fill these data structures 
      */
-    using DigitizerChannelChannelIDPair    = std::pair<size_t,size_t>;
+    using DigitizerChannelChannelIDPair    = std::tuple<size_t,size_t,size_t>; // std::tuple<DigitizerChannel, ChannelID, LaserChannel>
     using DigitizerChannelChannelIDPairVec = std::vector<DigitizerChannelChannelIDPair>;
     using FragmentToDigitizerChannelMap    = std::map<size_t, DigitizerChannelChannelIDPairVec>;
 

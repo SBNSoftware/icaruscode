@@ -4,9 +4,9 @@ process_name: stage1
 
 physics.reco: [ @sequence::icarus_filter_cluster3D,
                 @sequence::icarus_pandora_Gauss,
-		            @sequence::icarus_reco_fm,
+		@sequence::icarus_reco_fm,
                 @sequence::icarus_crttrack,
-		            @sequence::icarus_crtt0match,
+		@sequence::icarus_crtt0match,
                 caloskimCalorimetryCryoE, caloskimCalorimetryCryoW]
 
 physics.outana:            [ caloskimE, caloskimW, simpleLightAna, CRTDataAnalysis]

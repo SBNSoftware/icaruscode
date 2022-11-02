@@ -1,7 +1,5 @@
 #include "cafmakerjob_icarus_sce.fcl"
 
-services.RandomNumberGenerator: {}
-
 physics.runprod: [ @sequence::caf_preprocess_sce_sequence, rns, genieweight, cafmaker ]
 
 physics.producers.cafmaker.SystWeightLabels: ["genieweight"]

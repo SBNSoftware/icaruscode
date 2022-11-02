@@ -381,11 +381,18 @@ int ChannelMapPostGres::BuildFragmentToDigitizerChannelMap(FragmentToDigitizerCh
             // Now recover the digitizer channel number
             unsigned int digitizerChannelNo = getLongValue(tuple, 9, &error);
             if (error) throw std::runtime_error("Encountered error when trying to recover the PMT digitizer channel number");
-            // Finally, get the LArsoft channel ID
+            // Get the LArsoft channel ID
             unsigned int channelID = getLongValue(tuple, 17, &error);
             if (error) throw std::runtime_error("Encountered error when trying to recover the PMT channel ID");
+            // Get the laserChannelNumber 
+            char laserChannelBuffer[10];
+            getStringValue(tuple, 7, laserChannelBuffer, sizeof(laserChannelBuffer), &error);
+            if (error) throw std::runtime_error("Encountered error when trying to recover the PMT laser channel label");
+            std::string laserChannelLabel(laserChannelBuffer, 2, sizeof(laserChannelBuffer)); //sizeof(digitizerBuffer));
+            unsigned int laserChannel = std::stol(laserChannelLabel);  // try-catch syntax for stol or not necessary ? 
+
             // Fill the map
-            fragmentToDigitizerChannelMap[fragmentID].emplace_back(digitizerChannelNo,channelID);
+            fragmentToDigitizerChannelMap[fragmentID].emplace_back(digitizerChannelNo,channelID,laserChannel);
             releaseTuple(tuple);
         }
     }
