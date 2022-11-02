@@ -23,7 +23,7 @@ using ReadoutIDVec                     = std::vector<unsigned int>;
 using ChannelPlanePair                 = std::pair<unsigned int, unsigned int>;
 using ChannelPlanePairVec              = std::vector<ChannelPlanePair>;
 
-using DigitizerChannelChannelIDPair    = std::pair<size_t,size_t>;
+using DigitizerChannelChannelIDPair    = std::tuple<size_t,size_t, size_t>;
 using DigitizerChannelChannelIDPairVec = std::vector<DigitizerChannelChannelIDPair>;
 
 using ChannelPlanePair                 = std::pair<unsigned int, unsigned int>;

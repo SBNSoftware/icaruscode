@@ -27,7 +27,7 @@ icarus_pmt_calibration.Calib202203: {
 
 
 # ------------------------------------------------------------------------------
-icarus_pmt_calibration.CalibStandard: @local::icarus_pmt_calibration.Calib202203
+icarus_pmt_calibration.CalibStandard: @local::icarus_pmt_calibration.NoCalib
 
 
 

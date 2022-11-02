@@ -1,6 +1,6 @@
-
+file(GLOB lib_srcs *.cxx)
 cet_make_library(SOURCE
-                 ChannelROI.cxx
+                 ${lib_srcs}
                  LIBRARIES
                  PRIVATE
                  messagefacility::MF_MessageLogger

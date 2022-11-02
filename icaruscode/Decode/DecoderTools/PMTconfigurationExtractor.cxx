@@ -168,9 +168,9 @@ sbn::PMTconfiguration icarus::PMTconfigurationExtractor::finalize
       (short unsigned int channelNo)
       {
         auto const it = std::find_if(channelIDs.begin(), channelIDs.end(),
-          [channelNo](auto const& p){ return p.first == channelNo; });
+          [channelNo](auto const& p){ return std::get<0U>(p) == channelNo; });
         return (it != channelIDs.end())
-          ? it->second
+          ? std::get<1U>(*it)
           : sbn::V1730channelConfiguration::NoChannelID
           ;
       };
