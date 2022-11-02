@@ -526,7 +526,6 @@ namespace crt {
 	  int chantmp = (*ittmp).second[0].first;
 	  
 	  fHitMod  = fCrtutils->MacToAuxDetID(mactmp, chantmp);
-	  std::cout << "mac5: " << mactmp << " in modID: " << fHitMod << ", region = " << fHitReg << "\n";
 	  fHitStrip = fCrtutils->ChannelToAuxDetSensitiveID(mactmp, chantmp);
 	  
 	  fHitNtuple->Fill();
