@@ -105,7 +105,7 @@ physics.filters: {
 }
 physics.stage0base: [
     @sequence::icarus_stage0_PMT
-  , @sequence::icarus_stage0_crt
+  , @sequence::icarus_stage0_CRT
   , daqTPCROI
   , @sequence::icarus_stage0_multiTPC_TPC
   ]
@@ -148,7 +148,7 @@ physics.pathE: [
   , @sequence::icarus_filter_cluster3DCryoE
   , @sequence::icarus_reco_pandoraGausCryoE
   , fmatchCryoE
-  , @sequence::icarus_crthit
+  , @sequence::icarus_crttrack
   , caloskimCalorimetryCryoE
   ]
 physics.pathW: [
@@ -156,7 +156,7 @@ physics.pathW: [
   , @sequence::icarus_filter_cluster3DCryoW
   , @sequence::icarus_reco_pandoraGausCryoW
   , fmatchCryoW
-  , @sequence::icarus_crthit
+  , @sequence::icarus_crttrack
   , caloskimCalorimetryCryoW
   ]
 physics.path:
