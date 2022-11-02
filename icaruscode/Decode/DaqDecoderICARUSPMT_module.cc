@@ -8,6 +8,8 @@
 
 
 // ICARUS/SBN libraries
+#include "icaruscode/IcarusObj/OpDetWaveformMeta.h"
+#include "icaruscode/PMT/Algorithms/OpDetWaveformMetaUtils.h" // OpDetWaveformMetaMaker
 #include "icaruscode/Decode/DecoderTools/details/PMTDecoderUtils.h"
 #include "icaruscode/Decode/DecoderTools/Dumpers/FragmentDumper.h"
 #include "icaruscode/Decode/ChannelMapping/IICARUSChannelMap.h"
@@ -45,8 +47,11 @@
 #include "art/Framework/Principal/Run.h"
 #include "art/Framework/Principal/Event.h"
 #include "art/Framework/Principal/Handle.h"
+#include "art/Persistency/Common/PtrMaker.h"
 #include "canvas/Persistency/Provenance/EventID.h"
 #include "canvas/Persistency/Provenance/Timestamp.h"
+#include "canvas/Persistency/Common/Assns.h"
+#include "canvas/Persistency/Common/Ptr.h"
 #include "canvas/Utilities/InputTag.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
 #include "fhiclcpp/types/TableAs.h"
@@ -197,6 +202,22 @@ namespace icarus { class DaqDecoderICARUSPMT; }
  * * `DetectorClocksService` for the correct decoding of the time stamps
  *   (always required, even when dumbed-down timestamp decoding is requested);
  * * `TFileService` only if the production of trees or plots is requested.
+ * 
+ * 
+ * Output data products
+ * ---------------------
+ * 
+ * * `std::vector<raw::OpDetWaveform>` (empty instance name): decoded waveforms
+ *   from the "regular" PMT channels.
+ *   Produced only if `SkipWaveforms` is `false`.
+ * * `std::vector<raw::OpDetWaveform>` (non-empty instance name): decoded
+ *   waveforms from the special PMT channels as configured in `BoardSetup`.
+ *   Produced only if `SkipWaveforms` is `false`.
+ * * `std::vector<sbn::OpDetWaveformMeta>`: for regular waveforms, metadata
+ *   of each produced waveform (in the same order).
+ * * `art::Assns<raw::OpDetWaveform, sbn::OpDetWaveformMeta>`: for regular
+ *   waveforms, association with its metadata object (also in same order).
+ *   Produced only if `SkipWaveforms` is `false`.
  * 
  * 
  * Waveform time stamp
@@ -690,10 +711,12 @@ class icarus::DaqDecoderICARUSPMT: public art::EDProducer {
   /// Collection of information about the global trigger.
   struct TriggerInfo_t {
     SplitTimestamp_t time; ///< Time of the trigger (absolute).
-    long int relBeamGateTime; ///< Time of beam gate relative to trigger [ns].
+    long int trigToBeam; ///< Time of beam gate relative to trigger [ns].
     sbn::triggerSourceMask bits; ///< Trigger bits.
     unsigned int gateCount = 0U; ///< Gate number from the beginning of run.
     sbn::triggerType triggerType; ///< Type of trigger (minimum bias, majority).
+    electronics_time relTriggerTime; ///< Trigger time.
+    electronics_time relBeamGateTime; ///< Beam gate time.
   }; // TriggerInfo_t
   
   /// All the information collected about a waveform (with the waveform itself).
@@ -1032,6 +1055,20 @@ class icarus::DaqDecoderICARUSPMT: public art::EDProducer {
     std::vector<ProtoWaveform_t>& allWaveforms,
     std::vector<std::size_t> const& indices
     ) const;
+  
+  /// Creates and returns waveform metadata.
+  std::vector<sbn::OpDetWaveformMeta> createWaveformMetadata(
+      std::vector<raw::OpDetWaveform> const& waveforms,
+      TriggerInfo_t const& triggerInfo
+      ) const;
+  
+  /// Creates and returns waveform metadata associations.
+  art::Assns<raw::OpDetWaveform, sbn::OpDetWaveformMeta>
+  createWaveformMetadataAssociations(
+    std::vector<raw::OpDetWaveform> const& waveforms,
+    art::Event const& event, std::string const& instanceName = ""
+    ) const;
+
 
   electronics_time waveformStartTime(raw::OpDetWaveform const& wf) const
     { return electronics_time{ wf.TimeStamp() }; }
@@ -1172,6 +1209,11 @@ namespace {
     return std::find(begin(coll), cend, value) != cend;
   } // contains()
   
+  /// Moves the content of `data` into a `std::unique_ptr`.
+  template <typename T>
+  std::unique_ptr<T> moveToUniquePtr(T& data)
+    { return std::make_unique<T>(std::move(data)); }
+
 } // local namespace
 
 
@@ -1373,11 +1415,15 @@ icarus::DaqDecoderICARUSPMT::DaqDecoderICARUSPMT(Parameters const& params)
   //
   // produced data products declaration
   //
+  produces<std::vector<sbn::OpDetWaveformMeta>>();
+  
   if (!fSkipWaveforms) {
     for (std::string const& instanceName: getAllInstanceNames())
       produces<std::vector<raw::OpDetWaveform>>(instanceName);
+    
+    produces<art::Assns<raw::OpDetWaveform, sbn::OpDetWaveformMeta>>();
   }
-  
+
   //
   // additional initialization
   //
@@ -1574,48 +1620,61 @@ void icarus::DaqDecoderICARUSPMT::produce(art::Event& event) {
   //
   sortWaveforms(protoWaveforms);
   
-  if (!fSkipWaveforms) {
-    std::vector<ProtoWaveform_t const*> const waveformsWithTrigger
-      = findWaveformsWithNominalTrigger(protoWaveforms);
-    mf::LogTrace(fLogCategory) << waveformsWithTrigger.size() << "/"
-      << protoWaveforms.size() << " decoded waveforms include trigger time ("
-      << fNominalTriggerTime << ").";
-  } // if !fSkipWaveforms
+  std::vector<ProtoWaveform_t const*> const waveformsWithTrigger
+    = findWaveformsWithNominalTrigger(protoWaveforms);
+  mf::LogTrace(fLogCategory) << waveformsWithTrigger.size() << "/"
+    << protoWaveforms.size() << " decoded waveforms include trigger time ("
+    << fNominalTriggerTime << ").";
   
   // ---------------------------------------------------------------------------
   // output
   //
   
-  if (!fSkipWaveforms) {
-    // split the waveforms by destination
-    std::map<std::string, std::vector<raw::OpDetWaveform>> waveformProducts;
-    for (std::string const& instanceName: getAllInstanceNames())
-      waveformProducts.emplace(instanceName, std::vector<raw::OpDetWaveform>{});
-    for (ProtoWaveform_t& waveform: protoWaveforms) {
-      
-      // on-global and span requirements override even `mustSave()` requirement;
-      // if this is not good, user should not set `mustSave()`!
-      bool const keep =
-        (waveform.onGlobal || !waveform.channelSetup->onGlobalOnly)
-        && (waveform.span() >= waveform.channelSetup->minSpan)
-        ;
-      
-      if (!keep) continue;
-      waveformProducts.at(waveform.channelSetup->category).push_back
-        (std::move(waveform.waveform));
-    } // for
+  // split the waveforms by destination
+  std::map<std::string, std::vector<raw::OpDetWaveform>> waveformProducts;
+  for (std::string const& instanceName: getAllInstanceNames())
+    waveformProducts.emplace(instanceName, std::vector<raw::OpDetWaveform>{});
+  for (ProtoWaveform_t& waveform: protoWaveforms) {
     
+    // on-global and span requirements override even `mustSave()` requirement;
+    // if this is not good, user should not set `mustSave()`!
+    bool const keep =
+      (waveform.onGlobal || !waveform.channelSetup->onGlobalOnly)
+      && (waveform.span() >= waveform.channelSetup->minSpan)
+      ;
+    
+    if (!keep) continue;
+    waveformProducts.at(waveform.channelSetup->category).push_back
+      (std::move(waveform.waveform));
+  } // for
+  
+  
+  // create metadata for standard waveforms and, optionally, their associations
+  std::vector<raw::OpDetWaveform> const& regularWaveforms
+    = waveformProducts.at("");
+  std::vector<sbn::OpDetWaveformMeta> waveformMeta
+    = createWaveformMetadata(regularWaveforms, triggerInfo);
+  art::Assns<raw::OpDetWaveform, sbn::OpDetWaveformMeta> metaToWaveform;
+  if (!fSkipWaveforms) {
+    metaToWaveform
+      = createWaveformMetadataAssociations(regularWaveforms, event);
+  }
+  
+  // put the data products into the event
+  if (!fSkipWaveforms) {
     // put all the categories
     for (auto&& [ category, waveforms ]: waveformProducts) {
       mf::LogTrace(fLogCategory)
         << waveforms.size() << " PMT waveforms saved for "
         << (category.empty()? "standard": category) << " instance.";
-      event.put(
-        std::make_unique<std::vector<raw::OpDetWaveform>>(std::move(waveforms)),
-        category // the instance name is the category the waveforms belong to
-        );
+      // the instance name is the category the waveforms belong to
+      event.put(moveToUniquePtr(waveforms), category);
     }
+    
+    event.put(moveToUniquePtr(metaToWaveform));
   } // if !fSkipWaveforms
+  
+  event.put(moveToUniquePtr(waveformMeta));
   
 } // icarus::DaqDecoderICARUSPMT::produce()
 
@@ -1882,9 +1941,17 @@ auto icarus::DaqDecoderICARUSPMT::fetchTriggerTimestamp
   (art::Event const& event) const -> TriggerInfo_t
 {
   
-  if (!fTriggerTag)
-    return { SplitTimestamp_t(event.time().value()), 0U };
-  
+  if (!fTriggerTag) {
+    return { 
+        SplitTimestamp_t(event.time().value())  // time
+      , 0U                                      // trigToBeam
+      , {}                                      // bits
+      , 0U                                      // gateCount
+      , sbn::triggerType::NBits                 // triggerType
+      , fDetTimings.TriggerTime()               // relTriggerTime
+      , fDetTimings.BeamGateTime()              // relBeamGateTime
+    };
+  }
   
   auto const& extraTrigger
     = event.getProduct<sbn::ExtraTriggerInfo>(*fTriggerTag);
@@ -1916,15 +1983,22 @@ auto icarus::DaqDecoderICARUSPMT::fetchTriggerTimestamp
   long long int const relBeamGate = timestampDiff
     (extraTrigger.beamGateTimestamp, extraTrigger.triggerTimestamp);
   
+  electronics_time const relTriggerTime
+    { util::quantities::microsecond{ trigger.TriggerTime() } };
+  electronics_time const relBeamGateTime
+    { util::quantities::microsecond{ trigger.BeamGateTime() } };
+  
   unsigned int const gateCount = extraTrigger.gateID;
   
   return {
-      SplitTimestamp_t
+      SplitTimestamp_t          // time
         { static_cast<long long int>(extraTrigger.triggerTimestamp) }
-    , relBeamGate
-    , {trigger.TriggerBits()}
-    , gateCount
-    , extraTrigger.triggerType
+    , relBeamGate               // trigToBeam
+    , {trigger.TriggerBits()}   // bits
+    , gateCount                 // gateCount
+    , extraTrigger.triggerType  // triggerType
+    , relTriggerTime            // relTriggerTime
+    , relBeamGateTime           // relBeamGateTime
     };
   
 } // icarus::DaqDecoderICARUSPMT::fetchTriggerTimestamp()
@@ -2050,7 +2124,7 @@ auto icarus::DaqDecoderICARUSPMT::processFragment(
     
   if (fTreeFragment) fillPMTfragmentTree(fragInfo, triggerInfo, timeStamp);
   
-  return ((timeStamp != NoTimestamp) && !fSkipWaveforms)
+  return (timeStamp != NoTimestamp)
     ? createFragmentWaveforms(fragInfo, boardInfo.channelSetup(), timeStamp)
     : std::vector<ProtoWaveform_t>{}
     ;
@@ -2334,6 +2408,44 @@ auto icarus::DaqDecoderICARUSPMT::mergeWaveformGroup(
 
 
 //------------------------------------------------------------------------------
+std::vector<sbn::OpDetWaveformMeta>
+icarus::DaqDecoderICARUSPMT::createWaveformMetadata(
+  std::vector<raw::OpDetWaveform> const& waveforms,
+  TriggerInfo_t const& triggerInfo
+) const {
+  
+  sbn::OpDetWaveformMetaMaker const makeOpDetWaveformMeta
+    { fOpticalTick, triggerInfo.relTriggerTime, triggerInfo.relBeamGateTime };
+  
+  std::vector<sbn::OpDetWaveformMeta> waveformMeta;
+  for (auto const& waveform: waveforms)
+    waveformMeta.push_back(makeOpDetWaveformMeta(waveform));
+  
+  return waveformMeta;
+} // icarus::DaqDecoderICARUSPMT::createWaveformMetadata()
+
+
+//------------------------------------------------------------------------------
+art::Assns<raw::OpDetWaveform, sbn::OpDetWaveformMeta>
+icarus::DaqDecoderICARUSPMT::createWaveformMetadataAssociations(
+  std::vector<raw::OpDetWaveform> const& waveforms,
+  art::Event const& event, std::string const& instanceName /* = "" */
+) const {
+  
+  art::PtrMaker<raw::OpDetWaveform> const makeWaveformPtr
+    { event, instanceName };
+  art::PtrMaker<sbn::OpDetWaveformMeta> const makeWaveMetaPtr
+    { event, instanceName };
+  
+  art::Assns<raw::OpDetWaveform, sbn::OpDetWaveformMeta> assns;
+  for (std::size_t const iWaveform: util::counter(waveforms.size()))
+    assns.addSingle(makeWaveformPtr(iWaveform), makeWaveMetaPtr(iWaveform));
+  
+  return assns;
+} // icarus::DaqDecoderICARUSPMT::createWaveformMetadataAssociations()
+
+
+//------------------------------------------------------------------------------
 void icarus::DaqDecoderICARUSPMT::fillPMTfragmentTree(
   FragmentInfo_t const& fragInfo,
   TriggerInfo_t const& triggerInfo,
@@ -2346,7 +2458,7 @@ void icarus::DaqDecoderICARUSPMT::fillPMTfragmentTree(
   fTreeFragment->data.fragCount = fragInfo.eventCounter;
   fTreeFragment->data.TriggerTimeTag = fragInfo.TTT;
   fTreeFragment->data.trigger = triggerInfo.time;
-  fTreeFragment->data.relBeamGate = triggerInfo.relBeamGateTime;
+  fTreeFragment->data.relBeamGate = triggerInfo.trigToBeam;
   fTreeFragment->data.fragTime
     = { static_cast<long long int>(fragInfo.fragmentTimestamp) };
   fTreeFragment->data.waveformTime = waveformTimestamp.value();
