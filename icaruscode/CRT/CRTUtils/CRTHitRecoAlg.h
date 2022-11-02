@@ -78,7 +78,7 @@ class icarus::crt::CRTHitRecoAlg {
     
   using CRTData = icarus::crt::CRTData;
   using CRTHit = sbn::crt::CRTHit;
-
+  /*//OLD
   struct Config {
     using Name = fhicl::Name;
     using Comment = fhicl::Comment;
@@ -140,14 +140,19 @@ class icarus::crt::CRTHitRecoAlg {
 	};
   };//Config
 
-  //constructors
+  //OLD constructors
   CRTHitRecoAlg(const Config& config);
   CRTHitRecoAlg(const fhicl::ParameterSet& pset) :
     CRTHitRecoAlg{fhicl::Table<Config>{pset}()} {}
   CRTHitRecoAlg();
 
-  //configure module from fcl file
-  void reconfigure(const Config& config);
+  //OLD configure module from fcl file
+  void reconfigure(const Config& config);*/
+
+  //new constructors 
+  explicit CRTHitRecoAlg(const fhicl::ParameterSet& pset);
+  CRTHitRecoAlg();
+  void reconfigure(const fhicl::ParameterSet& pset);
 
   //produce CRTHits with associated data indices from input vector of CRTData
   vector<pair<CRTHit, vector<int>>> CreateCRTHits(vector<art::Ptr<CRTData>> crtList, uint64_t trigger_timestamp);
@@ -193,6 +198,9 @@ class icarus::crt::CRTHitRecoAlg {
   CRTHit MakeSideHit(vector<art::Ptr<CRTData>> coinData, ULong64_t GlobalTrigger[]);
   // Check if a hit is empty
   bool IsEmptyHit(CRTHit hit);
+
+  std::map<uint8_t, int32_t> FEB_T1delay_side; //<mac5, delay in ns>
+  std::map<uint8_t, int32_t> FEB_T0delay_side; //<mac5, delay in ns>
 
   static  bool compareBytime(art::Ptr<CRTData> const &a, art::Ptr<CRTData> const &b){
     return a->fTs0 < b->fTs0;
@@ -274,7 +282,7 @@ inline icarus::crt::CRT_delay_map icarus::crt::LoadFEBMap() {
 		{213, {169, 140, 213, 360ull, 2000387ull}},
 		{199, {144, 126, 199, 375ull, 2000402ull}},
 		{185, {239, 112, 185, 391ull, 2000417ull}},
-		{283, {147, 210, 283, 306ull, 2000433ull}},
+		{283, {147, 210, 283, 406ull, 2000433ull}},
 		{284, {105, 211, 284, 421ull, 2000448ull}},
 		{186, {231, 114, 186, 437ull, 2000463ull}},
 		{200, {117, 127, 200, 452ull, 2000478ull}},
