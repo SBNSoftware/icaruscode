@@ -2,7 +2,6 @@ cet_enable_asserts()
 add_subdirectory(MCTruth)
 
 add_definitions(-DEIGEN_FFTW_DEFAULT)
-include_directories(${FFTW3_INCLUDE_DIRS})
 
 set(         TOOL_LIBRARIES
                 lardataobj::RecoBase
@@ -34,6 +33,7 @@ set(         TOOL_LIBRARIES
 		Boost::system
 		CLHEP::Random
 		ROOT::Minuit ROOT::Tree
+                FFTW3::FFTW3
 		)
 
 cet_build_plugin(BasicHitAnalysis art::tool LIBRARIES ${TOOL_LIBRARIES})
