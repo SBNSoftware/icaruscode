@@ -74,6 +74,7 @@ find_ups_product( icarusutil )
 find_ups_product( icarus_data )
 
 find_ups_product( artdaq_core )
+find_ups_product( TRACE )
 find_ups_product( sbndaq_artdaq_core )
 
 find_package( cetlib_except REQUIRED EXPORT )
