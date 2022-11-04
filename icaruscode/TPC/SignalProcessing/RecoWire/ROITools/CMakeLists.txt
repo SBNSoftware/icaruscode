@@ -1,7 +1,5 @@
 cet_enable_asserts()
 
-add_definitions(-DEIGEN_FFTW_DEFAULT)
-
 set(
 	TOOL_LIBRARIES
 		larcorealg::Geometry
@@ -37,6 +35,7 @@ set(
 		CLHEP::Random
 )
 
+cet_build_plugin(ROICannyEdgeDetection art::tool LIBRARIES ${TOOL_LIBRARIES})
 cet_build_plugin(ROIFromDecoder art::tool LIBRARIES ${TOOL_LIBRARIES})
 cet_build_plugin(ROIMorphological2D art::tool LIBRARIES ${TOOL_LIBRARIES})
 

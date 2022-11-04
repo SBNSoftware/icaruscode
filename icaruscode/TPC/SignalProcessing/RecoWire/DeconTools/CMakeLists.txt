@@ -1,8 +1,5 @@
 cet_enable_asserts()
 
-add_definitions(-DEIGEN_FFTW_DEFAULT)
-include_directories(${FFTW3_INCLUDE_DIRS})
-
 set(	TOOL_LIBRARIES
 			larcorealg::Geometry
 			larevt::CalibrationDBI_IOVData
@@ -32,9 +29,11 @@ set(	TOOL_LIBRARIES
 			Boost::filesystem
 			Boost::system
 			CLHEP::Random
+			FFTW3::FFTW3
 )
 cet_build_plugin(BaselineMostProbAve art::tool LIBRARIES ${TOOL_LIBRARIES})
 cet_build_plugin(BaselineStandard art::tool LIBRARIES ${TOOL_LIBRARIES})
+cet_build_plugin(FullWireDeconvolution art::tool LIBRARIES ${TOOL_LIBRARIES})
 cet_build_plugin(NoBaseline art::tool LIBRARIES ${TOOL_LIBRARIES})
 cet_build_plugin(ROIDeconvolution art::tool LIBRARIES ${TOOL_LIBRARIES})
 cet_build_plugin(ROIFinderDifferential art::tool LIBRARIES ${TOOL_LIBRARIES})

@@ -1,6 +1,5 @@
 add_subdirectory(tools)
 
-include_directories(${FFTW3_INCLUDE_DIRS})
 
 art_make_library()
 set(	MODULE_LIBRARIES
@@ -35,6 +34,7 @@ set(	MODULE_LIBRARIES
 		ROOT::Geom
 		ROOT::XMLIO
 		ROOT::Gdml
+		FFTW3::FFTW3
 	)
 
 cet_build_plugin(OverlayICARUS art::module LIBRARIES ${MODULE_LIBRARIES})

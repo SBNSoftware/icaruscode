@@ -27,7 +27,6 @@ set(hitfinder_tool_lib_list
 			CLHEP::Random
 )
 
-set( TOOL_LIBRARIES ${hitfinder_tool_lib_list})
 cet_build_plugin(CandHitICARUS art::tool LIBRARIES ${hitfinder_tool_lib_list})
 cet_build_plugin(PeakFitterICARUS art::tool LIBRARIES ${hitfinder_tool_lib_list})
 

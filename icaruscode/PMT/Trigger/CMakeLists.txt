@@ -77,7 +77,7 @@ cet_build_plugin(DumpTriggerGateData art::module LIBRARIES ${MODULE_LIBRARIES})
 cet_build_plugin(DynamicTriggerGateBuilderTool art::tool LIBRARIES ${TOOL_LIBRARIES})
 cet_build_plugin(ExtractEnergyDepositionSummary art::module LIBRARIES ${MODULE_LIBRARIES})
 cet_build_plugin(FixedTriggerGateBuilderTool art::tool LIBRARIES ${TOOL_LIBRARIES})
-cet_build_plugin(LVDSgates art::module LIBRARIES ${TOOL_LIBRARIES})
+cet_build_plugin(LVDSgates art::module LIBRARIES ${MODULE_LIBRARIES})
 
 
 cet_build_plugin(WriteBeamGateInfo art::module LIBRARIES

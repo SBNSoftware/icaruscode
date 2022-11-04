@@ -1,7 +1,5 @@
 add_subdirectory(tools)
 
-add_definitions(-DEIGEN_FFTW_DEFAULT)
-include_directories(${FFTW3_INCLUDE_DIRS})
 art_make_library(
 	EXCLUDE
 		SimWireICARUS_module.cc)
@@ -37,6 +35,7 @@ set(	MODULE_LIBRARIES
 		ROOT::Geom
 		ROOT::XMLIO
 		ROOT::Gdml
+		FFTW3::FFTW3
 		)
 
 cet_build_plugin(SimWireICARUS art::module LIBRARIES ${MODULE_LIBRARIES})

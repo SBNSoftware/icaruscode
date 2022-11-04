@@ -1,7 +1,5 @@
 cet_enable_asserts()
 
-include_directories(${FFTW3_INCLUDE_DIRS})
-
 add_subdirectory("Dumpers")
 
 art_make_library(SUBDIRS details
@@ -19,6 +17,7 @@ art_make_library(SUBDIRS details
                 ROOT::RIO
                 ROOT::Core
                 art::Framework_Services_Registry
+                FFTW3::FFTW3
 )
 
 set(        TOOL_LIBRARIES
@@ -63,6 +62,7 @@ cet_build_plugin(TPCDecoderFilter2D art::tool LIBRARIES ${TOOL_LIBRARIES})
 cet_build_plugin(TPCDecoder art::tool LIBRARIES ${TOOL_LIBRARIES})
 cet_build_plugin(TPCNoiseFilter1D art::tool LIBRARIES ${TOOL_LIBRARIES})
 cet_build_plugin(TPCNoiseFilterCanny art::tool LIBRARIES ${TOOL_LIBRARIES})
+cet_build_plugin(TriggerDecoder art::tool LIBRARIES ${TOOL_LIBRARIES})
 cet_build_plugin(TriggerDecoderV2 art::tool LIBRARIES ${TOOL_LIBRARIES})
 
 

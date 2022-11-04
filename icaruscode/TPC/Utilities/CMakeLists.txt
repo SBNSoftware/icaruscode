@@ -1,11 +1,7 @@
 cet_enable_asserts()
 
 add_subdirectory(tools)
-include_directories(${FFTW3_INCLUDE_DIRS})
-link_directories(${FFTW3_LIBRARY_DIRS})
 
-
-add_definitions(-DEIGEN_FFTW_DEFAULT)
 
 set(icarus_util_lib_list
 	larcorealg::Geometry
@@ -17,7 +13,7 @@ set(icarus_util_lib_list
 	larcore::Geometry_Geometry_service
 	lardata::Utilities
 	nurandom::RandomUtils_NuRandomService_service
-	${ICARUS_FFTW_LIBRARIES}
+	FFTW3::FFTW3
 	art::Framework_Core
 	art::Framework_Principal
 	art::Framework_Services_Registry

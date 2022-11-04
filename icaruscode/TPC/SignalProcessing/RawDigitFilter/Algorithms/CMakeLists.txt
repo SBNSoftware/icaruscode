@@ -1,9 +1,4 @@
 
-include_directories(${FFTW3_INCLUDE_DIRS})
-link_directories(${FFTW3_LIBRARY_DIRS})
-
-add_definitions(-DEIGEN_FFTW_DEFAULT)
-
 art_make_library(
 	LIBRARIES
 		lardataobj::RawData
@@ -21,7 +16,6 @@ art_make_library(
 		larevt::CalibrationDBI_Providers
 		lardataobj::RecoBase
 		icaruscode::TPC_Utilities_SignalShapingICARUSService_service
-		${ICARUS_FFTW_LIBRARIES}
 		icarus_signal_processing::icarus_signal_processing
 		art::Framework_Core
 		art::Framework_Principal
@@ -40,11 +34,15 @@ art_make_library(
 		ROOT::XMLIO
 		ROOT::Gdml
 		ROOT::FFTW
+		FFTW3::FFTW3
 		Eigen3::Eigen
 )
+
+target_compile_definitions(icaruscode_TPC_SignalProcessing_RawDigitFilter_Algorithms PUBLIC EIGEN_FFTW_DEFAULT)
+
 set(	TOOL_LIBRARIES
-		icaruscode::TPC_SignalProcessing_RawDigitFilter_Algorithms
-		icaruscode::TPC_Utilities_SignalShapingICARUSService_service
+		icaruscode_TPC_SignalProcessing_RawDigitFilter_Algorithms
+		icaruscode_TPC_Utilities_SignalShapingICARUSService_service
 		lardataobj::RawData
 		lardataobj::RecoBase
 		lardata::Utilities
@@ -54,7 +52,6 @@ set(	TOOL_LIBRARIES
 		larcore::Geometry_Geometry_service
 		larevt::CalibrationDBI_IOVData
 		larevt::CalibrationDBI_Providers
-		${ICARUS_FFTW_LIBRARIES}
 		art::Framework_Core
 		art::Framework_Principal
 		art::Framework_Services_Registry
@@ -69,6 +66,7 @@ set(	TOOL_LIBRARIES
 		cetlib::cetlib cetlib_except::cetlib_except
 		ROOT::Geom
 		ROOT::FFTW
+		FFTW3::FFTW3
 
 )
 cet_build_plugin(MorphologicalFilter art::tool LIBRARIES ${TOOL_LIBRARIES})

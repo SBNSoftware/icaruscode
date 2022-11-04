@@ -20,7 +20,7 @@ set( MODULE_LIBRARIES
            ROOT::Core
            ROOT::Hist
            ROOT::Physics
-           messagefacility::MF_MessageLogger)
+           )
 set( TOOL_LIBRARIES
            larevt::CalibrationDBI_Providers
            larcorealg::Geometry
@@ -40,7 +40,6 @@ set( TOOL_LIBRARIES
            ROOT::Core
            ROOT::Hist
            ROOT::Physics
-           messagefacility::MF_MessageLogger
            wda::wda
          )
 cet_build_plugin(NormalizeDriftSQLite art::tool LIBRARIES ${TOOL_LIBRARIES})

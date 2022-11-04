@@ -1,4 +1,3 @@
-include_directories(${TRACE_INC})
 
 add_subdirectory(CRTUtils)
 add_subdirectory(CRTDecoder)

@@ -7,9 +7,6 @@ add_subdirectory(DeconTools)
 add_subdirectory(ROITools)
 add_subdirectory(SimTestPulse)
 
-add_definitions(-DEIGEN_FFTW_DEFAULT)
-include_directories(${FFTW3_INCLUDE_DIRS})
-
 art_make_library(
 		LIBRARIES
 			lardataobj::RawData
@@ -49,6 +46,7 @@ set(		MODULE_LIBRARIES
 			fhiclcpp::fhiclcpp
 			cetlib::cetlib
 			ROOT::FFTW
+			FFTW3::FFTW3
 		)
 cet_build_plugin(Decon1DROI art::module LIBRARIES ${MODULE_LIBRARIES})
 cet_build_plugin(ROIConverter art::module LIBRARIES ${MODULE_LIBRARIES})

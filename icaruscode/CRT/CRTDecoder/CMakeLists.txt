@@ -1,5 +1,3 @@
-include_directories(${TRACE_INC})
-
 art_make_library(
 	EXCLUDE
 		CrtCal.cc
@@ -10,7 +8,6 @@ art_make_library(
 		CRTMergePreProcessTrees.cxx
 	
 	NO_PLUGINS
-	BASENAME_ONLY
 	LIBRARY_NAME sbndaq-artdaq_ArtModules_Common
 	LIBRARIES sbndaq_artdaq_core::sbndaq-artdaq-core_Overlays
 		sbndaq_artdaq_core::sbndaq-artdaq-core_Overlays_Common

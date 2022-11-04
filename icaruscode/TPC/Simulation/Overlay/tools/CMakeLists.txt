@@ -1,5 +1,4 @@
 cet_enable_asserts()
-include_directories(${FFTW3_INCLUDE_DIRS})
 
 art_make_library()
 set(	TOOL_LIBRARIES
@@ -12,7 +11,7 @@ set(	TOOL_LIBRARIES
 			lardata::Utilities
 			lardataalg::DetectorInfo
 			nurandom::RandomUtils_NuRandomService_service
-			${ICARUS_FFTW_LIBRARIES}
+			FFTW3::FFTW3
 			art::Framework_Core
 			art::Framework_Principal
 			art::Framework_Services_Registry
@@ -34,7 +33,8 @@ set(	TOOL_LIBRARIES
 			CLHEP::Random
 			Eigen3::Eigen
 	)
-cet_build_plugin(Overlay1D art::tool LIBRARIES ${TOOL_LIBRARIES})
+cet_build_plugin(Overlay1D art::tool LIBRARIES ${TOOL_LIBRARIES} SOURCE Overlay1D_tool.cc)
+set_property(SOURCE Overlay1D_tool.cc APPEND PROPERTY COMPILE_DEFINITIONS EIGEN_FFTW_DEFAULT)
 
 install_headers()
 install_source()

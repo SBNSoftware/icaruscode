@@ -1,5 +1,3 @@
-include_directories(${FFTW3_INCLUDE_DIRS})
-link_directories(${FFTW3_LIBRARY_DIRS})
 
 art_make(
 	LIB_LIBRARIES
@@ -35,6 +33,7 @@ art_make(
 		ROOT::XMLIO
 		ROOT::Gdml
 		ROOT::FFTW
+		FFTW3::FFTW3
 
 	TOOL_LIBRARIES
 		icaruscode::TPC_Calorimetry_Algorithms
@@ -63,6 +62,7 @@ art_make(
 		cetlib::cetlib cetlib_except::cetlib_except
 		ROOT::Geom
 		ROOT::FFTW
+		FFTW3::FFTW3
 	)
 
 install_headers()

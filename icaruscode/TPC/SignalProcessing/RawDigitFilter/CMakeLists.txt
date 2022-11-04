@@ -1,9 +1,5 @@
 add_subdirectory(Algorithms)
 
-add_definitions(-DEIGEN_FFTW_DEFAULT)
-
-include_directories(${FFTW3_INCLUDE_DIRS})
-
 art_make_library(
 		LIBRARIES
 			lardataobj::RawData
@@ -11,6 +7,7 @@ art_make_library(
 			lardata::Utilities
 			fhiclcpp::fhiclcpp
 			cetlib::cetlib cetlib_except::cetlib_except)
+
 set(		MODULE_LIBRARIES
 			larcorealg::Geometry
 			icaruscode::TPC_SignalProcessing_RawDigitFilter_Algorithms
@@ -43,6 +40,7 @@ set(		MODULE_LIBRARIES
 			ROOT::FFTW
 			ROOT::Core
 			ROOT::Tree
+			FFTW3::FFTW3
 	)
 cet_build_plugin(RawDigitFilterICARUS art::module LIBRARIES ${MODULE_LIBRARIES})
 cet_build_plugin(RawDigitSmoother art::module LIBRARIES ${MODULE_LIBRARIES})

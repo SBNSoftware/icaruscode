@@ -1,9 +1,5 @@
 cet_enable_asserts()
-include_directories(${FFTW3_INCLUDE_DIRS})
-link_directories(${FFTW3_LIBRARY_DIRS})
 
-
-add_definitions(-DEIGEN_FFTW_DEFAULT)
 
 art_make_library()
 set(	TOOL_LIBRARIES
@@ -14,7 +10,7 @@ set(	TOOL_LIBRARIES
 		larcore::Geometry_Geometry_service
 		lardata::Utilities
 		lardataalg::DetectorInfo
-		${ICARUS_FFTW_LIBRARIES}
+		FFTW3::FFTW3
 		art::Framework_Core
 		art::Framework_Principal
 		art::Framework_Services_Registry
