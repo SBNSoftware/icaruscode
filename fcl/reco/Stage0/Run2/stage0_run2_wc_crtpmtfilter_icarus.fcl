@@ -7,7 +7,6 @@
 process_name: stage0
 
 ## Define the paths we'll execute depending on data
-#physics.pathOptical: [ @sequence::icarus_stage0_pmt ]
 physics.path:         [ @sequence::icarus_stage0_2d_data_crtpmtfilter ]
 
 ## boiler plate...
@@ -48,6 +47,11 @@ services.message.destinations :
        CRTSimHitProducer:
        {
          limit: 5
+         reportEvery: 1
+       }
+       FilterCRTPMTMatching:
+       {
+         limit: 50
          reportEvery: 1
        }
        default:

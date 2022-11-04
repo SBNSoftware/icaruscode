@@ -85,7 +85,7 @@ bool flashInTime(double const &flashTime, int gateType, double gateDiff, double 
     double activeGate = gateLength[gateType] /*- vetoOffset*/;
 
     double relFlashTime = flashTime + gateDiff / 1000. /*- vetoOffset*/;
-    std::cout << "Gate Diff " << gateDiff / 1000 << " Ftime+gateDiff " << flashTime + gateDiff / 1000. << " " << activeGate << std::endl;
+    mf::LogInfo("FilterCRTPMTMatching::flashInTime") << "Gate Diff " << gateDiff / 1000 << " Ftime+gateDiff " << flashTime + gateDiff / 1000. << " " << activeGate;
 
     return ((relFlashTime > flashTimeCut) && (relFlashTime < activeGate));
 }
