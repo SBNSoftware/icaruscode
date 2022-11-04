@@ -92,7 +92,7 @@ find_package(Microsoft.GSL HINTS $ENV{GUIDELINE_SL_DIR})
 find_package( PkgConfig REQUIRED)
 pkg_search_module(FFTW3F REQUIRED IMPORTED_TARGET GLOBAL fftw3f)
 pkg_search_module(FFTW3 REQUIRED IMPORTED_TARGET GLOBAL fftw3)
-pkg_search_module(FFTW3Q REQUIRED IMPORTED_TARGET GLOBAL ffftw3q)
+pkg_search_module(FFTW3Q REQUIRED IMPORTED_TARGET GLOBAL fftw3q)
 pkg_search_module(FFTW3L REQUIRED IMPORTED_TARGET GLOBAL fftw3l)
 set(ICARUS_FFTW_LIBRARIES PkgConfig::FFTW3F PkgConfig::FFTW3 PkgConfig::FFTW3Q PkgConfig::FFTW3L)
 
