@@ -1,6 +1,7 @@
 art_make( 
           MODULE_LIBRARIES
                         icarusalg_Utilities
+                        icaruscode_CRTUtils
                         larcorealg_Geometry
                         larcore_Geometry_Geometry_service
                         larsim_Simulation 
@@ -16,7 +17,9 @@ art_make(
                         ${ART_FRAMEWORK_CORE}
                         ${ART_FRAMEWORK_PRINCIPAL}
                         ${ART_FRAMEWORK_SERVICES_REGISTRY}
+                        ${ART_ROOT_IO_TFILE_SUPPORT}
                         ${ROOT_CORE}
+                        ${ART_ROOT_IO_TFILESERVICE_SERVICE}
                         art_Persistency_Common 
                         art_Persistency_Provenance 
                         art_Utilities 
