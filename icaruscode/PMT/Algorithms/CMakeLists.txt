@@ -1,8 +1,9 @@
 #Leave this out for the time being. One day the grid will be updated enough ...
 #cet_set_compiler_flags(EXTRA_CXX_FLAGS -mavx)
 
-
+file(GLOB lib_srcs *.cxx)
 art_make_library(
+        SOURCE ${lib_srcs}
 	LIBRARIES
 		icaruscode_Decode_DecoderTools
 		larcorealg::Geometry
