@@ -36,27 +36,6 @@ cet_build_plugin(FilterNoiseICARUS art::module LIBRARIES ${MODULE_LIBRARIES})
 cet_build_plugin(MCDecoderICARUSTPCwROI art::module LIBRARIES ${MODULE_LIBRARIES})
 
 cet_build_plugin(DaqDecoderICARUSPMT art::module LIBRARIES
-  sbnobj::Common_PMT_Data
-  sbnobj::Common_Trigger
-  icaruscode_Decode_DecoderTools_Dumpers
-  icaruscode_Decode_DecoderTools
-  icaruscode_Timing
-  icaruscode_IcarusObj
-  sbndaq_artdaq_core::sbndaq-artdaq-core_Overlays_Common
-  sbndaq_artdaq_core::sbndaq-artdaq-core_Overlays
-  lardataobj::RawData
-  artdaq_core::artdaq-core_Data
-  art_root_io::TFileService_service
-  art_root_io::tfile_support
-  art::Framework_Services_Registry
-  messagefacility::MF_MessageLogger
-  fhiclcpp::fhiclcpp
-  cetlib_except::cetlib_except
-  ROOT::Tree
-  )
-
-
-cet_build_plugin(DaqDecoderICARUSPMT art::module LIBRARIES
 	sbnobj::Common_PMT_Data
 	sbnobj::Common_Trigger
 	icaruscode_Decode_DecoderTools_Dumpers
