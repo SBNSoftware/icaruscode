@@ -40,28 +40,12 @@ set(icarus_util_lib_list
 )
 
 art_make_library(
-# LIBRARY_NAME icaruscode_TPC_Utilities
         LIBRARIES ${icarus_util_lib_list}
 )
-set(	SERVICE_LIBRARIES
-		${icarus_util_lib_list}
-)
-set(	MODULE_LIBRARIES
-		art_root_io::TFileService_service
-		art_root_io::tfile_support ROOT::Core
-		art::Framework_Services_Registry
-		art::Framework_Principal
-		art::Framework_Core
-		canvas::canvas
-		messagefacility::MF_MessageLogger
-		hep_concurrency::hep_concurrency
-		fhiclcpp::fhiclcpp
-		cetlib::cetlib
-		ROOT::Core
-	)
-cet_build_plugin(FileCatalogMetadataICARUS art::service LIBRARIES ${SERVICE_LIBRARIES})
-cet_build_plugin(SignalShapingICARUSService art::service LIBRARIES ${SERVICE_LIBRARIES})
-cet_build_plugin(TFileMetadataICARUS art::service LIBRARIES ${SERVICE_LIBRARIES})
+
+cet_build_plugin(FileCatalogMetadataICARUS art::service LIBRARIES ${icarus_util_lib_list})
+cet_build_plugin(SignalShapingICARUSService art::service LIBRARIES ${icarus_util_lib_list})
+cet_build_plugin(TFileMetadataICARUS art::service LIBRARIES ${icarus_util_lib_list})
 
 
 install_headers()
