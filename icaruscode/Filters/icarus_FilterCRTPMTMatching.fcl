@@ -1,0 +1,13 @@
+BEGIN_PROLOG
+
+icarus_FilterNumberTPCHits:
+{ 
+  module_type:           "FilterCRTPMTMatching"
+  OpHitModuleLabel:      "ophit"
+  OpFlashModuleLabelVec: ["opflashCryoE","opflashCryoW"]
+  CrtHitModuleLabel:     "crthit"
+  TriggerLabel:          "daqTrigger"
+  FlashTimeCut:          0.
+}
+
+END_PROLOG
