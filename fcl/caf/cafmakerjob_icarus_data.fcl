@@ -9,7 +9,8 @@ process_name: CAFmaker
 
 services:
 {
-  @table::icarus_wirecalibration_services
+  @table::icarus_wirecalibration_minimum_services
+  @table::icarus_random_services  # from services_common_icarus.fcl
 
   SpaceChargeService: @local::icarus_spacecharge
 }

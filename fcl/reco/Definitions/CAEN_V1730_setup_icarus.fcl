@@ -117,9 +117,10 @@ icarus_V1730_setup_Run0: [
 # configuration for one special channel reading the trigger primitives
 #
 icarus_V1730_16thChannel_trgprim_setup_Run1: {
-  ChannelIndex:          15  # the last one
-  Channel:             @nil  # needs to be customized on each board
-  InstanceName:          "trgprim"
+  ChannelIndex:           15  # the last one
+  Channel:                @nil  # needs to be customized on each board
+  OnlyOnGlobalTrigger:    true
+  InstanceName:           "trgprim"
 }
 icarus_V1730_16thChannel_RWM_setup_Run1: {
   ChannelIndex:          15  # the last one

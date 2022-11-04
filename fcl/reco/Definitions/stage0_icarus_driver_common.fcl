@@ -9,9 +9,10 @@ process_name: Stage0
 
 services:
 {
-  TFileService:           { }
-  IICARUSChannelMap:      @local::icarus_channelmappinggservice
-                          @table::icarus_wirecalibration_minimum_services
+  TFileService:                { }
+  IICARUSChannelMap:           @local::icarus_channelmappinggservice
+  IPMTTimingCorrectionService: @local::icarus_pmttimingservice
+                               @table::icarus_wirecalibration_minimum_services
 }
 
 #source is a root file

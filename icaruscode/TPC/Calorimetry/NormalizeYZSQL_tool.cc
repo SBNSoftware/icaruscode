@@ -59,6 +59,8 @@ private:
     float tzero; // Earliest time that this scale info is valid
     std::vector<ScaleBin> bins;
   };
+  // Cache timestamp requests
+  std::map<uint64_t, ScaleInfo> fScaleInfos;
 
   // Helpers
   const ScaleInfo GetScaleInfo(uint64_t timestamp);
@@ -79,6 +81,11 @@ icarus::calo::NormalizeYZSQL::NormalizeYZSQL(fhicl::ParameterSet const &pset):
 void icarus::calo::NormalizeYZSQL::configure(const fhicl::ParameterSet& pset) {}
 
 const icarus::calo::NormalizeYZSQL::ScaleInfo icarus::calo::NormalizeYZSQL::GetScaleInfo(uint64_t timestamp) {
+  // check the cache
+  if (fScaleInfos.count(timestamp)) {
+    return fScaleInfos.at(timestamp);
+  }
+
   // Prep data
   fDB.UpdateData(timestamp*1e9);
 
@@ -123,6 +130,9 @@ const icarus::calo::NormalizeYZSQL::ScaleInfo icarus::calo::NormalizeYZSQL::GetS
 
     thisscale.bins.push_back(bin);
   }
+
+  // Set the cache
+  fScaleInfos[timestamp] = thisscale;
 
   return thisscale;
 }

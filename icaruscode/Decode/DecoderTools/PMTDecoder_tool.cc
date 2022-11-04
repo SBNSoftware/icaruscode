@@ -919,7 +919,7 @@ void daq::PMTDecoder::process_fragment(const artdaq::Fragment &artdaqFragment)
         // track what we do and what we want to
         uint16_t attemptedChannels = 0;
         
-        for(auto const [ digitizerChannel, channelID ]: digitizerChannelVec)
+        for(auto const [ digitizerChannel, channelID, _ ]: digitizerChannelVec)
         {
             if (diagOut)
               (*diagOut) << " " << digitizerChannel << " [=> " << channelID << "];";
