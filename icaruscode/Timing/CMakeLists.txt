@@ -12,6 +12,7 @@ set(	LIB_LIBRARIES
         lardata::Utilities
         wda::wda
         icaruscode_IcarusObj
+        sbnobj::Common_PMT_Data
 )
 set(	SERVICE_LIBRARIES
 	icaruscode_Timing
