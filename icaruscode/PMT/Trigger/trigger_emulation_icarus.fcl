@@ -11,6 +11,21 @@
 #  * LVDS signal pairing
 #  * trigger windows composition
 # 
+# In addition, a workflow helper for adding the "standard" (or, minimal)
+# trigger emulation including only the "selected" threshold and pattern.
+# Example of usage:
+#     
+#     physics: {
+#       producers: {
+#         # ...
+#         @table::icarus_standard_triggersim.producers
+#       }
+#       
+#       triggersim: @sequence::icarus_standard_triggersim.path
+#       
+#       trigger_paths: [ ..., triggersim, ... ]
+#     }
+#     
 # 
 # Configuration parameters
 # -------------------------
@@ -302,6 +317,50 @@ icarus_trigslidewindow: {
 
 } # icarus_trigslidewindow
 
+
+# ------------------------------------------------------------------------------
+# ---  workflow helpers
+# ------------------------------------------------------------------------------
+icarus_standard_triggersim: {
+
+  producers: {
+    
+    # this should be already in the input (or in the workflow!):
+    # pmtfixedthr: @local::icarus_pmtdiscriminatethr_fixed_MC
+
+    pmtlvdsgates: {
+      @table::icarus_lvdsgates
+      TriggerGatesTag: pmtfixedthr
+      Thresholds:      [ @local::icarus_triggergate_basic.SelectedThreshold ]
+    }
+    
+    pmttriggerwindows: {
+      @table::icarus_trigslidewindow
+      Thresholds: [ @local::icarus_triggergate_basic.SelectedThreshold ]
+    }
+    
+    triggersimgates: @local::icarus_triggersimgates
+    
+    emuTrigger: {
+      module_type:           TriggerSimulationOnGates
+      TriggerGatesTag:       pmttriggerwindows
+      Thresholds:            [ @local::icarus_triggergate_basic.SelectedThreshold ]
+      Pattern:               @local::icarus_triggergate_basic.SelectedPattern
+      BeamGates:             triggersimgates
+      TriggerTimeResolution: "8 ns" # this should probably be 12 or 24 ns
+    }
+    
+  } # producers
+  
+  path: [ 
+    #  pmtfixedthr  # this should be already in the input (or in the workflow!)
+      pmtlvdsgates
+    , pmttriggerwindows
+    , triggersimgates
+    , emuTrigger
+  ]
+  
+} # icarus_standard_triggersim
 
 # ------------------------------------------------------------------------------
 
