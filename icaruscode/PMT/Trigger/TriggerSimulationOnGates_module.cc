@@ -15,7 +15,6 @@
 #include "icaruscode/PMT/Trigger/Algorithms/BeamGateMaker.h"
 #include "icaruscode/PMT/Trigger/Algorithms/TriggerTypes.h" // ADCCounts_t
 #include "icaruscode/PMT/Trigger/Algorithms/details/TriggerInfo_t.h"
-#include "sbnobj/ICARUS/PMT/Trigger/Data/OpticalTriggerGate.h"
 #include "icaruscode/PMT/Trigger/Utilities/TriggerDataUtils.h" // FillTriggerGates()
 #include "icaruscode/PMT/Trigger/Utilities/PlotSandbox.h"
 #include "icarusalg/Utilities/ROOTutils.h" // util::ROOT
@@ -26,6 +25,8 @@
 #include "icarusalg/Utilities/mfLoggingClass.h"
 #include "icarusalg/Utilities/ChangeMonitor.h" // ThreadSafeChangeMonitor
 #include "icarusalg/Utilities/rounding.h" // icarus::ns::util::roundup()
+#include "sbnobj/ICARUS/PMT/Trigger/Data/OpticalTriggerGate.h"
+#include "sbnobj/Common/Trigger/BeamBits.h" // sbn::triggerSource, mask()...
 
 // LArSoft libraries
 #include "lardata/DetectorInfoServices/DetectorClocksService.h"
@@ -155,9 +156,12 @@ namespace icarus::trigger { class TriggerSimulationOnGates; }
  *     pattern; the configuration format for a pattern is described under
  *     `icarus::trigger::ns::fhicl::WindowPatternConfig`.
  * * `BeamGates` (input tag, _mandatory_): the data product with the beam gates
- * *   to run the simulation in;
- * * `BeamBits` (bitmask as 32-bit integral number): bits to be set in the
- *     produced `raw::Trigger` objects (see also `daq::TriggerDecoder` tool).
+ *     to run the simulation in;
+ * * `BeamBits` (bitmask as 32-bit integral number, optional): bits to be set in
+ *     the produced `raw::Trigger` objects. If omitted, bits are created from
+ *     a `sbn::bits::triggerSource` mask reflecting the content of the input
+ *     beam gate bits, which basically can distinguish only between BNB, NuMI
+ *     and others, "unknown" (see also `daq::TriggerDecoder` tool).
  * * `LogCategory` (string, default `TriggerSimulationOnGates`): name of
  *     category used to stream messages from this module into message facility.
  * 
@@ -327,9 +331,9 @@ class icarus::trigger::TriggerSimulationOnGates
       Comment("data product with all beam gates to run simulation into")
       };
     
-    fhicl::Atom<std::uint32_t> BeamBits {
+    fhicl::OptionalAtom<std::uint32_t> BeamBits {
       Name("BeamBits"),
-      Comment("bits to be set in the trigger object as beam identified")
+      Comment("bits to be set in the trigger object as beam identifier")
       };
 
     fhicl::Atom<nanoseconds> TriggerTimeResolution {
@@ -407,6 +411,12 @@ class icarus::trigger::TriggerSimulationOnGates
   using BeamGates_t = std::vector<sim::BeamGateInfo>;
   
   
+  /// Utility to carry beam bits along with the beam gates.
+  struct ApplyBeamGateClassWithBits: icarus::trigger::ApplyBeamGateClass {
+    sbn::triggerSourceMask source; ///< Where trigger will look to come from.
+  };
+  
+  
   // --- BEGIN Configuration variables -----------------------------------------
   
   /// Name of ADC thresholds to read, and the input tag connected to their data.
@@ -417,7 +427,8 @@ class icarus::trigger::TriggerSimulationOnGates
   
   art::InputTag const fBeamGateTag; ///< Data product of beam gates to simulate.
   
-  std::uint32_t fBeamBits; ///< Bits for the beam gate being simulated.
+  /// Bits for the beam gate being simulated.
+  std::optional<std::uint32_t> fBeamBits;
   
   nanoseconds fTriggerTimeResolution; ///< Trigger resolution in time.
   
@@ -488,7 +499,7 @@ class icarus::trigger::TriggerSimulationOnGates
   /// Fills event-wide plots.
   void plotEvent(
     art::Event const& event, detinfo::DetectorTimings const& detTimings,
-    std::vector<icarus::trigger::ApplyBeamGateClass> const& gates
+    std::vector<ApplyBeamGateClassWithBits> const& gates
     );
   
   /// Fills the plots for threshold index `iThr` with trigger information.
@@ -523,14 +534,16 @@ class icarus::trigger::TriggerSimulationOnGates
   std::vector<WindowTriggerInfo_t> produceForThreshold(
     art::Event& event,
     detinfo::DetectorTimings const& detTimings,
-    std::vector<ApplyBeamGateClass> const& beamGates,
+    std::vector<ApplyBeamGateClassWithBits> const& beamGates,
     std::size_t const iThr, std::string const& thrTag,
     unsigned int firstTriggerNumber
     );
   
   /**
    * @brief Converts the trigger information into a `raw::Trigger` object.
-   * @param triggerNumber the unique number to assign to this trigger
+   * @param detTimings detector clocks service provider proxy
+   * @param beamGates list of all beam gates to evaluate
+   * @param detTimings the unique number to assign to this trigger
    * @param info the information about the fired trigger
    * @return a `raw::Trigger` object with all the information encoded
    * 
@@ -539,9 +552,13 @@ class icarus::trigger::TriggerSimulationOnGates
    */
   raw::Trigger triggerInfoToTriggerData(
     detinfo::DetectorTimings const& detTimings,
-    ApplyBeamGateClass const& beamGate,
+    ApplyBeamGateClassWithBits const& beamGate,
     unsigned int triggerNumber, WindowTriggerInfo_t const& info
     ) const;
+  
+  /// Converts trigger bits from `beamInfo` into a `sbn::triggerSourceMask`.
+  static sbn::triggerSourceMask makeTriggerBits
+    (sim::BeamGateInfo const& beamInfo);
   
   
   /// Prints the summary of fired triggers on screen.
@@ -555,33 +572,36 @@ class icarus::trigger::TriggerSimulationOnGates
     ) const;
 
   /// Shortcut to create an `ApplyBeamGate` with the specified `gate`.
-  icarus::trigger::ApplyBeamGateClass makeMyBeamGate
+  ApplyBeamGateClassWithBits makeMyBeamGate
     (detinfo::DetectorTimings const& detTimings, sim::BeamGateInfo const& gate) const
     {
       // the input gate is assumed to be relative to the global beam gate
       // opening (which is the implicit convention of simulation time and of
       // sim::BeamGateInfo in my understanding - [petrillo@slac.stanford.edu])
       // so it does not need further processing here
-      return makeApplyBeamGate(
-        nanoseconds{ gate.Width() }, nanoseconds{ gate.Start() },
-        detTimings.clockData(), fLogCategory
-        );
+      return ApplyBeamGateClassWithBits{ // aggregate ctor, base class first
+        makeApplyBeamGate(
+          nanoseconds{ gate.Width() }, nanoseconds{ gate.Start() },
+          detTimings.clockData(), fLogCategory
+          )
+        , fBeamBits.value_or(makeTriggerBits(gate.BeamType()))
+        };
     }
   
   //@{ 
   /// Shortcut to create `ApplyBeamGate` from a list of gates.
-  std::vector<icarus::trigger::ApplyBeamGateClass> makeMyBeamGates
+  std::vector<ApplyBeamGateClassWithBits> makeMyBeamGates
     (detinfo::DetectorTimings const& detTimings, BeamGates_t const& gates) const
     {
-      std::vector<icarus::trigger::ApplyBeamGateClass> applyGates;
+      std::vector<ApplyBeamGateClassWithBits> applyGates;
       for (sim::BeamGateInfo const& gate: gates)
         applyGates.push_back(makeMyBeamGate(detTimings, gate));
       return applyGates;
     }
-  std::vector<icarus::trigger::ApplyBeamGateClass> makeMyBeamGates
+  std::vector<ApplyBeamGateClassWithBits> makeMyBeamGates
     (art::Event const* event, BeamGates_t const& gates) const
     { return makeMyBeamGates(icarus::ns::util::makeDetTimings(event), gates); }
-  std::vector<icarus::trigger::ApplyBeamGateClass> makeMyBeamGates
+  std::vector<ApplyBeamGateClassWithBits> makeMyBeamGates
     (art::Event const& event, BeamGates_t const& gates) const
     { return makeMyBeamGates(&event, gates); }
   //@}
@@ -709,7 +729,7 @@ void icarus::trigger::TriggerSimulationOnGates::produce(art::Event& event)
     art::ServiceHandle<detinfo::DetectorClocksService const>()->DataFor(event)
     };
   
-  std::vector<icarus::trigger::ApplyBeamGateClass> const beamGates {
+  std::vector<ApplyBeamGateClassWithBits> const beamGates {
     makeMyBeamGates(
       detTimings,
       event.getProduct<std::vector<sim::BeamGateInfo>>(fBeamGateTag)
@@ -1032,7 +1052,7 @@ void icarus::trigger::TriggerSimulationOnGates::makeEventPlots() {
 auto icarus::trigger::TriggerSimulationOnGates::produceForThreshold(
   art::Event& event,
   detinfo::DetectorTimings const& detTimings,
-  std::vector<ApplyBeamGateClass> const& beamGates,
+  std::vector<ApplyBeamGateClassWithBits> const& beamGates,
   std::size_t const iThr, std::string const& thrTag,
   unsigned int firstTriggerNumber
 ) -> std::vector<WindowTriggerInfo_t> {
@@ -1093,7 +1113,7 @@ auto icarus::trigger::TriggerSimulationOnGates::produceForThreshold(
 //------------------------------------------------------------------------------
 void icarus::trigger::TriggerSimulationOnGates::plotEvent(
   art::Event const& event, detinfo::DetectorTimings const& detTimings,
-  std::vector<icarus::trigger::ApplyBeamGateClass> const& gates
+  std::vector<ApplyBeamGateClassWithBits> const& gates
 ) {
   
 #if 0
@@ -1200,9 +1220,11 @@ void icarus::trigger::TriggerSimulationOnGates::printSummary() const {
 raw::Trigger
 icarus::trigger::TriggerSimulationOnGates::triggerInfoToTriggerData(
   detinfo::DetectorTimings const& detTimings,
-  ApplyBeamGateClass const& beamGate,
+  ApplyBeamGateClassWithBits const& beamGate,
   unsigned int triggerNumber, WindowTriggerInfo_t const& info
 ) const {
+  
+  std::uint32_t const beamBits = beamGate.source;
   
   return {
     triggerNumber,                      // counter
@@ -1212,10 +1234,27 @@ icarus::trigger::TriggerSimulationOnGates::triggerInfoToTriggerData(
       ,
     double(detTimings.toElectronicsTime(beamGate.tickRange().start())),
                                         // beam gate in electronics time scale
-    (info.info.fired()? fBeamBits: 0)   // bits
+    (info.info.fired()? beamBits: 0)   // bits
     };
   
 } // icarus::trigger::TriggerSimulationOnGates::triggerInfoToTriggerData()
+
+
+//------------------------------------------------------------------------------
+sbn::triggerSourceMask
+icarus::trigger::TriggerSimulationOnGates::makeTriggerBits
+  (sim::BeamGateInfo const& beamInfo)
+{
+  
+  switch (beamInfo.BeamType()) {
+    case sim::kBNB: return mask(sbn::bits::triggerSource::BNB);
+    case sim::kNuMI: return mask(sbn::bits::triggerSource::NuMI);
+    case sim::kUnknown:
+    default:
+      return mask(sbn::bits::triggerSource::Unknown);
+  } // switch
+  
+} // icarus::trigger::TriggerSimulationOnGates::makeTriggerBits()
 
 
 //------------------------------------------------------------------------------

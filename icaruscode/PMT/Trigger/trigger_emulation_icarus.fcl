@@ -7,8 +7,9 @@
 # Currently included:
 #  * PMT configured baseline extraction (data)
 #  * PMT discrimination with readout-configured thresholds (data)
-#  * PMT discrimination with fixed thresholds
-#  * PMT discrimination with fixed thresholds
+#  * PMT discrimination with fixed thresholds (data and MC)
+#  * LVDS signal pairing
+#  * trigger windows composition
 # 
 # 
 # Configuration parameters

@@ -11,9 +11,24 @@
 # This is a top-level configuration that can be run directly.
 # 
 # 
+# Adapting the beam gate
+# -----------------------
+# 
+# The trigger emulation is applied on a fixed time interval representing the
+# beam gate. The definition of the beam gate in LArSoft is supposed to be stored
+# in a `sim::BeamGateInfo` collection (typically with only one entry).
+# That is a nominal beam gate, and one might want to extend it to a more
+# realistic one. The options are either to take it as is (the tag is usually
+# `generator`) or modify them (e.g. using the `FixBeamGateInfo` module).
+# Here we utilize that approach to actually completely overwrite the gates,
+# according to whether they are flagged BNB or NuMI.
+# 
+# 
 # Required inputs
 # ----------------
 # 
+#  * `generator`: list of beam gates to apply trigger simulation on
+#      (`std::vector<sim::BeamGateInfo>`)
 #  * `pmtthr`: discriminated signals (with threshold); must already contain all
 #      the discrimination thresholds needed for the simulation
 # 
@@ -41,12 +56,9 @@
 # ------------------------------------------------------------------------------
 BEGIN_PROLOG
 
-trigger_settings.beam_settings: @local::BNB_settings  # from trigger_icarus.fcl
-
-
 triggerSimTemplate: {
 
-  module_type: SlidingWindowTriggerSimulation
+  module_type: TriggerSimulationOnGates
 
   TriggerGatesTag: "pmttriggerwindows"
 
@@ -59,9 +71,11 @@ triggerSimTemplate: {
 
   # Beam gate:
   # duration (BNB: 1.6 us; NuMI: 9.5 us)
-  BeamGateDuration: @local::BNB_settings.spill_duration # from trigger_icarus.fcl
-  BeamBits:         @local::BNB_settings.trigger_bits   # from trigger_icarus.fcl
-
+  BeamGates: triggersimgates
+  
+  # we learn the bits from the beam gate type
+  # (non a great deal... hope it doesn't matter(TM))
+  # BeamBits: @local::BNB_settings.trigger_bits   # from trigger_icarus.fcl
 
   # this should probably be 12 or 24 ns
   TriggerTimeResolution: "8 ns"
@@ -76,7 +90,7 @@ END_PROLOG
 
 
 # ------------------------------------------------------------------------------
-process_name: MajTrg
+process_name: TrgSim
 
 
 services: {
@@ -103,9 +117,19 @@ physics: {
     
     pmttriggerwindows: @local::icarus_trigslidewindow
     
+    triggersimgates: @local::icarus_triggersimgates
+    
     # --------------------------------------------------------------------------
     # all interesting triggers
     
+    emuTriggerS3: {
+    
+      @table::triggerSimTemplate
+      
+      Pattern: @local::icarus_triggergate_basic.patterns.S3
+      
+    } # emuTriggerS3
+
     emuTriggerS5: {
     
       @table::triggerSimTemplate
@@ -113,6 +137,14 @@ physics: {
       Pattern: @local::icarus_triggergate_basic.patterns.S5
       
     } # emuTriggerS5
+
+    emuTriggerS10: {
+    
+      @table::triggerSimTemplate
+      
+      Pattern: @local::icarus_triggergate_basic.patterns.S10
+      
+    } # emuTriggerS10
 
     # --------------------------------------------------------------------------
     # this is THE trigger
@@ -126,14 +158,18 @@ physics: {
       Thresholds: [ @local::icarus_triggergate_basic.SelectedThreshold ]
       
     } # emuTrigger
-
-
+    
+    # --------------------------------------------------------------------------
+    
   } # producers
   
   trigger: [
       pmtthr  # TODO: comment out for stage0
     , pmtlvdsgates , pmttriggerwindows
+    , triggersimgates
+    , emuTriggerS3
     , emuTriggerS5
+    , emuTriggerS10
     , emuTrigger
     ]
   output: [ rootoutput ]
@@ -145,6 +181,10 @@ physics: {
 
 
 outputs.rootoutput: @local::icarus_rootoutput # from rootoutput_icarus.fcl
+outputs.rootoutput.outputCommands: [
+  "keep *"
+  , "drop longlonguinticarus::trigger::ReadoutTriggerGates_*_*_TrgSim"
+  ]
 
 
 # ##############################################################################
@@ -164,5 +204,9 @@ services.message.destinations.TriggerSimLog: {
 #
 # FIXME for development, drop most data products
 #
-outputs.rootoutput.outputCommands: [ "drop *", "keep *_*_*_MajTrg" ]
+outputs.rootoutput.outputCommands: [
+  "drop *"
+  , "keep *_*_*_TrgSim"
+  , "drop longlonguinticarus::trigger::ReadoutTriggerGates_*_*_TrgSim"
+  ]
 

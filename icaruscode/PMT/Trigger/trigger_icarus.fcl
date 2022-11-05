@@ -250,6 +250,37 @@ icarus_region_finder: {
 } # icarus_region_finder
 
 
+
+################################################################################
+###  Trigger evaluation gates
+# 
+# this configuration takes the configured beam gate duration
+# and creates extended gates to be used for trigger evaluation;
+# [20221104] the amount of extension needs to be verified with Run2 data
+#
+icarus_triggersimgates_Run1: {
+
+  module_type: FixBeamGateInfo
+
+  BeamGateTag: generator
+
+  Changes: [  # gates of type not included are left unchanged
+    { # for BNB gates
+      Select: { Types: [ "BNB" ] }
+      Start:  { SetTo: "-0.2 us" }
+      Width:  { SetTo: @local::BNB_settings.spill_duration  Add: "0.5 us" }
+    },
+    { # for NuMI gates
+      Select: { Types: [ "NuMI" ]}
+      Start:  { SetTo: "-0.2 us" }
+      Width:  { SetTo: @local::NuMI_settings.spill_duration  Add: "0.6 us" }
+    }
+    ]
+
+} # icarus_triggersimgates_Run1
+
+icarus_triggersimgates: @local::icarus_triggersimgates_Run1
+
 ################################################################################
 ###  Legacy configurations
 ################################################################################
@@ -312,7 +343,7 @@ icarus_trigger_channel_pairings_single_wire_geo: [
 ### Trigger patterns: definition of majority and a bit of topology of a trigger.
 ###
 
-# M1 p
+# M1 pattern: any PMT anywhere
 icarus_triggergate_basic.patterns.M1: {
   inMainWindow: 1
 }
@@ -340,6 +371,6 @@ icarus_triggergate_basic.patterns.S10: {
 
 icarus_triggergate_basic.SelectedPattern: @local::icarus_triggergate_basic.patterns.S5
 
-################################################################################
+
 
 END_PROLOG
