@@ -47,6 +47,8 @@ simple_plugin(DaqDecoderICARUSPMT module
   sbnobj_Common_Trigger
   icaruscode_Decode_DecoderTools_Dumpers
   icaruscode_Decode_DecoderTools
+  icaruscode_Timing
+  icaruscode_IcarusObj
   sbndaq_artdaq_core::sbndaq-artdaq-core_Overlays_Common
   sbndaq_artdaq_core::sbndaq-artdaq-core_Overlays
   lardataobj_RawData

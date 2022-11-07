@@ -1,6 +1,7 @@
 #include "services_common_icarus.fcl"
 #include "channelmapping_icarus.fcl"
 #include "decoderdefs_icarus.fcl"
+#include "timing_icarus.fcl"
 #include "icarus_ophitfinder.fcl"
 #include "icarus_flashfinder.fcl"
 #include "icarus_opana_modules.fcl"
@@ -38,13 +39,15 @@ physics:
 
         triggerConfig: @local::extractTriggerConfig 
 
-	    daqTrigger: @local::decodeTrigger
+        daqTrigger: @local::decodeTriggerV2
 
         PMTconfig: @local::extractPMTconfig 
 
         daqPMT: @local::decodePMT
 
-        ophit: @local::icarus_ophit_data
+        ophituncorrected: @local::icarus_ophit_data
+        
+        ophit: @local::icarus_ophit_timing_correction
 
         opflashCryoE: @local::ICARUSSimpleFlashDataCryoE
 
@@ -101,3 +104,9 @@ physics.producers.daqTrigger.DecoderTool.Debug: false
 physics.analyzers.simpleLightAna.DumpWaveformsInfo: false
 physics.analyzers.simpleLightAna.DumpOpHitInfo: false
 physics.analyzers.simpleLightAna.DumpFlashInfo: true
+
+
+#
+# customization of PMT reconstruction
+#
+physics.producers.ophit.InputLabels: [ "ophituncorrected" ]

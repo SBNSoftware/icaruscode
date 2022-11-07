@@ -15,7 +15,7 @@
 
 cmake_minimum_required(VERSION 3.19 FATAL_ERROR)
 
-project(icaruscode VERSION 09.60.01 LANGUAGES CXX)
+project(icaruscode VERSION 09.62.00.01 LANGUAGES CXX)
 
 message(STATUS
   "\n-- ============================================================================="
@@ -74,6 +74,7 @@ find_ups_product( icarusutil )
 find_ups_product( icarus_data )
 
 find_ups_product( artdaq_core )
+find_ups_product( TRACE )
 find_ups_product( sbndaq_artdaq_core )
 
 find_package( cetlib_except REQUIRED EXPORT )
