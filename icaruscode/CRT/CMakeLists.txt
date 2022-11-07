@@ -480,42 +480,6 @@ simple_plugin(CRTTPCTruthEff module
               ${ROOT_ROOFIT}
               ${ROOT_ROOFITCORE}
 )
-simple_plugin(CRTTPCTruthEffKalman module
-              icaruscode_CRTData
-              icaruscode_CRT
-              sbnobj_Common_CRT
-              icaruscode_CRTUtils
-              larcorealg_Geometry
-              larcore_Geometry_Geometry_service
-              larsim_Simulation lardataobj_Simulation
-              larsim_MCCheater_BackTrackerService_service
-              larsim_MCCheater_ParticleInventoryService_service
-              lardata_Utilities
-              larevt_Filters
-              lardataobj_RawData
-              lardataobj_RecoBase
-              lardataobj_AnalysisBase
-              lardata_RecoObjects
-              larpandora_LArPandoraInterface
-              larcorealg_Geometry
-              nusimdata_SimulationBase
-              ${ART_FRAMEWORK_SERVICES_REGISTRY}
-              ${ART_ROOT_IO_TFILE_SUPPORT} ${ROOT_CORE}
-              ${ART_ROOT_IO_TFILESERVICE_SERVICE}
-              art_Persistency_Common canvas
-              art_Persistency_Provenance canvas
-              art_Utilities canvas
-              ${MF_MESSAGELOGGER}
-              ${MF_UTILITIES}
-              ${ROOT_BASIC_LIB_LIST}
-              ${ROOT_GEOM}
-              ${ROOT_XMLIO}
-              ${ROOT_GDML}
-              ${ROOT_SPECTRUM}
-              ${ROOT_ROOFIT}
-              ${ROOT_ROOFITCORE}
-)
-
 
 install_headers()
 install_fhicl()

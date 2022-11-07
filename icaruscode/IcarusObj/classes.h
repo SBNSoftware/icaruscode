@@ -16,10 +16,6 @@
 #include "lardataobj/Simulation/BeamGateInfo.h"
 #include "sbnobj/Common/CRT/CRTHit.hh"
 #include "lardataobj/RawData/OpDetWaveform.h"
-<<<<<<< HEAD
-=======
-
->>>>>>> d741dfb50a66f0ca165234ecd4ccdd2470c9d702
 #include <vector>
 
 namespace {
