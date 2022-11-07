@@ -190,9 +190,6 @@ private:
     uint64_t                   m_trigger_timestamp;
     uint64_t                   m_gate_start_timestamp;
     uint64_t                   m_trigger_gate_diff;
-    uint64_t                   m_gate_crt_diff;
-
-    CRTCommonUtils*            crtutil;
 
     map<int, art::InputTag>    fFlashLabels;
 
@@ -433,7 +430,10 @@ bool icarus::crt::FilterCRTPMTMatching::filter(art::Event &e)
                 outputString << "TOF " << exiting.tof << "  distance  " << exiting.distance << "  velocity " << (double)exiting.distance / (double)exiting.tof << " Region " << exiting.CRTHit->plane << "\n";
             }
 
-            mf::LogInfo("FilterCRTPTMMatching") << outputString.str(); 
+            std::string debugMessage = outputString.str();
+            std::cout << "OutputString will be:" << std::endl;
+            std::cout << debugMessage << std::endl;
+            mf::LogInfo("FilterCRTPTMMatching") << outputString.str() << std::endl; 
 
             bool   matched = false;
             double peflash = flash->TotalPE();
