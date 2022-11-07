@@ -229,7 +229,7 @@ namespace icarus{
     double fMaxUncert;
     //    double fDistEndpointAVedge;
     std::vector<art::InputTag> fTPCTrackLabel;
-    bool fIsData;
+//    bool fIsData;
   };
 
 

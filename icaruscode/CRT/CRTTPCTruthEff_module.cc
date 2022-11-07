@@ -172,7 +172,7 @@ namespace icarus {
     uint64_t     m_trigger_timestamp;
     uint64_t     m_gate_start_timestamp;
     uint64_t     m_trigger_gate_diff;
-    uint64_t     m_gate_crt_diff;
+//    uint64_t     m_gate_crt_diff;
 
   }; // class CRTTPCTruthEff
 
@@ -302,7 +302,7 @@ namespace icarus {
     	    for (auto const& particle: (*particleHandle)){
               // Make map with ID
               int partID = particle.TrackId();
-	      std::cout << "ParticleID:\t" << partID << "\n";//adding while trying to debug sim related issues
+//	      std::cout << "ParticleID:\t" << partID << "\n";//adding while trying to debug sim related issues
 	      particles[partID] = particle;
 	    }//end loop over particles in particleHandle
      }//end(!fIsData)
@@ -434,8 +434,8 @@ namespace icarus {
 	  if(!fIsData){
 		track_trueID = RecoUtils::TrueParticleIDFromTotalRecoHits(clockData,hits,false);
 		GetAncestorID(track_trueID, track_mother, track_ancestor, track_motherlayers, particles);
-		std::cout << "track::{trueID,motherID,ancestorID,motherlayers}:\n";
-		std::cout << track_trueID << "," << track_mother << "," << track_ancestor << "," << track_motherlayers << "\n";
+//		std::cout << "track::{trueID,motherID,ancestorID,motherlayers}:\n";
+//		std::cout << track_trueID << "," << track_mother << "," << track_ancestor << "," << track_motherlayers << "\n";
 		trk_pdg = particles[track_trueID].PdgCode();
 	  }//end if(!fIsData)
 
@@ -504,12 +504,12 @@ namespace icarus {
 			crt_trueID =  bt.TrueIdFromTotalEnergy(event, checkhit);// std::cout << temp_crt_trueID << std::endl;
 			GetAncestorID(crt_trueID, crt_mother, crt_ancestor, crt_motherlayers, particles);
 			crt_pdg = particles[crt_trueID].PdgCode();
-			std::cout << "crt::{trueID,motherID,ancestorID,motherlayers}:\n";
-			std::cout << crt_trueID << "," << crt_mother << "," << crt_ancestor << "," << crt_motherlayers << "\n";
+//			std::cout << "crt::{trueID,motherID,ancestorID,motherlayers}:\n";
+//			std::cout << crt_trueID << "," << crt_mother << "," << crt_ancestor << "," << crt_motherlayers << "\n";
 	    	}//end if(!fIsData)
 
 		has_crtmatch=false;
-		std::cout << "Number of CRT candidates:\t" << (int)all_crt_candidates.size() << std::endl;
+//		std::cout << "Number of CRT candidates:\t" << (int)all_crt_candidates.size() << std::endl;
 		num_crt_candidates = (int)all_crt_candidates.size();
 		if(num_crt_candidates>0){
 			has_crtmatch=true;
@@ -599,7 +599,7 @@ void icarus::CRTTPCTruthEff::getCatCrossXYZ(recob::Track trk, double &my_x, doub
 
 	size_t ntrk = trk.NPoints();
 	std::vector<double> x, y, z, x_left_diff, x_right_diff;
-	std::pair<double,double> cathode_yz;
+//	std::pair<double,double> cathode_yz;
 	double left_dist_min = DBL_MAX; int left_dist_min_pos = INT_MAX;
 	double right_dist_min = DBL_MAX; int right_dist_min_pos = INT_MAX;
 	double xsum=0, xavg;
