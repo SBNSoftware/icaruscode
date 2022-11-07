@@ -12,8 +12,6 @@
 #include "lardataobj/Simulation/BeamGateInfo.h"
 #include "sbnobj/Common/CRT/CRTHit.hh"
 #include "lardataobj/RawData/OpDetWaveform.h"
-#include "lardataobj/RecoBase/Track.h"
-#include "lardataobj/AnalysisBase/T0.h"
 #include <vector>
 
 namespace {
