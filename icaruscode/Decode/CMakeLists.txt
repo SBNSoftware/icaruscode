@@ -45,6 +45,7 @@ art_make(
 simple_plugin(DaqDecoderICARUSPMT module
   sbnobj_Common_PMT_Data
   sbnobj_Common_Trigger
+  icaruscode_PMT_Algorithms
   icaruscode_Decode_DecoderTools_Dumpers
   icaruscode_Decode_DecoderTools
   icaruscode_Timing
