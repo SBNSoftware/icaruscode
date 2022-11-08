@@ -190,7 +190,7 @@ vector<pair<sbn::crt::CRTHit, vector<int>>> CRTHitRecoAlg::CreateCRTHits(vector<
 	}
 	
    }
-   std::cout << "------\nCreateCRTHits::Trigger timestamp = "<<trigger_timestamp<<"\n------\n";
+   //std::cout << "------\nCreateCRTHits::Trigger timestamp = "<<trigger_timestamp<<"\n------\n";
    //Global Trigger Calculation for Top CRT
    const int trigger_offset= 60; //Average distance between Global Trigger and Trigger_timestamp (ns)
    ULong64_t GlobalTrigger_top= trigger_timestamp;
@@ -200,7 +200,7 @@ vector<pair<sbn::crt::CRTHit, vector<int>>> CRTHitRecoAlg::CreateCRTHits(vector<
    for (int i=0; i<305; i++){
      if (TriggerArray_top[i]==0) TriggerArray_top[i]=GlobalTrigger_top;
    }
-   std::cout<<"------\nCreateCRTHits::Mode Top CRT Global Trigger ="<<GlobalTrigger_top<<"\n------\n";
+   //std::cout<<"------\nCreateCRTHits::Mode Top CRT Global Trigger ="<<GlobalTrigger_top<<"\n------\n";
 
    //Global Trigger Calculation for West/North Side CRTs
    ULong64_t GlobalTrigger_side_west= trigger_timestamp;
@@ -210,7 +210,7 @@ vector<pair<sbn::crt::CRTHit, vector<int>>> CRTHitRecoAlg::CreateCRTHits(vector<
    for (int i=0; i<305; i++){
      if (TriggerArray_side_west[i]==0) TriggerArray_side_west[i]=GlobalTrigger_side_west;
    }
-   std::cout<<"------\nCreateCRTHits::Mode Side West CRT Global Trigger ="<<GlobalTrigger_side_west<<"\n------\n";
+   //std::cout<<"------\nCreateCRTHits::Mode Side West CRT Global Trigger ="<<GlobalTrigger_side_west<<"\n------\n";
 
    //Global Trigger Calculation for East/South Side CRTs
    ULong64_t GlobalTrigger_side_east= trigger_timestamp;
@@ -220,7 +220,7 @@ vector<pair<sbn::crt::CRTHit, vector<int>>> CRTHitRecoAlg::CreateCRTHits(vector<
    for (int i=0; i<305; i++){
      if (TriggerArray_side_east[i]==0) TriggerArray_side_east[i]=GlobalTrigger_side_east;
    }
-   std::cout<<"------\nCreateCRTHits::Mode Side East CRT Global Trigger ="<<GlobalTrigger_side_east<<"\n------\n";
+   //std::cout<<"------\nCreateCRTHits::Mode Side East CRT Global Trigger ="<<GlobalTrigger_side_east<<"\n------\n";
 
 
    //loop over time-ordered CRTData
@@ -497,27 +497,25 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeTopHit(art::Ptr<CRTData> data, ULong64_t Glo
     auto const& adsGeo = adGeo.SensitiveVolume(adsid_max); //trigger strip
     uint64_t thit = data->fTs0;
     Long64_t thit1 = data->fTs1;
+    thit -= fSiPMtoFEBdelay;
+    thit1 -= fSiPMtoFEBdelay;
 
-    if(adsid_max<8){
-        thit -= (uint64_t)round(abs((92+hitpos.X())*fPropDelay));
-        thit1 -= (uint64_t)round(abs((92+hitpos.X())*fPropDelay));
-	thit -= fSiPMtoFEBdelay; //Correction for 12 ns signal cable from SiPM to FEB
-	thit1 -= fSiPMtoFEBdelay; //Correction for 12 ns signal cable from SiPM to FEB
-    }
-    else{
-        thit -= (uint64_t)round(abs((92+hitpos.Z())*fPropDelay));
-        thit1 -= (uint64_t)round(abs((92+hitpos.Z())*fPropDelay));
-	thit -= fSiPMtoFEBdelay; //Correction for 12 ns signal cable from SiPM to FEB
-	thit1 -= fSiPMtoFEBdelay; //Correction for 12 ns signal cable from SiPM to FEB
-    }
- 
+    //92.0 is the middle of one of the Top CRT modules (each of them is 184 cm)    
+    //TO DO: Move hardcoded numbers to parameter fcl files.
+    //Another possibility is using object values from GDML, but I (Francesco Poppi) found weird numbers some months ago and needed to double check.
+    double const corrPos = std::max(-hitpos.X(), hitpos.Z());
+    uint64_t const corr = (uint64_t)round(abs((92.0+corrPos)*fPropDelay));
+    thit -= corr;
+    thit1 -= corr;
+
     adGeo.LocalToWorld(hitlocal,hitpoint); //tranform from module to world coords
 
     hitpointerr[0] = adsGeo.HalfWidth1()*2/sqrt(12);
     hitpointerr[1] = adGeo.HalfHeight();
     hitpointerr[2] = adsGeo.HalfWidth1()*2/sqrt(12);
+    //thit1 = (Long64_t)(thit-GlobalTrigger[(int)mac+73]);
     thit1 = (Long64_t)(thit-GlobalTrigger[(int)mac]);
- 
+
     //Remove T1 Reset event not correctly flagged, remove T1 reset events, remove T0 reset events
     if((sum<10000 && thit1<2'001'000 && thit1>2'000'000)||data->IsReference_TS1() || data->IsReference_TS0()) return FillCRTHit({},{},0,0,0,0,0,0,0,0,0,0,"");
 
