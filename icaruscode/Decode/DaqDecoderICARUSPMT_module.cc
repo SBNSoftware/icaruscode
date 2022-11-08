@@ -811,6 +811,10 @@ class icarus::DaqDecoderICARUSPMT: public art::EDProducer {
     
   }; // struct ProtoWaveform_t
 
+  /// Type of map: category to collection of waveforms under that category.
+  using WaveformsByCategory_t
+    = std::map<std::string, std::vector<raw::OpDetWaveform>>;
+  
   // --- BEGIN -- Configuration parameters -------------------------------------
   
   ///< List of candidate data products with artDAQ data fragments.
@@ -1172,6 +1176,56 @@ class icarus::DaqDecoderICARUSPMT: public art::EDProducer {
   
   electronics_time waveformEndTime(ProtoWaveform_t const& wf) const
     { return waveformEndTime(wf.waveform); }
+  
+  /**
+   * @brief Converts the proto-waveforms into the final waveforms to be saved.
+   * @param protoWaveforms the waveforms to be converted
+   * @param timeCorrections the set of time corrections to apply (may be null)
+   * @return a map: instance name to its collection of waveforms to save
+   * 
+   * The protowaveforms are sorted by category (i.e. instance name),
+   * filtered as proper and corrections are applied to their timestamp according
+   * to the configuration of the module.
+   * 
+   * Filtering is based on the parameters in the module configuration, and
+   * includes the selection of categories to save and constraints e.g. on
+   * whether they include the global trigger.
+   * The `timeCorrections` can be omitted (`nullptr`), in which case cable delay
+   * corrections are applied unless `fApplyCableDelayCorrection` is disabled.
+   * 
+   * Note that `protoWaveforms` is depleted in the process.
+   */
+  WaveformsByCategory_t prepareOutputWaveforms(
+    std::vector<ProtoWaveform_t>&& protoWaveforms,
+    std::vector<icarus::timing::PMTWaveformTimeCorrection> const*
+      timeCorrections
+    ) const;
+
+  /// Creates metadata and associations (if needed) for the regular waveforms.
+  std::pair<
+    std::vector<sbn::OpDetWaveformMeta>,
+    art::Assns<raw::OpDetWaveform, sbn::OpDetWaveformMeta>
+    >
+  createRegularWaveformMetadata(
+    WaveformsByCategory_t const& waveformProducts,
+    art::Event const& event, TriggerInfo_t const& triggerInfo
+    ) const;
+
+  /**
+   * @brief Returns time correction appropriate for `waveform`.
+   * @param waveform the waveform whose time needs to be corrected
+   * @param corrections the set of available corrections by channel
+   * @return the time correction [us]
+   *
+   * Corrections are preferably extracted from `corrections` if non-null.
+   * If no `corrections` are specified, cable delay corrections are applied
+   * according to the value of the configuration (`fApplyCableDelayCorrection`).
+   */
+  double extractTimeCorrection(
+    raw::OpDetWaveform const& waveform,
+    std::vector<icarus::timing::PMTWaveformTimeCorrection> const* corrections
+    ) const;
+  
   
   // --- END ---- Output waveforms ---------------------------------------------
   
@@ -1784,7 +1838,7 @@ void icarus::DaqDecoderICARUSPMT::produce(art::Event& event) {
     timeCorrectionProducts[fCorrectionInstance] = {};
   }
   // process each (proto)waveform in a category marked as correction source
-  for (ProtoWaveform_t& waveform: protoWaveforms) {
+  for (ProtoWaveform_t const& waveform: protoWaveforms) {
     
     // extract correction only from waveforms on global trigger,
     // unless the special waveforms for this corrections are marked differently;
@@ -1831,75 +1885,17 @@ void icarus::DaqDecoderICARUSPMT::produce(art::Event& event) {
   //for( auto const & corr : corrections )
   //      std::cout << corr.startTime << std::endl;
   //std::cout << "---END Print the corrections for category " << fCorrectionInstance << " -----" << std::endl;
-
+  
   auto const* waveformCorrection = fCorrectionInstance.empty()
     ? nullptr: &(timeCorrectionProducts.at(fCorrectionInstance));
-  auto correctionFor = [&corrections=*waveformCorrection](raw::Channel_t ch)
-    {
-      return (ch < corrections.size())
-        ? corrections[ch]: icarus::timing::PMTWaveformTimeCorrection{};
-    };
   
-  // sort the waveforms by destination (and always pick the regular waveforms)
   std::map<std::string, std::vector<raw::OpDetWaveform>> waveformProducts
-    { { RegularWaveformCategory, std::vector<raw::OpDetWaveform>{} } };
-  for (std::string const& instanceName: fSaveWaveformsFrom)
-    waveformProducts.emplace(instanceName, std::vector<raw::OpDetWaveform>{});
-  for (ProtoWaveform_t& waveform: protoWaveforms) {
-    
-    // select the destination data product for this waveform:
-    auto const itOutputWaves
-      = waveformProducts.find(waveform.channelSetup->category);
-    if (itOutputWaves == waveformProducts.cend()) continue; // not to be saved
-    
-    // on-global and span requirements override even `mustSave()` requirement;
-    // if this is not good, user should not set `mustSave()`!
-    bool const keep =
-      (waveform.onGlobal || !waveform.channelSetup->onGlobalOnly)
-      && (waveform.span() >= waveform.channelSetup->minSpan)
-      ;
-    
-    if (!keep) continue;
-    
-    // apply the correction only to "standard" waveforms;
-    // we may extend the logic if needed
-    bool const useCorrection
-      = (waveform.channelSetup->category == RegularWaveformCategory);
+     = prepareOutputWaveforms(std::move(protoWaveforms), waveformCorrection);
 
-    double correctTimeStamp = waveform.waveform.TimeStamp();
-    
-    if( useCorrection && waveformCorrection ){
-      
-      correctTimeStamp
-        += correctionFor(waveform.waveform.ChannelNumber()).startTime;
-
-      //std::cout << " ** " << waveform.waveform.ChannelNumber() << ", "
-      //  << waveform.waveform.TimeStamp() << ", "
-      //  << correctionFor(waveform.waveform.ChannelNumber()).startTime << ", "
-      //  << correctTimeStamp << std::endl;
-
-    }
-    else if (fApplyCableDelayCorrection) {
-      correctTimeStamp += fPMTTimingCorrectionsService->getResetCableDelay
-        (waveform.waveform.ChannelNumber());
-    }
-    
-    // Set a new Timestamp
-    waveform.waveform.SetTimeStamp(correctTimeStamp);
-    itOutputWaves->second.push_back(std::move(waveform.waveform));
-  } // for protowaveforms
-  
-  
   // create metadata for standard waveforms and, optionally, their associations
-  std::vector<raw::OpDetWaveform> const& regularWaveforms
-    = waveformProducts.at(RegularWaveformCategory);
-  std::vector<sbn::OpDetWaveformMeta> waveformMeta
-    = createWaveformMetadata(regularWaveforms, triggerInfo);
-  art::Assns<raw::OpDetWaveform, sbn::OpDetWaveformMeta> metaToWaveform;
-  if (fSaveRegulatWaveforms) {
-    metaToWaveform
-      = createWaveformMetadataAssociations(regularWaveforms, event);
-  }
+  auto [ waveformMeta, metaToWaveform ]
+    = createRegularWaveformMetadata(waveformProducts, event, triggerInfo);
+  
   
   // put the data products into the event
   for (auto&& [ category, waveforms ]: waveformProducts) {
@@ -2650,6 +2646,107 @@ auto icarus::DaqDecoderICARUSPMT::mergeWaveformGroup(
   } // while
   return mergedWaveform;
 } // icarus::DaqDecoderICARUSPMT::mergeWaveformGroup()
+
+
+//------------------------------------------------------------------------------
+auto icarus::DaqDecoderICARUSPMT::prepareOutputWaveforms(
+  std::vector<ProtoWaveform_t>&& protoWaveforms,
+  std::vector<icarus::timing::PMTWaveformTimeCorrection> const* timeCorrections
+) const -> WaveformsByCategory_t {
+  
+  // the output map will always include the regular waveforms...
+  std::map<std::string, std::vector<raw::OpDetWaveform>> waveformProducts
+    { { RegularWaveformCategory, std::vector<raw::OpDetWaveform>{} } };
+  // ... plus all the ones we want to write
+  for (std::string const& instanceName: fSaveWaveformsFrom)
+    waveformProducts.emplace(instanceName, std::vector<raw::OpDetWaveform>{});
+  
+  for (ProtoWaveform_t& waveform: protoWaveforms) {
+    
+    // select the destination data product for this waveform:
+    auto const itOutputWaves
+      = waveformProducts.find(waveform.channelSetup->category);
+    if (itOutputWaves == waveformProducts.cend()) continue; // not to be saved
+    
+    // on-global and span requirements override even `mustSave()` requirement;
+    // if this is not good, user should not set `mustSave()`!
+    bool const keep =
+      (waveform.onGlobal || !waveform.channelSetup->onGlobalOnly)
+      && (waveform.span() >= waveform.channelSetup->minSpan)
+      ;
+    
+    if (!keep) continue;
+    
+    // apply time correction only to "standard" waveforms;
+    // we may extend the logic if needed
+    bool const useCorrection
+      = (waveform.channelSetup->category == RegularWaveformCategory);
+
+    double const correctTimeStamp
+      = waveform.waveform.TimeStamp()
+      + extractTimeCorrection
+        (waveform.waveform, useCorrection? timeCorrections: nullptr)
+      ;
+    
+    // Set a new Timestamp
+    waveform.waveform.SetTimeStamp(correctTimeStamp);
+    itOutputWaves->second.push_back(std::move(waveform.waveform));
+  } // for protowaveforms
+  
+  protoWaveforms.clear();
+  
+  return waveformProducts;
+  
+} // icarus::DaqDecoderICARUSPMT::prepareOutputWaveforms()
+
+
+//------------------------------------------------------------------------------
+std::pair<
+  std::vector<sbn::OpDetWaveformMeta>,
+  art::Assns<raw::OpDetWaveform, sbn::OpDetWaveformMeta>
+  >
+icarus::DaqDecoderICARUSPMT::createRegularWaveformMetadata(
+  WaveformsByCategory_t const& waveformProducts,
+  art::Event const& event, TriggerInfo_t const& triggerInfo
+) const {
+
+  // create metadata for standard waveforms and, optionally, their associations
+  std::vector<raw::OpDetWaveform> const& regularWaveforms
+    = waveformProducts.at(RegularWaveformCategory);
+  
+  std::vector<sbn::OpDetWaveformMeta> waveformMeta
+    = createWaveformMetadata(regularWaveforms, triggerInfo);
+  
+  art::Assns<raw::OpDetWaveform, sbn::OpDetWaveformMeta> metaToWaveform;
+  if (fSaveRegulatWaveforms) {
+    metaToWaveform
+      = createWaveformMetadataAssociations(regularWaveforms, event);
+  }
+  
+  return { std::move(waveformMeta), std::move(metaToWaveform) };
+} // icarus::DaqDecoderICARUSPMT::createRegularWaveformMetadata()
+
+
+//------------------------------------------------------------------------------
+double icarus::DaqDecoderICARUSPMT::extractTimeCorrection(
+  raw::OpDetWaveform const& waveform,
+  std::vector<icarus::timing::PMTWaveformTimeCorrection> const* corrections
+) const {
+
+  raw::Channel_t const channel = waveform.ChannelNumber();
+  
+  if (corrections) {
+    if (channel < corrections->size())
+      return (*corrections)[channel].startTime;
+    else
+      return icarus::timing::PMTWaveformTimeCorrection{}.startTime;
+  }
+  
+  if (fApplyCableDelayCorrection)
+    return fPMTTimingCorrectionsService->getResetCableDelay(channel);
+  
+  return 0.0;
+} // icarus::DaqDecoderICARUSPMT::extractTimeCorrection()
 
 
 //------------------------------------------------------------------------------
