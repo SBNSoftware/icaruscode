@@ -329,9 +329,7 @@ namespace icarus {
   auto const clockData = art::ServiceHandle<detinfo::DetectorClocksService const>()->DataFor(event);
 
     // Retrieve track list BEGIN LOOP OVER TRACKS IN EVENT
-    for(const auto& trackLabel : fTpcTrackModuleLabel){
-
-      auto it = &trackLabel - fTpcTrackModuleLabel.data();
+    for(const auto& [ trackLabel, pfpLabel ]: util::zip(fTpcTrackModuleLabel, fPFParticleLabel)) {
 
       art::Handle< std::vector<recob::Track> > trackListHandle;
       std::vector<art::Ptr<recob::Track> > trackList;
