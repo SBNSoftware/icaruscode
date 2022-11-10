@@ -88,8 +88,6 @@ namespace icarus {
     // Selected optional functions.
     void beginJob() override;
 
-    void endJob() override;
-
     void reconfigure(fhicl::ParameterSet const & p);
  
     void GetAncestorID(int trueid, int &motherid, int &ancestorid, int &layers, std::map<int, simb::MCParticle> all_particles);
@@ -320,6 +318,7 @@ namespace icarus {
     auto const& crtHits = event.getProduct<std::vector<sbn::crt::CRTHit>>(fCrtHitModuleLabel);
   auto const clockData = art::ServiceHandle<detinfo::DetectorClocksService const>()->DataFor(event);
 
+   if (trackListHandle.isValid() && crtListHandle.isValid() ){
     // Retrieve track list BEGIN LOOP OVER TRACKS IN EVENT
     for(const auto& [ trackLabel, pfpLabel ]: util::zip(fTpcTrackModuleLabel, fPFParticleLabel)) {
 
@@ -346,7 +345,6 @@ namespace icarus {
       art::FindOneP<anab::T0> fot0pandora(pfpListHandle, event, fPFParticleLabel[it]);
 
       
-      if (trackListHandle.isValid() && crtListHandle.isValid() ){
 	
 	auto const detProp = art::ServiceHandle<detinfo::DetectorPropertiesService const>()->DataFor(event);
 	art::FindManyP<recob::Hit> findManyHits(trackListHandle, event, trackLabel);
@@ -388,26 +386,26 @@ namespace icarus {
 
 	  //Find PFParticle for track i
 	  //art::Ptr::key() gives the index in the vector
-	  auto pfps = fmpfp.at(trackList[track_i]->ID());
+	  art::ptr<recob::PFParticle> pfp = fopfp.at(trackList[track_i]->ID());
 
 	  is_catcross = false;
-	  if (!pfps.empty()){
+	  if (pfp){
 	    //Find T0 for PFParticle
-	    auto t0s = fmt0pandora.at(pfps[0].key());
-	    if (!t0s.empty()){
-	      track_t0 = t0s[0]->Time();
+	    auto t0 = fmt0pandora.at(pfp.key());
+	    if (!t0.empty()){
+	      track_t0 = t0->Time();
 	      is_catcross = true;
 	      catcross_x = DBL_MAX;	catcross_y = DBL_MAX;	catcross_z = DBL_MAX;
 	      getCatCrossXYZ(*trackList[track_i], catcross_x, catcross_y, catcross_z);
 //	      t0 = track_t0;   //Get T0
-	    }//end if (!t0s.empty())
+	    }//end if (!t0.empty())
 	  }//end if (!pfps.empty())
 
 	  crt_tpc_dca = DBL_MAX; crt_trueID = INT_MAX; track_trueID = INT_MAX; track_mother = INT_MAX; crttime = DBL_MAX;
 
 	  std::vector<art::Ptr<recob::Hit>> hits = findManyHits.at(trackList[track_i]->ID());
 
-	  if (hits.size() == 0) continue;
+	  if (hits.empty()) continue;
 	  //Get Truth info if applicable:
 	  if(!fIsData){
 		track_trueID = RecoUtils::TrueParticleIDFromTotalRecoHits(clockData,hits,false);
@@ -429,7 +427,7 @@ namespace icarus {
 */
 //	    double sin_angle = -99999;
 	    if(closest.dca != -99999){//this if gives green light to start filling TTree variables for matched CRT Hit variables
-	      	auto start = trackList[track_i]->Vertex<TVector3>();
+//	      	auto start = trackList[track_i]->Vertex<TVector3>();
 		crt_region = fCrtutils->AuxDetRegionNameToNum(closest.thishit.tagger);	    
 		crt_tpc_dca = closest.dca;
 
@@ -542,16 +540,11 @@ namespace icarus {
    	    tr_crttpc->Fill();
 	} // Loop over tracks  
 	
-      } // Validity check
+      } // all track labels in a vector
 
-    } // all track labels in a vector 
+    } // Validity check
   } // CRTTPCTruthEff::produce()
 
-
-  void CRTTPCTruthEff::endJob()
-  {
-
-  } // CRTTPCTruthEff::endJob()
 
 void icarus::CRTTPCTruthEff::GetAncestorID(int trueid, int &motherid, int &ancestorid, int &layers, std::map<int, simb::MCParticle> all_particles){
 
@@ -622,8 +615,5 @@ void icarus::CRTTPCTruthEff::getCatCrossXYZ(recob::Track trk, double &my_x, doub
 
   DEFINE_ART_MODULE(CRTTPCTruthEff)
 
-} // sbnd namespace
+} // icarus namespace
 
-namespace {
-
-}
