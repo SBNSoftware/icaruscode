@@ -56,7 +56,6 @@ set(        TOOL_LIBRARIES
         )
 
 cet_build_plugin(FakeParticle art::tool LIBRARIES ${TOOL_LIBRARIES})
-cet_build_plugin(PMTDecoder art::tool LIBRARIES ${TOOL_LIBRARIES})
 cet_build_plugin(TPCDecoderFilter1D art::tool LIBRARIES ${TOOL_LIBRARIES})
 cet_build_plugin(TPCDecoderFilter2D art::tool LIBRARIES ${TOOL_LIBRARIES})
 cet_build_plugin(TPCDecoder art::tool LIBRARIES ${TOOL_LIBRARIES})

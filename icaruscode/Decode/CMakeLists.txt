@@ -27,8 +27,6 @@ set(          MODULE_LIBRARIES
                         lardata::ArtDataHelper
 )
 
-cet_build_plugin(DaqDecoderICARUSPMTnotThatOld art::module LIBRARIES ${MODULE_LIBRARIES})
-cet_build_plugin(DaqDecoderICARUSPMTold art::module LIBRARIES ${MODULE_LIBRARIES})
 cet_build_plugin(DaqDecoderICARUSTPC art::module LIBRARIES ${MODULE_LIBRARIES})
 cet_build_plugin(DaqDecoderICARUSTPCwROI art::module LIBRARIES ${MODULE_LIBRARIES})
 cet_build_plugin(DaqDecoderICARUSTrigger art::module LIBRARIES ${MODULE_LIBRARIES})
