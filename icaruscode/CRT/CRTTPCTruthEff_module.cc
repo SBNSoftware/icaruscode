@@ -340,7 +340,7 @@ namespace icarus {
       if (!pfpListHandle.isValid()) continue;
 
       //Get PFParticle-Track association
-      art::FindManyP<recob::PFParticle> fmpfp(trackListHandle, event, trackLabel);
+      art::FindOneP<recob::PFParticle> fopfp(trackListHandle, event, trackLabel);
 
       //Get T0-PFParticle association
       art::FindManyP<anab::T0> fmt0pandora(pfpListHandle, event, fPFParticleLabel[it]);
