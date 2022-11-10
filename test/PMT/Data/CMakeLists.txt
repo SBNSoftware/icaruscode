@@ -1,5 +1,7 @@
 cet_test(WaveformBaseline_test
   LIBRARIES
-    sbnobj_ICARUS_PMT_Data
+    sbnobj::ICARUS_PMT_Data
+    icarusalg::Utilities
+    lardataalg::DetectorInfo
   USE_BOOST_UNIT
   )
