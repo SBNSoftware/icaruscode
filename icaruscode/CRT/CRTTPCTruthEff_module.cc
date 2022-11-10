@@ -317,15 +317,7 @@ namespace icarus {
     m_trigger_gate_diff    = triggerInfo.triggerTimestamp - triggerInfo.beamGateTimestamp;
 
     // Retrieve CRT hit list
-    art::Handle<std::vector<sbn::crt::CRTHit>> crtListHandle;
-    std::vector<art::Ptr<sbn::crt::CRTHit>> crtList;
-    if(event.getByLabel(fCrtHitModuleLabel, crtListHandle))
-      art::fill_ptr_vector(crtList, crtListHandle);
-
-    std::vector<sbn::crt::CRTHit> crtHits;
-    for (auto const& crtHit : crtList){
-      crtHits.push_back(*crtHit);
-    }//end for (auto const& crtHit : crtList)
+    auto const& crtHits = event.getProduct<std::vector<sbn::crt::CRTHit>>(fCrtHitModuleLabel);
   auto const clockData = art::ServiceHandle<detinfo::DetectorClocksService const>()->DataFor(event);
 
     // Retrieve track list BEGIN LOOP OVER TRACKS IN EVENT
