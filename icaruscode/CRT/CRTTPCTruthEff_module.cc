@@ -308,25 +308,13 @@ namespace icarus {
      }//end(!fIsData)
 
     //add trigger info
-    if( !fTriggerLabel.empty() ) {
-
-      art::Handle<sbn::ExtraTriggerInfo> trigger_handle;
-      event.getByLabel( fTriggerLabel, trigger_handle );
-      if( trigger_handle.isValid() ) {
-	sbn::triggerSource bit = trigger_handle->sourceType;
-	m_gate_type            = (unsigned int)bit;
-	m_gate_name            = bitName(bit);
-	m_trigger_timestamp    = trigger_handle->triggerTimestamp;
-	m_gate_start_timestamp = trigger_handle->beamGateTimestamp;
-	m_trigger_gate_diff    = trigger_handle->triggerTimestamp - trigger_handle->beamGateTimestamp;
-      }//end if( trigger_handle.isValid() )
-      else{
-//	mf::LogError("CRTTPCTruthEff:") << "No raw::Trigger associated to label: " << fTriggerLabel.label() << "\n" ;
-      }//end else
-    }//end if( !fTriggerLabel.empty() )
-    else {
-//      mf::LogError("CRTTPCTruthEff:") << "Trigger Data product " << fTriggerLabel.label() << " not found!\n" ;
-    }//end else
+    auto const& triggerInfo = event.getProduct<sbn::ExtraTriggerInfo>(fTriggerLabel);
+    sbn::triggerSource bit = triggerInfo.sourceType;
+    m_gate_type            = value(bit);
+    m_gate_name            = bitName(bit);
+    m_trigger_timestamp    = triggerInfo.triggerTimestamp;
+    m_gate_start_timestamp = triggerInfo.beamGateTimestamp;
+    m_trigger_gate_diff    = triggerInfo.triggerTimestamp - triggerInfo.beamGateTimestamp;
 
     // Retrieve CRT hit list
     art::Handle<std::vector<sbn::crt::CRTHit>> crtListHandle;
