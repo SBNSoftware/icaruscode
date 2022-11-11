@@ -281,6 +281,31 @@ icarus_triggersimgates_Run1: {
 
 icarus_triggersimgates: @local::icarus_triggersimgates_Run1
 
+
+###
+### enable gate for the trigger primitives
+###
+
+#
+# this gate is read from the simulation settings
+#
+icarus_enablegate_sim: {
+
+  module_type: WriteBeamGateInfo
+  
+  BeamGates: [
+    {
+      Duration: @local::icarus_pmtsimulationalg_standard.ReadoutEnablePeriod  # from pmtsimulation_icarus.fcl
+      Start:    @local::icarus_pmtsimulationalg_standard.TriggerOffsetPMT  # from pmtsimulation_icarus.fcl
+    }
+  ]
+  
+} # icarus_enablegate_sim
+
+
+icarus_enablegate: @local::icarus_enablegate_sim
+
+
 ################################################################################
 ###  Legacy configurations
 ################################################################################
@@ -370,6 +395,7 @@ icarus_triggergate_basic.patterns.S10: {
 
 
 icarus_triggergate_basic.SelectedPattern: @local::icarus_triggergate_basic.patterns.S5
+icarus_triggergate_basic.SelectedPrimitivePattern: @local::icarus_triggergate_basic.patterns.S10
 
 
 
