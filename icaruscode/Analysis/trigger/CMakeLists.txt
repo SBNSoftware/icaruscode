@@ -5,7 +5,9 @@ art_make(
   SUBDIRS details
   EXCLUDE
     "TimedTrackSelector_module.cc"
+    "TimedTrackSelectorCRT_module.cc"
     "BeamGateInfoFromTracks_module.cc"
+    "BeamGateInfoFromTracksCRT_module.cc"
     "TimeTrackTreeStorage_module.cc"
   LIB_LIBRARIES
     larcorealg_Geometry
@@ -23,7 +25,20 @@ simple_plugin(TimedTrackSelector module
   ROOT::Core
   )
 
+simple_plugin(TimedTrackSelectorCRT module
+  lardataobj_AnalysisBase
+  lardataobj_RecoBase
+  messagefacility::MF_MessageLogger
+  ROOT::Core
+  )
+
 simple_plugin(BeamGateInfoFromTracks  module
+  lardataobj_Simulation
+  lardataobj_AnalysisBase
+  lardataobj_RecoBase
+  )
+
+simple_plugin(BeamGateInfoFromTracksCRT  module
   lardataobj_Simulation
   lardataobj_AnalysisBase
   lardataobj_RecoBase
@@ -49,6 +64,7 @@ simple_plugin(TimeTrackTreeStorage module
   fhiclcpp::fhiclcpp
   messagefacility::MF_MessageLogger
 )
+
 
 install_headers()
 install_source()
