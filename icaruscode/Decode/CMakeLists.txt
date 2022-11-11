@@ -1,8 +1,6 @@
 cet_enable_asserts()
 
-cet_find_library(LIBWDA NAMES wda PATHS ENV LIBWDA_LIB NO_DEFAULT_PATH)
-
-art_make(
+art_make_library(
           EXCLUDE
                         TriggerConfigurationExtraction_module.cc
                         PMTconfigurationExtraction_module.cc
@@ -11,102 +9,101 @@ art_make(
                         DumpArtDAQfragments_module.cc
                         DumpTrigger_module.cc
                         DaqDecoderICARUSPMT_module.cc
-          MODULE_LIBRARIES
+)
+
+set(          MODULE_LIBRARIES
                         icarus_signal_processing
                         icarus_signal_processing_Detection
                         icarus_signal_processing_Filters
                         icaruscode_TPC_Utilities
-                        sbndaq_artdaq_core::sbndaq-artdaq-core_Overlays_ICARUS 
+                        sbndaq_artdaq_core::sbndaq-artdaq-core_Overlays_ICARUS
                         artdaq_core::artdaq-core_Utilities
-                        larcorealg_Geometry
-                        larcore_Geometry_Geometry_service
-                        lardata_Utilities
-                        larevt_Filters
-                        lardataobj_RawData
-                        lardata_ArtDataHelper
-                        ${ROOT_BASIC_LIB_LIST}
-                        LIBWDA
-                        ${ART_FRAMEWORK_CORE}
-                        ${ART_FRAMEWORK_PRINCIPAL}
-                        ${ART_FRAMEWORK_SERVICES_REGISTRY}
-                        ${ART_ROOT_IO_TFILE_SUPPORT}
-                        ${ART_ROOT_IO_TFILESERVICE_SERVICE}
-                        ${ART_UTILITIES}
-                        art_Persistency_Common canvas
-                        art_Persistency_Provenance canvas
-                        art_Utilities canvas
-                        ${MF_MESSAGELOGGER}
-                        ${MF_UTILITIES}
-                        ${FHICLCPP}
-                        cetlib cetlib_except
-                        ${TBB}
-        )
+                        larcorealg::Geometry
+                        lardataobj::RawData
+                        larcore::Geometry_Geometry_service
+                        lardata::Utilities
+                        larevt::Filters
+                        lardataobj::RawData
+                        lardata::ArtDataHelper
+)
 
-simple_plugin(DaqDecoderICARUSPMT module
-  sbnobj_Common_PMT_Data
-  sbnobj_Common_Trigger
-  icaruscode_Decode_DecoderTools_Dumpers
-  icaruscode_Decode_DecoderTools
-  icaruscode_Timing
-  icaruscode_IcarusObj
-  sbndaq_artdaq_core::sbndaq-artdaq-core_Overlays_Common
-  sbndaq_artdaq_core::sbndaq-artdaq-core_Overlays
-  lardataobj_RawData
-  artdaq_core::artdaq-core_Data
-  ${ART_ROOT_IO_TFILESERVICE_SERVICE}
-  ${ART_ROOT_IO_TFILE_SUPPORT}
-  ${ART_FRAMEWORK_SERVICES_REGISTRY}
-  ${MF_MESSAGELOGGER}
-  ${FHICLCPP}
-  cetlib_except
-  ROOT::Tree
-  )
+cet_build_plugin(DaqDecoderICARUSTPC art::module LIBRARIES ${MODULE_LIBRARIES})
+cet_build_plugin(DaqDecoderICARUSTPCwROI art::module LIBRARIES ${MODULE_LIBRARIES})
+cet_build_plugin(DaqDecoderICARUSTrigger art::module LIBRARIES ${MODULE_LIBRARIES})
+cet_build_plugin(FilterNoiseICARUS art::module LIBRARIES ${MODULE_LIBRARIES})
+cet_build_plugin(MCDecoderICARUSTPCwROI art::module LIBRARIES ${MODULE_LIBRARIES})
 
-simple_plugin(PMTconfigurationExtraction module
-  icaruscode_Decode_DecoderTools
-  sbnobj_Common_PMT_Data
-  art_Framework_Services_Registry
-  fhiclcpp
-  cetlib_except
-  )
+cet_build_plugin(DaqDecoderICARUSPMT art::module LIBRARIES
+	sbnobj::Common_PMT_Data
+	sbnobj::Common_Trigger
+        icaruscode_Timing
+	icaruscode_Decode_DecoderTools_Dumpers
+	icaruscode_Decode_DecoderTools
+	sbndaq_artdaq_core::sbndaq-artdaq-core_Overlays_Common
+	sbndaq_artdaq_core::sbndaq-artdaq-core_Overlays
+	lardataobj::RawData
+	larcore::Geometry_Geometry_service
+	artdaq_core::artdaq-core_Data
+	art_root_io::TFileService_service
+	art_root_io::tfile_support
+	art::Framework_Services_Registry
+	messagefacility::MF_MessageLogger
+	fhiclcpp::fhiclcpp
+	cetlib_except::cetlib_except
+	ROOT::Tree
+	lardata::Utilities
+	)
 
-simple_plugin(TriggerConfigurationExtraction module
+cet_build_plugin(PMTconfigurationExtraction art::module LIBRARIES
+	icaruscode::Decode_DecoderTools
+	sbnobj::Common_PMT_Data
+	sbnobj::Common_Trigger
+	art::Framework_Services_Registry
+	fhiclcpp::fhiclcpp
+	cetlib_except::cetlib_except
+	)
+
+cet_build_plugin(TriggerConfigurationExtraction art::module LIBRARIES
   icaruscode_Decode_DecoderTools
   icaruscode_Decode_DataProducts
-  art_Framework_Services_Registry
-  fhiclcpp
-  cetlib_except
+  art::Framework_Services_Registry
+  fhiclcpp::fhiclcpp
+  cetlib_except::cetlib_except
   )
 
-simple_plugin(DumpPMTconfiguration module
-  sbnobj_Common_PMT_Data
-  messagefacility::MF_MessageLogger
-  fhiclcpp
-  cetlib_except
-  )
+cet_build_plugin(DumpPMTconfiguration art::module LIBRARIES
+	sbnobj::Common_PMT_Data
+        lardataobj::RawData
+	messagefacility::MF_MessageLogger
+	fhiclcpp::fhiclcpp
+	cetlib_except::cetlib_except
+	)
 
-simple_plugin(DumpTriggerConfiguration module
+
+cet_build_plugin(DumpTriggerConfiguration art::module LIBRARIES
   icaruscode_Decode_DataProducts
   messagefacility::MF_MessageLogger
-  fhiclcpp
-  cetlib_except
+  fhiclcpp::fhiclcpp
+  cetlib_except::cetlib_except
   )
 
-simple_plugin(DumpArtDAQfragments module
-  icaruscode_Decode_DecoderTools_Dumpers
-  artdaq_core::artdaq-core_Data
-  messagefacility::MF_MessageLogger
-  fhiclcpp
-  cetlib_except
-  )
+cet_build_plugin(DumpArtDAQfragments art::module LIBRARIES
+	icaruscode::Decode_DecoderTools_Dumpers
+        larcorealg::headers
+	artdaq_core::artdaq-core_Data
+	messagefacility::MF_MessageLogger
+	fhiclcpp::fhiclcpp
+	cetlib_except::cetlib_except
+	)
 
-simple_plugin(DumpTrigger module
-  sbnobj_Common_Trigger
+cet_build_plugin(DumpTrigger art::module LIBRARIES
+  sbnobj::Common_Trigger
   lardataobj::Simulation
   lardataobj::RawData
   messagefacility::MF_MessageLogger
-  fhiclcpp
+  fhiclcpp::fhiclcpp
   cetlib_except::cetlib_except
+  lardataalg::DetectorInfo
   )
 
 install_headers()
