@@ -22,15 +22,20 @@
 void icarus::trigger::WindowChannelMap::WindowInfo_t::dump
   (std::ostream& out, std::string const& indent /* = "" */) const
 {
-  out << indent << "window #" << index << " at " << center << " cm";
-  if (hasCryostat()) out << " in " << cryoid;
+  
+  out << indent << "window #" << topology.index
+    << " at " << composition.center << " cm";
+  if (composition.hasCryostat()) out << " in " << composition.cryoid;
   else               out << " (cryostat undefined)";
-  out << " includes " << channels.size() << " channels";
-  if (!channels.empty())
-    out << " (" << icarus::makeIntegerRanges(channels) << ")";
-  if (hasOppositeWindow()) out << " opposite to [#" << opposite << "]";
-  if (hasUpstreamWindow()) out << " downstream of [#" << upstream << "]";
-  if (hasDownstreamWindow()) out << " upstream of [#" << downstream << "]";
+  out << " includes " << composition.channels.size() << " channels";
+  if (!composition.channels.empty())
+    out << " (" << icarus::makeIntegerRanges(composition.channels) << ")";
+  if (topology.hasOppositeWindow())
+    out << " opposite to [#" << topology.opposite << "]";
+  if (topology.hasUpstreamWindow())
+    out << " downstream of [#" << topology.upstream << "]";
+  if (topology.hasDownstreamWindow())
+    out << " upstream of [#" << topology.downstream << "]";
 } // icarus::trigger::WindowChannelMap::WindowInfo_t::dump()
 
 
