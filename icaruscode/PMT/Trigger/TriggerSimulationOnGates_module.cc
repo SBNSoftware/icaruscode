@@ -573,12 +573,25 @@ class icarus::trigger::TriggerSimulationOnGates
 
   /// Shortcut to create an `ApplyBeamGate` with the specified `gate`.
   ApplyBeamGateClassWithBits makeMyBeamGate
-    (detinfo::DetectorTimings const& detTimings, sim::BeamGateInfo const& gate) const
+    (detinfo::DetectorTimings const& detTimings, sim::BeamGateInfo const& gate)
+    const
     {
       // the input gate is assumed to be relative to the global beam gate
       // opening (which is the implicit convention of simulation time and of
       // sim::BeamGateInfo in my understanding - [petrillo@slac.stanford.edu])
       // so it does not need further processing here
+      ApplyBeamGateClassWithBits awb{
+        makeApplyBeamGate(
+          nanoseconds{ gate.Width() }, nanoseconds{ gate.Start() },
+          detTimings.clockData(), fLogCategory
+          )
+        };
+      awb.source = sbn::triggerSourceMask
+        { fBeamBits.value_or(makeTriggerBits(gate.BeamType())) };
+      return awb;
+#if 0
+      // when we won't be bound anymore to the buggy, incomplete and by now ancient
+      // Clang 7.0.0, we'll be back to C++ world and we'll say:
       return ApplyBeamGateClassWithBits{ // aggregate ctor, base class first
         makeApplyBeamGate(
           nanoseconds{ gate.Width() }, nanoseconds{ gate.Start() },
@@ -586,6 +599,7 @@ class icarus::trigger::TriggerSimulationOnGates
           )
         , fBeamBits.value_or(makeTriggerBits(gate.BeamType()))
         };
+#endif // 0
     }
   
   //@{ 
