@@ -1,51 +1,34 @@
 cet_enable_asserts()
 
-art_make(
-    MODULE_LIBRARIES
-        art_Framework_Core
-        art_Framework_Principal
-        ${ART_FRAMEWORK_SERVICES_BASIC}
-        ${ART_FRAMEWORK_SERVICES_SYSTEM_FILECATALOGMETADATA_SERVICE}
-        art_Utilities
-        canvas
-        ${FHICLCPP}
-        ${MF_MESSAGELOGGER}
-        cetlib_except
-        cetlib 
-        lardataobj_RecoBase
-	LIB_LIBRARIES
-		art_Framework_Core
-		art_Framework_Principal
-		${ART_FRAMEWORK_SERVICES_BASIC}
-		${ART_FRAMEWORK_SERVICES_SYSTEM_FILECATALOGMETADATA_SERVICE}
-        art_Utilities
-        canvas
-        ${FHICLCPP}
-        ${MF_MESSAGELOGGER}
-        cetlib_except
-        cetlib 
-        LIBWDA
-        icaruscode_IcarusObj
-	SERVICE_LIBRARIES
-		icaruscode_Timing
-        icaruscode_IcarusObj
-        ${ROOT_BASIC_LIB_LIST}
-        LIBWDA
-        ${ART_FRAMEWORK_CORE}
-        ${ART_FRAMEWORK_PRINCIPAL}
-        ${ART_FRAMEWORK_SERVICES_REGISTRY}
-        ${ART_ROOT_IO_TFILE_SUPPORT}
-        ${ART_ROOT_IO_TFILESERVICE_SERVICE}
-        ${ART_UTILITIES}
-        art_Persistency_Common canvas
-        art_Persistency_Provenance canvas
-        art_Utilities canvas
-        ${MF_MESSAGELOGGER}
-        ${MF_UTILITIES}
-        ${FHICLCPP}
-        cetlib cetlib_except
-
+set(    MODULE_LIBRARIES
+        lardataobj::RecoBase
+        larcore::Geometry_Geometry_service
+        lardata::DetectorInfoServices_DetectorClocksServiceStandard_service
 )
+set(	LIB_LIBRARIES
+        art::Framework_Services_Registry
+        messagefacility::MF_MessageLogger
+        lardataobj::RecoBase
+        lardata::Utilities
+        wda::wda
+        icaruscode_IcarusObj
+        sbnobj::Common_PMT_Data
+)
+set(	SERVICE_LIBRARIES
+	icaruscode_Timing
+        icaruscode_IcarusObj
+        larcore::Geometry_Geometry_service
+        lardata::DetectorInfoServices_DetectorClocksServiceStandard_service
+)
+
+file(GLOB lib_srcs *.cxx)
+
+art_make_library( SOURCE ${lib_srcs} LIBRARIES PUBLIC ${LIB_LIBRARIES})
+
+cet_build_plugin( OpHitTimingCorrection art::module LIBRARIES PUBLIC ${MODULE_LIBRARIES})
+
+cet_build_plugin( PMTTimingCorrectionService art::service LIBRARIES PUBLIC ${SERVICE_LIBRARIES})
+
 install_headers()
 install_fhicl()
 install_source()

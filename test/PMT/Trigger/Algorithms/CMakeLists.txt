@@ -1,6 +1,8 @@
 cet_test(TriggerInfo_t_test
   LIBRARIES
-    sbnobj_ICARUS_PMT_Trigger_Data
+    sbnobj::ICARUS_PMT_Trigger_Data
+    larcorealg::headers
+    lardataalg::headers
   USE_BOOST_UNIT
   )
 
