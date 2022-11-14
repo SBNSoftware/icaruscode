@@ -41,8 +41,8 @@ icarus_stage0_mc_producers:
 
 # make the following modifications to job flow for MC vs the data
 icarus_stage0_mc_trigger: [
-                         pmtfixedthr,
-#                         @sequence::icarus_standard_triggersim.path
+                         pmtfixedthr
+#                        , @sequence::icarus_standard_triggersim.path
                        ]
 
 icarus_stage0_mc_PMT:  [
