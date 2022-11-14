@@ -20,6 +20,7 @@
 #include "art/Framework/Core/EDAnalyzer.h"
 #include "art/Framework/Core/ModuleMacros.h"
 #include "canvas/Persistency/Common/FindManyP.h"
+#include "canvas/Persistency/Common/FindOneP.h"
 #include "art/Framework/Principal/Handle.h"
 #include "art/Framework/Principal/Event.h" 
 #include "canvas/Persistency/Common/Ptr.h" 
@@ -59,6 +60,8 @@
 #include "lardataobj/RecoBase/PFParticle.h"
 #include "lardataobj/AnalysisBase/T0.h"
 #include "lardataobj/RecoBase/PFParticleMetadata.h"
+#include "larcorealg/CoreUtils/zip.h"
+#include "larcorealg/CoreUtils/enumerate.h"
 // ROOT
 #include "TVector3.h"
 #include "TH1.h"
@@ -318,11 +321,11 @@ namespace icarus {
     auto const& crtHits = event.getProduct<std::vector<sbn::crt::CRTHit>>(fCrtHitModuleLabel);
   auto const clockData = art::ServiceHandle<detinfo::DetectorClocksService const>()->DataFor(event);
 
+   art::Handle< std::vector<recob::Track> > trackListHandle;
+   art::Handle<std::vector<sbn::crt::CRTHit>> crtListHandle;
    if (trackListHandle.isValid() && crtListHandle.isValid() ){
     // Retrieve track list BEGIN LOOP OVER TRACKS IN EVENT
-    for(const auto& [ trackLabel, pfpLabel ]: util::zip(fTpcTrackModuleLabel, fPFParticleLabel)) {
-
-      art::Handle< std::vector<recob::Track> > trackListHandle;
+    for(const auto& [ iTrackLabel, trackLabel ] : util::enumerate(fTpcTrackModuleLabel)) {
       std::vector<art::Ptr<recob::Track> > trackList;
       if (event.getByLabel(trackLabel,trackListHandle))
       	art::fill_ptr_vector(trackList, trackListHandle);   
@@ -332,19 +335,17 @@ namespace icarus {
 //	<<"Number of CRT hits = "<<crtList.size();
 
       ttl_tpctrks=(int)trackList.size();
-      ttl_crthits=(int)crtList.size();
+      ttl_crthits=(int)crtHits.size();
 
       //Get PFParticles
-      auto pfpListHandle = event.getValidHandle<std::vector<recob::PFParticle> >(fPFParticleLabel[it]);
+      auto pfpListHandle = event.getValidHandle<std::vector<recob::PFParticle> >(fPFParticleLabel[iTrackLabel]);
       if (!pfpListHandle.isValid()) continue;
 
       //Get PFParticle-Track association
       art::FindOneP<recob::PFParticle> fopfp(trackListHandle, event, trackLabel);
 
       //Get T0-PFParticle association
-      art::FindOneP<anab::T0> fot0pandora(pfpListHandle, event, fPFParticleLabel[it]);
-
-      
+      art::FindOneP<anab::T0> fot0pandora(pfpListHandle, event, fPFParticleLabel[iTrackLabel]);
 	
 	auto const detProp = art::ServiceHandle<detinfo::DetectorPropertiesService const>()->DataFor(event);
 	art::FindManyP<recob::Hit> findManyHits(trackListHandle, event, trackLabel);
@@ -386,13 +387,13 @@ namespace icarus {
 
 	  //Find PFParticle for track i
 	  //art::Ptr::key() gives the index in the vector
-	  art::ptr<recob::PFParticle> pfp = fopfp.at(trackList[track_i]->ID());
+	  art::Ptr<recob::PFParticle> pfp = fopfp.at(trackList[track_i]->ID());
 
 	  is_catcross = false;
 	  if (pfp){
 	    //Find T0 for PFParticle
-	    auto t0 = fmt0pandora.at(pfp.key());
-	    if (!t0.empty()){
+	    auto t0 = fot0pandora.at(pfp.key());
+	    if (!t0){
 	      track_t0 = t0->Time();
 	      is_catcross = true;
 	      catcross_x = DBL_MAX;	catcross_y = DBL_MAX;	catcross_z = DBL_MAX;
