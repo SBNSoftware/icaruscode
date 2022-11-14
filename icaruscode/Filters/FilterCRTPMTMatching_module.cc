@@ -203,6 +203,10 @@ private:
     uint64_t                   m_gate_start_timestamp;
     uint64_t                   m_trigger_gate_diff;
 
+    double		       fOpHitAmplitude;    	// ADC threshold for the PMT
+    int                     fnOpHitToTrigger;        // Number of OpHit above threshold to mimic the trigger
+    double 		       fTimeOfFlightInterval;   // Time of Flight interval to find the match
+
     map<int, art::InputTag>    fFlashLabels;
 
     TTree*                     fMatchTree;
@@ -244,6 +248,9 @@ icarus::crt::FilterCRTPMTMatching::FilterCRTPMTMatching(fhicl::ParameterSet cons
     ,fCrtHitModuleLabel(p.get<art::InputTag>("CrtHitModuleLabel", "crthit"))
     ,fTriggerLabel(p.get<art::InputTag>("TriggerLabel", "daqTrigger")) 
     ,fFlashTimeCut(p.get<double>("FlashTimeCut", 0.))
+    ,fOpHitAmplitude(p.get<double>("OpHitAmplitude", 0.))
+    ,fnOpHitToTrigger(p.get<int>("nOpHitToTrigger", 0))
+    ,fTimeOfFlightInterval(p.get<double>("TimeOfFlightInterval", 0.))
     ,fGeometryService(lar::providerFrom<geo::Geometry>())
 {
 
@@ -348,7 +355,7 @@ bool icarus::crt::FilterCRTPMTMatching::filter(art::Event &e)
             double ampsum = 0, t_m = 0;
             for (auto const &hit : hits)
             {
-                if (hit->Amplitude() > 400)
+                if (hit->Amplitude() > fOpHitAmplitude)
                     nOpHitsTriggering++;
                 if (firstTime > hit->PeakTime())
                     firstTime = hit->PeakTime();
@@ -369,7 +376,7 @@ bool icarus::crt::FilterCRTPMTMatching::filter(art::Event &e)
             flash_pos[1] = flash_pos[1] / ampsum;
             flash_pos[2] = flash_pos[2] / ampsum;
             t_m = t_m / nOpHitsTriggering;
-            if (nOpHitsTriggering < 5)
+            if (nOpHitsTriggering < fnOpHitToTrigger)
             {
                 continue;
             }
@@ -383,7 +390,7 @@ bool icarus::crt::FilterCRTPMTMatching::filter(art::Event &e)
             //  for the future a differentiation between Top and Side and some considerations based
             //  on the proximity of the light are necessary
             // std::vector< art::Ptr<CRTHit> > selCRTHits;
-            icarus::crt::MatchedCRT CRTmatches = CRTHitmatched(firstTime, crtHitList, 0.1);
+            icarus::crt::MatchedCRT CRTmatches = CRTHitmatched(firstTime, crtHitList, fTimeOfFlightInterval);
             auto nCRTHits = CRTmatches.entering.size() + CRTmatches.exiting.size();
 
 	    {	        
