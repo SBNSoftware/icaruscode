@@ -61,7 +61,6 @@ void CRTHitRecoAlg::reconfigure(const fhicl::ParameterSet& pset){
   fSiPMtoFEBdelay   = pset.get<uint64_t>("SiPMtoFEBdelay", 0.);
   fCoinWindow       = pset.get<uint64_t>("CoinWindow", 0.);
   fCrtWindow        = pset.get<uint64_t>("CrtWindow", 0.);
-  foutCSVFile       = pset.get<bool>("outCSVFile", false);
   fCSVFile          = pset.get<std::string>("CSVFile", "");
   fData             = pset.get<bool>("Data", false);
   if (!fCSVFile.empty())  filecsv.open(fCSVFile);
