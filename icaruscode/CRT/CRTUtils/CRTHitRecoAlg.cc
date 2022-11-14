@@ -67,14 +67,14 @@ void CRTHitRecoAlg::reconfigure(const fhicl::ParameterSet& pset){
   {
     std::vector<std::vector<int32_t> > T1delays =  pset.get<std::vector<std::vector<int32_t> > >("FEB_T1delay_side");
     std::vector<std::vector<int32_t> > T0delays =  pset.get<std::vector<std::vector<int32_t> > >("FEB_T0delay_side");
-    for(auto & feb : T1delays) {
-      int32_t & mac = feb[0];
-      int32_t & d   = feb[1];
+    for(auto feb : T1delays) {
+      int32_t mac = feb[0];
+      int32_t d   = feb[1];
       FEB_T1delay_side[mac] = d;
     }
-    for(auto & feb : T0delays) {
-      int32_t & mac = feb[0];
-      int32_t & d   = feb[1];
+    for(auto feb : T0delays) {
+      int32_t mac = feb[0];
+      int32_t d   = feb[1];
       FEB_T0delay_side[mac] = d;
     }
   }
