@@ -184,7 +184,8 @@ vector<pair<sbn::crt::CRTHit, vector<int>>> CRTHitRecoAlg::CreateCRTHits(vector<
 	    }
 	  catch(std::out_of_range& e)
 	    {
-	      std::cout << "not found in the FEB_delay array!!! Please update FEB_delay FHiCL file \n";
+	      throw art::Exception(art::errors::Configuration)
+	        << "MAC address " << mac << " not found in the FEB_delay array!!! Please update FEB_delay FHiCL file \n";
             }
 	}
 	
