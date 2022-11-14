@@ -64,7 +64,7 @@ void CRTHitRecoAlg::reconfigure(const fhicl::ParameterSet& pset){
   foutCSVFile       = pset.get<bool>("outCSVFile", false);
   fCSVFile          = pset.get<std::string>("CSVFile", "");
   fData             = pset.get<bool>("Data", false);
-  if (foutCSVFile)  filecsv.open(fCSVFile.c_str());
+  if (!fCSVFile.empty())  filecsv.open(fCSVFile);
   {
     std::vector<std::vector<int32_t> > T1delays =  pset.get<std::vector<std::vector<int32_t> > >("FEB_T1delay_side");
     std::vector<std::vector<int32_t> > T0delays =  pset.get<std::vector<std::vector<int32_t> > >("FEB_T0delay_side");
