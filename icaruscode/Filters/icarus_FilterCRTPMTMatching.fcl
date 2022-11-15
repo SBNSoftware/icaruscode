@@ -7,6 +7,7 @@ icarus_FilterNumberTPCHits:
   OpFlashModuleLabelVec: ["opflashCryoE","opflashCryoW"]
   CrtHitModuleLabel:     "crthit"
   TriggerLabel:          "daqTrigger"
+  TriggerConfiguration:  "triggerconfig"
   OpHitAmplitude:        400
   nOpHitToTrigger:       5
   TimeOfFlightInterval   0.1          # [us] time of flight interval to evaluate the match
