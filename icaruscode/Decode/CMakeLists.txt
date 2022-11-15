@@ -34,11 +34,12 @@ cet_build_plugin(FilterNoiseICARUS art::module LIBRARIES ${MODULE_LIBRARIES})
 cet_build_plugin(MCDecoderICARUSTPCwROI art::module LIBRARIES ${MODULE_LIBRARIES})
 
 cet_build_plugin(DaqDecoderICARUSPMT art::module LIBRARIES
+	icaruscode::Timing
+	icaruscode::Decode_DecoderTools_Dumpers
+	icaruscode::Decode_DecoderTools
+	icaruscode::PMT_Algorithms
 	sbnobj::Common_PMT_Data
 	sbnobj::Common_Trigger
-        icaruscode_Timing
-	icaruscode_Decode_DecoderTools_Dumpers
-	icaruscode_Decode_DecoderTools
 	sbndaq_artdaq_core::sbndaq-artdaq-core_Overlays_Common
 	sbndaq_artdaq_core::sbndaq-artdaq-core_Overlays
 	lardataobj::RawData
