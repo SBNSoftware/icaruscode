@@ -31,7 +31,7 @@
 #include "sbnobj/Common/CRT/CRTHit.hh"
 #include "icaruscode/CRT/CRTUtils/CRTCommonUtils.h"
 #include "sbnobj/Common/Trigger/ExtraTriggerInfo.h"
-
+#include "icaruscode/Decode/DataProducts/TriggerConfiguration.h"
 // C++ includes
 #include <vector>
 #include <map>
@@ -84,17 +84,17 @@ namespace icarus
 
 using namespace icarus::crt;
 
-bool flashInTime(double const &flashTime, int gateType, double gateDiff, double flashTimeCut)
+bool flashInTime(double const &flashTime, int gateType, double gateDiff, double gateWidth, double flashTimeCut)
 {
-    std::map<unsigned int, double> gateLength{
-        {1, 2.2},  // BNB
-        {2, 10.1}, // NuMI
-        {3, 2.2},  // BNB Offbeam
-        {4, 10.1}, // NuMI Offbeam
-    };
+    //   {1, 2.2},  // BNB
+    //   {2, 10.1}, // NuMI
+    //   {3, 2.2},  // BNB Offbeam
+    //   {4, 10.1}, // NuMI Offbeam
+   
 
-    /*double vetoOffset = 4;*/
-    double activeGate = gateLength[gateType] /*- vetoOffset*/;
+    //As a reminder, I will leave here the commented part of the vetoOffset, in case something changes in the future
+    /*double vetoOffset = 3.5;*/
+    double activeGate = gateWidth /*- vetoOffset*/;
 
     double relFlashTime = flashTime + gateDiff / 1000. /*- vetoOffset*/;
     mf::LogInfo("FilterCRTPMTMatching::flashInTime") << "Gate Diff " << gateDiff / 1000 << " Ftime+gateDiff " << flashTime + gateDiff / 1000. << " " << activeGate;
@@ -189,6 +189,7 @@ private:
     std::vector<art::InputTag> fOpFlashModuleLabelVec;
     art::InputTag              fCrtHitModuleLabel;
     art::InputTag              fTriggerLabel;
+    art::InputTag	       fTriggerConfiguration;
 
     double                     fFlashTimeCut;
 
@@ -202,7 +203,7 @@ private:
     uint64_t                   m_trigger_timestamp;
     uint64_t                   m_gate_start_timestamp;
     uint64_t                   m_trigger_gate_diff;
-
+    uint64_t		       m_gate_width;
     double		       fOpHitAmplitude;    	// ADC threshold for the PMT
     int                        fnOpHitToTrigger;        // Number of OpHit above threshold to mimic the trigger
     double 		       fTimeOfFlightInterval;   // Time of Flight interval to find the match
@@ -239,6 +240,7 @@ icarus::crt::FilterCRTPMTMatching::FilterCRTPMTMatching(fhicl::ParameterSet cons
     ,fOpFlashModuleLabelVec(p.get<std::vector<art::InputTag>>("OpFlashModuleLabelVec", {"opflashE","opflashW"}))
     ,fCrtHitModuleLabel(p.get<art::InputTag>("CrtHitModuleLabel", "crthit"))
     ,fTriggerLabel(p.get<art::InputTag>("TriggerLabel", "daqTrigger")) 
+    ,fTriggerConfiguration(p.get<art::InputTag>("TriggerConfiguration", "triggerconfig"))
     ,fFlashTimeCut(p.get<double>("FlashTimeCut", 0.))
     ,fOpHitAmplitude(p.get<double>("OpHitAmplitude", 0.))
     ,fnOpHitToTrigger(p.get<int>("nOpHitToTrigger", 0))
@@ -299,6 +301,11 @@ bool icarus::crt::FilterCRTPMTMatching::filter(art::Event &e)
     m_trigger_timestamp = trigger_handle.triggerTimestamp;
     m_gate_start_timestamp = trigger_handle.beamGateTimestamp;
     m_trigger_gate_diff = trigger_handle.triggerTimestamp - trigger_handle.beamGateTimestamp;
+
+    //Read Beam Gate Size
+    art::Run const& run = e.getRun();
+    auto const& trigger_configuration = run.getProduct<icarus::TriggerConfiguration>(fTriggerConfiguration);
+    m_gate_width=trigger_configuration.getGateWidth(m_gate_type);
 
     // CRTHits
 
@@ -365,7 +372,7 @@ bool icarus::crt::FilterCRTPMTMatching::filter(art::Event &e)
             {
                 continue;
             }
-            bool   inTime   = flashInTime(firstTime, m_gate_type, m_trigger_gate_diff, fFlashTimeCut);
+            bool   inTime   = flashInTime(firstTime, m_gate_type, m_trigger_gate_diff, m_gate_width, fFlashTimeCut);
 
             mf::LogTrace("FilterCRTPMTMatching") << "\nFlash Time " << tflash << "  First Op Hit " << firstTime << "  " << inTime << "\n" <<
                         "Average Pos X " << flash_pos[0] << "  Y " << flash_pos[1] << "  Z " << flash_pos[2] << " nPMT " << nOpHitsTriggering << " " << ampsum << "\n" <<
