@@ -601,7 +601,7 @@ void SnippetHit3DBuilderICARUS::BuildHit3D(reco::HitPairList& hitPairList) const
         m_timeVector[BUILDTHREEDHITS] = theClockMakeHits.accumulated_real_time();
     }
 
-    mf::LogDebug("Cluster3D") << ">>>>> 3D hit building done, found " << numHitPairs << " 3D Hits" << std::endl;
+    mf::LogDebug("SnippetHit3D") << ">>>>> 3D hit building done, found " << numHitPairs << " 3D Hits" << std::endl;
 
     return;
 }
@@ -686,9 +686,9 @@ size_t SnippetHit3DBuilderICARUS::BuildHitPairMap(PlaneToSnippetHitMap& planeToS
     hitPairList.sort(SetPairStartTimeOrder);
 
     // Where are we?
-    mf::LogDebug("Cluster3D") << "Total number hits: " << totalNumHits << std::endl;
-    mf::LogDebug("Cluster3D") << "Created a total of " << hitPairList.size() << " hit pairs, counted: " << hitPairCntr << std::endl;
-    mf::LogDebug("Cluster3D") << "-- Triplets: " << nTriplets << ", dead channel pairs: " << nDeadChanHits << std::endl;
+    mf::LogDebug("SnippetHit3D") << "Total number hits: " << totalNumHits << std::endl;
+    mf::LogDebug("SnippetHit3D") << "Created a total of " << hitPairList.size() << " hit pairs, counted: " << hitPairCntr << std::endl;
+    mf::LogDebug("SnippetHit3D") << "-- Triplets: " << nTriplets << ", dead channel pairs: " << nDeadChanHits << std::endl;
 
     return hitPairList.size();
 }
@@ -782,7 +782,7 @@ size_t SnippetHit3DBuilderICARUS::BuildHitPairMapByTPC(PlaneSnippetHitMapItrPair
         snippetHitMapItrVec.front().first++;
     }
 
-    mf::LogDebug("Cluster3D") << "--> Created " << nTriplets << " triplets of which " << nOrphanPairs << " are orphans" << std::endl;
+    mf::LogDebug("SnippetHit3D") << "--> Created " << nTriplets << " triplets of which " << nOrphanPairs << " are orphans" << std::endl;
 
     return hitPairList.size();
 }
@@ -1453,8 +1453,7 @@ bool SnippetHit3DBuilderICARUS::WireIDsIntersect(const geo::WireID& wireID0, con
     const geo::WireGeo& wireGeo1 = m_geometry->WireIDToWireGeo(wireID1);
 
     // Get wire position and direction for first wire
-    double wirePosArr[3] = {0.,0.,0.};
-    wireGeo0.GetCenter(wirePosArr);
+    auto wirePosArr = wireGeo0.GetCenter();
 
     Eigen::Vector3f wirePos0(wirePosArr[0],wirePosArr[1],wirePosArr[2]);
     Eigen::Vector3f wireDir0(wireGeo0.Direction().X(),wireGeo0.Direction().Y(),wireGeo0.Direction().Z());
@@ -1464,7 +1463,7 @@ bool SnippetHit3DBuilderICARUS::WireIDsIntersect(const geo::WireID& wireID0, con
 //    if (wireID0.Plane > 0) wireDir0[2] = -wireDir0[2];
 
     // And now the second one
-    wireGeo1.GetCenter(wirePosArr);
+    wirePosArr = wireGeo1.GetCenter();
 
     Eigen::Vector3f wirePos1(wirePosArr[0],wirePosArr[1],wirePosArr[2]);
     Eigen::Vector3f wireDir1(wireGeo1.Direction().X(),wireGeo1.Direction().Y(),wireGeo1.Direction().Z());
@@ -1702,8 +1701,7 @@ float SnippetHit3DBuilderICARUS::DistanceFromPointToHitWire(const Eigen::Vector3
         const geo::WireGeo& wireGeo = m_geometry->WireIDToWireGeo(wireIDIn);
 
         // Get wire position and direction for first wire
-        double wirePosArr[3] = {0.,0.,0.};
-        wireGeo.GetCenter(wirePosArr);
+        auto const wirePosArr = wireGeo.GetCenter();
 
         Eigen::Vector3f wirePos(wirePosArr[0],wirePosArr[1],wirePosArr[2]);
         Eigen::Vector3f wireDir(wireGeo.Direction().X(),wireGeo.Direction().Y(),wireGeo.Direction().Z());
@@ -1830,7 +1828,7 @@ void SnippetHit3DBuilderICARUS::CollectArtHits(const art::Event& evt) const
             debugMessage += outputString.str();
         }
 
-        mf::LogDebug("Cluster3D") << debugMessage << std::endl;
+        mf::LogDebug("SnippetHit3D") << debugMessage << std::endl;
 
         m_weHaveAllBeenHereBefore = true;
     }
@@ -1888,7 +1886,7 @@ void SnippetHit3DBuilderICARUS::CollectArtHits(const art::Event& evt) const
         m_timeVector[COLLECTARTHITS] = theClockMakeHits.accumulated_real_time();
     }
 
-    mf::LogDebug("Cluster3D") << ">>>>> Number of ART hits: " << m_clusterHit2DMasterList.size() << std::endl;
+    mf::LogDebug("SnippetHit3D") << ">>>>> Number of ART hits: " << m_clusterHit2DMasterList.size() << std::endl;
 }
 
 //------------------------------------------------------------------------------------------------------------------------------------------
@@ -1956,7 +1954,7 @@ void SnippetHit3DBuilderICARUS::CreateNewRecobHitCollection(art::Event&         
         m_timeVector[BUILDNEWHITS] = theClockBuildNewHits.accumulated_real_time();
     }
 
-    mf::LogDebug("Cluster3D") << ">>>>> New output recob::Hit size: " << numNewHits << " (vs " << m_clusterHit2DMasterList.size() << " input)" << std::endl;
+    mf::LogDebug("SnippetHit3D") << ">>>>> New output recob::Hit size: " << numNewHits << " (vs " << m_clusterHit2DMasterList.size() << " input)" << std::endl;
 
     return;
 }
@@ -1997,7 +1995,7 @@ void SnippetHit3DBuilderICARUS::makeWireAssns(const art::Event& evt, art::Assns<
 
         if (!(chanWireItr != channelToWireMap.end()))
         {
-            //mf::LogDebug("Cluster3D") << "** Did not find channel to wire match! Skipping..." << std::endl;
+            //mf::LogDebug("SnippetHit3D") << "** Did not find channel to wire match! Skipping..." << std::endl;
             continue;
         }
 
@@ -2043,7 +2041,7 @@ void SnippetHit3DBuilderICARUS::makeRawDigitAssns(const art::Event& evt, art::As
 
         if (chanRawDigitItr == channelToRawDigitMap.end())
         {
-            //mf::LogDebug("Cluster3D") << "** Did not find channel to wire match! Skipping..." << std::endl;
+            //mf::LogDebug("SnippetHit3D") << "** Did not find channel to wire match! Skipping..." << std::endl;
            continue;
         }
 

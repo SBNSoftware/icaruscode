@@ -125,10 +125,9 @@ vector<pair<sbn::crt::CRTHit, vector<int>>> CRTHitRecoAlg::CreateCRTHits(vector<
     if (!CRTReset.empty()) GlobalTrigger = GetMode(CRTReset);
     //Add average difference between trigger_timestamp and Global trigger
     else GlobalTrigger=GlobalTrigger-trigger_offset;// In this event, the T1 Reset was probably "vetoed" by the T0 Reset
-    for (int i=0; i<304; i++){
+    for (int i=0; i<305; i++){
 	if (TriggerArray[i]==0) TriggerArray[i]=GlobalTrigger;
     }
-    //std::cout<<"Global Trigger "<<GlobalTrigger<<std::endl;
     //loop over time-ordered CRTData
     for (size_t febdat_i=0; febdat_i<crtList.size(); febdat_i++) {
 
@@ -393,27 +392,24 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeTopHit(art::Ptr<CRTData> data, ULong64_t Glo
     auto const& adsGeo = adGeo.SensitiveVolume(adsid_max); //trigger strip
     uint64_t thit = data->fTs0;
     Long64_t thit1 = data->fTs1;
+    thit -= fSiPMtoFEBdelay;
+    thit1 -= fSiPMtoFEBdelay;
 
-    if(adsid_max<8){
-        thit -= (uint64_t)round(abs((92+hitpos.X())*fPropDelay));
-        thit1 -= (uint64_t)round(abs((92+hitpos.X())*fPropDelay));
-	thit -= fSiPMtoFEBdelay; //Correction for 12 ns signal cable from SiPM to FEB
-	thit1 -= fSiPMtoFEBdelay; //Correction for 12 ns signal cable from SiPM to FEB
-    }
-    else{
-        thit -= (uint64_t)round(abs((92+hitpos.Z())*fPropDelay));
-        thit1 -= (uint64_t)round(abs((92+hitpos.Z())*fPropDelay));
-	thit -= fSiPMtoFEBdelay; //Correction for 12 ns signal cable from SiPM to FEB
-	thit1 -= fSiPMtoFEBdelay; //Correction for 12 ns signal cable from SiPM to FEB
-    }
- 
+    //92.0 is the middle of one of the Top CRT modules (each of them is 184 cm)    
+    //TO DO: Move hardcoded numbers to parameter fcl files.
+    //Another possibility is using object values from GDML, but I (Francesco Poppi) found weird numbers some months ago and needed to double check.
+    double const corrPos = std::max(-hitpos.X(), hitpos.Z());
+    uint64_t const corr = (uint64_t)round(abs((92.0+corrPos)*fPropDelay));
+    thit -= corr;
+    thit1 -= corr;
+
     adGeo.LocalToWorld(hitlocal,hitpoint); //tranform from module to world coords
 
     hitpointerr[0] = adsGeo.HalfWidth1()*2/sqrt(12);
     hitpointerr[1] = adGeo.HalfHeight();
     hitpointerr[2] = adsGeo.HalfWidth1()*2/sqrt(12);
-    thit1 = (Long64_t)(thit-GlobalTrigger[(int)mac+73]);
- 
+    //thit1 = (Long64_t)(thit-GlobalTrigger[(int)mac+73]);
+    thit1 = (Long64_t)(thit-GlobalTrigger[(int)mac]);
     //Remove T1 Reset event not correctly flagged, remove T1 reset events, remove T0 reset events
     if((sum<10000 && thit1<2'001'000 && thit1>2'000'000)||data->IsReference_TS1() || data->IsReference_TS0()) return FillCRTHit({},{},0,0,0,0,0,0,0,0,0,0,"");
 

@@ -1,0 +1,30 @@
+BEGIN_PROLOG
+
+standard_crthitrecoalg:
+{
+    Verbose:              false  # dump runtime info
+    QPed:                 60     # Pedestal offset [ADC]
+    QSlope:               70     # Pedestal slope [ADC/photon]
+    topGain:              110    # Dummy value for Top CRT Gain [ADC]
+    topPed:               160    # Dummy value for Top CRT Pedestal [ADC]
+    SiPMtoFEBdelay:        12     # Delay correction for signal propagation from SiPM to FEB, measured value is 11.6 [ns]
+    UseReadoutWindow:     false  # Only reconstruct hits within readout window
+    PropDelay:            0.062 # group velocity in WLS fiber [ns/cm]
+    PEThresh:             7.5    # PE threshold above which charge amplitudes used
+    CoinWindow:           150    # time window for finding side CRT trigger coincidences [ns]
+    CrtWindow:            3e6    # time window for looking data within trigger timestamp [ns]
+    outCSVFile:           false  # write the information in to a csv file
+    Data:                 true   # for data
+    CSVFile:              "data.csv" # dump time difference between both end readouts.
+}
+
+standard_crthitproducer:
+{
+    module_type:          "icaruscode/CRT/CRTSimHitProducer"
+    CrtModuleLabel:       "daqCRT"
+    TriggerLabel:         "daqTrigger"
+    HitAlg:               @local::standard_crthitrecoalg
+}
+
+
+END_PROLOG

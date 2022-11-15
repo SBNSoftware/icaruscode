@@ -1,7 +1,7 @@
 # A script to run the producer module: CRTSimHitProducer
 
 #include "services_icarus_simulation.fcl"
-#include "crtsimhitproducer.fcl"
+#include "crthitproducer.fcl"
 #include "channelmapping_icarus.fcl"
 #include "services_common_icarus.fcl"
 

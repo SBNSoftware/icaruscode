@@ -65,7 +65,7 @@ outputs:
 }
 
 # Include this as per directive of Kazu and Andrea (circa March 25, 2021) for introduction of the filter
-services.DetectorClocksService.InheritClockConfig: false
+#services.DetectorClocksService.InheritClockConfig: false
 
 ### Here we try to suppress known and pointless messages
 ### See https://cdcvs.fnal.gov/redmine/projects/messagefacility/wiki for details
