@@ -198,7 +198,7 @@ namespace icarus {
     fVerbose = p.get<bool>("Verbose");
 //    fIsData = p.get<bool>("IsData");
     bt = icarus::crt::CRTBackTracker{ p.get<fhicl::ParameterSet>("CRTBackTrack") };
-    if(!fIsData) fSimModuleLabel = p.get<art::InputTag>("SimModuleLabel","largeant");
+    fSimModuleLabel = p.get<art::InputTag>("SimModuleLabel","largeant");
 
   } // CRTTPCTruthEff()
 
