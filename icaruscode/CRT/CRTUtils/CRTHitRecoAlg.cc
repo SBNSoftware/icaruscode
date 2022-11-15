@@ -26,7 +26,10 @@ CRTHitRecoAlg::CRTHitRecoAlg(const fhicl::ParameterSet& pset){
   return;
 }
 
-CRTHitRecoAlg::CRTHitRecoAlg() = default;
+CRTHitRecoAlg::CRTHitRecoAlg()
+  : fGeometryService(lar::providerFrom<geo::Geometry>())
+  , fChannelMap(art::ServiceHandle<icarusDB::IICARUSChannelMap const>{}.get())
+  {}
 /*
 //---------------------------------------------------------------------
 void CRTHitRecoAlg::reconfigure(const Config& config){
