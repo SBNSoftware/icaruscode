@@ -1,40 +1,44 @@
-art_make( 
-          MODULE_LIBRARIES
-                        icarusalg_Utilities
-                        icaruscode_CRTUtils
-                        larcorealg_Geometry
-                        larcore_Geometry_Geometry_service
-                        larsim_Simulation 
-                        nug4_ParticleNavigation
-                        lardataobj_Simulation
-                        lardata_Utilities
-                        larevt_Filters
-                        lardataalg_MCDumpers
-                        lardataobj_RawData
-                        lardataobj_RecoBase
-                        lardata_RecoObjects
-                        nusimdata_SimulationBase
-                        ${ART_FRAMEWORK_CORE}
-                        ${ART_FRAMEWORK_PRINCIPAL}
-                        ${ART_FRAMEWORK_SERVICES_REGISTRY}
-                        ${ART_ROOT_IO_TFILE_SUPPORT}
-                        ${ROOT_CORE}
-                        ${ART_ROOT_IO_TFILESERVICE_SERVICE}
-                        art_Persistency_Common 
-                        art_Persistency_Provenance 
-                        art_Utilities 
-                        ${MF_MESSAGELOGGER}
-                        ${MF_UTILITIES}
-                        ${FHICLCPP}
-                        ${CETLIB}
-                        ${CETLIB_EXCEPT}
-                        ROOT::EG
-                        ${ROOT_GEOM}
-                        ${ROOT_XMLIO}
-                        ${ROOT_GDML}
-                        ${ROOT_GENVECTOR}
-                        ${ROOT_BASIC_LIB_LIST}
+art_make_library()
+set(	MODULE_LIBRARIES
+                sbnobj::Common_Trigger
+                icarusalg::Utilities
+                icaruscode::CRTUtils
+                larcorealg::Geometry
+                larcore::Geometry_Geometry_service
+                larsim::Simulation
+                nug4::ParticleNavigation
+                lardataobj::Simulation
+                lardata::Utilities
+                larevt::Filters
+                lardataalg::MCDumpers
+                lardataobj::RawData
+                lardataobj::RecoBase
+                lardata::RecoObjects
+                nusimdata::SimulationBase
+                art::Framework_Core
+                art::Framework_Principal
+                art::Framework_Services_Registry
+                ROOT::Core
+                art::Persistency_Common
+                art::Persistency_Provenance
+                art::Utilities
+                messagefacility::MF_MessageLogger
+                messagefacility::headers
+                fhiclcpp::fhiclcpp
+                cetlib::cetlib
+                cetlib_except::cetlib_except
+                ROOT::EG
+                ROOT::Geom
+                ROOT::XMLIO
+                ROOT::Gdml
+                ROOT::GenVector
         )
+cet_build_plugin(FilterNeutrinosActiveVolume art::module LIBRARIES ${MODULE_LIBRARIES})
+cet_build_plugin(FilterNumberTPCHits art::module LIBRARIES ${MODULE_LIBRARIES})
+cet_build_plugin(FilterOpFlash art::module LIBRARIES ${MODULE_LIBRARIES})
+cet_build_plugin(FilterParticlesActiveVolume art::module LIBRARIES ${MODULE_LIBRARIES})
+cet_build_plugin(TriggerTypeFilter art::module LIBRARIES ${MODULE_LIBRARIES})
+cet_build_plugin(FilterCRTPMTMatching art::module LIBRARIES ${MODULE_LIBRARIES})
 
 # install_headers()
 install_fhicl()

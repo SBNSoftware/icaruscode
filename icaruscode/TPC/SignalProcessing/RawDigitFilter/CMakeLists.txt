@@ -1,47 +1,53 @@
 add_subdirectory(Algorithms)
 
-add_definitions(-DEIGEN_FFTW_DEFAULT)
+art_make_library(
+		LIBRARIES
+			lardataobj::RawData
+			lardataobj::RecoBase
+			lardata::Utilities
+			fhiclcpp::fhiclcpp
+			cetlib::cetlib cetlib_except::cetlib_except)
 
-art_make(
-          LIB_LIBRARIES 
-                        lardataobj_RawData
-                        lardataobj_RecoBase
-                        lardata_Utilities
-                        ${FHICLCPP}
-                        cetlib cetlib_except
-                        ${ROOT_BASIC_LIB_LIST}
-          MODULE_LIBRARIES
-                        larcorealg_Geometry
-                        icaruscode_TPC_SignalProcessing_RawDigitFilter_Algorithms
-                        larcore_Geometry_Geometry_service
-                        lardata_Utilities
-                        larevt_Filters
-                        lardataobj_RawData
-                        lardataalg_DetectorInfo
-                        larevt_CalibrationDBI_IOVData
-                        larevt_CalibrationDBI_Providers
-                        lardataobj_RecoBase
-                        lardata_ArtDataHelper
-                        icaruscode_TPC_Utilities_SignalShapingICARUSService_service
-                        ${ART_FRAMEWORK_CORE}
-                        ${ART_FRAMEWORK_PRINCIPAL}
-                        ${ART_FRAMEWORK_SERVICES_REGISTRY}
-                        ${ART_ROOT_IO_TFILE_SUPPORT} ${ROOT_CORE}
-                        ${ART_ROOT_IO_TFILESERVICE_SERVICE}
-                        art_Persistency_Common canvas
-                        art_Persistency_Provenance canvas
-                        art_Utilities canvas
-                        ${MF_MESSAGELOGGER}
-                        ${MF_UTILITIES}
-                        ${FHICLCPP}
-                        cetlib cetlib_except
-                        ${ROOT_GEOM}
-                        ${ROOT_XMLIO}
-                        ${ROOT_GDML}
-			${ROOT_FFTW}
-			${ROOT_BASIC_LIB_LIST}
-			${TBB}
-        )
+set(		MODULE_LIBRARIES
+			larcorealg::Geometry
+			icaruscode::TPC_SignalProcessing_RawDigitFilter_Algorithms
+			larcore::Geometry_Geometry_service
+			lardata::Utilities
+			larevt::Filters
+			lardataobj::RawData
+			lardataalg::DetectorInfo
+			larevt::CalibrationDBI_IOVData
+			larevt::CalibrationDBI_Providers
+			lardataobj::RecoBase
+			lardata::ArtDataHelper
+			icaruscode::TPC_Utilities_SignalShapingICARUSService_service
+			art::Framework_Core
+			art::Framework_Principal
+			art::Framework_Services_Registry
+			art_root_io::tfile_support ROOT::Core
+			art_root_io::TFileService_service
+			art::Persistency_Common
+			canvas::canvas
+			art::Persistency_Provenance
+			art::Utilities
+			messagefacility::MF_MessageLogger
+			messagefacility::headers
+			fhiclcpp::fhiclcpp
+			cetlib::cetlib cetlib_except::cetlib_except
+			ROOT::Geom
+			ROOT::XMLIO
+			ROOT::Gdml
+			ROOT::FFTW
+			ROOT::Core
+			ROOT::Tree
+			FFTW3::FFTW3
+	)
+cet_build_plugin(RawDigitFilterICARUS art::module LIBRARIES ${MODULE_LIBRARIES})
+cet_build_plugin(RawDigitSmoother art::module LIBRARIES ${MODULE_LIBRARIES})
+cet_build_plugin(TPCNoiseMC art::module LIBRARIES ${MODULE_LIBRARIES})
+cet_build_plugin(TPCNoise art::module LIBRARIES ${MODULE_LIBRARIES})
+cet_build_plugin(mtRawDigitFilterICARUS art::module LIBRARIES ${MODULE_LIBRARIES})
+
 
 install_headers()
 install_fhicl()

@@ -1,29 +1,25 @@
-# Leave this out for the time being. One day the grid will be updated enough...
-# cet_set_compiler_flags(EXTRA_CXX_FLAGS -mavx)
+#Leave this out for the time being. One day the grid will be updated enough ...
+#cet_set_compiler_flags(EXTRA_CXX_FLAGS -mavx)
 
-art_make(
-  LIB_LIBRARIES
-    icaruscode_Decode_DecoderTools
-    larcorealg_Geometry
-    lardataobj_RawData
-    icarusalg_Utilities
-#    lardataobj_RecoBase
-#    lardata_Utilities
-#    larcorealg_Geometry
-#    lardata_ArtDataHelper
-#    nusimdata_SimulationBase
-     canvas
-     ${MF_MESSAGELOGGER}
-     ${MF_UTILITIES}
-     ${FHICLCPP}
-     ${CETLIB}
-     cetlib_except
-     ${ROOT_FFTW}
-     ${ROOT_GENVECTOR}
-     ${ROOT_BASIC_LIB_LIST}
-     ${CLHEP}
-#    ${Boost_SYSTEM_LIBRARY}
-  )
+file(GLOB lib_srcs *.cxx)
+art_make_library(
+        SOURCE ${lib_srcs}
+	LIBRARIES
+		icaruscode_Decode_DecoderTools
+		larcorealg::Geometry
+		lardataobj::RawData
+		icarusalg::Utilities
+                Microsoft.GSL::GSL
+		canvas::canvas
+		messagefacility::MF_MessageLogger
+		messagefacility::headers
+		fhiclcpp::fhiclcpp
+		cetlib::cetlib
+		cetlib_except::cetlib_except
+		ROOT::FFTW
+		ROOT::GenVector
+		CLHEP::Random
+	)
 
 install_headers()
 install_fhicl()

@@ -1,17 +1,19 @@
 
 # where should the scripts/..xml file be installed?  Perhaps in bin?
 
-art_make(LIB_LIBRARIES
-           lardataalg_DetectorInfo
-           lardataobj_RecoBase
-           larcorealg_Geometry
-           lardata_ArtDataHelper
-           lardata_RecoObjects
+art_make_library(
+        LIBRARIES
+           larevt::Filters
+           lardataalg::DetectorInfo
+           lardataobj::RecoBase
+           larcorealg::Geometry
+           lardata::ArtDataHelper
+           lardata::RecoObjects
            art::Framework_Core
            art::Framework_Principal
            art::Framework_Services_Registry
            art_root_io::tfile_support
-           ${ART_UTILITIES}
+           art::Utilities
            ROOT::Core
            ROOT::Gpad
            ROOT::Hist
@@ -25,25 +27,26 @@ art_make(LIB_LIBRARIES
            messagefacility::MF_MessageLogger
            fhiclcpp::fhiclcpp
            cetlib::cetlib
-           cetlib_except::cetlib_except
-        TOOL_LIBRARIES 
-           larreco_RecoAlg_Cluster3DAlgs
-           lardataalg_DetectorInfo
-           lardataobj_RecoBase
-           lardata_ArtDataHelper
+           cetlib_except::cetlib_except)
+set(    TOOL_LIBRARIES
+           larevt::Filters
+           larreco::RecoAlg_Cluster3DAlgs
+           lardataalg::DetectorInfo
+           lardataobj::RecoBase
+           lardata::ArtDataHelper
            art::Framework_Services_Registry
            art_root_io::tfile_support
            art_root_io::TFileService_service
-           ROOT::Tree
-        MODULE_LIBRARIES
-          larreco_Calorimetry
-          larreco_RecoAlg_Cluster3DAlgs
-          larreco_RecoAlg_TCAlg
-          larreco_RecoAlg
-          larreco_ClusterFinder
-          larsim_MCCheater_ParticleInventoryService_service
-          lardataobj_AnalysisBase
-          lardataobj_RecoBase
+           ROOT::Tree)
+set(    MODULE_LIBRARIES
+          larreco::Calorimetry
+          larreco::RecoAlg_Cluster3DAlgs
+          larreco::RecoAlg_TCAlg
+          larreco::RecoAlg
+          larreco::ClusterFinder
+          larsim::MCCheater_ParticleInventoryService_service
+          lardataobj::AnalysisBase
+          lardataobj::RecoBase
           nurandom::RandomUtils_NuRandomService_service
           nusimdata::SimulationBase
           art::Framework_Services_Registry
@@ -53,6 +56,9 @@ art_make(LIB_LIBRARIES
           art_root_io::TFileService_service
           messagefacility::MF_MessageLogger
        )
+cet_build_plugin(Cluster3DICARUS art::module LIBRARIES ${MODULE_LIBRARIES})
+cet_build_plugin(SnippetHit3DBuilderICARUS art::tool LIBRARIES ${TOOL_LIBRARIES} SOURCE SnippetHit3DBuilderICARUS_tool.cc)
+set_property(SOURCE SnippetHit3DBuilderICARUS_tool.cc APPEND PROPERTY COMPILE_DEFINITIONS EIGEN_FFTW_DEFAULT)
 
 install_headers()
 install_fhicl()
