@@ -16,6 +16,7 @@
 #include "lardataalg/DetectorInfo/DetectorTimingTypes.h" // electronics_time
 #include "lardataalg/Utilities/quantities/spacetime.h" // microseconds
 #include "lardataobj/RawData/OpDetWaveform.h"
+#include "lardataobj/RawData/TriggerData.h"
 
 // C/C++ standard libraries
 #include <optional>
@@ -84,12 +85,38 @@ namespace sbn {
    * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~{.cpp}
    * util::quantities::intervals::nanoseconds const opDetPeriod { 2.0 };
    * 
-   * sbn::OpDetWaveformMeta info = sbn::makeOpDetWaveformMeta(waveform, opDetPeriod);
+   * sbn::OpDetWaveformMeta info
+   *   = sbn::makeOpDetWaveformMeta(waveform, opDetPeriod);
    * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
    */
   OpDetWaveformMeta makeOpDetWaveformMeta(
     raw::OpDetWaveform const& waveform,
     util::quantities::intervals::microseconds opDetTickPeriod
+    );
+  
+  /**
+   * @brief Creates a `sbn::OpDetWaveformMeta` out of a `raw::OpDetWaveform`.
+   * @param waveform the input waveform
+   * @param opDetTickPeriod period of the optical detector digitizer
+   * @param trigger relative trigger times information
+   * @return a `sbn::OpDetWaveformMeta` object with the summary information
+   * 
+   * Returns a new summary object extracted from the `waveform`.
+   * 
+   * Example:
+   * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~{.cpp}
+   * util::quantities::intervals::nanoseconds const opDetPeriod { 2.0 };
+   * auto const& trigger
+   *   = event.getProduct<std::vector<raw::Trigger>>(triggerTag).front();
+   * 
+   * sbn::OpDetWaveformMeta info
+   *   = sbn::makeOpDetWaveformMeta(waveform, opDetPeriod, trigger);
+   * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   */
+  OpDetWaveformMeta makeOpDetWaveformMeta(
+    raw::OpDetWaveform const& waveform,
+    util::quantities::intervals::microseconds opDetTickPeriod,
+    raw::Trigger const& trigger
     );
   
   /// @}
@@ -126,14 +153,28 @@ class sbn::OpDetWaveformMetaMaker {
   
   using microseconds = util::quantities::intervals::microseconds;
   
+  using electronics_time = detinfo::timescales::electronics_time;
+  
   /// Constructor: allows creation of `sbn::OpDetWaveformMeta` with full
   /// information.
   OpDetWaveformMetaMaker(detinfo::DetectorTimings const& detTimings);
   
   
   /// Constructor: allows creation of `sbn::OpDetWaveformMeta` with no
+  /// detector clocks service.
+  OpDetWaveformMetaMaker
+    (microseconds opDetTickPeriod, raw::Trigger const& trigger);
+  
+  /// Constructor: allows creation of `sbn::OpDetWaveformMeta` with no
   /// trigger/beam time information.
   OpDetWaveformMetaMaker(microseconds opDetTickPeriod);
+  
+  /// Constructor: allows creation of `sbn::OpDetWaveformMeta` with explicit
+  /// trigger/beam time information.
+  OpDetWaveformMetaMaker(
+    microseconds opDetTickPeriod,
+    electronics_time triggerTime, electronics_time beamTime
+    );
   
   //@{
   /// Creates a `sbn::OpDetWaveformMeta` out of the specified `waveform`.
@@ -143,8 +184,6 @@ class sbn::OpDetWaveformMetaMaker {
   //@}
   
     private:
-  
-  using electronics_time = detinfo::timescales::electronics_time;
   
   microseconds fOpDetTickPeriod; ///< The duration of a optical detector tick.
   

@@ -1,41 +1,43 @@
 cet_enable_asserts()
 
-add_definitions(-DEIGEN_FFTW_DEFAULT)
+set(
+	TOOL_LIBRARIES
+		larcorealg::Geometry
+		icarus_signal_processing::icarus_signal_processing
+		icarus_signal_processing::Detection
+		icarus_signal_processing::Filters
+		larevt::CalibrationDBI_IOVData
+		larevt::CalibrationDBI_Providers
+		lardataobj::RecoBase
+		larcore::Geometry_Geometry_service
+		lardata::Utilities
+		lardataalg::DetectorInfo
+		icaruscode::TPC_Utilities_SignalShapingICARUSService_service
+		nurandom::RandomUtils_NuRandomService_service
+		art::Framework_Core
+		art::Framework_Principal
+		art::Framework_Services_Registry
+		art::Persistency_Common
+		art::Persistency_Provenance
+		ROOT::Tree
+		art_root_io::tfile_support ROOT::Core
+		art::Framework_Services_Optional_RandomNumberGenerator_service
+		art_root_io::TFileService_service
+		art::Framework_Services_System_FileCatalogMetadata_service
+		art::Utilities
+		canvas::canvas
+		messagefacility::MF_MessageLogger
+		messagefacility::headers
+		fhiclcpp::fhiclcpp
+		cetlib::cetlib
+		Boost::filesystem
+		Boost::system
+		CLHEP::Random
+)
 
-art_make( 
-          TOOL_LIBRARIES  larcorealg_Geometry
-                          icarus_signal_processing
-                          icarus_signal_processing_Detection
-                          icarus_signal_processing_Filters
-                          larevt_CalibrationDBI_IOVData
-                          larevt_CalibrationDBI_Providers
-                          lardataobj_RecoBase
-                          larcore_Geometry_Geometry_service
-                          lardata_Utilities
-                          lardataalg_DetectorInfo
-                          icaruscode_TPC_Utilities_SignalShapingICARUSService_service
-                          nurandom_RandomUtils_NuRandomService_service
-                          ${ART_FRAMEWORK_CORE}
-                          ${ART_FRAMEWORK_PRINCIPAL}
-                          ${ART_FRAMEWORK_SERVICES_REGISTRY}
-                          art_Persistency_Common
-                          art_Persistency_Provenance
-                          ${ART_FRAMEWORK_SERVICES_BASIC}
-                          ${ART_ROOT_IO_TFILE_SUPPORT} ${ROOT_CORE}
-                          ${ART_FRAMEWORK_SERVICES_OPTIONAL_RANDOMNUMBERGENERATOR_SERVICE}
-                          ${ART_ROOT_IO_TFILESERVICE_SERVICE}
-                          ${ART_FRAMEWORK_SERVICES_SYSTEM_FILECATALOGMETADATA_SERVICE}
-                          art_Utilities
-                          canvas
-                          ${MF_MESSAGELOGGER}
-                          ${MF_UTILITIES}
-                          ${FHICLCPP}
-                          ${CETLIB}
-                          ${Boost_FILESYSTEM_LIBRARY}
-                          ${Boost_SYSTEM_LIBRARY}
-                          ${CLHEP}
-                          ${ROOT_BASIC_LIB_LIST}
-    )
+cet_build_plugin(ROICannyEdgeDetection art::tool LIBRARIES ${TOOL_LIBRARIES})
+cet_build_plugin(ROIFromDecoder art::tool LIBRARIES ${TOOL_LIBRARIES})
+cet_build_plugin(ROIMorphological2D art::tool LIBRARIES ${TOOL_LIBRARIES})
 
 install_headers()
 install_source()

@@ -6,11 +6,10 @@ BEGIN_PROLOG
 icarus_calorimetryalgdata:	@local::standard_calorimetryalgdata
 icarus_calorimetryalgmc:	  @local::standard_calorimetryalgmc
 
-# Calorimetry constants from G. Putnam (Dec 2021)
-# Informed by truth based study on ICARUS MC -- docdb 23856
-# The method to obtain these was a bit of a hack and will
-# need to be revisted if/when the data processing is updated
-icarus_calorimetryalgmc.CalAreaConstants: [0.01343, 0.01338, 0.01475]
+# Calorimetry constants from G. Putnam (Nov 2022)
+# Informed by MC calibration -- docdb 28639.
+# NOTE: needs to be revisted if/when the data processing is updated
+icarus_calorimetryalgmc.CalAreaConstants: [0.01343, 0.01338, 0.01219]
 
 icarus_calorimetryalgdata.CalAreaConstants: @local::icarus_data_calconst
 icarus_calorimetryalgdata.CaloDoLifeTimeCorrection: false # handled by NormTools
