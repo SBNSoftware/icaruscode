@@ -18,12 +18,8 @@ CRTHitRecoAlg::CRTHitRecoAlg(){
   fCrtutils = new CRTCommonUtils();
 }
 */
-CRTHitRecoAlg::CRTHitRecoAlg(const fhicl::ParameterSet& pset){
-  this->reconfigure(pset);
-  fChannelMap = art::ServiceHandle<icarusDB::IICARUSChannelMap const>{}.get();
-  fGeometryService  = lar::providerFrom<geo::Geometry>();
-  fCrtutils = new CRTCommonUtils();
-  return;
+CRTHitRecoAlg::CRTHitRecoAlg(const fhicl::ParameterSet& pset): CRTHitRecoAlg() {
+      this->reconfigure(pset);
 }
 
 CRTHitRecoAlg::CRTHitRecoAlg()
