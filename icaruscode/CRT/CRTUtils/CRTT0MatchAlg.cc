@@ -433,7 +433,7 @@ namespace icarus{
     auto start = tpcTrack.Vertex();
     auto end   = tpcTrack.End();
 
-    bool simple_cathode_crosscheck = (std::abs(start.X()) < 210.215) != (std::abs(end.X() < 210.215));
+    bool simple_cathode_crosscheck =( (std::abs(start.X()) < 210.215) != (std::abs(end.X()) < 210.215));
     // ====================== Matching Algorithm ========================== //
     //  std::vector<std::pair<sbn::crt::CRTHit, double>> t0Candidates;
     std::vector<matchCand> t0Candidates;
@@ -894,7 +894,7 @@ namespace icarus{
     auto start = tpcTrack.Vertex();
     auto end   = tpcTrack.End();
 
-    bool simple_cathode_crosscheck = (std::abs(start.X()) < 210.215) != (std::abs(end.X() < 210.215));
+    bool simple_cathode_crosscheck =( (std::abs(start.X()) < 210.215) != (std::abs(end.X()) < 210.215));
     int hit_id = 0;
 
     // ====================== Matching Algorithm ========================== //
@@ -1043,7 +1043,7 @@ namespace icarus{
 
     double CRTT0MatchAlg::GetCRTTime(sbn::crt::CRTHit const& crthit, uint64_t& trigger_timestamp, int time_mode, bool isdata) const {
 
-	double crtTime;
+	double crtTime =DBL_MAX;
 
 	if(isdata){
 		if (time_mode == 1) {
@@ -1055,7 +1055,7 @@ namespace icarus{
 			else if(crtTime>=0.5e6) crtTime-=1e6;		
       		}//end else
 	}//end if(isdata)
-     	else if(!isdata){	
+     	else{	
 		crtTime = crthit.ts0_ns/1e3;
 	}//end else if(!IsData)
 
