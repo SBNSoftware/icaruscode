@@ -251,7 +251,7 @@ wpdir	product_dir	wire-cell-cfg
 ####################################
 product				version		qual	flags		<table_format=2>
 fftw				v3_3_9		-
-icarus_data			v09_62_00	-
+icarus_data			v09_59_00	-
 icarus_signal_processing	v09_63_00	-
 icarusalg			v09_63_00	-
 icarusutil			v09_62_00	-
