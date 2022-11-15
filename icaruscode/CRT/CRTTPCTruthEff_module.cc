@@ -91,7 +91,7 @@ namespace icarus {
     // Selected optional functions.
     void beginJob() override;
 
-    void reconfigure(fhicl::ParameterSet const & p);
+//    void reconfigure(fhicl::ParameterSet const & p);
  
     void GetAncestorID(int trueid, int &motherid, int &ancestorid, int &layers, std::map<int, simb::MCParticle> all_particles);
 
@@ -190,11 +190,19 @@ namespace icarus {
 //    produces< art::Assns<sbn::crt::CRTHit, anab::T0, icarus::CRTTPCMatchingInfo> >();
 
     fGeometryService = lar::providerFrom<geo::Geometry>();
-    reconfigure(p);
+    fTpcTrackModuleLabel = p.get< std::vector<art::InputTag>>("TpcTrackModuleLabel", {"pandoraTrackGausCryoE"});
+    fCrtHitModuleLabel   = p.get<art::InputTag> ("CrtHitModuleLabel", "crthit"); 
+    fPFParticleLabel    =  p.get< std::vector<art::InputTag> >("PFParticleLabel",             {""});
+    fTriggerLabel        = p.get<art::InputTag>("TriggerLabel","daqTrigger");
+    
+    fVerbose = p.get<bool>("Verbose");
+//    fIsData = p.get<bool>("IsData");
+    bt = icarus::crt::CRTBackTracker{ p.get<fhicl::ParameterSet>("CRTBackTrack") };
+    if(!fIsData) fSimModuleLabel = p.get<art::InputTag>("SimModuleLabel","largeant");
 
   } // CRTTPCTruthEff()
 
-
+/*
   void CRTTPCTruthEff::reconfigure(fhicl::ParameterSet const & p)
   {
     fTpcTrackModuleLabel = p.get< std::vector<art::InputTag>>("TpcTrackModuleLabel", {"pandoraTrackGausCryoE"});
@@ -207,7 +215,7 @@ namespace icarus {
     bt = icarus::crt::CRTBackTracker{ p.get<fhicl::ParameterSet>("CRTBackTrack") };
     if(!fIsData) fSimModuleLabel = p.get<art::InputTag>("SimModuleLabel","largeant");
   } // CRTTPCTruthEff::reconfigure()
-
+*/
 
   void CRTTPCTruthEff::beginJob()
   {
@@ -292,6 +300,8 @@ namespace icarus {
     fEvent  = event.id().event();
     fRun    = event.run();
     fSubRun = event.subRun();
+
+    fIsData = event.isRealData();
 
     std::map<int, simb::MCParticle> particles;
 
@@ -427,7 +437,7 @@ namespace icarus {
 	    }//end definition of icarus::CRTTPCMatchingInfo matchInfo;
 */
 //	    double sin_angle = -99999;
-	    if(closest.dca != -99999){//this if gives green light to start filling TTree variables for matched CRT Hit variables
+	    if(closest.dca != DBL_MIN){//this if gives green light to start filling TTree variables for matched CRT Hit variables
 //	      	auto start = trackList[track_i]->Vertex<TVector3>();
 		crt_region = fCrtutils->AuxDetRegionNameToNum(closest.thishit.tagger);	    
 		crt_tpc_dca = closest.dca;
