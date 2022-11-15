@@ -101,7 +101,7 @@ vector<art::Ptr<CRTData>> CRTHitRecoAlg::PreselectCRTData(const vector<art::Ptr<
       for(int chan=0; chan<32; chan++) {
 	std::pair<double,double> const chg_cal = fChannelMap->getSideCRTCalibrationMap((int)crtList[febdat_i]->fMac5,chan);
 	float pe = (crtList[febdat_i]->fAdc[chan]-chg_cal.second)/chg_cal.first;
-	if(pe<=fPEThresh && !crtList[febdat_i]->IsReference_TS1()) continue; // filter out low PE and non-T1 ref values
+	if(pe<=fPEThresh && !crtList[febdat_i]->IsReference_TS1() && !crtList[febdat_i]->IsReference_TS0()) continue; // filter out low PE and non-T1 and non-T0 ref values
 	presel = true;
 	if(fVerbose)
 	  mf::LogInfo("CRTHitRecoAlg: ") << "\nfebP (mac5, channel, gain, pedestal, adc, pe) = (" << (int)crtList[febdat_i]->fMac5 << ", " << chan << ", " 
@@ -152,9 +152,9 @@ vector<pair<sbn::crt::CRTHit, vector<int>>> CRTHitRecoAlg::CreateCRTHits(vector<
     std::vector<std::pair<int,ULong64_t>> CRTReset_top;
     std::vector<std::pair<int,ULong64_t>> CRTReset_side_west;
     std::vector<std::pair<int,ULong64_t>> CRTReset_side_east;
-    ULong64_t TriggerArray_top[305]={0};
-    ULong64_t TriggerArray_side_west[305]={0};
-    ULong64_t TriggerArray_side_east[305]={0};
+    ULong64_t TriggerArray_top[232]={0};
+    ULong64_t TriggerArray_side_west[94]={0};
+    ULong64_t TriggerArray_side_east[94]={0};
     
    for (size_t crtdat_i=0; crtdat_i<crtList.size(); crtdat_i++) {
 	uint8_t mac = crtList[crtdat_i]->fMac5;
@@ -196,7 +196,7 @@ vector<pair<sbn::crt::CRTHit, vector<int>>> CRTHitRecoAlg::CreateCRTHits(vector<
    if (!CRTReset_top.empty()) GlobalTrigger_top = GetMode(CRTReset_top);
    //Add average difference between trigger_timestamp and Global trigger
    else GlobalTrigger_top=GlobalTrigger_top-trigger_offset;// In this event, the T1 Reset was probably "vetoed" by the T0 Reset
-   for (int i=0; i<305; i++){
+   for (int i=0; i<232; i++){
      if (TriggerArray_top[i]==0) TriggerArray_top[i]=GlobalTrigger_top;
    }
    //std::cout<<"------\nCreateCRTHits::Mode Top CRT Global Trigger ="<<GlobalTrigger_top<<"\n------\n";
@@ -206,7 +206,7 @@ vector<pair<sbn::crt::CRTHit, vector<int>>> CRTHitRecoAlg::CreateCRTHits(vector<
    if (!CRTReset_side_west.empty()) GlobalTrigger_side_west = GetMode(CRTReset_side_west);
    //Add average difference between trigger_timestamp and Global trigger    
    else GlobalTrigger_side_west=GlobalTrigger_side_west-trigger_offset;// In this event, the T1 Reset was probably "vetoed" by the T0 Reset
-   for (int i=0; i<305; i++){
+   for (int i=0; i<94; i++){
      if (TriggerArray_side_west[i]==0) TriggerArray_side_west[i]=GlobalTrigger_side_west;
    }
    //std::cout<<"------\nCreateCRTHits::Mode Side West CRT Global Trigger ="<<GlobalTrigger_side_west<<"\n------\n";
@@ -216,7 +216,7 @@ vector<pair<sbn::crt::CRTHit, vector<int>>> CRTHitRecoAlg::CreateCRTHits(vector<
    if (!CRTReset_side_east.empty()) GlobalTrigger_side_east = GetMode(CRTReset_side_east);
    //Add average difference between trigger_timestamp and Global trigger
    else GlobalTrigger_side_east=GlobalTrigger_side_east-trigger_offset;// In this event, the T1 Reset was probably "vetoed" by the T0 Reset
-   for (int i=0; i<305; i++){
+   for (int i=0; i<94; i++){
      if (TriggerArray_side_east[i]==0) TriggerArray_side_east[i]=GlobalTrigger_side_east;
    }
    //std::cout<<"------\nCreateCRTHits::Mode Side East CRT Global Trigger ="<<GlobalTrigger_side_east<<"\n------\n";
@@ -395,7 +395,7 @@ sbn::crt::CRTHit CRTHitRecoAlg::FillCRTHit(vector<uint8_t> tfeb_id, map<uint8_t,
     crtHit.ts0_ns      = time0 % 1'000'000'000;
     crtHit.ts0_ns_corr = time0; 
     crtHit.ts1_ns      = time1 /*% 1'000'000'000*/; //TODO: Update the CRTHit data product /sbnobj/common/CRT . Discussion with SBND people needed
-    crtHit.ts0_s       = time0 / 1'000'000'000;//'
+    crtHit.ts0_s       = time0 / 1'000'000'000;
     crtHit.plane       = plane;
     crtHit.x_pos       = x;
     crtHit.x_err       = ex;
@@ -410,7 +410,7 @@ sbn::crt::CRTHit CRTHitRecoAlg::FillCRTHit(vector<uint8_t> tfeb_id, map<uint8_t,
 } // CRTHitRecoAlg::FillCRTHit()
 
 //------------------------------------------------------------------------------------------
-sbn::crt::CRTHit CRTHitRecoAlg::MakeTopHit(art::Ptr<CRTData> data, ULong64_t GlobalTrigger[305]){
+sbn::crt::CRTHit CRTHitRecoAlg::MakeTopHit(art::Ptr<CRTData> data, ULong64_t GlobalTrigger[232]){
 
     uint8_t mac = data->fMac5;
     if(fCrtutils->MacToType(mac)!='c')
@@ -592,7 +592,7 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeBottomHit(art::Ptr<CRTData> data){
 } // CRTHitRecoAlg::MakeBottomHit
 
 //-----------------------------------------------------------------------------------
-sbn::crt::CRTHit CRTHitRecoAlg::MakeSideHit(vector<art::Ptr<CRTData>> coinData, ULong64_t GlobalTrigger[305]) {
+sbn::crt::CRTHit CRTHitRecoAlg::MakeSideHit(vector<art::Ptr<CRTData>> coinData, ULong64_t GlobalTrigger[94]) {
 
     vector<uint8_t> macs;
     map< uint8_t, vector< pair<int,float> > > pesmap;
