@@ -16,6 +16,7 @@ art_make_library(
 
 cet_build_plugin(TimedTrackSelector art::module
   LIBRARIES
+  icarusalg::Utilities
   lardataobj::AnalysisBase
   lardataobj::RecoBase
   messagefacility::MF_MessageLogger
