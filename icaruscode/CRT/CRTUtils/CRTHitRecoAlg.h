@@ -170,7 +170,7 @@ class icarus::crt::CRTHitRecoAlg {
 
   geo::GeometryCore const* fGeometryService;
 
-  CRTCommonUtils* fCrtutils;
+  CRTCommonUtils fCrtutils;
 
   //Params from fcl file
   bool fVerbose;          ///< print info
