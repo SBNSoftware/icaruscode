@@ -410,6 +410,11 @@ sbn::crt::CRTHit CRTHitRecoAlg::FillCRTHit(vector<uint8_t> tfeb_id, map<uint8_t,
 } // CRTHitRecoAlg::FillCRTHit()
 
 //------------------------------------------------------------------------------------------
+int64_t CRTHitRecoAlg::RegionDelay(std::string const& region) const {
+  return fSiPMtoFEBdelay + uint64_t(((region=="North" || region=="South")? 200.: 400)*fPropDelay);
+}
+//------------------------------------------------------------------------------------------
+
 sbn::crt::CRTHit CRTHitRecoAlg::MakeTopHit(art::Ptr<CRTData> data, ULong64_t GlobalTrigger[232]){
 
     uint8_t mac = data->fMac5;
@@ -1118,8 +1123,7 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeSideHit(vector<art::Ptr<CRTData>> coinData, 
       int64_t rel_thit = 0;
       for(uint64_t const t : ttrigs){
         rel_thit += t - offset;
-	if (region=="North" || region=="South") rel_thit -= int64_t(200.*fPropDelay)+fSiPMtoFEBdelay;
-	else rel_thit -= int64_t(400.*fPropDelay)+fSiPMtoFEBdelay; 
+	thit -= RegionDelay(region);
       } 
       if(fVerbose)
 	mf::LogVerbatim("CRTHitRecoAlg: ")  << "Average: offset + rel_thit / ttrigs.size = " << offset << " + " << rel_thit << " / " << uint64_t(ttrigs.size()) << " = ";
