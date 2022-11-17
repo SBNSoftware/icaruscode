@@ -472,39 +472,35 @@ cet_build_plugin(CRTTPCMatchingAna art::module
               ROOT::RooFitCore
 )
 simple_plugin(CRTTPCTruthEff module
-              icaruscode_CRTData
+              sbnobj::ICARUS_CRT
               icaruscode_CRT
-              sbnobj_Common_CRT
+              sbnobj::Common_CRT
               icaruscode_CRTUtils
-              larcorealg_Geometry
-              larcore_Geometry_Geometry_service
-              larsim_Simulation lardataobj_Simulation
-              larsim_MCCheater_BackTrackerService_service
-              larsim_MCCheater_ParticleInventoryService_service
-              lardata_Utilities
-              larevt_Filters
-              lardataobj_RawData
-              lardataobj_RecoBase
-              lardataobj_AnalysisBase
-              lardata_RecoObjects
-              larpandora_LArPandoraInterface
-              larcorealg_Geometry
-              nusimdata_SimulationBase
-              ${ART_FRAMEWORK_SERVICES_REGISTRY}
-              ${ART_ROOT_IO_TFILE_SUPPORT} ${ROOT_CORE}
-              ${ART_ROOT_IO_TFILESERVICE_SERVICE}
-              art_Persistency_Common canvas
-              art_Persistency_Provenance canvas
-              art_Utilities canvas
-              ${MF_MESSAGELOGGER}
-              ${MF_UTILITIES}
-              ${ROOT_BASIC_LIB_LIST}
-              ${ROOT_GEOM}
-              ${ROOT_XMLIO}
-              ${ROOT_GDML}
-              ${ROOT_SPECTRUM}
-              ${ROOT_ROOFIT}
-              ${ROOT_ROOFITCORE}
+              larcorealg::Geometry
+              larcore::Geometry_Geometry_service
+              larsim::Simulation lardataobj::Simulation
+              larsim::MCCheater_BackTrackerService_service
+              larsim::MCCheater_ParticleInventoryService_service
+              lardata::Utilities
+              larevt::Filters
+              lardataobj::RawData
+              lardataobj::RecoBase
+              lardataobj::AnalysisBase
+              lardata::RecoObjects
+              larpandora::LArPandoraInterface
+              larcorealg::Geometry
+              nusimdata::SimulationBase
+              art::Persistency_Common canvas::canvas
+              art::Persistency_Provenance
+              art::Utilities
+              ROOT::Core
+              ROOT::Geom
+              ROOT::XMLIO
+              ROOT::Gdml
+              ROOT::Spectrum
+              ROOT::RooFit
+              ROOT::RooFitCore
+
 )
 
 
