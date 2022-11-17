@@ -1116,21 +1116,21 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeSideHit(vector<art::Ptr<CRTData>> coinData, 
     t1trigs.resize(std::distance(t1trigs.begin(), std::unique(t1trigs.begin(), t1trigs.end())));
     //    t1hit = std::reduce(t1trigs.begin(), t1trigs.end()) / (uint64_t)t1trigs.size();
     //    t1hit = std::accumulate(t1trigs.begin(), t1trigs.end()) / (uint64_t)t1trigs.size();
-    if(ttrigs.size()>10){
+    if(!ttrigs.empty()){
+      uint64_t const offset = ttrigs[0];
+      int64_t rel_thit = 0;
       for(uint64_t const t : ttrigs){
-        thit_s = t - t%1'000'000'000;
-	if (region=="North" || region=="South") thit_ns += t%1'000'000'000-uint64_t(200.*fPropDelay)-fSiPMtoFEBdelay;
-	else thit_ns += t%1'000'000'000 -uint64_t(400.*fPropDelay)-fSiPMtoFEBdelay; 
+        rel_thit += t - offset;
+	if (region=="North" || region=="South") rel_thit -= int64_t(200.*fPropDelay)+fSiPMtoFEBdelay;
+	else rel_thit -= int64_t(400.*fPropDelay)+fSiPMtoFEBdelay; 
       } 
       if(fVerbose)
-	mf::LogInfo("CRTHitRecoAlg: ")  << "Average: thit_ns / ttrigs.size = " << thit_ns << " / " << uint64_t(ttrigs.size()) << " = ";
-      thit_ns = thit_ns /uint64_t(ttrigs.size()); //average ns portion of timestamp of CRT data products in the CRT Hit 
-      thit = thit_s + thit_ns; //add averaged ns portion of timestamp to full s portion of unix timestamp
-       if(fVerbose)
-	mf::LogInfo("CRTHitRecoAlg: ") << "add on full second: thit = thit_s + thit_ns = " << thit_s << " + " << thit_ns << " = " << thit << "\n";
-	    
+	mf::LogVerbatim("CRTHitRecoAlg: ")  << "Average: offset + rel_thit / ttrigs.size = " << offset << " + " << rel_thit << " / " << uint64_t(ttrigs.size()) << " = ";
+      thit = offset + rel_thit /uint64_t(ttrigs.size()); //average relative portion of timestamp of CRT data products in the CRT Hit 
     }
     else{
+      thit = 0;
+    }
       for(uint64_t const t : ttrigs){
         if (region=="North" || region=="South") /*thit += t;*/ thit += t-uint64_t(200.*fPropDelay)-fSiPMtoFEBdelay;
         else /*thit += t;*/thit += t-uint64_t(400.*fPropDelay)-fSiPMtoFEBdelay;
