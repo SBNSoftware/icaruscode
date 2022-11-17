@@ -255,7 +255,7 @@ icarus_data			v09_59_00	-
 icarus_signal_processing	v09_63_00	-
 icarusalg			v09_63_00	-
 icarusutil			v09_62_00	-
-libwda				v2_30_0		-
+libwda				v2_30_0a	-
 sbncode				v09_63_00	-
 cetmodules			v3_20_00	-	only_for_build
 end_product_list
