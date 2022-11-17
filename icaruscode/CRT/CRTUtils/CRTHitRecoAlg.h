@@ -198,7 +198,9 @@ class icarus::crt::CRTHitRecoAlg {
   CRTHit MakeSideHit(vector<art::Ptr<CRTData>> coinData, ULong64_t GlobalTrigger[]);
   // Check if a hit is empty
   bool IsEmptyHit(CRTHit hit);
-
+  // function to appply appropriate prop delay for Side full vs cut modules (North and South walls are cut modules)
+  int64_t RegionDelay(std::string const& region) const;
+	
   std::map<uint8_t, int32_t> FEB_T1delay_side; //<mac5, delay in ns>
   std::map<uint8_t, int32_t> FEB_T0delay_side; //<mac5, delay in ns>
 
