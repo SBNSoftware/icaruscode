@@ -1,0 +1,221 @@
+#
+# File:    run_pmtreadoutsimulation_icarus.fcl
+# Purpose: Runs the simulation of ICARUS PMT readout.
+# Author:  Gianluca Petrillo (petrillo@slac.stanford.edu)
+# Date:    November 16, 2022
+# Version: 1.0
+#
+# This is a top-level configuration that can be run directly.
+#
+# This job reads the already digitized PMT waveforms, extracts the trigger
+# primitives using some standard ICARUS trigger settings and then reprocesses
+# the PMT waveforms, producing a waveform set comparable to the one from actual
+# ICARUS PMT readout.
+#
+#
+# Output
+# -------
+#
+# * `daqPMT` (`std::vector<raw::OpDetWaveform>`) the new waveforms
+# * `trigPrimitives (`std::vector<raw::Trigger>`) the trigger primitives
+#   discovered
+#
+#
+# Required inputs
+# ----------------
+#
+#  * simulated optical detector readout: `opdaq`
+#
+#
+# Required services
+# ------------------
+#
+#  * GeometryService
+#  * DetectorClocksService
+#
+#
+# Changes
+# --------
+# 
+# 20221116 (petrillo@slac.stanford.edu) [v1.0]
+# :   original version
+#
+
+#include "services_common_icarus.fcl"
+#include "rootoutput_icarus.fcl"
+#include "trigger_emulation_icarus.fcl"
+#include "pmtsimulation_icarus.fcl"
+
+
+BEGIN_PROLOG
+
+primTrigSimTemplate: {
+
+  module_type: TriggerSimulationOnGates
+
+  TriggerGatesTag: "pmttriggerwindows"
+
+  Thresholds: [ @local::icarus_triggergate_basic.SelectedThreshold ]  # from trigger_icarus.fcl
+  
+  Pattern: @local::icarus_triggergate_basic.SelectedPrimitivePattern  # from trigger_icarus.fcl
+  
+  BeamGates: enablegate
+  
+  # we set the bits with a magic value
+  BeamBits: 0x1000000
+  
+  # do not produce "non-triggers" (triggers which did not fire)
+  EmitEmpty: false
+
+  # wait 200 ns before emitting another trigger primitive
+  DeadTime: "200 ns"
+  
+  # disable the retriggering bit, which won't make sense in a 2 ms gate
+  RetriggeringBit: 64
+  
+  # use bit 20 for triggers on cryostat 0, bit 21 for the ones on cryostat 1
+  CryostatFirstBit: 20
+  
+  # this should probably be 12 or 24 ns
+  TriggerTimeResolution: "8 ns"
+
+  # name of the category used for the output
+  LogCategory: "TrigPrimSim"
+
+} # primTrigSimTemplate
+
+
+primTrigSim_cryoE: {
+                    @table::primTrigSimTemplate
+  TriggerGatesTag: "pmttriggerwindowsCryoE"
+}
+
+primTrigSim_cryoW: {
+                    @table::primTrigSimTemplate
+  TriggerGatesTag: "pmttriggerwindowsCryoW"
+}
+
+END_PROLOG
+
+
+# ------------------------------------------------------------------------------
+process_name: PMTrout
+
+
+# ------------------------------------------------------------------------------
+process_name: TrgPrimSim
+
+
+services: {
+  
+  # this provides: file service, random management (unused),
+  #                Geometry, detector properties and clocks
+  @table::icarus_common_services
+  
+  # currently unused (remove the line if they start mattering):
+  LArPropertiesService:      @erase
+  DetectorPropertiesService: @erase
+  
+} # services
+
+
+physics: {
+  
+  producers: {
+    
+    # --------------------------------------------------------------------------
+    pmtthr: @local::icarus_pmtdiscriminatethr_fixed_MC
+    
+    pmtlvdsgates: @local::icarus_lvdsgates
+    
+    pmttriggerwindowsCryoE: @local::icarus_trigslidewindow_cryoE
+    pmttriggerwindowsCryoW: @local::icarus_trigslidewindow_cryoW
+    
+    enablegate: @local::icarus_enablegate_sim  # from trigger_icarus.fcl
+    
+    emuTrigPrimCryoE: @local::primTrigSim_cryoE
+    emuTrigPrimCryoW: @local::primTrigSim_cryoW
+    
+    daqPMT: {
+      module_type:    SimPMTreadout
+      
+      WaveformTags:  [ "opdaq" ]
+      
+      PrimitiveTags: [ "emuTrigPrimCryoE", "emuTrigPrimCryoW" ]
+      
+      TriggerTags:   []  # no extra global triggers so far
+      
+      FixedTriggerTimes: [ "-3 us", "4 us", "13 us" ]
+      
+      Readout: {
+        WindowSize:      @local::icarus_settings_opdet.readoutWindowSize  # pmtsimulation_icarus.fcl
+        PreTrigFraction: @local::icarus_settings_opdet.readoutPreTrigFraction  # pmtsimulation_icarus.fcl
+      }
+      
+      # pick the marking of the cryostat in the trigger from whom has put it in
+      CryostatFirstBit: @local::primTrigSimTemplate.CryostatFirstBit
+      
+      LogCategory:   "PMTreadoutSim"
+      
+    } # daqPMT
+    
+    # --------------------------------------------------------------------------
+    
+  } # producers
+  
+  trigger: [
+      pmtthr  # TODO: comment out for stage0
+    , pmtlvdsgates, pmttriggerwindowsCryoE, pmttriggerwindowsCryoW
+    , enablegate
+    , emuTrigPrimCryoE
+    , emuTrigPrimCryoW
+    , daqPMT
+    ]
+  output: [ rootoutput ]
+  
+  trigger_paths: [ trigger ]
+  end_paths: [ output ]
+  
+} # physics
+
+
+outputs.rootoutput: @local::icarus_rootoutput # from rootoutput_icarus.fcl
+outputs.rootoutput.outputCommands: [
+  "keep *"
+  , "drop longlonguinticarus::trigger::ReadoutTriggerGates_*_*_TrgPrimSim"
+  ]
+
+
+# ##############################################################################
+#
+# add debug output to its own file
+#
+services.message.destinations.TrigPrimSimLog: {
+  type:       file
+  filename:  "TrigPrimSim.log"
+  threshold:  DEBUG
+  categories: {
+    TrigPrimSim: { limit: -1 }
+    default:     { limit: 0 }
+  }
+} # services.messages.destinations.TrigPrimSimLog
+
+services.message.destinations.PMTreadoutSimLog: {
+  type:       file
+  filename:  "PMTreadoutSim.log"
+  threshold:  DEBUG
+  categories: {
+    PMTreadoutSim: { limit: -1 }
+    default:       { limit: 0 }
+  }
+} # services.messages.destinations.PMTreadoutSimLog
+
+services.message.destinations.DebugLog: {
+  type:       file
+  filename:  "debug.log"
+  threshold:  DEBUG
+  categories: {
+    default:    { limit: -1 }
+  }
+} # services.messages.destinations.DebugLog
+

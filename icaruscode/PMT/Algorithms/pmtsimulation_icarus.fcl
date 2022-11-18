@@ -51,6 +51,13 @@ icarus_settings_opdet: {
   
   nominalPMTgain: 9.7e6  # PMT multiplication gain factor
   
+  # the actual readout window size for each "trigger" on the readout electronics
+  readoutWindowSize:         5000   # ticks (2 ns each --> 10 us)
+
+  # fraction of readout window size that should come before the "trigger" in the
+  # readout electronics
+  readoutPreTrigFraction:   0.3   # fraction (3+7 us)
+  
 } # icarus_settings_opdet
 
 

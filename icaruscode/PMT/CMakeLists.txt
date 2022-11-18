@@ -107,6 +107,7 @@ cet_build_plugin(SampledWaveformFunctionTool art::tool
 	icaruscode_Decode_DecoderTools
   )
 
+<<<<<<< HEAD
 cet_build_plugin(CustomPulseFunctionTool art::tool
         LIBRARIES
 	icaruscode_PMT_Algorithms
@@ -120,9 +121,31 @@ cet_build_plugin(CopyBeamTimePMTwaveforms art::module
     lardataobj::RawData
   )
 
+cet_build_plugin(SimPMTreadout art::module
+  LIBRARIES
+    icaruscode::PMT_Algorithms
+    lardata::DetectorInfoServices
+    lardataalg::DetectorInfo
+    lardataobj::RawData
+    lardataalg::Utilities
+    lardataobj::Simulation
+    larcore::Geometry_Geometry_service
+    larcorealg::Geometry
+    nurandom::RandomUtils_NuRandomService_service
+    art::Framework_Services_Registry
+    art::Framework_Services_Optional_RandomNumberGenerator_service
+  )
+
+cet_build_plugin(OpDetWaveformMetaMaker art::module
+  icaruscode::PMT_Algorithms
+  lardataalg::DetectorInfo
+  lardataobj::RawData
+  )
+
 art_make_library(
   EXCLUDE
     "SimPMTIcarus_module.cc"
+    "SimPMTreadout_module.cc"
     "OpDetWaveformMetaMaker_module.cc"
     "CopyBeamTimePMTwaveforms_module.cc"
     "PMTWaveformBaselines_module.cc"
