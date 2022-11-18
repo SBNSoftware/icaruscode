@@ -58,7 +58,7 @@ triggerSimTemplate: {
 
   TriggerGatesTag: "pmttriggerwindows"
 
-  Thresholds: @local::icarus_triggergate_basic.ChannelThresholds # from trigger_icarus.fcl
+  Thresholds: [ @local::icarus_triggergate_basic.ChannelThresholds ] # from trigger_icarus.fcl
   
   ###
   ### requirement:
