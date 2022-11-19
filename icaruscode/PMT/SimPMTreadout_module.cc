@@ -8,6 +8,8 @@
 
 // ICARUS libraries
 #include "icaruscode/Utilities/DetectorClocksHelpers.h" // makeDetTimings()
+#include "icaruscode/PMT/PMTnoiseGeneratorTool.h"
+
 
 // LArSoft libraries
 #include "larcore/Geometry/Geometry.h"
@@ -18,6 +20,7 @@
 #include "lardataalg/DetectorInfo/DetectorTimingTypes.h" // electronics_time
 #include "lardataalg/Utilities/intervals_fhicl.h" // microseconds from FHiCL
 #include "lardataalg/Utilities/quantities/spacetime.h" // nanosecond
+#include "lardataalg/Utilities/quantities/electronics.h" // counts_f
 #include "larcorealg/Geometry/GeometryCore.h"
 #include "larcorealg/CoreUtils/enumerate.h"
 #include "larcorealg/CoreUtils/counter.h"
@@ -26,22 +29,21 @@
 #include "nurandom/RandomUtils/NuRandomService.h"
 
 // framework libraries
-#include "art/Framework/Core/SharedProducer.h"
+#include "art/Framework/Core/EDProducer.h"
 #include "art/Framework/Core/ModuleMacros.h"
 #include "art/Framework/Principal/Event.h"
 #include "art/Framework/Principal/Handle.h"
 #include "art/Framework/Services/Registry/ServiceHandle.h"
 #include "art/Framework/Services/Optional/RandomNumberGenerator.h"
-// #include "art/Utilities/make_tool.h"
+#include "art/Utilities/make_tool.h"
 #include "canvas/Utilities/InputTag.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
-// #include "fhiclcpp/types/DelegatedParameter.h"
-// #include "fhiclcpp/types/TableFragment.h"
+#include "fhiclcpp/types/DelegatedParameter.h"
 #include "fhiclcpp/types/TableAs.h"
 #include "fhiclcpp/types/Table.h"
 #include "fhiclcpp/types/Sequence.h"
 #include "fhiclcpp/types/Atom.h"
-// #include "fhiclcpp/ParameterSet.h"
+#include "fhiclcpp/ParameterSet.h"
 
 // CLHEP libraries
 #include "CLHEP/Random/RandEngine.h" // CLHEP::HepRandomEngine
@@ -153,6 +155,32 @@ namespace icarus::opdet { class SimPMTreadout; }
  * any time coverage to the PMT.
  * 
  * 
+ * ### Noise generation and absolute event time
+ * 
+ * A noise generator is necessary to extend the waveforms to intervals where no
+ * original samples are available (as a reminder: the simulation fills a narrow
+ * region of waveform around any minor activity, while the detector readout
+ * acquires all PMT in a cryostat even when just a few of them show activity).
+ * Noise generation is delegated to an algorithm belonging to
+ * `icarus::opdet::NoiseGeneratorAlg` class. This class of generators may in
+ * principle generate noise specific to a channel and to a certain data
+ * acquisition time, and they require such information to be provided to them.
+ * We have two options to learn about the absolute time of the event: from a
+ * trigger object (`sbn::ExtraTriggerInfo` is produced by the trigger emulation)
+ * from the time of the event generation.
+ * In general, the status as of December 2022 in ICARUS is that no noise
+ * generator actually uses that information, we don't have automatically
+ * accessible records of different PMT noise conditions as function of time,
+ * and the Monte Carlo production is not set up to reflect any specific data
+ * taking condition. As a consequence, not only the choice here is largely
+ * irrelevant, but it's also not possible to make one that is "future-proof".
+ * The current implementation of this module utilizes the latter approach,
+ * of using the event time, because it's the simplest and least demanding;
+ * the former might be made optional too (for example, extracting the timestamp
+ * from the `sbn::ExtraTriggerInfo` data product matching the first of the
+ * `TriggerTags` tags).
+ * 
+ * 
  * Configuration
  * ==============
  * 
@@ -178,10 +206,19 @@ namespace icarus::opdet { class SimPMTreadout; }
  *       over a buffer of `5000` samples will have `1500` samples before the
  *       trigger primitive, and the remaining `3500` starting from the primitive
  *       time on).
+ * * `NoiseGenerator` (tool configuration table): configuration of the tool
+ *   used to generate noise in the intervals where no source samples are
+ *   available. The tool is one derived from
+ *   `icarus::opdet::PMTnoiseGeneratorTool`. The recommendation is to use the
+ *   same generator and parameters as used in the original simulation.
+ *   even if no noise addition is desired.
+ * * `NoiseGeneratorSeed` (integer, optional): if specified, the value is used
+ *   to seed the noise generation algorithm random engine; otherwise, the seed
+ *   is assigned by `NuRandomService`.
  * * `CryostatFirstBit` (positive integer, mandatory): the trigger bit which is
- *     set on triggers from cryostat 0; as many bits are expected as
- *     there are cryostats in the detector (thus, 2 for ICARUS). The value `0`
- *     represents the least significant bit.
+ *   set on input triggers from cryostat 0; as many bits are expected as
+ *   there are cryostats in the detector (thus, 2 for ICARUS). The value `0`
+ *   represents the least significant bit.
  * * `LogCategory` (string, default: `SimPMTreadout`): message facility
  *   category to which the module messages are routed.
  * 
@@ -213,14 +250,14 @@ namespace icarus::opdet { class SimPMTreadout; }
  * =============
  * 
  * This module currently requires LArSoft services:
- * * `DetectorClocksService` for timing conversions and settings
- * 
- * Three random streams are also used.
- * 
+ * * `Geometry` for discovery of optical detector channels and their cryostat;
+ * * `DetectorClocksService` for timing conversions and settings;
+ * * `NuRandomService` for the noise generation (even if a non-stochastic
+ *   generator is chosen).
  * 
  * 
  */
-class icarus::opdet::SimPMTreadout: public art::SharedProducer {
+class icarus::opdet::SimPMTreadout: public art::EDProducer {
     
   using electronics_time = detinfo::timescales::electronics_time;
   
@@ -288,12 +325,25 @@ class icarus::opdet::SimPMTreadout: public art::SharedProducer {
       std::vector<microseconds>{}
       };
     
+    fhicl::DelegatedParameter NoiseGenerator {
+      fhicl::Name{ "NoiseGenerator" },
+      fhicl::Comment{
+        "parameters describing the electronics noise generation algorithm"
+        " (PMTnoiseGeneratorTool tool)"
+        }
+      };
+    
     fhicl::Atom<unsigned int> CryostatFirstBit{
       Name("CryostatFirstBit"),
       Comment(
         "number of the trigger bit representing the first cryostat (< "
         + std::to_string(NTriggerBits) + ")"),
       NTriggerBits
+      };
+    
+    rndm::SeedAtom NoiseGeneratorSeed {
+      Name("NoiseGeneratorSeed"),
+      Comment("fix the seed for stochastic electronics noise generation")
       };
     
     fhicl::Atom<std::string> LogCategory{
@@ -306,55 +356,23 @@ class icarus::opdet::SimPMTreadout: public art::SharedProducer {
       Name{ "Readout" },
       Comment{ "Readout parameters" }
       };
-      
     
-    
-    // fhicl::DelegatedParameter SinglePhotonResponse {
-    //   fhicl::Name("SinglePhotonResponse"),
-    //   fhicl::Comment(
-    //     "parameters describing the single photon response"
-    //     " (SinglePhotonPulseFunctionTool tool)"
-    //     )
-    //   };
-    // 
-    // fhicl::TableFragment<icarus::opdet::PMTsimulationAlgMaker::Config> algoConfig;
-    
-//     rndm::SeedAtom DarkNoiseSeed {
-//       Name("DarkNoiseSeed"),
-//       Comment("fix the seed for stochastic dark noise generation")
-//       };
-//     
-//     rndm::SeedAtom ElectronicsNoiseSeed {
-//       Name("ElectronicsNoiseSeed"),
-//       Comment("fix the seed for stochastic electronics noise generation")
-//       };
-//     
-//     fhicl::Atom<std::string> electronicsNoiseRandomEngine {
-//         Name("ElectronicsNoiseRandomEngine"),
-//         Comment("type of random engine to use for electronics noise"),
-//         "HepJamesRandom"
-//     };
-// 
-//     fhicl::Atom<std::string> darkNoiseRandomEngine {
-//         Name("DarkNoiseRandomEngine"),
-//         Comment("type of random engine to use for dark noise"),
-//         "HepJamesRandom"
-//     };
-
   }; // struct Config
   
-  using Parameters = art::SharedProducer::Table<Config>;
+  using Parameters = art::EDProducer::Table<Config>;
 
   
-  explicit SimPMTreadout
-    (Parameters const& config, art::ProcessingFrame const& frame);
+  explicit SimPMTreadout(Parameters const& config);
   
-  void produce(art::Event& event, art::ProcessingFrame const& frame) override;
+  void produce(art::Event& event) override;
   
   
     private:
   
   using nanoseconds = util::quantities::intervals::nanoseconds; // alias
+    
+  /// Type of the electronics noise generator algorithm.
+  using NoiseGenerator_t = icarus::opdet::PMTnoiseGeneratorTool::Generator_t;
   
   /// Class to manage the input waveforms.
   class WaveformManager {
@@ -475,11 +493,14 @@ class icarus::opdet::SimPMTreadout: public art::SharedProducer {
   
   nanoseconds const fOpticalTick; ///< PMT digitization sampling time.
   
+  /// Random engine for the electronics noise generation algorithm.
+  CLHEP::HepRandomEngine& fNoiseGeneratorEngine;
+  
   // --- END ---- Cached values ------------------------------------------------
   
+  /// Electronics noise generation algorithm.
+  std::unique_ptr<NoiseGenerator_t> const fNoiseGenerator;
   
-  // CLHEP::HepRandomEngine&  fDarkNoiseEngine;
-  // CLHEP::HepRandomEngine&  fElectronicsNoiseEngine;
   
   /// Registers local primitives (affecting only part of the detector).
   void addLocalPrimitives(
@@ -500,7 +521,7 @@ class icarus::opdet::SimPMTreadout: public art::SharedProducer {
   /// Creates waveforms on a single channel, filling the specified readout
   /// windows, from the samples in `source` waveforms.
   std::vector<raw::OpDetWaveform> makeWaveforms(
-    raw::Channel_t channel,
+    raw::Channel_t channel, std::uint64_t beamGateTimestamp,
     std::vector<raw::OpDetWaveform const*> const& source,
     std::vector<Window_t> const& readoutWindows
     ) const;
@@ -787,9 +808,8 @@ void icarus::opdet::SimPMTreadout::PrimitiveManager::addPrimitiveToAllChannels
 // -----------------------------------------------------------------------------
 // --- icarus::opdet::SimPMTreadout implementation
 // -----------------------------------------------------------------------------
-icarus::opdet::SimPMTreadout::SimPMTreadout
-  (Parameters const& config, art::ProcessingFrame const& frame)
-  : art::SharedProducer{ config }
+icarus::opdet::SimPMTreadout::SimPMTreadout(Parameters const& config)
+  : art::EDProducer{ config }
   // configuration
   , fWaveformTags     { config().WaveformTags() }
   , fPrimitiveTags    { config().PrimitiveTags() }
@@ -804,9 +824,17 @@ icarus::opdet::SimPMTreadout::SimPMTreadout
   , fNOpChannels{ fGeom.NOpChannels() }
   , fNCryostats { fGeom.Ncryostats() }
   , fOpticalTick{ fDetTimings.OpticalClockPeriod() }
+  , fNoiseGeneratorEngine{
+      art::ServiceHandle<rndm::NuRandomService>()->createEngine(
+        *this, "HepJamesRandom", "ElectronicsNoise", config().NoiseGeneratorSeed
+        ).get()
+      }
+  , fNoiseGenerator{
+      art::make_tool<icarus::opdet::PMTnoiseGeneratorTool>
+        (config().NoiseGenerator.get<fhicl::ParameterSet>())
+        ->makeGenerator(fNoiseGeneratorEngine)
+    }
 {
-  
-  async<art::InEvent>();
   
   //
   // configuration checks
@@ -888,9 +916,7 @@ icarus::opdet::SimPMTreadout::SimPMTreadout
 
 
 // -----------------------------------------------------------------------------
-void icarus::opdet::SimPMTreadout::produce
-  (art::Event& event, art::ProcessingFrame const& frame)
-{
+void icarus::opdet::SimPMTreadout::produce(art::Event& event) {
   
   using detinfo::timescales::electronics_time;
   
@@ -930,7 +956,7 @@ void icarus::opdet::SimPMTreadout::produce
   //
   // create the new waveforms
   //
-  
+  std::uint64_t const beamGateTimestamp = event.time().value();
   std::vector<std::vector<raw::OpDetWaveform>> readoutWaveforms{ fNOpChannels };
   for (auto const channel: util::counter<raw::Channel_t>(fNOpChannels)) {
     
@@ -940,7 +966,7 @@ void icarus::opdet::SimPMTreadout::produce
       = simWaveforms[channel];
     
     readoutWaveforms[channel]
-      = makeWaveforms(channel, waveforms, readoutWindows);
+      = makeWaveforms(channel, beamGateTimestamp, waveforms, readoutWindows);
     
   } // for channels
   
@@ -1081,7 +1107,7 @@ auto icarus::opdet::SimPMTreadout::extractReadoutWindows
 
 // ---------------------------------------------------------------------------
 std::vector<raw::OpDetWaveform> icarus::opdet::SimPMTreadout::makeWaveforms(
-  raw::Channel_t channel,
+  raw::Channel_t channel, std::uint64_t beamGateTimestamp,
   std::vector<raw::OpDetWaveform const*> const& source,
   std::vector<Window_t> const& readoutWindows
 ) const {
@@ -1093,6 +1119,11 @@ std::vector<raw::OpDetWaveform> icarus::opdet::SimPMTreadout::makeWaveforms(
   
   auto const toTicks = [this](nanoseconds interval)
     { return static_cast<int>(fDetTimings.toOpticalTicks(interval).value()); };
+  auto const toTimestamp = [this,beamGateTimestamp](electronics_time t)
+    {
+      return beamGateTimestamp + static_cast<std::int64_t>
+        (std::round(nanoseconds(t - fDetTimings.BeamGateTime()).value()));
+    };
   
   std::vector<raw::OpDetWaveform> waveforms;
   waveforms.reserve(readoutWindows.size());
@@ -1187,8 +1218,15 @@ std::vector<raw::OpDetWaveform> icarus::opdet::SimPMTreadout::makeWaveforms(
         electronics_time const noiseEnd = std::min(srcStart, window.stop());
         std::size_t const nNoiseSamples = toTicks(noiseEnd - neededTime);
         
-        // TODO add noise
-        std::advance(itSample, nNoiseSamples);
+        // FIXME we still need a baseline
+        util::quantities::counts_f const baseline{ 14999.5f };
+        std::vector<util::quantities::counts_f> extendedNoise
+          (nNoiseSamples, baseline);
+        fNoiseGenerator->add(channel, toTimestamp(neededTime), extendedNoise);
+        for (util::quantities::counts_f const noise: extendedNoise) {
+          *(itSample++)
+            = static_cast<raw::ADC_Count_t>(std::round(noise.value()));
+        }
         assert(itSample <= send);
         
         neededTime = noiseEnd;

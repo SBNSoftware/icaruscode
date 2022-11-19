@@ -107,7 +107,6 @@ cet_build_plugin(SampledWaveformFunctionTool art::tool
 	icaruscode_Decode_DecoderTools
   )
 
-<<<<<<< HEAD
 cet_build_plugin(CustomPulseFunctionTool art::tool
         LIBRARIES
 	icaruscode_PMT_Algorithms

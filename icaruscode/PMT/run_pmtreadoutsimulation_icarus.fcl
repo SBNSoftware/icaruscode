@@ -137,25 +137,27 @@ physics: {
     emuTrigPrimCryoW: @local::primTrigSim_cryoW
     
     daqPMT: {
-      module_type:    SimPMTreadout
+      module_type:       SimPMTreadout
       
-      WaveformTags:  [ "opdaq" ]
+      WaveformTags:      [ "opdaq" ]
       
-      PrimitiveTags: [ "emuTrigPrimCryoE", "emuTrigPrimCryoW" ]
+      PrimitiveTags:     [ "emuTrigPrimCryoE", "emuTrigPrimCryoW" ]
       
-      TriggerTags:   []  # no extra global triggers so far
+      TriggerTags:       []  # no extra global triggers so far
       
       FixedTriggerTimes: [ "-3 us", "4 us", "13 us" ]
       
       Readout: {
-        WindowSize:      @local::icarus_settings_opdet.readoutWindowSize  # pmtsimulation_icarus.fcl
-        PreTrigFraction: @local::icarus_settings_opdet.readoutPreTrigFraction  # pmtsimulation_icarus.fcl
+        WindowSize:      @local::icarus_settings_opdet.readoutWindowSize  # from pmtsimulation_icarus.fcl
+        PreTrigFraction: @local::icarus_settings_opdet.readoutPreTrigFraction  # from pmtsimulation_icarus.fcl
       }
       
-      # pick the marking of the cryostat in the trigger from whom has put it in
-      CryostatFirstBit: @local::primTrigSimTemplate.CryostatFirstBit
+      NoiseGenerator:    @table::icarus_pmt_electronicsnoise_standard  # from "pmtsimulation_icarus.fcl"
       
-      LogCategory:   "PMTreadoutSim"
+      # pick the marking of the cryostat in the trigger from whom has put it in
+      CryostatFirstBit:  @local::primTrigSimTemplate.CryostatFirstBit
+      
+      LogCategory:       "PMTreadoutSim"
       
     } # daqPMT
     
