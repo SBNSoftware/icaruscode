@@ -8,7 +8,8 @@
 
 // ICARUS libraries
 #include "icaruscode/Utilities/DetectorClocksHelpers.h" // makeDetTimings()
-#include "icaruscode/PMT/PMTnoiseGeneratorTool.h"
+#include "icaruscode/PMT/PMTpedestalGeneratorTool.h"
+#include "icaruscode/PMT/Algorithms/PedestalGeneratorAlg.h"
 
 
 // LArSoft libraries
@@ -206,10 +207,10 @@ namespace icarus::opdet { class SimPMTreadout; }
  *       over a buffer of `5000` samples will have `1500` samples before the
  *       trigger primitive, and the remaining `3500` starting from the primitive
  *       time on).
- * * `NoiseGenerator` (tool configuration table): configuration of the tool
- *   used to generate noise in the intervals where no source samples are
- *   available. The tool is one derived from
- *   `icarus::opdet::PMTnoiseGeneratorTool`. The recommendation is to use the
+ * * `Pedestal` (tool configuration table): configuration of the tool
+ *   used to generate pedestal and noise in the intervals where no source
+ *   samples are available. The tool is one derived from
+ *   `icarus::opdet::PMTpedestalGeneratorTool`. The recommendation is to use the
  *   same generator and parameters as used in the original simulation.
  *   even if no noise addition is desired.
  * * `NoiseGeneratorSeed` (integer, optional): if specified, the value is used
@@ -325,11 +326,11 @@ class icarus::opdet::SimPMTreadout: public art::EDProducer {
       std::vector<microseconds>{}
       };
     
-    fhicl::DelegatedParameter NoiseGenerator {
-      fhicl::Name{ "NoiseGenerator" },
+    fhicl::DelegatedParameter Pedestal {
+      fhicl::Name{ "Pedestal" },
       fhicl::Comment{
-        "parameters describing the electronics noise generation algorithm"
-        " (PMTnoiseGeneratorTool tool)"
+        "parameters for the pedestal and electronics noise generation algorithm"
+        " (PMTpedestalGeneratorTool tool)"
         }
       };
     
@@ -371,8 +372,9 @@ class icarus::opdet::SimPMTreadout: public art::EDProducer {
   
   using nanoseconds = util::quantities::intervals::nanoseconds; // alias
     
-  /// Type of the electronics noise generator algorithm.
-  using NoiseGenerator_t = icarus::opdet::PMTnoiseGeneratorTool::Generator_t;
+  /// Type of the pedestal and electronics noise generator algorithm.
+  using PedestalGenerator_t
+    = icarus::opdet::PMTpedestalGeneratorTool::Generator_t;
   
   /// Class to manage the input waveforms.
   class WaveformManager {
@@ -498,8 +500,8 @@ class icarus::opdet::SimPMTreadout: public art::EDProducer {
   
   // --- END ---- Cached values ------------------------------------------------
   
-  /// Electronics noise generation algorithm.
-  std::unique_ptr<NoiseGenerator_t> const fNoiseGenerator;
+  /// Pedestal and electronics noise generation algorithm.
+  std::unique_ptr<PedestalGenerator_t> const fPedestalGenerator;
   
   
   /// Registers local primitives (affecting only part of the detector).
@@ -829,9 +831,9 @@ icarus::opdet::SimPMTreadout::SimPMTreadout(Parameters const& config)
         *this, "HepJamesRandom", "ElectronicsNoise", config().NoiseGeneratorSeed
         ).get()
       }
-  , fNoiseGenerator{
-      art::make_tool<icarus::opdet::PMTnoiseGeneratorTool>
-        (config().NoiseGenerator.get<fhicl::ParameterSet>())
+  , fPedestalGenerator{
+      art::make_tool<icarus::opdet::PMTpedestalGeneratorTool>
+        (config().Pedestal.get<fhicl::ParameterSet>())
         ->makeGenerator(fNoiseGeneratorEngine)
     }
 {
@@ -909,6 +911,8 @@ icarus::opdet::SimPMTreadout::SimPMTreadout(Parameters const& config)
         << *itTime;
       while (++itTime != tend) log << ", " << *itTime;
     }
+    
+    log << "\n - pedestal generation: " << *fPedestalGenerator;
     
   } // --- END ---- configuration dump -----------------------------------------
   
@@ -1218,11 +1222,14 @@ std::vector<raw::OpDetWaveform> icarus::opdet::SimPMTreadout::makeWaveforms(
         electronics_time const noiseEnd = std::min(srcStart, window.stop());
         std::size_t const nNoiseSamples = toTicks(noiseEnd - neededTime);
         
-        // FIXME we still need a baseline
-        util::quantities::counts_f const baseline{ 14999.5f };
-        std::vector<util::quantities::counts_f> extendedNoise
-          (nNoiseSamples, baseline);
-        fNoiseGenerator->add(channel, toTimestamp(neededTime), extendedNoise);
+        // while the pedestal generator is working in floating point,
+        // our source and destination is in rounded ADC counts;
+        // we need to convert (emitting directly in ADC counts is only good if
+        // the pedestal is already integer, otherwise we stack yet another
+        // rounding)
+        std::vector<util::quantities::counts_f> extendedNoise(nNoiseSamples);
+        fPedestalGenerator->fill
+          (channel, toTimestamp(neededTime), extendedNoise);
         for (util::quantities::counts_f const noise: extendedNoise) {
           *(itSample++)
             = static_cast<raw::ADC_Count_t>(std::round(noise.value()));

@@ -58,6 +58,10 @@ icarus_settings_opdet: {
   # readout electronics
   readoutPreTrigFraction:   0.3   # fraction (3+7 us)
   
+  NoiseRMS:                 3.0   # in ADC#; "temporary" value, see SBN DocDB 19187
+  
+  NominalPedestal:      14999.5   # in ADC#; try to balance rounding errors
+  
 } # icarus_settings_opdet
 
 
@@ -173,7 +177,7 @@ icarus_photoelectronresponse_standard: @local::icarus_photoelectronresponse_2022
 ### - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 icarus_pmt_electronicsnoise_gauss: {
   tool_type: PMTgausNoiseGeneratorTool
-  RMS:       3.0  # in ADC#; "temporary" value, see SBN DocDB 19187
+  RMS:       @local::icarus_settings_opdet.NoiseRMS
 }
 
 icarus_pmt_electronicsnoise_gauss_fast: {
@@ -191,10 +195,10 @@ icarus_pmt_electronicsnoise_standard: @local::icarus_pmt_electronicsnoise_gauss_
 
 icarus_pmt_pedestal_gaussnoise: {
   tool_type: PMTconstantPedestalGeneratorTool
-  Pedestal:       14999.5        # in ADC; try to distribute rounding errors
+  Pedestal:       @local::icarus_settings_opdet.NominalPedestal
   NoiseGenerator: {
     tool_type:      PMTgausNoiseGeneratorTool
-    RMS:            3.0  # in ADC#; "temporary" value, see SBN DocDB 19187
+    RMS:            @local::icarus_settings_opdet.NoiseRMS
   }
 } # icarus_pmt_pedestal_gaussnoise
 
@@ -213,6 +217,7 @@ icarus_pmt_pedestal_nonoise: {
   }
 } # icarus_pmt_pedestal_nonoise
 
+icarus_pmt_pedestal_standard: @local::icarus_pmt_pedestal_fastgaussnoise
 
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -263,7 +268,7 @@ icarus_pmtsimulation.disable_noise: {
 
 icarus_pmtsimulationalg_202202_noise: {
 
-  Pedestal:                  @local::icarus_pmt_pedestal_fastgaussnoise
+  Pedestal:                  @local::icarus_pmt_pedestal_standard
   
   SinglePhotonResponse:      @local::icarus_photoelectronresponse_standard
   
@@ -319,7 +324,13 @@ icarus_pmtsimulationalg_202202: @local::icarus_pmtsimulationalg_202202_noise
 ###
 icarus_pmtsimulationalg_2018: {
 
-  Pedestal:                  @local::icarus_pmt_pedestal_fastgaussnoise
+  Pedestal: {
+    Pedestal:                  14999.5
+    NoiseGenerator: {
+      tool_type:                 PMTfastGausNoiseGeneratorTool
+      RMS:                       3.0
+    }
+  } # Pedestal
   
   SinglePhotonResponse:      @local::icarus_photoelectronresponse_standard
   

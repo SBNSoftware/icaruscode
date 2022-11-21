@@ -248,8 +248,8 @@ icarus_pmtdiscriminatethr_fixed_MC: {
 
   # PMT baseline (from standard simulation configuration)
   Baselines: @erase
-  Baseline: @local::icarus_pmtsimulationalg_standard.Baseline
-  
+  Baseline: @local::icarus_settings_opdet.NominalPedestal
+
 } # icarus_pmtdiscriminatethr_fixed_MC
 
 

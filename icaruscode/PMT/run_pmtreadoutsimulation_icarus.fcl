@@ -152,7 +152,7 @@ physics: {
         PreTrigFraction: @local::icarus_settings_opdet.readoutPreTrigFraction  # from pmtsimulation_icarus.fcl
       }
       
-      NoiseGenerator:    @table::icarus_pmt_electronicsnoise_standard  # from "pmtsimulation_icarus.fcl"
+      Pedestal:          @local::icarus_pmt_pedestal_standard  # from "pmtsimulation_icarus.fcl"
       
       # pick the marking of the cryostat in the trigger from whom has put it in
       CryostatFirstBit:  @local::primTrigSimTemplate.CryostatFirstBit
