@@ -66,4 +66,10 @@ decodeTriggerV2: {
                     DecoderTool:        @local::TriggerDecoderV2Tool
 }
 
+copyPMTonBeam: {
+                    module_type:        CopyBeamTimePMTwaveforms
+                    Waveforms:          @nil # must override
+                    TimeReference:      "BeamGate"
+}
+
 END_PROLOG

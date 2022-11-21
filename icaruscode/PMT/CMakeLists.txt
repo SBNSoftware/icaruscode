@@ -113,10 +113,18 @@ cet_build_plugin(CustomPulseFunctionTool art::tool
 	ROOT::Hist
 	)
 
+cet_build_plugin(CopyBeamTimePMTwaveforms art::module
+  LIBRARIES
+    lardata::DetectorInfoServices_DetectorClocksServiceStandard_service
+    lardataalg::DetectorInfo
+    lardataobj::RawData
+  )
+
 art_make_library(
   EXCLUDE
     "SimPMTIcarus_module.cc"
     "OpDetWaveformMetaMaker_module.cc"
+    "CopyBeamTimePMTwaveforms_module.cc"
     "PMTWaveformBaselines_module.cc"
     "PMTWaveformBaselinesFromReadoutConfiguration_module.cc"
     "PMTWaveformBaselinesFromChannelData_module.cc"

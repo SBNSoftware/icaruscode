@@ -45,7 +45,7 @@ physics.analyzers.caloskimW.G4producer: "largeant"
 physics.analyzers.caloskimW.SimChannelproducer: "largeant"
 physics.analyzers.caloskimW.RawDigitproducers: ["MCDecodeTPCROI:PHYSCRATEDATATPCWW", "MCDecodeTPCROI:PHYSCRATEDATATPCWE"]
 
-physics.outana:            [ caloskimE, caloskimW, simpleLightAna]
+physics.outana:            [ caloskimE, caloskimW, simpleLightAna, CRTDataAnalysis]
 physics.trigger_paths:     [ reco ]
 physics.end_paths:         [ outana, stream1 ]
 outputs.out1.fileName:     "%ifb_%tc-%p.root"
