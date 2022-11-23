@@ -59,6 +59,7 @@
 #include "geometry_icarus.fcl"
 #include "services_common_icarus.fcl"
 #include "rootoutput_icarus.fcl"
+#include "beamgates_icarus.fcl"
 
 
 # ------------------------------------------------------------------------------
@@ -98,9 +99,13 @@ physics: {
     
     # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     
+    beamgate:  @local::icarus_standardbeamgate_NuMI  # from beamgates_icarus.fcl
+    
+    # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    
   } # producers
 
-  simulate: [ generator ]
+  simulate: [ generator, beamgate ]
 
   stream:   [ rootoutput ]
 

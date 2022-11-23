@@ -339,7 +339,7 @@ icarus_standard_triggersim: {
       Thresholds: [ @local::icarus_triggergate_basic.SelectedThreshold ]
     }
     
-    triggersimgates: @local::icarus_triggersimgates
+    triggersimgates: @local::icarus_triggersimgates  # from trigger_icarus.fcl
     
     emuTrigger: {
       module_type:           TriggerSimulationOnGates
