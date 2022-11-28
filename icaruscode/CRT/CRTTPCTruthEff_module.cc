@@ -333,9 +333,13 @@ namespace icarus {
 
    art::Handle< std::vector<recob::Track> > trackListHandle;
    art::Handle<std::vector<sbn::crt::CRTHit>> crtListHandle;
+   std::cout << "trackListHandle.isValid()=\t" << trackListHandle.isValid() << std::endl;
+   std::cout << "crtListHandle.isValid()=\t" << crtListHandle.isValid() << std::endl;
    if (trackListHandle.isValid() && crtListHandle.isValid() ){
+   std::cout << "test2\n";
     // Retrieve track list BEGIN LOOP OVER TRACKS IN EVENT
     for(const auto& [ iTrackLabel, trackLabel ] : util::enumerate(fTpcTrackModuleLabel)) {
+    std::cout << "test3\n";
       std::vector<art::Ptr<recob::Track> > trackList;
       if (event.getByLabel(trackLabel,trackListHandle))
       	art::fill_ptr_vector(trackList, trackListHandle);   
@@ -349,7 +353,7 @@ namespace icarus {
 
       //Get PFParticles
       auto pfpListHandle = event.getValidHandle<std::vector<recob::PFParticle> >(fPFParticleLabel[iTrackLabel]);
-      if (!pfpListHandle.isValid()) continue;
+//      if (!pfpListHandle.isValid()) continue;
 
       //Get PFParticle-Track association
       art::FindOneP<recob::PFParticle> fopfp(trackListHandle, event, trackLabel);
@@ -362,6 +366,8 @@ namespace icarus {
 	
 	// will create art pointers to the new T0 objects:
 //	art::PtrMaker<anab::T0> const makeT0Ptr{ event };
+
+	std::cout << "trackList.size()=\t" << trackList.size() << std::endl;
 
 	// Loop over all the reconstructed tracks 
 	for(size_t track_i = 0; track_i < trackList.size(); track_i++) {
@@ -397,13 +403,13 @@ namespace icarus {
 
 	  //Find PFParticle for track i
 	  //art::Ptr::key() gives the index in the vector
-	  art::Ptr<recob::PFParticle> pfp = fopfp.at(trackList[track_i]->ID());
+	  art::Ptr<recob::PFParticle> pfp = fopfp.at(track_i);
 
 	  is_catcross = false;
 	  if (pfp){
 	    //Find T0 for PFParticle
 	    auto t0 = fot0pandora.at(pfp.key());
-	    if (!t0){
+	    if (t0.isNonnull()){
 	      track_t0 = t0->Time();
 	      is_catcross = true;
 	      catcross_x = DBL_MAX;	catcross_y = DBL_MAX;	catcross_z = DBL_MAX;
@@ -429,6 +435,7 @@ namespace icarus {
 //	  int const cryoNumber = hits[0]->WireID().Cryostat;
 	  matchCand closest = t0Alg.GetClosestCRTHit(detProp, *trackList[track_i], hits, crtHits,  m_gate_start_timestamp, fIsData);
 
+	  std::cout << "closest.dca=\t" << closest.dca << std::endl;
 	  if(closest.dca >=0 ){
 	    
 /*	    icarus::CRTTPCMatchingInfo matchInfo {
@@ -547,7 +554,7 @@ namespace icarus {
 	    }//end if(closest.dca != -99999)
 
 	  } // DCA check
-	  
+	    std::cout << "Filling matchTree!\n";
    	    tr_crttpc->Fill();
 	} // Loop over tracks  
 	

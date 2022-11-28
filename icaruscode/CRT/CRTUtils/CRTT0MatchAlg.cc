@@ -442,7 +442,7 @@ namespace icarus{
     // Loop over all the CRT hits
     for(auto &crtHit : crtHits){
       // Check if hit is within the allowed t0 range
-      double crtTime = GetCRTTime(crtHit,trigger_timestamp,fTSMode,IsData);  // units are us
+      double crtTime = GetCRTTime(crtHit,trigger_timestamp,IsData);  // units are us
 /*      
      if(IsData){
       if (fTSMode == 1) {
@@ -905,7 +905,7 @@ namespace icarus{
     // Loop over all the CRT hits
     for(auto &crtHit : crtHits){
       // Check if hit is within the allowed t0 range
-      double crtTime = GetCRTTime(crtHit,trigger_timestamp,fTSMode,IsData);  // units are us
+      double crtTime = GetCRTTime(crtHit,trigger_timestamp,IsData);  // units are us
 
      icarus::match_geometry this_candidate;// = makeNULLmc_geo();
 /*     if(IsData){
@@ -1041,14 +1041,14 @@ namespace icarus{
   }//end function defn
 
 
-    double CRTT0MatchAlg::GetCRTTime(sbn::crt::CRTHit const& crthit, uint64_t& trigger_timestamp, int time_mode, bool isdata) const {
+    double CRTT0MatchAlg::GetCRTTime(sbn::crt::CRTHit const& crthit, uint64_t trigger_timestamp, bool isdata) const {
 
 	double crtTime =DBL_MAX;
 
 	if(isdata){
-		if (time_mode == 1) {
+		if (fTSMode == 1) {
 			crtTime = ((double)(int)crthit.ts1_ns) * 1e-3; //+ fTimeCorrection;
-	      	}//end if (time_mode == 1)
+	      	}//end if (fTSMode == 1)
       		else {
 			crtTime = double(crthit.ts0_ns - (trigger_timestamp%1'000'000'000))/1e3;
 			if(crtTime<-0.5e6) 	crtTime+=1e6;
@@ -1061,7 +1061,7 @@ namespace icarus{
 
 	return crtTime;
 
-    }//end definition of double CRTT0MatchAlg::GetCRTTime(sbn::crt:CRTHit const& crthit, uint64_t& trigger_timestamp, int time_mode) const
+    }//end definition of double CRTT0MatchAlg::GetCRTTime(sbn::crt:CRTHit const& crthit, uint64_t trigger_timestamp, bool isdata) const
 
 
 }

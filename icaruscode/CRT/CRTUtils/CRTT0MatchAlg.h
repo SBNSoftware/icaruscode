@@ -206,7 +206,7 @@ namespace icarus{
 			       recob::Track const& tpcTrack, std::pair<double, double> t0MinMax, 
 			       std::vector<sbn::crt::CRTHit> const& crtHits, int driftDirection, uint64_t& trigger_timestamp, bool IsData) const;
 
-    double GetCRTTime(sbn::crt::CRTHit const& crthit, uint64_t& trigger_timestamp, int time_mode, bool isdata) const;
+    double GetCRTTime(sbn::crt::CRTHit const& crthit, uint64_t trigger_timestamp, bool isdata) const;
 
   private:
 
