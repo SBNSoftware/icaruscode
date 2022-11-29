@@ -313,7 +313,6 @@ namespace icarus {
     	    for (auto const& particle: (*particleHandle)){
               // Make map with ID
               int partID = particle.TrackId();
-//	      std::cout << "ParticleID:\t" << partID << "\n";//adding while trying to debug sim related issues
 	      particles[partID] = particle;
 	    }//end loop over particles in particleHandle
      }//end(!fIsData)
@@ -331,22 +330,13 @@ namespace icarus {
     auto const& crtHits = event.getProduct<std::vector<sbn::crt::CRTHit>>(fCrtHitModuleLabel);
   auto const clockData = art::ServiceHandle<detinfo::DetectorClocksService const>()->DataFor(event);
 
-   art::Handle< std::vector<recob::Track> > trackListHandle;
-   art::Handle<std::vector<sbn::crt::CRTHit>> crtListHandle;
-   std::cout << "trackListHandle.isValid()=\t" << trackListHandle.isValid() << std::endl;
-   std::cout << "crtListHandle.isValid()=\t" << crtListHandle.isValid() << std::endl;
-   if (trackListHandle.isValid() && crtListHandle.isValid() ){
-   std::cout << "test2\n";
     // Retrieve track list BEGIN LOOP OVER TRACKS IN EVENT
     for(const auto& [ iTrackLabel, trackLabel ] : util::enumerate(fTpcTrackModuleLabel)) {
-    std::cout << "test3\n";
       std::vector<art::Ptr<recob::Track> > trackList;
-      if (event.getByLabel(trackLabel,trackListHandle))
-      	art::fill_ptr_vector(trackList, trackListHandle);   
+      art::Handle< std::vector<recob::Track> > trackListHandle;
+      if (event.getByLabel(trackLabel,trackListHandle)) art::fill_ptr_vector(trackList, trackListHandle);   
+      if (trackListHandle.isValid() ){
 
-//      mf::LogInfo("CRTTPCTruthEff")
-//	<<"Number of reconstructed tracks = "<<trackList.size()<<"\n"
-//	<<"Number of CRT hits = "<<crtList.size();
 
       ttl_tpctrks=(int)trackList.size();
       ttl_crthits=(int)crtHits.size();
@@ -366,8 +356,6 @@ namespace icarus {
 	
 	// will create art pointers to the new T0 objects:
 //	art::PtrMaker<anab::T0> const makeT0Ptr{ event };
-
-	std::cout << "trackList.size()=\t" << trackList.size() << std::endl;
 
 	// Loop over all the reconstructed tracks 
 	for(size_t track_i = 0; track_i < trackList.size(); track_i++) {
@@ -427,15 +415,12 @@ namespace icarus {
 	  if(!fIsData){
 		track_trueID = RecoUtils::TrueParticleIDFromTotalRecoHits(clockData,hits,false);
 		GetAncestorID(track_trueID, track_mother, track_ancestor, track_motherlayers, particles);
-//		std::cout << "track::{trueID,motherID,ancestorID,motherlayers}:\n";
-//		std::cout << track_trueID << "," << track_mother << "," << track_ancestor << "," << track_motherlayers << "\n";
 		trk_pdg = particles[track_trueID].PdgCode();
 	  }//end if(!fIsData)
 
 //	  int const cryoNumber = hits[0]->WireID().Cryostat;
 	  matchCand closest = t0Alg.GetClosestCRTHit(detProp, *trackList[track_i], hits, crtHits,  m_gate_start_timestamp, fIsData);
 
-	  std::cout << "closest.dca=\t" << closest.dca << std::endl;
 	  if(closest.dca >=0 ){
 	    
 /*	    icarus::CRTTPCMatchingInfo matchInfo {
@@ -495,15 +480,12 @@ namespace icarus {
 
 		if(!fIsData){
 			auto checkhit = closest.thishit;
-			crt_trueID =  bt.TrueIdFromTotalEnergy(event, checkhit);// std::cout << temp_crt_trueID << std::endl;
+			crt_trueID =  bt.TrueIdFromTotalEnergy(event, checkhit);
 			GetAncestorID(crt_trueID, crt_mother, crt_ancestor, crt_motherlayers, particles);
 			crt_pdg = particles[crt_trueID].PdgCode();
-//			std::cout << "crt::{trueID,motherID,ancestorID,motherlayers}:\n";
-//			std::cout << crt_trueID << "," << crt_mother << "," << crt_ancestor << "," << crt_motherlayers << "\n";
 	    	}//end if(!fIsData)
 
 		has_crtmatch=false;
-//		std::cout << "Number of CRT candidates:\t" << (int)all_crt_candidates.size() << std::endl;
 		num_crt_candidates = (int)all_crt_candidates.size();
 		if(num_crt_candidates>0){
 			has_crtmatch=true;
@@ -554,13 +536,12 @@ namespace icarus {
 	    }//end if(closest.dca != -99999)
 
 	  } // DCA check
-	    std::cout << "Filling matchTree!\n";
    	    tr_crttpc->Fill();
 	} // Loop over tracks  
 	
-      } // all track labels in a vector
+      } // validity check
 
-    } // Validity check
+    } // all track labels in the product
   } // CRTTPCTruthEff::produce()
 
 
