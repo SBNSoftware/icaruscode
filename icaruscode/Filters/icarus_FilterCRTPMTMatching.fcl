@@ -7,7 +7,7 @@ icarus_FilterNumberTPCHits:
   OpFlashModuleLabelVec: ["opflashCryoE","opflashCryoW"]
   CrtHitModuleLabel:     "crthit"
   TriggerLabel:          "daqTrigger"
-  FlashTimeCut:          0.
+  FlashTimeCut:          -1000.
 }
 
 END_PROLOG
