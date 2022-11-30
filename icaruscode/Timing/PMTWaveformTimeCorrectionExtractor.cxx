@@ -1,5 +1,5 @@
 /**
- * @file   TimingCorrectionExtraction_module.cc
+ * @file   icaruscode/Timing/PMTWaveformTimeCorrectionExtractor.cxx
  * @brief  Extract timing correction and adjust waveform starting point.
  * @author Andrea Scarpelli (ascarpell@bnl.gov)
  * @date   June 03, 2022
@@ -9,7 +9,6 @@
 #include "sbnobj/Common/PMT/Data/PMTconfiguration.h" // sbn::PMTconfiguration
 #include "icaruscode/Decode/ChannelMapping/IICARUSChannelMap.h"
 #include "icaruscode/Timing/PMTTimingCorrections.h"
-#include "icaruscode/Timing/DataProducts/PMTWaveformTimeCorrection.h"
 #include "icaruscode/Timing/PMTWaveformTimeCorrectionExtractor.h"
 
 // framework libraries
@@ -38,13 +37,64 @@
 #include <tuple>
 
 // -----------------------------------------------------------------------------
+icarus::timing::PMTWaveformTimeCorrectionExtractor::Error::Error
+  (std::string const& msg /* == "" */)
+    : cet::exception{
+      "PMTWaveformTimeCorrectionExtractor::MultipleCorrectionsForChannel", msg
+      }
+{}
+
+
+icarus::timing::PMTWaveformTimeCorrectionExtractor::MultipleCorrectionsForChannel
+::MultipleCorrectionsForChannel
+  (unsigned int existing, unsigned int additional)
+    : Error{
+      "Attempt to overwrite correction from channel "
+      + std::to_string(existing) + " with one from channel "
+      + std::to_string(additional) + "\n"
+      }
+{}
+
+
+icarus::timing::PMTWaveformTimeCorrectionExtractor::NotASpecialChannel::NotASpecialChannel
+  (unsigned int channel)
+    : Error{ makeBaseException(channel) }
+    {}
+    
+
+auto icarus::timing::PMTWaveformTimeCorrectionExtractor::NotASpecialChannel::makeBaseException
+  (unsigned int channel) -> Error
+{
+    return Error{}
+      << "PMT readout channel ID " << channel
+      << " (0x" << std::hex << channel << ") is not a special channel.\n";
+}
+
+
+icarus::timing::PMTWaveformTimeCorrectionExtractor::UnknownCrate::UnknownCrate
+  (unsigned int channel)
+    : Error{ makeBaseException(channel) }
+    {}
+    
+
+auto icarus::timing::PMTWaveformTimeCorrectionExtractor::UnknownCrate::makeBaseException
+  (unsigned int channel) -> Error
+{
+    return Error{}
+      << "PMT readout crate for special channel ID " << channel
+      << " (0x" << std::hex << channel << ") not known.\n";
+}
+
+
+
+// -----------------------------------------------------------------------------
 
 
 icarus::timing::PMTWaveformTimeCorrectionExtractor::PMTWaveformTimeCorrectionExtractor(
             detinfo::DetectorClocksData const detTimingService,
             icarusDB::IICARUSChannelMap const & channelMapService,
-            icarusDB::PMTTimingCorrections & pmtTimingCorrectionsService, 
-            bool const & verbose )
+            icarusDB::PMTTimingCorrections const* pmtTimingCorrectionsService, 
+            bool verbose )
 : fClocksData( detTimingService )
 , fChannelMap( channelMapService )
 , fPMTTimingCorrectionsService( pmtTimingCorrectionsService )
@@ -57,7 +107,7 @@ icarus::timing::PMTWaveformTimeCorrectionExtractor::PMTWaveformTimeCorrectionExt
 
 template<typename T>
   size_t icarus::timing::PMTWaveformTimeCorrectionExtractor::getMinBin( 
-        std::vector<T> vv, size_t startElement, size_t endElement ){
+        std::vector<T> const& vv, size_t startElement, size_t endElement ){
 
     auto minel = 
         std::min_element( vv.begin()+startElement, vv.begin()+endElement );
@@ -72,7 +122,7 @@ template<typename T>
 
 template<typename T>
   size_t icarus::timing::PMTWaveformTimeCorrectionExtractor::getMaxBin( 
-            std::vector<T> vv, size_t startElement, size_t endElement){
+            std::vector<T> const& vv, size_t startElement, size_t endElement){
 
     auto maxel = 
         std::max_element( vv.begin()+startElement, vv.begin()+endElement );
@@ -87,7 +137,10 @@ template<typename T>
 
 
 template<typename T>
-  size_t icarus::timing::PMTWaveformTimeCorrectionExtractor::getStartSample( std::vector<T> vv ){
+  size_t icarus::timing::PMTWaveformTimeCorrectionExtractor::getStartSample( std::vector<T> const& vv ){
+    
+    // NOTE: when changing this algorithm, also update the documentation
+    // in the section "Signal timing extraction" of the class documentation
 
     // We are thinking in inverted polarity
     size_t minbin = getMinBin( vv, 0, vv.size() );
@@ -120,29 +173,37 @@ template<typename T>
 
 void icarus::timing::PMTWaveformTimeCorrectionExtractor::findWaveformTimeCorrections
 (   raw::OpDetWaveform const & wave,
-    std::string const & cateogry, 
-    unsigned int const & waveChannelID, 
-    bool const & correctCableDelay,
-    std::vector<PMTWaveformTimeCorrection> & corrections  )
+    bool correctCableDelay,
+    std::vector<PMTWaveformTimeCorrection> & corrections  ) const
 {
+    if (!fPMTTimingCorrectionsService && correctCableDelay) {
+      throw Error{ "Requested cable delay correction without providing a correction database!\n" };
+    }
 
+    unsigned int const waveChannelID = wave.ChannelNumber();
+    if ((waveChannelID & 0xF000) == 0)
+      throw NotASpecialChannel{ waveChannelID };
+    
     unsigned int crateSignalID = waveChannelID & 0x00F0;
 
-    if( fCrateFragmentMap.find(crateSignalID) == fCrateFragmentMap.end() ){ 
-
-        mf::LogError("icarus::timing::PMTWaveformTimeCorrectionExtractor") << 
-            "Invalid special channel number: " << std::hex << waveChannelID << 
-            "And category: " << cateogry;
-
-        throw;
-    }
+    auto const itCrateFragment = fCrateFragmentMap.find(crateSignalID);
+    if( itCrateFragment == fCrateFragmentMap.end() )
+        throw UnknownCrate{ waveChannelID };
 
     // This will be the first sample of the falling edge of the special channel signal
     // Which corresponds to the global trigger time. 
     int startSampleSignal = static_cast<int>( getStartSample( wave ) );
     
+    // allocates room for correction for `channel`; intermediate ones are defaulted
+    auto correctionFor
+      = [&corrections](unsigned int channel) -> PMTWaveformTimeCorrection& 
+      {
+        if (channel >= corrections.size()) corrections.resize(channel + 1);
+        return corrections[channel];
+      };
+    
     // we now access the channels that we need
-    for( auto const & crateFragID : fCrateFragmentMap[crateSignalID] ){
+    for( auto const & crateFragID : itCrateFragment->second ){
       
         for( auto const & mapRow : fChannelMap.getChannelIDPairVec(crateFragID) ){
         
@@ -151,16 +212,24 @@ void icarus::timing::PMTWaveformTimeCorrectionExtractor::findWaveformTimeCorrect
             double cableDelay = 0; 
 
             if( correctCableDelay ){
-                cableDelay = fPMTTimingCorrectionsService.getTriggerCableDelay(channelID);
+                cableDelay = fPMTTimingCorrectionsService->getTriggerCableDelay(channelID);
             }
 
+            // time in electronics scale when trigger signal arrived to readout;
+            // ideally, it would be fClocksData.TriggerTime()
             double newStartTime = wave.TimeStamp() 
                     + startSampleSignal * fClocksData.OpticalClock().TickPeriod() 
                     + cableDelay; // << The correction is saved already with a minus sign
 
-            corrections[channelID].channelID = waveChannelID;
-            corrections[channelID].sample = startSampleSignal * fClocksData.OpticalClock().TickPeriod();
-            corrections[channelID].startTime = fClocksData.TriggerTime() - newStartTime;
+            PMTWaveformTimeCorrection& correction = correctionFor(channelID);
+            if (correction.isValid()) {
+              throw MultipleCorrectionsForChannel
+                { correction.channelID, waveChannelID };
+            }
+            
+            correction.channelID = waveChannelID;
+            correction.sample = startSampleSignal * fClocksData.OpticalClock().TickPeriod();
+            correction.startTime = fClocksData.TriggerTime() - newStartTime;
 
             if(fVerbose){
                 std::cout << channelID                                              << ", " 

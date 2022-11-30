@@ -46,7 +46,17 @@
   <class name="art::Wrapper<art::Assns<sbn::OpDetWaveformMeta, icarus::trigger::OpticalTriggerGate::GateData_t>>" />
   <class name="art::Wrapper<art::Assns<icarus::trigger::OpticalTriggerGate::GateData_t, sbn::OpDetWaveformMeta>>" />
   
-  
+  <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
+  <!-- icarus::timing::PMTWaveformTimeCorrection -->
+  <class name="icarus::timing::PMTWaveformTimeCorrection" ClassVersion="11" >
+   <version ClassVersion="11" checksum="849345931"/>
+   <version ClassVersion="10" checksum="1609503266"/>
+  </class>
+
+  <class name="art::Ptr<icarus::timing::PMTWaveformTimeCorrection>"/>
+  <class name="std::vector<icarus::timing::PMTWaveformTimeCorrection>"/>
+  <class name="art::Wrapper<std::vector<icarus::timing::PMTWaveformTimeCorrection> >"/>
+
   <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
   <!-- LArSoft object associations that are missing from LArSoft             -->
   

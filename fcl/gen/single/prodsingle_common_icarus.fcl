@@ -9,7 +9,7 @@ services:
   TFileService: { fileName: "Supplemental-prodsingle_common_icarus_%tc-%p.root" }
   #FileCatalogMetadata:  @local::art_file_catalog_mc
   @table::icarus_gen_services
-  NuRandomService: @local::per_event_NuRandomService
+  NuRandomService: @local::icarus_default_NuRandomService
 }
 
 #Start each new event with an empty event.

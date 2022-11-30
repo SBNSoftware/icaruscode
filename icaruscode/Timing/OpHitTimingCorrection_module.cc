@@ -1,74 +1,82 @@
 /**
- * @file   icarus::OpHitTimingCorrection_module.cc
+ * @file   icaruscode/Timing/OpHitTimingCorrection_module.cc
  * @brief  Extract timing correction and adjust the OpHit starting point.
  * @author Andrea Scarpelli (ascarpell@bnl.gov)
  * @date   June 03, 2022
  */
 
+// ICARUS libraries
 #include "icaruscode/Timing/PMTTimingCorrections.h"
+#include "icaruscode/Timing/IPMTTimingCorrectionService.h"
 
 // framework libraries
-#include "canvas/Persistency/Provenance/ProcessConfiguration.h"
-#include "canvas/Persistency/Provenance/ProcessHistory.h"
 #include "canvas/Utilities/InputTag.h"
-#include "fhiclcpp/ParameterSet.h"
 
 #include "art/Framework/Services/Registry/ServiceHandle.h" 
-#include "art/Framework/Core/EDProducer.h"
+#include "art/Framework/Core/SharedProducer.h"
 #include "art/Framework/Core/ModuleMacros.h"
-#include "art/Framework/Core/FileBlock.h"
-#include "art/Framework/Principal/Run.h"
 #include "art/Framework/Principal/Event.h"
 #include "art/Framework/Principal/Handle.h"
+#include "canvas/Utilities/InputTag.h"
+#include "canvas/Utilities/Exception.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
 #include "fhiclcpp/types/Atom.h"
 #include "fhiclcpp/types/Sequence.h"
-#include "cetlib_except/exception.h"
 
 // LArSoft libraries
 #include "lardataobj/RecoBase/OpHit.h"
-#include "larcorealg/CoreUtils/enumerate.h"
-#include "larcorealg/CoreUtils/counter.h"
-
-// Database interface helpers
-#include "wda.h"
 
 // C/C++ standard libraries
 #include <memory> // std::unique_ptr<>
-#include <optional>
 #include <string>
 #include <utility> // std::move()
-#include <cassert>
-#include <tuple>
 
 
 // -----------------------------------------------------------------------------
 namespace icarus { class OpHitTimingCorrection; }
 /**
- * @brief 
+ * @brief Creates a new collection of optical hits with corrected time.
  * 
- * This module reads 
+ * This module reads reconstructed optical detector hits and applies time
+ * corrections from laser and cosmic ray analyses as found in the
+ * `icarusDB::IPMTTimingCorrectionService` service. The corrections are based
+ * solely on the PMT channel the hits were reconstructed from.
+ * 
+ * A new collection of hits is produced containing a corrected copy of all the
+ * hits from the input collections.
+ * 
  * 
  * Input
  * ------
+ * 
+ * * `std::vector<recob::OpHit>` data products (as for `InputLabels`)
  * 
  * 
  * Output
  * -------
  * 
+ * * a single `std::vector<recob::OpHit>` data product with the hits from the
+ *   input collections, all with corrected times; the hits are in the order of
+ *   the data products specified in input.
  * 
  * 
  * Configuration parameters
  * -------------------------
  * 
- * 
- * 
- * Multithreading
- * ---------------
- * 
+ * * `InputLabels` (list of input tags, mandatory): the list of optical hit data
+ *   products to apply the time corrections on. It must be non-empty.
+ * * `CorrectLaser` (flag, default: `true`): if set, applies the correction
+ *   extracted from laser runs.
+ * * `CorrectCosmics` (flag, default: `true`): if set, applies the correction
+ *   extracted from cosmic ray analysis. This is a correction on top of the one
+ *   from the laser, so `CorrectLaser` must also be set.
+ * * `Verbose` (flag, default: `false`): prints on screen the corrections being
+ *   applied.
+ * * `LogCategory` (string, default: `OpHitTimingCorrection`): name of the
+ *   message stream for console output.
  * 
  */
-class icarus::OpHitTimingCorrection: public art::EDProducer {
+class icarus::OpHitTimingCorrection: public art::SharedProducer {
   
 public:
   
@@ -106,46 +114,64 @@ public:
     
   }; // struct Config
 
-  using Parameters = art::EDProducer::Table<Config>;
+  using Parameters = art::SharedProducer::Table<Config>;
 
   /// Constructor: just reads the configuration.
-  explicit OpHitTimingCorrection(Parameters const& config);
+  explicit OpHitTimingCorrection(Parameters const& config, art::ProcessingFrame const&);
     
-  /// process the run
-  void beginRun(art::Run& run) override;
-
   /// process the event
-  void produce(art::Event& event ) override;
+  void produce(art::Event& event, art::ProcessingFrame const&) override;
 
 private:
 
-  std::vector<art::InputTag> fInputLabels;
+  std::vector<art::InputTag> const fInputLabels;
 
-  bool fCorrectLaser;
+  bool const fCorrectLaser;
 
-  bool fCorrectCosmics;
+  bool const fCorrectCosmics;
 
-  bool fVerbose = false; ///< Whether to print the configuration we read.
+  bool const fVerbose = false; ///< Whether to print the configuration we read.
   
-  std::string fLogCategory; ///< Category tag for messages.
+  std::string const fLogCategory; ///< Category tag for messages.
 
   /// Pointer to the online pmt corrections service
-  icarusDB::PMTTimingCorrections & fPMTTimingCorrectionsService;
+  icarusDB::PMTTimingCorrections const& fPMTTimingCorrectionsService;
 
 };
 
 
 // -----------------------------------------------------------------------------
-icarus::OpHitTimingCorrection::OpHitTimingCorrection( Parameters const& config ) 
-    : art::EDProducer(config)
+icarus::OpHitTimingCorrection::OpHitTimingCorrection
+    ( Parameters const& config, art::ProcessingFrame const& )
+    : art::SharedProducer(config)
     , fInputLabels{ config().InputLabels() }
-    , fCorrectLaser{ config().CorrectLaser() } 
-    , fCorrectCosmics{ config().CorrectCosmics() } 
+    , fCorrectLaser{ config().CorrectLaser() }
+    , fCorrectCosmics{ config().CorrectCosmics() }
     , fVerbose{ config().Verbose() }
     , fLogCategory{ config().LogCategory() }
     , fPMTTimingCorrectionsService
-    { *(art::ServiceHandle<icarusDB::PMTTimingCorrections>{}) }
+    { *(lar::providerFrom<icarusDB::IPMTTimingCorrectionService const>()) }
 {
+    async<art::InEvent>();
+    
+    // configuration checks
+    if (fInputLabels.empty()) {
+        throw art::Exception{ art::errors::Configuration }
+          << "The list of input hit data products ('"
+          << config().InputLabels.name() << "') is empty.\n";
+    }
+    if (fCorrectCosmics && !fCorrectLaser) {
+        throw art::Exception{ art::errors::Configuration }
+          << "The corrections from cosmic rays (enabled with '"
+          << config().CorrectCosmics.name()
+          << "') must be applied on top of the ones from laser runs ('"
+          << config().CorrectLaser.name()
+          << "'), but the latter are disabled. Fix the configuration.\n";
+    }
+    if (!fCorrectCosmics && !fCorrectLaser) {
+        throw art::Exception{ art::errors::Configuration }
+          << "No correction to be applied.\n";
+    }
 
     /// Consumes
     for ( auto const & tag : fInputLabels )
@@ -156,87 +182,60 @@ icarus::OpHitTimingCorrection::OpHitTimingCorrection( Parameters const& config )
 }
 
 // -----------------------------------------------------------------------------
-void icarus::OpHitTimingCorrection::beginRun( art::Run& run ) {
-
-    fPMTTimingCorrectionsService.readTimeCorrectionDatabase(run);
-
-}
-
-// -----------------------------------------------------------------------------
-void icarus::OpHitTimingCorrection::produce( art::Event& event ) {
+void icarus::OpHitTimingCorrection::produce( art::Event& event, art::ProcessingFrame const& ) {
 
     // Create a copy of the OpHits 
     std::vector<recob::OpHit> correctedOpHits;
 
-    if( !fInputLabels.empty() ){
+    for(art::InputTag const& label: fInputLabels) {
         
-        for( size_t iTag=0; iTag<fInputLabels.size(); iTag++ ){
+        auto const& opHits = event.getProduct<std::vector<recob::OpHit>>(label);
 
-            art::InputTag label = fInputLabels[iTag];
+        for(  auto const & opHit : opHits  ){
 
-            art::Handle<std::vector<recob::OpHit>> opHitHandle;
-            event.getByLabel( label, opHitHandle );
+            double peakTime = opHit.PeakTime();
+            double peakTimeAbs = opHit.PeakTimeAbs();
 
-            if( opHitHandle.isValid() && !opHitHandle->empty() ){
+            double laserTimeCorrection=0;
+            double cosmicsCorrection=0;
 
-                for(  auto const & opHit : *opHitHandle  ){
-
-                    double peakTime = opHit.PeakTime();
-                    double peakTimeAbs = opHit.PeakTimeAbs();
-
-                    double laserTimeCorrection=0;
-                    double cosmicsCorrection=0;
-
-                    if( fCorrectLaser ){
-                        laserTimeCorrection = 
-                            fPMTTimingCorrectionsService.getLaserCorrections(opHit.OpChannel());
-                    }
-
-                    if( fCorrectLaser && fCorrectCosmics ){
-
-                        cosmicsCorrection = 
-                            fPMTTimingCorrectionsService.getCosmicsCorrections(opHit.OpChannel());
-                    }
-
-                        
-                    peakTime += (laserTimeCorrection+cosmicsCorrection);
-                    peakTimeAbs += (laserTimeCorrection+cosmicsCorrection);
-                    
-                    if(fVerbose){
-                        std::cout << opHit.OpChannel() << ", " 
-                              << opHit.PeakTime() << ", " 
-                              << peakTime << ", " 
-                              << cosmicsCorrection << ", " 
-                              << laserTimeCorrection << std::endl;
-                    }
-
-
-                    correctedOpHits.emplace_back(
-                        opHit.OpChannel(),  //
-                        peakTime, //
-                        peakTimeAbs, //
-                        opHit.Frame(), //
-                        opHit.Width(), //
-                        opHit.Area(), //
-                        opHit.Amplitude(), //
-                        opHit.PE(), //
-                        0.0 //
-                    );
-                }
-
-            } else {
-                mf::LogError(fLogCategory) 
-                    << " Not found recob::OpHit data product with label '" 
-                    << label.encode() << "'" << std::endl;
-                throw;
+            if( fCorrectLaser ){
+                laserTimeCorrection = 
+                    fPMTTimingCorrectionsService.getLaserCorrections(opHit.OpChannel());
             }
 
+            if( fCorrectLaser && fCorrectCosmics ){
+
+                cosmicsCorrection = 
+                    fPMTTimingCorrectionsService.getCosmicsCorrections(opHit.OpChannel());
+            }
+
+                
+            peakTime += (laserTimeCorrection+cosmicsCorrection);
+            peakTimeAbs += (laserTimeCorrection+cosmicsCorrection);
+            
+            if(fVerbose){
+                std::cout << opHit.OpChannel() << ", " 
+                        << opHit.PeakTime() << ", " 
+                        << peakTime << ", " 
+                        << cosmicsCorrection << ", " 
+                        << laserTimeCorrection << std::endl;
+            }
+
+
+            correctedOpHits.emplace_back(
+                opHit.OpChannel(),   // channel
+                peakTime,            // peaktime
+                peakTimeAbs,         // peaktimeabs
+                opHit.Frame(),       // frame
+                opHit.Width(),       // width
+                opHit.Area(),        // area
+                opHit.Amplitude(),   // peakheight
+                opHit.PE(),          // pe
+                opHit.FastToTotal()  // fasttototal
+            );
         }
 
-    } else {
-        mf::LogError(fLogCategory) 
-            << " InputLabels array should contain more than 1 valid entry " << std::endl;
-        throw;
     }
 
 

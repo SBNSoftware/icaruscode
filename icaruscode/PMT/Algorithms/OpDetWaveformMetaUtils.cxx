@@ -16,19 +16,48 @@
 
 
 // -----------------------------------------------------------------------------
+using microsecond = util::quantities::points::microsecond;
+
+
+// -----------------------------------------------------------------------------
 // ---  sbn::OpDetWaveformMetaMaker
 // -----------------------------------------------------------------------------
 sbn::OpDetWaveformMetaMaker::OpDetWaveformMetaMaker
   (detinfo::DetectorTimings const& detTimings)
-  : fOpDetTickPeriod{ detTimings.OpticalClockPeriod() }
-  , fTriggerTime{ detTimings.TriggerTime() }
-  , fBeamGateTime{ detTimings.BeamGateTime() }
+  : OpDetWaveformMetaMaker{
+      detTimings.OpticalClockPeriod(),
+      detTimings.TriggerTime(),
+      detTimings.BeamGateTime()
+      }
   {}
 
 
 // -----------------------------------------------------------------------------
-sbn::OpDetWaveformMetaMaker::OpDetWaveformMetaMaker(microseconds opDetTickPeriod)
+sbn::OpDetWaveformMetaMaker::OpDetWaveformMetaMaker
+  (microseconds opDetTickPeriod)
   : fOpDetTickPeriod{ opDetTickPeriod }
+  {}
+
+
+// -----------------------------------------------------------------------------
+sbn::OpDetWaveformMetaMaker::OpDetWaveformMetaMaker
+  (microseconds opDetTickPeriod, raw::Trigger const& trigger)
+  : OpDetWaveformMetaMaker{
+      opDetTickPeriod
+    , electronics_time{ microsecond{ trigger.TriggerTime() } }
+    , electronics_time{ microsecond{ trigger.BeamGateTime() } }
+    }
+  {}
+
+
+// -----------------------------------------------------------------------------
+sbn::OpDetWaveformMetaMaker::OpDetWaveformMetaMaker(
+  microseconds opDetTickPeriod,
+  electronics_time triggerTime, electronics_time beamTime
+)
+  : fOpDetTickPeriod{ opDetTickPeriod }
+  , fTriggerTime   { triggerTime }
+  , fBeamGateTime  { beamTime }
   {}
 
 
@@ -93,6 +122,15 @@ sbn::OpDetWaveformMeta sbn::makeOpDetWaveformMeta(
   util::quantities::intervals::microseconds opDetTickPeriod
 ) {
   return sbn::OpDetWaveformMetaMaker{ opDetTickPeriod }.make(waveform);
+}
+
+
+sbn::OpDetWaveformMeta sbn::makeOpDetWaveformMeta(
+  raw::OpDetWaveform const& waveform,
+  util::quantities::intervals::microseconds opDetTickPeriod,
+  raw::Trigger const& trigger
+) {
+  return sbn::OpDetWaveformMetaMaker{ opDetTickPeriod, trigger }.make(waveform);
 }
 
 

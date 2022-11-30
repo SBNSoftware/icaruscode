@@ -1,0 +1,57 @@
+###
+## This fhicl file is used to run "stage0" processing specifically for the case where all
+## TPC data is included in an artdaq data product from a single instance
+##
+#include "stage0_icarus_driver_common.fcl"
+
+process_name: stage0
+
+## Define the paths we'll execute depending on data
+#physics.pathOptical: [ @sequence::icarus_stage0_pmt ]
+physics.path:         [ @sequence::icarus_stage0_2d_data ]
+
+## boiler plate...
+physics.outana:        [ CRTPMTMatching, purityinfoana0, purityinfoana1 ]
+physics.trigger_paths: [ path ]
+physics.end_paths:     [ outana, streamROOT ]
+
+# Drop the artdaq format files on output, 
+# Drop all output from the TPC decoder stage
+# Drop all output from the 1D deconvolution stage
+# Drop all ouptut for the first running of the ROI finder (on the 1D decon)
+# Drop all output from the 2D deconvolution stage
+# Drop the recob::Wire output from the roifinder2d (but keep the ChannelROIs)
+outputs.rootOutput.outputCommands:         ["keep *_*_*_*", 
+                                            "drop *_*_*_DAQ*", 
+                                            "drop *_daqTPCROI_*_*", 
+                                            "drop *_decon1droi_*_*", 
+                                            "drop *_decon2droi*_*_*", 
+                                            "drop recob::Wire*_roifinder_*_*",
+                                            "drop recob::Wire*_roifinder2d_*_*" 
+                                           ]
+
+## Modify the event selection for the purity analyzers
+physics.analyzers.purityinfoana0.SelectEvents:    [ path ]
+physics.analyzers.purityinfoana1.SelectEvents:    [ path ]
+
+services.message.destinations :
+{
+  STDCOUT:
+  {
+     type:      "cout"      #tells the message service to output this destination to cout
+     threshold: "DEBUG"     #tells the message service that this destination applies to WARNING and higher level messages
+     categories:
+     {
+       CRTSimHitProducer:
+       {
+         limit: 5
+         reportEvery: 1
+       }
+       default:
+       {
+         limit: 0  #don't print anything at the infomsg level except the explicitly named categories
+         reportEvery: 0
+       }
+     }
+  }
+}

@@ -1,39 +1,39 @@
 ///////////////////////////////////////////////////////////////////////
 ///
-/// \file   PMTTimingCorrections
+/// \file   icaruscode/Timing/PMTTimingCorrections.h
 ///
 /// \brief  Interface class between the calibration database and the PMT time corrections
 ///
-/// \author A. Scarpell
+/// \author A. Scarpelli
 ///
 /// \mailto ascarpell@bnl.gov
 ///
 ////////////////////////////////////////////////////////////////////////
 
-#ifndef PMTTIMINGCORRECTIONS_H
-#define PMTTIMINGCORRECTIONS_H
+#ifndef ICARUSCODE_TIMING_PMTTIMINGCORRECTIONS_H
+#define ICARUSCODE_TIMING_PMTTIMINGCORRECTIONS_H
 
+
+#include "larcorealg/CoreUtils/UncopiableAndUnmovableClass.h"
 
 #include "art/Framework/Services/Registry/ServiceDeclarationMacros.h"
 #include "art/Framework/Principal/Run.h"
 
 namespace icarusDB {
 
-	class PMTTimingCorrections
+	class PMTTimingCorrections: lar::UncopiableClass
 	{
 		public: 
 			
 			virtual ~PMTTimingCorrections() noexcept = default;
 			
-			virtual void readTimeCorrectionDatabase(const art::Run& run) = 0;
+			virtual double getTriggerCableDelay( unsigned int channelID ) const = 0;
 			
-			virtual double getTriggerCableDelay( const unsigned int & channelID ) = 0;
-    		
-    		virtual double getResetCableDelay( const unsigned int & channelID ) = 0;
+			virtual double getResetCableDelay( unsigned int channelID ) const = 0;
 
-    		virtual double getLaserCorrections( const unsigned int & channelID ) = 0;
+			virtual double getLaserCorrections( unsigned int channelID ) const = 0;
 
-    		virtual double getCosmicsCorrections( const unsigned int & channelID ) = 0;
+			virtual double getCosmicsCorrections( unsigned int channelID ) const = 0;
 
 	}; // end class
 

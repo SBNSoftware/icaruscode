@@ -1,5 +1,5 @@
 /**
- * @file   icaruscode/Timing/ICARUSPMTTimingCorrections_service.cc
+ * @file   icaruscode/Timing/PMTTimingCorrectionsProvider.h
  * @brief  Service for the PMT timing corrections.
  * @author Andrea Scarpelli (ascarpell@bnl.gov)
  */
@@ -34,6 +34,22 @@
 #include <cassert>
 #include <tuple>
 
+namespace icarusDB::details {
+    
+  struct PMTTimeCorrectionsDB {
+
+    double triggerCableDelay=0; ///< Expect nanoseconds.
+
+    double resetCableDelay=0; ///< Expect nanoseconds.
+
+    double laserCableDelay=0; ///< Expect nanoseconds.
+
+    double cosmicsCorrections=0; ///< Expect nanoseconds.
+    
+  };
+  
+} // icarusDB::details
+
 namespace icarusDB{ class PMTTimingCorrectionsProvider; }
 /**
  * @brief 
@@ -67,23 +83,25 @@ class icarusDB::PMTTimingCorrectionsProvider : public PMTTimingCorrections {
 
         void readTimeCorrectionDatabase(const art::Run& run);
 
-        double getTriggerCableDelay( const unsigned int & channelID ) {
-            return fDatabaseTimingCorrections[channelID].triggerCableDelay;
+        double getTriggerCableDelay( unsigned int channelID ) const override {
+            return getChannelCorrOrDefault(channelID).triggerCableDelay;
         };
 
-        double getResetCableDelay( const unsigned int & channelID ) {
-            return fDatabaseTimingCorrections[channelID].resetCableDelay;
+        double getResetCableDelay( unsigned int channelID ) const override {
+            return getChannelCorrOrDefault(channelID).resetCableDelay;
         };
 
-        double getLaserCorrections( const unsigned int & channelID ) {
-            return fDatabaseTimingCorrections[channelID].laserCableDelay;
+        double getLaserCorrections( unsigned int channelID ) const override {
+            return getChannelCorrOrDefault(channelID).laserCableDelay;
         };
 
-        double getCosmicsCorrections( const unsigned int & channelID ) {
-            return fDatabaseTimingCorrections[channelID].cosmicsCorrections;
+        double getCosmicsCorrections( unsigned int channelID ) const override {
+            return getChannelCorrOrDefault(channelID).cosmicsCorrections;
         };
 
     private:
+        
+        using PMTTimeCorrectionsDB = details::PMTTimeCorrectionsDB;
 
         std::string fUrl;
 
@@ -98,27 +116,28 @@ class icarusDB::PMTTimingCorrectionsProvider : public PMTTimingCorrections {
         /// Interface to LArSoft configuration for detector timing.
         detinfo::DetectorClocksData const fClocksData;
 
-        struct PMTTimeCorrectionsDB {
-
-            double triggerCableDelay=0;
-
-            double resetCableDelay=0;
-
-            double laserCableDelay=0;
-
-            double cosmicsCorrections=0;
-        };
+        static constexpr PMTTimeCorrectionsDB CorrectionDefaults {};
+        
 
         std::map<unsigned int, PMTTimeCorrectionsDB> fDatabaseTimingCorrections;
+        
+        
+        /// Internal access to the channel correction record; returns defaults if not present.
+        PMTTimeCorrectionsDB const& getChannelCorrOrDefault
+            (unsigned int channelID) const
+            {
+                auto const it = fDatabaseTimingCorrections.find(channelID);
+                return (it == fDatabaseTimingCorrections.end())? CorrectionDefaults: it->second;
+            }
 
         int ConnectToDataset(const std::string& name, 
-            const uint32_t &run, Dataset& dataset ) const;
+            uint32_t run, Dataset& dataset ) const;
 
-        void ReadPMTCablesCorrections(const uint32_t & run);
+        void ReadPMTCablesCorrections(uint32_t run);
 
-        void ReadLaserCorrections(const uint32_t & run);
+        void ReadLaserCorrections(uint32_t run);
 
-        void ReadCosmicsCorrections(const uint32_t & run);
+        void ReadCosmicsCorrections(uint32_t run);
 
 }; // services class
 

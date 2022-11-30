@@ -246,10 +246,7 @@ void SimTestPulseWire::produce(art::Event & e)
             // Recover the positions 
             const geo::WireGeo& wireGeo = geo->Wire(wireID);
 
-            double xyz[3];
-
-            wireGeo.GetCenter(xyz);
-
+            auto xyz = wireGeo.GetCenter();
             xyz[0] = chargeDepCoords.X();
 
             Position position = {xyz[0],xyz[1],xyz[2]};
@@ -265,7 +262,7 @@ void SimTestPulseWire::produce(art::Event & e)
             sch.AddIonizationElectrons(1,   /// track id, keep 0 = invalid
                                        (unsigned int)tdc,
                                        fNumElectrons_v[index],
-                                       xyz,
+                                       position.data(),
                                        100.); /// energy, keep -1 = invalid
             simch_v->emplace_back(std::move(sch));
         }

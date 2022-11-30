@@ -59,8 +59,6 @@ icarus_simulation_basic_services: {
   
                                            @table::icarus_common_services
 
-    NuRandomService:                       @local::per_event_NuRandomService
-
     LArG4Parameters:                       @local::icarus_largeantparameters
     LArVoxelCalculator:                    @local::icarus_larvoxelcalculator
     SpaceChargeService:                    @local::icarus_spacecharge
