@@ -33,6 +33,7 @@ set(	MODULE_LIBRARIES
                 ROOT::XMLIO
                 ROOT::Gdml
                 ROOT::GenVector
+                ROOT::Tree
         )
 cet_build_plugin(FilterNeutrinosActiveVolume art::module LIBRARIES ${MODULE_LIBRARIES})
 cet_build_plugin(FilterNumberTPCHits art::module LIBRARIES ${MODULE_LIBRARIES})
