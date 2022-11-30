@@ -364,9 +364,10 @@ void SnippetHit3DBuilderICARUS::configure(fhicl::ParameterSet const &pset)
     m_geometry = art::ServiceHandle<geo::Geometry const>{}.get();
 
     // Returns the wire pitch per plane assuming they will be the same for all TPCs
-    m_wirePitch[0] = m_geometry->WirePitch(0);
-    m_wirePitch[1] = m_geometry->WirePitch(1);
-    m_wirePitch[2] = m_geometry->WirePitch(2);
+    constexpr geo::TPCID tpcid{0, 0};
+    m_wirePitch[0] = m_geometry->WirePitch(geo::PlaneID{tpcid, 0});
+    m_wirePitch[1] = m_geometry->WirePitch(geo::PlaneID{tpcid, 1});
+    m_wirePitch[2] = m_geometry->WirePitch(geo::PlaneID{tpcid, 2});
 
     // Access ART's TFileService, which will handle creating and writing
     // histograms and n-tuples for us.
@@ -461,9 +462,10 @@ void SnippetHit3DBuilderICARUS::BuildChannelStatusVec(PlaneToWireToHitSetMap& pl
     m_channelStatus.resize(m_geometry->Nplanes());
 
     // Loop through views/planes to set the wire length vectors
+    constexpr geo::TPCID tpcid{0, 0};
     for(size_t idx = 0; idx < m_channelStatus.size(); idx++)
     {
-        m_channelStatus[idx] = ChannelStatusVec(m_geometry->Nwires(idx), 5);
+        m_channelStatus[idx] = ChannelStatusVec(m_geometry->Nwires(geo::PlaneID(tpcid, idx)), 5);
     }
 
     // Loop through the channels and mark those that are "bad"
@@ -1455,7 +1457,7 @@ bool SnippetHit3DBuilderICARUS::WireIDsIntersect(const geo::WireID& wireID0, con
     // Get wire position and direction for first wire
     auto wirePosArr = wireGeo0.GetCenter();
 
-    Eigen::Vector3f wirePos0(wirePosArr[0],wirePosArr[1],wirePosArr[2]);
+    Eigen::Vector3f wirePos0(wirePosArr.X(),wirePosArr.Y(),wirePosArr.Z());
     Eigen::Vector3f wireDir0(wireGeo0.Direction().X(),wireGeo0.Direction().Y(),wireGeo0.Direction().Z());
 
     //*********************************
@@ -1465,7 +1467,7 @@ bool SnippetHit3DBuilderICARUS::WireIDsIntersect(const geo::WireID& wireID0, con
     // And now the second one
     wirePosArr = wireGeo1.GetCenter();
 
-    Eigen::Vector3f wirePos1(wirePosArr[0],wirePosArr[1],wirePosArr[2]);
+    Eigen::Vector3f wirePos1(wirePosArr.X(),wirePosArr.Y(),wirePosArr.Z());
     Eigen::Vector3f wireDir1(wireGeo1.Direction().X(),wireGeo1.Direction().Y(),wireGeo1.Direction().Z());
 
     //**********************************
@@ -1673,7 +1675,7 @@ geo::WireID SnippetHit3DBuilderICARUS::NearestWireID(const Eigen::Vector3f& posi
     try
     {
         // Switch from NearestWireID to this method to avoid the roundoff error issues...
-        double distanceToWire = m_geometry->Plane(wireIDIn).WireCoordinate(position.data());
+        double distanceToWire = m_geometry->Plane(wireIDIn).WireCoordinate(geo::vect::toPoint(position.data()));
 
         wireID.Wire = int(distanceToWire);
     }
@@ -1684,7 +1686,7 @@ geo::WireID SnippetHit3DBuilderICARUS::NearestWireID(const Eigen::Vector3f& posi
 
         // Assume extremum for wire number depending on z coordinate
         if (position[2] < 0.5 * m_geometry->DetLength()) wireID.Wire = 0;
-        else                                             wireID.Wire = m_geometry->Nwires(wireIDIn.Plane) - 1;
+        else                                             wireID.Wire = m_geometry->Nwires(wireIDIn.asPlaneID()) - 1;
     }
 
     return wireID;
@@ -1703,7 +1705,7 @@ float SnippetHit3DBuilderICARUS::DistanceFromPointToHitWire(const Eigen::Vector3
         // Get wire position and direction for first wire
         auto const wirePosArr = wireGeo.GetCenter();
 
-        Eigen::Vector3f wirePos(wirePosArr[0],wirePosArr[1],wirePosArr[2]);
+        Eigen::Vector3f wirePos(wirePosArr.X(),wirePosArr.Y(),wirePosArr.Z());
         Eigen::Vector3f wireDir(wireGeo.Direction().X(),wireGeo.Direction().Y(),wireGeo.Direction().Z());
 
         //*********************************

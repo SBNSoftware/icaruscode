@@ -139,15 +139,13 @@ void ICARUSOpHitAna::beginJob()
   std::vector<double> minX, minY, minZ;
   std::vector<double> maxX, maxY, maxZ;
   auto const geop = lar::providerFrom<geo::Geometry>();
-  double PMTxyz[3];
   for(size_t opch=0; opch<geop->NOpChannels(); ++opch) {
-    geop->OpDetGeoFromOpChannel(opch).GetCenter(PMTxyz);
-    pmtX.push_back(PMTxyz[0]);
-    pmtY.push_back(PMTxyz[1]);
-    pmtZ.push_back(PMTxyz[2]);
+    auto const PMTxyz = geop->OpDetGeoFromOpChannel(opch).GetCenter();
+    pmtX.push_back(PMTxyz.X());
+    pmtY.push_back(PMTxyz.Y());
+    pmtZ.push_back(PMTxyz.Z());
   }
-  for(auto iter=geop->begin_TPC(); iter!=geop->end_TPC(); ++iter) {
-    auto const& tpc = (*iter);
+  for(auto const& tpc : geop->Iterate<geo::TPCGeo>()) {
     minX.push_back(tpc.BoundingBox().MinX());
     minY.push_back(tpc.BoundingBox().MinY());
     minZ.push_back(tpc.BoundingBox().MinZ());

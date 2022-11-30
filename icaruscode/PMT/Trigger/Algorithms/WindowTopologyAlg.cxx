@@ -69,7 +69,7 @@ auto icarus::trigger::WindowTopologyAlg::createFromGates
   std::vector<WindowChannelMap::WindowInfo_t> windows;
   
   for (auto const& [ cryoGates, cryo ]
-    : util::zip(gates, fGeom->IterateCryostats()))
+         : util::zip(gates, fGeom->Iterate<geo::CryostatGeo>()))
   {
     
     append(
