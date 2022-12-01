@@ -112,5 +112,10 @@ TriggerDecoderV2Tool: {
    TriggerConfigLabel: @nil # must override
 }
 
+TriggerDecoderV3Tool: {
+   tool_type:	      TriggerDecoderV3
+   TriggerConfigLabel: @nil # must override		      
+}
+
 
 END_PROLOG

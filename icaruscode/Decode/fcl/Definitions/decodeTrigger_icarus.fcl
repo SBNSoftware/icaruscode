@@ -21,7 +21,8 @@ physics: {
 //     pmtconfig:  @local::extractPMTconfig
     triggerconfig: @local::extractTriggerConfig
     
-    daqTrigger: @local::decodeTriggerV2
+    daqTriggerV2: @local::decodeTriggerV2
+    daqTrigger: @local::decodeTriggerV3
     
 //     daqPMT:     @local::decodePMT
     

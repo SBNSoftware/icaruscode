@@ -21,7 +21,7 @@ physics: {
 //     pmtconfig:  @local::extractPMTconfig
     triggerconfig: @local::extractTriggerConfig
     
-    daqTrigger: @local::decodeTriggerV2
+    daqTrigger: @local::decodeTriggerV3
     
 //     daqPMT:     @local::decodePMT
     
@@ -48,4 +48,5 @@ outputs: {
 physics.producers.daqTrigger.DecoderTool.TrigConfigLabel: triggerconfig
 physics.producers.daqTrigger.DecoderTool.DiagnosticOutput: true
 physics.producers.daqTrigger.DecoderTool.Debug: true
+physics.producers.triggerconfig.TriggerFragmentType: ICARUSTriggerV3
 
