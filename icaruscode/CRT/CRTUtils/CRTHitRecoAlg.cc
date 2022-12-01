@@ -1123,7 +1123,7 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeSideHit(vector<art::Ptr<CRTData>> coinData, 
       int64_t rel_thit = 0;
       for(uint64_t const t : ttrigs){
         rel_thit += t - offset;
-	thit -= RegionDelay(region);
+	rel_thit -= RegionDelay(region);
       } 
       if(fVerbose)
 	mf::LogVerbatim("CRTHitRecoAlg: ")  << "Average: offset + rel_thit / ttrigs.size = " << offset << " + " << rel_thit << " / " << uint64_t(ttrigs.size()) << " = ";
