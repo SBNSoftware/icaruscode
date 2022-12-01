@@ -148,27 +148,33 @@ vector<pair<sbn::crt::CRTHit, vector<int>>> CRTHitRecoAlg::CreateCRTHits(vector<
 
     //Load Delays map for Top CRT
     CRT_delay_map const FEB_delay_map = LoadFEBMap();
-    //vectors to store CRT Resets. Note: West and North Side CRTs are on the West timing rack, East and South Side CRTs are on East timing rack
-    std::vector<std::pair<int,ULong64_t>> CRTReset_top;
+    std::vector<std::pair<int,ULong64_t>> CRTReset;
+    ULong64_t TriggerArray[305]={0};
+    // Note: I still need to validate the Side CRT GT, so for now we will just use the top values - will be revisited, want to store seperate                     
+    //       values for the different timing chains once understood better. - AH 12/01/2022   
+    // Vectors to store CRT Resets. Note: West and North Side CRTs are on the West timing rack, East and South Side CRTs are on East timing rack
+    /*std::vector<std::pair<int,ULong64_t>> CRTReset_top;
     std::vector<std::pair<int,ULong64_t>> CRTReset_side_west;
     std::vector<std::pair<int,ULong64_t>> CRTReset_side_east;
     ULong64_t TriggerArray_top[232]={0};
     ULong64_t TriggerArray_side_west[94]={0};
-    ULong64_t TriggerArray_side_east[94]={0};
+    ULong64_t TriggerArray_side_east[94]={0};*/
     
    for (size_t crtdat_i=0; crtdat_i<crtList.size(); crtdat_i++) {
 	uint8_t mac = crtList[crtdat_i]->fMac5;
 	int adid  = fCrtutils.MacToAuxDetID(mac,0);
 	char type = fCrtutils.GetAuxDetType(adid);
 	string region = fCrtutils.GetAuxDetRegion(adid);
-        int plane =fCrtutils.AuxDetRegionNameToNum(region);
+        //int plane =fCrtutils.AuxDetRegionNameToNum(region); //3 seperate GTs 
 	//For the time being, Only Top CRT delays are loaded, nothing to do for Side CRT yet
 	if (type == 'c' && crtList[crtdat_i]->IsReference_TS1()) {
 	    ULong64_t Ts0T1ResetEvent = crtList[crtdat_i]->fTs0 + FEB_delay_map.at((int)mac+73).T0_delay - FEB_delay_map.at((int)mac+73).T1_delay;
-	    TriggerArray_top[(int) mac]=Ts0T1ResetEvent;
-	    CRTReset_top.emplace_back((int) mac,Ts0T1ResetEvent);
+            TriggerArray[(int) mac]=Ts0T1ResetEvent;
+            CRTReset.emplace_back((int) mac,Ts0T1ResetEvent); //single GT
+	    /*TriggerArray_top[(int) mac]=Ts0T1ResetEvent; 
+	    CRTReset_top.emplace_back((int) mac,Ts0T1ResetEvent);*///3 seperate GTs 
 	}
-	if (type == 'm' && crtList[crtdat_i]->IsReference_TS1()) {
+	/*if (type == 'm' && crtList[crtdat_i]->IsReference_TS1()) {
 	  try
 	    {
 	      ULong64_t Ts0T1ResetEvent = crtList[crtdat_i]->fTs0 + FEB_T0delay_side.at(mac) - FEB_T1delay_side.at(mac);
@@ -186,10 +192,20 @@ vector<pair<sbn::crt::CRTHit, vector<int>>> CRTHitRecoAlg::CreateCRTHits(vector<
 	      throw art::Exception(art::errors::Configuration)
 	        << "MAC address " << mac << " not found in the FEB_delay array!!! Please update FEB_delay FHiCL file \n";
             }
-	}
+	}*/
 	
    }
    //std::cout << "------\nCreateCRTHits::Trigger timestamp = "<<trigger_timestamp<<"\n------\n";
+   const int trigger_offset= 60; //Average distance between Global Trigger and Trigger_timestamp (ns) TODO: Make configurable parameter                           
+   ULong64_t GlobalTrigger= trigger_timestamp;
+   if (!CRTReset.empty()) GlobalTrigger = GetMode(CRTReset);
+   //Add average difference between trigger_timestamp and Global trigger                                                                                          
+   else GlobalTrigger=GlobalTrigger-trigger_offset;// In this event, the T1 Reset was probably "vetoed" by the T0 Reset                                           
+   for (int i=0; i<305; i++){
+     if (TriggerArray[i]==0) TriggerArray[i]=GlobalTrigger;
+   }
+   //std::cout<<"Global Trigger "<<GlobalTrigger<<std::endl; //single GT 
+   /*
    //Global Trigger Calculation for Top CRT
    const int trigger_offset= 60; //Average distance between Global Trigger and Trigger_timestamp (ns)
    ULong64_t GlobalTrigger_top= trigger_timestamp;
@@ -220,7 +236,7 @@ vector<pair<sbn::crt::CRTHit, vector<int>>> CRTHitRecoAlg::CreateCRTHits(vector<
      if (TriggerArray_side_east[i]==0) TriggerArray_side_east[i]=GlobalTrigger_side_east;
    }
    //std::cout<<"------\nCreateCRTHits::Mode Side East CRT Global Trigger ="<<GlobalTrigger_side_east<<"\n------\n";
-
+   */ //3 seperate GTs 
 
    //loop over time-ordered CRTData
    for (size_t febdat_i=0; febdat_i<crtList.size(); febdat_i++) {
@@ -236,7 +252,8 @@ vector<pair<sbn::crt::CRTHit, vector<int>>> CRTHitRecoAlg::CreateCRTHits(vector<
   
         //CERN modules (intramodule coincidence)
         if ( type == 'c' ) {
-            hit = MakeTopHit(crtList[febdat_i], TriggerArray_top);
+	    hit = MakeTopHit(crtList[febdat_i], TriggerArray); //single GT
+	    //hit = MakeTopHit(crtList[febdat_i], TriggerArray_top); //3 seperate GT
             if(IsEmptyHit(hit))
                 nMissC++;
             else {
@@ -331,15 +348,15 @@ vector<pair<sbn::crt::CRTHit, vector<int>>> CRTHitRecoAlg::CreateCRTHits(vector<
 	    uint8_t imac = (int)crtList[indices[index_i]]->fMac5;
             int adid  = fCrtutils.MacToAuxDetID(imac,0);
             string region = fCrtutils.GetAuxDetRegion(adid);
-            int plane =fCrtutils.AuxDetRegionNameToNum(region);
-	    //CRTHit hit = MakeSideHit(coinData, TriggerArray);
-            CRTHit hit;
+	    //int plane =fCrtutils.AuxDetRegionNameToNum(region); //3 seperate GT
+	    CRTHit hit = MakeSideHit(coinData, TriggerArray); //single GT
+            /*CRTHit hit;
 	    if(plane == 40 || plane == 41 || plane == 42 || plane == 47){//CRT T1 reset on West/North
 	      hit = MakeSideHit(coinData, TriggerArray_side_west);
 	    }
 	    else{
 	      hit = MakeSideHit(coinData, TriggerArray_side_east);
-	    }
+	    }*/ //3 seperate GT
 	      
 	    if(IsEmptyHit(hit)){
 	      unusedDataIndex.push_back(indices[index_i]);
@@ -415,7 +432,7 @@ int64_t CRTHitRecoAlg::RegionDelay(std::string const& region) const {
 }
 //------------------------------------------------------------------------------------------
 
-sbn::crt::CRTHit CRTHitRecoAlg::MakeTopHit(art::Ptr<CRTData> data, ULong64_t GlobalTrigger[232]){
+sbn::crt::CRTHit CRTHitRecoAlg::MakeTopHit(art::Ptr<CRTData> data, ULong64_t GlobalTrigger[305]){ //single GT: GlobalTrigger[305], 3 seperate GT: GlobalTrigger[232]
 
     uint8_t mac = data->fMac5;
     if(fCrtutils.MacToType(mac)!='c')
@@ -597,7 +614,7 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeBottomHit(art::Ptr<CRTData> data){
 } // CRTHitRecoAlg::MakeBottomHit
 
 //-----------------------------------------------------------------------------------
-sbn::crt::CRTHit CRTHitRecoAlg::MakeSideHit(vector<art::Ptr<CRTData>> coinData, ULong64_t GlobalTrigger[94]) {
+sbn::crt::CRTHit CRTHitRecoAlg::MakeSideHit(vector<art::Ptr<CRTData>> coinData, ULong64_t GlobalTrigger[305]) { //single GT: GlobalTrigger[305], 3 seperate GT: GlobalTrigger[94]
 
     vector<uint8_t> macs;
     map< uint8_t, vector< pair<int,float> > > pesmap;
