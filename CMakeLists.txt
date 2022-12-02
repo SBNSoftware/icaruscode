@@ -90,12 +90,6 @@ find_package(FFTW3f REQUIRED )
 find_package(FFTW3q REQUIRED )
 find_package(FFTW3l REQUIRED )
 
-find_package( PkgConfig REQUIRED )
-pkg_search_module(FFTW3F REQUIRED IMPORTED_TARGET GLOBAL fftw3f)
-pkg_search_module(FFTW3Q REQUIRED IMPORTED_TARGET GLOBAL fftw3q)
-pkg_search_module(FFTW3L REQUIRED IMPORTED_TARGET GLOBAL fftw3l)
-
-
 # macros for dictionary and simple_plugin
 include(ArtDictionary)
 include(ArtMake)
