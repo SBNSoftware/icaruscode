@@ -48,9 +48,6 @@ services.FileCatalogMetadata: {}
 
 # Use this to setup the decoder module
 
-physics.producers.ophit.InputModule: "daqPMT"
-physics.producers.ophit.InputLabels: []
-
 
 outputs: {
   rootout: {

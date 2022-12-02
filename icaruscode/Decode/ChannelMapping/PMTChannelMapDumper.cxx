@@ -102,12 +102,12 @@ int main(int argc, char** argv) {
     log
       << "[" << iFragment << "] " << std::hex << fragmentID << std::dec
       << " includes " << digitizerChannels.size()
-      << " LArSoft channels between " << digitizerChannels.front().second
-      << " and " << digitizerChannels.back().second
+      << " LArSoft channels between " << std::get<1U>( digitizerChannels.front() )
+      << " and " << std::get<1U>( digitizerChannels.back() )
       << " [board channel index in brackets]:";
     constexpr unsigned int Cols = 8U;
     unsigned int n = 0;
-    for(auto const [ digitizerChannel, channelID ]: digitizerChannels) {
+    for(auto const [ digitizerChannel, channelID, laserChannel ]: digitizerChannels) {
       if (n-- == 0) { log << "\n     "; n = Cols - 1U; }
       log << " "  << std::setw(3) << channelID
         << " [" << std::setw(3) << digitizerChannel << "]";

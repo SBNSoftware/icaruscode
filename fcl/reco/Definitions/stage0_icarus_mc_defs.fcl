@@ -28,6 +28,9 @@ icarus_stage0_mc_producers:
 
     pmtfixedthr:       @local::icarus_pmtdiscriminatethr_fixed_MC
 
+    @table::icarus_standard_triggersim.producers  # from trigger_emulation_icarus.fcl
+    
+    ophit:             @local::icarus_ophit_data
     mcophit:           @local::ICARUSMCOpHit
 
     ## crt producer   
@@ -37,7 +40,13 @@ icarus_stage0_mc_producers:
 }  
 
 # make the following modifications to job flow for MC vs the data
-icarus_stage0_mc_PMT:  [ pmtfixedthr,
+icarus_stage0_mc_trigger: [
+                         pmtfixedthr
+#                        , @sequence::icarus_standard_triggersim.path
+                       ]
+
+icarus_stage0_mc_PMT:  [
+                         @sequence::icarus_stage0_mc_trigger,
                          ophit,
                          mcophit,
                          opflashCryoE,
