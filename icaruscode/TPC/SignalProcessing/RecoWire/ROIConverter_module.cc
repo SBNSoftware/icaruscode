@@ -148,6 +148,8 @@ void ROIConvert::produce(art::Event& evt)
                 wireCol->push_back(recob::WireCreator(std::move(ROIVec),channel,view).move());
             }
 
+            mf::LogInfo("ROIConvert") << "--> Outputting Wire data, size: " << wireCol->size() << " with instance name: " << instanceName;
+
             // Time to stroe everything
             if(wireCol->empty()) mf::LogWarning("ROIConvert") << "No wires made for this event.";
         }
