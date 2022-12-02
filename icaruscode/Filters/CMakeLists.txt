@@ -1,4 +1,5 @@
-aset(  MODULE_LIBRARIES
+art_make_library()
+set(  MODULE_LIBRARIES
     sbnobj::Common_Trigger
     icarusalg::Utilities
     larcorealg::Geometry
