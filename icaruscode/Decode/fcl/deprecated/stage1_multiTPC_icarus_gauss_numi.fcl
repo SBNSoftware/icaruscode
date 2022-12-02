@@ -1,4 +1,0 @@
-#include "stage1_multiTPC_icarus_gauss.fcl"
-
-physics.producers.pandoraGausCryoE.ConfigFile:   "PandoraSettings_Master_ICARUS_NuMI.xml"
-physics.producers.pandoraGausCryoW.ConfigFile:   "PandoraSettings_Master_ICARUS_NuMI.xml"
