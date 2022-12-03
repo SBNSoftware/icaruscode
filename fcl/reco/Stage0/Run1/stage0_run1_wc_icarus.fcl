@@ -2,7 +2,7 @@
 ## This fhicl file is used to run "stage0" processing specifically for the case where all
 ## TPC data is included in an artdaq data product from a single instance
 ##
-#include "stage0_icarus_driver_common.fcl"
+#include "stage0_icarus_driver_common_run1.fcl"
 
 process_name: stage0
 
