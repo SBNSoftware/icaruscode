@@ -151,7 +151,7 @@ icarus_stage0_filters:
                              TriggerType:        "Unknown"
                           }
 
-   crtpmtmatchingfilter: @local::icarus_FilterNumberTPCHits
+   crtpmtmatchingfilter: @local::icarus_FilterCRTPMTMatching
 }
 
 
