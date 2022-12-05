@@ -29,7 +29,7 @@ outputs.rootOutput.outputCommands:         ["keep *_*_*_*",
                                             "drop *_decon2droi*_*_*", 
                                             "drop recob::Wire*_roifinder_*_*",
                                             "drop recob::Wire*_roifinder2d_*_*", 
-                                            "keep *_daq_ICARUSTrigger*_*"
+                                            "keep *_daq_ICARUSTriggerV*_*"
                                            ]
 
 ## Modify the event selection for the purity analyzers

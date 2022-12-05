@@ -25,7 +25,7 @@ outputs.rootOutput.outputCommands: [
     "drop *_daqTPCROI_*_*", 
     "drop *_decon1droi_*_*", 
     "drop recob::Wire*_roifinder_*_*",
-    "keep *_daq_ICARUSTriggerV2_*"]
+    "keep *_daq_ICARUSTriggerV*_*"]
 
 ## Modify the event selection for the purity analyzers
 physics.analyzers.purityinfoana0.SelectEvents:    [ path ]
