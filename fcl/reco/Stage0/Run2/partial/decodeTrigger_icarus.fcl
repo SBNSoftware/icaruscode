@@ -45,8 +45,8 @@ outputs: {
 } # outputs 
 
 
+physics.producers.triggerconfig.TriggerFragmentType: ICARUSTriggerV3
 physics.producers.daqTrigger.DecoderTool.TrigConfigLabel: triggerconfig
 physics.producers.daqTrigger.DecoderTool.DiagnosticOutput: true
 physics.producers.daqTrigger.DecoderTool.Debug: true
-physics.producers.triggerconfig.TriggerFragmentType: ICARUSTriggerV3
 
