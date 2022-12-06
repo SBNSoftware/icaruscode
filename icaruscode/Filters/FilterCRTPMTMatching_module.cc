@@ -84,7 +84,7 @@ namespace icarus
 
 using namespace icarus::crt;
 
-bool flashInTime(double const &flashTime, int gateType, double gateDiff, double gateWidth, double flashTimeCut)
+bool flashInTime(double const &flashTime, int gateType, double gateDiff, double gateWidth)
 {
     //   {1, 2.2},  // BNB
     //   {2, 10.1}, // NuMI
@@ -99,7 +99,7 @@ bool flashInTime(double const &flashTime, int gateType, double gateDiff, double 
     double relFlashTime = flashTime + gateDiff / 1000. /*- vetoOffset*/;
     mf::LogInfo("FilterCRTPMTMatching::flashInTime") << "Gate Diff " << gateDiff / 1000 << " Ftime+gateDiff " << flashTime + gateDiff / 1000. << " " << activeGate;
 
-    return ((relFlashTime > flashTimeCut) && (relFlashTime < activeGate));
+    return ((relFlashTime > 0) && (relFlashTime < activeGate));
 }
 
 icarus::crt::MatchedCRT CRTHitmatched(double flashTime, std::vector<sbn::crt::CRTHit>const crtHits, double interval)
@@ -191,7 +191,7 @@ private:
     art::InputTag              fTriggerLabel;
     art::InputTag	       fTriggerConfiguration;
 
-    double                     fFlashTimeCut;
+    //double                     fFlashTimeCut;
 
     int                        fEvent;  ///< number of the event being processed.
     int                        fRun;    ///< number of the run being processed.
@@ -204,6 +204,8 @@ private:
     uint64_t                   m_gate_start_timestamp;
     uint64_t                   m_trigger_gate_diff;
     uint64_t		       m_gate_width;
+
+    std::string		       fFilterLevel;		// Filter level, default is loose 
     double		       fOpHitAmplitude;    	// ADC threshold for the PMT
     int                        fnOpHitToTrigger;        // Number of OpHit above threshold to mimic the trigger
     double 		       fTimeOfFlightInterval;   // Time of Flight interval to find the match
@@ -241,7 +243,7 @@ icarus::crt::FilterCRTPMTMatching::FilterCRTPMTMatching(fhicl::ParameterSet cons
     ,fCrtHitModuleLabel(p.get<art::InputTag>("CrtHitModuleLabel", "crthit"))
     ,fTriggerLabel(p.get<art::InputTag>("TriggerLabel", "daqTrigger")) 
     ,fTriggerConfiguration(p.get<art::InputTag>("TriggerConfiguration", "triggerconfig"))
-    ,fFlashTimeCut(p.get<double>("FlashTimeCut", 0.))
+    ,fFilterLevel(p.get<std::string>("FilterLevel","FilterOption"))
     ,fOpHitAmplitude(p.get<double>("OpHitAmplitude", 0.))
     ,fnOpHitToTrigger(p.get<int>("nOpHitToTrigger", 0))
     ,fTimeOfFlightInterval(p.get<double>("TimeOfFlightInterval", 0.))
@@ -311,8 +313,10 @@ bool icarus::crt::FilterCRTPMTMatching::filter(art::Event &e)
 
     auto const& crtHitList = e.getProduct<std::vector<CRTHit>>(fCrtHitModuleLabel);
 
-    bool Filter = false;
+    bool Cosmic = false;
     int  Type   = 9;
+
+    if (fFilterLevel != "loose" || fFilterLevel != "tight" || fFilterLevel != "medium") fFilterLevel="loose";
 
     for (auto const& flashLabel : fOpFlashModuleLabelVec)
     {
@@ -372,7 +376,7 @@ bool icarus::crt::FilterCRTPMTMatching::filter(art::Event &e)
             {
                 continue;
             }
-            bool   inTime   = flashInTime(firstTime, m_gate_type, m_trigger_gate_diff, m_gate_width, fFlashTimeCut);
+            bool   inTime   = flashInTime(firstTime, m_gate_type, m_trigger_gate_diff, m_gate_width);
 
             mf::LogTrace("FilterCRTPMTMatching") << "\nFlash Time " << tflash << "  First Op Hit " << firstTime << "  " << inTime << "\n" <<
                         "Average Pos X " << flash_pos[0] << "  Y " << flash_pos[1] << "  Z " << flash_pos[2] << " nPMT " << nOpHitsTriggering << " " << ampsum << "\n" <<
@@ -440,7 +444,6 @@ bool icarus::crt::FilterCRTPMTMatching::filter(art::Event &e)
                     fMatchedCRTamplitude.emplace_back(CRTPe);
                     fCRTGateDiff.emplace_back(CRTGateDiff);
                     HitFebs.clear();
-                    // Filla i vettori
                 }
 
                 for (auto &exiting : CRTmatches.exiting)
@@ -474,8 +477,7 @@ bool icarus::crt::FilterCRTPMTMatching::filter(art::Event &e)
                     HitFebs.clear();
                     // Filla i vettori
                 }
-
-                if ((eventType == 1 || eventType == 3 || eventType == 6 || eventType == 7) && inTime == true) Filter = true;
+                if ((eventType == 1 || eventType == 3 || eventType == 6 || eventType == 7) && inTime == true) Cosmic = true;
 
                 if (inTime == true) Type = eventType;
             } // if matched
@@ -505,7 +507,18 @@ bool icarus::crt::FilterCRTPMTMatching::filter(art::Event &e)
     }
     fEventType   = Type;
 
-    return Filter;
+    if (fFilterLevel == "loose") Cosmic = false;  // By default, with loose Filtering, everything is "intersting", nothing tagged as clear cosmic
+    else if (fFilterLevel == "medium") {
+	if (fEventType == 1 || fEventType == 3 || fEventType == 6 || fEventType == 7) Cosmic = true;
+	// With Medium filter, everything (inTime) which is associated with Top CRT Hit before the Flash is filtered as clear cosmic
+	else Cosmic = false;
+    }
+    else if (fFilterLevel == "thight"){
+	if (fEventType != 0 || fEventType != 4 || fEventType != 5) Cosmic = true;
+	// With Thight filter, everything (inTime) associated with a CRT Hit before the Flash is filtered as clear cosmic
+	else Cosmic = false;
+    }
+    return Cosmic;
 }
 
 void icarus::crt::FilterCRTPMTMatching::ClearVecs()
