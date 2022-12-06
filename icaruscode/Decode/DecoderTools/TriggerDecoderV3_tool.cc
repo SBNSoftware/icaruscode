@@ -110,33 +110,36 @@ namespace daq
    *     * `gateID`: the count of gates since the beginning of the run, as
    *         reported by the trigger hardware.
    *     * `gateCountFromPreviousTrigger`: number of gates since the last
-   *         trigger: specifically, if this trigger is e.g. from off-beam BNB
-   *         gate, this is the number of off-beam BNB gates from the last
-   *         off-beam BNB trigger (minimum number is `1`, since that gate is
-   *         included).
+   *         trigger: specifically, if this is e.g. a majority trigger is from 
+   *         off-beam BNB gate, this is the number of off-beam BNB gates
+   *         considered for majority triggers (i.e. excluding minimum bias) from
+   *         the last off-beam BNB majority trigger (minimum number is `1`,
+   *         since that gate is included). The same logic applies for minimum
+   *         bias triggers, which excludes from the count all minimum bias
+   *         triggers (and therefore for minimum bias this count is always
+   *         expected to be `1`).
    *     * `previousTriggerTimestamp`: absolute timestamp of the previous
-   *         trigger from this source. For example, if this trigger is from an
-   *         off-beam BNB gate, this represents the previous off-beam BNB
-   *         trigger.
+   *         trigger from this source. For example, if this is a majority
+   *         trigger from an off-beam BNB gate, this represents the previous
+   *         off-beam BNB majority trigger.
    *     * `gateCount`: total number of gates of this type (triggered or not)
    *         from the beginning of the run (minimum `1` since this one is
    *         included). For example, if this trigger is from an off-beam BNB
    *         gate, this is the number of off-beam BNB gates from the beginning
-   *         of the run.
+   *         of the run. Note that this count, differently from the
+   *         source-specific _trigger_ counts below, mixes the types of triggers
+   *         (majority and minimum bias).
    *     * `triggerCount`: total number of triggers from gates of this type
    *         from the beginning of the run (minimum `1` since this one is
    *         included). For example, if this trigger is from an off-beam BNB
-   *         gate, this is the number of off-beam BNB triggers from the
-   *         beginning of the run.
+   *         majority trigger, this is the number of off-beam BNB majority
+   *         triggers from the beginning of the run.
    *     * `anyTriggerCountFromPreviousTrigger`: number of triggers that
-   *         occurred since the last trigger of this time (the one with
-   *         timestamp `previousTriggerTimestamp`). For example, if this trigger
-   *         is from an off-beam BNB gate, this is the number of triggers from
-   *         any gate (including also e.g. off-beam NuMI, BNB, calibration...)
-   *         that occurred from the previous off-beam BNB trigger.
-   *     * `anyGateCountFromAnyPreviousTrigger`: how many gates have passed
-   *         since the last trigger (reported by `anyPreviousTriggerTimestamp`).
-   *         The minimum value is `1`.
+   *         occurred since the last trigger of this type (the one with
+   *         timestamp `previousTriggerTimestamp`).
+   *     * `anyGateCountFromAnyPreviousTrigger`: _not available_. It would hold
+   *         how many gates have passed since the last trigger (reported by
+   *         `anyPreviousTriggerTimestamp`), with minimum value `1`.
    *     * `anyPreviousTriggerTimestamp`: absolute timestamp of the previous
    *         trigger (from any source). For example, if this trigger is from an
    *         off-beam BNB gate, and the previous was from a NuMI gate, this
