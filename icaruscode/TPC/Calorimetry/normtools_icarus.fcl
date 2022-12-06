@@ -28,7 +28,29 @@ tpcgain: {
   Verbose: false
 }
 
-icarus_calonormtools: [@local::driftnorm, @local::yznorm, @local::tpcgain]
+driftnorm_sql: {
+  tool_type: NormalizeDriftSQLite
+  DBFileName: tpc_elifetime_data 
+  DBTag: v1r0
+  Verbose: false
+}
+
+tpcgain_sql: {
+  tool_type: NormalizeTPCSQL
+  DBFileName: tpc_dqdxcalibration_data
+  DBTag: v1r0
+  Verbose: false
+}
+
+yznorm_sql: {
+  tool_type: NormalizeYZSQL
+  DBFileName: tpc_yz_correction_data
+  DBTag: v1r0
+  Verbose: false
+}
+
+# icarus_calonormtools: [@local::driftnorm, @local::yznorm, @local::tpcgain]
+icarus_calonormtools: [@local::driftnorm_sql, @local::yznorm_sql, @local::tpcgain_sql]
 
 # The norm tools already take care of this
 icarus_data_calconst: [1., 1., 1.]

@@ -26,14 +26,15 @@ physics.path: [   @sequence::icarus_stage0_mc_PMT,
 ## boiler plate...
 physics.outana:        [ purityinfoana0, purityinfoana1 ]
 physics.trigger_paths: [ path ]
-physics.end_paths:     [ outana, streamCommon ]
+physics.end_paths:     [ outana, streamROOT ]
 
 # Drop the artdaq format files on output
 #outputs.outCommon.outputCommands: ["keep *_*_*_*", "drop *_MCDecodeTPCROI_*_*", "drop *_decon1droi_*_*","drop raw::RawDigits_*_*_*" ]
 outputs.outCommon.outputCommands: ["keep *_*_*_*", "drop *_decon1droi_*_*" ]
 
 # Set the expected input for ophit
-physics.producers.ophit.InputModule: "opdaq"
+physics.producers.ophit:     @local::icarus_ophit_MC
+physics.producers.ophitfull: @local::icarus_ophitdebugger_MC
 
 # Set up for the single module mutliple TPC mode...
 physics.producers.MCDecodeTPCROI.FragmentsLabelVec:   ["daq3:PHYSCRATEDATATPCWW","daq2:PHYSCRATEDATATPCWE","daq1:PHYSCRATEDATATPCEW","daq0:PHYSCRATEDATATPCEE"]

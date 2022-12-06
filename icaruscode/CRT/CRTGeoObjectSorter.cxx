@@ -73,41 +73,27 @@ namespace geo{
   }
   
   static bool CRTIncreaseZ(const AuxDetGeo& ad1, const AuxDetGeo& ad2) {
-    double xyz1[3] = {0.};
-    double xyz2[3] = {0.};
-
-    ad1.GetCenter(xyz1); ad2.GetCenter(xyz2);
-    return xyz1[2] < xyz2[2];
+    return ad1.GetCenter().Z() < ad2.GetCenter().Z();
   }
   
 
   //----------------------------------------------------------------------------
   // Define sort order for AuxDetSensitive in co-ordinate system
 
-  static bool CRTSensitiveIncreaseX(std::pair<int , geo::AuxDetSensitiveGeo> ads1, 
-				    std::pair<int , geo::AuxDetSensitiveGeo> ads2){
-    double xyz1[3] = {0.};
-    double xyz2[3] = {0.};
-    ads1.second.GetCenter(xyz1); ads2.second.GetCenter(xyz2);
-    return xyz1[0] < xyz2[0];
+  static bool CRTSensitiveIncreaseX(std::pair<int , geo::AuxDetSensitiveGeo> const& ads1,
+                                    std::pair<int , geo::AuxDetSensitiveGeo> const& ads2){
+    return ads1.second.GetCenter().X() < ads2.second.GetCenter().X();
   }
 
 
-  static bool CRTSensitiveDecreaseY(std::pair<int , geo::AuxDetSensitiveGeo> ads1,
-                                    std::pair<int , geo::AuxDetSensitiveGeo> ads2){
-    double xyz1[3] = {0.};
-    double xyz2[3] = {0.};
-    ads1.second.GetCenter(xyz1); ads2.second.GetCenter(xyz2);
-    return xyz1[1] > xyz2[1];
+  static bool CRTSensitiveDecreaseY(std::pair<int , geo::AuxDetSensitiveGeo> const& ads1,
+                                    std::pair<int , geo::AuxDetSensitiveGeo> const& ads2){
+    return ads1.second.GetCenter().Y() > ads2.second.GetCenter().Y();
   }
 
-  static bool CRTSensitiveIncreaseZ(std::pair<int , geo::AuxDetSensitiveGeo> ads1,
-                                    std::pair<int , geo::AuxDetSensitiveGeo> ads2){
-    double xyz1[3] = {0.};
-    double xyz2[3] = {0.};
-
-    ads1.second.GetCenter(xyz1); ads2.second.GetCenter(xyz2);
-    return xyz1[2] < xyz2[2];
+  static bool CRTSensitiveIncreaseZ(std::pair<int , geo::AuxDetSensitiveGeo> const& ads1,
+                                    std::pair<int , geo::AuxDetSensitiveGeo> const& ads2){
+    return ads1.second.GetCenter().Z() < ads2.second.GetCenter().Z();
   }
 
 

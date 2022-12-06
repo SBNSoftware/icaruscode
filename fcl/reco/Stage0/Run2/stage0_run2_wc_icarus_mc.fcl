@@ -38,7 +38,7 @@ outputs.rootOutput.outputCommands:         ["keep *_*_*_*",
                                             "drop *_MCDecodeTPCROI_*_*", 
                                             "drop *_decon1droi_*_*", 
                                             "drop *_decon2droi*_*_*", 
-                                            "drop *_roifinder_*_*",
+                                            "drop recob::Wire*_roifinder_*_*",
                                             "drop recob::Wire*_roifinder2d_*_*" 
                                            ]
 

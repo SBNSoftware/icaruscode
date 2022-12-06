@@ -13,6 +13,6 @@ SPE202202: {  # amplitude set to 4 mV, gain 9.7x10^6 with R = 50 ohm
   Shift: 0.
 }
 
-SPE: @local::SPEorig
+SPE: @local::SPE202202
 
 END_PROLOG

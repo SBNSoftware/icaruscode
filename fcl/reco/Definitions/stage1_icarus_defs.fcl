@@ -14,7 +14,6 @@
 #include "icarus_FilterNumberTPCHits.fcl"
 ### JCZ: Add simple flashmatch to this area
 #include "flashmatch_simple_icarus.fcl"
-#include "crtsimhitproducer.fcl"
 #include "crttrackproducer_icarus.fcl"
 #include "crtbacktracker_icarus.fcl"
 #include "crtt0matchingalg_icarus.fcl"
@@ -60,7 +59,6 @@ icarus_stage1_producers:
   fmatchCryoW:                    @local::icarus_simple_flashmatch_1
 
  ## crt producer
-  crthit:            @local::standard_crthitproducer	
   crttrack:          @local::standard_crttrackproducer
   CRTT0Matching:     @local::standard_crtt0producer
 }
@@ -75,15 +73,14 @@ icarus_stage1_filters:
                   WindowEndTime:   -1488.4 # 11.2 -1500 us offset + 0.4us safe margin
                 }
 
-   TPCHitFilter:      @local::icarus_FilterNumberTPCHits
    TPCHitFilterCryoW: @local::icarus_FilterNumberTPCHits
    TPCHitFilterCryoE: @local::icarus_FilterNumberTPCHits
 }
 
 icarus_stage1_analyzers:
 {
-  caloskimE: @local::caloskim_cryoe_nodigits_goldentracks
-  caloskimW: @local::caloskim_cryow_nodigits_goldentracks
+  caloskimE: @local::caloskim_cryoe_goldentracks_not0
+  caloskimW: @local::caloskim_cryow_goldentracks_not0
   simpleLightAna: @local::ICARUSFlashAssAna
   CRTDataAnalysis: 
    {
@@ -100,9 +97,11 @@ icarus_stage1_analyzers:
 
 icarus_stage1_analyzers.caloskimE.SelectEvents: [reco]
 icarus_stage1_analyzers.caloskimE.CALOproducer: caloskimCalorimetryCryoE 
+icarus_stage1_analyzers.caloskimE.SilenceMissingDataProducts: true
 
 icarus_stage1_analyzers.caloskimW.SelectEvents: [reco]
 icarus_stage1_analyzers.caloskimW.CALOproducer: caloskimCalorimetryCryoW 
+icarus_stage1_analyzers.caloskimW.SilenceMissingDataProducts: true
 
 ### Below are a list of convenient sequences that can be used for production/typical users. ###
 
@@ -154,7 +153,7 @@ icarus_pandora_Gauss:              [
 icarus_reco_fm:                    [ fmatchCryoE,
                                      fmatchCryoW ]
 
-icarus_crthit:                     [crthit, crttrack]
+icarus_crttrack:                   [crttrack]
 
 icarus_crtt0match:                 [CRTT0Matching]
 
@@ -168,16 +167,20 @@ icarus_stage1_filters.TPCHitFilterCryoE.HitDataLabelVec: ["cluster3DCryoE"]
 icarus_stage1_filters.TPCHitFilterCryoE.MaximumHits:     60000    
 
 ## Definitions for running the 3D clustering by Cryostat
+icarus_stage1_producers.cluster3DCryoW.MakeSpacePointsOnly:                                      true
 icarus_stage1_producers.cluster3DCryoW.Hit3DBuilderAlg.HitFinderTagVec:                          ["gaushitTPCWW", "gaushitTPCWE"]
 icarus_stage1_producers.cluster3DCryoW.Hit3DBuilderAlg.PulseHeightFraction:                      0. #0.75 #0.25
 icarus_stage1_producers.cluster3DCryoW.Hit3DBuilderAlg.PHLowSelection:                           0. #4.0 # 20.
 icarus_stage1_producers.cluster3DCryoW.Hit3DBuilderAlg.MaxHitChiSquare:                          1000000.
+icarus_stage1_producers.cluster3DCryoW.Hit3DBuilderAlg.MaxMythicalChiSquare:                     30.
 icarus_stage1_producers.cluster3DCryoW.Hit3DBuilderAlg.OutputHistograms:                         false
 
+icarus_stage1_producers.cluster3DCryoE.MakeSpacePointsOnly:                                      true
 icarus_stage1_producers.cluster3DCryoE.Hit3DBuilderAlg.HitFinderTagVec:                          ["gaushitTPCEW", "gaushitTPCEE"]
 icarus_stage1_producers.cluster3DCryoE.Hit3DBuilderAlg.PulseHeightFraction:                      0. #0.75 #0.25
 icarus_stage1_producers.cluster3DCryoE.Hit3DBuilderAlg.PHLowSelection:                           0. #4.0 # 20.
 icarus_stage1_producers.cluster3DCryoE.Hit3DBuilderAlg.MaxHitChiSquare:                          1000000.
+icarus_stage1_producers.cluster3DCryoE.Hit3DBuilderAlg.MaxMythicalChiSquare:                     30.
 icarus_stage1_producers.cluster3DCryoE.Hit3DBuilderAlg.OutputHistograms:                         false
 
 ### Definitions for a pandora by cryostat

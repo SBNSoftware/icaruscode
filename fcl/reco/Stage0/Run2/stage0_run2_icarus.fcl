@@ -21,7 +21,8 @@ physics.end_paths:     [ outana, streamROOT ]
 # Keep the Trigger fragment
 outputs.rootOutput.outputCommands: [
     "keep *_*_*_*", 
-    "drop *_*_*_DAQ*", 
+    "drop *_*_*_DAQ*",
+    "drop *_ophituncorrected_*_*",
     "drop *_daqTPCROI_*_*", 
     "drop *_decon1droi_*_*", 
     "drop recob::Wire*_roifinder_*_*",

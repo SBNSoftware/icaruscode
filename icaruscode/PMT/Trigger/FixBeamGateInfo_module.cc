@@ -73,14 +73,14 @@ namespace icarus::trigger { class FixBeamGateInfo; }
  *         while the start point is not changed. The following options are
  *         exclusive:
  *         * `SetTo` (time): duration is set to this interval;
- *         * `Change` (time): this value is added to the duration (negative
+ *         * `Add` (time): this value is added to the duration (negative
  *             decreases it, but never below `0`).
  *     * `Start` (optional table): a table with the operations affecting the
  *         start of the gate. The duration of the gate is always preserved.
- *         The following options are exclusive:
+ *         The following options are optional and sequential (set, then add):
  *         * `SetTo` (time): start of the beam gate is moved to this time point,
  *           set on the electronics time scale;
- *         * `Change` (time): this value is added to the start time (negative
+ *         * `Add` (time): this value is added to the start time (negative
  *           anticipates it).
  * * `KeepInstanceName` (flag, default: `false`): if set, the output beam gate
  *     data product will have the same instance name as the input one specified
@@ -116,7 +116,7 @@ class icarus::trigger::FixBeamGateInfo: public art::SharedProducer {
       std::optional<I> addValue; ///< Value to add.
       
       bool empty() const { return !setValue && !addValue; }
-      bool valid() const { return !(setValue && addValue); }
+      bool valid() const { return true; }
     }; // ChangeRecipe_t
     
     GateSelector_t selectGates; ///< Which gates to apply this recipe on.
