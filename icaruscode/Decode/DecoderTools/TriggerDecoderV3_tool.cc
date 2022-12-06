@@ -547,6 +547,7 @@ namespace daq
     //
     // extra trigger info
     //
+    unsigned int const triggerID = datastream_info.wr_event_no;
     sbn::triggerSource beamGateBit;
     switch (datastream_info.gate_type) {
       case TriggerGateTypes::BNB:{	
@@ -557,7 +558,7 @@ namespace daq
 	  fTriggerExtra->previousTriggerTimestamp = frag.getLastTimestampBNBMaj();
 	  fTriggerExtra->gateCount = datastream_info.gate_id_BNB;
 	  fTriggerExtra->triggerCount = frag.getTotalTriggerBNBMaj();
-	  fTriggerExtra->anyTriggerCountFromPreviousTrigger = frag.getLastTriggerBNBMaj();
+	  fTriggerExtra->anyTriggerCountFromPreviousTrigger = triggerID - frag.getLastTriggerBNBMaj();
 	}
 	else if(datastream_info.trigger_type == 1)
 	{
@@ -565,7 +566,7 @@ namespace daq
           fTriggerExtra->previousTriggerTimestamp = frag.getLastTimestampBNBMinbias();
           fTriggerExtra->gateCount = datastream_info.gate_id_BNB;
           fTriggerExtra->triggerCount = frag.getTotalTriggerBNBMinbias();
-          fTriggerExtra->anyTriggerCountFromPreviousTrigger = frag.getLastTriggerBNBMinbias();
+          fTriggerExtra->anyTriggerCountFromPreviousTrigger = triggerID - frag.getLastTriggerBNBMinbias();
 	}
         break;
       }
@@ -577,7 +578,7 @@ namespace daq
 	  fTriggerExtra->previousTriggerTimestamp = frag.getLastTimestampNuMIMaj();
 	  fTriggerExtra->gateCount = datastream_info.gate_id_NuMI;
 	  fTriggerExtra->triggerCount = frag.getTotalTriggerNuMIMaj();
-	  fTriggerExtra->anyTriggerCountFromPreviousTrigger = frag.getLastTriggerNuMIMaj();
+	  fTriggerExtra->anyTriggerCountFromPreviousTrigger = triggerID - frag.getLastTriggerNuMIMaj();
 	}
 	else if(datastream_info.trigger_type == 1)
 	{
@@ -585,7 +586,7 @@ namespace daq
 	  fTriggerExtra->previousTriggerTimestamp = frag.getLastTimestampNuMIMinbias();
 	  fTriggerExtra->gateCount = datastream_info.gate_id_NuMI;
 	  fTriggerExtra->triggerCount = frag.getTotalTriggerNuMIMinbias();
-	  fTriggerExtra->anyTriggerCountFromPreviousTrigger = frag.getLastTriggerNuMIMinbias();
+	  fTriggerExtra->anyTriggerCountFromPreviousTrigger = triggerID - frag.getLastTriggerNuMIMinbias();
 	}
         break;
       }
@@ -597,7 +598,7 @@ namespace daq
 	  fTriggerExtra->previousTriggerTimestamp= frag.getLastTimestampBNBOffMaj();
 	  fTriggerExtra->gateCount = datastream_info.gate_id_BNBOff;
 	  fTriggerExtra->triggerCount = frag.getTotalTriggerBNBOffMaj();
-	  fTriggerExtra->anyTriggerCountFromPreviousTrigger = frag.getLastTriggerBNBOffMaj();
+	  fTriggerExtra->anyTriggerCountFromPreviousTrigger = triggerID - frag.getLastTriggerBNBOffMaj();
 	}
 	else if(datastream_info.trigger_type == 1)
 	{
@@ -605,7 +606,7 @@ namespace daq
 	  fTriggerExtra->previousTriggerTimestamp= frag.getLastTimestampBNBOffMinbias();
 	  fTriggerExtra->gateCount = datastream_info.gate_id_BNBOff;
 	  fTriggerExtra->triggerCount = frag.getTotalTriggerBNBOffMinbias();
-	  fTriggerExtra->anyTriggerCountFromPreviousTrigger = frag.getLastTriggerBNBOffMinbias();
+	  fTriggerExtra->anyTriggerCountFromPreviousTrigger = triggerID - frag.getLastTriggerBNBOffMinbias();
 	}
         break;
       }
@@ -617,7 +618,7 @@ namespace daq
 	  fTriggerExtra->previousTriggerTimestamp= frag.getLastTimestampNuMIOffMaj();
 	  fTriggerExtra->gateCount = datastream_info.gate_id_NuMIOff;
 	  fTriggerExtra->triggerCount = frag.getTotalTriggerNuMIOffMaj();
-	  fTriggerExtra->anyTriggerCountFromPreviousTrigger = frag.getLastTriggerNuMIOffMaj();
+	  fTriggerExtra->anyTriggerCountFromPreviousTrigger = triggerID - frag.getLastTriggerNuMIOffMaj();
 	}
 	if(datastream_info.trigger_type == 1)
 	{
@@ -625,7 +626,7 @@ namespace daq
 	  fTriggerExtra->previousTriggerTimestamp= frag.getLastTimestampNuMIOffMinbias();
 	  fTriggerExtra->gateCount = datastream_info.gate_id_NuMIOff;
 	  fTriggerExtra->triggerCount = frag.getTotalTriggerNuMIOffMinbias();
-	  fTriggerExtra->anyTriggerCountFromPreviousTrigger = frag.getLastTriggerNuMIOffMinbias();
+	  fTriggerExtra->anyTriggerCountFromPreviousTrigger = triggerID - frag.getLastTriggerNuMIOffMinbias();
 	}
         break;
       }
@@ -637,7 +638,7 @@ namespace daq
 	  fTriggerExtra->previousTriggerTimestamp = frag.getLastTimestampCalibMaj();
 	  //fTriggerExtra->gateCount = datastream_info.gate_id_calib;
 	  fTriggerExtra->triggerCount = frag.getTotalTriggerCalibMaj();
-	  fTriggerExtra->anyTriggerCountFromPreviousTrigger = frag.getLastTriggerCalibMaj();
+	  fTriggerExtra->anyTriggerCountFromPreviousTrigger = triggerID - frag.getLastTriggerCalibMaj();
 	}
 	if(datastream_info.trigger_type == 1)
 	{
@@ -645,7 +646,7 @@ namespace daq
 	  fTriggerExtra->previousTriggerTimestamp = frag.getLastTimestampCalibMinbias();
 	  //fTriggerExtra->gateCount = datastream_info.gate_id_calib;
 	  fTriggerExtra->triggerCount = frag.getTotalTriggerCalibMinbias();
-	  fTriggerExtra->anyTriggerCountFromPreviousTrigger = frag.getLastTriggerCalibMinbias();
+	  fTriggerExtra->anyTriggerCountFromPreviousTrigger = triggerID - frag.getLastTriggerCalibMinbias();
 	}
 	break;
       }
@@ -657,7 +658,7 @@ namespace daq
     fTriggerExtra->triggerTimestamp = artdaq_ts;
     fTriggerExtra->beamGateTimestamp = beamgate_ts;
     fTriggerExtra->enableGateTimestamp = enablegate_ts;
-    fTriggerExtra->triggerID = datastream_info.wr_event_no; //all triggers (event ID)
+    fTriggerExtra->triggerID = triggerID; //all triggers (event ID)
     fTriggerExtra->gateID = datastream_info.gate_id; //all gate types (gate ID)
     fTriggerExtra->anyGateCountFromAnyPreviousTrigger = frag.getDeltaGates();
     fTriggerExtra->anyPreviousTriggerTimestamp = frag.getLastTimestamp();
@@ -781,7 +782,7 @@ namespace daq
     // relative time trigger (raw::Trigger)
     //
     fRelTrigger->emplace_back(
-      static_cast<unsigned int>(datastream_info.wr_event_no), // counter
+      fTriggerExtra->triggerID,                               // counter
       fDetTimings.TriggerTime().value(),                      // trigger_time
       elecGateStart.value(),                                  // beamgate_time
       mask(beamGateBit)                                       // bits
