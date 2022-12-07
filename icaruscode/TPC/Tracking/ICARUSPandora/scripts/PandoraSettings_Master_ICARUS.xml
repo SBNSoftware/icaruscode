@@ -30,7 +30,10 @@
             <tool type = "LArStitchingCosmicRayMerging"><ThreeDStitchingMode>false</ThreeDStitchingMode></tool>
         </StitchingTools>
         <CosmicRayTaggingTools>
-            <tool type = "LArCosmicRayTagging"/>
+            <tool type = "LArCosmicRayTagging">
+                <InTimeMaxX0>2.0</InTimeMaxX0>
+                <CutMode>cautious</CutMode>
+            </tool>
         </CosmicRayTaggingTools>
         <SliceIdTools>
 	    <tool type = "LArBdtNeutrinoId">
@@ -48,6 +51,7 @@
         <RecreatedClusterListName>RecreatedClusters</RecreatedClusterListName>
         <RecreatedVertexListName>RecreatedVertices</RecreatedVertexListName>
         <VisualizeOverallRecoStatus>false</VisualizeOverallRecoStatus>
+        <InTimeMaxX0>2.0</InTimeMaxX0>
     </algorithm>
 
     <algorithm type = "LArVisualMonitoring">
