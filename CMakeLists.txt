@@ -90,7 +90,6 @@ find_package(FFTW3f REQUIRED )
 find_package(FFTW3q REQUIRED )
 find_package(FFTW3l REQUIRED )
 
-
 # macros for dictionary and simple_plugin
 include(ArtDictionary)
 include(ArtMake)
