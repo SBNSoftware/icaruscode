@@ -1,0 +1,18 @@
+BEGIN_PROLOG
+
+icarus_FilterCRTPMTMatching:
+{ 
+  module_type:           "FilterCRTPMTMatching"
+  OpHitModuleLabel:      "ophit"
+  OpFlashModuleLabelVec: ["opflashCryoE","opflashCryoW"]
+  CrtHitModuleLabel:     "crthit"
+  TriggerLabel:          "daqTrigger"
+  TriggerConfiguration:  "triggerconfig"
+  OpHitAmplitude:        400
+  nOpHitToTrigger:       5
+  TimeOfFlightInterval:  0.1          # [us] time of flight interval to evaluate the match
+  FilterLevel:           "loose"       # loose: accept everything ; medium: reject Top CRT matched entering cosmics; tight: rejects everything matched with an entering CRT Hit; default is loose.
+  OutputTree:		 true	        # keep the output tree or not
+}
+
+END_PROLOG
