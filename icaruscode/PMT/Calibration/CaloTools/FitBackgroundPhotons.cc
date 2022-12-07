@@ -47,52 +47,5 @@ void FitBackgroundPhotons::fitHistogram( TH1D *hist, std::string fitoption )
 	}
 
 	m_fitstatus=fitstatus;
-	m_hist=hist;
-
-}
-
-void FitBackgroundPhotons::saveToCanvas( int pmt, bool m_exponential, TCanvas & canvas )
-{
-
-
-	m_hist->GetXaxis()->SetRangeUser( m_fitrange[0]-0.5, m_fitrange[1]+1 );
-	m_hist->GetYaxis()->SetTitle( "Number of pulses" );
-	m_hist->Draw("hist E1");
-
-	m_fitf->SetLineStyle(2);
-	m_fitf->SetLineColor(kRed);
-	m_fitf->Draw("same");
-
-	char gname[100];
-  	TPaveText* ptGainPar = new TPaveText(0.6, 0.55, 0.9, 0.9,"brNDC");
-  	sprintf(gname,"PMT: %d", pmt);
-  	ptGainPar->AddText(gname);
-  	sprintf( gname,"#chi^2 / ndf = %.0f/%d", m_fitf->GetChisquare(), m_fitf->GetNDF() );
-  	ptGainPar->AddText(gname);
- 	sprintf(gname,"#mu = %.2e #pm %.2e", m_vresults[0], m_verrors[0] );
-  	ptGainPar->AddText(gname);
-  	sprintf(gname,"q = %.2e #pm %.2e", m_vresults[1], m_verrors[1] );
- 	ptGainPar->AddText(gname);
-  	sprintf(gname,"#sigma = %.2e #pm %.2e", m_vresults[2], m_verrors[2] );
-  	ptGainPar->AddText(gname);
-  	sprintf(gname,"A = %.2e #pm %.2e", m_vresults[3], m_verrors[3] );
-  	ptGainPar->AddText(gname);
-  		
-  	if( m_exponential )
-  	{
-  		sprintf(gname,"A_{0} = %.2e #pm %.2e", m_vresults[4], m_verrors[4] );
-  		ptGainPar->AddText(gname);
-  		sprintf(gname,"c_{0} = %.2e #pm %.2e", m_vresults[5], m_verrors[5] );
-  		ptGainPar->AddText(gname);
-  	}
-
-  	ptGainPar->SetBorderSize(0);
-  	ptGainPar->SetFillColor(0);
-  	ptGainPar->SetTextFont(42);
-  	ptGainPar->SetTextAlign(12);
-  	ptGainPar->Draw();
-
-
-  	return;
 
 }

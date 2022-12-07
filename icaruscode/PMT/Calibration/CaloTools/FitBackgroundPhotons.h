@@ -9,8 +9,6 @@
 
 #include "TH1D.h"
 #include "TF1.h"
-#include "TCanvas.h"
-#include "TPaveText.h"
 #include "IdealPmtResponse.h"
 
 
@@ -36,8 +34,6 @@ class FitBackgroundPhotons {
 		void setFitRange( float low, float high ){ m_fitrange[0]=low; m_fitrange[1]=high; };
 		void getFitRange( float &low, float &high ){ low=m_fitrange[0]; high=m_fitrange[1]; };
 
-		void saveToCanvas( int pmt, bool m_exponential, TCanvas & canvas );
-
 	private: 
 
 		unsigned int m_nparameters=6;
@@ -46,7 +42,6 @@ class FitBackgroundPhotons {
 
 		float m_fitrange[2] = { 0.1, 2 };
 
-		TH1D * m_hist;
 		TF1 *m_fitf;
 
 		//float m_start[m_nparameters]

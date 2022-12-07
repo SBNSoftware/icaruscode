@@ -16,10 +16,12 @@ pmt_bkgphotons_calibration:
 {
   module_type: 	PMTBackgroundphotonsCalibration
   OpHitModule: "ophit"
+  TriggerModule: "daqTrigger"
   AmplitudeThreshold: 2.0 
   ADCmV: 0.122      
   ADCpC: 0.00488  
   ChannelMasks: [  ]  
+  FilterInTime: [ -3, 7] #in us
 }
 
 END_PROLOG

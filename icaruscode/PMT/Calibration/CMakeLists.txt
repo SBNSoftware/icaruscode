@@ -6,48 +6,47 @@
 add_subdirectory(CaloTools)
 add_subdirectory(fcl)
 
-simple_plugin(PMTLaserCalibration "module"
-                icaruscode_Timing_DataProducts
+cet_build_plugin(PMTLaserCalibration art::module
+                    LIBRARIES
                 icaruscode_PMT_Algorithms
                 icaruscode_PMT_Calibration_CaloTools
-                lardataobj_RawData
-                lardataobj_Simulation
-                lardataobj_RecoBase
-                nurandom_RandomUtils_NuRandomService_service
-                ${ART_FRAMEWORK_CORE}
-                ${ART_FRAMEWORK_PRINCIPAL}
-                ${ART_FRAMEWORK_SERVICES_REGISTRY}
-                ${ART_FRAMEWORK_SERVICES_OPTIONAL_RANDOMNUMBERGENERATOR_SERVICE}
-                ${ART_ROOT_IO_TFILESERVICE_SERVICE}
-                art_Persistency_Provenance
-                ${CANVAS}
-                ${MF_MESSAGELOGGER}
-                ${FHICLCPP}
-                ${CETLIB}
-                cetlib_except
-                ${ROOT_BASIC_LIB_LIST}
-                ${Boost_SYSTEM_LIBRARY}
+                icaruscode_IcarusObj
+		lardataobj::RawData
+                lardataobj::Simulation
+                lardataobj::RecoBase
+                art::Framework_Core
+                art::Framework_Principal
+                art::Framework_Services_Registry
+                art_root_io::TFileService_service
+                art_root_io::tfile_support
+                art::Persistency_Provenance
+                canvas::canvas
+                messagefacility::MF_MessageLogger
+                fhiclcpp::fhiclcpp
+                cetlib::cetlib
+                cetlib_except::cetlib_except
+                Boost::system
               )
 
-simple_plugin(PMTBackgroundphotonsCalibration "module"
+cet_build_plugin(PMTBackgroundphotonsCalibration art::module
+                    LIBRARIES
                 icaruscode_PMT_Algorithms
                 icaruscode_PMT_Calibration_CaloTools
-                lardataobj_RawData
-                lardataobj_Simulation
-                nurandom_RandomUtils_NuRandomService_service
-                ${ART_FRAMEWORK_CORE}
-                ${ART_FRAMEWORK_PRINCIPAL}
-                ${ART_FRAMEWORK_SERVICES_REGISTRY}
-                ${ART_FRAMEWORK_SERVICES_OPTIONAL_RANDOMNUMBERGENERATOR_SERVICE}
-                ${ART_ROOT_IO_TFILESERVICE_SERVICE}
-                art_Persistency_Provenance
-                ${CANVAS}
-                ${MF_MESSAGELOGGER}
-                ${FHICLCPP}
-                ${CETLIB}
-                cetlib_except
-                ${ROOT_BASIC_LIB_LIST}
-                ${Boost_SYSTEM_LIBRARY}
+                lardataobj::RawData
+                lardataobj::Simulation
+                lardataobj::RecoBase
+                art::Framework_Core
+                art::Framework_Principal
+                art::Framework_Services_Registry
+                art_root_io::TFileService_service
+                art_root_io::tfile_support
+                art::Persistency_Provenance
+                canvas::canvas
+                messagefacility::MF_MessageLogger
+                fhiclcpp::fhiclcpp
+                cetlib::cetlib
+                cetlib_except::cetlib_except
+                Boost::system
               )
 
 

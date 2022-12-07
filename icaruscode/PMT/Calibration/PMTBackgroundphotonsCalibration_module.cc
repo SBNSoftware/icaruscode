@@ -34,6 +34,7 @@
 #include "art_root_io/TFileService.h"
 #include "lardataobj/RawData/OpDetWaveform.h"
 #include "lardataobj/RecoBase/OpHit.h"
+#include "sbnobj/Common/Trigger/ExtraTriggerInfo.h"
 
 #include "icaruscode/PMT/Calibration/CaloTools/Utils.h"
 
@@ -64,11 +65,14 @@ public:
 
   void analyze(art::Event const& event) override;
 
+  bool inTime( double const & time, std::vector<double> & bounds );
+
   void clean();
 
 private:
 
   art::InputTag m_ophit_label;
+  art::InputTag fTriggerLabel;
 
 
   TTree *m_ophit_ttree;
@@ -86,6 +90,7 @@ private:
   double adc_to_pC;
   double m_threshold;
   std::vector< unsigned int > m_channel_mask;
+  std::vector<double> m_filter_intime;
 
   art::ServiceHandle<art::TFileService> tfs;
 
@@ -104,6 +109,7 @@ pmtcalo::PMTBackgroundphotonsCalibration::PMTBackgroundphotonsCalibration(fhicl:
 {
 
    m_ophit_label = pset.get<art::InputTag>("OpHitModule", "ophit");
+   fTriggerLabel = pset.get<art::InputTag>("TriggerModule");
 
    m_threshold = pset.get<double>("AmplitudeThreshold");
 
@@ -113,8 +119,11 @@ pmtcalo::PMTBackgroundphotonsCalibration::PMTBackgroundphotonsCalibration(fhicl:
    m_channel_mask = pset.get< std::vector< unsigned int > >
                             ("ChannelMasks", std::vector< unsigned int >());
 
+   m_filter_intime = pset.get< std::vector<double> >("FilterInTime", std::vector< double >()); // in us 
+
+
   // Add histogram bins and range in form of a triplet (hist low, hist high, binsize)
-      
+    
 }
 
 
@@ -165,6 +174,14 @@ void pmtcalo::PMTBackgroundphotonsCalibration::beginJob()
 
 //-----------------------------------------------------------------------------
 
+bool pmtcalo::PMTBackgroundphotonsCalibration::inTime( 
+                        double const & time, std::vector<double> & bounds ){
+  return (time >= bounds[0]) & ( time <= bounds[1] );
+}
+
+
+//-----------------------------------------------------------------------------
+
 
 void pmtcalo::PMTBackgroundphotonsCalibration::analyze(art::Event const& event)
 {
@@ -176,6 +193,22 @@ void pmtcalo::PMTBackgroundphotonsCalibration::analyze(art::Event const& event)
    m_event = event.id().event();
    m_timestamp = event.time().timeHigh(); // We just need precision at the s level
 
+
+   // Here we filter out triggers that are not MinBias
+   art::Handle<sbn::ExtraTriggerInfo> trigger_handle;
+   event.getByLabel( fTriggerLabel, trigger_handle );
+
+   bool _is_minbias=true;
+
+   if( trigger_handle.isValid() ) {
+
+        _is_minbias = value( trigger_handle->triggerType ) ==1;
+    
+    }
+      else{
+         mf::LogError("pmtcalo::PMTBackgroundphotonsCalibration") << "No raw::Trigger associated to label: " << fTriggerLabel.label() << "\n" ; 
+    }
+
    // First thing we sort the ophit in their respective channels
    art::Handle< std::vector< recob::OpHit > > ophitHandle;
    event.getByLabel(m_ophit_label, ophitHandle);
@@ -186,7 +219,10 @@ void pmtcalo::PMTBackgroundphotonsCalibration::analyze(art::Event const& event)
       
       unsigned int opch = ophit.OpChannel();
 
-      if( hasChannel(opch, m_channel_mask) )
+      // Remove OpHits from known channels that are not working + OpHits that are not
+      // In the trigger window
+      if( hasChannel(opch, m_channel_mask) | 
+            !inTime( ophit.PeakTime(), m_filter_intime ) | !_is_minbias )
         continue;
 
       hintegral[opch]->Fill( ophit.Area()*adc_to_pC/echarge );

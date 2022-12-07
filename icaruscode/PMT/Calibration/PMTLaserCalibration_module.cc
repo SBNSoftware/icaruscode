@@ -33,7 +33,7 @@
 
 #include "icaruscode/Decode/ChannelMapping/IICARUSChannelMap.h"
 #include "lardata/DetectorInfoServices/DetectorClocksService.h"
-#include "icaruscode/Timing/DataProducts/PMTWaveformTimeCorrection.h"
+#include "icaruscode/IcarusObj/PMTWaveformTimeCorrection.h"
 #include "icaruscode/PMT/Calibration/CaloTools/LaserPulse.h"
 
 
