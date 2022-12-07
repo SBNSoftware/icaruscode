@@ -69,7 +69,7 @@ icarus_stage0_producers:
 
   daqCRT:                         @local::crtdaq_icarus
 
-  daqTrigger:                     @local::decodeTriggerV3
+  daqTrigger:                     @local::decodeTriggerV2
 
   ### calwire producers
   decon1droi:                     @local::icarus_decon1droi
@@ -458,7 +458,5 @@ icarus_stage0_producers.purityana1.PersistPurityInfo:                           
 icarus_stage0_producers.purityana1.FillAnaTuple:                                               false
 icarus_stage0_producers.purityana1.PersistPurityInfo:                                          false
 icarus_stage0_producers.purityana1.FillAnaTuple:                                               false
-
-icarus_stage0_producers.triggerconfig.TriggerFragmentType:				       ICARUSTriggerV3
 
 END_PROLOG
