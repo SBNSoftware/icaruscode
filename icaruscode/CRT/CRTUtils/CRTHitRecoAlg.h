@@ -78,7 +78,7 @@ class icarus::crt::CRTHitRecoAlg {
     
   using CRTData = icarus::crt::CRTData;
   using CRTHit = sbn::crt::CRTHit;
-
+  /*//OLD
   struct Config {
     using Name = fhicl::Name;
     using Comment = fhicl::Comment;
@@ -140,14 +140,19 @@ class icarus::crt::CRTHitRecoAlg {
 	};
   };//Config
 
-  //constructors
+  //OLD constructors
   CRTHitRecoAlg(const Config& config);
   CRTHitRecoAlg(const fhicl::ParameterSet& pset) :
     CRTHitRecoAlg{fhicl::Table<Config>{pset}()} {}
   CRTHitRecoAlg();
 
-  //configure module from fcl file
-  void reconfigure(const Config& config);
+  //OLD configure module from fcl file
+  void reconfigure(const Config& config);*/
+
+  //new constructors 
+  explicit CRTHitRecoAlg(const fhicl::ParameterSet& pset);
+  CRTHitRecoAlg();
+  void reconfigure(const fhicl::ParameterSet& pset);
 
   //produce CRTHits with associated data indices from input vector of CRTData
   vector<pair<CRTHit, vector<int>>> CreateCRTHits(vector<art::Ptr<CRTData>> crtList, uint64_t trigger_timestamp);
@@ -165,7 +170,7 @@ class icarus::crt::CRTHitRecoAlg {
 
   geo::GeometryCore const* fGeometryService;
 
-  CRTCommonUtils* fCrtutils;
+  CRTCommonUtils fCrtutils;
 
   //Params from fcl file
   bool fVerbose;          ///< print info
@@ -193,6 +198,11 @@ class icarus::crt::CRTHitRecoAlg {
   CRTHit MakeSideHit(vector<art::Ptr<CRTData>> coinData, ULong64_t GlobalTrigger[]);
   // Check if a hit is empty
   bool IsEmptyHit(CRTHit hit);
+  // function to appply appropriate prop delay for Side full vs cut modules (North and South walls are cut modules)
+  int64_t RegionDelay(std::string const& region) const;
+	
+  std::map<uint8_t, int32_t> FEB_T1delay_side; //<mac5, delay in ns>
+  std::map<uint8_t, int32_t> FEB_T0delay_side; //<mac5, delay in ns>
 
   static  bool compareBytime(art::Ptr<CRTData> const &a, art::Ptr<CRTData> const &b){
     return a->fTs0 < b->fTs0;
