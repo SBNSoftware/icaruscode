@@ -22,7 +22,6 @@
 
 // LArSoft includes
 #include "larcore/CoreUtils/ServiceUtil.h"
-#include "lardata/DetectorInfoServices/DetectorClocksService.h"
 #include "larcorealg/Geometry/GeometryCore.h"
 #include "larcore/Geometry/Geometry.h"
 
@@ -32,7 +31,7 @@
 #include "sbnobj/Common/CRT/CRTHit.hh"
 #include "icaruscode/CRT/CRTUtils/CRTCommonUtils.h"
 #include "sbnobj/Common/Trigger/ExtraTriggerInfo.h"
-
+#include "icaruscode/Decode/DataProducts/TriggerConfiguration.h"
 // C++ includes
 #include <vector>
 #include <map>
@@ -50,15 +49,28 @@ namespace icarus
         struct CRTPMT
         {
             double tof;
-            double distance;
-            art::Ptr<sbn::crt::CRTHit> CRTHit;
+            sbn::crt::CRTHit const* CRTHit=nullptr;
         };
         struct MatchedCRT
         {
-            // vector of pairs where first is the matched Time of Flight and second is the matched CRTHit
             std::vector<CRTPMT> entering;
             std::vector<CRTPMT> exiting;
-            int matchType;
+	    /**
+            * Type of the matching.
+            * 
+            * Secret decoder ring:
+            *  * `0`: no matched CRT
+            *  * `1`: particle entering from Top CRT
+            *  * `2`: particle entering from Side CRT
+            *  * `3`: particle entering from Top and exiting from Side CRT
+            *  * `4`: particle exiting/coincidence with Top CRT
+            *  * `5`: particle exiting/coincidence with Side CRT
+            *  * `6`: multiple particles entering from Top and Side
+            *  * `7`: multiple particles entering from Top and Side and exiting from side
+            *  * `8`: all other cases
+            * 
+            */
+	    int matchType;
         };
         struct TrajPoint
         {
@@ -72,25 +84,25 @@ namespace icarus
 
 using namespace icarus::crt;
 
-bool flashInTime(double const &flashTime, int gateType, double gateDiff, double flashTimeCut)
+bool flashInTime(double const &flashTime, int gateType, double gateDiff, double gateWidth)
 {
-    std::map<unsigned int, double> gateLength{
-        {1, 2.2},  // BNB
-        {2, 10.1}, // NuMI
-        {3, 2.2},  // BNB Offbeam
-        {4, 10.1}, // NuMI Offbeam
-    };
+    //   {1, 2.2},  // BNB
+    //   {2, 10.1}, // NuMI
+    //   {3, 2.2},  // BNB Offbeam
+    //   {4, 10.1}, // NuMI Offbeam
+   
 
-    /*double vetoOffset = 4;*/
-    double activeGate = gateLength[gateType] /*- vetoOffset*/;
+    //As a reminder, I will leave here the commented part of the vetoOffset, in case something changes in the future
+    /*double vetoOffset = 3.5;*/
+    double activeGate = gateWidth /*- vetoOffset*/;
 
     double relFlashTime = flashTime + gateDiff / 1000. /*- vetoOffset*/;
-    std::cout << "Gate Diff " << gateDiff / 1000 << " Ftime+gateDiff " << flashTime + gateDiff / 1000. << " " << activeGate << std::endl;
+    mf::LogInfo("FilterCRTPMTMatching::flashInTime") << "Gate Diff " << gateDiff / 1000 << " Ftime+gateDiff " << flashTime + gateDiff / 1000. << " " << activeGate;
 
-    return ((relFlashTime > flashTimeCut) && (relFlashTime < activeGate));
+    return ((relFlashTime > 0) && (relFlashTime < activeGate));
 }
 
-icarus::crt::MatchedCRT CRTHitmatched(const double &flashTime, const double flashpos[3], std::vector<art::Ptr<sbn::crt::CRTHit>> &crtHits, const double &interval)
+icarus::crt::MatchedCRT CRTHitmatched(double flashTime, std::vector<sbn::crt::CRTHit>const crtHits, double interval)
 {
 
     std::vector<icarus::crt::CRTPMT> enteringCRTHits;
@@ -98,32 +110,33 @@ icarus::crt::MatchedCRT CRTHitmatched(const double &flashTime, const double flas
 
     int hasCRTHit = 0;
     int topen = 0, topex = 0, sideen = 0, sideex = 0;
-    for (auto const crtHit : crtHits)
+    for (auto const& crtHit : crtHits)
     {
-        double tof = crtHit->ts1_ns / 1e3 - flashTime;
-        double distance = sqrt(pow(flashpos[0] - crtHit->x_pos, 2) + pow(flashpos[1] - crtHit->y_pos, 2) + pow(flashpos[2] - crtHit->z_pos, 2));
+        double tof = crtHit.ts1_ns / 1e3 - flashTime;
         // std::cout<<"TOF "<<tof<<" "<<crtHit->ts1_ns<<" "<<crtHit->plane<<std::endl;
         if (tof < 0 && abs(tof) < interval)
         {
-            if (crtHit->plane > 36)
+	// crtHit->Plane >36 are Side CRT, crtHit->Plane <36 are Top CRT. I will update this with an existing function: isSideCRT
+            if (crtHit.plane > 36)
                 sideen++;
             else
                 topen++;
-            CRTPMT m_match = {tof, distance, crtHit};
-            enteringCRTHits.push_back(m_match);
+	    CRTPMT m_match = {tof, &crtHit};
+            enteringCRTHits.emplace_back(m_match);
         }
         else if (tof >= 0 && abs(tof) < interval)
         {
-            if (crtHit->plane > 36)
+            if (crtHit.plane > 36)
                 sideex++;
             else
                 topex++;
-            CRTPMT m_match = {tof, distance, crtHit};
-            exitingCRTHits.push_back(m_match);
+            CRTPMT m_match = {tof, &crtHit};
+            exitingCRTHits.emplace_back(m_match);
         }
     }
 
-    // Secret decoder ring, do not remove! 
+    // Secret decoder ring, do not remove!
+    // Coup attempted. Unfortunatly it failed. Secrecy will live on, until this is approved, then I will move it to a readme/online documentation
     // hasCRTHit = 0, no matched CRT
     // hasCRTHit = 1, Muon entering from Top CRT
     // hasCRTHit = 2, Muon entering from Side CRT
@@ -170,19 +183,19 @@ public:
 private:
     // Declare member data here.
 
-    bool HitCompare(const art::Ptr<CRTHit> &h1, const art::Ptr<CRTHit> &h2);
+    static bool HitCompare(const art::Ptr<CRTHit> &h1, const art::Ptr<CRTHit> &h2);
     void ClearVecs();
 
-    art::InputTag              fOpHitModuleLabel;
     std::vector<art::InputTag> fOpFlashModuleLabelVec;
     art::InputTag              fCrtHitModuleLabel;
     art::InputTag              fTriggerLabel;
+    art::InputTag	       fTriggerConfiguration;
 
-    double                     fFlashTimeCut;
+    //double                     fFlashTimeCut;
 
-    int                        fEvent;  ///< number of the event being processed
-    int                        fRun;    ///< number of the run being processed
-    int                        fSubRun; ///< number of the sub-run being processed
+    int                        fEvent;  ///< number of the event being processed.
+    int                        fRun;    ///< number of the run being processed.
+    int                        fSubRun; ///< number of the sub-run being processed.
 
     // add trigger data product vars
     unsigned int               m_gate_type;
@@ -190,62 +203,58 @@ private:
     uint64_t                   m_trigger_timestamp;
     uint64_t                   m_gate_start_timestamp;
     uint64_t                   m_trigger_gate_diff;
+    uint64_t		       m_gate_width;
 
+    std::string		       fFilterLevel;		// Filter level, default is loose 
+    double		       fOpHitAmplitude;    	// ADC threshold for the PMT
+    int                        fnOpHitToTrigger;        // Number of OpHit above threshold to mimic the trigger
+    double 		       fTimeOfFlightInterval;   // Time of Flight interval to find the match
+    bool                       fOutputTree;             // Output tree or not
     map<int, art::InputTag>    fFlashLabels;
 
     TTree*                     fMatchTree;
 
     // matchTree vars
-    vector<double>             fOpFlashPos;             // Position of the optical Flash Barycenter
-    double                     fOpFlashTime;            // Time of the optical Flash w.r.t. Global Trigger
-    bool                       fInTime;                 // Was the OpFlash in beam spill time?
-    double                     fOpFlashPE;              // Total PEs of the optical Flash
-    vector<double>             fOpHitX;                 // X position of the OP hit
-    vector<double>             fOpHitY;                 // Y position of the OP hit
-    vector<double>             fOpHitZ;                 // Z position of the OP hit
-    vector<double>             fOpHitT;                 // T of the OP hit
-    vector<double>             fOpHitA;                 // Amplitude (ADC) of the OP hit
+    vector<double>             fOpFlashPos;             ///< Position of the optical Flash Barycenter.
+    double                     fOpFlashTime;            ///< Time of the optical Flash w.r.t. Global Trigger.
+    bool                       fInTime;                 ///< Was the OpFlash in beam spill time?
+    double                     fOpFlashPE;              ///< Total PEs of the optical Flash.
+    vector<double>             fOpHitX;                 ///< X position of the OP hit.
+    vector<double>             fOpHitY;                 ///< Y position of the OP hit.
+    vector<double>             fOpHitZ;                 ///< Z position of the OP hit.
+    vector<double>             fOpHitT;                 ///< T of the OP hit.
+    vector<double>             fOpHitA;                 ///< Amplitude (ADC) of the OP hit.
     int                        fNCRTmatch;
-    vector<vector<double>>     fMatchedCRTpos;          // Position of the matched CRTs
-    vector<double>             fMatchedCRTtime;         // Time of the matched CRT Hits w.r.t. Global Trigger
-    vector<ULong64_t>          fMatchedCRTtime_abs;     // Time of the matched CRT Hits in Unix time
-    vector<int>                fMatchedCRTregion;       // Region of the matched CRT Hits
-    vector<vector<int>>        fMatchedCRTmodID;
-    vector<int>                fMatchedCRTsys;          // Subsystem of the matched CRT Hit
-    vector<double>             fMatchedCRTamplitude;    // Amplitude of the matched CRT Hit
-    vector<int>                fDirection;              // Was the matched CRT before or after the flash? entering/exiting
-    vector<double>             fDistance;               // Distance between matched CRT and light barycenter
-    vector<double>             fTofOpHit;               // Time of Flight between matched CRT and first Optical Hit
-    vector<double>             fTofOpFlash;             // Time of Flight between matched CRT and Optical Flash
-    vector<double>             fVelocity;               // Assuming the correct match, evaluate the speed of the particle
-    vector<double>             fCRTGateDiff;            // Difference between CRTHit and BeamGate opening
-    int                        fEventType;              // Was triggered the event?
+    vector<vector<double>>     fMatchedCRTpos;          ///< Position of the matched CRTs.
+    vector<double>             fMatchedCRTtime;         ///< Time of the matched CRT Hits w.r.t. Global Trigger.
+    vector<int>                fMatchedCRTregion;       ///< Region of the matched CRT Hits.
+    vector<vector<int>>        fMatchedCRTmodID;        ///< ModID of the CRT module.
+    vector<int>                fMatchedCRTsys;          ///< Subsystem of the matched CRT Hit.
+    vector<double>             fMatchedCRTamplitude;    ///< Amplitude of the matched CRT Hit.
+    vector<double>             fTofOpFlash;             ///< Time of Flight between matched CRT and Optical Flash.
+    vector<double>             fCRTGateDiff;            ///< Difference between CRTHit and BeamGate opening.
+    int                        fEventType;              ///< Was triggered the event?
 
-    geo::GeometryCore const*   fGeometryService; ///< pointer to Geometry provider
-
-    TTree*                     mSelectionTree;
-
-    int mEvent;        ///< number of the event being processed
-    int mRun;          ///< number of the run being processed
-    int mSubRun;       ///< number of the sub-run being processed
-    bool mEventFilter; // Event should be filtered?
-    int mEventType;    // EventType
+    geo::GeometryCore const*   fGeometryService; ///< pointer to Geometry provider.
 };
 
 icarus::crt::FilterCRTPMTMatching::FilterCRTPMTMatching(fhicl::ParameterSet const &p) : EDFilter{p} 
-    ,fOpHitModuleLabel(p.get<art::InputTag>("OpHitModuleLabel", "ophit"))
-    ,fOpFlashModuleLabelVec(p.get<std::vector<art::InputTag>>("OpFlashModuleLabelVec", {"opflashTPC0","opflashTPC1","opflashTPC2","opflashTPC3"}))
+    ,fOpFlashModuleLabelVec(p.get<std::vector<art::InputTag>>("OpFlashModuleLabelVec", {"opflashE","opflashW"}))
     ,fCrtHitModuleLabel(p.get<art::InputTag>("CrtHitModuleLabel", "crthit"))
     ,fTriggerLabel(p.get<art::InputTag>("TriggerLabel", "daqTrigger")) 
-    ,fFlashTimeCut(p.get<double>("FlashTimeCut", 0.))
+    ,fTriggerConfiguration(p.get<art::InputTag>("TriggerConfiguration", "triggerconfig"))
+    ,fFilterLevel(p.get<std::string>("FilterLevel","FilterOption"))
+    ,fOpHitAmplitude(p.get<double>("OpHitAmplitude", 0.))
+    ,fnOpHitToTrigger(p.get<int>("nOpHitToTrigger", 0))
+    ,fTimeOfFlightInterval(p.get<double>("TimeOfFlightInterval", 0.))
+    ,fOutputTree(p.get<bool>("OutputTree","treeOption"))
+    ,fGeometryService(lar::providerFrom<geo::Geometry>())
 {
-    // Get a pointer to the geometry service provider.
-    fGeometryService = lar::providerFrom<geo::Geometry>();
 
     art::ServiceHandle<art::TFileService> tfs;
+    if (fOutputTree==true) {
 
     fMatchTree = tfs->make<TTree>("matchTree", "CRTHit - OpHit/Flash matching analysis");
-
     fMatchTree->Branch("event", &fEvent, "event/I");
     fMatchTree->Branch("run", &fRun, "run/I");
     fMatchTree->Branch("subrun", &fSubRun, "subrun/I");
@@ -260,16 +269,11 @@ icarus::crt::FilterCRTPMTMatching::FilterCRTPMTMatching(fhicl::ParameterSet cons
     fMatchTree->Branch("CRT_matches", &fNCRTmatch);
     fMatchTree->Branch("CRT_pos", &fMatchedCRTpos);
     fMatchTree->Branch("CRT_Time", &fMatchedCRTtime);
-    fMatchTree->Branch("CRT_absTime", &fMatchedCRTtime_abs);
     fMatchTree->Branch("CRT_region", &fMatchedCRTregion);
     fMatchTree->Branch("CRT_FEB", &fMatchedCRTmodID);
     fMatchTree->Branch("CRT_subsys", &fMatchedCRTsys);
     fMatchTree->Branch("CRT_pes", &fMatchedCRTamplitude);
-    fMatchTree->Branch("direction", &fDirection);
-    fMatchTree->Branch("distance", &fDistance);
     fMatchTree->Branch("TOF_opflash", &fTofOpFlash);
-    fMatchTree->Branch("TOF_ophit", &fTofOpHit);
-    fMatchTree->Branch("speed", &fVelocity);
     fMatchTree->Branch("CRT_gate_diff", &fCRTGateDiff);
     fMatchTree->Branch("eventType", &fEventType);
     fMatchTree->Branch("gate_type", &m_gate_type, "gate_type/b");
@@ -277,13 +281,7 @@ icarus::crt::FilterCRTPMTMatching::FilterCRTPMTMatching(fhicl::ParameterSet cons
     fMatchTree->Branch("trigger_timestamp", &m_trigger_timestamp, "trigger_timestamp/l");
     fMatchTree->Branch("gate_start_timestamp", &m_gate_start_timestamp, "gate_start_timestamp/l");
     fMatchTree->Branch("trigger_gate_diff", &m_trigger_gate_diff, "trigger_gate_diff/l");
-
-    mSelectionTree = tfs->make<TTree>("FilterTree", "Event Filter based on CRT Hit - PMT matches");
-    mSelectionTree->Branch("event", &fEvent, "event/I");
-    mSelectionTree->Branch("run", &fRun, "run/I");
-    mSelectionTree->Branch("subrun", &fSubRun, "subrun/I");
-    mSelectionTree->Branch("EventFilter", &mEventFilter);
-    mSelectionTree->Branch("EventType", &mEventType);
+    }
 }
 
 bool icarus::crt::FilterCRTPMTMatching::filter(art::Event &e)
@@ -295,50 +293,30 @@ bool icarus::crt::FilterCRTPMTMatching::filter(art::Event &e)
     fRun = e.run();
     fSubRun = e.subRun();
 
-    mEvent = e.id().event();
-    mRun = e.run();
-    mSubRun = e.subRun();
-
     ClearVecs();
 
     // add trigger info
-    if (!fTriggerLabel.empty())
-    {
+    auto const& trigger_handle = e.getProduct<sbn::ExtraTriggerInfo>(fTriggerLabel);
+    sbn::triggerSource bit = trigger_handle.sourceType;
+    m_gate_type = value(bit);
+    m_gate_name = bitName(bit);
+    m_trigger_timestamp = trigger_handle.triggerTimestamp;
+    m_gate_start_timestamp = trigger_handle.beamGateTimestamp;
+    m_trigger_gate_diff = trigger_handle.triggerTimestamp - trigger_handle.beamGateTimestamp;
 
-        art::Handle<sbn::ExtraTriggerInfo> trigger_handle;
-        e.getByLabel(fTriggerLabel, trigger_handle);
-        if (trigger_handle.isValid())
-        {
-            sbn::triggerSource bit = trigger_handle->sourceType;
-            m_gate_type = (unsigned int)bit;
-            m_gate_name = bitName(bit);
-            m_trigger_timestamp = trigger_handle->triggerTimestamp;
-            m_gate_start_timestamp = trigger_handle->beamGateTimestamp;
-            m_trigger_gate_diff = trigger_handle->triggerTimestamp - trigger_handle->beamGateTimestamp;
-        }
-        else
-        {
-            mf::LogError("FilterCRTPMTMatching:") << "No raw::Trigger associated to label: " << fTriggerLabel.label() << "\n";
-        }
-    }
-    else
-    {
-        mf::LogInfo("FilterCRTPMTMatching") << "Trigger Data product " << fTriggerLabel.label() << " not found";
-        return false;
-    }
-
-    // OpHits
-    art::Handle<std::vector<recob::OpHit>> opHitListHandle;
-    std::vector<art::Ptr<recob::OpHit>> opHitList;
-    if (e.getByLabel(fOpHitModuleLabel, opHitListHandle)) art::fill_ptr_vector(opHitList, opHitListHandle);
+    //Read Beam Gate Size
+    art::Run const& run = e.getRun();
+    auto const& trigger_configuration = run.getProduct<icarus::TriggerConfiguration>(fTriggerConfiguration);
+    m_gate_width=trigger_configuration.getGateWidth(m_gate_type);
 
     // CRTHits
-    art::Handle<std::vector<CRTHit>> crtHitListHandle;
-    std::vector<art::Ptr<CRTHit>> crtHitList;
-    if (e.getByLabel(fCrtHitModuleLabel, crtHitListHandle)) art::fill_ptr_vector(crtHitList, crtHitListHandle);
 
-    bool Filter = false;
+    auto const& crtHitList = e.getProduct<std::vector<CRTHit>>(fCrtHitModuleLabel);
+
+    bool Cosmic = false;
     int  Type   = 9;
+
+    if (fFilterLevel != "loose" || fFilterLevel != "tight" || fFilterLevel != "medium") fFilterLevel="loose";
 
     for (auto const& flashLabel : fOpFlashModuleLabelVec)
     {
@@ -346,7 +324,7 @@ bool icarus::crt::FilterCRTPMTMatching::filter(art::Event &e)
 
         if (!e.getByLabel(flashLabel, flashHandle))
         {
-            mf::LogInfo("FilterCRTPMTMatching") << "Did not find opflash object with label: " << flashLabel;
+            mf::LogError("FilterCRTPMTMatching") << "Did not find opflash object with label: " << flashLabel;
             continue;
         }
 
@@ -367,71 +345,67 @@ bool icarus::crt::FilterCRTPMTMatching::filter(art::Event &e)
             double tflash = flash->Time();
 
             vector<art::Ptr<recob::OpHit>> hits = findManyHits.at(iflash);
-            int nPMTsTriggering = 0;
+            int nOpHitsTriggering = 0;
             double firstTime = 999999;
             double flash_pos[3] = {0, 0, 0};
             double ampsum = 0, t_m = 0;
             for (auto const &hit : hits)
             {
-                if (hit->Amplitude() > 400)
-                    nPMTsTriggering++;
+                if (hit->Amplitude() > fOpHitAmplitude)
+                    nOpHitsTriggering++;
                 if (firstTime > hit->PeakTime())
                     firstTime = hit->PeakTime();
-                double pos[3];
-                fGeometryService->OpDetGeoFromOpChannel(hit->OpChannel()).GetCenter(pos);
+                geo::Point_t pos = fGeometryService->OpDetGeoFromOpChannel(hit->OpChannel()).GetCenter();
                 double amp = hit->Amplitude();
-                ampsum = ampsum + amp;
-                fOpHitX.push_back(pos[0]);
-                fOpHitY.push_back(pos[1]);
-                fOpHitZ.push_back(pos[2]);
+                ampsum += amp;
+                fOpHitX.push_back(pos.X());
+                fOpHitY.push_back(pos.Y());
+                fOpHitZ.push_back(pos.Z());
                 fOpHitT.push_back(hit->PeakTime());
                 fOpHitA.push_back(amp);
-                flash_pos[0] = flash_pos[0] + pos[0] * amp;
-                flash_pos[1] = flash_pos[1] + pos[1] * amp;
-                flash_pos[2] = flash_pos[2] + pos[2] * amp;
+                flash_pos[0] = flash_pos[0] + pos.X() * amp;
+                flash_pos[1] = flash_pos[1] + pos.Y() * amp;
+                flash_pos[2] = flash_pos[2] + pos.Z() * amp;
                 t_m = t_m + hit->PeakTime();
             }
             flash_pos[0] = flash_pos[0] / ampsum;
             flash_pos[1] = flash_pos[1] / ampsum;
             flash_pos[2] = flash_pos[2] / ampsum;
-            t_m = t_m / nPMTsTriggering;
-            if (nPMTsTriggering < 5)
+            t_m = t_m / nOpHitsTriggering;
+            if (nOpHitsTriggering < fnOpHitToTrigger)
             {
                 continue;
             }
-            double gateDiff = m_trigger_timestamp - m_gate_start_timestamp;
-            bool   inTime   = flashInTime(firstTime, m_gate_type, gateDiff, fFlashTimeCut);
+            bool   inTime   = flashInTime(firstTime, m_gate_type, m_trigger_gate_diff, m_gate_width);
 
-            mf::LogInfo("FilterCRTPMTMatching") << "\nFlash Time " << tflash << "  First Op Hit " << firstTime << "  " << inTime << "\n" <<
-                        "Average Pos X " << flash_pos[0] << "  Y " << flash_pos[1] << "  Z " << flash_pos[2] << " nPMT " << nPMTsTriggering << " " << ampsum << "\n" <<
+            mf::LogTrace("FilterCRTPMTMatching") << "\nFlash Time " << tflash << "  First Op Hit " << firstTime << "  " << inTime << "\n" <<
+                        "Average Pos X " << flash_pos[0] << "  Y " << flash_pos[1] << "  Z " << flash_pos[2] << " nPMT " << nOpHitsTriggering << " " << ampsum << "\n" <<
                         "Flash X " << flash->XCenter() << "  " << flash->YCenter() << "  " << flash->ZCenter();
             // Now get the CRT. Search the CRT Hits within -100 from the flash time
             // NB currently the selection uses only top CRT.
             //  for the future a differentiation between Top and Side and some considerations based
             //  on the proximity of the light are necessary
             // std::vector< art::Ptr<CRTHit> > selCRTHits;
-            icarus::crt::MatchedCRT CRTmatches = CRTHitmatched(firstTime, flash_pos, crtHitList, 0.1);
+            icarus::crt::MatchedCRT CRTmatches = CRTHitmatched(firstTime, crtHitList, fTimeOfFlightInterval);
             auto nCRTHits = CRTmatches.entering.size() + CRTmatches.exiting.size();
 
-            // The following meant to try to preserve the original formatting
-            std::ostringstream outputString;
+	    {	        
+                // The following meant to try to preserve the original formatting
+                mf::LogDebug log("FilterCRTPMTMatching");
+                log << "Matched CRT " << nCRTHits << "  entering: \n";
 
-            outputString << "Matched CRT " << nCRTHits << "  entering: \n";
+                for (auto &entering : CRTmatches.entering)
+                {
+                    log << "TOF " << entering.tof <<  " Region " << entering.CRTHit->plane << "\n";
+                }
 
-            for (auto &entering : CRTmatches.entering)
-            {
-                outputString << "TOF " << entering.tof << "  distance  " << entering.distance << " velocity " << (double)entering.distance / (double)entering.tof << " Region " << entering.CRTHit->plane << "\n";
-            }
+                log << "Exiting: \n";
 
-            outputString << "Exiting: \n";
-
-            for (auto &exiting : CRTmatches.exiting)
-            {
-                outputString << "TOF " << exiting.tof << "  distance  " << exiting.distance << "  velocity " << (double)exiting.distance / (double)exiting.tof << " Region " << exiting.CRTHit->plane << "\n";
-            }
-
-            mf::LogInfo("FilterCRTPTMMatching") << outputString.str(); 
-
+                for (auto &exiting : CRTmatches.exiting)
+                {
+                    log << "TOF " << exiting.tof << " Region " << exiting.CRTHit->plane << "\n";
+                }
+	    }
             bool   matched = false;
             double peflash = flash->TotalPE();
 
@@ -452,11 +426,7 @@ bool icarus::crt::FilterCRTPMTMatching::filter(art::Event &e)
                     if (CRTRegion >= 36) CRTSys = 1;
 
                     double CRTPe = entering.CRTHit->peshit;
-                    int    CRTDirection   = 0; // 0=entering, 1=exiting
-                    double CRTDistance    = entering.distance;
-                    double CRTTof_ophit   = entering.tof;
                     double CRTTof_opflash = CRTtime - tflash;
-////                    double velocity=CRTDistance/CRTTof;
                     double CRTGateDiff    = CRTAbsTime - m_gate_start_timestamp;
 
                     std::vector<int> HitFebs;
@@ -469,17 +439,11 @@ bool icarus::crt::FilterCRTPMTMatching::filter(art::Event &e)
                     fMatchedCRTpos.emplace_back(CRTpos);
                     fMatchedCRTtime.emplace_back(CRTtime);
                     fTofOpFlash.emplace_back(CRTTof_opflash);
-                    fMatchedCRTtime_abs.emplace_back(CRTAbsTime);
                     fMatchedCRTregion.emplace_back(CRTRegion);
                     fMatchedCRTsys.emplace_back(CRTSys);
                     fMatchedCRTamplitude.emplace_back(CRTPe);
-                    fDirection.emplace_back(CRTDirection);
-                    fDistance.emplace_back(CRTDistance);
-                    fTofOpHit.emplace_back(CRTTof_ophit);
-////                    fVelocity.emplace_back(velocity);
                     fCRTGateDiff.emplace_back(CRTGateDiff);
                     HitFebs.clear();
-                    // Filla i vettori
                 }
 
                 for (auto &exiting : CRTmatches.exiting)
@@ -493,11 +457,7 @@ bool icarus::crt::FilterCRTPMTMatching::filter(art::Event &e)
                     if (CRTRegion >= 36) CRTSys = 1;
 
                     double CRTPe          = exiting.CRTHit->peshit;
-                    int    CRTDirection   = 1; // 0=entering, 1=exiting
-                    double CRTDistance    = exiting.distance;
-                    double CRTTof_ophit   = exiting.tof;
                     double CRTTof_opflash = CRTtime - tflash;
-////                    double velocity=CRTDistance/CRTTof;
                     double CRTGateDiff    = CRTAbsTime - m_gate_start_timestamp;
 
                     std::vector<int> HitFebs;
@@ -509,21 +469,15 @@ bool icarus::crt::FilterCRTPMTMatching::filter(art::Event &e)
                     fMatchedCRTmodID.emplace_back(HitFebs);
                     fMatchedCRTpos.emplace_back(CRTpos);
                     fMatchedCRTtime.emplace_back(CRTtime);
-                    fMatchedCRTtime_abs.emplace_back(CRTAbsTime);
                     fMatchedCRTregion.emplace_back(CRTRegion);
                     fMatchedCRTsys.emplace_back(CRTSys);
                     fMatchedCRTamplitude.emplace_back(CRTPe);
-                    fDirection.emplace_back(CRTDirection);
-                    fDistance.emplace_back(CRTDistance);
                     fTofOpFlash.emplace_back(CRTTof_opflash);
-                    fTofOpHit.emplace_back(CRTTof_ophit);
-////                    fVelocity.emplace_back(velocity);
                     fCRTGateDiff.emplace_back(CRTGateDiff);
                     HitFebs.clear();
                     // Filla i vettori
                 }
-
-                if ((eventType == 1 || eventType == 3 || eventType == 6 || eventType == 7) && inTime == true) Filter = true;
+                if ((eventType == 1 || eventType == 3 || eventType == 6 || eventType == 7) && inTime == true) Cosmic = true;
 
                 if (inTime == true) Type = eventType;
             } // if matched
@@ -534,7 +488,7 @@ bool icarus::crt::FilterCRTPMTMatching::filter(art::Event &e)
             fInTime = inTime;
             fEventType = eventType;
             fNCRTmatch = nCRTHits;
-            fMatchTree->Fill();
+ 	    if (fOutputTree==true) fMatchTree->Fill();
             fOpHitX.clear();
             fOpHitY.clear();
             fOpHitZ.clear();
@@ -544,23 +498,27 @@ bool icarus::crt::FilterCRTPMTMatching::filter(art::Event &e)
             fMatchedCRTmodID.clear();
             fMatchedCRTpos.clear();
             fMatchedCRTtime.clear();
-            fMatchedCRTtime_abs.clear();
             fMatchedCRTregion.clear();
             fMatchedCRTsys.clear();
             fMatchedCRTamplitude.clear();
-            fDirection.clear();
-            fDistance.clear();
-            fTofOpHit.clear();
             fTofOpFlash.clear();
-            fVelocity.clear();
             fCRTGateDiff.clear();
         } // for Flash
     }
-    mEventType   = Type;
-    mEventFilter = Filter;
-    mSelectionTree->Fill();
+    fEventType   = Type;
 
-    return Filter;
+    if (fFilterLevel == "loose") Cosmic = false;  // By default, with loose Filtering, everything is "intersting", nothing tagged as clear cosmic
+    else if (fFilterLevel == "medium") {
+	if (fEventType == 1 || fEventType == 3 || fEventType == 6 || fEventType == 7) Cosmic = true;
+	// With Medium filter, everything (inTime) which is associated with Top CRT Hit before the Flash is filtered as clear cosmic
+	else Cosmic = false;
+    }
+    else if (fFilterLevel == "thight"){
+	if (fEventType != 0 || fEventType != 4 || fEventType != 5) Cosmic = true;
+	// With Thight filter, everything (inTime) associated with a CRT Hit before the Flash is filtered as clear cosmic
+	else Cosmic = false;
+    }
+    return Cosmic;
 }
 
 void icarus::crt::FilterCRTPMTMatching::ClearVecs()
@@ -575,15 +533,10 @@ void icarus::crt::FilterCRTPMTMatching::ClearVecs()
     fMatchedCRTmodID.clear();
     fMatchedCRTpos.clear();
     fMatchedCRTtime.clear();
-    fMatchedCRTtime_abs.clear();
     fMatchedCRTregion.clear();
     fMatchedCRTsys.clear();
     fMatchedCRTamplitude.clear();
-    fDirection.clear();
-    fDistance.clear();
-    fDistance.clear();
-    fTofOpHit.clear();
-    fVelocity.clear();
+    fTofOpFlash.clear();
     fCRTGateDiff.clear();
 }
 

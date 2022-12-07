@@ -2,7 +2,28 @@
 add_subdirectory(CRTUtils)
 add_subdirectory(CRTDecoder)
 
-art_make_library(
+
+art_make(
+    NO_PLUGINS
+    EXCLUDE
+        CRTChannelMapAlg.cxx
+        CRTGeometryHelper_service.cc
+        CRTDetSim_module.cc
+        CRTSimHitProducer_module.cc
+        CRTTrueHitProducer_module.cc
+        CRTTzeroProducer_module.cc
+        CRTTrackProducer_module.cc
+        CRTSimAnalysis_module.cc
+        CRTDataAnalysis_module.cc
+        CrtOpHitMatchAnalysis_module.cc
+        CRTTruthMatchAnalysis_module.cc
+        CRTAutoVeto_module.cc
+        FlashResAna_module.cc
+        PhotBackground_module.cc
+        CRTT0Matching_module.cc
+        CRTTPCMatchingAna_module.cc	
+        CRTPMTMatchingAna_module.cc
+	      CRTTPCTruthEff_module.cc
     LIBRARY_NAME
         icaruscode_CRTData
     SOURCE
@@ -449,6 +470,37 @@ cet_build_plugin(CRTTPCMatchingAna art::module
               ROOT::Spectrum
               ROOT::RooFit
               ROOT::RooFitCore
+)
+simple_plugin(CRTTPCTruthEff module
+              sbnobj::ICARUS_CRT
+              icaruscode_CRT
+              sbnobj::Common_CRT
+              icaruscode_CRTUtils
+              larcorealg::Geometry
+              larcore::Geometry_Geometry_service
+              larsim::Simulation lardataobj::Simulation
+              larsim::MCCheater_BackTrackerService_service
+              larsim::MCCheater_ParticleInventoryService_service
+              lardata::Utilities
+              larevt::Filters
+              lardataobj::RawData
+              lardataobj::RecoBase
+              lardataobj::AnalysisBase
+              lardata::RecoObjects
+              larpandora::LArPandoraInterface
+              larcorealg::Geometry
+              nusimdata::SimulationBase
+              art::Persistency_Common canvas::canvas
+              art::Persistency_Provenance
+              art::Utilities
+              ROOT::Core
+              ROOT::Geom
+              ROOT::XMLIO
+              ROOT::Gdml
+              ROOT::Spectrum
+              ROOT::RooFit
+              ROOT::RooFitCore
+
 )
 
 

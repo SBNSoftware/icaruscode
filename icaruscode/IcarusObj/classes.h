@@ -3,6 +3,7 @@
 #include "canvas/Persistency/Common/Assns.h"
 
 #include "icaruscode/IcarusObj/SimEnergyDepositSummary.h"
+#include "icaruscode/IcarusObj/CRTTPCMatchingInfo.h"
 #include "icaruscode/IcarusObj/OpDetWaveformMeta.h"
 #include "icaruscode/IcarusObj/PMTWaveformTimeCorrection.h"
 #include "icaruscode/IcarusObj/ChannelROI.h"
@@ -13,8 +14,8 @@
 #include "lardataobj/AnalysisBase/T0.h"
 #include "lardataobj/RecoBase/PFParticle.h"
 #include "lardataobj/Simulation/BeamGateInfo.h"
+#include "sbnobj/Common/CRT/CRTHit.hh"
 #include "lardataobj/RawData/OpDetWaveform.h"
-
 #include <vector>
 
 namespace {
