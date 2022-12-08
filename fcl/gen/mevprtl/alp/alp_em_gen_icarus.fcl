@@ -1,0 +1,42 @@
+#include "alp.fcl"
+# service configuration
+#
+#include "services_icarus_simulation.fcl"
+
+
+process_name: ALPTree
+
+services:
+{
+  @table::icarus_basic_services
+  TFileService: { fileName: "alp_icarus.root" }
+  IFDH: {}
+}
+
+source: {
+  module_type: EmptyEvent
+}
+
+physics:
+{
+  producers: {
+    alp: @local::alp
+  }
+ 
+  ana:  [ alp ]
+ 
+  trigger_paths: [ana] 
+  end_paths:     [ ] 
+  
+} # physics
+
+# Set muon coupling to 0
+physics.producers.alp.Flux.cAl: 0
+physics.producers.alp.Decay.ReferenceALPcAl: 0
+physics.producers.alp.Decay.AllowEMDecay: true
+
+# Make art ROOT file
+physics.producers.alp.Produce: true
+physics.producers.alp.AnaOutput: false
+
+services.NuRandomService.policy: "random"
