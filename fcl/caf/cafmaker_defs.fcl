@@ -12,6 +12,7 @@
 #include "particleid_icarus.fcl"
 
 #include "eventweight_genie_sbn.fcl"
+#include "eventweight_genie_systtools.fcl"
 #include "eventweight_flux_sbn.fcl"
 #include "mcreco.fcl"
 #include "mcsproducer.fcl"
@@ -23,6 +24,7 @@
 #include "showerfindermodules_icarus.fcl"
 #include "sbn_stub.fcl"
 #include "transfer_flashmatch_producer.fcl"
+#include "crtt0producer_icarus.fcl"
 
 BEGIN_PROLOG
 
@@ -82,6 +84,14 @@ recoana_datacalo_producers.vertexChargeCryoW.NormTools: @local::icarus_calonormt
 recoana_datacalo_producers.vertexStubCryoE.NormTools: @local::icarus_calonormtools
 recoana_datacalo_producers.vertexStubCryoW.NormTools: @local::icarus_calonormtools
 
+# CRT Hit to TPC Track matching in E/W
+standard_crtt0producer_cryoE: @local::standard_crtt0producer
+standard_crtt0producer_cryoE.TpcTrackModuleLabel: ["pandoraTrackGausCryoE"]
+standard_crtt0producer_cryoE.PFParticleLabel: ["pandoraGausCryoE"]
+standard_crtt0producer_cryoW: @local::standard_crtt0producer
+standard_crtt0producer_cryoW.TpcTrackModuleLabel: ["pandoraTrackGausCryoW"]
+standard_crtt0producer_cryoW.PFParticleLabel: ["pandoraGausCryoW"]
+
 # Producers for making analysis level products
 recoana_caf_preprocess_producers: {
   mcreco: @local::standard_mcreco
@@ -95,9 +105,13 @@ recoana_caf_preprocess_producers: {
   pandoraPidGausCryoE: @local::icarus_chi2pid
   pandoraPidGausCryoW: @local::icarus_chi2pid
 
-  crtconvhit: @local::crthitconverter_icarus
+  pandoraCRTMatchCryoE: @local::standard_crtt0producer_cryoE
+  pandoraCRTMatchCryoW: @local::standard_crtt0producer_cryoW
+
+  # crtconvhit: @local::crthitconverter_icarus
   rns: { module_type: "RandomNumberSaver" }
   genieweight: @local::sbn_eventweight_genie
+  systtools: @local::sbn_systtools
   fluxweight: @local::sbn_eventweight_flux
 }
 
@@ -220,7 +234,8 @@ caf_preprocess_sequence: [ mcreco,
     vertexChargeCryoE, vertexChargeCryoW, vertexStubCryoE, vertexStubCryoW,
     # Track Momentum Estimation
     pandoraTrackMCSCryoE, pandoraTrackMCSCryoW, 
-    pandoraTrackRangeCryoE, pandoraTrackRangeCryoW
+    pandoraTrackRangeCryoE, pandoraTrackRangeCryoW,
+    pandoraCRTMatchCryoE, pandoraCRTMatchCryoW
     # TODO: rns??
     ]
 
@@ -232,7 +247,8 @@ caf_preprocess_data_sequence: [
     vertexChargeCryoE, vertexChargeCryoW, vertexStubCryoE, vertexStubCryoW,
     # Track Momentum Estimation
     pandoraTrackMCSCryoE, pandoraTrackMCSCryoW,
-    pandoraTrackRangeCryoE, pandoraTrackRangeCryoW
+    pandoraTrackRangeCryoE, pandoraTrackRangeCryoW,
+    pandoraCRTMatchCryoE, pandoraCRTMatchCryoW
     # TODO: rns??
     ]
 
@@ -281,7 +297,7 @@ cafmaker.TrackChi2PidLabel: "pandoraPidGaus"
 cafmaker.TrackScatterClosestApproachLabel: "" # unavailable
 cafmaker.TrackStoppingChi2FitLabel: "" # unavailable
 cafmaker.TrackDazzleLabel: "" # unavailable
-cafmaker.CRTHitMatchLabel: "" # unavailable
+cafmaker.CRTHitMatchLabel: "pandoraCRTMatch"
 cafmaker.CRTTrackMatchLabel: "" # unavailable
 cafmaker.TrackMCSLabel: "pandoraTrackMCS"
 cafmaker.TrackRangeLabel: "pandoraTrackRange"

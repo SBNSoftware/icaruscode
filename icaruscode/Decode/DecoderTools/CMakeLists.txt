@@ -1,59 +1,74 @@
 cet_enable_asserts()
 
-##include_directories($ENV{LIBWDA_FQ_DIR}/include)
-
 add_subdirectory("Dumpers")
 
-art_make( SUBDIRS details
-          EXCLUDE
-                        triggerPacketParser.cxx
-          LIB_LIBRARIES
-                        icaruscode_Utilities
-                        sbnobj_Common_PMT_Data
-                        icaruscode_Decode_DataProducts
-                        canvas
-                        ${MF_MESSAGELOGGER}
-                        ${FHICLCPP}
-                        cetlib_except
-                        cetlib
-                        ROOT::RIO
-                        ROOT::Core
-          TOOL_LIBRARIES
-                        sbndaq_artdaq_core::sbndaq-artdaq-core_Overlays_ICARUS 
-                        artdaq_core::artdaq-core_Utilities
-                        icarus_signal_processing
-                        icarus_signal_processing_Detection
-                        icarus_signal_processing_Filters
-                        icaruscode_TPC_Utilities_SignalShapingICARUSService_service
-                        icaruscode_Decode_DecoderTools
-                        icaruscode_Decode_DecoderTools_Dumpers
-                        icaruscode_Utilities
-                        larcorealg_Geometry
-                        larcore_Geometry_Geometry_service
-                        lardata_Utilities
-                        lardataalg_DetectorInfo
-                        larevt_Filters
-                        lardataobj_RawData
-                        lardata_ArtDataHelper
-                        ${ROOT_BASIC_LIB_LIST}
-                        LIBWDA
-                        ${ART_FRAMEWORK_CORE}
-                        ${ART_FRAMEWORK_PRINCIPAL}
-                        ${ART_FRAMEWORK_SERVICES_REGISTRY}
-                        ${ART_ROOT_IO_TFILE_SUPPORT}
-                        ${ART_ROOT_IO_TFILESERVICE_SERVICE}
-                        ${ART_UTILITIES}
-                        art_Persistency_Common canvas
-                        art_Persistency_Provenance canvas
-                        art_Utilities canvas
-                        ${MF_MESSAGELOGGER}
-                        ${MF_UTILITIES}
-                        ${FHICLCPP}
-                        cetlib cetlib_except
+art_make_library(SUBDIRS details
+        EXCLUDE
+                triggerPacketParser.cxx
+        LIBRARIES
+                lardataalg::DetectorInfo
+                icaruscode::Utilities
+                icaruscode::Decode_DataProducts
+                sbnobj::Common_PMT_Data
+                messagefacility::MF_MessageLogger
+                fhiclcpp::fhiclcpp
+                cetlib_except::cetlib_except
+                cetlib::cetlib
+                ROOT::RIO
+                ROOT::Core
+                art::Framework_Services_Registry
+                FFTW3::FFTW3
+)
+
+set(        TOOL_LIBRARIES
+                sbndaq_artdaq_core::sbndaq-artdaq-core_Overlays_ICARUS
+                artdaq_core::artdaq-core_Utilities
+                icarus_signal_processing::icarus_signal_processing
+                icarus_signal_processing::Detection
+                icarus_signal_processing::Filters
+                icaruscode::TPC_Utilities_SignalShapingICARUSService_service
+                icaruscode::Decode_DecoderTools
+                icaruscode::Decode_DecoderTools_Dumpers
+                icaruscode::Utilities
+                larcorealg::Geometry
+                larcore::Geometry_Geometry_service
+                lardata::Utilities
+                lardataalg::DetectorInfo
+                larevt::Filters
+                lardataobj::RawData
+                lardata::ArtDataHelper
+                ROOT::Core
+                wda::wda
+                art::Framework_Core
+                art::Framework_Principal
+                art::Framework_Services_Registry
+                art_root_io::tfile_support
+                art_root_io::TFileService_service
+                art::Utilities
+                art::Persistency_Common canvas::canvas
+                art::Persistency_Provenance
+                art::Utilities
+                messagefacility::MF_MessageLogger
+                messagefacility::headers
+                fhiclcpp::fhiclcpp
+                cetlib::cetlib cetlib_except::cetlib_except
+                Boost::program_options
         )
 
+cet_build_plugin(FakeParticle art::tool LIBRARIES ${TOOL_LIBRARIES})
+cet_build_plugin(TPCDecoderFilter1D art::tool LIBRARIES ${TOOL_LIBRARIES})
+cet_build_plugin(TPCDecoderFilter2D art::tool LIBRARIES ${TOOL_LIBRARIES})
+cet_build_plugin(TPCDecoder art::tool LIBRARIES ${TOOL_LIBRARIES})
+cet_build_plugin(TPCNoiseFilter1D art::tool LIBRARIES ${TOOL_LIBRARIES})
+cet_build_plugin(TPCNoiseFilterCanny art::tool LIBRARIES ${TOOL_LIBRARIES})
+cet_build_plugin(TriggerDecoder art::tool LIBRARIES ${TOOL_LIBRARIES})
+cet_build_plugin(TriggerDecoderV2 art::tool LIBRARIES ${TOOL_LIBRARIES})
+cet_build_plugin(TriggerDecoderV3 art::tool LIBRARIES ${TOOL_LIBRARIES})
+
+
+
 cet_make_exec(NAME triggerPacketParser
-  LIBRARIES PRIVATE
+  LIBRARIES
     icaruscode_Decode_DecoderTools
     Boost::program_options
 )

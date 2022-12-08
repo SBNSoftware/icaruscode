@@ -36,6 +36,7 @@ icarus_stage0_analyzers:
 
 # set the name of our `extractPMTconfig` and `extractTriggerConfig` for our decoders
 decodeTriggerV2.DecoderTool.TrigConfigLabel: triggerconfig
+decodeTriggerV3.DecoderTool.TrigConfigLabel: triggerconfig
 decodePMT.PMTconfigTag: pmtconfig
 decodePMT.TriggerTag:   daqTrigger
 
@@ -56,7 +57,7 @@ icarus_stage0_producers:
 
   daqCRT:                         @local::crtdaq_icarus
 
-  daqTrigger:                     @local::decodeTriggerV2
+  daqTrigger:                     @local::decodeTriggerV3
 
   ### calwire producers
   decon1droi:                     @local::icarus_decon1droi
@@ -151,7 +152,7 @@ icarus_stage0_filters:
                              TriggerType:        "Unknown"
                           }
 
-   crtpmtmatchingfilter: @local::icarus_FilterNumberTPCHits
+   crtpmtmatchingfilter: @local::icarus_FilterCRTPMTMatching
 }
 
 
@@ -463,5 +464,7 @@ icarus_stage0_producers.purityana1.PersistPurityInfo:                           
 icarus_stage0_producers.purityana1.FillAnaTuple:                                               false
 icarus_stage0_producers.purityana1.PersistPurityInfo:                                          false
 icarus_stage0_producers.purityana1.FillAnaTuple:                                               false
+
+icarus_stage0_producers.triggerconfig.TriggerFragmentType:				       ICARUSTriggerV3
 
 END_PROLOG

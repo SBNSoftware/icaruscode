@@ -18,7 +18,7 @@
 #include "crtbacktracker_icarus.fcl"
 #include "crtt0matchingalg_icarus.fcl"
 #include "crtt0producer_icarus.fcl"
-#include "supera_modules.fcl"
+
 
 BEGIN_PROLOG
 
@@ -79,26 +79,31 @@ icarus_stage1_filters:
 
 icarus_stage1_analyzers:
 {
-  caloskimE:      @local::caloskim_cryoe_nodigits_goldentracks
-  caloskimW:      @local::caloskim_cryow_nodigits_goldentracks
+  caloskimE: @local::caloskim_cryoe_goldentracks_not0
+  caloskimW: @local::caloskim_cryow_goldentracks_not0
   simpleLightAna: @local::ICARUSFlashAssAna
-  supera:         @local::icarus_supera_data
+  CRTDataAnalysis: 
+   {
+     module_type:   "CRTDataAnalysis"
+     CRTHitLabel:   "crthit"
+     CRTDAQLabel:   "daqCRT"
+     TriggerLabel:  "daqTrigger"
+     QPed:                 60     # Pedestal offset [ADC]
+     QSlope:               70     # Pedestal slope [ADC/photon]
+     PEThresh:             7.5    # PE threshold above which charge amplitudes used
+     CrtWindow:            3e6    # time window for looking data within trigger timestamp [ns]
+   }
  }
 
 icarus_stage1_analyzers.caloskimE.SelectEvents: [reco]
 icarus_stage1_analyzers.caloskimE.CALOproducer: caloskimCalorimetryCryoE 
+icarus_stage1_analyzers.caloskimE.SilenceMissingDataProducts: true
 
 icarus_stage1_analyzers.caloskimW.SelectEvents: [reco]
 icarus_stage1_analyzers.caloskimW.CALOproducer: caloskimCalorimetryCryoW 
+icarus_stage1_analyzers.caloskimW.SilenceMissingDataProducts: true
 
 ### Below are a list of convenient sequences that can be used for production/typical users. ###
-
-# Set up the standard analysis chain
-icarus_analysis_modules:           [  caloskimE 
-                                     ,caloskimW 
-                                     ,simpleLightAna
-                                     ,supera 
-                                   ]
 
 # Set up filtering of cluster3D hits by cryostat
 icarus_filter_cluster3DCryoW:      [ cluster3DCryoW,

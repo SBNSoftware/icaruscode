@@ -2,7 +2,7 @@
 ## This fhicl file is used to run "stage0" processing specifically for the case where all
 ## TPC data is included in an artdaq data product from a single instance
 ##
-#include "stage0_icarus_driver_common.fcl"
+#include "stage0_icarus_driver_common_run1.fcl"
 
 process_name: stage0
 
@@ -12,7 +12,7 @@ physics.path:     [ @sequence::icarus_stage0_data ]
 ## boiler plate...
 physics.outana:        [ purityinfoana0, purityinfoana1 ]
 physics.trigger_paths: [ path ]
-physics.end_paths:     [ outana, streamCommon ]
+physics.end_paths:     [ outana, streamROOT ]
 
 # Drop the artdaq format files on output
 outputs.outCommon.outputCommands:         ["keep *_*_*_*", "drop *_*_*_DAQ*", "drop *_ophituncorrected_*_*", "drop *_daqTPCROI_*_*", "drop *_decon1droi_*_*", "drop *_decon1DroiTPC*_*_*" ]

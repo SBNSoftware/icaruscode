@@ -473,10 +473,9 @@ namespace icarus{
       int hit_i = 0, index = 0;
     
       for(auto const& crtHit : (*crtHitHandle)){
-    
         if(HitCompare(crtHit, hit)) hit_i = index;
         index++;
-      }
+      }//end for(auto const& crtHit : (*crtHitHandle))
     
       // Get the crt data associated to that hit and the IDEs associate to the data
       std::vector<art::Ptr<CRTData>> data = findManyData.at(hit_i);
@@ -484,35 +483,27 @@ namespace icarus{
     
       // Get all the true IDs from all the IDEs in the hit
       for(size_t i = 0; i < data.size(); i++){
-    
         std::vector<art::Ptr<sim::AuxDetIDE>> ides = findManyIdes.at(i);
-    
         for(size_t j = 0; j < ides.size(); j++){
-    
           int id = ides[j]->trackID;
           if(fRollupUnsavedIds) id = std::abs(id);
           ids[id] += ides[j]->energyDeposited;
-        }
-      }
+        }//end (size_t j = 0; j < ides.size(); j++)
+      }//end for(size_t i = 0; i < data.size(); i++)
     
       // Find the true ID that contributed the most energy
       double maxEnergy = -1;
       int trueId = -99999;
     
       for(auto &id : ids){
-    
         if(id.second > maxEnergy){
-    
           maxEnergy = id.second;
           trueId = id.first;
-    
-        }
-      }
+        }//end if(id.second > maxEnergy)
+      }//end for(auto &id : ids)
     
       return trueId;
-    
-    }
-
+    }//end int CRTBackTracker::TrueIdFromTotalEnergy(const art::Event& event, const CRTHit& hit)
     //-----------------------------------------------------------------------------------------
     int CRTBackTracker::TrueIdFromHitId(const art::Event& event, int hit_i){
     

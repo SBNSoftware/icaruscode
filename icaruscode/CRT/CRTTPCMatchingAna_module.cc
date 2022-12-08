@@ -361,7 +361,7 @@ void icarus::CRTTPCMatchingAna::analyze(const art::Event& event)
 	//	 << hits[0]->WireID().TPC << " , " << hits[hits.size()-1]->WireID().TPC
 	//       << " , " << cryoNumber << " , " << t0 << " ] "<< std::endl;
 
-	matchCand closest = t0Alg.GetClosestCRTHit(detProp, tpcTrack, hits, crtHits, m_trigger_timestamp);
+	matchCand closest = t0Alg.GetClosestCRTHit(detProp, tpcTrack, hits, crtHits, m_trigger_timestamp, true);
 	if(closest.dca >=0 )
           mf::LogInfo("CRTTPCMatchingAna")
 	    << "Track # " << idx  <<" Matched time = "<<closest.t0<<" [us] to track "<< tpcTrack.ID()<<" with DCA = "<<closest.dca 

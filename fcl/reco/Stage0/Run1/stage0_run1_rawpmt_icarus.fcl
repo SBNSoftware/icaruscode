@@ -4,7 +4,7 @@
 ## 
 ## It drops TPC raw digits but not the PMT ones.
 ##
-#include "stage0_icarus_driver_common.fcl"
+#include "stage0_icarus_driver_common_run1.fcl"
 
 process_name: stage0
 
@@ -15,7 +15,7 @@ physics.path:         [ @sequence::icarus_stage0_data ]
 ## boiler plate...
 physics.outana:        [ purityinfoana0, purityinfoana1 ]
 physics.trigger_paths: [ path ]
-physics.end_paths:     [ outana, streamCommon ]
+physics.end_paths:     [ outana, streamROOT ]
 
 # Drop the artdaq format files on output
 outputs.outCommon.outputCommands:         ["keep *_*_*_*", "drop *_*_*_DAQ*", "drop *_daqTPCROI_*_*", "drop *_decon1droi_*_*", "drop *_decon1DroiTPC*_*_*" ]

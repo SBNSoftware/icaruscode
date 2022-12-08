@@ -1,44 +1,47 @@
 add_subdirectory(Objects)
 add_subdirectory(scripts)
 
-art_make(
-  SUBDIRS details
-  EXCLUDE
-    "TimedTrackSelector_module.cc"
-    "BeamGateInfoFromTracks_module.cc"
-    "TimeTrackTreeStorage_module.cc"
-  LIB_LIBRARIES
-    larcorealg_Geometry
-    lardataobj_RawData
+file(GLOB lib_srcs *.cxx details/*.cxx)
+
+art_make_library(
+  SOURCE ${lib_srcs}
+  LIBRARIES
+    larcorealg::Geometry
+    lardataobj::RawData
     art::Framework_Principal
     art::Framework_Core
     canvas::canvas
     ROOT::Tree
   )
 
-simple_plugin(TimedTrackSelector module
-  lardataobj_AnalysisBase
-  lardataobj_RecoBase
+cet_build_plugin(TimedTrackSelector art::module
+  LIBRARIES
+  icarusalg::Utilities
+  lardataobj::AnalysisBase
+  lardataobj::RecoBase
   messagefacility::MF_MessageLogger
   ROOT::Core
   )
 
-simple_plugin(BeamGateInfoFromTracks  module
-  lardataobj_Simulation
-  lardataobj_AnalysisBase
-  lardataobj_RecoBase
+cet_build_plugin(BeamGateInfoFromTracks  art::module
+  LIBRARIES
+  lardataobj::Simulation
+  lardataobj::AnalysisBase
+  lardataobj::RecoBase
+  lardata::DetectorInfoServices_DetectorClocksServiceStandard_service
   )
 
-simple_plugin(TimeTrackTreeStorage module
+cet_build_plugin(TimeTrackTreeStorage art::module
+  LIBRARIES
   icaruscode_Analysis_trigger
   icaruscode_PMT_Algorithms
   icaruscode_Decode_DataProducts
-  larcore_Geometry_Geometry_service
-  larcorealg_Geometry
-  lardataobj_AnalysisBase
-  lardataobj_RecoBase
-  lardataobj_RawData
-  lardataobj_Simulation
+  larcore::Geometry_Geometry_service
+  larcorealg::Geometry
+  lardataobj::AnalysisBase
+  lardataobj::RecoBase
+  lardataobj::RawData
+  lardataobj::Simulation
   ROOT::Tree
   ROOT::Core
   art_root_io::TFileService_service
