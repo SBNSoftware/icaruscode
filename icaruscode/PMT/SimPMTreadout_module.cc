@@ -1,7 +1,7 @@
 /**
  * @file   icaruscode/PMT/SimPMTreadout_module.cc
  * @brief  Produces PMT waveforms reflecting ICARUS readout.
- * @author Gianluca Petrillo
+ * @author Gianluca Petrillo (petrillo@slac.stanford.edu)
  * @date   November 16, 2022
  * 
  */
@@ -10,6 +10,7 @@
 #include "icaruscode/Utilities/DetectorClocksHelpers.h" // makeDetTimings()
 #include "icaruscode/PMT/PMTpedestalGeneratorTool.h"
 #include "icaruscode/PMT/Algorithms/PedestalGeneratorAlg.h"
+#include "icaruscode/PMT/Algorithms/PMTReadoutWindowMaker.h"
 
 
 // LArSoft libraries
@@ -296,7 +297,7 @@ class icarus::opdet::SimPMTreadout: public art::EDProducer {
         Comment{ "readout window size in samples" }
         };
       
-      fhicl::Atom<float> PreTrigFraction {
+      fhicl::Atom<float> PreTrigFraction{
         Name{ "PreTrigFraction" },
         Comment{ "fraction of readout coming before the trigger primitive" }
         };
@@ -448,21 +449,9 @@ class icarus::opdet::SimPMTreadout: public art::EDProducer {
     
   }; // PrimitiveManager
   
-  /// A single contiguous readout window.
-  struct Window_t: std::pair<electronics_time, electronics_time> {
-    using Base_t = std::pair<electronics_time, electronics_time>;
-    
-    using Base_t::Base_t;
-    
-    constexpr electronics_time start() const noexcept { return first; }
-    constexpr electronics_time stop() const noexcept { return second; }
-    constexpr auto width() const noexcept { return stop() - start(); }
-    
-    constexpr bool empty() const noexcept { return start() >= stop(); }
-    
-    void extendTo(electronics_time stop) { second = stop; }
-  }; // Window_t
+  using Window_t = PMTReadoutWindowMaker<electronics_time>::Window_t;
   
+
   // --- BEGIN -- Configuration ------------------------------------------------
   /// Input tags for already digitized waveforms.
   std::vector<art::InputTag> const fWaveformTags;
@@ -515,10 +504,6 @@ class icarus::opdet::SimPMTreadout: public art::EDProducer {
     PrimitiveManager& manager,
     std::vector<raw::Trigger> const& primitives
     ) const;
-  
-  /// Forms and merges the readout windows for the specified set of primitives.
-  std::vector<Window_t> extractReadoutWindows
-    (std::vector<electronics_time> const& primitives) const;
   
   /// Creates waveforms on a single channel, filling the specified readout
   /// windows, from the samples in `source` waveforms.
@@ -575,101 +560,6 @@ namespace {
     return (i >= nBits)? T{ 0 }: T{ 1 } << i;
   } // bitMask()
   
-  
-  // ---------------------------------------------------------------------------
-  
-#if 0
-  /**
-   * 
-   * Example of usage:
-   * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~{.cpp}
-   * using detinfo::timescales::electronics_time;
-   * 
-   * electronics_time extendStop(
-   *   electronics_time prevStop,
-   *   electronics_time nextStart, electronics_time nextStop
-   * ) {
-   *   using util::quantities::time_literals;
-   *   TolerantComparer const T{ 0.1_ns };
-   *   return (T(prevStop) >= T(nextStart))? nextStop: prevStop;
-   * }
-   * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-   * (the comparison should work as `T(prevStop) >= nextStart` or
-   * `prevStop >= T(nextStart)` as well).
-   * 
-   * The design of this class is roughly the following:
-   * * `TolerantComparer` is a factory of operands
-   * * an operand is just a typed copy of a value
-   * * comparison between operands is performed by free-function operators.
-   * 
-   */
-  template <typename T>
-  class TolerantComparer {
-    
-    using Tolerance_t = T;
-    
-    Tolerance_t fTol; ///< Reference tolerance value.
-    
-      public:
-    
-    template <typename U>
-    struct Operand {
-      
-      using Comparer_t = TolerantComparer<Tolerance_t>;
-      
-      Tolerance_t tol;
-      U&& value;
-      
-      constexpr Operand(Tolerance_t tol, U&& value)
-        : tol(std::move(tol)), value(std::forward<U>(value)) {}
-      
-    }; // struct Operand
-    
-    
-    constexpr TolerantComparer(T const tol): fTol(tol) {}
-    
-    template <typename U>
-    constexpr Operand<U> operator() (U&& value) const
-      { return Operand<U>{ fTol, std::forward(value) }; }
-    
-    template <typename U>
-    static constexpr isZero(U const& value, T const& tol)
-      { T const v = static_cast<T>(value); return (v >= -tol) && (v <= tol); }
-    
-  }; // TolerantComparer
-  
-  
-  template <typename T, typename U, typename V>
-  constexpr bool operator==
-    (TolerantComparer<T>::Operand<U> const& a, V const& b)
-    { return TolerantComparer<T>::isZero(a.value - b, a.tol); }
-  template <typename T, typename U, typename V>
-  constexpr bool operator==
-    (V const& a, TolerantComparer<T>::Operand<U> const& b)
-    { return TolerantComparer<T>::isZero(a.value - b, a.tol); }
-  
-  template <typename T, typename U, typename V>
-  constexpr bool operator!=
-    (TolerantComparer<T>::Operand<U> const& a, V const& b)
-    { return !(a == b); }
-  
-  template <typename T, typename U, typename V>
-  bool operator< (TolerantComparer<T>::Operand<U> const& a, V const& b)
-    { return (a.value - a.tol) < b; }
-  
-  template <typename T, typename U, typename V>
-  bool operator<= (TolerantComparer<T>::Operand<U> const& a, V const& b)
-    { return (a.value + a.tol) <= b; }
-  
-  template <typename T, typename U, typename V>
-  bool operator> (TolerantComparer<T>::Operand<U> const& a, V const& b)
-    { return !(a <= b); }
-  
-  template <typename T, typename U, typename V>
-  bool operator>= (TolerantComparer<T>::Operand<U> const& a, V const& b)
-    { return !(a < b); }
-  
-#endif // 0
   
   // ---------------------------------------------------------------------------
   
@@ -960,12 +850,21 @@ void icarus::opdet::SimPMTreadout::produce(art::Event& event) {
   //
   // create the new waveforms
   //
+  
+  // transforms trigger primitives into readout windows
+  // (we might do that once per cryostat rather than per channel...):
+  PMTReadoutWindowMaker<electronics_time> const makeReadoutWindows{
+    fReadoutParams.bufferSize * fOpticalTick,
+    fReadoutParams.preTriggerSize() * fOpticalTick,
+    fLogCategory + "_PMTReadoutWindowMaker"
+    };
+  
   std::uint64_t const beamGateTimestamp = event.time().value();
   std::vector<std::vector<raw::OpDetWaveform>> readoutWaveforms{ fNOpChannels };
   for (auto const channel: util::counter<raw::Channel_t>(fNOpChannels)) {
     
     std::vector<Window_t> const readoutWindows
-      = extractReadoutWindows(primitives.forChannel(channel));
+      = makeReadoutWindows(primitives.forChannel(channel));
     std::vector<raw::OpDetWaveform const*> const waveforms
       = simWaveforms[channel];
     
@@ -1046,71 +945,6 @@ void icarus::opdet::SimPMTreadout::addGlobalPrimitives
   } // for
   
 } // icarus::opdet::SimPMTreadout::addGlobalPrimitives()
-
-
-// ---------------------------------------------------------------------------
-auto icarus::opdet::SimPMTreadout::extractReadoutWindows
-  (std::vector<electronics_time> const& primitives) const
-  -> std::vector<Window_t>
-{
-  std::vector<Window_t> windows;
-  if (primitives.empty()) return windows;
-  
-  auto const preBuffer = fReadoutParams.preTriggerSize() * fOpticalTick;
-  auto const postBuffer = fReadoutParams.postTriggerSize() * fOpticalTick;
-  
-  auto itPrimitive = primitives.begin();
-  auto const pend = primitives.end();
-  
-  windows.emplace_back(*itPrimitive - preBuffer, *itPrimitive + postBuffer);
-  Window_t* lastWindow = &(windows.back());
-  
-  // --- BEGIN DEBUG -----------------------------------------------------------
-  auto dumpWindow [[maybe_unused]] = [](Window_t const& w)
-    {
-      MF_LOG_TRACE("SimPMTreadout") << w.start() << " -- " << w.stop()
-        << " (" << w.width() << ")";
-      return "";
-    };
-  MF_LOG_TRACE("SimPMTreadout")
-    << "Processing " << primitives.size() << " primitives."
-    << "\nFirst window from t=" << *itPrimitive << ": "
-    << dumpWindow(*lastWindow);
-  // --- END   DEBUG -----------------------------------------------------------
-  
-  while (++itPrimitive != pend) {
-    
-    electronics_time const time = *itPrimitive;
-    
-    electronics_time const start = time - preBuffer;
-    electronics_time const stop = time + postBuffer;
-    // --- BEGIN DEBUG ---------------------------------------------------------
-    MF_LOG_TRACE("SimPMTreadout")
-      << "Primitive at: " << time << " (starts at " << start << ")";
-    // --- END   DEBUG ---------------------------------------------------------
-    if (start <= lastWindow->stop()) { // merge
-      assert(lastWindow->start() <= start);
-      lastWindow->extendTo(stop);
-      // --- BEGIN DEBUG -------------------------------------------------------
-      MF_LOG_TRACE("SimPMTreadout")
-        << "  starts within last window: extended, now "
-        << dumpWindow(*lastWindow);
-      // --- END   DEBUG -------------------------------------------------------
-    }
-    else { // new
-      windows.emplace_back(start, stop);
-      lastWindow = &(windows.back());
-      // --- BEGIN DEBUG -------------------------------------------------------
-      MF_LOG_TRACE("SimPMTreadout")
-        << "  new window: " << dumpWindow(*lastWindow);
-      // --- END   DEBUG -------------------------------------------------------
-    }
-    
-  } // while
-  
-  return windows;
-  
-} // icarus::opdet::SimPMTreadout::extractReadoutWindows()
 
 
 // ---------------------------------------------------------------------------
@@ -1281,6 +1115,9 @@ std::vector<raw::OpDetWaveform> icarus::opdet::SimPMTreadout::makeWaveforms(
         
         itSample = std::copy(dbegin, dend, itSample);
         neededTime = dataEndTime;
+        
+        // if this source is over, point to next one for the next iteration
+        if (dend >= (*nextSource)->cend()) ++nextSource;
         
         // --- BEGIN DEBUG -----------------------------------------------------
         MF_LOG_TRACE("SimPMTreadout") << "Copy is over, neededTime="
