@@ -1066,14 +1066,16 @@ auto icarus::opdet::SimPMTreadout::extractReadoutWindows
   Window_t* lastWindow = &(windows.back());
   
   // --- BEGIN DEBUG -----------------------------------------------------------
-  auto dumpWindow = [](Window_t const& w)
+  auto dumpWindow [[maybe_unused]] = [](Window_t const& w)
     {
-      std::cout << w.start() << " -- " << w.stop() << " (" << w.width() << ")";
+      MF_LOG_TRACE("SimPMTreadout") << w.start() << " -- " << w.stop()
+        << " (" << w.width() << ")";
       return "";
     };
-  std::cout << "Processing " << primitives.size() << " primitives."
+  MF_LOG_TRACE("SimPMTreadout")
+    << "Processing " << primitives.size() << " primitives."
     << "\nFirst window from t=" << *itPrimitive << ": "
-    << dumpWindow(*lastWindow) << std::endl;
+    << dumpWindow(*lastWindow);
   // --- END   DEBUG -----------------------------------------------------------
   
   while (++itPrimitive != pend) {
@@ -1083,22 +1085,24 @@ auto icarus::opdet::SimPMTreadout::extractReadoutWindows
     electronics_time const start = time - preBuffer;
     electronics_time const stop = time + postBuffer;
     // --- BEGIN DEBUG ---------------------------------------------------------
-    std::cout << "Primitive at: " << time << " (starts at " << start << ")"
-      << std::endl;
+    MF_LOG_TRACE("SimPMTreadout")
+      << "Primitive at: " << time << " (starts at " << start << ")";
     // --- END   DEBUG ---------------------------------------------------------
     if (start <= lastWindow->stop()) { // merge
       assert(lastWindow->start() <= start);
       lastWindow->extendTo(stop);
       // --- BEGIN DEBUG -------------------------------------------------------
-      std::cout << "  starts within last window: extended, now "
-        << dumpWindow(*lastWindow) << std::endl;
+      MF_LOG_TRACE("SimPMTreadout")
+        << "  starts within last window: extended, now "
+        << dumpWindow(*lastWindow);
       // --- END   DEBUG -------------------------------------------------------
     }
     else { // new
       windows.emplace_back(start, stop);
       lastWindow = &(windows.back());
       // --- BEGIN DEBUG -------------------------------------------------------
-      std::cout << "  new window: " << dumpWindow(*lastWindow) << std::endl;
+      MF_LOG_TRACE("SimPMTreadout")
+        << "  new window: " << dumpWindow(*lastWindow);
       // --- END   DEBUG -------------------------------------------------------
     }
     
@@ -1133,20 +1137,22 @@ std::vector<raw::OpDetWaveform> icarus::opdet::SimPMTreadout::makeWaveforms(
   waveforms.reserve(readoutWindows.size());
   
   // --- BEGIN DEBUG -----------------------------------------------------------
-  std::cout << "makeWaveforms(channel=" << channel << ", { " << source.size()
-    << " waveforms }, { " << readoutWindows.size() << " windows })";
-  for (auto const& [ i, w ]: util::enumerate(source)) {
-    double const length = w->size() * fOpticalTick.value() / 1000.;
-    std::cout << "\n  [S" << i << "](" << ((void*) w)
-      << ") ch=" << w->ChannelNumber() << " t=" << w->TimeStamp()
-      << " -- " << (w->TimeStamp() + length) << " l=" << length
-      << " s=" << w->size();
-  } // for
-  for (auto const& [ i, r ]: util::enumerate(readoutWindows)) {
-    std::cout << "\n  [R" << i << "]"
-      << " " << r.start() << " -- " << r.stop() << " (" << r.width() << ")";
-  } // for
-  std::cout << std::endl;
+  {
+    mf::LogTrace log{ "SimPMTreadout" };
+    log << "makeWaveforms(channel=" << channel << ", { " << source.size()
+      << " waveforms }, { " << readoutWindows.size() << " windows })";
+    for (auto const& [ i, w ]: util::enumerate(source)) {
+      double const length = w->size() * fOpticalTick.value() / 1000.;
+      log << "\n  [S" << i << "](" << ((void*) w)
+        << ") ch=" << w->ChannelNumber() << " t=" << w->TimeStamp()
+        << " -- " << (w->TimeStamp() + length) << " l=" << length
+        << " s=" << w->size();
+    } // for
+    for (auto const& [ i, r ]: util::enumerate(readoutWindows)) {
+      log << "\n  [R" << i << "]"
+        << " " << r.start() << " -- " << r.stop() << " (" << r.width() << ")";
+    } // for
+  }
   // --- END   DEBUG -----------------------------------------------------------
   
   auto nextSource = source.begin();
@@ -1154,8 +1160,8 @@ std::vector<raw::OpDetWaveform> icarus::opdet::SimPMTreadout::makeWaveforms(
   
   for (Window_t const& window: readoutWindows) {
     // --- BEGIN DEBUG ---------------------------------------------------------
-    std::cout << "Window: " << window.start() << " -- " << window.stop() << " ("
-      << window.width() << ")" << std::endl;
+    MF_LOG_TRACE("SimPMTreadout") << "Window: " << window.start() << " -- "
+      << window.stop() << " (" << window.width() << ")";
     // --- END   DEBUG ---------------------------------------------------------
     
     if (window.empty()) continue;
@@ -1168,12 +1174,11 @@ std::vector<raw::OpDetWaveform> icarus::opdet::SimPMTreadout::makeWaveforms(
     electronics_time neededTime = window.start();
     
     // --- BEGIN DEBUG ---------------------------------------------------------
-    auto sampleIndex = [&itSample,b=samples.begin()](){ return itSample - b; };
-    std::cout
+    auto sampleIndex [[maybe_unused]]
+      = [&itSample,b=samples.begin()](){ return itSample - b; };
+    MF_LOG_TRACE("SimPMTreadout")
       << "Expected waveform with " << samples.size() << " samples;"
-      << " neededTime=" << neededTime << "  itSample=#" << sampleIndex()
-      << std::endl;
-    
+      << " neededTime=" << neededTime << "  itSample=#" << sampleIndex();
     // --- END   DEBUG ---------------------------------------------------------
     while (neededTime < window.stop()) {
       
@@ -1186,9 +1191,9 @@ std::vector<raw::OpDetWaveform> icarus::opdet::SimPMTreadout::makeWaveforms(
           { srcStart + (*nextSource)->size() * fOpticalTick };
         
         // --- BEGIN DEBUG -----------------------------------------------------
-        std::cout << "Next source: " << ((void*) *nextSource)
-          << " t=" << srcStart << " -- " << srcStop << " s="
-          << (*nextSource)->size() << std::endl;
+        MF_LOG_TRACE("SimPMTreadout")
+          << "Next source: " << ((void*) *nextSource) << " t=" << srcStart
+          << " -- " << srcStop << " s=" << (*nextSource)->size();
         // --- END   DEBUG -----------------------------------------------------
         
         if (srcStop > neededTime) break;
@@ -1204,23 +1209,24 @@ std::vector<raw::OpDetWaveform> icarus::opdet::SimPMTreadout::makeWaveforms(
       
       // --- BEGIN DEBUG -------------------------------------------------------
       if (nextSource == sourceEnd) {
-        std::cout << "No source can help with neededTime=" << neededTime
-          << std::endl;
+        MF_LOG_TRACE("SimPMTreadout")
+          << "No source can help with neededTime=" << neededTime;
       }
       else {
-        std::cout << "Source might help with neededTime=" << neededTime
-          << " (srcStart=" << srcStart << ")" << std::endl;
+        MF_LOG_TRACE("SimPMTreadout")
+          << "Source might help with neededTime=" << neededTime
+          << " (srcStart=" << srcStart << ")";
       }
       // --- END   DEBUG -------------------------------------------------------
       
       if (neededTime < srcStart) {
         // the data at needed time is not available: fill with noise
-        // --- BEGIN DEBUG -----------------------------------------------------
-        std::cout << "neededTime=" << neededTime
-          << " < srcStart=" << srcStart << ": noise time" << std::endl;
-        // --- END   DEBUG -----------------------------------------------------
         electronics_time const noiseEnd = std::min(srcStart, window.stop());
         std::size_t const nNoiseSamples = toTicks(noiseEnd - neededTime);
+        // --- BEGIN DEBUG -----------------------------------------------------
+        MF_LOG_TRACE("SimPMTreadout") << "neededTime=" << neededTime
+          << " < srcStart=" << srcStart << ": noise time";
+        // --- END   DEBUG -----------------------------------------------------
         
         // while the pedestal generator is working in floating point,
         // our source and destination is in rounded ADC counts;
@@ -1238,19 +1244,19 @@ std::vector<raw::OpDetWaveform> icarus::opdet::SimPMTreadout::makeWaveforms(
         
         neededTime = noiseEnd;
         // --- BEGIN DEBUG -----------------------------------------------------
-        std::cout << "Added " << nNoiseSamples
+        MF_LOG_TRACE("SimPMTreadout") << "Added " << nNoiseSamples
           << " samples of noise, now neededTime=" << neededTime
           << " itSample=#" << sampleIndex()
-          << "  window: " << window.start() << " -- " << window.stop()
-          << std::endl;
+          << "  window: " << window.start() << " -- " << window.stop();
         // --- END   DEBUG -----------------------------------------------------
       } // if add noise
       
       if (neededTime < window.stop()) {
         // adding noise (if any) was not enough: there must be some data to copy
         // --- BEGIN DEBUG -----------------------------------------------------
-        std::cout << "neededTime=" << neededTime << "  window: "
-          << window.start() << "--" << window.stop() << ": copy!" << std::endl;
+        MF_LOG_TRACE("SimPMTreadout")
+          << "neededTime=" << neededTime << "  window: "
+          << window.start() << "--" << window.stop() << ": copy!";
         // --- END   DEBUG -----------------------------------------------------
         assert(nextSource != sourceEnd);
         electronics_time const srcStart
@@ -1267,32 +1273,33 @@ std::vector<raw::OpDetWaveform> icarus::opdet::SimPMTreadout::makeWaveforms(
         auto const dend = dbegin + toTicks(dataEndTime - neededTime);
         
         // --- BEGIN DEBUG -----------------------------------------------------
-        std::cout << "Copy data from " << srcStart << " (#"
+        MF_LOG_TRACE("SimPMTreadout") << "Copy data from " << srcStart << " (#"
           << (dbegin - (*nextSource)->cbegin()) << ") to " << dataEndTime
           << " (#" << (dend - (*nextSource)->cbegin()) << ")"
-          << " into itSample=#" << sampleIndex() << std::endl;
+          << " into itSample=#" << sampleIndex();
         // --- END   DEBUG -----------------------------------------------------
         
         itSample = std::copy(dbegin, dend, itSample);
         neededTime = dataEndTime;
         
         // --- BEGIN DEBUG -----------------------------------------------------
-        std::cout << "Copy is over, neededTime=" << neededTime
-          << " itSample=#" << sampleIndex() << std::endl;
+        MF_LOG_TRACE("SimPMTreadout") << "Copy is over, neededTime="
+          << neededTime << " itSample=#" << sampleIndex();
         // --- END   DEBUG -----------------------------------------------------
         
       } // if copy more data
     
       // --- BEGIN DEBUG -------------------------------------------------------
-      std::cout << "Done with this source+window, neededTime=" << neededTime
-        << "  window.stop()=" << window.stop() << std::endl;
+      MF_LOG_TRACE("SimPMTreadout")
+        << "Done with this source+window, neededTime=" << neededTime
+        << "  window.stop()=" << window.stop();
       // --- END   DEBUG -------------------------------------------------------
     
     } // while needed time
     
     // --- BEGIN DEBUG ---------------------------------------------------------
-    std::cout << "Now neededTime=" << neededTime << " window.stop()="
-      << window.stop() << " => done" << std::endl;
+    MF_LOG_TRACE("SimPMTreadout") << "Now neededTime=" << neededTime
+      << " window.stop()=" << window.stop() << " => done";
     // --- END   DEBUG ---------------------------------------------------------
     
     assert(itSample == send);
@@ -1303,9 +1310,11 @@ std::vector<raw::OpDetWaveform> icarus::opdet::SimPMTreadout::makeWaveforms(
     
     // --- BEGIN DEBUG ---------------------------------------------------------
     {
-      raw::OpDetWaveform const& ow = waveforms.back();
-      double const length = ow.size() * fOpticalTick.value() / 1000.;
-      std::cout << "For window " << window.start() << " -- " << window.stop()
+      raw::OpDetWaveform const& ow [[maybe_unused]] = waveforms.back();
+      double const length [[maybe_unused]]
+        = ow.size() * fOpticalTick.value() / 1000.;
+      MF_LOG_TRACE("SimPMTreadout") 
+        << "For window " << window.start() << " -- " << window.stop()
         << " added ch=" << ow.ChannelNumber() << " t=" << ow.TimeStamp()
         << " -- " << (ow.TimeStamp() + length) << " l=" << length
         << " s=" << ow.size() << std::endl;
