@@ -145,7 +145,7 @@ physics: {
       
       TriggerTags:       []  # no extra global triggers so far
       
-      FixedTriggerTimes: [ "-3 us", "4 us", "13 us" ]
+      FixedTriggerTimes: [ "-4 us", "3 us", "12 us" ]
       
       Readout: {
         WindowSize:      @local::icarus_settings_opdet.readoutWindowSize  # from pmtsimulation_icarus.fcl

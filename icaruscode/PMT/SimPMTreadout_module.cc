@@ -1122,7 +1122,7 @@ std::vector<raw::OpDetWaveform> icarus::opdet::SimPMTreadout::makeWaveforms(
   using microsecond = util::quantities::points::microsecond;
   
   auto const toTicks = [this](nanoseconds interval)
-    { return static_cast<int>(fDetTimings.toOpticalTicks(interval).value()); };
+    { return static_cast<int>(std::round(interval / fOpticalTick)); };
   auto const toTimestamp = [this,beamGateTimestamp](electronics_time t)
     {
       return beamGateTimestamp + static_cast<std::int64_t>
