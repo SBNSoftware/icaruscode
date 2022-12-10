@@ -36,7 +36,7 @@ cet_build_plugin(SimPMTIcarus art::module
 
 cet_build_plugin(OpDetWaveformMetaMaker art::module
                     LIBRARIES
-			icaruscode_PMT_Algorithms
+			icaruscode::PMT_Algorithms
 			lardataalg::DetectorInfo
 			lardataobj::RawData
 			lardata::Utilities
@@ -113,6 +113,38 @@ cet_build_plugin(CustomPulseFunctionTool art::tool
 	ROOT::Hist
 	)
 
+cet_build_plugin(PMTconstantPedestalGeneratorTool art::tool
+  LIBRARIES
+    icaruscode::PMT_Algorithms
+    lardata::DetectorInfoServices_DetectorClocksServiceStandard_service
+    lardataalg::DetectorInfo
+    lardataobj::RawData
+  )
+
+cet_build_plugin(PMTgausNoiseGeneratorTool art::tool
+  LIBRARIES
+    icaruscode::PMT_Algorithms
+    lardata::DetectorInfoServices_DetectorClocksServiceStandard_service
+    lardataalg::DetectorInfo
+    lardataobj::RawData
+  )
+
+cet_build_plugin(PMTfastGausNoiseGeneratorTool art::tool
+  LIBRARIES
+    icaruscode::PMT_Algorithms
+    lardata::DetectorInfoServices_DetectorClocksServiceStandard_service
+    lardataalg::DetectorInfo
+    lardataobj::RawData
+  )
+
+cet_build_plugin(PMTnoNoiseGeneratorTool art::tool
+  LIBRARIES
+    icaruscode::PMT_Algorithms
+    lardata::DetectorInfoServices_DetectorClocksServiceStandard_service
+    lardataalg::DetectorInfo
+    lardataobj::RawData
+  )
+
 cet_build_plugin(CopyBeamTimePMTwaveforms art::module
   LIBRARIES
     lardata::DetectorInfoServices_DetectorClocksServiceStandard_service
@@ -123,22 +155,14 @@ cet_build_plugin(CopyBeamTimePMTwaveforms art::module
 cet_build_plugin(SimPMTreadout art::module
   LIBRARIES
     icaruscode::PMT_Algorithms
-    lardata::DetectorInfoServices
     lardataalg::DetectorInfo
     lardataobj::RawData
-    lardataalg::Utilities
     lardataobj::Simulation
     larcore::Geometry_Geometry_service
     larcorealg::Geometry
     nurandom::RandomUtils_NuRandomService_service
     art::Framework_Services_Registry
     art::Framework_Services_Optional_RandomNumberGenerator_service
-  )
-
-cet_build_plugin(OpDetWaveformMetaMaker art::module
-  icaruscode::PMT_Algorithms
-  lardataalg::DetectorInfo
-  lardataobj::RawData
   )
 
 art_make_library(
@@ -150,9 +174,19 @@ art_make_library(
     "PMTWaveformBaselines_module.cc"
     "PMTWaveformBaselinesFromReadoutConfiguration_module.cc"
     "PMTWaveformBaselinesFromChannelData_module.cc"
+    "OpHitFinderICARUS_module.cc"
+    "PMTStartCalibTime_module.cc"
+    "PMTcoordinates_module.cc"
+    "PhotonPropogationICARUS_module.cc"
+    "TrigInfo_module.cc"
+    "wvfAnaicarus_module.cc"
     "AsymGaussPulseFunctionTool_tool.cc"
     "AsymExpPulseFunctionTool_tool.cc"
     "SampledWaveformFunctionTool_tool.cc"
+    "PMTconstantPedestalGeneratorTool_tool.cc"
+    "PMTgausNoiseGeneratorTool_tool.cc"
+    "PMTfastGausNoiseGeneratorTool_tool.cc"
+    "PMTnoNoiseGeneratorTool_tool.cc"
     "CustomPulseFunctionTool_tool.cc"
           LIBRARIES
             lardataobj::RawData
