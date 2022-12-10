@@ -11,7 +11,8 @@
 #include "icaruscode/PMT/PMTpedestalGeneratorTool.h"
 #include "icaruscode/PMT/Algorithms/PedestalGeneratorAlg.h"
 #include "icaruscode/PMT/Algorithms/PMTReadoutWindowMaker.h"
-
+#include "icaruscode/PMT/Algorithms/OpDetWaveformMetaUtils.h" // OpDetWaveformMetaMaker
+#include "icaruscode/IcarusObj/OpDetWaveformMeta.h"
 
 // LArSoft libraries
 #include "larcore/Geometry/Geometry.h"
@@ -38,6 +39,9 @@
 #include "art/Framework/Services/Registry/ServiceHandle.h"
 #include "art/Framework/Services/Optional/RandomNumberGenerator.h"
 #include "art/Utilities/make_tool.h"
+#include "art/Persistency/Common/PtrMaker.h"
+#include "canvas/Persistency/Common/Assns.h"
+#include "canvas/Persistency/Common/Ptr.h"
 #include "canvas/Utilities/InputTag.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
 #include "fhiclcpp/types/DelegatedParameter.h"
@@ -56,6 +60,7 @@
 #include <atomic> // std::atomic_flag
 #include <mutex> // std::mutex, std::lock_guard
 #include <memory> // std::make_unique()
+#include <tuple>
 #include <utility> // std::move()
 #include <cmath> // std::round()
 #include <limits> // std::numeric_limits
@@ -377,6 +382,11 @@ class icarus::opdet::SimPMTreadout: public art::EDProducer {
   using PedestalGenerator_t
     = icarus::opdet::PMTpedestalGeneratorTool::Generator_t;
   
+  /// Type of data product and its association(s).
+  template <typename Data, typename... AssnsTo>
+  using DataAndAssns
+    = std::tuple<std::vector<Data>, art::Assns<Data, AssnsTo>...>;
+  
   /// Class to manage the input waveforms.
   class WaveformManager {
     
@@ -513,6 +523,12 @@ class icarus::opdet::SimPMTreadout: public art::EDProducer {
     std::vector<Window_t> const& readoutWindows
     ) const;
   
+  /// Creates waveform metadata and associations for all `waveforms`.
+  DataAndAssns<sbn::OpDetWaveformMeta, raw::OpDetWaveform> makeWaveformMetadata(
+    std::vector<raw::OpDetWaveform> const& waveforms,
+    detinfo::DetectorTimings const& detTimings,
+    art::Event const& event
+    ) const;
   
   /// Returns which cryostats the trigger belongs to (invalid if none/unknown).
   std::vector<geo::CryostatID> cryostatsOf(raw::Trigger const& trigger) const;
@@ -754,6 +770,8 @@ icarus::opdet::SimPMTreadout::SimPMTreadout(Parameters const& config)
   // output data product declaration
   //
   produces<std::vector<raw::OpDetWaveform>>();
+  produces<std::vector<sbn::OpDetWaveformMeta>>();
+  produces<art::Assns<sbn::OpDetWaveformMeta, raw::OpDetWaveform>>();
   
   
   { // --- BEGIN -- configuration dump -----------------------------------------
@@ -873,10 +891,19 @@ void icarus::opdet::SimPMTreadout::produce(art::Event& event) {
     
   } // for channels
   
+  
   //
   // sort the output and put it into the event
   //
-  event.put(moveToUniquePtr(flatten(std::move(readoutWaveforms))));
+  std::vector<raw::OpDetWaveform> allReadoutWaveforms
+    = flatten(std::move(readoutWaveforms));
+  
+  auto [ allReadoutWaveformsMeta, waveToMeta ]
+    = makeWaveformMetadata(allReadoutWaveforms, detTimings, event);
+  
+  event.put(moveToUniquePtr(std::move(allReadoutWaveforms)));
+  event.put(moveToUniquePtr(std::move(allReadoutWaveformsMeta)));
+  event.put(moveToUniquePtr(std::move(waveToMeta)));
   
 } // icarus::opdet::SimPMTreadout::produce()
 
@@ -1163,6 +1190,31 @@ std::vector<raw::OpDetWaveform> icarus::opdet::SimPMTreadout::makeWaveforms(
   return waveforms;
   
 } // icarus::opdet::SimPMTreadout::makeWaveforms()
+
+
+// ---------------------------------------------------------------------------
+auto icarus::opdet::SimPMTreadout::makeWaveformMetadata(
+  std::vector<raw::OpDetWaveform> const& waveforms,
+  detinfo::DetectorTimings const& detTimings,
+  art::Event const& event
+) const -> DataAndAssns<sbn::OpDetWaveformMeta, raw::OpDetWaveform> {
+  
+  sbn::OpDetWaveformMetaMaker const metaMaker{ detTimings };
+  
+  art::PtrMaker<raw::OpDetWaveform> const makeWaveformPtr{ event };
+  art::PtrMaker<sbn::OpDetWaveformMeta> const makeWaveformMetaPtr{ event };
+  
+  art::Assns<raw::OpDetWaveform, sbn::OpDetWaveformMeta> waveToMeta;
+  std::vector<sbn::OpDetWaveformMeta> meta;
+  
+  for (auto const& [ iWaveform, waveform ]: util::enumerate(waveforms)) {
+    meta.push_back(metaMaker(waveform));
+    waveToMeta.addSingle
+      (makeWaveformPtr(iWaveform), makeWaveformMetaPtr(iWaveform));
+  }
+  
+  return { std::move(meta), std::move(waveToMeta) };
+} // icarus::opdet::SimPMTreadout::makeWaveformMetadata()
 
 
 // ---------------------------------------------------------------------------

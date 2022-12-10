@@ -126,10 +126,20 @@ physics: {
     # --------------------------------------------------------------------------
     pmtthr: @local::icarus_pmtdiscriminatethr_fixed_MC
     
-    pmtlvdsgates: @local::icarus_lvdsgates
+    # the following modules are applied only on the preferred threshold for this application
+    pmtlvdsgates: {
+                    @table::icarus_lvdsgates                              # from trigger_emulation_icarus.fcl
+      Thresholds: [ @local::icarus_triggergate_basic.SelectedThreshold ]  # from trigger_icarus.fcl
+    }
     
-    pmttriggerwindowsCryoE: @local::icarus_trigslidewindow_cryoE
-    pmttriggerwindowsCryoW: @local::icarus_trigslidewindow_cryoW
+    pmttriggerwindowsCryoE: {
+                    @table::icarus_trigslidewindow_cryoE                  # from trigger_emulation_icarus.fcl
+      Thresholds: [ @local::icarus_triggergate_basic.SelectedThreshold ]  # from trigger_icarus.fcl
+    }
+    pmttriggerwindowsCryoW: {
+                    @table::icarus_trigslidewindow_cryoW                  # from trigger_emulation_icarus.fcl
+      Thresholds: [ @local::icarus_triggergate_basic.SelectedThreshold ]  # from trigger_icarus.fcl
+    }
     
     enablegate: @local::icarus_enablegate_sim  # from trigger_icarus.fcl
     
