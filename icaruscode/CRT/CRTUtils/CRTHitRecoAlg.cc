@@ -151,268 +151,272 @@ vector<art::Ptr<CRTData>> CRTHitRecoAlg::PreselectCRTData(const vector<art::Ptr<
 vector<pair<sbn::crt::CRTHit, vector<int>>> CRTHitRecoAlg::CreateCRTHits(vector<art::Ptr<CRTData>> crtList, uint64_t trigger_timestamp) {
   
   vector<pair<CRTHit, vector<int>>> returnHits;
-  vector<int> dataIds;
   
-    uint16_t nMissC = 0, nMissD = 0, nMissM = 0, nHitC = 0, nHitD = 0, nHitM = 0;
-    if (fVerbose) mf::LogInfo("CRTHitRecoAlg: ") << "Found " << crtList.size() << " FEB events" << '\n';
+  uint16_t nMissC = 0, nMissD = 0, nMissM = 0, nHitC = 0, nHitD = 0, nHitM = 0;
+  if (fVerbose) mf::LogInfo("CRTHitRecoAlg: ") << "Found " << crtList.size() << " FEB events" << '\n';
 
-    map<string,int> regCounts;
-    std::set<string> regs;
-    map<string,vector<size_t>> sideRegionToIndices;
+  /// key: string of each CRT region, value: number of CRTData
+  map<string,int> regCounts;
+  /// key: string of side CRT regions, value: indices in crtList
+  map<string,vector<size_t>> sideRegionToIndices;
     
-    // sort by the time 
-    std::sort(crtList.begin(), crtList.end(), compareBytime);        
+  /// sort by the time 
+  std::sort(crtList.begin(), crtList.end(), compareBytime);        
 
-    //Load Delays map for Top CRT
-    CRT_delay_map const FEB_delay_map = LoadFEBMap();
-    std::vector<std::pair<int,ULong64_t>> CRTReset;
-    ULong64_t TriggerArray[305]={0};
-    // Note: I still need to validate the Side CRT GT, so for now we will just use the top values - will be revisited, want to store seperate                     
-    //       values for the different timing chains once understood better. - AH 12/01/2022   
-    // Vectors to store CRT Resets. Note: West and North Side CRTs are on the West timing rack, East and South Side CRTs are on East timing rack
-    /*std::vector<std::pair<int,ULong64_t>> CRTReset_top;
-    std::vector<std::pair<int,ULong64_t>> CRTReset_side_west;
-    std::vector<std::pair<int,ULong64_t>> CRTReset_side_east;
-    ULong64_t TriggerArray_top[232]={0};
-    ULong64_t TriggerArray_side_west[94]={0};
-    ULong64_t TriggerArray_side_east[94]={0};*/
-    
-   for (size_t crtdat_i=0; crtdat_i<crtList.size(); crtdat_i++) {
-	uint8_t mac = crtList[crtdat_i]->fMac5;
-	int adid  = fCrtutils.MacToAuxDetID(mac,0);
-	char type = fCrtutils.GetAuxDetType(adid);
-	string region = fCrtutils.GetAuxDetRegion(adid);
-        //int plane =fCrtutils.AuxDetRegionNameToNum(region); //3 seperate GTs 
-	//For the time being, Only Top CRT delays are loaded, nothing to do for Side CRT yet
-	if (type == 'c' && crtList[crtdat_i]->IsReference_TS1()) {
-	    ULong64_t Ts0T1ResetEvent = crtList[crtdat_i]->fTs0 + FEB_delay_map.at((int)mac+73).T0_delay - FEB_delay_map.at((int)mac+73).T1_delay;
-            TriggerArray[(int) mac]=Ts0T1ResetEvent;
-            CRTReset.emplace_back((int) mac,Ts0T1ResetEvent); //single GT
-	    /*TriggerArray_top[(int) mac]=Ts0T1ResetEvent; 
-	    CRTReset_top.emplace_back((int) mac,Ts0T1ResetEvent);*///3 seperate GTs 
-	}
-	/*if (type == 'm' && crtList[crtdat_i]->IsReference_TS1()) {
-	  try
-	    {
-	      ULong64_t Ts0T1ResetEvent = crtList[crtdat_i]->fTs0 + FEB_T0delay_side.at(mac) - FEB_T1delay_side.at(mac);
-	      if(plane == 40 || plane == 41 || plane == 42 || plane == 47){//CRT T1 reset on West/North 
-		TriggerArray_side_west[(int) mac]=Ts0T1ResetEvent;
-                CRTReset_side_west.emplace_back((int) mac,Ts0T1ResetEvent);
-	      }
-	      else{
-		TriggerArray_side_east[(int) mac]=Ts0T1ResetEvent;
-                CRTReset_side_east.emplace_back((int) mac,Ts0T1ResetEvent);
-	      }
-	    }
-	  catch(std::out_of_range& e)
-	    {
-	      throw art::Exception(art::errors::Configuration)
-	        << "MAC address " << mac << " not found in the FEB_delay array!!! Please update FEB_delay FHiCL file \n";
-            }
-	}*/
-	
-   }
-   //std::cout << "------\nCreateCRTHits::Trigger timestamp = "<<trigger_timestamp<<"\n------\n";
-   const int trigger_offset= 60; //Average distance between Global Trigger and Trigger_timestamp (ns) TODO: Make configurable parameter                           
-   ULong64_t GlobalTrigger= trigger_timestamp;
-   if (!CRTReset.empty()) GlobalTrigger = GetMode(CRTReset);
-   //Add average difference between trigger_timestamp and Global trigger                                                                                          
-   else GlobalTrigger=GlobalTrigger-trigger_offset;// In this event, the T1 Reset was probably "vetoed" by the T0 Reset                                           
-   for (int i=0; i<305; i++){
-     if (TriggerArray[i]==0) TriggerArray[i]=GlobalTrigger;
-   }
-   //std::cout<<"Global Trigger "<<GlobalTrigger<<std::endl; //single GT 
-   /*
-   //Global Trigger Calculation for Top CRT
-   const int trigger_offset= 60; //Average distance between Global Trigger and Trigger_timestamp (ns)
-   ULong64_t GlobalTrigger_top= trigger_timestamp;
-   if (!CRTReset_top.empty()) GlobalTrigger_top = GetMode(CRTReset_top);
-   //Add average difference between trigger_timestamp and Global trigger
-   else GlobalTrigger_top=GlobalTrigger_top-trigger_offset;// In this event, the T1 Reset was probably "vetoed" by the T0 Reset
-   for (int i=0; i<232; i++){
-     if (TriggerArray_top[i]==0) TriggerArray_top[i]=GlobalTrigger_top;
-   }
-   //std::cout<<"------\nCreateCRTHits::Mode Top CRT Global Trigger ="<<GlobalTrigger_top<<"\n------\n";
-
-   //Global Trigger Calculation for West/North Side CRTs
-   ULong64_t GlobalTrigger_side_west= trigger_timestamp;
-   if (!CRTReset_side_west.empty()) GlobalTrigger_side_west = GetMode(CRTReset_side_west);
-   //Add average difference between trigger_timestamp and Global trigger    
-   else GlobalTrigger_side_west=GlobalTrigger_side_west-trigger_offset;// In this event, the T1 Reset was probably "vetoed" by the T0 Reset
-   for (int i=0; i<94; i++){
-     if (TriggerArray_side_west[i]==0) TriggerArray_side_west[i]=GlobalTrigger_side_west;
-   }
-   //std::cout<<"------\nCreateCRTHits::Mode Side West CRT Global Trigger ="<<GlobalTrigger_side_west<<"\n------\n";
-
-   //Global Trigger Calculation for East/South Side CRTs
-   ULong64_t GlobalTrigger_side_east= trigger_timestamp;
-   if (!CRTReset_side_east.empty()) GlobalTrigger_side_east = GetMode(CRTReset_side_east);
-   //Add average difference between trigger_timestamp and Global trigger
-   else GlobalTrigger_side_east=GlobalTrigger_side_east-trigger_offset;// In this event, the T1 Reset was probably "vetoed" by the T0 Reset
-   for (int i=0; i<94; i++){
-     if (TriggerArray_side_east[i]==0) TriggerArray_side_east[i]=GlobalTrigger_side_east;
-   }
-   //std::cout<<"------\nCreateCRTHits::Mode Side East CRT Global Trigger ="<<GlobalTrigger_side_east<<"\n------\n";
-   */ //3 seperate GTs 
-
-   //loop over time-ordered CRTData
-   for (size_t febdat_i=0; febdat_i<crtList.size(); febdat_i++) {
-
-        uint8_t mac = crtList[febdat_i]->fMac5;
-        int adid  = fCrtutils.MacToAuxDetID(mac,0); //module ID
-        
-        string region = fCrtutils.GetAuxDetRegion(adid);
-        char type = fCrtutils.GetAuxDetType(adid);
-        CRTHit hit;
-	
-	dataIds.clear();
-  
-        //CERN modules (intramodule coincidence)
-        if ( type == 'c' ) {
-	    hit = MakeTopHit(crtList[febdat_i], TriggerArray); //single GT
-	    //hit = MakeTopHit(crtList[febdat_i], TriggerArray_top); //3 seperate GT
-            if(IsEmptyHit(hit))
-                nMissC++;
-            else {
-	      dataIds.push_back(febdat_i);
-	      returnHits.push_back(std::make_pair(hit,dataIds));
-	      if ((regs.insert(region)).second) regCounts[region] = 1;
-	      else regCounts[region]++;
-	      
-	      nHitC++;
-            }
+  // Load Delays map for Top CRT
+  CRT_delay_map const FEB_delay_map = LoadFEBMap();
+  std::vector<std::pair<int,ULong64_t>> CRTReset;
+  ULong64_t TriggerArray[305]={0};
+  // Note: I still need to validate the Side CRT GT, so for now we will just use the top values - will be revisited, want to store seperate                     
+  //       values for the different timing chains once understood better. - AH 12/01/2022   
+  // Vectors to store CRT Resets. Note: West and North Side CRTs are on the West timing rack, East and South Side CRTs are on East timing rack
+  /*std::vector<std::pair<int,ULong64_t>> CRTReset_top;
+  std::vector<std::pair<int,ULong64_t>> CRTReset_side_west;
+  std::vector<std::pair<int,ULong64_t>> CRTReset_side_east;
+  ULong64_t TriggerArray_top[232]={0};
+  ULong64_t TriggerArray_side_west[94]={0};
+  ULong64_t TriggerArray_side_east[94]={0};*/
+  for (size_t crtdat_i=0; crtdat_i<crtList.size(); crtdat_i++) {
+    uint8_t mac = crtList[crtdat_i]->fMac5;
+    int adid  = fCrtutils.MacToAuxDetID(mac,0);
+    char type = fCrtutils.GetAuxDetType(adid);
+    string region = fCrtutils.GetAuxDetRegion(adid);
+    //int plane =fCrtutils.AuxDetRegionNameToNum(region); //3 seperate GTs 
+    //For the time being, Only Top CRT delays are loaded, nothing to do for Side CRT yet
+    if (type == 'c' && crtList[crtdat_i]->IsReference_TS1()) {
+      ULong64_t Ts0T1ResetEvent = crtList[crtdat_i]->fTs0 + FEB_delay_map.at((int)mac+73).T0_delay - FEB_delay_map.at((int)mac+73).T1_delay;
+      TriggerArray[(int) mac]=Ts0T1ResetEvent;
+      CRTReset.emplace_back((int) mac,Ts0T1ResetEvent); //single GT
+      /*TriggerArray_top[(int) mac]=Ts0T1ResetEvent; 
+      CRTReset_top.emplace_back((int) mac,Ts0T1ResetEvent);*///3 seperate GTs 
+    }
+    /*if (type == 'm' && crtList[crtdat_i]->IsReference_TS1()) {
+    try
+      {
+        ULong64_t Ts0T1ResetEvent = crtList[crtdat_i]->fTs0 + FEB_T0delay_side.at(mac) - FEB_T1delay_side.at(mac);
+        if(plane == 40 || plane == 41 || plane == 42 || plane == 47){//CRT T1 reset on West/North 
+          TriggerArray_side_west[(int) mac]=Ts0T1ResetEvent;
+          CRTReset_side_west.emplace_back((int) mac,Ts0T1ResetEvent);
         }
-  
-        //DC modules (intramodule coincidence)
-        if ( type == 'd' ) {
-            hit = MakeBottomHit(crtList[febdat_i]);
-            if(IsEmptyHit(hit))
-                nMissD++;
-            else {
-	      dataIds.push_back(febdat_i);
-	      returnHits.push_back(std::make_pair(hit,dataIds));
-	      if ((regs.insert(region)).second) regCounts[region] = 1;
-	      else regCounts[region]++;
-	      
-	      nHitD++;
-            }
+        else{
+          TriggerArray_side_east[(int) mac]=Ts0T1ResetEvent;
+          CRTReset_side_east.emplace_back((int) mac,Ts0T1ResetEvent);
         }
- 
-        if ( type == 'm' )
-            sideRegionToIndices[region].push_back(febdat_i);
+      }
+    catch(std::out_of_range& e)
+      {
+        throw art::Exception(art::errors::Configuration)
+          << "MAC address " << mac << " not found in the FEB_delay array!!! Please update FEB_delay FHiCL file \n";
+      }
+    }*/
+  
+  }
 
-    }//loop over CRTData products
+  //std::cout << "------\nCreateCRTHits::Trigger timestamp = "<<trigger_timestamp<<"\n------\n";
+  const int trigger_offset= 60; //Average distance between Global Trigger and Trigger_timestamp (ns) TODO: Make configurable parameter                           
+  ULong64_t GlobalTrigger= trigger_timestamp;
+  if (!CRTReset.empty()) GlobalTrigger = GetMode(CRTReset);
+  //Add average difference between trigger_timestamp and Global trigger                                                                                          
+  else GlobalTrigger=GlobalTrigger-trigger_offset;// In this event, the T1 Reset was probably "vetoed" by the T0 Reset                                           
+  for (int i=0; i<305; i++){
+    if (TriggerArray[i]==0) TriggerArray[i]=GlobalTrigger;
+  }
+  //std::cout<<"Global Trigger "<<GlobalTrigger<<std::endl; //single GT 
+  /*
+  //Global Trigger Calculation for Top CRT
+  const int trigger_offset= 60; //Average distance between Global Trigger and Trigger_timestamp (ns)
+  ULong64_t GlobalTrigger_top= trigger_timestamp;
+  if (!CRTReset_top.empty()) GlobalTrigger_top = GetMode(CRTReset_top);
+  //Add average difference between trigger_timestamp and Global trigger
+  else GlobalTrigger_top=GlobalTrigger_top-trigger_offset;// In this event, the T1 Reset was probably "vetoed" by the T0 Reset
+  for (int i=0; i<232; i++){
+    if (TriggerArray_top[i]==0) TriggerArray_top[i]=GlobalTrigger_top;
+  }
+  //std::cout<<"------\nCreateCRTHits::Mode Top CRT Global Trigger ="<<GlobalTrigger_top<<"\n------\n";
 
-    vector<size_t> unusedDataIndex;
+  //Global Trigger Calculation for West/North Side CRTs
+  ULong64_t GlobalTrigger_side_west= trigger_timestamp;
+  if (!CRTReset_side_west.empty()) GlobalTrigger_side_west = GetMode(CRTReset_side_west);
+  //Add average difference between trigger_timestamp and Global trigger    
+  else GlobalTrigger_side_west=GlobalTrigger_side_west-trigger_offset;// In this event, the T1 Reset was probably "vetoed" by the T0 Reset
+  for (int i=0; i<94; i++){
+    if (TriggerArray_side_west[i]==0) TriggerArray_side_west[i]=GlobalTrigger_side_west;
+  }
+  //std::cout<<"------\nCreateCRTHits::Mode Side West CRT Global Trigger ="<<GlobalTrigger_side_west<<"\n------\n";
+
+  //Global Trigger Calculation for East/South Side CRTs
+  ULong64_t GlobalTrigger_side_east= trigger_timestamp;
+  if (!CRTReset_side_east.empty()) GlobalTrigger_side_east = GetMode(CRTReset_side_east);
+  //Add average difference between trigger_timestamp and Global trigger
+  else GlobalTrigger_side_east=GlobalTrigger_side_east-trigger_offset;// In this event, the T1 Reset was probably "vetoed" by the T0 Reset
+  for (int i=0; i<94; i++){
+    if (TriggerArray_side_east[i]==0) TriggerArray_side_east[i]=GlobalTrigger_side_east;
+  }
+  //std::cout<<"------\nCreateCRTHits::Mode Side East CRT Global Trigger ="<<GlobalTrigger_side_east<<"\n------\n";
+  */ //3 seperate GTs 
+
+  /// loop over time-ordered CRTData
+  for (size_t febdat_i=0; febdat_i<crtList.size(); febdat_i++) {
+
+    uint8_t mac = crtList[febdat_i]->fMac5;
+    int adid  = fCrtutils.MacToAuxDetID(mac,0); //module ID
+
+    string region = fCrtutils.GetAuxDetRegion(adid);
+    char type = fCrtutils.GetAuxDetType(adid);
+    CRTHit hit;
+
+    //CERN modules (intramodule coincidence)
+    if ( type == 'c' ) {
+      hit = MakeTopHit(crtList[febdat_i], TriggerArray); //single GT
+      if(IsEmptyHit(hit))
+        nMissC++;
+      else {
+        returnHits.push_back(std::make_pair(hit, vector<int>{(int)febdat_i}));
+
+        if( regCounts.find(region)==regCounts.end() ) regCounts[region] = 1;
+        else regCounts[region]++;
+
+        nHitC++;
+      }
+    }
+
+    //DC modules (intramodule coincidence)
+    if ( type == 'd' ) {
+      hit = MakeBottomHit(crtList[febdat_i]);
+      if(IsEmptyHit(hit))
+        nMissD++;
+      else {
+        returnHits.push_back(std::make_pair(hit,vector<int>{(int)febdat_i}));
+
+        if( regCounts.find(region)==regCounts.end() ) regCounts[region] = 1;
+        else regCounts[region]++;
+
+        nHitD++;
+      }
+    }
+
+    /// Side CRT need further treament below
+    if ( type == 'm' )
+      sideRegionToIndices[region].push_back(febdat_i);
+
+    } //loop over CRTData products
+
     for(auto const& regIndices : sideRegionToIndices) {
-      
+
+      /// regIndices.first: string of side crt region
+      /// regIndices.second: vector of indcies of crtList
+
       if(fVerbose) 
-	mf::LogInfo("CRTHitRecoAlg: ") << "searching for side CRT hits in region, " << regIndices.first << '\n';
-      
-      vector<size_t> indices = regIndices.second;
-      
+        mf::LogInfo("CRTHitRecoAlg: ") << "searching for side CRT hits in region, " << regIndices.first << '\n';
+
+      const vector<size_t>& indices = regIndices.second;
+
       if(fVerbose)
-	mf::LogInfo("CRTHitRecoAlg: ") << "number of hits associated to this region : " << indices.size() << '\n';
+        mf::LogInfo("CRTHitRecoAlg: ") << "number of hits associated to this region : " << indices.size() << '\n';
       
       for(size_t index_i=0; index_i < indices.size(); index_i++) {
+
+        vector<int> dataIds;
+        dataIds.push_back(indices[index_i]);
+
+        vector<art::Ptr<CRTData>> coinData = {crtList[indices[index_i]]};
           
-	dataIds.clear();
-	dataIds.push_back(indices[index_i]);
-	vector<art::Ptr<CRTData>> coinData = {crtList[indices[index_i]]};
-          
-	if(fVerbose)
-	  mf::LogInfo("CRTHitRecoAlg: ") << "size ..  " << coinData.size()
-		    << " data products enetring to time ordring" << '\n';
-	
-	//inner loop over data after data_i in time
-	for (size_t index_j=index_i+1; index_j<indices.size(); index_j++) {
-	  
-	  if(fVerbose)
-	    mf::LogInfo("CRTHitRecoAlg: ") << "i \t"<<index_i << ", j \t"<<index_j << "\t"<<crtList[indices[index_j]]->fTs0 << "\t"<<crtList[indices[index_i]]->fTs0 
-		      << "\t"<<crtList[indices[index_i]]->fTs0+ fCoinWindow <<'\n';
-	  
-	  if(crtList[indices[index_j]]->fTs0 < crtList[indices[index_i]]->fTs0)
-	    mf::LogError("CRTHitRecoAlg::CreateCRTHits") <<
-	      "bad time ordering!" << '\n';
-	  
-	  if(fVerbose)
-	    mf::LogInfo("CRTHitRecoAlg: ") << "size ..  " << coinData.size()
-                        << " data products before coincidence" << '\n';
-	  // in coincidence
-	  //      if(crtList[indices[index_j]]->fTs0 <= crtList[indices[index_i]]->fTs0 + fCoinWindow) {
-	  //            if(std::llabs(crtList[indices[index_j]]->fTs0 - crtList[indices[index_i]]->fTs0) < fCoinWindow) {
-	  if( (crtList[indices[index_j]]->fTs0>=crtList[indices[index_i]]->fTs0 && 
-	       (crtList[indices[index_j]]->fTs0 - crtList[indices[index_i]]->fTs0) < fCoinWindow) ||
-	      (crtList[indices[index_j]]->fTs0<crtList[indices[index_i]]->fTs0 && 
-	       (crtList[indices[index_i]]->fTs0 - crtList[indices[index_j]]->fTs0) < fCoinWindow)) {
-	    if(fVerbose)
-	      mf::LogInfo("CRTHitRecoAlg: ") <<  " in coincidence: i \t " << index_i << " ,j: \t" << index_j <<",i mac: \t" 
-			<< (int)crtList[indices[index_i]]->fMac5 << ", j mac: \t" <<(int)crtList[indices[index_j]]->fMac5<< '\n';
-	    
-	    coinData.push_back(crtList[indices[index_j]]);
-	    dataIds.push_back(indices[index_j]);
-	  }
-          
-	  //out of coinWindow
-	  
-	  if  ((crtList[indices[index_j]]->fTs0 - crtList[indices[index_i]]->fTs0) > fCoinWindow || index_j==indices.size()-1){
-	    if(fVerbose)
-	      mf::LogInfo("CRTHitRecoAlg: ") <<  "out of coincidence  " << index_j << "\t" << indices.size() <<"\t" <<indices.size()-1
-			<< " data products..." << '\n';
-	    if(fVerbose)
-	      mf::LogInfo("CRTHitRecoAlg: ") << "attempting to produce MINOS hit from " << coinData.size() 
-			<< " data products..." << '\n';
-	    uint8_t imac = (int)crtList[indices[index_i]]->fMac5;
+        if(fVerbose)
+          mf::LogInfo("CRTHitRecoAlg: ") << "size ..  " << coinData.size()
+          << " data products enetring to time ordring" << '\n';
+  
+        //inner loop over data after data_i in time
+        for (size_t index_j=index_i+1; index_j<indices.size(); index_j++) {
+    
+          if(fVerbose)
+            mf::LogInfo("CRTHitRecoAlg: ") << "i \t"<<index_i << ", j \t"<<index_j << "\t"<<crtList[indices[index_j]]->fTs0 << "\t"<<crtList[indices[index_i]]->fTs0 
+            << "\t"<<crtList[indices[index_i]]->fTs0+ fCoinWindow <<'\n';
+    
+          if(crtList[indices[index_j]]->fTs0 < crtList[indices[index_i]]->fTs0)
+            mf::LogError("CRTHitRecoAlg::CreateCRTHits")<<
+            "bad time ordering!" << '\n';
+    
+          if(fVerbose)
+            mf::LogInfo("CRTHitRecoAlg: ") << "size ..  " << coinData.size()
+            << " data products before coincidence" << '\n';
+
+          /// Fill coinData when j-th is within coin window to i-th
+          if( (crtList[indices[index_j]]->fTs0 >= crtList[indices[index_i]]->fTs0 &&
+              (crtList[indices[index_j]]->fTs0 - crtList[indices[index_i]]->fTs0) < fCoinWindow) ||
+              //==== Do we need below? This should not happen once crtList is sorted
+              (crtList[indices[index_j]]->fTs0 < crtList[indices[index_i]]->fTs0 &&
+              (crtList[indices[index_i]]->fTs0 - crtList[indices[index_j]]->fTs0) < fCoinWindow)) {
+            if(fVerbose)
+              mf::LogInfo("CRTHitRecoAlg: ") <<  " in coincidence: i \t " << index_i << " ,j: \t" << index_j <<",i mac: \t" 
+              << (int)crtList[indices[index_i]]->fMac5 << ", j mac: \t" <<(int)crtList[indices[index_j]]->fMac5<< '\n';
+      
+            coinData.push_back(crtList[indices[index_j]]);
+            dataIds.push_back(indices[index_j]);
+          }
+
+          /// When j-th is outside the coin window 
+          /// or when j reached the end of indices,
+          /// make Side CRT hit using currently collected coinData
+          if( (crtList[indices[index_j]]->fTs0 - crtList[indices[index_i]]->fTs0) > fCoinWindow || index_j==indices.size()-1){
+
+            if(fVerbose)
+              mf::LogInfo("CRTHitRecoAlg: ") <<  "out of coincidence  " << index_j << "\t" << indices.size() <<"\t" <<indices.size()-1
+              << " data products..." << '\n';
+            if(fVerbose)
+              mf::LogInfo("CRTHitRecoAlg: ") << "attempting to produce MINOS hit from " << coinData.size() 
+              << " data products..." << '\n';
+
+            uint8_t imac = (int)crtList[indices[index_i]]->fMac5;
             int adid  = fCrtutils.MacToAuxDetID(imac,0);
             string region = fCrtutils.GetAuxDetRegion(adid);
-	    //int plane =fCrtutils.AuxDetRegionNameToNum(region); //3 seperate GT
-	    CRTHit hit = MakeSideHit(coinData, TriggerArray); //single GT
+            //int plane =fCrtutils.AuxDetRegionNameToNum(region); //3 seperate GT
+
+            CRTHit hit = MakeSideHit(coinData, TriggerArray); //single GT
             /*CRTHit hit;
-	    if(plane == 40 || plane == 41 || plane == 42 || plane == 47){//CRT T1 reset on West/North
-	      hit = MakeSideHit(coinData, TriggerArray_side_west);
-	    }
-	    else{
-	      hit = MakeSideHit(coinData, TriggerArray_side_east);
-	    }*/ //3 seperate GT
-	      
-	    if(IsEmptyHit(hit)){
-	      unusedDataIndex.push_back(indices[index_i]);
-	      nMissM++;
-	    }
-	    else {
-	      if(fVerbose)
-		mf::LogInfo("CRTHitRecoAlg: ") << "MINOS hit produced" << '\n';
-              
-	      returnHits.push_back(std::make_pair(hit,dataIds));
-	      
-	      if ((regs.insert(regIndices.first)).second) 
-		regCounts[regIndices.first] = 1;
-	      else 
-		regCounts[regIndices.first]++;
-	      
-	      nHitM++;
-	    }
-	    index_i = index_j-1;
-	    if(index_j==indices.size()-1)
-	      index_i++;
-	    
-	    break;
-	  }//if jth data out of coinc window
-	}//inner loop over data
-      }// outer loop over data
-    }//loop over side CRTData products
+            if(plane == 40 || plane == 41 || plane == 42 || plane == 47){//CRT T1 reset on West/North
+              hit = MakeSideHit(coinData, TriggerArray_side_west);
+            }
+            else{
+              hit = MakeSideHit(coinData, TriggerArray_side_east);
+            }*/ //3 seperate GT
+        
+            if(IsEmptyHit(hit)){
+              nMissM++;
+            }
+            else{
+              if(fVerbose)
+                mf::LogInfo("CRTHitRecoAlg: ") << "MINOS hit produced" << '\n';
+              returnHits.push_back(std::make_pair(hit,dataIds));
+              if( regCounts.find(regIndices.first)==regCounts.end() ) regCounts[regIndices.first] = 1;
+              else regCounts[regIndices.first]++;
+              nHitM++;
+            }
+
+            /// "j" now is outside the coincidence window of "i"
+            /// Breaking the loop over j, and restart the i-loop
+            /// starting from j
+            /// We are setting "index_i = index_j-1" here, so index_i++ will make "index_i" to "index_j"
+            index_i = index_j-1;
+            /// If j is the last element, increase index_i to end the i loop?
+            if(index_j==indices.size()-1){
+              index_i++;
+            }
+            break;
+
+          } // if jth data out of coinc window
+        } //inner loop over data
+      } // outer loop over data
+    } //loop over side CRTData products
     
     if(fVerbose) {
-          mf::LogInfo("CRT") << returnHits.size() << " CRT hits produced!" << '\n'
-              << "  nHitC: " << nHitC  << " , nHitD: " << nHitD  << " , nHitM: " << nHitM  << '\n'
-              << "  nMisC: " << nMissC << " , nMisD: " << nMissD << " , nMisM: " << nMissM << '\n';
-          auto cts = regCounts.begin();
-          mf::LogInfo("CRT") << " CRT Hits by region" << '\n';
-          while (cts != regCounts.end()) {
-              mf::LogInfo("CRT") << "reg: " << (*cts).first << " , hits: " << (*cts).second << '\n';
-              cts++;
-          }
-    }//if Verbose
+      mf::LogInfo("CRT") << returnHits.size() << " CRT hits produced!" << '\n'
+      << "  nHitC: " << nHitC  << " , nHitD: " << nHitD  << " , nHitM: " << nHitM  << '\n'
+      << "  nMisC: " << nMissC << " , nMisD: " << nMissD << " , nMisM: " << nMissM << '\n';
+      mf::LogInfo("CRT") << " CRT Hits by region" << '\n';
+      for(const auto& regCount: regCounts){
+        mf::LogInfo("CRT") << "reg: " << regCount.first << " , hits: " << regCount.second << '\n';
+      }
+    } //if Verbose
   
     return returnHits;
 }
