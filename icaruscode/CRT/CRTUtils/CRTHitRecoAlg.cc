@@ -85,45 +85,62 @@ void CRTHitRecoAlg::reconfigure(const fhicl::ParameterSet& pset){
 vector<art::Ptr<CRTData>> CRTHitRecoAlg::PreselectCRTData(const vector<art::Ptr<CRTData>> &crtList, uint64_t trigger_timestamp){
   if (fVerbose)  mf::LogInfo("CRTHitRecoAlg: ") << "In total " << crtList.size() << " CRTData found in an event" << '\n';
   vector<art::Ptr<CRTData>> crtdata;
-  bool presel = false;
 
-  for (size_t febdat_i=0; febdat_i<crtList.size(); febdat_i++) {
+  for(const auto& crtData: crtList){
     
-    uint8_t mac = crtList[febdat_i]->fMac5;
+    uint8_t mac = crtData->fMac5;
     int adid    = fCrtutils.MacToAuxDetID(mac,0);
     char type   = fCrtutils.GetAuxDetType(adid);
 
     /// Looking for data within +/- 3ms within trigger time stamp
     /// Here t0 - trigger time -ve
-    if (fData && (std::fabs(int64_t(crtList[febdat_i]->fTs0 - trigger_timestamp)) > fCrtWindow)) continue;
-    
+    if (fData && (std::fabs(int64_t(crtData->fTs0 - trigger_timestamp)) > fCrtWindow)) continue;
+
+    /// For each CRTData, we require at least one channel with pe above threshold
+    bool passCut = false;
+
     if ( type == 'm'){
       for(int chan=0; chan<32; chan++) {
-	std::pair<double,double> const chg_cal = fChannelMap->getSideCRTCalibrationMap((int)crtList[febdat_i]->fMac5,chan);
-	float pe = (crtList[febdat_i]->fAdc[chan]-chg_cal.second)/chg_cal.first;
-	if(pe<=fPEThresh && !crtList[febdat_i]->IsReference_TS1() && !crtList[febdat_i]->IsReference_TS0()) continue; // filter out low PE and non-T1 and non-T0 ref values
-	presel = true;
-	if(fVerbose)
-	  mf::LogInfo("CRTHitRecoAlg: ") << "\nfebP (mac5, channel, gain, pedestal, adc, pe) = (" << (int)crtList[febdat_i]->fMac5 << ", " << chan << ", " 
-					 << chg_cal.first << ", " << chg_cal.second << "," << crtList[febdat_i]->fAdc[chan] << "," << pe << ")\n";
+        std::pair<double,double> const chg_cal = fChannelMap->getSideCRTCalibrationMap((int)(crtData->fMac5),chan);
+        float pe = (crtData->fAdc[chan]-chg_cal.second)/chg_cal.first;
+        bool IsBadChannel = pe<=fPEThresh && !crtData->IsReference_TS1() && !crtData->IsReference_TS0(); // filter out low PE and non-T1 and non-T0 ref values
+        if(fVerbose){
+          mf::LogInfo("CRTHitRecoAlg: ") << "\nfebP (mac5, channel, gain, pedestal, adc, pe) = (" << (int)(crtData->fMac5) << ", " << chan << ", " 
+          << chg_cal.first << ", " << chg_cal.second << "," << crtData->fAdc[chan] << "," << pe << ")\n";
+        }
+        if(!IsBadChannel){
+          passCut = true;
+          break;
+        }
       }
-    }else if ( type == 'c' ) {
+    }
+    else if ( type == 'c' ) {
+    /// TODO Not filtering now
+      /*
       for(int chan=0; chan<32; chan++) {
-	//float pe = (crtList[febdat_i]->fAdc[chan]-fQPed)/fQSlope;
-	//if(pe<=fPEThresh) continue;
-	presel = true;
+        float pe = (crtData->fAdc[chan]-fQPed)/fQSlope;
+        bool IsBadChannel = pe<=fPEThresh;
+        if(!IsBadChannel){
+          passCut = true;
+          break;
+        }
       }
-    }else if ( type == 'd'){
+      */
+      passCut = true;
+    }
+    else if ( type == 'd'){
       for(int chan=0; chan<64; chan++) {
-	float pe = (crtList[febdat_i]->fAdc[chan]-fQPed)/fQSlope;
-	if(pe<=fPEThresh) continue;
-	presel = true;
+        float pe = (crtData->fAdc[chan]-fQPed)/fQSlope;
+        bool IsBadChannel = pe<=fPEThresh;
+        if(!IsBadChannel){
+          passCut = true;
+          break;
+        }
       }
     }
   
-    if (presel) crtdata.push_back(crtList[febdat_i]);
-    presel = false;
-    
+    if(passCut) crtdata.push_back(crtData);
+
   }
   mf::LogInfo("CRTHitRecoAlg:") << "Found " << crtdata.size() << " after preselection "<< '\n';
   //std::cout<<trigger_timestamp<<std::endl;
