@@ -46,7 +46,17 @@
   <class name="art::Wrapper<art::Assns<sbn::OpDetWaveformMeta, icarus::trigger::OpticalTriggerGate::GateData_t>>" />
   <class name="art::Wrapper<art::Assns<icarus::trigger::OpticalTriggerGate::GateData_t, sbn::OpDetWaveformMeta>>" />
   
-  
+  <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
+  <!-- icarus::timing::PMTWaveformTimeCorrection -->
+  <class name="icarus::timing::PMTWaveformTimeCorrection" ClassVersion="11" >
+   <version ClassVersion="11" checksum="849345931"/>
+   <version ClassVersion="10" checksum="1609503266"/>
+  </class>
+
+  <class name="art::Ptr<icarus::timing::PMTWaveformTimeCorrection>"/>
+  <class name="std::vector<icarus::timing::PMTWaveformTimeCorrection>"/>
+  <class name="art::Wrapper<std::vector<icarus::timing::PMTWaveformTimeCorrection> >"/>
+
   <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
   <!-- LArSoft object associations that are missing from LArSoft             -->
   
@@ -55,6 +65,11 @@
   <class name="art::Assns<recob::PFParticle, sim::BeamGateInfo>" />
   <class name="art::Wrapper<art::Assns<sim::BeamGateInfo, recob::PFParticle>>" />
   <class name="art::Wrapper<art::Assns<recob::PFParticle, sim::BeamGateInfo>>" />
+  
+<!--  <class name="art::Assns<sim::BeamGateInfo, recob::Track>" />
+  <class name="art::Assns<recob::Track, sim::BeamGateInfo>" />
+  <class name="art::Wrapper<art::Assns<sim::BeamGateInfo, recob::Track>>" />
+  <class name="art::Wrapper<art::Assns<recob::Track, sim::BeamGateInfo>>" />  -->
   
   <!-- anab::T0 - sim::BeamGateInfo associations -->
   <class name="std::pair<art::Ptr<sim::BeamGateInfo>, art::Ptr<anab::T0>>" />
@@ -65,6 +80,24 @@
   <class name="art::Wrapper<art::Assns<anab::T0, sim::BeamGateInfo>>" />
   
   <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
+
+  <!-- CRT matching metadata -->
+  <class name="icarus::CRTTPCMatchingInfo" ClassVersion="10" >
+   <version ClassVersion="10" checksum="3174835328"/>
+  </class>
+  <class name="std::vector<icarus::CRTTPCMatchingInfo>" />
+  
+  <!-- recob::Track - anab::T0 associations with CRT matching metadata -->
+<!--  <class name="art::Assns<recob::Track, anab::T0, icarus::CRTTPCMatchingInfo>" />
+  <class name="art::Assns<anab::T0, recob::Track, icarus::CRTTPCMatchingInfo>" />
+  <class name="art::Wrapper<art::Assns<recob::Track, anab::T0, icarus::CRTTPCMatchingInfo>>" />
+  <class name="art::Wrapper<art::Assns<anab::T0, recob::Track, icarus::CRTTPCMatchingInfo>>" /> -->
+  
+  <!-- sbn::crt::CRTHit - anab::T0 associations with CRT matching metadata -->
+  <class name="art::Assns<sbn::crt::CRTHit, anab::T0, icarus::CRTTPCMatchingInfo>" />
+  <class name="art::Assns<anab::T0, sbn::crt::CRTHit, icarus::CRTTPCMatchingInfo>" />
+  <class name="art::Wrapper<art::Assns<sbn::crt::CRTHit, anab::T0, icarus::CRTTPCMatchingInfo>>" />
+  <class name="art::Wrapper<art::Assns<anab::T0, sbn::crt::CRTHit, icarus::CRTTPCMatchingInfo>>" /> 
   
   
 </lcgdict>

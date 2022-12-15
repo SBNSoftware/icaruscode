@@ -97,12 +97,6 @@ TPCNoiseFilter1DTool: {
     FragmentIDMap:      [ [0,0x140C], [1,0x140E], [2,0x1410], [6,0x1414], [8,0x150E], [9,0x1510] ]
 }
 
-PMTDecoderTool: {
-    tool_type:          PMTDecoder
-    PMTconfigTag:       @nil # either specify or @erase in downstream config
-    BoardSetup:         @local::icarus_V1730_setup
-}
-
 TriggerDecoderTool: {
    tool_type:          TriggerDecoder
 }
@@ -110,6 +104,11 @@ TriggerDecoderTool: {
 TriggerDecoderV2Tool: {
    tool_type:          TriggerDecoderV2
    TriggerConfigLabel: @nil # must override
+}
+
+TriggerDecoderV3Tool: {
+   tool_type:	      TriggerDecoderV3
+   TriggerConfigLabel: @nil # must override		      
 }
 
 

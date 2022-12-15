@@ -53,6 +53,9 @@ private:
 
   // Helpers
   RunInfo GetRunInfo(uint64_t run);
+
+  // Cache run requests
+  std::map<uint32_t, RunInfo> fRunInfos;
 };
 
 DEFINE_ART_CLASS_TOOL(NormalizeDriftSQLite)
@@ -71,6 +74,11 @@ icarus::calo::NormalizeDriftSQLite::NormalizeDriftSQLite(fhicl::ParameterSet con
 void icarus::calo::NormalizeDriftSQLite::configure(const fhicl::ParameterSet& pset) {}
 
 icarus::calo::NormalizeDriftSQLite::RunInfo icarus::calo::NormalizeDriftSQLite::GetRunInfo(uint64_t run) {
+  // check the cache
+  if (fRunInfos.count(run)) {
+    return fRunInfos.at(run);
+  }
+
   // Look up the run
   //
   // Translate the run into a fake "timestamp"
@@ -93,7 +101,10 @@ icarus::calo::NormalizeDriftSQLite::RunInfo icarus::calo::NormalizeDriftSQLite::
   }
 
   if (fVerbose) std::cout << "NormalizeDriftSQLite Tool -- Lifetime Data:" << "\nTPC EE: " << thisrun.tau_EE << "\nTPC EW: " << thisrun.tau_EW << "\nTPC WE: " << thisrun.tau_WE << "\nTPC WW: " << thisrun.tau_WW << std::endl;
- 
+
+  // Set the cache
+  fRunInfos[run] = thisrun;
+
   return thisrun;
 }
 

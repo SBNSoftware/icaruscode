@@ -8,11 +8,14 @@
 #include "decoderdefs_icarus.fcl"
 #include "recowire_icarus.fcl"
 #include "hitfindermodules_icarus.fcl"
+#include "timing_icarus.fcl"
 #include "icarus_ophitfinder.fcl"
 #include "icarus_flashfinder.fcl"
 #include "trigger_emulation_icarus.fcl"
 #include "crt_decoderdefs_icarus.fcl"
+#include "crthitproducer.fcl"
 #include "wcls-decode-to-sig-base.fcl"
+#include "icarus_FilterCRTPMTMatching.fcl"
 
 BEGIN_PROLOG
 
@@ -33,6 +36,7 @@ icarus_stage0_analyzers:
 
 # set the name of our `extractPMTconfig` and `extractTriggerConfig` for our decoders
 decodeTriggerV2.DecoderTool.TrigConfigLabel: triggerconfig
+decodeTriggerV3.DecoderTool.TrigConfigLabel: triggerconfig
 decodePMT.PMTconfigTag: pmtconfig
 decodePMT.TriggerTag:   daqTrigger
 
@@ -45,8 +49,6 @@ icarus_stage0_producers:
   pmtconfig:                      @local::extractPMTconfig
 
   ### Decoder definitions
-  daqTrigger:                     @local::decodeTrigger
-
   daqTPC:                         @local::decodeTPC
 
   daqTPCROI:                      @local::decodeTPCROI
@@ -55,7 +57,7 @@ icarus_stage0_producers:
 
   daqCRT:                         @local::crtdaq_icarus
 
-  daqTrigger:                     @local::decodeTriggerV2
+  daqTrigger:                     @local::decodeTriggerV3
 
   ### calwire producers
   decon1droi:                     @local::icarus_decon1droi
@@ -71,7 +73,7 @@ icarus_stage0_producers:
   roifinder:                      @local::icarus_roifinder
   roifinder2d:                    @local::icarus_roifinder
 
-  ### hit-finder producers
+  ### TPC hit-finder producers
   gaushitTPCWW:                   @local::gaus_hitfinder_icarus
   gaushitTPCWE:                   @local::gaus_hitfinder_icarus
   gaushitTPCEW:                   @local::gaus_hitfinder_icarus
@@ -82,13 +84,18 @@ icarus_stage0_producers:
   gaushit2dTPCEW:                 @local::gaus_hitfinder_icarus
   gaushit2dTPCEE:                 @local::gaus_hitfinder_icarus
 
+  ### CRT hit finder producer
+  crthit:                         @local::standard_crthitproducer	
+
   ### trigger emulation foundation
   pmtconfigbaselines:             @local::icarus_pmtconfigbaselines
   pmtthr:                         @local::icarus_pmtdiscriminatethr
   
   ### Optical hit finder
-  ophit:                          @local::icarus_ophit_data
-  ophitfull:                      @local::icarus_ophitdebugger_data
+  ophituncorrected:               @local::icarus_ophit_data
+  ophit:                          @local::icarus_ophit_timing_correction
+  ophitfulluncorrected:           @local::icarus_ophitdebugger_data
+  ophitfull:                      @local::icarus_ophit_timing_correction
   opflashCryoE:                   @local::ICARUSSimpleFlashDataCryoE
   opflashCryoW:                   @local::ICARUSSimpleFlashDataCryoW
 
@@ -144,122 +151,144 @@ icarus_stage0_filters:
                              TriggerDataLabel:   "daqTrigger"
                              TriggerType:        "Unknown"
                           }
+
+   crtpmtmatchingfilter: @local::icarus_FilterCRTPMTMatching
 }
 
 
 ### Below are a list of convenient sequences that can be used for production/typical users. ###
 
-icarus_stage0_trigger_BNB:         [ triggerconfig,
-                                     daqTrigger,
-                                     triggerfilterBNB 
-                                   ]
+icarus_stage0_trigger_BNB:          [ triggerconfig,
+                                      daqTrigger,
+                                      triggerfilterBNB 
+                                    ]
+ 
+icarus_stage0_trigger_NuMI:         [ triggerconfig,
+                                      daqTrigger,
+                                      triggerfilterNuMI 
+                                    ]
+ 
+icarus_stage0_trigger_OffbeamBNB:   [ triggerconfig,
+                                      daqTrigger,
+                                      triggerfilterOffbeamBNB 
+                                    ]
 
-icarus_stage0_trigger_NuMI:        [ triggerconfig,
-                                     daqTrigger,
-                                     triggerfilterNuMI 
-                                   ]
+icarus_stage0_trigger_OffbeamNuMI:  [ triggerconfig,
+                                      daqTrigger,
+                                      triggerfilterOffbeamNuMI 
+                                    ]
 
-icarus_stage0_trigger_OffbeamBNB:  [ triggerconfig,
-                                     daqTrigger,
-                                     triggerfilterOffbeamBNB 
-                                   ]
+icarus_stage0_trigger_Unknown:      [ triggerconfig,
+                                      daqTrigger,
+                                      triggerfilterUnknown
+                                    ]
 
-icarus_stage0_trigger_OffbeamNuMI: [ triggerconfig,
-                                     daqTrigger,
-                                     triggerfilterOffbeamNuMI 
-                                   ]
+icarus_stage0_multiTPC_TPC:         [ decon1droi,
+                                      roifinder
+                                    ]
 
-icarus_stage0_trigger_Unknown:     [ triggerconfig,
-                                     daqTrigger,
-                                     triggerfilterUnknown
-                                   ]
+icarus_stage0_multiTPC_2d_TPC:      [ decon1droi,
+                                      roifinder,
+                                      decon2droiEE,
+                                      decon2droiEW,
+                                      decon2droiWE,
+                                      decon2droiWW,
+                                      roifinder2d
+                                    ]
 
-icarus_stage0_multiTPC_TPC:        [ decon1droi,
-                                     roifinder
-                                   ]
+icarus_stage0_EastHits_TPC:         [ gaushitTPCEW,
+                                      gaushitTPCEE
+                                    ]
 
-icarus_stage0_multiTPC_2d_TPC:     [ decon1droi,
-                                     roifinder,
-                                     decon2droiEE,
-                                     decon2droiEW,
-                                     decon2droiWE,
-                                     decon2droiWW,
-                                     roifinder2d
-                                   ]
+icarus_stage0_WestHits_TPC:         [ gaushitTPCWW,
+                                      gaushitTPCWE
+                                    ]
 
-icarus_stage0_EastHits_TPC:        [ gaushitTPCEW,
-                                     gaushitTPCEE
-                                   ]
+icarus_stage0_EastHits2d_TPC:       [ gaushit2dTPCEW,
+                                      gaushit2dTPCEE
+                                    ]
 
-icarus_stage0_WestHits_TPC:        [ gaushitTPCWW,
-                                     gaushitTPCWE
-                                   ]
+icarus_stage0_WestHits2d_TPC:       [ gaushit2dTPCWW,
+                                      gaushit2dTPCWE
+                                    ]
 
-icarus_stage0_EastHits2d_TPC:      [ gaushit2dTPCEW,
-                                     gaushit2dTPCEE
-                                   ]
+icarus_purity_monitor:              [
+                                      purityana0,
+                                      purityana1
+                                    ]
 
-icarus_stage0_WestHits2d_TPC:      [ gaushit2dTPCWW,
-                                     gaushit2dTPCWE
-                                   ]
+icarus_stage0_PMT:                  [ triggerconfig,
+                                      daqTrigger,
+                                      pmtconfig,
+                                      daqPMT,
+                                      pmtconfigbaselines,
+                                      pmtthr,
+                                      ophituncorrected,
+                                      ophit,
+                                      opflashCryoE,
+                                      opflashCryoW
+                                    ]
 
-icarus_purity_monitor:             [
-                                     purityana0,
-                                     purityana1
-                                   ]
+icarus_stage0_PMT_BNB:              [ @sequence::icarus_stage0_PMT,
+                                      flashfilterBNB
+                                    ]
+ 
+icarus_stage0_PMT_NuMI:             [ @sequence::icarus_stage0_PMT,
+                                      flashfilterNuMI
+                                    ]
+ 
+icarus_stage0_multiTPC:             [ @sequence::icarus_stage0_multiTPC_TPC,
+                                      @sequence::icarus_stage0_EastHits_TPC,
+                                      @sequence::icarus_stage0_WestHits_TPC,
+                                      @sequence::icarus_purity_monitor
+                                    ]
+ 
+icarus_stage0_2d_multiTPC:          [ @sequence::icarus_stage0_multiTPC_2d_TPC,
+                                      @sequence::icarus_stage0_EastHits_TPC,
+                                      @sequence::icarus_stage0_WestHits_TPC,
+                                      @sequence::icarus_stage0_EastHits2d_TPC,
+                                      @sequence::icarus_stage0_WestHits2d_TPC,
+                                      @sequence::icarus_purity_monitor
+                                    ]
+ 
+icarus_stage0_CRT:                  [
+                                      daqCRT,
+                                      crthit
+                                    ]
+ 
+icarus_stage0_data:                 [
+                                      @sequence::icarus_stage0_PMT, 
+                                      @sequence::icarus_stage0_CRT,
+                                      daqTPCROI, 
+                                      @sequence::icarus_stage0_multiTPC
+                                    ]
+ 
+icarus_stage0_2d_data:              [
+                                      @sequence::icarus_stage0_PMT, 
+                                      @sequence::icarus_stage0_CRT,
+                                      daqTPCROI, 
+                                      @sequence::icarus_stage0_2d_multiTPC
+                                    ]
+ 
+icarus_stage0_data_crtpmtfilter:    [
+                                      @sequence::icarus_stage0_PMT, 
+                                      @sequence::icarus_stage0_CRT,
+                                      crtpmtmatchingfilter,
+                                      daqTPCROI, 
+                                      @sequence::icarus_stage0_multiTPC
+                                    ]
 
-icarus_stage0_PMT:                 [ triggerconfig,
-                                     daqTrigger,
-                                     pmtconfig,
-                                     daqPMT,
-                                     pmtconfigbaselines,
-                                     pmtthr,
-                                     ophit,
-                                     opflashCryoE,
-                                     opflashCryoW
-                                   ]
-
-icarus_stage0_PMT_BNB:             [ @sequence::icarus_stage0_PMT,
-                                     flashfilterBNB
-                                   ]
-
-icarus_stage0_PMT_NuMI:            [ @sequence::icarus_stage0_PMT,
-                                     flashfilterNuMI
-                                   ]
-
-icarus_stage0_multiTPC:            [ @sequence::icarus_stage0_multiTPC_TPC,
-                                     @sequence::icarus_stage0_EastHits_TPC,
-                                     @sequence::icarus_stage0_WestHits_TPC,
-                                     @sequence::icarus_purity_monitor
-                                   ]
-
-icarus_stage0_2d_multiTPC:         [ @sequence::icarus_stage0_multiTPC_2d_TPC,
-                                     @sequence::icarus_stage0_EastHits_TPC,
-                                     @sequence::icarus_stage0_WestHits_TPC,
-                                     @sequence::icarus_stage0_EastHits2d_TPC,
-                                     @sequence::icarus_stage0_WestHits2d_TPC,
-                                     @sequence::icarus_purity_monitor
-                                   ]
-
-icarus_stage0_crt:                 [
-                                     daqCRT
-                                   ]
-
-icarus_stage0_data:                [
-                                     @sequence::icarus_stage0_PMT, 
-                                     daqTPCROI, 
-                                     @sequence::icarus_stage0_multiTPC,
-                                     @sequence::icarus_stage0_crt
-                                   ]
-
-icarus_stage0_2d_data:             [
-                                     @sequence::icarus_stage0_PMT, 
-                                     daqTPCROI, 
-                                     @sequence::icarus_stage0_2d_multiTPC,
-                                     @sequence::icarus_stage0_crt
-                                   ]
+icarus_stage0_2d_data_crtpmtfilter: [
+                                      @sequence::icarus_stage0_PMT, 
+                                      @sequence::icarus_stage0_CRT,
+                                      crtpmtmatchingfilter,
+                                      daqTPCROI, 
+                                      @sequence::icarus_stage0_2d_multiTPC
+                                    ]
 
 ### Below we include overrides for the modules above
+
+physics.producers.daqTrigger.DecoderTool.TrigConfigLabel:                                      triggerconfig
 
 ### Handle multiple TPC readout with single instances
 icarus_stage0_producers.daqTPC.FragmentsLabelVec:                                              ["daq:PHYSCRATEDATATPCWW","daq:PHYSCRATEDATATPCWE","daq:PHYSCRATEDATATPCEW","daq:PHYSCRATEDATATPCEE"]
@@ -409,9 +438,11 @@ icarus_stage0_producers.gaushit2dTPCEE.HitFinderToolVec.CandidateHitsPlane2:    
 icarus_stage0_producers.gaushit2dTPCEE.HitFinderToolVec.CandidateHitsPlane2.Plane:             2
 icarus_stage0_producers.gaushit2dTPCEE.HitFinderToolVec.CandidateHitsPlane2.RoiThreshold:      9.
 
-### Optical hit finding
-icarus_stage0_producers.ophit.InputModule:                                                     "daqPMT"
-icarus_stage0_producers.ophit.InputLabels:                                                     []
+###
+### Optical detector
+###
+icarus_stage0_producers.ophit.InputLabels:                                                     [ "ophituncorrected" ]
+icarus_stage0_producers.ophitfull.InputLabels:                                                 [ "ophitfulluncorrected" ]
 
 ### Default purity monitor settings (single TPC readout assumed)
 icarus_stage0_producers.purityana0.RawModuleLabel:                                             ["daqTPCROI:PHYSCRATEDATATPCWW","daqTPCROI:PHYSCRATEDATATPCWE","daqTPCROI:PHYSCRATEDATATPCEW","daqTPCROI:PHYSCRATEDATATPCEE"]
@@ -433,5 +464,7 @@ icarus_stage0_producers.purityana1.PersistPurityInfo:                           
 icarus_stage0_producers.purityana1.FillAnaTuple:                                               false
 icarus_stage0_producers.purityana1.PersistPurityInfo:                                          false
 icarus_stage0_producers.purityana1.FillAnaTuple:                                               false
+
+icarus_stage0_producers.triggerconfig.TriggerFragmentType:				       ICARUSTriggerV3
 
 END_PROLOG

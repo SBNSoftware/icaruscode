@@ -50,6 +50,7 @@ decodePMT: {
                     PMTconfigTag:       @nil # must override
                     TriggerTag:         @nil # must override
                     BoardSetup:         @local::icarus_V1730_setup
+                    CorrectionInstance: "trgprim"
 }
 
 decodeTrigger: {
@@ -64,4 +65,10 @@ decodeTriggerV2: {
                     DecoderTool:        @local::TriggerDecoderV2Tool
 }
 
-END_PROLOG
+decodeTriggerV3: {
+		    module_type:        DaqDecoderICARUSTrigger
+		    FragmentsLabel:	"daq:ICARUSTriggerV3"
+		    DecoderTool:	@local::TriggerDecoderV3Tool
+}
+
+ICARUS_PROLOG

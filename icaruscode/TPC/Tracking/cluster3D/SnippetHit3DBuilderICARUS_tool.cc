@@ -1453,8 +1453,7 @@ bool SnippetHit3DBuilderICARUS::WireIDsIntersect(const geo::WireID& wireID0, con
     const geo::WireGeo& wireGeo1 = m_geometry->WireIDToWireGeo(wireID1);
 
     // Get wire position and direction for first wire
-    double wirePosArr[3] = {0.,0.,0.};
-    wireGeo0.GetCenter(wirePosArr);
+    auto wirePosArr = wireGeo0.GetCenter();
 
     Eigen::Vector3f wirePos0(wirePosArr[0],wirePosArr[1],wirePosArr[2]);
     Eigen::Vector3f wireDir0(wireGeo0.Direction().X(),wireGeo0.Direction().Y(),wireGeo0.Direction().Z());
@@ -1464,7 +1463,7 @@ bool SnippetHit3DBuilderICARUS::WireIDsIntersect(const geo::WireID& wireID0, con
 //    if (wireID0.Plane > 0) wireDir0[2] = -wireDir0[2];
 
     // And now the second one
-    wireGeo1.GetCenter(wirePosArr);
+    wirePosArr = wireGeo1.GetCenter();
 
     Eigen::Vector3f wirePos1(wirePosArr[0],wirePosArr[1],wirePosArr[2]);
     Eigen::Vector3f wireDir1(wireGeo1.Direction().X(),wireGeo1.Direction().Y(),wireGeo1.Direction().Z());
@@ -1702,8 +1701,7 @@ float SnippetHit3DBuilderICARUS::DistanceFromPointToHitWire(const Eigen::Vector3
         const geo::WireGeo& wireGeo = m_geometry->WireIDToWireGeo(wireIDIn);
 
         // Get wire position and direction for first wire
-        double wirePosArr[3] = {0.,0.,0.};
-        wireGeo.GetCenter(wirePosArr);
+        auto const wirePosArr = wireGeo.GetCenter();
 
         Eigen::Vector3f wirePos(wirePosArr[0],wirePosArr[1],wirePosArr[2]);
         Eigen::Vector3f wireDir(wireGeo.Direction().X(),wireGeo.Direction().Y(),wireGeo.Direction().Z());

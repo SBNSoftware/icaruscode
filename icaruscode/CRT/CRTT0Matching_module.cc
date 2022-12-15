@@ -328,7 +328,7 @@ namespace icarus {
 	  if (hits.size() == 0) continue;
 	  int const cryoNumber = hits[0]->WireID().Cryostat;
 	  // std::pair<double, double> matchedTime = t0Alg.T0AndDCAFromCRTHits(detProp, *trackList[track_i], crtHits, event);
-	  matchCand closest = t0Alg.GetClosestCRTHit(detProp, *trackList[track_i], hits, crtHits,  m_gate_start_timestamp);
+	  matchCand closest = t0Alg.GetClosestCRTHit(detProp, *trackList[track_i], hits, crtHits,  m_gate_start_timestamp, true);
 	  // std::vector <matchCand> closestvec = t0Alg.GetClosestCRTHit(detProp, *trackList[track_i], crtHits, event);
 	  // matchCand closest = closestvec.back();	  
 

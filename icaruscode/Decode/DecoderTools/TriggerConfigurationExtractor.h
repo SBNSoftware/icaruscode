@@ -124,188 +124,187 @@ class icarus::TriggerConfigurationExtractorBase {
 /**
  * @brief Class to extract PMT readout board configuration.
  * 
- * This is an example of PMT readout board configuration taken from ICARUS run
- * 4774 (`destinations` and `metrics` have been omitted):
+ * This is an example of trigger configuration taken from a pre-Run 1 ICARUS run
+ * (`destinations` and `metrics` have been omitted):
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
- *daq: {
- *  fragment_receiver: {
- * 
- *     ....
- * 
- *     fpga_init_params: {
- *        MajLevelBeamCryo1: {
- *           name: "Majority level inside Beam Gate cryo1"
- *           value: "5"
- *        }
- *        MajLevelBeamCryo2: {
- *           name: "Majority level inside Beam Gate cryo2"
- *           value: "5"
- *        }
- *        MajLevelEnableCryo1: {
- *           name: "Majority level inside enable and outside Beam Gate cryo1"
- *           value: "10"
- *        }
- *        MajLevelEnableCryo2: {
- *           name: "Majority level inside enable and outside Beam Gate cryo2"
- *           value: "10"
- *        }
- *        MajorityTriggerType: {
- *           name: "Majority Trigger Type"
- *           value: "majo1or2"
- *        }
- *        RunType: {
- *           name: "Run type"
- *           value: "Majority"
- *        }
- *        SlidingWindowCryo1: {
- *           name: "Sliding window option cryo1"
- *           value: "Separated Window"
- *        }
- *        SlidingWindowCryo2: {
- *           name: "Sliding window option cryo2"
- *           value: "Separated Window"
- *        }
- *        Veto: {
- *           name: "Veto beam gate [ns]"
- *           value: "4000"
- *        }
- *     }
- *     
- *     ....
- * 
- *     generator: "ICARUSTriggerUDP"
- * 
- *     ....    
- * 
- *     spexi_init_params: {
- *        BNB1DOffset: {
- *           name: "BNB ($1D) Early Warning Offset"
- *           value: "0"
- *        }
- *        BNBBESOffset: {
- *           name: "BNB (gatedBES) Early Warning Offset"
- *           value: "0"
- *        }
- *        BNBBeamWidth: {
- *           name: "BNB Beam Gate Width [ns]"
- *           value: "8000"
- *        }
- *        BNBEnableWidth: {
- *           name: "BNB Enable Gate Width [ns]"
- *           value: "2000000"
- *        }
- *        GateSelection: {
- *           name: "Gate Selection [hex]"
- *           value: "FF"
- *        }
- *        MI12Ethertype: {
- *           name: "MI12 Ethertype"
- *           value: "5752"
- *        }
- *        MI12MACAddressLSB: {
- *           name: "MI12 MAC Address (LSB)"
- *           value: "30E971C8"
- *        }
- *        MI12MACAddressMSB: {
- *           name: "MI12 MAC Address (MSB)"
- *           value: "0800"
- *        }
- *        MI60Ethertype: {
- *           name: "MI60 Ethertype"
- *           value: "5752"
- *        }
- *        MI60MACAddressLSB: {
- *           name: "MI60 MAC Address (LSB)"
- *           value: "30E93B4F"
- *        }
- *        MI60MACAddressMSB: {
- *           name: "MI60 MAC Address (MSB)"
- *           value: "0800"
- *        }
- *        NuMIADOffset: {
- *           name: "NUMI ($AD) Early Warning Offset"
- *           value: "0"
- *        }
- *        NuMIBeamWidth: {
- *           name: "NuMI Beam Gate Width [ns]"
- *           value: "18000"
- *        }
- *        NuMIEnableWidth: {
- *           name: "NuMI Enable Gate Width [ns]"
- *           value: "2000000"
- *        }
- *        NuMIMIBSOffset: {
- *           name: "NuMI (MIBS$74) Early Warning Offset"
- *           value: "0"
- *        }
- *        OffBeamBNBBeamWidth: {
- *           name: "OffBeam-BNB Gate Width [ns]"
- *           value: "8000"
- *        }
- *        OffBeamBNBEnableWidth: {
- *           name: "OffBeam-BNB Enable Gate Width [ns]"
- *           value: "2000000"
- *        }
- *        OffBeamGateRate: {
- *           name: "OffBeam Gate Rate"
- *           value: "00010003"
- *        }
- *        OffBeamNuMIBeamWidth: {
- *           name: "OffBeam-NuMI Gate Width [ns]"
- *           value: "18000"
- *        }
- *        OffBeamNuMIEnableWidth: {
- *           name: "OffBeam-NuMI Enable Gate Width [ns]"
- *           value: "2000000"
- *        }
- *        PPSWidth: {
- *           name: "PPS Pulse Width [ns]"
- *           value: "1000"
- *        }
- *        PreScaleBNBNuMI: {
- *           name: "Prescale BNB-NuMI Number"
- *           value: "00010001"
- *        }
- *        PreScaleOffBeam: {
- *           name: "Prescale OffBeam Number"
- *           value: "00020002"
- *        }
- *        PrescaleZeroBias: {
- *           name: "Prescale ZeroBias Number"
- *           value: "0064"
- *        }
- *        TPCTriggerDelay: {
- *           name: "TPC Trigger Delay/400"
- *           value: "3250"
- *        }
- *        ZeroBiasEnableWidth: {
- *           name: "ZeroBias Enable Gate Width [ns]"
- *           value: "2000000"
- *        }
- *        ZeroBiasFreq: {
- *           name: "ZeroBias Frequency Period [ns]"
- *           value: "1000000000"
- *        }
- *        ZeroBiasWidth: {
- *           name: "ZeroBias Gate Width [ns]"
- *           value: "1600"
- *        }
- *     }
- *     use_wr_time: true
- *     wr_time_offset_ns: 1e9
- *   }
- * 
- *   ....     
- * 
- *}
+ * daq: {
+ *   fragment_receiver: {
+ *  
+ *      ....
+ *  
+ *      fpga_init_params: {
+ *         MajLevelBeamCryo1: {
+ *            name: "Majority level inside Beam Gate cryo1"
+ *            value: "5"
+ *         }
+ *         MajLevelBeamCryo2: {
+ *            name: "Majority level inside Beam Gate cryo2"
+ *            value: "5"
+ *         }
+ *         MajLevelEnableCryo1: {
+ *            name: "Majority level inside enable and outside Beam Gate cryo1"
+ *            value: "10"
+ *         }
+ *         MajLevelEnableCryo2: {
+ *            name: "Majority level inside enable and outside Beam Gate cryo2"
+ *            value: "10"
+ *         }
+ *         MajorityTriggerType: {
+ *            name: "Majority Trigger Type"
+ *            value: "majo1or2"
+ *         }
+ *         RunType: {
+ *            name: "Run type"
+ *            value: "Majority"
+ *         }
+ *         SlidingWindowCryo1: {
+ *            name: "Sliding window option cryo1"
+ *            value: "Separated Window"
+ *         }
+ *         SlidingWindowCryo2: {
+ *            name: "Sliding window option cryo2"
+ *            value: "Separated Window"
+ *         }
+ *         Veto: {
+ *            name: "Veto beam gate [ns]"
+ *            value: "4000"
+ *         }
+ *      }
+ *      
+ *      ....
+ *  
+ *      generator: "ICARUSTriggerUDP"
+ *  
+ *      ....    
+ *  
+ *      spexi_init_params: {
+ *         BNB1DOffset: {
+ *            name: "BNB ($1D) Early Warning Offset"
+ *            value: "0"
+ *         }
+ *         BNBBESOffset: {
+ *            name: "BNB (gatedBES) Early Warning Offset"
+ *            value: "0"
+ *         }
+ *         BNBBeamWidth: {
+ *            name: "BNB Beam Gate Width [ns]"
+ *            value: "8000"
+ *         }
+ *         BNBEnableWidth: {
+ *            name: "BNB Enable Gate Width [ns]"
+ *            value: "2000000"
+ *         }
+ *         GateSelection: {
+ *            name: "Gate Selection [hex]"
+ *            value: "FF"
+ *         }
+ *         MI12Ethertype: {
+ *            name: "MI12 Ethertype"
+ *            value: "5752"
+ *         }
+ *         MI12MACAddressLSB: {
+ *            name: "MI12 MAC Address (LSB)"
+ *            value: "30E971C8"
+ *         }
+ *         MI12MACAddressMSB: {
+ *            name: "MI12 MAC Address (MSB)"
+ *            value: "0800"
+ *         }
+ *         MI60Ethertype: {
+ *            name: "MI60 Ethertype"
+ *            value: "5752"
+ *         }
+ *         MI60MACAddressLSB: {
+ *            name: "MI60 MAC Address (LSB)"
+ *            value: "30E93B4F"
+ *         }
+ *         MI60MACAddressMSB: {
+ *            name: "MI60 MAC Address (MSB)"
+ *            value: "0800"
+ *         }
+ *         NuMIADOffset: {
+ *            name: "NUMI ($AD) Early Warning Offset"
+ *            value: "0"
+ *         }
+ *         NuMIBeamWidth: {
+ *            name: "NuMI Beam Gate Width [ns]"
+ *            value: "18000"
+ *         }
+ *         NuMIEnableWidth: {
+ *            name: "NuMI Enable Gate Width [ns]"
+ *            value: "2000000"
+ *         }
+ *         NuMIMIBSOffset: {
+ *            name: "NuMI (MIBS$74) Early Warning Offset"
+ *            value: "0"
+ *         }
+ *         OffBeamBNBBeamWidth: {
+ *            name: "OffBeam-BNB Gate Width [ns]"
+ *            value: "8000"
+ *         }
+ *         OffBeamBNBEnableWidth: {
+ *            name: "OffBeam-BNB Enable Gate Width [ns]"
+ *            value: "2000000"
+ *         }
+ *         OffBeamGateRate: {
+ *            name: "OffBeam Gate Rate"
+ *            value: "00010003"
+ *         }
+ *         OffBeamNuMIBeamWidth: {
+ *            name: "OffBeam-NuMI Gate Width [ns]"
+ *            value: "18000"
+ *         }
+ *         OffBeamNuMIEnableWidth: {
+ *            name: "OffBeam-NuMI Enable Gate Width [ns]"
+ *            value: "2000000"
+ *         }
+ *         PPSWidth: {
+ *            name: "PPS Pulse Width [ns]"
+ *            value: "1000"
+ *         }
+ *         PreScaleBNBNuMI: {
+ *            name: "Prescale BNB-NuMI Number"
+ *            value: "00010001"
+ *         }
+ *         PreScaleOffBeam: {
+ *            name: "Prescale OffBeam Number"
+ *            value: "00020002"
+ *         }
+ *         PrescaleZeroBias: {
+ *            name: "Prescale ZeroBias Number"
+ *            value: "0064"
+ *         }
+ *         TPCTriggerDelay: {
+ *            name: "TPC Trigger Delay/400"
+ *            value: "3250"
+ *         }
+ *         ZeroBiasEnableWidth: {
+ *            name: "ZeroBias Enable Gate Width [ns]"
+ *            value: "2000000"
+ *         }
+ *         ZeroBiasFreq: {
+ *            name: "ZeroBias Frequency Period [ns]"
+ *            value: "1000000000"
+ *         }
+ *         ZeroBiasWidth: {
+ *            name: "ZeroBias Gate Width [ns]"
+ *            value: "1600"
+ *         }
+ *      }
+ *      use_wr_time: true
+ *      wr_time_offset_ns: 1e9
+ *    }
+ *  
+ *    ....     
+ *  
+ * }
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  * 
- * 
- * 
+ * The extractor identifies the correct configuration by the
+ * `daq.fragment_receiver.generator` configuration key (in the above example,
+ * it is `ICARUSTriggerUDP`).
  * 
  */
-
-
 class icarus::TriggerConfigurationExtractor
   : public icarus::TriggerConfigurationExtractorBase
 {

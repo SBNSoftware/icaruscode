@@ -11,7 +11,7 @@ services:
 {
   TFileService:           { }
   IICARUSChannelMap:      @local::icarus_channelmappinggservice
-                          @table::icarus_wirecalibration_minimum_services
+                          @table::icarus_wirecalibration_services
 }
 
 #source is a root file
@@ -30,6 +30,7 @@ physics:
 
  producers:
  {
+     rns: {module_type: RandomNumberSaver }
      @table::icarus_stage1_producers
  }
 
@@ -65,7 +66,7 @@ outputs:
 }
 
 # Include this as per directive of Kazu and Andrea (circa March 25, 2021) for introduction of the filter
-services.DetectorClocksService.InheritClockConfig: false
+#services.DetectorClocksService.InheritClockConfig: false
 
 ### Here we try to suppress known and pointless messages
 ### See https://cdcvs.fnal.gov/redmine/projects/messagefacility/wiki for details

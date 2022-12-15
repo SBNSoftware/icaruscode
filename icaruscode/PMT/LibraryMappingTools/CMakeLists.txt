@@ -1,24 +1,25 @@
 art_make_library(
-  SOURCE
-    "ICARUSPhotonMappingTransformations.cxx"
-  LIBRARIES
-    larsim::PhotonMappingTransformations
-    larcore_Geometry_Geometry_service
-    larcorealg_Geometry
-    ${ART_FRAMEWORK_SERVICES_REGISTRY}
-    ${ART_UTILITIES}
-    ${CANVAS}
-    ${CETLIB_EXCEPT}
-    ${MF_MESSAGELOGGER}
-    ${FHICLCPP}
-    ${ROOT_GENVECTOR}
-    ${ROOT_BASIC_LIB_LIST}
-    ${Boost_SYSTEM_LIBRARY}
-  )
+		SOURCE
+			"ICARUSPhotonMappingTransformations.cxx"
+		LIBRARIES
+			larsim::PhotonMappingTransformations
+			larcore::Geometry_Geometry_service
+			larcorealg::Geometry
+			lardataalg::DetectorInfo
+			art::Framework_Services_Registry
+			art::Utilities
+			canvas::canvas
+			cetlib_except::cetlib_except
+			messagefacility::MF_MessageLogger
+			fhiclcpp::fhiclcpp
+			ROOT::GenVector
+			Boost::system
+		)
 
-simple_plugin(ICARUSPhotonMappingTransformations "tool"
-  icaruscode_PMT_LibraryMappingTools
-  )
+cet_build_plugin(ICARUSPhotonMappingTransformations art::tool LIBRARIES
+		icaruscode::PMT_LibraryMappingTools
+		larsim::PhotonMappingTransformations
+		)
 
 install_headers()
 install_fhicl()
