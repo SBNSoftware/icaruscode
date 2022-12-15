@@ -51,6 +51,7 @@ decodeTriggerV2.DecoderTool.TrigConfigLabel: triggerconfig
 decodeTriggerV3.DecoderTool.TrigConfigLabel: triggerconfig
 decodePMT.PMTconfigTag: pmtconfig
 decodePMT.TriggerTag:   daqTrigger
+extractTriggerConfig.DataFragmentType: ICARUSTriggerV2
 
 ### This is the complete list of all producers! ###
 icarus_stage0_producers:
