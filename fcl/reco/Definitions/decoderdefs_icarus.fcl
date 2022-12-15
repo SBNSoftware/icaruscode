@@ -4,6 +4,7 @@ BEGIN_PROLOG
 
 extractTriggerConfig: { 
                     module_type:        TriggerConfigurationExtraction
+                    DataFragmentType:   ICARUSTriggerV3
 }
 
 extractPMTconfig: {
