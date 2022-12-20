@@ -1,0 +1,21 @@
+BEGIN_PROLOG
+
+standard_producecompressedfragment:
+{
+  plugin_type: ProduceCompressedFragment
+  FragmentsLabel: "daq:PHYSCRATEDATA"
+}
+
+standard_producecompressedfragment_EE: @local::standard_producecompressedfragment
+standard_producecompressedfragment_EE.FragmentsLabel: "daq:PHYSCRATEDATATPCEE"
+
+standard_producecompressedfragment_EW: @local::standard_producecompressedfragment
+standard_producecompressedfragment_EW.FragmentsLabel: "daq:PHYSCRATEDATATPCEW"
+
+standard_producecompressedfragment_WE: @local::standard_producecompressedfragment
+standard_producecompressedfragment_WE.FragmentsLabel: "daq:PHYSCRATEDATATPCWE"
+
+standard_producecompressedfragment_WW: @local::standard_producecompressedfragment
+standard_producecompressedfragment_WW.FragmentsLabel: "daq:PHYSCRATEDATATPCWW"
+
+END_PROLOG
