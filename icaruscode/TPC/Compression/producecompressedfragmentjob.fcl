@@ -1,0 +1,35 @@
+#include "ProduceCompressedFragment.fcl"
+#include "messageservice.fcl"
+
+process_name: ProduceCompressedFragment
+
+services:
+{
+  message: @local::standard_info
+  TFileService:  { fileName: "compressedFragment_hist.root" }
+}
+
+outputs:
+{
+  compfrag:
+  {
+    module_type: RootOutput
+    fileName: "compressedFragment_out.root"
+    results:
+    {
+      producers:
+      {
+        compressEE: @local::standard_producecompressedfragment_EE
+        compressEW: @local::standard_producecompressedfragment_EW
+        compressWE: @local::standard_producecompressedfragment_WE
+        compressWW: @local::standard_producecompressedfragment_WW
+      }
+      rpPath: [ compressEE, compressEW, compressWE, compressWW ]
+    }
+  }
+}
+
+physics:
+{
+  stream1: [ compfrag ]
+}
