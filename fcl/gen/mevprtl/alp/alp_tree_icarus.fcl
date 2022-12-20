@@ -20,10 +20,10 @@ source: {
 physics:
 {
   producers: {
-    alp: @local::alp
+    generator: @local::alp
   }
  
-  ana:  [ alp ]
+  ana:  [ generator ]
  
   trigger_paths: [ana] 
   end_paths:     [ ] 
