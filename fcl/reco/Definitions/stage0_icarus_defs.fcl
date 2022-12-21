@@ -37,6 +37,9 @@ icarus_stage0_analyzers:
 # set the name of our `extractPMTconfig` and `extractTriggerConfig` for our decoders
 decodeTriggerV2.DecoderTool.TrigConfigLabel: triggerconfig
 decodeTriggerV3.DecoderTool.TrigConfigLabel: triggerconfig
+decodeTriggerAutodetect.DecoderTool.Decoders[0].ToolConfig.TrigConfigLabel: triggerconfig
+decodeTriggerAutodetect.DecoderTool.Decoders[1].ToolConfig.TrigConfigLabel: triggerconfig
+decodeTriggerAutodetect.DecoderTool.Decoders[2].ToolConfig.TrigConfigLabel: triggerconfig
 decodePMT.PMTconfigTag: pmtconfig
 decodePMT.TriggerTag:   daqTrigger
 
@@ -464,7 +467,5 @@ icarus_stage0_producers.purityana1.PersistPurityInfo:                           
 icarus_stage0_producers.purityana1.FillAnaTuple:                                               false
 icarus_stage0_producers.purityana1.PersistPurityInfo:                                          false
 icarus_stage0_producers.purityana1.FillAnaTuple:                                               false
-
-icarus_stage0_producers.triggerconfig.TriggerFragmentType:				       ICARUSTriggerV3
 
 END_PROLOG
