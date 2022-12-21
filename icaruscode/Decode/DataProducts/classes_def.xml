@@ -17,7 +17,8 @@
 <lcgdict>
   <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->  
 
-     <class name="icarus::TriggerConfiguration" ClassVersion="11" >
+     <class name="icarus::TriggerConfiguration" ClassVersion="12" >
+      <version ClassVersion="12" checksum="2609357722"/>
       <version ClassVersion="11" checksum="2294188438"/>
    <version ClassVersion="10" checksum="3222464842"/>
      </class>
