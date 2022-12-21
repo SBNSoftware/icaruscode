@@ -304,6 +304,8 @@ auto icarus::TriggerConfigurationExtractor::extractTriggerConfiguration
     = parsePrescaleString( prescaleMinBiasCalibration, icarus::trigger::kCalibration );
   rc.gateConfig[icarus::trigger::kCalibration].period 
     = spexiParams.get<unsigned int>("ZeroBiasFreq.value"); //it is actually a period 
+  
+  rc.generator = triggerParams.get<std::string>("generator");
 
   return rc;
 
