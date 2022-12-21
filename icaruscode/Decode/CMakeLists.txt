@@ -12,9 +12,8 @@ art_make_library(
 )
 
 set(          MODULE_LIBRARIES
-                        icarus_signal_processing
-                        icarus_signal_processing_Detection
-                        icarus_signal_processing_Filters
+                        icarus_signal_processing::Detection
+                        icarus_signal_processing::Filters
                         icaruscode_TPC_Utilities
                         sbndaq_artdaq_core::sbndaq-artdaq-core_Overlays_ICARUS
                         artdaq_core::artdaq-core_Utilities
