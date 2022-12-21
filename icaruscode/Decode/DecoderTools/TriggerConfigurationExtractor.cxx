@@ -145,7 +145,7 @@ icarus::TriggerConfiguration icarus::TriggerConfigurationExtractor::extract
   if (!config) {
     throw cet::exception{ "TriggerConfigurationExtractor" }
       << "No trigger configuration found (fragment type: '"
-      << fExpectedFragmentType << "').\n";
+      << fExpectedFragmentTypeSpec << "').\n";
   }
   
   return *config;
@@ -330,7 +330,7 @@ icarus::TriggerConfigurationExtractor::readTriggerConfig
     std::string fragmentType;
     if (!boardPSet.get_if_present("daq.fragment_receiver.generator", fragmentType))
       break;
-    if (fragmentType != fExpectedFragmentType) break;
+    if (!std::regex_match(fragmentType, fExpectedFragmentType)) break;
     
     config.emplace(std::move(boardPSet)); // success
   } while (false);
