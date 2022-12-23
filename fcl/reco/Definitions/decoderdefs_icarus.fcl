@@ -71,6 +71,7 @@ decodeTriggerV3: {
                     FragmentsLabel:     "daq:ICARUSTriggerV3"
                     DecoderTool:        @local::TriggerDecoderV3Tool
 }
+
 copyPMTonBeam: {
                     module_type:        CopyBeamTimePMTwaveforms
                     Waveforms:          @nil # must override
