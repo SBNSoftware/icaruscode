@@ -8,25 +8,31 @@ process_name: ALPTree
 
 services:
 {
-  @table::icarus_basic_services
+  @table::icarus_simulation_services
   TFileService: { fileName: "alp_icarus.root" }
   IFDH: {}
 }
 
 source: {
-  module_type: EmptyEvent
+  module_type: "EmptyEvent"
+  firstEvent: 1
+  firstRun: 1
+  timestampPlugin: {
+    plugin_type: "GeneratedEventTimestamp"
+  }
 }
 
 physics:
 {
   producers: {
     generator: @local::alp
+    rns:       { module_type: "RandomNumberSaver" }
   }
  
-  gen:  [ generator ]
+  runprod:  [ generator, rns]
   stream: [out]
  
-  trigger_paths: [gen] 
+  trigger_paths: [runprod] 
   end_paths:     [stream] 
   
 } # physics
