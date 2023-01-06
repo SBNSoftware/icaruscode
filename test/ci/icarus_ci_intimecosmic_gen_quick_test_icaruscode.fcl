@@ -1,5 +1,5 @@
 #include "messages_icarus.fcl"
-#include "prodcorsika_proton_intime_icarus_bnb_sce_on_ovb.fcl"
+#include "prodcorsika_proton_intime_icarus_bnb_sce_on.fcl"
 
 # non-interactive output settings, but keep them verbose
 services.message: @local::icarus_message_services_prod_debug

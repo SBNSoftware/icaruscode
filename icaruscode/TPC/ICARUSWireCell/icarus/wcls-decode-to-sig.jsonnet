@@ -24,7 +24,6 @@ local epoch = std.extVar('epoch');  // eg "dynamic", "after", "before", "perfect
 local reality = std.extVar('reality');
 local sigoutform = std.extVar('signal_output_form');  // eg "sparse" or "dense"
 
-
 local wc = import 'wirecell.jsonnet';
 local g = import 'pgraph.jsonnet';
 
@@ -34,8 +33,13 @@ local volume = if volume_label == '' then -1 else std.parseInt(volume_label);
 
 local data_params = import 'params.jsonnet';
 local simu_params = import 'simparams.jsonnet';
-local params = if reality == 'data' then data_params else simu_params;
+local params_init = if reality == 'data' then data_params else simu_params;
 
+local params = params_init {
+  files: super.files {
+    fields: [ std.extVar('files_fields'), ],
+  },
+};
 
 local tools_maker = import 'pgrapher/common/tools.jsonnet';
 local tools = tools_maker(params);
@@ -124,8 +128,8 @@ local chndb = [{
   type: 'OmniChannelNoiseDB',
   name: 'ocndbperfect%d' % n,
   // data: perfect(params, tools.anodes[n], tools.field, n),
-  data: base(params, tools.anodes[n], tools.field, n),
-  uses: [tools.anodes[n], tools.field],  // pnode extension
+  data: base(params, tools.anodes[n], tools.field, n){dft:wc.tn(tools.dft)},
+  uses: [tools.anodes[n], tools.field, tools.dft],  // pnode extension
 } for n in std.range(0, std.length(tools.anodes) - 1)];
 
 local nf_maker = import 'pgrapher/experiment/icarus/nf.jsonnet';

@@ -38,7 +38,7 @@
 #
 #
 
-#include "seedservice.fcl"
+#include "seedservice_icarus.fcl"
 #include "magfield_larsoft.fcl"
 
 #include "services_basic_icarus.fcl"
@@ -95,7 +95,7 @@ icarus_art_services: {
 icarus_random_services:
 {
     RandomNumberGenerator:               {}
-    NuRandomService:                     @local::random_NuRandomService
+    NuRandomService:                     @local::icarus_default_NuRandomService  # seedservice_icarus.fcl
 
 } # icarus_random_services
 
@@ -168,7 +168,6 @@ icarus_wirecalibration_services: {
                      @table::icarus_wirecalibration_minimum_services
 
                      @table::icarus_random_services
-    NuRandomService: @local::per_event_NuRandomService
 
 } # icarus_wirecalibration_services
 

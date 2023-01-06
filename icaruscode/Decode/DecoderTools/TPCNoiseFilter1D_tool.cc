@@ -227,12 +227,17 @@ void TPCNoiseFilter1DMC::configure(fhicl::ParameterSet const &pset)
 
     fFFTFilterFunctionVec.clear();
 
+    std::cout << "TPCNoiseFilter1D configure, fUseFFTFilter: " << fUseFFTFilter << std::endl;
+
     if (fUseFFTFilter)
     {
         for(int plane = 0; plane < 3; plane++)
         {
-            if (plane < 2) fFFTFilterFunctionVec.emplace_back(std::make_unique<icarus_signal_processing::WindowFFTFilter>(fFFTSigmaValsVec[plane], fFFTCutoffValsVec[plane]));
-            else           fFFTFilterFunctionVec.emplace_back(std::make_unique<icarus_signal_processing::NoFFTFilter>());
+            //if (plane < 2) fFFTFilterFunctionVec.emplace_back(std::make_unique<icarus_signal_processing::WindowFFTFilter>(fFFTSigmaValsVec[plane], fFFTCutoffValsVec[plane]));
+            //else           fFFTFilterFunctionVec.emplace_back(std::make_unique<icarus_signal_processing::NoFFTFilter>());
+            fFFTFilterFunctionVec.emplace_back(std::make_unique<icarus_signal_processing::WindowFFTFilter>(fFFTSigmaValsVec[plane], fFFTCutoffValsVec[plane]));
+
+            std::cout << "TPCDecoderFilter1D FFT setup for plane " << plane << ", SigmaVals: " << fFFTSigmaValsVec[plane].first << "/" << fFFTSigmaValsVec[plane].second << ", cutoff: " << fFFTCutoffValsVec[plane].first << "/" << fFFTCutoffValsVec[plane].second << std::endl;
         }
     }
 
@@ -272,6 +277,7 @@ void TPCNoiseFilter1DMC::process_fragment(detinfo::DetectorClocksData const&,
 
     if (fFilterFunctionVec.size() < numChannels) fFilterFunctionVec.resize(numChannels);
 
+//    icarus_signal_processing::Denoiser1D_Protect   denoiser;
     icarus_signal_processing::Denoiser1D           denoiser;
     icarus_signal_processing::WaveformTools<float> waveformTools;
 

@@ -85,6 +85,7 @@ private:
     icarusutil::FrequencyVec                          fConvolutionKernel;
     icarusutil::FrequencyVec                          fDeconvolutionKernel;  
 
+    bool                                              fUseEmpiricalOffsets;  ///< Use emperical offsets divined from data
     double                                            fT0Offset;             ///< The overall T0 offset for the response function         
 
     std::unique_ptr<icarus_signal_processing::ICARUSFFT<double>> fFFT;       ///< Object to handle thread safe FFT
@@ -103,6 +104,7 @@ void Response::configure(const fhicl::ParameterSet& pset)
     fThisPlane           = pset.get<size_t>("Plane");
     f3DCorrection        = pset.get<size_t>("Correction3D");
     fTimeScaleFactor     = pset.get<size_t>("TimeScaleFactor");
+    fUseEmpiricalOffsets = pset.get<bool  >("UseEmpiricalOffsets");
 
     fResponseHasBeenSet  = false;
 
@@ -289,8 +291,8 @@ void Response::calculateResponse(double sampling_rate,
 
     std::cout << "*** Response tool is setting timeBin = " << timeBin << std::endl;
 
-    if (fThisPlane == 0) timeBin = 83.;
-    if (fThisPlane == 1) timeBin = 83.;
+    if (fUseEmpiricalOffsets && fThisPlane == 0) timeBin = 83.;
+    if (fUseEmpiricalOffsets && fThisPlane == 1) timeBin = 83.;
     
 //    // Do a backwards search to find the first positive bin
 //    while(1)

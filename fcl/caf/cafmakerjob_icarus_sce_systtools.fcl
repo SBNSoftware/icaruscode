@@ -1,0 +1,6 @@
+#include "cafmakerjob_icarus_sce.fcl"
+
+physics.runprod: [ @sequence::caf_preprocess_sce_sequence, rns, systtools, cafmaker ]
+
+physics.producers.cafmaker.SystWeightLabels: ["systtools"]
+

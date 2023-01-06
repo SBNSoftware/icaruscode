@@ -11,6 +11,7 @@
 
 // LArSoft libraries
 #include "larcore/Geometry/Geometry.h"
+#include "larcore/CoreUtils/ServiceUtil.h" // lar::providerFrom()
 #include "lardataalg/Utilities/StatCollector.h"
 #include "lardataobj/RawData/OpDetWaveform.h"
 #include "larcorealg/Geometry/GeometryCore.h"

@@ -34,6 +34,7 @@
 #include "art/Framework/Core/ModuleMacros.h"
 #include "art/Framework/Core/EDProducer.h"
 #include "art/Framework/Principal/Event.h"
+#include "art/Framework/Principal/Run.h"
 #include "art/Framework/Principal/Handle.h"
 #include "art/Persistency/Common/PtrMaker.h"
 #include "art/Utilities/make_tool.h"
@@ -105,7 +106,7 @@ namespace icarus::trigger { class DiscriminatePMTwaveformsByChannel; }
  *      optical detector activity; the activity belongs to a single channel, but
  *      there may be multiple waveforms on the same channel. The time stamp is
  *      expected to be from the
- *      @anchor DetectorClocksElectronicsTime "electronics time scale"
+ *      @ref DetectorClocksElectronicsTime "electronics time scale"
  *      and therefore expressed in microseconds.
  * 
  * 
@@ -316,8 +317,6 @@ class icarus::trigger::DiscriminatePMTwaveformsByChannel: public art::EDProducer
   
   // --- BEGIN Framework hooks -------------------------------------------------
   /// Prepares the plots to be filled.
-  virtual void beginJob() override;
-  
   /// Prepares the plots to be filled.
   virtual void beginRun(art::Run& run) override;
   
@@ -534,7 +533,7 @@ icarus::trigger::DiscriminatePMTwaveformsByChannel::DiscriminatePMTwaveformsByCh
   
   if (fThresholdsFromPMTconfig)
     consumes<sbn::PMTconfiguration, art::InRun>(*fThresholdsFromPMTconfig);
-    
+  
   
   //
   // declaration of output
@@ -552,12 +551,6 @@ icarus::trigger::DiscriminatePMTwaveformsByChannel::DiscriminatePMTwaveformsByCh
   }
   
 } // icarus::trigger::DiscriminatePMTwaveformsByChannel::DiscriminatePMTwaveformsByChannel()
-
-
-//------------------------------------------------------------------------------
-void icarus::trigger::DiscriminatePMTwaveformsByChannel::beginJob() {
-  
-} // icarus::trigger::DiscriminatePMTwaveformsByChannel::beginJob()
 
 
 //------------------------------------------------------------------------------

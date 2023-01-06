@@ -1,50 +1,53 @@
 
 
-art_make(   LIB_LIBRARIES
-                lardataobj_RawData
-                lardataobj_RecoBase
-                lardata_Utilities
-                ${FHICLCPP}
-                ${CETLIB}
-                ${ROOT_BASIC_LIB_LIST}
-            MODULE_LIBRARIES
-                icaruscode_TPC_SignalProcessing_RecoWire_SimTestPulse
-                icaruscode_TPC_Utilities_SignalShapingICARUSService_service
-                lardata_Utilities
-                lardata_DetectorInfoServices_DetectorClocksServiceStandard_service
-                lardataobj_Simulation
-                larcoreobj_SummaryData
-                larcorealg_Geometry
-                larevt_CalibrationDBI_IOVData
-                larevt_CalibrationDBI_Providers
-                larreco_HitFinder
-                lardataobj_RecoBase
-                larcorealg_Geometry
-                larcore_Geometry_Geometry_service
-                lardata_Utilities
-                nurandom_RandomUtils_NuRandomService_service
-                lardata_Utilities
-                lardataobj_RawData
-                larevt_CalibrationDBI_IOVData
-                larevt_CalibrationDBI_Providers
-                lardataobj_RecoBase
-                lardata_ArtDataHelper
-                ${ART_FRAMEWORK_CORE}
-                ${ART_FRAMEWORK_PRINCIPAL}
-                ${ART_FRAMEWORK_SERVICES_REGISTRY}
-                ${ART_ROOT_IO_TFILE_SUPPORT} ${ROOT_CORE}
-                ${ART_ROOT_IO_TFILESERVICE_SERVICE}
-                art_Persistency_Common
-                art_Persistency_Provenance
-                art_Utilities
-                canvas
-                ${MF_MESSAGELOGGER}
-                ${MF_UTILITIES}
-                ${FHICLCPP}
-                ${CETLIB}
-                ${ROOT_FFTW}
-                ${ROOT_BASIC_LIB_LIST}
+art_make_library(LIBRARIES
+			lardataobj::RawData
+			lardataobj::RecoBase
+			lardata::Utilities
+			fhiclcpp::fhiclcpp
+			cetlib::cetlib
 )
+set(		MODULE_LIBRARIES
+			icaruscode::TPC_SignalProcessing_RecoWire_SimTestPulse
+			icaruscode::TPC_Utilities_SignalShapingICARUSService_service
+			lardata::Utilities
+			lardata::DetectorInfoServices_DetectorClocksServiceStandard_service
+			lardataobj::Simulation
+			larcoreobj::SummaryData
+			larcorealg::Geometry
+			larevt::CalibrationDBI_IOVData
+			larevt::CalibrationDBI_Providers
+			larreco::HitFinder
+			lardataobj::RecoBase
+			larcorealg::Geometry
+			larcore::Geometry_Geometry_service
+			lardata::Utilities
+			nurandom::RandomUtils_NuRandomService_service
+			lardata::Utilities
+			lardataobj::RawData
+			larevt::CalibrationDBI_IOVData
+			larevt::CalibrationDBI_Providers
+			lardataobj::RecoBase
+			lardata::ArtDataHelper
+			art::Framework_Core
+			art::Framework_Principal
+			art::Framework_Services_Registry
+			art_root_io::tfile_support ROOT::Core
+			art_root_io::TFileService_service
+			art::Persistency_Common
+			art::Persistency_Provenance
+			art::Utilities
+			canvas::canvas
+			messagefacility::MF_MessageLogger
+			messagefacility::headers
+			fhiclcpp::fhiclcpp
+			cetlib::cetlib
+			ROOT::FFTW
+			ROOT::Tree
+)
+cet_build_plugin(SimTestPulseAna art::module LIBRARIES ${MODULE_LIBRARIES})
+cet_build_plugin(SimTestPulseWire art::module LIBRARIES ${MODULE_LIBRARIES})
+cet_build_plugin(SimTestPulse art::module LIBRARIES ${MODULE_LIBRARIES})
 
 install_fhicl()
 

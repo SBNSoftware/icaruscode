@@ -45,6 +45,7 @@
 
 // Framework Includes
 #include "art/Framework/Core/EDProducer.h"
+#include "art/Framework/Principal/Event.h"
 #include "art/Framework/Core/ModuleMacros.h"
 #include "art/Persistency/Common/PtrMaker.h"
 #include "art/Utilities/make_tool.h"
@@ -118,30 +119,30 @@ namespace lar_cluster3d {
                        std::string& pathName,
                        std::string& vertexName,
                        std::string& extremeName)
-        : artPCAxisVector(new std::vector<recob::PCAxis>)
-        , artPFParticleVector(new std::vector<recob::PFParticle>)
-        , artClusterVector(new std::vector<recob::Cluster>)
-        , artSpacePointVector(new std::vector<recob::SpacePoint>)
-        , artPathPointVector(new std::vector<recob::SpacePoint>)
-        , artVertexPointVector(new std::vector<recob::SpacePoint>)
-        , artExtremePointVector(new std::vector<recob::SpacePoint>)
-        , artSeedVector(new std::vector<recob::Seed>)
-        , artEdgeVector(new std::vector<recob::Edge>)
-        , artPathEdgeVector(new std::vector<recob::Edge>)
-        , artVertexEdgeVector(new std::vector<recob::Edge>)
-        , artClusterAssociations(new art::Assns<recob::Cluster, recob::Hit>)
-        , artPFPartAxisAssociations(new art::Assns<recob::PFParticle, recob::PCAxis>)
-        , artPFPartClusAssociations(new art::Assns<recob::PFParticle, recob::Cluster>)
-        , artPFPartSPAssociations(new art::Assns<recob::SpacePoint, recob::PFParticle>)
-        , artPFPartPPAssociations(new art::Assns<recob::SpacePoint, recob::PFParticle>)
-        , artPFPartSeedAssociations(new art::Assns<recob::PFParticle, recob::Seed>)
-        , artPFPartEdgeAssociations(new art::Assns<recob::Edge, recob::PFParticle>)
-        , artPFPartPathEdgeAssociations(new art::Assns<recob::Edge, recob::PFParticle>)
-        , artSeedHitAssociations(new art::Assns<recob::Seed, recob::Hit>)
-        , artSPHitAssociations(new art::Assns<recob::Hit, recob::SpacePoint>)
-        , artPPHitAssociations(new art::Assns<recob::Hit, recob::SpacePoint>)
-        , artEdgeSPAssociations(new art::Assns<recob::SpacePoint, recob::Edge>)
-        , artEdgePPAssociations(new art::Assns<recob::SpacePoint, recob::Edge>)
+        : artSpacePointVector(std::make_unique<std::vector<recob::SpacePoint>>())
+        , artSPHitAssociations(std::make_unique<art::Assns<recob::Hit, recob::SpacePoint>>())
+        , artPCAxisVector(std::make_unique<std::vector<recob::PCAxis>>())
+        , artPFParticleVector(std::make_unique<std::vector<recob::PFParticle>>())
+        , artClusterVector(std::make_unique<std::vector<recob::Cluster>>())
+        , artPathPointVector(std::make_unique<std::vector<recob::SpacePoint>>())
+        , artVertexPointVector(std::make_unique<std::vector<recob::SpacePoint>>())
+        , artExtremePointVector(std::make_unique<std::vector<recob::SpacePoint>>())
+        , artSeedVector(std::make_unique<std::vector<recob::Seed>>())
+        , artEdgeVector(std::make_unique<std::vector<recob::Edge>>())
+        , artPathEdgeVector(std::make_unique<std::vector<recob::Edge>>())
+        , artVertexEdgeVector(std::make_unique<std::vector<recob::Edge>>())
+        , artClusterAssociations(std::make_unique<art::Assns<recob::Cluster, recob::Hit>>())
+        , artPFPartAxisAssociations(std::make_unique<art::Assns<recob::PFParticle, recob::PCAxis>>())
+        , artPFPartClusAssociations(std::make_unique<art::Assns<recob::PFParticle, recob::Cluster>>())
+        , artPFPartSPAssociations(std::make_unique<art::Assns<recob::SpacePoint, recob::PFParticle>>())
+        , artPFPartPPAssociations(std::make_unique<art::Assns<recob::SpacePoint, recob::PFParticle>>())
+        , artPFPartSeedAssociations(std::make_unique<art::Assns<recob::PFParticle, recob::Seed>>())
+        , artPFPartEdgeAssociations(std::make_unique<art::Assns<recob::Edge, recob::PFParticle>>())
+        , artPFPartPathEdgeAssociations(std::make_unique<art::Assns<recob::Edge, recob::PFParticle>>())
+        , artSeedHitAssociations(std::make_unique<art::Assns<recob::Seed, recob::Hit>>())
+        , artPPHitAssociations(std::make_unique<art::Assns<recob::Hit, recob::SpacePoint>>())
+        , artEdgeSPAssociations(std::make_unique<art::Assns<recob::SpacePoint, recob::Edge>>())
+        , artEdgePPAssociations(std::make_unique<art::Assns<recob::SpacePoint, recob::Edge>>())
         , fEvt(evt)
         , fSPPtrMaker(evt)
         , fSPPtrMakerPath(evt, pathName)
@@ -238,32 +239,36 @@ namespace lar_cluster3d {
       }
 
       void
-      outputObjects()
+      outputObjects(bool spacePointsOnly)
       {
-        fEvt.put(std::move(artPCAxisVector));
-        fEvt.put(std::move(artPFParticleVector));
-        fEvt.put(std::move(artClusterVector));
         fEvt.put(std::move(artSpacePointVector));
-        fEvt.put(std::move(artSeedVector));
-        fEvt.put(std::move(artEdgeVector));
-        fEvt.put(std::move(artPFPartAxisAssociations));
-        fEvt.put(std::move(artPFPartClusAssociations));
-        fEvt.put(std::move(artClusterAssociations));
-        fEvt.put(std::move(artPFPartSPAssociations));
-        fEvt.put(std::move(artPFPartSeedAssociations));
-        fEvt.put(std::move(artPFPartEdgeAssociations));
-        fEvt.put(std::move(artSeedHitAssociations));
         fEvt.put(std::move(artSPHitAssociations));
-        fEvt.put(std::move(artEdgeSPAssociations));
-        fEvt.put(std::move(artPathEdgeVector), fPathName);
-        fEvt.put(std::move(artPathPointVector), fPathName);
-        fEvt.put(std::move(artEdgePPAssociations), fPathName);
-        fEvt.put(std::move(artPFPartPPAssociations), fPathName);
-        fEvt.put(std::move(artPFPartPathEdgeAssociations), fPathName);
-        fEvt.put(std::move(artPPHitAssociations), fPathName);
-        fEvt.put(std::move(artVertexEdgeVector), fVertexName);
-        fEvt.put(std::move(artVertexPointVector), fVertexName);
-        fEvt.put(std::move(artExtremePointVector), fExtremeName);
+
+//        if (!spacePointsOnly)
+        {
+          fEvt.put(std::move(artPCAxisVector));
+          fEvt.put(std::move(artPFParticleVector));
+          fEvt.put(std::move(artClusterVector));
+          fEvt.put(std::move(artSeedVector));
+          fEvt.put(std::move(artEdgeVector));
+          fEvt.put(std::move(artPFPartAxisAssociations));
+          fEvt.put(std::move(artPFPartClusAssociations));
+          fEvt.put(std::move(artClusterAssociations));
+          fEvt.put(std::move(artPFPartSPAssociations));
+          fEvt.put(std::move(artPFPartSeedAssociations));
+          fEvt.put(std::move(artPFPartEdgeAssociations));
+          fEvt.put(std::move(artSeedHitAssociations));
+          fEvt.put(std::move(artEdgeSPAssociations));
+          fEvt.put(std::move(artPathEdgeVector), fPathName);
+          fEvt.put(std::move(artPathPointVector), fPathName);
+          fEvt.put(std::move(artEdgePPAssociations), fPathName);
+          fEvt.put(std::move(artPFPartPPAssociations), fPathName);
+          fEvt.put(std::move(artPFPartPathEdgeAssociations), fPathName);
+          fEvt.put(std::move(artPPHitAssociations), fPathName);
+          fEvt.put(std::move(artVertexEdgeVector), fVertexName);
+          fEvt.put(std::move(artVertexPointVector), fVertexName);
+          fEvt.put(std::move(artExtremePointVector), fExtremeName);
+        }
       }
 
       art::Ptr<recob::SpacePoint>
@@ -280,10 +285,12 @@ namespace lar_cluster3d {
         return fEdgePtrMakerPath(index);
       };
 
+      std::unique_ptr<std::vector<recob::SpacePoint>> artSpacePointVector;
+      std::unique_ptr<art::Assns<recob::Hit, recob::SpacePoint>> artSPHitAssociations;
+
       std::unique_ptr<std::vector<recob::PCAxis>> artPCAxisVector;
       std::unique_ptr<std::vector<recob::PFParticle>> artPFParticleVector;
       std::unique_ptr<std::vector<recob::Cluster>> artClusterVector;
-      std::unique_ptr<std::vector<recob::SpacePoint>> artSpacePointVector;
       std::unique_ptr<std::vector<recob::SpacePoint>> artPathPointVector;
       std::unique_ptr<std::vector<recob::SpacePoint>> artVertexPointVector;
       std::unique_ptr<std::vector<recob::SpacePoint>> artExtremePointVector;
@@ -301,7 +308,6 @@ namespace lar_cluster3d {
       std::unique_ptr<art::Assns<recob::Edge, recob::PFParticle>> artPFPartEdgeAssociations;
       std::unique_ptr<art::Assns<recob::Edge, recob::PFParticle>> artPFPartPathEdgeAssociations;
       std::unique_ptr<art::Assns<recob::Seed, recob::Hit>> artSeedHitAssociations;
-      std::unique_ptr<art::Assns<recob::Hit, recob::SpacePoint>> artSPHitAssociations;
       std::unique_ptr<art::Assns<recob::Hit, recob::SpacePoint>> artPPHitAssociations;
       std::unique_ptr<art::Assns<recob::SpacePoint, recob::Edge>> artEdgeSPAssociations;
       std::unique_ptr<art::Assns<recob::SpacePoint, recob::Edge>> artEdgePPAssociations;
@@ -562,35 +568,41 @@ namespace lar_cluster3d {
     // Handle special case of Space Point building outputting a new hit collection
     m_hit3DBuilderAlg->produces(producesCollector());
 
-    produces<std::vector<recob::PCAxis>>();
-    produces<std::vector<recob::PFParticle>>();
-    produces<std::vector<recob::Cluster>>();
-    produces<std::vector<recob::Seed>>();
-    produces<std::vector<recob::Edge>>();
-
-    produces<art::Assns<recob::PFParticle, recob::PCAxis>>();
-    produces<art::Assns<recob::PFParticle, recob::Cluster>>();
-    produces<art::Assns<recob::PFParticle, recob::Seed>>();
-    produces<art::Assns<recob::Edge, recob::PFParticle>>();
-    produces<art::Assns<recob::Seed, recob::Hit>>();
-    produces<art::Assns<recob::Cluster, recob::Hit>>();
-
+    // we always output space points
     produces<std::vector<recob::SpacePoint>>();
-    produces<art::Assns<recob::SpacePoint, recob::PFParticle>>();
     produces<art::Assns<recob::Hit, recob::SpacePoint>>();
-    produces<art::Assns<recob::SpacePoint, recob::Edge>>();
 
-    produces<std::vector<recob::SpacePoint>>(m_pathInstance);
-    produces<std::vector<recob::Edge>>(m_pathInstance);
-    produces<art::Assns<recob::SpacePoint, recob::PFParticle>>(m_pathInstance);
-    produces<art::Assns<recob::Edge, recob::PFParticle>>(m_pathInstance);
-    produces<art::Assns<recob::Hit, recob::SpacePoint>>(m_pathInstance);
-    produces<art::Assns<recob::SpacePoint, recob::Edge>>(m_pathInstance);
+    // Do we output anything else?
+//    if (!m_onlyMakSpacePoints)
+    {
+      produces<std::vector<recob::PCAxis>>();
+      produces<std::vector<recob::PFParticle>>();
+      produces<std::vector<recob::Cluster>>();
+      produces<std::vector<recob::Seed>>();
+      produces<std::vector<recob::Edge>>();
 
-    produces<std::vector<recob::Edge>>(m_vertexInstance);
-    produces<std::vector<recob::SpacePoint>>(m_vertexInstance);
+      produces<art::Assns<recob::PFParticle, recob::PCAxis>>();
+      produces<art::Assns<recob::PFParticle, recob::Cluster>>();
+      produces<art::Assns<recob::PFParticle, recob::Seed>>();
+      produces<art::Assns<recob::Edge, recob::PFParticle>>();
+      produces<art::Assns<recob::Seed, recob::Hit>>();
+      produces<art::Assns<recob::Cluster, recob::Hit>>();
 
-    produces<std::vector<recob::SpacePoint>>(m_extremeInstance);
+      produces<art::Assns<recob::SpacePoint, recob::PFParticle>>();
+      produces<art::Assns<recob::SpacePoint, recob::Edge>>();
+
+      produces<std::vector<recob::SpacePoint>>(m_pathInstance);
+      produces<std::vector<recob::Edge>>(m_pathInstance);
+      produces<art::Assns<recob::SpacePoint, recob::PFParticle>>(m_pathInstance);
+      produces<art::Assns<recob::Edge, recob::PFParticle>>(m_pathInstance);
+      produces<art::Assns<recob::Hit, recob::SpacePoint>>(m_pathInstance);
+      produces<art::Assns<recob::SpacePoint, recob::Edge>>(m_pathInstance);
+
+      produces<std::vector<recob::Edge>>(m_vertexInstance);
+      produces<std::vector<recob::SpacePoint>>(m_vertexInstance);
+
+      produces<std::vector<recob::SpacePoint>>(m_extremeInstance);
+    }
   }
 
   //------------------------------------------------------------------------------------------------------------------------------------------
@@ -627,14 +639,14 @@ namespace lar_cluster3d {
     // Get instances of the primary data structures needed
     reco::ClusterParametersList clusterParametersList;
     IHit3DBuilder::RecobHitToPtrMap clusterHitToArtPtrMap;
-    std::unique_ptr<reco::HitPairList> hitPairList(
-      new reco::HitPairList); // Potentially lots of hits, use heap instead of stack
+    std::unique_ptr<reco::HitPairList> hitPairList(new reco::HitPairList); // Potentially lots of hits, use heap instead of stack
 
     // Call the algorithm that builds 3D hits and stores the hit collection
     m_hit3DBuilderAlg->Hit3DBuilder(evt, *hitPairList, clusterHitToArtPtrMap);
 
     // Only do the rest if we are not in the mode of only building space points (requested by ML folks)
-    if (!m_onlyMakSpacePoints) {
+    if (!m_onlyMakSpacePoints) 
+    {
       // Call the main workhorse algorithm for building the local version of candidate 3D clusters
       m_clusterAlg->Cluster3DHits(*hitPairList, clusterParametersList);
 
@@ -653,13 +665,13 @@ namespace lar_cluster3d {
     // Call the module that does the end processing (of which there is quite a bit of work!)
     // This goes here to insure that something is always written to the data store
     auto const clockData = art::ServiceHandle<detinfo::DetectorClocksService const>()->DataFor(evt);
-    auto const detProp =
-      art::ServiceHandle<detinfo::DetectorPropertiesService const>()->DataFor(evt, clockData);
+    auto const detProp   = art::ServiceHandle<detinfo::DetectorPropertiesService const>()->DataFor(evt, clockData);
     util::GeometryUtilities const gser{*lar::providerFrom<geo::Geometry>(), clockData, detProp};
+
     ProduceArtClusters(gser, output, *hitPairList, clusterParametersList, clusterHitToArtPtrMap);
 
     // Output to art
-    output.outputObjects();
+    output.outputObjects(m_onlyMakSpacePoints);
 
     // If monitoring then deal with the fallout
     if (m_enableMonitoring) {
@@ -671,14 +683,20 @@ namespace lar_cluster3d {
       m_totalTime = theClockTotal.accumulated_real_time();
       m_artHitsTime = m_hit3DBuilderAlg->getTimeToExecute(IHit3DBuilder::COLLECTARTHITS);
       m_makeHitsTime = m_hit3DBuilderAlg->getTimeToExecute(IHit3DBuilder::BUILDTHREEDHITS);
-      m_buildNeighborhoodTime = m_clusterAlg->getTimeToExecute(IClusterAlg::BUILDHITTOHITMAP);
-      m_dbscanTime = m_clusterAlg->getTimeToExecute(IClusterAlg::RUNDBSCAN) +
-                     m_clusterAlg->getTimeToExecute(IClusterAlg::BUILDCLUSTERINFO);
-      m_clusterMergeTime = m_clusterMergeAlg->getTimeToExecute();
-      m_pathFindingTime = m_clusterPathAlg->getTimeToExecute();
+
+      if (!m_onlyMakSpacePoints)
+      {
+        m_buildNeighborhoodTime = m_clusterAlg->getTimeToExecute(IClusterAlg::BUILDHITTOHITMAP);
+        m_dbscanTime = m_clusterAlg->getTimeToExecute(IClusterAlg::RUNDBSCAN) +
+                       m_clusterAlg->getTimeToExecute(IClusterAlg::BUILDCLUSTERINFO);
+        m_clusterMergeTime = m_clusterMergeAlg->getTimeToExecute();
+        m_pathFindingTime = m_clusterPathAlg->getTimeToExecute();
+      }
+
       m_finishTime = theClockFinish.accumulated_real_time();
       m_hits = static_cast<int>(clusterHitToArtPtrMap.size());
       m_hits3D = static_cast<int>(hitPairList->size());
+
       m_pRecoTree->Fill();
 
       mf::LogDebug("Cluster3DICARUS") << "*** Cluster3DICARUS total time: " << m_totalTime
@@ -1346,42 +1364,45 @@ namespace lar_cluster3d {
       }
     }
 
+    mf::LogDebug("Cluster3DICARUS") << "--> Preparing to save the remaining space points, there are " << hitPairVector.size() << std::endl;
+
     // Right now error matrix is uniform...
     int nFreePoints(0);
 
     // Run through the HitPairVector and add any unused hit pairs to the list
-    for (auto& hitPair : hitPairVector) {
-      if (hitPair.bitsAreSet(reco::ClusterHit3D::MADESPACEPOINT)) continue;
+    for (auto& hitPair : hitPairVector) 
+    {
+        if (hitPair.bitsAreSet(reco::ClusterHit3D::MADESPACEPOINT)) continue;
 
-      double spacePointPos[] = {
-        hitPair.getPosition()[0], hitPair.getPosition()[1], hitPair.getPosition()[2]};
-      double spacePointErr[] = {1., 0., 0., 1., 0., 1.};
-      double chisq = hitPair.getHitChiSquare();
+        double spacePointPos[] = {
+          hitPair.getPosition()[0], hitPair.getPosition()[1], hitPair.getPosition()[2]};
+        double spacePointErr[] = {1., 0., 0., 1., 0., 1.};
+        double chisq = hitPair.getHitChiSquare();
 
-      RecobHitVector recobHits;
+        RecobHitVector recobHits;
 
-      for (const auto hit : hitPair.getHits()) {
-        if (!hit) continue;
+        for (const auto hit : hitPair.getHits()) {
+          if (!hit) continue;
 
-        art::Ptr<recob::Hit> hitPtr = hitToPtrMap[hit->getHit()];
-        recobHits.push_back(hitPtr);
-      }
+          art::Ptr<recob::Hit> hitPtr = hitToPtrMap[hit->getHit()];
+          recobHits.push_back(hitPtr);
+        }
 
-      nFreePoints++;
+        nFreePoints++;
 
-      spacePointErr[1] = hitPair.getTotalCharge();
-      spacePointErr[3] = hitPair.getChargeAsymmetry();
+        spacePointErr[1] = hitPair.getTotalCharge();
+        spacePointErr[3] = hitPair.getChargeAsymmetry();
 
-      output.artSpacePointVector->push_back(
-        recob::SpacePoint(spacePointPos, spacePointErr, chisq, output.artSpacePointVector->size()));
+        output.artSpacePointVector->push_back(
+          recob::SpacePoint(spacePointPos, spacePointErr, chisq, output.artSpacePointVector->size()));
 
-      if (!recobHits.empty())
-        output.makeSpacePointHitAssns(
-          *output.artSpacePointVector.get(), recobHits, *output.artSPHitAssociations.get());
-    }
+        if (!recobHits.empty())
+          output.makeSpacePointHitAssns(
+            *output.artSpacePointVector.get(), recobHits, *output.artSPHitAssociations.get());
+    } 
 
-    std::cout << "++++>>>> total num hits: " << hitPairVector.size()
-              << ", num free: " << nFreePoints << std::endl;
+    mf::LogDebug("Cluster3DICARUS") << "++++>>>> total num hits: " << hitPairVector.size()
+              << ", num free: " << nFreePoints;
   }
 
   size_t
@@ -1672,7 +1693,7 @@ namespace lar_cluster3d {
     spacePointVec.reserve(spacePointVec.size() + clusHitPairVector.size());
 
     // Right now error matrix is uniform...
-    double spError[] = {1., 0., 1., 0., 0., 1.};
+    double spError[] = {0., 0., 0., 0., 0., 0.};
 
     // Copy these hits to the vector to be stored with the event
     for (auto& hitPair : clusHitPairVector) {

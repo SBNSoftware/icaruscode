@@ -383,8 +383,13 @@ int buildTPCFragmentIDToReadoutIDMap_callback(void* dataIn, int argc, char**argv
     unsigned int digitizerChannelNo = std::stol(argv[9]);
     unsigned int channelID          = std::stol(argv[17]);
 
+    // Read the laser channel 
+    std::string laserChannelLabel  = argv[7]; // format is L-<number> . <number> is int from [1-41]
+    unsigned int laserChannel      = std::stol(laserChannelLabel.substr(2,4));  // try-catch syntax for stol or not necessary ? 
+
+
     // Fill the map
-    fragmentToDigitizerChannelMap[fragmentID].emplace_back(digitizerChannelNo,channelID);
+    fragmentToDigitizerChannelMap[fragmentID].emplace_back(digitizerChannelNo,channelID,laserChannel);
     
     return 0;
   }

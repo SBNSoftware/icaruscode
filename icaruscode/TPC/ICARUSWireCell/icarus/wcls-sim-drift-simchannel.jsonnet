@@ -140,13 +140,14 @@ local make_noise_model = function(anode, csdb=null) {
     name: "empericalnoise-" + anode.name,
     data: {
         anode: wc.tn(anode),
+        dft: wc.tn(tools.dft),
         chanstat: if std.type(csdb) == "null" then "" else wc.tn(csdb),
         spectra_file: params.files.noise,
         nsamples: params.daq.nticks,
         period: params.daq.tick,
         wire_length_scale: 1.0*wc.cm, // optimization binning
     },
-    uses: [anode] + if std.type(csdb) == "null" then [] else [csdb],
+    uses: [anode, tools.dft] + if std.type(csdb) == "null" then [] else [csdb],
 };
 local noise_model = make_noise_model(mega_anode);
 local add_noise = function(model, n) g.pnode({
@@ -154,10 +155,11 @@ local add_noise = function(model, n) g.pnode({
     name: "addnoise%d-" %n + model.name,
     data: {
         rng: wc.tn(tools.random),
+        dft: wc.tn(tools.dft),
         model: wc.tn(model),
   nsamples: params.daq.nticks,
         replacement_percentage: 0.02, // random optimization
-    }}, nin=1, nout=1, uses=[model]);
+    }}, nin=1, nout=1, uses=[tools.random, tools.dft, model]);
 local noises = [add_noise(noise_model, n) for n in std.range(0,3)];
 
 // local digitizer = sim.digitizer(mega_anode, name="digitizer", tag="orig");

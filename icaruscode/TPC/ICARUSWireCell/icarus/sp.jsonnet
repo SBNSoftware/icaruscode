@@ -21,6 +21,7 @@ function(params, tools, override = {}) {
     data: {
       // Many parameters omitted here.
       anode: wc.tn(anode),
+      dft: wc.tn(tools.dft),
       field_response: wc.tn(tools.field),
       ftoffset: 0.0, // default 0.0
       ctoffset: 0.0*wc.microsecond, // default -8.0
@@ -68,6 +69,6 @@ function(params, tools, override = {}) {
       process_planes: [0, util.anode_split(anode.data.ident)], // balance the left and right split
 
     } + override,
-  }, nin=1, nout=1, uses=[anode, tools.field, tools.elec_resp] + pc.uses + spfilt),
+  }, nin=1, nout=1, uses=[anode, tools.dft, tools.field, tools.elec_resp] + pc.uses + spfilt),
 
 }

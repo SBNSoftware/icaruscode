@@ -17,7 +17,7 @@ services:
   TFileService: { fileName: "simulation_cosmics_icarus.root" }
   #FileCatalogMetadata:  @local::art_file_catalog_mc
   @table::icarus_gen_services
-  NuRandomService: @local::per_event_NuRandomService
+  NuRandomService: @local::icarus_default_NuRandomService
 }
 
 services.Geometry.SurfaceY:  560 # This value has been introduced because at the moment using 690 cry provides an error... maybe related to Geometry.. to be fixed!

@@ -1,3 +1,3 @@
 install_fhicl()
-#FILE(GLOB fcl_files *.fcl)
-#install_source( EXTRAS ${fcl_files} )
+#FILE(GLOBfcl_files*.fcl)
+#install_source(EXTRAS${fcl_files})

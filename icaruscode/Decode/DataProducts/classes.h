@@ -11,8 +11,7 @@
  */
 
 // SBN libraries
-// #include "sbnobj/Common/Trigger/ExtraTriggerInfo.h"
-#include "icaruscode/Decode/DataProducts/ExtraTriggerInfo.h"
+#include "icaruscode/Decode/DataProducts/TriggerConfiguration.h"
 
 // framework libraries
 #include "canvas/Persistency/Common/Ptr.h"
@@ -21,6 +20,6 @@
 
 namespace {
   
-  sbn::ExtraTriggerInfo tinfo;
+  icarus::TriggerConfiguration tconfig;
   
 } // local namespace
