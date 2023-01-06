@@ -1,0 +1,79 @@
+BEGIN_PROLOG
+
+standard_pixelmapproducer:
+{
+  TdcWidth:          500 # 1000
+  WireLength:        1984 #collection plane : 1664, induction plane : 1984
+  TimeResolution:    1700 #1600 # 2560 # 3400
+  Threshold:         0
+  MultipleDrifts:    true
+  verbose:           false
+  ChangeWireNo:      true
+  ReadoutSize:       3400. # in time ticks # 2560
+  ShiftT:            420.
+  InductionWires:    1984
+  FlipInductionView: false
+  UseT:              false
+}
+
+
+standard_cvnmapper:
+{
+  module_type:           CVNMapperICARUS
+  HitsModuleLabel:       "gaushit"
+  ClusterPMLabel:        "cvnmap"
+  MinClusterHits:        100
+  verbose:               true
+  UseSlice:              true
+  SliceLabel:            "pandora"
+  PFParticleModuleLabel: "pandora"
+  T0Label:               "pandora"
+  PixelMapProducer:      @local::standard_pixelmapproducer
+  MapVecSize:            100000
+  
+}
+
+
+standard_cvnzlibmaker:
+{
+  module_type:     CVNZlibMakerICARUS
+#  OutputDir: "./"
+  SetLog:           false
+  ReverseViews:     [false,false,false]	
+  verbose:          false
+  UseSlice:         true
+  Verbose:          false
+  UseBackTrackInfo: true
+  UseNuContainment: false
+  SaveTree:         false
+  PlaneLimit:       500
+  TDCLimit:         500
+  TopologyHitsCut:  0
+  CosEfrac:         0.75
+  NuEfrac:          0.25
+  VolCut:           0.
+  PixelMapInput:         "pixelmap"
+  SliceLabel:            "pandora"
+  GenieGenModuleLabel:   "generator"
+  PFParticleModuleLabel: "pandora"
+  HitModuleLabel:        "gaushit"
+  T0Label:               "pandora"
+}
+
+
+standard_cvnmapper_sim:
+{
+  module_type:        CVNMapperSim
+  #==================
+  HitsModuleLabel:   "tpcrawdecoder:simpleSC"
+  ClusterPMLabel:    "cvnmap"
+  MinClusterHits:    100
+  PixelMapProducer:
+  {
+    @table::standard_pixelmapproducer
+    TimeResolution: 1500
+    Threshold:      0.6
+  }
+}
+
+END_PROLOG
