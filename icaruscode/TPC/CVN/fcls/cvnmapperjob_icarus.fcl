@@ -1,13 +1,16 @@
-#include "simulationservices_sbnd.fcl"
-#include "rootoutput_sbnd.fcl"
-#include "services_sbnd.fcl"
-#include "messages_sbnd.fcl"
-#include "sam_sbnd.fcl"
-#include "larfft_sbnd.fcl"
-#include "signalservices_sbnd.fcl"
-#include "rootoutput_sbnd.fcl"
+#include "services_common_icarus.fcl"
+#include "channelmapping_icarus.fcl"
 
-#include "CVNMapper.fcl"
+#include "correctionservices_icarus.fcl"
+#include "seedservice.fcl"
+#include "particleinventoryservice.fcl"
+#include "backtrackerservice.fcl"
+#include "photonbacktrackerservice.fcl"
+#include "mccheatermodules.fcl"
+
+#include "rootoutput_icarus.fcl"
+
+#include "CVNMapperICARUS.fcl"
 
 process_name: CVNMAPPERICARUS
 
@@ -20,7 +23,6 @@ services:
   RandomNumberGenerator:     {}
   MemoryTracker:             {} # default is one
 
-  message:                   @local::sbnd_message_services_prod # from messages_sbnd.fcl
   FileCatalogMetadata:       @local::art_file_catalog_mc
                              @table::icarus_detsim_services
 }
@@ -55,8 +57,8 @@ outputs:
 {
  out:
  {
-   module_type: RootOutput
-   dataTier: "reconstructed"
+   module_type:  RootOutput
+   dataTier:     "reconstructed"
    SelectEvents: [ reco ]
    fileName: @local::icarus_rootoutput.fileName
  } 
@@ -73,5 +75,3 @@ outputs.out.outputCommands: [
       "drop anab::anab::ParticleIDs_*_*_*",
       "drop recob::OpFlashs_*_*_*"
 ]
-
-
