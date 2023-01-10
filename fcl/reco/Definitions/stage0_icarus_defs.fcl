@@ -102,6 +102,8 @@ icarus_stage0_producers:
   opflashCryoE:                   @local::ICARUSSimpleFlashDataCryoE
   opflashCryoW:                   @local::ICARUSSimpleFlashDataCryoW
 
+  daqPMTonbeam:                   @local::copyPMTonBeam
+
   ### Purity monitoring
   purityana0:                     { module_type: "ICARUSPurityDQM" }
   purityana1:                     { module_type: "ICARUSPurityDQM" }
@@ -229,7 +231,8 @@ icarus_stage0_PMT:                  [ triggerconfig,
                                       ophituncorrected,
                                       ophit,
                                       opflashCryoE,
-                                      opflashCryoW
+                                      opflashCryoW,
+                                      daqPMTonbeam
                                     ]
 
 icarus_stage0_PMT_BNB:              [ @sequence::icarus_stage0_PMT,
@@ -467,5 +470,7 @@ icarus_stage0_producers.purityana1.PersistPurityInfo:                           
 icarus_stage0_producers.purityana1.FillAnaTuple:                                               false
 icarus_stage0_producers.purityana1.PersistPurityInfo:                                          false
 icarus_stage0_producers.purityana1.FillAnaTuple:                                               false
+
+icarus_stage0_producers.daqPMTonbeam.Waveforms: daqPMT
 
 END_PROLOG
