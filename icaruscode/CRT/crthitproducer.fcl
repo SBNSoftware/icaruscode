@@ -16,6 +16,7 @@ standard_crthitrecoalg:
     outCSVFile:           false  # write the information in to a csv file
     Data:                 true   # for data
     CSVFile:              "data.csv" # dump time difference between both end readouts.
+
 }
 
 standard_crthitproducer:
