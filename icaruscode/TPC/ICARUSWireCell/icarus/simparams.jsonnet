@@ -10,9 +10,9 @@ base {
     // Transverse diffusion constant
     DT :  8.8 * wc.cm2/wc.s,
     // Electron lifetime
-    lifetime : 9.6*wc.ms,
+    lifetime : 3.5*wc.ms,
     // Electron drift speed, assumes a certain applied E-field
-    drift_speed : 1.6*wc.mm/wc.us, // at 500 V/cm
+    drift_speed : 0.15756*wc.mm/wc.us, // at 500 V/cm
   },
   daq: super.daq {
 
