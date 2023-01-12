@@ -12,7 +12,7 @@ base {
     // Electron lifetime
     lifetime : 3.5*wc.ms,
     // Electron drift speed, assumes a certain applied E-field
-    drift_speed : 0.15756*wc.mm/wc.us, // at 500 V/cm
+    drift_speed : 1.5756*wc.mm/wc.us, // at 500 V/cm
   },
   daq: super.daq {
 
