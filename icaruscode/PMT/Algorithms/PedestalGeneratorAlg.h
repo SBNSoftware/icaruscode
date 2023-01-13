@@ -25,8 +25,9 @@
 // -----------------------------------------------------------------------------
 namespace icarus::opdet {
   template <typename ADCT> class PedestalGeneratorAlg; 
-  template <typename Stream, typename ADCT>
-  Stream& operator<< (Stream&& out, PedestalGeneratorAlg<ADCT> const& gen);
+  template <typename ADCT>
+  std::ostream& operator<<
+    (std::ostream& out, PedestalGeneratorAlg<ADCT> const& gen);
 } // namespace icarus::opdet
 
 // -----------------------------------------------------------------------------
@@ -94,6 +95,9 @@ class icarus::opdet::PedestalGeneratorAlg {
   /// Special pedestal value to express no knowledge of the pedestal.
   static constexpr ADCcount_t NoPedestalLevel
     = std::numeric_limits<ADCcount_t>::max();
+  
+  
+  virtual ~PedestalGeneratorAlg() = default;
   
   
   /**
@@ -590,9 +594,9 @@ std::size_t icarus::opdet::PedestalGeneratorAlg<ADCT>::_addByFilling(
 // -----------------------------------------------------------------------------
 // --- free function implementation
 // -----------------------------------------------------------------------------
-template <typename Stream, typename ADCT>
-Stream& icarus::opdet::operator<<
-  (Stream&& out, icarus::opdet::PedestalGeneratorAlg<ADCT> const& gen)
+template <typename ADCT>
+std::ostream& icarus::opdet::operator<<
+  (std::ostream& out, icarus::opdet::PedestalGeneratorAlg<ADCT> const& gen)
   { out << gen.toString(); return out; }
 
 

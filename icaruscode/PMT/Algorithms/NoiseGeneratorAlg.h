@@ -24,8 +24,9 @@
 // -----------------------------------------------------------------------------
 namespace icarus::opdet {
   template <typename ADCT> class NoiseGeneratorAlg; 
-  template <typename Stream, typename ADCT>
-  Stream& operator<< (Stream&& out, NoiseGeneratorAlg<ADCT> const& gen);
+  template <typename ADCT>
+  std::ostream& operator<<
+    (std::ostream& out, NoiseGeneratorAlg<ADCT> const& gen);
 } // namespace icarus::opdet
 
 // -----------------------------------------------------------------------------
@@ -83,6 +84,10 @@ class icarus::opdet::NoiseGeneratorAlg {
   using ADCcount_t = ADCT; ///< Type of the sample value.
   
   using Timestamp_t = std::uint64_t; ///< Type of timestamp.
+  
+  
+  virtual ~NoiseGeneratorAlg() = default;
+  
   
   // --- BEGIN -- Noise addition -----------------------------------------------
   /// @name Noise addition
@@ -544,9 +549,9 @@ std::size_t icarus::opdet::NoiseGeneratorAlg<ADCT>::_addByFilling(
 // -----------------------------------------------------------------------------
 // --- free function implementation
 // -----------------------------------------------------------------------------
-template <typename Stream, typename ADCT>
-Stream& icarus::opdet::operator<<
-  (Stream&& out, icarus::opdet::NoiseGeneratorAlg<ADCT> const& gen)
+template <typename ADCT>
+std::ostream& icarus::opdet::operator<<
+  (std::ostream& out, icarus::opdet::NoiseGeneratorAlg<ADCT> const& gen)
   { out << gen.toString(); return out; }
 
 

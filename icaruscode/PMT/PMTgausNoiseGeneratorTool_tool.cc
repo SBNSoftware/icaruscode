@@ -40,7 +40,7 @@ namespace icarus::opdet { struct PMTgausNoiseGeneratorTool; }
  * documentation of `icarus::opdet::GaussianNoiseGeneratorAlg`.
  * 
  */
-class icarus::opdet::PMTgausNoiseGeneratorTool
+struct icarus::opdet::PMTgausNoiseGeneratorTool
   : public icarus::opdet::PMTnoiseGeneratorToolBase<GaussianNoiseGeneratorAlg>
 {
   using Base_t

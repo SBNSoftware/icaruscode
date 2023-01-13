@@ -43,7 +43,7 @@ namespace icarus::opdet { struct PMTconstantPedestalGeneratorTool; }
  * the configuration of the noise generator tool within.
  * 
  */
-class icarus::opdet::PMTconstantPedestalGeneratorTool
+struct icarus::opdet::PMTconstantPedestalGeneratorTool
   : public icarus::opdet::PMTpedestalGeneratorToolBase<ConstantPedestalGeneratorAlg>
 {
   using Base_t

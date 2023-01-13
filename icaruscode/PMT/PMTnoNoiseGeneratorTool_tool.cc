@@ -40,7 +40,7 @@ namespace icarus::opdet { struct PMTnoNoiseGeneratorTool; }
  * documentation of `icarus::opdet::NoNoiseGeneratorAlg`.
  * 
  */
-class icarus::opdet::PMTnoNoiseGeneratorTool
+struct icarus::opdet::PMTnoNoiseGeneratorTool
   : public icarus::opdet::PMTnoiseGeneratorToolBase<NoNoiseGeneratorAlg>
 {
   using Base_t
