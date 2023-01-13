@@ -21,7 +21,7 @@ physics: {
 //     pmtconfig:  @local::extractPMTconfig
     triggerconfig: @local::extractTriggerConfig
     
-    daqTrigger: @local::decodeTriggerV2
+    daqTrigger: @local::decodeTriggerAutodetect
     
 //     daqPMT:     @local::decodePMT
     
@@ -46,6 +46,9 @@ outputs: {
 
 
 physics.producers.daqTrigger.DecoderTool.TrigConfigLabel: triggerconfig
-physics.producers.daqTrigger.DecoderTool.DiagnosticOutput: true
-physics.producers.daqTrigger.DecoderTool.Debug: true
-
+physics.producers.daqTrigger.DecoderTool.Decoders[0].ToolConfig.DiagnosticOutput: true
+physics.producers.daqTrigger.DecoderTool.Decoders[0].ToolConfig.Debug:            true
+physics.producers.daqTrigger.DecoderTool.Decoders[1].ToolConfig.DiagnosticOutput: true
+physics.producers.daqTrigger.DecoderTool.Decoders[1].ToolConfig.Debug:            true
+physics.producers.daqTrigger.DecoderTool.Decoders[2].ToolConfig.DiagnosticOutput: true
+physics.producers.daqTrigger.DecoderTool.Decoders[2].ToolConfig.Debug:            true

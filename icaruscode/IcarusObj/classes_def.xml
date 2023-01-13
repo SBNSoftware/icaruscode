@@ -66,6 +66,11 @@
   <class name="art::Wrapper<art::Assns<sim::BeamGateInfo, recob::PFParticle>>" />
   <class name="art::Wrapper<art::Assns<recob::PFParticle, sim::BeamGateInfo>>" />
   
+<!--  <class name="art::Assns<sim::BeamGateInfo, recob::Track>" />
+  <class name="art::Assns<recob::Track, sim::BeamGateInfo>" />
+  <class name="art::Wrapper<art::Assns<sim::BeamGateInfo, recob::Track>>" />
+  <class name="art::Wrapper<art::Assns<recob::Track, sim::BeamGateInfo>>" />  -->
+  
   <!-- anab::T0 - sim::BeamGateInfo associations -->
   <class name="std::pair<art::Ptr<sim::BeamGateInfo>, art::Ptr<anab::T0>>" />
   <class name="std::pair<art::Ptr<anab::T0>, art::Ptr<sim::BeamGateInfo>>" />
@@ -75,6 +80,24 @@
   <class name="art::Wrapper<art::Assns<anab::T0, sim::BeamGateInfo>>" />
   
   <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
+
+  <!-- CRT matching metadata -->
+  <class name="icarus::CRTTPCMatchingInfo" ClassVersion="10" >
+   <version ClassVersion="10" checksum="3174835328"/>
+  </class>
+  <class name="std::vector<icarus::CRTTPCMatchingInfo>" />
+  
+  <!-- recob::Track - anab::T0 associations with CRT matching metadata -->
+<!--  <class name="art::Assns<recob::Track, anab::T0, icarus::CRTTPCMatchingInfo>" />
+  <class name="art::Assns<anab::T0, recob::Track, icarus::CRTTPCMatchingInfo>" />
+  <class name="art::Wrapper<art::Assns<recob::Track, anab::T0, icarus::CRTTPCMatchingInfo>>" />
+  <class name="art::Wrapper<art::Assns<anab::T0, recob::Track, icarus::CRTTPCMatchingInfo>>" /> -->
+  
+  <!-- sbn::crt::CRTHit - anab::T0 associations with CRT matching metadata -->
+  <class name="art::Assns<sbn::crt::CRTHit, anab::T0, icarus::CRTTPCMatchingInfo>" />
+  <class name="art::Assns<anab::T0, sbn::crt::CRTHit, icarus::CRTTPCMatchingInfo>" />
+  <class name="art::Wrapper<art::Assns<sbn::crt::CRTHit, anab::T0, icarus::CRTTPCMatchingInfo>>" />
+  <class name="art::Wrapper<art::Assns<anab::T0, sbn::crt::CRTHit, icarus::CRTTPCMatchingInfo>>" /> 
   
   
 </lcgdict>
