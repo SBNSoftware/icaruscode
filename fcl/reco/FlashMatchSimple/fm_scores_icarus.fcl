@@ -1,4 +1,5 @@
 #include "services_common_icarus.fcl"
+#include "simulationservices_icarus.fcl"
 #include "messages_icarus.fcl"
 #include "rootoutput_icarus.fcl"
 
@@ -10,6 +11,8 @@ services:{
   TFileService: { fileName: "flashmatch_icarus.root" }
   @table::icarus_basic_services
   message:                     @local::icarus_message_services
+  BackTrackerService:          @local::standard_backtrackerservice
+  ParticleInventoryService:    @local::standard_particleinventoryservice  
 }
 
 source:{
@@ -18,11 +21,11 @@ source:{
 
 physics: {
   producers: {
-    fmatchCryo0: @local::icarus_simple_flashmatch_0
-    fmatchCryo1: @local::icarus_simple_flashmatch_1
+    fmatchCryoE: @local::icarus_simple_flashmatch_E
+    fmatchCryoW: @local::icarus_simple_flashmatch_W
   }
 
-  reco: [fmatchCryo0, fmatchCryo1]
+  reco: [fmatchCryoE, fmatchCryoW]
   stream: [out]
   end_paths: [stream]
 }
