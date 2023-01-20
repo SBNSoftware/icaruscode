@@ -54,8 +54,7 @@ icarus_genie_BNB_base: {
 # TopVolume:            "volTPCActive"
 # TopVolume:            "volCryostat"
   BeamName:             "booster"
-  EventGeneratorList:   "Default+CCMEC+NCMEC"
-# EventGeneratorList:   "Default"
+  EventGeneratorList:   "Default"
 # FluxCopyMethod:       "IFDH"
   FluxSearchPaths:      "/pnfs/icarus/persistent/bnb_gsimple/fluxes_Oct2017/"
   FluxFiles:            ["converted_beammc_icarus_*.root"]

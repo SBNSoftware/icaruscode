@@ -64,6 +64,7 @@ cet_build_plugin(TPCNoiseFilterCanny art::tool LIBRARIES ${TOOL_LIBRARIES})
 cet_build_plugin(TriggerDecoder art::tool LIBRARIES ${TOOL_LIBRARIES})
 cet_build_plugin(TriggerDecoderV2 art::tool LIBRARIES ${TOOL_LIBRARIES})
 cet_build_plugin(TriggerDecoderV3 art::tool LIBRARIES ${TOOL_LIBRARIES})
+cet_build_plugin(TriggerDecoderDispatcher art::tool LIBRARIES ${TOOL_LIBRARIES})
 
 
 
