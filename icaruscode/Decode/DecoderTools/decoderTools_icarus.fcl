@@ -103,13 +103,34 @@ TriggerDecoderTool: {
 
 TriggerDecoderV2Tool: {
    tool_type:          TriggerDecoderV2
-   TriggerConfigLabel: @nil # must override
+   TrigConfigLabel:    triggerconfig  # may need override
 }
 
 TriggerDecoderV3Tool: {
-   tool_type:	      TriggerDecoderV3
-   TriggerConfigLabel: @nil # must override		      
+   tool_type:          TriggerDecoderV3
+   TrigConfigLabel:    triggerconfig  # may need override
 }
 
+TriggerDecoderAutoTool: {
+   tool_type:          TriggerDecoderDispatcher
+   TrigConfigLabel:    triggerconfig  # may need override
+   Decoders: [
+      {
+         Generator:      "ICARUSTriggerUDP"
+         FragmentsLabel: "daq:ICARUSTriggerUDP"
+         ToolConfig:     @local::TriggerDecoderTool
+      },
+      {
+         Generator:      "ICARUSTriggerV2"
+         FragmentsLabel: "daq:ICARUSTriggerV2"
+         ToolConfig:     @local::TriggerDecoderV2Tool
+      },
+      {
+         Generator:      "ICARUSTriggerV3"
+         FragmentsLabel: "daq:ICARUSTriggerV3"
+         ToolConfig:     @local::TriggerDecoderV3Tool
+      }
+   ]
+}
 
 END_PROLOG
