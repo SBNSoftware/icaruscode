@@ -471,8 +471,6 @@ icarus_stage0_producers.purityana1.FillAnaTuple:                                
 icarus_stage0_producers.purityana1.PersistPurityInfo:                                          false
 icarus_stage0_producers.purityana1.FillAnaTuple:                                               false
 
-icarus_stage0_producers.triggerconfig.TriggerFragmentType:				       ICARUSTriggerV3
-
 icarus_stage0_producers.daqPMTonbeam.Waveforms: daqPMT
 
 END_PROLOG
