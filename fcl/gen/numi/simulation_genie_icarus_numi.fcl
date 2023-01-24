@@ -17,6 +17,7 @@
 
 #include "services_icarus_simulation.fcl"
 #include "genie_icarus_numioffaxis.fcl"
+#include "beamgates_icarus.fcl"
 
 
 process_name: GenGenie
@@ -51,11 +52,12 @@ physics: {
     
     rns:       { module_type: "RandomNumberSaver" }
     generator: @local::icarus_genie_NuMI # from `genie_icarus_numi.fcl`
+    beamgate:  @local::icarus_standardbeamgate_NuMI  # from beamgates_icarus.fcl
     
   } # producers
   
   
-  simulate:     [ rns, generator ]
+  simulate:     [ rns, generator, beamgate ]
   
   outputstream: [ rootoutput ]
   

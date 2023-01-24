@@ -117,7 +117,7 @@ physics: {
     
     pmttriggerwindows: @local::icarus_trigslidewindow
     
-    triggersimgates: @local::icarus_triggersimgates
+    triggersimgates: @local::icarus_triggersimgates  # from trigger_icarus.fcl
     
     # --------------------------------------------------------------------------
     # all interesting triggers
