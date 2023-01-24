@@ -8,6 +8,7 @@ process_name: stage0
 
 ## Define the path we'll execute
 physics.path:     [ @sequence::icarus_stage0_data ]
+physics.producers.daqPMTonbeam.module_type: DummyProducer # replaced with a no-op
 
 ## boiler plate...
 physics.outana:        [ purityinfoana0, purityinfoana1 ]

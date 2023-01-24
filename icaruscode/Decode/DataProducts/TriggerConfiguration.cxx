@@ -18,6 +18,9 @@
 static_assert(icarus::TriggerConfiguration::DefaultDumpVerbosity <= icarus::TriggerConfiguration::MaxDumpVerbosity);
 
 //------------------------------------------------------------------------------
+std::string const icarus::TriggerConfiguration::UnknwonGenerator { "<unknown>" };
+
+//------------------------------------------------------------------------------
 void icarus::TriggerConfiguration::dumpGateConfig
   (std::ostream& out, icarus::TriggerConfiguration::GateConfig const& gateConfig, std::string const& indent) const
 {
@@ -84,8 +87,11 @@ void icarus::TriggerConfiguration::dump(std::ostream& out,
     // --- verbosity: 0+ -------------------------------------------------------
     out << firstIndent
       << "Basic trigger configuration:";
-      outnl() << " Use WR time:    " << std::boolalpha << useWrTime << std::noboolalpha;
-      outnl() << " WR time offset: " << wrTimeOffset << " ns";
+    outnl() << " Generator name: ";
+    if (generator == UnknwonGenerator) out << "unknown";
+    else out << "'" << generator << "'";
+    outnl() << " Use WR time:    " << std::boolalpha << useWrTime << std::noboolalpha;
+    outnl() << " WR time offset: " << wrTimeOffset << " ns";
     
     if (++level > verbosity) break;
     // --- verbosity: 1+ -------------------------------------------------------

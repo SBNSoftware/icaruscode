@@ -29,7 +29,10 @@ namespace icarus {
 
 
 struct icarus::TriggerConfiguration {
-
+  
+  /// Label used for unknown DAQ generator.
+  static std::string const UnknwonGenerator;
+  
   struct CryoConfig {
 
     /// Majority Level for in-time activity
@@ -130,11 +133,14 @@ struct icarus::TriggerConfiguration {
   /// Force the run to be fully a MinBias, if runType=="MinBias". If runType=="Majority" does a majority run with some prescaled minbias triggers depending on the gate selection in use
   std::string runType;
 
-  /// TPCTriggerDelay: distance between the Global trigger time and the output for the TPC. NB: It is in units of 400 ns 
+  /// TPCTriggerDelay: distance between the Global trigger time and the output for the TPC. NB: It is in units of 400 ns.
   unsigned int tpcTriggerDelay = 0;
 
-  /// Gate Configuration 
+  /// Gate Configuration.
   std::array<GateConfig, icarus::trigger::kNTriggerSource> gateConfig;
+  
+  /// Name of the trigger fragment DAQ generator.
+  std::string generator = UnknwonGenerator;
 
   // --- END ---- Data members -------------------------------------------------
 

@@ -86,7 +86,9 @@ base {
 
     elec: super.elec {
         type: "WarmElecResponse",
-        gain: 17.8075*wc.mV/wc.fC, // 0.027 fC/(ADC*us)
+        // gain: 17.8075*wc.mV/wc.fC, // 0.027 fC/(ADC*us)
+        // Set gain to (roughly) match data ADC values (docdb 25161)
+        gain: 14.9654*wc.mV/wc.fC, // 0.0321 fC/(ADC*us)
         shaping: 1.3*wc.us,
         postgain: 1.0,
         start: 0,

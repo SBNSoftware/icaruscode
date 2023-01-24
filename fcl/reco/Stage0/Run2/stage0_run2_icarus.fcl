@@ -18,11 +18,14 @@ physics.end_paths:     [ outana, streamROOT ]
 # Drop all output from the TPC decoder stage
 # Drop all output from the 1D deconvolution stage
 # Drop the recob::Wire output from the roifinder (but keep the ChannelROIs)
+# Drop the reconstructed optical hits before the timing correction
+# Drop the PMT waveforms (will keep the ones from daqPMTonbeam)
 # Keep the Trigger fragment
 outputs.rootOutput.outputCommands: [
     "keep *_*_*_*", 
     "drop *_*_*_DAQ*",
     "drop *_ophituncorrected_*_*",
+    "drop raw::OpDetWaveforms_daqPMT__*",
     "drop *_daqTPCROI_*_*", 
     "drop *_decon1droi_*_*", 
     "drop recob::Wire*_roifinder_*_*",
