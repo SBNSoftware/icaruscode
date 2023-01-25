@@ -2,7 +2,7 @@ BEGIN_PROLOG
 
 standard_producecompressedfragment:
 {
-  plugin_type: ProduceCompressedFragment
+  module_type: "ProduceCompressedFragment"
   FragmentsLabel: "daq:PHYSCRATEDATA"
 }
 

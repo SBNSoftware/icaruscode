@@ -9,7 +9,7 @@ art_make_library(
                   sbndaq_artdaq_core::sbndaq-artdaq-core_Overlays_ICARUS
                 )
 
-simple_plugin(ProduceCompressedFragment module
+cet_build_plugin(ProduceCompressedFragment art::module
                 sbndaq_artdaq_core::sbndaq-artdaq-core_Overlays_ICARUS
                 artdaq_core::artdaq-core_Utilities
                 art_root_io::TFileService_service

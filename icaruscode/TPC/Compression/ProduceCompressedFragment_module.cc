@@ -40,8 +40,8 @@ namespace icarus
     ProduceCompressedFragment::ProduceCompressedFragment(fhicl::ParameterSet const& pset)
     : art::EDProducer::EDProducer(pset)
     {
-      
       this->reconfigure(pset);
+      produces<std::vector<artdaq::Fragment>>();
     }
 
     //.............................................................................
@@ -66,9 +66,10 @@ namespace icarus
       // loop over the uncompressed fragments and make the compressed fragments
       for (auto const uncompFrag : uncompressedFragments)
       {
-        // art::Ptr's are kind of annoying
+        // art::Ptrs are kind of annoying
         // so to get the Fragment we need to `.get()` the Ptr and dereference
-        producedFragments->push_back(icarus::PhysCrateCompressedFragment::compressArtdaqFragment(*(uncompFrag.get())));
+        artdaq::Fragment newFrag = icarus::PhysCrateCompressedFragment::compressArtdaqFragment(*(uncompFrag.get()));
+        producedFragments->emplace_back(newFrag);
       }
 
       e.put(std::move(producedFragments));
