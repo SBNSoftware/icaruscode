@@ -458,9 +458,16 @@ artdaq::Fragment icarus::PhysCrateCompressedFragment::compressArtdaqFragment(art
     icarus::PhysCrateCompressedFragmentMetadata::data_t sPerC     = f.metadata<icarus::PhysCrateCompressedFragmentMetadata>()->samples_per_channel();
     icarus::PhysCrateCompressedFragmentMetadata::data_t adcPerS   = f.metadata<icarus::PhysCrateCompressedFragmentMetadata>()->num_adc_bits(); // i don't know why the names are like this...
     icarus::PhysCrateCompressedFragmentMetadata::data_t compress  = 0; // working with compressed being zero. unsure if true
-    std::vector<icarus::PhysCrateCompressedFragmentMetadata::id_t> boardIds;
+    std::vector<icarus::PhysCrateCompressedFragmentMetadata::id_t> boardIds(nBoards);
+    // for whatever reason the getting the board ids from the metadata keeps failing
+    // so we'll do it through the DataTileHeaders (ie the hard way)
+    size_t runningDataTileHeaderLoc = 0;
     for (size_t b = 0; b < nBoards; b++)
-      boardIds.push_back(f.metadata<icarus::PhysCrateCompressedFragmentMetadata>()->board_id(b));
+    {
+      icarus::PhysCrateCompressedDataTileHeader const* currentHeader = reinterpret_cast<icarus::PhysCrateCompressedDataTileHeader const*>(f.dataBeginBytes() + runningDataTileHeaderLoc);
+      boardIds[b] = currentHeader->board_id;
+      runningDataTileHeaderLoc += ntohl(currentHeader->packSize);
+    }
     icarus::PhysCrateCompressedFragmentMetadata updatedMD(runNumber, nBoards, cPerB, sPerC, adcPerS, compress, boardIds);
     compressedFragment.updateMetadata<icarus::PhysCrateCompressedFragmentMetadata>(updatedMD);
   }
@@ -550,9 +557,16 @@ artdaq::Fragment icarus::PhysCrateCompressedFragment::decompressArtdaqFragment(a
     icarus::PhysCrateCompressedFragmentMetadata::data_t sPerC     = f.metadata<icarus::PhysCrateCompressedFragmentMetadata>()->samples_per_channel();
     icarus::PhysCrateCompressedFragmentMetadata::data_t adcPerS   = f.metadata<icarus::PhysCrateCompressedFragmentMetadata>()->num_adc_bits(); // i don't know why the names are like this...
     icarus::PhysCrateCompressedFragmentMetadata::data_t compress  = 1; // we really only care that this is not the compressed value. 1 should do
-    std::vector<icarus::PhysCrateCompressedFragmentMetadata::id_t> boardIds;
+    std::vector<icarus::PhysCrateCompressedFragmentMetadata::id_t> boardIds(nBoards);
+    // for whatever reason the getting the board ids from the metadata keeps failing
+    // so we'll do it through the DataTileHeaders (ie the hard way)
+    size_t runningDataTileHeaderLoc = 0;
     for (size_t b = 0; b < nBoards; b++)
-      boardIds.push_back(f.metadata<icarus::PhysCrateCompressedFragmentMetadata>()->board_id(b));
+    {
+      icarus::PhysCrateCompressedDataTileHeader const* currentHeader = reinterpret_cast<icarus::PhysCrateCompressedDataTileHeader const*>(f.dataBeginBytes() + runningDataTileHeaderLoc);
+      boardIds[b] = currentHeader->board_id;
+      runningDataTileHeaderLoc += ntohl(currentHeader->packSize);
+    }
     icarus::PhysCrateCompressedFragmentMetadata updatedMD(runNumber, nBoards, cPerB, sPerC, adcPerS, compress, boardIds);
     decompressedFragment.updateMetadata<icarus::PhysCrateCompressedFragmentMetadata>(updatedMD);
   }

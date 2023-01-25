@@ -1,7 +1,7 @@
 #include "ProduceCompressedFragment.fcl"
 #include "messageservice.fcl"
 
-process_name: ProduceCompressedFragment
+process_name: ProduceCompressedFragment 
 
 services:
 {
@@ -9,27 +9,34 @@ services:
   TFileService:  { fileName: "compressedFragment_hist.root" }
 }
 
+source:
+{
+  module_type: RootInput
+  maxEvents: -1
+}
+
 outputs:
 {
-  compfrag:
+  out1:
   {
     module_type: RootOutput
     fileName: "compressedFragment_out.root"
-    results:
-    {
-      producers:
-      {
-        compressEE: @local::standard_producecompressedfragment_EE
-        compressEW: @local::standard_producecompressedfragment_EW
-        compressWE: @local::standard_producecompressedfragment_WE
-        compressWW: @local::standard_producecompressedfragment_WW
-      }
-      rpPath: [ compressEE, compressEW, compressWE, compressWW ]
-    }
+    outputCommands: [ "drop *",
+                      "keep *_*_*_ProduceCompressedFragment" ]
   }
 }
 
 physics:
 {
-  stream1: [ compfrag ]
+  producers:
+    {
+      compressEE: @local::standard_producecompressedfragment_EE
+      compressEW: @local::standard_producecompressedfragment_EW
+      compressWE: @local::standard_producecompressedfragment_WE
+      compressWW: @local::standard_producecompressedfragment_WW
+    }
+  compress: [ compressEE, compressEW, compressWE, compressWW ]
+  stream1: [ out1 ]
+  trigger_paths: [ compress ]
+  end_paths: [ stream1 ]
 }
