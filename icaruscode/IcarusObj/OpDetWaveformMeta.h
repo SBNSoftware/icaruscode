@@ -135,6 +135,9 @@ struct sbn::OpDetWaveformMeta {
   /// @}
   
   
+  /// Returns whether the specified time is contained in the waveform interval.
+  bool includes(double time) const; // inline
+  
 }; // sbn::OpDetWaveformMeta
 
 
@@ -156,6 +159,12 @@ inline bool sbn::OpDetWaveformMeta::withTrigger() const {
 
 inline bool sbn::OpDetWaveformMeta::withoutTrigger() const {
   return flags.isDefined(bits::WithTrigger) && flags.isUnset(bits::WithTrigger);
+}
+
+
+// -----------------------------------------------------------------------------
+inline bool sbn::OpDetWaveformMeta::includes(double time) const {
+  return (time >= startTime) && (time < endTime);
 }
 
 

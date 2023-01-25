@@ -70,7 +70,7 @@ namespace daq
    *     * `TriggerCount()`: the trigger count from the beginning of the run.
    *     * `TriggerBits()`: includes the beam(s) with an open gate when the
    *         trigger happened (currently only one beam gate per trigger);
-   *         definitions are in `sbn::beamType` namespace.
+   *         definitions are in `sbn::bits::triggerSource` enumerator.
    * 
    *     It always includes a single entry (zero _might_ be supported).
    * * `std::vector<sim::BeamGateInfo>` containing information on the "main"
