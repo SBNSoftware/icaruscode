@@ -61,7 +61,7 @@ namespace icarus { class TriggerConfigurationExtraction; }
  * 
  * The following configuration parameters are supported:
  * 
- * * **TriggerFragmentType** (string, default: `ICARUSTriggerV2`):
+ * * **TriggerFragmentType** (string, default: `ICARUSTrigger.*`):
  *     name of the type of trigger fragment, used to identify the configuration
  *     of the trigger.
  * * **Verbose** (flag, default: `false`): if set to `true`, it will print in
@@ -101,8 +101,8 @@ class icarus::TriggerConfigurationExtraction: public art::EDProducer {
     
     fhicl::Atom<std::string> TriggerFragmentType {
       fhicl::Name("TriggerFragmentType"),
-      fhicl::Comment("the name of the type of trigger fragment from DAQ"),
-      "ICARUSTriggerV2" // default
+      fhicl::Comment("the name of the trigger generator in DAQ"),
+      "ICARUSTrigger.*" // default
       };
     
     fhicl::Atom<bool> Verbose {

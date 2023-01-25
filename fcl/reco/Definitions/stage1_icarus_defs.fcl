@@ -55,8 +55,8 @@ icarus_stage1_producers:
 
   ## Attempt to include simple flash matching here
   ## Simple Flash Matching, right now cryo0 and 1 are identical
-  fmatchCryoE:                    @local::icarus_simple_flashmatch_0
-  fmatchCryoW:                    @local::icarus_simple_flashmatch_1
+  fmatchCryoE:                    @local::icarus_simple_flashmatch_E
+  fmatchCryoW:                    @local::icarus_simple_flashmatch_W
 
  ## crt producer
   crttrack:          @local::standard_crttrackproducer
@@ -79,10 +79,11 @@ icarus_stage1_filters:
 
 icarus_stage1_analyzers:
 {
-  caloskimE:       @local::caloskim_cryoe_goldentracks_not0
-  caloskimW:       @local::caloskim_cryow_goldentracks_not0
+  caloskimE:       @local::caloskim_cryoe_goldentracks
+  caloskimW:       @local::caloskim_cryow_goldentracks
   simpleLightAna:  @local::ICARUSFlashAssAna
   supera:          @local::icarus_supera_data
+
   CRTDataAnalysis: 
    {
      module_type:   "CRTDataAnalysis"
@@ -205,6 +206,9 @@ icarus_stage1_producers.pandoraKalmanTrackGausCryoE.trackInputTag:              
 icarus_stage1_producers.caloskimCalorimetryCryoE.TrackModuleLabel:                               "pandoraTrackGausCryoE"
 icarus_stage1_producers.caloskimCalorimetryCryoW.TrackModuleLabel:                               "pandoraTrackGausCryoW"
 
+icarus_stage1_producers.pandoraTrackGausCryoW.UseAllParticles:                                   true
+icarus_stage1_producers.pandoraTrackGausCryoE.UseAllParticles:                                   true
+
 ## Switch pandora back to just gaushits?
 #icarus_stage1_producers.pandoraGausCryoW.ConfigFile:                                             "PandoraSettings_Master_ICARUS_RawICARUS.xml"
 #icarus_stage1_producers.pandoraGausCryoE.ConfigFile:                                             "PandoraSettings_Master_ICARUS_RawICARUS.xml"
@@ -212,5 +216,8 @@ icarus_stage1_producers.caloskimCalorimetryCryoW.TrackModuleLabel:              
 ## Definitions for shower finding (both single and by cryostat)
 icarus_stage1_producers.SBNShowerGausCryoW.PFParticleLabel:                                      "pandoraGausCryoW"
 icarus_stage1_producers.SBNShowerGausCryoE.PFParticleLabel:                                      "pandoraGausCryoE"
+
+icarus_stage1_producers.SBNShowerGausCryoW.UseAllParticles: 				         true
+icarus_stage1_producers.SBNShowerGausCryoE.UseAllParticles: 				         true
 
 END_PROLOG

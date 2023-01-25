@@ -55,8 +55,8 @@ icarus_stage1_producers:
 
   ## Attempt to include simple flash matching here
   ## Simple Flash Matching, right now cryo0 and 1 are identical
-  fmatchCryoE:                    @local::icarus_simple_flashmatch_0
-  fmatchCryoW:                    @local::icarus_simple_flashmatch_1
+  fmatchCryoE:                    @local::icarus_simple_flashmatch_E
+  fmatchCryoW:                    @local::icarus_simple_flashmatch_W
 
  ## crt producer
   crttrack:          @local::standard_crttrackproducer
@@ -189,6 +189,9 @@ icarus_stage1_producers.pandoraTrackGausCryoE.PFParticleLabel:                  
 icarus_stage1_producers.pandoraKalmanTrackGausCryoE.inputCollection:                             "pandoraGausCryoE"
 icarus_stage1_producers.pandoraKalmanTrackGausCryoE.trackInputTag:                               "pandoraTrackGausCryoE"
 
+icarus_stage1_producers.pandoraTrackGausCryoW.UseAllParticles:                                   true
+icarus_stage1_producers.pandoraTrackGausCryoE.UseAllParticles:                                   true
+
 icarus_stage1_producers.caloskimCalorimetryCryoE.TrackModuleLabel:                               "pandoraTrackGausCryoE"
 icarus_stage1_producers.caloskimCalorimetryCryoW.TrackModuleLabel:                               "pandoraTrackGausCryoW"
 
@@ -199,5 +202,8 @@ icarus_stage1_producers.caloskimCalorimetryCryoW.TrackModuleLabel:              
 ## Definitions for shower finding (both single and by cryostat)
 icarus_stage1_producers.SBNShowerGausCryoW.PFParticleLabel:                                      "pandoraGausCryoW"
 icarus_stage1_producers.SBNShowerGausCryoE.PFParticleLabel:                                      "pandoraGausCryoE"
+
+icarus_stage1_producers.SBNShowerGausCryoW.UseAllParticles:                                      true
+icarus_stage1_producers.SBNShowerGausCryoE.UseAllParticles:                                      true
 
 END_PROLOG

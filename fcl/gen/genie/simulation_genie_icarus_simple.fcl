@@ -5,6 +5,7 @@
 
 #include "largeantmodules.fcl"
 #include "genie_icarus_bnb.fcl"
+#include "beamgates_icarus.fcl"
 #include "mcreco.fcl"
 #include "services_common_icarus.fcl"
 #include "services_icarus_simulation.fcl"
@@ -44,11 +45,12 @@ physics:
  {
    generator: @local::icarus_genie_BNB # from `genie_icarus_bnb.fcl`
    rns:       { module_type: "RandomNumberSaver" }
+   beamgate:  @local::icarus_standardbeamgate_BNB  # from beamgates_icarus.fcl
  }
 
  #define the producer and filter modules for this path, order matters, 
  #filters reject all following items.  see lines starting physics.producers below
- simulate: [ rns, generator ]
+ simulate: [ rns, generator, beamgate ]
 
  #define the output stream, there could be more than one if using filters 
  stream1:  [ out1 ]
