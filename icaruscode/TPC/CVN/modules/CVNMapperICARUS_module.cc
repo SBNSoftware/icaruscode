@@ -1,18 +1,18 @@
-#include "icaruscode/TPC/CVN/module_helpers/ICVNMapperICARUS.h"
-#include "icaruscode/TPC/CVN/module_helpers/ICVNMapperICARUS.cxx"
-#include "larrecodnn/CVN/module_helpers/ICVNMapper.h"
-#include "larrecodnn/CVN/module_helpers/ICVNMapper.cxx"
+#include "icaruscode/TPC/CVN/interfaces/ICVNMapperICARUS.h"
+#include "icaruscode/TPC/CVN/interfaces/ICVNMapperICARUS.cxx"
+#include "icaruscode/TPC/CVN/interfaces/PixelMapProducerICARUS.h"
+#include "larrecodnn/CVN/interfaces/ICVNMapper.h"
+#include "larrecodnn/CVN/interfaces/ICVNMapper.cxx"
 
 #include "lardataobj/RecoBase/Hit.h"
 #include "lardataobj/RecoBase/Wire.h"
 #include "lardataobj/Simulation/SimChannel.h"
-
-#include "icaruscode/TPC/CVN/module_helpers/PixelMapProducerICARUS.h"
 
 namespace cvn {
 
   typedef ICVNMapperICARUS<PixelMapHitProducerICARUS, recob::Hit> CVNMapperICARUS;
   template class ICVNMapperICARUS<PixelMapHitProducerICARUS, recob::Hit>;
 
-DEFINE_ART_MODULE(CVNMapperICARUS)
 }
+
+DEFINE_ART_MODULE(cvn::CVNMapperICARUS)

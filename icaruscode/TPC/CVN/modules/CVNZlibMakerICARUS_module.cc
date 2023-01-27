@@ -53,7 +53,7 @@
 #include "larrecodnn/CVN/func/InteractionType.h"
 #include "larrecodnn/CVN/func/PixelMap.h"
 #include "larrecodnn/CVN/func/CVNImageUtils.h"
-#include "icaruscode/TPC/CVN/module_helpers/ICVNZlibMakerICARUS.h"
+#include "icaruscode/TPC/CVN/interfaces/ICVNZlibMakerICARUS.h"
 
 // Compression
 #include "zlib.h"
@@ -1077,5 +1077,6 @@ void CVNZlibMakerICARUS::Clear(){
      fT0 = 0.;
 }
 
-DEFINE_ART_MODULE(CVNZlibMakerICARUS)
 } // namespace cvn
+
+DEFINE_ART_MODULE(cvn::CVNZlibMakerICARUS)
