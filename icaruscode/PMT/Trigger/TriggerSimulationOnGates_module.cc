@@ -16,7 +16,7 @@
 #include "icaruscode/PMT/Trigger/Algorithms/TriggerTypes.h" // ADCCounts_t
 #include "icaruscode/PMT/Trigger/Algorithms/details/TriggerInfo_t.h"
 #include "icaruscode/PMT/Trigger/Utilities/TriggerDataUtils.h" // FillTriggerGates()
-#include "icaruscode/PMT/Trigger/Utilities/PlotSandbox.h"
+#include "icarusalg/Utilities/PlotSandbox.h"
 #include "icarusalg/Utilities/ROOTutils.h" // util::ROOT
 #include "icarusalg/Utilities/BinningSpecs.h"
 #include "icaruscode/Utilities/DetectorClocksHelpers.h" // makeDetTimings()...
@@ -538,6 +538,9 @@ class icarus::trigger::TriggerSimulationOnGates
   };
   
   
+  using PlotSandbox_t = icarus::ns::util::PlotSandbox<art::TFileDirectory>;
+  
+  
   // --- BEGIN Configuration variables -----------------------------------------
   
   /// Name of ADC thresholds to read, and the input tag connected to their data.
@@ -594,7 +597,7 @@ class icarus::trigger::TriggerSimulationOnGates
   std::optional<icarus::trigger::SlidingWindowPatternAlg> fPatternAlg;
   
   /// All plots in one practical sandbox.
-  icarus::trigger::PlotSandbox fPlots;
+  PlotSandbox_t fPlots;
   
   /// Proto-histogram information in a convenient packet; event-wide.
   ThresholdPlotInfo_t fEventPlotInfo;
@@ -622,7 +625,7 @@ class icarus::trigger::TriggerSimulationOnGates
   /// in `plotInfo`.
   void makeThresholdPlots(
     std::string const& threshold,
-    icarus::trigger::PlotSandbox& plots,
+    PlotSandbox_t& plots,
     ThresholdPlotInfo_t const& plotInfo
     );
   
@@ -716,7 +719,7 @@ class icarus::trigger::TriggerSimulationOnGates
   
   /// Creates and returns a 1D histogram filled with `binnedContent`.
   TH1* makeHistogramFromBinnedContent(
-    icarus::trigger::PlotSandbox& plots,
+    PlotSandbox_t& plots,
     std::string const& name, std::string const& title,
     BinnedContent_t const& binnedContent
     ) const;
@@ -1126,7 +1129,7 @@ void icarus::trigger::TriggerSimulationOnGates::initializePlots() {
   for (auto const& [ thr, info ]
     : util::zip(util::get_elements<0U>(fADCthresholds), fThresholdPlots))
   {
-    icarus::trigger::PlotSandbox& plots
+    PlotSandbox_t& plots
       = fPlots.addSubSandbox("Thr" + thr, "Threshold: " + thr);
     
     plots.make<TGraph>(
@@ -1161,7 +1164,7 @@ void icarus::trigger::TriggerSimulationOnGates::finalizePlots() {
   for (auto const& [ thr, info ]
     : util::zip(util::get_elements<0U>(fADCthresholds), fThresholdPlots))
   {
-    icarus::trigger::PlotSandbox& plots = fPlots.demandSandbox("Thr" + thr);
+    PlotSandbox_t& plots = fPlots.demandSandbox("Thr" + thr);
     makeThresholdPlots(thr, plots, info);
     if (plots.empty()) fPlots.deleteSubSandbox(plots.name());
   } // for thresholds
@@ -1176,7 +1179,7 @@ void icarus::trigger::TriggerSimulationOnGates::finalizePlots() {
 //------------------------------------------------------------------------------
 void icarus::trigger::TriggerSimulationOnGates::makeThresholdPlots(
   std::string const& threshold,
-  icarus::trigger::PlotSandbox& plots,
+  PlotSandbox_t& plots,
   ThresholdPlotInfo_t const& plotInfo
 ) {
   
@@ -1431,7 +1434,7 @@ void icarus::trigger::TriggerSimulationOnGates::plotTriggerResponse(
     fPlots.demand<TH2>("TriggerTimeVsBeamGate").Fill
       (thisTriggerTimeVsBeamGate.value(), iThr);
     
-    icarus::trigger::PlotSandbox& plots{ fPlots.demandSandbox("Thr" + thrTag) };
+    PlotSandbox_t& plots{ fPlots.demandSandbox("Thr" + thrTag) };
 //     plots.demand<TGraph>("TriggerTimeVsHWTrigVsBeam").AddPoint( // ROOT 6.24?
     TGraph& graph = plots.demand<TGraph>("TriggerTimeVsHWTrigVsBeam");
     graph.SetPoint(graph.GetN(),
@@ -1622,7 +1625,7 @@ icarus::trigger::TriggerSimulationOnGates::cryoIDtoTriggerLocation
 //------------------------------------------------------------------------------
 TH1*
 icarus::trigger::TriggerSimulationOnGates::makeHistogramFromBinnedContent(
-  icarus::trigger::PlotSandbox& plots,
+  PlotSandbox_t& plots,
   std::string const& name, std::string const& title,
   BinnedContent_t const& binnedContent
 ) const {
