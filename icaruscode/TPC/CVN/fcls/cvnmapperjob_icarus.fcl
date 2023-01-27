@@ -1,7 +1,8 @@
-#include "services_common_icarus.fcl"
 #include "channelmapping_icarus.fcl"
-
 #include "correctionservices_icarus.fcl"
+#include "geometry_icarus.fcl"
+#include "services_common_icarus.fcl"
+
 #include "seedservice.fcl"
 #include "particleinventoryservice.fcl"
 #include "backtrackerservice.fcl"
@@ -24,7 +25,7 @@ services:
   MemoryTracker:             {} # default is one
 
   FileCatalogMetadata:       @local::art_file_catalog_mc
-                             @table::icarus_detsim_services
+                             @table::icarus_geometry_services
 }
 
 source:
@@ -37,14 +38,14 @@ source:
 physics:
 {
  producers:{
-    cvnmap: @local::standard_cvnmapper
+    cvnmapicarus: @local::standard_cvnmapper
  }
  
  filters:  {} 
  
  analyzers:{}
  
- reco: [ cvnmap ]
+ reco: [ cvnmapicarus ]
  
  stream: [ out ]
  

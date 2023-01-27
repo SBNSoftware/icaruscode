@@ -1,7 +1,8 @@
-#include "services_common_icarus.fcl"
 #include "channelmapping_icarus.fcl"
-
 #include "correctionservices_icarus.fcl"
+#include "geometry_icarus.fcl"
+#include "services_common_icarus.fcl"
+
 #include "seedservice.fcl"
 #include "particleinventoryservice.fcl"
 #include "backtrackerservice.fcl"
@@ -26,9 +27,9 @@ services:
   MemoryTracker:             {} # default is one
 
   FileCatalogMetadata:       @local::art_file_catalog_mc
-                             @table::icarus_detsim_services
   ParticleInventoryService:  @local::standard_particleinventoryservice
   BackTrackerService:        @local::standard_backtrackerservice
+                             @table::icarus_geometry_services
 }
 
 source:
@@ -45,10 +46,10 @@ physics:
  filters:  {} 
  
  analyzers:{
-    zlib:@local::standard_cvnzlibmaker
+    zlibicarus: @local::standard_cvnzlibmaker
  }
  
- ana:       [ zlib ]
+ ana:       [ zlibicarus ]
  end_paths: [ ana ] 
 }
 
