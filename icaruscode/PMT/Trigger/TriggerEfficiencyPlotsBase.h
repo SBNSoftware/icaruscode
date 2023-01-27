@@ -20,11 +20,11 @@
 #include "icaruscode/PMT/Trigger/Algorithms/details/TreeHolder.h"
 #include "icaruscode/PMT/Trigger/Algorithms/details/EventInfoUtils.h"
 #include "icaruscode/PMT/Trigger/Algorithms/details/EventInfo_t.h"
-#include "icaruscode/PMT/Trigger/Utilities/PlotSandbox.h"
 #include "icaruscode/PMT/Trigger/Utilities/TrackedOpticalTriggerGate.h"
 #include "icaruscode/Utilities/DetectorClocksHelpers.h" // makeDetClockData()
 #include "icaruscode/IcarusObj/OpDetWaveformMeta.h"
 #include "icarusalg/Utilities/ChangeMonitor.h" // ThreadSafeChangeMonitor
+#include "icarusalg/Utilities/PlotSandbox.h"
 #include "icarusalg/Utilities/PassCounter.h"
 
 // LArSoft libraries
@@ -1146,7 +1146,8 @@ class icarus::trigger::TriggerEfficiencyPlotsBase {
   // --- END Helper interface --------------------------------------------------
   
   
-  using PlotSandbox = icarus::trigger::PlotSandbox; ///< Import type.
+  /// Import type.
+  using PlotSandbox = icarus::ns::util::PlotSandbox<art::TFileDirectory>;
   
   /// List of references to plot sandboxes.
   using PlotSandboxRefs_t

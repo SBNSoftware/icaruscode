@@ -12,7 +12,7 @@
 #include "icaruscode/PMT/Trigger/Algorithms/TriggerTypes.h" // ADCCounts_t
 #include "icaruscode/PMT/Trigger/Utilities/TriggerGateOperations.h" // sumGates()
 #include "icaruscode/PMT/Trigger/Utilities/TriggerDataUtils.h" // FillTriggerGates()
-#include "icaruscode/PMT/Trigger/Utilities/PlotSandbox.h"
+#include "icarusalg/Utilities/PlotSandbox.h"
 #include "icarusalg/Utilities/ROOTutils.h" // util::ROOT
 #include "sbnobj/ICARUS/PMT/Trigger/Data/OpticalTriggerGate.h"
 
@@ -1333,7 +1333,7 @@ class icarus::trigger::TriggerEfficiencyPlots: public art::EDAnalyzer {
   using TriggerGateData_t
     = icarus::trigger::OpticalTriggerGateData_t::GateData_t;
   
-  using PlotSandbox = icarus::trigger::PlotSandbox; ///< Import type.
+  using PlotSandbox = icarus::ns::util::PlotSandbox<art::TFileDirectory>;
   
   /// List of references to plot sandboxes.
   using PlotSandboxRefs_t
@@ -1714,7 +1714,7 @@ void icarus::trigger::TriggerEfficiencyPlots::initializePlots
   {
     // create a plot sandbox inside `fOutputDir` with a name/prefix `Thr###`
     auto const thr = threshold.value();
-    icarus::trigger::PlotSandbox thrPlots { fOutputDir,
+    PlotSandbox thrPlots { fOutputDir,
       "Thr"s + util::to_string(thr), "(thr: "s + util::to_string(thr) + ")"s };
     
     // create a subbox for each plot category
@@ -2334,7 +2334,7 @@ void icarus::trigger::TriggerEfficiencyPlots::plotResponses(
     std::string const minCountStr { "Req" + std::to_string(minCount) };
     
     // go through all the plot categories this event qualifies for
-    for (icarus::trigger::PlotSandbox const& plotSet: plotSets) {
+    for (PlotSandbox const& plotSet: plotSets) {
       
       HistGetter const get { plotSet };
       
