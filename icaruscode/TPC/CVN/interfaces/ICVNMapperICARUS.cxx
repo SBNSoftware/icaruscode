@@ -8,7 +8,7 @@
 #include <algorithm> // std::min_element
 #include <iterator>  // std::begin, std::end
 
-namespace cvn
+namespace lcvn
 {
   ////////////////////////////////////////////////////////////////////////////////
 	
@@ -68,22 +68,21 @@ namespace cvn
 	  } 		      
 	      
           if(findManyHits.isValid()){
-	     std::vector<art::Ptr<U>> slicehits = findManyHits.at(slice.key());
-	     this->fProducer.Set_fT0_value(min_T0);
-	     //std::cout << "============== T0 provided to make the pixel map : " << min_T0 << "  ================\n";
-	     PixelMap pm = this->fProducer.CreateMap(detProp, slicehits);
-             auto nhits = this->fProducer.NROI();
-             pm.SetTotHits(nhits);
-	     pm.fSliceID = slice->ID();
-	     //pm.fT0 = min_T0;
-             
-	     if(nhits > this->fMinClusterHits && pmCol->size()<fMapVecSize){
-		std::cout << "********* " << evt.run() << "  " << evt.subRun() << "  " << evt.id().event() << "  " << slice->ID() << "  **************\n";
-	        pmCol->push_back(pm);
-	     }
-	  
+            std::vector<art::Ptr<U>> slicehits = findManyHits.at(slice.key());
+            this->fProducer.Set_fT0_value(min_T0);
+            //std::cout << "============== T0 provided to make the pixel map : " << min_T0 << "  ================\n";
+            PixelMap pm = this->fProducer.CreateMap(detProp, slicehits);
+            auto nhits = this->fProducer.NROI();
+            pm.SetTotHits(nhits);
+            pm.fSliceID = slice->ID();
+            //pm.fT0 = min_T0;
+
+            if(nhits > this->fMinClusterHits && pmCol->size()<fMapVecSize){
+              std::cout << "********* " << evt.run() << "  " << evt.subRun() << "  " << evt.id().event() << "  " << slice->ID() << "  **************\n";
+              pmCol->push_back(pm);
+            }
           }
-      }
+        }
       
       evt.put(std::move(pmCol), this->fClusterPMLabel);
       
@@ -112,5 +111,4 @@ namespace cvn
     if(fverbose) std::cout << "============ Calling the function ICVNMapperICARUS::endJob() ==============\n";
   }
   
-  ////////////////////////////////////////////////////////////////////////////////
-}
+} // namespace lcvn

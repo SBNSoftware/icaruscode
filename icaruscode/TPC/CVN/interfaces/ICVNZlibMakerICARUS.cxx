@@ -3,7 +3,7 @@
 
 #include "canvas/Persistency/Common/FindManyP.h"
 
-namespace cvn
+namespace lcvn
 {
 ////////////////////////////////////////////////////////////////////////	
 	
@@ -18,6 +18,7 @@ ICVNZlibMakerICARUS::ICVNZlibMakerICARUS(fhicl::ParameterSet const& pset)
   
 ICVNZlibMakerICARUS::~ICVNZlibMakerICARUS()
 {
+
 }
 
 ///////////////////////////////////////////////////////////////////////
@@ -41,5 +42,5 @@ void ICVNZlibMakerICARUS::beginJob()
 
 /////////////////////////////////////////////////////////////////////
 
-}
+} // namespace lcvn
 

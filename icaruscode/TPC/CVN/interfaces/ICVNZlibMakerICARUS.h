@@ -13,21 +13,21 @@
 
 #include "larrecodnn/CVN/interfaces/ICVNZlibMaker.h"
 
-namespace cvn
+namespace lcvn
 {
   class ICVNZlibMakerICARUS : public ICVNZlibMaker
   {
     public:
-	explicit ICVNZlibMakerICARUS(fhicl::ParameterSet const& pset);
-        ~ICVNZlibMakerICARUS();
-	void beginJob();
-        void analyze(const art::Event& evt){}
-        void reconfigure(const fhicl::ParameterSet& pset);
+      explicit ICVNZlibMakerICARUS(fhicl::ParameterSet const& pset);
+      ~ICVNZlibMakerICARUS();
+      void beginJob();
+      void analyze(const art::Event& evt){}
+      void reconfigure(const fhicl::ParameterSet& pset);
     protected:
-	bool fverbose;
-        bool fUseSlice;
-	std::string fSliceLabel; 
+      bool fverbose;
+      bool fUseSlice;
+      std::string fSliceLabel; 
   };
-}
+} // namespace lcvn
 
 #endif

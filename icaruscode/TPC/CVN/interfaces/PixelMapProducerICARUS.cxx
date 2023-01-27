@@ -1,6 +1,6 @@
 #include "icaruscode/TPC/CVN/interfaces/PixelMapProducerICARUS.h"
 
-namespace cvn
+namespace lcvn
 {
  template <class T, class U> void PixelMapProducerICARUS<T, U>::ConvertLocaltoGlobal(geo::WireID wireid, 
                                       unsigned int &globalWire, unsigned int &globalPlane) const
@@ -268,5 +268,5 @@ namespace cvn
   template class PixelMapProducerICARUS<recob::Wire, WireHelper>;
   template class PixelMapProducerICARUS<sim::SimChannel, SimChannelHelper>;
 
-}
+} // namespace lcvn
 
