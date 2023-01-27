@@ -142,9 +142,12 @@ void BasicTrackAnalysis::initializeHists(art::ServiceHandle<art::TFileService>& 
     // Make a directory for these histograms
     art::TFileDirectory dir = tfs->mkdir(dirName.c_str());
 
-    fHitsByWire[0]    = dir.make<TH1D>("HitsByWire0", ";Wire #", fGeometry->Nwires(0), 0., fGeometry->Nwires(0));
-    fHitsByWire[1]    = dir.make<TH1D>("HitsByWire1", ";Wire #", fGeometry->Nwires(1), 0., fGeometry->Nwires(1));
-    fHitsByWire[2]    = dir.make<TH1D>("HitsByWire2", ";Wire #", fGeometry->Nwires(2), 0., fGeometry->Nwires(2));
+    auto const n_wires_0 = fGeometry->Nwires(geo::PlaneID{0, 0, 0});
+    auto const n_wires_1 = fGeometry->Nwires(geo::PlaneID{0, 0, 1});
+    auto const n_wires_2 = fGeometry->Nwires(geo::PlaneID{0, 0, 2});
+    fHitsByWire[0]    = dir.make<TH1D>("HitsByWire0", ";Wire #", n_wires_0, 0., n_wires_0);
+    fHitsByWire[1]    = dir.make<TH1D>("HitsByWire1", ";Wire #", n_wires_1, 0., n_wires_1);
+    fHitsByWire[2]    = dir.make<TH1D>("HitsByWire2", ";Wire #", n_wires_2, 0., n_wires_2);
     
     fPulseHVsWidth[0] = dir.make<TH2D>("PHVsWidth0",    ";PH;Width", 100,  0.,  100., 100,  0., 20.);
     fPulseHVsWidth[1] = dir.make<TH2D>("PHVsWidth1",    ";PH;Width", 100,  0.,  100., 100,  0., 20.);

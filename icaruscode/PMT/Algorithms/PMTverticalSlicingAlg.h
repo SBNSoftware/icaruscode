@@ -161,9 +161,9 @@ geo::Vector_t icarus::trigger::PMTverticalSlicingAlg::determineDriftDir
       << "determineDriftDir(): no TPC in the specified object!";
   }
 
-  auto const dir = iTPC->template DriftDir<geo::Vector_t>();
+  auto const dir = iTPC->DriftDir();
   while(++iTPC != tend) {
-    if (areParallel(iTPC->template DriftDir<geo::Vector_t>(), dir))
+    if (areParallel(iTPC->DriftDir(), dir))
       continue;
     throw cet::exception("PMTverticalSlicingAlg")
       << "determineDriftDir(): TPC " << iTPC->ID()
@@ -189,9 +189,9 @@ geo::Vector_t icarus::trigger::PMTverticalSlicingAlg::determineLengthDir
       << "determineLengthDir(): no TPC in the specified object!";
   }
 
-  auto const dir = iTPC->template LengthDir<geo::Vector_t>();
+  auto const dir = iTPC->LengthDir();
   while(++iTPC != tend) {
-    if (areParallel(iTPC->template LengthDir<geo::Vector_t>(), dir))
+    if (areParallel(iTPC->LengthDir(), dir))
       continue;
     throw cet::exception("PMTverticalSlicingAlg")
       << "determineLengthDir(): TPC " << iTPC->ID()
