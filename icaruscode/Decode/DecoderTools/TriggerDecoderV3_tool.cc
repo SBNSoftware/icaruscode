@@ -280,9 +280,6 @@ namespace daq
       static constexpr int Calib { 5 };
     }; 
     
-    static constexpr nanoseconds BNBgateDuration { 1600. };
-    static constexpr nanoseconds NuMIgateDuration { 9500. };
-    
     static std::string_view firstLine
       (std::string const& s, std::string const& endl = "\0\n\r"s);
     
