@@ -1,3 +1,18 @@
+#include <ostream>
+
+#include "TH2D.h"
+#include "TVector2.h"
+#include "lardataobj/RecoBase/Hit.h"
+#include "lardataobj/RecoBase/SpacePoint.h"
+#include "larrecodnn/CVN/func/AssignLabels.h"
+#include "larrecodnn/CVN/interfaces/PixelMapProducer.h"
+
+#include "larcore/Geometry/Geometry.h"
+#include "larcorealg/Geometry/GeometryCore.h"
+#include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
+#include "larsim/MCCheater/BackTrackerService.h"
+#include "larsim/MCCheater/ParticleInventoryService.h"
+
 #include "icaruscode/TPC/CVN/interfaces/PixelMapProducerICARUS.h"
 
 namespace lcvn
