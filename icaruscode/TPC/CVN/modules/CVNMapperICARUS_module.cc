@@ -8,11 +8,11 @@
 #include "lardataobj/RecoBase/Wire.h"
 #include "lardataobj/Simulation/SimChannel.h"
 
-namespace cvn {
+namespace lcvn {
 
   typedef ICVNMapperICARUS<PixelMapHitProducerICARUS, recob::Hit> CVNMapperICARUS;
   template class ICVNMapperICARUS<PixelMapHitProducerICARUS, recob::Hit>;
 
 }
 
-DEFINE_ART_MODULE(cvn::CVNMapperICARUS)
+DEFINE_ART_MODULE(lcvn::CVNMapperICARUS)

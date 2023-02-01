@@ -64,7 +64,7 @@
 #include "larcoreobj/SummaryData/POTSummary.h"
 
 
-namespace cvn {
+namespace lcvn {
 
   class CVNZlibMakerICARUS : public ICVNZlibMakerICARUS {
   public:
@@ -283,9 +283,9 @@ namespace cvn {
 	  
        ///////////////////////////////////////////////////////////////////////////////////////////  
 	  
-       std::vector<art::Ptr<cvn::PixelMap>> pixelmaps;
+       std::vector<art::Ptr<lcvn::PixelMap>> pixelmaps;
        art::InputTag itag1(fPixelMapInput, "cvnmap");
-       auto h_pixelmaps = evt.getHandle<std::vector<cvn::PixelMap>>(itag1);
+       auto h_pixelmaps = evt.getHandle<std::vector<lcvn::PixelMap>>(itag1);
        if (h_pixelmaps)
            art::fill_ptr_vector(pixelmaps, h_pixelmaps); 	  
 	  
@@ -771,7 +771,7 @@ namespace cvn {
     
     free(ostream);  // free allocated memory
 
-  } // cvn::CVNZlibMaker::write_files
+  } // lcvn::CVNZlibMaker::write_files
   
 //.................................................................................................
   
@@ -1077,6 +1077,6 @@ void CVNZlibMakerICARUS::Clear(){
      fT0 = 0.;
 }
 
-} // namespace cvn
+} // namespace lcvn
 
-DEFINE_ART_MODULE(cvn::CVNZlibMakerICARUS)
+DEFINE_ART_MODULE(lcvn::CVNZlibMakerICARUS)
