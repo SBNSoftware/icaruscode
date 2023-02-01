@@ -1,4 +1,4 @@
-set ( MODULE_LIBRARIES
+set(MODULE_LIBRARIES
    larcorealg::Geometry
    larcore::Geometry_Geometry_service
    larsim::Simulation lardataobj_Simulation
@@ -10,6 +10,9 @@ set ( MODULE_LIBRARIES
    lardataobj::RecoBase
    larreco::Calorimetry
    larreco::RecoAlg
+   larrecodnn::CVN_func
+   larrecodnn::CVN_interfaces
+   larrecodnn::CVN_interfaces
    lardata::RecoObjects  
    larpandora::LArPandoraInterface
    icaruscode::CRT
@@ -26,7 +29,7 @@ set ( MODULE_LIBRARIES
    art::Persistency_Provenance canvas
    art::Utilities canvas
    messagefacility::MF_MessageLogger
-   
+
    fhiclcpp::fhiclcpp
    ROOT::Geom
    ROOT::XMLIO
