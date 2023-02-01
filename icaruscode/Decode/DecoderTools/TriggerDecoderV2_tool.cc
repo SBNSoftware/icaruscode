@@ -705,8 +705,15 @@ namespace daq
     // beam gate
     //
     
-    // beam gate width (read in microseconds, but we use it in nanoseconds)
-    nanoseconds const gateWidth = microseconds{ fTriggerConfiguration
+    // beam gate width (read in microseconds, but we use it in nanoseconds);
+    // we need to protect from some defective configurations where the (unused)
+    // beam gate duration is smaller than the veto time
+    icarus::TriggerConfiguration::GateConfig const* gateConfig
+      = fTriggerConfiguration
+      ? &(fTriggerConfiguration->gateConfig.at(value(beamGateBit))): nullptr
+      ;
+    nanoseconds const gateWidth = microseconds{
+      (gateConfig && (gateConfig->gateWidth > fTriggerConfiguration->vetoDelay))
       ? fTriggerConfiguration->getGateWidth(value(beamGateBit))
       : 0.0
       };
