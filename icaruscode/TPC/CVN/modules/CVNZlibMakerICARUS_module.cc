@@ -44,8 +44,7 @@
 #include "lardataobj/Simulation/SimChannel.h"
 #include "larpandora/LArPandoraInterface/LArPandoraHelper.h"
 #include "lardataobj/RecoBase/PFParticleMetadata.h"
-#include "sbndcode/RecoUtils/RecoUtils.h"
-// #include "dunereco/FDSensOpt/FDSensOptData/EnergyRecoOutput.h"
+#include "icaruscode/RecoUtils/RecoUtils.h"
 
 // CVN includes
 #include "larrecodnn/CVN/func/AssignLabels.h"
