@@ -44,27 +44,21 @@ physics:
 
         pmtconfig: @local::extractPMTconfig 
 
-	    daqTrigger: @local::decodeTriggerV2
+	    daqTrigger: @local::decodeTriggerV3
 
         daqPMT: @local::decodePMT
 
         ophit: @local::icarus_ophit_data
-
-        opflashCryoE: @local::ICARUSSimpleFlashDataCryoE
-
-        opflashCryoW: @local::ICARUSSimpleFlashDataCryoW
 
     }
 
     analyzers: 
     {
 	
-        simpleLightAna: @local::ICARUSFlashAssAna
-
     	bkgcalibration: @local::pmt_bkgphotons_calibration 
     }
 
-    my_producer_modules: [ triggerconfig, pmtconfig, daqTrigger, daqPMT, ophit, opflashCryoE, opflashCryoW ]
+    my_producer_modules: [ triggerconfig, pmtconfig, daqTrigger, daqPMT, ophit ]
 
     ana: [ bkgcalibration ]
 
@@ -73,6 +67,7 @@ physics:
 
 physics.producers.daqPMT.RequireBoardConfig: false
 physics.producers.daqPMT.RequireKnownBoards: false
+
 
 physics.producers.daqTrigger.DecoderTool.TrigConfigLabel: triggerconfig
 physics.producers.daqPMT.PMTconfigTag: pmtconfig  # required
