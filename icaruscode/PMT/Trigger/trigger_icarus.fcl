@@ -4,7 +4,7 @@
 # Author:  Gianluca Petrillo (petrillo@slac.stanford.edu)
 # Date:    April 2, 2019
 #
-# Settings and paramteters are provided for algorithms related to triggering.
+# Settings and parameters are provided for algorithms related to triggering.
 # 
 # Current offer includes:
 # 
@@ -29,6 +29,8 @@ BEGIN_PROLOG
 ################################################################################
 
 BNB_settings: {
+
+  # also note the configuration `icarus_genie_BNB_base` in `genie_icarus_bnb.fcl`
 
   spill_duration: "1.6 us"
 
@@ -254,6 +256,11 @@ icarus_region_finder: {
 ################################################################################
 ###  Trigger evaluation gates
 # 
+# Preset configurations are available in `beamgates_icarus.fcl` to help the
+# workflow include the starting beam gate data product (there, its standard tag
+# is also defined, but we can't refer to it directly here because that
+# configuration file includes this one).
+#
 # this configuration takes the configured beam gate duration
 # and creates extended gates to be used for trigger evaluation;
 # [20221104] the amount of extension needs to be verified with Run2 data
@@ -262,7 +269,7 @@ icarus_triggersimgates_Run1: {
 
   module_type: FixBeamGateInfo
 
-  BeamGateTag: generator
+  BeamGateTag: beamgate
 
   Changes: [  # gates of type not included are left unchanged
     { # for BNB gates
@@ -279,7 +286,33 @@ icarus_triggersimgates_Run1: {
 
 } # icarus_triggersimgates_Run1
 
+
 icarus_triggersimgates: @local::icarus_triggersimgates_Run1
+
+
+###
+### enable gate for the trigger primitives
+###
+
+#
+# this gate is read from the simulation settings
+#
+icarus_enablegate_sim: {
+
+  module_type: WriteBeamGateInfo
+  
+  BeamGates: [
+    {
+      Duration: @local::icarus_pmtsimulationalg_standard.ReadoutEnablePeriod  # from pmtsimulation_icarus.fcl
+      Start:    @local::icarus_pmtsimulationalg_standard.TriggerOffsetPMT  # from pmtsimulation_icarus.fcl
+    }
+  ]
+  
+} # icarus_enablegate_sim
+
+
+icarus_enablegate: @local::icarus_enablegate_sim
+
 
 ################################################################################
 ###  Legacy configurations
@@ -370,6 +403,7 @@ icarus_triggergate_basic.patterns.S10: {
 
 
 icarus_triggergate_basic.SelectedPattern: @local::icarus_triggergate_basic.patterns.S5
+icarus_triggergate_basic.SelectedPrimitivePattern: @local::icarus_triggergate_basic.patterns.S10
 
 
 

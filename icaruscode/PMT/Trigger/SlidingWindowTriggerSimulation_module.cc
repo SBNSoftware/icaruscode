@@ -3,6 +3,8 @@
  * @brief  Production of triggers data products based on PMT sliding windows.
  * @author Gianluca Petrillo (petrillo@slac.stanford.edu)
  * @date   March 27, 2021
+ * 
+ * @note This module is not being developed any more.
  */
 
 
@@ -248,6 +250,21 @@ namespace icarus::trigger { class SlidingWindowTriggerSimulation; }
  * configuration are defined in `icarus::trigger::WindowPattern` and
  * `icarus::trigger::ns::fhicl::WindowPatternConfig` respectively. Trigger
  * simulation is delegated to `icarus::trigger::SlidingWindowPatternAlg`.
+ * 
+ * 
+ * Discontinuation note
+ * =====================
+ * 
+ * @note This module is not being developed any more.
+ *       New features are currently being added to
+ *       `icarus::trigger::TriggerSimulationOnGates` module only.
+ *       The main things that are lost with the _deprecation_ of this module are
+ *       some plots and more in general the design oriented to a single beam
+ *       gate. This allowed for assumptions that in turn could result into a
+ *       rational choice of plots and (a bit more) rational treatment of
+ *       non-triggering events.
+ *       Nevertheless, adding features to both modules is becoming vexing, so
+ *       the author has opted to stick to the most versatile among the two.
  * 
  */
 class icarus::trigger::SlidingWindowTriggerSimulation

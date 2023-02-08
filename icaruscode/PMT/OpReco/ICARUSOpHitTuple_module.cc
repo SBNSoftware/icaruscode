@@ -139,15 +139,13 @@ void ICARUSOpHitTuple::beginJob()
   std::vector<double> minX, minY, minZ;
   std::vector<double> maxX, maxY, maxZ;
   auto const geop = lar::providerFrom<geo::Geometry>();
-  double PMTxyz[3];
   for(size_t opch=0; opch<geop->NOpChannels(); ++opch) {
-    geop->OpDetGeoFromOpChannel(opch).GetCenter(PMTxyz);
-    pmtX.push_back(PMTxyz[0]);
-    pmtY.push_back(PMTxyz[1]);
-    pmtZ.push_back(PMTxyz[2]);
+    auto const PMTxyz = geop->OpDetGeoFromOpChannel(opch).GetCenter();
+    pmtX.push_back(PMTxyz.X());
+    pmtY.push_back(PMTxyz.Y());
+    pmtZ.push_back(PMTxyz.Z());
   }
-  for(auto iter=geop->begin_TPC(); iter!=geop->end_TPC(); ++iter) {
-    auto const& tpc = (*iter);
+  for(auto const& tpc : geop->Iterate<geo::TPCGeo>()) {
     minX.push_back(tpc.BoundingBox().MinX());
     minY.push_back(tpc.BoundingBox().MinY());
     minZ.push_back(tpc.BoundingBox().MinZ());
@@ -233,12 +231,15 @@ void ICARUSOpHitTuple::analyze(art::Event const& e)
   if(_event_time != std::numeric_limits<double>::max()) {
     auto const geop = lar::providerFrom<geo::Geometry>();
     // measure smallest dr to any pmt
-    double PMTxyz[3];
     for(size_t opch=0; opch<geop->NOpChannels(); ++opch) {
-      geop->OpDetGeoFromOpChannel(opch).GetCenter(PMTxyz);
-      double dx = PMTxyz[0] - _event_x;
-      double dy = PMTxyz[1] - _event_y;
-      double dz = PMTxyz[2] - _event_z;
+      auto const PMTxyz = geop->OpDetGeoFromOpChannel(opch).GetCenter();
+      // FIXME (KJK): The following code is dubious.  For the first
+      //              iteration, _event_x (etc.) are DBL_MAX, which
+      //              means that any arithmetic operations performed
+      //              on them will likely be garbage.
+      double dx = PMTxyz.X() - _event_x;
+      double dy = PMTxyz.Y() - _event_y;
+      double dz = PMTxyz.Z() - _event_z;
       double dr = sqrt(pow(dx,2)+pow(dy,2)+pow(dz,2));
       if(_event_dr < dr) continue;
       _event_dr = dr;

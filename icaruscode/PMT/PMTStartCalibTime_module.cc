@@ -323,13 +323,11 @@ for (std::size_t channel = 0; channel < optical.size(); ++channel) {
 	turned_PMT++;
 	}
 
-	double xyz[3];
+        auto const xyz = geom->OpDetGeoFromOpChannel(channel).GetCenter();
 
-	geom->OpDetGeoFromOpChannel(channel).GetCenter(xyz);
-
-	PMTx[channel] = xyz[0];
-	PMTy[channel] = xyz[1];
-	PMTz[channel] = xyz[2];
+        PMTx[channel] = xyz.X();
+        PMTy[channel] = xyz.Y();
+        PMTz[channel] = xyz.Z();
 
 	total_coll_photons= total_coll_photons + photons_collected[channel];
         //std::cout << " channel " << channel << " total photons  " << total_coll_photons << std::endl;
