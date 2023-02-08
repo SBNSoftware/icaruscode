@@ -116,7 +116,7 @@ namespace pmtcalo
         
         // Taken from configuration, shoudl be in service
         double adc_to_mV;
-        double adc_to_pC = adc_to_mV; 
+        double adc_to_pC; 
         double m_sampling_period;
 
         Rawdigits_t m_raw_waveform;

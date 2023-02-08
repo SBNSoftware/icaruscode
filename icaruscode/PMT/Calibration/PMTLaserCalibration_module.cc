@@ -66,7 +66,7 @@ private:
 
   art::InputTag fTimingCorrectionInputLabel;
 
-  bool m_filter_noise;
+  //bool m_filter_noise;
 
   unsigned int fLaserChannel = 0U;
 
@@ -74,7 +74,7 @@ private:
 
   bool fDebugMessages;
 
-  std::size_t fExpectedReadoutSize = 5000;
+  //std::size_t fExpectedReadoutSize = 5000;
 
   icarusDB::IICARUSChannelMap const& fChannelMap;
 
@@ -94,7 +94,7 @@ private:
 
   std::vector<int>   *m_channel_id = NULL;
   std::vector<int>   *m_fragment=NULL; 
-  std::vector<double> *m_reftime = NULL;
+  //std::vector<double> *m_reftime = NULL;
   std::vector<double> *m_baseline = NULL;
   std::vector<double> *m_rms = NULL;
   std::vector<double> *m_peak_time = NULL;
