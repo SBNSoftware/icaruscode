@@ -30,13 +30,13 @@ namespace geo{
     void Uninitialize() override;
 
     uint32_t PositionToAuxDetChannel(
-        double const worldLoc[3],
+        geo::Point_t const& worldLoc,
         std::vector<geo::AuxDetGeo> const& auxDets,
         size_t& ad,
         size_t& sv) const override;
 
-    const TVector3 AuxDetChannelToPosition(
-        uint32_t const& channel,
+    geo::Point_t AuxDetChannelToPosition(
+        uint32_t channel,
         std::string const& auxDetName,
         std::vector<geo::AuxDetGeo> const& auxDets) const override;
 

@@ -162,7 +162,10 @@ void icarus::trigger::SlidingWindowPatternAlg::verifyInputTopology
       = fWindowTopology.info(iWindow);
     
     auto const channelInWindow
-      = [begin=windowInfo.channels.cbegin(),end=windowInfo.channels.cend()]
+      = [
+        begin=windowInfo.composition.channels.cbegin(),
+        end=windowInfo.composition.channels.cend()
+      ]
       (raw::Channel_t channel)
       { return std::binary_search(begin, end, channel); }
       ;
@@ -170,9 +173,8 @@ void icarus::trigger::SlidingWindowPatternAlg::verifyInputTopology
     for (raw::Channel_t const channel: gate.channels()) {
       if (channelInWindow(channel)) continue;
       if (windowError.empty()) {
-        windowError =
-          "channels not in window #" + std::to_string(windowInfo.index)
-          + ":";
+        windowError = "channels not in window #"
+          + std::to_string(windowInfo.topology.index) + ":";
       } // if first error
       windowError += " " + std::to_string(channel);
     } // for all channels in gate
@@ -218,6 +220,9 @@ auto icarus::trigger::SlidingWindowPatternAlg::applyWindowPattern(
   TriggerInfo_t res; // no trigger by default
   assert(!res);
   
+  WindowTopology_t::WindowTopology_t const& winTopology
+    = windowInfo.topology; // I should have named the types better...
+  
   // undress the gate to get its data
   auto const gateAt = [&gates](std::size_t index) -> TriggerGateData_t const&
     { return gateIn(gates[index]); };
@@ -227,9 +232,9 @@ auto icarus::trigger::SlidingWindowPatternAlg::applyWindowPattern(
   //
   
   // check that the pattern centered into iWindow has all it needs:
-  if (pattern.requireUpstreamWindow && !windowInfo.hasUpstreamWindow())
+  if (pattern.requireUpstreamWindow && !winTopology.hasUpstreamWindow())
     return res;
-  if (pattern.requireDownstreamWindow && !windowInfo.hasDownstreamWindow())
+  if (pattern.requireDownstreamWindow && !winTopology.hasDownstreamWindow())
     return res;
   
   
@@ -239,16 +244,17 @@ auto icarus::trigger::SlidingWindowPatternAlg::applyWindowPattern(
   //
   
   mfLogTrace()
-    << "Window info #" << windowInfo.index << " pattern " << pattern.tag();
+    << "Window info #" << winTopology.index << " pattern "
+    << pattern.tag();
   
   // we have two different "modes" depending on whether we are constraining
   // the sum of main and opposite window, or not;
   std::optional<TriggerGateData_t> const mainPlusOpposite
     = (pattern.minSumInOppositeWindows > 0U)
     ? std::optional{
-      windowInfo.hasOppositeWindow()
-        ? sumGates(gateAt(windowInfo.index), gateAt(windowInfo.opposite))
-        : gateAt(windowInfo.index)
+      winTopology.hasOppositeWindow()
+        ? sumGates(gateAt(winTopology.index), gateAt(winTopology.opposite))
+        : gateAt(winTopology.index)
     }
     : std::nullopt
     ;
@@ -256,25 +262,27 @@ auto icarus::trigger::SlidingWindowPatternAlg::applyWindowPattern(
   // the basic trigger primitive gate has the levels of the main or
   // main+opposite window depending on the requirements
   TriggerGateData_t trigPrimitive
-    = mainPlusOpposite? *mainPlusOpposite: gateAt(windowInfo.index);
+    = mainPlusOpposite? *mainPlusOpposite: gateAt(winTopology.index);
     
   mfLogTrace() << "  base: " << compactdump(trigPrimitive);
   
   // main window
   if (pattern.minInMainWindow > 0U) {
     trigPrimitive.Mul
-      (discriminate(gateAt(windowInfo.index), pattern.minInMainWindow));
+      (discriminate(gateAt(winTopology.index), pattern.minInMainWindow));
     mfLogTrace()
       << "  main >= " << pattern.minInMainWindow << ": "
       << compactdump(trigPrimitive);
   } // if
   
   // add opposite window requirement (if any)
-  if ((pattern.minInOppositeWindow > 0U) && windowInfo.hasOppositeWindow()) {
-    trigPrimitive.Mul
-      (discriminate(gateAt(windowInfo.opposite), pattern.minInOppositeWindow));
-    mfLogTrace() << "  opposite [#" << windowInfo.opposite << "]: "
-      << compactdump(gateAt(windowInfo.opposite))
+  if ((pattern.minInOppositeWindow > 0U) && winTopology.hasOppositeWindow())
+  {
+    trigPrimitive.Mul(
+      discriminate(gateAt(winTopology.opposite), pattern.minInOppositeWindow)
+      );
+    mfLogTrace() << "  opposite [#" << winTopology.opposite << "]: "
+      << compactdump(gateAt(winTopology.opposite))
       << "\n  => " << compactdump(trigPrimitive);
   } // if
   
@@ -283,23 +291,27 @@ auto icarus::trigger::SlidingWindowPatternAlg::applyWindowPattern(
     assert(mainPlusOpposite.has_value());
     trigPrimitive.Mul
       (discriminate(*mainPlusOpposite, pattern.minSumInOppositeWindows));
-    mfLogTrace() << "  sum [+ #" << windowInfo.opposite << "]: "
+    mfLogTrace() << "  sum [+ #" << winTopology.opposite << "]: "
       << compactdump(*mainPlusOpposite)
       << "\n  => " << compactdump(trigPrimitive);
     
   } // if
   
   // add upstream window requirement (if any)
-  if ((pattern.minInUpstreamWindow > 0U) && windowInfo.hasUpstreamWindow()) {
-    trigPrimitive.Mul
-      (discriminate(gateAt(windowInfo.upstream), pattern.minInUpstreamWindow));
+  if ((pattern.minInUpstreamWindow > 0U) && winTopology.hasUpstreamWindow())
+  {
+    trigPrimitive.Mul(
+      discriminate(gateAt(winTopology.upstream), pattern.minInUpstreamWindow)
+      );
   } // if
   
   // add downstream window requirement (if any)
-  if ((pattern.minInDownstreamWindow > 0U) && windowInfo.hasDownstreamWindow())
-  {
+  if ((pattern.minInDownstreamWindow > 0U)
+    && winTopology.hasDownstreamWindow()
+  ) {
     trigPrimitive.Mul(
-      discriminate(gateAt(windowInfo.downstream), pattern.minInDownstreamWindow)
+      discriminate
+        (gateAt(winTopology.downstream), pattern.minInDownstreamWindow)
       );
   } // if
   
@@ -312,7 +324,7 @@ auto icarus::trigger::SlidingWindowPatternAlg::applyWindowPattern(
     { trigPrimitive };
 
   extractOpeningInfo.setLocation
-    (TriggerInfo_t::LocationID_t{ windowInfo.index });
+    (TriggerInfo_t::LocationID_t{ winTopology.index });
 
   while (extractOpeningInfo) {
     auto info = extractOpeningInfo();
@@ -333,7 +345,7 @@ auto icarus::trigger::SlidingWindowPatternAlg::applyWindowPattern(
 {
   WindowTopology_t::WindowInfo_t const& windowInfo
     = fWindowTopology.info(iWindow);
-  assert(windowInfo.index == iWindow);
+  assert(windowInfo.topology.index == iWindow);
   
   return applyWindowPattern(windowInfo, pattern, gates);
 } // icarus::trigger::SlidingWindowTriggerEfficiencyPlots::applyWindowPattern()

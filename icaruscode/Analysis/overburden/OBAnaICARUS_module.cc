@@ -39,7 +39,6 @@
 #include <boost/uuid/uuid_generators.hpp> // generators
 #include <boost/uuid/uuid_io.hpp>         // streaming operators etc.
 
-
 namespace obana {
   class OBAnaICARUS;
 }
@@ -118,12 +117,12 @@ private:
   double zmin = -894.951;
   double zmax = 894.951;
 
-  double _x_max; //!< x-max of volume box used to determine whether to save track information
-  double _x_min; //!< x-min of volume box used to determine whether to save track information
-  double _y_max; //!< y-max of volume box used to determine whether to save track information
-  double _y_min; //!< y-min of volume box used to determine whether to save track information
-  double _z_max; //!< z-max of volume box used to determine whether to save track information
-  double _z_min; //!< z-min of volume box used to determine whether to save track information
+  double _x_max{std::numeric_limits<double>::min()}; //!< x-max of volume box used to determine whether to save track information
+  double _x_min{std::numeric_limits<double>::max()}; //!< x-min of volume box used to determine whether to save track information
+  double _y_max{std::numeric_limits<double>::min()}; //!< y-max of volume box used to determine whether to save track information
+  double _y_min{std::numeric_limits<double>::max()}; //!< y-min of volume box used to determine whether to save track information
+  double _z_max{std::numeric_limits<double>::min()}; //!< z-max of volume box used to determine whether to save track information
+  double _z_min{std::numeric_limits<double>::max()}; //!< z-max of volume box used to determine whether to save track information
 
   boost::uuids::uuid _uuid; ///< A unique ID to identify different events in files with same event number
   std::string _uuid_str; ///< Same as uuid, but converted to string
@@ -630,12 +629,14 @@ obana::OBAnaICARUS::OBAnaICARUS(fhicl::ParameterSet const& p)
 
   // Iterate over all TPC's to get bounding box that covers volumes of each individual TPC in the detector
   art::ServiceHandle<geo::Geometry const> geo;
-  _x_min = std::min_element(geo->begin_TPC(), geo->end_TPC(), [](auto const &lhs, auto const &rhs){ return lhs.BoundingBox().MinX() < rhs.BoundingBox().MinX();})->MinX();
-  _y_min = std::min_element(geo->begin_TPC(), geo->end_TPC(), [](auto const &lhs, auto const &rhs){ return lhs.BoundingBox().MinY() < rhs.BoundingBox().MinY();})->MinY();
-  _z_min = std::min_element(geo->begin_TPC(), geo->end_TPC(), [](auto const &lhs, auto const &rhs){ return lhs.BoundingBox().MinZ() < rhs.BoundingBox().MinZ();})->MinZ();
-  _x_max = std::max_element(geo->begin_TPC(), geo->end_TPC(), [](auto const &lhs, auto const &rhs){ return lhs.BoundingBox().MaxX() < rhs.BoundingBox().MaxX();})->MaxX();
-  _y_max = std::max_element(geo->begin_TPC(), geo->end_TPC(), [](auto const &lhs, auto const &rhs){ return lhs.BoundingBox().MaxY() < rhs.BoundingBox().MaxY();})->MaxY();
-  _z_max = std::max_element(geo->begin_TPC(), geo->end_TPC(), [](auto const &lhs, auto const &rhs){ return lhs.BoundingBox().MaxZ() < rhs.BoundingBox().MaxZ();})->MaxZ();
+  for (auto const& tpc : geo->Iterate<geo::TPCGeo>()) {
+    _x_min = std::min(_x_min, tpc.BoundingBox().MinX());
+    _y_min = std::min(_y_min, tpc.BoundingBox().MinY());
+    _z_min = std::min(_z_min, tpc.BoundingBox().MinZ());
+    _x_max = std::max(_x_max, tpc.BoundingBox().MaxX());
+    _y_max = std::max(_y_max, tpc.BoundingBox().MaxY());
+    _z_max = std::max(_z_max, tpc.BoundingBox().MaxZ());
+  }
 
   std::cout << "TPC limits: " << std::endl;
   std::cout << "\tx_max\t" << _x_max << std::endl;

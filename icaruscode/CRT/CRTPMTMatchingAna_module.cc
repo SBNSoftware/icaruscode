@@ -287,7 +287,7 @@ void icarus::crt::CRTPMTMatchingAna::analyze(art::Event const& e)
     for(auto const& crt : crtHitList)
     {
         vector<double> xyzt, xyzerr;
-        TVector3 rcrt(crt->x_pos,crt->y_pos,crt->z_pos);
+        geo::Point_t const rcrt{crt->x_pos,crt->y_pos,crt->z_pos};
         m_gate_crt_diff = m_gate_start_timestamp - crt->ts0_ns;
         xyzt.push_back(rcrt.X());
         xyzt.push_back(rcrt.Y());
@@ -334,19 +334,14 @@ void icarus::crt::CRTPMTMatchingAna::analyze(art::Event const& e)
 
 	            double tflash = flash->Time();//*1e3;//-fOpDelay;
 
-	            TVector3 rflash(0,flash->YCenter(),flash->ZCenter());
-	            TVector3 vdiff = rcrt-rflash;
-	            //std::cout << "flash time: "<<flash->Time() << " absdiff : "<< abs(tcrt-tflash)<< std::endl;
 	            if(abs(tcrt-tflash)<abs(tdiff)) 
                 {
+                        geo::Point_t const rflash{0,flash->YCenter(),flash->ZCenter()};
+                        //std::cout << "flash time: "<<flash->Time() << " absdiff : "<< abs(tcrt-tflash)<< std::endl;
 	                peflash = flash->TotalPE();
 	                tdiff = tcrt-tflash;
-	                rdiff = vdiff.Mag();
-	                xyzt.clear();
-	                xyzt.push_back(rflash.X());
-	                xyzt.push_back(rflash.Y());
-	                xyzt.push_back(rflash.Z());
-	                xyzt.push_back(tflash);
+                        rdiff = (rcrt-rflash).R();
+                        xyzt = {rflash.X(), rflash.Y(), rflash.Z(), tflash};
 	                matched = true;
 	                matchtpc = flashList.first;
 
@@ -359,16 +354,9 @@ void icarus::crt::CRTPMTMatchingAna::analyze(art::Event const& e)
 	                        flashHitT = tPmt;
 	                        flashHitPE = hit->PE();
 	                        //FlashHit position/time
-	                        double pos[3];
-	                        fGeometryService->OpDetGeoFromOpChannel(hit->OpChannel()).GetCenter(pos);
-	                        flashHitxyzt.clear();
-	                        for(int i=0; i<3; i++) flashHitxyzt.push_back(pos[i]);
-	                        flashHitxyzt.push_back(flashHitT);
-
-	                        //FlashHit distance
-	                        TVector3 rflashHit(pos[0],pos[1],pos[2]);
-	                        TVector3 vdiffHit = rcrt-rflashHit;
-	                        flashHitDiff = vdiffHit.Mag();
+                                auto const pos = fGeometryService->OpDetGeoFromOpChannel(hit->OpChannel()).GetCenter();
+                                flashHitxyzt = {pos.X(), pos.Y(), pos.Z(), flashHitT};
+                                flashHitDiff = (rcrt-pos).R();
 	                    }
 	                }//loop over flash hits
 	            }//if minimum tdiff
@@ -412,18 +400,11 @@ void icarus::crt::CRTPMTMatchingAna::analyze(art::Event const& e)
 	            pemax = hit->PE();
 
 	            //hitXYZT
-	            double pos[3];
-	            fGeometryService->OpDetGeoFromOpChannel(hit->OpChannel()).GetCenter(pos);
-
-	            //distHit
-	            TVector3 rhit (pos[0],pos[1],pos[2]);
-	            TVector3 vdiff = rcrt-rhit;
-	            rdiff = vdiff.Mag();
+                    auto const pos = fGeometryService->OpDetGeoFromOpChannel(hit->OpChannel()).GetCenter();
+                    rdiff = (rcrt-pos).R();
 	            peflash = hit->PE();
 	            tdiff = tcrt-thit;
-	            xyzt.clear();
-	            for(int i=0; i<3; i++) xyzt.push_back(pos[i]);
-	            xyzt.push_back(thit);
+                    xyzt = {pos.X(), pos.Y(), pos.Z(), thit};
 
 	            matched = true;
 	            std::cout << "thit: "<<thit << " , tcrt: " << tcrt << " , tdiff " << tdiff  << std::endl;

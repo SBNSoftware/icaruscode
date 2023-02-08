@@ -234,7 +234,7 @@ namespace geo {
 
   //----------------------------------------------------------------------------
   uint32_t CRTChannelMapAlg::PositionToAuxDetChannel(
-      double const worldLoc[3],
+      geo::Point_t const& worldLoc,
       std::vector<geo::AuxDetGeo> const& auxDets,
       size_t& ad,
       size_t& sv) const {
@@ -248,12 +248,6 @@ namespace geo {
     sv = this->NearestSensitiveAuxDet(worldLoc, auxDets, ad);
 
 
-    // Get the origin of the sensitive volume in the world coordinate system
-    double svOrigin[3] = {0, 0, 0};
-    double localOrigin[3] = {0, 0, 0};
-
-    auxDets[ad].SensitiveVolume(sv).LocalToWorld(localOrigin, svOrigin);
-    //    std::cout <<"ad: " << ad << " ,x:  "<< svOrigin[0] << " ,y: " << svOrigin[1] << " ,z: "<< svOrigin[2] << std::endl;
     //    std::cout << ad << "\t"<< auxDets[ad].TotalVolume()->GetName() << std::endl;
     // for (auto& adtoname : fADGeoToName) std::cout << "ad: "<<adtoname.first << " | volname: " << adtoname.second<<std::endl;
     // Check to see which AuxDet this position corresponds to
@@ -294,13 +288,10 @@ namespace geo {
   }
 
   //----------------------------------------------------------------------------
-  const TVector3 CRTChannelMapAlg::AuxDetChannelToPosition(
-      uint32_t const& channel,
+  geo::Point_t CRTChannelMapAlg::AuxDetChannelToPosition(
+      uint32_t const channel,
       std::string const& auxDetName,
       std::vector<geo::AuxDetGeo> const& auxDets) const {
-    double x = 0;
-    double y = 0;
-    double z = 0;
 
     // Figure out which detector we are in
     size_t ad = UINT_MAX;
@@ -324,23 +315,14 @@ namespace geo {
     // Loop over the vector of channel and sensitive volumes to determine the
     // sensitive volume for this channel. Then get the origin of the sensitive
     // volume in the world coordinate system.
-    double svOrigin[3] = {0, 0, 0};
-    double localOrigin[3] = {0, 0, 0};
     for (auto csv : csvItr->second) {
       if (csv.first == channel) {
         // Get the center of the sensitive volume for this channel
-        auxDets[ad].SensitiveVolume(csv.second).LocalToWorld(localOrigin,
-                                                              svOrigin);
-
-        x = svOrigin[0];
-        y = svOrigin[1];
-        z = svOrigin[2];
-
-        break;
+        return auxDets[ad].SensitiveVolume(csv.second).GetCenter();
       }
     }
 
-    return TVector3(x, y, z);
+    return {};
   }
 
 }  // namespace crt

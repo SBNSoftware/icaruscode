@@ -7,8 +7,12 @@
 
 
 // ICARUS libraries
+#include "icaruscode/PMT/PMTpedestalGeneratorTool.h"
+#include "icaruscode/PMT/PMTnoiseGeneratorTool.h"
 #include "icaruscode/PMT/SinglePhotonPulseFunctionTool.h"
 #include "icaruscode/PMT/Algorithms/PMTsimulationAlg.h"
+#include "icaruscode/PMT/Algorithms/PedestalGeneratorAlg.h"
+#include "icaruscode/PMT/Algorithms/NoiseGeneratorAlg.h"
 #include "icaruscode/PMT/Algorithms/PhotoelectronPulseFunction.h"
 
 // LArSoft libraries
@@ -65,6 +69,8 @@ namespace icarus::opdet {
    *   `sim::SimPhotons` collection to be digitized;
    * * **SinglePhotonResponse** (configuration table): configuration of the
    *   _art_ tool delivering the single photon response function (see below);
+   * * **Pedestal** (configuration table): configuration of the _art_ tool
+   *   generating the waveform pedestal and electronics noise;
    * * **EfficiencySeed**, **DarkNoiseSeed** and **ElectronicsNoiseSeed**
    *   (integers, optional): if specified, each number is used to seed the
    *   pertaining random engine; otherwise, the seed is assigned by
@@ -162,6 +168,14 @@ namespace icarus::opdet {
           )
         };
 
+      fhicl::DelegatedParameter Pedestal {
+        fhicl::Name("Pedestal"),
+        fhicl::Comment(
+          "parameters describing the pedestal generation algorithm"
+          " (PMTnoiseGeneratorTool tool), including the electronics noise"
+          )
+        };
+
       fhicl::TableFragment<icarus::opdet::PMTsimulationAlgMaker::Config> algoConfig;
       
       fhicl::Atom<bool> writePhotons {
@@ -220,21 +234,28 @@ namespace icarus::opdet {
     using SinglePhotonResponseFunc_t
       = icarus::opdet::SinglePhotonResponseFunc_t const;
     
+    /// Type of the pedestal generator algorithm.
+    using PedestalGenerator_t
+      = icarus::opdet::PMTpedestalGeneratorTool::Generator_t;
+    
     /// Input tag for simulated scintillation photons (or photoelectrons).
     art::InputTag fInputModuleName;
     
     bool fWritePhotons { false }; ///< Whether to save contributing photons.
     
-    /// Single photoelectron response function.
-    std::unique_ptr<SinglePhotonResponseFunc_t> const fSinglePhotonResponseFunc;
-    
-    /// The actual simulation algorithm.
-    icarus::opdet::PMTsimulationAlgMaker makePMTsimulator;
-
     CLHEP::HepRandomEngine&  fEfficiencyEngine;
     CLHEP::HepRandomEngine&  fDarkNoiseEngine;
     CLHEP::HepRandomEngine&  fElectronicsNoiseEngine;
     
+    /// Single photoelectron response function.
+    std::unique_ptr<SinglePhotonResponseFunc_t> const fSinglePhotonResponseFunc;
+    
+    /// Pedestal generation algorithm (including electronics noise).
+    std::unique_ptr<PedestalGenerator_t> const fPedestalGen;
+    
+    /// The actual simulation algorithm.
+    icarus::opdet::PMTsimulationAlgMaker makePMTsimulator;
+
     
     /// True if `firstTime()` has already been called.
     std::atomic_flag fNotFirstTime;
@@ -250,14 +271,10 @@ namespace icarus::opdet {
   // ---------------------------------------------------------------------------
 SimPMTIcarus::SimPMTIcarus(Parameters const& config)
     : EDProducer{config}
+    // configuration
     , fInputModuleName(config().inputModuleLabel())
     , fWritePhotons(config().writePhotons())
-    , fSinglePhotonResponseFunc{
-        art::make_tool<icarus::opdet::SinglePhotonPulseFunctionTool>
-          (config().SinglePhotonResponse.get<fhicl::ParameterSet>())
-          ->getPulseFunction()
-      }
-    , makePMTsimulator(config().algoConfig())
+    // random engines
     , fEfficiencyEngine(art::ServiceHandle<rndm::NuRandomService>()->createEngine
         (*this, "HepJamesRandom", "Efficiencies", config().EfficiencySeed)
       )
@@ -273,6 +290,18 @@ SimPMTIcarus::SimPMTIcarus(Parameters const& config)
         "ElectronicsNoise",
         config().ElectronicsNoiseSeed
       ))
+    // algorithms
+    , fSinglePhotonResponseFunc{
+        art::make_tool<icarus::opdet::SinglePhotonPulseFunctionTool>
+          (config().SinglePhotonResponse.get<fhicl::ParameterSet>())
+          ->getPulseFunction()
+      }
+    , fPedestalGen{
+        art::make_tool<icarus::opdet::PMTpedestalGeneratorTool>
+          (config().Pedestal.get<fhicl::ParameterSet>())
+          ->makeGenerator(fElectronicsNoiseEngine)
+      }
+    , makePMTsimulator(config().algoConfig())
   {
     // Call appropriate produces<>() functions here.
     produces<std::vector<raw::OpDetWaveform>>();
@@ -311,9 +340,11 @@ SimPMTIcarus::SimPMTIcarus(Parameters const& config)
     // prepare the algorithm
     //
     auto PMTsimulator = makePMTsimulator(
+      e.time().value(), // using the event generation time as beam time stamp
       *(lar::providerFrom<detinfo::LArPropertiesService>()),
       clockData,
       *fSinglePhotonResponseFunc,
+      *fPedestalGen,
       fEfficiencyEngine,
       fDarkNoiseEngine,
       fElectronicsNoiseEngine,

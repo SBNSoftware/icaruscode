@@ -444,7 +444,7 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeTopHit(art::Ptr<CRTData> data, ULong64_t Glo
     auto const& adGeo = fGeometryService->AuxDet(adid); //module
     string region = fCrtutils.GetAuxDetRegion(adid);
     int plane = fCrtutils.AuxDetRegionNameToNum(region);
-    double hitpoint[3], hitpointerr[3], hitlocal[3];
+    double hitpointerr[3];
     TVector3 hitpos (0.,0.,0.);
     float petot = 0., pemax=0., pemaxx=0., pemaxz=0.;
     int adsid_max = -1, nabove=0;
@@ -511,9 +511,7 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeTopHit(art::Ptr<CRTData> data, ULong64_t Glo
 
     //hitpos*=1.0/petot; //hit position weighted by deposited charge
     //hitpos*=1.0/nabove;
-    hitlocal[0] = hitpos.X();
-    hitlocal[1] = 0.;
-    hitlocal[2] = hitpos.Z();
+    geo::AuxDetGeo::LocalPoint_t const hitlocal{hitpos.X(), 0., hitpos.Z()};
     
     auto const& adsGeo = adGeo.SensitiveVolume(adsid_max); //trigger strip
     uint64_t thit = data->fTs0;
@@ -529,7 +527,7 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeTopHit(art::Ptr<CRTData> data, ULong64_t Glo
     thit -= corr;
     thit1 -= corr;
 
-    adGeo.LocalToWorld(hitlocal,hitpoint); //tranform from module to world coords
+    auto const hitpoint = adGeo.toWorldCoords(hitlocal); //tranform from module to world coords
 
     hitpointerr[0] = adsGeo.HalfWidth1()*2/sqrt(12);
     hitpointerr[1] = adGeo.HalfHeight();
@@ -540,8 +538,8 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeTopHit(art::Ptr<CRTData> data, ULong64_t Glo
     //Remove T1 Reset event not correctly flagged, remove T1 reset events, remove T0 reset events
     if((sum<10000 && thit1<2'001'000 && thit1>2'000'000)||data->IsReference_TS1() || data->IsReference_TS0()) return FillCRTHit({},{},0,0,0,0,0,0,0,0,0,0,"");
 
-    CRTHit hit = FillCRTHit({mac},pesmap,petot,thit,thit1,plane,hitpoint[0],hitpointerr[0],
-                            hitpoint[1],hitpointerr[1],hitpoint[2],hitpointerr[2],region);
+    CRTHit hit = FillCRTHit({mac},pesmap,petot,thit,thit1,plane,hitpoint.X(),hitpointerr[0],
+                            hitpoint.Y(),hitpointerr[1],hitpoint.Z(),hitpointerr[2],region);
 
     return hit;
 
@@ -556,7 +554,7 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeBottomHit(art::Ptr<CRTData> data){
     auto const& adGeo = fGeometryService->AuxDet(adid); //module
     string region = fCrtutils.GetAuxDetRegion(adid);
     int plane =fCrtutils.AuxDetRegionNameToNum(region);
-    double hitpoint[3], hitpointerr[3], hitlocal[3];
+    double hitpointerr[3];
     TVector3 hitpos (0.,0.,0.);
     float petot = 0., pemax=0.;
     int adsid_max = -1, nabove=0;
@@ -593,21 +591,19 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeBottomHit(art::Ptr<CRTData> data){
         return FillCRTHit({},{},0,0,0,0,0,0,0,0,0,0,"");
 
     hitpos*=1.0/petot; //hit position weighted by deposited charge
-    hitlocal[0] = hitpos.X();
-    hitlocal[1] = 0.;
-    hitlocal[2] = 0;
+    geo::AuxDetGeo::LocalPoint_t const hitlocal{hitpos.X(), 0., 0.};
 
     auto const& adsGeo = adGeo.SensitiveVolume(adsid_max); //trigger strip
     uint64_t thit = data->fTs0 - adsGeo.HalfLength()*fPropDelay;
     
-    adGeo.LocalToWorld(hitlocal,hitpoint); //tranform from module to world coords
+    auto const hitpoint = adGeo.toWorldCoords(hitlocal); //tranform from module to world coords
 
     hitpointerr[0] = (xmax-xmin+2*adsGeo.HalfWidth1()*2)/sqrt(12);
     hitpointerr[1] = adGeo.HalfHeight();
     hitpointerr[2] = adsGeo.Length()/sqrt(12);
 
-    CRTHit hit = FillCRTHit({mac},pesmap,petot,thit,thit,plane,hitpoint[0],hitpointerr[0],
-                            hitpoint[1],hitpointerr[1],hitpoint[2],hitpointerr[2],region);
+    CRTHit hit = FillCRTHit({mac},pesmap,petot,thit,thit,plane,hitpoint.X(),hitpointerr[0],
+                            hitpoint.Y(),hitpointerr[1],hitpoint.Z(),hitpointerr[2],region);
 
     return hit;
 

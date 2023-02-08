@@ -223,8 +223,8 @@ void SimReadoutBoardICARUS::beginJob()
         if(fGeometry.Nchannels()<=fTestWire)
             throw cet::exception(__FUNCTION__)<<"Invalid test wire channel: "<<fTestWire;
         std::vector<unsigned int> channels;
-        for(auto const& plane_id : fGeometry.IteratePlaneIDs())
-            channels.push_back(fGeometry.PlaneWireToChannel(plane_id.Plane,fTestWire));
+        for(auto const& plane_id : fGeometry.Iterate<geo::PlaneID>())
+          channels.push_back(fGeometry.PlaneWireToChannel(geo::WireID(plane_id,fTestWire)));
         double xyz[3] = { std::numeric_limits<double>::max() };
         for(auto const& ch : channels)
         {

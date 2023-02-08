@@ -313,13 +313,11 @@ for (std::size_t channel = 0; channel < optical.size(); ++channel) {
 	turned_PMT++;
 	}
 
-	double xyz[3];
+        auto const xyz = geom->OpDetGeoFromOpChannel(channel).GetCenter();
 
-	geom->OpDetGeoFromOpChannel(channel).GetCenter(xyz);
-
-	PMTx[channel] = xyz[0];
-	PMTy[channel] = xyz[1];
-	PMTz[channel] = xyz[2];
+        PMTx[channel] = xyz.X();
+        PMTy[channel] = xyz.Y();
+        PMTz[channel] = xyz.Z();
 
 	reco_barycentre_y = reco_barycentre_y + PMTy[channel]*photons_collected[channel];
 	reco_barycentre_z = reco_barycentre_z + PMTz[channel]*photons_collected[channel];

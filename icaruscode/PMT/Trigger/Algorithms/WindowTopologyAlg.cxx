@@ -69,7 +69,7 @@ auto icarus::trigger::WindowTopologyAlg::createFromGates
   std::vector<WindowChannelMap::WindowInfo_t> windows;
   
   for (auto const& [ cryoGates, cryo ]
-    : util::zip(gates, fGeom->IterateCryostats()))
+         : util::zip(gates, fGeom->Iterate<geo::CryostatGeo>()))
   {
     
     append(
@@ -182,11 +182,12 @@ auto icarus::trigger::WindowTopologyAlg::createWindowsFromCryostat(
   for (auto const& channels: windowChannels) {
     
     WindowChannelMap::WindowInfo_t wInfo;
+    WindowChannelMap::WindowComposition_t& wComp = wInfo.composition;
     
-    wInfo.index = iWindow++;
-    wInfo.channels = channels;
-    std::sort(wInfo.channels.begin(), wInfo.channels.end());
-    wInfo.cryoid = channels.empty()
+    wInfo.topology.index = iWindow++;
+    wComp.channels = channels;
+    std::sort(wComp.channels.begin(), wComp.channels.end());
+    wComp.cryoid = channels.empty()
       ? geo::CryostatID{}
       : geom.OpDetGeoFromOpChannel(channels.front()).ID().asCryostatID()
       ;
@@ -196,9 +197,9 @@ auto icarus::trigger::WindowTopologyAlg::createWindowsFromCryostat(
       // documentation of OpDetGeoFromOpChannel() does not say what on error...
       geo::OpDetGeo const& opDet = geom.OpDetGeoFromOpChannel(channel);
       middlePoint.add(opDet.GetCenter());
-      if (opDet.ID() != wInfo.cryoid) wInfo.cryoid = geo::CryostatID{};
+      if (opDet.ID() != wComp.cryoid) wComp.cryoid = geo::CryostatID{};
     } // for channel
-    wInfo.center = middlePoint.middlePoint();
+    wComp.center = middlePoint.middlePoint();
     
     windows.push_back(std::move(wInfo));
     cryoWindowInfo.push_back(&windows.back());
@@ -209,7 +210,7 @@ auto icarus::trigger::WindowTopologyAlg::createWindowsFromCryostat(
   // 2. sort the windows in drift plane (first cryostat TPC as reference)
   //
   auto const normalProjection = [&refTPC](auto const* info)
-    { return refTPC.DistanceFromReferencePlane(info->center); };
+    { return refTPC.DistanceFromReferencePlane(info->composition.center); };
   WindowInfoPtrs_t const windowsByNormal
     = util::sortCollBy(cryoWindowInfo, normalProjection);
   
@@ -219,7 +220,9 @@ auto icarus::trigger::WindowTopologyAlg::createWindowsFromCryostat(
   // split the list in two; there is a good deal of faith here
   auto const beamCoordinate
     = [&refPlane=refTPC.ReferencePlane()](auto const* info)
-      { return refPlane.PointWidthDepthProjection(info->center).X(); }
+      {
+        return refPlane.PointWidthDepthProjection(info->composition.center).X();
+      }
     ;
 
   //
@@ -248,14 +251,18 @@ auto icarus::trigger::WindowTopologyAlg::createWindowsFromCryostat(
       if (WindowChannelMap::WindowInfo_t const* closestOppositeWindow
         = findClosestWindow(otherPlaneWindows, windowInfo)
       ) {
-        windowInfo->opposite = closestOppositeWindow->index;
+        windowInfo->topology.opposite = closestOppositeWindow->topology.index;
       }
 
-      if (iPlaneWindow > 0U)
-        windowInfo->upstream = planeWindows[iPlaneWindow - 1U]->index;
+      if (iPlaneWindow > 0U) {
+        windowInfo->topology.upstream
+          = planeWindows[iPlaneWindow - 1U]->topology.index;
+      }
       
-      if (iPlaneWindow < iLastPlaneWindow)
-        windowInfo->downstream = planeWindows[iPlaneWindow + 1U]->index;
+      if (iPlaneWindow < iLastPlaneWindow) {
+        windowInfo->topology.downstream
+          = planeWindows[iPlaneWindow + 1U]->topology.index;
+      }
       
     } // for window in plane
   } // for planes
@@ -297,7 +304,8 @@ auto icarus::trigger::WindowTopologyAlg::findClosestWindow(
   for (auto const* window: windowList) {
     if (!window) continue;
     
-    double const d2 = (window->center - targetWindow->center).mag2();
+    double const d2
+      = (window->composition.center - targetWindow->composition.center).mag2();
     if (minDistance2 <= d2) continue;
     minDistance2 = d2;
     closest = window;
@@ -379,9 +387,10 @@ std::string icarus::trigger::WindowTopologyVerification::verifyGate
   
   WindowChannelMap::WindowInfo_t const& windowInfo = fWindowMap->info(iWindow);
   
-  auto const channelInWindow
-    = [begin=windowInfo.channels.cbegin(),end=windowInfo.channels.cend()]
-    (raw::Channel_t channel)
+  auto const channelInWindow = [
+      begin=windowInfo.composition.channels.cbegin(),
+      end=windowInfo.composition.channels.cend()
+    ](raw::Channel_t channel)
     { return std::binary_search(begin, end, channel); }
     ;
   
@@ -389,7 +398,7 @@ std::string icarus::trigger::WindowTopologyVerification::verifyGate
     if (channelInWindow(channel)) continue;
     if (errors.empty()) {
       errors =
-        "channels not in window #" + std::to_string(windowInfo.index)
+        "channels not in window #" + std::to_string(windowInfo.topology.index)
         + ":";
     } // if first error
     errors += " " + std::to_string(channel);

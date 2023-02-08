@@ -18,14 +18,16 @@
 // ICARUS libraries
 #include "icaruscode/PMT/Algorithms/DiscretePhotoelectronPulse.h"
 #include "icaruscode/PMT/Algorithms/PhotoelectronPulseFunction.h"
+#include "icaruscode/PMT/Algorithms/PedestalGeneratorAlg.h"
+#include "icaruscode/Utilities/quantities_utils.h" // util::value_t
 #include "icarusalg/Utilities/SampledFunction.h"
-#include "icarusalg/Utilities/FastAndPoorGauss.h"
 
 // LArSoft libraries
 #include "lardataobj/RawData/OpDetWaveform.h"
 #include "lardataobj/Simulation/SimPhotons.h"
 #include "lardataalg/DetectorInfo/LArProperties.h"
 #include "lardataalg/DetectorInfo/DetectorClocksData.h"
+#include "lardataalg/DetectorInfo/DetectorTimings.h"
 #include "lardataalg/DetectorInfo/DetectorTimingTypes.h"
 #include "lardataalg/Utilities/quantities_fhicl.h" // microsecond from FHiCL
 #include "lardataalg/Utilities/quantities/spacetime.h" // microsecond, ...
@@ -66,6 +68,10 @@ namespace icarus::opdet {
   /// Type for single photon response shape function: nanosecond -> ADC counts.
   using SinglePhotonResponseFunc_t
     = DiscretePhotoelectronPulse::PulseFunction_t;
+  
+  /// Type of electronics noise generator algorithm.
+  using PedestalGenerator_t
+    = icarus::opdet::PedestalGeneratorAlg<DiscretePhotoelectronPulse::ADCcount>;
 
   template <typename SampleType> class OpDetWaveformMakerClass;
   
@@ -247,9 +253,15 @@ class icarus::opdet::OpDetWaveformMakerClass {
  * Electronics noise
  * ------------------
  *
- * Electronics noise is described by Gaussian fluctuations of a given
- * standard deviation, controlled by the configuration parameter `AmpNoise`.
- * No noise correlation is simulated neither in time nor in space.
+ * Electronics noise generation is delegated to an algorithm that also sets the
+ * waveform baseline and which can actually either add noise or transform the
+ * signal.
+ * Currently the "standard" noise model is Gaussian fluctuations of a given
+ * standard deviation, from tools `PMTgausNoiseGeneratorTool` or
+ * `PMTfastGausNoiseGeneratorTool`, with no noise correlation either in time
+ * or in space, while the standard pedestal model is a fixed value
+ * (`PMTconstantPedestalGeneratorTool`).
+ * Noise can be disabled by using the `PMTnoNoiseGeneratorTool`.
  *
  *
  * Configuration
@@ -341,8 +353,8 @@ class icarus::opdet::OpDetWaveformMakerClass {
 class icarus::opdet::PMTsimulationAlg {
 
     public:
-  using microseconds = util::quantities::microsecond;
-  using nanoseconds = util::quantities::nanosecond;
+  using microsecond = util::quantities::microsecond;
+  using nanosecond = util::quantities::nanosecond;
   using hertz = util::quantities::hertz;
   using megahertz = util::quantities::megahertz;
   using picocoulomb = util::quantities::picocoulomb;
@@ -422,20 +434,17 @@ class icarus::opdet::PMTsimulationAlg {
     float  pretrigFraction;       ///< Fraction of window size to be before "trigger"
     ADCcount thresholdADC; ///< ADC Threshold for self-triggered readout
     int    pulsePolarity;         ///< Pulse polarity (=1 for positive, =-1 for negative)
-    microseconds triggerOffsetPMT; ///< Time relative to trigger when PMT readout starts TODO make it a `trigger_time` point
+    microsecond triggerOffsetPMT; ///< Time relative to trigger when PMT readout starts TODO make it a `trigger_time` point
 
-    microseconds readoutEnablePeriod;  ///< Time (us) for which pmt readout is enabled
+    microsecond readoutEnablePeriod;  ///< Time (us) for which pmt readout is enabled
 
     bool createBeamGateTriggers; ///< Option to create unbiased readout around beam spill
-    microseconds beamGateTriggerRepPeriod; ///< Repetition Period (us) for BeamGateTriggers TODO make this a time_interval
+    microsecond beamGateTriggerRepPeriod; ///< Repetition Period (us) for BeamGateTriggers TODO make this a time_interval
     size_t beamGateTriggerNReps; ///< Number of beamgate trigger reps to produce
 
     unsigned int pulseSubsamples = 1U; ///< Number of tick subsamples.
 
     unsigned int ADCbits = 14U; ///< Number of bits of the digitizer.
-    ADCcount baseline; //waveform baseline
-    ADCcount ampNoise; //amplitude of gaussian noise
-    bool useFastElectronicsNoise; ///< Whether to use fast generator for electronics noise.
     hertz darkNoiseRate;
     float saturation; //equivalent to the number of p.e. that saturates the electronic signal
     PMTspecs_t PMTspecs; ///< PMT specifications.
@@ -445,13 +454,22 @@ class icarus::opdet::PMTsimulationAlg {
     /// @{
     /// @name Setup parameters
 
+    /// Beam gate opening time [UTC, ns]
+    std::uint64_t beamGateTimestamp = 0;
 
     detinfo::LArProperties const* larProp = nullptr; ///< LarProperties service provider.
 
     detinfo::DetectorClocksData const* clockData = nullptr;
+    
+    // detTimings is not really "optional" but it needs delayed construction.
+    /// Detector clocks data wrapper.
+    std::optional<detinfo::DetectorTimings> detTimings;
 
     /// Single photon response function.
     SinglePhotonResponseFunc_t const* pulseFunction;
+    
+    /// Pedestal and electronics noise generator algorithm.
+    PedestalGenerator_t* pedestalGen;
 
     /// Main random stream engine.
     CLHEP::HepRandomEngine* randomEngine = nullptr;
@@ -522,14 +540,12 @@ class icarus::opdet::PMTsimulationAlg {
   
   /// Type internally used for storing waveforms.
   using Waveform_t = OpDetWaveformMaker_t::WaveformData_t;
-  using WaveformValue_t = ADCcount::value_t; ///< Numeric type in waveforms.
+  /// Numeric type in waveforms.
+  using WaveformValue_t = util::value_t<ADCcount>;
 
   /// Type of sampled pulse shape: sequence of samples, one per tick.
   using PulseSampling_t = DiscretePhotoelectronPulse::Subsample_t;
-
-  /// Type of member function to add electronics noise.
-  using NoiseAdderFunc_t = void (PMTsimulationAlg::*)(Waveform_t&) const;
-
+  
 
   // --- BEGIN -- Helper functors ----------------------------------------------
   /// Functor to convert tick point into a tick number and a subsample index.
@@ -583,11 +599,10 @@ class icarus::opdet::PMTsimulationAlg {
   
   DiscretePhotoelectronPulse wsp; /// Single photon pulse (sampled).
 
-  NoiseAdderFunc_t const fNoiseAdder; ///< Selected electronics noise method.
-
-  ///< Transformation uniform to Gaussian for electronics noise.
-  static util::FastAndPoorGauss<32768U, float> const fFastGauss;
-
+  /// Pedestal and electronics noise generator algorithm.
+  PedestalGenerator_t* fPedestalGen = nullptr;
+  
+  
   /**
    * @brief Creates `raw::OpDetWaveform` objects from simulated photoelectrons.
    * @param photons the simulated list of photoelectrons
@@ -712,9 +727,10 @@ class icarus::opdet::PMTsimulationAlg {
     ) const;
   
   
-  void AddNoise(Waveform_t& wave) const; //add noise to baseline
-  /// Same as `AddNoise()` but using an alternative generator.
-  void AddNoise_faster(Waveform_t& wave) const;
+  /// Add the pedestal, including electronics noise.
+  void AddPedestal
+    (raw::Channel_t channel, std::uint64_t time, Waveform_t& wave) const;
+
   // Add "dark" noise to baseline.
   void AddDarkNoise(Waveform_t& wave) const;
   
@@ -741,7 +757,8 @@ class icarus::opdet::PMTsimulationAlg {
    * additional interest points that are added independently of whether there
    * is actual interesting activity in there.
    */
-  std::vector<optical_tick> FindTriggers(Waveform_t const& wvfm) const;
+  std::vector<optical_tick> FindTriggers
+    (Waveform_t const& wvfm, ADCcount baseline) const;
   
   
   /**
@@ -768,19 +785,23 @@ class icarus::opdet::PMTsimulationAlg {
   bool KicksPhotoelectron() const;
   
   /// Returns the ADC range allowed for photoelectron saturation.
-  std::pair<ADCcount, ADCcount> saturationRange() const;
+  std::pair<ADCcount, ADCcount> saturationRange(ADCcount baseline) const;
   
   /// Applies the configured photoelectron saturation on the `waveform`,
   /// only if the saturation is cutting into the digitisation `range`.
-  void ApplySaturation
-    (Waveform_t& waveform, std::pair<ADCcount, ADCcount> const& range) const;
+  void ApplySaturation(
+    Waveform_t& waveform, ADCcount baseline,
+    std::pair<ADCcount, ADCcount> const& range
+    ) const;
   
   /// Applies the configured photoelectron saturation on the `waveform`.
-  void ApplySaturation(Waveform_t& waveform) const;
+  void ApplySaturation(Waveform_t& waveform, ADCcount baseline) const;
   
   /// Forces `waveform` ADC within the `min` to `max` range (`max` included).
   static void ClipWaveform(Waveform_t& waveform, ADCcount min, ADCcount max);
   
+  /// Returns the timestamp matching the start of the full waveforms [UTC, ns]
+  std::uint64_t waveformStartTimestamp() const;
   
 }; // class PMTsimulationAlg
 
@@ -791,11 +812,11 @@ class icarus::opdet::PMTsimulationAlg {
 class icarus::opdet::PMTsimulationAlgMaker {
 
      public:
-  using microseconds = util::quantities::microsecond;
-  using nanoseconds = util::quantities::nanosecond;
+  using microsecond = util::quantities::microsecond;
+  using nanosecond = util::quantities::nanosecond;
   using hertz = util::quantities::hertz;
   using picocoulomb = util::quantities::picocoulomb;
-
+  
   struct PMTspecConfig {
     using Name = fhicl::Name;
     using Comment = fhicl::Comment;
@@ -828,7 +849,7 @@ class icarus::opdet::PMTsimulationAlgMaker {
     //
     // readout settings
     //
-    fhicl::Atom<microseconds> ReadoutEnablePeriod {
+    fhicl::Atom<microsecond> ReadoutEnablePeriod {
       Name("ReadoutEnablePeriod"),
       Comment("Time for which PMT readout is enabled [us]")
       // mandatory
@@ -843,11 +864,6 @@ class icarus::opdet::PMTsimulationAlgMaker {
       Name("ADCBits"),
       Comment("number of bits of the Analog-to-Digital Converter"),
       14U
-      };
-    fhicl::Atom<float> Baseline {
-      Name("Baseline"),
-      Comment("Waveform baseline (may be fractional) [ADC]")
-      // mandatory
       };
     fhicl::Atom<int> PulsePolarity {
       Name("PulsePolarity"),
@@ -902,21 +918,6 @@ class icarus::opdet::PMTsimulationAlgMaker {
       };
 
     //
-    // electronics noise
-    //
-    fhicl::Atom<double> AmpNoise {
-      Name("AmpNoise"),
-      Comment("RMS of the electronics noise fluctuations [ADC counts]")
-      // mandatory
-      };
-    fhicl::Atom<bool> FastElectronicsNoise {
-      Name("FastElectronicsNoise"),
-      Comment
-        ("use an approximate and faster random generator for electronics noise"),
-      true
-      };
-
-    //
     // trigger
     //
     fhicl::Atom<float> ThresholdADC {
@@ -929,7 +930,7 @@ class icarus::opdet::PMTsimulationAlgMaker {
       Comment("Whether to create unbiased readout trigger at beam spill")
       // mandatory
       };
-    fhicl::Atom<microseconds> BeamGateTriggerRepPeriod {
+    fhicl::Atom<microsecond> BeamGateTriggerRepPeriod {
       Name("BeamGateTriggerRepPeriod"),
       Comment("Repetition period for beam gate generated readout triggers [us]")
       // mandatory
@@ -939,7 +940,7 @@ class icarus::opdet::PMTsimulationAlgMaker {
       Comment("Number of beam gate readout triggers to generate")
       // mandatory
       };
-    fhicl::Atom<microseconds> TriggerOffsetPMT {
+    fhicl::Atom<microsecond> TriggerOffsetPMT {
       Name("TriggerOffsetPMT"),
       Comment("Time  when readout begins, relative to readout trigger [us]")
       // mandatory
@@ -954,9 +955,11 @@ class icarus::opdet::PMTsimulationAlgMaker {
 
   /**
    * @brief Creates and returns a new algorithm instance.
+   * @param beamGateTimestamp the time of beam gate opening, in UTC [ns]
    * @param larProp instance of `detinfo::LArProperties` to be used
    * @param detClocks instance of `detinfo::DetectorClocks` to be used
    * @param SPRfunction function to use for the single photon response
+   * @param pedestalGenerator algorithm generating the pedestal plus noise
    * @param mainRandomEngine main random engine (quantum efficiency, etc.)
    * @param darkNoiseRandomEngine random engine for dark noise simulation
    * @param elecNoiseRandomEngine random engine for electronics noise simulation
@@ -967,9 +970,11 @@ class icarus::opdet::PMTsimulationAlgMaker {
    * configuration disabled noise simulation.
    */
   std::unique_ptr<PMTsimulationAlg> operator()(
+    std::uint64_t beamGateTimestamp,
     detinfo::LArProperties const& larProp,
     detinfo::DetectorClocksData const& detClocks,
     SinglePhotonResponseFunc_t const& SPRfunction,
+    PedestalGenerator_t& pedestalGenerator,
     CLHEP::HepRandomEngine& mainRandomEngine,
     CLHEP::HepRandomEngine& darkNoiseRandomEngine,
     CLHEP::HepRandomEngine& elecNoiseRandomEngine,
@@ -978,9 +983,11 @@ class icarus::opdet::PMTsimulationAlgMaker {
 
   /**
    * @brief Returns a data structure to construct the algorithm.
+   * @param beamGateTimestamp the time of beam gate opening, in UTC [ns]
    * @param larProp instance of `detinfo::LArProperties` to be used
    * @param detClocks instance of `detinfo::DetectorClocks` to be used
    * @param SPRfunction function to use for the single photon response
+   * @param pedestalGenerator algorithm generating the pedestal plus noise
    * @param mainRandomEngine main random engine (quantum efficiency, etc.)
    * @param darkNoiseRandomEngine random engine for dark noise simulation
    * @param elecNoiseRandomEngine random engine for electronics noise simulation
@@ -993,9 +1000,11 @@ class icarus::opdet::PMTsimulationAlgMaker {
    * configuration disabled noise simulation.
    */
   PMTsimulationAlg::ConfigurationParameters_t makeParams(
+    std::uint64_t beamGateTimestamp,
     detinfo::LArProperties const& larProp,
     detinfo::DetectorClocksData const& clockData,
     SinglePhotonResponseFunc_t const& SPRfunction,
+    PedestalGenerator_t& pedestalGenerator,
     CLHEP::HepRandomEngine& mainRandomEngine,
     CLHEP::HepRandomEngine& darkNoiseRandomEngine,
     CLHEP::HepRandomEngine& elecNoiseRandomEngine,
@@ -1069,7 +1078,6 @@ void icarus::opdet::PMTsimulationAlg::printConfiguration
             << indent << "ADC bits:            " << fParams.ADCbits
       << " (" << fParams.ADCrange().first << " -- " << fParams.ADCrange().second
       << ")"
-    << '\n' << indent << "Baseline:            " << fParams.baseline
     << '\n' << indent << "ReadoutWindowSize:   " << fParams.readoutWindowSize << " ticks"
     << '\n' << indent << "PreTrigFraction:     " << fParams.pretrigFraction
     << '\n' << indent << "ThresholdADC:        " << fParams.thresholdADC
@@ -1085,12 +1093,7 @@ void icarus::opdet::PMTsimulationAlg::printConfiguration
     << '\n' << indent << "Gain at first stage: " << fParams.PMTspecs.firstStageGain()
     ;
 
-  out << '\n' << indent << "Electronics noise:   ";
-  if (fParams.ampNoise > 0_ADCf) {
-    out << fParams.ampNoise << " RMS ("
-      << (fParams.useFastElectronicsNoise? "faster": "slower") << " algorithm)";
-  }
-  else out << "none";
+  out << '\n' << indent << "Pedestal:          " << fPedestalGen->toString(indent + "  ", "");
 
   if (fParams.createBeamGateTriggers) {
     out << '\n' << indent << "Create " << fParams.beamGateTriggerNReps
