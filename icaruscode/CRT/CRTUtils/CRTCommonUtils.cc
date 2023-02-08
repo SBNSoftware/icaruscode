@@ -494,13 +494,10 @@ TVector3 CRTCommonUtils::ChanToLocalCoords(uint8_t mac, int chan) {
     int adsid = ChannelToAuxDetSensitiveID(mac,chan); //CRT strip ID
     auto const& adsGeo = adGeo.SensitiveVolume(adsid); //CRT strip
 
-    double origin[3] = {0,0,0};
-    double stripPosWorld[3], modPos[3];
+    auto const stripPosWorld = adsGeo.GetCenter();
+    auto const modPos = adGeo.toLocalCoords(stripPosWorld);
 
-    adsGeo.LocalToWorld(origin,stripPosWorld);
-    adGeo.WorldToLocal(stripPosWorld,modPos);
-
-    coords.SetXYZ(modPos[0],modPos[1],modPos[2]);
+    coords.SetXYZ(modPos.X(),modPos.Y(),modPos.Z());
     return coords;
 }
 
@@ -514,12 +511,9 @@ TVector3 CRTCommonUtils::ChanToWorldCoords(uint8_t mac, int chan) {
     int adsid = ChannelToAuxDetSensitiveID(mac,chan); //CRT strip ID
     auto const& adsGeo = adGeo.SensitiveVolume(adsid); //CRT strip
 
-    double origin[3] = {0,0,0};
-    double stripPosWorld[3];
+    auto const stripPosWorld = adsGeo.GetCenter();
 
-    adsGeo.LocalToWorld(origin,stripPosWorld);
-
-    coords.SetXYZ(stripPosWorld[0],stripPosWorld[1],stripPosWorld[2]);
+    coords.SetXYZ(stripPosWorld.X(),stripPosWorld.Y(),stripPosWorld.Z());
     return coords;
 }
 
@@ -632,13 +626,9 @@ TVector3 CRTCommonUtils::WorldToModuleCoords(TVector3 point, size_t adid) {
 
     char type = GetAuxDetType(adid);
     auto const& adGeo = fGeoService->AuxDet(adid);
-    double world[3], local[3];
-    world[0] = point.X();
-    world[1] = point.Y();
-    world[2] = point.Z();
-
-    adGeo.WorldToLocal(world,local);
-    TVector3 localpoint(local[0],local[1],local[2]);
+    geo::Point_t const world{point.X(), point.Y(), point.Z()};
+    auto const local = adGeo.toLocalCoords(world);
+    TVector3 localpoint(local.X(),local.Y(),local.Z());
 
     if(type=='c') {
         localpoint.SetX( 8.*(localpoint.X()/adGeo.HalfWidth1()+1.));

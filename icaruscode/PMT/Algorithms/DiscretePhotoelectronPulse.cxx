@@ -9,6 +9,9 @@
 
 // library header
 #include "icaruscode/PMT/Algorithms/DiscretePhotoelectronPulse.h"
+
+// ICARUS libraries
+#include "icaruscode/Utilities/quantities_utils.h" // util::...::abs()
 #include "icarusalg/Utilities/WaveformOperations.h"
 
 // framework libraries
@@ -88,8 +91,9 @@ bool icarus::opdet::DiscretePhotoelectronPulse::checkRange
   auto const high
     = *(fSampledShape.subsample(fSampledShape.nSubsamples() - 1).rbegin());
 
-  bool const bLowOk = (low.abs() < limit);
-  bool const bHighOk = (high.abs() < limit);
+  using std::abs;
+  bool const bLowOk = (abs(low) < limit);
+  bool const bHighOk = (abs(high) < limit);
   if (bLowOk && bHighOk) return true;
   if (!outputCat.empty()) {
     mf::LogWarning log(outputCat);

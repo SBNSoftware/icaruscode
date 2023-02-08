@@ -251,13 +251,13 @@ DaqDecoderICARUSTPCwROI::DaqDecoderICARUSTPCwROI(fhicl::ParameterSet const & pse
             {
                 geo::PlaneID planeID(cryoIdx,logicalTPCIdx,planeIdx);
 
-                raw::ChannelID_t channel = fGeometry->PlaneWireToChannel(planeID.Plane, 0, planeID.TPC, planeID.Cryostat);
+                raw::ChannelID_t channel = fGeometry->PlaneWireToChannel(geo::WireID(planeID, 0));
 
                 readout::ROPID ropID = fGeometry->ChannelToROP(channel);
 
                 fPlaneToROPPlaneMap[planeID]      = ropID.ROP;
                 fPlaneToWireOffsetMap[planeID]    = channel;
-                planeToLastWireOffsetMap[planeID] = fGeometry->PlaneWireToChannel(planeID.Plane, fGeometry->Nwires(planeID), planeID.TPC, planeID.Cryostat);
+                planeToLastWireOffsetMap[planeID] = fGeometry->PlaneWireToChannel(geo::WireID(planeID, fGeometry->Nwires(planeID)));
                 fROPToNumWiresMap[ropID.ROP]      = fGeometry->Nwires(planeID);
 
                 if (ropID.ROP > fNumROPs) fNumROPs = ropID.ROP;

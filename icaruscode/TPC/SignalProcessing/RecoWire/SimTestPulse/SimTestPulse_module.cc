@@ -197,11 +197,11 @@ void SimTestPulse::produce(art::Event & e)
 
         const geo::PlaneGeo& planeGeo = geo->Plane(geo::PlaneID(0,0,0)); // Get the coordinates of the first wire plane
 
-        TVector3 planeCoords = planeGeo.GetCenter();
-        TVector3 planeNormal = planeGeo.GetNormalDirection();
+        auto planeCoords = planeGeo.GetCenter();
+        auto planeNormal = planeGeo.GetNormalDirection();
 
         // Assume C=0, T=1
-        chargeDepCoords = geo::Point_t(planeCoords[0] + 1. * planeNormal[0],fY_v[index],fZ_v[index]);
+        chargeDepCoords = geo::Point_t(planeCoords.X() + planeNormal.X(),fY_v[index],fZ_v[index]);
         
         alternative::TruthHit pulse_record;
         pulse_record.tdc = tdc;
@@ -211,7 +211,7 @@ void SimTestPulse::produce(art::Event & e)
         double nElecADC = detProp.ElectronsToADC() * fNumElectrons_v[index];
         double eDeposit = 23.6 * fNumElectrons_v[index] / 1000.;    // This is a guesstimate for now but hopefully not far off, note we assume wirecell will handle recombination
 
-        std::cout << "==> x position of plane 0: " << planeCoords[0] << ", normal: " << planeNormal[0] << ", nElec: " << fNumElectrons_v[index] << ", nElecADC: " << nElecADC << ", edep: " << eDeposit << std::endl;
+        std::cout << "==> x position of plane 0: " << planeCoords.X() << ", normal: " << planeNormal.X() << ", nElec: " << fNumElectrons_v[index] << ", nElecADC: " << nElecADC << ", edep: " << eDeposit << std::endl;
         std::cout << "    x position of charge deposit: " << chargeDepCoords.X() << std::endl;
 
         simDep_v->emplace_back(0,

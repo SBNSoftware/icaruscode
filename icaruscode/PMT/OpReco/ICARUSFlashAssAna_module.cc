@@ -229,16 +229,15 @@ void opana::ICARUSFlashAssAna::beginJob() {
   fGeoTree->Branch("pmt_y",&m_pmt_y);
   fGeoTree->Branch("pmt_z",&m_pmt_z);
   
-  double PMTxyz[3];
   for(size_t opch=0; opch<fGeom->NOpChannels(); ++opch) {
 
-    fGeom->OpDetGeoFromOpChannel(opch).GetCenter(PMTxyz);
+    auto const PMTxyz = fGeom->OpDetGeoFromOpChannel(opch).GetCenter();
 
     //std::cout << PMTxyz[0] << " " << PMTxyz[1] << " " << PMTxyz[2] << std::endl;
 
-    m_pmt_x.push_back(PMTxyz[0]);
-    m_pmt_y.push_back(PMTxyz[1]);
-    m_pmt_z.push_back(PMTxyz[2]);
+    m_pmt_x.push_back(PMTxyz.X());
+    m_pmt_y.push_back(PMTxyz.Y());
+    m_pmt_z.push_back(PMTxyz.Z());
 
   }
 

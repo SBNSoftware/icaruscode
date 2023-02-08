@@ -51,6 +51,17 @@ icarus_settings_opdet: {
   
   nominalPMTgain: 9.7e6  # PMT multiplication gain factor
   
+  # the actual readout window size for each "trigger" on the readout electronics
+  readoutWindowSize:         5000   # ticks (2 ns each --> 10 us)
+
+  # fraction of readout window size that should come before the "trigger" in the
+  # readout electronics
+  readoutPreTrigFraction:   0.3   # fraction (3+7 us)
+  
+  NoiseRMS:                 3.0   # in ADC#; "temporary" value, see SBN DocDB 19187
+  
+  NominalPedestal:      14999.5   # in ADC#; try to balance rounding errors
+  
 } # icarus_settings_opdet
 
 
@@ -161,13 +172,61 @@ icarus_photoelectronresponse_customexample: {
 icarus_photoelectronresponse_standard: @local::icarus_photoelectronresponse_202202
 
 
+### - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+### Electronics noise configurations
+### - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+icarus_pmt_electronicsnoise_gauss: {
+  tool_type: PMTgausNoiseGeneratorTool
+  RMS:       @local::icarus_settings_opdet.NoiseRMS
+}
+
+icarus_pmt_electronicsnoise_gauss_fast: {
+  tool_type: PMTfastGausNoiseGeneratorTool
+  RMS:       @local::icarus_pmt_electronicsnoise_gauss.RMS
+}
+
+icarus_pmt_electronicsnoise_nonoise: {
+  tool_type: PMTnoNoiseGeneratorTool
+}
+
+# icarus_pmt_electronicsnoise_standard is always the current favourite
+icarus_pmt_electronicsnoise_standard: @local::icarus_pmt_electronicsnoise_gauss_fast
+
+
+icarus_pmt_pedestal_gaussnoise: {
+  tool_type: PMTconstantPedestalGeneratorTool
+  Pedestal:       @local::icarus_settings_opdet.NominalPedestal
+  NoiseGenerator: {
+    tool_type:      PMTgausNoiseGeneratorTool
+    RMS:            @local::icarus_settings_opdet.NoiseRMS
+  }
+} # icarus_pmt_pedestal_gaussnoise
+
+icarus_pmt_pedestal_fastgaussnoise: {
+  @table::icarus_pmt_pedestal_gaussnoise
+  NoiseGenerator: {
+    tool_type:      PMTfastGausNoiseGeneratorTool
+    RMS:            @local::icarus_pmt_electronicsnoise_gauss.RMS
+  }
+} # icarus_pmt_pedestal_fastgaussnoise
+
+icarus_pmt_pedestal_nonoise: {
+  @table::icarus_pmt_pedestal_gaussnoise
+  NoiseGenerator: {
+    tool_type:      NoNoiseGeneratorTool
+  }
+} # icarus_pmt_pedestal_nonoise
+
+icarus_pmt_pedestal_standard: @local::icarus_pmt_pedestal_fastgaussnoise
+
+
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 ###
 ### Configuration preset components
 ###
 icarus_pmtsimulation.disable_noise: {
-  AmpNoise:      0.0     # RMS in ADC counts
-  DarkNoiseRate: "0 kHz"
+  Pedestal:                  @local::icarus_pmt_pedestal_nonoise
+  DarkNoiseRate:             "0 kHz"
 } # icarus_pmtsimulation.disable_noise
 
 
@@ -209,11 +268,10 @@ icarus_pmtsimulation.disable_noise: {
 
 icarus_pmtsimulationalg_202202_noise: {
 
-  Baseline:                  14999.5        # in ADC; try to distribute rounding errors
+  Pedestal:                  @local::icarus_pmt_pedestal_standard
   
-  SinglePhotonResponse: @local::icarus_photoelectronresponse_standard
+  SinglePhotonResponse:      @local::icarus_photoelectronresponse_standard
   
-  AmpNoise:                  3.0            # in ADC; temporary value, see SBN DocDB 19187
   DarkNoiseRate:             "1.6 kHz"      # per channel, from CERN test stand measurement
 
   ## This is the readout window size for each "trigger" on the electronics
@@ -223,7 +281,7 @@ icarus_pmtsimulationalg_202202_noise: {
   PreTrigFraction:           0.25           # fraction (1+3 us)
 
   ##Threshold in ADC counts for a PMT self-trigger.
-  # 15 ADC = 5x 3 ADC (RMS, see AmpNoise above),~45% of standard SPR (4 mV, 33 ADC);
+  # 15 ADC = 5x 3 ADC (RMS, see ElectronicsNoise above),~45% of standard SPR (4 mV, 33 ADC);
   # number of noise samples above 15 ADC: ~206 samples for 2 ms x 360 channels (300 Hz)
   # number of noise samples above 18 ADC: ~0.36 samples for 2 ms x 360 channels (0.5 Hz)
   ##NOTE this is assumed to be positive-going and ABOVE BASELINE! Pulse polarity is corrected before determining trigger.
@@ -266,11 +324,16 @@ icarus_pmtsimulationalg_202202: @local::icarus_pmtsimulationalg_202202_noise
 ###
 icarus_pmtsimulationalg_2018: {
 
-  Baseline:                  14999.5         #in ADC
+  Pedestal: {
+    Pedestal:                  14999.5
+    NoiseGenerator: {
+      tool_type:                 PMTfastGausNoiseGeneratorTool
+      RMS:                       3.0
+    }
+  } # Pedestal
   
-  SinglePhotonResponse: @local::icarus_photoelectronresponse_standard
+  SinglePhotonResponse:      @local::icarus_photoelectronresponse_standard
   
-  AmpNoise:                  3.0            # in ADC; temporary value, see SBN DocDB 19187
   DarkNoiseRate:             "1.6 kHz"      # from CERN test stand measurement
 
   ##This is the readout window size for each "trigger" on the electronics
@@ -280,7 +343,7 @@ icarus_pmtsimulationalg_2018: {
   PreTrigFraction:           0.25           # fraction
 
   ##Threshold in ADC counts for a PMT self-trigger.
-  # 18 ADC = 6x 3 ADC (RMS, see AmpNoise above),~35% of standard SPR (55 ADC);
+  # 18 ADC = 6x 3 ADC (RMS, see ElectronicsNoise above),~35% of standard SPR (55 ADC);
   # number of noise samples above 18 ADC: ~0.35 samples for 2 ms x 360 channels
   ##NOTE this is assumed to be positive-going and ABOVE BASELINE! Pulse polarity is corrected before determining trigger.
   ThresholdADC:              18             # ADC counts

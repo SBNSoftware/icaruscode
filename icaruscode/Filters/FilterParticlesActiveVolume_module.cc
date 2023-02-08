@@ -142,24 +142,24 @@ namespace simfilter {
 
       std::cout << fXmin << " " << fXmax << " " << fYmin << " " <<fYmax << " " << fZmin << " " << fZmax << std::endl;
  
-      geo::CryostatGeo const& cryo0 = geom->Cryostat(0);
-      geo::CryostatGeo const& cryo1 = geom->Cryostat(1);
+      geo::CryostatGeo const& cryo0 = geom->Cryostat(geo::CryostatID{0});
+      geo::CryostatGeo const& cryo1 = geom->Cryostat(geo::CryostatID{1});
 
       geo::TPCGeo const& tpc00 = cryo0.TPC(0);
-      TVector3 xyzcenter00 = tpc00.GetActiveVolumeCenter();
-      std::cout << xyzcenter00[0] << " " << xyzcenter00[1] << " " << xyzcenter00[2] << std::endl;
+      geo::Point_t xyzcenter00 = tpc00.GetActiveVolumeCenter();
+      std::cout << xyzcenter00.X() << " " << xyzcenter00.Y() << " " << xyzcenter00.Z() << std::endl;
 
       geo::TPCGeo const& tpc01 = cryo0.TPC(1);
-      TVector3 xyzcenter01 = tpc01.GetActiveVolumeCenter();
-      std::cout << xyzcenter01[0] << " " << xyzcenter01[1] << " " << xyzcenter01[2] << std::endl;
+      geo::Point_t xyzcenter01 = tpc01.GetActiveVolumeCenter();
+      std::cout << xyzcenter01.X() << " " << xyzcenter01.Y() << " " << xyzcenter01.Z() << std::endl;
 
       geo::TPCGeo const& tpc10 = cryo1.TPC(0);
-      TVector3 xyzcenter10 = tpc10.GetActiveVolumeCenter();
-      std::cout << xyzcenter10[0] << " " << xyzcenter10[1] << " " << xyzcenter10[2] << std::endl;
+      geo::Point_t xyzcenter10 = tpc10.GetActiveVolumeCenter();
+      std::cout << xyzcenter10.X() << " " << xyzcenter10.Y() << " " << xyzcenter10.Z() << std::endl;
 
       geo::TPCGeo const& tpc11 = cryo1.TPC(1);
-      TVector3 xyzcenter11 = tpc11.GetActiveVolumeCenter();
-      std::cout << xyzcenter11[0] << " " << xyzcenter11[1] << " " << xyzcenter11[2] << std::endl;
+      geo::Point_t xyzcenter11 = tpc11.GetActiveVolumeCenter();
+      std::cout << xyzcenter11.X() << " " << xyzcenter11.Y() << " " << xyzcenter11.Z() << std::endl;
 
       double h00=tpc00.ActiveHalfHeight();
       double h01=tpc01.ActiveHalfHeight();
@@ -191,19 +191,19 @@ namespace simfilter {
       
 		  if (finActive==1 && pdg==filtpart)
 		    {
-		      if (xx>(xyzcenter00[0]-w00) && xx<(xyzcenter00[0]+w00) && yy>(xyzcenter00[1]-h00) && yy<(xyzcenter00[1]+h00) && zz>(xyzcenter00[2]-l00/2) && zz<(xyzcenter00[2]+l00/2))
+                      if (xx>(xyzcenter00.X()-w00) && xx<(xyzcenter00.X()+w00) && yy>(xyzcenter00.Y()-h00) && yy<(xyzcenter00.Y()+h00) && zz>(xyzcenter00.Z()-l00/2) && zz<(xyzcenter00.Z()+l00/2))
 			{
 			  interactionDesired = true;
 			}
-		      if (xx>(xyzcenter01[0]-w01) && xx<(xyzcenter01[0]+w01) && yy>(xyzcenter01[1]-h01) && yy<(xyzcenter01[1]+h01) && zz>(xyzcenter01[2]-l01/2) && zz<(xyzcenter01[2]+l01/2))
+                      if (xx>(xyzcenter01.X()-w01) && xx<(xyzcenter01.X()+w01) && yy>(xyzcenter01.Y()-h01) && yy<(xyzcenter01.Y()+h01) && zz>(xyzcenter01.Z()-l01/2) && zz<(xyzcenter01.Z()+l01/2))
 			{
 			  interactionDesired = true;
 			}
-		      if (xx>(xyzcenter10[0]-w10) && xx<(xyzcenter10[0]+w10) && yy>(xyzcenter10[1]-h10) && yy<(xyzcenter10[1]+h10) && zz>(xyzcenter10[2]-l10/2) && zz<(xyzcenter10[2]+l10/2))
+                      if (xx>(xyzcenter10.X()-w10) && xx<(xyzcenter10.X()+w10) && yy>(xyzcenter10.Y()-h10) && yy<(xyzcenter10.Y()+h10) && zz>(xyzcenter10.Z()-l10/2) && zz<(xyzcenter10.Z()+l10/2))
 			{
 			  interactionDesired = true;
 			}
-		      if (xx>(xyzcenter11[0]-w11) && xx<(xyzcenter11[0]+w11) && yy>(xyzcenter11[1]-h11) && yy<(xyzcenter11[1]+h11) && zz>(xyzcenter11[2]-l11/2) && zz<(xyzcenter11[2]+l11/2))
+                      if (xx>(xyzcenter11.X()-w11) && xx<(xyzcenter11.X()+w11) && yy>(xyzcenter11.Y()-h11) && yy<(xyzcenter11.Y()+h11) && zz>(xyzcenter11.Z()-l11/2) && zz<(xyzcenter11.Z()+l11/2))
 			{
 			  interactionDesired = true;
 			}
@@ -238,4 +238,3 @@ namespace simfilter {
 } // namespace simfilter
 
 #endif // FILTER_FILTERNEUTRINOSACTIVEVOLUME_H
-

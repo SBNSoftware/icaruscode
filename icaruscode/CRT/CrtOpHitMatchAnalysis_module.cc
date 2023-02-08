@@ -269,8 +269,8 @@ void CrtOpHitMatchAnalysis::analyze(art::Event const& e)
   //art::ServiceHandle<cheat::PhotonBackTrackerService> pbt;
   //fTTrig = fClock->TriggerTime();
 
-  geo::CryostatGeo const& cryo0 = fGeometryService->Cryostat(0);
-  geo::CryostatGeo const& cryo1 = fGeometryService->Cryostat(1);
+  geo::CryostatGeo const& cryo0 = fGeometryService->Cryostat(geo::CryostatID{0});
+  geo::CryostatGeo const& cryo1 = fGeometryService->Cryostat(geo::CryostatID{1});
   geo::TPCGeo const& tpc00 = cryo0.TPC(0);
   geo::TPCGeo const& tpc01 = cryo0.TPC(1);
   geo::TPCGeo const& tpc10 = cryo1.TPC(0);
@@ -338,10 +338,8 @@ void CrtOpHitMatchAnalysis::analyze(art::Event const& e)
         double t = ophit->PeakTime()*1e3-fOpDelay;
         fHitPE.push_back(ophit->PE());
         fHitChan.push_back(ophit->OpChannel());
-        double pos[3];
-        fGeometryService->OpDetGeoFromOpChannel(ophit->OpChannel()).GetCenter(pos);
-        vector<double> xyzt = {pos[0],pos[1],pos[2],t};
-        fHitXYZT.push_back(xyzt);
+        auto const pos = fGeometryService->OpDetGeoFromOpChannel(ophit->OpChannel()).GetCenter();
+        fHitXYZT.push_back({pos.X(), pos.Y(), pos.Z(), t});
   }
 
   fHitTree->Fill();
@@ -457,7 +455,7 @@ void CrtOpHitMatchAnalysis::analyze(art::Event const& e)
       fTrackFilt.push_back(trackfilt);
 
       vector<double> xyzt, xyzerr;
-      TVector3 rcrt(crt->x_pos,crt->y_pos,crt->z_pos);
+      geo::Point_t const rcrt(crt->x_pos,crt->y_pos,crt->z_pos);
 
       xyzt.push_back(rcrt.X());
       xyzt.push_back(rcrt.Y());
@@ -485,26 +483,19 @@ void CrtOpHitMatchAnalysis::analyze(art::Event const& e)
           fHitPDG.push_back(particle->PdgCode());
           for(size_t i=0; i<particle->NumberTrajectoryPoints(); i++){
               const TLorentzVector& pos = particle->Position(i);
-              double point[3] = {pos.X(),pos.Y(),pos.Z()};
+              geo::Point_t const point = geo::vect::toPoint(pos.Vect());
               if(cryo0.ContainsPosition(point)) {
                   firstIV = true;
                   if(!firstAV && (tpc00.ContainsPosition(point) ||
                      tpc01.ContainsPosition(point)) ) {
-                      double opDetPos[3];
-                      (cryo0.OpDet(cryo0.GetClosestOpDet(point))).GetCenter(opDetPos);
-                      double ddirect = sqrt(pow(opDetPos[0]-rcrt.X(),2)
-                                          + pow(opDetPos[1]-rcrt.Y(),2)
-                                          + pow(opDetPos[2]-rcrt.Z(),2));
-                      double dprop = sqrt(pow(opDetPos[0]-pos[0],2)
-                                        + pow(opDetPos[1]-pos[1],2)
-                                        + pow(opDetPos[2]-pos[2],2));
+                      auto const opDetPos = cryo0.OpDet(cryo0.GetClosestOpDet(point)).GetCenter();
+                      double ddirect = (opDetPos-rcrt).R();
+                      double dprop = (opDetPos-point).R();
                       double tprop = pos.T() + dprop*LAR_PROP_DELAY;
                       fTrueDist.push_back(ddirect);
                       fTrueTOF.push_back(tcrt-tprop);
-                      vector<double> tmp1 = {pos.X(),pos.Y(),pos.Z(),pos.T()};
-                      vector<double> tmp2 = {opDetPos[0],opDetPos[1],opDetPos[2],tprop};
-                      fEnterXYZT.push_back(tmp1);
-                      fPMTXYZT.push_back(tmp2);
+                      fEnterXYZT.push_back({pos.X(),pos.Y(),pos.Z(),pos.T()});
+                      fPMTXYZT.push_back({opDetPos.X(),opDetPos.Y(),opDetPos.Z(),tprop});
                       firstIV = false;
                       firstAV = true;
                       firstFV = true;
@@ -513,21 +504,14 @@ void CrtOpHitMatchAnalysis::analyze(art::Event const& e)
               if(!firstAV && cryo1.ContainsPosition(point)){
                   if(!firstAV && (tpc10.ContainsPosition(point) ||
                      tpc11.ContainsPosition(point)) ) {
-                      double opDetPos[3];
-                      (cryo1.OpDet(cryo0.GetClosestOpDet(point))).GetCenter(opDetPos);
-                      double ddirect = sqrt(pow(opDetPos[0]-rcrt.X(),2)
-                                          + pow(opDetPos[1]-rcrt.Y(),2)
-                                          + pow(opDetPos[2]-rcrt.Z(),2));
-                      double dprop = sqrt(pow(opDetPos[0]-pos[0],2)
-                                        + pow(opDetPos[1]-pos[1],2)
-                                        + pow(opDetPos[2]-pos[2],2));
+                      auto const opDetPos = cryo1.OpDet(cryo0.GetClosestOpDet(point)).GetCenter();
+                      double ddirect = (opDetPos-rcrt).R();
+                      double dprop = (opDetPos-point).R();
                       double tprop = pos.T() + dprop*LAR_PROP_DELAY;
                       fTrueDist.push_back(ddirect);
                       fTrueTOF.push_back(tcrt-tprop);
-                      vector<double> tmp1 = {pos.X(),pos.Y(),pos.Z(),pos.T()};
-                      vector<double> tmp2 = {opDetPos[0],opDetPos[1],opDetPos[2],tprop};
-                      fEnterXYZT.push_back(tmp1);
-                      fPMTXYZT.push_back(tmp2);
+                      fEnterXYZT.push_back({pos.X(),pos.Y(),pos.Z(),pos.T()});
+                      fPMTXYZT.push_back({opDetPos.X(),opDetPos.Y(),opDetPos.Z(),tprop});
                       firstIV = false;
                       firstAV = true;
                       firstFV = true;
@@ -575,17 +559,12 @@ void CrtOpHitMatchAnalysis::analyze(art::Event const& e)
               }
 
               double tflash = flash->Time()*1e3-fOpDelay;
-              TVector3 rflash(0,flash->YCenter(),flash->ZCenter());
-              TVector3 vdiff = rcrt-rflash;
               if(abs(tcrt-tflash)<abs(tdiff)) {
+                  geo::Point_t const rflash{0,flash->YCenter(),flash->ZCenter()};
                   peflash = flash->TotalPE();
                   tdiff = tcrt-tflash;
-                  rdiff = vdiff.Mag();
-                  xyzt.clear();
-                  xyzt.push_back(rflash.X());
-                  xyzt.push_back(rflash.Y());
-                  xyzt.push_back(rflash.Z());
-                  xyzt.push_back(tflash);
+                  rdiff = (rcrt-rflash).R();
+                  xyzt = {rflash.X(), rflash.Y(), rflash.Z(), tflash};
                   matched = true;
                   matchtpc = flashList.first;
 
@@ -597,16 +576,9 @@ void CrtOpHitMatchAnalysis::analyze(art::Event const& e)
                           flashHitPE = hit->PE();
 
                           //FlashHit position/time
-                          double pos[3];
-                          fGeometryService->OpDetGeoFromOpChannel(hit->OpChannel()).GetCenter(pos);
-                          flashHitxyzt.clear();
-                          for(int i=0; i<3; i++) flashHitxyzt.push_back(pos[i]);
-                          flashHitxyzt.push_back(flashHitT);
-
-                          //FlashHit distance
-                          TVector3 rflashHit(pos[0],pos[1],pos[2]);
-                          TVector3 vdiffHit = rcrt-rflashHit;
-                          flashHitDiff = vdiffHit.Mag();
+                          auto const pos = fGeometryService->OpDetGeoFromOpChannel(hit->OpChannel()).GetCenter();
+                          flashHitxyzt = {pos.X(), pos.Y(), pos.Z(), flashHitT};
+                          flashHitDiff = (rcrt - pos).R();
                       }
                   }//loop over flash hits
 
@@ -615,7 +587,7 @@ void CrtOpHitMatchAnalysis::analyze(art::Event const& e)
       }//for flash lists
       if(!matched) {
           peflash = DBL_MAX;
-          for(int i=0; i<4; i++) xyzt.push_back(DBL_MAX);
+          xyzt.assign(4, DBL_MAX);
       }
 
       fMatchFlash.push_back(matched);
@@ -648,23 +620,15 @@ void CrtOpHitMatchAnalysis::analyze(art::Event const& e)
               pemax = hit->PE();
 
               //hitXYZT
-              double pos[3];
-              fGeometryService->OpDetGeoFromOpChannel(hit->OpChannel()).GetCenter(pos);
-
-              //distHit
-              TVector3 rhit (pos[0],pos[1],pos[2]);
-              TVector3 vdiff = rcrt-rhit;
+              auto const pos = fGeometryService->OpDetGeoFromOpChannel(hit->OpChannel()).GetCenter();
+              rdiff = (rcrt-pos).R();
 
               //double vel = abs(vdiff.Mag()/(tcrt-thit));
               //if(vel>fHitVelocityMax || vel<fHitVelocityMin)
               //    continue;
-              rdiff = vdiff.Mag();
               peflash = hit->PE();
               tdiff = tcrt-thit;
-              xyzt.clear();
-              for(int i=0; i<3; i++) xyzt.push_back(pos[i]);
-              xyzt.push_back(thit);
-
+              xyzt = {pos.X(), pos.Y(), pos.Z(), thit};
               matched = true;
                 
           }//if min tof
@@ -673,8 +637,7 @@ void CrtOpHitMatchAnalysis::analyze(art::Event const& e)
           tdiff = DBL_MAX;
           peflash = DBL_MAX;
           rdiff = DBL_MAX;
-          xyzt.clear();
-          for(int i=0; i<4; i++) xyzt.push_back(DBL_MAX);
+          xyzt.assign(4, DBL_MAX);
       }
 
       fMatchHit.push_back(matched);

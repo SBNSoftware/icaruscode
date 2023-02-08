@@ -248,8 +248,8 @@ icarus_pmtdiscriminatethr_fixed_MC: {
 
   # PMT baseline (from standard simulation configuration)
   Baselines: @erase
-  Baseline: @local::icarus_pmtsimulationalg_standard.Baseline
-  
+  Baseline: @local::icarus_settings_opdet.NominalPedestal
+
 } # icarus_pmtdiscriminatethr_fixed_MC
 
 
@@ -318,6 +318,18 @@ icarus_trigslidewindow: {
 } # icarus_trigslidewindow
 
 
+icarus_trigslidewindow_cryoE: {
+                     @table::icarus_trigslidewindow
+  EnableOnlyWindows: [ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 ]
+} # icarus_trigslidewindow_cryoE
+
+
+icarus_trigslidewindow_cryoW: {
+                     @table::icarus_trigslidewindow
+  EnableOnlyWindows: [ 10, 11, 12, 13, 14, 15, 16, 17, 18, 19 ]
+} # icarus_trigslidewindow_cryoW
+
+
 # ------------------------------------------------------------------------------
 # ---  workflow helpers
 # ------------------------------------------------------------------------------
@@ -339,7 +351,7 @@ icarus_standard_triggersim: {
       Thresholds: [ @local::icarus_triggergate_basic.SelectedThreshold ]
     }
     
-    triggersimgates: @local::icarus_triggersimgates
+    triggersimgates: @local::icarus_triggersimgates  # from trigger_icarus.fcl
     
     emuTrigger: {
       module_type:           TriggerSimulationOnGates

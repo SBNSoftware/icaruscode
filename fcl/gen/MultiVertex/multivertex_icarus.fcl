@@ -1,5 +1,6 @@
 #include "services_icarus_simulation.fcl"
 #include "multipartvertex_icarus.fcl"
+#include "beamgates_icarus.fcl"
 
 process_name: MultiVertexGen
 
@@ -34,12 +35,13 @@ physics:
  producers:
  {
    generator: @local::MultiPartVertex
+   beamgate:  @local::icarus_standardbeamgate_NuMI  # from beamgates_icarus.fcl
    rns:       { module_type: "RandomNumberSaver" }
  }
 
  #define the producer and filter modules for this path, order matters, 
  #filters reject all following items.  see lines starting physics.producers below
- simulate: [ rns, generator ]
+ simulate: [ rns, generator, beamgate ]
 
  #define the output stream, there could be more than one if using filters 
  stream1:  [ out1 ]

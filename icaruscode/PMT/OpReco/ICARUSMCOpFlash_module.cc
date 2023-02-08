@@ -186,14 +186,13 @@ void ICARUSMCOpFlash::GetFlashLocation(std::vector<double> pePerOpChannel,
   for (unsigned int opch = 0; opch < pePerOpChannel.size(); opch++) {
 
     // Get physical detector location for this opChannel 
-    double PMTxyz[3];
-    geop->OpDetGeoFromOpChannel(opch).GetCenter(PMTxyz);
+    auto const PMTxyz = geop->OpDetGeoFromOpChannel(opch).GetCenter();
 
     // Add up the position, weighting with PEs 
-    sumy    += pePerOpChannel[opch]*PMTxyz[1];
-    sumy2   += pePerOpChannel[opch]*PMTxyz[1]*PMTxyz[1];
-    sumz    += pePerOpChannel[opch]*PMTxyz[2];
-    sumz2   += pePerOpChannel[opch]*PMTxyz[2]*PMTxyz[2];
+    sumy    += pePerOpChannel[opch]*PMTxyz.Y();
+    sumy2   += pePerOpChannel[opch]*PMTxyz.Y()*PMTxyz.Y();
+    sumz    += pePerOpChannel[opch]*PMTxyz.Z();
+    sumz2   += pePerOpChannel[opch]*PMTxyz.Z()*PMTxyz.Z();
 
     totalPE += pePerOpChannel[opch];
   }
