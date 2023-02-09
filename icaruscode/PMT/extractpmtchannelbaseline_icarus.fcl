@@ -40,8 +40,8 @@
 
 # ------------------------------------------------------------------------------
 #include "services_common_icarus.fcl"
+#include "icarus_ophitfinder.fcl"
 #include "rootoutput_icarus.fcl"
-
 
 # ------------------------------------------------------------------------------
 process_name: PMTbline
