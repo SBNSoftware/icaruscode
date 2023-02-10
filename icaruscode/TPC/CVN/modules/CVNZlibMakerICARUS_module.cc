@@ -48,7 +48,7 @@
 
 // CVN includes
 #include "larrecodnn/CVN/func/AssignLabels.h"
-#include "larrecodnn/CVN/func/TrainingData.h"
+#include "larrecodnn/CVN/func/LArTrainingData.h"
 #include "larrecodnn/CVN/func/InteractionType.h"
 #include "larrecodnn/CVN/func/PixelMap.h"
 #include "larrecodnn/CVN/func/CVNImageUtils.h"
@@ -405,10 +405,8 @@ namespace lcvn {
 		      }	*/ 
 			     
 		   //////////////////////// TEST //////////////////////////////////////	     
-			     
-			 
-	             if(SliceList[j]->ID() == pixelmaps[i]->fSliceID){
-			fsliceID = SliceList[j]->ID();
+		   if(SliceList[j]->ID() == pixelmaps[i]->fSliceID){
+		     fsliceID = SliceList[j]->ID();
 		        if(findManyHits.isValid()){
 		           std::vector<art::Ptr<recob::Hit>> slice_hits = findManyHits.at(SliceList[j].key());
 			   double tot_slice_eng = 0;
