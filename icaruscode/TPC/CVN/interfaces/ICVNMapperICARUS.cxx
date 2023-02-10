@@ -74,7 +74,7 @@ namespace lcvn
             PixelMap pm = this->fProducer.CreateMap(detProp, slicehits);
             auto nhits = this->fProducer.NROI();
             pm.SetTotHits(nhits);
-            //pm.fSliceID = slice->ID();
+            pm.fSliceID = slice->ID();
             //pm.fT0 = min_T0;
 
             if(nhits > this->fMinClusterHits && pmCol->size()<fMapVecSize){
