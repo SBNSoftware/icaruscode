@@ -97,7 +97,7 @@ namespace lcvn {
     // BackTrackerService
     art::ServiceHandle<cheat::BackTrackerService> bt_serv;
 
-    void write_files(TrainingNuData td, std::string evtid);
+    void write_files(LArTrainingNuData td, std::string evtid);
     //bool Is_in_TPC(double stX, double stY, double stZ);
     bool Is_in_Fiducial_Vol(double stX, double stY, double stZ);
     void HitTruth(detinfo::DetectorClocksData const& clockData, art::Ptr<recob::Hit> const& hit, Int_t& truthid);
@@ -580,7 +580,7 @@ namespace lcvn {
 			}
 		     }
 		     
-		     TrainingNuData train(interaction, *pixelmaps[i], info);
+		     LArTrainingNuData train(interaction, *pixelmaps[i], info);
 		     std::string evtid = "r"+std::to_string(evt.run())+"_s"+std::to_string(evt.subRun())+"_e"+std::to_string(evt.event())+"_sl"+std::to_string(pixelmaps[i]->fSliceID)+"_h"+std::to_string(time(0));
 	             write_files(train, evtid);
 		     break;
@@ -599,7 +599,7 @@ namespace lcvn {
                   fevent = evt.id().event();
 		  if(Nu_is_contained) fNuIsContained = true;
 		      
-		  TrainingNuData train(interaction, *pixelmaps[i], info);
+		  LArTrainingNuData train(interaction, *pixelmaps[i], info);
 		  fsliceID = pixelmaps[i]->fSliceID;
 		  
 		  /*art::Handle< std::vector<recob::Slice> > SliceListHandle;
@@ -680,7 +680,7 @@ namespace lcvn {
 	
 	else{
           std::cout << "***************** Used entire event ****************\n";
-	  TrainingNuData train(interaction, *pixelmaps[0], info);
+	  LArTrainingNuData train(interaction, *pixelmaps[0], info);
 	  std::string evtid = "r"+std::to_string(evt.run())+"_s"+std::to_string(evt.subRun())+"_e"+std::to_string(evt.event())+"_h"+std::to_string(time(0));
           write_files(train, evtid);
 	} // use event to make images
@@ -688,7 +688,7 @@ namespace lcvn {
 
   //......................................................................
   
-  void CVNZlibMakerICARUS::write_files(TrainingNuData td, std::string evtid)
+  void CVNZlibMakerICARUS::write_files(LArTrainingNuData td, std::string evtid)
   {
     // cropped from 2880 x 500 to 500 x 500 here 
     std::vector<unsigned char> pixel_array(3 * fPlaneLimit * fTDCLimit);
