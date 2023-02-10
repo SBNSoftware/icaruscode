@@ -1,7 +1,7 @@
 set(MODULE_LIBRARIES
    larcorealg::Geometry
    larcore::Geometry_Geometry_service
-   larsim::Simulation lardataobj_Simulation
+   larsim::Simulation
    larsim::MCCheater_BackTrackerService_service
    larsim::MCCheater_ParticleInventoryService_service
    lardata::Utilities
@@ -12,7 +12,8 @@ set(MODULE_LIBRARIES
    larreco::RecoAlg
    larrecodnn::CVN_func
    larrecodnn::CVN_interfaces
-   lardata::RecoObjects  
+   lardata::RecoObjects
+   lardataobj::Simulation
    larpandora::LArPandoraInterface
    icaruscode::CRT
    icaruscode::RecoUtils
@@ -24,9 +25,10 @@ set(MODULE_LIBRARIES
    art::Framework_Services_Registry
    art_root_io::tfile_support ROOT::Core
    art_root_io::TFileService_service
-   art::Persistency_Common canvas
-   art::Persistency_Provenance canvas
-   art::Utilities canvas
+   art::Persistency_Common
+   art::Persistency_Provenance
+   art::Utilities
+   canvas::canvas
    messagefacility::MF_MessageLogger
 
    fhiclcpp::fhiclcpp
