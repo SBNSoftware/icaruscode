@@ -12,7 +12,6 @@ set(MODULE_LIBRARIES
    larreco::RecoAlg
    larrecodnn::CVN_func
    larrecodnn::CVN_interfaces
-   larrecodnn::CVN_interfaces
    lardata::RecoObjects  
    larpandora::LArPandoraInterface
    icaruscode::CRT
