@@ -2,6 +2,7 @@
 #include "correctionservices_icarus.fcl"
 #include "geometry_icarus.fcl"
 #include "services_common_icarus.fcl"
+#include "services_icarus_simulation.fcl"
 
 #include "seedservice.fcl"
 #include "particleinventoryservice.fcl"
@@ -20,12 +21,14 @@ services:
   ParticleInventoryService:  @local::standard_particleinventoryservice
   BackTrackerService:        @local::standard_backtrackerservice
 
+  @table::icarus_geometry_services
+  @table::icarus_detsim_services
+
   TimeTracker:               {}
   RandomNumberGenerator:     {}
   MemoryTracker:             {} # default is one
 
-  FileCatalogMetadata:       @local::art_file_catalog_mc
-                             @table::icarus_geometry_services
+  FileCatalogMetadata: @local::art_file_catalog
 }
 
 source:
