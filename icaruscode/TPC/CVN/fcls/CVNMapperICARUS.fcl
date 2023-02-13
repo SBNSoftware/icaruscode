@@ -25,9 +25,9 @@ standard_cvnmapper:
   MinClusterHits:        100
   verbose:               true
   UseSlice:              true
-  SliceLabel:            "pandora"
-  PFParticleModuleLabel: "pandora"
-  T0Label:               "pandora"
+  SliceLabel:            "pandoraGausCryoE"
+  PFParticleModuleLabel: "pandoraGausCryoE"
+  T0Label:               "pandoraGausCryoE"
   PixelMapProducer:      @local::standard_pixelmapproducer
   MapVecSize:            100000
   
