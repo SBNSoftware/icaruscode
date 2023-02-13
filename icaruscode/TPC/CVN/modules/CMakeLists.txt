@@ -5,6 +5,7 @@ set(MODULE_LIBRARIES
    larsim::MCCheater_BackTrackerService_service
    larsim::MCCheater_ParticleInventoryService_service
    lardata::Utilities
+   lardataalg::DetectorInfo
    larevt::Filters
    lardataobj::RawData
    lardataobj::RecoBase
