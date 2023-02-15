@@ -401,10 +401,10 @@ icarus_stage0_producers.gaushitTPCEE.HitFinderToolVec.CandidateHitsPlane2:      
 icarus_stage0_producers.gaushitTPCEE.HitFinderToolVec.CandidateHitsPlane2.Plane:               2
 icarus_stage0_producers.gaushitTPCEE.HitFinderToolVec.CandidateHitsPlane2.RoiThreshold:        9.
 
-icarus_stage0_producers.gaushit2dTPCWW.CalDataModuleLabel:                                     "roifinder:PHYSCRATEDATATPCWW"
-icarus_stage0_producers.gaushit2dTPCWE.CalDataModuleLabel:                                     "roifinder:PHYSCRATEDATATPCWE"
-icarus_stage0_producers.gaushit2dTPCEW.CalDataModuleLabel:                                     "roifinder:PHYSCRATEDATATPCEW"
-icarus_stage0_producers.gaushit2dTPCEE.CalDataModuleLabel:                                     "roifinder:PHYSCRATEDATATPCEE"
+icarus_stage0_producers.gaushit2dTPCWW.CalDataModuleLabel:                                     "roifinder2d:PHYSCRATEDATATPCWW"
+icarus_stage0_producers.gaushit2dTPCWE.CalDataModuleLabel:                                     "roifinder2d:PHYSCRATEDATATPCWE"
+icarus_stage0_producers.gaushit2dTPCEW.CalDataModuleLabel:                                     "roifinder2d:PHYSCRATEDATATPCEW"
+icarus_stage0_producers.gaushit2dTPCEE.CalDataModuleLabel:                                     "roifinder2d:PHYSCRATEDATATPCEE"
 
 icarus_stage0_producers.gaushit2dTPCWW.HitFinderToolVec.CandidateHitsPlane0:                   @local::candhitfinder_standard      # Sets hit finding for plane 0
 icarus_stage0_producers.gaushit2dTPCWW.HitFinderToolVec.CandidateHitsPlane0.Plane:             0
