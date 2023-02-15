@@ -6,8 +6,8 @@
  */
 
 // ICARUS libraries
-#include "icaruscode/PMT/Algorithms/SharedWaveformBaseline.h"
 #include "icaruscode/PMT/Data/WaveformRMS.h"
+#include "icarusalg/PMT/Algorithms/SharedWaveformBaseline.h"
 #include "sbnobj/ICARUS/PMT/Data/WaveformBaseline.h"
 #include "sbnobj/Common/PMT/Data/PMTconfiguration.h"
 #include "sbnobj/Common/PMT/Data/V1730Configuration.h"
@@ -776,15 +776,14 @@ unsigned int icarus::PMTWaveformBaselinesFromChannelData::removeWaveformsAround
   double const tickDuration
     = detinfo::timescales::electronics_time::interval_t{ fOpticalTick }.value();
   
-  auto const hasTriggerTime
-    = [tickDuration,time](raw::OpDetWaveform const* waveform)
+  auto const hasTime = [tickDuration,time](raw::OpDetWaveform const* waveform)
     {
       double const relTime = time - waveform->TimeStamp();
       return (relTime >= 0.0) && (relTime < (waveform->size() * tickDuration));
     };
   
   auto const iLast
-    = std::remove_if(waveforms.begin(), waveforms.end(), hasTriggerTime);
+    = std::remove_if(waveforms.begin(), waveforms.end(), hasTime);
   
   unsigned int const nRemoved = std::distance(iLast, waveforms.end());
   waveforms.erase(iLast, waveforms.end());
