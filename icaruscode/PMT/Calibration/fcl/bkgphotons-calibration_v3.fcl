@@ -1,0 +1,87 @@
+#include "services_common_icarus.fcl"
+#include "channelmapping_icarus.fcl"
+#include "decoderdefs_icarus.fcl"
+#include "icarus_ophitfinder.fcl"
+#include "icarus_flashfinder.fcl"
+#include "pmt-calibration.fcl"
+#include "icarus_opana_modules.fcl"
+#include "timing_icarus.fcl"
+
+process_name: BkgphotonsCalibration
+
+services:
+{
+   TFileService:            { fileName: "%ifb_%tc-%p.root" }
+   @table::icarus_geometry_services
+   @table::icarus_basic_services
+   DetectorClocksService: @local::icarus_detectorclocks
+   IICARUSChannelMap: @local::icarus_channelmappinggservice
+   PMTTimingCorrections: @local::icarus_pmttimingservice
+}
+
+services.IICARUSChannelMap.ChannelMappingTool: @local::ChannelMappingPostGres
+
+
+#Look at the input files
+source:
+{
+  module_type: RootInput
+  fileNames:  [ "data.root" ]
+  maxEvents:   -1       # Number of events to create
+}
+
+# Make sure to get rid of NuRandomSvc (not thread save)
+services.NuRandomService: @erase
+
+physics:
+{
+
+    // now also have something produce the digits and headers
+    producers:
+    {
+
+        triggerconfig: @local::extractTriggerConfig
+
+        pmtconfig: @local::extractPMTconfig 
+
+	    daqTrigger: @local::decodeTriggerV3
+
+        daqPMT: @local::decodePMT
+
+        ophit: @local::icarus_ophit_data
+
+    }
+
+    analyzers: 
+    {
+	
+    	bkgcalibration: @local::pmt_bkgphotons_calibration 
+    }
+
+    my_producer_modules: [ triggerconfig, pmtconfig, daqTrigger, daqPMT, ophit ]
+
+    ana: [ bkgcalibration ]
+
+    end_paths: [ana]
+}
+
+physics.producers.daqPMT.RequireBoardConfig: false
+physics.producers.daqPMT.RequireKnownBoards: false
+
+
+physics.producers.daqTrigger.DecoderTool.TrigConfigLabel: triggerconfig
+physics.producers.daqPMT.PMTconfigTag: pmtconfig  # required
+physics.producers.daqPMT.TriggerTag:   daqTrigger # required
+
+# workaround for the configurations where the trigger vero is not set
+physics.producers.daqTrigger.DecoderTool.TrigConfigLabel: ""
+physics.producers.triggerconfig.module_type: DummyProducer
+
+
+physics.producers.ophit.PedAlgoPset.PedRangeMax: 18000
+physics.producers.ophit.PedAlgoPset.PedRangeMin: 12000
+
+## CALIBRATION CONFIGURATION
+physics.analyzers.bkgcalibration.OpHitModule: "ophit" 
+physics.analyzers.bkgcalibration.TriggerModule: "daqTrigger"  
+physics.analyzers.bkgcalibration.FilterInTime: [ -3, 7] #in us 

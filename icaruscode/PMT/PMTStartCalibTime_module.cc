@@ -57,6 +57,8 @@
 
 #include "nusimdata/SimulationBase/MCTrajectory.h"
 
+#include "lardataobj/RecoBase/OpHit.h"
+
 #include "nug4/ParticleNavigation/ParticleList.h"
 
 #include "lardataobj/Simulation/sim.h"
@@ -107,8 +109,10 @@ TTree* fTree;
 
 ////////////////////////////////// Variable in th tree//////////////////////////////
 
+int run;
+int subrun;
 int event;
-
+int nparticles = 0;
 int event_type;
 
 int gt_0;
@@ -172,7 +176,14 @@ float total_coll_photons;
   
 art::InputTag photonLabel;
 art::InputTag chargeLabel;
+art::InputTag ophitLabel;
 art::InputTag typoLabel;
+
+std::vector<int>   *m_channel_id = NULL;   
+std::vector<float> *m_tstart = NULL;
+std::vector<float> *m_tmax = NULL;
+std::vector<float> *m_amplitude = NULL;
+std::vector<float> *m_integral = NULL;
 
 };
 
@@ -182,6 +193,7 @@ icarus::PMTStartCalibTime::PMTStartCalibTime(fhicl::ParameterSet const & p)
   EDAnalyzer(p),
   photonLabel(p.get<art::InputTag>("fottoni", "largeant")),
   chargeLabel(p.get<art::InputTag>("carconi", "largeant")),
+  ophitLabel(p.get<art::InputTag>("ophitlabel", "ophit")),
   typoLabel  (p.get<art::InputTag>("tiponi", "generator"))
  // More initializers here.
 {
@@ -196,10 +208,14 @@ art::ServiceHandle<geo::Geometry> geom;
  
 std::vector<sim::SimPhotons> const& optical  = *(evt.getValidHandle<std::vector<sim::SimPhotons>>(photonLabel));
 std::vector<sim::SimChannel> const& charge   = *(evt.getValidHandle<std::vector<sim::SimChannel>>(chargeLabel));
+//std::vector<std::vector<recob::OpHit> const& pulse = *(evt.getValidHandle<std::vector<recob::OpHit>>(ophitLabel))
+
 //std::vector<simb::MCTruth> const& type    = *(evt.getValidHandle<std::vector<simb::MCTruth>>(typoLabel));
 
 ////////////////////////////////// Event number//////////////////////////////
 
+run = evt.id().run();
+subrun = evt.id().subRun();
 event = evt.id().event();
 
 //std::vector< art::Handle< std::vector<simb::MCTruth> > > type;
@@ -211,7 +227,17 @@ auto type = evt.getMany< std::vector<simb::MCTruth> >();
       std::vector<const simb::MCParticle*> particleVec;
       if (particleVecHandle.isValid())
       {
-          for(size_t idx = 0; idx < particleVecHandle->size(); idx++) particleVec.push_back(&particleVecHandle->at(idx)); //
+        for(size_t idx = 0; idx < particleVecHandle->size(); idx++)
+        {
+            const simb::MCParticle* particle = &particleVecHandle->at(idx);
+            particleVec.push_back(particle); //
+
+            // Count cosmics in the event
+            if( particle->Mother() == 0 ){
+                nparticles++;
+            }
+
+        }
       }
     art::Handle< std::vector<recob::Track> > trackVecHandle;
     evt.getByLabel("pandoraTrackICARUSCryo0", trackVecHandle);//at the moment I am calling here directly a particular kind of track: this should be generalized, putting the label of the track type in the fhicl...
@@ -337,6 +363,9 @@ for (std::size_t channel = 0; channel < optical.size(); ++channel) {
 //total_coll_photons = total_coll_photons;
 
 std::cout << " fotoni finale = " <<total_coll_photons <<std::endl; 
+
+
+
 
 
 
@@ -590,10 +619,51 @@ firstphoton_zp_expected_v3[ijk+factor]=(zp);
       }
 
 
+/// RECO PART //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+art::Handle< std::vector<recob::OpHit> > ophitHandle;
+evt.getByLabel(ophitLabel, ophitHandle);//at the moment I am calling here directly a particular kind of track: this should be generalized, putting the label of the track type in the fhicl...
+    
+std::vector<const recob::OpHit*> ophitVec;
+if (ophitHandle.isValid()) {
+
+    for(size_t idx = 0; idx < ophitHandle->size(); idx++){
+        
+        recob::OpHit ophit = ophitHandle->at(idx);
+
+        m_channel_id->push_back( ophit.OpChannel() );
+        m_tstart->push_back( ophit.PeakTimeAbs() );
+        m_tmax->push_back( ophit.PeakTime() );  // in us 
+        m_integral->push_back( ophit.Area() );
+        m_amplitude->push_back( ophit.Amplitude() );
+    }
+}
+else{
+
+    std::cout << "NOT FOUND DATA PRODUCT WITH LABEL: " << ophitLabel; 
+    std::cout << "\nRECONSTRUCTION INFORMATION WILL NOT BE SAVED!" << std::endl;
+}
 
 fTree->Fill();
-    std::cout << " after filling " << fTree << std::endl;
+
+
+
+std::cout << " after filling " << fTree << std::endl;
+
+// Reset things for the new event
+
+nparticles=0;
+
+m_channel_id->clear();
+m_tstart->clear();
+m_tmax->clear();
+m_integral->clear();
+m_amplitude->clear();
+
+
 }
+
+
 
 void icarus::PMTStartCalibTime::beginJob()
 {
@@ -602,7 +672,10 @@ void icarus::PMTStartCalibTime::beginJob()
 art::ServiceHandle<art::TFileService> tfs;
 fTree = tfs->make<TTree>("lighttree","tree for the light response");
 
+fTree->Branch("run",&run,"run/I");
+fTree->Branch("subrun",&subrun,"subrun/I");
 fTree->Branch("event",&event,"event/I");
+fTree->Branch("nparticles",&nparticles,"nparticles/I");
 fTree->Branch("event_type",&event_type,"event_type/I");
 fTree->Branch("gt_0",&gt_0,"gt_0/I");
 fTree->Branch("gt_1",&gt_1,"gt_1/I");
@@ -618,6 +691,8 @@ fTree->Branch("total_coll_photons",&total_coll_photons,"total_coll_photons/F");
 fTree->Branch("photons_colleted",&photons_collected,("photons_collected[" + std::to_string(nPMTs) + "]/F").c_str());
 fTree->Branch("QE_photons_colleted",&QE_photons_collected,("QE_photons_collected[" + std::to_string(nPMTs) + "]/F").c_str());
 fTree->Branch("firstphoton_time",&firstphoton_time,("firstphoton_time[" + std::to_string(nPMTs) + "]/F").c_str());
+fTree->Branch("photon_time",&photon_time,"photon_time[360][10000]/F");
+
 fTree->Branch("firstphoton_time_expected",&firstphoton_time_expected,("firstphoton_time_expected[" + std::to_string(nPMTs) + "]/F").c_str());
 fTree->Branch("firstphoton_time_expected_r",&firstphoton_time_expected_r,("firstphoton_time_expected_r[" + std::to_string(nPMTs) + "]/F").c_str());
 fTree->Branch("firstphoton_tp_expected",&firstphoton_tp_expected,("firstphoton_tp_expected[" + std::to_string(nPMTs) + "]/F").c_str());
@@ -643,13 +718,22 @@ fTree->Branch("firstphoton_time_expected_v2",&firstphoton_time_expected_v2,("fir
 fTree->Branch("firstphoton_time_expected_v3",&firstphoton_time_expected_v3,("firstphoton_time_expected_v3[" + std::to_string(nPMTs) + "]/F").c_str());
 fTree->Branch("firstphoton_time_expected_d2",&firstphoton_time_expected_d2,("firstphoton_time_expected_d2[" + std::to_string(nPMTs) + "]/F").c_str());
 fTree->Branch("firstphoton_time_expected_d3",&firstphoton_time_expected_d3,("firstphoton_time_expected_d3[" + std::to_string(nPMTs) + "]/F").c_str());
-//fTree->Branch("photon_time",&photon_time,"photon_time[360][10000]/F");
+fTree->Branch("photon_time",&photon_time,"photon_time[360][10000]/F");
+
 fTree->Branch("vertex_x",&vertex_x,"vertex_x/D");
 fTree->Branch("vertex_y",&vertex_y,"vertex_y/D");
 fTree->Branch("vertex_z",&vertex_z,"vertex_z/D");
 fTree->Branch("true_barycentre_x",&true_barycentre_x,"true_barycentre_x/F");
 fTree->Branch("true_barycentre_y",&true_barycentre_y,"true_barycentre_y/F");
 fTree->Branch("true_barycentre_z",&true_barycentre_z,"true_barycentre_z/F");
+
+// PULSE SECTION //////////////////  m_ophit_ttree->Branch("channel_id", &m_channel_id);
+fTree->Branch("channel_id", &m_channel_id);
+fTree->Branch("tstart", &m_tstart );
+fTree->Branch("tmax", &m_tmax );
+fTree->Branch("amplitude", &m_amplitude );
+fTree->Branch("integral", &m_integral );
+
 }
 
 DEFINE_ART_MODULE(icarus::PMTStartCalibTime)
