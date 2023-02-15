@@ -52,6 +52,7 @@
 # ------------------------------------------------------------------------------
 #include "services_common_icarus.fcl"
 #include "channelmapping_icarus.fcl"
+#include "timing_icarus.fcl"
 
 #include "rootoutput_icarus.fcl"
 #include "decoderdefs_icarus.fcl"
@@ -63,12 +64,13 @@ process_name: DecodePMT
 # ------------------------------------------------------------------------------
 services: {
   
-                     @table::icarus_art_services
-  message:           @local::icarus_message_services_interactive_debug
+                               @table::icarus_art_services
+  message:                     @local::icarus_message_services_interactive_debug
   
-                     @table::icarus_geometry_services
-  DetectorClocksService: @local::icarus_detectorclocks
-  IICARUSChannelMap: @local::icarus_channelmappinggservice
+                               @table::icarus_geometry_services
+  DetectorClocksService:       @local::icarus_detectorclocks
+  IICARUSChannelMap:           @local::icarus_channelmappinggservice
+  IPMTTimingCorrectionService: @local::icarus_pmttimingservice
   
   TFileService: { fileName: "Trees-%ifb_%tc-%p.root" }
 }
@@ -82,7 +84,7 @@ physics: {
     triggerconfig: @local::extractTriggerConfig
     pmtconfig:     @local::extractPMTconfig
     
-    daqTrigger:    @local::decodeTriggerV2
+    daqTrigger:    @local::decodeTriggerAutodetect
     
     daqPMT:        @local::decodePMT
     
@@ -109,7 +111,9 @@ outputs: {
 
 # ------------------------------------------------------------------------------
 
-physics.producers.daqTrigger.DecoderTool.TrigConfigLabel: triggerconfig # required
+physics.producers.daqTrigger.DecoderTool.Decoders[0].ToolConfig.TrigConfigLabel: triggerconfig
+physics.producers.daqTrigger.DecoderTool.Decoders[1].ToolConfig.TrigConfigLabel: triggerconfig
+physics.producers.daqTrigger.DecoderTool.Decoders[2].ToolConfig.TrigConfigLabel: triggerconfig
 physics.producers.daqPMT.PMTconfigTag: pmtconfig # required
 physics.producers.daqPMT.TriggerTag:   daqTrigger # required
 
@@ -130,8 +134,12 @@ physics.producers.daqPMT.DataTrees: [ "PMTfragments" ]
 # customization of trigger decoding
 #
 
-physics.producers.daqTrigger.DecoderTool.DiagnosticOutput: true
-physics.producers.daqTrigger.DecoderTool.Debug: false
+physics.producers.daqTrigger.DecoderTool.Decoders[0].ToolConfig.DiagnosticOutput: true
+physics.producers.daqTrigger.DecoderTool.Decoders[1].ToolConfig.DiagnosticOutput: true
+physics.producers.daqTrigger.DecoderTool.Decoders[2].ToolConfig.DiagnosticOutput: true
+physics.producers.daqTrigger.DecoderTool.Decoders[0].ToolConfig.Debug: false
+physics.producers.daqTrigger.DecoderTool.Decoders[1].ToolConfig.Debug: false
+physics.producers.daqTrigger.DecoderTool.Decoders[2].ToolConfig.Debug: false
 
 
 # ------------------------------------------------------------------------------

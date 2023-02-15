@@ -280,9 +280,6 @@ namespace daq
       static constexpr int Calib { 5 };
     }; 
     
-    static constexpr nanoseconds BNBgateDuration { 1600. };
-    static constexpr nanoseconds NuMIgateDuration { 9500. };
-    
     static std::string_view firstLine
       (std::string const& s, std::string const& endl = "\0\n\r"s);
     
@@ -764,8 +761,15 @@ namespace daq
     // beam gate
     //
     
-    // beam gate width (read in microseconds, but we use it in nanoseconds)
-    nanoseconds const gateWidth = microseconds{ fTriggerConfiguration
+    // beam gate width (read in microseconds, but we use it in nanoseconds);
+    // we need to protect from some defective configurations where the (unused)
+    // beam gate duration is smaller than the veto time
+    icarus::TriggerConfiguration::GateConfig const* gateConfig
+      = fTriggerConfiguration
+      ? &(fTriggerConfiguration->gateConfig.at(value(beamGateBit))): nullptr
+      ;
+    nanoseconds const gateWidth = microseconds{
+      (gateConfig && (gateConfig->gateWidth > fTriggerConfiguration->vetoDelay))
       ? fTriggerConfiguration->getGateWidth(value(beamGateBit))
       : 0.0
       };
