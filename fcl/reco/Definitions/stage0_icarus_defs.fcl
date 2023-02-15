@@ -95,6 +95,7 @@ icarus_stage0_producers:
   pmtthr:                         @local::icarus_pmtdiscriminatethr
   
   ### Optical hit finder
+  pmtbaselines:                   @local::icarus_opreco_pedestal_fromchannel_data  # from icarus_ophitfinder.fcl
   ophituncorrected:               @local::icarus_ophit_data
   ophit:                          @local::icarus_ophit_timing_correction
   ophitfulluncorrected:           @local::icarus_ophitdebugger_data
@@ -228,6 +229,7 @@ icarus_stage0_PMT:                  [ triggerconfig,
                                       daqPMT,
                                       pmtconfigbaselines,
                                       pmtthr,
+                                      pmtbaselines,
                                       ophituncorrected,
                                       ophit,
                                       opflashCryoE,

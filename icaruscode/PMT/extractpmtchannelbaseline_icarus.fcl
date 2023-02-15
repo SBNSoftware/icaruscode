@@ -1,0 +1,83 @@
+#
+# File:    extractpmtchannelbaseline_icarus.fcl
+# Purpose: writes PMT waveform baseline into a data product.
+# Author:  Gianluca Petrillo (petrillo@slac.stanford.edu)
+# Date:    February 4, 2023
+#
+# This job configuration applies the `opdet::SharedWaveformBaseline` algorithm
+# to the input data, and stores the result into a data product.
+# 
+# The algorithm attempts to extract a common baseline from all the PMT waveforms
+# recorded on the same channel and event using the starting part of the
+# waveforms. More details are in the algorithm class documentation.
+# 
+# The job is set up for data-like waveforms, and in particular:
+#  * the input data product tag matches the standard one from ICARUS stage0
+#  * PMT readout configuration information is required
+# 
+# 
+# Input
+# ------
+# 
+# Standard Stage0 and decodePMT output files contain the needed information
+# (Stage1 files may not contain it any more!):
+# 
+# * `daqPMT` (`std::vector<raw::OpDetWaveform>`): the PMT recorded waveforms
+# * `pmtconfig` (`sbn::PMTConfiguration`, run data product): the PMT readout
+#     configuration settings
+# 
+# Output
+# -------
+# 
+# A replica out the input file, with in addition:
+#  * `std::vector<icarus::WaveformBaseline>` (`pmtbaselines`): baselines per channel
+#  * `std::vector<icarus::WaveformRMS>` (`pmtbaselines`): baseline RMS per channel
+# 
+# Baseline plots are produced in the `pmtbaselines` directory of the
+# supplemental ROOT file.
+#
+#
+
+# ------------------------------------------------------------------------------
+#include "services_common_icarus.fcl"
+#include "icarus_ophitfinder.fcl"
+#include "rootoutput_icarus.fcl"
+
+# ------------------------------------------------------------------------------
+process_name: PMTbline
+
+
+# ------------------------------------------------------------------------------
+services: @local::icarus_minimum_services
+
+
+# ------------------------------------------------------------------------------
+physics: {
+  producers: {
+    pmtbaselines: {
+
+      @table::icarus_opreco_pedestal_fromchannel_data
+      
+      # enable plots
+      PlotBaselines: true
+      BaselineTimeAverage: 600.0 # seconds
+      
+    } # pmtbaselines
+  } # producers
+  
+  
+  reco:    [ pmtbaselines ]
+  
+  streams: [ rootoutput ]
+  
+} # physics
+
+
+# ------------------------------------------------------------------------------
+outputs.rootoutput: @local::icarus_rootoutput  # from rootoutput_icarus.fcl
+
+
+# ------------------------------------------------------------------------------
+outputs.rootoutput.outputCommands: [ "drop *", "keep *_*_*_PMTbline" ]
+
+# ------------------------------------------------------------------------------
