@@ -77,9 +77,10 @@ cet_build_plugin(PMTWaveformBaselinesFromReadoutConfiguration art::module
 
 cet_build_plugin(PMTWaveformBaselinesFromChannelData art::module
                     LIBRARIES
-			icaruscode_PMT_Algorithms
+			icarusalg::PMT_Algorithms
 			sbnobj::ICARUS_PMT_Data
 			sbnobj::Common_PMT_Data
+			lardata::headers
 			larcore::Geometry_Geometry_service
 			larcorealg::Geometry
 			lardataobj::RawData

@@ -15,9 +15,9 @@
 #include "icaruscode/PMT/Trigger/Utilities/TrackedOpticalTriggerGate.h"
 #include "icaruscode/PMT/Trigger/Utilities/TriggerDataUtils.h" // ReadTriggerGates()
 #include "icaruscode/PMT/Trigger/Utilities/TriggerGateOperations.h"
-#include "icaruscode/PMT/Trigger/Utilities/PlotSandbox.h"
 #include "icaruscode/IcarusObj/OpDetWaveformMeta.h"
 #include "icaruscode/Utilities/DetectorClocksHelpers.h" // makeDetTimings()...
+#include "icarusalg/Utilities/PlotSandbox.h"
 #include "icarusalg/Utilities/ROOTutils.h" // util::ROOT
 #include "icarusalg/Utilities/mfLoggingClass.h"
 #include "icarusalg/Utilities/ChangeMonitor.h" // ThreadSafeChangeMonitor
@@ -475,7 +475,7 @@ class icarus::trigger::MajorityTriggerSimulation
   GeometryChannelSplitter fChannelSplitter;
   
   /// All plots in one practical sandbox.
-  icarus::trigger::PlotSandbox fPlots;
+  icarus::ns::util::PlotSandbox<art::TFileDirectory> fPlots;
 
   ///< Count of fired triggers, per threshold.
   std::vector<std::atomic<unsigned int>> fTriggerCount;

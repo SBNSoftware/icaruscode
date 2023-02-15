@@ -13,10 +13,10 @@
 // ICARUS libraries
 #include "icaruscode/PMT/Trigger/Algorithms/BeamGateMaker.h"
 #include "icaruscode/PMT/Trigger/Utilities/TriggerDataUtils.h" // FillTriggerGates()
-#include "icaruscode/PMT/Trigger/Utilities/PlotSandbox.h"
 #include "icaruscode/Utilities/DetectorClocksHelpers.h" // makeDetTimings()
 #include "icarusalg/Utilities/BinningSpecs.h"
 #include "icarusalg/Utilities/ROOTutils.h" // util::ROOT
+#include "icarusalg/Utilities/PlotSandbox.h"
 #include "icarusalg/Utilities/FHiCLutils.h" // util::fhicl::getOptionalValue()
 
 // LArSoft libraries
@@ -752,7 +752,7 @@ void icarus::trigger::TriggerEfficiencyPlotsBase::initializePlots
   for (std::string const& thresholdTag: util::get_elements<0U>(fADCthresholds))
   {
     // create a plot sandbox inside `fOutputDir` with a name/prefix `Thr###`
-    icarus::trigger::PlotSandbox thrPlots
+    PlotSandbox thrPlots
       { fOutputDir, "Thr"s + thresholdTag, "(thr: "s + thresholdTag + ")"s };
     
     // create a subbox for each plot category
