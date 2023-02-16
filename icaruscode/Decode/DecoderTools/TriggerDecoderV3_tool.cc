@@ -213,12 +213,12 @@ namespace daq
    *     information, including a dump of the trigger data fragment.
    * 
    */
-  class TriggerDecoder : public IDecoder
+  class TriggerDecoderV3 : public IDecoder
   {
     using microseconds = util::quantities::microsecond;
     using nanoseconds = util::quantities::nanosecond;
   public:
-    explicit TriggerDecoder(fhicl::ParameterSet const &pset);
+    explicit TriggerDecoderV3(fhicl::ParameterSet const &pset);
     
     virtual void consumes(art::ConsumesCollector& collector) override;
     virtual void produces(art::ProducesCollector&) override;
@@ -301,11 +301,11 @@ namespace daq
   };
 
 
-  std::string const TriggerDecoder::CurrentTriggerInstanceName {};
-  std::string const TriggerDecoder::PreviousTriggerInstanceName { "previous" };
+  std::string const TriggerDecoderV3::CurrentTriggerInstanceName {};
+  std::string const TriggerDecoderV3::PreviousTriggerInstanceName { "previous" };
   
 
-  TriggerDecoder::TriggerDecoder(fhicl::ParameterSet const &pset)
+  TriggerDecoderV3::TriggerDecoderV3(fhicl::ParameterSet const &pset)
     : fDetTimings
       { art::ServiceHandle<detinfo::DetectorClocksService>()->DataForJob() }
   {
@@ -313,12 +313,12 @@ namespace daq
   }
 
   
-  void TriggerDecoder::consumes(art::ConsumesCollector& collector) {
+  void TriggerDecoderV3::consumes(art::ConsumesCollector& collector) {
     collector.consumes<icarus::TriggerConfiguration, art::InRun>
       (fTriggerConfigTag);
   }
   
-  void TriggerDecoder::produces(art::ProducesCollector& collector) 
+  void TriggerDecoderV3::produces(art::ProducesCollector& collector) 
   {
     collector.produces<TriggerCollection>(CurrentTriggerInstanceName);
     collector.produces<TriggerCollection>(PreviousTriggerInstanceName);
@@ -328,7 +328,7 @@ namespace daq
   }
     
 
-  void TriggerDecoder::configure(fhicl::ParameterSet const &pset) 
+  void TriggerDecoderV3::configure(fhicl::ParameterSet const &pset) 
   {
     fTriggerConfigTag = pset.get<std::string>("TrigConfigLabel");
     fDiagnosticOutput = pset.get<bool>("DiagnosticOutput", false);
@@ -347,7 +347,7 @@ namespace daq
     return;
   }
   
-  void TriggerDecoder::initializeDataProducts()
+  void TriggerDecoderV3::initializeDataProducts()
   {
     //use until different object chosen 
     //fTrigger = new raw::Trigger();
@@ -360,7 +360,7 @@ namespace daq
   }
   
   
-  icarus::ICARUSTriggerV3Fragment TriggerDecoder::makeTriggerFragment
+  icarus::ICARUSTriggerV3Fragment TriggerDecoderV3::makeTriggerFragment
     (artdaq::Fragment const& fragment) const
   {
     try {
@@ -379,10 +379,10 @@ namespace daq
           << sbndaq::dumpFragment(fragment);
       throw;
     }
-  } // TriggerDecoder::makeTriggerFragment()
+  } // TriggerDecoderV3::makeTriggerFragment()
 
   
-  icarus::ICARUSTriggerInfo TriggerDecoder::parseTriggerString
+  icarus::ICARUSTriggerInfo TriggerDecoderV3::parseTriggerString
     (std::string_view data) const
   {
     try {
@@ -401,10 +401,10 @@ namespace daq
         << data.length() << "-char long trigger string:\n==>|" << data << "|.";
       throw;
     }
-  } // TriggerDecoder::parseTriggerString()
+  } // TriggerDecoderV3::parseTriggerString()
 
 
-  icarus::KeyValuesData TriggerDecoder::parseTriggerStringAsCSV
+  icarus::KeyValuesData TriggerDecoderV3::parseTriggerStringAsCSV
     (std::string const& data) const
   {
     icarus::details::KeyedCSVparser parser;
@@ -423,20 +423,20 @@ namespace daq
         << "|<==\nError message: " << e.what() << std::endl;
       throw;
     }
-  } // TriggerDecoder::parseTriggerStringAsCSV()
+  } // TriggerDecoderV3::parseTriggerStringAsCSV()
   
 
-  void TriggerDecoder::setupRun(art::Run const& run) {
+  void TriggerDecoderV3::setupRun(art::Run const& run) {
     
     fTriggerConfiguration = fTriggerConfigTag.empty()
       ? nullptr
       : &(run.getProduct<icarus::TriggerConfiguration>(fTriggerConfigTag))
       ;
     
-  } // TriggerDecoder::setupRun()
+  } // TriggerDecoderV3::setupRun()
   
   
-  void TriggerDecoder::process_fragment(const artdaq::Fragment &fragment)
+  void TriggerDecoderV3::process_fragment(const artdaq::Fragment &fragment)
   {
     // artdaq_ts is reworked by the trigger board reader to match the corrected
     // trigger time; to avoid multiple (potentially inconsistent) corrections,
@@ -799,7 +799,7 @@ namespace daq
     return;
   }
 
-  void TriggerDecoder::outputDataProducts(art::Event &event)
+  void TriggerDecoderV3::outputDataProducts(art::Event &event)
   {
     //Place trigger data object into raw data store 
     event.put(std::move(fTrigger), CurrentTriggerInstanceName);
@@ -810,14 +810,14 @@ namespace daq
     return;
   }
 
-  std::string_view TriggerDecoder::firstLine
+  std::string_view TriggerDecoderV3::firstLine
     (std::string const& s, std::string const& endl /* = "\0\n\r" */)
   {
     return { s.data(), std::min(s.find_first_of(endl), s.size()) };
   }
   
 
-  std::uint64_t TriggerDecoder::encodeLVDSbits
+  std::uint64_t TriggerDecoderV3::encodeLVDSbits
     (short int cryostat, short int connector, std::uint64_t connectorWord)
   {
     /*
@@ -836,10 +836,10 @@ namespace daq
     assert(connectorWord == ((msw << 32ULL) | lsw));
     std::swap(lsw, msw);
     return (msw << 32ULL) | lsw;
-  } // TriggerDecoder::encodeLVDSbits()
+  } // TriggerDecoderV3::encodeLVDSbits()
   
   
-  sim::BeamType_t TriggerDecoder::simGateType(sbn::triggerSource source)
+  sim::BeamType_t TriggerDecoderV3::simGateType(sbn::triggerSource source)
   {
     switch (source) {
       case sbn::triggerSource::BNB:
@@ -854,9 +854,9 @@ namespace daq
         mf::LogWarning("TriggerDecoder") << "Unsupported trigger source " << name(source);
         return sim::kUnknown;
     } // switch source
-  } // TriggerDecoder::simGateType()
+  } // TriggerDecoderV3::simGateType()
   
   
-  DEFINE_ART_CLASS_TOOL(TriggerDecoder)
+  DEFINE_ART_CLASS_TOOL(TriggerDecoderV3)
 
 }
