@@ -1,0 +1,10 @@
+#include "cafmakerjob_icarus_evtw.fcl"
+
+# over-write labels to use Wire-Cell SimChannels
+physics.producers.cafmaker.SimChannelLabel: "daq:simpleSC" # 2D drift
+
+# SimChannel's get re-made by 2D drift simulation -- use these to backtrack
+services.BackTrackerService.BackTracker.SimChannelModuleLabel: "daq:simpleSC"
+
+this_cal_constants: [1.343e-2, 1.338e-2, 0.01227]
+#include "set_caf_calconst.fcl"

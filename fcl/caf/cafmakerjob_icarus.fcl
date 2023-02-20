@@ -21,7 +21,6 @@ services:
   SpaceChargeService: @local::icarus_spacecharge
 }
 
-
 outputs:
 {
   outpid:
