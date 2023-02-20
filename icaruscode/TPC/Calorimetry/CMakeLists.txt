@@ -42,14 +42,15 @@ set( TOOL_LIBRARIES
            ROOT::Physics
            wda::wda
          )
+
 cet_build_plugin(NormalizeDriftSQLite art::tool LIBRARIES ${TOOL_LIBRARIES})
 cet_build_plugin(NormalizeDrift art::tool LIBRARIES ${TOOL_LIBRARIES})
 cet_build_plugin(NormalizeTPCSQL art::tool LIBRARIES ${TOOL_LIBRARIES})
 cet_build_plugin(NormalizeTPC art::tool LIBRARIES ${TOOL_LIBRARIES})
+cet_build_plugin(NormalizeTPCLocal art::tool LIBRARIES ${TOOL_LIBRARIES})
 cet_build_plugin(NormalizeWire art::tool LIBRARIES ${TOOL_LIBRARIES})
 cet_build_plugin(NormalizeYZSQL art::tool LIBRARIES ${TOOL_LIBRARIES})
 cet_build_plugin(NormalizeYZ art::tool LIBRARIES ${TOOL_LIBRARIES})
-
 
 install_headers()
 install_fhicl()
