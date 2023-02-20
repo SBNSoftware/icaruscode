@@ -2,6 +2,7 @@
 #include "correctionservices_icarus.fcl"
 #include "geometry_icarus.fcl"
 #include "services_common_icarus.fcl"
+#include "services_icarus_simulation.fcl"
 
 #include "seedservice.fcl"
 #include "particleinventoryservice.fcl"
@@ -19,8 +20,7 @@ services:
 {
 
   # Load the service that manages root files for histograms.
-  TFileService: { fileName: "zlibmaker_r%r_s%s_hist.root"
-                  closeFileFast: false }
+  # TFileService: { fileName: "zlibmaker_r%r_s%s_hist.root" closeFileFast: false }
 
   RandomNumberGenerator:     {}                                 # required by fuzzyCluster
   RandomNumberGenerator:     {}
@@ -29,7 +29,9 @@ services:
   FileCatalogMetadata:       @local::art_file_catalog_mc
   ParticleInventoryService:  @local::standard_particleinventoryservice
   BackTrackerService:        @local::standard_backtrackerservice
-                             @table::icarus_geometry_services
+  
+  @table::icarus_geometry_services
+  @table::icarus_detsim_services
 }
 
 source:
@@ -41,14 +43,17 @@ source:
 
 physics:
 {
- producers:{}
- 
+ producers:{
+    cvnmapicarus: @local::standard_cvnmapper
+    }
+
  filters:  {} 
  
  analyzers:{
     zlibicarus: @local::standard_cvnzlibmaker
- }
+    }
  
+ map:       [ cvnmapicarus ]
  ana:       [ zlibicarus ]
  end_paths: [ ana ] 
 }
