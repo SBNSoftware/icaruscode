@@ -789,6 +789,55 @@
     <!--first number is estimated max energy, second is
         scale factor to multiply max scan energy by -->
   </param_set>
+ <param_set name="icarus-numi-rock">
+    <!-- verbosity of XML parsing -->
+    <verbose> 0 </verbose>
+    <!-- setting user units should be first -->
+    <units> m </units>
+    <!-- beamdir must come before beam zero position -->
+    <!-- direction of the beam in the user coordinate system -->
+    <!-- beam goes up 3 degrees in the coordinate system of the FD -->
+    <!-- rotation matrix created by sequence of rotations -->
+    <!-- ** Single dimension at a time transformation ** -->
+
+    <!-- ** GEANT4 Style Rotation Matrix ** -->
+    <beamdir type="newxyz">
+      [   0.921035925    0.022715103    0.388814672  ]
+      [             0    0.998297825   -0.058321970  ]
+      [  -0.389477631    0.053716629    0.919468161  ]
+    </beamdir>
+    <!-- value from SBN-doc-22998 -->
+
+    <!-- position of beam -->
+    <!-- this is a translation from ( user coords ) to ( beam coords ) -->
+    <!-- basically a statement of the origin in the detector coordinate system
+         has the corresponding value in the beam coordinate system -->
+    <!-- XML config must have already set the rotation matrix -->
+    <beampos> ( 0.0, 0.0, 0.0 ) = (4.503730, 80.153901, 795.112945)</beampos>
+    <!-- value from SBN-doc-22998 -->
+
+    <!-- define flux window in detector coords -->
+    <!-- need 3 positions to define a rectoid -->
+    <!-- not yet support beam coords, 
+         but if/when must have already specified transform -->
+    <!-- make this window big enough to cover the detector, also offset it from 
+         the origin towards the beam in x and y -->
+
+  <window>
+      <point coord="det">  23,  -22., -37.0 </point>
+      <point coord="det"> -23,   20., -37.0 </point>
+      <point coord="det">  23,  -22.,  22. </point>
+    </window>
+        <enumax> 120. 1.05 1.05 25000000 </enumax>
+    <reuse> 400   </reuse>
+    <maxwgtfail> frozen </maxwgtfail>
+    <upstreamz> -500.0 </upstreamz>
+
+    <!--minmaxwgt 1.25-->
+    <!--first number is estimated max energy, second is
+        scale factor to multiply max scan energy by -->
+  </param_set>
+
 
 </gnumi_config>
 

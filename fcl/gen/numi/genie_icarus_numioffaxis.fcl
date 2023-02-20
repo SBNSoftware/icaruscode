@@ -86,6 +86,10 @@ icarus_genie_NuMI: {
   
 } # icarus_genie_NuMI
 
+# Rock config
+icarus_genie_NuMI_rock: @local::icarus_genie_NuMI
+icarus_genie_NuMI_rock.DetectorLocation: "icarus-numi-rock"
+
 
 ################################################################################
 
