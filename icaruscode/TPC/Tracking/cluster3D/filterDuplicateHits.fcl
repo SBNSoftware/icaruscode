@@ -1,0 +1,17 @@
+BEGIN_PROLOG
+
+icarus_duplicateFilterCryoE:
+{
+  module_type:           DuplicateHitFilter
+  InputHitLabel:         "cluster3DCryoE"
+  HitWireAssns:          false
+}
+
+icarus_duplicateFilterCryoW:
+{
+  module_type:           DuplicateHitFilter
+  InputHitLabel:         "cluster3DCryoW"
+  HitWireAssns:          false
+}
+
+END_PROLOG
