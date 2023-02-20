@@ -20,6 +20,7 @@ standard_pixelmapproducer:
 standard_cvnmapper:
 {
   module_type:           CVNMapperICARUS
+  OutputDir:             "outputs_maps"
   HitsModuleLabel:       "gaushit"
   ClusterPMLabel:        "cvnmap"
   MinClusterHits:        100
@@ -36,8 +37,8 @@ standard_cvnmapper:
 
 standard_cvnzlibmaker:
 {
-  module_type:     CVNZlibMakerICARUS
-#  OutputDir: "./"
+  module_type:      CVNZlibMakerICARUS
+  OutputDir:        "outputs_zlib"
   SetLog:           false
   ReverseViews:     [false,false,false]	
   verbose:          false
@@ -52,19 +53,18 @@ standard_cvnzlibmaker:
   CosEfrac:         0.75
   NuEfrac:          0.25
   VolCut:           0.
-  PixelMapInput:         "pixelmap"
-  SliceLabel:            "pandora"
   GenieGenModuleLabel:   "generator"
-  PFParticleModuleLabel: "pandora"
+  PixelMapInput:         "cvnmapicarus"
   HitModuleLabel:        "gaushit"
-  T0Label:               "pandora"
+  SliceLabel:            "pandoraGausCryoE"
+  PFParticleModuleLabel: "pandoraGausCryoE"
+  T0Label:               "pandoraGausCryoE"
 }
 
 
 standard_cvnmapper_sim:
 {
   module_type:        CVNMapperSim
-  #==================
   HitsModuleLabel:   "tpcrawdecoder:simpleSC"
   ClusterPMLabel:    "cvnmap"
   MinClusterHits:    100
