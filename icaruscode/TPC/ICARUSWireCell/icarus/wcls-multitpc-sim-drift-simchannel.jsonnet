@@ -157,17 +157,17 @@ local wcls_simchannel_sink = g.pnode({
     v_to_rp: 100 * wc.mm,
     y_to_rp: 100 * wc.mm,
 
-    // GP: The shaping time of the electronics response (2.2us) shifts the peak
+    // GP: The shaping time of the electronics response (1.3us) shifts the peak
     //     of the field response time. Eyeballing simulation times, it does this
-    //     by a bit less than the 2.2us.
+    //     by a bit less than the 1.3us.
     //
     //     N.B. for future: there is likely an additional offset on the two induction
     //     planes due to where the deconvolution precisely defines where the "peak"
     //     of the pulse is. One may want to refine these parameters to account for that.
     //     This perturbation shouldn't be more than a tick or two.
-    u_time_offset: 2.0 * wc.us,
-    v_time_offset: 2.0 * wc.us,
-    y_time_offset: 2.0 * wc.us,
+    u_time_offset: 1.0 * wc.us,
+    v_time_offset: 1.0 * wc.us,
+    y_time_offset: 1.0 * wc.us,
 
     g4_ref_time: -1500 * wc.us, // G4RefTime from detectorclocks_icarus.fcl
     use_energy: true,
