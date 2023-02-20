@@ -206,7 +206,7 @@ namespace icarus{
                       //triggering channel in coincidence candidate's FEB
                       for ( size_t j=0; j< trg2.second.data.size(); j++ ) {
                           uint64_t t2tmp = trg2.second.data[j].first.ts; //in us
-                          if ( util::absDiff(t2tmp,ttrig) < fLayerCoincidenceWindowM) {
+                          if ( lar::util::absDiff(t2tmp,ttrig) < fLayerCoincidenceWindowM) {
                               minosPairFound = true;
                               break;
                           }
@@ -546,20 +546,18 @@ namespace icarus{
             double x = (ide.entryX + ide.exitX) / 2;
             double y = (ide.entryY + ide.exitY) / 2;
             double z = (ide.entryZ + ide.exitZ) / 2;
-            double world[3] = {x, y, z};
-            double svHitPosLocal[3];
-            double modHitPosLocal[3];
-            adsGeo.WorldToLocal(world, svHitPosLocal); //position in strip frame  (origin at center)
-            adGeo.WorldToLocal(world, modHitPosLocal); //position in module frame (origin at center)
+            geo::Point_t const world{x, y, z};
+            auto const svHitPosLocal = adsGeo.toLocalCoords(world); //position in strip frame  (origin at center)
+            auto const modHitPosLocal = adGeo.toLocalCoords(world); //position in module frame (origin at center)
 
             //check hit point is contained within the strip according to geometry
-            if ( abs(svHitPosLocal[0])>adsGeo.HalfWidth1()+0.001 ||
-                 abs(svHitPosLocal[1])>adsGeo.HalfHeight()+0.001 ||
-                 abs(svHitPosLocal[2])>adsGeo.HalfLength()+0.001)
+            if ( abs(svHitPosLocal.X())>adsGeo.HalfWidth1()+0.001 ||
+                 abs(svHitPosLocal.Y())>adsGeo.HalfHeight()+0.001 ||
+                 abs(svHitPosLocal.Z())>adsGeo.HalfLength()+0.001)
                mf::LogError("CRT") << "HIT POINT OUTSIDE OF SENSITIVE VOLUME!" << '\n'
                                   << "  AD: " << adid << " , ADS: " << adsid << '\n'
-                                  << "  Local position (x,y,z): ( " << svHitPosLocal[0]
-                                  << " , " << svHitPosLocal[1] << " , " << svHitPosLocal[2] << " )";
+                                  << "  Local position (x,y,z): ( " << svHitPosLocal.X()
+                                  << " , " << svHitPosLocal.Y() << " , " << svHitPosLocal.Z() << " )";
 
             //calculate Birks' correction factor
             double dl = sqrt(pow(ide.entryX-ide.exitX,2)+pow(ide.entryY-ide.exitY,2)+pow(ide.entryZ-ide.exitZ,2));
@@ -572,8 +570,8 @@ namespace icarus{
 
             //longitudinal distance (m) along the strip for fiber atten. calculation
             //assuming SiPM is on +z end (also -z for m modules)
-            double distToReadout = abs( adsGeo.HalfLength() - svHitPosLocal[2])*0.01;
-            double distToReadout2 = abs(-adsGeo.HalfLength() - svHitPosLocal[2])*0.01;
+            double distToReadout = abs( adsGeo.HalfLength() - svHitPosLocal.Z())*0.01;
+            double distToReadout2 = abs(-adsGeo.HalfLength() - svHitPosLocal.Z())*0.01;
 
             double npeExpected = GetLongAtten(distToReadout) * qr;
             double npeExpected2 = GetLongAtten(distToReadout2) * qr;
@@ -581,7 +579,7 @@ namespace icarus{
             //Attenuation factor for transverse propegation in the bulk (c modules only)
             double abs0=1.0, abs1=1.0;
             if(auxDetType=='c'){
-                pair<double,double> tmp = GetTransAtten(svHitPosLocal[0]);
+                pair<double,double> tmp = GetTransAtten(svHitPosLocal.X());
                 abs0 = tmp.first;
                 abs1 = tmp.second;
             }
@@ -668,7 +666,7 @@ namespace icarus{
             // Apply ADC threshold and strip-level coincidence (both fibers fire)
             if (auxDetType=='c') {
                 if ((fApplyStripCoinC && q0>fQThresholdC && q1>fQThresholdC
-                    && util::absDiff(t0,t1)<fStripCoincidenceWindow)||
+                    && lar::util::absDiff(t0,t1)<fStripCoincidenceWindow)||
                     (!fApplyStripCoinC && (q0>fQThresholdC || q1>fQThresholdC)) )
                 {
                     Tagger& tagger = fTaggers[mac5];
@@ -734,7 +732,7 @@ namespace icarus{
 
             //counting losses
             if (auxDetType == 'c') {
-                if ( fApplyStripCoinC && util::absDiff(t0,t1) >= fStripCoincidenceWindow ) fNmiss_strcoin_c++;
+                if ( fApplyStripCoinC && lar::util::absDiff(t0,t1) >= fStripCoincidenceWindow ) fNmiss_strcoin_c++;
             }
             if (auxDetType == 'd' && q0 < fQThresholdD) fNmissthr_d++;
             if (auxDetType == 'm') {
@@ -745,7 +743,7 @@ namespace icarus{
             //print detsim info (if enabled)
             if (fUltraVerbose&&
                (
-                 (auxDetType=='c' && q0>fQThresholdC && q1>fQThresholdC && util::absDiff(t0, t1) < fStripCoincidenceWindow) ||
+                 (auxDetType=='c' && q0>fQThresholdC && q1>fQThresholdC && lar::util::absDiff(t0, t1) < fStripCoincidenceWindow) ||
                  (auxDetType=='d' && q0>fQThresholdD ) ||
                  (auxDetType=='m' && (q0>fQThresholdM || q0Dual>fQThresholdM)) ))
               std::cout << '\n'
@@ -755,8 +753,8 @@ namespace icarus{
               << "CRT module type: " << auxDetType << " , CRT region: " << region << '\n'
               << "CRT channel: " << channel0ID << " , mac5: " << (int)mac5 << '\n'
               << "CRT HIT POS (world coords) " << x << " " << y << " " << z << "\n"
-              << "CRT STRIP POS (module coords) " << svHitPosLocal[0] << " " << svHitPosLocal[1] << " " << svHitPosLocal[2] << "\n"
-              << "CRT MODULE POS (region coords) " << modHitPosLocal[0] << " " << modHitPosLocal[1] << " "<< modHitPosLocal[2] << " " << "\n"
+              << "CRT STRIP POS (module coords) " << svHitPosLocal.X() << " " << svHitPosLocal.Y() << " " << svHitPosLocal.Z() << "\n"
+              << "CRT MODULE POS (region coords) " << modHitPosLocal.X() << " " << modHitPosLocal.Y() << " "<< modHitPosLocal.Z() << " " << "\n"
               << "CRT layer ID: " << layid << "\n"
               << "CRT distToReadout: " << distToReadout << ", distToReadout2: " << distToReadout2 << ", qr = " << qr << '\n'
               << "CRT abs0: " << abs0 << " , abs1: " << abs1 << '\n'
@@ -765,7 +763,7 @@ namespace icarus{
               << "CRT npeSiPM0: " << npe0 << " , npeSiPM1: " << npe1 << " , npeSiPM0Dual: " << npe0Dual << '\n'
               << "CRT charge q0: " << q0 << ", q1: " << q1 << '\n'
               //<< "CRT timing: tTrue: " << tTrue << ", t0: " << t0 << ", t1: " << t1 << ", dt: " << util::absDiff(t0,t1) << '\n'
-              << "CRT timing: tTrue: " << tTrue << ", t0: " << t0 << ", t1: " << t1 << ", |t0-t1|: " << util::absDiff(t0,t1) << '\n'
+              << "CRT timing: tTrue: " << tTrue << ", t0: " << t0 << ", t1: " << t1 << ", |t0-t1|: " << lar::util::absDiff(t0,t1) << '\n'
               //<< " recoT-trueT = " << t0-tTrue << std::endl; 
               << " recoT0-trueT = " << t0-tTrue << ", recoT1-trueT = " << t1-tTrue << ", recoT0Dual-trueT = " << t0Dual-tTrue << ", recoT0-recoT0Dual = " << t0-t0Dual << std::endl;
 

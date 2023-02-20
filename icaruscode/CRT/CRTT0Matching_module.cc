@@ -328,11 +328,11 @@ namespace icarus {
 	  if (hits.size() == 0) continue;
 	  int const cryoNumber = hits[0]->WireID().Cryostat;
 	  // std::pair<double, double> matchedTime = t0Alg.T0AndDCAFromCRTHits(detProp, *trackList[track_i], crtHits, event);
-	  matchCand closest = t0Alg.GetClosestCRTHit(detProp, *trackList[track_i], hits, crtHits,  m_gate_start_timestamp);
+	  matchCand closest = t0Alg.GetClosestCRTHit(detProp, *trackList[track_i], hits, crtHits,  m_gate_start_timestamp, true);
 	  // std::vector <matchCand> closestvec = t0Alg.GetClosestCRTHit(detProp, *trackList[track_i], crtHits, event);
 	  // matchCand closest = closestvec.back();	  
 
-	  if(closest.dca >=0 ){
+	  if(closest.dca !=DBL_MIN ){
 	    mf::LogInfo("CRTT0Matching")
 	      <<"Matched time = "<<closest.t0<<" [us] to track "<<trackList[track_i]->ID()<<" with DCA = "<<closest.dca;
 	    T0col->push_back(anab::T0(closest.t0*1e3, trackList[track_i]->ID(),  closest.thishit.plane, (int)closest.extrapLen, closest.dca));
@@ -340,7 +340,7 @@ namespace icarus {
 	    
 	    //std::cout << "---------------------- line #156 "  << std::endl;
 	    double sin_angle = -99999;
-	    if(closest.dca != -99999){
+//	    if(closest.dca != -99999){
 	      auto start = trackList[track_i]->Vertex<TVector3>();
 	      //auto end   = trackList[track_i]->End<TVector3>();
 	      hDCA[closest.thishit.tagger]->Fill(closest.dca);
@@ -362,7 +362,7 @@ namespace icarus {
 	      fcrtz.push_back(closest.thishit.z_pos);
 	      // fCrtRegion.push_back(closest.thishit.tagger);
 	      fCrtRegion.push_back(fCrtutils->AuxDetRegionNameToNum(closest.thishit.tagger));	    
-	    }
+//	    }
 	      //find this CRThit in the collection
 	    // note this does not work (both the loop and the assoc !!)
 	    unsigned CRThitIndex = std::numeric_limits<unsigned>::max();

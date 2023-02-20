@@ -1,0 +1,27 @@
+#include "calibrationtools.fcl"
+
+BEGIN_PROLOG
+
+pmt_laser_calibration:
+{
+  module_type: PMTLaserCalibration
+  OpDetWaveformLabel: "daqPMT"
+  PMTWaveformTimingCorrectionLabel:  ""  #or "daqPMT:trgprim" if the corrections are applied at decoder level already 
+  LaserChannel:       1
+  WaveformAnalysis :  @local::laser_pulse_configuration
+  DebugMessage:       false 
+}
+
+pmt_bkgphotons_calibration:
+{
+  module_type: 	PMTBackgroundphotonsCalibration
+  OpHitModule: "ophit"
+  TriggerModule: "daqTrigger"
+  AmplitudeThreshold: 2.0 
+  ADCmV: 0.122      
+  ADCpC: 0.00488  
+  ChannelMasks: [  ]  
+  FilterInTime: [ -3, 7] #in us
+}
+
+END_PROLOG

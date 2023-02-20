@@ -9,9 +9,9 @@
 
 // ICARUS libraries
 #include "icaruscode/PMT/Trigger/TriggerEfficiencyPlotsBase.h"
-#include "icaruscode/PMT/Trigger/Utilities/PlotSandbox.h"
 #include "icaruscode/PMT/Trigger/Utilities/TriggerGateOperations.h" // sumGates()
 #include "icaruscode/PMT/Trigger/Utilities/TrackedTriggerGate.h" // gateIn()
+#include "icarusalg/Utilities/PlotSandbox.h"
 #include "icarusalg/Utilities/ROOTutils.h" // util::ROOT
 
 // LArSoft libraries
@@ -833,7 +833,7 @@ void icarus::trigger::MajorityTriggerEfficiencyPlots::plotResponses(
     
     // go through all the plot categories this event qualifies for
     // (for example: charged currents, muon neutrinos, ...)
-    for (icarus::trigger::PlotSandbox const& plotSet: plotSets) {
+    for (PlotSandbox const& plotSet: plotSets) {
       
       //
       // overview plots from different thresholds

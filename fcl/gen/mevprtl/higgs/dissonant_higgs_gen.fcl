@@ -1,4 +1,5 @@
 #include "dissonant_higgs.fcl"
+#include "beamgates_icarus.fcl"
 # service configuration
 #
 #include "services_icarus_simulation.fcl"
@@ -25,6 +26,7 @@ physics:
 {
   producers:{
     generator: @local::dissonant_higgs_gen
+    beamgate:  @local::icarus_standardbeamgate_NuMI  # from beamgates_icarus.fcl
     rns:       { module_type: "RandomNumberSaver" }
   }
   filters:  {} 
@@ -32,7 +34,7 @@ physics:
     
   } # analyzers
  
-  runprod:  [ generator, rns ]
+  runprod:  [ generator, beamgate, rns ]
   stream: [out]
 
   trigger_paths: [ runprod ]

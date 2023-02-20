@@ -636,8 +636,8 @@ namespace crt {
     std::cout << "event " << fEvent << " with " << particleMap.size() << " MCParticles" << std::endl;
 
     //get TPC objects
-    geo::CryostatGeo const& cryo0 = fGeometryService->Cryostat(0);
-    geo::CryostatGeo const& cryo1 = fGeometryService->Cryostat(1);
+    geo::CryostatGeo const& cryo0 = fGeometryService->Cryostat(geo::CryostatID{0});
+    geo::CryostatGeo const& cryo1 = fGeometryService->Cryostat(geo::CryostatID{1});
 
     geo::TPCGeo const& tpc00 = cryo0.TPC(0);
     geo::TPCGeo const& tpc01 = cryo0.TPC(1);
@@ -781,7 +781,6 @@ namespace crt {
                 const TLorentzVector& mom = particle.Momentum(i); // 4-momentum
                 const double point[3] = {pos.X(),pos.Y(),pos.Z()};
                 const double pointnext[3] = {posnext.X(),posnext.Y(),posnext.Z()};
-                double opDetPos[3] = {-FLT_MAX, -FLT_MAX, -FLT_MAX};
                 double entryPos[3] = {-FLT_MAX, -FLT_MAX, -FLT_MAX};
                 double entryT = -FLT_MAX;
                 bool active0 = false, active1 = false, activenext0 = false, activenext1 = false;
@@ -851,12 +850,14 @@ namespace crt {
                                 entryT = fRegEntryXYZT[fNReg][3];
                                 fRegOpDetID.push_back(cryo0.GetClosestOpDet(entryPos));
                                 geo::OpDetGeo const& opDet = cryo0.OpDet(fRegOpDetID[fNReg]);
-                                opDet.GetCenter(opDetPos);
-                                fRegDistToOpDet.push_back(sqrt(pow(opDetPos[0]-entryPos[0],2)
-                                                            + pow(opDetPos[1]-entryPos[1],2)
-                                                            + pow(opDetPos[2]-entryPos[2],2)));
+                                auto const opDetPos = opDet.GetCenter();
+                                fRegDistToOpDet.push_back(sqrt(pow(opDetPos.X()-entryPos[0],2)
+                                                            + pow(opDetPos.Y()-entryPos[1],2)
+                                                            + pow(opDetPos.Z()-entryPos[2],2)));
                                 fRegOpDetXYZT.push_back({});
-                                for (int index=0; index<3; index++) fRegOpDetXYZT[fNReg].push_back(opDetPos[index]);
+                                fRegOpDetXYZT[fNReg].push_back(opDetPos.X());
+                                fRegOpDetXYZT[fNReg].push_back(opDetPos.Y());
+                                fRegOpDetXYZT[fNReg].push_back(opDetPos.Z());
                                 fRegOpDetXYZT[fNReg].push_back(entryT + fRegDistToOpDet[fNReg]*LAR_PROP_DELAY);
                                 fNReg++;
                         }
@@ -917,12 +918,14 @@ namespace crt {
                                 entryT = fRegEntryXYZT[fNReg][3];
                                 fRegOpDetID.push_back(cryo1.GetClosestOpDet(entryPos));
                                 geo::OpDetGeo const& opDet = cryo1.OpDet(fRegOpDetID[fNReg]);
-                                opDet.GetCenter(opDetPos);
-                                fRegDistToOpDet.push_back(sqrt(pow(opDetPos[0]-entryPos[0],2)
-                                                            + pow(opDetPos[1]-entryPos[1],2)
-                                                            + pow(opDetPos[2]-entryPos[2],2)));
+                                auto const opDetPos = opDet.GetCenter();
+                                fRegDistToOpDet.push_back(sqrt(pow(opDetPos.X()-entryPos[0],2)
+                                                            + pow(opDetPos.Y()-entryPos[1],2)
+                                                            + pow(opDetPos.Z()-entryPos[2],2)));
                                 fRegOpDetXYZT.push_back({});
-                                for (int index=0; index<3; index++) fRegOpDetXYZT[fNReg].push_back(opDetPos[index]);
+                                fRegOpDetXYZT[fNReg].push_back(opDetPos.X());
+                                fRegOpDetXYZT[fNReg].push_back(opDetPos.Y());
+                                fRegOpDetXYZT[fNReg].push_back(opDetPos.Z());
                                 fRegOpDetXYZT[fNReg].push_back(entryT + fRegDistToOpDet[fNReg]*LAR_PROP_DELAY);
                                 fNReg++;
                         } // if exiting from volume

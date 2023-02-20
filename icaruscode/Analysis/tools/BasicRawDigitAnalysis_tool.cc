@@ -305,7 +305,7 @@ void BasicRawDigitAnalysis::initializeHists(detinfo::DetectorClocksData const& c
         fFullRmsHist[plane] = dir.make<TH1D>(histName.c_str(), ";ADC", 100, 0., 20.);
         
         // Need a channel...
-        raw::ChannelID_t channel = fGeometry.PlaneWireToChannel(plane,0);
+        raw::ChannelID_t channel = fGeometry.PlaneWireToChannel(geo::WireID(0, 0, plane, 0));
         
         // Recover the filter from signal shaping services...
         const icarusutil::FrequencyVec& response = fSignalServices.GetResponse(channel).getConvKernel();

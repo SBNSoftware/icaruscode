@@ -100,7 +100,7 @@ class icarus::trigger::WindowChannelMap {
   }; // struct WindowTopology_t
   
   /// Information of a single window.
-  struct WindowInfo_t: public WindowComposition_t, public WindowTopology_t {
+  struct WindowInfo_t {
     
     WindowComposition_t composition;
     

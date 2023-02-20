@@ -66,6 +66,18 @@ decodeTriggerV2: {
                     DecoderTool:        @local::TriggerDecoderV2Tool
 }
 
+decodeTriggerV3: {
+                    module_type:        DaqDecoderICARUSTrigger
+                    FragmentsLabel:     "daq:ICARUSTriggerV3"
+                    DecoderTool:        @local::TriggerDecoderV3Tool
+}
+
+decodeTriggerAutodetect: {
+                    module_type:        DaqDecoderICARUSTrigger
+                    FragmentsLabel:     ""
+                    DecoderTool:        @local::TriggerDecoderAutoTool
+}
+
 copyPMTonBeam: {
                     module_type:        CopyBeamTimePMTwaveforms
                     Waveforms:          @nil # must override

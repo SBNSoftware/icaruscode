@@ -86,12 +86,12 @@ namespace icarus::ns::util {
   detinfo::DetectorTimings makeDetTimings(art::Event const* event)
     { return detinfo::DetectorTimings{ makeDetClockData(event) }; }
   
-  /// Returns detector clock data for the specified event.
+  /// Returns a `detinfo::DetectorTimings` for the specified event.
   /// @see `makeDetTimings(art::Event const*)`
   detinfo::DetectorTimings makeDetTimings(art::Event const& event)
     { return makeDetTimings(&event); }
   
-  /// Returns generic detector clock data for the job.
+  /// Returns a `detinfo::DetectorTimings` for the job.
   /// @see `makeDetTimings(art::Event const*)`
   detinfo::DetectorTimings makeDetTimings()
     { return makeDetTimings(nullptr); }

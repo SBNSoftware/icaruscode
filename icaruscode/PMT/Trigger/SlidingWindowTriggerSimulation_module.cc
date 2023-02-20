@@ -3,6 +3,8 @@
  * @brief  Production of triggers data products based on PMT sliding windows.
  * @author Gianluca Petrillo (petrillo@slac.stanford.edu)
  * @date   March 27, 2021
+ * 
+ * @note This module is not being developed any more.
  */
 
 
@@ -15,13 +17,13 @@
 #include "icaruscode/PMT/Trigger/Algorithms/BeamGateMaker.h"
 #include "icaruscode/PMT/Trigger/Algorithms/TriggerTypes.h" // ADCCounts_t
 #include "icaruscode/PMT/Trigger/Algorithms/details/TriggerInfo_t.h"
+#include "icaruscode/Utilities/DetectorClocksHelpers.h" // makeDetTimings()...
 #include "sbnobj/ICARUS/PMT/Trigger/Data/OpticalTriggerGate.h"
 #include "icaruscode/PMT/Trigger/Utilities/TriggerDataUtils.h" // FillTriggerGates()
-#include "icaruscode/PMT/Trigger/Utilities/PlotSandbox.h"
 #include "icaruscode/IcarusObj/OpDetWaveformMeta.h" // sbn::OpDetWaveformMeta
+#include "icarusalg/Utilities/PlotSandbox.h"
 #include "icarusalg/Utilities/ROOTutils.h" // util::ROOT
 #include "icarusalg/Utilities/BinningSpecs.h"
-#include "icaruscode/Utilities/DetectorClocksHelpers.h" // makeDetTimings()...
 #include "icarusalg/Utilities/FixedBins.h"
 #include "icarusalg/Utilities/mfLoggingClass.h"
 #include "icarusalg/Utilities/ChangeMonitor.h" // ThreadSafeChangeMonitor
@@ -249,6 +251,21 @@ namespace icarus::trigger { class SlidingWindowTriggerSimulation; }
  * `icarus::trigger::ns::fhicl::WindowPatternConfig` respectively. Trigger
  * simulation is delegated to `icarus::trigger::SlidingWindowPatternAlg`.
  * 
+ * 
+ * Discontinuation note
+ * =====================
+ * 
+ * @note This module is not being developed any more.
+ *       New features are currently being added to
+ *       `icarus::trigger::TriggerSimulationOnGates` module only.
+ *       The main things that are lost with the _deprecation_ of this module are
+ *       some plots and more in general the design oriented to a single beam
+ *       gate. This allowed for assumptions that in turn could result into a
+ *       rational choice of plots and (a bit more) rational treatment of
+ *       non-triggering events.
+ *       Nevertheless, adding features to both modules is becoming vexing, so
+ *       the author has opted to stick to the most versatile among the two.
+ * 
  */
 class icarus::trigger::SlidingWindowTriggerSimulation
   : public art::EDProducer
@@ -375,6 +392,8 @@ class icarus::trigger::SlidingWindowTriggerSimulation
     BinnedContent_t triggerTimesVsBeam;
   };
   
+  /// Import type.
+  using PlotSandbox_t = icarus::ns::util::PlotSandbox<art::TFileDirectory>;
   
   // --- BEGIN Configuration variables -----------------------------------------
   
@@ -423,7 +442,7 @@ class icarus::trigger::SlidingWindowTriggerSimulation
   std::optional<icarus::trigger::SlidingWindowPatternAlg> fPatternAlg;
   
   /// All plots in one practical sandbox.
-  icarus::trigger::PlotSandbox fPlots;
+  PlotSandbox_t fPlots;
   
   /// Proto-histogram information in a convenient packet; event-wide.
   ThresholdPlotInfo_t fEventPlotInfo;
@@ -455,7 +474,7 @@ class icarus::trigger::SlidingWindowTriggerSimulation
   /// in `plotInfo`.
   void makeThresholdPlots(
     std::string const& threshold,
-    icarus::trigger::PlotSandbox& plots,
+    PlotSandbox_t& plots,
     ThresholdPlotInfo_t const& plotInfo
     );
   
@@ -519,7 +538,7 @@ class icarus::trigger::SlidingWindowTriggerSimulation
   
   /// Creates and returns a 1D histogram filled with `binnedContent`.
   TH1* makeHistogramFromBinnedContent(
-    icarus::trigger::PlotSandbox& plots,
+    PlotSandbox_t& plots,
     std::string const& name, std::string const& title,
     BinnedContent_t const& binnedContent
     ) const;
@@ -828,7 +847,7 @@ void icarus::trigger::SlidingWindowTriggerSimulation::initializePlots() {
   for (auto const& [ thr, info ]
     : util::zip(util::get_elements<0U>(fADCthresholds), fThresholdPlots))
   {
-    icarus::trigger::PlotSandbox& plots
+    PlotSandbox_t& plots
       = fPlots.addSubSandbox("Thr" + thr, "Threshold: " + thr);
     
     plots.make<TGraph>(
@@ -859,7 +878,7 @@ void icarus::trigger::SlidingWindowTriggerSimulation::finalizePlots() {
   for (auto const& [ thr, info ]
     : util::zip(util::get_elements<0U>(fADCthresholds), fThresholdPlots))
   {
-    icarus::trigger::PlotSandbox& plots = fPlots.demandSandbox("Thr" + thr);
+    PlotSandbox_t& plots = fPlots.demandSandbox("Thr" + thr);
     makeThresholdPlots(thr, plots, info);
     if (plots.empty()) fPlots.deleteSubSandbox(plots.name());
   } // for thresholds
@@ -872,7 +891,7 @@ void icarus::trigger::SlidingWindowTriggerSimulation::finalizePlots() {
 //------------------------------------------------------------------------------
 void icarus::trigger::SlidingWindowTriggerSimulation::makeThresholdPlots(
   std::string const& threshold,
-  icarus::trigger::PlotSandbox& plots,
+  PlotSandbox_t& plots,
   ThresholdPlotInfo_t const& plotInfo
 ) {
   
@@ -1053,7 +1072,7 @@ void icarus::trigger::SlidingWindowTriggerSimulation::plotTriggerResponse(
     fPlots.demand<TH2>("TriggerTimeVsBeamGate").Fill
       (thisTriggerTimeVsBeamGate.value(), iThr);
     
-    icarus::trigger::PlotSandbox& plots{ fPlots.demandSandbox("Thr" + thrTag) };
+    PlotSandbox_t& plots{ fPlots.demandSandbox("Thr" + thrTag) };
 //     plots.demand<TGraph>("TriggerTimeVsHWTrigVsBeam").AddPoint( // ROOT 6.24?
     TGraph& graph = plots.demand<TGraph>("TriggerTimeVsHWTrigVsBeam");
     graph.SetPoint(graph.GetN(),
@@ -1143,7 +1162,7 @@ auto icarus::trigger::SlidingWindowTriggerSimulation::readTriggerGates
 //------------------------------------------------------------------------------
 TH1*
 icarus::trigger::SlidingWindowTriggerSimulation::makeHistogramFromBinnedContent(
-  icarus::trigger::PlotSandbox& plots,
+  PlotSandbox_t& plots,
   std::string const& name, std::string const& title,
   BinnedContent_t const& binnedContent
 ) const {

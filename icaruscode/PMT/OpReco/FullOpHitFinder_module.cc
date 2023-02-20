@@ -80,7 +80,7 @@ namespace opdet {
     std::vector<double> _wf;
     double _tstart;
     int _run,_event,_ch;
-    
+
     TTree* _wftree;
     TTree* _hittree;
     TTree* _geotree;
@@ -146,7 +146,7 @@ namespace opdet {
     _output_filename = pset.get<std::string>("OutputFile","out.root");
 
   }
-  
+
   void FullOpHitFinder::beginJob()
   {
     // analyzie tuple prep
@@ -179,15 +179,13 @@ namespace opdet {
     std::vector<double> minX, minY, minZ;
     std::vector<double> maxX, maxY, maxZ;
     auto const geop = lar::providerFrom<geo::Geometry>();
-    double PMTxyz[3];
     for(size_t opch=0; opch<geop->NOpChannels(); ++opch) {
-      geop->OpDetGeoFromOpChannel(opch).GetCenter(PMTxyz);
-      pmtX.push_back(PMTxyz[0]);
-      pmtY.push_back(PMTxyz[1]);
-      pmtZ.push_back(PMTxyz[2]);
+      auto const PMTxyz = geop->OpDetGeoFromOpChannel(opch).GetCenter();
+      pmtX.push_back(PMTxyz.X());
+      pmtY.push_back(PMTxyz.Y());
+      pmtZ.push_back(PMTxyz.Z());
     }
-    for(auto iter=geop->begin_TPC(); iter!=geop->end_TPC(); ++iter) {
-      auto const& tpc = (*iter);
+    for(auto const& tpc : geop->Iterate<geo::TPCGeo>()) {
       minX.push_back(tpc.BoundingBox().MinX());
       minY.push_back(tpc.BoundingBox().MinY());
       minZ.push_back(tpc.BoundingBox().MinZ());
@@ -215,7 +213,7 @@ namespace opdet {
     _geotree->Write();
     _ofile->Close();
   }
-  
+
   //----------------------------------------------------------------------------
   // Destructor
   FullOpHitFinder::~FullOpHitFinder()
@@ -249,29 +247,31 @@ namespace opdet {
       if (!wfHandle.isValid()) continue; // Skip non-existent collections
 
       for(auto const& waveform : (*wfHandle)) {
-	
+
 	_ch = static_cast< int >(waveform.ChannelNumber());
 	_tstart = waveform.TimeStamp();
-	
+
 	_wf.clear();
 	_wf.resize(waveform.size());
 	for(size_t idx=0; idx<_wf.size(); ++idx)
 	  _wf[idx] = waveform[idx];
-	
+
 	fPulseRecoMgr.Reconstruct(waveform);
-	
+
 	// Record waveforms
 	_ped_mean_v = fPedAlg->Mean();
 	_ped_sigma_v = fPedAlg->Sigma();
 	_wftree->Fill();
-	
+
 	// Record pulses
 	auto const& pulses = fThreshAlg->GetPulses();
 	size_t npulse = pulses.size();
+
+
 	_tstart_v.resize(npulse); _tmax_v.resize(npulse); _tend_v.resize(npulse); _tcross_v.resize(npulse);
 	_amp_v.resize(npulse); _area_v.resize(npulse);
 	_ped_mean_v.resize(npulse); _ped_sigma_v.resize(npulse);
-	
+
 	for(size_t idx=0; idx<npulse; ++idx) {
 	  auto const& pulse = pulses[idx];
 	  _tstart_v[idx] = pulse.t_start;

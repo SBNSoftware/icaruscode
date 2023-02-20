@@ -70,8 +70,8 @@ private:
     crt::CRTCommonUtils* fCrtutils;
 
     geo::GeometryCore const* fGeometryService = lar::providerFrom<geo::Geometry>();   ///< pointer to Geometry provider
-    geo::CryostatGeo const& cryo0 = fGeometryService->Cryostat(0);
-    geo::CryostatGeo const& cryo1 = fGeometryService->Cryostat(1);
+    geo::CryostatGeo const& cryo0 = fGeometryService->Cryostat(geo::CryostatID{0});
+    geo::CryostatGeo const& cryo1 = fGeometryService->Cryostat(geo::CryostatID{1});
 
     geo::TPCGeo const& tpc00 = cryo0.TPC(0);
     geo::TPCGeo const& tpc01 = cryo0.TPC(1);

@@ -11,7 +11,7 @@ process_name: stage0
 physics.path:         [ @sequence::icarus_stage0_2d_data ]
 
 ## boiler plate...
-physics.outana:        [ CRTPMTMatching, purityinfoana0, purityinfoana1 ]
+physics.outana:        [ purityinfoana0, purityinfoana1 ]
 physics.trigger_paths: [ path ]
 physics.end_paths:     [ outana, streamROOT ]
 
@@ -21,13 +21,15 @@ physics.end_paths:     [ outana, streamROOT ]
 # Drop all ouptut for the first running of the ROI finder (on the 1D decon)
 # Drop all output from the 2D deconvolution stage
 # Drop the recob::Wire output from the roifinder2d (but keep the ChannelROIs)
+# Keep the Trigger fragment
 outputs.rootOutput.outputCommands:         ["keep *_*_*_*", 
                                             "drop *_*_*_DAQ*", 
                                             "drop *_daqTPCROI_*_*", 
                                             "drop *_decon1droi_*_*", 
                                             "drop *_decon2droi*_*_*", 
                                             "drop recob::Wire*_roifinder_*_*",
-                                            "drop recob::Wire*_roifinder2d_*_*" 
+                                            "drop recob::Wire*_roifinder2d_*_*", 
+                                            "keep *_daq_ICARUSTriggerV*_*"
                                            ]
 
 ## Modify the event selection for the purity analyzers

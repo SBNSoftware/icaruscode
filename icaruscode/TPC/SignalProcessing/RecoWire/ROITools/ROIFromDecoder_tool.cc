@@ -183,7 +183,7 @@ void ROIFromDecoder::FindROIs(const art::Event& event, const ArrayFloat& inputIm
             }
             else
             {
-                std::cout << "*** Not finding ROI information for channel: " << channel << std::endl;
+                mf::LogDebug("ROIFromDecoder") << "*** Not finding ROI information for channel: " << channel;
             }
         }
     }

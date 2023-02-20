@@ -75,7 +75,7 @@ private:
     size_t                                   fStartTick;             //< The tick for the start point of our particle
     float                                    fStartAngle;            //< Angle (in degrees) for the trajectory
     int                                      fNumElectronsPerMM;     //< The number of electrons/mm to deposit
-    size_t                                   fPlaneToSimulate;       //< The plane to simulate
+    geo::PlaneID                             fPlaneToSimulate;       //< The plane to simulate
 
     // Some useful variables
     float                                    fMMPerTick;             //< Convert ticks in us to mm
@@ -117,7 +117,7 @@ void FakeParticle::configure(fhicl::ParameterSet const &pset)
     fStartTick         = pset.get<size_t             >("StartTick",                               1000);
     fStartAngle        = pset.get<float              >("StartAngle",                                45);
     fNumElectronsPerMM = pset.get<int                >("NumElectronsPerMM",                       6000);
-    fPlaneToSimulate   = pset.get<size_t             >("PlaneToSimulate",                            2);
+    fPlaneToSimulate   = {0, 0, pset.get<unsigned int>("PlaneToSimulate",                            2)};
                                   
     fGeometry           = art::ServiceHandle<geo::Geometry const>{}.get();
     fSignalShapingService = art::ServiceHandle<icarusutil::SignalShapingICARUSService>{}.get();
@@ -183,7 +183,7 @@ void FakeParticle::overlayFakeParticle(detinfo::DetectorClocksData const& clockD
     float asicGain = fSignalShapingService->GetASICGain(0) * sampling_rate(clockData) / 1000.;  // something like 67.4
 
     // Get a base channel number for the plane we want
-    raw::ChannelID_t channel = fGeometry->PlaneWireToChannel(fPlaneToSimulate, 0);
+    raw::ChannelID_t channel = fGeometry->PlaneWireToChannel(geo::WireID{fPlaneToSimulate, 0});
 
     // Recover the response function information for this channel
     const icarus_tool::IResponse& response = fSignalShapingService->GetResponse(channel);

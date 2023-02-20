@@ -56,13 +56,11 @@ physics.producers.decon2droiEW.wcls_main.params.raw_input_label:  "MCDecodeTPCRO
 physics.producers.decon2droiWE.wcls_main.params.raw_input_label:  "MCDecodeTPCROI:PHYSCRATEDATATPCWE"
 physics.producers.decon2droiWW.wcls_main.params.raw_input_label:  "MCDecodeTPCROI:PHYSCRATEDATATPCWW"
 
-physics.producers.roifinder2d.WireModuleLabelVec:                 ["decon2droiWW:looseLf","decon2droiWE:looseLf","decon2droiEW:looseLf","decon2droiEE:looseLf"]
-
 # Override the hit finder input 
-physics.producers.gaushitTPCWW.CalDataModuleLabel: "roifinder2d:PHYSCRATEDATATPCWW"
-physics.producers.gaushitTPCWE.CalDataModuleLabel: "roifinder2d:PHYSCRATEDATATPCWE"
-physics.producers.gaushitTPCEW.CalDataModuleLabel: "roifinder2d:PHYSCRATEDATATPCEW"
-physics.producers.gaushitTPCEE.CalDataModuleLabel: "roifinder2d:PHYSCRATEDATATPCEE"
+#physics.producers.gaushitTPCWW.CalDataModuleLabel: "roifinder2d:PHYSCRATEDATATPCWW"
+#physics.producers.gaushitTPCWE.CalDataModuleLabel: "roifinder2d:PHYSCRATEDATATPCWE"
+#physics.producers.gaushitTPCEW.CalDataModuleLabel: "roifinder2d:PHYSCRATEDATATPCEW"
+#physics.producers.gaushitTPCEE.CalDataModuleLabel: "roifinder2d:PHYSCRATEDATATPCEE"
 
 ## Need overrides for the purity monitor
 physics.analyzers.purityinfoana0.SelectEvents: [ path ]
