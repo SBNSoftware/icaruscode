@@ -42,6 +42,13 @@ tpcgain_sql: {
   Verbose: false
 }
 
+tpcgain_local: {
+  tool_type: NormalizeTPCLocal
+  CalConstants: [81.04, 79.5, 82.88, 81.88]
+  Verbose: false
+}
+
+
 yznorm_sql: {
   tool_type: NormalizeYZSQL
   DBFileName: tpc_yz_correction_data
@@ -50,7 +57,7 @@ yznorm_sql: {
 }
 
 # icarus_calonormtools: [@local::driftnorm, @local::yznorm, @local::tpcgain]
-icarus_calonormtools: [@local::driftnorm_sql, @local::yznorm_sql, @local::tpcgain_sql]
+icarus_calonormtools: [@local::driftnorm_sql, @local::yznorm_sql, @local::tpcgain_local]
 
 # The norm tools already take care of this
 icarus_data_calconst: [1., 1., 1.]
