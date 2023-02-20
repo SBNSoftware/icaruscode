@@ -134,6 +134,12 @@ icarus_V1730_16thChannel_BES_setup_Run1: {
   OnlyOnGlobalTrigger: true
   InstanceName:          "BES"
 }
+icarus_V1730_16thChannel_EW_setup_Run1: {
+  ChannelIndex:          15  # the last one
+  Channel:             @nil  # needs to be customized on each board
+  OnlyOnGlobalTrigger: true
+  InstanceName:          "EW"
+}
 icarus_V1730_16thChannel_BNBbeam_setup_Run1: {
   ChannelIndex:          15  # the last one
   Channel:             @nil  # needs to be customized on each board
@@ -265,9 +271,111 @@ icarus_V1730_setup_Run1: [
 
 
 ################################################################################
+# "Run 2": configuration good for data taken after December 2022.
+# 
+# This configuration is FROZEN: do not change it.
+#
+# Delays are the same as in Run 1 (we haven't reassessed them).
+# The special channel number encoding for special channels is also the same.
+# In summary, the setup of the special channels is:
+#  * the same signals are split and delivered to each of the eight crates
+#    (except that for the trigger primitives it's a different signal for east
+#    and west cryostats)
+#  * on the 16th channel of:
+#      * the first readout board: trigger primitive signal
+#      * the second readout board: early warning signals
+#      * the third readout board: resistive wall monitor signals
+#  * the early warning signals and the RWM signals are the superimposition of
+#    the signals from the BNB and the NuMI lanes. Effectively, since only one
+#    of the two beams is present at each gate, only one signal is present.
+#
+# For additional information see SBN DocDB 29410.
+#
+icarus_V1730_West_setup_Run2: [
+
+  ### --------------------------------------------------------------------------
+  ###  WW
+  ### --------------------------------------------------------------------------
+  #
+  # top
+  #
+  { Name: "icaruspmtwwtop01"  TriggerDelay: " 0 ns"  SpecialChannels: [ { @table::icarus_V1730_16thChannel_trgprim_setup_Run1   Channel: 0x1071 } ] },
+  { Name: "icaruspmtwwtop02"  TriggerDelay: "43 ns"  SpecialChannels: [ { @table::icarus_V1730_16thChannel_EW_setup_Run1        Channel: 0x3072 } ] },
+  { Name: "icaruspmtwwtop03"  TriggerDelay: "86 ns"  SpecialChannels: [ { @table::icarus_V1730_16thChannel_RWM_setup_Run1       Channel: 0x2073 } ] },
+  #
+  # bottom
+  #
+  { Name: "icaruspmtwwbot01"  TriggerDelay: " 0 ns"  SpecialChannels: [ { @table::icarus_V1730_16thChannel_trgprim_setup_Run1   Channel: 0x1061 } ] },
+  { Name: "icaruspmtwwbot02"  TriggerDelay: "43 ns"  SpecialChannels: [ { @table::icarus_V1730_16thChannel_EW_setup_Run1        Channel: 0x3062 } ] },
+  { Name: "icaruspmtwwbot03"  TriggerDelay: "86 ns"  SpecialChannels: [ { @table::icarus_V1730_16thChannel_RWM_setup_Run1       Channel: 0x2063 } ] },
+  ### --------------------------------------------------------------------------
+  ### WE
+  ### --------------------------------------------------------------------------
+  #
+  # top
+  #
+  { Name: "icaruspmtwetop01"  TriggerDelay: " 0 ns"  SpecialChannels: [ { @table::icarus_V1730_16thChannel_trgprim_setup_Run1   Channel: 0x1051 } ] },
+  { Name: "icaruspmtwetop02"  TriggerDelay: "43 ns"  SpecialChannels: [ { @table::icarus_V1730_16thChannel_EW_setup_Run1        Channel: 0x3052 } ] },
+  { Name: "icaruspmtwetop03"  TriggerDelay: "86 ns"  SpecialChannels: [ { @table::icarus_V1730_16thChannel_RWM_setup_Run1       Channel: 0x2053 } ] },
+  #
+  # bottom
+  #
+  { Name: "icaruspmtwebot01"  TriggerDelay: " 0 ns"  SpecialChannels: [ { @table::icarus_V1730_16thChannel_trgprim_setup_Run1   Channel: 0x1041 } ] },
+  { Name: "icaruspmtwebot02"  TriggerDelay: "43 ns"  SpecialChannels: [ { @table::icarus_V1730_16thChannel_EW_setup_Run1        Channel: 0x3042 } ] },
+  { Name: "icaruspmtwebot03"  TriggerDelay: "86 ns"  SpecialChannels: [ { @table::icarus_V1730_16thChannel_RWM_setup_Run1       Channel: 0x2043 } ] }
+  ### --------------------------------------------------------------------------
+
+] # icarus_V1730_West_setup_Run2
+
+
+icarus_V1730_East_setup_Run2: [
+  ### --------------------------------------------------------------------------
+  ### EW
+  ### --------------------------------------------------------------------------
+  #
+  # top
+  #
+  { Name: "icaruspmtewtop01"  TriggerDelay: " 0 ns"  SpecialChannels: [ { @table::icarus_V1730_16thChannel_trgprim_setup_Run1   Channel: 0x1031 } ] },
+  { Name: "icaruspmtewtop02"  TriggerDelay: "43 ns"  SpecialChannels: [ { @table::icarus_V1730_16thChannel_EW_setup_Run1        Channel: 0x3032 } ] },
+  { Name: "icaruspmtewtop03"  TriggerDelay: "86 ns"  SpecialChannels: [ { @table::icarus_V1730_16thChannel_RWM_setup_Run1       Channel: 0x2033 } ] },
+  #
+  # bottom
+  #
+  { Name: "icaruspmtewbot01"  TriggerDelay: " 0 ns"  SpecialChannels: [ { @table::icarus_V1730_16thChannel_trgprim_setup_Run1   Channel: 0x1021 } ] },
+  { Name: "icaruspmtewbot02"  TriggerDelay: "43 ns"  SpecialChannels: [ { @table::icarus_V1730_16thChannel_EW_setup_Run1        Channel: 0x3022 } ] },
+  { Name: "icaruspmtewbot03"  TriggerDelay: "86 ns"  SpecialChannels: [ { @table::icarus_V1730_16thChannel_RWM_setup_Run1       Channel: 0x2023 } ] },
+  ### --------------------------------------------------------------------------
+  ### EE
+  ### --------------------------------------------------------------------------
+  #
+  # top
+  #
+  { Name: "icaruspmteetop01"  TriggerDelay: " 0 ns"  SpecialChannels: [ { @table::icarus_V1730_16thChannel_trgprim_setup_Run1   Channel: 0x1011 } ] },
+  { Name: "icaruspmteetop02"  TriggerDelay: "43 ns"  SpecialChannels: [ { @table::icarus_V1730_16thChannel_EW_setup_Run1        Channel: 0x3012 } ] },
+  { Name: "icaruspmteetop03"  TriggerDelay: "86 ns"  SpecialChannels: [ { @table::icarus_V1730_16thChannel_RWM_setup_Run1       Channel: 0x2013 } ] },
+  #
+  # bottom
+  #
+  { Name: "icaruspmteebot01"  TriggerDelay: " 0 ns"  SpecialChannels: [ { @table::icarus_V1730_16thChannel_trgprim_setup_Run1   Channel: 0x1001 } ] },
+  { Name: "icaruspmteebot02"  TriggerDelay: "43 ns"  SpecialChannels: [ { @table::icarus_V1730_16thChannel_EW_setup_Run1        Channel: 0x3002 } ] },
+  { Name: "icaruspmteebot03"  TriggerDelay: "86 ns"  SpecialChannels: [ { @table::icarus_V1730_16thChannel_RWM_setup_Run1       Channel: 0x2003 } ] }
+  ### --------------------------------------------------------------------------
+  
+] # icarus_V1730_East_setup_Run2
+
+
+icarus_V1730_setup_Run2: [
+  
+  @sequence::icarus_V1730_West_setup_Run2,
+  @sequence::icarus_V1730_East_setup_Run2
+  
+] # icarus_V1730_setup_Run2
+
+
+################################################################################
 ###  current default
 ################################################################################
-icarus_V1730_setup: @local::icarus_V1730_setup_Run1
+icarus_V1730_setup: @local::icarus_V1730_setup_Run2
 
 
 ################################################################################

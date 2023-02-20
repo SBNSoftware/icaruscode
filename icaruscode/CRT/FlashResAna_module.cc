@@ -168,7 +168,7 @@ void icarus::FlashResAna::analyze(art::Event const& e)
     fInFrame  = false;;
     fNPmtFlash= -1;
     double dt = DBL_MAX;
-    geo::CryostatGeo const& cryo0 = fGeometryService->Cryostat(0);
+    geo::CryostatGeo const& cryo0 = fGeometryService->Cryostat(geo::CryostatID{0});
  
     for(size_t i=0; i<4; i++) {
         fNuXYZT[i] = dt;
@@ -269,17 +269,19 @@ void icarus::FlashResAna::analyze(art::Event const& e)
                     if(hit->PeakTime()<tPmtMin){
                         tPmtMin = hit->PeakTime();
                         geo::OpDetGeo const& opDet = cryo0.OpDet(hit->OpChannel());
-                        double pos[3];
-                        opDet.GetCenter(pos);
-                        for(int i=0; i<3; i++) fFlashXYZTMin[i] = pos[i];
+                        auto const pos = opDet.GetCenter();
+                        fFlashXYZTMin[0] = pos.X();
+                        fFlashXYZTMin[1] = pos.Y();
+                        fFlashXYZTMin[2] = pos.Z();
                         fFlashXYZTMin[3] = tPmtMin;
                     }
                     if(hit->PeakTime()>tPmtMax){
                         tPmtMax = hit->PeakTime();
                         geo::OpDetGeo const& opDet = cryo0.OpDet(hit->OpChannel());
-                        double pos[3];
-                        opDet.GetCenter(pos);
-                        for(int i=0; i<3; i++) fFlashXYZTMax[i] = pos[i];
+                        auto const pos = opDet.GetCenter();
+                        fFlashXYZTMax[0] = pos.X();
+                        fFlashXYZTMax[1] = pos.Y();
+                        fFlashXYZTMax[2] = pos.Z();
                         fFlashXYZTMax[3] = tPmtMax;
                     }
                 }
@@ -319,9 +321,10 @@ void icarus::FlashResAna::analyze(art::Event const& e)
                 std::cout << "OpHits time sort failed!" << std::endl;
 
             geo::OpDetGeo const& opDet = cryo0.OpDet(opHitList[0]->OpChannel());
-            double pos[3];
-            opDet.GetCenter(pos);
-            for(int i=0; i<3; i++) fHitXYZT[i] = pos[i];
+            auto const pos = opDet.GetCenter();
+            fHitXYZT[0] = pos.X();
+            fHitXYZT[1] = pos.Y();
+            fHitXYZT[2] = pos.Z();
             fHitXYZT[3] = opHitList[0]->PeakTime()*1.0e3; //time in ns
             fHitDist = 0.;
             for(int i=0; i<3; i++) 

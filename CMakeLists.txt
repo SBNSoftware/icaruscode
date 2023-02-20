@@ -17,7 +17,7 @@ cmake_minimum_required(VERSION 3.20 FATAL_ERROR)
 # cmake_policy(VERSION 3.19)
 
 find_package(cetmodules 3.20.00 REQUIRED)
-project(icaruscode VERSION 09.63.00 LANGUAGES CXX)
+project(icaruscode VERSION 09.66.02 LANGUAGES CXX)
 
 message(STATUS
   "\n-- ============================================================================="
@@ -89,7 +89,6 @@ find_package(Microsoft.GSL HINTS $ENV{GUIDELINE_SL_DIR} REQUIRED EXPORT)
 find_package(FFTW3f REQUIRED )
 find_package(FFTW3q REQUIRED )
 find_package(FFTW3l REQUIRED )
-
 
 # macros for dictionary and simple_plugin
 include(ArtDictionary)

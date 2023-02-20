@@ -88,6 +88,8 @@
 physics.filters.GenInTimeSorter.MaxT: 9600 # [ns]  9.5 us (NuMI beam) + 0.1 us (buffer)
 physics.filters.GenInTimeSorter.MinT: -200 # [ns]
 
+physics.producers.beamgate:  @local::icarus_standardbeamgate_NuMI  # from beamgates_icarus.fcl
+
 
 # ##############################################################################
 # time filter: events with at least this much scintillation energy detected

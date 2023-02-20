@@ -1,0 +1,24 @@
+BEGIN_PROLOG
+
+laser_pulse_configuration:
+{
+
+  ADCmV: 0.122 			
+  ADCpC: 0.00488  
+  SamplingTime: 2.0      # ns
+
+  NoiseWindowSize: 600        #n bins
+  NoiseReverse: false
+  NoiseThreshold: 300         # Arb. Unit after signal time domain FFT
+
+
+  IntegralStartBin: 500       # bin
+  IntegrationWindow: 1500     # number of bins
+
+  PulseThreshold:   1.5       # Threshold to accept a laser pulse in mV
+  DoFit: true                 # Choose to fit a pulse
+  FitRange: [ 30, 40 ]        # fit range around t peak in ns [ tpeak - FitRange[0], tpeak + FitRange[1] ]
+
+}
+
+END_PROLOG

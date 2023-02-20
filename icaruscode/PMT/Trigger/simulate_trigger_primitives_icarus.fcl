@@ -1,0 +1,284 @@
+#
+# File:    simulate_trigger_primitives_icarus.fcl
+# Purpose: Executes emulation of physics-style trigger primitives on MC samples.
+# Author:  Gianluca Petrillo (petrillo@slac.stanford.edu)
+# Date:    November 10, 2022
+#
+# The job executes the simulation of the configured triggers, plus a special,
+# "standard" one that should most closely reflect the data trigger
+# configuration.
+#
+# This is a top-level configuration that can be run directly.
+# 
+# 
+# Simulation gate
+# ----------------
+# 
+# The trigger emulation is applied on a fixed time interval representing the
+# enable gate. The definition of the enable gate is stored in the trigger
+# configuration in data, while it is not included in LArSoft.
+# 
+# In this configuration we learn the enable gate from the simulation settings.
+# 
+# Required inputs
+# ----------------
+# 
+#  * `pmtthr`: discriminated signals (with threshold); must already contain all
+#      the discrimination thresholds needed for the simulation
+# 
+# 
+# Output
+# -------
+# 
+# Data products:
+#  * `emuTrigPrimS10:THR`, ...:
+#    `raw::Trigger` collections for simulation of a majority 10 trigger summing
+#    east and west TPC ("S5"); the instance name represents the discrimination
+#    threshold used for input.
+#  * `emuTrigPrim`: `raw::Trigger` collection for simulation of the selected
+#    trigger pattern and discrimination threshold.
+# 
+# Plots:
+#  * `emuTrigPrimS10`: basic trigger primitive response distributions for S10
+#    pattern
+#  * `emuTrigPrim`: basic trigger response distributions for selected trigger
+# 
+
+#include "trigger_emulation_icarus.fcl"
+#include "services_common_icarus.fcl"
+#include "rootoutput_icarus.fcl"
+
+# ------------------------------------------------------------------------------
+BEGIN_PROLOG
+
+
+triggerSimTemplate: {
+
+  module_type: TriggerSimulationOnGates
+
+  TriggerGatesTag: "pmttriggerwindows"
+
+  Thresholds: [ @local::icarus_triggergate_basic.ChannelThresholds ] # from trigger_icarus.fcl
+  
+  ###
+  ### requirement:
+  ###
+  Pattern: @nil # need to replace
+
+  # Beam gate:
+  # duration (BNB: 1.6 us; NuMI: 9.5 us)
+  BeamGates: enablegate
+  
+  # we set the bits with a magic value
+  BeamBits: 0x1000000
+  
+  # do not produce "non-triggers" (triggers which did not fire)
+  EmitEmpty: false
+
+  # wait 200 ns before emitting another trigger primitive
+  DeadTime: "200 ns"
+  
+  # disable the retriggering bit, which won't make sense in a 2 ms gate
+  RetriggeringBit: 64
+  
+  # use bit 20 for triggers on cryostat 0, bit 21 for the ones on cryostat 1
+  CryostatFirstBit: 20
+  
+  # this should probably be 12 or 24 ns
+  TriggerTimeResolution: "8 ns"
+
+  # name of the category used for the output
+  LogCategory: "TriggerSim"
+
+} # triggerSimTemplate
+
+
+triggerSimTemplate_cryoE: {
+                    @table::triggerSimTemplate
+  TriggerGatesTag: "pmttriggerwindowsCryoE"
+}
+
+triggerSimTemplate_cryoW: {
+                    @table::triggerSimTemplate
+  TriggerGatesTag: "pmttriggerwindowsCryoW"
+}
+
+
+END_PROLOG
+
+
+# ------------------------------------------------------------------------------
+process_name: TrgPrimSim
+
+
+services: {
+  
+  # this provides: file service, random management (unused),
+  #                Geometry, detector properties and clocks
+  @table::icarus_common_services
+  
+  # currently unused (remove the line if they start mattering):
+  LArPropertiesService:      @erase
+  DetectorPropertiesService: @erase
+  
+} # services
+
+
+physics: {
+  
+  producers: {
+    
+    # --------------------------------------------------------------------------
+    pmtthr: @local::icarus_pmtdiscriminatethr_fixed_MC
+    
+    pmtlvdsgates: @local::icarus_lvdsgates
+    
+    pmttriggerwindowsCryoE: @local::icarus_trigslidewindow_cryoE
+    pmttriggerwindowsCryoW: @local::icarus_trigslidewindow_cryoW
+    
+    enablegate: @local::icarus_enablegate_sim  # from trigger_icarus.fcl
+    
+    # --------------------------------------------------------------------------
+    # all interesting triggers
+    
+    # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    emuTrigPrimS5cryoE: {
+    
+      @table::triggerSimTemplate_cryoE
+      
+      Pattern: @local::icarus_triggergate_basic.patterns.S5
+      
+    } # emuTrigPrimS5cryoE
+
+    emuTrigPrimS5cryoW: {
+    
+      @table::triggerSimTemplate_cryoW
+      
+      Pattern: @local::icarus_triggergate_basic.patterns.S5
+      
+    } # emuTrigPrimS5cryoW
+    
+    
+    # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    emuTrigPrimS8cryoE: {
+    
+      @table::triggerSimTemplate_cryoE
+      
+      Pattern: @local::icarus_triggergate_basic.patterns.S8
+      
+    } # emuTrigPrimS8cryoE
+
+    emuTrigPrimS8cryoW: {
+    
+      @table::triggerSimTemplate_cryoW
+      
+      Pattern: @local::icarus_triggergate_basic.patterns.S8
+      
+    } # emuTrigPrimS8cryoW
+    
+    
+    # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    emuTrigPrimS10cryoE: {
+    
+      @table::triggerSimTemplate_cryoE
+      
+      Pattern: @local::icarus_triggergate_basic.patterns.S10
+      
+    } # emuTrigPrimS10cryoE
+    
+    emuTrigPrimS10cryoW: {
+    
+      @table::triggerSimTemplate_cryoW
+      
+      Pattern: @local::icarus_triggergate_basic.patterns.S10
+      
+    } # emuTrigPrimS10cryoW
+    
+    
+    # --------------------------------------------------------------------------
+    # these are THE trigger primitives
+    
+    emuTrigPrimCryoE: {
+    
+      @table::triggerSimTemplate_cryoE
+      
+      Pattern: @local::icarus_triggergate_basic.SelectedPrimitivePattern  # from trigger_icarus.fcl
+      
+      Thresholds: [ @local::icarus_triggergate_basic.SelectedThreshold ]
+      
+    } # emuTrigPrimCryoE
+    
+    emuTrigPrimCryoW: {
+    
+      @table::triggerSimTemplate_cryoW
+      
+      Pattern: @local::icarus_triggergate_basic.SelectedPrimitivePattern  # from trigger_icarus.fcl
+      
+      Thresholds: [ @local::icarus_triggergate_basic.SelectedThreshold ]
+      
+    } # emuTrigPrimCryoW
+    
+    # --------------------------------------------------------------------------
+    
+  } # producers
+  
+  trigger: [
+      pmtthr  # TODO: comment out for stage0
+    , pmtlvdsgates, pmttriggerwindowsCryoE, pmttriggerwindowsCryoW
+    , enablegate
+#    , emuTrigPrimS5CryoE
+#    , emuTrigPrimS8CryoE
+#    , emuTrigPrimS10CryoE
+#    , emuTrigPrimS5CryoW
+#    , emuTrigPrimS8CryoW
+#    , emuTrigPrimS10CryoW
+    , emuTrigPrimCryoE
+    , emuTrigPrimCryoW
+    ]
+  output: [ rootoutput ]
+  
+  trigger_paths: [ trigger ]
+  end_paths: [ output ]
+  
+} # physics
+
+
+outputs.rootoutput: @local::icarus_rootoutput # from rootoutput_icarus.fcl
+outputs.rootoutput.outputCommands: [
+  "keep *"
+  , "drop longlonguinticarus::trigger::ReadoutTriggerGates_*_*_TrgPrimSim"
+  ]
+
+
+# ##############################################################################
+#
+# add debug output to its own file
+#
+services.message.destinations.TrigPrimSimLog: {
+  type:       file
+  filename:  "TrigPrimSim.log"
+  threshold:  DEBUG
+  categories: {
+    TriggerSim: { limit: -1 }
+    default:    { limit: 0 }
+  }
+} # services.messages.destinations.TrigPrimSimLog
+
+services.message.destinations.DebugLog: {
+  type:       file
+  filename:  "debug.log"
+  threshold:  DEBUG
+  categories: {
+    default:    { limit: -1 }
+  }
+} # services.messages.destinations.DebugLog
+
+#
+# FIXME for development, drop most data products
+#
+outputs.rootoutput.outputCommands: [
+  "drop *"
+  , "keep *_*_*_TrgPrimSim"
+  , "drop longlonguinticarus::trigger::ReadoutTriggerGates_*_*_TrgPrimSim"
+  ]
+

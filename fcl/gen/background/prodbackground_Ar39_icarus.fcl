@@ -15,6 +15,7 @@
 
 #include "services_common_icarus.fcl"
 #include "radiological_model_icarus.fcl"
+#include "beamgates_icarus.fcl"
 
 process_name: BackgroundGen
 
@@ -35,9 +36,10 @@ physics: {
   
   producers: {
     generator: @local::radiogen_Ar39_icarus # from radiological_model_icarus.fcl
+    beamgate:  @local::icarus_standardbeamgate_NuMI  # from beamgates_icarus.fcl
   }
   
-  simulate:      [ generator ]
+  simulate:      [ generator, beamgate ]
   
   stream1:       [ rootoutput ]
  

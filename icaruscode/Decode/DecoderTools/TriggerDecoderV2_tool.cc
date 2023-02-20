@@ -70,7 +70,7 @@ namespace daq
    *     * `TriggerCount()`: the trigger count from the beginning of the run.
    *     * `TriggerBits()`: includes the beam(s) with an open gate when the
    *         trigger happened (currently only one beam gate per trigger);
-   *         definitions are in `sbn::beamType` namespace.
+   *         definitions are in `sbn::bits::triggerSource` enumerator.
    * 
    *     It always includes a single entry (zero _might_ be supported).
    * * `std::vector<sim::BeamGateInfo>` containing information on the "main"
@@ -276,9 +276,6 @@ namespace daq
       static constexpr int OffbeamNuMI { 4 };
       static constexpr int Calib { 5 };
     }; 
-    
-    static constexpr nanoseconds BNBgateDuration { 1600. };
-    static constexpr nanoseconds NuMIgateDuration { 9500. };
     
     static std::string_view firstLine
       (std::string const& s, std::string const& endl = "\0\n\r"s);
@@ -705,8 +702,15 @@ namespace daq
     // beam gate
     //
     
-    // beam gate width (read in microseconds, but we use it in nanoseconds)
-    nanoseconds const gateWidth = microseconds{ fTriggerConfiguration
+    // beam gate width (read in microseconds, but we use it in nanoseconds);
+    // we need to protect from some defective configurations where the (unused)
+    // beam gate duration is smaller than the veto time
+    icarus::TriggerConfiguration::GateConfig const* gateConfig
+      = fTriggerConfiguration
+      ? &(fTriggerConfiguration->gateConfig.at(value(beamGateBit))): nullptr
+      ;
+    nanoseconds const gateWidth = microseconds{
+      (gateConfig && (gateConfig->gateWidth > fTriggerConfiguration->vetoDelay))
       ? fTriggerConfiguration->getGateWidth(value(beamGateBit))
       : 0.0
       };

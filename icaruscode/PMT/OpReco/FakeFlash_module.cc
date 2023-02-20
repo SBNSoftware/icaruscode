@@ -155,8 +155,7 @@ void FakeFlash::GenPosition(double& x, double& y, double& z) {
     bool found = false;
     // Implementation of required member function here.
     auto geop = lar::providerFrom<geo::Geometry>();
-    for(size_t c=0; c<geop->Ncryostats(); ++c) {
-        auto const& cryostat = geop->Cryostat(c);
+    for(auto const& cryostat : geop->Iterate<geo::CryostatGeo>()) {
         if(!cryostat.HasTPC(tpc_id)) continue;
         auto const& tpc = cryostat.TPC(tpc_id);
         auto const& tpcabox = tpc.ActiveBoundingBox();

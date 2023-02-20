@@ -2,14 +2,14 @@
 
 process_name: stage1
 
-physics.reco: [ @sequence::icarus_filter_cluster3D,
+physics.reco: [ @sequence::icarus_filter_cluster3D, 
                 @sequence::icarus_pandora_Gauss,
-		#@sequence::icarus_reco_fm,
+		            #@sequence::icarus_reco_fm,
                 @sequence::icarus_crttrack,
-		@sequence::icarus_crtt0match,
+		            @sequence::icarus_crtt0match,
                 caloskimCalorimetryCryoE, caloskimCalorimetryCryoW]
 
-physics.outana:            [ caloskimE, caloskimW, simpleLightAna, CRTDataAnalysis]
+physics.outana:            [ @sequence::icarus_analysis_modules ]
 physics.trigger_paths:     [ reco ]
 physics.end_paths:         [ outana, stream1 ]
 outputs.out1.fileName:     "%ifb_%tc-%p.root"
@@ -20,6 +20,8 @@ outputs.out1.outputCommands: [
   "drop *_caloskimCalorimetryCryoE_*_*",
   "drop *_caloskimCalorimetryCryoW_*_*"
 ]
+
+physics.analyzers.supera.unique_filename: true
 
 # Disabled Space-Charge service for calorimetry
 services.SpaceChargeService: {
@@ -32,6 +34,12 @@ services.SpaceChargeService: {
     RepresentationType: "Voxelized_TH3"
     service_provider: "SpaceChargeServiceICARUS"
 }
+
+# Note there is a selection on the number of hits at the cluster3D level
+physics.analyzers.caloskimE.SelectEvents:      [ reco ]
+physics.analyzers.caloskimW.SelectEvents:      [ reco ]
+physics.analyzers.simpleLightAna.SelectEvents: [ reco ]
+physics.analyzers.supera.SelectEvents:         [ reco ]
 
 services.message.destinations :
 {

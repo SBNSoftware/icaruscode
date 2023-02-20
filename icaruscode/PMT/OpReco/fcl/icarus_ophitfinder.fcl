@@ -4,6 +4,59 @@ BEGIN_PROLOG
 # ==============================================================================
 #  Pedestal estimation algorithms
 # ==============================================================================
+icarus_opreco_pedestal_fromchannel_data: {
+  # this is not by itself a pedestal algorithm in the optical hit reconstruction
+  # mini-framework; it extracts the baseline from multiple waveforms on the same
+  # channel (which the mini-framework does not support) and writes the result in
+  # a data product; a heavily hacked pedestal algorithm in the mini-framework
+  # can plug the baselines from that data product into the hit reconstruction.
+  module_type: PMTWaveformBaselinesFromChannelData
+
+  # data configuration
+  OpticalWaveforms: daqPMT
+  PMTconfigurationTag: pmtconfig
+
+  # use half the pre-trigger buffer (ICARUS 2022 configuration: 750 samples)
+  PretriggerBufferFractionForBaseline: 0.5
+
+  # waveform on beam gate is the most likely to have signal from its start;
+  # systematically exclude it if there are enough other waveforms available:
+  ExcludeSpillTimeIfMoreThan: 8
+
+  AlgoParams: {
+    
+    # if a waveform has 4 or more samples farther than 5 RMS from the median,
+    # do not use it (still, RMS estimation is biassed by those samples too)
+    AcceptedSampleRangeRMS: 5.0
+    ExcessSampleLimit: 4
+    
+  }
+
+  PlotBaselines: false
+  
+} # icarus_opreco_pedestal_fromchannel_data
+
+icarus_opreco_pedestal_fromchannel_MC: {
+  # configuration to apply to the waveforms without PMT readout simulation
+  # (thus, very low threshold, which makes the algorithm more reliable)
+  @table::icarus_opreco_pedestal_fromchannel_data
+  
+  OpticalWaveforms: opdaq
+  PMTconfigurationTag: @erase
+  PretriggerBufferSize: 500 # samples: (ReadoutWindowSize x PreTrigFraction) from pmtsimulation_icarus.fcl, 
+  
+} # icarus_opreco_pedestal_fromchannel_MC
+
+icarus_opreco_pedestal_fromchannel_MC_readout: {
+  # configuration to apply to the waveforms with PMT readout simulation
+  # (very similar to data, but we don't make up the pmtconfig)
+  @table::icarus_opreco_pedestal_fromchannel_data
+  
+  PretriggerBufferSize: 1500 # samples, from PMT readout hardware configuration
+  
+} # icarus_opreco_pedestal_fromchannel_MC_readout
+
+
 icarus_opreco_pedestal_edges: {
   @table::standard_algo_pedestal_edges
   NumSampleFront:  3

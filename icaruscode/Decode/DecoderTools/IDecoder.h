@@ -65,6 +65,15 @@ public:
     virtual void setupRun(art::Run const& run) {}
 
     /**
+     *  @brief Returns the tag of the input fragment, if known (empty otherwise).
+     *
+     *  The steering module can optionally use this tag for choosing or
+     *  overriding the input fragment.
+     */
+    virtual std::optional<art::InputTag> preferredInput() const
+        { return std::nullopt; }
+
+    /**
      *  @brief Preparation to process a new event.
      *
      *  To be called on every _art_ event transition.

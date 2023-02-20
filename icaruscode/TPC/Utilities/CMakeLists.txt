@@ -23,6 +23,7 @@ set(icarus_util_lib_list
 	art::Persistency_Provenance
 	icaruscode_IcarusObj
 	art_root_io::tfile_support ROOT::Core
+	art_root_io::RootDB
 	art::Framework_Services_Optional_RandomNumberGenerator_service
 	art_root_io::TFileService_service
 	art::Framework_Services_System_FileCatalogMetadata_service

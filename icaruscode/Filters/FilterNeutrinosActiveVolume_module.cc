@@ -446,7 +446,7 @@ void icarus::simfilter::FilterNeutrinosActiveVolume::addActiveVolumes() {
   
   geo::GeometryCore const& geom = *(lar::providerFrom<geo::Geometry>());
   
-  for (geo::TPCGeo const& TPC: geom.IterateTPCs()) {
+  for (geo::TPCGeo const& TPC: geom.Iterate<geo::TPCGeo>()) {
     
     geo::BoxBoundedGeo const& box = TPC.ActiveBoundingBox();
     
@@ -702,4 +702,3 @@ DEFINE_ART_MODULE(icarus::simfilter::FilterNeutrinosActiveVolume)
 
 
 // -----------------------------------------------------------------------------
-

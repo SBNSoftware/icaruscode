@@ -470,7 +470,7 @@ void TPCPurityMonitor::produce(art::Event& event)
                     geo::Point_t        hitPos  = track->LocationAtPoint(trkHitIndex);
                     geo::Vector_t       hitDir  = track->DirectionAtPoint(trkHitIndex);
                     const geo::WireGeo& wireGeo = fGeometry->Wire(hitMetaPair.first->WireID());
-                    geo::Vector_t       wireDir(wireGeo.Direction()[0],wireGeo.Direction()[1],wireGeo.Direction()[2]);
+                    geo::Vector_t       wireDir = wireGeo.Direction();
 
                     pointCloud.emplace_back(hitPos);
 

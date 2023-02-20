@@ -1,83 +1,131 @@
 BEGIN_PROLOG #comment to run generate_simple_weighted_template.py
 
-icarus_simple_flashmatch_0: {
+icarus_simple_flashmatch_E: {
   module_type: FlashPredict
   Cryostat: 0
-  PandoraProducer: "pandoraGausCryoE"
-  TrackProducer: "pandoraTrackGausCryoE"
-  #CaloProducer: "pandoraGausCaloCryoE"
-  SpacePointProducer: "pandoraGausCryoE"
+  PandoraProducer:     "pandoraGausCryoE"
+  TrackProducer:       "pandoraTrackGausCryoE"
+  #CaloProducer:       "pandoraGausCaloCryoE"
+  SpacePointProducer:  "pandoraGausCryoE"
   OpHitProducer: "ophit"
-  BeamWindowStart: -50.0 # us
-  BeamWindowEnd: 50.0 # us
-  FlashStart: -0.02 # us, wrt flash time
-  FlashEnd: 0.08 # us, wrt flash time
-  SelectNeutrino: true
+  BeamSpillTimeStart:      -1.7  # us, with some tolerance # TODO: workaround to accomodate MC and Data different times
+  BeamSpillTimeEnd:         1.7  # us, with some tolerance # TODO: workaround to accomodate MC and Data different times
+  FlashFindingTimeStart: -100.   # us # TODO: tune
+  FlashFindingTimeEnd:    100.   # us # TODO: tune
+  FlashStart:              -0.02 # us, wrt flash time
+  FlashEnd:                 0.08 # us, wrt flash time
   OnlyCollectionWires: false
   ForceConcurrence: true
-  UseOppVolMetric: true
+  CorrectDriftDistance: true
   InputFileName: "FlashMatch/fm_metrics_icarus.root"
   NoAvailableMetrics: false
+  SelectNeutrino: true # it's too buggy to set 'false'
   MakeTree: false
-  StoreTrueNus: false
-  StoreCheatMCT0: false
+  StoreMCInfo: false
+  # TODO: tune below
   MinHitQ: 0.
   MinSpacePointQ: 0.
   MinParticleQ: 0.
   MinSliceQ: 0.
-  MaxFlashes: 3
+  OpHitTime: "PeakTime" # TODO: test and change to RiseTime or StartTime once they become available
+  MinInTimeFlashes: 3
+  MaxFlashes: 10
   MinOpHPE: 0.
   MinFlashPE: 10.
+  FlashPEFraction: 0.9
   ChargeToNPhotonsShower: 1.0
   ChargeToNPhotonsTrack: 1.0
-
-  ThresholdTerm: 50.
+  # TODO: tune above
+  
+  ThresholdTerm: 200.
 
   PDMapAlg: {
     tool_type: PDMapAlgSimple
   }
 
-  # binning and geometry
-  score_hist_bins: 100
-  score_hist_low: 0.
-  score_hist_up: 50.
-
   DriftDistance: 149.115 # only used for metrics creation
   XBins: 30
   # XBinWidth approx 5.
-
+  #
+  # TODO: Metrics should depend on X,Y,Z.
+  #       The limiting factor to the number of bins is having enough
+  #       nu only stats.  The binning has to be done such that no two
+  #       PMTs fall under the same bin. Could potentially use
+  #       irregular binning?
+  # TODO: below needs to be tested
+  x_bins_: 10
+  x_low:    0.
+  x_up:   149.115
+  y_bins:   5
+  y_low: -184.5
+  y_up:   135.5
+  z_bins:  18
+  z_low: -905.
+  z_up:   905.
+  
   # block for Y and Z ophit distributions, used for unbiassing
-  # TODO: find adequate values, these are NOT OK!
-  YBins: 5
-  YLow: -135.
-  YHigh: 85.
-  YBiasSlope: 0. # TODO: find adequate value, currently no Y unbiassing
-  ZBins: 18
-  ZLow: -900.
-  YHigh: 900.
-  ZBiasSlope: 0. # TODO: find adequate value, currently no Z unbiassing
+  fit_func_y:    "pol2"
+  YBins:       5
+  YLow:      -155.45
+  YHigh:      108.55
+  fit_func_z:    "pol2"
+  ZBins:      18
+  ZLow:     -897.84
+  ZHigh:     897.84
+  SkewLimitY:  5.
+  SkewLimitZ:  5.
 
-  dy_bins: 75
-  dy_low: -200.
-  dy_up: 200.
-  dz_bins: 75
-  dz_low: -200.
-  dz_up: 200.
-  rr_bins: 50
-  rr_low: 0.
-  rr_up: 200.
-  rr_TF1_fit: "pol3"
-  ratio_bins: 50
-  ratio_low: 0.
-  ratio_up: 0.7
-  ratio_TF1_fit: "pol3"
+  # binning for template and metrics generation
+  score: {
+    bins:     60
+    low:       0.
+    up:       30. }
+  dy: {
+    bins:     60
+    low:    -150.
+    up:      150. }
+  dz: {
+    bins:     60
+    low:    -150.
+    up:      150. }
+  rr: {
+    bins:     40
+    low:       0.
+    up:      300. }
+  ratio: {
+    bins:     40
+    low:       0.
+    up:        0.7}
+  slope: {
+    bins:     40     # TODO
+    low:       0.    # TODO
+    up:        1. }  # TODO
+  petoq: {
+    bins:     40  
+    low:       0. 
+    up:        1.4}  
+  # rr_TF1_fit: "pol3" # LEGACY, not used in the normal operation but helpful for diagnostics
+  # ratio_TF1_fit: "pol3" # LEGACY, not used in the normal operation but helpful for diagnostics
 }
 
-icarus_simple_flashmatch_1: @local::icarus_simple_flashmatch_0
-icarus_simple_flashmatch_1.Cryostat: 1
-icarus_simple_flashmatch_1.PandoraProducer: pandoraGausCryoW
-icarus_simple_flashmatch_1.TrackProducer: pandoraTrackGausCryoW
-# icarus_simple_flashmatch_1.CaloProducer: pandoraGausCaloCryo1
-icarus_simple_flashmatch_1.SpacePointProducer: pandoraGausCryoW
+icarus_simple_flashmatch_W: @local::icarus_simple_flashmatch_E
+icarus_simple_flashmatch_W.Cryostat: 1
+icarus_simple_flashmatch_W.PandoraProducer:    "pandoraGausCryoW"
+icarus_simple_flashmatch_W.TrackProducer:      "pandoraTrackGausCryoW"
+# icarus_simple_flashmatch_W.CaloProducer:     "pandoraGausCaloCryoW"
+icarus_simple_flashmatch_W.SpacePointProducer: "pandoraGausCryoW"
+
+# SCE definitions
+icarus_simple_flashmatch_sce_E: @local::icarus_simple_flashmatch_E
+icarus_simple_flashmatch_sce_E.PandoraProducer:    "pandoraGausSCECryoE"
+icarus_simple_flashmatch_sce_E.TrackProducer:      "pandoraTrackGausSCECryoE"
+# icarus_simple_flashmatch_sce_E.CaloProducer:     "pandoraGausSCECaloCryoE"
+icarus_simple_flashmatch_sce_E.SpacePointProducer: "pandoraGausSCECryoE"
+
+icarus_simple_flashmatch_sce_W: @local::icarus_simple_flashmatch_W
+icarus_simple_flashmatch_sce_W.PandoraProducer:    "pandoraGausSCECryoW"
+icarus_simple_flashmatch_sce_W.TrackProducer:      "pandoraTrackGausSCECryoW"
+# icarus_simple_flashmatch_sce_W.CaloProducer:     "pandoraGausSCECaloCryoW"
+icarus_simple_flashmatch_sce_W.SpacePointProducer: "pandoraGausSCECryoW"
 
 END_PROLOG #comment to run generate_simple_weighted_template.py
