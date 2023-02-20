@@ -8,7 +8,7 @@ process_name: dissHTree
 
 services:
 {
-  @table::icarus_simulation_services
+  @table::icarus_basic_services
   TFileService: { fileName: "dissonant_higgs_icarus.root" }
   IFDH: {}
 }
@@ -20,15 +20,16 @@ source: {
 physics:
 {
   producers: {
-    disshiggs: @local::dissonant_higgs
+    generator: @local::dissonant_higgs
   } # analyzers
  
-  ana:  [ disshiggs ]
+  ana:  [ generator ]
  
   trigger_paths: [ ana ] 
   end_paths:     [  ] 
   
 } # physics
 
-physics.producers.disshiggs.RayTrace: @local::wgtraytrace
+physics.producers.generator.RayTrace: @local::wgtraytrace
 
+services.NuRandomService.policy: "random"

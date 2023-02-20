@@ -1,0 +1,6 @@
+physics.producers.pandoraCaloGausCryoE.CaloAlg.CalAreaConstants: @local::this_cal_constants
+physics.producers.pandoraCaloGausCryoW.CaloAlg.CalAreaConstants: @local::this_cal_constants
+physics.producers.vertexChargeCryoE.CaloAlg.CalAreaConstants: @local::this_cal_constants
+physics.producers.vertexChargeCryoW.CaloAlg.CalAreaConstants: @local::this_cal_constants
+physics.producers.vertexStubCryoE.CaloAlg.CalAreaConstants: @local::this_cal_constants
+physics.producers.vertexStubCryoW.CaloAlg.CalAreaConstants: @local::this_cal_constants
