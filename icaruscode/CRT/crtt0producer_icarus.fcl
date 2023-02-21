@@ -17,4 +17,26 @@ standard_crtt0producer:
    CRTBackTrack:        @local::standard_crtbacktracker
 }
 
+standard_crtt0producerW:
+{
+   module_type:         "icaruscode/CRT/CRTT0Matching"
+   CrtHitModuleLabel:   "crthit"           # name of crt hit producer
+   TpcTrackModuleLabel: ["pandoraTrackGausCryoW"]     # name of tpc track producer
+   PFParticleLabel:     ["pandoraGausCryoW"] # PFParticle producer module label
+   TriggerLabel:        "daqTrigger"
+   T0Alg:               @local::standard_crtt0matchingalgW
+   CRTBackTrack:        @local::standard_crtbacktracker
+}
+
+standard_crtt0producerE:
+{
+   module_type:         "icaruscode/CRT/CRTT0Matching"
+   CrtHitModuleLabel:   "crthit"           # name of crt hit producer
+   TpcTrackModuleLabel: ["pandoraTrackGausCryoE"]     # name of tpc track producer
+   PFParticleLabel:     ["pandoraGausCryoE"] # PFParticle producer module label
+   TriggerLabel:        "daqTrigger"
+   T0Alg:               @local::standard_crtt0matchingalgE
+   CRTBackTrack:        @local::standard_crtbacktracker
+}
+
 END_PROLOG

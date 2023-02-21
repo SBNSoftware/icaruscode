@@ -61,6 +61,8 @@ icarus_stage1_producers:
  ## crt producer
   crttrack:          @local::standard_crttrackproducer
   CRTT0Matching:     @local::standard_crtt0producer
+  CRTT0MatchingW:    @local::standard_crtt0producerW
+  CRTT0MatchingE:    @local::standard_crtt0producerE
 }
 
 icarus_stage1_filters:
@@ -165,6 +167,8 @@ icarus_reco_fm:                    [ fmatchCryoE,
 icarus_crttrack:                   [crttrack]
 
 icarus_crtt0match:                 [CRTT0Matching]
+
+icarus_crtt0match_eff:		   [CRTT0MatchingE, CRTT0MatchingW]
 
 ### Below we include overrides for the modules above
 
