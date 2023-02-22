@@ -277,6 +277,26 @@ caf_preprocess_sce_evtw_sequence: [@sequence::caf_preprocess_sce_sequence, rns, 
 # CAFMaker config
 cafmaker: @local::standard_cafmaker
 
+caf_prescaled_selection: {
+  tool_type: CAFSelectionBlinded
+  PreScale: 10
+  Extension: ".Prescaled.OKTOLOOK.root"
+}
+
+caf_blinded_selection: {
+  tool_type: CAFSelectionBlindEnergy
+  Extension: ".Blind.OKTOLOOK.root"
+}
+
+# setup the ICARUS blinding scheme
+cafmaker.SelectionTools: [
+  @local::caf_prescaled_selection,
+  @local::caf_blinded_selection
+]
+
+# set the base file extension to warn about blinding
+cafmaker.BaseFileExtension: ".Unblind.DONOTLOOK.root"
+
 # Set the labels to ICARUS
 cafmaker.PandoraTagSuffixes: ["CryoE", "CryoW"]
 cafmaker.G4Label: "largeant"
