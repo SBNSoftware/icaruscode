@@ -294,10 +294,16 @@ caf_blinded_selection: {
   Extension: ".Blind.OKTOLOOK.root"
 }
 
+caf_3trk1proton_selection: {
+  tool_type: CAFSelectionNtrkNproton
+  Extension: ".3t1p.root"
+}
+
 # setup the ICARUS blinding scheme
 cafmaker.SelectionTools: [
   @local::caf_prescaled_selection,
-  @local::caf_blinded_selection
+  @local::caf_blinded_selection,
+  @local::caf_3trk1proton_selection
 ]
 
 # set the base file extension to warn about blinding
