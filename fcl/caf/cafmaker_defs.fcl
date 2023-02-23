@@ -312,6 +312,7 @@ cafmaker.TriggerLabel: "daqTrigger"
 cafmaker.FlashTrigLabel: "" # unavailable
 cafmaker.SimChannelLabel: "largeant"
 cafmaker.SystWeightLabels: ["genieweight", "fluxweight"]
+cafmaker.TrackHitFillRREndCut: 30 # include entire PID region
 
 # Add CAFMaker to the list of producers
 caf_preprocess_producers.cafmaker: @local::cafmaker
