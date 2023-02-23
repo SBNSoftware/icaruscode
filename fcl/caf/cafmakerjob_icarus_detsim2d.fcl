@@ -1,4 +1,4 @@
-#include "cafmakerjob_icarus_evtw.fcl"
+#include "cafmakerjob_icarus_systtools_and_fluxwgt.fcl"
 
 # over-write labels to use Wire-Cell SimChannels
 physics.producers.cafmaker.SimChannelLabel: "daq:simpleSC" # 2D drift
