@@ -25,7 +25,7 @@ physics.trigger_paths: [ path ]
 physics.end_paths:     [ outana, streamROOT ]
 
 # Drop the artdaq format files on output
-outputs.rootOutput.outputCommands: ["keep *_*_*_*", "drop *_daq*_*_*", "drop *_MCDecodeTPCROI_*_*", "drop *_decon1droi_*_*", "drop recob::Wire*_roifinder_*_*", "keep *_daq_simpleSC_*"]
+outputs.rootOutput.outputCommands: ["keep *_*_*_*", "drop *_daq*_*_*", "drop *_MCDecodeTPCROI_*_*", "drop *_decon1droi_*_*", "keep *_daq_simpleSC_*"]
 
 # Set the expected input for ophit
 physics.producers.ophit.InputModule: "opdaq"
