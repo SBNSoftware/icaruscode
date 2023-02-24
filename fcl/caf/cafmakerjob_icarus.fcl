@@ -48,5 +48,5 @@ physics:
 }
 
 # Blinding not needed for MC
-cafmaker.SelectionTools: []
-cafmaker.BaseFileExtension: ".root"
+physics.producers.cafmaker.SelectionTools: []
+physics.producers.cafmaker.BaseFileExtension: ".root"
