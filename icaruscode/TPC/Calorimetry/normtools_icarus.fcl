@@ -44,7 +44,10 @@ tpcgain_sql: {
 
 tpcgain_local: {
   tool_type: NormalizeTPCLocal
-  CalConstants: [81.04, 79.5, 82.88, 81.88]
+  # Recombination floating, muon+proton fit
+  # CalConstants: [81.04, 79.5, 82.88, 81.88]
+  # Recombination fixed, muon+proton fit
+  CalConstants: [80.32, 79.82, 82.24, 81.68]
   Verbose: false
 }
 

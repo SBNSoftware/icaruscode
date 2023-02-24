@@ -1,2 +1,7 @@
-services.DetectorPropertiesService.ModBoxAlpha: 0.939
-services.DetectorPropertiesService.ModBoxBeta: 0.192
+# Recombination floating, muon+proton fit
+# services.DetectorPropertiesService.ModBoxAlpha: 0.939
+# services.DetectorPropertiesService.ModBoxBeta: 0.192
+
+# Recombination fixed
+services.DetectorPropertiesService.ModBoxAlpha: 0.93
+services.DetectorPropertiesService.ModBoxBeta: 0.212
