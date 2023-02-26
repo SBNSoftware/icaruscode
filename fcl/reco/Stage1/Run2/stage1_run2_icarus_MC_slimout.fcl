@@ -58,7 +58,9 @@ outputs.out1.outputCommands: [
   "drop *_caloskimCalorimetryCryoW_*_*",
   # Drop more stuff to reduce filesize output
   "drop recob::Wire*_decon2droi*_*_*",
-  "drop sim::SimPhotns*_*_*_*",
+  "drop recob::Wire*_roifinder2d_*_*",
+  # "drop recob::Wire*_roifinder_*_*",
+  "drop sim::SimPhotons*_*_*_*",
   "drop sim::SimEnergyDeposit*_*_*_*",
   "drop sim::SimChannel*_largeant_*_*",
   "drop raw::OpDetWaveform*_*_*_*",
