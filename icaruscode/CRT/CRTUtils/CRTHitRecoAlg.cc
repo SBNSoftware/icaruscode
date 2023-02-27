@@ -433,7 +433,6 @@ int64_t CRTHitRecoAlg::RegionDelay(std::string const& region) const {
 //------------------------------------------------------------------------------------------
 
 sbn::crt::CRTHit CRTHitRecoAlg::MakeTopHit(art::Ptr<CRTData> data, ULong64_t GlobalTrigger[305]){ //single GT: GlobalTrigger[305], 3 seperate GT: GlobalTrigger[232]
-
     uint8_t mac = data->fMac5;
     if(fCrtutils.MacToType(mac)!='c')
         mf::LogError("CRTHitRecoAlg::MakeTopHit") 
@@ -499,7 +498,8 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeTopHit(art::Ptr<CRTData> data, ULong64_t Glo
     hitpos.SetX(postmp.X());
     postmp = fCrtutils.ChanToLocalCoords(mac,maxz*2); 
     hitpos.SetZ(postmp.Z());
-
+    int sector=-1;
+    if(findz==true && findx==true) sector=(maxz-8)*8+maxx;
     if(!findx)
         mf::LogWarning("CRTHitRecoAlg::MakeTopHit") << " no interlayer coincidence found! Missing X coord." << '\n';
     if(!findz)
@@ -522,10 +522,12 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeTopHit(art::Ptr<CRTData> data, ULong64_t Glo
     //92.0 is the middle of one of the Top CRT modules (each of them is 184 cm)    
     //TO DO: Move hardcoded numbers to parameter fcl files.
     //Another possibility is using object values from GDML, but I (Francesco Poppi) found weird numbers some months ago and needed to double check.
-    double const corrPos = std::max(-hitpos.X(), hitpos.Z());
-    uint64_t const corr = (uint64_t)round(abs((92.0+corrPos)*fPropDelay));
-    thit -= corr;
-    thit1 -= corr;
+    //double const corrPos = std::max(-hitpos.X(), hitpos.Z());
+    //uint64_t const corr = (uint64_t)round(abs((92.0+corrPos)*fPropDelay));  //Obsolete
+    double corr = 0;
+    if(findz==true && findx==true) corr=TopCRT_TimingCorr[sector];
+    thit -= (uint64_t) round(corr);
+    thit1 -= (uint64_t) round(corr);
 
     auto const hitpoint = adGeo.toWorldCoords(hitlocal); //tranform from module to world coords
 

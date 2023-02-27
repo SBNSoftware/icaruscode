@@ -203,7 +203,19 @@ class icarus::crt::CRTHitRecoAlg {
 	
   std::map<uint8_t, int32_t> FEB_T1delay_side; //<mac5, delay in ns>
   std::map<uint8_t, int32_t> FEB_T0delay_side; //<mac5, delay in ns>
-
+  // Following: Data driven timing correction of the light propagation
+  // to the SiPM readout sector-by-sector for the Top CRT.
+  // These numbers refer to DocDB 29405 slide number 9
+  double const TopCRT_TimingCorr [64] = {  // [ns]
+        8.2, 7.0, 5.8, 4.5, 3.2, 1.9, 1.1, 0.7,
+        8.3, 7.3, 5.8, 4.7, 3.4, 2.3, 1.5, 1.2,
+        9.0, 8.0, 6.6, 5.6, 4.6, 3.5, 3.4, 3.1,
+        10.0, 8.9, 7.4, 6.6, 5.9, 5.0, 5.4, 4.7,
+        10.7, 9.9, 8.4, 7.7, 7.2, 6.6, 6.7, 6.4,
+        11.7, 10.6, 9.2, 8.5, 8.4, 7.8, 8.1, 7.7,
+        12.5, 11.6, 10.2, 9.5, 9.2, 8.9, 9.0, 8.8,
+        13.0, 12.3, 10.9, 10.5, 10.4, 9.8, 10.0, 9.7
+   };
   static  bool compareBytime(art::Ptr<CRTData> const &a, art::Ptr<CRTData> const &b){
     return a->fTs0 < b->fTs0;
   }
