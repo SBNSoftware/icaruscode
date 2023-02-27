@@ -60,18 +60,29 @@ namespace icarus {
       double distance;
       art::Ptr<sbn::crt::CRTHit> CRTHit;
     };
+    enum hasCRTHit {
+        noMatch=0, // No CRT match
+        enTop=1, // matched with Top CRT hit before optical flash
+        enSide=2, // matched with Side CRT hit before optical flash
+        enTop_exSide=3, // entering from Top and exiting from side
+        exTop=4, // matched with a Top CRT after the optical flash
+        exSide=5, // matched with a Side CRT after the optical flash
+        enTop_mult=6, // matched with multiple Top CRT hits before the optical flash
+        enTop_exSide_mult=7, //  matched with multiple Top CRT hits before the optical flash and more then 1 side CRT hits after the optical flash
+        others=9 // all the other cases
+    };
     struct MatchedCRT{
       //vector of pairs where first is the matched Time of Flight and second is the matched CRTHit
       std::vector< CRTPMT > entering;
       std::vector< CRTPMT > exiting;
-      int matchType;
+      hasCRTHit matchType;
     }; 
     struct TrajPoint{
       double X;
       double Y;
       double Z;
       double T;
-    }; 
+    };
   }
 }
 
@@ -98,7 +109,7 @@ icarus::crt::MatchedCRT CRTHitmatched( const double & flashTime, const double fl
     std::vector< icarus::crt::CRTPMT > enteringCRTHits;
     std::vector< icarus::crt::CRTPMT > exitingCRTHits;
     
-    int hasCRTHit = 0;
+    hasCRTHit MatchType;
     int topen=0, topex=0, sideen=0, sideex=0;
     for( auto const crtHit : crtHits ){
       double tof = crtHit->ts1_ns/1e3 - flashTime;
@@ -117,16 +128,15 @@ icarus::crt::MatchedCRT CRTHitmatched( const double & flashTime, const double fl
         exitingCRTHits.push_back( m_match );
       }
     }
-    if (topen == 0 && sideen == 0 && topex == 0 && sideex == 0 ) hasCRTHit = 0;
-    else if (topen == 1 && sideen == 0 && topex == 0 && sideex == 0 ) hasCRTHit = 1;
-    else if (topen == 0 && sideen == 1 && topex == 0 && sideex == 0 ) hasCRTHit = 2;
-    else if (topen == 1 && sideen == 0 && topex == 0 && sideex == 1 ) hasCRTHit = 3; 
-    else if (topen == 0 && sideen == 0 && topex == 1 && sideex == 0 ) hasCRTHit = 4;
-    else if (topen == 0 && sideen == 0 && topex == 0 && sideex == 1 ) hasCRTHit = 5;
-    else if (topen >= 1 && sideen >= 1 && topex == 0 && sideex == 0 ) hasCRTHit = 6;
-    else if (topen >= 1 && sideen >= 1 && topex == 0 && sideex >= 1 ) hasCRTHit = 7;
-    else hasCRTHit = 8;
-
+    if (topen == 0 && sideen == 0 && topex == 0 && sideex == 0 ) MatchType = noMatch;
+    else if (topen == 1 && sideen == 0 && topex == 0 && sideex == 0 ) MatchType = enTop;
+    else if (topen == 0 && sideen == 1 && topex == 0 && sideex == 0 ) MatchType = enSide;
+    else if (topen == 1 && sideen == 0 && topex == 0 && sideex == 1 ) MatchType = enTop_exSide; 
+    else if (topen == 0 && sideen == 0 && topex == 1 && sideex == 0 ) MatchType = exTop;
+    else if (topen == 0 && sideen == 0 && topex == 0 && sideex == 1 ) MatchType = exSide;
+    else if (topen >= 1 && sideen >= 1 && topex == 0 && sideex == 0 ) MatchType = enTop_mult;
+    else if (topen >= 1 && sideen >= 1 && topex == 0 && sideex >= 1 ) MatchType = enTop_exSide_mult;
+    else MatchType = others;
     // hasCRTHit = 0, no matched CRT
     // hasCRTHit = 1, Muon entering from Top CRT
     // hasCRTHit = 2, Muon entering from Side CRT
@@ -138,7 +148,7 @@ icarus::crt::MatchedCRT CRTHitmatched( const double & flashTime, const double fl
     // hasCRTHit = 8, all other cases
     
 
-    icarus::crt::MatchedCRT matches{enteringCRTHits, exitingCRTHits, hasCRTHit};
+    icarus::crt::MatchedCRT matches{enteringCRTHits, exitingCRTHits, MatchType};
 
     return matches;
 }   
@@ -213,8 +223,8 @@ private:
   //matchTree vars
 
   vector<double>      fOpFlashPos; // Position of the optical Flash Barycenter
-  double         fOpFlashTime; // Time of the optical Flash w.r.t. Global Trigger
-  double         fOpFlashTimehit;
+  double         fOpFlashTime_us; // Time of the optical Flash w.r.t. Global Trigger
+  double         fOpFlashTimehit_us;
   double	fOpFlashTimeAbs;
   bool         fInTime; // Was the OpFlash in beam spill time?
   bool		fInTime_gate;
@@ -228,7 +238,7 @@ private:
   int              fNCRTmatch;
   vector<vector<double>>       fMatchedCRTpos; // Position of the matched CRTs
   //vector<double[3]>       fMatchedCRTpos_err; // Position error of the matched CRTs
-  vector<double>          fMatchedCRTtime; // Time of the matched CRT Hits w.r.t. Global Trigger
+  vector<double>          fMatchedCRTtime_us; // Time of the matched CRT Hits w.r.t. Global Trigger
   vector<ULong64_t>       fMatchedCRTtime_abs; // Time of the matched CRT Hits in Unix time
   vector<int>             fMatchedCRTregion; // Region of the matched CRT Hits
   vector<vector<int>>             fMatchedCRTmodID;
@@ -240,7 +250,7 @@ private:
   vector<double>          fTofOpFlash; // Time of Flight between matched CRT and Optical Flash
   vector<double>          fVelocity; // Assuming the correct match, evaluate the speed of the particle
   vector<double>          fCRTGateDiff; // Difference between CRTHit and BeamGate opening
-  int                     fEventType; // Was triggered the event?
+  int               fEventType; // Was triggered the event?
   double		  fRelGateTime;
   /*int                    fNCrt;         //number of CRT hits per event
   vector<vector<double>> fCrtXYZT;      //Matched CRT hit x,y,z,t [cm/ns]
@@ -329,9 +339,9 @@ icarus::crt::CRTPMTMatchingAna::CRTPMTMatchingAna(fhicl::ParameterSet const& p)
   fMatchTree->Branch("run",          &fRun,            "run/I");
   fMatchTree->Branch("subrun",       &fSubRun,         "subrun/I");
   fMatchTree->Branch("opFlash_pos",  &fOpFlashPos);
-  fMatchTree->Branch("opFlash_time",  &fOpFlashTime);
+  fMatchTree->Branch("opFlash_time_us",  &fOpFlashTime_us);
   fMatchTree->Branch("opFlashAbsTime", &fOpFlashTimeAbs);
-  fMatchTree->Branch("opFlash_time_firsthit",  &fOpFlashTimehit);
+  fMatchTree->Branch("opFlash_time_firsthit_us",  &fOpFlashTimehit_us);
   fMatchTree->Branch("opHit_x",   &fOpHitX);
   fMatchTree->Branch("opHit_y",   &fOpHitY);
   fMatchTree->Branch("opHit_z",   &fOpHitZ);
@@ -342,7 +352,7 @@ icarus::crt::CRTPMTMatchingAna::CRTPMTMatchingAna(fhicl::ParameterSet const& p)
   fMatchTree->Branch("inTime_gate",  &fInTime_gate);
   fMatchTree->Branch("CRT_matches",     &fNCRTmatch);
   fMatchTree->Branch("CRT_pos",  &fMatchedCRTpos);
-  fMatchTree->Branch("CRT_Time",  &fMatchedCRTtime);
+  fMatchTree->Branch("CRT_Time_us",  &fMatchedCRTtime_us);
   fMatchTree->Branch("CRT_absTime",  &fMatchedCRTtime_abs);
   fMatchTree->Branch("CRT_region",  &fMatchedCRTregion);
   fMatchTree->Branch("CRT_FEB",  &fMatchedCRTmodID);
@@ -450,14 +460,14 @@ void icarus::crt::CRTPMTMatchingAna::analyze(art::Event const& e)
   //fNCrt = crtHitList.size();
   
   bool Filter=false;
-  int Type=9;
+  hasCRTHit Type=others;
   for(auto const& flashList : opFlashLists){
 
     art::FindManyP<recob::OpHit> findManyHits(flashHandles[flashList.first], e, fFlashLabels[flashList.first]);
 
     for(size_t iflash=0; iflash<flashList.second.size(); iflash++) {
       auto const& flash = flashList.second[iflash];
-      int eventType=0; 
+      hasCRTHit eventType=others; 
       double tflash = flash->Time();
       double tAbsflash = flash->AbsTime();
       vector<art::Ptr<recob::OpHit>> hits = findManyHits.at(iflash);
@@ -524,7 +534,7 @@ void icarus::crt::CRTPMTMatchingAna::analyze(art::Event const& e)
    //   std::cout<<std::endl;
       bool matched=false;
       double peflash=flash->TotalPE();
-      if (nCRTHits>0) matched=true;
+      if (nCRTHits>=0) matched=true;
       if (matched==true){
         eventType=CRTmatches.matchType;
 	for (auto & entering : CRTmatches.entering){
@@ -533,7 +543,7 @@ void icarus::crt::CRTPMTMatchingAna::analyze(art::Event const& e)
           ULong64_t CRTAbsTime=entering.CRTHit->ts0_s;
           int CRTRegion=entering.CRTHit->plane;
           int CRTSys=0;
-          if (CRTRegion>=36) CRTSys=1;
+          if (CRTRegion>=36) CRTSys=1; // Very lazy way to determine if the Hit is a Top or a Side. Will update it when bottom CRT will be availble
           double CRTPe=entering.CRTHit->peshit;
           int CRTDirection=0; // 0=entering, 1=exiting
           double CRTDistance=entering.distance;
@@ -548,7 +558,7 @@ void icarus::crt::CRTPMTMatchingAna::analyze(art::Event const& e)
 	  if(CRTSys==1)	SideEn++;
           fMatchedCRTmodID.emplace_back(HitFebs);
           fMatchedCRTpos.emplace_back(CRTpos);
-          fMatchedCRTtime.emplace_back(CRTtime);
+          fMatchedCRTtime_us.emplace_back(CRTtime);
           fTofOpFlash.emplace_back(CRTTof_opflash);
           fMatchedCRTtime_abs.emplace_back(CRTAbsTime);
           fMatchedCRTregion.emplace_back(CRTRegion);
@@ -559,7 +569,7 @@ void icarus::crt::CRTPMTMatchingAna::analyze(art::Event const& e)
           fTofOpHit.emplace_back(CRTTof_ophit);
           fCRTGateDiff.emplace_back(CRTGateDiff);
           HitFebs.clear();
-          //Filla i vettori
+          //Fill
         }          
         for (auto & exiting : CRTmatches.exiting){
           vector<double> CRTpos={exiting.CRTHit->x_pos,exiting.CRTHit->y_pos,exiting.CRTHit->z_pos};
@@ -582,7 +592,7 @@ void icarus::crt::CRTPMTMatchingAna::analyze(art::Event const& e)
 	  if(CRTSys==1)	SideEx++;
           fMatchedCRTmodID.emplace_back(HitFebs);
           fMatchedCRTpos.emplace_back(CRTpos);
-          fMatchedCRTtime.emplace_back(CRTtime);
+          fMatchedCRTtime_us.emplace_back(CRTtime);
           fMatchedCRTtime_abs.emplace_back(CRTAbsTime);
           fMatchedCRTregion.emplace_back(CRTRegion);
           fMatchedCRTsys.emplace_back(CRTSys);
@@ -593,9 +603,9 @@ void icarus::crt::CRTPMTMatchingAna::analyze(art::Event const& e)
           fTofOpHit.emplace_back(CRTTof_ophit);
           fCRTGateDiff.emplace_back(CRTGateDiff);
           HitFebs.clear();
-          //Filla i vettori
+          //Fill
         }
-        if((eventType==1 || eventType==3 || eventType==6 || eventType==7) && inTime==true) Filter=true;
+        if((eventType==enTop || eventType==enTop_exSide || eventType==enTop_mult || eventType==enTop_exSide_mult) && inTime==true) Filter=true;
         if (inTime==true) Type=eventType;
       }//if matched
     fTopBefore=TopEn;
@@ -604,11 +614,11 @@ void icarus::crt::CRTPMTMatchingAna::analyze(art::Event const& e)
     fSideAfter=SideEx;
     fOpFlashPE=peflash;
     fOpFlashPos={flash_pos[0],flash_pos[1],flash_pos[2]};
-    fOpFlashTime=tflash;
+    fOpFlashTime_us=tflash;
     fOpFlashTimeAbs=tAbsflash;
     //fRelGateTime=gateDiff+(tAbsflash-1500)*1e3;
   //  std::cout<<"Gate diff "<<gateDiff<<" relTime "<<fRelGateTime<<std::endl;
-    fOpFlashTimehit=firstTime;
+    fOpFlashTimehit_us=firstTime;
     fInTime=inTime;
     fEventType=eventType;
     fNCRTmatch=nCRTHits;
@@ -621,7 +631,7 @@ void icarus::crt::CRTPMTMatchingAna::analyze(art::Event const& e)
     fOpFlashPos.clear();
     fMatchedCRTmodID.clear();
     fMatchedCRTpos.clear();
-    fMatchedCRTtime.clear();
+    fMatchedCRTtime_us.clear();
     fMatchedCRTtime_abs.clear();
     fMatchedCRTregion.clear();
     fMatchedCRTsys.clear();
@@ -651,7 +661,7 @@ void icarus::crt::CRTPMTMatchingAna::ClearVecs()
   fOpFlashPos.clear();
   fMatchedCRTmodID.clear();
   fMatchedCRTpos.clear();
-  fMatchedCRTtime.clear();
+  fMatchedCRTtime_us.clear();
   fMatchedCRTtime_abs.clear();
   fMatchedCRTregion.clear();
   fMatchedCRTsys.clear();
