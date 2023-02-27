@@ -230,7 +230,7 @@ caf_preprocess_sce_producers: {
 }
 
 # Sequences
-caf_preprocess_sequence: [ 
+caf_preprocess_sequence: [ mcreco,
     # Calorimetry
     pandoraCaloGausCryoE, pandoraCaloGausCryoW,
     pandoraPidGausCryoE, pandoraPidGausCryoW,
@@ -258,7 +258,7 @@ caf_preprocess_data_sequence: [
 
 caf_preprocess_evtw_sequence: [@sequence::caf_preprocess_sequence, rns, genieweight, fluxweight]
 
-caf_preprocess_sce_sequence: [ 
+caf_preprocess_sce_sequence: [ mcreco,
   # Run the SCE correction
   pandoraGausSCECryoE, pandoraGausSCECryoW,
   # Then remake tracks
