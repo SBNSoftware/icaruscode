@@ -433,7 +433,6 @@ int64_t CRTHitRecoAlg::RegionDelay(std::string const& region) const {
 //------------------------------------------------------------------------------------------
 
 sbn::crt::CRTHit CRTHitRecoAlg::MakeTopHit(art::Ptr<CRTData> data, ULong64_t GlobalTrigger[305]){ //single GT: GlobalTrigger[305], 3 seperate GT: GlobalTrigger[232]
-
     uint8_t mac = data->fMac5;
     if(fCrtutils.MacToType(mac)!='c')
         mf::LogError("CRTHitRecoAlg::MakeTopHit") 
@@ -444,7 +443,7 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeTopHit(art::Ptr<CRTData> data, ULong64_t Glo
     auto const& adGeo = fGeometryService->AuxDet(adid); //module
     string region = fCrtutils.GetAuxDetRegion(adid);
     int plane = fCrtutils.AuxDetRegionNameToNum(region);
-    double hitpoint[3], hitpointerr[3], hitlocal[3];
+    double hitpointerr[3];
     TVector3 hitpos (0.,0.,0.);
     float petot = 0., pemax=0., pemaxx=0., pemaxz=0.;
     int adsid_max = -1, nabove=0;
@@ -499,7 +498,8 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeTopHit(art::Ptr<CRTData> data, ULong64_t Glo
     hitpos.SetX(postmp.X());
     postmp = fCrtutils.ChanToLocalCoords(mac,maxz*2); 
     hitpos.SetZ(postmp.Z());
-
+    int sector=-1;
+    if(findz==true && findx==true) sector=(maxz-8)*8+maxx;
     if(!findx)
         mf::LogWarning("CRTHitRecoAlg::MakeTopHit") << " no interlayer coincidence found! Missing X coord." << '\n';
     if(!findz)
@@ -511,9 +511,7 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeTopHit(art::Ptr<CRTData> data, ULong64_t Glo
 
     //hitpos*=1.0/petot; //hit position weighted by deposited charge
     //hitpos*=1.0/nabove;
-    hitlocal[0] = hitpos.X();
-    hitlocal[1] = 0.;
-    hitlocal[2] = hitpos.Z();
+    geo::AuxDetGeo::LocalPoint_t const hitlocal{hitpos.X(), 0., hitpos.Z()};
     
     auto const& adsGeo = adGeo.SensitiveVolume(adsid_max); //trigger strip
     uint64_t thit = data->fTs0;
@@ -524,12 +522,14 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeTopHit(art::Ptr<CRTData> data, ULong64_t Glo
     //92.0 is the middle of one of the Top CRT modules (each of them is 184 cm)    
     //TO DO: Move hardcoded numbers to parameter fcl files.
     //Another possibility is using object values from GDML, but I (Francesco Poppi) found weird numbers some months ago and needed to double check.
-    double const corrPos = std::max(-hitpos.X(), hitpos.Z());
-    uint64_t const corr = (uint64_t)round(abs((92.0+corrPos)*fPropDelay));
-    thit -= corr;
-    thit1 -= corr;
+    //double const corrPos = std::max(-hitpos.X(), hitpos.Z());
+    //uint64_t const corr = (uint64_t)round(abs((92.0+corrPos)*fPropDelay));  //Obsolete
+    double corr = 0;
+    if(findz==true && findx==true) corr=TopCRT_TimingCorr[sector];
+    thit -= (uint64_t) round(corr);
+    thit1 -= (uint64_t) round(corr);
 
-    adGeo.LocalToWorld(hitlocal,hitpoint); //tranform from module to world coords
+    auto const hitpoint = adGeo.toWorldCoords(hitlocal); //tranform from module to world coords
 
     hitpointerr[0] = adsGeo.HalfWidth1()*2/sqrt(12);
     hitpointerr[1] = adGeo.HalfHeight();
@@ -540,8 +540,8 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeTopHit(art::Ptr<CRTData> data, ULong64_t Glo
     //Remove T1 Reset event not correctly flagged, remove T1 reset events, remove T0 reset events
     if((sum<10000 && thit1<2'001'000 && thit1>2'000'000)||data->IsReference_TS1() || data->IsReference_TS0()) return FillCRTHit({},{},0,0,0,0,0,0,0,0,0,0,"");
 
-    CRTHit hit = FillCRTHit({mac},pesmap,petot,thit,thit1,plane,hitpoint[0],hitpointerr[0],
-                            hitpoint[1],hitpointerr[1],hitpoint[2],hitpointerr[2],region);
+    CRTHit hit = FillCRTHit({mac},pesmap,petot,thit,thit1,plane,hitpoint.X(),hitpointerr[0],
+                            hitpoint.Y(),hitpointerr[1],hitpoint.Z(),hitpointerr[2],region);
 
     return hit;
 
@@ -556,7 +556,7 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeBottomHit(art::Ptr<CRTData> data){
     auto const& adGeo = fGeometryService->AuxDet(adid); //module
     string region = fCrtutils.GetAuxDetRegion(adid);
     int plane =fCrtutils.AuxDetRegionNameToNum(region);
-    double hitpoint[3], hitpointerr[3], hitlocal[3];
+    double hitpointerr[3];
     TVector3 hitpos (0.,0.,0.);
     float petot = 0., pemax=0.;
     int adsid_max = -1, nabove=0;
@@ -593,21 +593,19 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeBottomHit(art::Ptr<CRTData> data){
         return FillCRTHit({},{},0,0,0,0,0,0,0,0,0,0,"");
 
     hitpos*=1.0/petot; //hit position weighted by deposited charge
-    hitlocal[0] = hitpos.X();
-    hitlocal[1] = 0.;
-    hitlocal[2] = 0;
+    geo::AuxDetGeo::LocalPoint_t const hitlocal{hitpos.X(), 0., 0.};
 
     auto const& adsGeo = adGeo.SensitiveVolume(adsid_max); //trigger strip
     uint64_t thit = data->fTs0 - adsGeo.HalfLength()*fPropDelay;
     
-    adGeo.LocalToWorld(hitlocal,hitpoint); //tranform from module to world coords
+    auto const hitpoint = adGeo.toWorldCoords(hitlocal); //tranform from module to world coords
 
     hitpointerr[0] = (xmax-xmin+2*adsGeo.HalfWidth1()*2)/sqrt(12);
     hitpointerr[1] = adGeo.HalfHeight();
     hitpointerr[2] = adsGeo.Length()/sqrt(12);
 
-    CRTHit hit = FillCRTHit({mac},pesmap,petot,thit,thit,plane,hitpoint[0],hitpointerr[0],
-                            hitpoint[1],hitpointerr[1],hitpoint[2],hitpointerr[2],region);
+    CRTHit hit = FillCRTHit({mac},pesmap,petot,thit,thit,plane,hitpoint.X(),hitpointerr[0],
+                            hitpoint.Y(),hitpointerr[1],hitpoint.Z(),hitpointerr[2],region);
 
     return hit;
 
