@@ -1,0 +1,8 @@
+#include "stage0_run2_icarus.fcl"
+
+
+# trigger configuration is not saved in DAQ FHiCL, hence it's not available:
+physics.producers.triggerconfig.module_type: DummyProducer
+
+# trigger is version 1 (and autodetection does not work for the reason above)
+physics.producers.daqTrigger: @local::decodeTrigger
