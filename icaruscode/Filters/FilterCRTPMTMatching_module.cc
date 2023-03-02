@@ -19,8 +19,7 @@
 
 // LArSoft includes
 #include "larcore/CoreUtils/ServiceUtil.h"
-#include "larcore/Geometry/Geometry.h"
-#include "larcorealg/Geometry/GeometryCore.h"
+#include "larcore/Geometry/WireReadout.h"
 #include "lardata/DetectorInfoServices/DetectorClocksService.h"
 
 // Data product includes
@@ -61,13 +60,13 @@ class icarus::crt::FilterCRTPMTMatching : public art::EDFilter {
  * and it tries to match them with one or more CRT Hits using a configurable
  * time interval, which, at the time (19/04/2023) is chosen as +/-100 ns.
  * If the flash is matched, the relative time will determine if the mu candidate
- * is entering or exiting the TPC. Depending on the amound and relative time of 
+ * is entering or exiting the TPC. Depending on the amound and relative time of
  * the match, a classification is provided to the flash.
  * The filtering module has 3 options: loose (everything goes through), medium
  * (removes events where the flash is matched with one Top CRT hit before the
  * flash) and tight (removes all the events where the flashes are matched with
  * CRT hits before the Flash).
- * If multiple flashes are in the beam gate, the filtering logic applies to the 
+ * If multiple flashes are in the beam gate, the filtering logic applies to the
  * AND of the flashes classification.
  * For questions and maintenance ask Francesco Poppi.
  */
@@ -210,12 +209,12 @@ bool icarus::crt::FilterCRTPMTMatching::filter(art::Event& e) {
   std::vector<CRTPMTMatching> EventFlashes;
   for(auto const & crtpmt : crtpmtMatches) {
     if(fSpillOnly==true){
-	    if(crtpmt.flashInBeam==1) EventFlashes.push_back(crtpmt);
+            if(crtpmt.flashInBeam==1) EventFlashes.push_back(crtpmt);
     }
     else {
-	    if(crtpmt.flashInGate==1) EventFlashes.push_back(crtpmt);
+            if(crtpmt.flashInGate==1) EventFlashes.push_back(crtpmt);
     }
-  } 
+  }
 
   bool hasOnlyCosmics = false;
   if (fFilterLevel == "loose") {
@@ -231,11 +230,11 @@ bool icarus::crt::FilterCRTPMTMatching::filter(art::Event& e) {
           f.flashClassification == sbn::crt::MatchType::enTop_mult ||
           f.flashClassification == sbn::crt::MatchType::enTop_exSide_mult) {
         isCosmic = true;
-	}
-      	// With Medium filter, everything (inTime) which is associated with Top
+        }
+        // With Medium filter, everything (inTime) which is associated with Top
         // CRT Hit before the Flash is filtered as clear cosmic
       else
-     	isCosmic = false;
+        isCosmic = false;
       hasOnlyCosmics = hasOnlyCosmics && isCosmic;
     }
   }
@@ -265,9 +264,9 @@ bool icarus::crt::FilterCRTPMTMatching::filter(art::Event& e) {
       finBeam = f.flashInBeam;
       fFlashBeamTime_ns = f.flashGateTime*1e3;
       for (const auto& crt : f.matchedCRTHits){
-	fCRTHitPos_X.push_back(crt.position.X());
-	fCRTHitPos_Y.push_back(crt.position.Y());
-	fCRTHitPos_Z.push_back(crt.position.Z());
+        fCRTHitPos_X.push_back(crt.position.X());
+        fCRTHitPos_Y.push_back(crt.position.Y());
+        fCRTHitPos_Z.push_back(crt.position.Z());
         fCRTHitTime_us.push_back(crt.time);
         fCRTFlashTime_ns.push_back(crt.PMTTimeDiff*1e3);
         fCRTHitRegion.push_back(crt.region);

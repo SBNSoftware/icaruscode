@@ -49,7 +49,7 @@
 #include "lardataobj/RawData/raw.h"
 #include "lardataobj/RawData/TriggerData.h"
 #include "lardataobj/Simulation/SimChannel.h"
-#include "larcore/Geometry/Geometry.h"
+#include "larcore/Geometry/WireReadout.h"
 #include "larcorealg/Geometry/GeometryCore.h"
 #include "lardata/Utilities/LArFFT.h"
 #include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
@@ -113,7 +113,7 @@ private:
     FFTPointer                              fFFT;                   //< Object to handle thread safe FFT
     
     //services
-    const geo::GeometryCore&                fGeometry;
+    const geo::WireReadoutGeom&               fChannelMapAlg;
     icarusutil::SignalShapingICARUSService* fSignalShapingService;  ///< Access to the response functions
     const lariov::DetPedestalProvider&      fPedestalRetrievalAlg;  ///< Keep track of an instance to the pedestal retrieval alg
     
@@ -123,8 +123,8 @@ DEFINE_ART_MODULE(OverlayICARUS)
 //-------------------------------------------------
 OverlayICARUS::OverlayICARUS(fhicl::ParameterSet const& pset)
     : EDProducer{pset}
-    , fGeometry(*lar::providerFrom<geo::Geometry>()),
-      fPedestalRetrievalAlg(*lar::providerFrom<lariov::DetPedestalService>())
+    , fChannelMapAlg{art::ServiceHandle<geo::WireReadout const>()->Get()}
+    , fPedestalRetrievalAlg(*lar::providerFrom<lariov::DetPedestalService>())
 {
     this->reconfigure(pset);
     
@@ -218,7 +218,7 @@ void OverlayICARUS::produce(art::Event& evt)
         raw::ChannelID_t channel = rawDigit.Channel();
             
         //use channel number to set some useful numbers
-        std::vector<geo::WireID> widVec = fGeometry.ChannelToWire(channel);
+        std::vector<geo::WireID> widVec = fChannelMapAlg.ChannelToWire(channel);
 
         // We skip channels that are not connected to a physical wire
         if (!widVec.empty())

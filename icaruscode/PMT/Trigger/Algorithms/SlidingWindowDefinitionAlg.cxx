@@ -15,6 +15,7 @@
 #include "icaruscode/PMT/Algorithms/PMTverticalSlicingAlg.h"
 
 // LArSoft libraries
+#include "larcorealg/Geometry/WireReadoutGeom.h"
 #include "larcorealg/Geometry/GeometryCore.h"
 #include "larcorealg/Geometry/CryostatGeo.h"
 #include "larcorealg/Geometry/OpDetGeo.h"

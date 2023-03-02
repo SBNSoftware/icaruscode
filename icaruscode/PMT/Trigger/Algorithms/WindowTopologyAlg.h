@@ -17,6 +17,9 @@
 #include "icaruscode/IcarusObj/OpDetWaveformMeta.h" // sbn::OpDetWaveformMeta
 #include "icarusalg/Utilities/mfLoggingClass.h"
 
+// LArSoft libraries
+#include "larcorealg/Geometry/fwd.h"
+
 // framework libraries
 #include "cetlib_except/exception.h"
 
@@ -28,12 +31,6 @@
 
 // -----------------------------------------------------------------------------
 // forward declaration
-namespace geo {
-  class GeometryCore;
-  class CryostatGeo;
-}
-
-// -----------------------------------------------------------------------------
 namespace icarus::trigger {
   class WindowTopologyAlg;
   class WindowTopologyVerification;
@@ -71,6 +68,7 @@ class icarus::trigger::WindowTopologyAlg
    */
   WindowTopologyAlg(
     geo::GeometryCore const& geom,
+    geo::WireReadoutGeom const& wireReadoutAlg,
     std::string const& logCategory = "WindowTopologyAlg"
     );
   
@@ -149,6 +147,7 @@ class icarus::trigger::WindowTopologyAlg
 
   
   geo::GeometryCore const* const fGeom; ///< Geometry service provider.
+  geo::WireReadoutGeom const* const fWireReadoutGeom;
 
   
   /// Convenience function: creates and returns a `WindowChannelMap` from the
@@ -169,7 +168,7 @@ class icarus::trigger::WindowTopologyAlg
   static std::vector<WindowChannelMap::WindowInfo_t> createWindowsFromCryostat(
     WindowChannelColl_t const& windowChannels,
     geo::CryostatGeo const& cryo,
-    geo::GeometryCore const& geom,
+    geo::WireReadoutGeom const& wireReadoutAlg,
     std::size_t firstWindowIndex = 0U
     );
 
@@ -338,6 +337,7 @@ class icarus::trigger::WindowTopologyManager
   WindowTopologyVerification fVerify;
   
   geo::GeometryCore const* const fGeom; ///< Geometry service provider.
+  geo::WireReadoutGeom const* const fChannelMapAlg;
   
     public:
   
@@ -356,6 +356,7 @@ class icarus::trigger::WindowTopologyManager
    */
   WindowTopologyManager(
     geo::GeometryCore const& geom,
+    geo::WireReadoutGeom const& wireReadoutAlg,
     std::string const& logCategory = "WindowTopologyManager"
     );
   
@@ -460,11 +461,13 @@ inline void icarus::trigger::WindowTopologyVerification::operator()
 //------------------------------------------------------------------------------
 inline icarus::trigger::WindowTopologyManager::WindowTopologyManager(
   geo::GeometryCore const& geom,
+  geo::WireReadoutGeom const& wireReadoutAlg,
   std::string const& logCategory /* = "WindowTopologyManager" */
   )
   : icarus::ns::util::mfLoggingClass(logCategory)
   , fVerify{ logCategory }
   , fGeom(&geom)
+  , fChannelMapAlg(&wireReadoutAlg)
 {}
 
 
@@ -541,7 +544,7 @@ template <typename Gates>
 void icarus::trigger::WindowTopologyManager::extractTopology(Gates const& gates)
 {
   icarus::trigger::WindowTopologyAlg const topoMaker
-    { *fGeom, logCategory() + "_Extractor" };
+    { *fGeom, *fChannelMapAlg, logCategory() + "_Extractor" };
   fVerify.setTopology(topoMaker.createFromGates(gates));
 } // icarus::trigger::WindowTopologyManager::extractTopology()
 
@@ -549,4 +552,3 @@ void icarus::trigger::WindowTopologyManager::extractTopology(Gates const& gates)
 //------------------------------------------------------------------------------
 
 #endif // ICARUSCODE_PMT_TRIGGER_ALGORITHMS_WINDOWTOPOLOGYALG_H
-

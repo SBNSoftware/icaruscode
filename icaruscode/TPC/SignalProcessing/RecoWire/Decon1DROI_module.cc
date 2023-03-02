@@ -35,7 +35,7 @@
 
 // LArSoft libraries
 #include "larcoreobj/SimpleTypesAndConstants/RawTypes.h" // raw::ChannelID_t
-#include "larcore/Geometry/Geometry.h"
+#include "larcore/Geometry/WireReadout.h"
 #include "larcore/CoreUtils/ServiceUtil.h" // lar::providerFrom()
 #include "lardataobj/RawData/RawDigit.h"
 #include "lardataobj/RawData/raw.h"
@@ -140,7 +140,7 @@ class Decon1DROI : public art::ReplicatedProducer
 
     icarus_signal_processing::WaveformTools<float>             fWaveformTool;
 
-    const geo::GeometryCore*                                   fGeometry        = lar::providerFrom<geo::Geometry>();
+    const geo::WireReadoutGeom& fChannelMapAlg = art::ServiceHandle<geo::WireReadout const>()->Get();
     const lariov::ChannelStatusProvider*                       fChannelFilter   = lar::providerFrom<lariov::ChannelStatusService>();
     const lariov::DetPedestalProvider*                         fPedRetrievalAlg = lar::providerFrom<lariov::DetPedestalService>();
     
@@ -236,8 +236,8 @@ void Decon1DROI::reconfigure(fhicl::ParameterSet const& pset)
             fFullRMSVec[planeIdx]        = tfs->make<TH1F>(    Form("RMSFPlane_%02zu",planeIdx),           "Full RMS;RMS (ADC);", 400, 0., 40.);
             fTruncRMSVec[planeIdx]       = tfs->make<TH1F>(    Form("RMSTPlane_%02zu",planeIdx),           "Truncated RMS;RMS (ADC);", 100, 0., 10.);
             fNumTruncBinsVec[planeIdx]   = tfs->make<TH1F>(    Form("NTruncBins_%02zu",planeIdx),          ";# bins",     640, 0., 6400.);
-            fPedByChanVec[planeIdx]      = tfs->make<TProfile>(Form("PedByWirePlane_%02zu",planeIdx),      ";Wire#", fGeometry->Nwires(planeID), 0., fGeometry->Nwires(planeID), -5., 5.);
-            fTruncRMSByChanVec[planeIdx] = tfs->make<TProfile>(Form("TruncRMSByWirePlane_%02zu",planeIdx), ";Wire#", fGeometry->Nwires(planeID), 0., fGeometry->Nwires(planeID),  0., 10.);
+            fPedByChanVec[planeIdx]      = tfs->make<TProfile>(Form("PedByWirePlane_%02zu",planeIdx),      ";Wire#", fChannelMapAlg.Nwires(planeID), 0., fChannelMapAlg.Nwires(planeID), -5., 5.);
+            fTruncRMSByChanVec[planeIdx] = tfs->make<TProfile>(Form("TruncRMSByWirePlane_%02zu",planeIdx), ";Wire#", fChannelMapAlg.Nwires(planeID), 0., fChannelMapAlg.Nwires(planeID),  0., 10.);
             fNumROIsHistVec[planeIdx]    = tfs->make<TH1F>(    Form("NROISplane_%02zu",planeIdx),          ";# ROIs;",   100, 0, 100);
             fROILenHistVec[planeIdx]     = tfs->make<TH1F>(    Form("ROISIZEplane_%02zu",planeIdx),        ";ROI size;", 500, 0, 500);
         }
@@ -393,7 +393,7 @@ float Decon1DROI::fixTheFreakingWaveform(const std::vector<float>& waveform, raw
         std::vector<geo::WireID> wids;
         try
         {
-           wids = fGeometry->ChannelToWire(channel);
+           wids = fChannelMapAlg.ChannelToWire(channel);
         }
         catch(...)
         {
@@ -443,7 +443,7 @@ void  Decon1DROI::processChannel(size_t                                  idx,
     float pedestal = 0.;
         
     // Recover the plane info
-    std::vector<geo::WireID> wids = fGeometry->ChannelToWire(channel);
+    std::vector<geo::WireID> wids = fChannelMapAlg.ChannelToWire(channel);
     
     // skip bad channels
     if( fChannelFilter->Status(channel) < fMinAllowedChanStatus) return;

@@ -1,5 +1,5 @@
 ///////////////////////////////////////////////////////////////////////////////
-/// \file CRTChannelMapAlg.cxx
+/// \file CRTWireReadoutGeom.cxx
 /// \brief Algorithm class for ICARUS auxiliary detector channel mapping
 ///
 /// Originally ported from AuxDetChannelMapLArIATAlg.cxx (Author: brebel@fnal.gov)
@@ -13,7 +13,7 @@
 #include "larcorealg/Geometry/AuxDetGeo.h"
 #include "larcorealg/Geometry/AuxDetSensitiveGeo.h"
 #include "larcorealg/Geometry/AuxDetGeometryCore.h"
-#include "icaruscode/CRT/CRTChannelMapAlg.h"
+#include "icaruscode/CRT/CRTWireReadoutGeom.h"
 #include "TVector3.h"
 #include <iostream>
 #include <ostream>
@@ -25,12 +25,12 @@ namespace geo {
 
 
   //---------------------------------------------------------------------------
-  CRTChannelMapAlg::CRTChannelMapAlg(
+  CRTWireReadoutGeom::CRTWireReadoutGeom(
       fhicl::ParameterSet const& p)
     : fSorter(geo::CRTGeoObjectSorter(p)) {}
 
   //---------------------------------------------------------------------------
-  void CRTChannelMapAlg::Initialize(AuxDetGeometryData_t& geodata) {
+  void CRTWireReadoutGeom::Initialize(AuxDetGeometryData_t& geodata) {
     Uninitialize();
 
     std::vector<geo::AuxDetGeo>& adgeo = geodata.auxDets;
@@ -230,10 +230,10 @@ namespace geo {
   }//Initialize
   
   //----------------------------------------------------------------------------
-  void CRTChannelMapAlg::Uninitialize() {}
+  void CRTWireReadoutGeom::Uninitialize() {}
 
   //----------------------------------------------------------------------------
-  uint32_t CRTChannelMapAlg::PositionToAuxDetChannel(
+  uint32_t CRTWireReadoutGeom::PositionToAuxDetChannel(
       geo::Point_t const& worldLoc,
       std::vector<geo::AuxDetGeo> const& auxDets,
       size_t& ad,
@@ -258,7 +258,7 @@ namespace geo {
       auto csvItr = fADGeoToChannelAndSV.find(ad);
       
       if (csvItr == fADGeoToChannelAndSV.end()) {
-	throw cet::exception("CRTChannelMapAlg")
+	throw cet::exception("CRTWireReadoutGeom")
 	  << "No entry in channel and sensitive volume map for AuxDet index "
 	  << ad;
       }
@@ -278,7 +278,7 @@ namespace geo {
     }
       
     /*if (channel == UINT_MAX) {
-      throw cet::exception("CRTChannelMapAlg")
+      throw cet::exception("CRTWireReadoutGeom")
       << "position ("
       << worldLoc[0] << "," << worldLoc[1] << "," << worldLoc[2]
       << ") does not correspond to any AuxDet";
@@ -288,7 +288,7 @@ namespace geo {
   }
 
   //----------------------------------------------------------------------------
-  geo::Point_t CRTChannelMapAlg::AuxDetChannelToPosition(
+  geo::Point_t CRTWireReadoutGeom::AuxDetChannelToPosition(
       uint32_t const channel,
       std::string const& auxDetName,
       std::vector<geo::AuxDetGeo> const& auxDets) const {
@@ -299,7 +299,7 @@ namespace geo {
       ad = fNameToADGeo.find(auxDetName)->second;
     }
     else {
-      throw cet::exception("CRTChannelMapAlg")
+      throw cet::exception("CRTWireReadoutGeom")
       << "No AuxDetGeo with name " << auxDetName;
     }
 
@@ -307,7 +307,7 @@ namespace geo {
     auto csvItr = fADGeoToChannelAndSV.find(ad);
 
     if (csvItr == fADGeoToChannelAndSV.end()) {
-      throw cet::exception("CRTChannelMapAlg")
+      throw cet::exception("CRTWireReadoutGeom")
       << "No entry in channel and sensitive volume"
       << " map for AuxDet index " << ad << " bail";
     }

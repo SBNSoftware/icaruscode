@@ -29,6 +29,7 @@
 
 
 #include "lardata/DetectorInfoServices/DetectorClocksService.h"
+#include "larcore/Geometry/WireReadout.h"
 #include "larcore/Geometry/Geometry.h"
 #include "larcore/CoreUtils/ServiceUtil.h" // lar::providerFrom()
 #include "larcorealg/Geometry/CryostatGeo.h"
@@ -237,6 +238,7 @@ private:
 
   // Useful services, keep copies for now (we can update during begin run periods)
   const geo::GeometryCore*           fGeometry;             ///< pointer to Geometry service
+  const geo::WireReadoutGeom*          fChannelMapAlg;        ///< pointer to ChannelMapAlg
 
   // Get geometry.
   //  art::ServiceHandle<geo::Geometry> geom;
@@ -272,10 +274,11 @@ ThroughgoingmuonAnalyzer::ThroughgoingmuonAnalyzer(fhicl::ParameterSet const& ps
   //  fHitProducerLabelVec      = pset.get< std::vector<art::InputTag>>("HitModuleLabelVec",  std::vector<art::InputTag>() = {"gauss"});
 
     fGeometry           = lar::providerFrom<geo::Geometry>();
+    fChannelMapAlg      = &art::ServiceHandle<geo::WireReadout const>()->Get();
 
     art::TFileDirectory dir = tfs->mkdir("histos");
-    fHitEffvselecVec.resize(fGeometry->Nplanes());
-    for(size_t plane = 0; plane < fGeometry->Nplanes(); plane++)
+    fHitEffvselecVec.resize(fChannelMapAlg->Nplanes());
+    for(size_t plane = 0; plane < fChannelMapAlg->Nplanes(); plane++)
       {
 	fHitEffvselecVec.at(plane)           = dir.make<TProfile>  (("HitEffvselec"    + std::to_string(plane)).c_str(), "Hit Efficiency; Total # e-",        200,  0., 200000., 0., 1.);
       }
@@ -685,7 +688,7 @@ void ThroughgoingmuonAnalyzer::analyze(art::Event const& evt)
     	          // This is the "correct" way to check and remove bad channels...
                 if( chanFilt.Status(chanToTDCToIDEMap.first) < fMinAllowedChanStatus)
                 {
-                    std::vector<geo::WireID> wids = fGeometry->ChannelToWire(chanToTDCToIDEMap.first);
+                    std::vector<geo::WireID> wids = fChannelMapAlg->ChannelToWire(chanToTDCToIDEMap.first);
                     std::cout << "*** skipping bad channel with status: " << chanFilt.Status(chanToTDCToIDEMap.first) 
                           << " for channel: "                         << chanToTDCToIDEMap.first 
                           << ", plane: "                              << wids[0].Plane 
@@ -713,7 +716,7 @@ void ThroughgoingmuonAnalyzer::analyze(art::Event const& evt)
             
         	     // The below try-catch block may no longer be necessary
         	     // Decode the channel and make sure we have a valid one
-            std::vector<geo::WireID> wids = fGeometry->ChannelToWire(chanToTDCToIDEMap.first);
+            std::vector<geo::WireID> wids = fChannelMapAlg->ChannelToWire(chanToTDCToIDEMap.first);
         
         	  // Recover plane and wire in the plane
             unsigned int plane = wids[0].Plane;
@@ -1469,7 +1472,7 @@ void ThroughgoingmuonAnalyzer::analyze(art::Event const& evt)
     
     std::cout << "-- final quick loop to fill summary hists" << std::endl;
     
-    for(size_t idx = 0; idx < fGeometry->Nplanes();idx++)
+    for(size_t idx = 0; idx < fChannelMapAlg->Nplanes();idx++)
       {
         if (nSimChannelHitVec[idx] > 10)
 	  {

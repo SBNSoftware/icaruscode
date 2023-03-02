@@ -35,7 +35,7 @@
 
 // LArSoft libraries
 #include "larcoreobj/SimpleTypesAndConstants/RawTypes.h" // raw::ChannelID_t
-#include "larcore/Geometry/Geometry.h"
+#include "larcore/Geometry/WireReadout.h"
 #include "larcore/CoreUtils/ServiceUtil.h" // lar::providerFrom()
 #include "lardataobj/RawData/RawDigit.h"
 #include "lardataobj/RawData/raw.h"
@@ -87,7 +87,7 @@ class WaveformIntegrity : public art::ReplicatedProducer
 
     icarus_signal_processing::WaveformTools<float>             fWaveformTool;
 
-    const geo::GeometryCore*                                   fGeometry        = lar::providerFrom<geo::Geometry>();
+    const geo::WireReadoutGeom* fChannelMapAlg = &art::ServiceHandle<geo::WireReadout const>()->Get();
     const lariov::ChannelStatusProvider*                       fChannelFilter   = lar::providerFrom<lariov::ChannelStatusService>();
     const lariov::DetPedestalProvider*                         fPedRetrievalAlg = lar::providerFrom<lariov::DetPedestalService>();
     
@@ -180,7 +180,7 @@ void WaveformIntegrity::produce(art::Event& evt, art::ProcessingFrame const& fra
                 short maxDiff = *std::max_element(diffVec.begin(),diffVec.end());
                 short minDiff = *std::min_element(diffVec.begin(),diffVec.end());
             
-                std::vector<geo::WireID> wireIDVec = fGeometry->ChannelToWire(newChannel);
+                std::vector<geo::WireID> wireIDVec = fChannelMapAlg->ChannelToWire(newChannel);
 
                 std::cout << "==> Channel: " << newChannel << " - " << wireIDVec[0] << " - has " << diffVec.size() << " max/min: " << maxDiff << "/" << minDiff << std::endl;
 //                for(size_t idx = 0; diffVec.size(); idx++) std::cout << idxVec[idx] << "/" << diffVec[idx] << " ";

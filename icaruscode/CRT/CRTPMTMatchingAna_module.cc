@@ -22,7 +22,7 @@
 
 // LArSoft includes
 #include "larcore/CoreUtils/ServiceUtil.h"
-#include "larcore/Geometry/Geometry.h"
+#include "larcore/Geometry/WireReadout.h"
 #include "larcorealg/Geometry/GeometryCore.h"
 #include "lardata/DetectorInfoServices/DetectorClocksService.h"
 //#include "larsim/MCCheater/PhotonBackTrackerService.h"
@@ -282,7 +282,7 @@ class icarus::crt::CRTPMTMatchingAna : public art::EDAnalyzer {
   int fEventType;    // Was triggered the event?
   double fRelGateTime;
 
-  geo::GeometryCore const* fGeometryService;  ///< pointer to Geometry provider
+  geo::WireReadoutGeom const* fWireReadout;  ///< pointer to Geometry provider
 
   TTree* mSelectionTree;
 
@@ -326,7 +326,7 @@ icarus::crt::CRTPMTMatchingAna::CRTPMTMatchingAna(fhicl::ParameterSet const& p)
   fFlashLabels.push_back(fOpFlashModuleLabel1);
 
   // Get a pointer to the geometry service provider.
-  fGeometryService = lar::providerFrom<geo::Geometry>();
+  fWireReadout = &art::ServiceHandle<geo::WireReadout>()->Get();
 
   art::ServiceHandle<art::TFileService> tfs;
 
@@ -481,7 +481,7 @@ void icarus::crt::CRTPMTMatchingAna::analyze(art::Event const& e) {
         if (hit->Amplitude() > fPMTADCThresh) nPMTsTriggering++;
         if (firstTime > hit->StartTime()) firstTime = hit->StartTime();
         geo::Point_t const pos =
-            fGeometryService->OpDetGeoFromOpChannel(hit->OpChannel())
+            fWireReadout->OpDetGeoFromOpChannel(hit->OpChannel())
                 .GetCenter();
         double amp = hit->Amplitude();
         // ampsum += amp; // unused

@@ -1,82 +1,33 @@
-
 add_subdirectory(CRTUtils)
 add_subdirectory(CRTDecoder)
 
 
-art_make(
-    NO_PLUGINS
-    EXCLUDE
-        CRTChannelMapAlg.cxx
-        CRTGeometryHelper_service.cc
-        CRTDetSim_module.cc
-        CRTSimHitProducer_module.cc
-        CRTTrueHitProducer_module.cc
-        CRTTzeroProducer_module.cc
-        CRTTrackProducer_module.cc
-        CRTSimAnalysis_module.cc
-        CRTDataAnalysis_module.cc
-        CrtOpHitMatchAnalysis_module.cc
-        CRTTruthMatchAnalysis_module.cc
-        CRTAutoVeto_module.cc
-        FlashResAna_module.cc
-        PhotBackground_module.cc
-        CRTT0Matching_module.cc
-        CRTTPCMatchingAna_module.cc	
-        CRTPMTMatchingAna_module.cc
-        CRTTPCTruthEff_module.cc
-    LIBRARY_NAME
-        icaruscode_CRTData
-    SOURCE
-        CRTGeoObjectSorter.cxx
-    LIBRARIES
+cet_build_plugin(CRTGeoObjectSorter art::tool
+  LIBRARIES
         larcorealg::Geometry
-        larcore::Geometry_Geometry_service
         canvas::canvas
         cetlib_except::cetlib_except
-        messagefacility::MF_MessageLogger
-        messagefacility::headers
         fhiclcpp::fhiclcpp
-        art::Framework_Services_Registry
         CLHEP::CLHEP
         ROOT::Geom
         cetlib::cetlib
 )
 
-art_make_library(
-        LIBRARY_NAME
-                icaruscode_CRT
-        SOURCE
-                CRTChannelMapAlg.cxx
-        LIBRARIES
+cet_build_plugin(CRTAuxDetInitializer art::tool
+  LIBRARIES
                 larcorealg::Geometry
-                larcore::Geometry_Geometry_service
-                sbnobj::ICARUS_CRT
-                icaruscode_CRTData
                 cetlib_except::cetlib_except
                 messagefacility::MF_MessageLogger
                 messagefacility::headers
                 fhiclcpp::fhiclcpp
-                art::Framework_Services_Registry
                 CLHEP::CLHEP
                 ROOT::Geom
                 cetlib::cetlib
         )
 
-cet_build_plugin(CRTGeometryHelper art::service
-     LIBRARIES
-        larcorealg::Geometry
-        larcore::Geometry_Geometry_service
-        icaruscode_CRT
-        art_root_io::TFileService_service
-        art::Framework_Services_Registry
-        messagefacility::MF_MessageLogger
-        messagefacility::headers
-        )
-
 cet_build_plugin(CRTDetSim art::module
      LIBRARIES
         larcorealg::Geometry
-        icaruscode_CRT
         sbnobj::ICARUS_CRT
         sbnobj::Common_CRT
         icaruscode_CRTUtils
@@ -93,7 +44,6 @@ cet_build_plugin(CRTDetSim art::module
 cet_build_plugin(CRTSimHitProducer art::module
      LIBRARIES
         larcorealg::Geometry
-        icaruscode_CRT
         sbnobj::ICARUS_CRT
         sbnobj::Common_CRT
         icaruscode_CRTUtils
@@ -110,7 +60,6 @@ cet_build_plugin(CRTSimHitProducer art::module
 cet_build_plugin( CRTTrueHitProducer art::module
      LIBRARIES
         larcorealg::Geometry
-        icaruscode_CRT
         sbnobj::ICARUS_CRT
         sbnobj::Common_CRT
         icaruscode_CRTUtils
@@ -132,7 +81,6 @@ cet_build_plugin( CRTTrueHitProducer art::module
 cet_build_plugin(CRTTzeroProducer art::module
      LIBRARIES
         larcorealg::Geometry
-        icaruscode_CRT
         sbnobj::ICARUS_CRT
         sbnobj::Common_CRT
         art_root_io::TFileService_service
@@ -149,7 +97,6 @@ cet_build_plugin(CRTTzeroProducer art::module
 cet_build_plugin(CRTTrackProducer art::module
      LIBRARIES
         larcorealg::Geometry
-        icaruscode_CRT
         sbnobj::ICARUS_CRT
         sbnobj::Common_CRT
         icaruscode_CRTUtils
@@ -167,7 +114,6 @@ cet_build_plugin(CRTTrackProducer art::module
 cet_build_plugin(CRTSimAnalysis art::module
      LIBRARIES
         sbnobj::ICARUS_CRT
-        icaruscode_CRT
         sbnobj::Common_CRT
         icaruscode_CRTUtils
         larcore::Geometry_Geometry_service
@@ -189,7 +135,6 @@ cet_build_plugin(CRTDataAnalysis art::module
      LIBRARIES
         artdaq_core::artdaq-core_Data
         sbnobj::ICARUS_CRT
-        icaruscode_CRT
         sbnobj::Common_CRT
         icaruscode_CRTUtils
         larcore::Geometry_Geometry_service
@@ -209,8 +154,6 @@ cet_build_plugin(CRTDataAnalysis art::module
 
 cet_build_plugin(CRTCalibrationAnalysis art::module
      LIBRARIES
-        icaruscode_CRTData
-        icaruscode_CRT
         sbnobj::Common_CRT
         icaruscode_CRTUtils
         larcore::Geometry_Geometry_service
@@ -232,7 +175,6 @@ cet_build_plugin(CRTCalibrationAnalysis art::module
 cet_build_plugin(CrtOpHitMatchAnalysis art::module
      LIBRARIES
         sbnobj::ICARUS_CRT
-        icaruscode_CRT
         sbnobj::Common_CRT
         icaruscode_CRTUtils
         larcore::Geometry_Geometry_service
@@ -252,7 +194,6 @@ cet_build_plugin(CrtOpHitMatchAnalysis art::module
 cet_build_plugin(CRTPMTMatchingAna art::module
      LIBRARIES
         sbnobj::ICARUS_CRT
-        icaruscode_CRT
         sbnobj::Common_CRT
         icaruscode_CRTUtils
         icaruscode::Decode_DataProducts
@@ -273,7 +214,6 @@ cet_build_plugin(CRTPMTMatchingAna art::module
 
 cet_build_plugin(CRTPMTMatchingProducer art::module
      LIBRARIES
-        icaruscode::CRT
         sbnobj::Common_CRT
         icaruscode::CRTUtils
         larcore::Geometry_Geometry_service
@@ -287,7 +227,6 @@ cet_build_plugin(CRTPMTMatchingProducer art::module
 cet_build_plugin(CRTTruthMatchAnalysis art::module
      LIBRARIES
         sbnobj::ICARUS_CRT
-        icaruscode_CRT
         sbnobj::Common_CRT
         icaruscode_CRTUtils
         larcore::Geometry_Geometry_service
@@ -308,7 +247,6 @@ cet_build_plugin(CRTTruthMatchAnalysis art::module
 cet_build_plugin( CRTAutoVeto art::module
      LIBRARIES
         sbnobj::ICARUS_CRT
-        icaruscode_CRT
         sbnobj::Common_CRT
         icaruscode_CRTUtils
         larcore::Geometry_Geometry_service
@@ -364,7 +302,6 @@ cet_build_plugin( PhotBackground art::module
         larcorealg::Geometry
         nusimdata::SimulationBase
         sbnobj::ICARUS_CRT
-        icaruscode_CRT
         sbnobj::Common_CRT
         icaruscode_CRTUtils
         art::Framework_Core
@@ -384,8 +321,6 @@ cet_build_plugin( PhotBackground art::module
 
 cet_build_plugin(CRTT0Matching art::module
      LIBRARIES
-              icaruscode_CRTData
-              icaruscode_CRT
               sbnobj::Common_CRT
               icaruscode_CRTUtils
               larcore::Geometry_Geometry_service
@@ -424,7 +359,6 @@ cet_build_plugin(CRTT0Matching art::module
 cet_build_plugin(CRTT0MatchingAna art::module
      LIBRARIES
               sbnobj::ICARUS_CRT
-              icaruscode_CRT
               sbnobj::Common_CRT
               icaruscode_CRTUtils
               larcorealg::Geometry
@@ -457,7 +391,6 @@ cet_build_plugin(CRTT0MatchingAna art::module
 cet_build_plugin(CRTTPCMatchingAna art::module
      LIBRARIES
               sbnobj::ICARUS_CRT
-              icaruscode_CRT
               sbnobj::Common_CRT
               icaruscode_CRTUtils
               larcorealg::Geometry
@@ -487,7 +420,6 @@ cet_build_plugin(CRTTPCMatchingAna art::module
 )
 simple_plugin(CRTTPCTruthEff module
               sbnobj::ICARUS_CRT
-              icaruscode_CRT
               sbnobj::Common_CRT
               icaruscode_CRTUtils
               larcorealg::Geometry

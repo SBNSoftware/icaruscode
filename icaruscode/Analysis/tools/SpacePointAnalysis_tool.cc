@@ -11,6 +11,7 @@
 #include "canvas/Persistency/Common/FindManyP.h"
 #include "canvas/Persistency/Common/FindOneP.h"
 
+#include "larcore/Geometry/WireReadout.h"
 #include "larcore/Geometry/Geometry.h"
 #include "larcore/CoreUtils/ServiceUtil.h" // lar::providerFrom()
 #include "lardata/DetectorInfoServices/DetectorClocksService.h"
@@ -342,6 +343,7 @@ private:
 
     // Useful services, keep copies for now (we can update during begin run periods)
     const geo::GeometryCore*    fGeometry;             ///< pointer to Geometry service
+    const geo::WireReadoutGeom*   fChannelMap;
 };
 
 //----------------------------------------------------------------------------
@@ -354,6 +356,7 @@ private:
 SpacePointAnalysis::SpacePointAnalysis(fhicl::ParameterSet const & pset) : fTree(nullptr)
 {
     fGeometry = lar::providerFrom<geo::Geometry>();
+    fChannelMap = &art::ServiceHandle<geo::WireReadout>()->Get();
 
     configure(pset);
 
@@ -408,9 +411,9 @@ void SpacePointAnalysis::initializeTuple(TTree* tree)
 
     fHitSpacePointObj.setBranches(locTree);
 
-    fHitTupleObjVec.resize(fGeometry->Nplanes());
+    fHitTupleObjVec.resize(fChannelMap->Nplanes());
 
-    for(size_t plane = 0; plane < fGeometry->Nplanes(); plane++)
+    for(size_t plane = 0; plane < fChannelMap->Nplanes(); plane++)
     {
         // Set up specific branch for space points
         locTree = tfs->makeAndRegister<TTree>("MatchedHits_P"+std::to_string(plane),"Matched Hits Tuple plane "+std::to_string(plane));
@@ -472,7 +475,7 @@ void SpacePointAnalysis::processSpacePoints(const art::Event&                  e
         {
             for(size_t tpcIdx = 0; tpcIdx < fGeometry->NTPC(); tpcIdx++)
             {
-                for(size_t planeIdx = 0; planeIdx < fGeometry->Nplanes(); planeIdx++)
+                for(size_t planeIdx = 0; planeIdx < fChannelMap->Nplanes(); planeIdx++)
                 {
                     geo::PlaneID planeID(cryoIdx,tpcIdx,planeIdx);
 
