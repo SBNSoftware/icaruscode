@@ -498,7 +498,12 @@ void crt::DecoderICARUSCRT::produce(art::Event& evt)
         data.fLostHits                = hit.lost_hits;
 
         memcpy(data.fAdc, hit.adc, 32*sizeof(hit.adc[0]));
-        
+	
+	// Change if it is the Telescope
+	// The 2 spare Top CRT modules have mac5 211 (the bottom one) and 212 (the top one)
+	// These modules are not in the simulation and they are supposed to move around
+        if (hit.mac5 == 211) data.fMac5=233;
+	if (hit.mac5 == 212) data.fMac5=234;
         allCRTdata.push_back(data);
     }
 

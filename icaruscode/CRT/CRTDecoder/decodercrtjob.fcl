@@ -40,7 +40,7 @@ physics:
  producers:
  {
    daqCRT: @local::crtdaq_icarus
-   daqTrigger: @local::decodeTriggerV2
+   daqTrigger: @local::decodeTriggerV3
    triggerconfig: @local::extractTriggerConfig
  }
 

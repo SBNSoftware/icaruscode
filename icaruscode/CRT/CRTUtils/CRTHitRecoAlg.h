@@ -190,6 +190,7 @@ class icarus::crt::CRTHitRecoAlg {
   bool fData;             ///< look for only data
   const icarusDB::IICARUSChannelMap* fChannelMap = nullptr;
 
+  CRTHit MakeTopSpareHit(art::Ptr<CRTData> data, ULong64_t GlobalTrigger[]);
   //Given top CRTData product, produce CRTHit
   CRTHit MakeTopHit(art::Ptr<CRTData> data, ULong64_t GlobalTrigger[]);
   //Given bottom CRTData product, produce CRTHit
@@ -366,7 +367,9 @@ inline icarus::crt::CRT_delay_map icarus::crt::LoadFEBMap() {
 		{302, {188, 229, 302, 437ull, 2000463ull}},
 		{301, {58, 228, 301, 452ull, 2000479ull}},
 		{300, {143, 227, 300, 467ull, 2000494ull}},
-		{299, {235, 226, 299, 483ull, 2000509ull}}};
+		{299, {235, 226, 299, 483ull, 2000509ull}},
+		{306, {211, 233, 306, 398ull, 2000425ull}},
+		{307, {212, 234, 307, 414ull, 2000441ull}}};
 	return FEBs;
 }
 

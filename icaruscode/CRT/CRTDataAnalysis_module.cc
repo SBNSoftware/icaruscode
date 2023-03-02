@@ -396,12 +396,19 @@ namespace crt {
     
     vector<art::Ptr<icarus::crt::CRTData>> crtData;
     bool presel = false;
-
     for (size_t febdat_i=0; febdat_i<crtList.size(); febdat_i++) {
       
       uint8_t mac = crtList[febdat_i]->fMac5;
-      int adid  = fCrtutils->MacToAuxDetID(mac,0);
-      char type = fCrtutils->GetAuxDetType(adid);
+      int adid = -1;
+      char type = '\0';
+      std::cout<<"mac "<<(int)mac<<std::endl;
+      if((int)mac==233 || (int)mac==234){
+	adid=(int)mac+73;
+	type='c';
+      } else {
+          adid  = fCrtutils->MacToAuxDetID(mac,0);
+          type = fCrtutils->GetAuxDetType(adid);
+      }
       /*
       for(int chan=0; chan<32; chan++) {
 	 mf::LogError("CRTDataAnalysis") << "\nfebP (mac5, channel, adc, type, adid) = (" << (int)crtList[febdat_i]->fMac5 << " , " << chan << " , "
@@ -446,15 +453,16 @@ namespace crt {
     // mf::LogError("CRTDataAnalysis") << "about to loop over CRTDAQ entries" << std::endl;
     for (size_t febdat_i=0; febdat_i<crtData.size(); febdat_i++) {
       
-      
       fDetEvent       = fEvent;
       fDetRun         = fRun;
       fDetSubRun      = fSubRun;
       fMac5           = crtData[febdat_i]->fMac5;
       fEntry          = crtData[febdat_i]->fEntry;
-      fFEBReg         = fCrtutils->AuxDetRegionNameToNum(fCrtutils->MacToRegion(fMac5));
+      if(fMac5!=233 && fMac5!=234) fFEBReg         = fCrtutils->AuxDetRegionNameToNum(fCrtutils->MacToRegion(fMac5));
+      else fFEBReg = 29;
       fNChan = 0;
-      fDetSubSys = fCrtutils->MacToTypeCode(fMac5);
+      if(fMac5!=233 && fMac5!=234) fDetSubSys = fCrtutils->MacToTypeCode(fMac5);
+      else fDetSubSys=1;
       fT0 = crtData[febdat_i]->fTs0;
       fT1 = crtData[febdat_i]->fTs1;
       fFlags = crtData[febdat_i]->fFlags;     
@@ -474,9 +482,7 @@ namespace crt {
 	  if (pe < 0) continue;
           fPE[ch] = pe;
 	} 
-	
       }
-            
       fDAQNtuple->Fill();
       
     } //for CRT FEB events
@@ -509,9 +515,13 @@ namespace crt {
 	  fNHitFeb  = hit.feb_id.size();
 	  fHitTotPe = hit.peshit;
 	  int mactmp = hit.feb_id[0];
-	  fHitReg  = fCrtutils->AuxDetRegionNameToNum(fCrtutils->MacToRegion(mactmp));
-	  fHitSubSys =  fCrtutils->MacToTypeCode(mactmp);
-	  
+	  if(mactmp!=233 && mactmp!=234){
+	     fHitReg  = fCrtutils->AuxDetRegionNameToNum(fCrtutils->MacToRegion(mactmp));
+	     fHitSubSys =  fCrtutils->MacToTypeCode(mactmp);
+	  } else {
+	     fHitReg=hit.plane;
+	     fHitSubSys=1;
+	  }
 	  m_gate_crt_diff = m_gate_start_timestamp - hit.ts0_ns;
 	  m_crt_global_trigger = hit.ts0_ns - hit.ts1_ns;
 	  m_crtGT_trig_diff = m_crt_global_trigger - (m_trigger_timestamp%1'000'000'000);
@@ -524,10 +534,13 @@ namespace crt {
 	    continue;
 	  }	  
 	  int chantmp = (*ittmp).second[0].first;
-	  
-	  fHitMod  = fCrtutils->MacToAuxDetID(mactmp, chantmp);
-	  fHitStrip = fCrtutils->ChannelToAuxDetSensitiveID(mactmp, chantmp);
-	  
+	  if(mactmp!=233 && mactmp!=234) {
+    	     fHitMod  = fCrtutils->MacToAuxDetID(mactmp, chantmp);
+	     fHitStrip = fCrtutils->ChannelToAuxDetSensitiveID(mactmp, chantmp);
+	  } else {
+	     fHitMod=mactmp+73;
+	     fHitStrip = -1;
+	  }
 	  fHitNtuple->Fill();
         }//for CRT Hits
     }//if CRT Hits
