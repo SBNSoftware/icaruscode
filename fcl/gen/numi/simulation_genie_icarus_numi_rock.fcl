@@ -5,4 +5,4 @@
 #
 physics.producers.generator: @local::icarus_genie_NuMI_rock
 physics.producers.generator.TopVolume:  "volWorld"
-physics.producers.generator.FiducialCut: "rockbox:(-571.55,-352.06667,-1187.037)(+571.55,+619.03333,+1566.203),1,550,0.00425,1.05,1"
+physics.producers.generator.FiducialCut: "rockbox:(-571.55,-352.06667,-1187.037)(+571.55,+619.03333,+1566.203),1,800,0.00425,1.05,1"
