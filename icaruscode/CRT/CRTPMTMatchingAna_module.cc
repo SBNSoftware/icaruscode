@@ -301,6 +301,7 @@ icarus::crt::CRTPMTMatchingAna::CRTPMTMatchingAna(fhicl::ParameterSet const& p)
   //,fOpFlashModuleLabel3(p.get<art::InputTag>("OpFlashModuleLabel3","opflashTPC3"))
   ,fCrtHitModuleLabel(p.get<art::InputTag>("CrtHitModuleLabel","crthit"))
   ,fTriggerLabel(p.get<art::InputTag>("TriggerLabel","daqTrigger"))
+  ,fTriggerConfiguration(p.get<art::InputTag>("TriggerConfiguration","triggerconfig"))
   ,fCoinWindow(p.get<double>("CoincidenceWindow",60.0))
   ,fOpDelay(p.get<double>("OpDelay",55.1))
   ,fCrtDelay(p.get<double>("CrtDelay",1.6e6))
@@ -324,10 +325,10 @@ icarus::crt::CRTPMTMatchingAna::CRTPMTMatchingAna(fhicl::ParameterSet const& p)
   // More initializers here.
 {
   // Call appropriate consumes<>() for any products to be retrieved by this module.
-  fFlashLabels[0] = fOpFlashModuleLabel0;
-  fFlashLabels[1] = fOpFlashModuleLabel1;
-  fFlashLabels[2] = fOpFlashModuleLabel2;
-  fFlashLabels[3] = fOpFlashModuleLabel3;
+  fFlashLabels.push_back(fOpFlashModuleLabel0);
+  fFlashLabels.push_back(fOpFlashModuleLabel1);
+  //fFlashLabels[2] = fOpFlashModuleLabel2;
+  //fFlashLabels[3] = fOpFlashModuleLabel3;
 
   // Get a pointer to the geometry service provider.
   fGeometryService = lar::providerFrom<geo::Geometry>();
@@ -399,7 +400,7 @@ void icarus::crt::CRTPMTMatchingAna::analyze(art::Event const& e)
   geo::TPCGeo const& tpc11 = cryo1.TPC(1);
   */
   MF_LOG_DEBUG("CRTPMTMatching: ") << "beginning analyis" << '\n';
-
+  std::cout<<"START"<<std::endl;
   // Start by fetching some basic event information for our n-tuple.
   fEvent  = e.id().event();
   fRun    = e.run();
