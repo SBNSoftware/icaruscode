@@ -55,7 +55,8 @@ physics:
       #OpFlashModuleLabel3: "opflashTPC3"
       
       TriggerLabel:  "daqTrigger" 
- 
+      TriggerConfiguration: "triggerconfig" 
+
       BNBBeamGateMin: -550
       BNBBeamGateMax: 2300
       BNBinBeamMin: -300
