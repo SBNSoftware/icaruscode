@@ -75,10 +75,6 @@ services.ParticleInventoryService:  @local::standard_particleinventoryservice
 physics.producers.mcassociationsGausCryoE.HitParticleAssociations.HitModuleLabelVec: ["cluster3DCryoE"]
 physics.producers.mcassociationsGausCryoW.HitParticleAssociations.HitModuleLabelVec: ["cluster3DCryoW"]
 
-# Set up for reading the 1D detector simulation output
-physics.producers.MCDecodeTPCROI.FragmentsLabelVec:   ["daq3:PHYSCRATEDATATPCWW","daq2:PHYSCRATEDATATPCWE","daq1:PHYSCRATEDATATPCEW","daq0:PHYSCRATEDATATPCEE"]
-physics.producers.MCDecodeTPCROI.OutInstanceLabelVec: ["PHYSCRATEDATATPCWW", "PHYSCRATEDATATPCWE", "PHYSCRATEDATATPCEW", "PHYSCRATEDATATPCEE"]
-
 services.message.destinations :
 {
   STDCOUT:
