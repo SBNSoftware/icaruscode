@@ -55,14 +55,25 @@ physics:
       #OpFlashModuleLabel3: "opflashTPC3"
       
       TriggerLabel:  "daqTrigger" 
+ 
+      BNBBeamGateMin: -550
+      BNBBeamGateMax: 2300
+      BNBinBeamMin: -300
+      BNBinBeamMax: 1300
       
+      NuMIBeamGateMin: -550
+      NuMIBeamGateMax: 10000
+      NuMIinBeamMin: -300
+      NuMIinBeamMax: 9100     
+
+      PMTADCThresh: 400
       FlashPeThresh: 2000.0
       HitPeThresh:   100.0
       CoincidenceWindow: 80.0
       OpDelay: 43.0
       HitVelocityMax: 15.0
       HitVelocityMin: 2.0
-
+      
       #CRTBackTrack: @local::standard_crtbacktracker
     }
   }

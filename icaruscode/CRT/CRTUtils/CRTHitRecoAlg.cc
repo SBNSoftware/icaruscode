@@ -526,8 +526,8 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeTopHit(art::Ptr<CRTData> data, ULong64_t Glo
     //uint64_t const corr = (uint64_t)round(abs((92.0+corrPos)*fPropDelay));  //Obsolete
     double corr = 0;
     if(findz==true && findx==true) corr=TopCRT_TimingCorr[sector];
-    thit -= (uint64_t) round(corr);
-    thit1 -= (uint64_t) round(corr);
+    thit -= (int64_t) round(corr);
+    thit1 -= (int64_t) round(corr);
 
     auto const hitpoint = adGeo.toWorldCoords(hitlocal); //tranform from module to world coords
 
