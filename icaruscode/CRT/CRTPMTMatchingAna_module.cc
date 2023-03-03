@@ -210,7 +210,7 @@ class icarus::crt::CRTPMTMatchingAna : public art::EDAnalyzer {
   uint64_t m_trigger_timestamp;
   uint64_t m_gate_start_timestamp;
   uint64_t m_trigger_gate_diff;
-  uint64_t m_gate_crt_diff;
+  //uint64_t m_gate_crt_diff;
   uint64_t m_gate_width;
 
   double fCoinWindow;
