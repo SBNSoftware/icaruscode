@@ -499,7 +499,7 @@ void MCDecoderICARUSTPCwROI::processSingleLabel(art::Event&                     
     // Require a valid handle
     if (digitVecHandle.isValid() && digitVecHandle->size()>0 )
     {
-        const unsigned int dataSize = art::Ptr<raw::RawDigit>(digitVecHandle,0)->Samples(); //size of raw data vectors
+        const unsigned int dataSize = digitVecHandle->front().Samples(); //size of raw data vectors
 
 	std::map<unsigned int, std::vector<const raw::RawDigit*> > boardToRawDigitMap;
 	for(size_t idx = 0; idx < digitVecHandle->size(); idx++) {
@@ -540,8 +540,7 @@ void MCDecoderICARUSTPCwROI::processSingleLabel(art::Event&                     
 	    // Fill into the data structure
             raw::ChannelID_t channel = rawDigit->Channel();
             unsigned int planeIdx       = fChannelToBoardWirePlaneMap.find(channel)->second.second.second;
-	    icarus_signal_processing::VectorFloat boardDataVec(dataSize);
-	    for(size_t tick = 0; tick < dataSize; tick++) boardDataVec[tick] = rawDataVec[tick];
+	    icarus_signal_processing::VectorFloat boardDataVec(rawDataVec.cbegin(),rawDataVec.cend());
 	    chanArr.first.push_back(daq::INoiseFilter::ChannelPlanePair(channel,planeIdx));
 	    chanArr.second.push_back(boardDataVec);
 	  }
