@@ -38,7 +38,8 @@
 #include "icaruscode/CRT/CRTUtils/CRTCommonUtils.h"
 #include "icaruscode/CRT/CRTUtils/CRTBackTracker.h"
 #include "sbnobj/Common/Trigger/ExtraTriggerInfo.h"
-
+#include "icaruscode/Decode/DataProducts/TriggerConfiguration.h"
+#include "larcorealg/CoreUtils/enumerate.h"
 //C++ includes
 #include <vector>
 #include <map>
@@ -88,7 +89,7 @@ namespace icarus {
 
 using namespace icarus::crt;
 
-bool flashInTime( double const & flashTime, int gateType, double gateWidth ){
+bool flashInTime( double const & flashTime, int gateType, double gateDiff, double gateWidth ){
   //std::map<unsigned int, double> gateLength{
   //  {1, 2.7}, //BNB
   //  {2, 10.6}, //NuMI
@@ -117,13 +118,13 @@ icarus::crt::MatchedCRT CRTHitmatched( const double & flashTime, geo::Point_t co
       //double distance = std::hypot(flashpos[0]-crtHit->x_pos, flashpos[1]-crtHit->y_pos, flashpos[2]-crtHit->z_pos);
       double distance = (flashpos - geo::Point_t{ crtHit->x_pos, crtHit->y_pos, crtHit->z_pos }).R();
       if ( abs(tof) >= interval ) continue;
-      if( tof < 0 ){
+      if ( tof < 0 ){
         if(crtHit->plane>36) sideen++;
         else topen++;
         CRTPMT m_match={tof, distance, crtHit};
         enteringCRTHits.push_back( m_match );
       }
-      else (tof >=0 ){
+      else if (tof >=0 ){
         if(crtHit->plane>36) sideex++;
         else topex++;
         CRTPMT m_match={tof, distance, crtHit};
@@ -140,7 +141,7 @@ icarus::crt::MatchedCRT CRTHitmatched( const double & flashTime, geo::Point_t co
     else if (topen >= 1 && sideen >= 1 && topex == 0 && sideex >= 1 ) MatchType = enTop_exSide_mult;
     else MatchType = others;
 
-    return icarus::crt::MatchedCRT matches{enteringCRTHits, exitingCRTHits, MatchType};
+    return  {std::move(enteringCRTHits), std::move(exitingCRTHits), MatchType};
 }   
 
 class icarus::crt::CRTPMTMatchingAna : public art::EDAnalyzer {
@@ -175,6 +176,7 @@ private:
   art::InputTag fOpFlashModuleLabel3;
   art::InputTag fCrtHitModuleLabel;
   art::InputTag fTriggerLabel;
+  art::InputTag fTriggerConfiguration;
   //tart::InputTag fCrtTrackModuleLabel;
 
   int fEvent;        ///< number of the event being processed
@@ -216,7 +218,7 @@ private:
   //  CRTBackTracker* bt;
   CRTCommonUtils *crtutil;
 
-  map<int,art::InputTag> fFlashLabels;
+  std::vector<art::InputTag> fFlashLabels;
 
   TTree* fMatchTree;
 
@@ -300,9 +302,9 @@ icarus::crt::CRTPMTMatchingAna::CRTPMTMatchingAna(fhicl::ParameterSet const& p)
   ,fCrtHitModuleLabel(p.get<art::InputTag>("CrtHitModuleLabel","crthit"))
   ,fTriggerLabel(p.get<art::InputTag>("TriggerLabel","daqTrigger"))
   ,fCoinWindow(p.get<double>("CoincidenceWindow",60.0))
-  ,fPMTADCThresh(p.get<int>("PMTADCThresh",400)
   ,fOpDelay(p.get<double>("OpDelay",55.1))
   ,fCrtDelay(p.get<double>("CrtDelay",1.6e6))
+  ,fPMTADCThresh(p.get<int>("PMTADCThresh",400))
   ,fFlashPeThresh(p.get<int>("FlashPeThresh",9000))
   ,fHitPeThresh(p.get<int>("HitPeThresh",700))
   ,fFlashVelocity(p.get<double>("FlashVelocityThresh",-40.))
@@ -470,15 +472,15 @@ void icarus::crt::CRTPMTMatchingAna::analyze(art::Event const& e)
   hasCRTHit Type=others;
   //for(auto const& flashList : opFlashLists){
   for(art::InputTag const& flashLabel : fFlashLabels){
-    auto const flashHandle = e.getHandle<std::vector<recob:OpFlash>>(flashLabel); 
-    art::FindMany<recob::OpHit> findManyHits(flashHandle, e, fFlashLabel);
+    auto const flashHandle = e.getHandle<std::vector<recob::OpFlash>>(flashLabel); 
+    art::FindMany<recob::OpHit> findManyHits(flashHandle, e, flashLabel);
 
-    for(auto const& [ iflash, flash ] : util:enumerate(*flashHandle)) {
+    for(auto const& [ iflash, flash ] : util::enumerate(*flashHandle)) {
       //auto const& flash = flashList.second[iflash];
       hasCRTHit eventType=others; 
       double tflash = flash.Time();
       double tAbsflash = flash.AbsTime();
-     oincidenceWindow:
+      vector<recob::OpHit const*> const& hits = findManyHits.at(iflash);
       int nPMTsTriggering = 0;
       double firstTime=999999;
       geo::vect::MiddlePointAccumulator flashCentroid;
@@ -498,17 +500,18 @@ void icarus::crt::CRTPMTMatchingAna::analyze(art::Event const& e)
         /*flash_pos[0]=flash_pos[0]+pos.X()*amp;
         flash_pos[1]=flash_pos[1]+pos.Y()*amp;
         flash_pos[2]=flash_pos[2]+pos.Z()*amp;*/
-	flashCentroid.add(po, amp);
+	flashCentroid.add(pos, amp);
         t_m=t_m+hit->PeakTime();
       }
       /*flash_pos[0]=flash_pos[0]/ampsum;
       flash_pos[1]=flash_pos[1]/ampsum;
       flash_pos[2]=flash_pos[2]/ampsum;*/
+      //auto flash_pos = flashCentroid.middlePointAs<double[3]>();
       geo::Point_t flash_pos = flashCentroid.middlePoint();
       t_m=t_m/nPMTsTriggering;
       if( nPMTsTriggering <5 ) { continue; }
       double gateDiff = (Long64_t)m_trigger_timestamp-(Long64_t)m_gate_start_timestamp;
-      bool inTime = flashInTime( firstTime, m_gate_type, m_gate_width);
+      bool inTime = flashInTime( firstTime, m_gate_type, gateDiff, m_gate_width);
       fRelGateTime=gateDiff+(tAbsflash-1500)*1e3;
       fInTime_gate=false;
       fInTime_beam=false;
@@ -528,7 +531,7 @@ void icarus::crt::CRTPMTMatchingAna::analyze(art::Event const& e)
       int TopEn=0,TopEx=0, SideEn=0, SideEx=0;
      
       auto nCRTHits = CRTmatches.entering.size() + CRTmatches.exiting.size();
-      double peflash=flash->TotalPE();
+      double peflash=flash.TotalPE();
       if (nCRTHits>=0){
         eventType=CRTmatches.matchType;
 	for (auto & entering : CRTmatches.entering){
@@ -585,7 +588,7 @@ void icarus::crt::CRTPMTMatchingAna::analyze(art::Event const& e)
 	  if(CRTSys==0) TopEx++;
 	  if(CRTSys==1)	SideEx++;
           fMatchedCRTmodID.emplace_back(HitFebs);
-          fMatchedCRTpos.push_back_back(std::move(CRTpos));
+          fMatchedCRTpos.push_back(std::move(CRTpos));
           fMatchedCRTtime_us.emplace_back(CRTtime);
           fMatchedCRTtime_abs.emplace_back(CRTAbsTime);
           fMatchedCRTregion.emplace_back(CRTRegion);
@@ -606,7 +609,7 @@ void icarus::crt::CRTPMTMatchingAna::analyze(art::Event const& e)
     fSideBefore=SideEn;
     fSideAfter=SideEx;
     fOpFlashPE=peflash;
-    fOpFlashPos={flash_pos[0],flash_pos[1],flash_pos[2]};
+    fOpFlashPos={(double)flash_pos.X(),(double)flash_pos.Y(),(double)flash_pos.Z()};
     fOpFlashTime_us=tflash;
     fOpFlashTimeAbs=tAbsflash;
     //fRelGateTime=gateDiff+(tAbsflash-1500)*1e3;
@@ -686,5 +689,6 @@ void icarus::crt::CRTPMTMatchingAna::ClearVecs()
   fMatchHit.clear();
   fMatchFlash.clear();*/
 }
+
 
 DEFINE_ART_MODULE(icarus::crt::CRTPMTMatchingAna)
