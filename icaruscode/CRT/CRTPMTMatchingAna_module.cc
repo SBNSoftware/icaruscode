@@ -182,6 +182,7 @@ class icarus::crt::CRTPMTMatchingAna : public art::EDAnalyzer {
   CRTPMTMatchingAna& operator=(CRTPMTMatchingAna&&) = delete;
 
   // Required functions.
+  void beginRun(art::Run const& r) override;
   void analyze(art::Event const& e) override;
 
  private:
@@ -197,8 +198,10 @@ class icarus::crt::CRTPMTMatchingAna : public art::EDAnalyzer {
   art::InputTag fOpFlashModuleLabel3;
   art::InputTag fCrtHitModuleLabel;
   art::InputTag fTriggerLabel;
-  art::InputTag fTriggerConfiguration;
+  art::InputTag fTriggerConfigurationLabel;
   // tart::InputTag fCrtTrackModuleLabel;
+  
+  icarus::TriggerConfiguration fTriggerConfiguration;
 
   int fEvent;   ///< number of the event being processed
   int fRun;     ///< number of the run being processed
@@ -333,7 +336,7 @@ icarus::crt::CRTPMTMatchingAna::CRTPMTMatchingAna(fhicl::ParameterSet const& p)
       ,
       fCrtHitModuleLabel(p.get<art::InputTag>("CrtHitModuleLabel", "crthit")),
       fTriggerLabel(p.get<art::InputTag>("TriggerLabel", "daqTrigger")),
-      fTriggerConfiguration(
+      fTriggerConfigurationLabel(
           p.get<art::InputTag>("TriggerConfiguration", "triggerconfig")),
       fCoinWindow(p.get<double>("CoincidenceWindow", 60.0)),
       fOpDelay(p.get<double>("OpDelay", 55.1)),
@@ -427,6 +430,15 @@ icarus::crt::CRTPMTMatchingAna::CRTPMTMatchingAna(fhicl::ParameterSet const& p)
   mSelectionTree->Branch("InBeam", &mInBeam);
 }
 
+
+void icarus::crt::CRTPMTMatchingAna::beginRun(art::Run const& r) {
+
+  fTriggerConfiguration =
+    r.getProduct<icarus::TriggerConfiguration>(fTriggerConfigurationLabel);
+
+}
+
+
 void icarus::crt::CRTPMTMatchingAna::analyze(art::Event const& e) {
   // Implementation of required member function here.
   /*
@@ -463,10 +475,7 @@ void icarus::crt::CRTPMTMatchingAna::analyze(art::Event const& e) {
       m_trigger_gate_diff =
           trigger_handle->triggerTimestamp - trigger_handle->beamGateTimestamp;
       // Read Beam Gate Size
-      art::Run const& run = e.getRun();
-      auto const& trigger_configuration =
-          run.getProduct<icarus::TriggerConfiguration>(fTriggerConfiguration);
-      m_gate_width = trigger_configuration.getGateWidth(m_gate_type);
+      m_gate_width = fTriggerConfiguration.getGateWidth(m_gate_type);
     } else {
       mf::LogError("CRTPMTMatching:")
           << "No sbn::ExtraTriggerInfo associated to label: "
