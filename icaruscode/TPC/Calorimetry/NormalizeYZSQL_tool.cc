@@ -45,6 +45,11 @@ private:
   // Class to hold data from DB
   class ScaleInfo {
   public:
+    struct Point {
+      int itpc;
+      double y, z;
+    };
+
     class ScaleBin {
       public:
       int itpc;
@@ -54,10 +59,24 @@ private:
       double zhi;
 
       double scale;
+
+      bool contains(const Point& point) const noexcept;
+      constexpr bool operator< (const ScaleBin& other) const noexcept;
+    };
+
+    struct BinComp {
+      /// Returns if the point `b` is strictly after the bin `a`.
+      bool operator() (const ScaleBin& a, const Point& b) const noexcept;
+      /// Returns if the point `a` is strictly after the bin `b`.
+      bool operator() (const Point& a, const ScaleBin& b) const noexcept;
     };
 
     float tzero; // Earliest time that this scale info is valid
     std::vector<ScaleBin> bins;
+
+    /// Returns the bin containing the `point`, `nullptr` if none.
+    ScaleBin const* findBin(const Point& point) const noexcept;
+
   };
   // Cache timestamp requests
   std::map<uint64_t, ScaleInfo> fScaleInfos;
@@ -70,6 +89,60 @@ DEFINE_ART_CLASS_TOOL(NormalizeYZSQL)
 
   } // end namespace calo
 } // end namespace icarus
+
+
+constexpr bool icarus::calo::NormalizeYZSQL::ScaleInfo::ScaleBin::operator<
+  (const ScaleBin& other) const noexcept
+{
+  if (itpc != other.itpc) return itpc < other.itpc;
+  if (yhi != other.yhi) return yhi < other.yhi;
+  return zhi < other.zhi;
+}
+
+bool icarus::calo::NormalizeYZSQL::ScaleInfo::BinComp::operator()
+  (const ScaleBin& a, const Point& b) const noexcept
+{
+  // the bin `a` must be strictly before the point `b`
+  if (a.itpc != b.itpc) return a.itpc < b.itpc;
+  if (a.yhi <= b.y) return true;
+  if (a.ylo > b.y) return false;
+  return a.zhi <= b.z;
+}
+
+bool icarus::calo::NormalizeYZSQL::ScaleInfo::BinComp::operator()
+  (const Point& a, const ScaleBin& b) const noexcept
+{
+  // the point `a` must be strictly before the bin `b`
+  if (a.itpc != b.itpc) return a.itpc < b.itpc;
+  if (a.y < b.ylo) return true;
+  if (a.y >= b.yhi) return false;
+  return a.z < b.zlo;
+}
+
+bool icarus::calo::NormalizeYZSQL::ScaleInfo::ScaleBin::contains
+  (const Point& point) const noexcept
+{
+  if (point.itpc != itpc) return false;
+  if ((point.y < ylo) || (point.y >= yhi)) return false;
+  return ((point.z >= zlo) && (point.z < zhi));
+}
+
+
+auto icarus::calo::NormalizeYZSQL::ScaleInfo::findBin
+  (const Point& point) const noexcept -> ScaleBin const*
+{
+  auto itBin = std::upper_bound(bins.begin(), bins.end(), point, ScaleInfo::BinComp{});
+  /*
+   * because of how upper_bound() works:
+   *  * if the point is before the first bin, `begin()` is returned
+   *  * if the point is after the last bin, `end()` is returned
+   *  * if the point is within the last bin, `end()` is returned
+   *  * if the point is within the domain, the returned bin is the one after the desired one
+   *  * if the point is in a TPC but beyond its last bin, first bin of next TPC is returned
+   */
+  return ((itBin != bins.cbegin()) && (--itBin)->contains(point))? &*itBin: nullptr;
+}
+
 
 
 icarus::calo::NormalizeYZSQL::NormalizeYZSQL(fhicl::ParameterSet const &pset):
@@ -97,6 +170,7 @@ const icarus::calo::NormalizeYZSQL::ScaleInfo icarus::calo::NormalizeYZSQL::GetS
   fDB.GetChannelList(channels);
 
   // Iterate over the channels
+  thisscale.bins.reserve(channels.size());
   for (unsigned ch = 0; ch < channels.size(); ch++) {
     std::string tpcname;
     fDB.GetNamedChannelData(ch, "tpc", tpcname);
@@ -130,6 +204,7 @@ const icarus::calo::NormalizeYZSQL::ScaleInfo icarus::calo::NormalizeYZSQL::GetS
 
     thisscale.bins.push_back(bin);
   }
+  std::sort(thisscale.bins.begin(), thisscale.bins.end());
 
   // Set the cache
   fScaleInfos[timestamp] = thisscale;
@@ -142,8 +217,6 @@ double icarus::calo::NormalizeYZSQL::Normalize(double dQdx, const art::Event &e,
   // Get the info
   ScaleInfo i = GetScaleInfo(e.time().timeHigh());
 
-  double scale = 1;
-  bool found_bin = false;;
 
   // compute itpc
   int cryo = hit.WireID().Cryostat;
@@ -153,17 +226,13 @@ double icarus::calo::NormalizeYZSQL::Normalize(double dQdx, const art::Event &e,
   double y = location.y();
   double z = location.z();
 
-  for (const ScaleInfo::ScaleBin &b: i.bins) {
-    if (itpc == b.itpc &&
-        (y >= b.ylo) && (y < b.yhi) &&
-        (z >= b.zlo) && (z < b.zhi)) {
-      found_bin = true;
-      scale = b.scale;
-      break;
-    }
+  ScaleInfo::Point const point { itpc, y, z };
+  ScaleInfo::ScaleBin const* b = i.findBin(point);
+
+  double const scale = b? b->scale: 1;
+  if (!b) {
+    // TODO: what to do if no lifetime is found? throw an exception??
   }
-  // TODO: what to do if no lifetime is found? throw an exception??
-  (void) found_bin;
 
   if (fVerbose) std::cout << "NormalizeYZSQL Tool -- Data Cryo: " << cryo << " TPC: " << tpc << " iTPC: " << itpc << " Y: " << y << " Z: " << z << " scale: " << scale << std::endl;
 
