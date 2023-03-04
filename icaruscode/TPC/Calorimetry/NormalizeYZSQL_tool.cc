@@ -82,7 +82,7 @@ private:
   std::map<uint64_t, ScaleInfo> fScaleInfos;
 
   // Helpers
-  const ScaleInfo GetScaleInfo(uint64_t timestamp);
+  const ScaleInfo& GetScaleInfo(uint64_t timestamp);
 };
 
 DEFINE_ART_CLASS_TOOL(NormalizeYZSQL)
@@ -153,7 +153,7 @@ icarus::calo::NormalizeYZSQL::NormalizeYZSQL(fhicl::ParameterSet const &pset):
 
 void icarus::calo::NormalizeYZSQL::configure(const fhicl::ParameterSet& pset) {}
 
-const icarus::calo::NormalizeYZSQL::ScaleInfo icarus::calo::NormalizeYZSQL::GetScaleInfo(uint64_t timestamp) {
+const icarus::calo::NormalizeYZSQL::ScaleInfo& icarus::calo::NormalizeYZSQL::GetScaleInfo(uint64_t timestamp) {
   // check the cache
   if (fScaleInfos.count(timestamp)) {
     return fScaleInfos.at(timestamp);
@@ -207,16 +207,14 @@ const icarus::calo::NormalizeYZSQL::ScaleInfo icarus::calo::NormalizeYZSQL::GetS
   std::sort(thisscale.bins.begin(), thisscale.bins.end());
 
   // Set the cache
-  fScaleInfos[timestamp] = thisscale;
+  return fScaleInfos[timestamp] = std::move(thisscale);
 
-  return thisscale;
 }
 
 double icarus::calo::NormalizeYZSQL::Normalize(double dQdx, const art::Event &e, 
     const recob::Hit &hit, const geo::Point_t &location, const geo::Vector_t &direction, double t0) {
   // Get the info
-  ScaleInfo i = GetScaleInfo(e.time().timeHigh());
-
+  ScaleInfo const& i = GetScaleInfo(e.time().timeHigh());
 
   // compute itpc
   int cryo = hit.WireID().Cryostat;
