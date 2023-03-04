@@ -502,9 +502,8 @@ void MCDecoderICARUSTPCwROI::processSingleLabel(art::Event&                     
         const unsigned int dataSize = digitVecHandle->front().Samples(); //size of raw data vectors
 
 	std::map<unsigned int, std::vector<const raw::RawDigit*> > boardToRawDigitMap;
-	for(size_t idx = 0; idx < digitVecHandle->size(); idx++) {
-	  const raw::RawDigit* rawDigit = &digitVecHandle->at(idx);
-	  raw::ChannelID_t channel = rawDigit->Channel();
+	for(const raw::RawDigit& rawDigit: *digitVecHandle) {
+	  raw::ChannelID_t channel = rawDigit.Channel();
 	  ChannelToBoardWirePlaneMap::const_iterator channelToBoardItr = fChannelToBoardWirePlaneMap.find(channel);
 	  if (channelToBoardItr == fChannelToBoardWirePlaneMap.end())
             {
@@ -516,9 +515,9 @@ void MCDecoderICARUSTPCwROI::processSingleLabel(art::Event&                     
 	  unsigned int board = channelToBoardItr->second.first;
 	  auto mapIter = boardToRawDigitMap.find(board);
 	  if (mapIter != boardToRawDigitMap.end()) {
-	    mapIter->second.push_back(rawDigit);
+	    mapIter->second.push_back(&rawDigit);
 	  } else {
-	    boardToRawDigitMap.insert({board,std::vector<const raw::RawDigit*>{rawDigit}});
+	    boardToRawDigitMap.insert({board,std::vector<const raw::RawDigit*>{&rawDigit}});
 	  }
 	}
 	//std::cout << "boardToRawDigitMap.size()=" << boardToRawDigitMap.size() << std::endl;
