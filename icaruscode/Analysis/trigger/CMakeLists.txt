@@ -1,4 +1,5 @@
 add_subdirectory(Objects)
+add_subdirectory(ArtObjects)
 add_subdirectory(scripts)
 
 file(GLOB lib_srcs *.cxx details/*.cxx)
