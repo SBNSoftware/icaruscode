@@ -28,6 +28,7 @@ END_PROLOG
 #include "triggeremu_data_config_icarus.fcl"
 #include "icarus_trackcalo_skimmer.fcl"
 #include "calorimetry_icarus.fcl"
+# 
 
 BEGIN_PROLOG
 
@@ -63,9 +64,9 @@ process_name: storeTree
 
 # ------------------------------------------------------------------------------
 services: {
-  message:     @local::icarus_message_services_interactive_debug
   @table::triggeremu_data_config_icarus.services # from triggeremu_data_config_icarus.fcl
   @table::icarus_common_services
+  message:     @local::icarus_message_services_interactive_debug
   TimeTracker: {}
   TFileService: {
     fileName: "timedtracks_store_triggeremu.root"
@@ -118,21 +119,28 @@ physics: {
 
     #calorimetry
 
-    calorimetryCryoE: @local::caloskim_calorimetry
-    calorimetryCryoW: @local::caloskim_calorimetry
+    calorimetryCryoE: {
+      @table::standard_gnocchicaloicarus  # from calorimetryICARUS.fcl
+      TrackModuleLabel: "pandoraTrackGausCryoE"
+    }
+    calorimetryCryoW: {
+      @table::standard_gnocchicaloicarus  # from calorimetryICARUS.fcl
+      TrackModuleLabel: "pandoraTrackGausCryoW"
+    }
     
   }
 
   analyzers: {
     t0TreeStoreW: {
       @table::timetracktreestorage_base
-      PFPproducer: "pandoraGausCryoW"
-      T0Producer: "CRTT0MatchingW"
       T0selProducer: "t0selectorW"
+      T0Producer: "pandoraGausCryoW"
+      PFPproducer: "pandoraTrackGausCryoW"
       TrackProducer: "pandoraTrackGausCryoW"
       TrackFitterProducer: "pandoraTrackGausCryoW"
       CaloProducer: "calorimetryCryoW"
       FlashProducer: "opflashCryoW"
+      CRTMatchingProducer: "CRTT0MatchingW"
       EmulatedTriggers: [
         { Name:       "M1"    TriggerTag: "simTiledORM1W" },
         { Name:       "S3"    TriggerTag: "simTiledORS3W" },
@@ -153,13 +161,14 @@ physics: {
 
     t0TreeStoreE: {
       @table::timetracktreestorage_base
-      PFPproducer: "pandoraGausCryoE"
-      T0Producer: "CRTT0MatchingE"
       T0selProducer: "t0selectorE"
+      T0Producer: "pandoraGausCryoE"
+      PFPproducer: "pandoraTrackGausCryoE"
       TrackProducer: "pandoraTrackGausCryoE"
       TrackFitterProducer: "pandoraTrackGausCryoE"
       CaloProducer: "calorimetryCryoE"
       FlashProducer: "opflashCryoE"
+      CRTMatchingProducer: "CRTT0MatchingE"
       EmulatedTriggers: [
         { Name:       "M1"    TriggerTag: "simTiledORM1E" },
         { Name:       "S3"    TriggerTag: "simTiledORS3E" },
@@ -186,7 +195,7 @@ physics: {
   trigger_paths: [ runprod, selectionW, selectionE]
   ana: [ t0TreeStoreW, t0TreeStoreE ]
   streams: [ "rootoutput" ]
-  end_paths: [ ana ]
+  end_paths: [ ana, streams ]
   
 } # physics
 
@@ -209,6 +218,7 @@ outputs: {
     outputCommands: [
       "drop *"
       , "keep sbn::PMTconfiguration_*_*_*", "keep *_daqTrigger_*_*"
+      , "keep *_CRTT0Matching*_*_*", "keep *_daqTrigger_*_*"
       , "keep *_pandoraGausCryo*_*_stage1", "drop *recob::SpacePoint*_pandoraGausCryo*_*_stage1", "keep *_pandoraTrackGausCryo*_*_stage1"
       , "keep *_cluster3DCryo*_*_*", "drop *recob::SpacePoint*_cluster3DCryo*_*_*"
       , "keep *_opflashCryo*_*_*"
@@ -218,5 +228,3 @@ outputs: {
 
   }
 }
-
-#include "icarus_data_recombination.fcl"

@@ -73,9 +73,10 @@ cet_build_plugin(TimeTrackTreeStorage art::module
 
 cet_build_plugin(TimeTrackTreeStorageCRT art::module
   LIBRARIES
-  icaruscode_Analysis_trigger
-  icaruscode_PMT_Algorithms
-  icaruscode_Decode_DataProducts
+  icaruscode::Analysis_trigger
+  icaruscode_CRTUtils
+  icaruscode::PMT_Algorithms
+  icaruscode::Decode_DataProducts
   larcore::Geometry_Geometry_service
   larcorealg::Geometry
   lardataobj::AnalysisBase

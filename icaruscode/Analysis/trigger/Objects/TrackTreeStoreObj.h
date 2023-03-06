@@ -16,9 +16,13 @@ namespace sbn {
    */
   struct selTrackInfo {
     static constexpr float NoPosition = -999999.0;
+    static constexpr float NoEnergy = -999999.0;
+    static constexpr double NoTime = -99999.0;
     
     int trackID = -1;
-    float t0 = NoPosition;
+    double t0 = NoTime;
+    double t0_TPC = NoTime;
+    double t0_CRT = NoPosition;
     float start_x = NoPosition;
     float start_y = NoPosition;
     float start_z = NoPosition;
@@ -40,16 +44,18 @@ namespace sbn {
     float beforecathode = -1; ///< Track path length before cathode (lower _x_).
     float aftercathode = -1; ///< Track path length before cathode (higher _x_).
     float length = -1.0;
-    float energy = NoPosition;
-    float charge_int = NoPosition;
-    float charge_dqdx = NoPosition;
+    float energy = NoEnergy;
+    float energy_int = NoEnergy;
+    float charge_int = NoEnergy;
+    float energy_range = NoEnergy;
+    // float charge_dqdx = NoPosition;
     float dir_x = NoPosition;
     float dir_y = NoPosition;
     float dir_z = NoPosition;
   };  // selTrackInfo
 
   struct selBeamInfo {
-    static constexpr float NoTime = -999999.0;
+    static constexpr float NoTime = -99999.0;
     
     float beamGateSimStart = NoTime;
     float beamGateDuration = -1.0;
@@ -66,7 +72,7 @@ namespace sbn {
   
   struct selSimTriggerInfo {
     
-    static constexpr double NoTime = -999999.0;
+    static constexpr double NoTime = -99999.0;
     
     double time = NoTime; ///< Time of the trigger in electronics time scale.
     
@@ -110,6 +116,26 @@ namespace sbn {
     float dEdx = NoValue;
     float rr = NoValue;
     
+  };
+  
+  struct selCRTpoint {
+    static constexpr double Nowhere = -999999.0;
+    static constexpr double NoTime = -99999.0;
+    static constexpr int NoRegion = -1;
+    double time = NoTime; ///< Hit time from trigger [us]
+    double x = Nowhere;
+    double y = Nowhere;
+    double z = Nowhere;
+    float resolution = -1.0;
+    float DCA = Nowhere;
+    int region = NoRegion;
+  };
+  
+  struct selCRTInfo {
+    static constexpr double NoTime = -99999.0;
+    selCRTpoint entry;
+    selCRTpoint exit;
+    double time = NoTime; ///< Matching time from trigger [us]
   };
   
 } // namespace sbn

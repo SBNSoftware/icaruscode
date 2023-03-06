@@ -18,6 +18,7 @@
 
 // LArSoft libraries
 #include "lardataobj/AnalysisBase/T0.h"
+#include "lardataobj/RecoBase/PFParticle.h"
 #include "lardataobj/RecoBase/Track.h"
 
 
@@ -75,6 +76,13 @@ namespace sbn { class TimedTrackSelector; }
  * The filter passes the event if:
  *  * the number of selected tracks is within the configured range of requested
  *    tracks per event.
+ * 
+ * The output includes:
+ *  * `std::vector<art::Ptr<recob::Track>>`: a list of the pointers to the
+ *    selected tracks.
+ *  * `art::Assns<recob::Track, anab::T0>`: the list of selected tracks and
+ *    the `anab::T0` they are associated to. This is effectively a subset of
+ *    the input association.
  * 
  * 
  * Configuration options
@@ -232,20 +240,21 @@ private:
   /**
    * @brief Adds to `selectedTracks` qualifying tracks from `timeTracks`.
    * @param timeTracks time/track associations
-   * @param[out] selectedTracks collection to expand with the qualifying tracks
+   * @param[out] selectedTracksAndT0 collection to expand with qualifying tracks
    * @return the number of qualifying tracks found in `timeTracks` and added
    */
   unsigned int selectTracks(
-			    art::Assns<recob::Track, anab::T0> const& timeTracks, std::vector<art::Ptr<recob::Track>>& selectedTracks
-			    ) const;
+    art::Assns<recob::Track, anab::T0> const& timeTracks,
+    art::Assns<recob::Track, anab::T0> & selectedTracksAndT0
+    ) const;
   
   
   /// Returns whether the specified track (with specified time) qualifies.
   bool isTrackSelected
-  (recob::Track const& track, anab::T0 const& time) const;
+    (recob::Track const& track, anab::T0 const& time) const;
 
   /// Returns whether the specified `particle` flow object is a track.
-  //static bool isTrack(recob::Track const& particle);
+  static bool isTrack(recob::PFParticle const& particle);
   
   /// Returns if the number of tracks `nTracks` satisfies filter requirements.
   bool selectedTracksRequirement(unsigned int nTracks) const;
@@ -275,8 +284,10 @@ sbn::TimedTrackSelector::TimedTrackSelector
 {
   async<art::InEvent>();
   
-  if (fSaveTracks)
+  if (fSaveTracks) {
     produces<std::vector<art::Ptr<recob::Track>>>();
+    produces<art::Assns<recob::Track, anab::T0>>();
+  }
   
   //
   // configuration dump
@@ -323,11 +334,11 @@ bool sbn::TimedTrackSelector::filter
   //
   // select tracks from each of the input tags
   //
-  std::vector<art::Ptr<recob::Track>> selectedTracks;
+  art::Assns<recob::Track, anab::T0> selectedTracksAndT0;
   for (art::InputTag const& inputTag: fTrackTimeTags) {
     auto const& T0toTrack
       = event.getProduct<art::Assns<recob::Track, anab::T0>>(inputTag);
-    unsigned int const newTracks = selectTracks(T0toTrack, selectedTracks);
+    unsigned int const newTracks = selectTracks(T0toTrack, selectedTracksAndT0);
     
     mf::LogTrace(fLogCategory)
       << "From '" << inputTag.encode() << "': "
@@ -336,25 +347,10 @@ bool sbn::TimedTrackSelector::filter
     
   } // for
 
+  std::vector<art::Ptr<recob::Track>> selectedTracks;
+  for (auto const& TrackAndT0: selectedTracksAndT0)
+    selectedTracks.push_back(TrackAndT0.first);
   unsigned int const nSelectedTracks = selectedTracks.size();
-  
-  
-  //
-  // save track list in the event
-  //
-  
-  // after this, selectedTracks may be empty. JCZ: Not quite, I think the access to selectedTracks[0] in the log statement throws a segfault it it's empty, now fixed
-  if (fSaveTracks) {
-    event.put(
-	      std::make_unique<std::vector<art::Ptr<recob::Track>>>(selectedTracks)
-	      );
-    if(selectedTracks.size() > 0)
-      {
-	mf::LogTrace(fLogCategory)
-	  << "InputTag for this product is: "
-	  << event.getProductDescription(selectedTracks[0].id())->inputTag();
-      }
-  }
   
   
   //
@@ -368,10 +364,30 @@ bool sbn::TimedTrackSelector::filter
 			     << " selected tracks)."; // funny fact: we don't know the total track count, JCZ: I think I fixed that fact although I could be completely wrong
   
   
-  mf::LogDebug(fLogCategory) << "Completed " << event.id();
+  mf::LogTrace(fLogCategory)
+    << "Completed " << event.id() << "."
+    << "\nThere are now " << fTotalTracks << " total tracks selected.";
 
-  mf::LogDebug(fLogCategory) << "There are now " << fTotalTracks << " total tracks selected.";
-
+  //
+  // save track list in the event
+  //
+  
+  // after this, selectedTracks may be empty.
+  if (fSaveTracks) {
+    if (!selectedTracks.empty()) {
+      mf::LogTrace(fLogCategory)
+        << "InputTag for this product is: "
+        << event.getProductDescription(selectedTracks[0].id())->inputTag();
+    }
+    event.put(
+      std::make_unique<std::vector<art::Ptr<recob::Track>>>(std::move(selectedTracks))
+      );
+    event.put(
+      std::make_unique<art::Assns<recob::Track, anab::T0>>(std::move(selectedTracksAndT0))
+      );
+  }
+  
+  
   return passed;
   
 } // sbn::TimedTrackSelector::filter()
@@ -388,8 +404,9 @@ void sbn::TimedTrackSelector::endJob(art::ProcessingFrame const&) {
 
 // -----------------------------------------------------------------------------
 unsigned int sbn::TimedTrackSelector::selectTracks(
-						   art::Assns<recob::Track, anab::T0> const& timeTracks, std::vector<art::Ptr<recob::Track>>& selectedTracks
-						   ) const {
+  art::Assns<recob::Track, anab::T0> const& timeTracks,
+  art::Assns<recob::Track, anab::T0>& selectedTracksAndT0
+) const {
   
   unsigned int nSelectedTracks { 0U };
   for (auto const& [ trackPtr, t0Ptr ]: timeTracks) {
@@ -403,7 +420,7 @@ unsigned int sbn::TimedTrackSelector::selectTracks(
     
     MF_LOG_TRACE(fLogCategory) << "Track #" << trackPtr.key() << " selected.";
     
-    selectedTracks.push_back(trackPtr);
+    selectedTracksAndT0.addSingle(trackPtr, t0Ptr);
     ++nSelectedTracks;
     ++fTotalTracks;
   } // for
@@ -444,10 +461,9 @@ bool sbn::TimedTrackSelector::isTrackSelected
 
 
 // -----------------------------------------------------------------------------
-/*
-bool sbn::TimedTrackSelector::isTrack(recob::Track const& track) {
+bool sbn::TimedTrackSelector::isTrack(recob::PFParticle const& particle) {
   
-  switch (std::abs(track.PdgCode())) {
+  switch (std::abs(particle.PdgCode())) {
     case 13:   // muon
     case 211:  // charged pion
     case 321:  // charged kaon
@@ -458,7 +474,7 @@ bool sbn::TimedTrackSelector::isTrack(recob::Track const& track) {
   } // switch
   return false;
 } // sbn::TimedTrackSelector::isTrack()
-*/
+
 
 // -----------------------------------------------------------------------------
 bool sbn::TimedTrackSelector::selectedTracksRequirement

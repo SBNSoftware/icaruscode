@@ -12,8 +12,11 @@
 #include "icaruscode/Analysis/trigger/details/TriggerResponseManager.h"
 #include "icaruscode/Analysis/trigger/details/CathodeCrossingUtils.h"
 #include "icaruscode/Analysis/trigger/Objects/TrackTreeStoreObj.h"
+#include "icaruscode/CRT/CRTUtils/CRTCommonUtils.h"
 #include "icaruscode/PMT/Algorithms/PMTverticalSlicingAlg.h"
 #include "icaruscode/Utilities/TrajectoryUtils.h"
+#include "icaruscode/Utilities/ArtAssociationCaches.h" // OneToOneAssociationCache
+#include "sbnobj/Common/CRT/CRTHit.hh"
 #include "sbnobj/Common/Trigger/ExtraTriggerInfo.h"
 
 // LArSoft libraries
@@ -22,6 +25,8 @@
 #include "larcore/CoreUtils/ServiceUtil.h" // lar::providerFrom()
 #include "larcorealg/Geometry/GeometryCore.h"
 #include "larcorealg/Geometry/OpDetGeo.h"
+#include "larcorealg/CoreUtils/zip.h"
+#include "larcorealg/CoreUtils/enumerate.h"
 #include "larcorealg/CoreUtils/counter.h"
 #include "lardataobj/AnalysisBase/T0.h"
 #include "lardataobj/AnalysisBase/Calorimetry.h"
@@ -30,9 +35,7 @@
 #include "lardataobj/RecoBase/OpFlash.h"
 #include "lardataobj/RecoBase/OpHit.h"
 #include "lardataobj/RecoBase/Hit.h"
-// #include "lardataobj/RecoBase/SpacePoint.h"
 #include "lardataobj/RecoBase/TrackHitMeta.h"
-// #include "lardataobj/RecoBase/PFParticleMetadata.h"
 #include "lardataobj/RawData/OpDetWaveform.h" // raw::Channel_t
 #include "lardataobj/Simulation/BeamGateInfo.h"
 #include "lardataobj/RawData/TriggerData.h" // raw::Trigger
@@ -40,15 +43,19 @@
 // framework libraries
 #include "art_root_io/TFileService.h"
 #include "art/Framework/Core/EDAnalyzer.h"
+#include "art/Framework/Core/ConsumesCollector.h"
 #include "art/Framework/Core/ModuleMacros.h"
 #include "art/Framework/Principal/Event.h"
 #include "art/Framework/Principal/Handle.h"
 #include "art/Framework/Principal/Run.h"
+#include "canvas/Persistency/Provenance/BranchDescription.h"
 #include "canvas/Persistency/Common/FindOneP.h"
 #include "canvas/Persistency/Common/FindManyP.h"
+#include "canvas/Persistency/Common/FindMany.h"
 #include "canvas/Persistency/Common/Assns.h"
 #include "canvas/Persistency/Common/Ptr.h"
 #include "canvas/Utilities/InputTag.h"
+#include "canvas/Utilities/Exception.h"
 #include "fhiclcpp/types/TableAs.h"
 #include "fhiclcpp/types/Sequence.h"
 #include "fhiclcpp/types/Atom.h"
@@ -83,11 +90,21 @@ namespace {
     return trackPath;
   } // extractTrajectory()
   
+  
+  /// Returns the input tag of data product the `ptr` points to.
+  template <typename T>
+  art::InputTag inputTagOf(art::Ptr<T> ptr, art::Event const& event)
+    { return event.getProductDescription(ptr.id())->inputTag(); }
+  
 } // local namespace
 
 
+
 // -----------------------------------------------------------------------------
-namespace sbn { class TimeTrackTreeStorage; }
+namespace sbn {
+  class TimeTrackTreeStorage; 
+  
+}
 /**
  * @brief Fills a ROOT tree with track-based triggering information.
  * 
@@ -96,11 +113,17 @@ namespace sbn { class TimeTrackTreeStorage; }
  * =========================
  * 
  * This module does not perform almost any selection: it processes all the
- * reconstructed particle flow objects (PFO) (typically from Pandora) selected
- * by the module in `T0selProducer`, which may perform the desired selection.
- * For every PFO which is associated to a track (`recob::Track`), that
- * associated track and the associated time (`anab::T0`) are saved in a tree
- * entry.
+ * selected track, output of the module in `T0selProducer`, which include a
+ * track (`recob::Track`) and its time (`anab::T0`).
+ * That module may perform the desired selection; this one will use all tracks
+ * that have a time, even if that time is apparently invalid.
+ * 
+ * For every track which is associated to a PFO (`recob::PFParticle`),
+ * the time (`anab::T0`) associated to that PFO is saved in a tree entry.
+ * 
+ * For every track which is matched to a CRT hit (from `CRTMatchingProducer`
+ * module), the time of that match is saved, together with some information
+ * about the hit itself.
  * 
  * 
  * Optical detector information
@@ -192,22 +215,19 @@ public:
       = fhicl::TableAs<TriggerInputSpec_t, TriggerSpecConfig>;
     
     
-    fhicl::Atom<art::InputTag> PFPproducer {
+    fhicl::Atom<art::InputTag> T0selProducer {
+      Name("T0selProducer"),
+      Comment("tag of the tracks to process (as a collection of art::Ptr)")
+      };
+    
+    fhicl::OptionalAtom<art::InputTag> PFPproducer {
       Name("PFPproducer"),
-      Comment("tag of the input particle flow objects to process")
-      // mandatory
+      Comment("tag of associations of particle flow objects and input tracks")
       };
     
     fhicl::OptionalAtom<art::InputTag> T0Producer {
       Name("T0Producer"),
-      Comment("tag of the input track time (t0) information [as PFPproducer]")
-      // default: as PFPproducer
-      };
-    
-    fhicl::OptionalAtom<art::InputTag> T0selProducer {
-      Name("T0selProducer"),
-      Comment
-        ("tag of the selected tracks (as a collection of art::Ptr) [as PFPproducer]")
+      Comment("tag of the time (t0) of particle flow objects [as PFPproducer]")
       // default: as PFPproducer
       };
     
@@ -246,6 +266,12 @@ public:
       Name("FlashProducer"),
       Comment("tag of flash information")
       //mandatory
+      };
+
+    fhicl::Atom<art::InputTag> CRTMatchingProducer {
+      Name("CRTMatchingProducer"),
+      Comment("tag of module used to associate TPC tracks and CRT hits"),
+      ""
       };
 
     fhicl::Sequence<TriggerSpecConfigTable> EmulatedTriggers {
@@ -289,6 +315,15 @@ public:
       false
       };
     
+    fhicl::Atom<int> CalorimetryPlane {
+      Name("CalorimetryPlane"),
+      Comment(
+        "number of the plane to pick calorimetry from"
+        " (0 is closest to cathode; -1: the highest available)"
+        ),
+      -1
+      };
+    
   }; // Config
   
   using Parameters = art::EDAnalyzer::Table<Config>;
@@ -299,7 +334,7 @@ public:
                           unsigned hkey,
                           const recob::Track &trk,
                           const recob::TrackHitMeta &thm,
-                          const std::vector<art::Ptr<anab::Calorimetry>> &calo,
+                          const std::vector<anab::Calorimetry const*> &calo,
                           const geo::GeometryCore *geo);
 
   float dEdx_calc(float dQdx, 
@@ -317,21 +352,23 @@ private:
   
   // --- BEGIN -- Configuration parameters -------------------------------------
   
-  art::InputTag const fPFPproducer;
-  art::InputTag const fT0Producer;
   art::InputTag const fT0selProducer;
   art::InputTag const fTrackProducer;
+  art::InputTag const fPFPproducer; // producer of PFP/track associations
+  art::InputTag const fT0Producer;
   art::InputTag const fTrackFitterProducer;
   art::InputTag const fCaloProducer;
   art::InputTag const fBeamGateProducer;
   art::InputTag const fTriggerProducer;
   art::InputTag const fFlashProducer;
+  art::InputTag const fCRTMatchProducer;
   std::string const fLogCategory;
   float const fMODA;
   float const fMODB;
   float const fWion;
   float const fEfield;
   bool const fForceDowngoing; ///< Whether to force all tracks to be downgoing.
+  int const fCalorimetryPlaneNumber; ///< Which plane to use for calorimetry.
   
   // --- END ---- Configuration parameters -------------------------------------
 
@@ -344,10 +381,10 @@ private:
   sbn::selTrackInfo fTrackInfo; //change to one entry per track instead of per event 
   sbn::selBeamInfo fBeamInfo;
   sbn::selTriggerInfo fTriggerInfo;
-  sbn::selLightInfo fFlashInfo;
   std::vector<sbn::selLightInfo> fFlashStore;
   sbn::selHitInfo fHitInfo;
   std::vector<sbn::selHitInfo> fHitStore;
+  sbn::selCRTInfo fCRTInfo;
   // --- END ---- Tree buffers -------------------------------------------------
   
   // --- BEGIN -- Cached information -------------------------------------------
@@ -374,10 +411,85 @@ private:
   
   // --- END ---- Trigger response branches ------------------------------------
   
+  /// Extracts CRT information pertaining the specified `track`.
+  sbn::selCRTInfo extractCRTinfoFor(
+    art::Ptr<recob::Track> const& track, art::Event const& event,
+    util::OneToOneAssociationCache<recob::Track, anab::T0> const& trackToCRTt0,
+    util::OneToOneAssociationCache<anab::T0, sbn::crt::CRTHit> const& t0ToCRThits
+    ) const;
+  
   /// Accesses detector geometry to return all PMT split by wall.
   std::vector<std::pair<double, std::vector<raw::Channel_t>>>
     computePMTwalls() const;
+  
+  /// Connects `recob::Track` to `anab::T0` via intermediate `recob::PFParticle`
+  class TPCT0fromTrackBrowser {
+      public:
+    
+    /**
+     * @brief Constructor.
+     * @param event the _art_ event to read data from when needed
+     * @param trackParticleAssnsTag (default: none) tag of particle/track associations
+     * 
+     * If `trackParticleAssnsTag` is empty, it will be figured out from the
+     * first query, assuming that the producer of the track is also the one
+     * of the particle flow object associations to them.
+     */
+    TPCT0fromTrackBrowser(
+      art::Event const& event,
+      art::InputTag const& trackParticleAssnsTag = {},
+      art::InputTag const& particleT0AssnsTag = {}
+      );
+    
+    /// Declares the data products that may be consumed to the `collector`.
+    void declareConsumes(art::ConsumesCollector& collector) const;
+    
+    //@{
+    /// Returns the `anab::T0` associated to the specified track.
+    art::Ptr<anab::T0> findT0for(art::Ptr<recob::Track> const& trackPtr);
+    art::Ptr<anab::T0> operator() (art::Ptr<recob::Track> const& trackPtr)
+      { return findT0for(trackPtr); }
+    //@}
+    
+    
+    /// Declares the data products that may be consumed to the `collector`.
+    static void declareConsumes(
+      art::ConsumesCollector& collector
+      , art::InputTag const& trackParticleAssnsTag
+      , art::InputTag const& particleT0AssnsTag
+      );
+  
+      private:
+    art::Event const* fEvent; ///< Event to read data on demand.
+    
+    /// Tag for the particle/track associations.
+    art::InputTag fTrackParticleAssnsTag;
+    
+    /// Tag for the t0/particle associations.
+    art::InputTag fParticleT0AssnsTag;
+    
+    /// Track to PFO cache.
+    util::OneToOneAssociationCache<recob::Track, recob::PFParticle> fTrackToPFO;
+    
+    /// PFO to TO cache.
+    util::OneToOneAssociationCache<recob::PFParticle, anab::T0> fPFOtoT0;
+    
+    /// Returns the `recob::PFParticle` associated to `trackPtr`, null if none.
+    art::Ptr<recob::PFParticle> findPFOforTrack(art::Ptr<recob::Track> const& trackPtr);
+    
+    /// Returns the `anab::T0` associated to `particlePtr`, null if none.
+    art::Ptr<anab::T0> findT0forPFO(art::Ptr<recob::PFParticle> const& particlePtr);
+    
+    /// Lookup which queries `cache` and loads more data into it if needed.
+    template <typename Left, typename Right>
+    art::Ptr<Right> findAssociatedPtr(
+      art::Ptr<Left> const& leftPtr,
+      util::OneToOneAssociationCache<Left, Right>& cache,
+      art::InputTag* assnsTag = nullptr
+      );
 
+  }; // TPCT0fromTrackBrowser
+  
 }; // sbn::TimeTrackTreeStorage
 
 
@@ -400,21 +512,23 @@ namespace sbn {
 sbn::TimeTrackTreeStorage::TimeTrackTreeStorage(Parameters const& p)
   : EDAnalyzer{p}
   // configuration
-  , fPFPproducer      { p().PFPproducer() }
-  , fT0Producer       { p().T0Producer().value_or(fPFPproducer) }
-  , fT0selProducer    { p().T0selProducer().value_or(fPFPproducer) }
+  , fT0selProducer    { p().T0selProducer() }
   , fTrackProducer    { p().TrackProducer() }
+  , fPFPproducer      { p().PFPproducer().value_or(fTrackProducer) }
+  , fT0Producer       { p().T0Producer().value_or(fPFPproducer) }
   , fTrackFitterProducer { p().TrackFitterProducer() }
   , fCaloProducer     { p().CaloProducer() }
   , fBeamGateProducer { p().BeamGateProducer() }
   , fTriggerProducer  { p().TriggerProducer() }
   , fFlashProducer    { p().FlashProducer() }
+  , fCRTMatchProducer { p().CRTMatchingProducer() }
   , fLogCategory      { p().LogCategory() }
   , fMODA             { p().MODA() }
   , fMODB             { p().MODB() }
   , fWion             { p().Wion() }
   , fEfield           { p().Efield() }
   , fForceDowngoing    { p().ForceDowngoing() }
+  , fCalorimetryPlaneNumber { p().CalorimetryPlane() }
   // algorithms
   , fPMTwalls         { computePMTwalls() }
   , fStoreTree {
@@ -429,14 +543,20 @@ sbn::TimeTrackTreeStorage::TimeTrackTreeStorage(Parameters const& p)
   // declaration of input
   //
   
-  // consumes<std::vector<recob::PFParticle>>(fPFPproducer); // not yet?
   consumes<std::vector<art::Ptr<recob::Track>>>(fT0selProducer);
-  consumes<sbn::ExtraTriggerInfo>(fTriggerProducer);
+  consumes<art::Assns<recob::Track, anab::T0>>(fT0selProducer);
   consumes<std::vector<sim::BeamGateInfo>>(fBeamGateProducer);
-  consumes<art::Assns<recob::PFParticle, recob::Track>>(fTrackProducer);
-  consumes<art::Assns<recob::Track, anab::T0>>(fT0Producer);
-  consumes<art::Assns<recob::Hit, recob::Track, recob::TrackHitMeta>>(fTrackProducer);
+  consumes<sbn::ExtraTriggerInfo>(fTriggerProducer);
+  consumes<art::Assns<recob::Track, recob::PFParticle>>(fTrackProducer);
+  TPCT0fromTrackBrowser::declareConsumes
+    (consumesCollector(), fPFPproducer, fT0Producer);
+  consumes<art::Assns<recob::Track, anab::Calorimetry>>(fCaloProducer);
+  consumes<art::Assns<recob::Track, recob::Hit, recob::TrackHitMeta>>(fTrackProducer);
   consumes<recob::OpFlash>(fFlashProducer);
+  if (!fCRTMatchProducer.empty()) {
+    consumes<art::Assns<recob::Track, anab::T0>>(fCRTMatchProducer);
+    consumes<art::Assns<anab::T0, sbn::crt::CRTHit>>(fCRTMatchProducer);
+  }
 
   //
   // tree population
@@ -449,26 +569,38 @@ sbn::TimeTrackTreeStorage::TimeTrackTreeStorage(Parameters const& p)
   fStoreTree->Branch("selTracks", &fTrackInfo);
   fStoreTree->Branch("selFlashes", &fFlashStore); //store all flashes in an event for all tracks
   fStoreTree->Branch("selHits", &fHitStore);
-  //fStoreTree->Branch("selFlashes", &fFlashInfo);
+  if (!fCRTMatchProducer.empty())
+    fStoreTree->Branch("selCRTHits", &fCRTInfo); // one entry per track
   
 } // sbn::TimeTrackTreeStorage::TimeTrackTreeStorage()
 
 
 void sbn::TimeTrackTreeStorage::analyze(art::Event const& e)
 {
+  /*
+   * The flow is the following:
+   *  * driving the process it is the T0 selector output:
+   *      * its list of tracks is processed
+   *      * if there is an association to a T0, that becomes `t0` of the track
+   *  * time from TPC reconstruction (`t0_TPC`) is taken from PFParticle reco
+   *  * time from CRT (`t0_CRT`) is taken from the CRT/TPC matching
+   * Usually `t0` is equal to either one of the other two times, and one of them
+   * can be missing (or better, with a special invalid value).
+   * 
+   */
   const geo::GeometryCore *geom = lar::providerFrom<geo::Geometry>();
-  // Implementation of required member function here.
+  
+  //
+  // event identification
+  //
   fEvent = e.event();
   fSubRun = e.subRun();
   fRun = e.run();
   fBeamInfo = {};
   
-  std::vector<art::Ptr<recob::Track>> const& tracks = e.getProduct<std::vector<art::Ptr<recob::Track>>> (fT0selProducer);
-  if(tracks.empty()) {
-    mf::LogDebug(fLogCategory) << "No tracks in '" << fT0selProducer.encode() << "'.";
-    return;
-  }
-
+  //
+  // hardware beam gate information
+  //
   std::vector<sim::BeamGateInfo> const& beamgate = e.getProduct<std::vector<sim::BeamGateInfo>> (fBeamGateProducer);
   if(beamgate.empty())
     mf::LogWarning(fLogCategory) << "No Beam Gate Information!";
@@ -481,6 +613,9 @@ void sbn::TimeTrackTreeStorage::analyze(art::Event const& e)
     fBeamInfo.beamGateType = bg.BeamType();
   }
 
+  //
+  // hardware trigger information
+  //
   sbn::ExtraTriggerInfo const &triggerinfo = e.getProduct<sbn::ExtraTriggerInfo> (fTriggerProducer);
   fTriggerInfo.beamType = value(triggerinfo.sourceType);
   fTriggerInfo.triggerTime = triggerinfo.triggerTimestamp;
@@ -488,73 +623,92 @@ void sbn::TimeTrackTreeStorage::analyze(art::Event const& e)
   fTriggerInfo.triggerID = triggerinfo.triggerID;
   fTriggerInfo.gateID = triggerinfo.gateID;
   
-  //mf::LogTrace(fLogCategory) << "HERE!";
-  //art::FindOneP<recob::Track> particleTracks(pfparticles,e,fTrackProducer);
-  art::FindOneP<anab::T0> t0Tracks(tracks,e,fT0Producer);  
-  std::vector<recob::OpFlash> const &particleFlashes = e.getProduct<std::vector<recob::OpFlash>>(fFlashProducer);
-  //art::FindOneP<recob::SpacePoint> particleSPs(pfparticles, e, fT0selProducer);
-  //mf::LogTrace(fLogCategory) << "PFParticles size: " << pfparticles.size() << " art::FindOneP Tracks Size: " << particleTracks.size();
-  art::ValidHandle<std::vector<recob::Track>> allTracks = e.getValidHandle<std::vector<recob::Track>>(fTrackProducer);
-  //auto particles = e.getValidHandle<std::vector<recob::PFParticle>>(fPFPproducer);
-  //art::FindManyP<anab::T0> pandora_t0Tracks(particles, e, fPFPproducer);
-  art::FindManyP<recob::Hit,recob::TrackHitMeta> trkht(allTracks,e,fTrackProducer); //for track hits
-  art::FindManyP<anab::Calorimetry> calorim(allTracks, e, fCaloProducer);  
-  
+  //
+  // trigger emulation support
+  //
   // get an extractor bound to this event
   sbn::details::TriggerResponseManager::Extractors triggerResponseExtractors
     = fTriggerResponses.extractorsFor(e);
-  unsigned int processed = 0;
   
+  //
+  // tracks
+  //
+  
+  std::vector<art::Ptr<recob::Track>> const& tracks = e.getProduct<std::vector<art::Ptr<recob::Track>>> (fT0selProducer);
+  if(tracks.empty()) {
+    mf::LogDebug(fLogCategory) << "No tracks in '" << fT0selProducer.encode() << "'.";
+    return;
+  }
+
+  
+  //
+  // additional associations to navigate from tracks to other information
+  //
+  
+  // t0 from selection
+  art::FindOneP<anab::T0> TrackT0s(tracks,e,fT0selProducer);
+  
+  // t0 from TPC (cathode crossing tracks)
+  TPCT0fromTrackBrowser TrackTPCt0s{ e, fPFPproducer, fT0Producer };
+  
+  // optical flashes
+  std::vector<recob::OpFlash> const &particleFlashes = e.getProduct<std::vector<recob::OpFlash>>(fFlashProducer);
+  
+  // track calorimetry
+  art::FindMany<anab::Calorimetry> trackCalorimetry(tracks, e, fCaloProducer);
+  
+  // track TPC hits
+  art::FindManyP<recob::Hit,recob::TrackHitMeta> trkht(tracks,e,fTrackProducer);
+  
+  // track t0 from CRT
+  std::optional<util::OneToOneAssociationCache<recob::Track, anab::T0> const>
+  TrackCRTt0s;
+  if (!fCRTMatchProducer.empty()) {
+    TrackCRTt0s.emplace
+      (e.getProduct<art::Assns<recob::Track, anab::T0>>(fCRTMatchProducer));
+  }
+  // track t0 from CRT
+  std::optional<util::OneToOneAssociationCache<anab::T0, sbn::crt::CRTHit> const>
+  T0CRThits;
+  if (!fCRTMatchProducer.empty()) {
+    T0CRThits.emplace
+      (e.getProduct<art::Assns<anab::T0, sbn::crt::CRTHit>>(fCRTMatchProducer));
+  }
+  
+  unsigned int processed = 0;
   for(unsigned int iTrack = 0; iTrack < tracks.size(); ++iTrack)
   {
     art::Ptr<recob::Track> const& trackPtr = tracks.at(iTrack);
     if(trackPtr.isNull()) continue;
     
-    fFlashInfo = {};
-    fFlashStore.clear();
-    fHitStore.clear();
+    //
+    // matched CRT information
+    //
+    if (!fCRTMatchProducer.empty())
+      fCRTInfo = extractCRTinfoFor(trackPtr, e, *TrackCRTt0s, *T0CRThits);
     
-    art::Ptr<anab::T0> const& t0Ptr = t0Tracks.at(iTrack);
-    //auto pandora_t0Ptr = pandora_t0Tracks.at(trackPtr.key());
-    float const track_t0 = t0Ptr->Time();
-    //float pandora_t0 = -99999.0;
-    //if(!pandora_t0Ptr.empty())
-    //{
-    //float const pandora_t0 = pandora_t0Ptr->Time();
-    //}
-    //std::cout << "CRT-TPC matching algo T0: " << track_t0/1e3 << "Pandora t0 value: " << pandora_t0/1e3 << std::endl; 
-    if(!particleFlashes.empty())
-    {
-      //float min_flash_t0_diff = 999999.0; 
-      for(unsigned int iFlash = 0; iFlash < particleFlashes.size(); ++iFlash)
-      {
-        fFlashInfo = {};
-        recob::OpFlash const flashPtr = particleFlashes.at(iFlash);
-        float const flash_pe = flashPtr.TotalPE();
-        float const flash_time = flashPtr.Time();
-        float const flash_x = flashPtr.XCenter();
-        float const flash_y = flashPtr.YCenter();
-        float const flash_z = flashPtr.ZCenter();
-        float flash_t0_diff = flash_time - track_t0/1e3;
-        //if(std::abs(flash_t0_diff) < min_flash_t0_diff)
-          //{ 
-        fFlashInfo.flash_id = iFlash;
-        fFlashInfo.sum_pe = flash_pe;
-        fFlashInfo.flash_time = flash_time;
-        fFlashInfo.flash_x = flash_x;
-        fFlashInfo.flash_y = flash_y;
-        fFlashInfo.flash_z = flash_z;
-        fFlashInfo.diff_flash_t0 = flash_t0_diff;
-        //min_flash_t0_diff = std::abs(flash_t0_diff);
-        fFlashStore.push_back(fFlashInfo);
-        //}
-      }
-    }
+    //
+    // track information (at last!!)
+    //
     sbn::selTrackInfo trackInfo;
     trackInfo.trackID = trackPtr->ID();
-    trackInfo.t0 = track_t0/1e3; //is this in nanoseconds? Will convert to seconds so I can understand better
-    //if(track_t0/1e3 < 10 && track_t0/1e3 > -10)
-    //mf::LogTrace(fLogCategory) << track_t0/1e3 << " Run is: " << fRun << " SubRun is: " << fSubRun << " Event is: " << fEvent << " Track ID is: " << trackPtr->ID();
+    
+    art::Ptr<anab::T0> const& t0Ptr = TrackT0s.at(iTrack);
+    if (!t0Ptr) {
+      // this is the t0 that must not be missing,
+      // since it's the one the trigger emulation is based on
+      throw art::Exception{ art::errors::NotFound }
+        << "Track #" << trackPtr.key() << " from '" << inputTagOf(trackPtr, e).encode()
+        << "' (ID=" << trackPtr->ID() << ") is not associated to any anab::T0 from '"
+        << fT0selProducer.encode() << "'!\n";
+    }
+    float const track_t0 = t0Ptr->Time() / 1000.0; // nanoseconds -> microseconds
+    trackInfo.t0 = track_t0;
+    
+    art::Ptr<anab::T0> const& t0TPCPtr = TrackTPCt0s(trackPtr);
+    if (t0TPCPtr) trackInfo.t0_TPC = t0TPCPtr->Time() / 1000.0; // nanoseconds -> microseconds
+    
+    trackInfo.t0_CRT = fCRTInfo.time; // replica
     
     recob::tracking::Point_t startPoint = trackPtr->Start();
     recob::tracking::Point_t endPoint = trackPtr->End();
@@ -631,65 +785,96 @@ void sbn::TimeTrackTreeStorage::analyze(art::Event const& e)
       
     } // if crossing
     
+    //
+    // calorimetry information
+    //
+    
+    std::vector<anab::Calorimetry const*> const& calorimetry = trackCalorimetry.at(iTrack);
+    // pick the plane of choice:
+    anab::Calorimetry const* trackCalo = nullptr;
+    if (fCalorimetryPlaneNumber < 0) {
+      // pick the plane with the highest number (i.e. farther from cathode):
+      for (anab::Calorimetry const* candCalo: calorimetry) {
+        if (trackCalo && (candCalo->PlaneID().Plane < trackCalo->PlaneID().Plane))
+          continue;
+        trackCalo = candCalo;
+      } // for
+    }
+    else {
+      // find the calorimetry object for the requested plane:
+      for (anab::Calorimetry const* candCalo: calorimetry) {
+        if ((int) candCalo->PlaneID().Plane != fCalorimetryPlaneNumber) continue;
+        trackCalo = candCalo;
+        break;
+      } // for
+    }
+    
+    bool const hasCaloInfo = trackCalo && !trackCalo->TrkPitchVec().empty();
+    if (hasCaloInfo) {
+      trackInfo.energy_range = trackCalo->Range();
+      trackInfo.energy = trackCalo->KineticEnergy();
+      trackInfo.energy_int = 0.0;
+      trackInfo.charge_int = 0.0;
+      for (auto const [ dx, dEdx, dQdx ]
+        : util::zip(trackCalo->TrkPitchVec(), trackCalo->dEdx(), trackCalo->dQdx())
+      ) {
+        if (dx <= 0.0) continue;
+        trackInfo.energy_int += dEdx * dx;
+        trackInfo.charge_int += dQdx * dx;
+      } // for
+    }
+    else {
+      mf::LogPrint{ "TimeTrackTreeStorage" } // this is a warning
+        << "Track '" << inputTagOf(trackPtr, e).encode() << "' ID="
+        << trackInfo.trackID << " has no suitable calorimetry information.";
+    }
+    
+    fTrackInfo = std::move(trackInfo);
+    
+    //
+    // hit information
+    //
+    
     //Animesh added hit information - 2/8/2022
+    std::vector<art::Ptr<recob::Hit>> const& allHits = trkht.at(iTrack);
+    std::vector<const recob::TrackHitMeta*> const& trkmetas = trkht.data(iTrack);
 
-    unsigned int plane = 0; //hit plane number
-
-    std::vector<art::Ptr<recob::Hit>> const& allHits = trkht.at(trackPtr.key());
-    std::vector<const recob::TrackHitMeta*> const& trkmetas = trkht.data(trackPtr.key());
-    std::vector<art::Ptr<anab::Calorimetry>> const& calorimetrycol = calorim.at(trackPtr.key());
-    std::vector<std::vector<unsigned int>> hits(plane);
-
-    // art::FindManyP<recob::SpacePoint> fmspts(allHits, e, fT0selProducer);
-    // or art::FindManyP<recob::SpacePoint> fmspts(allHits, e, fSpacePointModuleLabel); // Not sure how to define it
+    fHitStore.clear();
     for (size_t ih = 0; ih < allHits.size(); ++ih)
     {
-      //hits[allHits[ih]->WireID().Plane].push_back(ih);
-      sbn::selHitInfo hinfo = makeHit(*allHits[ih], allHits[ih].key(), *trackPtr, *trkmetas[ih], calorimetrycol, geom);
-      if(hinfo.plane == 2)
-        fHitStore.push_back(hinfo);
-
+      if (allHits[ih]->WireID().Plane != 2) continue;
+      sbn::selHitInfo hinfo = makeHit(*allHits[ih], allHits[ih].key(), *trackPtr, *trkmetas[ih], calorimetry, geom);
+      fHitStore.push_back(std::move(hinfo));
     }
-    float totE = 0;
-    float totq_int = 0;
-    float totq_dqdx = 0;
-    for (size_t i = 0; i < fHitStore.size(); ++i)
-    {
-      if(fHitStore[i].dEdx > -1)
-      {
-        float E_hit = fHitStore[i].dEdx*fHitStore[i].pitch; //energy of hit, in MeV?
-        totE += E_hit;
-      }
-
-      if(fHitStore[i].dqdx > -1)
-      {
-        float q_hit = fHitStore[i].integral;
-        totq_int += q_hit;
-        float q_hit_dqdx = fHitStore[i].dqdx*fHitStore[i].pitch;
-        totq_dqdx += q_hit_dqdx;
-      }
-      /*
-      if(fHitStore[i].pitch > 1 && fHitStore[i].dqdx < 100)
-      {
-        std::cout << "In strange peak! Event: " << fEvent << " Track ID: " << trackInfo.trackID << " Hit ID: " << i << " Total Number of hits: " << fHitStore.size() << std::endl;
-      }
-      */
-    }
-    trackInfo.energy = totE;
-    trackInfo.charge_int = totq_int;
-    trackInfo.charge_dqdx = totq_dqdx;
-    fTrackInfo = std::move(trackInfo);
-    /*
-    for(size_t trajp = 0; trajp < trackPtr->NumberTrajectoryPoints()-1; ++trajp)
-    {
-      TVector3 cur_point(trackPtr->TrajectoryPoint(traj_p).position.X(), trackPtr->TrajectoryPoint(traj_p).position.Y(), trackPtr->TrajectoryPoint(traj_p).position.Z());
-      TVector3 next_point(trackPtr->TrajectoryPoint(traj_p+1).position.X(), trackPtr->TrajectoryPoint(traj_p+1).position.Y(), trackPtr->TrajectoryPoint(traj_p+1).position.Z());
-      if(abs(cur_point.X()) < 170 && abs(next_point.X()) > 170)
-        //interpolate to get cathode crossing point
-        
-    }
-    */
     
+    //
+    // optical flash information
+    //
+    fFlashStore.clear();
+    // we load all of them in the tree so far
+    for (auto const& [ iFlash, flash ]: util::enumerate(particleFlashes))
+    {
+      float const flash_pe = flash.TotalPE();
+      float const flash_time = flash.Time();
+      float const flash_x = flash.XCenter();
+      float const flash_y = flash.YCenter();
+      float const flash_z = flash.ZCenter();
+      float flash_t0_diff = flash_time - track_t0/1e3;
+      
+      sbn::selLightInfo flashInfo;
+      flashInfo.flash_id = iFlash;
+      flashInfo.sum_pe = flash_pe;
+      flashInfo.flash_time = flash_time;
+      flashInfo.flash_x = flash_x;
+      flashInfo.flash_y = flash_y;
+      flashInfo.flash_z = flash_z;
+      flashInfo.diff_flash_t0 = flash_t0_diff;
+      fFlashStore.push_back(flashInfo);
+    } // for flashes
+    
+    //
+    // trigger emulation information
+    //
     triggerResponseExtractors.fetch(iTrack); // TODO no check performed; need to find a way
   
     ++processed;
@@ -706,8 +891,8 @@ sbn::selHitInfo sbn::TimeTrackTreeStorage::makeHit(const recob::Hit &hit,
                                                    unsigned hkey,
                                                    const recob::Track &trk,
                                                    const recob::TrackHitMeta &thm,
-                                                   const std::vector<art::Ptr<anab::Calorimetry>> &calo,
-                                                   const geo::GeometryCore *geo)
+                                                   const std::vector<anab::Calorimetry const*> &calo,
+                                                   const geo::GeometryCore *geom)
 {
 
   // TrackHitInfo to save
@@ -721,7 +906,7 @@ sbn::selHitInfo sbn::TimeTrackTreeStorage::makeHit(const recob::Hit &hit,
   hinfo.mult = hit.Multiplicity();
   hinfo.wire = hit.WireID().Wire;
   hinfo.plane = hit.WireID().Plane;
-  hinfo.channel = geo->PlaneWireToChannel(hit.WireID());
+  hinfo.channel = geom->PlaneWireToChannel(hit.WireID());
   hinfo.tpc = hit.WireID().TPC;
   hinfo.end = hit.EndTick();
   hinfo.start = hit.StartTick();
@@ -745,7 +930,7 @@ sbn::selHitInfo sbn::TimeTrackTreeStorage::makeHit(const recob::Hit &hit,
     hinfo.dirz = dir.Z();
     
     // And determine if the Hit is on a Calorimetry object
-    for (const art::Ptr<anab::Calorimetry> &c: calo) {
+    for (anab::Calorimetry const* c: calo) {
       if (c->PlaneID().Plane != hinfo.plane) continue;
       
       // Found the plane! Now find the hit:
@@ -780,6 +965,77 @@ float sbn::TimeTrackTreeStorage::dEdx_calc(float dQdx,
  
   return dEdx;
   
+}
+
+
+sbn::selCRTInfo sbn::TimeTrackTreeStorage::extractCRTinfoFor(
+  art::Ptr<recob::Track> const& trackPtr, art::Event const& event,
+  util::OneToOneAssociationCache<recob::Track, anab::T0> const& trackToCRTt0,
+  util::OneToOneAssociationCache<anab::T0, sbn::crt::CRTHit> const& t0ToCRThits
+) const {
+  assert(!fCRTMatchProducer.empty());
+  assert(trackPtr);
+  
+  sbn::selCRTInfo CRTinfo;
+  
+  //
+  // fetch the CRT time associated to the track
+  //
+  art::Ptr<anab::T0> const t0Ptr = trackToCRTt0(trackPtr);
+  if (!t0Ptr) return {}; // no CRT information associated with this track
+  
+  if (t0Ptr->ID() < 0) return {}; // supposedly invalid t0 content
+  
+  CRTinfo.time = t0Ptr->Time() / 1000.0; // nanoseconds -> microseconds
+  
+  //
+  // fetch the CRT hit(s) information
+  //
+  
+  // so far, we expect only one CRT hit;
+  // when this changes, the cache one-to-one won't do any more...
+  //   (then ask petrillo@slac.stanford.edu to write the one-to-many version)
+  std::vector<sbn::crt::CRTHit const*> hits { t0ToCRThits(t0Ptr).get() };
+  
+  if (hits.empty()) {
+    // we expect that the matching module between CRT hits and TPC tracks
+    // produced a T0 and its associations to both track and hits;
+    // if we find a T0 but we can't find the associated track or hit are missing,
+    // we are doing something wrong
+    throw art::Exception{ art::errors::LogicError }
+      << "No CRT hit from '" << fCRTMatchProducer.encode() << "' associated to track #"
+      << trackPtr.key() << " of '" << inputTagOf(trackPtr, event).encode() << "' (ID="
+      << trackPtr->ID() << ") via anab::T0 #" << t0Ptr.key() << " from '"
+      << inputTagOf(t0Ptr, event).encode() << "' (ID=" << t0Ptr->ID()
+      << " time=" << t0Ptr->Time() << " ns)!\n";
+  }
+  
+  // currently (v09_67_00) only one CRT hit per track is found; if we found more than one,
+  // we should go back to the documentation or the authors to add the new information
+  sbn::crt::CRTHit const& entryHit = *(hits.front());
+  CRTinfo.entry = {
+      entryHit.ts1_ns / 1000.0                                    // time [us]
+    , entryHit.x_pos                                              // x
+    , entryHit.y_pos                                              // y
+    , entryHit.z_pos                                              // z
+    , std::hypot(entryHit.x_err, entryHit.y_err, entryHit.z_err)  // resolution
+    , static_cast<float>(t0Ptr->TriggerConfidence())              // DCA FIXME DCA is shoved into anab::T0 "trigger confidence" so far
+    , icarus::crt::CRTCommonUtils{}.AuxDetRegionNameToNum(entryHit.tagger)
+                                                                  // region
+    };
+  
+  if (hits.size() > 1) {
+    // this means that something has changed in the algorithm, and we should know what
+    throw art::Exception{ art::errors::LogicError }
+      << hits.size() << " CRT hits from '" << fCRTMatchProducer.encode()
+      << "' associated to track #" << trackPtr.key() << " of '"
+      << inputTagOf(trackPtr, event).encode() << "' (ID=" << trackPtr->ID()
+      << ") via anab::T0 #" << t0Ptr.key() << " from '"
+      << inputTagOf(t0Ptr, event).encode() << "' (ID=" << t0Ptr->ID()
+      << " time=" << t0Ptr->Time() << "); expecting no more than 1.\n";
+  }
+  
+  return CRTinfo;
 }
 
 
@@ -823,5 +1079,98 @@ sbn::TimeTrackTreeStorage::computePMTwalls() const {
 
 
 // -----------------------------------------------------------------------------
+// --- BEGIN -- Implementation for association traverse with two hops ----------
+// -----------------------------------------------------------------------------
+sbn::TimeTrackTreeStorage::TPCT0fromTrackBrowser::TPCT0fromTrackBrowser(
+  art::Event const& event,
+  art::InputTag const& trackParticleAssnsTag /* = {} */,
+  art::InputTag const& particleT0AssnsTag /* = {} */
+)
+  : fEvent{ &event }
+  , fTrackParticleAssnsTag{ trackParticleAssnsTag }
+  , fParticleT0AssnsTag{ particleT0AssnsTag }
+  {}
+
+
+void sbn::TimeTrackTreeStorage::TPCT0fromTrackBrowser::declareConsumes
+  (art::ConsumesCollector& collector) const
+  { declareConsumes(collector, fTrackParticleAssnsTag, fParticleT0AssnsTag); }
+
+
+art::Ptr<anab::T0> sbn::TimeTrackTreeStorage::TPCT0fromTrackBrowser::findT0for
+  (art::Ptr<recob::Track> const& trackPtr)
+{
+  art::Ptr<recob::PFParticle> particlePtr = findPFOforTrack(trackPtr);
+  if (trackPtr.isNull()) return {};
+  
+  art::Ptr<anab::T0> t0Ptr = findT0forPFO(particlePtr);
+  return t0Ptr;
+} // sbn::TimeTrackTreeStorage::TPCT0fromTrackBrowser::findT0for()
+
+
+template <typename Left, typename Right>
+art::Ptr<Right>
+sbn::TimeTrackTreeStorage::TPCT0fromTrackBrowser::findAssociatedPtr(
+  art::Ptr<Left> const& leftPtr,
+  util::OneToOneAssociationCache<Left, Right>& cache,
+  art::InputTag* assnsTag /* = nullptr */
+) {
+  // check cache
+  art::Ptr<Right> rightPtr = cache(leftPtr);
+  if (rightPtr) return rightPtr;
+  
+  if (cache.hasProduct(leftPtr)) return {}; // can't load anything new here
+  
+  // if no hit, load new associations
+  art::InputTag const tag
+    = (!assnsTag || assnsTag->empty())? inputTagOf(leftPtr, *fEvent): *assnsTag;
+  if (assnsTag && assnsTag->empty()) *assnsTag = tag;
+  
+  auto const& assns = fEvent->getProduct<art::Assns<Left, Right>>(tag);
+  
+  util::OneToOneAssociationCache<Left, Right> newCache{ assns };
+  
+  rightPtr = newCache(leftPtr);
+  
+  cache.mergeCache(std::move(newCache));
+  
+  return rightPtr;
+  
+} // sbn::TimeTrackTreeStorage::TPCT0fromTrackBrowser::findAssociatedPtr()
+
+
+art::Ptr<recob::PFParticle>
+sbn::TimeTrackTreeStorage::TPCT0fromTrackBrowser::findPFOforTrack
+  (art::Ptr<recob::Track> const& trackPtr)
+  { return findAssociatedPtr(trackPtr, fTrackToPFO, &fTrackParticleAssnsTag); }
+
+
+art::Ptr<anab::T0>
+sbn::TimeTrackTreeStorage::TPCT0fromTrackBrowser::findT0forPFO
+  (art::Ptr<recob::PFParticle> const& particlePtr)
+  { return findAssociatedPtr(particlePtr, fPFOtoT0, &fParticleT0AssnsTag); }
+
+
+void sbn::TimeTrackTreeStorage::TPCT0fromTrackBrowser::declareConsumes(
+  art::ConsumesCollector& collector
+  , art::InputTag const& trackParticleAssnsTag
+  , art::InputTag const& particleT0AssnsTag
+) {
+  if (!trackParticleAssnsTag.empty()) {
+    collector.consumes<art::Assns<recob::Track, recob::PFParticle>>
+      (trackParticleAssnsTag);
+  }
+  if (!particleT0AssnsTag.empty()) {
+    collector.consumes<art::Assns<recob::PFParticle, anab::T0>>
+      (particleT0AssnsTag);
+  }
+} // sbn::TimeTrackTreeStorage::TPCT0fromTrackBrowser::declareConsumes()
+
+
+// -----------------------------------------------------------------------------
+// --- END ---- Implementation for association traverse with two hops ----------
+// -----------------------------------------------------------------------------
 
 DEFINE_ART_MODULE(sbn::TimeTrackTreeStorage)
+
+

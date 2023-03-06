@@ -2,7 +2,8 @@
 
   <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
 
-  <class name="sbn::selTrackInfo" ClassVersion="15">
+  <class name="sbn::selTrackInfo" ClassVersion="16">
+   <version ClassVersion="16" checksum="3241616212"/>
    <version ClassVersion="15" checksum="352409387"/>
    <version ClassVersion="14" checksum="4105307536"/>
    <version ClassVersion="13" checksum="471742515"/>
@@ -34,10 +35,19 @@
    <version ClassVersion="10" checksum="2893769828"/>
   </class>
 
-  <class name="std::vector<sbn::selTrackInfo>" />    
+  <class name="sbn::selCRTpoint" ClassVersion="10" >
+   <version ClassVersion="10" checksum="852776335"/>
+  </class>
+  
+  <class name="sbn::selCRTInfo" ClassVersion="10" >
+   <version ClassVersion="10" checksum="2923224810"/>
+  </class>
+
+  <class name="std::vector<sbn::selTrackInfo>" />
   <class name="std::vector<sbn::selBeamInfo>" />
   <class name="std::vector<sbn::selTriggerInfo>" />
   <class name="std::vector<sbn::selLightInfo>" />
   <class name="std::vector<sbn::selHitInfo>" />
+  <class name="std::vector<sbn::selCRTInfo>" />
   
 </lcgdict>
