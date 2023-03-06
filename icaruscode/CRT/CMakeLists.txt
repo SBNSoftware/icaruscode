@@ -255,6 +255,7 @@ cet_build_plugin(CRTPMTMatchingAna art::module
         icaruscode_CRT
         sbnobj::Common_CRT
         icaruscode_CRTUtils
+        icaruscode::Decode_DataProducts
         larcore::Geometry_Geometry_service
         larcorealg::Geometry
         nusimdata::SimulationBase
