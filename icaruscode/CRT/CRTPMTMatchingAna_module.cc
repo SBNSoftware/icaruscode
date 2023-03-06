@@ -540,7 +540,7 @@ void icarus::crt::CRTPMTMatchingAna::analyze(art::Event const& e) {
       //double gateDiff =
       //    (Long64_t)m_trigger_timestamp - (Long64_t)m_gate_start_timestamp;
       bool inTime = flashInTime(firstTime, m_gate_type, m_trigger_gate_diff, m_gate_width);
-      fRelGateTime = gateDiff + (tAbsflash - 1500) * 1e3;
+      fRelGateTime = m_trigger_gate_diff + (tAbsflash - 1500) * 1e3;
       fInTime_gate = false;
       fInTime_beam = false;
       if (m_gate_type == 1 || m_gate_type == 3) {  // BNB OffBeamBNB
