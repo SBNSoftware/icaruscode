@@ -1,0 +1,15 @@
+# Tracks
+physics.producers.pandoraCaloGausCryoE.CaloAlg.CalAreaConstants: @local::this_cal_constants
+physics.producers.pandoraCaloGausCryoW.CaloAlg.CalAreaConstants: @local::this_cal_constants
+# Stubs
+physics.producers.vertexChargeCryoE.CaloAlg.CalAreaConstants: @local::this_cal_constants
+physics.producers.vertexChargeCryoW.CaloAlg.CalAreaConstants: @local::this_cal_constants
+physics.producers.vertexStubCryoE.CaloAlg.CalAreaConstants: @local::this_cal_constants
+physics.producers.vertexStubCryoW.CaloAlg.CalAreaConstants: @local::this_cal_constants
+# Showers
+physics.producers.SBNShowerGausCryoE.ShowerFinderTools[3].CalorimetryAlg.CalAreaConstants: @local::this_cal_constants
+physics.producers.SBNShowerGausCryoE.ShowerFinderTools[5].CalorimetryAlg.CalAreaConstants: @local::this_cal_constants
+physics.producers.SBNShowerGausCryoE.ShowerFinderTools[7].CalorimetryAlg.CalAreaConstants: @local::this_cal_constants
+physics.producers.SBNShowerGausCryoW.ShowerFinderTools[3].CalorimetryAlg.CalAreaConstants: @local::this_cal_constants
+physics.producers.SBNShowerGausCryoW.ShowerFinderTools[5].CalorimetryAlg.CalAreaConstants: @local::this_cal_constants
+physics.producers.SBNShowerGausCryoW.ShowerFinderTools[7].CalorimetryAlg.CalAreaConstants: @local::this_cal_constants
