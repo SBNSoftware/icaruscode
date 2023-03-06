@@ -287,29 +287,6 @@ class icarus::crt::CRTPMTMatchingAna : public art::EDAnalyzer {
       fCRTGateDiff;  // Difference between CRTHit and BeamGate opening
   int fEventType;    // Was triggered the event?
   double fRelGateTime;
-  /*int                    fNCrt;         //number of CRT hits per event
-  vector<vector<double>> fCrtXYZT;      //Matched CRT hit x,y,z,t [cm/ns]
-  vector<vector<double>> fCrtXYZErr;    //Matched CRT hit x,y,z,t error [cm/ns]
-  vector<int>            fCrtRegion;    //Matched CRT hit region code
-  vector<double>         fCrtPE;        //total PE's for Matched CRT hit
-  vector<double>         fTofHit;       //CRT - PMT TOF using OpHit
-  double         fTofFlash;     //CRT - PMT TOF using OpFlash
-  double         fTofFlashHit;
-  vector<double>         fDistHit;      //CRT - PMT distance [cm]
-  double         fDistFlash;    //CRT - flash barycenter distance [cm]
-  double         fDistFlashHit;
-  vector<double>         fTofPeHit;     //total PE for matched OpHit
-  double         fTofPeFlash;   //total PE for matched OpFlash
-  vector<double>         fTofPeFlashHit;
-
-  vector<vector<double>> fTofXYZTHit;   //position/time [cm/ns] for matched
-  OpHit vector<double> fTofXYZTFlash; //position/time [cm/ns] for matched
-  OpFlash vector<vector<double>> fTofXYZTFlashHit; vector<int> fTofTpcHit; //TPC
-  for matched OpHit int            fTofTpcFlash;  //TPC for matched OpFlash
-  vector<bool>           fMatchHit;     //was CRT hit matched to OpHit?
-  bool           fMatchFlash;   //was CRT hit matched to OpFlash?
-  bool           fInTime;   //was the OpFlash in beam spill time?
-  vector<bool>           fTrackFilt;    //excluded by track filter */
 
   geo::GeometryCore const* fGeometryService;  ///< pointer to Geometry provider
 
@@ -449,8 +426,7 @@ void icarus::crt::CRTPMTMatchingAna::analyze(art::Event const& e) {
   geo::TPCGeo const& tpc10 = cryo1.TPC(0);
   geo::TPCGeo const& tpc11 = cryo1.TPC(1);
   */
-  MF_LOG_DEBUG("CRTPMTMatching: ") << "beginning analyis" << '\n';
-  std::cout << "START" << std::endl;
+  mf::LogDebug("CRTPMTMatching: ") << "beginning analyis" << '\n';
   // Start by fetching some basic event information for our n-tuple.
   fEvent = e.id().event();
   fRun = e.run();
@@ -561,9 +537,9 @@ void icarus::crt::CRTPMTMatchingAna::analyze(art::Event const& e) {
       if (nPMTsTriggering < 5) {
         continue;
       }
-      double gateDiff =
-          (Long64_t)m_trigger_timestamp - (Long64_t)m_gate_start_timestamp;
-      bool inTime = flashInTime(firstTime, m_gate_type, gateDiff, m_gate_width);
+      //double gateDiff =
+      //    (Long64_t)m_trigger_timestamp - (Long64_t)m_gate_start_timestamp;
+      bool inTime = flashInTime(firstTime, m_gate_type, m_trigger_gate_diff, m_gate_width);
       fRelGateTime = gateDiff + (tAbsflash - 1500) * 1e3;
       fInTime_gate = false;
       fInTime_beam = false;
