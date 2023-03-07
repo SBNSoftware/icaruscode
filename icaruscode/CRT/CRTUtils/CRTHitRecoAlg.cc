@@ -585,8 +585,8 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeTopHit(art::Ptr<CRTData> data, ULong64_t Glo
     double sum=0;
     for(int chan=0; chan<32; chan++) {
 	sum=sum+data->fAdc[chan];
-        std::pair<double,double> const chg_cal = fChannelMap->getSideCRTCalibrationMap((int)crtList[febdat_i]->fMac5,chan);
-        float pe = (crtList[febdat_i]->fAdc[chan]-chg_cal.second)/chg_cal.first;
+        std::pair<double,double> const chg_cal = fChannelMap->getSideCRTCalibrationMap((int)data->fMac5,chan);
+        float pe = (data->fAdc[chan]-chg_cal.second)/chg_cal.first;
 	if(pe<0) pe=0;
         // float pe = (data->fAdc[chan]-ftopPed)/ftopGain;
 //      if(pe<=fPEThresh) continue;
