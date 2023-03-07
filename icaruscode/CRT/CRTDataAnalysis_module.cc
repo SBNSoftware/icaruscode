@@ -465,7 +465,8 @@ namespace crt {
       for(int ch=0; ch<maxchan; ch++) {
 	fADC[ch] = crtData[febdat_i]->fAdc[ch]; 
 	std::pair<double,double> const chg_cal = fChannelMap->getSideCRTCalibrationMap((int)fMac5,ch);
-	if (fDetSubSys == 0){
+	std::cout<<chg_cal.second<<"  "<<chg_cal.first<<std::endl;
+	if (fDetSubSys == 0 || fDetSubSys == 1){
 	  float pe = (fADC[ch]-chg_cal.second)/chg_cal.first;
 	  if (pe < 0) continue;
 	  fPE[ch] = pe;
