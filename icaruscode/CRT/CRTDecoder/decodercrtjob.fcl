@@ -40,7 +40,7 @@ physics:
  producers:
  {
    daqCRT: @local::crtdaq_icarus
-   daqTrigger: @local::decodeTriggerV3
+   daqTrigger: @local::decodeTriggerAutodetect
    triggerconfig: @local::extractTriggerConfig
  }
 
@@ -73,5 +73,7 @@ outputs:
    compressionLevel: 1
  }
 }
-physics.producers.daqTrigger.DecoderTool.TrigConfigLabel: triggerconfig
+decodeTriggerAutodetect.DecoderTool.Decoders[0].ToolConfig.TrigConfigLabel: triggerconfig
+decodeTriggerAutodetect.DecoderTool.Decoders[1].ToolConfig.TrigConfigLabel: triggerconfig
+decodeTriggerAutodetect.DecoderTool.Decoders[2].ToolConfig.TrigConfigLabel: triggerconfig
 #services.IICARUSChannelMap.ChannelMappingTool: @local::ChannelMappingPostGres
