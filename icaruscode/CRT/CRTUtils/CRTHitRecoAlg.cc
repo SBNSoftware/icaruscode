@@ -520,8 +520,12 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeTopHit(
   double sum = 0;
   for (int chan = 0; chan < 32; chan++) {
     sum = sum + data->fAdc[chan];
-    float pe = (data->fAdc[chan] - ftopPed) / ftopGain;
+    std::pair<double, double> const chg_cal =
+              fChannelMap->getSideCRTCalibrationMap((int)data->fMac5, chan);
+    float pe = (data->fAdc[chan] - chg_cal.second) / chg_cal.first;
+    //float pe = (data->fAdc[chan] - ftopPed) / ftopGain;
     //      if(pe<=fPEThresh) continue;
+    if (pe<0) pe=0;
     nabove++;
     int adsid = fCrtutils.ChannelToAuxDetSensitiveID(mac, chan);
     petot += pe;
