@@ -14,7 +14,6 @@ physics.trigger_paths:     [ reco ]
 physics.end_paths:         [ outana, stream1 ]
 outputs.out1.fileName:     "%ifb_%tc-%p.root"
 outputs.out1.dataTier:     "reconstructed"
-outputs.out1.SelectEvents: [ reco ]
 outputs.out1.outputCommands: [
   "keep *_*_*_*",
   "drop *_caloskimCalorimetryCryoE_*_*",

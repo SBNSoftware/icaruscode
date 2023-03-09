@@ -32,7 +32,7 @@ physics.producers: {
 physics.reco: [ 
                 @sequence::icarus_reco_Gauss_CryoE ,
                 @sequence::icarus_reco_Gauss_CryoW ,
-		@sequence::icarus_reco_fm,
+		            @sequence::icarus_reco_fm,
                 caloskimCalorimetryCryoE, caloskimCalorimetryCryoW,
                 mcassociationsGausCryoE,  mcassociationsGausCryoW
               ]
@@ -50,7 +50,6 @@ physics.trigger_paths:     [ reco ]
 physics.end_paths:         [ outana, stream1 ]
 outputs.out1.fileName:     "%ifb_%tc-%p.root"
 outputs.out1.dataTier:     "reconstructed"
-outputs.out1.SelectEvents: [ reco ]
 outputs.out1.outputCommands: [
   "keep *_*_*_*",
   "drop *_caloskimCalorimetryCryoE_*_*",
