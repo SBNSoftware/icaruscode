@@ -1,11 +1,11 @@
 /**
- * @file    TimeTrackTreeStorage_module.cc
+ * @file    TimeTrackTreeStorageCRT_module.cc
  * @authors Jacob Zettlemoyer (FNAL, jzettle@fnal.gov),
  *          Animesh Chatterjee (U. Pittsburgh, anc238@pitt.edu),
  *          Gianluca Petrillo (SLAC, petrillo@slac.stanford.edu)
- * @date    Tue Sep 21 10:33:10 2021
+ * @date    February 2023
  * 
- * Borrowed heavily from Gray Putnam's existing TrackCaloSkimmer
+ * Originally borrowed heavily from Gray Putnam's existing `TrackCaloSkimmer`.
  */
 
 // ICARUS libraries
@@ -20,9 +20,10 @@
 #include "sbnobj/Common/Trigger/ExtraTriggerInfo.h"
 
 // LArSoft libraries
-// #include "lardata/DetectorInfoServices/DetectorClocksService.h"
+#include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
 #include "larcore/Geometry/Geometry.h"
 #include "larcore/CoreUtils/ServiceUtil.h" // lar::providerFrom()
+#include "lardataalg/DetectorInfo/DetectorPropertiesData.h"
 #include "larcorealg/Geometry/GeometryCore.h"
 #include "larcorealg/Geometry/OpDetGeo.h"
 #include "larcorealg/CoreUtils/zip.h"
@@ -77,12 +78,12 @@ namespace {
   // ---------------------------------------------------------------------------
   /// Returns the sequence of `track` valid points (as geometry points).
   std::vector<geo::Point_t> extractTrajectory
-    (recob::Track const& track, bool reverse = false)
+    (recob::Track const& track, bool reverse = false, geo::Vector_t shift = {})
   {
     std::vector<geo::Point_t> trackPath;
     std::size_t index = track.FirstValidPoint();
     while (index != recob::TrackTrajectory::InvalidIndex) {
-      trackPath.push_back(track.LocationAtPoint(index));
+      trackPath.push_back(track.LocationAtPoint(index) + shift);
       if (++index >= track.NPoints()) break;
       index = track.NextValidPoint(index);
     }
@@ -134,6 +135,38 @@ namespace sbn {
  * match a single flash to a track.
  * 
  * 
+ * Data stored in the tree
+ * ========================
+ * 
+ * Tracks
+ * -------
+ * 
+ * ### Position in the drift direction
+ * 
+ * The input tracks are expected to be processed in a Pandora-like way.
+ * That is, if a TPC time is associated with them, then they have been already
+ * translated along the drift direction (_x_) to match the assigned time.
+ * 
+ * In case the tracks have no TPC time associated with them, instead, the time
+ * associated from the CRT (not the one from the `T0selProducer` source),
+ * is considered. If that time is valid, then it is used to translate the track
+ * in the position that pertains a track of that time. The track in input is
+ * assumed to have been placed on the drift direction in the position that would
+ * pertain a track arrived at trigger time. No correction for the time of flight
+ * between the CRT hit and the track is performed (this correction, of the order
+ * of nanoseconds, is irrelevant to the purpose of trigger efficiency
+ * evaluation).
+ * 
+ * 
+ * 
+ * Calorimetry
+ * ------------
+ * 
+ * Track energy and energy profile are directly taken from the results of
+ * "standard" ICARUS calorimetry application.
+ * Calibration hit by hit is currently still custom, using recombination
+ * correction.
+ * 
  * 
  * Trigger information
  * ====================
@@ -182,6 +215,16 @@ namespace sbn {
  *   simulated. It is in the same time scale as the trigger time, and
  *   directly taken from `raw::Trigger::BeamGateTime()`.
  * 
+ * 
+ * Service dependencies
+ * =====================
+ * 
+ * * `Geometry` for determinations related to the position of the cathode and
+ *   anodes, and for association of track and hits.
+ * * `LArProperties` as dependency for `DetectorPropertiesService`
+ * * `DetectorClocksService` as dependency for `DetectorPropertiesService`
+ * * `DetectorPropertiesService` for the drift velocity to convert a time shift
+ *   into a drift direction shift.
  * 
  */
 class sbn::TimeTrackTreeStorage : public art::EDAnalyzer {
@@ -422,6 +465,17 @@ private:
   std::vector<std::pair<double, std::vector<raw::Channel_t>>>
     computePMTwalls() const;
   
+  /// Returns the position correction of a `track` based on a time shift.
+  /// ("actual" track time minus the time assumed during reconstruction).
+  /// A non-empty list of the TPCs crossed by the track is required.
+  geo::Vector_t posShiftFromCRTtime(
+    recob::Track const& track,
+    double timeShift,
+    std::vector<geo::TPCID> const& TPCs,
+    geo::GeometryCore const& geom,
+    detinfo::DetectorPropertiesData const& detProp
+    ) const;
+  
   /// Connects `recob::Track` to `anab::T0` via intermediate `recob::PFParticle`
   class TPCT0fromTrackBrowser {
       public:
@@ -509,6 +563,42 @@ namespace sbn {
 
 
 // -----------------------------------------------------------------------------
+namespace {
+  
+  /// A vector-like collection which inserts elements only if not there yet.
+  /// It's designed for small collections.
+  template <typename... Args>
+  class UniqueVector: private std::vector<Args...> {
+    using Vector_t = std::vector<Args...>;
+      public:
+    using value_type = typename Vector_t::value_type;
+    using const_iterator = typename Vector_t::const_iterator;
+    
+    /// Adds a copy of `value` if it's not present yet.
+    void push_back(value_type value)
+      {
+        auto const end = Vector_t::crend();
+        if (std::find(Vector_t::crbegin(), end, value) != end) return;
+        Vector_t::push_back(std::move(value));
+      }
+    
+    using Vector_t::empty;
+    using Vector_t::size;
+    using Vector_t::back;
+    using Vector_t::front;
+    using Vector_t::cbegin;
+    using Vector_t::cend;
+    auto begin() const { return cbegin(); }
+    auto end() const { return cend(); }
+    
+    Vector_t const& vector() const { return *this; }
+    
+  }; // class UniqueVector
+  
+} // local namespace
+
+
+// -----------------------------------------------------------------------------
 sbn::TimeTrackTreeStorage::TimeTrackTreeStorage(Parameters const& p)
   : EDAnalyzer{p}
   // configuration
@@ -589,6 +679,9 @@ void sbn::TimeTrackTreeStorage::analyze(art::Event const& e)
    * 
    */
   const geo::GeometryCore *geom = lar::providerFrom<geo::Geometry>();
+  
+  detinfo::DetectorPropertiesData const detProp
+    = art::ServiceHandle<detinfo::DetectorPropertiesService>()->DataFor(e);
   
   //
   // event identification
@@ -686,6 +779,36 @@ void sbn::TimeTrackTreeStorage::analyze(art::Event const& e)
     //
     if (!fCRTMatchProducer.empty())
       fCRTInfo = extractCRTinfoFor(trackPtr, e, *TrackCRTt0s, *T0CRThits);
+    bool const hasCRTT0 = (fCRTInfo.time != sbn::selCRTInfo::NoTime);
+    
+    //
+    // hit information
+    //
+    
+    //Animesh added hit information - 2/8/2022
+    std::vector<anab::Calorimetry const*> const& calorimetry
+      = trackCalorimetry.at(iTrack);
+    std::vector<art::Ptr<recob::Hit>> const& allHits = trkht.at(iTrack);
+    std::vector<const recob::TrackHitMeta*> const& trkmetas = trkht.data(iTrack);
+
+    fHitStore.clear();
+    UniqueVector<geo::TPCID> TPCs; // collect the list of TPC for later
+    for (size_t ih = 0; ih < allHits.size(); ++ih)
+    {
+      art::Ptr<recob::Hit> const& hitPtr = allHits[ih];
+      geo::WireID const wire = hitPtr->WireID();
+      if (!wire.isValid) continue;
+      TPCs.push_back(wire);
+      if (wire.Plane != 2) continue;
+      fHitStore.push_back
+        (makeHit(*hitPtr, hitPtr.key(), *trackPtr, *trkmetas[ih], calorimetry, geom));
+    }
+    if (TPCs.empty()) {
+      // this is needed for corrections; if needed, this check may be made optional,
+      // but then a fix for the position correction needs to be devised.
+      throw art::Exception{ art::errors::NotFound }
+        << "Track ID=" << trackPtr->ID() << " is not associated with any hit.\n";
+    }
     
     //
     // track information (at last!!)
@@ -707,17 +830,33 @@ void sbn::TimeTrackTreeStorage::analyze(art::Event const& e)
     
     art::Ptr<anab::T0> const& t0TPCPtr = TrackTPCt0s(trackPtr);
     if (t0TPCPtr) trackInfo.t0_TPC = t0TPCPtr->Time() / 1000.0; // nanoseconds -> microseconds
+    bool const hasTPCT0 = (trackInfo.t0_TPC != sbn::selTrackInfo::NoTime);
     
     trackInfo.t0_CRT = fCRTInfo.time; // replica
     
-    recob::tracking::Point_t startPoint = trackPtr->Start();
-    recob::tracking::Point_t endPoint = trackPtr->End();
+    //
+    // correction on position from time:
+    //   if we have a t0 from TPC (cathode-crossing track) we assume it to be
+    //   good enough and the track to be already stitched and correct.
+    //   If instead we have at least the CRT time, correction is upon us;
+    //   reference time for t0_CRT is trigger time,
+    //   which is also the one assumed by TPC track reconstruction.
+    //
+    geo::Vector_t const positionShift = (!hasTPCT0 && hasCRTT0)
+      ? posShiftFromCRTtime
+        (*trackPtr, trackInfo.t0_CRT, TPCs.vector(), *geom, detProp)
+      : geo::Vector_t{}
+      ;
+    trackInfo.driftCorrX = positionShift.X();
+
     recob::tracking::Vector_t startDir = trackPtr->StartDirection();
     bool const flipTrack = fForceDowngoing && (startDir.Y() > 0.0);
-    if (flipTrack) {
-      std::swap(startPoint, endPoint);
-      startDir = -trackPtr->EndDirection();
-    }
+    
+    std::vector<geo::Point_t> const trackPath
+      = extractTrajectory(*trackPtr, flipTrack, positionShift);
+    
+    recob::tracking::Point_t const& startPoint = trackPath.front();
+    recob::tracking::Point_t const& endPoint = trackPath.back();
     
     trackInfo.start_x = startPoint.X();
     trackInfo.start_y = startPoint.Y();
@@ -730,8 +869,6 @@ void sbn::TimeTrackTreeStorage::analyze(art::Event const& e)
     trackInfo.dir_z = startDir.Z();
     trackInfo.length = trackPtr->Length();
     
-    std::vector<geo::Point_t> const trackPath
-      = extractTrajectory(*trackPtr, flipTrack);
     geo::Point_t const middlePoint
       = util::pathMiddlePoint(trackPath.begin(), std::prev(trackPath.end()));
     trackInfo.middle_x = middlePoint.X();
@@ -749,6 +886,26 @@ void sbn::TimeTrackTreeStorage::analyze(art::Event const& e)
       = icarus::detectCrossing(trackPath.begin(), trackPath.end(), cathode);
     
     if (crossInfo) {
+      if (positionShift != geo::Vector_t{}) {
+        // in general, we correct only tracks that don't cross the cathode,
+        // and for the others the correction should be 0;
+        // but a contained track may have been pushed to cross cathode by the
+        // correction (or maybe because of reconstruction imprecisions) by a bit
+        constexpr double aBit = 5.0; // say, no more than this mucj
+        if (std::min(
+          std::abs(distance(trackPath.front(), cathode)),
+          std::abs(distance(trackPath.back(), cathode))
+          ) > aBit
+        ) {
+          mf::LogPrint(fLogCategory) 
+            << "Track ID=" << trackPtr->ID()
+            << " (" << startPoint << " to " << endPoint
+            << ", crossing at " << crossInfo.crossingPoint
+            << ") is scheduled for position correction by " << positionShift
+            << " cm! (times: TPC=" << trackInfo.t0_TPC << ", CRT="
+            << trackInfo.t0_CRT << " us).";
+        }
+      } // position shift check
       
       auto itBeforeCathode = trackPath.begin() + crossInfo.indexBefore;
       auto itAfterCathode = trackPath.begin() + crossInfo.indexAfter;
@@ -758,7 +915,7 @@ void sbn::TimeTrackTreeStorage::analyze(art::Event const& e)
       geo::Point_t middleAfterCathode
         = util::pathMiddlePoint(itAfterCathode, std::prev(trackPath.end()));
       
-        // "before" is defined as "smaller x", so:
+      // "before" is defined as "smaller x", so:
       if (distance(middleAfterCathode, cathode) < 0.0) {
         assert(distance(middleBeforeCathode, cathode) >= 0.0);
         std::swap(crossInfo.indexBefore, crossInfo.indexAfter);
@@ -789,7 +946,6 @@ void sbn::TimeTrackTreeStorage::analyze(art::Event const& e)
     // calorimetry information
     //
     
-    std::vector<anab::Calorimetry const*> const& calorimetry = trackCalorimetry.at(iTrack);
     // pick the plane of choice:
     anab::Calorimetry const* trackCalo = nullptr;
     if (fCalorimetryPlaneNumber < 0) {
@@ -830,22 +986,6 @@ void sbn::TimeTrackTreeStorage::analyze(art::Event const& e)
     }
     
     fTrackInfo = std::move(trackInfo);
-    
-    //
-    // hit information
-    //
-    
-    //Animesh added hit information - 2/8/2022
-    std::vector<art::Ptr<recob::Hit>> const& allHits = trkht.at(iTrack);
-    std::vector<const recob::TrackHitMeta*> const& trkmetas = trkht.data(iTrack);
-
-    fHitStore.clear();
-    for (size_t ih = 0; ih < allHits.size(); ++ih)
-    {
-      if (allHits[ih]->WireID().Plane != 2) continue;
-      sbn::selHitInfo hinfo = makeHit(*allHits[ih], allHits[ih].key(), *trackPtr, *trkmetas[ih], calorimetry, geom);
-      fHitStore.push_back(std::move(hinfo));
-    }
     
     //
     // optical flash information
@@ -1076,6 +1216,37 @@ sbn::TimeTrackTreeStorage::computePMTwalls() const {
   
   return channelWalls;
 } // sbn::TimeTrackTreeStorage::computePMTwalls()
+
+
+// -----------------------------------------------------------------------------
+geo::Vector_t sbn::TimeTrackTreeStorage::posShiftFromCRTtime(
+  recob::Track const& track,
+  double timeShift,
+  std::vector<geo::TPCID> const& TPCs,
+  geo::GeometryCore const& geom,
+  detinfo::DetectorPropertiesData const& detProp
+) const {
+  if (TPCs.empty()) return {};
+  
+  auto iTPC = TPCs.begin();
+  geo::Vector_t const driftDir = geom.TPC(*iTPC).DriftDir(); // toward anode
+  
+  // check for consistency of the drift direction
+  while (++iTPC != TPCs.end()) {
+    if (driftDir == geom.TPC(*iTPC).DriftDir()) continue;
+    mf::LogPrint log(fLogCategory);
+    log << "Warning: track ID=" << track.ID()
+      << " (from " << track.Start() << " to " << track.End()
+      << " cm) with no TPC T0 crosses TPCs with different drifts:";
+    for (geo::TPCID const& tpcid: TPCs)
+      log << " " << tpcid << " " << geom.TPC(tpcid).DriftDir();
+    return {};
+  } // while
+  
+  double const shiftTowardAnode = timeShift * detProp.DriftVelocity();
+  
+  return driftDir * shiftTowardAnode;
+} // sbn::TimeTrackTreeStorage::posShiftFromCRTtime()
 
 
 // -----------------------------------------------------------------------------
