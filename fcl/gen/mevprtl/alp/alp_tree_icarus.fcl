@@ -1,0 +1,33 @@
+#include "alp.fcl"
+# service configuration
+#
+#include "services_icarus_simulation.fcl"
+
+
+process_name: ALPTree
+
+services:
+{
+  @table::icarus_basic_services
+  TFileService: { fileName: "alp_icarus.root" }
+  IFDH: {}
+}
+
+source: {
+  module_type: EmptyEvent
+}
+
+physics:
+{
+  producers: {
+    generator: @local::alp
+  }
+ 
+  ana:  [ generator ]
+ 
+  trigger_paths: [ana] 
+  end_paths:     [ ] 
+  
+} # physics
+
+services.NuRandomService.policy: "random"
