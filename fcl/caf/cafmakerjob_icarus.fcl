@@ -6,6 +6,7 @@
 #include "backtrackerservice.fcl"
 #include "photonbacktrackerservice.fcl"
 #include "mccheatermodules.fcl"
+#include "crtsimmodules_icarus.fcl"
 
 #include "cafmaker_defs.fcl"
 
@@ -46,5 +47,9 @@ physics:
   end_paths:     [ stream1 ]
 }
 
+# MCT0Offset for MC ()
+# ref1 : https://github.com/SBNSoftware/icaruscode/blob/v09_37_02_01/icaruscode/CRT/crtsimmodules_icarus.fcl#L11
+# ref2 : https://github.com/SBNSoftware/icaruscode/blob/v09_64_01/icaruscode/CRT/crttruehitproducer.fcl#L8
+physics.producers.cafmaker.CRTSimT0Offset: @local::standard_icarus_crtsimalg.GlobalT0Offset
 # Blinding not needed for MC
 physics.producers.cafmaker.CreateBlindedCAF: false
