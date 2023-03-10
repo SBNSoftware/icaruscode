@@ -15,7 +15,7 @@ physics.producers: {  @table::icarus_stage0_producers
 ## Use the following to run the full defined stage0 set of modules
 physics.path: [   @sequence::icarus_stage0_mc_PMT, 
                   MCDecodeTPCROI, 
-                  @sequence::icarus_stage0_2d_multiTPC,
+                  @sequence::icarus_stage0_multiTPC,
                   @sequence::icarus_stage0_mc_crt
               ]
 
