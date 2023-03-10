@@ -23,7 +23,8 @@
    <version ClassVersion="11" checksum="2335077475"/>
    <version ClassVersion="10" checksum="2486880499"/>
   </class>
-  <class name="sbn::selLightInfo" ClassVersion="13">
+  <class name="sbn::selLightInfo" ClassVersion="14">
+   <version ClassVersion="14" checksum="2709766870"/>
    <version ClassVersion="13" checksum="3810861666"/>
    <version ClassVersion="12" checksum="2145002064"/>
    <version ClassVersion="11" checksum="4227899354"/>

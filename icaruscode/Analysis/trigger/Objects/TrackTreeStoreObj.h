@@ -82,11 +82,16 @@ namespace sbn {
     static constexpr float NoPosition = -999999.0;
     int flash_id = -1;
     float sum_pe = NoPosition;
-    float flash_time = NoPosition;
+    float flash_time = NoPosition; ///< Nominal flash time [us]
     float flash_x = NoPosition;
     float flash_y = NoPosition;
     float flash_z = NoPosition;
-    float diff_flash_t0 = NoPosition;
+    float diff_flash_pos = NoPosition; ///< Distance from track middle point [cm]
+    float diff_flash_t0 = NoPosition; ///< Time from track time `t0` [us]
+    float diff_flash_TPCt0 = NoPosition; ///< Time from TPC time `t0_TPC` [us]
+    float diff_flash_CRTt0 = NoPosition; ///< Time from CRT time `t0_CRT` [us]
+    bool flash_closest_to_track = false; ///< Is this the smallest `diff_flash_t0`?
+    bool flash_nearest_to_track = false; ///< Is this the smallest `diff_flash_pos`?
   };
 
   struct selHitInfo {

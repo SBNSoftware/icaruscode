@@ -424,6 +424,8 @@ private:
   sbn::selTrackInfo fTrackInfo; //change to one entry per track instead of per event 
   sbn::selBeamInfo fBeamInfo;
   sbn::selTriggerInfo fTriggerInfo;
+  sbn::selLightInfo fClosestFlash;
+  sbn::selLightInfo fNearestFlash;
   std::vector<sbn::selLightInfo> fFlashStore;
   sbn::selHitInfo fHitInfo;
   std::vector<sbn::selHitInfo> fHitStore;
@@ -657,6 +659,8 @@ sbn::TimeTrackTreeStorage::TimeTrackTreeStorage(Parameters const& p)
   fStoreTree->Branch("beamInfo", &fBeamInfo);
   fStoreTree->Branch("triggerInfo", &fTriggerInfo);
   fStoreTree->Branch("selTracks", &fTrackInfo);
+  fStoreTree->Branch("closestFlash", &fClosestFlash);
+  fStoreTree->Branch("nearestFlash", &fNearestFlash);
   fStoreTree->Branch("selFlashes", &fFlashStore); //store all flashes in an event for all tracks
   fStoreTree->Branch("selHits", &fHitStore);
   if (!fCRTMatchProducer.empty())
@@ -825,12 +829,18 @@ void sbn::TimeTrackTreeStorage::analyze(art::Event const& e)
         << "' (ID=" << trackPtr->ID() << ") is not associated to any anab::T0 from '"
         << fT0selProducer.encode() << "'!\n";
     }
-    float const track_t0 = t0Ptr->Time() / 1000.0; // nanoseconds -> microseconds
-    trackInfo.t0 = track_t0;
+    // it may happen that a T0 object is present, but with an invalid time;
+    // in that case, the ID is expected not to be valid either;
+    // here we assume that since the tracks were selected they are desired;
+    // on the other end, all the trigger efficiency figures will be bogus
+    bool const hasT0 = (t0Ptr->ID() >= 0);
+    if (hasT0) trackInfo.t0 = t0Ptr->Time() / 1000.0; // otherwise stays NoTime
     
     art::Ptr<anab::T0> const& t0TPCPtr = TrackTPCt0s(trackPtr);
-    if (t0TPCPtr) trackInfo.t0_TPC = t0TPCPtr->Time() / 1000.0; // nanoseconds -> microseconds
-    bool const hasTPCT0 = (trackInfo.t0_TPC != sbn::selTrackInfo::NoTime);
+    // differently from CRT, we assume that all available T0 from TPC are valid
+    bool const hasTPCT0 = t0TPCPtr.isNonnull();
+    if (hasTPCT0)
+      trackInfo.t0_TPC = t0TPCPtr->Time() / 1000.0; // nanoseconds -> microseconds
     
     trackInfo.t0_CRT = fCRTInfo.time; // replica
     
@@ -980,7 +990,7 @@ void sbn::TimeTrackTreeStorage::analyze(art::Event const& e)
       } // for
     }
     else {
-      mf::LogPrint{ "TimeTrackTreeStorage" } // this is a warning
+      mf::LogTrace{ "TimeTrackTreeStorage" }
         << "Track '" << inputTagOf(trackPtr, e).encode() << "' ID="
         << trackInfo.trackID << " has no suitable calorimetry information.";
     }
@@ -991,15 +1001,21 @@ void sbn::TimeTrackTreeStorage::analyze(art::Event const& e)
     // optical flash information
     //
     fFlashStore.clear();
+    // to use pointers below, need to avoid reallocation of vector data
+    fFlashStore.reserve(particleFlashes.size());
+    sbn::selLightInfo* closestFlash = nullptr;
+    sbn::selLightInfo* nearestFlash = nullptr;
     // we load all of them in the tree so far
     for (auto const& [ iFlash, flash ]: util::enumerate(particleFlashes))
     {
+      geo::Point_t const center{ flash.XCenter(), flash.YCenter(), flash.ZCenter() };
       float const flash_pe = flash.TotalPE();
       float const flash_time = flash.Time();
-      float const flash_x = flash.XCenter();
-      float const flash_y = flash.YCenter();
-      float const flash_z = flash.ZCenter();
-      float flash_t0_diff = flash_time - track_t0/1e3;
+      float const flash_x = center.X();
+      float const flash_y = center.Y();
+      float const flash_z = center.Z();
+      
+      geo::Vector_t const diff_flash_pos = center - middlePoint;
       
       sbn::selLightInfo flashInfo;
       flashInfo.flash_id = iFlash;
@@ -1008,9 +1024,32 @@ void sbn::TimeTrackTreeStorage::analyze(art::Event const& e)
       flashInfo.flash_x = flash_x;
       flashInfo.flash_y = flash_y;
       flashInfo.flash_z = flash_z;
-      flashInfo.diff_flash_t0 = flash_t0_diff;
+      if (hasT0)    flashInfo.diff_flash_t0    = flash_time - fTrackInfo.t0;
+      if (hasTPCT0) flashInfo.diff_flash_TPCt0 = flash_time - fTrackInfo.t0_TPC;
+      if (hasCRTT0) flashInfo.diff_flash_CRTt0 = flash_time - fTrackInfo.t0_CRT;
+      flashInfo.diff_flash_pos = std::hypot(diff_flash_pos.Y(), diff_flash_pos.Z());
+      
       fFlashStore.push_back(flashInfo);
+      
+      if (hasT0 && (!closestFlash
+        || std::abs(flashInfo.diff_flash_t0) < std::abs(closestFlash->diff_flash_t0))
+      ) {
+        closestFlash = &fFlashStore.back();
+      }
+      if (!nearestFlash
+        || std::abs(flashInfo.diff_flash_pos) < std::abs(nearestFlash->diff_flash_pos)
+      ) {
+        nearestFlash = &fFlashStore.back();
+      }
+      
     } // for flashes
+    
+    if (closestFlash) closestFlash->flash_closest_to_track = true;
+    if (nearestFlash) nearestFlash->flash_nearest_to_track = true;
+    
+    fClosestFlash = closestFlash? *closestFlash: sbn::selLightInfo{};
+    fNearestFlash = nearestFlash? *nearestFlash: sbn::selLightInfo{};
+    
     
     //
     // trigger emulation information
