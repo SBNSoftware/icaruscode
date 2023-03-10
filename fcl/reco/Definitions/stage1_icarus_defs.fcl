@@ -114,6 +114,10 @@ icarus_analysis_modules:           [  caloskimE
                                      ,supera 
                                    ]
 
+icarus_analysis_larcv_modules:     [  @sequence::icarus_analysis_modules
+                                     ,supera 
+                                   ]
+
 # Set up filtering of cluster3D hits by cryostat
 icarus_filter_cluster3DCryoW:      [ cluster3DCryoW,
                                      TPCHitFilterCryoW
