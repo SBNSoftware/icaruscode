@@ -199,19 +199,18 @@ icarus_stage1_producers.cluster3DCryoE.Hit3DBuilderAlg.OutputHistograms:        
 ### Definitions for a pandora by cryostat
 icarus_stage1_producers.pandoraGausCryoW.HitFinderModuleLabel:                                   "cluster3DCryoW"
 icarus_stage1_producers.pandoraTrackGausCryoW.PFParticleLabel:                                   "pandoraGausCryoW"
+icarus_stage1_producers.pandoraTrackGausCryoW.UseAllParticles:                                   true
 icarus_stage1_producers.pandoraKalmanTrackGausCryoW.inputCollection:                             "pandoraGausCryoW"
 icarus_stage1_producers.pandoraKalmanTrackGausCryoW.trackInputTag:                               "pandoraTrackGausCryoW"
 
 icarus_stage1_producers.pandoraGausCryoE.HitFinderModuleLabel:                                   "cluster3DCryoE"
 icarus_stage1_producers.pandoraTrackGausCryoE.PFParticleLabel:                                   "pandoraGausCryoE"
+icarus_stage1_producers.pandoraTrackGausCryoE.UseAllParticles:                                   true
 icarus_stage1_producers.pandoraKalmanTrackGausCryoE.inputCollection:                             "pandoraGausCryoE"
 icarus_stage1_producers.pandoraKalmanTrackGausCryoE.trackInputTag:                               "pandoraTrackGausCryoE"
 
 icarus_stage1_producers.caloskimCalorimetryCryoE.TrackModuleLabel:                               "pandoraTrackGausCryoE"
 icarus_stage1_producers.caloskimCalorimetryCryoW.TrackModuleLabel:                               "pandoraTrackGausCryoW"
-
-icarus_stage1_producers.pandoraTrackGausCryoW.UseAllParticles:                                   true
-icarus_stage1_producers.pandoraTrackGausCryoE.UseAllParticles:                                   true
 
 ## Switch pandora back to just gaushits?
 #icarus_stage1_producers.pandoraGausCryoW.ConfigFile:                                             "PandoraSettings_Master_ICARUS_RawICARUS.xml"
@@ -219,8 +218,8 @@ icarus_stage1_producers.pandoraTrackGausCryoE.UseAllParticles:                  
 
 ## Definitions for shower finding (both single and by cryostat)
 icarus_stage1_producers.SBNShowerGausCryoW.PFParticleLabel:                                      "pandoraGausCryoW"
+icarus_stage1_producers.SBNShowerGausCryoW.UseAllParticles:                                      true
 icarus_stage1_producers.SBNShowerGausCryoE.PFParticleLabel:                                      "pandoraGausCryoE"
-icarus_stage1_producers.SBNShowerGausCryoW.UseAllParticles: 				         true
-icarus_stage1_producers.SBNShowerGausCryoE.UseAllParticles: 				         true
+icarus_stage1_producers.SBNShowerGausCryoE.UseAllParticles:                                      true
 
 END_PROLOG
