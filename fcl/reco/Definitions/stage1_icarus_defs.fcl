@@ -111,6 +111,7 @@ icarus_stage1_analyzers.caloskimW.SilenceMissingDataProducts: true
 icarus_analysis_modules:           [  caloskimE 
                                      ,caloskimW 
                                      ,simpleLightAna
+                                     ,CRTDataAnalysis
                                      ,supera 
                                    ]
 
