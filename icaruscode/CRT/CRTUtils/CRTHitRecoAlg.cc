@@ -62,6 +62,13 @@ void CRTHitRecoAlg::reconfigure(const fhicl::ParameterSet& pset){
   fCrtWindow        = pset.get<uint64_t>("CrtWindow", 0.);
   fCSVFile          = pset.get<std::string>("CSVFile", "");
   fData             = pset.get<bool>("Data", false);
+  fETtopX	    = pset.get<double>("ETtopX", 183.6);
+  fETtopY           = pset.get<double>("ETtopY", 981.0);
+  fETtopZ           = pset.get<double>("ETtopZ", -747.0);
+  fETbotX           = pset.get<double>("ETbotX", 183.6);
+  fETbotY           = pset.get<double>("ETbotY", 964.0);
+  fETbotZ           = pset.get<double>("ETbotZ", -747.0);
+
   if (!fCSVFile.empty())  filecsv.open(fCSVFile);
   /*{
     std::vector<std::vector<int32_t> > T1delays =  pset.get<std::vector<std::vector<int32_t> > >("FEB_T1delay_side");
@@ -541,14 +548,14 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeTopSpareHit(art::Ptr<CRTData> data, ULong64_
     thit1 -= (uint64_t) round(corr);
     TVector3 Module (0,0,0);
     if((int)mac==233){
-        Module.SetY(964);
-        Module.SetX(183.6);
-	Module.SetZ(-747);
+        Module.SetY(fETbotY);
+        Module.SetX(fETbotX);
+	Module.SetZ(fETbotZ);
     }
     else if ((int)mac==234){
-        Module.SetY(981);
-	Module.SetX(183.6);
-	Module.SetZ(-747);
+        Module.SetY(fETtopY);
+	Module.SetX(fETtopX);
+	Module.SetZ(fETtopZ);
     }
     TVector3 const hitpoint = hitpos + Module;
     std::cout<<"Sector "<<sector<<" correction: "<<TopCRT_TimingCorr[sector]<<" Final Position: "<<hitpoint.X()<<" "<<hitpoint.Y()<<" "<<hitpoint.Z()<<std::endl;
@@ -557,7 +564,7 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeTopSpareHit(art::Ptr<CRTData> data, ULong64_
     hitpointerr[2] = 23/sqrt(12);
     thit1 = (Long64_t)(thit-GlobalTrigger[(int)mac]);
     std::cout<<"GlobalTrigger "<<GlobalTrigger[(int)mac]<<"  t1 "<<thit1<<std::endl;
-    if((sum<10000 && thit1<2'001'000 && thit1>2'000'000)||data->IsReference_TS1() || data->IsReference_TS0()) return FillCRTHit({},{},0,0,0,0,0,0,0,0,0,0,"");
+    if((sum<9000 && thit1<2'001'000 && thit1>2'000'000)||data->IsReference_TS1() || data->IsReference_TS0()) return FillCRTHit({},{},0,0,0,0,0,0,0,0,0,0,"");
 
     CRTHit hit = FillCRTHit({mac},pesmap,petot,thit,thit1,plane,hitpoint.X(),hitpointerr[0],
                             hitpoint.Y(),hitpointerr[1],hitpoint.Z(),hitpointerr[2],region);

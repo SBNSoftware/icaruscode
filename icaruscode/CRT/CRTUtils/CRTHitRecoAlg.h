@@ -188,6 +188,12 @@ class icarus::crt::CRTHitRecoAlg {
   uint64_t fCrtWindow;    ///< Looking data window within trigger timestamp [ns]
   std::ofstream filecsv;
   bool fData;             ///< look for only data
+  double fETtopX;
+  double fETtopY;
+  double fETtopZ;
+  double fETbotX;
+  double fETbotY;
+  double fETbotZ;
   const icarusDB::IICARUSChannelMap* fChannelMap = nullptr;
 
   CRTHit MakeTopSpareHit(art::Ptr<CRTData> data, ULong64_t GlobalTrigger[]);
