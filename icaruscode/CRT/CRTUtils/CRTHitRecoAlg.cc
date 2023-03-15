@@ -527,10 +527,10 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeTopSpareHit(art::Ptr<CRTData> data, ULong64_
             postrig = postmp;
         }
     }
-    if ((int)mac==234) hitpos.SetZ((23/2)+23*(maxx-4));
-    if ((int)mac==234) hitpos.SetX((23/2)+23*(11-maxz));
-    if ((int)mac==233) hitpos.SetZ((23/2)+23*(3-maxx));
-    if ((int)mac==233) hitpos.SetX((23/2)+23*(maxz-12));
+    if ((int)mac==234) hitpos.SetZ(-((23/2)+23*(maxx-4)));
+    if ((int)mac==234) hitpos.SetX(-((23/2)+23*(11-maxz)));
+    if ((int)mac==233) hitpos.SetZ(-((23/2)+23*(3-maxx)));
+    if ((int)mac==233) hitpos.SetX(-((23/2)+23*(maxz-12)));
     std::cout<<"Mac "<<(int)mac<<" Triggering Channels  "<<maxx<<" "<<maxz<<" Somma ADC "<<sum<<" Posizioni locali: "<<hitpos.X()<<" "<<hitpos.Y()<<" "<<hitpos.Z()<<std::endl;
     int sector=-1;
     if(findz==true && findx==true) sector=(maxz-8)*8+maxx;
