@@ -540,8 +540,16 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeTopSpareHit(art::Ptr<CRTData> data, ULong64_
     std::cout<<" --- T0 after "<<thit<<std::endl;
     thit1 -= (uint64_t) round(corr);
     TVector3 Module (0,0,0);
-    if((int)mac==233) Module.SetY(963);
-    else if ((int)mac==234) Module.SetY(978);
+    if((int)mac==233){
+        Module.SetY(964);
+        Module.SetX(183.6);
+	Module.SetZ(-747);
+    }
+    else if ((int)mac==234){
+        Module.SetY(981);
+	Module.SetX(183.6);
+	Module.SetZ(-747);
+    }
     TVector3 const hitpoint = hitpos + Module;
     std::cout<<"Sector "<<sector<<" correction: "<<TopCRT_TimingCorr[sector]<<" Final Position: "<<hitpoint.X()<<" "<<hitpoint.Y()<<" "<<hitpoint.Z()<<std::endl;
     hitpointerr[0] = 23/sqrt(12);
