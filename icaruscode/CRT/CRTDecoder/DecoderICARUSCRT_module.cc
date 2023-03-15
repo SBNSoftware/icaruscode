@@ -142,6 +142,7 @@ void crt::DecoderICARUSCRT::CorrectForCableDelay(icarus::crt::BernCRTTranslator 
       else {
         delay = FEB_delay_top.at(hit.mac5);
       }
+      if(hit.mac5==211 || hit.mac5==212) std::cout<<"Before everything, Raw counter for mac "<<hit.mac5<<" t0 "<<hit.ts0<<" with delay ( "<<delay<<" ) "<<hit.ts0+delay<<std::endl;
       hit.ts0 += delay;
       hit.ts0 %= 1'000'000'000;
       if(hit.ts0 < 0) hit.ts0 += 1000'000'000; //just in case the cable offset is negative (should be positive normally)
@@ -160,7 +161,7 @@ uint64_t crt::DecoderICARUSCRT::CalculateTimestamp(icarus::crt::BernCRTTranslato
    * see: https://sbn-docdb.fnal.gov/cgi-bin/private/DisplayMeeting?sessionid=7783
    */
   int32_t ts0  = hit.ts0; //must be signed int
-
+  if(hit.mac5==211 || hit.mac5==212) std::cout<<"Calculate TS for MAC "<<hit.mac5<<" T0 "<<ts0<<std::endl;
   uint64_t mean_poll_time = hit.last_poll_start/2 + hit.this_poll_end/2;
   int mean_poll_time_ns = mean_poll_time % (1000'000'000); 
   

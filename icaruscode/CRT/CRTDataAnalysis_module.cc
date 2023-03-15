@@ -401,7 +401,6 @@ namespace crt {
       uint8_t mac = crtList[febdat_i]->fMac5;
       int adid = -1;
       char type = '\0';
-      std::cout<<"mac "<<(int)mac<<std::endl;
       if((int)mac==233 || (int)mac==234){
 	adid=(int)mac+73;
 	type='c';

@@ -194,6 +194,7 @@ vector<pair<sbn::crt::CRTHit, vector<int>>> CRTHitRecoAlg::CreateCRTHits(vector<
 	//For the time being, Only Top CRT delays are loaded, nothing to do for Side CRT yet
 	if (type == 'c' && crtList[crtdat_i]->IsReference_TS1()) {
 	    ULong64_t Ts0T1ResetEvent = crtList[crtdat_i]->fTs0 + FEB_delay_map.at((int)mac+73).T0_delay - FEB_delay_map.at((int)mac+73).T1_delay;
+	    if ((int)mac==233 || (int)mac==234) std::cout<<"ResetT1 of "<<(int)mac<<" VALUE "<<crtList[crtdat_i]->fTs0<<" t0delay "<<FEB_delay_map.at((int)mac+73).T0_delay<<" t1delay "<<FEB_delay_map.at((int)mac+73).T1_delay<<std::endl;
             TriggerArray[(int) mac]=Ts0T1ResetEvent;
             CRTReset.emplace_back((int) mac,Ts0T1ResetEvent); //single GT
 	    /*TriggerArray_top[(int) mac]=Ts0T1ResetEvent; 
@@ -523,7 +524,7 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeTopSpareHit(art::Ptr<CRTData> data, ULong64_
     if ((int)mac==234) hitpos.SetX((23/2)+23*(11-maxz));
     if ((int)mac==233) hitpos.SetZ((23/2)+23*(3-maxx));
     if ((int)mac==233) hitpos.SetX((23/2)+23*(maxz-12));
-    //std::cout<<"Mac "<<(int)mac<<" Triggering Channels  "<<maxx<<" "<<maxz<<" Somma ADC "<<sum<<" Posizioni locali: "<<hitpos.X()<<" "<<hitpos.Y()<<" "<<hitpos.Z()<<std::endl;
+    std::cout<<"Mac "<<(int)mac<<" Triggering Channels  "<<maxx<<" "<<maxz<<" Somma ADC "<<sum<<" Posizioni locali: "<<hitpos.X()<<" "<<hitpos.Y()<<" "<<hitpos.Z()<<std::endl;
     int sector=-1;
     if(findz==true && findx==true) sector=(maxz-8)*8+maxx;
     if(nabove==0||!findx||!findz)
@@ -534,17 +535,20 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeTopSpareHit(art::Ptr<CRTData> data, ULong64_
     thit1 -= fSiPMtoFEBdelay;
     double corr = 0;
     if(findz==true && findx==true) corr=TopCRT_TimingCorr[sector];
+    std::cout<<"T0 pre "<<thit;
     thit -= (uint64_t) round(corr);
+    std::cout<<" --- T0 after "<<thit<<std::endl;
     thit1 -= (uint64_t) round(corr);
     TVector3 Module (0,0,0);
     if((int)mac==233) Module.SetY(963);
     else if ((int)mac==234) Module.SetY(978);
     TVector3 const hitpoint = hitpos + Module;
-    //std::cout<<"Sector "<<sector<<" Final Position: "<<hitpoint.X()<<" "<<hitpoint.Y()<<" "<<hitpoint.Z()<<std::endl;
+    std::cout<<"Sector "<<sector<<" correction: "<<TopCRT_TimingCorr[sector]<<" Final Position: "<<hitpoint.X()<<" "<<hitpoint.Y()<<" "<<hitpoint.Z()<<std::endl;
     hitpointerr[0] = 23/sqrt(12);
     hitpointerr[1] = 1.5;
     hitpointerr[2] = 23/sqrt(12);
     thit1 = (Long64_t)(thit-GlobalTrigger[(int)mac]);
+    std::cout<<"GlobalTrigger "<<GlobalTrigger[(int)mac]<<"  t1 "<<thit1<<std::endl;
     if((sum<10000 && thit1<2'001'000 && thit1>2'000'000)||data->IsReference_TS1() || data->IsReference_TS0()) return FillCRTHit({},{},0,0,0,0,0,0,0,0,0,0,"");
 
     CRTHit hit = FillCRTHit({mac},pesmap,petot,thit,thit1,plane,hitpoint.X(),hitpointerr[0],
@@ -577,8 +581,8 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeTopHit(art::Ptr<CRTData> data, ULong64_t Glo
     double sum=0;
     for(int chan=0; chan<32; chan++) {
 	sum=sum+data->fAdc[chan];
-        std::pair<double,double> const chg_cal = fChannelMap->getSideCRTCalibrationMap((int)crtList[febdat_i]->fMac5,chan);
-        float pe = (crtList[febdat_i]->fAdc[chan]-chg_cal.second)/chg_cal.first;
+        std::pair<double,double> const chg_cal = fChannelMap->getSideCRTCalibrationMap((int)data->fMac5,chan);
+        float pe = (data->fAdc[chan]-chg_cal.second)/chg_cal.first;
 	if(pe<0) pe=0;
         // float pe = (data->fAdc[chan]-ftopPed)/ftopGain;
 //      if(pe<=fPEThresh) continue;
