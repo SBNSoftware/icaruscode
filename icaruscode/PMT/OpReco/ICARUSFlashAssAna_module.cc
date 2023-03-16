@@ -267,7 +267,7 @@ void opana::ICARUSFlashAssAna::beginJob() {
   
     for( auto const & label : fOpDetWaveformLabels ) {
 
-      std::string name = label.label()+"wfttree";
+      std::string name = label.label()+label.instance()+"wfttree";
       std::string info = "TTree with aggregated optical waveform information with label: " + label.label();
 
       TTree* ttree = tfs->make<TTree>(name.c_str(), info.c_str());
