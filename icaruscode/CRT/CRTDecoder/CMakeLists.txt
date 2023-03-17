@@ -180,5 +180,17 @@ cet_build_plugin( DecoderICARUSCRT art::module
   artdaq_core::artdaq-core_Data
   sbnobj::Common_CRT
 )
+cet_build_plugin( DecoderICARUSCRTNew art::module
+  LIBRARIES
+  icaruscode_Utilities
+  art::Framework_Services_Registry
+  art_root_io::tfile_support
+  art_root_io::TFileService_service
+  ROOT::Core ROOT::Tree ROOT::Hist
+  artdaq_core::artdaq-core_Utilities
+  sbndaq_artdaq_core::sbndaq-artdaq-core_Overlays_Common
+  artdaq_core::artdaq-core_Data
+  sbnobj::Common_CRT
+)
 
 install_fhicl()

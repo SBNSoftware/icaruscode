@@ -4,6 +4,7 @@
 
 #include "icaruscode/IcarusObj/SimEnergyDepositSummary.h"
 #include "icaruscode/IcarusObj/CRTTPCMatchingInfo.h"
+#include "icaruscode/IcarusObj/CRTDataRaw.h"
 #include "icaruscode/IcarusObj/OpDetWaveformMeta.h"
 #include "icaruscode/IcarusObj/PMTWaveformTimeCorrection.h"
 #include "icaruscode/IcarusObj/ChannelROI.h"
