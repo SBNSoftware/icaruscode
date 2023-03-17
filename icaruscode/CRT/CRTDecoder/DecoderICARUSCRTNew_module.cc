@@ -172,7 +172,6 @@ uint64_t crt::DecoderICARUSCRTNew::CalculateTimestamp(icarus::crt::BernCRTTransl
 
 void crt::DecoderICARUSCRTNew::produce(art::Event& evt)
 {
-  std::cout<<"AAHHHH UN NUOVO EVENTO"<<std::endl;
   util::LocalArtHandleTrackerManager dataCacheRemover
     (evt, fDropRawDataAfterUse);
   
@@ -188,7 +187,6 @@ void crt::DecoderICARUSCRTNew::produce(art::Event& evt)
   }
   
   std::vector<icarus::crt::BernCRTTranslator> hit_vector;
-  std::cout<<"Fin qui ci siamo. A. "<<std::endl;
   for (auto const& handle : fragmentHandles) {
     if (!handle.isValid()) continue;
     
@@ -217,6 +215,9 @@ void crt::DecoderICARUSCRTNew::produce(art::Event& evt)
   // vector: Mac5 -> its CRT data
   std::vector<icarus::crt::CRTDataRaw> allCRTdata;
   for (auto & hit : hit_vector){
+    uint64_t CounterT0 = hit.ts0;
+    uint64_t CounterT1 = hit.ts1;
+    uint64_t mean_poll_time = hit.last_poll_start/2 + hit.this_poll_end/2;
     CorrectForCableDelay(hit);  //add PPS cable length
 
     if(IsSideCRT(hit)) {
@@ -462,7 +463,10 @@ void crt::DecoderICARUSCRTNew::produce(art::Event& evt)
         if (recipe.firstSourceChannel == recipe.lastSourceChannel) continue;
         icarus::crt::CRTDataRaw data;
         data.fMac5  = recipe.destMac5;
+        data.fCounterT0 = CounterT0;
+	data.fCounterT1 = CounterT1;
         data.fTs0   = CalculateTimestamp(hit);
+	data.fFullSecond = mean_poll_time - mean_poll_time % 1000000000;
         data.fTs1   = hit.ts1;
         data.fFlags                   = hit.flags;
         data.fThisPollStart           = hit.this_poll_start;
@@ -486,6 +490,9 @@ void crt::DecoderICARUSCRTNew::produce(art::Event& evt)
       //this code needs review by the TOP CRT group!!!
         icarus::crt::CRTDataRaw data;
         data.fMac5  = fChannelMap->gettopSimMacAddress(hit.mac5); 
+	data.fCounterT0 = CounterT0;
+	data.fCounterT1 = CounterT1;
+	data.fFullSecond = mean_poll_time - mean_poll_time % 1000000000;
         data.fTs0   = CalculateTimestamp(hit);
         data.fTs1   = hit.ts1;
         data.fFlags                   = hit.flags;
@@ -502,16 +509,13 @@ void crt::DecoderICARUSCRTNew::produce(art::Event& evt)
     }
 
   } // loop over all hits in an event
-  std::cout<<"Uff forse siamo alla fine."<<std::endl;
   // move the data which is actually present in the final data product
   auto crtdata = std::make_unique<std::vector<icarus::crt::CRTDataRaw>>();
   for (icarus::crt::CRTDataRaw& crtDataElem: allCRTdata) {
     if (crtDataElem.fMac5 == 0) continue; // not a valid Mac5, data is not present
     crtdata->push_back(std::move(crtDataElem));
   }
-  std::cout<<"QUASI QUASI  "<<crtdata->size()<<std::endl;
   evt.put(std::move(crtdata));
-  std::cout<<"OOOOOK"<<std::endl;
 }
 
 DEFINE_ART_MODULE(crt::DecoderICARUSCRTNew)

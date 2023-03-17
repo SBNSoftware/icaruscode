@@ -83,9 +83,10 @@
 
   <!-- CRT Data Raw -->
   <class name="icarus::crt::CRTDataRaw" ClassVersion="10" >
-   <version ClassVersion="10" checksum="" />
+   <version ClassVersion="10" checksum="2404808299"/>
   </class>
   <class name="std::vector<icarus::crt::CRTDataRaw>" />
+  <class name="art::Wrapper<vector<icarus::crt::CRTDataRaw>>" />
   <!-- CRT matching metadata -->
   <class name="icarus::CRTTPCMatchingInfo" ClassVersion="10" >
    <version ClassVersion="10" checksum="3174835328"/>

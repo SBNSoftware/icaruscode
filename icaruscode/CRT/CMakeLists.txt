@@ -15,6 +15,7 @@ art_make(
         CRTTrackProducer_module.cc
         CRTSimAnalysis_module.cc
         CRTDataAnalysis_module.cc
+	CRTDataRawAnalysis_module.cc
         CrtOpHitMatchAnalysis_module.cc
         CRTTruthMatchAnalysis_module.cc
         CRTAutoVeto_module.cc
@@ -206,6 +207,29 @@ cet_build_plugin(CRTDataAnalysis art::module
         ROOT::XMLIO
         ROOT::Gdml
         )
+
+cet_build_plugin(CRTDataRawAnalysis art::module
+     LIBRARIES
+        artdaq_core::artdaq-core_Data
+        sbnobj::ICARUS_CRT
+        icaruscode_CRT
+        sbnobj::Common_CRT
+        icaruscode_CRTUtils
+        larcore::Geometry_Geometry_service
+        larcorealg::Geometry
+        nusimdata::SimulationBase
+        art::Framework_Services_Registry
+        art_root_io::tfile_support ROOT::Core
+        art_root_io::TFileService_service
+        messagefacility::MF_MessageLogger
+        messagefacility::headers
+        ROOT::Core
+        ROOT::Tree
+        ROOT::Geom
+        ROOT::XMLIO
+        ROOT::Gdml
+        )
+
 
 cet_build_plugin(CRTCalibrationAnalysis art::module
      LIBRARIES
