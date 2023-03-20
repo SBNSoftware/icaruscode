@@ -56,7 +56,7 @@ icarus_genie_BNB_base: {
   BeamName:             "booster"
   EventGeneratorList:   "Default"
 # FluxCopyMethod:       "IFDH"
-  FluxSearchPaths:      "/pnfs/icarus/persistent/bnb_gsimple/fluxes_Oct2017/"
+  FluxSearchPaths:      "/cvmfs/sbn.osgstorage.org/pnfs/fnal.gov/usr/sbn/persistent/stash/physics/beam/GENIE/BNB/standard/v01_00/"
   FluxFiles:            ["converted_beammc_icarus_*.root"]
   GHepPrintLevel:       13
   POTPerSpill:          5.0e12
