@@ -2,6 +2,6 @@
 
 #include "stage1_icarus_driver_common.fcl"
 
-physics.outana:    [ @sequence::icarus_larcv_analysis_modules ]
+physics.outana:    [ @sequence::icarus_analysis_larcv_modules ]
 physics.end_paths: [ outana, stream1 ]
 

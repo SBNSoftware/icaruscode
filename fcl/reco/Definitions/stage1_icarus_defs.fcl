@@ -112,7 +112,6 @@ icarus_analysis_modules:           [  caloskimE
                                      ,caloskimW 
                                      ,simpleLightAna
                                      ,CRTDataAnalysis
-                                     ,supera 
                                    ]
 
 icarus_analysis_larcv_modules:     [  @sequence::icarus_analysis_modules
