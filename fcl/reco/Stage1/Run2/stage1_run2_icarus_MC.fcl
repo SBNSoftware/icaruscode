@@ -1,6 +1,5 @@
 
 #include "mchitmodules.fcl"
-#include "mcreco.fcl"
 #include "mctrutht0matching.fcl"
 #include "backtrackerservice.fcl"
 #include "particleinventoryservice.fcl"
