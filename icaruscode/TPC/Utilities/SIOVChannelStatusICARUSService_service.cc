@@ -2,6 +2,7 @@
 #include "art/Framework/Services/Registry/ActivityRegistry.h"
 #include "art/Framework/Services/Registry/ServiceDefinitionMacros.h"
 #include "art/Persistency/Provenance/ScheduleContext.h"
+#include "messagefacility/MessageLogger/MessageLogger.h"
 #include "fhiclcpp/ParameterSet.h"
 #include "larcore/CoreUtils/EnsureOnlyOneSchedule.h"
 #include "larevt/CalibrationDBI/Interface/ChannelStatusService.h"
