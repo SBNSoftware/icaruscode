@@ -27,8 +27,8 @@
 #include "services_icarus_simulation.fcl"
 #include "largeantmodules_icarus.fcl"
 #include "photpropservices_icarus.fcl"
-#include "g4inforeducer.fcl"
-#include "mcreco.fcl"
+##include "g4inforeducer.fcl"
+##include "mcreco.fcl"
 
 process_name: G4
 
@@ -65,10 +65,10 @@ physics:
                   EDepTag:     "largeant:TPCActive"
                   MakeAnaTree: false
                 }
-    sedlite:    @local::sbn_largeant_info_reducer # needs to run right after largeant
-         
-    # Saving MC information needed for the ML effort
-    mcreco:     @local::standard_mcreco
+#    sedlite:    @local::sbn_largeant_info_reducer # needs to run right after largeant
+#         
+#    # Saving MC information needed for the ML effort
+#    mcreco:     @local::standard_mcreco
 
    rns:      { module_type: "RandomNumberSaver" }
  }
@@ -104,13 +104,17 @@ services.LArG4Parameters.ParticleKineticEnergyCut: 0.0005
 physics.producers.larg4outtime.KeepParticlesInVolumes: [ "volDetEnclosure" ]
 physics.producers.larg4outtime.InputLabels: [ "GenInTimeSorter:outtime" ]
 
-# ------------------------------------------------------------------------------
-
-# Configure mcreco to read SEDLite instead of SED and MCParticleLite in addition to MCParticle
-physics.producers.mcreco.SimChannelLabel: "sedlite"
-physics.producers.mcreco.MCParticleLabel: "largeant"
-physics.producers.mcreco.MCParticleLiteLabel: "largeant"
-physics.producers.mcreco.UseSimEnergyDeposit: false
-physics.producers.mcreco.MCRecoPart.SavePathPDGList: [13,-13,211,-211,111,311,310,130,321,-321,2212,2112,2224,2214,2114,1114,3122,1000010020,1000010030,1000020030,1000020040]
-physics.producers.mcreco.UseSimEnergyDepositLite: true
-physics.producers.mcreco.IncludeDroppedParticles: true
+## Store MCParticleLite in G4 to store dropped particles from KeepEMShowerDaughters: false
+#physics.producers.larg4outtime.StoreDroppedMCParticles: true
+#
+## ------------------------------------------------------------------------------
+#
+## Configure mcreco to read SEDLite instead of SED and MCParticleLite in addition to MCParticle
+#physics.producers.mcreco.SimChannelLabel: "sedlite"
+#physics.producers.mcreco.MCParticleLabel: "largeant"
+#physics.producers.mcreco.MCParticleLiteLabel: "largeant"
+#physics.producers.mcreco.UseSimEnergyDeposit: false
+#physics.producers.mcreco.MCRecoPart.SavePathPDGList: [13,-13,211,-211,111,311,310,130,321,-321,2212,2112,2224,2214,2114,1114,3122,1000010020,1000010030,1000020030,1000020040]
+#physics.producers.mcreco.UseSimEnergyDepositLite: true
+#physics.producers.mcreco.IncludeDroppedParticles: true
+#
