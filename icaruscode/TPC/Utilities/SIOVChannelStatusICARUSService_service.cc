@@ -50,7 +50,13 @@ namespace lariov {
 
   void SIOVChannelStatusICARUSService::PreProcessEvent(const art::Event& evt, art::ScheduleContext)
   {
-    std::uint64_t timeStamp = std::uint64_t(evt.time().timeHigh()) * 1000000000 + std::uint64_t(evt.time().timeLow());
+    // LArSoft follows MicroBooNE convention where time stamp is in ns referenced to the epoch
+    std::uint64_t timeStamp = evt.time().value();
+
+    // We need to use a different format if we are looking at data
+    // ICARUS convention is upper 32 bits ("timeHigh") are seconds references to the epoch
+    // and then the lower 32 bits ("timeLow") are in ns referenced to the seconds above
+    if (evt.isRealData()) timeStamp = std::uint64_t(evt.time().timeHigh()) * 1000000000 + std::uint64_t(evt.time().timeLow());
 
     mf::LogInfo("SIOVChannelStatusICARUSService") << "==> PreProcessEvent using timestamp (ns): " << timeStamp << ", timeHigh: " << evt.time().timeHigh() << ", timeLow: " << evt.time().timeLow();
 
