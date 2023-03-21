@@ -27,6 +27,7 @@
 #include "services_icarus_simulation.fcl"
 #include "largeantmodules_icarus.fcl"
 #include "photpropservices_icarus.fcl"
+#include "g4inforeducer.fcl"
 #include "mcreco.fcl"
 
 process_name: G4
@@ -102,9 +103,6 @@ outputs:
 services.LArG4Parameters.ParticleKineticEnergyCut: 0.0005
 physics.producers.larg4outtime.KeepParticlesInVolumes: [ "volDetEnclosure" ]
 physics.producers.larg4outtime.InputLabels: [ "GenInTimeSorter:outtime" ]
-
-# Store MCParticleLite in G4 to store dropped particles from KeepEMShowerDaughters: false
-physics.producers.largeant.StoreDroppedMCParticles: true
 
 # ------------------------------------------------------------------------------
 
