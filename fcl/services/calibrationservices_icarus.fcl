@@ -30,7 +30,7 @@ BEGIN_PROLOG
 #    
 # In the below, "standard" means no DB and a perfect Detector
 # Change this to "icarus" to access the channel status DB
-icarus_channelstatusservice: @local::standard_siov_channelstatus_service # from `database_standard.fcl` (`larevt`)
+icarus_channelstatusservice: @local::icarus_siov_channelstatus_service # from `database_standard.fcl` (`larevt`)
 
 
 # ##############################################################################

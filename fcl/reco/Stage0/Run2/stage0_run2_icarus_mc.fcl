@@ -24,7 +24,8 @@ physics.outana:        [ purityinfoana0, purityinfoana1 ]
 physics.trigger_paths: [ path ]
 physics.end_paths:     [ outana, streamROOT ]
 
-# Drop the artdaq format files on output
+# Drop data products that are no longer needed, but make sure to keep important items!
+# For example, we need to drop the RawDigits from the detector simulation stage but want to keep the SimChannel info from WireCell...
 outputs.rootOutput.outputCommands: ["keep *_*_*_*", "drop *_daq*_*_*", "drop *_MCDecodeTPCROI_*_*", "drop *_decon1droi_*_*", "drop recob::Wire*_roifinder_*_*", "keep *_daq_simpleSC_*"]
 
 # Set the expected input for ophit
