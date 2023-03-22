@@ -15,18 +15,18 @@
 
 #include <map>
 
-namespace HitCollectionTools {
+namespace lar_pandora {
 
-  class LArPandoraHitCollectionToolICARUS : public HitCollectionTool
+  class LArPandoraHitCollectionToolICARUS : public IHitCollectionTool
   {
   public:
     explicit LArPandoraHitCollectionToolICARUS(const fhicl::ParameterSet& pset);
-    void CollectHits(const art::Event& evt, const std::string& label, lar_pandora::HitVector& hitVector) override;
+    void CollectHits(const art::Event& evt, const std::string& label, HitVector& hitVector) override;
   };
 
   LArPandoraHitCollectionToolICARUS::LArPandoraHitCollectionToolICARUS(const fhicl::ParameterSet& pset){}
 
-  void LArPandoraHitCollectionToolICARUS::CollectHits(const art::Event& evt, const std::string& label, lar_pandora::HitVector& hitVector)
+  void LArPandoraHitCollectionToolICARUS::CollectHits(const art::Event& evt, const std::string& label, HitVector& hitVector)
   {
     std::map< std::pair<raw::ChannelID_t, int>, unsigned int > channelTimeHits; // converting the float PeakTime to int for the second item in pair
 
@@ -51,6 +51,6 @@ namespace HitCollectionTools {
     mf::LogDebug("LArPandoraHitCollectionToolICARUS") << "  Passing along " << hitVector.size() << " Hits " << std::endl;
   }
 
-} // namespace HitCollectionTools
+} // namespace lar_pandora
 
-DEFINE_ART_CLASS_TOOL(HitCollectionTools::LArPandoraHitCollectionToolICARUS)
+DEFINE_ART_CLASS_TOOL(lar_pandora::LArPandoraHitCollectionToolICARUS)
