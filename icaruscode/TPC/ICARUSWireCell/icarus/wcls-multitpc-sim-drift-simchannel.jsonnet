@@ -44,9 +44,24 @@ local output = 'wct-sim-ideal-sig.npz';
 
 local wcls_maker = import 'pgrapher/ui/wcls/nodes.jsonnet';
 local wcls = wcls_maker(params, tools);
+//local wcls_input = {
+//  // depos: wcls.input.depos(name="", art_tag="ionization"),
+//  depos: wcls.input.depos(name='electron', art_tag='ionization'),  // default art_tag="blopper"
+//};
+
+//Haiwang DepoSetSource Implementation:
 local wcls_input = {
-  // depos: wcls.input.depos(name="", art_tag="ionization"),
-  depos: wcls.input.depos(name='electron', art_tag='ionization'),  // default art_tag="blopper"
+	depos: wcls.input.depos(name="", art_tag="IonAndScint"),
+	deposet: g.pnode({
+        	type: 'wclsSimDepoSetSource',
+        	name: "electron",
+        	data: {
+            	model: "",
+            	scale: -1, //scale is -1 to correct a sign error in the SimDepoSource converter.
+            	art_tag: "ionization", //name of upstream art producer of depos "label:instance:processName"
+            	assn_art_tag: "",
+        	},
+    	}, nin=0, nout=1),
 };
 
 // Collect all the wc/ls output converters for use below.  Note the
@@ -264,7 +279,8 @@ local pipe_reducer = util.fansummer('DepoSetFanout', analog_pipes, frame_summers
 local sink = sim.frame_sink;
 
 // local graph = g.pipeline([wcls_input.depos, drifter,  wcls_simchannel_sink, bagger, pipe_reducer, retagger, wcls_output.sim_digits, sink]);
-local graph = g.pipeline([wcls_input.depos, drifter,  wcls_simchannel_sink, bagger, pipe_reducer, sink]);
+//local graph = g.pipeline([wcls_input.depos, drifter,  wcls_simchannel_sink, bagger, pipe_reducer, sink]);
+local graph = g.pipeline([wcls_input.deposet, setdrifter, pipe_reducer, sink]);
 
 local app = {
   type: 'Pgrapher',

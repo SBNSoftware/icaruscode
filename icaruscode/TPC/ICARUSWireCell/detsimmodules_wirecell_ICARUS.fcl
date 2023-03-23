@@ -19,10 +19,10 @@ icarus_simwire_wirecell:
         configs: ["pgrapher/experiment/icarus/wcls-multitpc-sim-drift-simchannel.jsonnet"]
         // Contract note: these exact "type:name" must be used to identify
         // the configuration data structures for these components in the Jsonnet.
-        inputers: ["wclsSimDepoSource:electron"]
+        inputers: ["wclsSimDepoSetSource:electron"]
         outputers: 
         [
-            "wclsSimChannelSink:postdrift",
+            "wclsDepoSetSimChannelSink:postdrift",
             "wclsFrameSaver:simdigits0",
             "wclsFrameSaver:simdigits1",
             "wclsFrameSaver:simdigits2",
