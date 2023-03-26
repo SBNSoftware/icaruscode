@@ -43,8 +43,7 @@ namespace lar_pandora {
 
     for (unsigned int i = 0; i < theHits->size(); ++i) {
       const art::Ptr<recob::Hit> hit(theHits, i);
-      if ( channelTimeHits.find(std::make_pair(hit->Channel(), int(hit->PeakTime()))) == channelTimeHits.end() ) channelTimeHits[std::make_pair(hit->Channel(), int(hit->PeakTime()))] = 1;
-      else continue;
+      if ( std::exchange( channelTimeHits[std::make_pair(hit->Channel(),int(hit->PeakTime()))], 1 ) ) continue;
       hitVector.push_back(hit);
     }
 
