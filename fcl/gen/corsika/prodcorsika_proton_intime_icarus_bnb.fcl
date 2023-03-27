@@ -133,4 +133,3 @@ physics.producers.generator.SubBoxLength: "subboxLength 60 "
 services.LArG4Parameters.ParticleKineticEnergyCut: 0.0005
 physics.producers.larg4intime.KeepParticlesInVolumes: [ "volDetEnclosure" ]
 physics.producers.larg4intime.InputLabels: [ "GenInTimeSorter:intime" ]
-physics.producers.larg4intime.StoreDroppedMCParticles: true
