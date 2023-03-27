@@ -131,6 +131,13 @@ local wcls_output = {
 
 //local deposio = io.numpy.depos(output);
 local drifter = sim.drifter;
+local setdrifter = g.pnode({
+            type: 'DepoSetDrifter',
+            data: {
+                drifter: "Drifter"
+            }
+        }, nin=1, nout=1,
+        uses=[drifter]);
 local bagger = sim.make_bagger();
 
 // signal plus noise pipelines
