@@ -27,8 +27,8 @@
 #include "services_icarus_simulation.fcl"
 #include "largeantmodules_icarus.fcl"
 #include "photpropservices_icarus.fcl"
-##include "g4inforeducer.fcl"
-##include "mcreco.fcl"
+#include "g4inforeducer.fcl"
+#include "mcreco.fcl"
 
 process_name: G4
 
