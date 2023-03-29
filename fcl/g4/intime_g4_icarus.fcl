@@ -56,7 +56,7 @@ physics:
  {
     larg4outtime:  @local::icarus_largeant
     largeant: {
-      module_type: "MergeSimSources"
+      module_type: "MergeSimSourcesSBN"
       InputSourcesLabels: [ "larg4intime","larg4outtime"]
       TrackIDOffsets: [ 10000000,20000000 ]
     }
