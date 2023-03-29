@@ -471,14 +471,21 @@ void SnippetHit3DBuilderICARUS::BuildChannelStatusVec(PlaneToWireToHitSetMap& pl
     // Loop through the channels and mark those that are "bad"
     for(size_t channel = 0; channel < m_geometry->Nchannels(); channel++)
     {
-        if( m_channelFilter->IsPresent(channel) && !m_channelFilter->IsGood(channel))
-        {
-            std::vector<geo::WireID>                wireIDVec = m_geometry->ChannelToWire(channel);
-            geo::WireID                             wireID    = wireIDVec[0];
-            lariov::ChannelStatusProvider::Status_t chanStat  = m_channelFilter->Status(channel);
+        try
+        {  
+            if( m_channelFilter->IsPresent(channel) && !m_channelFilter->IsGood(channel))
+            {
+                std::vector<geo::WireID>                wireIDVec = m_geometry->ChannelToWire(channel);
+                geo::WireID                             wireID    = wireIDVec[0];
+                lariov::ChannelStatusProvider::Status_t chanStat  = m_channelFilter->Status(channel);
 
-            m_channelStatus[wireID.Plane][wireID.Wire] = chanStat;
-            m_numBadChannels++;
+                m_channelStatus[wireID.Plane][wireID.Wire] = chanStat;
+                m_numBadChannels++;
+            }
+        }
+        catch(...)
+        {
+            mf::LogDebug("SnippetHit3D") << "--> Channel: " << channel << " threw exception so we will skip" << std::endl;
         }
     }
 
@@ -592,7 +599,9 @@ void SnippetHit3DBuilderICARUS::BuildHit3D(reco::HitPairList& hitPairList) const
 
     // The first task is to take the lists of input 2D hits (a map of view to sorted lists of 2D hits)
     // and then to build a list of 3D hits to be used in downstream processing
+    std::cout << "--> Calling BuildChannelStatusVec" << std::endl;
     BuildChannelStatusVec(m_planeToWireToHitSetMap);
+    std::cout << "--- done with channel status building" << std::endl;
 
     size_t numHitPairs = BuildHitPairMap(m_planeToSnippetHitMap, hitPairList);
 
