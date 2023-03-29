@@ -310,7 +310,7 @@ icarus::trigger::BeamGateInfoFromTracks::BeamGateInfoFromTracks
   // configuration report (short)
   //
   auto const& beamType
-    = Config::GateTypeSelector.get(Config::GateType_t{ fBeamGateType });
+    = Config::GateTypeSelector.get(static_cast<Config::GateType_t>(fBeamGateType));
   
   mf::LogInfo{ fLogCategory }
     << "Configuration:"
