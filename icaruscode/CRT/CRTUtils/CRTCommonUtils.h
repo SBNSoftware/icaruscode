@@ -44,6 +44,14 @@ class icarus::crt::CRTCommonUtils {
  public:
     CRTCommonUtils();
 
+    struct boundary_plane{
+        double xmin, xmax, ymin, ymax, zmin, zmax;
+        int thin_range;//<range of wall that is thinnest, x=0, y=1, z=2
+	std::string region_name;
+	int region_num;
+    };
+
+//    bool	   IsInCRTVolume(TVector3 point);
     int            GetAuxDetTypeCode(size_t adid);
     char           GetAuxDetType(size_t adid);
     string         GetAuxDetRegion(size_t adid);

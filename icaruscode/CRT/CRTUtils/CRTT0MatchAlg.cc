@@ -490,27 +490,12 @@ namespace icarus{
       thisend.SetX(end.X()+xshift);
       // repeat SCE correction for endpoints
       if (fSCE->EnableCalSpatialSCE() && fSCEposCorr) {
-//	geo::Point_t temppt = {thisstart.X(),thisstart.Y(),thisstart.Z()};
 	geo::TPCID tpcid = fGeometryService->PositionToTPCID(thisstart);
-//	geo::Vector_t  fPosOffsets = fSCE->GetCalPosOffsets(temppt,tpcid.TPC);
 	thisstart+= fSCE->GetCalPosOffsets(thisstart,tpcid.TPC);
-/*	thisstart[0] += fPosOffsets.X();
-	thisstart[1] += fPosOffsets.Y();
-	thisstart[2] += fPosOffsets.Z();*/
-//	temppt.SetX(thisend.X());
-//	temppt.SetY(thisend.Y());
-//	temppt.SetZ(thisend.Z());
 	tpcid = fGeometryService->PositionToTPCID(thisend);
 	thisend+= fSCE->GetCalPosOffsets(thisend,tpcid.TPC);
-/*	fPosOffsets = fSCE->GetCalPosOffsets(temppt,tpcid.TPC);
-	thisend[0] += fPosOffsets.X();
-	thisend[1] += fPosOffsets.Y();
-	thisend[2] += fPosOffsets.Z();*/
 
       }
-//      TVector3 thisstart_v(thisstart.X(),thisstart.Y(),thisstart.Z());
-//      TVector3 thisend_v(thisend.X(),thisend.Y(),thisend.Z());
-
 
       matchCand newmc;// = makeNULLmc();
       if (startDist<fDistanceLimit || endDist<fDistanceLimit) {
@@ -1062,6 +1047,461 @@ namespace icarus{
 	return crtTime;
 
     }//end definition of double CRTT0MatchAlg::GetCRTTime(sbn::crt:CRTHit const& crthit, uint64_t trigger_timestamp, bool isdata) const
+
+
+/////////////////////////////////////////////////////////////
+
+  //This is the function that is typically called by the user to associate CRT Hits with TPC tracks.
+  //It differs from the other similar function in a few ways, this one takes in a vector of art::Ptrs to the recob::Hits 
+  //inside the recob::Track as well as the track itself. 
+  //It pre-processes the recob::Hits to get the TPC drift direction as well as the TPC X limits and the min/max allowed T0
+  //given the X range of the recob::Hits in that TPC, which are also fed into the similar (non-vector) function to 
+  //assist with the matching process. I'm not 100% why this was the choice originally, I haven't disturbed it
+  //as it works for me right now. -TB 03/22/23
+  matchCand_PCA CRTT0MatchAlg::GetClosestCRTHit_PCA(detinfo::DetectorPropertiesData const& detProp,
+					    recob::Track const& tpcTrack, std::vector<art::Ptr<recob::Hit>> const& hits, 
+					    std::vector<sbn::crt::CRTHit> const& crtHits, uint64_t trigger_timestamp, bool IsData) {
+
+    auto start = tpcTrack.Vertex();
+    auto end   = tpcTrack.End();
+
+
+
+    // Get the drift direction from the TPC
+    int driftDirection = TPCGeoUtil::DriftDirectionFromHits(fGeometryService, hits);
+    //std::cout << "size of hit in a track: " << hits.size() << ", driftDirection: "<< driftDirection 
+    //	      << " , tpc: "<< hits[0]->WireID().TPC << std::endl; //<< " , intpc: "<< icarus::TPCGeoUtil::DetectedInTPC(hits) << std::endl;
+    std::pair<double, double> xLimits = TPCGeoUtil::XLimitsFromHits(fGeometryService, hits);
+    // Get the allowed t0 range
+    std::pair<double, double> t0MinMax = TrackT0Range(detProp, start.X(), end.X(), driftDirection, xLimits);
+
+    return GetClosestCRTHit_PCA(detProp, tpcTrack, t0MinMax, crtHits, driftDirection, trigger_timestamp, IsData);
+
+  }
+
+
+
+/*  struct  matchCand_PCA {
+    sbn::crt::CRTHit thishit;
+    double t0 = DBL_MIN;
+    double dca = DBL_MIN;
+    double extrapLen = DBL_MIN;
+    int best_DCA_pos = -1;//-1=no match; 0=startdir is best; 1=enddir is best; 2=both start+end are equally good;
+    bool simple_cathodecrosser = false;
+    int driftdir = -5;
+    double t0min = DBL_MIN;
+    double t0max = DBL_MIN;
+    double crtTime = DBL_MIN;
+    TVector3 startDir{DBL_MIN,DBL_MIN,DBL_MIN};
+    TVector3 endDir{DBL_MIN,DBL_MIN,DBL_MIN};
+    TVector3 tpc_track_start{DBL_MIN,DBL_MIN,DBL_MIN};
+    TVector3 tpc_track_end{DBL_MIN,DBL_MIN,DBL_MIN};
+
+    TVector3 PCA_start_pos{-DBL_MAX,-DBL_MAX,-DBL_MAX};
+    TVector3 PCA_end_pos{-DBL_MAX,-DBL_MAX,-DBL_MAX};
+    TVector3 PCA_start_dir{-DBL_MAX,-DBL_MAX,-DBL_MAX};
+    TVector3 PCA_end_dir{-DBL_MAX,-DBL_MAX,-DBL_MAX};
+    TVector3 PCA_start_crtplanecross{-DBL_MAX,-DBL_MAX,-DBL_MAX};
+    TVector3 PCA_end_crtplanecross{-DBL_MAX,-DBL_MAX,-DBL_MAX};
+
+    double PCA_DCA_start = -1;
+    double PCA_DCA_end = -1;
+    double PCA_planedist_start = -1;
+    double PCA_planedist_end = -1;
+
+  };*/
+
+  //This is the main workhorse function, in that it takes in a TPC track and a vector of CRT Hits, then searches for the best match candidate. 
+  //Today I'm going to try to implement PCA into this to differ from the results found with the old method. 
+  matchCand_PCA CRTT0MatchAlg::GetClosestCRTHit_PCA(detinfo::DetectorPropertiesData const& detProp,
+					    recob::Track const& tpcTrack, std::pair<double, double> t0MinMax, 
+					    std::vector<sbn::crt::CRTHit> const& crtHits, int driftDirection, uint64_t& trigger_timestamp, bool IsData)  {
+
+    auto start = tpcTrack.Vertex();
+    auto end   = tpcTrack.End();
+
+    bool simple_cathode_crosscheck =( (std::abs(start.X()) < 210.215) != (std::abs(end.X()) < 210.215));
+    // ====================== Matching Algorithm ========================== //
+    //  std::vector<std::pair<sbn::crt::CRTHit, double>> t0Candidates;
+    std::vector<matchCand_PCA> t0Candidates;
+
+    TVector3 pca_start_pos, pca_end_pos, pca_start_dir, pca_end_dir, pca_start_crtcross, pca_end_crtcross;
+    endpoint_PCA_ana(tpcTrack,true,pca_start_dir,pca_start_pos);
+    endpoint_PCA_ana(tpcTrack,true,pca_end_dir,pca_end_pos);
+
+    // Loop over all the CRT hits
+    for(auto &crtHit : crtHits){
+
+      TVector3 crthitposvec(crtHit.x_pos,crtHit.y_pos,crtHit.z_pos);
+
+      // Check if hit is within the allowed t0 range
+      double crtTime = GetCRTTime(crtHit,trigger_timestamp,IsData);  // units are us
+
+      // If track is stitched then try all hits
+      if (!((crtTime >= t0MinMax.first - 10. && crtTime <= t0MinMax.second + 10.) 
+            || t0MinMax.first == t0MinMax.second)) continue;
+
+      // cut on CRT hit PE value
+      if (crtHit.x_err>fMaxUncert) continue;
+      if (crtHit.y_err>fMaxUncert) continue;
+      if (crtHit.z_err>fMaxUncert) continue;
+      if (tpcTrack.Length() < fMinTrackLength) continue;
+
+      geo::Point_t crtPoint(crtHit.x_pos, crtHit.y_pos, crtHit.z_pos);
+    
+      int crt_reg = AuxDetRegionNameToNum(crtHit.tagger);
+      int thinrange;
+      if(crt_reg==30) thinrange=1;
+      else if(crt_reg==31||crt_reg==32||(crt_reg>=40&&crt_reg<=45)) thinrange = 0; 
+      else if(crt_reg==33 || crt_reg==34 || crt_reg ==46 ||crt_reg==47) thinrange = 2; 
+
+      std::pair<TVector3, TVector3> startEndDir;
+      // dirmethod=2 is original algorithm, dirmethod=1 is simple algorithm for which SCE corrections are possible
+      startEndDir = TrackDirection(detProp, tpcTrack, fTrackDirectionFrac, crtTime, driftDirection);
+      TVector3 startDir = startEndDir.first;
+      TVector3 endDir = startEndDir.second;
+    
+      // Calculate the distance of closest approach between TPC track vector and the CRT hit, SCE corrections are done inside but dropped
+      double startDist_old = DistOfClosestApproach(detProp, start, startDir, crtHit, driftDirection, crtTime);
+      double endDist_old = DistOfClosestApproach(detProp, end, endDir, crtHit, driftDirection, crtTime);
+
+      // Calculate the distance between the crossing point and the CRT hit
+      double xshift = driftDirection * crtTime * detProp.DriftVelocity();
+      TVector3 startposvec(pca_start_pos.X()+xshift,pca_start_pos.Y(),pca_start_pos.Z());
+      TVector3 endposvec(pca_end_pos.X()+xshift,pca_end_pos.Y(),pca_end_pos.Z());
+
+      double startDist = CRT_plane_dist(startposvec,pca_start_dir,crthitposvec,thinrange,pca_start_crtcross);
+      double endDist = CRT_plane_dist(endposvec,pca_end_dir,crthitposvec,thinrange,pca_end_crtcross);
+    
+      auto thisstart = start; 
+      thisstart.SetX(start.X()+xshift);
+      auto thisend = end; 
+      thisend.SetX(end.X()+xshift);
+      // repeat SCE correction for endpoints
+      if (fSCE->EnableCalSpatialSCE() && fSCEposCorr) {
+	geo::TPCID tpcid = fGeometryService->PositionToTPCID(thisstart);
+	thisstart+= fSCE->GetCalPosOffsets(thisstart,tpcid.TPC);
+	tpcid = fGeometryService->PositionToTPCID(thisend);
+	thisend+= fSCE->GetCalPosOffsets(thisend,tpcid.TPC);
+
+      }
+
+      matchCand_PCA newmc;// = makeNULLmc();
+      if (startDist<fDistanceLimit || endDist<fDistanceLimit) {
+	double distS = startDist; //(crtPoint-thisstart).R();
+	double distE = startDist; //(crtPoint-thisend).R();
+	if (distS <= distE && startDist<fDistanceLimit){ 
+	  newmc.dca = startDist;
+	  newmc.extrapLen = distS;
+	  newmc.best_DCA_pos=0;
+	}//end if(distS < distE)
+	else if(distE<=distS && endDist<fDistanceLimit ){
+	  newmc.dca = endDist;
+	  newmc.extrapLen = distE;
+	  newmc.best_DCA_pos=1;
+	}//end else if(distE<=distS && endDist<fDistanceLimit )
+	else continue;
+	newmc.thishit = crtHit;
+	newmc.t0= crtTime;
+	newmc.simple_cathodecrosser = simple_cathode_crosscheck;
+	newmc.driftdir = driftDirection;
+	newmc.t0min = t0MinMax.first;
+	newmc.t0max = t0MinMax.second;
+	newmc.crtTime = crtTime;
+	newmc.startDir = startDir;
+	newmc.endDir = endDir;
+	newmc.tpc_track_start.SetXYZ(thisstart.X(),thisstart.Y(),thisstart.Z());
+	newmc.tpc_track_end.SetXYZ(thisend.X(),thisend.Y(),thisend.Z());
+	newmc.PCA_start_pos.SetXYZ(startposvec.X(),startposvec.Y(),startposvec.Z());
+	newmc.PCA_end_pos.SetXYZ(endposvec.X(),endposvec.Y(),endposvec.Z());
+	newmc.PCA_start_dir.SetXYZ(pca_start_dir.X(),pca_start_dir.Y(),pca_start_dir.Z());
+	newmc.PCA_end_dir.SetXYZ(pca_end_dir.X(),pca_end_dir.Y(),pca_end_dir.Z());
+	newmc.PCA_start_crtplanecross.SetXYZ(pca_start_crtcross.X(),pca_start_crtcross.Y(),pca_start_crtcross.Z());
+	newmc.PCA_end_crtplanecross.SetXYZ(pca_end_crtcross.X(),pca_end_crtcross.Y(),pca_end_crtcross.Z());
+
+	newmc.PCA_DCA_start = startDist_old;
+	newmc.PCA_DCA_end = endDist_old;
+	newmc.PCA_planedist_start = startDist;
+	newmc.PCA_planedist_end = endDist;
+
+	t0Candidates.push_back(newmc);
+
+      }//end if (startDist<fDistanceLimit || endDist<fDistanceLimit) 
+    }//end loop over CRT Hits
+
+
+      //std::cout << " found " << t0Candidates.size() << " candidates" << std::endl;
+    matchCand_PCA bestmatch;// = makeNULLmc();
+    if(t0Candidates.size() > 0){
+      // Find candidate with shortest DCA or DCA/L value
+      bestmatch=t0Candidates[0];
+      double sin_angle = bestmatch.dca/bestmatch.extrapLen;
+      if (fDCAoverLength) { // Use dca/extrapLen to judge best
+	for(auto &thisCand : t0Candidates){
+	  double this_sin_angle = thisCand.dca/thisCand.extrapLen;
+	  if (bestmatch.dca<0 )bestmatch=thisCand;
+	  else if (this_sin_angle<sin_angle && thisCand.dca>=0)bestmatch=thisCand;
+	}//end for(auto &thisCand : t0Candidates)
+      }//end if (fDCAoverLength)
+      else { // use Dca to judge best
+	for(auto &thisCand : t0Candidates){
+	  if (bestmatch.dca<0 )bestmatch=thisCand;
+	  else if (thisCand.dca<bestmatch.dca && thisCand.dca>=0)bestmatch=thisCand;
+	}//end for(auto &thisCand : t0Candidates)
+      }//end else [use DCA for best match method]
+    }//end if(t0Candidates.size() > 0)
+
+    //std::cout << "best match has dca of " << bestmatch.dca << std::endl;
+    return bestmatch;
+
+  }//end function defn
+
+//First new added function is to do the PCA analysis on a given endpoint
+void CRTT0MatchAlg::endpoint_PCA_ana(recob::Track trk, bool usestartpt, TVector3 &bestfit_dir, TVector3 &bestfit_pos){
+
+
+//	size_t ntrk = trk.NPoints(); size_t nvalidtrk = trk.CountValidPoints();
+	Eigen::Vector3d meanPos(Eigen::Vector3d::Zero());
+
+	//create container for all hit point locations as well as calculate average positions along all axes
+	float xavg = 0, yavg = 0, zavg = 0;
+	std::vector<TVector3> hit_points;
+
+	size_t firstpt;
+	geo::Point_t thispt; geo::Point_t lastpt;
+	TVector3 pos_of_endpoint;
+
+	if(usestartpt) {
+		firstpt = trk.FirstValidPoint(); 
+		thispt = trk.LocationAtPoint(firstpt);
+		xavg+=thispt.X(); yavg+=thispt.Y(); zavg+=thispt.Z();
+		TVector3 temppt(thispt.X(),thispt.Y(),thispt.Z());
+		pos_of_endpoint.SetXYZ(thispt.X(),thispt.Y(),thispt.Z());
+		hit_points.push_back(temppt);
+	}//end if(usestartpt)
+	else if(!usestartpt) { 
+		firstpt = trk.LastValidPoint(); 
+		thispt = trk.LocationAtPoint(firstpt);
+		xavg+=thispt.X(); yavg+=thispt.Y(); zavg+=thispt.Z();
+		TVector3 temppt(thispt.X(),thispt.Y(),thispt.Z());
+		pos_of_endpoint.SetXYZ(thispt.X(),thispt.Y(),thispt.Z());
+		hit_points.push_back(temppt);
+	}//end else if(!usestartpt)
+
+	float distance_from_endpoint = 0;
+	float distlimit = 10;
+	int num_points_counter = 1;
+
+	bool forcedbreak = false;
+
+
+	while(distance_from_endpoint<distlimit || (size_t)num_points_counter<40){
+
+		size_t nextpt;
+		if(usestartpt) {
+			nextpt = trk.NextValidPoint(firstpt+1);
+		}//end if(usestartpt)
+		else if(!usestartpt) { 
+			nextpt = trk.PreviousValidPoint(firstpt-1);
+		}//end else if(!usestartpt)
+
+		if(nextpt==firstpt) {
+
+			forcedbreak = true;
+			break;
+
+		}//end if(nextpt==firstpt)
+
+		geo::Point_t thispt = trk.LocationAtPoint(nextpt);
+
+
+		xavg+=thispt.X(); yavg+=thispt.Y(); zavg+=thispt.Z();
+		TVector3 temppt(thispt.X(),thispt.Y(),thispt.Z());
+
+		distance_from_endpoint = vect_dist(pos_of_endpoint,temppt);
+
+		hit_points.push_back(temppt);
+
+		firstpt = nextpt;
+
+
+		num_points_counter++;
+	}//end loop over points in TPC track, adding to what will eventually go in PCA analysis
+
+	if(!forcedbreak) {
+
+
+
+	xavg = xavg/num_points_counter; yavg = yavg/num_points_counter; zavg = zavg/num_points_counter;
+	meanPos(0) = xavg; meanPos(1) = yavg; meanPos(2) = zavg;
+	bestfit_pos.SetX(xavg); bestfit_pos.SetY(yavg); bestfit_pos.SetZ(zavg);
+
+	//Make covariance matrix now that we have averages
+	float xi2 = 0, yi2 = 0, zi2 = 0, xiy = 0, xiz = 0, yiz = 0;
+	for(size_t i=0; i<hit_points.size(); i++){
+
+		float tempx = hit_points[i].X() - xavg;
+		float tempy = hit_points[i].Y() - yavg;
+		float tempz = hit_points[i].Z() - zavg;
+
+		xi2+=(tempx*tempx); yi2+=(tempy*tempy); zi2+=(tempz*tempz);
+		xiy+=(tempx*tempy); xiz+=(tempx*tempz); yiz+=(tempy*tempz);
+
+	}//end loop over points in data
+	xi2 = xi2/hit_points.size(); yi2 = yi2/hit_points.size(); zi2 = zi2/hit_points.size();
+	xiy = xiy/hit_points.size(); xiz = xiz/hit_points.size(); yiz = yiz/hit_points.size();
+
+	Eigen::Matrix3d covmat; 
+	covmat << xi2, xiy, xiz, xiy, yi2, yiz, xiz, yiz, zi2;
+
+	Eigen::SelfAdjointEigenSolver<Eigen::Matrix3d> eigenMat(covmat);
+
+	if(eigenMat.info() == Eigen::ComputationInfo::Success){
+
+	      reco::PrincipalComponents::EigenValues recobEigenVals = eigenMat.eigenvalues().cast<float>();
+	      reco::PrincipalComponents::EigenVectors recobEigenVecs = eigenMat.eigenvectors().cast<float>();
+
+	      float maxeval = FLT_MIN; int maxvalpos = -1;
+
+	      for(int tempindex=0; tempindex<3; tempindex++){
+
+			if(maxeval<(float)recobEigenVals(tempindex)) {
+
+				maxeval = (float)recobEigenVals(tempindex);
+				maxvalpos = tempindex;
+
+			}//end if(maxeval<(float)recobEigenVals)
+
+	      }//end for(int tempindex=0; tempindex<3; tempindex++)
+
+	      bestfit_dir.SetXYZ(recobEigenVecs(0,maxvalpos), recobEigenVecs(1,maxvalpos), recobEigenVecs(2,maxvalpos));
+
+	}//end if(eigenMat.info() == Eigen::ComputationInfo::Success)
+
+	}//end if(!forcedbreak)
+
+}//end definition of void endpoint_PCA_ana(recob::Track trk, int startorend, TVector3 &bestfit_dir, TVector3 &bestfit_pos)
+
+//Second function, a quick tool to calculate distance between two TVector3 objects
+float CRTT0MatchAlg::vect_dist(TVector3 vec1, TVector3 vec2){
+
+//	std::cout << "finding distance between two vectors.\n";
+//	std::cout << "vector 1 (x,y,z):\t(" << vec1.X() << "," << vec1.Y() << "," << vec1.Z() << ")\n"; 
+//	std::cout << "vector 2 (x,y,z):\t(" << vec2.X() << "," << vec2.Y() << "," << vec2.Z() << ")\n"; 
+
+	float xdiff = vec1.X()-vec2.X();
+	float ydiff = vec1.Y()-vec2.Y();
+	float zdiff = vec1.Z()-vec2.Z();
+
+//	std::cout << "Difference in X:\t" << xdiff << std::endl;
+//	std::cout << "Difference in Y:\t" << ydiff << std::endl;
+//	std::cout << "Difference in Z:\t" << zdiff << std::endl;
+
+	xdiff=xdiff*xdiff; ydiff=ydiff*ydiff; zdiff=zdiff*zdiff;
+
+//	std::cout << "Difference^2 in X:\t" << xdiff << std::endl;
+//	std::cout << "Difference^2 in Y:\t" << ydiff << std::endl;
+//	std::cout << "Difference^2 in Z:\t" << zdiff << std::endl;
+
+	float returnval = std::sqrt(xdiff+ydiff+zdiff);
+
+//	std::cout << "distance betwen vectors found to be:\t" << returnval << std::endl;
+
+	return returnval;
+
+
+}//end definition of double CRTT0MatchAlg::vect_dist(TVector3 vec1, TVector3 vec2)
+
+//Third addition, a function to calculate the distance between a CRT Hit and where
+//a given TPC track will intersect the plane of the CRT, which *should*
+//be the "real" hit position
+double CRTT0MatchAlg::CRT_plane_dist(TVector3 TPC_track_pos, TVector3 TPC_track_dir, TVector3 CRT_hit_pos, int plane_axis/*0 for x, 1 for y, 2 for z*/, TVector3 &TPC_track_crosspoint){
+
+	double tfactor, returnval = -1;
+
+	if(plane_axis==0){
+
+		tfactor = (CRT_hit_pos.X() - TPC_track_pos.X())/TPC_track_dir.X();
+		
+		TPC_track_crosspoint.SetX(CRT_hit_pos.X());
+		TPC_track_crosspoint.SetY(TPC_track_pos.Y()+TPC_track_dir.Y()*tfactor);
+		TPC_track_crosspoint.SetZ(TPC_track_pos.Z()+TPC_track_dir.Z()*tfactor);
+
+		double ydiff, zdiff;
+		ydiff = TPC_track_crosspoint.Y() - CRT_hit_pos.Y();
+		zdiff = TPC_track_crosspoint.Z() - CRT_hit_pos.Z();
+
+		returnval = sqrt(ydiff*ydiff + zdiff*zdiff);
+
+	}//end if(plane_axis==0)
+	else if(plane_axis==1){
+
+		tfactor = (CRT_hit_pos.Y() - TPC_track_pos.Y())/TPC_track_dir.Y();
+		
+		TPC_track_crosspoint.SetX(TPC_track_pos.X()+TPC_track_dir.X()*tfactor);
+		TPC_track_crosspoint.SetY(CRT_hit_pos.Y());
+		TPC_track_crosspoint.SetZ(TPC_track_pos.Z()+TPC_track_dir.Z()*tfactor);
+
+		double xdiff, zdiff;
+		xdiff = TPC_track_crosspoint.X() - CRT_hit_pos.X();
+		zdiff = TPC_track_crosspoint.Z() - CRT_hit_pos.Z();
+
+		returnval = sqrt(xdiff*xdiff + zdiff*zdiff);
+
+	}//end else if (plane_axis==1)
+	else if(plane_axis==2){
+
+		tfactor = (CRT_hit_pos.Z() - TPC_track_pos.Z())/TPC_track_dir.Z();
+		
+		TPC_track_crosspoint.SetX(TPC_track_pos.X()+TPC_track_dir.X()*tfactor);
+		TPC_track_crosspoint.SetY(TPC_track_pos.Y()+TPC_track_dir.Y()*tfactor);
+		TPC_track_crosspoint.SetZ(CRT_hit_pos.Z());
+
+		double ydiff, xdiff;
+		ydiff = TPC_track_crosspoint.Y() - CRT_hit_pos.Y();
+		xdiff = TPC_track_crosspoint.X() - CRT_hit_pos.X();
+
+		returnval = sqrt(ydiff*ydiff + xdiff*xdiff);
+
+	}//end else if(plane_axis==2)
+
+	return returnval;
+
+
+}//end double CRTT0MatchAlg::CRT_plane_dist(TVector3 TPC_track_pos, TVector3 TPC_track_dir, TVector3 CRT_hit_pos, int plane_axis/*0 for x, 1 for y, 2 for z*/)
+
+int CRTT0MatchAlg::AuxDetRegionNameToNum(string reg)
+{
+    if(reg == "Top")        return 30;
+    if(reg == "RimWest")    return 31;
+    if(reg == "RimEast")    return 32;
+    if(reg == "RimSouth")   return 33;
+    if(reg == "RimNorth")   return 34;
+    if(reg == "WestSouth")  return 40;
+    if(reg == "WestCenter") return 41;
+    if(reg == "WestNorth")  return 42;
+    if(reg == "EastSouth")  return 43;
+    if(reg == "EastCenter") return 44;
+    if(reg == "EastNorth")  return 45;
+    if(reg == "South")      return 46;
+    if(reg == "North")      return 47;
+    if(reg == "Bottom")     return 50;
+    mf::LogError("CRT") << "region not found!" << '\n';
+    return INT_MAX;
+}//GetAuxDetRegionNum()
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 }

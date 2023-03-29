@@ -14,6 +14,12 @@ CRTCommonUtils::CRTCommonUtils() {
   FillAuxDetMaps();
 }
 
+/*bool IsInCRTVolume(TVector3 point){
+
+	return false;
+
+}*///end definition of bool IsInCRTVolume(TVector3 point)
+
 //given an AuxDetGeo object, returns name of the CRT subsystem to which it belongs
 char CRTCommonUtils::GetAuxDetType(size_t adid) {
     if(fAuxDetIdToType.find(adid)==fAuxDetIdToType.end()) {

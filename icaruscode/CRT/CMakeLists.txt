@@ -40,6 +40,7 @@ art_make(
         CLHEP::CLHEP
         ROOT::Geom
         cetlib::cetlib
+	Eigen3::Eigen
 )
 
 art_make_library(
@@ -472,6 +473,8 @@ cet_build_plugin(CRTTPCMatchingAna art::module
               ROOT::RooFitCore
 )
 simple_plugin(CRTTPCTruthEff module
+	      larreco::RecoAlg_Cluster3DAlgs
+              larreco::RecoAlg
               sbnobj::ICARUS_CRT
               icaruscode_CRT
               sbnobj::Common_CRT
@@ -500,7 +503,7 @@ simple_plugin(CRTTPCTruthEff module
               ROOT::Spectrum
               ROOT::RooFit
               ROOT::RooFitCore
-
+	      Eigen3::Eigen
 )
 
 

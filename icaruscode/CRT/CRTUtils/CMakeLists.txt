@@ -41,6 +41,9 @@ art_make_library(LIBRARY_NAME icaruscode_CRTUtils
 	icaruscode_CRTData
 	lardata::DetectorInfoServices_DetectorClocksServiceStandard_service
 	nurandom::RandomUtils_NuRandomService_service
+	larreco::RecoAlg_Cluster3DAlgs
+        larreco::RecoAlg
+	Eigen3::Eigen
 	)
 
 install_headers()

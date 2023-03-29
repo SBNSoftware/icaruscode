@@ -62,12 +62,19 @@
 #include "lardataobj/RecoBase/PFParticleMetadata.h"
 #include "larcorealg/CoreUtils/zip.h"
 #include "larcorealg/CoreUtils/enumerate.h"
+#include "larreco/RecoAlg/Cluster3DAlgs/Cluster3D.h"
 // ROOT
 #include "TVector3.h"
 #include "TH1.h"
 #include "TH2.h"
 #include "TVector3.h"
 #include "TTree.h"
+//Eigen includes (for PCA analysis)
+#include "Eigen/Core"
+#include "Eigen/Dense"
+#include "Eigen/Eigenvalues"
+#include "Eigen/Geometry"
+#include "Eigen/Jacobi"
 
 namespace icarus {
   
@@ -94,8 +101,15 @@ namespace icarus {
 //    void reconfigure(fhicl::ParameterSet const & p);
  
     void GetAncestorID(int trueid, int &motherid, int &ancestorid, int &layers, std::map<int, simb::MCParticle> all_particles);
-
     void getCatCrossXYZ(recob::Track trk, double &my_x, double &my_y, double &my_z);
+    void getTickRange(std::vector<art::Ptr<recob::Hit>> hits, int &mintick, int &maxtick);
+    void findIntersectingCRTVolume(TVector3 &retvec, TVector3 &endpoint, int &likely_CRT_region1, int &likely_CRT_region2, int &likely_CRT_region3);
+    void pointChecker(recob::Track trk, bool &startisinTPC, bool &endisinTPC, int &startflag, int &endflag);
+    void endpoint_PCA_ana(recob::Track trk, bool usestartpt, TVector3 &bestfit_dir, TVector3 &bestfit_pos);
+    float vect_dist(TVector3 vec1, TVector3 vec2);
+    bool willEnterCRTVolume(TVector3 vecpos, TVector3 vecdir, int crtregion);
+    double getnewDCA(TVector3 CRTHitpos, TVector3 TPC_posvec, TVector3 TPC_dirvec);
+    double CRT_plane_dist(TVector3 TPC_track_pos, TVector3 TPC_track_dir, TVector3 CRT_hit_pos, int plane_axis/*0 for x, 1 for y, 2 for z*/);
 
   private:
     art::ServiceHandle<art::TFileService> tfs;
@@ -111,6 +125,7 @@ namespace icarus {
     CRTT0MatchAlg              t0Alg;		     ///< used to call matching functions
     bool                       fVerbose;       	     ///< print information about what's going on
     bool		       fIsData;              ///< switch for if this is data or MC
+    bool	tpcEast, tpcWest;//true if in that TPC, false otherwise
 
     geo::GeometryCore const* fGeometryService;   ///< pointer to Geometry provider
     icarus::crt::CRTCommonUtils* fCrtutils;
@@ -124,73 +139,96 @@ namespace icarus {
     int ttl_tpctrks, ttl_crthits; 	///< Total number of TPC tracks and CRT Hits for a given event
     int driftdir;			///< Drift direction of the track
     int num_crt_candidates;		///< Number of CRT Hit candidates for a given track, including the matched hti
-    double crt_tpc_dca;			///< Distance of Closest Approach between CRT Hit and projected TPC track
-    double t0min, t0max; 		///< Minimum and maximum possible T0 given the TPC trackorientation
-    double crttime;			///< Matched CRT Hit timestamp
-    double track_t0;			///< Reconstructed T0 of the TPC track if it has one, otherwise set to -99999
-    double crt_pes; 			///< Total PEs of the matched CRT Hit
-    double crt_extraplen;		///< Extrapolated length of the TPC track to the CRT
+	    int startflag, endflag;		///< flags for TPC track endpoints
+	    int PCA_trackstart_reg1, PCA_trackstart_reg2, PCA_trackstart_reg3;//CRT regions being pointed to by TPC track start
+	    int PCA_trackend_reg1, PCA_trackend_reg2, PCA_trackend_reg3;//CRT regions being pointed to by TPC track end
 
-    bool has_crtmatch; 			///< Tells if the TPC track has a valid CRT Hit match or not by looking for a valid CRT Hit timestamp in the returned algorithm struct
-    bool is_catcross; 			///< True if the track has a reconstructed T0, false otherwise
-    bool simple_catcross;		///< True if my own "simple" method to determine if a track is CC says it is CC, false otherwise
+	    double crt_tpc_dca;			///< Distance of Closest Approach between CRT Hit and projected TPC track
+	    double t0min, t0max; 		///< Minimum and maximum possible T0 given the TPC trackorientation
+	    double crttime;			///< Matched CRT Hit timestamp
+	    double track_t0;			///< Reconstructed T0 of the TPC track if it has one, otherwise set to -99999
+	    double crt_pes; 			///< Total PEs of the matched CRT Hit
+	    double crt_extraplen;		///< Extrapolated length of the TPC track to the CRT
+	    double crt_tpc_plane_dist;		///< DCA between matched CRT Hit and TPC track *in the plane of the CRT*
 
-    double tpc_trk_start_x, tpc_trk_start_y, tpc_trk_start_z;	///< XYZ coordinates for the TPC track start point
-    double tpc_trk_end_x, tpc_trk_end_y, tpc_trk_end_z;	///< XYZ coordinates for the TPC track end point
-    double trk_startdir_x, trk_startdir_y, trk_startdir_z;	///< XYZ components of directional vector pointing from TPC track start to the midpoint
-    double trk_enddir_x, trk_enddir_y, trk_enddir_z;		///< XYZ components of directional vector pointing from TPC track end to the midpoint
-    double catcross_x, catcross_y, catcross_z;			///< From my "simple"method of determining if a track is a cathode-crosser, my calculation of the crossing point for a given track
-    double crt_x, crt_y, crt_z;					///< Matched CRT Hit XYZ
+	    bool has_crtmatch; 			///< Tells if the TPC track has a valid CRT Hit match or not by looking for a valid CRT Hit timestamp in the returned algorithm struct
+	    bool is_catcross; 			///< True if the track has a reconstructed T0, false otherwise
+	    bool simple_catcross;		///< True if my own "simple" method to determine if a track is CC says it is CC, false otherwise
+	    bool is_ancatcross;			///< True if track both has a reconstrcuted T0 and appears to have crossed the anode due to tick range of hits
+	    bool start_in_tpc, end_in_tpc;	///< True if start/endpoint are located inside the TPC boundaries
 
-    //Simulation-only variables
-    int crt_pdg, trk_pdg;  			///< PDG codes of the CRT Hit and TPC track
-    int track_trueID, crt_trueID;		///< Truth IDs of the TPC track and matched CRT Hit
-    int track_mother, crt_mother; 		///< First mother of the CRT Hit/TPC track simulated particle truth ID
-    int track_ancestor, crt_ancestor;		///< Truth ID of the CRT Hit/TPC Track ancestor, which I define as the ID that returns itself when querying the Mother ID
-    int crt_motherlayers, track_motherlayers;   ///< Number of times the track/hit mother was queried before returning itself or 0
-    //End simulation-only variables
+	    double tpc_trk_start_x, tpc_trk_start_y, tpc_trk_start_z;	///< XYZ coordinates for the TPC track start point
+	    double tpc_trk_end_x, tpc_trk_end_y, tpc_trk_end_z;	///< XYZ coordinates for the TPC track end point
+	    double trk_startdir_x, trk_startdir_y, trk_startdir_z;	///< XYZ components of directional vector pointing from TPC track start to the midpoint
+	    double trk_enddir_x, trk_enddir_y, trk_enddir_z;		///< XYZ components of directional vector pointing from TPC track end to the midpoint
+	    double catcross_x, catcross_y, catcross_z;			///< From my "simple"method of determining if a track is a cathode-crosser, my calculation of the crossing point for a given track
+	    double crt_x, crt_y, crt_z;					///< Matched CRT Hit XYZ
+	    double track_length, tpc_start_x, tpc_start_y, tpc_start_z, tpc_end_x, tpc_end_y, tpc_end_z; ///Track start/end directions from Pandora
 
-    //These vectors contain the relevant matched CRT Hit information, with each entry across the vectors representing a FEB mac5, channel, and PE of one of the constituent hits, think of them 
-    //as parallel column vectors
-    std::vector<int> matched_hit_mac5, matched_hit_chan;
-    std::vector<double> matched_hit_pes;
+	    //Below are test variables of PCA analysis
+	    double PCA_track_end_pos_x, PCA_track_end_pos_y, PCA_track_end_pos_z, PCA_track_end_dir_x, PCA_track_end_dir_y, PCA_track_end_dir_z;
+	    double PCA_track_start_pos_x, PCA_track_start_pos_y, PCA_track_start_pos_z, PCA_track_start_dir_x, PCA_track_start_dir_y, PCA_track_start_dir_z;
+	    double PCA_start_crtplanecross_x, PCA_start_crtplanecross_y, PCA_start_crtplanecross_z;
+	    double PCA_end_crtplanecross_x, PCA_end_crtplanecross_y, PCA_end_crtplanecross_z;
+	    double PCA_DCA_start, PCA_DCA_end, PCA_planedist_start, PCA_planedist_end;
 
-    //These vectors contain the information for all CRT Hit candidates that were considered valid to be matched with the TPC track, including the one that was matched
-    std::vector<int> all_crt_candidate_trueIDs, all_crt_candidate_motherIDs, all_crt_candidate_ancestorIDs;
-    std::vector<int> all_crt_regions, all_crt_pdg, all_crt_candidate_motherlayers;
-    std::vector<double> all_crt_candidate_x, all_crt_candidate_y, all_crt_candidate_z;
-    std::vector<double> crt_start_dca, crt_end_dca, crt_timestamp;
-    std::vector<int> all_crt_hitcode_map;//<refers above vectors to hitcodes for all CRT Hit candidate vectors below
-    int best_dca_pos;			///<Contains position of "best match" for the vectors above
+	    std::vector<double> track_points_x, track_points_y, track_points_z;
+	    double midpt_x, midpt_y, midpt_z;
 
-    //These vectors attempt to preserve all of the information about the hit candidate PE breakdown, using 
-    std::vector<int> all_crt_mac5s, all_crt_chans, all_crt_hitcode;//"hitcode" allows for vectors to be searched by individual hits among the several in the candidates
-    std::vector<double> all_crt_pes;
+	    int tpc_mintick, tpc_maxtick; ///<TPC track tick ranges for quality control
 
-    //add trigger data product vars
-    unsigned int m_gate_type;
-    std::string  m_gate_name;
-    uint64_t     m_trigger_timestamp;
-    uint64_t     m_gate_start_timestamp;
-    uint64_t     m_trigger_gate_diff;
-//    uint64_t     m_gate_crt_diff;
+	    int crt_hitflag;
 
-  }; // class CRTTPCTruthEff
+	    //Simulation-only variables
+	    int crt_pdg, trk_pdg;  			///< PDG codes of the CRT Hit and TPC track
+	    int track_trueID, crt_trueID;		///< Truth IDs of the TPC track and matched CRT Hit
+	    int track_mother, crt_mother; 		///< First mother of the CRT Hit/TPC track simulated particle truth ID
+	    int track_ancestor, crt_ancestor;		///< Truth ID of the CRT Hit/TPC Track ancestor, which I define as the ID that returns itself when querying the Mother ID
+	    int crt_motherlayers, track_motherlayers;   ///< Number of times the track/hit mother was queried before returning itself or 0
+	    //End simulation-only variables
+
+	    //These vectors contain the relevant matched CRT Hit information, with each entry across the vectors representing a FEB mac5, channel, and PE of one of the constituent hits, think of them 
+	    //as parallel column vectors
+	    std::vector<int> matched_hit_mac5, matched_hit_chan;
+	    std::vector<double> matched_hit_pes;
+
+	    //These vectors contain the information for all CRT Hit candidates that were considered valid to be matched with the TPC track, including the one that was matched
+	    std::vector<int> all_crt_candidate_trueIDs, all_crt_candidate_motherIDs, all_crt_candidate_ancestorIDs;
+	    std::vector<int> all_crt_regions, all_crt_pdg, all_crt_candidate_motherlayers;
+	    std::vector<double> all_crt_candidate_x, all_crt_candidate_y, all_crt_candidate_z;
+	    std::vector<int> all_crt_hitflags;
+	    std::vector<double> crt_start_dca, crt_end_dca, crt_timestamp;
+	    std::vector<int> all_crt_hitcode_map;//<refers above vectors to hitcodes for all CRT Hit candidate vectors below
+	    int best_dca_pos;			///<Contains position of "best match" for the vectors above
+
+	    //These vectors attempt to preserve all of the information about the hit candidate PE breakdown, using 
+	    std::vector<int> all_crt_mac5s, all_crt_chans, all_crt_hitcode;//"hitcode" allows for vectors to be searched by individual hits among the several in the candidates
+	    std::vector<double> all_crt_pes;
+
+	    //add trigger data product vars
+	    unsigned int m_gate_type;
+	    std::string  m_gate_name;
+	    uint64_t     m_trigger_timestamp;
+	    uint64_t     m_gate_start_timestamp;
+	    uint64_t     m_trigger_gate_diff;
+	//    uint64_t     m_gate_crt_diff;
+
+	  }; // class CRTTPCTruthEff
 
 
-  CRTTPCTruthEff::CRTTPCTruthEff(fhicl::ParameterSet const & p)
-    : EDAnalyzer(p), t0Alg(p.get<fhicl::ParameterSet>("T0Alg"))
-    , fCrtutils(new icarus::crt::CRTCommonUtils())
-      // Initialize member data here, if know don't want to reconfigure on the fly
-  {
+	  CRTTPCTruthEff::CRTTPCTruthEff(fhicl::ParameterSet const & p)
+	    : EDAnalyzer(p), t0Alg(p.get<fhicl::ParameterSet>("T0Alg"))
+	    , fCrtutils(new icarus::crt::CRTCommonUtils())
+	      // Initialize member data here, if know don't want to reconfigure on the fly
+	  {
 
-    // Call appropriate produces<>() functions here.
-//    produces< std::vector<anab::T0>                                              >();
-//    produces< art::Assns<recob::Track , anab::T0, icarus::CRTTPCMatchingInfo>    >();
-//    produces< art::Assns<sbn::crt::CRTHit, anab::T0, icarus::CRTTPCMatchingInfo> >();
+	    // Call appropriate produces<>() functions here.
+	//    produces< std::vector<anab::T0>                                              >();
+	//    produces< art::Assns<recob::Track , anab::T0, icarus::CRTTPCMatchingInfo>    >();
+	//    produces< art::Assns<sbn::crt::CRTHit, anab::T0, icarus::CRTTPCMatchingInfo> >();
 
     fGeometryService = lar::providerFrom<geo::Geometry>();
-    fTpcTrackModuleLabel = p.get< std::vector<art::InputTag>>("TpcTrackModuleLabel", {"pandoraTrackGausCryoE"});
+    fTpcTrackModuleLabel = p.get< std::vector<art::InputTag>>("TpcTrackModuleLabel", {"pandoraTrackGausCryoE","pandoraTrackGausCryoW"});
     fCrtHitModuleLabel   = p.get<art::InputTag> ("CrtHitModuleLabel", "crthit"); 
     fPFParticleLabel    =  p.get< std::vector<art::InputTag> >("PFParticleLabel",             {""});
     fTriggerLabel        = p.get<art::InputTag>("TriggerLabel","daqTrigger");
@@ -229,6 +267,8 @@ namespace icarus {
     tr_crttpc->Branch("fRun",&fRun,"fRun/I");
     tr_crttpc->Branch("driftdir",&driftdir,"driftdir/I");
     tr_crttpc->Branch("fSubRun",&fSubRun,"fSubRun/I");
+    tr_crttpc->Branch("tpc_mintick",&tpc_mintick,"tpc_mintick/I");
+    tr_crttpc->Branch("tpc_maxtick",&tpc_maxtick,"tpc_maxtick/I");
     tr_crttpc->Branch("track_trueID",&track_trueID,"track_trueID/I");
     tr_crttpc->Branch("track_mother",&track_mother,"track_mother/I");
     tr_crttpc->Branch("crt_mother",&crt_mother,"crt_mother/I");
@@ -249,18 +289,70 @@ namespace icarus {
     tr_crttpc->Branch("crt_pes",&crt_pes,"crt_pes/D");
     tr_crttpc->Branch("crttime",&crttime,"crttime/D");
     tr_crttpc->Branch("crt_extraplen",&crt_extraplen,"crt_extraplen/D");
+    tr_crttpc->Branch("tpcEast",&tpcEast,"tpcEast/O");
+    tr_crttpc->Branch("tpcWest",&tpcWest,"tpcWest/O");
     tr_crttpc->Branch("is_catcross",&is_catcross,"is_catcross/O");
     tr_crttpc->Branch("simple_catcross",&simple_catcross,"simple_catcross/O");
     tr_crttpc->Branch("has_crtmatch",&has_crtmatch,"has_crtmatch/O");
+    tr_crttpc->Branch("startflag",&startflag,"startflag/I");
+    tr_crttpc->Branch("endflag",&endflag,"endflag/I");
+    tr_crttpc->Branch("PCA_trackstart_reg1",&PCA_trackstart_reg1,"PCA_trackstart_reg1/I");
+    tr_crttpc->Branch("PCA_trackstart_reg2",&PCA_trackstart_reg2,"PCA_trackstart_reg2/I");
+    tr_crttpc->Branch("PCA_trackstart_reg3",&PCA_trackstart_reg3,"PCA_trackstart_reg3/I");
+    tr_crttpc->Branch("PCA_trackend_reg1",&PCA_trackend_reg1,"PCA_trackend_reg1/I");
+    tr_crttpc->Branch("PCA_trackend_reg2",&PCA_trackend_reg1,"PCA_trackend_reg2/I");
+    tr_crttpc->Branch("PCA_trackend_reg3",&PCA_trackend_reg1,"PCA_trackend_reg3/I");
+    tr_crttpc->Branch("start_in_tpc",&start_in_tpc,"start_in_tpc/O");
+    tr_crttpc->Branch("end_in_tpc",&end_in_tpc,"end_in_tpc/O");
+    tr_crttpc->Branch("track_length",&track_length,"track_length/D");
     tr_crttpc->Branch("tpc_trk_start_x",&tpc_trk_start_x,"tpc_trk_start_x/D");
     tr_crttpc->Branch("tpc_trk_start_y",&tpc_trk_start_y,"tpc_trk_start_y/D");
     tr_crttpc->Branch("tpc_trk_start_z",&tpc_trk_start_z,"tpc_trk_start_z/D");
     tr_crttpc->Branch("tpc_trk_end_x",&tpc_trk_end_x,"tpc_trk_end_x/D");
     tr_crttpc->Branch("tpc_trk_end_y",&tpc_trk_end_y,"tpc_trk_end_y/D");
     tr_crttpc->Branch("tpc_trk_end_z",&tpc_trk_end_z,"tpc_trk_end_z/D");
+    tr_crttpc->Branch("PCA_track_end_pos_x",&PCA_track_end_pos_x,"PCA_track_end_pos_x/D");
+    tr_crttpc->Branch("PCA_track_end_pos_y",&PCA_track_end_pos_y,"PCA_track_end_pos_y/D");
+    tr_crttpc->Branch("PCA_track_end_pos_z",&PCA_track_end_pos_z,"PCA_track_end_pos_z/D");
+    tr_crttpc->Branch("PCA_track_end_dir_x",&PCA_track_end_dir_x,"PCA_track_end_dir_x/D");
+    tr_crttpc->Branch("PCA_track_end_dir_y",&PCA_track_end_dir_y,"PCA_track_end_dir_y/D");
+    tr_crttpc->Branch("PCA_track_end_dir_z",&PCA_track_end_dir_z,"PCA_track_end_dir_z/D");
+    tr_crttpc->Branch("PCA_track_start_pos_x",&PCA_track_start_pos_x,"PCA_track_start_pos_x/D");
+    tr_crttpc->Branch("PCA_track_start_pos_y",&PCA_track_start_pos_y,"PCA_track_start_pos_y/D");
+    tr_crttpc->Branch("PCA_track_start_pos_z",&PCA_track_start_pos_z,"PCA_track_start_pos_z/D");
+    tr_crttpc->Branch("PCA_track_start_dir_x",&PCA_track_start_dir_x,"PCA_track_start_dir_x/D");
+    tr_crttpc->Branch("PCA_track_start_dir_y",&PCA_track_start_dir_y,"PCA_track_start_dir_y/D");
+    tr_crttpc->Branch("PCA_track_start_dir_z",&PCA_track_start_dir_z,"PCA_track_start_dir_z/D");
+
+    tr_crttpc->Branch("PCA_start_crtplanecross_x",&PCA_start_crtplanecross_x,"PCA_start_crtplanecross_x/D");
+    tr_crttpc->Branch("PCA_start_crtplanecross_y",&PCA_start_crtplanecross_y,"PCA_start_crtplanecross_y/D");
+    tr_crttpc->Branch("PCA_start_crtplanecross_z",&PCA_start_crtplanecross_z,"PCA_start_crtplanecross_z/D");
+    tr_crttpc->Branch("PCA_end_crtplanecross_x",&PCA_end_crtplanecross_x,"PCA_end_crtplanecross_x/D");
+    tr_crttpc->Branch("PCA_end_crtplanecross_y",&PCA_end_crtplanecross_y,"PCA_end_crtplanecross_y/D");
+    tr_crttpc->Branch("PCA_end_crtplanecross_z",&PCA_end_crtplanecross_z,"PCA_end_crtplanecross_z/D");
+
+    tr_crttpc->Branch("PCA_DCA_start",&PCA_DCA_start,"PCA_DCA_start/D");
+    tr_crttpc->Branch("PCA_DCA_end",&PCA_DCA_end,"PCA_DCA_end/D");
+    tr_crttpc->Branch("PCA_planedist_start",&PCA_planedist_start,"PCA_planedist_start/D");
+    tr_crttpc->Branch("PCA_planedist_end",&PCA_planedist_end,"PCA_planedist_end/D");
+
+    tr_crttpc->Branch("midpt_x",&midpt_x,"midpt_x/D");
+    tr_crttpc->Branch("midpt_y",&midpt_y,"midpt_y/D");
+    tr_crttpc->Branch("midpt_z",&midpt_z,"midpt_z/D");
+    tr_crttpc->Branch("track_points_x",&track_points_x);
+    tr_crttpc->Branch("track_points_y",&track_points_y);
+    tr_crttpc->Branch("track_points_z",&track_points_z);
+    tr_crttpc->Branch("crt_tpc_plane_dist",&crt_tpc_plane_dist,"crt_tpc_plane_dist/D");
     tr_crttpc->Branch("crt_x",&crt_x,"crt_x/D");
     tr_crttpc->Branch("crt_y",&crt_y,"crt_y/D");
     tr_crttpc->Branch("crt_z",&crt_z,"crt_z/D");
+    tr_crttpc->Branch("tpc_start_x",&tpc_start_x,"tpc_start_x/D");
+    tr_crttpc->Branch("tpc_start_y",&tpc_start_y,"tpc_start_y/D");
+    tr_crttpc->Branch("tpc_start_z",&tpc_start_z,"tpc_start_z/D");
+    tr_crttpc->Branch("tpc_end_x",&tpc_end_x,"tpc_end_x/D");
+    tr_crttpc->Branch("tpc_end_y",&tpc_end_y,"tpc_end_y/D");
+    tr_crttpc->Branch("tpc_end_z",&tpc_end_z,"tpc_end_z/D");
+    tr_crttpc->Branch("crt_hitflag",&crt_hitflag,"crt_hitflag/I");
     tr_crttpc->Branch("catcross_x",&catcross_x,"catcross_x/D");
     tr_crttpc->Branch("catcross_y",&catcross_y,"catcross_y/D");
     tr_crttpc->Branch("catcross_z",&catcross_z,"catcross_z/D");
@@ -279,6 +371,7 @@ namespace icarus {
     tr_crttpc->Branch("all_crt_candidate_x",&all_crt_candidate_x);
     tr_crttpc->Branch("all_crt_candidate_y",&all_crt_candidate_y);
     tr_crttpc->Branch("all_crt_candidate_z",&all_crt_candidate_z);
+    tr_crttpc->Branch("all_crt_hitflags",&all_crt_hitflags);
     tr_crttpc->Branch("crt_start_dca",&crt_start_dca);
     tr_crttpc->Branch("crt_end_dca",&crt_end_dca);
     tr_crttpc->Branch("crt_timestamp",&crt_timestamp);
@@ -381,13 +474,130 @@ namespace icarus {
 	  matched_hit_mac5.clear();
 	  matched_hit_chan.clear();
 	  matched_hit_pes.clear();
+	  all_crt_hitflags.clear();
+	  track_points_x.clear();
+	  track_points_y.clear();
+	  track_points_z.clear();
 
 	  //Set certain output variables to defaults
 	  crt_tpc_dca = DBL_MAX; crt_trueID = INT_MAX; 
 	  track_trueID = INT_MAX; track_mother = INT_MAX; track_ancestor = INT_MAX; track_motherlayers = INT_MAX;
 	  crt_trueID = INT_MAX; crt_mother = INT_MAX; crt_ancestor = INT_MAX; crt_motherlayers = INT_MAX;
 	  crttime = DBL_MAX; track_t0=DBL_MAX;
-	  best_dca_pos=-99999;
+	  best_dca_pos=-99999; track_length=-99999;
+	  tpc_start_x = DBL_MAX; tpc_start_y = DBL_MAX; tpc_start_z = DBL_MAX;
+	  tpc_end_x = DBL_MAX; tpc_end_y = DBL_MAX; tpc_end_z = DBL_MAX;
+	  tpc_mintick = -99999; tpc_maxtick = -99999;
+	  startflag=-1; endflag=-1;	
+	  PCA_trackstart_reg1 = -1; PCA_trackstart_reg2 = -1; PCA_trackstart_reg3 = -1;
+	  PCA_trackend_reg1 = -1; PCA_trackend_reg2 = -1; PCA_trackend_reg3 = -1;
+	  tpcEast=false; tpcWest=false;
+
+
+	  std::cout << "starting pointChecker....\n";
+	  pointChecker(*trackList[track_i],start_in_tpc,end_in_tpc,startflag,endflag);
+
+	  //(temporary) adding all valid geo::Point_t object positions to the vectors to be able to identify PCA behavior
+	  geo::Point_t thispt;
+/*	  size_t pointloc1, pointloc2;
+	  size_t numvalidtrk = trackList[track_i]->CountValidPoints();
+*/
+	  size_t nTrackPoints = trackList[track_i]->NPoints();
+	  int midPt = (int)floor(nTrackPoints*0.5);
+	  geo::Point_t midP = trackList[track_i]->LocationAtPoint(midPt);
+
+	  midpt_x = midP.X(); midpt_y = midP.Y(); midpt_z = midP.Z();
+	  track_length = trackList[track_i]->Length();
+
+/*
+	  if(numvalidtrk>0){
+
+		pointloc1 = trackList[track_i]->FirstValidPoint();
+		thispt = trackList[track_i]->LocationAtPoint(pointloc1);
+
+		track_points_x.push_back(thispt.X()); 
+		track_points_y.push_back(thispt.Y()); 
+		track_points_z.push_back(thispt.Z()); 
+
+		for(size_t i_geo = 0; i_geo<numvalidtrk; i_geo++){
+
+	  		pointloc2 = trackList[track_i]->NextValidPoint(pointloc1+1);
+			thispt = trackList[track_i]->LocationAtPoint(pointloc2);
+
+			track_points_x.push_back(thispt.X());
+			track_points_y.push_back(thispt.Y());
+			track_points_z.push_back(thispt.Z());
+
+			pointloc1=pointloc2; 
+
+		}//end for(int i_geo = 0; i_geo<numtrk; i_geo++)
+	  }//end if(numvalidtrk>0)	
+
+	  if(start_in_tpc) std::cout << "Track start point found inside active volume!\n";
+	  else if(!start_in_tpc) std::cout << "Track start point NOT found inside active volume!\n";
+	  if(end_in_tpc) std::cout << "Track end point found inside active volume!\n";
+	  else if(!end_in_tpc) std::cout << "Track end point NOT found inside active volume!\n";
+
+	  TVector3 this_bestfit_dir, this_bestfit_pos; 
+	  track_length = trackList[track_i]->Length();
+
+	  if(start_in_tpc && track_length>=20) { 
+		std::cout << "Doing PCA analysis on start point...\n";
+		endpoint_PCA_ana(*trackList[track_i], true, this_bestfit_dir, this_bestfit_pos); 
+		std::cout << "Succesfully fit start point with PCA, continuing....\n";
+		std::cout << "Eigenvalue (start) 1: " << PCA_start_eval_1 << std::endl;
+		std::cout << "Eigenvector (start) 1 (X,Y,Z)=(" << PCA_start_comp_x_1 << "," << PCA_start_comp_y_1 << "," << PCA_start_comp_z_1 << ")\n";
+		std::cout << "Eigenvalue (start) 2: " << PCA_start_eval_2 << std::endl;
+		std::cout << "Eigenvector (start) 2 (X,Y,Z)=(" << PCA_start_comp_x_2 << "," << PCA_start_comp_y_2 << "," << PCA_start_comp_z_2 << ")\n";
+		std::cout << "Eigenvalue (start) 3: " << PCA_start_eval_3 << std::endl;
+		std::cout << "Eigenvector (start) 3 (X,Y,Z)=(" << PCA_start_comp_x_3 << "," << PCA_start_comp_y_3 << "," << PCA_start_comp_z_3 << ")\n";
+
+		std::cout << "Best fit direction (X,Y,Z) (should be same as evect of largest eval above):\t("; 
+		std::cout << this_bestfit_dir.X() << "," << this_bestfit_dir.Y() << "," << this_bestfit_dir.Z() << ")\n"; 
+
+		findIntersectingCRTVolume(this_bestfit_pos, this_bestfit_dir,PCA_trackstart_reg1,PCA_trackstart_reg2,PCA_trackstart_reg3);
+
+	  	PCA_track_start_pos_x = this_bestfit_pos.X(); 
+		PCA_track_start_pos_y = this_bestfit_pos.Y(); 
+		PCA_track_start_pos_z = this_bestfit_pos.Z();
+	  	PCA_track_start_dir_x = this_bestfit_dir.X(); 
+		PCA_track_start_dir_y = this_bestfit_dir.Y(); 
+		PCA_track_start_dir_z = this_bestfit_dir.Z();
+	
+	  }//end if(start_in_tpc)
+	  if(end_in_tpc && track_length>=20) { 
+		std::cout << "Doing PCA analysis on end point...\n";
+		endpoint_PCA_ana(*trackList[track_i], false, this_bestfit_dir, this_bestfit_pos); 
+		std::cout << "Succesfully fit end point with PCA, continuing....\n";
+		std::cout << "Eigenvalue (end) 1: " << PCA_end_eval_1 << std::endl;
+		std::cout << "Eigenvector (end) 1 (X,Y,Z)=(" << PCA_end_comp_x_1 << "," << PCA_end_comp_y_1 << "," << PCA_end_comp_z_1 << ")\n";
+		std::cout << "Eigenvalue (end) 2: " << PCA_end_eval_2 << std::endl;
+		std::cout << "Eigenvector (end) 2 (X,Y,Z)=(" << PCA_end_comp_x_2 << "," << PCA_end_comp_y_2 << "," << PCA_end_comp_z_2 << ")\n";
+		std::cout << "Eigenvalue (end) 3: " << PCA_end_eval_3 << std::endl;
+		std::cout << "Eigenvector (end) 3 (X,Y,Z)=(" << PCA_end_comp_x_3 << "," << PCA_end_comp_y_3 << "," << PCA_end_comp_z_3 << ")\n";
+
+		std::cout << "Best fit direction (X,Y,Z) (should be same as evect of largest eval above):\t("; 
+		std::cout << this_bestfit_dir.X() << "," << this_bestfit_dir.Y() << "," << this_bestfit_dir.Z() << ")\n"; 
+
+		findIntersectingCRTVolume(this_bestfit_pos, this_bestfit_dir,PCA_trackend_reg1,PCA_trackend_reg2,PCA_trackend_reg3);
+
+//		if(PCA_trackend_reg1>=30||<=50) std::cout << "Found at least one intersecting CRT volume from PCA!\n";
+
+	  	PCA_track_end_pos_x = this_bestfit_pos.X(); 
+		PCA_track_end_pos_y = this_bestfit_pos.Y(); 
+		PCA_track_end_pos_z = this_bestfit_pos.Z();
+	  	PCA_track_end_dir_x = this_bestfit_dir.X(); 
+		PCA_track_end_dir_y = this_bestfit_dir.Y(); 
+		PCA_track_end_dir_z = this_bestfit_dir.Z();
+
+	  }//end if(end_in_tpc)
+*/
+	  tpc_start_x = trackList[track_i]->StartDirection().X();
+	  tpc_start_y = trackList[track_i]->StartDirection().Y();
+	  tpc_start_z = trackList[track_i]->StartDirection().Z();
+	  tpc_end_x = trackList[track_i]->EndDirection().X();
+	  tpc_end_y = trackList[track_i]->EndDirection().Y();
+	  tpc_end_z = trackList[track_i]->EndDirection().Z();
 
 	  //Find PFParticle for track i
 	  //art::Ptr::key() gives the index in the vector
@@ -410,6 +620,12 @@ namespace icarus {
 
 	  std::vector<art::Ptr<recob::Hit>> hits = findManyHits.at(trackList[track_i]->ID());
 
+	  getTickRange(hits,tpc_mintick,tpc_maxtick);
+
+	  is_ancatcross = false;
+	  if(tpc_maxtick - tpc_mintick>=2300) is_ancatcross=true;
+
+
 	  if (hits.empty()) continue;
 	  //Get Truth info if applicable:
 	  if(!fIsData){
@@ -419,7 +635,8 @@ namespace icarus {
 	  }//end if(!fIsData)
 
 //	  int const cryoNumber = hits[0]->WireID().Cryostat;
-	  matchCand closest = t0Alg.GetClosestCRTHit(detProp, *trackList[track_i], hits, crtHits,  m_gate_start_timestamp, fIsData);
+
+	  matchCand_PCA closest = t0Alg.GetClosestCRTHit_PCA(detProp, *trackList[track_i], hits, crtHits,  m_gate_start_timestamp, fIsData);
 
 	  if(closest.dca >=0 ){
 	    
@@ -437,6 +654,55 @@ namespace icarus {
 		driftdir =  closest.driftdir; //TPCGeoUtil::DriftDirectionFromHits(fGeometryService, hits);
 		simple_catcross = closest.simple_cathodecrosser;
 		best_dca_pos = closest.best_DCA_pos;
+
+		PCA_track_start_pos_x = closest.PCA_start_pos.X();
+		PCA_track_start_pos_y = closest.PCA_start_pos.Y();
+		PCA_track_start_pos_z = closest.PCA_start_pos.Z();
+		PCA_track_end_pos_x = closest.PCA_end_pos.X();
+		PCA_track_end_pos_y = closest.PCA_end_pos.Y();
+		PCA_track_end_pos_z = closest.PCA_end_pos.Z();
+		PCA_track_start_dir_x = closest.PCA_start_dir.X();
+		PCA_track_start_dir_y = closest.PCA_start_dir.Y();
+		PCA_track_start_dir_z = closest.PCA_start_dir.Z();
+		PCA_track_end_dir_x = closest.PCA_end_dir.X();
+		PCA_track_end_dir_y = closest.PCA_end_dir.Y();
+		PCA_track_end_dir_z = closest.PCA_end_dir.Z();
+		PCA_start_crtplanecross_x = closest.PCA_start_crtplanecross.X();
+		PCA_start_crtplanecross_y = closest.PCA_start_crtplanecross.Y();
+		PCA_start_crtplanecross_z = closest.PCA_start_crtplanecross.Z();
+		PCA_end_crtplanecross_x = closest.PCA_end_crtplanecross.X();
+		PCA_end_crtplanecross_y = closest.PCA_end_crtplanecross.Y();
+		PCA_end_crtplanecross_z = closest.PCA_end_crtplanecross.Z();
+		PCA_DCA_start = closest.PCA_DCA_start;
+		PCA_DCA_end = closest.PCA_DCA_end;
+		PCA_planedist_start = closest.PCA_planedist_start;
+		PCA_planedist_end = closest.PCA_planedist_end;
+
+		int thinrange;
+
+		if(crt_region==30) thinrange=1;
+		else if(crt_region==31||crt_region==32||(crt_region>=40&&crt_region<=45)) thinrange = 0;
+		else if(crt_region==33 || crt_region==34 || crt_region ==46 ||crt_region==47) thinrange = 2;
+
+		if(best_dca_pos==0||best_dca_pos==2){
+
+			TVector3 trkpos(closest.tpc_track_start.X(),closest.tpc_track_start.Y(),closest.tpc_track_start.Z());
+			TVector3 trkdir(closest.startDir.X(),closest.startDir.Y(),closest.startDir.Z());
+			TVector3 crtpos(closest.thishit.x_pos,closest.thishit.y_pos,closest.thishit.z_pos);
+
+			crt_tpc_plane_dist = CRT_plane_dist(trkpos,trkdir,crtpos,thinrange);
+
+		}//end if(best_dca_pos==0||best_dca_pos==2)
+		else if(best_dca_pos==1){
+
+			TVector3 trkpos(closest.tpc_track_end.X(),closest.tpc_track_end.Y(),closest.tpc_track_end.Z());
+			TVector3 trkdir(closest.endDir.X(),closest.endDir.Y(),closest.endDir.Z());
+			TVector3 crtpos(closest.thishit.x_pos,closest.thishit.y_pos,closest.thishit.z_pos);
+
+			crt_tpc_plane_dist = CRT_plane_dist(trkpos,trkdir,crtpos,thinrange);
+
+		}//end else if(best_dca_pos==1)
+
 		crttime = closest.t0;
 		crt_pes= closest.thishit.peshit;
 		crt_extraplen = closest.extrapLen;
@@ -449,6 +715,17 @@ namespace icarus {
 		tpc_trk_end_y = closest.tpc_track_end.Y();
 		tpc_trk_end_z = closest.tpc_track_end.Z();
 	
+		if((tpc_trk_start_x+tpc_trk_end_x)/2 >0) {
+
+			tpcWest=true;
+
+		}//end if((tpc_trk_start_x+tpc_trk_end_x)/2 >0) 
+		else if((tpc_trk_start_x+tpc_trk_end_x)/2 <0){
+
+			tpcEast=true;
+
+		}//end else if((tpc_trk_start_x+tpc_trk_end_x)/2 <0)
+
 		trk_startdir_x = closest.startDir.X();
 		trk_startdir_y = closest.startDir.Y();
 		trk_startdir_z = closest.startDir.Z();
@@ -463,6 +740,11 @@ namespace icarus {
 
 		t0min = closest.t0min;
 		t0max = closest.t0max;
+
+		PCA_DCA_start = closest.PCA_DCA_start;
+		PCA_DCA_end = closest.PCA_DCA_end;
+
+		crt_hitflag = closest.thishit.ts0_s_corr;
 
 		//extract all info about CRT Hit's mac5+channel+pes into vectors
 	    	std::map< uint8_t, std::vector<std::pair<int,float> > > crthit_pes = closest.thishit.pesmap; ///< Saves signal hit information (FEB, local-channel and PE) .
@@ -519,6 +801,8 @@ namespace icarus {
 
 				all_crt_hitcode_map.push_back(i);//Gives ID to each hit for the FEB+channel+pes breakdown below to allow cross-referencing between vectors
 
+				all_crt_hitflags.push_back(thiscand.thishit.ts0_s_corr);
+
 			    	std::map< uint8_t, std::vector<std::pair<int,float> > > thishit_pes = crtcandidate.pesmap; ///< Saves signal hit information (FEB, local-channel and PE) .
 				for(uint8_t k=1; k<232; k++){
 					if(thishit_pes[k].size()>0){
@@ -536,7 +820,7 @@ namespace icarus {
 	    }//end if(closest.dca != -99999)
 
 	  } // DCA check
-   	    tr_crttpc->Fill();
+   	    /*if(trackList[track_i]->Length()>20)*/ tr_crttpc->Fill();
 	} // Loop over tracks  
 	
       } // validity check
@@ -564,6 +848,29 @@ void icarus::CRTTPCTruthEff::GetAncestorID(int trueid, int &motherid, int &ances
 
 
 }//CRTTPCTruthEff::GetAncestorID
+void icarus::CRTTPCTruthEff::getTickRange(std::vector<art::Ptr<recob::Hit>> hits, int &mintick, int &maxtick){
+
+	int tempmin = 4097; int tempmax = -1;
+
+	std::cout << "Found " << (int)hits.size() << " hits to search\n";
+
+	for(int i=0; i<(int)hits.size(); i++){
+
+		int tickhold1 =(int)hits[i]->StartTick(); 
+		if(tickhold1>tempmax) tempmax=tickhold1;
+		if(tickhold1<tempmin) tempmin=tickhold1;
+
+		int tickhold2 =(int)hits[i]->EndTick(); 
+		if(tickhold2>tempmax) tempmax=tickhold2;
+		if(tickhold2<tempmin) tempmin=tickhold2;
+
+//		std::cout << "StartTick: " << tickhold1 << "\tEndTick: " << tickhold2 << std::endl;
+
+	}//end loop over hits
+
+	mintick = tempmin; maxtick = tempmax;
+
+}//end definition of void icarus::CRTTPCTruthEff::getTickRange(recob::Track trk, double &mintick, double &maxtick)
 
 void icarus::CRTTPCTruthEff::getCatCrossXYZ(recob::Track trk, double &my_x, double &my_y, double &my_z){
 
@@ -611,6 +918,757 @@ void icarus::CRTTPCTruthEff::getCatCrossXYZ(recob::Track trk, double &my_x, doub
 	}
 
 }//end definition of std::pair<int,int> getCatCrossYZ(std::vector<art::Ptr<recob::Hit>> trk_hits)
+bool icarus::CRTTPCTruthEff::willEnterCRTVolume(TVector3 vecpos, TVector3 vecdir, int crtregion){
+
+	bool returnbool;
+
+	struct boundary_plane{
+		double xmin, xmax, ymin, ymax, zmin, zmax;
+		int thin_range;//<range of wall that is thinnest, x=0, y=1, z=2
+		std::string reg_name; int reg_num;
+	};
+
+	boundary_plane all_north_planes[5];
+
+	boundary_plane thisplane;
+
+	if(crtregion==30){
+		thisplane.xmin = -550;     thisplane.xmax = 550;
+		thisplane.ymin = 617.4;    thisplane.ymax = 617.4;
+		thisplane.zmin = -1130;    thisplane.zmax = 1430;
+		thisplane.reg_num = 30;	   thisplane.reg_name = "Top Roof";
+		thisplane.thin_range = 1;	
+	}//end if(crtregion==30)
+	else if(crtregion==31){
+		thisplane.xmin = 555;     thisplane.xmax = 555;
+		thisplane.ymin = 415;     thisplane.ymax = 577;
+		thisplane.zmin = -1130;   thisplane.zmax = 1430;
+		thisplane.reg_num = 31;	  thisplane.reg_name = "Top Rim West";
+		thisplane.thin_range = 0;
+	}//end else if(crtregion==31)
+	else if(crtregion==32){
+		thisplane.xmin = -555;    thisplane.xmax = -555;
+		thisplane.ymin = 415;     thisplane.ymax = 577;
+		thisplane.zmin = -1130;   thisplane.zmax = 1430;
+		thisplane.reg_num = 32;	  thisplane.reg_name = "Top Rim East";
+		thisplane.thin_range = 0;
+	}//end else if(crtregion==32)
+	else if(crtregion==33){
+		thisplane.xmin = -540;    thisplane.xmax = 357;
+		thisplane.ymin = 415;     thisplane.ymax = 577;
+		thisplane.zmin = -1143;   thisplane.zmax = -1143;
+		thisplane.reg_num = 33;	  thisplane.reg_name = "Top Rim South";
+		thisplane.thin_range = 2;
+	}//end else if(crtregion==33)
+	else if(crtregion==34){
+		thisplane.xmin = -541;    thisplane.xmax = 542;
+		thisplane.ymin = 445;     thisplane.ymax = 605;
+		thisplane.zmin = -1533;   thisplane.zmax = 1533;
+		thisplane.reg_num = 34;	  thisplane.reg_name = "Top Rim North";
+		thisplane.thin_range = 2;
+	}//end else if(crtregion==34)
+	else if(crtregion==40){
+		thisplane.xmin = 526.22;    thisplane.xmax = 534.49;
+		thisplane.ymin = -300;      thisplane.ymax = 450;
+		thisplane.zmin = -1173.34;  thisplane.zmax = 373.34;
+		thisplane.reg_num = 40;     thisplane.reg_name = "Side West-South";
+		thisplane.thin_range = 0;
+	}//end else if(crtregion==40)
+	else if(crtregion==41){
+		thisplane.xmin = 556.055;   thisplane.xmax = 564.325;
+		thisplane.ymin = -280;      thisplane.ymax = 390;
+		thisplane.zmin = -407;      thisplane.zmax = 393;
+		thisplane.reg_num = 41;     thisplane.reg_name = "Side West-Center";
+		thisplane.thin_range = 0;
+	}//end else if(crtregion==41)
+	else if(crtregion==42){
+		thisplane.xmin = 526.22;    thisplane.xmax = 534.49;
+		thisplane.ymin = -300;      thisplane.ymax = 450;
+		thisplane.zmin = 359.34;    thisplane.zmax = 1159.34;
+		thisplane.reg_num = 42;     thisplane.reg_name = "Side West-North";
+		thisplane.thin_range = 0;
+	}//end else if(crtregion==42)
+	else if(crtregion==43){	
+		thisplane.xmin = -534.49;   thisplane.xmax = -526.22;
+		thisplane.ymin = -260;      thisplane.ymax = 420;
+		thisplane.zmin = -1173.34;  thisplane.zmax = 373.34;
+		thisplane.reg_num = 43;     thisplane.reg_name = "Side East-South";
+		thisplane.thin_range = 0;
+	}//end else if(crtregion==43)
+	else if(crtregion==44){	
+		thisplane.xmin = -564.325;  thisplane.xmax = -556.055;
+		thisplane.ymin = -220;      thisplane.ymax = 400;
+		thisplane.zmin = -407;      thisplane.zmax = 393;
+		thisplane.reg_num = 44;     thisplane.reg_name = "Side East-Center";
+		thisplane.thin_range = 0;
+	}//end else if(crtregion==44)
+	else if(crtregion==45){	
+		thisplane.xmin = -534.49;   thisplane.xmax = -526.22;
+		thisplane.ymin = -280;      thisplane.ymax = 450;
+		thisplane.zmin = 359.34;    thisplane.zmax = 1159.34;
+		thisplane.reg_num = 45;     thisplane.reg_name = "Side East-North";
+		thisplane.thin_range = 0;
+	}//end else if(crtregion==45)
+	else if(crtregion==46){	
+		thisplane.xmin = -500;       thisplane.xmax = 500;
+		thisplane.ymin = -300;       thisplane.ymax = 500;
+		thisplane.zmin = -1134.74;   thisplane.zmax = -1120.33;
+		thisplane.reg_num = 46;      thisplane.reg_name = "Side South";
+		thisplane.thin_range = 2;
+	}//end else if(crtregion==46)
+	else if(crtregion==47){	
+		all_north_planes[0].xmin = -508.275;   all_north_planes[0].xmax = 508.275;
+		all_north_planes[0].ymin = 80;         all_north_planes[0].ymax = 320;
+		all_north_planes[0].zmin = 1169.72;    all_north_planes[0].zmax = 1177.99;
+		all_north_planes[0].reg_num = 47;      all_north_planes[0].reg_name = "Side North Topmost";
+		all_north_planes[0].thin_range = 2;
+
+		all_north_planes[1].xmin = -508.275;   all_north_planes[1].xmax = -353.325;
+		all_north_planes[1].ymin = -80;	      all_north_planes[1].ymax = 80;
+		all_north_planes[1].zmin = 1169.72;    all_north_planes[1].zmax = 1177.99;
+		all_north_planes[1].reg_num = 47;      all_north_planes[1].reg_name = "Side North Mid-East";
+		all_north_planes[1].thin_range = 2;
+	
+		all_north_planes[2].xmin = 353.325;    all_north_planes[2].xmax = 508.275;
+		all_north_planes[2].ymin = -80;        all_north_planes[2].ymax = 80;
+		all_north_planes[2].zmin = 1169.72;    all_north_planes[2].zmax = 1177.99;
+		all_north_planes[2].reg_num = 47;      all_north_planes[2].reg_name = "Side North Mid-West";
+		all_north_planes[2].thin_range = 2;
+	
+		all_north_planes[3].xmin = -508.275;   all_north_planes[3].xmax = -380.005;
+		all_north_planes[3].ymin = -160;       all_north_planes[3].ymax = -80;
+		all_north_planes[3].zmin = 1169.72;    all_north_planes[3].zmax = 1177.99;
+		all_north_planes[3].reg_num = 47;      all_north_planes[3].reg_name = "Side North Bottom-East";
+		all_north_planes[3].thin_range = 2;
+	
+		all_north_planes[4].xmin = 380.005;    all_north_planes[4].xmax = 508.275;
+		all_north_planes[4].ymin = -160;       all_north_planes[4].ymax = -80;
+		all_north_planes[4].zmin = 1169.72;    all_north_planes[4].zmax = 1177.99;
+		all_north_planes[4].reg_num = 47;      all_north_planes[4].reg_name = "Side North Bottom-West";
+		all_north_planes[4].thin_range = 2;
+	}//end else if(crtregion==47)
+
+//bool icarus::CRTTPCTruthEff::willEnterCRTVolume(TVector3 vecpos, TVector3 vecdir, int crtregion)
+
+	if(thisplane.thin_range==0){
+
+//		double thinmin = thisplane.xmin; double thinmax = thisplane.xmax;
+		double parameter_tmin = (thisplane.xmin - vecpos.X())/vecdir.X();
+		double parameter_tmax = (thisplane.xmax - vecpos.X())/vecdir.X();
+
+		double ycalcmin = vecpos.Y() + vecdir.Y()*parameter_tmin;
+		double ycalcmax = vecpos.Y() + vecdir.Y()*parameter_tmax;
+		double zcalcmin = vecpos.Z() + vecdir.Z()*parameter_tmin;
+		double zcalcmax = vecpos.Z() + vecdir.Z()*parameter_tmax;
+
+		bool ymin_inrange = ycalcmin<=thisplane.ymax && ycalcmin >=thisplane.ymin;
+		bool ymax_inrange = ycalcmax<=thisplane.ymax && ycalcmax >=thisplane.ymin;
+		bool zmin_inrange = zcalcmin<=thisplane.zmax && zcalcmin >=thisplane.zmin;
+		bool zmax_inrange = zcalcmax<=thisplane.zmax && zcalcmax >=thisplane.zmin;
+
+		if(ymin_inrange && zmin_inrange) return true;
+		else if(ymax_inrange && zmax_inrange) return true;
+		else return false;
+
+	}//end if(thisplane.thin_range==0)
+	else if(thisplane.thin_range==1){
+
+//		double thinmin = thisplane.ymin; double thinmax = thisplane.ymax;
+		double parameter_tmin = (thisplane.ymin - vecpos.Y())/vecdir.Y();
+		double parameter_tmax = (thisplane.ymax - vecpos.Y())/vecdir.Y();
+
+		double xcalcmin = vecpos.X() + vecdir.X()*parameter_tmin;
+		double xcalcmax = vecpos.X() + vecdir.X()*parameter_tmax;
+		double zcalcmin = vecpos.Z() + vecdir.Z()*parameter_tmin;
+		double zcalcmax = vecpos.Z() + vecdir.Z()*parameter_tmax;
+
+		bool xmin_inrange = xcalcmin<=thisplane.xmax && xcalcmin >=thisplane.xmin;
+		bool xmax_inrange = xcalcmax<=thisplane.xmax && xcalcmax >=thisplane.xmin;
+		bool zmin_inrange = zcalcmin<=thisplane.zmax && zcalcmin >=thisplane.zmin;
+		bool zmax_inrange = zcalcmax<=thisplane.zmax && zcalcmax >=thisplane.zmin;
+
+		if(xmin_inrange && zmin_inrange) return true;
+		else if(xmax_inrange && zmax_inrange) return true;
+		else return false;
+
+	}//end if(thisplane.thin_range==1)
+	else if(thisplane.thin_range==2){
+
+//		double thinmin = thisplane.zmin; double thinmax = thisplane.zmax;
+		double parameter_tmin = (thisplane.zmin - vecpos.Z())/vecdir.Z();
+		double parameter_tmax = (thisplane.zmax - vecpos.Z())/vecdir.Z();
+
+		double xcalcmin = vecpos.X() + vecdir.X()*parameter_tmin;
+		double xcalcmax = vecpos.X() + vecdir.X()*parameter_tmax;
+		double ycalcmin = vecpos.Y() + vecdir.Y()*parameter_tmin;
+		double ycalcmax = vecpos.Y() + vecdir.Y()*parameter_tmax;
+
+		bool xmin_inrange = xcalcmin<=thisplane.xmax && xcalcmin >=thisplane.xmin;
+		bool xmax_inrange = xcalcmax<=thisplane.xmax && xcalcmax >=thisplane.xmin;
+		bool ymin_inrange = ycalcmin<=thisplane.ymax && ycalcmin >=thisplane.ymin;
+		bool ymax_inrange = ycalcmax<=thisplane.ymax && ycalcmax >=thisplane.ymin;
+
+		if(xmin_inrange && ymin_inrange) return true;
+		else if(xmax_inrange && ymax_inrange) return true;
+		else return false;
+
+	}//end if(thisplane.thin_range==2)
+
+	returnbool=false;
+	if(crt_region==47){
+		for(int i=0; i<5; i++){
+//			double thinmin = all_north_planes[i].zmin; double thinmax = all_north_planes[i].zmax;
+			double parameter_tmin = (all_north_planes[i].zmin - vecpos.Z())/vecdir.Z();
+			double parameter_tmax = (all_north_planes[i].zmax - vecpos.Z())/vecdir.Z();
+
+			double xcalcmin = vecpos.X() + vecdir.X()*parameter_tmin;
+			double xcalcmax = vecpos.X() + vecdir.X()*parameter_tmax;
+			double ycalcmin = vecpos.Y() + vecdir.Y()*parameter_tmin;
+			double ycalcmax = vecpos.Y() + vecdir.Y()*parameter_tmax;
+
+			bool xmin_inrange = xcalcmin<=all_north_planes[i].xmax && xcalcmin >=all_north_planes[i].xmin;
+			bool xmax_inrange = xcalcmax<=all_north_planes[i].xmax && xcalcmax >=all_north_planes[i].xmin;
+			bool ymin_inrange = ycalcmin<=all_north_planes[i].ymax && ycalcmin >=all_north_planes[i].ymin;
+			bool ymax_inrange = ycalcmax<=all_north_planes[i].ymax && ycalcmax >=all_north_planes[i].ymin;
+
+			if(xmin_inrange && ymin_inrange) returnbool=true;
+			else if(xmax_inrange && ymax_inrange) returnbool=true;
+		}//end loop over North Wall planes
+	}//end if(crt_region==47)
+	return returnbool;
+
+}//end definition of bool icarus::CRTTPCTruthEff::willEnterCRTVolume(TVector3 vecpos, TVector3 vecdir, int crtregion)
+
+void icarus::CRTTPCTruthEff::findIntersectingCRTVolume(TVector3 &vecpos, TVector3 &vecdir, int &likely_CRT_region1, int &likely_CRT_region2, int &likely_CRT_region3){
+
+
+	likely_CRT_region1 = -1; likely_CRT_region2=-1; likely_CRT_region3=-1;
+
+	if(willEnterCRTVolume(vecpos,vecdir,30)) likely_CRT_region1 = 30;
+	
+	if(willEnterCRTVolume(vecpos,vecdir,31)){ 
+
+		if(likely_CRT_region1==-1) likely_CRT_region1 = 30;
+		else likely_CRT_region2 = 31;
+
+	}//end 	if(willEnterCRTVolume(vecpos,vecdir,31))
+
+	if(willEnterCRTVolume(vecpos,vecdir,32)){ 
+
+		if(likely_CRT_region1==-1) likely_CRT_region1 = 32;
+		if(likely_CRT_region1!=-1 && likely_CRT_region2==-1) likely_CRT_region2 = 32;
+		else likely_CRT_region3 = 32;
+
+	}//end 	if(willEnterCRTVolume(vecpos,vecdir,32))
+
+	if(willEnterCRTVolume(vecpos,vecdir,33)){ 
+
+		if(likely_CRT_region1==-1) likely_CRT_region1 = 33;
+		if(likely_CRT_region1!=-1 && likely_CRT_region2==-1) likely_CRT_region2 = 33;
+		if(likely_CRT_region1!=-1 && likely_CRT_region2!=-1 && likely_CRT_region3==-1) likely_CRT_region3 = 33;
+		if(likely_CRT_region1!=-1 && likely_CRT_region2!=-1 && likely_CRT_region3!=-1) std::cout << "\nAll three slots for predicted CRT regions are filled!\n";
+
+	}//end 	if(willEnterCRTVolume(vecpos,vecdir,33))
+
+	if(willEnterCRTVolume(vecpos,vecdir,34)){ 
+
+		if(likely_CRT_region1==-1) likely_CRT_region1 = 34;
+		if(likely_CRT_region1!=-1 && likely_CRT_region2==-1) likely_CRT_region2 = 34;
+		if(likely_CRT_region1!=-1 && likely_CRT_region2!=-1 && likely_CRT_region3==-1) likely_CRT_region3 = 34;
+		if(likely_CRT_region1!=-1 && likely_CRT_region2!=-1 && likely_CRT_region3!=-1) std::cout << "\nAll three slots for predicted CRT regions are filled!\n";
+
+	}//end 	if(willEnterCRTVolume(vecpos,vecdir,34))
+
+	if(willEnterCRTVolume(vecpos,vecdir,40)){ 
+
+		if(likely_CRT_region1==-1) likely_CRT_region1 = 40;
+		if(likely_CRT_region1!=-1 && likely_CRT_region2==-1) likely_CRT_region2 = 40;
+		if(likely_CRT_region1!=-1 && likely_CRT_region2!=-1 && likely_CRT_region3==-1) likely_CRT_region3 = 40;
+		if(likely_CRT_region1!=-1 && likely_CRT_region2!=-1 && likely_CRT_region3!=-1) std::cout << "\nAll three slots for predicted CRT regions are filled!\n";
+
+	}//end 	if(willEnterCRTVolume(vecpos,vecdir,40))
+
+	if(willEnterCRTVolume(vecpos,vecdir,41)){ 
+
+		if(likely_CRT_region1==-1) likely_CRT_region1 = 41;
+		if(likely_CRT_region1!=-1 && likely_CRT_region2==-1) likely_CRT_region2 = 41;
+		if(likely_CRT_region1!=-1 && likely_CRT_region2!=-1 && likely_CRT_region3==-1) likely_CRT_region3 = 41;
+		if(likely_CRT_region1!=-1 && likely_CRT_region2!=-1 && likely_CRT_region3!=-1) std::cout << "\nAll three slots for predicted CRT regions are filled!\n";
+
+	}//end 	if(willEnterCRTVolume(vecpos,vecdir,41))
+
+	if(willEnterCRTVolume(vecpos,vecdir,42)){ 
+
+		if(likely_CRT_region1==-1) likely_CRT_region1 = 42;
+		if(likely_CRT_region1!=-1 && likely_CRT_region2==-1) likely_CRT_region2 = 42;
+		if(likely_CRT_region1!=-1 && likely_CRT_region2!=-1 && likely_CRT_region3==-1) likely_CRT_region3 = 42;
+		if(likely_CRT_region1!=-1 && likely_CRT_region2!=-1 && likely_CRT_region3!=-1) std::cout << "\nAll three slots for predicted CRT regions are filled!\n";
+
+	}//end 	if(willEnterCRTVolume(vecpos,vecdir,42))
+
+	if(willEnterCRTVolume(vecpos,vecdir,43)){ 
+
+		if(likely_CRT_region1==-1) likely_CRT_region1 = 43;
+		if(likely_CRT_region1!=-1 && likely_CRT_region2==-1) likely_CRT_region2 = 43;
+		if(likely_CRT_region1!=-1 && likely_CRT_region2!=-1 && likely_CRT_region3==-1) likely_CRT_region3 = 43;
+		if(likely_CRT_region1!=-1 && likely_CRT_region2!=-1 && likely_CRT_region3!=-1) std::cout << "\nAll three slots for predicted CRT regions are filled!\n";
+
+	}//end 	if(willEnterCRTVolume(vecpos,vecdir,43))
+
+	if(willEnterCRTVolume(vecpos,vecdir,44)){ 
+
+		if(likely_CRT_region1==-1) likely_CRT_region1 = 44;
+		if(likely_CRT_region1!=-1 && likely_CRT_region2==-1) likely_CRT_region2 = 44;
+		if(likely_CRT_region1!=-1 && likely_CRT_region2!=-1 && likely_CRT_region3==-1) likely_CRT_region3 = 44;
+		if(likely_CRT_region1!=-1 && likely_CRT_region2!=-1 && likely_CRT_region3!=-1) std::cout << "\nAll three slots for predicted CRT regions are filled!\n";
+
+	}//end 	if(willEnterCRTVolume(vecpos,vecdir,44))
+
+	if(willEnterCRTVolume(vecpos,vecdir,45)){ 
+
+		if(likely_CRT_region1==-1) likely_CRT_region1 = 45;
+		if(likely_CRT_region1!=-1 && likely_CRT_region2==-1) likely_CRT_region2 = 45;
+		if(likely_CRT_region1!=-1 && likely_CRT_region2!=-1 && likely_CRT_region3==-1) likely_CRT_region3 = 45;
+		if(likely_CRT_region1!=-1 && likely_CRT_region2!=-1 && likely_CRT_region3!=-1) std::cout << "\nAll three slots for predicted CRT regions are filled!\n";
+
+	}//end 	if(willEnterCRTVolume(vecpos,vecdir,45))
+
+	if(willEnterCRTVolume(vecpos,vecdir,46)){ 
+
+		if(likely_CRT_region1==-1) likely_CRT_region1 = 46;
+		if(likely_CRT_region1!=-1 && likely_CRT_region2==-1) likely_CRT_region2 = 46;
+		if(likely_CRT_region1!=-1 && likely_CRT_region2!=-1 && likely_CRT_region3==-1) likely_CRT_region3 = 46;
+		if(likely_CRT_region1!=-1 && likely_CRT_region2!=-1 && likely_CRT_region3!=-1) std::cout << "\nAll three slots for predicted CRT regions are filled!\n";
+
+	}//end 	if(willEnterCRTVolume(vecpos,vecdir,46))
+
+	if(willEnterCRTVolume(vecpos,vecdir,47)){ 
+
+		if(likely_CRT_region1==-1) likely_CRT_region1 = 47;
+		if(likely_CRT_region1!=-1 && likely_CRT_region2==-1) likely_CRT_region2 = 47;
+		if(likely_CRT_region1!=-1 && likely_CRT_region2!=-1 && likely_CRT_region3==-1) likely_CRT_region3 = 47;
+		if(likely_CRT_region1!=-1 && likely_CRT_region2!=-1 && likely_CRT_region3!=-1) std::cout << "\nAll three slots for predicted CRT regions are filled!\n";
+
+	}//end 	if(willEnterCRTVolume(vecpos,vecdir,47))
+
+/*	if(startorend==0){ 
+		auto temp_endpoint = trk.Start();
+		auto temp_retvec = trk.StartDirection();
+
+		endpoint.X() = temp_endpoint.X;
+		endpoint.Y() = temp_endpoint.Y;
+		endpoint.Z() = temp_endpoint.Z;
+
+		retvec.X() = temp_retvec.X;
+		retvec.Y() = temp_retvec.Y;
+		retvec.Z() = temp_retvec.Z;
+	}//end if(startorend==0)
+	else if(startorend==1){ 
+		auto temp_endpoint = trk.End();
+		auto temp_retvec = trk.EndDirection();
+
+		endpoint.X() = temp_endpoint.X;
+		endpoint.Y() = temp_endpoint.Y;
+		endpoint.Z() = temp_endpoint.Z;
+
+		retvec.X() = temp_retvec.X;
+		retvec.Y() = temp_retvec.Y;
+		retvec.Z() = temp_retvec.Z;
+	}//end if(startorend==0) 
+
+	struct boundary_plane{
+		double xmin, xmax, ymin, ymax, zmin, zmax;
+		int thin_range;//<range of wall that is thinnest, x=0, y=1, z=2
+		std::string reg_name; int reg_num;
+	};
+
+	boundary_plane all_top_planes[5], all_side_planes[12];
+
+	all_top_planes[0].xmin = -550;     all_top_planes[0].xmax = 550;
+	all_top_planes[0].ymin = 617.4;    all_top_planes[0].ymax = 617.4;
+	all_top_planes[0].zmin = -1130;    all_top_planes[0].zmax = 1430;
+	all_top_planes[0].reg_num = 30;	   all_top_planes[0].reg_name = "Top Roof";
+	all_top_planes[0].thin_range = 1;	
+	
+	all_top_planes[1].xmin = 555;     all_top_planes[1].xmax = 555;
+	all_top_planes[1].ymin = 415;     all_top_planes[1].ymax = 577;
+	all_top_planes[1].zmin = -1130;   all_top_planes[1].zmax = 1430;
+	all_top_planes[1].reg_num = 31;	  all_top_planes[1].reg_name = "Top Rim West";
+	all_top_planes[1].thin_range = 0;
+	
+	all_top_planes[2].xmin = -555;    all_top_planes[2].xmax = -555;
+	all_top_planes[2].ymin = 415;     all_top_planes[2].ymax = 577;
+	all_top_planes[2].zmin = -1130;   all_top_planes[2].zmax = 1430;
+	all_top_planes[2].reg_num = 32;	  all_top_planes[2].reg_name = "Top Rim East";
+	all_top_planes[2].thin_range = 0;
+
+	all_top_planes[3].xmin = -540;    all_top_planes[3].xmax = 357;
+	all_top_planes[3].ymin = 415;     all_top_planes[3].ymax = 577;
+	all_top_planes[3].zmin = -1143;   all_top_planes[3].zmax = -1143;
+	all_top_planes[3].reg_num = 33;	  all_top_planes[3].reg_name = "Top Rim South";
+	all_top_planes[3].thin_range = 2;
+
+	all_top_planes[4].xmin = -541;    all_top_planes[4].xmax = 542;
+	all_top_planes[4].ymin = 445;     all_top_planes[4].ymax = 605;
+	all_top_planes[4].zmin = -1533;   all_top_planes[4].zmax = 1533;
+	all_top_planes[4].reg_num = 34;	  all_top_planes[4].reg_name = "Top Rim North";
+	all_top_planes[4].thin_range = 2;
+
+	all_side_planes[0].xmin = 526.22;    all_side_planes[0].xmax = 534.49;
+	all_side_planes[0].ymin = -300;      all_side_planes[0].ymax = 450;
+	all_side_planes[0].zmin = -1173.34;  all_side_planes[0].zmax = 373.34;
+	all_side_planes[0].reg_num = 40;     all_side_planes[0].reg_name = "Side West-South";
+	all_side_planes[0].thin_range = 0;
+
+	all_side_planes[1].xmin = 556.055;   all_side_planes[1].xmax = 564.325;
+	all_side_planes[1].ymin = -280;      all_side_planes[1].ymax = 390;
+	all_side_planes[1].zmin = -407;      all_side_planes[1].zmax = 393;
+	all_side_planes[1].reg_num = 41;     all_side_planes[1].reg_name = "Side West-Center";
+	all_side_planes[1].thin_range = 0;
+	
+	all_side_planes[2].xmin = 526.22;    all_side_planes[2].xmax = 534.49;
+	all_side_planes[2].ymin = -300;      all_side_planes[2].ymax = 450;
+	all_side_planes[2].zmin = 359.34;    all_side_planes[2].zmax = 1159.34;
+	all_side_planes[2].reg_num = 42;     all_side_planes[2].reg_name = "Side West-North";
+	all_side_planes[2].thin_range = 0;
+	
+	all_side_planes[3].xmin = -534.49;   all_side_planes[3].xmax = -526.22;
+	all_side_planes[3].ymin = -260;      all_side_planes[3].ymax = 420;
+	all_side_planes[3].zmin = -1173.34;  all_side_planes[3].zmax = 373.34;
+	all_side_planes[3].reg_num = 43;     all_side_planes[3].reg_name = "Side East-South";
+	all_side_planes[3].thin_range = 0;
+	
+	all_side_planes[4].xmin = -564.325;  all_side_planes[4].xmax = -556.055;
+	all_side_planes[4].ymin = -220;      all_side_planes[4].ymax = 400;
+	all_side_planes[4].zmin = -407;      all_side_planes[4].zmax = 393;
+	all_side_planes[4].reg_num = 44;     all_side_planes[4].reg_name = "Side East-Center";
+	all_side_planes[4].thin_range = 0;
+	
+	all_side_planes[5].xmin = -534.49;   all_side_planes[5].xmax = -526.22;
+	all_side_planes[5].ymin = -280;      all_side_planes[5].ymax = 450;
+	all_side_planes[5].zmin = 359.34;    all_side_planes[5].zmax = 1159.34;
+	all_side_planes[5].reg_num = 45;     all_side_planes[5].reg_name = "Side East-North";
+	all_side_planes[5].thin_range = 0;
+	
+	all_side_planes[6].xmin = -500;       all_side_planes[6].xmax = 500;
+	all_side_planes[6].ymin = -300;       all_side_planes[6].ymax = 500;
+	all_side_planes[6].zmin = -1134.74;   all_side_planes[6].zmax = -1120.33;
+	all_side_planes[6].reg_num = 46;      all_side_planes[6].reg_name = "Side South";
+	all_side_planes[6].thin_range = 2;
+	
+	all_side_planes[7].xmin = -508.275;   all_side_planes[7].xmax = 508.275;
+	all_side_planes[7].ymin = 80;         all_side_planes[7].ymax = 320;
+	all_side_planes[7].zmin = 1169.72;    all_side_planes[7].zmax = 1177.99;
+	all_side_planes[7].reg_num = 47;      all_side_planes[7].reg_name = "Side North Topmost";
+	all_side_planes[7].thin_range = 2;
+	
+	all_side_planes[8].xmin = -508.275;   all_side_planes[8].xmax = -353.325;
+	all_side_planes[8].ymin = -80;	      all_side_planes[8].ymax = 80;
+	all_side_planes[8].zmin = 1169.72;    all_side_planes[8].zmax = 1177.99;
+	all_side_planes[8].reg_num = 47;      all_side_planes[8].reg_name = "Side North Mid-East";
+	all_side_planes[8].thin_range = 2;
+	
+	all_side_planes[9].xmin = 353.325;    all_side_planes[9].xmax = 508.275;
+	all_side_planes[9].ymin = -80;        all_side_planes[9].ymax = 80;
+	all_side_planes[9].zmin = 1169.72;    all_side_planes[9].zmax = 1177.99;
+	all_side_planes[9].reg_num = 47;      all_side_planes[9].reg_name = "Side North Mid-West";
+	all_side_planes[9].thin_range = 2;
+	
+	all_side_planes[10].xmin = -508.275;   all_side_planes[10].xmax = -380.005;
+	all_side_planes[10].ymin = -160;       all_side_planes[10].ymax = -80;
+	all_side_planes[10].zmin = 1169.72;    all_side_planes[10].zmax = 1177.99;
+	all_side_planes[10].reg_num = 47;      all_side_planes[10].reg_name = "Side North Bottom-East";
+	all_side_planes[10].thin_range = 2;
+	
+	all_side_planes[11].xmin = 380.005;    all_side_planes[11].xmax = 508.275;
+	all_side_planes[11].ymin = -160;       all_side_planes[11].ymax = -80;
+	all_side_planes[11].zmin = 1169.72;    all_side_planes[11].zmax = 1177.99;
+	all_side_planes[11].reg_num = 47;      all_side_planes[11].reg_name = "Side North Bottom-West";
+	all_side_planes[11].thin_range = 2;
+*/
+
+
+}//end definition of void icarus::CRTTPCTruthEff::findIntersectingCRTVolume(recob::Track trk, TVector3 &retvec, TVector3 &endpoint, int &likely_CRT_region)
+
+void icarus::CRTTPCTruthEff::endpoint_PCA_ana(recob::Track trk, bool usestartpt, TVector3 &bestfit_dir, TVector3 &bestfit_pos){
+
+	Eigen::Vector3d meanPos(Eigen::Vector3d::Zero());
+
+	//create container for all hit point locations as well as calculate average positions along all axes
+	float xavg = 0, yavg = 0, zavg = 0;
+	std::vector<TVector3> hit_points;
+
+	size_t firstpt;
+	geo::Point_t thispt; geo::Point_t lastpt;
+	TVector3 pos_of_endpoint;
+
+	if(usestartpt) {
+		std::cout << "Begin by assigning first valid point position....\n";
+		firstpt = trk.FirstValidPoint(); 
+//		std::cout << "Found first valid point at size_t=" << firstpt << std::endl;
+		thispt = trk.LocationAtPoint(firstpt);
+		xavg+=thispt.X(); yavg+=thispt.Y(); zavg+=thispt.Z();
+		std::cout << "First valid point is at location (x,y,z)=(" << thispt.X() << "," << thispt.Y() << "," << thispt.Z() << ")\n";
+		TVector3 temppt(thispt.X(),thispt.Y(),thispt.Z());
+		pos_of_endpoint.SetXYZ(thispt.X(),thispt.Y(),thispt.Z());
+		hit_points.push_back(temppt);
+	}//end if(usestartpt)
+	else if(!usestartpt) { 
+		std::cout << "Begin by assigning last valid point position....\n";
+		firstpt = trk.LastValidPoint(); 
+//		std::cout << "Found last valid point at size_t=" << firstpt << std::endl;
+		thispt = trk.LocationAtPoint(firstpt);
+		xavg+=thispt.X(); yavg+=thispt.Y(); zavg+=thispt.Z();
+		std::cout << "Last valid point is at location (x,y,z)=(" << thispt.X() << "," << thispt.Y() << "," << thispt.Z() << ")\n";
+		TVector3 temppt(thispt.X(),thispt.Y(),thispt.Z());
+		pos_of_endpoint.SetXYZ(thispt.X(),thispt.Y(),thispt.Z());
+		hit_points.push_back(temppt);
+	}//end else if(!usestartpt)
+
+	float distance_from_endpoint = 0;
+	float distlimit = 10;
+	int num_points_counter = 1;
+
+	bool forcedbreak = false;
+
+//	std::vector<TVector3> hit_points;
+
+	while(distance_from_endpoint<distlimit || (size_t)num_points_counter<40){
+//		std::cout << "Number of points in the track: " << num_points_counter << std::endl;
+
+		size_t nextpt;
+		if(usestartpt) {
+			nextpt = trk.NextValidPoint(firstpt+1);
+//			std::cout << "Found next valid point at size_t=" << nextpt << std::endl;
+		}//end if(usestartpt)
+		else if(!usestartpt) { 
+			nextpt = trk.PreviousValidPoint(firstpt-1);
+//			std::cout << "Found previous valid point at size_t=" << nextpt << std::endl;
+		}//end else if(!usestartpt)
+
+		if(nextpt==firstpt) {
+
+			std::cout << "Next/previous valid point found to be the same size_t as the one before it! Exiting....\n";
+			forcedbreak = true;
+			break;
+
+		}//end if(nextpt==firstpt)
+
+		geo::Point_t thispt = trk.LocationAtPoint(nextpt);
+
+		std::cout << "Found next track location at (x,y,z)=(" << thispt.X() << "," << thispt.Y() << "," << thispt.Z() << ")\n";
+
+		xavg+=thispt.X(); yavg+=thispt.Y(); zavg+=thispt.Z();
+		TVector3 temppt(thispt.X(),thispt.Y(),thispt.Z());
+
+		distance_from_endpoint = vect_dist(pos_of_endpoint,temppt);
+
+		hit_points.push_back(temppt);
+
+		firstpt = nextpt;
+
+//		std::cout << "Distance between first point and this point: " << distance_from_endpoint << std::endl;
+
+		num_points_counter++;
+	}//end loop over points in TPC track, adding to what will eventually go in PCA analysis
+
+	if(!forcedbreak) {
+
+	std::cout << "Number of valid points found within " << distlimit << " cm of the track endpoint: " << hit_points.size() << std::endl;
+
+
+	xavg = xavg/num_points_counter; yavg = yavg/num_points_counter; zavg = zavg/num_points_counter;
+	meanPos(0) = xavg; meanPos(1) = yavg; meanPos(2) = zavg;
+	bestfit_pos.SetX(xavg); bestfit_pos.SetY(yavg); bestfit_pos.SetZ(zavg);
+	std::cout << "Average (x,y,z) = (" << xavg << "," << yavg << "," << zavg << ")\n";
+	//Make covariance matrix now that we have averages
+	float xi2 = 0, yi2 = 0, zi2 = 0, xiy = 0, xiz = 0, yiz = 0;
+	for(size_t i=0; i<hit_points.size(); i++){
+
+		float tempx = hit_points[i].X() - xavg;
+		float tempy = hit_points[i].Y() - yavg;
+		float tempz = hit_points[i].Z() - zavg;
+
+		xi2+=(tempx*tempx); yi2+=(tempy*tempy); zi2+=(tempz*tempz);
+		xiy+=(tempx*tempy); xiz+=(tempx*tempz); yiz+=(tempy*tempz);
+
+/*		xi2 += (hit_points[i].X() - xavg)*(hit_points[i].X() - xavg);
+		yi2 += (hit_points[i].Y() - yavg)*(hit_points[i].Y() - yavg);
+		zi2 += (hit_points[i].Z() - zavg)*(hit_points[i].Z() - zavg);
+		xiy += (hit_points[i].X() - xavg)*(hit_points[i].Y() - yavg);
+		xiz += (hit_points[i].X() - xavg)*(hit_points[i].Z() - zavg);
+		yiz += (hit_points[i].Y() - yavg)*(hit_points[i].Z() - zavg);
+*/
+
+	}//end loop over points in data
+	xi2 = xi2/hit_points.size(); yi2 = yi2/hit_points.size(); zi2 = zi2/hit_points.size();
+	xiy = xiy/hit_points.size(); xiz = xiz/hit_points.size(); yiz = yiz/hit_points.size();
+
+	Eigen::Matrix3d covmat; 
+	covmat << xi2, xiy, xiz, xiy, yi2, yiz, xiz, yiz, zi2;
+
+	Eigen::SelfAdjointEigenSolver<Eigen::Matrix3d> eigenMat(covmat);
+
+	std::cout << "covariant matrix:\n" << covmat << std::endl;
+
+	if(eigenMat.info() == Eigen::ComputationInfo::Success){
+
+	      reco::PrincipalComponents::EigenValues recobEigenVals = eigenMat.eigenvalues().cast<float>();
+	      reco::PrincipalComponents::EigenVectors recobEigenVecs = eigenMat.eigenvectors().cast<float>();
+
+	      std::cout << "Eigenvalues are: " << recobEigenVals(0) << ", " << recobEigenVals(1) << ", " << recobEigenVals(2) << std::endl;
+
+	      float maxeval = FLT_MIN; int maxvalpos = -1;
+
+	      for(int tempindex=0; tempindex<3; tempindex++){
+
+			if(maxeval<(float)recobEigenVals(tempindex)) {
+
+				maxeval = (float)recobEigenVals(tempindex);
+				maxvalpos = tempindex;
+
+			}//end if(maxeval<(float)recobEigenVals)
+
+	      }//end for(int tempindex=0; tempindex<3; tempindex++)
+
+	      bestfit_dir.SetXYZ(recobEigenVecs(0,maxvalpos), recobEigenVecs(1,maxvalpos), recobEigenVecs(2,maxvalpos));
+
+	}//end if(eigenMat.info() == Eigen::ComputationInfo::Success)
+
+	}//end if(!forcedbreak)
+	std::cout << "End endpoint_PCA_ana function............\n-----------------------------------------\n\n\n";
+
+}//end definition of void endpoint_PCA_ana(recob::Track trk, int startorend, TVector3 &bestfit_dir, TVector3 &bestfit_pos)
+
+void icarus::CRTTPCTruthEff::pointChecker(recob::Track trk, bool &startisinTPC, bool &endisinTPC, int &startflag, int &endflag){
+
+	geo::Point_t startpoint = trk.Start();
+	geo::Point_t endpoint = trk.End();
+
+	float xmin = 61.94;    float xmax = 358.49;
+	float ymin = -181.86;  float ymax = 134.96;
+	float zmin = -894.951; float zmax = 894.951;
+
+	bool x_start_check, x_end_check, y_start_check, y_end_check, z_start_check, z_end_check;
+
+	x_start_check = std::abs(startpoint.X())>=xmin && std::abs(startpoint.X())<=xmax;
+	x_end_check = std::abs(endpoint.X())>=xmin && std::abs(endpoint.X())<=xmax;
+	y_start_check = startpoint.Y()>=ymin && startpoint.Y()<=ymax;
+	y_end_check = endpoint.Y()>=ymin && endpoint.Y()<=ymax;
+	z_start_check = startpoint.Z()>=zmin && startpoint.Z()<=zmax;
+	z_end_check = endpoint.Z()>=zmin && endpoint.Z()<=zmax;
+
+	startisinTPC = x_start_check && y_start_check && z_start_check;
+	endisinTPC = x_end_check && y_end_check && z_end_check;
+
+	startflag=-1; endflag=-1;
+
+	if(startisinTPC) startflag=0;
+	else if(!x_start_check && y_start_check && z_start_check) startflag=1;
+	else if(x_start_check && !y_start_check && z_start_check) startflag=2;
+	else if(x_start_check && y_start_check && !z_start_check) startflag=3;
+	else startflag=4;
+	if(endisinTPC) endflag=0;
+	else if(!x_end_check && y_end_check && z_end_check) endflag=1;
+	else if(x_end_check && !y_end_check && z_end_check) endflag=2;
+	else if(x_end_check && y_end_check && !z_end_check) endflag=3;
+	else endflag=4;
+
+}//end definition of void icarus::CRTTPCTruthEff::pointChecker(recob::Track trk, bool &startisinTPC, bool &endisinTPC)
+
+double icarus::CRTTPCTruthEff::getnewDCA(TVector3 CRTHitpos, TVector3 TPC_posvec, TVector3 TPC_dirvec){
+
+    double denominator = TPC_dirvec.Mag();
+    double numerator = (CRTHitpos - TPC_posvec).Cross(CRTHitpos - TPC_posvec - TPC_dirvec).Mag();
+    return numerator/denominator;
+
+
+}//end definition of double icarus::CRTTPCTruthEff::getnewDCA(TVector3 CRTHitpos, TVector3 TPC_posvec, TVector3 TPC_dirvec)
+
+float icarus::CRTTPCTruthEff::vect_dist(TVector3 vec1, TVector3 vec2){
+
+//	std::cout << "finding distance between two vectors.\n";
+//	std::cout << "vector 1 (x,y,z):\t(" << vec1.X() << "," << vec1.Y() << "," << vec1.Z() << ")\n"; 
+//	std::cout << "vector 2 (x,y,z):\t(" << vec2.X() << "," << vec2.Y() << "," << vec2.Z() << ")\n"; 
+
+	float xdiff = vec1.X()-vec2.X();
+	float ydiff = vec1.Y()-vec2.Y();
+	float zdiff = vec1.Z()-vec2.Z();
+
+//	std::cout << "Difference in X:\t" << xdiff << std::endl;
+//	std::cout << "Difference in Y:\t" << ydiff << std::endl;
+//	std::cout << "Difference in Z:\t" << zdiff << std::endl;
+
+	xdiff=xdiff*xdiff; ydiff=ydiff*ydiff; zdiff=zdiff*zdiff;
+
+//	std::cout << "Difference^2 in X:\t" << xdiff << std::endl;
+//	std::cout << "Difference^2 in Y:\t" << ydiff << std::endl;
+//	std::cout << "Difference^2 in Z:\t" << zdiff << std::endl;
+
+	float returnval = std::sqrt(xdiff+ydiff+zdiff);
+
+//	std::cout << "distance betwen vectors found to be:\t" << returnval << std::endl;
+
+	return returnval;
+
+
+}//end definition of double icarus::CRTTPCTruthEff::vect_dist(TVector3 vec1, TVector3 vec2)
+double icarus::CRTTPCTruthEff::CRT_plane_dist(TVector3 TPC_track_pos, TVector3 TPC_track_dir, TVector3 CRT_hit_pos, int plane_axis/*0 for x, 1 for y, 2 for z*/){
+
+	double tfactor, returnval = -1;
+	TVector3 TPC_track_cross_CRTmodpt;
+
+	if(plane_axis==0){
+
+		tfactor = (CRT_hit_pos.X() - TPC_track_pos.X())/TPC_track_dir.X();
+		
+		TPC_track_cross_CRTmodpt.SetX(CRT_hit_pos.X());
+		TPC_track_cross_CRTmodpt.SetY(TPC_track_pos.Y()+TPC_track_dir.Y()*tfactor);
+		TPC_track_cross_CRTmodpt.SetZ(TPC_track_pos.Z()+TPC_track_dir.Z()*tfactor);
+
+		double ydiff, zdiff;
+		ydiff = TPC_track_cross_CRTmodpt.Y() - CRT_hit_pos.Y();
+		zdiff = TPC_track_cross_CRTmodpt.Z() - CRT_hit_pos.Z();
+
+		returnval = sqrt(ydiff*ydiff + zdiff*zdiff);
+
+	}//end if(plane_axis==0)
+	else if(plane_axis==1){
+
+		tfactor = (CRT_hit_pos.Y() - TPC_track_pos.Y())/TPC_track_dir.Y();
+		
+		TPC_track_cross_CRTmodpt.SetX(TPC_track_pos.X()+TPC_track_dir.X()*tfactor);
+		TPC_track_cross_CRTmodpt.SetY(CRT_hit_pos.Y());
+		TPC_track_cross_CRTmodpt.SetZ(TPC_track_pos.Z()+TPC_track_dir.Z()*tfactor);
+
+		double xdiff, zdiff;
+		xdiff = TPC_track_cross_CRTmodpt.X() - CRT_hit_pos.X();
+		zdiff = TPC_track_cross_CRTmodpt.Z() - CRT_hit_pos.Z();
+
+		returnval = sqrt(xdiff*xdiff + zdiff*zdiff);
+
+	}//end else if (plane_axis==1)
+	else if(plane_axis==2){
+
+		tfactor = (CRT_hit_pos.Z() - TPC_track_pos.Z())/TPC_track_dir.Z();
+		
+		TPC_track_cross_CRTmodpt.SetX(TPC_track_pos.X()+TPC_track_dir.X()*tfactor);
+		TPC_track_cross_CRTmodpt.SetY(TPC_track_pos.Y()+TPC_track_dir.Y()*tfactor);
+		TPC_track_cross_CRTmodpt.SetZ(CRT_hit_pos.Z());
+
+		double ydiff, xdiff;
+		ydiff = TPC_track_cross_CRTmodpt.Y() - CRT_hit_pos.Y();
+		xdiff = TPC_track_cross_CRTmodpt.X() - CRT_hit_pos.X();
+
+		returnval = sqrt(ydiff*ydiff + xdiff*xdiff);
+
+	}//end else if(plane_axis==2)
+
+	return returnval;
+
+
+}//end double icarus::CRTTPCTruthEff::CRT_plane_dist(TVector3 TPC_track_pos, TVector3 TPC_track_dir, TVector3 CRT_hit_pos, int plane_axis/*0 for x, 1 for y, 2 for z*/)
+
 
   DEFINE_ART_MODULE(CRTTPCTruthEff)
 

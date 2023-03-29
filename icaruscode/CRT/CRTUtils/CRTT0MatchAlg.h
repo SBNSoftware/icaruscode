@@ -59,6 +59,15 @@
 #include "TVector3.h"
 #include "TGeoManager.h"
 
+//New
+#include "larreco/RecoAlg/Cluster3DAlgs/Cluster3D.h"
+#include "Eigen/Core"
+#include "Eigen/Dense"
+#include "Eigen/Eigenvalues"
+#include "Eigen/Geometry"
+#include "Eigen/Jacobi"
+
+
 
 namespace icarus{
 
@@ -80,6 +89,37 @@ namespace icarus{
     TVector3 tpc_track_end{DBL_MIN,DBL_MIN,DBL_MIN};
 
   };
+
+  struct  matchCand_PCA {
+    sbn::crt::CRTHit thishit;
+    double t0 = DBL_MIN;
+    double dca = DBL_MIN;
+    double extrapLen = DBL_MIN;
+    int best_DCA_pos = -1;//-1=no match; 0=startdir is best; 1=enddir is best; 2=both start+end are equally good;
+    bool simple_cathodecrosser = false;
+    int driftdir = -5;
+    double t0min = DBL_MIN;
+    double t0max = DBL_MIN;
+    double crtTime = DBL_MIN;
+    TVector3 startDir{DBL_MIN,DBL_MIN,DBL_MIN};
+    TVector3 endDir{DBL_MIN,DBL_MIN,DBL_MIN};
+    TVector3 tpc_track_start{DBL_MIN,DBL_MIN,DBL_MIN};
+    TVector3 tpc_track_end{DBL_MIN,DBL_MIN,DBL_MIN};
+
+    TVector3 PCA_start_pos{-DBL_MAX,-DBL_MAX,-DBL_MAX};
+    TVector3 PCA_end_pos{-DBL_MAX,-DBL_MAX,-DBL_MAX};
+    TVector3 PCA_start_dir{-DBL_MAX,-DBL_MAX,-DBL_MAX};
+    TVector3 PCA_end_dir{-DBL_MAX,-DBL_MAX,-DBL_MAX};
+    TVector3 PCA_start_crtplanecross{-DBL_MAX,-DBL_MAX,-DBL_MAX};
+    TVector3 PCA_end_crtplanecross{-DBL_MAX,-DBL_MAX,-DBL_MAX};
+
+    double PCA_DCA_start = -1;
+    double PCA_DCA_end = -1;
+    double PCA_planedist_start = -1;
+    double PCA_planedist_end = -1;
+
+  };
+
 
   struct  match_geometry {
     sbn::crt::CRTHit thishit;
@@ -161,6 +201,16 @@ namespace icarus{
 			       recob::Track const& tpcTrack, std::pair<double, double> t0MinMax, 
 			       std::vector<sbn::crt::CRTHit> const& crtHits, int driftDirection, uint64_t& trigger_timestamp, bool IsData) const;
 
+    //Do updated PCA calculation of endpoint direction
+    matchCand_PCA GetClosestCRTHit_PCA(detinfo::DetectorPropertiesData const& detProp,
+			       recob::Track const& tpcTrack, std::vector<art::Ptr<recob::Hit>> const& hits, 
+			       std::vector<sbn::crt::CRTHit> const& crtHits, uint64_t trigger_timestamp, bool IsData);
+
+    matchCand_PCA GetClosestCRTHit_PCA(detinfo::DetectorPropertiesData const& detProp,
+			       recob::Track const& tpcTrack, std::pair<double, double> t0MinMax, 
+			       std::vector<sbn::crt::CRTHit> const& crtHits, int driftDirection, uint64_t& trigger_timestamp, bool IsData);
+
+
     // Match track to T0 from CRT hits
     std::vector<double> T0FromCRTHits(detinfo::DetectorPropertiesData const& detProp,
 				      recob::Track const& tpcTrack, std::vector<sbn::crt::CRTHit> const& crtHits, 
@@ -207,6 +257,14 @@ namespace icarus{
 			       std::vector<sbn::crt::CRTHit> const& crtHits, int driftDirection, uint64_t& trigger_timestamp, bool IsData) const;
 
     double GetCRTTime(sbn::crt::CRTHit const& crthit, uint64_t trigger_timestamp, bool isdata) const;
+
+	void endpoint_PCA_ana(recob::Track trk, bool usestartpt, TVector3 &bestfit_dir, TVector3 &bestfit_pos);
+
+	float vect_dist(TVector3 vec1, TVector3 vec2);
+
+	double CRT_plane_dist(TVector3 TPC_track_pos, TVector3 TPC_track_dir, TVector3 CRT_hit_pos, int plane_axis/*0 for x, 1 for y, 2 for z*/, TVector3 &TPC_track_crosspoint);
+
+	int AuxDetRegionNameToNum(string reg);
 
   private:
 
