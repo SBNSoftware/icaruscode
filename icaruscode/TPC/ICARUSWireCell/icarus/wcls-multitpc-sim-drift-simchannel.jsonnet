@@ -164,7 +164,7 @@ local sp_pipes = [sp.make_sigproc(a) for a in tools.anodes];
 
 local rng = tools.random;
 local wcls_simchannel_sink = g.pnode({
-  type: 'wclsSimChannelSink',
+  type: 'wclsDepoSetSimChannelSink',
   name: 'postdrift',
   data: {
     artlabel: 'simpleSC',  // where to save in art::Event
@@ -287,7 +287,7 @@ local sink = sim.frame_sink;
 
 // local graph = g.pipeline([wcls_input.depos, drifter,  wcls_simchannel_sink, bagger, pipe_reducer, retagger, wcls_output.sim_digits, sink]);
 //local graph = g.pipeline([wcls_input.depos, drifter,  wcls_simchannel_sink, bagger, pipe_reducer, sink]);
-local graph = g.pipeline([wcls_input.deposet, setdrifter, pipe_reducer, sink]);
+local graph = g.pipeline([wcls_input.deposet, setdrifter, wcls_simchannel_sink, pipe_reducer, sink]);
 
 local app = {
   type: 'Pgrapher',
