@@ -1,6 +1,5 @@
 
 #include "mchitmodules.fcl"
-#include "mcreco.fcl"
 #include "mctrutht0matching.fcl"
 #include "backtrackerservice.fcl"
 #include "particleinventoryservice.fcl"
@@ -32,7 +31,7 @@ physics.producers: {
 physics.reco: [ 
                 @sequence::icarus_reco_Gauss_CryoE ,
                 @sequence::icarus_reco_Gauss_CryoW ,
-		@sequence::icarus_reco_fm,
+		            @sequence::icarus_reco_fm,
                 caloskimCalorimetryCryoE, caloskimCalorimetryCryoW,
                 mcassociationsGausCryoE,  mcassociationsGausCryoW
               ]
@@ -45,12 +44,11 @@ physics.analyzers.caloskimW.G4producer: "largeant"
 physics.analyzers.caloskimW.SimChannelproducer: "largeant"
 physics.analyzers.caloskimW.RawDigitproducers: ["MCDecodeTPCROI:PHYSCRATEDATATPCWW", "MCDecodeTPCROI:PHYSCRATEDATATPCWE"]
 
-physics.outana:            [ caloskimE, caloskimW, simpleLightAna, CRTDataAnalysis]
+physics.outana:            [ @sequence::icarus_analysis_modules ]
 physics.trigger_paths:     [ reco ]
 physics.end_paths:         [ outana, stream1 ]
 outputs.out1.fileName:     "%ifb_%tc-%p.root"
 outputs.out1.dataTier:     "reconstructed"
-outputs.out1.SelectEvents: [ reco ]
 outputs.out1.outputCommands: [
   "keep *_*_*_*",
   "drop *_caloskimCalorimetryCryoE_*_*",
@@ -71,10 +69,6 @@ services.SpaceChargeService: {
 
 services.BackTrackerService:        @local::standard_backtrackerservice
 services.ParticleInventoryService:  @local::standard_particleinventoryservice
-
-# Use this to take out the interplane offsets that are put in during the G4 stage
-physics.producers.cluster3DCryoE.Hit3DBuilderAlg.UseT0Offsets: true
-physics.producers.cluster3DCryoW.Hit3DBuilderAlg.UseT0Offsets: true
 
 physics.producers.mcassociationsGausCryoE.HitParticleAssociations.HitModuleLabelVec: ["cluster3DCryoE"]
 physics.producers.mcassociationsGausCryoW.HitParticleAssociations.HitModuleLabelVec: ["cluster3DCryoW"]

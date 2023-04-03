@@ -27,7 +27,7 @@ icarus_corsika_p: {
   @table::standard_CORSIKAGen_protons
   @table::icarus_corsika_settings
   
-  ShowerInputFiles:    [ "/pnfs/larsoft/persistent/physics/cosmics/Fermilab/CORSIKA/standard/p_*.db" ]
+  ShowerInputFiles:    [ "/cvmfs/sbn.osgstorage.org/pnfs/fnal.gov/usr/sbn/persistent/stash/physics/cosmics/Fermilab/CORSIKA/standard/p_*.db" ]
 
 } # icarus_corsika_p
 
@@ -36,7 +36,7 @@ icarus_corsika_cmc: {
   @table::standard_CORSIKAGen_CMC
   @table::icarus_corsika_settings
   
-  ShowerInputFiles: [ "/pnfs/larsoft/persistent/physics/cosmics/Fermilab/CORSIKA/standard/p_showers_*.db", "/pnfs/larsoft/persistent/physics/cosmics/Fermilab/CORSIKA/standard/He_showers_*.db", "/pnfs/larsoft/persistent/physics/cosmics/Fermilab/CORSIKA/standard/N_showers_*.db", "/pnfs/larsoft/persistent/physics/cosmics/Fermilab/CORSIKA/standard/Mg_showers_*.db", "/pnfs/larsoft/persistent/physics/cosmics/Fermilab/CORSIKA/standard/Fe_showers_*.db" ]
+  ShowerInputFiles: [ "/cvmfs/sbn.osgstorage.org/pnfs/fnal.gov/usr/sbn/persistent/stash/physics/cosmics/Fermilab/CORSIKA/standard/p_showers_*.db", "/cvmfs/sbn.osgstorage.org/pnfs/fnal.gov/usr/sbn/persistent/stash/physics/cosmics/Fermilab/CORSIKA/standard/He_showers_*.db", "/cvmfs/sbn.osgstorage.org/pnfs/fnal.gov/usr/sbn/persistent/stash/physics/cosmics/Fermilab/CORSIKA/standard/N_showers_*.db", "/cvmfs/sbn.osgstorage.org/pnfs/fnal.gov/usr/sbn/persistent/stash/physics/cosmics/Fermilab/CORSIKA/standard/Mg_showers_*.db", "/cvmfs/sbn.osgstorage.org/pnfs/fnal.gov/usr/sbn/persistent/stash/physics/cosmics/Fermilab/CORSIKA/standard/Fe_showers_*.db" ]
 
 } # icarus_corsika_cmc
 

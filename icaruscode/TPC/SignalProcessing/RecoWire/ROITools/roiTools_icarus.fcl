@@ -16,6 +16,23 @@ morphologicalfinder_1.Plane: 1
 morphologicalfinder_2:       @local::icarus_morphologicalroifinder
 morphologicalfinder_2.Plane: 2
 
+icarus_waveletroifinder:
+{
+    tool_type:           ROIWavelets
+    Plane:               0
+    WaveletScale:        15.
+    WaveletSigma:        5.
+    Threshold:           2.5 #5.
+}
+
+waveletroifinder_0:       @local::icarus_waveletroifinder
+
+waveletroifinder_1:       @local::icarus_waveletroifinder
+waveletroifinder_1.Plane: 1
+
+waveletroifinder_2:       @local::icarus_waveletroifinder
+waveletroifinder_2.Plane: 2
+
 icarus_cannyedgedetector:
 {
     tool_type:                  ROICannyEdgeDetection

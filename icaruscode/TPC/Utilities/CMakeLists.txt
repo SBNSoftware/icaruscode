@@ -37,7 +37,7 @@ set(icarus_util_lib_list
 	Boost::filesystem
 	Boost::system
 	CLHEP::Random
-        larcoreobj::headers
+    larcoreobj::headers
 )
 
 art_make_library(
@@ -46,6 +46,7 @@ art_make_library(
 
 cet_build_plugin(FileCatalogMetadataICARUS art::service LIBRARIES ${icarus_util_lib_list})
 cet_build_plugin(SignalShapingICARUSService art::service LIBRARIES ${icarus_util_lib_list})
+cet_build_plugin(SIOVChannelStatusICARUSService art::service LIBRARIES ${icarus_util_lib_list})
 cet_build_plugin(TFileMetadataICARUS art::service LIBRARIES ${icarus_util_lib_list})
 
 

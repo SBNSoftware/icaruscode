@@ -111,6 +111,10 @@ icarus_stage1_analyzers.caloskimW.SilenceMissingDataProducts: true
 icarus_analysis_modules:           [  caloskimE 
                                      ,caloskimW 
                                      ,simpleLightAna
+                                     ,CRTDataAnalysis
+                                   ]
+
+icarus_analysis_larcv_modules:     [  @sequence::icarus_analysis_modules
                                      ,supera 
                                    ]
 
