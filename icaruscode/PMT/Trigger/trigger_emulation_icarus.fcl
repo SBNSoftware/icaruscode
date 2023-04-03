@@ -360,6 +360,8 @@ icarus_standard_triggersim: {
       Pattern:               @local::icarus_triggergate_basic.SelectedPattern
       BeamGates:             triggersimgates
       TriggerTimeResolution: "8 ns" # this should probably be 12 or 24 ns
+      EmitEmpty:             true
+      ExtraInfo:             true
     }
     
   } # producers
