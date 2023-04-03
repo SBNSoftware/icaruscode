@@ -79,8 +79,8 @@ icarus_stage1_filters:
 
 icarus_stage1_analyzers:
 {
-  caloskimE:       @local::caloskim_cryoe_goldentracks
-  caloskimW:       @local::caloskim_cryow_goldentracks
+  caloskimE:       @local::caloskim_cryoe_goldentracks_not0
+  caloskimW:       @local::caloskim_cryow_goldentracks_not0
   simpleLightAna:  @local::ICARUSFlashAssAna
   supera:          @local::icarus_supera_data
 
@@ -94,6 +94,37 @@ icarus_stage1_analyzers:
      QSlope:               70     # Pedestal slope [ADC/photon]
      PEThresh:             7.5    # PE threshold above which charge amplitudes used
      CrtWindow:            3e6    # time window for looking data within trigger timestamp [ns]
+   }
+  CRTAnalysis:
+   {
+     module_type:   "CRTPMTMatchingAna"
+
+     CrtHitModuleLabel:  "crthit"
+     OpHitModuleLabel:   "ophit"
+     OpFlashModuleLabel0: "opflashCryoE"
+     OpFlashModuleLabel1: "opflashCryoW"
+
+     TriggerLabel:   "daqTrigger"
+     TriggerConfiguration:  "triggerconfig"
+
+     BNBBeamGateMin: -550
+     BNBBeamGateMax: 2300
+     BNBinBeamMin: -300
+     BNBinBeamMax: 1300
+
+     NuMIBeamGateMin: -550
+     NuMIBeamGateMax: 10000
+     NuMIinBeamMin: -300
+     NuMIinBeamMax: 9100
+
+     PMTADCThresh: 400
+     FlashPeThresh: 2000.0
+     HitPeThresh:  100.0
+     CoincidenceWindow: 80.0
+     OpDelay: 43.0
+     HitVelocityMax: 15.0
+     HitVelocityMin: 2.0
+
    }
  }
 
@@ -112,6 +143,7 @@ icarus_analysis_modules:           [  caloskimE
                                      ,caloskimW 
                                      ,simpleLightAna
                                      ,CRTDataAnalysis
+				     ,CRTAnalysis
                                    ]
 
 icarus_analysis_larcv_modules:     [  @sequence::icarus_analysis_modules
