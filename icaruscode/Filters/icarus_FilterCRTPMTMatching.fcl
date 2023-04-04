@@ -5,11 +5,27 @@ icarus_FilterCRTPMTMatching:
   module_type:           "FilterCRTPMTMatching"
   OpHitModuleLabel:      "ophit"
   OpFlashModuleLabelVec: ["opflashCryoE","opflashCryoW"]
+  OpFlashModuleLabel0: "opflashCryoE"
+  OpFlashModuleLabel1: "opflashCryoW"
+  TriggerLabel:  "daqTrigger" 
+  TriggerConfiguration: "triggerconfig"  
+
+  BNBBeamGateMin: -550
+  BNBBeamGateMax: 2300
+  BNBinBeamMin: -300
+  BNBinBeamMax: 1300
+      
+  NuMIBeamGateMin: -550
+  NuMIBeamGateMax: 10000
+  NuMIinBeamMin: -300
+  NuMIinBeamMax: 9100     
+  
   CrtHitModuleLabel:     "crthit"
-  TriggerLabel:          "daqTrigger"
-  TriggerConfiguration:  "triggerconfig"
+
+  PMTADCThresh: 400
   OpHitAmplitude:        400
   nOpHitToTrigger:       5
+  CoincidenceWindow: 80.0
   TimeOfFlightInterval:  0.1          # [us] time of flight interval to evaluate the match
   FilterLevel:           "loose"       # loose: accept everything ; medium: reject Top CRT matched entering cosmics; tight: rejects everything matched with an entering CRT Hit; default is loose.
   OutputTree:		 true	        # keep the output tree or not
