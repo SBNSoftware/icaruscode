@@ -20,20 +20,22 @@
 #include "art_root_io/TFileService.h"
 #include "canvas/Persistency/Common/FindMany.h"
 
+
 // LArSoft includes
 #include "larcore/CoreUtils/ServiceUtil.h"
 #include "larcorealg/Geometry/GeometryCore.h"
 #include "larcore/Geometry/Geometry.h"
+#include "lardata/DetectorInfoServices/DetectorClocksService.h"
 
 // Data product includes
-#include "larcorealg/CoreUtils/enumerate.h"
-#include "lardataobj/RecoBase/OpHit.h"
-#include "lardataobj/RecoBase/OpFlash.h"
-#include "sbnobj/Common/CRT/CRTHit.hh"
-#include "icaruscode/CRT/CRTUtils/CRTCommonUtils.h"
-#include "sbnobj/Common/Trigger/ExtraTriggerInfo.h"
-#include "icaruscode/Decode/DataProducts/TriggerConfiguration.h"
 
+#include "icaruscode/CRT/CRTUtils/CRTCommonUtils.h"
+#include "icaruscode/Decode/DataProducts/TriggerConfiguration.h"
+#include "larcorealg/CoreUtils/enumerate.h"
+#include "lardataobj/RecoBase/OpFlash.h"
+#include "lardataobj/RecoBase/OpHit.h"
+#include "sbnobj/Common/CRT/CRTHit.hh"
+#include "sbnobj/Common/Trigger/ExtraTriggerInfo.h"
 
 // C++ includes
 #include <vector>
@@ -181,6 +183,7 @@ public:
     explicit FilterCRTPMTMatching(fhicl::ParameterSet const& p);
 
     // Required functions.
+    void getTriggerConf(art::Run &);
     bool filter(art::Event &) override;
 
 private:
@@ -198,7 +201,7 @@ private:
     art::InputTag fTriggerConfigurationLabel;
 
     icarus::TriggerConfiguration fTriggerConfiguration;
-
+    
     //double                     fFlashTimeCut;
 
     int                        fEvent;  ///< number of the event being processed.
@@ -276,6 +279,7 @@ private:
     int                        fEventType;              ///< Classification of the flash that triggered the event?
     double		       fRelGateTime;		///< Time difference between optical Flash and Beam Gate opening.
     geo::GeometryCore const*   fGeometryService; ///< pointer to Geometry provider.
+
 };
 
 icarus::crt::FilterCRTPMTMatching::FilterCRTPMTMatching(fhicl::ParameterSet const &p) : EDFilter{p} 
@@ -351,6 +355,13 @@ icarus::crt::FilterCRTPMTMatching::FilterCRTPMTMatching(fhicl::ParameterSet cons
     }
 }
 
+void icarus::crt::FilterCRTPMTMatching::getTriggerConf(art::Run &r) {
+
+  fTriggerConfiguration =
+    r.getProduct<icarus::TriggerConfiguration>(fTriggerConfigurationLabel);
+
+}
+
 bool icarus::crt::FilterCRTPMTMatching::filter(art::Event &e)
 {
     mf::LogDebug("FilterCRTPMTMatching: ") << "beginning analyis";
@@ -361,7 +372,6 @@ bool icarus::crt::FilterCRTPMTMatching::filter(art::Event &e)
     fSubRun = e.subRun();
 
     ClearVecs();
-
     // add trigger info
     if (!fTriggerLabel.empty()) {
         art::Handle<sbn::ExtraTriggerInfo> trigger_handle;

@@ -6,7 +6,6 @@
 // Generated at Thu Feb 17 13:31:00 2022 by Biswaranjan Behera using cetskelgen
 // from  version .
 ////////////////////////////////////////////////////////////////////////
-
 #include "art/Framework/Core/EDAnalyzer.h"
 #include "art/Framework/Core/ModuleMacros.h"
 #include "art/Framework/Principal/Event.h"

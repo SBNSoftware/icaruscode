@@ -6,6 +6,7 @@ set(  MODULE_LIBRARIES
     larcore::Geometry_Geometry_service
     larsim::Simulation
     nug4::ParticleNavigation
+    icaruscode::Decode_DataProducts
     lardataobj::Simulation
     lardata::Utilities
     larevt::Filters
