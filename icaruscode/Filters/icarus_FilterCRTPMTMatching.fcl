@@ -1,5 +1,4 @@
 BEGIN_PROLOG
-#include "services_common_icarus.fcl"
 icarus_FilterCRTPMTMatching:
 { 
   module_type:           "FilterCRTPMTMatching"
@@ -23,7 +22,6 @@ icarus_FilterCRTPMTMatching:
   CrtHitModuleLabel:     "crthit"
 
   PMTADCThresh: 400
-  OpHitAmplitude:        400
   nOpHitToTrigger:       5
   CoincidenceWindow: 80.0
   TimeOfFlightInterval:  0.1          # [us] time of flight interval to evaluate the match
