@@ -733,8 +733,9 @@ icarus::opdet::SimPMTreadout::SimPMTreadout(Parameters const& config)
   , fNCryostats { fGeom.Ncryostats() }
   , fOpticalTick{ fDetTimings.OpticalClockPeriod() }
   , fNoiseGeneratorEngine{
-      art::ServiceHandle<rndm::NuRandomService>()->createEngine(
-        *this, "HepJamesRandom", "ElectronicsNoise", config().NoiseGeneratorSeed
+      art::ServiceHandle<rndm::NuRandomService>()->registerAndSeedEngine(
+        createEngine(0, "HepJamesRandom", "ElectronicsNoise"),
+        "HepJamesRandom", "ElectronicsNoise", config().NoiseGeneratorSeed
         ).get()
       }
   , fPedestalGenerator{
