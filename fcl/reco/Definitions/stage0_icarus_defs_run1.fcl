@@ -15,6 +15,7 @@
 #include "crt_decoderdefs_icarus.fcl"
 #include "crthitproducer.fcl"
 #include "wcls-decode-to-sig-base.fcl"
+#include "icarus_FilterCRTPMTMatching.fcl"
 
 BEGIN_PROLOG
 
@@ -163,6 +164,7 @@ icarus_stage0_filters:
                              TriggerDataLabel:   "daqTrigger"
                              TriggerType:        "Unknown"
                           }
+   crtpmtmatchingfilter: @local::icarus_FilterCRTPMTMatching
 }
 
 
@@ -272,6 +274,14 @@ icarus_stage0_data:                [
                                      daqTPCROI, 
                                      @sequence::icarus_stage0_multiTPC
                                    ]
+ 
+icarus_stage0_data_crtpmtfilter:   [
+                                     @sequence::icarus_stage0_PMT, 
+                                     @sequence::icarus_stage0_CRT,
+                                     crtpmtmatchingfilter,
+                                     daqTPCROI, 
+                                     @sequence::icarus_stage0_multiTPC
+                                  ]
 
 icarus_stage0_2d_data:             [
                                      @sequence::icarus_stage0_PMT, 
@@ -279,6 +289,14 @@ icarus_stage0_2d_data:             [
                                      daqTPCROI, 
                                      @sequence::icarus_stage0_2d_multiTPC
                                    ]
+
+icarus_stage0_2d_data_crtpmtfilter: [
+                                      @sequence::icarus_stage0_PMT, 
+                                      @sequence::icarus_stage0_CRT,
+                                      crtpmtmatchingfilter,
+                                      daqTPCROI, 
+                                      @sequence::icarus_stage0_2d_multiTPC
+                                    ]
 
 ### Below we include overrides for the modules above
 
