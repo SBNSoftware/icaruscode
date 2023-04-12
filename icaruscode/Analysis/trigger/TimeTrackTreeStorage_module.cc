@@ -667,7 +667,7 @@ void sbn::TimeTrackTreeStorage::analyze(art::Event const& e)
     }
     trackInfo.energy = totE;
     trackInfo.charge_int = totq_int;
-    trackInfo.charge_dqdx = totq_dqdx;
+    // trackInfo.charge_dqdx = totq_dqdx;
     fTrackInfo = std::move(trackInfo);
     /*
     for(size_t trajp = 0; trajp < trackPtr->NumberTrajectoryPoints()-1; ++trajp)
