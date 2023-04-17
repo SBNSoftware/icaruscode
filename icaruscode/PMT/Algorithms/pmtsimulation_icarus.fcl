@@ -286,6 +286,7 @@ icarus_pmtsimulationalg_202202_noise: {
   # number of noise samples above 18 ADC: ~0.36 samples for 2 ms x 360 channels (0.5 Hz)
   ##NOTE this is assumed to be positive-going and ABOVE BASELINE! Pulse polarity is corrected before determining trigger.
   ThresholdADC:              18             # ADC counts
+  DiscrimAlgo:               AboveThreshold # keep all samples above threshold
 
   PulsePolarity:             -1             #Pulse polarity (1 = positive, -1 = negative)
   TriggerOffsetPMT:          "-1.0 ms"      # PMT enable gate start: time relative to trigger when readout begins

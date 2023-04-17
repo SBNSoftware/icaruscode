@@ -29,6 +29,7 @@
 #include "lardataalg/DetectorInfo/DetectorClocksData.h"
 #include "lardataalg/DetectorInfo/DetectorTimings.h"
 #include "lardataalg/DetectorInfo/DetectorTimingTypes.h"
+#include "lardataalg/Utilities/MultipleChoiceSelection.h"
 #include "lardataalg/Utilities/quantities_fhicl.h" // microsecond from FHiCL
 #include "lardataalg/Utilities/quantities/spacetime.h" // microsecond, ...
 #include "lardataalg/Utilities/quantities/frequency.h" // hertz, gigahertz
@@ -291,6 +292,23 @@ class icarus::opdet::OpDetWaveformMakerClass {
  *     @f$ \mu_{i} \propto (\Delta V_{i})^{k} @f$ (with @f$ \mu_{i} @f$ the
  *     gain for stage @f$ i @f$, @f$ \Delta V_{i} @f$ the drop of potential
  *     of that stage and @f$ k @f$ the parameter set by `dynodeK`.
+ * * `DiscrimAlgo` (choice, default: `"CrossingThreshold"`): selects one of the
+ *     hard-coded discrimination algorithms used for zero suppression.
+ *     The suppression algorithm identifies some interesting time points and
+ *     issues a "trigger primitive" for each of them. A readout buffer is build
+ *     around each trigger primitive (they are merged when overlapping).
+ *     The algorithms currently supported are:
+ *     * `CrossingThreshold`: a trigger primitive is issued whenever the signal
+ *       passes from below threshold to above threshold. This algorithm suffers
+ *       from a problem with large signals if the readout buffer is too short:
+ *       the large signal may exceed the buffer while staying strictly above
+ *       threshold and its tail will be lost until a fluctuation below and then
+ *       back above threshold happens.
+ *     * `AboveThreshold`: a trigger primitive is issued on each sample above
+ *       threshold, regardless the neighbours. No sample below threshold will be
+ *       suppressed, and if the readout buffer is longer than the single
+ *       photoelectron response (as it should) the tail of the buffer will
+ *       always contain just noise.
  *
  *
  * Random number generators
@@ -364,9 +382,16 @@ class icarus::opdet::PMTsimulationAlg {
   using time_interval = detinfo::timescales::time_interval;
   using optical_tick = detinfo::timescales::optical_tick;
 
+  /// How to discriminate the waveform to determine the readout regions.
+  enum class DiscriminationAlgo {
+      Unset             ///< Mode not set.
+    , AboveThreshold    ///< Readout triggered when signal is above threshold.
+    , CrossingThreshold ///< Readout triggered when signal crosses threshold.
+  }; // DiscriminationAlgo
+  
   /// Type holding all configuration parameters for this algorithm.
   struct ConfigurationParameters_t {
-
+    
     struct PMTspecs_t {
 
       /// Voltage distribution of the PMT. Each number represents the
@@ -423,8 +448,7 @@ class icarus::opdet::PMTsimulationAlg {
       void setVoltageDistribution(std::vector<double>&& Rs);
 
     }; // struct PMTspecs_t
-
-
+  
     /// @{
     /// @name High level configuration parameters.
 
@@ -432,11 +456,14 @@ class icarus::opdet::PMTsimulationAlg {
 
     size_t readoutWindowSize;     ///< ReadoutWindowSize in samples
     float  pretrigFraction;       ///< Fraction of window size to be before "trigger"
-    ADCcount thresholdADC; ///< ADC Threshold for self-triggered readout
+    ADCcount thresholdADC;        ///< ADC Threshold for self-triggered readout
     int    pulsePolarity;         ///< Pulse polarity (=1 for positive, =-1 for negative)
     microsecond triggerOffsetPMT; ///< Time relative to trigger when PMT readout starts TODO make it a `trigger_time` point
 
     microsecond readoutEnablePeriod;  ///< Time (us) for which pmt readout is enabled
+    
+    /// Which waveform discrimination algorithm to use for zero suppression.
+    DiscriminationAlgo discrimAlgo = DiscriminationAlgo::CrossingThreshold;
 
     bool createBeamGateTriggers; ///< Option to create unbiased readout around beam spill
     microsecond beamGateTriggerRepPeriod; ///< Repetition Period (us) for BeamGateTriggers TODO make this a time_interval
@@ -504,7 +531,6 @@ class icarus::opdet::PMTsimulationAlg {
   }; // ConfigurationParameters_t
 
 
-
   /// Constructor.
   PMTsimulationAlg(ConfigurationParameters_t const& config);
 
@@ -532,6 +558,10 @@ class icarus::opdet::PMTsimulationAlg {
   void printConfiguration(Stream&& out, std::string indent = "") const;
 
 
+  /// Manages the conversion between names and values of `DiscriminationAlgo`.
+  static util::MultipleChoiceSelection<DiscriminationAlgo> const
+  DiscrimAlgoSelector;
+
 
     private:
   
@@ -546,6 +576,12 @@ class icarus::opdet::PMTsimulationAlg {
   /// Type of sampled pulse shape: sequence of samples, one per tick.
   using PulseSampling_t = DiscretePhotoelectronPulse::Subsample_t;
   
+  /// Type of member function for zero-suppression discrimination.
+  using DiscriminationAlgoProc_t
+    = std::vector<optical_tick> (PMTsimulationAlg::*)
+      (Waveform_t const& wvfm, ADCcount baseline) const
+    ;
+
 
   // --- BEGIN -- Helper functors ----------------------------------------------
   /// Functor to convert tick point into a tick number and a subsample index.
@@ -601,6 +637,9 @@ class icarus::opdet::PMTsimulationAlg {
 
   /// Pedestal and electronics noise generator algorithm.
   PedestalGenerator_t* fPedestalGen = nullptr;
+  
+  /// Member function for the zero suppression discrimination algorithm.
+  DiscriminationAlgoProc_t fDiscrAlgo = nullptr;
   
   
   /**
@@ -734,24 +773,30 @@ class icarus::opdet::PMTsimulationAlg {
   // Add "dark" noise to baseline.
   void AddDarkNoise(Waveform_t& wave) const;
   
+  
   /**
-   * @brief Ticks in the specified waveform where some signal activity starts.
+   * @brief Returns time points in `wvfm` where the readout should happen.
+   * @param wvfm the waveform to parse
+   * @param ADCcount the value of the reference baseline
    * @return a collection of ticks with interesting activity, sorted
-   * @see `CreateBeamGateTriggers()`
+   * @see `CreateBeamGateTriggers()`, `CreateTriggersCrossingThreshold()`,
+   *      `CreateTriggersAboveThreshold()`
    *
+   * This method is a portal to enable the actual functions performing the task.
+   * 
    * We define an "interest point" a time when some activity in the
    * waveform is considered interesting enough to be recorded.
    * This method returns a list of interest points, in the form of the
    * index they are located at in the waveform `wvfm`.
-   *
-   * In general (but with the exception noted below), a time becomes an
-   * interest point if the sample recorded at that time is above the threshold
-   * set by the configuration parameter `ThresholdADC`.
-   *
+   * 
    * These interest points are local readout triggers that drive zero
    * suppression on the optical readout channel and that are not necessarily
    * causing any level of event trigger.
-   *
+   * 
+   * Currently only two algorithms are set for this task:
+   * `CreateTriggersCrossingThreshold()`, which has been the algorithm of choice
+   * since the beginning, and `CreateTriggersAboveThreshold()`.
+   * 
    * This method also adds the mandatory beam gate interest points as
    * explained in `CreateBeamGateTriggers()` documentation. These are
    * additional interest points that are added independently of whether there
@@ -760,6 +805,56 @@ class icarus::opdet::PMTsimulationAlg {
   std::vector<optical_tick> FindTriggers
     (Waveform_t const& wvfm, ADCcount baseline) const;
   
+  /**
+   * @brief Ticks in the specified waveform where some signal activity starts.
+   * @param wvfm the waveform to parse
+   * @param ADCcount the value of the reference baseline
+   * @return a collection of ticks with interesting activity, sorted
+   * @see `FindTriggers()`, `CreateTriggersAboveThreshold()`
+   *
+   * This is an implementation of the algorithm for `FindTriggers()`.
+   * 
+   * An interest point is created whenever the signal passes from below the set
+   * threshold (configuration parameter `ThresholdADC`) to above it.
+   * This is also similar to how the CAEN 1730B readout board discrimination
+   * works, although this algorithm is by no mean sufficient to correctly
+   * emulate the work of that readout board, and the thresholds are better be
+   * left low so that a second-step readout simulation can take place
+   * afterwards.
+   * 
+   * Note that this algorithm can artificially truncate a strong signal which
+   * stays above threshold long time after having crossed it: in that case,
+   * only a trigger at the crossing point is issued, and if the signal is longer
+   * than the set readout window, truncation will occur.
+   */
+  std::vector<optical_tick> CreateTriggersCrossingThreshold
+    (Waveform_t const& wvfm, ADCcount baseline) const;
+  
+  /**
+   * @brief Ticks in the specified waveform where some signal activity starts.
+   * @param wvfm the waveform to parse
+   * @param ADCcount the value of the reference baseline
+   * @return a collection of ticks with interesting activity, sorted
+   * @see `FindTriggers()`, `CreateTriggersCrossingThreshold()`
+   *
+   * This is an implementation of the algorithm for `FindTriggers()`.
+   * 
+   * An interest point is created whenever the signal is above a set threshold
+   * (configuration parameter `ThresholdADC`).
+   * Instead of issuing a trigger for every sample above the threshold, triggers
+   * are issued no more often than a readout post-trigger buffer as configured.
+   * This is just a computing optimization that should have no visible effect
+   * as long as each trigger is represented by a full readout window in the
+   * final waveform.
+   * 
+   * Compared to the `CreateTriggersCrossingThreshold()`, this algorithm does
+   * not suffer from the effect of truncating strong signals but it will produce
+   * potentially more waveforms. If the threshold is lower than a single
+   * photoelectron, though, the main effect will only be potentially longer
+   * waveforms.
+   */
+  std::vector<optical_tick> CreateTriggersAboveThreshold
+    (Waveform_t const& wvfm, ADCcount baseline) const;
   
   /**
    * @brief Generate periodic interest points regardless the actual activity.
@@ -803,6 +898,10 @@ class icarus::opdet::PMTsimulationAlg {
   /// Returns the timestamp matching the start of the full waveforms [UTC, ns]
   std::uint64_t waveformStartTimestamp() const;
   
+  /// Returns the method corresponding to the specified algorithm enumerator.
+  static DiscriminationAlgoProc_t selectDiscriminationAlgo
+    (DiscriminationAlgo algo);
+  
 }; // class PMTsimulationAlg
 
 
@@ -816,6 +915,8 @@ class icarus::opdet::PMTsimulationAlgMaker {
   using nanosecond = util::quantities::nanosecond;
   using hertz = util::quantities::hertz;
   using picocoulomb = util::quantities::picocoulomb;
+  
+  using DiscriminationAlgo = PMTsimulationAlg::DiscriminationAlgo;
   
   struct PMTspecConfig {
     using Name = fhicl::Name;
@@ -945,7 +1046,16 @@ class icarus::opdet::PMTsimulationAlgMaker {
       Comment("Time  when readout begins, relative to readout trigger [us]")
       // mandatory
       };
+    fhicl::Atom<std::string> DiscrimAlgo {
+      Name("DiscrimAlgo"),
+      Comment("trigger primitive detection algorithm: "
+        + PMTsimulationAlg::DiscrimAlgoSelector.optionListString()),
+      PMTsimulationAlg::DiscrimAlgoSelector.get
+        (DiscriminationAlgo::CrossingThreshold).name()
+      };
 
+    /// Returns the discrimination algorithm as a `DiscriminationAlgo` value.
+    DiscriminationAlgo getDiscriminationAlgo() const;
 
   }; // struct Config
 
@@ -1081,6 +1191,8 @@ void icarus::opdet::PMTsimulationAlg::printConfiguration
     << '\n' << indent << "ReadoutWindowSize:   " << fParams.readoutWindowSize << " ticks"
     << '\n' << indent << "PreTrigFraction:     " << fParams.pretrigFraction
     << '\n' << indent << "ThresholdADC:        " << fParams.thresholdADC
+    << '\n' << indent << "DiscrimAlgo:         "
+      << DiscrimAlgoSelector.get(fParams.discrimAlgo).name()
     << '\n' << indent << "Saturation:          " << fParams.saturation << " p.e."
     << '\n' << indent << "doGainFluctuations:  "
       << std::boolalpha << fParams.doGainFluctuations

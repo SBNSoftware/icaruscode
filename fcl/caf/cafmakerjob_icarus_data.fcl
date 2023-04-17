@@ -31,4 +31,6 @@ physics.producers.cafmaker.GenLabel: ""
 physics.producers.cafmaker.SimChannelLabel: ""
 physics.producers.cafmaker.SystWeightLabels: []
 
+physics.producers.cafmaker.TriggerLabel: "daqTrigger" # the general configuration, for MC, has a different one (see also https://github.com/SBNSoftware/icaruscode/issues/556)
+
 #include "icarus_data_recombination.fcl"
