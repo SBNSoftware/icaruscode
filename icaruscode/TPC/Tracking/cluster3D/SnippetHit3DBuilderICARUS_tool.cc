@@ -799,9 +799,9 @@ size_t SnippetHit3DBuilderICARUS::BuildHitPairMapByTPC(PlaneSnippetHitMapItrPair
 }
 
 int SnippetHit3DBuilderICARUS::findGoodHitPairs(SnippetHitMap::iterator& firstSnippetItr,
-                                                SnippetHitMap::iterator& startItr,
-                                                SnippetHitMap::iterator& endItr,
-                                                HitMatchTripletVecMap&   hitMatchMap) const
+                                          SnippetHitMap::iterator& startItr,
+                                          SnippetHitMap::iterator& endItr,
+                                          HitMatchTripletVecMap&   hitMatchMap) const
 {
     int numPairs(0);
 
@@ -1505,11 +1505,11 @@ bool SnippetHit3DBuilderICARUS::WireIDsIntersect(const geo::WireID& wireID0, con
 }
 
 float SnippetHit3DBuilderICARUS::closestApproach(const Eigen::Vector3f& P0,
-                                                 const Eigen::Vector3f& u0,
-                                                 const Eigen::Vector3f& P1,
-                                                 const Eigen::Vector3f& u1,
-                                                 float&                 arcLen0,
-                                                 float&                 arcLen1) const
+                                           const Eigen::Vector3f& u0,
+                                           const Eigen::Vector3f& P1,
+                                           const Eigen::Vector3f& u1,
+                                           float&                 arcLen0,
+                                           float&                 arcLen1) const
 {
     // Technique is to compute the arclength to each point of closest approach
     Eigen::Vector3f w0 = P0 - P1;
@@ -1906,9 +1906,9 @@ void SnippetHit3DBuilderICARUS::CollectArtHits(const art::Event& evt) const
 //------------------------------------------------------------------------------------------------------------------------------------------
 
 void SnippetHit3DBuilderICARUS::CreateNewRecobHitCollection(art::Event&              event,
-                                                            reco::HitPairList&       hitPairList,
-                                                            std::vector<recob::Hit>& hitPtrVec,
-                                                            RecobHitToPtrMap&        recobHitToPtrMap)
+                                                      reco::HitPairList&       hitPairList,
+                                                      std::vector<recob::Hit>& hitPtrVec,
+                                                      RecobHitToPtrMap&        recobHitToPtrMap)
 {
     // Set up the timing
     cet::cpu_timer theClockBuildNewHits;
