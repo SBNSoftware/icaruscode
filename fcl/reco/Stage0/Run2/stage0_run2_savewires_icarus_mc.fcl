@@ -1,3 +1,0 @@
-#include "stage0_run2_icarus_mc.fcl"
-outputs.rootOutput.outputCommands: ["keep *_*_*_*", "drop *_daq*_*_*", "drop *_MCDecodeTPCROI_*_*", "drop *_decon1droi_*_*", "keep *_daq_simpleSC_*"]
-
