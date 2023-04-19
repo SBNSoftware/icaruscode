@@ -83,7 +83,7 @@ services.message.destinations :
      {
        default:
        {
-         limit: -1  #don't print anything at the infomsg level except the explicitly named categories
+         limit: 5           #don't print anything at the infomsg level except the explicitly named categories
          reportEvery: 1
        }
      }
