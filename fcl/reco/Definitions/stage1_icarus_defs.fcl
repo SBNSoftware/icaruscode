@@ -211,7 +211,7 @@ icarus_stage1_filters.TPCHitFilterCryoW.HitDataLabelVec: ["cluster3DCryoW"]
 icarus_stage1_filters.TPCHitFilterCryoW.MaximumHits:     60000 
 
 icarus_stage1_filters.TPCHitFilterCryoE.HitDataLabelVec: ["cluster3DCryoE"]
-icarus_stage1_filters.TPCHitFilterCryoE.MaximumHits:     60000
+icarus_stage1_filters.TPCHitFilterCryoE.MaximumHits:     60000 
 
 ## Definitions for running the 3D clustering by Cryostat
 icarus_stage1_producers.cluster3DCryoW.MakeSpacePointsOnly:                                      true
