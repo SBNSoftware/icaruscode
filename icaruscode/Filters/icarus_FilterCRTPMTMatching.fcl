@@ -2,30 +2,40 @@ BEGIN_PROLOG
 icarus_FilterCRTPMTMatching:
 { 
   module_type:           "FilterCRTPMTMatching"
+  CrtHitModuleLabel:     "crthit"
   OpHitModuleLabel:      "ophit"
   OpFlashModuleLabelVec: ["opflashCryoE","opflashCryoW"]
   OpFlashModuleLabel0: "opflashCryoE"
   OpFlashModuleLabel1: "opflashCryoW"
   TriggerLabel:  "daqTrigger" 
-  TriggerConfiguration: "triggerconfig"  
-
-  BNBBeamGateMin: -550
-  BNBBeamGateMax: 2300
-  BNBinBeamMin: -300
-  BNBinBeamMax: 1300
-      
-  NuMIBeamGateMin: -550
-  NuMIBeamGateMax: 10000
-  NuMIinBeamMin: -300
-  NuMIinBeamMax: 9100     
+  TriggerConfiguration: "triggerconfig"   
   
-  CrtHitModuleLabel:     "crthit"
+  #  Beam Gate and inBeam gate parameters were evaluated from the BNB and NuMI plots
+  #  reported in DocDB-30190 slides 17 (BNB) and 19 (NuMI).
+  #  Note1: in the plots a 500 ns offset was added to have start of the gate right at 0.
+  #  Note2: the inBeam parameters were determined experimentally by selecting the beam
+  #  excess time window. At the current state of the CRTPMT filter, the requirement to
+  #  have the optical flashes within the BeamExcess time window is not applied. 
 
-  PMTADCThresh: 400
-  nOpHitToTrigger:       5
-  CoincidenceWindow: 80.0
-  TimeOfFlightInterval:  0.1          # [us] time of flight interval to evaluate the match
-  FilterLevel:           "loose"       # loose: accept everything ; medium: reject Top CRT matched entering cosmics; tight: rejects everything matched with an entering CRT Hit; default is loose.
+  CRTPMTmatchingparams_standard: {
+
+  BNBBeamGateMin: -550  # ns
+  BNBBeamGateMax: 2300  # ns
+  BNBinBeamMin: -300  # ns 
+  BNBinBeamMax: 1300  # ns
+
+  NuMIBeamGateMin: -550  # ns
+  NuMIBeamGateMax: 10000  # ns
+  NuMIinBeamMin: -300  # ns
+  NuMIinBeamMax: 9100  # ns
+
+  PMTADCThresh:  400  # ADC, this value was suggested from A. Scarpelli to mimic the PMT trigger.
+  nOpHitToTrigger:  5 # Number of PMT above threshold to mimic the PMT trigger.
+  TimeOfFlightInterval:  100 # ns, time difference between CRT Hit and Optical Flash to confirm the match.
+  
+  }  # CRTPMTmatchingparams_standard
+
+  FilterLevel:           "loose"       # loose: accept everything ; medium: reject Top CRT matched entering cosmics; thight: rejects everything matched with an entering CRT Hit; default is loose.
   OutputTree:		 true	        # keep the output tree or not
 }
 
