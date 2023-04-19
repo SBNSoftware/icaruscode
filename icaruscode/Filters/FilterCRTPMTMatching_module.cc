@@ -196,7 +196,6 @@ class icarus::crt::FilterCRTPMTMatching : public art::EDFilter {
   using CRTHit = sbn::crt::CRTHit;
 
   explicit FilterCRTPMTMatching(fhicl::ParameterSet const& p);
-
   // Required functions.
   //void getTriggerConf(art::Run const&);
   void beginRun(art::Run const& run);
@@ -351,7 +350,6 @@ void icarus::crt::FilterCRTPMTMatching::beginRun(art::Run const& r) {
 
 bool icarus::crt::FilterCRTPMTMatching::filter(art::Event& e) {
   mf::LogDebug("FilterCRTPMTMatching: ") << "beginning analyis";
-
   // Start by fetching some basic event information for our n-tuple.
   fEvent = e.id().event();
   fRun = e.run();
@@ -456,7 +454,7 @@ bool icarus::crt::FilterCRTPMTMatching::filter(art::Event& e) {
             CRTSys =
                 1;  // Very lazy way to determine if the Hit is a Top or a Side.
                     // Will update it when bottom CRT will be availble.
-          double CRTTof_opflash = CRTtime - tflash;
+          double CRTTof_opflash = entering.CRTHit->ts1_ns - tflash * 1e3;
           std::vector<int> HitFebs;
           for (auto crts : entering.CRTHit->feb_id) {
             HitFebs.emplace_back((int)crts);
@@ -481,7 +479,7 @@ bool icarus::crt::FilterCRTPMTMatching::filter(art::Event& e) {
           int CRTRegion = exiting.CRTHit->plane;
           int CRTSys = 0;
           if (CRTRegion >= 36) CRTSys = 1;
-          double CRTTof_opflash = CRTtime - tflash;
+          double CRTTof_opflash = exiting.CRTHit->ts1_ns - tflash * 1e3;
           std::vector<int> HitsFebs;
           for (auto crts : exiting.CRTHit->feb_id) {
             HitsFebs.emplace_back((int)crts);

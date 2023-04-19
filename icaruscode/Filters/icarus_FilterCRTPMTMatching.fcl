@@ -1,4 +1,7 @@
+#include "crtpmtmatching_parameters.fcl"
+
 BEGIN_PROLOG
+
 icarus_FilterCRTPMTMatching:
 { 
   module_type:           "FilterCRTPMTMatching"
@@ -8,33 +11,15 @@ icarus_FilterCRTPMTMatching:
   OpFlashModuleLabel0: "opflashCryoE"
   OpFlashModuleLabel1: "opflashCryoW"
   TriggerLabel:  "daqTrigger" 
-  TriggerConfiguration: "triggerconfig"   
+  TriggerConfiguration: "triggerconfig"
   
-  #  Beam Gate and inBeam gate parameters were evaluated from the BNB and NuMI plots
-  #  reported in DocDB-30190 slides 17 (BNB) and 19 (NuMI).
-  #  Note1: in the plots a 500 ns offset was added to have start of the gate right at 0.
-  #  Note2: the inBeam parameters were determined experimentally by selecting the beam
-  #  excess time window. At the current state of the CRTPMT filter, the requirement to
-  #  have the optical flashes within the BeamExcess time window is not applied. 
-
-  CRTPMTmatchingparams_standard: {
-
-  BNBBeamGateMin: -550  # ns
-  BNBBeamGateMax: 2300  # ns
-  BNBinBeamMin: -300  # ns 
-  BNBinBeamMax: 1300  # ns
-
-  NuMIBeamGateMin: -550  # ns
-  NuMIBeamGateMax: 10000  # ns
-  NuMIinBeamMin: -300  # ns
-  NuMIinBeamMax: 9100  # ns
-
-  PMTADCThresh:  400  # ADC, this value was suggested from A. Scarpelli to mimic the PMT trigger.
-  nOpHitToTrigger:  5 # Number of PMT above threshold to mimic the PMT trigger.
-  TimeOfFlightInterval:  100 # ns, time difference between CRT Hit and Optical Flash to confirm the match.
-  
-  }  # CRTPMTmatchingparams_standard
-
+  # note 19/04/2023: parameters are set to run2,
+  # they can be set to run1, but currently values are the same 
+   
+  @table::CRTMatchBNBBeamGate_run2
+  @table::CRTMatchNuMIBeamGate_run2
+  @table::CRTPMTmatchingparams_standard
+ 
   FilterLevel:           "loose"       # loose: accept everything ; medium: reject Top CRT matched entering cosmics; thight: rejects everything matched with an entering CRT Hit; default is loose.
   OutputTree:		 true	        # keep the output tree or not
 }
