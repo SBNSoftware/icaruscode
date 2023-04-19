@@ -1,11 +1,8 @@
-////////////////////////////////////////////////////////////////////////
-// Class:       FilterCRTPMTMatching
-// Plugin Type: analyzer (Unknown Unknown)
-// File:        FilterCRTPMTMatching_module.cc
-//
-// Generated at Thu Feb 17 13:31:00 2022 by Biswaranjan Behera using cetskelgen
-// from  version .
-////////////////////////////////////////////////////////////////////////
+/**
+  * @file icaruscode/Filters/FilterCRTPMTMatching_module.cc
+  * @author Francesco Poppi, mail: poppi@bo.infn.it
+*/
+
 
 #include "art/Framework/Core/EDFilter.h"
 #include "art/Framework/Core/ModuleMacros.h"
@@ -211,7 +208,7 @@ class icarus::crt::FilterCRTPMTMatching : public art::EDFilter {
   explicit FilterCRTPMTMatching(fhicl::ParameterSet const& p);
   // Required functions.
   //void getTriggerConf(art::Run const&);
-  void beginRun(art::Run const& run);
+  bool beginRun(art::Run& run) override;
   bool filter(art::Event&) override;
 
  private:
@@ -356,9 +353,10 @@ icarus::crt::FilterCRTPMTMatching::FilterCRTPMTMatching(
 //      r.getProduct<icarus::TriggerConfiguration>(fTriggerConfigurationLabel);
 //}
 
-void icarus::crt::FilterCRTPMTMatching::beginRun(art::Run const& r) {
+bool icarus::crt::FilterCRTPMTMatching::beginRun(art::Run& r) {
   fTriggerConfiguration =
       r.getProduct<icarus::TriggerConfiguration>(fTriggerConfigurationLabel);
+  return true;
 }
 
 bool icarus::crt::FilterCRTPMTMatching::filter(art::Event& e) {
