@@ -189,7 +189,20 @@ class icarus::crt::FilterCRTPMTMatching : public art::EDFilter {
 /**
  * @brief Rejects events with only incoming particles in time with the beam.
  *
- * Here is a long and detailed explanation on what are the choices.
+ * This filtering module is based on CRT the CRT PMT matching.
+ * It starts by considering only the flashes which are within the beam gate
+ * and it tries to match them with one or more CRT Hits using a configurable
+ * time interval, which, at the time (19/04/2023) is chosen as +/-100 ns.
+ * If the flash is matched, the relative time will determine if the mu candidate
+ * is entering or exiting the TPC. Depending on the amound and relative time of 
+ * the match, a classification is provided to the flash.
+ * The filtering module has 3 options: loose (everything goes through), medium
+ * (removes events where the flash is matched with one Top CRT hit before the
+ * flash) and tight (removes all the events where the flashes are matched with
+ * CRT hits before the Flash).
+ * If multiple flashes are in the beam gate, the filtering logic applies to the 
+ * AND of the flashes classification.
+ * For questions and maintenance ask Francesco Poppi.
  */
 
  public:
