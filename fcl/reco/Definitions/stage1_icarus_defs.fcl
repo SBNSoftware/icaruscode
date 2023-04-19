@@ -19,6 +19,7 @@
 #include "crtt0matchingalg_icarus.fcl"
 #include "crtt0producer_icarus.fcl"
 #include "supera_modules.fcl"
+#include "crtpmtmatching_parameters.fcl"
 
 BEGIN_PROLOG
 
@@ -114,19 +115,12 @@ icarus_stage1_analyzers:
      #  excess time window. At the current state of the CRTPMT filter, the requirement to
      #  have the optical flashes within the BeamExcess time window is not applied. 
 
-     BNBBeamGateMin: -550  # ns
-     BNBBeamGateMax: 2300  # ns
-     BNBinBeamMin: -300  # ns
-     BNBinBeamMax: 1300  # ns
-
-     NuMIBeamGateMin: -550  # ns
-     NuMIBeamGateMax: 10000  # ns
-     NuMIinBeamMin: -300  # ns
-     NuMIinBeamMax: 9100  # ns
-
-     PMTADCThresh: 400  # ADC, this value was suggested from A. Scarpelli to mimic the PMT trigger.
-     TimeOfFlightInterval: 0.1 # us, time difference between CRT Hit and Optical Flash to confirm the match.
-
+      # note 19/04/2023: parameters are set to run2,
+      # they can be set to run1, but currently values are the same 
+   
+      @table::CRTMatchBNBBeamGate_run2
+      @table::CRTMatchNuMIBeamGate_run2
+      @table::CRTPMTmatchingparams_standard
    }
  }
 
