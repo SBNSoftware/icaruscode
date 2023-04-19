@@ -80,7 +80,7 @@ services.message.destinations :
      {
        default:
        {
-         limit: -1  #don't print anything at the infomsg level except the explicitly named categories
+         limit: 10          #Set to a value that will not print every warning, but enough to know there are issues
          reportEvery: 1
        }
      }
