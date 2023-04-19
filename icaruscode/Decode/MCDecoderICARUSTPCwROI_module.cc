@@ -550,6 +550,9 @@ void MCDecoderICARUSTPCwROI::processSingleLabel(art::Event&                     
 	            chanArr.second.push_back(boardDataVec);
 	        }
               processSingleImage(clockData, chanArr, coherentNoiseGrouping, concurrentRawDigits, concurrentRawRawDigits, coherentRawDigits, concurrentROIs);
+
+	        if (chanArr.second.size() < 64) processSingleImage(clockData, chanArr, chanArr.second.size(), concurrentRawDigits, concurrentRawRawDigits, coherentRawDigits, concurrentROIs);
+	        else                            processSingleImage(clockData, chanArr, coherentNoiseGrouping, concurrentRawDigits, concurrentRawRawDigits, coherentRawDigits, concurrentROIs);
 	    });
     }
 
