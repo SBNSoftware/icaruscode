@@ -495,6 +495,7 @@ void MCDecoderICARUSTPCwROI::processSingleLabel(art::Event&                     
     // Read in the digit List object(s).
     art::Handle< std::vector<raw::RawDigit> > digitVecHandle;
     event.getByLabel(inputLabel, digitVecHandle);
+    const raw::RawDigit invalidRD;
 
     // Require a valid handle
     if (digitVecHandle.isValid() && digitVecHandle->size()>0 )
@@ -514,11 +515,12 @@ void MCDecoderICARUSTPCwROI::processSingleLabel(art::Event&                     
             }
 	  unsigned int board = channelToBoardItr->second.first;
 	  auto mapIter = boardToRawDigitMap.find(board);
-	  if (mapIter != boardToRawDigitMap.end()) {
-	    mapIter->second.push_back(&rawDigit);
-	  } else {
-	    boardToRawDigitMap.insert({board,std::vector<const raw::RawDigit*>{&rawDigit}});
+	  unsigned int wireIdx = channelToBoardItr->second.second.first;
+	  if (mapIter == boardToRawDigitMap.end()) {
+	    boardToRawDigitMap.insert({board,std::vector<const raw::RawDigit*>(64,&invalidRD)});
+	    mapIter = boardToRawDigitMap.find(board);
 	  }
+	  mapIter->second[wireIdx] = &rawDigit;
 	}
 	//std::cout << "boardToRawDigitMap.size()=" << boardToRawDigitMap.size() << std::endl;
 	//for (auto elem : boardToRawDigitMap) {
@@ -527,9 +529,9 @@ void MCDecoderICARUSTPCwROI::processSingleLabel(art::Event&                     
 
 	  //std::cout << "board=" << elem->first << " nch=" << elem->second.size() << " first=" << elem->second[0]->Channel() << " last=" << elem->second[elem->second.size()-1]->Channel() << std::endl;
 
-	  std::vector<const raw::RawDigit*>& rawDigitVec = elem->second;
-	  // Sort (use a lambda to sort by channel id)
-	  std::sort(rawDigitVec.begin(),rawDigitVec.end(),[](const raw::RawDigit* left, const raw::RawDigit* right) {return left->Channel() < right->Channel();});
+	  std::vector<const raw::RawDigit*> rawDigitVec;
+	  for (auto e : elem->second) if (raw::isValidChannelID(e->Channel())) rawDigitVec.push_back(e);
+
           ChannelArrayPair chanArr;
           for (const auto rawDigit : rawDigitVec) {
 	    // Declare a temporary digit holder and resize it if downsizing the waveform
