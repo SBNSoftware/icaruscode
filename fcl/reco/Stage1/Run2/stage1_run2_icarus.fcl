@@ -39,7 +39,7 @@ services.message.destinations :
   STDCOUT:
   {
      type:      "cout"      #tells the message service to output this destination to cout
-     threshold: "DEBUG"     #tells the message service that this destination applies to WARNING and higher level messages
+     threshold: "WARNING"   #tells the message service that this destination applies to WARNING and higher level messages
      categories:
      {
        Cluster3DICARUS:

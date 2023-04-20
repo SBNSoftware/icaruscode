@@ -24,6 +24,18 @@ standard_crtt0matchingalg:
     TSMode: 2				    
 }
 
+standard_crtt0matchingalgW:
+{
+    @table::standard_crtt0matchingalg
+    TPCTrackLabel:       ["pandoraTrackGausCryoW"]
+}
+
+standard_crtt0matchingalgE:
+{
+    @table::standard_crtt0matchingalg
+    TPCTrackLabel:       ["pandoraTrackGausCryoE"]
+}
+
 icarus_crtt0matchingalg_crID:
 {
     DistanceLimit:       35.                # Maximum distance between projected crossing point and CRT hit
@@ -41,5 +53,6 @@ icarus_crthitt0producer:
     TriggerLabel:  "daqTrigger"
     T0Alg:                @local::standard_crtt0matchingalg
 }
+
 
 END_PROLOG

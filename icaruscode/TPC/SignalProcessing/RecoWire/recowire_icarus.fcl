@@ -93,7 +93,7 @@ icarus_roifinder:
     CorrectROIBaseline:    false
     MinSizeForCorrection:  12
     MaxSizeForCorrection:  512
-    LeadTrail:             10
+    LeadTrail:             0
     OutputMorphed:         false
     DaignosticOutput:      false
     OutputHistograms:      false
