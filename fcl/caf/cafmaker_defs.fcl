@@ -334,7 +334,8 @@ cafmaker.TrackRangeLabel: "pandoraTrackRange"
 cafmaker.CRTHitLabel: "crthit"
 cafmaker.CRTTrackLabel: "crttrack"
 cafmaker.OpFlashLabel: "opflash"
-cafmaker.TriggerLabel: "daqTrigger"
+# cafmaker.TriggerLabel: "daqTrigger" # see also https://github.com/SBNSoftware/icaruscode/issues/556
+cafmaker.TriggerLabel: "emuTrigger"
 cafmaker.FlashTrigLabel: "" # unavailable
 cafmaker.SimChannelLabel: "largeant"
 cafmaker.SystWeightLabels: ["genieweight", "fluxweight"]

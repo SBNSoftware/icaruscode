@@ -87,3 +87,31 @@ outputs.rootoutput: @local::icarus_rootoutput
 
 
 # ------------------------------------------------------------------------------
+
+services.message.destinations :
+{
+  STDCOUT:
+  {
+     type:      "cout"      #tells the message service to output this destination to cout
+     threshold: "WARNING"   #tells the message service that this destination applies to WARNING and higher level messages
+     categories:
+     {
+      ## Turning off the spewing of warnings coming from these two modules
+       SimDriftElectrons:
+       {
+         limit: 0
+         reportEvery: 0
+       }
+       McReco:
+       {
+         limit: 0
+         reportEvery: 0
+       }
+       default:
+       {
+         limit: 5  #don't print anything at the infomsg level except the explicitly named categories
+         reportEvery: 1
+       }
+     }
+  }
+}
