@@ -44,6 +44,7 @@
 #include <map>
 #include <numeric>
 #include <vector>
+#include <optional>
 
 // ROOT includes
 #include "TTree.h"
@@ -201,7 +202,7 @@ class icarus::crt::CRTPMTMatchingAna : public art::EDAnalyzer {
   art::InputTag fTriggerConfigurationLabel;
   // tart::InputTag fCrtTrackModuleLabel;
   
-  icarus::TriggerConfiguration fTriggerConfiguration;
+  std::optional<icarus::TriggerConfiguration> fTriggerConfiguration;
 
   int fEvent;   ///< number of the event being processed
   int fRun;     ///< number of the run being processed
@@ -389,15 +390,25 @@ icarus::crt::CRTPMTMatchingAna::CRTPMTMatchingAna(fhicl::ParameterSet const& p)
 
 
 void icarus::crt::CRTPMTMatchingAna::beginRun(art::Run const& r) {
-
-  fTriggerConfiguration =
-    r.getProduct<icarus::TriggerConfiguration>(fTriggerConfigurationLabel);
+  
+  // we don't know if this is data or not; if not, there will be no trigger config
+  auto const& trigConfHandle = 
+    r.getHandle<icarus::TriggerConfiguration>(fTriggerConfigurationLabel);
+  
+  fTriggerConfiguration
+    = trigConfHandle.isValid()? std::make_optional(*trigConfHandle): std::nullopt;
 
 }
 
 
 void icarus::crt::CRTPMTMatchingAna::analyze(art::Event const& e) {
   // Implementation of required member function here.
+  
+  if (!fTriggerConfiguration) {
+    mf::LogDebug("CRTPMTMatching")
+      << "Skipping because no data (or at least no trigger configuration).";
+    return;
+  }
   
   mf::LogDebug("CRTPMTMatching: ") << "beginning analyis" << '\n';
   // Start by fetching some basic event information for our n-tuple.
@@ -424,7 +435,7 @@ void icarus::crt::CRTPMTMatchingAna::analyze(art::Event const& e) {
       m_trigger_gate_diff =
           trigger_handle->triggerTimestamp - trigger_handle->beamGateTimestamp;
       // Read Beam Gate Size
-      m_gate_width = fTriggerConfiguration.getGateWidth(m_gate_type);
+      m_gate_width = fTriggerConfiguration->getGateWidth(m_gate_type);
     } else {
       mf::LogError("CRTPMTMatching:")
           << "No sbn::ExtraTriggerInfo associated to label: "
