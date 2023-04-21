@@ -261,7 +261,7 @@ class icarus::crt::FilterCRTPMTMatching : public art::EDFilter {
   double fNuMIinBeamMin;
   double fNuMIinBeamMax;
 
-  TTree* fMatchTree;
+  TTree* fMatchTree = nullptr;
 
   int fFiltered;  ///< Was the event filtered out?
 
@@ -302,6 +302,7 @@ icarus::crt::FilterCRTPMTMatching::FilterCRTPMTMatching(
       fFilterLevel(p.get<std::string>("FilterLevel", "loose")),
       fnOpHitToTrigger(p.get<int>("nOpHitToTrigger")),
       fTimeOfFlightInterval(p.get<double>("TimeOfFlightInterval")),
+      fOutputTree(p.get<bool>("MakeMatchTree", true)),
       fPMTADCThresh(p.get<int>("PMTADCThresh")),
       fBNBBeamGateMin(p.get<double>("BNBBeamGateMin")),
       fBNBBeamGateMax(p.get<double>("BNBBeamGateMax")),
@@ -313,8 +314,8 @@ icarus::crt::FilterCRTPMTMatching::FilterCRTPMTMatching(
       fNuMIinBeamMax(p.get<double>("NuMIinBeamMax")),
       fGeometryService(lar::providerFrom<geo::Geometry>()) {
   fFlashLabels = { fOpFlashModuleLabel0, fOpFlashModuleLabel1 };
-  art::ServiceHandle<art::TFileService> tfs;
-  if (fOutputTree == true) {
+  if (fOutputTree) {
+    art::ServiceHandle<art::TFileService> tfs;
     fMatchTree =
         tfs->make<TTree>("matchTree", "CRTHit - OpHit/Flash matching analysis");
     fMatchTree->Branch("event", &fEvent, "event/I");
@@ -548,39 +549,41 @@ bool icarus::crt::FilterCRTPMTMatching::filter(art::Event& e) {
     }
   }
   fFiltered = hasOnlyCosmics;
-  EventCRTPMT thisEvent = {/* .Filter = */ hasOnlyCosmics, // C++20: restore initializers
-                           /* .inGateFlashes = */ thisEventFlashes};
-  for (const auto& f : thisEventFlashes) {
-    fClassification = f.Classification;
-    fOpFlashPos_X = f.FlashPos.X();
-    fOpFlashPos_Y = f.FlashPos.Y();
-    fOpFlashPos_Z = f.FlashPos.Z();
-    fOpFlashTime_us = f.FlashTime_us;
-    finGate = f.inGate;
-    finBeam = f.inBeam;
-    fFlashBeamTime_ns = f.FlashGateTime_ns;
-    for (const auto& crt : f.CRTmatches) {
-      fCRTHitPos_X.push_back(crt.CRTHitPos.X());
-      fCRTHitPos_Y.push_back(crt.CRTHitPos.Y());
-      fCRTHitPos_Z.push_back(crt.CRTHitPos.Z());
-      fCRTHitTime_us.push_back(crt.CRTTime_us);
-      fCRTFlashTime_ns.push_back(crt.CRTPMTTimeDiff_ns);
-      fCRTHitRegion.push_back(crt.CRTRegion);
-      fCRTHitSystem.push_back(crt.CRTSys);
+  if (fMatchTree) {
+    EventCRTPMT thisEvent = {/* .Filter = */ hasOnlyCosmics, // C++20: restore initializers
+                            /* .inGateFlashes = */ thisEventFlashes};
+    for (const auto& f : thisEventFlashes) {
+      fClassification = f.Classification;
+      fOpFlashPos_X = f.FlashPos.X();
+      fOpFlashPos_Y = f.FlashPos.Y();
+      fOpFlashPos_Z = f.FlashPos.Z();
+      fOpFlashTime_us = f.FlashTime_us;
+      finGate = f.inGate;
+      finBeam = f.inBeam;
+      fFlashBeamTime_ns = f.FlashGateTime_ns;
+      for (const auto& crt : f.CRTmatches) {
+        fCRTHitPos_X.push_back(crt.CRTHitPos.X());
+        fCRTHitPos_Y.push_back(crt.CRTHitPos.Y());
+        fCRTHitPos_Z.push_back(crt.CRTHitPos.Z());
+        fCRTHitTime_us.push_back(crt.CRTTime_us);
+        fCRTFlashTime_ns.push_back(crt.CRTPMTTimeDiff_ns);
+        fCRTHitRegion.push_back(crt.CRTRegion);
+        fCRTHitSystem.push_back(crt.CRTSys);
+      }
+      fMatchTree->Fill();
+      ClearVecs();
     }
-    fMatchTree->Fill();
-    ClearVecs();
-  }
-  if (thisEventFlashes.empty()) {
-    fClassification = 9;
-    fOpFlashPos_X = 0;
-    fOpFlashPos_Y = 0;
-    fOpFlashPos_Z = 0;
-    fOpFlashTime_us = 0;
-    finGate = false;
-    finBeam = false;
-    fFlashBeamTime_ns = 0;
-    fMatchTree->Fill();
+    if (thisEventFlashes.empty()) {
+      fClassification = 9;
+      fOpFlashPos_X = 0;
+      fOpFlashPos_Y = 0;
+      fOpFlashPos_Z = 0;
+      fOpFlashTime_us = 0;
+      finGate = false;
+      finBeam = false;
+      fFlashBeamTime_ns = 0;
+      fMatchTree->Fill();
+    }
   }
   return !hasOnlyCosmics;
 }
