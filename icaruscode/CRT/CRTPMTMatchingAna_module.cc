@@ -5,7 +5,6 @@
 //
 // Generated at Thu Feb 17 13:31:00 2022 by Biswaranjan Behera using cetskelgen
 // from  version .
-// The module was updated and modified by Francesco Poppi: poppi@bo.infn.it
 ////////////////////////////////////////////////////////////////////////
 
 #include "art/Framework/Core/EDAnalyzer.h"
@@ -329,6 +328,7 @@ icarus::crt::CRTPMTMatchingAna::CRTPMTMatchingAna(fhicl::ParameterSet const& p)
   fGeometryService = lar::providerFrom<geo::Geometry>();
 
   art::ServiceHandle<art::TFileService> tfs;
+
   fMatchTree =
       tfs->make<TTree>("matchTree", "CRTHit - OpHit/Flash matching analysis");
 
@@ -389,28 +389,10 @@ icarus::crt::CRTPMTMatchingAna::CRTPMTMatchingAna(fhicl::ParameterSet const& p)
 
 
 void icarus::crt::CRTPMTMatchingAna::beginRun(art::Run const& r) {
-  if (!fTriggerLabel.empty()){
-    art::Handle<sbn::ExtraTriggerInfo> trigger_handle;
-    r.getByLabel(fTriggerLabel, trigger_handle);
-    if (trigger_handle.isValid()){
-    	fTriggerConfiguration =
-     	 r.getProduct<icarus::TriggerConfiguration>(fTriggerConfigurationLabel);
-    } else {
-	mf::LogError("CRTPMTMatching:")
-          << "No sbn::ExtraTriggerInfo associated to label: "
-          << fTriggerLabel.encode() << ". Is this MC?\n";
-        m_gate_type = 0;
-	m_gate_name = "noTriggerLabel";
-        m_trigger_timestamp = 500;
-        m_gate_start_timestamp = 0;
-        m_trigger_gate_diff = m_trigger_timestamp-m_gate_start_timestamp;
-        m_gate_width = 1000;
-    }
-  } else {
-	mf::LogError("CRTPMTMatching:")
-          << "No sbn::ExtraTriggerInfo associated to label: "
-          << fTriggerLabel.encode() << "\n";
-  }
+
+  fTriggerConfiguration =
+    r.getProduct<icarus::TriggerConfiguration>(fTriggerConfigurationLabel);
+
 }
 
 
@@ -453,28 +435,12 @@ void icarus::crt::CRTPMTMatchingAna::analyze(art::Event const& e) {
     // found!\n" ;
   }
 
-
-  //These has to be fixed for MC.
-  art::Handle<std::vector<recob::OpFlash>> thisFlashHandle;
-  e.getByLabel("OpFlashModuleLabel0", thisFlashHandle);
-  if(!thisFlashHandle.isValid()){
-     mf::LogError("CRTPMTMatching:")
-          << "No recob::OpFlash associated to Flash label: OpFlashCryoE\n";
-     return;
-  }
-  e.getByLabel("OpFlashModuleLabel1", thisFlashHandle);
-  if(!thisFlashHandle.isValid()){
-     mf::LogError("CRTPMTMatching:")
-          << "No recob::OpFlash associated to Flash label: OpFlashCryoW\n";
-     return;
-  }
-
   // OpFlash
   std::array<art::Handle<std::vector<recob::OpFlash>>, 2U> flashHandles;
   for (int i = 0; i < 2; i++) {
     flashHandles[i] = e.getHandle<std::vector<recob::OpFlash>>(fFlashLabels[i]);
   }
-  
+
   // CRTHits
   art::Handle<std::vector<CRTHit>> crtHitListHandle;
   std::vector<art::Ptr<CRTHit>> crtHitList;
@@ -482,12 +448,14 @@ void icarus::crt::CRTPMTMatchingAna::analyze(art::Event const& e) {
     art::fill_ptr_vector(crtHitList, crtHitListHandle);
 
   // fNCrt = crtHitList.size();
-   bool Filter = false;
+
+  bool Filter = false;
   hasCRTHit Type = others;
   for (art::InputTag const& flashLabel : fFlashLabels) {
     auto const flashHandle =
         e.getHandle<std::vector<recob::OpFlash>>(flashLabel);
     art::FindMany<recob::OpHit> findManyHits(flashHandle, e, flashLabel);
+
     for (auto const& [iflash, flash] : util::enumerate(*flashHandle)) {
       hasCRTHit eventType = others;
       double tflash = flash.Time();
