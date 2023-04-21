@@ -516,61 +516,45 @@ void MCDecoderICARUSTPCwROI::processSingleLabel(art::Event&                     
 	            std::cout << "********************************************************************************" << std::endl;
 	            continue;
             }
-	  unsigned int board = channelToBoardItr->second.first;
-	  auto mapIter = boardToRawDigitMap.find(board);
-	  unsigned int wireIdx = channelToBoardItr->second.second.first;
-	  if (mapIter == boardToRawDigitMap.end()) {
-	    boardToRawDigitMap.insert({board,std::vector<const raw::RawDigit*>(64,&invalidRD)});
-	    mapIter = boardToRawDigitMap.find(board);
-	  }
-	  mapIter->second[wireIdx] = &rawDigit;
-	}
-	//std::cout << "boardToRawDigitMap.size()=" << boardToRawDigitMap.size() << std::endl;
-	//for (auto elem : boardToRawDigitMap) {
-	tbb::parallel_for (static_cast<std::size_t>(0),boardToRawDigitMap.size(),[&](size_t& r) {
-	  auto elem = std::next(boardToRawDigitMap.begin(),r);
 
-	  //std::cout << "board=" << elem->first << " nch=" << elem->second.size() << " first=" << elem->second[0]->Channel() << " last=" << elem->second[elem->second.size()-1]->Channel() << std::endl;
+	        unsigned int board   = channelToBoardItr->second.first;
+	        auto         mapIter = boardToRawDigitMap.find(board);
+	        unsigned int wireIdx = channelToBoardItr->second.second.first;
 
-	  std::vector<const raw::RawDigit*> rawDigitVec;
-	  for (auto e : elem->second) if (raw::isValidChannelID(e->Channel())) rawDigitVec.push_back(e);
+	        if (mapIter == boardToRawDigitMap.end()) 
+            {
+	            boardToRawDigitMap.insert({board,std::vector<const raw::RawDigit*>(64,&invalidRD)});
+	            mapIter = boardToRawDigitMap.find(board);
+	        }
 
-          ChannelArrayPair chanArr;
-          for (const auto rawDigit : rawDigitVec) {
-	    // Declare a temporary digit holder and resize it if downsizing the waveform
-	    raw::RawDigit::ADCvector_t rawDataVec(dataSize);
-	    // Decompress data into local holder
-	    raw::Uncompress(rawDigit->ADCs(), rawDataVec, rawDigit->Compression());
-	    // Fill into the data structure
-            raw::ChannelID_t channel = rawDigit->Channel();
-            unsigned int planeIdx       = fChannelToBoardWirePlaneMap.find(channel)->second.second.second;
-	    icarus_signal_processing::VectorFloat boardDataVec(rawDataVec.cbegin(),rawDataVec.cend());
-	    chanArr.first.push_back(daq::INoiseFilter::ChannelPlanePair(channel,planeIdx));
-	    chanArr.second.push_back(boardDataVec);
-	  }
-	  if (chanArr.second.size() < 64) {
-	    processSingleImage(clockData, chanArr, chanArr.second.size(), concurrentRawDigits, concurrentRawRawDigits, coherentRawDigits, concurrentROIs);
-	  } else {
-	    processSingleImage(clockData, chanArr, coherentNoiseGrouping, concurrentRawDigits, concurrentRawRawDigits, coherentRawDigits, concurrentROIs);
-	  }
-	});
+	        mapIter->second[wireIdx] = &rawDigit;
+	    }
 
-	        std::vector<const raw::RawDigit*>& rawDigitVec = elem->second;
+	    //std::cout << "boardToRawDigitMap.size()=" << boardToRawDigitMap.size() << std::endl;
+	    //for (auto elem : boardToRawDigitMap) {
+	    tbb::parallel_for (static_cast<std::size_t>(0),boardToRawDigitMap.size(),[&](size_t& r) 
+        {
+	        auto elem = std::next(boardToRawDigitMap.begin(),r);
 
-	        // Sort (use a lambda to sort by channel id)
-	        std::sort(rawDigitVec.begin(),rawDigitVec.end(),[](const raw::RawDigit* left, const raw::RawDigit* right) {return left->Channel() < right->Channel();});
+	        //std::cout << "board=" << elem->first << " nch=" << elem->second.size() << " first=" << elem->second[0]->Channel() << " last=" << elem->second[elem->second.size()-1]->Channel() << std::endl;
+
+	        std::vector<const raw::RawDigit*> rawDigitVec;
+
+	        for (auto e : elem->second) if (raw::isValidChannelID(e->Channel())) rawDigitVec.push_back(e);
 
             ChannelArrayPair chanArr;
-
             for (const auto rawDigit : rawDigitVec) 
             {
 	            // Declare a temporary digit holder and resize it if downsizing the waveform
 	            raw::RawDigit::ADCvector_t rawDataVec(dataSize);
+
 	            // Decompress data into local holder
 	            raw::Uncompress(rawDigit->ADCs(), rawDataVec, rawDigit->Compression());
+
 	            // Fill into the data structure
-                raw::ChannelID_t channel = rawDigit->Channel();
-                unsigned int planeIdx       = fChannelToBoardWirePlaneMap.find(channel)->second.second.second;
+                raw::ChannelID_t channel  = rawDigit->Channel();
+                unsigned int     planeIdx = fChannelToBoardWirePlaneMap.find(channel)->second.second.second;
+
 	            icarus_signal_processing::VectorFloat boardDataVec(rawDataVec.cbegin(),rawDataVec.cend());
 	            chanArr.first.push_back(daq::INoiseFilter::ChannelPlanePair(channel,planeIdx));
 	            chanArr.second.push_back(boardDataVec);
