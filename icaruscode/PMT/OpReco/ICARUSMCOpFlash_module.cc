@@ -146,11 +146,11 @@ void ICARUSMCOpFlash::produce(art::Event& e)
       pe_sum += oph.PE();
       if((int)(_enabled_opch_v.size()) <= opch || !_enabled_opch_v[opch]) continue;
       pe_sum1 += oph.PE();
-      if(oph.PeakTime() < flash_time || oph.PeakTime() > (flash_time + _merge_period)) {
+      if(oph.StartTime() < flash_time || oph.StartTime() > (flash_time + _merge_period)) {
 	/*
-	std::cout << "Ch " << opch << " Time: " << oph.PeakTime() 
+	std::cout << "Ch " << opch << " Time: " << oph.StartTime() 
 		  << " PE " << oph.PE()
-		  << " ... dt " << oph.PeakTime() - flash_time <<std::endl;
+		  << " ... dt " << oph.StartTime() - flash_time <<std::endl;
 	*/
 	continue;
       }

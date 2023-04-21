@@ -353,20 +353,20 @@ bool icarus::crt::FilterCRTPMTMatching::filter(art::Event &e)
             {
                 if (hit->Amplitude() > fOpHitAmplitude)
                     nOpHitsTriggering++;
-                if (firstTime > hit->PeakTime())
-                    firstTime = hit->PeakTime();
+                if (firstTime > hit->StartTime())
+                    firstTime = hit->StartTime();
                 geo::Point_t pos = fGeometryService->OpDetGeoFromOpChannel(hit->OpChannel()).GetCenter();
                 double amp = hit->Amplitude();
                 ampsum += amp;
                 fOpHitX.push_back(pos.X());
                 fOpHitY.push_back(pos.Y());
                 fOpHitZ.push_back(pos.Z());
-                fOpHitT.push_back(hit->PeakTime());
+                fOpHitT.push_back(hit->StartTime());
                 fOpHitA.push_back(amp);
                 flash_pos[0] = flash_pos[0] + pos.X() * amp;
                 flash_pos[1] = flash_pos[1] + pos.Y() * amp;
                 flash_pos[2] = flash_pos[2] + pos.Z() * amp;
-                t_m = t_m + hit->PeakTime();
+                t_m = t_m + hit->StartTime();
             }
             flash_pos[0] = flash_pos[0] / ampsum;
             flash_pos[1] = flash_pos[1] / ampsum;
