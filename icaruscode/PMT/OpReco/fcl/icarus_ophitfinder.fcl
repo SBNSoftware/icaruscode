@@ -201,6 +201,10 @@ icarus_ophit: # some basic configuration
    reco_man:       @local::standard_preco_manager
    HitAlgoPset:    @local::icarus_opreco_hit_slidingwindow_201910
    PedAlgoPset:    @local::icarus_opreco_pedestal_DocDB24969
+   RiseTimeCalculator: {
+     tool_type:      RiseTimeThreshold
+     PeakRatio:      0.15  # at 15% of the peak amplitude -- not tuned
+   }
 }
 
 icarus_ophitdebugger: @local::icarus_ophit
