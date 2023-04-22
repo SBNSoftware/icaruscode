@@ -1,17 +1,26 @@
+#include "crtpmtmatching_parameters.fcl"
+
 BEGIN_PROLOG
 
 icarus_FilterCRTPMTMatching:
 { 
   module_type:           "FilterCRTPMTMatching"
+  CrtHitModuleLabel:     "crthit"
   OpHitModuleLabel:      "ophit"
   OpFlashModuleLabelVec: ["opflashCryoE","opflashCryoW"]
-  CrtHitModuleLabel:     "crthit"
-  TriggerLabel:          "daqTrigger"
-  TriggerConfiguration:  "triggerconfig"
-  OpHitAmplitude:        400
-  nOpHitToTrigger:       5
-  TimeOfFlightInterval:  0.1          # [us] time of flight interval to evaluate the match
-  FilterLevel:           "loose"       # loose: accept everything ; medium: reject Top CRT matched entering cosmics; tight: rejects everything matched with an entering CRT Hit; default is loose.
+  OpFlashModuleLabel0: "opflashCryoE"
+  OpFlashModuleLabel1: "opflashCryoW"
+  TriggerLabel:  "daqTrigger" 
+  TriggerConfiguration: "triggerconfig"
+  
+  # note 19/04/2023: parameters are set to run2,
+  # they can be set to run1, but currently values are the same 
+   
+  @table::CRTMatchBNBBeamGate_run2
+  @table::CRTMatchNuMIBeamGate_run2
+  @table::CRTPMTmatchingparams_standard
+ 
+  FilterLevel:           "loose"       # loose: accept everything ; medium: reject Top CRT matched entering cosmics; thight: rejects everything matched with an entering CRT Hit; default is loose.
   OutputTree:		 true	        # keep the output tree or not
 }
 

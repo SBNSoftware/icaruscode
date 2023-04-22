@@ -20,6 +20,7 @@
 #include "crtt0producer_icarus.fcl"
 ## The below can be found from the softlink to Supera in sbncode
 #include "supera_modules.fcl"
+#include "crtpmtmatching_parameters.fcl"
 
 BEGIN_PROLOG
 
@@ -98,6 +99,32 @@ icarus_stage1_analyzers:
      PEThresh:             7.5    # PE threshold above which charge amplitudes used
      CrtWindow:            3e6    # time window for looking data within trigger timestamp [ns]
    }
+  CRTAnalysis:
+   {
+     module_type:   "CRTPMTMatchingAna"
+
+     CrtHitModuleLabel:  "crthit"
+     OpHitModuleLabel:   "ophit"
+     OpFlashModuleLabel0: "opflashCryoE"
+     OpFlashModuleLabel1: "opflashCryoW"
+
+     TriggerLabel:   "daqTrigger"
+     TriggerConfiguration:  "triggerconfig"
+
+     #  Beam Gate and inBeam gate parameters were evaluated from the BNB and NuMI plots
+     #  reported in DocDB-30190 slides 17 (BNB) and 19 (NuMI).
+     #  Note1: in the plots a 500 ns offset was added to have start of the gate right at 0.
+     #  Note2: the inBeam parameters were determined experimentally by selecting the beam
+     #  excess time window. At the current state of the CRTPMT filter, the requirement to
+     #  have the optical flashes within the BeamExcess time window is not applied. 
+
+      # note 19/04/2023: parameters are set to run2,
+      # they can be set to run1, but currently values are the same 
+   
+      @table::CRTMatchBNBBeamGate_run2
+      @table::CRTMatchNuMIBeamGate_run2
+      @table::CRTPMTmatchingparams_standard
+   }
  }
 
 icarus_stage1_analyzers.caloskimE.SelectEvents: [reco]
@@ -117,6 +144,7 @@ icarus_analysis_modules:           [  caloskimE
                                      ,caloskimW 
                                      ,simpleLightAna
                                      ,CRTDataAnalysis
+				     ,CRTAnalysis
                                    ]
 
 icarus_analysis_supera:            [ supera
