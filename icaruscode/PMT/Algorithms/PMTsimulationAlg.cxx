@@ -560,7 +560,7 @@ icarus::opdet::PMTsimulationAlg::CreateFixedSizeOpDetWaveforms
   std::vector<BufferRange_t> buffers;
   buffers.reserve(std::distance(iNextTrigger, tend)); // worst case
   
-  auto lastBufferEnd { firstTick };
+  auto lastBufferEnd{ firstTick - detinfo::timescales::optical_time_ticks{ 1 }};
   while (iNextTrigger != tend) {
     
     BufferRange_t const buffer = makeBuffer(*iNextTrigger);
