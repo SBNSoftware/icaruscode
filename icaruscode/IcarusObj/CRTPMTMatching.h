@@ -35,32 +35,30 @@ struct matchedCRT{
 	double		CRTHitTime_us;		///< Time of the CRT Hit w.r.t. the global trigger in us.
 	double		CRTHitGateTime_ns;	///< Time of the CRT Hit w.r.t. the beam gate opening in ns.
 	double		CRTHitAmplitude_pe;	///< CRTHit amplitude in PEs.
-			
-	
+	double 		CRTPMTTimeDiff_ns;	///< Time difference between the CRT Hit and the optical flash in ns.
 
 }
 
 
 struct CRTPMTMatching{
 
-    int			event;			///< Event number.
-    int			run;			///< Run number.
-    unsigned int	gateType;		///< Beam gate type.
+    int				event;			///< Event number.
+    int				run;			///< Run number.
+    unsigned int		gateType;		///< Beam gate type.
    
-    int			flashID;		///< ID of the optical flash.
-    double		flashTime_us;		///< Time of the optical flash w.r.t. the global trigger in us.
-    double		flashGateTime_ns;	///< Time of the optical flash w.r.t. the beam gate opening in ns.
-    bool		flashInGate;		///< Flash within gate or not.
-    bool		flashInBeam;		///< Flash within the beam window of the gate or not.
-    double		flashAmplitude_pe	///< Flash amplitude in PEs.
-    Point_t		flashPosition;		///< Flash barycenter coordinates evaluated using ADCs as weights.
-    double		flashYWidth;		///< Flash spread along Y.
-    double		flashZWidth;		///< Flash spread along Z.
+    int				flashID;		///< ID of the optical flash.
+    double			flashTime_us;		///< Time of the optical flash w.r.t. the global trigger in us.
+    double			flashGateTime_ns;	///< Time of the optical flash w.r.t. the beam gate opening in ns.
+    bool			flashInGate;		///< Flash within gate or not.
+    bool			flashInBeam;		///< Flash within the beam window of the gate or not.
+    double			flashAmplitude_pe	///< Flash amplitude in PEs.
+    Point_t			flashPosition;		///< Flash barycenter coordinates evaluated using ADCs as weights.
+    double			flashYWidth;		///< Flash spread along Y.
+    double			flashZWidth;		///< Flash spread along Z.
    
-    matchType		flashClassification;	///< Classication of the optical flash.	
-
+    matchType			flashClassification;	///< Classication of the optical flash.	
+    std::vector<matchedCRT>	matchedCRTHits;		///< Matched CRT Hits with the optical flash.
          
-
 }
 
 
