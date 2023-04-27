@@ -4,6 +4,7 @@
 #include "icaruscode/CRT/CRTUtils/CRTHitRecoAlg.h"
 #include "sbnobj/Common/Trigger/ExtraTriggerInfo.h"
 #include "icaruscode/IcarusObj/CRTPMTMatching.h"
+#include "icaruscode/CRT/CRTUtils/CRTPMTMatchingUtils.h"
 
 // Framework includes
 #include "art/Framework/Core/EDProducer.h"
@@ -80,7 +81,7 @@ bool flashInTime(double flashTime, int gateType, double gateDiff,
   return ((relFlashTime > 0) && (relFlashTime < activeGate));
 }
 
-
+  /*
 struct CRTPMT {
   double 	tof;    	///< Time difference between CRT Hit and optical flash [ns]
   double 	distance;    	///< Distance between CRT Hit and optical flash centroid [cm]
@@ -95,15 +96,16 @@ struct CRTMatches {
   matchType FlashType;
 };
 
+  //struct MatchedCRT
 struct MatchedCRT {
   geo::Point_t CRTHitPos;
   double CRTPMTTimeDiff_ns;
   double CRTTime_us;
   int CRTSys;
   int CRTRegion;
-};
+  };*/
 
-struct FlashType {
+  /*struct FlashType {
   geo::Point_t FlashPos;
   double FlashTime_us;
   double FlashGateTime_ns;
@@ -111,7 +113,7 @@ struct FlashType {
   bool inGate;
   matchType Classification;
   std::vector<MatchedCRT> CRTmatches;
-};
+  };*/
 
 CRTMatches CRTHitmatched(
     double flashTime, geo::Point_t const& flashpos,
@@ -276,7 +278,6 @@ CRTMatches CRTHitmatched(
   void CRTPMTMatchingProducer::produce(art::Event & e)
   {
 	mf::LogDebug("CRTPMTMatchingProducer: ") << "beginning analyis";
-
 	std::unique_ptr< vector<CRTPMTMatching> > CRTPMTMatchesColl( new vector<CRTPMTMatching>);
 	std::unique_ptr< art::Assns<CRTPMTMatching, recob::OpFlash> > FlashAssociation( new art::Assns<CRTPMTMatching, recob::OpFlash>);
     	//art::PtrMaker<sbn::crt::CRTHit> makeHitPtr(event);
@@ -382,6 +383,8 @@ CRTMatches CRTHitmatched(
           				if (CRTSys == 0) TopEn++;
           				if (CRTSys == 1) SideEn++;		
 					MatchedCRT thisCRTMatch = { /* .CRTHitPos = */ thisCRTpos, // C++20: restore initializers
+								    //MatchedCRT thisCRTMatch = { /* .CRTHitPos =  thisCRTpos,*/ // C++20: restore initializers
+					//MatchedCRT thisCRTMatch = { /* .CRTHitPos = */ thisCRTpos, // C++20: restore initializers
                                      	  /* .CRTPMTTimeDiff_ns = */ CRTTof_opflash,
                                      	  /* .CRTTime_us = */ CRTtime,
                                      	  /* .CRTSys = */ CRTSys,
@@ -406,7 +409,8 @@ CRTMatches CRTHitmatched(
 					}
           				if (CRTSys == 0) TopEx++;
           				if (CRTSys == 1) SideEx++;		
-					MatchedCRT thisCRTMatch = { /* .CRTHitPos = */ thisCRTpos, // C++20: restore initializers
+					//MatchedCRT thisCRTMatch = { /* .CRTHitPos =  thisCRTpos,*/ // C++20: restore initializers
+					MatchedCRT thisCRTMatch = { /* .CRTHitPos =*/  thisCRTpos, // C++20: restore initializers
                                      	  /* .CRTPMTTimeDiff_ns = */ CRTTof_opflash,
                                      	  /* .CRTTime_us = */ CRTtime,
                                      	  /* .CRTSys = */ CRTSys,
