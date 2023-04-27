@@ -270,8 +270,9 @@ CRTMatches CRTHitmatched(
   {
 	mf::LogDebug("CRTPMTMatchingProducer: ") << "beginning analyis";
 
-	std::unique_ptr< vector<CRTPMTMatching> > CRTPMTmatchesColl( new vector<CRTPMTMatching>);
-
+	std::unique_ptr< vector<CRTPMTMatching> > CRTPMTMatchesColl( new vector<CRTPMTMatching>);
+	std::unique_ptr< art::Assns<CRTPMTMatchig, recob::OpFlash> > FlashAssociation( new art::Assns<CRTPMTMatching, recob::OpFlash>);
+    	//art::PtrMaker<sbn::crt::CRTHit> makeHitPtr(event);
  	// add trigger info
   	auto const& triggerInfo = e.getProduct<sbn::ExtraTriggerInfo>(fTriggerLabel);
   	sbn::triggerSource bit = triggerInfo.sourceType;
@@ -406,34 +407,12 @@ CRTMatches CRTHitmatched(
 			} //Fine CRT
 		} // Fine di questo flash
       }
-    //std::unique_ptr< vector<CRTHit> > CRTHitcol( new vector<CRTHit>);
-    //std::unique_ptr< art::Assns<CRTHit, CRTData> > Hitassn( new art::Assns<CRTHit, CRTData>);
-    //art::PtrMaker<sbn::crt::CRTHit> makeHitPtr(event);
+   //art::PtrMaker<sbn::crt::CRTHit> makeHitPtr(event);
+     
+    event.put(std::move(CRTPMTMatchesColl));
+    event.put(std::move(FlashAssociation));
 
-
-    vector<std::pair<CRTHit, vector<int>>> crtHitPairs = hitAlg.CreateCRTHits(crtData, m_trigger_timestamp);
-    //vector<std::pair<CRTHit, vector<int>>> crtHitPairs = hitAlg.CreateCRTHits(crtList);
-
-    mf::LogInfo("CRTPMTMatchingProducer")
-      << "Number of CRTHit,data indices pairs = " << crtHitPairs.size();
-
-    for(auto const& crtHitPair : crtHitPairs){
-
-      CRTHitcol->push_back(crtHitPair.first);
-      art::Ptr<CRTHit> hitPtr = makeHitPtr(CRTHitcol->size()-1);
-      nHits++;
-
-      for(auto const& data_i : crtHitPair.second){
-
-        Hitassn->addSingle(hitPtr, crtList[data_i]);
-      }
-    }
-      
-    event.put(std::move(CRTHitcol));
-    event.put(std::move(Hitassn));
-
-    mf::LogInfo("CRTSimHitProducer")
-      <<"Number of CRT hits produced = "<<nHits;
+  
 
   } // CRTPMTMatchingProducer::produce()
 
