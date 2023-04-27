@@ -27,6 +27,7 @@
 
 // C++ includes
 #include <memory>
+#include <numeric>
 #include <iostream>
 #include <map>
 #include <iterator>
@@ -34,16 +35,23 @@
 #include <vector>
 
 // LArSoft
+
+#include "icaruscode/Decode/DataProducts/TriggerConfiguration.h"
 #include "larcore/Geometry/Geometry.h"
 #include "larcore/Geometry/AuxDetGeometry.h"
 #include "larcorealg/Geometry/GeometryCore.h"
+#include "larcore/CoreUtils/ServiceUtil.h" // lar::providerFrom()
 #include "lardata/Utilities/AssociationUtil.h"
+#include "larcorealg/CoreUtils/enumerate.h"
 #include "lardata/DetectorInfoServices/LArPropertiesService.h"
 #include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
 #include "lardata/DetectorInfoServices/DetectorClocksService.h"
 #include "lardataobj/RawData/ExternalTrigger.h"
 #include "larcoreobj/SimpleTypesAndConstants/PhysicalConstants.h"
 #include "larcoreobj/SimpleTypesAndConstants/geo_types.h"
+#include "lardataobj/RecoBase/OpHit.h"
+#include "lardataobj/RecoBase/OpFlash.h"
+#include "lardata/Utilities/AssociationUtil.h"
 
 // ROOT
 #include "TTree.h"
@@ -70,7 +78,7 @@ bool flashInTime(double flashTime, int gateType, double gateDiff,
       << flashTime + gateDiff / 1000. << " " << activeGate;
 
   return ((relFlashTime > 0) && (relFlashTime < activeGate));
-};
+}
 
 
 struct CRTPMT {
@@ -84,7 +92,7 @@ struct CRTMatches {
   // matched CRTHit
   std::vector<CRTPMT> 	entering;
   std::vector<CRTPMT> 	exiting;
-  matchType matchType;
+  matchType FlashType;
 };
 
 struct MatchedCRT {
@@ -111,7 +119,7 @@ CRTMatches CRTHitmatched(
 
   	std::vector<icarus::crt::CRTPMT> enteringCRTHits;
   	std::vector<icarus::crt::CRTPMT> exitingCRTHits;
-  	matchType MatchType;
+  	matchType FlashType;
   	int topen = 0, topex = 0, sideen = 0, sideex = 0;
   	for (auto const& crtHit : crtHits) {
     		double tof = crtHit->ts1_ns - flashTime * 1e3;
@@ -136,26 +144,26 @@ CRTMatches CRTHitmatched(
     		}
   	}
   	if (topen == 0 && sideen == 0 && topex == 0 && sideex == 0)
-    		MatchType = noMatch;
+    		FlashType = noMatch;
   	else if (topen == 1 && sideen == 0 && topex == 0 && sideex == 0)
-    		MatchType = enTop;
+    		FlashType = enTop;
   	else if (topen == 0 && sideen == 1 && topex == 0 && sideex == 0)
-    		MatchType = enSide;
+    		FlashType = enSide;
   	else if (topen == 1 && sideen == 0 && topex == 0 && sideex == 1)
-    		MatchType = enTop_exSide;
+    		FlashType = enTop_exSide;
   	else if (topen == 0 && sideen == 0 && topex == 1 && sideex == 0)
-    		MatchType = exTop;
+    		FlashType = exTop;
   	else if (topen == 0 && sideen == 0 && topex == 0 && sideex == 1)
-    		MatchType = exSide;
+    		FlashType = exSide;
   	else if (topen >= 1 && sideen >= 1 && topex == 0 && sideex == 0)
-    		MatchType = enTop_mult;
+    		FlashType = enTop_mult;
   	else if (topen >= 1 && sideen >= 1 && topex == 0 && sideex >= 1)
-    		MatchType = enTop_exSide_mult;
+    		FlashType = enTop_exSide_mult;
   	else
-    		MatchType = others;
+    		FlashType = others;
 
-  	return {std::move(enteringCRTHits), std::move(exitingCRTHits), MatchType};
-};
+  	return {std::move(enteringCRTHits), std::move(exitingCRTHits), FlashType};
+}
 
   class CRTPMTMatchingProducer : public art::EDProducer {
   public:
@@ -169,7 +177,7 @@ CRTMatches CRTHitmatched(
 
     // Plugins should not be copied or assigned.
     CRTPMTMatchingProducer(CRTPMTMatchingProducer const &) = delete;
-    CRTPMTMathcingProducer(CRTPMTMatchingProducer &&) = delete;
+    CRTPMTMatchingProducer(CRTPMTMatchingProducer &&) = delete;
     CRTPMTMatchingProducer & operator = (CRTPMTMatchingProducer const &) = delete; 
     CRTPMTMatchingProducer & operator = (CRTPMTMatchingProducer &&) = delete;
 
@@ -178,7 +186,7 @@ CRTMatches CRTHitmatched(
 
     // Selected optional functions.
     void beginJob() override;
-
+    void beginRun(art::Run& run) override;
     void endJob() override;
 
     //void reconfigure(fhicl::ParameterSet const & p);
@@ -187,12 +195,16 @@ CRTMatches CRTHitmatched(
 
 	// Params from fcl file.......
 
+	std::vector<art::InputTag> fFlashLabels;
+
   	// art::InputTag fOpHitModuleLabel;
   	art::InputTag fOpFlashModuleLabel0;		///< OpticalFlashes Cryo 0.
   	art::InputTag fOpFlashModuleLabel1;		///< OpticalFlashes Cryo1.
-	art::InputTag fCrtModuleLabel;		      	///< name of crt producer.
+	art::InputTag fCrtHitModuleLabel;		///< name of crt producer.
 	art::InputTag fTriggerLabel;		        ///< name of trigger producer.
 	art::InputTag fTriggerConfigurationLabel;	///< name of the trigger configuration.
+
+        icarus::TriggerConfiguration fTriggerConfiguration;
     
 	double fTimeOfFlightInterval;	 		///< CRTPMT time difference interval to find the match.
 	int fPMTADCThresh;				///< ADC amplitude for a PMT to be considered above threshold.
@@ -229,9 +241,9 @@ CRTMatches CRTHitmatched(
       fTriggerLabel(p.get<art::InputTag>("TriggerLabel", "daqTrigger")),
       fTriggerConfigurationLabel(
           p.get<art::InputTag>("TriggerConfiguration", "triggerconfig")),
-      fnOpHitToTrigger(p.get<int>("nOpHitToTrigger")),
       fTimeOfFlightInterval(p.get<double>("TimeOfFlightInterval")),
       fPMTADCThresh(p.get<int>("PMTADCThresh")),
+      fnOpHitToTrigger(p.get<int>("nOpHitToTrigger")),
       fBNBBeamGateMin(p.get<double>("BNBBeamGateMin")),
       fBNBBeamGateMax(p.get<double>("BNBBeamGateMax")),
       fBNBinBeamMin(p.get<double>("BNBinBeamMin")),
@@ -240,20 +252,10 @@ CRTMatches CRTHitmatched(
       fNuMIBeamGateMax(p.get<double>("NuMIBeamGateMax")),
       fNuMIinBeamMin(p.get<double>("NuMIinBeamMin")),
       fNuMIinBeamMax(p.get<double>("NuMIinBeamMax")),
-      fGeometryService(lar::providerFrom<geo::Geometry>()) {
+      fGeometryService(lar::providerFrom<geo::Geometry>())
+        {
 	  fFlashLabels = { fOpFlashModuleLabel0, fOpFlashModuleLabel1 };
-	}
-
-  // Initialize member data here, if know don't want to reconfigure on the fly
-  {
- 
-   // Call appropriate produces<>() functions here.
-    //produces< vector<CRTHit> >();
-    //produces< art::Assns<CRTHit, CRTData> >();
-    
-    //reconfigure(p);
-
-  } // CRTPMTMatchingProducer()
+	} // CRTPMTMatchingProducer()
 
   /*void CRTPMTMatchingProducer::reconfigure(fhicl::ParameterSet const & p)
   {
@@ -261,17 +263,22 @@ CRTMatches CRTHitmatched(
     fTriggerLabel   = (p.get<art::InputTag> ("TriggerLabel")); 
   } // CRTPMTMatchingProducer::reconfigure() */
 
+  void CRTPMTMatchingProducer::beginRun(art::Run& r) {
+	fTriggerConfiguration =
+      		r.getProduct<icarus::TriggerConfiguration>(fTriggerConfigurationLabel);
+  }
+
   void CRTPMTMatchingProducer::beginJob()
   {
 
   } // CRTPMTMatchingProducer::beginJob()
  
-  void CRTPMTMatchingProducer::produce(art::Event & event)
+  void CRTPMTMatchingProducer::produce(art::Event & e)
   {
 	mf::LogDebug("CRTPMTMatchingProducer: ") << "beginning analyis";
 
 	std::unique_ptr< vector<CRTPMTMatching> > CRTPMTMatchesColl( new vector<CRTPMTMatching>);
-	std::unique_ptr< art::Assns<CRTPMTMatchig, recob::OpFlash> > FlashAssociation( new art::Assns<CRTPMTMatching, recob::OpFlash>);
+	std::unique_ptr< art::Assns<CRTPMTMatching, recob::OpFlash> > FlashAssociation( new art::Assns<CRTPMTMatching, recob::OpFlash>);
     	//art::PtrMaker<sbn::crt::CRTHit> makeHitPtr(event);
  	// add trigger info
   	auto const& triggerInfo = e.getProduct<sbn::ExtraTriggerInfo>(fTriggerLabel);
@@ -298,6 +305,7 @@ CRTMatches CRTHitmatched(
 		std::vector<FlashType> thisEventFlashes;
 
 		for (auto const& [iflash, flash] : util::enumerate(*flashHandle)) {
+			matchType eventType = others;
 			double tflash = flash.Time();
       			vector<recob::OpHit const*> const& hits = findManyHits.at(iflash);
       			int nPMTsTriggering = 0;
@@ -351,7 +359,8 @@ CRTMatches CRTHitmatched(
           		  firstTime, flash_pos, crtHitList, fTimeOfFlightInterval);
 			int TopEn = 0, TopEx = 0, SideEn = 0, SideEx = 0;
       			auto nCRTHits = CRTmatches.entering.size() + CRTmatches.exiting.size();
-			eventType = CRTmatches.matchType;
+ 			std::vector<MatchedCRT> thisFlashCRTmatches;
+			eventType = CRTmatches.FlashType;
 			if (nCRTHits > 0) {
         			for (auto const& entering : CRTmatches.entering) {
           				vector<double> CRTpos {entering.CRTHit->x_pos,
@@ -384,7 +393,7 @@ CRTMatches CRTHitmatched(
                                  		exiting.CRTHit->y_pos,
                                  		exiting.CRTHit->z_pos};
           				geo::Point_t thisCRTpos {exiting.CRTHit->x_pos,
-                                   		enxiting.CRTHit->y_pos,
+                                   		exiting.CRTHit->y_pos,
                                    		exiting.CRTHit->z_pos};
           				double CRTtime = exiting.CRTHit->ts1_ns / 1e3;
           				int CRTRegion = exiting.CRTHit->plane;
@@ -405,12 +414,20 @@ CRTMatches CRTHitmatched(
 					thisFlashCRTmatches.push_back(thisCRTMatch);
         			}
 			} //Fine CRT
+			FlashType thisFlashType = { /* .FlashPos = */ flash_pos, // C++20: restore initializers
+                                 /* .FlashTime_us = */ tflash,
+                                 /* .FlashGateTime_ns = */ fThisRelGateTime,
+                                 /* .inBeam = */ fThisInTime_beam,
+                                 /* .inGate = */ inTime,
+                                 /* .Classification = */ eventType,
+                                 /* .CRTmatches = */ thisFlashCRTmatches};
+			thisEventFlashes.push_back(thisFlashType);
 		} // Fine di questo flash
       }
    //art::PtrMaker<sbn::crt::CRTHit> makeHitPtr(event);
      
-    event.put(std::move(CRTPMTMatchesColl));
-    event.put(std::move(FlashAssociation));
+    e.put(std::move(CRTPMTMatchesColl));
+    e.put(std::move(FlashAssociation));
 
   
 
@@ -423,5 +440,4 @@ CRTMatches CRTHitmatched(
 
   DEFINE_ART_MODULE(CRTPMTMatchingProducer)
 
-}
 } //end namespace

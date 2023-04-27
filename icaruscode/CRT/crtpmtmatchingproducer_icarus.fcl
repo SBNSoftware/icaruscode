@@ -1,5 +1,6 @@
 # A script to run the producer module: CRTPMTMatchingProducer
 
+#include "crtpmtmatchingproducer.fcl"
 #include "services_icarus_simulation.fcl"
 #include "crtpmtmatching_parameters.fcl"
 #include "channelmapping_icarus.fcl"
@@ -49,25 +50,6 @@ physics:
 {
   producers:
   {
-      module_type:        "CRTPMTMatchingProducer"
-
-      CrtHitModuleLabel:  "crthit"
-
-      OpHitModuleLabel:   "ophit"
-
-      OpFlashModuleLabel0: "opflashCryoE"
-      OpFlashModuleLabel1: "opflashCryoW"
-
-      TriggerLabel:  "daqTrigger"
-      TriggerConfiguration: "triggerconfig"
-
-      # note 19/04/2023: parameters are set to run2,
-      # they can be set to run1, but currently values are the same
-
-      @table::CRTMatchBNBBeamGate_run2
-      @table::CRTMatchNuMIBeamGate_run2
-      @table::CRTPMTmatchingparams_standard
-
       crtpmt: @local::standard_crtpmtmatchingproducer
   }
   # Schedule job step(s) for execution by defining the analysis module for this job.
