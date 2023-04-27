@@ -49,10 +49,29 @@ physics:
 {
   producers:
   {
-    crthit: @local::standard_crtpmtmatchingproducer
+      module_type:        "CRTPMTMatchingProducer"
+
+      CrtHitModuleLabel:  "crthit"
+
+      OpHitModuleLabel:   "ophit"
+
+      OpFlashModuleLabel0: "opflashCryoE"
+      OpFlashModuleLabel1: "opflashCryoW"
+
+      TriggerLabel:  "daqTrigger"
+      TriggerConfiguration: "triggerconfig"
+
+      # note 19/04/2023: parameters are set to run2,
+      # they can be set to run1, but currently values are the same
+
+      @table::CRTMatchBNBBeamGate_run2
+      @table::CRTMatchNuMIBeamGate_run2
+      @table::CRTPMTmatchingparams_standard
+
+      crtpmt: @local::standard_crtpmtmatchingproducer
   }
   # Schedule job step(s) for execution by defining the analysis module for this job.
-  reco: [ crthit ]
+  reco: [ crtpmt ]
   stream1: [ out1 ]
   trigger_paths: [reco]
   # "end_paths" is a keyword and contains the modules that do not modify the art::Event;
