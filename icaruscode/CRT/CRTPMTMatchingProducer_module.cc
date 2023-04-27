@@ -72,33 +72,6 @@ bool flashInTime(double flashTime, int gateType, double gateDiff,
   return ((relFlashTime > 0) && (relFlashTime < activeGate));
 };
 
-enum hasCRTHit {
-  /**
-   * Type of the matching.
-   *
-   * Secret decoder ring:
-   *  * `0`: No CRT match
-   *  * `1`: matched with Top CRT hit before optical flash
-   *  * `2`: matched with Side CRT hit before optical flash
-   *  * `3`: entering from Top and exiting from side
-   *  * `4`: matched with a Top CRT after the optical flash
-   *  * `5`: matched with a Side CRT after the optical flash
-   *  * `6`: matched with multiple Top CRT hits before the optical flash
-   *  * `7`: matched with multiple Top CRT hits before the optical flash and
-   * more then 1 side CRT hits after the optical flash
-   *  * `9`: all the other cases
-   *
-   */
-  noMatch = 0,
-  enTop = 1,
-  enSide = 2,
-  enTop_exSide = 3,
-  exTop = 4,
-  exSide = 5,
-  enTop_mult = 6,
-  enTop_exSide_mult = 7,
-  others = 9
-};
 
 struct CRTPMT {
   double 	tof;    	///< Time difference between CRT Hit and optical flash [ns]
@@ -111,7 +84,7 @@ struct CRTMatches {
   // matched CRTHit
   std::vector<CRTPMT> 	entering;
   std::vector<CRTPMT> 	exiting;
-  hasCRTHit matchType;
+  matchType matchType;
 };
 
 struct MatchedCRT {
@@ -128,7 +101,7 @@ struct FlashType {
   double FlashGateTime_ns;
   bool inBeam;
   bool inGate;
-  hasCRTHit Classification;
+  matchType Classification;
   std::vector<MatchedCRT> CRTmatches;
 };
 
@@ -138,7 +111,7 @@ CRTMatches CRTHitmatched(
 
   	std::vector<icarus::crt::CRTPMT> enteringCRTHits;
   	std::vector<icarus::crt::CRTPMT> exitingCRTHits;
-  	hasCRTHit MatchType;
+  	matchType MatchType;
   	int topen = 0, topex = 0, sideen = 0, sideex = 0;
   	for (auto const& crtHit : crtHits) {
     		double tof = crtHit->ts1_ns - flashTime * 1e3;
@@ -297,6 +270,8 @@ CRTMatches CRTHitmatched(
   {
 	mf::LogDebug("CRTPMTMatchingProducer: ") << "beginning analyis";
 
+	std::unique_ptr< vector<CRTPMTMatching> > CRTPMTmatchesColl( new vector<CRTPMTMatching>);
+
  	// add trigger info
   	auto const& triggerInfo = e.getProduct<sbn::ExtraTriggerInfo>(fTriggerLabel);
   	sbn::triggerSource bit = triggerInfo.sourceType;
@@ -435,30 +410,6 @@ CRTMatches CRTHitmatched(
     //std::unique_ptr< art::Assns<CRTHit, CRTData> > Hitassn( new art::Assns<CRTHit, CRTData>);
     //art::PtrMaker<sbn::crt::CRTHit> makeHitPtr(event);
 
-    if (event.getByLabel(fCrtModuleLabel, crtListHandle))
-      art::fill_ptr_vector(crtList, crtListHandle);
-
-    //add trigger info
-    if( !fTriggerLabel.empty() ) {
-
-      art::Handle<sbn::ExtraTriggerInfo> trigger_handle;
-      event.getByLabel( fTriggerLabel, trigger_handle );
-      if( trigger_handle.isValid() )
-      	m_trigger_timestamp = trigger_handle->triggerTimestamp; 
-      else
-      	mf::LogError("CRTPMTMatchingProducer") << "No raw::Trigger associated to label: " << fTriggerLabel.label() << "\n" ;
-    } else{ 
-      std::cout  << "Trigger Data product " << fTriggerLabel.label() << " not found!\n" ;
-    }
-
-    mf::LogInfo("CRTPMTMatchingProducer")
-      <<"Number of SiPM hits = "<<crtList.size();
-    //m_trigger_timestamp = event.getProduct<sbn::ExtraTriggerInfo>(fTriggerLabel).triggerTimestamp;
-
-    mf::LogInfo("CRTPMTMatchingProducer")
-      <<"Number of SiPM hits = "<<crtList.size();
-
-    vector<art::Ptr<CRTData>> crtData = hitAlg.PreselectCRTData(crtList, m_trigger_timestamp);
 
     vector<std::pair<CRTHit, vector<int>>> crtHitPairs = hitAlg.CreateCRTHits(crtData, m_trigger_timestamp);
     //vector<std::pair<CRTHit, vector<int>>> crtHitPairs = hitAlg.CreateCRTHits(crtList);
