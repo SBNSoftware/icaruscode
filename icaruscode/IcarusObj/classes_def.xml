@@ -65,8 +65,6 @@
 
   <class name="std::vector<icarus::crt::matchedCRT>"/>  
 
-  <class name="icarus::crt::matchType"/>
-
   <class name="icarus::crt::CRTPMTMatching" ClassVersion="10">
    <version ClassVersion="10" checksum="2106023918"/>
   </class>

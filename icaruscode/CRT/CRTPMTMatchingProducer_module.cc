@@ -207,7 +207,7 @@ namespace icarus::crt {
 		std::vector<FlashType> thisEventFlashes;
 
 		for (auto const& [iflash, flash] : util::enumerate(*flashHandle)) {
-			matchType eventType = others;
+			enum matchType eventType = others;
 			double tflash = flash.Time();
       			vector<recob::OpHit const*> const& hits = findManyHits.at(iflash);
       			int nPMTsTriggering = 0;

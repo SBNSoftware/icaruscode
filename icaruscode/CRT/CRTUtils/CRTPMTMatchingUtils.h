@@ -13,7 +13,7 @@ namespace icarus::crt {
     // matched CRTHit
     std::vector<CRTPMT> entering;
     std::vector<CRTPMT> exiting;
-    matchType FlashType;
+    enum matchType FlashType;
   };
 
   struct MatchedCRT {
@@ -30,7 +30,7 @@ namespace icarus::crt {
     double FlashGateTime_ns;
     bool inBeam;
     bool inGate;
-    matchType Classification;
+    enum matchType Classification;
     std::vector<MatchedCRT> CRTmatches;
   };
 
@@ -55,7 +55,7 @@ CRTMatches CRTHitmatched(
 
   	std::vector<icarus::crt::CRTPMT> enteringCRTHits;
   	std::vector<icarus::crt::CRTPMT> exitingCRTHits;
-  	matchType FlashType;
+  	enum matchType FlashType;
   	int topen = 0, topex = 0, sideen = 0, sideex = 0;
   	for (auto const& crtHit : crtHits) {
     		double tof = crtHit->ts1_ns - flashTime * 1e3;

@@ -45,7 +45,6 @@ struct matchedCRT{
 
 };
 
-
 struct CRTPMTMatching{
 
     int				event;			///< Event number.
@@ -64,7 +63,7 @@ struct CRTPMTMatching{
     double			flashYWidth;		///< Flash spread along Y.
     double			flashZWidth;		///< Flash spread along Z.
    
-    matchType			flashClassification;	///< Classication of the optical flash.	
+    enum matchType		flashClassification;	///< Classication of the optical flash.	
     std::vector<matchedCRT>	matchedCRTHits;		///< Matched CRT Hits with the optical flash.
     int				topCRTBefore;		///< Number of Top CRT Hits before the optical flash.
     int				topCRTAfter;		///< Number of Top CRT Hits after the optical flash.
