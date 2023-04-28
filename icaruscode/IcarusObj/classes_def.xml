@@ -58,6 +58,22 @@
   <class name="art::Wrapper<std::vector<icarus::timing::PMTWaveformTimeCorrection> >"/>
 
   <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
+  <!-- icarus::crt::CRTPMTMatching -->
+  <class name="icarus::crt::matchedCRT" ClassVersion="10">
+   <version ClassVersion="10" checksum="2583456996"/>
+  </class>
+
+  <class name="std::vector<icarus::crt::matchedCRT>"/>  
+
+  <class name="icarus::crt::matchType"/>
+
+  <class name="icarus::crt::CRTPMTMatching" ClassVersion="10">
+   <version ClassVersion="10" checksum="2106023918"/>
+  </class>
+  <class name="std::vector<icarus::crt::CRTPMTMatching>" />
+  <class name="art::Wrapper<vector<icarus::crt::CRTPMTMatching>>" />  
+
+  <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
   <!-- LArSoft object associations that are missing from LArSoft             -->
   
   <!-- recob::PFParticle - sim::BeamGateInfo associations -->

@@ -1,5 +1,4 @@
 // icaruscode includes
-#include "sbnobj/ICARUS/CRT/CRTData.hh"
 #include "sbnobj/Common/CRT/CRTHit.hh"
 #include "icaruscode/CRT/CRTUtils/CRTHitRecoAlg.h"
 #include "sbnobj/Common/Trigger/ExtraTriggerInfo.h"
@@ -65,107 +64,6 @@
 using std::vector;
 
 namespace icarus::crt {
-
-bool flashInTime(double flashTime, int gateType, double gateDiff,
-                 double gateWidth) {
-  // As a reminder, I will leave here the commented part of the vetoOffset, in
-  // case something changes in the future
-  /*double vetoOffset = 3.5;*/
-  double activeGate = gateWidth /*- vetoOffset*/;
-
-  double relFlashTime = flashTime + gateDiff / 1000. /*- vetoOffset*/;
-  mf::LogDebug("CRTPMTMatchingProducer FlashInTime")
-      << "Gate Diff " << gateDiff / 1000 << " Ftime+gateDiff "
-      << flashTime + gateDiff / 1000. << " " << activeGate;
-
-  return ((relFlashTime > 0) && (relFlashTime < activeGate));
-}
-
-  /*
-struct CRTPMT {
-  double 	tof;    	///< Time difference between CRT Hit and optical flash [ns]
-  double 	distance;    	///< Distance between CRT Hit and optical flash centroid [cm]
-  art::Ptr<sbn::crt::CRTHit> CRTHit;
-};
-
-struct CRTMatches {
-  // vector of pairs where first is the matched Time of Flight and second is the
-  // matched CRTHit
-  std::vector<CRTPMT> 	entering;
-  std::vector<CRTPMT> 	exiting;
-  matchType FlashType;
-};
-
-  //struct MatchedCRT
-struct MatchedCRT {
-  geo::Point_t CRTHitPos;
-  double CRTPMTTimeDiff_ns;
-  double CRTTime_us;
-  int CRTSys;
-  int CRTRegion;
-  };*/
-
-  /*struct FlashType {
-  geo::Point_t FlashPos;
-  double FlashTime_us;
-  double FlashGateTime_ns;
-  bool inBeam;
-  bool inGate;
-  matchType Classification;
-  std::vector<MatchedCRT> CRTmatches;
-  };*/
-
-CRTMatches CRTHitmatched(
-    double flashTime, geo::Point_t const& flashpos,
-    std::vector<art::Ptr<sbn::crt::CRTHit>>& crtHits, double interval) {
-
-  	std::vector<icarus::crt::CRTPMT> enteringCRTHits;
-  	std::vector<icarus::crt::CRTPMT> exitingCRTHits;
-  	matchType FlashType;
-  	int topen = 0, topex = 0, sideen = 0, sideex = 0;
-  	for (auto const& crtHit : crtHits) {
-    		double tof = crtHit->ts1_ns - flashTime * 1e3;
-    		double distance =
-		  (flashpos - geo::Point_t{crtHit->x_pos, crtHit->y_pos, crtHit->z_pos})
-            	    .R();
-    		if (abs(tof) >= interval) continue;
-    		if (tof < 0) {
-      			if (crtHit->plane > 36)
-        			sideen++;
-      			else
-        			topen++;
-      			CRTPMT m_match = {tof, distance, crtHit};
-      			enteringCRTHits.push_back(m_match);
-    		} else if (tof >= 0) {
-      			if (crtHit->plane > 36)
-        			sideex++;
-      			else
-        			topex++;
-      			CRTPMT m_match = {tof, distance, crtHit};
-      			exitingCRTHits.push_back(m_match);
-    		}
-  	}
-  	if (topen == 0 && sideen == 0 && topex == 0 && sideex == 0)
-    		FlashType = noMatch;
-  	else if (topen == 1 && sideen == 0 && topex == 0 && sideex == 0)
-    		FlashType = enTop;
-  	else if (topen == 0 && sideen == 1 && topex == 0 && sideex == 0)
-    		FlashType = enSide;
-  	else if (topen == 1 && sideen == 0 && topex == 0 && sideex == 1)
-    		FlashType = enTop_exSide;
-  	else if (topen == 0 && sideen == 0 && topex == 1 && sideex == 0)
-    		FlashType = exTop;
-  	else if (topen == 0 && sideen == 0 && topex == 0 && sideex == 1)
-    		FlashType = exSide;
-  	else if (topen >= 1 && sideen >= 1 && topex == 0 && sideex == 0)
-    		FlashType = enTop_mult;
-  	else if (topen >= 1 && sideen >= 1 && topex == 0 && sideex >= 1)
-    		FlashType = enTop_exSide_mult;
-  	else
-    		FlashType = others;
-
-  	return {std::move(enteringCRTHits), std::move(exitingCRTHits), FlashType};
-}
 
   class CRTPMTMatchingProducer : public art::EDProducer {
   public:
@@ -256,6 +154,7 @@ CRTMatches CRTHitmatched(
       fNuMIinBeamMax(p.get<double>("NuMIinBeamMax")),
       fGeometryService(lar::providerFrom<geo::Geometry>())
         {
+	  produces< std::vector<CRTPMTMatching> >();
 	  fFlashLabels = { fOpFlashModuleLabel0, fOpFlashModuleLabel1 };
 	} // CRTPMTMatchingProducer()
 
@@ -278,8 +177,10 @@ CRTMatches CRTHitmatched(
   void CRTPMTMatchingProducer::produce(art::Event & e)
   {
 	mf::LogDebug("CRTPMTMatchingProducer: ") << "beginning analyis";
+	std::cout<<"LETS START PRODUCING"<<std::endl;
 	std::unique_ptr< vector<CRTPMTMatching> > CRTPMTMatchesColl( new vector<CRTPMTMatching>);
-	std::unique_ptr< art::Assns<CRTPMTMatching, recob::OpFlash> > FlashAssociation( new art::Assns<CRTPMTMatching, recob::OpFlash>);
+	//std::unique_ptr< art::Assns<CRTPMTMatching, recob::OpFlash> > FlashAssociation( new art::Assns<CRTPMTMatching, recob::OpFlash>);
+
     	//art::PtrMaker<sbn::crt::CRTHit> makeHitPtr(event);
  	// add trigger info
   	auto const& triggerInfo = e.getProduct<sbn::ExtraTriggerInfo>(fTriggerLabel);
@@ -383,8 +284,6 @@ CRTMatches CRTHitmatched(
           				if (CRTSys == 0) TopEn++;
           				if (CRTSys == 1) SideEn++;		
 					MatchedCRT thisCRTMatch = { /* .CRTHitPos = */ thisCRTpos, // C++20: restore initializers
-								    //MatchedCRT thisCRTMatch = { /* .CRTHitPos =  thisCRTpos,*/ // C++20: restore initializers
-					//MatchedCRT thisCRTMatch = { /* .CRTHitPos = */ thisCRTpos, // C++20: restore initializers
                                      	  /* .CRTPMTTimeDiff_ns = */ CRTTof_opflash,
                                      	  /* .CRTTime_us = */ CRTtime,
                                      	  /* .CRTSys = */ CRTSys,
@@ -409,7 +308,6 @@ CRTMatches CRTHitmatched(
 					}
           				if (CRTSys == 0) TopEx++;
           				if (CRTSys == 1) SideEx++;		
-					//MatchedCRT thisCRTMatch = { /* .CRTHitPos =  thisCRTpos,*/ // C++20: restore initializers
 					MatchedCRT thisCRTMatch = { /* .CRTHitPos =*/  thisCRTpos, // C++20: restore initializers
                                      	  /* .CRTPMTTimeDiff_ns = */ CRTTof_opflash,
                                      	  /* .CRTTime_us = */ CRTtime,
@@ -427,12 +325,16 @@ CRTMatches CRTHitmatched(
                                  /* .CRTmatches = */ thisFlashCRTmatches};
 			thisEventFlashes.push_back(thisFlashType);
 		} // Fine di questo flash
-      }
+		for (auto const& theseFlashes : thisEventFlashes){
+			CRTPMTMatching ProducedFlash = FillCRTPMT (theseFlashes, e.id().event(), e.run(), m_gate_type);
+			CRTPMTMatchesColl->push_back(ProducedFlash);	
+		}
+	}
    //art::PtrMaker<sbn::crt::CRTHit> makeHitPtr(event);
-     
+	std::cout<<"This Event has "<<CRTPMTMatchesColl->size()<<" Flashes."<<std::endl;
     e.put(std::move(CRTPMTMatchesColl));
-    e.put(std::move(FlashAssociation));
-
+    //e.put(std::move(FlashAssociation));
+	std::cout<<"put andato"<<std::endl;
   
 
   } // CRTPMTMatchingProducer::produce()

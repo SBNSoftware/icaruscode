@@ -7,6 +7,7 @@
 #include "icaruscode/IcarusObj/OpDetWaveformMeta.h"
 #include "icaruscode/IcarusObj/PMTWaveformTimeCorrection.h"
 #include "icaruscode/IcarusObj/ChannelROI.h"
+#include "icaruscode/IcarusObj/CRTPMTMatching.h"
 
 #include "sbnobj/ICARUS/PMT/Trigger/Data/OpticalTriggerGate.h"
 #include "sbnobj/ICARUS/PMT/Trigger/Data/TriggerGateData.h"
