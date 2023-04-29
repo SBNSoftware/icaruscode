@@ -59,15 +59,18 @@
 
   <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
   <!-- icarus::crt::CRTPMTMatching -->
-  <class name="icarus::crt::matchedCRT" ClassVersion="10">
+  <class name="icarus::crt::MatchedCRT" ClassVersion="12">
+   <version ClassVersion="12" checksum="80440696"/>
+   <version ClassVersion="11" checksum="1017316548"/>
    <version ClassVersion="10" checksum="2583456996"/>
   </class>
 
-  <class name="std::vector<icarus::crt::matchedCRT>"/>  
+  <class name="std::vector<icarus::crt::MatchedCRT>"/>  
  
   <enum name="icarus::crt::matchType" />
 
-  <class name="icarus::crt::CRTPMTMatching" ClassVersion="10">
+  <class name="icarus::crt::CRTPMTMatching" ClassVersion="11">
+   <version ClassVersion="11" checksum="1082156238"/>
    <version ClassVersion="10" checksum="2106023918"/>
   </class>
   <class name="std::vector<icarus::crt::CRTPMTMatching>" />

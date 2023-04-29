@@ -7,21 +7,13 @@ namespace icarus::crt {
     double distance;    ///< Distance between CRT Hit and optical flash centroid [cm]
     art::Ptr<sbn::crt::CRTHit> CRTHit;
   };
-  
+
   struct CRTMatches {
     // vector of pairs where first is the matched Time of Flight and second is the
     // matched CRTHit
     std::vector<CRTPMT> entering;
     std::vector<CRTPMT> exiting;
     enum matchType FlashType;
-  };
-
-  struct MatchedCRT {
-    geo::Point_t CRTHitPos;
-    double CRTPMTTimeDiff_ns;
-    double CRTTime_us;
-    int CRTSys;
-    int CRTRegion;
   };
 
   struct FlashType {
@@ -120,16 +112,22 @@ CRTMatches CRTHitmatched(
     crtpmt.flashZWidth = 0; //
     crtpmt.flashClassification = thisFlash.Classification;
     for (auto const& crts : thisFlash.CRTmatches){
-      matchedCRT thismatchedCRT;
-      thismatchedCRT.CRTHitModule = 0; //
+      MatchedCRT thismatchedCRT;
+      /*thismatchedCRT.CRTHitModule = 0; //
       thismatchedCRT.CRTRegion = crts.CRTRegion;
       thismatchedCRT.CRTSys = crts.CRTSys;
-      thismatchedCRT.CRTHitPosition = crts.CRTHitPos;
-      thismatchedCRT.CRTHitTime_us = crts.CRTTime_us;
+      thismatchedCRT.CRTHitPosition = crts.CRTHitPosition;
+      thismatchedCRT.CRTHitTime_us = crts.CRTHitTime_us;
       thismatchedCRT.CRTHitGateTime_ns = 0;//
       thismatchedCRT.CRTHitAmplitude_pe = 0;//
       thismatchedCRT.CRTPMTTimeDiff_ns = crts.CRTPMTTimeDiff_ns;
-      thismatchedCRT.CRTHitFlashDistance = 0; //
+      thismatchedCRT.CRTHitFlashDistance = 0; //*/
+      // push stuff back to MatchedCRT (for now onlt CRTHitPos, CRTPMTTimeDiff, CRTTime, CRTSys, CRTReg)
+      thismatchedCRT.CRTHitPos = crts.CRTHitPos;
+      thismatchedCRT.CRTPMTTimeDiff_ns = crts.CRTPMTTimeDiff_ns; 
+      thismatchedCRT.CRTTime_us = crts.CRTTime_us; 
+      thismatchedCRT.CRTSys = crts.CRTSys;
+      thismatchedCRT.CRTRegion = crts.CRTRegion; 
     }
     crtpmt.topCRTBefore = 0; //
     crtpmt.topCRTAfter = 0; //

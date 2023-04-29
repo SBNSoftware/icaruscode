@@ -283,11 +283,17 @@ namespace icarus::crt {
 					}
           				if (CRTSys == 0) TopEn++;
           				if (CRTSys == 1) SideEn++;		
+					//matchedCRT thisCRTMatch = { /* .CRTHitPos = */ thisCRTpos, // C++20: restore initializers
 					MatchedCRT thisCRTMatch = { /* .CRTHitPos = */ thisCRTpos, // C++20: restore initializers
-                                     	  /* .CRTPMTTimeDiff_ns = */ CRTTof_opflash,
-                                     	  /* .CRTTime_us = */ CRTtime,
-                                     	  /* .CRTSys = */ CRTSys,
-                                     	  /* .CRTRegion = */ CRTRegion};	
+								    /* .CRTPMTTimeDiff_ns = */ CRTTof_opflash,
+								    /* .CRTTime_us = */ CRTtime,
+								    /* .CRTSys = */ CRTSys,
+								    /* .CRTRegion = */ CRTRegion};	
+					// i think we need to redefine thisCRTMatch here if we want to use MatchedCRT instead of matchedCRT
+					//MatchedCRT thisCRTMatch = { , 
+					 
+
+					std::cout << "saving entering CRTmatch: CRTpos = " << std::setw(20) << thisCRTpos << ", tof = " << CRTTof_opflash << ", CRTTime = " << CRTtime << ", CRTSys = " << CRTSys << ", CRTRegion = "<< CRTRegion << " \n";
 					thisFlashCRTmatches.push_back(thisCRTMatch);
         			}
 				for (auto const& exiting : CRTmatches.exiting) {

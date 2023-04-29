@@ -12,12 +12,15 @@
 // C++ includes
 #include <vector>
 #include "larcoreobj/SimpleTypesAndConstants/geo_vectors.h"
+//#include "icaruscode/CRT/CRTPMTMatchingUtils.h"
+//#include "icaruscode/CRT/CRTUtils/CRTPMTMatchingUtils.h"
 //#include "Math/GenVector/Cartesian3D.h"
 //#include "Math/GenVector/PositionVector3D.h"
 //#include "Math/GenVector/DisplacementVector3D.h"
 namespace icarus::crt {
 
-enum matchType {
+
+  enum matchType {
 
 	noMatch = 0,       	///< No CRT match
 	enTop = 1,         	///< Matched with Top CRT hit before optical flash.
@@ -29,23 +32,16 @@ enum matchType {
 	enTop_exSide_mult = 7,  ///< Matched with multiple Top CRT hits before the optical flash and more then 1 side CRT hits after the optical flash.
 	others = 9		///< All the other cases.
 
-};
+  };
+  struct MatchedCRT {
+   geo::Point_t CRTHitPos;
+   double CRTPMTTimeDiff_ns;
+   double CRTTime_us;
+   int CRTSys;
+   int CRTRegion;
+  };
 
-struct matchedCRT{
-
-	int		CRTHitModule;		///< Module ID of the matched CRT.
-	int		CRTRegion;		///< Region identifier of the matched CRT.
-	int		CRTSys;			///< CRT subsystem identifier: 0 Top CRT, 1 Side CRT, 2 Bottom CRT.
-	geo::Point_t	CRTHitPosition;		///< Coordinated of the matched CRT.
-	double		CRTHitTime_us;		///< Time of the CRT Hit w.r.t. the global trigger in us.
-	double		CRTHitGateTime_ns;	///< Time of the CRT Hit w.r.t. the beam gate opening in ns.
-	double		CRTHitAmplitude_pe;	///< CRTHit amplitude in PEs.
-	double 		CRTPMTTimeDiff_ns;	///< Time difference between the CRT Hit and the optical flash in ns.
-	double		CRTHitFlashDistance;	///< Distance between the CRT Hit and the optical flash barycenter.
-
-};
-
-struct CRTPMTMatching{
+  struct CRTPMTMatching{
 
     int				event;			///< Event number.
     int				run;			///< Run number.
@@ -61,16 +57,15 @@ struct CRTPMTMatching{
     double			flashAmplitude_pe;	///< Flash amplitude in PEs.
     geo::Point_t		flashPosition;		///< Flash barycenter coordinates evaluated using ADCs as weights.
     double			flashYWidth;		///< Flash spread along Y.
-    double			flashZWidth;		///< Flash spread along Z.
-   
+    double			flashZWidth;		///< Flash spread along Z. 
     enum matchType		flashClassification;	///< Classication of the optical flash.	
-    std::vector<matchedCRT>	matchedCRTHits;		///< Matched CRT Hits with the optical flash.
+    std::vector<MatchedCRT>	matchedCRTHits;		///< Matched CRT Hits with the optical flash.
     int				topCRTBefore;		///< Number of Top CRT Hits before the optical flash.
     int				topCRTAfter;		///< Number of Top CRT Hits after the optical flash.
     int				sideCRTBefore;		///< Number of Side CRT Hits before the optical flash.
     int				sideCRTAfter;		///< Number of Side CRT Hits after the optical flash.
     //std::vector<recob::OpHit>	opHits;			///< Optical hits of the flash.
-};
+  };
 
 
 }
