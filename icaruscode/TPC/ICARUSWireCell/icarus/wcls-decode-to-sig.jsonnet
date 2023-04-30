@@ -41,7 +41,7 @@ local params = params_init {
   },
 };
 
-local tools_maker = import 'pgrapher/common/tools.jsonnet';
+local tools_maker = import 'pgrapher/experiment/icarus/icarus_tools.jsonnet';
 local tools = tools_maker(params);
 
 local wcls_maker = import 'pgrapher/ui/wcls/nodes.jsonnet';
