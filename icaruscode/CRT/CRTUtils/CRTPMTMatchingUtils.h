@@ -129,6 +129,7 @@ CRTMatches CRTHitmatched(
       thismatchedCRT.CRTSys = crts.CRTSys;
       thismatchedCRT.CRTRegion = crts.CRTRegion; 
     }
+    crtpmt.matchedCRTHits = thisFlash.CRTmatches;
     crtpmt.topCRTBefore = 0; //
     crtpmt.topCRTAfter = 0; //
     crtpmt.sideCRTBefore = 0; //
