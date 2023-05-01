@@ -289,11 +289,6 @@ namespace icarus::crt {
 								    /* .CRTTime_us = */ CRTtime,
 								    /* .CRTSys = */ CRTSys,
 								    /* .CRTRegion = */ CRTRegion};	
-					// i think we need to redefine thisCRTMatch here if we want to use MatchedCRT instead of matchedCRT
-					//MatchedCRT thisCRTMatch = { , 
-					 
-
-					std::cout << "saving entering CRTmatch: CRTpos = " << std::setw(20) << thisCRTpos << ", tof = " << CRTTof_opflash << ", CRTTime = " << CRTtime << ", CRTSys = " << CRTSys << ", CRTRegion = "<< CRTRegion << " \n";
 					thisFlashCRTmatches.push_back(thisCRTMatch);
         			}
 				for (auto const& exiting : CRTmatches.exiting) {
@@ -340,8 +335,6 @@ namespace icarus::crt {
 	std::cout<<"This Event has "<<CRTPMTMatchesColl->size()<<" Flashes."<<std::endl;
     e.put(std::move(CRTPMTMatchesColl));
     //e.put(std::move(FlashAssociation));
-	std::cout<<"put andato"<<std::endl;
-  
 
   } // CRTPMTMatchingProducer::produce()
 
