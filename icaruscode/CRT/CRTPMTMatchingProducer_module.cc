@@ -176,7 +176,7 @@ namespace icarus::crt {
  
   void CRTPMTMatchingProducer::produce(art::Event & e)
   {
-	mf::LogDebug("CRTPMTMatchingProducer: ") << "beginning analyis";
+	mf::LogDebug("CRTPMTMatchingProducer: ") << "beginning CRTPMTProducer";
 	std::cout<<"LETS START PRODUCING"<<std::endl;
 	std::unique_ptr< vector<CRTPMTMatching> > CRTPMTMatchesColl( new vector<CRTPMTMatching>);
 	//std::unique_ptr< art::Assns<CRTPMTMatching, recob::OpFlash> > FlashAssociation( new art::Assns<CRTPMTMatching, recob::OpFlash>);
@@ -213,8 +213,6 @@ namespace icarus::crt {
       			int nPMTsTriggering = 0;
       			double firstTime = 999999;
       			geo::vect::MiddlePointAccumulator flashCentroid;
-      			double ampsum = 0, t_m = 0;
-      			std::vector<double> fHitX, fHitY, fHitZ, fHitT, fHitA;
       			for (auto const& hit : hits) {
         			if (hit->Amplitude() > fPMTADCThresh) nPMTsTriggering++;
         			if (firstTime > hit->PeakTime()) firstTime = hit->PeakTime();
@@ -222,17 +220,9 @@ namespace icarus::crt {
             		  	  fGeometryService->OpDetGeoFromOpChannel(hit->OpChannel())
                 	  	  .GetCenter();
         			double amp = hit->Amplitude();
-        			ampsum += amp;
-        			fHitX.push_back(pos.X());
-        			fHitY.push_back(pos.Y());
-        			fHitZ.push_back(pos.Z());
-        			fHitT.push_back(hit->PeakTime());
-        			fHitA.push_back(amp);
         			flashCentroid.add(pos, amp);
-        			t_m = t_m + hit->PeakTime();
       			}
       			geo::Point_t flash_pos = flashCentroid.middlePoint();
-			t_m = t_m / nPMTsTriggering;
       			if (nPMTsTriggering < fnOpHitToTrigger) continue;
 
 			bool inTime = flashInTime(firstTime, m_gate_type, m_trigger_gate_diff,
