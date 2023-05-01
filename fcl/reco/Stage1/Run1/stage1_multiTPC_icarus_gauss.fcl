@@ -39,23 +39,13 @@ services.message.destinations :
   STDCOUT:
   {
      type:      "cout"      #tells the message service to output this destination to cout
-     threshold: "DEBUG"     #tells the message service that this destination applies to WARNING and higher level messages
+     threshold: "WARNING"     #tells the message service that this destination applies to WARNING and higher level messages
      categories:
      {
        Cluster3D:
        {
          limit: -1
          reportEvery: 1
-       }
-       PMAlgTracker:
-       {
-         limit: -1
-         reportEvery: 1
-       }
-       default:
-       {
-         limit: 0  #don't print anything at the infomsg level except the explicitly named categories
-         reportEvery: 0
        }
      }
   }

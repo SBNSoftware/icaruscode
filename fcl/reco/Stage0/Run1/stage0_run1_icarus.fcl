@@ -7,7 +7,7 @@
 process_name: stage0
 
 ## Define the path we'll execute
-physics.path:     [ @sequence::icarus_stage0_data ]
+physics.path:     [ @sequence::icarus_stage0_data_crtpmtfilter ]
 
 ## boiler plate...
 physics.outana:        [ purityinfoana0, purityinfoana1 ]

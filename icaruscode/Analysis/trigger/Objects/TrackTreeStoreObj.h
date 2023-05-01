@@ -16,15 +16,19 @@ namespace sbn {
    */
   struct selTrackInfo {
     static constexpr float NoPosition = -999999.0;
+    static constexpr float NoEnergy = -999999.0;
+    static constexpr double NoTime = -99999.0;
     
-    int trackID = -1;
-    float t0 = NoPosition;
-    float start_x = NoPosition;
-    float start_y = NoPosition;
-    float start_z = NoPosition;
-    float end_x = NoPosition;
-    float end_y = NoPosition;
-    float end_z = NoPosition;
+    int trackID = -1; ///< `recob::Track::ID()` from the reconstructed track.
+    double t0 = NoTime; ///< Best time of the track (used for selection) [us]
+    double t0_TPC = NoTime; ///< Time of (cathode crossing) track from TPC reconstruction [us]
+    double t0_CRT = NoPosition; ///< Time of track from association with CRT hit [us]
+    float start_x = NoPosition; ///< Start of the track (assumed downgoing) [cm]
+    float start_y = NoPosition; ///< Start of the track (assumed downgoing) [cm]
+    float start_z = NoPosition; ///< Start of the track (assumed downgoing) [cm]
+    float end_x = NoPosition; ///< End of the track (assumed downgoing) [cm]
+    float end_y = NoPosition; ///< End of the track (assumed downgoing) [cm]
+    float end_z = NoPosition; ///< End of the track (assumed downgoing) [cm]
     float middle_x = NoPosition; ///< Half-way distance along the trajectory.
     float middle_y = NoPosition; ///< Half-way distance along the trajectory.
     float middle_z = NoPosition; ///< Half-way distance along the trajectory.
@@ -39,17 +43,19 @@ namespace sbn {
     float midaftercathode_z = NoPosition; ///< Midpoint of subpath after cathode.
     float beforecathode = -1; ///< Track path length before cathode (lower _x_).
     float aftercathode = -1; ///< Track path length before cathode (higher _x_).
-    float length = -1.0;
-    float energy = NoPosition;
-    float charge_int = NoPosition;
-    float charge_dqdx = NoPosition;
-    float dir_x = NoPosition;
-    float dir_y = NoPosition;
-    float dir_z = NoPosition;
+    float length = -1.0; ///< Full track length [cm]
+    float energy = NoEnergy; ///< Total energy as reported by calorimetry [MeV]
+    float energy_int = NoEnergy; ///< Integral of all (dE/dx) x dx [MeV]
+    float charge_int = NoEnergy; ///< Integral of all (dQ/dx) x dx [electrons?]
+    float energy_range = NoEnergy; ///< Energy from range (assuming stopping) [MeV]
+    float dir_x = NoPosition; ///< Direction vector at the start if the track.
+    float dir_y = NoPosition; ///< Direction vector at the start if the track.
+    float dir_z = NoPosition; ///< Direction vector at the start if the track.
+    float driftCorrX = 0.0; ///< Shift applied to track position for time [cm]
   };  // selTrackInfo
 
   struct selBeamInfo {
-    static constexpr float NoTime = -999999.0;
+    static constexpr float NoTime = -99999.0;
     
     float beamGateSimStart = NoTime;
     float beamGateDuration = -1.0;
@@ -66,7 +72,7 @@ namespace sbn {
   
   struct selSimTriggerInfo {
     
-    static constexpr double NoTime = -999999.0;
+    static constexpr double NoTime = -99999.0;
     
     double time = NoTime; ///< Time of the trigger in electronics time scale.
     
@@ -76,11 +82,16 @@ namespace sbn {
     static constexpr float NoPosition = -999999.0;
     int flash_id = -1;
     float sum_pe = NoPosition;
-    float flash_time = NoPosition;
+    float flash_time = NoPosition; ///< Nominal flash time [us]
     float flash_x = NoPosition;
     float flash_y = NoPosition;
     float flash_z = NoPosition;
-    float diff_flash_t0 = NoPosition;
+    float diff_flash_pos = NoPosition; ///< Distance from track middle point [cm]
+    float diff_flash_t0 = NoPosition; ///< Time from track time `t0` [us]
+    float diff_flash_TPCt0 = NoPosition; ///< Time from TPC time `t0_TPC` [us]
+    float diff_flash_CRTt0 = NoPosition; ///< Time from CRT time `t0_CRT` [us]
+    bool flash_closest_to_track = false; ///< Is this the smallest `diff_flash_t0`?
+    bool flash_nearest_to_track = false; ///< Is this the smallest `diff_flash_pos`?
   };
 
   struct selHitInfo {
@@ -110,6 +121,26 @@ namespace sbn {
     float dEdx = NoValue;
     float rr = NoValue;
     
+  };
+  
+  struct selCRTpoint {
+    static constexpr double Nowhere = -999999.0;
+    static constexpr double NoTime = -99999.0;
+    static constexpr int NoRegion = -1;
+    double time = NoTime; ///< Hit time from trigger [us]
+    double x = Nowhere;
+    double y = Nowhere;
+    double z = Nowhere;
+    float resolution = -1.0;
+    float DCA = Nowhere;
+    int region = NoRegion;
+  };
+  
+  struct selCRTInfo {
+    static constexpr double NoTime = -99999.0;
+    selCRTpoint entry;
+    selCRTpoint exit;
+    double time = NoTime; ///< Matching time from trigger [us]
   };
   
 } // namespace sbn

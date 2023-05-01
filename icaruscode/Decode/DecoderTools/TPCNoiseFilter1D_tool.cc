@@ -273,7 +273,8 @@ void TPCNoiseFilter1DMC::process_fragment(detinfo::DetectorClocksData const&,
     if (fNumTruncBins.size()     < numChannels)  fNumTruncBins.resize(numChannels);
     if (fRangeBins.size()        < numChannels)  fRangeBins.resize(numChannels);
 
-    if (fThresholdVec.size()     < numChannels)  fThresholdVec.resize(numChannels / coherentNoiseGrouping);
+    size_t ngroups = std::max(numChannels/coherentNoiseGrouping,size_t(1));
+    if (fThresholdVec.size()     < ngroups)  fThresholdVec.resize(ngroups);
 
     if (fFilterFunctionVec.size() < numChannels) fFilterFunctionVec.resize(numChannels);
 

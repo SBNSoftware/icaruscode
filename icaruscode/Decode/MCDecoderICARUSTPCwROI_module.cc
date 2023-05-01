@@ -380,6 +380,7 @@ void MCDecoderICARUSTPCwROI::produce(art::Event & event, art::ProcessingFrame co
     {
         art::Handle<artdaq::Fragments> daq_handle;
         event.getByLabel(rawDigitLabel, daq_handle);
+	//std::cout << "\nLabel=" << rawDigitLabel << std::endl;
 
         ConcurrentRawDigitCol concurrentRawDigits;
         ConcurrentRawDigitCol concurrentRawRawDigits;
@@ -494,115 +495,74 @@ void MCDecoderICARUSTPCwROI::processSingleLabel(art::Event&                     
     // Read in the digit List object(s).
     art::Handle< std::vector<raw::RawDigit> > digitVecHandle;
     event.getByLabel(inputLabel, digitVecHandle);
+    const raw::RawDigit invalidRD;
 
     // Require a valid handle
     if (digitVecHandle.isValid() && digitVecHandle->size()>0 )
     {
-        // Sadly, the RawDigits come to us in an unsorted condition which is not optimal for
-        // what we want to do here. So we make a vector of pointers to the input raw digits and sort them
-        std::vector<const raw::RawDigit*> rawDigitVec;
+        const unsigned int dataSize = digitVecHandle->front().Samples(); //size of raw data vectors
 
-        // Ugliness to fill the pointer vector...
-        for(size_t idx = 0; idx < digitVecHandle->size(); idx++) rawDigitVec.emplace_back(&digitVecHandle->at(idx)); //art::Ptr<raw::RawDigit>(digitVecHandle, idx).get());
+	    std::map<unsigned int, std::vector<const raw::RawDigit*> > boardToRawDigitMap;
 
-        // Sort (use a lambda to sort by channel id)
-        std::sort(rawDigitVec.begin(),rawDigitVec.end(),[](const raw::RawDigit* left, const raw::RawDigit* right) {return left->Channel() < right->Channel();});
-
-        // Declare a temporary digit holder and resize it if downsizing the waveform
-        unsigned int               dataSize = art::Ptr<raw::RawDigit>(digitVecHandle,0)->Samples(); //size of raw data vectors
-        raw::RawDigit::ADCvector_t rawDataVec(dataSize);
-
-        using BoardToChannelArrayPairMap = std::map<unsigned int, ChannelArrayPair>;
-
-        BoardToChannelArrayPairMap  boardToChannelArrayPairMap;
-        std::map<unsigned int, int> boardWireCountMap;
-        const unsigned int          MAXCHANNELS(64);
-
-        // Commence looping over raw digits
-        for(const auto& rawDigit : rawDigitVec)
+	    for(const raw::RawDigit& rawDigit: *digitVecHandle) 
         {
-            raw::ChannelID_t channel = rawDigit->Channel();
+	        raw::ChannelID_t channel = rawDigit.Channel();
+	        ChannelToBoardWirePlaneMap::const_iterator channelToBoardItr = fChannelToBoardWirePlaneMap.find(channel);
 
-            ChannelToBoardWirePlaneMap::const_iterator channelToBoardItr = fChannelToBoardWirePlaneMap.find(channel);
-
-            if (channelToBoardItr == fChannelToBoardWirePlaneMap.end())
+	        if (channelToBoardItr == fChannelToBoardWirePlaneMap.end())
             {
-                std::cout << "********************************************************************************" << std::endl;
-                std::cout << "********* We did not find channel " << channel << "*****************************" << std::endl;
-                std::cout << "********************************************************************************" << std::endl;
-                continue;
+	            std::cout << "********************************************************************************" << std::endl;
+	            std::cout << "********* We did not find channel " << channel << "*****************************" << std::endl;
+	            std::cout << "********************************************************************************" << std::endl;
+	            continue;
             }
 
-            unsigned int readoutBoardID = channelToBoardItr->second.first;
-            unsigned int wireIdx        = channelToBoardItr->second.second.first;
-            unsigned int planeIdx       = channelToBoardItr->second.second.second;
+	        unsigned int board   = channelToBoardItr->second.first;
+	        auto         mapIter = boardToRawDigitMap.find(board);
+	        unsigned int wireIdx = channelToBoardItr->second.second.first;
 
-            BoardToChannelArrayPairMap::iterator boardMapItr = boardToChannelArrayPairMap.find(readoutBoardID);
-
-            if (boardMapItr == boardToChannelArrayPairMap.end())
+	        if (mapIter == boardToRawDigitMap.end()) 
             {
-                const auto [mapItr, success] = 
-                    boardToChannelArrayPairMap.insert({readoutBoardID,{daq::INoiseFilter::ChannelPlaneVec(MAXCHANNELS,{0,3}),icarus_signal_processing::ArrayFloat(MAXCHANNELS,icarus_signal_processing::VectorFloat(dataSize))}});
+	            boardToRawDigitMap.insert({board,std::vector<const raw::RawDigit*>(64,&invalidRD)});
+	            mapIter = boardToRawDigitMap.find(board);
+	        }
 
-                if (!success) 
-                {
-                    std::cout << "+++> failed to insert data structure! " << std::endl;
-                    continue;
-                }
+	        mapIter->second[wireIdx] = &rawDigit;
+	    }
 
-                boardMapItr = mapItr;
-                boardWireCountMap[readoutBoardID] = 0;
-            }
-
-           // Decompress data into local holder
-            raw::Uncompress(rawDigit->ADCs(), rawDataVec, rawDigit->Compression());
-
-            // Fill into the data structure
-            icarus_signal_processing::VectorFloat& boardDataVec = boardMapItr->second.second[wireIdx];
-
-            for(size_t tick = 0; tick < dataSize; tick++) boardDataVec[tick] = rawDataVec[tick];
-
-            boardMapItr->second.first[wireIdx] = daq::INoiseFilter::ChannelPlanePair(channel,planeIdx);
-
-            if (++boardWireCountMap[readoutBoardID] == MAXCHANNELS)
-            {
-                processSingleImage(clockData, boardMapItr->second, coherentNoiseGrouping, concurrentRawDigits, concurrentRawRawDigits, coherentRawDigits, concurrentROIs);
-
-                boardToChannelArrayPairMap.erase(boardMapItr);
-
-                // Get the wireIDs for this channel
-//                std::vector<geo::WireID> wids = fGeometry->ChannelToWire(channel);
-//
-//                // Since we work with channels we can ignore the case in the middle of the TPC where there are 
-//                // wires crossing the midplane and just work with the first wire ID
-//                const geo::WireID&  wireID =  wids[0];
-//                const geo::PlaneID& planeID = wireID.planeID();
-//
-//                // Ok, now store things...
-//                unsigned int planeIndex = fPlaneToROPPlaneMap.find(planeID)->second;
-//                unsigned int wire       = channel - fPlaneToWireOffsetMap.find(planeID)->second;
-//
-//                if (wire >= channelArrayPairVec[planeIndex].second.size()) continue;
-//
-//                icarus_signal_processing::VectorFloat& dataVec = channelArrayPairVec[planeIndex].second[wire];
-//
-//                for(size_t tick = 0; tick < dataSize; tick++) dataVec[tick] = rawDataVec[tick];
-//
-//                // Keep track of the channel
-//                channelArrayPairVec[planeIndex].first[wire] = daq::INoiseFilter::ChannelPlanePair(channel,planeID.Plane);
-            }
-        }
-
-        // Some detector simulations don't output channels that don't have any possibility of signal (ghost channels)
-        // Do a cleanup phase here to find these
-        for(auto& boardInfo : boardToChannelArrayPairMap)
+	    //std::cout << "boardToRawDigitMap.size()=" << boardToRawDigitMap.size() << std::endl;
+	    //for (auto elem : boardToRawDigitMap) {
+	    tbb::parallel_for (static_cast<std::size_t>(0),boardToRawDigitMap.size(),[&](size_t& r) 
         {
-            if (boardWireCountMap[boardInfo.first] < 64)
-            {
-                processSingleImage(clockData, boardInfo.second, boardWireCountMap[boardInfo.first], concurrentRawDigits, concurrentRawRawDigits, coherentRawDigits, concurrentROIs);
-            }
-        }
+	        auto elem = std::next(boardToRawDigitMap.begin(),r);
 
+	        //std::cout << "board=" << elem->first << " nch=" << elem->second.size() << " first=" << elem->second[0]->Channel() << " last=" << elem->second[elem->second.size()-1]->Channel() << std::endl;
+
+	        std::vector<const raw::RawDigit*> rawDigitVec;
+
+	        for (auto e : elem->second) if (raw::isValidChannelID(e->Channel())) rawDigitVec.push_back(e);
+
+            ChannelArrayPair chanArr;
+            for (const auto rawDigit : rawDigitVec) 
+            {
+	            // Declare a temporary digit holder and resize it if downsizing the waveform
+	            raw::RawDigit::ADCvector_t rawDataVec(dataSize);
+
+	            // Decompress data into local holder
+	            raw::Uncompress(rawDigit->ADCs(), rawDataVec, rawDigit->Compression());
+
+	            // Fill into the data structure
+                raw::ChannelID_t channel  = rawDigit->Channel();
+                unsigned int     planeIdx = fChannelToBoardWirePlaneMap.find(channel)->second.second.second;
+
+	            icarus_signal_processing::VectorFloat boardDataVec(rawDataVec.cbegin(),rawDataVec.cend());
+	            chanArr.first.push_back(daq::INoiseFilter::ChannelPlanePair(channel,planeIdx));
+	            chanArr.second.push_back(boardDataVec);
+	        }
+
+	        if (chanArr.second.size() < 64) processSingleImage(clockData, chanArr, chanArr.second.size(), concurrentRawDigits, concurrentRawRawDigits, coherentRawDigits, concurrentROIs);
+	        else                            processSingleImage(clockData, chanArr, coherentNoiseGrouping, concurrentRawDigits, concurrentRawRawDigits, coherentRawDigits, concurrentROIs);
+	    });
     }
 
     theClockProcess.stop();

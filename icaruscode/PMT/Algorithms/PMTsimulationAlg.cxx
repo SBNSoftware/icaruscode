@@ -57,6 +57,15 @@ namespace util {
 // -----------------------------------------------------------------------------
 // ---  icarus::opdet::PMTsimulationAlg
 // -----------------------------------------------------------------------------
+util::MultipleChoiceSelection<icarus::opdet::PMTsimulationAlg::DiscriminationAlgo>
+const icarus::opdet::PMTsimulationAlg::DiscrimAlgoSelector {
+  //  { DiscriminationAlgo::Unset,              "Unset" }  // NOT an acceptable value!
+    { DiscriminationAlgo::AboveThreshold,     "AboveThreshold"    }
+  , { DiscriminationAlgo::CrossingThreshold,  "CrossingThreshold" }
+};
+
+
+// -----------------------------------------------------------------------------
 double
 icarus::opdet::PMTsimulationAlg::ConfigurationParameters_t::PMTspecs_t::
   multiplicationStageGain(unsigned int i /* = 1 */) const
@@ -100,6 +109,7 @@ icarus::opdet::PMTsimulationAlg::PMTsimulationAlg
     1.0e-4_ADCf // stop sampling when ADC counts are below this value
     )
   , fPedestalGen(fParams.pedestalGen)
+  , fDiscrAlgo(selectDiscriminationAlgo(fParams.discrimAlgo))
 {
   using namespace util::quantities::electronics_literals;
 
@@ -122,6 +132,11 @@ icarus::opdet::PMTsimulationAlg::PMTsimulationAlg
         " and this simulation will effectively apply a quantum efficiency of "
         << fParams.larProp->ScintPreScale();
       ;
+  }
+
+  if (!fDiscrAlgo) {
+    throw cet::exception("PMTsimulationAlg")
+      << "Logic error: discrimination algorithm not supported.\n"; 
   }
 
   // check that the sampled waveform has a sufficiently large range, so that
@@ -268,8 +283,8 @@ auto icarus::opdet::PMTsimulationAlg::CreateFullWaveform
     //
     Waveform_t waveform(fNsamples, 0_ADCf);
     
-    unsigned int nTotalPE [[gnu::unused]] = 0U; // unused if not in `debug` mode
-    double nTotalEffectivePE [[gnu::unused]] = 0U; // unused if not in `debug` mode
+    unsigned int nTotalPE [[maybe_unused]] = 0U; // unused if not in `debug` mode
+    double nTotalEffectivePE [[maybe_unused]] = 0U; // unused if not in `debug` mode
 
     auto gainFluctuation = makeGainFluctuator();
 
@@ -354,44 +369,124 @@ auto icarus::opdet::PMTsimulationAlg::CreateFullWaveform
     return trigger_locations;
   }
 
-  auto icarus::opdet::PMTsimulationAlg::FindTriggers
-    (Waveform_t const& wvfm, ADCcount baseline) const
-    -> std::vector<optical_tick>
-  {
-    std::vector<optical_tick> trigger_locations;
-    
-    // find all ticks at which we would trigger readout
-    bool above_thresh=false;
-    for(size_t i_t=0; i_t<wvfm.size(); ++i_t){
+//------------------------------------------------------------------------------
+auto icarus::opdet::PMTsimulationAlg::FindTriggers
+  (Waveform_t const& wvfm, ADCcount baseline) const -> std::vector<optical_tick>
+{
+  // first generate the triggers from the waveform signal
+  std::vector<optical_tick> trigger_locations
+    = (this->*fDiscrAlgo)(wvfm, baseline);
+  
+  // next, add the triggers injected at beam gate time
+  if (fParams.createBeamGateTriggers) {
+    auto beamGateTriggers = CreateBeamGateTriggers();
 
-      auto const val { fParams.pulsePolarity* (wvfm[i_t]-baseline) };
+    // insert the new triggers and sort them
+    trigger_locations.insert(trigger_locations.end(),
+      beamGateTriggers.begin(), beamGateTriggers.end());
+    std::inplace_merge(
+      trigger_locations.begin(),
+      trigger_locations.end() - beamGateTriggers.size(),
+      trigger_locations.end()
+      );
+  }
 
-      if(!above_thresh && val>=fParams.thresholdADC){
-	above_thresh=true;
-	trigger_locations.push_back(optical_tick::castFrom(i_t));
-      }
-      else if(above_thresh && val<fParams.thresholdADC){
-	above_thresh=false;
-      }
+  return trigger_locations;
+} // icarus::opdet::PMTsimulationAlg::FindTriggers()
 
-    }//end loop over waveform
 
-    // next, add the triggers injected at beam gate time
-    if (fParams.createBeamGateTriggers) {
-      auto beamGateTriggers = CreateBeamGateTriggers();
+//------------------------------------------------------------------------------
+auto icarus::opdet::PMTsimulationAlg::CreateTriggersCrossingThreshold
+  (Waveform_t const& wvfm, ADCcount baseline) const -> std::vector<optical_tick>
+{
+  std::vector<optical_tick> trigger_locations;
+  
+  // find all ticks at which we would trigger readout
+  bool above_thresh=false;
+  for(size_t i_t=0; i_t<wvfm.size(); ++i_t){
 
-      // insert the new triggers and sort them
-      trigger_locations.insert(trigger_locations.end(),
-        beamGateTriggers.begin(), beamGateTriggers.end());
-      std::inplace_merge(
-        trigger_locations.begin(),
-        trigger_locations.end() - beamGateTriggers.size(),
-        trigger_locations.end()
-        );
+    auto const val { fParams.pulsePolarity* (wvfm[i_t]-baseline) };
+
+    if(!above_thresh && val>=fParams.thresholdADC){
+      above_thresh=true;
+      trigger_locations.push_back(optical_tick::castFrom(i_t));
+    }
+    else if(above_thresh && val<fParams.thresholdADC){
+      above_thresh=false;
     }
 
-    return trigger_locations;
-  }
+  }//end loop over waveform
+
+  return trigger_locations;
+} // icarus::opdet::PMTsimulationAlg::CreateTriggersCrossingThreshold()
+
+
+//------------------------------------------------------------------------------
+/// Returns the maximum between `minuend - subtrahend` and `0`.
+template <typename T>
+constexpr T maxZeroOrDiff(T minuend, T subtrahend)
+  { return (minuend <= subtrahend)? T{ 0 }: minuend - subtrahend; }
+
+auto icarus::opdet::PMTsimulationAlg::CreateTriggersAboveThreshold
+  (Waveform_t const& wvfm, ADCcount baseline) const
+  -> std::vector<optical_tick>
+{
+  if (wvfm.empty()) return {};
+  
+  std::vector<optical_tick> trigger_locations;
+  
+  // instead of subtracting the baseline from each sample,
+  // we include it in the threshold
+  auto const threshold
+    = fParams.pulsePolarity * baseline + fParams.thresholdADC;
+  
+  std::size_t iSample = 0;
+  std::size_t const wend = wvfm.size();
+  while (iSample < wend) {
+    //
+    // determine the next merged region
+    //
+    
+    // find the start of the next region
+    do  {
+      if (fParams.pulsePolarity * wvfm[iSample] >= threshold) break;
+    } while(++iSample < wend);
+    if (iSample == wend) break; // no more regions
+    
+    std::pair<std::size_t, std::size_t> currentRange
+      { iSample, iSample + fParams.readoutWindowSize }; // shifted by pretrigger
+    
+    // now let's see until when we can extend it
+    while (++iSample < wend) {
+      
+      if (fParams.pulsePolarity * wvfm[iSample] > threshold) {
+        currentRange.second = iSample + fParams.readoutWindowSize;
+        continue;
+      }
+      if (iSample >= currentRange.second) {
+        // the next sample, even if it triggered, would not merge windows
+        // with this one; so this one is done now
+        break;
+      }
+    } // while looking for an end
+    
+    //
+    // turn the region into the proper sequence of triggers
+    //
+    std::size_t const lastTrigger
+      = currentRange.second - fParams.readoutWindowSize;
+    for (std::size_t trigger = currentRange.first; trigger < lastTrigger;
+         trigger += fParams.readoutWindowSize
+    ) {
+      trigger_locations.push_back(optical_tick::castFrom(trigger));
+    }
+    trigger_locations.push_back(optical_tick::castFrom(lastTrigger));
+    
+  } // while (outer)
+  
+  return trigger_locations;
+} // icarus::opdet::PMTsimulationAlg::CreateTriggersAboveThreshold()
+
 
 //------------------------------------------------------------------------------
 std::vector<raw::OpDetWaveform>
@@ -465,18 +560,18 @@ icarus::opdet::PMTsimulationAlg::CreateFixedSizeOpDetWaveforms
   std::vector<BufferRange_t> buffers;
   buffers.reserve(std::distance(iNextTrigger, tend)); // worst case
   
-  auto earliestBufferStart { firstTick };
+  auto lastBufferEnd{ firstTick - detinfo::timescales::optical_time_ticks{ 1 }};
   while (iNextTrigger != tend) {
     
     BufferRange_t const buffer = makeBuffer(*iNextTrigger);
     
-    if (buffer.first < earliestBufferStart) { // extend the previous buffer
+    if (buffer.first <= lastBufferEnd) { // extend the previous buffer
       assert(!buffers.empty()); // guaranteed because we skipped early triggers
       buffers.back().second = buffer.second;
     }
     else buffers.emplace_back(buffer);
     
-    earliestBufferStart = buffer.second;
+    lastBufferEnd = buffer.second;
     
     ++iNextTrigger;
   } // while
@@ -702,6 +797,22 @@ std::uint64_t icarus::opdet::PMTsimulationAlg::waveformStartTimestamp() const {
 
 
 // -----------------------------------------------------------------------------
+auto icarus::opdet::PMTsimulationAlg::selectDiscriminationAlgo
+  (DiscriminationAlgo algo) -> DiscriminationAlgoProc_t
+{
+  switch (algo) {
+    case DiscriminationAlgo::AboveThreshold:
+      return &PMTsimulationAlg::CreateTriggersAboveThreshold;
+    case DiscriminationAlgo::CrossingThreshold:
+      return &PMTsimulationAlg::CreateTriggersCrossingThreshold;
+    case DiscriminationAlgo::Unset:
+    default:
+      return nullptr;
+  } // switch
+} // icarus::opdet::PMTsimulationAlg::selectDiscriminationAlgo()
+
+
+// -----------------------------------------------------------------------------
 auto icarus::opdet::PMTsimulationAlg::TimeToTickAndSubtickConverter::operator()
   (double const tick_d) const -> std::tuple<tick, SubsampleIndex_t>
 {
@@ -726,6 +837,23 @@ double icarus::opdet::PMTsimulationAlg::GainFluctuator<Rand>::operator()
 
 // -----------------------------------------------------------------------------
 // ---  icarus::opdet::PMTsimulationAlgMaker
+// -----------------------------------------------------------------------------
+auto icarus::opdet::PMTsimulationAlgMaker::Config::getDiscriminationAlgo() const
+  -> DiscriminationAlgo
+{
+  try {
+    return PMTsimulationAlg::DiscrimAlgoSelector.parse(DiscrimAlgo());
+  }
+  catch (util::MultipleChoiceSelectionBase::UnknownOptionError const& e) {
+    throw cet::exception("PMTsimulationAlgMaker")
+      << "Invalid value for 'DiscrimAlgo' parameter: '" << e.label()
+      << "'; valid options: "
+      << PMTsimulationAlg::DiscrimAlgoSelector.optionListString()
+      << ".\n";
+  }
+} // icarus::opdet::PMTsimulationAlgMaker::Config::getDiscriminationAlgo()
+
+
 // -----------------------------------------------------------------------------
 icarus::opdet::PMTsimulationAlgMaker::PMTsimulationAlgMaker
   (Config const& config)
@@ -776,6 +904,7 @@ icarus::opdet::PMTsimulationAlgMaker::PMTsimulationAlgMaker
   fBaseConfig.createBeamGateTriggers   = config.CreateBeamGateTriggers();
   fBaseConfig.beamGateTriggerRepPeriod = microsecond(config.BeamGateTriggerRepPeriod());
   fBaseConfig.beamGateTriggerNReps     = config.BeamGateTriggerNReps();
+  fBaseConfig.discrimAlgo              = config.getDiscriminationAlgo();
 
   //
   // parameter checks

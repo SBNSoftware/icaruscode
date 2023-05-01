@@ -1,6 +1,5 @@
 
 #include "mchitmodules.fcl"
-#include "mcreco.fcl"
 #include "mctrutht0matching.fcl"
 #include "backtrackerservice.fcl"
 #include "particleinventoryservice.fcl"
@@ -32,7 +31,7 @@ physics.producers: {
 physics.reco: [ 
                 @sequence::icarus_reco_Gauss_CryoE ,
                 @sequence::icarus_reco_Gauss_CryoW ,
-		@sequence::icarus_reco_fm,
+		            @sequence::icarus_reco_fm,
                 caloskimCalorimetryCryoE, caloskimCalorimetryCryoW,
                 mcassociationsGausCryoE,  mcassociationsGausCryoW
               ]
@@ -45,12 +44,11 @@ physics.analyzers.caloskimW.G4producer: "largeant"
 physics.analyzers.caloskimW.SimChannelproducer: "largeant"
 physics.analyzers.caloskimW.RawDigitproducers: ["MCDecodeTPCROI:PHYSCRATEDATATPCWW", "MCDecodeTPCROI:PHYSCRATEDATATPCWE"]
 
-physics.outana:            [ caloskimE, caloskimW, simpleLightAna, CRTDataAnalysis]
+physics.outana:            [ @sequence::icarus_analysis_modules ]
 physics.trigger_paths:     [ reco ]
 physics.end_paths:         [ outana, stream1 ]
 outputs.out1.fileName:     "%ifb_%tc-%p.root"
 outputs.out1.dataTier:     "reconstructed"
-outputs.out1.SelectEvents: [ reco ]
 outputs.out1.outputCommands: [
   "keep *_*_*_*",
   "drop *_caloskimCalorimetryCryoE_*_*",
@@ -80,23 +78,13 @@ services.message.destinations :
   STDCOUT:
   {
      type:      "cout"      #tells the message service to output this destination to cout
-     threshold: "DEBUG"     #tells the message service that this destination applies to WARNING and higher level messages
+     threshold: "WARNING"   #tells the message service that this destination applies to WARNING and higher level messages
      categories:
      {
        Cluster3DICARUS:
        {
          limit: -1
          reportEvery: 1
-       }
-       PMAlgTracker:
-       {
-         limit: -1
-         reportEvery: 1
-       }
-       default:
-       {
-         limit: 0  #don't print anything at the infomsg level except the explicitly named categories
-         reportEvery: 0
        }
      }
   }

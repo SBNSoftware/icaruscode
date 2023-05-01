@@ -18,7 +18,9 @@
 #include "crtbacktracker_icarus.fcl"
 #include "crtt0matchingalg_icarus.fcl"
 #include "crtt0producer_icarus.fcl"
+## The below can be found from the softlink to Supera in sbncode
 #include "supera_modules.fcl"
+#include "crtpmtmatching_parameters.fcl"
 
 BEGIN_PROLOG
 
@@ -61,6 +63,8 @@ icarus_stage1_producers:
  ## crt producer
   crttrack:          @local::standard_crttrackproducer
   CRTT0Matching:     @local::standard_crtt0producer
+  CRTT0MatchingW:    @local::standard_crtt0producerW
+  CRTT0MatchingE:    @local::standard_crtt0producerE
 }
 
 icarus_stage1_filters:
@@ -95,6 +99,32 @@ icarus_stage1_analyzers:
      PEThresh:             7.5    # PE threshold above which charge amplitudes used
      CrtWindow:            3e6    # time window for looking data within trigger timestamp [ns]
    }
+  CRTAnalysis:
+   {
+     module_type:   "CRTPMTMatchingAna"
+
+     CrtHitModuleLabel:  "crthit"
+     OpHitModuleLabel:   "ophit"
+     OpFlashModuleLabel0: "opflashCryoE"
+     OpFlashModuleLabel1: "opflashCryoW"
+
+     TriggerLabel:   "daqTrigger"
+     TriggerConfiguration:  "triggerconfig"
+
+     #  Beam Gate and inBeam gate parameters were evaluated from the BNB and NuMI plots
+     #  reported in DocDB-30190 slides 17 (BNB) and 19 (NuMI).
+     #  Note1: in the plots a 500 ns offset was added to have start of the gate right at 0.
+     #  Note2: the inBeam parameters were determined experimentally by selecting the beam
+     #  excess time window. At the current state of the CRTPMT filter, the requirement to
+     #  have the optical flashes within the BeamExcess time window is not applied. 
+
+      # note 19/04/2023: parameters are set to run2,
+      # they can be set to run1, but currently values are the same 
+   
+      @table::CRTMatchBNBBeamGate_run2
+      @table::CRTMatchNuMIBeamGate_run2
+      @table::CRTPMTmatchingparams_standard
+   }
  }
 
 icarus_stage1_analyzers.caloskimE.SelectEvents: [reco]
@@ -105,13 +135,23 @@ icarus_stage1_analyzers.caloskimW.SelectEvents: [reco]
 icarus_stage1_analyzers.caloskimW.CALOproducer: caloskimCalorimetryCryoW 
 icarus_stage1_analyzers.caloskimW.SilenceMissingDataProducts: true
 
+icarus_stage1_analyzers.supera.unique_filename: true
+
 ### Below are a list of convenient sequences that can be used for production/typical users. ###
 
 # Set up the standard analysis chain
 icarus_analysis_modules:           [  caloskimE 
                                      ,caloskimW 
                                      ,simpleLightAna
-                                     ,supera 
+                                     ,CRTDataAnalysis
+				     ,CRTAnalysis
+                                   ]
+
+icarus_analysis_supera:            [ supera
+                                   ]
+
+icarus_analysis_larcv_modules:     [  @sequence::icarus_analysis_modules
+                                     ,@sequence::icarus_analysis_supera 
                                    ]
 
 # Set up filtering of cluster3D hits by cryostat
@@ -166,6 +206,8 @@ icarus_crttrack:                   [crttrack]
 
 icarus_crtt0match:                 [CRTT0Matching]
 
+icarus_crtt0match_eff:             [CRTT0MatchingE, CRTT0MatchingW]
+
 ### Below we include overrides for the modules above
 
 ## Overrides for filtering of cluster3D hits
@@ -173,7 +215,7 @@ icarus_stage1_filters.TPCHitFilterCryoW.HitDataLabelVec: ["cluster3DCryoW"]
 icarus_stage1_filters.TPCHitFilterCryoW.MaximumHits:     60000 
 
 icarus_stage1_filters.TPCHitFilterCryoE.HitDataLabelVec: ["cluster3DCryoE"]
-icarus_stage1_filters.TPCHitFilterCryoE.MaximumHits:     60000    
+icarus_stage1_filters.TPCHitFilterCryoE.MaximumHits:     60000 
 
 ## Definitions for running the 3D clustering by Cryostat
 icarus_stage1_producers.cluster3DCryoW.MakeSpacePointsOnly:                                      true
