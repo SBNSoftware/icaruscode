@@ -1,0 +1,12 @@
+#include "opticalTools_icarus.fcl"
+
+BEGIN_PROLOG
+	
+icarus_opdetwaveform_filtering:	
+{
+  module_type:         "OpDetWaveformFiltering"
+  InputLabels:         ["daqPMT"]
+  TimeConstant:        20.0
+}
+
+END_PROLOG
