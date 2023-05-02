@@ -223,6 +223,7 @@ void icarus::OpDetWaveformFiltering::produce( art::Event& event ) {
     	m_channel_id = wf.ChannelNumber();
         m_tstart = wf.TimeStamp();
         m_wf = wf.Waveform();
+	m_nsize = m_wf.size();	
 
 	// filtering waveform data
 	m_filt_wf = lowPassFilter( m_wf, opticalTick.value(), fTimeConstant);	      
