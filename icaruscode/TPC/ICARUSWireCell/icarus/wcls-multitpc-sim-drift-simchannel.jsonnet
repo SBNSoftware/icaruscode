@@ -29,7 +29,6 @@ local er_params = [
   },
 ];
 
-
 local params = base {
   lar: super.lar {
     // Longitudinal diffusion constant
@@ -58,11 +57,11 @@ local params = base {
   }
   else super.rc_resp,
 
-  elec: std.mapWithIndex(function (n, e)
-    e + {
-      gain: er_params[n].gain,
-      shaping: er_params[n].shaping,
-    }, super.elec),
+  elec: std.mapWithIndex(function (n, eparam)
+    super.elec[0] + {
+      gain: eparam.gain,
+      shaping: eparam.shaping,
+    }, er_params),
 };
 
 local tools = tools_maker(params);
