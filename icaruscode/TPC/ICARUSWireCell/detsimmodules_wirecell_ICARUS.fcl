@@ -75,7 +75,7 @@ icarus_simwire_wirecell_fitSR.wcls_main.params.file_rcresp: "icarus_fnal_rc_tail
 # Add in the tuned field responses
 icarus_simwire_wirecell_fitSR.wcls_main.params.files_fields: "icarus_fnal_fit_ks.json.bz2"
 # futz with shaping+gain values
-icarus_simwire_wirecell_fitSR.wcls_main.structs.gain2: 13.2390 # mV/fC
+icarus_simwire_wirecell_fitSR.wcls_main.structs.gain2: 12.4915 # mV/fC
 icarus_simwire_wirecell_fitSR.wcls_main.structs.shaping1: 1.45 # us
 
 
