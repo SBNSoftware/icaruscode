@@ -76,6 +76,7 @@ function(params)
         type: if std.objectHas(e, "type")
               then e.type
               else "ColdElecResponse", // default
+        name: "Plane%iElectronicsResponse" % n,
         data: sim_response_binning {
             shaping: e.shaping,
             gain: e.gain,
@@ -128,8 +129,8 @@ function(params)
                 field_response: wc.tn(fr),
                 // note twice we give rc so we have rc^2 in the final convolution
                 short_responses: if params.sys_status == false
-                                    then [wc.tn($.elec_resp[n])]
-                                    else [wc.tn($.elec_resp[n]), wc.tn($.sys_resp)],
+                                    then [wc.tn($.elec_resp[plane])]
+                                    else [wc.tn($.elec_resp[plane]), wc.tn($.sys_resp)],
 		overall_short_padding: if std.objectHas(params, 'overall_short_padding')
                                     then params.overall_short_padding
                                     else if params.sys_status == false
@@ -142,7 +143,7 @@ function(params)
         else [wc.tn($.rc_resp), wc.tn($.rc_resp)],
 		long_padding: 1.5*wc.ms,
 	    },
-            uses: [$.dft, fr, $.elec_resp[n], $.rc_resp, $.sys_resp],
+            uses: [$.dft, fr, $.elec_resp[plane], $.rc_resp, $.sys_resp],
         } for plane in [0,1,2]], $.fields),
 
     // One anode per detector "volume"
