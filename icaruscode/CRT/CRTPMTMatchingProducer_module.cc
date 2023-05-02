@@ -33,6 +33,7 @@
 #include <iterator>
 #include <algorithm>
 #include <vector>
+#include <optional>
 
 // LArSoft
 
@@ -103,8 +104,7 @@ namespace icarus::crt {
 	art::InputTag fCrtHitModuleLabel;		///< name of crt producer.
 	art::InputTag fTriggerLabel;		        ///< name of trigger producer.
 	art::InputTag fTriggerConfigurationLabel;	///< name of the trigger configuration.
-
-        icarus::TriggerConfiguration fTriggerConfiguration;
+        std::optional<icarus::TriggerConfiguration> fTriggerConfiguration;
     
 	double fTimeOfFlightInterval;	 		///< CRTPMT time difference interval to find the match.
 	int fPMTADCThresh;				///< ADC amplitude for a PMT to be considered above threshold.
@@ -165,8 +165,14 @@ namespace icarus::crt {
   } // CRTPMTMatchingProducer::reconfigure() */
 
   void CRTPMTMatchingProducer::beginRun(art::Run& r) {
-	fTriggerConfiguration =
-      		r.getProduct<icarus::TriggerConfiguration>(fTriggerConfigurationLabel);
+    //fTriggerConfiguration = r.getProduct<icarus::TriggerConfiguration>(fTriggerConfigurationLabel);
+    // copied below from CRTPMTMatchingAna_module.cc
+    // we don't know if this is data or not; if not, there will be no trigger config
+     auto const& trigConfHandle = 
+       r.getHandle<icarus::TriggerConfiguration>(fTriggerConfigurationLabel);
+     fTriggerConfiguration
+       = trigConfHandle.isValid()? std::make_optional(*trigConfHandle): std::nullopt;
+     
   }
 
   void CRTPMTMatchingProducer::beginJob()
@@ -176,35 +182,52 @@ namespace icarus::crt {
  
   void CRTPMTMatchingProducer::produce(art::Event & e)
   {
-	mf::LogDebug("CRTPMTMatchingProducer: ") << "beginning CRTPMTProducer";
-	std::cout<<"LETS START PRODUCING"<<std::endl;
-	std::unique_ptr< vector<CRTPMTMatching> > CRTPMTMatchesColl( new vector<CRTPMTMatching>);
-	//std::unique_ptr< art::Assns<CRTPMTMatching, recob::OpFlash> > FlashAssociation( new art::Assns<CRTPMTMatching, recob::OpFlash>);
+      std::cout << "looking for trig config.. \n"; 
+      if (!fTriggerConfiguration) {
+	std::cout   << "Skipping because no data (or at least no trigger configuration).";
+	mf::LogDebug("CRTPMTMatchingProducer")
+	  << "Skipping because no data (or at least no trigger configuration).";
+	//return;
+      }
+      mf::LogDebug("CRTPMTMatchingProducer: ") << "beginning CRTPMTProducer";
+      std::cout<<"LETS START PRODUCING"<<std::endl;
+      // add trigger info
+      if (!fTriggerLabel.empty()) {
+	art::Handle<sbn::ExtraTriggerInfo> trigger_handle;
+	e.getByLabel(fTriggerLabel, trigger_handle);
+	if (trigger_handle.isValid()) {
+	  sbn::triggerSource bit = trigger_handle->sourceType;
+	  m_gate_type = (unsigned int)bit;
+	  m_gate_name = bitName(bit);
+	  m_trigger_timestamp = trigger_handle->triggerTimestamp;
+	  m_gate_start_timestamp = trigger_handle->beamGateTimestamp;
+	  m_trigger_gate_diff =
+	  trigger_handle->triggerTimestamp - trigger_handle->beamGateTimestamp;
+	  // Read Beam Gate Size
+	  m_gate_width = fTriggerConfiguration->getGateWidth(m_gate_type);
+	} else {
+	  std::cout << "No sbn::ExtraTriggerInfo associated to label: " << fTriggerLabel.encode() << "\n";
+	}
+      }
+      else {
+	std::cout << "No TriggerLabel in : " << fTriggerLabel.encode() << "\n";
+      }
+      
+      std::unique_ptr< vector<CRTPMTMatching> > CRTPMTMatchesColl( new vector<CRTPMTMatching>);
+      //std::unique_ptr< art::Assns<CRTPMTMatching, recob::OpFlash> > FlashAssociation( new art::Assns<CRTPMTMatching, recob::OpFlash>);
+      // add CRTHits
+      art::Handle<std::vector<CRTHit>> crtHitListHandle;
+      std::vector<art::Ptr<CRTHit>> crtHitList;
+      if (e.getByLabel(fCrtHitModuleLabel, crtHitListHandle))
+	art::fill_ptr_vector(crtHitList, crtHitListHandle);
+      
+      // add optical flashes
+      for (art::InputTag const& flashLabel : fFlashLabels) {
+	   auto const flashHandle =
+	     e.getHandle<std::vector<recob::OpFlash>>(flashLabel);
+	   art::FindMany<recob::OpHit> findManyHits(flashHandle, e, flashLabel);
 
-    	//art::PtrMaker<sbn::crt::CRTHit> makeHitPtr(event);
- 	// add trigger info
-  	auto const& triggerInfo = e.getProduct<sbn::ExtraTriggerInfo>(fTriggerLabel);
-  	sbn::triggerSource bit = triggerInfo.sourceType;
-  	m_gate_type = (unsigned int)bit;
-  	m_gate_name = bitName(bit);
-  	m_trigger_timestamp = triggerInfo.triggerTimestamp;
-  	m_gate_start_timestamp = triggerInfo.beamGateTimestamp;
-  	m_trigger_gate_diff = triggerInfo.triggerTimestamp - triggerInfo.beamGateTimestamp;
-  	m_gate_width = fTriggerConfiguration.getGateWidth(m_gate_type);
-	
-	// add CRTHits
-  	art::Handle<std::vector<CRTHit>> crtHitListHandle;
-  	std::vector<art::Ptr<CRTHit>> crtHitList;
-  	if (e.getByLabel(fCrtHitModuleLabel, crtHitListHandle))
-    	  art::fill_ptr_vector(crtHitList, crtHitListHandle);
-
-	// add optical flashes
- 	for (art::InputTag const& flashLabel : fFlashLabels) {
-    		auto const flashHandle =
-        	  e.getHandle<std::vector<recob::OpFlash>>(flashLabel);
-    		art::FindMany<recob::OpHit> findManyHits(flashHandle, e, flashLabel);
-
-		std::vector<FlashType> thisEventFlashes;
+	   std::vector<FlashType> thisEventFlashes;
 
 		for (auto const& [iflash, flash] : util::enumerate(*flashHandle)) {
 			enum matchType eventType = others;
@@ -224,9 +247,9 @@ namespace icarus::crt {
       			}
       			geo::Point_t flash_pos = flashCentroid.middlePoint();
       			if (nPMTsTriggering < fnOpHitToTrigger) continue;
-
 			bool inTime = flashInTime(firstTime, m_gate_type, m_trigger_gate_diff,
-                                m_gate_width);
+						  m_gate_width);
+
 			double fThisRelGateTime = m_trigger_gate_diff + tflash * 1e3;
       			bool fThisInTime_gate = false;
      			bool fThisInTime_beam = false;

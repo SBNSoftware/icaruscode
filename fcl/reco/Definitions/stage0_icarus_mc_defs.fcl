@@ -7,6 +7,7 @@
 #include "crttruehitproducer.fcl"
 #include "crtsimhitproducer.fcl"
 #include "crttrackproducer_icarus.fcl"
+#include "crtpmtmatchingproducer.fcl"
 
 BEGIN_PROLOG
 
@@ -37,7 +38,8 @@ icarus_stage0_mc_producers:
     ## crt producer   
     crthit:            @local::standard_crtsimhitproducer
     crttrack:          @local::standard_crttrackproducer
-}  
+    crtpmt: 	       @local::standard_crtpmtmatchingproducer
+    }  
 
 # make the following modifications to job flow for MC vs the data
 icarus_stage0_mc_trigger: [
@@ -56,7 +58,8 @@ icarus_stage0_mc_PMT:  [
 
 icarus_stage0_mc_crt:  [ crthit,
                          #crttzero 
-                         crttrack 
-                       ]
+                         crttrack, 
+                       	 crtpmt
+		       ]
 
 END_PROLOG
