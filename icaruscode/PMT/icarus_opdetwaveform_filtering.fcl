@@ -5,8 +5,10 @@ BEGIN_PROLOG
 icarus_opdetwaveform_filtering:	
 {
   module_type:         "OpDetWaveformFiltering"
-  InputLabels:         ["daqPMT"]
+  InputLabel:          "daqPMT"
   TimeConstant:        20.0
+  SaveDebug:           false
+  OutputFile:          "filter_debug.root"
 }
 
 END_PROLOG
