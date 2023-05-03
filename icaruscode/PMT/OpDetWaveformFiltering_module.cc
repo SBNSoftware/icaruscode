@@ -254,7 +254,7 @@ template<typename T> std::vector<T> icarus::OpDetWaveformFiltering::lowPassFilte
     std::vector<T> out(data.size());
     double alpha = dt/(RC+dt);
     
-    out[0] = alpha * data[0];
+    out[0] = data[0];
     
     for( size_t i=1; i<data.size(); i++ )
 	out[i] = alpha * data[i] + (1-alpha) * out[i-1];
