@@ -229,6 +229,14 @@ physics.analyzers.effSlidingORW.DetectorParticleTag: @erase
 physics.analyzers.effSlidingORW.EnergyDeposits:      []
 
 
+# keep decoded hardware information too
+outputs.rootoutput.outputCommands: [
+  @sequence::outputs.rootoutput.outputCommands
+  , "keep *_daqTrigger_*_*"
+#  , "keep *_daqPMT_*_*"   # this would also keep waveforms etc.
+  ]
+
+
 
 # ------------------------------------------------------------------------------
 # --- Configuration override guide
