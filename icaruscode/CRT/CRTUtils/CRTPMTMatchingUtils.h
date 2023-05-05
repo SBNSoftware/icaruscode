@@ -43,14 +43,16 @@ bool flashInTime(double flashTime, int gateType, double gateDiff,
 
 CRTMatches CRTHitmatched(
     double flashTime, geo::Point_t const& flashpos,
-    std::vector<art::Ptr<sbn::crt::CRTHit>>& crtHits, double interval) {
+    std::vector<art::Ptr<sbn::crt::CRTHit>>& crtHits, double interval, bool isRealData, double fGlobalT0Offset) {
 
   	std::vector<icarus::crt::CRTPMT> enteringCRTHits;
   	std::vector<icarus::crt::CRTPMT> exitingCRTHits;
   	enum matchType FlashType;
   	int topen = 0, topex = 0, sideen = 0, sideex = 0;
   	for (auto const& crtHit : crtHits) {
-    		double tof = crtHit->ts1_ns - flashTime * 1e3;
+
+	  double CRTHitTime_ns = isRealData ? (crtHit->ts1_ns) : ((long long)(crtHit->ts0())-fGlobalT0Offset);
+	  double tof = CRTHitTime_ns - flashTime * 1e3;
     		double distance =
 		  (flashpos - geo::Point_t{crtHit->x_pos, crtHit->y_pos, crtHit->z_pos})
             	    .R();

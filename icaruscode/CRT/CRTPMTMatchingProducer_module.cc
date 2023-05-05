@@ -109,6 +109,8 @@ namespace icarus::crt {
 	double fTimeOfFlightInterval;	 		///< CRTPMT time difference interval to find the match.
 	int fPMTADCThresh;				///< ADC amplitude for a PMT to be considered above threshold.
 	int fnOpHitToTrigger;				///< Number of OpHit above threshold to mimic the triggering PMT.
+        double fGlobalT0Offset;                         ///< 1.6 ms delay to shift CRT Hit T0, the CRT Timing variable we use in MC.
+
 	double fBNBBeamGateMin;
 	double fBNBBeamGateMax;
 	double fBNBinBeamMin;
@@ -144,6 +146,7 @@ namespace icarus::crt {
       fTimeOfFlightInterval(p.get<double>("TimeOfFlightInterval")),
       fPMTADCThresh(p.get<int>("PMTADCThresh")),
       fnOpHitToTrigger(p.get<int>("nOpHitToTrigger")),
+      fGlobalT0Offset(p.get<int>("GlobalT0Offset")),
       fBNBBeamGateMin(p.get<double>("BNBBeamGateMin")),
       fBNBBeamGateMax(p.get<double>("BNBBeamGateMax")),
       fBNBinBeamMin(p.get<double>("BNBinBeamMin")),
@@ -182,13 +185,11 @@ namespace icarus::crt {
  
   void CRTPMTMatchingProducer::produce(art::Event & e)
   {
-      std::cout << "looking for trig config.. \n"; 
-      if (!fTriggerConfiguration) {
-	std::cout   << "Skipping because no data (or at least no trigger configuration).";
+      /*if (!fTriggerConfiguration) {
 	mf::LogDebug("CRTPMTMatchingProducer")
 	  << "Skipping because no data (or at least no trigger configuration).";
 	//return;
-      }
+	}*/ 
       mf::LogDebug("CRTPMTMatchingProducer: ") << "beginning CRTPMTProducer";
       std::cout<<"LETS START PRODUCING"<<std::endl;
       // add trigger info
@@ -206,11 +207,11 @@ namespace icarus::crt {
 	  // Read Beam Gate Size
 	  m_gate_width = fTriggerConfiguration->getGateWidth(m_gate_type);
 	} else {
-	  std::cout << "No sbn::ExtraTriggerInfo associated to label: " << fTriggerLabel.encode() << "\n";
+	  mf::LogDebug("CRTPMTMatchingProducer:") << "No sbn::ExtraTriggerInfo associated to label: " << fTriggerLabel.encode() << "\n";
 	}
       }
       else {
-	std::cout << "No TriggerLabel in : " << fTriggerLabel.encode() << "\n";
+	mf::LogDebug("CRTPMTMatchingProducer:") << "No TriggerLabel in : " << fTriggerLabel.encode() << "\n";
       }
       
       std::unique_ptr< vector<CRTPMTMatching> > CRTPMTMatchesColl( new vector<CRTPMTMatching>);
@@ -220,7 +221,8 @@ namespace icarus::crt {
       std::vector<art::Ptr<CRTHit>> crtHitList;
       if (e.getByLabel(fCrtHitModuleLabel, crtHitListHandle))
 	art::fill_ptr_vector(crtHitList, crtHitListHandle);
-      
+      bool isRealData = e.isRealData();
+      std::cout << "is this real data? " << isRealData << "\n";
       // add optical flashes
       for (art::InputTag const& flashLabel : fFlashLabels) {
 	   auto const flashHandle =
@@ -271,25 +273,33 @@ namespace icarus::crt {
       			}
       			inTime = fThisInTime_gate;
 		        icarus::crt::CRTMatches CRTmatches = CRTHitmatched(
-          		  firstTime, flash_pos, crtHitList, fTimeOfFlightInterval);
-			int TopEn = 0, TopEx = 0, SideEn = 0, SideEx = 0;
+									   firstTime, flash_pos, crtHitList, fTimeOfFlightInterval, isRealData, fGlobalT0Offset);
+			int TopEn = 0, TopEx = 0, SideEn = 0, SideEx = 0;			
       			auto nCRTHits = CRTmatches.entering.size() + CRTmatches.exiting.size();
+			
  			std::vector<MatchedCRT> thisFlashCRTmatches;
 			eventType = CRTmatches.FlashType;
 			if (nCRTHits > 0) {
-        			for (auto const& entering : CRTmatches.entering) {
+			  std::cout << "nCRTMatches = nEntering + nExiting = " << CRTmatches.entering.size() << " + " << CRTmatches.exiting.size() << " = " << nCRTHits << "\n"; 
+			  for (auto const& entering : CRTmatches.entering) {
           				vector<double> CRTpos {entering.CRTHit->x_pos,
                                  		entering.CRTHit->y_pos,
                                  		entering.CRTHit->z_pos};
           				geo::Point_t thisCRTpos {entering.CRTHit->x_pos,
                                    		entering.CRTHit->y_pos,
                                    		entering.CRTHit->z_pos};
-          				double CRTtime = entering.CRTHit->ts1_ns / 1e3;
-          				int CRTRegion = entering.CRTHit->plane;
+					// fGlobalT0Offset = 1.6e6 ns = 1600000 ns. 
+          				double CRTtime_us = isRealData ? (entering.CRTHit->ts1_ns/1e3) : ( (long long)(entering.CRTHit->ts0()) - fGlobalT0Offset)/1e3; // us 
+					double CRTtime_ns = isRealData ? (entering.CRTHit->ts1_ns) : ( (long long)(entering.CRTHit->ts0()) - fGlobalT0Offset); // us 
+					std::cout << "isRealData? " << isRealData << ", CRTTime_us = " << CRTtime_us << ", CRTtime_ns = " << CRTtime_ns << "\n";
+					int CRTRegion = entering.CRTHit->plane;
           				int CRTSys = 0;
           				if (CRTRegion >= 36) CRTSys = 1;  	// Very lazy way to determine if the Hit is a Top or a Side.
                     					    			// Will update it when bottom CRT will be availble.
-          				double CRTTof_opflash = entering.CRTHit->ts1_ns - tflash * 1e3;
+					double CRTTof_opflash = CRTtime_ns - tflash * 1e3; // ns 
+					double CRTTof_opflash_us = CRTtime_us - tflash; // us 
+					std::cout << "Entering match: tof = crtTime_ns - tflash*1e3 = " << CRTtime_ns << " - "<< tflash * 1e3 << " = " << CRTTof_opflash << " (ns) \n";
+					std::cout << "Entering match: tof_us = crtTime_us - tflash  = " << CRTtime_us << " - "<< tflash << " = " << CRTTof_opflash_us << " (us) \n";
           				std::vector<int> HitFebs;
           				for (auto crts : entering.CRTHit->feb_id) {
 						HitFebs.emplace_back((int)crts);
@@ -299,7 +309,7 @@ namespace icarus::crt {
 					//matchedCRT thisCRTMatch = { /* .CRTHitPos = */ thisCRTpos, // C++20: restore initializers
 					MatchedCRT thisCRTMatch = { /* .CRTHitPos = */ thisCRTpos, // C++20: restore initializers
 								    /* .CRTPMTTimeDiff_ns = */ CRTTof_opflash,
-								    /* .CRTTime_us = */ CRTtime,
+								    /* .CRTTime_us = */ CRTtime_us,
 								    /* .CRTSys = */ CRTSys,
 								    /* .CRTRegion = */ CRTRegion};	
 					thisFlashCRTmatches.push_back(thisCRTMatch);
@@ -311,11 +321,16 @@ namespace icarus::crt {
           				geo::Point_t thisCRTpos {exiting.CRTHit->x_pos,
                                    		exiting.CRTHit->y_pos,
                                    		exiting.CRTHit->z_pos};
-          				double CRTtime = exiting.CRTHit->ts1_ns / 1e3;
-          				int CRTRegion = exiting.CRTHit->plane;
+          				double CRTtime_us = isRealData ? (exiting.CRTHit->ts1_ns/1e3) : ( (long long)(exiting.CRTHit->ts0()) - fGlobalT0Offset)/1e3; // us    
+                                        double CRTtime_ns = isRealData ? (exiting.CRTHit->ts1_ns) : ( (long long)(exiting.CRTHit->ts0()) - fGlobalT0Offset); // us     
+					std::cout << "isRealData? " << isRealData << ", CRTTime_us = " << CRTtime_us << ", CRTtime_ns = " << CRTtime_ns << "\n";
+					int CRTRegion = exiting.CRTHit->plane;
           				int CRTSys = 0;
           				if (CRTRegion >= 36) CRTSys = 1; 
-          				double CRTTof_opflash = exiting.CRTHit->ts1_ns - tflash * 1e3;
+					double CRTTof_opflash = CRTtime_ns - tflash * 1e3; // ns
+					double CRTTof_opflash_us = CRTtime_us - tflash; // us
+					std::cout << "Exiting match: tof = crtTime_ns - tflash*1e3 = " << CRTtime_ns << " - "<< tflash * 1e3 << " = " << CRTTof_opflash << " (ns) \n";
+					std::cout << "Exiting match: tof_us = crtTime_us - tflash  = " << CRTtime_us << " - "<< tflash << " = " << CRTTof_opflash_us << " (us) \n";
           				std::vector<int> HitFebs;
           				for (auto crts : exiting.CRTHit->feb_id) {
 						HitFebs.emplace_back((int)crts);
@@ -324,7 +339,7 @@ namespace icarus::crt {
           				if (CRTSys == 1) SideEx++;		
 					MatchedCRT thisCRTMatch = { /* .CRTHitPos =*/  thisCRTpos, // C++20: restore initializers
                                      	  /* .CRTPMTTimeDiff_ns = */ CRTTof_opflash,
-                                     	  /* .CRTTime_us = */ CRTtime,
+                                     	  /* .CRTTime_us = */ CRTtime_us,
                                      	  /* .CRTSys = */ CRTSys,
                                      	  /* .CRTRegion = */ CRTRegion};	
 					thisFlashCRTmatches.push_back(thisCRTMatch);
@@ -338,7 +353,9 @@ namespace icarus::crt {
                                  /* .Classification = */ eventType,
                                  /* .CRTmatches = */ thisFlashCRTmatches};
 			thisEventFlashes.push_back(thisFlashType);
+			if (!thisFlashCRTmatches.empty() ) std::cout << "pushing back flash with " << thisFlashCRTmatches.size() << " CRT Matches.\n---\n";
 		} // Fine di questo flash
+		std::cout << "Event has " << thisEventFlashes.size() << " flashes in " << flashLabel.label() << "\n----------\n";
 		for (auto const& theseFlashes : thisEventFlashes){
 			CRTPMTMatching ProducedFlash = FillCRTPMT (theseFlashes, e.id().event(), e.run(), m_gate_type);
 			CRTPMTMatchesColl->push_back(ProducedFlash);	
