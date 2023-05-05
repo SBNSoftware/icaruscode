@@ -1,0 +1,13 @@
+#include "scintillationtime_tool.fcl"
+
+BEGIN_PROLOG
+
+icarus_ionandscint:
+{
+    module_type: "IonAndScint"
+    Instances:   "LArG4DetectorServicevolTPCActive;LArG4DetectorServicevolTPCPlaneU;LArG4DetectorServicevolTPCPlaneV;LArG4DetectorServicevolTPCPlaneY;LArG4DetectorServicevolTPC0" # separated by semicolon
+    ISCalcAlg:   "Correlated"
+    SavePriorSCE: true
+}
+
+END_PROLOG
