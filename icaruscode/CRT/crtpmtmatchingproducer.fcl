@@ -4,17 +4,17 @@ BEGIN_PROLOG
 
 standard_crtpmtmatchingproducer:
 {
-  module_type:	"icaruscode/CRT/CRTPMTMatchingProducer"
+  module_type: "icaruscode/CRT/CRTPMTMatchingProducer"
 
   CrtHitModuleLabel:  "crthit"
 
-  OpHitModuleLabel:   "ophit"
+# OpHitModuleLabel:   "ophit"
 
   OpFlashModuleLabel0: "opflashCryoE"
   OpFlashModuleLabel1: "opflashCryoW"
 
   TriggerLabel:  "daqTrigger"
-  TriggerConfiguration: "triggerconfig"
+# TriggerConfiguration: "triggerconfig"
 
   # note 19/04/2023: parameters are set to run2,
   # they can be set to run1, but currently values are the same

@@ -2,7 +2,6 @@
 
 #include "crtpmtmatchingproducer.fcl"
 #include "services_icarus_simulation.fcl"
-#include "crtpmtmatching_parameters.fcl"
 #include "channelmapping_icarus.fcl"
 #include "services_common_icarus.fcl"
 
@@ -13,7 +12,6 @@ services:
   scheduler:                 { defaultExceptions: false }    # Make all uncaught exceptions fatal.
   # Load the service that manages root files for histograms.
   TFileService:           { fileName: "crtpmtmatchingproducer_hist.root" }
-  message:                 @local::icarus_message_services_prod_debug
                            @table::icarus_common_services
 
   IICARUSChannelMap:       @local::icarus_channelmappinggservice

@@ -11,11 +11,7 @@
 // C++ includes
 #include <vector>
 #include "larcoreobj/SimpleTypesAndConstants/geo_vectors.h"
-//#include "icaruscode/CRT/CRTPMTMatchingUtils.h"
-//#include "icaruscode/CRT/CRTUtils/CRTPMTMatchingUtils.h"
-//#include "Math/GenVector/Cartesian3D.h"
-//#include "Math/GenVector/PositionVector3D.h"
-//#include "Math/GenVector/DisplacementVector3D.h"
+
 namespace icarus::crt {
 
   /// Type of match between a TPC object (e.g. PMT flash) and CRT system.

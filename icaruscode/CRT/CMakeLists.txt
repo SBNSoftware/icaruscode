@@ -273,24 +273,15 @@ cet_build_plugin(CRTPMTMatchingAna art::module
 
 cet_build_plugin(CRTPMTMatchingProducer art::module
      LIBRARIES
-        sbnobj::ICARUS_CRT
-        icaruscode_CRT
+        icaruscode::CRT
         sbnobj::Common_CRT
-        icaruscode_CRTUtils
-        icaruscode::Decode_DataProducts
+        icaruscode::CRTUtils
         larcore::Geometry_Geometry_service
         larcorealg::Geometry
-        nusimdata::SimulationBase
+        larcoreobj::headers
         lardataobj::RecoBase
-        lardataalg::DetectorInfo
         art::Framework_Services_Registry
-        art_root_io::tfile_support ROOT::Core
-        art_root_io::TFileService_service
-        lardataalg::DetectorInfo
         messagefacility::MF_MessageLogger
-        messagefacility::headers
-        ROOT::Core
-        ROOT::Tree
 )
 
 cet_build_plugin(CRTTruthMatchAnalysis art::module

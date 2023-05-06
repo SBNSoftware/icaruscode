@@ -7,6 +7,14 @@
 
 #include "icaruscode/IcarusObj/CRTPMTMatching.h"
 
+#include "larcoreobj/SimpleTypesAndConstants/geo_vectors.h"
+#include "sbnobj/Common/CRT/CRTHit.hh"
+#include "canvas/Persistency/Common/Ptr.h" 
+#include "messagefacility/MessageLogger/MessageLogger.h"
+
+#include <vector>
+#include <utility>
+
 namespace icarus::crt {
 
   struct CRTPMT {
