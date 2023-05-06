@@ -59,10 +59,7 @@ namespace icarus::crt {
 
     // Params from fcl file.......
 
-    std::vector<art::InputTag> fFlashLabels;
-
-    art::InputTag fOpFlashModuleLabel0;        ///< OpticalFlashes Cryo 0.
-    art::InputTag fOpFlashModuleLabel1;        ///< OpticalFlashes Cryo1.
+    std::vector<art::InputTag> fFlashLabels;   ///< All optical flash input tags.
     art::InputTag fCrtHitModuleLabel;          ///< Name of CRT producer.
     art::InputTag fTriggerLabel;               ///< Name of trigger producer.
     
@@ -90,10 +87,7 @@ namespace icarus::crt {
 
   CRTPMTMatchingProducer::CRTPMTMatchingProducer(fhicl::ParameterSet const & p)
   : EDProducer{p},
-    fOpFlashModuleLabel0(
-        p.get<art::InputTag>("OpFlashModuleLabel0")),
-    fOpFlashModuleLabel1(
-        p.get<art::InputTag>("OpFlashModuleLabel1")),
+    fFlashLabels(p.get<std::vector<art::InputTag>>("OpFlashModuleLabels")),
     fCrtHitModuleLabel(p.get<art::InputTag>("CrtHitModuleLabel", "crthit")),
     fTriggerLabel(p.get<art::InputTag>("TriggerLabel", "daqTrigger")),
     fTimeOfFlightInterval(p.get<double>("TimeOfFlightInterval")),
@@ -111,7 +105,6 @@ namespace icarus::crt {
     fGeometryService(lar::providerFrom<geo::Geometry>())
   {
     produces< std::vector<CRTPMTMatching> >();
-    fFlashLabels = { fOpFlashModuleLabel0, fOpFlashModuleLabel1 };
   } // CRTPMTMatchingProducer()
 
 

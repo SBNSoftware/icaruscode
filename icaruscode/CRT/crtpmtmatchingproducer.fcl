@@ -10,8 +10,7 @@ standard_crtpmtmatchingproducer:
 
 # OpHitModuleLabel:   "ophit"
 
-  OpFlashModuleLabel0: "opflashCryoE"
-  OpFlashModuleLabel1: "opflashCryoW"
+  OpFlashModuleLabels: [ "opflashCryoE", "opflashCryoW" ]
 
   TriggerLabel:  "daqTrigger"
 # TriggerConfiguration: "triggerconfig"
