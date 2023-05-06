@@ -94,72 +94,72 @@ namespace icarus::crt {
 
   private:
 
-	// Params from fcl file.......
+    // Params from fcl file.......
 
-	std::vector<art::InputTag> fFlashLabels;
+    std::vector<art::InputTag> fFlashLabels;
 
-  	// art::InputTag fOpHitModuleLabel;
-  	art::InputTag fOpFlashModuleLabel0;		///< OpticalFlashes Cryo 0.
-  	art::InputTag fOpFlashModuleLabel1;		///< OpticalFlashes Cryo1.
-	art::InputTag fCrtHitModuleLabel;		///< name of crt producer.
-	art::InputTag fTriggerLabel;		        ///< name of trigger producer.
-	art::InputTag fTriggerConfigurationLabel;	///< name of the trigger configuration.
-        std::optional<icarus::TriggerConfiguration> fTriggerConfiguration;
+    // art::InputTag fOpHitModuleLabel;
+    art::InputTag fOpFlashModuleLabel0;        ///< OpticalFlashes Cryo 0.
+    art::InputTag fOpFlashModuleLabel1;        ///< OpticalFlashes Cryo1.
+    art::InputTag fCrtHitModuleLabel;          ///< name of crt producer.
+    art::InputTag fTriggerLabel;               ///< name of trigger producer.
+    art::InputTag fTriggerConfigurationLabel;  ///< name of the trigger configuration.
+    std::optional<icarus::TriggerConfiguration> fTriggerConfiguration;
     
-	double fTimeOfFlightInterval;	 		///< CRTPMT time difference interval to find the match.
-	int fPMTADCThresh;				///< ADC amplitude for a PMT to be considered above threshold.
-	int fnOpHitToTrigger;				///< Number of OpHit above threshold to mimic the triggering PMT.
-        double fGlobalT0Offset;                         ///< 1.6 ms delay to shift CRT Hit T0, the CRT Timing variable we use in MC.
+    double fTimeOfFlightInterval;              ///< CRTPMT time difference interval to find the match.
+    int fPMTADCThresh;                         ///< ADC amplitude for a PMT to be considered above threshold.
+    int fnOpHitToTrigger;                      ///< Number of OpHit above threshold to mimic the triggering PMT.
+    double fGlobalT0Offset;                    ///< 1.6 ms delay to shift CRT Hit T0, the CRT Timing variable we use in MC.
 
-	double fBNBBeamGateMin;
-	double fBNBBeamGateMax;
-	double fBNBinBeamMin;
-	double fBNBinBeamMax;
-	double fNuMIBeamGateMin;
-	double fNuMIBeamGateMax;
-	double fNuMIinBeamMin;
-	double fNuMIinBeamMax;
+    double fBNBBeamGateMin;
+    double fBNBBeamGateMax;
+    double fBNBinBeamMin;
+    double fBNBinBeamMax;
+    double fNuMIBeamGateMin;
+    double fNuMIBeamGateMax;
+    double fNuMIinBeamMin;
+    double fNuMIinBeamMax;
 
-	// Trigger data product variables
-	unsigned int m_gate_type;
-	std::string m_gate_name;
-	uint64_t m_trigger_timestamp;
-	uint64_t m_gate_start_timestamp;
-	uint64_t m_trigger_gate_diff;
-	uint64_t m_gate_width;
+    // Trigger data product variables
+    unsigned int m_gate_type;
+    std::string m_gate_name;
+    uint64_t m_trigger_timestamp;
+    uint64_t m_gate_start_timestamp;
+    uint64_t m_trigger_gate_diff;
+    uint64_t m_gate_width;
 
 
-	geo::GeometryCore const* fGeometryService;	///< pointer to Geometry provider
+    geo::GeometryCore const* fGeometryService;  ///< pointer to Geometry provider
 
   }; // class CRTPMTMatchingProducer
 
   CRTPMTMatchingProducer::CRTPMTMatchingProducer(fhicl::ParameterSet const & p)
   : EDProducer{p},
-      fOpFlashModuleLabel0(
-          p.get<art::InputTag>("OpFlashModuleLabel0")),
-      fOpFlashModuleLabel1(
-          p.get<art::InputTag>("OpFlashModuleLabel1")),
-      fCrtHitModuleLabel(p.get<art::InputTag>("CrtHitModuleLabel", "crthit")),
-      fTriggerLabel(p.get<art::InputTag>("TriggerLabel", "daqTrigger")),
-      fTriggerConfigurationLabel(
-          p.get<art::InputTag>("TriggerConfiguration", "triggerconfig")),
-      fTimeOfFlightInterval(p.get<double>("TimeOfFlightInterval")),
-      fPMTADCThresh(p.get<int>("PMTADCThresh")),
-      fnOpHitToTrigger(p.get<int>("nOpHitToTrigger")),
-      fGlobalT0Offset(p.get<int>("GlobalT0Offset")),
-      fBNBBeamGateMin(p.get<double>("BNBBeamGateMin")),
-      fBNBBeamGateMax(p.get<double>("BNBBeamGateMax")),
-      fBNBinBeamMin(p.get<double>("BNBinBeamMin")),
-      fBNBinBeamMax(p.get<double>("BNBinBeamMax")),
-      fNuMIBeamGateMin(p.get<double>("NuMIBeamGateMin")),
-      fNuMIBeamGateMax(p.get<double>("NuMIBeamGateMax")),
-      fNuMIinBeamMin(p.get<double>("NuMIinBeamMin")),
-      fNuMIinBeamMax(p.get<double>("NuMIinBeamMax")),
-      fGeometryService(lar::providerFrom<geo::Geometry>())
-        {
-	  produces< std::vector<CRTPMTMatching> >();
-	  fFlashLabels = { fOpFlashModuleLabel0, fOpFlashModuleLabel1 };
-	} // CRTPMTMatchingProducer()
+    fOpFlashModuleLabel0(
+        p.get<art::InputTag>("OpFlashModuleLabel0")),
+    fOpFlashModuleLabel1(
+        p.get<art::InputTag>("OpFlashModuleLabel1")),
+    fCrtHitModuleLabel(p.get<art::InputTag>("CrtHitModuleLabel", "crthit")),
+    fTriggerLabel(p.get<art::InputTag>("TriggerLabel", "daqTrigger")),
+    fTriggerConfigurationLabel(
+        p.get<art::InputTag>("TriggerConfiguration", "triggerconfig")),
+    fTimeOfFlightInterval(p.get<double>("TimeOfFlightInterval")),
+    fPMTADCThresh(p.get<int>("PMTADCThresh")),
+    fnOpHitToTrigger(p.get<int>("nOpHitToTrigger")),
+    fGlobalT0Offset(p.get<int>("GlobalT0Offset")),
+    fBNBBeamGateMin(p.get<double>("BNBBeamGateMin")),
+    fBNBBeamGateMax(p.get<double>("BNBBeamGateMax")),
+    fBNBinBeamMin(p.get<double>("BNBinBeamMin")),
+    fBNBinBeamMax(p.get<double>("BNBinBeamMax")),
+    fNuMIBeamGateMin(p.get<double>("NuMIBeamGateMin")),
+    fNuMIBeamGateMax(p.get<double>("NuMIBeamGateMax")),
+    fNuMIinBeamMin(p.get<double>("NuMIinBeamMin")),
+    fNuMIinBeamMax(p.get<double>("NuMIinBeamMax")),
+    fGeometryService(lar::providerFrom<geo::Geometry>())
+  {
+    produces< std::vector<CRTPMTMatching> >();
+    fFlashLabels = { fOpFlashModuleLabel0, fOpFlashModuleLabel1 };
+  } // CRTPMTMatchingProducer()
 
   /*void CRTPMTMatchingProducer::reconfigure(fhicl::ParameterSet const & p)
   {
@@ -185,184 +185,184 @@ namespace icarus::crt {
  
   void CRTPMTMatchingProducer::produce(art::Event & e)
   {
-      /*if (!fTriggerConfiguration) {
-	mf::LogDebug("CRTPMTMatchingProducer")
-	  << "Skipping because no data (or at least no trigger configuration).";
-	//return;
-	}*/ 
-      mf::LogDebug("CRTPMTMatchingProducer: ") << "beginning CRTPMTProducer";
-      std::cout<<"LETS START PRODUCING"<<std::endl;
-      // add trigger info
-      if (!fTriggerLabel.empty()) {
-	art::Handle<sbn::ExtraTriggerInfo> trigger_handle;
-	e.getByLabel(fTriggerLabel, trigger_handle);
-	if (trigger_handle.isValid()) {
-	  sbn::triggerSource bit = trigger_handle->sourceType;
-	  m_gate_type = (unsigned int)bit;
-	  m_gate_name = bitName(bit);
-	  m_trigger_timestamp = trigger_handle->triggerTimestamp;
-	  m_gate_start_timestamp = trigger_handle->beamGateTimestamp;
-	  m_trigger_gate_diff =
-	  trigger_handle->triggerTimestamp - trigger_handle->beamGateTimestamp;
-	  // Read Beam Gate Size
-	  m_gate_width = fTriggerConfiguration->getGateWidth(m_gate_type);
-	} else {
-	  mf::LogDebug("CRTPMTMatchingProducer:") << "No sbn::ExtraTriggerInfo associated to label: " << fTriggerLabel.encode() << "\n";
-	}
+    /*if (!fTriggerConfiguration) {
+    mf::LogDebug("CRTPMTMatchingProducer")
+      << "Skipping because no data (or at least no trigger configuration).";
+    //return;
+    }*/
+    mf::LogDebug("CRTPMTMatchingProducer: ") << "beginning CRTPMTProducer";
+    std::cout<<"LETS START PRODUCING"<<std::endl;
+    // add trigger info
+    if (!fTriggerLabel.empty()) {
+      art::Handle<sbn::ExtraTriggerInfo> trigger_handle;
+      e.getByLabel(fTriggerLabel, trigger_handle);
+      if (trigger_handle.isValid()) {
+        sbn::triggerSource bit = trigger_handle->sourceType;
+        m_gate_type = (unsigned int)bit;
+        m_gate_name = bitName(bit);
+        m_trigger_timestamp = trigger_handle->triggerTimestamp;
+        m_gate_start_timestamp = trigger_handle->beamGateTimestamp;
+        m_trigger_gate_diff =
+        trigger_handle->triggerTimestamp - trigger_handle->beamGateTimestamp;
+        // Read Beam Gate Size
+        m_gate_width = fTriggerConfiguration->getGateWidth(m_gate_type);
+      } else {
+        mf::LogDebug("CRTPMTMatchingProducer:") << "No sbn::ExtraTriggerInfo associated to label: " << fTriggerLabel.encode() << "\n";
       }
-      else {
-	mf::LogDebug("CRTPMTMatchingProducer:") << "No TriggerLabel in : " << fTriggerLabel.encode() << "\n";
+    }
+    else {
+      mf::LogDebug("CRTPMTMatchingProducer:") << "No TriggerLabel in : " << fTriggerLabel.encode() << "\n";
+    }
+    
+    std::unique_ptr< vector<CRTPMTMatching> > CRTPMTMatchesColl( new vector<CRTPMTMatching>);
+    //std::unique_ptr< art::Assns<CRTPMTMatching, recob::OpFlash> > FlashAssociation( new art::Assns<CRTPMTMatching, recob::OpFlash>);
+    // add CRTHits
+    art::Handle<std::vector<CRTHit>> crtHitListHandle;
+    std::vector<art::Ptr<CRTHit>> crtHitList;
+    if (e.getByLabel(fCrtHitModuleLabel, crtHitListHandle))
+      art::fill_ptr_vector(crtHitList, crtHitListHandle);
+    bool isRealData = e.isRealData();
+    std::cout << "is this real data? " << isRealData << "\n";
+    // add optical flashes
+    for (art::InputTag const& flashLabel : fFlashLabels) {
+    auto const flashHandle =
+      e.getHandle<std::vector<recob::OpFlash>>(flashLabel);
+    art::FindMany<recob::OpHit> findManyHits(flashHandle, e, flashLabel);
+
+    std::vector<FlashType> thisEventFlashes;
+
+    for (auto const& [iflash, flash] : util::enumerate(*flashHandle)) {
+      enum matchType eventType = others;
+      double tflash = flash.Time();
+      vector<recob::OpHit const*> const& hits = findManyHits.at(iflash);
+      int nPMTsTriggering = 0;
+      double firstTime = 999999;
+      geo::vect::MiddlePointAccumulator flashCentroid;
+      for (auto const& hit : hits) {
+        if (hit->Amplitude() > fPMTADCThresh) nPMTsTriggering++;
+        if (firstTime > hit->PeakTime()) firstTime = hit->PeakTime();
+        geo::Point_t const pos =
+          fGeometryService->OpDetGeoFromOpChannel(hit->OpChannel())
+          .GetCenter();
+        double amp = hit->Amplitude();
+        flashCentroid.add(pos, amp);
       }
+      geo::Point_t flash_pos = flashCentroid.middlePoint();
+      if (nPMTsTriggering < fnOpHitToTrigger) continue;
+      bool inTime = flashInTime(firstTime, m_gate_type, m_trigger_gate_diff,
+        m_gate_width);
+
+      double fThisRelGateTime = m_trigger_gate_diff + tflash * 1e3;
+      bool fThisInTime_gate = false;
+      bool fThisInTime_beam = false;
+      if (m_gate_type == 1 || m_gate_type == 3) {  // BNB OffBeamBNB
+        if (fThisRelGateTime > fBNBBeamGateMin &&
+              fThisRelGateTime < fBNBBeamGateMax)
+              fThisInTime_gate = true;
+        if (fThisRelGateTime > fBNBinBeamMin &&
+              fThisRelGateTime < fBNBinBeamMax)
+              fThisInTime_beam = true;
+      }
+      if (m_gate_type == 2 || m_gate_type == 4) {  // NuMI OffBeamNuMI
+        if (fThisRelGateTime > fNuMIBeamGateMin &&
+              fThisRelGateTime < fNuMIBeamGateMax)
+              fThisInTime_gate = true;
+        if (fThisRelGateTime > fNuMIinBeamMin &&
+              fThisRelGateTime < fNuMIinBeamMax)
+              fThisInTime_beam = true;
+      }
+      inTime = fThisInTime_gate;
+      icarus::crt::CRTMatches CRTmatches = CRTHitmatched(
+        firstTime, flash_pos, crtHitList, fTimeOfFlightInterval, isRealData, fGlobalT0Offset);
+      int TopEn = 0, TopEx = 0, SideEn = 0, SideEx = 0;      
+      auto nCRTHits = CRTmatches.entering.size() + CRTmatches.exiting.size();
       
-      std::unique_ptr< vector<CRTPMTMatching> > CRTPMTMatchesColl( new vector<CRTPMTMatching>);
-      //std::unique_ptr< art::Assns<CRTPMTMatching, recob::OpFlash> > FlashAssociation( new art::Assns<CRTPMTMatching, recob::OpFlash>);
-      // add CRTHits
-      art::Handle<std::vector<CRTHit>> crtHitListHandle;
-      std::vector<art::Ptr<CRTHit>> crtHitList;
-      if (e.getByLabel(fCrtHitModuleLabel, crtHitListHandle))
-	art::fill_ptr_vector(crtHitList, crtHitListHandle);
-      bool isRealData = e.isRealData();
-      std::cout << "is this real data? " << isRealData << "\n";
-      // add optical flashes
-      for (art::InputTag const& flashLabel : fFlashLabels) {
-	   auto const flashHandle =
-	     e.getHandle<std::vector<recob::OpFlash>>(flashLabel);
-	   art::FindMany<recob::OpHit> findManyHits(flashHandle, e, flashLabel);
-
-	   std::vector<FlashType> thisEventFlashes;
-
-		for (auto const& [iflash, flash] : util::enumerate(*flashHandle)) {
-			enum matchType eventType = others;
-			double tflash = flash.Time();
-      			vector<recob::OpHit const*> const& hits = findManyHits.at(iflash);
-      			int nPMTsTriggering = 0;
-      			double firstTime = 999999;
-      			geo::vect::MiddlePointAccumulator flashCentroid;
-      			for (auto const& hit : hits) {
-        			if (hit->Amplitude() > fPMTADCThresh) nPMTsTriggering++;
-        			if (firstTime > hit->PeakTime()) firstTime = hit->PeakTime();
-        			geo::Point_t const pos =
-            		  	  fGeometryService->OpDetGeoFromOpChannel(hit->OpChannel())
-                	  	  .GetCenter();
-        			double amp = hit->Amplitude();
-        			flashCentroid.add(pos, amp);
-      			}
-      			geo::Point_t flash_pos = flashCentroid.middlePoint();
-      			if (nPMTsTriggering < fnOpHitToTrigger) continue;
-			bool inTime = flashInTime(firstTime, m_gate_type, m_trigger_gate_diff,
-						  m_gate_width);
-
-			double fThisRelGateTime = m_trigger_gate_diff + tflash * 1e3;
-      			bool fThisInTime_gate = false;
-     			bool fThisInTime_beam = false;
-      			if (m_gate_type == 1 || m_gate_type == 3) {  // BNB OffBeamBNB
-        			if (fThisRelGateTime > fBNBBeamGateMin &&
-            			  fThisRelGateTime < fBNBBeamGateMax)
-          			    fThisInTime_gate = true;
-        			if (fThisRelGateTime > fBNBinBeamMin &&
-            			  fThisRelGateTime < fBNBinBeamMax)
-          			    fThisInTime_beam = true;
-      			}
-      			if (m_gate_type == 2 || m_gate_type == 4) {  // NuMI OffBeamNuMI
-        			if (fThisRelGateTime > fNuMIBeamGateMin &&
-            			  fThisRelGateTime < fNuMIBeamGateMax)
-          			    fThisInTime_gate = true;
-        			if (fThisRelGateTime > fNuMIinBeamMin &&
-           			  fThisRelGateTime < fNuMIinBeamMax)
-          			    fThisInTime_beam = true;
-      			}
-      			inTime = fThisInTime_gate;
-		        icarus::crt::CRTMatches CRTmatches = CRTHitmatched(
-									   firstTime, flash_pos, crtHitList, fTimeOfFlightInterval, isRealData, fGlobalT0Offset);
-			int TopEn = 0, TopEx = 0, SideEn = 0, SideEx = 0;			
-      			auto nCRTHits = CRTmatches.entering.size() + CRTmatches.exiting.size();
-			
- 			std::vector<MatchedCRT> thisFlashCRTmatches;
-			eventType = CRTmatches.FlashType;
-			if (nCRTHits > 0) {
-			  std::cout << "nCRTMatches = nEntering + nExiting = " << CRTmatches.entering.size() << " + " << CRTmatches.exiting.size() << " = " << nCRTHits << "\n"; 
-			  for (auto const& entering : CRTmatches.entering) {
-          				vector<double> CRTpos {entering.CRTHit->x_pos,
-                                 		entering.CRTHit->y_pos,
-                                 		entering.CRTHit->z_pos};
-          				geo::Point_t thisCRTpos {entering.CRTHit->x_pos,
-                                   		entering.CRTHit->y_pos,
-                                   		entering.CRTHit->z_pos};
-					// fGlobalT0Offset = 1.6e6 ns = 1600000 ns. 
-          				double CRTtime_us = isRealData ? (entering.CRTHit->ts1_ns/1e3) : ( (long long)(entering.CRTHit->ts0()) - fGlobalT0Offset)/1e3; // us 
-					double CRTtime_ns = isRealData ? (entering.CRTHit->ts1_ns) : ( (long long)(entering.CRTHit->ts0()) - fGlobalT0Offset); // us 
-					std::cout << "isRealData? " << isRealData << ", CRTTime_us = " << CRTtime_us << ", CRTtime_ns = " << CRTtime_ns << "\n";
-					int CRTRegion = entering.CRTHit->plane;
-          				int CRTSys = 0;
-          				if (CRTRegion >= 36) CRTSys = 1;  	// Very lazy way to determine if the Hit is a Top or a Side.
-                    					    			// Will update it when bottom CRT will be availble.
-					double CRTTof_opflash = CRTtime_ns - tflash * 1e3; // ns 
-					double CRTTof_opflash_us = CRTtime_us - tflash; // us 
-					std::cout << "Entering match: tof = crtTime_ns - tflash*1e3 = " << CRTtime_ns << " - "<< tflash * 1e3 << " = " << CRTTof_opflash << " (ns) \n";
-					std::cout << "Entering match: tof_us = crtTime_us - tflash  = " << CRTtime_us << " - "<< tflash << " = " << CRTTof_opflash_us << " (us) \n";
-          				std::vector<int> HitFebs;
-          				for (auto crts : entering.CRTHit->feb_id) {
-						HitFebs.emplace_back((int)crts);
-					}
-          				if (CRTSys == 0) TopEn++;
-          				if (CRTSys == 1) SideEn++;		
-					//matchedCRT thisCRTMatch = { /* .CRTHitPos = */ thisCRTpos, // C++20: restore initializers
-					MatchedCRT thisCRTMatch = { /* .CRTHitPos = */ thisCRTpos, // C++20: restore initializers
-								    /* .CRTPMTTimeDiff_ns = */ CRTTof_opflash,
-								    /* .CRTTime_us = */ CRTtime_us,
-								    /* .CRTSys = */ CRTSys,
-								    /* .CRTRegion = */ CRTRegion};	
-					thisFlashCRTmatches.push_back(thisCRTMatch);
-        			}
-				for (auto const& exiting : CRTmatches.exiting) {
-          				vector<double> CRTpos {exiting.CRTHit->x_pos,
-                                 		exiting.CRTHit->y_pos,
-                                 		exiting.CRTHit->z_pos};
-          				geo::Point_t thisCRTpos {exiting.CRTHit->x_pos,
-                                   		exiting.CRTHit->y_pos,
-                                   		exiting.CRTHit->z_pos};
-          				double CRTtime_us = isRealData ? (exiting.CRTHit->ts1_ns/1e3) : ( (long long)(exiting.CRTHit->ts0()) - fGlobalT0Offset)/1e3; // us    
-                                        double CRTtime_ns = isRealData ? (exiting.CRTHit->ts1_ns) : ( (long long)(exiting.CRTHit->ts0()) - fGlobalT0Offset); // us     
-					std::cout << "isRealData? " << isRealData << ", CRTTime_us = " << CRTtime_us << ", CRTtime_ns = " << CRTtime_ns << "\n";
-					int CRTRegion = exiting.CRTHit->plane;
-          				int CRTSys = 0;
-          				if (CRTRegion >= 36) CRTSys = 1; 
-					double CRTTof_opflash = CRTtime_ns - tflash * 1e3; // ns
-					double CRTTof_opflash_us = CRTtime_us - tflash; // us
-					std::cout << "Exiting match: tof = crtTime_ns - tflash*1e3 = " << CRTtime_ns << " - "<< tflash * 1e3 << " = " << CRTTof_opflash << " (ns) \n";
-					std::cout << "Exiting match: tof_us = crtTime_us - tflash  = " << CRTtime_us << " - "<< tflash << " = " << CRTTof_opflash_us << " (us) \n";
-          				std::vector<int> HitFebs;
-          				for (auto crts : exiting.CRTHit->feb_id) {
-						HitFebs.emplace_back((int)crts);
-					}
-          				if (CRTSys == 0) TopEx++;
-          				if (CRTSys == 1) SideEx++;		
-					MatchedCRT thisCRTMatch = { /* .CRTHitPos =*/  thisCRTpos, // C++20: restore initializers
-                                     	  /* .CRTPMTTimeDiff_ns = */ CRTTof_opflash,
-                                     	  /* .CRTTime_us = */ CRTtime_us,
-                                     	  /* .CRTSys = */ CRTSys,
-                                     	  /* .CRTRegion = */ CRTRegion};	
-					thisFlashCRTmatches.push_back(thisCRTMatch);
-        			}
-			} //Fine CRT
-			FlashType thisFlashType = { /* .FlashPos = */ flash_pos, // C++20: restore initializers
-                                 /* .FlashTime_us = */ tflash,
-                                 /* .FlashGateTime_ns = */ fThisRelGateTime,
-                                 /* .inBeam = */ fThisInTime_beam,
-                                 /* .inGate = */ inTime,
-                                 /* .Classification = */ eventType,
-                                 /* .CRTmatches = */ thisFlashCRTmatches};
-			thisEventFlashes.push_back(thisFlashType);
-			if (!thisFlashCRTmatches.empty() ) std::cout << "pushing back flash with " << thisFlashCRTmatches.size() << " CRT Matches.\n---\n";
-		} // Fine di questo flash
-		std::cout << "Event has " << thisEventFlashes.size() << " flashes in " << flashLabel.label() << "\n----------\n";
-		for (auto const& theseFlashes : thisEventFlashes){
-			CRTPMTMatching ProducedFlash = FillCRTPMT (theseFlashes, e.id().event(), e.run(), m_gate_type);
-			CRTPMTMatchesColl->push_back(ProducedFlash);	
-		}
-	}
+      std::vector<MatchedCRT> thisFlashCRTmatches;
+      eventType = CRTmatches.FlashType;
+      if (nCRTHits > 0) {
+        std::cout << "nCRTMatches = nEntering + nExiting = " << CRTmatches.entering.size() << " + " << CRTmatches.exiting.size() << " = " << nCRTHits << "\n"; 
+        for (auto const& entering : CRTmatches.entering) {
+          vector<double> CRTpos {entering.CRTHit->x_pos,
+                                 entering.CRTHit->y_pos,
+                                 entering.CRTHit->z_pos};
+          geo::Point_t thisCRTpos {entering.CRTHit->x_pos,
+                                   entering.CRTHit->y_pos,
+                                   entering.CRTHit->z_pos};
+          // fGlobalT0Offset = 1.6e6 ns = 1600000 ns. 
+          double CRTtime_us = isRealData ? (entering.CRTHit->ts1_ns/1e3) : ( (long long)(entering.CRTHit->ts0()) - fGlobalT0Offset)/1e3; // us 
+          double CRTtime_ns = isRealData ? (entering.CRTHit->ts1_ns) : ( (long long)(entering.CRTHit->ts0()) - fGlobalT0Offset); // us 
+          std::cout << "isRealData? " << isRealData << ", CRTTime_us = " << CRTtime_us << ", CRTtime_ns = " << CRTtime_ns << "\n";
+          int CRTRegion = entering.CRTHit->plane;
+          int CRTSys = 0;
+          if (CRTRegion >= 36) CRTSys = 1;  // Very lazy way to determine if the Hit is a Top or a Side.
+                                            // Will update it when bottom CRT will be availble.
+          double CRTTof_opflash = CRTtime_ns - tflash * 1e3; // ns 
+          double CRTTof_opflash_us = CRTtime_us - tflash; // us 
+          std::cout << "Entering match: tof = crtTime_ns - tflash*1e3 = " << CRTtime_ns << " - "<< tflash * 1e3 << " = " << CRTTof_opflash << " (ns) \n";
+          std::cout << "Entering match: tof_us = crtTime_us - tflash  = " << CRTtime_us << " - "<< tflash << " = " << CRTTof_opflash_us << " (us) \n";
+          std::vector<int> HitFebs;
+          for (auto crts : entering.CRTHit->feb_id) {
+            HitFebs.emplace_back((int)crts);
+          }
+          if (CRTSys == 0) TopEn++;
+          if (CRTSys == 1) SideEn++;
+          //matchedCRT thisCRTMatch = { /* .CRTHitPos = */ thisCRTpos, // C++20: restore initializers
+          MatchedCRT thisCRTMatch = { /* .CRTHitPos = */ thisCRTpos, // C++20: restore initializers
+                                      /* .CRTPMTTimeDiff_ns = */ CRTTof_opflash,
+                                      /* .CRTTime_us = */ CRTtime_us,
+                                      /* .CRTSys = */ CRTSys,
+                                      /* .CRTRegion = */ CRTRegion};
+          thisFlashCRTmatches.push_back(thisCRTMatch);
+        }
+        for (auto const& exiting : CRTmatches.exiting) {
+          vector<double> CRTpos {exiting.CRTHit->x_pos,
+                                 exiting.CRTHit->y_pos,
+                                 exiting.CRTHit->z_pos};
+          geo::Point_t thisCRTpos {exiting.CRTHit->x_pos,
+                                   exiting.CRTHit->y_pos,
+                                   exiting.CRTHit->z_pos};
+          double CRTtime_us = isRealData ? (exiting.CRTHit->ts1_ns/1e3) : ( (long long)(exiting.CRTHit->ts0()) - fGlobalT0Offset)/1e3; // us    
+          double CRTtime_ns = isRealData ? (exiting.CRTHit->ts1_ns) : ( (long long)(exiting.CRTHit->ts0()) - fGlobalT0Offset); // us     
+          std::cout << "isRealData? " << isRealData << ", CRTTime_us = " << CRTtime_us << ", CRTtime_ns = " << CRTtime_ns << "\n";
+          int CRTRegion = exiting.CRTHit->plane;
+          int CRTSys = 0;
+          if (CRTRegion >= 36) CRTSys = 1; 
+          double CRTTof_opflash = CRTtime_ns - tflash * 1e3; // ns
+          double CRTTof_opflash_us = CRTtime_us - tflash; // us
+          std::cout << "Exiting match: tof = crtTime_ns - tflash*1e3 = " << CRTtime_ns << " - "<< tflash * 1e3 << " = " << CRTTof_opflash << " (ns) \n";
+          std::cout << "Exiting match: tof_us = crtTime_us - tflash  = " << CRTtime_us << " - "<< tflash << " = " << CRTTof_opflash_us << " (us) \n";
+          std::vector<int> HitFebs;
+          for (auto crts : exiting.CRTHit->feb_id) {
+            HitFebs.emplace_back((int)crts);
+          }
+          if (CRTSys == 0) TopEx++;
+          if (CRTSys == 1) SideEx++;
+          MatchedCRT thisCRTMatch = { /* .CRTHitPos =*/  thisCRTpos, // C++20: restore initializers
+                                      /* .CRTPMTTimeDiff_ns = */ CRTTof_opflash,
+                                      /* .CRTTime_us = */ CRTtime_us,
+                                      /* .CRTSys = */ CRTSys,
+                                      /* .CRTRegion = */ CRTRegion};
+          thisFlashCRTmatches.push_back(thisCRTMatch);
+        }
+      } //Fine CRT
+      FlashType thisFlashType = { /* .FlashPos = */ flash_pos, // C++20: restore initializers
+                                  /* .FlashTime_us = */ tflash,
+                                  /* .FlashGateTime_ns = */ fThisRelGateTime,
+                                  /* .inBeam = */ fThisInTime_beam,
+                                  /* .inGate = */ inTime,
+                                  /* .Classification = */ eventType,
+                                  /* .CRTmatches = */ thisFlashCRTmatches};
+      thisEventFlashes.push_back(thisFlashType);
+      if (!thisFlashCRTmatches.empty() ) std::cout << "pushing back flash with " << thisFlashCRTmatches.size() << " CRT Matches.\n---\n";
+    } // Fine di questo flash
+    std::cout << "Event has " << thisEventFlashes.size() << " flashes in " << flashLabel.label() << "\n----------\n";
+    for (auto const& theseFlashes : thisEventFlashes){
+      CRTPMTMatching ProducedFlash = FillCRTPMT (theseFlashes, e.id().event(), e.run(), m_gate_type);
+      CRTPMTMatchesColl->push_back(ProducedFlash);  
+    }
+  }
    //art::PtrMaker<sbn::crt::CRTHit> makeHitPtr(event);
-	std::cout<<"This Event has "<<CRTPMTMatchesColl->size()<<" Flashes."<<std::endl;
+  std::cout<<"This Event has "<<CRTPMTMatchesColl->size()<<" Flashes."<<std::endl;
     e.put(std::move(CRTPMTMatchesColl));
     //e.put(std::move(FlashAssociation));
 

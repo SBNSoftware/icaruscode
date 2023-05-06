@@ -6,18 +6,18 @@ cet_make_library(SOURCE
                  messagefacility::MF_MessageLogger
                  larcoreobj::headers
                  lardataobj::headers
-              	 larcorealg::Geometry
-		 ROOT::Geom
+                 larcorealg::Geometry
+                 ROOT::Geom
                )
 
 art_dictionary(DICTIONARY_LIBRARIES
                  icaruscode::IcarusObj
                  lardataobj::RecoBase
                  lardataalg::headers
-		 larcorealg::Geometry
+                 larcorealg::Geometry
                  canvas::canvas
                  sbnobj::ICARUS_PMT_Trigger_Data
-		 ROOT::Geom
+                 ROOT::Geom
               )
 
 install_headers()
