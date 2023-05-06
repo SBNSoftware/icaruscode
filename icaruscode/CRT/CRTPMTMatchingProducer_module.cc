@@ -59,29 +59,29 @@ namespace icarus::crt {
 
     // Params from fcl file.......
 
-    std::vector<art::InputTag> fFlashLabels;   ///< All optical flash input tags.
-    art::InputTag fCrtHitModuleLabel;          ///< Name of CRT producer.
-    art::InputTag fTriggerLabel;               ///< Name of trigger producer.
+    std::vector<art::InputTag> const fFlashLabels;   ///< All optical flash input tags.
+    art::InputTag const fCrtHitModuleLabel;          ///< Name of CRT producer.
+    art::InputTag const fTriggerLabel;               ///< Name of trigger producer.
     
-    double fTimeOfFlightInterval;              ///< CRT-PMT time difference interval to find the match.
-    int fPMTADCThresh;                         ///< ADC amplitude for a PMT to be considered above threshold.
-    int fnOpHitToTrigger;                      ///< Number of OpHit above threshold to mimic the triggering PMT.
-    double fGlobalT0Offset;                    ///< 1.6 ms delay to shift CRT Hit T0, the CRT Timing variable we use in MC.
+    double const fTimeOfFlightInterval;              ///< CRT-PMT time difference interval to find the match.
+    int const fPMTADCThresh;                         ///< ADC amplitude for a PMT to be considered above threshold.
+    int const fnOpHitToTrigger;                      ///< Number of OpHit above threshold to mimic the triggering PMT.
+    double const fGlobalT0Offset;                    ///< 1.6 ms delay to shift CRT Hit T0, the CRT Timing variable we use in MC.
 
-    double fBNBBeamGateMin;
-    double fBNBBeamGateMax;
-    double fBNBinBeamMin;
-    double fBNBinBeamMax;
-    double fNuMIBeamGateMin;
-    double fNuMIBeamGateMax;
-    double fNuMIinBeamMin;
-    double fNuMIinBeamMax;
+    double const fBNBBeamGateMin;
+    double const fBNBBeamGateMax;
+    double const fBNBinBeamMin;
+    double const fBNBinBeamMax;
+    double const fNuMIBeamGateMin;
+    double const fNuMIBeamGateMax;
+    double const fNuMIinBeamMin;
+    double const fNuMIinBeamMax;
 
     // Trigger data product variables
     unsigned int m_gate_type;
     uint64_t m_trigger_gate_diff;
 
-    geo::GeometryCore const* fGeometryService;  ///< Pointer to Geometry provider.
+    geo::GeometryCore const* const fGeometryService;  ///< Pointer to Geometry provider.
 
   }; // class CRTPMTMatchingProducer
 
