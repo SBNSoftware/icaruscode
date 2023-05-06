@@ -109,24 +109,6 @@ icarus::crt::CRTPMTMatching icarus::crt::FillCRTPMT
   crtpmt.flashYWidth = 0; //
   crtpmt.flashZWidth = 0; //
   crtpmt.flashClassification = thisFlash.classification;
-  for (auto const& crts : thisFlash.CRTmatches){
-    MatchedCRT thismatchedCRT;
-    /*thismatchedCRT.CRTHitModule = 0; //
-    thismatchedCRT.CRTRegion = crts.CRTRegion;
-    thismatchedCRT.CRTSys = crts.CRTSys;
-    thismatchedCRT.CRTHitPosition = crts.CRTHitPosition;
-    thismatchedCRT.CRTHitTime_us = crts.CRTHitTime_us;
-    thismatchedCRT.CRTHitGateTime_ns = 0;//
-    thismatchedCRT.CRTHitAmplitude_pe = 0;//
-    thismatchedCRT.CRTPMTTimeDiff_ns = crts.CRTPMTTimeDiff_ns;
-    thismatchedCRT.CRTHitFlashDistance = 0; //*/
-    // push stuff back to MatchedCRT (for now onlt CRTHitPos, CRTPMTTimeDiff, CRTTime, CRTSys, CRTReg)
-    thismatchedCRT.CRTHitPos = crts.CRTHitPos;
-    thismatchedCRT.CRTPMTTimeDiff_ns = crts.CRTPMTTimeDiff_ns; 
-    thismatchedCRT.CRTTime_us = crts.CRTTime_us; 
-    thismatchedCRT.CRTSys = crts.CRTSys;
-    thismatchedCRT.CRTRegion = crts.CRTRegion; 
-  }
   crtpmt.matchedCRTHits = thisFlash.CRTmatches;
   crtpmt.topCRTBefore = 0; //
   crtpmt.topCRTAfter = 0; //

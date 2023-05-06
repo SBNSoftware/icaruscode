@@ -180,10 +180,8 @@ namespace icarus::crt {
               thisRelGateTime < fNuMIinBeamMax)
               thisInTime_beam = true;
       }
-      bool inTime = thisInTime_gate;
-      icarus::crt::CRTMatches crtMatches = CRTHitmatched(
+      icarus::crt::CRTMatches const crtMatches = CRTHitmatched(
         firstTime, flash_pos, crtHitList, fTimeOfFlightInterval, isRealData, fGlobalT0Offset);
-      int TopEn = 0, TopEx = 0, SideEn = 0, SideEx = 0;      
       auto nCRTHits = crtMatches.entering.size() + crtMatches.exiting.size();
       
       std::vector<MatchedCRT> thisFlashCRTmatches;
@@ -192,9 +190,6 @@ namespace icarus::crt {
         mf::LogTrace("CRTPMTMatchingProducer") 
           << "nCRTMatches = nEntering + nExiting = " << crtMatches.entering.size() << " + " << crtMatches.exiting.size() << " = " << nCRTHits;
         for (auto const& entering : crtMatches.entering) {
-          vector<double> CRTpos {entering.CRTHit->x_pos,
-                                 entering.CRTHit->y_pos,
-                                 entering.CRTHit->z_pos};
           geo::Point_t thisCRTpos {entering.CRTHit->x_pos,
                                    entering.CRTHit->y_pos,
                                    entering.CRTHit->z_pos};
@@ -210,13 +205,6 @@ namespace icarus::crt {
           double CRTTof_opflash_us = CRTtime_us - tflash; // us 
           mf::LogTrace("CRTPMTMatchingProducer") << "Entering match: tof = crtTime_ns - tflash*1e3 = " << CRTtime_ns << " - "<< tflash * 1e3 << " = " << CRTTof_opflash << " (ns)"
             << "\nEntering match: tof_us = crtTime_us - tflash  = " << CRTtime_us << " - "<< tflash << " = " << CRTTof_opflash_us << " (us)";
-          std::vector<int> HitFebs;
-          for (auto crts : entering.CRTHit->feb_id) {
-            HitFebs.emplace_back((int)crts);
-          }
-          if (CRTSys == 0) TopEn++;
-          if (CRTSys == 1) SideEn++;
-          //matchedCRT thisCRTMatch = { /* .CRTHitPos = */ thisCRTpos, // C++20: restore initializers
           MatchedCRT thisCRTMatch = { /* .CRTHitPos = */ thisCRTpos, // C++20: restore initializers
                                       /* .CRTPMTTimeDiff_ns = */ CRTTof_opflash,
                                       /* .CRTTime_us = */ CRTtime_us,
@@ -225,9 +213,6 @@ namespace icarus::crt {
           thisFlashCRTmatches.push_back(thisCRTMatch);
         }
         for (auto const& exiting : crtMatches.exiting) {
-          vector<double> CRTpos {exiting.CRTHit->x_pos,
-                                 exiting.CRTHit->y_pos,
-                                 exiting.CRTHit->z_pos};
           geo::Point_t thisCRTpos {exiting.CRTHit->x_pos,
                                    exiting.CRTHit->y_pos,
                                    exiting.CRTHit->z_pos};
@@ -242,12 +227,6 @@ namespace icarus::crt {
           mf::LogTrace("CRTPMTMatchingProducer")
             << "Exiting match: tof = crtTime_ns - tflash*1e3 = " << CRTtime_ns << " - "<< tflash * 1e3 << " = " << CRTTof_opflash << " (ns)"
             << "\nExiting match: tof_us = crtTime_us - tflash  = " << CRTtime_us << " - "<< tflash << " = " << CRTTof_opflash_us << " (us)";
-          std::vector<int> HitFebs;
-          for (auto crts : exiting.CRTHit->feb_id) {
-            HitFebs.emplace_back((int)crts);
-          }
-          if (CRTSys == 0) TopEx++;
-          if (CRTSys == 1) SideEx++;
           MatchedCRT thisCRTMatch = { /* .CRTHitPos =*/  thisCRTpos, // C++20: restore initializers
                                       /* .CRTPMTTimeDiff_ns = */ CRTTof_opflash,
                                       /* .CRTTime_us = */ CRTtime_us,
@@ -260,7 +239,7 @@ namespace icarus::crt {
                                   /* .flashTime_us = */ tflash,
                                   /* .flashGateTime_ns = */ thisRelGateTime,
                                   /* .inBeam = */ thisInTime_beam,
-                                  /* .inGate = */ inTime,
+                                  /* .inGate = */ thisInTime_gate,
                                   /* .classification = */ eventType,
                                   /* .CRTmatches = */ thisFlashCRTmatches};
       thisEventFlashes.push_back(thisFlashType);
