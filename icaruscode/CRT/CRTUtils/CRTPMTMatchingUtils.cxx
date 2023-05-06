@@ -56,14 +56,14 @@ icarus::crt::CRTMatches icarus::crt::CRTHitmatched(
       else
         topen++;
       CRTPMT m_match = {tof, distance, crtHit};
-      enteringCRTHits.push_back(m_match);
+      enteringCRTHits.push_back(std::move(m_match));
     } else if (tof >= 0) {
       if (crtHit->plane > 36)
         sideex++;
       else
         topex++;
       CRTPMT m_match = {tof, distance, crtHit};
-      exitingCRTHits.push_back(m_match);
+      exitingCRTHits.push_back(std::move(m_match));
     }
   }
   if (topen == 0 && sideen == 0 && topex == 0 && sideex == 0)

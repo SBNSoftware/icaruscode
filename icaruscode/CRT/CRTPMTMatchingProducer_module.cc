@@ -26,6 +26,7 @@
 #include <memory>
 #include <iomanip>
 #include <vector>
+#include <utility>
 
 // LArSoft
 #include "larcore/Geometry/Geometry.h"
@@ -210,7 +211,7 @@ namespace icarus::crt {
                                       /* .CRTTime_us = */ CRTtime_us,
                                       /* .CRTSys = */ CRTSys,
                                       /* .CRTRegion = */ CRTRegion};
-          thisFlashCRTmatches.push_back(thisCRTMatch);
+          thisFlashCRTmatches.push_back(std::move(thisCRTMatch));
         }
         for (auto const& exiting : crtMatches.exiting) {
           geo::Point_t thisCRTpos {exiting.CRTHit->x_pos,
@@ -232,24 +233,24 @@ namespace icarus::crt {
                                       /* .CRTTime_us = */ CRTtime_us,
                                       /* .CRTSys = */ CRTSys,
                                       /* .CRTRegion = */ CRTRegion};
-          thisFlashCRTmatches.push_back(thisCRTMatch);
+          thisFlashCRTmatches.push_back(std::move(thisCRTMatch));
         }
       } //Fine CRT
+      if (!thisFlashCRTmatches.empty() )
+        mf::LogTrace("CRTPMTMatchingProducer") << "pushing back flash with " << thisFlashCRTmatches.size() << " CRT Matches.";
       FlashType thisFlashType = { /* .flashPos = */ flash_pos, // C++20: restore initializers
                                   /* .flashTime_us = */ tflash,
                                   /* .flashGateTime_ns = */ thisRelGateTime,
                                   /* .inBeam = */ thisInTime_beam,
                                   /* .inGate = */ thisInTime_gate,
                                   /* .classification = */ eventType,
-                                  /* .CRTmatches = */ thisFlashCRTmatches};
-      thisEventFlashes.push_back(thisFlashType);
-      if (!thisFlashCRTmatches.empty() )
-        mf::LogTrace("CRTPMTMatchingProducer") << "pushing back flash with " << thisFlashCRTmatches.size() << " CRT Matches.";
+                                  /* .CRTmatches = */ std::move(thisFlashCRTmatches)};
+      thisEventFlashes.push_back(std::move(thisFlashType));
     } // end of this flash
     mf::LogTrace("CRTPMTMatchingProducer") << "Event has " << thisEventFlashes.size() << " flashes in " << flashLabel.encode();
     for (auto const& theseFlashes : thisEventFlashes){
       CRTPMTMatching ProducedFlash = FillCRTPMT (theseFlashes, e.id().event(), e.run(), m_gate_type);
-      CRTPMTMatchesColl->push_back(ProducedFlash);  
+      CRTPMTMatchesColl->push_back(std::move(ProducedFlash));
     }
   }
    //art::PtrMaker<sbn::crt::CRTHit> makeHitPtr(event);
