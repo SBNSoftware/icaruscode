@@ -1,3 +1,10 @@
+/**
+ * @file   icaruscode/CRT/CRTPMTMatchingProducer_module.cc
+ * @brief  Producer to extract and store time matches between CRT hits and PMT.
+ * @author Francesco Poppi ( poppi@bo.infn.it )  and Anna Heggestuen 
+ * @date   April 26 2023
+ */
+
 // icaruscode includes
 #include "sbnobj/Common/CRT/CRTHit.hh"
 #include "icaruscode/CRT/CRTUtils/CRTHitRecoAlg.h"
@@ -101,12 +108,12 @@ namespace icarus::crt {
     // art::InputTag fOpHitModuleLabel;
     art::InputTag fOpFlashModuleLabel0;        ///< OpticalFlashes Cryo 0.
     art::InputTag fOpFlashModuleLabel1;        ///< OpticalFlashes Cryo1.
-    art::InputTag fCrtHitModuleLabel;          ///< name of crt producer.
-    art::InputTag fTriggerLabel;               ///< name of trigger producer.
-    art::InputTag fTriggerConfigurationLabel;  ///< name of the trigger configuration.
+    art::InputTag fCrtHitModuleLabel;          ///< Name of CRT producer.
+    art::InputTag fTriggerLabel;               ///< Name of trigger producer.
+    art::InputTag fTriggerConfigurationLabel;  ///< Name of the trigger configuration.
     std::optional<icarus::TriggerConfiguration> fTriggerConfiguration;
     
-    double fTimeOfFlightInterval;              ///< CRTPMT time difference interval to find the match.
+    double fTimeOfFlightInterval;              ///< CRT-PMT time difference interval to find the match.
     int fPMTADCThresh;                         ///< ADC amplitude for a PMT to be considered above threshold.
     int fnOpHitToTrigger;                      ///< Number of OpHit above threshold to mimic the triggering PMT.
     double fGlobalT0Offset;                    ///< 1.6 ms delay to shift CRT Hit T0, the CRT Timing variable we use in MC.
@@ -129,7 +136,7 @@ namespace icarus::crt {
     uint64_t m_gate_width;
 
 
-    geo::GeometryCore const* fGeometryService;  ///< pointer to Geometry provider
+    geo::GeometryCore const* fGeometryService;  ///< Pointer to Geometry provider.
 
   }; // class CRTPMTMatchingProducer
 
@@ -354,7 +361,7 @@ namespace icarus::crt {
                                   /* .CRTmatches = */ thisFlashCRTmatches};
       thisEventFlashes.push_back(thisFlashType);
       if (!thisFlashCRTmatches.empty() ) std::cout << "pushing back flash with " << thisFlashCRTmatches.size() << " CRT Matches.\n---\n";
-    } // Fine di questo flash
+    } // end of this flash
     std::cout << "Event has " << thisEventFlashes.size() << " flashes in " << flashLabel.label() << "\n----------\n";
     for (auto const& theseFlashes : thisEventFlashes){
       CRTPMTMatching ProducedFlash = FillCRTPMT (theseFlashes, e.id().event(), e.run(), m_gate_type);

@@ -1,6 +1,6 @@
-/*
+/**
  * @file   icaruscode/IcarusObj/CRTPMTMatching.h
- * @brief  Holds the flashes matched with CRT Hits..
+ * @brief  Holds the flashes matched with CRT Hits.
  * @author Francesco Poppi ( poppi@bo.infn.it )  and Anna Heggestuen 
  * @date   April 26 2023.
  */
@@ -18,10 +18,10 @@
 //#include "Math/GenVector/DisplacementVector3D.h"
 namespace icarus::crt {
 
-
+  /// Type of match between a TPC object (e.g. PMT flash) and CRT system.
   enum matchType {
 
-    noMatch = 0,            ///< No CRT match
+    noMatch = 0,            ///< No CRT match.
     enTop = 1,              ///< Matched with Top CRT hit before optical flash.
     enSide = 2,             ///< Matched with Side CRT hit before optical flash.
     enTop_exSide = 3,       ///< Matched with one Top CRT hit before the optical flash and matched with one Side CRT hit after the optical flash.
@@ -32,14 +32,17 @@ namespace icarus::crt {
     others = 9              ///< All the other cases.
 
   };
+  
+  /// Information about a CRT hit matched with a PMT flash.
   struct MatchedCRT {
-    geo::Point_t CRTHitPos;
-    double CRTPMTTimeDiff_ns;
-    double CRTTime_us;
-    int CRTSys;
-    int CRTRegion;
+    geo::Point_t CRTHitPos;   ///< Hit location [cm]
+    double CRTPMTTimeDiff_ns; ///< CRT hit time minus PMT flash time [ns]
+    double CRTTime_us;        ///< CRT hit time [us]
+    int CRTSys;               ///< CRT subdetector the hit fell into.
+    int CRTRegion;            ///< Region the matched CRT hit fell into.
   };
 
+  /// Information about the match between a PMT flash and CRT hits at detector entrance and exit.
   struct CRTPMTMatching{
 
     int          event;         ///< Event number.
@@ -54,10 +57,10 @@ namespace icarus::crt {
     bool         flashInGate;   ///< Flash within gate or not.
     bool         flashInBeam;   ///< Flash within the beam window of the gate or not.
     double       flashAmplitude_pe;  ///< Flash amplitude in PEs.
-    geo::Point_t flashPosition; ///< Flash barycenter coordinates evaluated using ADCs as weights.
+    geo::Point_t flashPosition; ///< Flash baricenter coordinates evaluated using ADCs as weights.
     double       flashYWidth;   ///< Flash spread along Y.
     double       flashZWidth;   ///< Flash spread along Z. 
-    enum matchType flashClassification;  ///< Classication of the optical flash.  
+    enum matchType flashClassification;  ///< Classification of the optical flash.
     std::vector<MatchedCRT> matchedCRTHits;    ///< Matched CRT Hits with the optical flash.
     int          topCRTBefore;  ///< Number of Top CRT Hits before the optical flash.
     int          topCRTAfter;   ///< Number of Top CRT Hits after the optical flash.
