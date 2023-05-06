@@ -77,10 +77,6 @@ namespace icarus::crt {
     double const fNuMIinBeamMin;
     double const fNuMIinBeamMax;
 
-    // Trigger data product variables
-    unsigned int m_gate_type;
-    uint64_t m_trigger_gate_diff;
-
     geo::GeometryCore const* const fGeometryService;  ///< Pointer to Geometry provider.
 
   }; // class CRTPMTMatchingProducer
@@ -112,6 +108,9 @@ namespace icarus::crt {
   {
     mf::LogDebug("CRTPMTMatchingProducer") << "beginning CRTPMTProducer";
     std::cout<<"LETS START PRODUCING"<<std::endl;
+    // Trigger data product variables
+    unsigned int m_gate_type = 0;
+    uint64_t m_trigger_gate_diff = 0; // TODO: check what happens in case of failure to retrieve it
     // add trigger info
     if (!fTriggerLabel.empty()) {
       art::Handle<sbn::ExtraTriggerInfo> trigger_handle;
