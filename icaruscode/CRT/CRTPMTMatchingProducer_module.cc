@@ -117,7 +117,7 @@ namespace icarus::crt {
 
   void CRTPMTMatchingProducer::produce(art::Event & e)
   {
-    mf::LogDebug("CRTPMTMatchingProducer: ") << "beginning CRTPMTProducer";
+    mf::LogDebug("CRTPMTMatchingProducer") << "beginning CRTPMTProducer";
     std::cout<<"LETS START PRODUCING"<<std::endl;
     // add trigger info
     if (!fTriggerLabel.empty()) {
@@ -129,11 +129,11 @@ namespace icarus::crt {
         m_trigger_gate_diff =
         trigger_handle->triggerTimestamp - trigger_handle->beamGateTimestamp;
       } else {
-        mf::LogDebug("CRTPMTMatchingProducer:") << "No sbn::ExtraTriggerInfo associated to label: " << fTriggerLabel.encode() << "\n";
+        mf::LogDebug("CRTPMTMatchingProducer") << "No sbn::ExtraTriggerInfo associated to label: " << fTriggerLabel.encode() << "\n";
       }
     }
     else {
-      mf::LogDebug("CRTPMTMatchingProducer:") << "No TriggerLabel in : " << fTriggerLabel.encode() << "\n";
+      mf::LogDebug("CRTPMTMatchingProducer") << "No TriggerLabel in : " << fTriggerLabel.encode() << "\n";
     }
     
     std::unique_ptr< vector<CRTPMTMatching> > CRTPMTMatchesColl( new vector<CRTPMTMatching>);

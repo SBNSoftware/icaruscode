@@ -65,7 +65,7 @@ bool flashInTime(double flashTime, int gateType, double gateDiff,
   double activeGate = gateWidth /*- vetoOffset*/;
 
   double relFlashTime = flashTime + gateDiff / 1000. /*- vetoOffset*/;
-  mf::LogDebug("CRTPMTMatchingProducer FlashInTime")
+  mf::LogDebug("CRTPMTMatchingProducer_FlashInTime")
     << "Gate Diff " << gateDiff / 1000 << " Ftime+gateDiff "
     << flashTime + gateDiff / 1000. << " " << activeGate;
 
