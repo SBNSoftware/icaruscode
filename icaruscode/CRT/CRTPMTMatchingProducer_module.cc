@@ -112,8 +112,7 @@ namespace icarus::crt {
     uint64_t m_trigger_gate_diff = 0; // TODO: check what happens in case of failure to retrieve it
     // add trigger info
     if (!fTriggerLabel.empty()) {
-      art::Handle<sbn::ExtraTriggerInfo> trigger_handle;
-      e.getByLabel(fTriggerLabel, trigger_handle);
+      auto const trigger_handle = e.getHandle<sbn::ExtraTriggerInfo>(fTriggerLabel);
       if (trigger_handle.isValid()) {
         sbn::triggerSource bit = trigger_handle->sourceType;
         m_gate_type = (unsigned int)bit;
@@ -130,9 +129,8 @@ namespace icarus::crt {
     std::unique_ptr< vector<CRTPMTMatching> > CRTPMTMatchesColl( new vector<CRTPMTMatching>);
     //std::unique_ptr< art::Assns<CRTPMTMatching, recob::OpFlash> > FlashAssociation( new art::Assns<CRTPMTMatching, recob::OpFlash>);
     // add CRTHits
-    art::Handle<std::vector<CRTHit>> crtHitListHandle;
     std::vector<art::Ptr<CRTHit>> crtHitList;
-    if (e.getByLabel(fCrtHitModuleLabel, crtHitListHandle))
+    if (auto crtHitListHandle = e.getHandle<std::vector<CRTHit>>(fCrtHitModuleLabel))
       art::fill_ptr_vector(crtHitList, crtHitListHandle);
     bool isRealData = e.isRealData();
     mf::LogTrace("CRTPMTMatchingProducer") << "is this real data? " << std::boolalpha << isRealData;
