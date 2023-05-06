@@ -27,16 +27,16 @@ namespace icarus::crt {
   struct CRTMatches {
     std::vector<CRTPMT> entering; ///< Matches from outside inward.
     std::vector<CRTPMT> exiting; ///< Matches from inside outward.
-    enum matchType FlashType; ///< Type of match.
+    MatchType flashType; ///< Type of match.
   };
 
   struct FlashType {
-    geo::Point_t FlashPos;
-    double FlashTime_us;
-    double FlashGateTime_ns;
+    geo::Point_t flashPos;
+    double flashTime_us;
+    double flashGateTime_ns;
     bool inBeam;
     bool inGate;
-    enum matchType Classification;
+    MatchType classification;
     std::vector<MatchedCRT> CRTmatches;
   };
 
@@ -92,7 +92,7 @@ CRTMatches CRTHitmatched(
 
   std::vector<icarus::crt::CRTPMT> enteringCRTHits;
   std::vector<icarus::crt::CRTPMT> exitingCRTHits;
-  enum matchType FlashType;
+  MatchType flashType;
   int topen = 0, topex = 0, sideen = 0, sideex = 0;
   for (auto const& crtHit : crtHits) {
 
@@ -119,25 +119,25 @@ CRTMatches CRTHitmatched(
     }
   }
   if (topen == 0 && sideen == 0 && topex == 0 && sideex == 0)
-    FlashType = noMatch;
+    flashType = noMatch;
   else if (topen == 1 && sideen == 0 && topex == 0 && sideex == 0)
-    FlashType = enTop;
+    flashType = enTop;
   else if (topen == 0 && sideen == 1 && topex == 0 && sideex == 0)
-    FlashType = enSide;
+    flashType = enSide;
   else if (topen == 1 && sideen == 0 && topex == 0 && sideex == 1)
-    FlashType = enTop_exSide;
+    flashType = enTop_exSide;
   else if (topen == 0 && sideen == 0 && topex == 1 && sideex == 0)
-    FlashType = exTop;
+    flashType = exTop;
   else if (topen == 0 && sideen == 0 && topex == 0 && sideex == 1)
-    FlashType = exSide;
+    flashType = exSide;
   else if (topen >= 1 && sideen >= 1 && topex == 0 && sideex == 0)
-    FlashType = enTop_mult;
+    flashType = enTop_mult;
   else if (topen >= 1 && sideen >= 1 && topex == 0 && sideex >= 1)
-    FlashType = enTop_exSide_mult;
+    flashType = enTop_exSide_mult;
   else
-    FlashType = others;
+    flashType = others;
 
-  return {std::move(enteringCRTHits), std::move(exitingCRTHits), FlashType};
+  return {std::move(enteringCRTHits), std::move(exitingCRTHits), flashType};
 }
 
 
@@ -148,17 +148,17 @@ CRTPMTMatching FillCRTPMT (FlashType thisFlash, int event, int run, int gate){
   crtpmt.run = run;
   crtpmt.gateType = gate;
   crtpmt.flashID = 0; //
-  crtpmt.flashTime_us = thisFlash.FlashTime_us;
-  crtpmt.flashGateTime_ns = thisFlash.FlashGateTime_ns;
+  crtpmt.flashTime_us = thisFlash.flashTime_us;
+  crtpmt.flashGateTime_ns = thisFlash.flashGateTime_ns;
   crtpmt.firstOpHitPeakTime_us = 0; //
   crtpmt.firstOpHitStartTime_us = 0; //
   crtpmt.flashInGate = thisFlash.inGate;
   crtpmt.flashInBeam = thisFlash.inBeam;
   crtpmt.flashAmplitude_pe = 0; //
-  crtpmt.flashPosition = thisFlash.FlashPos;
+  crtpmt.flashPosition = thisFlash.flashPos;
   crtpmt.flashYWidth = 0; //
   crtpmt.flashZWidth = 0; //
-  crtpmt.flashClassification = thisFlash.Classification;
+  crtpmt.flashClassification = thisFlash.classification;
   for (auto const& crts : thisFlash.CRTmatches){
     MatchedCRT thismatchedCRT;
     /*thismatchedCRT.CRTHitModule = 0; //

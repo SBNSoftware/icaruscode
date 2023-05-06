@@ -146,7 +146,7 @@ namespace icarus::crt {
     std::vector<FlashType> thisEventFlashes;
 
     for (auto const& [iflash, flash] : util::enumerate(*flashHandle)) {
-      enum matchType eventType = others;
+      MatchType eventType = others;
       double tflash = flash.Time();
       vector<recob::OpHit const*> const& hits = findManyHits.at(iflash);
       int nPMTsTriggering = 0;
@@ -184,16 +184,16 @@ namespace icarus::crt {
               fThisInTime_beam = true;
       }
       bool inTime = fThisInTime_gate;
-      icarus::crt::CRTMatches CRTmatches = CRTHitmatched(
+      icarus::crt::CRTMatches crtMatches = CRTHitmatched(
         firstTime, flash_pos, crtHitList, fTimeOfFlightInterval, isRealData, fGlobalT0Offset);
       int TopEn = 0, TopEx = 0, SideEn = 0, SideEx = 0;      
-      auto nCRTHits = CRTmatches.entering.size() + CRTmatches.exiting.size();
+      auto nCRTHits = crtMatches.entering.size() + crtMatches.exiting.size();
       
       std::vector<MatchedCRT> thisFlashCRTmatches;
-      eventType = CRTmatches.FlashType;
+      eventType = crtMatches.flashType;
       if (nCRTHits > 0) {
-        std::cout << "nCRTMatches = nEntering + nExiting = " << CRTmatches.entering.size() << " + " << CRTmatches.exiting.size() << " = " << nCRTHits << "\n"; 
-        for (auto const& entering : CRTmatches.entering) {
+        std::cout << "nCRTMatches = nEntering + nExiting = " << crtMatches.entering.size() << " + " << crtMatches.exiting.size() << " = " << nCRTHits << "\n"; 
+        for (auto const& entering : crtMatches.entering) {
           vector<double> CRTpos {entering.CRTHit->x_pos,
                                  entering.CRTHit->y_pos,
                                  entering.CRTHit->z_pos};
@@ -226,7 +226,7 @@ namespace icarus::crt {
                                       /* .CRTRegion = */ CRTRegion};
           thisFlashCRTmatches.push_back(thisCRTMatch);
         }
-        for (auto const& exiting : CRTmatches.exiting) {
+        for (auto const& exiting : crtMatches.exiting) {
           vector<double> CRTpos {exiting.CRTHit->x_pos,
                                  exiting.CRTHit->y_pos,
                                  exiting.CRTHit->z_pos};
@@ -257,12 +257,12 @@ namespace icarus::crt {
           thisFlashCRTmatches.push_back(thisCRTMatch);
         }
       } //Fine CRT
-      FlashType thisFlashType = { /* .FlashPos = */ flash_pos, // C++20: restore initializers
-                                  /* .FlashTime_us = */ tflash,
-                                  /* .FlashGateTime_ns = */ fThisRelGateTime,
+      FlashType thisFlashType = { /* .flashPos = */ flash_pos, // C++20: restore initializers
+                                  /* .flashTime_us = */ tflash,
+                                  /* .flashGateTime_ns = */ fThisRelGateTime,
                                   /* .inBeam = */ fThisInTime_beam,
                                   /* .inGate = */ inTime,
-                                  /* .Classification = */ eventType,
+                                  /* .classification = */ eventType,
                                   /* .CRTmatches = */ thisFlashCRTmatches};
       thisEventFlashes.push_back(thisFlashType);
       if (!thisFlashCRTmatches.empty() ) std::cout << "pushing back flash with " << thisFlashCRTmatches.size() << " CRT Matches.\n---\n";

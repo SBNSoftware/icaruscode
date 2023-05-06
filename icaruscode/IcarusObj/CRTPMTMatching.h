@@ -15,7 +15,7 @@
 namespace icarus::crt {
 
   /// Type of match between a TPC object (e.g. PMT flash) and CRT system.
-  enum matchType {
+  enum MatchType {
 
     noMatch = 0,            ///< No CRT match.
     enTop = 1,              ///< Matched with Top CRT hit before optical flash.
@@ -56,7 +56,7 @@ namespace icarus::crt {
     geo::Point_t flashPosition; ///< Flash baricenter coordinates evaluated using ADCs as weights.
     double       flashYWidth;   ///< Flash spread along Y.
     double       flashZWidth;   ///< Flash spread along Z. 
-    enum matchType flashClassification;  ///< Classification of the optical flash.
+    MatchType    flashClassification;  ///< Classification of the optical flash.
     std::vector<MatchedCRT> matchedCRTHits;    ///< Matched CRT Hits with the optical flash.
     int          topCRTBefore;  ///< Number of Top CRT Hits before the optical flash.
     int          topCRTAfter;   ///< Number of Top CRT Hits after the optical flash.
