@@ -36,7 +36,7 @@ bool icarus::crt::flashInTime(double flashTime, int gateType, double gateDiff,
 // -----------------------------------------------------------------------------
 icarus::crt::CRTMatches icarus::crt::CRTHitmatched(
   double flashTime, geo::Point_t const& flashpos,
-  std::vector<art::Ptr<sbn::crt::CRTHit>>& crtHits, double interval, bool isRealData, double fGlobalT0Offset) {
+  std::vector<art::Ptr<sbn::crt::CRTHit>>& crtHits, double interval, bool isRealData, double globalT0Offset) {
 
   std::vector<icarus::crt::CRTPMT> enteringCRTHits;
   std::vector<icarus::crt::CRTPMT> exitingCRTHits;
@@ -44,7 +44,7 @@ icarus::crt::CRTMatches icarus::crt::CRTHitmatched(
   int topen = 0, topex = 0, sideen = 0, sideex = 0;
   for (auto const& crtHit : crtHits) {
 
-    double CRTHitTime_ns = isRealData ? (crtHit->ts1_ns) : ((long long)(crtHit->ts0())-fGlobalT0Offset);
+    double CRTHitTime_ns = isRealData ? (crtHit->ts1_ns) : ((long long)(crtHit->ts0())-globalT0Offset);
     double tof = CRTHitTime_ns - flashTime * 1e3;
     double distance =
       (flashpos - geo::Point_t{crtHit->x_pos, crtHit->y_pos, crtHit->z_pos})

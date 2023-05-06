@@ -71,7 +71,7 @@ namespace icarus::crt {
    * @param crtHits list of the CRT hits to consider
    * @param interval time difference for matching flash and hit [ns]
    * @param isRealData `true` for detector data, `false` for simulation
-   * @param fGlobalT0Offset CRT timing offset [ns]
+   * @param globalT0Offset CRT timing offset [ns]
    * @return a `CRTMatches` record with information about all the matched hits
    * 
    * Hits are separated between entering (before the flash) and exiting
@@ -80,7 +80,7 @@ namespace icarus::crt {
    */
   CRTMatches CRTHitmatched(
     double flashTime, geo::Point_t const& flashpos,
-    std::vector<art::Ptr<sbn::crt::CRTHit>>& crtHits, double interval, bool isRealData, double fGlobalT0Offset);
+    std::vector<art::Ptr<sbn::crt::CRTHit>>& crtHits, double interval, bool isRealData, double globalT0Offset);
 
   /// Fills a `CRTPMTMatching` record out of the specified flash information.
   CRTPMTMatching FillCRTPMT (FlashType thisFlash, int event, int run, int gate);

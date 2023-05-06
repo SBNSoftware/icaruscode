@@ -161,26 +161,26 @@ namespace icarus::crt {
       geo::Point_t flash_pos = flashCentroid.middlePoint();
       if (nPMTsTriggering < fnOpHitToTrigger) continue;
 
-      double fThisRelGateTime = m_trigger_gate_diff + tflash * 1e3;
-      bool fThisInTime_gate = false;
-      bool fThisInTime_beam = false;
+      double thisRelGateTime = m_trigger_gate_diff + tflash * 1e3;
+      bool thisInTime_gate = false;
+      bool thisInTime_beam = false;
       if (m_gate_type == 1 || m_gate_type == 3) {  // BNB OffBeamBNB
-        if (fThisRelGateTime > fBNBBeamGateMin &&
-              fThisRelGateTime < fBNBBeamGateMax)
-              fThisInTime_gate = true;
-        if (fThisRelGateTime > fBNBinBeamMin &&
-              fThisRelGateTime < fBNBinBeamMax)
-              fThisInTime_beam = true;
+        if (thisRelGateTime > fBNBBeamGateMin &&
+              thisRelGateTime < fBNBBeamGateMax)
+              thisInTime_gate = true;
+        if (thisRelGateTime > fBNBinBeamMin &&
+              thisRelGateTime < fBNBinBeamMax)
+              thisInTime_beam = true;
       }
       if (m_gate_type == 2 || m_gate_type == 4) {  // NuMI OffBeamNuMI
-        if (fThisRelGateTime > fNuMIBeamGateMin &&
-              fThisRelGateTime < fNuMIBeamGateMax)
-              fThisInTime_gate = true;
-        if (fThisRelGateTime > fNuMIinBeamMin &&
-              fThisRelGateTime < fNuMIinBeamMax)
-              fThisInTime_beam = true;
+        if (thisRelGateTime > fNuMIBeamGateMin &&
+              thisRelGateTime < fNuMIBeamGateMax)
+              thisInTime_gate = true;
+        if (thisRelGateTime > fNuMIinBeamMin &&
+              thisRelGateTime < fNuMIinBeamMax)
+              thisInTime_beam = true;
       }
-      bool inTime = fThisInTime_gate;
+      bool inTime = thisInTime_gate;
       icarus::crt::CRTMatches crtMatches = CRTHitmatched(
         firstTime, flash_pos, crtHitList, fTimeOfFlightInterval, isRealData, fGlobalT0Offset);
       int TopEn = 0, TopEx = 0, SideEn = 0, SideEx = 0;      
@@ -258,8 +258,8 @@ namespace icarus::crt {
       } //Fine CRT
       FlashType thisFlashType = { /* .flashPos = */ flash_pos, // C++20: restore initializers
                                   /* .flashTime_us = */ tflash,
-                                  /* .flashGateTime_ns = */ fThisRelGateTime,
-                                  /* .inBeam = */ fThisInTime_beam,
+                                  /* .flashGateTime_ns = */ thisRelGateTime,
+                                  /* .inBeam = */ thisInTime_beam,
                                   /* .inGate = */ inTime,
                                   /* .classification = */ eventType,
                                   /* .CRTmatches = */ thisFlashCRTmatches};
