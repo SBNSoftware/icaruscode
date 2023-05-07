@@ -335,8 +335,9 @@ namespace icarus::crt {
         break;
     } // switch
     
-    std::unique_ptr< vector<CRTPMTMatching> > CRTPMTMatchesColl( new vector<CRTPMTMatching>);
-    //std::unique_ptr< art::Assns<CRTPMTMatching, recob::OpFlash> > FlashAssociation( new art::Assns<CRTPMTMatching, recob::OpFlash>);
+    auto CRTPMTMatchesColl = std::make_unique<std::vector<CRTPMTMatching>>();
+
+    //auto FlashAssociation = std::make_unique<art::Assns<CRTPMTMatching, recob::OpFlash>>();
     
     // add CRTHits
     std::vector<art::Ptr<CRTHit>> crtHitList;
