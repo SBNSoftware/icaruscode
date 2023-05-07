@@ -109,16 +109,13 @@ namespace icarus::crt {
   {
     mf::LogDebug("CRTPMTMatchingProducer") << "beginning CRTPMTProducer";
     // Trigger data product variables
-    unsigned int m_gate_type = 0;
-    uint64_t m_trigger_gate_diff = 0; // TODO: check what happens in case of failure to retrieve it
     // add trigger info
+    
+    sbn::ExtraTriggerInfo const* trigInfo = nullptr;
     if (!fTriggerLabel.empty()) {
-      auto const trigger_handle = e.getHandle<sbn::ExtraTriggerInfo>(fTriggerLabel);
-      if (trigger_handle.isValid()) {
-        sbn::triggerSource bit = trigger_handle->sourceType;
-        m_gate_type = (unsigned int)bit;
-        m_trigger_gate_diff =
-        trigger_handle->triggerTimestamp - trigger_handle->beamGateTimestamp;
+      if (auto const trigger_handle = e.getHandle<sbn::ExtraTriggerInfo>(fTriggerLabel))
+      {
+        trigInfo = trigger_handle.product();
       } else {
         mf::LogDebug("CRTPMTMatchingProducer") << "No sbn::ExtraTriggerInfo associated to label: " << fTriggerLabel.encode() << "\n";
       }
@@ -126,9 +123,42 @@ namespace icarus::crt {
     else {
       mf::LogDebug("CRTPMTMatchingProducer") << "No TriggerLabel in : " << fTriggerLabel.encode() << "\n";
     }
+    sbn::triggerSource const gateType
+      = trigInfo? trigInfo->sourceType: sbn::triggerSource::Unknown;
+    int64_t const triggerGateDiff
+      = trigInfo? trigInfo->triggerFromBeamGate(): 0;
+    
+    double BeamGateMin = 0.0, BeamGateMax = 0.0;
+    double inBeamMin = 0.0, inBeamMax = 0.0;
+    switch (gateType) {
+      case sbn::triggerSource::BNB:
+      case sbn::triggerSource::OffbeamBNB:
+        BeamGateMin = fBNBBeamGateMin;
+        BeamGateMax = fBNBBeamGateMax;
+        inBeamMin = fBNBinBeamMin;
+        inBeamMax = fBNBinBeamMax;
+        break;
+      case sbn::triggerSource::NuMI:
+      case sbn::triggerSource::OffbeamNuMI:
+        BeamGateMin = fNuMIBeamGateMin;
+        BeamGateMax = fNuMIBeamGateMax;
+        inBeamMin = fNuMIinBeamMin;
+        inBeamMax = fNuMIinBeamMax;
+        break;
+      case sbn::triggerSource::Unknown:
+        mf::LogWarning("CRTPMTMatchingProducer")
+          << "Unknown beam gate type: in-gate flags won't be available.";
+        break;
+      default:
+        mf::LogWarning("CRTPMTMatchingProducer")
+          << "Unsupported beam gate type: " << name(gateType)
+          << "; in-gate flags won't be available.";
+        break;
+    } // switch
     
     std::unique_ptr< vector<CRTPMTMatching> > CRTPMTMatchesColl( new vector<CRTPMTMatching>);
     //std::unique_ptr< art::Assns<CRTPMTMatching, recob::OpFlash> > FlashAssociation( new art::Assns<CRTPMTMatching, recob::OpFlash>);
+    
     // add CRTHits
     std::vector<art::Ptr<CRTHit>> crtHitList;
     if (auto crtHitListHandle = e.getHandle<std::vector<CRTHit>>(fCrtHitModuleLabel))
@@ -161,25 +191,12 @@ namespace icarus::crt {
       geo::Point_t const flash_pos = flashCentroid.middlePoint();
       if (nPMTsTriggering < fnOpHitToTrigger) continue;
 
-      double const thisRelGateTime = m_trigger_gate_diff + tflash * 1e3;
-      bool thisInTime_gate = false;
-      bool thisInTime_beam = false;
-      if (m_gate_type == 1 || m_gate_type == 3) {  // BNB OffBeamBNB
-        if (thisRelGateTime > fBNBBeamGateMin &&
-              thisRelGateTime < fBNBBeamGateMax)
-              thisInTime_gate = true;
-        if (thisRelGateTime > fBNBinBeamMin &&
-              thisRelGateTime < fBNBinBeamMax)
-              thisInTime_beam = true;
-      }
-      if (m_gate_type == 2 || m_gate_type == 4) {  // NuMI OffBeamNuMI
-        if (thisRelGateTime > fNuMIBeamGateMin &&
-              thisRelGateTime < fNuMIBeamGateMax)
-              thisInTime_gate = true;
-        if (thisRelGateTime > fNuMIinBeamMin &&
-              thisRelGateTime < fNuMIinBeamMax)
-              thisInTime_beam = true;
-      }
+      double const thisRelGateTime = triggerGateDiff + tflash * 1e3; // ns
+      bool const thisInTime_gate
+        = thisRelGateTime > BeamGateMin && thisRelGateTime < BeamGateMax;
+      bool const thisInTime_beam
+        = thisRelGateTime > inBeamMin && thisRelGateTime < inBeamMax;
+    
       icarus::crt::CRTMatches const crtMatches = CRTHitmatched(
         firstTime, flash_pos, crtHitList, fTimeOfFlightInterval, isRealData, fGlobalT0Offset);
       auto const nCRTHits = crtMatches.entering.size() + crtMatches.exiting.size();
@@ -246,7 +263,7 @@ namespace icarus::crt {
     } // end of this flash
     mf::LogTrace("CRTPMTMatchingProducer") << "Event has " << thisEventFlashes.size() << " flashes in " << flashLabel.encode();
     for (auto const& theseFlashes : thisEventFlashes){
-      CRTPMTMatching ProducedFlash = FillCRTPMT (theseFlashes, e.id().event(), e.run(), m_gate_type);
+      CRTPMTMatching ProducedFlash = FillCRTPMT (theseFlashes, e.id().event(), e.run(), value(gateType));
       CRTPMTMatchesColl->push_back(std::move(ProducedFlash));
     }
   }
