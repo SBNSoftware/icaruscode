@@ -65,6 +65,20 @@ namespace icarus::crt {
                    double gateWidth);
 
   /**
+   * @brief Returns the relative time of a CRT hit [ns]
+   * @param hit the CRT hit
+   * @param globalT0Offset for simulation, the global T0 offset in nanoseconds
+   * @param isRealData whether the hit is from data (as opposed to simulation)
+   * @return the time of the hit [ns]
+   * 
+   * For data hits, the time is directly taken from the timestamp 1 (`ts1_ns`).
+   * For simulation, the time is taken from the "absolute" timestamp 0 (`ts0()`)
+   * after subtracting a known offset (`globalT0Offset`).
+   */
+  double CRTHitTime
+    (sbn::crt::CRTHit const& hit, double globalT0Offset, bool isRealData);
+
+  /**
    * @brief Returns all the CRT hits matching the specified flash time.
    * @param flashTime the time of the flash to be matched [us]
    * @param flashpos nominal position of the flash source [cm]

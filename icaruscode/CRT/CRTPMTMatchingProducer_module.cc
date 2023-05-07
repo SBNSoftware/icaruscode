@@ -211,8 +211,9 @@ namespace icarus::crt {
                                    entering.CRTHit->y_pos,
                                    entering.CRTHit->z_pos};
           // fGlobalT0Offset = 1.6e6 ns = 1600000 ns.
-          double const CRTtime_us = isRealData ? (entering.CRTHit->ts1_ns/1e3) : ( (long long)(entering.CRTHit->ts0()) - fGlobalT0Offset)/1e3; // us 
-          double const CRTtime_ns = isRealData ? (entering.CRTHit->ts1_ns) : ( (long long)(entering.CRTHit->ts0()) - fGlobalT0Offset); // us 
+          double const CRTtime_ns
+            = icarus::crt::CRTHitTime(*entering.CRTHit, fGlobalT0Offset, isRealData); // ns
+          double const CRTtime_us = CRTtime_ns / 1000.0; // us
           mf::LogTrace("CRTPMTMatchingProducer") << "CRTTime_us = " << CRTtime_us << ", CRTtime_ns = " << CRTtime_ns;
           int const CRTRegion = entering.CRTHit->plane;
           int const CRTSys = (CRTRegion >= 36)? 1: 0;  // Very lazy way to determine if the Hit is a Top or a Side.
@@ -232,8 +233,9 @@ namespace icarus::crt {
           geo::Point_t thisCRTpos {exiting.CRTHit->x_pos,
                                    exiting.CRTHit->y_pos,
                                    exiting.CRTHit->z_pos};
-          double const CRTtime_us = isRealData ? (exiting.CRTHit->ts1_ns/1e3) : ( (long long)(exiting.CRTHit->ts0()) - fGlobalT0Offset)/1e3; // us
-          double const CRTtime_ns = isRealData ? (exiting.CRTHit->ts1_ns) : ( (long long)(exiting.CRTHit->ts0()) - fGlobalT0Offset); // us
+          double const CRTtime_ns
+            = icarus::crt::CRTHitTime(*exiting.CRTHit, fGlobalT0Offset, isRealData); // ns
+          double const CRTtime_us = CRTtime_ns / 1000.0; // us
           mf::LogTrace("CRTPMTMatchingProducer") << isRealData << ", CRTTime_us = " << CRTtime_us << ", CRTtime_ns = " << CRTtime_ns;
           int const CRTRegion = exiting.CRTHit->plane;
           int const CRTSys = (CRTRegion >= 36)? 1: 0;

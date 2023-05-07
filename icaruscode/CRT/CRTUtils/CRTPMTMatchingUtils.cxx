@@ -34,6 +34,15 @@ bool icarus::crt::flashInTime(double flashTime, int gateType, double gateDiff,
 
 
 // -----------------------------------------------------------------------------
+double icarus::crt::CRTHitTime
+  (sbn::crt::CRTHit const& hit, double globalT0Offset, bool isRealData)
+{
+  return isRealData? hit.ts1_ns
+    : static_cast<std::int64_t>(hit.ts0()) - static_cast<std::int64_t>(globalT0Offset);
+}
+
+
+// -----------------------------------------------------------------------------
 icarus::crt::CRTMatches icarus::crt::CRTHitmatched(
   double flashTime, geo::Point_t const& flashpos,
   std::vector<art::Ptr<sbn::crt::CRTHit>>& crtHits, double interval, bool isRealData, double globalT0Offset) {
@@ -43,8 +52,11 @@ icarus::crt::CRTMatches icarus::crt::CRTHitmatched(
   MatchType flashType;
   int topen = 0, topex = 0, sideen = 0, sideex = 0;
   for (auto const& crtHit : crtHits) {
-
-    double CRTHitTime_ns = isRealData ? (crtHit->ts1_ns) : ((long long)(crtHit->ts0())-globalT0Offset);
+    // care with conversions: if either side of a subtraction is a `double`,
+    // the other side is also converted to `double` just before the subtraction,
+    // and in this conversion it may lose precision; subtraction itself must
+    // operate between 64-bit integers, then the conversion of the result may happen
+    double const CRTHitTime_ns = CRTHitTime(*crtHit, globalT0Offset, isRealData);
     double tof = CRTHitTime_ns - flashTime * 1e3;
     double distance =
       (flashpos - geo::Point_t{crtHit->x_pos, crtHit->y_pos, crtHit->z_pos})
