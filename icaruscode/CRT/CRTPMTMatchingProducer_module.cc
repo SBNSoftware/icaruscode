@@ -9,6 +9,7 @@
 #include "sbnobj/Common/CRT/CRTHit.hh"
 #include "sbnobj/Common/Trigger/ExtraTriggerInfo.h"
 #include "icaruscode/CRT/CRTUtils/CRTPMTMatchingUtils.h"
+#include "icaruscode/IcarusObj/CRTPMTMatching.h"
 
 // Framework includes
 #include "art/Framework/Core/EDProducer.h"
@@ -162,39 +163,39 @@ namespace icarus::crt {
    *    * `flashID`: not saved yet (set to `0`).
    *    * `flashTime`: from `recob::OpFlash::Time()`.
    *    * `flashGateTime`: time of the flash from the beam gate opening.
-   *    * `firstOpHitPeakTime`: not saved yet (set to `0`).
-   *    * `firstOpHitStartTime`: not saved yet (set to `0`).
+   *    * `firstOpHitPeakTime`: not saved yet (left to default value).
+   *    * `firstOpHitStartTime`: not saved yet (left to default value).
    *    * `flashInGate`: whether the flash is in the beam gate interval as
    *       configured via `BNBinBeamMin`/`BNBinBeamMax` or the corresponding
    *       settings for NuMI beam.
    *    * `flashInBeam`: whether the flash is in the beam gate interval as
    *       configured via `BNBBeamGateMin`/`BNBBeamGateMax` or the corresponding
    *       settings for NuMI beam.
-   *    * `flashAmplitude_pe`: not saved yet (set to `0`).
+   *    * `flashPE`: not saved yet (left to default value).
    *    * `flashPosition`: centroid of the flash, recomputed as the average of
    *         the position of the contributing PMTs, weighted by the amplitude of
    *         their hits.
-   *    * `flashYWidth`: not saved yet (set to `0`).
-   *    * `flashZWidth`: not saved yet (set to `0`).
+   *    * `flashYWidth`: not saved yet (left to default value).
+   *    * `flashZWidth`: not saved yet (left to default value).
    *    * `flashClassification`: the topology of this track, according to the
    *      categories in `icarus::crt::MatchType`; i.e. if it is a particle that
    *      seems to be entering from the top, or exiting from within, etc.
    *    * `matchedCRTHits` (`icarus::crt::MatchedCRT`): for each CRT hit matched
    *      to the flash, information on its location and time relative to the
    *      flash.
-   *        *`CRTHitPos`: the location of the hit in space.
-   *        * `CRTPMTTimeDiff` [&micro;s]: the time of flight computed using
+   *        *`pos`: the location of the hit in space.
+   *        * `PMTTimeDiff` [&micro;s]: the time of flight computed using
    *          the flash time as described above (not `recob::OpFlash::Time()`);
    *          it is also the time on which the matching decision was taken,
    *          and the time that settles the relative time of hit and flash.
-   *        * `CRTTime` [&micro;s]: the time of the matched CRT hit.
-   *        * `CRTRegion`: the number of CRT region where the matched hit is.
-   *        * `CRTSys`: which subdetector the hit is in; `0` for top CRT, `1`
+   *        * `time` [&micro;s]: the time of the matched CRT hit.
+   *        * `region`: the number of CRT region where the matched hit is.
+   *        * `sys`: which subdetector the hit is in; `0` for top CRT, `1`
    *          for side CRT.
-   *    * `topCRTBefore`: not saved yet (set to `0`).
-   *    * `topCRTAfter`: not saved yet (set to `0`).
-   *    * `sideCRTBefore`: not saved yet (set to `0`).
-   *    * `sideCRTAfter`: not saved yet (set to `0`).
+   *    * `nTopCRTHitsBefore`: not saved yet (left to default value).
+   *    * `nTopCRTHitsAfter`: not saved yet (left to default value).
+   *    * `nSideCRTHitsBefore`: not saved yet (left to default value).
+   *    * `nSideCRTHitsAfter`: not saved yet (left to default value).
    * 
    * 
    * Services
@@ -439,11 +440,11 @@ namespace icarus::crt {
     mf::LogTrace("CRTPMTMatchingProducer")
       << "  Match: tof = crtTime - tflash  = " << CRTtime
       << " - "<< tflash << " = " << CRTTof_opflash << " (us)";
-    return { /* .CRTHitPos =*/  thisCRTpos, // C++20: restore initializers
-             /* .CRTPMTTimeDiff = */ CRTTof_opflash,
-             /* .CRTTime = */ CRTtime,
-             /* .CRTSys = */ CRTSys,
-             /* .CRTRegion = */ CRTRegion};
+    return { /* .position =*/  thisCRTpos, // C++20: restore initializers
+             /* .PMTTimeDiff = */ CRTTof_opflash,
+             /* .time = */ CRTtime,
+             /* .sys = */ CRTSys,
+             /* .region = */ CRTRegion};
   }
 
   DEFINE_ART_MODULE(CRTPMTMatchingProducer)

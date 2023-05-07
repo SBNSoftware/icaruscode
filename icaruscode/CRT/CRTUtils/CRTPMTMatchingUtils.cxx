@@ -110,20 +110,20 @@ icarus::crt::CRTPMTMatching icarus::crt::FillCRTPMT(FlashType const& flash)
   crtpmt.flashID = 0; //
   crtpmt.flashTime = flash.flashTime;
   crtpmt.flashGateTime = flash.flashGateTime;
-  crtpmt.firstOpHitPeakTime = 0; //
-  crtpmt.firstOpHitStartTime = 0; //
+  // crtpmt.firstOpHitPeakTime = 0; //
+  // crtpmt.firstOpHitStartTime = 0; //
   crtpmt.flashInGate = flash.inGate;
   crtpmt.flashInBeam = flash.inBeam;
-  crtpmt.flashAmplitude_pe = 0; //
+  // crtpmt.flashPE = 0; //
   crtpmt.flashPosition = flash.flashPos;
-  crtpmt.flashYWidth = 0; //
-  crtpmt.flashZWidth = 0; //
+  // crtpmt.flashYWidth = 0; //
+  // crtpmt.flashZWidth = 0; //
   crtpmt.flashClassification = flash.classification;
   crtpmt.matchedCRTHits = flash.CRTmatches;
-  crtpmt.topCRTBefore = 0; //
-  crtpmt.topCRTAfter = 0; //
-  crtpmt.sideCRTBefore = 0; //
-  crtpmt.sideCRTAfter = 0; //
+  // crtpmt.nTopCRTHitsBefore = 0; //
+  // crtpmt.nTopCRTHitsAfter = 0; //
+  // crtpmt.nSideCRTHitsBefore = 0; //
+  // crtpmt.nSideCRTHitsAfter = 0; //
   
   return crtpmt;
 }

@@ -59,7 +59,8 @@
 
   <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
   <!-- icarus::crt::CRTPMTMatching -->
-  <class name="icarus::crt::MatchedCRT" ClassVersion="13">
+  <class name="icarus::crt::MatchedCRT" ClassVersion="14">
+   <version ClassVersion="14" checksum="1591831496"/>
    <version ClassVersion="13" checksum="483325859"/>
    <version ClassVersion="12" checksum="80440696"/>
    <version ClassVersion="11" checksum="1017316548"/>
@@ -70,7 +71,8 @@
  
   <enum name="icarus::crt::MatchType" />
 
-  <class name="icarus::crt::CRTPMTMatching" ClassVersion="14">
+  <class name="icarus::crt::CRTPMTMatching" ClassVersion="15">
+   <version ClassVersion="15" checksum="1804810359"/>
    <version ClassVersion="14" checksum="592644065"/>
    <version ClassVersion="13" checksum="230773027"/>
    <version ClassVersion="12" checksum="2564643950"/>
