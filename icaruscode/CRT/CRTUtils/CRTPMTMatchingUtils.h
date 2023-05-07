@@ -96,8 +96,8 @@ namespace icarus::crt {
     double flashTime, geo::Point_t const& flashpos,
     std::vector<art::Ptr<sbn::crt::CRTHit>>& crtHits, double interval, bool isRealData, double globalT0Offset);
 
-  /// Fills a `CRTPMTMatching` record out of the specified flash information.
-  CRTPMTMatching FillCRTPMT (FlashType const& thisFlash, int event, int run, int gate);
+  /// Fills a `CRTPMTMatching` record out of the specified `flash` information.
+  CRTPMTMatching FillCRTPMT (FlashType const& flash);
 
 }
 

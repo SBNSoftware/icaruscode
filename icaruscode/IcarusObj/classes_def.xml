@@ -70,7 +70,8 @@
  
   <enum name="icarus::crt::MatchType" />
 
-  <class name="icarus::crt::CRTPMTMatching" ClassVersion="13">
+  <class name="icarus::crt::CRTPMTMatching" ClassVersion="14">
+   <version ClassVersion="14" checksum="592644065"/>
    <version ClassVersion="13" checksum="230773027"/>
    <version ClassVersion="12" checksum="2564643950"/>
    <version ClassVersion="11" checksum="1082156238"/>

@@ -41,10 +41,6 @@ namespace icarus::crt {
   /// Information about the match between a PMT flash and CRT hits at detector entrance and exit.
   struct CRTPMTMatching{
 
-    int          event;         ///< Event number.
-    int          run;           ///< Run number.
-    unsigned int gateType;      ///< Beam gate type.
-   
     int          flashID;       ///< ID of the optical flash.
     double       flashTime;     ///< Time of the optical flash w.r.t. the global trigger [us]
     double       flashGateTime; ///< Time of the optical flash w.r.t. the beam gate opening [us]

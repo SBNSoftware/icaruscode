@@ -410,7 +410,7 @@ namespace icarus::crt {
       } // end of this flash
       mf::LogTrace("CRTPMTMatchingProducer") << "Event has " << thisEventFlashes.size() << " flashes in " << flashLabel.encode();
       for (auto const& theseFlashes : thisEventFlashes){
-        CRTPMTMatching ProducedFlash = FillCRTPMT (theseFlashes, e.id().event(), e.run(), value(gateType));
+        CRTPMTMatching ProducedFlash = FillCRTPMT(theseFlashes);
         CRTPMTMatchesColl->push_back(std::move(ProducedFlash));
       }
     }

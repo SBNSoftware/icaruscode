@@ -102,28 +102,24 @@ icarus::crt::CRTMatches icarus::crt::CRTHitmatched(
 
 
 // -----------------------------------------------------------------------------
-icarus::crt::CRTPMTMatching icarus::crt::FillCRTPMT
-  (FlashType const& thisFlash, int event, int run, int gate)
+icarus::crt::CRTPMTMatching icarus::crt::FillCRTPMT(FlashType const& flash)
 {
   // UPDATE CRTPMTMatchingProducer class documentation when some missing items
   //        are added
   CRTPMTMatching crtpmt;
-  crtpmt.event = event;
-  crtpmt.run = run;
-  crtpmt.gateType = gate;
   crtpmt.flashID = 0; //
-  crtpmt.flashTime = thisFlash.flashTime;
-  crtpmt.flashGateTime = thisFlash.flashGateTime;
+  crtpmt.flashTime = flash.flashTime;
+  crtpmt.flashGateTime = flash.flashGateTime;
   crtpmt.firstOpHitPeakTime = 0; //
   crtpmt.firstOpHitStartTime = 0; //
-  crtpmt.flashInGate = thisFlash.inGate;
-  crtpmt.flashInBeam = thisFlash.inBeam;
+  crtpmt.flashInGate = flash.inGate;
+  crtpmt.flashInBeam = flash.inBeam;
   crtpmt.flashAmplitude_pe = 0; //
-  crtpmt.flashPosition = thisFlash.flashPos;
+  crtpmt.flashPosition = flash.flashPos;
   crtpmt.flashYWidth = 0; //
   crtpmt.flashZWidth = 0; //
-  crtpmt.flashClassification = thisFlash.classification;
-  crtpmt.matchedCRTHits = thisFlash.CRTmatches;
+  crtpmt.flashClassification = flash.classification;
+  crtpmt.matchedCRTHits = flash.CRTmatches;
   crtpmt.topCRTBefore = 0; //
   crtpmt.topCRTAfter = 0; //
   crtpmt.sideCRTBefore = 0; //
