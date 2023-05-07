@@ -43,6 +43,174 @@ using std::vector;
 
 namespace icarus::crt {
 
+  /**
+   * @brief Extracts and saves matches between CRT hits and PMT flashes.
+   * 
+   * Matching between reconstructed CRT hits and optical flashes is driven by
+   * the time difference between them.
+   * 
+   * Only flashes with a minimum amount (`nOpHitToTrigger`) of contributing PMT
+   * above a certain amplitude threshold (`PMTADCThresh`) are considered for
+   * matching.
+   * Matches are considered successful if they are not farther than a time
+   * cutoff (`TimeOfFlightInterval`). Either way, all candidate flashes have
+   * matching information saved, even just to say that the matching failed.
+   * A single CRT hit may in principle be matched to multiple flashes.
+   * In practice this is unlikely since it is rare to have multiple flashes
+   * close enough in time to match the same CRT hit time.
+   * 
+   * This module also works for simulated events, provided that trigger
+   * simulation results are available, a proper CRT time offset is specified
+   * in the configuration and beam gate limits are also configured.
+   * 
+   * 
+   * ### Timing
+   * 
+   * The time of a flash used to match it to CRT hits is not taken from the data
+   * product, but rather computed anew, as the earliest peak time
+   * (`rceob::OpHit::PeakTime()`) among the hits associated to the flash.
+   * 
+   * The time of a CRT hit from a _data_ sample is taken directly from the
+   * timestamp 1 (`sbn::crt::CRTHit::ts1_ns`). For a simulated sample, instead,
+   * the absolute timestamp 0 is used (`sbn::crt::CRTHit::ts0()`), compared with
+   * a time offset specified in the configuration (`GlobalT0Offset`).
+   * 
+   * 
+   * Configuration parameters
+   * -------------------------
+   * 
+   * All parameters for which no default value is reported are mandatory.
+   * 
+   * * `OpFlashModuleLabels` (sequence of input tags, mandatory):
+   *   list of reconstructed PMT flash data products to be matched to CRT hits.
+   * * `CrtHitModuleLabel` (input tag, default: `crthit`): data product with
+   *   the reconstructed CRT hits to be matched to the flashes above.
+   * * `TriggerLabel` (input tag, default: `daqTrigger`): data product
+   *   containing hardware trigger information. It may be from simulation.
+   *   To omit the trigger information, an empty tag can be specified;
+   *   if the specified trigger data product is not available, a warning will
+   *   be printed on console, but the processing will continue.
+   * * `TimeOfFlightInterval` (real number, nanoseconds): the maximum time
+   *   between a CRT hit and a flash in order to consider them matched.
+   * * `PMTADCThresh` (integral number, PMT ADC counts): optical hits with
+   *   amplitude lower than this do not contribute to the contributing hit count
+   *   of a flash.
+   * * `nOpHitToTrigger` (integral number): minimum number of contributing
+   *   reconstructed optical hits to a flash; flashes contributed by fewer hits
+   *   will not be matched.
+   * * `GlobalT0Offset` (real number, nanoseconds): offset used in simulation,
+   *   equivalent to the CRT hit timestamp (TS0) at the time of the reference
+   *   trigger.
+   * * `BNBBeamGateMin`, `BNBBeamGateMax`, `NuMIBeamGateMin`, `NuMIBeamGateMax`
+   *   (real numbers, nanoseconds): the start and stop of the beam gates,
+   *   i.e. the time while the trigger is active for an event. This interval is
+   *   used to determine the value `flashInGate` of the matching.
+   *   The intervals are specified independently for BNB and NuMI gates
+   *   (on-beam and off-beam gates share the same gate interval).
+   *   See below for the definition of the time scale.
+   * * `BNBinBeamMin`, `BNBinBeamMax`, `NuMIinBeamMin`, `NuMIinBeamMax`
+   *   (real numbers, nanoseconds): the start and stop of the beam spill time,
+   *   i.e. the time at which neutrinos from the accelerator pass through the
+   *   detector. This interval is used to determine the value `flashInBeam` of
+   *   the matching. The intervals are specified independently for BNB and NuMI
+   *   gates (on-beam and off-beam gates share the same gate interval).
+   *   The times are relative to the beam gate opening timestamp; see below for
+   *   an explanation of the scale of these times.
+   * 
+   * 
+   * ### Time intervals for the determination of flashes inside beam gates.
+   * 
+   * The gate interval parameters are on a time scale with as reference the
+   * beam gate opening time from the hardware.
+   * Ideally, this means that the `BNBBeamGateMin` and `NuMIBeamGateMin`
+   * parameters would evaluate to `0`. In practice the beam gate time (and also
+   * the trigger time) as stamped by the hardware may not match the actual beam
+   * gate opening, and these values need to be aligned with some calibration.
+   * 
+   * Therefore, effectively `BNBBeamGateMin` represents how much before
+   * (negative sign) or after (positive sign) a flash happening exactly at the
+   * time of the beam gate opening would be reconstructed with respect to the
+   * beam gate timestamp.
+   * The best way to determine these values is empirically from a distribution
+   * of the time of reconstructed flashes in a sample of majority-triggered
+   * events, which should appear like a continuum with a step due to the opening
+   * of the beam gate (which is biassed because of the presence of the trigger)
+   * and a further step due to the presence of the neutrinos.
+   * The first plateau defines the beam gate interval (`XxxxBeamGateXxx`), the
+   * second one defined the spill interval (`XxxxinBeamXxx`).
+   * 
+   * 
+   * Input
+   * ------
+   * 
+   * * `std::vector<recob::OpFlash>` (all tags from `OpFlashModuleLabels`):
+   *   the collections of flashes to match. All the flashes are treated the
+   *   same, independently of which of the collections they come from.
+   * * `std::vector<sbn::crt::CRTHit>` (tag from `CrtHitModuleLabel`): the CRT
+   *   hits to match to the flashes.
+   * * `sbn::ExtraTriggerInfo` (tag from `TriggerLabel`): if available,
+   *   information whether the flash is at beam time and in the beam gate time
+   *   are saved. It is otherwise optional.
+   * 
+   * 
+   * Output
+   * -------
+   * 
+   * * `std::vector<icarus::crt::CRTPMTMatching>`: an entry for each matched
+   *   flash; the entry contains information of all the matched CRT hits and
+   *   the type of the matching:
+   *    * `flashID`: not saved yet (set to `0`).
+   *    * `flashTime`: from `recob::OpFlash::Time()`.
+   *    * `flashGateTime`: time of the flash from the beam gate opening.
+   *    * `firstOpHitPeakTime`: not saved yet (set to `0`).
+   *    * `firstOpHitStartTime`: not saved yet (set to `0`).
+   *    * `flashInGate`: whether the flash is in the beam gate interval as
+   *       configured via `BNBinBeamMin`/`BNBinBeamMax` or the corresponding
+   *       settings for NuMI beam.
+   *    * `flashInBeam`: whether the flash is in the beam gate interval as
+   *       configured via `BNBBeamGateMin`/`BNBBeamGateMax` or the corresponding
+   *       settings for NuMI beam.
+   *    * `flashAmplitude_pe`: not saved yet (set to `0`).
+   *    * `flashPosition`: centroid of the flash, recomputed as the average of
+   *         the position of the contributing PMTs, weighted by the amplitude of
+   *         their hits.
+   *    * `flashYWidth`: not saved yet (set to `0`).
+   *    * `flashZWidth`: not saved yet (set to `0`).
+   *    * `flashClassification`: the topology of this track, according to the
+   *      categories in `icarus::crt::MatchType`; i.e. if it is a particle that
+   *      seems to be entering from the top, or exiting from within, etc.
+   *    * `matchedCRTHits` (`icarus::crt::MatchedCRT`): for each CRT hit matched
+   *      to the flash, information on its location and time relative to the
+   *      flash.
+   *        *`CRTHitPos`: the location of the hit in space.
+   *        * `CRTPMTTimeDiff` [&micro;s]: the time of flight computed using
+   *          the flash time as described above (not `recob::OpFlash::Time()`);
+   *          it is also the time on which the matching decision was taken,
+   *          and the time that settles the relative time of hit and flash.
+   *        * `CRTTime` [&micro;s]: the time of the matched CRT hit.
+   *        * `CRTRegion`: the number of CRT region where the matched hit is.
+   *        * `CRTSys`: which subdetector the hit is in; `0` for top CRT, `1`
+   *          for side CRT.
+   *    * `topCRTBefore`: not saved yet (set to `0`).
+   *    * `topCRTAfter`: not saved yet (set to `0`).
+   *    * `sideCRTBefore`: not saved yet (set to `0`).
+   *    * `sideCRTAfter`: not saved yet (set to `0`).
+   * 
+   * 
+   * Services
+   * ---------
+   * 
+   * * `Geometry` for the determination of the position of the PMT
+   * 
+   * 
+   * Multithreading
+   * ---------------
+   * 
+   * The module currently does not support multithreading, even if it is ready
+   * to.
+   * 
+   * 
+   */
   class CRTPMTMatchingProducer : public art::EDProducer {
   public:
  
@@ -228,7 +396,7 @@ namespace icarus::crt {
             thisFlashCRTmatches.push_back(makeMatchedCRT(*exiting.CRTHit, tflash, isRealData));
           }
           
-        } //Fine CRT
+        }
         if (!thisFlashCRTmatches.empty() )
           mf::LogTrace("CRTPMTMatchingProducer") << "pushing back flash with " << thisFlashCRTmatches.size() << " CRT Matches.";
         FlashType thisFlashType = { /* .flashPos = */ flash_pos, // C++20: restore initializers

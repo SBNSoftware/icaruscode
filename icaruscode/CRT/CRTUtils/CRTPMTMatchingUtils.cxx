@@ -105,6 +105,8 @@ icarus::crt::CRTMatches icarus::crt::CRTHitmatched(
 icarus::crt::CRTPMTMatching icarus::crt::FillCRTPMT
   (FlashType const& thisFlash, int event, int run, int gate)
 {
+  // UPDATE CRTPMTMatchingProducer class documentation when some missing items
+  //        are added
   CRTPMTMatching crtpmt;
   crtpmt.event = event;
   crtpmt.run = run;
