@@ -32,8 +32,8 @@ namespace icarus::crt {
   /// Information about a CRT hit matched with a PMT flash.
   struct MatchedCRT {
     geo::Point_t CRTHitPos;   ///< Hit location [cm]
-    double CRTPMTTimeDiff_ns; ///< CRT hit time minus PMT flash time [ns]
-    double CRTTime_us;        ///< CRT hit time [us]
+    double CRTPMTTimeDiff;    ///< CRT hit time minus PMT flash time [us]
+    double CRTTime;           ///< CRT hit time [us]
     int CRTSys;               ///< CRT subdetector the hit fell into.
     int CRTRegion;            ///< Region the matched CRT hit fell into.
   };
@@ -46,14 +46,14 @@ namespace icarus::crt {
     unsigned int gateType;      ///< Beam gate type.
    
     int          flashID;       ///< ID of the optical flash.
-    double       flashTime_us;  ///< Time of the optical flash w.r.t. the global trigger in us.
-    double       flashGateTime_ns;  ///< Time of the optical flash w.r.t. the beam gate opening in ns.
-    double       firstOpHitPeakTime_us;  ///< Time of the first optical hit peak time w.r.t. the global trigger in us.
-    double       firstOpHitStartTime_us; ///< Time of the first optical hit start time w.r.t. the global trigger in us.
+    double       flashTime;     ///< Time of the optical flash w.r.t. the global trigger [us]
+    double       flashGateTime; ///< Time of the optical flash w.r.t. the beam gate opening [us]
+    double       firstOpHitPeakTime; ///< Time of the first optical hit peak time w.r.t. the global trigger [us]
+    double       firstOpHitStartTime; ///< Time of the first optical hit start time w.r.t. the global trigger [us]
     bool         flashInGate;   ///< Flash within gate or not.
     bool         flashInBeam;   ///< Flash within the beam window of the gate or not.
     double       flashAmplitude_pe;  ///< Flash amplitude in PEs.
-    geo::Point_t flashPosition; ///< Flash baricenter coordinates evaluated using ADCs as weights.
+    geo::Point_t flashPosition; ///< Flash barycenter coordinates evaluated using ADCs as weights.
     double       flashYWidth;   ///< Flash spread along Y.
     double       flashZWidth;   ///< Flash spread along Z. 
     MatchType    flashClassification;  ///< Classification of the optical flash.

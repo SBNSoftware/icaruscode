@@ -79,6 +79,17 @@ namespace icarus::crt {
     double const fNuMIinBeamMax;
 
     geo::GeometryCore const* const fGeometryService;  ///< Pointer to Geometry provider.
+    
+    /**
+     * @brief Returns a `MatchedCRT` out of the provided information.
+     * @param hit the matched CRT hit
+     * @param tflash the time of the matched flash [us]
+     * @param isRealData whether the data is real (as opposed to Monte Carlo)
+     * @return a complete `icarus::crt::MatchedCRT` record
+     */
+    icarus::crt::MatchedCRT makeMatchedCRT
+      (sbn::crt::CRTHit const& hit, double tflash, bool isRealData) const;
+    
 
   }; // class CRTPMTMatchingProducer
 
@@ -196,7 +207,7 @@ namespace icarus::crt {
         = thisRelGateTime > BeamGateMin && thisRelGateTime < BeamGateMax;
       bool const thisInTime_beam
         = thisRelGateTime > inBeamMin && thisRelGateTime < inBeamMax;
-    
+      
       icarus::crt::CRTMatches const crtMatches = CRTHitmatched(
         firstTime, flash_pos, crtHitList, fTimeOfFlightInterval, isRealData, fGlobalT0Offset);
       auto const nCRTHits = crtMatches.entering.size() + crtMatches.exiting.size();
@@ -204,78 +215,67 @@ namespace icarus::crt {
       std::vector<MatchedCRT> thisFlashCRTmatches;
       MatchType const eventType = crtMatches.flashType;
       if (nCRTHits > 0) {
-        mf::LogTrace("CRTPMTMatchingProducer") 
-          << "nCRTMatches = nEntering + nExiting = " << crtMatches.entering.size() << " + " << crtMatches.exiting.size() << " = " << nCRTHits;
-        for (auto const& entering : crtMatches.entering) {
-          geo::Point_t thisCRTpos {entering.CRTHit->x_pos,
-                                   entering.CRTHit->y_pos,
-                                   entering.CRTHit->z_pos};
-          // fGlobalT0Offset = 1.6e6 ns = 1600000 ns.
-          double const CRTtime_ns
-            = icarus::crt::CRTHitTime(*entering.CRTHit, fGlobalT0Offset, isRealData); // ns
-          double const CRTtime_us = CRTtime_ns / 1000.0; // us
-          mf::LogTrace("CRTPMTMatchingProducer") << "CRTTime_us = " << CRTtime_us << ", CRTtime_ns = " << CRTtime_ns;
-          int const CRTRegion = entering.CRTHit->plane;
-          int const CRTSys = (CRTRegion >= 36)? 1: 0;  // Very lazy way to determine if the Hit is a Top or a Side.
-                                            // Will update it when bottom CRT will be availble.
-          double const CRTTof_opflash = CRTtime_ns - tflash * 1e3; // ns 
-          double const CRTTof_opflash_us = CRTtime_us - tflash; // us 
-          mf::LogTrace("CRTPMTMatchingProducer") << "Entering match: tof = crtTime_ns - tflash*1e3 = " << CRTtime_ns << " - "<< tflash * 1e3 << " = " << CRTTof_opflash << " (ns)"
-            << "\nEntering match: tof_us = crtTime_us - tflash  = " << CRTtime_us << " - "<< tflash << " = " << CRTTof_opflash_us << " (us)";
-          MatchedCRT thisCRTMatch = { /* .CRTHitPos = */ thisCRTpos, // C++20: restore initializers
-                                      /* .CRTPMTTimeDiff_ns = */ CRTTof_opflash,
-                                      /* .CRTTime_us = */ CRTtime_us,
-                                      /* .CRTSys = */ CRTSys,
-                                      /* .CRTRegion = */ CRTRegion};
-          thisFlashCRTmatches.push_back(std::move(thisCRTMatch));
-        }
-        for (auto const& exiting : crtMatches.exiting) {
-          geo::Point_t thisCRTpos {exiting.CRTHit->x_pos,
-                                   exiting.CRTHit->y_pos,
-                                   exiting.CRTHit->z_pos};
-          double const CRTtime_ns
-            = icarus::crt::CRTHitTime(*exiting.CRTHit, fGlobalT0Offset, isRealData); // ns
-          double const CRTtime_us = CRTtime_ns / 1000.0; // us
-          mf::LogTrace("CRTPMTMatchingProducer") << isRealData << ", CRTTime_us = " << CRTtime_us << ", CRTtime_ns = " << CRTtime_ns;
-          int const CRTRegion = exiting.CRTHit->plane;
-          int const CRTSys = (CRTRegion >= 36)? 1: 0;
-          double const CRTTof_opflash = CRTtime_ns - tflash * 1e3; // ns
-          double const CRTTof_opflash_us = CRTtime_us - tflash; // us
+          
           mf::LogTrace("CRTPMTMatchingProducer")
-            << "Exiting match: tof = crtTime_ns - tflash*1e3 = " << CRTtime_ns << " - "<< tflash * 1e3 << " = " << CRTTof_opflash << " (ns)"
-            << "\nExiting match: tof_us = crtTime_us - tflash  = " << CRTtime_us << " - "<< tflash << " = " << CRTTof_opflash_us << " (us)";
-          MatchedCRT thisCRTMatch = { /* .CRTHitPos =*/  thisCRTpos, // C++20: restore initializers
-                                      /* .CRTPMTTimeDiff_ns = */ CRTTof_opflash,
-                                      /* .CRTTime_us = */ CRTtime_us,
-                                      /* .CRTSys = */ CRTSys,
-                                      /* .CRTRegion = */ CRTRegion};
-          thisFlashCRTmatches.push_back(std::move(thisCRTMatch));
-        }
-      } //Fine CRT
-      if (!thisFlashCRTmatches.empty() )
-        mf::LogTrace("CRTPMTMatchingProducer") << "pushing back flash with " << thisFlashCRTmatches.size() << " CRT Matches.";
-      FlashType thisFlashType = { /* .flashPos = */ flash_pos, // C++20: restore initializers
-                                  /* .flashTime_us = */ tflash,
-                                  /* .flashGateTime_ns = */ thisRelGateTime,
-                                  /* .inBeam = */ thisInTime_beam,
-                                  /* .inGate = */ thisInTime_gate,
-                                  /* .classification = */ eventType,
-                                  /* .CRTmatches = */ std::move(thisFlashCRTmatches)};
-      thisEventFlashes.push_back(std::move(thisFlashType));
-    } // end of this flash
-    mf::LogTrace("CRTPMTMatchingProducer") << "Event has " << thisEventFlashes.size() << " flashes in " << flashLabel.encode();
-    for (auto const& theseFlashes : thisEventFlashes){
-      CRTPMTMatching ProducedFlash = FillCRTPMT (theseFlashes, e.id().event(), e.run(), value(gateType));
-      CRTPMTMatchesColl->push_back(std::move(ProducedFlash));
+            << "Entering matches (" << crtMatches.entering.size() << "):";
+          for (auto const& entering : crtMatches.entering) {
+            thisFlashCRTmatches.push_back(makeMatchedCRT(*entering.CRTHit, tflash, isRealData));
+          }
+          
+          mf::LogTrace("CRTPMTMatchingProducer")
+            << "Exiting matches (" << crtMatches.exiting.size() << "):";
+          for (auto const& exiting : crtMatches.exiting) {
+            thisFlashCRTmatches.push_back(makeMatchedCRT(*exiting.CRTHit, tflash, isRealData));
+          }
+          
+        } //Fine CRT
+        if (!thisFlashCRTmatches.empty() )
+          mf::LogTrace("CRTPMTMatchingProducer") << "pushing back flash with " << thisFlashCRTmatches.size() << " CRT Matches.";
+        FlashType thisFlashType = { /* .flashPos = */ flash_pos, // C++20: restore initializers
+                                    /* .flashTime = */ tflash,
+                                    /* .flashGateTime = */ thisRelGateTime / 1000.0, // -> us
+                                    /* .inBeam = */ thisInTime_beam,
+                                    /* .inGate = */ thisInTime_gate,
+                                    /* .classification = */ eventType,
+                                    /* .CRTmatches = */ std::move(thisFlashCRTmatches)};
+        thisEventFlashes.push_back(std::move(thisFlashType));
+      } // end of this flash
+      mf::LogTrace("CRTPMTMatchingProducer") << "Event has " << thisEventFlashes.size() << " flashes in " << flashLabel.encode();
+      for (auto const& theseFlashes : thisEventFlashes){
+        CRTPMTMatching ProducedFlash = FillCRTPMT (theseFlashes, e.id().event(), e.run(), value(gateType));
+        CRTPMTMatchesColl->push_back(std::move(ProducedFlash));
+      }
     }
-  }
-   //art::PtrMaker<sbn::crt::CRTHit> makeHitPtr(event);
-  mf::LogTrace("CRTPMTMatchingProducer") <<"This Event has "<<CRTPMTMatchesColl->size()<<"  Flashes candidate for CRT matching."<<std::endl;
+    //art::PtrMaker<sbn::crt::CRTHit> makeHitPtr(event);
+    mf::LogTrace("CRTPMTMatchingProducer") <<"This Event has "<<CRTPMTMatchesColl->size()<<"  Flashes candidate for CRT matching."<<std::endl;
     e.put(std::move(CRTPMTMatchesColl));
     //e.put(std::move(FlashAssociation));
 
   } // CRTPMTMatchingProducer::produce()
 
+
+  // ---------------------------------------------------------------------------
+  icarus::crt::MatchedCRT CRTPMTMatchingProducer::makeMatchedCRT
+    (sbn::crt::CRTHit const& hit, double tflash, bool isRealData) const
+  {
+    geo::Point_t const thisCRTpos {hit.x_pos, hit.y_pos, hit.z_pos};
+    // fGlobalT0Offset = 1.6e6 ns = 1600000 ns.
+    double const CRTtime  // ns -> us
+      = icarus::crt::CRTHitTime(hit, fGlobalT0Offset, isRealData) / 1000.0;
+    double const CRTTof_opflash = CRTtime - tflash; // us
+    int const CRTRegion = hit.plane;
+    // Very lazy way to determine if the Hit is a Top or a Side;
+    // Will update it when bottom CRT will be available:
+    int const CRTSys = (CRTRegion >= 36)? 1: 0;
+    mf::LogTrace("CRTPMTMatchingProducer")
+      << "  Match: tof = crtTime - tflash  = " << CRTtime
+      << " - "<< tflash << " = " << CRTTof_opflash << " (us)";
+    return { /* .CRTHitPos =*/  thisCRTpos, // C++20: restore initializers
+             /* .CRTPMTTimeDiff = */ CRTTof_opflash,
+             /* .CRTTime = */ CRTtime,
+             /* .CRTSys = */ CRTSys,
+             /* .CRTRegion = */ CRTRegion};
+  }
 
   DEFINE_ART_MODULE(CRTPMTMatchingProducer)
 

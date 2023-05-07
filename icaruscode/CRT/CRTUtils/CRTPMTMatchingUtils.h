@@ -36,8 +36,8 @@ namespace icarus::crt {
 
   struct FlashType {
     geo::Point_t flashPos;
-    double flashTime_us;
-    double flashGateTime_ns;
+    double flashTime;
+    double flashGateTime;
     bool inBeam;
     bool inGate;
     MatchType classification;
@@ -97,7 +97,7 @@ namespace icarus::crt {
     std::vector<art::Ptr<sbn::crt::CRTHit>>& crtHits, double interval, bool isRealData, double globalT0Offset);
 
   /// Fills a `CRTPMTMatching` record out of the specified flash information.
-  CRTPMTMatching FillCRTPMT (FlashType thisFlash, int event, int run, int gate);
+  CRTPMTMatching FillCRTPMT (FlashType const& thisFlash, int event, int run, int gate);
 
 }
 

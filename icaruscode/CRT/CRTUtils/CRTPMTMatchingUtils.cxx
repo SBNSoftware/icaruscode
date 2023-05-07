@@ -103,17 +103,17 @@ icarus::crt::CRTMatches icarus::crt::CRTHitmatched(
 
 // -----------------------------------------------------------------------------
 icarus::crt::CRTPMTMatching icarus::crt::FillCRTPMT
-  (FlashType thisFlash, int event, int run, int gate)
+  (FlashType const& thisFlash, int event, int run, int gate)
 {
   CRTPMTMatching crtpmt;
   crtpmt.event = event;
   crtpmt.run = run;
   crtpmt.gateType = gate;
   crtpmt.flashID = 0; //
-  crtpmt.flashTime_us = thisFlash.flashTime_us;
-  crtpmt.flashGateTime_ns = thisFlash.flashGateTime_ns;
-  crtpmt.firstOpHitPeakTime_us = 0; //
-  crtpmt.firstOpHitStartTime_us = 0; //
+  crtpmt.flashTime = thisFlash.flashTime;
+  crtpmt.flashGateTime = thisFlash.flashGateTime;
+  crtpmt.firstOpHitPeakTime = 0; //
+  crtpmt.firstOpHitStartTime = 0; //
   crtpmt.flashInGate = thisFlash.inGate;
   crtpmt.flashInBeam = thisFlash.inBeam;
   crtpmt.flashAmplitude_pe = 0; //
