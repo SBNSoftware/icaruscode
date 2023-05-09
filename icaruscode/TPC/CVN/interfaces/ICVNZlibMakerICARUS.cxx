@@ -27,7 +27,7 @@ void ICVNZlibMakerICARUS::reconfigure(const fhicl::ParameterSet& pset)
 {
   std::cout << "============ Calling the function ICVNZlibMakerICARUS::reconfigure() ==============\n";
   ICVNZlibMaker::reconfigure(pset);
-  fverbose = pset.get<bool>("verbose");
+  fVerbose = pset.get<bool>("verbose");
   fUseSlice = pset.get<bool>("UseSlice");
   fSliceLabel = pset.get<std::string>("SliceLabel");
 }

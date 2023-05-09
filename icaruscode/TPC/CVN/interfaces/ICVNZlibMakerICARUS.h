@@ -24,7 +24,7 @@ namespace lcvn
       void analyze(const art::Event& evt){}
       void reconfigure(const fhicl::ParameterSet& pset);
     protected:
-      bool fverbose;
+      bool fVerbose;
       bool fUseSlice;
       std::string fSliceLabel; 
   };

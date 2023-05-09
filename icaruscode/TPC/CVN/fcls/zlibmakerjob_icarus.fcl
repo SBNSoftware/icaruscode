@@ -14,7 +14,7 @@
 
 #include "CVNMapperICARUS.fcl"
 
-process_name: ZlibMakerICARUS
+process_name: ZLIBMAKERICARUS
 
 services:
 {
@@ -32,6 +32,7 @@ services:
   
   @table::icarus_geometry_services
   @table::icarus_detsim_services
+  #@table::icarus_geometry_services_legacy_icarus_v3
 }
 
 source:
