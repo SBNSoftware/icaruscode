@@ -63,6 +63,13 @@ void CRTHitRecoAlg::reconfigure(const fhicl::ParameterSet& pset) {
   fCrtWindow = pset.get<uint64_t>("CrtWindow", 0.);
   fCSVFile = pset.get<std::string>("CSVFile", "");
   fData = pset.get<bool>("Data", false);
+  fETtopX	    = pset.get<double>("ETtopX", 183.6);
+  fETtopY           = pset.get<double>("ETtopY", 981.0);
+  fETtopZ           = pset.get<double>("ETtopZ", -747.0);
+  fETbotX           = pset.get<double>("ETbotX", 183.6);
+  fETbotY           = pset.get<double>("ETbotY", 964.0);
+  fETbotZ           = pset.get<double>("ETbotZ", -747.0);
+
   if (!fCSVFile.empty()) filecsv.open(fCSVFile);
   /*{
     std::vector<std::vector<int32_t> > T1delays =
@@ -93,8 +100,17 @@ vector<art::Ptr<CRTData>> CRTHitRecoAlg::PreselectCRTData(
 
   for (size_t febdat_i = 0; febdat_i < crtList.size(); febdat_i++) {
     uint8_t mac = crtList[febdat_i]->fMac5;
-    int adid = fCrtutils.MacToAuxDetID(mac, 0);
-    char type = fCrtutils.GetAuxDetType(adid);
+
+    int adid=-1;
+    char type = '\0';
+    if((int)mac!=234 && (int)mac!=233){
+        adid    = fCrtutils.MacToAuxDetID(mac,0);
+        type   = fCrtutils.GetAuxDetType(adid);
+    } else {
+	type = 'c';
+        if((int)mac==234) adid=234;
+	else if ((int)mac==233) adid=233;
+    }
 
     /// Looking for data within +/- 3ms within trigger time stamp
     /// Here t0 - trigger time -ve
@@ -164,7 +180,7 @@ vector<pair<sbn::crt::CRTHit, vector<int>>> CRTHitRecoAlg::CreateCRTHits(
   // Load Delays map for Top CRT
   CRT_delay_map const FEB_delay_map = LoadFEBMap();
   std::vector<std::pair<int, ULong64_t>> CRTReset;
-  ULong64_t TriggerArray[305] = {0};
+  ULong64_t TriggerArray[308] = {0};
   // Note: I still need to validate the Side CRT GT, so for now we will just use
   // the top values - will be revisited, want to store seperate
   //       values for the different timing chains once understood better. - AH
@@ -180,9 +196,24 @@ vector<pair<sbn::crt::CRTHit, vector<int>>> CRTHitRecoAlg::CreateCRTHits(
 
   for (size_t crtdat_i = 0; crtdat_i < crtList.size(); crtdat_i++) {
     uint8_t mac = crtList[crtdat_i]->fMac5;
-    int adid = fCrtutils.MacToAuxDetID(mac, 0);
-    char type = fCrtutils.GetAuxDetType(adid);
-    string region = fCrtutils.GetAuxDetRegion(adid);
+
+    int adid = -1;
+    char type = '\0';
+    string region;
+    if ((int)mac!=233 && (int)mac!=234){
+	adid  = fCrtutils.MacToAuxDetID(mac,0);
+	type = fCrtutils.GetAuxDetType(adid);
+	region = fCrtutils.GetAuxDetRegion(adid);
+    } else if((int)mac==233) {
+	adid = 306;
+        type = 'c';
+        region = "TopCRT External Telescope";
+    } else if((int)mac==234) {
+        adid = 307;
+        type = 'c';
+        region = "TopCRT External Telescope";
+    }
+
     // int plane =fCrtutils.AuxDetRegionNameToNum(region); //3 seperate GTs
     // For the time being, Only Top CRT delays are loaded, nothing to do for
     // Side CRT yet
@@ -229,7 +260,7 @@ vector<pair<sbn::crt::CRTHit, vector<int>>> CRTHitRecoAlg::CreateCRTHits(
     GlobalTrigger =
         GlobalTrigger - trigger_offset;  // In this event, the T1 Reset was
                                          // probably "vetoed" by the T0 Reset
-  for (int i = 0; i < 305; i++) {
+  for (int i = 0; i < 308; i++) {
     if (TriggerArray[i] == 0) TriggerArray[i] = GlobalTrigger;
   }
   // std::cout<<"Global Trigger "<<GlobalTrigger<<std::endl; //single GT
@@ -276,17 +307,33 @@ vector<pair<sbn::crt::CRTHit, vector<int>>> CRTHitRecoAlg::CreateCRTHits(
   // loop over time-ordered CRTData
   for (size_t febdat_i = 0; febdat_i < crtList.size(); febdat_i++) {
     uint8_t mac = crtList[febdat_i]->fMac5;
-    int adid = fCrtutils.MacToAuxDetID(mac, 0);  // module ID
 
-    string region = fCrtutils.GetAuxDetRegion(adid);
-    char type = fCrtutils.GetAuxDetType(adid);
+    int adid=-1;
+    char type ='\0';
+    string region; 
+    if ((int)mac!=233 && (int)mac!=234){
+       adid  = fCrtutils.MacToAuxDetID(mac,0);
+       type = fCrtutils.GetAuxDetType(adid);
+       region = fCrtutils.GetAuxDetRegion(adid);
+    } else if((int)mac==233) {
+       adid = 306;
+       type = 'c';
+       region = "TopCRT External Telescope";
+    } else if((int)mac==234) {
+       adid = 307;
+       type = 'c';
+       region = "TopCRT External Telescope";
+    }
+
+
     CRTHit hit;
 
     dataIds.clear();
 
     // CERN modules (intramodule coincidence)
     if (type == 'c') {
-      hit = MakeTopHit(crtList[febdat_i], TriggerArray);  // single GT
+      if ((int)mac==234||(int)mac==233) hit=MakeTopSpareHit(crtList[febdat_i], TriggerArray);
+      else hit = MakeTopHit(crtList[febdat_i], TriggerArray); //single GT
       // hit = MakeTopHit(crtList[febdat_i], TriggerArray_top); //3 seperate GT
       if (IsEmptyHit(hit))
         nMissC++;
@@ -496,9 +543,99 @@ int64_t CRTHitRecoAlg::RegionDelay(std::string const& region) const {
 }
 //------------------------------------------------------------------------------------------
 
+sbn::crt::CRTHit CRTHitRecoAlg::MakeTopSpareHit(art::Ptr<CRTData> data, ULong64_t GlobalTrigger[309]){ //single GT: GlobalTrigger[305], 3 seperate GT: GlobalTrigger[232]
+    uint8_t mac = data->fMac5;
+    map< uint8_t, vector< pair<int,float> > > pesmap;
+    string region;
+    int plane;
+    if((int)mac==233) {
+	region = "TopCRT External Telescope";
+	plane = 29;
+    } else if ((int)mac==234){
+        region = "TopCRT External Telescope";
+        plane = 29;
+    }
+    double hitpointerr[3];
+    TVector3 hitpos (0.,0.,0.);
+    float petot = 0., pemax=0., pemaxx=0., pemaxz=0.;
+    int nabove=0;
+    TVector3 postrig;
+    bool findx = false, findz = false;
+    int maxx=0, maxz=0;
+    double sum=0;
+    for(int chan=0; chan<32; chan++) {
+        sum=sum+data->fAdc[chan];
+        float pe = (data->fAdc[chan]-ftopPed)/ftopGain;
+	if(pe<0) pe=0;
+        nabove++;
+        petot += pe;
+        pesmap[mac].push_back(std::make_pair(chan,pe));
+        if(chan<16){
+           if(pe>pemaxx){
+                pemaxx = pe;
+                maxx = chan/2;
+            }
+            findx = true;
+	}	
+	else if (chan>=16 && chan<32){
+           if(pe > pemaxz) {
+                pemaxz = pe;
+                maxz = chan/2;
+            }
+            findz = true;
+	}
+        if(pe>pemax) {
+            TVector3 postmp (0,0,0);
+            pemax = pe;
+            postrig = postmp;
+        }
+    }
+    if ((int)mac==234) hitpos.SetZ(-((23/2)+23*(maxx-4)));
+    if ((int)mac==234) hitpos.SetX(-((23/2)+23*(11-maxz)));
+    if ((int)mac==233) hitpos.SetZ(-((23/2)+23*(3-maxx)));
+    if ((int)mac==233) hitpos.SetX(-((23/2)+23*(maxz-12)));
+    int sector=-1;
+    if(findz==true && findx==true) sector=(maxz-8)*8+maxx;
+    if(nabove==0||!findx||!findz)
+        return FillCRTHit({},{},0,0,0,0,0,0,0,0,0,0,"");
+    uint64_t thit = data->fTs0;
+    Long64_t thit1 = data->fTs1;
+    thit -= fSiPMtoFEBdelay;
+    thit1 -= fSiPMtoFEBdelay;
+    double corr = 0;
+    if(findz==true && findx==true) corr=TopCRT_TimingCorr[sector];
+    std::cout<<"T0 pre "<<thit;
+    thit -= (uint64_t) round(corr);
+    std::cout<<" --- T0 after "<<thit<<std::endl;
+    thit1 -= (uint64_t) round(corr);
+    TVector3 Module (0,0,0);
+    if((int)mac==233){
+        Module.SetY(fETbotY);
+        Module.SetX(fETbotX);
+	Module.SetZ(fETbotZ);
+    }
+    else if ((int)mac==234){
+        Module.SetY(fETtopY);
+	Module.SetX(fETtopX);
+	Module.SetZ(fETtopZ);
+    }
+    TVector3 const hitpoint = hitpos + Module;
+    hitpointerr[0] = 23/sqrt(12);
+    hitpointerr[1] = 1.5;
+    hitpointerr[2] = 23/sqrt(12);
+    thit1 = (Long64_t)(thit-GlobalTrigger[(int)mac]);
+    if((sum<9000 && thit1<2'001'000 && thit1>2'000'000)||data->IsReference_TS1() || data->IsReference_TS0()) return FillCRTHit({},{},0,0,0,0,0,0,0,0,0,0,"");
+
+    CRTHit hit = FillCRTHit({mac},pesmap,petot,thit,thit1,plane,hitpoint.X(),hitpointerr[0],
+                            hitpoint.Y(),hitpointerr[1],hitpoint.Z(),hitpointerr[2],region);
+
+    return hit;
+
+} // CRTHitRecoAlg::MakeSpareTopHit
+
 sbn::crt::CRTHit CRTHitRecoAlg::MakeTopHit(
     art::Ptr<CRTData> data,
-    ULong64_t GlobalTrigger[305]) {  // single GT: GlobalTrigger[305], 3
+    ULong64_t GlobalTrigger[309]) {  // single GT: GlobalTrigger[305], 3
                                      // seperate GT: GlobalTrigger[232]
   uint8_t mac = data->fMac5;
   if (fCrtutils.MacToType(mac) != 'c')
@@ -523,8 +660,6 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeTopHit(
     std::pair<double, double> const chg_cal =
               fChannelMap->getSideCRTCalibrationMap((int)data->fMac5, chan);
     float pe = (data->fAdc[chan] - chg_cal.second) / chg_cal.first;
-    //float pe = (data->fAdc[chan] - ftopPed) / ftopGain;
-    //      if(pe<=fPEThresh) continue;
     if (pe<0) pe=0;
     nabove++;
     int adsid = fCrtutils.ChannelToAuxDetSensitiveID(mac, chan);

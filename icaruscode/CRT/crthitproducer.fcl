@@ -17,6 +17,15 @@ standard_crthitrecoalg:
     Data:                 true   # for data
     CSVFile:              "data.csv" # dump time difference between both end readouts.
 
+    # The following position of the Top CRT external telescope refer to March 06 2022
+    # and are measured w.r.t. detector 0.0.0 coordinates.
+    ETtopX:		  183.6  # X position of the Top CRT top external telescope [cm] 
+    ETtopY:               981.0  # Y position of the Top CRT top external telescope [cm]
+    ETtopZ:               -747.0  # Z position of the Top CRT top external telescope [cm]
+    ETbotX:               183.6  # X position of the Top CRT bot external telescope [cm]
+    ETbotY:               964.0  # Y position of the Top CRT bot external telescope [cm]
+    ETbotZ:               -747.0  # Z position of the Top CRT bot external telescope [cm]
+
 }
 
 standard_crthitproducer:
