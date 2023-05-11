@@ -1,9 +1,8 @@
 ////////////////////////////////////////////////////////////////////////
 // \file    CVNZlibMakerICARUS_module.cc
 // \brief   Analyzer module for creating CVN gzip file objects
-// \author  Jeremy Hewes - jhewes15@fnal.gov
+// \author  V Hewes - vhewes@fnal.gov
 //          Saul Alonso-Monsalve - saul.alonso.monsalve@cern.ch
-//           - wrote the zlib code used in this module
 ////////////////////////////////////////////////////////////////////////
 
 // C/C++ includes
@@ -294,9 +293,9 @@ namespace lcvn {
 
         // collect the TPC hits
         std::vector<art::Ptr<recob::Hit>> HitList; // hits
+        art::Handle<std::vector<recob::Hit>> HitListHandle;
         for (unsigned i_tag = 0; i_tag < pandora_tag_suffixes.size(); i_tag++) {
           const std::string &pandora_tag_suffix = pandora_tag_suffixes[i_tag];
-          art::Handle<std::vector<recob::Hit>> HitListHandle;
           if (evt.getByLabel(fHitModuleLabel + pandora_tag_suffix, HitListHandle)){
             art::fill_ptr_vector(HitList, HitListHandle);
           }
@@ -305,20 +304,23 @@ namespace lcvn {
         // collect the TPC slices
         std::vector<art::Ptr<recob::Slice>> SliceList; //slices;
         art::Handle<std::vector<recob::Slice>> SliceListHandle; // thisSlices
-        std::vector<std::string> slice_tag_suffixes;
-        std::vector<unsigned> slice_tag_indices;
         for (unsigned i_tag = 0; i_tag < pandora_tag_suffixes.size(); i_tag++) {
           const std::string &pandora_tag_suffix = pandora_tag_suffixes[i_tag];
-          // Get a handle on the slices
           if (evt.getByLabel(fSliceLabel + pandora_tag_suffix, SliceListHandle)) {
             art::fill_ptr_vector(SliceList, SliceListHandle);
           }
         }
 
-        art::Handle< std::vector<recob::PFParticle> > PFPListHandle;
-        std::vector< art::Ptr<recob::PFParticle> > PFPList;
-        if( evt.getByLabel(fPFParticleModuleLabel,PFPListHandle)) art::fill_ptr_vector(PFPList,PFPListHandle);
-         
+        // collect the TPC pfps
+        std::vector<art::Ptr<recob::PFParticle>> PFPList; //slices;
+        art::Handle<std::vector<recob::Slice>> PFPListHandle; // thisSlices
+        for (unsigned i_tag = 0; i_tag < pandora_tag_suffixes.size(); i_tag++) {
+          const std::string &pandora_tag_suffix = pandora_tag_suffixes[i_tag];
+          if (evt.getByLabel(fPFParticleModuleLabel + pandora_tag_suffix, PFPListHandle)) {
+            art::fill_ptr_vector(PFPList, PFPListHandle);
+          }
+        }
+
         art::FindManyP<recob::Hit> findManyHits(SliceListHandle, evt, fSliceLabel);
         art::FindManyP<recob::PFParticle> findManyPFPs(SliceListHandle, evt, fPFParticleModuleLabel);
         art::FindManyP<larpandoraobj::PFParticleMetadata> fm_pfpmd(PFPListHandle, evt, fPFParticleModuleLabel);
@@ -688,13 +690,6 @@ namespace lcvn {
 
   } // lcvn::CVNZlibMaker::write_files
   
-//.................................................................................................
-  
-/*bool CVNZlibMakerICARUS::Is_in_TPC(double stX, double stY, double stZ)
-{
-     if(TMath::Abs(stX) <= 196.5 && TMath::Abs(stY) <= 200. && (stZ >=0. && stZ <= 500.)) return true;
-     else return false;
-}*/ 
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////
 
