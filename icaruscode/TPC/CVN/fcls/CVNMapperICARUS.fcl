@@ -21,15 +21,15 @@ standard_cvnmapper:
 {
   module_type:           CVNMapperICARUS
   OutputDir:             "outputs_maps"
-  PandoraTagSuffixes:   ["CryoE", "CryoW"]
-  HitsModuleLabel:       "cluster3D"
-  ClusterPMLabel:        "cvnmap"
   MinClusterHits:        100
   verbose:               true
   UseSlice:              true
+  PandoraTagSuffixes:   ["CryoE", "CryoW"]
+  HitsModuleLabel:       "cluster3D"
   SliceLabel:            "pandoraGaus"
   PFParticleModuleLabel: "pandoraGaus"
   T0Label:               "pandoraGaus"
+  ClusterPMLabel:        "cvnmap"
   PixelMapProducer:      @local::standard_pixelmapproducer
   MapVecSize:            100000
   

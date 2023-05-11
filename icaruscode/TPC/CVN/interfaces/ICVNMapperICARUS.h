@@ -23,6 +23,7 @@ namespace lcvn
     protected:
          bool fverbose;
          bool fUseSlice; 
+         std::vector<std::string> fPandoraTagSuffixes;
          std::string fSliceLabel;
          std::string fPFParticleModuleLabel;
          std::string fT0Label;

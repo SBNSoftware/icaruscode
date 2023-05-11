@@ -285,7 +285,6 @@ namespace lcvn {
       // collect the input TPC reco tags
       std::vector<std::string> pandora_tag_suffixes = fPandoraTagSuffixes;
       if (pandora_tag_suffixes.size() == 0) pandora_tag_suffixes.push_back("");
-
       
       /////////////////////// use slice section ////////////////////////////////////////
       if(fUseSlice){
@@ -313,7 +312,7 @@ namespace lcvn {
 
         // collect the TPC pfps
         std::vector<art::Ptr<recob::PFParticle>> PFPList; //slices;
-        art::Handle<std::vector<recob::Slice>> PFPListHandle; // thisSlices
+        art::Handle<std::vector<recob::PFParticle>> PFPListHandle; // thisSlices
         for (unsigned i_tag = 0; i_tag < pandora_tag_suffixes.size(); i_tag++) {
           const std::string &pandora_tag_suffix = pandora_tag_suffixes[i_tag];
           if (evt.getByLabel(fPFParticleModuleLabel + pandora_tag_suffix, PFPListHandle)) {
@@ -330,7 +329,6 @@ namespace lcvn {
             std::cout << "***************** Using backtracker information to get neutrino information ****************\n";
             
             auto const clockData = art::ServiceHandle<detinfo::DetectorClocksService const>()->DataFor(evt);
-            std::cout << "check clock data!" << std::endl;
            
             for(unsigned int i=0; i<pixelmaps.size(); i++){
                Clear();
