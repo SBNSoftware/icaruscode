@@ -469,6 +469,16 @@ namespace icarus::crt {
     std::vector<art::Ptr<CRTHit>> crtHitList;
     if (auto crtHitListHandle = e.getHandle<std::vector<CRTHit>>(fCrtHitModuleLabel))
       art::fill_ptr_vector(crtHitList, crtHitListHandle);
+    {
+      mf::LogTrace log("CRTPMTMatchingProducer");
+      log << fCrtHitModuleLabel.encode() << " has " << crtHitList.size() << " CRT hits";
+      for (art::Ptr<sbn::crt::CRTHit> const& hitPtr: crtHitList) {
+        log << "\n [#" << hitPtr.key() << "] at T0=" << hitPtr->ts0() << " ns, T1="
+          << hitPtr->ts1()/1000.0 << " us, (" << hitPtr->x_pos << ", "
+          << hitPtr->y_pos << ", " << hitPtr->z_pos << ") cm, " << hitPtr->peshit
+          << " p.e., on " << hitPtr->tagger;
+      } // for
+    }
     bool const isRealData = e.isRealData();
     mf::LogTrace("CRTPMTMatchingProducer") << "is this real data? " << std::boolalpha << isRealData;
     // add optical flashes
@@ -478,6 +488,9 @@ namespace icarus::crt {
       
       std::vector<art::Ptr<recob::OpFlash>> flashes;
       art::fill_ptr_vector(flashes, flashHandle);
+      
+      mf::LogTrace("CRTPMTMatchingProducer")
+        << "Matching " << flashes.size() << " flashes from " << flashLabel.encode();
       
       art::FindMany<recob::OpHit> const findManyHits(flashHandle, e, flashLabel);
 
@@ -500,7 +513,20 @@ namespace icarus::crt {
         flashCentroid.add(pos, amp);
       }
       geo::Point_t const flash_pos = flashCentroid.middlePoint();
-      if (nPMTsTriggering < fnOpHitToTrigger) continue;
+        mf::LogTrace("CRTPMTMatchingProducer")
+          << "Now matching flash #" << flashPtr.key()
+          << " at " << flashPtr->Time() << " us and ("
+          << flashPtr->XCenter() << ", " << flashPtr->YCenter()
+            << ", " << flashPtr->ZCenter()
+          << ") cm [" << hits.size() << " op.hits] -> first time: "
+          << firstTime << " us, centroid: " << flash_pos << " cm";
+        
+        if (nPMTsTriggering < fnOpHitToTrigger) {
+          mf::LogTrace("CRTPMTMatchingProducer")
+            << "  => skipped (only " << nPMTsTriggering << " < " << fnOpHitToTrigger
+            << " hits above threshold)";
+          continue;
+        }
 
       double const thisRelGateTime = triggerGateDiff + tflash * 1e3; // ns
       bool const thisInTime_gate
