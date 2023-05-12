@@ -598,9 +598,7 @@ namespace crt {
     art::Handle<vector<icarus::crt::CRTPMTMatching>> CRTPMTMatchingHandle;
     if ( event.getByLabel(fCRTPMTProducerLabel, CRTPMTMatchingHandle)){
       //if (CRTPMTMatchingHandle.isValid() ){
-      std::cout << "Valid CRTPMTProducer label!\n";
       for (auto const& match: *CRTPMTMatchingHandle){
-	std::cout << "\n---------\nrun " << match.run << ", event = " << match.event << ", flash classification " << match.flashClassification << "\n";
 	fMatchEvent = match.event;
 	fMatchRun = match.run;
 	fGateType = match.gateType;
@@ -615,8 +613,6 @@ namespace crt {
 	
 	nMatchedCRTHits = match.matchedCRTHits.size();
 	for(auto const& crthit: match.matchedCRTHits){
-	  std::cout << "crtRegion = " << crthit.CRTRegion << ", CRTTime_us = " << crthit.CRTTime_us << ", CRTPMTtime_ns = " << crthit.CRTPMTTimeDiff_ns <<"\n";
-	  std::cout << "crt hit pos: x,y,z = " << crthit.CRTHitPos.X() << ", " << crthit.CRTHitPos.Y() << ", " << crthit.CRTHitPos.Z() << "\n";
 	  CRTHitPos_x.push_back(crthit.CRTHitPos.X());
 	  CRTHitPos_y.push_back(crthit.CRTHitPos.Y());
 	  CRTHitPos_z.push_back(crthit.CRTHitPos.Z());
@@ -629,7 +625,7 @@ namespace crt {
       } // for match in handle 
     } // if valid label 
     else{
-      std::cout << "not Valid CRTPMTProducer label!\n";
+      mf::LogError("CRTDataAnalysis") << "not Valid CRTPMTProducer label!\n";
     }
     
 
