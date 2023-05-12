@@ -36,6 +36,7 @@
 
 # trigger configuration is not saved in DAQ FHiCL, hence it's not available:
 physics.producers.triggerconfig.module_type: DummyProducer
+physics.filters.crtpmtmatchingfilter.module_type: DummyFilter
 
 # trigger is version 1 (and autodetection does not work for the reason above)
 physics.producers.daqTrigger: @local::decodeTrigger
