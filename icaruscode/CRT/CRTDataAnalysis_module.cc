@@ -229,20 +229,13 @@ namespace crt {
     int          fMatchEvent;///< Event number.
     int          fMatchRun;///< Run number.
     unsigned int fGateType;///< Beam gate type.
-    //int          fFlashID;///< ID of the optical flash.
     double       fFlashTime_us;///< Time of the optical flash w.r.t. the global trigger in us.    
     double fFlashGateTime_ns;///< Time of the optical flash w.r.t. the beam gate opening in ns.
-    //double fFirstOpHitPeakTime_us;  ///< Time of the first optical hit peak time w.r.t. the global trigger in us.
-    //double fFirstOpHitStartTime_us; ///< Time of the first optical hit start time w.r.t. the global trigger in us.
     bool fFlashInGate;///< Flash within gate or not.
     bool fFlashInBeam;///< Flash within the beam window of the gate or not.
-    //double fFlashAmplitude_pe;///< Flash amplitude in PEs.
-    //geo::Point_t fFlashPosition;///< Flash barycenter coordinates evaluated using ADCs as weights.
     double fFlashPos_x;///< Flash barycenter coordinates evaluated using ADCs as weights, X-position.
     double fFlashPos_y;///< Flash barycenter coordinates evaluated using ADCs as weights, Y-position.
     double fFlashPos_z;///< Flash barycenter coordinates evaluated using ADCs as weights, Z-position.
-    //double fFlashYWidth;///< Flash spread along Y.
-    //double fFlashZWidth;///< Flash spread along Z. 
     enum matchType fFlashClassification;///< Classication of the optical flash.
     std::vector<MatchedCRT> matchedCRTHits;///< Matched CRT Hits with the optical flash.
     // add contents of MatchedCRT struct to be put into branches, 
@@ -399,15 +392,10 @@ namespace crt {
     fCRTPMTNtuple->Branch("event", &fMatchEvent, "event/I");
     fCRTPMTNtuple->Branch("run", &fMatchRun, "run/I");
     fCRTPMTNtuple->Branch("gate_type", &fGateType, "gate_type/b");
-    //fCRTPMTNtuple->Branch("flashID", &fFlashID, "flashID/I");
     fCRTPMTNtuple->Branch("flashTime_us", &fFlashTime_us, "flashTime_us/D");
     fCRTPMTNtuple->Branch("flashGateTime_ns", &fFlashGateTime_ns, "flashGateTime_ns/D");
-    //fCRTPMTNtuple->Branch("firstOpHitPeakTime_us", &fFirstOpHitPeakTime_us, "firstOpHitPeakTime_us/D");
-    //fCRTPMTNtuple->Branch("firstOpHitStartTime_us", &fFirstOpHitStartTime_us, "firstOpHitStartTime_us/D");
     fCRTPMTNtuple->Branch("flashInGate", &fFlashInGate, "flashInGate/O");
     fCRTPMTNtuple->Branch("flashInBeam", &fFlashInBeam, "flashInBeam/O");
-    //fCRTPMTNtuple->Branch("flashAmplitude_pe", &fFlashAmplitude_pe, "flashAmplitude_pe/D");
-    //fCRTPMTNtuple->Branch("fFlashPosition", &fFlashPosition);
     fCRTPMTNtuple->Branch("fFlashPos_x", &fFlashPos_x, "flashPos_x/D");
     fCRTPMTNtuple->Branch("fFlashPos_y", &fFlashPos_y, "flashPos_y/D");
     fCRTPMTNtuple->Branch("fFlashPos_z", &fFlashPos_z, "flashPos_z/D");
@@ -616,25 +604,15 @@ namespace crt {
 	fMatchEvent = match.event;
 	fMatchRun = match.run;
 	fGateType = match.gateType;
-	//fFlashID = match.flashID;
 	fFlashTime_us = match.flashTime_us;
 	fFlashGateTime_ns = match.flashGateTime_ns;
-	//fFirstOpHitPeakTime_us = match.firstOpHitPeakTime_us;
-	//fFirstOpHitStartTime_us = match.firstOpHitStartTime_us;
 	fFlashInGate = match.flashInGate;
 	fFlashInBeam = match.flashInBeam;
-	//fFlashAmplitude_pe = match.flashAmplitude_pe;
-	//fFlashPosition = match.flashPosition;
 	fFlashPos_x = match.flashPosition.X();
 	fFlashPos_y = match.flashPosition.Y();
 	fFlashPos_z = match.flashPosition.Z();
 	fFlashClassification = match.flashClassification;
 	
-	std::cout << "flashPos = " << match.flashPosition << "\n";
-	std::cout << "gate type = " << fGateType << ", flashtime = " << fFlashTime_us << "\n";
-	//std::cout << "flashInGate = " << fFlashInGate << ", fFlashInBeam = " << fFlashInBeam << "\n";
-	std::cout << "# of matched CRT hits = " << match.matchedCRTHits.size() << "\n";
-
 	nMatchedCRTHits = match.matchedCRTHits.size();
 	for(auto const& crthit: match.matchedCRTHits){
 	  std::cout << "crtRegion = " << crthit.CRTRegion << ", CRTTime_us = " << crthit.CRTTime_us << ", CRTPMTtime_ns = " << crthit.CRTPMTTimeDiff_ns <<"\n";
