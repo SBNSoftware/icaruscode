@@ -79,23 +79,23 @@ icarus::crt::CRTMatches icarus::crt::CRTHitmatched(
     }
   }
   if (topen == 0 && sideen == 0 && topex == 0 && sideex == 0)
-    flashType = noMatch;
+    flashType = MatchType::noMatch;
   else if (topen == 1 && sideen == 0 && topex == 0 && sideex == 0)
-    flashType = enTop;
+    flashType = MatchType::enTop;
   else if (topen == 0 && sideen == 1 && topex == 0 && sideex == 0)
-    flashType = enSide;
+    flashType = MatchType::enSide;
   else if (topen == 1 && sideen == 0 && topex == 0 && sideex == 1)
-    flashType = enTop_exSide;
+    flashType = MatchType::enTop_exSide;
   else if (topen == 0 && sideen == 0 && topex == 1 && sideex == 0)
-    flashType = exTop;
+    flashType = MatchType::exTop;
   else if (topen == 0 && sideen == 0 && topex == 0 && sideex == 1)
-    flashType = exSide;
+    flashType = MatchType::exSide;
   else if (topen >= 1 && sideen >= 1 && topex == 0 && sideex == 0)
-    flashType = enTop_mult;
+    flashType = MatchType::enTop_mult;
   else if (topen >= 1 && sideen >= 1 && topex == 0 && sideex >= 1)
-    flashType = enTop_exSide_mult;
+    flashType = MatchType::enTop_exSide_mult;
   else
-    flashType = others;
+    flashType = MatchType::others;
 
   return {std::move(enteringCRTHits), std::move(exitingCRTHits), flashType};
 }
