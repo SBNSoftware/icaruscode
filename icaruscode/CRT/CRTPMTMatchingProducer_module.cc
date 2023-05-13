@@ -16,6 +16,7 @@
 #include "art/Framework/Core/ModuleMacros.h"
 #include "art/Framework/Principal/Handle.h"
 #include "art/Framework/Principal/Event.h" 
+#include "art/Persistency/Common/PtrMaker.h"
 #include "canvas/Persistency/Common/Ptr.h" 
 #include "canvas/Persistency/Common/PtrVector.h" 
 #include "canvas/Persistency/Common/FindMany.h"
@@ -196,6 +197,28 @@ namespace icarus::crt {
    *    * `nTopCRTHitsAfter`: not saved yet (left to default value).
    *    * `nSideCRTHitsBefore`: not saved yet (left to default value).
    *    * `nSideCRTHitsAfter`: not saved yet (left to default value).
+   * * `art::Assns<icarus::crt::CRTPMTMatching, recob::OpFlash>`:
+   *   associations linking the matched flash and the match information;
+   *   this is a one-to-one association; all `icarus::crt::CRTPMTMatching`
+   *   objects in the association come from the collection data product
+   *   documented above, and all have exactly one associated flash. Flashes
+   *   that were not matched are not present in this association.
+   * * `art::Assns<icarus::crt::CRTPMTMatching, sbn::crt::CRTHit>`:
+   *   associations linking the matched CRT hits and the match information;
+   *   this is a one-to-many association; all `icarus::crt::CRTPMTMatching`
+   *   objects in the association come from the collection data product
+   *   documented above, and they may have one or more CRT hits associated to
+   *   them. CRT hits that were not matched are not present in this association.
+   *   Also failed matches, with no CRT hit, are not present.
+   * * `art::Assns<recob::OpFlash, sbn::crt::CRTHit, icarus::crt::CRTPMTMatchingInfo>`:
+   *   direct association between a flash and its matched CRT hit (or hits);
+   *   this is a one-to-many association. This information is redundant with
+   *   the other two associations produced by this module. Metadata includes:
+   *     * `timeOfFlight`: time of flight between hit and flash [&micro;s]
+   *     * `direction`, derived from the time of flight, of the flash compared
+   *       to the hit.
+   *     * `distance` between the reconstructed CRT hit position and the
+   *       centroid of the reconstructed flash [cm]
    * 
    * 
    * Services
@@ -286,6 +309,11 @@ namespace icarus::crt {
     async<art::InEvent>();
     
     produces< std::vector<CRTPMTMatching> >();
+    
+    produces< art::Assns<icarus::crt::CRTPMTMatching, recob::OpFlash> >();
+    produces< art::Assns<icarus::crt::CRTPMTMatching, sbn::crt::CRTHit> >();
+    produces< art::Assns<recob::OpFlash, sbn::crt::CRTHit, CRTPMTMatchingInfo> >();
+    
   } // CRTPMTMatchingProducer()
 
 
@@ -342,7 +370,10 @@ namespace icarus::crt {
     
     auto CRTPMTMatchesColl = std::make_unique<std::vector<CRTPMTMatching>>();
 
-    //auto FlashAssociation = std::make_unique<art::Assns<CRTPMTMatching, recob::OpFlash>>();
+    art::PtrMaker<CRTPMTMatching> const makeInfoPtr(e);
+    auto FlashAssociation = std::make_unique<art::Assns<CRTPMTMatching, recob::OpFlash>>();
+    auto CRTAssociation = std::make_unique<art::Assns<CRTPMTMatching, sbn::crt::CRTHit>>();
+    auto FlashCRTAssociation = std::make_unique<art::Assns<recob::OpFlash, sbn::crt::CRTHit, CRTPMTMatchingInfo>>();
     
     // add CRTHits
     std::vector<art::Ptr<CRTHit>> crtHitList;
@@ -352,15 +383,20 @@ namespace icarus::crt {
     mf::LogTrace("CRTPMTMatchingProducer") << "is this real data? " << std::boolalpha << isRealData;
     // add optical flashes
     for (art::InputTag const& flashLabel : fFlashLabels) {
-    auto const flashHandle =
-      e.getHandle<std::vector<recob::OpFlash>>(flashLabel);
-    art::FindMany<recob::OpHit> const findManyHits(flashHandle, e, flashLabel);
+      auto const flashHandle =
+        e.getHandle<std::vector<recob::OpFlash>>(flashLabel);
+      
+      std::vector<art::Ptr<recob::OpFlash>> flashes;
+      art::fill_ptr_vector(flashes, flashHandle);
+      
+      art::FindMany<recob::OpHit> const findManyHits(flashHandle, e, flashLabel);
 
     std::vector<FlashType> thisEventFlashes;
 
-    for (auto const& [iflash, flash] : util::enumerate(*flashHandle)) {
-      double const tflash = flash.Time();
-      vector<recob::OpHit const*> const& hits = findManyHits.at(iflash);
+      for (art::Ptr<recob::OpFlash> const& flashPtr: flashes) {
+        
+        double const tflash = flashPtr->Time();
+        vector<recob::OpHit const*> const& hits = findManyHits.at(flashPtr.key());
       int nPMTsTriggering = 0;
       double firstTime = 999999;
       geo::vect::MiddlePointAccumulator flashCentroid;
@@ -384,27 +420,29 @@ namespace icarus::crt {
       
       icarus::crt::CRTMatches const crtMatches = CRTHitmatched(
         firstTime, flash_pos, crtHitList, fTimeOfFlightInterval, isRealData, fGlobalT0Offset);
-      auto const nCRTHits = crtMatches.entering.size() + crtMatches.exiting.size();
       
       std::vector<MatchedCRT> thisFlashCRTmatches;
+        std::vector<art::Ptr<sbn::crt::CRTHit>> CRTPtrs; // same order as thisFlashCRTmatches
       MatchType const eventType = crtMatches.flashType;
-      if (nCRTHits > 0) {
-          
+        if (!crtMatches.entering.empty()) {
           mf::LogTrace("CRTPMTMatchingProducer")
             << "Entering matches (" << crtMatches.entering.size() << "):";
           for (auto const& entering : crtMatches.entering) {
+            CRTPtrs.push_back(entering.CRTHit);
             thisFlashCRTmatches.push_back(makeMatchedCRT(*entering.CRTHit, tflash, isRealData));
           }
-          
+        }
+        if (!crtMatches.exiting.empty()) {
           mf::LogTrace("CRTPMTMatchingProducer")
             << "Exiting matches (" << crtMatches.exiting.size() << "):";
           for (auto const& exiting : crtMatches.exiting) {
+            CRTPtrs.push_back(exiting.CRTHit);
             thisFlashCRTmatches.push_back(makeMatchedCRT(*exiting.CRTHit, tflash, isRealData));
           }
-          
         }
         if (!thisFlashCRTmatches.empty() )
           mf::LogTrace("CRTPMTMatchingProducer") << "pushing back flash with " << thisFlashCRTmatches.size() << " CRT Matches.";
+        
         FlashType thisFlashType = { /* .flashPos = */ flash_pos, // C++20: restore initializers
                                     /* .flashTime = */ tflash,
                                     /* .flashGateTime = */ thisRelGateTime / 1000.0, // -> us
@@ -412,18 +450,50 @@ namespace icarus::crt {
                                     /* .inGate = */ thisInTime_gate,
                                     /* .classification = */ eventType,
                                     /* .CRTmatches = */ std::move(thisFlashCRTmatches)};
-        thisEventFlashes.push_back(std::move(thisFlashType));
+        
+        // add to the data products
+        
+        // pointer to the matching info object we are going to add to the collection:
+        art::Ptr<CRTPMTMatching> const infoPtr
+          = makeInfoPtr(CRTPMTMatchesColl->size());
+        
+        FlashAssociation->addSingle(infoPtr, flashPtr);
+        
+        for (CRTPMT const& CRTmatch: crtMatches.entering) {
+          CRTAssociation->addSingle(infoPtr, CRTmatch.CRTHit);
+          FlashCRTAssociation->addSingle(
+            flashPtr, CRTmatch.CRTHit,
+            CRTPMTMatchingInfo{
+              /* .direction =    */ CRTPMTMatchingInfo::Dir::entering, // C++20: restore initializers
+              /* .timeOfFlight = */ CRTmatch.tof,
+              /* .distance =     */ CRTmatch.distance
+            }
+            );
+        }
+        for (CRTPMT const& CRTmatch: crtMatches.exiting) {
+          CRTAssociation->addSingle(infoPtr, CRTmatch.CRTHit);
+          FlashCRTAssociation->addSingle(
+            flashPtr, CRTmatch.CRTHit,
+            CRTPMTMatchingInfo{
+              /* .direction =    */ CRTPMTMatchingInfo::Dir::exiting,  // C++20: restore initializers
+              /* .timeOfFlight = */ CRTmatch.tof,
+              /* .distance =     */ CRTmatch.distance
+            }
+            );
+        }
+        
+        CRTPMTMatching matchInfo = FillCRTPMT(thisFlashType);
+        CRTPMTMatchesColl->push_back(std::move(matchInfo));
+        
       } // end of this flash
-      mf::LogTrace("CRTPMTMatchingProducer") << "Event has " << thisEventFlashes.size() << " flashes in " << flashLabel.encode();
-      for (auto const& theseFlashes : thisEventFlashes){
-        CRTPMTMatching ProducedFlash = FillCRTPMT(theseFlashes);
-        CRTPMTMatchesColl->push_back(std::move(ProducedFlash));
-      }
-    }
-    //art::PtrMaker<sbn::crt::CRTHit> makeHitPtr(event);
+      
+    } // for flash data products
+    
     mf::LogTrace("CRTPMTMatchingProducer") <<"This Event has "<<CRTPMTMatchesColl->size()<<"  Flashes candidate for CRT matching."<<std::endl;
     e.put(std::move(CRTPMTMatchesColl));
-    //e.put(std::move(FlashAssociation));
+    e.put(std::move(FlashAssociation));
+    e.put(std::move(CRTAssociation));
+    e.put(std::move(FlashCRTAssociation));
 
   } // CRTPMTMatchingProducer::produce()
 

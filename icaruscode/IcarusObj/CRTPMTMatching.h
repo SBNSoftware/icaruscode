@@ -88,7 +88,24 @@ namespace icarus::crt {
     bool isValid() const { return flashID != NoID; }
     
   };
-
+  
+  
+  /// Additional information about the matching of one flash and one CRT hit.
+  /// 
+  /// Intended as association metadata.
+  struct CRTPMTMatchingInfo {
+    
+    enum class Dir { unknown, entering, exiting };
+    
+    /// Special value to indicate the lack of information on a time.
+    static constexpr double NoTime = std::numeric_limits<double>::lowest();
+    
+    /// Whether CRT hit describes a particle entering the detector of exiting.
+    Dir direction = Dir::unknown;
+    double timeOfFlight = NoTime; ///< CRT hit time minus PMT flash time [us]
+    double distance; ///< Distance between CRT Hit and optical flash centroid [cm]
+    
+  }; // CRTPMTMatchingInfo
 
 }
 
