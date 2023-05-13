@@ -494,25 +494,25 @@ namespace icarus::crt {
       
       art::FindMany<recob::OpHit> const findManyHits(flashHandle, e, flashLabel);
 
-    std::vector<FlashType> thisEventFlashes;
+      std::vector<FlashType> thisEventFlashes;
 
       for (art::Ptr<recob::OpFlash> const& flashPtr: flashes) {
         
         double const tflash = flashPtr->Time();
         vector<recob::OpHit const*> const& hits = findManyHits.at(flashPtr.key());
-      int nPMTsTriggering = 0;
-      double firstTime = 999999;
-      geo::vect::MiddlePointAccumulator flashCentroid;
-      for (auto const& hit : hits) {
-        if (hit->Amplitude() > fPMTADCThresh) nPMTsTriggering++;
-        if (firstTime > hit->PeakTime()) firstTime = hit->PeakTime();
-        geo::Point_t const pos =
-          fGeometryService->OpDetGeoFromOpChannel(hit->OpChannel())
-          .GetCenter();
-        double const amp = hit->Amplitude();
-        flashCentroid.add(pos, amp);
-      }
-      geo::Point_t const flash_pos = flashCentroid.middlePoint();
+        int nPMTsTriggering = 0;
+        double firstTime = 999999;
+        geo::vect::MiddlePointAccumulator flashCentroid;
+        for (auto const& hit : hits) {
+          if (hit->Amplitude() > fPMTADCThresh) nPMTsTriggering++;
+          if (firstTime > hit->PeakTime()) firstTime = hit->PeakTime();
+          geo::Point_t const pos =
+            fGeometryService->OpDetGeoFromOpChannel(hit->OpChannel())
+            .GetCenter();
+          double const amp = hit->Amplitude();
+          flashCentroid.add(pos, amp);
+        }
+        geo::Point_t const flash_pos = flashCentroid.middlePoint();
         mf::LogTrace("CRTPMTMatchingProducer")
           << "Now matching flash #" << flashPtr.key()
           << " at " << flashPtr->Time() << " us and ("
@@ -528,18 +528,18 @@ namespace icarus::crt {
           continue;
         }
 
-      double const thisRelGateTime = triggerGateDiff + tflash * 1e3; // ns
-      bool const thisInTime_gate
-        = thisRelGateTime > BeamGateMin && thisRelGateTime < BeamGateMax;
-      bool const thisInTime_beam
-        = thisRelGateTime > inBeamMin && thisRelGateTime < inBeamMax;
-      
-      icarus::crt::CRTMatches const crtMatches = CRTHitmatched(
-        firstTime, flash_pos, crtHitList, fTimeOfFlightInterval, isRealData, fGlobalT0Offset);
-      
-      std::vector<MatchedCRT> thisFlashCRTmatches;
-        std::vector<art::Ptr<sbn::crt::CRTHit>> CRTPtrs; // same order as thisFlashCRTmatches
-      MatchType const eventType = crtMatches.flashType;
+        double const thisRelGateTime = triggerGateDiff + tflash * 1e3; // ns
+        bool const thisInTime_gate
+          = thisRelGateTime > BeamGateMin && thisRelGateTime < BeamGateMax;
+        bool const thisInTime_beam
+          = thisRelGateTime > inBeamMin && thisRelGateTime < inBeamMax;
+        
+        icarus::crt::CRTMatches const crtMatches = CRTHitmatched(
+          firstTime, flash_pos, crtHitList, fTimeOfFlightInterval, isRealData, fGlobalT0Offset);
+        
+        std::vector<MatchedCRT> thisFlashCRTmatches;
+          std::vector<art::Ptr<sbn::crt::CRTHit>> CRTPtrs; // same order as thisFlashCRTmatches
+        MatchType const eventType = crtMatches.flashType;
         if (!crtMatches.entering.empty()) {
           mf::LogTrace("CRTPMTMatchingProducer")
             << "Entering matches (" << crtMatches.entering.size() << "):";
@@ -556,8 +556,10 @@ namespace icarus::crt {
             thisFlashCRTmatches.push_back(makeMatchedCRT(*exiting.CRTHit, tflash, isRealData));
           }
         }
-        if (!thisFlashCRTmatches.empty() )
-          mf::LogTrace("CRTPMTMatchingProducer") << "pushing back flash with " << thisFlashCRTmatches.size() << " CRT Matches.";
+        if (!thisFlashCRTmatches.empty() ) {
+          mf::LogTrace("CRTPMTMatchingProducer") << "pushing back flash with "
+            << thisFlashCRTmatches.size() << " CRT Matches.";
+        }
         
         FlashType thisFlashType = { /* .flashPos = */ flash_pos, // C++20: restore initializers
                                     /* .flashTime = */ tflash,
