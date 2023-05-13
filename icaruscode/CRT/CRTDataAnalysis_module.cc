@@ -236,7 +236,7 @@ namespace crt {
     double fFlashPos_x;///< Flash barycenter coordinates evaluated using ADCs as weights, X-position.
     double fFlashPos_y;///< Flash barycenter coordinates evaluated using ADCs as weights, Y-position.
     double fFlashPos_z;///< Flash barycenter coordinates evaluated using ADCs as weights, Z-position.
-    enum matchType fFlashClassification;///< Classication of the optical flash.
+    MatchType fFlashClassification;///< Classication of the optical flash.
     std::vector<MatchedCRT> matchedCRTHits;///< Matched CRT Hits with the optical flash.
     // add contents of MatchedCRT struct to be put into branches, 
     //geo::Point_t CRTHitPos;
@@ -427,13 +427,14 @@ namespace crt {
     FillFebMap();//febMap);
 
     //add trigger info
+    m_gate_type = value(sbn::triggerSource::Unknown);
     if( !fTriggerLabel.empty() ) {
 
       art::Handle<sbn::ExtraTriggerInfo> trigger_handle;
       event.getByLabel( fTriggerLabel, trigger_handle );
       if( trigger_handle.isValid() ) {
 	sbn::triggerSource bit = trigger_handle->sourceType;
-        m_gate_type = (unsigned int)bit;
+        m_gate_type = value(bit);
         m_gate_name = bitName(bit);
         m_trigger_timestamp = trigger_handle->triggerTimestamp;
         m_gate_start_timestamp =  trigger_handle->beamGateTimestamp;
@@ -599,11 +600,11 @@ namespace crt {
     if ( event.getByLabel(fCRTPMTProducerLabel, CRTPMTMatchingHandle)){
       //if (CRTPMTMatchingHandle.isValid() ){
       for (auto const& match: *CRTPMTMatchingHandle){
-	fMatchEvent = match.event;
-	fMatchRun = match.run;
-	fGateType = match.gateType;
-	fFlashTime_us = match.flashTime_us;
-	fFlashGateTime_ns = match.flashGateTime_ns;
+	fMatchEvent = fEvent;
+	fMatchRun = fRun;
+	fGateType = m_gate_type;
+	fFlashTime_us = match.flashTime;
+	fFlashGateTime_ns = match.flashGateTime;
 	fFlashInGate = match.flashInGate;
 	fFlashInBeam = match.flashInBeam;
 	fFlashPos_x = match.flashPosition.X();
@@ -613,13 +614,13 @@ namespace crt {
 	
 	nMatchedCRTHits = match.matchedCRTHits.size();
 	for(auto const& crthit: match.matchedCRTHits){
-	  CRTHitPos_x.push_back(crthit.CRTHitPos.X());
-	  CRTHitPos_y.push_back(crthit.CRTHitPos.Y());
-	  CRTHitPos_z.push_back(crthit.CRTHitPos.Z());
-	  fCRTPMTTimeDiff_ns.push_back(crthit.CRTPMTTimeDiff_ns);
-	  fCRTTime_us.push_back(crthit.CRTTime_us);
-	  fCRTSys.push_back(crthit.CRTSys);
-	  fCRTRegion.push_back(crthit.CRTRegion);
+	  CRTHitPos_x.push_back(crthit.position.X());
+	  CRTHitPos_y.push_back(crthit.position.Y());
+	  CRTHitPos_z.push_back(crthit.position.Z());
+	  fCRTPMTTimeDiff_ns.push_back(crthit.PMTTimeDiff);
+	  fCRTTime_us.push_back(crthit.time);
+	  fCRTSys.push_back(crthit.sys);
+	  fCRTRegion.push_back(crthit.region);
 	}
 	fCRTPMTNtuple->Fill();
       } // for match in handle 
