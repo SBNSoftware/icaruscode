@@ -17,7 +17,6 @@
 #include "crtpmtmatchingproducer.fcl"
 #include "wcls-decode-to-sig-base.fcl"
 #include "icarus_FilterCRTPMTMatching.fcl"
-#include "icarus_FilterCRTPMTMatching2.fcl"
 
 BEGIN_PROLOG
 
@@ -164,8 +163,6 @@ icarus_stage0_filters:
                           }
 
    crtpmtmatchingfilter: @local::icarus_FilterCRTPMTMatching
-
-   crtpmtmatchingfilter2: @local::icarus_FilterCRTPMTMatching2
 }
 
 
