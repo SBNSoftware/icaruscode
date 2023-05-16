@@ -5,13 +5,11 @@ BEGIN_PROLOG
 icarus_FilterCRTPMTMatching:
 { 
   module_type:           "FilterCRTPMTMatching"
-  CrtHitModuleLabel:     "crthit"
-  OpHitModuleLabel:      "ophit"
-  OpFlashModuleLabelVec: ["opflashCryoE","opflashCryoW"]
-  OpFlashModuleLabel0: "opflashCryoE"
-  OpFlashModuleLabel1: "opflashCryoW"
+  CrtPmtModuleLabel:     "crtpmt"
+
   TriggerLabel:  "daqTrigger" 
   TriggerConfiguration: "triggerconfig"
+  SpillOnly:  false     # Discard events where there are not flashes within the beam spill window.
   
   # note 19/04/2023: parameters are set to run2,
   # they can be set to run1, but currently values are the same 
