@@ -58,7 +58,7 @@ local params = base {
   else super.rc_resp,
 
   elec: std.mapWithIndex(function (n, eparam)
-    super.elec[0] + {
+    super.elec[n] + {
       gain: eparam.gain,
       shaping: eparam.shaping,
     }, er_params),
