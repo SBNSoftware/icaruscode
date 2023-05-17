@@ -38,8 +38,13 @@ namespace icarus::crt {
     geo::Point_t flashPos;
     double flashTime;
     double flashGateTime;
+    double firstOpHitPeakTime;
+    double firstOpHitStartTime;
     bool inBeam;
     bool inGate;
+    double flashPE;
+    double flashYWidth;
+    double flashZWidth;
     MatchType classification;
     std::vector<MatchedCRT> CRTmatches;
   };
@@ -47,6 +52,7 @@ namespace icarus::crt {
   /**
    * @brief Returns whether a flash is in time with the specified gate.
    * @param flashTime time of the flash, in trigger time scale [us]
+   *  " fill in for new vars "
    * @param gateType type of the gate [unused]
    * @param gateDiff time offset between PMT flashes and beam gate opening time [ns]
    * @param gateWidth the duration of the gate opening [us]
