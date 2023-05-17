@@ -9,7 +9,7 @@ icarus_calorimetryalgmc:	  @local::standard_calorimetryalgmc
 # Calorimetry constants from G. Putnam (Nov 2022)
 # Informed by MC calibration -- docdb 28639.
 # NOTE: needs to be revisted if/when the data processing is updated
-icarus_calorimetryalgmc.CalAreaConstants: [0.01343, 0.01338, 0.01276]
+icarus_calorimetryalgmc.CalAreaConstants: [0.01343, 0.01338, 0.01219]
 
 icarus_calorimetryalgdata.CalAreaConstants: @local::icarus_data_calconst
 icarus_calorimetryalgdata.CaloDoLifeTimeCorrection: false # handled by NormTools
