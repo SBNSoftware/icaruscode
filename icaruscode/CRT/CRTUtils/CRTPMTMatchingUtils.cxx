@@ -50,7 +50,7 @@ icarus::crt::CRTMatches icarus::crt::CRTHitmatched(
   std::vector<icarus::crt::CRTPMT> enteringCRTHits;
   std::vector<icarus::crt::CRTPMT> exitingCRTHits;
   MatchType flashType;
-  int topen = 0, topex = 0, sideen = 0, sideex = 0;
+  int topen = 0, topex = 0, sideen = 0, sideex = 0, bottomen = 0, bottomex = 0;
   for (auto const& crtHit : crtHits) {
     // care with conversions: if either side of a subtraction is a `double`,
     // the other side is also converted to `double` just before the subtraction,
@@ -63,13 +63,21 @@ icarus::crt::CRTMatches icarus::crt::CRTHitmatched(
       .R();
     if (abs(tof) >= interval) continue;
     if (tof < 0) {
-      if (crtHit->plane > 36)
+      if (crtHit->plane > 49){
+	std::cout << "found a bottom match, plane = " << crtHit->plane << ", crthit time = " << CRTHitTime_ns << " ns. \n";
+	bottomen++;
+      }
+      else if (crtHit->plane > 36)
         sideen++;
       else
         topen++;
       CRTPMT m_match = {tof, distance, crtHit};
       enteringCRTHits.push_back(std::move(m_match));
     } else if (tof >= 0) {
+      if (crtHit->plane > 49){
+	std::cout << "found a bottom match, plane = " << crtHit->plane << ", crthit time = " << CRTHitTime_ns << " ns. \n";
+	bottomex++;
+      }
       if (crtHit->plane > 36)
         sideex++;
       else
@@ -78,22 +86,30 @@ icarus::crt::CRTMatches icarus::crt::CRTHitmatched(
       exitingCRTHits.push_back(std::move(m_match));
     }
   }
-  if (topen == 0 && sideen == 0 && topex == 0 && sideex == 0)
+  if (topen == 0 && sideen == 0 && topex == 0 && sideex == 0 && bottomen == 0 && bottomex == 0)
     flashType = MatchType::noMatch;
-  else if (topen == 1 && sideen == 0 && topex == 0 && sideex == 0)
+  else if (topen == 1 && sideen == 0 && topex == 0 && sideex == 0 && bottomen == 0 && bottomex == 0)
     flashType = MatchType::enTop;
-  else if (topen == 0 && sideen == 1 && topex == 0 && sideex == 0)
+  else if (topen == 0 && sideen == 1 && topex == 0 && sideex == 0 && bottomen == 0 && bottomex == 0)
     flashType = MatchType::enSide;
-  else if (topen == 1 && sideen == 0 && topex == 0 && sideex == 1)
+  else if (topen == 1 && sideen == 0 && topex == 0 && sideex == 1 && bottomen == 0 && bottomex == 0)
     flashType = MatchType::enTop_exSide;
-  else if (topen == 0 && sideen == 0 && topex == 1 && sideex == 0)
+  else if (topen == 0 && sideen == 0 && topex == 1 && sideex == 0 && bottomen == 0 && bottomex == 0)
     flashType = MatchType::exTop;
-  else if (topen == 0 && sideen == 0 && topex == 0 && sideex == 1)
+  else if (topen == 0 && sideen == 0 && topex == 0 && sideex == 1 && bottomen == 0 && bottomex == 0)
     flashType = MatchType::exSide;
-  else if (topen >= 1 && sideen >= 1 && topex == 0 && sideex == 0)
+  else if (topen >= 1 && sideen >= 1 && topex == 0 && sideex == 0 && bottomen == 0 && bottomex == 0)
     flashType = MatchType::enTop_mult;
-  else if (topen >= 1 && sideen >= 1 && topex == 0 && sideex >= 1)
+  else if (topen >= 1 && sideen >= 1 && topex == 0 && sideex >= 1 && bottomen == 0 && bottomex == 0)
     flashType = MatchType::enTop_exSide_mult;
+  else if (topen == 0 && sideen == 0 && topex == 0 && sideex == 0 && bottomen == 1 && bottomex == 0)
+    flashType = MatchType::enBottom;
+  else if (topen == 0 && sideen == 0 && topex == 0 && sideex == 0 && bottomen == 0 && bottomex == 1)
+    flashType = MatchType::exBottom;
+  else if (topen == 1 && sideen == 0 && topex == 0 && sideex == 0 && bottomen == 0 && bottomex == 1)
+    flashType = MatchType::enTop_exBottom;
+  else if (topen == 0 && sideen == 1 && topex == 0 && sideex == 0 && bottomen == 0 && bottomex == 1)
+    flashType = MatchType::enSide_exBottom;
   else
     flashType = MatchType::others;
 

@@ -25,8 +25,14 @@ namespace icarus::crt {
     exSide            = 5, ///< Matched with a Side CRT after the optical flash.
     enTop_mult        = 6, ///< Matched with multiple Top CRT hits before the optical flash.
     enTop_exSide_mult = 7, ///< Matched with multiple Top CRT hits before the optical flash and more then 1 side CRT hits after the optical flash.
-    others            = 9  ///< All the other cases.
-
+    enBottom          = 8, ///< Matched with bottom CRT hit before the optical flash.  
+    exBottom          = 9,
+    enTop_exBottom    = 10,
+    enSide_exBottom   = 11,
+      /*enBottom_exTop    = 12,
+	enBottom_exSide   = 13,*/
+    others            = 12  ///< All the other cases.
+      
   };
   
   /// Information about a CRT hit matched with a PMT flash.

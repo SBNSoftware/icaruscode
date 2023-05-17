@@ -7,6 +7,20 @@
 
 process_name: CRTPMTMatchingProducer
 
+services.message.destinations: {
+
+  # grab all the "DumpCRTPMTMatching" messages and put them in DumpCRTPMTMatching.log
+  LogCRTPMT: {
+    append: false
+    categories: {
+      DumpCRTPMTMatching: { limit: -1 }
+      default: { limit: 0 }
+    }
+    filename: "CRTPMTMatchingProd.log"
+    threshold: "INFO"
+    type: "file"
+  } # LogCRTPMT
+}
 services:
 {
   scheduler:                 { defaultExceptions: false }    # Make all uncaught exceptions fatal.
@@ -64,7 +78,7 @@ services.message.destinations :
   STDCOUT:
   {
      type:      "cout"      #tells the message service to output this destination to cout
-     threshold: "INFO"      #tells the message service that this destination applies to WARNING and higher level messages
+     threshold: "DEBUG"      #tells the message service that this destination applies to WARNING and higher level messages
      categories:
      {
        default:
