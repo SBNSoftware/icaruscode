@@ -165,7 +165,7 @@ namespace icarus::crt {
    *    * `flashID`: not saved yet (set to `0`).
    *    * `flashTime`: from `recob::OpFlash::Time()`.
    *    * `flashGateTime`: time of the flash from the beam gate opening.
-   *    * `firstOpHitPeakTime`: not saved yet (left to default value).
+   *    * `firstOpHitPeakTime`: first `recob::OpHit::PeakTime()` in the flash.
    *    * `firstOpHitStartTime`: not saved yet (left to default value).
    *    * `flashInGate`: whether the flash is in the beam gate interval as
    *       configured via `BNBinBeamMin`/`BNBinBeamMax` or the corresponding
@@ -173,12 +173,12 @@ namespace icarus::crt {
    *    * `flashInBeam`: whether the flash is in the beam gate interval as
    *       configured via `BNBBeamGateMin`/`BNBBeamGateMax` or the corresponding
    *       settings for NuMI beam.
-   *    * `flashPE`: not saved yet (left to default value).
+   *    * `flashPE`: `recob::OpFlash::TotalPE()` saved in the flash.
    *    * `flashPosition`: centroid of the flash, recomputed as the average of
    *         the position of the contributing PMTs, weighted by the amplitude of
    *         their hits.
-   *    * `flashYWidth`: not saved yet (left to default value).
-   *    * `flashZWidth`: not saved yet (left to default value).
+   *    * `flashYWidth`: from `recob::OpFlash::YWidth()`.
+   *    * `flashZWidth`: from `recob::OpFlash::ZWidth()`.
    *    * `flashClassification`: the topology of this track, according to the
    *      categories in `icarus::crt::MatchType`; i.e. if it is a particle that
    *      seems to be entering from the top, or exiting from within, etc.
@@ -511,7 +511,6 @@ namespace icarus::crt {
         geo::vect::MiddlePointAccumulator flashCentroid;
         for (auto const& hit : hits) {
           if (hit->Amplitude() > fPMTADCThresh) nPMTsTriggering++;
-          //if (firstTime > hit->PeakTime()) firstTime = hit->PeakTime();
 	  if (firstOpHitPeakTime > hit->PeakTime()) firstOpHitPeakTime = hit->PeakTime();
 	  if(hit->HasStartTime()){
 	    mf::LogTrace("CRTPMTMatchingProducer") << "OpHit has a starttime " << hit->StartTime() << ", saving ";
