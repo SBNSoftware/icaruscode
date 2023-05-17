@@ -148,18 +148,19 @@ namespace lcvn {
     double fNuSlice_purity;
     double fNuSlice_completeness;
     double fT0;
-};
+  };
 
   //......................................................................
-  CVNZlibMakerICARUS::CVNZlibMakerICARUS(fhicl::ParameterSet const& pset)
-    : ICVNZlibMakerICARUS(pset)
+  CVNZlibMakerICARUS::CVNZlibMakerICARUS(fhicl::ParameterSet const& pset):ICVNZlibMakerICARUS(pset)
   {
     reconfigure(pset);
   }
 
   //......................................................................
   CVNZlibMakerICARUS::~CVNZlibMakerICARUS()
-  {  }
+  {
+
+  }
 
   //......................................................................
   void CVNZlibMakerICARUS::reconfigure(const fhicl::ParameterSet& pset)
@@ -181,8 +182,8 @@ namespace lcvn {
   }
 
   //......................................................................
-  void CVNZlibMakerICARUS::endSubRun(const art::SubRun & sr){
-
+  void CVNZlibMakerICARUS::endSubRun(const art::SubRun & sr)
+  {
     std::string fPOTModuleLabel = "generator";
     fRun = sr.run();
     fSubRun = sr.subRun();
@@ -195,8 +196,7 @@ namespace lcvn {
     if(hPOT) hPOT->Fill(0.5, fPOT);
   }
 
-  //......................................................................
-  
+  //...................................................................... 
   void CVNZlibMakerICARUS::beginJob()
   {
     ICVNZlibMakerICARUS::beginJob();
@@ -206,8 +206,7 @@ namespace lcvn {
     
   }
 
-  //......................................................................
-  
+  //......................................................................  
   void CVNZlibMakerICARUS::analyze(const art::Event& evt)
   {
 
@@ -215,10 +214,10 @@ namespace lcvn {
 	  
     std::vector<art::Ptr<lcvn::PixelMap>> pixelmaps;
     art::InputTag itag1(fPixelMapInput, "cvnmap");
-    auto h_pixelmaps = evt.getHandle<std::vector<lcvn::PixelMap>>(itag1);
-    if (h_pixelmaps){
-      art::fill_ptr_vector(pixelmaps, h_pixelmaps);
-      std::cout << "if(h_pixelmaps) fill_ptr_vector" << std::endl;
+    auto pixelmaps_handle = evt.getHandle<std::vector<lcvn::PixelMap>>(itag1);
+    if (pixelmaps_handle){
+      art::fill_ptr_vector(pixelmaps, pixelmaps_handle);
+      std::cout << "if(pixelmaps_handle) fill_ptr_vector" << std::endl;
     }
     if (pixelmaps.size() == 0){
       std::cout << "pixelmaps.size == 0"; return;
@@ -230,22 +229,20 @@ namespace lcvn {
     InteractionType interaction = kOther;
     bool Nu_is_contained = false;
        
-    std::vector<art::Ptr<simb::MCTruth>> mctruth_list;
-    auto h_mctruth = evt.getHandle<std::vector<simb::MCTruth>>(fGenieGenModuleLabel);
+    std::vector<art::Ptr<simb::MCTruth>> mctruths;
+    auto mctruths_handle = evt.getHandle<std::vector<simb::MCTruth>>(fGenieGenModuleLabel);
 
-    if (h_mctruth){
-      art::fill_ptr_vector(mctruth_list, h_mctruth);
+    if (mctruths_handle){
+      art::fill_ptr_vector(mctruths, mctruths_handle);
       std::cout << "got mctruth handle" << std::endl;
 
-      for(auto const& mctruth : mctruth_list){
-        std::cout << "got mctruth_list" << std::endl;
+      for(auto const& mctruth : mctruths){
+        std::cout << "got mctruths" << std::endl;
         
         if(mctruth->Origin() == simb::kBeamNeutrino){
           simb::MCNeutrino true_neutrino = mctruth->GetNeutrino();
-          std::cout << "in mctruth == kBeamNeutrino" << std::endl;
 
           if(fUseNuContainment){
-            std::cout << "fUseNuContainment" << std::endl;
             if(Is_in_Fiducial_Vol(true_neutrino.Nu().Vx(),true_neutrino.Nu().Vy(),true_neutrino.Nu().Vz())){ 
               interaction = labels.GetInteractionType(true_neutrino);
               labels.GetTopology(mctruth, fTopologyHitsCut);
@@ -256,8 +253,8 @@ namespace lcvn {
               info.SetTopologyInformation(labels.GetPDG(), labels.GetNProtons(), labels.GetNPions(), labels.GetNPizeros(), labels.GetNNeutrons(), labels.GetTopologyType(), labels.GetTopologyTypeAlt());
               Nu_is_contained = true;
               break;
-              } // if in fiducial volume
-            } // use containment
+            } // if in fiducial volume
+          } // use containment
           else{
             std::cout << "false fUseNuContainment" << std::endl;
             interaction = labels.GetInteractionType(true_neutrino);
@@ -269,339 +266,332 @@ namespace lcvn {
             info.SetTopologyInformation(labels.GetPDG(), labels.GetNProtons(), labels.GetNPions(), labels.GetNPizeros(), labels.GetNNeutrons(), labels.GetTopologyType(), labels.GetTopologyTypeAlt());
             if(Is_in_Fiducial_Vol(true_neutrino.Nu().Vx(),true_neutrino.Nu().Vy(),true_neutrino.Nu().Vz())) Nu_is_contained = true;
             break;
-            } // dont use containment
-          } // select kBeamNeutrino
+          } // dont use containment
+        } // kBeamNeutrino
 
         else if(mctruth->Origin() == simb::kCosmicRay){
-          std::cout << "in mctruth == kCosmicRay" << std::endl;
           interaction = kCosmic;
           break;
-          } // select kCosmicRay
+        } // kCosmicRay
 
-        } // mctruth_list
-      } // if h_mctruth
+      } // mctruths
+    } // if mctruths_handle
 
+    // collect the input TPC reco tags
+    std::vector<std::string> pandora_tag_suffixes = fPandoraTagSuffixes;
+    if (pandora_tag_suffixes.size() == 0) pandora_tag_suffixes.push_back("");
 
-      // collect the input TPC reco tags
-      std::vector<std::string> pandora_tag_suffixes = fPandoraTagSuffixes;
-      if (pandora_tag_suffixes.size() == 0) pandora_tag_suffixes.push_back("");
-      
-      /////////////////////// use slice section ////////////////////////////////////////
-      if(fUseSlice){
-        std::cout << "***************** Using slice method ****************\n";
+    /////////////////////// use slice section ////////////////////////////////////////
+    if(fUseSlice){
+      std::cout << "***************** Using slice method ****************\n";
 
-        // collect the TPC hits
-        std::vector<art::Ptr<recob::Hit>> HitList; // hits
-        art::Handle<std::vector<recob::Hit>> HitListHandle;
-        for (unsigned i_tag = 0; i_tag < pandora_tag_suffixes.size(); i_tag++) {
-          const std::string &pandora_tag_suffix = pandora_tag_suffixes[i_tag];
-          if (evt.getByLabel(fHitModuleLabel + pandora_tag_suffix, HitListHandle)){
-            art::fill_ptr_vector(HitList, HitListHandle);
-          }
+      // collect the TPC hits
+      std::vector<art::Ptr<recob::Hit>> hits;
+      art::Handle<std::vector<recob::Hit>> hits_handle;
+      for (unsigned i_tag = 0; i_tag < pandora_tag_suffixes.size(); i_tag++){
+        const std::string &pandora_tag_suffix = pandora_tag_suffixes[i_tag];
+        if (evt.getByLabel(fHitModuleLabel + pandora_tag_suffix, hits_handle)){
+          art::fill_ptr_vector(hits, hits_handle);
         }
+      }
 
-        // collect the TPC slices
-        std::vector<art::Ptr<recob::Slice>> SliceList; //slices;
-        art::Handle<std::vector<recob::Slice>> SliceListHandle; // thisSlices
-        for (unsigned i_tag = 0; i_tag < pandora_tag_suffixes.size(); i_tag++) {
-          const std::string &pandora_tag_suffix = pandora_tag_suffixes[i_tag];
-          if (evt.getByLabel(fSliceLabel + pandora_tag_suffix, SliceListHandle)) {
-            art::fill_ptr_vector(SliceList, SliceListHandle);
-          }
+      // collect the TPC slices
+      std::vector<art::Ptr<recob::Slice>> slices;
+      art::Handle<std::vector<recob::Slice>> slices_handle;
+      for (unsigned i_tag = 0; i_tag < pandora_tag_suffixes.size(); i_tag++) {
+        const std::string &pandora_tag_suffix = pandora_tag_suffixes[i_tag];
+        if (evt.getByLabel(fSliceLabel + pandora_tag_suffix, slices_handle)) {
+          art::fill_ptr_vector(slices, slices_handle);
         }
+      }
 
-        // collect the TPC pfps
-        std::vector<art::Ptr<recob::PFParticle>> PFPList; //slices;
-        art::Handle<std::vector<recob::PFParticle>> PFPListHandle; // thisSlices
-        for (unsigned i_tag = 0; i_tag < pandora_tag_suffixes.size(); i_tag++) {
-          const std::string &pandora_tag_suffix = pandora_tag_suffixes[i_tag];
-          if (evt.getByLabel(fPFParticleModuleLabel + pandora_tag_suffix, PFPListHandle)) {
-            art::fill_ptr_vector(PFPList, PFPListHandle);
-          }
+      // collect the TPC pfps
+      std::vector<art::Ptr<recob::PFParticle>> pfps;
+      art::Handle<std::vector<recob::PFParticle>> pfps_handle;
+      for (unsigned i_tag = 0; i_tag < pandora_tag_suffixes.size(); i_tag++) {
+        const std::string &pandora_tag_suffix = pandora_tag_suffixes[i_tag];
+        if (evt.getByLabel(fPFParticleModuleLabel + pandora_tag_suffix, pfps_handle)) {
+          art::fill_ptr_vector(pfps, pfps_handle);
         }
+      }
 
-        art::FindManyP<recob::Hit> findManyHits(SliceListHandle, evt, fSliceLabel);
-        art::FindManyP<recob::PFParticle> findManyPFPs(SliceListHandle, evt, fPFParticleModuleLabel);
-        art::FindManyP<larpandoraobj::PFParticleMetadata> fm_pfpmd(PFPListHandle, evt, fPFParticleModuleLabel);
-        art::FindManyP<anab::T0> findManyT0s(PFPListHandle, evt, fT0Label);
+      art::FindManyP<recob::Hit> findManyHits(slices_handle, evt, fSliceLabel);
+      art::FindManyP<recob::PFParticle> findManyPFPs(slices_handle, evt, fPFParticleModuleLabel);
+      art::FindManyP<larpandoraobj::PFParticleMetadata> fm_pfpmd(pfps_handle, evt, fPFParticleModuleLabel);
+      art::FindManyP<anab::T0> findManyT0s(pfps_handle, evt, fT0Label);
          
-        if(fUseBackTrackInfo){
-            std::cout << "***************** Using backtracker information to get neutrino information ****************\n";
+      if(fUseBackTrackInfo){
+        std::cout << "***************** Using backtracker information to get neutrino information ****************\n";
             
-            auto const clockData = art::ServiceHandle<detinfo::DetectorClocksService const>()->DataFor(evt);
+        auto const clockData = art::ServiceHandle<detinfo::DetectorClocksService const>()->DataFor(evt);
            
-            for(unsigned int i=0; i<pixelmaps.size(); i++){
-               Clear();
-               frun = evt.run();
-               fsubrun = evt.subRun();
-               fevent = evt.id().event();
+        for(unsigned int pmID=0; pmID<pixelmaps.size(); pmID++){
+          Clear();
+          frun = evt.run();
+          fsubrun = evt.subRun();
+          fevent = evt.id().event();
                
-               AssignLabels labels;
-               TDNuInfo info;
-               double event_weight = 1;
-               InteractionType interaction = kOther;	  
+          AssignLabels labels;
+          TDNuInfo info;
+          double event_weight = 1;
+          InteractionType interaction = kOther;	  
                
-               for(unsigned int j=0; j<SliceList.size(); j++){
-                  if(SliceList[j]->ID() == pixelmaps[i]->fSliceID){
-                    std::cout << "if SliceList ID == pixelmaps ID" << std::endl;
-                    fsliceID = SliceList[j]->ID();
-                    if(findManyHits.isValid()){
-                        std::vector<art::Ptr<recob::Hit>> slice_hits = findManyHits.at(SliceList[j].key());
-                        double tot_slice_eng = 0;
-                        double tot_slice_nu_eng = 0;
-                        double tot_slice_cos_eng = 0;
-                        fNhits_total = slice_hits.size();
-                        std::vector<double> mc_truth_eng(mctruth_list.size(),0.);
-                        
-                        for(auto const hit : slice_hits){
-                           //Int_t trkId; // newly deleted
-                           tot_slice_eng += HitTotE(clockData,hit);
-                           tot_slice_nu_eng += HitTotE_frm_given_orgin(clockData,hit,"nu"); // newly added
-                           tot_slice_cos_eng += HitTotE_frm_given_orgin(clockData,hit,"cos"); // newly added
-                           
-                           // newly added section
-                           if(mctruth_list.size()){
-                              for(auto const truth : mctruth_list){
-                                 if(truth->Origin() == simb::kBeamNeutrino){
-                                    mc_truth_eng[truth.key()] += HitTotE_frm_mctruth(clockData,hit,truth);
-                                 }
-                              }
-                           }
-                           
-                           // newly deleted section
-                           /*if(HitTruthId(clockData,hit,trkId)){
-                              art::Ptr<simb::MCTruth> mctruth;
-                              if(TrackIdToMCTruth(trkId,mctruth)){
-                                 if(mctruth->Origin() == simb::kBeamNeutrino){
-                                    tot_slice_nu_eng += HitEfrmTrkID(clockData,hit,trkId); 
-                                    mc_truth_eng[mctruth.key()] += HitEfrmTrkID(clockData,hit,trkId);
-                                    }
-                                    else if(mctruth->Origin() == simb::kCosmicRay){
-                                       tot_slice_cos_eng += HitEfrmTrkID(clockData,hit,trkId);
-                                       }
-                                       } // found a valid MCTruth object
-                                       }*/ // hit is matched to a trkID
-                        } // loop over hits in the selected slice
-                     
-                     ftotsliceE = tot_slice_eng;
-                     if(tot_slice_eng > 0){
-                        std::cout << "Total energy : " << tot_slice_eng << "\n";
-                        std::cout << "Total cosmic energy : " << tot_slice_cos_eng << "\n";
-                        std::cout << "Total nu energy : " << tot_slice_nu_eng << "\n";
-                        std::cout << "Cosmic fraction : " << double(tot_slice_cos_eng)/tot_slice_eng << "\n";
-                        std::cout << "Neutrino fraction : " << double(tot_slice_nu_eng)/tot_slice_eng << "\n";
-                     
-                        ftotsliceNuE = tot_slice_nu_eng;
-                        ftotsliceCosE = tot_slice_cos_eng;
-                        ftotsliceOthE = ftotsliceE - ftotsliceNuE - ftotsliceCosE;
-                        fsliceNuEfrac = double(ftotsliceNuE)/ftotsliceE;
-                        fsliceCosEfrac = double(ftotsliceCosE)/ftotsliceE;
-                        fsliceOthEfrac = double(ftotsliceOthE)/ftotsliceE;
-			      
-                        ///////////////////////////////////////////////////// Check whether this has pandora T0 ///////////////////////////////
-                        std::vector<float> pfp_T0_vec;
-                        if(findManyPFPs.isValid()){
-                           std::vector<art::Ptr<recob::PFParticle>> slicePFPs = findManyPFPs.at(SliceList[j].key());
-                           if(slicePFPs.size()){
-                              for(auto const &pfp : slicePFPs){
-                                 if(findManyT0s.isValid()){
-                                    std::vector<art::Ptr<anab::T0>> T0_vec = findManyT0s.at(pfp.key());
-                                    if(T0_vec.size()){
-                                       for(auto const& T0 : T0_vec){
-                                          pfp_T0_vec.push_back(T0->Time());
-                                       }
-                                    }
-                                 }
-                              }
-                           }
-                        }
-                        
-                        if(pfp_T0_vec.size()){
-                           fT0 = *min_element(pfp_T0_vec.begin(), pfp_T0_vec.end());
-                        } 
-                        
-                        ////////////////////////////////////////////////////// ////////////////////////////////////////////////////////////////
-                        
-                        if((double(tot_slice_cos_eng)/tot_slice_eng) >= fCosEfrac){
-                          std::cout << "if ... fCosEfrac sets interaction to kCosmic BBUUUUUUHHH!" << std::endl;
-                           interaction = kCosmic;
-                        } // select cosmic
-                        else if((double(tot_slice_nu_eng)/tot_slice_eng) >= fNuEfrac){
-                           int index = -1;
-                           double min_E = 0.; 
-                           std::cout << "Size of the truth energy list : " << mc_truth_eng.size() << "\n";
-                           
-                           for(unsigned int k=0; k<mc_truth_eng.size(); k++){
-                              if(mc_truth_eng[k] > min_E){
-                                 std::cout << "MC truth energy : " << mc_truth_eng[k] << "\n";	    
-                                 art::Ptr<simb::MCTruth> mctruth = mctruth_list[k];
-                                 simb::MCNeutrino true_neutrino = mctruth->GetNeutrino();
-                                 std::cout << "Neutrino vertext : " << true_neutrino.Nu().Vx() << "  " << true_neutrino.Nu().Vy() << "  " << true_neutrino.Nu().Vz() << "\n";
-                                 
-                                 if(fUseNuContainment){
-                                    if(Is_in_Fiducial_Vol(true_neutrino.Nu().Vx(),true_neutrino.Nu().Vy(),true_neutrino.Nu().Vz())){ 
-                                    //std::cout << "================ Checking containment cut =================\n";
-                                    index = k;
-                                    min_E = mc_truth_eng[k];
-                                    fNuIsContained = true;
-                                    }
-                                 }
-                                    
-                                 else{
-                                    //std::cout << "================ Not Checking containment cut =================\n";
-                                    index = k;
-                                    min_E = mc_truth_eng[k];
-                                    if(Is_in_Fiducial_Vol(true_neutrino.Nu().Vx(),true_neutrino.Nu().Vy(),true_neutrino.Nu().Vz())) fNuIsContained = true;
-                                    else fNuIsContained = false;
-                                 }
-                                    
-                                 /*if(fUseNuFullContainment){
-                                    if(Is_in_Fiducial_Vol(true_neutrino.Nu().Vx(),true_neutrino.Nu().Vy(),true_neutrino.Nu().Vz())){
-                                       index = k;
-                                       min_E = mc_truth_eng[k];
-                                    }
-                                 }*/
-                                 
-                              }
-                           }
-                           
-                           if(index != -1){
-                              std::cout << "index diff -1" << std::endl;
-                              std::cout << "GetTopology and SetTruthInfo etc" << std::endl;
-                              simb::MCNeutrino true_neutrino = mctruth_list[index]->GetNeutrino();
-                              interaction = labels.GetInteractionType(true_neutrino);
-                              labels.GetTopology(mctruth_list[index], fTopologyHitsCut);
-                              float nu_energy = true_neutrino.Nu().E();
-                              float lep_energy = true_neutrino.Lepton().E();
-                              fNuID = true_neutrino.Nu().TrackId();
-                              info.SetTruthInfo(nu_energy, lep_energy, 0., event_weight);
-                              info.SetTopologyInformation(labels.GetPDG(), labels.GetNProtons(), labels.GetNPions(), labels.GetNPizeros(), labels.GetNNeutrons(), labels.GetTopologyType(), labels.GetTopologyTypeAlt());
-                              //fNuSlice_purity = double(Get_Tot_nu_E(clockData,mctruth_list[index],slice_hits))/tot_slice_eng; // newly deleted
-                              fNuSlice_purity = double(mc_truth_eng[index])/tot_slice_eng; // newly added
-                              //if(Get_Tot_nu_E(clockData,mctruth_list[index],HitList)>0)fNuSlice_completeness = double(Get_Tot_nu_E(clockData,mctruth_list[index],slice_hits))/Get_Tot_nu_E(clockData,mctruth_list[index],HitList); // newly deleted
-                              
-                              if(TotE_from_mctruth(clockData, HitList, mctruth_list[index])) fNuSlice_completeness = double(mc_truth_eng[index])/TotE_from_mctruth(clockData, HitList, mctruth_list[index]); // newly added
-                              std::cout << "Nu purity : " << fNuSlice_purity << " Nu completeness : " << fNuSlice_completeness << "\n";
-                           }
-                        } // select neutrino
-                     } // total slice energy is greater that 0
-            } // valid hit association
-		     
-		   if(findManyPFPs.isValid()){
-            std::cout << "findManyPFPs.isValid" << std::endl;
-            fIsSliceNu=Is_Slice_Nu(findManyPFPs,SliceList[j]);
+          for(unsigned int sliceID=0; sliceID<slices.size(); sliceID++){
             
-            if(fIsSliceNu){
-              std::cout << "if(fIsSliceNu)" << std::endl;
-               /*art::Handle< std::vector<recob::PFParticle> > PFPListHandle;
-               std::vector< art::Ptr<recob::PFParticle> > PFPList;
-               if( evt.getByLabel(fPFParticleModuleLabel,PFPListHandle))
-               art::fill_ptr_vector(PFPList,PFPListHandle);*/ 
-               //art::FindManyP<larpandoraobj::PFParticleMetadata> fm_pfpmd(PFPListHandle, evt, fPFParticleModuleLabel);
-               
-               if(fm_pfpmd.isValid()){
-                  fSliceScore = Get_Slice_Score(fm_pfpmd,Get_Nu_like_PFP(findManyPFPs,SliceList[j]));
-                  if(SliceList[j]->ID() == Get_Best_Slice_ID_PFP_pdg(findManyPFPs,fm_pfpmd,SliceList)[0]) fIsbestSlice = true;
-                  fbestpfppdg = Get_Best_Slice_ID_PFP_pdg(findManyPFPs,fm_pfpmd,SliceList)[1];
-                  fbestsliceID = Get_Best_Slice_ID_PFP_pdg(findManyPFPs,fm_pfpmd,SliceList)[0];
-                  fpfppdg = Get_Slice_PFP_ID(findManyPFPs, SliceList[j]);
-               }
-            }
-		   }
-		     
-		   LArTrainingNuData train(interaction, *pixelmaps[i], info);
-		   std::string evtid = "r"+std::to_string(evt.run())+"_s"+std::to_string(evt.subRun())+"_e"+std::to_string(evt.event())+"_sl"+std::to_string(pixelmaps[i]->fSliceID)+"_h"+std::to_string(time(0));
-	      write_files(train, evtid);
-		   break;
-		   } // found the matching slice
-	         } // loop over slices
-	      } // loop over pixel maps
-         } // use backtrack inoformation
-         
-         else{
-            std::cout << "***************** Used truth level information to get neutrino information ****************\n";
-            for(unsigned int i=0; i<pixelmaps.size(); i++){
-               Clear();
-               frun = evt.run();
-               fsubrun = evt.subRun();
-               fevent = evt.id().event();
-               
-               if(Nu_is_contained) fNuIsContained = true;
-               
-               LArTrainingNuData train(interaction, *pixelmaps[i], info);
-               fsliceID = pixelmaps[i]->fSliceID;
-               /*art::Handle< std::vector<recob::Slice> > SliceListHandle;
-               std::vector< art::Ptr<recob::Slice> > SliceList;
-               if( evt.getByLabel(fSliceLabel,SliceListHandle))
-                  art::fill_ptr_vector(SliceList,SliceListHandle);
-                  art::FindManyP<recob::PFParticle> findManyPFPs(SliceListHandle, evt, fPFParticleModuleLabel);*/
-               
-               for(unsigned int j=0; j<SliceList.size(); j++){
-                  if(SliceList[j]->ID() == fsliceID){
-                     if(findManyHits.isValid()){
-                        std::vector<art::Ptr<recob::Hit>> slice_hits = findManyHits.at(SliceList[j].key());
-                        fNhits_total = slice_hits.size();
-                     }
+            if(slices[sliceID]->ID() == pixelmaps[pmID]->fSliceID){
+              fsliceID = slices[sliceID]->ID();
+              if(findManyHits.isValid()){
+                std::vector<art::Ptr<recob::Hit>> slice_hits = findManyHits.at(slices[sliceID].key());
+                double tot_slice_eng = 0;
+                double tot_slice_nu_eng = 0;
+                double tot_slice_cos_eng = 0;
+                fNhits_total = slice_hits.size();
+                std::vector<double> truth_energies(mctruths.size(),0.);
+
+                for(auto const hit : slice_hits){
+                //Int_t trkId; // newly deleted
+                  tot_slice_eng += HitTotE(clockData,hit);
+                  tot_slice_nu_eng += HitTotE_frm_given_orgin(clockData,hit,"nu"); // newly added
+                  tot_slice_cos_eng += HitTotE_frm_given_orgin(clockData,hit,"cos"); // newly added
+                           
+                  // newly added section
+                  if(mctruths.size()){
+                    for(auto const mctruth : mctruths){
+                      if(mctruth->Origin() == simb::kBeamNeutrino){
+                        truth_energies[mctruth.key()] += HitTotE_frm_mctruth(clockData,hit,mctruth);
+                      }
+                    }
+                  }
+
+                  // newly deleted section
+                  /*if(HitTruthId(clockData,hit,trkId)){
+                  art::Ptr<simb::MCTruth> mctruth;
+                  if(TrackIdToMCTruth(trkId,mctruth)){
+                    if(mctruth->Origin() == simb::kBeamNeutrino){
+                      tot_slice_nu_eng += HitEfrmTrkID(clockData,hit,trkId); 
+                      truth_energies[mctruth.key()] += HitEfrmTrkID(clockData,hit,trkId);
+                    }
+                  else if(mctruth->Origin() == simb::kCosmicRay){
+                    tot_slice_cos_eng += HitEfrmTrkID(clockData,hit,trkId);
+                    }
+                  } // found a valid MCTruth object
+                  }*/ // hit is matched to a trkID
+                
+                } // loop over hits in the selected slice
                      
-                     if(findManyPFPs.isValid()){
-                        fIsSliceNu=Is_Slice_Nu(findManyPFPs,SliceList[j]);
-                        ////////////////////////////////////////// pandora T0 //////////////////////////////////////////////////////
-                        std::vector<float> pfp_T0_vec;
-                        
-                        if(findManyPFPs.isValid()){
-                           std::vector<art::Ptr<recob::PFParticle>> slicePFPs = findManyPFPs.at(SliceList[j].key());
-                           if(slicePFPs.size()){
-                              for(auto const &pfp : slicePFPs){
-                                 if(findManyT0s.isValid()){
-                                    std::vector<art::Ptr<anab::T0>> T0_vec = findManyT0s.at(pfp.key());
-                                    if(T0_vec.size()){
-                                       for(auto const& T0 : T0_vec){
-                                          pfp_T0_vec.push_back(T0->Time());
-                                       }
-                                    }
-                                 }
-                              }
-                           }
+                ftotsliceE = tot_slice_eng;
+                if(tot_slice_eng > 0){
+                  std::cout << "Total energy : " << tot_slice_eng << "\n";
+                  std::cout << "Total cosmic energy : " << tot_slice_cos_eng << "\n";
+                  std::cout << "Total nu energy : " << tot_slice_nu_eng << "\n";
+                  std::cout << "Cosmic fraction : " << double(tot_slice_cos_eng)/tot_slice_eng << "\n";
+                  std::cout << "Neutrino fraction : " << double(tot_slice_nu_eng)/tot_slice_eng << "\n";
+                     
+                  ftotsliceNuE = tot_slice_nu_eng;
+                  ftotsliceCosE = tot_slice_cos_eng;
+                  ftotsliceOthE = ftotsliceE - ftotsliceNuE - ftotsliceCosE;
+                  fsliceNuEfrac = double(ftotsliceNuE)/ftotsliceE;
+                  fsliceCosEfrac = double(ftotsliceCosE)/ftotsliceE;
+                  fsliceOthEfrac = double(ftotsliceOthE)/ftotsliceE;
+
+                  ///////////////////////////////////////////////////// Check whether this has pandora T0 ///////////////////////////////
+                  std::vector<float> pfp_t0s;
+                  if(findManyPFPs.isValid()){
+                    std::vector<art::Ptr<recob::PFParticle>> slice_pfps = findManyPFPs.at(slices[sliceID].key());
+                    if(slice_pfps.size()){
+                      for(auto const &pfp : slice_pfps){
+                        if(findManyT0s.isValid()){
+                          std::vector<art::Ptr<anab::T0>> t0s = findManyT0s.at(pfp.key());
+                          if(t0s.size()){
+                            for(auto const& t0 : t0s){
+                              pfp_t0s.push_back(t0->Time());
+                            }
+                          }
                         }
-			      
-	                     if(pfp_T0_vec.size()){
-                           fT0 = *min_element(pfp_T0_vec.begin(), pfp_T0_vec.end());
-                        } 
-                        ///////////////////////////////////////////////////////////////////////////////////////////////////////////
+                      }
+                    }
+                  }
+
+                  if(pfp_t0s.size()){
+                    fT0 = *min_element(pfp_t0s.begin(), pfp_t0s.end());
+                  } 
+
+                  ////////////////////////////////////////////////////// ////////////////////////////////////////////////////////////////
                         
-                        if(fIsSliceNu){
+                  if((double(tot_slice_cos_eng)/tot_slice_eng) >= fCosEfrac){
+                    interaction = kCosmic;
+                  } // select cosmic
+                  
+                  else if((double(tot_slice_nu_eng)/tot_slice_eng) >= fNuEfrac){
+                    int index = -1;
+                    double min_E = 0.; 
+                    std::cout << "Size of the true energy list : " << truth_energies.size() << "\n";
+                           
+                    for(unsigned int true_energyID=0; true_energyID<truth_energies.size(); true_energyID++){
+                      if(truth_energies[true_energyID] > min_E){
+                        std::cout << "MC truth energy : " << truth_energies[true_energyID] << "\n";
+                        art::Ptr<simb::MCTruth> mctruth = mctruths[true_energyID];
+                        simb::MCNeutrino true_neutrino = mctruth->GetNeutrino();
+                        std::cout << "Neutrino vertext : " << true_neutrino.Nu().Vx() << "  " << true_neutrino.Nu().Vy() << "  " << true_neutrino.Nu().Vz() << "\n";
+
+                        if(fUseNuContainment){
+                          if(Is_in_Fiducial_Vol(true_neutrino.Nu().Vx(),true_neutrino.Nu().Vy(),true_neutrino.Nu().Vz())){ 
+                            index = true_energyID;
+                            min_E = truth_energies[true_energyID];
+                            fNuIsContained = true;
+                          }
+                        }
+                                    
+                        else{
+                          index = true_energyID;
+                          min_E = truth_energies[true_energyID];
+                          if(Is_in_Fiducial_Vol(true_neutrino.Nu().Vx(),true_neutrino.Nu().Vy(),true_neutrino.Nu().Vz())) fNuIsContained = true;
+                          else fNuIsContained = false;
+                        }
+                                    
+                      }
+                    }
+
+                    if(index != -1){
+                      std::cout << "index diff -1" << std::endl;
+                      std::cout << "GetTopology and SetTruthInfo etc" << std::endl;
+                      simb::MCNeutrino true_neutrino = mctruths[index]->GetNeutrino();
+                      interaction = labels.GetInteractionType(true_neutrino);
+                      labels.GetTopology(mctruths[index], fTopologyHitsCut);
+                      float nu_energy = true_neutrino.Nu().E();
+                      float lep_energy = true_neutrino.Lepton().E();
+                      fNuID = true_neutrino.Nu().TrackId();
+                      info.SetTruthInfo(nu_energy, lep_energy, 0., event_weight);
+                      info.SetTopologyInformation(labels.GetPDG(), labels.GetNProtons(), labels.GetNPions(), labels.GetNPizeros(), labels.GetNNeutrons(), labels.GetTopologyType(), labels.GetTopologyTypeAlt());
+                      //fNuSlice_purity = double(Get_Tot_nu_E(clockData,mctruths[index],slice_hits))/tot_slice_eng; // newly deleted
+                      fNuSlice_purity = double(truth_energies[index])/tot_slice_eng; // newly added
+                      //if(Get_Tot_nu_E(clockData,mctruths[index],HitList)>0)fNuSlice_completeness = double(Get_Tot_nu_E(clockData,mctruths[index],slice_hits))/Get_Tot_nu_E(clockData,mctruths[index],HitList); // newly deleted
+                      
+                      if(TotE_from_mctruth(clockData, hits, mctruths[index])) fNuSlice_completeness = double(truth_energies[index])/TotE_from_mctruth(clockData, hits, mctruths[index]); // newly added
+                      std::cout << "Nu purity : " << fNuSlice_purity << " Nu completeness : " << fNuSlice_completeness << "\n";
+                    }
+
+                  } // select neutrino
+                } // total slice energy is greater that 0
+              } // valid hit association
+
+              if(findManyPFPs.isValid()){
+                std::cout << "findManyPFPs.isValid" << std::endl;
+                fIsSliceNu=Is_Slice_Nu(findManyPFPs,slices[sliceID]);
+
+                if(fIsSliceNu){
+                  std::cout << "if(fIsSliceNu)" << std::endl;
+                  /*art::Handle< std::vector<recob::PFParticle> > PFPListHandle;
+                  std::vector< art::Ptr<recob::PFParticle> > PFPList;
+                  if( evt.getByLabel(fPFParticleModuleLabel,PFPListHandle))
+                  art::fill_ptr_vector(PFPList,PFPListHandle);*/ 
+                  //art::FindManyP<larpandoraobj::PFParticleMetadata> fm_pfpmd(PFPListHandle, evt, fPFParticleModuleLabel);
+
+                  if(fm_pfpmd.isValid()){
+                    fSliceScore = Get_Slice_Score(fm_pfpmd,Get_Nu_like_PFP(findManyPFPs,slices[sliceID]));
+                    if(slices[sliceID]->ID() == Get_Best_Slice_ID_PFP_pdg(findManyPFPs,fm_pfpmd,slices)[0]) fIsbestSlice = true;
+                      fbestpfppdg = Get_Best_Slice_ID_PFP_pdg(findManyPFPs,fm_pfpmd,slices)[1];
+                      fbestsliceID = Get_Best_Slice_ID_PFP_pdg(findManyPFPs,fm_pfpmd,slices)[0];
+                      fpfppdg = Get_Slice_PFP_ID(findManyPFPs, slices[sliceID]);
+                    }
+                  }
+                }
+
+                LArTrainingNuData train(interaction, *pixelmaps[pmID], info);
+                std::string evtid = "r"+std::to_string(evt.run())+"_s"+std::to_string(evt.subRun())+"_e"+std::to_string(evt.event())+"_sl"+std::to_string(pixelmaps[pmID]->fSliceID)+"_h"+std::to_string(time(0));
+                write_files(train, evtid);
+                break;
+              } // valid pfps
+          } // loop over slices
+	      } // loop over pixel maps
+      } // use backtrack information
+         
+      else{
+        std::cout << "***************** Used truth level information to get neutrino information ****************\n";
+        for(unsigned int pmID=0; pmID<pixelmaps.size(); pmID++){
+          Clear();
+          frun = evt.run();
+          fsubrun = evt.subRun();
+          fevent = evt.id().event();
+               
+          if(Nu_is_contained) fNuIsContained = true;
+               
+          LArTrainingNuData train(interaction, *pixelmaps[pmID], info);
+          fsliceID = pixelmaps[pmID]->fSliceID;
+           /*art::Handle< std::vector<recob::Slice> > slicesHandle;
+           std::vector< art::Ptr<recob::Slice> > slices;
+           if( evt.getByLabel(fSliceLabel,slicesHandle))
+              art::fill_ptr_vector(slices,slicesHandle);
+              art::FindManyP<recob::PFParticle> findManyPFPs(slicesHandle, evt, fPFParticleModuleLabel);*/
+               
+          for(unsigned int sliceID=0; sliceID<slices.size(); sliceID++){
+            if(slices[sliceID]->ID() == fsliceID){
+              if(findManyHits.isValid()){
+                std::vector<art::Ptr<recob::Hit>> slice_hits = findManyHits.at(slices[sliceID].key());
+                fNhits_total = slice_hits.size();
+              }
+                     
+              if(findManyPFPs.isValid()){
+                fIsSliceNu=Is_Slice_Nu(findManyPFPs,slices[sliceID]);
+                ////////////////////////////////////////// pandora T0 //////////////////////////////////////////////////////
+                std::vector<float> pfp_t0s;
+                        
+                if(findManyPFPs.isValid()){
+                  std::vector<art::Ptr<recob::PFParticle>> slice_pfps = findManyPFPs.at(slices[sliceID].key());
+                  if(slice_pfps.size()){
+                    for(auto const &pfp : slice_pfps){
+                      if(findManyT0s.isValid()){
+                        std::vector<art::Ptr<anab::T0>> t0s = findManyT0s.at(pfp.key());
+                        if(t0s.size()){
+                          for(auto const& t0 : t0s){
+                            pfp_t0s.push_back(t0->Time());
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+
+                if(pfp_t0s.size()){
+                  fT0 = *min_element(pfp_t0s.begin(), pfp_t0s.end());
+                } 
+
+                ///////////////////////////////////////////////////////////////////////////////////////////////////////////
+                        
+                if(fIsSliceNu){
 			       /*art::Handle< std::vector<recob::PFParticle> > PFPListHandle;
                                std::vector< art::Ptr<recob::PFParticle> > PFPList;
                                if( evt.getByLabel(fPFParticleModuleLabel,PFPListHandle))
                                    art::fill_ptr_vector(PFPList,PFPListHandle);*/ 
 			   
 			       //art::FindManyP<larpandoraobj::PFParticleMetadata> fm_pfpmd(PFPListHandle, evt, fPFParticleModuleLabel);
-                
-                if(fm_pfpmd.isValid()){
-			          fSliceScore = Get_Slice_Score(fm_pfpmd,Get_Nu_like_PFP(findManyPFPs,SliceList[j]));
-				  if(SliceList[j]->ID() == Get_Best_Slice_ID_PFP_pdg(findManyPFPs,fm_pfpmd,SliceList)[0]) fIsbestSlice = true;
-			          fbestpfppdg = Get_Best_Slice_ID_PFP_pdg(findManyPFPs,fm_pfpmd,SliceList)[1];
-				  fbestsliceID = Get_Best_Slice_ID_PFP_pdg(findManyPFPs,fm_pfpmd,SliceList)[0];
-				  fpfppdg = Get_Slice_PFP_ID(findManyPFPs, SliceList[j]);
-			       }
-			    }
-		         }
-		         break;
-		      }
-		  }
-		  
-		  std::string evtid = "r"+std::to_string(evt.run())+"_s"+std::to_string(evt.subRun())+"_e"+std::to_string(evt.event())+"_sl"+std::to_string(pixelmaps[i]->fSliceID)+"_h"+std::to_string(time(0));
-	          write_files(train, evtid);
-	      }
-          } // don't use slice information to extrac truth info
-        } // use slcie to make images
-	
-	else{
-          std::cout << "***************** Used entire event ****************\n";
-	  LArTrainingNuData train(interaction, *pixelmaps[0], info);
-	  std::string evtid = "r"+std::to_string(evt.run())+"_s"+std::to_string(evt.subRun())+"_e"+std::to_string(evt.event())+"_h"+std::to_string(time(0));
+
+                  if(fm_pfpmd.isValid()){
+                    fSliceScore = Get_Slice_Score(fm_pfpmd,Get_Nu_like_PFP(findManyPFPs,slices[sliceID]));
+                    if(slices[sliceID]->ID() == Get_Best_Slice_ID_PFP_pdg(findManyPFPs,fm_pfpmd,slices)[0]) fIsbestSlice = true;
+
+                    fbestpfppdg = Get_Best_Slice_ID_PFP_pdg(findManyPFPs,fm_pfpmd,slices)[1];
+                    fbestsliceID = Get_Best_Slice_ID_PFP_pdg(findManyPFPs,fm_pfpmd,slices)[0];
+                    fpfppdg = Get_Slice_PFP_ID(findManyPFPs, slices[sliceID]);
+                  }
+                }
+              }
+              break;
+            }
+          }
+
+          std::string evtid = "r"+std::to_string(evt.run())+"_s"+std::to_string(evt.subRun())+"_e"+std::to_string(evt.event())+"_sl"+std::to_string(pixelmaps[pmID]->fSliceID)+"_h"+std::to_string(time(0));
           write_files(train, evtid);
-	} // use event to make images
+        }
+      } // use truth info
+    } // use slice to make images
+
+    else{
+      std::cout << "***************** Using entire event ****************\n";
+      LArTrainingNuData train(interaction, *pixelmaps[0], info);
+      std::string evtid = "r"+std::to_string(evt.run())+"_s"+std::to_string(evt.subRun())+"_e"+std::to_string(evt.event())+"_h"+std::to_string(time(0));
+      write_files(train, evtid);
+    } // use event to make images
   }
 
   //......................................................................
