@@ -18,7 +18,7 @@ icarus_FilterCRTPMTMatching:
   @table::CRTMatchNuMIBeamGate_run2
   @table::CRTPMTmatchingparams_standard
  
-  FilterLevel:           "loose"       # loose: accept everything ; medium: reject Top CRT matched entering cosmics; thight: rejects everything matched with an entering CRT Hit; default is loose.
+  FilterLevel:           "tight"       # loose: accept everything ; medium: reject Top CRT matched entering cosmics; thight: rejects everything matched with an entering CRT Hit; default is loose.
   OutputTree:		 true	        # keep the output tree or not
 }
 

@@ -200,22 +200,19 @@ bool icarus::crt::FilterCRTPMTMatching::filter(art::Event& e) {
   m_trigger_gate_diff = triggerInfo.triggerTimestamp - triggerInfo.beamGateTimestamp;
   m_gate_width = fTriggerConfiguration.getGateWidth(m_gate_type);
 
-  art::Handle<std::vector<CRTPMTMatching>> crtpmtListHandle;
-  std::vector<art::Ptr<CRTPMTMatching>> crtpmtList;
+  auto const& crtpmtMatches = e.getProduct<std::vector<CRTPMTMatching>>(fCrtPmtModuleLabel);
 
-  if (e.getByLabel(fCrtPmtModuleLabel, crtpmtListHandle))
-    art::fill_ptr_vector(crtpmtList, crtpmtListHandle);
   if ((fFilterLevel != "loose") && (fFilterLevel != "medium") && (fFilterLevel != "tight"))
     throw art::Exception{ art::errors::Configuration } << "Invalid CRT/PMT filter level: '" << fFilterLevel << "'\n";
 
   mf::LogInfo("FilterCRTPMTMatching::FilteringLevel ") << fFilterLevel;
   std::vector<CRTPMTMatching> EventFlashes;
-  for(auto const & crtpmtLabel : *crtpmtListHandle) {
+  for(auto const & crtpmt : crtpmtMatches) {
     if(fSpillOnly==true){
-	if(crtpmtLabel.flashInBeam==1) EventFlashes.push_back(crtpmtLabel);
+	if(crtpmt.flashInBeam==1) EventFlashes.push_back(crtpmt);
     }
     else {
-	if(crtpmtLabel.flashInGate==1) EventFlashes.push_back(crtpmtLabel);
+	if(crtpmt.flashInGate==1) EventFlashes.push_back(crtpmt);
     }
   } 
 
@@ -227,11 +224,11 @@ bool icarus::crt::FilterCRTPMTMatching::filter(art::Event& e) {
   }
   else if (fFilterLevel == "medium") {
     hasOnlyCosmics = true;
-    for (const auto& h : EventFlashes) {
+    for (const auto& f : EventFlashes) {
       bool isCosmic = false;
-      if (h.flashClassification == icarus::crt::MatchType::enTop || h.flashClassification == icarus::crt::MatchType::enTop_exSide ||
-          h.flashClassification == icarus::crt::MatchType::enTop_mult ||
-          h.flashClassification == icarus::crt::MatchType::enTop_exSide_mult) {
+      if (f.flashClassification == icarus::crt::MatchType::enTop || f.flashClassification == icarus::crt::MatchType::enTop_exSide ||
+          f.flashClassification == icarus::crt::MatchType::enTop_mult ||
+          f.flashClassification == icarus::crt::MatchType::enTop_exSide_mult) {
         isCosmic = true;
 	}
       	// With Medium filter, everything (inTime) which is associated with Top
@@ -243,10 +240,10 @@ bool icarus::crt::FilterCRTPMTMatching::filter(art::Event& e) {
   }
   else if (fFilterLevel == "tight") {
     hasOnlyCosmics = true;
-    for (const auto& h : EventFlashes) {
+    for (const auto& f : EventFlashes) {
       bool isCosmic = false;
-      if ((h.flashClassification != icarus::crt::MatchType::noMatch) && (h.flashClassification != icarus::crt::MatchType::exTop) &&
-          (h.flashClassification != icarus::crt::MatchType::exSide))
+      if ((f.flashClassification != icarus::crt::MatchType::noMatch) && (f.flashClassification != icarus::crt::MatchType::exTop) &&
+          (f.flashClassification != icarus::crt::MatchType::exSide))
         isCosmic = true;
         // With Medium filter, everything (inTime) which is associated with Top
         // CRT Hit before the Flash is filtered as clear cosmic
