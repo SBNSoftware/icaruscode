@@ -351,9 +351,10 @@ void icarus::crt::DumpCRTPMTMatching::DumpMatching(
   if (flash) {
     log << "\n" << indent << "  associated flash: "
       << tagIndex(flash).encode() << "#"
-      << flash.key() << " at " << flash->Time() << " us and ("
-      << flash->XCenter() << ", " << flash->YCenter() << ", " << flash->ZCenter()
-      << ") cm";
+      << flash.key() << " at " << flash->Time() << " us and (";
+    if (flash->hasXCenter()) log << flash->XCenter();
+    else log << "n/a";
+    log << ", " << flash->YCenter() << ", " << flash->ZCenter() << ") cm";
   }
   if (!CRThits.empty()) {
     log << "\n" << indent << "  associated CRT hits:";

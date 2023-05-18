@@ -564,13 +564,16 @@ namespace icarus::crt {
         flashCentroid.add(pos, amp);
       }
       geo::Point_t const flash_pos = flashCentroid.middlePoint();
-      mf::LogTrace("CRTPMTMatchingProducer")
-        << "Now matching flash #" << flashPtr.key()
-        << " at " << flashPtr->Time() << " us and ("
-        << flashPtr->XCenter() << ", " << flashPtr->YCenter()
-          << ", " << flashPtr->ZCenter()
-        << ") cm [" << hits.size() << " op.hits] -> first time: "
-        << firstOpHitPeakTime << " us, centroid: " << flash_pos << " cm";
+      {
+        mf::LogTrace log("CRTPMTMatchingProducer");
+        log << "Now matching flash #" << flashPtr.key()
+          << " at " << flashPtr->Time() << " us and (";
+        if (flashPtr->hasXCenter()) log << flashPtr->XCenter();
+        else log << "n/a";
+        log << ", " << flashPtr->YCenter() << ", " << flashPtr->ZCenter()
+          << ") cm [" << hits.size() << " op.hits] -> first time: "
+          << firstOpHitPeakTime << " us, centroid: " << flash_pos << " cm";
+      }
       
       if (nPMTsTriggering < fnOpHitToTrigger) {
         mf::LogTrace("CRTPMTMatchingProducer")
