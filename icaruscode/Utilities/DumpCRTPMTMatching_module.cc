@@ -288,7 +288,7 @@ void icarus::crt::DumpCRTPMTMatching::DumpMatching(
   // flash ID
   log << "\n" << indent << "  flash";
   if (matchInfo.flashID == CRTPMTMatching::NoID) log << " <unknown ID>";
-  else                                           log << " #" << matchInfo.flashID;
+  else                                           log << " ID=" << matchInfo.flashID;
   
   // flash times
   if (matchInfo.flashTime != CRTPMTMatching::NoTime)

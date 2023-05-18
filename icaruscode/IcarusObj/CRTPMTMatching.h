@@ -10,6 +10,7 @@
 
 // C++ includes
 #include <vector>
+#include <limits>
 #include "larcoreobj/SimpleTypesAndConstants/geo_vectors.h"
 
 namespace icarus::crt {
@@ -55,7 +56,7 @@ namespace icarus::crt {
   struct CRTPMTMatching{
     
     /// Special value to indicate the lack of information on an ID.
-    static constexpr int NoID = -1;
+    static constexpr int NoID = std::numeric_limits<int>::min();
 
     /// Special value to indicate the lack of information on a counter.
     static constexpr unsigned int NoCount

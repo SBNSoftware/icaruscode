@@ -18,6 +18,7 @@
 
 #include <vector>
 
+namespace recob { class OpFlash; } // no need to know the details
 
 namespace icarus::crt {
 
@@ -35,6 +36,9 @@ namespace icarus::crt {
   };
 
   struct FlashType {
+    static constexpr auto NoID = icarus::crt::CRTPMTMatching::NoID;
+    
+    int flashID = NoID;
     geo::Point_t flashPos;
     double flashTime;
     double flashGateTime;
@@ -104,6 +108,27 @@ namespace icarus::crt {
 
   /// Fills a `CRTPMTMatching` record out of the specified `flash` information.
   CRTPMTMatching FillCRTPMT (FlashType const& flash);
+
+  //@{
+  /**
+   * @brief Returns an unique ID for the flash in `ptr`.
+   * @param flash a flash or its pointer
+   * @param version (default: latest) the ID creation algorithm version to use
+   * @return an unique ID for the flash in `ptr`
+   * 
+   * An ID is made up out of the flash.
+   * 
+   * Supported versions:
+   *  * `10`: ID is the flash time in picoseconds, rounded;
+   *          `icarus::crt::CRTPMTMatching::NoID` if flash is invalid
+   *          (e.g. null pointer)
+   */
+  int makeFlashID
+    (recob::OpFlash const& flash, int version = std::numeric_limits<int>::max());
+
+  int makeFlashID
+    (recob::OpFlash const* flash, int version = std::numeric_limits<int>::max());
+  //@}
 
 }
 

@@ -9,11 +9,15 @@
 // Library header
 #include "icaruscode/CRT/CRTUtils/CRTPMTMatchingUtils.h"
 
+// LArSoft libraries
+#include "lardataobj/RecoBase/OpFlash.h"
+
 // framework libraries
 #include "messagefacility/MessageLogger/MessageLogger.h"
 
 // C++ standard libraries
 #include <utility>
+#include <cmath>
 
 
 // -----------------------------------------------------------------------------
@@ -123,7 +127,7 @@ icarus::crt::CRTPMTMatching icarus::crt::FillCRTPMT(FlashType const& flash)
   // UPDATE CRTPMTMatchingProducer class documentation when some missing items
   //        are added
   CRTPMTMatching crtpmt;
-  crtpmt.flashID = 0; //
+  crtpmt.flashID = flash.flashID;
   crtpmt.flashTime = flash.flashTime;
   crtpmt.flashGateTime = flash.flashGateTime;
   crtpmt.firstOpHitPeakTime = flash.firstOpHitPeakTime; 
@@ -144,5 +148,17 @@ icarus::crt::CRTPMTMatching icarus::crt::FillCRTPMT(FlashType const& flash)
   return crtpmt;
 }
 
+
+// -----------------------------------------------------------------------------
+int icarus::crt::makeFlashID
+  (recob::OpFlash const& flash, int /* version = std::numeric_limits<int>::max() */)
+{
+  // all versions now
+  return static_cast<int>(std::lround(flash.Time() * 1e6)); // us -> ps
+}
+
+int icarus::crt::makeFlashID
+  (recob::OpFlash const* flash, int version /* = std::numeric_limits<int>::max() */)
+  { return flash? makeFlashID(*flash, version): icarus::crt::CRTPMTMatching::NoID; }
 
 // -----------------------------------------------------------------------------

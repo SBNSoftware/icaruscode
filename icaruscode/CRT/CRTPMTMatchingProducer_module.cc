@@ -167,7 +167,8 @@ namespace icarus::crt {
    *   irregardless of which of the input flash collections they come from.
    *   Each entry contains information of all the matched CRT hits and the type
    *   of the matching:
-   *    * `flashID`: not saved yet (set to `0`).
+   *    * `flashID`: an ID made up out of the flash content
+   *         (`icarus::crt::makeFlashID()`).
    *    * `flashTime`: from `recob::OpFlash::Time()`.
    *    * `flashGateTime`: time of the flash from the beam gate opening.
    *    * `firstOpHitPeakTime`: first `recob::OpHit::PeakTime()` in the flash.
@@ -379,7 +380,6 @@ namespace icarus::crt {
     icarus::crt::MatchedCRT makeMatchedCRT
       (sbn::crt::CRTHit const& hit, double tflash, bool isRealData) const;
     
-
   }; // class CRTPMTMatchingProducer
 
   CRTPMTMatchingProducer::CRTPMTMatchingProducer
@@ -618,7 +618,10 @@ namespace icarus::crt {
         mf::LogTrace("CRTPMTMatchingProducer") << "\tfirstOpHitPeakTime " << firstOpHitPeakTime << ", firstOpHitStartTime = " << firstOpHitStartTime << " (us)\n\ttotPe = " << totPe << "\n\tflashYWidth = " << flashYWidth << ", flashZWidth = " << flashZWidth << " (cm)\n";
 
       }
-      FlashType thisFlashType = { /* .flashPos = */ flash_pos, // C++20: restore initializers
+      
+      int const flashID = icarus::crt::makeFlashID(flashPtr.get());
+      FlashType thisFlashType = { /* .flashID = */ flashID, // C++20: restore initializers
+                                  /* .flashPos = */ flash_pos,
                                   /* .flashTime = */ tflash,
                                   /* .flashGateTime = */ thisRelGateTime / 1000.0, // -> us
                                   /* .firstOpHitPeakTime = */ firstOpHitPeakTime,
@@ -699,6 +702,7 @@ namespace icarus::crt {
              /* .sys = */ CRTSys,
              /* .region = */ CRTRegion};
   }
+
 
   DEFINE_ART_MODULE(CRTPMTMatchingProducer)
 
