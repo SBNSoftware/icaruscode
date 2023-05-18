@@ -163,14 +163,16 @@ namespace icarus::crt {
    * -------
    * 
    * * `std::vector<icarus::crt::CRTPMTMatching>`: an entry for each matched
-   *   flash; the entry contains information of all the matched CRT hits and
-   *   the type of the matching:
+   *   flash. Entries are sorted by flast time, from the earliest to the latest,
+   *   irregardless of which of the input flash collections they come from.
+   *   Each entry contains information of all the matched CRT hits and the type
+   *   of the matching:
    *    * `flashID`: not saved yet (set to `0`).
    *    * `flashTime`: from `recob::OpFlash::Time()`.
    *    * `flashGateTime`: time of the flash from the beam gate opening.
    *    * `firstOpHitPeakTime`: first `recob::OpHit::PeakTime()` in the flash.
-   *    * `firstOpHitStartTime`: from `recob::OpHit::StartTime()`, only seemed 
-   *    *    filled for MC, left to default value otherwise.
+   *    * `firstOpHitStartTime`: from `recob::OpHit::StartTime()` in the flash;
+   *         only filled if present in the hit (`HasStartTime()`).
    *    * `flashInGate`: whether the flash is in the beam gate interval as
    *       configured via `BNBinBeamMin`/`BNBinBeamMax` or the corresponding
    *       settings for NuMI beam.
