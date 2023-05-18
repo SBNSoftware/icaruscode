@@ -532,7 +532,7 @@ namespace icarus::crt {
             << "Flashes " << flashPtrA << " and " << flashPtrB
             << " both are at time " << flashPtrA->Time() << " us";
           if (flashPtrA->TotalPE() != flashPtrB->TotalPE())
-            return flashPtrA->TotalPE() < flashPtrB->TotalPE();
+            return flashPtrA->TotalPE() > flashPtrB->TotalPE();
           mf::LogPrint("CRTPMTMatchingProducer")
             << "  ... and they both have " << flashPtrA->TotalPE() << "?!?";
           return flashPtrA < flashPtrB;
