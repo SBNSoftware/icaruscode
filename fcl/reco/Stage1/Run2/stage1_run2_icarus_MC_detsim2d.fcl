@@ -1,0 +1,11 @@
+#include "stage1_run2_icarus_MC.fcl"
+
+# In the 2D-detsim, SimChannel objects are made by the WireCell
+# drift simulation (daq), not LArG4 (largeant). Thus, we need
+# to overwrite the truth matching labels in the calibration ntuple maker
+
+# Used in backtracker service
+services.BackTrackerService.BackTracker.SimChannelModuleLabel: "daq:simpleSC"
+
+physics.analyzers.caloskimE.SimChannelproducer: "daq:simpleSC"
+physics.analyzers.caloskimW.SimChannelproducer: "daq:simpleSC"
