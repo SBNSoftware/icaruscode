@@ -503,22 +503,22 @@ namespace icarus::crt {
         
         double const tflash = flashPtr->Time();
         double const totPe  = flashPtr->TotalPE();
-	double const flashYWidth = flashPtr->YWidth();
-	double const flashZWidth = flashPtr->ZWidth();
+        double const flashYWidth = flashPtr->YWidth();
+        double const flashZWidth = flashPtr->ZWidth();
 
-	vector<recob::OpHit const*> const& hits = findManyHits.at(flashPtr.key());
+        vector<recob::OpHit const*> const& hits = findManyHits.at(flashPtr.key());
         int nPMTsTriggering = 0;
-	double firstOpHitPeakTime = 999999;
-	double firstOpHitStartTime = 999999;
+        double firstOpHitPeakTime = 999999;
+        double firstOpHitStartTime = 999999;
 
         geo::vect::MiddlePointAccumulator flashCentroid;
         for (auto const& hit : hits) {
           if (hit->Amplitude() > fPMTADCThresh) nPMTsTriggering++;
-	  if (firstOpHitPeakTime > hit->PeakTime()) firstOpHitPeakTime = hit->PeakTime();
-	  if(hit->HasStartTime()){
-	    if (firstOpHitStartTime > hit->StartTime()) firstOpHitStartTime = hit->StartTime(); 
-	    //mf::LogTrace("CRTPMTMatchingProducer") << "OpHit has a starttime " << hit->StartTime() << ", saving " <<  firstOpHitStartTime << " to firstOpHitStartTime.\n";
-	  }	  
+          if (firstOpHitPeakTime > hit->PeakTime()) firstOpHitPeakTime = hit->PeakTime();
+          if(hit->HasStartTime()){
+            if (firstOpHitStartTime > hit->StartTime()) firstOpHitStartTime = hit->StartTime(); 
+            //mf::LogTrace("CRTPMTMatchingProducer") << "OpHit has a starttime " << hit->StartTime() << ", saving " <<  firstOpHitStartTime << " to firstOpHitStartTime.\n";
+          }
 
           geo::Point_t const pos =
             fGeometryService->OpDetGeoFromOpChannel(hit->OpChannel())
@@ -541,7 +541,7 @@ namespace icarus::crt {
             << " hits above threshold)";
           continue;
         }
-	
+        
         double const thisRelGateTime = triggerGateDiff + tflash * 1e3; // ns
         bool const thisInTime_gate
           = thisRelGateTime > BeamGateMin && thisRelGateTime < BeamGateMax;
@@ -559,7 +559,7 @@ namespace icarus::crt {
             << "Entering matches (" << crtMatches.entering.size() << "):";
           for (auto const& entering : crtMatches.entering) {
             n_entering_matches++;
-	    CRTPtrs.push_back(entering.CRTHit);
+            CRTPtrs.push_back(entering.CRTHit);
             thisFlashCRTmatches.push_back(makeMatchedCRT(*entering.CRTHit, tflash, isRealData));
           }
         }
@@ -567,27 +567,27 @@ namespace icarus::crt {
           mf::LogTrace("CRTPMTMatchingProducer")
             << "Exiting matches (" << crtMatches.exiting.size() << "):";
           for (auto const& exiting : crtMatches.exiting) {
-	    n_exiting_matches++;
+            n_exiting_matches++;
             CRTPtrs.push_back(exiting.CRTHit);
             thisFlashCRTmatches.push_back(makeMatchedCRT(*exiting.CRTHit, tflash, isRealData));
           }
         }
         if (!thisFlashCRTmatches.empty() ) {
           mf::LogTrace("CRTPMTMatchingProducer") << "pushing back flash with "
-						 << thisFlashCRTmatches.size() << " CRT Matches. --> Match classification = " << std::to_string(static_cast<int>(eventType))<< "\n" ;
-	  mf::LogTrace("CRTPMTMatchingProducer") << "\tfirstOpHitPeakTime " << firstOpHitPeakTime << ", firstOpHitStartTime = " << firstOpHitStartTime << " (us)\n\ttotPe = " << totPe << "\n\tflashYWidth = " << flashYWidth << ", flashZWidth = " << flashZWidth << " (cm)\n";
+                                                 << thisFlashCRTmatches.size() << " CRT Matches. --> Match classification = " << std::to_string(static_cast<int>(eventType))<< "\n" ;
+          mf::LogTrace("CRTPMTMatchingProducer") << "\tfirstOpHitPeakTime " << firstOpHitPeakTime << ", firstOpHitStartTime = " << firstOpHitStartTime << " (us)\n\ttotPe = " << totPe << "\n\tflashYWidth = " << flashYWidth << ", flashZWidth = " << flashZWidth << " (cm)\n";
 
-	}
+        }
         FlashType thisFlashType = { /* .flashPos = */ flash_pos, // C++20: restore initializers
                                     /* .flashTime = */ tflash,
                                     /* .flashGateTime = */ thisRelGateTime / 1000.0, // -> us
                                     /* .firstOpHitPeakTime = */ firstOpHitPeakTime,
-				    /* .firstOpHitStartTime = */ firstOpHitStartTime,
-				    /* .inBeam = */ thisInTime_beam,
+                                    /* .firstOpHitStartTime = */ firstOpHitStartTime,
+                                    /* .inBeam = */ thisInTime_beam,
                                     /* .inGate = */ thisInTime_gate,
-				    /* .flashPE = */ totPe, 
-				    /* /.flashYWidth = */ flashYWidth,
-				    /* /.flashZWidth = */ flashZWidth,
+                                    /* .flashPE = */ totPe, 
+                                    /* /.flashYWidth = */ flashYWidth,
+                                    /* /.flashZWidth = */ flashZWidth,
                                     /* .classification = */ eventType,
                                     /* .CRTmatches = */ std::move(thisFlashCRTmatches)};
         
