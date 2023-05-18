@@ -7,20 +7,6 @@
 
 process_name: CRTPMTMatchingProducer
 
-services.message.destinations: {
-
-  # grab all the "DumpCRTPMTMatching" messages and put them in DumpCRTPMTMatching.log
-  LogCRTPMT: {
-    append: false
-    categories: {
-      DumpCRTPMTMatching: { limit: -1 }
-      default: { limit: 0 }
-    }
-    filename: "CRTPMTMatchingProd.log"
-    threshold: "INFO"
-    type: "file"
-  } # LogCRTPMT
-}
 services:
 {
   scheduler:                 { defaultExceptions: false }    # Make all uncaught exceptions fatal.

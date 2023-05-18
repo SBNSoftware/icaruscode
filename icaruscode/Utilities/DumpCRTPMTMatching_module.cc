@@ -29,12 +29,6 @@
 #include "canvas/Utilities/InputTag.h"
 
 // C//C++ standard libraries
-// #include <algorithm>  // std::max(), std::sort(), std::transform()
-// #include <functional> // std::mem_fn()
-// #include <iomanip>    // std::setw()
-// #include <iterator>   // std::back_inserter()
-// #include <memory>     // std::unique_ptr()
-// #include <sstream>
 #include <optional>
 #include <map>
 #include <vector>
