@@ -292,6 +292,10 @@ namespace icarus::crt {
         Comment{ "offset used in simulation, equivalent to the CRT hit timestamp (TS0)"
           " at the time of the reference trigger [ns]" }
         };
+      fhicl::Atom<bool> MatchBottomCRT{
+	Name{ "MatchBottomCRT" },
+        Comment{ "bool fcl parameter to perform CRT-PMT Matching on bottom CRT data" }
+        };
       
       fhicl::Atom<double> BNBBeamGateMin{
         Name{ "BNBBeamGateMin" },
@@ -358,7 +362,7 @@ namespace icarus::crt {
     int const fPMTADCThresh;                         ///< ADC amplitude for a PMT to be considered above threshold.
     int const fnOpHitToTrigger;                      ///< Number of OpHit above threshold to mimic the triggering PMT.
     double const fGlobalT0Offset;                    ///< 1.6 ms delay to shift CRT Hit T0, the CRT Timing variable we use in MC.
-
+    bool const fMatchBottomCRT;                      ///< Bool fcl value to perform matching on bottom CRT Hits if true, currently set to false.
     double const fBNBBeamGateMin;
     double const fBNBBeamGateMax;
     double const fBNBinBeamMin;
@@ -392,6 +396,7 @@ namespace icarus::crt {
     fPMTADCThresh{p().PMTADCThresh()},
     fnOpHitToTrigger{p().nOpHitToTrigger()},
     fGlobalT0Offset{p().GlobalT0Offset()},
+    fMatchBottomCRT{p().MatchBottomCRT()},
     fBNBBeamGateMin{p().BNBBeamGateMin()},
     fBNBBeamGateMax{p().BNBBeamGateMax()},
     fBNBinBeamMin{p().BNBinBeamMin()},
@@ -589,7 +594,7 @@ namespace icarus::crt {
         = thisRelGateTime > inBeamMin && thisRelGateTime < inBeamMax;
       
       icarus::crt::CRTMatches const crtMatches = CRTHitmatched(
-        firstOpHitPeakTime, flash_pos, crtHitList, fTimeOfFlightInterval, isRealData, fGlobalT0Offset);
+	firstOpHitPeakTime, flash_pos, crtHitList, fTimeOfFlightInterval, isRealData, fGlobalT0Offset, fMatchBottomCRT);
       
       std::vector<MatchedCRT> thisFlashCRTmatches;
         std::vector<art::Ptr<sbn::crt::CRTHit>> CRTPtrs; // same order as thisFlashCRTmatches
@@ -661,8 +666,8 @@ namespace icarus::crt {
             /* .direction =    */ CRTPMTMatchingInfo::Dir::exiting,  // C++20: restore initializers
             /* .timeOfFlight = */ CRTmatch.tof,
             /* .distance =     */ CRTmatch.distance
-          }
-          );
+	  }
+        );
       }
       
       CRTPMTMatching matchInfo = FillCRTPMT(thisFlashType);
@@ -689,10 +694,9 @@ namespace icarus::crt {
       = icarus::crt::CRTHitTime(hit, fGlobalT0Offset, isRealData) / 1000.0;
     double const CRTTof_opflash = CRTtime - tflash; // us
     int const CRTRegion = hit.plane;
-    // Very lazy way to determine if the Hit is a Top or a Side;
-    // Will update it when bottom CRT will be available:
-    //int const CRTSys = (CRTRegion >= 36)? 1: 0;
-    int const CRTSys = (CRTRegion >= 49) ? 2 : ((CRTRegion >= 36)? 1: 0);
+    // Very lazy way to determine if the Hit is a Top or a Side, bottom CRT is only set if fMatchBottomCRT true; 
+    int const CRTSys = (fMatchBottomCRT && CRTRegion >= 49) ? 2 : ((CRTRegion >= 36)? 1: 0);
+
     mf::LogTrace("CRTPMTMatchingProducer")
       << "  Match: tof = crtTime - tflash  = " << CRTtime
       << " - "<< tflash << " = " << CRTTof_opflash << " (us) in region " << CRTRegion << "";

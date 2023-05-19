@@ -44,6 +44,7 @@ namespace icarus::crt {
     double flashGateTime;
     double firstOpHitPeakTime;
     double firstOpHitStartTime;
+    //bool matchBottomCRT;
     bool inBeam;
     bool inGate;
     double flashPE;
@@ -104,7 +105,7 @@ namespace icarus::crt {
    */
   CRTMatches CRTHitmatched(
     double flashTime, geo::Point_t const& flashpos,
-    std::vector<art::Ptr<sbn::crt::CRTHit>>& crtHits, double interval, bool isRealData, double globalT0Offset);
+    std::vector<art::Ptr<sbn::crt::CRTHit>>& crtHits, double interval, bool isRealData, double globalT0Offset,  bool matchBottomCRT);
 
   /// Fills a `CRTPMTMatching` record out of the specified `flash` information.
   CRTPMTMatching FillCRTPMT (FlashType const& flash);

@@ -49,7 +49,7 @@ double icarus::crt::CRTHitTime
 // -----------------------------------------------------------------------------
 icarus::crt::CRTMatches icarus::crt::CRTHitmatched(
   double flashTime, geo::Point_t const& flashpos,
-  std::vector<art::Ptr<sbn::crt::CRTHit>>& crtHits, double interval, bool isRealData, double globalT0Offset) {
+  std::vector<art::Ptr<sbn::crt::CRTHit>>& crtHits, double interval, bool isRealData, double globalT0Offset, bool MatchBottomCRT) {
 
   std::vector<icarus::crt::CRTPMT> enteringCRTHits;
   std::vector<icarus::crt::CRTPMT> exitingCRTHits;
@@ -67,10 +67,10 @@ icarus::crt::CRTMatches icarus::crt::CRTHitmatched(
       .R();
     if (abs(tof) >= interval) continue;
     if (tof < 0) {
-      if (crtHit->plane > 49){
-	std::cout << "found a bottom match, plane = " << crtHit->plane << ", crthit time = " << CRTHitTime_ns << " ns. \n";
+      if (MatchBottomCRT && crtHit->plane > 49) 
 	bottomen++;
-      }
+      else if(crtHit->plane > 49) 
+	continue;
       else if (crtHit->plane > 36)
         sideen++;
       else
@@ -78,11 +78,11 @@ icarus::crt::CRTMatches icarus::crt::CRTHitmatched(
       CRTPMT m_match = {tof, distance, crtHit};
       enteringCRTHits.push_back(std::move(m_match));
     } else if (tof >= 0) {
-      if (crtHit->plane > 49){
-	std::cout << "found a bottom match, plane = " << crtHit->plane << ", crthit time = " << CRTHitTime_ns << " ns. \n";
+      if (MatchBottomCRT && crtHit->plane > 49)
 	bottomex++;
-      }
-      if (crtHit->plane > 36)
+      else if(crtHit->plane > 49) 
+	continue;
+      else if (crtHit->plane > 36)
         sideex++;
       else
         topex++;
@@ -90,33 +90,44 @@ icarus::crt::CRTMatches icarus::crt::CRTHitmatched(
       exitingCRTHits.push_back(std::move(m_match));
     }
   }
-  if (topen == 0 && sideen == 0 && topex == 0 && sideex == 0 && bottomen == 0 && bottomex == 0)
-    flashType = MatchType::noMatch;
-  else if (topen == 1 && sideen == 0 && topex == 0 && sideex == 0 && bottomen == 0 && bottomex == 0)
-    flashType = MatchType::enTop;
-  else if (topen == 0 && sideen == 1 && topex == 0 && sideex == 0 && bottomen == 0 && bottomex == 0)
-    flashType = MatchType::enSide;
-  else if (topen == 1 && sideen == 0 && topex == 0 && sideex == 1 && bottomen == 0 && bottomex == 0)
+  if (topen == 0 && sideen == 0 && topex == 0 && sideex == 0){
+    if(MatchBottomCRT){
+      if(bottomex==0 && bottomen==0) flashType = MatchType::noMatch;
+      else if (bottomex>=1 && bottomen==0) flashType = MatchType::exBottom;
+      else if (bottomex==0 && bottomen>=1) flashType = MatchType::enBottom;
+    } 
+    else flashType = MatchType::noMatch; 
+  }
+  else if (topen == 1 && sideen == 0 && topex == 0 && sideex == 0){
+    if (MatchBottomCRT){
+      if(bottomex==1 && bottomen==0) flashType = MatchType::enTop_exBottom;
+    }
+    else flashType = MatchType::enTop;
+  }
+  else if (topen == 0 && sideen == 1 && topex == 0 && sideex == 0)
+    if (MatchBottomCRT){
+      if(bottomex==1 && bottomen==0) flashType = MatchType::enSide_exBottom;
+    }
+    else flashType = MatchType::enSide;
+  else if (topen == 1 && sideen == 0 && topex == 0 && sideex == 1)
     flashType = MatchType::enTop_exSide;
-  else if (topen == 0 && sideen == 0 && topex == 1 && sideex == 0 && bottomen == 0 && bottomex == 0)
-    flashType = MatchType::exTop;
-  else if (topen == 0 && sideen == 0 && topex == 0 && sideex == 1 && bottomen == 0 && bottomex == 0)
-    flashType = MatchType::exSide;
-  else if (topen >= 1 && sideen >= 1 && topex == 0 && sideex == 0 && bottomen == 0 && bottomex == 0)
-    flashType = MatchType::enTop_mult;
-  else if (topen >= 1 && sideen >= 1 && topex == 0 && sideex >= 1 && bottomen == 0 && bottomex == 0)
+  else if (topen == 0 && sideen == 0 && topex == 1 && sideex == 0){
+    if (MatchBottomCRT){
+      if(bottomex==0 && bottomen==1) flashType = MatchType::exTop_enBottom;
+    }
+    else flashType = MatchType::exTop;
+  }
+  else if (topen == 0 && sideen == 0 && topex == 0 && sideex == 1)
+    if (MatchBottomCRT){
+      if(bottomex==0 && bottomen==1) flashType = MatchType::exSide_enBottom;
+    }
+    else flashType = MatchType::exSide;
+  else if (topen >= 1 && sideen >= 1 && topex == 0 && sideex == 0) // could also add `if (MatchBottomCRT)` here
+    flashType = MatchType::enTop_mult; 
+  else if (topen >= 1 && sideen >= 1 && topex == 0 && sideex >= 1) // and here 
     flashType = MatchType::enTop_exSide_mult;
-  else if (topen == 0 && sideen == 0 && topex == 0 && sideex == 0 && bottomen == 1 && bottomex == 0)
-    flashType = MatchType::enBottom;
-  else if (topen == 0 && sideen == 0 && topex == 0 && sideex == 0 && bottomen == 0 && bottomex == 1)
-    flashType = MatchType::exBottom;
-  else if (topen == 1 && sideen == 0 && topex == 0 && sideex == 0 && bottomen == 0 && bottomex == 1)
-    flashType = MatchType::enTop_exBottom;
-  else if (topen == 0 && sideen == 1 && topex == 0 && sideex == 0 && bottomen == 0 && bottomex == 1)
-    flashType = MatchType::enSide_exBottom;
   else
     flashType = MatchType::others;
-
   return {std::move(enteringCRTHits), std::move(exitingCRTHits), flashType};
 }
 
