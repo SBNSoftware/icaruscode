@@ -91,12 +91,9 @@ icarus::crt::CRTMatches icarus::crt::CRTHitmatched(
     }
   }
   if (topen == 0 && sideen == 0 && topex == 0 && sideex == 0){
-    if(MatchBottomCRT){
-      if(bottomex==0 && bottomen==0) flashType = MatchType::noMatch;
-      else if (bottomex>=1 && bottomen==0) flashType = MatchType::exBottom;
-      else if (bottomex==0 && bottomen>=1) flashType = MatchType::enBottom;
-    } 
-    else flashType = MatchType::noMatch; 
+    if(bottomex==0 && bottomen==0) flashType = MatchType::noMatch;
+    else if (bottomex>=1 && bottomen==0) flashType = MatchType::exBottom;
+    else if (bottomex==0 && bottomen>=1) flashType = MatchType::enBottom;
   }
   else if (topen == 1 && sideen == 0 && topex == 0 && sideex == 0){
     if (MatchBottomCRT){
