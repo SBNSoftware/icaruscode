@@ -87,7 +87,7 @@ namespace icarus::crt {
    * 
    * All parameters for which no default value is reported are mandatory.
    * 
-   * * `OpFlashModuleLabels` (sequence of input tags, mandatory):
+   * * `OpFlashModuleLabels` (sequence of input tags):
    *   list of reconstructed PMT flash data products to be matched to CRT hits.
    * * `CrtHitModuleLabel` (input tag, default: `crthit`): data product with
    *   the reconstructed CRT hits to be matched to the flashes above.
@@ -107,6 +107,8 @@ namespace icarus::crt {
    * * `GlobalT0Offset` (real number, nanoseconds): offset used in simulation,
    *   equivalent to the CRT hit timestamp (TS0) at the time of the reference
    *   trigger.
+   * * `MatchBottomCRT` (flag): if unset, the CRT hits from the bottom regions
+   *   will be ignored.
    * * `BNBBeamGateMin`, `BNBBeamGateMax`, `NuMIBeamGateMin`, `NuMIBeamGateMax`
    *   (real numbers, nanoseconds): the start and stop of the beam gates,
    *   i.e. the time while the trigger is active for an event. This interval is
@@ -293,7 +295,7 @@ namespace icarus::crt {
           " at the time of the reference trigger [ns]" }
         };
       fhicl::Atom<bool> MatchBottomCRT{
-	Name{ "MatchBottomCRT" },
+        Name{ "MatchBottomCRT" },
         Comment{ "bool fcl parameter to perform CRT-PMT Matching on bottom CRT data" }
         };
       
@@ -594,7 +596,7 @@ namespace icarus::crt {
         = thisRelGateTime > inBeamMin && thisRelGateTime < inBeamMax;
       
       icarus::crt::CRTMatches const crtMatches = CRTHitmatched(
-	firstOpHitPeakTime, flash_pos, crtHitList, fTimeOfFlightInterval, isRealData, fGlobalT0Offset, fMatchBottomCRT);
+        firstOpHitPeakTime, flash_pos, crtHitList, fTimeOfFlightInterval, isRealData, fGlobalT0Offset, fMatchBottomCRT);
       
       std::vector<MatchedCRT> thisFlashCRTmatches;
         std::vector<art::Ptr<sbn::crt::CRTHit>> CRTPtrs; // same order as thisFlashCRTmatches
@@ -666,7 +668,7 @@ namespace icarus::crt {
             /* .direction =    */ CRTPMTMatchingInfo::Dir::exiting,  // C++20: restore initializers
             /* .timeOfFlight = */ CRTmatch.tof,
             /* .distance =     */ CRTmatch.distance
-	  }
+          }
         );
       }
       
