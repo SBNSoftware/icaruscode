@@ -231,8 +231,11 @@ namespace crt {
     unsigned int fGateType;///< Beam gate type.
     double       fFlashTime_us;///< Time of the optical flash w.r.t. the global trigger in us.    
     double fFlashGateTime_ns;///< Time of the optical flash w.r.t. the beam gate opening in ns.
+    double fFirstOpHitPeakTime;///< Time of the first optical hit peak time w.r.t. the global trigger [us]
+    double fFirstOpHitStartTime; ///< Time of the first optical hit start time w.r.t. the global trigger [us]
     bool fFlashInGate;///< Flash within gate or not.
     bool fFlashInBeam;///< Flash within the beam window of the gate or not.
+    double fFlashPE;///< Total reconstructed light in the flash [photoelectrons]
     double fFlashPos_x;///< Flash barycenter coordinates evaluated using ADCs as weights, X-position.
     double fFlashPos_y;///< Flash barycenter coordinates evaluated using ADCs as weights, Y-position.
     double fFlashPos_z;///< Flash barycenter coordinates evaluated using ADCs as weights, Z-position.
@@ -247,12 +250,12 @@ namespace crt {
     vector<double> fCRTPMTTimeDiff_ns;
     vector<double> fCRTTime_us;
     vector<int> fCRTSys;
-    vector<int> fCRTRegion;
+    vector<int> fCRTRegion;     
 
-    /*int topCRTBefore;///< Number of Top CRT Hits before the optical flash.
-    int topCRTAfter;///< Number of Top CRT Hits after the optical flash.
-    int sideCRTBefore;///< Number of Side CRT Hits before the optical flash.
-    int sideCRTAfter;///< Number of Side CRT Hits after the optical flash.*/
+    int fNtopCRTBefore;
+    int fNtopCRTAfter;
+    int fNsideCRTBefore;
+    int fNsideCRTAfter;
     //std::vector<recob::OpHit>opHits;///< Optical hits of the flash.
     
     // Other variables that will be shared between different methods.
@@ -394,8 +397,11 @@ namespace crt {
     fCRTPMTNtuple->Branch("gate_type", &fGateType, "gate_type/b");
     fCRTPMTNtuple->Branch("flashTime_us", &fFlashTime_us, "flashTime_us/D");
     fCRTPMTNtuple->Branch("flashGateTime_ns", &fFlashGateTime_ns, "flashGateTime_ns/D");
+    fCRTPMTNtuple->Branch("firstOpHitPeakTime", &fFirstOpHitPeakTime);
+    fCRTPMTNtuple->Branch("firstOpHitStartTime", &fFirstOpHitStartTime);
     fCRTPMTNtuple->Branch("flashInGate", &fFlashInGate, "flashInGate/O");
     fCRTPMTNtuple->Branch("flashInBeam", &fFlashInBeam, "flashInBeam/O");
+    fCRTPMTNtuple->Branch("flashPE", &fFlashPE);
     fCRTPMTNtuple->Branch("fFlashPos_x", &fFlashPos_x, "flashPos_x/D");
     fCRTPMTNtuple->Branch("fFlashPos_y", &fFlashPos_y, "flashPos_y/D");
     fCRTPMTNtuple->Branch("fFlashPos_z", &fFlashPos_z, "flashPos_z/D");
@@ -408,6 +414,10 @@ namespace crt {
     fCRTPMTNtuple->Branch("CRTTime_us", &fCRTTime_us);
     fCRTPMTNtuple->Branch("CRTSys", &fCRTSys);
     fCRTPMTNtuple->Branch("CRTRegion", &fCRTRegion);
+    fCRTPMTNtuple->Branch("topCRTBefore", &fNtopCRTBefore);
+    fCRTPMTNtuple->Branch("topCRTAfter", &fNtopCRTAfter);
+    fCRTPMTNtuple->Branch("sideCRTBefore", &fNsideCRTBefore);
+    fCRTPMTNtuple->Branch("sideCRTAfter", &fNsideCRTAfter);
 }
   
   void CRTDataAnalysis::beginRun(const art::Run&)
@@ -597,13 +607,17 @@ namespace crt {
     if ( event.getByLabel(fCRTPMTProducerLabel, CRTPMTMatchingHandle)){
       //if (CRTPMTMatchingHandle.isValid() ){
       for (auto const& match: *CRTPMTMatchingHandle){
+	int TopEn = 0, TopEx = 0, SideEn = 0, SideEx = 0;
 	fMatchEvent = fEvent;
 	fMatchRun = fRun;
 	fGateType = m_gate_type;
 	fFlashTime_us = match.flashTime;
 	fFlashGateTime_ns = match.flashGateTime;
+	fFirstOpHitPeakTime = match.firstOpHitPeakTime;
+	fFirstOpHitStartTime = match.firstOpHitStartTime;
 	fFlashInGate = match.flashInGate;
 	fFlashInBeam = match.flashInBeam;
+	fFlashPE = match.flashPE;
 	fFlashPos_x = match.flashPosition.X();
 	fFlashPos_y = match.flashPosition.Y();
 	fFlashPos_z = match.flashPosition.Z();
@@ -618,7 +632,16 @@ namespace crt {
 	  fCRTTime_us.push_back(crthit.time);
 	  fCRTSys.push_back(crthit.sys);
 	  fCRTRegion.push_back(crthit.region);
+	  int fMatchType = static_cast<int>(fFlashClassification);
+	  if(fMatchType == 1 || fMatchType == 3 || fMatchType == 6 || fMatchType == 7 || fMatchType == 11) TopEn++;
+	  if(fMatchType == 4 || fMatchType == 13) TopEx++;
+	  if(fMatchType == 2 || fMatchType == 12) SideEn++;
+	  if(fMatchType == 3 || fMatchType == 5 || fMatchType == 7 || fMatchType == 14) SideEx++;
 	}
+	fNtopCRTBefore = TopEn;
+	fNtopCRTAfter = TopEx;
+	fNsideCRTBefore = SideEn;
+	fNsideCRTAfter = SideEx;
 	fCRTPMTNtuple->Fill();
       } // for match in handle 
     } // if valid label 
