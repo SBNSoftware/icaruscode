@@ -26,14 +26,12 @@ namespace icarus::crt {
     exSide            = 5, ///< Matched with a Side CRT after the optical flash.
     enTop_mult        = 6, ///< Matched with multiple Top CRT hits before the optical flash.
     enTop_exSide_mult = 7, ///< Matched with multiple Top CRT hits before the optical flash and more then 1 side CRT hits after the optical flash.
-    enBottom          = 8, ///< Matched with bottom CRT hit before the optical flash.  
-    exBottom          = 10,
-    enTop_exBottom    = 11,
-    enSide_exBottom   = 12,
-    exTop_enBottom    = 13, 
-    exSide_enBottom   = 14,
-      /*enBottom_exTop    = 12,
-	enBottom_exSide   = 13,*/
+    enBottom          = 8, ///< Matched with bottom CRT hit before the optical flash.
+    exBottom          = 10, ///< Matched with Bottom CRT hit after the optical flash.
+    enTop_exBottom    = 11, ///< Matched with one Top CRT hit before the optical flash and
+    enSide_exBottom   = 12, ///< Matched with one Side CRT hit before the optical flash and matched with one Bottom CRT hit after the optical flash.
+    exTop_enBottom    = 13, ///< Matched with one Bottom CRT hit before the optical flash and matched with one Top CRT hit after the optical flash.
+    exSide_enBottom   = 14, ///< Matched with one Bottom CRT hit before the optical flash and matched with one Side CRT hit after the optical flash.
     others            = 9  ///< All the other cases.
       
   };
