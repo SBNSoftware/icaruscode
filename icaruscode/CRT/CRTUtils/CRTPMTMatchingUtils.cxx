@@ -96,28 +96,20 @@ icarus::crt::CRTMatches icarus::crt::CRTHitmatched(
     else if (bottomex==0 && bottomen>=1) flashType = MatchType::enBottom;
   }
   else if (topen == 1 && sideen == 0 && topex == 0 && sideex == 0){
-    if (MatchBottomCRT){
-      if(bottomex==1 && bottomen==0) flashType = MatchType::enTop_exBottom;
-    }
+    if(bottomex==1 && bottomen==0) flashType = MatchType::enTop_exBottom;
     else flashType = MatchType::enTop;
   }
   else if (topen == 0 && sideen == 1 && topex == 0 && sideex == 0)
-    if (MatchBottomCRT){
-      if(bottomex==1 && bottomen==0) flashType = MatchType::enSide_exBottom;
-    }
+    if(bottomex==1 && bottomen==0) flashType = MatchType::enSide_exBottom;
     else flashType = MatchType::enSide;
   else if (topen == 1 && sideen == 0 && topex == 0 && sideex == 1)
     flashType = MatchType::enTop_exSide;
   else if (topen == 0 && sideen == 0 && topex == 1 && sideex == 0){
-    if (MatchBottomCRT){
-      if(bottomex==0 && bottomen==1) flashType = MatchType::exTop_enBottom;
-    }
+    if(bottomex==0 && bottomen==1) flashType = MatchType::exTop_enBottom;
     else flashType = MatchType::exTop;
   }
   else if (topen == 0 && sideen == 0 && topex == 0 && sideex == 1)
-    if (MatchBottomCRT){
-      if(bottomex==0 && bottomen==1) flashType = MatchType::exSide_enBottom;
-    }
+    if(bottomex==0 && bottomen==1) flashType = MatchType::exSide_enBottom;
     else flashType = MatchType::exSide;
   else if (topen >= 1 && sideen >= 1 && topex == 0 && sideex == 0) // could also add `if (MatchBottomCRT)` here
     flashType = MatchType::enTop_mult; 
