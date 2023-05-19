@@ -1,7 +1,7 @@
 /**
  * @file   icaruscode/CRT/CRTPMTMatchingProducer_module.cc
  * @brief  Producer to extract and store time matches between CRT hits and PMT.
- * @author Francesco Poppi ( poppi@bo.infn.it )  and Anna Heggestuen 
+ * @author Francesco Poppi ( poppi@bo.infn.it )  and Anna Heggestuen (aheggest@colostate.edu)
  * @date   April 26 2023
  */
 

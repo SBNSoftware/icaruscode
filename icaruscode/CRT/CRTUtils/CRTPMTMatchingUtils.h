@@ -1,7 +1,7 @@
 /**
  * @file   icaruscode/CRT/CRTUtils/CRTPMTMatchingUtils.h
  * @brief  Common functions for CRT/PMT matching.
- * @author Francesco Poppi ( poppi@bo.infn.it )  and Anna Heggestuen 
+ * @author Francesco Poppi ( poppi@bo.infn.it )  and Anna Heggestuen (aheggest@colostate.edu)
  * @date   April 26 2023.
  * @see    icaruscode/CRT/CRTUtils/CRTPMTMatchingUtils.cxx
  */

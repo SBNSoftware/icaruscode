@@ -496,15 +496,12 @@ namespace crt {
 	  presel = true;
 	}
       }
-      //std:: cout << "presel just before filling: " << presel << std::endl;
       if (presel) crtData.push_back(crtList[febdat_i]);
       presel = false;
     } // end of crtList
     
-    //     mf::LogError("CRTDataAnalysis") << "size of the crtdata after removing unwanted charges: " << crtData.size() << std::endl;  
-    
-    // mf::LogError("CRTDataAnalysis") << "about to loop over CRTDAQ entries" << std::endl;
-    std::cout << crtData.size() <<" crtData entries \n";
+        
+    mf::LogError("CRTDataAnalysis") << "about to loop over " << crtData.size() <<" crtData entries \n";
     for (size_t febdat_i=0; febdat_i<crtData.size(); febdat_i++) {
       
       
@@ -617,7 +614,7 @@ namespace crt {
 	  CRTHitPos_x.push_back(crthit.position.X());
 	  CRTHitPos_y.push_back(crthit.position.Y());
 	  CRTHitPos_z.push_back(crthit.position.Z());
-	  fCRTPMTTimeDiff_ns.push_back(crthit.PMTTimeDiff);
+	  fCRTPMTTimeDiff_ns.push_back(1e3*crthit.PMTTimeDiff);
 	  fCRTTime_us.push_back(crthit.time);
 	  fCRTSys.push_back(crthit.sys);
 	  fCRTRegion.push_back(crthit.region);
