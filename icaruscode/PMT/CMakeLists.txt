@@ -235,6 +235,7 @@ cet_build_plugin(PhotonPropogationICARUS art::module LIBRARIES ${MODULE_LIBRARIE
 cet_build_plugin(TrigInfo art::module LIBRARIES ${MODULE_LIBRARIES})
 cet_build_plugin(wvfAnaicarus art::module LIBRARIES ${MODULE_LIBRARIES})
 cet_build_plugin(OpDetWaveformFiltering art::module LIBRARIES ${MODULE_LIBRARIES})
+cet_build_plugin(OpDetWaveformDumper art::module LIBRARIES ${MODULE_LIBRARIES})
 
 install_headers()
 install_fhicl()
