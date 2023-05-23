@@ -13,5 +13,5 @@ physics.producers.mcreco.SimChannelLabel: "daq:simpleSC"
 # Mini production, pre signal shape tuning
 # this_cal_constants: [1.343e-2, 1.338e-2, 0.01227]
 # Post signal shape tuning
-this_cal_constants: [1.343e-2, 1.338e-2, 0.01262]
+this_cal_constants: [1.343e-2, 1.338e-2, 0.01285]
 #include "set_caf_calconst.fcl"
