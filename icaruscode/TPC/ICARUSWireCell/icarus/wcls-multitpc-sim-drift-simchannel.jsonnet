@@ -7,9 +7,28 @@ local f = import 'pgrapher/common/funcs.jsonnet';
 local wc = import 'wirecell.jsonnet';
 
 local io = import 'pgrapher/common/fileio.jsonnet';
-local tools_maker = import 'pgrapher/common/tools.jsonnet';
+local tools_maker = import 'pgrapher/experiment/icarus/icarus_tools.jsonnet';
 // local params = import 'pgrapher/experiment/icarus/simparams.jsonnet';
 local base = import 'pgrapher/experiment/icarus/simparams.jsonnet';
+
+// load the electronics response parameters
+local er_params = [
+  {
+    gain: std.extVar('gain0')*wc.mV/wc.fC,
+    shaping: std.extVar('shaping0')*wc.us,
+  },
+
+  {
+    gain: std.extVar('gain1')*wc.mV/wc.fC,
+    shaping: std.extVar('shaping1')*wc.us,
+  },
+
+  {
+    gain: std.extVar('gain2')*wc.mV/wc.fC,
+    shaping: std.extVar('shaping2')*wc.us,
+  },
+];
+
 local params = base {
   lar: super.lar {
     // Longitudinal diffusion constant
@@ -24,6 +43,25 @@ local params = base {
   files: super.files {
     fields: [ std.extVar('files_fields'), ],
   },
+
+  rc_resp: if std.extVar('file_rcresp') != "" then
+  {
+    // "icarus_fnal_rc_tail.json"
+    filename: std.extVar('file_rcresp'),
+    postgain: 1.0,
+    start: 0.0,
+    tick: 0.4*wc.us,
+    nticks: 4255,
+    type: "JsonElecResponse",
+    rc_layers: 1
+  }
+  else super.rc_resp,
+
+  elec: std.mapWithIndex(function (n, eparam)
+    super.elec[n] + {
+      gain: eparam.gain,
+      shaping: eparam.shaping,
+    }, er_params),
 };
 
 local tools = tools_maker(params);
@@ -181,15 +219,15 @@ local wcls_simchannel_sink = g.pnode({
 
     // GP: The shaping time of the electronics response (1.3us) shifts the peak
     //     of the field response time. Eyeballing simulation times, it does this
-    //     by a bit less than the 1.3us.
+    //     by a bit less than the 1.3us (1us).
     //
     //     N.B. for future: there is likely an additional offset on the two induction
     //     planes due to where the deconvolution precisely defines where the "peak"
     //     of the pulse is. One may want to refine these parameters to account for that.
     //     This perturbation shouldn't be more than a tick or two.
-    u_time_offset: 1.0 * wc.us,
-    v_time_offset: 1.0 * wc.us,
-    y_time_offset: 1.0 * wc.us,
+    u_time_offset: std.extVar('time_offset_u') * wc.us,
+    v_time_offset: std.extVar('time_offset_v') * wc.us,
+    y_time_offset: std.extVar('time_offset_y') * wc.us,
 
     g4_ref_time: -1500 * wc.us, // G4RefTime from detectorclocks_icarus.fcl
     use_energy: true,

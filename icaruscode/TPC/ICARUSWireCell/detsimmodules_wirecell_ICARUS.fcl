@@ -34,6 +34,7 @@ icarus_simwire_wirecell:
         // Make available parameters via Jsonnet's std.extVar()
         params: {
 	    files_fields: "garfield-icarus-fnal-rev1.json.bz2"
+	    file_rcresp: "" # use the RCResponse by default
 	}
         structs: {
             # load values from simulationservices_icarus.fcl
@@ -49,9 +50,35 @@ icarus_simwire_wirecell:
             # Scaling Parameters from int and coh noise components
 	    int_noise_scale: 1.0
 	    coh_noise_scale: 1.09
+
+            # Gain and shaping time
+            gain0: 14.9654 # mV/fC 
+            gain1: 14.9654 # mV/fC 
+            gain2: 14.9654 # mV/fC 
+
+            shaping0: 1.3 # us
+            shaping1: 1.3 # us
+            shaping2: 1.3 # us
+
+            # Time offsets for truth matching
+            time_offset_u: 1.0 # us
+            time_offset_v: 1.0 # us
+            time_offset_y: 1.0 # us
+            
         }
     }
 }
+
+icarus_simwire_wirecell_fitSR: @local::icarus_simwire_wirecell
+# Add in the ER tail
+icarus_simwire_wirecell_fitSR.wcls_main.params.file_rcresp: "icarus_fnal_rc_tail.json"
+# Add in the tuned field responses
+icarus_simwire_wirecell_fitSR.wcls_main.params.files_fields: "icarus_fnal_fit_ks.json.bz2"
+# futz with shaping+gain values (note these are really just scale factors and should not be taken literally)
+icarus_simwire_wirecell_fitSR.wcls_main.structs.gain0: 10.2636323 # mV/fC 
+icarus_simwire_wirecell_fitSR.wcls_main.structs.gain1: 12.1420344 # mV/fC
+icarus_simwire_wirecell_fitSR.wcls_main.structs.gain2: 13.0261362 # mV/fC
+icarus_simwire_wirecell_fitSR.wcls_main.structs.shaping1: 1.45 # us
 
 
 END_PROLOG
