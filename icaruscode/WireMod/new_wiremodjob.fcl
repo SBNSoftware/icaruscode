@@ -1,0 +1,33 @@
+#incldue "New_WireMod.fcl"
+
+process_name: WireMod
+
+services:
+{
+  # Load the service that manages root files for histograms.
+  TFileService: { fileName: "wiremod_hist.root" closeFileFast: false }
+}
+
+source:
+{
+  module_type: RootInput
+}
+
+physics:
+{
+  producers:
+  {
+    wiremod:
+    {
+      #@table::standard_wiremod
+    }
+  }
+}
+
+physics.producers.wiremod: {
+     module_type: NewWireMod
+     WireLabelVec: [ "roifinder:PHYSCRATEDATATPCWW",
+                     "roifinder:PHYSCRATEDATATPCWE",
+                     "roifinder:PHYSCRATEDATATPCEW",
+                     "roifinder:PHYSCRATEDATATPCEE" ]
+}

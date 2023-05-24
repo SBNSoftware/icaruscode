@@ -1,0 +1,12 @@
+BEGIN_PROLOG
+
+standard_wiremod:
+{
+  plugin_type: "WireMod"
+  WireLabelVec: [ "roifinder:PHYSCRATEDATATPCWW",
+                  "roifinder:PHYSCRATEDATATPCWE",
+                  "roifinder:PHYSCRATEDATATPCEW",
+                  "roifinder:PHYSCRATEDATATPCEE" ]
+}
+
+END_PROLOG
