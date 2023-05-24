@@ -143,11 +143,11 @@ namespace crt {
   private:
 
     void FillFebMap();
-
+    
     // Declare member data here.
     const icarusDB::IICARUSChannelMap* fChannelMap = nullptr;
     //    CRTHitRecoAlg hitAlg;
-
+    void ClearVecs();
     // The parameters we'll read from the .fcl file.
     art::InputTag fTriggerLabel;
     art::InputTag fCRTHitProducerLabel;        ///< The name of the producer that created hits
@@ -433,7 +433,6 @@ namespace crt {
     fEvent  = event.id().event(); 
     fRun    = event.run();
     fSubRun = event.subRun();
-
     FillFebMap();//febMap);
 
     //add trigger info
@@ -605,7 +604,7 @@ namespace crt {
     //Fill CRTPMT Match TTree
     art::Handle<vector<icarus::crt::CRTPMTMatching>> CRTPMTMatchingHandle;
     if ( event.getByLabel(fCRTPMTProducerLabel, CRTPMTMatchingHandle)){
-      //if (CRTPMTMatchingHandle.isValid() ){
+      
       for (auto const& match: *CRTPMTMatchingHandle){
 	int TopEn = 0, TopEx = 0, SideEn = 0, SideEx = 0;
 	fMatchEvent = fEvent;
@@ -643,6 +642,7 @@ namespace crt {
 	fNsideCRTBefore = SideEn;
 	fNsideCRTAfter = SideEx;
 	fCRTPMTNtuple->Fill();
+	ClearVecs();
       } // for match in handle 
     } // if valid label 
     else{
@@ -652,6 +652,15 @@ namespace crt {
 
   } // CRTDataAnalysis::analyze()
   
+    void CRTDataAnalysis::ClearVecs(){
+      CRTHitPos_x.clear();
+      CRTHitPos_y.clear();
+      CRTHitPos_z.clear();
+      fCRTPMTTimeDiff_ns.clear();
+      fCRTTime_us.clear();
+      fCRTSys.clear();
+      fCRTRegion.clear();
+    }
   
   DEFINE_ART_MODULE(CRTDataAnalysis)
 
