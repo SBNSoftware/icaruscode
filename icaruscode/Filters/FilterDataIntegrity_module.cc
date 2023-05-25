@@ -76,11 +76,12 @@ bool filter::FilterDataIntegrity::filter(art::Event &event)
         }
     }
 
-    std::cout << "FilterDataIntegrity has " << fExpectedFragments.size() << " expected, has " << missingFragments.size() << " missing. There are " << emptyFragments << " empty fragments" << std::endl;
+    mf::LogDebug("FilterDataIntegrity") << "Expected fragments: " << fExpectedFragments.size() << " expected, has " << missingFragments.size() << " missing. There are " << emptyFragments << " empty fragments";
 
     if (missingFragments.size() > 0 || emptyFragments > 0)
     {
-        std::cout << "Bad fragments: " << missingFragments.size() << ", " << emptyFragments << std::endl;
+        mf::LogInfo("FilterDataIntegrity") << "Bad fragments: " << missingFragments.size() << ", " << emptyFragments;
+        
         filterPass = false;
     }
 
