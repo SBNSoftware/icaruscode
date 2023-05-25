@@ -73,7 +73,7 @@ bool filter::FilterDataIntegrity::filter(art::Event &event)
 
     mf::LogDebug("FilterDataIntegrity") << "Expected fragments: " << fExpectedFragments.size() << " expected, has " << missingFragments.size() << " missing. There are " << emptyFragments << " empty fragments";
 
-    if (missingFragments.empty() || emptyFragments > 0)
+    if (!missingFragments.empty() || emptyFragments > 0)
     {
         mf::LogInfo("FilterDataIntegrity") << "Bad fragments: " << missingFragments.size() << ", " << emptyFragments;
 
