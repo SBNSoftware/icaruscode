@@ -3,18 +3,17 @@
 // FilterDataIntegrity class
 //
 ////////////////////////////////////////////////////////////////////////
-#include <fstream>
 
 /// Framework includes
 #include "art/Framework/Core/ModuleMacros.h"
 #include "art/Framework/Core/EDFilter.h"
 #include "art/Framework/Principal/Event.h"
-#include "canvas/Utilities/InputTag.h"
-#include "fhiclcpp/ParameterSet.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
-#include "lardataobj/RecoBase/Hit.h"
 
-#include "sbndaq-artdaq-core/Overlays/ICARUS/PhysCrateFragment.hh"
+#include "artdaq-core/Data/Fragment.hh"
+
+#include <set>
+#include <string>
 
 ///filters for events, etc
 namespace filter
@@ -68,20 +67,16 @@ bool filter::FilterDataIntegrity::filter(art::Event &event)
             std::string instanceName = handle.provenance()->productInstanceName();
             std::size_t found        = instanceName.find("Empty");
 
-            if (found != std::string::npos)
-            {
-                // fragment is empty
-                emptyFragments++;
-            }
+            if (found != std::string::npos) emptyFragments++;
         }
     }
 
     mf::LogDebug("FilterDataIntegrity") << "Expected fragments: " << fExpectedFragments.size() << " expected, has " << missingFragments.size() << " missing. There are " << emptyFragments << " empty fragments";
 
-    if (missingFragments.size() > 0 || emptyFragments > 0)
+    if (missingFragments.empty() || emptyFragments > 0)
     {
         mf::LogInfo("FilterDataIntegrity") << "Bad fragments: " << missingFragments.size() << ", " << emptyFragments;
-        
+
         filterPass = false;
     }
 
