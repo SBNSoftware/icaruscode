@@ -229,6 +229,7 @@ namespace crt {
     int          fMatchEvent;///< Event number.
     int          fMatchRun;///< Run number.
     unsigned int fGateType;///< Beam gate type.
+    int          fFlashID; ///< ID of the optical flash.
     double       fFlashTime_us;///< Time of the optical flash w.r.t. the global trigger in us.    
     double fFlashGateTime_ns;///< Time of the optical flash w.r.t. the beam gate opening in ns.
     double fFirstOpHitPeakTime;///< Time of the first optical hit peak time w.r.t. the global trigger [us]
@@ -236,6 +237,8 @@ namespace crt {
     bool fFlashInGate;///< Flash within gate or not.
     bool fFlashInBeam;///< Flash within the beam window of the gate or not.
     double fFlashPE;///< Total reconstructed light in the flash [photoelectrons]
+    double       fFlashYWidth;///< Flash spread along Y.
+    double       fFlashZWidth;///< Flash spread along Z.
     double fFlashPos_x;///< Flash barycenter coordinates evaluated using ADCs as weights, X-position.
     double fFlashPos_y;///< Flash barycenter coordinates evaluated using ADCs as weights, Y-position.
     double fFlashPos_z;///< Flash barycenter coordinates evaluated using ADCs as weights, Z-position.
@@ -395,6 +398,7 @@ namespace crt {
     fCRTPMTNtuple->Branch("event", &fMatchEvent, "event/I");
     fCRTPMTNtuple->Branch("run", &fMatchRun, "run/I");
     fCRTPMTNtuple->Branch("gate_type", &fGateType, "gate_type/b");
+    fCRTPMTNtuple->Branch("fFlashID", &fFlashID);
     fCRTPMTNtuple->Branch("flashTime_us", &fFlashTime_us, "flashTime_us/D");
     fCRTPMTNtuple->Branch("flashGateTime_ns", &fFlashGateTime_ns, "flashGateTime_ns/D");
     fCRTPMTNtuple->Branch("firstOpHitPeakTime", &fFirstOpHitPeakTime);
@@ -405,6 +409,8 @@ namespace crt {
     fCRTPMTNtuple->Branch("fFlashPos_x", &fFlashPos_x, "flashPos_x/D");
     fCRTPMTNtuple->Branch("fFlashPos_y", &fFlashPos_y, "flashPos_y/D");
     fCRTPMTNtuple->Branch("fFlashPos_z", &fFlashPos_z, "flashPos_z/D");
+    fCRTPMTNtuple->Branch("fFlashYWidth",&fFlashYWidth);
+    fCRTPMTNtuple->Branch("fFlashZWidth",&fFlashZWidth);
     fCRTPMTNtuple->Branch("fFlashClassification", &fFlashClassification, "flashClassification/I");
     fCRTPMTNtuple->Branch("nMatchedCRTHits", &nMatchedCRTHits);
     fCRTPMTNtuple->Branch("CRTHitPos_x", &CRTHitPos_x);
@@ -610,6 +616,7 @@ namespace crt {
 	fMatchEvent = fEvent;
 	fMatchRun = fRun;
 	fGateType = m_gate_type;
+	fFlashID = match.flashID;
 	fFlashTime_us = match.flashTime;
 	fFlashGateTime_ns = match.flashGateTime;
 	fFirstOpHitPeakTime = match.firstOpHitPeakTime;
@@ -620,8 +627,9 @@ namespace crt {
 	fFlashPos_x = match.flashPosition.X();
 	fFlashPos_y = match.flashPosition.Y();
 	fFlashPos_z = match.flashPosition.Z();
+	fFlashYWidth = match.flashYWidth;
+	fFlashZWidth = match.flashZWidth;
 	fFlashClassification = match.flashClassification;
-	
 	nMatchedCRTHits = match.matchedCRTHits.size();
 	for(auto const& crthit: match.matchedCRTHits){
 	  CRTHitPos_x.push_back(crthit.position.X());

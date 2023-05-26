@@ -627,6 +627,7 @@ namespace icarus::crt {
       }
       
       int const flashID = icarus::crt::makeFlashID(flashPtr.get());
+      mf::LogTrace("CRTPMTMatchingProducer") << "saving Flash with FlashID = " << flashID << "\n";
       FlashType thisFlashType = { /* .flashID = */ flashID, // C++20: restore initializers
                                   /* .flashPos = */ flash_pos,
                                   /* .flashTime = */ tflash,
