@@ -15,6 +15,7 @@ set(            MODULE_LIBRARIES
                         larevt::Filters
                         lardataobj::RecoBase
                         lardata::ArtDataHelper
+                        nurandom::RandomUtils_NuRandomService_service
                         art::Framework_Core
                         art::Framework_Principal
                         art::Framework_Services_Registry
@@ -28,6 +29,7 @@ set(            MODULE_LIBRARIES
                         messagefacility::headers
                         fhiclcpp::fhiclcpp
                         cetlib::cetlib
+                        CLHEP::Random
                         ROOT::Geom
                         ROOT::XMLIO
                         ROOT::Gdml

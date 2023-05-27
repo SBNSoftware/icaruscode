@@ -29,6 +29,11 @@
 #include "lardata/ArtDataHelper/HitCreator.h"
 #include "lardataobj/RecoBase/SpacePoint.h"
 
+// For random implementation: see
+// https://github.com/SBNSoftware/icaruscode/blob/7b71f0213a1a66913cfe1cd795f49a9215570145/icaruscode/PMT/OpReco/FakePhotoS_module.cc#L16
+#include "nurandom/RandomUtils/NuRandomService.h"
+#include "CLHEP/Random/RandFlat.h"
+
 #include <memory>
 
 class HARPS;
@@ -59,13 +64,23 @@ private:
 
   std::string fInterestFileName;
 
+  // TODO: how to handle the hits without spacepoints...
   double fMaskBeginningDist; ///< How far from beginning of track to mask (in cm)
+  double fMaskEndDist;       ///< How far from end of track to mask (in cm)
+
+  // Allow for one to choose random groups of wires to skip on the different planes...
+  // TODO: Attempt made to handle things crossing boundaries, but possibly could be improved.
+  std::vector< unsigned int > fMaskNBreak;
+  std::vector< int > fMaskNWires;
 
   bool fTPCHitsWireAssn;
   std::string fTPCHitCreatorInstanceName;
 
   std::map< std::string, std::vector<size_t> > fParticleListCryo0;
   std::map< std::string, std::vector<size_t> > fParticleListCryo1;
+
+  CLHEP::HepRandomEngine &fFlatEngine;
+  CLHEP::RandFlat *fFlatRand; ///< Random number generator as in PMT/OpReco/FakePhotoS_module.cc
 };
 
 
@@ -77,11 +92,18 @@ HARPS::HARPS(fhicl::ParameterSet const& p)
   fTrackModuleLabels         ( p.get< std::vector<art::InputTag> >("TrackModuleLabels") ),
   fInterestFileName          ( p.get<std::string>("InterestFileName") ),
   fMaskBeginningDist         ( p.get<double>("MaskBeginningDist", -1.) ),
+  fMaskEndDist               ( p.get<double>("MaskEndDist", -1.) ),
+  fMaskNBreak                ( p.get< std::vector<unsigned int> >("MaskNBreak", {0}) ),
+  fMaskNWires                ( p.get< std::vector<int> >("MaskNWires", {-1}) ),
   fTPCHitsWireAssn           ( p.get< bool >("TPCHitsWireAssn", true) ),
-  fTPCHitCreatorInstanceName ( p.get<std::string>("TPCHitCreatorInstanaceName","") )
+  fTPCHitCreatorInstanceName ( p.get<std::string>("TPCHitCreatorInstanaceName","") ),
+  fFlatEngine                ( art::ServiceHandle<rndm::NuRandomService>()->createEngine(*this, "HepJamesRandom", "Gen", p, "Seed") )
 {
   if ( fPFParticleModuleLabels.size()!=fTrackModuleLabels.size() || fPFParticleModuleLabels.size()!=fHitModuleLabels.size() )
     throw cet::exception("HARPS") << "Error... InputTag vectors need to be same size..." << std::endl; // borrow from elsewhere
+
+  if ( fMaskBeginningDist>0. && fMaskEndDist>0. )
+    throw cet::exception("HARPS") << "Error... Should not try to mask the beginning and ALSO some distance from the end..." << std::endl;
 
   recob::HitCollectionCreator::declare_products(producesCollector(), fTPCHitCreatorInstanceName, fTPCHitsWireAssn, false);
 
@@ -101,6 +123,8 @@ HARPS::HARPS(fhicl::ParameterSet const& p)
     else           fParticleListCryo1[evtID].push_back(nP);
   }
   in.close();
+
+  fFlatRand = new CLHEP::RandFlat(fFlatEngine,0.,1.);
 }
 
 void HARPS::produce(art::Event& e)
@@ -180,16 +204,18 @@ void HARPS::produce(art::Event& e)
       double trkStartX = trkFromPFP.at(0)->Start().X();
       double trkStartY = trkFromPFP.at(0)->Start().Y();
       double trkStartZ = trkFromPFP.at(0)->Start().Z();
+      double trkEndX   = trkFromPFP.at(0)->End().X();
+      double trkEndY   = trkFromPFP.at(0)->End().Y();
+      double trkEndZ   = trkFromPFP.at(0)->End().Z();
 
       const std::vector< art::Ptr<recob::Hit> > hitsFromTrk = fmHit.at(trkFromPFP.at(0).key());
 
-      //art::FindManyP<recob::SpacePoint> fmSps(hitsFromTrk, e, fPFParticleModuleLabels[iCryo]);
-      //if ( !fmSps.isValid() ){
-      //  throw cet::exception("HARPS") << "Module wants to use invalid associations (fmSps)." << std::endl;
-      //}
+      // Make a vector of the hits for each plane, and while doing it, compile a list of idx = Nw * 4 * 3 * Cryo + Nw * 3 * TPC + Nw * Plane + Wire, for now hardcode Nw = 5000 which should be long enough...
+      std::map< unsigned int, std::vector< art::Ptr<recob::Hit> > > planeToHitsMap;
+      std::map< unsigned int, std::set< unsigned int > > planeToIdxMap;
 
-      // Copied from my overlay module
-      for ( auto const& iHitPtr : hitsFromTrk ) {
+      // Loop as in my overlay module, copy hits passing the criteria into the maps for checking against other criteria...
+      for( auto const& iHitPtr : hitsFromTrk ) {
         // Check if we want to remove this hit because we are masking X distance from the beginning:
         // TODO: as a start, use the Pandora spacepoints<->hit association... is this safe or should we do something in 2d distances?
         if ( fMaskBeginningDist > 0. ) {
@@ -201,19 +227,59 @@ void HARPS::produce(art::Event& e)
           const auto thisXYZ = spsFromHit.at(0)->XYZ();
           if ( std::hypot( trkStartX-thisXYZ[0], trkStartY-thisXYZ[1], trkStartZ-thisXYZ[2] ) < fMaskBeginningDist ) continue;
         }
-
-        // TODO: add some sort of random ability to miss some wires.
-
-        // If we're not skipping this hit then write it to the file!
-        recob::Hit theHit = *iHitPtr;
-        if ( fTPCHitsWireAssn ) {
-          std::vector< art::Ptr<recob::Wire> > hitWires = fmWire.at(iHitPtr.key());
-          if ( hitWires.size() == 0 ) throw cet::exception("HARPS") << "Hit found with no associated wires...\n";
-          else if ( hitWires.size() > 1 ) mf::LogWarning("HARPS") << "Hit with >1 recob::Wire associated...";
-          hitCol.emplace_back(theHit,hitWires[0]);
+        else if ( fMaskEndDist > 0. ) {
+          const std::vector< art::Ptr<recob::SpacePoint> > spsFromHit = fmSps.at(iHitPtr.key());
+          if ( spsFromHit.size() != 1 ) {
+            mf::LogError("HARPS") << "fmSps gave us something other than one spacepoint for this hit (" << spsFromHit.size() << ")... Skipping.";
+            continue;
+          }
+          const auto thisXYZ = spsFromHit.at(0)->XYZ();
+          if ( std::hypot( trkEndX-thisXYZ[0], trkEndY-thisXYZ[1], trkEndZ-thisXYZ[2] ) > fMaskEndDist ) continue;
         }
-        else hitCol.emplace_back(theHit);
-      } // loop hits
+
+        unsigned int plane = iHitPtr->WireID().Plane;
+        unsigned int idx = 5000*4*3*iHitPtr->WireID().Cryostat + 5000*3*iHitPtr->WireID().TPC + 5000*iHitPtr->WireID().Plane + iHitPtr->WireID().Wire;
+        planeToHitsMap[plane].push_back( iHitPtr );
+        planeToIdxMap[plane].emplace( idx );
+      }
+
+      // Pick wires to remove!
+      std::map< unsigned int, std::set< unsigned int > > planeToIdxRemoval;
+      if ( fMaskNWires.size() >= 1 && fMaskNBreak.size() >= 1 && fMaskNWires.size() == fMaskNBreak.size() ) {
+        for ( unsigned int idxPlane = 0; idxPlane < fMaskNWires.size(); ++idxPlane ) {
+          if( fMaskNWires[idxPlane] < 0 || fMaskNBreak[idxPlane] == 0 ) continue;
+          if ( planeToIdxMap.find(idxPlane) == planeToIdxMap.end() ) continue;
+          std::vector<unsigned int> planeIdxVec(planeToIdxMap[idxPlane].begin(),planeToIdxMap[idxPlane].end()); // vector copy for easy access... thanks Stack Overflow
+          unsigned int ithBreak = 0;
+          while ( ithBreak < fMaskNBreak[idxPlane] ) {
+            unsigned int locToBreak = planeToIdxMap[idxPlane].size()*fFlatRand->fire(0.,1.);
+            for ( unsigned int idxSubBreak=0; idxSubBreak < (unsigned int)fMaskNWires[idxPlane]; ++idxSubBreak ) {
+              if ( locToBreak+idxSubBreak >= planeToIdxMap[idxPlane].size() ) continue;
+              planeToIdxRemoval[idxPlane].emplace( planeIdxVec.at(locToBreak+idxSubBreak) );
+            } // loop number of wires to break in this group
+            ithBreak+=1;
+          } // loop through number of groups of breaks to make in this plane
+        } // loop through number of planes on which to add breaks
+      }
+
+      // Now loop over the hits we have and remove them if its wire didn't pass the test...
+      for ( auto const& [ plane, hitVec ] : planeToHitsMap ) {
+        for ( auto const& hit : hitVec ) {
+          unsigned int plane = hit->WireID().Plane;
+          unsigned int idx = 5000*4*3*hit->WireID().Cryostat + 5000*3*hit->WireID().TPC + 5000*hit->WireID().Plane + hit->WireID().Wire;
+          if ( planeToIdxRemoval.find(plane) != planeToIdxRemoval.end() && planeToIdxRemoval[plane].count( idx ) ) continue;
+
+          // If we're not skipping this hit then write it to the file!
+          recob::Hit theHit = *hit;
+          if ( fTPCHitsWireAssn ) {
+            std::vector< art::Ptr<recob::Wire> > hitWires = fmWire.at(hit.key());
+            if ( hitWires.size() == 0 ) throw cet::exception("HARPS") << "Hit found with no associated wires...\n";
+            else if ( hitWires.size() > 1 ) mf::LogWarning("HARPS") << "Hit with >1 recob::Wire associated...";
+            hitCol.emplace_back(theHit,hitWires[0]);
+          }
+          else hitCol.emplace_back(theHit);
+        } // loop hits
+      } // loop planes with hits
     } // loop pfps
   } // loop cryos
 
