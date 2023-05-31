@@ -52,11 +52,6 @@ services.message.destinations :
          limit: 5
          reportEvery: 1
        }
-       default:
-       {
-         limit: 0  #don't print anything at the infomsg level except the explicitly named categories
-         reportEvery: 0
-       }
      }
   }
 }

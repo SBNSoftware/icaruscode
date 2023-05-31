@@ -1,8 +1,44 @@
-#include "stage0_run2_icarus.fcl"
+#
+# File:    stage0_runA_icarus_triggerV1.fcl
+# Purpose: Runs Stage0 for runs 7932 and earlier.
+#
+# Runs older than circa 7932, before March 2022, were taken with physics
+# triggers. Compared to Run1:
+# * PMT readout:
+#     - uses 6+9 us buffers (not 3+7).
+#     - artificial trigger primitives are sent at beam gate opening
+#       time (not 4 us before -- the "veto" was not introduced
+#       either) and 6 us after the beam gate, covering -6/+15 us
+#       from the beam gate (more if a NuMI trigger happens late).
+#     - on the 16th channel of the first readout board the trigger
+#       primitive signals are sent, not the global trigger one.
+#       These signals appear like three peaks (the two artificial
+#       primitives plus the one at global trigger time) and they are
+#       not suitable for the trigger timing correction developed for
+#       Run2, which assumes a single sharp signal at global trigger
+#       time. These signals are not very reliable either: one board
+#       does not see them, another sees them seriously distorted,
+#       and sometimes other boards see them distorted too.
+#       For this reason, this configuration disables the correction.
+#     - it is assumed that the counter reset signal (PPS) is sent to
+#       all the readout boards at the same time and therefore the
+#       trigger primitive propagation delay is automatically
+#       accounted for by the counter values.
+# * trigger:
+#     - trigger information is in the unversioned format
+#       (postumous v1).
+#     - no trigger configuration information is saved in FHiCL.
+#
+# As usual, Stage0 runs the full optical simulation chain.
+#
 
+#include "stage0_run2_icarus.fcl"
 
 # trigger configuration is not saved in DAQ FHiCL, hence it's not available:
 physics.producers.triggerconfig.module_type: DummyProducer
 
 # trigger is version 1 (and autodetection does not work for the reason above)
 physics.producers.daqTrigger: @local::decodeTrigger
+
+# no global trigger waveform available for correction: omit it
+physics.producers.daqPMT.CorrectionInstance: @erase

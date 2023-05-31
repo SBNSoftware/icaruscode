@@ -1,0 +1,8 @@
+###
+## This fhicl file is used to run "stage0" processing specifically for the case where all
+## TPC data is included in an artdaq data product from a single instance
+##
+#include "stage0_run1_icarus.fcl"
+
+## use a sequence without the CRT/PMT matching filter
+physics.path:     [ @sequence::icarus_stage0_data ]

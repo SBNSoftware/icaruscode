@@ -844,21 +844,6 @@ void icarus::trigger::SlidingWindowTriggerSimulation::initializePlots() {
   // 
   // per-threshold plots; should this initialization be set into its own method?
   // 
-  for (auto const& [ thr, info ]
-    : util::zip(util::get_elements<0U>(fADCthresholds), fThresholdPlots))
-  {
-    PlotSandbox_t& plots
-      = fPlots.addSubSandbox("Thr" + thr, "Threshold: " + thr);
-    
-    plots.make<TGraph>(
-      "TriggerTimeVsHWTrigVsBeam",
-      "Time of the trigger: emulated vs. hardware"
-        ";hardware trigger time (relative to beam gate opening)  [ #mus ]"
-        ";emulated trigger time (relative to beam gate opening)  [ #mus ]"
-      );
-    
-  } // for thresholds
-  
   fThresholdPlots.resize(
     size(fADCthresholds),
     {
@@ -868,6 +853,20 @@ void icarus::trigger::SlidingWindowTriggerSimulation::initializePlots() {
       BinnedContent_t{ beamGateBinning.binWidth() } // triggerTimesVsBeam
     }
     );
+  
+  for (std::string const& thr: util::get_elements<0U>(fADCthresholds)) {
+    PlotSandbox_t& plots
+      = fPlots.addSubSandbox("Thr" + thr, "Threshold: " + thr);
+    
+    plots.make<TGraph>(
+      "TriggerTimeVsHWTrigVsBeam",
+      "Time of the trigger: emulated vs. hardware"
+        ";hardware trigger time (relative to beam gate opening)  [ #mus ]"
+        ";emulated trigger time (relative to beam gate opening)  [ #mus ]",
+      PlotSandbox_t::NoNameTitle
+      );
+    
+  } // for thresholds
   
 } // icarus::trigger::SlidingWindowTriggerSimulation::initializePlots()
 

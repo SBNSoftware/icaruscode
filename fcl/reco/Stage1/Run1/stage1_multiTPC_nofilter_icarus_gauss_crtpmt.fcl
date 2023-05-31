@@ -9,7 +9,7 @@ physics.reco: [ @sequence::icarus_filter_cluster3D,
 		@sequence::icarus_crtt0match,
                 caloskimCalorimetryCryoE, caloskimCalorimetryCryoW]
 
-physics.outana:            [ caloskimE, caloskimW, simpleLightAna, CRTDataAnalysis]
+physics.outana:            [ caloskimE, caloskimW, simpleLightAna, CRTDataAnalysis, CRTAnalysis]
 physics.trigger_paths:     [ reco ]
 physics.end_paths:         [ outana, stream1 ]
 outputs.out1.fileName:     "%ifb_%tc-%p.root"
@@ -33,6 +33,8 @@ services.SpaceChargeService: {
     service_provider: "SpaceChargeServiceICARUS"
 }
 
+services.DetectorPropertiesService.IncludeInterPlanePitchInXTickOffsets: false
+
 services.message.destinations :
 {
   STDCOUT:
@@ -41,7 +43,7 @@ services.message.destinations :
      threshold: "WARNING"   #tells the message service that this destination applies to WARNING and higher level messages
      categories:
      {
-       Cluster3D:
+       Cluster3DICARUS:
        {
          limit: -1
          reportEvery: 1
@@ -49,4 +51,3 @@ services.message.destinations :
      }
   }
 }
-
