@@ -27,85 +27,96 @@ namespace lcvn
     std::vector<std::string> pandora_tag_suffixes = fPandoraTagSuffixes;
     if (pandora_tag_suffixes.size() == 0) pandora_tag_suffixes.push_back("");
 
-   if(fUseSlice){
+    if(fUseSlice){
       if(fverbose) std::cout << "============ Calling the function ICVNMapperICARUS::produce() is using slices ==============\n";
 
       // collect the TPC slices
-      std::vector<art::Ptr<recob::Slice>> SliceList; //slices;
-      art::Handle<std::vector<recob::Slice>> SliceListHandle; // thisSlices
+      std::vector<art::Ptr<recob::Slice>> slices;
+      std::vector<std::string> slice_tag_suffixes;
+      std::vector<unsigned> slice_tag_indices;
+      art::Handle<std::vector<recob::Slice>> slices_handle;
       for (unsigned i_tag = 0; i_tag < pandora_tag_suffixes.size(); i_tag++) {
         const std::string &pandora_tag_suffix = pandora_tag_suffixes[i_tag];
-        if (evt.getByLabel(fSliceLabel + pandora_tag_suffix, SliceListHandle)) {
-          art::fill_ptr_vector(SliceList, SliceListHandle);
+        if (evt.getByLabel(fSliceLabel + pandora_tag_suffix, slices_handle)) {
+          art::fill_ptr_vector(slices, slices_handle);
+          for (unsigned i = 0; i < slices.size(); i++) {
+            slice_tag_suffixes.push_back(pandora_tag_suffix);
+            slice_tag_indices.push_back(i_tag);
+          }
         }
       }
 
       // collect the TPC pfps
-      std::vector<art::Ptr<recob::PFParticle>> PFPList; //slices;
-      art::Handle<std::vector<recob::PFParticle>> PFPListHandle; // thisSlices
+      std::vector<art::Ptr<recob::PFParticle>> pfps;
+      art::Handle<std::vector<recob::PFParticle>> pfps_handle;
       for (unsigned i_tag = 0; i_tag < pandora_tag_suffixes.size(); i_tag++) {
         const std::string &pandora_tag_suffix = pandora_tag_suffixes[i_tag];
-        if (evt.getByLabel(fPFParticleModuleLabel + pandora_tag_suffix, PFPListHandle)) {
-          art::fill_ptr_vector(PFPList, PFPListHandle);
+        if (evt.getByLabel(fPFParticleModuleLabel + pandora_tag_suffix, pfps_handle)) {
+          art::fill_ptr_vector(pfps, pfps_handle);
         }
       }
 
-      art::FindManyP<U> findManyHits(SliceListHandle, evt, fSliceLabel);
-      art::FindManyP<recob::PFParticle> findManyPFPs(SliceListHandle, evt, fPFParticleModuleLabel);
-      art::FindManyP<anab::T0> findManyT0s(PFPListHandle, evt, fT0Label);
+      //art::FindManyP<U> findManyHits(SliceListHandle, evt, fSliceLabel);
+      //art::FindManyP<recob::PFParticle> findManyPFPs(SliceListHandle, evt, fPFParticleModuleLabel);
+      //art::FindManyP<anab::T0> findManyT0s(PFPListHandle, evt, fT0Label);
       
       std::unique_ptr< std::vector<PixelMap> > pmCol(new std::vector<PixelMap>);
        
       auto const detProp = art::ServiceHandle<detinfo::DetectorPropertiesService const>()->DataFor(evt);
       
-      for(auto const& slice : SliceList){
-	  std::vector<float> pfp_T0_vec;
-	  if(findManyPFPs.isValid()){
-	     std::vector<art::Ptr<recob::PFParticle>> slicePFPs = findManyPFPs.at(slice.key());
-	     if(slicePFPs.size()){
-	        for(auto const &pfp : slicePFPs){
-		    if(findManyT0s.isValid()){
-		       std::vector<art::Ptr<anab::T0>> T0_vec = findManyT0s.at(pfp.key());
-		       if(T0_vec.size()){
-		          for(auto const& T0 : T0_vec){
-			      pfp_T0_vec.push_back(T0->Time());
-			  }
-		       }
-	            }
-	        }
-	     }
-	  }    
-	  
-	  float min_T0 = 0.;
-	  if(pfp_T0_vec.size()){
-	     min_T0 = *min_element(pfp_T0_vec.begin(), pfp_T0_vec.end());
-	  } 		      
-	      
-          if(findManyHits.isValid()){
-            std::vector<art::Ptr<U>> slicehits = findManyHits.at(slice.key());
-            this->fProducer.Set_fT0_value(min_T0);
-            //std::cout << "============== T0 provided to make the pixel map : " << min_T0 << "  ================\n";
-            PixelMap pm = this->fProducer.CreateMap(detProp, slicehits);
-            auto nhits = this->fProducer.NROI();
-            pm.SetTotHits(nhits);
-            pm.fSliceID = slice->ID();
-            //pm.fT0 = min_T0;
+//      for(auto const& slice : SliceList){
+      for(unsigned int sliceID=0; sliceID<slices.size(); sliceID++){
+        art::Ptr<recob::Slice> slice = slices[sliceID];
+        const std::string &slice_tag_suff = slice_tag_suffixes[sliceID];
+        std::vector<float> pfp_T0_vec;
+        art::FindManyP<recob::PFParticle> findManyPFPs(slices_handle, evt, fPFParticleModuleLabel + slice_tag_suff);
+        art::FindManyP<recob::Hit> findManyHits(slices_handle, evt, fSliceLabel + slice_tag_suff);
+        art::FindManyP<anab::T0> findManyT0s(pfps_handle, evt, fT0Label + slice_tag_suff);
 
-            if(nhits > this->fMinClusterHits && pmCol->size()<fMapVecSize){
-              std::cout << "********* " << evt.run() << "  " << evt.subRun() << "  " << evt.id().event() << "  " << slice->ID() << "  **************\n";
-              pmCol->push_back(pm);
+        if(findManyPFPs.isValid()){
+          std::vector<art::Ptr<recob::PFParticle>> slicePFPs = findManyPFPs.at(slice.key());
+          if(slicePFPs.size()){
+            for(auto const &pfp : slicePFPs){
+              if(findManyT0s.isValid()){
+                std::vector<art::Ptr<anab::T0>> T0_vec = findManyT0s.at(pfp.key());
+                if(T0_vec.size()){
+                  for(auto const& T0 : T0_vec){
+                    pfp_T0_vec.push_back(T0->Time());
+                  }
+                }
+              }
             }
           }
         }
+
+        float min_T0 = 0.;
+        if(pfp_T0_vec.size()){
+          min_T0 = *min_element(pfp_T0_vec.begin(), pfp_T0_vec.end());
+        }
+        if(findManyHits.isValid()){
+          std::vector<art::Ptr<U>> slicehits = findManyHits.at(slice.key());
+          this->fProducer.Set_fT0_value(min_T0);
+          //std::cout << "============== T0 provided to make the pixel map : " << min_T0 << "  ================\n"
+          PixelMap pm = this->fProducer.CreateMap(detProp, slicehits);
+          auto nhits = this->fProducer.NROI();
+          pm.SetTotHits(nhits);
+          pm.fSliceID = slice->ID();
+          //pm.fT0 = min_T0;
+
+          if(nhits > this->fMinClusterHits && pmCol->size()<fMapVecSize){
+            std::cout << "********* " << evt.run() << "  " << evt.subRun() << "  " << evt.id().event() << "  " << slice->ID() << "  **************\n";
+            pmCol->push_back(pm);
+          }
+        }
+      }
       
       evt.put(std::move(pmCol), this->fClusterPMLabel);
-      
-   }
-   
-   else{
-       if(fverbose) std::cout << "============ Calling the function ICVNMapperICARUS::produce() is using full event ==============\n";
-       ICVNMapper<T,U>::produce(evt);
-   }
+    }
+
+    else{
+      if(fverbose) std::cout << "============ Calling the function ICVNMapperICARUS::produce() is using full event ==============\n";
+      ICVNMapper<T,U>::produce(evt);
+    }
    
    //std::cout << "=============================== REACHED the END of the produce() function ==========================\n";
    

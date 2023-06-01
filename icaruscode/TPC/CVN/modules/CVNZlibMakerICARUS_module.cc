@@ -297,11 +297,17 @@ namespace lcvn {
 
       // collect the TPC slices
       std::vector<art::Ptr<recob::Slice>> slices;
+      std::vector<std::string> slice_tag_suffixes;
+      std::vector<unsigned> slice_tag_indices;
       art::Handle<std::vector<recob::Slice>> slices_handle;
       for (unsigned i_tag = 0; i_tag < pandora_tag_suffixes.size(); i_tag++) {
         const std::string &pandora_tag_suffix = pandora_tag_suffixes[i_tag];
         if (evt.getByLabel(fSliceLabel + pandora_tag_suffix, slices_handle)) {
           art::fill_ptr_vector(slices, slices_handle);
+          for (unsigned i = 0; i < slices.size(); i++) {
+            slice_tag_suffixes.push_back(pandora_tag_suffix);
+            slice_tag_indices.push_back(i_tag);
+          }
         }
       }
 
@@ -315,10 +321,10 @@ namespace lcvn {
         }
       }
 
-      art::FindManyP<recob::Hit> findManyHits(slices_handle, evt, fSliceLabel);
-      art::FindManyP<recob::PFParticle> findManyPFPs(slices_handle, evt, fPFParticleModuleLabel);
-      art::FindManyP<larpandoraobj::PFParticleMetadata> fm_pfpmd(pfps_handle, evt, fPFParticleModuleLabel);
-      art::FindManyP<anab::T0> findManyT0s(pfps_handle, evt, fT0Label);
+//      art::FindManyP<recob::Hit> findManyHits(slices_handle, evt, fSliceLabel);
+//      art::FindManyP<recob::PFParticle> findManyPFPs(slices_handle, evt, fPFParticleModuleLabel);
+//      art::FindManyP<larpandoraobj::PFParticleMetadata> fm_pfpmd(pfps_handle, evt, fPFParticleModuleLabel);
+//      art::FindManyP<anab::T0> findManyT0s(pfps_handle, evt, fT0Label);
          
       if(fUseBackTrackInfo){
         std::cout << "***************** Using backtracker information to get neutrino information ****************\n";
@@ -337,11 +343,19 @@ namespace lcvn {
           InteractionType interaction = kOther;	  
                
           for(unsigned int sliceID=0; sliceID<slices.size(); sliceID++){
+            art::Ptr<recob::Slice> slice = slices[sliceID];
+            const std::string &slice_tag_suff = slice_tag_suffixes[sliceID];
+            std::vector<art::Ptr<recob::Slice>> sliceList {slice};
             
-            if(slices[sliceID]->ID() == pixelmaps[pmID]->fSliceID){
-              fsliceID = slices[sliceID]->ID();
+            art::FindManyP<recob::PFParticle> findManyPFPs(slices_handle, evt, fPFParticleModuleLabel + slice_tag_suff);
+            art::FindManyP<recob::Hit> findManyHits(slices_handle, evt, fSliceLabel + slice_tag_suff);
+            art::FindManyP<anab::T0> findManyT0s(pfps_handle, evt, fT0Label + slice_tag_suff);
+            art::FindManyP<larpandoraobj::PFParticleMetadata> fm_pfpmd(pfps_handle, evt, fPFParticleModuleLabel + slice_tag_suff);
+
+            if(slice->ID() == pixelmaps[pmID]->fSliceID){
+
               if(findManyHits.isValid()){
-                std::vector<art::Ptr<recob::Hit>> slice_hits = findManyHits.at(slices[sliceID].key());
+                std::vector<art::Ptr<recob::Hit>> slice_hits = findManyHits.at(slice.key());
                 double tot_slice_eng = 0;
                 double tot_slice_nu_eng = 0;
                 double tot_slice_cos_eng = 0;
@@ -396,8 +410,9 @@ namespace lcvn {
 
                   ///////////////////////////////////////////////////// Check whether this has pandora T0 ///////////////////////////////
                   std::vector<float> pfp_t0s;
+
                   if(findManyPFPs.isValid()){
-                    std::vector<art::Ptr<recob::PFParticle>> slice_pfps = findManyPFPs.at(slices[sliceID].key());
+                    std::vector<art::Ptr<recob::PFParticle>> slice_pfps = findManyPFPs.at(slice.key());
                     if(slice_pfps.size()){
                       for(auto const &pfp : slice_pfps){
                         if(findManyT0s.isValid()){
@@ -477,7 +492,7 @@ namespace lcvn {
 
               if(findManyPFPs.isValid()){
                 std::cout << "findManyPFPs.isValid" << std::endl;
-                fIsSliceNu=Is_Slice_Nu(findManyPFPs,slices[sliceID]);
+                fIsSliceNu=Is_Slice_Nu(findManyPFPs,slice);
 
                 if(fIsSliceNu){
                   std::cout << "if(fIsSliceNu)" << std::endl;
@@ -488,20 +503,20 @@ namespace lcvn {
                   //art::FindManyP<larpandoraobj::PFParticleMetadata> fm_pfpmd(PFPListHandle, evt, fPFParticleModuleLabel);
 
                   if(fm_pfpmd.isValid()){
-                    fSliceScore = Get_Slice_Score(fm_pfpmd,Get_Nu_like_PFP(findManyPFPs,slices[sliceID]));
+                    fSliceScore = Get_Slice_Score(fm_pfpmd,Get_Nu_like_PFP(findManyPFPs,slice));
                     if(slices[sliceID]->ID() == Get_Best_Slice_ID_PFP_pdg(findManyPFPs,fm_pfpmd,slices)[0]) fIsbestSlice = true;
                       fbestpfppdg = Get_Best_Slice_ID_PFP_pdg(findManyPFPs,fm_pfpmd,slices)[1];
                       fbestsliceID = Get_Best_Slice_ID_PFP_pdg(findManyPFPs,fm_pfpmd,slices)[0];
-                      fpfppdg = Get_Slice_PFP_ID(findManyPFPs, slices[sliceID]);
-                    }
+                      fpfppdg = Get_Slice_PFP_ID(findManyPFPs, slice);
                   }
                 }
+              }
 
-                LArTrainingNuData train(interaction, *pixelmaps[pmID], info);
-                std::string evtid = "r"+std::to_string(evt.run())+"_s"+std::to_string(evt.subRun())+"_e"+std::to_string(evt.event())+"_sl"+std::to_string(pixelmaps[pmID]->fSliceID)+"_h"+std::to_string(time(0));
-                write_files(train, evtid);
-                break;
-              } // valid pfps
+              LArTrainingNuData train(interaction, *pixelmaps[pmID], info);
+              std::string evtid = "r"+std::to_string(evt.run())+"_s"+std::to_string(evt.subRun())+"_e"+std::to_string(evt.event())+"_sl"+std::to_string(pixelmaps[pmID]->fSliceID)+"_h"+std::to_string(time(0));
+              write_files(train, evtid);
+              break;
+            } // valid pfps
           } // loop over slices
 	      } // loop over pixel maps
       } // use backtrack information
@@ -525,19 +540,27 @@ namespace lcvn {
               art::FindManyP<recob::PFParticle> findManyPFPs(slicesHandle, evt, fPFParticleModuleLabel);*/
                
           for(unsigned int sliceID=0; sliceID<slices.size(); sliceID++){
-            if(slices[sliceID]->ID() == fsliceID){
+            art::Ptr<recob::Slice> slice = slices[sliceID];
+            const std::string &slice_tag_suff = slice_tag_suffixes[sliceID];
+            
+            art::FindManyP<recob::PFParticle> findManyPFPs(slices_handle, evt, fPFParticleModuleLabel + slice_tag_suff);
+            art::FindManyP<recob::Hit> findManyHits(slices_handle, evt, fSliceLabel + slice_tag_suff);
+            art::FindManyP<anab::T0> findManyT0s(pfps_handle, evt, fT0Label + slice_tag_suff);
+            art::FindManyP<larpandoraobj::PFParticleMetadata> fm_pfpmd(pfps_handle, evt, fPFParticleModuleLabel + slice_tag_suff);
+
+            if(slice->ID() == fsliceID){
               if(findManyHits.isValid()){
-                std::vector<art::Ptr<recob::Hit>> slice_hits = findManyHits.at(slices[sliceID].key());
+                std::vector<art::Ptr<recob::Hit>> slice_hits = findManyHits.at(slice.key());
                 fNhits_total = slice_hits.size();
               }
                      
               if(findManyPFPs.isValid()){
-                fIsSliceNu=Is_Slice_Nu(findManyPFPs,slices[sliceID]);
+                fIsSliceNu=Is_Slice_Nu(findManyPFPs,slice);
                 ////////////////////////////////////////// pandora T0 //////////////////////////////////////////////////////
                 std::vector<float> pfp_t0s;
                         
                 if(findManyPFPs.isValid()){
-                  std::vector<art::Ptr<recob::PFParticle>> slice_pfps = findManyPFPs.at(slices[sliceID].key());
+                  std::vector<art::Ptr<recob::PFParticle>> slice_pfps = findManyPFPs.at(slice.key());
                   if(slice_pfps.size()){
                     for(auto const &pfp : slice_pfps){
                       if(findManyT0s.isValid()){
@@ -563,16 +586,14 @@ namespace lcvn {
                                std::vector< art::Ptr<recob::PFParticle> > PFPList;
                                if( evt.getByLabel(fPFParticleModuleLabel,PFPListHandle))
                                    art::fill_ptr_vector(PFPList,PFPListHandle);*/ 
-			   
-			       //art::FindManyP<larpandoraobj::PFParticleMetadata> fm_pfpmd(PFPListHandle, evt, fPFParticleModuleLabel);
 
                   if(fm_pfpmd.isValid()){
-                    fSliceScore = Get_Slice_Score(fm_pfpmd,Get_Nu_like_PFP(findManyPFPs,slices[sliceID]));
-                    if(slices[sliceID]->ID() == Get_Best_Slice_ID_PFP_pdg(findManyPFPs,fm_pfpmd,slices)[0]) fIsbestSlice = true;
+                    fSliceScore = Get_Slice_Score(fm_pfpmd,Get_Nu_like_PFP(findManyPFPs,slice));
+                    if(slice->ID() == Get_Best_Slice_ID_PFP_pdg(findManyPFPs,fm_pfpmd,slices)[0]) fIsbestSlice = true;
 
                     fbestpfppdg = Get_Best_Slice_ID_PFP_pdg(findManyPFPs,fm_pfpmd,slices)[1];
                     fbestsliceID = Get_Best_Slice_ID_PFP_pdg(findManyPFPs,fm_pfpmd,slices)[0];
-                    fpfppdg = Get_Slice_PFP_ID(findManyPFPs, slices[sliceID]);
+                    fpfppdg = Get_Slice_PFP_ID(findManyPFPs, slice);
                   }
                 }
               }
