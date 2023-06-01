@@ -275,17 +275,20 @@ SimPMTIcarus::SimPMTIcarus(Parameters const& config)
     , fInputModuleName(config().inputModuleLabel())
     , fWritePhotons(config().writePhotons())
     // random engines
-    , fEfficiencyEngine(art::ServiceHandle<rndm::NuRandomService>()->createEngine
-        (*this, "HepJamesRandom", "Efficiencies", config().EfficiencySeed)
-      )
-    , fDarkNoiseEngine(art::ServiceHandle<rndm::NuRandomService>()->createEngine(
-        *this,
+    , fEfficiencyEngine(art::ServiceHandle<rndm::NuRandomService>()->registerAndSeedEngine(
+          createEngine(0, "HepJamesRandom", "Efficiencies"),
+          "HepJamesRandom",
+          "Efficiencies",
+          config().EfficiencySeed
+      ))
+    , fDarkNoiseEngine(art::ServiceHandle<rndm::NuRandomService>()->registerAndSeedEngine(
+        createEngine(0, config().darkNoiseRandomEngine(), "DarkNoise"),
         config().darkNoiseRandomEngine(),
         "DarkNoise",
         config().DarkNoiseSeed
       ))
-    , fElectronicsNoiseEngine(art::ServiceHandle<rndm::NuRandomService>()->createEngine(
-        *this,
+    , fElectronicsNoiseEngine(art::ServiceHandle<rndm::NuRandomService>()->registerAndSeedEngine(
+        createEngine(0, config().electronicsNoiseRandomEngine(), "ElectronicsNoise"),
         config().electronicsNoiseRandomEngine(),
         "ElectronicsNoise",
         config().ElectronicsNoiseSeed
