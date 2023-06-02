@@ -38,10 +38,10 @@ physics.reco: [
 
 # Turn on truth-info for track skimmer 
 physics.analyzers.caloskimE.G4producer: "largeant"
-physics.analyzers.caloskimE.SimChannelproducer: "largeant"
+physics.analyzers.caloskimE.SimChannelproducer: "daq:simpleSC"
 physics.analyzers.caloskimE.RawDigitproducers: ["MCDecodeTPCROI:PHYSCRATEDATATPCEW", "MCDecodeTPCROI:PHYSCRATEDATATPCEE"]
 physics.analyzers.caloskimW.G4producer: "largeant"
-physics.analyzers.caloskimW.SimChannelproducer: "largeant"
+physics.analyzers.caloskimW.SimChannelproducer: "daq:simpleSC"
 physics.analyzers.caloskimW.RawDigitproducers: ["MCDecodeTPCROI:PHYSCRATEDATATPCWW", "MCDecodeTPCROI:PHYSCRATEDATATPCWE"]
 
 physics.outana:            [ @sequence::icarus_analysis_modules ]
@@ -68,6 +68,10 @@ services.SpaceChargeService: {
 }
 
 services.BackTrackerService:        @local::standard_backtrackerservice
+# In the 2D-detsim, SimChannel objects are made by the WireCell
+# drift simulation (daq), not LArG4 (largeant). Thus, we need
+# to overwrite the truth matching labels in the calibration ntuple maker
+services.BackTrackerService.BackTracker.SimChannelModuleLabel: "daq:simpleSC"
 services.ParticleInventoryService:  @local::standard_particleinventoryservice
 
 physics.producers.mcassociationsGausCryoE.HitParticleAssociations.HitModuleLabelVec: ["cluster3DCryoE"]
