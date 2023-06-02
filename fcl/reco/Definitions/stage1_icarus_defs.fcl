@@ -155,16 +155,11 @@ icarus_analysis_larcv_modules:     [  @sequence::icarus_analysis_modules
                                    ]
 
 # Set up filtering of cluster3D hits by cryostat
-icarus_filter_cluster3DCryoW:      [ cluster3DCryoW,
+# Changed slightly to faciliate larcv processing
+icarus_filter_cluster3D:           [ cluster3DCryoE,
+                                     cluster3DCryoW,
+                                     TPCHitFilterCryoE,
                                      TPCHitFilterCryoW
-                                   ]
-
-icarus_filter_cluster3DCryoE:      [ cluster3DCryoE,
-                                     TPCHitFilterCryoE
-                                   ]
-
-icarus_filter_cluster3D:           [ @sequence::icarus_filter_cluster3DCryoW,
-                                     @sequence::icarus_filter_cluster3DCryoE
                                    ]
 
 icarus_reco_cluster3DCryoW:        [ cluster3DCryoW ]
