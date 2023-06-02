@@ -90,6 +90,9 @@ icarus_genie_NuMI: {
 icarus_genie_NuMI_rock: @local::icarus_genie_NuMI
 icarus_genie_NuMI_rock.DetectorLocation: "icarus-numi-rock"
 
+# RHC Config
+icarus_genie_NuMI_RHC: @local::icarus_genie_NuMI
+icarus_genie_NuMI_RHC.FluxSearchPaths: "/cvmfs/sbn.osgstorage.org/pnfs/fnal.gov/usr/sbn/persistent/stash/physics/beam/GENIE/NuMI/standard/v02_00_RHC/"
 
 ################################################################################
 
