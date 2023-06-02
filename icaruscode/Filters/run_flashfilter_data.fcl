@@ -5,15 +5,7 @@
 
 process_name: OpReco
 
-services:
-{
-  @table::icarus_basic_services
-}
-
-source:
-{
-  module_type: RootInput
-}
+services: @local::icarus_minimum_services  # from services_common_icarus.fcl
 
 physics:
 {
@@ -22,8 +14,8 @@ physics:
  {
    ophit:  @local::icarus_ophit_data
    ophitfull:    @local::icarus_ophitdebugger_data
-   opflashCryo0: @local::ICARUSSimpleFlashDataCryo0
-   opflashCryo1: @local::ICARUSSimpleFlashDataCryo1
+   opflashCryo0: @local::ICARUSSimpleFlashDataCryoE
+   opflashCryo1: @local::ICARUSSimpleFlashDataCryoW
    
  }
  analyzers: { 
@@ -33,10 +25,8 @@ physics:
  filters: {
    flashfilter: { module_type: "FilterOpFlash" 
                   OpFlashProducerList: ["opflashCryo0","opflashCryo1"] 
-#                  WindowStartTime: -1489.6 # -1489.4 - 0.2us safe margin
-#                  WindowEndTime:   -1487.6 # -1487.8 + 0.2us safe margin
-                  WindowStartTime: -1490.8 # 9.6 us - 1500 us offset - 0.4us safe margin
-                  WindowEndTime:   -1488.4 # 11.2 -1500 us offset + 0.4us safe margin
+                  WindowStartTime:     -0.2 # 0.2us safe margin
+                  WindowEndTime:        1.8
                 }
  }
 
