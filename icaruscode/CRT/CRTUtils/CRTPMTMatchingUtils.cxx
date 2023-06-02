@@ -54,7 +54,7 @@ icarus::crt::CRTMatches icarus::crt::CRTHitmatched(
   std::vector<icarus::crt::CRTPMT> enteringCRTHits;
   std::vector<icarus::crt::CRTPMT> exitingCRTHits;
   MatchType flashType;
-  int topen = 0, topex = 0, sideen = 0, sideex = 0, bottomen = 0, bottomex = 0;
+  uint topen = 0, topex = 0, sideen = 0, sideex = 0, bottomen = 0, bottomex = 0;
   for (auto const& crtHit : crtHits) {
     if (!MatchBottomCRT && crtHit->plane > 49) continue; // For now, we are skipping bottom CRT Hits as they are not present in data. 
     // care with conversions: if either side of a subtraction is a `double`,
