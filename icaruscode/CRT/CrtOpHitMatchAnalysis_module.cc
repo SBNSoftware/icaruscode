@@ -335,7 +335,7 @@ void CrtOpHitMatchAnalysis::analyze(art::Event const& e)
 
   fNHit = opHitList.size();
   for(auto const& ophit : opHitList){
-        double t = ophit->PeakTime()*1e3-fOpDelay;
+        double t = ophit->StartTime()*1e3-fOpDelay;
         fHitPE.push_back(ophit->PE());
         fHitChan.push_back(ophit->OpChannel());
         auto const pos = fGeometryService->OpDetGeoFromOpChannel(ophit->OpChannel()).GetCenter();
@@ -380,7 +380,7 @@ void CrtOpHitMatchAnalysis::analyze(art::Event const& e)
 
             /*vector<art::Ptr<recob::OpHit>> hits = findManyHits.at(iflash);
             for(auto const& hit : hits) {
-                double tPmt = hit->PeakTime()*1.e3-fOpDelay;
+                double tPmt = hit->StartTime()*1.e3-fOpDelay;
                 if( tPmt < flashHitT) {
                     flashHitT = tPmt;
                     flashHitPE = hit->PE();
@@ -570,7 +570,7 @@ void CrtOpHitMatchAnalysis::analyze(art::Event const& e)
 
                   vector<art::Ptr<recob::OpHit>> hits = findManyHits.at(iflash);
                   for(auto const& hit : hits) {
-                      double tPmt = hit->PeakTime()*1.e3-fOpDelay;
+                      double tPmt = hit->StartTime()*1.e3-fOpDelay;
                       if( tPmt < flashHitT) {
                           flashHitT = tPmt;
                           flashHitPE = hit->PE();
@@ -610,7 +610,7 @@ void CrtOpHitMatchAnalysis::analyze(art::Event const& e)
 
       double pemax = 0.;
       for(auto const& hit : opHitList) {
-          double thit = hit->PeakTime()*1e3-fOpDelay;
+          double thit = hit->StartTime()*1e3-fOpDelay;
           if(hit->PE()<fHitPeThresh){
                 continue;
           }

@@ -222,7 +222,7 @@ void pmtcalo::PMTBackgroundphotonsCalibration::analyze(art::Event const& event)
       // Remove OpHits from known channels that are not working + OpHits that are not
       // In the trigger window
       if( hasChannel(opch, m_channel_mask) | 
-            !inTime( ophit.PeakTime(), m_filter_intime ) | !_is_minbias )
+            !inTime( ophit.StartTime(), m_filter_intime ) | !_is_minbias )
         continue;
 
       hintegral[opch]->Fill( ophit.Area()*adc_to_pC/echarge );

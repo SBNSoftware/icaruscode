@@ -355,7 +355,7 @@ SimPMTIcarus::SimPMTIcarus(Parameters const& config)
       );
     
     if (firstTime()) {
-      mf::LogDebug log { "SimPMTIcarus" };
+      mf::LogInfo log { "SimPMTIcarus" };
       log << "PMT simulation configuration (first event):\n";
       PMTsimulator->printConfiguration(log);
     } // if first time

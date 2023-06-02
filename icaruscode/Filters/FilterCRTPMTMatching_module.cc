@@ -404,7 +404,7 @@ bool icarus::crt::FilterCRTPMTMatching::filter(art::Event& e) {
       std::vector<double> fHitX, fHitY, fHitZ, fHitT, fHitA;
       for (auto const& hit : hits) {
         if (hit->Amplitude() > fPMTADCThresh) nPMTsTriggering++;
-        if (firstTime > hit->PeakTime()) firstTime = hit->PeakTime();
+        if (firstTime > hit->StartTime()) firstTime = hit->StartTime();
         geo::Point_t const pos =
             fGeometryService->OpDetGeoFromOpChannel(hit->OpChannel())
                 .GetCenter();
@@ -413,10 +413,10 @@ bool icarus::crt::FilterCRTPMTMatching::filter(art::Event& e) {
         fHitX.push_back(pos.X());
         fHitY.push_back(pos.Y());
         fHitZ.push_back(pos.Z());
-        fHitT.push_back(hit->PeakTime());
+        fHitT.push_back(hit->StartTime());
         fHitA.push_back(amp);
         flashCentroid.add(pos, amp);
-        t_m = t_m + hit->PeakTime();
+        t_m = t_m + hit->StartTime();
       }
       geo::Point_t flash_pos = flashCentroid.middlePoint();
       t_m = t_m / nPMTsTriggering;
