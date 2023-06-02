@@ -215,9 +215,7 @@ void SaveConfigurationIntoTFile::saveProcessConfiguration(
 fhicl::ParameterSet SaveConfigurationIntoTFile::processConfiguration
   (art::Event const& event, std::string const& procName)
 {
-  fhicl::ParameterSet pset;
-  event.getProcessParameterSet(procName, pset);
-  return pset;
+  return event.getProcessParameterSet(procName).value_or(fhicl::ParameterSet{});
 } // SaveConfigurationIntoTFile::processConfiguration()
 
 
@@ -327,4 +325,3 @@ bool SaveConfigurationIntoTFile::isProcessConfiguration
 
 
 //------------------------------------------------------------------------------
-

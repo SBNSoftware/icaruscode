@@ -1,0 +1,49 @@
+# Configuration for running the Calibration NTupler
+# on a stage-1 reco file
+#
+#include "stage1_icarus_defs.fcl"
+#include "services_common_icarus.fcl"
+#include "channelmapping_icarus.fcl"
+
+process_name: ntuple
+
+services:
+{
+  TFileService:           { }
+  IICARUSChannelMap:      @local::icarus_channelmappinggservice
+                          @table::icarus_wirecalibration_services
+}
+
+#source is a root file
+source:
+{
+  module_type: RootInput
+  maxEvents:  10        # Number of events to create
+  saveMemoryObjectThreshold: 0
+}
+
+# only do analysis
+physics:
+{
+
+ producers: {}
+
+ filters: {}
+
+ analyzers:
+ {
+     @table::icarus_stage1_analyzers
+ }
+
+ outana: [ @sequence::icarus_analysis_modules ]
+ reco: []
+ trigger_paths: [reco]
+ end_paths: [outana]
+}
+
+physics.analyzers.caloskimE.SelectEvents:      [  ]
+physics.analyzers.caloskimW.SelectEvents:      [  ]
+physics.analyzers.simpleLightAna.SelectEvents: [  ]
+physics.analyzers.supera.SelectEvents:         [  ]
+
+outputs: {}

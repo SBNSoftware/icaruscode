@@ -1,0 +1,33 @@
+#include "hnl.fcl"
+# service configuration
+#
+#include "services_icarus_simulation.fcl"
+
+
+process_name: HNLTree
+
+services:
+{
+  @table::icarus_basic_services
+  TFileService: { fileName: "hnl_icarus.root" }
+  IFDH: {}
+}
+
+source: {
+  module_type: EmptyEvent
+}
+
+physics:
+{
+  producers: {
+    hnl: @local::hnl_tau
+  }
+ 
+  ana:  [ hnl ]
+ 
+  trigger_paths: [ana] 
+  end_paths:     [ ] 
+  
+} # physics
+
+services.NuRandomService.policy: "random"

@@ -479,7 +479,7 @@ void icarus::crt::CRTPMTMatchingAna::analyze(art::Event const& e) {
       double ampsum = 0, t_m = 0;
       for (auto const& hit : hits) {
         if (hit->Amplitude() > fPMTADCThresh) nPMTsTriggering++;
-        if (firstTime > hit->PeakTime()) firstTime = hit->PeakTime();
+        if (firstTime > hit->StartTime()) firstTime = hit->StartTime();
         geo::Point_t const pos =
             fGeometryService->OpDetGeoFromOpChannel(hit->OpChannel())
                 .GetCenter();
@@ -488,10 +488,10 @@ void icarus::crt::CRTPMTMatchingAna::analyze(art::Event const& e) {
         fOpHitX.push_back(pos.X());
         fOpHitY.push_back(pos.Y());
         fOpHitZ.push_back(pos.Z());
-        fOpHitT.push_back(hit->PeakTime());
+        fOpHitT.push_back(hit->StartTime());
         fOpHitA.push_back(amp);
         flashCentroid.add(pos, amp);
-        t_m = t_m + hit->PeakTime();
+        t_m = t_m + hit->StartTime();
       }
       geo::Point_t flash_pos = flashCentroid.middlePoint();
       t_m = t_m / nPMTsTriggering;
@@ -644,8 +644,8 @@ void icarus::crt::CRTPMTMatchingAna::ClearVecs() {
   fMatchedCRTamplitude.clear();
   fDirection.clear();
   fDistance.clear();
-  fDistance.clear();
   fTofOpHit.clear();
+  fTofOpFlash.clear();
   fVelocity.clear();
   fCRTGateDiff.clear();
 }

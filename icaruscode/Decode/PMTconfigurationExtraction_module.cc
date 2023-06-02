@@ -193,7 +193,7 @@ void icarus::PMTconfigurationExtraction::beginRun(art::Run& run) {
   fPMTconfig = std::move(config);
   
   // put a copy of the current configuration
-  run.put(std::make_unique<sbn::PMTconfiguration>(fPMTconfig.value()));
+  run.put(std::make_unique<sbn::PMTconfiguration>(fPMTconfig.value()), art::fullRun());
   
 } // icarus::PMTconfigurationExtraction::beginRun()
 

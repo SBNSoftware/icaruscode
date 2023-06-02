@@ -209,10 +209,10 @@ bool icarus::crt::FilterCRTPMTMatching::filter(art::Event& e) {
   std::vector<CRTPMTMatching> EventFlashes;
   for(auto const & crtpmt : crtpmtMatches) {
     if(fSpillOnly==true){
-	if(crtpmt.flashInBeam==1) EventFlashes.push_back(crtpmt);
+	    if(crtpmt.flashInBeam==1) EventFlashes.push_back(crtpmt);
     }
     else {
-	if(crtpmt.flashInGate==1) EventFlashes.push_back(crtpmt);
+	    if(crtpmt.flashInGate==1) EventFlashes.push_back(crtpmt);
     }
   } 
 
