@@ -160,7 +160,7 @@ void SimTestPulseWire::beginRun(art::Run& run)
     
     std::unique_ptr<sumdata::RunData> runData(new sumdata::RunData(geo->DetectorName()));
     
-    run.put(std::move(runData), art::fullRun());
+    run.put(std::move(runData));
     
     return;
 }

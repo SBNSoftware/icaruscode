@@ -7,8 +7,6 @@
 // from cetpkgsupport v1_10_02.
 ////////////////////////////////////////////////////////////////////////
 
-#include "icaruscode/PMT/OpReco/Algorithms/OpHitTimeSelector.h"
-
 #include "art/Framework/Core/EDProducer.h"
 #include "art/Framework/Core/ModuleMacros.h"
 #include "art/Framework/Principal/Event.h"
@@ -53,9 +51,6 @@ private:
   ::pmtana::FlashFinderManager _mgr;
   ::pmtana::PECalib _pecalib;
   std::string _hit_producer;
-  
-  /// Extracts a configured time from `recob::OpHit`.
-  recob::OpHitTimeSelector const fHitTime;
 
   void GetFlashLocation(std::vector<double>, double&, double&, double&, double&);
 
@@ -64,7 +59,6 @@ private:
 
 ICARUSFlashFinder::ICARUSFlashFinder(pmtana::Config_t const & p)
   : EDProducer{p}
-  , fHitTime{ recob::opHitTimeType(p.get<std::string>("TimeType", "Start")) }
 // Initialize member data here.
 {
   _hit_producer   = p.get<std::string>("OpHitProducer");
@@ -102,7 +96,7 @@ void ICARUSFlashFinder::produce(art::Event & e)
   for(auto const& oph : *ophit_h) {
     ::pmtana::LiteOpHit_t loph;
     if(trigger_time > 1.e20) trigger_time = oph.PeakTimeAbs() - oph.PeakTime();
-    loph.peak_time = fHitTime(oph);
+    loph.peak_time = oph.PeakTime();
 
     size_t opdet = ::pmtana::OpDetFromOpChannel(oph.OpChannel());
     loph.pe = _pecalib.Calibrate(opdet,oph.Area());

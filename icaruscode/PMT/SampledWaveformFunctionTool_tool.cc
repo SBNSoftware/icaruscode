@@ -32,7 +32,6 @@
 #include "cetlib_except/exception.h"
 
 // C/C++ standard libraries
-#include <fstream>
 #include <memory> // std::unique_ptr()
 #include <cassert>
 
@@ -365,3 +364,4 @@ DEFINE_ART_CLASS_TOOL(icarus::opdet::SampledWaveformFunctionTool)
 
 
 //------------------------------------------------------------------------------
+

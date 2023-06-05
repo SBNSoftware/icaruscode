@@ -172,7 +172,7 @@ void icarus::TriggerConfigurationExtraction::beginRun(art::Run& run) {
   fTriggerConfig = std::move(config);
   
   // put a copy of the current configuration
-  run.put(std::make_unique<icarus::TriggerConfiguration>(fTriggerConfig.value()), art::fullRun());
+  run.put(std::make_unique<icarus::TriggerConfiguration>(fTriggerConfig.value()));
   
 } // icarus::riggerConfigurationExtraction::beginRun()
 

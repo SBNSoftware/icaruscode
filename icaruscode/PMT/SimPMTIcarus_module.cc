@@ -275,20 +275,17 @@ SimPMTIcarus::SimPMTIcarus(Parameters const& config)
     , fInputModuleName(config().inputModuleLabel())
     , fWritePhotons(config().writePhotons())
     // random engines
-    , fEfficiencyEngine(art::ServiceHandle<rndm::NuRandomService>()->registerAndSeedEngine(
-          createEngine(0, "HepJamesRandom", "Efficiencies"),
-          "HepJamesRandom",
-          "Efficiencies",
-          config().EfficiencySeed
-      ))
-    , fDarkNoiseEngine(art::ServiceHandle<rndm::NuRandomService>()->registerAndSeedEngine(
-        createEngine(0, config().darkNoiseRandomEngine(), "DarkNoise"),
+    , fEfficiencyEngine(art::ServiceHandle<rndm::NuRandomService>()->createEngine
+        (*this, "HepJamesRandom", "Efficiencies", config().EfficiencySeed)
+      )
+    , fDarkNoiseEngine(art::ServiceHandle<rndm::NuRandomService>()->createEngine(
+        *this,
         config().darkNoiseRandomEngine(),
         "DarkNoise",
         config().DarkNoiseSeed
       ))
-    , fElectronicsNoiseEngine(art::ServiceHandle<rndm::NuRandomService>()->registerAndSeedEngine(
-        createEngine(0, config().electronicsNoiseRandomEngine(), "ElectronicsNoise"),
+    , fElectronicsNoiseEngine(art::ServiceHandle<rndm::NuRandomService>()->createEngine(
+        *this,
         config().electronicsNoiseRandomEngine(),
         "ElectronicsNoise",
         config().ElectronicsNoiseSeed
@@ -355,7 +352,7 @@ SimPMTIcarus::SimPMTIcarus(Parameters const& config)
       );
     
     if (firstTime()) {
-      mf::LogInfo log { "SimPMTIcarus" };
+      mf::LogDebug log { "SimPMTIcarus" };
       log << "PMT simulation configuration (first event):\n";
       PMTsimulator->printConfiguration(log);
     } // if first time

@@ -84,16 +84,15 @@ base {
         fullscale: [0.8*wc.millivolt, 3.3*wc.volt],
     },
 
-    elec: [super.elec {
+    elec: super.elec {
         type: "WarmElecResponse",
-        // Old values:
-        //   ICARUS nominal: 17.8075*wc.mV/wc.fC // 0.027 fC/(ADC*us)
-        //   Match data ADC values (docdb 25161): 14.9654*wc.mV/wc.fC, // 0.0321 fC/(ADC*us)
+        // gain: 17.8075*wc.mV/wc.fC, // 0.027 fC/(ADC*us)
+        // Set gain to (roughly) match data ADC values (docdb 25161)
         gain: 14.9654*wc.mV/wc.fC, // 0.0321 fC/(ADC*us)
         shaping: 1.3*wc.us,
         postgain: 1.0,
         start: 0,
-    }, for _ in [0, 1, 2]],
+    },
 
 
     sim: super.sim {

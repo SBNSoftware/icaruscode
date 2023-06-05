@@ -737,7 +737,7 @@ class util::details::ArtHandleTracker: public ArtHandleTrackerInterface<Event> {
       mf::LogDebug{ "ArtHandleTracker" } << "Removing cache for handle<"
         << fHandle.provenance()->producedClassName()
         << ">(" << fHandle.provenance()->inputTag().encode() << ").";
-      return fHandle.removeProduct();
+      return fEvent->removeCachedProduct(fHandle);
     }
   
   /// Returns a pointer to the managed handle, wrapped in `std::any`.

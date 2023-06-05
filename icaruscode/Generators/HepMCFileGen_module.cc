@@ -185,7 +185,7 @@ void evgen::HepMCFileGen::beginRun(art::Run& run)
 {
     fEventsPerSubRun = 0;
     art::ServiceHandle<geo::Geometry const> geo;
-    run.put(std::make_unique<sumdata::RunData>(geo->DetectorName()), art::fullRun());
+    run.put(std::make_unique<sumdata::RunData>(geo->DetectorName()));
   }
 //------------------------------------------------------------------------------
 void evgen::HepMCFileGen::endSubRun(art::SubRun& sr)
@@ -193,7 +193,7 @@ void evgen::HepMCFileGen::endSubRun(art::SubRun& sr)
     auto p = std::make_unique<sumdata::POTSummary>();
     p->totpot     = fEventsPerSubRun * fEventsPerPOT;
     p->totgoodpot = fEventsPerSubRun * fEventsPerPOT;
-    sr.put(std::move(p), art::subRunFragment());
+    sr.put(std::move(p));
     return;
   }
 //------------------------------------------------------------------------------
@@ -292,3 +292,4 @@ void evgen::HepMCFileGen::produce(art::Event & e)
   return;
 }
 DEFINE_ART_MODULE(evgen::HepMCFileGen)
+
