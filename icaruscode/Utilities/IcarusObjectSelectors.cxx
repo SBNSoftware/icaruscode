@@ -12,7 +12,7 @@
 
 
 // ---  BEGIN  --- icarus::crt::MatchType --------------------------------------
-using icarus::crt::MatchType;
+using sbn::crt::MatchType;
 using MatchTypeSelOption_t = util::MultipleChoiceSelection<MatchType>::Option_t;
 
 util::MultipleChoiceSelection<MatchType> const icarus::crt::MatchTypeSelector{
