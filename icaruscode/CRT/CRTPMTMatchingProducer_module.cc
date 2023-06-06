@@ -9,8 +9,8 @@
 #include "sbnobj/Common/CRT/CRTHit.hh"
 #include "sbnobj/Common/Trigger/ExtraTriggerInfo.h"
 #include "icaruscode/CRT/CRTUtils/CRTPMTMatchingUtils.h"
-#include "icaruscode/IcarusObj/CRTPMTMatching.h"
-
+//#include "icaruscode/IcarusObj/CRTPMTMatching.h"
+#include "sbnobj/Common/CRT/CRTPMTMatching.hh"
 // Framework includes
 #include "art/Framework/Core/SharedProducer.h"
 #include "art/Framework/Core/ModuleMacros.h"
@@ -47,8 +47,8 @@
 
 using std::vector;
 
-namespace icarus::crt {
-
+//namespace icarus::crt {
+namespace sbn::crt {
   /**
    * @brief Extracts and saves matches between CRT hits and PMT flashes.
    * 
@@ -164,13 +164,13 @@ namespace icarus::crt {
    * Output
    * -------
    * 
-   * * `std::vector<icarus::crt::CRTPMTMatching>`: an entry for each matched
+   * * `std::vector<sbn::crt::CRTPMTMatching>`: an entry for each matched
    *   flash. Entries are sorted by flast time, from the earliest to the latest,
    *   irregardless of which of the input flash collections they come from.
    *   Each entry contains information of all the matched CRT hits and the type
    *   of the matching:
    *    * `flashID`: an ID made up out of the flash content
-   *         (`icarus::crt::makeFlashID()`).
+   *         (`sbn::crt::makeFlashID()`).
    *    * `flashTime`: from `recob::OpFlash::Time()`.
    *    * `flashGateTime`: time of the flash from the beam gate opening.
    *    * `firstOpHitPeakTime`: first `recob::OpHit::PeakTime()` in the flash.
@@ -189,9 +189,9 @@ namespace icarus::crt {
    *    * `flashYWidth`: from `recob::OpFlash::YWidth()`.
    *    * `flashZWidth`: from `recob::OpFlash::ZWidth()`.
    *    * `flashClassification`: the topology of this track, according to the
-   *      categories in `icarus::crt::MatchType`; i.e. if it is a particle that
+   *      categories in `sbn::crt::MatchType`; i.e. if it is a particle that
    *      seems to be entering from the top, or exiting from within, etc.
-   *    * `matchedCRTHits` (`icarus::crt::MatchedCRT`): for each CRT hit matched
+   *    * `matchedCRTHits` (`sbn::crt::MatchedCRT`): for each CRT hit matched
    *      to the flash, information on its location and time relative to the
    *      flash.
    *        *`pos`: the location of the hit in space.
@@ -207,20 +207,20 @@ namespace icarus::crt {
    *    * `nTopCRTHitsAfter`: not saved yet (left to default value).
    *    * `nSideCRTHitsBefore`: not saved yet (left to default value).
    *    * `nSideCRTHitsAfter`: not saved yet (left to default value).
-   * * `art::Assns<icarus::crt::CRTPMTMatching, recob::OpFlash>`:
+   * * `art::Assns<sbn::crt::CRTPMTMatching, recob::OpFlash>`:
    *   associations linking the matched flash and the match information;
-   *   this is a one-to-one association; all `icarus::crt::CRTPMTMatching`
+   *   this is a one-to-one association; all `sbn::crt::CRTPMTMatching`
    *   objects in the association come from the collection data product
    *   documented above, and all have exactly one associated flash. Flashes
    *   that were not matched are not present in this association.
-   * * `art::Assns<icarus::crt::CRTPMTMatching, sbn::crt::CRTHit>`:
+   * * `art::Assns<sbn::crt::CRTPMTMatching, sbn::crt::CRTHit>`:
    *   associations linking the matched CRT hits and the match information;
-   *   this is a one-to-many association; all `icarus::crt::CRTPMTMatching`
+   *   this is a one-to-many association; all `sbn::crt::CRTPMTMatching`
    *   objects in the association come from the collection data product
    *   documented above, and they may have one or more CRT hits associated to
    *   them. CRT hits that were not matched are not present in this association.
    *   Also failed matches, with no CRT hit, are not present.
-   * * `art::Assns<recob::OpFlash, sbn::crt::CRTHit, icarus::crt::CRTPMTMatchingInfo>`:
+   * * `art::Assns<recob::OpFlash, sbn::crt::CRTHit, sbn::crt::CRTPMTMatchingInfo>`:
    *   direct association between a flash and its matched CRT hit (or hits);
    *   this is a one-to-many association. This information is redundant with
    *   the other two associations produced by this module. Metadata includes:
@@ -249,7 +249,7 @@ namespace icarus::crt {
   public:
  
     using CRTHit = sbn::crt::CRTHit;
-    
+    using CRTPMTMatching = sbn::crt::CRTPMTMatching;
     struct Config {
       
       using Name = fhicl::Name;
@@ -381,9 +381,9 @@ namespace icarus::crt {
      * @param hit the matched CRT hit
      * @param tflash the time of the matched flash [us]
      * @param isRealData whether the data is real (as opposed to Monte Carlo)
-     * @return a complete `icarus::crt::MatchedCRT` record
+     * @return a complete `sbn::crt::MatchedCRT` record
      */
-    icarus::crt::MatchedCRT makeMatchedCRT
+    sbn::crt::MatchedCRT makeMatchedCRT
       (sbn::crt::CRTHit const& hit, double tflash, bool isRealData) const;
     
   }; // class CRTPMTMatchingProducer
@@ -413,8 +413,8 @@ namespace icarus::crt {
     
     produces< std::vector<CRTPMTMatching> >();
     
-    produces< art::Assns<icarus::crt::CRTPMTMatching, recob::OpFlash> >();
-    produces< art::Assns<icarus::crt::CRTPMTMatching, sbn::crt::CRTHit> >();
+    produces< art::Assns<sbn::crt::CRTPMTMatching, recob::OpFlash> >();
+    produces< art::Assns<sbn::crt::CRTPMTMatching, sbn::crt::CRTHit> >();
     produces< art::Assns<recob::OpFlash, sbn::crt::CRTHit, CRTPMTMatchingInfo> >();
     
   } // CRTPMTMatchingProducer()
@@ -595,7 +595,7 @@ namespace icarus::crt {
       bool const thisInTime_beam
         = thisRelGateTime > inBeamMin && thisRelGateTime < inBeamMax;
       
-      icarus::crt::CRTMatches const crtMatches = CRTHitmatched(
+      icarus::crt::CRTMatches const crtMatches = icarus::crt::CRTHitmatched(
         firstOpHitPeakTime, flash_pos, crtHitList, fTimeOfFlightInterval, isRealData, fGlobalT0Offset, fMatchBottomCRT);
       
       std::vector<MatchedCRT> thisFlashCRTmatches;
@@ -650,7 +650,7 @@ namespace icarus::crt {
       
       FlashAssociation->addSingle(infoPtr, flashPtr);
       
-      for (CRTPMT const& CRTmatch: crtMatches.entering) {
+      for (icarus::crt::CRTPMT const& CRTmatch: crtMatches.entering) {
         CRTAssociation->addSingle(infoPtr, CRTmatch.CRTHit);
         FlashCRTAssociation->addSingle(
           flashPtr, CRTmatch.CRTHit,
@@ -661,7 +661,7 @@ namespace icarus::crt {
           }
           );
       }
-      for (CRTPMT const& CRTmatch: crtMatches.exiting) {
+      for (icarus::crt::CRTPMT const& CRTmatch: crtMatches.exiting) {
         CRTAssociation->addSingle(infoPtr, CRTmatch.CRTHit);
         FlashCRTAssociation->addSingle(
           flashPtr, CRTmatch.CRTHit,
@@ -673,7 +673,7 @@ namespace icarus::crt {
         );
       }
       
-      CRTPMTMatching matchInfo = FillCRTPMT(thisFlashType);
+      CRTPMTMatching matchInfo = sbn::crt::FillCRTPMT(thisFlashType);
       CRTPMTMatchesColl->push_back(std::move(matchInfo));
       
     } // for flash data products
@@ -688,7 +688,7 @@ namespace icarus::crt {
 
 
   // ---------------------------------------------------------------------------
-  icarus::crt::MatchedCRT CRTPMTMatchingProducer::makeMatchedCRT
+  sbn::crt::MatchedCRT CRTPMTMatchingProducer::makeMatchedCRT
     (sbn::crt::CRTHit const& hit, double tflash, bool isRealData) const
   {
     geo::Point_t const thisCRTpos {hit.x_pos, hit.y_pos, hit.z_pos};

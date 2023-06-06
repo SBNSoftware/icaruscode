@@ -11,7 +11,8 @@
 #define ICARUSCODE_UTILITIES_ICARUSOBJECTSELECTORS_H
 
 
-#include "icaruscode/IcarusObj/CRTPMTMatching.h" // icarus::crt::MatchType
+//#include "icaruscode/IcarusObj/CRTPMTMatching.h" // icarus::crt::MatchType
+#include "sbnobj/Common/CRT/CRTPMTMatching.hh"
 #include <map> // until https://github.com/LArSoft/lardataalg/pull/41
 #include "lardataalg/Utilities/MultipleChoiceSelection.h"
 
@@ -19,7 +20,7 @@
 namespace icarus::crt {
   
   /// Selector for `icarus::crt::MatchType`.
-  extern util::MultipleChoiceSelection<MatchType> const MatchTypeSelector;
+  extern util::MultipleChoiceSelection<sbn::crt::MatchType> const MatchTypeSelector;
   
 } // icarus::crt
 

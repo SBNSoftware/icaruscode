@@ -59,7 +59,7 @@
 
   <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
   <!-- icarus::crt::CRTPMTMatching -->
-  <class name="icarus::crt::MatchedCRT" ClassVersion="10">
+  <!--<class name="icarus::crt::MatchedCRT" ClassVersion="10">
    <version ClassVersion="10" checksum="1591831496"/>
   </class>
 
@@ -71,24 +71,24 @@
    <version ClassVersion="10" checksum="1804810359"/>
   </class>
   <class name="std::vector<icarus::crt::CRTPMTMatching>" />
-  <class name="art::Wrapper<vector<icarus::crt::CRTPMTMatching>>" />  
+  <class name="art::Wrapper<vector<icarus::crt::CRTPMTMatching>>" />  -->
 
     <!-- associations: icarus::crt::CRTPMTMatching, recob::OpFlash -->
-  <class name="art::Assns<icarus::crt::CRTPMTMatching, recob::OpFlash, void>" />
+    <!--<class name="art::Assns<icarus::crt::CRTPMTMatching, recob::OpFlash, void>" />
   <class name="art::Wrapper<art::Assns<icarus::crt::CRTPMTMatching, recob::OpFlash>>" />
   
   <class name="art::Assns<recob::OpFlash, icarus::crt::CRTPMTMatching, void>" />
-  <class name="art::Wrapper<art::Assns<recob::OpFlash, icarus::crt::CRTPMTMatching>>" />
+  <class name="art::Wrapper<art::Assns<recob::OpFlash, icarus::crt::CRTPMTMatching>>" />-->
   
     <!-- associations: icarus::crt::CRTPMTMatching, sbn::crt::CRTHit -->
-  <class name="art::Assns<icarus::crt::CRTPMTMatching, sbn::crt::CRTHit, void>" />
+<!--  <class name="art::Assns<icarus::crt::CRTPMTMatching, sbn::crt::CRTHit, void>" />
   <class name="art::Wrapper<art::Assns<icarus::crt::CRTPMTMatching, sbn::crt::CRTHit>>" />
   
   <class name="art::Assns<sbn::crt::CRTHit, icarus::crt::CRTPMTMatching, void>" />
-  <class name="art::Wrapper<art::Assns<sbn::crt::CRTHit, icarus::crt::CRTPMTMatching>>" />
+  <class name="art::Wrapper<art::Assns<sbn::crt::CRTHit, icarus::crt::CRTPMTMatching>>" />-->
     
     <!-- associations: recob::OpFlash, sbn::crt::CRTHit -->
-  <enum name="icarus::crt::CRTPMTMatchingInfo::Dir"/>
+    <!--<enum name="icarus::crt::CRTPMTMatchingInfo::Dir"/>
   <class name="icarus::crt::CRTPMTMatchingInfo" ClassVersion="10" >
    <version ClassVersion="10" checksum="3187367654"/>
   </class>
@@ -104,8 +104,8 @@
   <class name="art::Wrapper<art::Assns<sbn::crt::CRTHit, recob::OpFlash>>" />
     
   <class name="art::Assns<sbn::crt::CRTHit, recob::OpFlash, icarus::crt::CRTPMTMatchingInfo>" />
-  <class name="art::Wrapper<art::Assns<sbn::crt::CRTHit, recob::OpFlash, icarus::crt::CRTPMTMatchingInfo>>" />
-  
+  <class name="art::Wrapper<art::Assns<sbn::crt::CRTHit, recob::OpFlash, icarus::crt::CRTPMTMatchingInfo>>" />-->
+ 
   <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
   <!-- LArSoft object associations that are missing from LArSoft             -->
   
