@@ -5,4 +5,4 @@
 #include "stage0_run1_icarus.fcl"
 
 # Drop the artdaq format files on output
-outputs.outCommon.outputCommands:  ["keep *_*_*_*", "drop *_*_*_DAQ*", "drop *_decon1droi_*_*", "drop *_decon1DroiTPC*_*_*" ]
+outputs.rootOutput.outputCommands:  ["keep *_*_*_*", "drop *_*_*_DAQ*", "drop *_decon1droi_*_*", "drop *_decon1DroiTPC*_*_*" ]
