@@ -32,7 +32,8 @@
 #include "lardataobj/RecoBase/OpHit.h"
 #include "sbnobj/Common/CRT/CRTHit.hh"
 #include "sbnobj/Common/Trigger/ExtraTriggerInfo.h"
-#include "icaruscode/IcarusObj/CRTPMTMatching.h"
+//#include "icaruscode/IcarusObj/CRTPMTMatching.h"
+#include "sbnobj/Common/CRT/CRTPMTMatching.hh"
 
 // C++ includes
 #include <map>
@@ -73,7 +74,7 @@ class icarus::crt::FilterCRTPMTMatching : public art::EDFilter {
 
  public:
   using CRTHit = sbn::crt::CRTHit;
-
+  using CRTPMTMatching = sbn::crt::CRTPMTMatching;
   explicit FilterCRTPMTMatching(fhicl::ParameterSet const& p);
   // Required functions.
   bool beginRun(art::Run& run) override;
@@ -226,9 +227,9 @@ bool icarus::crt::FilterCRTPMTMatching::filter(art::Event& e) {
     hasOnlyCosmics = true;
     for (const auto& f : EventFlashes) {
       bool isCosmic = false;
-      if (f.flashClassification == icarus::crt::MatchType::enTop || f.flashClassification == icarus::crt::MatchType::enTop_exSide ||
-          f.flashClassification == icarus::crt::MatchType::enTop_mult ||
-          f.flashClassification == icarus::crt::MatchType::enTop_exSide_mult) {
+      if (f.flashClassification == sbn::crt::MatchType::enTop || f.flashClassification == sbn::crt::MatchType::enTop_exSide ||
+          f.flashClassification == sbn::crt::MatchType::enTop_mult ||
+          f.flashClassification == sbn::crt::MatchType::enTop_exSide_mult) {
         isCosmic = true;
 	}
       	// With Medium filter, everything (inTime) which is associated with Top
@@ -242,8 +243,8 @@ bool icarus::crt::FilterCRTPMTMatching::filter(art::Event& e) {
     hasOnlyCosmics = true;
     for (const auto& f : EventFlashes) {
       bool isCosmic = false;
-      if ((f.flashClassification != icarus::crt::MatchType::noMatch) && (f.flashClassification != icarus::crt::MatchType::exTop) &&
-          (f.flashClassification != icarus::crt::MatchType::exSide))
+      if ((f.flashClassification != sbn::crt::MatchType::noMatch) && (f.flashClassification != sbn::crt::MatchType::exTop) &&
+          (f.flashClassification != sbn::crt::MatchType::exSide))
         isCosmic = true;
         // With Medium filter, everything (inTime) which is associated with Top
         // CRT Hit before the Flash is filtered as clear cosmic

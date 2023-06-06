@@ -7,7 +7,7 @@
 #include "icaruscode/IcarusObj/OpDetWaveformMeta.h"
 #include "icaruscode/IcarusObj/PMTWaveformTimeCorrection.h"
 #include "icaruscode/IcarusObj/ChannelROI.h"
-#include "icaruscode/IcarusObj/CRTPMTMatching.h"
+//#include "icaruscode/IcarusObj/CRTPMTMatching.h"
 
 #include "sbnobj/ICARUS/PMT/Trigger/Data/OpticalTriggerGate.h"
 #include "sbnobj/ICARUS/PMT/Trigger/Data/TriggerGateData.h"
@@ -23,7 +23,7 @@
 namespace {
   icarus::SimEnergyDepositSummary EDepSum;
   
-  icarus::crt::CRTPMTMatchingInfo meta1;
+  /*icarus::crt::CRTPMTMatchingInfo meta1;
   
   art::Assns<sbn::crt::CRTHit, recob::OpFlash, icarus::crt::CRTPMTMatchingInfo> assn11;
   art::Assns<recob::OpFlash, sbn::crt::CRTHit, icarus::crt::CRTPMTMatchingInfo> assn12;
@@ -32,6 +32,6 @@ namespace {
   art::Assns<icarus::crt::CRTPMTMatching, recob::OpFlash> assn22;
   
   art::Assns<sbn::crt::CRTHit, icarus::crt::CRTPMTMatching> assn31;
-  art::Assns<icarus::crt::CRTPMTMatching, sbn::crt::CRTHit> assn32;
+  art::Assns<icarus::crt::CRTPMTMatching, sbn::crt::CRTHit> assn32;*/
   
 }

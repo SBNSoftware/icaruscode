@@ -70,6 +70,7 @@ using std::map;
 using std::set;
 using std::pair;
 
+using namespace sbn::crt;
 
 namespace icarus {
 namespace crt {
@@ -555,7 +556,6 @@ namespace crt {
     } //for CRT FEB events
     
   
-
     // Fill CRT Hit Tree
     art::Handle<std::vector<sbn::crt::CRTHit>> crtHitHandle;
     
@@ -608,7 +608,7 @@ namespace crt {
 
        
     //Fill CRTPMT Match TTree
-    art::Handle<vector<icarus::crt::CRTPMTMatching>> CRTPMTMatchingHandle;
+    art::Handle<vector<sbn::crt::CRTPMTMatching>> CRTPMTMatchingHandle;
     if ( event.getByLabel(fCRTPMTProducerLabel, CRTPMTMatchingHandle)){
       
       for (auto const& match: *CRTPMTMatchingHandle){
