@@ -46,8 +46,8 @@ physics:
 
  #reco sequence and trigger_paths to be defined elsewhere
 
- stream1:    [ out1 ]
- end_paths:  [stream1]
+ stream1:    [ rootOutput ]
+ end_paths:  [ stream1 ]
 
 }
 
@@ -56,7 +56,7 @@ physics:
 #entry in the output stream you want those to go to, where XXX is the label of the filter module(s)
 outputs:
 {
- out1:
+ rootOutput:
  {
    module_type: RootOutput
    dataTier: "reconstructed"
