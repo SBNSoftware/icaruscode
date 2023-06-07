@@ -25,6 +25,7 @@
 #include "sbn_stub.fcl"
 #include "transfer_flashmatch_producer.fcl"
 #include "crtt0producer_icarus.fcl"
+#include "crtpmtmatchingproducer.fcl"
 
 BEGIN_PROLOG
 
@@ -92,6 +93,9 @@ standard_crtt0producer_cryoW: @local::standard_crtt0producer
 standard_crtt0producer_cryoW.TpcTrackModuleLabel: ["pandoraTrackGausCryoW"]
 standard_crtt0producer_cryoW.PFParticleLabel: ["pandoraGausCryoW"]
 
+# CRTPMTMatching producer
+crtpmt:                         @local::standard_crtpmtmatchingproducer
+
 # Producers for making analysis level products
 recoana_caf_preprocess_producers: {
   mcreco: @local::standard_mcreco
@@ -107,6 +111,8 @@ recoana_caf_preprocess_producers: {
 
   pandoraCRTMatchCryoE: @local::standard_crtt0producer_cryoE
   pandoraCRTMatchCryoW: @local::standard_crtt0producer_cryoW
+
+  CRTPMTMatch: @local::crtpmt
 
   # crtconvhit: @local::crthitconverter_icarus
   rns: { module_type: "RandomNumberSaver" }
