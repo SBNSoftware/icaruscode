@@ -128,7 +128,7 @@ icarus_stage0_filters:
    flashfilterBNB: { module_type:         "FilterOpFlash" 
                      OpFlashProducerList: ["opflashCryoE","opflashCryoW"] 
                      WindowStartTime:     -0.2 # 0.2us safe margin
-#                    WindowEndTime:        1.8 
+                     WindowEndTime:        1.8 
                    }
    flashfilterNuMI: { module_type:         "FilterOpFlash" 
                       OpFlashProducerList: ["opflashCryoE","opflashCryoW"] 
