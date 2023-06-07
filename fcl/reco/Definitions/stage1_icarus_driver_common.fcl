@@ -47,7 +47,7 @@ physics:
  #reco sequence and trigger_paths to be defined elsewhere
 
  stream1:    [ out1 ]
- end_paths:  [stream1]
+ end_paths:  [ stream1 ]
 
 }
 

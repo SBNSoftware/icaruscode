@@ -15,6 +15,7 @@
 #include "crt_decoderdefs_icarus.fcl"
 #include "crthitproducer.fcl"
 #include "wcls-decode-to-sig-base.fcl"
+#include "icarus_FilterDataIntegrity.fcl"
 #include "icarus_FilterCRTPMTMatching.fcl"
 
 BEGIN_PROLOG
@@ -154,6 +155,8 @@ icarus_stage0_filters:
                              TriggerType:        "Unknown"
                           }
 
+   filterdataintegrity: @local::icarus_FilterDataIntegrity
+
    crtpmtmatchingfilter: @local::icarus_FilterCRTPMTMatching
 }
 
@@ -261,6 +264,7 @@ icarus_stage0_CRT:                  [
                                     ]
  
 icarus_stage0_data:                 [
+                                      filterdataintegrity,
                                       @sequence::icarus_stage0_PMT, 
                                       @sequence::icarus_stage0_CRT,
                                       daqTPCROI, 
@@ -268,6 +272,7 @@ icarus_stage0_data:                 [
                                     ]
  
 icarus_stage0_2d_data:              [
+                                      filterdataintegrity,
                                       @sequence::icarus_stage0_PMT, 
                                       @sequence::icarus_stage0_CRT,
                                       daqTPCROI, 
@@ -275,6 +280,7 @@ icarus_stage0_2d_data:              [
                                     ]
  
 icarus_stage0_data_crtpmtfilter:    [
+                                      filterdataintegrity,
                                       @sequence::icarus_stage0_PMT, 
                                       @sequence::icarus_stage0_CRT,
                                       crtpmtmatchingfilter,
@@ -283,6 +289,7 @@ icarus_stage0_data_crtpmtfilter:    [
                                     ]
 
 icarus_stage0_2d_data_crtpmtfilter: [
+                                      filterdataintegrity,
                                       @sequence::icarus_stage0_PMT, 
                                       @sequence::icarus_stage0_CRT,
                                       crtpmtmatchingfilter,

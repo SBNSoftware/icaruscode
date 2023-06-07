@@ -18,7 +18,7 @@ physics.trigger_paths: [ path ]
 physics.end_paths:     [ outana, streamROOT ]
 
 # Drop the artdaq format files on output
-outputs.outCommon.outputCommands:         ["keep *_*_*_*", "drop *_*_*_DAQ*", "drop *_daqTPCROI_*_*", "drop *_decon1droi_*_*", "drop *_decon1DroiTPC*_*_*" ]
+outputs.rootOutput.outputCommands:         ["keep *_*_*_*", "drop *_*_*_DAQ*", "drop *_daqTPCROI_*_*", "drop *_decon1droi_*_*", "drop *_decon1DroiTPC*_*_*" ]
 
 ## Modify the event selection for the purity analyzers
 physics.analyzers.purityinfoana0.SelectEvents:    [ path ]
