@@ -1,4 +1,4 @@
-# A script to run the analyzer module: CRTTPCTruthEffMC
+# A script to run the analyzer module: CRTTPCTruthEffMCKalman
 
 #include "services_icarus_simulation.fcl"
 #include "services_common_icarus.fcl"
@@ -7,7 +7,7 @@
 #include "crtbacktracker_icarus.fcl"
 #include "crtt0producer_icarus.fcl"
 
-process_name: CRTTPCTruthEffMC
+process_name: CRTTPCTruthEffMCKalman
 
 services:
 {
@@ -59,12 +59,12 @@ physics:
 {
    analyzers:
   {
-    CRTTPCTruthEffMC:
+    CRTTPCTruthEffMCKalman:
     {
-      module_type:         "icaruscode/CRT/CRTTPCTruthEffMC"
+      module_type:         "icaruscode/CRT/CRTTPCTruthEffMCKalman"
       # The input parameters	   
       CRTHitLabel:         "crthit"           # CRT producer module label
-      TPCTrackLabel:       ["pandoraTrackGausCryoE", "pandoraTrackGausCryoW"]     # Track producer module label
+      TPCTrackLabel:       ["pandoraKalmanTrackGausCryoE", "pandoraKalmanTrackGausCryoW"]     # Track producer module label
       PFParticleLabel: 	   ["pandoraGausCryoE", "pandoraGausCryoW"]
       PFParticleMetadataLabel: ["pandoraGausCryoE", "pandoraGausCryoW"]
       #TPCTrackLabel:       "pandoraTrackGausCryoE"     # Track producer module label  
@@ -79,7 +79,7 @@ physics:
   }
 
   # Schedule job step(s) for execution by defining the analysis module for this job.
-  analysis: [ CRTTPCTruthEffMC ]
+  analysis: [ CRTTPCTruthEffMCKalman ]
 
  # stream1: [ out1 ]
 

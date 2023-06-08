@@ -176,3 +176,95 @@ double RecoUtils::CalculateTrackLength(const art::Ptr<recob::Track> track){
   }
   return length;
 }
+
+
+int RecoUtils::TrueIDOfTrack(detinfo::DetectorClocksData const& clockData, const std::vector<art::Ptr<recob::Hit>> &hits, bool rollup_unsaved_ids){
+
+	bool beVerbose = false;
+	bool take_eveID_abs = true;
+
+ 	std::map<int,double> trkide;
+  	art::ServiceHandle<cheat::BackTrackerService> backTracker;
+
+	if(beVerbose) std::cout << "Begin Truth matching " << hits.size() << " recob::Hits:\n";
+
+	for(size_t i=0; i<hits.size(); i++){
+
+		art::Ptr<recob::Hit> hit=hits[i];
+		std::vector<sim::TrackIDE> eveIDs = backTracker->HitToTrackIDEs(clockData, hit);
+
+//		if(beVerbose) std::cout << "Hit #" << i << " has " << eveIDs.size() << "event IDEs associated with it\n";
+
+		for(size_t j=0; j<eveIDs.size(); j++){
+
+			int eveID = eveIDs[j].trackID;
+			if(take_eveID_abs){
+
+				eveID = std::abs(eveID);
+
+			}//end if(take_eveID_abs)
+
+			trkide[eveID] += eveIDs[j].energy;
+
+//			if(beVerbose) std::cout << "eveID #" << j << " of hit #" << i << " has trackID "<< eveIDs[j].trackID << " and energy " << eveIDs[j].energy << "\n";
+
+		}//end loop over eveIDs in hit
+
+	}//end loop over hits from track
+
+	//We should have a map of track event IDs with corresponding energy deposition saved in trkide, 
+	//now we need to select the one with highest energy
+	double maxe = -1; double tote = 0; int trackid = -1;
+
+	if(beVerbose) std::cout << "Total energy is currently 0 in truth matching\n";
+	if(beVerbose) std::cout << "begin reading out map:\n";
+	for(std::map<int,double>::iterator ii = trkide.begin(); ii!=trkide.end(); ++ii){
+	
+		if(beVerbose) std::cout << "Map(first,second): (" << ii->first << "," << ii->second << ")\n";
+        	tote += ii->second;
+		if(beVerbose) std::cout << "Total energy is currently " << tote << " in truth matching\n";
+           	if((ii->second)>maxe){
+             		maxe = ii->second;
+            	 	trackid = ii->first;
+          	}//end if(this ID's energy>max found energy so far)
+	}//end loop over map looking for largest energy
+
+	if(beVerbose) std::cout << "Total energy found during truth match: " << tote << std::endl;
+	if(beVerbose) std::cout << "Track ID found to be best match: " << trackid << std::endl;
+
+	return trackid;
+
+}//end definition of function int RecoUtils::TrueIDOfTrack(detinfo::DetectorClocksData const& clockData, const std::vector<art::Ptr<recob::Hit>> &hits, bool rollup_unsaved_ids=1)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -50,6 +50,7 @@ namespace RecoUtils{
   // If rollup_unsaved_ids is set to true, any unsaved daughter than 
   // contributed energy to the hit has its energy included in its closest ancestor that was saved.
 
+
   int TrueParticleID(detinfo::DetectorClocksData const& clockData, const art::Ptr<recob::Hit> hit, bool rollup_unsaved_ids=1); 
   
   // Returns the geant4 ID which contributes the most to the vector of hits.  
@@ -75,7 +76,11 @@ namespace RecoUtils{
   // Calculates the total length of a recob::track by summing up the distances between adjacent traj. points
 
   double CalculateTrackLength(const art::Ptr<recob::Track> track); 
-  
+
+   //TB: I added this function because the old function isn't working, largely copied from a DUNE module sent to me by Ryan Howell
+  int TrueIDOfTrack(detinfo::DetectorClocksData const& clockData, const std::vector<art::Ptr<recob::Hit>> &hits, bool rollup_unsaved_ids=1);
+
+ 
 }
 
 #endif
