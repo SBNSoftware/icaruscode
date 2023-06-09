@@ -14,6 +14,7 @@
 #include "trigger_emulation_icarus.fcl"
 #include "crt_decoderdefs_icarus.fcl"
 #include "crthitproducer.fcl"
+#include "crtpmtmatchingproducer.fcl"
 #include "wcls-decode-to-sig-base.fcl"
 #include "icarus_FilterDataIntegrity.fcl"
 #include "icarus_FilterCRTPMTMatching.fcl"
@@ -90,6 +91,9 @@ icarus_stage0_producers:
 
   ### CRT hit finder producer
   crthit:                         @local::standard_crthitproducer	
+
+  ### CRTPMTMatching producer
+  crtpmt:                         @local::standard_crtpmtmatchingproducer
 
   ### trigger emulation foundation
   pmtconfigbaselines:             @local::icarus_pmtconfigbaselines
@@ -260,8 +264,9 @@ icarus_stage0_2d_multiTPC:          [ @sequence::icarus_stage0_multiTPC_2d_TPC,
  
 icarus_stage0_CRT:                  [
                                       daqCRT,
-                                      crthit
-                                    ]
+                                      crthit,
+                                      crtpmt
+				    ]
  
 icarus_stage0_data:                 [
                                       filterdataintegrity,
@@ -286,6 +291,12 @@ icarus_stage0_data_crtpmtfilter:    [
                                       crtpmtmatchingfilter,
                                       daqTPCROI, 
                                       @sequence::icarus_stage0_multiTPC
+                                    ]
+
+icarus_stage0_data_crtpmtfilter_noTPC:    [
+                                      @sequence::icarus_stage0_PMT,
+                                      @sequence::icarus_stage0_CRT,
+                                      crtpmtmatchingfilter
                                     ]
 
 icarus_stage0_2d_data_crtpmtfilter: [
