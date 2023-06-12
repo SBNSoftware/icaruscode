@@ -1397,7 +1397,7 @@ void icarus::CRTTPCTruthEff::endpoint_PCA_ana(recob::Track trk, bool usestartpt,
 	while(distance_from_endpoint<distlimit || (size_t)num_points_counter<40){
 //		std::cout << "Number of points in the track: " << num_points_counter << std::endl;
 
-		size_t nextpt;
+		size_t nextpt=SIZE_MAX;
 		if(usestartpt) {
 			nextpt = trk.NextValidPoint(firstpt+1);
 //			std::cout << "Found next valid point at size_t=" << nextpt << std::endl;

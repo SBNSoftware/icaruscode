@@ -224,11 +224,11 @@ namespace icarus {
 	    std::vector<double> all_crt_pes;
 
 	    //add trigger data product vars
-	    unsigned int m_gate_type;
+//	    unsigned int m_gate_type;
 	    std::string  m_gate_name;
 	    uint64_t     m_trigger_timestamp;
 	    uint64_t     m_gate_start_timestamp;
-	    uint64_t     m_trigger_gate_diff;
+//	    uint64_t     m_trigger_gate_diff;
 	//    uint64_t     m_gate_crt_diff;
 
 	  }; // class CRTTPCTruthEffMCKalman
@@ -1480,7 +1480,7 @@ void icarus::CRTTPCTruthEffMCKalman::endpoint_PCA_ana(recob::Track trk, bool use
 	while(distance_from_endpoint<distlimit || (size_t)num_points_counter<40){
 //		std::cout << "Number of points in the track: " << num_points_counter << std::endl;
 
-		size_t nextpt;
+		size_t nextpt = SIZE_MAX;
 		if(usestartpt) {
 			nextpt = trk.NextValidPoint(firstpt+1);
 //			std::cout << "Found next valid point at size_t=" << nextpt << std::endl;

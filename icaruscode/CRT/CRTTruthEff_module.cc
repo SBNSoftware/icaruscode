@@ -134,7 +134,6 @@ namespace icarus {
     CRTT0MatchAlg              t0Alg;		     ///< used to call matching functions
     bool                       fVerbose;       	     ///< print information about what's going on
     bool		       fIsData;              ///< switch for if this is data or MC
-    bool	tpcEast, tpcWest;//true if in that TPC, false otherwise
 
     geo::GeometryCore const* fGeometryService;   ///< pointer to Geometry provider
     icarus::crt::CRTCommonUtils* fCrtutils;
@@ -172,11 +171,11 @@ namespace icarus {
 	std::vector<double> mcp_crtcross_region;				///< CRT Region that is being crossed
 
 	    //add trigger data product vars
-	    unsigned int m_gate_type;
+//	    unsigned int m_gate_type;
 	    std::string  m_gate_name;
-	    uint64_t     m_trigger_timestamp;
-	    uint64_t     m_gate_start_timestamp;
-	    uint64_t     m_trigger_gate_diff;
+//	    uint64_t     m_trigger_timestamp;
+//	    uint64_t     m_gate_start_timestamp;
+//	    uint64_t     m_trigger_gate_diff;
 	//    uint64_t     m_gate_crt_diff;
 
 	  }; // class CRTTruthEff
@@ -1022,7 +1021,7 @@ void icarus::CRTTruthEff::endpoint_PCA_ana(recob::Track trk, bool usestartpt, TV
 	while(distance_from_endpoint<distlimit || (size_t)num_points_counter<40){
 //		std::cout << "Number of points in the track: " << num_points_counter << std::endl;
 
-		size_t nextpt;
+		size_t nextpt=SIZE_MAX;
 		if(usestartpt) {
 			nextpt = trk.NextValidPoint(firstpt+1);
 //			std::cout << "Found next valid point at size_t=" << nextpt << std::endl;
