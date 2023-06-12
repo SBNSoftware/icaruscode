@@ -104,7 +104,7 @@ namespace icarus {
     bool willEnterCRTVolume(TVector3 vecpos, TVector3 vecdir, int crtregion);
     double getnewDCA(TVector3 CRTHitpos, TVector3 TPC_posvec, TVector3 TPC_dirvec);
     double CRT_plane_dist(TVector3 TPC_track_pos, TVector3 TPC_track_dir, TVector3 CRT_hit_pos, int plane_axis/*0 for x, 1 for y, 2 for z*/);
-    
+    bool track_near_TPC_edge(recob::Track trk, bool &start_x, bool &start_y, bool &start_z, bool &end_x, bool &end_y, bool &end_z);
 
   private:
     art::ServiceHandle<art::TFileService> tfs;
@@ -184,6 +184,10 @@ namespace icarus {
     int track_ancestor, crt_ancestor;		///< Truth ID of the CRT Hit/TPC Track ancestor, which I define as the ID that returns itself when querying the Mother ID
     int crt_motherlayers, track_motherlayers;   ///< Number of times the track/hit mother was queried before returning itself or 0
     //End simulation-only variables
+
+    bool trk_start_nearedge, trk_end_nearedge;
+    bool trk_nearedge_start_x, trk_nearedge_start_y, trk_nearedge_start_z;
+    bool trk_nearedge_end_x, trk_nearedge_end_y, trk_nearedge_end_z;
 
     //These vectors contain the relevant matched CRT Hit information, with each entry across the vectors representing a FEB mac5, channel, and PE of one of the constituent hits, think of them 
     //as parallel column vectors
@@ -352,6 +356,15 @@ namespace icarus {
     tr_crttpc->Branch("pfp_isprimary",&pfp_isprimary,"pfp_isprimary/O");
     tr_crttpc->Branch("clearcosmic",&clearcosmic,"clearcosmic/O");
 
+    tr_crttpc->Branch("trk_start_nearedge",&trk_start_nearedge,"trk_start_nearedge/O");
+    tr_crttpc->Branch("trk_end_nearedge",&trk_end_nearedge,"trk_end_nearedge/O");
+    tr_crttpc->Branch("trk_nearedge_start_x",&trk_nearedge_start_x,"trk_nearedge_start_x/O");
+    tr_crttpc->Branch("trk_nearedge_start_y",&trk_nearedge_start_y,"trk_nearedge_start_y/O");
+    tr_crttpc->Branch("trk_nearedge_start_z",&trk_nearedge_start_z,"trk_nearedge_start_z/O");
+    tr_crttpc->Branch("trk_nearedge_end_x",&trk_nearedge_end_x,"trk_nearedge_end_x/O");
+    tr_crttpc->Branch("trk_nearedge_end_y",&trk_nearedge_end_y,"trk_nearedge_end_y/O");
+    tr_crttpc->Branch("trk_nearedge_end_z",&trk_nearedge_end_z,"trk_nearedge_end_z/O");
+
     tr_crttpc->Branch("tpc_trk_start_x",&tpc_trk_start_x,"tpc_trk_start_x/D");
     tr_crttpc->Branch("tpc_trk_start_y",&tpc_trk_start_y,"tpc_trk_start_y/D");
     tr_crttpc->Branch("tpc_trk_start_z",&tpc_trk_start_z,"tpc_trk_start_z/D");
@@ -504,6 +517,10 @@ namespace icarus {
 	  pfp_id = -999999; pfp_parent = -999999; pfp_numdaughters = -999999; pfp_pdg=-999999; pfp_isprimary=false; clearcosmic = false;
 	  tpc_trk_start_x = DBL_MAX; tpc_trk_start_y = DBL_MAX; tpc_trk_start_z = DBL_MAX;
 	  tpc_trk_end_x = DBL_MAX; tpc_trk_end_y = DBL_MAX; tpc_trk_end_z = DBL_MAX;
+	  trk_start_nearedge=false; trk_end_nearedge=false;
+	  trk_nearedge_start_x=false; trk_nearedge_start_y=false; trk_nearedge_start_z=false;
+	  trk_nearedge_end_x=false; trk_nearedge_end_y=false; trk_nearedge_end_z=false;
+
 
 	  pointChecker(*trackList[track_i],start_in_tpc,end_in_tpc,startflag,endflag);
 
@@ -569,6 +586,13 @@ namespace icarus {
 		trk_pdg = particles[track_trueID].PdgCode();
 	  }//end if(!fIsData)
 
+	  //adding analysis to see if track is near TPC edge
+	  bool neartpcedge = false;
+	  neartpcedge = track_near_TPC_edge(*trackList[track_i], trk_nearedge_start_x, trk_nearedge_start_y, trk_nearedge_start_z, trk_nearedge_end_x, trk_nearedge_end_y, trk_nearedge_end_z);
+	  if(neartpcedge){
+		if(trk_nearedge_start_x || trk_nearedge_start_y || trk_nearedge_start_z) trk_start_nearedge = true;
+		if(trk_nearedge_end_x || trk_nearedge_end_y || trk_nearedge_end_z) trk_end_nearedge = true;
+	  }//end if(neartpcedge)
 	  matchCand_PCA closest = t0Alg.GetClosestCRTHit_PCA(detProp, *trackList[track_i], hits, crtHits,  m_gate_start_timestamp, fIsData);
 
 	  if(closest.dca >=0 ){
@@ -1607,7 +1631,34 @@ double icarus::CRTTPCTruthEff::CRT_plane_dist(TVector3 TPC_track_pos, TVector3 T
 
 }//end double icarus::CRTTPCTruthEff::CRT_plane_dist(TVector3 TPC_track_pos, TVector3 TPC_track_dir, TVector3 CRT_hit_pos, int plane_axis/*0 for x, 1 for y, 2 for z*/)
 
+bool icarus::CRTTPCTruthEff::track_near_TPC_edge(recob::Track trk, bool &start_x, bool &start_y, bool &start_z, bool &end_x, bool &end_y, bool &end_z){
 
+	auto thisstart = trk.Vertex();
+	auto thisend = trk.End();
+
+	bool returnbool=false;
+
+	double edgedist = 10;
+
+	double xmin = 61.94;    double xmax = 358.49; 
+	double ymin = -181.86;  double ymax = 134.96;
+	double zmin = -894.951; double zmax = 894.951;
+
+	start_x = (std::abs(thisstart.X())>xmin && std::abs(thisstart.X())<xmin+edgedist) || (std::abs(thisstart.X())<xmax && std::abs(thisstart.X())>xmax-edgedist);
+	end_x = (std::abs(thisend.X())>xmin && std::abs(thisend.X())<xmin+edgedist) || (std::abs(thisend.X())<xmax && std::abs(thisend.X())>xmax-edgedist);
+
+	start_y = (thisstart.Y()>ymin && thisstart.Y()<ymin+edgedist) || (thisstart.Y()<ymax && thisstart.Y()>ymax - edgedist);
+	end_y = (thisend.Y()>ymin && thisend.Y()<ymin+edgedist) || (thisend.Y()<ymax && thisend.Y()>ymax - edgedist);
+
+	start_z = (thisstart.Z()>zmin && thisstart.Z()<zmin+edgedist) || (thisstart.Z()<zmax && thisstart.Z()>zmax - edgedist);
+	end_z = (thisend.Z()>zmin && thisend.Z()<zmin+edgedist) || (thisend.Z()<zmax && thisend.Z()>zmax - edgedist);
+
+
+	if(start_x || start_y || start_z || end_x || end_y || end_z) returnbool = true;
+
+	return returnbool;
+
+}//end bool icarus::CRTTPCTruthEff::track_near_TPC_edge(recob::Track trk, bool &start_x, bool &start_y, bool &start_z, bool &end_x, bool &end_y, bool &end_z)
 
   DEFINE_ART_MODULE(CRTTPCTruthEff)
 
