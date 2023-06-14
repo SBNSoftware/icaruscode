@@ -168,7 +168,7 @@ void icarus::FlashResAna::analyze(art::Event const& e)
     fInFrame  = false;;
     fNPmtFlash= -1;
     double dt = DBL_MAX;
-    geo::CryostatGeo const& cryo0 = fGeometryService->Cryostat(0);
+    geo::CryostatGeo const& cryo0 = fGeometryService->Cryostat(geo::CryostatID{0});
  
     for(size_t i=0; i<4; i++) {
         fNuXYZT[i] = dt;
@@ -264,22 +264,24 @@ void icarus::FlashResAna::analyze(art::Event const& e)
                 vector<art::Ptr<recob::OpHit>> hits = findManyHits.at(iflash);
                 for(auto const& hit : hits) {
                     if(hit->OpChannel() == fMaxChan){
-                        fDeltaPmt = hit->PeakTime()*1.0e3 - fNuXYZT[3];
+                        fDeltaPmt = hit->StartTime()*1.0e3 - fNuXYZT[3];
                     }
-                    if(hit->PeakTime()<tPmtMin){
-                        tPmtMin = hit->PeakTime();
+                    if(hit->StartTime()<tPmtMin){
+                        tPmtMin = hit->StartTime();
                         geo::OpDetGeo const& opDet = cryo0.OpDet(hit->OpChannel());
-                        double pos[3];
-                        opDet.GetCenter(pos);
-                        for(int i=0; i<3; i++) fFlashXYZTMin[i] = pos[i];
+                        auto const pos = opDet.GetCenter();
+                        fFlashXYZTMin[0] = pos.X();
+                        fFlashXYZTMin[1] = pos.Y();
+                        fFlashXYZTMin[2] = pos.Z();
                         fFlashXYZTMin[3] = tPmtMin;
                     }
-                    if(hit->PeakTime()>tPmtMax){
-                        tPmtMax = hit->PeakTime();
+                    if(hit->StartTime()>tPmtMax){
+                        tPmtMax = hit->StartTime();
                         geo::OpDetGeo const& opDet = cryo0.OpDet(hit->OpChannel());
-                        double pos[3];
-                        opDet.GetCenter(pos);
-                        for(int i=0; i<3; i++) fFlashXYZTMax[i] = pos[i];
+                        auto const pos = opDet.GetCenter();
+                        fFlashXYZTMax[0] = pos.X();
+                        fFlashXYZTMax[1] = pos.Y();
+                        fFlashXYZTMax[2] = pos.Z();
                         fFlashXYZTMax[3] = tPmtMax;
                     }
                 }
@@ -313,16 +315,17 @@ void icarus::FlashResAna::analyze(art::Event const& e)
         else{ 
             std::sort(opHitList.begin(),opHitList.end(),
                     [](art::Ptr<recob::OpHit> h1, art::Ptr<recob::OpHit> h2)
-                       {return h1->PeakTime()<h2->PeakTime();}
+                       {return h1->StartTime()<h2->StartTime();}
                    );
-            if(opHitList.size()>1 && opHitList[0]->PeakTime()>opHitList.back()->PeakTime())
+            if(opHitList.size()>1 && opHitList[0]->StartTime()>opHitList.back()->StartTime())
                 std::cout << "OpHits time sort failed!" << std::endl;
 
             geo::OpDetGeo const& opDet = cryo0.OpDet(opHitList[0]->OpChannel());
-            double pos[3];
-            opDet.GetCenter(pos);
-            for(int i=0; i<3; i++) fHitXYZT[i] = pos[i];
-            fHitXYZT[3] = opHitList[0]->PeakTime()*1.0e3; //time in ns
+            auto const pos = opDet.GetCenter();
+            fHitXYZT[0] = pos.X();
+            fHitXYZT[1] = pos.Y();
+            fHitXYZT[2] = pos.Z();
+            fHitXYZT[3] = opHitList[0]->StartTime()*1.0e3; //time in ns
             fHitDist = 0.;
             for(int i=0; i<3; i++) 
                 fHitDist+=pow(fHitXYZT[i]-fNuXYZT[i],2);

@@ -1,0 +1,11 @@
+#include "stage1_icarus_driver_common.fcl"
+
+process_name: larcv
+
+physics.reco: [ ]
+
+physics.outana:            [ @sequence::icarus_analysis_supera ]
+physics.trigger_paths:     [ reco ]
+physics.end_paths:         [ outana ]
+
+

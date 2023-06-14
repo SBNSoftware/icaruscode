@@ -13,10 +13,10 @@
 #include "icaruscode/PMT/Trigger/Algorithms/WindowTopologyAlg.h" // WindowTopologyManager
 #include "icaruscode/PMT/Trigger/Algorithms/WindowPatternConfig.h"
 #include "icaruscode/PMT/Trigger/Algorithms/WindowPattern.h"
-#include "icaruscode/PMT/Trigger/Utilities/PlotSandbox.h"
 #include "icaruscode/PMT/Trigger/Utilities/TriggerGateOperations.h"
 #include "icaruscode/PMT/Trigger/Utilities/TrackedTriggerGate.h" // gatesIn()
 #include "icarusalg/Utilities/ROOTutils.h" // util::ROOT
+#include "icarusalg/Utilities/PlotSandbox.h"
 #include "icarusalg/Utilities/sortBy.h" // also icarus::util::sortCollBy()
 
 // LArSoft libraries
@@ -889,7 +889,7 @@ void icarus::trigger::SlidingWindowTriggerEfficiencyPlots::plotResponse(
   
   // go through all the plot categories this event qualifies for
   // (for example: charged currents, muon neutrinos, ...)
-  for (icarus::trigger::PlotSandbox const& plotSet: plotSets) {
+  for (PlotSandbox const& plotSet: plotSets) {
     
     //
     // overview plots from different thresholds

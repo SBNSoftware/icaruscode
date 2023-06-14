@@ -48,7 +48,7 @@ auto icarus::trigger::SlidingWindowDefinitionAlg::makeWindows
   //
   PMTverticalSlicingAlg slicerAlg(fLogCategory);
   PMTverticalSlicingAlg::Slices_t slices;
-  for (geo::CryostatGeo const& cryo: fGeom.IterateCryostats())
+  for (geo::CryostatGeo const& cryo: fGeom.Iterate<geo::CryostatGeo>())
     slicerAlg.appendCryoSlices(slices, cryo);
 
   //
@@ -130,4 +130,3 @@ auto icarus::trigger::SlidingWindowDefinitionAlg::makeWindows
 
 
 // -----------------------------------------------------------------------------
-

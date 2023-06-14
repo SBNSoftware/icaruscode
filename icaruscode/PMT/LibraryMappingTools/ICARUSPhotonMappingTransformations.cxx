@@ -36,7 +36,7 @@ phot::ICARUSPhotonMappingTransformations::ICARUSPhotonMappingTransformations
   LibraryIndexToOpDetMap libraryIndices;
   if (!config.CryostatChannelRemap(libraryIndices)) {
     assert(fNOpDetChannels > 0U); // if no mapping is specified, we need to know
-    unsigned int nCryoChannels = fGeom->Cryostat(0U).NOpDet();
+    unsigned int nCryoChannels = fGeom->Cryostat().NOpDet();
     libraryIndices.resize(nCryoChannels);
     std::iota(libraryIndices.begin(), libraryIndices.end(), 0U);
   }
@@ -88,8 +88,8 @@ void phot::ICARUSPhotonMappingTransformations::prepareGeometryMapping() {
   //
   // (1.1) determine the switch coordinate (on x axis) between cryostats
   
-  geo::Length_t const C0endX = fGeom->Cryostat(0U).MaxX();
-  geo::Length_t const C1startX = fGeom->Cryostat(1U).MinX();
+  geo::Length_t const C0endX = fGeom->Cryostat(geo::CryostatID{0U}).MaxX();
+  geo::Length_t const C1startX = fGeom->Cryostat(geo::CryostatID{1U}).MinX();
   if (C0endX > C1startX) {
     throw std::runtime_error(
       "phot::ICARUSPhotonMappingTransformations::prepareGeometryMapping(): "
@@ -103,8 +103,8 @@ void phot::ICARUSPhotonMappingTransformations::prepareGeometryMapping() {
     << "Switching from cryostat 0 to 1 when x > " << fSwitchPoint << " cm";
   
   // (1.2) determine the amount of shift required
-  geo::Point_t const refPoint = fGeom->Cryostat(0).BoundingBox().Min();
-  for (geo::CryostatGeo const& cryo: fGeom->IterateCryostats()) {
+  geo::Point_t const refPoint = fGeom->Cryostat().BoundingBox().Min();
+  for (geo::CryostatGeo const& cryo: fGeom->Iterate<geo::CryostatGeo>()) {
     fTranslations.push_back(refPoint - cryo.BoundingBox().Min());
   } // for all cryostats
   
@@ -155,7 +155,7 @@ void phot::ICARUSPhotonMappingTransformations::prepareLibraryMappings
   
   // (2.2) determine the shift amount (hint: 180)
   fChannelShifts.clear();
-  for (geo::CryostatGeo const& cryo: fGeom->IterateCryostats()) {
+  for (geo::CryostatGeo const& cryo: fGeom->Iterate<geo::CryostatGeo>()) {
     
     // sanity checks
     geo::CryostatID const cid = cryo.ID();
@@ -198,7 +198,7 @@ void phot::ICARUSPhotonMappingTransformations::prepareLibraryMappings
   //  * [ 0, 179 ] => [ 180, 359 ] if `location` is in the other one (C:1)
   //
   fLibraryIndexToOpDetMaps.clear();
-  for (geo::CryostatGeo const& cryo: fGeom->IterateCryostats()) {
+  for (geo::CryostatGeo const& cryo: fGeom->Iterate<geo::CryostatGeo>()) {
     
     // this is the library for sources in cryostat `cryo`;
     // it is positioned at `cryo.ID().Cryostat` in `fLibOpDetIDmaps`;
@@ -328,7 +328,7 @@ void phot::ICARUSPhotonMappingTransformations::dumpMapping() const {
   
   constexpr unsigned int PageBreak = 12;
   
-  for (auto const& cryo: fGeom->IterateCryostats()) {
+  for (auto const& cryo: fGeom->Iterate<geo::CryostatGeo>()) {
     
     auto const c = cryo.ID().Cryostat;
     
@@ -409,4 +409,3 @@ void phot::ICARUSPhotonMappingTransformations::dumpMapping() const {
 
 
 //------------------------------------------------------------------------------
-

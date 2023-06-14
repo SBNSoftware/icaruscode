@@ -1,0 +1,77 @@
+# A script to run the producer module: CRTPMTMatchingProducer
+
+#include "crtpmtmatchingproducer.fcl"
+#include "services_icarus_simulation.fcl"
+#include "channelmapping_icarus.fcl"
+#include "services_common_icarus.fcl"
+
+process_name: CRTPMTMatchingProducer
+
+services:
+{
+  scheduler:                 { defaultExceptions: false }    # Make all uncaught exceptions fatal.
+  # Load the service that manages root files for histograms.
+  TFileService:           { fileName: "crtpmtmatchingproducer_hist.root" }
+                           @table::icarus_common_services
+
+  IICARUSChannelMap:       @local::icarus_channelmappinggservice
+                           @table::icarus_calibration_services
+                           @table::icarus_wirecalibration_services
+
+} # services
+
+# The 'source' section tells the script to expect an input file with art::Event records.
+source:
+{
+  module_type: RootInput
+  # Number of events to analyze; "-1" means all of the events in the input
+  # file. You can override this value with the "-n" option on the command line. 
+  maxEvents:  -1 
+}
+
+# This is empty, because we're not writing an output file with art::Event objects.
+outputs:
+{
+  out1:
+  {
+    module_type: RootOutput
+    fileName:    "%ifb_%tc_reco.root"
+    dataTier: "reconstructed"
+    saveMemoryObjectThreshold: 0
+    compressionLevel: 1
+    fastCloning: false
+  }
+}
+
+# The 'physics' section defines and configures some modules to do work on each event.
+physics:
+{
+  producers:
+  {
+      crtpmt: @local::standard_crtpmtmatchingproducer
+  }
+  # Schedule job step(s) for execution by defining the analysis module for this job.
+  reco: [ crtpmt ]
+  stream1: [ out1 ]
+  trigger_paths: [reco]
+  # "end_paths" is a keyword and contains the modules that do not modify the art::Event;
+  # i.e., analyzers and output streams.
+  end_paths: [ stream1 ]
+}
+
+services.message.destinations :
+{
+  STDCOUT:
+  {
+     type:      "cout"      #tells the message service to output this destination to cout
+     threshold: "DEBUG"      #tells the message service that this destination applies to WARNING and higher level messages
+     categories:
+     {
+       default:
+       {
+         limit:       1000  #don't print anything at the infomsg level except the explicitly named categories
+         reportEvery: 1
+       }
+     }
+  }
+}

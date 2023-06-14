@@ -16,7 +16,7 @@
 #include "icaruscode/PMT/Trigger/Algorithms/TriggerTypes.h" // ADCCounts_t
 #include "icaruscode/PMT/Trigger/Algorithms/details/TriggerInfo_t.h"
 #include "icaruscode/PMT/Trigger/Utilities/TriggerDataUtils.h" // FillTriggerGates()
-#include "icaruscode/PMT/Trigger/Utilities/PlotSandbox.h"
+#include "icarusalg/Utilities/PlotSandbox.h"
 #include "icarusalg/Utilities/ROOTutils.h" // util::ROOT
 #include "icarusalg/Utilities/BinningSpecs.h"
 #include "icaruscode/Utilities/DetectorClocksHelpers.h" // makeDetTimings()...
@@ -26,6 +26,7 @@
 #include "icarusalg/Utilities/ChangeMonitor.h" // ThreadSafeChangeMonitor
 #include "icarusalg/Utilities/rounding.h" // icarus::ns::util::roundup()
 #include "sbnobj/ICARUS/PMT/Trigger/Data/OpticalTriggerGate.h"
+#include "sbnobj/Common/Trigger/ExtraTriggerInfo.h"
 #include "sbnobj/Common/Trigger/BeamBits.h" // sbn::triggerSource, mask()...
 
 // LArSoft libraries
@@ -74,6 +75,7 @@
 #include <algorithm> // std::fill()
 #include <map>
 #include <vector>
+#include <iterator> // std::make_move_iterator()
 #include <memory> // std::make_unique()
 #include <string>
 #include <atomic>
@@ -97,18 +99,14 @@ namespace icarus::trigger { class TriggerSimulationOnGates; }
  * some trigger logic applied to discriminated optical detector input
  * ("trigger primitives").
  * The logic is applied to each event at multiple times, according to a list
- * of time intervals read from each event.
+ * of time intervals read from each event. In addition, the module finds all the
+ * possible triggers _within_ each gate (honouring a configurable dead time).
  * 
  * The main purpose of this module is to simulate the trigger logic at times of
  * special interest, typically the times some track is believed to have crossed
  * the detector.
  * 
- * A trigger primitive is a two-level function of time which describes when
- * that primitive is on and when it is off. Trigger primitives are given as
- * input to this module and their origin may vary, but the standard source in
- * ICARUS is @ref ICARUSPMTTriggerGlossary "single trigger request (LVDS)".
- * 
- * This module applies a sliding window pattern to the input: the pattern
+ * This module applies the configured window pattern to the input: the pattern
  * consists of a requirement on the main window and optional additional
  * requirements on the neighbouring windows. This module rebases the configured
  * pattern on each of the available windows, evaluates the requirement of the
@@ -162,6 +160,31 @@ namespace icarus::trigger { class TriggerSimulationOnGates; }
  *     a `sbn::bits::triggerSource` mask reflecting the content of the input
  *     beam gate bits, which basically can distinguish only between BNB, NuMI
  *     and others, "unknown" (see also `daq::TriggerDecoder` tool).
+ * * `DeadTime` (time, default: forever): when looking for sequences of
+ *     triggers, ignore this much time after every trigger found. This applies
+ *     only within each requested gate: a trigger at the very end of a gate
+ *     will not suppress one at the beginning of the next one even if that is
+ *     within the set dead time. If set to a very large value (as the default),
+ *     only one trigger will be found per input gate.
+ * * `EmitEmpty` (flag, default: `true`): if set, each gate gets at least a
+ *     trigger object, and if there is no trigger during a gate its trigger
+ *     object will be marked by having no bit set. If unset, when there is no
+ *     trigger in the gate, no trigger object will be produced, but the counts
+ *     will still proceed.
+ * * `ExtraInfo` (flag, default: `false`): also produces a data product
+ *     `sbn::ExtraTriggerInfo` with reduced information from the _first_ of the
+ *     triggers from the _first_ of the gates. If the first gate did not trigger
+ *     the object will have fields marked invalid.
+ * * `RetriggeringBit` (positive integer, default: `17`): the bit to set for all
+ *     the triggers found after the first one within each gate. The value `0`
+ *     represents the least significant bit; the default value is `17`, bit mask
+ *     `0x20000`. Using a value larger than the size of the trigger bit field
+ *     will disable this mark.
+ * * `CryostatFirstBit` (positive integer, default: disabled): the bit to set
+ *     for triggers from windows in cryostat 0; as many bits will be used as
+ *     there are cryostats in the detector (thus, 2 for ICARUS). The value `0`
+ *     represents the least significant bit. Using a value larger than the size
+ *     of the trigger bit field (which is the default) will disable this mark.
  * * `LogCategory` (string, default `TriggerSimulationOnGates`): name of
  *     category used to stream messages from this module into message facility.
  * 
@@ -184,18 +207,78 @@ namespace icarus::trigger { class TriggerSimulationOnGates; }
  * Output data products
  * =====================
  * 
- * * `std::vector<raw::Trigger>` (one instance per ADC threshold):
- *   list of triggers fired according to the configured trigger definition;
- *   there is one collection (and data product) per ADC threshold, and the
- *   data product has the same instance name as the input data one, unless
- *   there is only one threshold (see `TriggerGatesTag`, `Thresholds` and
- *   `KeepThresholdName` configuration parameters);
- *   one trigger object is produced for each of the beam gates found in the
- *   input data product specified by the `BeamGates` parameter.
- *   Each trigger object has the time stamp matching the first time the trigger
- *   criteria are satisfied. All triggers feature the bits specified in
- *   `BeamBits` configuration parameter.
+ * @anchor TriggerSimulationOnGates_Output
+ *
+ * For each ADC threshold there will be an instance of the following:
  * 
+ * * `std::vector<raw::Trigger>`:
+ *     list of triggers fired according to the configured trigger definition;
+ *     there is one collection (and data product) per ADC threshold, and the
+ *     data product has the same instance name as the input data one, unless
+ *     there is only one threshold (see `TriggerGatesTag`, `Thresholds` and
+ *     `KeepThresholdName` configuration parameters);
+ *     at least one trigger object is produced for each of the beam gates found
+ *     in the input data product specified by the `BeamGates` parameter.
+ *     Each trigger object has the time stamp matching the time the trigger
+ *     criteria are satisfied. All triggers feature the bits specified in
+ *     `BeamBits` configuration parameter, with the following exceptions:
+ *     if there was no trigger found, the bits will all be cleared; and if there
+ *     was more than one trigger found in the same gate, all triggers except the
+ *     first one (which all share the same ID) will have the `RetriggeringBit`
+ *     set.
+ * * `sbn::ExtraTriggerInfo` (if `ExtraInfo` configuration parameter is set):
+ *     always present, and reflecting the triggers on the first beam gate: if a
+ *     trigger fired in that beam gate, a _reduced_ version of
+ *     `sbn::ExtraTriggerInfo` is provided; currently it is guaranteed to have:
+ *     * `triggerTimestamp`: based on the _art_ event timestamp, or invalid
+ *       timestamp if the trigger did not fire.
+ *     * `beamGateTimestamp`: set accordingly to the relative time of the
+ *       trigger vs. simulated beam gate opening, if the trigger happened.
+ *       Otherwise, it will be set at the event time.
+ *     * `sourceType`: interpreted according to the trigger bits of the input
+ *       beam gate object, it may be `sbn::triggerSource::BNB`,
+ *       `sbn::bits::triggerSource::NuMI` or `sbn::bits::triggerSource::Unknown`
+ *       (note that in any case it's not left to its default value
+ *       `sbn::bits::triggerSource::NBits`).
+ *     * `triggerType`: majority type is always set.
+ *     * `triggerLocationBits`: set to either cryostat east or west depending on
+ *        where trigger was (bit mask for `sbn::bits::triggerLocation::CryoEast`
+ *        or `sbn::bits::triggerLocation::CryoWest`).
+ *     * `triggerID` and `triggerCount` match the trigger number in
+ *       `raw::Trigger::TriggerNumber()`, except in case no trigger fired,
+ *       in which case `triggerID` is `sbn::ExtraTriggerInfo::NoID` and
+ *       `triggerCount` is `0`, both in their default values.
+ *     * `gateID` and `gateCount` match the event number.
+ *   
+ *     If the first gate did not emit a trigger, the object will be left
+ *     default-constructed, noticeably with an invalid trigger timestamp
+ *     (`sbn::ExtraTriggerInfo::NoTimestamp`). Note that there may be exceptions
+ *     to this rule (for example, `triggerSource`, `beamGateTimestamp` and the
+ *     gate counts described above). Also note that
+ *     `sbn::ExtraTriggerInfo::isValid()`, bound to the source of the trigger,
+ *     will return `true` even when there was no trigger firing.
+ * 
+ * 
+ * ### Trigger bits
+ * 
+ * The trigger bits may be overridden by the `BeamBits` configuration parameter.
+ * If they are not, the bits from an input "beam" gate will be used verbatim for
+ * all the triggers within that gate.
+ * 
+ * On top of this base set of bits, this module may add a few additional bits.
+ * 
+ * The module can be configured so that multiple trigger objects are created for
+ * a single input gate. In that case, the triggers after the first one may be
+ * marked as "retriggering" by setting a bit whose position is determined by
+ * `RetriggeringBit` configuration parameter.
+ * 
+ * In addition, the module can mark a trigger according to which cryostat it
+ * originated from. The position of the bit for cryostat `0` is set by the
+ * `CryostatFirstBit`, and the next cryostat(s) will follow in their order with
+ * more significant bits.
+ * 
+ * For the options where a bit position can be specified, specifying a position
+ * beyond the number of available bits effectively disables that option.
  * 
  * 
  * Trigger logic algorithm
@@ -292,7 +375,13 @@ class icarus::trigger::TriggerSimulationOnGates
   : public art::EDProducer
   , private lar::UncopiableAndUnmovableClass
 {
-
+  
+  /// Type of trigger bits supported by `raw::Trigger`.
+  using TriggerBits_t = decltype(std::declval<raw::Trigger>().TriggerBits());
+  
+  /// Number of bits supported by `raw::Trigger`.
+  static constexpr std::size_t NTriggerBits = sizeof(TriggerBits_t) * 8U;
+  
     public:
   
   using microseconds = util::quantities::intervals::microseconds;
@@ -336,6 +425,40 @@ class icarus::trigger::TriggerSimulationOnGates
       Comment("bits to be set in the trigger object as beam identifier")
       };
 
+    fhicl::Atom<bool> EmitEmpty {
+      Name("EmitEmpty"),
+      Comment("produce a trigger object even for gates with no firing trigger"),
+      true
+      };
+
+    fhicl::Atom<bool> ExtraInfo {
+      Name("ExtraInfo"),
+      Comment("produce a snm::ExtraTriggerInfo object our of the first gate"),
+      false
+      };
+
+    fhicl::Atom<nanoseconds> DeadTime {
+      Name("DeadTime"),
+      Comment("veto time after each trigger found"),
+      std::numeric_limits<nanoseconds>::max()
+      };
+    
+    fhicl::Atom<unsigned int> RetriggeringBit {
+      Name("RetriggeringBit"),
+      Comment(
+        "number of the bit to set for triggers from retriggering (< "
+        + std::to_string(NTriggerBits) + ")"),
+      17U
+      };
+    
+    fhicl::Atom<unsigned int> CryostatFirstBit {
+      Name("CryostatFirstBit"),
+      Comment(
+        "number of the bit to set for triggers from the first cryostat (< "
+        + std::to_string(NTriggerBits) + ")"),
+      NTriggerBits
+      };
+    
     fhicl::Atom<nanoseconds> TriggerTimeResolution {
       Name("TriggerTimeResolution"),
       Comment("resolution of trigger in time"),
@@ -384,18 +507,16 @@ class icarus::trigger::TriggerSimulationOnGates
   
   using TriggerInfo_t = details::TriggerInfo_t; ///< Type alias.
   
-  /// Type of trigger gate extracted from the input event.
-  using InputTriggerGate_t
-    = icarus::trigger::SlidingWindowPatternAlg::InputTriggerGate_t;
-  
-  /// List of trigger gates.
-  using TriggerGates_t
-    = icarus::trigger::SlidingWindowPatternAlg::TriggerGates_t;
-  
   /// Data structure to communicate internally a trigger response.
   using WindowTriggerInfo_t
     = icarus::trigger::SlidingWindowPatternAlg::AllTriggerInfo_t;
   
+  /// Event-level information.
+  struct EventAux_t {
+    std::uint64_t time; ///< Event timestamp [ns]
+    unsigned int event; ///< Event number.
+  };
+
   /// Content for future histograms, binned.
   using BinnedContent_t = icarus::ns::util::FixedBins<double>;
   
@@ -417,6 +538,9 @@ class icarus::trigger::TriggerSimulationOnGates
   };
   
   
+  using PlotSandbox_t = icarus::ns::util::PlotSandbox<art::TFileDirectory>;
+  
+  
   // --- BEGIN Configuration variables -----------------------------------------
   
   /// Name of ADC thresholds to read, and the input tag connected to their data.
@@ -430,9 +554,21 @@ class icarus::trigger::TriggerSimulationOnGates
   /// Bits for the beam gate being simulated.
   std::optional<std::uint32_t> fBeamBits;
   
-  nanoseconds fTriggerTimeResolution; ///< Trigger resolution in time.
+  /// Whether to produce trigger objects for gates without triggers.
+  bool const fEmitEmpty;
   
-  double fEventTimeBinning; ///< Trigger time plot binning [s]
+  bool const fExtraInfo; ///< Whether to produce a `sbn::ExtraTriggerInfo`.
+  
+  nanoseconds const fDeadTime; ///< Veto time after a trigger in a gate.
+  
+  /// Bit mask set for triggers after the first one in a gate.
+  TriggerBits_t const fRetriggeringMask;
+  
+  TriggerBits_t const fCryostatZeroMask; ///< Bit mask for cryostat `0`.
+  
+  nanoseconds const fTriggerTimeResolution; ///< Trigger resolution in time.
+  
+  double const fEventTimeBinning; ///< Trigger time plot binning [s]
   
   /// Message facility stream category for output.
   std::string const fLogCategory;
@@ -461,7 +597,7 @@ class icarus::trigger::TriggerSimulationOnGates
   std::optional<icarus::trigger::SlidingWindowPatternAlg> fPatternAlg;
   
   /// All plots in one practical sandbox.
-  icarus::trigger::PlotSandbox fPlots;
+  PlotSandbox_t fPlots;
   
   /// Proto-histogram information in a convenient packet; event-wide.
   ThresholdPlotInfo_t fEventPlotInfo;
@@ -489,7 +625,7 @@ class icarus::trigger::TriggerSimulationOnGates
   /// in `plotInfo`.
   void makeThresholdPlots(
     std::string const& threshold,
-    icarus::trigger::PlotSandbox& plots,
+    PlotSandbox_t& plots,
     ThresholdPlotInfo_t const& plotInfo
     );
   
@@ -499,13 +635,13 @@ class icarus::trigger::TriggerSimulationOnGates
   /// Fills event-wide plots.
   void plotEvent(
     art::Event const& event, detinfo::DetectorTimings const& detTimings,
-    std::vector<ApplyBeamGateClassWithBits> const& gates
+    std::vector<sim::BeamGateInfo> const& gates
     );
   
   /// Fills the plots for threshold index `iThr` with trigger information.
   void plotTriggerResponse(
     std::size_t iThr, std::string const& thrTag,
-    WindowTriggerInfo_t const& triggerInfo,
+    std::vector<WindowTriggerInfo_t> const& triggerInfos,
     detinfo::DetectorTimings const& detTimings
     );
   
@@ -527,38 +663,55 @@ class icarus::trigger::TriggerSimulationOnGates
    * configuration), simulation is performed, auxiliary plots are drawn and
    * a `raw::Trigger` collection is stored into the event.
    * 
-   * The stored collection contains either one or zero `raw::Trigger` elements.
+   * The return value contains one trigger list per gate. Depending on the
+   * configuration (and especially `fDeadTime`), one gate may be any number of
+   * triggers, including none.
    * 
-   * The simulation itself is performed by the `simulate()` method.
+   * The simulation itself is performed by the `fPatternAlg` algorithm.
    */
-  std::vector<WindowTriggerInfo_t> produceForThreshold(
+  std::vector<std::vector<WindowTriggerInfo_t>> produceForThreshold(
     art::Event& event,
     detinfo::DetectorTimings const& detTimings,
-    std::vector<ApplyBeamGateClassWithBits> const& beamGates,
+    std::vector<sim::BeamGateInfo> const& beamGates,
     std::size_t const iThr, std::string const& thrTag,
     unsigned int firstTriggerNumber
     );
   
   /**
-   * @brief Converts the trigger information into a `raw::Trigger` object.
+   * @brief Converts the trigger information into trigger objects.
    * @param detTimings detector clocks service provider proxy
    * @param beamGates list of all beam gates to evaluate
-   * @param detTimings the unique number to assign to this trigger
-   * @param info the information about the fired trigger
-   * @return a `raw::Trigger` object with all the information encoded
+   * @param eventInfo event-wide information to be transferred to trigger data
+   * @param triggerNumber the "unique" number to assign to this trigger
+   * @param info the information about the fired triggers
+   * @return objects with all the trigger information encoded
    * 
-   * The trigger described by `info` is encoded into a `raw::Trigger` object.
-   * The trigger _must_ have fired.
+   * The triggers described by `info` are encoded into `raw::Trigger` objects.
+   * If no trigger is present, one object may be made up depending of the
+   * value configured in `fEmitEmpty`.
+   * A `sbn::ExtraTriggerInfo` object is also returned representing the first
+   * trigger in the beam gate (see the
+   * @ref TriggerSimulationOnGates_Output "Output section of module documentation"
+   * for details).
    */
-  raw::Trigger triggerInfoToTriggerData(
+  std::pair<std::vector<raw::Trigger>, sbn::ExtraTriggerInfo>
+  triggerInfoToTriggerData(
     detinfo::DetectorTimings const& detTimings,
-    ApplyBeamGateClassWithBits const& beamGate,
-    unsigned int triggerNumber, WindowTriggerInfo_t const& info
+    sim::BeamGateInfo const& beamGate,
+    EventAux_t const& eventInfo,
+    unsigned int triggerNumber, std::vector<WindowTriggerInfo_t> const& info
     ) const;
   
   /// Converts trigger bits from `beamInfo` into a `sbn::triggerSourceMask`.
   static sbn::triggerSourceMask makeTriggerBits
     (sim::BeamGateInfo const& beamInfo);
+  
+  /// Converts a `sim::BeamType_t` value into a `sbn::bits::triggerSource` one.
+  static sbn::triggerSource beamTypeToTriggerSource(sim::BeamType_t beamType);
+  
+  /// Converts a cryostat ID into a bitmask pointing to that cryostat.
+  static sbn::bits::triggerLocationMask cryoIDtoTriggerLocation
+    (geo::CryostatID const& cid);
   
   
   /// Prints the summary of fired triggers on screen.
@@ -566,59 +719,10 @@ class icarus::trigger::TriggerSimulationOnGates
   
   /// Creates and returns a 1D histogram filled with `binnedContent`.
   TH1* makeHistogramFromBinnedContent(
-    icarus::trigger::PlotSandbox& plots,
+    PlotSandbox_t& plots,
     std::string const& name, std::string const& title,
     BinnedContent_t const& binnedContent
     ) const;
-
-  /// Shortcut to create an `ApplyBeamGate` with the specified `gate`.
-  ApplyBeamGateClassWithBits makeMyBeamGate
-    (detinfo::DetectorTimings const& detTimings, sim::BeamGateInfo const& gate)
-    const
-    {
-      // the input gate is assumed to be relative to the global beam gate
-      // opening (which is the implicit convention of simulation time and of
-      // sim::BeamGateInfo in my understanding - [petrillo@slac.stanford.edu])
-      // so it does not need further processing here
-      ApplyBeamGateClassWithBits awb{
-        makeApplyBeamGate(
-          nanoseconds{ gate.Width() }, nanoseconds{ gate.Start() },
-          detTimings.clockData(), fLogCategory
-          )
-        };
-      awb.source = sbn::triggerSourceMask
-        { fBeamBits.value_or(makeTriggerBits(gate.BeamType())) };
-      return awb;
-#if 0
-      // when we won't be bound anymore to the buggy, incomplete and by now ancient
-      // Clang 7.0.0, we'll be back to C++ world and we'll say:
-      return ApplyBeamGateClassWithBits{ // aggregate ctor, base class first
-        makeApplyBeamGate(
-          nanoseconds{ gate.Width() }, nanoseconds{ gate.Start() },
-          detTimings.clockData(), fLogCategory
-          )
-        , fBeamBits.value_or(makeTriggerBits(gate.BeamType()))
-        };
-#endif // 0
-    }
-  
-  //@{ 
-  /// Shortcut to create `ApplyBeamGate` from a list of gates.
-  std::vector<ApplyBeamGateClassWithBits> makeMyBeamGates
-    (detinfo::DetectorTimings const& detTimings, BeamGates_t const& gates) const
-    {
-      std::vector<ApplyBeamGateClassWithBits> applyGates;
-      for (sim::BeamGateInfo const& gate: gates)
-        applyGates.push_back(makeMyBeamGate(detTimings, gate));
-      return applyGates;
-    }
-  std::vector<ApplyBeamGateClassWithBits> makeMyBeamGates
-    (art::Event const* event, BeamGates_t const& gates) const
-    { return makeMyBeamGates(icarus::ns::util::makeDetTimings(event), gates); }
-  std::vector<ApplyBeamGateClassWithBits> makeMyBeamGates
-    (art::Event const& event, BeamGates_t const& gates) const
-    { return makeMyBeamGates(&event, gates); }
-  //@}
   
   
   //@{
@@ -626,6 +730,14 @@ class icarus::trigger::TriggerSimulationOnGates
   static double eventTimestampInSeconds(art::Timestamp const& time);
   static double eventTimestampInSeconds(art::Event const& event);
   //@}
+  
+  /// Fills an `EventAux_t` from the information found in the argument.
+  static EventAux_t extractEventInfo(art::Event const& event);
+  
+  /// Returns the ID of the cryostat the specified window belongs to.
+  static geo::CryostatID WindowCryostat
+    (icarus::trigger::WindowChannelMap::WindowInfo_t const& winfo)
+    { return winfo.composition.cryoid; }
 
 }; // icarus::trigger::TriggerSimulationOnGates
 
@@ -634,6 +746,55 @@ class icarus::trigger::TriggerSimulationOnGates
 //------------------------------------------------------------------------------
 //--- Implementation
 //------------------------------------------------------------------------------
+namespace {
+  
+  /// Moves all the elements of `src` to the end of `dest`.
+  /// The status of `src` after the call is undefined but destroyable.
+  template <typename DestColl, typename SrcColl>
+  DestColl& append(DestColl& dest, SrcColl&& src) {
+    using std::begin, std::end;
+    dest.insert(end(dest),
+      std::make_move_iterator(begin(src)), std::make_move_iterator(end(src))
+      );
+    return dest;
+  } // append()
+  
+  // ---------------------------------------------------------------------------
+  
+  /// Adds the numbers avoiding overflow. Only really safe if `T` == `U`.
+  template <typename T, typename U, typename... Others>
+  T cappedSum(T a, U&& b, Others&&... others) {
+    
+    static constexpr T max = std::numeric_limits<T>::max();
+    
+    T const max_d = max - a;
+    a = (b > max_d)? max: a + b;
+    
+    if constexpr(sizeof...(Others) > 0) {
+      return cappedSum(a, std::forward<Others>(others)...);
+    }
+    else {
+      return a;
+    }
+  } // cappedSum()
+  
+  
+  // ---------------------------------------------------------------------------
+  template <typename T>
+  constexpr T bitMask(std::size_t i) {
+    constexpr std::size_t nBits = sizeof(T) * 8;
+    return (i >= nBits)? T{ 0 }: T{ 1 } << i;
+  } // bitMask()
+  
+  
+  // ---------------------------------------------------------------------------
+  
+} // local namespace
+
+
+//------------------------------------------------------------------------------
+//---  icarus::trigger::TriggerSimulationOnGates
+//------------------------------------------------------------------------------
 icarus::trigger::TriggerSimulationOnGates::TriggerSimulationOnGates
   (Parameters const& config)
   : art::EDProducer       (config)
@@ -641,6 +802,11 @@ icarus::trigger::TriggerSimulationOnGates::TriggerSimulationOnGates
   , fPattern              (config().Pattern())
   , fBeamGateTag          (config().BeamGates())
   , fBeamBits             (config().BeamBits())
+  , fEmitEmpty            (config().EmitEmpty())
+  , fExtraInfo            (config().ExtraInfo())
+  , fDeadTime             (config().DeadTime())
+  , fRetriggeringMask     (bitMask<TriggerBits_t>(config().RetriggeringBit()))
+  , fCryostatZeroMask     (bitMask<TriggerBits_t>(config().CryostatFirstBit()))
   , fTriggerTimeResolution(config().TriggerTimeResolution())
   , fEventTimeBinning     (config().EventTimeBinning())
   , fLogCategory          (config().LogCategory())
@@ -679,6 +845,11 @@ icarus::trigger::TriggerSimulationOnGates::TriggerSimulationOnGates
   // initialization of a vector of atomic is not as trivial as it sounds...
   fTriggerCount = std::vector<std::atomic<unsigned int>>(fADCthresholds.size());
   std::fill(fTriggerCount.begin(), fTriggerCount.end(), 0U);
+  
+  if ((fTriggerTimeResolution <= 0_ns) && (fDeadTime <= 0_ns)) {
+    throw art::Exception{ art::errors::Configuration }
+      << "Either trigger resolution or dead time must be larger than 0.\n";
+  }
 
   //
   // input data declaration
@@ -709,6 +880,7 @@ icarus::trigger::TriggerSimulationOnGates::TriggerSimulationOnGates
     std::string const outputInstance
       = keepThresholdName? inputDataTag.instance(): "";
     produces<std::vector<raw::Trigger>>(outputInstance);
+    if (fExtraInfo) produces<sbn::ExtraTriggerInfo>(outputInstance);
     fOutputInstances.push_back(outputInstance);
   }
   
@@ -717,6 +889,36 @@ icarus::trigger::TriggerSimulationOnGates::TriggerSimulationOnGates
     log << "\nConfigured " << fADCthresholds.size() << " thresholds (ADC):";
     for (auto const& [ thresholdTag, dataTag ]: fADCthresholds)
       log << "\n * " << thresholdTag << " (from '" << dataTag.encode() << "')";
+    log << "\nOther parameters:"
+      << "\n * trigger time resolution: " << fTriggerTimeResolution;
+    if (fDeadTime == std::numeric_limits<nanoseconds>::max())
+      log << "\n * only one trigger per beam gate (infinite dead time)";
+    else {
+      log << "\n * veto time after a trigger in one gate: " << fDeadTime
+        << "\n * retriggering bit:";
+      if (config().RetriggeringBit() >= NTriggerBits)
+        log << " none (#" << config().RetriggeringBit() << ", 0x" << std::hex << fRetriggeringMask << std::dec << ")";
+      else {
+        log << " #" << config().RetriggeringBit() << " (0x"
+          << std::hex << fRetriggeringMask << std::dec << ")";
+      }
+    } // if no dead time ... else
+    log << "\n * bits for triggering cryostat:";
+    if (config().CryostatFirstBit() >= NTriggerBits) 
+      log << " disabled (#" << config().CryostatFirstBit() << ")";
+    else {
+      geo::GeometryCore const& geom = *lar::providerFrom<geo::Geometry>();
+      unsigned int const firstBit = config().CryostatFirstBit();
+      unsigned int const NCryostats = geom.Ncryostats();
+      log << " #" << firstBit;
+      if (NCryostats > 1) log << "-" << (firstBit + NCryostats - 1);
+      log << " (0x" << std::hex << fCryostatZeroMask;
+      if (NCryostats > 1)
+        log << "-0x" << (fCryostatZeroMask << (NCryostats-1));
+      log << std::dec << ")";
+    }
+    if (fExtraInfo)
+      log << "\n * will produce a sbn::ExtraTriggerInfo from the first gate";
     
   } // local block
   
@@ -743,12 +945,8 @@ void icarus::trigger::TriggerSimulationOnGates::produce(art::Event& event)
     art::ServiceHandle<detinfo::DetectorClocksService const>()->DataFor(event)
     };
   
-  std::vector<ApplyBeamGateClassWithBits> const beamGates {
-    makeMyBeamGates(
-      detTimings,
-      event.getProduct<std::vector<sim::BeamGateInfo>>(fBeamGateTag)
-      )
-    };
+  std::vector<sim::BeamGateInfo> const& beamGates
+    = event.getProduct<std::vector<sim::BeamGateInfo>>(fBeamGateTag);
 
   
   { // BEGIN local block
@@ -757,7 +955,8 @@ void icarus::trigger::TriggerSimulationOnGates::produce(art::Event& event)
     if (!beamGates.empty()) {
       log << " ('" << fBeamGateTag.encode() << "'):";
       for (auto const& [iGate, gate]: util::enumerate(beamGates)) {
-        log << "\n [" << iGate << "]  " << gate;
+        log << "\n [" << iGate << "]  from " << gate.Start() << " to "
+          << (gate.Start() + gate.Width()) << " ns (" << gate.Width() << "ns)";
       } // for
     } // if
   } // END local block
@@ -777,15 +976,19 @@ void icarus::trigger::TriggerSimulationOnGates::produce(art::Event& event)
     : util::enumerate(util::get_elements<0U>(fADCthresholds))
   ) {
     
-    std::vector<WindowTriggerInfo_t> const triggers = produceForThreshold
-      (event, detTimings, beamGates, iThr, thrTag, firstTriggerNumber);
+    std::vector<std::vector<WindowTriggerInfo_t>> const triggers
+      = produceForThreshold
+        (event, detTimings, beamGates, iThr, thrTag, firstTriggerNumber)
+      ;
     
     log << "\n * threshold " << thrTag << ": ";
     icarus::ns::util::PassCounter gateResults;
-    for (WindowTriggerInfo_t const& triggerInfo: triggers)
-      gateResults.add(triggerInfo.info.fired());
+    for (std::vector<WindowTriggerInfo_t> const& triggerInfo: triggers) {
+      if (triggerInfo.empty()) continue;
+      gateResults.add(triggerInfo.front().info.fired());
+    }
     log << gateResults.passed() << "/" << gateResults.total()
-      << " gates triggered";
+      << " gates triggered"; // ... at least once
     
   } // for
   
@@ -926,7 +1129,7 @@ void icarus::trigger::TriggerSimulationOnGates::initializePlots() {
   for (auto const& [ thr, info ]
     : util::zip(util::get_elements<0U>(fADCthresholds), fThresholdPlots))
   {
-    icarus::trigger::PlotSandbox& plots
+    PlotSandbox_t& plots
       = fPlots.addSubSandbox("Thr" + thr, "Threshold: " + thr);
     
     plots.make<TGraph>(
@@ -961,7 +1164,7 @@ void icarus::trigger::TriggerSimulationOnGates::finalizePlots() {
   for (auto const& [ thr, info ]
     : util::zip(util::get_elements<0U>(fADCthresholds), fThresholdPlots))
   {
-    icarus::trigger::PlotSandbox& plots = fPlots.demandSandbox("Thr" + thr);
+    PlotSandbox_t& plots = fPlots.demandSandbox("Thr" + thr);
     makeThresholdPlots(thr, plots, info);
     if (plots.empty()) fPlots.deleteSubSandbox(plots.name());
   } // for thresholds
@@ -976,7 +1179,7 @@ void icarus::trigger::TriggerSimulationOnGates::finalizePlots() {
 //------------------------------------------------------------------------------
 void icarus::trigger::TriggerSimulationOnGates::makeThresholdPlots(
   std::string const& threshold,
-  icarus::trigger::PlotSandbox& plots,
+  PlotSandbox_t& plots,
   ThresholdPlotInfo_t const& plotInfo
 ) {
   
@@ -1066,10 +1269,10 @@ void icarus::trigger::TriggerSimulationOnGates::makeEventPlots() {
 auto icarus::trigger::TriggerSimulationOnGates::produceForThreshold(
   art::Event& event,
   detinfo::DetectorTimings const& detTimings,
-  std::vector<ApplyBeamGateClassWithBits> const& beamGates,
+  std::vector<sim::BeamGateInfo> const& beamGates,
   std::size_t const iThr, std::string const& thrTag,
   unsigned int firstTriggerNumber
-) -> std::vector<WindowTriggerInfo_t> {
+) -> std::vector<std::vector<WindowTriggerInfo_t>> {
   
 //   auto& plotInfo = fThresholdPlots[iThr];
   
@@ -1088,36 +1291,82 @@ auto icarus::trigger::TriggerSimulationOnGates::produceForThreshold(
   //
   // simulate the trigger response on all beam gates
   //
-  std::vector<WindowTriggerInfo_t> allTriggerInfo; // one per gate
+  std::vector<std::vector<WindowTriggerInfo_t>> allTriggerInfo; // one per gate
   auto triggers = std::make_unique<std::vector<raw::Trigger>>();
+  std::unique_ptr<sbn::ExtraTriggerInfo> firstExtraInfo;
   unsigned int triggerNumber = firstTriggerNumber;
-  for (auto const& beamGate: beamGates) {
-    WindowTriggerInfo_t const triggerInfo
-      = fPatternAlg->simulateResponse(beamGate.applyToAll(gates));
+  
+  detinfo::DetectorClocksData const& detClocks = detTimings.clockData();
+  EventAux_t const eventInfo = extractEventInfo(event);
+  
+  for (sim::BeamGateInfo const& beamGate: beamGates) {
+    std::vector<WindowTriggerInfo_t> triggerInfos;
     
-    // FIXME what do we do with statistics and plots?
-    if (triggerInfo) {
-      ++fTriggerCount[iThr]; // keep the unique count
+    // relative to the beam gate time (also simulation time for MC);
+    nanoseconds start{ beamGate.Start() };
+    nanoseconds const stop{ beamGate.Start() + beamGate.Width() };
+    
+    while (start < stop) {
+      
+      icarus::trigger::ApplyBeamGateClass const applyBeamGate
+       = makeApplyBeamGate(stop - start, start, detClocks, fLogCategory);
+      
+      mf::LogTrace(fLogCategory) << "Applying gate: " << applyBeamGate;
+      
+      WindowTriggerInfo_t const triggerInfo
+        = fPatternAlg->simulateResponse(applyBeamGate.applyToAll(gates));
+      
+      if (!triggerInfo) break;
+      
+      // FIXME what do we do with statistics and plots?
 //       plotInfo.eventTimes.add(eventTimestampInSeconds(event));
-    }
+      
+      // set the next starting point to the trigger we just found...
+      start = detTimings.toElectronicsTime(triggerInfo.info.atTick())
+        - detTimings.BeamGateTime();
+      
+      mf::LogTrace(fLogCategory) << "Found a trigger at optical tick "
+        << triggerInfo.info.atTick() << " (" << start
+        << ") from window #" << triggerInfo.extra.windowIndex;
+      
+      // ... plus the dead time (or at least some time)
+      start = cappedSum(start, std::max(fDeadTime, fTriggerTimeResolution));
+      
+      triggerInfos.push_back(std::move(triggerInfo));
+      
+    } // while
+    
+    if (!triggerInfos.empty()) ++fTriggerCount[iThr]; // keep the unique count
     
     //
     // fill the plots
     //
-    plotTriggerResponse(iThr, thrTag, triggerInfo, detTimings);
+    plotTriggerResponse(iThr, thrTag, triggerInfos, detTimings);
 
     //
     // create and store the data product
     //
-    triggers->push_back(
-      triggerInfoToTriggerData
-        (detTimings, beamGate, triggerNumber++, triggerInfo)
-      );
-    allTriggerInfo.push_back(std::move(triggerInfo));
+    auto [ gateTriggers, extraInfo ] = triggerInfoToTriggerData
+      (detTimings, beamGate, eventInfo, triggerNumber++, triggerInfos);
+    
+    append(*triggers, std::move(gateTriggers));
+    
+    if (!firstExtraInfo && fExtraInfo) {
+      firstExtraInfo
+        = std::make_unique<sbn::ExtraTriggerInfo>(std::move(extraInfo));
+    }
+    
+    allTriggerInfo.push_back(std::move(triggerInfos));
     
   } // for beam gates
+
+  if (!firstExtraInfo && fExtraInfo) {
+    // even with no gates at all our contract prescribes we emit extra info
+    firstExtraInfo = std::make_unique<sbn::ExtraTriggerInfo>();
+  }
   
   event.put(std::move(triggers), fOutputInstances[iThr]);
+  if (fExtraInfo) event.put(std::move(firstExtraInfo), fOutputInstances[iThr]);
   
   return allTriggerInfo;
   
@@ -1127,7 +1376,7 @@ auto icarus::trigger::TriggerSimulationOnGates::produceForThreshold(
 //------------------------------------------------------------------------------
 void icarus::trigger::TriggerSimulationOnGates::plotEvent(
   art::Event const& event, detinfo::DetectorTimings const& detTimings,
-  std::vector<ApplyBeamGateClassWithBits> const& gates
+  std::vector<sim::BeamGateInfo> const& gates
 ) {
   
 #if 0
@@ -1149,7 +1398,7 @@ void icarus::trigger::TriggerSimulationOnGates::plotEvent(
 //------------------------------------------------------------------------------
 void icarus::trigger::TriggerSimulationOnGates::plotTriggerResponse(
   std::size_t iThr, std::string const& thrTag,
-  WindowTriggerInfo_t const& triggerInfo,
+  std::vector<WindowTriggerInfo_t> const& triggerInfos,
   detinfo::DetectorTimings const& detTimings
 ) {
   
@@ -1185,7 +1434,7 @@ void icarus::trigger::TriggerSimulationOnGates::plotTriggerResponse(
     fPlots.demand<TH2>("TriggerTimeVsBeamGate").Fill
       (thisTriggerTimeVsBeamGate.value(), iThr);
     
-    icarus::trigger::PlotSandbox& plots{ fPlots.demandSandbox("Thr" + thrTag) };
+    PlotSandbox_t& plots{ fPlots.demandSandbox("Thr" + thrTag) };
 //     plots.demand<TGraph>("TriggerTimeVsHWTrigVsBeam").AddPoint( // ROOT 6.24?
     TGraph& graph = plots.demand<TGraph>("TriggerTimeVsHWTrigVsBeam");
     graph.SetPoint(graph.GetN(),
@@ -1231,25 +1480,104 @@ void icarus::trigger::TriggerSimulationOnGates::printSummary() const {
 
 
 //------------------------------------------------------------------------------
-raw::Trigger
+auto icarus::trigger::TriggerSimulationOnGates::extractEventInfo
+  (art::Event const& event) -> EventAux_t
+{
+  return {
+      event.time().value()  // time
+    , event.event()         // event
+    };
+} // icarus::trigger::TriggerSimulationOnGates::extractEventInfo()
+
+
+//------------------------------------------------------------------------------
+std::pair<std::vector<raw::Trigger>, sbn::ExtraTriggerInfo>
 icarus::trigger::TriggerSimulationOnGates::triggerInfoToTriggerData(
   detinfo::DetectorTimings const& detTimings,
-  ApplyBeamGateClassWithBits const& beamGate,
-  unsigned int triggerNumber, WindowTriggerInfo_t const& info
+  sim::BeamGateInfo const& beamGate,
+  EventAux_t const& eventInfo,
+  unsigned int triggerNumber, std::vector<WindowTriggerInfo_t> const& info
 ) const {
   
-  std::uint32_t const beamBits = beamGate.source;
+  detinfo::timescales::electronics_time const beamTime
+    = detTimings.BeamGateTime() + nanoseconds{ beamGate.Start() };
+  TriggerBits_t const beamBits
+    = fBeamBits.value_or(makeTriggerBits(beamGate.BeamType()));
   
-  return {
-    triggerNumber,                      // counter
-    info.info.fired()                   // trigger time
-      ? double(detTimings.toElectronicsTime(info.info.atTick()))
-      : std::numeric_limits<double>::lowest()
-      ,
-    double(detTimings.toElectronicsTime(beamGate.tickRange().start())),
-                                        // beam gate in electronics time scale
-    (info.info.fired()? beamBits: 0)   // bits
-    };
+  std::vector<raw::Trigger> triggers;
+  
+  sbn::ExtraTriggerInfo extraInfo;
+  // these are fixed by the gate and set this way whether trigger fired or not:
+  extraInfo.triggerType = sbn::bits::triggerType::Majority;
+  extraInfo.sourceType  = beamTypeToTriggerSource(beamGate.BeamType());
+  extraInfo.gateID      = eventInfo.event;
+  extraInfo.gateCount   = eventInfo.event;
+  
+  TriggerBits_t retriggerMask { 0 };
+  bool fillExtraInfo = fExtraInfo;
+  for (WindowTriggerInfo_t const& trInfo: info) {
+    
+    if (trInfo.info.fired()) { // trigger fired
+      detinfo::timescales::electronics_time const triggerTime
+        = detTimings.toElectronicsTime(trInfo.info.atTick());
+      
+      // find the location and set the bits accordingly
+      geo::CryostatID const triggeringCryo
+        = WindowCryostat(fWindowMapMan->info(trInfo.extra.windowIndex));
+      TriggerBits_t const sourceMask = triggeringCryo.isValid
+        ? (fCryostatZeroMask << triggeringCryo.Cryostat): 0U;
+      
+      triggers.emplace_back(
+        triggerNumber,                         // counter
+        double(triggerTime),                   // trigger time
+        double(beamTime),                      // beam gate
+        beamBits | retriggerMask | sourceMask  // bits
+        );
+      
+      retriggerMask = fRetriggeringMask;
+      
+      if (fillExtraInfo) {
+        nanoseconds const relTrigTime = triggerTime - beamTime;
+        
+        extraInfo.triggerTimestamp  = eventInfo.time;
+        extraInfo.beamGateTimestamp = extraInfo.triggerTimestamp
+          - static_cast<std::int64_t>(std::round(relTrigTime.value()));
+        
+        extraInfo.triggerID    = triggerNumber;
+        extraInfo.triggerCount = triggerNumber;
+        
+        extraInfo.triggerLocationBits = cryoIDtoTriggerLocation(triggeringCryo);
+      }
+      
+    }
+    else { // trigger did not fire
+      
+      // nothing to do for raw::Trigger: we just don't produce any
+      
+      if (fillExtraInfo) {
+        extraInfo.triggerTimestamp  = sbn::ExtraTriggerInfo::NoTimestamp;
+        extraInfo.beamGateTimestamp = eventInfo.time;
+        
+        extraInfo.triggerID    = sbn::ExtraTriggerInfo::NoID;
+      } // if extra info
+    } // if fired... else
+    
+    fillExtraInfo = false;
+    
+  } // for
+  
+  if (triggers.empty() && fEmitEmpty) {
+    
+    triggers.emplace_back(
+      triggerNumber,                          // counter
+      std::numeric_limits<double>::lowest(),  // trigger time
+      double(beamTime),                   // beam gate in electronics time scale
+      0                                       // bits
+      );
+    
+  } // if
+  
+  return { std::move(triggers), std::move(extraInfo) };
   
 } // icarus::trigger::TriggerSimulationOnGates::triggerInfoToTriggerData()
 
@@ -1258,23 +1586,46 @@ icarus::trigger::TriggerSimulationOnGates::triggerInfoToTriggerData(
 sbn::triggerSourceMask
 icarus::trigger::TriggerSimulationOnGates::makeTriggerBits
   (sim::BeamGateInfo const& beamInfo)
+  { return mask(beamTypeToTriggerSource(beamInfo.BeamType())); }
+
+
+//------------------------------------------------------------------------------
+sbn::triggerSource
+icarus::trigger::TriggerSimulationOnGates::beamTypeToTriggerSource
+  (sim::BeamType_t beamType)
 {
   
-  switch (beamInfo.BeamType()) {
-    case sim::kBNB: return mask(sbn::bits::triggerSource::BNB);
-    case sim::kNuMI: return mask(sbn::bits::triggerSource::NuMI);
+  switch (beamType) {
+    case sim::kBNB: return sbn::bits::triggerSource::BNB;
+    case sim::kNuMI: return sbn::bits::triggerSource::NuMI;
     case sim::kUnknown:
     default:
-      return mask(sbn::bits::triggerSource::Unknown);
+      return sbn::bits::triggerSource::Unknown;
   } // switch
   
-} // icarus::trigger::TriggerSimulationOnGates::makeTriggerBits()
+} // icarus::trigger::TriggerSimulationOnGates::beamTypeToTriggerSource()
+
+
+//------------------------------------------------------------------------------
+sbn::bits::triggerLocationMask
+icarus::trigger::TriggerSimulationOnGates::cryoIDtoTriggerLocation
+  (geo::CryostatID const& cid)
+{
+  
+  if      (cid == geo::CryostatID{ 0 })
+    return mask(sbn::bits::triggerLocation::CryoEast);
+  else if (cid == geo::CryostatID{ 1 })
+    return mask(sbn::bits::triggerLocation::CryoWest);
+  else
+    return mask(sbn::bits::triggerLocation::NBits);
+  
+} // icarus::trigger::TriggerSimulationOnGates::cryoIDtoTriggerLocation()
 
 
 //------------------------------------------------------------------------------
 TH1*
 icarus::trigger::TriggerSimulationOnGates::makeHistogramFromBinnedContent(
-  icarus::trigger::PlotSandbox& plots,
+  PlotSandbox_t& plots,
   std::string const& name, std::string const& title,
   BinnedContent_t const& binnedContent
 ) const {

@@ -338,7 +338,7 @@ namespace icarus {
 	  //std::cout << "closest match " << closest.t0 << std::endl;
 	  //std::cout << "closest dca " << closest.dca << " ,tagger: "<< closest.thishit.tagger << " , sin angele: \t" << closest.dca/closest.extrapLen << std::endl;
 	  double sin_angle = -99999;
-	  if(closest.dca != -99999){ 
+	  if(closest.dca != DBL_MIN){ 
 	    hDCA[closest.thishit.tagger]->Fill(closest.dca);
 	    //hDCA["All"]->Fill(closest.dca);
 	    sin_angle = closest.dca/closest.extrapLen;
@@ -379,19 +379,19 @@ namespace icarus {
 		hEffDCATotal[tagger]->Fill(DCAcut);
 		
 		// If closest hit is below limit and track matches any hits then fill efficiency
-		if(closest.dca < DCAcut && closest.dca != -99999){
+		if(closest.dca < DCAcut && closest.dca != DBL_MIN){
 		  hEffDCAReco[tagger]->Fill(DCAcut);
 		}
 	      }
 	      // Fill total efficiency histograms
 	      // hEffDCATotal["All"]->Fill(DCAcut);
-	      if(closest.dca < DCAcut && closest.dca != -99999){
+	      if(closest.dca < DCAcut && closest.dca != DBL_MIN){
 		// hEffDCAReco["All"]->Fill(DCAcut);
 	      }
 	    }
 	    
 	    // Fill total purity histogram with each cut if closest hit is below limit
-	    if(closest.dca < DCAcut && closest.dca != -99999){
+	    if(closest.dca < DCAcut && closest.dca != DBL_MIN){
 	      hPurityDCATotal[closest.thishit.tagger]->Fill(DCAcut);
 	      // hPurityDCATotal["All"]->Fill(DCAcut);
 	      
@@ -418,19 +418,19 @@ namespace icarus {
 		hEffDoLTotal[tagger]->Fill(DCAcut);
 		
 		// If closest hit is below limit and track matches any hits then fill efficiency
-		if(sin_angle < DCAcut && closest.dca != -99999){
+		if(sin_angle < DCAcut && closest.dca != DBL_MIN){
 		  hEffDoLReco[tagger]->Fill(DCAcut);
 		}
 	      }
 	      // Fill total efficiency histograms
 	      //  hEffDoLTotal["All"]->Fill(DCAcut);
-	      if(sin_angle < DCAcut && closest.dca != -99999){
+	      if(sin_angle < DCAcut && closest.dca != DBL_MIN){
 		// hEffDoLReco["All"]->Fill(DCAcut);
 	      }
 	    }
 	    
 	    // Fill total purity histogram with each cut if closest hit is below limit
-	    if(sin_angle < DCAcut && closest.dca != -99999){
+	    if(sin_angle < DCAcut && closest.dca != DBL_MIN){
 	      hPurityDoLTotal[closest.thishit.tagger]->Fill(DCAcut);
 	      // hPurityDoLTotal["All"]->Fill(DCAcut);
 	      

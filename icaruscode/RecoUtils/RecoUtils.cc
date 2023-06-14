@@ -94,10 +94,9 @@ int RecoUtils::TrueParticleIDFromTotalRecoHits(const detinfo::DetectorClocksData
 
 
 bool RecoUtils::IsInsideTPC(TVector3 position, double distance_buffer){
-  double vtx[3] = {position.X(), position.Y(), position.Z()};
   bool inside = false;
   art::ServiceHandle<geo::Geometry> geom;
-  geo::TPCID idtpc = geom->FindTPCAtPosition(vtx);
+  geo::TPCID idtpc = geom->FindTPCAtPosition(geo::vect::toPoint(position));
 
   if (geom->HasTPC(idtpc))
   {
@@ -106,19 +105,14 @@ bool RecoUtils::IsInsideTPC(TVector3 position, double distance_buffer){
     double miny = tpcgeo.MinY(); double maxy = tpcgeo.MaxY();
     double minz = tpcgeo.MinZ(); double maxz = tpcgeo.MaxZ();
 
-    for (size_t c = 0; c < geom->Ncryostats(); c++)
+    for (auto const& tpcg : geom->Iterate<geo::TPCGeo>())
     {
-      const geo::CryostatGeo& cryostat = geom->Cryostat(c);
-      for (size_t t = 0; t < cryostat.NTPC(); t++)
-      {
-        const geo::TPCGeo& tpcg = cryostat.TPC(t);
         if (tpcg.MinX() < minx) minx = tpcg.MinX();
         if (tpcg.MaxX() > maxx) maxx = tpcg.MaxX();
         if (tpcg.MinY() < miny) miny = tpcg.MinY();
         if (tpcg.MaxY() > maxy) maxy = tpcg.MaxY();
         if (tpcg.MinZ() < minz) minz = tpcg.MinZ();
         if (tpcg.MaxZ() > maxz) maxz = tpcg.MaxZ();
-      }
     }
 
     //x

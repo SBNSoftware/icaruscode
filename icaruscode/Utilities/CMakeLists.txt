@@ -35,6 +35,14 @@ cet_build_plugin(DuplicateEventTracker art::service LIBRARIES
 		messagefacility::MF_MessageLogger
 	)
 
+cet_build_plugin(DumpCRTPMTMatching art::module LIBRARIES
+		icaruscode::Utilities
+		icaruscode::IcarusObj
+		sbnobj::Common_CRT
+		lardataobj::RecoBase
+		canvas::canvas
+	)
+
 cet_build_plugin(DummyFilter art::module)
 cet_build_plugin(DummyProducer art::module)
 cet_build_plugin(DummyAnalyzer art::module)

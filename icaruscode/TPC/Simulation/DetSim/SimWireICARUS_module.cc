@@ -146,9 +146,9 @@ DEFINE_ART_MODULE(SimWireICARUS)
 //-------------------------------------------------
 SimWireICARUS::SimWireICARUS(fhicl::ParameterSet const& pset)
     : EDProducer{pset}
-    , fPedestalEngine(art::ServiceHandle<rndm::NuRandomService>()->createEngine(*this, "HepJamesRandom", "pedestal", pset, "SeedPedestal"))
-    , fUncNoiseEngine(art::ServiceHandle<rndm::NuRandomService>()->createEngine(*this, "HepJamesRandom", "noise",    pset, "Seed"))
-    , fCorNoiseEngine(art::ServiceHandle<rndm::NuRandomService>()->createEngine(*this, "HepJamesRandom", "cornoise", pset, "Seed"))
+    , fPedestalEngine(art::ServiceHandle<rndm::NuRandomService>()->registerAndSeedEngine(createEngine(0, "HepJamesRandom", "pedestal"), "HepJamesRandom", "pedestal", pset, "SeedPedestal"))
+    , fUncNoiseEngine(art::ServiceHandle<rndm::NuRandomService>()->registerAndSeedEngine(createEngine(0, "HepJamesRandom", "noise"   ), "HepJamesRandom", "noise",    pset, "Seed"))
+    , fCorNoiseEngine(art::ServiceHandle<rndm::NuRandomService>()->registerAndSeedEngine(createEngine(0, "HepJamesRandom", "cornoise"), "HepJamesRandom", "cornoise", pset, "Seed"))
     , fGeometry(*lar::providerFrom<geo::Geometry>())
 {
     this->reconfigure(pset);
@@ -223,8 +223,8 @@ void SimWireICARUS::beginJob()
         if(fGeometry.Nchannels()<=fTestWire)
             throw cet::exception(__FUNCTION__)<<"Invalid test wire channel: "<<fTestWire;
         std::vector<unsigned int> channels;
-        for(auto const& plane_id : fGeometry.IteratePlaneIDs())
-            channels.push_back(fGeometry.PlaneWireToChannel(plane_id.Plane,fTestWire));
+        for(auto const& plane_id : fGeometry.Iterate<geo::PlaneID>())
+            channels.push_back(fGeometry.PlaneWireToChannel(geo::WireID(plane_id,fTestWire)));
         double xyz[3] = { std::numeric_limits<double>::max() };
         for(auto const& ch : channels)
         {
@@ -327,7 +327,7 @@ void SimWireICARUS::produce(art::Event& evt)
    
     for (geo::TPCID const& tpcid : fTPCVec) 
     {
-        for (geo::PlaneGeo const& plane : fGeometry.IteratePlanes(tpcid)) 
+        for (geo::PlaneGeo const& plane : fGeometry.Iterate<geo::PlaneGeo>(tpcid))
         {
             raw::ChannelID_t const planeStartChannel = fGeometry.PlaneWireToChannel({ plane.ID(), 0U });
             raw::ChannelID_t const planeEndChannel = fGeometry.PlaneWireToChannel({ plane.ID(), plane.Nwires() - 1U }) + 1;

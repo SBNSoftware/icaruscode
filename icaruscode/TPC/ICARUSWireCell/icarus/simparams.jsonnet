@@ -10,9 +10,9 @@ base {
     // Transverse diffusion constant
     DT :  8.8 * wc.cm2/wc.s,
     // Electron lifetime
-    lifetime : 9.6*wc.ms,
+    lifetime : 3.5*wc.ms,
     // Electron drift speed, assumes a certain applied E-field
-    drift_speed : 1.6*wc.mm/wc.us, // at 500 V/cm
+    drift_speed : 1.5756*wc.mm/wc.us, // at 500 V/cm
   },
   daq: super.daq {
 
@@ -39,15 +39,6 @@ base {
   //    chresp: null,
   //},
 
-  // This sets a relative gain at the input to the ADC.  Note, if
-  // you are looking to fix SimDepoSource, you are in the wrong
-  // place.  See the "scale" parameter of wcls.input.depos() defined
-  // in pgrapher/common/ui/wcls/nodes.jsonnet.
-  elec: super.elec {
-    // postgain: 1.0,
-    // shaping: 2.2 * wc.us,
-  },
-
   sys_status: false,
   sys_resp: {
     // overall_short_padding should take into account this offset "start".
@@ -56,8 +47,8 @@ base {
     time_smear: 1.0 * wc.us,
   },
 
-  rc_resp: {
-    width: 1.1*wc.ms,
-    rc_layers: 1,
-  }
+   rc_resp: {
+     width: 1.1*wc.ms,
+     rc_layers: 1,
+   }
 }

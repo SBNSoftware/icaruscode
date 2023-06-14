@@ -1,0 +1,147 @@
+#
+# File:    beamgates_icarus.fcl
+# Purpose: Module configurations to ensure the presence of `sim::BeamGateInfo`.
+# Author:  Gianluca Petrillo (petrillo@slac.stanford.edu)
+# Date:    November 22, 2022
+# Version: 1.0
+#
+# This is a collection of simple module configurations to help simulation
+# workflows (generation stage) to ensure the presence of a beam gate information
+# data product with a standard name.
+# 
+# Three main scenarios may be present:
+# 1. the generator module(s) does generate the proper beam gate data product,
+#    but with a non-standard name;
+# 2. the generator module does generate a beam gate data product, but it needs;
+#    adjustment;
+# 3. no generator module generates a beam data data product.
+# 
+# The workflow should rely on a standard beam gate data product name which is
+# not a standard generator name, to support the case (3) where one of those
+# generators is run with the standard generator name.
+# 
+# Thus, I propose here also a standard beam gate definition name, "beamgate",
+# which modules looking for a beam gate data product can confidently refer to:
+#     
+#     BeamGateTag: @local::icarus_standardbeamgate_tag
+#     
+# For the rest, this configuration file supports two of the cases above:
+# 
+# 1. `icarus_standardbeamgate_copy` can "rename" the data product; the label of
+#    the generator module creating the original beam gate can be overridden in
+#    the `BeamGateTag` parameter, and its default value is the standard
+#    "generator" (for example ICARUS GENIE configurations usually use that one).
+#    Example:
+#        
+#      physics.producers: {
+#        
+#        beamgate: @local::icarus_standardbeamgate_copy
+#        
+#        # ...
+#        
+#      }
+# 
+# 2. This case should use `FixBeamGateInfo`, but no preset is provided because
+#    no specific use case is known.
+# 
+# 3. The workflow must decide which beam gate to use. Options prepackaged here
+#    are:
+#    
+#    * BNB:
+#          
+#          physics.producers: {
+#            
+#            beamgate: @local::icarus_standardbeamgate_BNB
+#            
+#            # ...
+#          }
+#          
+#    * NuMI:
+#          
+#          physics.producers: {
+#            
+#            beamgate: @local::icarus_standardbeamgate_NuMI
+#            
+#            # ...
+#          }
+#          
+#    
+#    In doubt, it is suggested that the longer one (i.e. NuMI) is used, because
+#    usually downstream to take into account the effect of a reduced beam gate 
+#    is easier than with an too narrow one.
+# 
+# 
+# Changes:
+# 20221122 (petrillo@slac.stanford.edu) [v1.0]
+#   original version
+# 
+#
+
+#include "trigger_icarus.fcl"
+
+BEGIN_PROLOG
+
+# ------------------------------------------------------------------------------
+#
+# This is the name that downstream workflows should expect for the beam gate
+# data product.
+#
+icarus_standardbeamgate_tag: beamgate
+
+
+# ------------------------------------------------------------------------------
+# 
+# these two configurations create a beam gate data product with strictly the
+# nominal beam specifications. They are intended for use in the workflow of
+# event generators that do not generate beam gate information.
+#
+icarus_standardbeamgate_BNB: {
+
+  module_type: WriteBeamGateInfo
+  
+  BeamGates: [
+    {
+      Duration: @local::BNB_settings.spill_duration  # from trigger_icarus.fcl
+      Type: BNB
+    }
+  ]
+
+} # icarus_standardbeamgate_BNB
+
+
+icarus_standardbeamgate_NuMI: {
+
+  module_type: WriteBeamGateInfo
+  
+  BeamGates: [
+    {
+      Duration: @local::NuMI_settings.spill_duration  # from trigger_icarus.fcl
+      Type: NuMI
+    }
+  ]
+
+} # icarus_standardbeamgate_NuMI
+
+
+# ------------------------------------------------------------------------------
+#
+# This configuration is copying an existing beam gate data product (by default,
+# with `generator` tag) into a new one with the same characteristics.
+# The net effect is of "renaming" the beam gate, that is a useful trick for
+# workflows.
+# Any association is lost (the code may be extended to copy them too).
+#
+icarus_standardbeamgate_copy: {
+
+  module_type: FixBeamGateInfo
+  
+  BeamGateTag: generator
+  
+  Changes: [ {} ]  # no changes
+  
+} # icarus_standardbeamgate_copy
+
+
+# ------------------------------------------------------------------------------
+
+END_PROLOG

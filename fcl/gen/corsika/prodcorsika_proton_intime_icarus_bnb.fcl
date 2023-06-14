@@ -34,6 +34,7 @@
 # do not pass the filtering in order to tune how many to generate
 
 #include "corsika_icarus.fcl"
+#include "beamgates_icarus.fcl"
 #include "services_common_icarus.fcl"
 #include "services_icarus_simulation.fcl"
 #include "largeantmodules_icarus.fcl"
@@ -67,6 +68,7 @@ physics:
  {
    generator: @local::icarus_corsika_p
    larg4intime: @local::icarus_largeant
+   beamgate:  @local::icarus_standardbeamgate_BNB  # from beamgates_icarus.fcl
    rns:       { module_type: "RandomNumberSaver" }
  }
 
@@ -102,7 +104,7 @@ physics:
 
  #define the producer and filter modules for this path, order matters, 
  #filters reject all following items.  see lines starting physics.producers below 
- simulate: [ rns, generator, GenInTimeSorter, larg4intime, timefilter ] 
+ simulate: [ rns, generator, GenInTimeSorter, larg4intime, beamgate, timefilter ] 
 
 
  #define the output stream, there could be more than one if using filters 
@@ -131,3 +133,6 @@ physics.producers.generator.SubBoxLength: "subboxLength 60 "
 services.LArG4Parameters.ParticleKineticEnergyCut: 0.0005
 physics.producers.larg4intime.KeepParticlesInVolumes: [ "volDetEnclosure" ]
 physics.producers.larg4intime.InputLabels: [ "GenInTimeSorter:intime" ]
+
+# Store MCParticleLite in G4 to store dropped particles from KeepEMShowerDaughters: false
+physics.producers.larg4intime.StoreDroppedMCParticles: true

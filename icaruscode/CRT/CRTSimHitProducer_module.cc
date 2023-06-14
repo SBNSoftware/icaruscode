@@ -25,6 +25,7 @@
 #include "canvas/Utilities/Exception.h"
 
 // C++ includes
+#include <fstream>
 #include <memory>
 #include <iostream>
 #include <map>

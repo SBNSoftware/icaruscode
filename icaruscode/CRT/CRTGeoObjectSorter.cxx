@@ -59,17 +59,15 @@ namespace geo{
   // Define sort order for AuxDets in co-ordinate system
 
   static bool CRTIncreaseX(const AuxDetGeo& ad1, const AuxDetGeo& ad2) {
-    double xyz1[3] = {0.};
-    double xyz2[3] = {0.};
-    ad1.GetCenter(xyz1); ad2.GetCenter(xyz2);
-    return xyz1[0] < xyz2[0];
+    auto const xyz1 = ad1.GetCenter();
+    auto const xyz2 = ad2.GetCenter();
+    return xyz1.X() < xyz2.X();
   }
   
   static bool CRTDecreaseY(const AuxDetGeo& ad1, const AuxDetGeo& ad2) {
-    double xyz1[3] = {0.};
-    double xyz2[3] = {0.};
-    ad1.GetCenter(xyz1); ad2.GetCenter(xyz2);
-    return xyz1[1] > xyz2[1];
+    auto const xyz1 = ad1.GetCenter();
+    auto const xyz2 = ad2.GetCenter();
+    return xyz1.Y() > xyz2.Y();
   }
   
   static bool CRTIncreaseZ(const AuxDetGeo& ad1, const AuxDetGeo& ad2) {

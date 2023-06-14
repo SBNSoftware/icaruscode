@@ -1,0 +1,118 @@
+#
+# File:    select_timed_tracks_icarus.fcl
+# Purpose: Add selection of tracks with time information to the events.
+# Authors: Animesh Chatterjee (ANC238@pitt.edu),
+#          Gianluca Petrillo (petrillo@slac.stanford.edu),
+#          Jacob Zettlemoyer (jzettle@fnal.gov)
+# Date:    September 17, 2021
+#
+#
+
+#include "messages_icarus.fcl"
+#include "rootoutput_icarus.fcl"
+#include "services_common_icarus.fcl"
+
+BEGIN_PROLOG
+
+gatesFromTracks_icarus: {
+
+  module_type: BeamGateInfoFromTracksCRT
+  
+  GateStartOffset: "-15 us"
+  GateEndOffset:   "+15 us"
+  
+  T0Producer:    @nil  # must override
+  T0selProducer: @nil  # must override
+  
+} # gatesFromTracks_icarus
+
+
+END_PROLOG
+
+
+# ------------------------------------------------------------------------------
+process_name: T0sel
+
+
+# ------------------------------------------------------------------------------
+services: {
+  message:     @local::icarus_message_services_interactive_debug
+  @table::icarus_common_services
+  TimeTracker: {}
+}
+
+
+# ------------------------------------------------------------------------------
+physics: {
+
+  producers: {
+    # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    
+    gatesFromTracksE: {
+      @table::gatesFromTracks_icarus
+    
+      T0Producer:    "CRTT0Matching::CRTT0Matching"
+      T0selProducer: t0selectorE
+    }
+    
+    gatesFromTracksW: {
+      @table::gatesFromTracks_icarus
+      
+      T0Producer:    "CRTT0Matching::CRTT0Matching"
+      T0selProducer: t0selectorW
+    }
+    
+    # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    
+  } # producers
+  
+  
+  filters: {
+    
+    # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    t0selectorW: {
+      module_type: TimedTrackSelectorCRT
+      
+      #TrackTimeTags: [ pandoraGausCryoW, pandoraGausCryoE ]
+      TrackTimeTags: [ "CRTT0Matching::CRTT0Matching" ] #pandoraGausCryoW
+      
+    } # t0selectorW
+
+    t0selectorE: {
+      module_type: TimedTrackSelectorCRT
+      TrackTimeTags: [ "CRTT0Matching::CRTT0Matching" ] #pandoraGausCryoE
+    }
+    
+    
+    # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    
+  } # filters
+  
+  # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  selectionW: [ "t0selectorW" , "gatesFromTracksW" ]
+  selectionE: [ "t0selectorE" , "gatesFromTracksE" ]
+  
+  streams: [ "rootoutput" ]
+  
+} # physics
+
+
+# ------------------------------------------------------------------------------
+outputs: {
+  rootoutput: {
+    @table::icarus_rootoutput
+    outputCommands: [
+      "drop *", "keep *_pmtconfig_*_stage0",
+      "keep *_daqTrigger_*_stage0",
+      "keep *_daqPMT_*_stage0",
+      "keep *_opflashCryo*_*_*",
+      "keep *_*_*_stage1",
+      "keep *_*_*_T0sel"
+      ]
+  }
+}
+
+#source.inputCommands: ["keep *_*_*_*", "drop *_CRTT0Matching_*_stage1"]
+
+
+# ------------------------------------------------------------------------------

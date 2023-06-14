@@ -27,7 +27,7 @@ namespace pmtana {
 	res.push_back(opch);
       }
     }else{
-      auto const& bbox = geo->Cryostat(cryostat).Boundaries();
+      auto const& bbox = geo->Cryostat(geo::CryostatID(cryostat)).Boundaries();
       for(size_t opch=0; opch<geo->MaxOpChannel(); ++opch) {
 	if(geo->IsValidOpChannel(opch)) continue;
 	auto const& pt = geo->OpDetGeoFromOpChannel(opch).GetCenter();
@@ -46,7 +46,7 @@ namespace pmtana {
 	res.push_back(opdet);
       }
     }else{
-      auto const& bbox = geo->Cryostat(cryostat).Boundaries();
+      auto const& bbox = geo->Cryostat(geo::CryostatID(cryostat)).Boundaries();
       for(size_t opdet=0; opdet<geo->NOpDets(); ++opdet) {
 	auto const& pt = geo->OpDetGeoFromOpDet(opdet).GetCenter();
 	if(!bbox.ContainsPosition(pt)) continue;
@@ -61,7 +61,7 @@ namespace pmtana {
     if(cryostat<0)
       return geo->NOpDets();
     else
-      return geo->Cryostat(cryostat).NOpDet();
+      return geo->Cryostat(geo::CryostatID(cryostat)).NOpDet();
   }
 
   size_t OpDetFromOpChannel(size_t opch) {
@@ -71,7 +71,10 @@ namespace pmtana {
 
   void OpDetCenterFromOpChannel(size_t opch, double *xyz) {
     ::art::ServiceHandle<geo::Geometry> geo;
-    geo->OpDetGeoFromOpChannel(opch).GetCenter(xyz); 
+    auto const tmp = geo->OpDetGeoFromOpChannel(opch).GetCenter();
+    xyz[0] = tmp.X();
+    xyz[1] = tmp.Y();
+    xyz[2] = tmp.Z();
   }
 
 }

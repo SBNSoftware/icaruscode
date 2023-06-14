@@ -7,6 +7,7 @@
 #include "crttruehitproducer.fcl"
 #include "crtsimhitproducer.fcl"
 #include "crttrackproducer_icarus.fcl"
+#include "crtpmtmatchingproducer.fcl"
 
 BEGIN_PROLOG
 
@@ -30,33 +31,35 @@ icarus_stage0_mc_producers:
 
     @table::icarus_standard_triggersim.producers  # from trigger_emulation_icarus.fcl
     
+    pmtbaselines:      @local::icarus_opreco_pedestal_fromchannel_MC  # from icarus_ophitfinder.fcl
     ophit:             @local::icarus_ophit_data
     mcophit:           @local::ICARUSMCOpHit
 
     ## crt producer   
-    crttruehit:        @local::standard_crttruehitproducer
     crthit:            @local::standard_crtsimhitproducer
     crttrack:          @local::standard_crttrackproducer
-}  
+    crtpmt: 	       @local::standard_crtpmtmatchingproducer
+    }  
 
 # make the following modifications to job flow for MC vs the data
 icarus_stage0_mc_trigger: [
                          pmtfixedthr
-#                        , @sequence::icarus_standard_triggersim.path
+                         , @sequence::icarus_standard_triggersim.path  # from trigger_emulation_icarus.fcl
                        ]
 
 icarus_stage0_mc_PMT:  [
                          @sequence::icarus_stage0_mc_trigger,
+                         pmtbaselines,
                          ophit,
                          mcophit,
                          opflashCryoE,
                          opflashCryoW
                        ]
 
-icarus_stage0_mc_crt:  [ crttruehit,
-                         crthit,
+icarus_stage0_mc_crt:  [ crthit,
                          #crttzero 
-                         crttrack 
-                       ]
+                         crttrack, 
+                       	 crtpmt
+		       ]
 
 END_PROLOG

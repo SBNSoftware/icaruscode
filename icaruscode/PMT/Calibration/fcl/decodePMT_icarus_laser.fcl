@@ -1,0 +1,96 @@
+#include "services_common_icarus.fcl"
+#include "channelmapping_icarus.fcl"
+#include "decoderdefs_icarus.fcl"
+#include "icarus_ophitfinder.fcl"
+#include "icarus_flashfinder.fcl"
+#include "icarus_opana_modules.fcl"
+#include "rootoutput_icarus.fcl"
+#include "timing_icarus.fcl"
+#include "pmt-calibration.fcl"
+
+process_name: laserAnalysis
+
+services:
+{
+   TFileService:            { fileName: "%ifb_%tc-%p.root" }
+   @table::icarus_geometry_services
+   DetectorClocksService: @local::icarus_detectorclocks
+   IICARUSChannelMap: @local::icarus_channelmappinggservice
+   PMTTimingCorrections:   @local::icarus_pmttimingservice
+   
+   @table::icarus_basic_services
+}
+
+#services.IICARUSChannelMap.ChannelMappingTool: @local::ChannelMappingPostGres
+
+#Look at the input files
+source:
+{
+  module_type: RootInput
+  fileNames:  [ "data.root" ]
+  maxEvents:   -1       # Number of events to create
+}
+
+# Make sure to get rid of NuRandomSvc (not thread save)
+services.NuRandomService: @erase
+
+physics:
+{
+
+    // now also have something produce the digits and headers
+    producers:
+    {
+        PMTconfig: @local::extractPMTconfig 
+
+        daqTrigger: @local::decodeTrigger
+
+        daqPMT: @local::decodePMT
+    }
+
+    analyzers: 
+    {
+        laserCalibration: @local::pmt_laser_calibration
+    }
+
+    laserpath: [ PMTconfig, daqTrigger, daqPMT ]
+
+    ana: [ rootoutput, laserCalibration ]
+
+    trigger_paths: [ laserpath ]
+
+    end_paths: [ ana ]
+}
+
+outputs: {
+
+  rootoutput: {
+     @table::icarus_rootoutput
+     outputCommands:  [ "keep *_daqPMT_*_*", "drop *_daq_*_*" ]
+  } # rootoutput
+
+} # outputs 
+
+
+#
+# customization of PMT decoding
+#
+physics.producers.daqPMT.PMTconfigTag:       PMTconfig      # try to use board configuration -if available-
+physics.producers.daqPMT.TriggerTag:         daqTrigger     # do not rely on trigger info for now
+physics.producers.daqPMT.SurviveExceptions:  false
+physics.producers.daqPMT.DiagnosticOutput:   false
+physics.producers.daqPMT.PacketDump:         false
+physics.producers.daqPMT.RequireKnownBoards: false 
+physics.producers.daqPMT.RequireBoardConfig: false 
+physics.producers.daqPMT.DataTrees: [ "PMTfragments" ]
+
+#
+# custmoziation of the Timing corrections 
+#
+
+#
+# customization of the laser analysis
+#
+physics.analyzers.laserCalibration.LaserChannel:                       1 
+physics.analyzers.laserCalibration.WaveformAnalysis.IntegralStartBin:  3500       # bin
+physics.analyzers.laserCalibration.WaveformAnalysis.IntegrationWindow: 1500
+

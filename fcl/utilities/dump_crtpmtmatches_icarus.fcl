@@ -1,0 +1,60 @@
+#
+# File:     dump_crtpmtmatches_icarus.fcl
+# Purpose:  Dump on screen matches of reconstructed CRT hits and PMT flashes.
+# Author:   Gianluca Petrillo (petrillo@fnal.gov)
+# Date:     May 11, 2023
+# Version:  1.0
+#
+# Service dependencies:
+# - message facility
+# 
+# Changes:
+# 20230511 (petrillo@slac.stanford.edu) [v1.0]
+#   first version, from icaruscode/fcl/utilities/dump_opdetwaveforms_icarus.fcl v1.1
+#
+
+
+process_name: DumpCRTPMT
+
+
+services.message.destinations: {
+  
+  # grab all the "DumpCRTPMTMatching" messages and put them in DumpCRTPMTMatching.log
+  LogCRTPMT: {
+    append: false
+    categories: {
+      DumpCRTPMTMatching: { limit: -1 }
+      default: { limit: 0 }
+    }
+    filename: "DumpCRTPMTMatching.log"
+    threshold: "INFO"
+    type: "file"
+  } # LogCRTPMT
+  
+  LogStandardOut: {
+    categories: {
+      DumpCRTPMTMatching: { limit: 0 }
+      default: {}
+    }
+    threshold: "WARNING"
+    type: "cout"
+  } # LogStandardOut
+  
+} # services.destinations.message
+
+
+physics: {
+  analyzers: {
+    dumpcrtpmt: {
+      module_type: DumpCRTPMTMatching
+      
+      MatchingTag:            "crtpmt"
+        
+      PrintFlashAssociations:  true
+      PrintCRTHitAssociations: true
+      
+      LogCategory:            "DumpCRTPMTMatching"
+    }
+  }
+  dumpers: [ dumpcrtpmt ]
+}
