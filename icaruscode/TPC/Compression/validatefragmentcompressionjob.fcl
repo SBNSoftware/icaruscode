@@ -1,0 +1,33 @@
+#include ValidateFragmentCompression.fcl
+#include "messageservice.fcl"
+
+process_name: ValidateCompression
+
+services:
+  {
+    # Load the service that manages root files for histograms.
+    TFileService: { fileName: "validateCompression_hist.root" closeFileFast: false }
+    message: @local::standard_info
+  }
+
+outputs:
+  {
+    validate:
+      {
+        module_type: RootOutput
+        fileName: "validateCompression_out.root"
+        results:
+          {
+            producers:
+              {
+                validComp: { @table::standard_validatecompression }
+              }
+            rpPath: [ validComp ]
+          }
+      }
+  }
+
+physics:
+  {
+    stream1: [ validate ]
+  }
