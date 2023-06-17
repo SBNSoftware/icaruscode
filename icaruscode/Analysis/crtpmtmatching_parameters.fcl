@@ -40,7 +40,9 @@ CRTPMTmatchingparams_standard:
   PMTADCThresh:          400  # ADC, this value was suggested from A. Scarpelli to mimic the PMT trigger.
   nOpHitToTrigger:       5  # Number of PMT above threshold to mimic the PMT trigger.
   TimeOfFlightInterval:  100 # ns, time difference between CRT Hit and Optical Flash to confirm the match.
-  GlobalT0Offset:        1.6e6  # ns, (copied from ref: https://github.com/SBNSoftware/icaruscode/blob/v09_37_02_01/icaruscode/CRT/crtsimmodules_icarus.fcl#L11)  
+  #  GlobalT0Offset:        1600043 #1.6e6 + 43 ns   # ns, (copied from ref: https://github.com/SBNSoftware/icaruscode/blob/v09_37_02_01/icaruscode/CRT/crtsimmodules_icarus.fcl#L11)  
+   GlobalT0Offset:        1599957 # 1.6e6 - 43 for 
+
   MatchBottomCRT:  	 false #Config variable to perform CRTPMT Matching without bottom CRT. `True` applies the matching to bottom CRT Hits,  currently set to false for data/MC comparisons 
 }  # CRTPMTmatchingparams_standard
 
