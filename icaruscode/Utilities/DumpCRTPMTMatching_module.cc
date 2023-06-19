@@ -7,7 +7,6 @@
 
 // LArSoft and ICARUS libraries
 #include "icaruscode/Utilities/IcarusObjectSelectors.h"
-//#include "icaruscode/IcarusObj/CRTPMTMatching.h"
 #include "sbnobj/Common/CRT/CRTPMTMatching.hh"
 #include "sbnobj/Common/CRT/CRTHit.hh"
 #include "lardataobj/RecoBase/OpFlash.h"

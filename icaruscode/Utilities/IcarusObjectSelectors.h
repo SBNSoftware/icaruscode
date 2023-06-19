@@ -11,7 +11,6 @@
 #define ICARUSCODE_UTILITIES_ICARUSOBJECTSELECTORS_H
 
 
-//#include "icaruscode/IcarusObj/CRTPMTMatching.h" // icarus::crt::MatchType
 #include "sbnobj/Common/CRT/CRTPMTMatching.hh"
 #include <map> // until https://github.com/LArSoft/lardataalg/pull/41
 #include "lardataalg/Utilities/MultipleChoiceSelection.h"
