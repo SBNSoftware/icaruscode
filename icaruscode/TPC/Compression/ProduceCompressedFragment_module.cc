@@ -58,11 +58,11 @@ namespace icarus
       std::unique_ptr<std::vector<artdaq::Fragment>> producedFragments(new std::vector<artdaq::Fragment>);
 
       // get the uncompressed fragments from the event
-      art::Handle<std::vector<artdaq::Fragment>> uncompressedFragmentsHandle;
-      std::vector<art::Ptr<artdaq::Fragment>>    uncompressedFragments;
-
-      if (e.getByLabel(fFragmentsLabel, uncompressedFragmentsHandle))
-        art::fill_ptr_vector(uncompressedFragments, uncompressedFragmentsHandle);
+      //art::Handle<std::vector<artdaq::Fragment>> uncompressedFragmentsHandle;
+      //std::vector<art::Ptr<artdaq::Fragment>>    uncompressedFragments;
+      //if (e.getByLabel(fFragmentsLabel, uncompressedFragmentsHandle))
+      //  art::fill_ptr_vector(uncompressedFragments, uncompressedFragmentsHandle);
+      std::vector<artdaq::Fragment> uncompressedFragments = e.getProduct<std::vector<artdaq::Fragment>>(fFragmentsLabel);
 
       // set up averages to keep track of how long the (de)compression takes and how effective it is
       double avgCompTime   = 0;
@@ -77,7 +77,8 @@ namespace icarus
         std::chrono::steady_clock::time_point compT1 = std::chrono::steady_clock::now();
         // art::Ptrs are kind of annoying
         // so to get the Fragment we need to `.get()` the Ptr and dereference
-        artdaq::Fragment newFrag = icarus::PhysCrateCompressedFragment::compressArtdaqFragment(*(uncompFrag.get()));
+        //artdaq::Fragment newFrag = icarus::PhysCrateCompressedFragment::compressArtdaqFragment(*(uncompFrag.get()));
+        artdaq::Fragment newFrag = icarus::PhysCrateCompressedFragment::compressArtdaqFragment(uncompFrag);
         std::chrono::steady_clock::time_point compT2 = std::chrono::steady_clock::now();
         producedFragments->emplace_back(newFrag);
         double compTime = std::chrono::duration_cast<std::chrono::nanoseconds>(compT2 - compT1).count();

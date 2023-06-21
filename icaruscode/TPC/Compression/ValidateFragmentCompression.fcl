@@ -2,7 +2,7 @@ BEGIN_PROLOG
 
 standard_validatecompression:
 {
-  module_type: "ValidateCompression"
+  plugin_type: "ValidateFragmentCompression"
   FragmentsLabel: "daq:PHYSCRATEDATA"
 }
 

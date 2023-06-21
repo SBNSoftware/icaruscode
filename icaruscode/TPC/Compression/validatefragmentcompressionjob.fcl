@@ -1,5 +1,5 @@
-#include ValidateFragmentCompression.fcl
-#include "messageservice.fcl"
+#include "ValidateFragmentCompression.fcl"
+#include "messages_icarus.fcl"
 
 process_name: ValidateCompression
 
@@ -7,7 +7,7 @@ services:
   {
     # Load the service that manages root files for histograms.
     TFileService: { fileName: "validateCompression_hist.root" closeFileFast: false }
-    message: @local::standard_info
+    message: @local::icarus_message_services_interactive_debug
   }
 
 outputs:
@@ -20,9 +20,12 @@ outputs:
           {
             producers:
               {
-                validComp: { @table::standard_validatecompression }
+                validComp_ee: { @table::standard_validatecompression_EE }
+                validComp_ew: { @table::standard_validatecompression_EW }
+                validComp_we: { @table::standard_validatecompression_WE }
+                validComp_ww: { @table::standard_validatecompression_WW }
               }
-            rpPath: [ validComp ]
+            rpPath: [ validComp_ee, validComp_ew, validComp_we, validComp_ww ]
           }
       }
   }
