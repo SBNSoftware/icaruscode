@@ -35,6 +35,7 @@
 #include "CLHEP/Random/RandFlat.h"
 
 #include <memory>
+#include <numeric>
 
 class HARPS;
 
@@ -81,6 +82,9 @@ private:
 
   CLHEP::HepRandomEngine &fFlatEngine;
   CLHEP::RandFlat *fFlatRand; ///< Random number generator as in PMT/OpReco/FakePhotoS_module.cc
+
+  bool fTagDaughters; ///< Are we tagging daughter particles?
+  bool fKeepContext;  ///< Are we doing the inverse operation (ie keeping only the context)?
 };
 
 
@@ -97,7 +101,9 @@ HARPS::HARPS(fhicl::ParameterSet const& p)
   fMaskNWires                ( p.get< std::vector<int> >("MaskNWires", {-1}) ),
   fTPCHitsWireAssn           ( p.get< bool >("TPCHitsWireAssn", true) ),
   fTPCHitCreatorInstanceName ( p.get<std::string>("TPCHitCreatorInstanaceName","") ),
-  fFlatEngine                ( art::ServiceHandle<rndm::NuRandomService>()->createEngine(*this, "HepJamesRandom", "Gen", p, "Seed") )
+  fFlatEngine                ( art::ServiceHandle<rndm::NuRandomService>()->createEngine(*this, "HepJamesRandom", "Gen", p, "Seed") ),
+  fTagDaughters              ( p.get< bool >("TagDaughters", false) ),
+  fKeepContext               ( p.get< bool >("KeepContext", false) )
 {
   if ( fPFParticleModuleLabels.size()!=fTrackModuleLabels.size() || fPFParticleModuleLabels.size()!=fHitModuleLabels.size() )
     throw cet::exception("HARPS") << "Error... InputTag vectors need to be same size..." << std::endl; // borrow from elsewhere
@@ -117,10 +123,10 @@ HARPS::HARPS(fhicl::ParameterSet const& p)
     unsigned int nR, nS, nE, nC, nP;
     sscanf(line, "%u %u %u %u %u", &nR, &nS, &nE, &nC, &nP);
     std::string evtID = std::to_string(nR) + ":" + std::to_string(nS) + ":" + std::to_string(nE);
-    if ( fOnlyOnePerEvent && (fParticleListCryo0.find(evtID) != fParticleListCryo0.end() ||
-                              fParticleListCryo1.find(evtID) != fParticleListCryo1.end()) ) continue;
-    if ( nC == 0 ) fParticleListCryo0[evtID].push_back(nP);
-    else           fParticleListCryo1[evtID].push_back(nP);
+    std::map< std::string, std::vector<size_t> >& aliasParticleList = (nC == 0) ? fParticleListCryo0 : fParticleListCryo1;
+    if ( fOnlyOnePerEvent && (aliasParticleList.find(evtID) != aliasParticleList.end()) )
+      continue;
+    aliasParticleList[evtID].push_back(nP);
   }
   in.close();
 
@@ -140,8 +146,8 @@ void HARPS::produce(art::Event& e)
 
   // Load in the PFParticles, Tracks, and Hits & the necessary FindManyP's
   for ( unsigned int iCryo=0; iCryo<2; ++iCryo ) {
-    if ( iCryo==0 && fParticleListCryo0.find(evtID) == fParticleListCryo0.end() ) continue;
-    if ( iCryo==1 && fParticleListCryo1.find(evtID) == fParticleListCryo1.end() ) continue;
+    std::map< std::string, std::vector<size_t> >& aliasParticleList = (iCryo == 0) ? fParticleListCryo0 : fParticleListCryo1;
+    if ( aliasParticleList.find(evtID) == aliasParticleList.end() ) continue;
 
     // as in previous code
     art::Handle< std::vector<recob::PFParticle> > pfpHandle;
@@ -151,6 +157,41 @@ void HARPS::produce(art::Event& e)
     }
     else {
       mf::LogError("HARPS") << "Error pulling in PFParticle product... Skipping cryostat.";
+    }
+
+    // sort the PFParticles by id
+    // annoying as recob::PFParticle has a < opperator, but we have art::Ptr<recob::PFParticle> 
+    std::sort(pfps.begin(), pfps.end(), [](art::Ptr<recob::PFParticle> pfpA, art::Ptr<recob::PFParticle> pfpB){ return pfpA->Self() < pfpB->Self(); });
+
+    // if we are tagging duaghters find them here
+    if (fTagDaughters)
+    {
+      auto idItr = aliasParticleList[evtID].begin();
+      while (idItr != aliasParticleList[evtID].end())
+      {
+        std::vector<size_t> dghts = pfps[*idItr]->Daughters();
+        aliasParticleList[evtID].insert(aliasParticleList[evtID].end(), dghts.begin(), dghts.end());
+        ++idItr;
+      }
+    }
+
+    // if we are keeping context, get the complement of our indices
+    if (fKeepContext)
+    {
+      // start with {0, 1, ..., pfps.size() - 1}
+      std::vector<size_t> complement(pfps.size());
+      std::iota(complement.begin(), complement.end(), 0);
+
+      // make sure the initial pfp ids are sorted
+      // we want descending order so when we erase from complement we don't effect the indexing
+      std::sort(aliasParticleList[evtID].begin(), aliasParticleList[evtID].end(), [](size_t a, size_t b){ return a > b; });
+
+      // erase the indices in aliasParticleList[evtID] from complement
+      for (auto const& id : aliasParticleList[evtID])
+        complement.erase(complement.begin() + id);
+      
+      // set the particle list to the complement
+      aliasParticleList[evtID] = complement;
     }
 
     art::Handle< std::vector<recob::Track> > trkHandle;
@@ -185,15 +226,8 @@ void HARPS::produce(art::Event& e)
     }
 
     // Find the PFParticles we care about and put their hits into the collection
-    for ( auto const& pfp : pfps ) {
-      bool keep = false;
-      for ( auto const& id : (iCryo==0 ? fParticleListCryo0[evtID] : fParticleListCryo1[evtID]) ) {
-        if ( pfp->Self() == id ) {
-          keep = true;
-          break;
-        }
-      }
-      if( !keep ) continue;
+    for (auto const& id : aliasParticleList[evtID]) {
+      art::Ptr<recob::PFParticle> pfp = pfps[id];
 
       const std::vector< art::Ptr<recob::Track> > trkFromPFP = fmTrk.at(pfp.key());
       if ( trkFromPFP.size() != 1 ) {
@@ -246,6 +280,7 @@ void HARPS::produce(art::Event& e)
       // Pick wires to remove!
       std::map< unsigned int, std::set< unsigned int > > planeToIdxRemoval;
       if ( fMaskNWires.size() >= 1 && fMaskNBreak.size() >= 1 && fMaskNWires.size() == fMaskNBreak.size() ) {
+
         for ( unsigned int idxPlane = 0; idxPlane < fMaskNWires.size(); ++idxPlane ) {
           if( fMaskNWires[idxPlane] < 0 || fMaskNBreak[idxPlane] == 0 ) continue;
           if ( planeToIdxMap.find(idxPlane) == planeToIdxMap.end() ) continue;
