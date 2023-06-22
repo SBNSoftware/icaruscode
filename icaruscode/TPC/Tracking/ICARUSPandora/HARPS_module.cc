@@ -163,7 +163,7 @@ void HARPS::produce(art::Event& e)
     // annoying as recob::PFParticle has a < opperator, but we have art::Ptr<recob::PFParticle> 
     std::sort(pfps.begin(), pfps.end(), [](art::Ptr<recob::PFParticle> pfpA, art::Ptr<recob::PFParticle> pfpB){ return pfpA->Self() < pfpB->Self(); });
 
-    // if we are tagging duaghters find them here
+    // if we are tagging daughters find them here
     if (fTagDaughters)
     {
       auto idItr = aliasParticleList[evtID].begin();
