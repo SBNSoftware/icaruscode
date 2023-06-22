@@ -85,166 +85,109 @@ namespace tcpCompression {
 
       // put the fragment in a compression compliant overlay
       icarus::PhysCrateCompressedFragment fragOverlay(frag);
+      icarus::PhysCrateFragment fragOldOverlay(frag);
       bool isComp = fragOverlay.isCompressed();
-      if (not isComp && fFoundFirstUncompressed)
-        continue;
-      if (not fFoundFirstUncompressed)
+      if (not isComp)
       {
         MF_LOG_VERBATIM("ValidateCompression")
           << "Checking first few ADC values for uncompressed fragment" << '\n'
-          << " ADC board 0, channel 0, sample 0: " << fragOverlay.adc_val(0, 0, 0) << '\n'
-          << " ADC board 0, channel 0, sample 1: " << fragOverlay.adc_val(0, 0, 1) << '\n'
-          << " ADC board 0, channel 0, sample 2: " << fragOverlay.adc_val(0, 0, 2) << '\n'
-          << " ADC board 0, channel 1, sample 0: " << fragOverlay.adc_val(0, 1, 0) << '\n'
-          << " ADC board 0, channel 1, sample 1: " << fragOverlay.adc_val(0, 1, 1) << '\n'
-          << " ADC board 0, channel 1, sample 2: " << fragOverlay.adc_val(0, 1, 2) << '\n'
-          << " ADC board 0, channel 2, sample 0: " << fragOverlay.adc_val(0, 2, 0) << '\n'
-          << " ADC board 0, channel 2, sample 1: " << fragOverlay.adc_val(0, 2, 1) << '\n'
-          << " ADC board 0, channel 2, sample 2: " << fragOverlay.adc_val(0, 2, 2) << '\n'
-          << " ADC board 1, channel 0, sample 0: " << fragOverlay.adc_val(1, 0, 0) << '\n'
-          << " ADC board 1, channel 0, sample 1: " << fragOverlay.adc_val(1, 0, 1) << '\n'
-          << " ADC board 1, channel 0, sample 2: " << fragOverlay.adc_val(1, 0, 2) << '\n'
-          << " ADC board 1, channel 1, sample 0: " << fragOverlay.adc_val(1, 1, 0) << '\n'
-          << " ADC board 1, channel 1, sample 1: " << fragOverlay.adc_val(1, 1, 1) << '\n'
-          << " ADC board 1, channel 1, sample 2: " << fragOverlay.adc_val(1, 1, 2) << '\n'
-          << " ADC board 1, channel 2, sample 0: " << fragOverlay.adc_val(1, 2, 0) << '\n'
-          << " ADC board 1, channel 2, sample 1: " << fragOverlay.adc_val(1, 2, 1) << '\n'
-          << " ADC board 1, channel 2, sample 2: " << fragOverlay.adc_val(1, 2, 2) << '\n'
-          << " ADC board 2, channel 0, sample 0: " << fragOverlay.adc_val(2, 0, 0) << '\n'
-          << " ADC board 2, channel 0, sample 1: " << fragOverlay.adc_val(2, 0, 1) << '\n'
-          << " ADC board 2, channel 0, sample 2: " << fragOverlay.adc_val(2, 0, 2) << '\n'
-          << " ADC board 2, channel 1, sample 0: " << fragOverlay.adc_val(2, 1, 0) << '\n'
-          << " ADC board 2, channel 1, sample 1: " << fragOverlay.adc_val(2, 1, 1) << '\n'
-          << " ADC board 2, channel 1, sample 2: " << fragOverlay.adc_val(2, 1, 2) << '\n'
-          << " ADC board 2, channel 2, sample 0: " << fragOverlay.adc_val(2, 2, 0) << '\n'
-          << " ADC board 2, channel 2, sample 1: " << fragOverlay.adc_val(2, 2, 1) << '\n'
-          << " ADC board 2, channel 2, sample 2: " << fragOverlay.adc_val(2, 2, 2) << '\n';
-          fFoundFirstUncompressed = true;
+          << " ADC board 0, channel 0, sample 0: " << fragOverlay.adc_val(0, 0, 0) << " | " << fragOldOverlay.adc_val(0, 0, 0) << '\n'
+          << " ADC board 0, channel 0, sample 1: " << fragOverlay.adc_val(0, 0, 1) << " | " << fragOldOverlay.adc_val(0, 0, 1) << '\n'
+          << " ADC board 0, channel 0, sample 2: " << fragOverlay.adc_val(0, 0, 2) << " | " << fragOldOverlay.adc_val(0, 0, 2) << '\n'
+          << " ADC board 0, channel 1, sample 0: " << fragOverlay.adc_val(0, 1, 0) << " | " << fragOldOverlay.adc_val(0, 1, 0) << '\n'
+          << " ADC board 0, channel 1, sample 1: " << fragOverlay.adc_val(0, 1, 1) << " | " << fragOldOverlay.adc_val(0, 1, 1) << '\n'
+          << " ADC board 0, channel 1, sample 2: " << fragOverlay.adc_val(0, 1, 2) << " | " << fragOldOverlay.adc_val(0, 1, 2) << '\n'
+          << " ADC board 0, channel 2, sample 0: " << fragOverlay.adc_val(0, 2, 0) << " | " << fragOldOverlay.adc_val(0, 2, 0) << '\n'
+          << " ADC board 0, channel 2, sample 1: " << fragOverlay.adc_val(0, 2, 1) << " | " << fragOldOverlay.adc_val(0, 2, 1) << '\n'
+          << " ADC board 0, channel 2, sample 2: " << fragOverlay.adc_val(0, 2, 2) << " | " << fragOldOverlay.adc_val(0, 2, 2) << '\n'
+          << " ADC board 1, channel 0, sample 0: " << fragOverlay.adc_val(1, 0, 0) << " | " << fragOldOverlay.adc_val(0, 0, 0) << '\n'
+          << " ADC board 1, channel 0, sample 1: " << fragOverlay.adc_val(1, 0, 1) << " | " << fragOldOverlay.adc_val(1, 0, 1) << '\n'
+          << " ADC board 1, channel 0, sample 2: " << fragOverlay.adc_val(1, 0, 2) << " | " << fragOldOverlay.adc_val(1, 0, 2) << '\n'
+          << " ADC board 1, channel 1, sample 0: " << fragOverlay.adc_val(1, 1, 0) << " | " << fragOldOverlay.adc_val(1, 1, 0) << '\n'
+          << " ADC board 1, channel 1, sample 1: " << fragOverlay.adc_val(1, 1, 1) << " | " << fragOldOverlay.adc_val(1, 1, 1) << '\n'
+          << " ADC board 1, channel 1, sample 2: " << fragOverlay.adc_val(1, 1, 2) << " | " << fragOldOverlay.adc_val(1, 1, 2) << '\n'
+          << " ADC board 1, channel 2, sample 0: " << fragOverlay.adc_val(1, 2, 0) << " | " << fragOldOverlay.adc_val(1, 2, 0) << '\n'
+          << " ADC board 1, channel 2, sample 1: " << fragOverlay.adc_val(1, 2, 1) << " | " << fragOldOverlay.adc_val(1, 2, 1) << '\n'
+          << " ADC board 1, channel 2, sample 2: " << fragOverlay.adc_val(1, 2, 2) << " | " << fragOldOverlay.adc_val(1, 2, 2) << '\n'
+          << " ADC board 2, channel 0, sample 0: " << fragOverlay.adc_val(2, 0, 0) << " | " << fragOldOverlay.adc_val(2, 0, 0) << '\n'
+          << " ADC board 2, channel 0, sample 1: " << fragOverlay.adc_val(2, 0, 1) << " | " << fragOldOverlay.adc_val(2, 0, 1) << '\n'
+          << " ADC board 2, channel 0, sample 2: " << fragOverlay.adc_val(2, 0, 2) << " | " << fragOldOverlay.adc_val(2, 0, 2) << '\n'
+          << " ADC board 2, channel 1, sample 0: " << fragOverlay.adc_val(2, 1, 0) << " | " << fragOldOverlay.adc_val(2, 1, 0) << '\n'
+          << " ADC board 2, channel 1, sample 1: " << fragOverlay.adc_val(2, 1, 1) << " | " << fragOldOverlay.adc_val(2, 1, 1) << '\n'
+          << " ADC board 2, channel 1, sample 2: " << fragOverlay.adc_val(2, 1, 2) << " | " << fragOldOverlay.adc_val(2, 1, 2) << '\n'
+          << " ADC board 2, channel 2, sample 0: " << fragOverlay.adc_val(2, 2, 0) << " | " << fragOldOverlay.adc_val(2, 2, 0) << '\n'
+          << " ADC board 2, channel 2, sample 1: " << fragOverlay.adc_val(2, 2, 1) << " | " << fragOldOverlay.adc_val(2, 2, 1) << '\n'
+          << " ADC board 2, channel 2, sample 2: " << fragOverlay.adc_val(2, 2, 2) << " | " << fragOldOverlay.adc_val(2, 2, 2) << '\n';
           continue;
       }
-      if (not fFoundFirstCompressed)
+      if (isComp)
       {
         MF_LOG_VERBATIM("ValidateCompression")
           << "Checking first few ADC values for compressed fragment" << '\n'
-          << " ADC board 0, channel 0, sample 0: " << fragOverlay.adc_val(0, 0, 0) << '\n'
-          << " ADC board 0, channel 0, sample 1: " << fragOverlay.adc_val(0, 0, 1) << '\n'
-          << " ADC board 0, channel 0, sample 2: " << fragOverlay.adc_val(0, 0, 2) << '\n'
-          << " ADC board 0, channel 1, sample 0: " << fragOverlay.adc_val(0, 1, 0) << '\n'
-          << " ADC board 0, channel 1, sample 1: " << fragOverlay.adc_val(0, 1, 1) << '\n'
-          << " ADC board 0, channel 1, sample 2: " << fragOverlay.adc_val(0, 1, 2) << '\n'
-          << " ADC board 0, channel 2, sample 0: " << fragOverlay.adc_val(0, 2, 0) << '\n'
-          << " ADC board 0, channel 2, sample 1: " << fragOverlay.adc_val(0, 2, 1) << '\n'
-          << " ADC board 0, channel 2, sample 2: " << fragOverlay.adc_val(0, 2, 2) << '\n'
-          << " ADC board 1, channel 0, sample 0: " << fragOverlay.adc_val(1, 0, 0) << '\n'
-          << " ADC board 1, channel 0, sample 1: " << fragOverlay.adc_val(1, 0, 1) << '\n'
-          << " ADC board 1, channel 0, sample 2: " << fragOverlay.adc_val(1, 0, 2) << '\n'
-          << " ADC board 1, channel 1, sample 0: " << fragOverlay.adc_val(1, 1, 0) << '\n'
-          << " ADC board 1, channel 1, sample 1: " << fragOverlay.adc_val(1, 1, 1) << '\n'
-          << " ADC board 1, channel 1, sample 2: " << fragOverlay.adc_val(1, 1, 2) << '\n'
-          << " ADC board 1, channel 2, sample 0: " << fragOverlay.adc_val(1, 2, 0) << '\n'
-          << " ADC board 1, channel 2, sample 1: " << fragOverlay.adc_val(1, 2, 1) << '\n'
-          << " ADC board 1, channel 2, sample 2: " << fragOverlay.adc_val(1, 2, 2) << '\n'
-          << " ADC board 2, channel 0, sample 0: " << fragOverlay.adc_val(2, 0, 0) << '\n'
-          << " ADC board 2, channel 0, sample 1: " << fragOverlay.adc_val(2, 0, 1) << '\n'
-          << " ADC board 2, channel 0, sample 2: " << fragOverlay.adc_val(2, 0, 2) << '\n'
-          << " ADC board 2, channel 1, sample 0: " << fragOverlay.adc_val(2, 1, 0) << '\n'
-          << " ADC board 2, channel 1, sample 1: " << fragOverlay.adc_val(2, 1, 1) << '\n'
-          << " ADC board 2, channel 1, sample 2: " << fragOverlay.adc_val(2, 1, 2) << '\n'
-          << " ADC board 2, channel 2, sample 0: " << fragOverlay.adc_val(2, 2, 0) << '\n'
-          << " ADC board 2, channel 2, sample 1: " << fragOverlay.adc_val(2, 2, 1) << '\n'
-          << " ADC board 2, channel 2, sample 2: " << fragOverlay.adc_val(2, 2, 2) << '\n'
-          << " ADC board 3, channel 0, sample 0: " << fragOverlay.adc_val(3, 0, 0) << '\n'
-          << " ADC board 3, channel 0, sample 1: " << fragOverlay.adc_val(3, 0, 1) << '\n'
-          << " ADC board 3, channel 0, sample 2: " << fragOverlay.adc_val(3, 0, 2) << '\n'
-          << " ADC board 3, channel 1, sample 0: " << fragOverlay.adc_val(3, 1, 0) << '\n'
-          << " ADC board 3, channel 1, sample 1: " << fragOverlay.adc_val(3, 1, 1) << '\n'
-          << " ADC board 3, channel 1, sample 2: " << fragOverlay.adc_val(3, 1, 2) << '\n'
-          << " ADC board 3, channel 2, sample 0: " << fragOverlay.adc_val(3, 2, 0) << '\n'
-          << " ADC board 3, channel 2, sample 1: " << fragOverlay.adc_val(3, 2, 1) << '\n'
-          << " ADC board 3, channel 2, sample 2: " << fragOverlay.adc_val(3, 2, 2) << '\n'
-          << " ADC board 4, channel 0, sample 0: " << fragOverlay.adc_val(4, 0, 0) << '\n'
-          << " ADC board 4, channel 0, sample 1: " << fragOverlay.adc_val(4, 0, 1) << '\n'
-          << " ADC board 4, channel 0, sample 2: " << fragOverlay.adc_val(4, 0, 2) << '\n'
-          << " ADC board 4, channel 1, sample 0: " << fragOverlay.adc_val(4, 1, 0) << '\n'
-          << " ADC board 4, channel 1, sample 1: " << fragOverlay.adc_val(4, 1, 1) << '\n'
-          << " ADC board 4, channel 1, sample 2: " << fragOverlay.adc_val(4, 1, 2) << '\n'
-          << " ADC board 4, channel 2, sample 0: " << fragOverlay.adc_val(4, 2, 0) << '\n'
-          << " ADC board 4, channel 2, sample 1: " << fragOverlay.adc_val(4, 2, 1) << '\n'
-          << " ADC board 4, channel 2, sample 2: " << fragOverlay.adc_val(4, 2, 2) << '\n'
-          << " ADC board 5, channel 0, sample 0: " << fragOverlay.adc_val(5, 0, 0) << '\n'
-          << " ADC board 5, channel 0, sample 1: " << fragOverlay.adc_val(5, 0, 1) << '\n'
-          << " ADC board 5, channel 0, sample 2: " << fragOverlay.adc_val(5, 0, 2) << '\n'
-          << " ADC board 5, channel 1, sample 0: " << fragOverlay.adc_val(5, 1, 0) << '\n'
-          << " ADC board 5, channel 1, sample 1: " << fragOverlay.adc_val(5, 1, 1) << '\n'
-          << " ADC board 5, channel 1, sample 2: " << fragOverlay.adc_val(5, 1, 2) << '\n'
-          << " ADC board 5, channel 2, sample 0: " << fragOverlay.adc_val(5, 2, 0) << '\n'
-          << " ADC board 5, channel 2, sample 1: " << fragOverlay.adc_val(5, 2, 1) << '\n'
-          << " ADC board 5, channel 2, sample 2: " << fragOverlay.adc_val(5, 2, 2) << '\n'
-          << " ADC board 6, channel 0, sample 0: " << fragOverlay.adc_val(6, 0, 0) << '\n'
-          << " ADC board 6, channel 0, sample 1: " << fragOverlay.adc_val(6, 0, 1) << '\n'
-          << " ADC board 6, channel 0, sample 2: " << fragOverlay.adc_val(6, 0, 2) << '\n'
-          << " ADC board 6, channel 1, sample 0: " << fragOverlay.adc_val(6, 1, 0) << '\n'
-          << " ADC board 6, channel 1, sample 1: " << fragOverlay.adc_val(6, 1, 1) << '\n'
-          << " ADC board 6, channel 1, sample 2: " << fragOverlay.adc_val(6, 1, 2) << '\n'
-          << " ADC board 6, channel 2, sample 0: " << fragOverlay.adc_val(6, 2, 0) << '\n'
-          << " ADC board 6, channel 2, sample 1: " << fragOverlay.adc_val(6, 2, 1) << '\n'
-          << " ADC board 6, channel 2, sample 2: " << fragOverlay.adc_val(6, 2, 2) << '\n'
-          << " ADC board 7, channel 0, sample 0: " << fragOverlay.adc_val(7, 0, 0) << '\n'
-          << " ADC board 7, channel 0, sample 1: " << fragOverlay.adc_val(7, 0, 1) << '\n'
-          << " ADC board 7, channel 0, sample 2: " << fragOverlay.adc_val(7, 0, 2) << '\n'
-          << " ADC board 7, channel 1, sample 0: " << fragOverlay.adc_val(7, 1, 0) << '\n'
-          << " ADC board 7, channel 1, sample 1: " << fragOverlay.adc_val(7, 1, 1) << '\n'
-          << " ADC board 7, channel 1, sample 2: " << fragOverlay.adc_val(7, 1, 2) << '\n'
-          << " ADC board 7, channel 2, sample 0: " << fragOverlay.adc_val(7, 2, 0) << '\n'
-          << " ADC board 7, channel 2, sample 1: " << fragOverlay.adc_val(7, 2, 1) << '\n'
-          << " ADC board 7, channel 2, sample 2: " << fragOverlay.adc_val(7, 2, 2) << '\n'
-          << " ADC board 8, channel 0, sample 0: " << fragOverlay.adc_val(8, 0, 0) << '\n'
-          << " ADC board 8, channel 0, sample 1: " << fragOverlay.adc_val(8, 0, 1) << '\n'
-          << " ADC board 8, channel 0, sample 2: " << fragOverlay.adc_val(8, 0, 2) << '\n'
-          << " ADC board 8, channel 1, sample 0: " << fragOverlay.adc_val(8, 1, 0) << '\n'
-          << " ADC board 8, channel 1, sample 1: " << fragOverlay.adc_val(8, 1, 1) << '\n'
-          << " ADC board 8, channel 1, sample 2: " << fragOverlay.adc_val(8, 1, 2) << '\n'
-          << " ADC board 8, channel 2, sample 0: " << fragOverlay.adc_val(8, 2, 0) << '\n'
-          << " ADC board 8, channel 2, sample 1: " << fragOverlay.adc_val(8, 2, 1) << '\n'
-          << " ADC board 8, channel 2, sample 2: " << fragOverlay.adc_val(8, 2, 2) << '\n';
-          fFoundFirstCompressed = true;
+          << " ADC board 0, channel 0, sample 0: " << fragOverlay.adc_val(0, 0, 0) << " | " << fragOldOverlay.adc_val(0, 0, 0) << '\n'
+          << " ADC board 0, channel 0, sample 1: " << fragOverlay.adc_val(0, 0, 1) << " | " << fragOldOverlay.adc_val(0, 0, 1) << '\n'
+          << " ADC board 0, channel 0, sample 2: " << fragOverlay.adc_val(0, 0, 2) << " | " << fragOldOverlay.adc_val(0, 0, 2) << '\n'
+          << " ADC board 0, channel 1, sample 0: " << fragOverlay.adc_val(0, 1, 0) << " | " << fragOldOverlay.adc_val(0, 1, 0) << '\n'
+          << " ADC board 0, channel 1, sample 1: " << fragOverlay.adc_val(0, 1, 1) << " | " << fragOldOverlay.adc_val(0, 1, 1) << '\n'
+          << " ADC board 0, channel 1, sample 2: " << fragOverlay.adc_val(0, 1, 2) << " | " << fragOldOverlay.adc_val(0, 1, 2) << '\n'
+          << " ADC board 0, channel 2, sample 0: " << fragOverlay.adc_val(0, 2, 0) << " | " << fragOldOverlay.adc_val(0, 2, 0) << '\n'
+          << " ADC board 0, channel 2, sample 1: " << fragOverlay.adc_val(0, 2, 1) << " | " << fragOldOverlay.adc_val(0, 2, 1) << '\n'
+          << " ADC board 0, channel 2, sample 2: " << fragOverlay.adc_val(0, 2, 2) << " | " << fragOldOverlay.adc_val(0, 2, 2) << '\n'
+          << " ADC board 1, channel 0, sample 0: " << fragOverlay.adc_val(1, 0, 0) << " | " << fragOldOverlay.adc_val(1, 0, 0) << '\n'
+          << " ADC board 1, channel 0, sample 1: " << fragOverlay.adc_val(1, 0, 1) << " | " << fragOldOverlay.adc_val(1, 0, 1) << '\n'
+          << " ADC board 1, channel 0, sample 2: " << fragOverlay.adc_val(1, 0, 2) << " | " << fragOldOverlay.adc_val(1, 0, 2) << '\n'
+          << " ADC board 1, channel 1, sample 0: " << fragOverlay.adc_val(1, 1, 0) << " | " << fragOldOverlay.adc_val(1, 1, 0) << '\n'
+          << " ADC board 1, channel 1, sample 1: " << fragOverlay.adc_val(1, 1, 1) << " | " << fragOldOverlay.adc_val(1, 1, 1) << '\n'
+          << " ADC board 1, channel 1, sample 2: " << fragOverlay.adc_val(1, 1, 2) << " | " << fragOldOverlay.adc_val(1, 1, 2) << '\n'
+          << " ADC board 1, channel 2, sample 0: " << fragOverlay.adc_val(1, 2, 0) << " | " << fragOldOverlay.adc_val(1, 2, 0) << '\n'
+          << " ADC board 1, channel 2, sample 1: " << fragOverlay.adc_val(1, 2, 1) << " | " << fragOldOverlay.adc_val(1, 2, 1) << '\n'
+          << " ADC board 1, channel 2, sample 2: " << fragOverlay.adc_val(1, 2, 2) << " | " << fragOldOverlay.adc_val(1, 2, 2) << '\n'
+          << " ADC board 2, channel 0, sample 0: " << fragOverlay.adc_val(2, 0, 0) << " | " << fragOldOverlay.adc_val(2, 0, 0) << '\n'
+          << " ADC board 2, channel 0, sample 1: " << fragOverlay.adc_val(2, 0, 1) << " | " << fragOldOverlay.adc_val(2, 0, 1) << '\n'
+          << " ADC board 2, channel 0, sample 2: " << fragOverlay.adc_val(2, 0, 2) << " | " << fragOldOverlay.adc_val(2, 0, 2) << '\n'
+          << " ADC board 2, channel 1, sample 0: " << fragOverlay.adc_val(2, 1, 0) << " | " << fragOldOverlay.adc_val(2, 1, 0) << '\n'
+          << " ADC board 2, channel 1, sample 1: " << fragOverlay.adc_val(2, 1, 1) << " | " << fragOldOverlay.adc_val(2, 1, 1) << '\n'
+          << " ADC board 2, channel 1, sample 2: " << fragOverlay.adc_val(2, 1, 2) << " | " << fragOldOverlay.adc_val(2, 1, 2) << '\n'
+          << " ADC board 2, channel 2, sample 0: " << fragOverlay.adc_val(2, 2, 0) << " | " << fragOldOverlay.adc_val(2, 2, 0) << '\n'
+          << " ADC board 2, channel 2, sample 1: " << fragOverlay.adc_val(2, 2, 1) << " | " << fragOldOverlay.adc_val(2, 2, 1) << '\n'
+          << " ADC board 2, channel 2, sample 2: " << fragOverlay.adc_val(2, 2, 2) << " | " << fragOldOverlay.adc_val(2, 2, 2) << '\n';
           continue;
       }
       
 
-      bool originalValid = fragOverlay.Verify();
-      icarus::PhysCrateCompressedFragment newFragOverlay = (isComp) ? fragOverlay.makeUncompressedFragment() :
-                                                                      fragOverlay.  makeCompressedFragment() ;
-      bool newValid = newFragOverlay.Verify();
+      //bool originalValid = fragOverlay.Verify();
+      //icarus::PhysCrateCompressedFragment newFragOverlay = (isComp) ? fragOverlay.makeUncompressedFragment() :
+      //                                                                fragOverlay.  makeCompressedFragment() ;
+      //bool newValid = newFragOverlay.Verify();
 
-      std::string oldValidStr = (originalValid) ? "Original fragment is valid" : "Original fragment is not valid";
-      std::string newValidStr = (newValid)      ? "new fragment is valid"      : "new fragment is not valid";
-      if (originalValid == newValid)
-      {
-        MF_LOG_VERBATIM("ValidateCompression")
-          << oldValidStr << ", and " << newValidStr;
-      } else {
-        MF_LOG_VERBATIM("ValidateCompression")
-          << oldValidStr << ", but " << newValidStr;
-      }
+      //std::string oldValidStr = (originalValid) ? "Original fragment is valid" : "Original fragment is not valid";
+      //std::string newValidStr = (newValid)      ? "new fragment is valid"      : "new fragment is not valid";
+      //if (originalValid == newValid)
+      //{
+      //  MF_LOG_VERBATIM("ValidateCompression")
+      //    << oldValidStr << ", and " << newValidStr;
+      //} else {
+      //  MF_LOG_VERBATIM("ValidateCompression")
+      //    << oldValidStr << ", but " << newValidStr;
+      //}
 
-      if (not originalValid)
-      {
-        MF_LOG_VERBATIM("ValidateCompression")
-          << "Attempting to make valid fragment...";
-        icarus::PhysCrateCompressedFragment reFragmentOverlay = (isComp) ? newFragOverlay.  makeCompressedFragment() :
-                                                                           newFragOverlay.makeUncompressedFragment() ;
-        if (isComp)
-        {
-          MF_LOG_VERBATIM("ValidateCompression")
-            << "Validating recompressed fragment...";
-          reFragmentOverlay.Verify();
-        } else {
-          MF_LOG_VERBATIM("ValidateCompression")
-            << "Validating re-decompressed fragment...";
-          reFragmentOverlay.Verify();
-        }
-      }
+      //if (not originalValid)
+      //{
+      //  MF_LOG_VERBATIM("ValidateCompression")
+      //    << "Attempting to make valid fragment...";
+      //  icarus::PhysCrateCompressedFragment reFragmentOverlay = (isComp) ? newFragOverlay.  makeCompressedFragment() :
+      //                                                                     newFragOverlay.makeUncompressedFragment() ;
+      //  if (isComp)
+      //  {
+      //    MF_LOG_VERBATIM("ValidateCompression")
+      //      << "Validating recompressed fragment...";
+      //    reFragmentOverlay.Verify();
+      //  } else {
+      //    MF_LOG_VERBATIM("ValidateCompression")
+      //      << "Validating re-decompressed fragment...";
+      //    reFragmentOverlay.Verify();
+      //  }
+      //}
 
     }
   }
