@@ -83,18 +83,25 @@ namespace {
   
   // ---------------------------------------------------------------------------
   /// Returns the sequence of `track` valid points (as geometry points).
-  std::vector<geo::Point_t> extractTrajectory
+  std::pair<std::vector<geo::Point_t>, std::vector<geo::Vector_t>>
+  extractTrajectory
     (recob::Track const& track, bool reverse = false, geo::Vector_t shift = {})
   {
     std::vector<geo::Point_t> trackPath;
+    std::vector<geo::Vector_t> trackMom;
     std::size_t index = track.FirstValidPoint();
     while (index != recob::TrackTrajectory::InvalidIndex) {
       trackPath.push_back(track.LocationAtPoint(index) + shift);
+      trackMom.push_back(track.MomentumVectorAtPoint(index));
       if (++index >= track.NPoints()) break;
       index = track.NextValidPoint(index);
     }
-    if (reverse) std::reverse(trackPath.begin(), trackPath.end());
-    return trackPath;
+    if (reverse) {
+      std::reverse(trackPath.begin(), trackPath.end());
+      std::reverse(trackMom.begin(), trackMom.end());
+      for (geo::Vector_t& mom: trackMom) mom *= -1.0;
+    }
+    return { std::move(trackPath), std::move(trackMom) };
   } // extractTrajectory()
   
   
@@ -383,6 +390,7 @@ public:
                           unsigned hkey,
                           const recob::Track &trk,
                           const recob::TrackHitMeta &thm,
+                          bool flippedTrack,
                           const std::vector<anab::Calorimetry const*> &calo,
                           const geo::GeometryCore *geo);
 
@@ -826,6 +834,10 @@ void sbn::TimeTrackTreeStorage::analyze(art::Event const& e)
     art::Ptr<recob::Track> const& trackPtr = tracks.at(iTrack);
     if(trackPtr.isNull()) continue;
     
+    // decide immediately if the track needs to be flipped
+    bool const flipTrack
+      = fForceDowngoing && (trackPtr->StartDirection().Y() > 0.0);
+    
     //
     // matched CRT information
     //
@@ -867,6 +879,7 @@ void sbn::TimeTrackTreeStorage::analyze(art::Event const& e)
     //
     sbn::selTrackInfo trackInfo;
     trackInfo.trackID = trackPtr->ID();
+    trackInfo.flipped = flipTrack;
     
     art::Ptr<anab::T0> const& t0Ptr = TrackT0s.at(iTrack);
     if (!t0Ptr) {
@@ -924,14 +937,14 @@ void sbn::TimeTrackTreeStorage::analyze(art::Event const& e)
       ;
     trackInfo.driftCorrX = positionShift.X();
 
-    recob::tracking::Vector_t startDir = trackPtr->StartDirection();
-    bool const flipTrack = fForceDowngoing && (startDir.Y() > 0.0);
-    
-    std::vector<geo::Point_t> const trackPath
+    // the trajectory in space is thoroughly flipped if required;
+    // directions/momenta are not, and explicit treatment is needed.
+    auto const& [ trackPath, trackMom ]
       = extractTrajectory(*trackPtr, flipTrack, positionShift);
     
     recob::tracking::Point_t const& startPoint = trackPath.front();
     recob::tracking::Point_t const& endPoint = trackPath.back();
+    recob::tracking::Vector_t const& startDir = trackMom.front();
     
     trackInfo.start_x = startPoint.X();
     trackInfo.start_y = startPoint.Y();
@@ -1135,6 +1148,7 @@ sbn::selHitInfo sbn::TimeTrackTreeStorage::makeHit(const recob::Hit &hit,
                                                    unsigned hkey,
                                                    const recob::Track &trk,
                                                    const recob::TrackHitMeta &thm,
+                                                   bool flippedTrack,
                                                    const std::vector<anab::Calorimetry const*> &calo,
                                                    const geo::GeometryCore *geom)
 {
@@ -1163,12 +1177,16 @@ sbn::selHitInfo sbn::TimeTrackTreeStorage::makeHit(const recob::Hit &hit,
   // Save trajectory information if we can
   if(!badhit)
   {
+    // note that the track `trk` never comes flipped:
+    // indices are still consistent between trajectory point, hit and metadata;
+    // but all flipping needs to be done by hand here
     geo::Point_t const& loc = trk.LocationAtPoint(thm.Index());
     hinfo.px = loc.X();
     hinfo.py = loc.Y();
     hinfo.pz = loc.Z();
   
-    geo::Vector_t const& dir = trk.DirectionAtPoint(thm.Index());
+    geo::Vector_t const dir
+      = (flippedTrack? -1: +1) * trk.DirectionAtPoint(thm.Index());
     hinfo.dirx = dir.X();
     hinfo.diry = dir.Y();
     hinfo.dirz = dir.Z();
@@ -1176,6 +1194,9 @@ sbn::selHitInfo sbn::TimeTrackTreeStorage::makeHit(const recob::Hit &hit,
     // And determine if the Hit is on a Calorimetry object
     for (anab::Calorimetry const* c: calo) {
       if (c->PlaneID().Plane != hinfo.plane) continue;
+      
+      auto const sortRange = [fullRange=c->Range(), flippedTrack]
+        (float rr){ return flippedTrack? (fullRange - rr): rr; };
       
       // Found the plane! Now find the hit:
       for (unsigned i_calo = 0; i_calo < c->dQdx().size(); i_calo++) {
@@ -1186,7 +1207,7 @@ sbn::selHitInfo sbn::TimeTrackTreeStorage::makeHit(const recob::Hit &hit,
         hinfo.pitch = c->TrkPitchVec()[i_calo];
         hinfo.dqdx = c->dQdx()[i_calo];
         hinfo.dEdx = dEdx_calc(hinfo.dqdx, fMODA, fMODB, fWion, fEfield);
-        hinfo.rr = c->ResidualRange()[i_calo];
+        hinfo.rr = sortRange(c->ResidualRange()[i_calo]);
         break;
       } // for i_calo
       break;

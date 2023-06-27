@@ -56,6 +56,7 @@ namespace sbn {
     float dir_y = NoPosition; ///< Direction vector at the start if the track.
     float dir_z = NoPosition; ///< Direction vector at the start if the track.
     float driftCorrX = 0.0; ///< Shift applied to track position for time [cm]
+    bool  flipped = false; ///< Whether the track has been flipped backward.
   };  // selTrackInfo
 
   struct selBeamInfo {
