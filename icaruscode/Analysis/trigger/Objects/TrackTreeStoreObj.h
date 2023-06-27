@@ -27,6 +27,8 @@ namespace sbn {
     float t0_TPC_max = NoTime; ///< Maximum track time allowed by its hits [us]
     float t0_diff = NoTime; ///< Distance of `t0` time from the one allowed by hits [us]
     float t0_CRT_diff = NoTime; ///< Distance of CRT time from the one allowed by hits [us]
+    float hitTick_min = NoTime; ///< Lowest tick time among hits of this track.
+    float hitTick_max = NoTime; ///< Highest tick time among hits of this track.
     float start_x = NoPosition; ///< Start of the track (assumed downgoing) [cm]
     float start_y = NoPosition; ///< Start of the track (assumed downgoing) [cm]
     float start_z = NoPosition; ///< Start of the track (assumed downgoing) [cm]

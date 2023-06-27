@@ -30,6 +30,7 @@
 #include "lardataalg/DetectorInfo/DetectorPropertiesData.h"
 #include "lardataalg/DetectorInfo/DetectorClocksData.h"
 #include "lardataalg/Utilities/quantities/spacetime.h" // microseconds
+#include "lardataalg/Utilities/StatCollector.h" // lar::util::MinMaxCollector
 #include "larcorealg/Geometry/GeometryCore.h"
 #include "larcorealg/Geometry/OpDetGeo.h"
 #include "larcorealg/CoreUtils/zip.h"
@@ -854,18 +855,22 @@ void sbn::TimeTrackTreeStorage::analyze(art::Event const& e)
       = trackCalorimetry.at(iTrack);
     std::vector<art::Ptr<recob::Hit>> const& allHits = trkht.at(iTrack);
     std::vector<const recob::TrackHitMeta*> const& trkmetas = trkht.data(iTrack);
+    
+    lar::util::MinMaxCollector<float> hitTimeRange;
 
     fHitStore.clear();
     UniqueVector<geo::TPCID> TPCs; // collect the list of TPC for later
-    for (size_t ih = 0; ih < allHits.size(); ++ih)
+    for (auto const& [ hitPtr, pTrkMeta ]: util::zip(allHits, trkmetas))
     {
-      art::Ptr<recob::Hit> const& hitPtr = allHits[ih];
-      geo::WireID const wire = hitPtr->WireID();
+      recob::Hit const& hit = *hitPtr;
+      geo::WireID const wire = hit.WireID();
       if (!wire.isValid) continue;
       TPCs.push_back(wire);
+      hitTimeRange.add(hit.PeakTime());
       if (wire.Plane != 2) continue;
-      fHitStore.push_back
-        (makeHit(*hitPtr, hitPtr.key(), *trackPtr, *trkmetas[ih], calorimetry, geom));
+      fHitStore.push_back(makeHit
+        (hit, hitPtr.key(), *trackPtr, *pTrkMeta, flipTrack, calorimetry, geom)
+        );
     }
     if (TPCs.empty()) {
       // this is needed for corrections; if needed, this check may be made optional,
@@ -921,6 +926,9 @@ void sbn::TimeTrackTreeStorage::analyze(art::Event const& e)
       = detTimings.toElectronicsTime(trigger_time{ trackInfo.t0_CRT });
     trackInfo.t0_CRT_diff
       = distanceFromTimeRange(t0_CRT_elec, trackTimeRange).value();
+    
+    trackInfo.hitTick_min = hitTimeRange.min();
+    trackInfo.hitTick_max = hitTimeRange.max();
     
     //
     // correction on position from time:
