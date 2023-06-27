@@ -26,6 +26,7 @@ END_PROLOG
 #include "services_common_icarus.fcl"
 #include "trigger_icarus.fcl"
 #include "triggeremu_data_config_icarus.fcl"
+#include "crtt0producer_icarus.fcl"
 #include "icarus_trackcalo_skimmer.fcl"
 #include "calorimetry_icarus.fcl"
 # 
@@ -86,28 +87,18 @@ physics: {
     # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     t0selectorW: {
       module_type: TimedTrackSelectorCRT
-      #AngleCosCut: -0.9396926
-      #TrackTimeTags: [ pandoraGausCryoW, pandoraGausCryoE ]
       TrackTimeTags: [ "CRTT0MatchingW" ]
 
     } # t0selectorW
 
     t0selectorE: {
       module_type: TimedTrackSelectorCRT
-      #AngleCosCut: -0.9396926
       TrackTimeTags: [ "CRTT0MatchingE" ]
     }
   }
 
   producers: {
 
-    gatesFromTracksE: {
-      @table::gatesFromTracks_icarus
-    
-      T0Producer:    "CRTT0MatchingE"
-      T0selProducer: t0selectorE
-    }
-    
     gatesFromTracksW: {
       @table::gatesFromTracks_icarus
       
@@ -115,17 +106,35 @@ physics: {
       T0selProducer: t0selectorW
     }
   
+    gatesFromTracksE: {
+      @table::gatesFromTracks_icarus
+    
+      T0Producer:    "CRTT0MatchingE"
+      T0selProducer: t0selectorE
+    }
+    
     @table::triggeremu_data_config_icarus.producers # from triggeremu_data_config_icarus.fcl
+
+    # CRT/TPC matching per cryostat (enable if not in Stage1 input)
+    
+    CRTT0MatchingW: {
+      @table::standard_crtt0producerW  # from crtt0matchingalg_icarus.fcl
+      TPCTrackLabel: ["pandoraTrackGausCryoW" ]
+    }
+    CRTT0MatchingE: {
+      @table::standard_crtt0producerE  # from crtt0matchingalg_icarus.fcl
+      TPCTrackLabel: ["pandoraTrackGausCryoE" ]
+    }
 
     #calorimetry
 
-    calorimetryCryoE: {
-      @table::standard_gnocchicaloicarus  # from calorimetryICARUS.fcl
-      TrackModuleLabel: "pandoraTrackGausCryoE"
-    }
     calorimetryCryoW: {
       @table::standard_gnocchicaloicarus  # from calorimetryICARUS.fcl
       TrackModuleLabel: "pandoraTrackGausCryoW"
+    }
+    calorimetryCryoE: {
+      @table::standard_gnocchicaloicarus  # from calorimetryICARUS.fcl
+      TrackModuleLabel: "pandoraTrackGausCryoE"
     }
     
   }
@@ -177,21 +186,32 @@ physics: {
 
   } #analyzers
   
-  selectionW: [ "t0selectorW", "gatesFromTracksW", @sequence::triggeremu_data_config_icarus.producerpathW ]
-  selectionE: [ "t0selectorE", "gatesFromTracksE", @sequence::triggeremu_data_config_icarus.producerpathE ]
-  runprod: [calorimetryCryoE, calorimetryCryoW]
-  trigger_paths: [ runprod, selectionW, selectionE]
-  ana: [ t0TreeStoreW, t0TreeStoreE ]
-  streams: [ "rootoutput" ]
+  selectionW: [
+    "calorimetryCryoW", "CRTT0MatchingW",
+    "t0selectorW", "gatesFromTracksW",
+    "lvdsgatesOR",
+    @sequence::triggeremu_data_config_icarus.simulationPrepWest,  # from triggeremu_data_config_icarus.fcl
+    "simSlidingORM1W", "simSlidingORS3W", "simSlidingORS5W",
+    "simSlidingORS8W", "simSlidingORS10W", "simSlidingORS15W"
+    ]
+  selectionE: [
+    "calorimetryCryoE", "CRTT0MatchingE",
+    "t0selectorE", "gatesFromTracksE",
+    "lvdsgatesOR",
+    @sequence::triggeremu_data_config_icarus.simulationPrepEast,  # from triggeremu_data_config_icarus.fcl
+    "simSlidingORM1E", "simSlidingORS3E", "simSlidingORS5E",
+    "simSlidingORS8E", "simSlidingORS10E", "simSlidingORS15E"
+    ]
+  trigger_paths: [ selectionW, selectionE]
+  
+  ana:       [ t0TreeStoreW, t0TreeStoreE ]
+  streams:   [ "rootoutput" ]
   end_paths: [ ana, streams ]
   
 } # physics
 
 physics.producers.calorimetryCryoE.TrackModuleLabel: "pandoraTrackGausCryoE"
 physics.producers.calorimetryCryoW.TrackModuleLabel: "pandoraTrackGausCryoW"
-
-# disable the functionality of the module without removing it from path (for convenience)
-physics.producers.pmtfixedthr.module_type: DummyProducer
 
 
 # ------------------------------------------------------------------------------
