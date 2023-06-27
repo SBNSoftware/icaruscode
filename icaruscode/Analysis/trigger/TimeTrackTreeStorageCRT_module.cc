@@ -16,14 +16,20 @@
 #include "icaruscode/PMT/Algorithms/PMTverticalSlicingAlg.h"
 #include "icaruscode/Utilities/TrajectoryUtils.h"
 #include "icaruscode/Utilities/ArtAssociationCaches.h" // OneToOneAssociationCache
+#include "icarusalg/Utilities/TrackTimeInterval.h"
 #include "sbnobj/Common/CRT/CRTHit.hh"
 #include "sbnobj/Common/Trigger/ExtraTriggerInfo.h"
 
 // LArSoft libraries
 #include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
+#include "lardata/DetectorInfoServices/DetectorClocksService.h"
 #include "larcore/Geometry/Geometry.h"
 #include "larcore/CoreUtils/ServiceUtil.h" // lar::providerFrom()
+#include "lardataalg/DetectorInfo/DetectorTimingTypes.h" // electronics_time
+#include "lardataalg/DetectorInfo/DetectorTimings.h"
 #include "lardataalg/DetectorInfo/DetectorPropertiesData.h"
+#include "lardataalg/DetectorInfo/DetectorClocksData.h"
+#include "lardataalg/Utilities/quantities/spacetime.h" // microseconds
 #include "larcorealg/Geometry/GeometryCore.h"
 #include "larcorealg/Geometry/OpDetGeo.h"
 #include "larcorealg/CoreUtils/zip.h"
@@ -392,6 +398,8 @@ public:
 
 private:
   
+  using electronics_time = detinfo::timescales::electronics_time;
+  using microseconds = util::quantities::intervals::microseconds;
   
   // --- BEGIN -- Configuration parameters -------------------------------------
   
@@ -478,6 +486,29 @@ private:
     detinfo::DetectorPropertiesData const& detProp
     ) const;
   
+  /**
+   * @brief Returns the most significative distance of a `time` from a `range`.
+   * @param time time to be checked
+   * @param range time range `time` is going to be compared to
+   * @returns the most significative distance of a `time` from a `range`
+   * 
+   * If `time` is contained in the range, the return value is negative and its
+   * modulus is the distance from the closest `range` boundary; no information
+   * is encoded about which of the boundaries that is.
+   * 
+   * If `time` is not contained in the range, the return value is positive and
+   * its modulus is again the distance from the closest `range` boundary, which
+   * is also the one crossed by `time`.
+   * 
+   * The rule also holds for ranges where the start time is larger than the stop
+   * time. If `range` is not valid, it is interpreted as a range containing all
+   * time, and the return value is `0`.
+   */
+  static microseconds distanceFromTimeRange(
+    electronics_time time, lar::util::TrackTimeInterval::TimeRange const& range
+    );
+    
+    
   /// Connects `recob::Track` to `anab::T0` via intermediate `recob::PFParticle`
   class TPCT0fromTrackBrowser {
       public:
@@ -682,10 +713,27 @@ void sbn::TimeTrackTreeStorage::analyze(art::Event const& e)
    * can be missing (or better, with a special invalid value).
    * 
    */
+  
+  using namespace util::quantities::time_literals; // ""_us
+  using trigger_time = detinfo::timescales::trigger_time;
+  
+  //
+  // reach for all the needed services (geometry, timing and detector state)
+  //
   const geo::GeometryCore *geom = lar::providerFrom<geo::Geometry>();
   
+  detinfo::DetectorClocksData const detClocks
+    = art::ServiceHandle<detinfo::DetectorClocksService>()->DataFor(e);
+  
   detinfo::DetectorPropertiesData const detProp
-    = art::ServiceHandle<detinfo::DetectorPropertiesService>()->DataFor(e);
+    = art::ServiceHandle<detinfo::DetectorPropertiesService>()->DataFor
+      (e, detClocks)
+    ;
+  
+  detinfo::DetectorTimings const detTimings{ detClocks };
+  
+  lar::util::TrackTimeInterval const allowedTrackTime
+    { *geom, detProp, detTimings };
   
   //
   // event identification
@@ -843,6 +891,23 @@ void sbn::TimeTrackTreeStorage::analyze(art::Event const& e)
       trackInfo.t0_TPC = t0TPCPtr->Time() / 1000.0; // nanoseconds -> microseconds
     
     trackInfo.t0_CRT = fCRTInfo.time; // replica
+    
+    lar::util::TrackTimeInterval::TimeRange const trackTimeRange
+      = allowedTrackTime.timeRangeOfHits(allHits);
+    
+    trackInfo.t0_TPC_min
+      = detTimings.toTriggerTime(trackTimeRange.start).value();
+    trackInfo.t0_TPC_max
+      = detTimings.toTriggerTime(trackTimeRange.stop).value();
+    
+    electronics_time const t0_elec
+      = detTimings.toElectronicsTime(trigger_time{ trackInfo.t0 });
+    trackInfo.t0_diff = distanceFromTimeRange(t0_elec, trackTimeRange).value();
+    
+    electronics_time const t0_CRT_elec
+      = detTimings.toElectronicsTime(trigger_time{ trackInfo.t0_CRT });
+    trackInfo.t0_CRT_diff
+      = distanceFromTimeRange(t0_CRT_elec, trackTimeRange).value();
     
     //
     // correction on position from time:
@@ -1286,6 +1351,50 @@ geo::Vector_t sbn::TimeTrackTreeStorage::posShiftFromCRTtime(
   
   return driftDir * shiftTowardAnode;
 } // sbn::TimeTrackTreeStorage::posShiftFromCRTtime()
+
+
+// -----------------------------------------------------------------------------
+auto sbn::TimeTrackTreeStorage::distanceFromTimeRange
+  (electronics_time time, lar::util::TrackTimeInterval::TimeRange const& range)
+  -> microseconds
+{
+  using namespace util::quantities::time_literals;
+  
+  if (!range.isValid()) return 0_us; // all-inclusive range, perfect match
+  
+  // how much beyond the boundary the time is (negative = within boundary):
+  microseconds const startDiff = range.start - time;
+  microseconds const stopDiff = time - range.stop;
+  
+  if (range.duration() >= 0_us) {
+    assert(startDiff <= 0_us || stopDiff <= 0_us);
+    // if range contains time, both diffs are negative;
+    //   we want to return the one with the smallest modulus, i.e. the largest
+    // otherwise, if time is earlier than the range, startDiff is positive and
+    //   stopDiff is negative, we want to return the first one, which is again
+    //   the largest; and if time is after the range, the roles are inverted
+    //   but we still want the largest (and only positive) one to be returned
+    return std::max(startDiff, stopDiff);
+  }
+  else {
+    assert(startDiff > 0_us || stopDiff > 0_us);
+    /* It is impossible for this result to be negative, since the range is more
+     * than empty.
+     * If the time is earlier than the stop bound, then the exceeded boundary is
+     * the start one, and we want to return the start difference; likewise if
+     * the time is later than the start bound, then we want to return the stop
+     * difference. In both case, the one we want to return is positive and the
+     * other is negative, so we can return the highest value among them.
+     * If the time is in between, both differences are positive and we want to
+     * return the one from the closest boundary, that is the smallest one.
+     */
+    if ((startDiff > 0_us) && (stopDiff > 0_us))
+      return std::min(startDiff, stopDiff);
+    else
+      return std::max(startDiff, stopDiff);
+  }
+  
+} // distanceFromTimeRange()
 
 
 // -----------------------------------------------------------------------------
