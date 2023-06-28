@@ -27,7 +27,6 @@ namespace lcvn
     std::vector<std::string> pandora_tag_suffixes = fPandoraTagSuffixes;
     if (pandora_tag_suffixes.size() == 0) {
       pandora_tag_suffixes.push_back("");
-      std::cout << "\n\npandora tag size = 0 !\n\n" << std::endl;
     }
     if(fUseSlice){
       if(fverbose) std::cout << "============ Calling the function ICVNMapperICARUS::produce() is using slices ==============\n";
@@ -42,7 +41,7 @@ namespace lcvn
         if (evt.getByLabel(fSliceLabel + pandora_tag_suffix, slices_handle)) {
           art::fill_ptr_vector(slices, slices_handle);
           for (unsigned i = 0; i < slices.size(); i++) {
-            slice_tag_suffixes.push_back(pandora_tag_suffix);
+            slice_tag_suffixes.push_back(pandora_tag_suffix); 
             slice_tag_indices.push_back(i_tag);
           }
         }
@@ -98,7 +97,7 @@ namespace lcvn
         if(findManyHits.isValid()){
           std::vector<art::Ptr<U>> slicehits = findManyHits.at(slice.key());
           this->fProducer.Set_fT0_value(min_T0);
-          //std::cout << "============== T0 provided to make the pixel map : " << min_T0 << "  ================\n"
+          //std::cout << "============== T0 provided to make the pixel map : " << min_T0 << "  ================\n" << std::endl;
           PixelMap pm = this->fProducer.CreateMap(detProp, slicehits);
           auto nhits = this->fProducer.NROI();
           pm.SetTotHits(nhits);
