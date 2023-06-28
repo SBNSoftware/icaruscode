@@ -25,8 +25,10 @@ namespace lcvn
    
     // collect the input TPC reco tags
     std::vector<std::string> pandora_tag_suffixes = fPandoraTagSuffixes;
-    if (pandora_tag_suffixes.size() == 0) pandora_tag_suffixes.push_back("");
-
+    if (pandora_tag_suffixes.size() == 0) {
+      pandora_tag_suffixes.push_back("");
+      std::cout << "\n\npandora tag size = 0 !\n\n" << std::endl;
+    }
     if(fUseSlice){
       if(fverbose) std::cout << "============ Calling the function ICVNMapperICARUS::produce() is using slices ==============\n";
 

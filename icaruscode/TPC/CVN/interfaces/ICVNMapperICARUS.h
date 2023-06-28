@@ -15,7 +15,7 @@ namespace lcvn
   class ICVNMapperICARUS : public ICVNMapper <T,U>
   {
     public:
-        explicit ICVNMapperICARUS(fhicl::ParameterSet const&pset):ICVNMapper<T,U>::ICVNMapper(pset),fverbose(pset.get<bool>("verbose")),fUseSlice(pset.get<bool>("UseSlice")),fSliceLabel(pset.get<std::string>("SliceLabel")),fPFParticleModuleLabel(pset.get<std::string>("PFParticleModuleLabel")),fT0Label(pset.get<std::string>("T0Label")),fMapVecSize(pset.get<int>("MapVecSize")) {std::cout << "============ Calling the function ICVNMapperICARUS::ICVNMapperICARUS() ==============\n";} 
+        explicit ICVNMapperICARUS(fhicl::ParameterSet const&pset):ICVNMapper<T,U>::ICVNMapper(pset),fverbose(pset.get<bool>("verbose")),fUseSlice(pset.get<bool>("UseSlice")),fPandoraTagSuffixes(pset.get<std::vector<std::string>>("PandoraTagSuffixes")),fSliceLabel(pset.get<std::string>("SliceLabel")),fPFParticleModuleLabel(pset.get<std::string>("PFParticleModuleLabel")),fT0Label(pset.get<std::string>("T0Label")),fMapVecSize(pset.get<int>("MapVecSize")) {std::cout << "============ Calling the function ICVNMapperICARUS::ICVNMapperICARUS() ==============\n";} 
         ~ICVNMapperICARUS();
         void produce(art::Event& evt);
         void beginJob();
