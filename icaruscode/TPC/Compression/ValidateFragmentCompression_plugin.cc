@@ -38,6 +38,7 @@ namespace tcpCompression {
   private:
     art::InputTag fFragmentsLabel;
     bool          fCheckOldFragments;
+    bool          fDumpADCs;
     bool          fFoundFirstUncompressed = false;
     bool          fFoundFirstCompressed   = false;
   };// end ValidateCompression class
@@ -51,8 +52,9 @@ namespace tcpCompression {
   //------------------------------------------------------------------
   void ValidateCompression::reconfigure(fhicl::ParameterSet const& pset)
   {
-    fFragmentsLabel = pset.get<art::InputTag>("FragmentsLabel", "daq:PHYSCRATEDATA");
-    fCheckOldFragments = pset.get<bool>("CheckOldFragments", false);
+    fFragmentsLabel    = pset.get<art::InputTag>("FragmentsLabel"   , "daq:PHYSCRATEDATA");
+    fCheckOldFragments = pset.get<bool>         ("CheckOldFragments", false);
+    fDumpADCs          = pset.get<bool>         ("DumpADCs"         , false);
   }
 
   //------------------------------------------------------------------
@@ -87,10 +89,12 @@ namespace tcpCompression {
       icarus::PhysCrateCompressedFragment fragOverlay(frag);
       icarus::PhysCrateFragment fragOldOverlay(frag);
       bool isComp = fragOverlay.isCompressed();
-      if (not isComp)
+      if (fDumpADCs && not isComp)
       {
         MF_LOG_VERBATIM("ValidateCompression")
           << "Checking first few ADC values for uncompressed fragment" << '\n'
+          << "Crate ID (new): " << std::hex << fragOverlay.DataTileHeader()->crate_id << std::dec << '\n'
+          << "Crate ID (old): " << std::hex << fragOldOverlay.DataTileHeader()->crate_id << std::dec << '\n'
           << " ADC board 0, channel 0, sample 0: " << fragOverlay.adc_val(0, 0, 0) << " | " << fragOldOverlay.adc_val(0, 0, 0) << '\n'
           << " ADC board 0, channel 0, sample 1: " << fragOverlay.adc_val(0, 0, 1) << " | " << fragOldOverlay.adc_val(0, 0, 1) << '\n'
           << " ADC board 0, channel 0, sample 2: " << fragOverlay.adc_val(0, 0, 2) << " | " << fragOldOverlay.adc_val(0, 0, 2) << '\n'
@@ -120,10 +124,12 @@ namespace tcpCompression {
           << " ADC board 2, channel 2, sample 2: " << fragOverlay.adc_val(2, 2, 2) << " | " << fragOldOverlay.adc_val(2, 2, 2) << '\n';
           continue;
       }
-      if (isComp)
+      if (fDumpADCs && isComp)
       {
         MF_LOG_VERBATIM("ValidateCompression")
           << "Checking first few ADC values for compressed fragment" << '\n'
+          << "Crate ID (new): " << std::hex << fragOverlay.DataTileHeader()->crate_id << std::dec << '\n'
+          << "Crate ID (old): " << std::hex << fragOldOverlay.DataTileHeader()->crate_id << std::dec << '\n'
           << " ADC board 0, channel 0, sample 0: " << fragOverlay.adc_val(0, 0, 0) << " | " << fragOldOverlay.adc_val(0, 0, 0) << '\n'
           << " ADC board 0, channel 0, sample 1: " << fragOverlay.adc_val(0, 0, 1) << " | " << fragOldOverlay.adc_val(0, 0, 1) << '\n'
           << " ADC board 0, channel 0, sample 2: " << fragOverlay.adc_val(0, 0, 2) << " | " << fragOldOverlay.adc_val(0, 0, 2) << '\n'
