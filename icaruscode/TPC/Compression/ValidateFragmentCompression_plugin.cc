@@ -157,8 +157,17 @@ namespace tcpCompression {
           << " ADC board 2, channel 2, sample 0: " << fragOverlay.adc_val(2, 2, 0) << " | " << fragOldOverlay.adc_val(2, 2, 0) << '\n'
           << " ADC board 2, channel 2, sample 1: " << fragOverlay.adc_val(2, 2, 1) << " | " << fragOldOverlay.adc_val(2, 2, 1) << '\n'
           << " ADC board 2, channel 2, sample 2: " << fragOverlay.adc_val(2, 2, 2) << " | " << fragOldOverlay.adc_val(2, 2, 2) << '\n';
+          for (size_t b = 0; b < fragOverlay.nBoards(); ++b)
+          {
+            for (size_t s = 0; s < 10; ++s)
+            {
+              MF_LOG_VERBATIM("ValidateCompression")
+                << "  Board " << b << " Sample " << s << " Key: " << std::bitset<16>(fragOverlay.CompressionKey(b, s));
+            }
+          }
           continue;
       }
+      
       
 
       //bool originalValid = fragOverlay.Verify();
