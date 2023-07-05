@@ -1,0 +1,33 @@
+#include "WireModMakeHists.fcl"
+#include "messages_icarus.fcl"
+
+process_name: WireModMakeHistograms
+
+services:
+{
+  TFileService: { fileName: "wireMod_hist.root" closeFileFast: false }
+  message: @local::icarus_message_services_interactive_debug
+}
+
+outputs:
+{
+  makehists:
+  {
+    module_type: RootOutput
+    fileName: "wireMod_out.root"
+    results:
+    {
+      producers:
+      {
+        makehists_east: { @table::makehists_east }
+        makehists_west: { @table::makehists_west }
+      }
+    }
+    rpPath: [makehists_east, makehists_east]
+  }
+}
+
+physics:
+{
+  stream1: [ makehists ]
+}
