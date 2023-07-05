@@ -1,4 +1,4 @@
-#include "stage1_run2_nofilter_icarus.fcl"
+#include "stage1_run2_icarus.fcl"
 
 # don't run supera -- crashes on old files
 physics.outana: [

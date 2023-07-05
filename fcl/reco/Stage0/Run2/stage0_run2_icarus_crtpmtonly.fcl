@@ -1,0 +1,33 @@
+###
+## This fhicl file is used to run "stage0" processing specifically for the case where all
+## TPC data is included in an artdaq data product from a single instance
+##
+#include "stage0_icarus_driver_common.fcl"
+
+process_name: stage0
+
+## Define the path we'll execute
+physics.path:     [ @sequence::icarus_stage0_data_crtpmtfilter_noTPC ]
+
+## boiler plate...
+physics.trigger_paths: [ path ]
+physics.end_paths:     [ streamROOT ]
+
+# Drop the artdaq format files on output, 
+# Drop all output from the TPC decoder stage
+# Drop all output from the 1D deconvolution stage
+# Drop the recob::Wire output from the roifinder (but keep the ChannelROIs)
+# Drop the reconstructed optical hits before the timing correction
+# Drop the PMT waveforms (will keep the ones from daqPMTonbeam)
+# Keep the Trigger fragment
+outputs.rootOutput.outputCommands: [
+    "keep *_*_*_*", 
+    "drop *_*_*_DAQ*",
+    "drop *_ophituncorrected_*_*",
+    "drop raw::OpDetWaveforms_daqPMT__*",
+    "drop *_daqTPCROI_*_*", 
+    "drop *_decon1droi_*_*", 
+    "drop recob::Wire*_roifinder_*_*",
+    "keep *_daq_ICARUSTriggerV*_*"]
+
+## Modify the event selection for the purity analyzers

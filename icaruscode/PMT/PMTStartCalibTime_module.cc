@@ -632,7 +632,7 @@ if (ophitHandle.isValid()) {
         recob::OpHit ophit = ophitHandle->at(idx);
 
         m_channel_id->push_back( ophit.OpChannel() );
-        m_tstart->push_back( ophit.PeakTimeAbs() );
+        m_tstart->push_back( ophit.StartTime() );
         m_tmax->push_back( ophit.PeakTime() );  // in us 
         m_integral->push_back( ophit.Area() );
         m_amplitude->push_back( ophit.Amplitude() );

@@ -15,5 +15,5 @@
 
 # Drop truth data products.
 
-outputs.outCommon.outputCommands: [ @sequence::outputs.outCommon.outputCommands,
-                                    @sequence::reco_drops ]
+outputs.rootOutput.outputCommands: [ @sequence::outputs.rootOutput.outputCommands,
+                                     @sequence::reco_drops ]

@@ -10,5 +10,8 @@ physics.producers.mcreco.G4ModName: @erase
 physics.producers.mcreco.MCParticleLabel: "largeant"
 physics.producers.mcreco.SimChannelLabel: "daq:simpleSC"
 
-this_cal_constants: [1.343e-2, 1.338e-2, 0.01227]
+# Mini production, pre signal shape tuning
+# this_cal_constants: [1.343e-2, 1.338e-2, 0.01227]
+# Post signal shape tuning
+this_cal_constants: [1.343e-2, 1.338e-2, 0.01285]
 #include "set_caf_calconst.fcl"

@@ -27,7 +27,7 @@ icarus_simple_flashmatch_E: {
   MinSpacePointQ: 0.
   MinParticleQ: 0.
   MinSliceQ: 0.
-  OpHitTime: "PeakTime" # TODO: test and change to RiseTime or StartTime once they become available
+  OpHitTime: "StartTime" # TODO: test and change to RiseTime once it is tested
   MinInTimeFlashes: 3
   MaxFlashes: 10
   MinOpHPE: 0.

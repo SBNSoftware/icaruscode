@@ -37,7 +37,6 @@ set_caf_calconst.fcl
 # This should at least allow the issues not to grow.
 #
 
-job/OnlineDecoder.fcl
 job/bnbanaicarus21apr21.fcl
 job/dirtanaicarus21apr21.fcl
 job/icarus_ci_nucosmics_anatree_quick_test_icaruscode.fcl
@@ -55,13 +54,9 @@ job/prodcosmics_corsika_proton_21apr21_ob.fcl
 job/prodgenie_nu_spill_indirt.fcl
 job/prodsingle_full_optical_electronic.fcl
 job/prodsingle_optical_electronic.fcl
-job/run_flashfilter_data.fcl
 job/run_icarus_flashfinder.fcl
 job/run_opreco.fcl
 job/run_opreco_data.fcl
-job/stage0_EastCryo_icarus.fcl
-job/stage0_multiTPC_splitstream_east_icarus.fcl
-job/stage0_multiTPC_splitstream_west_icarus.fcl
 job/standard_g4_icarus_21apr21_noob.fcl
 job/standard_g4_icarus_21apr21_ob.fcl
 job/study_ophit_singlep.fcl
@@ -72,7 +67,6 @@ job/study_ophit_singlep_290.fcl
 job/study_ophit_singlep_310.fcl
 job/study_ophit_singlep_330.fcl
 job/study_ophit_singlep_350.fcl
-job/testDecoderFilter.fcl
 job/var_10pe_5hits_1us_020ns.fcl
 job/var_20pe_5hits_1us_020ns.fcl
 job/var_30pe_5hits_1us_020ns.fcl

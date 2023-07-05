@@ -27,6 +27,7 @@
 #include "lardataobj/RecoBase/OpHit.h"
 
 // C/C++ standard libraries
+#include <optional>
 #include <memory> // std::unique_ptr<>
 #include <string>
 #include <utility> // std::move()
@@ -186,6 +187,8 @@ void icarus::OpHitTimingCorrection::produce( art::Event& event, art::ProcessingF
 
     // Create a copy of the OpHits 
     std::vector<recob::OpHit> correctedOpHits;
+    
+    auto log = fVerbose? std::make_optional<mf::LogInfo>(fLogCategory): std::nullopt;
 
     for(art::InputTag const& label: fInputLabels) {
         
@@ -195,6 +198,8 @@ void icarus::OpHitTimingCorrection::produce( art::Event& event, art::ProcessingF
 
             double peakTime = opHit.PeakTime();
             double peakTimeAbs = opHit.PeakTimeAbs();
+            double startTime = opHit.StartTime();
+            double riseTime = opHit.RiseTime();
 
             double laserTimeCorrection=0;
             double cosmicsCorrection=0;
@@ -210,16 +215,19 @@ void icarus::OpHitTimingCorrection::produce( art::Event& event, art::ProcessingF
                     fPMTTimingCorrectionsService.getCosmicsCorrections(opHit.OpChannel());
             }
 
-                
-            peakTime += (laserTimeCorrection+cosmicsCorrection);
-            peakTimeAbs += (laserTimeCorrection+cosmicsCorrection);
+            double const totalCorrection = laserTimeCorrection + cosmicsCorrection;
+            peakTime += totalCorrection;
+            peakTimeAbs += totalCorrection;
+            startTime += totalCorrection;
+            // riseTime is currently relative to the start time, no correction needed
             
-            if(fVerbose){
-                std::cout << opHit.OpChannel() << ", " 
-                        << opHit.PeakTime() << ", " 
-                        << peakTime << ", " 
-                        << cosmicsCorrection << ", " 
-                        << laserTimeCorrection << std::endl;
+            if(log){
+                *log << opHit.OpChannel() << ", " 
+                     << opHit.PeakTime() << ", " 
+                     << peakTime << ", " 
+                     << cosmicsCorrection << ", " 
+                     << laserTimeCorrection
+                     << totalCorrection;
             }
 
 
@@ -227,6 +235,8 @@ void icarus::OpHitTimingCorrection::produce( art::Event& event, art::ProcessingF
                 opHit.OpChannel(),   // channel
                 peakTime,            // peaktime
                 peakTimeAbs,         // peaktimeabs
+                startTime,           // starttime
+                riseTime,            // risetime
                 opHit.Frame(),       // frame
                 opHit.Width(),       // width
                 opHit.Area(),        // area

@@ -146,9 +146,9 @@ DEFINE_ART_MODULE(SimWireICARUS)
 //-------------------------------------------------
 SimWireICARUS::SimWireICARUS(fhicl::ParameterSet const& pset)
     : EDProducer{pset}
-    , fPedestalEngine(art::ServiceHandle<rndm::NuRandomService>()->createEngine(*this, "HepJamesRandom", "pedestal", pset, "SeedPedestal"))
-    , fUncNoiseEngine(art::ServiceHandle<rndm::NuRandomService>()->createEngine(*this, "HepJamesRandom", "noise",    pset, "Seed"))
-    , fCorNoiseEngine(art::ServiceHandle<rndm::NuRandomService>()->createEngine(*this, "HepJamesRandom", "cornoise", pset, "Seed"))
+    , fPedestalEngine(art::ServiceHandle<rndm::NuRandomService>()->registerAndSeedEngine(createEngine(0, "HepJamesRandom", "pedestal"), "HepJamesRandom", "pedestal", pset, "SeedPedestal"))
+    , fUncNoiseEngine(art::ServiceHandle<rndm::NuRandomService>()->registerAndSeedEngine(createEngine(0, "HepJamesRandom", "noise"   ), "HepJamesRandom", "noise",    pset, "Seed"))
+    , fCorNoiseEngine(art::ServiceHandle<rndm::NuRandomService>()->registerAndSeedEngine(createEngine(0, "HepJamesRandom", "cornoise"), "HepJamesRandom", "cornoise", pset, "Seed"))
     , fGeometry(*lar::providerFrom<geo::Geometry>())
 {
     this->reconfigure(pset);

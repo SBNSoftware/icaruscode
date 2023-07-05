@@ -145,7 +145,7 @@ physics.filters: {
 
 physics.pathE: [
     @sequence::physics.pathE
-  , @sequence::icarus_filter_cluster3DCryoE
+  , @sequence::icarus_reco_cluster3DCryoE
   , @sequence::icarus_reco_pandoraGausCryoE
   , fmatchCryoE
   , @sequence::icarus_crttrack
@@ -153,7 +153,7 @@ physics.pathE: [
   ]
 physics.pathW: [
     @sequence::physics.pathW
-  , @sequence::icarus_filter_cluster3DCryoW
+  , @sequence::icarus_reco_cluster3DCryoW
   , @sequence::icarus_reco_pandoraGausCryoW
   , fmatchCryoW
   , @sequence::icarus_crttrack

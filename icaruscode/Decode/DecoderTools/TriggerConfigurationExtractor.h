@@ -16,7 +16,6 @@
 #include "sbnobj/Common/Trigger/BeamBits.h"
 
 // framework libraries
-#include "art/Framework/Principal/DataViewImpl.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
 #include "fhiclcpp/ParameterSet.h"
 #include "cetlib_except/exception.h"
