@@ -1,7 +1,7 @@
 #include "WireModMakeHists.fcl"
 #include "messages_icarus.fcl"
 
-process_name: WireModMakeHistograms
+process_name: WireModMakeHist
 
 services:
 {
@@ -19,11 +19,13 @@ outputs:
     {
       producers:
       {
-        makehists_east: { @table::makehists_east }
-        makehists_west: { @table::makehists_west }
+        makehists_ee: { @table::makehists_ee }
+        makehists_ew: { @table::makehists_ew }
+        makehists_we: { @table::makehists_we }
+        makehists_ww: { @table::makehists_ww }
       }
+      rpPath: [makehists_ee, makehists_ew, makehists_we, makehists_ww]
     }
-    rpPath: [makehists_east, makehists_east]
   }
 }
 

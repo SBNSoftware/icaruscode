@@ -1,4 +1,4 @@
-set(EXCLUDED_PLUGINS NewWireModifier_pluggin.cc)
+set(EXCLUDED_PLUGINS NewWireModifier_pluggin.cc WireModMakeHists_plugin.cc)
 
 
 art_make( 
@@ -39,6 +39,37 @@ art_make(
         )
 
 simple_plugin(NewWireModifier "module"
+              ${ART_FRAMEWORK_CORE}
+              ${MF_MESSAGELOGGER}
+              ${Boost_SYSTEM_LIBRARY}
+              ${ROOT_BASIC_LIB_LIST}
+              ${ROOT_HIST}
+              art_root_io::TFileService_service
+              lardataobj::AnalysisBase
+              lardataobj::RawData
+              lardataobj::RecoBase
+              lardata::RecoObjects
+              larreco::RecoAlg
+              ${LARRECO_LIB}
+              ${LARDATA_LIB}
+              ${ART_FRAMEWORK_CORE}
+              ${ART_FRAMEWORK_PRINCIPAL}
+              ${ART_FRAMEWORK_SERVICES_REGISTRY}
+              ${ART_FRAMEWORK_SERVICES_OPTIONAL}
+              ${ART_FRAMEWORK_SERVICES_OPTIONAL_RANDOMNUMBERGENERATOR_SERVICE}
+              ${ART_FRAMEWORK_SERVICES_OPTIONAL_TFILESERVICE_SERVICE}
+              ${MF_MESSAGELOGGER}
+              ${FHICLCPP}
+              ${CLHEP}
+              ${ROOT_GEOM}
+              ${ROOT_XMLIO}
+              ${ROOT_GDML}
+              ${ROOT_BASIC_LIB_LIST}
+              ${ROOT_HIST}
+              BASENAME_ONLY
+)
+
+simple_plugin(WireModMakeHists "plugin"
               ${ART_FRAMEWORK_CORE}
               ${MF_MESSAGELOGGER}
               ${Boost_SYSTEM_LIBRARY}

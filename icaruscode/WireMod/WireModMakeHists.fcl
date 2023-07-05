@@ -2,15 +2,20 @@ BEGIN_PROLOG
 
 standard_makehists: 
 {
-  plugin_type: "WireModMakeHistograms"
-  TrackLabel: "pandoraTrackGausCryoE"
-  HitsLabelVec: [ "gaushitTPCEE", "gaushitTPCEW" ]
+  plugin_type: "WireModMakeHists"
+  HitsLabel: "gaushitTPCEE"
 }
 
-makehists_east: @local::standard_makehists
+makehists_ee: @local::standard_makehists
+makehists_ee.HitsLabel: "gaushitTPCEE"
 
-makehists_west: @local::standard_makehists
-makehists_west.TrackLabel: "pandoraTrackGausCryoW"
-makehists_west.HitsLabelVec: [ "gaushitTPCWE", "gaushitTPCWW" ]
+makehists_ew: @local::standard_makehists
+makehists_ew.HitsLabel: "gaushitTPCEW"
+
+makehists_we: @local::standard_makehists
+makehists_we.HitsLabel: "gaushitTPCWE"
+
+makehists_ww: @local::standard_makehists
+makehists_ww.HitsLabel: "gaushitTPCWW"
 
 END_PROLOG
