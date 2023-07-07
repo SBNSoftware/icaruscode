@@ -33,7 +33,8 @@ namespace WireMod {
     void clear() override;
 
   private:
-    art::InputTag fHitsLabel; // how the hits are labeled in the input file
+    art::InputTag fLabel; // how the hits/wires are labeled in the input file
+    bool fGetHits;        // are we getting hits? if false the label is for the wires
   };// end WireModMakeHists class
 
   //-------------------------------------------------------------
@@ -52,7 +53,8 @@ namespace WireMod {
   void WireModMakeHists::reconfigure(fhicl::ParameterSet const& pset)
   {
     // the first arguement is where in the fhicl to look, the second is the default value if that isn't found
-    fHitsLabel= pset.get<art::InputTag>("HitsLabel", "decon1droi"); // EE & EW or WE & WW
+    fLabel = pset.get<art::InputTag>("Label", "decon1droi");
+    fGetHits = pset.get<bool>("GetHits", false);
   }
 
   //-------------------------------------------------------------
@@ -63,50 +65,92 @@ namespace WireMod {
     // this is what will make our histograms for us
     art::ServiceHandle<art::TFileService>  tfs;
 
-    // get the hits out of the event and put them in a handle
-    // the handle is needed to get the associated wires
-    // we can use the handle to get a vector of hits
-    art::Handle<std::vector<recob::Hit>> hitHandle;
-    evt.getByLabel(fHitsLabel, hitHandle);
-    if (not hitHandle.isValid())
+    // we don't have an association between the deconvoluted, but this method is how we would handle it.
+    // this is mostly a pedagogical exercise
+    // if we aren't getting the hits, just get the wires
+    if (fGetHits)
     {
-      MF_LOG_VERBATIM("WireModWireModMakeHists")
-        << "Hit handle is not valid!" << '\n'
-        << "Tried " << fHitsLabel << '\n'
-        << "abort";
-      return;
-    }
-    std::vector<art::Ptr<recob::Hit>> hitPtrVec;
-    art::fill_ptr_vector(hitPtrVec, hitHandle);
-
-    // this tool will let us get the wire for each hit
-    art::FindOneP<recob::Wire> hitToWireAssns(hitHandle, evt, fHitsLabel);
-
-    // loop over the hits
-    for (auto const& hitPtr : hitPtrVec)
-    {
-      // get info from hit here
-
-      // get the associated wire
-      art::Ptr<recob::Wire> wirePtr = hitToWireAssns.at(hitPtr.key());
-
-      // put the waveform in the histogram
-      // tfs will make a whatever is in the <>, (in this case a TH1F)
-      // the agruements past to it should be the same as for the constructor for the <object>
-      TH1F* waveformHist = tfs->make<TH1F>(("adc_"+fHitsLabel.label()+"_"+std::to_string(wirePtr.key())).c_str(), //> name of the object
-                                           ";Sample;Arbitrary Units",                                             //> axes labels
-                                           wirePtr->NSignal(),                                                    //> numbeer of bins
-                                           0,                                                                     //> lowest edge
-                                           wirePtr->NSignal());                                                   //> upper edge
-
-      // ROOT counts from 1, everyone else counts from 0
-      for (size_t bin = 1; bin < wirePtr->NSignal() + 1; ++bin)
+      // get the hits out of the event and put them in a handle
+      // the handle is needed to get the associated wires
+      // we can use the handle to get a vector of hits
+      art::Handle<std::vector<recob::Hit>> hitHandle;
+      evt.getByLabel(fLabel, hitHandle);
+      if (not hitHandle.isValid())
       {
-        waveformHist->SetBinContent(bin, (wirePtr->Signal())[bin-1]);
+        MF_LOG_VERBATIM("WireModWireModMakeHists")
+          << "Hit handle is not valid!" << '\n'
+          << "Tried " << fLabel << '\n'
+          << "abort";
+        return;
       }
+      std::vector<art::Ptr<recob::Hit>> hitPtrVec;
+      art::fill_ptr_vector(hitPtrVec, hitHandle);
 
-      // In testing this I just want one
-      break;
+      // this tool will let us get the wire for each hit
+      art::FindOneP<recob::Wire> hitToWireAssns(hitHandle, evt, fLabel);
+
+      // loop over the hits
+      for (auto const& hitPtr : hitPtrVec)
+      {
+        // get info from hit here
+
+        // get the associated wire
+        art::Ptr<recob::Wire> wirePtr = hitToWireAssns.at(hitPtr.key());
+
+        // put the waveform in the histogram
+        // tfs will make a whatever is in the <>, (in this case a TH1F)
+        // the agruements past to it should be the same as for the constructor for the <object>
+        TH1F* waveformHist = tfs->make<TH1F>(("adc_"+fLabel.label()+"_"+std::to_string(wirePtr.key())).c_str(), //> name of the object
+                                             ";Sample;Arbitrary Units",                                             //> axes labels
+                                             wirePtr->NSignal(),                                                    //> numbeer of bins
+                                             0,                                                                     //> lowest edge
+                                             wirePtr->NSignal());                                                   //> upper edge
+
+        // ROOT counts from 1, everyone else counts from 0
+        for (size_t bin = 1; bin < wirePtr->NSignal() + 1; ++bin)
+        {
+          waveformHist->SetBinContent(bin, (wirePtr->Signal())[bin-1]);
+        }
+
+        // In testing this I just want one
+        break;
+      }
+    } else {
+      // get the wires directly since we aren't getting the hits
+      art::Handle<std::vector<recob::Wire>> wireHandle;
+      evt.getByLabel(fLabel, wireHandle);
+      if (not wireHandle.isValid())
+      {
+        MF_LOG_VERBATIM("WireModWireModMakeHists")
+          << "Wire handle is not valid!" << '\n'
+          << "Tried " << fLabel << '\n'
+          << "abort";
+        return;
+      }
+      std::vector<art::Ptr<recob::Wire>> wirePtrVec;
+      art::fill_ptr_vector(wirePtrVec, wireHandle);
+
+      // loop over the wires
+      for (auto const& wirePtr : wirePtrVec)
+      {
+        // put the waveform in the histogram
+        // tfs will make a whatever is in the <>, (in this case a TH1F)
+        // the agruements past to it should be the same as for the constructor for the <object>
+        TH1F* waveformHist = tfs->make<TH1F>(("adc_"+fLabel.label()+":"+fLabel.instance()+"_"+std::to_string(wirePtr.key())).c_str(), //> name of the object
+                                             ";Sample;Arbitrary Units",                                                               //> axes labels
+                                             wirePtr->NSignal(),                                                                      //> numbeer of bins
+                                             0,                                                                                       //> lowest edge
+                                             wirePtr->NSignal());                                                                     //> upper edge
+
+        // ROOT counts from 1, everyone else counts from 0
+        for (size_t bin = 1; bin < wirePtr->NSignal() + 1; ++bin)
+        {
+          waveformHist->SetBinContent(bin, (wirePtr->Signal())[bin-1]);
+        }
+
+        // In testing this I just want one
+        break;
+      }
     }
   }
 

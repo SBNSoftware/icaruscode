@@ -3,19 +3,36 @@ BEGIN_PROLOG
 standard_makehists: 
 {
   plugin_type: "WireModMakeHists"
-  HitsLabel: "gaushitTPCEE"
+  Label: "decon1droi"
+  GetHits: false
 }
 
 makehists_ee: @local::standard_makehists
-makehists_ee.HitsLabel: "gaushitTPCEE"
+makehists_ee.Label: "decon1droi:PHYSCRATEDATATPCEE"
 
 makehists_ew: @local::standard_makehists
-makehists_ew.HitsLabel: "gaushitTPCEW"
+makehists_ew.Label: "decon1droi:PHYSCRATEDATATPCEW"
 
 makehists_we: @local::standard_makehists
-makehists_we.HitsLabel: "gaushitTPCWE"
+makehists_we.Label: "decon1droi:PHYSCRATEDATATPCWE"
 
 makehists_ww: @local::standard_makehists
-makehists_ww.HitsLabel: "gaushitTPCWW"
+makehists_ww.Label: "decon1droi:PHYSCRATEDATATPCWW"
+
+makehists_ee_withHits: @local::standard_makehists
+makehists_ee_withHits.Label: "gaushitTPCEE"
+makehists_ee_withHits.GetHits: true
+
+makehists_ew_withHits: @local::standard_makehists
+makehists_ew_withHits.Label: "gaushitTPCEW"
+makehists_ew_withHits.GetHits: true
+
+makehists_we_withHits: @local::standard_makehists
+makehists_we_withHits.Label: "gaushitTPCWE"
+makehists_we_withHits.GetHits: true
+
+makehists_ww_withHits: @local::standard_makehists
+makehists_ww_withHits.Label: "gaushitTPCWW"
+makehists_ww_withHits.GetHits: true
 
 END_PROLOG
