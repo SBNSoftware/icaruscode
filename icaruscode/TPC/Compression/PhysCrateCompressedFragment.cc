@@ -64,11 +64,10 @@ icarus::A2795CompressedDataBlock::data_t const* icarus::PhysCrateCompressedFragm
     size_t cumulativeSize = (b == 0) ? 0 : cumulativeBoardSize(b - 1);
     return ( reinterpret_cast<A2795CompressedDataBlock::data_t const*>
              (artdaq_Fragment_.dataBeginBytes()
-              + sizeof(PhysCrateCompressedDataTileHeader)
-              + sizeof(A2795CompressedDataBlock::Header)
-              + b*sizeof(PhysCrateCompressedDataTileHeader)
-              + b*4*sizeof(uint16_t)
-              + cumulativeSize));
+              + cumulativeSize
+              + (1+b)*sizeof(PhysCrateCompressedDataTileHeader)
+              + (1+b)*sizeof(A2795CompressedDataBlock::Header)
+              + b*4*sizeof(uint16_t)));
   }
 
   return ( reinterpret_cast< A2795CompressedDataBlock::data_t const *>
@@ -240,9 +239,8 @@ std::vector<uint16_t> icarus::PhysCrateCompressedFragment::GenerateKeys(artdaq::
     icarus::A2795CompressedDataBlock::data_t const* boardData
                                             = reinterpret_cast<icarus::A2795CompressedDataBlock::data_t const*>
                                                        ( f.dataBeginBytes()
-                                                       + sizeof(icarus::PhysCrateCompressedDataTileHeader)
-                                                       + sizeof(icarus::A2795CompressedDataBlock::Header)
-                                                       + b*sizeof(icarus::PhysCrateCompressedDataTileHeader)
+                                                       + (1 + b) * sizeof(icarus::PhysCrateCompressedDataTileHeader)
+                                                       + (1 + b) * sizeof(icarus::A2795CompressedDataBlock::Header)
                                                        + b*4*sizeof(uint16_t)
                                                        + cumulativePrevBlockSize                   );
     size_t nWord = 0;

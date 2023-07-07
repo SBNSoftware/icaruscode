@@ -93,6 +93,15 @@ namespace tcpCompression {
       {
         MF_LOG_VERBATIM("ValidateCompression")
           << "Checking first few ADC values for uncompressed fragment" << '\n'
+          << "-----------------------NEW HEADER-----------------------" << '\n'
+          << *(fragOverlay.DataTileHeader(0)) << '\n'
+          << *(fragOverlay.DataTileHeader(1)) << '\n'
+          << *(fragOverlay.DataTileHeader(2)) << '\n'
+          << "-----------------------OLD HEADER-----------------------" << '\n'
+          << *(fragOldOverlay.DataTileHeader(0)) << '\n'
+          << *(fragOldOverlay.DataTileHeader(1)) << '\n'
+          << *(fragOldOverlay.DataTileHeader(2)) << '\n'
+          << "--------------------------------------------------------" << '\n'
           << "Crate ID (new): " << std::hex << fragOverlay.DataTileHeader()->crate_id << std::dec << '\n'
           << "Crate ID (old): " << std::hex << fragOldOverlay.DataTileHeader()->crate_id << std::dec << '\n'
           << " ADC board 0, channel 0, sample 0: " << fragOverlay.adc_val(0, 0, 0) << " | " << fragOldOverlay.adc_val(0, 0, 0) << '\n'
@@ -124,10 +133,19 @@ namespace tcpCompression {
           << " ADC board 2, channel 2, sample 2: " << fragOverlay.adc_val(2, 2, 2) << " | " << fragOldOverlay.adc_val(2, 2, 2) << '\n';
           continue;
       }
-      if (fDumpADCs && isComp)
+      if (fDumpADCs && isComp && (fragOverlay.CompressionKey(0,0) == 0))
       {
         MF_LOG_VERBATIM("ValidateCompression")
           << "Checking first few ADC values for compressed fragment" << '\n'
+          << "-----------------------NEW HEADER-----------------------" << '\n'
+          << *(fragOverlay.DataTileHeader(0)) << '\n'
+          << *(fragOverlay.DataTileHeader(1)) << '\n'
+          << *(fragOverlay.DataTileHeader(2)) << '\n'
+          << "-----------------------OLD HEADER-----------------------" << '\n'
+          << *(fragOldOverlay.DataTileHeader(0)) << '\n'
+          << *(fragOldOverlay.DataTileHeader(1)) << '\n'
+          << *(fragOldOverlay.DataTileHeader(2)) << '\n'
+          << "--------------------------------------------------------" << '\n'
           << "Crate ID (new): " << std::hex << fragOverlay.DataTileHeader()->crate_id << std::dec << '\n'
           << "Crate ID (old): " << std::hex << fragOldOverlay.DataTileHeader()->crate_id << std::dec << '\n'
           << " ADC board 0, channel 0, sample 0: " << fragOverlay.adc_val(0, 0, 0) << " | " << fragOldOverlay.adc_val(0, 0, 0) << '\n'
@@ -167,42 +185,6 @@ namespace tcpCompression {
           }
           continue;
       }
-      
-      
-
-      //bool originalValid = fragOverlay.Verify();
-      //icarus::PhysCrateCompressedFragment newFragOverlay = (isComp) ? fragOverlay.makeUncompressedFragment() :
-      //                                                                fragOverlay.  makeCompressedFragment() ;
-      //bool newValid = newFragOverlay.Verify();
-
-      //std::string oldValidStr = (originalValid) ? "Original fragment is valid" : "Original fragment is not valid";
-      //std::string newValidStr = (newValid)      ? "new fragment is valid"      : "new fragment is not valid";
-      //if (originalValid == newValid)
-      //{
-      //  MF_LOG_VERBATIM("ValidateCompression")
-      //    << oldValidStr << ", and " << newValidStr;
-      //} else {
-      //  MF_LOG_VERBATIM("ValidateCompression")
-      //    << oldValidStr << ", but " << newValidStr;
-      //}
-
-      //if (not originalValid)
-      //{
-      //  MF_LOG_VERBATIM("ValidateCompression")
-      //    << "Attempting to make valid fragment...";
-      //  icarus::PhysCrateCompressedFragment reFragmentOverlay = (isComp) ? newFragOverlay.  makeCompressedFragment() :
-      //                                                                     newFragOverlay.makeUncompressedFragment() ;
-      //  if (isComp)
-      //  {
-      //    MF_LOG_VERBATIM("ValidateCompression")
-      //      << "Validating recompressed fragment...";
-      //    reFragmentOverlay.Verify();
-      //  } else {
-      //    MF_LOG_VERBATIM("ValidateCompression")
-      //      << "Validating re-decompressed fragment...";
-      //    reFragmentOverlay.Verify();
-      //  }
-      //}
 
     }
   }

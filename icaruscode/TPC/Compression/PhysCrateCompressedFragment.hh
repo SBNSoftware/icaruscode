@@ -239,6 +239,8 @@ class icarus::PhysCrateCompressedFragment {
   PhysCrateCompressedFragment makeCompressedFragment()   const { return PhysCrateCompressedFragment(  compressArtdaqFragment(artdaq_Fragment_)); }
   PhysCrateCompressedFragment makeUncompressedFragment() const { return PhysCrateCompressedFragment(decompressArtdaqFragment(artdaq_Fragment_)); }
 
+  uint32_t RunCumulativeDataSize(size_t b) { return cumulativeBoardSize(0); }
+
 private:
 
   artdaq::Fragment const & artdaq_Fragment_;
