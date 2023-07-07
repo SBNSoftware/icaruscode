@@ -44,8 +44,7 @@ standard_cvnzlibmaker:
   ReverseViews:     [false,false,false]	
   verbose:          false
   UseSlice:         true
-  Verbose:          false
-  UseBackTrackInfo: true
+  UseBackTrackInfo: false
   UseNuContainment: false
   SaveTree:         false
   PlaneLimit:       500
@@ -57,7 +56,7 @@ standard_cvnzlibmaker:
   PandoraTagSuffixes:   ["CryoW"]
   GenieGenModuleLabel:   "generator"
   PixelMapInput:         "cvnmapicarus"
-  HitModuleLabel:        "cluster3D"
+  HitModuleLabel:        "gaushit"
   SliceLabel:            "pandoraGaus"
   PFParticleModuleLabel: "pandoraGaus"
   T0Label:               "pandoraGaus"

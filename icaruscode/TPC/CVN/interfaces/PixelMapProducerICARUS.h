@@ -16,16 +16,19 @@ namespace lcvn
   class PixelMapProducerICARUS : public PixelMapProducer <T,U>
   {
     public:
-    	PixelMapProducerICARUS(unsigned int nWire, unsigned int nTdc, double tRes, double threshold = 0.):PixelMapProducer<T,U>::PixelMapProducer(nWire, nTdc, tRes, threshold){std::cout << "============ Calling the function PixelMapProducerICARUS::PixelMapProducerICARUS() ==============\n";}
-		PixelMapProducerICARUS():PixelMapProducer<T,U>::PixelMapProducer(){std::cout << "============ Calling the function PixelMapProducerICARUS::PixelMapProducerICARUS() ==============\n";}
-		PixelMapProducerICARUS(const fhicl::ParameterSet& pset):PixelMapProducer<T,U>::PixelMapProducer(pset),fverbose(pset.get<bool>("verbose")),fChangeWireNo(pset.get<bool>("ChangeWireNo")),fReadoutSize(pset.get<double>("ReadoutSize")),fShiftT(pset.get<float>("ShiftT")),fInductionWires(pset.get<int>("InductionWires")),fFlipInductionView(pset.get<bool>("FlipInductionView")),fUseT(pset.get<bool>("UseT")) {std::cout << "============ Calling the function PixelMapProducerICARUS::PixelMapProducerICARUS() ==============\n";}
-		Boundary DefineBoundary(detinfo::DetectorPropertiesData const& detProp,const std::vector< const T* >& cluster) override;
-		void ConvertLocaltoGlobal(geo::WireID wireid, unsigned int &globalWire, unsigned int &globalPlane) const override; 
-		void ConvertLocaltoGlobalTDC(geo::WireID wireid, double localTDC, unsigned int &globalWire, unsigned int &globalPlane, double &globalTDC) const override;
-		PixelMap CreateMapGivenBoundary(detinfo::DetectorPropertiesData const& detProp,const std::vector< const T* >& cluster,const Boundary& bound) override;
-		PixelMap CreateMap(detinfo::DetectorPropertiesData const& detProp,const std::vector< art::Ptr< T > >& cluster);
-		PixelMap CreateMap(detinfo::DetectorPropertiesData const& detProp,const std::vector< const T* >& cluster);
-		void Set_fT0_value(float value);
+    	PixelMapProducerICARUS(unsigned int nWire, unsigned int nTdc, double tRes, double threshold = 0.):PixelMapProducer<T,U>::PixelMapProducer(nWire, nTdc, tRes, threshold){
+    		std::cout << "============ Calling the function PixelMapProducerICARUS::PixelMapProducerICARUS() ==============\n";}
+    	PixelMapProducerICARUS():PixelMapProducer<T,U>::PixelMapProducer(){
+    		std::cout << "============ Calling the function PixelMapProducerICARUS::PixelMapProducerICARUS() ==============\n";}
+    	PixelMapProducerICARUS(const fhicl::ParameterSet& pset):PixelMapProducer<T,U>::PixelMapProducer(pset),fverbose(pset.get<bool>("verbose")),fChangeWireNo(pset.get<bool>("ChangeWireNo")),fReadoutSize(pset.get<double>("ReadoutSize")),fShiftT(pset.get<float>("ShiftT")),fInductionWires(pset.get<int>("InductionWires")),fFlipInductionView(pset.get<bool>("FlipInductionView")),fUseT(pset.get<bool>("UseT")){
+    		std::cout << "============ Calling the function PixelMapProducerICARUS::PixelMapProducerICARUS() ==============\n";}
+    	Boundary DefineBoundary(detinfo::DetectorPropertiesData const& detProp,const std::vector< const T* >& cluster) override;
+    	void ConvertLocaltoGlobal(geo::WireID wireid, unsigned int &globalWire, unsigned int &globalPlane) const override; 
+    	void ConvertLocaltoGlobalTDC(geo::WireID wireid, double localTDC, unsigned int &globalWire, unsigned int &globalPlane, double &globalTDC) const override;
+    	PixelMap CreateMapGivenBoundary(detinfo::DetectorPropertiesData const& detProp,const std::vector< const T* >& cluster,const Boundary& bound) override;
+    	PixelMap CreateMap(detinfo::DetectorPropertiesData const& detProp,const std::vector< art::Ptr< T > >& cluster);
+    	PixelMap CreateMap(detinfo::DetectorPropertiesData const& detProp,const std::vector< const T* >& cluster);
+    	void Set_fT0_value(float value);
     protected:
         bool fverbose;
         bool fChangeWireNo; 
