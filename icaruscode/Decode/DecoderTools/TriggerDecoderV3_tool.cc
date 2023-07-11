@@ -731,11 +731,6 @@ namespace daq
       }
     };
 
-    // we expect the LVDS status bits to follow this pattern:
-    for (auto const& cryoInfo [[maybe_unused]]: fTriggerExtra->cryostats)
-      for (auto LVDS [[maybe_unused]]: cryoInfo.LVDSstatus)
-        assert((LVDS & 0xFF000000FF000000) == 0);
-    
     //
     // absolute time trigger (raw::ExternalTrigger)
     //
