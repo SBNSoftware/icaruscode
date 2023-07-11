@@ -644,7 +644,7 @@ void icarus::crt::CRTPMTMatchingAna::ClearVecs() {
   fMatchedCRTamplitude.clear();
   fDirection.clear();
   fDistance.clear();
-  fDistance.clear();
+  fTofOpFlash.clear();
   fTofOpHit.clear();
   fVelocity.clear();
   fCRTGateDiff.clear();
