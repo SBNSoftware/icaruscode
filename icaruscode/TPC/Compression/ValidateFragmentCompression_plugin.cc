@@ -3,6 +3,7 @@
 
 //ROOT includes
 #include "TFile.h"
+#include "TH1.h"
 
 //Framework includes
 #include "art/Framework/Core/ResultsProducer.h"
@@ -13,8 +14,6 @@
 #include "art/Framework/Services/Registry/ServiceHandle.h"
 #include "art_root_io/TFileService.h"
 #include "art_root_io/TFileDirectory.h"
-//#include "art/Framework/Services/Optional/TFileService.h"
-//#include "art/Framework/Services/Optional/TFileDirectory.h"
 #include "fhiclcpp/ParameterSet.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
 #include "canvas/Utilities/InputTag.h"
@@ -41,6 +40,8 @@ namespace tcpCompression {
     bool          fDumpADCs;
     bool          fFoundFirstUncompressed = false;
     bool          fFoundFirstCompressed   = false;
+    TH1F*         fCompHist;
+    TH1F*         fDcmpHist;
   };// end ValidateCompression class
 
   //------------------------------------------------------------------
@@ -55,6 +56,10 @@ namespace tcpCompression {
     fFragmentsLabel    = pset.get<art::InputTag>("FragmentsLabel"   , "daq:PHYSCRATEDATA");
     fCheckOldFragments = pset.get<bool>         ("CheckOldFragments", false);
     fDumpADCs          = pset.get<bool>         ("DumpADCs"         , false);
+
+    art::ServiceHandle<art::TFileService>  tfs;
+    fCompHist = tfs->make<TH1F>(("CompHist_"+fFragmentsLabel.instance()).c_str(), ";Size (bytes);Number of Fragments", 100, 0, 10000000);
+    fDcmpHist = tfs->make<TH1F>(("DcmpHist_"+fFragmentsLabel.instance()).c_str(), ";Size (bytes);Number of Fragments", 100, 0, 10000000);
   }
 
   //------------------------------------------------------------------
@@ -186,6 +191,18 @@ namespace tcpCompression {
           continue;
       }
 
+      // here's where we fill the plots
+      bool isActuallyCompresed = (fragOverlay.CompressionKey(0,0) == 0);
+      if (isActuallyCompresed)
+      {
+        MF_LOG_VERBATIM("ValidateCompression")
+          << "Filling Compressed Hist with " << frag.sizeBytes();
+        fCompHist->Fill(frag.sizeBytes());
+      } else {
+        MF_LOG_VERBATIM("ValidateCompression")
+          << "Filling Decompressed Hist with " << frag.sizeBytes();
+        fDcmpHist->Fill(frag.sizeBytes());
+      }
     }
   }
 
