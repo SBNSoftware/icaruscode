@@ -23,7 +23,7 @@ art_make(
         CRTT0Matching_module.cc
         CRTTPCMatchingAna_module.cc	
         CRTPMTMatchingAna_module.cc
-	      CRTTPCTruthEff_module.cc
+        CRTTPCTruthEff_module.cc
     LIBRARY_NAME
         icaruscode_CRTData
     SOURCE
@@ -269,6 +269,19 @@ cet_build_plugin(CRTPMTMatchingAna art::module
         messagefacility::headers
         ROOT::Core
         ROOT::Tree
+)
+
+cet_build_plugin(CRTPMTMatchingProducer art::module
+     LIBRARIES
+        icaruscode::CRT
+        sbnobj::Common_CRT
+        icaruscode::CRTUtils
+        larcore::Geometry_Geometry_service
+        larcorealg::Geometry
+        larcoreobj::headers
+        lardataobj::RecoBase
+        art::Framework_Services_Registry
+        messagefacility::MF_MessageLogger
 )
 
 cet_build_plugin(CRTTruthMatchAnalysis art::module
