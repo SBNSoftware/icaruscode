@@ -20,6 +20,7 @@
 
 //icarus includes
 #include "icaruscode/TPC/Compression/PhysCrateCompressedFragment.cc"
+#include "icaruscode/Decode/ChannelMapping/IICARUSChannelMap.h"
 
 //sbndaq includes
 #include "sbndaq-artdaq-core/Overlays/ICARUS/PhysCrateFragment.hh"
@@ -42,6 +43,7 @@ namespace tcpCompression {
     bool          fFoundFirstCompressed   = false;
     TH1F*         fCompHist;
     TH1F*         fDcmpHist;
+    const icarusDB::IICARUSChannelMap* fChannelMap;
   };// end ValidateCompression class
 
   //------------------------------------------------------------------
@@ -58,6 +60,8 @@ namespace tcpCompression {
     fDumpADCs          = pset.get<bool>         ("DumpADCs"         , false);
 
     art::ServiceHandle<art::TFileService>  tfs;
+    fChannelMap = art::ServiceHandle<icarusDB::IICARUSChannelMap const>{}.get();
+
     fCompHist = tfs->make<TH1F>(("CompHist_"+fFragmentsLabel.instance()).c_str(), ";Size (bytes);Number of Fragments", 100, 0, 10000000);
     fDcmpHist = tfs->make<TH1F>(("DcmpHist_"+fFragmentsLabel.instance()).c_str(), ";Size (bytes);Number of Fragments", 100, 0, 10000000);
   }
@@ -193,14 +197,17 @@ namespace tcpCompression {
 
       // here's where we fill the plots
       bool isActuallyCompresed = (fragOverlay.CompressionKey(0,0) == 0);
+      std::string fragCrateName = fChannelMap->getCrateName(frag.fragmentID());
       if (isActuallyCompresed)
       {
         MF_LOG_VERBATIM("ValidateCompression")
-          << "Filling Compressed Hist with " << frag.sizeBytes();
+          << "Filling Compressed Hist with " << frag.sizeBytes() << '\n'
+          << "|-> Fragment comes from crate " << fragCrateName;
         fCompHist->Fill(frag.sizeBytes());
       } else {
         MF_LOG_VERBATIM("ValidateCompression")
-          << "Filling Decompressed Hist with " << frag.sizeBytes();
+          << "Filling Decompressed Hist with " << frag.sizeBytes() << '\n'
+          << "|-> Fragment comes from crate " << fragCrateName;
         fDcmpHist->Fill(frag.sizeBytes());
       }
     }
