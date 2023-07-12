@@ -95,23 +95,36 @@ namespace WireMod {
       for (auto const& hitPtr : hitPtrVec)
       {
         // get info from hit here
+        // like the start and stop times of the hit
+        size_t fstTick = hitPtr->StartTick();
+        size_t endTick = hitPtr->EndTick();
+        size_t hitWidth = endTick - fstTick;
 
         // get the associated wire
         art::Ptr<recob::Wire> wirePtr = hitToWireAssns.at(hitPtr.key());
+
+        // the start and end ticks were aquired assuming the hits are gaussian
+        // we want to plot a bit of buffer around the region of interest to get the full shape
+        // default to a hit width on either side, but if the wire doesn't have enough ticks then use what we can
+        size_t nTicks = wirePtr->NSignal();
+        size_t fstBuffer = (fstTick > hitWidth)          ? hitWidth : fstTick;
+        size_t endBuffer = (nTicks > endTick + hitWidth) ? hitWidth : nTicks - endTick;
 
         // put the waveform in the histogram
         // tfs will make a whatever is in the <>, (in this case a TH1F)
         // the agruements past to it should be the same as for the constructor for the <object>
         TH1F* waveformHist = tfs->make<TH1F>(("adc_"+evtStr+fLabel.label()+"_"+std::to_string(wirePtr.key())).c_str(), //> name of the object
                                              ";Sample;Arbitrary Units",                                                //> axes labels
-                                             wirePtr->NSignal(),                                                       //> numbeer of bins
-                                             0,                                                                        //> lowest edge
-                                             wirePtr->NSignal());                                                      //> upper edge
+                                             hitWidth + fstBuffer + endBuffer,                                         //> number of bins
+                                             fstTick - fstBuffer,                                                      //> lowest edge
+                                             endTick + endBuffer);                                                     //> upper edge
 
         // ROOT counts from 1, everyone else counts from 0
-        for (size_t bin = 1; bin < wirePtr->NSignal() + 1; ++bin)
+        //for (size_t bin = 1; bin < endTick - fstTick + 1; ++bin)
+        for (size_t bin = 1; bin < hitWidth + fstBuffer + endBuffer + 1; ++bin)
         {
-          waveformHist->SetBinContent(bin, (wirePtr->Signal())[bin-1]);
+          float wvfmVal = (wirePtr->Signal())[fstTick - fstBuffer + bin - 1]; 
+          waveformHist->SetBinContent(bin, wvfmVal);
         }
 
         // In testing this I just want one
