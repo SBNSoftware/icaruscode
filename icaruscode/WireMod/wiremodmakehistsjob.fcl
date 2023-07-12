@@ -19,10 +19,10 @@ outputs:
     {
       producers:
       {
-        makehists_ee: { @table::makehists_ee }
-        makehists_ew: { @table::makehists_ew }
-        makehists_we: { @table::makehists_we }
-        makehists_ww: { @table::makehists_ww }
+        makehists_ee: { @table::makehists_ee_withHits }
+        makehists_ew: { @table::makehists_ew_withHits }
+        makehists_we: { @table::makehists_we_withHits }
+        makehists_ww: { @table::makehists_ww_withHits }
       }
       rpPath: [makehists_ee, makehists_ew, makehists_we, makehists_ww]
     }

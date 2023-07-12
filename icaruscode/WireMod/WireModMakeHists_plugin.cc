@@ -65,9 +65,11 @@ namespace WireMod {
     // this is what will make our histograms for us
     art::ServiceHandle<art::TFileService>  tfs;
 
-    // we don't have an association between the deconvoluted, but this method is how we would handle it.
-    // this is mostly a pedagogical exercise
-    // if we aren't getting the hits, just get the wires
+    // get a unique string for this event
+    std::string evtStr = std::to_string(evt.id().run()) + "_"
+                       + std::to_string(evt.id().subRun()) + "_"
+                       + std::to_string(evt.id().event()) + "_";
+
     if (fGetHits)
     {
       // get the hits out of the event and put them in a handle
@@ -100,11 +102,11 @@ namespace WireMod {
         // put the waveform in the histogram
         // tfs will make a whatever is in the <>, (in this case a TH1F)
         // the agruements past to it should be the same as for the constructor for the <object>
-        TH1F* waveformHist = tfs->make<TH1F>(("adc_"+fLabel.label()+"_"+std::to_string(wirePtr.key())).c_str(), //> name of the object
-                                             ";Sample;Arbitrary Units",                                             //> axes labels
-                                             wirePtr->NSignal(),                                                    //> numbeer of bins
-                                             0,                                                                     //> lowest edge
-                                             wirePtr->NSignal());                                                   //> upper edge
+        TH1F* waveformHist = tfs->make<TH1F>(("adc_"+evtStr+fLabel.label()+"_"+std::to_string(wirePtr.key())).c_str(), //> name of the object
+                                             ";Sample;Arbitrary Units",                                                //> axes labels
+                                             wirePtr->NSignal(),                                                       //> numbeer of bins
+                                             0,                                                                        //> lowest edge
+                                             wirePtr->NSignal());                                                      //> upper edge
 
         // ROOT counts from 1, everyone else counts from 0
         for (size_t bin = 1; bin < wirePtr->NSignal() + 1; ++bin)
@@ -136,11 +138,11 @@ namespace WireMod {
         // put the waveform in the histogram
         // tfs will make a whatever is in the <>, (in this case a TH1F)
         // the agruements past to it should be the same as for the constructor for the <object>
-        TH1F* waveformHist = tfs->make<TH1F>(("adc_"+fLabel.label()+":"+fLabel.instance()+"_"+std::to_string(wirePtr.key())).c_str(), //> name of the object
-                                             ";Sample;Arbitrary Units",                                                               //> axes labels
-                                             wirePtr->NSignal(),                                                                      //> numbeer of bins
-                                             0,                                                                                       //> lowest edge
-                                             wirePtr->NSignal());                                                                     //> upper edge
+        TH1F* waveformHist = tfs->make<TH1F>(("adc_"+evtStr+fLabel.label()+":"+fLabel.instance()+"_"+std::to_string(wirePtr.key())).c_str(), //> name of the object
+                                             ";Sample;Arbitrary Units",                                                                      //> axes labels
+                                             wirePtr->NSignal(),                                                                             //> numbeer of bins
+                                             0,                                                                                              //> lowest edge
+                                             wirePtr->NSignal());                                                                            //> upper edge
 
         // ROOT counts from 1, everyone else counts from 0
         for (size_t bin = 1; bin < wirePtr->NSignal() + 1; ++bin)
