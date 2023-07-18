@@ -1,9 +1,0 @@
-#include "standard_g4_icarus.fcl"
-#include "enable_spacecharge_icarus.fcl"
-
-physics.simulate: [ rns, ionization, sedlite, mcreco ]
-
-services.LArG4Parameters.ModBoxA: 0.93
-services.LArG4Parameters.ModBoxB: 0.218
-
-
