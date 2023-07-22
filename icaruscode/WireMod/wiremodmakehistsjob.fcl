@@ -33,3 +33,12 @@ physics:
 {
   stream1: [ makehists ]
 }
+
+outputs.makehists.results.producers.makehists_ee.TrackLabel: "pandoraKalmanTrackGausCryoE"
+outputs.makehists.results.producers.makehists_ee.GetTracks:  true
+outputs.makehists.results.producers.makehists_ew.TrackLabel: "pandoraKalmanTrackGausCryoE"
+outputs.makehists.results.producers.makehists_ew.GetTracks:  true
+outputs.makehists.results.producers.makehists_we.TrackLabel: "pandoraKalmanTrackGausCryoW"
+outputs.makehists.results.producers.makehists_we.GetTracks:  true
+outputs.makehists.results.producers.makehists_ww.TrackLabel: "pandoraKalmanTrackGausCryoW"
+outputs.makehists.results.producers.makehists_ww.GetTracks:  true

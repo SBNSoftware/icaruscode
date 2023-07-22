@@ -19,6 +19,7 @@
 #include "canvas/Utilities/InputTag.h"
 #include "lardata/Utilities/AssociationUtil.h"
 #include "lardataobj/RecoBase/Track.h"
+#include "lardataobj/RecoBase/TrackHitMeta.h"
 #include "lardataobj/RecoBase/Hit.h"
 #include "lardataobj/RecoBase/Wire.h"
 
@@ -33,8 +34,10 @@ namespace WireMod {
     void clear() override;
 
   private:
-    art::InputTag fLabel; // how the hits/wires are labeled in the input file
-    bool fGetHits;        // are we getting hits? if false the label is for the wires
+    art::InputTag fLabel;      // how the hits/wires are labeled in the input file
+    art::InputTag fTrackLabel; // how the tracks are labeled in the input file
+    bool fGetHits;             // are we getting hits? if false the label is for the wires
+    bool fGetTracks;           // are we getting the tracks?
   };// end WireModMakeHists class
 
   //-------------------------------------------------------------
@@ -54,7 +57,9 @@ namespace WireMod {
   {
     // the first arguement is where in the fhicl to look, the second is the default value if that isn't found
     fLabel = pset.get<art::InputTag>("Label", "decon1droi");
+    fTrackLabel = pset.get<art::InputTag>("TrackLabel");
     fGetHits = pset.get<bool>("GetHits", false);
+    fGetTracks = pset.get<bool>("GetTracks", false);
   }
 
   //-------------------------------------------------------------
@@ -70,7 +75,96 @@ namespace WireMod {
                        + std::to_string(evt.id().subRun()) + "_"
                        + std::to_string(evt.id().event()) + "_";
 
-    if (fGetHits)
+    if (fGetTracks)
+    {
+      // we need both the hits and the tracks separeately
+      art::Handle<std::vector<recob::Hit>> hitHandle;
+      evt.getByLabel(fLabel, hitHandle);
+      if (not hitHandle.isValid())
+      {
+        MF_LOG_VERBATIM("WireModWireModMakeHists")
+          << "Hit handle is not valid!" << '\n'
+          << "Tried " << fLabel << '\n'
+          << "abort";
+        return;
+      }
+      std::vector<art::Ptr<recob::Hit>> hitPtrVec;
+      art::fill_ptr_vector(hitPtrVec, hitHandle);
+
+      // also get tracks and the hits for each track
+      art::FindOneP<recob::Wire> hitToWireAssns(hitHandle, evt, fLabel);
+      art::Handle<std::vector<recob::Track>> trackHandle;
+      evt.getByLabel(fTrackLabel, trackHandle);
+      if (not trackHandle.isValid())
+      {
+        MF_LOG_VERBATIM("WireModWireModMakeHists")
+          << "Track handle is not valid!" << '\n'
+          << "Tried " << fTrackLabel << '\n'
+          << "abort";
+        return;
+      }
+      std::vector<art::Ptr<recob::Track>> trackPtrVec;
+      art::fill_ptr_vector(trackPtrVec, trackHandle);
+      
+      // the recob::TrackHitMeta will let us find where in the track each hit is
+      art::FindManyP<recob::Hit, recob::TrackHitMeta> trackToHits(trackHandle, evt, fTrackLabel);
+
+      for (auto const& trackPtr : trackPtrVec)
+      {
+        // get the tracks hits and metadata for the hits
+        std::vector<art::Ptr<recob::Hit>> const& trackHits = trackToHits.at(trackPtr.key());
+        std::vector<const recob::TrackHitMeta*> const& trackHitMetas = trackToHits.data(trackPtr.key());
+
+        // loop over the track hits
+        // will need to also find the same hit in hitPtrVec to get the associated wire
+        for (size_t hitIdx = 0; hitIdx < trackHits.size(); ++hitIdx)
+        {
+          // get the track hit and metadata
+          art::Ptr<recob::Hit> trackHit = trackHits[hitIdx];
+          const recob::TrackHitMeta& hitMeta = *trackHitMetas[hitIdx];
+          if (hitMeta.Index() == std::numeric_limits<unsigned int>::max() || not trackPtr->HasValidPoint(hitMeta.Index()))
+          {
+            MF_LOG_VERBATIM("WireModWireModMakeHists")
+              << "Bad Hit, get another one";
+              continue;
+          }
+          recob::Track::Point_t const& hitLoc = trackPtr->LocationAtPoint(hitMeta.Index());
+
+          // set up a wirePtr, loop over hitPtrVec to find the right wire
+          art::Ptr<recob::Wire> wirePtr;
+          for (auto const& hitPtr : hitPtrVec)
+          {
+            // check channel etc to see if the hits are a match
+            if (trackHit->Channel()   == hitPtr->Channel()   &&
+                trackHit->StartTick() == hitPtr->StartTick() &&
+                trackHit->EndTick()   == hitPtr->EndTick()   &&
+                trackHit->PeakTime()  == hitPtr->PeakTime()  )
+            {
+              MF_LOG_VERBATIM("WireModWireModMakeHists")
+                << "Wire Fount!";
+              wirePtr = hitToWireAssns.at(hitPtr.key());
+            }
+          }
+          if (wirePtr.isNull())
+          {
+            MF_LOG_VERBATIM("WireModWireModMakeHists")
+              << "Couldn't find wire" << '\n'
+              << "Continue...";
+            continue;
+          }
+
+          // get the location from the track using the hitMeta
+          // get X using hitLoc.X(), similarly for Y and Z
+          // more info from what you can get at https://sbnsoftware.github.io/doxygen/d9/dca/classrecob_1_1Track.html
+          MF_LOG_VERBATIM("WireModWireModMakeHists")
+            << "Hit Pos is (" << hitLoc.X() << ", " << hitLoc.Y() << ", " << hitLoc.Z() << ")"; 
+
+          // now that you have trackPtr, trackHit, & wirePtr you should be able to do all your stuff here
+
+        }
+      }
+
+    } else if (fGetHits)
     {
       // get the hits out of the event and put them in a handle
       // the handle is needed to get the associated wires
@@ -130,7 +224,8 @@ namespace WireMod {
         // In testing this I just want one
         break;
       }
-    } else {
+    } else
+    {
       // get the wires directly since we aren't getting the hits
       art::Handle<std::vector<recob::Wire>> wireHandle;
       evt.getByLabel(fLabel, wireHandle);

@@ -1,6 +1,5 @@
 set(EXCLUDED_PLUGINS NewWireModifier_pluggin.cc WireModMakeHists_plugin.cc)
 
-
 art_make( 
 	  LIB_LIBRARIES
 			${ART_FRAMEWORK_CORE}
@@ -36,7 +35,11 @@ art_make(
 			${ROOT_BASIC_LIB_LIST}
 			${ROOT_HIST}
             EXCLUDE     ${EXCLUDED_PLUGINS}
+                        WireMod_Utilities.hh
+                        WireMod_Utilities.cc
         )
+
+    
 
 simple_plugin(NewWireModifier "module"
               ${ART_FRAMEWORK_CORE}
