@@ -168,14 +168,38 @@ local wcls_output = {
 };
 
 //local deposio = io.numpy.depos(output);
-local drifter = sim.drifter;
-local setdrifter = g.pnode({
+//local drifter = sim.drifter;
+local localeLiftime = [std.extVar('lifetime_TPCEE') * wc.us,std.extVar('lifetime_TPCEE') * wc.us,std.extVar('lifetime_TPCEW') * wc.us,std.extVar('lifetime_TPCEW') * wc.us,std.extVar('lifetime_TPCWE') * wc.us,std.extVar('lifetime_TPCWE') * wc.us,std.extVar('lifetime_TPCWW') * wc.us,std.extVar('lifetime_TPCWW') * wc.us];
+local drifters = [{
+        local xregions = wc.unique_list(std.flattenArrays([v.faces for v in params.det.volumes])),
+
+        type: "Drifter",
+	name: "drifter%d" %n,
+        data: params.lar {
+            rng: wc.tn(tools.random),
+            xregions: xregions,
+            time_offset: params.sim.depo_toffset,
+
+            drift_speed: params.lar.drift_speed,
+            fluctuate: params.sim.fluctuate,
+
+            DL: params.lar.DL,
+            DT: params.lar.DT,
+            lifetime: localeLiftime[n],
+
+        },
+    } 
+	for n in std.range(0,7)];
+
+local setdrifter = [g.pnode({
             type: 'DepoSetDrifter',
+	    name: 'setdrifter%d' %n,
             data: {
-                drifter: "Drifter"
+                drifter: wc.tn(drifters[n])
             }
         }, nin=1, nout=1,
-        uses=[drifter]);
+        uses=[drifters[n]])
+	for n in std.range(0,7)];
 local bagger = sim.make_bagger();
 
 // signal plus noise pipelines
@@ -201,12 +225,12 @@ local sp = sp_maker(params, tools);
 local sp_pipes = [sp.make_sigproc(a) for a in tools.anodes];
 
 local rng = tools.random;
-local wcls_simchannel_sink = g.pnode({
+local wcls_simchannel_sink = [ g.pnode({
   type: 'wclsDepoSetSimChannelSink',
-  name: 'postdrift',
+  name: 'postdrift%d' %n,
   data: {
-    artlabel: 'simpleSC',  // where to save in art::Event
-    anodes_tn: [wc.tn(anode) for anode in tools.anodes],
+    artlabel: 'simpleSC%d' %n,  // where to save in art::Event
+    anode: wc.tn(tools.anodes[n]),//[wc.tn(anode) for anode in tools.anodes],
     rng: wc.tn(rng),
     tick: params.daq.tick,
     start_time: -0.34 * wc.ms, // TriggerOffsetTPC from detectorclocks_icarus.fcl
@@ -232,7 +256,8 @@ local wcls_simchannel_sink = g.pnode({
     g4_ref_time: -1500 * wc.us, // G4RefTime from detectorclocks_icarus.fcl
     use_energy: true,
   },
-}, nin=1, nout=1, uses=tools.anodes);
+}, nin=1, nout=1, uses=tools.anodes)
+for n in std.range(0,7)];
 
 local nicks = ["incoTPCEE","incoTPCEW","incoTPCWE","incoTPCWW", "coheTPCEE","coheTPCEW","coheTPCWE","coheTPCWW"];
 local scale_int = std.extVar('int_noise_scale');
@@ -298,10 +323,24 @@ local frame_summers = [
         },
     }, nin=2, nout=1) for n in std.range(0, 3)];
 
+local deposetfilter = [ g.pnode({
+            type: 'DepoSetFilter',
+   	    name: 'deposetfilter%d' %n,
+            data: {
+                anode: wc.tn(tools.anodes[n])
+            }
+        }, nin=1, nout=1,
+        uses=tools.anodes)
+	for n in std.range(0,7)];
+
 local actpipes = [g.pipeline([noises[n], coh_noises[n], digitizers[n], /*retaggers[n],*/ wcls_output.sim_digits[n]], name="noise-digitizer%d" %n) for n in std.range(0,3)];
 local util = import 'pgrapher/experiment/icarus/funcs.jsonnet';
 local outtags = ['orig%d' % n for n in std.range(0, 3)];
 local pipe_reducer = util.fansummer('DepoSetFanout', analog_pipes, frame_summers, actpipes, 'FrameFanin', 'fansummer', outtags);
+
+local driftpipes = [g.pipeline([deposetfilter[n],setdrifter[n], wcls_simchannel_sink[n]], name="depo-set-drifter%d" %n) for n in std.range(0,7)];
+
+local pipe_drift = util.fandrifter('DepoSetFanout',driftpipes,analog_pipes, frame_summers, actpipes, 'FrameFanin', 'fandrifter', outtags);
 
 // local retagger = g.pnode({
 //   type: 'Retagger',
@@ -325,8 +364,11 @@ local sink = sim.frame_sink;
 
 // local graph = g.pipeline([wcls_input.depos, drifter,  wcls_simchannel_sink, bagger, pipe_reducer, retagger, wcls_output.sim_digits, sink]);
 //local graph = g.pipeline([wcls_input.depos, drifter,  wcls_simchannel_sink, bagger, pipe_reducer, sink]);
-local graph = g.pipeline([wcls_input.deposet, setdrifter, wcls_simchannel_sink, pipe_reducer, sink]);
 
+
+
+local graph = g.pipeline([wcls_input.deposet,pipe_drift, sink]);
+//local graph = g.pipeline([depos,pipe_drift, sink]);
 local app = {
   type: 'Pgrapher',
   data: {
