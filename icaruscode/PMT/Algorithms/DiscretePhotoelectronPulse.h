@@ -21,7 +21,7 @@
 #include "lardataalg/Utilities/quantities/electronics.h" // tick, counts_f
 
 // guidelines library
-#include "gsl/gsl_util" // gsl::index
+#include "gsl/util" // gsl::index
 
 // C++ standard library
 #include <string>
