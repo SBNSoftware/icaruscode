@@ -43,6 +43,8 @@ uint64_t icarusDB::PMTTimingCorrectionsProvider::RunToDatabaseTimestamp( uint32_
    uint64_t timestamp = runNum+1000000000;
    timestamp *= 1000000000;
 
+   if( fVerbose ) mf::LogInfo(fLogCategory) << "Run " << runNum << " corrections from DB timestamp " << timestamp << std::endl;
+   
    return timestamp;
 }
 
@@ -57,9 +59,12 @@ void icarusDB::PMTTimingCorrectionsProvider::ReadPMTCablesCorrections( uint32_t 
     lariov::DBFolder db(dbname, "", "", fTag, true, false);
 
     bool ret = db.UpdateData( RunToDatabaseTimestamp(run) ); // select table based on run number   
-    if( !ret ) throw(std::exception());
+    if( !ret ) throw std::runtime_error( "Unable to find or open " + dbname + ".db");
 
-    for( unsigned int channel=0; channel < 360; channel++ ) {
+    std::vector<unsigned int> channelList;
+    ret = db.GetChannelList(channelList);
+
+    for( auto channel : channelList ) {
         
         // PPS reset correction
         double reset_distribution_delay = 0;
@@ -105,9 +110,12 @@ void icarusDB::PMTTimingCorrectionsProvider::ReadLaserCorrections( uint32_t run 
     lariov::DBFolder db(dbname, "", "", fTag, true, false);
 
     bool ret = db.UpdateData( RunToDatabaseTimestamp(run) ); // select table based on run number   
-    if( !ret ) throw(std::exception());
+    if( !ret ) throw std::runtime_error( "Unable to find or open `" + dbname + ".db`");
 
-    for( unsigned int channel=0; channel < 360; channel++ ) {
+    std::vector<unsigned int> channelList;
+    ret = db.GetChannelList(channelList);
+
+    for( auto channel : channelList ) {
         
         // Laser correction
         double t_signal = 0;
@@ -131,13 +139,16 @@ void icarusDB::PMTTimingCorrectionsProvider::ReadCosmicsCorrections( uint32_t ru
     lariov::DBFolder db(dbname, "", "", fTag, true, false);
 
     bool ret = db.UpdateData( RunToDatabaseTimestamp(run) ); // select table based on run number   
-    if( !ret ) throw(std::exception());
+    if( !ret ) throw std::runtime_error("Unable to find or open `" + dbname + ".db`");
 
-    for( unsigned int channel=0; channel < 360; channel++ ) {
+    std::vector<unsigned int> channelList;
+    ret = db.GetChannelList(channelList);
+
+    for( auto channel : channelList ) {
         
         // Cosmics correction
  	double mean_residual_ns = 0;
-        int error = db.GetNamedChannelData( channel, "mean_residual_ns", mean_residual_ns );
+	int error = db.GetNamedChannelData( channel, "mean_residual_ns", mean_residual_ns );
         if( error ) throw std::runtime_error( "Encountered error while trying to access 'mean_residual_ns' on table " + dbname );
 
         /// pmt_cosmics_residual: time residuals from downward going cosmics tracks 
