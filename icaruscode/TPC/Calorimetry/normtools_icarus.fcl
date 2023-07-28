@@ -19,7 +19,7 @@ wirenorm: {
 yznorm: {
   tool_type: NormalizeYZ
   Timeout: 200
-  URL: "https://dbdata0vm.fnal.gov:9443/icarus_con_prod/app/data?f=test_tpc_yz_correction_data&t="
+  URL: "https://dbdata0vm.fnal.gov:9443/icarus_con_prod/app/data?f=tpc_yz_correction_data&t="
   Verbose: false
 }
 
@@ -46,13 +46,10 @@ tpcgain_sql: {
 
 tpcgain_local: {
   tool_type: NormalizeTPCLocal
-  # Recombination floating, muon+proton fit
-  # CalConstants: [81.04, 79.5, 82.88, 81.88]
-  # Recombination fixed, muon+proton fit
-  CalConstants: [80.32, 79.82, 82.24, 81.68]
+  # Relative normalization of the TPCs
+  CalConstants: [1.0118, 1.0000, 1.0333, 1.0230]
   Verbose: false
 }
-
 
 yznorm_sql: {
   tool_type: NormalizeYZSQL
@@ -61,10 +58,11 @@ yznorm_sql: {
   Verbose: false
 }
 
-# icarus_calonormtools: [@local::driftnorm, @local::yznorm, @local::tpcgain]
-icarus_calonormtools: [@local::driftnorm_sql, @local::yznorm_sql, @local::tpcgain_local]
+icarus_calonormtools: [@local::driftnorm, @local::yznorm, @local::tpcgain]
+# icarus_calonormtools: [@local::driftnorm_sql, @local::yznorm_sql, @local::tpcgain_sql]
 
-# The norm tools already take care of this
-icarus_data_calconst: [1., 1., 1.]
+# Gain with angular dep. recombination
+# Assume equal on planes -- this is __wrong__ -- will need to be fixed when they are calibrated
+icarus_data_calconst: [0.013390, 0.013390, 0.013390]
 
 END_PROLOG
