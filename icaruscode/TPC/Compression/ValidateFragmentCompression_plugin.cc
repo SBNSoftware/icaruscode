@@ -59,7 +59,7 @@ namespace tcpCompression {
     fCheckOldFragments = pset.get<bool>         ("CheckOldFragments", false);
     fDumpADCs          = pset.get<bool>         ("DumpADCs"         , false);
 
-    art::ServiceHandle<art::TFileService>  tfs;
+    art::ServiceHandle<art::TFileService> tfs;
     fChannelMap = art::ServiceHandle<icarusDB::IICARUSChannelMap const>{}.get();
 
     fCompHist = tfs->make<TH1F>(("CompHist_"+fFragmentsLabel.instance()).c_str(), ";Size (bytes);Number of Fragments", 100, 0, 10000000);
@@ -75,6 +75,9 @@ namespace tcpCompression {
     //if (e.getByLabel(fFragmentsLabel, originalFragmentsHandle))
     //  art::fill_ptr_vector(originalFragments, originalFragmentsHandle);
     std::vector<artdaq::Fragment> originalFragments = evt.getProduct<std::vector<artdaq::Fragment>>(fFragmentsLabel);
+
+    // if we want to make a histogram for the waveform
+    art::ServiceHandle<art::TFileService> tfs;
 
     for (auto const& frag : originalFragments)
     {
@@ -204,12 +207,44 @@ namespace tcpCompression {
           << "Filling Compressed Hist with " << frag.sizeBytes() << '\n'
           << "|-> Fragment comes from crate " << fragCrateName;
         fCompHist->Fill(frag.sizeBytes());
+        
+        // look through the fragment and try to find peaks
+        // for each channel loop over the keys and look for where there's no compression
+        // ignore sample zero because that's always uncompressed
+        for (size_t b = 0; b < fragOverlay.nBoards(); ++b)
+        {
+          // for each channel which has more than 2 uncompressed blocks save the waveform
+          size_t nDcmpBlocks[16] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+          for (size_t s = 1; s < fragOverlay.nSamplesPerChannel(); ++s)
+          {
+            uint16_t const& key = fragOverlay.CompressionKey(b, s);
+            for (size_t bit = 0; bit < 16; bit++)
+              nDcmpBlocks[bit] += (std::bitset<16>(key)[bit] == 0);
+          }
+          for (size_t bit = 0; bit < 16; bit++)
+          {
+            if (nDcmpBlocks[bit] > 1)
+            {
+              size_t baseChannel = bit*4;
+              for (size_t c = 0; c < 4; ++c)
+              {
+                std::string title = "ADC_"+fFragmentsLabel.label()+"_ID_"+std::to_string(frag.fragmentID())+"_Board_"+std::to_string(b)+"_Channel_"+std::to_string(baseChannel + c);
+                TH1F* hist = tfs->make<TH1F>(title.c_str(), ";Sample;ADC Counts", fragOverlay.nSamplesPerChannel(), 0, fragOverlay.nSamplesPerChannel());
+                for (size_t s = 0; s < fragOverlay.nSamplesPerChannel(); ++s)
+                {
+                  hist->SetBinContent(s, fragOverlay.adc_val(b, s, baseChannel + c));
+                }
+              }
+            }
+          }
+        }
       } else {
         MF_LOG_VERBATIM("ValidateCompression")
           << "Filling Decompressed Hist with " << frag.sizeBytes() << '\n'
           << "|-> Fragment comes from crate " << fragCrateName;
         fDcmpHist->Fill(frag.sizeBytes());
       }
+
     }
   }
 
