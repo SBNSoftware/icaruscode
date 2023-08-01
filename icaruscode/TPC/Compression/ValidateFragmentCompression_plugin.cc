@@ -228,7 +228,7 @@ namespace tcpCompression {
               size_t baseChannel = bit*4;
               for (size_t c = 0; c < 4; ++c)
               {
-                std::string title = "ADC_"+fFragmentsLabel.label()+"_ID_"+std::to_string(frag.fragmentID())+"_Board_"+std::to_string(b)+"_Channel_"+std::to_string(baseChannel + c);
+                std::string title = "ADC_"+fFragmentsLabel.label()+":"+fFragmentsLabel.process()+"_ID_"+std::to_string(frag.fragmentID())+"_Board_"+std::to_string(b)+"_Channel_"+std::to_string(baseChannel + c);
                 TH1F* hist = tfs->make<TH1F>(title.c_str(), ";Sample;ADC Counts", fragOverlay.nSamplesPerChannel(), 0, fragOverlay.nSamplesPerChannel());
                 for (size_t s = 0; s < fragOverlay.nSamplesPerChannel(); ++s)
                 {
