@@ -21,7 +21,7 @@ set(icarus_util_lib_list
 	art::Framework_IO
 	art::Framework_IO_detail
 	art::Persistency_Provenance
-	icaruscode_IcarusObj
+	sbnobj::ICARUS_TPC	
 	art_root_io::tfile_support ROOT::Core
 	art_root_io::RootDB
 	art::Framework_Services_Optional_RandomNumberGenerator_service
