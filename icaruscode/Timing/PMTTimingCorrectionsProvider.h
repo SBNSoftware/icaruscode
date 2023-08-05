@@ -33,10 +33,10 @@ namespace icarusDB::details {
   /// Structure for single channel corrections
   struct PMTTimeCorrectionsDB { 
 
-    double triggerCableDelay=0;  ///< ns
-    double resetCableDelay=0;    ///< ns
-    double laserCableDelay=0;    ///< ns
-    double cosmicsCorrections=0; ///< ns
+    double triggerCableDelay=0;  ///< [&micro;s]
+    double resetCableDelay=0;    ///< [&micro;s]
+    double laserCableDelay=0;    ///< [&micro;s]
+    double cosmicsCorrections=0; ///< [&micro;s]
     
   };
   
@@ -48,6 +48,8 @@ namespace icarusDB{ class PMTTimingCorrectionsProvider; }
  * 
  * This module reads the PMT timing corrections from the database.
  * Corrections are picked according to the run number being processed.  
+ *
+ * All time corrections are offsets (in microseconds) that need to be _added_ to the uncorrected time.
  * 
  * Configuration parameters
  * -------------------------

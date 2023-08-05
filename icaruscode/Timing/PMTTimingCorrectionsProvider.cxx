@@ -59,17 +59,20 @@ void icarusDB::PMTTimingCorrectionsProvider::ReadPMTCablesCorrections( uint32_t 
     lariov::DBFolder db(dbname, "", "", fTag, true, false);
 
     bool ret = db.UpdateData( RunToDatabaseTimestamp(run) ); // select table based on run number   
-    if( !ret ) throw std::runtime_error( "Unable to find or open " + dbname + ".db");
+    mf::LogDebug(fLogCategory) << "PMT corrections" << (ret? "": " not") << " updated for run " << run;
 
     std::vector<unsigned int> channelList;
-    ret = db.GetChannelList(channelList);
+    if (int res = db.GetChannelList(channelList); res != 0) {
+      throw std::runtime_error
+        ( "PMTTimingCorrectionsProvider: GetChannelList() returned " + std::to_string(res) + " on run " + std::to_string(run) + " query.");
+    }
 
     for( auto channel : channelList ) {
         
         // PPS reset correction
         double reset_distribution_delay = 0;
         int error  = db.GetNamedChannelData( channel, "reset_distribution_delay", reset_distribution_delay );
-        if( error ) throw std::runtime_error( "Encountered error while trying to access 'reset_distribution_delay' on table " + dbname );
+        if( error ) throw std::runtime_error( "Encountered error (code " + std::to_string(error) + ") while trying to access 'reset_distribution_delay' on table " + dbname );
 
         // Trigger cable delay
         double trigger_reference_delay = 0;
