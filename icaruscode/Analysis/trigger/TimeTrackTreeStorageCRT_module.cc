@@ -16,6 +16,7 @@
 #include "icaruscode/PMT/Algorithms/PMTverticalSlicingAlg.h"
 #include "icaruscode/Utilities/TrajectoryUtils.h"
 #include "icaruscode/Utilities/ArtAssociationCaches.h" // OneToOneAssociationCache
+#include "icarusalg/Utilities/AssnsCrosser.h"
 #include "sbnobj/Common/CRT/CRTHit.hh"
 #include "sbnobj/Common/Trigger/ExtraTriggerInfo.h"
 
@@ -478,74 +479,6 @@ private:
     detinfo::DetectorPropertiesData const& detProp
     ) const;
   
-  /// Connects `recob::Track` to `anab::T0` via intermediate `recob::PFParticle`
-  class TPCT0fromTrackBrowser {
-      public:
-    
-    /**
-     * @brief Constructor.
-     * @param event the _art_ event to read data from when needed
-     * @param trackParticleAssnsTag (default: none) tag of particle/track associations
-     * 
-     * If `trackParticleAssnsTag` is empty, it will be figured out from the
-     * first query, assuming that the producer of the track is also the one
-     * of the particle flow object associations to them.
-     */
-    TPCT0fromTrackBrowser(
-      art::Event const& event,
-      art::InputTag const& trackParticleAssnsTag = {},
-      art::InputTag const& particleT0AssnsTag = {}
-      );
-    
-    /// Declares the data products that may be consumed to the `collector`.
-    void declareConsumes(art::ConsumesCollector& collector) const;
-    
-    //@{
-    /// Returns the `anab::T0` associated to the specified track.
-    art::Ptr<anab::T0> findT0for(art::Ptr<recob::Track> const& trackPtr);
-    art::Ptr<anab::T0> operator() (art::Ptr<recob::Track> const& trackPtr)
-      { return findT0for(trackPtr); }
-    //@}
-    
-    
-    /// Declares the data products that may be consumed to the `collector`.
-    static void declareConsumes(
-      art::ConsumesCollector& collector
-      , art::InputTag const& trackParticleAssnsTag
-      , art::InputTag const& particleT0AssnsTag
-      );
-  
-      private:
-    art::Event const* fEvent; ///< Event to read data on demand.
-    
-    /// Tag for the particle/track associations.
-    art::InputTag fTrackParticleAssnsTag;
-    
-    /// Tag for the t0/particle associations.
-    art::InputTag fParticleT0AssnsTag;
-    
-    /// Track to PFO cache.
-    util::OneToOneAssociationCache<recob::Track, recob::PFParticle> fTrackToPFO;
-    
-    /// PFO to TO cache.
-    util::OneToOneAssociationCache<recob::PFParticle, anab::T0> fPFOtoT0;
-    
-    /// Returns the `recob::PFParticle` associated to `trackPtr`, null if none.
-    art::Ptr<recob::PFParticle> findPFOforTrack(art::Ptr<recob::Track> const& trackPtr);
-    
-    /// Returns the `anab::T0` associated to `particlePtr`, null if none.
-    art::Ptr<anab::T0> findT0forPFO(art::Ptr<recob::PFParticle> const& particlePtr);
-    
-    /// Lookup which queries `cache` and loads more data into it if needed.
-    template <typename Left, typename Right>
-    art::Ptr<Right> findAssociatedPtr(
-      art::Ptr<Left> const& leftPtr,
-      util::OneToOneAssociationCache<Left, Right>& cache,
-      art::InputTag* assnsTag = nullptr
-      );
-
-  }; // TPCT0fromTrackBrowser
-  
 }; // sbn::TimeTrackTreeStorage
 
 
@@ -640,8 +573,6 @@ sbn::TimeTrackTreeStorage::TimeTrackTreeStorage(Parameters const& p)
   consumes<std::vector<sim::BeamGateInfo>>(fBeamGateProducer);
   consumes<sbn::ExtraTriggerInfo>(fTriggerProducer);
   consumes<art::Assns<recob::Track, recob::PFParticle>>(fTrackProducer);
-  TPCT0fromTrackBrowser::declareConsumes
-    (consumesCollector(), fPFPproducer, fT0Producer);
   consumes<art::Assns<recob::Track, anab::Calorimetry>>(fCaloProducer);
   consumes<art::Assns<recob::Track, recob::Hit, recob::TrackHitMeta>>(fTrackProducer);
   consumes<recob::OpFlash>(fFlashProducer);
@@ -746,7 +677,8 @@ void sbn::TimeTrackTreeStorage::analyze(art::Event const& e)
   art::FindOneP<anab::T0> TrackT0s(tracks,e,fT0selProducer);
   
   // t0 from TPC (cathode crossing tracks)
-  TPCT0fromTrackBrowser TrackTPCt0s{ e, fPFPproducer, fT0Producer };
+  icarus::ns::util::AssnsCrosser<recob::Track, recob::PFParticle, anab::T0> const
+  TrackTPCt0s{ e, fPFPproducer, fT0Producer };
   
   // optical flashes
   std::vector<recob::OpFlash> const &particleFlashes = e.getProduct<std::vector<recob::OpFlash>>(fFlashProducer);
@@ -836,7 +768,7 @@ void sbn::TimeTrackTreeStorage::analyze(art::Event const& e)
     bool const hasT0 = (t0Ptr->ID() >= 0);
     if (hasT0) trackInfo.t0 = t0Ptr->Time() / 1000.0; // otherwise stays NoTime
     
-    art::Ptr<anab::T0> const& t0TPCPtr = TrackTPCt0s(trackPtr);
+    art::Ptr<anab::T0> const& t0TPCPtr = TrackTPCt0s.assPtr(trackPtr);
     // differently from CRT, we assume that all available T0 from TPC are valid
     bool const hasTPCT0 = t0TPCPtr.isNonnull();
     if (hasTPCT0)
@@ -1287,99 +1219,6 @@ geo::Vector_t sbn::TimeTrackTreeStorage::posShiftFromCRTtime(
   return driftDir * shiftTowardAnode;
 } // sbn::TimeTrackTreeStorage::posShiftFromCRTtime()
 
-
-// -----------------------------------------------------------------------------
-// --- BEGIN -- Implementation for association traverse with two hops ----------
-// -----------------------------------------------------------------------------
-sbn::TimeTrackTreeStorage::TPCT0fromTrackBrowser::TPCT0fromTrackBrowser(
-  art::Event const& event,
-  art::InputTag const& trackParticleAssnsTag /* = {} */,
-  art::InputTag const& particleT0AssnsTag /* = {} */
-)
-  : fEvent{ &event }
-  , fTrackParticleAssnsTag{ trackParticleAssnsTag }
-  , fParticleT0AssnsTag{ particleT0AssnsTag }
-  {}
-
-
-void sbn::TimeTrackTreeStorage::TPCT0fromTrackBrowser::declareConsumes
-  (art::ConsumesCollector& collector) const
-  { declareConsumes(collector, fTrackParticleAssnsTag, fParticleT0AssnsTag); }
-
-
-art::Ptr<anab::T0> sbn::TimeTrackTreeStorage::TPCT0fromTrackBrowser::findT0for
-  (art::Ptr<recob::Track> const& trackPtr)
-{
-  art::Ptr<recob::PFParticle> particlePtr = findPFOforTrack(trackPtr);
-  if (trackPtr.isNull()) return {};
-  
-  art::Ptr<anab::T0> t0Ptr = findT0forPFO(particlePtr);
-  return t0Ptr;
-} // sbn::TimeTrackTreeStorage::TPCT0fromTrackBrowser::findT0for()
-
-
-template <typename Left, typename Right>
-art::Ptr<Right>
-sbn::TimeTrackTreeStorage::TPCT0fromTrackBrowser::findAssociatedPtr(
-  art::Ptr<Left> const& leftPtr,
-  util::OneToOneAssociationCache<Left, Right>& cache,
-  art::InputTag* assnsTag /* = nullptr */
-) {
-  // check cache
-  art::Ptr<Right> rightPtr = cache(leftPtr);
-  if (rightPtr) return rightPtr;
-  
-  if (cache.hasProduct(leftPtr)) return {}; // can't load anything new here
-  
-  // if no hit, load new associations
-  art::InputTag const tag
-    = (!assnsTag || assnsTag->empty())? inputTagOf(leftPtr, *fEvent): *assnsTag;
-  if (assnsTag && assnsTag->empty()) *assnsTag = tag;
-  
-  auto const& assns = fEvent->getProduct<art::Assns<Left, Right>>(tag);
-  
-  util::OneToOneAssociationCache<Left, Right> newCache{ assns };
-  
-  rightPtr = newCache(leftPtr);
-  
-  cache.mergeCache(std::move(newCache));
-  
-  return rightPtr;
-  
-} // sbn::TimeTrackTreeStorage::TPCT0fromTrackBrowser::findAssociatedPtr()
-
-
-art::Ptr<recob::PFParticle>
-sbn::TimeTrackTreeStorage::TPCT0fromTrackBrowser::findPFOforTrack
-  (art::Ptr<recob::Track> const& trackPtr)
-  { return findAssociatedPtr(trackPtr, fTrackToPFO, &fTrackParticleAssnsTag); }
-
-
-art::Ptr<anab::T0>
-sbn::TimeTrackTreeStorage::TPCT0fromTrackBrowser::findT0forPFO
-  (art::Ptr<recob::PFParticle> const& particlePtr)
-  { return findAssociatedPtr(particlePtr, fPFOtoT0, &fParticleT0AssnsTag); }
-
-
-void sbn::TimeTrackTreeStorage::TPCT0fromTrackBrowser::declareConsumes(
-  art::ConsumesCollector& collector
-  , art::InputTag const& trackParticleAssnsTag
-  , art::InputTag const& particleT0AssnsTag
-) {
-  if (!trackParticleAssnsTag.empty()) {
-    collector.consumes<art::Assns<recob::Track, recob::PFParticle>>
-      (trackParticleAssnsTag);
-  }
-  if (!particleT0AssnsTag.empty()) {
-    collector.consumes<art::Assns<recob::PFParticle, anab::T0>>
-      (particleT0AssnsTag);
-  }
-} // sbn::TimeTrackTreeStorage::TPCT0fromTrackBrowser::declareConsumes()
-
-
-// -----------------------------------------------------------------------------
-// --- END ---- Implementation for association traverse with two hops ----------
-// -----------------------------------------------------------------------------
 
 DEFINE_ART_MODULE(sbn::TimeTrackTreeStorage)
 
