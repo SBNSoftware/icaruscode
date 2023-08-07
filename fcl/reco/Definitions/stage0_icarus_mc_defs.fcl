@@ -1,4 +1,5 @@
-#include "decoderTools_icarus.fcl"
+// #include "decoderTools_icarus.fcl"
+#include "decoderdefs_icarus.fcl"
 #include "trigger_emulation_icarus.fcl"
 #include "icarus_ophitfinder.fcl"
 #include "icarus_flashfinder.fcl"
@@ -31,7 +32,13 @@ icarus_stage0_mc_producers:
 
     @table::icarus_standard_triggersim.producers  # from trigger_emulation_icarus.fcl
     
+    opdaqmeta:         {
+                           module_type: OpDetWaveformMetaMaker
+                           Waveforms:   opdaq
+                       }
+    
     pmtbaselines:      @local::icarus_opreco_pedestal_fromchannel_MC  # from icarus_ophitfinder.fcl
+    opdetonbeam:       @local::copyPMTonBeam  # from decoderdefs_icarus.fcl
     ophit:             @local::icarus_ophit_data
     mcophit:           @local::ICARUSMCOpHit
 
@@ -61,5 +68,10 @@ icarus_stage0_mc_crt:  [ crthit,
                          crttrack, 
                        	 crtpmt
 		       ]
+
+# adapt input labels
+icarus_stage0_mc_producers.opdetonbeam.Waveforms:              opdaq
+icarus_stage0_mc_producers.opdetonbeam.OpDetWaveformMetaAssns: opdaqmeta
+icarus_stage0_mc_producers.opdetonbeam.WaveformBaselineAssns:  pmtbaselines
 
 END_PROLOG
