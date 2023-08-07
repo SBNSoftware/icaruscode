@@ -81,7 +81,7 @@ decodeTriggerAutodetect: {
 copyPMTonBeam: {
                     module_type:        CopyBeamTimePMTwaveforms
                     Waveforms:          @nil # must override
-                    TimeReference:      "BeamGate"
+                    WaveformBaselineAssns: ""
 }
 
 END_PROLOG
