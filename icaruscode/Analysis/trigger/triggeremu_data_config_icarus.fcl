@@ -116,6 +116,10 @@ triggeremu_data_config_icarus.input.gatesForTriggerE: "gatesFromTracksE"
 triggeremu_data_config_icarus.input.gatesForTriggerW: "gatesFromTracksW"
 triggeremu_data_config_icarus.input.gatesForTrigger:  "gatesFromTracks"
 
+triggeremu_data_config_icarus.input.gatesForTriggerCentralAddersE: "gatesFromTracksCentralAddersE"
+triggeremu_data_config_icarus.input.gatesForTriggerCentralAddersW: "gatesFromTracksCentralAddersW"
+triggeremu_data_config_icarus.input.gatesForTriggerCentralAdders:  "gatesFromTracksCentralAdders"
+
 END_PROLOG
 
 

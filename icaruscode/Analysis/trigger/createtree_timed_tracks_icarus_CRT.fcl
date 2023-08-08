@@ -99,15 +99,17 @@ physics: {
     t0selectorAddersW: {
       module_type: TimedTrackSelectorCRT
       TrackTimeTags: [ "CRTT0MatchingW" ]
-      MinT0: 1498800 #1498.8 in ns as requested by code, evaluated from distribution of the triggered tracks wrt electronics time scale
-      MaxT0: 1500400 #1500.4 in ns evaluated from distribution of triggered tracks wrt electronics time scale
+      #MinT0: 1498800 #1498.8 in ns as requested by code, evaluated from distribution of the triggered tracks wrt electronics time scale
+      #MaxT0: 1509000 #1500.4 in ns evaluated from distribution of triggered tracks wrt electronics time scale
+      MinT0: -49000 #1498.8 in ns as requested by code, evaluated from distribution of the triggered tracks wrt electronics time scale
+      MaxT0: 117000 #1500.4 in ns evaluated from distribution of triggered tracks wrt electronics time scale
     }
     
     t0selectorAddersE: {
       module_type: TimedTrackSelectorCRT
       TrackTimeTags: [ "CRTT0MatchingE" ]
-      MinT0: 14988000 #see t0selectorAddersW 
-      MaxT0: 15004000 #see t0selectorAddersW 
+      MinT0: -49000 #1498.8 in ns as requested by code, evaluated from distribution of the triggered tracks wrt electronics time scale
+      MaxT0: 117000 #1500.4 in ns evaluated from distribution of triggered tracks wrt electronics time scale 
     }
   }
 
@@ -115,7 +117,6 @@ physics: {
 
     gatesFromTracksW: {
       @table::gatesFromTracks_icarus
-      
       T0Producer:    "CRTT0MatchingW"
       T0selProducer: t0selectorW
     }
@@ -258,7 +259,7 @@ physics: {
   
   selectionW: [
     "calorimetryCryoW", "CRTT0MatchingW",
-    "t0selectorW", "gatesFromTracksW",
+    "t0selectorAddersW", "gatesFromTracksW",
     "lvdsgatesOR",
     @sequence::triggeremu_data_config_icarus.simulationPrepWest,  # from triggeremu_data_config_icarus.fcl
     "simSlidingORM1W", "simSlidingORS3W", "simSlidingORS5W",
@@ -266,7 +267,7 @@ physics: {
     ]
   selectionE: [
     "calorimetryCryoE", "CRTT0MatchingE",
-    "t0selectorE", "gatesFromTracksE",
+    "t0selectorAddersE", "gatesFromTracksE",
     "lvdsgatesOR",
     @sequence::triggeremu_data_config_icarus.simulationPrepEast,  # from triggeremu_data_config_icarus.fcl
     "simSlidingORM1E", "simSlidingORS3E", "simSlidingORS5E",
@@ -278,7 +279,6 @@ physics: {
     "t0selectorAddersW", "gatesFromTracksCentralAddersW",
     "lvdsgatesOR", 
     @sequence::triggeremu_data_config_icarus.simulationPrepCentralAddersWest,
-    #@sequence::triggeremu_data_config_icarus.simulationPrepWest,
     "simSlidingORM1W", "simSlidingORS3W", "simSlidingORS5W",
     "simSlidingORS8W", "simSlidingORS10W", "simSlidingORS15W"
     ]
@@ -288,7 +288,6 @@ physics: {
     "t0selectorAddersE", "gatesFromTracksCentralAddersE",
     "lvdsgatesOR",
     @sequence::triggeremu_data_config_icarus.simulationPrepCentralAddersEast,
-    #@sequence::triggeremu_data_config_icarus.simulationPrepEast,
     "simSlidingORM1E", "simSlidingORS3E", "simSlidingORS5E",
     "simSlidingORS8E", "simSlidingORS10E", "simSlidingORS15E"
     ]
