@@ -7,4 +7,4 @@
 
 #change to central adders track selection/emulation method
 physics.trigger_paths: [ selectionCentralAddersW, selectionCentralAddersE ]
- 
+physics.ana: [ t0TreeStoreCentralAddersW, t0TreeStoreCentralAddersE ]  

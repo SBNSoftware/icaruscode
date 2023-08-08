@@ -197,6 +197,50 @@ physics: {
       SelectEvents: [ "selectionE" ]
       }
 
+    t0TreeStoreCentralAddersW: {
+      @table::timetracktreestorage_base
+      T0selProducer: "t0selectorW"
+      T0Producer: "pandoraGausCryoW"
+      PFPproducer: "pandoraTrackGausCryoW"
+      TrackProducer: "pandoraTrackGausCryoW"
+      TrackFitterProducer: "pandoraTrackGausCryoW"
+      CaloProducer: "calorimetryCryoW"
+      FlashProducer: "opflashCryoW"
+      CRTMatchingProducer: "CRTT0MatchingW"
+      EmulatedTriggers: [
+        { Name:       "M1"   TriggerTag: "simSlidingORM1W" },
+	{ Name:       "S3"   TriggerTag: "simSlidingORS3W" },
+        { Name:       "S5"   TriggerTag: "simSlidingORS5W" },
+        { Name:       "S8"   TriggerTag: "simSlidingORS8W" },
+        { Name:      "S10"   TriggerTag: "simSlidingORS10W" },
+        { Name:      "S15"   TriggerTag: "simSlidingORS15W" }
+      ]
+      LogCategory: "TimeTrackTreeStorageCryoW"
+      SelectEvents: [ "selectionCentralAddersW" ]
+      }
+
+    t0TreeStoreCentralAddersE: {
+      @table::timetracktreestorage_base
+      T0selProducer: "t0selectorE"
+      T0Producer: "pandoraGausCryoE"
+      PFPproducer: "pandoraTrackGausCryoE"
+      TrackProducer: "pandoraTrackGausCryoE"
+      TrackFitterProducer: "pandoraTrackGausCryoE"
+      CaloProducer: "calorimetryCryoE"
+      FlashProducer: "opflashCryoE"
+      CRTMatchingProducer: "CRTT0MatchingE"
+      EmulatedTriggers: [
+        { Name:       "M1"   TriggerTag: "simSlidingORM1E" },
+	{ Name:       "S3"   TriggerTag: "simSlidingORS3E" },
+        { Name:       "S5"   TriggerTag: "simSlidingORS5E" },
+        { Name:       "S8"   TriggerTag: "simSlidingORS8E" },
+        { Name:      "S10"   TriggerTag: "simSlidingORS10E" },
+        { Name:      "S15"   TriggerTag: "simSlidingORS15E" }
+      ]
+      LogCategory: "TimeTrackTreeStorageCryoE"
+      SelectEvents: [ "selectionCentralAddersE" ]
+      }
+
   } #analyzers
   
   selectionW: [
