@@ -64,10 +64,10 @@ icarus::A2795CompressedDataBlock::data_t const* icarus::PhysCrateCompressedFragm
     size_t cumulativeSize = (b == 0) ? 0 : cumulativeBoardSize(b - 1);
     return ( reinterpret_cast<A2795CompressedDataBlock::data_t const*>
              (artdaq_Fragment_.dataBeginBytes()
-              + cumulativeSize
               + (1+b)*sizeof(PhysCrateCompressedDataTileHeader)
               + (1+b)*sizeof(A2795CompressedDataBlock::Header)
-              + b*4*sizeof(uint16_t)));
+              + 4*b*sizeof(uint16_t)
+              + cumulativeSize));
   }
 
   return ( reinterpret_cast< A2795CompressedDataBlock::data_t const *>
@@ -76,7 +76,7 @@ icarus::A2795CompressedDataBlock::data_t const* icarus::PhysCrateCompressedFragm
 	    + sizeof(A2795CompressedDataBlock::Header)) );  
 }
 
-icarus::A2795CompressedDataBlock::data_t icarus::PhysCrateCompressedFragment::adc_val(size_t b,size_t c, size_t s) const{
+icarus::A2795CompressedDataBlock::data_t icarus::PhysCrateCompressedFragment::adc_val(size_t b, size_t c, size_t s) const{
   if (isCompressed())
     return adc_val_recursive_helper(b, c, 0, s,
              std::make_pair(static_cast<icarus::A2795CompressedDataBlock::data_t>(0), BoardData(b))).first;
@@ -239,9 +239,9 @@ std::vector<uint16_t> icarus::PhysCrateCompressedFragment::GenerateKeys(artdaq::
     icarus::A2795CompressedDataBlock::data_t const* boardData
                                             = reinterpret_cast<icarus::A2795CompressedDataBlock::data_t const*>
                                                        ( f.dataBeginBytes()
-                                                       + (1 + b) * sizeof(icarus::PhysCrateCompressedDataTileHeader)
-                                                       + (1 + b) * sizeof(icarus::A2795CompressedDataBlock::Header)
-                                                       + b*4*sizeof(uint16_t)
+                                                       + (1+b)*sizeof(icarus::PhysCrateCompressedDataTileHeader)
+                                                       + (1+b)*sizeof(icarus::A2795CompressedDataBlock::Header)
+                                                       + 4*b*sizeof(uint16_t)
                                                        + cumulativePrevBlockSize                   );
     size_t nWord = 0;
     for (size_t s = 0; s < nSamples; s++)
@@ -258,6 +258,10 @@ std::vector<uint16_t> icarus::PhysCrateCompressedFragment::GenerateKeys(artdaq::
       nWord += (std::bitset<16>(key).count() % 2);
       cumulativePrevBlockSize += icarus::PhysCrateCompressedFragment::SampleBytesFromKey(key);
       TRACEN("PhysCrateCompressedFragment",TLVL_DEBUG+3,"PhysCrateCompressedFragment::GenerateKeys : Compression key for board %ld, sample %ld is %s", b, s, std::bitset<16>(key).to_string().c_str());
+      if(s == 0 && f.metadata<icarus::PhysCrateCompressedFragmentMetadata>()->compression_scheme() != 0 && key != 0)
+      {
+        TRACEN("PhysCrateCompressedFragment", TLVL_ERROR, "PhysCrateCompressedFragment::GenerateKeys : Sample 0 key is non-zero for board board %ld. Compressed boards use 0th sample as a reference, so this should not occur!", b);
+      }
     }
   }
   return keys;
@@ -457,22 +461,12 @@ artdaq::Fragment icarus::PhysCrateCompressedFragment::compressArtdaqFragment(art
     icarus::PhysCrateCompressedFragmentMetadata::data_t adcPerS   = f.metadata<icarus::PhysCrateCompressedFragmentMetadata>()->num_adc_bits(); // i don't know why the names are like this...
     icarus::PhysCrateCompressedFragmentMetadata::data_t compress  = 1; // working with uncompressed being zero. unsure if true
     std::vector<icarus::PhysCrateCompressedFragmentMetadata::id_t> boardIds(nBoards);
-    // for whatever reason the getting the board ids from the metadata keeps failing
-    // so we'll do it through the DataTileHeaders (ie the hard way)
-    size_t runningDataTileHeaderLoc = 0;
-    std::cout << "comp debug: nBoards = " << nBoards << std::endl;
     for (size_t b = 0; b < nBoards; b++)
-    {
-      icarus::PhysCrateCompressedDataTileHeader const* currentHeader = reinterpret_cast<icarus::PhysCrateCompressedDataTileHeader const*>(f.dataBeginBytes() + runningDataTileHeaderLoc);
-      std::cout << "decomp debug: board " << b << " has id " << currentHeader->board_id << std::endl;
-      boardIds[b] = currentHeader->board_id;
-      runningDataTileHeaderLoc += ntohl(currentHeader->packSize);
-    }
+      boardIds.push_back(f.metadata<icarus::PhysCrateCompressedFragmentMetadata>()->board_id(b));
     icarus::PhysCrateCompressedFragmentMetadata updatedMD(runNumber, nBoards, cPerB, sPerC, adcPerS, compress, boardIds);
     compressedFragment.updateMetadata<icarus::PhysCrateCompressedFragmentMetadata>(updatedMD);
   }
 
-  std::cout << "icarus::PhysCrateCompressedFragment::compressArtdaqFragment || fragment size is " << compressedPayloadSize << std::endl;
   return compressedFragment;
 }
 
@@ -557,27 +551,14 @@ artdaq::Fragment icarus::PhysCrateCompressedFragment::decompressArtdaqFragment(a
     icarus::PhysCrateCompressedFragmentMetadata::data_t cPerB     = f.metadata<icarus::PhysCrateCompressedFragmentMetadata>()->channels_per_board();
     icarus::PhysCrateCompressedFragmentMetadata::data_t sPerC     = f.metadata<icarus::PhysCrateCompressedFragmentMetadata>()->samples_per_channel();
     icarus::PhysCrateCompressedFragmentMetadata::data_t adcPerS   = f.metadata<icarus::PhysCrateCompressedFragmentMetadata>()->num_adc_bits(); // i don't know why the names are like this...
-    icarus::PhysCrateCompressedFragmentMetadata::data_t compress  = 1; // we really only care that this is not the compressed value. 1 should do
+    icarus::PhysCrateCompressedFragmentMetadata::data_t compress  = 0; // we really only care that this is not the compressed value. 1 should do
     std::vector<icarus::PhysCrateCompressedFragmentMetadata::id_t> boardIds(nBoards);
-    // for whatever reason the getting the board ids from the metadata keeps failing
-    // so we'll do it through the DataTileHeaders (ie the hard way)
-    std::cout << "decomp debug: nBoards = " << nBoards << std::endl;
-    size_t runningDataTileHeaderLoc = 0;
     for (size_t b = 0; b < nBoards; b++)
-    {
-      icarus::PhysCrateCompressedDataTileHeader const* currentHeader = reinterpret_cast<icarus::PhysCrateCompressedDataTileHeader const*>(f.dataBeginBytes() + runningDataTileHeaderLoc);
-      //std::cout << "decomp debug: board " << b << " has id " << currentHeader->board_id << std::endl;
-      //boardIds[b] = currentHeader->board_id;
-      std::cout << "decomp debug: board " << b << " has id " << f.metadata<icarus::PhysCrateCompressedFragmentMetadata>()->board_id(b) << std::endl;
-      boardIds[b] = f.metadata<icarus::PhysCrateCompressedFragmentMetadata>()->board_id(b);
-      runningDataTileHeaderLoc += ntohl(currentHeader->packSize);
-    }
+      boardIds.push_back(f.metadata<icarus::PhysCrateCompressedFragmentMetadata>()->board_id(b));
     icarus::PhysCrateCompressedFragmentMetadata updatedMD(runNumber, nBoards, cPerB, sPerC, adcPerS, compress, boardIds);
     decompressedFragment.updateMetadata<icarus::PhysCrateCompressedFragmentMetadata>(updatedMD);
   }
 
-  std::cout << "icarus::PhysCrateCompressedFragment::decompressArtdaqFragment || fragment size is " << nBoardsPerFragment * (sizeof(icarus::A2795CompressedDataBlock::Header)
-                                                                                                       + nChannelsPerBoard * nSamplesPerChannel * sizeof(icarus::A2795CompressedDataBlock::data_t)) << std::endl;
   return decompressedFragment;
 
 }

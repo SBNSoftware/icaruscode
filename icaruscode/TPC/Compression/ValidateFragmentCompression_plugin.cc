@@ -23,7 +23,7 @@
 #include "icaruscode/Decode/ChannelMapping/IICARUSChannelMap.h"
 
 //sbndaq includes
-#include "sbndaq-artdaq-core/Overlays/ICARUS/PhysCrateFragment.hh"
+#include "sbndaq-artdaq-core/Overlays/ICARUS/PhysCrateFragment.cc"
 
 namespace tcpCompression {
   class ValidateCompression : public art::ResultsProducer {
@@ -79,129 +79,140 @@ namespace tcpCompression {
     // if we want to make a histogram for the waveform
     art::ServiceHandle<art::TFileService> tfs;
 
+    // this is useful
+    size_t fragNumber = 0;
     for (auto const& frag : originalFragments)
     {
       // test that the old overlays work...
-      if (fCheckOldFragments)
-      {
-        icarus::PhysCrateFragment oldOverlay(frag);
-        MF_LOG_VERBATIM("ValidateCompression")
-          << "Verifying old overlays..." << '\n'
-          << " * This fragment has " << oldOverlay.nBoards() << " boards," << '\n'
-          << " *                   " << oldOverlay.nChannelsPerBoard() << " channels per board," << '\n'
-          << " *               and " << oldOverlay.nSamplesPerChannel() << " samples per channel" << '\n'
-          << "-----------------------------------------------";
-        oldOverlay.Verify();
-        MF_LOG_VERBATIM("ValidateCompression")
-          << "-----------------------------------------------";
-        continue;
-      }
+      //if (fCheckOldFragments)
+      //{
+      //  icarus::PhysCrateFragment oldOverlay(frag);
+      //  MF_LOG_VERBATIM("ValidateCompression")
+      //    << "Verifying old overlays..." << '\n'
+      //    << " * This fragment has " << oldOverlay.nBoards() << " boards," << '\n'
+      //    << " *                   " << oldOverlay.nChannelsPerBoard() << " channels per board," << '\n'
+      //    << " *               and " << oldOverlay.nSamplesPerChannel() << " samples per channel" << '\n'
+      //    << "-----------------------------------------------";
+      //  oldOverlay.Verify();
+      //  MF_LOG_VERBATIM("ValidateCompression")
+      //    << "-----------------------------------------------";
+      //  continue;
+      //}
 
       // put the fragment in a compression compliant overlay
       icarus::PhysCrateCompressedFragment fragOverlay(frag);
       icarus::PhysCrateFragment fragOldOverlay(frag);
       bool isComp = fragOverlay.isCompressed();
-      if (fDumpADCs && not isComp)
+
+      if (isComp)
       {
+        std::string compStr = (fragOldOverlay.isCompressed()) ? "Yes!" : "no :(";
         MF_LOG_VERBATIM("ValidateCompression")
-          << "Checking first few ADC values for uncompressed fragment" << '\n'
-          << "-----------------------NEW HEADER-----------------------" << '\n'
-          << *(fragOverlay.DataTileHeader(0)) << '\n'
-          << *(fragOverlay.DataTileHeader(1)) << '\n'
-          << *(fragOverlay.DataTileHeader(2)) << '\n'
-          << "-----------------------OLD HEADER-----------------------" << '\n'
-          << *(fragOldOverlay.DataTileHeader(0)) << '\n'
-          << *(fragOldOverlay.DataTileHeader(1)) << '\n'
-          << *(fragOldOverlay.DataTileHeader(2)) << '\n'
-          << "--------------------------------------------------------" << '\n'
-          << "Crate ID (new): " << std::hex << fragOverlay.DataTileHeader()->crate_id << std::dec << '\n'
-          << "Crate ID (old): " << std::hex << fragOldOverlay.DataTileHeader()->crate_id << std::dec << '\n'
-          << " ADC board 0, channel 0, sample 0: " << fragOverlay.adc_val(0, 0, 0) << " | " << fragOldOverlay.adc_val(0, 0, 0) << '\n'
-          << " ADC board 0, channel 0, sample 1: " << fragOverlay.adc_val(0, 0, 1) << " | " << fragOldOverlay.adc_val(0, 0, 1) << '\n'
-          << " ADC board 0, channel 0, sample 2: " << fragOverlay.adc_val(0, 0, 2) << " | " << fragOldOverlay.adc_val(0, 0, 2) << '\n'
-          << " ADC board 0, channel 1, sample 0: " << fragOverlay.adc_val(0, 1, 0) << " | " << fragOldOverlay.adc_val(0, 1, 0) << '\n'
-          << " ADC board 0, channel 1, sample 1: " << fragOverlay.adc_val(0, 1, 1) << " | " << fragOldOverlay.adc_val(0, 1, 1) << '\n'
-          << " ADC board 0, channel 1, sample 2: " << fragOverlay.adc_val(0, 1, 2) << " | " << fragOldOverlay.adc_val(0, 1, 2) << '\n'
-          << " ADC board 0, channel 2, sample 0: " << fragOverlay.adc_val(0, 2, 0) << " | " << fragOldOverlay.adc_val(0, 2, 0) << '\n'
-          << " ADC board 0, channel 2, sample 1: " << fragOverlay.adc_val(0, 2, 1) << " | " << fragOldOverlay.adc_val(0, 2, 1) << '\n'
-          << " ADC board 0, channel 2, sample 2: " << fragOverlay.adc_val(0, 2, 2) << " | " << fragOldOverlay.adc_val(0, 2, 2) << '\n'
-          << " ADC board 1, channel 0, sample 0: " << fragOverlay.adc_val(1, 0, 0) << " | " << fragOldOverlay.adc_val(0, 0, 0) << '\n'
-          << " ADC board 1, channel 0, sample 1: " << fragOverlay.adc_val(1, 0, 1) << " | " << fragOldOverlay.adc_val(1, 0, 1) << '\n'
-          << " ADC board 1, channel 0, sample 2: " << fragOverlay.adc_val(1, 0, 2) << " | " << fragOldOverlay.adc_val(1, 0, 2) << '\n'
-          << " ADC board 1, channel 1, sample 0: " << fragOverlay.adc_val(1, 1, 0) << " | " << fragOldOverlay.adc_val(1, 1, 0) << '\n'
-          << " ADC board 1, channel 1, sample 1: " << fragOverlay.adc_val(1, 1, 1) << " | " << fragOldOverlay.adc_val(1, 1, 1) << '\n'
-          << " ADC board 1, channel 1, sample 2: " << fragOverlay.adc_val(1, 1, 2) << " | " << fragOldOverlay.adc_val(1, 1, 2) << '\n'
-          << " ADC board 1, channel 2, sample 0: " << fragOverlay.adc_val(1, 2, 0) << " | " << fragOldOverlay.adc_val(1, 2, 0) << '\n'
-          << " ADC board 1, channel 2, sample 1: " << fragOverlay.adc_val(1, 2, 1) << " | " << fragOldOverlay.adc_val(1, 2, 1) << '\n'
-          << " ADC board 1, channel 2, sample 2: " << fragOverlay.adc_val(1, 2, 2) << " | " << fragOldOverlay.adc_val(1, 2, 2) << '\n'
-          << " ADC board 2, channel 0, sample 0: " << fragOverlay.adc_val(2, 0, 0) << " | " << fragOldOverlay.adc_val(2, 0, 0) << '\n'
-          << " ADC board 2, channel 0, sample 1: " << fragOverlay.adc_val(2, 0, 1) << " | " << fragOldOverlay.adc_val(2, 0, 1) << '\n'
-          << " ADC board 2, channel 0, sample 2: " << fragOverlay.adc_val(2, 0, 2) << " | " << fragOldOverlay.adc_val(2, 0, 2) << '\n'
-          << " ADC board 2, channel 1, sample 0: " << fragOverlay.adc_val(2, 1, 0) << " | " << fragOldOverlay.adc_val(2, 1, 0) << '\n'
-          << " ADC board 2, channel 1, sample 1: " << fragOverlay.adc_val(2, 1, 1) << " | " << fragOldOverlay.adc_val(2, 1, 1) << '\n'
-          << " ADC board 2, channel 1, sample 2: " << fragOverlay.adc_val(2, 1, 2) << " | " << fragOldOverlay.adc_val(2, 1, 2) << '\n'
-          << " ADC board 2, channel 2, sample 0: " << fragOverlay.adc_val(2, 2, 0) << " | " << fragOldOverlay.adc_val(2, 2, 0) << '\n'
-          << " ADC board 2, channel 2, sample 1: " << fragOverlay.adc_val(2, 2, 1) << " | " << fragOldOverlay.adc_val(2, 2, 1) << '\n'
-          << " ADC board 2, channel 2, sample 2: " << fragOverlay.adc_val(2, 2, 2) << " | " << fragOldOverlay.adc_val(2, 2, 2) << '\n';
-          continue;
+          << "THe icaruscode overlay is compressed." << '\n'
+          << "... Is the sbncode overlay compressed? " << compStr;
       }
-      if (fDumpADCs && isComp && (fragOverlay.CompressionKey(0,0) == 0))
-      {
-        MF_LOG_VERBATIM("ValidateCompression")
-          << "Checking first few ADC values for compressed fragment" << '\n'
-          << "-----------------------NEW HEADER-----------------------" << '\n'
-          << *(fragOverlay.DataTileHeader(0)) << '\n'
-          << *(fragOverlay.DataTileHeader(1)) << '\n'
-          << *(fragOverlay.DataTileHeader(2)) << '\n'
-          << "-----------------------OLD HEADER-----------------------" << '\n'
-          << *(fragOldOverlay.DataTileHeader(0)) << '\n'
-          << *(fragOldOverlay.DataTileHeader(1)) << '\n'
-          << *(fragOldOverlay.DataTileHeader(2)) << '\n'
-          << "--------------------------------------------------------" << '\n'
-          << "Crate ID (new): " << std::hex << fragOverlay.DataTileHeader()->crate_id << std::dec << '\n'
-          << "Crate ID (old): " << std::hex << fragOldOverlay.DataTileHeader()->crate_id << std::dec << '\n'
-          << " ADC board 0, channel 0, sample 0: " << fragOverlay.adc_val(0, 0, 0) << " | " << fragOldOverlay.adc_val(0, 0, 0) << '\n'
-          << " ADC board 0, channel 0, sample 1: " << fragOverlay.adc_val(0, 0, 1) << " | " << fragOldOverlay.adc_val(0, 0, 1) << '\n'
-          << " ADC board 0, channel 0, sample 2: " << fragOverlay.adc_val(0, 0, 2) << " | " << fragOldOverlay.adc_val(0, 0, 2) << '\n'
-          << " ADC board 0, channel 1, sample 0: " << fragOverlay.adc_val(0, 1, 0) << " | " << fragOldOverlay.adc_val(0, 1, 0) << '\n'
-          << " ADC board 0, channel 1, sample 1: " << fragOverlay.adc_val(0, 1, 1) << " | " << fragOldOverlay.adc_val(0, 1, 1) << '\n'
-          << " ADC board 0, channel 1, sample 2: " << fragOverlay.adc_val(0, 1, 2) << " | " << fragOldOverlay.adc_val(0, 1, 2) << '\n'
-          << " ADC board 0, channel 2, sample 0: " << fragOverlay.adc_val(0, 2, 0) << " | " << fragOldOverlay.adc_val(0, 2, 0) << '\n'
-          << " ADC board 0, channel 2, sample 1: " << fragOverlay.adc_val(0, 2, 1) << " | " << fragOldOverlay.adc_val(0, 2, 1) << '\n'
-          << " ADC board 0, channel 2, sample 2: " << fragOverlay.adc_val(0, 2, 2) << " | " << fragOldOverlay.adc_val(0, 2, 2) << '\n'
-          << " ADC board 1, channel 0, sample 0: " << fragOverlay.adc_val(1, 0, 0) << " | " << fragOldOverlay.adc_val(1, 0, 0) << '\n'
-          << " ADC board 1, channel 0, sample 1: " << fragOverlay.adc_val(1, 0, 1) << " | " << fragOldOverlay.adc_val(1, 0, 1) << '\n'
-          << " ADC board 1, channel 0, sample 2: " << fragOverlay.adc_val(1, 0, 2) << " | " << fragOldOverlay.adc_val(1, 0, 2) << '\n'
-          << " ADC board 1, channel 1, sample 0: " << fragOverlay.adc_val(1, 1, 0) << " | " << fragOldOverlay.adc_val(1, 1, 0) << '\n'
-          << " ADC board 1, channel 1, sample 1: " << fragOverlay.adc_val(1, 1, 1) << " | " << fragOldOverlay.adc_val(1, 1, 1) << '\n'
-          << " ADC board 1, channel 1, sample 2: " << fragOverlay.adc_val(1, 1, 2) << " | " << fragOldOverlay.adc_val(1, 1, 2) << '\n'
-          << " ADC board 1, channel 2, sample 0: " << fragOverlay.adc_val(1, 2, 0) << " | " << fragOldOverlay.adc_val(1, 2, 0) << '\n'
-          << " ADC board 1, channel 2, sample 1: " << fragOverlay.adc_val(1, 2, 1) << " | " << fragOldOverlay.adc_val(1, 2, 1) << '\n'
-          << " ADC board 1, channel 2, sample 2: " << fragOverlay.adc_val(1, 2, 2) << " | " << fragOldOverlay.adc_val(1, 2, 2) << '\n'
-          << " ADC board 2, channel 0, sample 0: " << fragOverlay.adc_val(2, 0, 0) << " | " << fragOldOverlay.adc_val(2, 0, 0) << '\n'
-          << " ADC board 2, channel 0, sample 1: " << fragOverlay.adc_val(2, 0, 1) << " | " << fragOldOverlay.adc_val(2, 0, 1) << '\n'
-          << " ADC board 2, channel 0, sample 2: " << fragOverlay.adc_val(2, 0, 2) << " | " << fragOldOverlay.adc_val(2, 0, 2) << '\n'
-          << " ADC board 2, channel 1, sample 0: " << fragOverlay.adc_val(2, 1, 0) << " | " << fragOldOverlay.adc_val(2, 1, 0) << '\n'
-          << " ADC board 2, channel 1, sample 1: " << fragOverlay.adc_val(2, 1, 1) << " | " << fragOldOverlay.adc_val(2, 1, 1) << '\n'
-          << " ADC board 2, channel 1, sample 2: " << fragOverlay.adc_val(2, 1, 2) << " | " << fragOldOverlay.adc_val(2, 1, 2) << '\n'
-          << " ADC board 2, channel 2, sample 0: " << fragOverlay.adc_val(2, 2, 0) << " | " << fragOldOverlay.adc_val(2, 2, 0) << '\n'
-          << " ADC board 2, channel 2, sample 1: " << fragOverlay.adc_val(2, 2, 1) << " | " << fragOldOverlay.adc_val(2, 2, 1) << '\n'
-          << " ADC board 2, channel 2, sample 2: " << fragOverlay.adc_val(2, 2, 2) << " | " << fragOldOverlay.adc_val(2, 2, 2) << '\n';
-          for (size_t b = 0; b < fragOverlay.nBoards(); ++b)
-          {
-            for (size_t s = 0; s < 10; ++s)
-            {
-              MF_LOG_VERBATIM("ValidateCompression")
-                << "  Board " << b << " Sample " << s << " Key: " << std::bitset<16>(fragOverlay.CompressionKey(b, s));
-            }
-          }
-          continue;
-      }
+
+      //if (fDumpADCs && not isComp)
+      //{
+      //  MF_LOG_VERBATIM("ValidateCompression")
+      //    << "Checking first few ADC values for uncompressed fragment" << '\n'
+      //    << "-----------------------NEW HEADER-----------------------" << '\n'
+      //    << *(fragOverlay.DataTileHeader(0)) << '\n'
+      //    << *(fragOverlay.DataTileHeader(1)) << '\n'
+      //    << *(fragOverlay.DataTileHeader(2)) << '\n'
+      //    << "-----------------------OLD HEADER-----------------------" << '\n'
+      //    << *(fragOldOverlay.DataTileHeader(0)) << '\n'
+      //    << *(fragOldOverlay.DataTileHeader(1)) << '\n'
+      //    << *(fragOldOverlay.DataTileHeader(2)) << '\n'
+      //    << "--------------------------------------------------------" << '\n'
+      //    << "Crate ID (new): " << std::hex << fragOverlay.DataTileHeader()->crate_id << std::dec << '\n'
+      //    << "Crate ID (old): " << std::hex << fragOldOverlay.DataTileHeader()->crate_id << std::dec << '\n'
+      //    << " ADC board 0, channel 0, sample 0: " << fragOverlay.adc_val(0, 0, 0) << " | " << fragOldOverlay.adc_val(0, 0, 0) << '\n'
+      //    << " ADC board 0, channel 0, sample 1: " << fragOverlay.adc_val(0, 0, 1) << " | " << fragOldOverlay.adc_val(0, 0, 1) << '\n'
+      //    << " ADC board 0, channel 0, sample 2: " << fragOverlay.adc_val(0, 0, 2) << " | " << fragOldOverlay.adc_val(0, 0, 2) << '\n'
+      //    << " ADC board 0, channel 1, sample 0: " << fragOverlay.adc_val(0, 1, 0) << " | " << fragOldOverlay.adc_val(0, 1, 0) << '\n'
+      //    << " ADC board 0, channel 1, sample 1: " << fragOverlay.adc_val(0, 1, 1) << " | " << fragOldOverlay.adc_val(0, 1, 1) << '\n'
+      //    << " ADC board 0, channel 1, sample 2: " << fragOverlay.adc_val(0, 1, 2) << " | " << fragOldOverlay.adc_val(0, 1, 2) << '\n'
+      //    << " ADC board 0, channel 2, sample 0: " << fragOverlay.adc_val(0, 2, 0) << " | " << fragOldOverlay.adc_val(0, 2, 0) << '\n'
+      //    << " ADC board 0, channel 2, sample 1: " << fragOverlay.adc_val(0, 2, 1) << " | " << fragOldOverlay.adc_val(0, 2, 1) << '\n'
+      //    << " ADC board 0, channel 2, sample 2: " << fragOverlay.adc_val(0, 2, 2) << " | " << fragOldOverlay.adc_val(0, 2, 2) << '\n'
+      //    << " ADC board 1, channel 0, sample 0: " << fragOverlay.adc_val(1, 0, 0) << " | " << fragOldOverlay.adc_val(0, 0, 0) << '\n'
+      //    << " ADC board 1, channel 0, sample 1: " << fragOverlay.adc_val(1, 0, 1) << " | " << fragOldOverlay.adc_val(1, 0, 1) << '\n'
+      //    << " ADC board 1, channel 0, sample 2: " << fragOverlay.adc_val(1, 0, 2) << " | " << fragOldOverlay.adc_val(1, 0, 2) << '\n'
+      //    << " ADC board 1, channel 1, sample 0: " << fragOverlay.adc_val(1, 1, 0) << " | " << fragOldOverlay.adc_val(1, 1, 0) << '\n'
+      //    << " ADC board 1, channel 1, sample 1: " << fragOverlay.adc_val(1, 1, 1) << " | " << fragOldOverlay.adc_val(1, 1, 1) << '\n'
+      //    << " ADC board 1, channel 1, sample 2: " << fragOverlay.adc_val(1, 1, 2) << " | " << fragOldOverlay.adc_val(1, 1, 2) << '\n'
+      //    << " ADC board 1, channel 2, sample 0: " << fragOverlay.adc_val(1, 2, 0) << " | " << fragOldOverlay.adc_val(1, 2, 0) << '\n'
+      //    << " ADC board 1, channel 2, sample 1: " << fragOverlay.adc_val(1, 2, 1) << " | " << fragOldOverlay.adc_val(1, 2, 1) << '\n'
+      //    << " ADC board 1, channel 2, sample 2: " << fragOverlay.adc_val(1, 2, 2) << " | " << fragOldOverlay.adc_val(1, 2, 2) << '\n'
+      //    << " ADC board 2, channel 0, sample 0: " << fragOverlay.adc_val(2, 0, 0) << " | " << fragOldOverlay.adc_val(2, 0, 0) << '\n'
+      //    << " ADC board 2, channel 0, sample 1: " << fragOverlay.adc_val(2, 0, 1) << " | " << fragOldOverlay.adc_val(2, 0, 1) << '\n'
+      //    << " ADC board 2, channel 0, sample 2: " << fragOverlay.adc_val(2, 0, 2) << " | " << fragOldOverlay.adc_val(2, 0, 2) << '\n'
+      //    << " ADC board 2, channel 1, sample 0: " << fragOverlay.adc_val(2, 1, 0) << " | " << fragOldOverlay.adc_val(2, 1, 0) << '\n'
+      //    << " ADC board 2, channel 1, sample 1: " << fragOverlay.adc_val(2, 1, 1) << " | " << fragOldOverlay.adc_val(2, 1, 1) << '\n'
+      //    << " ADC board 2, channel 1, sample 2: " << fragOverlay.adc_val(2, 1, 2) << " | " << fragOldOverlay.adc_val(2, 1, 2) << '\n'
+      //    << " ADC board 2, channel 2, sample 0: " << fragOverlay.adc_val(2, 2, 0) << " | " << fragOldOverlay.adc_val(2, 2, 0) << '\n'
+      //    << " ADC board 2, channel 2, sample 1: " << fragOverlay.adc_val(2, 2, 1) << " | " << fragOldOverlay.adc_val(2, 2, 1) << '\n'
+      //    << " ADC board 2, channel 2, sample 2: " << fragOverlay.adc_val(2, 2, 2) << " | " << fragOldOverlay.adc_val(2, 2, 2) << '\n';
+      //    continue;
+      //}
+      //if (fDumpADCs && isComp && (fragOverlay.CompressionKey(0,0) == 0))
+      //{
+      //  MF_LOG_VERBATIM("ValidateCompression")
+      //    << "Checking first few ADC values for compressed fragment" << '\n'
+      //    << "-----------------------NEW HEADER-----------------------" << '\n'
+      //    << *(fragOverlay.DataTileHeader(0)) << '\n'
+      //    << *(fragOverlay.DataTileHeader(1)) << '\n'
+      //    << *(fragOverlay.DataTileHeader(2)) << '\n'
+      //    << "-----------------------OLD HEADER-----------------------" << '\n'
+      //    << *(fragOldOverlay.DataTileHeader(0)) << '\n'
+      //    << *(fragOldOverlay.DataTileHeader(1)) << '\n'
+      //    << *(fragOldOverlay.DataTileHeader(2)) << '\n'
+      //    << "--------------------------------------------------------" << '\n'
+      //    << "Crate ID (new): " << std::hex << fragOverlay.DataTileHeader()->crate_id << std::dec << '\n'
+      //    << "Crate ID (old): " << std::hex << fragOldOverlay.DataTileHeader()->crate_id << std::dec << '\n'
+      //    << " ADC board 0, channel 0, sample 0: " << fragOverlay.adc_val(0, 0, 0) << " | " << fragOldOverlay.adc_val(0, 0, 0) << '\n'
+      //    << " ADC board 0, channel 0, sample 1: " << fragOverlay.adc_val(0, 0, 1) << " | " << fragOldOverlay.adc_val(0, 0, 1) << '\n'
+      //    << " ADC board 0, channel 0, sample 2: " << fragOverlay.adc_val(0, 0, 2) << " | " << fragOldOverlay.adc_val(0, 0, 2) << '\n'
+      //    << " ADC board 0, channel 1, sample 0: " << fragOverlay.adc_val(0, 1, 0) << " | " << fragOldOverlay.adc_val(0, 1, 0) << '\n'
+      //    << " ADC board 0, channel 1, sample 1: " << fragOverlay.adc_val(0, 1, 1) << " | " << fragOldOverlay.adc_val(0, 1, 1) << '\n'
+      //    << " ADC board 0, channel 1, sample 2: " << fragOverlay.adc_val(0, 1, 2) << " | " << fragOldOverlay.adc_val(0, 1, 2) << '\n'
+      //    << " ADC board 0, channel 2, sample 0: " << fragOverlay.adc_val(0, 2, 0) << " | " << fragOldOverlay.adc_val(0, 2, 0) << '\n'
+      //    << " ADC board 0, channel 2, sample 1: " << fragOverlay.adc_val(0, 2, 1) << " | " << fragOldOverlay.adc_val(0, 2, 1) << '\n'
+      //    << " ADC board 0, channel 2, sample 2: " << fragOverlay.adc_val(0, 2, 2) << " | " << fragOldOverlay.adc_val(0, 2, 2) << '\n'
+      //    << " ADC board 1, channel 0, sample 0: " << fragOverlay.adc_val(1, 0, 0) << " | " << fragOldOverlay.adc_val(1, 0, 0) << '\n'
+      //    << " ADC board 1, channel 0, sample 1: " << fragOverlay.adc_val(1, 0, 1) << " | " << fragOldOverlay.adc_val(1, 0, 1) << '\n'
+      //    << " ADC board 1, channel 0, sample 2: " << fragOverlay.adc_val(1, 0, 2) << " | " << fragOldOverlay.adc_val(1, 0, 2) << '\n'
+      //    << " ADC board 1, channel 1, sample 0: " << fragOverlay.adc_val(1, 1, 0) << " | " << fragOldOverlay.adc_val(1, 1, 0) << '\n'
+      //    << " ADC board 1, channel 1, sample 1: " << fragOverlay.adc_val(1, 1, 1) << " | " << fragOldOverlay.adc_val(1, 1, 1) << '\n'
+      //    << " ADC board 1, channel 1, sample 2: " << fragOverlay.adc_val(1, 1, 2) << " | " << fragOldOverlay.adc_val(1, 1, 2) << '\n'
+      //    << " ADC board 1, channel 2, sample 0: " << fragOverlay.adc_val(1, 2, 0) << " | " << fragOldOverlay.adc_val(1, 2, 0) << '\n'
+      //    << " ADC board 1, channel 2, sample 1: " << fragOverlay.adc_val(1, 2, 1) << " | " << fragOldOverlay.adc_val(1, 2, 1) << '\n'
+      //    << " ADC board 1, channel 2, sample 2: " << fragOverlay.adc_val(1, 2, 2) << " | " << fragOldOverlay.adc_val(1, 2, 2) << '\n'
+      //    << " ADC board 2, channel 0, sample 0: " << fragOverlay.adc_val(2, 0, 0) << " | " << fragOldOverlay.adc_val(2, 0, 0) << '\n'
+      //    << " ADC board 2, channel 0, sample 1: " << fragOverlay.adc_val(2, 0, 1) << " | " << fragOldOverlay.adc_val(2, 0, 1) << '\n'
+      //    << " ADC board 2, channel 0, sample 2: " << fragOverlay.adc_val(2, 0, 2) << " | " << fragOldOverlay.adc_val(2, 0, 2) << '\n'
+      //    << " ADC board 2, channel 1, sample 0: " << fragOverlay.adc_val(2, 1, 0) << " | " << fragOldOverlay.adc_val(2, 1, 0) << '\n'
+      //    << " ADC board 2, channel 1, sample 1: " << fragOverlay.adc_val(2, 1, 1) << " | " << fragOldOverlay.adc_val(2, 1, 1) << '\n'
+      //    << " ADC board 2, channel 1, sample 2: " << fragOverlay.adc_val(2, 1, 2) << " | " << fragOldOverlay.adc_val(2, 1, 2) << '\n'
+      //    << " ADC board 2, channel 2, sample 0: " << fragOverlay.adc_val(2, 2, 0) << " | " << fragOldOverlay.adc_val(2, 2, 0) << '\n'
+      //    << " ADC board 2, channel 2, sample 1: " << fragOverlay.adc_val(2, 2, 1) << " | " << fragOldOverlay.adc_val(2, 2, 1) << '\n'
+      //    << " ADC board 2, channel 2, sample 2: " << fragOverlay.adc_val(2, 2, 2) << " | " << fragOldOverlay.adc_val(2, 2, 2) << '\n';
+      //    for (size_t b = 0; b < fragOverlay.nBoards(); ++b)
+      //    {
+      //      for (size_t s = 0; s < 10; ++s)
+      //      {
+      //        MF_LOG_VERBATIM("ValidateCompression")
+      //          << "  Board " << b << " Sample " << s << " Key: " << std::bitset<16>(fragOverlay.CompressionKey(b, s));
+      //      }
+      //    }
+      //    continue;
+      //}
 
       // here's where we fill the plots
       bool isActuallyCompresed = (fragOverlay.CompressionKey(0,0) == 0);
       std::string fragCrateName = fChannelMap->getCrateName(frag.fragmentID());
-      if (isActuallyCompresed)
+      if (isComp && isActuallyCompresed)
       {
         MF_LOG_VERBATIM("ValidateCompression")
           << "Filling Compressed Hist with " << frag.sizeBytes() << '\n'
@@ -213,27 +224,18 @@ namespace tcpCompression {
         // ignore sample zero because that's always uncompressed
         for (size_t b = 0; b < fragOverlay.nBoards(); ++b)
         {
-          // for each channel which has more than 2 uncompressed blocks save the waveform
-          size_t nDcmpBlocks[16] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-          for (size_t s = 1; s < fragOverlay.nSamplesPerChannel(); ++s)
+          for (size_t c = 0; c < fragOverlay.nChannelsPerBoard(); ++c)
           {
-            uint16_t const& key = fragOverlay.CompressionKey(b, s);
-            for (size_t bit = 0; bit < 16; bit++)
-              nDcmpBlocks[bit] += (std::bitset<16>(key)[bit] == 0);
-          }
-          for (size_t bit = 0; bit < 16; bit++)
-          {
-            if (nDcmpBlocks[bit] > 1)
+            std::string title = "ADC_"+fFragmentsLabel.label()+":"+fFragmentsLabel.instance()+"_Event_"+std::to_string(evt.id().event())+"_Fragment_"+std::to_string(fragNumber)+"_Board_"+std::to_string(b)+"_Channel_"+std::to_string(c);
+            TH1F* hist = tfs->make<TH1F>(title.c_str(), ";Sample;ADC Counts", fragOverlay.nSamplesPerChannel(), 0, fragOverlay.nSamplesPerChannel());
+            for (size_t s = 0; s < fragOverlay.nSamplesPerChannel(); ++s)
             {
-              size_t baseChannel = bit*4;
-              for (size_t c = 0; c < 4; ++c)
+              hist->SetBinContent(s, fragOverlay.adc_val(b, c, s));
+              if (fragOverlay.adc_val(b, c, s) > 4000)
               {
-                std::string title = "ADC_"+fFragmentsLabel.label()+":"+fFragmentsLabel.process()+"_ID_"+std::to_string(frag.fragmentID())+"_Board_"+std::to_string(b)+"_Channel_"+std::to_string(baseChannel + c);
-                TH1F* hist = tfs->make<TH1F>(title.c_str(), ";Sample;ADC Counts", fragOverlay.nSamplesPerChannel(), 0, fragOverlay.nSamplesPerChannel());
-                for (size_t s = 0; s < fragOverlay.nSamplesPerChannel(); ++s)
-                {
-                  hist->SetBinContent(s, fragOverlay.adc_val(b, s, baseChannel + c));
-                }
+                MF_LOG_VERBATIM("ValidateCompression")
+                  << "ADV Value for Board " << b << " Channel " << c << " Sample " << s << " is " << fragOverlay.adc_val(b, c, s) << '\n'
+                  << "  Cmpression key for Board/Sample is " << std::bitset<16>(fragOverlay.CompressionKey(b, s));
               }
             }
           }
@@ -243,8 +245,21 @@ namespace tcpCompression {
           << "Filling Decompressed Hist with " << frag.sizeBytes() << '\n'
           << "|-> Fragment comes from crate " << fragCrateName;
         fDcmpHist->Fill(frag.sizeBytes());
+        for (size_t b = 0; b < fragOldOverlay.nBoards(); ++b)
+        {
+          for (size_t c = 0; c < fragOldOverlay.nChannelsPerBoard(); ++c)
+          {
+            std::string title = "ADC_"+fFragmentsLabel.label()+":"+fFragmentsLabel.instance()+"_Event_"+std::to_string(evt.id().event())+"_Fragment_"+std::to_string(fragNumber)+"_Board_"+std::to_string(b)+"_Channel_"+std::to_string(c);
+            TH1F* hist = tfs->make<TH1F>(title.c_str(), ";Sample;ADC Counts", fragOldOverlay.nSamplesPerChannel(), 0, fragOldOverlay.nSamplesPerChannel());
+            for (size_t s = 0; s < fragOldOverlay.nSamplesPerChannel(); ++s)
+            {
+              hist->SetBinContent(s, fragOldOverlay.adc_val(b, c, s));
+            }
+          }
+        }
       }
 
+      ++fragNumber;
     }
   }
 

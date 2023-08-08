@@ -229,17 +229,15 @@ class icarus::PhysCrateCompressedFragment {
 
   typedef std::pair<A2795CompressedDataBlock::data_t, const A2795CompressedDataBlock::data_t*> recursionPair;
 
+  PhysCrateCompressedFragment makeCompressedFragment()   const { return PhysCrateCompressedFragment(  compressArtdaqFragment(artdaq_Fragment_)); }
+  PhysCrateCompressedFragment makeUncompressedFragment() const { return PhysCrateCompressedFragment(decompressArtdaqFragment(artdaq_Fragment_)); }
+
   static artdaq::Fragment   compressArtdaqFragment(artdaq::Fragment const & f);
   static artdaq::Fragment decompressArtdaqFragment(artdaq::Fragment const & f);
   static artdaq::Fragment fragmentSwitch(artdaq::Fragment const & f, bool const & compressionSwitch)
   {
     return (compressionSwitch) ? compressArtdaqFragment(f) : decompressArtdaqFragment(f);
   }
-
-  PhysCrateCompressedFragment makeCompressedFragment()   const { return PhysCrateCompressedFragment(  compressArtdaqFragment(artdaq_Fragment_)); }
-  PhysCrateCompressedFragment makeUncompressedFragment() const { return PhysCrateCompressedFragment(decompressArtdaqFragment(artdaq_Fragment_)); }
-
-  uint32_t RunCumulativeDataSize(size_t b) { return cumulativeBoardSize(0); }
 
 private:
 
