@@ -126,6 +126,18 @@ physics: {
       T0Producer:    "CRTT0MatchingE"
       T0selProducer: t0selectorE
     }
+
+    gatesFromTracksCentralAddersW: {
+      @table::gatesFromTracks_icarus
+      T0Producer: "CRTT0MatchingW"
+      T0selProducer: t0selectorAddersW
+    }
+
+    gatesFromTracksCentralAddersE: {
+      @table::gatesFromTracks_icarus
+      T0Producer: "CRTT0MatchingE"
+      T0selProducer: t0selectorAddersE
+    }
     
     @table::triggeremu_data_config_icarus.producers # from triggeremu_data_config_icarus.fcl
 
@@ -200,7 +212,7 @@ physics: {
 
     t0TreeStoreCentralAddersW: {
       @table::timetracktreestorage_base
-      T0selProducer: "t0selectorW"
+      T0selProducer: "t0selectorAddersW"
       T0Producer: "pandoraGausCryoW"
       PFPproducer: "pandoraTrackGausCryoW"
       TrackProducer: "pandoraTrackGausCryoW"
@@ -222,7 +234,7 @@ physics: {
 
     t0TreeStoreCentralAddersE: {
       @table::timetracktreestorage_base
-      T0selProducer: "t0selectorE"
+      T0selProducer: "t0selectorAddersE"
       T0Producer: "pandoraGausCryoE"
       PFPproducer: "pandoraTrackGausCryoE"
       TrackProducer: "pandoraTrackGausCryoE"
@@ -263,18 +275,20 @@ physics: {
 
   selectionCentralAddersW: [
     "calorimetryCryoW", "CRTT0MatchingW",
-    "t0selectorAddersW", "gatesFromTracksW",
+    "t0selectorAddersW", "gatesFromTracksCentralAddersW",
     "lvdsgatesOR", 
     @sequence::triggeremu_data_config_icarus.simulationPrepCentralAddersWest,
+    #@sequence::triggeremu_data_config_icarus.simulationPrepWest,
     "simSlidingORM1W", "simSlidingORS3W", "simSlidingORS5W",
     "simSlidingORS8W", "simSlidingORS10W", "simSlidingORS15W"
     ]
 
   selectionCentralAddersE: [
     "calorimetryCryoE",	 "CRTT0MatchingE",
-    "t0selectorAddersE", "gatesFromTracksE",
+    "t0selectorAddersE", "gatesFromTracksCentralAddersE",
     "lvdsgatesOR",
     @sequence::triggeremu_data_config_icarus.simulationPrepCentralAddersEast,
+    #@sequence::triggeremu_data_config_icarus.simulationPrepEast,
     "simSlidingORM1E", "simSlidingORS3E", "simSlidingORS5E",
     "simSlidingORS8E", "simSlidingORS10E", "simSlidingORS15E"
     ]

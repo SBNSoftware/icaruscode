@@ -412,12 +412,12 @@ triggeremu_data_config_icarus.producers.trigslidewindowORW: {
 }
 
 triggeremu_data_config_icarus.producers.trigslidewindowORCentralAddersE: {
-  @table::triggeremu_data_config_icarus.producers.trigtilewindowOR
+  @table::triggeremu_data_config_icarus.producers.trigslidewindowOR
   EnableOnlyWindows: @local::triggeremu_data_config_icarus.settings.EnabledWindowsCentralAddersSlidingE
 }
 
 triggeremu_data_config_icarus.producers.trigslidewindowORCentralAddersW: {
-  @table::triggeremu_data_config_icarus.producers.trigtilewindowOR
+  @table::triggeremu_data_config_icarus.producers.trigslidewindowOR
   EnableOnlyWindows: @local::triggeremu_data_config_icarus.settings.EnabledWindowsCentralAddersSlidingW
 }
 
