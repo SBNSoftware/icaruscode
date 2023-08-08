@@ -103,11 +103,12 @@ physics: {
       MaxT0: 1500400 #1500.4 in ns evaluated from distribution of triggered tracks wrt electronics time scale
     }
     
-    t0selectorAddersE:
+    t0selectorAddersE: {
       module_type: TimedTrackSelectorCRT
       TrackTimeTags: [ "CRTT0MatchingE" ]
       MinT0: 14988000 #see t0selectorAddersW 
       MaxT0: 15004000 #see t0selectorAddersW 
+    }
   }
 
   producers: {
@@ -265,7 +266,7 @@ physics: {
     "t0selectorAddersW", "gatesFromTracksW",
     "lvdsgatesOR", 
     @sequence::triggeremu_data_config_icarus.simulationPrepCentralAddersWest,
-    "simSlidingORM1W", simSlidingORS3W", "simSlidingORS5W",
+    "simSlidingORM1W", "simSlidingORS3W", "simSlidingORS5W",
     "simSlidingORS8W", "simSlidingORS10W", "simSlidingORS15W"
     ]
 
@@ -274,7 +275,7 @@ physics: {
     "t0selectorAddersE", "gatesFromTracksE",
     "lvdsgatesOR",
     @sequence::triggeremu_data_config_icarus.simulationPrepCentralAddersEast,
-    "simSlidingORM1E", simSlidingORS3E", "simSlidingORS5E",
+    "simSlidingORM1E", "simSlidingORS3E", "simSlidingORS5E",
     "simSlidingORS8E", "simSlidingORS10E", "simSlidingORS15E"
     ]
     
