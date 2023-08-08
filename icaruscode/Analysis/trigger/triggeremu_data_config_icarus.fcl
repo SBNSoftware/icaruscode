@@ -1,7 +1,7 @@
 #
 # File:    triggeremu_data_config_icarus.fcl
 # Purpose: Settings for emulation of ICARUS trigger (only trigger outcome).
-# Authors: Gianluca Petrillo (petrillo@slac.stanford.edu)
+# Authors: Gianluca Petrillo (petrillo@slac.stanford.edu), Jacob Zettlemoyer (jzettle@fnal.gov)
 # Date:    November 9, 2021
 #
 # This configuration can be included in a art job as follows:
@@ -105,6 +105,10 @@ triggeremu_data_config_icarus.settings.EnabledWindowsTilingW                   :
 triggeremu_data_config_icarus.settings.EnabledWindowsSlidingE                  : @local::triggeremu_config_icarus.settings.EnabledWindowsSlidingE
 triggeremu_data_config_icarus.settings.EnabledWindowsSlidingW                  : @local::triggeremu_config_icarus.settings.EnabledWindowsSlidingW
 triggeremu_data_config_icarus.settings.SlidingWindowTriggerPatterns            : @local::triggeremu_config_icarus.settings.SlidingWindowTriggerPatterns
+
+#Input for adders work
+triggeremu_data_config_icarus.settings.EnabledWindowsCentralAddersSlidingE : [ 2, 7 ]
+triggeremu_data_config_icarus.settings.EnabledWindowsCentralAddersSlidingW : [ 12, 17 ]
 
 
 # input tags with the gate for the evaluation of the trigger"
@@ -318,6 +322,14 @@ triggeremu_data_config_icarus.simulationPrepWest: [
   trigslidewindowORW
 ]
 
+triggeremu_data_config_icarus.simulationPrepCentralAddersEast: [
+  trigslidewindowORCentralAddersE
+]
+
+triggeremu_data_config_icarus.simulationPrepCentralAddersWest: [
+  trigslidewindowORCentralAddersW
+]
+
 triggeremu_data_config_icarus.simulationPrepFull: [
   trigslidewindowOR
 ]
@@ -397,6 +409,16 @@ triggeremu_data_config_icarus.producers.trigslidewindowORE: {
 triggeremu_data_config_icarus.producers.trigslidewindowORW: {
   @table::triggeremu_data_config_icarus.producers.trigslidewindowOR
   EnableOnlyWindows: @local::triggeremu_data_config_icarus.settings.EnabledWindowsSlidingW
+}
+
+triggeremu_data_config_icarus.producers.trigslidewindowORCentralAddersE: {
+  @table::triggeremu_data_config_icarus.producers.trigtilewindowOR
+  EnableOnlyWindows: @local::triggeremu_data_config_icarus.settings.EnabledWindowsCentralAddersSlidingE
+}
+
+triggeremu_data_config_icarus.producers.trigslidewindowORCentralAddersW: {
+  @table::triggeremu_data_config_icarus.producers.trigtilewindowOR
+  EnableOnlyWindows: @local::triggeremu_data_config_icarus.settings.EnabledWindowsCentralAddersSlidingW
 }
 
 

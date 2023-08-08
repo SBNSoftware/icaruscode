@@ -1,0 +1,10 @@
+#
+# File intended to run with the adders definition enabled, can be changed based on how you want to enable the different windows for emulation
+# Author: Jacob Zettlemoyer (jzettle@fnal.gov)
+#
+
+#include "createtree_timed_tracks_icarus_CRT.fcl"
+
+#change to central adders track selection/emulation method
+physics.trigger_paths: [ selectionCentralAddersW, selectionCentralAddersE ]
+ 
