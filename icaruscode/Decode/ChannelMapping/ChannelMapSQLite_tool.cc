@@ -5,6 +5,9 @@
  *
  */
 
+// ICARUS libraries
+#include "icaruscode/Decode/ChannelMapping/RunPeriods.h"
+
 // Framework Includes
 #include "art/Framework/Core/EDProducer.h"
 #include "art/Framework/Services/Registry/ServiceHandle.h"
@@ -27,6 +30,7 @@
 #include <sqlite3.h> 
 #include <time.h>
 
+
 //------------------------------------------------------------------------------------------------------------------------------------------
 // implementation follows
 
@@ -45,9 +49,20 @@ public:
   explicit ChannelMapSQLite(fhicl::ParameterSet const &pset);
   
   /**
-   *  @brief  Destructor
+   * @brief   Prepares the object for queries pertaining the specified period.
+   * @param   period the period to be prepared for
+   * @return  whether values cached from the previous period are invalidated
+   * 
+   * Periods are defined in `icarusDB::RunPeriods` class.
+   * 
+   * If the return value is `true`, caller should follow by rebuilding all the
+   * maps they need to use.
+   * If the return value is `false`, all maps built after the previous call to
+   * `SelectPeriod()` are still current for `period`: building new ones is not
+   * necessary, but it's not harmful either (at most, wasteful).
    */
-  ~ChannelMapSQLite();
+  virtual bool SelectPeriod(RunPeriod period) override;
+  
   
   /**
    *  @brief Define the returned data structures for a mapping between TPC Fragment IDs
@@ -82,6 +97,17 @@ public:
   virtual int BuildSideCRTCalibrationMap(SideCRTChannelToCalibrationMap&) const override;  
   
 private:
+
+  /// Record of all relevant table names.
+  struct TableNames_t {
+    std::string TPCfragmentMap;
+    std::string TPCreadoutBoardMap;
+    std::string PMTfragmentMap;
+    std::string CRTsideMap;
+    std::string CRTtopMap;
+    // NOTE: CRT side calibration is is a different type of database which uses a timestamp
+  };
+
   // Recover data from postgres database
   int GetDataset(const std::string&, int func(void*,int,char**,char**), void*) const;
   
@@ -89,6 +115,13 @@ private:
   std::string fDBFileName;          //< File name of our sqlite database
   std::string fCalibDBFileName;     //< File name of our side crt calibration sqlite database
   std::string fTag;                 //< Tag for conditioned database
+
+  /// The set of tables being served. Chosen by `SelectRun()`.
+  TableNames_t const* fCurrentTable = nullptr;
+
+  /// The list of names of tables.
+  static std::array<TableNames_t, RunPeriods::NPeriods> const TableNameSets;
+
 };
 
 ChannelMapSQLite::ChannelMapSQLite(fhicl::ParameterSet const &pset)
@@ -101,10 +134,50 @@ ChannelMapSQLite::ChannelMapSQLite(fhicl::ParameterSet const &pset)
 }
 
 //------------------------------------------------------------------------------------------------------------------------------------------
+std::array<ChannelMapSQLite::TableNames_t, RunPeriods::NPeriods> const
+ChannelMapSQLite::TableNameSets{
+  TableNames_t{
+      "readout_boards"  // TPCfragmentMap
+    , "daq_channels"    // TPCreadoutBoardMap
+    , "pmt_placements"  // PMTfragmentMap
+    , "feb_channels"    // CRTsideMap
+    , "crtfeb"          // CRTtopMap
+  },
+  TableNames_t{
+      "readout_boards"          // TPCfragmentMap
+    , "daq_channels"            // TPCreadoutBoardMap
+    , "pmt_placements_Aug2023"  // PMTfragmentMap
+    , "feb_channels"            // CRTsideMap
+    , "crtfeb"                  // CRTtopMap
+  }
+};
 
-ChannelMapSQLite::~ChannelMapSQLite()
-{
+
+//------------------------------------------------------------------------------------------------------------------------------------------
+bool ChannelMapSQLite::SelectPeriod(RunPeriod period) {
+  
+  auto const iPeriod = static_cast<unsigned int>(period);
+  TableNames_t const* newSet = &(TableNameSets.at(iPeriod));
+  
+  if (fCurrentTable == newSet) {
+    mf::LogDebug("ChannelMapSQLite")
+      << "Period #" << iPeriod << " already selected";
+  }
+  else if (fCurrentTable) {
+    mf::LogDebug("ChannelMapSQLite") << "Switched from period #"
+      << (fCurrentTable - &(TableNameSets[0])) << " to #" << iPeriod;
+  }
+  else {
+    mf::LogDebug("ChannelMapSQLite") << "Switching to period #" << iPeriod;
+  }
+  
+  if (fCurrentTable == newSet) return false;
+  
+  fCurrentTable = newSet;
+  return true;
+  
 }
+
 
 //------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -135,6 +208,9 @@ int callback(void *data, int argc, char **argv, char **azColName)
     
     if (!searchPath.find_file(fDBFileName, fullFileName))
       throw cet::exception("ChannelMapSQLite::GetDataset") << "Can't find input file: '" << fDBFileName << "'\n";
+    
+    mf::LogDebug("ChannelMapSQLite")
+      << "Database file: '" << fullFileName << "'.";
     
     // Set up to open the database
     sqlite3* database;
@@ -177,7 +253,7 @@ int buildTPCFragmentIDToReadoutIDMap_callback(void* dataIn, int argc, char**argv
 
     IChannelMapping::TPCFragmentIDToReadoutIDMap& fragmentBoardMap = *(IChannelMapping::TPCFragmentIDToReadoutIDMap*)dataIn;
 
-    // Include a by hand mapping of fragement ID to crate
+    // Include a by hand mapping of fragment ID to crate
     // Note that we now know we can get this from the "flanges" table... so an upgrade coming soon...
     using FlangeIDToCrateMap = std::map<size_t,std::string>;
     FlangeIDToCrateMap flangeIDToCrateMap;
@@ -303,7 +379,8 @@ int buildTPCFragmentIDToReadoutIDMap_callback(void* dataIn, int argc, char**argv
   //-----------------------------------------------------
   int ChannelMapSQLite::BuildTPCFragmentIDToReadoutIDMap(TPCFragmentIDToReadoutIDMap& fragmentBoardMap) const
   {
-    const std::string dataType("readout_boards");
+    assert(fCurrentTable);
+    const std::string dataType(fCurrentTable->TPCfragmentMap);
     
     // Recover the data from the database
     int error = GetDataset(dataType,buildTPCFragmentIDToReadoutIDMap_callback,&fragmentBoardMap);
@@ -360,7 +437,8 @@ int buildTPCFragmentIDToReadoutIDMap_callback(void* dataIn, int argc, char**argv
   
   int ChannelMapSQLite::BuildTPCReadoutBoardToChannelMap(TPCReadoutBoardToChannelMap& rbChanMap) const
   {
-    const std::string  dataType("daq_channels");
+    assert(fCurrentTable);
+    const std::string  dataType(fCurrentTable->TPCreadoutBoardMap);
     
     // Recover the data from the database
     int error = GetDataset(dataType,buildTPCReadoutBoardToChannelMap_callback,&rbChanMap);
@@ -399,7 +477,8 @@ int buildTPCFragmentIDToReadoutIDMap_callback(void* dataIn, int argc, char**argv
     // clearing is cleansing
     fragmentToDigitizerChannelMap.clear();
     // Recover the information from the database on the mapping 
-    const std::string  dataType("pmt_placements");
+    assert(fCurrentTable);
+    const std::string  dataType(fCurrentTable->PMTfragmentMap);
     
     // Recover the data from the database
     int error = GetDataset(dataType,buildFragmentToDigitizerChannelMap_callback,&fragmentToDigitizerChannelMap);
@@ -440,7 +519,8 @@ int buildTPCFragmentIDToReadoutIDMap_callback(void* dataIn, int argc, char**argv
     // clearing is cleansing
     crtChannelIDToHWtoSimMacAddressPairMap.clear();
     // Recover the information from the database on the mapping
-    const std::string  dataType("feb_channels");
+    assert(fCurrentTable);
+    const std::string  dataType(fCurrentTable->CRTsideMap);
     
     // Recover the data from the database
     int error = GetDataset(dataType,buildCRTChannelIDToHWtoSimMacAddressPairMap_callback,&crtChannelIDToHWtoSimMacAddressPairMap);
@@ -473,7 +553,8 @@ int buildTPCFragmentIDToReadoutIDMap_callback(void* dataIn, int argc, char**argv
     // clearing is cleansing
     topcrtHWtoSimMacAddressPairMap.clear();
     // Recover the information from the database on the mapping
-    const std::string  dataType("crtfeb");
+    assert(fCurrentTable);
+    const std::string  dataType(fCurrentTable->CRTtopMap);
     
     // Recover the data from the database
     int error = GetDataset(dataType,buildTopCRTHWtoSimMacAddressPairMap_callback,&topcrtHWtoSimMacAddressPairMap);
