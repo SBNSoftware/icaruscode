@@ -229,17 +229,19 @@ int callback(void *data, int argc, char **argv, char **azColName)
     
     if( rc != SQLITE_OK ) 
       {
-	std::cout << "ChannelMapSQLite::GetDataset: SQL error: " << zErrMsg << std::endl;
-	sqlite3_free(zErrMsg);
+        mf::LogError("ChannelMapSQLite")
+          << "ChannelMapSQLite::GetDataset: SQL error: " << zErrMsg;
+        sqlite3_free(zErrMsg);
       } 
     else 
       {
-        std::cout << "ChannelMapSQLite::GetDataset: Successfully read database" << std::endl;
+        mf::LogDebug("ChannelMapSQLite")
+          << "ChannelMapSQLite::GetDataset: Successfully read database";
       }
     
     sqlite3_close(database);
     
-    return 0;
+    return rc;
   }
   
 // -----------------------------------------------------
