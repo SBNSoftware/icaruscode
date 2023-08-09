@@ -99,17 +99,15 @@ physics: {
     t0selectorAddersW: {
       module_type: TimedTrackSelectorCRT
       TrackTimeTags: [ "CRTT0MatchingW" ]
-      #MinT0: 1498800 #1498.8 in ns as requested by code, evaluated from distribution of the triggered tracks wrt electronics time scale
-      #MaxT0: 1509000 #1500.4 in ns evaluated from distribution of triggered tracks wrt electronics time scale
-      MinT0: -49000 #1498.8 in ns as requested by code, evaluated from distribution of the triggered tracks wrt electronics time scale
-      MaxT0: 117000 #1500.4 in ns evaluated from distribution of triggered tracks wrt electronics time scale
+      MinT0: -1200 #1498.8 in ns as requested by code, evaluated from distribution of the triggered tracks wrt electronics time scale
+      MaxT0: 9000 #1500.4 in ns evaluated from distribution of triggered tracks wrt electronics time scale
     }
     
     t0selectorAddersE: {
       module_type: TimedTrackSelectorCRT
       TrackTimeTags: [ "CRTT0MatchingE" ]
-      MinT0: -49000 #1498.8 in ns as requested by code, evaluated from distribution of the triggered tracks wrt electronics time scale
-      MaxT0: 117000 #1500.4 in ns evaluated from distribution of triggered tracks wrt electronics time scale 
+      MinT0: -1200 #1498.8 in ns as requested by code, evaluated from distribution of the triggered tracks wrt electronics time scale
+      MaxT0: 9000 #1500.4 in ns evaluated from distribution of triggered tracks wrt electronics time scale 
     }
   }
 
