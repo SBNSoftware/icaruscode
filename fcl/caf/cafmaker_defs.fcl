@@ -148,6 +148,8 @@ recoana_sce_producers: {
   # Analysis on SCE stuff
   fmatchSCECryoE: @local::transfer_flashmatch_sce_icarus_cryoE
   fmatchSCECryoW: @local::transfer_flashmatch_sce_icarus_cryoW
+  fmatchopSCECryoE: @local::transfer_flashmatch_sce_icarus_cryoE_op
+  fmatchopSCECryoW: @local::transfer_flashmatch_sce_icarus_cryoW_op
 
   pandoraTrackSCEMCSCryoE: @local::recoana_caf_preprocess_producers.pandoraTrackMCSCryoE
   pandoraTrackSCEMCSCryoW: @local::recoana_caf_preprocess_producers.pandoraTrackMCSCryoW
@@ -274,7 +276,7 @@ caf_preprocess_sce_sequence: [ mcreco,
   pandoraTrackSCEMCSCryoE, pandoraTrackSCEMCSCryoW, 
   pandoraTrackSCERangeCryoE, pandoraTrackSCERangeCryoW,
   # Transfer flash-match T0 to the space-charge corrected slice
-  fmatchSCECryoE, fmatchSCECryoW
+  fmatchSCECryoE, fmatchSCECryoW, fmatchopSCECryoE, fmatchopSCECryoW
   # TODO: rns??
 ]
 

@@ -57,6 +57,8 @@ icarus_stage1_producers:
   ## Simple Flash Matching, right now cryo0 and 1 are identical
   fmatchCryoE:                    @local::icarus_simple_flashmatch_E
   fmatchCryoW:                    @local::icarus_simple_flashmatch_W
+  fmatchopCryoE:                  @local::icarus_simple_flashmatch_E_op
+  fmatchopCryoW:                  @local::icarus_simple_flashmatch_W_op
 
  ## crt producer
   crttrack:          @local::standard_crttrackproducer
@@ -150,7 +152,9 @@ icarus_pandora_Gauss:              [
 
 #Add flash matching
 icarus_reco_fm:                    [ fmatchCryoE,
-                                     fmatchCryoW ]
+                                     fmatchCryoW,
+                                     fmatchopCryoE,
+                                     fmatchopCryoW ]
 
 icarus_crthit:                     [crthit, crttrack]
 
