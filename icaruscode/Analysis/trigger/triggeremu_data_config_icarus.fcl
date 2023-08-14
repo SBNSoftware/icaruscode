@@ -59,6 +59,8 @@
 # Changes
 # --------
 # 
+# 20230809/20230814 (jzettle@fnal.gov) [v1.4]
+# :   adding configurations for the central/corner adder configurations
 # 20230525 (petrillo@slac.stanford.edu) [v1.3]
 # :   tiled configurations removed from processing list (obsolete)
 # 20220118 (petrillo@slac.stanford.edu) [v1.2]
@@ -110,6 +112,8 @@ triggeremu_data_config_icarus.settings.SlidingWindowTriggerPatterns            :
 triggeremu_data_config_icarus.settings.EnabledWindowsCentralAddersSlidingE : [ 2, 7 ]
 triggeremu_data_config_icarus.settings.EnabledWindowsCentralAddersSlidingW : [ 12, 17 ]
 
+triggeremu_data_config_icarus.settings.EnabledWindowsCornerAddersSlidingE : [ 0, 4, 5, 9  ] 
+triggeremu_data_config_icarus.settings.EnabledWindowsCornerAddersSlidingW : [ 10, 14, 15, 19 ] 
 
 # input tags with the gate for the evaluation of the trigger"
 triggeremu_data_config_icarus.input.gatesForTriggerE: "gatesFromTracksE"
@@ -119,6 +123,10 @@ triggeremu_data_config_icarus.input.gatesForTrigger:  "gatesFromTracks"
 triggeremu_data_config_icarus.input.gatesForTriggerCentralAddersE: "gatesFromTracksCentralAddersE"
 triggeremu_data_config_icarus.input.gatesForTriggerCentralAddersW: "gatesFromTracksCentralAddersW"
 triggeremu_data_config_icarus.input.gatesForTriggerCentralAdders:  "gatesFromTracksCentralAdders"
+
+triggeremu_data_config_icarus.input.gatesForTriggerCornerAddersE: "gatesFromTracksCornerAddersE"
+triggeremu_data_config_icarus.input.gatesForTriggerCornerAddersW: "gatesFromTracksCornerAddersW"
+triggeremu_data_config_icarus.input.gatesForTriggerCornerAdders:  "gatesFromTracksCornerAdders"
 
 END_PROLOG
 
@@ -334,6 +342,15 @@ triggeremu_data_config_icarus.simulationPrepCentralAddersWest: [
   trigslidewindowORCentralAddersW
 ]
 
+triggeremu_data_config_icarus.simulationPrepCornerAddersEast: [
+  trigslidewindowORCornerAddersE
+]
+
+triggeremu_data_config_icarus.simulationPrepCornerAddersWest: [
+  trigslidewindowORCornerAddersW
+]
+
+
 triggeremu_data_config_icarus.simulationPrepFull: [
   trigslidewindowOR
 ]
@@ -423,6 +440,22 @@ triggeremu_data_config_icarus.producers.trigslidewindowORCentralAddersE: {
 triggeremu_data_config_icarus.producers.trigslidewindowORCentralAddersW: {
   @table::triggeremu_data_config_icarus.producers.trigslidewindowOR
   EnableOnlyWindows: @local::triggeremu_data_config_icarus.settings.EnabledWindowsCentralAddersSlidingW
+}
+
+triggeremu_data_config_icarus.producers.trigslidewindowORCornerAddersE: {
+  @table::triggeremu_data_config_icarus.producers.trigslidewindowOR
+  EnableOnlyWindows: @local::triggeremu_data_config_icarus.settings.EnabledWindowsCornerAddersSlidingE
+}
+
+triggeremu_data_config_icarus.producers.trigslidewindowORCornerAddersW: {
+  @table::triggeremu_data_config_icarus.producers.trigslidewindowOR
+  EnableOnlyWindows: @local::triggeremu_data_config_icarus.settings.EnabledWindowsCornerAddersSlidingW
+}
+
+
+triggeremu_data_config_icarus.producers.trigslidewindowORCentralAddersW: {
+  @table::triggeremu_data_config_icarus.producers.trigslidewindowOR
+  EnableOnlyWindows: @local::triggeremu_data_config_icarus.settings.EnabledWindowsCornerAddersSlidingW
 }
 
 

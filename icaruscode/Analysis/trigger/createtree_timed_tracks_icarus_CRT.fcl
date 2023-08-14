@@ -137,6 +137,18 @@ physics: {
       T0Producer: "CRTT0MatchingE"
       T0selProducer: t0selectorAddersE
     }
+
+    gatesFromTracksCornerAddersW: {
+      @table::gatesFromTracks_icarus
+      T0Producer: "CRTT0MatchingW"
+      T0selProducer: t0selectorAddersW
+    }
+    
+    gatesFromTracksCornerAddersE: {
+      @table::gatesFromTracks_icarus
+      T0Producer: "CRTT0MatchingE"
+      T0selProducer: t0selectorAddersE
+    }
     
     @table::triggeremu_data_config_icarus.producers # from triggeremu_data_config_icarus.fcl
 
@@ -253,6 +265,50 @@ physics: {
       SelectEvents: [ "selectionCentralAddersE" ]
       }
 
+    t0TreeStoreCornerAddersW: {
+      @table::timetracktreestorage_base
+      T0selProducer: "t0selectorAddersW"
+      T0Producer: "pandoraGausCryoW"
+      PFPproducer: "pandoraTrackGausCryoW"
+      TrackProducer: "pandoraTrackGausCryoW"
+      TrackFitterProducer: "pandoraTrackGausCryoW"
+      CaloProducer: "calorimetryCryoW"
+      FlashProducer: "opflashCryoW"
+      CRTMatchingProducer: "CRTT0MatchingW"
+      EmulatedTriggers: [
+        { Name:       "M1"   TriggerTag: "simSlidingORM1W" },
+        { Name:       "S3"   TriggerTag: "simSlidingORS3W" },
+        { Name:       "S5"   TriggerTag: "simSlidingORS5W" },
+        { Name:       "S8"   TriggerTag: "simSlidingORS8W" },
+        { Name:      "S10"   TriggerTag: "simSlidingORS10W" },
+        { Name:      "S15"   TriggerTag: "simSlidingORS15W" }
+      ]
+      LogCategory: "TimeTrackTreeStorageCryoW"
+      SelectEvents: [ "selectionCornerAddersW" ]
+    }
+
+    t0TreeStoreCornerAddersE: {
+      @table::timetracktreestorage_base
+      T0selProducer: "t0selectorAddersE"
+      T0Producer: "pandoraGausCryoE"
+      PFPproducer: "pandoraTrackGausCryoE"
+      TrackProducer: "pandoraTrackGausCryoE"
+      TrackFitterProducer: "pandoraTrackGausCryoE"
+      CaloProducer: "calorimetryCryoE"
+      FlashProducer: "opflashCryoE"
+      CRTMatchingProducer: "CRTT0MatchingE"
+      EmulatedTriggers: [
+        { Name:       "M1"   TriggerTag: "simSlidingORM1E" },
+        { Name:       "S3"   TriggerTag: "simSlidingORS3E" },
+        { Name:       "S5"   TriggerTag: "simSlidingORS5E" },
+        { Name:       "S8"   TriggerTag: "simSlidingORS8E" },
+        { Name:      "S10"   TriggerTag: "simSlidingORS10E" },
+        { Name:      "S15"   TriggerTag: "simSlidingORS15E" }
+      ]
+      LogCategory: "TimeTrackTreeStorageCryoE"
+      SelectEvents: [ "selectionCornerAddersE" ]
+    }
+
   } #analyzers
   
   selectionW: [
@@ -289,6 +345,25 @@ physics: {
     "simSlidingORM1E", "simSlidingORS3E", "simSlidingORS5E",
     "simSlidingORS8E", "simSlidingORS10E", "simSlidingORS15E"
     ]
+
+  selectionCornerAddersW: [
+    "calorimetryCryoW", "CRTT0MatchingW",
+    "t0selectorAddersW", "gatesFromTracksCornerAddersW",
+    "lvdsgatesOR",
+    @sequence::triggeremu_data_config_icarus.simulationPrepCornerAddersWest,
+    "simSlidingORM1W", "simSlidingORS3W", "simSlidingORS5W",
+    "simSlidingORS8W", "simSlidingORS10W", "simSlidingORS15W"
+    ]
+
+  selectionCornerAddersE: [
+    "calorimetryCryoE",  "CRTT0MatchingE",
+    "t0selectorAddersE", "gatesFromTracksCornerAddersE",
+    "lvdsgatesOR",
+    @sequence::triggeremu_data_config_icarus.simulationPrepCornerAddersEast,
+    "simSlidingORM1E", "simSlidingORS3E", "simSlidingORS5E",
+    "simSlidingORS8E", "simSlidingORS10E", "simSlidingORS15E"
+    ]
+
     
   trigger_paths: [ selectionW, selectionE]
   
