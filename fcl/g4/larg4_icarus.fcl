@@ -84,3 +84,5 @@ outputs.rootoutput: @local::icarus_rootoutput
 services.Geometry.GDML: "icarus_complete_overburden_refactored_20220518_testnew_steplimit.gdml"
 services.Geometry.ROOT: "icarus_complete_overburden_refactored_20220518_testnew_steplimit.gdml"
 services.LArG4Detector.gdmlFileName_: "icarus_complete_overburden_refactored_20220518_testnew_steplimit.gdml"
+services.AuxDetGeometry.GDML: "icarus_complete_overburden_refactored_20220518_testnew_steplimit.gdml"
+services.AuxDetGeometry.ROOT: "icarus_complete_overburden_refactored_20220518_testnew_steplimit.gdml"
