@@ -23,10 +23,12 @@ namespace geo{
     std::string ad1name = (ad1.TotalVolume())->GetName();
     std::string ad2name = (ad2.TotalVolume())->GetName();
     // assume volume name is "volAuxDet_<subsystem>_module_###_<region>"
-    std::string modulePrefix = "module_";
+    std::string modulePrefix = "module";
 
     int ad1Num = atoi( ad1name.substr(ad1name.find(modulePrefix)+modulePrefix.length(),3).c_str() );
     int ad2Num = atoi( ad2name.substr(ad2name.find(modulePrefix)+modulePrefix.length(), 3).c_str() );
+
+    std::cout << "sort crt: " << ad1name << " " << ad1Num << " " << ad2name << ad2Num << std::endl;
 
     return ad1Num < ad2Num;
   }
@@ -40,11 +42,13 @@ namespace geo{
     std::string ad1name = (ad1.TotalVolume())->GetName();
     std::string ad2name = (ad2.TotalVolume())->GetName();
     // assume volume name is "volAuxDetSensitive_<subsystem>_module_###_(<cut<###>,top or bot>_)strip_##"
-    std::string modulePrefix = "module_";
-    std::string stripPrefix = "strip_";
+    std::string modulePrefix = "module";
+    std::string stripPrefix = "strip";
 
     int ad1Num = atoi( ad1name.substr(ad1name.find(modulePrefix)+modulePrefix.length(), 3).c_str() );
     int ad2Num = atoi( ad2name.substr(ad2name.find(modulePrefix)+modulePrefix.length(), 3).c_str() );
+
+    std::cout << "sort crt2: " << ad1name << " " << ad1Num << " " << ad2name << ad2Num << std::endl;
 
     if(ad1Num!=ad2Num) return ad1Num < ad2Num;
 

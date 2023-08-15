@@ -597,7 +597,9 @@ void CRTCommonUtils::FillAuxDetMaps() {
 //--------------------------------------------------------------------
 string CRTCommonUtils::AuxDetNameToRegion(string name) {
 
-    string base("volAuxDet_");
+  std::cout << "AuxDetNameToRegion name=" << name << std::endl;
+    //string base("volAuxDet_");
+    string base("volAuxDet");
     const char type = fAuxDetIdToType[fNameToAuxDetId[name]];
 
     switch( type ){
@@ -608,17 +610,21 @@ string CRTCommonUtils::AuxDetNameToRegion(string name) {
           throw cet::exception("CRTCommonUtils::Constructor::AuxDetNameToRegion")
                 << "AuxDet type not set!";
     }
-    base+="_module_###_";
+    //base+="_module_###_";
+    base+="module###";
 
     //module name has 2 possible formats
     //  volAuxDet_<subsystem>_module_###_<region>
     //  volAuxDet_<subsystem>_module_###_cut###_<region>
     string region(name.substr(base.length(),name.length()));
-    if( region.find("_")==string::npos) 
+    std::cout << region << std::endl;
+    // if( region.find("_")==string::npos) 
+    if( region.find("cut")==string::npos)
         return region;
     
     else 
-        return region.substr(region.find("_")+1,region.length());
+    //     return region.substr(region.find("_")+1,region.length());
+        return region.substr(region.find("cut")+6,region.length());
 }
 
 //--------------------------------------------------------------------------
