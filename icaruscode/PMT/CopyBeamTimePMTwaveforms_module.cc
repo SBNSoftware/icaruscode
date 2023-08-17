@@ -80,7 +80,7 @@ namespace icarus { class CopyBeamTimePMTwaveforms; }
  * * `std::vector<raw::OpDetWaveform>`: a copy of the selected waveforms from
  *   the original collection (`Waveforms` configuration parameter).
  * * `art::Assns<raw::OpDetWaveform, sbn::OpDetWaveformMeta>` (optional):
- *   association of the copied waveforms to their existing metadata
+ *   association _of the copied waveforms_ to their existing metadata
  *   (`OpDetWaveformMetaAssns` configuration parameter)
  * 
  * 
@@ -430,8 +430,8 @@ void icarus::CopyBeamTimePMTwaveforms::produce
   //
   // fetch input
   //
-  auto const& waveformHandle
-    = event.getValidHandle<std::vector<raw::OpDetWaveform>>(fWaveformTag);
+  auto const& waveforms
+    = event.getProduct<std::vector<raw::OpDetWaveform>>(fWaveformTag);
 
   art::Assns<raw::OpDetWaveform, sbn::OpDetWaveformMeta> const* waveMetaAssns
     = doAssns(Metadata)
@@ -456,21 +456,21 @@ void icarus::CopyBeamTimePMTwaveforms::produce
   // the assumption: the associations are in the same order as the
   // original waveforms, and none is missing; this allows us to skip
   // art::FindOneP calls. If not true... art::FindOneP is a way.
-  if (waveMetaAssns && (waveMetaAssns->size() != waveformHandle->size())) {
+  if (waveMetaAssns && (waveMetaAssns->size() != waveforms.size())) {
     throw art::Exception{ art::errors::LogicError }
       << "CopyBeamTimePMTwaveforms association logic assumption is broken"
       " by metadata (I)."
       "\nPlease contact the author for a fix.\n";
   }
   if (
-    waveBaselineAssns && (waveBaselineAssns->size() != waveformHandle->size())
+    waveBaselineAssns && (waveBaselineAssns->size() != waveforms.size())
   ) {
     throw art::Exception{ art::errors::LogicError }
       << "CopyBeamTimePMTwaveforms association logic assumption is broken"
       " by baselines (I)."
       "\nPlease contact the author for a fix.\n";
   }
-  if (waveRMSassns && (waveRMSassns->size() != waveformHandle->size())) {
+  if (waveRMSassns && (waveRMSassns->size() != waveforms.size())) {
     throw art::Exception{ art::errors::LogicError }
       << "CopyBeamTimePMTwaveforms association logic assumption is broken"
       " by RMS (I)."
@@ -487,7 +487,7 @@ void icarus::CopyBeamTimePMTwaveforms::produce
     mf::LogDebug(fLogCategory)
       << "Event " << event.id() << " has beam gate starting at " << beamGateTime
       << " and trigger at " << triggerTime << "."
-      << "\nNow extracting information from " << waveformHandle->size()
+      << "\nNow extracting information from " << waveforms.size()
         << " waveforms."
       ;
   }
@@ -520,10 +520,9 @@ void icarus::CopyBeamTimePMTwaveforms::produce
     : nullptr
     ;
   
-  art::PtrMaker<raw::OpDetWaveform> const makeWaveformPtr
-    { event, waveformHandle.id() };
+  art::PtrMaker<raw::OpDetWaveform> const makeWaveformPtr{ event };
   
-  for (auto const& [ iWaveform, waveform ]: util::enumerate(*waveformHandle)) {
+  for (auto const& [ iWaveform, waveform ]: util::enumerate(waveforms)) {
     
     if (!overlaps(targetInterval, waveform)) continue;
     
