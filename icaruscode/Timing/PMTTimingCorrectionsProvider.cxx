@@ -27,8 +27,16 @@ icarusDB::PMTTimingCorrectionsProvider::PMTTimingCorrectionsProvider
     (const fhicl::ParameterSet& pset) 
     : fVerbose{ pset.get<bool>("Verbose", false) }
     , fLogCategory{ pset.get<std::string>("LogCategory", "PMTTimingCorrection") }
-    , fTag{ pset.get<std::string>("Tag", "v1r0") }
-    { }
+    , fTags{ pset.get<fhicl::ParameterSet>("CorrectionsTags") }
+    { 
+	fCablesTag  = fTags.get<std::string>("CablesTag", "v1r0");
+	fLaserTag   = fTags.get<std::string>("LaserTag", "v1r0");
+	fCosmicsTag = fTags.get<std::string>("CosmicsTag", "v1r0");
+	if( fVerbose ) mf::LogInfo(fLogCategory) << "Database tags for timing corrections:\n"
+						 << "Cables corrections  " << fCablesTag << "\n"  
+						 << "Laser corrections   " << fLaserTag  << "\n"
+						 << "Cosmics corrections " << fCosmicsTag << std::endl;
+    }
 
 // -------------------------------------------------------------------------------
 
@@ -56,7 +64,7 @@ void icarusDB::PMTTimingCorrectionsProvider::ReadPMTCablesCorrections( uint32_t 
     // pmt_cables_delay: delays of the cables relative to trigger 
     // and reset distribution
     const std::string dbname("pmt_cables_delays_data");
-    lariov::DBFolder db(dbname, "", "", fTag, true, false);
+    lariov::DBFolder db(dbname, "", "", fCablesTag, true, false);
 
     bool ret = db.UpdateData( RunToDatabaseTimestamp(run) ); // select table based on run number   
     mf::LogDebug(fLogCategory) << dbname + " corrections" << (ret? "": " not") << " updated for run " << run;
@@ -114,7 +122,7 @@ void icarusDB::PMTTimingCorrectionsProvider::ReadPMTCablesCorrections( uint32_t 
 void icarusDB::PMTTimingCorrectionsProvider::ReadLaserCorrections( uint32_t run ) { 
 
     const std::string dbname("pmt_laser_timing_data");
-    lariov::DBFolder db(dbname, "", "", fTag, true, false);
+    lariov::DBFolder db(dbname, "", "", fLaserTag, true, false);
 
     bool ret = db.UpdateData( RunToDatabaseTimestamp(run) ); // select table based on run number   
     mf::LogDebug(fLogCategory) << dbname + " corrections" << (ret? "": " not") << " updated for run " << run;
@@ -150,7 +158,7 @@ void icarusDB::PMTTimingCorrectionsProvider::ReadLaserCorrections( uint32_t run 
 void icarusDB::PMTTimingCorrectionsProvider::ReadCosmicsCorrections( uint32_t run ) { 
 
     const std::string dbname("pmt_cosmics_timing_data");
-    lariov::DBFolder db(dbname, "", "", fTag, true, false);
+    lariov::DBFolder db(dbname, "", "", fCosmicsTag, true, false);
 
     bool ret = db.UpdateData( RunToDatabaseTimestamp(run) ); // select table based on run number   
     mf::LogDebug(fLogCategory) << dbname + " corrections" << (ret? "": " not") << " updated for run " << run;
