@@ -1,10 +1,12 @@
+#include "timing_corrections_tags.fcl"
+
 BEGIN_PROLOG
 
 icarus_pmttimingservice:
 {
     # service name:   IPMTTimingCorrectionService
     service_provider: PMTTimingCorrectionService
-    Tag:              "v1r0"
+    CorrectionsTags:  @local::PMTtimingCorrectionsTags_Run2_August2023
     Verbose:          false
 }
 

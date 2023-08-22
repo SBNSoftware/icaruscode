@@ -94,7 +94,10 @@ class icarusDB::PMTTimingCorrectionsProvider : public PMTTimingCorrections {
 
         bool fVerbose = false; ///< Whether to print the configuration we read.
         std::string fLogCategory; ///< Category tag for messages.
-	std::string fTag; ///< Tag for database version.	
+	fhicl::ParameterSet fTags; ///< List of database tags
+	std::string fCablesTag;  ///< Tag for cable corrections database.	
+	std::string fLaserTag;   ///< Tag for laser corrections database.
+	std::string fCosmicsTag; ///< Tag for cosmics corrections database.	
 
 	/// Map of corrections by channel
         std::map<unsigned int, PMTTimeCorrectionsDB> fDatabaseTimingCorrections;
