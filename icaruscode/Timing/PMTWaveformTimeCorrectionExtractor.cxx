@@ -39,9 +39,7 @@
 // -----------------------------------------------------------------------------
 icarus::timing::PMTWaveformTimeCorrectionExtractor::Error::Error
   (std::string const& msg /* == "" */)
-    : cet::exception{
-      "PMTWaveformTimeCorrectionExtractor::MultipleCorrectionsForChannel", msg
-      }
+    : cet::exception{ "PMTWaveformTimeCorrectionExtractor", msg }
 {}
 
 
