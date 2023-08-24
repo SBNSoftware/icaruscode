@@ -69,8 +69,9 @@ struct icarusDB::RunPeriods {
   static constexpr RunPeriod withRun(int run)
     {
       
-      if (run < 0xBADCAFE) return RunPeriod::Runs0to2; // FIXME set the correct run number
-      if (run < 0xBADCAFE) return RunPeriod::Runs3andOn; // FIXME set the correct run number
+      if (run < 0x10369) return RunPeriod::Runs0to2;
+      // new PMT mapping (swapped some digitizer channels)
+      if (run < 0xBADCAFE) return RunPeriod::Runs3andOn; // large value; reminds me of Fermilab
       
       return RunPeriod::NPeriods;
       
