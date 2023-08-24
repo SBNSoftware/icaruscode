@@ -1,0 +1,7 @@
+#include "standard_g4_icarus.fcl"
+#include "enable_spacecharge_icarus.fcl"
+
+process_name: G4ion
+
+physics.simulate: [ rns, ionization, sedlite, mcreco ]
+
