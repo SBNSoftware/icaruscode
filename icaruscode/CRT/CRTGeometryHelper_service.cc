@@ -30,6 +30,7 @@ namespace crt{
   CRTGeometryHelper::doConfigureAuxDetChannelMapAlg(
       fhicl::ParameterSet const& sortingParameters) const {
 
+    std::cout << __FILE__ << " " << __LINE__ << std::endl;
     return std::make_unique<geo::CRTChannelMapAlg>(sortingParameters);
 
   }

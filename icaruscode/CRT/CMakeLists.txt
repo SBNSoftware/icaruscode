@@ -183,6 +183,9 @@ cet_build_plugin(CRTSimAnalysis art::module
         ROOT::XMLIO
         ROOT::Gdml
         ROOT::Tree
+	Geant4::G4geometry
+	Geant4::G4run
+	Geant4::G4digits_hits
         )
 
 cet_build_plugin(CRTDataAnalysis art::module

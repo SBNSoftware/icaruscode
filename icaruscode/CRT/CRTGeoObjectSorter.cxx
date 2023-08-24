@@ -105,7 +105,9 @@ namespace geo{
 
   //----------------------------------------------------------------------------
   void CRTGeoObjectSorter::SortAuxDets(std::vector<geo::AuxDetGeo> & adgeo) const {
+    std::cout << __FILE__ << " " << __LINE__ << std::endl;
     std::sort(adgeo.begin(), adgeo.end(), sortAuxDetICARUS);
+    std::cout << __FILE__ << " " << __LINE__ << std::endl;
   }
 
   //----------------------------------------------------------------------------
