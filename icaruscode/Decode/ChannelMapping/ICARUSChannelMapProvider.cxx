@@ -7,6 +7,8 @@
 // library header
 #include "icaruscode/Decode/ChannelMapping/ICARUSChannelMapProvider.h"
 
+#include "icaruscode/Decode/ChannelMapping/RunPeriods.h"
+
 #include "art/Utilities/make_tool.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
 #include "fhiclcpp/ParameterSet.h"
@@ -14,7 +16,6 @@
 #include "cetlib/cpu_timer.h"
 
 #include "icaruscode/Decode/ChannelMapping/IICARUSChannelMap.h"
-//#include "icaruscode/Decode/ChannelMapping/TPCChannelmapping.h"
 #include "icaruscode/Decode/ChannelMapping/IChannelMapping.h"
 
 #include <string>
@@ -29,8 +30,6 @@ namespace icarusDB
 // Constructor.
 ICARUSChannelMapProvider::ICARUSChannelMapProvider(const fhicl::ParameterSet& pset) {
 
-    mf::LogInfo("ICARUSChannelMapProvider") << "Building the channel mapping" ;
-
     fDiagnosticOutput = pset.get<bool>("DiagnosticOutput", false);
 
     // Recover the vector of fhicl parameters for the ROI tools
@@ -39,10 +38,50 @@ ICARUSChannelMapProvider::ICARUSChannelMapProvider(const fhicl::ParameterSet& ps
     // Get instance of the mapping tool (allowing switch between database instances)
     fChannelMappingTool = art::make_tool<IChannelMapping>(channelMappingParams);
 
+}
+
+bool ICARUSChannelMapProvider::forRun(int run) {
+  
+  RunPeriod period = RunPeriod::NPeriods;
+  try {
+    period = RunPeriods::withRun(run);
+  } catch (...) {
+    mf::LogError("ICARUSChannelMapProvider")
+      << "Failed to associate a run period number to run " << run;
+    throw;
+  }
+  
+  if (period == RunPeriod::NPeriods) {
+    throw std::runtime_error(
+      "ICARUSChannelMapProvider::forRun(): can't determine the period of run "
+      + std::to_string(run) + "!\n"
+      );
+  }
+  
+  return forPeriod(period);
+  
+}
+
+
+bool ICARUSChannelMapProvider::forPeriod(icarusDB::RunPeriod period) {
+  
+  // if cache is not invalidated, we don't refresh it
+  if (!fChannelMappingTool->SelectPeriod(period)) return false;
+  
+  readFromDatabase();
+  return true;
+}
+
+
+void ICARUSChannelMapProvider::readFromDatabase() {
+
+    mf::LogInfo("ICARUSChannelMapProvider") << "Building the channel mapping" ;
+
     cet::cpu_timer theClockFragmentIDs;
 
     theClockFragmentIDs.start();
 
+    fFragmentToReadoutMap.clear();
     if (fChannelMappingTool->BuildTPCFragmentIDToReadoutIDMap(fFragmentToReadoutMap))
     {
         throw cet::exception("ICARUSChannelMapProvider") << "Cannot recover the Fragment ID channel map from the database \n";
@@ -63,6 +102,7 @@ ICARUSChannelMapProvider::ICARUSChannelMapProvider(const fhicl::ParameterSet& ps
 
     theClockReadoutIDs.start();
 
+    fReadoutBoardToChannelMap.clear();
     if (fChannelMappingTool->BuildTPCReadoutBoardToChannelMap(fReadoutBoardToChannelMap))
     {
         std::cout << "******* FAILED TO CONFIGURE CHANNEL MAP ********" << std::endl;
@@ -70,6 +110,7 @@ ICARUSChannelMapProvider::ICARUSChannelMapProvider(const fhicl::ParameterSet& ps
     }
 
     // Do the channel mapping initialization
+    fFragmentToDigitizerMap.clear();
     if (fChannelMappingTool->BuildFragmentToDigitizerChannelMap(fFragmentToDigitizerMap))
       {
 	throw cet::exception("ICARUSChannelMapProvider") << "Cannot recover the Fragment ID channel map from the database \n";
@@ -82,6 +123,7 @@ ICARUSChannelMapProvider::ICARUSChannelMapProvider(const fhicl::ParameterSet& ps
       }
     
     // Do the channel mapping initialization for CRT
+    fCRTChannelIDToHWtoSimMacAddressPairMap.clear();
     if (fChannelMappingTool->BuildCRTChannelIDToHWtoSimMacAddressPairMap(fCRTChannelIDToHWtoSimMacAddressPairMap))
       {
         throw cet::exception("CRTDecoder") << "Cannot recover the HW MAC Address  from the database \n";
@@ -97,6 +139,7 @@ ICARUSChannelMapProvider::ICARUSChannelMapProvider(const fhicl::ParameterSet& ps
     
     
     // Do the channel mapping initialization for top CRT
+    fTopCRTHWtoSimMacAddressPairMap.clear();
     if (fChannelMappingTool->BuildTopCRTHWtoSimMacAddressPairMap(fTopCRTHWtoSimMacAddressPairMap))
       {
         throw cet::exception("CRTDecoder") << "Cannot recover the Top CRT HW MAC Address  from the database \n";
@@ -110,6 +153,7 @@ ICARUSChannelMapProvider::ICARUSChannelMapProvider(const fhicl::ParameterSet& ps
     
 
     // Do the CRT Charge Calibration initialization
+    fSideCRTChannelToCalibrationMap.clear();
     if (fChannelMappingTool->BuildSideCRTCalibrationMap(fSideCRTChannelToCalibrationMap))
       {
 	std::cout << "******* FAILED TO CONFIGURE CRT Calibration  ********" << std::endl;
@@ -219,6 +263,8 @@ unsigned int ICARUSChannelMapProvider::nPMTfragmentIDs() const {
 
 const DigitizerChannelChannelIDPairVec& ICARUSChannelMapProvider::getChannelIDPairVec(const unsigned int fragmentID) const
 {
+    mf::LogTrace{ "ICARUSChannelMapProvider" }
+      << "Call to: ICARUSChannelMapProvider::getChannelIDPairVec(" << fragmentID << ")";
     DigitizerChannelChannelIDPairVec const* digitizerPair = findPMTfragmentEntry(fragmentID);
     
     if (digitizerPair) return *digitizerPair;

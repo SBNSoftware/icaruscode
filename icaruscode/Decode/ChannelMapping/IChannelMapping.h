@@ -10,6 +10,9 @@
 #ifndef IChannelMapping_h
 #define IChannelMapping_h
 
+// ICARUS libraries
+#include "icaruscode/Decode/ChannelMapping/RunPeriods.h"
+
 // Framework Includes
 #include "fhiclcpp/ParameterSet.h"
 
@@ -27,6 +30,18 @@ namespace icarusDB
      *  @brief  Virtual Destructor
      */
     virtual ~IChannelMapping() noexcept = default;
+    
+    /**
+     *  @brief Prepares the tool to serve information about the specified run period.
+     *  @param period the run period to be served
+     *  @return whether the served values are going to be different than before
+     * 
+     * If this method returns `false`, the values from the previous call to it
+     * are still current.
+     * 
+     * Run periods are defined in `icarusDB::RunPeriods`.
+     */
+    virtual bool SelectPeriod(icarusDB::RunPeriod period) = 0;
     
     /**
      *  @brief Define the returned data structures for a mapping between TPC Fragment IDs
