@@ -39,19 +39,17 @@
 // -----------------------------------------------------------------------------
 icarus::timing::PMTWaveformTimeCorrectionExtractor::Error::Error
   (std::string const& msg /* == "" */)
-    : cet::exception{
-      "PMTWaveformTimeCorrectionExtractor::MultipleCorrectionsForChannel", msg
-      }
+    : cet::exception{ "PMTWaveformTimeCorrectionExtractor", msg }
 {}
 
 
 icarus::timing::PMTWaveformTimeCorrectionExtractor::MultipleCorrectionsForChannel
 ::MultipleCorrectionsForChannel
-  (unsigned int existing, unsigned int additional)
+  (unsigned int channel, unsigned int existing, unsigned int additional)
     : Error{
-      "Attempt to overwrite correction from channel "
-      + std::to_string(existing) + " with one from channel "
-      + std::to_string(additional) + "\n"
+      "Attempt to overwrite the correction for channel "
+      + std::to_string(channel) + " (from channel " + std::to_string(existing)
+      + ") with another (from channel " + std::to_string(additional) + ")\n"
       }
 {}
 
@@ -224,7 +222,7 @@ void icarus::timing::PMTWaveformTimeCorrectionExtractor::findWaveformTimeCorrect
             PMTWaveformTimeCorrection& correction = correctionFor(channelID);
             if (correction.isValid()) {
               throw MultipleCorrectionsForChannel
-                { correction.channelID, waveChannelID };
+                { channelID, correction.channelID, waveChannelID };
             }
             
             correction.channelID = waveChannelID;

@@ -1,0 +1,52 @@
+#
+# File:     dump_ophits_icarus.fcl
+# Purpose:  Dump on screen optical hit content of ICARUS data.
+# Author:   Gianluca Petrillo (petrillo@slac.stanford.edu)
+# Date:     August 11, 2023
+# Version:  1.0
+#
+# Dumps `ophit` hit collection.
+#
+# Service dependencies:
+# - message facility
+#
+
+process_name: DumpOpHits
+
+services.message: {
+  destinations: {
+    
+    # grab all the "DumpOpHits" messages and put them in DumpOpHits.log
+    DumpOpHits: {
+      append: false
+      categories: {
+        DumpOpHits: { limit: -1 }
+        default: { limit: 0 }
+      }
+      filename: "DumpOpHits.log"
+      threshold: "INFO"
+      type: "file"
+    } # DumpOpHits
+    
+    LogStandardOut: {
+      categories: {
+        DumpOpHits: { limit: 0 }
+        default: {}
+      }
+      threshold: "WARNING"
+      type: "cout"
+    } # LogStandardOut
+    
+  } # destinations
+} # message
+
+
+physics.analyzers.dumpophits: {
+  module_type:       DumpOpHits
+  
+  # output category (used in `messages` configuration above)
+  OutputCategory:   "DumpOpHits"
+  OpHitModuleLabel:  ophit
+}
+
+physics.dumpers: [ dumpophits ]

@@ -133,18 +133,12 @@ physics: {
       CaloProducer: "calorimetryCryoW"
       FlashProducer: "opflashCryoW"
       EmulatedTriggers: [
-        { Name:       "M1"    TriggerTag: "simTiledORM1W" },
-        { Name:       "S3"    TriggerTag: "simTiledORS3W" },
-        { Name:       "S5"    TriggerTag: "simTiledORS5W" },
-        { Name:       "S8"    TriggerTag: "simTiledORS8W" },
-        { Name:      "S10"    TriggerTag: "simTiledORS10W" },
-        { Name:      "S15"    TriggerTag: "simTiledORS15W" },
-        { Name:       "M1s"   TriggerTag: "simSlidingORM1W" },
-        { Name:       "S3s"   TriggerTag: "simSlidingORS3W" },
-        { Name:       "S5s"   TriggerTag: "simSlidingORS5W" },
-        { Name:       "S8s"   TriggerTag: "simSlidingORS8W" },
-        { Name:      "S10s"   TriggerTag: "simSlidingORS10W" },
-        { Name:      "S15s"   TriggerTag: "simSlidingORS15W" }
+        { Name:       "M1"   TriggerTag: "simSlidingORM1W" },
+        { Name:       "S3"   TriggerTag: "simSlidingORS3W" },
+        { Name:       "S5"   TriggerTag: "simSlidingORS5W" },
+        { Name:       "S8"   TriggerTag: "simSlidingORS8W" },
+        { Name:      "S10"   TriggerTag: "simSlidingORS10W" },
+        { Name:      "S15"   TriggerTag: "simSlidingORS15W" }
       ]
       LogCategory: "TimeTrackTreeStorageCryoW"
       SelectEvents: [ "selectionW" ]
@@ -160,18 +154,12 @@ physics: {
       CaloProducer: "calorimetryCryoE"
       FlashProducer: "opflashCryoE"
       EmulatedTriggers: [
-        { Name:       "M1"    TriggerTag: "simTiledORM1E" },
-        { Name:       "S3"    TriggerTag: "simTiledORS3E" },
-        { Name:       "S5"    TriggerTag: "simTiledORS5E" },
-        { Name:       "S8"    TriggerTag: "simTiledORS8E" },
-        { Name:      "S10"    TriggerTag: "simTiledORS10E" },
-        { Name:      "S15"    TriggerTag: "simTiledORS15E" },
-        { Name:       "M1s"   TriggerTag: "simSlidingORM1E" },
-        { Name:       "S3s"   TriggerTag: "simSlidingORS3E" },
-        { Name:       "S5s"   TriggerTag: "simSlidingORS5E" },
-        { Name:       "S8s"   TriggerTag: "simSlidingORS8E" },
-        { Name:      "S10s"   TriggerTag: "simSlidingORS10E" },
-        { Name:      "S15s"   TriggerTag: "simSlidingORS15E" }
+        { Name:       "M1"   TriggerTag: "simSlidingORM1E" },
+        { Name:       "S3"   TriggerTag: "simSlidingORS3E" },
+        { Name:       "S5"   TriggerTag: "simSlidingORS5E" },
+        { Name:       "S8"   TriggerTag: "simSlidingORS8E" },
+        { Name:      "S10"   TriggerTag: "simSlidingORS10E" },
+        { Name:      "S15"   TriggerTag: "simSlidingORS15E" }
       ]
       LogCategory: "TimeTrackTreeStorageCryoE"
       SelectEvents: [ "selectionE" ]
