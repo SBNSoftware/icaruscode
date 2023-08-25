@@ -1,4 +1,4 @@
-# BEGIN_PROLOG #comment to run generate_simple_weighted_template.py
+BEGIN_PROLOG #comment to run generate_simple_weighted_template.py
 
 icarus_simple_flashmatch_E: {
   module_type: FlashPredict
@@ -119,8 +119,8 @@ icarus_simple_flashmatch_W.PandoraProducer:    "pandoraGausCryoW"
 icarus_simple_flashmatch_W.TrackProducer:      "pandoraTrackGausCryoW"
 # icarus_simple_flashmatch_W.CaloProducer:     "pandoraGausCaloCryoW"
 icarus_simple_flashmatch_W.SpacePointProducer: "pandoraGausCryoW"
-icarus_simple_flashmatch_W.OpFlashProducer: ["opflashCryoE"]
-icarus_simple_flashmatch_W.OpFlashHitProducer: ["opflashCryoE"]
+icarus_simple_flashmatch_W.OpFlashProducer: ["opflashCryoW"]
+icarus_simple_flashmatch_W.OpFlashHitProducer: ["opflashCryoW"]
 
 # OpFlashes
 icarus_simple_flashmatch_E_op: @local::icarus_simple_flashmatch_E
@@ -153,4 +153,4 @@ icarus_simple_flashmatch_sce_W_op: @local::icarus_simple_flashmatch_W_op
 icarus_simple_flashmatch_sce_W_op.IsSimple: false
 icarus_simple_flashmatch_sce_W_op.FlashType: "opflash_pmt"
 
-# END_PROLOG #comment to run generate_simple_weighted_template.py
+END_PROLOG #comment to run generate_simple_weighted_template.py
