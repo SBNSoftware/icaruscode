@@ -15,6 +15,7 @@
 #include "crt_decoderdefs_icarus.fcl"
 #include "crthitproducer.fcl"
 #include "wcls-decode-to-sig-base.fcl"
+#include "icarus_FilterDataIntegrity.fcl"
 #include "icarus_FilterCRTPMTMatching.fcl"
 
 BEGIN_PROLOG
@@ -126,11 +127,7 @@ icarus_stage0_filters:
   #
    flashfilterBNB: { module_type:         "FilterOpFlash" 
                      OpFlashProducerList: ["opflashCryoE","opflashCryoW"] 
-#                     WindowStartTime:     -1489.6 # -1489.4 - 0.2us safe margin
-#                     WindowEndTime:       -1487.6 # -1487.8 + 0.2us safe margin
-#                     WindowStartTime:     -1490.8 # 9.6 us - 1500 us offset - 0.4us safe margin
-#                     WindowEndTime:       -1488.4 # 11.2 -1500 us offset + 0.4us safe margin
-                     WindowStartTime:     -0.2 # Gate is now recentered by Gianluca/Andrea
+                     WindowStartTime:     -0.2 # 0.2us safe margin
                      WindowEndTime:        1.8 
                    }
    flashfilterNuMI: { module_type:         "FilterOpFlash" 
@@ -164,6 +161,9 @@ icarus_stage0_filters:
                              TriggerDataLabel:   "daqTrigger"
                              TriggerType:        "Unknown"
                           }
+
+   filterdataintegrity: @local::icarus_FilterDataIntegrity
+
    crtpmtmatchingfilter: @local::icarus_FilterCRTPMTMatching
 }
 
@@ -269,6 +269,7 @@ icarus_stage0_CRT:                 [
                                    ]
 
 icarus_stage0_data:                [
+                                     filterdataintegrity,
                                      @sequence::icarus_stage0_PMT, 
                                      @sequence::icarus_stage0_CRT,
                                      daqTPCROI, 
@@ -276,6 +277,7 @@ icarus_stage0_data:                [
                                    ]
  
 icarus_stage0_data_crtpmtfilter:   [
+                                     filterdataintegrity,
                                      @sequence::icarus_stage0_PMT, 
                                      @sequence::icarus_stage0_CRT,
                                      crtpmtmatchingfilter,
@@ -284,6 +286,7 @@ icarus_stage0_data_crtpmtfilter:   [
                                   ]
 
 icarus_stage0_2d_data:             [
+                                     filterdataintegrity,
                                      @sequence::icarus_stage0_PMT, 
                                      @sequence::icarus_stage0_CRT,
                                      daqTPCROI, 
@@ -291,6 +294,7 @@ icarus_stage0_2d_data:             [
                                    ]
 
 icarus_stage0_2d_data_crtpmtfilter: [
+                                      filterdataintegrity,
                                       @sequence::icarus_stage0_PMT, 
                                       @sequence::icarus_stage0_CRT,
                                       crtpmtmatchingfilter,

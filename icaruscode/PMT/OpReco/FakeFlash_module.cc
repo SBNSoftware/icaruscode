@@ -88,7 +88,7 @@ private:
 
 FakeFlash::FakeFlash(fhicl::ParameterSet const& p)
   : EDProducer{p}
-  , fFlatEngine(art::ServiceHandle<rndm::NuRandomService>()->createEngine(*this, "HepJamesRandom", "Gen", p, "Seed"))
+  , fFlatEngine(art::ServiceHandle<rndm::NuRandomService>()->registerAndSeedEngine(createEngine(0, "HepJamesRandom", "Gen"), "HepJamesRandom", "Gen", p, "Seed"))
   // More initializers here.
 {
   _verbose = p.get<bool>("Verbose",false); // If you want someone to talk to you
@@ -144,7 +144,7 @@ void FakeFlash::beginRun(art::Run& run)
 
   std::unique_ptr<sumdata::RunData> runData(new sumdata::RunData(geo->DetectorName()));
 
-  run.put(std::move(runData));
+  run.put(std::move(runData), art::fullRun());
 
   return;
 }

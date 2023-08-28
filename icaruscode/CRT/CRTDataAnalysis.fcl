@@ -59,6 +59,8 @@ physics:
 
       TriggerLabel:  "daqTrigger"
 
+      CRTPMTLabel:   "crtpmt"
+
       QPed:                 60     # Pedestal offset [ADC]
       QSlope:               70     # Pedestal slope [ADC/photon]
       PEThresh:             7.5    # PE threshold above which charge amplitudes used

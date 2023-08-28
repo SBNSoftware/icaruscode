@@ -60,7 +60,7 @@
 #include "sbnobj/ICARUS/CRT/CRTData.hh"
 #include "sbnobj/Common/CRT/CRTHit.hh"
 #include "icaruscode/CRT/CRTUtils/CRTCommonUtils.h"
-
+#include "icaruscode/CRT/CRTUtils/CRTPMTMatchingUtils.h"
 #include "icaruscode/Decode/DecoderTools/IDecoder.h"
 #include "icaruscode/Decode/ChannelMapping/IICARUSChannelMap.h"
 
@@ -70,6 +70,7 @@ using std::map;
 using std::set;
 using std::pair;
 
+using namespace sbn::crt;
 
 namespace icarus {
 namespace crt {
@@ -101,7 +102,10 @@ namespace crt {
         Name("TriggerLabel"),
 	  Comment("Label for the Trigger fragment label")
 	  };
-
+      fhicl::Atom<art::InputTag> CRTPMTLabel {
+	Name("CRTPMTLabel"),
+	  Comment("Label for the CRTPMT Matched variables from the crtpmt data product")
+	  };
       fhicl::Atom<double> QPed {
 	Name("QPed"),
 	  Comment("Pedestal offset [ADC]")
@@ -140,15 +144,17 @@ namespace crt {
   private:
 
     void FillFebMap();
-
+    
     // Declare member data here.
     const icarusDB::IICARUSChannelMap* fChannelMap = nullptr;
     //    CRTHitRecoAlg hitAlg;
-
+    void ClearVecs();
     // The parameters we'll read from the .fcl file.
     art::InputTag fTriggerLabel;
     art::InputTag fCRTHitProducerLabel;        ///< The name of the producer that created hits
     art::InputTag fCRTDAQProducerLabel;
+    art::InputTag fCRTPMTProducerLabel;
+
     //    bool fVerbose;          ///< print info
     double fQPed;           ///< Pedestal offset of SiPMs [ADC]
     double fQSlope;         ///< Pedestal slope of SiPMs [ADC/photon]
@@ -160,6 +166,7 @@ namespace crt {
     // The n-tuples we'll create.
     TTree* fDAQNtuple;
     TTree* fHitNtuple;
+    TTree* fCRTPMTNtuple;
 
     // The comment lines with the @ symbols define groups in doxygen. 
     /// @name The variables that will go into both n-tuples.
@@ -218,6 +225,42 @@ namespace crt {
     int       fHitMod;
     int       fNHitFeb;
     float     fHitTotPe;
+
+    //CRT-PMT Matching vars
+    int          fMatchEvent;///< Event number.
+    int          fMatchRun;///< Run number.
+    unsigned int fGateType;///< Beam gate type.
+    int          fFlashID; ///< ID of the optical flash.
+    double       fFlashTime_us;///< Time of the optical flash w.r.t. the global trigger in us.    
+    double fFlashGateTime_ns;///< Time of the optical flash w.r.t. the beam gate opening in ns.
+    double fFirstOpHitPeakTime;///< Time of the first optical hit peak time w.r.t. the global trigger [us]
+    double fFirstOpHitStartTime; ///< Time of the first optical hit start time w.r.t. the global trigger [us]
+    bool fFlashInGate;///< Flash within gate or not.
+    bool fFlashInBeam;///< Flash within the beam window of the gate or not.
+    double fFlashPE;///< Total reconstructed light in the flash [photoelectrons]
+    double       fFlashYWidth;///< Flash spread along Y.
+    double       fFlashZWidth;///< Flash spread along Z.
+    double fFlashPos_x;///< Flash barycenter coordinates evaluated using ADCs as weights, X-position.
+    double fFlashPos_y;///< Flash barycenter coordinates evaluated using ADCs as weights, Y-position.
+    double fFlashPos_z;///< Flash barycenter coordinates evaluated using ADCs as weights, Z-position.
+    MatchType fFlashClassification;///< Classication of the optical flash.
+    std::vector<MatchedCRT> matchedCRTHits;///< Matched CRT Hits with the optical flash.
+    // add contents of MatchedCRT struct to be put into branches, 
+    //geo::Point_t CRTHitPos;
+    int nMatchedCRTHits; ///< Number of Matched CRT hits to flash 
+    vector<double> CRTHitPos_x;
+    vector<double> CRTHitPos_y;
+    vector<double> CRTHitPos_z;
+    vector<double> fCRTPMTTimeDiff_ns;
+    vector<double> fCRTTime_us;
+    vector<int> fCRTSys;
+    vector<int> fCRTRegion;     
+
+    int fNtopCRTBefore;
+    int fNtopCRTAfter;
+    int fNsideCRTBefore;
+    int fNsideCRTAfter;
+    //std::vector<recob::OpHit>opHits;///< Optical hits of the flash.
     
     // Other variables that will be shared between different methods.
     geo::GeometryCore const* fGeometryService;   ///< pointer to Geometry provider
@@ -245,6 +288,7 @@ namespace crt {
     , fTriggerLabel( config().TriggerLabel() )
     , fCRTHitProducerLabel(config().CRTHitLabel())
     , fCRTDAQProducerLabel(config().CRTDAQLabel())
+    , fCRTPMTProducerLabel(config().CRTPMTLabel())
     , fQPed(config().QPed())
     , fQSlope(config().QSlope())
     , fPEThresh(config().PEThresh())
@@ -304,6 +348,7 @@ namespace crt {
     // Define our n-tuples
     fDAQNtuple        = tfs->make<TTree>("DAQTree",          "MyCRTDAQ");
     fHitNtuple        = tfs->make<TTree>("HitTree",          "MyCRTHit");
+    fCRTPMTNtuple     = tfs->make<TTree>("CRTPMTTree",       "MyCRTPMTMatch");
 
     // Define the branches of our DetSim n-tuple 
     fDAQNtuple->Branch("event",                 &fDetEvent,          "event/I");
@@ -349,8 +394,39 @@ namespace crt {
     fHitNtuple->Branch("gate_crt_diff",&m_gate_crt_diff, "gate_crt_diff/l");
     fHitNtuple->Branch("crt_global_trigger",&m_crt_global_trigger,"crt_global_trigger/l");
     fHitNtuple->Branch("crtGT_trig_diff",&m_crtGT_trig_diff,"crtGT_trig_diff/L");
+    
+    // Define the branches of our CRTPMTMatch ntuple
+    fCRTPMTNtuple->Branch("event", &fMatchEvent, "event/I");
+    fCRTPMTNtuple->Branch("run", &fMatchRun, "run/I");
+    fCRTPMTNtuple->Branch("gate_type", &fGateType, "gate_type/b");
+    fCRTPMTNtuple->Branch("fFlashID", &fFlashID);
+    fCRTPMTNtuple->Branch("flashTime_us", &fFlashTime_us, "flashTime_us/D");
+    fCRTPMTNtuple->Branch("flashGateTime_ns", &fFlashGateTime_ns, "flashGateTime_ns/D");
+    fCRTPMTNtuple->Branch("firstOpHitPeakTime", &fFirstOpHitPeakTime);
+    fCRTPMTNtuple->Branch("firstOpHitStartTime", &fFirstOpHitStartTime);
+    fCRTPMTNtuple->Branch("flashInGate", &fFlashInGate, "flashInGate/O");
+    fCRTPMTNtuple->Branch("flashInBeam", &fFlashInBeam, "flashInBeam/O");
+    fCRTPMTNtuple->Branch("flashPE", &fFlashPE);
+    fCRTPMTNtuple->Branch("fFlashPos_x", &fFlashPos_x, "flashPos_x/D");
+    fCRTPMTNtuple->Branch("fFlashPos_y", &fFlashPos_y, "flashPos_y/D");
+    fCRTPMTNtuple->Branch("fFlashPos_z", &fFlashPos_z, "flashPos_z/D");
+    fCRTPMTNtuple->Branch("fFlashYWidth",&fFlashYWidth);
+    fCRTPMTNtuple->Branch("fFlashZWidth",&fFlashZWidth);
+    fCRTPMTNtuple->Branch("fFlashClassification", &fFlashClassification, "flashClassification/I");
+    fCRTPMTNtuple->Branch("nMatchedCRTHits", &nMatchedCRTHits);
+    fCRTPMTNtuple->Branch("CRTHitPos_x", &CRTHitPos_x);
+    fCRTPMTNtuple->Branch("CRTHitPos_y", &CRTHitPos_y);
+    fCRTPMTNtuple->Branch("CRTHitPos_z", &CRTHitPos_z);
+    fCRTPMTNtuple->Branch("CRTPMTTimeDiff_ns", &fCRTPMTTimeDiff_ns);
+    fCRTPMTNtuple->Branch("CRTTime_us", &fCRTTime_us);
+    fCRTPMTNtuple->Branch("CRTSys", &fCRTSys);
+    fCRTPMTNtuple->Branch("CRTRegion", &fCRTRegion);
+    fCRTPMTNtuple->Branch("topCRTBefore", &fNtopCRTBefore);
+    fCRTPMTNtuple->Branch("topCRTAfter", &fNtopCRTAfter);
+    fCRTPMTNtuple->Branch("sideCRTBefore", &fNsideCRTBefore);
+    fCRTPMTNtuple->Branch("sideCRTAfter", &fNsideCRTAfter);
 }
-   
+  
   void CRTDataAnalysis::beginRun(const art::Run&)
   {
   }
@@ -364,17 +440,17 @@ namespace crt {
     fEvent  = event.id().event(); 
     fRun    = event.run();
     fSubRun = event.subRun();
-
     FillFebMap();//febMap);
 
     //add trigger info
+    m_gate_type = value(sbn::triggerSource::Unknown);
     if( !fTriggerLabel.empty() ) {
 
       art::Handle<sbn::ExtraTriggerInfo> trigger_handle;
       event.getByLabel( fTriggerLabel, trigger_handle );
       if( trigger_handle.isValid() ) {
 	sbn::triggerSource bit = trigger_handle->sourceType;
-        m_gate_type = (unsigned int)bit;
+        m_gate_type = value(bit);
         m_gate_name = bitName(bit);
         m_trigger_timestamp = trigger_handle->triggerTimestamp;
         m_gate_start_timestamp =  trigger_handle->beamGateTimestamp;
@@ -436,14 +512,12 @@ namespace crt {
 	  presel = true;
 	}
       }
-      //std:: cout << "presel just before filling: " << presel << std::endl;
       if (presel) crtData.push_back(crtList[febdat_i]);
       presel = false;
     } // end of crtList
     
-    //     mf::LogError("CRTDataAnalysis") << "size of the crtdata after removing unwanted charges: " << crtData.size() << std::endl;  
-    
-    // mf::LogError("CRTDataAnalysis") << "about to loop over CRTDAQ entries" << std::endl;
+        
+    mf::LogError("CRTDataAnalysis") << "about to loop over " << crtData.size() <<" crtData entries \n";
     for (size_t febdat_i=0; febdat_i<crtData.size(); febdat_i++) {
       
       
@@ -482,9 +556,7 @@ namespace crt {
     } //for CRT FEB events
     
   
-
-  
-
+    // Fill CRT Hit Tree
     art::Handle<std::vector<sbn::crt::CRTHit>> crtHitHandle;
     
     bool isCRTHit = event.getByLabel(fCRTHitProducerLabel, crtHitHandle);
@@ -514,7 +586,7 @@ namespace crt {
 	  
 	  m_gate_crt_diff = m_gate_start_timestamp - hit.ts0_ns;
 	  m_crt_global_trigger = hit.ts0_ns - hit.ts1_ns;
-	  m_crtGT_trig_diff = m_crt_global_trigger - (m_trigger_timestamp%1'000'000'000);
+	  m_crtGT_trig_diff = m_crt_global_trigger - (m_trigger_timestamp%1'000'000'000);//'''						      
 	  auto ittmp = hit.pesmap.find(mactmp);
 	  if (ittmp==hit.pesmap.end()) {
 	     mf::LogError("CRTDataAnalysis") << "hitreg: " << fHitReg << std::endl;
@@ -529,14 +601,74 @@ namespace crt {
 	  fHitStrip = fCrtutils->ChannelToAuxDetSensitiveID(mactmp, chantmp);
 	  
 	  fHitNtuple->Fill();
-        }//for CRT Hits
+       }//for CRT Hits
     }//if CRT Hits
     
     else  mf::LogError("CRTDataAnalysis") << "CRTHit products not found! (expected if decoder step)" << std::endl;
 
+       
+    //Fill CRTPMT Match TTree
+    art::Handle<vector<sbn::crt::CRTPMTMatching>> CRTPMTMatchingHandle;
+    if ( event.getByLabel(fCRTPMTProducerLabel, CRTPMTMatchingHandle)){
+      
+      for (auto const& match: *CRTPMTMatchingHandle){
+	int TopEn = 0, TopEx = 0, SideEn = 0, SideEx = 0;
+	fMatchEvent = fEvent;
+	fMatchRun = fRun;
+	fGateType = m_gate_type;
+	fFlashID = match.flashID;
+	fFlashTime_us = match.flashTime;
+	fFlashGateTime_ns = match.flashGateTime;
+	fFirstOpHitPeakTime = match.firstOpHitPeakTime;
+	fFirstOpHitStartTime = match.firstOpHitStartTime;
+	fFlashInGate = match.flashInGate;
+	fFlashInBeam = match.flashInBeam;
+	fFlashPE = match.flashPE;
+	fFlashPos_x = match.flashPosition.X();
+	fFlashPos_y = match.flashPosition.Y();
+	fFlashPos_z = match.flashPosition.Z();
+	fFlashYWidth = match.flashYWidth;
+	fFlashZWidth = match.flashZWidth;
+	fFlashClassification = match.flashClassification;
+	nMatchedCRTHits = match.matchedCRTHits.size();
+	for(auto const& crthit: match.matchedCRTHits){
+	  CRTHitPos_x.push_back(crthit.position.X());
+	  CRTHitPos_y.push_back(crthit.position.Y());
+	  CRTHitPos_z.push_back(crthit.position.Z());
+	  fCRTPMTTimeDiff_ns.push_back(1e3*crthit.PMTTimeDiff);
+	  fCRTTime_us.push_back(crthit.time);
+	  fCRTSys.push_back(crthit.sys);
+	  fCRTRegion.push_back(crthit.region);
+	  int fMatchType = static_cast<int>(fFlashClassification);
+	  if(fMatchType == 1 || fMatchType == 3 || fMatchType == 6 || fMatchType == 7 || fMatchType == 11) TopEn++;
+	  if(fMatchType == 4 || fMatchType == 13) TopEx++;
+	  if(fMatchType == 2 || fMatchType == 12) SideEn++;
+	  if(fMatchType == 3 || fMatchType == 5 || fMatchType == 7 || fMatchType == 14) SideEx++;
+	}
+	fNtopCRTBefore = TopEn;
+	fNtopCRTAfter = TopEx;
+	fNsideCRTBefore = SideEn;
+	fNsideCRTAfter = SideEx;
+	fCRTPMTNtuple->Fill();
+	ClearVecs();
+      } // for match in handle 
+    } // if valid label 
+    else{
+      mf::LogError("CRTDataAnalysis") << "not Valid CRTPMTProducer label!\n";
+    }
+    
 
   } // CRTDataAnalysis::analyze()
   
+    void CRTDataAnalysis::ClearVecs(){
+      CRTHitPos_x.clear();
+      CRTHitPos_y.clear();
+      CRTHitPos_z.clear();
+      fCRTPMTTimeDiff_ns.clear();
+      fCRTTime_us.clear();
+      fCRTSys.clear();
+      fCRTRegion.clear();
+    }
   
   DEFINE_ART_MODULE(CRTDataAnalysis)
 

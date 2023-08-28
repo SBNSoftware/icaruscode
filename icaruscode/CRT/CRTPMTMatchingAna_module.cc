@@ -44,6 +44,7 @@
 #include <map>
 #include <numeric>
 #include <vector>
+#include <optional>
 
 // ROOT includes
 #include "TTree.h"
@@ -201,7 +202,7 @@ class icarus::crt::CRTPMTMatchingAna : public art::EDAnalyzer {
   art::InputTag fTriggerConfigurationLabel;
   // tart::InputTag fCrtTrackModuleLabel;
   
-  icarus::TriggerConfiguration fTriggerConfiguration;
+  std::optional<icarus::TriggerConfiguration> fTriggerConfiguration;
 
   int fEvent;   ///< number of the event being processed
   int fRun;     ///< number of the run being processed
@@ -217,15 +218,8 @@ class icarus::crt::CRTPMTMatchingAna : public art::EDAnalyzer {
   uint64_t m_gate_width;
 
   double fCoinWindow;
-  double fOpDelay;
-  double fCrtDelay;
   int fPMTADCThresh;
-  int fFlashPeThresh;
-  int fHitPeThresh;
-  double fFlashVelocity;
-  double fFlashZOffset;
-  double fHitVelocityMax;
-  double fHitVelocityMin;
+  int fnOpHitToTrigger;
   int fTopBefore;
   int fTopAfter;
   int fSideBefore;
@@ -305,36 +299,24 @@ icarus::crt::CRTPMTMatchingAna::CRTPMTMatchingAna(fhicl::ParameterSet const& p)
       //,fOpHitModuleLabel(p.get<art::InputTag>("OpHitModuleLabel","ophit"))
       ,
       fOpFlashModuleLabel0(
-          p.get<art::InputTag>("OpFlashModuleLabel0", "opflashTPC0")),
+          p.get<art::InputTag>("OpFlashModuleLabel0")),
       fOpFlashModuleLabel1(
-          p.get<art::InputTag>("OpFlashModuleLabel1", "opflashTPC1"))
-      //  ,fOpFlashModuleLabel2(p.get<art::InputTag>("OpFlashModuleLabel2","opflashTPC2"))
-      //,fOpFlashModuleLabel3(p.get<art::InputTag>("OpFlashModuleLabel3","opflashTPC3"))
-      ,
+          p.get<art::InputTag>("OpFlashModuleLabel1")),
       fCrtHitModuleLabel(p.get<art::InputTag>("CrtHitModuleLabel", "crthit")),
       fTriggerLabel(p.get<art::InputTag>("TriggerLabel", "daqTrigger")),
       fTriggerConfigurationLabel(
           p.get<art::InputTag>("TriggerConfiguration", "triggerconfig")),
-      fCoinWindow(p.get<double>("CoincidenceWindow", 60.0)),
-      fOpDelay(p.get<double>("OpDelay", 55.1)),
-      fCrtDelay(p.get<double>("CrtDelay", 1.6e6)),
-      fPMTADCThresh(p.get<int>("PMTADCThresh", 400)),
-      fFlashPeThresh(p.get<int>("FlashPeThresh", 9000)),
-      fHitPeThresh(p.get<int>("HitPeThresh", 700)),
-      fFlashVelocity(p.get<double>("FlashVelocityThresh", -40.)),
-      fFlashZOffset(p.get<double>("FlashZOffset", 0.)),
-      fHitVelocityMax(p.get<double>("HitVelocityMax", 20.)),
-      fHitVelocityMin(p.get<double>("HitVelocityMin", 1.)),
-      fBNBBeamGateMin(p.get<double>("BNBBeamGateMin", -550)),
-      fBNBBeamGateMax(p.get<double>("BNBBeamGateMax", 2300)),
-      fBNBinBeamMin(p.get<double>("BNBinBeamMin", -300)),
-      fBNBinBeamMax(p.get<double>("BNBinBeamMax", 1300)),
-      fNuMIBeamGateMin(p.get<double>("NuMIBeamGateMin", -550)),
-      fNuMIBeamGateMax(p.get<double>("NuMIBeamGateMax", 10000)),
-      fNuMIinBeamMin(p.get<double>("NuMIinBeamMin", -300)),
-      fNuMIinBeamMax(p.get<double>("NuMIinBeamMax", 9100))
-      // bt(new CRTBackTracker(p.get<fhicl::ParameterSet>("CRTBackTrack"))),
-      ,
+      fCoinWindow(p.get<double>("TimeOfFlightInterval")),
+      fPMTADCThresh(p.get<int>("PMTADCThresh")),
+      fnOpHitToTrigger(p.get<int>("nOpHitToTrigger")),
+      fBNBBeamGateMin(p.get<double>("BNBBeamGateMin")),
+      fBNBBeamGateMax(p.get<double>("BNBBeamGateMax")),
+      fBNBinBeamMin(p.get<double>("BNBinBeamMin")),
+      fBNBinBeamMax(p.get<double>("BNBinBeamMax")),
+      fNuMIBeamGateMin(p.get<double>("NuMIBeamGateMin")),
+      fNuMIBeamGateMax(p.get<double>("NuMIBeamGateMax")),
+      fNuMIinBeamMin(p.get<double>("NuMIinBeamMin")),
+      fNuMIinBeamMax(p.get<double>("NuMIinBeamMax")),
       crtutil(new CRTCommonUtils())
 // More initializers here.
 {
@@ -342,8 +324,6 @@ icarus::crt::CRTPMTMatchingAna::CRTPMTMatchingAna(fhicl::ParameterSet const& p)
   // module.
   fFlashLabels.push_back(fOpFlashModuleLabel0);
   fFlashLabels.push_back(fOpFlashModuleLabel1);
-  // fFlashLabels[2] = fOpFlashModuleLabel2;
-  // fFlashLabels[3] = fOpFlashModuleLabel3;
 
   // Get a pointer to the geometry service provider.
   fGeometryService = lar::providerFrom<geo::Geometry>();
@@ -359,6 +339,7 @@ icarus::crt::CRTPMTMatchingAna::CRTPMTMatchingAna(fhicl::ParameterSet const& p)
   fMatchTree->Branch("opFlash_pos", &fOpFlashPos);
   fMatchTree->Branch("opFlash_time_us", &fOpFlashTime_us);
   fMatchTree->Branch("opFlashAbsTime", &fOpFlashTimeAbs);
+  fMatchTree->Branch("opFlashPE", &fOpFlashPE);
   fMatchTree->Branch("opFlash_time_firsthit_us", &fOpFlashTimehit_us);
   fMatchTree->Branch("opHit_x", &fOpHitX);
   fMatchTree->Branch("opHit_y", &fOpHitY);
@@ -409,23 +390,26 @@ icarus::crt::CRTPMTMatchingAna::CRTPMTMatchingAna(fhicl::ParameterSet const& p)
 
 
 void icarus::crt::CRTPMTMatchingAna::beginRun(art::Run const& r) {
-
-  fTriggerConfiguration =
-    r.getProduct<icarus::TriggerConfiguration>(fTriggerConfigurationLabel);
+  
+  // we don't know if this is data or not; if not, there will be no trigger config
+  auto const& trigConfHandle = 
+    r.getHandle<icarus::TriggerConfiguration>(fTriggerConfigurationLabel);
+  
+  fTriggerConfiguration
+    = trigConfHandle.isValid()? std::make_optional(*trigConfHandle): std::nullopt;
 
 }
 
 
 void icarus::crt::CRTPMTMatchingAna::analyze(art::Event const& e) {
   // Implementation of required member function here.
-  /*
-  geo::CryostatGeo const& cryo0 = fGeometryService->Cryostat(0);
-  geo::CryostatGeo const& cryo1 = fGeometryService->Cryostat(1);
-  geo::TPCGeo const& tpc00 = cryo0.TPC(0);
-  geo::TPCGeo const& tpc01 = cryo0.TPC(1);
-  geo::TPCGeo const& tpc10 = cryo1.TPC(0);
-  geo::TPCGeo const& tpc11 = cryo1.TPC(1);
-  */
+  
+  if (!fTriggerConfiguration) {
+    mf::LogDebug("CRTPMTMatching")
+      << "Skipping because no data (or at least no trigger configuration).";
+    return;
+  }
+  
   mf::LogDebug("CRTPMTMatching: ") << "beginning analyis" << '\n';
   // Start by fetching some basic event information for our n-tuple.
   fEvent = e.id().event();
@@ -451,7 +435,7 @@ void icarus::crt::CRTPMTMatchingAna::analyze(art::Event const& e) {
       m_trigger_gate_diff =
           trigger_handle->triggerTimestamp - trigger_handle->beamGateTimestamp;
       // Read Beam Gate Size
-      m_gate_width = fTriggerConfiguration.getGateWidth(m_gate_type);
+      m_gate_width = fTriggerConfiguration->getGateWidth(m_gate_type);
     } else {
       mf::LogError("CRTPMTMatching:")
           << "No sbn::ExtraTriggerInfo associated to label: "
@@ -462,25 +446,11 @@ void icarus::crt::CRTPMTMatchingAna::analyze(art::Event const& e) {
     // found!\n" ;
   }
 
-  // OpHits
-  // art::Handle< std::vector<recob::OpHit> > opHitListHandle;
-  // std::vector< art::Ptr<recob::OpHit> >    opHitList;
-  // if( e.getByLabel(fOpHitModuleLabel,opHitListHandle) )
-  //  art::fill_ptr_vector(opHitList, opHitListHandle);
-
   // OpFlash
   std::array<art::Handle<std::vector<recob::OpFlash>>, 2U> flashHandles;
   for (int i = 0; i < 2; i++) {
     flashHandles[i] = e.getHandle<std::vector<recob::OpFlash>>(fFlashLabels[i]);
   }
-  /*
-  map<int, art::Handle< std::vector<recob::OpFlash> > > flashHandles;
-  std::map<int,std::vector< art::Ptr<recob::OpFlash> >> opFlashLists;
-  //  fNFlash = 0;
-  for(int i=0; i<2; i++) {
-    if( e.getByLabel(fFlashLabels[i],flashHandles[i]) )
-      art::fill_ptr_vector(opFlashLists[i], flashHandles[i]);
-  }*/
 
   // CRTHits
   art::Handle<std::vector<CRTHit>> crtHitListHandle;
@@ -492,14 +462,12 @@ void icarus::crt::CRTPMTMatchingAna::analyze(art::Event const& e) {
 
   bool Filter = false;
   hasCRTHit Type = others;
-  // for(auto const& flashList : opFlashLists){
   for (art::InputTag const& flashLabel : fFlashLabels) {
     auto const flashHandle =
         e.getHandle<std::vector<recob::OpFlash>>(flashLabel);
     art::FindMany<recob::OpHit> findManyHits(flashHandle, e, flashLabel);
 
     for (auto const& [iflash, flash] : util::enumerate(*flashHandle)) {
-      // auto const& flash = flashList.second[iflash];
       hasCRTHit eventType = others;
       double tflash = flash.Time();
       double tAbsflash = flash.AbsTime();
@@ -511,7 +479,7 @@ void icarus::crt::CRTPMTMatchingAna::analyze(art::Event const& e) {
       double ampsum = 0, t_m = 0;
       for (auto const& hit : hits) {
         if (hit->Amplitude() > fPMTADCThresh) nPMTsTriggering++;
-        if (firstTime > hit->PeakTime()) firstTime = hit->PeakTime();
+        if (firstTime > hit->StartTime()) firstTime = hit->StartTime();
         geo::Point_t const pos =
             fGeometryService->OpDetGeoFromOpChannel(hit->OpChannel())
                 .GetCenter();
@@ -520,25 +488,16 @@ void icarus::crt::CRTPMTMatchingAna::analyze(art::Event const& e) {
         fOpHitX.push_back(pos.X());
         fOpHitY.push_back(pos.Y());
         fOpHitZ.push_back(pos.Z());
-        fOpHitT.push_back(hit->PeakTime());
+        fOpHitT.push_back(hit->StartTime());
         fOpHitA.push_back(amp);
-        /*flash_pos[0]=flash_pos[0]+pos.X()*amp;
-        flash_pos[1]=flash_pos[1]+pos.Y()*amp;
-        flash_pos[2]=flash_pos[2]+pos.Z()*amp;*/
         flashCentroid.add(pos, amp);
-        t_m = t_m + hit->PeakTime();
+        t_m = t_m + hit->StartTime();
       }
-      /*flash_pos[0]=flash_pos[0]/ampsum;
-      flash_pos[1]=flash_pos[1]/ampsum;
-      flash_pos[2]=flash_pos[2]/ampsum;*/
-      // auto flash_pos = flashCentroid.middlePointAs<double[3]>();
       geo::Point_t flash_pos = flashCentroid.middlePoint();
       t_m = t_m / nPMTsTriggering;
-      if (nPMTsTriggering < 5) {
+      if (nPMTsTriggering < fnOpHitToTrigger) {
         continue;
       }
-      //double gateDiff =
-      //    (Long64_t)m_trigger_timestamp - (Long64_t)m_gate_start_timestamp;
       bool inTime = flashInTime(firstTime, m_gate_type, m_trigger_gate_diff, m_gate_width);
       fRelGateTime = m_trigger_gate_diff + (tAbsflash - 1500) * 1e3;
       fInTime_gate = false;
@@ -562,7 +521,6 @@ void icarus::crt::CRTPMTMatchingAna::analyze(art::Event const& e) {
       icarus::crt::MatchedCRT CRTmatches =
           CRTHitmatched(firstTime, flash_pos, crtHitList, 0.1);
       int TopEn = 0, TopEx = 0, SideEn = 0, SideEx = 0;
-
       auto nCRTHits = CRTmatches.entering.size() + CRTmatches.exiting.size();
       double peflash = flash.TotalPE();
       if (nCRTHits >= 0) {
@@ -603,7 +561,6 @@ void icarus::crt::CRTPMTMatchingAna::analyze(art::Event const& e) {
           fDistance.emplace_back(CRTDistance);
           fTofOpHit.emplace_back(CRTTof_ophit);
           fCRTGateDiff.emplace_back(CRTGateDiff);
-          HitFebs.clear();
           // Fill
         }
         for (auto& exiting : CRTmatches.exiting) {
@@ -655,33 +612,12 @@ void icarus::crt::CRTPMTMatchingAna::analyze(art::Event const& e) {
                      (double)flash_pos.Z()};
       fOpFlashTime_us = tflash;
       fOpFlashTimeAbs = tAbsflash;
-      // fRelGateTime=gateDiff+(tAbsflash-1500)*1e3;
-      //  std::cout<<"Gate diff "<<gateDiff<<" relTime
-      //  "<<fRelGateTime<<std::endl;
       fOpFlashTimehit_us = firstTime;
       fInTime = inTime;
       fEventType = eventType;
       fNCRTmatch = nCRTHits;
       fMatchTree->Fill();
-      fOpHitX.clear();
-      fOpHitY.clear();
-      fOpHitZ.clear();
-      fOpHitT.clear();
-      fOpHitA.clear();
-      fOpFlashPos.clear();
-      fMatchedCRTmodID.clear();
-      fMatchedCRTpos.clear();
-      fMatchedCRTtime_us.clear();
-      fMatchedCRTtime_abs.clear();
-      fMatchedCRTregion.clear();
-      fMatchedCRTsys.clear();
-      fMatchedCRTamplitude.clear();
-      fDirection.clear();
-      fDistance.clear();
-      fTofOpHit.clear();
-      fTofOpFlash.clear();
-      fVelocity.clear();
-      fCRTGateDiff.clear();
+      ClearVecs();
     }  // for Flash
   }
   mEventType = Type;
@@ -692,6 +628,7 @@ void icarus::crt::CRTPMTMatchingAna::analyze(art::Event const& e) {
 
 void icarus::crt::CRTPMTMatchingAna::ClearVecs() {
   // matchTree
+
   fOpHitX.clear();
   fOpHitY.clear();
   fOpHitZ.clear();
@@ -707,30 +644,10 @@ void icarus::crt::CRTPMTMatchingAna::ClearVecs() {
   fMatchedCRTamplitude.clear();
   fDirection.clear();
   fDistance.clear();
-  fDistance.clear();
   fTofOpHit.clear();
+  fTofOpFlash.clear();
   fVelocity.clear();
   fCRTGateDiff.clear();
-  /*fCrtXYZT.clear();
-  fCrtXYZErr.clear();
-  fCrtRegion.clear();
-  fCrtPE.clear();
-  fTofHit.clear();
-  fTofFlash.clear();
-  fTofFlashHit.clear();
-  fDistHit.clear();
-  fDistFlash.clear();
-  fDistFlashHit.clear();
-  fTofPeHit.clear();
-  fTofPeFlash.clear();
-  fTofPeFlashHit.clear();
-  fTofXYZTHit.clear();
-  fTofXYZTFlash.clear();
-  fTofXYZTFlashHit.clear();
-  fTofTpcHit.clear();
-  fTofTpcFlash.clear();
-  fMatchHit.clear();
-  fMatchFlash.clear();*/
 }
 
 DEFINE_ART_MODULE(icarus::crt::CRTPMTMatchingAna)

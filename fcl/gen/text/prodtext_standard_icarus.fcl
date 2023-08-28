@@ -95,6 +95,7 @@ physics: {
     generator: {
       module_type:    TextFileGen
       InputFileName: "HEPevents.txt"
+      Offset:         0
     }
     
     # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

@@ -6,7 +6,7 @@ cet_make_library(SOURCE
                  messagefacility::MF_MessageLogger
                  larcoreobj::headers
                  lardataobj::headers
-                )
+               )
 
 art_dictionary(DICTIONARY_LIBRARIES
                  icaruscode::IcarusObj

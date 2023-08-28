@@ -1,4 +1,4 @@
-
+#include "crtpmtmatching_parameters.fcl"
 #include "services_common_icarus.fcl"
 #include "services_icarus_simulation.fcl"
 #include "crtbacktracker_icarus.fcl"
@@ -51,29 +51,16 @@ physics:
 
       OpFlashModuleLabel0: "opflashCryoE"
       OpFlashModuleLabel1: "opflashCryoW"
-      #OpFlashModuleLabel2: "opflashTPC2"
-      #OpFlashModuleLabel3: "opflashTPC3"
       
       TriggerLabel:  "daqTrigger" 
       TriggerConfiguration: "triggerconfig" 
 
-      BNBBeamGateMin: -550
-      BNBBeamGateMax: 2300
-      BNBinBeamMin: -300
-      BNBinBeamMax: 1300
-      
-      NuMIBeamGateMin: -550
-      NuMIBeamGateMax: 10000
-      NuMIinBeamMin: -300
-      NuMIinBeamMax: 9100     
-
-      PMTADCThresh: 400
-      FlashPeThresh: 2000.0
-      HitPeThresh:   100.0
-      CoincidenceWindow: 80.0
-      OpDelay: 43.0
-      HitVelocityMax: 15.0
-      HitVelocityMin: 2.0
+      # note 19/04/2023: parameters are set to run2,
+      # they can be set to run1, but currently values are the same 
+   
+      @table::CRTMatchBNBBeamGate_run2
+      @table::CRTMatchNuMIBeamGate_run2
+      @table::CRTPMTmatchingparams_standard
       
       #CRTBackTrack: @local::standard_crtbacktracker
     }
