@@ -18,7 +18,7 @@ namespace icarus{
     fMinTrackLength     = pset.get<double>("MinTrackLength", 20.0);
     fTrackDirectionFrac = pset.get<double>("TrackDirectionFrac", 0.5);
     fDistanceLimit      = pset.get<double>("DistanceLimit", 100);
-    fTSMode             = pset.get<int>("TSMode", 2);
+    fTSMode             = pset.get<int>("TSMode", 1);
     fTimeCorrection     = pset.get<double>("TimeCorrection", 0.);
     fSCEposCorr         = pset.get<bool>("SCEposCorr", true);
     fDirMethod          = pset.get<int>("DirMethod", 1);
