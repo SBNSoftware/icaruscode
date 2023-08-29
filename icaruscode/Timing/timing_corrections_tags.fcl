@@ -1,0 +1,27 @@
+# File:    timing_corrections_tags.fcl
+# Author:  M. Vicenzi (mvicenzi@bnl.gov)
+# Date:    August 21, 2023
+# Purpose: Tags definitions for the PMT timing calibration databases
+
+BEGIN_PROLOG
+
+# These are the standard tags for analyses on Run 1 data
+# These tagged versions of the databases only contain tables relevant for Run 1
+PMTtimingCorrectionsTags_Run1: {
+  CablesTag:    "v1r0"  # tables for run>=0 (null) and run>=8046
+  LaserTag:     "v1r0"  # tables for run>=0 (null) and run>=8046
+  CosmicsTag:   "v1r0"  # tables for run>=0 (null) and run>=8046 
+}
+
+# These are the standard tags for analyses on Run 1 and Run 2 data (as of August 2023)
+# These tagged versions of the databases only contain tables relevant for Run 1 and Run 2.
+# Notes: 
+#  - No cosmics corrections are available for Run 2
+#  - Laser and cable corrections do not cover the entire Run 2 period
+PMTtimingCorrectionsTags_Run2_August2023: {
+  CablesTag:    "v2r0"  # tables for run>=0 (null), run>=8046 and run>=9773
+  LaserTag:     "v2r0"  # tables for run>=0 (null), run>=8046 and run>=9773
+  CosmicsTag:   "v1r0"  # tables for run>=0 (null) and run>=8046 
+}
+
+END_PROLOG

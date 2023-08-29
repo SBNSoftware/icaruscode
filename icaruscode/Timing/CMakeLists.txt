@@ -10,9 +10,10 @@ set(	LIB_LIBRARIES
         messagefacility::MF_MessageLogger
         lardataobj::RecoBase
         lardata::Utilities
-        wda::wda
         icaruscode_IcarusObj
         sbnobj::Common_PMT_Data
+	larevt::CalibrationDBI_IOVData
+	larevt::CalibrationDBI_Providers
 )
 set(	SERVICE_LIBRARIES
 	icaruscode_Timing
