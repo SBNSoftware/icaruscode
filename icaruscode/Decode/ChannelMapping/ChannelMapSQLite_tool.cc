@@ -236,7 +236,8 @@ int callback(void *data, int argc, char **argv, char **azColName)
     else 
       {
         mf::LogDebug("ChannelMapSQLite")
-          << "ChannelMapSQLite::GetDataset: Successfully read database";
+          << "ChannelMapSQLite::GetDataset: Successfully read database table '"
+          << table << "'";
       }
     
     sqlite3_close(database);
