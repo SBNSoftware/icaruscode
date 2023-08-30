@@ -211,7 +211,6 @@ namespace geo {
 	  // std::cout << id << std::endl;
 
 	  //	  std::cout << "module index  " << a << " volName  " << volName << " module no "<< id << " channelID:  " << chID << std::endl;      
-	  std::cout << " " << a << " \t" << volName << "\t "<< id << " \t" << chID << std::endl;      
       } //if correct name
       else {
 	throw cet::exception("CRTChannelMap")
