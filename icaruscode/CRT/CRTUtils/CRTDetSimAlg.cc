@@ -469,6 +469,7 @@ namespace icarus{
     // -> PEs from the SiPM (or PMT in case of bottom CRT) with associated time stamps
     void CRTDetSimAlg::FillTaggers(detinfo::DetectorClocksData const& clockData,
                                    const uint32_t adid, const uint32_t adsid, const vector<sim::AuxDetIDE>& ides) {
+
         art::ServiceHandle<geo::Geometry> geoService;
         detinfo::ElecClock trigClock = clockData.TriggerClock();
         fHasFilledTaggers = true;
@@ -554,18 +555,13 @@ namespace icarus{
             geo::Point_t const world{x, y, z};
             auto const svHitPosLocal = adsGeo.toLocalCoords(world); //position in strip frame  (origin at center)
             auto const modHitPosLocal = adGeo.toLocalCoords(world); //position in module frame (origin at center)
-	    auto cent = adsGeo.GetCenter();
 
             //check hit point is contained within the strip according to geometry
             if ( abs(svHitPosLocal.X())>adsGeo.HalfWidth1()+0.001 ||
                  abs(svHitPosLocal.Y())>adsGeo.HalfHeight()+0.001 ||
                  abs(svHitPosLocal.Z())>adsGeo.HalfLength()+0.001)
                mf::LogError("CRT") << "HIT POINT OUTSIDE OF SENSITIVE VOLUME!" << '\n'
-				   << "   ADType: " << auxDetType << '\n'
-				   << "   ADRegion: " << region << '\n'
                                   << "  AD: " << adid << " , ADS: " << adsid << '\n'
-                                  << "  world: " << world << '\n'
-				   << " center: " << cent << "\n"
                                   << "  Local position (x,y,z): ( " << svHitPosLocal.X()
                                   << " , " << svHitPosLocal.Y() << " , " << svHitPosLocal.Z() << " )";
 

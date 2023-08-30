@@ -47,7 +47,6 @@ local wcls = wcls_maker(params, tools);
 local wcls_input = {
   // depos: wcls.input.depos(name="", art_tag="ionization"),
   depos: wcls.input.depos(name='electron', art_tag='ionandscint'),  // default art_tag="blopper"
-  //depos: wcls.input.depos(name='electron', art_tag='ionization'),  // default art_tag="blopper"
 };
 
 // Collect all the wc/ls output converters for use below.  Note the

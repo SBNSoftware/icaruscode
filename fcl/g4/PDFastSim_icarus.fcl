@@ -70,7 +70,7 @@ BEGIN_PROLOG
 			[132.637, 140.57, 147.406, 151.75, 156.099, 160.353, 162.947, 165.174, 166.656, 166.734],
 			[130.847, 138.784, 145.106, 150.963, 155.084, 158.991, 161.935, 164.596, 166.148, 166.383],
 			[127.26, 134.345, 141.726, 146.923, 151.455, 154.986, 157.498, 160.633, 162.228, 163.082]
-		] ]	
+		] ]
 
   Tau_ICARUS: [
 		[	[3.37773, 5.67524, 4.23857, 4.04827, 3.50598, 3.09153, 2.82991, 2.74153, 2.50424, 2.51098],
@@ -149,8 +149,8 @@ icarus_vis_timing_parameterization:
 
   # vis velocity in cm/ns
   vis_vmean: 23.99
-  
-  # angular bin size in deg, must correspond to parameterisation set 
+
+  # angular bin size in deg, must correspond to parameterisation set
   angle_bin_timing_vis: 10
 }
 

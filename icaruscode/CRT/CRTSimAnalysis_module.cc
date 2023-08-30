@@ -575,8 +575,7 @@ namespace crt {
     // If there aren't any simb::MCParticle object art will 
     // display a "ProductNotFound" exception message and may skip
     // all processing for the rest of this event or stop the execution.
-    // if (!event.getByLabel(fSimulationProducerLabel, particleHandle)) 
-    if (!event.getByLabel("largeant", particleHandle)) 
+    if (!event.getByLabel(fSimulationProducerLabel, particleHandle)) 
       {
 	// If we have no MCParticles at all in an event, then we're in
 	// big trouble. Throw an exception.
@@ -635,6 +634,8 @@ namespace crt {
         // track ID as the key.
         particleMap.insert(std::make_pair(particle.TrackId(),&particle));
     }
+
+    std::cout << "event " << fEvent << " with " << particleMap.size() << " MCParticles" << std::endl;
 
     //get TPC objects
     geo::CryostatGeo const& cryo0 = fGeometryService->Cryostat(geo::CryostatID{0});
