@@ -113,12 +113,15 @@ icarus_stage0_producers:
   pmtthr:                         @local::icarus_pmtdiscriminatethr
   
   ### Optical hit finder
+  pmtbaselines:                   @local::icarus_opreco_pedestal_fromchannel_data  # from icarus_ophitfinder.fcl
   ophituncorrected:               @local::icarus_ophit_data
   ophit:                          @local::icarus_ophit_timing_correction
   ophitfulluncorrected:           @local::icarus_ophitdebugger_data
   ophitfull:                      @local::icarus_ophit_timing_correction
   opflashCryoE:                   @local::ICARUSSimpleFlashDataCryoE
   opflashCryoW:                   @local::ICARUSSimpleFlashDataCryoW
+
+  daqPMTonbeam:                   @local::copyPMTonBeam
 
   ### Purity monitoring
   purityana0:                     { module_type: "ICARUSPurityDQM" }
@@ -242,6 +245,7 @@ icarus_stage0_PMT:                 [ triggerconfig,
                                      daqPMT,
                                      pmtconfigbaselines,
                                      pmtthr,
+                                     pmtbaselines,
                                      ophituncorrected,
                                      ophit,
                                      opflashCryoE,
@@ -488,5 +492,7 @@ icarus_stage0_producers.purityana1.PersistPurityInfo:                           
 icarus_stage0_producers.purityana1.FillAnaTuple:                                               false
 icarus_stage0_producers.purityana1.PersistPurityInfo:                                          false
 icarus_stage0_producers.purityana1.FillAnaTuple:                                               false
+
+icarus_stage0_producers.daqPMTonbeam.Waveforms: daqPMT
 
 END_PROLOG
