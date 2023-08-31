@@ -148,6 +148,9 @@ cet_build_plugin(PMTnoNoiseGeneratorTool art::tool
 
 cet_build_plugin(CopyBeamTimePMTwaveforms art::module
   LIBRARIES
+    icaruscode::PMT_Data
+    icarusalg::Utilities
+    sbnobj::ICARUS_PMT_Data
     lardata::DetectorInfoServices_DetectorClocksServiceStandard_service
     lardataalg::DetectorInfo
     lardataobj::RawData

@@ -64,6 +64,8 @@ private:
   std::vector<TTree*> _hittree_v;
   double _width;
   double _time;
+  double _start;
+  double _rise;
   double _amp;
   double _area;
   double _pe;
@@ -127,6 +129,8 @@ void ICARUSOpHitAna::beginJob()
     hittree->Branch("area",&_area,"area/D");
     hittree->Branch("width",&_width,"width/D");
     hittree->Branch("time",&_time,"time/D");
+    hittree->Branch("start",&_start,"start/D");
+    hittree->Branch("rise",&_rise,"rise/D");
     hittree->Branch("pe",&_pe,"pe/D");
     hittree->Branch("time_true",&_time_true,"time_true/D");
     hittree->Branch("pe_true",&_pe_true,"pe_true/D");
@@ -242,6 +246,8 @@ void ICARUSOpHitAna::analyze(art::Event const& e)
       // fill simple info
       _ch=hit.OpChannel();
       _time  = hit.PeakTime();
+      _start = hit.StartTime();
+      _rise  = hit.RiseTime();
       _amp   = hit.Amplitude();
       _width = hit.Width();
       _area  = hit.Area();

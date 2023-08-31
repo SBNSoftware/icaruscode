@@ -197,10 +197,14 @@ icarus_ophit: # some basic configuration
                          # used as single PE area (in ADC counts)
    SPEShift:       @local::SPE.Shift # Used by PhotonCalibratorStandard to compute
                          # PE = area / SPEArea + SPEShift
-   UseStartTime:   true  # record pulse start time rather than peak (max) time
+   UseStartTime:   false # start and peak times each in its own data member
    reco_man:       @local::standard_preco_manager
    HitAlgoPset:    @local::icarus_opreco_hit_slidingwindow_201910
    PedAlgoPset:    @local::icarus_opreco_pedestal_DocDB24969
+   RiseTimeCalculator: {
+     tool_type:      RiseTimeThreshold
+     PeakRatio:      0.15  # at 15% of the peak amplitude -- not tuned
+   }
 }
 
 icarus_ophitdebugger: @local::icarus_ophit

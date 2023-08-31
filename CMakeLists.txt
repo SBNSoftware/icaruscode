@@ -17,7 +17,7 @@ cmake_minimum_required(VERSION 3.20 FATAL_ERROR)
 # cmake_policy(VERSION 3.19)
 
 find_package(cetmodules 3.20.00 REQUIRED)
-project(icaruscode VERSION 09.68.00 LANGUAGES CXX)
+project(icaruscode VERSION 09.78.02 LANGUAGES CXX)
 
 message(STATUS
   "\n-- ============================================================================="
@@ -77,7 +77,6 @@ find_package(FFTW3 REQUIRED )
 find_package(ifdh_art REQUIRED )
 find_package(ROOT REQUIRED )
 find_package(Boost COMPONENTS system program_options REQUIRED)
-find_package(Protobuf REQUIRED )
 find_package(PandoraSDK REQUIRED )
 find_package(PandoraMonitoring REQUIRED )
 find_package(SQLite3 REQUIRED )

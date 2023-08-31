@@ -1,7 +1,7 @@
 /**
  * @file   icaruscode/Timing/PMTTimingCorrectionsProvider.cxx
  * @brief  Service for the PMT timing corrections.
- * @author Andrea Scarpelli (ascarpell@bnl.gov)
+ * @author Andrea Scarpelli (ascarpell@bnl.gov), Matteo Vicenzi (mvicenzi@bnl.gov)
  */
 
 // Framework includes
@@ -10,114 +10,107 @@
 #include "messagefacility/MessageLogger/MessageLogger.h"
 #include "cetlib_except/exception.h"
 
-#include "lardata/DetectorInfoServices/DetectorClocksService.h"
-
+// Local
 #include "icaruscode/Timing/PMTTimingCorrections.h"
 #include "icaruscode/Timing/PMTTimingCorrectionsProvider.h"
 
 // Database interface helpers
-#include "wda.h"
+#include "larevt/CalibrationDBI/Providers/DBFolder.h"
 
 // C/C++ standard libraries
-#include <memory> // std::unique_ptr<>
-#include <optional>
 #include <string>
-#include <utility> // std::move()
-#include <cassert>
-#include <tuple>
+#include <vector>
 
 //--------------------------------------------------------------------------------
 
 icarusDB::PMTTimingCorrectionsProvider::PMTTimingCorrectionsProvider
     (const fhicl::ParameterSet& pset) 
-    : fUrl{ pset.get<std::string>("DatabaseURL", "https://dbdata0vm.fnal.gov:9443/icarus_con_prod/app/data?") }
-    , fTimeout{ pset.get<unsigned int>("Timeout", 1000) }
-    , fVerbose{ pset.get<bool>("Verbose", false) }
+    : fVerbose{ pset.get<bool>("Verbose", false) }
     , fLogCategory{ pset.get<std::string>("LogCategory", "PMTTimingCorrection") }
-    , fClocksData{ art::ServiceHandle<detinfo::DetectorClocksService const>()->DataForJob() }
-    { }
-
+    , fTags{ pset.get<fhicl::ParameterSet>("CorrectionsTags") }
+    { 
+	fCablesTag  = fTags.get<std::string>("CablesTag", "v1r0");
+	fLaserTag   = fTags.get<std::string>("LaserTag", "v1r0");
+	fCosmicsTag = fTags.get<std::string>("CosmicsTag", "v1r0");
+	if( fVerbose ) mf::LogInfo(fLogCategory) << "Database tags for timing corrections:\n"
+						 << "Cables corrections  " << fCablesTag << "\n"  
+						 << "Laser corrections   " << fLaserTag  << "\n"
+						 << "Cosmics corrections " << fCosmicsTag << std::endl;
+    }
 
 // -------------------------------------------------------------------------------
 
-/// Access the PostgreSQL calibration database for icarus
-/// Query depends on the run 
-int icarusDB::PMTTimingCorrectionsProvider::ConnectToDataset(
-    const std::string& name, uint32_t run, Dataset& dataset ) const {
+uint64_t icarusDB::PMTTimingCorrectionsProvider::RunToDatabaseTimestamp( uint32_t run ) {
 
-    int error = 0;
-    std::string url = fUrl + "f="+name +"&t="+std::to_string(run);
-    dataset = getDataWithTimeout( url.c_str(), "", fTimeout, &error );
-    if ( error ){
-        throw cet::exception(fLogCategory) 
-          << "Calibration database access failed. URL (" << url 
-          << ") Error code: " << error;
-    }
-    if ( getHTTPstatus(dataset) !=200 ){
-        throw cet::exception(fLogCategory)
-            << "Calibration database access failed. URL (" << url
-            << "). HTTP error status: " << getHTTPstatus(dataset) 
-            << ". HTTP error message: " << getHTTPmessage(dataset); 
-    }
+   // Run number to timestamp used in the db
+   // DBFolder.h only takes 19 digit (= timestamp in nano second),
+   // but ICARUS tables are currently using run numbers
+   // Step 1) Add 1000000000 to the run number; e.g., run XXXXX -> 10000XXXXX
+   // Step 2) Multiply 1000000000
+   uint64_t runNum = uint64_t(run);
+   uint64_t timestamp = runNum+1000000000;
+   timestamp *= 1000000000;
 
-    return error;
-
+   if( fVerbose ) mf::LogInfo(fLogCategory) << "Run " << runNum << " corrections from DB timestamp " << timestamp << std::endl;
+   
+   return timestamp;
 }
 
-
-// -----------------------------------------------------------------------------
+// -------------------------------------------------------------------------------
 
 /// Function to look up the calibration database at the table holding the pmt hardware cables corrections
 void icarusDB::PMTTimingCorrectionsProvider::ReadPMTCablesCorrections( uint32_t run ) { 
 
     // pmt_cables_delay: delays of the cables relative to trigger 
     // and reset distribution
-    const std::string name("pmt_cables_delays_data");
-    Dataset dataset;
-    int error = ConnectToDataset( name, run, dataset );
+    const std::string dbname("pmt_cables_delays_data");
+    lariov::DBFolder db(dbname, "", "", fCablesTag, true, false);
 
-    if (error) throw(std::exception());
+    bool ret = db.UpdateData( RunToDatabaseTimestamp(run) ); // select table based on run number   
+    mf::LogDebug(fLogCategory) << dbname + " corrections" << (ret? "": " not") << " updated for run " << run;
 
-    for( int row=4; row < getNtuples(dataset); row++ ) {
+    std::vector<unsigned int> channelList;
+    if (int res = db.GetChannelList(channelList); res != 0) {
+      throw cet::exception
+        ( "PMTTimingCorrectionsProvider: GetChannelList() returned " + std::to_string(res) + " on run " + std::to_string(run) + " query in " + dbname);
+    }
+    
+    if (channelList.empty()) {
+      throw cet::exception("PMTTimingCorrectionsProvider: got an empty channel list for run " + std::to_string(run) + " in " + dbname);
+    }
 
-        Tuple tuple = getTuple(dataset, row);
+    for( auto channel : channelList ) {
+        
+        // PPS reset correction
+        double reset_distribution_delay = 0;
+        int error  = db.GetNamedChannelData( channel, "reset_distribution_delay", reset_distribution_delay );
+        if( error ) throw cet::exception( "Encountered error (code " + std::to_string(error) + ") while trying to access 'reset_distribution_delay' on table " + dbname );
 
-        if( tuple != NULL ) {
+        // Trigger cable delay
+        double trigger_reference_delay = 0;
+        error  = db.GetNamedChannelData( channel, "trigger_reference_delay", trigger_reference_delay );
+        if( error ) throw cet::exception( "Encountered error (code " + std::to_string(error) + ") while trying to access 'trigger_reference_delay' on table " + dbname );
 
-            unsigned int channel_id = getLongValue( tuple, 0, &error );
-            if( error ) throw std::runtime_error( "Encountered error while trying to access 'channel_id' on table " + name );
-            
-            // PPS reset correction
-            double reset_distribution_delay = getDoubleValue( tuple, 11, &error );
-            if( error ) throw std::runtime_error( "Encountered error '" + std::to_string(error) + "' while trying to access 'reset_distribution_delay' on table " + name );
-
-            // Trigger cable delay
-            double trigger_reference_delay = getDoubleValue( tuple, 10, &error );
-            if( error ) throw std::runtime_error( "Encountered error while trying to access 'trigger_reference_delay' on table " + name );
-
-            // Phase correction
-            double phase_correction = getDoubleValue( tuple, 13, &error );
-            if( error ) throw std::runtime_error( "Encountered error while trying to access 'phase_correction' on table " + name );
+        // Phase correction
+        double phase_correction = 0;
+	error = db.GetNamedChannelData( channel, "phase_correction", phase_correction );
+        if( error ) throw cet::exception( "Encountered error (code " + std::to_string(error) + ") while trying to access 'phase_correction' on table " + dbname );
    
-            /// This is the delay due to the cables connecting the 'global' FPGA of the trigger crate to the spare channel of the first digitizer in each VME crates. 
-            ////The phase correction is an additional fudge factor 
-            /// holding local variation due to constant clock offsets (it can be up to 8 ns)
-            /// It can be absorbed within other corrections if necessary
-            /// Corrections are saved in ns, but icaruscode wants us
-            /// Correction are saved with the sing correspoding to their time direction 
-            fDatabaseTimingCorrections[channel_id].triggerCableDelay = -(trigger_reference_delay-phase_correction)/1000.;
+        /// This is the delay due to the cables connecting the 'global' trigger crate FPGA to the spare channel of the first digitizer in each VME crates. 
+        /// The phase correction is an additional fudge factor 
+        /// holding local variation due to constant clock offsets (it can be up to 8 ns)
+        /// It can be absorbed within other corrections if necessary
+        /// Corrections are saved in ns, but icaruscode wants us
+        /// Correction are saved with the sing correspoding to their time direction 
+        fDatabaseTimingCorrections[channel].triggerCableDelay = -(trigger_reference_delay-phase_correction)/1000.;
 
-            /// This is the delay along the distribution line of the TTT reset
-            /// The phase correction is an additional fudge factor 
-            /// holding local variation due to constant clock offsets (it can be up to 8 ns)
-            /// It can be absorbed within other corrections if necessary
-            /// Corrections are saved in ns, but icaruscode wants us
-            /// Corrections are additive! 
-            fDatabaseTimingCorrections[channel_id].resetCableDelay = (reset_distribution_delay-phase_correction)/1000.; 
-
-            releaseTuple(tuple);
-        }
-
+        /// This is the delay along the distribution line of the TTT reset
+        /// The phase correction is an additional fudge factor 
+        /// holding local variation due to constant clock offsets (it can be up to 8 ns)
+        /// It can be absorbed within other corrections if necessary
+        /// Corrections are saved in ns, but icaruscode wants us
+        /// Corrections are additive! 
+        fDatabaseTimingCorrections[channel].resetCableDelay = (reset_distribution_delay-phase_correction)/1000.; 
     }
 
 }
@@ -128,72 +121,73 @@ void icarusDB::PMTTimingCorrectionsProvider::ReadPMTCablesCorrections( uint32_t 
 /// Function to look up the calibration database at the table holding the pmt timing corrections measured using the laser
 void icarusDB::PMTTimingCorrectionsProvider::ReadLaserCorrections( uint32_t run ) { 
 
-    const std::string name("pmt_laser_timing_data");
-    Dataset dataset;
-    int error = ConnectToDataset( name, run, dataset );
+    const std::string dbname("pmt_laser_timing_data");
+    lariov::DBFolder db(dbname, "", "", fLaserTag, true, false);
 
-    if (error) throw(std::exception());
+    bool ret = db.UpdateData( RunToDatabaseTimestamp(run) ); // select table based on run number   
+    mf::LogDebug(fLogCategory) << dbname + " corrections" << (ret? "": " not") << " updated for run " << run;
 
-    for( int row=4; row < getNtuples(dataset); row++ ) {
-
-        Tuple tuple = getTuple(dataset, row);
-        if( tuple != NULL ) {
-
-            unsigned int channel_id = getLongValue( tuple, 0, &error );
-            if( error ) throw std::runtime_error( "Encountered error while trying to access channel_id on table " + name );
-
-            double t_signal = getDoubleValue( tuple, 5, &error );
-            if( error ) throw std::runtime_error( "Encountered error while trying to access 't_signal' on table " + name );
-
-            /// pmt_laser_delay: delay from the Electron Transit time inside the PMT 
-            /// and the PMT signal cable 
-            /// corrections are saved in ns, but icaruscode wants us
-            /// Corrections are additive! 
-            fDatabaseTimingCorrections[channel_id].laserCableDelay = -t_signal/1000.; 
-
-            releaseTuple(tuple);
-        }
-
+    std::vector<unsigned int> channelList;
+    if (int res = db.GetChannelList(channelList); res != 0) {
+      throw cet::exception
+        ( "PMTTimingCorrectionsProvider: GetChannelList() returned " + std::to_string(res) + " on run " + std::to_string(run) + " query in " + dbname);
+    }
+    
+    if (channelList.empty()) {
+      throw cet::exception("PMTTimingCorrectionsProvider: got an empty channel list for run " + std::to_string(run) + " in " + dbname);
     }
 
+    for( auto channel : channelList ) {
+        
+        // Laser correction
+        double t_signal = 0;
+        int error  = db.GetNamedChannelData( channel, "t_signal", t_signal );
+        if( error ) throw cet::exception( "Encountered error (code " + std::to_string(error) + ") while trying to access 't_signal' on table " + dbname );
+
+        /// pmt_laser_delay: delay from the Electron Transit time inside the PMT 
+        /// and the PMT signal cable 
+        /// corrections are saved in ns, but icaruscode wants us
+        /// Corrections are additive! 
+        fDatabaseTimingCorrections[channel].laserCableDelay = -t_signal/1000.; 
+    }
 }
 
 // -----------------------------------------------------------------------------
 
-/*
 /// Function to look up the calibration database at the table holding the pmt timing corrections measured using cosmic muons
-void icarus::PMTTimingCorrectionsProvider::ReadCosmicsCorrections( uint32_t run ) { 
+void icarusDB::PMTTimingCorrectionsProvider::ReadCosmicsCorrections( uint32_t run ) { 
 
-    const std::string name("pmt_muons_timing_data");
-    Dataset dataset;
-    int error = ConnectToDataset( name, run, dataset );
+    const std::string dbname("pmt_cosmics_timing_data");
+    lariov::DBFolder db(dbname, "", "", fCosmicsTag, true, false);
 
-    if (error) throw(std::exception());
+    bool ret = db.UpdateData( RunToDatabaseTimestamp(run) ); // select table based on run number   
+    mf::LogDebug(fLogCategory) << dbname + " corrections" << (ret? "": " not") << " updated for run " << run;
 
-    for( int row=4; row < getNtuples(dataset); row++ ) {
+    std::vector<unsigned int> channelList;
+    if (int res = db.GetChannelList(channelList); res != 0) {
+      throw cet::exception
+        ( "PMTTimingCorrectionsProvider: GetChannelList() returned " + std::to_string(res) + " on run " + std::to_string(run) + " query in " + dbname);
+    }
 
-        Tuple tuple = getTuple(dataset, row);
-        if( tuple != NULL ) {
+    if (channelList.empty()) {
+      throw cet::exception("PMTTimingCorrectionsProvider: got an empty channel list for run " + std::to_string(run) + " in " + dbname);
+    }
 
-            unsigned int channel_id = getLongValue( tuple, 0, &error );
-            if( error ) throw std::runtime_error( "Encountered error while trying to access channel_id on table " + name );
+    for( auto channel : channelList ) {
+        
+        // Cosmics correction
+ 	double mean_residual_ns = 0;
+	int error = db.GetNamedChannelData( channel, "mean_residual_ns", mean_residual_ns );
+        if( error ) throw cet::exception( "Encountered error (code " + std::to_string(error) + ") while trying to access 'mean_residual_ns' on table " + dbname );
 
-            double t_signal = getDoubleValue( tuple, 5, &error );
-            if( error ) throw std::runtime_error( "Encountered error while trying to access 't_signal' on table " + name );
-
-            /// pmt_laser_delay: delay from the Electron Transit time inside the PMT 
-            /// and the PMT signal cable 
-            /// corrections are saved in ns, but icaruscode wants us
-            /// Corrections are additive! 
-            fDatabaseTimingCorrections[channel_id].cosmicsCorrections = t_signal/1000.; 
-
-            releaseTuple(tuple);
-        }
-
+        /// pmt_cosmics_residual: time residuals from downward going cosmics tracks 
+        /// correcting for point-like laser emission and pmts that do not see laser light
+        /// corrections are saved in ns, but icaruscode wants us
+        /// Corrections are additive! 
+        fDatabaseTimingCorrections[channel].cosmicsCorrections = -mean_residual_ns/1000.; 
     }
 
 }
-*/
 
 
 // -----------------------------------------------------------------------------
@@ -207,15 +201,13 @@ void icarusDB::PMTTimingCorrectionsProvider::readTimeCorrectionDatabase(const ar
     fDatabaseTimingCorrections.clear();
 
     ReadPMTCablesCorrections(run.id().run());
-
     ReadLaserCorrections(run.id().run());
-
-    //ReadCosmicsCorrections(run.id().run());
+    ReadCosmicsCorrections(run.id().run());
 
     if( fVerbose ) {
 
         mf::LogInfo(fLogCategory) << "Dump information from database " << std::endl;
-        mf::LogInfo(fLogCategory) << "channel, trigger cable delay, reset cable delay, laser corrections, muons correctsions" << std::endl;
+        mf::LogInfo(fLogCategory) << "channel, trigger cable delay, reset cable delay, laser corrections, muons corrections" << std::endl;
 
         for( auto const & [key, value] : fDatabaseTimingCorrections ){
             mf::LogInfo(fLogCategory) << key << " " 

@@ -1,0 +1,79 @@
+#
+# File:     dump_hits_icarus.fcl
+# Purpose:  Dump on screen hit content of ICARUS data.
+# Author:   Gianluca Petrillo (petrillo@slac.stanford.edu)
+# Date:     August 11, 2023
+# Version:  1.0
+#
+# Dumps `gaushitTPC[EW][EW]` hit collections.
+#
+# Service dependencies:
+# - message facility
+#
+
+BEGIN_PROLOG
+
+dumphits: {
+  module_type:              DumpHits
+  
+  # output category (used in `messages` configuration)
+  OutputCategory:          "DumpHits"
+  
+  # specify the label of the recob::Hit producer (need to override)
+  HitModuleLabel:          @nil
+  
+  # hits have no associated raw digits nor wires
+  CheckRawDigitAssociation: false
+  CheckWireAssociation:     false
+  
+} # dumphits
+
+END_PROLOG
+
+
+# ------------------------------------------------------------------------------
+process_name: DumpHits
+
+services: {
+  message: {
+    destinations: {
+      
+      # grab all the "DumpHits" messages and put them in DumpHits.log
+      DumpHits: {
+        append: false
+        categories: {
+          DumpHits: { limit: -1 }
+          default: { limit: 0 }
+        }
+        filename: "DumpHits.log"
+        threshold: "INFO"
+        type: "file"
+      } # DumpHits
+      
+      LogStandardOut: {
+        categories: {
+          DumpHits: { limit: 0 }
+          default: {}
+        }
+        threshold: "WARNING"
+        type: "cout"
+      } # LogStandardOut
+      
+    } # destinations
+  } # message
+} # services
+
+
+physics: {
+  analyzers: {
+  
+    dumphitsEE: { @table::dumphits  HitModuleLabel: "gaushitTPCEE" }
+    dumphitsEW: { @table::dumphits  HitModuleLabel: "gaushitTPCEW" }
+    dumphitsWE: { @table::dumphits  HitModuleLabel: "gaushitTPCWE" }
+    dumphitsWW: { @table::dumphits  HitModuleLabel: "gaushitTPCWW" }
+    
+  } # analyzers
+  
+  dumpers: [ dumphitsEE, dumphitsEW, dumphitsWE, dumphitsWW ]
+  
+} # physics

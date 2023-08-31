@@ -1,0 +1,10 @@
+<lcgdict>
+
+  <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
+
+  <class name="art::Assns<recob::Track,sim::BeamGateInfo,void>" />
+  <class name="art::Assns<sim::BeamGateInfo,recob::Track,void>" />
+  <class name="art::Wrapper<art::Assns<recob::Track,sim::BeamGateInfo,void> >" />
+  <class name="art::Wrapper<art::Assns<sim::BeamGateInfo,recob::Track,void> >" />
+
+</lcgdict>

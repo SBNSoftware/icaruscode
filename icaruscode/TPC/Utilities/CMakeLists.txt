@@ -21,7 +21,7 @@ set(icarus_util_lib_list
 	art::Framework_IO
 	art::Framework_IO_detail
 	art::Persistency_Provenance
-	icaruscode_IcarusObj
+	sbnobj::ICARUS_TPC	
 	art_root_io::tfile_support ROOT::Core
 	art_root_io::RootDB
 	art::Framework_Services_Optional_RandomNumberGenerator_service
@@ -37,7 +37,7 @@ set(icarus_util_lib_list
 	Boost::filesystem
 	Boost::system
 	CLHEP::Random
-        larcoreobj::headers
+    larcoreobj::headers
 )
 
 art_make_library(
@@ -46,6 +46,7 @@ art_make_library(
 
 cet_build_plugin(FileCatalogMetadataICARUS art::service LIBRARIES ${icarus_util_lib_list})
 cet_build_plugin(SignalShapingICARUSService art::service LIBRARIES ${icarus_util_lib_list})
+cet_build_plugin(SIOVChannelStatusICARUSService art::service LIBRARIES ${icarus_util_lib_list})
 cet_build_plugin(TFileMetadataICARUS art::service LIBRARIES ${icarus_util_lib_list})
 
 

@@ -245,6 +245,12 @@ namespace icarus { class DaqDecoderICARUSPMT; }
  * * `art::Assns<raw::OpDetWaveform, sbn::OpDetWaveformMeta>`: for regular
  *   waveforms, association with its metadata object (also in same order).
  *   Produced only if `SkipWaveforms` is `false`.
+ * * `std::vector<icarus::timing::PMTWaveformTimeCorrection>` (one instance
+ *   name per correction source): list of time corrections from the specific
+ *   source, one per (regular) PMT channel. If `SaveCorrectionsFrom` is
+ *   specified it defines which corrections are saved; if it's not specified,
+ *   only the correction from `CorrectionInstance` is saved, if any (otherwise,
+ *   this data product is not saved at all).
  * 
  * 
  * Waveform time stamp
@@ -255,7 +261,7 @@ namespace icarus { class DaqDecoderICARUSPMT; }
  * All waveforms on the same readout board fragment share the same timestamp.
  * The same readout board can produce different fragments at different times
  * within an event in which case each fragment will be independently assigned
- * a timstamp .
+ * a timestamp .
  * 
  * The time stamp of the waveform is defined as the time when the first sample
  * of the waveform started (that is, if the sample represent the value of the
@@ -893,7 +899,7 @@ class icarus::DaqDecoderICARUSPMT: public art::EDProducer {
   /// Trigger time as reported by `detinfo::DetectorClocks` service.
   electronics_time const fNominalTriggerTime;
   
-  bool const fSaveRegulatWaveforms; ///< Whether regular waveforms are saved.
+  bool const fSaveRegularWaveforms; ///< Whether regular waveforms are saved.
   
   // --- END ---- Cached values ------------------------------------------------
   
@@ -1561,7 +1567,7 @@ icarus::DaqDecoderICARUSPMT::DaqDecoderICARUSPMT(Parameters const& params)
       }
   , fOpticalTick{ fDetTimings.OpticalClockPeriod() }
   , fNominalTriggerTime{ fDetTimings.TriggerTime() }
-  , fSaveRegulatWaveforms
+  , fSaveRegularWaveforms
     { contains(fSaveWaveformsFrom, RegularWaveformCategory) }
 {
   //
@@ -1897,15 +1903,18 @@ void icarus::DaqDecoderICARUSPMT::produce(art::Event& event) {
     = createRegularWaveformMetadata(waveformProducts, event, triggerInfo);
   
   
-  // put the data products into the event
-  for (auto&& [ category, waveforms ]: waveformProducts) {
+  // put the waveform data products we are required to save into the event
+  for (std::string const& category: fSaveWaveformsFrom) {
+    auto itData = waveformProducts.find(category);
+    if (itData == waveformProducts.end()) continue;
+    auto& waveforms = itData->second;
     mf::LogTrace(fLogCategory)
       << waveforms.size() << " PMT waveforms saved for "
       << (category.empty()? "standard": category) << " instance.";
     // the instance name is the category the waveforms belong to
     event.put(moveToUniquePtr(waveforms), category);
   }
-  if (fSaveRegulatWaveforms) event.put(moveToUniquePtr(metaToWaveform));
+  if (fSaveRegularWaveforms) event.put(moveToUniquePtr(metaToWaveform));
   
   // put all the categories of corrections
   for( std::string const& category: fSaveCorrectionsFrom ){
@@ -2718,7 +2727,7 @@ icarus::DaqDecoderICARUSPMT::createRegularWaveformMetadata(
     = createWaveformMetadata(regularWaveforms, triggerInfo);
   
   art::Assns<raw::OpDetWaveform, sbn::OpDetWaveformMeta> metaToWaveform;
-  if (fSaveRegulatWaveforms) {
+  if (fSaveRegularWaveforms) {
     metaToWaveform
       = createWaveformMetadataAssociations(regularWaveforms, event);
   }

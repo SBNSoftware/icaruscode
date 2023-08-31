@@ -1,0 +1,401 @@
+#
+# File:    createtree_timed_tracks_icarus.fcl
+# Purpose: Store selected timed tracks with energy estimation and trigger emulation into flat ROOT trees.
+# Authors: Animesh Chatterjee (ANC238@pitt.edu),
+#          Gianluca Petrillo (petrillo@slac.stanford.edu),
+#          Jacob Zettlemoyer (jzettle@fnal.gov)
+# Date:    September 22, 2021
+#
+#
+
+BEGIN_PROLOG
+###
+### fix settings (so that will not be overridden later);
+### these are defined in `triggeremu_data_config_icarus.fcl`
+###
+
+# do not emulate any fixed level threshold (only `pmtthr`)
+triggeremu_data_config_icarus.settings.PMTADCthresholds @protect_ignore: []
+
+
+END_PROLOG
+
+
+#include "messages_icarus.fcl"
+#include "rootoutput_icarus.fcl"
+#include "services_common_icarus.fcl"
+#include "trigger_icarus.fcl"
+#include "triggeremu_data_config_icarus.fcl"
+#include "crtt0producer_icarus.fcl"
+#include "icarus_trackcalo_skimmer.fcl"
+#include "calorimetry_icarus.fcl"
+# 
+
+BEGIN_PROLOG
+
+timetracktreestorage_base: {
+  module_type: "TimeTrackTreeStorageCRT"
+  BeamGateProducer: "daqTrigger"
+  TriggerProducer:  "daqTrigger"
+  MODA: 0.930
+  MODB: 0.212
+  Wion: 0.0000236016
+  Efield: 0.5
+  ForceDowngoing: true
+}
+
+gatesFromTracks_icarus: {
+
+  module_type: BeamGateInfoFromTracksCRT
+  
+  GateStartOffset: "-15 us"
+  GateEndOffset:   "+5 us"
+  
+  T0Producer:    @nil  # must override
+  T0selProducer: @nil  # must override
+  
+} # gatesFromTracks_icarus
+
+
+END_PROLOG
+
+# ------------------------------------------------------------------------------
+process_name: storeTree
+
+
+# ------------------------------------------------------------------------------
+services: {
+  @table::triggeremu_data_config_icarus.services # from triggeremu_data_config_icarus.fcl
+  @table::icarus_common_services
+  message:     @local::icarus_message_services_interactive_debug
+  TimeTracker: {}
+  TFileService: {
+    fileName: "timedtracks_store_triggeremu.root"
+  }
+}
+
+# customization of message destinations from trigger emulation
+services.message.destinations: {
+  @table::services.message.destinations
+  @table::triggeremu_data_config_icarus.messagedestinations
+}
+
+services.SpaceChargeService: @local::icarus_spacecharge
+
+physics: {
+  filters: {
+    # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    t0selectorW: {
+      module_type: TimedTrackSelectorCRT
+      TrackTimeTags: [ "CRTT0MatchingW" ]
+
+    } # t0selectorW
+
+    t0selectorE: {
+      module_type: TimedTrackSelectorCRT
+      TrackTimeTags: [ "CRTT0MatchingE" ]
+    }
+    
+    t0selectorAddersW: {
+      module_type: TimedTrackSelectorCRT
+      TrackTimeTags: [ "CRTT0MatchingW" ]
+      MinT0: -1200 #1498.8 in ns as requested by code, evaluated from distribution of the triggered tracks wrt electronics time scale
+      MaxT0: 9000 #1500.4 in ns evaluated from distribution of triggered tracks wrt electronics time scale
+    }
+    
+    t0selectorAddersE: {
+      module_type: TimedTrackSelectorCRT
+      TrackTimeTags: [ "CRTT0MatchingE" ]
+      MinT0: -1200 #1498.8 in ns as requested by code, evaluated from distribution of the triggered tracks wrt electronics time scale
+      MaxT0: 9000 #1500.4 in ns evaluated from distribution of triggered tracks wrt electronics time scale 
+    }
+  }
+
+  producers: {
+
+    gatesFromTracksW: {
+      @table::gatesFromTracks_icarus
+      T0Producer:    "CRTT0MatchingW"
+      T0selProducer: t0selectorW
+    }
+  
+    gatesFromTracksE: {
+      @table::gatesFromTracks_icarus
+    
+      T0Producer:    "CRTT0MatchingE"
+      T0selProducer: t0selectorE
+    }
+
+    gatesFromTracksCentralAddersW: {
+      @table::gatesFromTracks_icarus
+      T0Producer: "CRTT0MatchingW"
+      T0selProducer: t0selectorAddersW
+    }
+
+    gatesFromTracksCentralAddersE: {
+      @table::gatesFromTracks_icarus
+      T0Producer: "CRTT0MatchingE"
+      T0selProducer: t0selectorAddersE
+    }
+
+    gatesFromTracksCornerAddersW: {
+      @table::gatesFromTracks_icarus
+      T0Producer: "CRTT0MatchingW"
+      T0selProducer: t0selectorAddersW
+    }
+    
+    gatesFromTracksCornerAddersE: {
+      @table::gatesFromTracks_icarus
+      T0Producer: "CRTT0MatchingE"
+      T0selProducer: t0selectorAddersE
+    }
+    
+    @table::triggeremu_data_config_icarus.producers # from triggeremu_data_config_icarus.fcl
+
+    # CRT/TPC matching per cryostat (enable if not in Stage1 input)
+    
+    CRTT0MatchingW: {
+      @table::standard_crtt0producerW  # from crtt0matchingalg_icarus.fcl
+      TPCTrackLabel: ["pandoraTrackGausCryoW" ]
+    }
+    CRTT0MatchingE: {
+      @table::standard_crtt0producerE  # from crtt0matchingalg_icarus.fcl
+      TPCTrackLabel: ["pandoraTrackGausCryoE" ]
+    }
+
+    #calorimetry
+
+    calorimetryCryoW: {
+      @table::standard_gnocchicaloicarus  # from calorimetryICARUS.fcl
+      TrackModuleLabel: "pandoraTrackGausCryoW"
+    }
+    calorimetryCryoE: {
+      @table::standard_gnocchicaloicarus  # from calorimetryICARUS.fcl
+      TrackModuleLabel: "pandoraTrackGausCryoE"
+    }
+    
+  }
+
+  analyzers: {
+    t0TreeStoreW: {
+      @table::timetracktreestorage_base
+      T0selProducer: "t0selectorW"
+      T0Producer: "pandoraGausCryoW"
+      PFPproducer: "pandoraTrackGausCryoW"
+      TrackProducer: "pandoraTrackGausCryoW"
+      TrackFitterProducer: "pandoraTrackGausCryoW"
+      CaloProducer: "calorimetryCryoW"
+      FlashProducer: "opflashCryoW"
+      CRTMatchingProducer: "CRTT0MatchingW"
+      EmulatedTriggers: [
+        { Name:       "M1"   TriggerTag: "simSlidingORM1W" },
+        { Name:       "S3"   TriggerTag: "simSlidingORS3W" },
+        { Name:       "S5"   TriggerTag: "simSlidingORS5W" },
+        { Name:       "S8"   TriggerTag: "simSlidingORS8W" },
+        { Name:      "S10"   TriggerTag: "simSlidingORS10W" },
+        { Name:      "S15"   TriggerTag: "simSlidingORS15W" }
+      ]
+      LogCategory: "TimeTrackTreeStorageCryoW"
+      SelectEvents: [ "selectionW" ]
+      }
+
+    t0TreeStoreE: {
+      @table::timetracktreestorage_base
+      T0selProducer: "t0selectorE"
+      T0Producer: "pandoraGausCryoE"
+      PFPproducer: "pandoraTrackGausCryoE"
+      TrackProducer: "pandoraTrackGausCryoE"
+      TrackFitterProducer: "pandoraTrackGausCryoE"
+      CaloProducer: "calorimetryCryoE"
+      FlashProducer: "opflashCryoE"
+      CRTMatchingProducer: "CRTT0MatchingE"
+      EmulatedTriggers: [
+        { Name:       "M1"   TriggerTag: "simSlidingORM1E" },
+        { Name:       "S3"   TriggerTag: "simSlidingORS3E" },
+        { Name:       "S5"   TriggerTag: "simSlidingORS5E" },
+        { Name:       "S8"   TriggerTag: "simSlidingORS8E" },
+        { Name:      "S10"   TriggerTag: "simSlidingORS10E" },
+        { Name:      "S15"   TriggerTag: "simSlidingORS15E" }
+      ]
+      LogCategory: "TimeTrackTreeStorageCryoE"
+      SelectEvents: [ "selectionE" ]
+      }
+
+    t0TreeStoreCentralAddersW: {
+      @table::timetracktreestorage_base
+      T0selProducer: "t0selectorAddersW"
+      T0Producer: "pandoraGausCryoW"
+      PFPproducer: "pandoraTrackGausCryoW"
+      TrackProducer: "pandoraTrackGausCryoW"
+      TrackFitterProducer: "pandoraTrackGausCryoW"
+      CaloProducer: "calorimetryCryoW"
+      FlashProducer: "opflashCryoW"
+      CRTMatchingProducer: "CRTT0MatchingW"
+      EmulatedTriggers: [
+        { Name:       "M1"   TriggerTag: "simSlidingORM1W" },
+	{ Name:       "S3"   TriggerTag: "simSlidingORS3W" },
+        { Name:       "S5"   TriggerTag: "simSlidingORS5W" },
+        { Name:       "S8"   TriggerTag: "simSlidingORS8W" },
+        { Name:      "S10"   TriggerTag: "simSlidingORS10W" },
+        { Name:      "S15"   TriggerTag: "simSlidingORS15W" }
+      ]
+      LogCategory: "TimeTrackTreeStorageCryoW"
+      SelectEvents: [ "selectionCentralAddersW" ]
+      }
+
+    t0TreeStoreCentralAddersE: {
+      @table::timetracktreestorage_base
+      T0selProducer: "t0selectorAddersE"
+      T0Producer: "pandoraGausCryoE"
+      PFPproducer: "pandoraTrackGausCryoE"
+      TrackProducer: "pandoraTrackGausCryoE"
+      TrackFitterProducer: "pandoraTrackGausCryoE"
+      CaloProducer: "calorimetryCryoE"
+      FlashProducer: "opflashCryoE"
+      CRTMatchingProducer: "CRTT0MatchingE"
+      EmulatedTriggers: [
+        { Name:       "M1"   TriggerTag: "simSlidingORM1E" },
+	{ Name:       "S3"   TriggerTag: "simSlidingORS3E" },
+        { Name:       "S5"   TriggerTag: "simSlidingORS5E" },
+        { Name:       "S8"   TriggerTag: "simSlidingORS8E" },
+        { Name:      "S10"   TriggerTag: "simSlidingORS10E" },
+        { Name:      "S15"   TriggerTag: "simSlidingORS15E" }
+      ]
+      LogCategory: "TimeTrackTreeStorageCryoE"
+      SelectEvents: [ "selectionCentralAddersE" ]
+      }
+
+    t0TreeStoreCornerAddersW: {
+      @table::timetracktreestorage_base
+      T0selProducer: "t0selectorAddersW"
+      T0Producer: "pandoraGausCryoW"
+      PFPproducer: "pandoraTrackGausCryoW"
+      TrackProducer: "pandoraTrackGausCryoW"
+      TrackFitterProducer: "pandoraTrackGausCryoW"
+      CaloProducer: "calorimetryCryoW"
+      FlashProducer: "opflashCryoW"
+      CRTMatchingProducer: "CRTT0MatchingW"
+      EmulatedTriggers: [
+        { Name:       "M1"   TriggerTag: "simSlidingORM1W" },
+        { Name:       "S3"   TriggerTag: "simSlidingORS3W" },
+        { Name:       "S5"   TriggerTag: "simSlidingORS5W" },
+        { Name:       "S8"   TriggerTag: "simSlidingORS8W" },
+        { Name:      "S10"   TriggerTag: "simSlidingORS10W" },
+        { Name:      "S15"   TriggerTag: "simSlidingORS15W" }
+      ]
+      LogCategory: "TimeTrackTreeStorageCryoW"
+      SelectEvents: [ "selectionCornerAddersW" ]
+    }
+
+    t0TreeStoreCornerAddersE: {
+      @table::timetracktreestorage_base
+      T0selProducer: "t0selectorAddersE"
+      T0Producer: "pandoraGausCryoE"
+      PFPproducer: "pandoraTrackGausCryoE"
+      TrackProducer: "pandoraTrackGausCryoE"
+      TrackFitterProducer: "pandoraTrackGausCryoE"
+      CaloProducer: "calorimetryCryoE"
+      FlashProducer: "opflashCryoE"
+      CRTMatchingProducer: "CRTT0MatchingE"
+      EmulatedTriggers: [
+        { Name:       "M1"   TriggerTag: "simSlidingORM1E" },
+        { Name:       "S3"   TriggerTag: "simSlidingORS3E" },
+        { Name:       "S5"   TriggerTag: "simSlidingORS5E" },
+        { Name:       "S8"   TriggerTag: "simSlidingORS8E" },
+        { Name:      "S10"   TriggerTag: "simSlidingORS10E" },
+        { Name:      "S15"   TriggerTag: "simSlidingORS15E" }
+      ]
+      LogCategory: "TimeTrackTreeStorageCryoE"
+      SelectEvents: [ "selectionCornerAddersE" ]
+    }
+
+  } #analyzers
+  
+  selectionW: [
+    "calorimetryCryoW", "CRTT0MatchingW",
+    "t0selectorAddersW", "gatesFromTracksW",
+    "lvdsgatesOR",
+    @sequence::triggeremu_data_config_icarus.simulationPrepWest,  # from triggeremu_data_config_icarus.fcl
+    "simSlidingORM1W", "simSlidingORS3W", "simSlidingORS5W",
+    "simSlidingORS8W", "simSlidingORS10W", "simSlidingORS15W"
+    ]
+  selectionE: [
+    "calorimetryCryoE", "CRTT0MatchingE",
+    "t0selectorAddersE", "gatesFromTracksE",
+    "lvdsgatesOR",
+    @sequence::triggeremu_data_config_icarus.simulationPrepEast,  # from triggeremu_data_config_icarus.fcl
+    "simSlidingORM1E", "simSlidingORS3E", "simSlidingORS5E",
+    "simSlidingORS8E", "simSlidingORS10E", "simSlidingORS15E"
+    ]
+
+  selectionCentralAddersW: [
+    "calorimetryCryoW", "CRTT0MatchingW",
+    "t0selectorAddersW", "gatesFromTracksCentralAddersW",
+    "lvdsgatesOR", 
+    @sequence::triggeremu_data_config_icarus.simulationPrepCentralAddersWest,
+    "simSlidingORM1W", "simSlidingORS3W", "simSlidingORS5W",
+    "simSlidingORS8W", "simSlidingORS10W", "simSlidingORS15W"
+    ]
+
+  selectionCentralAddersE: [
+    "calorimetryCryoE",	 "CRTT0MatchingE",
+    "t0selectorAddersE", "gatesFromTracksCentralAddersE",
+    "lvdsgatesOR",
+    @sequence::triggeremu_data_config_icarus.simulationPrepCentralAddersEast,
+    "simSlidingORM1E", "simSlidingORS3E", "simSlidingORS5E",
+    "simSlidingORS8E", "simSlidingORS10E", "simSlidingORS15E"
+    ]
+
+  selectionCornerAddersW: [
+    "calorimetryCryoW", "CRTT0MatchingW",
+    "t0selectorAddersW", "gatesFromTracksCornerAddersW",
+    "lvdsgatesOR",
+    @sequence::triggeremu_data_config_icarus.simulationPrepCornerAddersWest,
+    "simSlidingORM1W", "simSlidingORS3W", "simSlidingORS5W",
+    "simSlidingORS8W", "simSlidingORS10W", "simSlidingORS15W"
+    ]
+
+  selectionCornerAddersE: [
+    "calorimetryCryoE",  "CRTT0MatchingE",
+    "t0selectorAddersE", "gatesFromTracksCornerAddersE",
+    "lvdsgatesOR",
+    @sequence::triggeremu_data_config_icarus.simulationPrepCornerAddersEast,
+    "simSlidingORM1E", "simSlidingORS3E", "simSlidingORS5E",
+    "simSlidingORS8E", "simSlidingORS10E", "simSlidingORS15E"
+    ]
+
+    
+  trigger_paths: [ selectionW, selectionE]
+  
+  ana:       [ t0TreeStoreW, t0TreeStoreE ]
+  streams:   [ "rootoutput" ]
+  end_paths: [ ana, streams ]
+  
+} # physics
+
+physics.producers.calorimetryCryoE.TrackModuleLabel: "pandoraTrackGausCryoE"
+physics.producers.calorimetryCryoW.TrackModuleLabel: "pandoraTrackGausCryoW"
+
+
+# ------------------------------------------------------------------------------
+outputs: {
+  rootoutput: {
+    @table::icarus_rootoutput
+    
+    fileProperties: { maxInputFiles: 1 }
+    checkFileName: false
+    
+    # these data products are enough to rerun this job (until hits are needed):
+    outputCommands: [
+      "drop *"
+      , "keep sbn::PMTconfiguration_*_*_*", "keep *_daqTrigger_*_*"
+      , "keep *_CRTT0Matching*_*_*", "keep *_daqTrigger_*_*"
+      , "keep *_pandoraGausCryo*_*_stage1", "drop *recob::SpacePoint*_pandoraGausCryo*_*_stage1", "keep *_pandoraTrackGausCryo*_*_stage1"
+      , "keep *_cluster3DCryo*_*_*", "drop *recob::SpacePoint*_cluster3DCryo*_*_*"
+      , "keep *_opflashCryo*_*_*"
+      , "keep *_*_*_TrgEmu", "keep *_*_*_T0sel"
+      , "keep *_*_*_storeTree"
+      ]
+
+  }
+}

@@ -4,5 +4,5 @@
 ##
 #include "stage0_run2_icarus_mc.fcl"
 
-# Drop the artdaq format files on output
-outputs.rootOutput.outputCommands: ["keep *_*_*_*", "drop *_daq*_*_*", "drop recob::Wire*_MCDecodeTPCROI_*_*", "drop *_decon1droi_*_*", "drop recob::Wire*_roifinder_*_*" ]
+# Modify the drop so that we keep RawDigits from the MCDecoder stage
+outputs.rootOutput.outputCommands: ["keep *_*_*_*", "drop *_daq*_*_*", "drop recob::Wire*_MCDecodeTPCROI_*_*", "drop *_decon1droi_*_*", "drop recob::Wire*_roifinder_*_*", "keep *_daq_simpleSC_*"]

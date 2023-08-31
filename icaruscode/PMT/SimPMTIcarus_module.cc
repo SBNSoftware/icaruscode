@@ -10,18 +10,22 @@
 #include "icaruscode/PMT/PMTpedestalGeneratorTool.h"
 #include "icaruscode/PMT/PMTnoiseGeneratorTool.h"
 #include "icaruscode/PMT/SinglePhotonPulseFunctionTool.h"
+#include "icaruscode/PMT/Algorithms/OpDetWaveformMetaUtils.h" // OpDetWaveformMetaMaker
 #include "icaruscode/PMT/Algorithms/PMTsimulationAlg.h"
 #include "icaruscode/PMT/Algorithms/PedestalGeneratorAlg.h"
 #include "icaruscode/PMT/Algorithms/NoiseGeneratorAlg.h"
 #include "icaruscode/PMT/Algorithms/PhotoelectronPulseFunction.h"
+#include "icaruscode/IcarusObj/OpDetWaveformMeta.h"
 
 // LArSoft libraries
 #include "larcore/CoreUtils/ServiceUtil.h"
 #include "lardata/DetectorInfoServices/DetectorClocksService.h"
 #include "lardata/DetectorInfoServices/LArPropertiesService.h"
+#include "lardataalg/DetectorInfo/DetectorTimings.h"
 #include "lardataalg/Utilities/quantities/spacetime.h" // nanosecond
 #include "lardataobj/RawData/OpDetWaveform.h"
 #include "lardataobj/Simulation/SimPhotons.h"
+#include "larcorealg/CoreUtils/enumerate.h"
 #include "nurandom/RandomUtils/NuRandomService.h"
 
 // framework libraries
@@ -31,7 +35,10 @@
 #include "art/Framework/Principal/Handle.h"
 #include "art/Framework/Services/Registry/ServiceHandle.h"
 #include "art/Framework/Services/Optional/RandomNumberGenerator.h"
+#include "art/Persistency/Common/PtrMaker.h"
 #include "art/Utilities/make_tool.h"
+#include "canvas/Persistency/Common/Assns.h"
+#include "canvas/Persistency/Common/Ptr.h"
 #include "canvas/Utilities/InputTag.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
 #include "fhiclcpp/types/DelegatedParameter.h"
@@ -44,6 +51,7 @@
 
 // C/C++ standard library
 #include <vector>
+#include <tuple> // std::tie()
 #include <atomic> // std::atomic_flag
 #include <iterator> // std::back_inserter()
 #include <memory> // std::make_unique()
@@ -81,6 +89,8 @@ namespace icarus::opdet {
    *   `art::RandomNumberGenerator` (which match the random engine classes
    *   derived from `clhep::HepRandomEngine` in CLHEP 2.3 except
    *   `NonRandomEngine` and `RandEngine`);
+   * * **MakeMetadata** (boolean, default: `true`): produces waveform metadata
+   *   objects.
    * * **WritePhotons** (boolean, default: `false`): saves in an additional
    *   `sim::SimPhotons` collection the photons effectively contributing to
    *   the waveforms; currently, no selection ever happens and all photons are
@@ -107,6 +117,17 @@ namespace icarus::opdet {
    * A collection of optical detector waveforms
    * (`std::vector<raw::OpDetWaveform>`) is produced.
    * See `icarus::opdet::PMTsimulationAlg` algorithm documentation for details.
+   * 
+   * If `MakeMetadata` configuration parameter is set `true`, a collection of
+   * `std::vector<sbn::OpDetWaveformMeta>` is produced, one per waveform, in the
+   * same order as the waveform data product (satisfying the
+   * @ref LArSoftProxyDefinitionParallelData "parallel data product"
+   * requirement). A regular
+   * `art::Assns<raw::OpDetWaveform, sbn::OpDetWaveformMeta>` association is
+   * also produced. The on-trigger/on-beam flags are assigned according to the
+   * times reported by `DetectorClocks` service provider; the trigger in
+   * particular is unlikely to be meaningful, given that to emulate it the
+   * waveforms are typically needed.
    * 
    * If `WritePhotons` configuration parameter is set `true`, a collection of
    * the scintillation photons (`std::vector<sim::SimPhotons>`) which
@@ -178,6 +199,12 @@ namespace icarus::opdet {
 
       fhicl::TableFragment<icarus::opdet::PMTsimulationAlgMaker::Config> algoConfig;
       
+      fhicl::Atom<bool> MakeMetadata {
+        Name("MakeMetadata"),
+        Comment("writes a metadata object for each waveform"),
+        true
+      };
+      
       fhicl::Atom<bool> writePhotons {
           Name("WritePhotons"),
           Comment
@@ -241,6 +268,7 @@ namespace icarus::opdet {
     /// Input tag for simulated scintillation photons (or photoelectrons).
     art::InputTag fInputModuleName;
     
+    bool fMakeMetadata; ///< Whether to produce waveform metadata.
     bool fWritePhotons { false }; ///< Whether to save contributing photons.
     
     CLHEP::HepRandomEngine&  fEfficiencyEngine;
@@ -260,6 +288,17 @@ namespace icarus::opdet {
     /// True if `firstTime()` has already been called.
     std::atomic_flag fNotFirstTime;
     
+    /// Returns the metadata of `waveforms` and their associations.
+    std::pair<
+      std::vector<sbn::OpDetWaveformMeta>,
+      art::Assns<raw::OpDetWaveform, sbn::OpDetWaveformMeta>
+      >
+      makeMetadata(
+        art::Event const& event,
+        std::vector<raw::OpDetWaveform> const& waveforms,
+        detinfo::DetectorTimings const& detTimings
+      ) const;
+    
     /// Returns whether no other event has been processed yet.
     bool firstTime() { return !fNotFirstTime.test_and_set(); }
     
@@ -273,19 +312,23 @@ SimPMTIcarus::SimPMTIcarus(Parameters const& config)
     : EDProducer{config}
     // configuration
     , fInputModuleName(config().inputModuleLabel())
+    , fMakeMetadata(config().MakeMetadata())
     , fWritePhotons(config().writePhotons())
     // random engines
-    , fEfficiencyEngine(art::ServiceHandle<rndm::NuRandomService>()->createEngine
-        (*this, "HepJamesRandom", "Efficiencies", config().EfficiencySeed)
-      )
-    , fDarkNoiseEngine(art::ServiceHandle<rndm::NuRandomService>()->createEngine(
-        *this,
+    , fEfficiencyEngine(art::ServiceHandle<rndm::NuRandomService>()->registerAndSeedEngine(
+          createEngine(0, "HepJamesRandom", "Efficiencies"),
+          "HepJamesRandom",
+          "Efficiencies",
+          config().EfficiencySeed
+      ))
+    , fDarkNoiseEngine(art::ServiceHandle<rndm::NuRandomService>()->registerAndSeedEngine(
+        createEngine(0, config().darkNoiseRandomEngine(), "DarkNoise"),
         config().darkNoiseRandomEngine(),
         "DarkNoise",
         config().DarkNoiseSeed
       ))
-    , fElectronicsNoiseEngine(art::ServiceHandle<rndm::NuRandomService>()->createEngine(
-        *this,
+    , fElectronicsNoiseEngine(art::ServiceHandle<rndm::NuRandomService>()->registerAndSeedEngine(
+        createEngine(0, config().electronicsNoiseRandomEngine(), "ElectronicsNoise"),
         config().electronicsNoiseRandomEngine(),
         "ElectronicsNoise",
         config().ElectronicsNoiseSeed
@@ -305,6 +348,10 @@ SimPMTIcarus::SimPMTIcarus(Parameters const& config)
   {
     // Call appropriate produces<>() functions here.
     produces<std::vector<raw::OpDetWaveform>>();
+    if (fMakeMetadata) {
+      produces<std::vector<sbn::OpDetWaveformMeta>>();
+      produces<art::Assns<raw::OpDetWaveform, sbn::OpDetWaveformMeta>>();
+    }
     if (fWritePhotons) produces<std::vector<sim::SimPhotons> >();
     
     fNotFirstTime.clear(); // superfluous in C++20
@@ -352,7 +399,7 @@ SimPMTIcarus::SimPMTIcarus(Parameters const& config)
       );
     
     if (firstTime()) {
-      mf::LogDebug log { "SimPMTIcarus" };
+      mf::LogInfo log { "SimPMTIcarus" };
       log << "PMT simulation configuration (first event):\n";
       PMTsimulator->printConfiguration(log);
     } // if first time
@@ -401,15 +448,65 @@ SimPMTIcarus::SimPMTIcarus(Parameters const& config)
     mf::LogInfo("SimPMTIcarus") << "Generated " << pulseVecPtr->size()
       << " waveforms out of " << nopch << " optical channels.";
     
+    // waveform metadata
+    std::unique_ptr<std::vector<sbn::OpDetWaveformMeta>> metadataVec;
+    std::unique_ptr<art::Assns<raw::OpDetWaveform, sbn::OpDetWaveformMeta>>
+      metadataAssns;
+    if (fMakeMetadata) {
+      metadataVec = std::make_unique<std::vector<sbn::OpDetWaveformMeta>>();
+      metadataAssns =
+        std::make_unique<art::Assns<raw::OpDetWaveform, sbn::OpDetWaveformMeta>>
+        ();
+      
+      auto const detTimings = detinfo::makeDetectorTimings
+        (art::ServiceHandle<detinfo::DetectorClocksService const>()->DataFor(e))
+        ;
+      std::tie(*metadataVec, *metadataAssns)
+        = makeMetadata(e, *pulseVecPtr, detTimings);
+    }
+    
     //
     // save the result
     //
     e.put(std::move(pulseVecPtr));
+    if (fMakeMetadata) {
+      e.put(std::move(metadataVec));
+      e.put(std::move(metadataAssns));
+    }
     if (simphVecPtr) e.put(std::move(simphVecPtr));
   } // SimPMTIcarus::produce()
   
   
-// ---------------------------------------------------------------------------
+  // ---------------------------------------------------------------------------
+  std::pair<
+    std::vector<sbn::OpDetWaveformMeta>,
+    art::Assns<raw::OpDetWaveform, sbn::OpDetWaveformMeta>
+    >
+  SimPMTIcarus::makeMetadata(
+    art::Event const& event,
+    std::vector<raw::OpDetWaveform> const& waveforms,
+    detinfo::DetectorTimings const& detTimings
+  ) const {
+    
+    std::vector<sbn::OpDetWaveformMeta> meta;
+    art::Assns<raw::OpDetWaveform, sbn::OpDetWaveformMeta> assns;
+    
+    art::PtrMaker<raw::OpDetWaveform> const makeWaveformPtr{ event };
+    art::PtrMaker<sbn::OpDetWaveformMeta> const makeMetaPtr{ event };
+    
+    sbn::OpDetWaveformMetaMaker const makeOpDetWaveformMeta{ detTimings };
+    
+    for (auto const& [iWaveform, waveform ]: util::enumerate(waveforms)) {
+      meta.push_back(makeOpDetWaveformMeta(waveform));
+      assns.addSingle(makeWaveformPtr(iWaveform), makeMetaPtr(iWaveform));
+    } // for waveforms
+    
+    return { std::move(meta), std::move(assns) };
+    
+  } // SimPMTIcarus::makeMetadata()
+  
+  
+  // ---------------------------------------------------------------------------
   DEFINE_ART_MODULE(SimPMTIcarus)
   
   

@@ -471,14 +471,21 @@ void SnippetHit3DBuilderICARUS::BuildChannelStatusVec(PlaneToWireToHitSetMap& pl
     // Loop through the channels and mark those that are "bad"
     for(size_t channel = 0; channel < m_geometry->Nchannels(); channel++)
     {
-        if( !m_channelFilter->IsGood(channel))
-        {
-            std::vector<geo::WireID>                wireIDVec = m_geometry->ChannelToWire(channel);
-            geo::WireID                             wireID    = wireIDVec[0];
-            lariov::ChannelStatusProvider::Status_t chanStat  = m_channelFilter->Status(channel);
+        try
+        {  
+            if( m_channelFilter->IsPresent(channel) && !m_channelFilter->IsGood(channel))
+            {
+                std::vector<geo::WireID>                wireIDVec = m_geometry->ChannelToWire(channel);
+                geo::WireID                             wireID    = wireIDVec[0];
+                lariov::ChannelStatusProvider::Status_t chanStat  = m_channelFilter->Status(channel);
 
-            m_channelStatus[wireID.Plane][wireID.Wire] = chanStat;
-            m_numBadChannels++;
+                m_channelStatus[wireID.Plane][wireID.Wire] = chanStat;
+                m_numBadChannels++;
+            }
+        }
+        catch(...)
+        {
+            mf::LogDebug("SnippetHit3D") << "--> Channel: " << channel << " threw exception so we will skip" << std::endl;
         }
     }
 
@@ -592,7 +599,9 @@ void SnippetHit3DBuilderICARUS::BuildHit3D(reco::HitPairList& hitPairList) const
 
     // The first task is to take the lists of input 2D hits (a map of view to sorted lists of 2D hits)
     // and then to build a list of 3D hits to be used in downstream processing
+    std::cout << "--> Calling BuildChannelStatusVec" << std::endl;
     BuildChannelStatusVec(m_planeToWireToHitSetMap);
+    std::cout << "--- done with channel status building" << std::endl;
 
     size_t numHitPairs = BuildHitPairMap(m_planeToSnippetHitMap, hitPairList);
 
@@ -1539,11 +1548,11 @@ float SnippetHit3DBuilderICARUS::chargeIntegral(float peakMean,
 }
 
 bool SnippetHit3DBuilderICARUS::makeDeadChannelPair(reco::ClusterHit3D&       pairOut,
-                                          const reco::ClusterHit3D& pair,
-                                          size_t                    maxChanStatus,
-                                          size_t                    minChanStatus,
-                                          float                     minOverlap) const
-{
+                                                    const reco::ClusterHit3D& pair,
+                                                    size_t                    maxChanStatus,
+                                                    size_t                    minChanStatus,
+                                                    float                     minOverlap) const
+{           
     // Assume failure (most common result)
     bool result(false);
 
@@ -1675,9 +1684,12 @@ geo::WireID SnippetHit3DBuilderICARUS::NearestWireID(const Eigen::Vector3f& posi
     try
     {
         // Switch from NearestWireID to this method to avoid the roundoff error issues...
-        double distanceToWire = m_geometry->Plane(wireIDIn).WireCoordinate(geo::vect::toPoint(position.data()));
+        //double distanceToWire = m_geometry->Plane(wireIDIn).WireCoordinate(geo::vect::toPoint(position.data()));
 
-        wireID.Wire = int(distanceToWire);
+        //wireID.Wire = int(distanceToWire);
+
+        // Not sure the thinking above but is wrong... switch back to NearestWireID...
+        wireID = m_geometry->NearestWireID(geo::vect::toPoint(position.data()),wireIDIn);
     }
     catch(std::exception& exc)
     {
@@ -1852,7 +1864,7 @@ void SnippetHit3DBuilderICARUS::CollectArtHits(const art::Event& evt) const
         // Can this really happen?
         if (hitStartEndPair.second <= hitStartEndPair.first)
         {
-            std::cout << "Yes, found a hit with end time less than start time: " << hitStartEndPair.first << "/" << hitStartEndPair.second << ", mult: " << recobHit->Multiplicity() << std::endl;
+            mf::LogInfo("SnippetHit3D") << "Yes, found a hit with end time less than start time: " << hitStartEndPair.first << "/" << hitStartEndPair.second << ", mult: " << recobHit->Multiplicity();
             continue;
         }
 

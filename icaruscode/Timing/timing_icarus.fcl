@@ -1,11 +1,13 @@
+#include "timing_corrections_tags.fcl"
+
 BEGIN_PROLOG
 
 icarus_pmttimingservice:
 {
-    # service name: IPMTTimingCorrectionService
+    # service name:   IPMTTimingCorrectionService
     service_provider: PMTTimingCorrectionService
-    DatabaseURL:   "https://dbdata0vm.fnal.gov:9443/icarus_con_prod/app/data?"
-    Timeout:   1000
+    CorrectionsTags:  @local::PMTtimingCorrectionsTags_Run2_August2023
+    Verbose:          false
 }
 
 icarus_ophit_timing_correction:

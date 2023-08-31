@@ -42,7 +42,7 @@
 #include "lardata/ArtDataHelper/WireCreator.h"
 #include "lardata/Utilities/AssociationUtil.h"
 
-#include "icaruscode/IcarusObj/ChannelROI.h"
+#include "sbnobj/ICARUS/TPC/ChannelROI.h"
 #include "icaruscode/TPC/Utilities/ChannelROICreator.h"
 
 #include "icaruscode/TPC/SignalProcessing/RecoWire/ROITools/IROILocator.h"
@@ -50,7 +50,7 @@
 #include "icarus_signal_processing/WaveformTools.h"
 #include "icarus_signal_processing/Denoising.h"
 
-#include "icaruscode/IcarusObj/ChannelROI.h"
+#include "sbnobj/ICARUS/TPC/ChannelROI.h"
 
 #include "tbb/parallel_for.h"
 #include "tbb/blocked_range.h"
@@ -164,6 +164,7 @@ private:
     bool                                                       fDiagnosticOutput;           ///< secret diagnostics flag
     bool                                                       fOutputHistograms;           ///< Output tuples/histograms?
     size_t                                                     fEventCount;                 ///< count of event processed
+    size_t                                                     fLeadTrail;                  ///< Number of bins to include each side of ROI
     
     std::map<size_t,std::unique_ptr<icarus_tool::IROILocator>> fROIToolMap;
 
@@ -201,6 +202,7 @@ void ROIFinder::reconfigure(fhicl::ParameterSet const& pset)
     fCorrectROIBaseline    = pset.get<bool                      >("CorrectROIBaseline",                                         false);
     fMinSizeForCorrection  = pset.get<size_t                    >("MinSizeForCorrection",                                          12);
     fMaxSizeForCorrection  = pset.get<size_t                    >("MaxSizeForCorrection",                                         512);
+    fLeadTrail             = pset.get<size_t                    >("LeadTrail",                                                      0);
     fOutputMorphed         = pset.get< bool                     >("OutputMorphed",                                               true);
     fDiagnosticOutput      = pset.get< bool                     >("DaignosticOutput",                                           false);
     fOutputHistograms      = pset.get< bool                     >("OutputHistograms",                                           false);
@@ -438,8 +440,6 @@ void  ROIFinder::processPlane(size_t                          idx,
     using CandidateROI    = std::pair<size_t, size_t>;
     using CandidateROIVec = std::vector<CandidateROI>;
 
-    size_t leadTrail(0);
-
     for(size_t waveIdx = 0; waveIdx < selectedVals.size(); waveIdx++)
     {
         // Skip if a bad channel
@@ -461,11 +461,11 @@ void  ROIFinder::processPlane(size_t                          idx,
         {
             if (selVals[idx])
             {
-                Size_t startTick = idx >= leadTrail ? idx - leadTrail : 0;
+                Size_t startTick = idx >= fLeadTrail ? idx - fLeadTrail : 0;
 
                 while(idx < selVals.size() && selVals[idx]) idx++;
 
-                size_t stopTick  = idx < selVals.size() - leadTrail ? idx + leadTrail : selVals.size();
+                size_t stopTick  = idx < selVals.size() - fLeadTrail ? idx + fLeadTrail : selVals.size();
 
                 candidateROIVec.emplace_back(startTick, stopTick);
             }
@@ -523,6 +523,9 @@ void  ROIFinder::processPlane(size_t                          idx,
 
                 if (wireIDVec.size() > 1)
                 {
+                    // First get a lock to make sure we don't conflict
+                    tbb::spin_mutex::scoped_lock lock(roifinderSpinMutex);
+
                     std::vector<recob::Wire>::iterator wireItr = std::find_if(wireColVec.begin(),wireColVec.end(),[channel](const auto& wire){return wire.Channel() == channel;});
 
                     if (wireItr != wireColVec.end()) 

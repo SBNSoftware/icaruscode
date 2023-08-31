@@ -6,7 +6,7 @@ pmt_laser_calibration:
 {
   module_type: PMTLaserCalibration
   OpDetWaveformLabel: "daqPMT"
-  PMTWaveformTimingCorrectionLabel:  ""  #or "daqPMT:trgprim" if the corrections are applied at decoder level already 
+  PMTWaveformTimingCorrectionLabel:  ""  #or "daqPMT:globtrg" if the corrections are applied at decoder level already 
   LaserChannel:       1
   WaveformAnalysis :  @local::laser_pulse_configuration
   DebugMessage:       false 
