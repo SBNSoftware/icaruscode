@@ -7,7 +7,7 @@
 
 // LArSoft and ICARUS libraries
 #include "icaruscode/Utilities/IcarusObjectSelectors.h"
-#include "icaruscode/IcarusObj/CRTPMTMatching.h"
+#include "sbnobj/Common/CRT/CRTPMTMatching.hh"
 #include "sbnobj/Common/CRT/CRTHit.hh"
 #include "lardataobj/RecoBase/OpFlash.h"
 #include "larcorealg/CoreUtils/enumerate.h"
@@ -62,7 +62,8 @@ namespace icarus::crt { class DumpCRTPMTMatching; }
 class icarus::crt::DumpCRTPMTMatching: public art::EDAnalyzer {
   
     public:
-  
+  using CRTPMTMatching = sbn::crt::CRTPMTMatching;
+  using MatchedCRT = sbn::crt::MatchedCRT;
   /// Configuration object
   struct Config {
     using Comment = fhicl::Comment;
@@ -110,7 +111,7 @@ class icarus::crt::DumpCRTPMTMatching: public art::EDAnalyzer {
   /// Dumps information about the specified matching.
   void DumpMatching(
     unsigned int iMatching,
-    icarus::crt::CRTPMTMatching const& matchInfo,
+    sbn::crt::CRTPMTMatching const& matchInfo,
     art::Ptr<recob::OpFlash> const& flash,
     std::vector<art::Ptr<sbn::crt::CRTHit>> const& CRThits,
     ProductTagIndex const& tagIndex,
@@ -186,7 +187,7 @@ void icarus::crt::DumpCRTPMTMatching::analyze(art::Event const& event) {
   // collect all the input
   //
   auto const& matchHandle
-    = event.getValidHandle<std::vector<icarus::crt::CRTPMTMatching>>(fMatchingTag);
+    = event.getValidHandle<std::vector<sbn::crt::CRTPMTMatching>>(fMatchingTag);
 
   mf::LogInfo(fLogCategory)
     << "The event contains " << matchHandle->size() << " '"
@@ -235,7 +236,7 @@ void icarus::crt::DumpCRTPMTMatching::analyze(art::Event const& event) {
 //---------------------------------------------------------------------------
 void icarus::crt::DumpCRTPMTMatching::DumpMatching(
   unsigned int iMatching,
-  icarus::crt::CRTPMTMatching const& matchInfo,
+  sbn::crt::CRTPMTMatching const& matchInfo,
   art::Ptr<recob::OpFlash> const& flash,
   std::vector<art::Ptr<sbn::crt::CRTHit>> const& CRThits,
   ProductTagIndex const& tagIndex,

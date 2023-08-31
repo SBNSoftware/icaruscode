@@ -14,12 +14,12 @@
 
 // ICARUS libraries
 #include "icaruscode/Decode/ChannelMapping/ICARUSChannelMapProvider.h"
+#include "icaruscode/Decode/ChannelMapping/RunPeriods.h"
 
 // LArSoft and framework libraries
 #include "larcorealg/CoreUtils/enumerate.h"
 #include "larcorealg/TestUtils/unit_test_base.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
-// #include "cetlib_except/exception.h"
 
 // C/C++ standard libraries
 #include <iomanip> // std::setw()
@@ -48,31 +48,7 @@ struct SortByElement {
 
 
 // -----------------------------------------------------------------------------
-int main(int argc, char** argv) {
-  
-  using Environment
-    = testing::TesterEnvironment<testing::BasicEnvironmentConfiguration>;
-  
-  testing::BasicEnvironmentConfiguration config("PMTchannelMappingDumper");
-
-  //
-  // parameter parsing
-  //
-  int iParam = 0;
-
-  // first argument: configuration file (mandatory)
-  if (++iParam < argc)
-    config.SetConfigurationPath(argv[iParam]);
-  else {
-    std::cerr << "FHiCL configuration file path required as first argument!"
-      << std::endl;
-    return 1;
-  }
-
-  Environment const Env { config };
-  
-  icarusDB::ICARUSChannelMapProvider const channelMapping
-    { Env.ServiceParameters("IICARUSChannelMap") };
+void dumpMapping(icarusDB::ICARUSChannelMapProvider const& channelMapping) {
   
   // hard-coded list of fragment ID; don't like it?
   // ask for an extension of the channel mapping features.
@@ -114,6 +90,50 @@ int main(int argc, char** argv) {
     } // for channel
     
   } // for fragment
+  
+}
+
+
+// -----------------------------------------------------------------------------
+int main(int argc, char** argv) {
+  
+  using Environment
+    = testing::TesterEnvironment<testing::BasicEnvironmentConfiguration>;
+  
+  testing::BasicEnvironmentConfiguration config("PMTchannelMappingDumper");
+
+  //
+  // parameter parsing
+  //
+  int iParam = 0;
+
+  // first argument: configuration file (mandatory)
+  if (++iParam < argc)
+    config.SetConfigurationPath(argv[iParam]);
+  else {
+    std::cerr << "FHiCL configuration file path required as first argument!"
+      << std::endl;
+    return 1;
+  }
+
+  Environment const Env { config };
+  
+  icarusDB::ICARUSChannelMapProvider channelMapping
+    { Env.ServiceParameters("IICARUSChannelMap") };
+  
+  for (icarusDB::RunPeriod const period: icarusDB::RunPeriods::All)
+  {
+    mf::LogVerbatim("PMTchannelMappingDumper")
+      << std::string(80, '=') << "\nRun period #"
+      << static_cast<unsigned int>(period) << ":\n";
+    channelMapping.forPeriod(period);
+    dumpMapping(channelMapping);
+  }
+  
+  mf::LogVerbatim("PMTchannelMappingDumper")
+    << std::string(80, '=')
+    << "\nDumped " << icarusDB::RunPeriods::All.size() << " run periods."
+    ;
   
   return 0;
 } // main()

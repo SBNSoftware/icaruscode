@@ -12,6 +12,7 @@ art_make_library(
 		ROOT::Tree
 		ROOT::Core
 		ROOT::RIO
+                sbnobj::Common_CRT
 	)
 
 cet_build_plugin(SaveConfigurationIntoTFile art::module LIBRARIES

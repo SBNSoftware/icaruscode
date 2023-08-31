@@ -70,7 +70,10 @@ class icarus::timing::PMTWaveformTimeCorrectionExtractor {
 
         /// Exception thrown when trying to overwrite a correction.
         struct MultipleCorrectionsForChannel: Error {
-            MultipleCorrectionsForChannel(unsigned int existing, unsigned int additional);
+            MultipleCorrectionsForChannel(
+                unsigned int channel,
+                unsigned int existing, unsigned int additional
+            );
         };
 
         /// Exception thrown when correction requested from a non-special channel.

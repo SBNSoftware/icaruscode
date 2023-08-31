@@ -8,12 +8,17 @@
 
 // ICARUS libraries
 #include "icaruscode/IcarusObj/OpDetWaveformMeta.h"
+#include "icaruscode/PMT/Data/WaveformRMS.h"
+#include "icarusalg/Utilities/TimeIntervalConfig.h"
+#include "icarusalg/Utilities/TimeInterval.h"
+#include "sbnobj/ICARUS/PMT/Data/WaveformBaseline.h"
 
 // LArSoft libraries
 #include "lardata/DetectorInfoServices/DetectorClocksService.h"
 #include "lardataalg/DetectorInfo/DetectorTimings.h"
 #include "lardataalg/DetectorInfo/DetectorTimingTypes.h" // electronics_time
 #include "lardataalg/Utilities/MultipleChoiceSelection.h"
+#include "lardataalg/Utilities/intervals_fhicl.h" // for intervals from FHiCL
 #include "larcorealg/CoreUtils/enumerate.h"
 #include "lardataobj/RawData/OpDetWaveform.h"
 
@@ -38,13 +43,17 @@
 
 
 //------------------------------------------------------------------------------
+using namespace util::quantities::time_literals;
+
+//------------------------------------------------------------------------------
 namespace icarus { class CopyBeamTimePMTwaveforms; }
 
 /**
  * @brief Creates a new list of PMT waveforms covering the specified time.
  * 
  * This module creates a new data product with all and only the PMT waveforms
- * from an existing data product that cover the configured time point.
+ * from an existing data product that overlap at least in part with the
+ * configured time interval.
  * Some associations are replicated: a new association is produced from the
  * elements of the new data product to the old elements associated to the
  * original PMT waveform data product; the associated data is not replicated.
@@ -71,7 +80,7 @@ namespace icarus { class CopyBeamTimePMTwaveforms; }
  * * `std::vector<raw::OpDetWaveform>`: a copy of the selected waveforms from
  *   the original collection (`Waveforms` configuration parameter).
  * * `art::Assns<raw::OpDetWaveform, sbn::OpDetWaveformMeta>` (optional):
- *   association of the copied waveforms to their existing metadata
+ *   association _of the copied waveforms_ to their existing metadata
  *   (`OpDetWaveformMetaAssns` configuration parameter)
  * 
  * 
@@ -92,10 +101,12 @@ namespace icarus { class CopyBeamTimePMTwaveforms; }
  * 
  * * `Waveforms` (input tag, mandatory): the list of optical detector waveforms
  *   to be processed.
- * * `SelectTime` (time point, default: `0 ns`): the time that the waveforms
- *   need to cover for them to be selected. The time is by default referring to
- *   the beam time (from `TriggerTag`), but a different reference time can be
- *   specified (`TimeReference` configuration parameter).
+ * * `SelectInterval` (time interval, default: `0` to `1 &micro;s): the time
+ *   interval that the waveforms need to partially cover for them to be
+ *   selected. The time is by default referring to the beam time (from
+ *   `TriggerTag`), but a different reference time can be specified
+ *   (`TimeReference` configuration parameter). An empty interval will save
+ *   nothing!
  *   The time requires a unit.
  * * `TimeReference` (one of: `BeamGate` (default), `electronics`) time scale
  *   the selected time lies on:
@@ -109,6 +120,17 @@ namespace icarus { class CopyBeamTimePMTwaveforms; }
  *       If specified empty, no metadata association is created. If the
  *       parameter is omitted, instead, the associated metadata is found with
  *       the same tag as `Waveforms`.
+ *     * `WaveformBaselineAssns` (input tag, optional): the tag of the
+ *       associations between the original data product above and its baseline
+ *       estimation.
+ *       If specified empty, no baseline association is created. If the
+ *       parameter is omitted, instead, the associated baselines are found with
+ *       the same tag as `Waveforms`.
+ *     * `WaveformRMSassns` (input tag, optional): the tag of the
+ *       associations between the original data product above and its baseline
+ *       estimation.
+ *       If specified empty, no RMS association is created. If the parameter is
+ *       omitted, instead, the same tag as `WaveformBaselineAssns` is used.
  * * `LogCategory` (string, default: `CopyBeamTimePMTwaveforms`): name of the
  *     output stream category for console messages (managed by MessageFacility
  *     library).
@@ -140,10 +162,9 @@ class icarus::CopyBeamTimePMTwaveforms: public art::SharedProducer {
       // mandatory
       };
     
-    fhicl::Atom<microseconds> SelectTime {
-      Name{ "SelectTime" },
-      Comment{ "time the selected waveforms need to include" },
-      microseconds{ 0 }
+    icarus::ns::fhicl::TimeIntervalOptionalTable<microseconds> SelectInterval {
+      Name{ "SelectInterval" },
+      Comment{ "time interval the selected waveforms need to overlap with" }
       };
     
     fhicl::Atom<std::string> TimeReference {
@@ -157,6 +178,20 @@ class icarus::CopyBeamTimePMTwaveforms: public art::SharedProducer {
       Name{ "OpDetWaveformMetaAssns" },
       Comment{ "tag of waveform metadata association"
         " (default as Waveforms, empty to skip)" 
+        }
+      };
+    
+    fhicl::OptionalAtom<art::InputTag> WaveformBaselineAssns {
+      Name{ "WaveformBaselineAssns" },
+      Comment{ "tag of waveform baseline association"
+        " (default as Waveforms, empty to skip)" 
+        }
+      };
+    
+    fhicl::OptionalAtom<art::InputTag> WaveformRMSassns {
+      Name{ "WaveformRMSassns" },
+      Comment{ "tag of waveform RMS association"
+        " (default as WaveformBaselineAssns, empty to skip)" 
         }
       };
     
@@ -201,13 +236,18 @@ class icarus::CopyBeamTimePMTwaveforms: public art::SharedProducer {
   using nanoseconds = util::quantities::intervals::nanoseconds;
   using electronics_time = detinfo::timescales::electronics_time;
   
+  using RelInterval_t = icarus::ns::util::TimeInterval<nanoseconds>;
+  using Interval_t = icarus::ns::util::TimeInterval<electronics_time>;
   
   // --- BEGIN -- Configuration variables --------------------------------------
   
   art::InputTag const fWaveformTag; ///< Input waveforms.
   art::InputTag const fWaveMetaTag; ///< Input waveform metadata associations.
+  art::InputTag const fWaveBaselineTag; ///< Input waveform baseline assns.
+  art::InputTag const fWaveRMStag; ///< Input waveform RMS associations.
   
-  nanoseconds const fTargetTime; ///< Time the selected waveforms contain.
+  /// Time interval the selected waveforms cross.
+  RelInterval_t const fTargetInterval;
   TimeReference_t const fTimeReference; ///< Reference for the target time.
   
   /// Message facility stream category for output.
@@ -227,13 +267,19 @@ class icarus::CopyBeamTimePMTwaveforms: public art::SharedProducer {
   electronics_time getReferenceTime
     (detinfo::DetectorTimings const& detTimings) const;
   
-  /// Returns whether `waveform` includes `time`.
-  bool contains
-    (electronics_time time, raw::OpDetWaveform const& waveform) const;
+  /// Returns whether `waveform` overlaps with the `time` interval.
+  bool overlaps
+    (Interval_t const& time, raw::OpDetWaveform const& waveform) const;
   
+  
+  enum Assns_t { Metadata, Baseline, RMS };
   
   /// Returns whether the configuration requested copying metadata associations.
-  bool doWaveMetaAssns() const { return !fWaveMetaTag.empty(); }
+  bool doAssns(Assns_t which) const;
+  
+  
+  /// Time interval used as default if none is specified.
+  static constexpr RelInterval_t DefaultInterval{ 0_us, 1_us };
   
 }; // class icarus::CopyBeamTimePMTwaveforms
 
@@ -285,11 +331,14 @@ icarus::CopyBeamTimePMTwaveforms::CopyBeamTimePMTwaveforms
   (Parameters const& config, art::ProcessingFrame const&)
   : art::SharedProducer(config)
   // configuration
-  , fWaveformTag  { config().Waveforms() }
-  , fWaveMetaTag  { config().OpDetWaveformMetaAssns().value_or(fWaveformTag) }
-  , fTargetTime   { config().SelectTime() }
-  , fTimeReference{ config().getTimeReference() }
-  , fLogCategory  { config().LogCategory() }
+  , fWaveformTag    { config().Waveforms() }
+  , fWaveMetaTag    { config().OpDetWaveformMetaAssns().value_or(fWaveformTag) }
+  , fWaveBaselineTag{ config().WaveformBaselineAssns().value_or(fWaveformTag) }
+  , fWaveRMStag     { config().WaveformRMSassns().value_or(fWaveBaselineTag) }
+  , fTargetInterval
+      { makeTimeInterval(config().SelectInterval()).value_or(DefaultInterval) }
+  , fTimeReference  { config().getTimeReference() }
+  , fLogCategory    { config().LogCategory() }
   // cached
   , fOpticalTick{
     detinfo::makeDetectorTimings(
@@ -304,9 +353,17 @@ icarus::CopyBeamTimePMTwaveforms::CopyBeamTimePMTwaveforms
   // input data declaration
   //
   consumes<std::vector<raw::OpDetWaveform>>(fWaveformTag);
-  if (doWaveMetaAssns()) {
+  if (doAssns(Metadata)) {
     consumes<art::Assns<raw::OpDetWaveform, sbn::OpDetWaveformMeta>>
       (fWaveMetaTag);
+  }
+  if (doAssns(Baseline)) {
+    consumes<art::Assns<raw::OpDetWaveform, icarus::WaveformBaseline>>
+      (fWaveBaselineTag);
+  }
+  if (doAssns(RMS)) {
+    consumes<art::Assns<raw::OpDetWaveform, icarus::WaveformRMS>>
+      (fWaveRMStag);
   }
   
   
@@ -314,8 +371,14 @@ icarus::CopyBeamTimePMTwaveforms::CopyBeamTimePMTwaveforms
   // output data declaration
   //
   produces<std::vector<raw::OpDetWaveform>>();
-  if (doWaveMetaAssns()) {
+  if (doAssns(Metadata)) {
     produces<art::Assns<raw::OpDetWaveform, sbn::OpDetWaveformMeta>>();
+  }
+  if (doAssns(Baseline)) {
+    produces<art::Assns<raw::OpDetWaveform, icarus::WaveformBaseline>>();
+  }
+  if (doAssns(RMS)) {
+    produces<art::Assns<raw::OpDetWaveform, icarus::WaveformRMS>>();
   }
   
   
@@ -328,13 +391,25 @@ icarus::CopyBeamTimePMTwaveforms::CopyBeamTimePMTwaveforms
     << "Configuration:"
     << "\n - input waveforms: '" << fWaveformTag.encode() << '\''
     ;
-  if (doWaveMetaAssns()) {
+  if (doAssns(Metadata)) {
     log << "\n - waveform metadata: associated in '" << fWaveMetaTag.encode()
       << "'";
   }
-  log << "\n - selection time:";
-  if (fTargetTime != nanoseconds{ 0.0 }) log << " " << fTargetTime << " from";
-  log << Config::TimeReferenceSelector.get(fTimeReference).name();
+  if (doAssns(Baseline)) {
+    log << "\n - waveform baselines: associated in '"
+      << fWaveBaselineTag.encode() << "'";
+  }
+  if (doAssns(Metadata)) {
+    log << "\n - waveform RMS: associated in '" << fWaveRMStag.encode() << "'";
+  }
+  if (fTargetInterval.empty()) {
+    mf::LogWarning{ fLogCategory }
+      << "Empty target interval specified: no waveform will be saved!";
+  }
+  else {
+    log << "\n - selection interval: " << fTargetInterval << " ("
+      << Config::TimeReferenceSelector.get(fTimeReference).name() << ")";
+  }
   
 } // icarus::CopyBeamTimePMTwaveforms::CopyBeamTimePMTwaveforms()
 
@@ -355,22 +430,50 @@ void icarus::CopyBeamTimePMTwaveforms::produce
   //
   // fetch input
   //
-  auto const& waveformHandle
-    = event.getValidHandle<std::vector<raw::OpDetWaveform>>(fWaveformTag);
+  auto const& waveforms
+    = event.getProduct<std::vector<raw::OpDetWaveform>>(fWaveformTag);
 
   art::Assns<raw::OpDetWaveform, sbn::OpDetWaveformMeta> const* waveMetaAssns
-    = doWaveMetaAssns()
+    = doAssns(Metadata)
     ? &(event.getProduct<art::Assns<raw::OpDetWaveform, sbn::OpDetWaveformMeta>>
       (fWaveMetaTag))
     : nullptr
     ;
+  art::Assns<raw::OpDetWaveform, icarus::WaveformBaseline> const*
+  waveBaselineAssns
+    = doAssns(Baseline)
+    ? &(event.getProduct<art::Assns<raw::OpDetWaveform, icarus::WaveformBaseline>>
+      (fWaveBaselineTag))
+    : nullptr
+    ;
+  art::Assns<raw::OpDetWaveform, icarus::WaveformRMS> const* waveRMSassns
+    = doAssns(RMS)
+    ? &(event.getProduct<art::Assns<raw::OpDetWaveform, icarus::WaveformRMS>>
+      (fWaveRMStag))
+    : nullptr
+    ;
   
-  if (waveMetaAssns && (waveMetaAssns->size() != waveformHandle->size())) {
-    // the assumption: the associations are in the same order as the
-    // original waveforms, and none is missing; this allows us to skip
-    // art::FindOneP calls. If not true... art::FindOneP is a way.
+  // the assumption: the associations are in the same order as the
+  // original waveforms, and none is missing; this allows us to skip
+  // art::FindOneP calls. If not true... art::FindOneP is a way.
+  if (waveMetaAssns && (waveMetaAssns->size() != waveforms.size())) {
     throw art::Exception{ art::errors::LogicError }
-      << "CopyBeamTimePMTwaveforms association logic assumption is broken (I)."
+      << "CopyBeamTimePMTwaveforms association logic assumption is broken"
+      " by metadata (I)."
+      "\nPlease contact the author for a fix.\n";
+  }
+  if (
+    waveBaselineAssns && (waveBaselineAssns->size() != waveforms.size())
+  ) {
+    throw art::Exception{ art::errors::LogicError }
+      << "CopyBeamTimePMTwaveforms association logic assumption is broken"
+      " by baselines (I)."
+      "\nPlease contact the author for a fix.\n";
+  }
+  if (waveRMSassns && (waveRMSassns->size() != waveforms.size())) {
+    throw art::Exception{ art::errors::LogicError }
+      << "CopyBeamTimePMTwaveforms association logic assumption is broken"
+      " by RMS (I)."
       "\nPlease contact the author for a fix.\n";
   }
   
@@ -384,14 +487,14 @@ void icarus::CopyBeamTimePMTwaveforms::produce
     mf::LogDebug(fLogCategory)
       << "Event " << event.id() << " has beam gate starting at " << beamGateTime
       << " and trigger at " << triggerTime << "."
-      << "\nNow extracting information from " << waveformHandle->size()
+      << "\nNow extracting information from " << waveforms.size()
         << " waveforms."
       ;
   }
   
-  electronics_time const targetTime
-    = getReferenceTime(detTimings) + fTargetTime;
-  mf::LogDebug{ fLogCategory } << "Target time: " << targetTime;
+  Interval_t const targetInterval
+    = getReferenceTime(detTimings) + fTargetInterval;
+  mf::LogDebug{ fLogCategory } << "Target interval: " << targetInterval;
   
   //
   // selection and copies
@@ -399,17 +502,29 @@ void icarus::CopyBeamTimePMTwaveforms::produce
   std::vector<raw::OpDetWaveform> selWaveforms;
   std::unique_ptr<art::Assns<raw::OpDetWaveform, sbn::OpDetWaveformMeta>>
     selWaveMetaAssns
-    = doWaveMetaAssns()
+    = doAssns(Metadata)
     ? std::make_unique<art::Assns<raw::OpDetWaveform, sbn::OpDetWaveformMeta>>()
     : nullptr
     ;
+  std::unique_ptr<art::Assns<raw::OpDetWaveform, icarus::WaveformBaseline>>
+    selWaveBaselineAssns
+    = doAssns(Baseline)
+    ? std::make_unique<art::Assns<raw::OpDetWaveform, icarus::WaveformBaseline>>
+      ()
+    : nullptr
+    ;
+  std::unique_ptr<art::Assns<raw::OpDetWaveform, icarus::WaveformRMS>>
+    selWaveRMSassns
+    = doAssns(RMS)
+    ? std::make_unique<art::Assns<raw::OpDetWaveform, icarus::WaveformRMS>>()
+    : nullptr
+    ;
   
-  art::PtrMaker<raw::OpDetWaveform> const makeWaveformPtr
-    { event, waveformHandle.id() };
+  art::PtrMaker<raw::OpDetWaveform> const makeWaveformPtr{ event };
   
-  for (auto const& [ iWaveform, waveform ]: util::enumerate(*waveformHandle)) {
+  for (auto const& [ iWaveform, waveform ]: util::enumerate(waveforms)) {
     
-    if (!contains(targetTime, waveform)) continue;
+    if (!overlaps(targetInterval, waveform)) continue;
     
     mf::LogTrace{ fLogCategory } << "Waveform #" << iWaveform
       << " selected (channel " << waveform.ChannelNumber() << ", time "
@@ -421,7 +536,8 @@ void icarus::CopyBeamTimePMTwaveforms::produce
     //
     // associations
     //
-    if (doWaveMetaAssns()) {
+    art::Ptr<raw::OpDetWaveform> const wavePtr = makeWaveformPtr(iWaveform);
+    if (doAssns(Metadata)) {
       assert(selWaveMetaAssns);
       
       auto waveAssn = waveMetaAssns->at(iWaveform);
@@ -431,24 +547,61 @@ void icarus::CopyBeamTimePMTwaveforms::produce
         // art::FindOneP calls. If not true... art::FindOneP is a way.
         throw art::Exception{ art::errors::LogicError }
           << "CopyBeamTimePMTwaveforms association logic assumption is broken"
-            " (II)."
+            " by metadata (II)."
             "\nPlease contact the author for a fix.\n";
       }
-      
-      art::Ptr<raw::OpDetWaveform> const wavePtr = makeWaveformPtr(iWaveform);
       
       selWaveMetaAssns->addSingle(wavePtr, waveAssn.second);
       
     } // if waveform metadata association
     
+    if (doAssns(Baseline)) {
+      assert(selWaveBaselineAssns);
+      
+      auto waveAssn = waveBaselineAssns->at(iWaveform);
+      if (waveAssn.second.key() != iWaveform) {
+        // the assumption: the associations are in the same order as the
+        // original waveforms, and none is missing; this allows us to skip
+        // art::FindOneP calls. If not true... art::FindOneP is a way.
+        throw art::Exception{ art::errors::LogicError }
+          << "CopyBeamTimePMTwaveforms association logic assumption is broken"
+            " by baseline (II)."
+            "\nPlease contact the author for a fix.\n";
+      }
+      
+      selWaveBaselineAssns->addSingle(wavePtr, waveAssn.second);
+      
+    } // if waveform baseline association
+    
+    if (doAssns(RMS)) {
+      assert(selWaveRMSassns);
+      
+      auto waveAssn = waveRMSassns->at(iWaveform);
+      if (waveAssn.second.key() != iWaveform) {
+        // the assumption: the associations are in the same order as the
+        // original waveforms, and none is missing; this allows us to skip
+        // art::FindOneP calls. If not true... art::FindOneP is a way.
+        throw art::Exception{ art::errors::LogicError }
+          << "CopyBeamTimePMTwaveforms association logic assumption is broken"
+            " by RMS (II)."
+            "\nPlease contact the author for a fix.\n";
+      }
+      
+      selWaveRMSassns->addSingle(wavePtr, waveAssn.second);
+      
+    } // if waveform baseline association
+    
   } // for waveforms
-  
   
   //
   // store output
   //
+  mf::LogTrace{ fLogCategory }
+    << "Saving " << selWaveforms.size() << " selected waveforms.";
   event.put(moveToUniquePtr(selWaveforms));
-  if (doWaveMetaAssns()) event.put(std::move(selWaveMetaAssns));
+  if (doAssns(Metadata)) event.put(std::move(selWaveMetaAssns));
+  if (doAssns(Baseline)) event.put(std::move(selWaveBaselineAssns));
+  if (doAssns(RMS)) event.put(std::move(selWaveRMSassns));
   
 } // icarus::CopyBeamTimePMTwaveforms::produce()
 
@@ -476,20 +629,33 @@ auto icarus::CopyBeamTimePMTwaveforms::getReferenceTime
 
 
 //------------------------------------------------------------------------------
-bool icarus::CopyBeamTimePMTwaveforms::contains
-  (electronics_time time, raw::OpDetWaveform const& waveform) const
+bool icarus::CopyBeamTimePMTwaveforms::overlaps
+  (Interval_t const& time, raw::OpDetWaveform const& waveform) const
 {
   
   using util::quantities::points::microsecond;
   
   electronics_time const startWaveformTime
     { microsecond{ waveform.TimeStamp() } };
-  electronics_time const endWaveformTime
-    = startWaveformTime + fOpticalTick * waveform.size();
+    
+  Interval_t overlap
+    { startWaveformTime, startWaveformTime + fOpticalTick * waveform.size() };
+  overlap.intersect(time);
   
-  return (time >= startWaveformTime) && (time < endWaveformTime);
+  return !overlap.empty();
   
-} // icarus::CopyBeamTimePMTwaveforms::contains()
+} // icarus::CopyBeamTimePMTwaveforms::overlaps()
+
+
+//------------------------------------------------------------------------------
+bool icarus::CopyBeamTimePMTwaveforms::doAssns(Assns_t which) const {
+  switch (which) {
+    case Metadata: return !fWaveMetaTag.empty();
+    case Baseline: return !fWaveBaselineTag.empty();
+    case RMS: return !fWaveRMStag.empty();
+    default: throw std::logic_error{ "Meh." };
+  } // switch
+} // icarus::CopyBeamTimePMTwaveforms::doAssns()
 
 
 //------------------------------------------------------------------------------

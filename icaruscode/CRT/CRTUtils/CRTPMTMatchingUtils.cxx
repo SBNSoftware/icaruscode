@@ -19,7 +19,7 @@
 #include <utility>
 #include <cmath>
 
-
+using namespace sbn::crt;
 // -----------------------------------------------------------------------------
 bool icarus::crt::flashInTime(double flashTime, int gateType, double gateDiff,
                  double gateWidth) {
@@ -120,7 +120,7 @@ icarus::crt::CRTMatches icarus::crt::CRTHitmatched(
 
 
 // -----------------------------------------------------------------------------
-icarus::crt::CRTPMTMatching icarus::crt::FillCRTPMT(FlashType const& flash)
+sbn::crt::CRTPMTMatching sbn::crt::FillCRTPMT(FlashType const& flash)
 {
   // UPDATE CRTPMTMatchingProducer class documentation when some missing items
   //        are added
@@ -157,6 +157,6 @@ int icarus::crt::makeFlashID
 
 int icarus::crt::makeFlashID
   (recob::OpFlash const* flash, int version /* = std::numeric_limits<int>::max() */)
-  { return flash? makeFlashID(*flash, version): icarus::crt::CRTPMTMatching::NoID; }
+  { return flash? makeFlashID(*flash, version): sbn::crt::CRTPMTMatching::NoID; }
 
 // -----------------------------------------------------------------------------

@@ -10,8 +10,8 @@
 #define ICARUSCODE_CRT_CRTUTILS_CRTPMTMATCHINGUTILS_H
 
 
-#include "icaruscode/IcarusObj/CRTPMTMatching.h"
-
+//#include "icaruscode/IcarusObj/CRTPMTMatching.h"
+#include "sbnobj/Common/CRT/CRTPMTMatching.hh"
 #include "larcoreobj/SimpleTypesAndConstants/geo_vectors.h"
 #include "sbnobj/Common/CRT/CRTHit.hh"
 #include "canvas/Persistency/Common/Ptr.h" 
@@ -32,27 +32,10 @@ namespace icarus::crt {
   struct CRTMatches {
     std::vector<CRTPMT> entering; ///< Matches from outside inward.
     std::vector<CRTPMT> exiting; ///< Matches from inside outward.
-    MatchType flashType; ///< Type of match.
+    sbn::crt::MatchType flashType; ///< Type of match.
   };
 
-  struct FlashType {
-    static constexpr auto NoID = icarus::crt::CRTPMTMatching::NoID;
-    
-    int flashID = NoID;
-    geo::Point_t flashPos;
-    double flashTime;
-    double flashGateTime;
-    double firstOpHitPeakTime;
-    double firstOpHitStartTime;
-    //bool matchBottomCRT;
-    bool inBeam;
-    bool inGate;
-    double flashPE;
-    double flashYWidth;
-    double flashZWidth;
-    MatchType classification;
-    std::vector<MatchedCRT> CRTmatches;
-  };
+
 
   /**
    * @brief Returns whether a flash is in time with the specified gate.
@@ -107,8 +90,6 @@ namespace icarus::crt {
     double flashTime, geo::Point_t const& flashpos,
     std::vector<art::Ptr<sbn::crt::CRTHit>>& crtHits, double interval, bool isRealData, double globalT0Offset,  bool matchBottomCRT);
 
-  /// Fills a `CRTPMTMatching` record out of the specified `flash` information.
-  CRTPMTMatching FillCRTPMT (FlashType const& flash);
 
   //@{
   /**
@@ -130,7 +111,35 @@ namespace icarus::crt {
   int makeFlashID
     (recob::OpFlash const* flash, int version = std::numeric_limits<int>::max());
   //@}
+} // end icarus::crt namespace 
 
-}
+namespace sbn::crt { 
+  struct FlashType {
+    //static constexpr auto NoID = icarus::crt::CRTPMTMatching::NoID;
+    static constexpr int NoID = std::numeric_limits<int>::min();
+    
+    int flashID = NoID;
+    geo::Point_t flashPos;
+    double flashTime;
+    double flashGateTime;
+    double firstOpHitPeakTime;
+    double firstOpHitStartTime;
+    //bool matchBottomCRT;
+    bool inBeam;
+    bool inGate;
+    double flashPE;
+    double flashYWidth;
+    double flashZWidth;
+    MatchType classification;
+    std::vector<MatchedCRT> CRTmatches;
+  };   
+    /// Fills a `CRTPMTMatching` record out of the specified `flash` information.
+  CRTPMTMatching FillCRTPMT (FlashType const& flash);
+
+} // end sbn::crt namespace 
+
+
+
+
 
 #endif // ICARUSCODE_CRT_CRTUTILS_CRTPMTMATCHINGUTILS_H

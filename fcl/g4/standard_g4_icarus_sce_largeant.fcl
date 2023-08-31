@@ -1,0 +1,5 @@
+#include "standard_g4_icarus.fcl"
+#include "enable_spacecharge_icarus.fcl"
+
+physics.simulate: [ rns, largeant ]
+

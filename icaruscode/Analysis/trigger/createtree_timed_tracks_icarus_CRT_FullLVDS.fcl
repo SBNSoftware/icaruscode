@@ -1,0 +1,33 @@
+#
+# File intended to run with the adders definition enabled, can be changed based on how you want to enable the different windows for emulation
+# Author: Jacob Zettlemoyer (jzettle@fnal.gov)
+#
+
+#include "createtree_timed_tracks_icarus_CRT.fcl"
+
+# ------------------------------------------------------------------------------
+# --- parameter customisation
+# ------------------------------------------------------------------------------
+# track selection: 0 is trigger, reference of the hardware trigger time;
+# track time from CRT matching is ~0.6 us earlier than the hardware trigger time, with RMS ~25 ns;
+# times are on the `anab::T0` timescale, which is trigger time scale in nanoseconds
+
+physics.filters.t0selectorW.MinT0: -750
+physics.filters.t0selectorW.MaxT0: -450
+
+physics.filters.t0selectorE.MinT0: -750
+physics.filters.t0selectorE.MaxT0: -450
+
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# trigger emulation around the track time
+# (which is itself ~0.6 us earlier than the hardware trigger time);
+# needs to be properly aligned with the PMT waveforms (not with hardware trigger timestamp)
+physics.producers.gatesFromTracksW.GateStartOffset: "-1 us"
+physics.producers.gatesFromTracksW.GateEndOffset:   "+1 us"
+
+physics.producers.gatesFromTracksE.GateStartOffset: "-1 us"
+physics.producers.gatesFromTracksE.GateEndOffset:   "+1 us"
+
+
+# ------------------------------------------------------------------------------
