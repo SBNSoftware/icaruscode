@@ -31,7 +31,7 @@
 #include "lardataobj/RecoBase/Wire.h"
 #include "lardata/ArtDataHelper/WireCreator.h"
 
-#include "icaruscode/IcarusObj/ChannelROI.h"
+#include "sbnobj/ICARUS/TPC/ChannelROI.h"
 
 ///creation of calibrated signals on wires
 namespace caldata {

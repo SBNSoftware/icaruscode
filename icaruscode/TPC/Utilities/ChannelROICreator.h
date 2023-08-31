@@ -15,7 +15,7 @@
 
 // LArSoft libraries
 #include "larcoreobj/SimpleTypesAndConstants/RawTypes.h" // raw::ChannelID_t
-#include "icaruscode/IcarusObj/ChannelROI.h"
+#include "sbnobj/ICARUS/TPC/ChannelROI.h"
 
 namespace raw { class RawDigit; }
 
