@@ -15,6 +15,7 @@ outputs.rootOutput.outputCommands:         ["keep *_*_*_*",
                                             "drop *_decon1droi_*_*", 
                                             "drop *_decon2droi*_*_*", 
                                             "drop recob::Wire*_roifinder_*_*",
-                                            "drop recob::Wire*_roifinder2d_*_*" 
+                                            "drop recob::Wire*_roifinder2d_*_*",
+                                            "keep *_daq_simpleSC_*" 
                                            ]
 
