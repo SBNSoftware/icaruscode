@@ -1,0 +1,12 @@
+BEGIN_PROLOG
+
+standard_testwiremod:
+{
+  module_type: "TestWireModifier"
+  WireLabelVec: [ "decon1droi:PHYSCRATEDATATPCWW",
+                  "decon1droi:PHYSCRATEDATATPCWE",
+                  "decon1droi:PHYSCRATEDATATPCEW",
+                  "decon1droi:PHYSCRATEDATATPCEE" ]
+}
+
+END_PROLOG
