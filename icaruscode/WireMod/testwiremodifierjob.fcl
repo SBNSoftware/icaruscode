@@ -1,0 +1,45 @@
+#include "services_common_icarus.fcl"
+
+#include "TestWireModifier.fcl"
+
+process_name: TestWireMod
+
+services:
+{
+  # what services do we need?
+  @table::icarus_basic_services
+  TFileService: { fileName: "testwiremod_hist.root" } # we will want to store some histograms at some point
+}
+
+source:
+{
+}
+
+physics:
+{
+  producers:
+  {
+    wiremod: @local::standard_testwiremod
+  }
+
+  wmproduce: [ wiremod ]
+
+  # you gotta have an output stream
+  stream1: [ out1 ]
+
+  # trigger_paths is for anything that modifies art::Events
+  # ie what we want to do
+  trigger_paths: [ wmproduce ]
+
+  # end_paths is for stuff that doesn't modify art::Events
+  end_paths: [ stream1 ]
+}
+
+outputs:
+{
+  out1:
+  {
+    module_type: RootOutput
+    fileName: "testwiremod_out.root"
+  }
+}
