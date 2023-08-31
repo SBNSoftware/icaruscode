@@ -249,7 +249,8 @@ icarus_stage0_PMT:                 [ triggerconfig,
                                      ophituncorrected,
                                      ophit,
                                      opflashCryoE,
-                                     opflashCryoW
+                                     opflashCryoW,
+                                     daqPMTonbeam
                                    ]
 
 icarus_stage0_PMT_BNB:             [ @sequence::icarus_stage0_PMT,
