@@ -72,12 +72,6 @@ public:
         fhicl::Comment("Raw waveform input label to be used")
 	    };
 	    
-    fhicl::Atom<std::string> OutputFile {
-      fhicl::Name("OutputFile"),
-      fhicl::Comment("output ROOT tree filename"),
-      "wf_output.root" // default
-    };
-    
   }; // struct Config
 
   using Parameters = art::EDAnalyzer::Table<Config>;
@@ -92,12 +86,12 @@ public:
 
 private:
 
+  art::ServiceHandle<art::TFileService> tfs;
+  
   /// inputs
   art::InputTag const fInputLabel;
-  std::string const fOutputFile;
 
   /// data members
-  TFile *fFile;
   TTree *fTree;
   int m_run;
   int m_event;
@@ -113,7 +107,6 @@ private:
 icarus::OpDetWaveformDumper::OpDetWaveformDumper(Parameters const& config)
   : art::EDAnalyzer(config)
   , fInputLabel{ config().InputLabel() }
-  , fOutputFile{ config().OutputFile() }
 {
     // configuration checks
     if (fInputLabel.empty()) {
@@ -129,9 +122,7 @@ icarus::OpDetWaveformDumper::OpDetWaveformDumper(Parameters const& config)
 // ---------------------------------------------------------------------------
 void icarus::OpDetWaveformDumper::beginJob() {
 
-  fFile = new TFile(fOutputFile.c_str(),"RECREATE");
-    
-  fTree = new TTree("wftree", "waveform info" );
+  fTree = tfs->make<TTree>("wftree", "waveform info" );
   fTree->Branch("run",&m_run);
   fTree->Branch("event",&m_event);
   fTree->Branch("timestamp",&m_timestamp);
@@ -167,9 +158,6 @@ void icarus::OpDetWaveformDumper::analyze(art::Event const& e)
 // ----------------------------------------------------------------------------
 void icarus::OpDetWaveformDumper::endJob()
 {
-  fFile->cd();
-  fTree->Write();
-  fFile->Close();
 }
 
 // -----------------------------------------------------------------------------

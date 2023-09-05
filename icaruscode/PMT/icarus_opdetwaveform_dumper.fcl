@@ -6,7 +6,6 @@ icarus_opdetwaveform_dumper:
 {
   module_type:         "OpDetWaveformDumper"
   InputLabel:          "daqPMT"
-  OutputFile:          "wf_output.root"
 }
 
 END_PROLOG
