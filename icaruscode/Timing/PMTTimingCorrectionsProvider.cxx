@@ -207,10 +207,10 @@ void icarusDB::PMTTimingCorrectionsProvider::readTimeCorrectionDatabase(const ar
     if( fVerbose ) {
 
         mf::LogInfo(fLogCategory) << "Dump information from database " << std::endl;
-        mf::LogInfo(fLogCategory) << "channel, trigger cable delay, reset cable delay, laser corrections, muons corrections" << std::endl;
-
+        mf::LogVerbatim(fLogCategory) << "channel, trigger cable delay, reset cable delay, laser corrections, muons corrections" << std::endl;
         for( auto const & [key, value] : fDatabaseTimingCorrections ){
-            mf::LogInfo(fLogCategory) << key << " " 
+            mf::LogVerbatim(fLogCategory) 
+                  << key << " " 
                   << value.triggerCableDelay << "," 
                   << value.resetCableDelay << ", " 
                   << value.laserCableDelay << ", "
