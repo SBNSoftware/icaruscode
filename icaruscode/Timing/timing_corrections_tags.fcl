@@ -31,7 +31,7 @@ PMTtimingCorrectionsTags_Run2_August2023: {
 PMTtimingCorrectionsTags_Run2_Sept2023: {
   CablesTag:    "v2r1"  # tables for run>=0 (null), run>=8046, run>=9301, run>=9628 and run>=9773
   LaserTag:     "v2r1"  # tables for run>=0 (null), run>=8046, run>=9301, run>=9628 and run>=9773
-  CosmicsTag:   "v1r0"  # tables for run>=0 (null) and run>=8046 
+  CosmicsTag:   "v2r0"  # tables for run>=0 (null), run>=8046 and run>=9301 (null) 
 }
 
 END_PROLOG
