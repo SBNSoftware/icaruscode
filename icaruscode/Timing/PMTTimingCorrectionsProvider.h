@@ -23,7 +23,6 @@
 #include "icaruscode/Timing/PMTTimingCorrections.h"
 
 // Database interface helpers
-#include "larevt/CalibrationDBI/Providers/DBFolder.h"
 
 // C/C++ standard libraries
 #include <string>
@@ -53,7 +52,10 @@ namespace icarusDB{ class PMTTimingCorrectionsProvider; }
  * 
  * Configuration parameters
  * -------------------------
- * * `Tag` (default: `false`): Tag for database versioning
+ * * `CorrectionsTags`: tags to select the correction versions:
+ *     * `CablesTag` (default: `v1r0`): correction for cable delay.
+ *     * `LaserTag` (default: `v1r0`): first order PMT time correction, from laser data.
+ *     * `CosmicsTag` (default: `v1r0`): second order PMT time correction, from cosmic rays.
  * * `Verbose` (default: `false`): Print-out the corrections read from the database.
  * * `LogCategory` (default: `PMTTimingCorrection")
  *
@@ -94,7 +96,6 @@ class icarusDB::PMTTimingCorrectionsProvider : public PMTTimingCorrections {
 
         bool fVerbose = false; ///< Whether to print the configuration we read.
         std::string fLogCategory; ///< Category tag for messages.
-	fhicl::ParameterSet fTags; ///< List of database tags
 	std::string fCablesTag;  ///< Tag for cable corrections database.	
 	std::string fLaserTag;   ///< Tag for laser corrections database.
 	std::string fCosmicsTag; ///< Tag for cosmics corrections database.	

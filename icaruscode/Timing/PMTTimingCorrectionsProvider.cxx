@@ -27,15 +27,15 @@ icarusDB::PMTTimingCorrectionsProvider::PMTTimingCorrectionsProvider
     (const fhicl::ParameterSet& pset) 
     : fVerbose{ pset.get<bool>("Verbose", false) }
     , fLogCategory{ pset.get<std::string>("LogCategory", "PMTTimingCorrection") }
-    , fTags{ pset.get<fhicl::ParameterSet>("CorrectionsTags") }
     { 
-	fCablesTag  = fTags.get<std::string>("CablesTag", "v1r0");
-	fLaserTag   = fTags.get<std::string>("LaserTag", "v1r0");
-	fCosmicsTag = fTags.get<std::string>("CosmicsTag", "v1r0");
+        fhicl::ParameterSet const tags{ pset.get<fhicl::ParameterSet>("CorrectionsTags") };
+	fCablesTag  = tags.get<std::string>("CablesTag", "v1r0");
+	fLaserTag   = tags.get<std::string>("LaserTag", "v1r0");
+	fCosmicsTag = tags.get<std::string>("CosmicsTag", "v1r0");
 	if( fVerbose ) mf::LogInfo(fLogCategory) << "Database tags for timing corrections:\n"
 						 << "Cables corrections  " << fCablesTag << "\n"  
 						 << "Laser corrections   " << fLaserTag  << "\n"
-						 << "Cosmics corrections " << fCosmicsTag << std::endl;
+						 << "Cosmics corrections " << fCosmicsTag;
     }
 
 // -------------------------------------------------------------------------------
@@ -51,7 +51,7 @@ uint64_t icarusDB::PMTTimingCorrectionsProvider::RunToDatabaseTimestamp( uint32_
    uint64_t timestamp = runNum+1000000000;
    timestamp *= 1000000000;
 
-   if( fVerbose ) mf::LogInfo(fLogCategory) << "Run " << runNum << " corrections from DB timestamp " << timestamp << std::endl;
+   if( fVerbose ) mf::LogInfo(fLogCategory) << "Run " << runNum << " corrections from DB timestamp " << timestamp;
    
    return timestamp;
 }
@@ -72,11 +72,11 @@ void icarusDB::PMTTimingCorrectionsProvider::ReadPMTCablesCorrections( uint32_t 
     std::vector<unsigned int> channelList;
     if (int res = db.GetChannelList(channelList); res != 0) {
       throw cet::exception
-        ( "PMTTimingCorrectionsProvider: GetChannelList() returned " + std::to_string(res) + " on run " + std::to_string(run) + " query in " + dbname);
+        ( "PMTTimingCorrectionsProvider" ) << "GetChannelList() returned " << res << " on run " << run << " query in " << dbname << "\n";
     }
     
     if (channelList.empty()) {
-      throw cet::exception("PMTTimingCorrectionsProvider: got an empty channel list for run " + std::to_string(run) + " in " + dbname);
+      throw cet::exception("PMTTimingCorrectionsProvider") << "Got an empty channel list for run " << run << " in " << dbname << "\n";
     }
 
     for( auto channel : channelList ) {
@@ -84,17 +84,17 @@ void icarusDB::PMTTimingCorrectionsProvider::ReadPMTCablesCorrections( uint32_t 
         // PPS reset correction
         double reset_distribution_delay = 0;
         int error  = db.GetNamedChannelData( channel, "reset_distribution_delay", reset_distribution_delay );
-        if( error ) throw cet::exception( "Encountered error (code " + std::to_string(error) + ") while trying to access 'reset_distribution_delay' on table " + dbname );
+        if( error ) throw cet::exception("PMTTimingCorrectionsProvider") << "Encountered error (code " << error << ") while trying to access 'reset_distribution_delay' on table " << dbname << "\n";
 
         // Trigger cable delay
         double trigger_reference_delay = 0;
         error  = db.GetNamedChannelData( channel, "trigger_reference_delay", trigger_reference_delay );
-        if( error ) throw cet::exception( "Encountered error (code " + std::to_string(error) + ") while trying to access 'trigger_reference_delay' on table " + dbname );
+        if( error ) throw cet::exception( "PMTTimingCorrectionsProvider" ) << Encountered error (code " << error << ") while trying to access 'trigger_reference_delay' on table " << dbname << "\n";
 
         // Phase correction
         double phase_correction = 0;
 	error = db.GetNamedChannelData( channel, "phase_correction", phase_correction );
-        if( error ) throw cet::exception( "Encountered error (code " + std::to_string(error) + ") while trying to access 'phase_correction' on table " + dbname );
+        if( error ) throw cet::exception( "PMTTimingCorrectionsProvider" ) << "Encountered error (code " << error <<  ") while trying to access 'phase_correction' on table " << dbname << "\n";
    
         /// This is the delay due to the cables connecting the 'global' trigger crate FPGA to the spare channel of the first digitizer in each VME crates. 
         /// The phase correction is an additional fudge factor 
@@ -130,11 +130,11 @@ void icarusDB::PMTTimingCorrectionsProvider::ReadLaserCorrections( uint32_t run 
     std::vector<unsigned int> channelList;
     if (int res = db.GetChannelList(channelList); res != 0) {
       throw cet::exception
-        ( "PMTTimingCorrectionsProvider: GetChannelList() returned " + std::to_string(res) + " on run " + std::to_string(run) + " query in " + dbname);
+        ( "PMTTimingCorrectionsProvider" ) << "GetChannelList() returned " << res << " on run " << run << " query in " << dbname << "\n";
     }
     
     if (channelList.empty()) {
-      throw cet::exception("PMTTimingCorrectionsProvider: got an empty channel list for run " + std::to_string(run) + " in " + dbname);
+      throw cet::exception("PMTTimingCorrectionsProvider") << "got an empty channel list for run " << run << " in " << dbname << "\n";
     }
 
     for( auto channel : channelList ) {
@@ -142,7 +142,7 @@ void icarusDB::PMTTimingCorrectionsProvider::ReadLaserCorrections( uint32_t run 
         // Laser correction
         double t_signal = 0;
         int error  = db.GetNamedChannelData( channel, "t_signal", t_signal );
-        if( error ) throw cet::exception( "Encountered error (code " + std::to_string(error) + ") while trying to access 't_signal' on table " + dbname );
+        if( error ) throw cet::exception( "PMTTimingCorrectionsProvider" ) << "Encountered error (code " << error << ") while trying to access 't_signal' on table " << dbname << "\n";
 
         /// pmt_laser_delay: delay from the Electron Transit time inside the PMT 
         /// and the PMT signal cable 
@@ -166,11 +166,11 @@ void icarusDB::PMTTimingCorrectionsProvider::ReadCosmicsCorrections( uint32_t ru
     std::vector<unsigned int> channelList;
     if (int res = db.GetChannelList(channelList); res != 0) {
       throw cet::exception
-        ( "PMTTimingCorrectionsProvider: GetChannelList() returned " + std::to_string(res) + " on run " + std::to_string(run) + " query in " + dbname);
+        ( "PMTTimingCorrectionsProvider" ) << "GetChannelList() returned " << res << " on run " << run << " query in " << dbname << "\n";
     }
 
     if (channelList.empty()) {
-      throw cet::exception("PMTTimingCorrectionsProvider: got an empty channel list for run " + std::to_string(run) + " in " + dbname);
+      throw cet::exception("PMTTimingCorrectionsProvider") << "Got an empty channel list for run " << run << " in " << dbname << "\n";
     }
 
     for( auto channel : channelList ) {
@@ -178,7 +178,7 @@ void icarusDB::PMTTimingCorrectionsProvider::ReadCosmicsCorrections( uint32_t ru
         // Cosmics correction
  	double mean_residual_ns = 0;
 	int error = db.GetNamedChannelData( channel, "mean_residual_ns", mean_residual_ns );
-        if( error ) throw cet::exception( "Encountered error (code " + std::to_string(error) + ") while trying to access 'mean_residual_ns' on table " + dbname );
+        if( error ) throw cet::exception( "PMTTimingCorrectionsProvider" ) << "Encountered error (code " << error << ") while trying to access 'mean_residual_ns' on table " << dbname << "\n";
 
         /// pmt_cosmics_residual: time residuals from downward going cosmics tracks 
         /// correcting for point-like laser emission and pmts that do not see laser light
