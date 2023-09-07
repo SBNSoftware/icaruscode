@@ -15,17 +15,15 @@
 #include "art/Framework/Principal/Run.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
 #include "cetlib_except/exception.h"
-#include "fhiclcpp/types/Atom.h"
-#include "fhiclcpp/types/Sequence.h"
-#include "cetlib_except/exception.h"
+#include "fhiclcpp/ParameterSet.h"
 
 // Local
 #include "icaruscode/Timing/PMTTimingCorrections.h"
 
-// Database interface helpers
-
 // C/C++ standard libraries
 #include <string>
+#include <map>
+#include <stdint.h>
 
 namespace icarusDB::details {
     
@@ -52,7 +50,7 @@ namespace icarusDB{ class PMTTimingCorrectionsProvider; }
  * 
  * Configuration parameters
  * -------------------------
- * * `CorrectionsTags`: tags to select the correction versions:
+ * * `CorrectionTags`: tags to select the correction versions:
  *     * `CablesTag` (default: `v1r0`): correction for cable delay.
  *     * `LaserTag` (default: `v1r0`): first order PMT time correction, from laser data.
  *     * `CosmicsTag` (default: `v1r0`): second order PMT time correction, from cosmic rays.
@@ -112,7 +110,7 @@ class icarusDB::PMTTimingCorrectionsProvider : public PMTTimingCorrections {
             }
 
 	/// Convert run number to internal database
-	uint64_t RunToDatabaseTimestamp(uint32_t run);
+	uint64_t RunToDatabaseTimestamp(uint32_t run) const;
 
         void ReadPMTCablesCorrections(uint32_t run);
 
