@@ -28,11 +28,11 @@ icarusDB::PMTTimingCorrectionsProvider::PMTTimingCorrectionsProvider
     : fVerbose{ pset.get<bool>("Verbose", false) }
     , fLogCategory{ pset.get<std::string>("LogCategory", "PMTTimingCorrection") }
     { 
-        fhicl::ParameterSet const tags{ pset.get<fhicl::ParameterSet>("CorrectionsTags") };
-	fCablesTag  = tags.get<std::string>("CablesTag", "v1r0");
-	fLaserTag   = tags.get<std::string>("LaserTag", "v1r0");
-	fCosmicsTag = tags.get<std::string>("CosmicsTag", "v1r0");
-	if( fVerbose ) mf::LogInfo(fLogCategory) << "Database tags for timing corrections:\n"
+        fhicl::ParameterSet const tags{ pset.get<fhicl::ParameterSet>("CorrectionTags") };
+        fCablesTag  = tags.get<std::string>("CablesTag");
+        fLaserTag   = tags.get<std::string>("LaserTag");
+        fCosmicsTag = tags.get<std::string>("CosmicsTag");
+        if( fVerbose ) mf::LogInfo(fLogCategory) << "Database tags for timing corrections:\n"
 						 << "Cables corrections  " << fCablesTag << "\n"  
 						 << "Laser corrections   " << fLaserTag  << "\n"
 						 << "Cosmics corrections " << fCosmicsTag;
@@ -89,7 +89,7 @@ void icarusDB::PMTTimingCorrectionsProvider::ReadPMTCablesCorrections( uint32_t 
         // Trigger cable delay
         double trigger_reference_delay = 0;
         error  = db.GetNamedChannelData( channel, "trigger_reference_delay", trigger_reference_delay );
-        if( error ) throw cet::exception( "PMTTimingCorrectionsProvider" ) << Encountered error (code " << error << ") while trying to access 'trigger_reference_delay' on table " << dbname << "\n";
+        if( error ) throw cet::exception( "PMTTimingCorrectionsProvider" ) << "Encountered error (code " << error << ") while trying to access 'trigger_reference_delay' on table " << dbname << "\n";
 
         // Phase correction
         double phase_correction = 0;
