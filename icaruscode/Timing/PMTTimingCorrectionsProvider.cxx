@@ -40,7 +40,7 @@ icarusDB::PMTTimingCorrectionsProvider::PMTTimingCorrectionsProvider
 
 // -------------------------------------------------------------------------------
 
-uint64_t icarusDB::PMTTimingCorrectionsProvider::RunToDatabaseTimestamp( uint32_t run ) {
+uint64_t icarusDB::PMTTimingCorrectionsProvider::RunToDatabaseTimestamp( uint32_t run ) const{
 
    // Run number to timestamp used in the db
    // DBFolder.h only takes 19 digit (= timestamp in nano second),
