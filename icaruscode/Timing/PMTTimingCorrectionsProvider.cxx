@@ -16,6 +16,7 @@
 
 // Database interface helpers
 #include "larevt/CalibrationDBI/Providers/DBFolder.h"
+#include "larevt/CalibrationDBI/IOVData/TimeStampDecoder.h"
 
 // C/C++ standard libraries
 #include <string>
@@ -68,6 +69,10 @@ void icarusDB::PMTTimingCorrectionsProvider::ReadPMTCablesCorrections( uint32_t 
 
     bool ret = db.UpdateData( RunToDatabaseTimestamp(run) ); // select table based on run number   
     mf::LogDebug(fLogCategory) << dbname + " corrections" << (ret? "": " not") << " updated for run " << run;
+    mf::LogTrace(fLogCategory)
+           << "Fetched IoV [ " << db.CachedStart().DBStamp() << " ; " << db.CachedEnd().DBStamp()
+           << " ] to cover t=" << RunToDatabaseTimestamp(run)
+           << " [=" << lariov::TimeStampDecoder::DecodeTimeStamp(RunToDatabaseTimestamp(run)).DBStamp() << "]";
 
     std::vector<unsigned int> channelList;
     if (int res = db.GetChannelList(channelList); res != 0) {
@@ -126,6 +131,10 @@ void icarusDB::PMTTimingCorrectionsProvider::ReadLaserCorrections( uint32_t run 
 
     bool ret = db.UpdateData( RunToDatabaseTimestamp(run) ); // select table based on run number   
     mf::LogDebug(fLogCategory) << dbname + " corrections" << (ret? "": " not") << " updated for run " << run;
+    mf::LogTrace(fLogCategory)
+           << "Fetched IoV [ " << db.CachedStart().DBStamp() << " ; " << db.CachedEnd().DBStamp()
+           << " ] to cover t=" << RunToDatabaseTimestamp(run)
+           << " [=" << lariov::TimeStampDecoder::DecodeTimeStamp(RunToDatabaseTimestamp(run)).DBStamp() << "]";
 
     std::vector<unsigned int> channelList;
     if (int res = db.GetChannelList(channelList); res != 0) {
@@ -162,6 +171,10 @@ void icarusDB::PMTTimingCorrectionsProvider::ReadCosmicsCorrections( uint32_t ru
 
     bool ret = db.UpdateData( RunToDatabaseTimestamp(run) ); // select table based on run number   
     mf::LogDebug(fLogCategory) << dbname + " corrections" << (ret? "": " not") << " updated for run " << run;
+    mf::LogTrace(fLogCategory)
+           << "Fetched IoV [ " << db.CachedStart().DBStamp() << " ; " << db.CachedEnd().DBStamp()
+           << " ] to cover t=" << RunToDatabaseTimestamp(run)
+           << " [=" << lariov::TimeStampDecoder::DecodeTimeStamp(RunToDatabaseTimestamp(run)).DBStamp() << "]";
 
     std::vector<unsigned int> channelList;
     if (int res = db.GetChannelList(channelList); res != 0) {
