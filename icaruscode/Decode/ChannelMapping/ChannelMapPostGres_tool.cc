@@ -141,6 +141,14 @@ ChannelMapPostGres::TableNameSets{
     , "Feb_channels"              // CRTsideMap
     , "topcrt_febs"               // CRTtopMap
     , "SideCRT_calibration_data"  // CRTsideCalibrationMap
+  },
+  TableNames_t{
+      "icarus_hw_readoutboard"    // TPCfragmentMap
+    , "icarus_hardware_prd"       // TPCreadoutBoardMap
+    , "Pmt_placement"             // PMTfragmentMap      TODO need the new table!
+    , "Feb_channels"              // CRTsideMap
+    , "topcrt_febs"               // CRTtopMap
+    , "SideCRT_calibration_data"  // CRTsideCalibrationMap
   }
 };
 
