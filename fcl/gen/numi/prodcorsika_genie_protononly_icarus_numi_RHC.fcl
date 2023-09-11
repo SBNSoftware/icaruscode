@@ -1,0 +1,3 @@
+#include "prodcorsika_genie_protononly_icarus_numi.fcl"
+
+physics.producers.generator: @local::icarus_genie_NuMI_RHC # from `genie_icarus_numi.fcl`

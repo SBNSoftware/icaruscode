@@ -2772,24 +2772,24 @@ double icarus::AnalysisTree::bdist(const recob::tracking::Point_t& pos)
   // Get geometry.
   art::ServiceHandle<geo::Geometry> geom;
 
-    geo::CryostatGeo const& cryo0 = geom->Cryostat(0);
-    geo::CryostatGeo const& cryo1 = geom->Cryostat(1);
+    geo::CryostatGeo const& cryo0 = geom->Cryostat(geo::CryostatID{0});
+    geo::CryostatGeo const& cryo1 = geom->Cryostat(geo::CryostatID{1});
     
     geo::TPCGeo const& tpc00 = cryo0.TPC(0);
-    TVector3 xyzcenter00 = tpc00.GetActiveVolumeCenter();
-    std::cout << xyzcenter00[0] << " " << xyzcenter00[1] << " " << xyzcenter00[2] << std::endl;
+    geo::Point_t xyzcenter00 = tpc00.GetActiveVolumeCenter();
+    std::cout << xyzcenter00.X() << " " << xyzcenter00.Y() << " " << xyzcenter00.Z() << std::endl;
     
     geo::TPCGeo const& tpc01 = cryo0.TPC(1);
-    TVector3 xyzcenter01 = tpc01.GetActiveVolumeCenter();
-    std::cout << xyzcenter01[0] << " " << xyzcenter01[1] << " " << xyzcenter01[2] << std::endl;
+    geo::Point_t xyzcenter01 = tpc01.GetActiveVolumeCenter();
+    std::cout << xyzcenter01.X() << " " << xyzcenter01.Y() << " " << xyzcenter01.Z() << std::endl;
     
     geo::TPCGeo const& tpc10 = cryo1.TPC(0);
-    TVector3 xyzcenter10 = tpc10.GetActiveVolumeCenter();
-    std::cout << xyzcenter10[0] << " " << xyzcenter10[1] << " " << xyzcenter10[2] << std::endl;
+    geo::Point_t xyzcenter10 = tpc10.GetActiveVolumeCenter();
+    std::cout << xyzcenter10.X() << " " << xyzcenter10.Y() << " " << xyzcenter10.Z() << std::endl;
     
     geo::TPCGeo const& tpc11 = cryo1.TPC(1);
-    TVector3 xyzcenter11 = tpc11.GetActiveVolumeCenter();
-    std::cout << xyzcenter11[0] << " " << xyzcenter11[1] << " " << xyzcenter11[2] << std::endl;
+    geo::Point_t xyzcenter11 = tpc11.GetActiveVolumeCenter();
+    std::cout << xyzcenter11.X() << " " << xyzcenter11.Y() << " " << xyzcenter11.Z() << std::endl;
     
     double h00=tpc00.ActiveHalfHeight();
     double w00=tpc00.ActiveHalfWidth();
@@ -2797,12 +2797,12 @@ double icarus::AnalysisTree::bdist(const recob::tracking::Point_t& pos)
     std::cout << h00 << " " << w00 << " " << l00 << std::endl;
     
     
-    double xmin = xyzcenter10[0]-w00;
-    double xmax = xyzcenter11[0]+w00;
-    double ymin = xyzcenter00[1]-h00;
-    double ymax = xyzcenter00[1]+h00;
-    double zmin = xyzcenter00[2]-l00/2;
-    double zmax = xyzcenter00[2]+l00/2;
+    double xmin = xyzcenter10.X()-w00;
+    double xmax = xyzcenter11.X()+w00;
+    double ymin = xyzcenter00.Y()-h00;
+    double ymax = xyzcenter00.Y()+h00;
+    double zmin = xyzcenter00.Z()-l00/2;
+    double zmax = xyzcenter00.Z()+l00/2;
 
     double d1;                             // Distance to right side (wires).
     double d2;   // Distance to left side (cathode).
@@ -2842,24 +2842,24 @@ double icarus::AnalysisTree::length(const simb::MCParticle& part, TVector3& star
   //double xmin = 0.;
 
     
-    geo::CryostatGeo const& cryo0 = geom->Cryostat(0);
-    geo::CryostatGeo const& cryo1 = geom->Cryostat(1);
+    geo::CryostatGeo const& cryo0 = geom->Cryostat(geo::CryostatID{0});
+    geo::CryostatGeo const& cryo1 = geom->Cryostat(geo::CryostatID{1});
     
     geo::TPCGeo const& tpc00 = cryo0.TPC(0);
-    TVector3 xyzcenter00 = tpc00.GetActiveVolumeCenter();
-    std::cout << xyzcenter00[0] << " " << xyzcenter00[1] << " " << xyzcenter00[2] << std::endl;
+    geo::Point_t xyzcenter00 = tpc00.GetActiveVolumeCenter();
+    std::cout << xyzcenter00.X() << " " << xyzcenter00.Y() << " " << xyzcenter00.Z() << std::endl;
     
     geo::TPCGeo const& tpc01 = cryo0.TPC(1);
-    TVector3 xyzcenter01 = tpc01.GetActiveVolumeCenter();
-    std::cout << xyzcenter01[0] << " " << xyzcenter01[1] << " " << xyzcenter01[2] << std::endl;
+    geo::Point_t xyzcenter01 = tpc01.GetActiveVolumeCenter();
+    std::cout << xyzcenter01.X() << " " << xyzcenter01.Y() << " " << xyzcenter01.Z() << std::endl;
     
     geo::TPCGeo const& tpc10 = cryo1.TPC(0);
-    TVector3 xyzcenter10 = tpc10.GetActiveVolumeCenter();
-    std::cout << xyzcenter10[0] << " " << xyzcenter10[1] << " " << xyzcenter10[2] << std::endl;
+    geo::Point_t xyzcenter10 = tpc10.GetActiveVolumeCenter();
+    std::cout << xyzcenter10.X() << " " << xyzcenter10.Y() << " " << xyzcenter10.Z() << std::endl;
     
     geo::TPCGeo const& tpc11 = cryo1.TPC(1);
-    TVector3 xyzcenter11 = tpc11.GetActiveVolumeCenter();
-    std::cout << xyzcenter11[0] << " " << xyzcenter11[1] << " " << xyzcenter11[2] << std::endl;
+    geo::Point_t xyzcenter11 = tpc11.GetActiveVolumeCenter();
+    std::cout << xyzcenter11.X() << " " << xyzcenter11.Y() << " " << xyzcenter11.Z() << std::endl;
     
     double h00=tpc00.ActiveHalfHeight();
     double w00=tpc00.ActiveHalfWidth();
@@ -2867,12 +2867,12 @@ double icarus::AnalysisTree::length(const simb::MCParticle& part, TVector3& star
     std::cout << h00 << " " << w00 << " " << l00 << std::endl;
 
     
-  double xmin = xyzcenter10[0]-w00;
-  double xmax = xyzcenter11[0]+w00;
-  double ymin = xyzcenter00[1]-h00;
-  double ymax = xyzcenter00[1]+h00;
-  double zmin = xyzcenter00[2]-l00/2;
-  double zmax = xyzcenter00[2]+l00/2;
+  double xmin = xyzcenter10.X()-w00;
+  double xmax = xyzcenter11.X()+w00;
+  double ymin = xyzcenter00.Y()-h00;
+  double ymax = xyzcenter00.Y()+h00;
+  double zmin = xyzcenter00.Z()-l00/2;
+  double zmax = xyzcenter00.Z()+l00/2;
   //double vDrift = 160*pow(10,-6);
 
   std::cout << "DET DIMENSIONS:   xmin = " << xmin << "  xmax = " << xmax << "  ymin = " << ymin << "  ymax = " << ymax << "  zmin = " << zmin << "  zmax = " << zmax << std::endl;

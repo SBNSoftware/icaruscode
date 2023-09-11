@@ -70,7 +70,7 @@ namespace daq
    *     * `TriggerCount()`: the trigger count from the beginning of the run.
    *     * `TriggerBits()`: includes the beam(s) with an open gate when the
    *         trigger happened (currently only one beam gate per trigger);
-   *         definitions are in `sbn::beamType` namespace.
+   *         definitions are in `sbn::bits::triggerSource` enumerator.
    * 
    *     It always includes a single entry (zero _might_ be supported).
    * * `std::vector<sim::BeamGateInfo>` containing information on the "main"
@@ -210,12 +210,12 @@ namespace daq
    *     information, including a dump of the trigger data fragment.
    * 
    */
-  class TriggerDecoder : public IDecoder
+  class TriggerDecoderV2 : public IDecoder
   {
     using microseconds = util::quantities::microsecond;
     using nanoseconds = util::quantities::nanosecond;
   public:
-    explicit TriggerDecoder(fhicl::ParameterSet const &pset);
+    explicit TriggerDecoderV2(fhicl::ParameterSet const &pset);
     
     virtual void consumes(art::ConsumesCollector& collector) override;
     virtual void produces(art::ProducesCollector&) override;
@@ -277,9 +277,6 @@ namespace daq
       static constexpr int Calib { 5 };
     }; 
     
-    static constexpr nanoseconds BNBgateDuration { 1600. };
-    static constexpr nanoseconds NuMIgateDuration { 9500. };
-    
     static std::string_view firstLine
       (std::string const& s, std::string const& endl = "\0\n\r"s);
     
@@ -301,11 +298,11 @@ namespace daq
   };
 
 
-  std::string const TriggerDecoder::CurrentTriggerInstanceName {};
-  std::string const TriggerDecoder::PreviousTriggerInstanceName { "previous" };
+  std::string const TriggerDecoderV2::CurrentTriggerInstanceName {};
+  std::string const TriggerDecoderV2::PreviousTriggerInstanceName { "previous" };
   
 
-  TriggerDecoder::TriggerDecoder(fhicl::ParameterSet const &pset)
+  TriggerDecoderV2::TriggerDecoderV2(fhicl::ParameterSet const &pset)
     : fDetTimings
       { art::ServiceHandle<detinfo::DetectorClocksService>()->DataForJob() }
   {
@@ -313,12 +310,12 @@ namespace daq
   }
 
   
-  void TriggerDecoder::consumes(art::ConsumesCollector& collector) {
+  void TriggerDecoderV2::consumes(art::ConsumesCollector& collector) {
     collector.consumes<icarus::TriggerConfiguration, art::InRun>
       (fTriggerConfigTag);
   }
   
-  void TriggerDecoder::produces(art::ProducesCollector& collector) 
+  void TriggerDecoderV2::produces(art::ProducesCollector& collector) 
   {
     collector.produces<TriggerCollection>(CurrentTriggerInstanceName);
     collector.produces<TriggerCollection>(PreviousTriggerInstanceName);
@@ -328,7 +325,7 @@ namespace daq
   }
     
 
-  void TriggerDecoder::configure(fhicl::ParameterSet const &pset) 
+  void TriggerDecoderV2::configure(fhicl::ParameterSet const &pset) 
   {
     fTriggerConfigTag = pset.get<std::string>("TrigConfigLabel");
     fDiagnosticOutput = pset.get<bool>("DiagnosticOutput", false);
@@ -347,7 +344,7 @@ namespace daq
     return;
   }
   
-  void TriggerDecoder::initializeDataProducts()
+  void TriggerDecoderV2::initializeDataProducts()
   {
     //use until different object chosen 
     //fTrigger = new raw::Trigger();
@@ -360,7 +357,7 @@ namespace daq
   }
   
   
-  icarus::ICARUSTriggerV2Fragment TriggerDecoder::makeTriggerFragment
+  icarus::ICARUSTriggerV2Fragment TriggerDecoderV2::makeTriggerFragment
     (artdaq::Fragment const& fragment) const
   {
     try {
@@ -379,10 +376,10 @@ namespace daq
           << sbndaq::dumpFragment(fragment);
       throw;
     }
-  } // TriggerDecoder::makeTriggerFragment()
+  } // TriggerDecoderV2::makeTriggerFragment()
 
   
-  icarus::ICARUSTriggerInfo TriggerDecoder::parseTriggerString
+  icarus::ICARUSTriggerInfo TriggerDecoderV2::parseTriggerString
     (std::string_view data) const
   {
     try {
@@ -401,10 +398,10 @@ namespace daq
         << data.length() << "-char long trigger string:\n==>|" << data << "|.";
       throw;
     }
-  } // TriggerDecoder::parseTriggerString()
+  } // TriggerDecoderV2::parseTriggerString()
 
 
-  icarus::KeyValuesData TriggerDecoder::parseTriggerStringAsCSV
+  icarus::KeyValuesData TriggerDecoderV2::parseTriggerStringAsCSV
     (std::string const& data) const
   {
     icarus::details::KeyedCSVparser parser;
@@ -423,20 +420,20 @@ namespace daq
         << "|<==\nError message: " << e.what() << std::endl;
       throw;
     }
-  } // TriggerDecoder::parseTriggerStringAsCSV()
+  } // TriggerDecoderV2::parseTriggerStringAsCSV()
   
 
-  void TriggerDecoder::setupRun(art::Run const& run) {
+  void TriggerDecoderV2::setupRun(art::Run const& run) {
     
     fTriggerConfiguration = fTriggerConfigTag.empty()
       ? nullptr
       : &(run.getProduct<icarus::TriggerConfiguration>(fTriggerConfigTag))
       ;
     
-  } // TriggerDecoder::setupRun()
+  } // TriggerDecoderV2::setupRun()
   
   
-  void TriggerDecoder::process_fragment(const artdaq::Fragment &fragment)
+  void TriggerDecoderV2::process_fragment(const artdaq::Fragment &fragment)
   {
     // artdaq_ts is reworked by the trigger board reader to match the corrected
     // trigger time; to avoid multiple (potentially inconsistent) corrections,
@@ -705,8 +702,15 @@ namespace daq
     // beam gate
     //
     
-    // beam gate width (read in microseconds, but we use it in nanoseconds)
-    nanoseconds const gateWidth = microseconds{ fTriggerConfiguration
+    // beam gate width (read in microseconds, but we use it in nanoseconds);
+    // we need to protect from some defective configurations where the (unused)
+    // beam gate duration is smaller than the veto time
+    icarus::TriggerConfiguration::GateConfig const* gateConfig
+      = fTriggerConfiguration
+      ? &(fTriggerConfiguration->gateConfig.at(value(beamGateBit))): nullptr
+      ;
+    nanoseconds const gateWidth = microseconds{
+      (gateConfig && (gateConfig->gateWidth > fTriggerConfiguration->vetoDelay))
       ? fTriggerConfiguration->getGateWidth(value(beamGateBit))
       : 0.0
       };
@@ -736,7 +740,7 @@ namespace daq
     return;
   }
 
-  void TriggerDecoder::outputDataProducts(art::Event &event)
+  void TriggerDecoderV2::outputDataProducts(art::Event &event)
   {
     //Place trigger data object into raw data store 
     event.put(std::move(fTrigger), CurrentTriggerInstanceName);
@@ -747,14 +751,14 @@ namespace daq
     return;
   }
 
-  std::string_view TriggerDecoder::firstLine
+  std::string_view TriggerDecoderV2::firstLine
     (std::string const& s, std::string const& endl /* = "\0\n\r" */)
   {
     return { s.data(), std::min(s.find_first_of(endl), s.size()) };
   }
   
 
-  std::uint64_t TriggerDecoder::encodeLVDSbits
+  std::uint64_t TriggerDecoderV2::encodeLVDSbits
     (short int cryostat, short int connector, std::uint64_t connectorWord)
   {
     /*
@@ -773,10 +777,10 @@ namespace daq
     assert(connectorWord == ((msw << 32ULL) | lsw));
     std::swap(lsw, msw);
     return (msw << 32ULL) | lsw;
-  } // TriggerDecoder::encodeLVDSbits()
+  } // TriggerDecoderV2::encodeLVDSbits()
   
   
-  sim::BeamType_t TriggerDecoder::simGateType(sbn::triggerSource source)
+  sim::BeamType_t TriggerDecoderV2::simGateType(sbn::triggerSource source)
   {
     switch (source) {
       case sbn::triggerSource::BNB:
@@ -791,9 +795,9 @@ namespace daq
         mf::LogWarning("TriggerDecoder") << "Unsupported trigger source " << name(source);
         return sim::kUnknown;
     } // switch source
-  } // TriggerDecoder::simGateType()
+  } // TriggerDecoderV2::simGateType()
   
   
-  DEFINE_ART_CLASS_TOOL(TriggerDecoder)
+  DEFINE_ART_CLASS_TOOL(TriggerDecoderV2)
 
 }

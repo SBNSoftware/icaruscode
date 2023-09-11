@@ -78,11 +78,11 @@ class icarus::opdet::PhotoelectronPulseFunction {
 
   // @{
   /**
-    * @brief Prints on stream the parameters of this shape.
-    * @param out the stream to write into
-    * @param indent indentation string, prepended to all lines except first
-    * @param indentFirst indentation string prepended to the first line
-    */
+   * @brief Prints on stream the parameters of this shape.
+   * @param out the stream to write into
+   * @param indent indentation string, prepended to all lines except first
+   * @param firstIndent indentation string prepended to the first line
+   */
   void dump(
     std::ostream& out,
     std::string const& indent, std::string const& firstIndent
@@ -95,11 +95,11 @@ class icarus::opdet::PhotoelectronPulseFunction {
 
   // @{
   /**
-    * @brief Returns the parameters of this shape as a descriptive string.
-    * @param indent indentation string, prepended to all lines except first
-    * @param indentFirst indentation string prepended to the first line
-    * @return a string with the parameters of this shape
-    */
+   * @brief Returns the parameters of this shape as a descriptive string.
+   * @param indent indentation string, prepended to all lines except first
+   * @param firstIndent indentation string prepended to the first line
+   * @return a string with the parameters of this shape
+   */
   std::string toString
     (std::string const& indent, std::string const& firstIndent) const;
   std::string toString(std::string const& indent = "") const
@@ -142,7 +142,7 @@ class icarus::opdet::PhotoelectronPulseFunction {
    * @brief Prints into the stream the parameters of this shape.
    * @param out the C++ output stream to write into
    * @param indent indentation string, prepended to all lines except first
-   * @param indentFirst indentation string prepended to the first line
+   * @param firstIndent indentation string prepended to the first line
    */
   virtual void doDump(
     std::ostream& out,

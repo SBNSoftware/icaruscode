@@ -64,6 +64,8 @@ private:
   std::vector<TTree*> _hittree_v;
   double _width;
   double _time;
+  double _start;
+  double _rise;
   double _amp;
   double _area;
   double _pe;
@@ -127,6 +129,8 @@ void ICARUSOpHitAna::beginJob()
     hittree->Branch("area",&_area,"area/D");
     hittree->Branch("width",&_width,"width/D");
     hittree->Branch("time",&_time,"time/D");
+    hittree->Branch("start",&_start,"start/D");
+    hittree->Branch("rise",&_rise,"rise/D");
     hittree->Branch("pe",&_pe,"pe/D");
     hittree->Branch("time_true",&_time_true,"time_true/D");
     hittree->Branch("pe_true",&_pe_true,"pe_true/D");
@@ -139,15 +143,13 @@ void ICARUSOpHitAna::beginJob()
   std::vector<double> minX, minY, minZ;
   std::vector<double> maxX, maxY, maxZ;
   auto const geop = lar::providerFrom<geo::Geometry>();
-  double PMTxyz[3];
   for(size_t opch=0; opch<geop->NOpChannels(); ++opch) {
-    geop->OpDetGeoFromOpChannel(opch).GetCenter(PMTxyz);
-    pmtX.push_back(PMTxyz[0]);
-    pmtY.push_back(PMTxyz[1]);
-    pmtZ.push_back(PMTxyz[2]);
+    auto const PMTxyz = geop->OpDetGeoFromOpChannel(opch).GetCenter();
+    pmtX.push_back(PMTxyz.X());
+    pmtY.push_back(PMTxyz.Y());
+    pmtZ.push_back(PMTxyz.Z());
   }
-  for(auto iter=geop->begin_TPC(); iter!=geop->end_TPC(); ++iter) {
-    auto const& tpc = (*iter);
+  for(auto const& tpc : geop->Iterate<geo::TPCGeo>()) {
     minX.push_back(tpc.BoundingBox().MinX());
     minY.push_back(tpc.BoundingBox().MinY());
     minZ.push_back(tpc.BoundingBox().MinZ());
@@ -244,6 +246,8 @@ void ICARUSOpHitAna::analyze(art::Event const& e)
       // fill simple info
       _ch=hit.OpChannel();
       _time  = hit.PeakTime();
+      _start = hit.StartTime();
+      _rise  = hit.RiseTime();
       _amp   = hit.Amplitude();
       _width = hit.Width();
       _area  = hit.Area();

@@ -364,9 +364,10 @@ void SnippetHit3DBuilderICARUS::configure(fhicl::ParameterSet const &pset)
     m_geometry = art::ServiceHandle<geo::Geometry const>{}.get();
 
     // Returns the wire pitch per plane assuming they will be the same for all TPCs
-    m_wirePitch[0] = m_geometry->WirePitch(0);
-    m_wirePitch[1] = m_geometry->WirePitch(1);
-    m_wirePitch[2] = m_geometry->WirePitch(2);
+    constexpr geo::TPCID tpcid{0, 0};
+    m_wirePitch[0] = m_geometry->WirePitch(geo::PlaneID{tpcid, 0});
+    m_wirePitch[1] = m_geometry->WirePitch(geo::PlaneID{tpcid, 1});
+    m_wirePitch[2] = m_geometry->WirePitch(geo::PlaneID{tpcid, 2});
 
     // Access ART's TFileService, which will handle creating and writing
     // histograms and n-tuples for us.
@@ -461,22 +462,30 @@ void SnippetHit3DBuilderICARUS::BuildChannelStatusVec(PlaneToWireToHitSetMap& pl
     m_channelStatus.resize(m_geometry->Nplanes());
 
     // Loop through views/planes to set the wire length vectors
+    constexpr geo::TPCID tpcid{0, 0};
     for(size_t idx = 0; idx < m_channelStatus.size(); idx++)
     {
-        m_channelStatus[idx] = ChannelStatusVec(m_geometry->Nwires(idx), 5);
+        m_channelStatus[idx] = ChannelStatusVec(m_geometry->Nwires(geo::PlaneID(tpcid, idx)), 5);
     }
 
     // Loop through the channels and mark those that are "bad"
     for(size_t channel = 0; channel < m_geometry->Nchannels(); channel++)
     {
-        if( !m_channelFilter->IsGood(channel))
-        {
-            std::vector<geo::WireID>                wireIDVec = m_geometry->ChannelToWire(channel);
-            geo::WireID                             wireID    = wireIDVec[0];
-            lariov::ChannelStatusProvider::Status_t chanStat  = m_channelFilter->Status(channel);
+        try
+        {  
+            if( m_channelFilter->IsPresent(channel) && !m_channelFilter->IsGood(channel))
+            {
+                std::vector<geo::WireID>                wireIDVec = m_geometry->ChannelToWire(channel);
+                geo::WireID                             wireID    = wireIDVec[0];
+                lariov::ChannelStatusProvider::Status_t chanStat  = m_channelFilter->Status(channel);
 
-            m_channelStatus[wireID.Plane][wireID.Wire] = chanStat;
-            m_numBadChannels++;
+                m_channelStatus[wireID.Plane][wireID.Wire] = chanStat;
+                m_numBadChannels++;
+            }
+        }
+        catch(...)
+        {
+            mf::LogDebug("SnippetHit3D") << "--> Channel: " << channel << " threw exception so we will skip" << std::endl;
         }
     }
 
@@ -590,7 +599,9 @@ void SnippetHit3DBuilderICARUS::BuildHit3D(reco::HitPairList& hitPairList) const
 
     // The first task is to take the lists of input 2D hits (a map of view to sorted lists of 2D hits)
     // and then to build a list of 3D hits to be used in downstream processing
+    std::cout << "--> Calling BuildChannelStatusVec" << std::endl;
     BuildChannelStatusVec(m_planeToWireToHitSetMap);
+    std::cout << "--- done with channel status building" << std::endl;
 
     size_t numHitPairs = BuildHitPairMap(m_planeToSnippetHitMap, hitPairList);
 
@@ -1455,7 +1466,7 @@ bool SnippetHit3DBuilderICARUS::WireIDsIntersect(const geo::WireID& wireID0, con
     // Get wire position and direction for first wire
     auto wirePosArr = wireGeo0.GetCenter();
 
-    Eigen::Vector3f wirePos0(wirePosArr[0],wirePosArr[1],wirePosArr[2]);
+    Eigen::Vector3f wirePos0(wirePosArr.X(),wirePosArr.Y(),wirePosArr.Z());
     Eigen::Vector3f wireDir0(wireGeo0.Direction().X(),wireGeo0.Direction().Y(),wireGeo0.Direction().Z());
 
     //*********************************
@@ -1465,7 +1476,7 @@ bool SnippetHit3DBuilderICARUS::WireIDsIntersect(const geo::WireID& wireID0, con
     // And now the second one
     wirePosArr = wireGeo1.GetCenter();
 
-    Eigen::Vector3f wirePos1(wirePosArr[0],wirePosArr[1],wirePosArr[2]);
+    Eigen::Vector3f wirePos1(wirePosArr.X(),wirePosArr.Y(),wirePosArr.Z());
     Eigen::Vector3f wireDir1(wireGeo1.Direction().X(),wireGeo1.Direction().Y(),wireGeo1.Direction().Z());
 
     //**********************************
@@ -1537,11 +1548,11 @@ float SnippetHit3DBuilderICARUS::chargeIntegral(float peakMean,
 }
 
 bool SnippetHit3DBuilderICARUS::makeDeadChannelPair(reco::ClusterHit3D&       pairOut,
-                                          const reco::ClusterHit3D& pair,
-                                          size_t                    maxChanStatus,
-                                          size_t                    minChanStatus,
-                                          float                     minOverlap) const
-{
+                                                    const reco::ClusterHit3D& pair,
+                                                    size_t                    maxChanStatus,
+                                                    size_t                    minChanStatus,
+                                                    float                     minOverlap) const
+{           
     // Assume failure (most common result)
     bool result(false);
 
@@ -1673,9 +1684,12 @@ geo::WireID SnippetHit3DBuilderICARUS::NearestWireID(const Eigen::Vector3f& posi
     try
     {
         // Switch from NearestWireID to this method to avoid the roundoff error issues...
-        double distanceToWire = m_geometry->Plane(wireIDIn).WireCoordinate(position.data());
+        //double distanceToWire = m_geometry->Plane(wireIDIn).WireCoordinate(geo::vect::toPoint(position.data()));
 
-        wireID.Wire = int(distanceToWire);
+        //wireID.Wire = int(distanceToWire);
+
+        // Not sure the thinking above but is wrong... switch back to NearestWireID...
+        wireID = m_geometry->NearestWireID(geo::vect::toPoint(position.data()),wireIDIn);
     }
     catch(std::exception& exc)
     {
@@ -1684,7 +1698,7 @@ geo::WireID SnippetHit3DBuilderICARUS::NearestWireID(const Eigen::Vector3f& posi
 
         // Assume extremum for wire number depending on z coordinate
         if (position[2] < 0.5 * m_geometry->DetLength()) wireID.Wire = 0;
-        else                                             wireID.Wire = m_geometry->Nwires(wireIDIn.Plane) - 1;
+        else                                             wireID.Wire = m_geometry->Nwires(wireIDIn.asPlaneID()) - 1;
     }
 
     return wireID;
@@ -1703,7 +1717,7 @@ float SnippetHit3DBuilderICARUS::DistanceFromPointToHitWire(const Eigen::Vector3
         // Get wire position and direction for first wire
         auto const wirePosArr = wireGeo.GetCenter();
 
-        Eigen::Vector3f wirePos(wirePosArr[0],wirePosArr[1],wirePosArr[2]);
+        Eigen::Vector3f wirePos(wirePosArr.X(),wirePosArr.Y(),wirePosArr.Z());
         Eigen::Vector3f wireDir(wireGeo.Direction().X(),wireGeo.Direction().Y(),wireGeo.Direction().Z());
 
         //*********************************
@@ -1850,7 +1864,7 @@ void SnippetHit3DBuilderICARUS::CollectArtHits(const art::Event& evt) const
         // Can this really happen?
         if (hitStartEndPair.second <= hitStartEndPair.first)
         {
-            std::cout << "Yes, found a hit with end time less than start time: " << hitStartEndPair.first << "/" << hitStartEndPair.second << ", mult: " << recobHit->Multiplicity() << std::endl;
+            mf::LogInfo("SnippetHit3D") << "Yes, found a hit with end time less than start time: " << hitStartEndPair.first << "/" << hitStartEndPair.second << ", mult: " << recobHit->Multiplicity();
             continue;
         }
 

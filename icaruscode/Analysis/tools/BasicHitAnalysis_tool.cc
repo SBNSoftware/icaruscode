@@ -174,9 +174,13 @@ void BasicHitAnalysis::initializeHists(art::ServiceHandle<art::TFileService>& tf
     
     fHitsByWire.resize(fGeometry->Nplanes());
 
-    fHitsByWire[0]            = dir.make<TH1D>("HitsByWire0", ";Wire #", fGeometry->Nwires(0), 0., fGeometry->Nwires(0));
-    fHitsByWire[1]            = dir.make<TH1D>("HitsByWire1", ";Wire #", fGeometry->Nwires(1), 0., fGeometry->Nwires(1));
-    fHitsByWire[2]            = dir.make<TH1D>("HitsByWire2", ";Wire #", fGeometry->Nwires(2), 0., fGeometry->Nwires(2));
+    constexpr geo::TPCID tpcid{0, 0};
+    auto const n_wires_0 = fGeometry->Nwires(geo::PlaneID{tpcid, 0});
+    auto const n_wires_1 = fGeometry->Nwires(geo::PlaneID{tpcid, 1});
+    auto const n_wires_2 = fGeometry->Nwires(geo::PlaneID{tpcid, 2});
+    fHitsByWire[0]            = dir.make<TH1D>("HitsByWire0", ";Wire #", n_wires_0, 0., n_wires_0);
+    fHitsByWire[1]            = dir.make<TH1D>("HitsByWire1", ";Wire #", n_wires_1, 0., n_wires_1);
+    fHitsByWire[2]            = dir.make<TH1D>("HitsByWire2", ";Wire #", n_wires_2, 0., n_wires_2);
     
     fDriftTimes[0]            = dir.make<TH1D>("DriftTime0",  ";time(ticks)", 2048, 0., 4096.);
     fDriftTimes[1]            = dir.make<TH1D>("DriftTime1",  ";time(ticks)", 2048, 0., 4096.);
@@ -267,7 +271,7 @@ void BasicHitAnalysis::initializeHists(art::ServiceHandle<art::TFileService>& tf
     
     fBadWPulseHeight          = dir.make<TH1D>("BWPulseHeight",  "PH (ADC)",  300,  0.,  150.);
     fBadWPulseHVsWidth        = dir.make<TH2D>("BWPHVsWidth",    ";PH;Width", 100,  0.,  100., 100,  0., 10.);
-    fBadWHitsByWire           = dir.make<TH1D>("BWHitsByWire",   ";Wire #", fGeometry->Nwires(2), 0., fGeometry->Nwires(2));
+    fBadWHitsByWire           = dir.make<TH1D>("BWHitsByWire",   ";Wire #", n_wires_2, 0., n_wires_2);
     
     fSPHvsIdx[0]              = dir.make<TH2D>("SPHVsIdx0",      ";PH;Idx", 30,  0.,  30., 100,  0., 100.);
     fSPHvsIdx[1]              = dir.make<TH2D>("SPHVsIdx1",      ";PH;Idx", 30,  0.,  30., 100,  0., 100.);

@@ -134,7 +134,8 @@ void icarus::crt::CRTDetSim::reconfigure(fhicl::ParameterSet const & p) {
 
 // constructor
 icarus::crt::CRTDetSim::CRTDetSim(fhicl::ParameterSet const & p) : EDProducer{p},
-    fRandEngine(art::ServiceHandle<rndm::NuRandomService>()->createEngine(*this, "HepJamesRandom", "crt", p, "Seed")),
+   fRandEngine(art::ServiceHandle<rndm::NuRandomService>()->registerAndSeedEngine(
+                 createEngine(0, "HepJamesRandom", "crt"), "HepJamesRandom", "crt", p, "Seed")),
     detAlg(p.get<fhicl::ParameterSet>("DetSimAlg"),fRandEngine)
 {
     this->reconfigure(p);

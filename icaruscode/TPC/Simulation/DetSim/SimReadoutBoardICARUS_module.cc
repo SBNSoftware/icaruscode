@@ -148,9 +148,9 @@ DEFINE_ART_MODULE(SimReadoutBoardICARUS)
 //-------------------------------------------------
 SimReadoutBoardICARUS::SimReadoutBoardICARUS(fhicl::ParameterSet const& pset)
     : EDProducer{pset}
-    , fPedestalEngine(art::ServiceHandle<rndm::NuRandomService>()->createEngine(*this, "HepJamesRandom", "pedestal", pset, "SeedPedestal"))
-    , fUncNoiseEngine(art::ServiceHandle<rndm::NuRandomService>()->createEngine(*this, "HepJamesRandom", "noise",    pset, "Seed"))
-    , fCorNoiseEngine(art::ServiceHandle<rndm::NuRandomService>()->createEngine(*this, "HepJamesRandom", "cornoise", pset, "Seed"))
+    , fPedestalEngine(art::ServiceHandle<rndm::NuRandomService>()->registerAndSeedEngine(createEngine(0, "HepJamesRandom", "pedestal"), "HepJamesRandom", "pedestal", pset, "SeedPedestal"))
+    , fUncNoiseEngine(art::ServiceHandle<rndm::NuRandomService>()->registerAndSeedEngine(createEngine(0, "HepJamesRandom", "noise"   ), "HepJamesRandom", "noise",    pset, "Seed"))
+    , fCorNoiseEngine(art::ServiceHandle<rndm::NuRandomService>()->registerAndSeedEngine(createEngine(0, "HepJamesRandom", "cornoise"), "HepJamesRandom", "cornoise", pset, "Seed"))
     , fGeometry(*lar::providerFrom<geo::Geometry>())
     , fChannelMap(art::ServiceHandle<icarusDB::IICARUSChannelMap const>{}.get())
 {
@@ -223,8 +223,8 @@ void SimReadoutBoardICARUS::beginJob()
         if(fGeometry.Nchannels()<=fTestWire)
             throw cet::exception(__FUNCTION__)<<"Invalid test wire channel: "<<fTestWire;
         std::vector<unsigned int> channels;
-        for(auto const& plane_id : fGeometry.IteratePlaneIDs())
-            channels.push_back(fGeometry.PlaneWireToChannel(plane_id.Plane,fTestWire));
+        for(auto const& plane_id : fGeometry.Iterate<geo::PlaneID>())
+          channels.push_back(fGeometry.PlaneWireToChannel(geo::WireID(plane_id,fTestWire)));
         double xyz[3] = { std::numeric_limits<double>::max() };
         for(auto const& ch : channels)
         {

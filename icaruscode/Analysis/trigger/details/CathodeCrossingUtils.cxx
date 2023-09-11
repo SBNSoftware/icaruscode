@@ -18,22 +18,22 @@
 
 // -----------------------------------------------------------------------------
 icarus::CathodeDesc_t icarus::findTPCcathode
-  (geo::Point_t const& point, geo::GeometryCore const& geom)
+(geo::Point_t const& point, geo::GeometryCore const& geom)
 {
   geo::CryostatGeo const* pCryo = geom.PositionToCryostatPtr(point);
   if (!pCryo) return {}; // all invalid, goodbye
   
   return {
-      findCathodeCenter(*pCryo)                   // center
-    , -(pCryo->TPC(0).DriftDir<geo::Vector_t>())  // normal
-    };
+    findCathodeCenter(*pCryo)                   // center
+      , -(pCryo->TPC(0).DriftDir())  // normal
+      };
   
 } // icarus::findTPCcathode()
 
 
 // -----------------------------------------------------------------------------
 double icarus::distance(geo::Point_t const& point, CathodeDesc_t const& cathode)
-  { return (point - cathode.center).Dot(cathode.normal); }
+{ return (point - cathode.center).Dot(cathode.normal); }
 
 
 // -----------------------------------------------------------------------------
@@ -43,11 +43,8 @@ geo::Point_t icarus::findCathodeCenter(geo::CryostatGeo const& cryo) {
   geo::vect::MiddlePointAccumulator cathodePos;
   
   for (geo::TPCGeo const& TPC: cryo.IterateTPCs())
-      cathodePos.add(TPC.GetCathodeCenter<geo::Point_t>());
+    cathodePos.add(TPC.GetCathodeCenter());
   
   return cathodePos.middlePoint();
   
 } // icarus::findCathodeCenter()
-
-
-// -----------------------------------------------------------------------------

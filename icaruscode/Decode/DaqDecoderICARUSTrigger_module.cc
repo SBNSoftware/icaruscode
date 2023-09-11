@@ -47,11 +47,12 @@ namespace daq
   
   DaqDecoderICARUSTrigger::DaqDecoderICARUSTrigger(fhicl::ParameterSet const & params): art::EDProducer{params}, fInputTag(params.get<std::string>("FragmentsLabel", "daq:ICARUSTriggerUDP"))
   {
-    consumes<artdaq::Fragments>(fInputTag);
+    if (!fInputTag.empty()) mayConsume<artdaq::Fragments>(fInputTag);
     
     fDecoderTool = art::make_tool<IDecoder>(params.get<fhicl::ParameterSet>("DecoderTool"));
+    fDecoderTool->consumes(consumesCollector());
     fDecoderTool->produces(producesCollector());
-
+    
     return;
   }
   
@@ -64,7 +65,11 @@ namespace daq
   void DaqDecoderICARUSTrigger::produce(art::Event & event)
   {
     fDecoderTool->initializeDataProducts();
-    auto const & daq_handle = event.getValidHandle<artdaq::Fragments>(fInputTag);
+    
+    // if the tool asks for a specific input, use that one; otherwise, try the configured one.
+    art::InputTag const& inputTag = fDecoderTool->preferredInput().value_or(fInputTag);
+    
+    auto const & daq_handle = event.getValidHandle<artdaq::Fragments>(inputTag);
     if(daq_handle.isValid() && daq_handle->size() > 0)
     {
       for (auto const & rawFrag: *daq_handle) fDecoderTool->process_fragment(rawFrag);

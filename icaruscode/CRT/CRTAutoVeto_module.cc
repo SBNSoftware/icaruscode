@@ -285,8 +285,8 @@ void CRTAutoVeto::analyze(art::Event const& ev)
 
 bool CRTAutoVeto::IsAV(TVector3 const& point){
 
-    geo::CryostatGeo const& cryo0 = fGeoService->Cryostat(0);
-    geo::CryostatGeo const& cryo1 = fGeoService->Cryostat(1);
+    geo::CryostatGeo const& cryo0 = fGeoService->Cryostat(geo::CryostatID{0});
+    geo::CryostatGeo const& cryo1 = fGeoService->Cryostat(geo::CryostatID{1});
     geo::TPCGeo const& tpc00 = cryo0.TPC(0);
     geo::TPCGeo const& tpc01 = cryo0.TPC(1);
     geo::TPCGeo const& tpc10 = cryo1.TPC(0);
@@ -303,8 +303,8 @@ bool CRTAutoVeto::IsAV(TVector3 const& point){
 
 bool CRTAutoVeto::IsFV(TVector3 const& point) {
 
-    geo::CryostatGeo const& cryo0 = fGeoService->Cryostat(0);
-    geo::CryostatGeo const& cryo1 = fGeoService->Cryostat(1);
+    geo::CryostatGeo const& cryo0 = fGeoService->Cryostat(geo::CryostatID{0});
+    geo::CryostatGeo const& cryo1 = fGeoService->Cryostat(geo::CryostatID{1});
     geo::TPCGeo const& tpc00 = cryo0.TPC(0);
     geo::TPCGeo const& tpc01 = cryo0.TPC(1);
     geo::TPCGeo const& tpc10 = cryo1.TPC(0);

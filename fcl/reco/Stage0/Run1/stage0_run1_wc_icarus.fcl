@@ -16,7 +16,7 @@ physics.trigger_paths: [ path ]
 physics.end_paths:     [ outana, streamCommon ]
 
 # Drop the artdaq format files on output
-outputs.outCommon.outputCommands:         ["keep *_*_*_*", "drop *_*_*_DAQ*", "drop *_daqTPCROI_*_*", "drop *_decon1droi_*_*", "drop *_decon1DroiTPC*_*_*", "drop *_decon2Droi*_*_*", "drop *_roifindr_*_*" ]
+outputs.rootOutput.outputCommands:         ["keep *_*_*_*", "drop *_*_*_DAQ*", "drop *_daqTPCROI_*_*", "drop *_decon1droi_*_*", "drop *_decon1DroiTPC*_*_*", "drop *_decon2Droi*_*_*", "drop *_roifindr_*_*" ]
 
 # Override the hit finder input 
 physics.producers.gaushitTPCWW.CalDataModuleLabel: "roifinder2d:PHYSCRATEDATATPCWW"

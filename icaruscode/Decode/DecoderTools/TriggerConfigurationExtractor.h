@@ -16,7 +16,6 @@
 #include "sbnobj/Common/Trigger/BeamBits.h"
 
 // framework libraries
-#include "art/Framework/Principal/DataViewImpl.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
 #include "fhiclcpp/ParameterSet.h"
 #include "cetlib_except/exception.h"
@@ -302,7 +301,9 @@ class icarus::TriggerConfigurationExtractorBase {
  * 
  * The extractor identifies the correct configuration by the
  * `daq.fragment_receiver.generator` configuration key (in the above example,
- * it is `ICARUSTriggerUDP`).
+ * it is `ICARUSTriggerUDP`). The key is specified as a regular expression
+ * pattern that must match the whole string (as in `std::regex_match()` with
+ * standard format).
  * 
  */
 class icarus::TriggerConfigurationExtractor
@@ -313,8 +314,9 @@ class icarus::TriggerConfigurationExtractor
   
   /// Learns the name of the trigger fragment type.
   TriggerConfigurationExtractor
-    (std::string const& expectedFragmentType = "ICARUSTriggerUDP")
-    : fExpectedFragmentType{ expectedFragmentType }
+    (std::string expectedFragmentType = "ICARUSTrigger.*")
+    : fExpectedFragmentTypeSpec{ std::move(expectedFragmentType) }
+    , fExpectedFragmentType{ fExpectedFragmentTypeSpec }
     {}
 
   // --- BEGIN -- Interface ----------------------------------------------------
@@ -345,7 +347,11 @@ class icarus::TriggerConfigurationExtractor
   
     private:
   
-  std::string const fExpectedFragmentType;
+  /// Specification of the trigger type name pattern.
+  std::string const fExpectedFragmentTypeSpec;
+  
+  /// Regular expression pattern for trigger type name.
+  std::regex const fExpectedFragmentType;
   
   /// Regular expressions matching all names of supported Trigger configurations.
   static std::vector<std::regex> const ConfigurationNames;

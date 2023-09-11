@@ -50,7 +50,7 @@ decodePMT: {
                     PMTconfigTag:       @nil # must override
                     TriggerTag:         @nil # must override
                     BoardSetup:         @local::icarus_V1730_setup
-                    CorrectionInstance: "trgprim"
+                    CorrectionInstance: "globtrg"
 
 }
 
@@ -71,6 +71,13 @@ decodeTriggerV3: {
                     FragmentsLabel:     "daq:ICARUSTriggerV3"
                     DecoderTool:        @local::TriggerDecoderV3Tool
 }
+
+decodeTriggerAutodetect: {
+                    module_type:        DaqDecoderICARUSTrigger
+                    FragmentsLabel:     ""
+                    DecoderTool:        @local::TriggerDecoderAutoTool
+}
+
 copyPMTonBeam: {
                     module_type:        CopyBeamTimePMTwaveforms
                     Waveforms:          @nil # must override

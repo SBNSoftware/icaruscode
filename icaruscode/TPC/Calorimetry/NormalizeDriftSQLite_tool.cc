@@ -22,6 +22,8 @@
 
 // C++
 #include <string>
+#include <optional>
+#include <cassert>
 
 namespace icarus {
   namespace calo {
@@ -32,6 +34,7 @@ public:
   NormalizeDriftSQLite(fhicl::ParameterSet const &pset);
 
   void configure(const fhicl::ParameterSet& pset) override;
+  void setup(const art::Event& e) override;
   double Normalize(double dQdx, const art::Event &e, const recob::Hit &h, const geo::Point_t &location, const geo::Vector_t &direction, double t0) override;
 
 private:
@@ -41,6 +44,8 @@ private:
   bool fVerbose;
 
   lariov::DBFolder fDB;
+
+  std::optional<detinfo::DetectorClocksData> fClockData; // need delayed construction
 
   // Class to hold data from DB
   class RunInfo {
@@ -72,6 +77,10 @@ icarus::calo::NormalizeDriftSQLite::NormalizeDriftSQLite(fhicl::ParameterSet con
 {}
 
 void icarus::calo::NormalizeDriftSQLite::configure(const fhicl::ParameterSet& pset) {}
+
+void icarus::calo::NormalizeDriftSQLite::setup(const art::Event& e) {
+  fClockData.emplace(art::ServiceHandle<detinfo::DetectorClocksService const>()->DataFor(e));
+}
 
 icarus::calo::NormalizeDriftSQLite::RunInfo icarus::calo::NormalizeDriftSQLite::GetRunInfo(uint64_t run) {
   // check the cache
@@ -110,8 +119,8 @@ icarus::calo::NormalizeDriftSQLite::RunInfo icarus::calo::NormalizeDriftSQLite::
 
 double icarus::calo::NormalizeDriftSQLite::Normalize(double dQdx, const art::Event &e, 
     const recob::Hit &hit, const geo::Point_t &location, const geo::Vector_t &direction, double t0) {
-  // Services
-  auto const clock_data = art::ServiceHandle<detinfo::DetectorClocksService const>()->DataFor(e);
+
+  assert(fClockData);
 
   // Get the info
   RunInfo runelifetime = GetRunInfo(e.id().runID().run());
@@ -131,7 +140,7 @@ double icarus::calo::NormalizeDriftSQLite::Normalize(double dQdx, const art::Eve
   if (cryo == 1 && (tpc == 2 || tpc == 3)) thiselifetime = runelifetime.tau_WW;
   
   // Get the hit time
-  double thit = clock_data.TPCTick2TrigTime(hit.PeakTime()) - t0;
+  double thit = fClockData->TPCTick2TrigTime(hit.PeakTime()) - t0;
 
   if (fVerbose) std::cout << "NormalizeDriftSQLite Tool -- Norm factor: " << exp(thit / thiselifetime) << " at TPC: " << tpc << " Cryo: " << cryo << " Time: " << thit << " Track T0: " << t0 << std::endl;
 

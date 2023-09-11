@@ -76,6 +76,9 @@ triggerSimTemplate: {
   # we learn the bits from the beam gate type
   # (non a great deal... hope it doesn't matter(TM))
   # BeamBits: @local::BNB_settings.trigger_bits   # from trigger_icarus.fcl
+  
+  # write also a surrogate sbn::ExtraTriggerInfo data product
+  ExtraInfo: true
 
   # this should probably be 12 or 24 ns
   TriggerTimeResolution: "8 ns"
@@ -117,7 +120,7 @@ physics: {
     
     pmttriggerwindows: @local::icarus_trigslidewindow
     
-    triggersimgates: @local::icarus_triggersimgates
+    triggersimgates: @local::icarus_triggersimgates  # from trigger_icarus.fcl
     
     # --------------------------------------------------------------------------
     # all interesting triggers

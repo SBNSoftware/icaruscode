@@ -1,0 +1,7 @@
+#include "stage1_run2_icarus.fcl"
+
+# neuter the CRT/TPC matching module already scheduled
+physics.producers.CRTT0Matching.module_type: DummyProducer
+
+# add a cryostat-split configuration
+physics.reco: [ @sequence::physics.reco, @sequence::icarus_crtt0match_eff ]

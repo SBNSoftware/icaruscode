@@ -160,7 +160,7 @@ void SimTestPulseWire::beginRun(art::Run& run)
     
     std::unique_ptr<sumdata::RunData> runData(new sumdata::RunData(geo->DetectorName()));
     
-    run.put(std::move(runData));
+    run.put(std::move(runData), art::fullRun());
     
     return;
 }
@@ -210,11 +210,12 @@ void SimTestPulseWire::produce(art::Event & e)
         
         const geo::PlaneGeo& planeGeo = geo->Plane(geo::PlaneID(fCryostat,fTPC,0)); // Get the coordinates of the first wire plane
 
-        TVector3 planeCoords = planeGeo.GetCenter();
-        TVector3 planeNormal = planeGeo.GetNormalDirection();
+        auto planeCoords = planeGeo.GetCenter();
+        auto planeNormal = planeGeo.GetNormalDirection();
 
         // Assume C=0, T=1
-        chargeDepCoords = geo::Point_t(planeCoords[0] + 1. * planeNormal[0],planeCoords[1],planeCoords[2]);
+        chargeDepCoords = planeCoords;
+        chargeDepCoords.SetX(planeCoords.X() + planeNormal.X());
 
         alternative::TruthHit pulse_record;
         pulse_record.tdc = tdc;
@@ -223,7 +224,7 @@ void SimTestPulseWire::produce(art::Event & e)
 
         double nElecADC = detProp.ElectronsToADC() * fNumElectrons_v[index];
 
-        std::cout << "==> x position of plane 0: " << planeCoords[0] << ", normal: " << planeNormal[0] << ", nElec: " << fNumElectrons_v[index] << ", nElecADC: " << nElecADC << std::endl;
+        std::cout << "==> x position of plane 0: " << planeCoords.X() << ", normal: " << planeNormal.X() << ", nElec: " << fNumElectrons_v[index] << ", nElecADC: " << nElecADC << std::endl;
 
         simDep_v->emplace_back(0,fNumElectrons_v[index],0.,nElecADC,chargeDepCoords,chargeDepCoords);
 
@@ -247,9 +248,9 @@ void SimTestPulseWire::produce(art::Event & e)
             const geo::WireGeo& wireGeo = geo->Wire(wireID);
 
             auto xyz = wireGeo.GetCenter();
-            xyz[0] = chargeDepCoords.X();
+            xyz.SetX(chargeDepCoords.X());
 
-            Position position = {xyz[0],xyz[1],xyz[2]};
+            Position position = {xyz.X(),xyz.Y(),xyz.Z()};
 
             fPlanePositionVecVec[plane].emplace_back(position);
 

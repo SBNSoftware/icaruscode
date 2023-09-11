@@ -101,7 +101,7 @@ auto icarus::trigger::PMTverticalSlicingAlg::PMTwalls
   (geo::GeometryCore const& geom) const
   -> std::vector<std::pair<double, PMTlist_t>>
 {
-  return PMTwalls(getPMTs(geom), determineDriftDir(geom.IterateTPCs()));
+  return PMTwalls(getPMTs(geom), determineDriftDir(geom.Iterate<geo::TPCGeo>()));
 } // icarus::trigger::PMTverticalSlicingAlg::PMTwalls(GeometryCore)
 
 
@@ -237,7 +237,7 @@ auto icarus::trigger::PMTverticalSlicingAlg::getPMTs
   (geo::GeometryCore const& geom) -> PMTlist_t
 {
   PMTlist_t opDets;
-  for (geo::CryostatGeo const& cryo: geom.IterateCryostats())
+  for (geo::CryostatGeo const& cryo: geom.Iterate<geo::CryostatGeo>())
     append(opDets, getCryoPMTs(cryo));
   return opDets;
 } // icarus::trigger::PMTverticalSlicingAlg::getCryoPMTs()
