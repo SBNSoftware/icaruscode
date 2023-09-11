@@ -43,16 +43,13 @@
 #include "lardata/ArtDataHelper/WireCreator.h"
 #include "lardata/Utilities/AssociationUtil.h"
 
-#include "icaruscode/IcarusObj/ChannelROI.h"
+#include "sbnobj/ICARUS/TPC/ChannelROI.h"
 #include "icaruscode/TPC/Utilities/ChannelROICreator.h"
 
 #include "icaruscode/TPC/SignalProcessing/RecoWire/ROITools/IROILocator.h"
 
 #include "icarus_signal_processing/WaveformTools.h"
 #include "icarus_signal_processing/Denoising.h"
-
-#include "icaruscode/IcarusObj/ChannelROI.h"
-
 
 ///creation of calibrated signals on wires
 namespace caldata {
