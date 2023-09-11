@@ -8,7 +8,7 @@ ChannelMappingPostGres: {
 
 ChannelMappingSQLite: {
     tool_type:          ChannelMapSQLite
-    DBFileName:         "ChannelMapICARUS.db"
+    DBFileName:         "ChannelMapICARUS_20230829.db"
     CalibDBFileName:    "crt_gain_reco_data"
     Tag:                "v1r0"
 	
