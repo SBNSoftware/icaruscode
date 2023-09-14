@@ -499,7 +499,9 @@ icarus::trigger::transformIntoOpticalTriggerGate(Gates&& gates) {
   
   std::vector<TriggerGateData_t> gateData;
 
-  for (TriggerGateData_t& gate: icarus::trigger::gatesIn(gates))
+  // this function also captures a `Gate const& gates`, which would yield to
+  // const `gate` in this loop: `auto&&` matches it as exactly as it can
+  for (auto&& gate: icarus::trigger::gatesIn(gates))
     gateData.push_back(std::move(gate));
   
   return gateData;
