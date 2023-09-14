@@ -17,7 +17,6 @@
 #include "icaruscode/PMT/Trigger/Utilities/TriggerGateDataFormatting.h"
 #include "icaruscode/PMT/Algorithms/PMTverticalSlicingAlg.h"
 #include "icaruscode/IcarusObj/OpDetWaveformMeta.h" // sbn::OpDetWaveformMeta
-#include "icarusalg/Utilities/FHiCLutils.h" // util::fhicl::getOptionalValue()
 
 // LArSoft libraries
 #include "lardata/Utilities/NestedIterator.h" // lar::double_fwd_const_iterator
@@ -417,8 +416,7 @@ icarus::trigger::SlidingWindowTrigger::SlidingWindowTrigger
   : art::EDProducer(config)
   // configuration
   , fWindowSize(config().WindowSize())
-  , fWindowStride
-    (util::fhicl::getOptionalValue(config().Stride).value_or(fWindowSize))
+  , fWindowStride(config().Stride().value_or(fWindowSize))
   , fWindowChannels(defineWindows())
   , fEnabledWindows(makeEnabledWindowIndices(
      fWindowChannels.size(),
