@@ -8,6 +8,8 @@
 # Date:   March 2021
 #
 # Changes:
+# 20230821 (petrillo@slac.stanford.edu) [1.5]
+#   added --keepgoing option
 # 20220720 (petrillo@slac.stanford.edu) [1.4]
 #   added --locate option
 # 20220406 (petrillo@slac.stanford.edu) [1.3]
@@ -22,7 +24,7 @@
 #
 
 SCRIPTNAME="$(basename "$0")"
-SCRIPTVERSION="1.3"
+SCRIPTVERSION="1.5"
 
 declare -r RawType='raw'
 declare -r DecodeType='decoded'
@@ -73,9 +75,22 @@ function FATAL() {
   exit $Code
 } # FATAL()
 
+function MAYBEFATAL() {
+  [[ $AllowedErrors -eq 0 ]] && FATAL "$@"
+  let --AllowedErrors
+  local -i Code=$1
+  shift
+  ERROR "[code=${Code}, fatal after ${AllowedErrors} more]  $@"
+} # MAYBEFATAL()
+
 function LASTFATAL() {
   local -i res=$?
   [[ $res == 0 ]] || FATAL "$res" "$@"
+} # LASTFATAL()
+
+function LASTMAYBEFATAL() {
+  local -i res=$?
+  [[ $res == 0 ]] || MAYBEFATAL "$res" "$@"
 } # LASTFATAL()
 
 
@@ -113,7 +128,6 @@ Options:
 --allstreams
     select the stream (if empty, all streams are included)
 
-
 --output=OUTPUTFILE
     use OUTPUTFILE for all output file lists
 --outputdir=OUTPUTDIR
@@ -135,6 +149,12 @@ Options:
     in all cases, it translates only LIMIT files into a location; 0 means no limit
 --experiment=NAME
     experiment name (and SAM station) passed to SAM
+
+--keepgoing[=MAXERRORS]
+    ignore up to \`MAXERRORS\` errors while interacting with SAM.
+    If this option is not specified (equivalent to setting \`MAXERRORS\` to 0)
+    no error will be ignored. If this option is specified without a number
+    (equivalent to setting \`MAXERRORS\` to -1) all errors will be ignored.
 --quiet , -q
     do not print non-fatal information on screen while running
 --debug[=LEVEL]
@@ -273,6 +293,7 @@ declare Location="$DefaultLocation"
 declare Stream="$DefaultStream"
 declare OutputPattern="$DefaultOutputPattern"
 declare EntryLimit=0 # 0 = no limits'
+declare -i AllowedErrors=0 # negative = any number
 declare -i iParam
 for (( iParam=1 ; iParam <= $# ; ++iParam )); do
   Param="${!iParam}"
@@ -304,6 +325,8 @@ for (( iParam=1 ; iParam <= $# ; ++iParam )); do
       ( "--max="* | "--limit="* )         EntryLimit="${Param#--*=}" ;;
       ( "--experiment="* )                Experiment="${Param#--*=}" ;;
       
+      ( '--keepgoing' | '-k' )            AllowedErrors=-1 ;;
+      ( '--keepgoing='* )                 AllowedErrors="${Param#--*=}" ;;
       ( '--debug' )                       DEBUG=1 ;;
       ( '--debug='* )                     DEBUG="${Param#--*=}" ;;
       ( '--quiet' | '-q' )                DoQuiet=1 ;;
@@ -419,13 +442,14 @@ for Spec in "${Specs[@]}" ; do
         FileURL=( $(getFileAccessURL "$FileName" "$Schema" "$Location" ) )
         ;;
     esac
-    LASTFATAL "getting file '${FileName}' location from SAM."
-    [[ "${#FileURL[@]}" == 0 ]] && FATAL 2 "failed getting file '${FileName}' location from SAM."
+    LASTMAYBEFATAL "getting file '${FileName}' location from SAM."
+    [[ "${#FileURL[@]}" == 0 ]] && MAYBEFATAL 2 "failed getting file '${FileName}' location from SAM."
     [[ "${#FileURL[@]}" -gt 1 ]] && WARN "File '${FileName}' matched ${#FileURL[@]} locations (only the first one included):$(printf -- "\n- '%s'" "${FileURL[@]}")"
     AddPathToList "${FileURL[0]}"
   done < "$FileList"
   
 done
+
 
 [[ $nErrors -gt 0 ]] && FATAL 1 "${nErrors} error(s) accumulated while processing."
 
