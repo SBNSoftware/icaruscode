@@ -283,7 +283,8 @@ auto icarus::trigger::SlidingWindowPatternAlg::applyWindowPattern(
       );
     mfLogTrace() << "  opposite [#" << winTopology.opposite << "]: "
       << compactdump(gateAt(winTopology.opposite))
-      << "\n  => " << compactdump(trigPrimitive);
+      << "\n  opposite >= " << pattern.minInOppositeWindow << ": "
+        << compactdump(trigPrimitive);
   } // if
   
   // add main plus opposite window requirement (if any)
@@ -293,7 +294,8 @@ auto icarus::trigger::SlidingWindowPatternAlg::applyWindowPattern(
       (discriminate(*mainPlusOpposite, pattern.minSumInOppositeWindows));
     mfLogTrace() << "  sum [+ #" << winTopology.opposite << "]: "
       << compactdump(*mainPlusOpposite)
-      << "\n  => " << compactdump(trigPrimitive);
+      << "\n  sum >= " << pattern.minSumInOppositeWindows << ": "
+        << compactdump(trigPrimitive);
     
   } // if
   
