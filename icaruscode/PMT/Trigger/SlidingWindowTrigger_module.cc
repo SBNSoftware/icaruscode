@@ -202,6 +202,11 @@ namespace icarus::trigger { class SlidingWindowTrigger; }
  *     the input (i.e. no input gate should include them).
  * * `ProduceWaveformAssns` (flag, default: `true`): produce also associations
  *     between each gate and the `raw::OpDetWaveform` which contributed to it.
+ * * `IgnoreErrors` (flag, default: `false`): catch processing exceptions and,
+ *     in case, just stop processing the current event. Some of the data
+ *     products may be written, while others not; _art_ won't be happy with
+ *     this, and module's `errorOnFailureToPut` option will need to be set to
+ *     `false`.
  * * `LogCategory` (string): name of the output stream category for console
  *     messages (managed by MessageFacility library).
  *
@@ -269,6 +274,12 @@ class icarus::trigger::SlidingWindowTrigger: public art::EDProducer {
       true
       };
     
+    fhicl::Atom<bool> IgnoreErrors {
+      Name("IgnoreErrors"),
+      Comment("in case of fatal error just stop processing the event"),
+      false
+      };
+    
     fhicl::Atom<std::string> LogCategory {
       Name("LogCategory"),
       Comment("name of the category used for the output"),
@@ -327,7 +338,9 @@ class icarus::trigger::SlidingWindowTrigger: public art::EDProducer {
   std::vector<std::size_t> const fEnabledWindows;
 
   /// Whether to produce gate/waveform associations.
-  bool fProduceWaveformAssns;
+  bool const fProduceWaveformAssns;
+  
+  bool const fIgnoreErrors; /// Whether to survive errors in the processing.
   
   /// Message facility stream category for output.
   std::string const fLogCategory;
@@ -412,6 +425,7 @@ icarus::trigger::SlidingWindowTrigger::SlidingWindowTrigger
      config().EnableOnlyWindows, config().DisableWindows
      ))
   , fProduceWaveformAssns(config().ProduceWaveformAssns())
+  , fIgnoreErrors(config().IgnoreErrors())
   , fLogCategory(config().LogCategory())
     // demand full PMT coverage only if no window was disabled:
   , fCombiner(
@@ -487,8 +501,21 @@ void icarus::trigger::SlidingWindowTrigger::produce(art::Event& event) {
   icarus::trigger::OpDetWaveformMetaDataProductMap_t waveformMap;
 
   for (auto const& [ thresholdStr, dataTag ]: fADCthresholds) {
-
-    produceThreshold(event, waveformMap, thresholdStr, dataTag);
+    try {
+      produceThreshold(event, waveformMap, thresholdStr, dataTag);
+    }
+    catch (cet::exception const& e) {
+      if (!fIgnoreErrors) throw;
+      
+      mf::LogError{ fLogCategory }
+        << moduleDescription().moduleName()
+        << "[" << moduleDescription().moduleLabel()
+        << "]: Exception thrown while processing threshold " << thresholdStr
+        << " of input '" << dataTag.encode() << "':\n"
+        << e.what()
+        << "\nException is being ignored, but no data product will be added.\n";
+      // wise?
+    }
     
   } // for all thresholds
   
