@@ -566,7 +566,7 @@ void DaqDecoderICARUSTPCwROI::processSingleFragment(size_t                      
            icarus_signal_processing::VectorFloat& rawDataVec = channelArrayPair.second[chanIdx];
 
             for(size_t tick = 0; tick < nSamplesPerChannel; tick++)
-                rawDataVec[tick] = physCrateFragmentadc_val(board, chanIdx, tick);
+                rawDataVec[tick] = physCrateFragment.adc_val(board, chanIdx, tick);
 
             // Keep track of the channel
             channelArrayPair.first[chanIdx] = channelPlanePairVec[chanIdx];
