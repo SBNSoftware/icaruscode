@@ -165,22 +165,28 @@ namespace wiremod
     auto const& hitVec(*hitHandle);
 
     // put the new stuff somewhere
-    std::unique_ptr< std::vector<recob::Wire> > new_wires(new std::vector<recob::Wire>());
+    std::unique_ptr<std::vector<recob::Wire>> new_wires(new std::vector<recob::Wire>());
+    std::unique_ptr<art::Assns<raw::RawDigit, recob::Wire>> new_digit_assn(new art::Assns<raw::RawDigit, recob::Wire>());
 
     // do the things
     MF_LOG_VERBATIM("TestWireModifier")
       << "Get Edep Map";
-    wmUtil.FillROIMatchedEdepMap(edepShiftedVec,wireVec,offset_ADC);
+    wmUtil.FillROIMatchedEdepMap(edepShiftedVec, wireVec, offset_ADC);
     MF_LOG_VERBATIM("TestWireModifier")
       << "Got Edep Map." << '\n'
       << "Get Hit Map";
-    wmUtil.FillROIMatchedHitMap(hitVec,wireVec);
+    wmUtil.FillROIMatchedHitMap(hitVec, wireVec);
     MF_LOG_VERBATIM("TestWireModifier")
       << "Got Hit Map.";
+
+    // match old and new wires
+    std::vector<std::pair<size_t, size_t>> oldNew_wireIdx;
 
     // loop-de-loop
     for(size_t i_w = 0; i_w < wireVec.size(); ++i_w)
     {
+      bool isModified = false;
+
       MF_LOG_VERBATIM("TestWireModifier")
         << "Checking wire " << i_w;
 
@@ -207,13 +213,15 @@ namespace wiremod
           continue;
         }
         std::vector<size_t> matchedEdepIdxVec = it_map->second;
-        if(matchedEdepIdxVec.size()==0){
+        if(matchedEdepIdxVec.size() == 0)
+        {
           new_rois.add_range(range.begin_index(),modified_data);
           continue;
         }
         std::vector<const sim::SimEnergyDeposit*> matchedEdepPtrVec;
         std::vector<const sim::SimEnergyDeposit*> matchedShiftedEdepPtrVec;
-        for(auto i_e : matchedEdepIdxVec) {
+        for(auto i_e : matchedEdepIdxVec)
+        {
           matchedEdepPtrVec.push_back(&edepOrigVec[i_e]);
           matchedShiftedEdepPtrVec.push_back(&edepShiftedVec[i_e]);
         }
@@ -257,61 +265,55 @@ namespace wiremod
             if ( truth_vals.total_energy < 0.3 && subroi_prop.total_q > 80 ) {
               scale_vals.r_Q     = 1.;
               scale_vals.r_sigma = 1.;
-
+              isModified = false;
             } 
             else {
               scale_vals = wmUtil.GetScaleValues(truth_vals, roi_properties);
+              isModified = true;
             }
           }
           else {
             scale_vals.r_Q     = 1.;
             scale_vals.r_sigma = 1.;
+            isModified = false;
           }
 
           SubROIMatchedScalesMap[key] = scale_vals;
         }
-        
+
+        // store old ROI
+        TH1F* oldROI = new TH1F(("oldROI_Wire_"+std::to_string(i_w)+"_ROI_"+std::to_string(i_r)).c_str(), ";Sample;Arbitrary Units", modified_data.size(), 0, modified_data.size());
+        for (size_t bin = 1; bin < modified_data.size() + 1; ++bin)
+          oldROI->SetBinContent(bin, modified_data[bin - 1]);
+
         wmUtil.ModifyROI(modified_data, roi_properties, subROIPropVec, SubROIMatchedScalesMap);
 
-        new_rois.add_range(roi_properties.begin,modified_data);
-      }
+        // store new ROI
+        TH1F* newROI = new TH1F(("newROI_Wire_"+std::to_string(i_w)+"_ROI_"+std::to_string(i_r)).c_str(), ";Sample;Arbitrary Units", modified_data.size(), 0, modified_data.size());
+        for (size_t bin = 1; bin < modified_data.size() + 1; ++bin)
+          newROI->SetBinContent(bin, modified_data[bin - 1]);
 
-      new_wires->emplace_back(new_rois,wire.Channel(),wire.View());
-
-      // test - make some hists
-      art::ServiceHandle<art::TFileService> tfs;
-      //TH1F* oldWav = tfs->make<TH1F>(("oldWav_"+std::to_string(i_w)).c_str(), ";Sample;Arbitrary Units", wire.NSignal(), 0, wire.NSignal());
-      TH1F* oldWavTemp = new TH1F(("oldWav_"+std::to_string(i_w)).c_str(), ";Sample;Arbitrary Units", wire.NSignal(), 0, wire.NSignal());
-      for (size_t bin = 1; bin < wire.NSignal(); ++bin)
-        oldWavTemp->SetBinContent(bin, (wire.Signal())[bin-1]);
-
-      //TH1F* newWav = tfs->make<TH1F>(("newWav_"+std::to_string(i_w)).c_str(), ";Sample;Arbitrary Units", new_wires->back().NSignal(), 0, new_wires->back().NSignal());
-      TH1F* newWavTemp = new TH1F(("newWav_"+std::to_string(i_w)).c_str(), ";Sample;Arbitrary Units", new_wires->back().NSignal(), 0, new_wires->back().NSignal());
-      for (size_t bin = 1; bin < new_wires->back().NSignal(); ++bin)
-        newWavTemp->SetBinContent(bin, (new_wires->back().Signal())[bin-1]);
-
-      bool isMod = false;
-      for (size_t bin = 1; bin < wire.NSignal(); ++bin)
-      {
-        if (oldWavTemp->GetBinContent(bin) != newWavTemp->GetBinContent(bin))
+        if (isModified)
         {
-          MF_LOG_VERBATIM("TestWireModifier")
-            << "Wire " << i_w << " has been modified!!!";
-          isMod = true;
-          break;
+          art::ServiceHandle<art::TFileService> tfs;
+          TH1F* oldROI_saved = tfs->make<TH1F>(*oldROI);
+          TH1F* newROI_saved = tfs->make<TH1F>(*newROI);
+          mf::LogVerbatim("TestWireModifier")
+            << "Wrote histograms " << oldROI_saved->GetName() << " and " << newROI_saved->GetName();
         }
+
+        new_rois.add_range(roi_properties.begin, modified_data);
       }
 
-      if (isMod)
-      {
-        TH1F* oldWav = tfs->make<TH1F>(*oldWavTemp);
-        TH1F* newWav = tfs->make<TH1F>(*newWavTemp);
+      new_wires->emplace_back(new_rois, wire.Channel(), wire.View());
 
-        // gotta use them or the compiler gets mad
-        MF_LOG_VERBATIM("TestWireModifier")
-          << "  Made histograms " << oldWav->GetName() << " and " << newWav->GetName();
-      }
+      auto const& rd_ptrs = digit_assn.at(i_w);
+      for(auto const& rd_ptr : rd_ptrs)
+        util::CreateAssn(*this, evt, *new_wires, rd_ptr, *new_digit_assn, new_wires->size() - 1);
     }
+
+    evt.put(std::move(new_wires));
+    evt.put(std::move(new_digit_assn));
   }
   DEFINE_ART_MODULE(TestWireModifier)
 } // end namespace

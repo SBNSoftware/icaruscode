@@ -1,4 +1,4 @@
-set(EXCLUDED_PLUGINS NewWireModifier_pluggin.cc WireModMakeHists_plugin.cc TestWireModifier_module.cc)
+set(EXCLUDED_PLUGINS NewWireModifier_plugin.cc WireModMakeHists_plugin.cc TestWireModifier_module.cc)
 
 add_subdirectory(Utility)
 
