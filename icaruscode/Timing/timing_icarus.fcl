@@ -6,7 +6,7 @@ icarus_pmttimingservice:
 {
     # service name:   IPMTTimingCorrectionService
     service_provider: PMTTimingCorrectionService
-    CorrectionsTags:  @local::PMTtimingCorrectionsTags_Run2_August2023
+    CorrectionTags:   @local::PMTtimingCorrectionTags_Run2_Sept2023
     Verbose:          false
 }
 
