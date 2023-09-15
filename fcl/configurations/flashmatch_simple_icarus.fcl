@@ -4,6 +4,7 @@ icarus_simple_flashmatch_E: {
   module_type: FlashPredict
   IsSimple: true
   FlashType: "simpleflash_pmt"
+  UseOldMetrics: false		// Use metrics file with just simpleflash_pmt metrics
   Cryostat: 0
   PandoraProducer:     "pandoraGausCryoE"
   TrackProducer:       "pandoraTrackGausCryoE"
