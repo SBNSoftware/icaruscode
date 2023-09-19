@@ -137,15 +137,15 @@ void ICARUSMCOpFlash::produce(art::Event& e)
   for(auto const& flash_time : flash_time_v) {
     std::vector<double> pe_v(geop->NOpChannels(),0.);
     double pe_total=-1.;
-    double pe_sum=0.;
-    double pe_sum1=0.;
-    double pe_sum2=0.;
+    // double pe_sum=0.; // unused
+    // double pe_sum1=0.; // unused
+    // double pe_sum2=0.; // unused
     for(auto const& oph : *oph_h) {
       auto opch = oph.OpChannel();
       if(oph.PE()<_pe_threshold) continue;
-      pe_sum += oph.PE();
+      // pe_sum += oph.PE(); // unused
       if((int)(_enabled_opch_v.size()) <= opch || !_enabled_opch_v[opch]) continue;
-      pe_sum1 += oph.PE();
+      // pe_sum1 += oph.PE(); // unused
       if(oph.StartTime() < flash_time || oph.StartTime() > (flash_time + _merge_period)) {
 	/*
 	std::cout << "Ch " << opch << " Time: " << oph.StartTime() 
@@ -154,7 +154,7 @@ void ICARUSMCOpFlash::produce(art::Event& e)
 	*/
 	continue;
       }
-      pe_sum2 += oph.PE();
+      // pe_sum2 += oph.PE(); // unused
       pe_v[opch] += oph.PE();
       pe_total = (pe_total < 0. ? oph.PE() : pe_total + oph.PE());
     }
