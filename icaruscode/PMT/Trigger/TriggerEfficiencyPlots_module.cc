@@ -401,7 +401,7 @@ PlotCategories_t const PlotCategories {
 
   PlotCategory{
     "NuNC_e", "NC_e",
-    [](EventInfo_t const& info){ return (info.isWeakNeutralCurrent() & info.isNu_e()); }
+    [](EventInfo_t const& info){ return (info.isWeakNeutralCurrent() && info.isNu_e()); }
     }
 
 }; // PlotCategories[]
