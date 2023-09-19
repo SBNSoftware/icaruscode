@@ -159,7 +159,7 @@ void pmtcalo::PMTBackgroundphotonsCalibration::beginJob()
 
     sprintf(histname, "hamplitude%u", opch);
     sprintf(histtitle, "PMT: %u;Pulse amplitude [mV]", opch);
-    hamplitude[opch] = tfs->make<TH1D>( histname, histtitle, 200, 0, 120 );
+    hamplitude[opch] = tfs->make<TH1D>( histname, histtitle, 200, 0, 30 );
 
     sprintf(histname, "hpulses%u", opch);
     sprintf(histtitle, "PMT: %u;", opch);
