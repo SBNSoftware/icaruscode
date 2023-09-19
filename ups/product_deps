@@ -313,10 +313,12 @@ end_product_list
 #
 ####################################
 qualifier	sbncode		icarusalg	icarusutil	icarus_signal_processing	icarus_data	fftw	libwda	notes
+c14:debug	c14:debug	c14:debug	c14:debug	c14:debug			-nq-		-nq-	-nq-
+c14:prof	c14:prof	c14:prof	c14:prof	c14:prof			-nq-		-nq-	-nq-
 c7:debug	c7:debug	c7:debug	c7:debug	c7:debug			-nq-		-nq-	-nq-
 c7:prof		c7:prof		c7:prof		c7:prof		c7:prof				-nq-		-nq-	-nq-
-e19:debug	e19:debug	e19:debug	e19:debug	e19:debug			-nq-		-nq-	-nq-
-e19:prof	e19:prof	e19:prof	e19:prof	e19:prof			-nq-		-nq-	-nq-
+e26:debug	e26:debug	e26:debug	e26:debug	e26:debug			-nq-		-nq-	-nq-
+e26:prof	e26:prof	e26:prof	e26:prof	e26:prof			-nq-		-nq-	-nq-
 e20:debug	e20:debug	e20:debug	e20:debug	e20:debug			-nq-		-nq-	-nq-
 e20:prof	e20:prof	e20:prof	e20:prof	e20:prof			-nq-		-nq-	-nq-
 end_qualifier_list
