@@ -14,6 +14,7 @@
 
 
 // LArSoft libraries
+#include <cstdint>  // uint16_t in OpDetWaveform.h
 #include "lardataobj/RawData/OpDetWaveform.h" // raw::Channel_t
 #include "larcoreobj/SimpleTypesAndConstants/geo_vectors.h" // geo::Point_t
 #include "larcoreobj/SimpleTypesAndConstants/geo_types.h" // geo::CryostatID
