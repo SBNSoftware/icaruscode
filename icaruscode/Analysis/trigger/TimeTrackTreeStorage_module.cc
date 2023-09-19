@@ -642,7 +642,7 @@ void sbn::TimeTrackTreeStorage::analyze(art::Event const& e)
     }
     float totE = 0;
     float totq_int = 0;
-    float totq_dqdx = 0;
+    // float totq_dqdx = 0; // unused
     for (size_t i = 0; i < fHitStore.size(); ++i)
     {
       if(fHitStore[i].dEdx > -1)
@@ -651,6 +651,7 @@ void sbn::TimeTrackTreeStorage::analyze(art::Event const& e)
         totE += E_hit;
       }
 
+/*  this block is unused
       if(fHitStore[i].dqdx > -1)
       {
         float q_hit = fHitStore[i].integral;
@@ -658,6 +659,7 @@ void sbn::TimeTrackTreeStorage::analyze(art::Event const& e)
         float q_hit_dqdx = fHitStore[i].dqdx*fHitStore[i].pitch;
         totq_dqdx += q_hit_dqdx;
       }
+*/
       /*
       if(fHitStore[i].pitch > 1 && fHitStore[i].dqdx < 100)
       {
