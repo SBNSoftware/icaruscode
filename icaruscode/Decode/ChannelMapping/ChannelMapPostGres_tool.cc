@@ -5,6 +5,9 @@
  *
  */
 
+// ICARUS libraries
+#include "icaruscode/Decode/ChannelMapping/RunPeriods.h"
+
 // Framework Includes
 #include "art/Framework/Core/EDProducer.h"
 #include "art/Framework/Services/Registry/ServiceHandle.h"
@@ -23,6 +26,8 @@
 #include <string>
 #include <iostream>
 #include <memory>
+#include <array>
+#include <cassert>
 
 //------------------------------------------------------------------------------------------------------------------------------------------
 // implementation follows
@@ -42,9 +47,19 @@ public:
     explicit ChannelMapPostGres(fhicl::ParameterSet const &pset);
 
     /**
-     *  @brief  Destructor
+     * @brief   Prepares the object for queries pertaining the specified period.
+     * @param   period the period to be prepared for
+     * @return  whether values cached from the previous period are invalidated
+     * 
+     * Periods are defined in `icarusDB::RunPeriods` class.
+     * 
+     * If the return value is `true`, caller should follow by rebuilding all the
+     * maps they need to use.
+     * If the return value is `false`, all maps built after the previous call to
+     * `SelectPeriod()` are still current for `period`: building new ones is not
+     * necessary, but it's not harmful either (at most, wasteful).
      */
-    ~ChannelMapPostGres();
+    virtual bool SelectPeriod(RunPeriod period) override;
 
     /**
      *  @brief Define the returned data structures for a mapping between TPC Fragment IDs
@@ -84,13 +99,29 @@ public:
   virtual int BuildSideCRTCalibrationMap(SideCRTChannelToCalibrationMap&) const override;
 
 private:
+
     // Recover data from postgres database
     int GetDataset(const std::string&, const std::string&, const std::string&, Dataset&) const;
     int GetCRTCaldata(const std::string&, const std::string&, Dataset&) const;
     uint32_t fNothing;     //< Nothing
 
+    /// The PMT timestamp being served. Chosen by `SelectPeriod()`.
+    std::string fCurrentPMTTimestamp = "";
+
+    /// The list of available PMT timestamps.
+    static std::array<std::string, RunPeriods::NPeriods> const PMTTimestampSet;
+
 };
 
+//------------------------------------------------------------------------------------------------------------------------------------------
+std::array<std::string, RunPeriods::NPeriods> const
+ChannelMapPostGres::PMTTimestampSet{
+   "start"    
+  ,"23aug2023"
+  ,"29aug2023"
+};
+
+//------------------------------------------------------------------------------------------------------------------------------------------
 ChannelMapPostGres::ChannelMapPostGres(fhicl::ParameterSet const &pset)
 {
     fNothing = pset.get<uint32_t>("Nothing");
@@ -99,10 +130,31 @@ ChannelMapPostGres::ChannelMapPostGres(fhicl::ParameterSet const &pset)
 }
 
 //------------------------------------------------------------------------------------------------------------------------------------------
-
-ChannelMapPostGres::~ChannelMapPostGres()
-{
+bool ChannelMapPostGres::SelectPeriod(RunPeriod period) {
+  
+  auto const iPeriod = static_cast<unsigned int>(period);
+  std::string newPMTTimestamp = PMTTimestampSet.at(iPeriod);
+  
+  if (fCurrentPMTTimestamp == newPMTTimestamp) {
+    mf::LogDebug("ChannelMapPostGres")
+      << "Period " << newPMTTimestamp << " already selected";
+  }
+  else if ( !fCurrentPMTTimestamp.empty() ) {
+    mf::LogDebug("ChannelMapPostGres") << "Switched from period "
+      << fCurrentPMTTimestamp << " to " << newPMTTimestamp;
+  }
+  else {
+    mf::LogDebug("ChannelMapPostGres") << "Switching to period " << newPMTTimestamp;
+  }
+  
+  if (fCurrentPMTTimestamp == newPMTTimestamp) return false;
+  
+  fCurrentPMTTimestamp = newPMTTimestamp;
+  return true;
+  
 }
+
+//------------------------------------------------------------------------------------------------------------------------------------------
 
 // -----------------------------------------------------
 // This Function does the basic information retrieval 
@@ -289,6 +341,7 @@ int ChannelMapPostGres::BuildTPCFragmentIDToReadoutIDMap(TPCFragmentIDToReadoutI
             releaseTuple(tuple);
         }
     }
+
     return error;
 }
 
@@ -351,15 +404,17 @@ int ChannelMapPostGres::BuildTPCReadoutBoardToChannelMap(TPCReadoutBoardToChanne
 //******************* PMT Channel Mapping ***********************
 int ChannelMapPostGres::BuildFragmentToDigitizerChannelMap(FragmentToDigitizerChannelMap& fragmentToDigitizerChannelMap) const
 {
+    assert( !fCurrentPMTTimestamp.empty() );
     // clearing is cleansing
     fragmentToDigitizerChannelMap.clear();
     // Recover the information from the database on the mapping 
     const std::string  name("Pmt_placement");
     const std::string  dburl("https://dbdata0vm.fnal.gov:9443/QE/hw/app/SQ/query?dbname=icarus_hardware_prd");
+    const std::string  period_query("&w=period_active:eq:"+fCurrentPMTTimestamp);
     const std::string  dataType("pmt_placements");
     Dataset            dataset;
     // Recover the data from the database
-    int error = GetDataset(name,dburl,dataType,dataset);
+    int error = GetDataset(name,dburl+period_query,dataType,dataset);
     // If there was an error the function above would have printed a message so bail out
     if (error) throw(std::exception());
     // Ok, now we can start extracting the information
@@ -370,23 +425,24 @@ int ChannelMapPostGres::BuildFragmentToDigitizerChannelMap(FragmentToDigitizerCh
         Tuple tuple = getTuple(dataset, row);
         if (tuple != NULL)
         {
+     
             char digitizerBuffer[10];
             // Recover the digitizer label first 
-            getStringValue(tuple, 8, digitizerBuffer, sizeof(digitizerBuffer), &error);
+            getStringValue(tuple, 11, digitizerBuffer, sizeof(digitizerBuffer), &error);
             if (error) throw std::runtime_error("Encountered error when trying to recover the PMT digitizer label");
             std::string digitizerLabel(digitizerBuffer, 8); //sizeof(digitizerBuffer));
             // Recover the fragment id
-            unsigned fragmentID = getLongValue(tuple, 18, &error);
+            unsigned fragmentID = getLongValue(tuple, 15, &error);
             if (error) throw std::runtime_error("Encountered error when trying to recover the PMT fragment id");
             // Now recover the digitizer channel number
-            unsigned int digitizerChannelNo = getLongValue(tuple, 9, &error);
+            unsigned int digitizerChannelNo = getLongValue(tuple, 12, &error);
             if (error) throw std::runtime_error("Encountered error when trying to recover the PMT digitizer channel number");
             // Get the LArsoft channel ID
-            unsigned int channelID = getLongValue(tuple, 17, &error);
+            unsigned int channelID = getLongValue(tuple, 3, &error);
             if (error) throw std::runtime_error("Encountered error when trying to recover the PMT channel ID");
             // Get the laserChannelNumber 
             char laserChannelBuffer[10];
-            getStringValue(tuple, 7, laserChannelBuffer, sizeof(laserChannelBuffer), &error);
+            getStringValue(tuple, 10, laserChannelBuffer, sizeof(laserChannelBuffer), &error);
             if (error) throw std::runtime_error("Encountered error when trying to recover the PMT laser channel label");
             std::string laserChannelLabel(laserChannelBuffer, 2, sizeof(laserChannelBuffer)); //sizeof(digitizerBuffer));
             unsigned int laserChannel = std::stol(laserChannelLabel);  // try-catch syntax for stol or not necessary ? 
@@ -396,7 +452,7 @@ int ChannelMapPostGres::BuildFragmentToDigitizerChannelMap(FragmentToDigitizerCh
             releaseTuple(tuple);
         }
     }
-
+ 
     return error;
 }
 
