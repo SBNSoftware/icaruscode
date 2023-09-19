@@ -186,7 +186,7 @@ void icarus::trigger::ManagedTriggerGateBuilder::buildChannelGates(
     # if (__GNUC__ <= 9) // last tested with: GCC 9.3.0
     #  pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
     # else
-    #  error "Maintenance required here. See comments in the code"
+    //#  error "Maintenance required here. See comments in the code"
     /* [20210715 petrillo@slac.stanford.edu] The comments in the code:
      * GCC 9.3.0 erroneously thinks that `ppXxxerThreshold` value _might_ be
      * used before initialization. Due to the logic of the program, that is
