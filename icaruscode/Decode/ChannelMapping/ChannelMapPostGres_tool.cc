@@ -137,15 +137,14 @@ bool ChannelMapPostGres::SelectPeriod(RunPeriod period) {
   
   if (fCurrentPMTTimestamp == newPMTTimestamp) {
     mf::LogDebug("ChannelMapPostGres")
-      << "Period #" << iPeriod << " already selected";
+      << "Period " << newPMTTimestamp << " already selected";
   }
   else if ( !fCurrentPMTTimestamp.empty() ) {
-    mf::LogDebug("ChannelMapPostGres") << "Switched from period #"
-      << std::find(PMTTimestampSet.begin(), PMTTimestampSet.end(), fCurrentPMTTimestamp) 
-      << " to #" << iPeriod;
+    mf::LogDebug("ChannelMapPostGres") << "Switched from period "
+      << fCurrentPMTTimestamp << " to " << newPMTTimestamp;
   }
   else {
-    mf::LogDebug("ChannelMapPostGres") << "Switching to period #" << iPeriod;
+    mf::LogDebug("ChannelMapPostGres") << "Switching to period " << newPMTTimestamp;
   }
   
   if (fCurrentPMTTimestamp == newPMTTimestamp) return false;
