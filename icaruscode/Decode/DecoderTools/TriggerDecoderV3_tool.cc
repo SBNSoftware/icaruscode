@@ -851,6 +851,13 @@ namespace daq
   } // TriggerDecoderV3::encodeLVDSbits()
   
   
+  template <unsigned int startBit, unsigned int nBits, typename T>
+  constexpr T TriggerDecoderV3::bits(T value) {
+    constexpr T nBitsMask = (nBits == sizeof(T)*8)? ~T{0}: T((1 << nBits) - 1);
+    return (value >> T(startBit)) & nBitsMask;
+  }
+  
+  
   std::uint16_t TriggerDecoderV3::encodeSectorBits
     (short int cryostat, short int connector, std::uint64_t connectorWord)
   {
@@ -876,13 +883,6 @@ namespace daq
       | (bits<FirstSectorBit,                  SectorBitsPerConnector>(connectorWord)                          )
       );
   } // TriggerDecoderV3::encodeSectorBits()
-  
-  
-  template <unsigned int startBit, unsigned int nBits, typename T>
-  constexpr T TriggerDecoderV3::bits(T value) {
-    constexpr T nBitsMask = (nBits == sizeof(T)*8)? ~T{0}: T((1 << nBits) - 1);
-    return (value >> T(startBit)) & nBitsMask;
-  }
   
   
   sim::BeamType_t TriggerDecoderV3::simGateType(sbn::triggerSource source)
