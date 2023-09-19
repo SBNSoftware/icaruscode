@@ -652,7 +652,7 @@ for(unsigned int jhit=0;jhit<mergedCands.size(); jhit++)
                 assert(&Func);
                 Func.SetParameter(0, mergedCands.size());
                 
-                float intBaseline=0;
+                // float intBaseline=0; // unused
 
               ICARUSPeakFitParams_t peakParams=peakParamsVec[jhit];
 
@@ -682,7 +682,7 @@ for(unsigned int jhit=0;jhit<mergedCands.size(); jhit++)
                   Func.SetParameter(4+5*jhit,peakRight);
                   Func.SetParameter(5+5*jhit,peakLeft);
 
-                  intBaseline+=(endInt-startInt)*peakBaseline;
+                  // intBaseline+=(endInt-startInt)*peakBaseline; // unused
                 
                 try
                   {
@@ -701,7 +701,7 @@ for(unsigned int jhit=0;jhit<mergedCands.size(); jhit++)
                   FuncLong.SetParameter(0, mergedCands.size());
 
                 
-                float intBaseline=0;
+                // float intBaseline=0; // unused
 
               ICARUSPeakFitParams_t peakParams=peakParamsVec[jhit];
 
@@ -712,7 +712,7 @@ for(unsigned int jhit=0;jhit<mergedCands.size(); jhit++)
                peakLeft   = peakParams.peakTauLeft;
                peakRight  = peakParams.peakTauRight;
                peakBaseline = peakParams.peakBaseline;
- intBaseline+=(endInt-startInt)*peakBaseline;
+ // intBaseline+=(endInt-startInt)*peakBaseline; // unused
  peakAmpErr   = peakParams.peakAmplitudeError;
               peakMeanErr  = peakParams.peakCenterError;
                
