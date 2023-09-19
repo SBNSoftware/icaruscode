@@ -560,7 +560,7 @@ void icarus::trigger::SlidingWindowTrigger::produceThreshold(
     // do it now while the gate/metadata association is still locally available
     icarus::trigger::OpDetWaveformMetaMatcher waveformMetaMatcher{ event };
     art::Assns<OpticalTriggerGateData_t, raw::OpDetWaveform> outputWaveAssns;
-    for (auto const [ gatePtr, metaPtr ]: outputAssns)
+    for (auto const &[ gatePtr, metaPtr ]: outputAssns)
       outputWaveAssns.addSingle(gatePtr, waveformMetaMatcher(metaPtr));
     
     event.put(
