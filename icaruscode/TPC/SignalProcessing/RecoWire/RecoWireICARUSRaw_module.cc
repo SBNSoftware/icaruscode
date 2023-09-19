@@ -223,7 +223,7 @@ namespace recowireraw{
        
         double signal[4096];
                double integral[4096];
-        double check[4096];
+        // double check[4096];  // unused
       
        // double tau0=100;
         for(int j=0;j<4096;j++)
@@ -248,9 +248,9 @@ namespace recowireraw{
         
         
         outl[0]=integral[0];
-        double sum_tot=0;
+        // double sum_tot=0; // unused
         for(int j=1;j<4096;j++) {
-            sum_tot+=integral[j];
+            // sum_tot+=integral[j]; // unused
             outl[j]=outl[j-1]*exp(-0.4/tl)+integral[j];
         }
         
@@ -262,9 +262,9 @@ namespace recowireraw{
         }
         
         outs[0]=integral[0];
-        sum_tot=0;
+        // sum_tot=0; // unused
         for(int j=1;j<4096;j++) {
-            sum_tot+=integral[j];
+            // sum_tot+=integral[j]; // unused
             if(ts>0)
                 outs[j]=outs[j-1]*exp(-0.4/ts)+integral[j];
             else
