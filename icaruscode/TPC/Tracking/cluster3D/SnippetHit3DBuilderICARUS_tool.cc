@@ -738,7 +738,7 @@ size_t SnippetHit3DBuilderICARUS::BuildHitPairMapByTPC(PlaneSnippetHitMapItrPair
     };
 
     size_t nTriplets(0);
-    size_t nDeadChanHits(0);
+    // size_t nDeadChanHits(0); // unused
     size_t nOrphanPairs(0);
 
     //*********************************************************************************
@@ -776,7 +776,7 @@ size_t SnippetHit3DBuilderICARUS::BuildHitPairMapByTPC(PlaneSnippetHitMapItrPair
         size_t n12Pairs = findGoodHitPairs(firstSnippetItr, snippetHitMapItr1Start, snippetHitMapItr1End, pair12Map);
         size_t n13Pairs = findGoodHitPairs(firstSnippetItr, snippetHitMapItr2Start, snippetHitMapItr2End, pair13Map);
 
-        nDeadChanHits  += hitPairList.size() - curHitListSize;
+        // nDeadChanHits  += hitPairList.size() - curHitListSize; // unused
         curHitListSize  = hitPairList.size();
 
         if (n12Pairs > n13Pairs) findGoodTriplets(pair12Map, pair13Map, hitPairList);
