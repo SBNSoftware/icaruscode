@@ -274,6 +274,7 @@ namespace recowireraw{
         double nl=(1-exp(-0.4/tl));
         double ns=(1-exp(-0.4/ts));
         
+        /*  unused
         double intl=0;
         double ints=0;
         double int0=0;
@@ -286,6 +287,7 @@ namespace recowireraw{
             int0+=integral[j];
         for(int j=0;j<4096;j++) 
             intc+=check[j];
+        */
         
         
         for(int j=0;j<4096;j++) { 
