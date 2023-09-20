@@ -36,6 +36,12 @@ outputs.rootOutput.outputCommands:         ["keep *_*_*_*",
 physics.analyzers.purityinfoana0.SelectEvents:    [ path ]
 physics.analyzers.purityinfoana1.SelectEvents:    [ path ]
 
+### Set up hit finding for multiple TPC readout
+physics.producers.gaushitTPCWW.CalDataModuleLabel:  "roifinder2d:PHYSCRATEDATATPCWW"
+physics.producers.gaushitTPCWE.CalDataModuleLabel:  "roifinder2d:PHYSCRATEDATATPCWE"
+physics.producers.gaushitTPCEW.CalDataModuleLabel:  "roifinder2d:PHYSCRATEDATATPCEW"
+physics.producers.gaushitTPCEE.CalDataModuleLabel:  "roifinder2d:PHYSCRATEDATATPCEE"
+
 services.message.destinations :
 {
   STDCOUT:

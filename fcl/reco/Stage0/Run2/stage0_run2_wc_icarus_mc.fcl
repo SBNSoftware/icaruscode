@@ -63,10 +63,10 @@ physics.producers.decon2droiWE.wcls_main.params.raw_input_label:  "MCDecodeTPCRO
 physics.producers.decon2droiWW.wcls_main.params.raw_input_label:  "MCDecodeTPCROI:PHYSCRATEDATATPCWW"
 
 # Override the hit finder input 
-#physics.producers.gaushitTPCWW.CalDataModuleLabel: "roifinder2d:PHYSCRATEDATATPCWW"
-#physics.producers.gaushitTPCWE.CalDataModuleLabel: "roifinder2d:PHYSCRATEDATATPCWE"
-#physics.producers.gaushitTPCEW.CalDataModuleLabel: "roifinder2d:PHYSCRATEDATATPCEW"
-#physics.producers.gaushitTPCEE.CalDataModuleLabel: "roifinder2d:PHYSCRATEDATATPCEE"
+physics.producers.gaushitTPCWW.CalDataModuleLabel: "roifinder2d:PHYSCRATEDATATPCWW"
+physics.producers.gaushitTPCWE.CalDataModuleLabel: "roifinder2d:PHYSCRATEDATATPCWE"
+physics.producers.gaushitTPCEW.CalDataModuleLabel: "roifinder2d:PHYSCRATEDATATPCEW"
+physics.producers.gaushitTPCEE.CalDataModuleLabel: "roifinder2d:PHYSCRATEDATATPCEE"
 
 ## Need overrides for the purity monitor
 physics.analyzers.purityinfoana0.SelectEvents: [ path ]
