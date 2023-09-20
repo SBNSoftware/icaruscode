@@ -152,7 +152,8 @@ void TPCDecoder::process_fragment(const artdaq::Fragment &fragment)
         {
             //raw::ChannelID_t channel_num = (i_ch & 0xff ) + (i_b << 8);
             raw::ChannelID_t           channel_num = boardId + channel;
-            raw::RawDigit::ADCvector_t wvfm(physCrateFragment.channel_adc_vec(board, channel).begin(), physCrateFragment.channel_adc_vec(board, channel).end());
+            raw::RawDigit::ADCvector_t wvfm(physCrateFragment.nSamplesPerChannel());
+            wvfm.assign(physCrateFragment.channel_adc_vec(board, channel).begin(), physCrateFragment.channel_adc_vec(board, channel).end());
             fRawDigitCollection->emplace_back(channel_num,physCrateFragment.nSamplesPerChannel(),wvfm);
         }//loop over channels
     }//loop over boards
