@@ -385,9 +385,7 @@ void TPCDecoderFilter2D::process_fragment(detinfo::DetectorClocksData const&,
             size_t channelOnBoard = boardOffset + chanIdx;
 
             icarus_signal_processing::VectorFloat& rawDataVec = fRawWaveforms[channelOnBoard];
-
-            for(size_t tick = 0; tick < nSamplesPerChannel; tick++)
-                rawDataVec[tick] = physCrateFragment.adc_val(board, chanIdx, tick);
+            rawDataVec.assign(physCrateFragment.channel_adc_vec(board, chanIdx).begin(), physCrateFragment.channel_adc_vec(board, chanIdx).end());
 
             icarus_signal_processing::VectorFloat& pedCorDataVec = fPedCorWaveforms[channelOnBoard];
 
