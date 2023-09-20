@@ -33,8 +33,15 @@ physics :{
 
             inputers: ["wclsSimDepoSource:electron"]
             outputers: [
-               "wclsSimChannelSink:postdrift",
-               "wclsFrameSaver:simdigits0",
+               "wclsDepoSetSimChannelSink:postdrift0",
+		"wclsDepoSetSimChannelSink:postdrift1",
+		"wclsDepoSetSimChannelSink:postdrift2",
+		"wclsDepoSetSimChannelSink:postdrift3",
+		"wclsDepoSetSimChannelSink:postdrift4",
+		"wclsDepoSetSimChannelSink:postdrift5",
+		"wclsDepoSetSimChannelSink:postdrift6",
+		"wclsDepoSetSimChannelSink:postdrift7",
+		"wclsFrameSaver:simdigits0",
                "wclsFrameSaver:simdigits1",
                "wclsFrameSaver:simdigits2",
                "wclsFrameSaver:simdigits3"
@@ -58,6 +65,11 @@ physics :{
               # load values from services_common_icarus.fcl
               # Electron lifetime [microseconds]
               lifetime: @local::icarus_detproperties.Electronlifetime
+
+		lifetime_TPCEE: @local::icarus_detproperties.Electronlifetime
+                lifetime_TPCEW: @local::icarus_detproperties.Electronlifetime
+                lifetime_TPCWE: @local::icarus_detproperties.Electronlifetime
+                lifetime_TPCWW: @local::icarus_detproperties.Electronlifetime
 
               # Electron drift speed, assumes a certain applied E-field [mm/us]
               # driftSpeed: 1.565

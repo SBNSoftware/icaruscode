@@ -81,6 +81,80 @@ local g = import 'pgraph.jsonnet';
                       name=name),
     }.ret,
 
+
+    //  Build a depofanout-[drift]-[signal]-[framesummer]-[pipelines]-fanin graph.
+    //  FrameSummer add up the two "split" anodes into one frame.
+    //  Each branch of the pipelines operates on the summed signal frame.
+    fandrifter :: function(fout,driftpipes, sigpipes, summers, actpipes, fin, name="fandrifter", outtags=[], tag_rules=[]) {
+
+        local fanoutmult = std.length(driftpipes),
+        local faninmult = std.length(actpipes),
+
+        local fanout = g.pnode({
+            type: fout,
+            name: name,
+            data: {
+                multiplicity: fanoutmult,
+                tag_rules: tag_rules,
+            },
+        }, nin=1, nout=fanoutmult),
+
+
+        local fanin = g.pnode({
+            type: fin,
+            name: name,
+            data: {
+                multiplicity: faninmult,
+                tags: outtags,
+            },
+        }, nin=faninmult, nout=1),
+
+	local drift = g.intern(innodes=driftpipes,
+                                 outnodes=actpipes,
+                                 centernodes=sigpipes+summers,
+                                 edges=
+				[g.edge(driftpipes[n], sigpipes[n]) for n in std.range(0,fanoutmult-1)]
+                                 // connecting signal and summer
+                                 + [g.edge(sigpipes[0], summers[0],0,0)]
+                                 + [g.edge(sigpipes[1], summers[0],0,1)]
+                                 + [g.edge(sigpipes[2], summers[1],0,0)]
+                                 + [g.edge(sigpipes[3], summers[1],0,1)]
+                                 + [g.edge(sigpipes[4], summers[2],0,0)]
+                                 + [g.edge(sigpipes[5], summers[2],0,1)]
+                                 + [g.edge(sigpipes[6], summers[3],0,0)]
+                                 + [g.edge(sigpipes[7], summers[3],0,1)]
+                                 // connecting summer and the operator pipelines
+                                 + [g.edge(summers[n], actpipes[n]) for n in std.range(0,faninmult-1)],
+                                 name=name),
+
+        local signal = g.intern(innodes=sigpipes,
+                                 outnodes=actpipes,
+                                 centernodes=summers,
+                                 edges= 
+                                 // connecting signal and summer
+                                 + [g.edge(sigpipes[0], summers[0],0,0)]
+                                 + [g.edge(sigpipes[1], summers[0],0,1)]
+                                 + [g.edge(sigpipes[2], summers[1],0,0)]
+                                 + [g.edge(sigpipes[3], summers[1],0,1)]
+                                 + [g.edge(sigpipes[4], summers[2],0,0)]
+                                 + [g.edge(sigpipes[5], summers[2],0,1)]
+                                 + [g.edge(sigpipes[6], summers[3],0,0)]
+                                 + [g.edge(sigpipes[7], summers[3],0,1)]
+                                 // connecting summer and the operator pipelines
+                                 + [g.edge(summers[n], actpipes[n]) for n in std.range(0,faninmult-1)],
+                                 name=name),
+
+
+        ret: g.intern(innodes=[fanout],
+                      outnodes=[fanin],
+                      centernodes=[drift],
+                      edges=
+                      [g.edge(fanout, driftpipes[n], n, 0) for n in std.range(0, fanoutmult-1)] +
+                      [g.edge(drift, fanin, n, n) for n in std.range(0, faninmult-1)],
+                      name=name),
+    }.ret,
+
+
   // Build a fanout-[pipelines]-fanin graph.  pipelines is a list of
   // pnode objects, one for each spine of the fan.
   fanpipe:: function(fout, pipelines, fin, name='fanpipe', outtags=[], fout_tag_rules=[], fin_tag_rules=[]) {

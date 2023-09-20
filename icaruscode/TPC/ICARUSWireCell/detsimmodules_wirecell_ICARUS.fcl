@@ -22,7 +22,14 @@ icarus_simwire_wirecell:
         inputers: ["wclsSimDepoSetSource:electron"]
         outputers: 
         [
-            "wclsDepoSetSimChannelSink:postdrift",
+               "wclsDepoSetSimChannelSink:postdrift0",
+                "wclsDepoSetSimChannelSink:postdrift1",
+                "wclsDepoSetSimChannelSink:postdrift2",
+                "wclsDepoSetSimChannelSink:postdrift3",
+                "wclsDepoSetSimChannelSink:postdrift4",
+                "wclsDepoSetSimChannelSink:postdrift5",
+                "wclsDepoSetSimChannelSink:postdrift6",
+                "wclsDepoSetSimChannelSink:postdrift7",
             "wclsFrameSaver:simdigits0",
             "wclsFrameSaver:simdigits1",
             "wclsFrameSaver:simdigits2",
@@ -45,6 +52,11 @@ icarus_simwire_wirecell:
             # load values from services_common_icarus.fcl
             # Electron lifetime [microseconds]
             lifetime: @local::icarus_detproperties.Electronlifetime
+
+            lifetime_TPCEE: @local::icarus_detproperties.Electronlifetime
+            lifetime_TPCEW: @local::icarus_detproperties.Electronlifetime
+            lifetime_TPCWE: @local::icarus_detproperties.Electronlifetime
+            lifetime_TPCWW: @local::icarus_detproperties.Electronlifetime
             # Electron drift speed, assumes a certain applied E-field [mm/us]
             # driftSpeed: 1.565
             # Scaling Parameters from int and coh noise components
