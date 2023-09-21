@@ -218,6 +218,7 @@ namespace crt {
     float    fZErrHit; ///< stat error of CRT hit reco Z (cm)
     uint64_t    fT0Hit; ///< hit time w.r.t. PPS
     Long64_t    fT1Hit; ///< hit time w.r.t. global trigger
+    int       fHitNChan;
     float     fHitPE[32];
     int       fHitMac[32];
     int	      fHitChan[32];
@@ -372,6 +373,8 @@ namespace crt {
     fDAQNtuple->Branch("gate_start_timestamp", &m_gate_start_timestamp, "gate_start_timestamp/l");
 
     // Define the branches of our SimHit n-tuple
+    fHitNtuple->Branch("run",         &fDetRun,      "run/I");
+    fHitNtuple->Branch("subrun",      &fDetSubRun,   "subrun/I");
     fHitNtuple->Branch("event",       &fHitEvent,    "event/I");
     fHitNtuple->Branch("nHit",        &fNHit,        "nHit/I");
     fHitNtuple->Branch("x",           &fXHit,        "x/F");
@@ -382,6 +385,7 @@ namespace crt {
     fHitNtuple->Branch("zErr",        &fZErrHit,     "zErr/F");
     fHitNtuple->Branch("t0",          &fT0Hit,       "t0/l");
     fHitNtuple->Branch("t1",          &fT1Hit,       "t1/L");
+    fHitNtuple->Branch("NChan",       &fHitNChan,       "nChan/I");
     fHitNtuple->Branch("PEs",         &fHitPE,       "PEs[32]/F");
     fHitNtuple->Branch("Macs",        &fHitMac,      "Mac[32]/I");
     fHitNtuple->Branch("Chans",       &fHitChan,     "Chans[32]/I");
@@ -603,13 +607,15 @@ namespace crt {
 	     mf::LogError("CRTDataAnalysis") << "could not find mac in pesmap!" << std::endl;
 	    continue;
 	  }
+	  fHitNChan=0;
           if(fHitSubSys==0){
 	     std::map<uint8_t, std::vector<std::pair<int,float>>>::const_iterator it;
 	     for (it = hit.pesmap.begin(); it!=hit.pesmap.end();it++){
 		std::vector<std::pair<int,float>> thisHit = it->second;
 		int hitsize = (int) thisHit.size();
 	     	for(int k=0; k< hitsize; k++){
-			fHitPE[thisHit[k].first]=thisHit[k].second;
+		   fHitPE[thisHit[k].first]=thisHit[k].second;
+		   if(thisHit[k].second>1) fHitNChan++;
 		}	
   	     }
 	  } else if (fHitSubSys==1) {
@@ -618,6 +624,7 @@ namespace crt {
 	     for (it = hit.pesmap.begin(); it!=hit.pesmap.end();it++){
                 std::vector<std::pair<int,float>> thisHit = it->second;
                 int hitsize = (int) thisHit.size();
+		fHitNChan+=hitsize;
                 for(int k=0; k< hitsize; k++){
 		   arrpos++;
 		   if(arrpos>=32) continue;
