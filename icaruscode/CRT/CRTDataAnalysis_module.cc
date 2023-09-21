@@ -615,6 +615,8 @@ namespace crt {
 		int hitsize = (int) thisHit.size();
 	     	for(int k=0; k< hitsize; k++){
 		   fHitPE[thisHit[k].first]=thisHit[k].second;
+		   fHitChan[thisHit[k].first]=thisHit[k].first;
+		   fHitMac[thisHit[k].first]=(int)it->first;
 		   if(thisHit[k].second>1) fHitNChan++;
 		}	
   	     }
