@@ -504,7 +504,7 @@ void TrackHitEfficiencyAnalysis::fillHistograms(const art::Event& event) const
             int   nMatchedWires(0);
             int   nMatchedHits(0);
             int   bestTrackID(0);
-            int   bestOrigTrackID(0);
+//            int   bestOrigTrackID(0);
 //            short bestStartTDC(0);
 //            short bestStopTDC(0);
 
@@ -516,7 +516,7 @@ void TrackHitEfficiencyAnalysis::fillHistograms(const art::Event& event) const
                 if (std::get<2>(mapItr.second) > trackElectrons)
                 {
                     bestTrackID     = mapItr.first;
-                    bestOrigTrackID = std::get<3>(mapItr.second);
+//                    bestOrigTrackID = std::get<3>(mapItr.second);
 //                    bestStartTDC    = std::get<0>(mapItr.second);
 //                    bestStopTDC     = std::get<1>(mapItr.second);
                     trackElectrons  = std::get<2>(mapItr.second);
