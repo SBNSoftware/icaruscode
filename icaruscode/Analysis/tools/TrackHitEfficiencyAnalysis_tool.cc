@@ -431,7 +431,7 @@ void TrackHitEfficiencyAnalysis::fillHistograms(const art::Event& event) const
 
         sim::SimChannel::TDCIDEs_t::const_iterator tdcIdeItr = simChannel.TDCIDEMap().begin();
 
-        std::cout << "****************** Channel " << channel << " ***********************" << std::endl;
+//        std::cout << "****************** Channel " << channel << " ***********************" << std::endl;
 
         // Loop through all of the TDC values in the "map"
         while(true)
@@ -448,7 +448,7 @@ void TrackHitEfficiencyAnalysis::fillHistograms(const art::Event& event) const
 
             StartStopChargeTupleMap startStopChargeTupleMap;
 
-            std::cout << "  --> First TDC value for map: " << simChannel.TDCIDEMap().begin()->first << std::endl;
+//            std::cout << "  --> First TDC value for map: " << simChannel.TDCIDEMap().begin()->first << std::endl;
 
             // Loop through continuous groups of TDC values
             while(tdcIdeItr != simChannel.TDCIDEMap().end())
@@ -534,9 +534,9 @@ void TrackHitEfficiencyAnalysis::fillHistograms(const art::Event& event) const
             {
                 int         trackPDGCode = trackIDToMCPartItr->second->PdgCode();
 //                int         trackID      = trackIDToMCPartItr->first;
-                std::string processName  = trackIDToMCPartItr->second->Process();
+//                std::string processName  = trackIDToMCPartItr->second->Process();
 
-                std::cout << "#### trackID: " << bestTrackID << ", orig: " << bestOrigTrackID << ", trackPDGCode: " << trackPDGCode << ", process: " << processName << std::endl;
+//                std::cout << "#### trackID: " << bestTrackID << ", orig: " << bestOrigTrackID << ", trackPDGCode: " << trackPDGCode << ", process: " << processName << std::endl;
 
                 // Looking for primary muons (e.g. CR Tracks)
 //                if (fabs(trackPDGCode) != 13 || processName != "primary") continue;
@@ -586,8 +586,8 @@ void TrackHitEfficiencyAnalysis::fillHistograms(const art::Event& event) const
                 stopTick         += fOffsetVec[plane];
                 maxElectronsTick += fOffsetVec[plane];
 
-                std::cout << "  --> startTick/stopTick/maxElectronsTick: " << startTick << "/" << stopTick << "/" << maxElectronsTick 
-                          << " which is from TDC values: " << startItr->first << "/" << stopItr->first << "/" << maxElectronsItr->first << std::endl;
+//                std::cout << "  --> startTick/stopTick/maxElectronsTick: " << startTick << "/" << stopTick << "/" << maxElectronsTick 
+//                          << " which is from TDC values: " << startItr->first << "/" << stopItr->first << "/" << maxElectronsItr->first << std::endl;
 
                 // Apparently it can happen that we have a start tick that exceeds the length of the input waveform. 
                 // We should also make cuts at edges of readout so we don't have distorted waveforms
@@ -688,7 +688,7 @@ void TrackHitEfficiencyAnalysis::fillHistograms(const art::Event& event) const
                             // The easiest way to do this is to simply look up all the hits on this channel and then match
                             ChanToHitVecMap::iterator hitIter = channelToHitVec.find(channel);
 
-                            std::cout << "  --> roiLen, roiDeltaT: " << roiLen << ", " << roiDeltaT << std::endl;
+//                            std::cout << "  --> roiLen, roiDeltaT: " << roiLen << ", " << roiDeltaT << std::endl;
 
                             if (hitIter != channelToHitVec.end())
                             {
@@ -791,8 +791,6 @@ void TrackHitEfficiencyAnalysis::fillHistograms(const art::Event& event) const
                 }
             }
         } // Looping over TDC bins
-
-        std::cout << "------ storing sichannel " << &simChannel << " and going to next channel --------" << std::endl;
 
         channelToSimChannelMap[channel] = &simChannel;
     } // end of loop over SimChannels
