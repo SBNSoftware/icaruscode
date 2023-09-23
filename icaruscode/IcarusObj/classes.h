@@ -11,6 +11,7 @@
 
 #include "sbnobj/ICARUS/PMT/Trigger/Data/OpticalTriggerGate.h"
 #include "sbnobj/ICARUS/PMT/Trigger/Data/TriggerGateData.h"
+#include "sbnobj/ICARUS/TPC/ChannelROI.h"
 
 #include "lardataobj/AnalysisBase/T0.h"
 #include "lardataobj/RecoBase/OpFlash.h"
