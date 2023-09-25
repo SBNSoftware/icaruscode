@@ -195,6 +195,9 @@ icarus_V1730_16thChannel_misc_setup_Run1: {
 #     * `s`: side: `0` for bottom ("bot"), `1` for top ("top")
 #     For example, the digit 5 (0b101) is the crate `wetop`.
 # * `B`: board inside the crate: 1, 2 or 3.
+# 
+# Note that this convention is currently (v09_77_00) required and assumed by
+# `PMTWaveformTimeCorrectionExtractor::findWaveformTimeCorrections()`.
 #
 icarus_V1730_West_setup_Run1: [
 
