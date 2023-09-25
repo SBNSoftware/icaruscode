@@ -26,6 +26,7 @@ set(		MODULE_LIBRARIES
 			lardata::Utilities
 			lardataalg::DetectorInfo
 			larevt::Filters
+			lardataobj::Simulation
 			lardataobj::RawData
 			larevt::CalibrationDBI_IOVData
 			larevt::CalibrationDBI_Providers
@@ -51,6 +52,7 @@ set(		MODULE_LIBRARIES
 cet_build_plugin(Decon1DROI art::module LIBRARIES ${MODULE_LIBRARIES})
 cet_build_plugin(ROIConverter art::module LIBRARIES ${MODULE_LIBRARIES})
 cet_build_plugin(ROIFinder art::module LIBRARIES ${MODULE_LIBRARIES})
+cet_build_plugin(SimChannelROI art::module LIBRARIES ${MODULE_LIBRARIES})
 cet_build_plugin(RecoWireICARUSRaw art::module LIBRARIES ${MODULE_LIBRARIES})
 cet_build_plugin(RecoWireICARUS art::module LIBRARIES ${MODULE_LIBRARIES})
 cet_build_plugin(RecoWireROIICARUS art::module LIBRARIES ${MODULE_LIBRARIES})
