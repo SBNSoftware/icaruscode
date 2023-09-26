@@ -119,4 +119,13 @@ gauss_hitfinder_icarus.HitFinderToolVec.CandidateHitsPlane2.MinDeltaPeaks:      
 gauss_hitfinder_icarus.HitFinderToolVec.CandidateHitsPlane2.DilationThreshold:      8
 
 
+icarus_hitconverter:
+{
+    module_type:           HitConverter
+    HitModuleLabelVec:    ["gausshitTPCEE","gausshitTPCEW","gausshitTPCWE","gausshitTPCWW"]
+    OutInstanceLabelVec:   ["EE","EW","WE","WW"]
+    DaignosticOutput:      false
+}
+
+
 END_PROLOG
