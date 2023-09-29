@@ -2,22 +2,7 @@
 #include <algorithm>
 #include "larcore/CoreUtils/ServiceUtil.h"  // lar::providerFrom()
 using namespace icarus::crt;
-/*
-//----------------------------------------------------------------------
-CRTHitRecoAlg::CRTHitRecoAlg(const Config& config){
-  this->reconfigure(config);
-  fChannelMap = art::ServiceHandle<icarusDB::IICARUSChannelMap const>{}.get();
-  fGeometryService  = lar::providerFrom<geo::Geometry>();
-  fCrtutils = new CRTCommonUtils();
-}
 
-//---------------------------------------------------------------------
-CRTHitRecoAlg::CRTHitRecoAlg(){
-  fChannelMap = art::ServiceHandle<icarusDB::IICARUSChannelMap const>{}.get();
-  fGeometryService = lar::providerFrom<geo::Geometry>();
-  fCrtutils = new CRTCommonUtils();
-}
-*/
 CRTHitRecoAlg::CRTHitRecoAlg(const fhicl::ParameterSet& pset)
     : CRTHitRecoAlg() {
   this->reconfigure(pset);
@@ -27,28 +12,9 @@ CRTHitRecoAlg::CRTHitRecoAlg()
     : fGeometryService(lar::providerFrom<geo::Geometry>()),
       fChannelMap(
           art::ServiceHandle<icarusDB::IICARUSChannelMap const>{}.get()) {}
-/*
+
 //---------------------------------------------------------------------
-void CRTHitRecoAlg::reconfigure(const Config& config){
-    fVerbose = config.Verbose();
-    fUseReadoutWindow = config.UseReadoutWindow();
-    fQPed = config.QPed();
-    fQSlope = config.QSlope();
-    fPropDelay = config.PropDelay();
-    fPEThresh = config.PEThresh();
-    ftopGain = config.topGain();
-    ftopPed = config.topPed();
-    fSiPMtoFEBdelay = config.SiPMtoFEBdelay();
-    fCoinWindow = config.CoinWindow();
-    fCrtWindow = config.CrtWindow();
-    foutCSVFile = config.outCSVFile();
-    fCSVFile = config.CSVFile();
-    fData = config.Data();
-    if (foutCSVFile)
-      filecsv.open(fCSVFile.c_str());
-    return;
-}
-*/
+
 void CRTHitRecoAlg::reconfigure(const fhicl::ParameterSet& pset) {
   fVerbose = pset.get<bool>("Verbose", false);
   fUseReadoutWindow = pset.get<bool>("UseReadoutWindow", false);
@@ -64,21 +30,6 @@ void CRTHitRecoAlg::reconfigure(const fhicl::ParameterSet& pset) {
   fCSVFile = pset.get<std::string>("CSVFile", "");
   fData = pset.get<bool>("Data", false);
   if (!fCSVFile.empty()) filecsv.open(fCSVFile);
-  /*{
-    std::vector<std::vector<int32_t> > T1delays =
-  pset.get<std::vector<std::vector<int32_t> > >("FEB_T1delay_side");
-    std::vector<std::vector<int32_t> > T0delays =
-  pset.get<std::vector<std::vector<int32_t> > >("FEB_T0delay_side"); for(auto
-  feb : T1delays) { int32_t mac = feb[0]; int32_t d   = feb[1];
-      FEB_T1delay_side[mac] = d;
-    }
-    for(auto feb : T0delays) {
-      int32_t mac = feb[0];
-      int32_t d   = feb[1];
-      FEB_T0delay_side[mac] = d;
-    }
-  }*/
-
   return;
 }
 
@@ -102,7 +53,7 @@ vector<art::Ptr<CRTData>> CRTHitRecoAlg::PreselectCRTData(
                                     trigger_timestamp)) > fCrtWindow))
       continue;
 
-    if (type == 'm') {
+    if (type == 'm') { // 'm' = MINOS, Side CRTs
       for (int chan = 0; chan < 32; chan++) {
         std::pair<double, double> const chg_cal =
             fChannelMap->getSideCRTCalibrationMap((int)crtList[febdat_i]->fMac5,
@@ -120,13 +71,13 @@ vector<art::Ptr<CRTData>> CRTHitRecoAlg::PreselectCRTData(
               << chg_cal.first << ", " << chg_cal.second << ","
               << crtList[febdat_i]->fAdc[chan] << "," << pe << ")\n";
       }
-    } else if (type == 'c') {
+    } else if (type == 'c') { // 'c' = CERN, Top CRTs
       for (int chan = 0; chan < 32; chan++) {
         // float pe = (crtList[febdat_i]->fAdc[chan]-fQPed)/fQSlope;
         // if(pe<=fPEThresh) continue;
         presel = true;
       }
-    } else if (type == 'd') {
+    } else if (type == 'd') { // 'd' = Double Chooz, Bottom CRTs
       for (int chan = 0; chan < 64; chan++) {
         float pe = (crtList[febdat_i]->fAdc[chan] - fQPed) / fQSlope;
         if (pe <= fPEThresh) continue;
@@ -165,19 +116,9 @@ vector<pair<sbn::crt::CRTHit, vector<int>>> CRTHitRecoAlg::CreateCRTHits(
   CRT_delay_map const FEB_delay_map = LoadFEBMap();
   std::vector<std::pair<int, ULong64_t>> CRTReset;
   ULong64_t TriggerArray[305] = {0};
-  // Note: I still need to validate the Side CRT GT, so for now we will just use
-  // the top values - will be revisited, want to store seperate
-  //       values for the different timing chains once understood better. - AH
-  //       12/01/2022
-  // Vectors to store CRT Resets. Note: West and North Side CRTs are on the West
-  // timing rack, East and South Side CRTs are on East timing rack
-  /*std::vector<std::pair<int,ULong64_t>> CRTReset_top;
-  std::vector<std::pair<int,ULong64_t>> CRTReset_side_west;
-  std::vector<std::pair<int,ULong64_t>> CRTReset_side_east;
-  ULong64_t TriggerArray_top[232]={0};
-  ULong64_t TriggerArray_side_west[94]={0};
-  ULong64_t TriggerArray_side_east[94]={0};*/
-
+  // TODO: Validate side CRT global trigger timestamp reconstruction to be used 
+  // for the reference for side CRT hits, currently a couple ns off.
+  
   for (size_t crtdat_i = 0; crtdat_i < crtList.size(); crtdat_i++) {
     uint8_t mac = crtList[crtdat_i]->fMac5;
     int adid = fCrtutils.MacToAuxDetID(mac, 0);
@@ -192,30 +133,7 @@ vector<pair<sbn::crt::CRTHit, vector<int>>> CRTHitRecoAlg::CreateCRTHits(
                                   FEB_delay_map.at((int)mac + 73).T1_delay;
       TriggerArray[(int)mac] = Ts0T1ResetEvent;
       CRTReset.emplace_back((int)mac, Ts0T1ResetEvent);  // single GT
-      /*TriggerArray_top[(int) mac]=Ts0T1ResetEvent;
-      CRTReset_top.emplace_back((int) mac,Ts0T1ResetEvent);*///3 seperate GTs
     }
-    /*if (type == 'm' && crtList[crtdat_i]->IsReference_TS1()) {
-      try
-        {
-          ULong64_t Ts0T1ResetEvent = crtList[crtdat_i]->fTs0 +
-    FEB_T0delay_side.at(mac) - FEB_T1delay_side.at(mac); if(plane == 40 || plane
-    == 41 || plane == 42 || plane == 47){//CRT T1 reset on West/North
-            TriggerArray_side_west[(int) mac]=Ts0T1ResetEvent;
-            CRTReset_side_west.emplace_back((int) mac,Ts0T1ResetEvent);
-          }
-          else{
-            TriggerArray_side_east[(int) mac]=Ts0T1ResetEvent;
-            CRTReset_side_east.emplace_back((int) mac,Ts0T1ResetEvent);
-          }
-        }
-      catch(std::out_of_range& e)
-        {
-          throw art::Exception(art::errors::Configuration)
-            << "MAC address " << mac << " not found in the FEB_delay array!!!
-    Please update FEB_delay FHiCL file \n";
-        }
-    }*/
   }
   // std::cout << "------\nCreateCRTHits::Trigger timestamp =
   // "<<trigger_timestamp<<"\n------\n";
@@ -232,46 +150,6 @@ vector<pair<sbn::crt::CRTHit, vector<int>>> CRTHitRecoAlg::CreateCRTHits(
   for (int i = 0; i < 305; i++) {
     if (TriggerArray[i] == 0) TriggerArray[i] = GlobalTrigger;
   }
-  // std::cout<<"Global Trigger "<<GlobalTrigger<<std::endl; //single GT
-  /*
-  //Global Trigger Calculation for Top CRT
-  const int trigger_offset= 60; //Average distance between Global Trigger and
-  Trigger_timestamp (ns) ULong64_t GlobalTrigger_top= trigger_timestamp; if
-  (!CRTReset_top.empty()) GlobalTrigger_top = GetMode(CRTReset_top);
-  //Add average difference between trigger_timestamp and Global trigger
-  else GlobalTrigger_top=GlobalTrigger_top-trigger_offset;// In this event, the
-  T1 Reset was probably "vetoed" by the T0 Reset for (int i=0; i<232; i++){ if
-  (TriggerArray_top[i]==0) TriggerArray_top[i]=GlobalTrigger_top;
-  }
-  //std::cout<<"------\nCreateCRTHits::Mode Top CRT Global Trigger
-  ="<<GlobalTrigger_top<<"\n------\n";
-
-  //Global Trigger Calculation for West/North Side CRTs
-  ULong64_t GlobalTrigger_side_west= trigger_timestamp;
-  if (!CRTReset_side_west.empty()) GlobalTrigger_side_west =
-  GetMode(CRTReset_side_west);
-  //Add average difference between trigger_timestamp and Global trigger
-  else GlobalTrigger_side_west=GlobalTrigger_side_west-trigger_offset;// In this
-  event, the T1 Reset was probably "vetoed" by the T0 Reset for (int i=0; i<94;
-  i++){ if (TriggerArray_side_west[i]==0)
-  TriggerArray_side_west[i]=GlobalTrigger_side_west;
-  }
-  //std::cout<<"------\nCreateCRTHits::Mode Side West CRT Global Trigger
-  ="<<GlobalTrigger_side_west<<"\n------\n";
-
-  //Global Trigger Calculation for East/South Side CRTs
-  ULong64_t GlobalTrigger_side_east= trigger_timestamp;
-  if (!CRTReset_side_east.empty()) GlobalTrigger_side_east =
-  GetMode(CRTReset_side_east);
-  //Add average difference between trigger_timestamp and Global trigger
-  else GlobalTrigger_side_east=GlobalTrigger_side_east-trigger_offset;// In this
-  event, the T1 Reset was probably "vetoed" by the T0 Reset for (int i=0; i<94;
-  i++){ if (TriggerArray_side_east[i]==0)
-  TriggerArray_side_east[i]=GlobalTrigger_side_east;
-  }
-  //std::cout<<"------\nCreateCRTHits::Mode Side East CRT Global Trigger
-  ="<<GlobalTrigger_side_east<<"\n------\n";
-  */ //3 seperate GTs
 
   // loop over time-ordered CRTData
   for (size_t febdat_i = 0; febdat_i < crtList.size(); febdat_i++) {
@@ -474,7 +352,7 @@ sbn::crt::CRTHit CRTHitRecoAlg::FillCRTHit(
       time1 /*% 1'000'000'000*/;  // TODO: Update the CRTHit data product
                                   // /sbnobj/common/CRT . Discussion with SBND
                                   // people needed
-  crtHit.ts0_s = time0 / 1'000'000'000;
+  crtHit.ts0_s = time0 / 1'000'000'000;//'
   crtHit.plane = plane;
   crtHit.x_pos = x;
   crtHit.x_err = ex;
