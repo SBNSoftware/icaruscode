@@ -14,7 +14,7 @@ CRTHitRecoAlg::CRTHitRecoAlg()
           art::ServiceHandle<icarusDB::IICARUSChannelMap const>{}.get()) {}
 
 //---------------------------------------------------------------------
-
+// Read in values from crthitproducer.fcl
 void CRTHitRecoAlg::reconfigure(const fhicl::ParameterSet& pset) {
   fVerbose = pset.get<bool>("Verbose", false);
   fUseReadoutWindow = pset.get<bool>("UseReadoutWindow", false);
@@ -34,6 +34,14 @@ void CRTHitRecoAlg::reconfigure(const fhicl::ParameterSet& pset) {
 }
 
 //---------------------------------------------------------------------------------------
+// Preselect CRTData to be constructed into a CRT Hit 
+// 1. look for CRTData within +/- 3ms (fCrtWindow) of trigger timestamp
+// 2. filtering 
+// -- Side CRTs filter out low PEs (values < fPEThresh) and hits that are not a 
+//    T0 or T1 reference hit (if its a T0 or T1 reset event, they can have low PE..)
+// -- Bottom CRT Hit reco also using fPEThresh, probably need to be revisited
+// -- Top CRT does not require additional filtering here
+// 
 vector<art::Ptr<CRTData>> CRTHitRecoAlg::PreselectCRTData(
     const vector<art::Ptr<CRTData>>& crtList, uint64_t trigger_timestamp) {
   if (fVerbose)
@@ -90,7 +98,7 @@ vector<art::Ptr<CRTData>> CRTHitRecoAlg::PreselectCRTData(
   }
   mf::LogInfo("CRTHitRecoAlg:")
       << "Found " << crtdata.size() << " after preselection " << '\n';
-  // std::cout<<trigger_timestamp<<std::endl;
+  
   return crtdata;
 }
 
@@ -111,14 +119,16 @@ vector<pair<sbn::crt::CRTHit, vector<int>>> CRTHitRecoAlg::CreateCRTHits(
 
   // sort by the time
   std::sort(crtList.begin(), crtList.end(), compareBytime);
+  // Here is the calculation of the Global Trigger timestamp from the T1 reset
+  // currently only done for top CRT T1 reset values
+  // TODO: Validate side CRT global trigger timestamp reconstruction to be used 
+  // for the reference for side CRT hits, currently a couple ns off.
 
   // Load Delays map for Top CRT
   CRT_delay_map const FEB_delay_map = LoadFEBMap();
   std::vector<std::pair<int, ULong64_t>> CRTReset;
   ULong64_t TriggerArray[305] = {0};
-  // TODO: Validate side CRT global trigger timestamp reconstruction to be used 
-  // for the reference for side CRT hits, currently a couple ns off.
-  
+    
   for (size_t crtdat_i = 0; crtdat_i < crtList.size(); crtdat_i++) {
     uint8_t mac = crtList[crtdat_i]->fMac5;
     int adid = fCrtutils.MacToAuxDetID(mac, 0);
@@ -135,13 +145,11 @@ vector<pair<sbn::crt::CRTHit, vector<int>>> CRTHitRecoAlg::CreateCRTHits(
       CRTReset.emplace_back((int)mac, Ts0T1ResetEvent);  // single GT
     }
   }
-  // std::cout << "------\nCreateCRTHits::Trigger timestamp =
-  // "<<trigger_timestamp<<"\n------\n";
   const int trigger_offset =
       60;  // Average distance between Global Trigger and Trigger_timestamp (ns)
            // TODO: Make configurable parameter
   ULong64_t GlobalTrigger = trigger_timestamp;
-  if (!CRTReset.empty()) GlobalTrigger = GetMode(CRTReset);
+  if (!CRTReset.empty()) GlobalTrigger = GetMode(CRTReset); 
   // Add average difference between trigger_timestamp and Global trigger
   else
     GlobalTrigger =
@@ -199,8 +207,11 @@ vector<pair<sbn::crt::CRTHit, vector<int>>> CRTHitRecoAlg::CreateCRTHits(
 
     if (type == 'm') sideRegionToIndices[region].push_back(febdat_i);
 
-  }  // loop over CRTData products
+  }  // End loop over time-ordered CRTData products
 
+  // For Side CRT, we group the CRTData by region and look for multiple FEBs 
+  // in coincidence, saved in 'coinData'. Each index in each region should
+  // be time ordered.
   vector<size_t> unusedDataIndex;
   for (auto const& regIndices : sideRegionToIndices) {
     if (fVerbose)
@@ -284,14 +295,6 @@ vector<pair<sbn::crt::CRTHit, vector<int>>> CRTHitRecoAlg::CreateCRTHits(
           string region = fCrtutils.GetAuxDetRegion(adid);
           // int plane =fCrtutils.AuxDetRegionNameToNum(region); //3 seperate GT
           CRTHit hit = MakeSideHit(coinData, TriggerArray);  // single GT
-          /*CRTHit hit;
-          if(plane == 40 || plane == 41 || plane == 42 || plane == 47){//CRT T1
-          reset on West/North hit = MakeSideHit(coinData,
-          TriggerArray_side_west);
-          }
-          else{
-            hit = MakeSideHit(coinData, TriggerArray_side_east);
-          }*/ //3 seperate GT
 
           if (IsEmptyHit(hit)) {
             unusedDataIndex.push_back(indices[index_i]);
