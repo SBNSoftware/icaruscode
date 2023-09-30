@@ -322,16 +322,17 @@ vector<pair<sbn::crt::CRTHit, vector<int>>> CRTHitRecoAlg::CreateCRTHits(
   }        // loop over side CRTData products
 
   if (fVerbose) {
-    mf::LogInfo("CRT") << returnHits.size() << " CRT hits produced!" << '\n'
-                       << "  nHitC: " << nHitC << " , nHitD: " << nHitD
-                       << " , nHitM: " << nHitM << '\n'
-                       << "  nMisC: " << nMissC << " , nMisD: " << nMissD
-                       << " , nMisM: " << nMissM << '\n';
+    mf::LogInfo("CRTHitRecoAlg: ")
+      << returnHits.size() << " CRT hits produced!" << '\n'
+      << "  nHitC: " << nHitC << " , nHitD: " << nHitD
+      << " , nHitM: " << nHitM << '\n'
+      << "  nMisC: " << nMissC << " , nMisD: " << nMissD
+      << " , nMisM: " << nMissM << '\n'
+      << " CRT Hits by region" << '\n';
     auto cts = regCounts.begin();
-    mf::LogInfo("CRT") << " CRT Hits by region" << '\n';
     while (cts != regCounts.end()) {
-      mf::LogInfo("CRT") << "reg: " << (*cts).first
-                         << " , hits: " << (*cts).second << '\n';
+      std::cout  << "reg: " << (*cts).first
+		 << " , hits: " << (*cts).second << '\n';
       cts++;
     }
   }  // if Verbose
@@ -355,7 +356,7 @@ sbn::crt::CRTHit CRTHitRecoAlg::FillCRTHit(
       time1 /*% 1'000'000'000*/;  // TODO: Update the CRTHit data product
                                   // /sbnobj/common/CRT . Discussion with SBND
                                   // people needed
-  crtHit.ts0_s = time0 / 1'000'000'000;//'
+  crtHit.ts0_s = time0 / 1'000'000'000;//
   crtHit.plane = plane;
   crtHit.x_pos = x;
   crtHit.x_err = ex;
@@ -588,31 +589,14 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeSideHit(
 		      flag = 5 : reco z position in exact center of module 
 		      flag = 6 : single ended readout on opposite ends on inner and outer layers 
 		   */
-  struct infoA {
-    uint8_t mac5s;
-    int channel;
-    uint64_t t0;
-    TVector3 pos;
-    int strip;
-  };
-
-  struct infoB {
-    uint8_t mac5s;
-    int channel;
-    uint64_t t0;
-    TVector3 pos;
-    int strip;
-  };
-  /*struct info{
+  struct info{
     uint8_t mac5s; 
     int channel;
     uint64_t t0;
     TVector3 pos;
     int strip;
     };
-    info infoA, infoB;*/
-  vector<infoA> informationA;
-  vector<infoA> informationB;
+  vector<info> informationA, informationB;
 
   int adid = fCrtutils.MacToAuxDetID(coinData[0]->fMac5, 0);  // module ID
   auto const& adGeo = fGeometryService->AuxDet(adid);         // module
@@ -627,19 +611,16 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeSideHit(
 
   TVector3 postrig;
 
-  vector<uint64_t> ttrigs;
-  vector<uint64_t> t1trigs;
+  vector<uint64_t> ttrigs, t1trigs;
   vector<TVector3> tpos;
   double zmin = DBL_MAX, zmax = -DBL_MAX;
   double ymin = DBL_MAX, ymax = -DBL_MAX;
   double xmin = DBL_MAX, xmax = -DBL_MAX;
-  std::vector<int> layID;
-  std::vector<int> febA;
-  std::vector<int> febB;
-
+  std::vector<int> layID, febA, febB;
+  int zrange_min = 0, zrange_max = 0;
   uint64_t southt0_v = -999, southt0_h = -999;
 
-  // loop over FEBs
+  // loop over coinData to group FEBs into inner or outer layers (infoA or infoB)
   for (auto const& data : coinData) {
     if (adid == (int)fCrtutils.MacToAuxDetID((int)data->fMac5, 0)) {
       febA.push_back(data->fMac5);
@@ -649,10 +630,32 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeSideHit(
   }
 
   if (fVerbose)
-    std ::cout << "line 451: size of febA: \t" << (int)febA.size()
-               << " size of febB: " << (int)febB.size() << '\n';
+    mf::LogInfo("CRTHitRecoAlg:MakeSideHit") 
+      << "size of febA: " << (int)febA.size()
+      << ", size of febB: " << (int)febB.size() << '\n';
+  // *** Flag = 1: Check and flag single ended readouts
+  if ((int)febA.size() == 1 and (int)febB.size() == 1 and region!="South" and region!="North"){
+    flag = 1;
+    if(fVerbose) 
+      mf::LogInfo("CRTHitRecoAlg:MakeSideHit") 
+	<< "single ended readout for both layers! setting flag == 1 ... \n";
+  }
+  // *** Flag = 4: Check and flag single ended readout on one layer 
+  else if ((int)febA.size() == 1 and region!="South" and region!="North"){
+    if(fVerbose)
+      mf::LogInfo("CRTHitRecoAlg:MakeSideHit") 
+	<< "single ended readout for feb A, 1st layer! setting flag == 4 ... \n";
+    flag = 4;
+  }
+  else if ((int)febB.size() == 1 and region!="South" and region!="North"){
+    if(fVerbose)
+      mf::LogInfo("CRTHitRecoAlg:MakeSideHit") 
+	<< "single ended readout for feb B, 2nd layer! setting flag == 4 ... \n";
+    flag = 4;
+  }
 
-  // loop over FEBs
+
+  // loop over coinData 
   for (auto const& data : coinData) {
     // if(!(region=="South")) continue;
     macs.push_back(data->fMac5);
@@ -662,9 +665,9 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeSideHit(
     layID.push_back(layer);
 
     auto idx = &data - coinData.data();
-    if (fVerbose)
-      std ::cout << "index: " << idx << " , mac5: " << (int)macs.back()
-                 << " ,adid: " << adid << '\n';
+    if (fVerbose) 
+      mf::LogInfo("CRTHitRecoAlg:MakeSideHit") 
+	<< "index: " << idx <<" , mac5: " << (int)macs.back() << " ,AuxDetID: " << adid<< '\n';
 
     if ((int)febA.size() == 0 or (int) febB.size() == 0) continue;
 
@@ -678,7 +681,6 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeSideHit(
     for (int i = 0; i < size; i++) {
       if (macs.back() == (int)febA[i]) {
         // loop over channels
-
         for (int chan = 0; chan < 32; chan++) {
           std::pair<double, double> const chg_cal =
               fChannelMap->getSideCRTCalibrationMap((int)data->fMac5, chan);
@@ -829,7 +831,7 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeSideHit(
       nz++;
       if (fVerbose) {
         if (region == "South")
-          mf::LogInfo("CRTHitRecoAlg: ")
+          mf::LogInfo("CRTHitRecoAlg:")
               << " South wall z: \t"
               << " feb: " << (int)macs.back() << " ,chan : \t" << chan
               << " ,pe: \t" << pe << ", adc:\t" << data->fAdc[chan]
@@ -932,20 +934,28 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeSideHit(
 
   geo::Point_t crossfebpos;
 
-  uint64_t t0_1 = -5;
-  uint64_t t0_2 = -5;
-  uint64_t t1_1 = -5;
-  uint64_t t1_2 = -5;
-  uint64_t t2_1 = -5;
-  uint64_t t2_2 = -5;
-  int mac5_1 = -5;
-  int mac5_2 = -5;
+  uint64_t t0_1 = -5; //T0 for infoA, layer 1
+  uint64_t t0_2 = -5; //T0 for infoB, layer 2
+  uint64_t t1_1 = -5; //layer 1: T0 for FEB on South end of module (even mac5), E+W walls
+  uint64_t t1_2 = -5; //layer 1: T0 for FEB on North end of module (odd mac5), E+W walls
+  uint64_t t2_1 = -5; //layer 2: T0 for FEB on South end of module (even mac5), E+W walls
+  uint64_t t2_2 = -5; //layer 2: T0 for FEB on North end of module (odd mac5), E+W walls
+  int mac5_1 = -5; //layer 1 mac5 (used to check for hits that cross module,)
+  int mac5_2 = -5; //layer 2 mac5 
   geo::Point_t center;
+  //if multiple pairs of FEBs contribute on a layer, take average of all reco'd z pos 
+  // (store them in vector and take avg.)
+  float zposA = 0, zposB = 0;
+  vector<float> zposA_vec = {}, zposB_vec = {}; 
 
   for (auto const& infn : informationA) {
     auto i = &infn - informationA.data();
     auto const& adsGeo = adGeo.SensitiveVolume(infn.strip);  // trigger stripi
     center = adsGeo.GetCenter();
+    
+    // rough Z boundaries for each module (relevent for side E+W)
+    zrange_min = center.Z() - adsGeo.HalfLength();
+    zrange_max = center.Z() + adsGeo.HalfLength();
 
     if (fVerbose)
       mf::LogInfo("CRTHitRecoAlg: ")
@@ -954,31 +964,83 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeSideHit(
           << " ,chal " << infn.channel << " ,  position " << infn.pos[2]
           << '\n';
 
-    if ((int)infn.mac5s != (int)informationA[i + 1].mac5s and
-        i < (int)informationA.size() - 1) {
+    if (((int)infn.mac5s != (int)informationA[i+1].mac5s and 
+	 i < (int)informationA.size()-1) || (flag == 1 || flag == 4)){ 
+      if(flag == 4 and i > 0) continue;
       layer1 = true;
-
-      if ((int)infn.mac5s % 2 == 0)
-        t1_1 = infn.t0;
+      mac5_1 = (int)infn.mac5s;
+      t0_1 = infn.t0;
+      if ((int)infn.mac5s % 2 == 0) //if even mac5, feb on south end  (for E+W walls)
+        t1_1 = infn.t0; // t1_1 is timestamp of South FEB, even mac5[i]
       else
-        t1_1 = informationA[i + 1].t0;
+        t1_1 = informationA[i + 1].t0; //mac5[i+1] is even(South), save to t1_1
       if ((int)informationA[i + 1].mac5s % 2 != 0)
-        t1_2 = informationA[i + 1].t0;
+        t1_2 = informationA[i + 1].t0; // t1_2 is timestamp of North FEB, odd mac5[i+1]
       else
-        t1_2 = infn.t0;
-      if (fVerbose)
-        mf::LogInfo("CRTHitRecoAlg: ")
+        t1_2 = infn.t0; // mac5[i] is odd(North), save to t1_2
+      
+      if ((int)febA.size()==1){ //if single ended readout
+	posA = adsGeo.GetCenter();
+	if (fVerbose) 
+	  mf::LogInfo("CRTHitRecoAlg") 
+            << "single ended readout: febA.size() = " 
+	    << febA.size() << ", flag = " << flag <<"\n";
+      } // end if single ended readout
+      
+      // Check: Does macA == macA+1?
+      else if((int)infn.mac5s == (int)informationA[i+1].mac5s and region!="South" && region!="North"){
+	posA = adsGeo.GetCenter();
+	if (fVerbose) 
+	  mf::LogInfo("CRTHitRecoAlg")
+	    << "Attempting to make a CRT Hit out of two hits on the same FEB! \n"
+	    << "mac 1: " << (int)infn.mac5s << ", mac2: " << (int)informationA[i+1].mac5s 
+	    << ", flag: " << flag << "\n";
+      }
+      else{
+	if (fVerbose)
+	  mf::LogInfo("CRTHitRecoAlg:")
             << "t1: " << t1_1 << ", t2:" << t1_2
             << ", deltat : " << int64_t(t1_1 - t1_2) << '\n';
+	
+	float zaxixpos = 0.5 * (int64_t(t1_1 - t1_2) / fPropDelay);
+	posA = adsGeo.GetCenter() + geo::Zaxis() * zaxixpos;
 
-      float zaxixpos = 0.5 * (int64_t(t1_1 - t1_2) / fPropDelay);
+	if(zaxixpos!=0){
+	  
+	  
+	}
+	//
+	if (fVerbose) 
+	  mf::LogInfo("CRTHitRecoAlg:MakeSideHit") 
+	    << "---\n\tFEB A: (mac_1,mac_2 = " << (int)infn.mac5s << "," 
+	    << (int)informationA[i+1].mac5s<< "), delta_t = t1_1 - t1_2 = " 
+	    << t1_1 << " - " << t1_2 << " = " << int64_t(t1_1 - t1_2) << "\n"
+	    << "\tFEB A z hit pos = .5*(delta_t)/prop + center = .5*(" 
+	    << int64_t(t1_1 - t1_2) << ")/ " << fPropDelay << " + " 
+	    << 1.0*adsGeo.GetCenter().Z() << " = " << posA.Z() << "\n";
+	// *** Flag 2: Check and flag if 1st modules delta_t > 54 ns
+	// 54 ns = 800 cm (full module length) x 0.062 ns/cm (prop delay) 
+	// = 49.5 ns + a lil buffer
+	if(std::abs(int64_t(t1_1 - t1_2))>54){
+	  flag = 2;
+	  if (fVerbose) 
+	    mf::LogInfo("CRTHitRecoAlg:MakeSideHit") 
+	      << "*** FEB A delta_t greater than 54! delta_t = " 
+	      << int64_t(t1_1 - t1_2) << ", setting flag == 2 ... \n";
+	}
+	// *** Flag 3: Check and flag if reco z beyond length of module A
+	else if((posA.Z() < zrange_min || posA.Z() > zrange_max ) and region!="South" && region!="North"){
+	  flag = 3;
+	  if (fVerbose) 
+	    mf::LogInfo("CRTHitRecoAlg:MakeSideHit") 
+	      << "*** reco Z beyond length of module!! posA.Z = " 
+	      << posA.Z() << ", minz,maxz = " << zrange_min << ", " << zrange_max << "\n";
+	}
+	zposA_vec.push_back(posA.Z());
 
-      posA = adsGeo.GetCenter() + geo::Zaxis() * zaxixpos;
-      if (fVerbose)
-        mf::LogInfo("CRTHitRecoAlg: ") << "posA (==0): " << posA << '\n';
-
-      if (fVerbose)
-        mf::LogInfo("CRTHitRecoAlg: ")
+	if (fVerbose)
+	  mf::LogInfo("CRTHitRecoAlg:")
+	    << "posA (==0): " << posA << '\n'
             << i << " ,1st mac5: " << (int)infn.mac5s
             << " 1st time: " << (long long int)infn.t0
             << " ,2nd mac5: " << (int)informationA[i + 1].mac5s << ", 2nd time "
@@ -990,18 +1052,38 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeSideHit(
             << " , zaxis: " << geo::Zaxis()
             << " , half length:  " << adsGeo.HalfLength()
             << " , actual pos w.rt. z: " << posA << '\n';
+      } // end else single ended readout  
+    } 
+  } //end loop over info A
+  if (fVerbose) 
+    mf::LogInfo("CRTHitRecoAlg")
+      << "zposA_vec.size = " << zposA_vec.size() << "\n";
+  if (zposA_vec.size() > 1){
+    if (fVerbose) std::cout << "Z pos = ";
+    for(float i_zpos : zposA_vec){
+      zposA += i_zpos;
+      if (fVerbose) std::cout << i_zpos << " + ";
     }
+    if (fVerbose) 
+      std::cout << " = " << zposA << " / " << zposA_vec.size() << " = " << zposA /zposA_vec.size() << "\n";
+    zposA = zposA / zposA_vec.size();
+    posA =geo::Zaxis()*zposA;
   }
 
   for (auto const& infn : informationB) {
+    auto i = &infn - informationB.data();
+    auto const& adsGeo = adGeo.SensitiveVolume(infn.strip);  // trigger stripi
+    center = adsGeo.GetCenter();
+
+    // rough Z boundaries for each module (relevent for side E+W)
+    zrange_min = center.Z() - adsGeo.HalfLength();
+    zrange_max = center.Z() + adsGeo.HalfLength();
+
     if (fVerbose)
       mf::LogInfo("CRTHitRecoAlg: ") << " B type ----------> time: " << infn.t0
                                      << " ,macs " << (int)infn.mac5s  //<< '\n';
                                      << " ,chal " << infn.channel
                                      << " ,  position " << infn.pos[2] << '\n';
-
-    auto i = &infn - informationB.data();
-    auto const& adsGeo = adGeo.SensitiveVolume(infn.strip);  // trigger stripi
 
     if ((int)infn.mac5s != (int)informationB[i + 1].mac5s and
         i < (int)informationB.size() - 1) {
@@ -1018,20 +1100,65 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeSideHit(
       else
         t2_2 = infn.t0;
 
-      if (fVerbose)
-        mf::LogInfo("CRTHitRecoAlg: ")
+      if ((int)febB.size()==1) { // if single ended readout 
+	posB = adsGeo.GetCenter();
+	if(fVerbose) 
+	  mf::LogInfo("CRTHitRecoAlg: ") 
+	    << "single ended readout: febB.size() = " 
+	    << febB.size() << ", flag = " << flag <<"\n"
+	    << "using center pos for Z = " << posB << "\n";
+      } // end if single ended readout 
+      // Check: Does macB == macB+1?                                                                         
+      else if((int)infn.mac5s == (int)informationB[i+1].mac5s and region!="South" && region!="North"){
+	posB = adsGeo.GetCenter();
+	if (fVerbose) 
+	  mf::LogInfo("CRTHitRecoAlg")
+	    << "Attempting to make a CRT Hit out of two hits on the same FEB! \n"
+	    << "mac 1: " << (int)infn.mac5s << ", mac2: " << (int)informationB[i+1].mac5s
+	    << ", flag: " << flag << "\n"
+	    << "using center pos for Z = " << posB << "\n";
+      }
+      else{ 
+	if (fVerbose)
+	  mf::LogInfo("CRTHitRecoAlg: ")
             << "t1: " << t2_1 << ", t2:" << t2_2
             << ", deltat : " << int64_t(t2_1 - t2_2) << '\n';
-      // if (foutCSVFile) filecsv << plane << "\t"<<  int64_t(t2_1 - t2_2) <<
-      // "\n";
-      float zaxixpos = 0.5 * (int64_t(t2_1 - t2_2) / fPropDelay);
+	// if (foutCSVFile) filecsv << plane << "\t"<<  int64_t(t2_1 - t2_2) <<
+	// "\n";
+	float zaxixpos = 0.5 * (int64_t(t2_1 - t2_2) / fPropDelay);
+	posB = adsGeo.GetCenter() + geo::Zaxis() * zaxixpos;
 
-      posB = adsGeo.GetCenter() + geo::Zaxis() * zaxixpos;
-      if (fVerbose)
-        mf::LogInfo("CRTHitRecoAlg: ") << "posB (== 0): " << posB << '\n';
+	//posB = adsGeo.GetCenter() + geo::Zaxis() * zaxixpos;
+	if (fVerbose)
+	  mf::LogInfo("CRTHitRecoAlg:MakeSideHit") 
+	    << "---\n\tFEB B: (mac_1,mac_2 = " << (int)infn.mac5s << "," 
+	    << (int)informationB[i+1].mac5s << "), delta_t = t2_1 - t2_2 = " 
+	    << t2_1 << " - " << t2_2 << " = " << int64_t(t2_1 - t2_2) << "\n"
+	    << "\tFEB B z hit pos = .5*(delta_t)/prop + center = .5*(" 
+	    << int64_t(t2_1 - t2_2) << ")/ "<< fPropDelay << " + " 
+	    << 1.0*adsGeo.GetCenter().Z() << " = " << posB.Z() << "\n";
 
-      if (fVerbose)
-        mf::LogInfo("CRTHitRecoAlg: ")
+	// *** Flag 2: Check and flag if 2nd modules delta_t > 50 ns
+        if(std::abs(int64_t(t2_1 - t2_2))>54){
+          flag = 2;
+          if (fVerbose)
+	    mf::LogInfo("CRTHitRecoAlg:MakeSideHit")
+              << "*** FEB B delta_t greater than 54! delta_t = "
+              << int64_t(t2_1 - t2_2) << ", setting flag == 2 ... \n";
+        }
+        // *** Flag 3: Check and flag if reco z beyond length of module B
+        else if((posB.Z() < zrange_min || posB.Z() > zrange_max) and region!="South" && region!="North"){
+          flag = 3;
+          if (fVerbose)
+	    mf::LogInfo("CRTHitRecoAlg:MakeSideHit")
+              << "*** reco Z beyond length of module!! posB.Z = "
+              << posB.Z() << ", minz,maxz = " << zrange_min << ", " << zrange_max << "\n";
+        }
+	zposB_vec.push_back(posB.Z());
+
+	if (fVerbose)
+	  mf::LogInfo("CRTHitRecoAlg: ")
+	    << "posB (== 0): " << posB << '\n'
             << i << " ,1st mac5: " << (int)infn.mac5s
             << " 1st time: " << (long long int)infn.t0
             << " ,2nd mac5: " << (int)informationB[i + 1].mac5s << ", 2nd time "
@@ -1043,27 +1170,74 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeSideHit(
             << " , zaxis: " << geo::Zaxis()
             << " , half length:  " << adsGeo.HalfLength()
             << " , actual pos w.rt. z: " << posB << '\n';
+      } // end else 
     }
+  } // end loop over info B 
+  if (fVerbose) 
+    mf::LogInfo("CRTHitRecoAlg")
+      << "zposB_vec.size = " << zposB_vec.size() << "\n";
+  // if zposA_vec.size > 1, average the values in vect                                                 
+  if (zposB_vec.size() > 1){
+    if (fVerbose) std::cout << "Z pos = (";
+    for(float i_zpos : zposB_vec){
+      zposB += i_zpos;
+      if (fVerbose) std::cout << i_zpos << " + ";
+    }
+    if (fVerbose)
+      std::cout << ")/size = " << zposB << " / " << zposB_vec.size() 
+		<< " = " << (zposB /zposB_vec.size()) << "\n";
+    zposB = zposB / zposB_vec.size();
+    posB =geo::Zaxis()*zposB;
   }
 
   int crossfeb = std::abs(mac5_1 - mac5_2);
+  if ((int)informationA.size()==1 and 
+      (int)informationB.size()==1 and 
+      (crossfeb == 7 or crossfeb == 5) and //if opp ended readouts and cross feb
+      region!="South" && region!="North"){ 
+    flag = 6;
+    int z_pos = 0.5*(int64_t(t0_1 - t0_2)/fPropDelay);
+    // Check if FEB hits contributing to crossfeb hit are over 54ns apart
+    if(std::abs(int64_t(t0_1 - t0_2))>54){
+      flag = 2;
+      if (fVerbose) 
+	mf::LogInfo("CRTHitRecoAlg:MakeSideHit") 
+	  << "*** crossfeb delta_t greater than 54! delta_t = " 
+	  << int64_t(t0_1 - t0_2) << ", setting flag == 2 ... \n";
+    }
+    crossfebpos =  center + geo::Zaxis()*z_pos;
+    if (fVerbose) 
+      mf::LogInfo("CRTHitRecoAlg:MakeSideHit")
+	<< "crossfeb = abs(mac5_1 - mac5_2) = " << mac5_1 
+	<< " - " << mac5_2 << " = " << crossfeb << "\n"
+	<< "setting flag == 6 \n"
+	<< "crossfeb Zpos = center + zpos = " << center.Z() 
+	<< " + " << z_pos << " = " << crossfebpos << "\n";
 
+    hitpos.SetZ(crossfebpos.Z());
+    hitpos.SetX(hitpos.X()*1.0/nx);
+    hitpos.SetY(hitpos.Y()*1.0/nx);
+	
+    if(fVerbose)
+      mf::LogInfo("CRTHitRecoAlg") << "hello hi namaskar,  hitpos z " << hitpos[2] << '\n';
   // side crt and match the both layers
-  if (layer1 && layer2 && region != "South" &&
+  } // end if opp end readout and crossfeb
+  else if (layer1 && layer2 && region != "South" &&
       region != "North") {  //&& nx==4){
-    float avg = 0.5 * (posA.Z() + posB.Z());
+    // Average Z positions in inner and outer layers
+    float avg = 0.5 * (posA.Z() + posB.Z()); 
     hitpos.SetZ(avg);
     hitpos.SetX(hitpos.X() * 1.0 / nx);
     hitpos.SetY(hitpos.Y() * 1.0 / nx);
     // hitpos.SetX(hitpos.X()*1.0/petot);
     // hitpos.SetY(hitpos.Y()*1.0/petot);
     if (fVerbose)
-      mf::LogInfo("CRTHitRecoAlg: ")
+      mf::LogInfo("CRTHitRecoAlg:")
           << "z position in layer 1: " << posA.Z() << " and in layer 2 "
-          << posB.Z() << " average is " << (posA.Z() + posB.Z()) / 2.
-          << " ,hitpos z " << hitpos[2] << '\n';
+          << posB.Z() << "\nAvg (posA+posB) = ( " << posA.Z() << " + " 
+	  << posB.Z() << ")/2 = " << (posA.Z() + posB.Z()) / 2. << "\n"; 
 
-  } else if ((int)informationA.size() == 1 and
+  } /*else if ((int)informationA.size() == 1 and
              (int) informationB.size() == 1 and
              (crossfeb == 7 or crossfeb == 5) and region != "South" &&
              region != "North") {
@@ -1079,7 +1253,7 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeSideHit(
       mf::LogInfo("CRTHitRecoAlg: ")
           << "hello hi namaskar,  hitpos z " << hitpos[2] << '\n';
     // side crt and only single layer match
-  } else if (layer1 && region != "South" && region != "North") {  // && nx==1){
+  }*/ else if (layer1 && region != "South" && region != "North") {  // && nx==1){
     hitpos.SetZ(posA.Z());
     hitpos.SetX(hitpos.X() * 1.0 / nx);
     hitpos.SetY(hitpos.Y() * 1.0 / nx);
@@ -1147,28 +1321,37 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeSideHit(
   hitpoint[0] = hitpos.X();
   hitpoint[1] = hitpos.Y();
   hitpoint[2] = hitpos.Z();
-
-  if (region == "South" && hitpoint[0] >= 366. && hitpoint[1] > 200. &&
-      fVerbose)
-    mf::LogInfo("CRTHitRecoAlg: ")
+  //check if final z pos is out of the z range of that wall 
+  // (if not flagged with bad positions earlier on, double check z positions again now...)
+  if (flag==0 and region!="South" && region!="North"){
+    // *** Flag 3: Check and flag if reco z beyond length of module 
+    if((hitpoint[2] < zrange_min || hitpoint[2] > zrange_max)){
+      flag = 3;
+      if (fVerbose) 
+	mf::LogInfo("CRTHitRecoAlg:MakeSideHit") 
+	  << "*** Zpos of hit in " << region << " is off the wall! z=" 
+	  << hitpoint[2] << "is beyond bounds for " << region << " : (zmin,zmax=" 
+	  << zrange_min << ", " << zrange_max <<"), setting flag = 3 ... \n"; 
+    }
+    // *** Flag 5: Check if Reco Z position is in the center of module
+    if ((hitpoint[2] == adGeo.GetCenter().Z()) ){
+      flag = 5;
+      if (fVerbose) 
+	mf::LogInfo("CRTHitRecoAlg:MakeSideHit") 
+	  << "*** Center hit in " << region << " at z pos = " << hitpoint[2] << ", flag = " << flag << "\n";
+    }
+  }
+  if (fVerbose) {
+    if (region == "South" && hitpoint[0] >= 366. && hitpoint[1] > 200.)
+      mf::LogInfo("CRTHitRecoAlg: ")
         << "I am looking for south wall :   macs " << (int)macs.back()
         << " x: \t" << hitpoint[0] << " ,y: \t" << hitpoint[1] << " ,z: \t"
         << hitpoint[2] << '\n';
-
-  if (fVerbose) {
     if (region == "North")
       mf::LogInfo("CRTHitRecoAlg: ")
           << "north wall x: \t" << hitpoint[0] << " ,y: \t" << hitpoint[1]
           << " ,z: \t" << hitpoint[2] << '\n';
   }
-  if (fVerbose)
-    mf::LogInfo("CRTHitRecoAlg: ")
-        << " nx: \t" << nx << " ,ny: \t" << ny << " ,nz: \t" << nz << '\n';
-  if (fVerbose)
-    mf::LogInfo("CRTHitRecoAlg: ")
-        << " x: \t" << hitpoint[0] << " ,y: \t" << hitpoint[1] << " ,z: \t"
-        << hitpoint[2] << '\n';
-
   // time stamp averaged over all FEBs
   uint64_t thit = 0., t1hit = 0.;  // thit_1 = 0.;
 
@@ -1243,7 +1426,16 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeSideHit(
   }
 
   Long64_t thit1 = (Long64_t)(thit - GlobalTrigger[(int)macs.at(0)]);
-
+  if (fVerbose) {
+    std::cout  << "End of make side hit, z = " << hitpoint[2] << " is saved from macs: ( ";
+    for (int i=0; i<(int)macs.size(); i++){
+      std::cout << (int)macs.at(i) << " , ";
+    }
+    std::cout << ") in region " << region << " with flag " << flag << "\n";
+    std::cout << " final (x,y,z) = ( " <<  hitpoint[0] << ", " << hitpoint[1] << ", " << hitpoint[2] << ")\n";
+    std::cout << " final T0 = " << thit << ", T1 = " << thit1 << "\n";
+    std::cout << "flag = " << flag << "\n-------------------------------\n";
+  }
   // generate hit
   CRTHit hit = FillCRTHit(macs, pesmap, petot, flag, thit, thit1, plane, hitpoint[0],
                           hitpointerr[0], hitpoint[1], hitpointerr[1],
