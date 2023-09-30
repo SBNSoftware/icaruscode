@@ -229,7 +229,7 @@ namespace crt {
     int       fHitMod;
     int       fNHitFeb;
     float     fHitTotPe;
-
+    double    fHitFlag; // CRT Hit flag for side CRT Z reconstruction
     //CRT-PMT Matching vars
     int          fMatchEvent;///< Event number.
     int          fMatchRun;///< Run number.
@@ -404,6 +404,7 @@ namespace crt {
     fHitNtuple->Branch("gate_crt_diff",&m_gate_crt_diff, "gate_crt_diff/l");
     fHitNtuple->Branch("crt_global_trigger",&m_crt_global_trigger,"crt_global_trigger/l");
     fHitNtuple->Branch("crtGT_trig_diff",&m_crtGT_trig_diff,"crtGT_trig_diff/L");
+    fHitNtuple->Branch("hitFlag", &fHitFlag, "hitFlag/D");
     
     // Define the branches of our CRTPMTMatch ntuple
     fCRTPMTNtuple->Branch("event", &fMatchEvent, "event/I");
@@ -587,7 +588,7 @@ namespace crt {
 	  fZErrHit = hit.z_err;
 	  fT0Hit   = hit.ts0_ns;
 	  fT1Hit   = hit.ts1_ns;
-	   
+	  fHitFlag = hit.ts0_s_corr;
 	  fNHitFeb  = hit.feb_id.size();
 	  fHitTotPe = hit.peshit;
 	  int mactmp = hit.feb_id[0];

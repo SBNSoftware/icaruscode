@@ -940,8 +940,8 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeSideHit(
   uint64_t t1_2 = -5; //layer 1: T0 for FEB on North end of module (odd mac5), E+W walls
   uint64_t t2_1 = -5; //layer 2: T0 for FEB on South end of module (even mac5), E+W walls
   uint64_t t2_2 = -5; //layer 2: T0 for FEB on North end of module (odd mac5), E+W walls
-  int mac5_1 = -5; //layer 1 mac5 (used to check for hits that cross module,)
-  int mac5_2 = -5; //layer 2 mac5 
+  int mac5_1 = -555; //layer 1 mac5 (used to check for hits that cross module,)
+  int mac5_2 = -555; //layer 2 mac5 
   geo::Point_t center;
   //if multiple pairs of FEBs contribute on a layer, take average of all reco'd z pos 
   // (store them in vector and take avg.)
@@ -958,7 +958,7 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeSideHit(
     zrange_max = center.Z() + adsGeo.HalfLength();
 
     if (fVerbose)
-      mf::LogInfo("CRTHitRecoAlg: ")
+      mf::LogInfo("CRTHitRecoAlg:")
           << "A type ----------> time: " << (long long int)infn.t0 << " ,macs "
           << (int)infn.mac5s  //<< '\n';
           << " ,chal " << infn.channel << " ,  position " << infn.pos[2]
@@ -1080,13 +1080,14 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeSideHit(
     zrange_max = center.Z() + adsGeo.HalfLength();
 
     if (fVerbose)
-      mf::LogInfo("CRTHitRecoAlg: ") << " B type ----------> time: " << infn.t0
+      mf::LogInfo("CRTHitRecoAlg:") << " B type ----------> time: " << infn.t0
                                      << " ,macs " << (int)infn.mac5s  //<< '\n';
                                      << " ,chal " << infn.channel
                                      << " ,  position " << infn.pos[2] << '\n';
 
-    if ((int)infn.mac5s != (int)informationB[i + 1].mac5s and
-        i < (int)informationB.size() - 1) {
+    if (((int)infn.mac5s != (int)informationB[i + 1].mac5s and
+	 i < (int)informationB.size() - 1) || (flag == 1 || flag == 4)) {
+      if(flag == 4 and i > 0) continue;
       layer2 = true;
       mac5_2 = (int)infn.mac5s;
       t0_2 = (uint64_t)infn.t0;
@@ -1195,6 +1196,7 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeSideHit(
       (int)informationB.size()==1 and 
       (crossfeb == 7 or crossfeb == 5) and //if opp ended readouts and cross feb
       region!="South" && region!="North"){ 
+    std::cout << "mac1, mac2 = " << mac5_1 << ", " << mac5_2 << "\n";
     flag = 6;
     int z_pos = 0.5*(int64_t(t0_1 - t0_2)/fPropDelay);
     // Check if FEB hits contributing to crossfeb hit are over 54ns apart
@@ -1253,7 +1255,8 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeSideHit(
       mf::LogInfo("CRTHitRecoAlg: ")
           << "hello hi namaskar,  hitpos z " << hitpos[2] << '\n';
     // side crt and only single layer match
-  }*/ else if (layer1 && region != "South" && region != "North") {  // && nx==1){
+    }*/ 
+  else if (layer1 && region != "South" && region != "North") {  // && nx==1){
     hitpos.SetZ(posA.Z());
     hitpos.SetX(hitpos.X() * 1.0 / nx);
     hitpos.SetY(hitpos.Y() * 1.0 / nx);
