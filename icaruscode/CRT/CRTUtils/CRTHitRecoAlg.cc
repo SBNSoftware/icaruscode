@@ -1005,11 +1005,7 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeSideHit(
 	float zaxixpos = 0.5 * (int64_t(t1_1 - t1_2) / fPropDelay);
 	posA = adsGeo.GetCenter() + geo::Zaxis() * zaxixpos;
 
-	if(zaxixpos!=0){
-	  
-	  
-	}
-	//
+	
 	if (fVerbose) 
 	  mf::LogInfo("CRTHitRecoAlg:MakeSideHit") 
 	    << "---\n\tFEB A: (mac_1,mac_2 = " << (int)infn.mac5s << "," 
@@ -1058,6 +1054,7 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeSideHit(
   if (fVerbose) 
     mf::LogInfo("CRTHitRecoAlg")
       << "zposA_vec.size = " << zposA_vec.size() << "\n";
+  // if mutliple FEB coincidences on single layer, take average of all reco'd z-positions 
   if (zposA_vec.size() > 1){
     if (fVerbose) std::cout << "Z pos = ";
     for(float i_zpos : zposA_vec){
@@ -1124,12 +1121,11 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeSideHit(
 	  mf::LogInfo("CRTHitRecoAlg: ")
             << "t1: " << t2_1 << ", t2:" << t2_2
             << ", deltat : " << int64_t(t2_1 - t2_2) << '\n';
-	// if (foutCSVFile) filecsv << plane << "\t"<<  int64_t(t2_1 - t2_2) <<
-	// "\n";
+	// if (foutCSVFile) filecsv << plane << "\t"<<  int64_t(t2_1 - t2_2) << "\n";
+
 	float zaxixpos = 0.5 * (int64_t(t2_1 - t2_2) / fPropDelay);
 	posB = adsGeo.GetCenter() + geo::Zaxis() * zaxixpos;
 
-	//posB = adsGeo.GetCenter() + geo::Zaxis() * zaxixpos;
 	if (fVerbose)
 	  mf::LogInfo("CRTHitRecoAlg:MakeSideHit") 
 	    << "---\n\tFEB B: (mac_1,mac_2 = " << (int)infn.mac5s << "," 
@@ -1177,7 +1173,7 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeSideHit(
   if (fVerbose) 
     mf::LogInfo("CRTHitRecoAlg")
       << "zposB_vec.size = " << zposB_vec.size() << "\n";
-  // if zposA_vec.size > 1, average the values in vect                                                 
+   // if mutliple FEB coincidences on single layer, take average of all reco'd z-positions 
   if (zposB_vec.size() > 1){
     if (fVerbose) std::cout << "Z pos = (";
     for(float i_zpos : zposB_vec){
