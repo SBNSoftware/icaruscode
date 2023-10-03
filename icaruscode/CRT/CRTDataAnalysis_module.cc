@@ -588,7 +588,7 @@ namespace crt {
 	  fZErrHit = hit.z_err;
 	  fT0Hit   = hit.ts0_ns;
 	  fT1Hit   = hit.ts1_ns;
-	  fHitFlag = hit.ts0_s_corr;
+	  fHitFlag = 0; //default flag = 0, only fill var. below for side CRT hits
 	  fNHitFeb  = hit.feb_id.size();
 	  fHitTotPe = hit.peshit;
 	  int mactmp = hit.feb_id[0];
@@ -636,6 +636,11 @@ namespace crt {
 		   fHitChan[arrpos]=thisHit[k].first;
                 }
              }
+	     // Load in CRTHitFlag for side CRT Hits only  
+	     // hit.ts0_s_corr was an unused variable in the sbn/common/CRTHit.h, repurposed this var for the hit flag to classify side CRT Z-position reconstruction 
+	     // if hitFlags are filled, hit.ts0_s_corr should be < 7, or else a timestamp is saved in ts0_s_corr
+	     if (hit.ts0_s_corr < 7) fHitFlag = hit.ts0_s_corr; 
+	     //
 	  }
 	  int chantmp = (*ittmp).second[0].first;
 	  
