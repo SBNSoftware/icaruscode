@@ -87,11 +87,6 @@ icarus_larg4detector:
 #  stepLimits    : [0.3]#, 0.3, 0.3, 0.3, 0.3, 0.3] # corresponding stepLimits in mm for the volumes in the volumeNames list
 }
 
-#icarus_larg4detector_noophybrid: @local::icarus_larg4detector
-#icarus_larg4detector_noophybrid.volumeNames: ["volTPCActive"]
-#icarus_larg4detector_noophybrid.stepLimits: [0.3]
-
-
 #
 # The LArG4 Services
 #
@@ -106,11 +101,5 @@ icarus_larg4_services:
   PhysicsList:        @local::icarus_physics_list_fastoptical
   LArG4Detector:      @local::icarus_larg4detector
 }
-
-#icarus_larg4_services_noophybrid:
-#{
-#                      @table::icarus_larg4_services
-#  LArG4Detector:      @local::icarus_larg4detector_noophybrid
-#}
 
 END_PROLOG

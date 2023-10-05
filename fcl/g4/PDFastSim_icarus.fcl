@@ -157,7 +157,7 @@ icarus_vis_timing_parameterization:
 # standard configuration
 icarus_pdfastsim_pvs:                     @local::standard_pdfastsim_pvs
 
-icarus_pdfastsim_pvs.SimulationLabel:     "ionandscint"
+icarus_pdfastsim_pvs.SimulationLabel:     "ionization"
 icarus_pdfastsim_pvs.IncludePropTime: true
 icarus_pdfastsim_pvs.ScintTimeTool.SlowDecayTime: 1300.0
 

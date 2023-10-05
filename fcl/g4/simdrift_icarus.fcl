@@ -12,7 +12,7 @@ BEGIN_PROLOG
 icarus_simdrift:
 {
     module_type:     SimDriftElectrons
-    SimulationLabel: "ionandscint:priorSCE"
+    SimulationLabel: "ionization:priorSCE"
 }
 
 END_PROLOG
