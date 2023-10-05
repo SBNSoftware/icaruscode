@@ -96,7 +96,7 @@ local wcls_input = {
         	data: {
             	model: "",
             	scale: -1, //scale is -1 to correct a sign error in the SimDepoSource converter.
-               art_tag: "ionization", //name of upstream art producer of depos "label:instance:processName"
+		art_tag: "ionization", //name of upstream art producer of depos "label:instance:processName"
             	assn_art_tag: "",
         	},
     	}, nin=0, nout=1),
