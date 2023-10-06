@@ -144,13 +144,6 @@ private:
     size_t BuildHitPairMap(PlaneToSnippetHitMap& planeToHitVectorMap, reco::HitPairList& hitPairList) const;
 
     /**
-     * @brief This defines a structure allowing us to see which hits have already been matched. Generally, if two
-     *        hits have been matched then there is no point considering them anymore as it simply means duplicate
-     *        space points will be created
-     */
-    using MatchedHitMap = std::unordered_map<const reco::ClusterHit2D*,std::set<const reco::ClusterHit2D*>>;
-
-    /**
      *  @brief Given the ClusterHit2D objects, build the HitPairMap
      */
     size_t BuildHitPairMapByTPC(PlaneSnippetHitMapItrPairVec& planeSnippetHitMapItrPairVec, reco::HitPairList& hitPairList) const;
@@ -167,13 +160,13 @@ private:
     /**
      *  @brief This algorithm takes lists of hit pairs and finds good triplets
      */
-    void findGoodTriplets(HitMatchTripletVecMap&, HitMatchTripletVecMap&, MatchedHitMap&, reco::HitPairList&, bool = false) const;
+    void findGoodTriplets(HitMatchTripletVecMap&, HitMatchTripletVecMap&, reco::HitPairList&, bool = false) const;
 
     /**
      * @brief This will look at storing pair "orphans" where the 2D hits are otherwise unused
      */
 
-    int saveOrphanPairs(HitMatchTripletVecMap&, MatchedHitMap&, reco::HitPairList&) const;
+    int saveOrphanPairs(HitMatchTripletVecMap&, reco::HitPairList&) const;
 
     /**
      *  @brief Make a HitPair object by checking two hits
@@ -188,14 +181,13 @@ private:
      *  @brief Make a 3D HitPair object by checking two hits
      */
     bool makeHitTriplet(reco::ClusterHit3D&       pairOut,
-                        MatchedHitMap&            matchedHitMap,
                         const reco::ClusterHit3D& pairIn,
                         const reco::ClusterHit2D* hit2) const;
 
     /**
      *  @brief Make a 3D HitPair object from a valid pair and a dead channel in the missing plane
      */
-    bool makeDeadChannelPair(reco::ClusterHit3D& pairOut, const reco::ClusterHit3D& pair, MatchedHitMap&, size_t maxStatus = 4, size_t minStatus = 0, float minOverlap=0.2) const;
+    bool makeDeadChannelPair(reco::ClusterHit3D& pairOut, const reco::ClusterHit3D& pair, size_t maxStatus = 4, size_t minStatus = 0, float minOverlap=0.2) const;
 
     /**
      * @brief function to detemine if two wires "intersect" (in the 2D sense)
@@ -497,8 +489,6 @@ void SnippetHit3DBuilderICARUS::BuildChannelStatusVec(PlaneToWireToHitSetMap& pl
         }
     }
 
-    std::cout << "SnippetHit3D finds " << m_numBadChannels << " bad channels" << std::endl;
-
     return;
 }
 
@@ -609,7 +599,9 @@ void SnippetHit3DBuilderICARUS::BuildHit3D(reco::HitPairList& hitPairList) const
 
     // The first task is to take the lists of input 2D hits (a map of view to sorted lists of 2D hits)
     // and then to build a list of 3D hits to be used in downstream processing
+    std::cout << "--> Calling BuildChannelStatusVec" << std::endl;
     BuildChannelStatusVec(m_planeToWireToHitSetMap);
+    std::cout << "--- done with channel status building" << std::endl;
 
     size_t numHitPairs = BuildHitPairMap(m_planeToSnippetHitMap, hitPairList);
 
@@ -749,9 +741,6 @@ size_t SnippetHit3DBuilderICARUS::BuildHitPairMapByTPC(PlaneSnippetHitMapItrPair
     size_t nDeadChanHits(0);
     size_t nOrphanPairs(0);
 
-    // Structure to keep track of hit associations
-    MatchedHitMap matchedHitMap;
-
     //*********************************************************************************
     // Basically, we try to loop until done...
     while(1)
@@ -790,13 +779,13 @@ size_t SnippetHit3DBuilderICARUS::BuildHitPairMapByTPC(PlaneSnippetHitMapItrPair
         nDeadChanHits  += hitPairList.size() - curHitListSize;
         curHitListSize  = hitPairList.size();
 
-        if (n12Pairs > n13Pairs) findGoodTriplets(pair12Map, pair13Map, matchedHitMap, hitPairList);
-        else                     findGoodTriplets(pair13Map, pair12Map, matchedHitMap, hitPairList);
+        if (n12Pairs > n13Pairs) findGoodTriplets(pair12Map, pair13Map, hitPairList);
+        else                     findGoodTriplets(pair13Map, pair12Map, hitPairList);
 
         if (m_saveMythicalPoints)
         {
-            nOrphanPairs += saveOrphanPairs(pair12Map, matchedHitMap, hitPairList);
-            nOrphanPairs += saveOrphanPairs(pair13Map, matchedHitMap, hitPairList);
+            nOrphanPairs += saveOrphanPairs(pair12Map, hitPairList);
+            nOrphanPairs += saveOrphanPairs(pair13Map, hitPairList);
         }
 
         nTriplets += hitPairList.size() - curHitListSize;
@@ -810,9 +799,9 @@ size_t SnippetHit3DBuilderICARUS::BuildHitPairMapByTPC(PlaneSnippetHitMapItrPair
 }
 
 int SnippetHit3DBuilderICARUS::findGoodHitPairs(SnippetHitMap::iterator& firstSnippetItr,
-                                                SnippetHitMap::iterator& startItr,
-                                                SnippetHitMap::iterator& endItr,
-                                                HitMatchTripletVecMap&   hitMatchMap) const
+                                          SnippetHitMap::iterator& startItr,
+                                          SnippetHitMap::iterator& endItr,
+                                          HitMatchTripletVecMap&   hitMatchMap) const
 {
     int numPairs(0);
 
@@ -863,11 +852,7 @@ int SnippetHit3DBuilderICARUS::findGoodHitPairs(SnippetHitMap::iterator& firstSn
     return numPairs;
 }
 
-void SnippetHit3DBuilderICARUS::findGoodTriplets(HitMatchTripletVecMap& pair12Map, 
-                                                 HitMatchTripletVecMap& pair13Map, 
-                                                 MatchedHitMap&         matchedHitMap,
-                                                 reco::HitPairList&     hitPairList, 
-                                                 bool                   tagged) const
+void SnippetHit3DBuilderICARUS::findGoodTriplets(HitMatchTripletVecMap& pair12Map, HitMatchTripletVecMap& pair13Map, reco::HitPairList& hitPairList, bool tagged) const
 {
     // Build triplets from the two lists of hit pairs
     if (!pair12Map.empty())
@@ -915,7 +900,7 @@ void SnippetHit3DBuilderICARUS::findGoodTriplets(HitMatchTripletVecMap& pair12Ma
                         // If success try for the triplet
                         reco::ClusterHit3D triplet;
 
-                        if (makeHitTriplet(triplet, matchedHitMap, pair1, hit2))
+                        if (makeHitTriplet(triplet, pair1, hit2))
                         {
                             triplet.setID(hitPairList.size());
                             hitPairList.emplace_back(triplet);
@@ -937,7 +922,7 @@ void SnippetHit3DBuilderICARUS::findGoodTriplets(HitMatchTripletVecMap& pair12Ma
                 const reco::ClusterHit3D* pair = pairMapPair.first;
 
                 // Here we look to see if we failed to make a triplet because the partner wire was dead/noisy/sick
-                if (makeDeadChannelPair(deadChanPair, *pair, matchedHitMap, 4, 0, 0.)) tempDeadChanVec.emplace_back(deadChanPair);
+                if (makeDeadChannelPair(deadChanPair, *pair, 4, 0, 0.)) tempDeadChanVec.emplace_back(deadChanPair);
             }
 
             // Handle the dead wire triplets
@@ -982,7 +967,7 @@ void SnippetHit3DBuilderICARUS::findGoodTriplets(HitMatchTripletVecMap& pair12Ma
     return;
 }
 
-int SnippetHit3DBuilderICARUS::saveOrphanPairs(HitMatchTripletVecMap& pairMap, MatchedHitMap& matchedHitMap, reco::HitPairList& hitPairList) const
+int SnippetHit3DBuilderICARUS::saveOrphanPairs(HitMatchTripletVecMap& pairMap, reco::HitPairList& hitPairList) const
 {
     int curTripletCount = hitPairList.size();
 
@@ -1006,9 +991,6 @@ int SnippetHit3DBuilderICARUS::saveOrphanPairs(HitMatchTripletVecMap& pairMap, M
                 const reco::ClusterHit2D* hit1 = std::get<0>(hit2Dhit3DPair);
                 const reco::ClusterHit2D* hit2 = std::get<1>(hit2Dhit3DPair);
 
-                // Have these already been used in some fashion?
-                if (matchedHitMap[hit1].find(hit2) != matchedHitMap[hit1].end()) continue;
-
                 if (m_outputHistograms)
                 {
                     m_2hit1stPHVec.emplace_back(hit1->getHit()->PeakAmplitude());
@@ -1029,8 +1011,6 @@ int SnippetHit3DBuilderICARUS::saveOrphanPairs(HitMatchTripletVecMap& pairMap, M
                         // Add to the list
                         hitPairList.emplace_back(hit3D);
                         hitPairList.back().setID(hitPairList.size()-1);
-                        matchedHitMap[hit1].insert(hit2);
-                        matchedHitMap[hit2].insert(hit1);
                     }
                 }
             }
@@ -1192,7 +1172,6 @@ bool SnippetHit3DBuilderICARUS::makeHitPair(reco::ClusterHit3D&       hitPair,
 
 
 bool SnippetHit3DBuilderICARUS::makeHitTriplet(reco::ClusterHit3D&       hitTriplet,
-                                               MatchedHitMap&            matchedHitMap,
                                                const reco::ClusterHit3D& pair,
                                                const reco::ClusterHit2D* hit) const
 {
@@ -1238,12 +1217,8 @@ bool SnippetHit3DBuilderICARUS::makeHitTriplet(reco::ClusterHit3D&       hitTrip
             if      (!hit0) hit0 = pairHitVec[2];
             else if (!hit1) hit1 = pairHitVec[2];
 
-            bool notMatched =  matchedHitMap[hit].find(hit0)  == matchedHitMap[hit].end() 
-                            && matchedHitMap[hit].find(hit1)  == matchedHitMap[hit].end()
-                            && matchedHitMap[hit0].find(hit1) == matchedHitMap[hit0].end();
-
             // If good pairs made here then we can try to make a triplet
-            if (notMatched && makeHitPair(pair0h, hit0, hit, m_hitWidthSclFctr) && makeHitPair(pair1h, hit1, hit, m_hitWidthSclFctr))
+            if (makeHitPair(pair0h, hit0, hit, m_hitWidthSclFctr) && makeHitPair(pair1h, hit1, hit, m_hitWidthSclFctr))
             {
                 // Get a copy of the input hit vector (note the order is by plane - by definition)
                 reco::ClusterHit2DVec hitVector = pair.getHits();
@@ -1455,13 +1430,8 @@ bool SnippetHit3DBuilderICARUS::makeHitTriplet(reco::ClusterHit3D&       hitTrip
                                           wireIDVec);
                     
                     // Since we are keeping the triplet, mark the hits as used
-                    for(size_t hit2DIdx = 0; hit2DIdx < hitVector.size(); hit2DIdx++)
+                    for(const auto& hit2D : hitVector)
                     {
-                        const reco::ClusterHit2D* hit2D = hitVector[hit2DIdx];
-
-                        matchedHitMap[hit2D].insert(hitVector[(hit2DIdx+1)%hitVector.size()]);
-                        matchedHitMap[hit2D].insert(hitVector[(hit2DIdx+2)%hitVector.size()]);
-
                         if (hit2D->getStatusBits() & reco::ClusterHit2D::USEDINTRIPLET) hit2D->setStatusBit(reco::ClusterHit2D::SHAREDINTRIPLET);
 
                         hit2D->setStatusBit(reco::ClusterHit2D::USEDINTRIPLET);
@@ -1535,11 +1505,11 @@ bool SnippetHit3DBuilderICARUS::WireIDsIntersect(const geo::WireID& wireID0, con
 }
 
 float SnippetHit3DBuilderICARUS::closestApproach(const Eigen::Vector3f& P0,
-                                                 const Eigen::Vector3f& u0,
-                                                 const Eigen::Vector3f& P1,
-                                                 const Eigen::Vector3f& u1,
-                                                 float&                 arcLen0,
-                                                 float&                 arcLen1) const
+                                           const Eigen::Vector3f& u0,
+                                           const Eigen::Vector3f& P1,
+                                           const Eigen::Vector3f& u1,
+                                           float&                 arcLen0,
+                                           float&                 arcLen1) const
 {
     // Technique is to compute the arclength to each point of closest approach
     Eigen::Vector3f w0 = P0 - P1;
@@ -1579,7 +1549,6 @@ float SnippetHit3DBuilderICARUS::chargeIntegral(float peakMean,
 
 bool SnippetHit3DBuilderICARUS::makeDeadChannelPair(reco::ClusterHit3D&       pairOut,
                                                     const reco::ClusterHit3D& pair,
-                                                    MatchedHitMap&            matchedHitMap,
                                                     size_t                    maxChanStatus,
                                                     size_t                    minChanStatus,
                                                     float                     minOverlap) const
@@ -1605,56 +1574,49 @@ bool SnippetHit3DBuilderICARUS::makeDeadChannelPair(reco::ClusterHit3D&       pa
         missPlane = 1;
     }
 
-    // It can be the case that these hits have already been associated to a space point
-    if (matchedHitMap[hit0].find(hit1) != matchedHitMap[hit0].end())
+    // Which plane is missing?
+    geo::WireID wireID0 = hit0->WireID();
+    geo::WireID wireID1 = hit1->WireID();
+
+    // Ok, recover the wireID expected in the third plane...
+    geo::WireID wireIn(wireID0.Cryostat,wireID0.TPC,missPlane,0);
+    geo::WireID wireID = NearestWireID(pair.getPosition(), wireIn);
+
+    // There can be a round off issue so check the next wire as well
+    bool wireStatus    = m_channelStatus[wireID.Plane][wireID.Wire]   < maxChanStatus && m_channelStatus[wireID.Plane][wireID.Wire]   >= minChanStatus;
+    bool wireOneStatus = m_channelStatus[wireID.Plane][wireID.Wire+1] < maxChanStatus && m_channelStatus[wireID.Plane][wireID.Wire+1] >= minChanStatus;
+
+    // Make sure they are of at least the minimum status
+    if(wireStatus || wireOneStatus)
     {
-        // Which plane is missing?
-        geo::WireID wireID0 = hit0->WireID();
-        geo::WireID wireID1 = hit1->WireID();
+        // Sort out which is the wire we're dealing with
+        if (!wireStatus) wireID.Wire += 1;
 
-        // Ok, recover the wireID expected in the third plane...
-        geo::WireID wireIn(wireID0.Cryostat,wireID0.TPC,missPlane,0);
-        geo::WireID wireID = NearestWireID(pair.getPosition(), wireIn);
+        // Want to refine position since we "know" the missing wire
+        geo::WireIDIntersection widIntersect0;
 
-        // There can be a round off issue so check the next wire as well
-        bool wireStatus    = m_channelStatus[wireID.Plane][wireID.Wire]   < maxChanStatus && m_channelStatus[wireID.Plane][wireID.Wire]   >= minChanStatus;
-        bool wireOneStatus = m_channelStatus[wireID.Plane][wireID.Wire+1] < maxChanStatus && m_channelStatus[wireID.Plane][wireID.Wire+1] >= minChanStatus;
-
-        // Make sure they are of at least the minimum status
-        if(wireStatus || wireOneStatus)
+        if (m_geometry->WireIDsIntersect(wireID0, wireID, widIntersect0))
         {
-            // Sort out which is the wire we're dealing with
-            if (!wireStatus) wireID.Wire += 1;
+            geo::WireIDIntersection widIntersect1;
 
-            // Want to refine position since we "know" the missing wire
-            geo::WireIDIntersection widIntersect0;
-
-            if (m_geometry->WireIDsIntersect(wireID0, wireID, widIntersect0))
+            if (m_geometry->WireIDsIntersect(wireID1, wireID, widIntersect1))
             {
-                geo::WireIDIntersection widIntersect1;
+                Eigen::Vector3f newPosition(pair.getPosition()[0],pair.getPosition()[1],pair.getPosition()[2]);
 
-                if (m_geometry->WireIDsIntersect(wireID1, wireID, widIntersect1))
-                {
-                    Eigen::Vector3f newPosition(pair.getPosition()[0],pair.getPosition()[1],pair.getPosition()[2]);
+                newPosition[1] = (newPosition[1] + widIntersect0.y + widIntersect1.y) / 3.;
+                newPosition[2] = (newPosition[2] + widIntersect0.z + widIntersect1.z - 2. * m_zPosOffset) / 3.;
 
-                    newPosition[1] = (newPosition[1] + widIntersect0.y + widIntersect1.y) / 3.;
-                    newPosition[2] = (newPosition[2] + widIntersect0.z + widIntersect1.z - 2. * m_zPosOffset) / 3.;
+                pairOut = pair;
+                pairOut.setWireID(wireID);
+                pairOut.setPosition(newPosition);
 
-                    pairOut = pair;
-                    pairOut.setWireID(wireID);
-                    pairOut.setPosition(newPosition);
+                if (hit0->getStatusBits() & reco::ClusterHit2D::USEDINTRIPLET) hit0->setStatusBit(reco::ClusterHit2D::SHAREDINTRIPLET);
+                if (hit1->getStatusBits() & reco::ClusterHit2D::USEDINTRIPLET) hit1->setStatusBit(reco::ClusterHit2D::SHAREDINTRIPLET);
 
-                    if (hit0->getStatusBits() & reco::ClusterHit2D::USEDINTRIPLET) hit0->setStatusBit(reco::ClusterHit2D::SHAREDINTRIPLET);
-                    if (hit1->getStatusBits() & reco::ClusterHit2D::USEDINTRIPLET) hit1->setStatusBit(reco::ClusterHit2D::SHAREDINTRIPLET);
+                hit0->setStatusBit(reco::ClusterHit2D::USEDINTRIPLET);
+                hit1->setStatusBit(reco::ClusterHit2D::USEDINTRIPLET);
 
-                    hit0->setStatusBit(reco::ClusterHit2D::USEDINTRIPLET);
-                    hit1->setStatusBit(reco::ClusterHit2D::USEDINTRIPLET);
-
-                    matchedHitMap[hit0].insert(hit1);
-                    matchedHitMap[hit1].insert(hit0);
-
-                    result  = true;
-                }
+                result  = true;
             }
         }
     }
@@ -1944,9 +1906,9 @@ void SnippetHit3DBuilderICARUS::CollectArtHits(const art::Event& evt) const
 //------------------------------------------------------------------------------------------------------------------------------------------
 
 void SnippetHit3DBuilderICARUS::CreateNewRecobHitCollection(art::Event&              event,
-                                                            reco::HitPairList&       hitPairList,
-                                                            std::vector<recob::Hit>& hitPtrVec,
-                                                            RecobHitToPtrMap&        recobHitToPtrMap)
+                                                      reco::HitPairList&       hitPairList,
+                                                      std::vector<recob::Hit>& hitPtrVec,
+                                                      RecobHitToPtrMap&        recobHitToPtrMap)
 {
     // Set up the timing
     cet::cpu_timer theClockBuildNewHits;

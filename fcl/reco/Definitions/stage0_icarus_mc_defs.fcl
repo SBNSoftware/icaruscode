@@ -1,12 +1,15 @@
-#include "decoderTools_icarus.fcl"
+// #include "decoderTools_icarus.fcl"
+#include "decoderdefs_icarus.fcl"
 #include "trigger_emulation_icarus.fcl"
 #include "icarus_ophitfinder.fcl"
 #include "icarus_flashfinder.fcl"
 #include "icarus_opana_modules.fcl"
+#include "recowire_icarus.fcl"
 
 #include "crttruehitproducer.fcl"
 #include "crtsimhitproducer.fcl"
 #include "crttrackproducer_icarus.fcl"
+#include "crtpmtmatchingproducer.fcl"
 
 BEGIN_PROLOG
 
@@ -26,18 +29,22 @@ icarus_stage0_mc_producers:
                            DecoderTool:         @local::TPCNoiseFilter1DTool
                        }
 
+    simChannelROI:     @local::icarus_simchannelroi
+
     pmtfixedthr:       @local::icarus_pmtdiscriminatethr_fixed_MC
 
     @table::icarus_standard_triggersim.producers  # from trigger_emulation_icarus.fcl
     
     pmtbaselines:      @local::icarus_opreco_pedestal_fromchannel_MC  # from icarus_ophitfinder.fcl
+    opdetonbeam:       @local::copyPMTonBeam  # from decoderdefs_icarus.fcl
     ophit:             @local::icarus_ophit_data
     mcophit:           @local::ICARUSMCOpHit
 
     ## crt producer   
     crthit:            @local::standard_crtsimhitproducer
     crttrack:          @local::standard_crttrackproducer
-}  
+    crtpmt: 	       @local::standard_crtpmtmatchingproducer
+    }  
 
 # make the following modifications to job flow for MC vs the data
 icarus_stage0_mc_trigger: [
@@ -56,7 +63,12 @@ icarus_stage0_mc_PMT:  [
 
 icarus_stage0_mc_crt:  [ crthit,
                          #crttzero 
-                         crttrack 
-                       ]
+                         crttrack, 
+                       	 crtpmt
+		       ]
+
+# adapt input labels
+icarus_stage0_mc_producers.opdetonbeam.Waveforms:              opdaq
+icarus_stage0_mc_producers.opdetonbeam.WaveformBaselineAssns:  pmtbaselines
 
 END_PROLOG

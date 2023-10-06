@@ -248,6 +248,8 @@ void TPCDecoderFilter1D::configure(fhicl::ParameterSet const &pset)
     {
         for(int plane = 0; plane < 3; plane++)
         {
+            std::cout << "--TPCDecoderFilter1D plane:" << plane << ", sigmas: " << fFFTSigmaValsVec[plane].first << ", " << fFFTSigmaValsVec[plane].second
+                      << ", offsets: " << fFFTCutoffValsVec[plane].first << ", " << fFFTCutoffValsVec[plane].second << std::endl;
             if (plane < 3) fFFTFilterFunctionVec.emplace_back(std::make_unique<icarus_signal_processing::WindowFFTFilter>(fFFTSigmaValsVec[plane], fFFTCutoffValsVec[plane]));
             else           fFFTFilterFunctionVec.emplace_back(std::make_unique<icarus_signal_processing::NoFFTFilter>());
 
@@ -457,8 +459,21 @@ void TPCDecoderFilter1D::process_fragment(detinfo::DetectorClocksData const&,
                                                        fNumTruncBins[channelOnBoard],
                                                        fRangeBins[channelOnBoard]);
 
+            std::cout << "==>rawDataVec: " << rawDataVec[0] << ", " << rawDataVec[1] << ", " << rawDataVec[2] << ", " << rawDataVec[3] << ", " << rawDataVec[4] << ", " << rawDataVec[5] << std::endl;
+
             // Convolve with a filter function
-            if (fUseFFTFilter) (*fFFTFilterFunctionVec[plane])(pedCorDataVec);
+            //if (fUseFFTFilter) (*fFFTFilterFunctionVec[plane])(pedCorDataVec);
+            if (fUseFFTFilter)
+            {
+                // Temporary diagnostics
+                icarus_signal_processing::VectorFloat medianSmoothVec(nSamplesPerChannel);
+
+                waveformTools.medianSmooth(pedCorDataVec, medianSmoothVec, 5);
+
+                std::transform(pedCorDataVec.begin(),pedCorDataVec.end(), medianSmoothVec.begin(), pedCorDataVec.begin(), std::minus<float>());
+
+                std::copy(medianSmoothVec.begin(),medianSmoothVec.end(),rawDataVec.begin());
+            }
 
             if (fDiagnosticOutput)
             {

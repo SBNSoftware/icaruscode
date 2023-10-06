@@ -6,7 +6,7 @@
 // Generated at Tue Jun 29 13:43:54 2021 by Andrea Scarpelli using cetskelgen
 // from cetlib version v3_11_01.
 //
-// Module that dumps the assciation between Flashes and OpHit
+// Module that dumps the association between Flashes and OpHit
 //
 // mailto:ascarpel@bnl.gov
 ////////////////////////////////////////////////////////////////////////
@@ -193,6 +193,8 @@ class opana::ICARUSFlashAssAna : public art::EDAnalyzer {
     float m_integral; // in ADC x tick
     float m_amplitude; // in ADC
     float m_start_time;
+    float m_peak_time;
+    float m_rise_time;
     float m_width;
     float m_abs_start_time;
     float m_pe;
@@ -302,6 +304,8 @@ void opana::ICARUSFlashAssAna::beginJob() {
       ttree->Branch("integral", &m_integral, "integral/F");
       ttree->Branch("amplitude", &m_amplitude, "amplitude/F");
       ttree->Branch("start_time", &m_start_time, "start_time/F");
+      ttree->Branch("peak_time", &m_peak_time, "peak_time/F");
+      ttree->Branch("rise_time", &m_rise_time, "rise_time/F");
       ttree->Branch("abs_start_time", &m_abs_start_time, "abs_start_time/F");
       ttree->Branch("pe", &m_pe, "pe/F");
       ttree->Branch("width", &m_width, "width/F");
@@ -360,6 +364,8 @@ void opana::ICARUSFlashAssAna::beginJob() {
         ophittree->Branch("integral", &m_integral, "integral/F");
         ophittree->Branch("amplitude", &m_amplitude, "amplitude/F");
         ophittree->Branch("start_time", &m_start_time, "start_time/F");
+        ophittree->Branch("peak_time", &m_peak_time, "peak_time/F");
+        ophittree->Branch("rise_time", &m_rise_time, "rise_time/F");
         ophittree->Branch("abs_start_time", &m_abs_start_time, "abs_start_time/F");
         ophittree->Branch("pe", &m_pe, "pe/F");
         ophittree->Branch("width", &m_width, "width/F");
@@ -456,9 +462,11 @@ void opana::ICARUSFlashAssAna::processOpHits( art::Event const& e, unsigned int 
           m_channel_id = channel_id;
           m_integral = ophit.Area(); // in ADC x tick
           m_amplitude = ophit.Amplitude(); // in ADC
-          m_start_time = ophit.PeakTime();
+          m_start_time = ophit.StartTime();
+          m_peak_time = ophit.PeakTime();
+          m_rise_time = ophit.RiseTime();
           m_width = ophit.Width();
-          m_abs_start_time = ophit.PeakTimeAbs();
+          m_abs_start_time = ophit.PeakTimeAbs() + (m_start_time - m_peak_time);
           m_pe = ophit.PE();
           m_fast_to_total = ophit.FastToTotal();
 
@@ -496,19 +504,19 @@ void opana::ICARUSFlashAssAna::processOpHitsFlash( std::vector<art::Ptr<recob::O
     m_channel_id = channel_id;
     m_integral = ophit->Area(); // in ADC x tick
     m_amplitude = ophit->Amplitude(); // in ADC
-    m_start_time = ophit->PeakTime();
+    m_start_time = ophit->StartTime();
+    m_peak_time = ophit->PeakTime();
+    m_rise_time = ophit->RiseTime();
     m_width = ophit->Width();
-    m_abs_start_time = ophit->PeakTimeAbs();
+    m_abs_start_time = ophit->PeakTimeAbs() + (m_start_time - m_peak_time);
     m_pe = ophit->PE();
     m_fast_to_total = ophit->FastToTotal();
 
     pmt_pe[channel_id] += ophit->PE();
 
-    if( pmt_start_time[channel_id] == 0 ){
-      pmt_start_time[channel_id] = ophit->PeakTime();
-    }else if ( pmt_start_time[channel_id] > ophit->PeakTime() ){
-      pmt_start_time[channel_id] = ophit->PeakTime();
-      pmt_max_amplitude[channel_id] = ophit->Amplitude();
+    if( ( pmt_start_time[channel_id] == 0 ) || ( pmt_start_time[channel_id] > m_start_time )) {
+      pmt_start_time[channel_id] = m_start_time;
+      pmt_max_amplitude[channel_id] = m_amplitude;
     }
 
 

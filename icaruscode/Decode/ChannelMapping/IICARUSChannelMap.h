@@ -12,6 +12,8 @@
 #ifndef IICARUSChannelMap_H
 #define IICARUSChannelMap_H
 
+#include "icaruscode/Decode/ChannelMapping/RunPeriods.h"
+
 #include "art/Framework/Services/Registry/ServiceDeclarationMacros.h"
 
 #include <vector>
@@ -35,7 +37,14 @@ class IICARUSChannelMap //: private lar::EnsureOnlyOneSchedule
 {
 public:
     virtual ~IICARUSChannelMap() noexcept = default;
-
+    
+    
+    /// Loads the mapping for `run`, returns whether a new mapping was loaded.
+    virtual bool                                    forRun(int run)                               = 0;
+    
+    /// Loads the mapping for `period`, returns whether a new mapping was loaded.
+    virtual bool                                    forPeriod(icarusDB::RunPeriod period)         = 0;
+    
     // Section to access fragment to board mapping
     virtual bool                                    hasFragmentID(const unsigned int)       const = 0;
     /// Returns the number of TPC fragment IDs known to the service.
@@ -57,8 +66,8 @@ public:
     virtual unsigned int                            nPMTfragmentIDs() const = 0;
     virtual const DigitizerChannelChannelIDPairVec& getChannelIDPairVec(const unsigned int) const = 0;
 
-    virtual unsigned int                            getSimMacAddress(const unsigned int)    const = 0;    
-    virtual unsigned int                         gettopSimMacAddress(const unsigned int)    const = 0;    
+    virtual unsigned int                            getSimMacAddress(const unsigned int)    const = 0;
+    virtual unsigned int                         gettopSimMacAddress(const unsigned int)    const = 0;
 
     virtual std::pair<double, double>          getSideCRTCalibrationMap(int mac5, int chan) const = 0;
 };

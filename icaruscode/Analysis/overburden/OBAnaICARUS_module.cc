@@ -75,7 +75,7 @@ private:
   bool InDetector(const double& x, const double& y, const double& z) const;
 
   /// Check if an MCP passes through the detector, sets step to the step index when particle is in detector
-  bool InDetector(const art::Ptr<simb::MCParticle>, int & step);
+  bool InDetector(const simb::MCParticle&, int & step);
 
   /// Saves the pi0 info to a separate tree, give the pi0 track id
   void SavePi0ShowerInfo(int pi0_track_id);
@@ -670,35 +670,31 @@ void obana::OBAnaICARUS::analyze(art::Event const& e)
   //
   // MCTruth
   //
-  art::Handle<std::vector<simb::MCTruth>> mct_h;
-  e.getByLabel(_mctruth_producer, mct_h);
-  if(mct_h.isValid()){
-    std::vector<art::Ptr<simb::MCTruth>> mct_v;
-    art::fill_ptr_vector(mct_v, mct_h);
-
+  auto mct_h = e.getHandle<std::vector<simb::MCTruth>>(_mctruth_producer);
+  if(mct_h){
     //
     // Loop over the neutrino interactions in this event
     //
-    for (size_t i = 0; i < mct_v.size(); i++) {
+    for (simb::MCTruth const& mct : *mct_h) {
       // if (mct_v.at(i)->Origin() != simb::kBeamNeutrino) {
       //   std::cout << "[OverburdenAna] MCTruth from generator does not have neutrino origin?!" << std::endl;
       // }
 
-      if(!mct_v[i]->NeutrinoSet()) {
+      if(!mct.NeutrinoSet()) {
         break;
       }
 
-      _nu_e = mct_v[i]->GetNeutrino().Nu().E();
-      _nu_pdg = mct_v[i]->GetNeutrino().Nu().PdgCode();
-      _nu_ccnc = mct_v[i]->GetNeutrino().CCNC();
-      _nu_mode = mct_v[i]->GetNeutrino().Mode();
-      _nu_int_type = mct_v[i]->GetNeutrino().InteractionType();
-      _nu_vtx_x = mct_v[i]->GetNeutrino().Nu().Vx();
-      _nu_vtx_y = mct_v[i]->GetNeutrino().Nu().Vy();
-      _nu_vtx_z = mct_v[i]->GetNeutrino().Nu().Vz();
-      _nu_px = mct_v[i]->GetNeutrino().Nu().Px();
-      _nu_py = mct_v[i]->GetNeutrino().Nu().Py();
-      _nu_pz = mct_v[i]->GetNeutrino().Nu().Pz();
+      _nu_e = mct.GetNeutrino().Nu().E();
+      _nu_pdg = mct.GetNeutrino().Nu().PdgCode();
+      _nu_ccnc = mct.GetNeutrino().CCNC();
+      _nu_mode = mct.GetNeutrino().Mode();
+      _nu_int_type = mct.GetNeutrino().InteractionType();
+      _nu_vtx_x = mct.GetNeutrino().Nu().Vx();
+      _nu_vtx_y = mct.GetNeutrino().Nu().Vy();
+      _nu_vtx_z = mct.GetNeutrino().Nu().Vz();
+      _nu_px = mct.GetNeutrino().Nu().Px();
+      _nu_py = mct.GetNeutrino().Nu().Py();
+      _nu_pz = mct.GetNeutrino().Nu().Pz();
 
 
       //      std::cout<< _nu_vtx_x << "\t"<<_nu_vtx_y <<"\t"<< _nu_vtx_z << std::endl;
@@ -718,8 +714,8 @@ void obana::OBAnaICARUS::analyze(art::Event const& e)
       _nu_pi0_mult = 0;
       _nu_p_mult = 0; 
 
-      for (int p = 0; p < mct_v[i]->NParticles(); p++) {
-	auto const & mcp = mct_v[i]->GetParticle(p);
+      for (int p = 0; p < mct.NParticles(); p++) {
+        auto const & mcp = mct.GetParticle(p);
 
 	if (mcp.StatusCode() != 1) continue;
 
@@ -744,64 +740,57 @@ void obana::OBAnaICARUS::analyze(art::Event const& e)
 
   //std::cout << " 3rd time ----------------------- Run: " << _run << ",  subrun: " << _subrun <<",  event: " << _event <<  std::endl;
 
-  art::Handle<std::vector<simb::MCParticle> > mcp_h;
-  e.getByLabel(_mcparticle_producer, mcp_h);
-  if(!mcp_h.isValid()){
+  auto mcp_h = e.getHandle<std::vector<simb::MCParticle>>(_mcparticle_producer);
+  if(!mcp_h){
     std::cout << "MCParticle product " << _mcparticle_producer << " not found..." << std::endl;
     _tree->Fill();
     return;
     //throw std::exception();
   }
 
-  std::vector<art::Ptr<simb::MCParticle>> mcp_v;
-  art::fill_ptr_vector(mcp_v, mcp_h);
-
   clear_vectors();
 
-  for (size_t i = 0; i < mcp_v.size(); i++) {
-    auto mcp = mcp_v.at(i);
-
-    _trackid_to_mcparticle[mcp->TrackId()] = *mcp;
+  for (simb::MCParticle const& mcp : *mcp_h) {
+    _trackid_to_mcparticle[mcp.TrackId()] = mcp;
   }
 
-  for (size_t i = 0; i < mcp_v.size(); i++) {
-    auto mcp = mcp_v.at(i);
+  for (simb::MCParticle const& mcp : *mcp_h) {
     //      bool in_det = InDetector(mcp);
 
     // Only save the MCP if it's a primary, or if it crosses the det
-    //    if (mcp->Process() == "primary" || in_det) {
-    if (mcp->Process() == "primary") {
+    //    if (mcp.Process() == "primary" || in_det) {
+    if (mcp.Process() == "primary") {
 
-      _mcp_px.push_back(mcp->Px());
-      _mcp_py.push_back(mcp->Py());
-      _mcp_pz.push_back(mcp->Pz());
-      _mcp_e.push_back(mcp->E());
+      _mcp_px.push_back(mcp.Px());
+      _mcp_py.push_back(mcp.Py());
+      _mcp_pz.push_back(mcp.Pz());
+      _mcp_e.push_back(mcp.E());
 
-      _mcp_vx.push_back(mcp->Vx());
-      _mcp_vy.push_back(mcp->Vy());
-      _mcp_vz.push_back(mcp->Vz());
-      _mcp_endx.push_back(mcp->EndX());
-      _mcp_endy.push_back(mcp->EndY());
-      _mcp_endz.push_back(mcp->EndZ());
+      _mcp_vx.push_back(mcp.Vx());
+      _mcp_vy.push_back(mcp.Vy());
+      _mcp_vz.push_back(mcp.Vz());
+      _mcp_endx.push_back(mcp.EndX());
+      _mcp_endy.push_back(mcp.EndY());
+      _mcp_endz.push_back(mcp.EndZ());
 
-      _mcp_pdg.push_back(mcp->PdgCode());
-      _mcp_mother.push_back(mcp->Mother());
-      _mcp_status_code.push_back(mcp->StatusCode());
-      _mcp_process.push_back(mcp->Process());
-      _mcp_end_process.push_back(mcp->EndProcess());
-      _mcp_trackid.push_back(mcp->TrackId());
+      _mcp_pdg.push_back(mcp.PdgCode());
+      _mcp_mother.push_back(mcp.Mother());
+      _mcp_status_code.push_back(mcp.StatusCode());
+      _mcp_process.push_back(mcp.Process());
+      _mcp_end_process.push_back(mcp.EndProcess());
+      _mcp_trackid.push_back(mcp.TrackId());
 
       //      _mcp_intpc.push_back(InDetector(mcp));
-      // _neut_par_uuid = _uuid_str + "-" + std::to_string(mcp->TrackId());
+      // _neut_par_uuid = _uuid_str + "-" + std::to_string(mcp.TrackId());
 
       int step = 0;
       bool in_det = InDetector(mcp, step);
       _mcp_intpc.push_back(in_det);      
       
-      if (mcp->PdgCode() == 2112 && in_det){ /// save the daughter of neutron entring to TPCs 
-	unsigned int nSec = mcp->NumberDaughters();
+      if (mcp.PdgCode() == 2112 && in_det){ /// save the daughter of neutron entring to TPCs
+        unsigned int nSec = mcp.NumberDaughters();
 	for (size_t d = 0; d < nSec; ++d) {
-	  auto d_search = _trackid_to_mcparticle.find(mcp->Daughter(d));
+          auto d_search = _trackid_to_mcparticle.find(mcp.Daughter(d));
 	  if (d_search != _trackid_to_mcparticle.end()) {
 	    auto const& daughter = d_search->second;
 	    _neut_daughters_pdg.push_back(daughter.PdgCode());
@@ -854,21 +843,21 @@ void obana::OBAnaICARUS::analyze(art::Event const& e)
       
       if (in_det) {
 	/*
-	  if (mcp->PdgCode()==13 && mcp->E() >= 0.01 ){
-	  std::cout << "photon: " << mcp->PdgCode()  << " , has energy : " << mcp->E() 
-	  << " , process: " << mcp->Process() << " , and mother is : "
-	  << mcp->Mother() << std::endl;
+          if (mcp.PdgCode()==13 && mcp.E() >= 0.01 ){
+          std::cout << "photon: " << mcp.PdgCode()  << " , has energy : " << mcp.E()
+          << " , process: " << mcp.Process() << " , and mother is : "
+          << mcp.Mother() << std::endl;
 	  
-	  std::cout << "step: " << step << " , has energy : " << mcp->E(step) << std::endl;
-	  if ((mcp->E(step)-0.105658) > 0.0) std::cout << "step: " << step << " , has energy : " << mcp->E(step)-0.105658 << std::endl;
+          std::cout << "step: " << step << " , has energy : " << mcp.E(step) << std::endl;
+          if ((mcp.E(step)-0.105658) > 0.0) std::cout << "step: " << step << " , has energy : " << mcp.E(step)-0.105658 << std::endl;
 	  
 	  }*/
-        _mcp_intpc_nu_e.push_back(mcp->E(step));
-        _mcp_intpc_e.push_back(mcp->E(step-1));
-        //_mcp_intpc_e_previousstep.push_back(mcp->E(step-1));
+        _mcp_intpc_nu_e.push_back(mcp.E(step));
+        _mcp_intpc_e.push_back(mcp.E(step-1));
+        //_mcp_intpc_e_previousstep.push_back(mcp.E(step-1));
 	
-	//	std::cout << "step: " << step << " , has energy : " << mcp->E(step) << "\t"<< mcp->E(step)-0.105658 << std::endl;
-	//std::cout << "previous step: " << step-1 << " , has energy : " << mcp->E(step-1) << "\t"<< mcp->E(step-1)-0.105658 << std::endl;
+        //	std::cout << "step: " << step << " , has energy : " << mcp.E(step) << "\t"<< mcp.E(step)-0.105658 << std::endl;
+        //std::cout << "previous step: " << step-1 << " , has energy : " << mcp.E(step-1) << "\t"<< mcp.E(step-1)-0.105658 << std::endl;
       } else {
         _mcp_intpc_e.push_back(-9999.);
         _mcp_intpc_nu_e.push_back(-9999.);
@@ -887,35 +876,29 @@ void obana::OBAnaICARUS::analyze(art::Event const& e)
   //
   // MCTrack
   //
-  art::Handle<std::vector<sim::MCTrack> > mc_track_h;
-  e.getByLabel(_mctrack_producer, mc_track_h);
-  if(!mc_track_h.isValid()){
+  auto mc_track_h = e.getHandle<std::vector<sim::MCTrack>>(_mctrack_producer);
+  if(!mc_track_h){
     std::cout << "MCTrack product " << _mctrack_producer << " not found..." << std::endl;
     throw std::exception();
   }
 
-  std::vector<art::Ptr<sim::MCTrack>> mc_track_v;
-  art::fill_ptr_vector(mc_track_v, mc_track_h);
-
-  for (size_t i = 0; i < mc_track_v.size(); i++) {
-    auto mc_track = mc_track_v.at(i);
-
-    // std::cout << "MCTrack " << i << ": ancestor pdg " << mc_track->AncestorPdgCode()
-    //                               << ", ancestor process " << mc_track->AncestorProcess()
-    //                               << ", mother pdg " << mc_track->MotherPdgCode()
-    //                               << ", mother process " << mc_track->MotherProcess()
-    //                              << "| PDG " << mc_track->PdgCode()
-    //                               << ", process " << mc_track->Process()
+  for (sim::MCTrack const& mc_track : *mc_track_h) {
+    // std::cout << "MCTrack " << i << ": ancestor pdg " << mc_track.AncestorPdgCode()
+    //                               << ", ancestor process " << mc_track.AncestorProcess()
+    //                               << ", mother pdg " << mc_track.MotherPdgCode()
+    //                               << ", mother process " << mc_track.MotherProcess()
+    //                              << "| PDG " << mc_track.PdgCode()
+    //                               << ", process " << mc_track.Process()
     //                               << std::endl;
 
-    auto iter = _trackid_to_mcparticle.find(mc_track->TrackID());
+    auto iter = _trackid_to_mcparticle.find(mc_track.TrackID());
     int mother_in_ob = -1;
     if (iter != _trackid_to_mcparticle.end()) {
       mother_in_ob = FindMotherInOverburden(iter->second);
     }
 
     // Don't save MCT with energy less than 1 MeV
-    if (mc_track->Start().E() < 1) { // MeV
+    if (mc_track.Start().E() < 1) { // MeV
       _n_mct_lt1 ++;
       if (mother_in_ob != -1){
         _n_mct_lt1_from_ob ++;
@@ -924,12 +907,12 @@ void obana::OBAnaICARUS::analyze(art::Event const& e)
     }
 
     // Don't save MCS that are not in the TPCs
-    if (mc_track->size() == 0) {
+    if (mc_track.size() == 0) {
       continue;
     }
 
-    geo::Point_t mctrackstartPoint(mc_track->Start().X(),mc_track->Start().Y(), mc_track->Start().Z());
-    geo::Point_t mctrackendPoint(mc_track->End().X(),mc_track->End().Y(), mc_track->End().Z());
+    geo::Point_t mctrackstartPoint(mc_track.Start().X(),mc_track.Start().Y(), mc_track.Start().Z());
+    geo::Point_t mctrackendPoint(mc_track.End().X(),mc_track.End().Y(), mc_track.End().Z());
 
     const geo::TPCGeo* mctpcstartGeo = fGeometry->PositionToTPCptr(mctrackstartPoint);
     const geo::TPCGeo* mctpcendGeo = fGeometry->PositionToTPCptr(mctrackendPoint);
@@ -941,26 +924,26 @@ void obana::OBAnaICARUS::analyze(art::Event const& e)
         !mctpcendGeo->ActiveBoundingBox().ContainsPosition(mctrackendPoint)) continue; // out of active volume
 
 
-    _mct_pdg.push_back(mc_track->PdgCode());
-    _mct_process.push_back(mc_track->Process());
+    _mct_pdg.push_back(mc_track.PdgCode());
+    _mct_process.push_back(mc_track.Process());
 
-    _mct_start_x.push_back(mc_track->Start().X());
-    _mct_start_y.push_back(mc_track->Start().Y());
-    _mct_start_z.push_back(mc_track->Start().Z());
+    _mct_start_x.push_back(mc_track.Start().X());
+    _mct_start_y.push_back(mc_track.Start().Y());
+    _mct_start_z.push_back(mc_track.Start().Z());
 
-    _mct_end_x.push_back(mc_track->End().X());
-    _mct_end_y.push_back(mc_track->End().Y());
-    _mct_end_z.push_back(mc_track->End().Z());
+    _mct_end_x.push_back(mc_track.End().X());
+    _mct_end_y.push_back(mc_track.End().Y());
+    _mct_end_z.push_back(mc_track.End().Z());
 
-    _mct_start_px.push_back(mc_track->Start().Px());
-    _mct_start_py.push_back(mc_track->Start().Py());
-    _mct_start_pz.push_back(mc_track->Start().Pz());
-    _mct_start_e.push_back(mc_track->Start().E());
+    _mct_start_px.push_back(mc_track.Start().Px());
+    _mct_start_py.push_back(mc_track.Start().Py());
+    _mct_start_pz.push_back(mc_track.Start().Pz());
+    _mct_start_e.push_back(mc_track.Start().E());
 
-    _mct_mother_pdg.push_back(mc_track->MotherPdgCode());
-    _mct_mother_process.push_back(mc_track->MotherProcess());
-    _mct_ancestor_pdg.push_back(mc_track->AncestorPdgCode());
-    _mct_ancestor_process.push_back(mc_track->AncestorProcess());
+    _mct_mother_pdg.push_back(mc_track.MotherPdgCode());
+    _mct_mother_process.push_back(mc_track.MotherProcess());
+    _mct_ancestor_pdg.push_back(mc_track.AncestorPdgCode());
+    _mct_ancestor_process.push_back(mc_track.AncestorProcess());
 
     _mct_mother_in_ob_trackid.push_back(mother_in_ob);
 
@@ -969,34 +952,29 @@ void obana::OBAnaICARUS::analyze(art::Event const& e)
   //
   // MCShower
   //
-  art::Handle<std::vector<sim::MCShower> > mc_shower_h;
-  e.getByLabel(_mcshower_producer, mc_shower_h);
-  if(!mc_shower_h.isValid()){
+  auto mc_shower_h = e.getHandle<std::vector<sim::MCShower>>(_mcshower_producer);
+  if(!mc_shower_h){
     std::cout << "MCShower product " << _mcshower_producer << " not found..." << std::endl;
     throw std::exception();
   }
 
-  std::vector<art::Ptr<sim::MCShower>> mc_shower_v;
-  art::fill_ptr_vector(mc_shower_v, mc_shower_h);
-
-  for (size_t i = 0; i < mc_shower_v.size(); i++) {
-    auto mc_shower = mc_shower_v.at(i);
-    // std::cout << "MCShower " << i << ": ancestor pdg " << mc_shower->AncestorPdgCode()
-    //                               << ", ancestor process " << mc_shower->AncestorProcess()
-    //                               << ", mother pdg " << mc_shower->MotherPdgCode()
-    //                               << ", mother process " << mc_shower->MotherProcess()
-    //                               << "| PDG " << mc_shower->PdgCode()
-    //                               << ", process " << mc_shower->Process()
+  for (sim::MCShower const& mc_shower : *mc_shower_h) {
+    // std::cout << "MCShower " << i << ": ancestor pdg " << mc_shower.AncestorPdgCode()
+    //                               << ", ancestor process " << mc_shower.AncestorProcess()
+    //                               << ", mother pdg " << mc_shower.MotherPdgCode()
+    //                               << ", mother process " << mc_shower.MotherProcess()
+    //                               << "| PDG " << mc_shower.PdgCode()
+    //                               << ", process " << mc_shower.Process()
     //                               << std::endl;
 
-    auto iter = _trackid_to_mcparticle.find(mc_shower->TrackID());
+    auto iter = _trackid_to_mcparticle.find(mc_shower.TrackID());
     int mother_in_ob = -1;
     if (iter != _trackid_to_mcparticle.end()) {
       mother_in_ob = FindMotherInOverburden(iter->second);
     }
 
     // Don't save MCS with energy less than 1 MeV
-    if (mc_shower->Start().E() < 1) { // MeV
+    if (mc_shower.Start().E() < 1) { // MeV
       _n_mcs_lt1 ++;
       if (mother_in_ob != -1){
         _n_mcs_lt1_from_ob ++;
@@ -1007,55 +985,55 @@ void obana::OBAnaICARUS::analyze(art::Event const& e)
     /// Don't save MCS that are not in the TPCs
     // Special case for photon showers, which can start outside
    
-    bool end_in_det = InDetector(mc_shower->End().X(), mc_shower->End().Y(), mc_shower->End().Z());
+    bool end_in_det = InDetector(mc_shower.End().X(), mc_shower.End().Y(), mc_shower.End().Z());
 
     if (!end_in_det) {
       continue;
     }
 
-    _mcs_pdg.push_back(mc_shower->PdgCode());
-    _mcs_process.push_back(mc_shower->Process());
+    _mcs_pdg.push_back(mc_shower.PdgCode());
+    _mcs_process.push_back(mc_shower.Process());
 
-    _mcs_start_x.push_back(mc_shower->Start().X());
-    _mcs_start_y.push_back(mc_shower->Start().Y());
-    _mcs_start_z.push_back(mc_shower->Start().Z());
+    _mcs_start_x.push_back(mc_shower.Start().X());
+    _mcs_start_y.push_back(mc_shower.Start().Y());
+    _mcs_start_z.push_back(mc_shower.Start().Z());
 
-    _mcs_end_x.push_back(mc_shower->End().X());
-    _mcs_end_y.push_back(mc_shower->End().Y());
-    _mcs_end_z.push_back(mc_shower->End().Z());
+    _mcs_end_x.push_back(mc_shower.End().X());
+    _mcs_end_y.push_back(mc_shower.End().Y());
+    _mcs_end_z.push_back(mc_shower.End().Z());
 
-    _mcs_start_px.push_back(mc_shower->Start().Px());
-    _mcs_start_py.push_back(mc_shower->Start().Py());
-    _mcs_start_pz.push_back(mc_shower->Start().Pz());
-    _mcs_start_e.push_back(mc_shower->Start().E());
-    _mcs_charge_col.push_back(mc_shower->Charge(2));
-    _mcs_charge_ind2.push_back(mc_shower->Charge(1));
-    _mcs_charge_ind1.push_back(mc_shower->Charge(0));
+    _mcs_start_px.push_back(mc_shower.Start().Px());
+    _mcs_start_py.push_back(mc_shower.Start().Py());
+    _mcs_start_pz.push_back(mc_shower.Start().Pz());
+    _mcs_start_e.push_back(mc_shower.Start().E());
+    _mcs_charge_col.push_back(mc_shower.Charge(2));
+    _mcs_charge_ind2.push_back(mc_shower.Charge(1));
+    _mcs_charge_ind1.push_back(mc_shower.Charge(0));
 
-    _mcs_mother_pdg.push_back(mc_shower->MotherPdgCode());
-    _mcs_mother_trackid.push_back(mc_shower->MotherTrackID()); 
-    _mcs_mother_start_x.push_back(mc_shower->MotherStart().X());
-    _mcs_mother_start_y.push_back(mc_shower->MotherStart().Y());
-    _mcs_mother_start_z.push_back(mc_shower->MotherStart().Z());
-    _mcs_mother_start_e.push_back(mc_shower->MotherStart().E());
-    _mcs_mother_end_x.push_back(mc_shower->MotherEnd().X());
-    _mcs_mother_end_y.push_back(mc_shower->MotherEnd().Y());
-    _mcs_mother_end_z.push_back(mc_shower->MotherEnd().Z());
-    _mcs_mother_end_e.push_back(mc_shower->MotherEnd().E());
+    _mcs_mother_pdg.push_back(mc_shower.MotherPdgCode());
+    _mcs_mother_trackid.push_back(mc_shower.MotherTrackID());
+    _mcs_mother_start_x.push_back(mc_shower.MotherStart().X());
+    _mcs_mother_start_y.push_back(mc_shower.MotherStart().Y());
+    _mcs_mother_start_z.push_back(mc_shower.MotherStart().Z());
+    _mcs_mother_start_e.push_back(mc_shower.MotherStart().E());
+    _mcs_mother_end_x.push_back(mc_shower.MotherEnd().X());
+    _mcs_mother_end_y.push_back(mc_shower.MotherEnd().Y());
+    _mcs_mother_end_z.push_back(mc_shower.MotherEnd().Z());
+    _mcs_mother_end_e.push_back(mc_shower.MotherEnd().E());
 
-    _mcs_mother_process.push_back(mc_shower->MotherProcess());
-    _mcs_ancestor_pdg.push_back(mc_shower->AncestorPdgCode());
-    _mcs_ancestor_process.push_back(mc_shower->AncestorProcess());
-    _mcs_ancestor_start_e.push_back(mc_shower->AncestorStart().E());
-    _mcs_ancestor_end_e.push_back(mc_shower->AncestorEnd().E());
+    _mcs_mother_process.push_back(mc_shower.MotherProcess());
+    _mcs_ancestor_pdg.push_back(mc_shower.AncestorPdgCode());
+    _mcs_ancestor_process.push_back(mc_shower.AncestorProcess());
+    _mcs_ancestor_start_e.push_back(mc_shower.AncestorStart().E());
+    _mcs_ancestor_end_e.push_back(mc_shower.AncestorEnd().E());
     _mcs_mother_in_ob_trackid.push_back(mother_in_ob);
 
-    if (mc_shower->MotherPdgCode() == 111 && _save_pi0_tree) {
-      SavePi0ShowerInfo(mc_shower->MotherTrackID());
+    if (mc_shower.MotherPdgCode() == 111 && _save_pi0_tree) {
+      SavePi0ShowerInfo(mc_shower.MotherTrackID());
     }
 
-    if (std::abs(mc_shower->MotherPdgCode()) == 13 && _save_muon_tree) {
-      SaveMuonShowerInfo(mc_shower->MotherTrackID());
+    if (std::abs(mc_shower.MotherPdgCode()) == 13 && _save_muon_tree) {
+      SaveMuonShowerInfo(mc_shower.MotherTrackID());
     }
     
   }
@@ -1590,15 +1568,15 @@ bool obana::OBAnaICARUS::InDetector(art::Ptr<simb::MCTruth> mctruth){
 }
 */
 
-bool obana::OBAnaICARUS::InDetector(art::Ptr<simb::MCParticle> mcp, int & step) {
-  auto t = mcp->Trajectory();
-  //  std::cout<< "size of trajectory: "<< mcp->NumberTrajectoryPoints() << "\t" << t.size() << std::endl;
+bool obana::OBAnaICARUS::InDetector(simb::MCParticle const& mcp, int & step) {
+  auto t = mcp.Trajectory();
+  //  std::cout<< "size of trajectory: "<< mcp.NumberTrajectoryPoints() << "\t" << t.size() << std::endl;
   const geo::GeometryCore*           fGeometry;             ///< pointer to Geometry service
   fGeometry           = lar::providerFrom<geo::Geometry>();
 
   for (size_t i = 0; i < t.size(); i++) {
-    // std::cout << "step: " << i << " , has energy : " << mcp->E(i) << "\t" <<mcp->PdgCode()<< std::endl;
-    const TLorentzVector& pos = mcp->Position(i);
+    // std::cout << "step: " << i << " , has energy : " << mcp.E(i) << "\t" <<mcp.PdgCode()<< std::endl;
+    const TLorentzVector& pos = mcp.Position(i);
     geo::Point_t trackPoint(pos.X(),pos.Y(),pos.Z());
 
     const geo::TPCGeo* tpcGeo = fGeometry->PositionToTPCptr(trackPoint);
@@ -1607,7 +1585,7 @@ bool obana::OBAnaICARUS::InDetector(art::Ptr<simb::MCParticle> mcp, int & step) 
     //    if (tpcGeo->ID() != C0id) continue; // point not in cryostat 0
     if (tpcGeo->ActiveBoundingBox().ContainsPosition(trackPoint)){
       step = i;
-      //      std::cout << "Indide the boundary, step: " << step << " , has energy : " << mcp->E(step) << std::endl;
+      //      std::cout << "Indide the boundary, step: " << step << " , has energy : " << mcp.E(step) << std::endl;
       return true; 
     }
     // if (InDetector(t.X(i), t.Y(i), t.Z(i))) return true;

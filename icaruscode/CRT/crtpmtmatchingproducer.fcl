@@ -1,0 +1,27 @@
+#include "crtpmtmatching_parameters.fcl"
+
+BEGIN_PROLOG
+
+standard_crtpmtmatchingproducer:
+{
+  module_type: "icaruscode/CRT/CRTPMTMatchingProducer"
+
+  CrtHitModuleLabel:  "crthit"
+
+# OpHitModuleLabel:   "ophit"
+
+  OpFlashModuleLabels: [ "opflashCryoE", "opflashCryoW" ]
+
+  TriggerLabel:  "daqTrigger"
+# TriggerConfiguration: "triggerconfig"
+
+  # note 19/04/2023: parameters are set to run2,
+  # they can be set to run1, but currently values are the same
+
+  @table::CRTMatchBNBBeamGate_run2
+  @table::CRTMatchNuMIBeamGate_run2
+  @table::CRTPMTmatchingparams_standard
+
+}
+
+END_PROLOG

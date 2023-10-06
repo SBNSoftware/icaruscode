@@ -1903,8 +1903,11 @@ void icarus::DaqDecoderICARUSPMT::produce(art::Event& event) {
     = createRegularWaveformMetadata(waveformProducts, event, triggerInfo);
   
   
-  // put the data products into the event
-  for (auto&& [ category, waveforms ]: waveformProducts) {
+  // put the waveform data products we are required to save into the event
+  for (std::string const& category: fSaveWaveformsFrom) {
+    auto itData = waveformProducts.find(category);
+    if (itData == waveformProducts.end()) continue;
+    auto& waveforms = itData->second;
     mf::LogTrace(fLogCategory)
       << waveforms.size() << " PMT waveforms saved for "
       << (category.empty()? "standard": category) << " instance.";

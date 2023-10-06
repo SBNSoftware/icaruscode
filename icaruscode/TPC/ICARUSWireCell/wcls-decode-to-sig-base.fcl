@@ -7,8 +7,9 @@ standard_wirecell_sigproc:
      tool_type: WCLS
      apps: ["Pgrapher"]
   
-     logsinks: ["stdout"]
-     loglevels: ["debug", "pgraph:info", "glue:debug", "sigproc:debug"]
+     // Comment the following lines to stop the massive output to std::cout... 
+     //logsinks: ["stdout"]
+     //loglevels: ["debug", "pgraph:info", "glue:debug", "sigproc:debug"]
   
      // Libraries in which to look for WCT components
      plugins: ["WireCellGen", "WireCellSigProc", "WireCellRoot", "WireCellPgraph", "WireCellLarsoft"]
@@ -41,7 +42,7 @@ standard_wirecell_sigproc:
         // Set "data" vs. "sim".  The epoch below probably should follow suit.
         reality: "data"
         // reality: "sim"
-  	files_fields: "garfield-icarus-fnal-rev1.json.bz2"
+  	     files_fields: "icarus_fnal_fit_ks.json.bz2"
         // if epoch is "dynamic" you MUST add
         // "wclsMultiChannelNoiseDB" to "inputers" and must NOT
         // add it if not "dynamic"

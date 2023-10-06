@@ -53,3 +53,5 @@ physics:
 physics.producers.cafmaker.CRTSimT0Offset: @local::standard_icarus_crtsimalg.GlobalT0Offset
 # Blinding not needed for MC
 physics.producers.cafmaker.CreateBlindedCAF: false
+# MC times are already measured w.r.t. the beam gate
+physics.producers.cafmaker.ReferencePMTFromTriggerToBeam: false

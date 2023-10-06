@@ -29,8 +29,8 @@ physics.trigger_paths: [ path ]
 physics.end_paths:     [ outana, streamROOT ]
 
 # Drop the artdaq format files on output
-#outputs.outCommon.outputCommands: ["keep *_*_*_*", "drop *_MCDecodeTPCROI_*_*", "drop *_decon1droi_*_*","drop raw::RawDigits_*_*_*" ]
-outputs.outCommon.outputCommands: ["keep *_*_*_*", "drop *_decon1droi_*_*" ]
+#outputs.rootOutput.outputCommands: ["keep *_*_*_*", "drop *_MCDecodeTPCROI_*_*", "drop *_decon1droi_*_*","drop raw::RawDigits_*_*_*" ]
+outputs.rootOutput.outputCommands: ["keep *_*_*_*", "drop *_decon1droi_*_*" ]
 
 # Set the expected input for ophit
 physics.producers.ophit:     @local::icarus_ophit_MC

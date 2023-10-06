@@ -737,7 +737,7 @@ class util::details::ArtHandleTracker: public ArtHandleTrackerInterface<Event> {
       mf::LogDebug{ "ArtHandleTracker" } << "Removing cache for handle<"
         << fHandle.provenance()->producedClassName()
         << ">(" << fHandle.provenance()->inputTag().encode() << ").";
-      return fEvent->removeCachedProduct(fHandle);
+      return fHandle.removeProduct();
     }
   
   /// Returns a pointer to the managed handle, wrapped in `std::any`.
@@ -830,6 +830,14 @@ art::ValidHandle<T> util::ArtHandleTrackerManager<Event>::getValidHandle
   (Args&&... args)
 {
   canOperate("getValidHandle()");
+  auto handle = fEvent->template getValidHandle<T>(std::forward<Args>(args)...);
+  if (!handle) {
+    // we can't write which input tag this is because we elected to have the
+    // most generic interface possible, so we don't know if in `Args` there is
+    // even any input tag. We could find out with additional effort.
+    mf::LogDebug{ fConfig.logCategory }
+      << "ArtHandleTrackerManager: invalid handle won't be registered.";
+  }
   return registerHandle
     (fEvent->template getValidHandle<T>(std::forward<Args>(args)...));
 }
@@ -844,6 +852,12 @@ auto util::ArtHandleTrackerManager<Event>::registerHandle
   using util::details::ProvenanceGetter;
   
   using Handle_t = std::decay_t<Handle>;
+  
+  if (!handle.isValid()) {
+    mf::LogDebug{ fConfig.logCategory }
+      << "Attempt to register an invalid handle.";
+    return std::forward<Handle>(handle);
+  }
   
   canOperate("registerHandle()");
   
@@ -937,11 +951,10 @@ template <typename Handle>
 Handle const* util::ArtHandleTrackerManager<Event>::findHandle
   (Handle const& like) const
 {
+  if (!like.isValid()) return nullptr;
   
   // look for it, one by one
   for (TrackerPtr const& tracker: fTrackers) {
-    
-    
     
     std::any anyHandlePtr = tracker->handlePtr();
     Handle const** handlePtr = std::any_cast<Handle const*>(&anyHandlePtr);

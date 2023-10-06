@@ -1,0 +1,58 @@
+#include "alp.fcl"
+# service configuration
+#
+#include "services_icarus_simulation.fcl"
+
+
+process_name: ALPTree
+
+services:
+{
+  @table::icarus_simulation_services
+  TFileService: { fileName: "alp_icarus.root" }
+  IFDH: {}
+}
+
+source: {
+  module_type: "EmptyEvent"
+  firstEvent: 1
+  firstRun: 1
+  timestampPlugin: {
+    plugin_type: "GeneratedEventTimestamp"
+  }
+}
+
+physics:
+{
+  producers: {
+    generator: @local::alp
+    rns:       { module_type: "RandomNumberSaver" }
+  }
+ 
+  runprod:  [ generator, rns]
+  stream: [out]
+ 
+  trigger_paths: [runprod] 
+  end_paths:     [stream] 
+  
+} # physics
+
+outputs: {
+ out:
+ {
+   module_type: RootOutput
+   dataTier: "simulated"
+   compressionLevel: 1
+   saveMemoryObjectThreshold: 0
+ }
+
+}
+
+outputs.out.fileName: "simulation_higgs_icarus_numi_%tc-%p.root"
+
+# Make art ROOT file
+physics.producers.generator.Produce: true
+physics.producers.generator.AnaOutput: false
+physics.producers.generator.Deweight: true
+
+services.NuRandomService.policy: "random"

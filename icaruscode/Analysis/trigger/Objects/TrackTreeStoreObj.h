@@ -23,6 +23,12 @@ namespace sbn {
     double t0 = NoTime; ///< Best time of the track (used for selection) [us]
     double t0_TPC = NoTime; ///< Time of (cathode crossing) track from TPC reconstruction [us]
     double t0_CRT = NoPosition; ///< Time of track from association with CRT hit [us]
+    float t0_TPC_min = NoTime; ///< Minimum track time allowed by its hits [us]
+    float t0_TPC_max = NoTime; ///< Maximum track time allowed by its hits [us]
+    float t0_diff = NoTime; ///< Distance of `t0` time from the one allowed by hits [us]
+    float t0_CRT_diff = NoTime; ///< Distance of CRT time from the one allowed by hits [us]
+    float hitTick_min = NoTime; ///< Lowest tick time among hits of this track.
+    float hitTick_max = NoTime; ///< Highest tick time among hits of this track.
     float start_x = NoPosition; ///< Start of the track (assumed downgoing) [cm]
     float start_y = NoPosition; ///< Start of the track (assumed downgoing) [cm]
     float start_z = NoPosition; ///< Start of the track (assumed downgoing) [cm]
@@ -52,6 +58,7 @@ namespace sbn {
     float dir_y = NoPosition; ///< Direction vector at the start if the track.
     float dir_z = NoPosition; ///< Direction vector at the start if the track.
     float driftCorrX = 0.0; ///< Shift applied to track position for time [cm]
+    bool  flipped = false; ///< Whether the track has been flipped backward.
   };  // selTrackInfo
 
   struct selBeamInfo {

@@ -2,6 +2,8 @@ art_make_library()
 set(  MODULE_LIBRARIES
     sbnobj::Common_Trigger
     icarusalg::Utilities
+    sbndaq_artdaq_core::sbndaq-artdaq-core_Overlays_ICARUS
+    artdaq_core::artdaq-core_Utilities
     larcorealg::Geometry
     larcore::Geometry_Geometry_service
     larsim::Simulation
@@ -38,6 +40,7 @@ set(  MODULE_LIBRARIES
   )
 cet_build_plugin(FilterNeutrinosActiveVolume art::module LIBRARIES ${MODULE_LIBRARIES})
 cet_build_plugin(FilterNumberTPCHits art::module LIBRARIES ${MODULE_LIBRARIES})
+cet_build_plugin(FilterDataIntegrity art::module LIBRARIES ${MODULE_LIBRARIES})
 cet_build_plugin(FilterOpFlash art::module LIBRARIES ${MODULE_LIBRARIES})
 cet_build_plugin(FilterParticlesActiveVolume art::module LIBRARIES ${MODULE_LIBRARIES})
 cet_build_plugin(TriggerTypeFilter art::module LIBRARIES ${MODULE_LIBRARIES})

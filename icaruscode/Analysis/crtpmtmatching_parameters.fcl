@@ -37,10 +37,15 @@ CRTMatchNuMIBeamGate_run2: {
   
 CRTPMTmatchingparams_standard:
 {
-  PMTADCThresh:  400  # ADC, this value was suggested from A. Scarpelli to mimic the PMT trigger.
-  nOpHitToTrigger:  5  # Number of PMT above threshold to mimic the PMT trigger.
-  TimeOfFlightInterval:  100 # ns, time difference between CRT Hit and Optical Flash to confirm the match.
-  
+  PMTADCThresh:          400  # ADC, this value was suggested from A. Scarpelli to mimic the PMT trigger.
+  nOpHitToTrigger:       5  # Number of PMT above threshold to mimic the PMT trigger.
+  TimeOfFlightInterval:  100 # ns, time difference between CRT Hit and Optical Flash to confirm the match.	
+  GlobalT0Offset:        1599957 # [ns], Global timing offset to be applied to CRT - PMT Matching for MC. 
+  # we currently use 1.6 us for the CRT T0 timing reference in MC (copied from ref: https://github.com/SBNSoftware/icaruscode/blob/v09_37_02_01/icaruscode/CRT/crtsimmodules_icarus.fcl#L11),
+  # and we also apply a 43 ns offset to the MC OpHit times in the CRT-PMT Matching code (see ref: https://github.com/SBNSoftware/icaruscode/blob/v09_37_02_01/icaruscode/CRT/CrtOpHitMatchAnalysis.fcl#L60). 
+  # (CRTHitt0 - 1.6e6) - (OpHit.time - 43 ns) -> CRTHitt0 - OpHit.time - GlobalT0Offset, where GlobalT0Offset = 1.6e6 - 43 = 1599957 ns. 
+
+  MatchBottomCRT:  	 false #Config variable to perform CRTPMT Matching without bottom CRT. `True` applies the matching to bottom CRT Hits,  currently set to false for data/MC comparisons 
 }  # CRTPMTmatchingparams_standard
 
 END_PROLOG

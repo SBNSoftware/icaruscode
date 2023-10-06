@@ -28,6 +28,13 @@
 #include "icarus_signal_processing/Denoising.h"
 #include "icarus_signal_processing/Filters/FFTFilterFunctions.h"
 
+// Eigen includes
+#include "Eigen/Core"
+#include "Eigen/Dense"
+#include "Eigen/Eigenvalues"
+#include "Eigen/Geometry"
+#include "Eigen/Jacobi"
+
 // std includes
 #include <string>
 #include <iostream>
@@ -138,6 +145,8 @@ public:
     const icarus_signal_processing::VectorInt&   getNumTruncBins()     const override {return fNumTruncBins;};
 
 private:
+
+    void principleComponents(const icarus_signal_processing::VectorFloat&) const;
 
     using FloatPairVec = std::vector<std::pair<float,float>>;
 
@@ -280,11 +289,12 @@ void TPCNoiseFilter1DMC::process_fragment(detinfo::DetectorClocksData const&,
 
 //    icarus_signal_processing::Denoiser1D_Protect   denoiser;
     icarus_signal_processing::Denoiser1D           denoiser;
-    icarus_signal_processing::WaveformTools<float> waveformTools;
+    icarus_signal_processing::WaveformTools<float> waveformTools(5);
 
     // Make a pass throught to do pedestal corrections and get raw waveform information
     for(size_t idx = 0; idx < numChannels; idx++)
     {
+        icarus_signal_processing::VectorFloat& rawDataVec    = fRawWaveforms[idx];
         icarus_signal_processing::VectorFloat& pedCorDataVec = fPedCorWaveforms[idx];
 
         // Keep track of the channel
@@ -322,8 +332,10 @@ void TPCNoiseFilter1DMC::process_fragment(detinfo::DetectorClocksData const&,
                 break;
         }
 
+        std::copy(dataArray[idx].begin(),dataArray[idx].end(),rawDataVec.begin());
+
         // Now determine the pedestal and correct for it
-        waveformTools.getPedestalCorrectedWaveform(dataArray[idx],
+        waveformTools.getPedestalCorrectedWaveform(rawDataVec,
                                                    pedCorDataVec,
                                                    fSigmaForTruncation,
                                                    fPedestalVals[idx],
@@ -333,7 +345,21 @@ void TPCNoiseFilter1DMC::process_fragment(detinfo::DetectorClocksData const&,
                                                    fRangeBins[idx]);
 
         // Convolve with a filter function
-        if (fUseFFTFilter) (*fFFTFilterFunctionVec[plane])(pedCorDataVec);
+        //if (fUseFFTFilter) (*fFFTFilterFunctionVec[plane])(pedCorDataVec);
+        if (fUseFFTFilter)
+        {
+            // Temporary diagnostics
+            icarus_signal_processing::VectorFloat medianSmoothVec(numTicks);
+
+            principleComponents(pedCorDataVec);
+
+            //waveformTools.medianSmooth(pedCorDataVec, medianSmoothVec, 201);
+            waveformTools.truncAveSmooth(pedCorDataVec, medianSmoothVec, 201);
+
+            std::transform(pedCorDataVec.begin(),pedCorDataVec.end(), medianSmoothVec.begin(), pedCorDataVec.begin(), std::minus<float>());
+
+            std::copy(medianSmoothVec.begin(),medianSmoothVec.end(),rawDataVec.begin());
+        }
 
         // Make sure our selection and ROI arrays are initialized
         std::fill(fSelectVals[idx].begin(),fSelectVals[idx].end(),false);
@@ -358,6 +384,79 @@ void TPCNoiseFilter1DMC::process_fragment(detinfo::DetectorClocksData const&,
     double totalTime = theClockTotal.accumulated_real_time();
 
     mf::LogDebug("TPCNoiseFilter1DMC") << "    *totalTime: " << totalTime << std::endl;
+
+    return;
+}
+
+void TPCNoiseFilter1DMC::principleComponents(const icarus_signal_processing::VectorFloat& waveform) const
+{
+
+    // Define elements of our covariance matrix
+    float xi2(0.);
+    float xiyi(0.);
+    float xizi(0.0);
+    float yi2(0.0);
+    float yizi(0.0);
+    float zi2(0.);
+//    float weightSum(0.);
+
+    std::cout << "Entering principle components alg, size: " << waveform.size() << std::endl;
+
+    Eigen::Vector3f meanPos(float(waveform.size()/2),waveform[waveform.size()/2],0.);
+
+    for (size_t waveIdx = 0; waveIdx < waveform.size(); waveIdx++)
+    {
+        float x = float(waveIdx)    - meanPos(0);
+        float y = waveform[waveIdx] - meanPos(1);
+        float z = 0.;
+
+        xi2  += x * x;
+        xiyi += x * y;
+        xizi += x * z;
+        yi2  += y * y;
+        yizi += y * z;
+        zi2  += z;
+    }
+
+    // Using Eigen package
+    Eigen::Matrix2f sig;
+
+//    sig << xi2, xiyi, xizi, xiyi, yi2, yizi, xizi, yizi, zi2;
+    sig << xi2, xiyi, xiyi, yi2;
+
+//    sig *= 1. / weightSum;
+
+    Eigen::SelfAdjointEigenSolver<Eigen::Matrix2f> eigenMat(sig);
+
+    if (eigenMat.info() == Eigen::ComputationInfo::Success) 
+    {
+        // Now copy output
+        Eigen::Matrix2f eigenVectors = eigenMat.eigenvectors().transpose();
+        Eigen::Vector2f eigenValues  = eigenMat.eigenvalues();
+
+        std::cout << "-- eigenvalues and vectors" << std::endl;
+        std::cout << eigenValues << std::endl;
+        std::cout << eigenVectors << std::endl;
+//      // The returned eigen values and vectors will be returned in an xyz system where x is the smallest spread,
+//      // y is the next smallest and z is the largest. Adopt that convention going forward
+//      reco::PrincipalComponents::EigenValues recobEigenVals = eigenMat.eigenvalues().cast<float>();
+//      reco::PrincipalComponents::EigenVectors recobEigenVecs =
+//        eigenMat.eigenvectors().transpose().cast<float>();
+//
+//      // Check for a special case (which may have gone away with switch back to doubles for computation?)
+//      if (std::isnan(recobEigenVals[0])) {
+//        std::cout << "==> Third eigenvalue returns a nan" << std::endl;
+//
+//        recobEigenVals[0] = 0.;
+//
+//        // Assume the third axis is also kaput?
+//        recobEigenVecs.row(0) = recobEigenVecs.row(1).cross(recobEigenVecs.row(2));
+//      }
+//
+//      // Store away
+//      pca = reco::PrincipalComponents(
+//        true, numPairsInt, recobEigenVals, recobEigenVecs, meanPos.cast<float>());
+    }
 
     return;
 }

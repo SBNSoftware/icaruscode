@@ -38,6 +38,7 @@ set(        TOOL_LIBRARIES
                 lardataobj::RawData
                 lardata::ArtDataHelper
                 ROOT::Core
+                Eigen3::Eigen
                 wda::wda
                 art::Framework_Core
                 art::Framework_Principal
