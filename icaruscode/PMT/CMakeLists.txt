@@ -237,7 +237,7 @@ cet_build_plugin(PMTcoordinates art::module LIBRARIES ${MODULE_LIBRARIES})
 cet_build_plugin(PhotonPropogationICARUS art::module LIBRARIES ${MODULE_LIBRARIES})
 cet_build_plugin(TrigInfo art::module LIBRARIES ${MODULE_LIBRARIES})
 cet_build_plugin(wvfAnaicarus art::module LIBRARIES ${MODULE_LIBRARIES})
-
+cet_build_plugin(OpHitCorrectionsChecker art::module LIBRARIES ${MODULE_LIBRARIES})
 
 install_headers()
 install_fhicl()
