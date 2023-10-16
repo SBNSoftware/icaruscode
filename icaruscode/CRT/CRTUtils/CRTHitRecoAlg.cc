@@ -357,7 +357,7 @@ sbn::crt::CRTHit CRTHitRecoAlg::FillCRTHit(
       time1 /*% 1'000'000'000*/;  // TODO: Update the CRTHit data product
                                   // /sbnobj/common/CRT . Discussion with SBND
                                   // people needed
-  crtHit.ts0_s = time0 / 1'000'000'000;//
+  crtHit.ts0_s = time0 / 1'000'000'000;//'
   crtHit.plane = plane;
   crtHit.x_pos = x;
   crtHit.x_err = ex;
@@ -582,14 +582,15 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeSideHit(
   double flag = 0.;// Flag for Side CRT Hits to destinguish between good and bad 
                    //  reconstructed positions. - AH on 2/3/2023, see docdb 29972
                    /* Note on flag variables: 
-		      flag = 0 : OK z position 
-		      flag = 1 : single ended readout on same end on inner and outer layers 
-		      flag = 2 : timestamps on opposite ends of module are >50 ns apart 
-		      flag = 3 : reco z position beyond length of module
-		      flag = 4 : single ended readout on one layer, OK z position 
-		      flag = 5 : reco z position beyond length of module //reco z position in exact center of module 
-		      flag = 6 : single ended readout on opposite ends on inner and outer layers 
-		   */
+		      flag = 0 : OK z position
+		      flag = 1 : single ended readout on one layer, OK z position
+		      flag = 2 : single ended readout on opposite ends on inner and outer layers
+		      flag = 3 : reco z position beyond length of module on layer A or layer B 
+		      flag = 4 : final reco z position beyond length of module 
+		      flag = 5 : timestamps on opposite ends of module are >50 ns apart 
+		      flag = 6 : single ended readout on same end on inner and outer layers
+		    */
+  
   struct info{
     uint8_t mac5s; 
     int channel;
@@ -652,25 +653,25 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeSideHit(
     mf::LogInfo("CRTHitRecoAlg:MakeSideHit") 
       << "size of febA: " << (int)febA.size()
       << ", size of febB: " << (int)febB.size() << '\n';
-  // *** Flag = 1: Check and flag single ended readouts
+  // *** Flag = 6: Check and flag single ended readouts
   if ((int)febA.size() == 1 and (int)febB.size() == 1 and region!="South" and region!="North"){
-    flag = 1;
+    flag = 6;
     if(fVerbose) 
       mf::LogInfo("CRTHitRecoAlg:MakeSideHit") 
-	<< "single ended readout for both layers! setting flag == 1 ... \n";
+	<< "single ended readout for both layers! setting flag == 6 ... \n";
   }
-  // *** Flag = 4: Check and flag single ended readout on one layer 
+  // *** Flag = 1: Check and flag single ended readout on one layer 
   else if ((int)febA.size() == 1 and region!="South" and region!="North"){
     if(fVerbose)
       mf::LogInfo("CRTHitRecoAlg:MakeSideHit") 
-	<< "single ended readout for feb A, 1st layer! setting flag == 4 ... \n";
-    flag = 4;
+	<< "single ended readout for feb A, 1st layer! setting flag == 1 ... \n";
+    flag = 1;
   }
   else if ((int)febB.size() == 1 and region!="South" and region!="North"){
     if(fVerbose)
       mf::LogInfo("CRTHitRecoAlg:MakeSideHit") 
-	<< "single ended readout for feb B, 2nd layer! setting flag == 4 ... \n";
-    flag = 4;
+	<< "single ended readout for feb B, 2nd layer! setting flag == 1 ... \n";
+    flag = 1;
   }
 
 
@@ -990,7 +991,7 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeSideHit(
           << '\n';
 
     if (((int)infn.mac5s != (int)informationA[i+1].mac5s and 
-	 i < (int)informationA.size()-1) || flag == 1){ 
+	 i < (int)informationA.size()-1) || flag == 6){ 
       if((int)febA.size()==1 and i > 0) continue;
       mac5_1 = (int)infn.mac5s;
       t0_1 = infn.t0;
@@ -1040,15 +1041,14 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeSideHit(
 	  << "\tFEB A z hit pos = .5*(delta_t)/prop + center = .5*(" 
 	  << int64_t(t1_1 - t1_2) << ")/ " << fPropDelay << " + " 
 	  << 1.0*adsGeo.GetCenter().Z() << " = " << posA.Z() << "\n";
-      // *** Flag 2: Check and flag if 1st modules delta_t > 54 ns
-      // 54 ns = 800 cm (full module length) x 0.062 ns/cm (prop delay) 
-      // = 49.5 ns + a lil buffer
+      // *** Flag 5: Check and flag if 1st modules delta_t > 50 ns
+      // 50 ns ~= 800 cm (full module length) x 0.062 ns/cm (prop delay)  = 49.5 ns
       if(std::abs(int64_t(t1_1 - t1_2))>50){
-	flag = 2;
+	flag = 5;
 	if (fVerbose) 
 	  mf::LogInfo("CRTHitRecoAlg:MakeSideHit") 
 	    << "*** FEB A delta_t greater than 54! delta_t = " 
-	    << int64_t(t1_1 - t1_2) << ", setting flag == 2 ... \n";
+	    << int64_t(t1_1 - t1_2) << ", setting flag == 5 ... \n";
       }
       // *** Flag 3: Check and flag if reco z beyond length of module A
       else if((posA.Z() < zrange_min || posA.Z() > zrange_max ) and region!="South" && region!="North" and flag==0){
@@ -1109,7 +1109,7 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeSideHit(
                                      << " ,  position " << infn.pos[2] << '\n';
 
     if (((int)infn.mac5s != (int)informationB[i + 1].mac5s and
-	 i < (int)informationB.size() - 1) || flag == 1) {
+	 i < (int)informationB.size() - 1) || flag == 6) {
       if((int)febB.size()==1 and i > 0) continue;
       mac5_2 = (int)infn.mac5s;
       t0_2 = (uint64_t)infn.t0;
@@ -1164,13 +1164,13 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeSideHit(
 	  << int64_t(t2_1 - t2_2) << ")/ "<< fPropDelay << " + " 
 	  << 1.0*adsGeo.GetCenter().Z() << " = " << posB.Z() << "\n";
       
-      // *** Flag 2: Check and flag if 2nd modules delta_t > 50 ns
+      // *** Flag 5: Check and flag if 2nd modules delta_t > 50 ns
       if(std::abs(int64_t(t2_1 - t2_2))>50){
-	flag = 2;
+	flag = 5;
 	if (fVerbose)
 	  mf::LogInfo("CRTHitRecoAlg:MakeSideHit")
 	    << "*** FEB B delta_t greater than 54! delta_t = "
-	    << int64_t(t2_1 - t2_2) << ", setting flag == 2 ... \n";
+	    << int64_t(t2_1 - t2_2) << ", setting flag == 5 ... \n";
       }
       // *** Flag 3: Check and flag if reco z beyond length of module B
       else if((posB.Z() < zrange_min || posB.Z() > zrange_max) and region!="South" && region!="North" and flag == 0){
@@ -1214,7 +1214,7 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeSideHit(
     zposB = zposB / zposB_vec.size();
     posB =geo::Zaxis()*zposB;
   }
-
+  // *** Flag 2: single ended readout on opposite ends on inner and outer layers
   int crossfeb = std::abs(mac5_1 - mac5_2);
   if ((int)informationA.size()==1 and 
       (int)informationB.size()==1 and 
@@ -1237,23 +1237,23 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeSideHit(
       mf::LogInfo("CRTHitRecoAlg")
 	<< "t0_1 = " << t0_1 << ", t0_2 = " << t0_2 << ", tdiff = " << int64_t(t0_1 - t0_2) <<"\n"
 	<< "t0_s = " << t0_s << ", t0_n = " << t0_n <<", tdiff = " << int64_t(t0_s - t0_n) <<  "\n";
-    flag = 6;
+    flag = 2;
     float z_pos = 0.5*(int64_t(t0_s - t0_n)/fPropDelay);
     //float z_pos = 0.5*(int64_t(t0_s - t0_n)/fPropDelay);
     // Check if FEB hits contributing to crossfeb hit are over 54ns apart
     if(std::abs(int64_t(t0_1 - t0_2))>54){
-      flag = 2;
+      flag = 5;
       if (fVerbose) 
 	mf::LogInfo("CRTHitRecoAlg") 
 	  << "*** crossfeb delta_t greater than 54! delta_t = " 
-	  << int64_t(t0_1 - t0_2) << ", setting flag == 2 ... \n";
+	  << int64_t(t0_1 - t0_2) << ", setting flag == 5 ... \n";
     }
     crossfebpos =  center + geo::Zaxis()*z_pos;
     if (fVerbose) 
       std::cout //mf::LogInfo("CRTHitRecoAlg")
 	<< "crossfeb = abs(mac5_1 - mac5_2) = " << mac5_1 
 	<< " - " << mac5_2 << " = " << crossfeb << "\n"
-	<< "setting flag == 6 \n"
+	<< "setting flag == 2 \n"
 	<< "crossfeb Zpos = .5*(delta_t)/prop + center = .5*(" << int64_t(t0_s - t0_n) << ")/" << fPropDelay <<" + " << center.Z() 
         << " = " << crossfebpos << "\n";
 
@@ -1353,16 +1353,16 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeSideHit(
   //check if final z pos is out of the z range of that wall 
   // (if not flagged with bad positions earlier on, double check z positions again now...)
   
-  // *** Flag 5: Check and flag if final reco z beyond length of module 
+  // *** Flag 4: Check and flag if final reco z beyond length of module 
   std::cout << "is (hitpoint[2] " << hitpoint[2] << " < zrange_min " << zrange_min << " or > zrange_max " <<  zrange_max << "? (flag = " << flag << "\n";
-  if((hitpoint[2] < zrange_min || hitpoint[2] > zrange_max) and flag!=2 and region!="South" && region!="North"){
-    flag = 5; // actually lets repurpose flag 5
+  if((hitpoint[2] < zrange_min || hitpoint[2] > zrange_max) and flag!=5 and region!="South" && region!="North"){
+    flag = 4; // actually lets repurpose flag 5
     //if (fVerbose) 
     //mf::LogInfo("CRTHitRecoAlg: ") 
     std::cout 
 	<< "*** Zpos of hit in " << region << " is off the wall! z=" 
 	<< hitpoint[2] << "is beyond bounds for " << region << " : (zmin,zmax=" 
-	<< zrange_min << ", " << zrange_max <<"), setting flag = 5 ... " << flag << "\n"; 
+	<< zrange_min << ", " << zrange_max <<"), setting flag = 4 ... " << flag << "\n"; 
   }
   
   if (fVerbose) {
