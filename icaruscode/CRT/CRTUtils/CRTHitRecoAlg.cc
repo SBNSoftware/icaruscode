@@ -938,7 +938,7 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeSideHit(
   // (store them in vector and take avg.)
   float zposA = 0, zposB = 0;
   vector<float> zposA_vec = {}, zposB_vec = {}; 
-
+  int zrange_min = 0, zrange_max = 0;
   for (auto const& infn : informationA) {
     auto i = &infn - informationA.data();
     auto const& adsGeo = adGeo.SensitiveVolume(infn.strip);  // trigger stripi
