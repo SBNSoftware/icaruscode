@@ -110,12 +110,6 @@ namespace tcpCompression {
         MF_LOG_VERBATIM("ValidateCompression")
           << "THe icaruscode overlay is compressed." << '\n'
           << "... Is the sbncode overlay compressed? " << compStr;
-        if (fragOldOverlay.isCompressed())
-        {
-          uint16_t testKey = fragOldOverlay.CompressionKey(0, 0);
-          MF_LOG_VERBATIM("ValidateCompression")
-            << "Comp Key is " << std::bitset<16>(testKey);
-        }
       }
 
       //if (fDumpADCs && not isComp)
