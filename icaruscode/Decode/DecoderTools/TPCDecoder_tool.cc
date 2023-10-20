@@ -147,10 +147,8 @@ void TPCDecoder::process_fragment(const artdaq::Fragment &fragment)
 
         size_t boardId = nChannelsPerBoard * (nBoardsPerFragment * fragment_id + board);
 
-        //A2795DataBlock const& block_data = *(crate_data.BoardDataBlock(i_b));
         for(size_t channel = 0; channel < physCrateFragment.nChannelsPerBoard(); channel++)
         {
-            //raw::ChannelID_t channel_num = (i_ch & 0xff ) + (i_b << 8);
             raw::ChannelID_t           channel_num = boardId + channel;
             raw::RawDigit::ADCvector_t wvfm(physCrateFragment.nSamplesPerChannel());
             wvfm.assign(physCrateFragment.channel_adc_vec(board, channel).begin(), physCrateFragment.channel_adc_vec(board, channel).end());
