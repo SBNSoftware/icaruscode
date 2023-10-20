@@ -1,7 +1,7 @@
 ###
 ## This fhicl file takes the standard stage 0 wc mc file and keeps the raw digits
 ##
-#include "stage0_run2_wc_icarus_mc.fcl"
+#include "stage0_run2_wc_testgauss_icarus_mc.fcl"
 
 # Drop the daq format files on output, 
 # Drop all output from the TPC decoder stage

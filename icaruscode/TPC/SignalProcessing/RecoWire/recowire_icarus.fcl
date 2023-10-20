@@ -104,6 +104,14 @@ icarus_roifinder:
     }
 }
 
+icarus_simchannelroi:
+{
+    module_type:           "SimChannelROI"
+    WireModuleLabelVec:    ["largeant"]
+    OutInstanceLabelVec:   ["PHYSCRATEDATA"]
+    DaignosticOutput:      false
+}
+
 icarus_roiconverter:
 {
     module_type:           ROIConverter

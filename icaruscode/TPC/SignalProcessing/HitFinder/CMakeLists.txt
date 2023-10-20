@@ -20,7 +20,10 @@ set(		MODULE_LIBRARIES
 			lardataobj::RecoBase
 			lardata::ArtDataHelper
 			larreco::RecoAlg
-			art::Framework_Core
+			icaruscode::IcarusObj
+			sbnobj::ICARUS_TPC
+			icaruscode_TPC_Utilities
+      	    art::Framework_Core
 			art::Framework_Principal
 			art::Framework_Services_Registry
 			art_root_io::tfile_support ROOT::Core
@@ -42,6 +45,14 @@ set(		MODULE_LIBRARIES
 cet_build_plugin(HitMerger art::module LIBRARIES ${MODULE_LIBRARIES})
 cet_build_plugin(HitSelector art::module LIBRARIES ${MODULE_LIBRARIES})
 cet_build_plugin(ICARUSHitFinder art::module LIBRARIES ${MODULE_LIBRARIES})
+cet_build_plugin(HitConverter art::module LIBRARIES ${MODULE_LIBRARIES})
+cet_build_plugin(GaussHitFinderICARUS art::module 
+				 LIBRARIES ${MODULE_LIBRARIES}
+				 larreco::HitFinder
+				 larreco::CandidateHitFinderTool
+				 larreco::PeakFitterTool
+				)
+
 
 install_headers()
 install_fhicl()

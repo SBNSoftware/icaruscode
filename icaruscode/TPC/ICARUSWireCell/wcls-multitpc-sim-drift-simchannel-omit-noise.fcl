@@ -59,7 +59,7 @@ physics :{
               lifetime: @local::icarus_detproperties.Electronlifetime
 
               # Electron drift speed, assumes a certain applied E-field [mm/us]
-              # driftSpeed: 1.565
+              # driftSpeed: 1.5756
             }
          }
       }

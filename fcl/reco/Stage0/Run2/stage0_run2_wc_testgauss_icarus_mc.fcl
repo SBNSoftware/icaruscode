@@ -16,6 +16,8 @@ physics.producers: {  @table::icarus_stage0_producers
 physics.path: [   @sequence::icarus_stage0_mc_PMT, 
                   MCDecodeTPCROI, 
                   @sequence::icarus_stage0_2d_multiTPC,
+                  @sequence::icarus_stage0_EastGauss_TPC,
+                  @sequence::icarus_stage0_WestGauss_TPC,
                   @sequence::icarus_stage0_mc_crt
               ]
 
@@ -24,29 +26,20 @@ physics.outana:        [ purityinfoana0, purityinfoana1 ]
 physics.trigger_paths: [ path ]
 physics.end_paths:     [ outana, streamROOT ]
 
-# Drop the artdaq format files on output
-outputs.rootOutput.outputCommands: ["keep *_*_*_*", 
-                                    "drop *_daq_*_*", 
-                                    "drop *_MCDecodeTPCROI_*_*", 
-                                    "drop *_decon1droi_*_*", 
-                                    "drop *_decon2Droi*_*_*", 
-                                    "drop recob::Wire*_roifinder_*_*", 
-                                    "keep *_daq_simpleSC_*" ]
-
 # Drop the daq format files on output, 
 # Drop all output from the TPC decoder stage
 # Drop all output from the 1D deconvolution stage
 # Drop all ouptut for the first running of the ROI finder (on the 1Dsingularity shell --nv -B /cvmfs,/media/usher/analysis/LArSoft/ICARUS slf7-essentials_latest.sif decon)
 # Drop all output from the 2D deconvolution stage
 # Drop the recob::Wire output from the roifinder2d (but keep the ChannelROIs)
-outputs.rootOutput.outputCommands:         ["keep *_*_*_*", 
-                                            "drop *_daq_*_*", 
-                                            "drop *_MCDecodeTPCROI_*_*", 
-                                            "drop *_decon1droi_*_*", 
-                                            "drop *_decon2droi*_*_*", 
-                                            "drop recob::Wire*_roifinder_*_*",
-                                            "drop recob::Wire*_roifinder2d_*_*" 
-                                           ]
+outputs.rootOutput.outputCommands: ["keep *_*_*_*", 
+                                    "drop *_daq_*_*", 
+                                    "drop *_MCDecodeTPCROI_*_*", 
+                                    "drop *_decon1droi_*_*", 
+                                    "drop *_decon2Droi*_*_*", 
+                                    "drop recob::Wire*_roifinder*_*_*", 
+                                    "keep *_daq_simpleSC*_*" ]
+
 
 # Set the expected input for ophit
 physics.producers.ophit.InputModule: "opdaq"
@@ -67,6 +60,12 @@ physics.producers.gaushitTPCWW.CalDataModuleLabel: "roifinder2d:PHYSCRATEDATATPC
 physics.producers.gaushitTPCWE.CalDataModuleLabel: "roifinder2d:PHYSCRATEDATATPCWE"
 physics.producers.gaushitTPCEW.CalDataModuleLabel: "roifinder2d:PHYSCRATEDATATPCEW"
 physics.producers.gaushitTPCEE.CalDataModuleLabel: "roifinder2d:PHYSCRATEDATATPCEE"
+
+# Override the hit finder input 
+physics.producers.gausshitTPCWW.CalDataModuleLabel: "roifinder2d:PHYSCRATEDATATPCWW"
+physics.producers.gausshitTPCWE.CalDataModuleLabel: "roifinder2d:PHYSCRATEDATATPCWE"
+physics.producers.gausshitTPCEW.CalDataModuleLabel: "roifinder2d:PHYSCRATEDATATPCEW"
+physics.producers.gausshitTPCEE.CalDataModuleLabel: "roifinder2d:PHYSCRATEDATATPCEE"
 
 ## Need overrides for the purity monitor
 physics.analyzers.purityinfoana0.SelectEvents: [ path ]

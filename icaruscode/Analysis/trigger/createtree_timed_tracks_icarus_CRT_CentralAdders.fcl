@@ -1,0 +1,66 @@
+#
+# File intended to run with the adders definition enabled, can be changed based on how you want to enable the different windows for emulation
+# Author: Jacob Zettlemoyer (jzettle@fnal.gov)
+#
+
+#include "createtree_timed_tracks_icarus_CRT.fcl"
+
+#emulation changes
+physics.producers.simSlidingORM1E.BeamGates:  "gatesFromTracksCentralAddersE"
+physics.producers.simSlidingORS3E.BeamGates:  "gatesFromTracksCentralAddersE"
+physics.producers.simSlidingORS5E.BeamGates:  "gatesFromTracksCentralAddersE"
+physics.producers.simSlidingORS8E.BeamGates:  "gatesFromTracksCentralAddersE"
+physics.producers.simSlidingORS10E.BeamGates: "gatesFromTracksCentralAddersE"
+physics.producers.simSlidingORS15E.BeamGates: "gatesFromTracksCentralAddersE"
+
+physics.producers.simSlidingORM1W.BeamGates:  "gatesFromTracksCentralAddersW"
+physics.producers.simSlidingORS3W.BeamGates:  "gatesFromTracksCentralAddersW"
+physics.producers.simSlidingORS5W.BeamGates:  "gatesFromTracksCentralAddersW"
+physics.producers.simSlidingORS8W.BeamGates:  "gatesFromTracksCentralAddersW"
+physics.producers.simSlidingORS10W.BeamGates: "gatesFromTracksCentralAddersW"
+physics.producers.simSlidingORS15W.BeamGates: "gatesFromTracksCentralAddersW"
+
+physics.producers.simSlidingORM1E.TriggerGatesTag:  "trigslidewindowORCentralAddersE"
+physics.producers.simSlidingORS3E.TriggerGatesTag:  "trigslidewindowORCentralAddersE"
+physics.producers.simSlidingORS5E.TriggerGatesTag:  "trigslidewindowORCentralAddersE"
+physics.producers.simSlidingORS8E.TriggerGatesTag:  "trigslidewindowORCentralAddersE"
+physics.producers.simSlidingORS10E.TriggerGatesTag: "trigslidewindowORCentralAddersE"
+physics.producers.simSlidingORS15E.TriggerGatesTag: "trigslidewindowORCentralAddersE"
+
+physics.producers.simSlidingORM1W.TriggerGatesTag:  "trigslidewindowORCentralAddersW"
+physics.producers.simSlidingORS3W.TriggerGatesTag:  "trigslidewindowORCentralAddersW"
+physics.producers.simSlidingORS5W.TriggerGatesTag:  "trigslidewindowORCentralAddersW"
+physics.producers.simSlidingORS8W.TriggerGatesTag:  "trigslidewindowORCentralAddersW"
+physics.producers.simSlidingORS10W.TriggerGatesTag: "trigslidewindowORCentralAddersW"
+physics.producers.simSlidingORS15W.TriggerGatesTag: "trigslidewindowORCentralAddersW"
+
+#change to central adders track selection/emulation method
+physics.trigger_paths: [ selectionCentralAddersW, selectionCentralAddersE ]
+physics.ana: [ t0TreeStoreCentralAddersW, t0TreeStoreCentralAddersE ]  
+
+# ------------------------------------------------------------------------------
+# --- parameter customisation
+# ------------------------------------------------------------------------------
+# track selection: 0 is trigger, reference of the hardware trigger time;
+# track time from CRT matching is ~0.6 us earlier than the hardware trigger time, with RMS ~25 ns;
+# times are on the `anab::T0` timescale, which is trigger time scale in nanoseconds
+
+physics.filters.t0selectorAddersW.MinT0: -750
+physics.filters.t0selectorAddersW.MaxT0: -450
+
+physics.filters.t0selectorAddersE.MinT0: -750
+physics.filters.t0selectorAddersE.MaxT0: -450
+
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# trigger emulation around the track time
+# (which is itself ~0.6 us earlier than the hardware trigger time);
+# needs to be properly aligned with the PMT waveforms (not with hardware trigger timestamp)
+physics.producers.gatesFromTracksCentralAddersW.GateStartOffset: "-1 us"
+physics.producers.gatesFromTracksCentralAddersW.GateEndOffset:   "+1 us"
+
+physics.producers.gatesFromTracksCentralAddersE.GateStartOffset: "-1 us"
+physics.producers.gatesFromTracksCentralAddersE.GateEndOffset:   "+1 us"
+
+
+# ------------------------------------------------------------------------------
