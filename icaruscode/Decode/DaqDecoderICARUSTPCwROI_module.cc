@@ -204,6 +204,8 @@ DaqDecoderICARUSTPCwROI::DaqDecoderICARUSTPCwROI(fhicl::ParameterSet const & pse
                           art::ReplicatedProducer(pset, frame),
                           fLogCategory("DaqDecoderICARUSTPCwROI"),fNumEvent(0), fNumROPs(0)
 {
+    mf::LogVerbatim("DaqDecoderICARUSTPCwROI") << "************HHAUSNER TESTING DaqDecoderICARUSTPCwROI_module************"<< std::endl;
+
     fGeometry   = art::ServiceHandle<geo::Geometry const>{}.get();
     fChannelMap = art::ServiceHandle<icarusDB::IICARUSChannelMap const>{}.get();
 
@@ -562,7 +564,7 @@ void DaqDecoderICARUSTPCwROI::processSingleFragment(size_t                      
         }
 
         // Get the pointer to the start of this board's block of data
-        const icarus::A2795DataBlock::data_t* dataBlock = physCrateFragment.BoardData(board);
+        //const icarus::A2795DataBlock::data_t* dataBlock = physCrateFragment.BoardData(board);
 
         // Copy to input data array
         for(size_t chanIdx = 0; chanIdx < nChannelsPerBoard; chanIdx++)
@@ -570,7 +572,10 @@ void DaqDecoderICARUSTPCwROI::processSingleFragment(size_t                      
            icarus_signal_processing::VectorFloat& rawDataVec = channelArrayPair.second[chanIdx];
 
             for(size_t tick = 0; tick < nSamplesPerChannel; tick++)
-                rawDataVec[tick] = -dataBlock[chanIdx + tick * nChannelsPerBoard];
+            {
+              //rawDataVec[tick] = -dataBlock[chanIdx + tick * nChannelsPerBoard];
+              rawDataVec[tick] = physCrateFragment.adc_val(board, chanIdx, tick);
+            }
 
             // Keep track of the channel
             channelArrayPair.first[chanIdx] = channelPlanePairVec[chanIdx];

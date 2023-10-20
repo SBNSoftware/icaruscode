@@ -55,8 +55,6 @@ namespace tcpCompression {
   //------------------------------------------------------------------
   void ValidateCompression::reconfigure(fhicl::ParameterSet const& pset)
   {
-    mf::LogVerbatim("DaqDecoderICARUSTPCwROI") << "NO HARRY YOU ARE NOT CRAZY THIS IS THE RIGHT FILE (DaqDecoderICARUSTPCwROI) TO EDIT";
-
     fFragmentsLabel    = pset.get<art::InputTag>("FragmentsLabel"   , "daq:PHYSCRATEDATA");
     fCheckOldFragments = pset.get<bool>         ("CheckOldFragments", false);
     fDumpADCs          = pset.get<bool>         ("DumpADCs"         , false);

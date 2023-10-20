@@ -252,6 +252,8 @@ void TPCDecoderFilter2D::configure(fhicl::ParameterSet const &pset)
 void TPCDecoderFilter2D::process_fragment(detinfo::DetectorClocksData const&,
                                           const artdaq::Fragment &fragment)
 {
+    mf::LogVerbatim("TPCDecoderFilter2D") << "************HHAUSNER TESTING TPCDecoderFilter2D************"<< std::endl;
+
     cet::cpu_timer theClockTotal;
 
     theClockTotal.start();
@@ -379,7 +381,7 @@ void TPCDecoderFilter2D::process_fragment(detinfo::DetectorClocksData const&,
         size_t boardOffset = nChannelsPerBoard * board;
 
         // Get the pointer to the start of this board's block of data
-        const icarus::A2795DataBlock::data_t* dataBlock = physCrateFragment.BoardData(board);
+        //const icarus::A2795DataBlock::data_t* dataBlock = physCrateFragment.BoardData(board);
 
         // Copy to input data array
         for(size_t chanIdx = 0; chanIdx < nChannelsPerBoard; chanIdx++)
@@ -390,7 +392,10 @@ void TPCDecoderFilter2D::process_fragment(detinfo::DetectorClocksData const&,
             icarus_signal_processing::VectorFloat& rawDataVec = fRawWaveforms[channelOnBoard];
 
             for(size_t tick = 0; tick < nSamplesPerChannel; tick++)
-                rawDataVec[tick] = -dataBlock[chanIdx + tick * nChannelsPerBoard];
+            {
+              //rawDataVec[tick] = -dataBlock[chanIdx + tick * nChannelsPerBoard];
+              rawDataVec[tick] = physCrateFragment.adc_val(board, chanIdx, tick);
+            }
 
             icarus_signal_processing::VectorFloat& pedCorDataVec = fPedCorWaveforms[channelOnBoard];
 

@@ -131,6 +131,8 @@ void TPCDecoder::initializeDataProducts()
 
 void TPCDecoder::process_fragment(const artdaq::Fragment &fragment)
 {
+    mf::LogVerbatim("TPCDecoder") << "************HHAUSNER TESTING TPCDecoder************"<< std::endl;
+
     size_t fragment_id = fragment.fragmentID() - fFragment_id_offset;
   
     // convert fragment to Nevis fragment
@@ -148,7 +150,7 @@ void TPCDecoder::process_fragment(const artdaq::Fragment &fragment)
         size_t boardId = nChannelsPerBoard * (nBoardsPerFragment * fragment_id + board);
 
         // Get the pointer to the start of this board's block of data
-        const icarus::A2795DataBlock::data_t* dataBlock = physCrateFragment.BoardData(board);
+        //const icarus::A2795DataBlock::data_t* dataBlock = physCrateFragment.BoardData(board);
 
         //A2795DataBlock const& block_data = *(crate_data.BoardDataBlock(i_b));
         for(size_t channel = 0; channel < physCrateFragment.nChannelsPerBoard(); channel++)
@@ -160,7 +162,10 @@ void TPCDecoder::process_fragment(const artdaq::Fragment &fragment)
             // It seems that the data is read from each channel for each tick so the 
             // loop indices below are chosen to pick out the "right" ticks for a given channel
             for(size_t tick = 0; tick < physCrateFragment.nSamplesPerChannel(); tick++)
-                wvfm[tick] = dataBlock[channel + tick * physCrateFragment.nChannelsPerBoard()];
+            {
+              //wvfm[tick] = dataBlock[channel + tick * physCrateFragment.nChannelsPerBoard()];
+              wvfm[tick] = physCrateFragment.adc_val(board, channel, tick);
+            }
         
             fRawDigitCollection->emplace_back(channel_num,physCrateFragment.nSamplesPerChannel(),wvfm);
         }//loop over channels
