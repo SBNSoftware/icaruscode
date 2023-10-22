@@ -21,7 +21,7 @@ icarus_siov_channelstatus_service: @local::standard_siov_channelstatus_service
 
 icarus_siov_channelstatus_service.service_provider:                                        SIOVChannelStatusICARUSService
 icarus_siov_channelstatus_service.ChannelStatusProvider.DatabaseRetrievalAlg.DBFolderName: "tpc_channelstatus_data"
-icarus_siov_channelstatus_service.ChannelStatusProvider.DatabaseRetrievalAlg.DBTag:        "v1r1"
+icarus_siov_channelstatus_service.ChannelStatusProvider.DatabaseRetrievalAlg.DBTag:        "v3r1"
 icarus_siov_channelstatus_service.ChannelStatusProvider.DatabaseRetrievalAlg.DBUrl:        "https://dbdata0vm.fnal.gov:9443/icarus_con_prod/app/"
 icarus_siov_channelstatus_service.ChannelStatusProvider.DatabaseRetrievalAlg.UseSQLite:    true
 icarus_siov_channelstatus_service.ChannelStatusProvider.UseDB:                             true

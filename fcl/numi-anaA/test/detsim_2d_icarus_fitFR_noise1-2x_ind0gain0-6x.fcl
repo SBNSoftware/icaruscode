@@ -1,0 +1,8 @@
+# Fit field responses, turned up noise on each plane
+#
+#include "detsim_2d_icarus.fcl"
+
+
+physics.producers.daq: @local::icarus_simwire_wirecell_fitSR
+physics.producers.daq.wcls_main.structs.int_noise_scale: 1.2
+physics.producers.daq.wcls_main.structs.gain0: 7.1951
