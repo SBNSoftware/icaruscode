@@ -1,0 +1,60 @@
+#include "stage1_icarus_defs.fcl"
+#include "services_icarus_simulation.fcl"
+#include "cafmakerjob_icarus.fcl"
+
+process_name: stage1REDO
+
+services:
+{
+  TFileService:           { }
+  IICARUSChannelMap:      @local::icarus_channelmappinggservice
+                          @table::icarus_wirecalibration_services
+  SpaceChargeService: @local::icarus_spacecharge
+  IFBeam: {}
+}
+services.ParticleInventoryService:  @local::standard_particleinventoryservice
+
+
+physics.producers: {
+  @table::physics.producers
+  @table::icarus_stage1_producers
+}
+
+physics.filters: {
+  @table::icarus_stage1_filters
+}
+
+physics.analyzers: {
+  @table::icarus_stage1_analyzers
+}
+
+physics.runprod: [
+  rns, 
+  @sequence::icarus_filter_cluster3D,
+  @sequence::icarus_pandora_Gauss,
+  # @sequence::icarus_reco_fm,
+  # @sequence::icarus_crttrack,
+  # @sequence::icarus_crtt0match,
+  caloskimCalorimetryCryoE, caloskimCalorimetryCryoW,
+  systtools, fluxweight, geant4weight,
+  
+  @sequence::physics.runprod
+]
+
+physics.outana:            [ caloskimE, caloskimW]
+physics.stream1: []
+
+physics.trigger_paths:     [ runprod ]
+physics.end_paths:         [ outana, stream1 ]
+
+source.inputCommands: [
+  "keep *_*_*_*",
+  "drop *_*_*_stage1"
+]
+
+physics.analyzers.caloskimE.SelectEvents: [ runprod ]
+physics.analyzers.caloskimW.SelectEvents: [ runprod ]
+
+physics.producers.cafmaker.SystWeightLabels: ["systtools", "fluxweight", "geant4weight"]
+#include "cafmaker_add_detsim2d_icarus.fcl"
+

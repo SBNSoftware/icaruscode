@@ -53,6 +53,12 @@ outputs: {
 
 }
 
+# NuMI-like-timing
+physics.producers.generator.Flux.SpillTimeConfig: @local::FNAL_NuMI_default # from beamspilltimings.fcl
+
+physics.producers.generator.Verbose: false
+phyiscs.producers.generator.RayTrace.Verbose: false
+
 outputs.out.fileName: "simulation_higgs_icarus_numi_%tc-%p.root"
 
 services.NuRandomService.policy: "random"
