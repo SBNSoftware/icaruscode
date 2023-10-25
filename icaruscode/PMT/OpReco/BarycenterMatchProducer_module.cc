@@ -155,8 +155,8 @@ BarycenterMatchProducer::BarycenterMatchProducer(fhicl::ParameterSet const& p)
   // Call appropriate produces<>() functions here.
 
   produces< std::vector<sbn::BarycenterMatch> >();
-//  produces< art::Assns<sbn::BarycenterMatch, recob::Slice> >();
-//  produces< art::Assns<sbn::BarycenterMatch, recob::OpFlash> >();
+  produces< art::Assns<sbn::BarycenterMatch, recob::Slice> >();
+  produces< art::Assns<sbn::BarycenterMatch, recob::OpFlash> >();
 //  produces< art::Assns<recob::Slice, recob::OpFlash, sbn::BarycenterMatch> >();
 
   // Call appropriate consumes<>() for any products to be retrieved by this module.
@@ -229,9 +229,9 @@ void BarycenterMatchProducer::produce(art::Event& e)
   lar::util::TrackTimeInterval const timeIntervals = fTimeIntervalMaker(detProp, detTimings);
 
   auto matchInfoVector = std::make_unique< std::vector<sbn::BarycenterMatch> >();
-//  art::PtrMaker< sbn::BarycenterMatch > const makeInfoPtr(e); //What does this do? Only Gianluca can know...
-//  auto sliceAssns = std::make_unique< art::Assns<sbn::BarycenterMatch, recob::Slice> >();
-//  auto flashAssns = std::make_unique< art::Assns<sbn::BarycenterMatch, recob::OpFlash> >();
+  art::PtrMaker< sbn::BarycenterMatch > const makeInfoPtr(e); //What does this do? Only Gianluca can know...
+  auto sliceAssns = std::make_unique< art::Assns<sbn::BarycenterMatch, recob::Slice> >();
+  auto flashAssns = std::make_unique< art::Assns<sbn::BarycenterMatch, recob::OpFlash> >();
 //  auto crossAssns = std::make_unique< art::Assns<recob::Slice, recob::OpFlash, sbn::BarycenterMatch> >();
 
   //For cryo...
@@ -296,7 +296,7 @@ void BarycenterMatchProducer::produce(art::Event& e)
     //For slice...
     for ( int j = 0; j < nSlices; j++ ) {
       fSliceNum = j;
-//      const art::Ptr<recob::Slice>& slicePtr = sliceVector.at(j);
+      const art::Ptr<recob::Slice>& slicePtr = sliceVector.at(j);
       InitializeSlice();
       sbn::BarycenterMatch sliceMatchInfo;
       updateMatchInfo(sliceMatchInfo);
@@ -347,8 +347,8 @@ void BarycenterMatchProducer::produce(art::Event& e)
       //No charge found in slice...
       if ( sumCharge == 0. ) {
         fMatchTree->Fill();
-//        art::Ptr<sbn::BarycenterMatch> const infoPtr = makeInfoPtr(matchInfoVector->size());
-//        sliceAssns->addSingle(infoPtr, slicePtr);
+        art::Ptr<sbn::BarycenterMatch> const infoPtr = makeInfoPtr(matchInfoVector->size());
+        sliceAssns->addSingle(infoPtr, slicePtr);
         matchInfoVector->push_back(std::move(sliceMatchInfo));
         if ( fVerbose ) std::cout << "No charge found in Event " << fEvent << " Slice " << j << "! Continuing..." << std::endl; //TODO: Remove print statements later, or maybe keep this one?
         continue;
@@ -386,8 +386,8 @@ void BarycenterMatchProducer::produce(art::Event& e)
       //No valid match found...
       if ( matchIndex == -5 ) {
         fMatchTree->Fill();
-//        art::Ptr<sbn::BarycenterMatch> const infoPtr = makeInfoPtr(matchInfoVector->size());
-//        sliceAssns->addSingle(infoPtr, slicePtr);
+        art::Ptr<sbn::BarycenterMatch> const infoPtr = makeInfoPtr(matchInfoVector->size());
+        sliceAssns->addSingle(infoPtr, slicePtr);
         matchInfoVector->push_back(std::move(sliceMatchInfo));
         if ( fVerbose ) std::cout << "No matching flash found for Event " << fEvent << " Slice " << j << "! Continuing..." << std::endl; //TODO: Remove print statements later, or maybe keep this one?
         continue;
@@ -408,9 +408,9 @@ void BarycenterMatchProducer::produce(art::Event& e)
       updateMatchInfo(sliceMatchInfo);
 
 
-//      art::Ptr<sbn::BarycenterMatch> const infoPtr = makeInfoPtr(matchInfoVector->size());
-//      sliceAssns->addSingle(infoPtr, slicePtr);
-//      flashAssns->addSingle(infoPtr, flashPtr);
+      art::Ptr<sbn::BarycenterMatch> const infoPtr = makeInfoPtr(matchInfoVector->size());
+      sliceAssns->addSingle(infoPtr, slicePtr);
+      flashAssns->addSingle(infoPtr, flashPtr);
 //      crossAssns->addSingle(slicePtr, flashPtr, infoPtr);
       matchInfoVector->push_back(std::move(sliceMatchInfo));
       fMatchTree->Fill();
@@ -420,8 +420,8 @@ void BarycenterMatchProducer::produce(art::Event& e)
   } //End for cryo
 
   e.put(std::move(matchInfoVector));
-//  e.put(std::move(sliceAssns));
-//  e.put(std::move(flashAssns));
+  e.put(std::move(sliceAssns));
+  e.put(std::move(flashAssns));
 //  e.put(std::move(crossAssns));
 
 } //End produce()

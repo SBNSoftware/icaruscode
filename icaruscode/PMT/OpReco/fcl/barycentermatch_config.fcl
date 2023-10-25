@@ -1,0 +1,97 @@
+BEGIN_PROLOG
+
+#Common paramters for the barycenter matching
+barycentermatch_common_params:
+{
+    OpFlashLabel:     "opflash"
+    PandoraLabel:     "pandoraGaus"
+    CollectionOnly:   true
+    UseTimeRange:     true
+    Verbose:          true
+    TriggerTolerance: 0.15
+    TimeRangeMargin:  35.
+}
+
+
+#Parameters specific to data and Monte Carlo separately
+######
+
+barycentermatch_data_params:
+{   
+    TriggerLabel:     "daqTrigger"
+    NominalTrigTime:  -0.6
+}
+
+barycentermatch_mc_params:
+{
+    TriggerLabel:     "emuTrigger"
+    NominalTrigTime:  -0.22
+}
+
+######
+
+
+#Separate configurations for data or MC for running the matching over BOTH cryostats
+######
+
+data_barycentermatchproducer:
+{ 
+  module_type: "icaruscode/PMT/OpReco/BarycenterMatchProducer"
+    @table::barycentermatch_common_params
+    @table::barycentermatch_data_params
+    CryoTags:         ["CryoE","CryoW"]
+}
+
+mc_barycentermatchproducer:
+{
+  module_type: "icaruscode/PMT/OpReco/BarycenterMatchProducer"
+    @table::barycentermatch_common_params
+    @table::barycentermatch_mc_params
+    CryoTags:         ["CryoE","CryoW"]
+}
+
+######
+
+#Separate configurations for data or MC for running the matching over the east cryostat
+######
+
+data_barycentermatchproducer_east:
+{
+  module_type: "icaruscode/PMT/OpReco/BarycenterMatchProducer"
+    @table::barycentermatch_common_params
+    @table::barycentermatch_data_params
+    CryoTags:         ["CryoE"]
+}
+
+mc_barycentermatchproducer_east:
+{ 
+  module_type: "icaruscode/PMT/OpReco/BarycenterMatchProducer"
+    @table::barycentermatch_common_params
+    @table::barycentermatch_mc_params
+    CryoTags:         ["CryoE"]
+}
+
+######
+
+#Separate configurations for data or MC for running the matching over the west cryostat
+######
+
+data_barycentermatchproducer_west:
+{
+  module_type: "icaruscode/PMT/OpReco/BarycenterMatchProducer"
+    @table::barycentermatch_common_params
+    @table::barycentermatch_data_params
+    CryoTags:         ["CryoW"]
+}
+
+mc_barycentermatchproducer_west:
+{
+  module_type: "icaruscode/PMT/OpReco/BarycenterMatchProducer"
+    @table::barycentermatch_common_params
+    @table::barycentermatch_mc_params
+    CryoTags:         ["CryoW"]
+}
+
+######
+
+END_PROLOG

@@ -1,5 +1,7 @@
 # A script to run the producer module: BarycenterMatchProducer
 
+#include "barycentermatch_config.fcl"
+
 #include "services_icarus_simulation.fcl"
 #include "services_common_icarus.fcl"
 
@@ -51,25 +53,11 @@ physics:
 {
    producers:
   {
-    BarycenterMatchProducer:
-    {
-      module_type:         "BarycenterMatchProducer"
-      # The input parameters	   
-      CryoTags:         ["CryoE","CryoW"]
-      OpFlashLabel:     "opflash"
-      PandoraLabel:     "pandoraGaus"
-      TriggerLabel:     "daqTrigger"
-      CollectionOnly:   true
-      UseTimeRange:     true
-      Verbose:          true
-      NominalTrigTime:  -0.6
-      TriggerTolerance: 0.15
-      TimeRangeMargin:  35.
-    }
+    barycentermatch: @local::data_barycentermatchproducer
   }
 
   # Schedule job step(s) for execution by defining the analysis module for this job.
-  reco: [ BarycenterMatchProducer ]
+  reco: [ barycentermatch ]
 
   stream1: [ out1 ]
 
