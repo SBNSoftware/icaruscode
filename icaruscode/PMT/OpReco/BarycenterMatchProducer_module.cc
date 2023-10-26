@@ -526,22 +526,22 @@ void BarycenterMatchProducer::updateFlashVars(art::Ptr<recob::OpFlash> flash, do
 
 
 void BarycenterMatchProducer::updateMatchInfo(sbn::BarycenterMatch& matchInfo) {
-  matchInfo.fChargeTotal = fChargeTotal;
-  matchInfo.fChargeCenterXLocal = fChargeCenterXLocal;
-  matchInfo.fChargeCenter = {fChargeCenterXGlobal, fChargeCenterY, fChargeCenterZ};
-  matchInfo.fChargeWidth = {fChargeWidthX, fChargeWidthY, fChargeWidthZ};
-  matchInfo.fFlashFirstHit = fFlashFirstHit;
-  matchInfo.fFlashTime = fFlashTime;
-  matchInfo.fFlashPEs = fFlashPEs;
-  matchInfo.fFlashCenter = {-9999., fFlashCenterY, fFlashCenterZ};
-  matchInfo.fFlashWidth = {-9999., fFlashWidthY, fFlashWidthZ};
-  matchInfo.fDeltaT = fDeltaT;
-  matchInfo.fDeltaY = fDeltaY;
-  matchInfo.fDeltaZ = fDeltaZ;
-  matchInfo.fRadius = fRadius;
-  matchInfo.fOverlapY = fOverlapY;
-  matchInfo.fOverlapZ = fOverlapZ;
-  matchInfo.fDeltaZ_Trigger = fDeltaZ_Trigger;
+  matchInfo.chargeTotal = fChargeTotal;
+  matchInfo.chargeCenterXLocal = fChargeCenterXLocal;
+  matchInfo.chargeCenter = {fChargeCenterXGlobal, fChargeCenterY, fChargeCenterZ};
+  matchInfo.chargeWidth = {fChargeWidthX, fChargeWidthY, fChargeWidthZ};
+  matchInfo.flashFirstHit = fFlashFirstHit;
+  matchInfo.flashTime = fFlashTime;
+  matchInfo.flashPEs = fFlashPEs;
+  matchInfo.flashCenter = {-9999., fFlashCenterY, fFlashCenterZ};
+  matchInfo.flashWidth = {-9999., fFlashWidthY, fFlashWidthZ};
+  matchInfo.deltaT = fDeltaT;
+  matchInfo.deltaY = fDeltaY;
+  matchInfo.deltaZ = fDeltaZ;
+  matchInfo.radius = fRadius;
+  matchInfo.overlapY = fOverlapY;
+  matchInfo.overlapZ = fOverlapZ;
+  matchInfo.deltaZ_Trigger = fDeltaZ_Trigger;
 } //End updateMatchInfo()
 
 
