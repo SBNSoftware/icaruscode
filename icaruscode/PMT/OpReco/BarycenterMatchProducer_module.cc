@@ -5,6 +5,11 @@
 //
 // Generated at Sun Oct 22 14:43:16 2023 by John Smedley using cetskelgen
 // from  version .
+//
+//  @file   icaruscode/PMT/OpReco/BarycenterMatchProducer_module.cc
+//  @brief  Producer to match Pandora slices to their best match OpFlash by minimizing barycetner distance, as well as compare slices to the triggering OpFlash
+//  @author Jack Smedley ( jsmedley@fnal.gov )
+//
 ////////////////////////////////////////////////////////////////////////
 
 #include "art/Framework/Core/EDProducer.h"
@@ -75,12 +80,12 @@ public:
 private:
 
   // Declare member data here.
-  void InitializeSlice();
-  double CentroidOverlap(double center1, double center2, double width1, double width2);
-  double CalculateAsymmetry(art::Ptr<recob::OpFlash> flash, int cryo);
-  void updateChargeVars(double sumCharge, TVector3 sumPos, TVector3 sumPosSqr, double triggerFlashCenter);
-  void updateFlashVars(art::Ptr<recob::OpFlash> flash, double shift, double firstHit);
-  void updateMatchInfo(sbn::BarycenterMatch& matchInfo);
+  void InitializeSlice();                                                                                  ///< Re-initialize all slice-level data members
+  double CentroidOverlap(double center1, double center2, double width1, double width2);                    ///< Return overlap between charge and light centroids OR distance apart if no overlap
+  double CalculateAsymmetry(art::Ptr<recob::OpFlash> flash, int cryo);                                     ///< Return the east-west asymmetry of PEs in a given OpFlash
+  void updateChargeVars(double sumCharge, TVector3 sumPos, TVector3 sumPosSqr, double triggerFlashCenter); ///< Update slice-level data members with charge and trigger match info
+  void updateFlashVars(art::Ptr<recob::OpFlash> flash, double shift, double firstHit);                     ///< Update slice-level data members with best match info
+  void updateMatchInfo(sbn::BarycenterMatch& matchInfo);                                                   ///< Update match product with slice-level data members
  
   // Input parameters
   std::vector<std::string>  fCryoTags;             ///< Labels for each cryostat
@@ -89,7 +94,8 @@ private:
   std::string               fTriggerLabel;         ///< Label for trigger product
   bool                      fCollectionOnly;       ///< Only use TPC spacepoints from the collection plane
   bool                      fUseTimeRange;         ///< Reject impossible matches based on allowed time range of TPC hits relative to trigger 
-  bool                      fVerbose;              ///< Print extra info, fcl input
+  bool                      fVerbose;              ///< Print extra info
+  bool                      fFillMatchTree;        ///< Fill an output TTree in the supplemental file
   double                    fNominalTrigTime;      ///< Typical time of triggering flash, EYEBALLED (us)
   double                    fTriggerTolerance;     ///< Spread of triggering flash times, EYEBALLED (us)
   double                    fTimeRangeMargin;      ///< Symmetric acceptable margin for allowed time range of TPC hits (us)
@@ -99,6 +105,7 @@ private:
   int                       fEvent;                ///< Number of the event being processed
   int                       fCryo;                 ///< Cryostat this event occured in
   int                       fSliceNum;             ///< Number of slice in the event
+  // Slice-level data members 
   double                    fChargeT0;             ///< Start time for cathode-crossing PFPs, not always available (us)
   double                    fChargeTotal;          ///< Total charge in slice
   double                    fChargeCenterXGlobal;  ///< Weighted mean X position of spacepoints (cm)
@@ -144,6 +151,7 @@ BarycenterMatchProducer::BarycenterMatchProducer(fhicl::ParameterSet const& p)
   fCollectionOnly(p.get<bool>("CollectionOnly")),
   fUseTimeRange(p.get<bool>("UseTimeRange")),
   fVerbose(p.get<bool>("Verbose")),
+  fFillMatchTree(p.get<bool>("FillMatchTree")),
   fNominalTrigTime(p.get<double>("NominalTrigTime")),
   fTriggerTolerance(p.get<double>("TriggerTolerance")),
   fTimeRangeMargin(p.get<double>("TimeRangeMargin")),
@@ -160,44 +168,48 @@ BarycenterMatchProducer::BarycenterMatchProducer(fhicl::ParameterSet const& p)
 //  produces< art::Assns<recob::Slice, recob::OpFlash, sbn::BarycenterMatch> >();
 
   // Call appropriate consumes<>() for any products to be retrieved by this module.
-  art::ServiceHandle<art::TFileService> tfs;
-  fMatchTree = tfs->make<TTree>("matchTree","TPC Slice - OpFlash Matching Analysis");
 
-  //Event Info
-  fMatchTree->Branch("run",                 &fRun,                 "run/I"                );
-  fMatchTree->Branch("event",               &fEvent,               "event/I"              );
-  fMatchTree->Branch("cryo",                &fCryo,                "cryo/I"               );
-  fMatchTree->Branch("sliceNum",            &fSliceNum,            "sliceNum/I"           );
+  if ( fFillMatchTree ) {
+    art::ServiceHandle<art::TFileService> tfs;
+    fMatchTree = tfs->make<TTree>("matchTree","TPC Slice - OpFlash Matching Analysis");
 
-  //Charge Info
-  fMatchTree->Branch("chargeT0",            &fChargeT0,            "chargeT0/d"           );
-  fMatchTree->Branch("chargeTotal",         &fChargeTotal,         "chargeTotal/d"        );
-  fMatchTree->Branch("chargeCenterXGlobal", &fChargeCenterXGlobal, "chargeCenterXGlobal/d");
-  fMatchTree->Branch("chargeCenterXLocal",  &fChargeCenterXLocal,  "chargeCenterXLocal/d" );
-  fMatchTree->Branch("chargeCenterY",       &fChargeCenterY,       "chargeCenterY/d"      );
-  fMatchTree->Branch("chargeCenterZ",       &fChargeCenterZ,       "chargeCenterZ/d"      );
-  fMatchTree->Branch("chargeWidthX",        &fChargeWidthX,        "chargeWidthX/d"       );
-  fMatchTree->Branch("chargeWidthY",        &fChargeWidthY,        "chargeWidthY/d"       );
-  fMatchTree->Branch("chargeWidthZ",        &fChargeWidthZ,        "chargeWidthZ/d"       );
+    //Event Info
+    fMatchTree->Branch("run",                 &fRun,                 "run/I"                );
+    fMatchTree->Branch("event",               &fEvent,               "event/I"              );
+    fMatchTree->Branch("cryo",                &fCryo,                "cryo/I"               );
+    fMatchTree->Branch("sliceNum",            &fSliceNum,            "sliceNum/I"           );
 
-  //Matched Flash Info
-  fMatchTree->Branch("flashFirstHit",       &fFlashFirstHit,       "flashFirstHit/d"      );
-  fMatchTree->Branch("flashTime",           &fFlashTime,           "flashTime/d"          );
-  fMatchTree->Branch("flashPEs",            &fFlashPEs,            "flashPEs/d"           );
-  fMatchTree->Branch("flashAsymmetry",      &fFlashAsymmetry,      "flashAsymmetry/d"     );
-  fMatchTree->Branch("flashCenterY",        &fFlashCenterY,        "flashCenterY/d"       );
-  fMatchTree->Branch("flashCenterZ",        &fFlashCenterZ,        "flashCenterZ/d"       );
-  fMatchTree->Branch("flashWidthY",         &fFlashWidthY,         "flashWidthY/d"        );
-  fMatchTree->Branch("flashWidthZ",         &fFlashWidthZ,         "flashWidthZ/d"        );
+    //Charge Info
+    fMatchTree->Branch("chargeT0",            &fChargeT0,            "chargeT0/d"           );
+    fMatchTree->Branch("chargeTotal",         &fChargeTotal,         "chargeTotal/d"        );
+    fMatchTree->Branch("chargeCenterXGlobal", &fChargeCenterXGlobal, "chargeCenterXGlobal/d");
+    fMatchTree->Branch("chargeCenterXLocal",  &fChargeCenterXLocal,  "chargeCenterXLocal/d" );
+    fMatchTree->Branch("chargeCenterY",       &fChargeCenterY,       "chargeCenterY/d"      );
+    fMatchTree->Branch("chargeCenterZ",       &fChargeCenterZ,       "chargeCenterZ/d"      );
+    fMatchTree->Branch("chargeWidthX",        &fChargeWidthX,        "chargeWidthX/d"       );
+    fMatchTree->Branch("chargeWidthY",        &fChargeWidthY,        "chargeWidthY/d"       );
+    fMatchTree->Branch("chargeWidthZ",        &fChargeWidthZ,        "chargeWidthZ/d"       );
 
-  //Match Quality Info
-  fMatchTree->Branch("deltaT",              &fDeltaT,              "deltaT/d"             );
-  fMatchTree->Branch("deltaY",              &fDeltaY,              "deltaY/d"             );
-  fMatchTree->Branch("deltaZ",              &fDeltaZ,              "deltaZ/d"             );
-  fMatchTree->Branch("radius",              &fRadius,              "radius/d"             );
-  fMatchTree->Branch("overlapY",            &fOverlapY,            "overlapY/d"           );
-  fMatchTree->Branch("overlapZ",            &fOverlapZ,            "overlapZ/d"           );
-  fMatchTree->Branch("deltaZ_Trigger",      &fDeltaZ_Trigger,      "deltaZ_Trigger/d"     );
+    //Matched Flash Info
+    fMatchTree->Branch("flashFirstHit",       &fFlashFirstHit,       "flashFirstHit/d"      );
+    fMatchTree->Branch("flashTime",           &fFlashTime,           "flashTime/d"          );
+    fMatchTree->Branch("flashPEs",            &fFlashPEs,            "flashPEs/d"           );
+    fMatchTree->Branch("flashAsymmetry",      &fFlashAsymmetry,      "flashAsymmetry/d"     );
+    fMatchTree->Branch("flashCenterY",        &fFlashCenterY,        "flashCenterY/d"       );
+    fMatchTree->Branch("flashCenterZ",        &fFlashCenterZ,        "flashCenterZ/d"       );
+    fMatchTree->Branch("flashWidthY",         &fFlashWidthY,         "flashWidthY/d"        );
+    fMatchTree->Branch("flashWidthZ",         &fFlashWidthZ,         "flashWidthZ/d"        );
+
+    //Match Quality Info
+    fMatchTree->Branch("deltaT",              &fDeltaT,              "deltaT/d"             );
+    fMatchTree->Branch("deltaY",              &fDeltaY,              "deltaY/d"             );
+    fMatchTree->Branch("deltaZ",              &fDeltaZ,              "deltaZ/d"             );
+    fMatchTree->Branch("radius",              &fRadius,              "radius/d"             );
+    fMatchTree->Branch("overlapY",            &fOverlapY,            "overlapY/d"           );
+    fMatchTree->Branch("overlapZ",            &fOverlapZ,            "overlapZ/d"           );
+    fMatchTree->Branch("deltaZ_Trigger",      &fDeltaZ_Trigger,      "deltaZ_Trigger/d"     );
+
+  } //End MatchTree
 
 }
 
@@ -346,7 +358,7 @@ void BarycenterMatchProducer::produce(art::Event& e)
 
       //No charge found in slice...
       if ( sumCharge == 0. ) {
-        fMatchTree->Fill();
+        if ( fFillMatchTree ) fMatchTree->Fill();
         art::Ptr<sbn::BarycenterMatch> const infoPtr = makeInfoPtr(matchInfoVector->size());
         sliceAssns->addSingle(infoPtr, slicePtr);
         matchInfoVector->push_back(std::move(sliceMatchInfo));
@@ -385,7 +397,7 @@ void BarycenterMatchProducer::produce(art::Event& e)
 
       //No valid match found...
       if ( matchIndex == -5 ) {
-        fMatchTree->Fill();
+        if ( fFillMatchTree ) fMatchTree->Fill();
         art::Ptr<sbn::BarycenterMatch> const infoPtr = makeInfoPtr(matchInfoVector->size());
         sliceAssns->addSingle(infoPtr, slicePtr);
         matchInfoVector->push_back(std::move(sliceMatchInfo));
@@ -413,7 +425,7 @@ void BarycenterMatchProducer::produce(art::Event& e)
       flashAssns->addSingle(infoPtr, flashPtr);
 //      crossAssns->addSingle(slicePtr, flashPtr, infoPtr);
       matchInfoVector->push_back(std::move(sliceMatchInfo));
-      fMatchTree->Fill();
+      if ( fFillMatchTree ) fMatchTree->Fill();
 
     } //End for slice
 

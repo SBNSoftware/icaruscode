@@ -8,6 +8,7 @@ barycentermatch_common_params:
     CollectionOnly:   true
     UseTimeRange:     true
     Verbose:          true
+    FillMatchTree:    true
     TriggerTolerance: 0.15
     TimeRangeMargin:  35.
 }
