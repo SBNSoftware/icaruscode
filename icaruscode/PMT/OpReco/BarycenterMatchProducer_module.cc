@@ -7,7 +7,7 @@
 // from  version .
 //
 //  @file   icaruscode/PMT/OpReco/BarycenterMatchProducer_module.cc
-//  @brief  Producer to match Pandora slices to their best match OpFlash by minimizing barycetner distance, as well as compare slices to the triggering OpFlash
+//  @brief  Producer to match Pandora slices to their best match OpFlash by minimizing barycenter distance, as well as compare slices to the triggering OpFlash
 //  @author Jack Smedley ( jsmedley@fnal.gov )
 //
 ////////////////////////////////////////////////////////////////////////
@@ -84,11 +84,11 @@ private:
   double CentroidOverlap(double center1, double center2, double width1, double width2);                    ///< Return overlap between charge and light centroids OR distance apart if no overlap
   double CalculateAsymmetry(art::Ptr<recob::OpFlash> flash, int cryo);                                     ///< Return the east-west asymmetry of PEs in a given OpFlash
   void updateChargeVars(double sumCharge, TVector3 sumPos, TVector3 sumPosSqr, double triggerFlashCenter); ///< Update slice-level data members with charge and trigger match info
-  void updateFlashVars(art::Ptr<recob::OpFlash> flash, double shift, double firstHit);                     ///< Update slice-level data members with best match info
+  void updateFlashVars(art::Ptr<recob::OpFlash> flash, double firstHit);                     ///< Update slice-level data members with best match info
   void updateMatchInfo(sbn::BarycenterMatch& matchInfo);                                                   ///< Update match product with slice-level data members
  
   // Input parameters
-  std::vector<std::string>  fCryoTags;             ///< Labels for each cryostat
+  std::vector<std::string>  fInputTags;            ///< Suffix added onto fOpFlashLabel and fPandoraLabel, used by ICARUS for separate cryostat labels but could be empty
   std::string               fOpFlashLabel;         ///< Label for PMT reconstruction products
   std::string               fPandoraLabel;         ///< Label for Pandora output products
   std::string               fTriggerLabel;         ///< Label for trigger product
@@ -125,11 +125,11 @@ private:
   double                    fFlashWidthZ;          ///< Weighted standard deviation of Z postion of hit PMTs (cm)
   double                    fDeltaT;               ///< | Matched flash time - charge T0 | when available (us)
   double                    fDeltaY;               ///< | Matched flash Y center - charge Y center | (cm)
-  double                    fDeltaZ;               ///< | Matched flash Z cetner - charge Z center | (cm)
+  double                    fDeltaZ;               ///< | Matched flash Z center - charge Z center | (cm)
   double                    fRadius;               ///< Hypotenuse of DeltaY and DeltaZ, PARAMETER MINIMIZED BY MATCHING (cm)
   double                    fOverlapY;             ///< Spacial overlap of flash and charge centroids in Y [>0] OR distance apart if no overlap [<0] (cm)
   double                    fOverlapZ;             ///< Spacial overlap of flash and charge centroids in Z [>0] OR distance apart if no overlap [<0] (cm)
-  double                    fDeltaZ_Trigger;       ///< | Triggering flash Z cetner - charge Z center | (cm)
+  double                    fDeltaZ_Trigger;       ///< | Triggering flash Z center - charge Z center | (cm)
   
   TTree*                    fMatchTree;            ///< Tree to store all match information
   
@@ -144,7 +144,7 @@ private:
 BarycenterMatchProducer::BarycenterMatchProducer(fhicl::ParameterSet const& p)
   : EDProducer{p},
   // More initializers here.
-  fCryoTags(p.get<std::vector<std::string>>("CryoTags")),
+  fInputTags(p.get<std::vector<std::string>>("InputTags")),
   fOpFlashLabel(p.get<std::string>("OpFlashLabel")),
   fPandoraLabel(p.get<std::string>("PandoraLabel")),
   fTriggerLabel(p.get<std::string>("TriggerLabel")),
@@ -165,7 +165,6 @@ BarycenterMatchProducer::BarycenterMatchProducer(fhicl::ParameterSet const& p)
   produces< std::vector<sbn::BarycenterMatch> >();
   produces< art::Assns<sbn::BarycenterMatch, recob::Slice> >();
   produces< art::Assns<sbn::BarycenterMatch, recob::OpFlash> >();
-//  produces< art::Assns<recob::Slice, recob::OpFlash, sbn::BarycenterMatch> >();
 
   // Call appropriate consumes<>() for any products to be retrieved by this module.
 
@@ -220,86 +219,83 @@ void BarycenterMatchProducer::produce(art::Event& e)
   fRun    = e.run();
   const bool isData = e.isRealData();
 
+  //Fetch trigger info and if MC check whether this event triggered
   art::Handle<std::vector<raw::Trigger>> triggerHandle;
   e.getByLabel(fTriggerLabel, triggerHandle);
   raw::Trigger trigger;
-  double shiftFactor = 0.;
+  double triggerWithinGate = 0.;
   bool triggeredEvt = false;
   if ( triggerHandle.isValid() && triggerHandle->size() == 1 ) {
     trigger = (*triggerHandle).at(0);
     if ( trigger.TriggerTime() >= 0 ) {
-      shiftFactor = trigger.TriggerTime() - trigger.BeamGateTime();
+      triggerWithinGate = trigger.TriggerTime() - trigger.BeamGateTime();
       triggeredEvt = true;
     }
-    if ( fVerbose ) std::cout << std::endl << "Valid trigger found. Trigger time: " << trigger.TriggerTime() << ", Beam gate time: " << trigger.BeamGateTime() << ", Difference: " << shiftFactor << ", Is data? " << isData << std::endl;
+    if ( fVerbose ) std::cout << "Valid trigger product found. Trigger time: " << trigger.TriggerTime() << ", Beam gate time: " << trigger.BeamGateTime() << ", Difference: " << triggerWithinGate  << std::endl;
   }
-  else if ( fVerbose ) std::cout << std::endl << "~~~~~~~~~~~~~ No valid trigger found for this event! ~~~~~~~~~~~~~" << std::endl;
+  else if ( fVerbose ) std::cout << "No valid trigger product found for this event!"  << std::endl;
 
+  //Infstracture for checking allowed time range of a slice
   microseconds margin(fTimeRangeMargin);
   detinfo::DetectorTimings const detTimings{ fDetClocks.DataFor(e) };
   detinfo::DetectorPropertiesData const& detProp { fDetProp.DataFor(e, detTimings.clockData()) };
   lar::util::TrackTimeInterval const timeIntervals = fTimeIntervalMaker(detProp, detTimings);
 
+  //Initialize new data products
   auto matchInfoVector = std::make_unique< std::vector<sbn::BarycenterMatch> >();
-  art::PtrMaker< sbn::BarycenterMatch > const makeInfoPtr(e); //What does this do? Only Gianluca can know...
+  art::PtrMaker< sbn::BarycenterMatch > const makeInfoPtr(e); 
   auto sliceAssns = std::make_unique< art::Assns<sbn::BarycenterMatch, recob::Slice> >();
   auto flashAssns = std::make_unique< art::Assns<sbn::BarycenterMatch, recob::OpFlash> >();
-//  auto crossAssns = std::make_unique< art::Assns<recob::Slice, recob::OpFlash, sbn::BarycenterMatch> >();
 
-  //For cryo...
-  for ( const std::string cryoTag : fCryoTags ) {
+  //For InputTag...
+  for ( const std::string inputTag : fInputTags ) {
     //East-->0, West-->1
-    fCryo = ( cryoTag.find("W") != std::string::npos ) ? 1 : 0;
+    fCryo = ( inputTag.find("W") != std::string::npos ) ? 1 : 0;
 
 
 /* ~~~~~~~~~~~~~~~~~~~~ Flash Section
  *
  * Here we gather the OpFlashes found in this cryostat and their OpHits
- * We iterate through the flashes to identify a triggering flash and the earliest time associated with each flash
+ * We iterate through the flashes to identify a triggering flash
  */
 
-    //Fetch the flashes and their associated hits; pointer vector needed for assns
+    //Fetch the flashes and their associated hits, pointer vector needed for generating associations
     art::Handle<std::vector<recob::OpFlash>> flashHandle;
-    e.getByLabel(fOpFlashLabel + cryoTag, flashHandle);
-    art::FindMany<recob::OpHit> fmOpHits(flashHandle, e, fOpFlashLabel + cryoTag);
+    e.getByLabel(fOpFlashLabel + inputTag, flashHandle);
+    art::FindMany<recob::OpHit> fmOpHits(flashHandle, e, fOpFlashLabel + inputTag);
     std::vector<art::Ptr<recob::OpFlash>> flashVector;
     art::fill_ptr_vector(flashVector, flashHandle);
 
     int nFlashes = (*flashHandle).size();
 
     double triggerFlashCenter = -9999.;
-    double flashTime_Trigger, flashTime_Beam;
+    double flashTime_Trigger;
     //For flash...
     for ( int i = 0; i < nFlashes; i++ ) {
       const recob::OpFlash &flash = (*flashHandle).at(i);
 
-      flashTime_Trigger = flash.Time();
-      flashTime_Beam = flash.Time();
-      if ( isData ) flashTime_Beam += shiftFactor;
-      else flashTime_Trigger += -1.*shiftFactor;
-
       //Is this a triggering flash?
+      flashTime_Trigger = flash.Time();
+      if ( !isData ) flashTime_Trigger += -1.*triggerWithinGate;
       if ( triggeredEvt && abs(flashTime_Trigger - fNominalTrigTime) < fTriggerTolerance ) triggerFlashCenter = flash.ZCenter();
 
-      if ( fVerbose ) std::cout << std::endl << "Flash time wrt trigger: " << flashTime_Trigger << ", Flash time wrt beam gate: " << flashTime_Beam << std::endl; //TODO: Remove print statements later
+    } //End for flash
 
-    } // End for flash
-
-    if ( fVerbose ) std::cout << "Event: " << fEvent << ", Cryo: " << cryoTag << ", nFlashes: " << nFlashes << ", Triggering flash center: " << triggerFlashCenter << std::endl; //TODO: Remove print statements later
+    if ( fVerbose ) std::cout << "Event: " << fEvent << ", Cryo: " << inputTag << ", nFlashes: " << nFlashes << ", Triggering flash center: " << triggerFlashCenter  << std::endl;
 
 
 /* ~~~~~~~~~~~~~~~~~~~~ TPC Section
  * Here we start by gathering the Slices in the event
  * For each slice, the charge centroid is first calculated
  * Then we iterate through flashes to identify the best match flash
- * If a triggering flash was found earlier, the barycetner distance to the triggering flash is also stored
+ * If a triggering flash was found in this cyrostat, the barycenter distance to the triggering flash is also stored
  */
 
-    //Fetch slices, TPC hits, and PFPs; pointer vector needed for assns
+    //Fetch slices, TPC hits, and PFPs; pointer vector needed for generating associations
     art::Handle<std::vector<recob::Slice>> sliceHandle;
-    e.getByLabel(fPandoraLabel + cryoTag, sliceHandle);
-    art::FindManyP<recob::Hit> fmTPCHits(sliceHandle, e, fPandoraLabel + cryoTag);
-    art::FindManyP<recob::PFParticle> fmPFPs(sliceHandle, e, fPandoraLabel + cryoTag);
+    e.getByLabel(fPandoraLabel + inputTag, sliceHandle);
+    art::FindManyP<recob::Hit> fmTPCHits(sliceHandle, e, fPandoraLabel + inputTag);
+    art::FindManyP<recob::PFParticle> fmPFPs(sliceHandle, e, fPandoraLabel + inputTag);
     std::vector<art::Ptr<recob::Slice>> sliceVector;
     art::fill_ptr_vector(sliceVector, sliceHandle);
 
@@ -315,7 +311,7 @@ void BarycenterMatchProducer::produce(art::Event& e)
 
       const std::vector<art::Ptr<recob::Hit>> &tpcHitsVec = fmTPCHits.at(j);
       const std::vector<art::Ptr<recob::PFParticle>> &pfpsVec = fmPFPs.at(j);
-      art::FindOne<recob::SpacePoint> f1SpacePoint(tpcHitsVec, e, fPandoraLabel + cryoTag);
+      art::FindOne<recob::SpacePoint> f1SpacePoint(tpcHitsVec, e, fPandoraLabel + inputTag);
 
       int nHits = tpcHitsVec.size();
       int nPFPs = pfpsVec.size();
@@ -326,10 +322,9 @@ void BarycenterMatchProducer::produce(art::Event& e)
 
       //Retrieve Pandora's T0 for this slice if available, same for every PFP in slice so we only need one
       if ( nPFPs != 0 ) {
-        art::FindOne<anab::T0> f1T0( {pfpsVec.at(0)}, e, fPandoraLabel + cryoTag);
+        art::FindOne<anab::T0> f1T0( {pfpsVec.at(0)}, e, fPandoraLabel + inputTag);
         if ( f1T0.at(0).isValid() ) {
           fChargeT0 = f1T0.at(0).ref().Time() / 1e3;
-          if ( isData ) fChargeT0 += shiftFactor;
         }
       }
 
@@ -362,7 +357,7 @@ void BarycenterMatchProducer::produce(art::Event& e)
         art::Ptr<sbn::BarycenterMatch> const infoPtr = makeInfoPtr(matchInfoVector->size());
         sliceAssns->addSingle(infoPtr, slicePtr);
         matchInfoVector->push_back(std::move(sliceMatchInfo));
-        if ( fVerbose ) std::cout << "No charge found in Event " << fEvent << " Slice " << j << "! Continuing..." << std::endl; //TODO: Remove print statements later, or maybe keep this one?
+        if ( fVerbose ) std::cout << "No charge found in Event: " << fEvent << " Slice: " << j << "! Continuing..."  << std::endl;
         continue;
       }
 
@@ -378,6 +373,7 @@ void BarycenterMatchProducer::produce(art::Event& e)
       for ( int m = 0; m < nFlashes; m++ ) {
         const recob::OpFlash &flash = (*flashHandle).at(m);
 
+        //Skip over flashes that are very out of time with respect to the slice
         if ( fUseTimeRange && rangeIsValid ) {
           electronics_time eTime (flash.AbsTime());
           if ( !timeRange.contains(eTime, margin) ) continue;
@@ -401,40 +397,35 @@ void BarycenterMatchProducer::produce(art::Event& e)
         art::Ptr<sbn::BarycenterMatch> const infoPtr = makeInfoPtr(matchInfoVector->size());
         sliceAssns->addSingle(infoPtr, slicePtr);
         matchInfoVector->push_back(std::move(sliceMatchInfo));
-        if ( fVerbose ) std::cout << "No matching flash found for Event " << fEvent << " Slice " << j << "! Continuing..." << std::endl; //TODO: Remove print statements later, or maybe keep this one?
+        if ( fVerbose ) std::cout << "No matching flash found for Event: " << fEvent << " Slice: " << j << "! Continuing..."  << std::endl;
         continue;
       }
 
-      //Update match variables
+      //Best match flash pointer
       const art::Ptr<recob::OpFlash>& flashPtr = flashVector.at(matchIndex);
 
+      //Find time of first OpHit in matched flash
       const std::vector<recob::OpHit const*> &opHitsVec = fmOpHits.at(matchIndex);
       double minTime = 1e6;
-      //For OpHit...
-      for (const recob::OpHit *opHit : opHitsVec ) {
-        if ( opHit->PeakTime() < minTime ) minTime = opHit->PeakTime(); //TODO: Rise time or peak time?
-      } //End for OpHit
-      if ( isData ) minTime += shiftFactor;
+      for (const recob::OpHit *opHit : opHitsVec ) { if ( opHit->PeakTime() < minTime ) minTime = opHit->PeakTime(); }
 
-      updateFlashVars(flashPtr, (isData ? shiftFactor : 0.), minTime);
+      //Update match info
+      updateFlashVars(flashPtr, minTime);
       updateMatchInfo(sliceMatchInfo);
-
-
       art::Ptr<sbn::BarycenterMatch> const infoPtr = makeInfoPtr(matchInfoVector->size());
       sliceAssns->addSingle(infoPtr, slicePtr);
       flashAssns->addSingle(infoPtr, flashPtr);
-//      crossAssns->addSingle(slicePtr, flashPtr, infoPtr);
       matchInfoVector->push_back(std::move(sliceMatchInfo));
       if ( fFillMatchTree ) fMatchTree->Fill();
 
     } //End for slice
 
-  } //End for cryo
+  } //End for InputTag
 
+  //Store new products at the end of the event
   e.put(std::move(matchInfoVector));
   e.put(std::move(sliceAssns));
   e.put(std::move(flashAssns));
-//  e.put(std::move(crossAssns));
 
 } //End produce()
 
@@ -510,8 +501,8 @@ void BarycenterMatchProducer::updateChargeVars(double sumCharge, TVector3 sumPos
 } //End updateChargeVars()
 
 
-void BarycenterMatchProducer::updateFlashVars(art::Ptr<recob::OpFlash> flash, double shift, double firstHit) {
-  double matchedTime = flash->Time() + shift;
+void BarycenterMatchProducer::updateFlashVars(art::Ptr<recob::OpFlash> flash, double firstHit) {
+  double matchedTime = flash->Time();
   double matchedYCenter = flash->YCenter();
   double matchedZCenter = flash->ZCenter();
   double matchedYWidth = flash->YWidth();

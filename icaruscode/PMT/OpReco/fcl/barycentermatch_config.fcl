@@ -7,8 +7,8 @@ barycentermatch_common_params:
     PandoraLabel:     "pandoraGaus"
     CollectionOnly:   true
     UseTimeRange:     true
-    Verbose:          true
-    FillMatchTree:    true
+    Verbose:          false
+    FillMatchTree:    flase
     TriggerTolerance: 0.15
     TimeRangeMargin:  35.
 }
@@ -40,7 +40,7 @@ data_barycentermatchproducer:
   module_type: "icaruscode/PMT/OpReco/BarycenterMatchProducer"
     @table::barycentermatch_common_params
     @table::barycentermatch_data_params
-    CryoTags:         ["CryoE","CryoW"]
+    InputTags:         ["CryoE","CryoW"]
 }
 
 mc_barycentermatchproducer:
@@ -48,7 +48,7 @@ mc_barycentermatchproducer:
   module_type: "icaruscode/PMT/OpReco/BarycenterMatchProducer"
     @table::barycentermatch_common_params
     @table::barycentermatch_mc_params
-    CryoTags:         ["CryoE","CryoW"]
+    InputTags:         ["CryoE","CryoW"]
 }
 
 ######
@@ -61,7 +61,7 @@ data_barycentermatchproducer_east:
   module_type: "icaruscode/PMT/OpReco/BarycenterMatchProducer"
     @table::barycentermatch_common_params
     @table::barycentermatch_data_params
-    CryoTags:         ["CryoE"]
+    InputTags:         ["CryoE"]
 }
 
 mc_barycentermatchproducer_east:
@@ -69,7 +69,7 @@ mc_barycentermatchproducer_east:
   module_type: "icaruscode/PMT/OpReco/BarycenterMatchProducer"
     @table::barycentermatch_common_params
     @table::barycentermatch_mc_params
-    CryoTags:         ["CryoE"]
+    InputTags:         ["CryoE"]
 }
 
 ######
@@ -82,7 +82,7 @@ data_barycentermatchproducer_west:
   module_type: "icaruscode/PMT/OpReco/BarycenterMatchProducer"
     @table::barycentermatch_common_params
     @table::barycentermatch_data_params
-    CryoTags:         ["CryoW"]
+    InputTags:         ["CryoW"]
 }
 
 mc_barycentermatchproducer_west:
@@ -90,7 +90,7 @@ mc_barycentermatchproducer_west:
   module_type: "icaruscode/PMT/OpReco/BarycenterMatchProducer"
     @table::barycentermatch_common_params
     @table::barycentermatch_mc_params
-    CryoTags:         ["CryoW"]
+    InputTags:         ["CryoW"]
 }
 
 ######
