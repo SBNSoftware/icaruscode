@@ -168,7 +168,7 @@ namespace crt {
     art::InputTag fCRTDAQProducerLabel;
     art::InputTag fCRTPMTProducerLabel;
     art::InputTag fCRTDetSimProducerLabel;
-    art::InputTag fCRTDetSimLabel;
+    //art::InputTag fCRTDetSimLabel;
     art::InputTag fCRTBackTrackLabel;
     //icarus::crt::CRTBackTracker fCRTBackTrack;
     //    bool fVerbose;          ///< print info
@@ -611,7 +611,7 @@ namespace crt {
     //CRTData
     //CRTBackTracker bt;
     art::Handle<vector<icarus::crt::CRTData>> crtDetSimHandle;
-    if (event.getByLabel(fCRTDetSimLabel, crtDetSimHandle))  {
+    if (event.getByLabel(fCRTDetSimProducerLabel, crtDetSimHandle))  {
 
       vector<art::Ptr<icarus::crt::CRTData>> febdata;
       art::fill_ptr_vector(febdata,crtDetSimHandle);
