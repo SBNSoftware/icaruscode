@@ -235,7 +235,7 @@ void BarycenterMatchProducer::produce(art::Event& e)
   }
   else if ( fVerbose ) std::cout << "No valid trigger product found for this event!"  << std::endl;
 
-  //Infstracture for checking allowed time range of a slice
+  //Infrastructure for checking allowed time range of a slice
   microseconds margin(fTimeRangeMargin);
   detinfo::DetectorTimings const detTimings{ fDetClocks.DataFor(e) };
   detinfo::DetectorPropertiesData const& detProp { fDetProp.DataFor(e, detTimings.clockData()) };
