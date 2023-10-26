@@ -2,6 +2,7 @@
 #include "services_common_icarus.fcl"
 #include "services_icarus_simulation.fcl"
 #include "channelmapping_icarus.fcl"
+#include "crtbacktracker_icarus.fcl"
 
 process_name: CRTAnalysis
 
@@ -56,15 +57,20 @@ physics:
       CRTHitLabel:   "crthit"
 
       CRTDAQLabel:   "daqCRT"
-
-      TriggerLabel:  "daqTrigger"
-
+      
+      #TriggerLabel:  "daqTrigger" # for Data 
+      TriggerLabel: "emuTrigger" # for MC
+      
       CRTPMTLabel:   "crtpmt"
+      CRTDetSimLabel: "crtdaq"	
 
       QPed:                 60     # Pedestal offset [ADC]
       QSlope:               70     # Pedestal slope [ADC/photon]
       PEThresh:             7.5    # PE threshold above which charge amplitudes used
       CrtWindow:            3e6    # time window for looking data within trigger timestamp [ns]
+
+      CRTBackTrack: @local::standard_crtbacktracker
+
     }
   }
 

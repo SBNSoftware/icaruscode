@@ -17,6 +17,8 @@
 #include "larcorealg/Geometry/AuxDetGeometryCore.h"
 #include "larcoreobj/SimpleTypesAndConstants/geo_types.h"
 #include "sbnobj/Common/Trigger/ExtraTriggerInfo.h"
+#include "nusimdata/SimulationBase/MCParticle.h"
+#include "nusimdata/SimulationBase/MCTruth.h"
 //#include "icaruscode/CRT/CRTUtils/CRTHitRecoAlg.h"
 
 // Framework includes
@@ -59,10 +61,12 @@
 // CRT data products
 #include "sbnobj/ICARUS/CRT/CRTData.hh"
 #include "sbnobj/Common/CRT/CRTHit.hh"
+#include "sbnobj/Common/CRT/CRTTrack.hh"
 #include "icaruscode/CRT/CRTUtils/CRTCommonUtils.h"
 #include "icaruscode/CRT/CRTUtils/CRTPMTMatchingUtils.h"
 #include "icaruscode/Decode/DecoderTools/IDecoder.h"
 #include "icaruscode/Decode/ChannelMapping/IICARUSChannelMap.h"
+#include "icaruscode/CRT/CRTUtils/CRTBackTracker.h"
 
 using std::string;
 using std::vector;
@@ -80,9 +84,9 @@ namespace crt {
   class CRTDataAnalysis : public art::EDAnalyzer
   {
   public:
-
+    /* //OLD
     struct Config {
-      
+    
       // Save some typing:
       using Name = fhicl::Name;
       using Comment = fhicl::Comment;
@@ -106,6 +110,14 @@ namespace crt {
 	Name("CRTPMTLabel"),
 	  Comment("Label for the CRTPMT Matched variables from the crtpmt data product")
 	  };
+      fhicl::Atom<art::InputTag> CRTDetSimLabel {
+        Name("CRTDetSimLabel"),
+          Comment("Label for CRTDetSim")
+          };
+      fhicl::Atom<art::InputTag> CRTBackTrackLabel {
+        Name("CRTBackTrackLabel"),
+          Comment("Label for CRTBackTrack")
+          };
       fhicl::Atom<double> QPed {
 	Name("QPed"),
 	  Comment("Pedestal offset [ADC]")
@@ -125,8 +137,8 @@ namespace crt {
 	  Comment("window for looking data [ns]")
 	  };
     }; // Config
-    
-    using Parameters = art::EDAnalyzer::Table<Config>;
+      */ // old config 
+    //using Parameters = art::EDAnalyzer::Table<Config>;
     
     // -------------------------------------------------------------------
     // -------------------------------------------------------------------
@@ -134,7 +146,8 @@ namespace crt {
     // we don't need a special destructor here.
 
     /// Constructor: configures the module (see the Config structure above)
-    explicit CRTDataAnalysis(Parameters const& config);
+    //explicit CRTDataAnalysis(Parameters const& config);
+    explicit CRTDataAnalysis(fhicl::ParameterSet const& p);
 
     virtual void beginJob() override;
     virtual void beginRun(const art::Run& run) override;
@@ -154,7 +167,10 @@ namespace crt {
     art::InputTag fCRTHitProducerLabel;        ///< The name of the producer that created hits
     art::InputTag fCRTDAQProducerLabel;
     art::InputTag fCRTPMTProducerLabel;
-
+    art::InputTag fCRTDetSimProducerLabel;
+    art::InputTag fCRTDetSimLabel;
+    art::InputTag fCRTBackTrackLabel;
+    //icarus::crt::CRTBackTracker fCRTBackTrack;
     //    bool fVerbose;          ///< print info
     double fQPed;           ///< Pedestal offset of SiPMs [ADC]
     double fQSlope;         ///< Pedestal slope of SiPMs [ADC/photon]
@@ -269,7 +285,11 @@ namespace crt {
     // Other variables that will be shared between different methods.
     geo::GeometryCore const* fGeometryService;   ///< pointer to Geometry provider
     int                      fTriggerOffset;     ///< (units of ticks) time of expected neutrino event
+    CRTBackTracker bt;
     CRTCommonUtils* fCrtutils;  
+    //icarus::crt::CRTBackTracker fCRTBackTrack; 
+    //CRTBackTracker* fCRTBackTrack;
+
   }; // class CRTDataAnalysis
 
 
@@ -285,19 +305,22 @@ namespace crt {
   // each element in Config is an Atom<Type>, so to access the type we
   // again use the call operator, e.g. "SimulationLabel()".
 
-  map<int,vector<pair<int,int>>> CRTDataAnalysis::fFebMap;
- 
-  CRTDataAnalysis::CRTDataAnalysis(Parameters const& config)
+
+    // old constructor
+    /*CRTDataAnalysis::CRTDataAnalysis(Parameters const& config)
     : EDAnalyzer(config)
     , fTriggerLabel( config().TriggerLabel() )
     , fCRTHitProducerLabel(config().CRTHitLabel())
     , fCRTDAQProducerLabel(config().CRTDAQLabel())
     , fCRTPMTProducerLabel(config().CRTPMTLabel())
+    , fCRTDetSimLabel(config().CRTDetSimLabel())
+    , fCRTBackTrackLabel(config().CRTBackTrackLabel())
     , fQPed(config().QPed())
     , fQSlope(config().QSlope())
     , fPEThresh(config().PEThresh())
     , fCrtWindow(config().CrtWindow())
     , fCrtutils(new CRTCommonUtils())
+    //, fCRTBackTrack(new CRTBackTracker())
       
   {
     // Get a pointer to the geometry service provider.
@@ -307,9 +330,27 @@ namespace crt {
     // Access to detector properties.
     auto const clockData = art::ServiceHandle<detinfo::DetectorClocksService const>()->DataForJob();
     fTriggerOffset = trigger_offset(clockData);
-  }
-
-  
+    }*/ // old constructor 
+    //new constructor 
+    CRTDataAnalysis::CRTDataAnalysis(fhicl::ParameterSet const& p)
+      : EDAnalyzer{p}
+      , fTriggerLabel(p.get<art::InputTag>("TriggerLabel","daqTrigger"))
+      , fCRTHitProducerLabel(p.get<art::InputTag>("CRTHitLabel","crthit"))
+      , fCRTDAQProducerLabel(p.get<art::InputTag>("CRTDAQLabel","daqCRT"))
+      , fCRTPMTProducerLabel(p.get<art::InputTag>("CRTPMTLabel","crtpmt"))
+      , fCRTDetSimProducerLabel(p.get<art::InputTag>("CRTDetSimLabel","crtdaq"))
+      , fQPed(p.get<double>("QPed", 0.))
+      , fQSlope(p.get<double>("QSlope", 0.))
+      , fPEThresh(p.get<double>("PEThresh", 0.))
+      , fCrtWindow(p.get<uint64_t>("CrtWindow", 0.))
+      , bt(p.get<fhicl::ParameterSet>("CRTBackTrack"))
+      , fCrtutils(new CRTCommonUtils())
+    {
+      fGeometryService = lar::providerFrom<geo::Geometry>();
+      auto const clockData = art::ServiceHandle<detinfo::DetectorClocksService const>()->DataForJob();
+      fTriggerOffset = sampling_rate(clockData);
+    }
+    map<int,vector<pair<int,int>>> CRTDataAnalysis::fFebMap;
   void CRTDataAnalysis::FillFebMap() { 
     if(!this->fFebMap.empty())
         return;
@@ -451,7 +492,7 @@ namespace crt {
     fRun    = event.run();
     fSubRun = event.subRun();
     FillFebMap();//febMap);
-
+    //fCRTBackTrack->Initialize(event);
     //add trigger info
     m_gate_type = value(sbn::triggerSource::Unknown);
     if( !fTriggerLabel.empty() ) {
@@ -474,7 +515,7 @@ namespace crt {
     else {
        mf::LogError("CRTDataAnalysis")  << "Trigger Data product " << fTriggerLabel.label() << " not found!\n" ;
     }
-
+        
     art::Handle<vector<icarus::crt::CRTData>> crtDAQHandle;
     vector<art::Ptr<icarus::crt::CRTData> > crtList;
     if ( event.getByLabel(fCRTDAQProducerLabel, crtDAQHandle))
@@ -488,6 +529,9 @@ namespace crt {
       uint8_t mac = crtList[febdat_i]->fMac5;
       int adid  = fCrtutils->MacToAuxDetID(mac,0);
       char type = fCrtutils->GetAuxDetType(adid);
+      /*for( int trk: fCRTBackTrack->AllTrueIds(event, *crtList[febdat_i])){
+	std::cout << "trk: " << trk << "\n";
+	}*/
       /*
       for(int chan=0; chan<32; chan++) {
 	 mf::LogError("CRTDataAnalysis") << "\nfebP (mac5, channel, adc, type, adid) = (" << (int)crtList[febdat_i]->fMac5 << " , " << chan << " , "
@@ -530,7 +574,6 @@ namespace crt {
     mf::LogError("CRTDataAnalysis") << "about to loop over " << crtData.size() <<" crtData entries \n";
     for (size_t febdat_i=0; febdat_i<crtData.size(); febdat_i++) {
       
-      
       fDetEvent       = fEvent;
       fDetRun         = fRun;
       fDetSubRun      = fSubRun;
@@ -565,7 +608,42 @@ namespace crt {
       
     } //for CRT FEB events
     
-  
+    //CRTData
+    //CRTBackTracker bt;
+    art::Handle<vector<icarus::crt::CRTData>> crtDetSimHandle;
+    if (event.getByLabel(fCRTDetSimLabel, crtDetSimHandle))  {
+
+      vector<art::Ptr<icarus::crt::CRTData>> febdata;
+      art::fill_ptr_vector(febdata,crtDetSimHandle);
+      mf::LogPrint("CRTSimAnalysis") << "found " << febdata.size() << " CRTData" << '\n';
+      
+      for ( auto const& data : febdata ) {
+	std::cout << "entered loop over febdata..\n";
+	std::cout << "mac: " << (int)data->fMac5 << "\n";
+	bt.Initialize(event);
+	for( int trk : bt.AllTrueIds(event,*data)) {
+	  std::cout << "trk ID: " << trk << "\n";
+	  /*fTrackID.push_back(trk);
+	  if (particleMap.find(trk) != particleMap.end() ){
+	    fDetPDG.push_back(particleMap[trk]->PdgCode());
+	    if(!passfilter)
+	      for(int const& pdg: fPDGs) {
+		if(fDetPDG.back()==pdg) 
+		  passfilter = true;
+	      }
+	  }
+	  else 
+	  fDetPDG.push_back(INT_MAX);*/
+	  }//for trackIDs
+	std::cout << ".. and exitied loop..\n";
+      }
+
+    }//if crtdetsim products present
+    else 
+      mf::LogWarning("CRTSimAnalysis") << "CRTData products not found! (expected if gen/G4 step)" << '\n';
+
+
+
     // Fill CRT Hit Tree
     art::Handle<std::vector<sbn::crt::CRTHit>> crtHitHandle;
     
@@ -640,7 +718,9 @@ namespace crt {
 	  
 	  fHitMod  = fCrtutils->MacToAuxDetID(mactmp, chantmp);
 	  fHitStrip = fCrtutils->ChannelToAuxDetSensitiveID(mactmp, chantmp);
-	  
+	  for( int trk: bt.AllTrueIds(event, hit)){
+	    std::cout << "trk: " << trk << "\n";
+	  }
 	  fHitNtuple->Fill();
        }//for CRT Hits
     }//if CRT Hits
