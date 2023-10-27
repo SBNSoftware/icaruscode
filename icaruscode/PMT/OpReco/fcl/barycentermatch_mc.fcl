@@ -53,11 +53,12 @@ physics:
 {
    producers:
   {
-    barycentermatch: @local::mc_barycentermatchproducer
+    barycentermatchCryoE: @local::mc_barycentermatchproducer_east
+    barycentermatchCryoW: @local::mc_barycentermatchproducer_west
   }
 
   # Schedule job step(s) for execution by defining the analysis module for this job.
-  reco: [ barycentermatch ]
+  reco: [ barycentermatchCryoE, barycentermatchCryoW ]
 
   stream1: [ out1 ]
 
