@@ -1,0 +1,7 @@
+#include "calibration_database_TagSets_icarus.fcl"
+
+BEGIN_PROLOG
+
+ICARUS_Calibration_GlobalTags: @local::CalibrationTags_Run2_Oct2023
+
+END_PROLOG
