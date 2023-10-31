@@ -1,0 +1,40 @@
+# File:    calibration_database_GlobalTags.fcl
+# Purpose: Collection of tag info for the calibration database
+# Created at: Oct. 31th 2023
+# Last updated at: Oct. 31th 2023
+
+BEGIN_PROLOG
+
+CalibrationTags_Run2_Oct2023: {
+
+  ## TPC
+  tpc_channelstatus_data: {
+    tag: "v3r1"
+  }
+  tpc_elifetime_data: {
+    tag: "v2r1"
+  }
+  tpc_dqdxcalibration_data: {
+    tag: "v2r1"
+  }
+  tpc_yz_correction_data: {
+    tag: "v2r1"
+  }
+
+  ## PMT
+  # These are the standard tags for analyses on Run 1 and Run 2 data (as of September 2023)
+  # These tagged versions of the databases only contain tables relevant for Run 1 and Run 2.
+  # Notes: 
+  #  - No cosmics corrections are available for Run 2
+  pmt_cables_delays_data: {
+    tag: "v2r1"  # tables for run>=0 (null), run>=8046, run>=9301, run>=9628 and run>=9773
+  }
+  pmt_laser_timing_data: {
+    tag: "v2r1" # tables for run>=0 (null), run>=8046, run>=9301, run>=9628 and run>=9773
+  }
+  pmt_cosmics_timing_data: {
+    tag: "v2r0" # tables for run>=0 (null), run>=8046 and run>=9301 (null) 
+  }
+}
+
+END_PROLOG
