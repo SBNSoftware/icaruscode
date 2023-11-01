@@ -74,11 +74,7 @@ icarus::calo::NormalizeDriftSQLite::NormalizeDriftSQLite(fhicl::ParameterSet con
   fDBTag(pset.get<std::string>("DBTag")),
   fVerbose(pset.get<bool>("Verbose", false)),
   fDB(fDBFileName, "", "", fDBTag, true, false)
-{
-
-  std::cout << "NormalizeDriftSQLite Tool -- fDBTag: " << fDBTag << std::endl;
-
-}
+{}
 
 void icarus::calo::NormalizeDriftSQLite::configure(const fhicl::ParameterSet& pset) {}
 
