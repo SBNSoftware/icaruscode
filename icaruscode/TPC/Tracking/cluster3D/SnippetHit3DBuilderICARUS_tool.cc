@@ -221,11 +221,6 @@ private:
     float DistanceFromPointToHitWire(const Eigen::Vector3f& position, const geo::WireID& wireID) const;
 
     /**
-     *  @brief Create the internal channel status vector (assume will eventually be event-by-event)
-     */
-    void BuildChannelStatusVec(PlaneToWireToHitSetMap& planeToWiretoHitSetMap) const;
-
-    /**
      * @brief Perform charge integration between limits
      */
     float chargeIntegral(float,float,float,float,int,int) const;
@@ -257,6 +252,7 @@ private:
     std::vector<int>                        m_invalidTPCVec;
     float                                   m_wirePitchScaleFactor;  ///< Scaling factor to determine max distance allowed between candidate pairs
     float                                   m_maxHit3DChiSquare;     ///< Provide ability to select hits based on "chi square"
+    bool                                    m_allowBadChannels;      ///< Allow space points with bad channels
     bool                                    m_saveMythicalPoints;    ///< Should we save valid 2 hit space points? 
     float                                   m_maxMythicalChiSquare;  ///< Selection cut on mythical points
     bool                                    m_useT0Offsets;          ///< If true then we will use the LArSoft interplane offsets
@@ -312,10 +308,6 @@ private:
     mutable PlaneToSnippetHitMap            m_planeToSnippetHitMap;
     mutable PlaneToWireToHitSetMap          m_planeToWireToHitSetMap;
 
-
-    mutable ChannelStatusByPlaneVec         m_channelStatus;
-    mutable size_t                          m_numBadChannels;
-
     mutable bool                            m_weHaveAllBeenHereBefore = false;
 
     const geo::Geometry*                    m_geometry;              //< pointer to the Geometry service
@@ -355,6 +347,7 @@ void SnippetHit3DBuilderICARUS::configure(fhicl::ParameterSet const &pset)
     m_invalidTPCVec        = pset.get<std::vector<int>          >("InvalidTPCVec",          std::vector<int>());
     m_wirePitchScaleFactor = pset.get<float                     >("WirePitchScaleFactor",   1.9 );
     m_maxHit3DChiSquare    = pset.get<float                     >("MaxHitChiSquare",        6.0 );
+    m_allowBadChannels     = pset.get<bool                      >("AllowBadChannels",       true);
     m_saveMythicalPoints   = pset.get<bool                      >("SaveMythicalPoints",     true);
     m_maxMythicalChiSquare = pset.get<float                     >("MaxMythicalChiSquare",    10.);
     m_useT0Offsets         = pset.get<bool                      >("UseT0Offsets",           true);
@@ -452,46 +445,6 @@ void SnippetHit3DBuilderICARUS::clear()
 
     return;
 }
-
-void SnippetHit3DBuilderICARUS::BuildChannelStatusVec(PlaneToWireToHitSetMap& planeToWireToHitSetMap) const
-{
-    // This is called each event, clear out the previous version and start over
-    m_channelStatus.clear();
-
-    m_numBadChannels = 0;
-    m_channelStatus.resize(m_geometry->Nplanes());
-
-    // Loop through views/planes to set the wire length vectors
-    constexpr geo::TPCID tpcid{0, 0};
-    for(size_t idx = 0; idx < m_channelStatus.size(); idx++)
-    {
-        m_channelStatus[idx] = ChannelStatusVec(m_geometry->Nwires(geo::PlaneID(tpcid, idx)), 5);
-    }
-
-    // Loop through the channels and mark those that are "bad"
-    for(size_t channel = 0; channel < m_geometry->Nchannels(); channel++)
-    {
-        try
-        {  
-            if( m_channelFilter->IsPresent(channel) && !m_channelFilter->IsGood(channel))
-            {
-                std::vector<geo::WireID>                wireIDVec = m_geometry->ChannelToWire(channel);
-                geo::WireID                             wireID    = wireIDVec[0];
-                lariov::ChannelStatusProvider::Status_t chanStat  = m_channelFilter->Status(channel);
-
-                m_channelStatus[wireID.Plane][wireID.Wire] = chanStat;
-                m_numBadChannels++;
-            }
-        }
-        catch(...)
-        {
-            mf::LogDebug("SnippetHit3D") << "--> Channel: " << channel << " threw exception so we will skip" << std::endl;
-        }
-    }
-
-    return;
-}
-
 
 bool SetPeakHitPairIteratorOrder(const reco::HitPairList::iterator& left, const reco::HitPairList::iterator& right)
 {
@@ -597,12 +550,6 @@ void SnippetHit3DBuilderICARUS::BuildHit3D(reco::HitPairList& hitPairList) const
 
     if (m_enableMonitoring) theClockMakeHits.start();
 
-    // The first task is to take the lists of input 2D hits (a map of view to sorted lists of 2D hits)
-    // and then to build a list of 3D hits to be used in downstream processing
-    std::cout << "--> Calling BuildChannelStatusVec" << std::endl;
-    BuildChannelStatusVec(m_planeToWireToHitSetMap);
-    std::cout << "--- done with channel status building" << std::endl;
-
     size_t numHitPairs = BuildHitPairMap(m_planeToSnippetHitMap, hitPairList);
 
     if (m_enableMonitoring)
@@ -660,7 +607,6 @@ size_t SnippetHit3DBuilderICARUS::BuildHitPairMap(PlaneToSnippetHitMap& planeToS
     size_t hitPairCntr(0);
 
     size_t nTriplets(0);
-    size_t nDeadChanHits(0);
 
     // Set up to loop over cryostats and tpcs...
     for(size_t cryoIdx = 0; cryoIdx < m_geometry->Ncryostats(); cryoIdx++)
@@ -699,7 +645,7 @@ size_t SnippetHit3DBuilderICARUS::BuildHitPairMap(PlaneToSnippetHitMap& planeToS
     // Where are we?
     mf::LogDebug("SnippetHit3D") << "Total number hits: " << totalNumHits << std::endl;
     mf::LogDebug("SnippetHit3D") << "Created a total of " << hitPairList.size() << " hit pairs, counted: " << hitPairCntr << std::endl;
-    mf::LogDebug("SnippetHit3D") << "-- Triplets: " << nTriplets << ", dead channel pairs: " << nDeadChanHits << std::endl;
+    mf::LogDebug("SnippetHit3D") << "-- Triplets: " << nTriplets << std::endl;
 
     return hitPairList.size();
 }
@@ -738,7 +684,6 @@ size_t SnippetHit3DBuilderICARUS::BuildHitPairMapByTPC(PlaneSnippetHitMapItrPair
     };
 
     size_t nTriplets(0);
-    size_t nDeadChanHits(0);
     size_t nOrphanPairs(0);
 
     //*********************************************************************************
@@ -776,7 +721,6 @@ size_t SnippetHit3DBuilderICARUS::BuildHitPairMapByTPC(PlaneSnippetHitMapItrPair
         size_t n12Pairs = findGoodHitPairs(firstSnippetItr, snippetHitMapItr1Start, snippetHitMapItr1End, pair12Map);
         size_t n13Pairs = findGoodHitPairs(firstSnippetItr, snippetHitMapItr2Start, snippetHitMapItr2End, pair13Map);
 
-        nDeadChanHits  += hitPairList.size() - curHitListSize;
         curHitListSize  = hitPairList.size();
 
         if (n12Pairs > n13Pairs) findGoodTriplets(pair12Map, pair13Map, hitPairList);
@@ -913,7 +857,7 @@ void SnippetHit3DBuilderICARUS::findGoodTriplets(HitMatchTripletVecMap& pair12Ma
         }
 
         // One more loop through the other pairs to check for sick channels
-        if (m_numBadChannels > 0)
+        if (m_allowBadChannels)
         {
             for(const auto& pairMapPair : usedPairMap)
             {
@@ -1582,9 +1526,23 @@ bool SnippetHit3DBuilderICARUS::makeDeadChannelPair(reco::ClusterHit3D&       pa
     geo::WireID wireIn(wireID0.Cryostat,wireID0.TPC,missPlane,0);
     geo::WireID wireID = NearestWireID(pair.getPosition(), wireIn);
 
+    // Recover the channels associated to these wire IDs
+    raw::ChannelID_t channel = m_geometry->PlaneWireToChannel(wireID);
+
     // There can be a round off issue so check the next wire as well
-    bool wireStatus    = m_channelStatus[wireID.Plane][wireID.Wire]   < maxChanStatus && m_channelStatus[wireID.Plane][wireID.Wire]   >= minChanStatus;
-    bool wireOneStatus = m_channelStatus[wireID.Plane][wireID.Wire+1] < maxChanStatus && m_channelStatus[wireID.Plane][wireID.Wire+1] >= minChanStatus;
+    bool wireStatus = m_channelFilter->IsPresent(channel) && !m_channelFilter->IsGood(channel);
+    
+    if (wireStatus) wireStatus = m_channelFilter->Status(channel) < maxChanStatus && m_channelFilter->Status(channel) >= minChanStatus;
+
+    // Check nearest wire too (potential roundoff issues?)
+    bool wireOneStatus = false;
+
+    if (wireID.Wire < m_geometry->Nwires(wireID.asPlaneID()) - 1)
+    {
+        wireOneStatus = m_channelFilter->IsPresent(channel+1) && !m_channelFilter->IsGood(channel+1);
+    
+        if (wireOneStatus) wireOneStatus = m_channelFilter->Status(channel+1) < maxChanStatus && m_channelFilter->Status(channel+1) >= minChanStatus;
+    }
 
     // Make sure they are of at least the minimum status
     if(wireStatus || wireOneStatus)
