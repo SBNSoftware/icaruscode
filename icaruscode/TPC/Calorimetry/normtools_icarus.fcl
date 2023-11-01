@@ -33,14 +33,14 @@ tpcgain: {
 driftnorm_sql: {
   tool_type: NormalizeDriftSQLite
   DBFileName: tpc_elifetime_data 
-  DBTag: @local::ICARUS_Calibration_GlobalTags.tpc_elifetime_data.tag
+  DBTag: @local::ICARUS_Calibration_GlobalTags.tpc_elifetime_data
   Verbose: false
 }
 
 tpcgain_sql: {
   tool_type: NormalizeTPCSQL
   DBFileName: tpc_dqdxcalibration_data
-  DBTag: @local::ICARUS_Calibration_GlobalTags.tpc_dqdxcalibration_data.tag
+  DBTag: @local::ICARUS_Calibration_GlobalTags.tpc_dqdxcalibration_data
   Verbose: false
 }
 
@@ -57,7 +57,7 @@ tpcgain_local: {
 yznorm_sql: {
   tool_type: NormalizeYZSQL
   DBFileName: tpc_yz_correction_data
-  DBTag: @local::ICARUS_Calibration_GlobalTags.tpc_yz_correction_data.tag
+  DBTag: @local::ICARUS_Calibration_GlobalTags.tpc_yz_correction_data
   Verbose: false
 }
 
