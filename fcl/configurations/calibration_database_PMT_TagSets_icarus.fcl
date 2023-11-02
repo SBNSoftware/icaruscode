@@ -1,5 +1,5 @@
-# File:    timing_corrections_tags.fcl
-# Author:  M. Vicenzi (mvicenzi@bnl.gov)
+# File:    calibration_database_PMT_TagSets_icarus.fcl
+# Author:  M. Vicenzi (mvicenzi@bnl.gov), J. Kim (jae.sung.kim.3426@gmail.com)
 # Date:    August 21, 2023
 # Purpose: Tags definitions for the PMT timing calibration databases
 
