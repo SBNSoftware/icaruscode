@@ -6,7 +6,7 @@ process_name: TestReprocessRaw
 
 services:
 {
-  @table::icarus_basic_services
+  #@table::icarus_basic_services
 }
 
 source:

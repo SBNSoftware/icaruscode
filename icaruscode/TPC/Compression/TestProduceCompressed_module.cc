@@ -60,8 +60,63 @@ namespace reprocessRaw
     std::unique_ptr<std::vector<artdaq::Fragment>> new_fragments(new std::vector<artdaq::Fragment>());
 
     // fill the new fragments vector
-    for (auto const& fragment : old_fragments)
-      new_fragments->emplace_back(icarus::PhysCrateFragment::compressArtdaqFragment(fragment));
+    for (auto const& old_fragment : old_fragments)
+    {
+      artdaq::Fragment new_fragment = icarus::PhysCrateFragment::compressArtdaqFragment_alt(old_fragment);
+      MF_LOG_VERBATIM("TestProduceCompressed")
+        << "-------------------------" << '\n'
+        << "  size of old_fragment (in bytes) = " << old_fragment.sizeBytes() << '\n'
+        << "    sizd of payload: " << old_fragment.dataSizeBytes() << '\n'
+        << "  size of new_fragment (in byets) = " << new_fragment.sizeBytes() << '\n'
+        << "    sizd of payload: " << new_fragment.dataSizeBytes();
+      new_fragments->emplace_back(new_fragment);
+
+      // check adc vals
+      icarus::PhysCrateFragment old_overlay(old_fragment);
+      icarus::PhysCrateFragment new_overlay(new_fragment);
+      for (size_t b = 0; b < old_overlay.nBoards(); ++b)
+      {
+        for (size_t s = 0; s < old_overlay.nSamplesPerChannel(); ++s)
+        {
+          bool sampleWrong = false;
+          std::array<bool, 16> sampleKey = new_overlay.CompressionKey(b, s);
+          size_t nCompressed = 0;
+          for (auto const& bit : sampleKey)
+            nCompressed += bit;
+          MF_LOG_VERBATIM("TestProduceCompressed")
+            << "Sample key for board " << b << ", sample " << s << ": " << sampleKey[0]
+                                                                        << sampleKey[1]
+                                                                        << sampleKey[2]
+                                                                        << sampleKey[3]
+                                                                        << sampleKey[4]
+                                                                        << sampleKey[5]
+                                                                        << sampleKey[6]
+                                                                        << sampleKey[7]
+                                                                        << sampleKey[8]
+                                                                        << sampleKey[9]
+                                                                        << sampleKey[10]
+                                                                        << sampleKey[11]
+                                                                        << sampleKey[12]
+                                                                        << sampleKey[13]
+                                                                        << sampleKey[14]
+                                                                        << sampleKey[15] << '\n'
+            << " there are " << nCompressed << " compressions in the sample.";
+          for (size_t c = 0; c < old_overlay.nChannelsPerBoard(); ++c)
+          {
+            if (old_overlay.adc_val(b, c, s) != new_overlay.adc_val(b, c, s) && not sampleWrong)
+            {
+              MF_LOG_VERBATIM("TestProduceCompressed")
+                << "  MISMATCH ON BOAD " << b << ", CHANNEL " << c << ", SAMPLE " << s << '\n'
+                << "    OLD ADC: " << old_overlay.adc_val(b, c, s) << '\n'
+                << "    NEW ADC: " << new_overlay.adc_val(b, c, s);
+              sampleWrong = true;
+            }
+          }
+          if (sampleWrong)
+            break;
+        }
+      }
+    }
 
     // put the new fragments into the event
     evt.put(std::move(new_fragments));
