@@ -1,0 +1,41 @@
+###
+## This fhicl file is used to filter events that do not pass the "medium" level
+## of the CRT-PMT filter. Only events passing are saved, in the same RAW format as before.
+## A second root file is saved with the CRT-PMT information for all events,
+## to allow studies on the filter performance.
+##
+#include "stage0_icarus_driver_common.fcl"
+
+process_name: CrtPmtFilter
+
+## Define the path we'll execute
+physics.path:     [ @sequence::icarus_stage0_data_crtpmtfilter_noTPC ]
+
+physics.filters.crtpmtmatchingfilter.FilterLevel: "medium"
+
+outputs.rootOutput.dataTier: "raw"
+outputs.rootOutput.outputCommands: [
+    "drop *_*_*_*", 
+    "keep *_*_*_DAQ*"]
+
+outputs.rootOutputNoFilt: {
+      checkFileName: false
+      compressionLevel: 1
+      dataTier: "reconstructed"
+      fileName: "%ifb_%tc-%p_unfilt.root"
+      fileProperties: {
+         maxInputFiles: 1
+      }
+      module_type: "RootOutput"
+      outputCommands: [
+         "keep *_*_*_CrtPmtFilter"
+      ]
+      saveMemoryObjectThreshold: 0
+   }
+
+physics.streamROOTNoFilt: [ "rootOutputNoFilt" ]
+
+physics.trigger_paths: [ path ]
+physics.end_paths:     [ streamROOT, streamROOTNoFilt ]
+
+
