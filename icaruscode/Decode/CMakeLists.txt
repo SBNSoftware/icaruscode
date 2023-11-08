@@ -106,6 +106,14 @@ cet_build_plugin(DumpTrigger art::module LIBRARIES
   lardataalg::DetectorInfo
   )
 
+cet_build_plugin(CopyDaqICARUSTPC art::module LIBRARIES
+  sbnobj::Common_Trigger
+  artdaq_core::artdaq-core_Data
+  messagefacility::MF_MessageLogger
+  fhiclcpp::fhiclcpp
+  cetlib_except::cetlib_except
+  )
+
 install_headers()
 install_fhicl()
 install_source()
