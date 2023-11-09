@@ -1,5 +1,10 @@
 cet_enable_asserts()
 
+#find_library(ICARUS_OVERLAY_LIB sbndaq_artdaq_core::sbndaq-artdaq-core_Overlays_ICARUS)
+#if (NOT ICARUS_OVERLAY_LIB)
+#  message(FATAL_ERROR "sbndaq_artdaq_core::sbndaq-artdaq-core_Overlays_ICARUS not found!")
+#endif()
+
 art_make_library(
         EXCLUDE
                   ProduceCompressedFragment_module.cc
@@ -10,6 +15,23 @@ art_make_library(
                   ${CETLIB_EXCEPT}
                   sbndaq_artdaq_core::sbndaq-artdaq-core_Overlays_ICARUS
                 )
+
+set(MODULE_LIBRARIES
+                   sbndaq_artdaq_core::sbndaq-artdaq-core_Overlays_ICARUS
+                   sbndaq_artdaq_core::sbndaq-artdaq-core_Overlays
+                   artdaq_core::artdaq-core_Utilities
+                   art_root_io::TFileService_service
+                   ${ROOT_BASIC_LIB_LIST}
+                   ${ART_FRAMEWORK_CORE}
+                   ${ART_FRAMEWORK_PRINCIPAL}
+                   ${ART_FRAMEWORK_SERVICES_REGISTRY}
+                   ${ART_ROOT_IO_TFILE_SUPPORT}
+                   ${ART_ROOT_IO_TFILESERVICE_SERVICE}
+                   ${ART_UTILITIES}
+                   ${MF_MESSAGELOGGER}
+                   ${MF_UTILITIES}
+                   ${FHICLCPP}
+                   )
 
 simple_plugin(ValidateFragmentCompression "plugin"
                 sbndaq_artdaq_core::sbndaq-artdaq-core_Overlays_ICARUS
@@ -41,36 +63,8 @@ simple_plugin(ValidateFragmentCompression "plugin"
                 art::Framework_Services_Registry
              )
 
-cet_build_plugin(ProduceCompressedFragment art::module
-                sbndaq_artdaq_core::sbndaq-artdaq-core_Overlays_ICARUS
-                artdaq_core::artdaq-core_Utilities
-                art_root_io::TFileService_service
-                ${ROOT_BASIC_LIB_LIST}
-                ${ART_FRAMEWORK_CORE}
-                ${ART_FRAMEWORK_PRINCIPAL}
-                ${ART_FRAMEWORK_SERVICES_REGISTRY}
-                ${ART_ROOT_IO_TFILE_SUPPORT}
-                ${ART_ROOT_IO_TFILESERVICE_SERVICE}
-                ${ART_UTILITIES}
-                ${MF_MESSAGELOGGER}
-                ${MF_UTILITIES}
-                ${FHICLCPP}
-             )
-cet_build_plugin(TestProduceCompressed art::module
-                   sbndaq_artdaq_core::sbndaq-artdaq-core_Overlays_ICARUS
-                   artdaq_core::artdaq-core_Utilities
-                   art_root_io::TFileService_service
-                   ${ROOT_BASIC_LIB_LIST}
-                   ${ART_FRAMEWORK_CORE}
-                   ${ART_FRAMEWORK_PRINCIPAL}
-                   ${ART_FRAMEWORK_SERVICES_REGISTRY}
-                   ${ART_ROOT_IO_TFILE_SUPPORT}
-                   ${ART_ROOT_IO_TFILESERVICE_SERVICE}
-                   ${ART_UTILITIES}
-                   ${MF_MESSAGELOGGER}
-                   ${MF_UTILITIES}
-                   ${FHICLCPP}
-)
+cet_build_plugin(ProduceCompressedFragment art::module LIBRARIES ${MODULE_LIBRARIES})
+cet_build_plugin(TestProduceCompressed art::module LIBRARIES ${MODULE_LIBRARIES})
 
 install_headers()
 install_source()

@@ -256,7 +256,7 @@ icarus_signal_processing	v09_78_04	-
 icarusalg			v09_78_06	-
 icarusutil			v09_75_00	-
 libwda				v2_30_0a	-
-sbndaq_artdaq_core              v1_08_03	-
+sbndaq_artdaq_core              v1_08_00of0	-
 sbncode				v09_78_06	-
 cetmodules			v3_20_00	-	only_for_build
 end_product_list
@@ -319,7 +319,7 @@ c7:prof		c7:prof		c7:prof		c7:prof		c7:prof				-nq-		-nq-	-nq-    -nq-
 e19:debug	e19:debug	e19:debug	e19:debug	e19:debug			-nq-		-nq-	-nq-    -nq-
 e19:prof	e19:prof	e19:prof	e19:prof	e19:prof			-nq-		-nq-	-nq-    -nq-
 e20:debug	e20:debug	e20:debug	e20:debug	e20:debug			-nq-		-nq-	-nq-	-nq-
-e20:prof	e20:prof	e20:prof	e20:prof	e20:prof			-nq-		-nq-	-nq-	e20:prof:s122
+e20:prof	e20:prof	e20:prof	e20:prof	e20:prof			-nq-		-nq-	-nq-	e20:prof:s120a
 end_qualifier_list
 ####################################
 

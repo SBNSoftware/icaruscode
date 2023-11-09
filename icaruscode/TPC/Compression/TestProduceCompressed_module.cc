@@ -9,7 +9,7 @@
 #include "art/Framework/Services/Registry/ServiceHandle.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
 
-// wiremod testing
+// overlay testing
 #include "sbndaq-artdaq-core/Overlays/ICARUS/PhysCrateFragment.hh"
 
 //namespace
@@ -62,7 +62,8 @@ namespace reprocessRaw
     // fill the new fragments vector
     for (auto const& old_fragment : old_fragments)
     {
-      artdaq::Fragment new_fragment = icarus::PhysCrateFragment::compressArtdaqFragment_alt(old_fragment);
+      artdaq::Fragment new_fragment = icarus::PhysCrateFragment::fragmentSwitch(old_fragment, true);
+      //artdaq::Fragment new_fragment = icarus::PhysCrateFragment::compressArtdaqFragment(old_fragment);
       MF_LOG_VERBATIM("TestProduceCompressed")
         << "-------------------------" << '\n'
         << "  size of old_fragment (in bytes) = " << old_fragment.sizeBytes() << '\n'
