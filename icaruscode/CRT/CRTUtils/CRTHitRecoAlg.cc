@@ -7,14 +7,14 @@ using namespace icarus::crt;
 CRTHitRecoAlg::CRTHitRecoAlg(const Config& config){
   this->reconfigure(config);
   fChannelMap = art::ServiceHandle<icarusDB::IICARUSChannelMap const>{}.get();
-  fGeometryService  = lar::providerFrom<geo::Geometry>();
+  fAuxDetGeom  = lar::providerFrom<geo::Geometry>();
   fCrtutils = new CRTCommonUtils();
 }
 
 //---------------------------------------------------------------------
 CRTHitRecoAlg::CRTHitRecoAlg(){
   fChannelMap = art::ServiceHandle<icarusDB::IICARUSChannelMap const>{}.get();
-  fGeometryService = lar::providerFrom<geo::Geometry>();
+  fAuxDetGeom = lar::providerFrom<geo::Geometry>();
   fCrtutils = new CRTCommonUtils();
 }
 */
@@ -24,7 +24,7 @@ CRTHitRecoAlg::CRTHitRecoAlg(const fhicl::ParameterSet& pset)
 }
 
 CRTHitRecoAlg::CRTHitRecoAlg()
-    : fGeometryService(lar::providerFrom<geo::Geometry>()),
+    : fAuxDetGeom(art::ServiceHandle<geo::AuxDetGeometry const>()->GetProviderPtr()),
       fChannelMap(
           art::ServiceHandle<icarusDB::IICARUSChannelMap const>{}.get()) {}
 /*
@@ -507,7 +507,7 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeTopHit(
 
   map<uint8_t, vector<pair<int, float>>> pesmap;
   int adid = fCrtutils.MacToAuxDetID(mac, 0);          // module ID
-  auto const& adGeo = fGeometryService->AuxDet(adid);  // module
+  auto const& adGeo = fAuxDetGeom->AuxDet(adid);  // module
   string region = fCrtutils.GetAuxDetRegion(adid);
   int plane = fCrtutils.AuxDetRegionNameToNum(region);
   double hitpointerr[3];
@@ -631,7 +631,7 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeBottomHit(art::Ptr<CRTData> data) {
   uint8_t mac = data->fMac5;
   map<uint8_t, vector<pair<int, float>>> pesmap;
   int adid = fCrtutils.MacToAuxDetID(mac, 0);          // module ID
-  auto const& adGeo = fGeometryService->AuxDet(adid);  // module
+  auto const& adGeo = fAuxDetGeom->AuxDet(adid);  // module
   string region = fCrtutils.GetAuxDetRegion(adid);
   int plane = fCrtutils.AuxDetRegionNameToNum(region);
   double hitpointerr[3];
@@ -716,14 +716,15 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeSideHit(
   vector<infoA> informationB;
 
   int adid = fCrtutils.MacToAuxDetID(coinData[0]->fMac5, 0);  // module ID
-  auto const& adGeo = fGeometryService->AuxDet(adid);         // module
+  auto const& adGeo = fAuxDetGeom->AuxDet(adid);         // module
   string region = fCrtutils.GetAuxDetRegion(adid);
   int plane = fCrtutils.AuxDetRegionNameToNum(region);
 
   double hitpoint[3], hitpointerr[3];
   TVector3 hitpos(0., 0., 0.);
 
-  float petot = 0., pemax = 0., pex = 0., pey = 0.;
+  // float petot = 0., pemax = 0., pex = 0., pey = 0.; // pex, pey unused
+  float petot = 0., pemax = 0.;
   int adsid_max = -1, nabove = 0, nx = 0, ny = 0, nz = 0, ntrig = 0;
 
   TVector3 postrig;
@@ -893,14 +894,14 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeSideHit(
               << " petotal : " << petot << '\n';
         }
         ny++;
-        pey += pe;
+        // pey += pe; // unused
         if (postmp.Y() < ymin) ymin = postmp.Y();
         if (postmp.Y() > ymax) ymax = postmp.Y();
         if (region != "South") {  // region is E/W/N
           //    hitpos.SetX(pe*postmp.X()+hitpos.X());
           hitpos.SetX(1.0 * postmp.X() + hitpos.X());
           nx++;
-          pex += pe;
+          // pex += pe; // unused
           if (postmp.X() < xmin) xmin = postmp.X();
           if (postmp.X() > xmax) xmax = postmp.X();
         }
@@ -919,7 +920,7 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeSideHit(
               << " petotal : " << petot << '\n';
         }
         nx++;
-        pex += pe;
+        // pex += pe; // unused
         if (postmp.X() < xmin) xmin = postmp.X();
         if (postmp.X() > xmax) xmax = postmp.X();
       }

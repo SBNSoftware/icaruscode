@@ -18,7 +18,7 @@
 #include "messagefacility/MessageLogger/MessageLogger.h"
 
 // LArSoft includes
-#include "larcore/Geometry/Geometry.h"
+#include "larcore/Geometry/WireReadout.h"
 
 #include "sbndaq-artdaq-core/Overlays/ICARUS/PhysCrateFragment.hh"
 
@@ -205,7 +205,7 @@ private:
 
     icarus_signal_processing::FilterFunctionVec    fFilterFunctionVec;
     
-    const geo::Geometry*                           fGeometry;              //< pointer to the Geometry service
+    const geo::WireReadoutGeom*                      fChannelMapAlg;
 
     // Keep track of the FFT 
     icarus_signal_processing::FFTFilterFunctionVec fFFTFilterFunctionVec;
@@ -313,7 +313,7 @@ void TPCNoiseFilterCannyMC::configure(fhicl::ParameterSet const &pset)
                                                                               fBinaryDilation_SX,
                                                                               fBinaryDilation_SY);
 
-    fGeometry   = art::ServiceHandle<geo::Geometry const>{}.get();
+    fChannelMapAlg = &art::ServiceHandle<geo::WireReadout const>{}->Get();
 
     fFFTFilterFunctionVec.clear();
 
@@ -376,7 +376,7 @@ void TPCNoiseFilterCannyMC::process_fragment(detinfo::DetectorClocksData const&,
         fChannelIDVec[idx] = channelPlaneVec[idx].first;
 
         // We need to recover info on which plane we have
-        std::vector<geo::WireID> widVec = fGeometry->ChannelToWire(fChannelIDVec[idx]);
+        std::vector<geo::WireID> widVec = fChannelMapAlg->ChannelToWire(fChannelIDVec[idx]);
 
         // Handle the filter function to use for this channel
         unsigned int plane = widVec[0].Plane;

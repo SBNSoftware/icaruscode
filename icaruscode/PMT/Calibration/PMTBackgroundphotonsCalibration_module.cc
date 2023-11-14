@@ -14,7 +14,7 @@
 ////////////////////////////////////////////////////////////////////////
 
 
-#include "larcore/Geometry/Geometry.h"
+#include "larcore/Geometry/WireReadout.h"
 #include "larcore/CoreUtils/ServiceUtil.h" // lar::providerFrom()
 
 #include "art/Framework/Core/EDAnalyzer.h"
@@ -140,8 +140,7 @@ void pmtcalo::PMTBackgroundphotonsCalibration::beginJob()
   m_ophit_ttree->Branch("event", &m_event, "event/I" );
   m_ophit_ttree->Branch("timestamp", &m_timestamp, "timestamp/I" );
 
-  auto const geop = lar::providerFrom<geo::Geometry>();
-  const unsigned int nPMTs = geop->NOpChannels();
+  const unsigned int nPMTs = art::ServiceHandle<geo::WireReadout const>()->Get().NOpChannels();
 
   char histname[100]; 
   char histtitle[100];
@@ -176,7 +175,7 @@ void pmtcalo::PMTBackgroundphotonsCalibration::beginJob()
 
 bool pmtcalo::PMTBackgroundphotonsCalibration::inTime( 
                         double const & time, std::vector<double> & bounds ){
-  return (time >= bounds[0]) & ( time <= bounds[1] );
+  return (time >= bounds[0]) && ( time <= bounds[1] );
 }
 
 
@@ -221,7 +220,7 @@ void pmtcalo::PMTBackgroundphotonsCalibration::analyze(art::Event const& event)
 
       // Remove OpHits from known channels that are not working + OpHits that are not
       // In the trigger window
-      if( hasChannel(opch, m_channel_mask) | 
+      if( hasChannel(opch, m_channel_mask) || 
             !inTime( ophit.StartTime(), m_filter_intime ) | !_is_minbias )
         continue;
 

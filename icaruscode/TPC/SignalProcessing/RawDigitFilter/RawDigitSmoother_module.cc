@@ -29,7 +29,7 @@
 #include "canvas/Persistency/Common/Ptr.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
 
-#include "larcore/Geometry/Geometry.h"
+#include "larcore/Geometry/WireReadout.h"
 #include "larevt/CalibrationDBI/Interface/DetPedestalService.h"
 #include "larevt/CalibrationDBI/Interface/DetPedestalProvider.h"
 
@@ -87,7 +87,7 @@ private:
     caldata::RawDigitCharacterizationAlg fCharacterizationAlg;
 
     // Useful services, keep copies for now (we can update during begin run periods)
-    geo::GeometryCore const*             fGeometry;             ///< pointer to Geometry service
+    geo::WireReadoutGeom const*            fChannelMapAlg;
     const lariov::DetPedestalProvider&   fPedestalRetrievalAlg; ///< Keep track of an instance to the pedestal retrieval alg
 };
 
@@ -106,7 +106,7 @@ RawDigitSmoother::RawDigitSmoother(fhicl::ParameterSet const & pset) : EDProduce
                                    fPedestalRetrievalAlg(*lar::providerFrom<lariov::DetPedestalService>())
 {
     
-    fGeometry = lar::providerFrom<geo::Geometry>();
+    fChannelMapAlg = &art::ServiceHandle<geo::WireReadout const>()->Get();
     
     configure(pset);
     produces<std::vector<raw::RawDigit>>("erosion");
@@ -216,7 +216,7 @@ void RawDigitSmoother::produce(art::Event & event)
         averageRawDigit->reserve(digitVecHandle->size());
         medianRawDigit->reserve(digitVecHandle->size());
         
-        unsigned int maxChannels = fGeometry->Nchannels();
+        unsigned int maxChannels = fChannelMapAlg->Nchannels();
         
         // Sadly, the RawDigits come to us in an unsorted condition which is not optimal for
         // what we want to do here. So we make a vector of pointers to the input raw digits and sort them
@@ -273,7 +273,7 @@ void RawDigitSmoother::produce(art::Event & event)
         // Avoid creating and destroying a vector each loop... make a single one here
         caldata::RawDigitVector inputAdcVector(rawDataSize);
         
-        geo::WireID lastWireID = fGeometry->ChannelToWire(rawDigitVec.front()->Channel())[0];
+        geo::WireID lastWireID = fChannelMapAlg->ChannelToWire(rawDigitVec.front()->Channel())[0];
     
         // Commence looping over raw digits
         for(const auto& rawDigit : rawDigitVec)
@@ -283,10 +283,10 @@ void RawDigitSmoother::produce(art::Event & event)
             if (channel >= maxChannels) continue;
 
             // Decode the channel and make sure we have a valid one
-            std::vector<geo::WireID> wids = fGeometry->ChannelToWire(channel);
+            std::vector<geo::WireID> wids = fChannelMapAlg->ChannelToWire(channel);
             
             // Look to see if we have crossed to another plane
-            if (lastWireID.asPlaneID().cmp(wids[0].asPlaneID()) != 0)
+            if (lastWireID.asPlaneID() != wids[0].asPlaneID())
             {
                 // Dispose of the end set of RawDigits (in order)
                 WaveformList::iterator inputWaveItr = inputWaveformList.begin();
@@ -438,7 +438,7 @@ void RawDigitSmoother::produce(art::Event & event)
     if (fOutputWaveforms)
     {
         // Try to limit to the wire number (since we are already segregated by plane)
-        std::vector<geo::WireID> wids  = fGeometry->ChannelToWire(channel);
+        std::vector<geo::WireID> wids  = fChannelMapAlg->ChannelToWire(channel);
         size_t                   cryo  = wids[0].Cryostat;
         size_t                   tpc   = wids[0].TPC;
         size_t                   plane = wids[0].Plane;

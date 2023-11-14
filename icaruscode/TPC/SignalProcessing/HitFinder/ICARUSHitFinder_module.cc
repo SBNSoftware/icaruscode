@@ -31,7 +31,7 @@
 
 
 //LArSoft
-#include "larcore/Geometry/Geometry.h"
+#include "larcore/Geometry/WireReadout.h"
 #include "larcore/CoreUtils/ServiceUtil.h" // lar::providerFrom()
 #include "larevt/Filters/ChannelFilter.h"
 #include "lardataobj/RawData/RawDigit.h"
@@ -43,7 +43,6 @@
 
 //LArSoft From FFT
 #include "larcoreobj/SimpleTypesAndConstants/geo_types.h"
-#include "larcore/Geometry/Geometry.h"
 #include "larcorealg/Geometry/CryostatGeo.h"
 #include "larcorealg/Geometry/TPCGeo.h"
 #include "larcorealg/Geometry/PlaneGeo.h"
@@ -228,7 +227,7 @@ double                fChi2NDF;                  ///maximum Chisquared / NDF all
       mutable ICARUShitFitCache fFitCache; ///< Cached functions for multi-peak fits.
       mutable ICARUSlongHitFitCache fLongFitCache; ///< Cached functions for long hits.
       
-      const geo::GeometryCore* fGeometry = lar::providerFrom<geo::Geometry>();
+      const geo::WireReadoutGeom* fChannelMapAlg = &art::ServiceHandle<geo::WireReadout const>()->Get();
      
   }; // class ICARUSHitFinder
 
@@ -329,9 +328,6 @@ double                fChi2NDF;                  ///maximum Chisquared / NDF all
 
   //    std::cout << " ICARUSHitFinder produce " << std::endl;
       
-    //GET THE GEOMETRY.
-    art::ServiceHandle<geo::Geometry> geom;
-      
       // ###############################################
       // ### Making a ptr vector to put on the event ###
       // ###############################################
@@ -431,7 +427,7 @@ double                fChi2NDF;                  ///maximum Chisquared / NDF all
 
           
           // get the WireID for this hit
-          std::vector<geo::WireID> wids = geom->ChannelToWire(channel);
+          std::vector<geo::WireID> wids = fChannelMapAlg->ChannelToWire(channel);
           // for now, just take the first option returned from ChannelToWire
           geo::WireID wid  = wids[0];
           // We need to know the plane to look up parameters
@@ -448,7 +444,7 @@ double                fChi2NDF;                  ///maximum Chisquared / NDF all
       channel   = rawdigits->Channel();
       fDataSize = rawdigits->Samples();
 
-        std::vector<geo::WireID> widVec = geom->ChannelToWire(channel);
+        std::vector<geo::WireID> widVec = fChannelMapAlg->ChannelToWire(channel);
         size_t                   iwire  = widVec[0].Wire;
      //   size_t plane = widVec[0].Plane;
 
@@ -486,7 +482,7 @@ double                fChi2NDF;                  ///maximum Chisquared / NDF all
         
         
         
-     // sigType = geom->SignalType(channel);
+     // sigType = fChannelMapAlg->SignalType(channel);
 
       peakHeight.clear();
       endTimes.clear();
@@ -524,7 +520,7 @@ double                fChi2NDF;                  ///maximum Chisquared / NDF all
 
       reco_tool::ICandidateHitFinder::MergeHitCandidateVec mergedCandidateHitVec;
           
-    std::vector<geo::WireID> wids = geom->ChannelToWire(channel);
+    std::vector<geo::WireID> wids = fChannelMapAlg->ChannelToWire(channel);
           
           std::vector<float> tempVec = holder;
           recob::Wire::RegionsOfInterest_t::datarange_t rangeData(size_t(0),std::move(tempVec));
@@ -652,7 +648,7 @@ for(unsigned int jhit=0;jhit<mergedCands.size(); jhit++)
                 assert(&Func);
                 Func.SetParameter(0, mergedCands.size());
                 
-                float intBaseline=0;
+                // float intBaseline=0; // unused
 
               ICARUSPeakFitParams_t peakParams=peakParamsVec[jhit];
 
@@ -682,7 +678,7 @@ for(unsigned int jhit=0;jhit<mergedCands.size(); jhit++)
                   Func.SetParameter(4+5*jhit,peakRight);
                   Func.SetParameter(5+5*jhit,peakLeft);
 
-                  intBaseline+=(endInt-startInt)*peakBaseline;
+                  // intBaseline+=(endInt-startInt)*peakBaseline; // unused
                 
                 try
                   {
@@ -701,7 +697,7 @@ for(unsigned int jhit=0;jhit<mergedCands.size(); jhit++)
                   FuncLong.SetParameter(0, mergedCands.size());
 
                 
-                float intBaseline=0;
+                // float intBaseline=0; // unused
 
               ICARUSPeakFitParams_t peakParams=peakParamsVec[jhit];
 
@@ -712,7 +708,7 @@ for(unsigned int jhit=0;jhit<mergedCands.size(); jhit++)
                peakLeft   = peakParams.peakTauLeft;
                peakRight  = peakParams.peakTauRight;
                peakBaseline = peakParams.peakBaseline;
- intBaseline+=(endInt-startInt)*peakBaseline;
+ // intBaseline+=(endInt-startInt)*peakBaseline; // unused
  peakAmpErr   = peakParams.peakAmplitudeError;
               peakMeanErr  = peakParams.peakCenterError;
                

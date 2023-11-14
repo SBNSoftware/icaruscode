@@ -55,6 +55,7 @@
 // LArSoft includes
 #include "larcore/CoreUtils/ServiceUtil.h"
 #include "larcore/Geometry/Geometry.h"
+#include "larcore/Geometry/WireReadout.h"
 #include "lardata/DetectorInfoServices/DetectorClocksService.h"
 #include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
 #include "lardata/Utilities/AssociationUtil.h"
@@ -666,7 +667,10 @@ namespace lar_cluster3d {
     // This goes here to insure that something is always written to the data store
     auto const clockData = art::ServiceHandle<detinfo::DetectorClocksService const>()->DataFor(evt);
     auto const detProp   = art::ServiceHandle<detinfo::DetectorPropertiesService const>()->DataFor(evt, clockData);
-    util::GeometryUtilities const gser{*lar::providerFrom<geo::Geometry>(), clockData, detProp};
+    util::GeometryUtilities const gser{*lar::providerFrom<geo::Geometry>(),
+                                       art::ServiceHandle<geo::WireReadout>()->Get(),
+                                       clockData,
+                                       detProp};
 
     ProduceArtClusters(gser, output, *hitPairList, clusterParametersList, clusterHitToArtPtrMap);
 
@@ -943,7 +947,7 @@ namespace lar_cluster3d {
     skeletonListPtr.front()->setStatusBit(reco::ClusterHit3D::SELECTEDBYMST);
 
     float largestDistance(0.);
-    float averageDistance(0.);
+    // float averageDistance(0.); // unused
 
     // Now run the MST
     // Basically, we loop until the MST list is the same size as the input list
@@ -976,7 +980,7 @@ namespace lar_cluster3d {
 
       if (bestDist > largestDistance) largestDistance = bestDist;
 
-      averageDistance += bestDist;
+      // averageDistance += bestDist; // unused
 
       // Now we add the best hit not in the list to our list, keep track of the distance
       // to the object it was closest to
@@ -991,7 +995,7 @@ namespace lar_cluster3d {
       nextHit3D->setStatusBit(reco::ClusterHit3D::SELECTEDBYMST);
     }
 
-    averageDistance /= float(hit3DList.size());
+    // averageDistance /= float(hit3DList.size()); // unused
 
     float thirdDist = 2. * sqrt(clusterParameters.getSkeletonPCA().getEigenValues()[2]);
 

@@ -35,6 +35,7 @@
 
 // LArSoft includes
 #include "larcoreobj/SimpleTypesAndConstants/RawTypes.h" // raw::ChannelID_t
+#include "larcore/Geometry/WireReadout.h"
 #include "larcore/Geometry/Geometry.h"
 #include "larcore/CoreUtils/ServiceUtil.h" // lar::providerFrom()
 #include "larcorealg/Geometry/PlaneGeo.h"
@@ -118,8 +119,7 @@ namespace recowireraw{
   //////////////////////////////////////////////////////
   void RecoWireICARUSRaw::produce(art::Event& evt)
   {
-    // get the geometry
-    art::ServiceHandle<geo::Geometry> geom;
+    auto const& wireReadoutAlg = art::ServiceHandle<geo::WireReadout const>()->Get();
       
     // make a collection of Wires
     std::unique_ptr<std::vector<recob::Wire> > wirecol(new std::vector<recob::Wire>);
@@ -160,7 +160,7 @@ namespace recowireraw{
             // The following test is meant to be temporary until the "correct" solution is implemented
             if (!fChannelFilter->IsPresent(channel)) continue;
 
-            std::vector<geo::WireID> wids = geom->ChannelToWire(channel);
+            std::vector<geo::WireID> wids = wireReadoutAlg.ChannelToWire(channel);
 
             if (wids.empty()) continue;
             
@@ -223,7 +223,7 @@ namespace recowireraw{
        
         double signal[4096];
                double integral[4096];
-        double check[4096];
+        // double check[4096];  // unused
       
        // double tau0=100;
         for(int j=0;j<4096;j++)
@@ -248,9 +248,9 @@ namespace recowireraw{
         
         
         outl[0]=integral[0];
-        double sum_tot=0;
+        // double sum_tot=0; // unused
         for(int j=1;j<4096;j++) {
-            sum_tot+=integral[j];
+            // sum_tot+=integral[j]; // unused
             outl[j]=outl[j-1]*exp(-0.4/tl)+integral[j];
         }
         
@@ -262,9 +262,9 @@ namespace recowireraw{
         }
         
         outs[0]=integral[0];
-        sum_tot=0;
+        // sum_tot=0; // unused
         for(int j=1;j<4096;j++) {
-            sum_tot+=integral[j];
+            // sum_tot+=integral[j]; // unused
             if(ts>0)
                 outs[j]=outs[j-1]*exp(-0.4/ts)+integral[j];
             else
@@ -274,6 +274,7 @@ namespace recowireraw{
         double nl=(1-exp(-0.4/tl));
         double ns=(1-exp(-0.4/ts));
         
+        /*  unused
         double intl=0;
         double ints=0;
         double int0=0;
@@ -286,6 +287,7 @@ namespace recowireraw{
             int0+=integral[j];
         for(int j=0;j<4096;j++) 
             intc+=check[j];
+        */
         
         
         for(int j=0;j<4096;j++) { 
@@ -363,4 +365,3 @@ namespace recowireraw{
 
 
 #endif // RecoWireICARUSRawH
-

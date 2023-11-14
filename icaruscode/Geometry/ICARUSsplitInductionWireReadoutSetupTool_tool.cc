@@ -1,19 +1,20 @@
 /**
- * @file   icaruscode/Geometry/ICARUSsplitInductionChannelMapSetupTool_tool.cc
+ * @file   icaruscode/Geometry/ICARUSsplitInductionWireReadoutSetupTool_tool.cc
  * @brief  Tool to create ICARUS channel mapper with split induction wires.
  * @author Gianluca Petrillo (petrillo@slac.stanford.edu)
  * @date   October 7, 2019
- * @see    `larcore/Geometry/ChannelMapSetupTool.h`
- * 
+ * @see    `larcore/Geometry/WireReadoutSetupTool.h`
+ *
  * This library is header-only.
  */
 
 // ICARUS libraries
-#include "icarusalg/Geometry/ICARUSChannelMapAlg.h"
+#include "icarusalg/Geometry/ICARUSWireReadoutGeom.h"
 
 // LArSoft libraries
-#include "larcore/Geometry/ChannelMapSetupTool.h"
-#include "larcorealg/Geometry/ChannelMapAlg.h"
+#include "larcore/Geometry/Geometry.h"
+#include "larcore/Geometry/WireReadoutSetupTool.h"
+#include "larcorealg/Geometry/WireReadoutGeom.h"
 
 // framework libraries
 #include "art/Utilities/ToolConfigTable.h"
@@ -22,76 +23,74 @@
 
 // -----------------------------------------------------------------------------
 namespace icarus {
-  class ICARUSsplitInductionChannelMapSetupTool;
+  class ICARUSsplitInductionWireReadoutSetupTool;
 } // namespace icarus
 
 
 /**
  * @brief Interface for a tool creating the standard ICARUS channel mapper.
- * 
- * This tool creates a `icarus::ICARUSChannelMapAlg` mapper.
- * 
+ *
+ * This tool creates a `icarus::ICARUSWireReadoutGeom` mapper.
+ *
  */
-class icarus::ICARUSsplitInductionChannelMapSetupTool
-  : public geo::ChannelMapSetupTool
+class icarus::ICARUSsplitInductionWireReadoutSetupTool
+  : public geo::WireReadoutSetupTool
 {
-  
+
   /// Type of channel mapping algorithm being created.
-  using Mapper_t = icarus::ICARUSChannelMapAlg;
-  
+  using Mapper_t = icarus::ICARUSWireReadoutGeom;
+
     public:
-  
+
   using Parameters = art::ToolConfigTable<Mapper_t::Config>;
-  
-  
+
+
   /// Constructor: passes all parameters to the channel mapping algorithm.
-  ICARUSsplitInductionChannelMapSetupTool(Parameters const& config);
-  
-  
+  ICARUSsplitInductionWireReadoutSetupTool(Parameters const& config);
+
+
     protected:
-  
-  std::unique_ptr<Mapper_t> fChannelMap;
-  
-  
+
+  Mapper_t::Config fParams;
+
+
   // --- BEGIN -- Virtual interface implementation ---------------------------
   /// @name Virtual interface
   /// @{
-  
+
   /// Returns a pointer to the channel mapping.
-  virtual std::unique_ptr<geo::ChannelMapAlg> doChannelMap() override
-    { return std::move(fChannelMap); }
-  
+  std::unique_ptr<geo::WireReadoutGeom> doWireReadout(
+    geo::GeometryCore const* geom,
+    std::unique_ptr<geo::WireReadoutSorter> sorter) override;
+
   /// @}
   // --- END -- Virtual interface implementation -----------------------------
-  
-  
-  /// Creates and returns the channel mapping algorithm.
-  std::unique_ptr<Mapper_t> makeChannelMap
-    (Mapper_t::Config const& config) const;
-  
-}; // class icarus::ICARUSsplitInductionChannelMapSetupTool
+
+
+}; // class icarus::ICARUSsplitInductionWireReadoutSetupTool
 
 
 // -----------------------------------------------------------------------------
 // ---  Implementation
 // -----------------------------------------------------------------------------
-icarus::ICARUSsplitInductionChannelMapSetupTool::ICARUSsplitInductionChannelMapSetupTool
+icarus::ICARUSsplitInductionWireReadoutSetupTool::ICARUSsplitInductionWireReadoutSetupTool
   (Parameters const& config)
-  : fChannelMap(makeChannelMap(config()))
+    : fParams{config()}
 {}
 
 
 // -----------------------------------------------------------------------------
-auto icarus::ICARUSsplitInductionChannelMapSetupTool::makeChannelMap
-  (Mapper_t::Config const& config) const -> std::unique_ptr<Mapper_t>
+std::unique_ptr<geo::WireReadoutGeom>
+icarus::ICARUSsplitInductionWireReadoutSetupTool::doWireReadout
+  (geo::GeometryCore const* geom, std::unique_ptr<geo::WireReadoutSorter> sorter)
 {
-  return std::make_unique<Mapper_t>(config);
-} // icarus::ICARUSsplitInductionChannelMapSetupTool::makeChannelMap()
+  return std::make_unique<Mapper_t>(fParams, geom, std::move(sorter));
+}
 
 
 
 // -----------------------------------------------------------------------------
-DEFINE_ART_CLASS_TOOL(icarus::ICARUSsplitInductionChannelMapSetupTool)
+DEFINE_ART_CLASS_TOOL(icarus::ICARUSsplitInductionWireReadoutSetupTool)
 
 
 // -----------------------------------------------------------------------------

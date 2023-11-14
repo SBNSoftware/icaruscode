@@ -32,6 +32,7 @@
 #include "canvas/Persistency/Common/FindOneP.h"
 #include "canvas/Persistency/Common/Assns.h"
 
+#include "larcore/Geometry/WireReadout.h"
 #include "larcore/Geometry/Geometry.h"
 #include "larcore/CoreUtils/ServiceUtil.h" // lar::providerFrom()
 #include "lardataobj/RawData/OpDetWaveform.h"
@@ -205,6 +206,7 @@ class opana::ICARUSFlashAssAna : public art::EDAnalyzer {
     std::vector<float> m_pmt_z;
 
     geo::GeometryCore const* fGeom;
+    geo::WireReadoutGeom const* fChannelMapAlg;
 
 };
 
@@ -219,6 +221,7 @@ opana::ICARUSFlashAssAna::ICARUSFlashAssAna(Parameters const& config)
   , fPEOpHitThreshold( config().PEOpHitThreshold() )
   , fDebug( config().Debug() )
   , fGeom( lar::providerFrom<geo::Geometry>() )
+  , fChannelMapAlg( &art::ServiceHandle<geo::WireReadout const>()->Get() )
 { }
 
 
@@ -231,9 +234,9 @@ void opana::ICARUSFlashAssAna::beginJob() {
   fGeoTree->Branch("pmt_y",&m_pmt_y);
   fGeoTree->Branch("pmt_z",&m_pmt_z);
   
-  for(size_t opch=0; opch<fGeom->NOpChannels(); ++opch) {
+  for(size_t opch=0; opch<fChannelMapAlg->NOpChannels(); ++opch) {
 
-    auto const PMTxyz = fGeom->OpDetGeoFromOpChannel(opch).GetCenter();
+    auto const PMTxyz = fChannelMapAlg->OpDetGeoFromOpChannel(opch).GetCenter();
 
     //std::cout << PMTxyz[0] << " " << PMTxyz[1] << " " << PMTxyz[2] << std::endl;
 
@@ -393,7 +396,7 @@ template<typename T>
 geo::CryostatID::CryostatID_t opana::ICARUSFlashAssAna::getCryostatByChannel( int channel ) {
 
 
-  const geo::OpDetGeo& opdetgeo = fGeom->OpDetGeoFromOpChannel(channel);
+  const geo::OpDetGeo& opdetgeo = fChannelMapAlg->OpDetGeoFromOpChannel(channel);
   geo::CryostatID::CryostatID_t cid = opdetgeo.ID().Cryostat ; 
 
   return cid;

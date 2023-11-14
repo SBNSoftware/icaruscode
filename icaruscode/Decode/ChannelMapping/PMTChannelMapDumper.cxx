@@ -48,19 +48,19 @@ struct SortByElement {
 
 
 // -----------------------------------------------------------------------------
-void dumpMapping(icarusDB::ICARUSChannelMapProvider const& channelMapping) {
+void dumpMapping(icarusDB::ICARUSChannelMapProvider const& wireReadoutping) {
   
   // hard-coded list of fragment ID; don't like it?
   // ask for an extension of the channel mapping features.
   std::array<unsigned int, 24U> FragmentIDs;
   std::iota(FragmentIDs.begin(), FragmentIDs.end(), 0x2000);
   
-  mf::LogVerbatim("PMTchannelMappingDumper") << "Fragment IDs:";
+  mf::LogVerbatim("PMTwireReadoutpingDumper") << "Fragment IDs:";
   for (auto const [ iFragment, fragmentID]: util::enumerate(FragmentIDs)) {
     unsigned int const effFragmentID = fragmentID & 0xFF;
     
-    if (!channelMapping.hasPMTDigitizerID(effFragmentID)) {
-      mf::LogVerbatim("PMTchannelMappingDumper")
+    if (!wireReadoutping.hasPMTDigitizerID(effFragmentID)) {
+      mf::LogVerbatim("PMTwireReadoutpingDumper")
         << "[" << iFragment << "] " << std::hex << fragmentID << std::dec
         << " not found in the database (as "
         << std::hex << effFragmentID << std::dec << ")";
@@ -68,13 +68,13 @@ void dumpMapping(icarusDB::ICARUSChannelMapProvider const& channelMapping) {
     }
     
     icarusDB::DigitizerChannelChannelIDPairVec digitizerChannels
-      = channelMapping.getChannelIDPairVec(effFragmentID);
+      = wireReadoutping.getChannelIDPairVec(effFragmentID);
     
     std::sort
       (digitizerChannels.begin(), digitizerChannels.end(), SortByElement<1U>{});
     
     
-    mf::LogVerbatim log("PMTchannelMappingDumper");
+    mf::LogVerbatim log("PMTwireReadoutpingDumper");
     log
       << "[" << iFragment << "] " << std::hex << fragmentID << std::dec
       << " includes " << digitizerChannels.size()
@@ -83,7 +83,7 @@ void dumpMapping(icarusDB::ICARUSChannelMapProvider const& channelMapping) {
       << " [board channel index in brackets]:";
     constexpr unsigned int Cols = 8U;
     unsigned int n = 0;
-    for(auto const [ digitizerChannel, channelID, laserChannel ]: digitizerChannels) {
+    for(auto const & [ digitizerChannel, channelID, laserChannel ]: digitizerChannels) {
       if (n-- == 0) { log << "\n     "; n = Cols - 1U; }
       log << " "  << std::setw(3) << channelID
         << " [" << std::setw(3) << digitizerChannel << "]";
@@ -100,7 +100,7 @@ int main(int argc, char** argv) {
   using Environment
     = testing::TesterEnvironment<testing::BasicEnvironmentConfiguration>;
   
-  testing::BasicEnvironmentConfiguration config("PMTchannelMappingDumper");
+  testing::BasicEnvironmentConfiguration config("PMTwireReadoutpingDumper");
 
   //
   // parameter parsing
@@ -118,19 +118,19 @@ int main(int argc, char** argv) {
 
   Environment const Env { config };
   
-  icarusDB::ICARUSChannelMapProvider channelMapping
+  icarusDB::ICARUSChannelMapProvider wireReadoutping
     { Env.ServiceParameters("IICARUSChannelMap") };
   
   for (icarusDB::RunPeriod const period: icarusDB::RunPeriods::All)
   {
-    mf::LogVerbatim("PMTchannelMappingDumper")
+    mf::LogVerbatim("PMTwireReadoutpingDumper")
       << std::string(80, '=') << "\nRun period #"
       << static_cast<unsigned int>(period) << ":\n";
-    channelMapping.forPeriod(period);
-    dumpMapping(channelMapping);
+    wireReadoutping.forPeriod(period);
+    dumpMapping(wireReadoutping);
   }
   
-  mf::LogVerbatim("PMTchannelMappingDumper")
+  mf::LogVerbatim("PMTwireReadoutpingDumper")
     << std::string(80, '=')
     << "\nDumped " << icarusDB::RunPeriods::All.size() << " run periods."
     ;

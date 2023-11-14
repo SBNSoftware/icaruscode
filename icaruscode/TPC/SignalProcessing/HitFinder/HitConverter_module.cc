@@ -25,7 +25,7 @@
 
 // LArSoft libraries
 #include "larcoreobj/SimpleTypesAndConstants/RawTypes.h" // raw::ChannelID_t
-#include "larcore/Geometry/Geometry.h"
+#include "larcore/Geometry/WireReadout.h"
 #include "larcore/CoreUtils/ServiceUtil.h" // lar::providerFrom()
 #include "larcorealg/CoreUtils/zip.h"
 #include "lardataobj/RecoBase/Hit.h"
@@ -52,7 +52,7 @@ private:
     bool                                                       fDiagnosticOutput;           ///< secret diagnostics flag
     size_t                                                     fEventCount;                 ///< count of event processed
 
-    const geo::GeometryCore*                                   fGeometry = lar::providerFrom<geo::Geometry>();
+    const geo::WireReadoutGeom&  fWireReadout = art::ServiceHandle<geo::WireReadout>()->Get();
     
 }; // class HitConvert
 
@@ -118,7 +118,7 @@ void HitConvert::produce(art::Event& evt)
             {
                 // Recover the channel and the view
                 raw::ChannelID_t channel = hit.Channel();
-                geo::View_t      view    = fGeometry->View(channel);
+                geo::View_t      view    = fWireReadout.View(channel);
 
                 recob::Hit recobHit(channel,
                                     hit.StartTick(),

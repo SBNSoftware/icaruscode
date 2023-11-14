@@ -1,4 +1,3 @@
-
 ////////////////////////////////////////////////////////////////////////
 //
 // ICARUSPurityDQM class
@@ -33,7 +32,7 @@
 //#include "messagefacility/MessageLogger/MessageLogger.h" 
 
 //LArSoft includes
-#include "larcore/Geometry/Geometry.h"
+#include "larcore/Geometry/WireReadout.h"
 #include "nusimdata/SimulationBase/MCTruth.h"
 #include "nug4/ParticleNavigation/ParticleList.h"
 #include "nug4/ParticleNavigation/EmEveIdCalculator.h"
@@ -346,7 +345,7 @@ std::sort(usedhere->begin(),usedhere->end(), [](float &c, float &d){ return c<d;
     
 //      //std::cout << " Inizia Purity ICARUS Ana - upgraded by C.FARNESE, WES and OLIVIA " << std::endl;
       // code stolen from TrackAna_module.cc
-      art::ServiceHandle<geo::Geometry>      geom;
+    geo::WireReadoutGeom const& wireReadoutAlg = art::ServiceHandle<geo::WireReadout const>()->Get();
       unsigned int  fDataSize;
       std::vector<short> rawadc;      //UNCOMPRESSED ADC VALUES.
       // get all hits in the event
@@ -408,7 +407,7 @@ std::sort(usedhere->begin(),usedhere->end(), [](float &c, float &d){ return c<d;
 	  {
 	    raw::ChannelID_t channel = rawDigit->Channel();
 	    ////std::cout << channel << std::endl;
-	    std::vector<geo::WireID> wids = geom->ChannelToWire(channel);
+            std::vector<geo::WireID> wids = wireReadoutAlg.ChannelToWire(channel);
 	    // for now, just take the first option returned from ChannelToWire
 	    geo::WireID wid  = wids[0];
 	    // We need to know the plane to look up parameters
@@ -950,12 +949,12 @@ if(delta_sample_selected>1900)
 			    float intercetta_purezza=fit->GetParameter(0);
 			    
 			    TH1F *h111 = new TH1F("h111","delta aree",200,-10,10);
-			    float sum_per_rms_test=0;
+			    // float sum_per_rms_test=0; // unused
                             int quanti_in_h111=0;
 			    for(int k=0;k<(int)hitareagood->size();k++)
 			      {
 				h111->Fill(area[k]-slope_purity*tempo[k]-intercetta_purezza);
-				sum_per_rms_test+=(area[k]-slope_purity*tempo[k]-intercetta_purezza)*(area[k]-slope_purity*tempo[k]-intercetta_purezza);
+				// sum_per_rms_test+=(area[k]-slope_purity*tempo[k]-intercetta_purezza)*(area[k]-slope_purity*tempo[k]-intercetta_purezza); // unused
                                 if((area[k]-slope_purity*tempo[k]-intercetta_purezza)>-10 && (area[k]-slope_purity*tempo[k]-intercetta_purezza)<10)quanti_in_h111+=1;
 			      }
                        
@@ -1179,4 +1178,3 @@ namespace icarus{
   DEFINE_ART_MODULE(ICARUSPurityDQM)
   
 }
-
