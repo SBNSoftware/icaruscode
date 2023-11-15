@@ -801,10 +801,6 @@ void SnippetHit3DBuilderICARUS::findGoodTriplets(HitMatchTripletVecMap& pair12Ma
     // Build triplets from the two lists of hit pairs
     if (!pair12Map.empty())
     {
-        // temporary container for dead channel hits
-        std::vector<reco::ClusterHit3D> tempDeadChanVec;
-        reco::ClusterHit3D              deadChanPair;
-
         // Keep track of which third plane hits have been used
         std::map<const reco::ClusterHit3D*,bool> usedPairMap;
 
@@ -859,15 +855,20 @@ void SnippetHit3DBuilderICARUS::findGoodTriplets(HitMatchTripletVecMap& pair12Ma
         // One more loop through the other pairs to check for sick channels
         if (m_allowBadChannels)
         {
-            for(const auto& pairMapPair : usedPairMap)
-            {
-                if (pairMapPair.second) continue;
+            // temporary container for dead channel hits
+            std::vector<reco::ClusterHit3D> tempDeadChanVec;
+            reco::ClusterHit3D              deadChanPair;
 
-                const reco::ClusterHit3D* pair = pairMapPair.first;
+            // Temporarily deactivate following loop so we can do compiler upgrade
+            //for(const auto& pairMapPair : usedPairMap)
+            //{
+            //    if (pairMapPair.second) continue;
 
-                // Here we look to see if we failed to make a triplet because the partner wire was dead/noisy/sick
-                if (makeDeadChannelPair(deadChanPair, *pair, 4, 0, 0.)) tempDeadChanVec.emplace_back(deadChanPair);
-            }
+            //    const reco::ClusterHit3D* pair = pairMapPair.first;
+
+            //    // Here we look to see if we failed to make a triplet because the partner wire was dead/noisy/sick
+            //    if (makeDeadChannelPair(deadChanPair, *pair, 4, 0, 0.)) tempDeadChanVec.emplace_back(deadChanPair);
+            //}
 
             // Handle the dead wire triplets
             if(!tempDeadChanVec.empty())
