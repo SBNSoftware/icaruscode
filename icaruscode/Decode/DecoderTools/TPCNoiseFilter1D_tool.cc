@@ -394,10 +394,7 @@ void TPCNoiseFilter1DMC::principleComponents(const icarus_signal_processing::Vec
     // Define elements of our covariance matrix
     float xi2(0.);
     float xiyi(0.);
-    float xizi(0.0);
     float yi2(0.0);
-    float yizi(0.0);
-    float zi2(0.);
 //    float weightSum(0.);
 
     std::cout << "Entering principle components alg, size: " << waveform.size() << std::endl;
@@ -408,23 +405,18 @@ void TPCNoiseFilter1DMC::principleComponents(const icarus_signal_processing::Vec
     {
         float x = float(waveIdx)    - meanPos(0);
         float y = waveform[waveIdx] - meanPos(1);
-        float z = 0.;
 
         xi2  += x * x;
         xiyi += x * y;
-        xizi += x * z;
         yi2  += y * y;
-        yizi += y * z;
-        zi2  += z;
     }
 
     // Using Eigen package
     Eigen::Matrix2f sig;
 
-//    sig << xi2, xiyi, xizi, xiyi, yi2, yizi, xizi, yizi, zi2;
     sig << xi2, xiyi, xiyi, yi2;
 
-//    sig *= 1. / weightSum;
+    sig *= 1. / float(waveform.size());
 
     Eigen::SelfAdjointEigenSolver<Eigen::Matrix2f> eigenMat(sig);
 
