@@ -34,6 +34,7 @@
 #include "lardata/DetectorInfoServices/DetectorClocksService.h"
 #include "lardataalg/DetectorInfo/DetectorPropertiesData.h"
 #include "lardataalg/DetectorInfo/DetectorClocksData.h"
+#include "lardataalg/Utilities/quantities/spacetime.h" // microseconds
 #include "larcore/Geometry/Geometry.h"
 #include "larcorealg/Geometry/GeometryCore.h"
 #include "larcore/CoreUtils/ServiceUtil.h"
