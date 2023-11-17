@@ -247,7 +247,7 @@ void BarycenterMatchProducer::produce(art::Event& e)
   auto flashAssns = std::make_unique< art::Assns<sbn::BarycenterMatch, recob::OpFlash> >();
 
   //For InputTag...
-  for ( const std::string inputTag : fInputTags ) {
+  for ( const std::string& inputTag : fInputTags ) {
     //East-->0, West-->1
     fCryo = ( inputTag.find("W") != std::string::npos ) ? 1 : 0;
 
