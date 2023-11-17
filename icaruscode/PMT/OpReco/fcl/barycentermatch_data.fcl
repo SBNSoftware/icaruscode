@@ -23,17 +23,6 @@ services:
 } # services
 
 
-# The 'source' section tells the script to expect an input file with art::Event records.
-source:
-{
-  module_type: RootInput
-
-  # Number of events to analyze; "-1" means all of the events in the input
-  # file. You can override this value with the "-n" option on the command line. 
-  maxEvents:  -1 
-
-}
-
 # This is empty, because we're not writing an output file with art::Event objects.
 outputs:
 {
