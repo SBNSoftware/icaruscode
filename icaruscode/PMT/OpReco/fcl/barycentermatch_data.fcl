@@ -23,7 +23,6 @@ services:
 } # services
 
 
-# This is empty, because we're not writing an output file with art::Event objects.
 outputs:
 {
   out1:
