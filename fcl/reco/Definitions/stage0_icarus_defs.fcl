@@ -473,6 +473,11 @@ icarus_stage0_producers.gaushit2dTPCEE.HitFinderToolVec.CandidateHitsPlane2:    
 icarus_stage0_producers.gaushit2dTPCEE.HitFinderToolVec.CandidateHitsPlane2.Plane:             2
 icarus_stage0_producers.gaushit2dTPCEE.HitFinderToolVec.CandidateHitsPlane2.RoiThreshold:      9.
 
+icarus_stage0_producers.gausshitTPCWW.CalDataModuleLabel:                                      "roifinder:PHYSCRATEDATATPCWW"
+icarus_stage0_producers.gausshitTPCWE.CalDataModuleLabel:                                      "roifinder:PHYSCRATEDATATPCWE"
+icarus_stage0_producers.gausshitTPCEW.CalDataModuleLabel:                                      "roifinder:PHYSCRATEDATATPCEW"
+icarus_stage0_producers.gausshitTPCEE.CalDataModuleLabel:                                      "roifinder:PHYSCRATEDATATPCEE"
+
 icarus_stage0_producers.gausshitTPCWW.HitFinderToolVec.CandidateHitsPlane0:                    @local::candhitfinder_standard      # Sets hit finding for plane 0
 icarus_stage0_producers.gausshitTPCWW.HitFinderToolVec.CandidateHitsPlane0.Plane:              0
 icarus_stage0_producers.gausshitTPCWW.HitFinderToolVec.CandidateHitsPlane0.RoiThreshold:       9.
