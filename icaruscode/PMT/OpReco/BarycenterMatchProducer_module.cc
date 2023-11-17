@@ -292,8 +292,8 @@ void BarycenterMatchProducer::produce(art::Event& e)
  */
 
     //Fetch slices, TPC hits, and PFPs; pointer vector needed for generating associations
-    art::Handle<std::vector<recob::Slice>> sliceHandle;
-    e.getByLabel(fPandoraLabel + inputTag, sliceHandle);
+    art::Handle const sliceHandle
+      = e.getHandle<std::vector<recob::Slice>>(fPandoraLabel + inputTag);
     art::FindManyP<recob::Hit> fmTPCHits(sliceHandle, e, fPandoraLabel + inputTag);
     art::FindManyP<recob::PFParticle> fmPFPs(sliceHandle, e, fPandoraLabel + inputTag);
     std::vector<art::Ptr<recob::Slice>> sliceVector;
