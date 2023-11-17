@@ -61,6 +61,157 @@ using electronics_time = detinfo::timescales::electronics_time;
 class BarycenterMatchProducer;
 
 
+/**
+ * @brief Matches optical flashes and charge slices based on their location.
+ * 
+ * 
+ * This algorithm associates slices of charge from the TPC (`recob::Slice`) to
+ * reconstructed scintillation light flashes (`recob::OpFlash`).
+ * 
+ * For each one of the `InputTags` tags, one slice and one flash set are
+ * identified and matching is done between them.
+ * 
+ * Each slice is associated independently to the closest among the flashes.
+ * Distance is computed between the charge centroid of the slice and the one 
+ * of the flash.
+ * 
+ * All flashes are candidate for matching with any given slice. If
+ * `UseTimeRange` is specified, though, an allowed time range is determined
+ * for the slice based on the drift time of its TPC hits (in the extreme case,
+ * a slice covering from anode to cathode has an allowed time interval reduced
+ * to a single instant). In this case, only flashes that are no farther from
+ * this interval (with a set margin, `TimeRangeMargin`, accommodating for some
+ * reconstruction biases) are kept in the candidate pool.
+ * 
+ * Matching of a slice immediately fails if no charge is associated to it, or,
+ * in the case `UseTimeRange` is set, if there are no reconstructed flash
+ * compatible with the time interval of the slice. Whenever the candidate pool
+ * contains at least a flash, the matching is "successful", meaning that it
+ * yields a result. It is the privilege of the analyzer to decide whether that
+ * is a good match or not, based on the information in the matching data
+ * product associated to the slice. If the matching did not succeed, matching
+ * information will still be associated with the slice, but most or all of its
+ * information will be placeholders.
+ * 
+ * It is possible that a flash ends being associated with multiple slices.
+ * 
+ * In addition, if a trigger time is available, the algorithm will attempt to
+ * identify the triggering flash and, if found, will provide the distance of
+ * each slice from that flash.
+ * 
+ * Content of the matching information:
+ * 
+ * * `ChargeT0` (microseconds): time associated to the slice via particle flow
+ *     object; it is left in the original time reference. If no `anab::T0`
+ *     object is associated, this variable is assigned the magic value `-9999`.
+ * 
+ * ### Definition of the centroids
+ * 
+ * The centroid of the slice is defined as the position of all the valid space
+ * points associated with the slice, weighted by their charge.
+ * Space points (`recob::SpacePoint`) are associated each to a TPC hit
+ * (`recob::Hit`); the charge of the hit is used as a weight, with no further
+ * calibration applied.
+ * If `CollectionOnly` is specified, only space points associated to hits on
+ * a collection plane are included.
+ * 
+ * The centroid of a flash is defined only in its projection on the PMT plane.
+ * Its definition is delegated to the flash reconstruction algorithm
+ * (`recob::OpFlash::YCenter()` and `recob::OpFlash::ZCenter()`).
+ * In particular note that there is no attempt to enforce a location based on
+ * the earliest light. In fact, the standard flash reconstruction algorithm
+ * builds the center of the flash from _all_ the associated hits no matter
+ * their time.
+ * 
+ * ### Determination of the trigger flash
+ * 
+ * If a trigger time is found from the `TriggerLabel` data product, the module
+ * will attempt to identify the triggering flash.
+ * The identification is based solely on the time of the trigger and of the
+ * flash.
+ * In ICARUS data, the time reference is the trigger time, therefore the time
+ * of the global trigger is a fixed value by definition. Nevertheless, to
+ * accommodate relative delays between the trigger and the light systems, a
+ * "nominal" trigger time (`NominalTrigTime`) is used instead of the actual
+ * one, and this other time is controlled directly by the module caller.
+ * In ICARUS simulation the mechanism is the same; the times are stored with
+ * respect to the simulation time, but the module will take care of
+ * the appropriate conversion, so the configuration parameter holds the same
+ * meaning and scale as in data.
+ * 
+ * 
+ * Input
+ * ------
+ * 
+ * * `std::vector<recob::OpFlash>` (based on `OpFlashLabel`): collection of
+ *     reconstructed flashes to be associated to the charge; also their
+ *     associations to `recob::OpHit` (and those hits themselves).
+ * * `std::vector<recob::Slice>` (based on `PandoraLabel`): collection of
+ *     reconstructed TPC charge slices to be associated to the light; also their
+ *     associations to `recob::Hit` and `recob::PFParticle`, and
+ *     `recob::SpacePoint` objects associated to those hits
+ *     (and also the associated objects as well).
+ * * `std::vector<raw::Trigger>` (`TriggerLabel`): collection of the global
+ *     triggers (only at most one is expected).
+ * 
+ * 
+ * Output
+ * -------
+ * 
+ * A single collection, merging all the input, is produced for each of the
+ * following data products in the _art_/ROOT output:
+ * 
+ * * `std::vector<sbn::BarycenterMatch>`: collection of matching information;
+ *     one matching information object is present for each slice in the input
+ *     collections, in the same order as the input.
+ * * `art::Assns<sbn::BarycenterMatch, recob::Slice>`: association of each
+ *     matched slice with its matching information.
+ * * `art::Assns<sbn::BarycenterMatch, recob::OpFlash>`: association of each
+ *     matched light flash with its matching information.
+ * 
+ * Note that while there is currently no direct association between the slice
+ * and the flash, the information contained in `sbn::BarycenterMatch` is very
+ * detailed.
+ * 
+ * In addition, if `FillMatchTree` is set, a ROOT tree called `matchTree` will
+ * be written via `TFileService`. The tree contains one entry per slice,
+ * whether matched or not,
+ * 
+ * 
+ * Configuration parameters
+ * -------------------------
+ * 
+ * * `InputTags` (list of strings, mandatory): suffixes to be added to the
+ *     labels of the reconstructed data products to be used in the matching.
+ *     Two typical choices are to process independently parts of the detector,
+ *     e.g. `[ "cryoE", "cryoW" ]` to process east cryostat first and west one
+ *     next, or to have a single empty suffix (`[ "" ]`) to use as input tags
+ *     exactly the labels as specified by the following parameters.
+ * * `OpFlashLabel` (string, mandatory): base of the tag of the input flashes.
+ * * `PandoraLabel` (string, mandatory): base of the tag of input slices, and
+ *     their associations to hits, space points, particle flow objects etc.
+ * * `TriggerLabel` (input tag, mandatory): information on the global trigger
+ *     (hardware or synthetic).
+ * * `CollectionOnly` (flag, default: `true`): if set, only hits from
+ *     collection planes will contribute to the centroid of the TPC slice.
+ * * `UseTimeRange` (flag, default: `true`): if set, a slice is assigned an
+ *     allowed time interval based on the drift time of its hits and only
+ *     flashes falling in that interval are considered for matching. Otherwise,
+ *     all flashes are game for matching.
+ * * `Verbose` (flag, default: `false`): enables verbose output directly to
+ *     console standard output.
+ * * `FillMatchTree` (flag, default: `false`): if set to `true`, a ROOT tree
+ *     with detailed matching information called `"matchTree"` will be written
+ *     via `TFileService`.
+ * * `NominalTrigTime` (real, mandatory, in microseconds): the time, in
+ *     electronics scale, when the trigger is expected to arrive.
+ * * `TriggerTolerance` (real, mandatory, in microseconds): the tolerance used
+ *     to identify a light flash associated with the trigger.
+ * * `TimeRangeMargin` (real, microseconds; default: `0`): when `UseTimeRange`
+ *     is set, the allowed time interval for each slice is extended on both
+ *     sides by this amount of time.
+ * 
+ */
 class BarycenterMatchProducer : public art::EDProducer {
 public:
   explicit BarycenterMatchProducer(fhicl::ParameterSet const& p);
