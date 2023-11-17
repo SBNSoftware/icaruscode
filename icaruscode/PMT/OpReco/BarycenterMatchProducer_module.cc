@@ -293,8 +293,6 @@ void BarycenterMatchProducer::produce(art::Event& e)
       = e.getHandle<std::vector<recob::Slice>>(fPandoraLabel + inputTag);
     art::FindManyP<recob::Hit> fmTPCHits(sliceHandle, e, fPandoraLabel + inputTag);
     art::FindManyP<recob::PFParticle> fmPFPs(sliceHandle, e, fPandoraLabel + inputTag);
-    std::vector<art::Ptr<recob::Slice>> sliceVector;
-    art::fill_ptr_vector(sliceVector, sliceHandle);
 
     int nSlices = (*sliceHandle).size();
 
