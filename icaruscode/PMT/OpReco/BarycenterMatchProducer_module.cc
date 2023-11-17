@@ -301,7 +301,7 @@ void BarycenterMatchProducer::produce(art::Event& e)
     //For slice...
     for ( int j = 0; j < nSlices; j++ ) {
       fSliceNum = j;
-      const art::Ptr<recob::Slice>& slicePtr = sliceVector.at(j);
+      const art::Ptr<recob::Slice> slicePtr { sliceHandle, j };
       InitializeSlice();
       sbn::BarycenterMatch sliceMatchInfo;
       updateMatchInfo(sliceMatchInfo);
