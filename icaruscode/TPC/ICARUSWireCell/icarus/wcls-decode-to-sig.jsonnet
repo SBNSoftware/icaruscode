@@ -121,8 +121,9 @@ local wcls_output = {
       digitize: false,  // true means save as RawDigit, else recob::Wire
       // frame_tags: ['gauss', 'wiener', 'looseLf'],
       // frame_scale: [0.1, 0.1, 0.1],
-      frame_tags: ['looseLf'],
-      frame_scale: [0.009],
+      //frame_tags: ['looseLf'],
+      frame_tags: ['decon','looseLf'],
+      frame_scale: [0.009,0.009],
       // nticks: params.daq.nticks,
       chanmaskmaps: [],
       nticks: -1,
@@ -207,6 +208,7 @@ local fanin_tag_rules = [
               ['threshold%d'%ind]:'threshold%d'%ind,
               // ['tight_lf%d'%ind]:'tight_lf%d'%ind,
               ['loose_lf%d'%ind]:'loose_lf%d'%ind,
+              ['decon%d'%ind]:'decon%d'%ind,
             },
 
           }
@@ -229,6 +231,7 @@ local retagger = g.pnode({
         'wiener\\d\\d\\d': 'wiener',
         // 'tight_lf\\d\\d\\d': 'tightLf',
         'loose_lf\\d\\d\\d': 'looseLf',
+        'decon\\d\\d\\d': 'decon',
       },
     }],
   },

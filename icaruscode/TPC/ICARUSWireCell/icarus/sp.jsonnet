@@ -52,7 +52,7 @@ function(params, tools, override = {}) {
       gauss_tag: 'gauss%d' % anode.data.ident,
 
       use_roi_debug_mode: false,
-      use_roi_refinement: false, // default: true
+      use_roi_refinement: true, //false, // default: true
       tight_lf_tag: 'tight_lf%d' % anode.data.ident,
       loose_lf_tag: 'loose_lf%d' % anode.data.ident,
       cleanup_roi_tag: 'cleanup_roi%d' % anode.data.ident,
@@ -60,6 +60,8 @@ function(params, tools, override = {}) {
       break_roi_loop2_tag: 'break_roi_2nd%d' % anode.data.ident,
       shrink_roi_tag: 'shrink_roi%d' % anode.data.ident,
       extend_roi_tag: 'extend_roi%d' % anode.data.ident,
+
+      decon_charge_tag: 'decon%d' % anode.data.ident,
 
       use_multi_plane_protection: false,
       mp3_roi_tag: 'mp3_roi%d' % anode.data.ident,
