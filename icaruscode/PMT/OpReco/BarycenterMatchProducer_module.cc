@@ -260,8 +260,8 @@ void BarycenterMatchProducer::produce(art::Event& e)
  */
 
     //Fetch the flashes and their associated hits, pointer vector needed for generating associations
-    art::Handle<std::vector<recob::OpFlash>> flashHandle;
-    e.getByLabel(fOpFlashLabel + inputTag, flashHandle);
+    art::Handle const flashHandle
+      = e.getHandle<std::vector<recob::OpFlash>>(fOpFlashLabel + inputTag);
     art::FindMany<recob::OpHit> fmOpHits(flashHandle, e, fOpFlashLabel + inputTag);
     std::vector<art::Ptr<recob::OpFlash>> flashVector;
     art::fill_ptr_vector(flashVector, flashHandle);
