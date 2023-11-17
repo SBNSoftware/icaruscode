@@ -269,7 +269,7 @@ void BarycenterMatchProducer::produce(art::Event& e)
     double flashTime_Trigger;
     //For flash...
     for ( int i = 0; i < nFlashes; i++ ) {
-      const recob::OpFlash &flash = (*flashHandle).at(i);
+      const recob::OpFlash &flash = (*flashHandle)[i];
 
       //Is this a triggering flash?
       flashTime_Trigger = flash.Time();
