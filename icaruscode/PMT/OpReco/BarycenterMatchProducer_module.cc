@@ -491,7 +491,6 @@ void BarycenterMatchProducer::produce(art::Event& e)
 
       double thisCharge;
       double sumCharge = 0.;
-      TVector3 thisPoint, thisPointSqr;
       TVector3 sumPos {0.,0.,0.};
       TVector3 sumPosSqr {0.,0.,0.};
 
