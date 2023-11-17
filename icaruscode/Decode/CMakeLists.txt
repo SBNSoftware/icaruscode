@@ -24,6 +24,7 @@ set(          MODULE_LIBRARIES
                         larevt::Filters
                         lardataobj::RawData
                         lardata::ArtDataHelper
+                        Eigen3::Eigen
 )
 
 cet_build_plugin(DaqDecoderICARUSTPC art::module LIBRARIES ${MODULE_LIBRARIES})
