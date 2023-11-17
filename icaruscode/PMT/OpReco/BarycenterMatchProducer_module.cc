@@ -401,7 +401,7 @@ void BarycenterMatchProducer::produce(art::Event& e)
       }
 
       //Best match flash pointer
-      const art::Ptr<recob::OpFlash>& flashPtr = flashVector.at(matchIndex);
+      const art::Ptr<recob::OpFlash> flashPtr { flashHandle, matchIndex };
 
       //Find time of first OpHit in matched flash
       const std::vector<recob::OpHit const*> &opHitsVec = fmOpHits.at(matchIndex);
