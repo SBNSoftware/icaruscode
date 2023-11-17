@@ -222,11 +222,10 @@ void BarycenterMatchProducer::produce(art::Event& e)
   //Fetch trigger info and if MC check whether this event triggered
   art::Handle const triggerHandle
     = e.getHandle<std::vector<raw::Trigger>>(fTriggerLabel);
-  raw::Trigger trigger;
   double triggerWithinGate = 0.;
   bool triggeredEvt = false;
-  if ( triggerHandle.isValid() && triggerHandle->size() == 1 ) {
-    trigger = (*triggerHandle).at(0);
+  if ( triggerHandle.isValid() && triggerHandle->size() >= 1 ) {
+    raw::Trigger const& trigger = triggerHandle->at(0);
     if ( trigger.TriggerTime() >= 0 ) {
       triggerWithinGate = trigger.TriggerTime() - trigger.BeamGateTime();
       triggeredEvt = true;
