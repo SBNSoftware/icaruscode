@@ -220,8 +220,8 @@ void BarycenterMatchProducer::produce(art::Event& e)
   const bool isData = e.isRealData();
 
   //Fetch trigger info and if MC check whether this event triggered
-  art::Handle<std::vector<raw::Trigger>> triggerHandle;
-  e.getByLabel(fTriggerLabel, triggerHandle);
+  art::Handle const triggerHandle
+    = e.getHandle<std::vector<raw::Trigger>>(fTriggerLabel);
   raw::Trigger trigger;
   double triggerWithinGate = 0.;
   bool triggeredEvt = false;
