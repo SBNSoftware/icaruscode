@@ -262,8 +262,6 @@ void BarycenterMatchProducer::produce(art::Event& e)
     art::Handle const flashHandle
       = e.getHandle<std::vector<recob::OpFlash>>(fOpFlashLabel + inputTag);
     art::FindMany<recob::OpHit> fmOpHits(flashHandle, e, fOpFlashLabel + inputTag);
-    std::vector<art::Ptr<recob::OpFlash>> flashVector;
-    art::fill_ptr_vector(flashVector, flashHandle);
 
     int nFlashes = (*flashHandle).size();
 
