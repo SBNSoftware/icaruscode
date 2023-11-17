@@ -496,8 +496,9 @@ void BarycenterMatchProducer::produce(art::Event& e)
 
       double thisCharge;
       double sumCharge = 0.;
-      TVector3 sumPos {0.,0.,0.};
-      TVector3 sumPosSqr {0.,0.,0.};
+      //Forcing Git to recognize there was a change here...
+      TVector3 sumPos {0.,0.,0.};//Forcing Git to recognize there was a change here...
+      TVector3 sumPosSqr {0.,0.,0.};//Forcing Git to recognize there was a change here...
 
       //For hit...
       for ( int k = 0; k < nHits; k++ ) {
@@ -509,8 +510,8 @@ void BarycenterMatchProducer::produce(art::Event& e)
 
         const recob::SpacePoint point = f1SpacePoint.at(k).ref();
         thisCharge = tpcHit->Integral();
-        TVector3 const thisPoint = point.XYZ();
-        TVector3 const thisPointSqr {thisPoint.X()*thisPoint.X(), thisPoint.Y()*thisPoint.Y(), thisPoint.Z()*thisPoint.Z()};
+        TVector3 const thisPoint = point.XYZ();//Forcing Git to recognize there was a change here...
+        TVector3 const thisPointSqr {thisPoint.X()*thisPoint.X(), thisPoint.Y()*thisPoint.Y(), thisPoint.Z()*thisPoint.Z()};//Forcing Git to recognize there was a change here...
         sumCharge += thisCharge;
         sumPos += thisPoint * thisCharge;
         sumPosSqr += thisPointSqr * thisCharge;
