@@ -53,7 +53,12 @@
 #include "TTree.h"
 #include "TVector3.h"
 
+#include <cmath> // std::hypot(), std::abs(), std::sqrt()
+#include <iostream>
 #include <memory>
+#include <string>
+#include <utility> // std::move()
+#include <vector>
 
 using microseconds = util::quantities::intervals::microseconds;
 using electronics_time = detinfo::timescales::electronics_time;
