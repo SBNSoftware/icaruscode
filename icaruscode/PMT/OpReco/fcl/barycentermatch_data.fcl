@@ -46,7 +46,7 @@ physics:
   }
 
   # Schedule job step(s) for execution by defining the analysis module for this job.
-  reco: [ barycentermatchCryoE,  barycentermatchCryoW ]
+  reco: [ barycentermatchCryoE, barycentermatchCryoW ]
 
   stream1: [ out1 ]
 

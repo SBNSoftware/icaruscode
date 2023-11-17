@@ -19,14 +19,14 @@ barycentermatch_common_params:
 
 barycentermatch_data_params:
 {   
-    TriggerLabel:     "daqTrigger"
-    NominalTrigTime:  -0.6
+    TriggerLabel:  "daqTrigger"
+    TriggerDelay:  0.6
 }
 
 barycentermatch_mc_params:
 {
-    TriggerLabel:     "emuTrigger"
-    NominalTrigTime:  -0.22
+    TriggerLabel:  "emuTrigger"
+    TriggerDelay:  0.22
 }
 
 ######

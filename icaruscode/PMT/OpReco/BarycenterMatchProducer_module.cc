@@ -136,7 +136,7 @@ using electronics_time = detinfo::timescales::electronics_time;
  * In ICARUS data, the time reference is the trigger time, therefore the time
  * of the global trigger is a fixed value by definition. Nevertheless, to
  * accommodate relative delays between the trigger and the light systems, a
- * "nominal" trigger time (`NominalTrigTime`) is used instead of the actual
+ * "nominal" trigger time (`TriggerDelay`) is used instead of the actual
  * one, and this other time is controlled directly by the module caller.
  * In ICARUS simulation the mechanism is the same; the times are stored with
  * respect to the simulation time, but the module will take care of
@@ -207,7 +207,7 @@ using electronics_time = detinfo::timescales::electronics_time;
  * * `FillMatchTree` (flag, default: `false`): if set to `true`, a ROOT tree
  *     with detailed matching information called `"matchTree"` will be written
  *     via `TFileService`.
- * * `NominalTrigTime` (real, mandatory, in microseconds): the time, in
+ * * `TriggerDelay` (real, mandatory, in microseconds): the time, in
  *     electronics scale, when the trigger is expected to arrive.
  * * `TriggerTolerance` (real, mandatory, in microseconds): the tolerance used
  *     to identify a light flash associated with the trigger.
@@ -235,9 +235,9 @@ private:
 
   // Declare member data here.
   void InitializeSlice();                                                                                  ///< Re-initialize all slice-level data members
-  double CentroidOverlap(double center1, double center2, double width1, double width2);                    ///< Return overlap between charge and light centroids OR distance apart if no overlap
+  double CentroidOverlap(double center1, double center2, double width1, double width2) const;                    ///< Return overlap between charge and light centroids OR distance apart if no overlap
   double CalculateAsymmetry(art::Ptr<recob::OpFlash> flash, int cryo);                                     ///< Return the east-west asymmetry of PEs in a given OpFlash
-  void updateChargeVars(double sumCharge, TVector3 sumPos, TVector3 sumPosSqr, double triggerFlashCenter); ///< Update slice-level data members with charge and trigger match info
+  void updateChargeVars(double sumCharge, TVector3 const& sumPos, TVector3 const& sumPosSqr, std::array<double, 2> const& triggerFlashCenter); ///< Update slice-level data members with charge and trigger match info
   void updateFlashVars(art::Ptr<recob::OpFlash> flash, double firstHit);                     ///< Update slice-level data members with best match info
   void updateMatchInfo(sbn::BarycenterMatch& matchInfo);                                                   ///< Update match product with slice-level data members
  
@@ -250,9 +250,9 @@ private:
   bool                      fUseTimeRange;         ///< Reject impossible matches based on allowed time range of TPC hits relative to trigger 
   bool                      fVerbose;              ///< Print extra info
   bool                      fFillMatchTree;        ///< Fill an output TTree in the supplemental file
-  double                    fNominalTrigTime;      ///< Typical time of triggering flash, EYEBALLED (us)
+  double                    fTriggerDelay;      ///< Typical time of triggering flash, EYEBALLED (us)
   double                    fTriggerTolerance;     ///< Spread of triggering flash times, EYEBALLED (us)
-  double                    fTimeRangeMargin;      ///< Symmetric acceptable margin for allowed time range of TPC hits (us)
+  microseconds              fTimeRangeMargin;      ///< Symmetric acceptable margin for allowed time range of TPC hits (us)
   
   // Event-level data members
   int                       fRun;                  ///< Number of the run being processed
@@ -261,7 +261,7 @@ private:
   int                       fSliceNum;             ///< Number of slice in the event
   // Slice-level data members 
   double                    fChargeT0;             ///< Start time for cathode-crossing PFPs, not always available (us)
-  double                    fChargeTotal;          ///< Total charge in slice
+  double                    fChargeTotal;          ///< Total charge in slice (integrated ADC counts)
   double                    fChargeCenterXGlobal;  ///< Weighted mean X position of spacepoints (cm)
   double                    fChargeCenterXLocal;   ///< Weighted mean X position of spacepoints, measured with respect to the cathode (cm)
   double                    fChargeCenterY;        ///< Weighted mean Y position of spacepoints (cm)
@@ -280,10 +280,12 @@ private:
   double                    fDeltaT;               ///< | Matched flash time - charge T0 | when available (us)
   double                    fDeltaY;               ///< | Matched flash Y center - charge Y center | (cm)
   double                    fDeltaZ;               ///< | Matched flash Z center - charge Z center | (cm)
-  double                    fRadius;               ///< Hypotenuse of DeltaY and DeltaZ, PARAMETER MINIMIZED BY MATCHING (cm)
-  double                    fOverlapY;             ///< Spacial overlap of flash and charge centroids in Y [>0] OR distance apart if no overlap [<0] (cm)
-  double                    fOverlapZ;             ///< Spacial overlap of flash and charge centroids in Z [>0] OR distance apart if no overlap [<0] (cm)
+  double                    fRadius;               ///< Hypotenuse of DeltaY and DeltaZ *parameter minimized by matching* (cm)
+  double                    fOverlapY;             ///< Spatial overlap of flash and charge centroids in Y [>0] OR distance apart if no overlap [<0] (cm)
+  double                    fOverlapZ;             ///< Spatial overlap of flash and charge centroids in Z [>0] OR distance apart if no overlap [<0] (cm)
+  double                    fDeltaY_Trigger;       ///< | Triggering flash Y center - charge Y center | (cm)
   double                    fDeltaZ_Trigger;       ///< | Triggering flash Z center - charge Z center | (cm)
+  double                    fRadius_Trigger;       ///< Hypotenuse of DeltaY_Trigger and DeltaZ_Trigger (cm)
   
   TTree*                    fMatchTree;            ///< Tree to store all match information
   
@@ -302,13 +304,13 @@ BarycenterMatchProducer::BarycenterMatchProducer(fhicl::ParameterSet const& p)
   fOpFlashLabel(p.get<std::string>("OpFlashLabel")),
   fPandoraLabel(p.get<std::string>("PandoraLabel")),
   fTriggerLabel(p.get<std::string>("TriggerLabel")),
-  fCollectionOnly(p.get<bool>("CollectionOnly")),
-  fUseTimeRange(p.get<bool>("UseTimeRange")),
-  fVerbose(p.get<bool>("Verbose")),
-  fFillMatchTree(p.get<bool>("FillMatchTree")),
-  fNominalTrigTime(p.get<double>("NominalTrigTime")),
-  fTriggerTolerance(p.get<double>("TriggerTolerance")),
-  fTimeRangeMargin(p.get<double>("TimeRangeMargin")),
+  fCollectionOnly(p.get<bool>("CollectionOnly", true)),
+  fUseTimeRange(p.get<bool>("UseTimeRange", true)),
+  fVerbose(p.get<bool>("Verbose", false)),
+  fFillMatchTree(p.get<bool>("FillMatchTree", false)),
+  fTriggerDelay(p.get<double>("TriggerDelay", 0.0)),
+  fTriggerTolerance(p.get<double>("TriggerTolerance", 25.0)),
+  fTimeRangeMargin(fUseTimeRange? p.get<microseconds>("TimeRangeMargin"): microseconds{0.0}),
   fGeom(*lar::providerFrom<geo::Geometry>()),
   fDetClocks(*art::ServiceHandle<detinfo::DetectorClocksService>()),
   fDetProp(*art::ServiceHandle<detinfo::DetectorPropertiesService>()),
@@ -373,6 +375,8 @@ BarycenterMatchProducer::BarycenterMatchProducer(fhicl::ParameterSet const& p)
     fMatchTree->Branch("overlapY",            &fOverlapY,            "overlapY/d"           );
     fMatchTree->Branch("overlapZ",            &fOverlapZ,            "overlapZ/d"           );
     fMatchTree->Branch("deltaZ_Trigger",      &fDeltaZ_Trigger,      "deltaZ_Trigger/d"     );
+    fMatchTree->Branch("deltaY_Trigger",      &fDeltaY_Trigger,      "deltaY_Trigger/d"     );
+    fMatchTree->Branch("radius_Trigger",      &fRadius_Trigger,      "dadius_Trigger/d"     );
 
   } //End MatchTree
 
@@ -397,11 +401,11 @@ void BarycenterMatchProducer::produce(art::Event& e)
       triggeredEvt = true;
     }
     if ( fVerbose ) std::cout << "Valid trigger product found. Trigger time: " << trigger.TriggerTime() << ", Beam gate time: " << trigger.BeamGateTime() << ", Difference: " << triggerWithinGate  << std::endl;
+  std::cout << "TEMPORARY Trigger time: " << trigger.TriggerTime() << std::endl;
   }
   else if ( fVerbose ) std::cout << "No valid trigger product found for this event!"  << std::endl;
 
   //Infrastructure for checking allowed time range of a slice
-  microseconds margin(fTimeRangeMargin);
   detinfo::DetectorTimings const detTimings{ fDetClocks.DataFor(e) };
   detinfo::DetectorPropertiesData const& detProp { fDetProp.DataFor(e, detTimings.clockData()) };
   lar::util::TrackTimeInterval const timeIntervals = fTimeIntervalMaker(detProp, detTimings);
@@ -431,20 +435,21 @@ void BarycenterMatchProducer::produce(art::Event& e)
 
     int nFlashes = (*flashHandle).size();
 
-    double triggerFlashCenter = -9999.;
+    std::array<double, 2> triggerFlashCenter = {-9999., -9999.};
     double flashTime_Trigger;
     //For flash...
     for ( int i = 0; i < nFlashes; i++ ) {
       const recob::OpFlash &flash = (*flashHandle)[i];
 
+      std::cout << "TEMPORARY flash.Time(): " << flash.Time() << ", flash.AbsTime(): " << flash.AbsTime() << std::endl;
       //Is this a triggering flash?
       flashTime_Trigger = flash.Time();
-      if ( !isData ) flashTime_Trigger += -1.*triggerWithinGate;
-      if ( triggeredEvt && abs(flashTime_Trigger - fNominalTrigTime) < fTriggerTolerance ) triggerFlashCenter = flash.ZCenter();
+      if ( !isData ) flashTime_Trigger -= triggerWithinGate;
+      if ( triggeredEvt && abs(flashTime_Trigger + fTriggerDelay) < fTriggerTolerance ) triggerFlashCenter = {flash.YCenter(), flash.ZCenter()};
 
     } //End for flash
 
-    if ( fVerbose ) std::cout << "Event: " << fEvent << ", Cryo: " << inputTag << ", nFlashes: " << nFlashes << ", Triggering flash center: " << triggerFlashCenter  << std::endl;
+    if ( fVerbose ) std::cout << "Event: " << fEvent << ", Cryo: " << inputTag << ", nFlashes: " << nFlashes << ", Triggering flash center Y: " << triggerFlashCenter[0] << ", Triggering flash center Z: " << triggerFlashCenter[1]  << std::endl;
 
 
 /* ~~~~~~~~~~~~~~~~~~~~ TPC Section
@@ -460,10 +465,10 @@ void BarycenterMatchProducer::produce(art::Event& e)
     art::FindManyP<recob::Hit> fmTPCHits(sliceHandle, e, fPandoraLabel + inputTag);
     art::FindManyP<recob::PFParticle> fmPFPs(sliceHandle, e, fPandoraLabel + inputTag);
 
-    int nSlices = (*sliceHandle).size();
+    unsigned nSlices = (*sliceHandle).size();
 
     //For slice...
-    for ( int j = 0; j < nSlices; j++ ) {
+    for ( unsigned j = 0; j < nSlices; j++ ) {
       fSliceNum = j;
       const art::Ptr<recob::Slice> slicePtr { sliceHandle, j };
       InitializeSlice();
@@ -537,7 +542,7 @@ void BarycenterMatchProducer::produce(art::Event& e)
         //Skip over flashes that are very out of time with respect to the slice
         if ( fUseTimeRange && rangeIsValid ) {
           electronics_time eTime (flash.AbsTime());
-          if ( !timeRange.contains(eTime, margin) ) continue;
+          if ( !timeRange.contains(eTime, fTimeRangeMargin) ) continue;
         }
 
         //TODO: if ( flash has entering CRT match ) continue? Or at least just store that as a bool?
@@ -563,7 +568,8 @@ void BarycenterMatchProducer::produce(art::Event& e)
       }
 
       //Best match flash pointer
-      const art::Ptr<recob::OpFlash> flashPtr { flashHandle, matchIndex };
+      unsigned unsignedMatchIndex = matchIndex;
+      const art::Ptr<recob::OpFlash> flashPtr { flashHandle, unsignedMatchIndex };
 
       //Find time of first OpHit in matched flash
       const std::vector<recob::OpHit const*> &opHitsVec = fmOpHits.at(matchIndex);
@@ -614,10 +620,12 @@ void BarycenterMatchProducer::InitializeSlice() {
   fOverlapY = -9999.;
   fOverlapZ = -9999.;
   fDeltaZ_Trigger = -9999.;
+  fDeltaY_Trigger = -9999.;
+  fRadius_Trigger = -9999.;
 } //End InitializeSlice()
 
 
-double BarycenterMatchProducer::CentroidOverlap(double center1, double center2, double width1, double width2) {
+double BarycenterMatchProducer::CentroidOverlap(double center1, double center2, double width1, double width2) const {
   //Centroid 2 is contained within Centroid 1, so overlap is the whole Centroid 2
   if ( (center1 - width1 < center2 - width2) && (center1 + width1 > center2 + width2) ) return (2 * width2);
 
@@ -650,7 +658,7 @@ double BarycenterMatchProducer::CalculateAsymmetry(art::Ptr<recob::OpFlash> flas
 
 //TODO: Get the cathode position and shift global X to local X in a less hacky way
 //According to a geometrydump, the cathode X positions are +/-(210.14, 210.29), depending on the TPC. Here I just averaged those...
-void BarycenterMatchProducer::updateChargeVars(double sumCharge, TVector3 sumPos, TVector3 sumPosSqr, double triggerFlashCenter) {
+void BarycenterMatchProducer::updateChargeVars(double sumCharge, TVector3 const& sumPos, TVector3 const& sumPosSqr, std::array<double, 2> const& triggerFlashCenter) {
   fChargeCenterXGlobal = sumPos[0] / sumCharge;
   fChargeCenterXLocal = fChargeCenterXGlobal - 210.215 * (2*fCryo - 1);
   fChargeCenterY = sumPos[1] / sumCharge;
@@ -658,7 +666,11 @@ void BarycenterMatchProducer::updateChargeVars(double sumCharge, TVector3 sumPos
   fChargeWidthX = std::sqrt( sumPosSqr[0]/sumCharge - (sumPos[0]/sumCharge)*(sumPos[0]/sumCharge) );
   fChargeWidthY = std::sqrt( sumPosSqr[1]/sumCharge - (sumPos[1]/sumCharge)*(sumPos[1]/sumCharge) );
   fChargeWidthZ = std::sqrt( sumPosSqr[2]/sumCharge - (sumPos[2]/sumCharge)*(sumPos[2]/sumCharge) );
-  if ( triggerFlashCenter != -9999 ) fDeltaZ_Trigger = abs(triggerFlashCenter - fChargeCenterZ);
+  if ( triggerFlashCenter[1] != -9999. ) {
+    fDeltaY_Trigger = abs(triggerFlashCenter[0] - fChargeCenterY);
+    fDeltaZ_Trigger = abs(triggerFlashCenter[1] - fChargeCenterZ);
+    fRadius_Trigger = std::hypot(fDeltaY_Trigger, fDeltaZ_Trigger);
+  }
 } //End updateChargeVars()
 
 
