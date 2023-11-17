@@ -64,8 +64,6 @@
 using microseconds = util::quantities::intervals::microseconds;
 using electronics_time = detinfo::timescales::electronics_time;
 
-class BarycenterMatchProducer;
-
 
 /**
  * @brief Matches optical flashes and charge slices based on their location.
