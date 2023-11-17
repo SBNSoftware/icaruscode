@@ -322,6 +322,18 @@ BarycenterMatchProducer::BarycenterMatchProducer(fhicl::ParameterSet const& p)
   produces< art::Assns<sbn::BarycenterMatch, recob::OpFlash> >();
 
   // Call appropriate consumes<>() for any products to be retrieved by this module.
+  consumes<std::vector<raw::Trigger>>(fTriggerLabel);
+  for ( const std::string& inputTag : fInputTags ) {
+    consumes<std::vector<recob::OpFlash>>(fOpFlashLabel + inputTag);
+    consumes<std::vector<recob::Slice>>(fPandoraLabel + inputTag);
+    
+    // via art::FindMany:
+    consumes<art::Assns<recob::OpFlash, recob::OpHit>>(fOpFlashLabel + inputTag);
+    consumes<art::Assns<recob::Slice, recob::Hit>>(fPandoraLabel + inputTag);
+    consumes<art::Assns<recob::Slice, recob::PFParticle>>(fPandoraLabel + inputTag);
+    consumes<art::Assns<recob::Hit, recob::SpacePoint>>(fPandoraLabel + inputTag);
+    consumes<art::Assns<recob::PFParticle, anab::T0>>(fPandoraLabel + inputTag);
+  } // for
 
   if ( fFillMatchTree ) {
     art::ServiceHandle<art::TFileService> tfs;
