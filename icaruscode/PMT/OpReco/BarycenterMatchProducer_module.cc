@@ -504,8 +504,8 @@ void BarycenterMatchProducer::produce(art::Event& e)
 
         const recob::SpacePoint point = f1SpacePoint.at(k).ref();
         thisCharge = tpcHit->Integral();
-        thisPoint = point.XYZ();
-        thisPointSqr = {thisPoint[0]*thisPoint[0], thisPoint[1]*thisPoint[1], thisPoint[2]*thisPoint[2]};
+        TVector3 const thisPoint = point.XYZ();
+        TVector3 const thisPointSqr {thisPoint.X()*thisPoint.X(), thisPoint.Y()*thisPoint.Y(), thisPoint.Z()*thisPoint.Z()};
         sumCharge += thisCharge;
         sumPos += thisPoint * thisCharge;
         sumPosSqr += thisPointSqr * thisCharge;
