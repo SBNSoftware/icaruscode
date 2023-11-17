@@ -25,7 +25,6 @@
 #include "art/Framework/Services/Registry/ServiceHandle.h"
 #include "art/Persistency/Common/PtrMaker.h"
 #include "canvas/Persistency/Common/FindOne.h"
-#include "canvas/Persistency/Common/FindOneP.h"
 #include "canvas/Persistency/Common/FindMany.h"
 #include "canvas/Persistency/Common/FindManyP.h"
 
