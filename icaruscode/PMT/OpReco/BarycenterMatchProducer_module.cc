@@ -234,12 +234,12 @@ public:
 private:
 
   // Declare member data here.
-  void InitializeSlice();                                                                                  ///< Re-initialize all slice-level data members
-  double CentroidOverlap(double center1, double center2, double width1, double width2) const;                    ///< Return overlap between charge and light centroids OR distance apart if no overlap
-  double CalculateAsymmetry(art::Ptr<recob::OpFlash> flash, int cryo);                                     ///< Return the east-west asymmetry of PEs in a given OpFlash
+  void InitializeSlice();                                                                     ///< Re-initialize all slice-level data members
+  double CentroidOverlap(double center1, double center2, double width1, double width2) const; ///< Return overlap between charge and light centroids OR distance apart if no overlap
+  double CalculateAsymmetry(art::Ptr<recob::OpFlash> flash, int cryo);                        ///< Return the east-west asymmetry of PEs in a given OpFlash
   void updateChargeVars(double sumCharge, TVector3 const& sumPos, TVector3 const& sumPosSqr, std::array<double, 2> const& triggerFlashCenter); ///< Update slice-level data members with charge and trigger match info
-  void updateFlashVars(art::Ptr<recob::OpFlash> flash, double firstHit);                     ///< Update slice-level data members with best match info
-  void updateMatchInfo(sbn::BarycenterMatch& matchInfo);                                                   ///< Update match product with slice-level data members
+  void updateFlashVars(art::Ptr<recob::OpFlash> flash, double firstHit);                      ///< Update slice-level data members with best match info
+  void updateMatchInfo(sbn::BarycenterMatch& matchInfo);                                      ///< Update match product with slice-level data members
  
   // Input parameters
   std::vector<std::string>  fInputTags;            ///< Suffix added onto fOpFlashLabel and fPandoraLabel, used by ICARUS for separate cryostat labels but could be empty
@@ -250,7 +250,7 @@ private:
   bool                      fUseTimeRange;         ///< Reject impossible matches based on allowed time range of TPC hits relative to trigger 
   bool                      fVerbose;              ///< Print extra info
   bool                      fFillMatchTree;        ///< Fill an output TTree in the supplemental file
-  double                    fTriggerDelay;      ///< Typical time of triggering flash, EYEBALLED (us)
+  double                    fTriggerDelay;         ///< Typical time of triggering flash, EYEBALLED (us)
   double                    fTriggerTolerance;     ///< Spread of triggering flash times, EYEBALLED (us)
   microseconds              fTimeRangeMargin;      ///< Symmetric acceptable margin for allowed time range of TPC hits (us)
   
@@ -310,7 +310,7 @@ BarycenterMatchProducer::BarycenterMatchProducer(fhicl::ParameterSet const& p)
   fFillMatchTree(p.get<bool>("FillMatchTree", false)),
   fTriggerDelay(p.get<double>("TriggerDelay", 0.0)),
   fTriggerTolerance(p.get<double>("TriggerTolerance", 25.0)),
-  fTimeRangeMargin(fUseTimeRange? p.get<microseconds>("TimeRangeMargin"): microseconds{0.0}),
+  fTimeRangeMargin(fUseTimeRange? microseconds{p.get<double>("TimeRangeMargin")}: microseconds{0.0}),
   fGeom(*lar::providerFrom<geo::Geometry>()),
   fDetClocks(*art::ServiceHandle<detinfo::DetectorClocksService>()),
   fDetProp(*art::ServiceHandle<detinfo::DetectorPropertiesService>()),
@@ -387,21 +387,15 @@ void BarycenterMatchProducer::produce(art::Event& e)
   // Implementation of required member function here.
   fEvent  = e.id().event();
   fRun    = e.run();
-  const bool isData = e.isRealData();
 
   //Fetch trigger info and if MC check whether this event triggered
   art::Handle const triggerHandle
     = e.getHandle<std::vector<raw::Trigger>>(fTriggerLabel);
-  double triggerWithinGate = 0.;
-  bool triggeredEvt = false;
+  double triggerTime = -9999.;
   if ( triggerHandle.isValid() && triggerHandle->size() >= 1 ) {
     raw::Trigger const& trigger = triggerHandle->at(0);
-    if ( trigger.TriggerTime() >= 0 ) {
-      triggerWithinGate = trigger.TriggerTime() - trigger.BeamGateTime();
-      triggeredEvt = true;
-    }
-    if ( fVerbose ) std::cout << "Valid trigger product found. Trigger time: " << trigger.TriggerTime() << ", Beam gate time: " << trigger.BeamGateTime() << ", Difference: " << triggerWithinGate  << std::endl;
-  std::cout << "TEMPORARY Trigger time: " << trigger.TriggerTime() << std::endl;
+    triggerTime = trigger.TriggerTime();
+    if ( fVerbose ) std::cout << "Valid trigger product found. Trigger time: " << trigger.TriggerTime() << ", Beam gate time: " << trigger.BeamGateTime() << ", Difference: " << trigger.TriggerTime() - trigger.BeamGateTime() << std::endl;
   }
   else if ( fVerbose ) std::cout << "No valid trigger product found for this event!"  << std::endl;
 
@@ -432,22 +426,25 @@ void BarycenterMatchProducer::produce(art::Event& e)
     art::Handle const flashHandle
       = e.getHandle<std::vector<recob::OpFlash>>(fOpFlashLabel + inputTag);
     art::FindMany<recob::OpHit> fmOpHits(flashHandle, e, fOpFlashLabel + inputTag);
-
     int nFlashes = (*flashHandle).size();
 
     std::array<double, 2> triggerFlashCenter = {-9999., -9999.};
-    double flashTime_Trigger;
-    //For flash...
-    for ( int i = 0; i < nFlashes; i++ ) {
-      const recob::OpFlash &flash = (*flashHandle)[i];
+    //If triggered event..
+    if ( triggerTime >= 0. ) {
+      double minTimeDiff = 1.6;
+      //For flash...
+      for ( int i = 0; i < nFlashes; i++ ) {
+        const recob::OpFlash &flash = (*flashHandle)[i];
 
-      std::cout << "TEMPORARY flash.Time(): " << flash.Time() << ", flash.AbsTime(): " << flash.AbsTime() << std::endl;
-      //Is this a triggering flash?
-      flashTime_Trigger = flash.Time();
-      if ( !isData ) flashTime_Trigger -= triggerWithinGate;
-      if ( triggeredEvt && abs(flashTime_Trigger + fTriggerDelay) < fTriggerTolerance ) triggerFlashCenter = {flash.YCenter(), flash.ZCenter()};
+        //Identify the triggering flash
+        double timeDiff = abs( (triggerTime - flash.AbsTime()) - fTriggerDelay );
+        if ( timeDiff < fTriggerTolerance && timeDiff < minTimeDiff ) {
+          triggerFlashCenter = {flash.YCenter(), flash.ZCenter()};
+          minTimeDiff = timeDiff;
+        }
 
-    } //End for flash
+      } //End for flash
+    } //End if triggered event
 
     if ( fVerbose ) std::cout << "Event: " << fEvent << ", Cryo: " << inputTag << ", nFlashes: " << nFlashes << ", Triggering flash center Y: " << triggerFlashCenter[0] << ", Triggering flash center Z: " << triggerFlashCenter[1]  << std::endl;
 
@@ -496,9 +493,8 @@ void BarycenterMatchProducer::produce(art::Event& e)
 
       double thisCharge;
       double sumCharge = 0.;
-      //Forcing Git to recognize there was a change here...
-      TVector3 sumPos {0.,0.,0.};//Forcing Git to recognize there was a change here...
-      TVector3 sumPosSqr {0.,0.,0.};//Forcing Git to recognize there was a change here...
+      TVector3 sumPos {0.,0.,0.};
+      TVector3 sumPosSqr {0.,0.,0.};
 
       //For hit...
       for ( int k = 0; k < nHits; k++ ) {
@@ -510,8 +506,8 @@ void BarycenterMatchProducer::produce(art::Event& e)
 
         const recob::SpacePoint point = f1SpacePoint.at(k).ref();
         thisCharge = tpcHit->Integral();
-        TVector3 const thisPoint = point.XYZ();//Forcing Git to recognize there was a change here...
-        TVector3 const thisPointSqr {thisPoint.X()*thisPoint.X(), thisPoint.Y()*thisPoint.Y(), thisPoint.Z()*thisPoint.Z()};//Forcing Git to recognize there was a change here...
+        TVector3 const thisPoint = point.XYZ();
+        TVector3 const thisPointSqr {thisPoint.X()*thisPoint.X(), thisPoint.Y()*thisPoint.Y(), thisPoint.Z()*thisPoint.Z()};
         sumCharge += thisCharge;
         sumPos += thisPoint * thisCharge;
         sumPosSqr += thisPointSqr * thisCharge;
@@ -714,7 +710,9 @@ void BarycenterMatchProducer::updateMatchInfo(sbn::BarycenterMatch& matchInfo) {
   matchInfo.radius = fRadius;
   matchInfo.overlapY = fOverlapY;
   matchInfo.overlapZ = fOverlapZ;
+  matchInfo.deltaY_Trigger = fDeltaY_Trigger;
   matchInfo.deltaZ_Trigger = fDeltaZ_Trigger;
+  matchInfo.radius_Trigger = fRadius_Trigger;
 } //End updateMatchInfo()
 
 
