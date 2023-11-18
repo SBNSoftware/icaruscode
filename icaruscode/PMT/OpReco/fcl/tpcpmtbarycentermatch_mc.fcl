@@ -1,11 +1,11 @@
-# A script to run the producer module: BarycenterMatchProducer
+# A script to run the producer module: TPCPMTBarycenterMatchProducer
 
-#include "barycentermatch_config.fcl"
+#include "tpcpmtbarycentermatch_config.fcl"
 
 #include "services_icarus_simulation.fcl"
 #include "services_common_icarus.fcl"
 
-process_name: BarycenterMatchProducer
+process_name: TPCPMTBarycenterMatchProducer
 
 services:
 {
@@ -22,13 +22,12 @@ services:
 
 } # services
 
-
 outputs:
 {
   out1:
   {
     module_type: RootOutput
-    fileName:    "%ifb_%tc_BarycenterMatch.root"
+    fileName:    "%ifb_%tc_TPCPMTBarycenterMatch.root"
     dataTier: "reconstructed"
     saveMemoryObjectThreshold: 0
     compressionLevel: 1
@@ -41,12 +40,12 @@ physics:
 {
    producers:
   {
-    barycentermatchCryoE: @local::data_barycentermatchproducer_east
-    barycentermatchCryoW: @local::data_barycentermatchproducer_west
+    tpcpmtbarycentermatchCryoE: @local::mc_tpcpmtbarycentermatchproducer_east
+    tpcpmtbarycentermatchCryoW: @local::mc_tpcpmtbarycentermatchproducer_west
   }
 
   # Schedule job step(s) for execution by defining the analysis module for this job.
-  reco: [ barycentermatchCryoE, barycentermatchCryoW ]
+  reco: [ tpcpmtbarycentermatchCryoE, tpcpmtbarycentermatchCryoW ]
 
   stream1: [ out1 ]
 

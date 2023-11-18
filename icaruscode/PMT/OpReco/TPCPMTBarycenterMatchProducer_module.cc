@@ -1,12 +1,12 @@
 ////////////////////////////////////////////////////////////////////////
-// Class:       BarycenterMatchProducer
+// Class:       TPCPMTBarycenterMatchProducer
 // Plugin Type: producer (Unknown Unknown)
-// File:        BarycenterMatchProducer_module.cc
+// File:        TPCPMTBarycenterMatchProducer_module.cc
 //
 // Generated at Sun Oct 22 14:43:16 2023 by John Smedley using cetskelgen
 // from  version .
 //
-//  @file   icaruscode/PMT/OpReco/BarycenterMatchProducer_module.cc
+//  @file   icaruscode/PMT/OpReco/TPCPMTBarycenterMatchProducer_module.cc
 //  @brief  Producer to match Pandora slices to their best match OpFlash by minimizing barycenter distance, as well as compare slices to the triggering OpFlash
 //  @author Jack Smedley ( jsmedley@fnal.gov )
 //
@@ -48,7 +48,7 @@
 #include "lardataobj/RecoBase/PFParticle.h"
 #include "lardataobj/AnalysisBase/T0.h"
 #include "lardataobj/RawData/TriggerData.h"
-#include "sbnobj/Common/Reco/BarycenterMatch.h"
+#include "sbnobj/Common/Reco/TPCPMTBarycenterMatch.h"
 
 //ROOT includes
 #include "TTree.h"
@@ -165,16 +165,16 @@ using electronics_time = detinfo::timescales::electronics_time;
  * A single collection, merging all the input, is produced for each of the
  * following data products in the _art_/ROOT output:
  * 
- * * `std::vector<sbn::BarycenterMatch>`: collection of matching information;
+ * * `std::vector<sbn::TPCPMTBarycenterMatch>`: collection of matching information;
  *     one matching information object is present for each slice in the input
  *     collections, in the same order as the input.
- * * `art::Assns<sbn::BarycenterMatch, recob::Slice>`: association of each
+ * * `art::Assns<sbn::TPCPMTBarycenterMatch, recob::Slice>`: association of each
  *     matched slice with its matching information.
- * * `art::Assns<sbn::BarycenterMatch, recob::OpFlash>`: association of each
+ * * `art::Assns<sbn::TPCPMTBarycenterMatch, recob::OpFlash>`: association of each
  *     matched light flash with its matching information.
  * 
  * Note that while there is currently no direct association between the slice
- * and the flash, the information contained in `sbn::BarycenterMatch` is very
+ * and the flash, the information contained in `sbn::TPCPMTBarycenterMatch` is very
  * detailed.
  * 
  * In addition, if `FillMatchTree` is set, a ROOT tree called `matchTree` will
@@ -216,17 +216,17 @@ using electronics_time = detinfo::timescales::electronics_time;
  *     sides by this amount of time.
  * 
  */
-class BarycenterMatchProducer : public art::EDProducer {
+class TPCPMTBarycenterMatchProducer : public art::EDProducer {
 public:
-  explicit BarycenterMatchProducer(fhicl::ParameterSet const& p);
+  explicit TPCPMTBarycenterMatchProducer(fhicl::ParameterSet const& p);
   // The compiler-generated destructor is fine for non-base
   // classes without bare pointers or other resource use.
 
   // Plugins should not be copied or assigned.
-  BarycenterMatchProducer(BarycenterMatchProducer const&) = delete;
-  BarycenterMatchProducer(BarycenterMatchProducer&&) = delete;
-  BarycenterMatchProducer& operator=(BarycenterMatchProducer const&) = delete;
-  BarycenterMatchProducer& operator=(BarycenterMatchProducer&&) = delete;
+  TPCPMTBarycenterMatchProducer(TPCPMTBarycenterMatchProducer const&) = delete;
+  TPCPMTBarycenterMatchProducer(TPCPMTBarycenterMatchProducer&&) = delete;
+  TPCPMTBarycenterMatchProducer& operator=(TPCPMTBarycenterMatchProducer const&) = delete;
+  TPCPMTBarycenterMatchProducer& operator=(TPCPMTBarycenterMatchProducer&&) = delete;
 
   // Required functions.
   void produce(art::Event& e) override;
@@ -239,7 +239,7 @@ private:
   double CalculateAsymmetry(art::Ptr<recob::OpFlash> flash, int cryo);                        ///< Return the east-west asymmetry of PEs in a given OpFlash
   void updateChargeVars(double sumCharge, TVector3 const& sumPos, TVector3 const& sumPosSqr, std::array<double, 2> const& triggerFlashCenter); ///< Update slice-level data members with charge and trigger match info
   void updateFlashVars(art::Ptr<recob::OpFlash> flash, double firstHit);                      ///< Update slice-level data members with best match info
-  void updateMatchInfo(sbn::BarycenterMatch& matchInfo);                                      ///< Update match product with slice-level data members
+  void updateMatchInfo(sbn::TPCPMTBarycenterMatch& matchInfo);                                      ///< Update match product with slice-level data members
  
   // Input parameters
   std::vector<std::string>  fInputTags;            ///< Suffix added onto fOpFlashLabel and fPandoraLabel, used by ICARUS for separate cryostat labels but could be empty
@@ -297,7 +297,7 @@ private:
 };
 
 
-BarycenterMatchProducer::BarycenterMatchProducer(fhicl::ParameterSet const& p)
+TPCPMTBarycenterMatchProducer::TPCPMTBarycenterMatchProducer(fhicl::ParameterSet const& p)
   : EDProducer{p},
   // More initializers here.
   fInputTags(p.get<std::vector<std::string>>("InputTags")),
@@ -318,9 +318,9 @@ BarycenterMatchProducer::BarycenterMatchProducer(fhicl::ParameterSet const& p)
 {
   // Call appropriate produces<>() functions here.
 
-  produces< std::vector<sbn::BarycenterMatch> >();
-  produces< art::Assns<sbn::BarycenterMatch, recob::Slice> >();
-  produces< art::Assns<sbn::BarycenterMatch, recob::OpFlash> >();
+  produces< std::vector<sbn::TPCPMTBarycenterMatch> >();
+  produces< art::Assns<sbn::TPCPMTBarycenterMatch, recob::Slice> >();
+  produces< art::Assns<sbn::TPCPMTBarycenterMatch, recob::OpFlash> >();
 
   // Call appropriate consumes<>() for any products to be retrieved by this module.
   consumes<std::vector<raw::Trigger>>(fTriggerLabel);
@@ -382,7 +382,7 @@ BarycenterMatchProducer::BarycenterMatchProducer(fhicl::ParameterSet const& p)
 
 }
 
-void BarycenterMatchProducer::produce(art::Event& e)
+void TPCPMTBarycenterMatchProducer::produce(art::Event& e)
 {
   // Implementation of required member function here.
   fEvent  = e.id().event();
@@ -405,10 +405,10 @@ void BarycenterMatchProducer::produce(art::Event& e)
   lar::util::TrackTimeInterval const timeIntervals = fTimeIntervalMaker(detProp, detTimings);
 
   //Initialize new data products
-  auto matchInfoVector = std::make_unique< std::vector<sbn::BarycenterMatch> >();
-  art::PtrMaker< sbn::BarycenterMatch > const makeInfoPtr(e); 
-  auto sliceAssns = std::make_unique< art::Assns<sbn::BarycenterMatch, recob::Slice> >();
-  auto flashAssns = std::make_unique< art::Assns<sbn::BarycenterMatch, recob::OpFlash> >();
+  auto matchInfoVector = std::make_unique< std::vector<sbn::TPCPMTBarycenterMatch> >();
+  art::PtrMaker< sbn::TPCPMTBarycenterMatch > const makeInfoPtr(e); 
+  auto sliceAssns = std::make_unique< art::Assns<sbn::TPCPMTBarycenterMatch, recob::Slice> >();
+  auto flashAssns = std::make_unique< art::Assns<sbn::TPCPMTBarycenterMatch, recob::OpFlash> >();
 
   //For InputTag...
   for ( const std::string& inputTag : fInputTags ) {
@@ -469,7 +469,7 @@ void BarycenterMatchProducer::produce(art::Event& e)
       fSliceNum = j;
       const art::Ptr<recob::Slice> slicePtr { sliceHandle, j };
       InitializeSlice();
-      sbn::BarycenterMatch sliceMatchInfo;
+      sbn::TPCPMTBarycenterMatch sliceMatchInfo;
       updateMatchInfo(sliceMatchInfo);
 
       const std::vector<art::Ptr<recob::Hit>> &tpcHitsVec = fmTPCHits.at(j);
@@ -516,7 +516,7 @@ void BarycenterMatchProducer::produce(art::Event& e)
       //No charge found in slice...
       if ( sumCharge == 0. ) {
         if ( fFillMatchTree ) fMatchTree->Fill();
-        art::Ptr<sbn::BarycenterMatch> const infoPtr = makeInfoPtr(matchInfoVector->size());
+        art::Ptr<sbn::TPCPMTBarycenterMatch> const infoPtr = makeInfoPtr(matchInfoVector->size());
         sliceAssns->addSingle(infoPtr, slicePtr);
         matchInfoVector->push_back(std::move(sliceMatchInfo));
         if ( fVerbose ) std::cout << "No charge found in Event: " << fEvent << " Slice: " << j << "! Continuing..."  << std::endl;
@@ -556,7 +556,7 @@ void BarycenterMatchProducer::produce(art::Event& e)
       //No valid match found...
       if ( matchIndex == -5 ) {
         if ( fFillMatchTree ) fMatchTree->Fill();
-        art::Ptr<sbn::BarycenterMatch> const infoPtr = makeInfoPtr(matchInfoVector->size());
+        art::Ptr<sbn::TPCPMTBarycenterMatch> const infoPtr = makeInfoPtr(matchInfoVector->size());
         sliceAssns->addSingle(infoPtr, slicePtr);
         matchInfoVector->push_back(std::move(sliceMatchInfo));
         if ( fVerbose ) std::cout << "No matching flash found for Event: " << fEvent << " Slice: " << j << "! Continuing..."  << std::endl;
@@ -575,7 +575,7 @@ void BarycenterMatchProducer::produce(art::Event& e)
       //Update match info
       updateFlashVars(flashPtr, minTime);
       updateMatchInfo(sliceMatchInfo);
-      art::Ptr<sbn::BarycenterMatch> const infoPtr = makeInfoPtr(matchInfoVector->size());
+      art::Ptr<sbn::TPCPMTBarycenterMatch> const infoPtr = makeInfoPtr(matchInfoVector->size());
       sliceAssns->addSingle(infoPtr, slicePtr);
       flashAssns->addSingle(infoPtr, flashPtr);
       matchInfoVector->push_back(std::move(sliceMatchInfo));
@@ -592,7 +592,7 @@ void BarycenterMatchProducer::produce(art::Event& e)
 
 } //End produce()
 
-void BarycenterMatchProducer::InitializeSlice() {
+void TPCPMTBarycenterMatchProducer::InitializeSlice() {
   fChargeT0 = -9999.;
   fChargeTotal = -9999.;
   fChargeCenterXGlobal = -9999.;
@@ -621,7 +621,7 @@ void BarycenterMatchProducer::InitializeSlice() {
 } //End InitializeSlice()
 
 
-double BarycenterMatchProducer::CentroidOverlap(double center1, double center2, double width1, double width2) const {
+double TPCPMTBarycenterMatchProducer::CentroidOverlap(double center1, double center2, double width1, double width2) const {
   //Centroid 2 is contained within Centroid 1, so overlap is the whole Centroid 2
   if ( (center1 - width1 < center2 - width2) && (center1 + width1 > center2 + width2) ) return (2 * width2);
 
@@ -634,7 +634,7 @@ double BarycenterMatchProducer::CentroidOverlap(double center1, double center2, 
 } //End CentroidOverlap()
 
 
-double BarycenterMatchProducer::CalculateAsymmetry(art::Ptr<recob::OpFlash> flash, int cryo) {
+double TPCPMTBarycenterMatchProducer::CalculateAsymmetry(art::Ptr<recob::OpFlash> flash, int cryo) {
   double sumEast = 0.;
   double sumWest = 0.;
 
@@ -654,7 +654,7 @@ double BarycenterMatchProducer::CalculateAsymmetry(art::Ptr<recob::OpFlash> flas
 
 //TODO: Get the cathode position and shift global X to local X in a less hacky way
 //According to a geometrydump, the cathode X positions are +/-(210.14, 210.29), depending on the TPC. Here I just averaged those...
-void BarycenterMatchProducer::updateChargeVars(double sumCharge, TVector3 const& sumPos, TVector3 const& sumPosSqr, std::array<double, 2> const& triggerFlashCenter) {
+void TPCPMTBarycenterMatchProducer::updateChargeVars(double sumCharge, TVector3 const& sumPos, TVector3 const& sumPosSqr, std::array<double, 2> const& triggerFlashCenter) {
   fChargeCenterXGlobal = sumPos[0] / sumCharge;
   fChargeCenterXLocal = fChargeCenterXGlobal - 210.215 * (2*fCryo - 1);
   fChargeCenterY = sumPos[1] / sumCharge;
@@ -670,7 +670,7 @@ void BarycenterMatchProducer::updateChargeVars(double sumCharge, TVector3 const&
 } //End updateChargeVars()
 
 
-void BarycenterMatchProducer::updateFlashVars(art::Ptr<recob::OpFlash> flash, double firstHit) {
+void TPCPMTBarycenterMatchProducer::updateFlashVars(art::Ptr<recob::OpFlash> flash, double firstHit) {
   double matchedTime = flash->Time();
   double matchedYCenter = flash->YCenter();
   double matchedZCenter = flash->ZCenter();
@@ -694,7 +694,7 @@ void BarycenterMatchProducer::updateFlashVars(art::Ptr<recob::OpFlash> flash, do
 } //End updateFlashVars()
 
 
-void BarycenterMatchProducer::updateMatchInfo(sbn::BarycenterMatch& matchInfo) {
+void TPCPMTBarycenterMatchProducer::updateMatchInfo(sbn::TPCPMTBarycenterMatch& matchInfo) {
   matchInfo.chargeTotal = fChargeTotal;
   matchInfo.chargeCenterXLocal = fChargeCenterXLocal;
   matchInfo.chargeCenter = {fChargeCenterXGlobal, fChargeCenterY, fChargeCenterZ};
@@ -716,4 +716,4 @@ void BarycenterMatchProducer::updateMatchInfo(sbn::BarycenterMatch& matchInfo) {
 } //End updateMatchInfo()
 
 
-DEFINE_ART_MODULE(BarycenterMatchProducer)
+DEFINE_ART_MODULE(TPCPMTBarycenterMatchProducer)
