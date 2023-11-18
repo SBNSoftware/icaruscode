@@ -135,9 +135,10 @@ using electronics_time = detinfo::timescales::electronics_time;
  * flash.
  * In ICARUS data, the time reference is the trigger time, therefore the time
  * of the global trigger is a fixed value by definition. Nevertheless, to
- * accommodate relative delays between the trigger and the light systems, a
- * "nominal" trigger time (`TriggerDelay`) is used instead of the actual
- * one, and this other time is controlled directly by the module caller.
+ * accommodate relative delays between the trigger and the light systems, an
+ * expected time difference between the reconstrcuted flash (`TriggerDelay`)
+ * is accounted for with a cushion ('TriggerTolerance'). These parameters are
+ * measured in microseconds and controlled directly by the module caller.
  * In ICARUS simulation the mechanism is the same; the times are stored with
  * respect to the simulation time, but the module will take care of
  * the appropriate conversion, so the configuration parameter holds the same
@@ -207,8 +208,8 @@ using electronics_time = detinfo::timescales::electronics_time;
  * * `FillMatchTree` (flag, default: `false`): if set to `true`, a ROOT tree
  *     with detailed matching information called `"matchTree"` will be written
  *     via `TFileService`.
- * * `TriggerDelay` (real, mandatory, in microseconds): the time, in
- *     electronics scale, when the trigger is expected to arrive.
+ * * `TriggerDelay` (real, mandatory, in microseconds): the expected time
+ *     difference between the scintillation flash and the global trigger.
  * * `TriggerTolerance` (real, mandatory, in microseconds): the tolerance used
  *     to identify a light flash associated with the trigger.
  * * `TimeRangeMargin` (real, microseconds; default: `0`): when `UseTimeRange`
