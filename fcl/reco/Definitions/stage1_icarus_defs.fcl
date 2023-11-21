@@ -21,6 +21,7 @@
 ## The below can be found from the softlink to Supera in sbncode
 #include "supera_modules.fcl"
 #include "crtpmtmatching_parameters.fcl"
+#include "tpcpmtbarycentermatch_config.fcl"
 
 BEGIN_PROLOG
 
@@ -65,6 +66,9 @@ icarus_stage1_producers:
   CRTT0Matching:     @local::standard_crtt0producer
   CRTT0MatchingW:    @local::standard_crtt0producerW
   CRTT0MatchingE:    @local::standard_crtt0producerE
+
+  tpcpmtbarycentermatchCryoE: @local::data_tpcpmtbarycentermatchproducer_east
+  tpcpmtbarycentermatchCryoW: @local::data_tpcpmtbarycentermatchproducer_west
 }
 
 icarus_stage1_filters:
@@ -190,6 +194,11 @@ icarus_pandora_Gauss:              [
 #Add flash matching
 icarus_reco_fm:                    [ fmatchCryoE,
                                      fmatchCryoW ]
+
+icarus_tpcpmtbarycentermatch:      [
+                                     tpcpmtbarycentermatchCryoE, 
+                                     tpcpmtbarycentermatchCryoW
+                                   ]
 
 icarus_crttrack:                   [crttrack]
 
