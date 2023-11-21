@@ -339,6 +339,8 @@ GENIEReWeight_Multisim_Tool_Config: {
     MFP_pi_random_distribution: "gaussian"
     MFP_pi_variation_descriptor: "{-1,1}"
 
+    # The charge-exchange FSI fate is excluded to act as the "cushion"
+    # term for reweighting
     #FrCEx_pi_central_value: 0
     #FrCEx_pi_nthrows: 100
     #FrCEx_pi_random_distribution: "gaussian"
@@ -371,6 +373,8 @@ GENIEReWeight_Multisim_Tool_Config: {
     MFP_N_random_distribution: "gaussian"
     MFP_N_variation_descriptor: "{-1,1}"
 
+    # The charge-exchange FSI fate is excluded to act as the "cushion"
+    # term for reweighting
     #FrCEx_N_central_value: 0
     #FrCEx_N_nthrows: 100
     #FrCEx_N_random_distribution: "gaussian"
