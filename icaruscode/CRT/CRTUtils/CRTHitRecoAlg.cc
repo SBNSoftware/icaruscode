@@ -14,7 +14,7 @@ CRTHitRecoAlg::CRTHitRecoAlg()
           art::ServiceHandle<icarusDB::IICARUSChannelMap const>{}.get()) {}
 
 //---------------------------------------------------------------------
-
+// Read in values from crthitproducer.fcl
 void CRTHitRecoAlg::reconfigure(const fhicl::ParameterSet& pset) {
   fVerbose = pset.get<bool>("Verbose", false);
   fUseReadoutWindow = pset.get<bool>("UseReadoutWindow", false);
@@ -34,6 +34,14 @@ void CRTHitRecoAlg::reconfigure(const fhicl::ParameterSet& pset) {
 }
 
 //---------------------------------------------------------------------------------------
+// Preselect CRTData to be constructed into a CRT Hit 
+// 1. look for CRTData within +/- 3ms (fCrtWindow) of trigger timestamp
+// 2. filtering 
+// -- Side CRTs filter out low PEs (values < fPEThresh) and hits that are not a 
+//    T0 or T1 reference hit (if its a T0 or T1 reset event, they can have low PE..)
+// -- Bottom CRT Hit reco also using fPEThresh, probably need to be revisited
+// -- Top CRT does not require additional filtering here
+
 vector<art::Ptr<CRTData>> CRTHitRecoAlg::PreselectCRTData(
     const vector<art::Ptr<CRTData>>& crtList, uint64_t trigger_timestamp) {
   if (fVerbose)
@@ -90,7 +98,6 @@ vector<art::Ptr<CRTData>> CRTHitRecoAlg::PreselectCRTData(
   }
   mf::LogInfo("CRTHitRecoAlg:")
       << "Found " << crtdata.size() << " after preselection " << '\n';
-  // std::cout<<trigger_timestamp<<std::endl;
   return crtdata;
 }
 
@@ -111,7 +118,11 @@ vector<pair<sbn::crt::CRTHit, vector<int>>> CRTHitRecoAlg::CreateCRTHits(
 
   // sort by the time
   std::sort(crtList.begin(), crtList.end(), compareBytime);
-
+  
+  // Here is the calculation of the Global Trigger timestamp from the T1 reset
+  // currently only done for top CRT T1 reset values
+  // TODO: Validate side CRT global trigger timestamp reconstruction to be used 
+  // for the reference for side CRT hits, currently a couple ns off.
   // Load Delays map for Top CRT
   CRT_delay_map const FEB_delay_map = LoadFEBMap();
   std::vector<std::pair<int, ULong64_t>> CRTReset;
@@ -574,7 +585,7 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeSideHit(
   vector<uint8_t> macs;
   map<uint8_t, vector<pair<int, float>>> pesmap;
 
-  struct infoA {
+  struct info {
     uint8_t mac5s;
     int channel;
     uint64_t t0;
@@ -582,16 +593,7 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeSideHit(
     int strip;
   };
 
-  struct infoB {
-    uint8_t mac5s;
-    int channel;
-    uint64_t t0;
-    TVector3 pos;
-    int strip;
-  };
-
-  vector<infoA> informationA;
-  vector<infoA> informationB;
+  vector<info> informationA, informationB;
 
   int adid = fCrtutils.MacToAuxDetID(coinData[0]->fMac5, 0);  // module ID
   auto const& adGeo = fGeometryService->AuxDet(adid);         // module
@@ -613,9 +615,7 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeSideHit(
   double zmin = DBL_MAX, zmax = -DBL_MAX;
   double ymin = DBL_MAX, ymax = -DBL_MAX;
   double xmin = DBL_MAX, xmax = -DBL_MAX;
-  std::vector<int> layID;
-  std::vector<int> febA;
-  std::vector<int> febB;
+  std::vector<int> layID, febA, febB;
 
   uint64_t southt0_v = -999, southt0_h = -999;
 
@@ -1127,20 +1127,19 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeSideHit(
   hitpoint[0] = hitpos.X();
   hitpoint[1] = hitpos.Y();
   hitpoint[2] = hitpos.Z();
-
-  if (region == "South" && hitpoint[0] >= 366. && hitpoint[1] > 200. &&
-      fVerbose)
-    mf::LogInfo("CRTHitRecoAlg: ")
+  if (fVerbose) {
+    if (region == "South" && hitpoint[0] >= 366. && hitpoint[1] > 200.)
+      mf::LogInfo("CRTHitRecoAlg: ")
         << "I am looking for south wall :   macs " << (int)macs.back()
         << " x: \t" << hitpoint[0] << " ,y: \t" << hitpoint[1] << " ,z: \t"
         << hitpoint[2] << '\n';
-
-  if (fVerbose) {
+    
     if (region == "North")
       mf::LogInfo("CRTHitRecoAlg: ")
-          << "north wall x: \t" << hitpoint[0] << " ,y: \t" << hitpoint[1]
-          << " ,z: \t" << hitpoint[2] << '\n';
-  }
+	<< "north wall x: \t" << hitpoint[0] << " ,y: \t" << hitpoint[1]
+	<< " ,z: \t" << hitpoint[2] << '\n';
+  }  
+
   if (fVerbose)
     mf::LogInfo("CRTHitRecoAlg: ")
         << " nx: \t" << nx << " ,ny: \t" << ny << " ,nz: \t" << nz << '\n';
