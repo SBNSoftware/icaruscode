@@ -28,10 +28,15 @@ physics.producers: {
             mcassociationsGausCryoW:        @local::standard_mcparticlehitmatching
 }
 
+#Redefine TPCPMTBarycenterMatch producers with MC parameters
+physics.producers.tpcpmtbarycentermatchCryoE: @local::mc_tpcpmtbarycentermatchproducer_east
+physics.producers.tpcpmtbarycentermatchCryoW: @local::mc_tpcpmtbarycentermatchproducer_west
+
 physics.reco: [ 
                 @sequence::icarus_reco_Gauss_CryoE ,
                 @sequence::icarus_reco_Gauss_CryoW ,
 		            @sequence::icarus_reco_fm,
+                @sequence::icarus_tpcpmtbarycentermatch,
                 caloskimCalorimetryCryoE, caloskimCalorimetryCryoW,
                 mcassociationsGausCryoE,  mcassociationsGausCryoW
               ]
