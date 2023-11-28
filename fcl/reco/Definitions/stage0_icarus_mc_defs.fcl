@@ -4,6 +4,7 @@
 #include "icarus_ophitfinder.fcl"
 #include "icarus_flashfinder.fcl"
 #include "icarus_opana_modules.fcl"
+#include "recowire_icarus.fcl"
 
 #include "crttruehitproducer.fcl"
 #include "crtsimhitproducer.fcl"
@@ -27,6 +28,8 @@ icarus_stage0_mc_producers:
                            CoherentGrouping:    64
                            DecoderTool:         @local::TPCNoiseFilter1DTool
                        }
+
+    simChannelROI:     @local::icarus_simchannelroi
 
     pmtfixedthr:       @local::icarus_pmtdiscriminatethr_fixed_MC
 

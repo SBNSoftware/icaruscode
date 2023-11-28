@@ -723,7 +723,8 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeSideHit(
   double hitpoint[3], hitpointerr[3];
   TVector3 hitpos(0., 0., 0.);
 
-  float petot = 0., pemax = 0., pex = 0., pey = 0.;
+  // float petot = 0., pemax = 0., pex = 0., pey = 0.; // pex, pey unused
+  float petot = 0., pemax = 0.;
   int adsid_max = -1, nabove = 0, nx = 0, ny = 0, nz = 0, ntrig = 0;
 
   TVector3 postrig;
@@ -893,14 +894,14 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeSideHit(
               << " petotal : " << petot << '\n';
         }
         ny++;
-        pey += pe;
+        // pey += pe; // unused
         if (postmp.Y() < ymin) ymin = postmp.Y();
         if (postmp.Y() > ymax) ymax = postmp.Y();
         if (region != "South") {  // region is E/W/N
           //    hitpos.SetX(pe*postmp.X()+hitpos.X());
           hitpos.SetX(1.0 * postmp.X() + hitpos.X());
           nx++;
-          pex += pe;
+          // pex += pe; // unused
           if (postmp.X() < xmin) xmin = postmp.X();
           if (postmp.X() > xmax) xmax = postmp.X();
         }
@@ -919,7 +920,7 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeSideHit(
               << " petotal : " << petot << '\n';
         }
         nx++;
-        pex += pe;
+        // pex += pe; // unused
         if (postmp.X() < xmin) xmin = postmp.X();
         if (postmp.X() > xmax) xmax = postmp.X();
       }

@@ -6,10 +6,12 @@
 #include "icaruscode/IcarusObj/CRTTPCMatchingInfo.h"
 #include "icaruscode/IcarusObj/OpDetWaveformMeta.h"
 #include "icaruscode/IcarusObj/PMTWaveformTimeCorrection.h"
+#include "icaruscode/IcarusObj/Hit.h"
 //#include "icaruscode/IcarusObj/CRTPMTMatching.h"
 
 #include "sbnobj/ICARUS/PMT/Trigger/Data/OpticalTriggerGate.h"
 #include "sbnobj/ICARUS/PMT/Trigger/Data/TriggerGateData.h"
+#include "sbnobj/ICARUS/TPC/ChannelROI.h"
 
 #include "lardataobj/AnalysisBase/T0.h"
 #include "lardataobj/RecoBase/OpFlash.h"

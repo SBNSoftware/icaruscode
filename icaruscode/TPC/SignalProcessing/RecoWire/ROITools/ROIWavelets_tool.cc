@@ -169,8 +169,6 @@ void ROIWavelets::FindROIs(const art::Event& event, const ArrayFloat& constInput
 {
     if (waveletWaveforms.size() != constInputImage.size()) waveletWaveforms.resize(constInputImage.size(),icarus_signal_processing::VectorFloat(constInputImage[0].size()));
 
-    std::cout << "FindROIs input wave size: " << constInputImage[0].size() << ", fMaxRange: " << fMaxRange << std::endl;
-
     // Declare a holder for the input waveforms which has padding on each end 
     VectorFloat inputWaveform(constInputImage[0].size() + 2 * fMaxRange,0.);
     VectorFloat waveletVec(inputWaveform.size(),0.);

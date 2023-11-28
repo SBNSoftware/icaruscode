@@ -128,7 +128,7 @@ base {
     files: {
         wires: "icarus-wires-dualanode-v5.json.bz2",
 
-        fields: ["garfield-icarus-fnal-rev1.json.bz2"],
+        fields: ["garfield-icarus-fnal-rev2.json.bz2"],
 
        // noise: ["icarus_noise_model_int_TPCEE.json.bz2","icarus_noise_model_int_TPCEW.json.bz2","icarus_noise_model_int_TPCWE.json.bz2","icarus_noise_model_int_TPCWW.json.bz2"],
        // coherent_noise: ["icarus_noise_model_coh_TPCEE.json.bz2","icarus_noise_model_coh_TPCEW.json.bz2","icarus_noise_model_coh_TPCWE.json.bz2","icarus_noise_model_coh_TPCWW.json.bz2"],	

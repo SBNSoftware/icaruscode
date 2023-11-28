@@ -218,6 +218,10 @@ namespace crt {
     float    fZErrHit; ///< stat error of CRT hit reco Z (cm)
     uint64_t    fT0Hit; ///< hit time w.r.t. PPS
     Long64_t    fT1Hit; ///< hit time w.r.t. global trigger
+    int       fHitNChan;
+    float     fHitPE[32];
+    int       fHitMac[32];
+    int	      fHitChan[32];
     int       fHitReg; ///< region code of CRT hit
     int       fHitSubSys;
     int       fNHit; ///< number of CRT hits for this event
@@ -369,6 +373,8 @@ namespace crt {
     fDAQNtuple->Branch("gate_start_timestamp", &m_gate_start_timestamp, "gate_start_timestamp/l");
 
     // Define the branches of our SimHit n-tuple
+    fHitNtuple->Branch("run",         &fDetRun,      "run/I");
+    fHitNtuple->Branch("subrun",      &fDetSubRun,   "subrun/I");
     fHitNtuple->Branch("event",       &fHitEvent,    "event/I");
     fHitNtuple->Branch("nHit",        &fNHit,        "nHit/I");
     fHitNtuple->Branch("x",           &fXHit,        "x/F");
@@ -379,6 +385,10 @@ namespace crt {
     fHitNtuple->Branch("zErr",        &fZErrHit,     "zErr/F");
     fHitNtuple->Branch("t0",          &fT0Hit,       "t0/l");
     fHitNtuple->Branch("t1",          &fT1Hit,       "t1/L");
+    fHitNtuple->Branch("NChan",       &fHitNChan,       "nChan/I");
+    fHitNtuple->Branch("PEs",         &fHitPE,       "PEs[32]/F");
+    fHitNtuple->Branch("Macs",        &fHitMac,      "Mac[32]/I");
+    fHitNtuple->Branch("Chans",       &fHitChan,     "Chans[32]/I");
     fHitNtuple->Branch("region",      &fHitReg,      "region/I");  
     //    fHitNtuple->Branch("tagger",      &ftagger,      "tagger/C");  
     fHitNtuple->Branch("subSys",      &fHitSubSys,   "subSys/I");
@@ -583,7 +593,9 @@ namespace crt {
 	  int mactmp = hit.feb_id[0];
 	  fHitReg  = fCrtutils->AuxDetRegionNameToNum(fCrtutils->MacToRegion(mactmp));
 	  fHitSubSys =  fCrtutils->MacToTypeCode(mactmp);
-	  
+	  std::fill( std::begin( fHitPE ), std::end( fHitPE ), -1 );
+	  std::fill( std::begin( fHitMac ), std::end( fHitMac ), -1 );
+	  std::fill( std::begin( fHitMac ), std::end( fHitChan ), -1 );
 	  m_gate_crt_diff = m_gate_start_timestamp - hit.ts0_ns;
 	  m_crt_global_trigger = hit.ts0_ns - hit.ts1_ns;
 	  m_crtGT_trig_diff = m_crt_global_trigger - (m_trigger_timestamp%1'000'000'000);//'''						      
@@ -594,7 +606,36 @@ namespace crt {
 	     mf::LogError("CRTDataAnalysis") << "mactmp = " << mactmp << std::endl;
 	     mf::LogError("CRTDataAnalysis") << "could not find mac in pesmap!" << std::endl;
 	    continue;
-	  }	  
+	  }
+	  fHitNChan=0;
+          if(fHitSubSys==0){
+	     std::map<uint8_t, std::vector<std::pair<int,float>>>::const_iterator it;
+	     for (it = hit.pesmap.begin(); it!=hit.pesmap.end();it++){
+		std::vector<std::pair<int,float>> thisHit = it->second;
+		int hitsize = (int) thisHit.size();
+	     	for(int k=0; k< hitsize; k++){
+		   fHitPE[thisHit[k].first]=thisHit[k].second;
+		   fHitChan[thisHit[k].first]=thisHit[k].first;
+		   fHitMac[thisHit[k].first]=(int)it->first;
+		   if(thisHit[k].second>1) fHitNChan++;
+		}	
+  	     }
+	  } else if (fHitSubSys==1) {
+	     int arrpos=-1;
+	     std::map<uint8_t, std::vector<std::pair<int,float>>>::const_iterator it;
+	     for (it = hit.pesmap.begin(); it!=hit.pesmap.end();it++){
+                std::vector<std::pair<int,float>> thisHit = it->second;
+                int hitsize = (int) thisHit.size();
+		fHitNChan+=hitsize;
+                for(int k=0; k< hitsize; k++){
+		   arrpos++;
+		   if(arrpos>=32) continue;
+                   fHitPE[arrpos]=thisHit[k].second;
+                   fHitMac[arrpos]=(int)it->first;
+		   fHitChan[arrpos]=thisHit[k].first;
+                }
+             }
+	  }
 	  int chantmp = (*ittmp).second[0].first;
 	  
 	  fHitMod  = fCrtutils->MacToAuxDetID(mactmp, chantmp);

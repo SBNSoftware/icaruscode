@@ -100,50 +100,26 @@ public:
 
 private:
 
-    /// Record of all relevant table names.
-    struct TableNames_t {
-      std::string TPCfragmentMap;
-      std::string TPCreadoutBoardMap;
-      std::string PMTfragmentMap;
-      std::string CRTsideMap;
-      std::string CRTtopMap;
-      std::string CRTsideCalibrationMap;
-    };
-
     // Recover data from postgres database
     int GetDataset(const std::string&, const std::string&, const std::string&, Dataset&) const;
     int GetCRTCaldata(const std::string&, const std::string&, Dataset&) const;
     uint32_t fNothing;     //< Nothing
 
-    /// The set of tables being served. Chosen by `SelectRun()`.
-    TableNames_t const* fCurrentTable = nullptr;
+    /// The PMT timestamp being served. Chosen by `SelectPeriod()`.
+    std::string fCurrentPMTTimestamp = "";
 
-    /// The list of names of tables.
-    static std::array<TableNames_t, RunPeriods::NPeriods> const TableNameSets;
+    /// The list of available PMT timestamps.
+    static std::array<std::string, RunPeriods::NPeriods> const PMTTimestampSet;
 
 };
 
 //------------------------------------------------------------------------------------------------------------------------------------------
-std::array<ChannelMapPostGres::TableNames_t, RunPeriods::NPeriods> const
-ChannelMapPostGres::TableNameSets{
-  TableNames_t{
-      "icarus_hw_readoutboard"    // TPCfragmentMap
-    , "icarus_hardware_prd"       // TPCreadoutBoardMap
-    , "Pmt_placement"             // PMTfragmentMap
-    , "Feb_channels"              // CRTsideMap
-    , "topcrt_febs"               // CRTtopMap
-    , "SideCRT_calibration_data"  // CRTsideCalibrationMap
-  },
-  TableNames_t{
-      "icarus_hw_readoutboard"    // TPCfragmentMap
-    , "icarus_hardware_prd"       // TPCreadoutBoardMap
-    , "Pmt_placement"             // PMTfragmentMap      TODO need the new table!
-    , "Feb_channels"              // CRTsideMap
-    , "topcrt_febs"               // CRTtopMap
-    , "SideCRT_calibration_data"  // CRTsideCalibrationMap
-  }
+std::array<std::string, RunPeriods::NPeriods> const
+ChannelMapPostGres::PMTTimestampSet{
+   "start"    
+  ,"23aug2023"
+  ,"29aug2023"
 };
-
 
 //------------------------------------------------------------------------------------------------------------------------------------------
 ChannelMapPostGres::ChannelMapPostGres(fhicl::ParameterSet const &pset)
@@ -157,23 +133,23 @@ ChannelMapPostGres::ChannelMapPostGres(fhicl::ParameterSet const &pset)
 bool ChannelMapPostGres::SelectPeriod(RunPeriod period) {
   
   auto const iPeriod = static_cast<unsigned int>(period);
-  TableNames_t const* newSet = &(TableNameSets.at(iPeriod));
+  std::string newPMTTimestamp = PMTTimestampSet.at(iPeriod);
   
-  if (fCurrentTable == newSet) {
+  if (fCurrentPMTTimestamp == newPMTTimestamp) {
     mf::LogDebug("ChannelMapPostGres")
-      << "Period #" << iPeriod << " already selected";
+      << "Period " << newPMTTimestamp << " already selected";
   }
-  else if (fCurrentTable) {
-    mf::LogDebug("ChannelMapPostGres") << "Switched from period #"
-      << (fCurrentTable - &(TableNameSets[0])) << " to #" << iPeriod;
+  else if ( !fCurrentPMTTimestamp.empty() ) {
+    mf::LogDebug("ChannelMapPostGres") << "Switched from period "
+      << fCurrentPMTTimestamp << " to " << newPMTTimestamp;
   }
   else {
-    mf::LogDebug("ChannelMapPostGres") << "Switching to period #" << iPeriod;
+    mf::LogDebug("ChannelMapPostGres") << "Switching to period " << newPMTTimestamp;
   }
   
-  if (fCurrentTable == newSet) return false;
+  if (fCurrentPMTTimestamp == newPMTTimestamp) return false;
   
-  fCurrentTable = newSet;
+  fCurrentPMTTimestamp = newPMTTimestamp;
   return true;
   
 }
@@ -229,9 +205,8 @@ int ChannelMapPostGres::GetDataset(const std::string& name, const std::string& u
 //-----------------------------------------------------
 int ChannelMapPostGres::BuildTPCFragmentIDToReadoutIDMap(TPCFragmentIDToReadoutIDMap& fragmentBoardMap) const
 {
-    assert(fCurrentTable);
     const unsigned int tpcIdentifier(0x00001000);
-    const std::string  name(fCurrentTable->TPCfragmentMap);
+    const std::string  name("icarus_hw_readoutboard");
     const std::string  dburl("https://dbdata0vm.fnal.gov:9443/QE/hw/app/SQ/query?dbname=icarus_hardware_prd");
     const std::string  dataType("readout_boards");
     Dataset            dataset;
@@ -366,6 +341,7 @@ int ChannelMapPostGres::BuildTPCFragmentIDToReadoutIDMap(TPCFragmentIDToReadoutI
             releaseTuple(tuple);
         }
     }
+
     return error;
 }
 
@@ -379,8 +355,7 @@ int ChannelMapPostGres::BuildTPCFragmentIDToReadoutIDMap(TPCFragmentIDToReadoutI
 const unsigned int CHANNELSPERBOARD = 64;
 int ChannelMapPostGres::BuildTPCReadoutBoardToChannelMap(TPCReadoutBoardToChannelMap& rbChanMap) const
 {
-    assert(fCurrentTable);
-    const std::string  name(fCurrentTable->TPCreadoutBoardMap);
+    const std::string  name("icarus_hardware_prd");
     const std::string  dburl("https://dbdata0vm.fnal.gov:9443/QE/hw/app/SQ/query?dbname=icarus_hardware_prd");
     const std::string  dataType("daq_channels");
     Dataset            dataset;
@@ -429,16 +404,17 @@ int ChannelMapPostGres::BuildTPCReadoutBoardToChannelMap(TPCReadoutBoardToChanne
 //******************* PMT Channel Mapping ***********************
 int ChannelMapPostGres::BuildFragmentToDigitizerChannelMap(FragmentToDigitizerChannelMap& fragmentToDigitizerChannelMap) const
 {
-    assert(fCurrentTable);
+    assert( !fCurrentPMTTimestamp.empty() );
     // clearing is cleansing
     fragmentToDigitizerChannelMap.clear();
     // Recover the information from the database on the mapping 
-    const std::string  name(fCurrentTable->PMTfragmentMap);
+    const std::string  name("Pmt_placement");
     const std::string  dburl("https://dbdata0vm.fnal.gov:9443/QE/hw/app/SQ/query?dbname=icarus_hardware_prd");
+    const std::string  period_query("&w=period_active:eq:"+fCurrentPMTTimestamp);
     const std::string  dataType("pmt_placements");
     Dataset            dataset;
     // Recover the data from the database
-    int error = GetDataset(name,dburl,dataType,dataset);
+    int error = GetDataset(name,dburl+period_query,dataType,dataset);
     // If there was an error the function above would have printed a message so bail out
     if (error) throw(std::exception());
     // Ok, now we can start extracting the information
@@ -449,23 +425,24 @@ int ChannelMapPostGres::BuildFragmentToDigitizerChannelMap(FragmentToDigitizerCh
         Tuple tuple = getTuple(dataset, row);
         if (tuple != NULL)
         {
+     
             char digitizerBuffer[10];
             // Recover the digitizer label first 
-            getStringValue(tuple, 8, digitizerBuffer, sizeof(digitizerBuffer), &error);
+            getStringValue(tuple, 11, digitizerBuffer, sizeof(digitizerBuffer), &error);
             if (error) throw std::runtime_error("Encountered error when trying to recover the PMT digitizer label");
             std::string digitizerLabel(digitizerBuffer, 8); //sizeof(digitizerBuffer));
             // Recover the fragment id
-            unsigned fragmentID = getLongValue(tuple, 18, &error);
+            unsigned fragmentID = getLongValue(tuple, 15, &error);
             if (error) throw std::runtime_error("Encountered error when trying to recover the PMT fragment id");
             // Now recover the digitizer channel number
-            unsigned int digitizerChannelNo = getLongValue(tuple, 9, &error);
+            unsigned int digitizerChannelNo = getLongValue(tuple, 12, &error);
             if (error) throw std::runtime_error("Encountered error when trying to recover the PMT digitizer channel number");
             // Get the LArsoft channel ID
-            unsigned int channelID = getLongValue(tuple, 17, &error);
+            unsigned int channelID = getLongValue(tuple, 3, &error);
             if (error) throw std::runtime_error("Encountered error when trying to recover the PMT channel ID");
             // Get the laserChannelNumber 
             char laserChannelBuffer[10];
-            getStringValue(tuple, 7, laserChannelBuffer, sizeof(laserChannelBuffer), &error);
+            getStringValue(tuple, 10, laserChannelBuffer, sizeof(laserChannelBuffer), &error);
             if (error) throw std::runtime_error("Encountered error when trying to recover the PMT laser channel label");
             std::string laserChannelLabel(laserChannelBuffer, 2, sizeof(laserChannelBuffer)); //sizeof(digitizerBuffer));
             unsigned int laserChannel = std::stol(laserChannelLabel);  // try-catch syntax for stol or not necessary ? 
@@ -475,7 +452,7 @@ int ChannelMapPostGres::BuildFragmentToDigitizerChannelMap(FragmentToDigitizerCh
             releaseTuple(tuple);
         }
     }
-
+ 
     return error;
 }
 
@@ -484,11 +461,10 @@ int ChannelMapPostGres::BuildFragmentToDigitizerChannelMap(FragmentToDigitizerCh
   
   int ChannelMapPostGres::BuildCRTChannelIDToHWtoSimMacAddressPairMap(CRTChannelIDToHWtoSimMacAddressPairMap& crtChannelIDToHWtoSimMacAddressPairMap) const
   {
-    assert(fCurrentTable);
     // clearing is cleansing
     crtChannelIDToHWtoSimMacAddressPairMap.clear();
     // Recover the information from the database on the mapping 
-    const std::string  name(fCurrentTable->CRTsideMap);
+    const std::string  name("Feb_channels");
     const std::string  dburl("https://dbdata0vm.fnal.gov:9443/QE/hw/app/SQ/query?dbname=icarus_hardware_prd");
     const std::string  dataType("feb_channels");
     Dataset            dataset;
@@ -527,11 +503,10 @@ int ChannelMapPostGres::BuildFragmentToDigitizerChannelMap(FragmentToDigitizerCh
   //----------------------------------------------------
   int ChannelMapPostGres::BuildTopCRTHWtoSimMacAddressPairMap(TopCRTHWtoSimMacAddressPairMap& topcrtHWtoSimMacAddressPairMap) const
   {
-    assert(fCurrentTable);
     // clearing is cleansing
     topcrtHWtoSimMacAddressPairMap.clear();
     // Recover the information from the database on the mapping 
-    const std::string  name(fCurrentTable->CRTtopMap);
+    const std::string  name("topcrt_febs");
     const std::string  dburl("https://dbdata0vm.fnal.gov:9443/QE/hw/app/SQ/query?dbname=icarus_hardware_prd");
     const std::string  dataType("crtfeb");
     Dataset            dataset;
@@ -568,9 +543,8 @@ int ChannelMapPostGres::BuildFragmentToDigitizerChannelMap(FragmentToDigitizerCh
   //------------------------------------------------------------------------
 
   int ChannelMapPostGres::BuildSideCRTCalibrationMap(SideCRTChannelToCalibrationMap& sideCRTChannelToCalibrationMap) const {
-    assert(fCurrentTable);
     //    sideCRTChannelToCalibrationMap.clear();
-    const std::string  name(fCurrentTable->CRTsideCalibrationMap);
+    const std::string  name("SideCRT_calibration_data");
     const std::string dburl("https://dbdata0vm.fnal.gov:9443/icarus_con_prod/app/data?f=crt_gain_reco_data&t=1638918270");
     Dataset            ds;
     // Recover the data from the database
