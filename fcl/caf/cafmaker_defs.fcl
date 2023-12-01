@@ -313,6 +313,7 @@ cafmaker.TriggerLabel: "emuTrigger"
 cafmaker.FlashTrigLabel: "" # unavailable
 cafmaker.SimChannelLabel: "largeant"
 cafmaker.SystWeightLabels: ["genieweight", "fluxweight"]
+cafmaker.TPCPMTBarycenterMatchLabel: "tpcpmtbarycentermatch"
 cafmaker.TrackHitFillRREndCut: 30 # include entire PID region
 
 # Add CAFMaker to the list of producers
