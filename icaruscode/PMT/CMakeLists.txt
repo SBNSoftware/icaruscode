@@ -197,6 +197,7 @@ art_make_library(
             lardataobj::RecoBase
             lardata::Utilities)
 set(      MODULE_LIBRARIES
+	    sbnobj::Common_Trigger
             larcorealg::Geometry
             larana::OpticalDetector
             larcore::Geometry_Geometry_service
@@ -238,6 +239,7 @@ cet_build_plugin(PhotonPropogationICARUS art::module LIBRARIES ${MODULE_LIBRARIE
 cet_build_plugin(TrigInfo art::module LIBRARIES ${MODULE_LIBRARIES})
 cet_build_plugin(wvfAnaicarus art::module LIBRARIES ${MODULE_LIBRARIES})
 cet_build_plugin(OpHitCorrectionsChecker art::module LIBRARIES ${MODULE_LIBRARIES})
+cet_build_plugin(HitTiming art::module LIBRARIES ${MODULE_LIBRARIES})
 
 install_headers()
 install_fhicl()
