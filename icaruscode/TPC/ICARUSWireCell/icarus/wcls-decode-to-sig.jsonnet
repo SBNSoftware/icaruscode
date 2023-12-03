@@ -39,9 +39,17 @@ local params = params_init {
   files: super.files {
     fields: [ std.extVar('files_fields'), ],
   },
+  elec: {
+      type: "WarmElecResponse",
+      gain: 14.9654*wc.mV/wc.fC, // 0.0321 fC/(ADC*us)
+      shaping: 1.3*wc.us,
+      postgain: 1.0,
+      start: 0,
+    },
 };
 
-local tools_maker = import 'pgrapher/experiment/icarus/icarus_tools.jsonnet';
+local tools_maker = import 'pgrapher/common/tools.jsonnet';
+//local tools_maker = import 'icarus_tools.jsonnet';
 local tools = tools_maker(params);
 
 local wcls_maker = import 'pgrapher/ui/wcls/nodes.jsonnet';

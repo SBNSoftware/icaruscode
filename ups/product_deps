@@ -251,12 +251,12 @@ wpdir	product_dir	wire-cell-cfg
 ####################################
 product				version		qual	flags		<table_format=2>
 fftw				v3_3_10		-
-icarus_data			v09_79_01	-
-icarus_signal_processing	v09_75_00	-
-icarusalg			v09_78_02	-
-icarusutil			v09_75_00	-
+icarus_data			v09_80_00_01	-
+icarus_signal_processing	v09_79_00	-
+icarusalg			v09_79_00	-
+icarusutil			v09_79_00	-
 libwda				v2_30_0a	-
-sbncode				v09_78_02	-
+sbncode				v09_79_00	-
 cetmodules			v3_20_00	-	only_for_build
 end_product_list
 ####################################
@@ -313,10 +313,12 @@ end_product_list
 #
 ####################################
 qualifier	sbncode		icarusalg	icarusutil	icarus_signal_processing	icarus_data	fftw	libwda	notes
+c14:debug	c14:debug	c14:debug	c14:debug	c14:debug			-nq-		-nq-	-nq-
+c14:prof	c14:prof	c14:prof	c14:prof	c14:prof			-nq-		-nq-	-nq-
 c7:debug	c7:debug	c7:debug	c7:debug	c7:debug			-nq-		-nq-	-nq-
 c7:prof		c7:prof		c7:prof		c7:prof		c7:prof				-nq-		-nq-	-nq-
-e19:debug	e19:debug	e19:debug	e19:debug	e19:debug			-nq-		-nq-	-nq-
-e19:prof	e19:prof	e19:prof	e19:prof	e19:prof			-nq-		-nq-	-nq-
+e26:debug	e26:debug	e26:debug	e26:debug	e26:debug			-nq-		-nq-	-nq-
+e26:prof	e26:prof	e26:prof	e26:prof	e26:prof			-nq-		-nq-	-nq-
 e20:debug	e20:debug	e20:debug	e20:debug	e20:debug			-nq-		-nq-	-nq-
 e20:prof	e20:prof	e20:prof	e20:prof	e20:prof			-nq-		-nq-	-nq-
 end_qualifier_list

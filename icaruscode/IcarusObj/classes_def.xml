@@ -82,6 +82,20 @@
   <class name="art::Assns<anab::T0, sbn::crt::CRTHit, icarus::CRTTPCMatchingInfo>" />
   <class name="art::Wrapper<art::Assns<sbn::crt::CRTHit, anab::T0, icarus::CRTTPCMatchingInfo>>" />
   <class name="art::Wrapper<art::Assns<anab::T0, sbn::crt::CRTHit, icarus::CRTTPCMatchingInfo>>" /> 
-  
-  
+
+  <!-- icarus::Hit -->
+    <class name="icarus::Hit" ClassVersion="-1">
+    <version ClassVersion="-1" checksum="3524685965"/>
+   </class>
+  <class name="art::Ptr<icarus::Hit>"/>
+  <class name="art::PtrVector<icarus::Hit>"/>
+  <class name="std::vector<art::Ptr<icarus::Hit>>"/>
+  <class name="std::vector<icarus::Hit>"/>
+  <class name="art::Wrapper< std::vector< icarus::Hit>>"/>
+  <class name="art::Wrapper< std::vector< art::Ptr<icarus::Hit>>>"/>
+  <class name="art::Assns<icarus::Hit,recob::ChannelROI,void>"/>
+  <class name="art::Assns<recob::ChannelROI,icarus::Hit,void>"/>
+  <class name="art::Wrapper<art::Assns<icarus::Hit,recob::ChannelROI,void>>"/>
+  <class name="art::Wrapper<art::Assns<recob::ChannelROI,icarus::Hit,void>>"/>
+
 </lcgdict>

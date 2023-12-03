@@ -24,7 +24,7 @@ function(params, tools, override = {}) {
       dft: wc.tn(tools.dft),
       field_response: wc.tn(tools.field),
       ftoffset: 0.0, // default 0.0
-      ctoffset: 0.0*wc.microsecond, // default -8.0
+      ctoffset: 2.0*wc.microsecond, // default -8.0
       per_chan_resp: pc.name,
       fft_flag: 0,  // 1 is faster but higher memory, 0 is slightly slower but lower memory
       elecresponse : wc.tn(tools.elec_resp),

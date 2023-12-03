@@ -8,7 +8,6 @@ local wc = import 'wirecell.jsonnet';
 
 local io = import 'pgrapher/common/fileio.jsonnet';
 local tools_maker = import 'pgrapher/experiment/icarus/icarus_tools.jsonnet';
-// local params = import 'pgrapher/experiment/icarus/simparams.jsonnet';
 local base = import 'pgrapher/experiment/icarus/simparams.jsonnet';
 
 // load the electronics response parameters
@@ -98,6 +97,7 @@ local wcls_input = {
             	scale: -1, //scale is -1 to correct a sign error in the SimDepoSource converter.
             	art_tag: "ionization", //name of upstream art producer of depos "label:instance:processName"
             	assn_art_tag: "",
+              id_is_track: false,    // Use this for "id-is-index" in the output
         	},
     	}, nin=0, nout=1),
 };
@@ -201,38 +201,69 @@ local sp = sp_maker(params, tools);
 local sp_pipes = [sp.make_sigproc(a) for a in tools.anodes];
 
 local rng = tools.random;
-local wcls_simchannel_sink = g.pnode({
-  type: 'wclsDepoSetSimChannelSink',
-  name: 'postdrift',
-  data: {
-    artlabel: 'simpleSC',  // where to save in art::Event
-    anodes_tn: [wc.tn(anode) for anode in tools.anodes],
-    rng: wc.tn(rng),
-    tick: params.daq.tick,
-    start_time: -0.34 * wc.ms, // TriggerOffsetTPC from detectorclocks_icarus.fcl
-    readout_time: params.daq.readout_time,
-    nsigma: 3.0,
-    drift_speed: params.lar.drift_speed,
-    u_to_rp: 100 * wc.mm,
-    v_to_rp: 100 * wc.mm,
-    y_to_rp: 100 * wc.mm,
+local wcls_simchannel_sink_old = 
+  g.pnode({
+    type: 'wclsDepoSetSimChannelSink',
+    name: 'postdriftold',
+    data: {
+      artlabel: 'simpleSCOld',  // where to save in art::Event
+      anodes_tn: [wc.tn(anode) for anode in tools.anodes],
+      rng: wc.tn(rng),
+      tick: params.daq.tick,
+      start_time: -0.34 * wc.ms, // TriggerOffsetTPC from detectorclocks_icarus.fcl
+      readout_time: params.daq.readout_time,
+      nsigma: 3.0,
+      drift_speed: params.lar.drift_speed,
+      u_to_rp: 100 * wc.mm,
+      v_to_rp: 100 * wc.mm,
+      y_to_rp: 100 * wc.mm,
 
-    // GP: The shaping time of the electronics response (1.3us) shifts the peak
-    //     of the field response time. Eyeballing simulation times, it does this
-    //     by a bit less than the 1.3us (1us).
-    //
-    //     N.B. for future: there is likely an additional offset on the two induction
-    //     planes due to where the deconvolution precisely defines where the "peak"
-    //     of the pulse is. One may want to refine these parameters to account for that.
-    //     This perturbation shouldn't be more than a tick or two.
-    u_time_offset: std.extVar('time_offset_u') * wc.us,
-    v_time_offset: std.extVar('time_offset_v') * wc.us,
-    y_time_offset: std.extVar('time_offset_y') * wc.us,
+      // GP: The shaping time of the electronics response (1.3us) shifts the peak
+      //     of the field response time. Eyeballing simulation times, it does this
+      //     by a bit less than the 1.3us (1us).
+      //
+      //     N.B. for future: there is likely an additional offset on the two induction
+      //     planes due to where the deconvolution precisely defines where the "peak"
+      //     of the pulse is. One may want to refine these parameters to account for that.
+      //     This perturbation shouldn't be more than a tick or two.
+      u_time_offset: std.extVar('time_offset_u') * wc.us,
+      v_time_offset: std.extVar('time_offset_v') * wc.us,
+      y_time_offset: std.extVar('time_offset_y') * wc.us,
 
-    g4_ref_time: -1500 * wc.us, // G4RefTime from detectorclocks_icarus.fcl
-    use_energy: true,
-  },
-}, nin=1, nout=1, uses=tools.anodes);
+      g4_ref_time: -1500 * wc.us, // G4RefTime from detectorclocks_icarus.fcl
+      use_energy: true,
+    },
+  },nin=1, nout=1, uses=tools.anodes);
+
+local wcls_simchannel_sink =
+  g.pnode({
+    type: 'wclsDepoFluxWriter',
+    name: 'postdrift',
+    data: {
+      anodes: [wc.tn(anode) for anode in tools.anodes],
+      field_response: wc.tn(tools.field),
+
+      // time binning
+      tick: params.daq.tick,
+      window_start: -340 * wc.us, // TriggerOffsetTPC from detectorclocks_icarus.fcl
+      window_duration: params.daq.readout_time,
+
+      nsigma: 3.0,
+
+      reference_time: -1500 * wc.us - self.window_start, // G4RefTime from detectorclocks_icarus.fcl less window start as per Brett Viren
+
+      smear_long: 0.0,
+      smear_tran: 0.0,
+
+      time_offsets: [std.extVar('time_offset_u') * wc.us, std.extVar('time_offset_v') * wc.us, std.extVar('time_offset_y') * wc.us],
+
+      // input from art::Event
+      sed_label: 'largeant:TPCActive',
+
+      // output to art::Event
+      simchan_label: 'simpleSC',
+    },
+  },   nin=1, nout=1, uses=tools.anodes+[tools.field]);
 
 local nicks = ["incoTPCEE","incoTPCEW","incoTPCWE","incoTPCWW", "coheTPCEE","coheTPCEW","coheTPCWE","coheTPCWW"];
 local scale_int = std.extVar('int_noise_scale');
@@ -323,9 +354,9 @@ local pipe_reducer = util.fansummer('DepoSetFanout', analog_pipes, frame_summers
 //local frameio = io.numpy.frames(output);
 local sink = sim.frame_sink;
 
-// local graph = g.pipeline([wcls_input.depos, drifter,  wcls_simchannel_sink, bagger, pipe_reducer, retagger, wcls_output.sim_digits, sink]);
+// local graph = g.pipeline([wcls_input.depos, drifter,  wcls_simchannel_sink.simchannels, bagger, pipe_reducer, retagger, wcls_output.sim_digits, sink]);
 //local graph = g.pipeline([wcls_input.depos, drifter,  wcls_simchannel_sink, bagger, pipe_reducer, sink]);
-local graph = g.pipeline([wcls_input.deposet, setdrifter, wcls_simchannel_sink, pipe_reducer, sink]);
+local graph = g.pipeline([wcls_input.deposet, setdrifter, wcls_simchannel_sink_old, wcls_simchannel_sink, pipe_reducer, sink]);
 
 local app = {
   type: 'Pgrapher',
