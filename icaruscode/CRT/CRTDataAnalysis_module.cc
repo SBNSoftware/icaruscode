@@ -405,7 +405,8 @@ namespace crt {
     fHitNtuple->Branch("gate_crt_diff",&m_gate_crt_diff, "gate_crt_diff/l");
     fHitNtuple->Branch("crt_global_trigger",&m_crt_global_trigger,"crt_global_trigger/l");
     fHitNtuple->Branch("crtGT_trig_diff",&m_crtGT_trig_diff,"crtGT_trig_diff/L");
-    
+    fHitNtuple->Branch("hitFlag", &fHitFlag, "hitFlag/D");
+
     // Define the branches of our CRTPMTMatch ntuple
     fCRTPMTNtuple->Branch("event", &fMatchEvent, "event/I");
     fCRTPMTNtuple->Branch("run", &fMatchRun, "run/I");
