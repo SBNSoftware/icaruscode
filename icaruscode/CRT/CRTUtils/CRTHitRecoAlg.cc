@@ -991,10 +991,11 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeSideHit(
       t0_1 = infn.t0;
 
       if ((int)febA.size()==1) { 
+	posA = center;
 	if (fVerbose) 
 	  mf::LogInfo("CRTHitRecoAlg") 
             << "single ended readout: febA.size() = " 
-	    << febA.size() << ", flag = " << flag <<"\n";
+	    << febA.size() << ", flag = " << flag << ", set posA = center = " << posA.Z() << "\n";
 	continue;
       }
       // Check: Does macA == macA+1?
@@ -1092,7 +1093,7 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeSideHit(
 
     auto i = &infn - informationB.data();
     auto const& adsGeo = adGeo.SensitiveVolume(infn.strip);  // trigger stripi
-
+    center = adsGeo.GetCenter();
     if (((int)infn.mac5s != (int)informationB[i + 1].mac5s and
 	 i < (int)informationB.size() - 1) || flag == 6) {
       if((int)febB.size()==1 and i > 0) continue;
@@ -1100,6 +1101,7 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeSideHit(
       mac5_2 = (int)infn.mac5s;
       t0_2 = (uint64_t)infn.t0;
       if ((int)febB.size()==1) { // if single ended readout 
+	posB = center;
 	//posB.Z() = adsGeo.GetCenter().Z();
 	if(fVerbose) 
 	  mf::LogInfo("CRTHitRecoAlg: ") 
@@ -1198,6 +1200,10 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeSideHit(
     zposB = zposB / zposB_vec.size();
     posB =geo::Zaxis()*zposB;
   }
+
+  std::cout << "infoA size = " << (int)informationA.size() << ", infoB size = " << (int)informationB.size() << "\n";
+  std::cout << "febA size = " << (int)febA.size() << ", febB size = " << (int)febB.size()  << "\n";
+  std::cout << "mac5_1 = " << mac5_1 << ", mac5_2 = " << mac5_2 << "\n";
   // *** Flag 2: single ended readout on opposite ends on inner and outer layers
   int crossfeb = std::abs(mac5_1 - mac5_2);
   if ((int)informationA.size()==1 and 
