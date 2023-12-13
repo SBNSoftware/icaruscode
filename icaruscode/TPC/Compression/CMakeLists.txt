@@ -21,6 +21,7 @@ set(MODULE_LIBRARIES
                    sbndaq_artdaq_core::sbndaq-artdaq-core_Overlays
                    artdaq_core::artdaq-core_Utilities
                    art_root_io::TFileService_service
+                   icaruscode::Decode_DecoderTools_Dumpers
                    ${ROOT_BASIC_LIB_LIST}
                    ${ART_FRAMEWORK_CORE}
                    ${ART_FRAMEWORK_PRINCIPAL}
@@ -65,6 +66,7 @@ simple_plugin(ValidateFragmentCompression "plugin"
 
 cet_build_plugin(ProduceCompressedFragment art::module LIBRARIES ${MODULE_LIBRARIES})
 cet_build_plugin(TestProduceCompressed art::module LIBRARIES ${MODULE_LIBRARIES})
+cet_build_plugin(ProduceCompressed art::module LIBRARIES ${MODULE_LIBRARIES})
 
 install_headers()
 install_source()
