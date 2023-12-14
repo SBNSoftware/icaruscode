@@ -347,6 +347,7 @@ icarus::crt::CRTPMTMatchingAna::CRTPMTMatchingAna(fhicl::ParameterSet const& p)
   fMatchTree->Branch("opHit_z", &fOpHitZ);
   fMatchTree->Branch("opHit_t", &fOpHitT);
   fMatchTree->Branch("opHit_amplitude", &fOpHitA);
+  fMatchTree->Branch("nOpHitOverThreshold", &fnOpHitAboveThreshold);
   fMatchTree->Branch("inTime", &fInTime);
   fMatchTree->Branch("inTime_beam", &fInTime_beam);
   fMatchTree->Branch("inTime_gate", &fInTime_gate);
