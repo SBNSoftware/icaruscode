@@ -1,0 +1,80 @@
+#include "LArG4.fcl"
+#include "services_icarus_simulation.fcl"
+#include "larg4_services_icarus.fcl"
+#include "rootoutput_icarus.fcl"
+
+#include "ionandscint_icarus.fcl"
+#include "simdrift_icarus.fcl"
+#include "PDFastSim_icarus.fcl"
+#include "config_genericCRT.fcl"
+#include "mcreco.fcl"
+
+process_name: G4
+
+services: {
+       @table::icarus_g4_services
+       @table::icarus_larg4_services
+}
+
+source:
+{
+  module_type: RootInput
+}
+
+
+physics:
+{
+
+  producers:
+  {
+    rns: { module_type: "RandomNumberSaver" }
+
+    # A dummy module that forces the G4 physics list to be loaded
+    loader: { module_type: "PhysListLoader" }
+
+    # The geant4 step
+    largeant: @local::standard_larg4
+
+    # Creation of ionization electrons and scintillation photons (keep ionization name for compatibility)
+    ionization: @local::icarus_ionandscint
+
+    # Light propogation
+    pdfastsim: @local::icarus_pdfastsim_pvs
+
+    # Electron propogation
+    simdrift: @local::icarus_simdrift
+
+    # Truth-level reconstruction
+    mcreco: @local::standard_mcreco
+
+    # Generic CRT
+    genericcrt: @local::sbnd_genericCRT
+
+  }
+
+  # All producers and filters modules for this path, order matters
+  simulate: [ rns
+            , loader
+            , largeant
+            , ionization
+            , pdfastsim
+            , simdrift
+            , mcreco
+            , genericcrt
+          ]
+
+  # The output stream, there could be more than one if using filters
+  stream1: [ rootoutput ]
+
+  # Contains the paths that modify the art::event
+  trigger_paths: [ simulate ]
+
+  # Contains the paths that do not modify the art::Event
+  end_paths: [ stream1 ]
+}
+
+physics.producers.mcreco.G4ModName: "simdrift"
+physics.producers.mcreco.MCParticleLabel: "largeant"
+physics.producers.mcreco.SimChannelLabel: "simdrift"
+
+outputs.rootoutput: @local::icarus_rootoutput
