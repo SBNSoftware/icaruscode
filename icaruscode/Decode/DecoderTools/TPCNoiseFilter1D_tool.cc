@@ -158,6 +158,7 @@ private:
     bool                                           fDiagnosticOutput;       //< If true will spew endless messages to output
     FloatPairVec                                   fFFTSigmaValsVec;        //< Gives the sigmas for the filter function
     FloatPairVec                                   fFFTCutoffValsVec;       //< Gives the cutoffs for the filter function
+    std::string                                    fDenoiserType;           //< Describes the specific denoiser to use
       
     std::vector<std::string>                       fFilterModeVec;          //< Allowed modes for the filter
 
@@ -232,6 +233,8 @@ void TPCNoiseFilter1DMC::configure(fhicl::ParameterSet const &pset)
     fFFTSigmaValsVec       = pset.get<FloatPairVec            >("FFTSigmaVals",        FloatPairVec()={{1.5,20.}, {1.5,20.}, {2.0,20.}});
     fFFTCutoffValsVec      = pset.get<FloatPairVec            >("FFTCutoffVals",       FloatPairVec()={{8.,800.}, {8.,800.}, {0.0,800.}});
 
+    fDenoiserType          = pset.get<std::string             >("DenoiserType",        "default");
+
     fGeometry   = art::ServiceHandle<geo::Geometry const>{}.get();
 
     fFFTFilterFunctionVec.clear();
@@ -286,11 +289,23 @@ void TPCNoiseFilter1DMC::process_fragment(detinfo::DetectorClocksData const&,
 
     if (fFilterFunctionVec.size() < numChannels) fFilterFunctionVec.resize(numChannels);
 
-//    icarus_signal_processing::Denoiser1D_Protect   denoiser;
-//    icarus_signal_processing::Denoiser1D_Ave       denoiser;
-    icarus_signal_processing::Denoiser1D_PCA       denoiser;
-//    icarus_signal_processing::Denoiser1D_NoCoherent       denoiser;
-//    icarus_signal_processing::Denoiser1D           denoiser;
+    //icarus_signal_processing::IDenoiser1D* denoiser = nullptr;
+
+    //denoiser = std::unique_ptr<icarus_signal_processing::Denoiser1D_NoCoherent>(new icarus_signal_processing::Denoiser1D_NoCoherent()).get();
+
+
+    // Assume we don't ask for coherent noise subtraction
+    std::unique_ptr<icarus_signal_processing::IDenoiser1D> denoiser(new icarus_signal_processing::Denoiser1D());
+
+    if (!fDenoiserType.compare("nonoise"))
+            denoiser = std::unique_ptr<icarus_signal_processing::IDenoiser1D>(new icarus_signal_processing::Denoiser1D_NoCoherent());
+
+    if (!fDenoiserType.compare("pca"))
+            denoiser = std::unique_ptr<icarus_signal_processing::IDenoiser1D>(new icarus_signal_processing::Denoiser1D_PCA());
+
+    if (!fDenoiserType.compare("ave"))
+            denoiser = std::unique_ptr<icarus_signal_processing::IDenoiser1D>(new icarus_signal_processing::Denoiser1D_Ave());
+
     icarus_signal_processing::WaveformTools<float> waveformTools(5);
 
     // Make a pass throught to do pedestal corrections and get raw waveform information
@@ -386,19 +401,19 @@ void TPCNoiseFilter1DMC::process_fragment(detinfo::DetectorClocksData const&,
         std::fill(fSelectVals[idx].begin(),fSelectVals[idx].end(),false);
     }
 
-    denoiser(fWaveLessCoherent.begin(),
-             fPedCorWaveforms.begin(),
-             fMorphedWaveforms.begin(),
-             fIntrinsicRMS.begin(),
-             fSelectVals.begin(),
-             fROIVals.begin(),
-             fCorrectedMedians.begin(),
-             fFilterFunctionVec.begin(),
-             fThresholdVec,
-             numChannels,
-             coherentNoiseGrouping,
-             fCoherentNoiseOffset,
-             fMorphWindow);
+    (*denoiser)(fWaveLessCoherent.begin(),
+                fPedCorWaveforms.begin(),
+                fMorphedWaveforms.begin(),
+                fIntrinsicRMS.begin(),
+                fSelectVals.begin(),
+                fROIVals.begin(),
+                fCorrectedMedians.begin(),
+                fFilterFunctionVec.begin(),
+                fThresholdVec,
+                numChannels,
+                coherentNoiseGrouping,
+                fCoherentNoiseOffset,
+                fMorphWindow);
 
     theClockTotal.stop();
 
