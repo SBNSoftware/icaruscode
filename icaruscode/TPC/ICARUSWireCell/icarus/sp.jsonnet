@@ -27,7 +27,7 @@ function(params, tools, override = {}) {
       ctoffset: 2.0*wc.microsecond, // default -8.0
       per_chan_resp: pc.name,
       fft_flag: 0,  // 1 is faster but higher memory, 0 is slightly slower but lower memory
-      elecresponse : wc.tn(tools.elec_resp),
+      elecresponse : wc.tn(tools.elec_resp[2]),
       postgain: 1,  // default 1.2
       ADC_mV: 4096 / (3300.0 * wc.mV),  // default 4096/2000
       troi_col_th_factor: 5.0,  // default 5
@@ -71,6 +71,6 @@ function(params, tools, override = {}) {
       process_planes: [0, util.anode_split(anode.data.ident)], // balance the left and right split
 
     } + override,
-  }, nin=1, nout=1, uses=[anode, tools.dft, tools.field, tools.elec_resp] + pc.uses + spfilt),
+  }, nin=1, nout=1, uses=[anode, tools.dft, tools.field, tools.elec_resp[2]] + pc.uses + spfilt),
 
 }

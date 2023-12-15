@@ -52,6 +52,8 @@ standard_wirecell_sigproc:
   
         // Save output signal waveforms (recob::Wire) in "sparse" or "dense" form
         signal_output_form: "sparse"
+
+        file_rcresp: "icarus_fnal_rc_tail.json"
      }
   }
 }
