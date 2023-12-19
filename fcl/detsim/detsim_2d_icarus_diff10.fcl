@@ -1,0 +1,46 @@
+#include "services_icarus_simulation.fcl"
+#include "detsimmodules_wirecell_ICARUS.fcl"
+#include "opdetsim_pmt_icarus.fcl"
+#include "crtsimmodules_icarus.fcl"
+#include "rootoutput_icarus.fcl"
+
+process_name: DetSim
+
+services: {
+  @table::icarus_detsim_services
+  #FileCatalogMetadata:  @local::art_file_catalog_mc
+} # services
+
+
+physics: {
+
+  producers: {
+    crtdaq:         @local::icarus_crtsim
+     opdaq:         @local::icarus_simpmt
+       daq:         @local::icarus_simwire_wirecell
+
+       rns:         { module_type: "RandomNumberSaver" }
+  } # producers
+  
+  simulate: [ rns, opdaq, daq, crtdaq ]
+  
+  # define the output stream, there could be more than one if using filters
+  stream:  [ rootoutput ]
+
+} # physics
+
+
+outputs: {
+  rootoutput: @local::icarus_rootoutput
+}
+
+# Field Responce input customisation
+# physics.producers.daq.wcls_main.params.files_fields: "icarus_testFR_1.json.bz2"
+
+#
+# customisation
+#
+
+# we are suppressing channels with no signal in the TPC
+# physics.producers.daq.SuppressNoSignal: true
+physics.producers.daq.wcls_main.structs.DL: 4.4e-9

@@ -16,14 +16,22 @@
 #include "icaruscode/PMT/Algorithms/PMTverticalSlicingAlg.h"
 #include "icaruscode/Utilities/TrajectoryUtils.h"
 #include "icaruscode/Utilities/ArtAssociationCaches.h" // OneToOneAssociationCache
+#include "icarusalg/Utilities/TrackTimeInterval.h"
+#include "icarusalg/Utilities/AssnsCrosser.h"
 #include "sbnobj/Common/CRT/CRTHit.hh"
 #include "sbnobj/Common/Trigger/ExtraTriggerInfo.h"
 
 // LArSoft libraries
 #include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
+#include "lardata/DetectorInfoServices/DetectorClocksService.h"
 #include "larcore/Geometry/Geometry.h"
 #include "larcore/CoreUtils/ServiceUtil.h" // lar::providerFrom()
+#include "lardataalg/DetectorInfo/DetectorTimingTypes.h" // electronics_time
+#include "lardataalg/DetectorInfo/DetectorTimings.h"
 #include "lardataalg/DetectorInfo/DetectorPropertiesData.h"
+#include "lardataalg/DetectorInfo/DetectorClocksData.h"
+#include "lardataalg/Utilities/quantities/spacetime.h" // microseconds
+#include "lardataalg/Utilities/StatCollector.h" // lar::util::MinMaxCollector
 #include "larcorealg/Geometry/GeometryCore.h"
 #include "larcorealg/Geometry/OpDetGeo.h"
 #include "larcorealg/CoreUtils/zip.h"
@@ -77,18 +85,25 @@ namespace {
   
   // ---------------------------------------------------------------------------
   /// Returns the sequence of `track` valid points (as geometry points).
-  std::vector<geo::Point_t> extractTrajectory
+  std::pair<std::vector<geo::Point_t>, std::vector<geo::Vector_t>>
+  extractTrajectory
     (recob::Track const& track, bool reverse = false, geo::Vector_t shift = {})
   {
     std::vector<geo::Point_t> trackPath;
+    std::vector<geo::Vector_t> trackMom;
     std::size_t index = track.FirstValidPoint();
     while (index != recob::TrackTrajectory::InvalidIndex) {
       trackPath.push_back(track.LocationAtPoint(index) + shift);
+      trackMom.push_back(track.MomentumVectorAtPoint(index));
       if (++index >= track.NPoints()) break;
       index = track.NextValidPoint(index);
     }
-    if (reverse) std::reverse(trackPath.begin(), trackPath.end());
-    return trackPath;
+    if (reverse) {
+      std::reverse(trackPath.begin(), trackPath.end());
+      std::reverse(trackMom.begin(), trackMom.end());
+      for (geo::Vector_t& mom: trackMom) mom *= -1.0;
+    }
+    return { std::move(trackPath), std::move(trackMom) };
   } // extractTrajectory()
   
   
@@ -377,6 +392,7 @@ public:
                           unsigned hkey,
                           const recob::Track &trk,
                           const recob::TrackHitMeta &thm,
+                          bool flippedTrack,
                           const std::vector<anab::Calorimetry const*> &calo,
                           const geo::GeometryCore *geo);
 
@@ -392,6 +408,8 @@ public:
 
 private:
   
+  using electronics_time = detinfo::timescales::electronics_time;
+  using microseconds = util::quantities::intervals::microseconds;
   
   // --- BEGIN -- Configuration parameters -------------------------------------
   
@@ -478,74 +496,28 @@ private:
     detinfo::DetectorPropertiesData const& detProp
     ) const;
   
-  /// Connects `recob::Track` to `anab::T0` via intermediate `recob::PFParticle`
-  class TPCT0fromTrackBrowser {
-      public:
+  /**
+   * @brief Returns the most significative distance of a `time` from a `range`.
+   * @param time time to be checked
+   * @param range time range `time` is going to be compared to
+   * @returns the most significative distance of a `time` from a `range`
+   * 
+   * If `time` is contained in the range, the return value is negative and its
+   * modulus is the distance from the closest `range` boundary; no information
+   * is encoded about which of the boundaries that is.
+   * 
+   * If `time` is not contained in the range, the return value is positive and
+   * its modulus is again the distance from the closest `range` boundary, which
+   * is also the one crossed by `time`.
+   * 
+   * The rule also holds for ranges where the start time is larger than the stop
+   * time. If `range` is not valid, it is interpreted as a range containing all
+   * time, and the return value is `0`.
+   */
+  static microseconds distanceFromTimeRange(
+    electronics_time time, lar::util::TrackTimeInterval::TimeRange const& range
+    );
     
-    /**
-     * @brief Constructor.
-     * @param event the _art_ event to read data from when needed
-     * @param trackParticleAssnsTag (default: none) tag of particle/track associations
-     * 
-     * If `trackParticleAssnsTag` is empty, it will be figured out from the
-     * first query, assuming that the producer of the track is also the one
-     * of the particle flow object associations to them.
-     */
-    TPCT0fromTrackBrowser(
-      art::Event const& event,
-      art::InputTag const& trackParticleAssnsTag = {},
-      art::InputTag const& particleT0AssnsTag = {}
-      );
-    
-    /// Declares the data products that may be consumed to the `collector`.
-    void declareConsumes(art::ConsumesCollector& collector) const;
-    
-    //@{
-    /// Returns the `anab::T0` associated to the specified track.
-    art::Ptr<anab::T0> findT0for(art::Ptr<recob::Track> const& trackPtr);
-    art::Ptr<anab::T0> operator() (art::Ptr<recob::Track> const& trackPtr)
-      { return findT0for(trackPtr); }
-    //@}
-    
-    
-    /// Declares the data products that may be consumed to the `collector`.
-    static void declareConsumes(
-      art::ConsumesCollector& collector
-      , art::InputTag const& trackParticleAssnsTag
-      , art::InputTag const& particleT0AssnsTag
-      );
-  
-      private:
-    art::Event const* fEvent; ///< Event to read data on demand.
-    
-    /// Tag for the particle/track associations.
-    art::InputTag fTrackParticleAssnsTag;
-    
-    /// Tag for the t0/particle associations.
-    art::InputTag fParticleT0AssnsTag;
-    
-    /// Track to PFO cache.
-    util::OneToOneAssociationCache<recob::Track, recob::PFParticle> fTrackToPFO;
-    
-    /// PFO to TO cache.
-    util::OneToOneAssociationCache<recob::PFParticle, anab::T0> fPFOtoT0;
-    
-    /// Returns the `recob::PFParticle` associated to `trackPtr`, null if none.
-    art::Ptr<recob::PFParticle> findPFOforTrack(art::Ptr<recob::Track> const& trackPtr);
-    
-    /// Returns the `anab::T0` associated to `particlePtr`, null if none.
-    art::Ptr<anab::T0> findT0forPFO(art::Ptr<recob::PFParticle> const& particlePtr);
-    
-    /// Lookup which queries `cache` and loads more data into it if needed.
-    template <typename Left, typename Right>
-    art::Ptr<Right> findAssociatedPtr(
-      art::Ptr<Left> const& leftPtr,
-      util::OneToOneAssociationCache<Left, Right>& cache,
-      art::InputTag* assnsTag = nullptr
-      );
-
-  }; // TPCT0fromTrackBrowser
-  
 }; // sbn::TimeTrackTreeStorage
 
 
@@ -640,8 +612,6 @@ sbn::TimeTrackTreeStorage::TimeTrackTreeStorage(Parameters const& p)
   consumes<std::vector<sim::BeamGateInfo>>(fBeamGateProducer);
   consumes<sbn::ExtraTriggerInfo>(fTriggerProducer);
   consumes<art::Assns<recob::Track, recob::PFParticle>>(fTrackProducer);
-  TPCT0fromTrackBrowser::declareConsumes
-    (consumesCollector(), fPFPproducer, fT0Producer);
   consumes<art::Assns<recob::Track, anab::Calorimetry>>(fCaloProducer);
   consumes<art::Assns<recob::Track, recob::Hit, recob::TrackHitMeta>>(fTrackProducer);
   consumes<recob::OpFlash>(fFlashProducer);
@@ -682,10 +652,27 @@ void sbn::TimeTrackTreeStorage::analyze(art::Event const& e)
    * can be missing (or better, with a special invalid value).
    * 
    */
+  
+  using namespace util::quantities::time_literals; // ""_us
+  using trigger_time = detinfo::timescales::trigger_time;
+  
+  //
+  // reach for all the needed services (geometry, timing and detector state)
+  //
   const geo::GeometryCore *geom = lar::providerFrom<geo::Geometry>();
   
+  detinfo::DetectorClocksData const detClocks
+    = art::ServiceHandle<detinfo::DetectorClocksService>()->DataFor(e);
+  
   detinfo::DetectorPropertiesData const detProp
-    = art::ServiceHandle<detinfo::DetectorPropertiesService>()->DataFor(e);
+    = art::ServiceHandle<detinfo::DetectorPropertiesService>()->DataFor
+      (e, detClocks)
+    ;
+  
+  detinfo::DetectorTimings const detTimings{ detClocks };
+  
+  lar::util::TrackTimeInterval const allowedTrackTime
+    { *geom, detProp, detTimings };
   
   //
   // event identification
@@ -746,7 +733,8 @@ void sbn::TimeTrackTreeStorage::analyze(art::Event const& e)
   art::FindOneP<anab::T0> TrackT0s(tracks,e,fT0selProducer);
   
   // t0 from TPC (cathode crossing tracks)
-  TPCT0fromTrackBrowser TrackTPCt0s{ e, fPFPproducer, fT0Producer };
+  icarus::ns::util::AssnsCrosser<recob::Track, recob::PFParticle, anab::T0> const
+  TrackTPCt0s{ e, fPFPproducer, fT0Producer };
   
   // optical flashes
   std::vector<recob::OpFlash> const &particleFlashes = e.getProduct<std::vector<recob::OpFlash>>(fFlashProducer);
@@ -778,6 +766,10 @@ void sbn::TimeTrackTreeStorage::analyze(art::Event const& e)
     art::Ptr<recob::Track> const& trackPtr = tracks.at(iTrack);
     if(trackPtr.isNull()) continue;
     
+    // decide immediately if the track needs to be flipped
+    bool const flipTrack
+      = fForceDowngoing && (trackPtr->StartDirection().Y() > 0.0);
+    
     //
     // matched CRT information
     //
@@ -794,18 +786,22 @@ void sbn::TimeTrackTreeStorage::analyze(art::Event const& e)
       = trackCalorimetry.at(iTrack);
     std::vector<art::Ptr<recob::Hit>> const& allHits = trkht.at(iTrack);
     std::vector<const recob::TrackHitMeta*> const& trkmetas = trkht.data(iTrack);
+    
+    lar::util::MinMaxCollector<float> hitTimeRange;
 
     fHitStore.clear();
     UniqueVector<geo::TPCID> TPCs; // collect the list of TPC for later
-    for (size_t ih = 0; ih < allHits.size(); ++ih)
+    for (auto const& [ hitPtr, pTrkMeta ]: util::zip(allHits, trkmetas))
     {
-      art::Ptr<recob::Hit> const& hitPtr = allHits[ih];
-      geo::WireID const wire = hitPtr->WireID();
+      recob::Hit const& hit = *hitPtr;
+      geo::WireID const wire = hit.WireID();
       if (!wire.isValid) continue;
       TPCs.push_back(wire);
+      hitTimeRange.add(hit.PeakTime());
       if (wire.Plane != 2) continue;
-      fHitStore.push_back
-        (makeHit(*hitPtr, hitPtr.key(), *trackPtr, *trkmetas[ih], calorimetry, geom));
+      fHitStore.push_back(makeHit
+        (hit, hitPtr.key(), *trackPtr, *pTrkMeta, flipTrack, calorimetry, geom)
+        );
     }
     if (TPCs.empty()) {
       // this is needed for corrections; if needed, this check may be made optional,
@@ -819,6 +815,7 @@ void sbn::TimeTrackTreeStorage::analyze(art::Event const& e)
     //
     sbn::selTrackInfo trackInfo;
     trackInfo.trackID = trackPtr->ID();
+    trackInfo.flipped = flipTrack;
     
     art::Ptr<anab::T0> const& t0Ptr = TrackT0s.at(iTrack);
     if (!t0Ptr) {
@@ -836,13 +833,33 @@ void sbn::TimeTrackTreeStorage::analyze(art::Event const& e)
     bool const hasT0 = (t0Ptr->ID() >= 0);
     if (hasT0) trackInfo.t0 = t0Ptr->Time() / 1000.0; // otherwise stays NoTime
     
-    art::Ptr<anab::T0> const& t0TPCPtr = TrackTPCt0s(trackPtr);
+    art::Ptr<anab::T0> const& t0TPCPtr = TrackTPCt0s.assPtr(trackPtr);
     // differently from CRT, we assume that all available T0 from TPC are valid
     bool const hasTPCT0 = t0TPCPtr.isNonnull();
     if (hasTPCT0)
       trackInfo.t0_TPC = t0TPCPtr->Time() / 1000.0; // nanoseconds -> microseconds
     
     trackInfo.t0_CRT = fCRTInfo.time; // replica
+    
+    lar::util::TrackTimeInterval::TimeRange const trackTimeRange
+      = allowedTrackTime.timeRangeOfHits(allHits);
+    
+    trackInfo.t0_TPC_min
+      = detTimings.toTriggerTime(trackTimeRange.start).value();
+    trackInfo.t0_TPC_max
+      = detTimings.toTriggerTime(trackTimeRange.stop).value();
+    
+    electronics_time const t0_elec
+      = detTimings.toElectronicsTime(trigger_time{ trackInfo.t0 });
+    trackInfo.t0_diff = distanceFromTimeRange(t0_elec, trackTimeRange).value();
+    
+    electronics_time const t0_CRT_elec
+      = detTimings.toElectronicsTime(trigger_time{ trackInfo.t0_CRT });
+    trackInfo.t0_CRT_diff
+      = distanceFromTimeRange(t0_CRT_elec, trackTimeRange).value();
+    
+    trackInfo.hitTick_min = hitTimeRange.min();
+    trackInfo.hitTick_max = hitTimeRange.max();
     
     //
     // correction on position from time:
@@ -859,14 +876,14 @@ void sbn::TimeTrackTreeStorage::analyze(art::Event const& e)
       ;
     trackInfo.driftCorrX = positionShift.X();
 
-    recob::tracking::Vector_t startDir = trackPtr->StartDirection();
-    bool const flipTrack = fForceDowngoing && (startDir.Y() > 0.0);
-    
-    std::vector<geo::Point_t> const trackPath
+    // the trajectory in space is thoroughly flipped if required;
+    // directions/momenta are not, and explicit treatment is needed.
+    auto const& [ trackPath, trackMom ]
       = extractTrajectory(*trackPtr, flipTrack, positionShift);
     
     recob::tracking::Point_t const& startPoint = trackPath.front();
     recob::tracking::Point_t const& endPoint = trackPath.back();
+    recob::tracking::Vector_t const& startDir = trackMom.front();
     
     trackInfo.start_x = startPoint.X();
     trackInfo.start_y = startPoint.Y();
@@ -1070,6 +1087,7 @@ sbn::selHitInfo sbn::TimeTrackTreeStorage::makeHit(const recob::Hit &hit,
                                                    unsigned hkey,
                                                    const recob::Track &trk,
                                                    const recob::TrackHitMeta &thm,
+                                                   bool flippedTrack,
                                                    const std::vector<anab::Calorimetry const*> &calo,
                                                    const geo::GeometryCore *geom)
 {
@@ -1098,12 +1116,16 @@ sbn::selHitInfo sbn::TimeTrackTreeStorage::makeHit(const recob::Hit &hit,
   // Save trajectory information if we can
   if(!badhit)
   {
+    // note that the track `trk` never comes flipped:
+    // indices are still consistent between trajectory point, hit and metadata;
+    // but all flipping needs to be done by hand here
     geo::Point_t const& loc = trk.LocationAtPoint(thm.Index());
     hinfo.px = loc.X();
     hinfo.py = loc.Y();
     hinfo.pz = loc.Z();
   
-    geo::Vector_t const& dir = trk.DirectionAtPoint(thm.Index());
+    geo::Vector_t const dir
+      = (flippedTrack? -1: +1) * trk.DirectionAtPoint(thm.Index());
     hinfo.dirx = dir.X();
     hinfo.diry = dir.Y();
     hinfo.dirz = dir.Z();
@@ -1111,6 +1133,9 @@ sbn::selHitInfo sbn::TimeTrackTreeStorage::makeHit(const recob::Hit &hit,
     // And determine if the Hit is on a Calorimetry object
     for (anab::Calorimetry const* c: calo) {
       if (c->PlaneID().Plane != hinfo.plane) continue;
+      
+      auto const sortRange = [fullRange=c->Range(), flippedTrack]
+        (float rr){ return flippedTrack? (fullRange - rr): rr; };
       
       // Found the plane! Now find the hit:
       for (unsigned i_calo = 0; i_calo < c->dQdx().size(); i_calo++) {
@@ -1121,7 +1146,7 @@ sbn::selHitInfo sbn::TimeTrackTreeStorage::makeHit(const recob::Hit &hit,
         hinfo.pitch = c->TrkPitchVec()[i_calo];
         hinfo.dqdx = c->dQdx()[i_calo];
         hinfo.dEdx = dEdx_calc(hinfo.dqdx, fMODA, fMODB, fWion, fEfield);
-        hinfo.rr = c->ResidualRange()[i_calo];
+        hinfo.rr = sortRange(c->ResidualRange()[i_calo]);
         break;
       } // for i_calo
       break;
@@ -1289,98 +1314,50 @@ geo::Vector_t sbn::TimeTrackTreeStorage::posShiftFromCRTtime(
 
 
 // -----------------------------------------------------------------------------
-// --- BEGIN -- Implementation for association traverse with two hops ----------
-// -----------------------------------------------------------------------------
-sbn::TimeTrackTreeStorage::TPCT0fromTrackBrowser::TPCT0fromTrackBrowser(
-  art::Event const& event,
-  art::InputTag const& trackParticleAssnsTag /* = {} */,
-  art::InputTag const& particleT0AssnsTag /* = {} */
-)
-  : fEvent{ &event }
-  , fTrackParticleAssnsTag{ trackParticleAssnsTag }
-  , fParticleT0AssnsTag{ particleT0AssnsTag }
-  {}
-
-
-void sbn::TimeTrackTreeStorage::TPCT0fromTrackBrowser::declareConsumes
-  (art::ConsumesCollector& collector) const
-  { declareConsumes(collector, fTrackParticleAssnsTag, fParticleT0AssnsTag); }
-
-
-art::Ptr<anab::T0> sbn::TimeTrackTreeStorage::TPCT0fromTrackBrowser::findT0for
-  (art::Ptr<recob::Track> const& trackPtr)
+auto sbn::TimeTrackTreeStorage::distanceFromTimeRange
+  (electronics_time time, lar::util::TrackTimeInterval::TimeRange const& range)
+  -> microseconds
 {
-  art::Ptr<recob::PFParticle> particlePtr = findPFOforTrack(trackPtr);
-  if (trackPtr.isNull()) return {};
+  using namespace util::quantities::time_literals;
   
-  art::Ptr<anab::T0> t0Ptr = findT0forPFO(particlePtr);
-  return t0Ptr;
-} // sbn::TimeTrackTreeStorage::TPCT0fromTrackBrowser::findT0for()
-
-
-template <typename Left, typename Right>
-art::Ptr<Right>
-sbn::TimeTrackTreeStorage::TPCT0fromTrackBrowser::findAssociatedPtr(
-  art::Ptr<Left> const& leftPtr,
-  util::OneToOneAssociationCache<Left, Right>& cache,
-  art::InputTag* assnsTag /* = nullptr */
-) {
-  // check cache
-  art::Ptr<Right> rightPtr = cache(leftPtr);
-  if (rightPtr) return rightPtr;
+  if (!range.isValid()) return 0_us; // all-inclusive range, perfect match
   
-  if (cache.hasProduct(leftPtr)) return {}; // can't load anything new here
+  // how much beyond the boundary the time is (negative = within boundary):
+  microseconds const startDiff = range.start - time;
+  microseconds const stopDiff = time - range.stop;
   
-  // if no hit, load new associations
-  art::InputTag const tag
-    = (!assnsTag || assnsTag->empty())? inputTagOf(leftPtr, *fEvent): *assnsTag;
-  if (assnsTag && assnsTag->empty()) *assnsTag = tag;
-  
-  auto const& assns = fEvent->getProduct<art::Assns<Left, Right>>(tag);
-  
-  util::OneToOneAssociationCache<Left, Right> newCache{ assns };
-  
-  rightPtr = newCache(leftPtr);
-  
-  cache.mergeCache(std::move(newCache));
-  
-  return rightPtr;
-  
-} // sbn::TimeTrackTreeStorage::TPCT0fromTrackBrowser::findAssociatedPtr()
-
-
-art::Ptr<recob::PFParticle>
-sbn::TimeTrackTreeStorage::TPCT0fromTrackBrowser::findPFOforTrack
-  (art::Ptr<recob::Track> const& trackPtr)
-  { return findAssociatedPtr(trackPtr, fTrackToPFO, &fTrackParticleAssnsTag); }
-
-
-art::Ptr<anab::T0>
-sbn::TimeTrackTreeStorage::TPCT0fromTrackBrowser::findT0forPFO
-  (art::Ptr<recob::PFParticle> const& particlePtr)
-  { return findAssociatedPtr(particlePtr, fPFOtoT0, &fParticleT0AssnsTag); }
-
-
-void sbn::TimeTrackTreeStorage::TPCT0fromTrackBrowser::declareConsumes(
-  art::ConsumesCollector& collector
-  , art::InputTag const& trackParticleAssnsTag
-  , art::InputTag const& particleT0AssnsTag
-) {
-  if (!trackParticleAssnsTag.empty()) {
-    collector.consumes<art::Assns<recob::Track, recob::PFParticle>>
-      (trackParticleAssnsTag);
+  if (range.duration() >= 0_us) {
+    assert(startDiff <= 0_us || stopDiff <= 0_us);
+    // if range contains time, both diffs are negative;
+    //   we want to return the one with the smallest modulus, i.e. the largest
+    // otherwise, if time is earlier than the range, startDiff is positive and
+    //   stopDiff is negative, we want to return the first one, which is again
+    //   the largest; and if time is after the range, the roles are inverted
+    //   but we still want the largest (and only positive) one to be returned
+    return std::max(startDiff, stopDiff);
   }
-  if (!particleT0AssnsTag.empty()) {
-    collector.consumes<art::Assns<recob::PFParticle, anab::T0>>
-      (particleT0AssnsTag);
+  else {
+    assert(startDiff > 0_us || stopDiff > 0_us);
+    /* It is impossible for this result to be negative, since the range is more
+     * than empty.
+     * If the time is earlier than the stop bound, then the exceeded boundary is
+     * the start one, and we want to return the start difference; likewise if
+     * the time is later than the start bound, then we want to return the stop
+     * difference. In both case, the one we want to return is positive and the
+     * other is negative, so we can return the highest value among them.
+     * If the time is in between, both differences are positive and we want to
+     * return the one from the closest boundary, that is the smallest one.
+     */
+    if ((startDiff > 0_us) && (stopDiff > 0_us))
+      return std::min(startDiff, stopDiff);
+    else
+      return std::max(startDiff, stopDiff);
   }
-} // sbn::TimeTrackTreeStorage::TPCT0fromTrackBrowser::declareConsumes()
+  
+} // distanceFromTimeRange()
 
 
 // -----------------------------------------------------------------------------
-// --- END ---- Implementation for association traverse with two hops ----------
-// -----------------------------------------------------------------------------
-
 DEFINE_ART_MODULE(sbn::TimeTrackTreeStorage)
 
 

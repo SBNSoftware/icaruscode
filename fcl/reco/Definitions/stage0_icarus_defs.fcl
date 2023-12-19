@@ -487,6 +487,7 @@ icarus_stage0_producers.purityana1.FillAnaTuple:                                
 icarus_stage0_producers.purityana1.PersistPurityInfo:                                          false
 icarus_stage0_producers.purityana1.FillAnaTuple:                                               false
 
-icarus_stage0_producers.daqPMTonbeam.Waveforms: daqPMT
+icarus_stage0_producers.daqPMTonbeam.Waveforms:             daqPMT
+icarus_stage0_producers.daqPMTonbeam.WaveformBaselineAssns: pmtbaselines
 
 END_PROLOG

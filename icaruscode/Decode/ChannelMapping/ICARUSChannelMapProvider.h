@@ -22,6 +22,12 @@
 
 // -----------------------------------------------------------------------------
 namespace icarusDB { class ICARUSChannelMapProvider; }
+/**
+ * @brief Interface to the channel mapping databases of TPC, CRT and PMT subdetectors.
+ * 
+ * Before retrieving the information, a run period (`forPeriod()`) or a run
+ * (`forRun()`) must be selected.
+ */
 class icarusDB::ICARUSChannelMapProvider: public IICARUSChannelMap
 {
 public:
@@ -66,6 +72,13 @@ public:
     /// Returns the PMT fragment ID for the specified channel mapping database key.
     static constexpr unsigned int DBkeyToPMTfragmentID(unsigned int DBkey);
 
+  
+    /// Loads the mapping for `run`, returns whether a new mapping was loaded.
+    bool                                    forRun(int run)                         override;
+    
+    /// Loads the mapping for `period`, returns whether a new mapping was loaded.
+    bool                                    forPeriod(icarusDB::RunPeriod period)   override;
+
 private:
     
     bool fDiagnosticOutput;
@@ -84,10 +97,17 @@ private:
 
     std::unique_ptr<IChannelMapping>               fChannelMappingTool;
 
+
+    /// Has the channel mapping tool fill the mapping caches.
+    void readFromDatabase();
+
+    
     /// Returns the list of board channel-to-PMT channel ID mapping within the specified fragment.
     /// @returns a pointer to the mapping list, or `nullptr` if invalid fragment
     DigitizerChannelChannelIDPairVec const* findPMTfragmentEntry
       (unsigned int fragmentID) const;
+    
+    
 
 }; // icarusDB::ICARUSChannelMapProvider
 
