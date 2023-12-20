@@ -45,6 +45,7 @@ recoana_mccalo_producers: {
 # Overwrite Labels
 recoana_mccalo_producers.pandoraCaloGausCryoE.TrackModuleLabel: "pandoraTrackGausCryoE"
 recoana_mccalo_producers.pandoraCaloGausCryoW.TrackModuleLabel: "pandoraTrackGausCryoW"
+recoana_mccalo_producers.pandoraCaloGausCryoW.Cryostat: 1
 
 # Setup CaloAlg for VertexCharge
 recoana_mccalo_producers.vertexChargeCryoE.CaloAlg: @local::icarus_calorimetryalgmc
@@ -326,6 +327,7 @@ cafmaker.TriggerLabel: "emuTrigger"
 cafmaker.FlashTrigLabel: "" # unavailable
 cafmaker.SimChannelLabel: "largeant"
 cafmaker.SystWeightLabels: ["genieweight", "fluxweight"]
+cafmaker.TPCPMTBarycenterMatchLabel: "tpcpmtbarycentermatch"
 cafmaker.TrackHitFillRREndCut: 30 # include entire PID region
 
 # Add CAFMaker to the list of producers

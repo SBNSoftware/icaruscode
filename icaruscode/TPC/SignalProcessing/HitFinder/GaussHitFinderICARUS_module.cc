@@ -281,6 +281,10 @@ namespace hit {
           return charge;
         };
 
+
+    std::cout << " " << std::endl;
+    std::cout << "************************** In gauss hit finder ***************************" << std::endl;
+
     //##############################
     //### Looping over the wires ###
     //##############################
@@ -348,6 +352,7 @@ namespace hit {
 
             fHitFinderToolVec.at(plane)->findHitCandidates(
               range, 0, channel, count, hitCandidateVec);
+
             fHitFinderToolVec.at(plane)->MergeHitCandidates(
               range, hitCandidateVec, mergedCandidateHitVec);
 

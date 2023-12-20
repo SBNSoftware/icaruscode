@@ -24,6 +24,7 @@ set(          MODULE_LIBRARIES
                         larevt::Filters
                         lardataobj::RawData
                         lardata::ArtDataHelper
+                        Eigen3::Eigen
 )
 
 cet_build_plugin(DaqDecoderICARUSTPC art::module LIBRARIES ${MODULE_LIBRARIES})
@@ -104,6 +105,14 @@ cet_build_plugin(DumpTrigger art::module LIBRARIES
   fhiclcpp::fhiclcpp
   cetlib_except::cetlib_except
   lardataalg::DetectorInfo
+  )
+
+cet_build_plugin(CopyDaqICARUSTPC art::module LIBRARIES
+  sbnobj::Common_Trigger
+  artdaq_core::artdaq-core_Data
+  messagefacility::MF_MessageLogger
+  fhiclcpp::fhiclcpp
+  cetlib_except::cetlib_except
   )
 
 install_headers()

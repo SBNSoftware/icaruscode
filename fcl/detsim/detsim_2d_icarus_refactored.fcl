@@ -1,0 +1,4 @@
+#include "detsim_2d_icarus.fcl"
+
+physics.producers.crtdaq.G4ModuleLabel: "genericcrt"
+physics.producers.opdaq.InputModule: "pdfastsim"

@@ -1,0 +1,6 @@
+#include "larg4_icarus.fcl"
+
+services.ParticleListAction.keepGenTrajectories: ["cosmgen","generator"]
+services.ParticleListAction.EnergyCut: 5e-1
+# services.ParticleListAction.KeepParticlesInVolumes: [ "volCryostat" ] #not supported yet
+services.ParticleListAction.SparsifyTrajectories: false
