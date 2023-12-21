@@ -6,7 +6,7 @@ BEGIN_PROLOG
 
 ICARUS_Calibration_GlobalTags: {
   @table::TPC_CalibrationTags_Oct2023
-  @table::PMT_CalibrationTags_Run2_Dec2023
+  @table::PMT_CalibrationTags_Run3_Dec2023
   @table::CRT_CalibrationTags_Oct2023
 }
 
