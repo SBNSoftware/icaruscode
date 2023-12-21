@@ -133,7 +133,7 @@ class icarus::HitTiming : public art::EDAnalyzer {
 		std::vector<int> m_channel_id;
 		std::vector<double> m_start_time;
 		std::vector<double> m_peak_time;
-
+		std::vector<double> m_rise_time;
 };
 
 // --------------------------------------------------------------------------
@@ -180,6 +180,7 @@ void icarus::HitTiming::beginJob() {
 			ttree->Branch("channels",&m_channel_id);
 			ttree->Branch("start_time",&m_start_time);
 			ttree->Branch("peak_time",&m_peak_time);
+			ttree->Branch("rise_time",&m_rise_time);
 
 			fOpFlashTrees.push_back( ttree );
 		}
@@ -347,6 +348,7 @@ void icarus::HitTiming::analyze(art::Event const& e)
 					m_channel_id.clear();
 					m_start_time.clear();
 					m_peak_time.clear();
+					m_rise_time.clear();
 
 					m_flash_id = idx;
 					auto const & flash = (*flash_handle)[idx];
@@ -358,6 +360,7 @@ void icarus::HitTiming::analyze(art::Event const& e)
 
 					std::map<int,double> hitmap;
 					std::map<int,double> peakmap;
+					std::map<int,double> risemap;
 
 					// loop all hits in the flash: save only the first one
 					for ( auto const hit : ophits ){
@@ -365,15 +368,18 @@ void icarus::HitTiming::analyze(art::Event const& e)
 						const int ch = hit->OpChannel();
 						double ts = hit->StartTime();
 						double tp = hit->PeakTime();
+						double tr = hit->RiseTime();
 	
 						if ( hitmap.find(ch) != hitmap.end() ){
 							if ( ts < hitmap[ch] ){
 								hitmap[ch] = ts;
 								peakmap[ch] = tp;
+								risemap[ch] = tr;
 							}	
 						}else{
 							 hitmap.insert(std::make_pair(ch,ts));
 							 peakmap.insert(std::make_pair(ch,tp));
+							 risemap.insert(std::make_pair(ch,tr));
 						}
 					}
 
@@ -383,12 +389,14 @@ void icarus::HitTiming::analyze(art::Event const& e)
 						m_channel_id.push_back(it->first);
 						m_start_time.push_back(it->second);
 						m_peak_time.push_back(peakmap.at(it->first));
+						m_rise_time.push_back(risemap.at(it->first));
 						//std::cout<< "ch " << it->first << " t " << it->second << std::endl;
 					}		  
 
 					fOpFlashTrees[iFlashLabel]->Fill();
 					hitmap.clear();
 					peakmap.clear();
+					risemap.clear();
 				}
 			}
 		}
