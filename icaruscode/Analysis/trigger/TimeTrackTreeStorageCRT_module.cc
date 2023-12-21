@@ -1145,7 +1145,7 @@ sbn::selHitInfo sbn::TimeTrackTreeStorage::makeHit(const recob::Hit &hit,
         hinfo.oncalo = true;
         hinfo.pitch = c->TrkPitchVec()[i_calo];
         hinfo.dqdx = c->dQdx()[i_calo];
-        hinfo.dEdx = dEdx_calc(hinfo.dqdx, fMODA, fMODB, fWion, fEfield);
+        hinfo.dEdx = c->dEdx()[i_calo];
         hinfo.rr = sortRange(c->ResidualRange()[i_calo]);
         break;
       } // for i_calo
