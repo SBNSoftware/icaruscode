@@ -23,7 +23,7 @@ icarus_simple_flashmatch_E: {
   OnlyCollectionWires: false
   ForceConcurrence: true
   CorrectDriftDistance: true
-  InputFileName: "FlashMatch/fm_metrics_icarus.root"
+  InputFileName: "FlashMatch/fm_all_metrics_icarus.root"
   NoAvailableMetrics: false
   SelectNeutrino: true # it's too buggy to set 'false'
   MakeTree: false
