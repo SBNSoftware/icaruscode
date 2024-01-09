@@ -115,13 +115,13 @@ class icarus::HitTiming : public art::EDAnalyzer {
 		int m_n_ew;
 		int m_n_rwm;
 		int m_n_trig;
-		std::vector<double> m_ew_channel;
+		std::vector<int> m_ew_channel;
 		std::vector<double> m_ew_start;
 		std::vector<double> m_ew_time;
-		std::vector<double> m_rwm_channel;
+		std::vector<int> m_rwm_channel;
 		std::vector<double> m_rwm_start;
 		std::vector<double> m_rwm_time;
-		std::vector<double> m_trig_channel;
+		std::vector<int> m_trig_channel;
 		std::vector<double> m_trig_corr;
 	
 		// flash info
