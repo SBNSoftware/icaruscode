@@ -383,7 +383,10 @@ namespace icarus { class DaqDecoderICARUSPMT; }
  *     * `triggerSec`, `triggerNS` (32-bit integer each): same time as `trigger`
  *       branch, split into second and nanosecond components.
  *     * `relBeamGateNS`, (32-bit integer): beam gate time opening relative to
- *       the trigger time, in nanoseconds; it may be affected by rounding.
+ *       the trigger time, in nanoseconds.
+ *     * `relEnableGateNS`, (32-bit integer): enable gate time opening relative
+ *       to the beam gate time, in nanoseconds. If larger than 2.1 seconds (
+ *       @f$\pm 2^{31}@f$ ns), it is capped.
  *       branch, split into second and nanosecond components.
  *     * `fragTime` (64-bit signed integer), `fragTimeSec` (32-bit signed
  *       integer): the timestamp of the PMT fragment, assigned by the board
@@ -395,7 +398,14 @@ namespace icarus { class DaqDecoderICARUSPMT; }
  *     * `waveformSize` (unsigned integer): number of ticks for the waveforms
  *       from this fragment.
  *     * `triggerBits` (unsigned integer): bits from the `raw::Trigger`.
- *     * `gateCount` (unsigned integer): number of this gate from run start.
+ *     * `triggerSource` (unsigned integer): value of the trigger source bit
+ *       (from `sbn::ExtraTriggerInfo::triggerSource`; see
+ *       `sbn::bits::triggerSource`).
+ *     * `gateID` (unsigned integer): number of this gate from run start
+ *       (note: this used to be `gateCount` until around `v09_80_00`).
+ *     * `gateCount` (unsigned integer): number of gates from this trigger
+ *       source since run start, including this one (note: this used to be the
+ *       number of _all_ gates regardless the source until around `v09_80_00`).
  *     * `onGlobalTrigger` (boolean): whether the waveform covers the nominal
  *       trigger time (which should be equivalent to whether the fragment was
  *       triggered by the global trigger).
@@ -784,8 +794,11 @@ class icarus::DaqDecoderICARUSPMT: public art::EDProducer {
   struct TriggerInfo_t {
     SplitTimestamp_t time; ///< Time of the trigger (absolute).
     long int trigToBeam; ///< Time of beam gate relative to trigger [ns].
+    long int beamToEnable; ///< Enable gate time relative to beam gate [ns].
     sbn::triggerSourceMask bits; ///< Trigger bits.
-    unsigned int gateCount = 0U; ///< Gate number from the beginning of run.
+    unsigned int gateID = 0U; ///< Gate number from the beginning of run.
+    unsigned int gateCount = 0U; ///< Gate number for this source.
+    sbn::triggerSource sourceType; ///< Trigger source bit.
     sbn::triggerType triggerType; ///< Type of trigger (minimum bias, majority).
     electronics_time relTriggerTime; ///< Trigger time.
     electronics_time relBeamGateTime; ///< Beam gate time.
@@ -1010,6 +1023,7 @@ class icarus::DaqDecoderICARUSPMT: public art::EDProducer {
       SplitTimestamp_t fragTime; ///< PMT fragment time stamp.
       
       long int relBeamGate; ///< Beam gate start relative to trigger [ns].
+      long int relEnableGate; ///< Enable gate start relative to beam gate [ns].
       
       /// Time assigned to the waveforms.
       double waveformTime = std::numeric_limits<double>::lowest();
@@ -1017,6 +1031,10 @@ class icarus::DaqDecoderICARUSPMT: public art::EDProducer {
       unsigned int waveformSize = 0U; ///< Ticks in the waveforms.
       
       unsigned int triggerBits = 0x0; ///< Trigger bits, from `raw::Trigger`.
+      
+      unsigned int triggerSource = 0x0; ///< Trigger source bit.
+      
+      unsigned int gateID = 0U; ///< The number of gates of this source so far.
       
       unsigned int gateCount = 0U; ///< The number of gate from run start.
       
@@ -1340,6 +1358,17 @@ class icarus::DaqDecoderICARUSPMT: public art::EDProducer {
 // --- implementation
 //------------------------------------------------------------------------------
 namespace {
+  
+  /// Converts `v` into type `T`, returning `min()`/`max()` if out of `T` range.
+  template <typename T, typename U>
+  T clampInto(U v) {
+    
+    using traits_t = std::numeric_limits<T>;
+    
+    if (v > traits_t::max()) return traits_t::max();
+    if (v < traits_t::min()) return traits_t::min();
+    return static_cast<T>(v);
+  } // clampInto()
   
   /// Moves the contend of `src` into the end of `dest`.
   template <typename T>
@@ -1844,6 +1873,9 @@ void icarus::DaqDecoderICARUSPMT::produce(art::Event& event) {
     timeCorrectionProducts[fCorrectionInstance] = {};
   }
   // process each (proto)waveform in a category marked as correction source
+  mf::LogTrace{ fLogCategory }
+    << "We have now " << protoWaveforms.size() << " protoWaveforms.";
+  
   for (ProtoWaveform_t const& waveform: protoWaveforms) {
     
     // extract correction only from waveforms on global trigger,
@@ -1858,6 +1890,14 @@ void icarus::DaqDecoderICARUSPMT::produce(art::Event& event) {
     auto const itCorr
       = timeCorrectionProducts.find(waveform.channelSetup->category);
     if (itCorr == timeCorrectionProducts.end()) continue; // we don't need this
+    
+    mf::LogTrace{ fLogCategory }
+      << "Time corr. from CH=" << std::hex << waveform.waveform.ChannelNumber()
+      << " for category " << waveform.channelSetup->category;
+    if (!itCorr->second.empty()) {
+      mf::LogTrace{ fLogCategory }
+        << "  already " << itCorr->second.size() << " present";
+    }
     
     try {
       fPMTWaveformTimeCorrectionManager.findWaveformTimeCorrections(
@@ -1880,7 +1920,7 @@ void icarus::DaqDecoderICARUSPMT::produce(art::Event& event) {
         << waveform.channelSetup->category << "'.\n";
     }
     
-  }
+  } // for protowaveforms
 
   // ---------------------------------------------------------------------------
   // output
@@ -2192,14 +2232,17 @@ auto icarus::DaqDecoderICARUSPMT::fetchTriggerTimestamp
 {
   
   if (!fTriggerTag) {
-    return { 
-        SplitTimestamp_t(event.time().value())  // time
-      , 0U                                      // trigToBeam
-      , {}                                      // bits
-      , 0U                                      // gateCount
-      , sbn::triggerType::NBits                 // triggerType
-      , fDetTimings.TriggerTime()               // relTriggerTime
-      , fDetTimings.BeamGateTime()              // relBeamGateTime
+    return {
+        SplitTimestamp_t(event.time().value())   // time
+      , std::numeric_limits<std::int64_t>::min() // trigToBeam
+      , std::numeric_limits<std::int64_t>::min() // beamToEnable
+      , {}                                       // bits
+      , 0U                                       // gateID
+      , 0U                                       // gateCount
+      , sbn::triggerSource::NBits                // sourceType
+      , sbn::triggerType::NBits                  // triggerType
+      , fDetTimings.TriggerTime()                // relTriggerTime
+      , fDetTimings.BeamGateTime()               // relBeamGateTime
     };
   }
   
@@ -2232,23 +2275,26 @@ auto icarus::DaqDecoderICARUSPMT::fetchTriggerTimestamp
   
   long long int const relBeamGate = timestampDiff
     (extraTrigger.beamGateTimestamp, extraTrigger.triggerTimestamp);
+  long long int const relEnableGate = timestampDiff
+    (extraTrigger.enableGateTimestamp, extraTrigger.beamGateTimestamp);
   
   electronics_time const relTriggerTime
     { util::quantities::microsecond{ trigger.TriggerTime() } };
   electronics_time const relBeamGateTime
     { util::quantities::microsecond{ trigger.BeamGateTime() } };
   
-  unsigned int const gateCount = extraTrigger.gateID;
-  
   return {
-      SplitTimestamp_t          // time
+      SplitTimestamp_t                    // time
         { static_cast<long long int>(extraTrigger.triggerTimestamp) }
-    , relBeamGate               // trigToBeam
-    , {trigger.TriggerBits()}   // bits
-    , gateCount                 // gateCount
-    , extraTrigger.triggerType  // triggerType
-    , relTriggerTime            // relTriggerTime
-    , relBeamGateTime           // relBeamGateTime
+    , relBeamGate                         // trigToBeam
+    , clampInto<long int>(relEnableGate)  // beamToEnable
+    , {trigger.TriggerBits()}             // bits
+    , extraTrigger.gateID                 // gateID
+    , extraTrigger.gateCount              // gateCount
+    , extraTrigger.sourceType             // sourceType
+    , extraTrigger.triggerType            // triggerType
+    , relTriggerTime                      // relTriggerTime
+    , relBeamGateTime                     // relBeamGateTime
     };
   
 } // icarus::DaqDecoderICARUSPMT::fetchTriggerTimestamp()
@@ -2810,11 +2856,14 @@ void icarus::DaqDecoderICARUSPMT::fillPMTfragmentTree(
   fTreeFragment->data.TriggerTimeTag = fragInfo.TTT;
   fTreeFragment->data.trigger = triggerInfo.time;
   fTreeFragment->data.relBeamGate = triggerInfo.trigToBeam;
+  fTreeFragment->data.relEnableGate = triggerInfo.beamToEnable;
   fTreeFragment->data.fragTime
     = { static_cast<long long int>(fragInfo.fragmentTimestamp) };
   fTreeFragment->data.waveformTime = waveformTimestamp.value();
   fTreeFragment->data.waveformSize = fragInfo.nSamplesPerChannel;
   fTreeFragment->data.triggerBits = triggerInfo.bits;
+  fTreeFragment->data.triggerSource = value(triggerInfo.sourceType);
+  fTreeFragment->data.gateID = triggerInfo.gateID;
   fTreeFragment->data.gateCount = triggerInfo.gateCount;
   fTreeFragment->data.onGlobalTrigger
     = containsGlobalTrigger(waveformTimestamp, fragInfo.nSamplesPerChannel);
@@ -3277,9 +3326,12 @@ void icarus::DaqDecoderICARUSPMT::initFragmentsTree() {
   tree->Branch("triggerSec", &data.trigger.split.seconds);
   tree->Branch("triggerNS", &data.trigger.split.nanoseconds);
   tree->Branch("relBeamGateNS", &data.relBeamGate, "relBeamGateNS/I"); // ROOT 6.24 can't handle `long` neither
+  tree->Branch("relEnableGateNS", &data.relEnableGate, "relEnableGateNS/I"); // ditto
   tree->Branch("waveformTime", &data.waveformTime);
   tree->Branch("waveformSize", &data.waveformSize);
   tree->Branch("triggerBits", &data.triggerBits);
+  tree->Branch("triggerSource", &data.triggerSource);
+  tree->Branch("gateID", &data.gateID);
   tree->Branch("gateCount", &data.gateCount);
   tree->Branch("onGlobal", &data.onGlobalTrigger);
   tree->Branch("minimumBias", &data.minimumBias);
