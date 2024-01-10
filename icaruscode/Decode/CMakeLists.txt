@@ -24,6 +24,7 @@ set(          MODULE_LIBRARIES
                         larevt::Filters
                         lardataobj::RawData
                         lardata::ArtDataHelper
+                        icaruscode::Decode_DecoderTools_Dumpers
 )
 
 cet_build_plugin(DaqDecoderICARUSTPC art::module LIBRARIES ${MODULE_LIBRARIES})

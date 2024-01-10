@@ -6,7 +6,17 @@ process_name: TestReprocessRaw
 
 services:
 {
-  #@table::icarus_basic_services
+  @table::icarus_basic_services
+  IICARUSChannelMap: {
+    ChannelMappingTool: {
+      CalibDBFileName: "crt_gain_reco_data"
+      DBFileName: "ChannelMapICARUS_20230829.db"
+      Tag: "v1r0"
+      tool_type: "ChannelMapSQLite"
+    }
+    DiagnosticOutput: false
+    service_provider: "ICARUSChannelMap"
+  }
 }
 
 source:
