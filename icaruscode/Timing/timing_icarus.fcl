@@ -1,11 +1,17 @@
+#include "calibration_database_GlobalTags_icarus.fcl"
+
 BEGIN_PROLOG
 
 icarus_pmttimingservice:
 {
-    # service name: IPMTTimingCorrectionService
+    # service name:   IPMTTimingCorrectionService
     service_provider: PMTTimingCorrectionService
-    DatabaseURL:   "https://dbdata0vm.fnal.gov:9443/icarus_con_prod/app/data?"
-    Timeout:   1000
+    CorrectionTags: {
+      CablesTag: @local::ICARUS_Calibration_GlobalTags.pmt_cables_delays_data
+      LaserTag: @local::ICARUS_Calibration_GlobalTags.pmt_laser_timing_data
+      CosmicsTag: @local::ICARUS_Calibration_GlobalTags.pmt_cosmics_timing_data
+    }
+    Verbose:          false
 }
 
 icarus_ophit_timing_correction:

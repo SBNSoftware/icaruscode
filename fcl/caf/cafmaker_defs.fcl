@@ -25,6 +25,8 @@
 #include "sbn_stub.fcl"
 #include "transfer_flashmatch_producer.fcl"
 #include "crtt0producer_icarus.fcl"
+#include "showercosmicdistanceproducer.fcl"
+
 
 BEGIN_PROLOG
 
@@ -43,6 +45,7 @@ recoana_mccalo_producers: {
 # Overwrite Labels
 recoana_mccalo_producers.pandoraCaloGausCryoE.TrackModuleLabel: "pandoraTrackGausCryoE"
 recoana_mccalo_producers.pandoraCaloGausCryoW.TrackModuleLabel: "pandoraTrackGausCryoW"
+recoana_mccalo_producers.pandoraCaloGausCryoW.Cryostat: 1
 
 # Setup CaloAlg for VertexCharge
 recoana_mccalo_producers.vertexChargeCryoE.CaloAlg: @local::icarus_calorimetryalgmc
@@ -108,6 +111,9 @@ recoana_caf_preprocess_producers: {
   pandoraCRTMatchCryoE: @local::standard_crtt0producer_cryoE
   pandoraCRTMatchCryoW: @local::standard_crtt0producer_cryoW
 
+  ShowerCosmicDistCryoE: @local::showerCosmicDist_sbn
+  ShowerCosmicDistCryoW: @local::showerCosmicDist_sbn
+
   # crtconvhit: @local::crthitconverter_icarus
   rns: { module_type: "RandomNumberSaver" }
   genieweight: @local::sbn_eventweight_genie
@@ -120,6 +126,10 @@ recoana_caf_preprocess_producers.pandoraTrackMCSCryoE.TrackLabel: pandoraTrackGa
 recoana_caf_preprocess_producers.pandoraTrackMCSCryoW.TrackLabel: pandoraTrackGausCryoW
 recoana_caf_preprocess_producers.pandoraTrackRangeCryoE.TrackLabel: pandoraTrackGausCryoE
 recoana_caf_preprocess_producers.pandoraTrackRangeCryoW.TrackLabel: pandoraTrackGausCryoW
+recoana_caf_preprocess_producers.ShowerCosmicDistCryoE.ShowerLabel: SBNShowerGausCryoE
+recoana_caf_preprocess_producers.ShowerCosmicDistCryoW.ShowerLabel: SBNShowerGausCryoW
+recoana_caf_preprocess_producers.ShowerCosmicDistCryoE.PandoraLabel: pandoraGausCryoE
+recoana_caf_preprocess_producers.ShowerCosmicDistCryoW.PandoraLabel: pandoraGausCryoW
 
 recoana_caf_preprocess_producers.pandoraPidGausCryoE.TrackModuleLabel: "pandoraTrackGausCryoE"
 recoana_caf_preprocess_producers.pandoraPidGausCryoE.CalorimetryModuleLabel: "pandoraCaloGausCryoE"
@@ -241,8 +251,10 @@ caf_preprocess_sequence: [ mcreco,
     # Track Momentum Estimation
     pandoraTrackMCSCryoE, pandoraTrackMCSCryoW, 
     pandoraTrackRangeCryoE, pandoraTrackRangeCryoW,
-    pandoraCRTMatchCryoE, pandoraCRTMatchCryoW
+    pandoraCRTMatchCryoE, pandoraCRTMatchCryoW,
     # TODO: rns??
+    # Shower
+    ShowerCosmicDistCryoE, ShowerCosmicDistCryoW
     ]
 
 caf_preprocess_data_sequence: [
@@ -254,8 +266,10 @@ caf_preprocess_data_sequence: [
     # Track Momentum Estimation
     pandoraTrackMCSCryoE, pandoraTrackMCSCryoW,
     pandoraTrackRangeCryoE, pandoraTrackRangeCryoW,
-    pandoraCRTMatchCryoE, pandoraCRTMatchCryoW
+    pandoraCRTMatchCryoE, pandoraCRTMatchCryoW,
     # TODO: rns??
+    # Shower
+    ShowerCosmicDistCryoE, ShowerCosmicDistCryoW
     ]
 
 caf_preprocess_evtw_sequence: [@sequence::caf_preprocess_sequence, rns, genieweight, fluxweight]
@@ -298,7 +312,7 @@ cafmaker.RecoTrackLabel:    "pandoraTrackGaus"
 cafmaker.RecoShowerLabel:   "SBNShowerGaus"
 cafmaker.ShowerRazzleLabel: "" # unavailable
 cafmaker.RecoShowerSelectionLabel: "" # unavailable
-cafmaker.ShowerCosmicDistLabel: "" # unavailable
+cafmaker.ShowerCosmicDistLabel: "ShowerCosmicDist" 
 cafmaker.TrackCaloLabel:    "pandoraCaloGaus"
 cafmaker.TrackChi2PidLabel: "pandoraPidGaus"
 cafmaker.TrackScatterClosestApproachLabel: "" # unavailable
@@ -316,6 +330,7 @@ cafmaker.TriggerLabel: "emuTrigger"
 cafmaker.FlashTrigLabel: "" # unavailable
 cafmaker.SimChannelLabel: "largeant"
 cafmaker.SystWeightLabels: ["genieweight", "fluxweight"]
+cafmaker.TPCPMTBarycenterMatchLabel: "tpcpmtbarycentermatch"
 cafmaker.TrackHitFillRREndCut: 30 # include entire PID region
 
 # Add CAFMaker to the list of producers

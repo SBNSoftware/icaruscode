@@ -36,12 +36,18 @@ outputs.rootOutput.outputCommands:         ["keep *_*_*_*",
 physics.analyzers.purityinfoana0.SelectEvents:    [ path ]
 physics.analyzers.purityinfoana1.SelectEvents:    [ path ]
 
+### Set up hit finding for multiple TPC readout
+physics.producers.gaushitTPCWW.CalDataModuleLabel:  "roifinder2d:PHYSCRATEDATATPCWW"
+physics.producers.gaushitTPCWE.CalDataModuleLabel:  "roifinder2d:PHYSCRATEDATATPCWE"
+physics.producers.gaushitTPCEW.CalDataModuleLabel:  "roifinder2d:PHYSCRATEDATATPCEW"
+physics.producers.gaushitTPCEE.CalDataModuleLabel:  "roifinder2d:PHYSCRATEDATATPCEE"
+
 services.message.destinations :
 {
   STDCOUT:
   {
      type:      "cout"      #tells the message service to output this destination to cout
-     threshold: "DEBUG"     #tells the message service that this destination applies to WARNING and higher level messages
+     threshold: "WARNING"   #tells the message service that this destination applies to WARNING and higher level messages
      categories:
      {
        CRTSimHitProducer:
@@ -51,8 +57,8 @@ services.message.destinations :
        }
        default:
        {
-         limit: 0  #don't print anything at the infomsg level except the explicitly named categories
-         reportEvery: 0
+         limit: 5  #don't print anything at the infomsg level except the explicitly named categories
+         reportEvery: 1
        }
      }
   }

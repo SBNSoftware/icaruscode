@@ -16,6 +16,7 @@ physics.producers: {  @table::icarus_stage0_producers
 physics.path: [   @sequence::icarus_stage0_mc_PMT, 
                   MCDecodeTPCROI, 
                   @sequence::icarus_stage0_multiTPC,
+                  simChannelROI,
                   @sequence::icarus_stage0_mc_crt
               ]
 
@@ -39,6 +40,9 @@ physics.producers.MCDecodeTPCROI.FragmentsLabelVec:   ["daq:TPCWW","daq:TPCWE","
 physics.producers.MCDecodeTPCROI.OutInstanceLabelVec: ["PHYSCRATEDATATPCWW", "PHYSCRATEDATATPCWE", "PHYSCRATEDATATPCEW", "PHYSCRATEDATATPCEE"]
 physics.producers.decon1droi.RawDigitLabelVec:        ["MCDecodeTPCROI:PHYSCRATEDATATPCWW","MCDecodeTPCROI:PHYSCRATEDATATPCWE","MCDecodeTPCROI:PHYSCRATEDATATPCEW","MCDecodeTPCROI:PHYSCRATEDATATPCEE"]
 physics.producers.roifinder.WireModuleLabelVec:       ["decon1droi:PHYSCRATEDATATPCWW","decon1droi:PHYSCRATEDATATPCWE","decon1droi:PHYSCRATEDATATPCEW","decon1droi:PHYSCRATEDATATPCEE"]
+
+physics.producers.simChannelROI.SimChannelLabelVec:  ["daq:simpleSC"]
+physics.producers.simChannelROI.OutInstanceLabelVec: ["All"]
 
 physics.producers.decon2droiEE.wcls_main.params.raw_input_label:  "MCDecodeTPCROI:PHYSCRATEDATATPCEE"
 physics.producers.decon2droiEW.wcls_main.params.raw_input_label:  "MCDecodeTPCROI:PHYSCRATEDATATPCEW"

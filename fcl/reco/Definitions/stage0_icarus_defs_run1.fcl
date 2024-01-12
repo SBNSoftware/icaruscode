@@ -14,6 +14,7 @@
 #include "trigger_emulation_icarus.fcl"
 #include "crt_decoderdefs_icarus.fcl"
 #include "crthitproducer.fcl"
+#include "crtpmtmatchingproducer.fcl"
 #include "wcls-decode-to-sig-base.fcl"
 #include "icarus_FilterDataIntegrity.fcl"
 #include "icarus_FilterCRTPMTMatching.fcl"
@@ -51,6 +52,9 @@ icarus_stage0_analyzers:
 # set the name of our `extractPMTconfig` and `extractTriggerConfig` for our decoders
 decodeTriggerV2.DecoderTool.TrigConfigLabel: triggerconfig
 decodeTriggerV3.DecoderTool.TrigConfigLabel: triggerconfig
+decodeTriggerAutodetect.DecoderTool.Decoders[0].ToolConfig.TrigConfigLabel: triggerconfig
+decodeTriggerAutodetect.DecoderTool.Decoders[1].ToolConfig.TrigConfigLabel: triggerconfig
+decodeTriggerAutodetect.DecoderTool.Decoders[2].ToolConfig.TrigConfigLabel: triggerconfig
 decodePMT.PMTconfigTag: pmtconfig
 decodePMT.TriggerTag:   daqTrigger
 
@@ -71,7 +75,7 @@ icarus_stage0_producers:
 
   daqCRT:                         @local::crtdaq_icarus
 
-  daqTrigger:                     @local::decodeTriggerV2
+  daqTrigger:                     @local::decodeTriggerAutodetect
 
   ### calwire producers
   decon1droi:                     @local::icarus_decon1droi
@@ -101,17 +105,23 @@ icarus_stage0_producers:
   ### CRT hit finder producer
   crthit:                         @local::standard_crthitproducer	
 
+  ### CRTPMTMatching producer
+  crtpmt:			  @local::standard_crtpmtmatchingproducer
+
   ### trigger emulation foundation
   pmtconfigbaselines:             @local::icarus_pmtconfigbaselines
   pmtthr:                         @local::icarus_pmtdiscriminatethr
   
   ### Optical hit finder
+  pmtbaselines:                   @local::icarus_opreco_pedestal_fromchannel_data  # from icarus_ophitfinder.fcl
   ophituncorrected:               @local::icarus_ophit_data
   ophit:                          @local::icarus_ophit_timing_correction
   ophitfulluncorrected:           @local::icarus_ophitdebugger_data
   ophitfull:                      @local::icarus_ophit_timing_correction
   opflashCryoE:                   @local::ICARUSSimpleFlashDataCryoE
   opflashCryoW:                   @local::ICARUSSimpleFlashDataCryoW
+
+  daqPMTonbeam:                   @local::copyPMTonBeam
 
   ### Purity monitoring
   purityana0:                     { module_type: "ICARUSPurityDQM" }
@@ -235,10 +245,12 @@ icarus_stage0_PMT:                 [ triggerconfig,
                                      daqPMT,
                                      pmtconfigbaselines,
                                      pmtthr,
+                                     pmtbaselines,
                                      ophituncorrected,
                                      ophit,
                                      opflashCryoE,
-                                     opflashCryoW
+                                     opflashCryoW,
+                                     daqPMTonbeam
                                    ]
 
 icarus_stage0_PMT_BNB:             [ @sequence::icarus_stage0_PMT,
@@ -265,7 +277,8 @@ icarus_stage0_2d_multiTPC:         [ @sequence::icarus_stage0_multiTPC_2d_TPC,
 
 icarus_stage0_CRT:                 [
                                      daqCRT,
-                                     crthit
+                                     crthit,
+				     crtpmt
                                    ]
 
 icarus_stage0_data:                [
@@ -480,5 +493,7 @@ icarus_stage0_producers.purityana1.PersistPurityInfo:                           
 icarus_stage0_producers.purityana1.FillAnaTuple:                                               false
 icarus_stage0_producers.purityana1.PersistPurityInfo:                                          false
 icarus_stage0_producers.purityana1.FillAnaTuple:                                               false
+
+icarus_stage0_producers.daqPMTonbeam.Waveforms: daqPMT
 
 END_PROLOG

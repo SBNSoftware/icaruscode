@@ -1,0 +1,22 @@
+###
+## This fhicl file takes the standard stage 0 wc mc file and keeps the raw digits
+##
+#include "stage0_run2_wc_testgauss_icarus_mc.fcl"
+
+# Drop the daq format files on output, 
+# Drop all output from the TPC decoder stage
+# Drop all output from the 1D deconvolution stage
+# Drop all ouptut for the first running of the ROI finder (on the 1D decon)
+# Drop all output from the 2D deconvolution stage
+# Drop the recob::Wire output from the roifinder2d (but keep the ChannelROIs)
+outputs.rootOutput.outputCommands:         ["keep *_*_*_*", 
+                                            "drop *_daq_*_*", 
+                                            "drop *_MCDecodeTPCROI_*_*", 
+                                            "drop *_decon1droi_*_*", 
+                                            "drop *_decon2droi*_*_*", 
+                                            "drop recob::Wire*_roifinder_*_*",
+                                            "drop recob::Wire*_roifinder2d_*_*",
+                                            "keep raw::RawDigit*_MCDecodeTPCROI_*_*",
+                                            "keep *_daq_simpleSC*_*" 
+                                           ]
+

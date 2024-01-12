@@ -21,7 +21,7 @@ standard_crtt0matchingalg:
     PEcut: 10                               # Only consider CRT hits with PE values larger than this, default = 0.0
     MaxUncert:  20                          # Only consider CRT hits with position uncertainties below this value (cm) default = 1000.0 cm
                                             #    a cut value of 20 is recommended if one wants to remove all single strip hits 
-    TSMode: 2				    
+    TSMode: 1                               # Want to use a value of 1 for correct hit timing				    
 }
 
 standard_crtt0matchingalgW:

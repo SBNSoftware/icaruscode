@@ -21,6 +21,7 @@ set(icarus_util_lib_list
 	art::Framework_IO
 	art::Framework_IO_detail
 	art::Persistency_Provenance
+	icaruscode::IcarusObj
 	sbnobj::ICARUS_TPC	
 	art_root_io::tfile_support ROOT::Core
 	art_root_io::RootDB
