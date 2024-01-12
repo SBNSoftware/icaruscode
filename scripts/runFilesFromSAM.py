@@ -50,6 +50,12 @@ logger = logging.getLogger(__name__)
 class FatalError(RuntimeError): pass
 
 class QueryElement: pass
+class QueryDirect(QueryElement):
+  def __init__(self, query):
+    self.query = query
+  def __str__(self): return self.query
+# class QueryDirect
+
 class QueryAtom(QueryElement):
   def __init__(self, key, *values):
     self.key = str(key)
@@ -133,22 +139,22 @@ class InputSAMquery(InputSpecification):
   Type = "query"
   
   def __init__(self, inputSpec):
-    super().__init__(self, inputSpec)
+    super().__init__(inputSpec)
     self.inputType = self.Type
   
   def tag(self): return self.sanitized()
   def describe(self): return f"SAM query '{self.sanitized()}'"
-  def queryElement(self): return QueryAtom(self.name)
+  def queryElement(self): return QueryDirect(self.name)
 # class InputSAMquery
 
 class InputSAMdef(InputSpecification):
   Type = "def"
   
   def __init__(self, inputSpec):
-    super().__init__(self, inputSpec)
+    super().__init__(inputSpec)
     self.inputType = self.Type
   
-  def describe(self): return f"SAM definition '{self.name()}'"
+  def describe(self): return f"SAM definition '{self.name}'"
   def queryElement(self): return QueryAtom("dataset.tag", f'"{self.name}"') # ??
 # class InputSAMdef
 
@@ -202,6 +208,7 @@ class FileListMakerClass:
   def process(self, inputSpec, index=None):
     
     inputSpec = InputSpecification.make(inputSpec)
+    logger.debug("Input spec %s: %s", inputSpec.inputType, inputSpec)
     fileURLs = self.queryFileURLs(inputSpec)
     
     outputLines, nEntries = self.prepareOutput(inputSpec, fileURLs)
@@ -216,7 +223,7 @@ class FileListMakerClass:
   
   def prepareQuery(self, inputSpec):
     if isinstance(inputSpec, InputSAMdef):
-      return dict(dimensions=Query(), defname=inputSpec.name())
+      return dict(dimensions=Query(), defname=inputSpec.name)
     else:
       return dict(dimensions=Query(inputSpec.queryElement()))
   # prepareQuery()
