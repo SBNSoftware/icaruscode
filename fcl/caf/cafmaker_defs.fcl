@@ -301,7 +301,7 @@ cafmaker: @local::standard_cafmaker
 
 # Set the labels to ICARUS
 cafmaker.PandoraTagSuffixes: ["CryoE", "CryoW"]
-cafmaker.FlashMatchSuffixes: ["", "op"]
+cafmaker.FlashMatchOpDetSuffixes: ["", "op"]
 cafmaker.G4Label: "largeant"
 cafmaker.GenLabel: "generator"
 cafmaker.PFParticleLabel:   "pandoraGaus"
