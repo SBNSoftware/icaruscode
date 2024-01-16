@@ -15,6 +15,7 @@ TrackHitEfficiencyAnalysisTool:
   RawDigitLabelVec:        ["rawdigitfilter"]
   WireModuleLabelVec:      ["decon1droi"]
   HitModuleLabelVec:       ["gaushit"]
+  TestHitModuleLabelVec:   ["gaushit"]
   MCParticleLabel:         "largeant"
   SimChannelLabel:         "largeant"
   LocalDirName:            "EfficHists"

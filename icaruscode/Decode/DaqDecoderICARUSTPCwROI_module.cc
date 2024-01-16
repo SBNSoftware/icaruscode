@@ -110,6 +110,7 @@ public:
                                ConcurrentRawDigitCol&,
                                ConcurrentRawDigitCol&,
                                ConcurrentRawDigitCol&,
+                               ConcurrentRawDigitCol&,
                                ConcurrentChannelROICol&) const;
 
 private:
@@ -122,6 +123,7 @@ private:
                                       ConcurrentRawDigitCol&                concurrentRawRawDigits,
                                       ConcurrentRawDigitCol&                concurrentRawDigits,
                                       ConcurrentRawDigitCol&                coherentRawDigits,
+                                      ConcurrentRawDigitCol&                morphedRawDigits,
                                       ConcurrentChannelROICol&              concurrentROIs)
             : fDaqDecoderICARUSTPCwROI(parent),
               fClockData{clockData},
@@ -129,13 +131,14 @@ private:
               fConcurrentRawRawDigits(concurrentRawRawDigits),
               fConcurrentRawDigits(concurrentRawDigits),
               fCoherentRawDigits(coherentRawDigits),
+              fMorphedRawDigits(morphedRawDigits),
               fConcurrentROIs(concurrentROIs)
         {}
 
         void operator()(const tbb::blocked_range<size_t>& range) const
         {
             for (size_t idx = range.begin(); idx < range.end(); idx++)
-              fDaqDecoderICARUSTPCwROI.processSingleFragment(idx, fClockData, fFragmentsHandle, fConcurrentRawRawDigits, fConcurrentRawDigits, fCoherentRawDigits, fConcurrentROIs);
+              fDaqDecoderICARUSTPCwROI.processSingleFragment(idx, fClockData, fFragmentsHandle, fConcurrentRawRawDigits, fConcurrentRawDigits, fCoherentRawDigits, fMorphedRawDigits, fConcurrentROIs);
         }
     private:
         const DaqDecoderICARUSTPCwROI&        fDaqDecoderICARUSTPCwROI;
@@ -144,6 +147,7 @@ private:
         ConcurrentRawDigitCol&                fConcurrentRawRawDigits;
         ConcurrentRawDigitCol&                fConcurrentRawDigits;
         ConcurrentRawDigitCol&                fCoherentRawDigits;
+        ConcurrentRawDigitCol&                fMorphedRawDigits;
         ConcurrentChannelROICol&              fConcurrentROIs;
     };
 
@@ -158,8 +162,10 @@ private:
     std::vector<art::InputTag>                                  fFragmentsLabelVec;          ///< The input artdaq fragment label vector (for more than one)
     bool                                                        fOutputRawWaveform;          ///< Should we output pedestal corrected (not noise filtered)?
     bool                                                        fOutputCorrection;           ///< Should we output the coherent noise correction vectors?
+    bool                                                        fOutputMorphed;              ///< Should we output the morphological filter vectors?
     std::string                                                 fOutputRawWavePath;          ///< Path to assign to the output if asked for
     std::string                                                 fOutputCoherentPath;         ///< Path to assign to the output if asked for
+    std::string                                                 fOutputMorphedPath;          ///< Path to assign to the output if asked for
     bool                                                        fDiagnosticOutput;           ///< Set this to get lots of messages
     float                                                       fSigmaForTruncation;         ///< Cut for truncated rms calc
     size_t                                                      fCoherentNoiseGrouping;      ///< Grouping for removing coherent noise
@@ -202,8 +208,7 @@ DEFINE_ART_MODULE(DaqDecoderICARUSTPCwROI)
 /// pset - Fcl parameters.
 ///
 DaqDecoderICARUSTPCwROI::DaqDecoderICARUSTPCwROI(fhicl::ParameterSet const & pset, art::ProcessingFrame const& frame) :
-                          art::ReplicatedProducer(pset, frame),
-                          fLogCategory("DaqDecoderICARUSTPCwROI"),fNumEvent(0), fNumROPs(0)
+                            art::ReplicatedProducer(pset, frame),fLogCategory("DaqDecoderICARUSTPCwROI"),fNumEvent(0), fNumROPs(0)
 {
     fGeometry   = art::ServiceHandle<geo::Geometry const>{}.get();
     fChannelMap = art::ServiceHandle<icarusDB::IICARUSChannelMap const>{}.get();
@@ -239,6 +244,9 @@ DaqDecoderICARUSTPCwROI::DaqDecoderICARUSTPCwROI(fhicl::ParameterSet const & pse
 
         if (fOutputCorrection)
             produces<std::vector<raw::RawDigit>>(fragmentLabel.instance() + fOutputCoherentPath);
+
+        if (fOutputMorphed)
+            produces<std::vector<raw::RawDigit>>(fragmentLabel.instance() + fOutputMorphedPath);
     }
 
     // Set up a WireID to ROP plane number table
@@ -302,8 +310,10 @@ void DaqDecoderICARUSTPCwROI::configure(fhicl::ParameterSet const & pset)
     fFragmentsLabelVec     = pset.get<std::vector<art::InputTag>>("FragmentsLabelVec",  std::vector<art::InputTag>()={"daq:PHYSCRATEDATA"});
     fOutputRawWaveform     = pset.get<bool                      >("OutputRawWaveform",                                               false);
     fOutputCorrection      = pset.get<bool                      >("OutputCorrection",                                                false);
+    fOutputMorphed         = pset.get<bool                      >("OutputMorphed",                                                   false);
     fOutputRawWavePath     = pset.get<std::string               >("OutputRawWavePath",                                               "raw");
     fOutputCoherentPath    = pset.get<std::string               >("OutputCoherentPath",                                              "Cor");
+    fOutputMorphedPath     = pset.get<std::string               >("OutputMorphedPath",                                               "Mor");
     fDiagnosticOutput      = pset.get<bool                      >("DiagnosticOutput",                                                false);
     fSigmaForTruncation    = pset.get<float                     >("NSigmaForTrucation",                                                3.5);
     fCoherentNoiseGrouping = pset.get<size_t                    >("CoherentGrouping",                                                   64);
@@ -355,6 +365,7 @@ void DaqDecoderICARUSTPCwROI::produce(art::Event & event, art::ProcessingFrame c
         ConcurrentRawDigitCol   concurrentRawDigits;
         ConcurrentRawDigitCol   concurrentRawRawDigits;
         ConcurrentRawDigitCol   coherentRawDigits;
+        ConcurrentRawDigitCol   morphedRawDigits;
         ConcurrentChannelROICol concurrentROIs;
 
         PlaneIdxToImageMap   planeIdxToImageMap;
@@ -378,7 +389,7 @@ void DaqDecoderICARUSTPCwROI::produce(art::Event & event, art::ProcessingFrame c
         // ... Launch multiple threads with TBB to do the deconvolution and find ROIs in parallel
         auto const clockData = art::ServiceHandle<detinfo::DetectorClocksService>()->DataFor(event);
 
-        multiThreadFragmentProcessing fragmentProcessing(*this, clockData, daq_handle, concurrentRawRawDigits, concurrentRawDigits, coherentRawDigits, concurrentROIs);
+        multiThreadFragmentProcessing fragmentProcessing(*this, clockData, daq_handle, concurrentRawRawDigits, concurrentRawDigits, coherentRawDigits, morphedRawDigits, concurrentROIs);
 
         tbb::parallel_for(tbb::blocked_range<size_t>(0, daq_handle->size()), fragmentProcessing);
 
@@ -438,6 +449,19 @@ void DaqDecoderICARUSTPCwROI::produce(art::Event & event, art::ProcessingFrame c
             // Now transfer ownership to the event store
             event.put(std::move(coherentCollection),fragmentLabel.instance() + fOutputCoherentPath);
         }
+    
+        if (fOutputMorphed)
+        {
+            // Copy the raw digits from the concurrent vector to our output vector
+            RawDigitCollectionPtr morphedCollection = std::make_unique<std::vector<raw::RawDigit>>(std::move_iterator(morphedRawDigits.begin()), 
+                                                                                                   std::move_iterator(morphedRawDigits.end()));
+    
+            // Want the RawDigits to be sorted in channel order... has to be done somewhere so why not now?
+            std::sort(morphedCollection->begin(),morphedCollection->end(),[](const auto& left,const auto&right){return left.Channel() < right.Channel();});
+    
+            // Now transfer ownership to the event store
+            event.put(std::move(morphedCollection),fragmentLabel.instance() + fOutputMorphedPath);
+        }
     }
 
     theClockTotal.stop();
@@ -455,6 +479,7 @@ void DaqDecoderICARUSTPCwROI::processSingleFragment(size_t                      
                                                     ConcurrentRawDigitCol&             concurrentRawRawDigitCol,
                                                     ConcurrentRawDigitCol&             concurrentRawDigitCol,
                                                     ConcurrentRawDigitCol&             coherentRawDigitCol,
+                                                    ConcurrentRawDigitCol&             morphedRawDigitCol,
                                                     ConcurrentChannelROICol&           concurrentROIs) const
 {
     cet::cpu_timer theClockProcess;
@@ -610,8 +635,8 @@ void DaqDecoderICARUSTPCwROI::processSingleFragment(size_t                      
             // Are we storing the raw waveforms?
             if (fOutputRawWaveform)
             {
-                const icarus_signal_processing::VectorFloat& waveform = decoderTool->getPedCorWaveforms()[chanIdx];
-                //const icarus_signal_processing::VectorFloat& waveform = decoderTool->getRawWaveforms()[chanIdx];
+                //const icarus_signal_processing::VectorFloat& waveform = decoderTool->getPedCorWaveforms()[chanIdx];
+                const icarus_signal_processing::VectorFloat& waveform = decoderTool->getRawWaveforms()[chanIdx];
 
                 // Need to convert from float to short int
                 std::transform(waveform.begin(),waveform.end(),wvfm.begin(),[](const auto& val){return short(std::round(val));});
@@ -634,6 +659,19 @@ void DaqDecoderICARUSTPCwROI::processSingleFragment(size_t                      
                 newRawObjItr->SetPedestal(0.,0.);
             }
 
+            if (fOutputMorphed)
+            {
+                const icarus_signal_processing::VectorFloat& corrections = decoderTool->getMorphedWaveforms()[chanIdx];
+
+                // Need to convert from float to short int
+                std::transform(corrections.begin(),corrections.end(),wvfm.begin(),[](const auto& val){return short(std::round(val));});
+
+                //ConcurrentRawDigitCol::iterator newRawObjItr = coherentRawDigitCol.emplace_back(channel,wvfm.size(),wvfm); 
+                ConcurrentRawDigitCol::iterator newRawObjItr = morphedRawDigitCol.push_back(raw::RawDigit(channel,wvfm.size(),wvfm)); 
+
+                newRawObjItr->SetPedestal(0.,0.);
+            }
+
             // Now determine the pedestal and correct for it
             waveformTools.getPedestalCorrectedWaveform(denoised[chanIdx],
                                                        pedCorWaveforms,
@@ -645,7 +683,6 @@ void DaqDecoderICARUSTPCwROI::processSingleFragment(size_t                      
                                                        localRangeBins);
 
             // Need to convert from float to short int
-//            std::transform(denoised[chanIdx].begin(),denoised[chanIdx].end(),wvfm.begin(),[](const auto& val){return short(std::round(val));});
             std::transform(pedCorWaveforms.begin(),pedCorWaveforms.end(),wvfm.begin(),[](const auto& val){return short(std::round(val));});
 
             ConcurrentRawDigitCol::iterator newObjItr = concurrentRawDigitCol.emplace_back(channel,wvfm.size(),wvfm); 

@@ -50,6 +50,8 @@
 #include "icaruscode/Decode/ChannelMapping/IICARUSChannelMap.h"
 #include "icaruscode/Decode/DecoderTools/INoiseFilter.h"
 
+#include "icarus_signal_processing/WaveformTools.h"
+
 namespace daq 
 {
 
@@ -167,6 +169,7 @@ private:
     bool                                                        fOutputCorrection;           ///< Should we output the coherent noise correction vectors?
     std::string                                                 fOutputRawWavePath;          ///< Path to assign to the output if asked for
     std::string                                                 fOutputCoherentPath;         ///< Path to assign to the output if asked for
+    float                                                       fSigmaForTruncation;         ///< Cut for truncated rms calc
     bool                                                        fDiagnosticOutput;           ///< Set this to get lots of messages
     size_t                                                      fCoherentNoiseGrouping;      ///< # channels in common for coherent noise
 
@@ -335,6 +338,7 @@ void MCDecoderICARUSTPCwROI::configure(fhicl::ParameterSet const & pset)
     fOutputCorrection           = pset.get<bool                      >("OutputCorrection",                    false);
     fOutputRawWavePath          = pset.get<std::string               >("OutputRawWavePath",                   "raw");
     fOutputCoherentPath         = pset.get<std::string               >("OutputCoherentPath",                  "Cor");
+    fSigmaForTruncation         = pset.get<float                     >("NSigmaForTrucation",                    3.5);
     fDiagnosticOutput           = pset.get<bool                      >("DiagnosticOutput",                    false);
     fCoherentNoiseGrouping      = pset.get<size_t                    >("CoherentGrouping",                       64);
 
@@ -498,7 +502,7 @@ void MCDecoderICARUSTPCwROI::processSingleLabel(art::Event&                     
     const raw::RawDigit invalidRD;
 
     // Require a valid handle
-    if (digitVecHandle.isValid() && digitVecHandle->size()>0 )
+    if (digitVecHandle.isValid() && digitVecHandle->size()>0 )    
     {
         const unsigned int dataSize = digitVecHandle->front().Samples(); //size of raw data vectors
 
@@ -598,6 +602,18 @@ void MCDecoderICARUSTPCwROI::processSingleImage(const detinfo::DetectorClocksDat
     // Now set up for output, we need to convert back from float to short int so use this
     raw::RawDigit::ADCvector_t wvfm(numTicks);
 
+    // We need to recalculate pedestals for the noise corrected waveforms
+    icarus_signal_processing::WaveformTools<float> waveformTools;
+
+    // Local storage for recomputing the the pedestals for the noise corrected data
+    float localPedestal(0.);
+    float localFullRMS(0.);
+    float localTruncRMS(0.);
+    int   localNumTruncBins(0);
+    int   localRangeBins(0);
+
+    float sigmaCut(fSigmaForTruncation);
+
     // Loop over the channels to recover the RawDigits after filtering
     for(size_t chanIdx = 0; chanIdx < numChannels; chanIdx++)
     {
@@ -608,7 +624,8 @@ void MCDecoderICARUSTPCwROI::processSingleImage(const detinfo::DetectorClocksDat
 
         if (fOutputRawWaveform)
         {
-            const icarus_signal_processing::VectorFloat& waveform = decoderTool->getPedCorWaveforms()[chanIdx];
+            //const icarus_signal_processing::VectorFloat& waveform = decoderTool->getPedCorWaveforms()[chanIdx];
+            const icarus_signal_processing::VectorFloat& waveform = decoderTool->getRawWaveforms()[chanIdx];
 
             // Need to convert from float to short int
             std::transform(waveform.begin(),waveform.end(),wvfm.begin(),[](const auto& val){return short(std::round(val));});
@@ -632,14 +649,25 @@ void MCDecoderICARUSTPCwROI::processSingleImage(const detinfo::DetectorClocksDat
         }
 
         // Recover the denoised waveform
-        const icarus_signal_processing::VectorFloat& denoised = decoderTool->getWaveLessCoherent()[chanIdx];
+        const icarus_signal_processing::VectorFloat& waveLessCoherentVec = decoderTool->getWaveLessCoherent()[chanIdx];
+        icarus_signal_processing::VectorFloat        denoised(waveLessCoherentVec.size());
+
+        // Now determine the pedestal and correct for it
+        waveformTools.getPedestalCorrectedWaveform(waveLessCoherentVec,
+                                                   denoised,
+                                                   sigmaCut,
+                                                   localPedestal,
+                                                   localFullRMS,
+                                                   localTruncRMS,
+                                                   localNumTruncBins,
+                                                   localRangeBins);
 
         // Need to convert from float to short int
         std::transform(denoised.begin(),denoised.end(),wvfm.begin(),[](const auto& val){return short(std::round(val));});
 
         ConcurrentRawDigitCol::iterator newObjItr = concurrentRawDigitCol.emplace_back(channel,wvfm.size(),wvfm); 
 
-        newObjItr->SetPedestal(0.,decoderTool->getTruncRMSVals()[chanIdx]);
+        newObjItr->SetPedestal(localPedestal,localTruncRMS);
 
         // And, finally, the ROIs 
         const icarus_signal_processing::VectorBool& chanROIs = decoderTool->getROIVals()[chanIdx];
