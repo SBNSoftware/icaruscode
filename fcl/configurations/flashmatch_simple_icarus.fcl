@@ -2,22 +2,28 @@ BEGIN_PROLOG #comment to run generate_simple_weighted_template.py
 
 icarus_simple_flashmatch_E: {
   module_type: FlashPredict
+  IsSimple: true
+  FlashType: "simpleflash_pmt"
+  UseOldMetrics: false		// Use metrics file with just simpleflash_pmt metrics
   Cryostat: 0
   PandoraProducer:     "pandoraGausCryoE"
   TrackProducer:       "pandoraTrackGausCryoE"
   #CaloProducer:       "pandoraGausCaloCryoE"
   SpacePointProducer:  "pandoraGausCryoE"
   OpHitProducer: "ophit"
+  OpFlashProducer: ["opflashCryoE"]
+  OpFlashHitProducer: ["opflashCryoE"]
   BeamSpillTimeStart:      -1.7  # us, with some tolerance # TODO: workaround to accomodate MC and Data different times
   BeamSpillTimeEnd:         1.7  # us, with some tolerance # TODO: workaround to accomodate MC and Data different times
   FlashFindingTimeStart: -100.   # us # TODO: tune
   FlashFindingTimeEnd:    100.   # us # TODO: tune
   FlashStart:              -0.02 # us, wrt flash time
   FlashEnd:                 0.08 # us, wrt flash time
+  PlaneList: [0, 1, 3] 	# Choose which wireplanes to get hits from: 0, 1, 3 = U, V, Z
   OnlyCollectionWires: false
   ForceConcurrence: true
   CorrectDriftDistance: true
-  InputFileName: "FlashMatch/fm_metrics_icarus.root"
+  InputFileName: "FlashMatch/fm_all_metrics_icarus.root"
   NoAvailableMetrics: false
   SelectNeutrino: true # it's too buggy to set 'false'
   MakeTree: false
@@ -114,6 +120,17 @@ icarus_simple_flashmatch_W.PandoraProducer:    "pandoraGausCryoW"
 icarus_simple_flashmatch_W.TrackProducer:      "pandoraTrackGausCryoW"
 # icarus_simple_flashmatch_W.CaloProducer:     "pandoraGausCaloCryoW"
 icarus_simple_flashmatch_W.SpacePointProducer: "pandoraGausCryoW"
+icarus_simple_flashmatch_W.OpFlashProducer: ["opflashCryoW"]
+icarus_simple_flashmatch_W.OpFlashHitProducer: ["opflashCryoW"]
+
+# OpFlashes
+icarus_simple_flashmatch_E_op: @local::icarus_simple_flashmatch_E
+icarus_simple_flashmatch_E_op.IsSimple: false
+icarus_simple_flashmatch_E_op.FlashType: "opflash_pmt"
+
+icarus_simple_flashmatch_W_op: @local::icarus_simple_flashmatch_W
+icarus_simple_flashmatch_W_op.IsSimple: false
+icarus_simple_flashmatch_W_op.FlashType: "opflash_pmt"
 
 # SCE definitions
 icarus_simple_flashmatch_sce_E: @local::icarus_simple_flashmatch_E
@@ -127,5 +144,14 @@ icarus_simple_flashmatch_sce_W.PandoraProducer:    "pandoraGausSCECryoW"
 icarus_simple_flashmatch_sce_W.TrackProducer:      "pandoraTrackGausSCECryoW"
 # icarus_simple_flashmatch_sce_W.CaloProducer:     "pandoraGausSCECaloCryoW"
 icarus_simple_flashmatch_sce_W.SpacePointProducer: "pandoraGausSCECryoW"
+
+# OpFlashes
+icarus_simple_flashmatch_sce_E_op: @local::icarus_simple_flashmatch_E_op
+icarus_simple_flashmatch_sce_E_op.IsSimple: false
+icarus_simple_flashmatch_sce_E_op.FlashType: "opflash_pmt"
+
+icarus_simple_flashmatch_sce_W_op: @local::icarus_simple_flashmatch_W_op
+icarus_simple_flashmatch_sce_W_op.IsSimple: false
+icarus_simple_flashmatch_sce_W_op.FlashType: "opflash_pmt"
 
 END_PROLOG #comment to run generate_simple_weighted_template.py
