@@ -258,30 +258,6 @@ public:
       Comment("label for output messages of this module instance"),
       "TimeTrackTreeStorage" // default
       };
-
-    fhicl::Atom<float> MODA {
-      Name("MODA"),
-      Comment("first recombination parameter for dE/dx calculations"),
-      0.930 //default
-      };
-    
-    fhicl::Atom<float> MODB {
-      Name("MODB"),
-      Comment("second recombination parameter for dE/dx calculations"),
-      0.212
-      };
-    
-    fhicl::Atom<float> Wion {
-      Name("Wion"),
-      Comment("work function for recombination"),
-      0.0000236016
-      };
-    
-    fhicl::Atom<float> Efield {
-      Name("Efield"),
-      Comment("Electric field in kV/cm"),
-      0.5
-      };
     
     fhicl::Atom<bool> ForceDowngoing {
       Name("ForceDowngoing"),
@@ -302,12 +278,6 @@ public:
                           const std::vector<art::Ptr<anab::Calorimetry>> &calo,
                           const geo::GeometryCore *geo);
 
-  float dEdx_calc(float dQdx, 
-                  float A,
-                  float B,
-                  float Wion,
-                  float E);
-
   void analyze(art::Event const& e) override;
   
   void endJob() override;
@@ -327,10 +297,6 @@ private:
   art::InputTag const fTriggerProducer;
   art::InputTag const fFlashProducer;
   std::string const fLogCategory;
-  float const fMODA;
-  float const fMODB;
-  float const fWion;
-  float const fEfield;
   bool const fForceDowngoing; ///< Whether to force all tracks to be downgoing.
   
   // --- END ---- Configuration parameters -------------------------------------
@@ -410,10 +376,6 @@ sbn::TimeTrackTreeStorage::TimeTrackTreeStorage(Parameters const& p)
   , fTriggerProducer  { p().TriggerProducer() }
   , fFlashProducer    { p().FlashProducer() }
   , fLogCategory      { p().LogCategory() }
-  , fMODA             { p().MODA() }
-  , fMODB             { p().MODB() }
-  , fWion             { p().Wion() }
-  , fEfield           { p().Efield() }
   , fForceDowngoing    { p().ForceDowngoing() }
   // algorithms
   , fPMTwalls         { computePMTwalls() }
@@ -748,7 +710,7 @@ sbn::selHitInfo sbn::TimeTrackTreeStorage::makeHit(const recob::Hit &hit,
         hinfo.oncalo = true;
         hinfo.pitch = c->TrkPitchVec()[i_calo];
         hinfo.dqdx = c->dQdx()[i_calo];
-        hinfo.dEdx = dEdx_calc(hinfo.dqdx, fMODA, fMODB, fWion, fEfield);
+        hinfo.dEdx = c->dEdx()[i_calo];
         hinfo.rr = c->ResidualRange()[i_calo];
         break;
       } // for i_calo
@@ -757,21 +719,6 @@ sbn::selHitInfo sbn::TimeTrackTreeStorage::makeHit(const recob::Hit &hit,
   }
   
   return hinfo;
-}
-
-float sbn::TimeTrackTreeStorage::dEdx_calc(float dQdx,
-                                           float A,
-                                           float B,
-                                           float Wion,
-                                           float E) 
-{
-  float LAr_density_gmL = 1.389875; //LAr density in g/cm^3
-  float alpha = A;
-  float beta = B/(LAr_density_gmL*E);
-  float dEdx = ((std::exp(dQdx*Wion*beta) - alpha)/beta)*3.278;
- 
-  return dEdx;
-  
 }
 
 
