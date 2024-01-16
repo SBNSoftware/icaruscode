@@ -376,10 +376,6 @@ sbn::TimeTrackTreeStorage::TimeTrackTreeStorage(Parameters const& p)
   , fTriggerProducer  { p().TriggerProducer() }
   , fFlashProducer    { p().FlashProducer() }
   , fLogCategory      { p().LogCategory() }
-  , fMODA             { p().MODA() }
-  , fMODB             { p().MODB() }
-  , fWion             { p().Wion() }
-  , fEfield           { p().Efield() }
   , fForceDowngoing    { p().ForceDowngoing() }
   // algorithms
   , fPMTwalls         { computePMTwalls() }

@@ -553,10 +553,6 @@ sbn::TimeTrackTreeStorage::TimeTrackTreeStorage(Parameters const& p)
   , fFlashProducer    { p().FlashProducer() }
   , fCRTMatchProducer { p().CRTMatchingProducer() }
   , fLogCategory      { p().LogCategory() }
-  , fMODA             { p().MODA() }
-  , fMODB             { p().MODB() }
-  , fWion             { p().Wion() }
-  , fEfield           { p().Efield() }
   , fForceDowngoing    { p().ForceDowngoing() }
   , fCalorimetryPlaneNumber { p().CalorimetryPlane() }
   // algorithms
@@ -1309,5 +1305,4 @@ auto sbn::TimeTrackTreeStorage::distanceFromTimeRange
 
 // -----------------------------------------------------------------------------
 DEFINE_ART_MODULE(sbn::TimeTrackTreeStorage)
-
 
