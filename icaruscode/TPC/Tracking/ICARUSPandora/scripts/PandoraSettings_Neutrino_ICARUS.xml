@@ -331,9 +331,9 @@
     <ShowerPfoListName>ShowerParticles3D</ShowerPfoListName>
     <UseThreeDInformation>true</UseThreeDInformation>
     <PersistFeatures>true</PersistFeatures>
-    <MvaFileName>BNBPfoCharTraining_sdellepi_noHierarchy.xml</MvaFileName>
+    <MvaFileName>PandoraBdt_v09_72_01_ICARUS_pfochar_bnb.xml</MvaFileName>
     <MvaName>PfoCharBDT</MvaName>
-    <MvaFileNameNoChargeInfo>BNBPfoCharTraining_sdellepi_noHierarchy.xml</MvaFileNameNoChargeInfo>
+    <MvaFileNameNoChargeInfo>PandoraBdt_v09_72_01_ICARUS_pfochar_bnb.xml</MvaFileNameNoChargeInfo>
     <MvaNameNoChargeInfo>PfoCharBDTNoChargeInfo</MvaNameNoChargeInfo>
     <FeatureTools>
       <tool type = "LArThreeDLinearFitFeatureTool"/>
