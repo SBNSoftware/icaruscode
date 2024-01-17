@@ -19,8 +19,8 @@ physics :{
             tool_type: WCLS
             apps: ["Pgrapher"]
 
-            // logsinks: ["stdout"]
-            // loglevels: ["magnify:debug"]
+            logsinks: ["stdout"]
+            loglevels: ["magnify:debug"]
 
             plugins: ["WireCellPgraph", "WireCellGen","WireCellSio","WireCellRoot","WireCellLarsoft"]
 

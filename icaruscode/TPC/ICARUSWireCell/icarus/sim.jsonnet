@@ -16,8 +16,8 @@ function(params, tools) {
 
     local zippers = [sim.make_depozipper("depozipper-"+tools.anodes[n].name, tools.anodes[n], tools.pirs[0])
                      for n in std.range(0, nanodes-1)],
-    local transforms = [sim.make_depotransform("depotransform-"+tools.anodes[n].name, tools.anodes[n], tools.pirs[0])
-                        for n in std.range(0, nanodes-1)],
+    local transforms = [sim.make_depotransform("depotransform-%d-"%n+tools.anodes[std.floor(n/45)].name+"-plane%d"%std.mod(std.floor(n/15),3), tools.anodes[std.floor(n/45)], [std.mod(std.floor(n/15),3)],tools.pirs[std.mod(n,15)]) //tools.pirs[0])
+                        for n in std.range(0, 359)],
     local depos2traces = transforms,
     //local depos2traces = zippers,
 
@@ -28,16 +28,17 @@ function(params, tools) {
     local reframers = [
         g.pnode({
             type: 'Reframer',
-            name: 'reframer-'+tools.anodes[n].name,
+            name: 'reframer-%d-'%n+tools.anodes[std.floor(n/45)].name,
             data: {
-                anode: wc.tn(tools.anodes[n]),
+                anode: wc.tn(tools.anodes[std.floor(n/45)]),
                 tags: [],           // ?? what do?
                 fill: 0.0,
                 tbin: params.sim.reframer.tbin,
                 toffset: 0,
                 nticks: params.sim.reframer.nticks,
             },
-        }, nin=1, nout=1) for n in std.range(0, nanodes-1)],
+//        }, nin=1, nout=1) for n in std.range(0, 3)],
+        }, nin=1, nout=1) for n in std.range(0, 359)],
 
 
     // fixme: see https://github.com/WireCell/wire-cell-gen/issues/29
@@ -75,8 +76,9 @@ function(params, tools) {
 
     ret : {
 
-        analog_pipelines: [g.pipeline([depos2traces[n], reframers[n]],
-                                      name="simanalogpipe-" + tools.anodes[n].name) for n in std.range(0, nanodes-1)],
+        
+        analog_pipelines: [g.pipeline([depos2traces[n]],
+                                      name="simanalogpipe-%d-"%n + tools.anodes[std.floor(n/45)].name) for n in std.range(0, 359)],
 
         signal_pipelines: [g.pipeline([depos2traces[n], reframers[n],  digitizers[n]],
                                       name="simsigpipe-" + tools.anodes[n].name) for n in std.range(0, nanodes-1)],
@@ -84,9 +86,9 @@ function(params, tools) {
         splusn_pipelines:  [g.pipeline([depos2traces[n], reframers[n], noises[n], digitizers[n]],
                                        name="simsignoipipe-" + tools.anodes[n].name) for n in std.range(0, nanodes-1)],
 
-        analog: f.fanpipe('DepoSetFanout', self.analog_pipelines, 'FrameFanin', "simanaloggraph", outtags),
-        signal: f.fanpipe('DepoSetFanout', self.signal_pipelines, 'FrameFanin', "simsignalgraph", outtags),
-        splusn: f.fanpipe('DepoSetFanout', self.splusn_pipelines, 'FrameFanin', "simsplusngraph", outtags),
+        analog: f.fanpipe('DepoSetFanout', self.analog_pipelines,   'FrameFanin', "simanaloggraph",   outtags),
+        signal: f.fanpipe('DepoSetFanout', self.signal_pipelines,   'FrameFanin', "simsignalgraph",   outtags),
+        splusn: f.fanpipe('DepoSetFanout', self.splusn_pipelines,   'FrameFanin', "simsplusngraph",   outtags),
 
     } + sim,                    // tack on base for user sugar.
 }.ret
