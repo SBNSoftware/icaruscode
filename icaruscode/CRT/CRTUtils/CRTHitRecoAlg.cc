@@ -28,6 +28,7 @@ void CRTHitRecoAlg::reconfigure(const fhicl::ParameterSet& pset) {
   fCrtWindow = pset.get<uint64_t>("CrtWindow", 0.);
   fCSVFile = pset.get<std::string>("CSVFile", "");
   fData = pset.get<bool>("Data", false);
+  fGlobalT0Offset = pset.get<double>("GlobalT0Offset",0.);
   if (!fCSVFile.empty()) filecsv.open(fCSVFile);
   return;
 }
