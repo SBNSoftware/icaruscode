@@ -767,6 +767,9 @@ class icarus::trigger::TriggerSimulationOnGates
   /// Fills an `EventAux_t` from the information found in the argument.
   static EventAux_t extractEventInfo(art::Event const& event);
   
+  /// Converts a standard _art_ timestamp into an UTC time [ns]
+  static std::uint64_t TimestampToUTC(art::Timestamp const& ts);
+  
   /// Returns the ID of the cryostat the specified window belongs to.
   static geo::CryostatID WindowCryostat
     (icarus::trigger::WindowChannelMap::WindowInfo_t const& winfo)
@@ -1579,10 +1582,19 @@ auto icarus::trigger::TriggerSimulationOnGates::extractEventInfo
   (art::Event const& event) -> EventAux_t
 {
   return {
-      event.time().value()  // time
-    , event.event()         // event
+      TimestampToUTC(event.time()) // time
+    , event.event()                // event
     };
 } // icarus::trigger::TriggerSimulationOnGates::extractEventInfo()
+
+
+//------------------------------------------------------------------------------
+std::uint64_t icarus::trigger::TriggerSimulationOnGates::TimestampToUTC
+  (art::Timestamp const& ts)
+{
+  return static_cast<std::uint64_t>(ts.timeHigh())
+    + static_cast<std::uint64_t>(event.time().timeLow()) * 1'000'000'000ULL;
+} // icarus::trigger::TriggerSimulationOnGates::TimestampToUTC()
 
 
 //------------------------------------------------------------------------------

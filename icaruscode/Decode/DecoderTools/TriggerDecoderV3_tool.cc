@@ -24,10 +24,9 @@
 #include "lardata/DetectorInfoServices/DetectorClocksService.h"
 #include "lardataalg/DetectorInfo/DetectorTimings.h"
 #include "lardataalg/Utilities/quantities/spacetime.h" // util::quantities::nanosecond
-#include "lardataobj/RawData/ExternalTrigger.h" //JCZ: TBD, placeholder for now to represent the idea
+#include "lardataobj/RawData/ExternalTrigger.h"
 #include "lardataobj/RawData/TriggerData.h" // raw::Trigger
-#include "lardataobj/Simulation/BeamGateInfo.h" //JCZ:, another placeholder I am unsure if this and above will be combined at some point into a dedicated object 
-
+#include "lardataobj/Simulation/BeamGateInfo.h"
 #include "sbndaq-artdaq-core/Overlays/ICARUS/ICARUSTriggerV3Fragment.hh"
 
 #include "sbnobj/Common/Trigger/ExtraTriggerInfo.h"
@@ -239,7 +238,7 @@ namespace daq
     TriggerPtr fPrevTrigger;
     std::unique_ptr<RelativeTriggerCollection> fRelTrigger;
     ExtraInfoPtr fTriggerExtra;
-    BeamGateInfoPtr fBeamGateInfo; 
+    BeamGateInfoPtr fBeamGateInfo;
     art::InputTag fTriggerConfigTag; ///< Data product with hardware trigger configuration.
     bool fDiagnosticOutput; ///< Produces large number of diagnostic messages, use with caution!
     bool fDebug; ///< Use this for debugging this tool
@@ -761,20 +760,19 @@ namespace daq
       : 0.0
       };
     
-    // beam gate - trigger: hope it's negative...
+    // beam gate, defined in simulation time, which should match beam gate time
+    // ... trivial:
+    fBeamGateInfo->emplace_back(0, gateWidth.value(), simGateType(beamGateBit));
+    
+    //
+    // relative time trigger (raw::Trigger)
+    //
     nanoseconds const gateStartFromTrigger{
       static_cast<double>(timestampDiff
         (fTriggerExtra->beamGateTimestamp, fTriggerExtra->triggerTimestamp)
         )
       }; // narrowing!!
     auto const elecGateStart = fDetTimings.TriggerTime() + gateStartFromTrigger;
-    auto const simGateStart = fDetTimings.toSimulationTime(elecGateStart);
-    fBeamGateInfo->emplace_back
-      (simGateStart.value(), gateWidth.value(), simGateType(beamGateBit));
-    
-    //
-    // relative time trigger (raw::Trigger)
-    //
     fRelTrigger->emplace_back(
       fTriggerExtra->triggerID,                               // counter
       fDetTimings.TriggerTime().value(),                      // trigger_time
