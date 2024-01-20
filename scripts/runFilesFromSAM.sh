@@ -105,15 +105,13 @@ Each specification may be a run number, a SAM definition (preceded by \`@\`,
 e.g. \`@icarus_run005300_raw\`) or a file name.
 In all cases, run, definition or file, they must be known to SAM.
 
-Options:
+Input options:
 --type=<${RawType}|${DecodeType}|...>  [${DefaultType}]
 --decode , --decoded , -D
 --raw , -R
 --stage=STAGE
     select the type of files to query (raw from DAQ, decoded...);
     if the stage is explicitly selected, it is used as constraint in SAM query
---schema=<${XRootDschema}|...>  [${DefaultSchema}]
---xrootd , --root , -X
 --locate
     select the type of URL (XRootD, ...); the option \`--locate\` and the
     special schema value <${LocateSchema}> will cause the query to be done via
@@ -127,6 +125,15 @@ Options:
 --numi
 --allstreams
     select the stream (if empty, all streams are included)
+--project=<version>
+    exclusively asks for file processed with the specified version of the
+    software (e.g. \`v09_72_03_00p01\`). If specified multiple times or as a
+    comma-separated list, files from any of the chosen versions are selected
+
+Output options:
+
+--schema=<${XRootDschema}|...>  [${DefaultSchema}]
+--xrootd , --root , -X
 
 --output=OUTPUTFILE
     use OUTPUTFILE for all output file lists
@@ -147,9 +154,11 @@ Options:
 --max=LIMIT
     retrieves only the first LIMIT files from SAM (only when querying run numbers);
     in all cases, it translates only LIMIT files into a location; 0 means no limit
+
+Other options:
+
 --experiment=NAME
     experiment name (and SAM station) passed to SAM
-
 --keepgoing[=MAXERRORS]
     ignore up to \`MAXERRORS\` errors while interacting with SAM.
     If this option is not specified (equivalent to setting \`MAXERRORS\` to 0)
@@ -284,6 +293,14 @@ function locateFile() {
 
 
 # ------------------------------------------------------------------------------
+function makeCSL() {
+  local -a Args=( "$@" )
+  
+  printf '%s' "${Args[0]}"
+  printf ', %s' "${Args[@]:1}"
+} # makeCSL()
+
+# ------------------------------------------------------------------------------
 declare -a Specs
 declare -i UseDefaultOutputFile=0 DoQuiet=0
 declare OutputFile Experiment
@@ -291,6 +308,7 @@ declare Type="$DefaultType"
 declare Schema="$DefaultSchema"
 declare Location="$DefaultLocation"
 declare Stream="$DefaultStream"
+declare -a ProjectVersions=( )
 declare OutputPattern="$DefaultOutputPattern"
 declare EntryLimit=0 # 0 = no limits'
 declare -i AllowedErrors=0 # negative = any number
@@ -317,6 +335,8 @@ for (( iParam=1 ; iParam <= $# ; ++iParam )); do
       ( '--bnb' | '--BNB' )               Stream="$BNBstream" ;;
       ( '--numi' | '--NuMI' | '--NUMI' )  Stream="$NuMIstream" ;;
       ( '--allstreams' )                  Stream="$AnyStream" ;;
+      
+      ( '--project='* )                   ProjectVersions+=( $(tr ',' ' ' <<< "${Param#--*=}" ) ) ;;
       
       ( "--output="* )                    OutputFile="${Param#--*=}" ;;
       ( "--outputpattern="* )             OutputPattern="${Param#--*=}" ;;
@@ -381,6 +401,16 @@ case "${Type,,}" in
 #   exit 1
 esac
 [[ -n "$Stream" ]] && Constraints+=" and sbn_dm.beam_type=${Stream}"
+case "${#ProjectVersions[*]}" in
+  ( 0 )
+    ;;
+  ( 1 )
+    Constraints+=" and icarus_project.version=${ProjectVersions[0]}"
+    ;;
+  ( * )
+    Constraints+=" and icarus_project.version in ( $(makeCSL "${ProjectVersions[@]}" ) )"
+    ;;
+esac
 [[ "$EntryLimit" -gt 0 ]] && Constraints+=" with limit ${EntryLimit}"
 
 
