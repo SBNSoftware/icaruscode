@@ -352,7 +352,7 @@ sbn::crt::CRTHit CRTHitRecoAlg::FillCRTHit(
       time1 /*% 1'000'000'000*/;  // TODO: Update the CRTHit data product
                                   // /sbnobj/common/CRT . Discussion with SBND
                                   // people needed
-  crtHit.ts0_s = time0 / 1'000'000'000;
+  crtHit.ts0_s = time0 / 1'000'000'000;//'
   crtHit.plane = plane;
   crtHit.x_pos = x;
   crtHit.x_err = ex;
@@ -488,8 +488,11 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeTopHit(
   hitpointerr[1] = adGeo.HalfHeight();
   hitpointerr[2] = adsGeo.HalfWidth1() * 2 / sqrt(12);
   // thit1 = (Long64_t)(thit-GlobalTrigger[(int)mac+73]);
-  thit1 = (Long64_t)(thit - GlobalTrigger[(int)mac]);
-
+  if (fData) thit1 = (Long64_t)(thit - GlobalTrigger[(int)mac]);
+  else {
+    thit1 = thit - fGlobalT0Offset;
+    std::cout << "thit1 = thit - fGlobalT0Offset = " << thit << " - " << fGlobalT0Offset << " = " << thit1 << "\n";
+  }
   // Remove T1 Reset event not correctly flagged, remove T1 reset events, remove
   // T0 reset events
   if ((sum < 10000 && thit1 < 2'001'000 && thit1 > 2'000'000) ||
@@ -549,7 +552,9 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeBottomHit(art::Ptr<CRTData> data) {
 
   auto const& adsGeo = adGeo.SensitiveVolume(adsid_max);  // trigger strip
   uint64_t thit = data->fTs0 - adsGeo.HalfLength() * fPropDelay;
-
+  Long64_t thit1;
+  if (fData) thit1 = data->fTs0 - adsGeo.HalfLength() * fPropDelay; // this should probably be revisited, but we dont currently reconstruct bottom CRT entries anyway
+  else thit1 = data->fTs0 - fGlobalT0Offset;
   auto const hitpoint =
       adGeo.toWorldCoords(hitlocal);  // tranform from module to world coords
 
@@ -557,7 +562,7 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeBottomHit(art::Ptr<CRTData> data) {
   hitpointerr[1] = adGeo.HalfHeight();
   hitpointerr[2] = adsGeo.Length() / sqrt(12);
 
-  CRTHit hit = FillCRTHit({mac}, pesmap, petot, thit, thit, plane, hitpoint.X(),
+  CRTHit hit = FillCRTHit({mac}, pesmap, petot, thit, thit1, plane, hitpoint.X(),
                           hitpointerr[0], hitpoint.Y(), hitpointerr[1],
                           hitpoint.Z(), hitpointerr[2], region);
 
@@ -1215,8 +1220,13 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeSideHit(
     hitpointerr[2] = (zmax - zmin) / sqrt(12);
   }
 
-  Long64_t thit1 = (Long64_t)(thit - GlobalTrigger[(int)macs.at(0)]);
-
+  //Long64_t thit1 = (Long64_t)(thit - GlobalTrigger[(int)macs.at(0)]);
+  Long64_t thit1;
+  if (fData) thit1=(Long64_t)(thit-GlobalTrigger[(int)macs.at(0)]);
+  else {
+    thit1 = thit - fGlobalT0Offset;
+    std::cout << "thit1 = thit - fGlobalT0Offset = " << thit << " - " << fGlobalT0Offset << " = " << thit1 << "\n";
+  }
   // generate hit
   CRTHit hit = FillCRTHit(macs, pesmap, petot, thit, thit1, plane, hitpoint[0],
                           hitpointerr[0], hitpoint[1], hitpointerr[1],
