@@ -489,10 +489,8 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeTopHit(
   hitpointerr[2] = adsGeo.HalfWidth1() * 2 / sqrt(12);
   // thit1 = (Long64_t)(thit-GlobalTrigger[(int)mac+73]);
   if (fData) thit1 = (Long64_t)(thit - GlobalTrigger[(int)mac]);
-  else {
-    thit1 = thit - fGlobalT0Offset;
-    std::cout << "thit1 = thit - fGlobalT0Offset = " << thit << " - " << fGlobalT0Offset << " = " << thit1 << "\n";
-  }
+  else thit1 = thit - fGlobalT0Offset;
+
   // Remove T1 Reset event not correctly flagged, remove T1 reset events, remove
   // T0 reset events
   if ((sum < 10000 && thit1 < 2'001'000 && thit1 > 2'000'000) ||
@@ -1223,10 +1221,8 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeSideHit(
   //Long64_t thit1 = (Long64_t)(thit - GlobalTrigger[(int)macs.at(0)]);
   Long64_t thit1;
   if (fData) thit1=(Long64_t)(thit-GlobalTrigger[(int)macs.at(0)]);
-  else {
-    thit1 = thit - fGlobalT0Offset;
-    std::cout << "thit1 = thit - fGlobalT0Offset = " << thit << " - " << fGlobalT0Offset << " = " << thit1 << "\n";
-  }
+  else thit1 = thit - fGlobalT0Offset;
+
   // generate hit
   CRTHit hit = FillCRTHit(macs, pesmap, petot, thit, thit1, plane, hitpoint[0],
                           hitpointerr[0], hitpoint[1], hitpointerr[1],
