@@ -50,7 +50,6 @@
 
 #include "icaruscode/Utilities/ArtHandleTrackerManager.h"
 #include "icaruscode/Decode/DecoderTools/INoiseFilter.h"
-#include "icaruscode/Decode/DecoderTools/Dumpers/FragmentDumper.h"
 #include "icaruscode/Decode/ChannelMapping/IICARUSChannelMap.h"
 
 #include "icarus_signal_processing/ICARUSSigProcDefs.h"
@@ -517,10 +516,6 @@ void DaqDecoderICARUSTPCwROI::processSingleFragment(size_t                      
     // Recover the crate name for this fragment
     const std::string& crateName = fChannelMap->getCrateName(fragmentID);
 
-    //mf::LogInfo("DaqDecoderICARUSTPCwROI")
-    //  << "FragmentID " << std::hex << fragmentID << std::dec << ", Crate " << crateName << " DUMP:" << '\n'
-    //  << sbndaq::dumpFragment(*fragmentPtr);
-
     // Get the board ids for this fragment
     const icarusDB::ReadoutIDVec& readoutIDVec = fChannelMap->getReadoutBoardVec(fragmentID);
 
@@ -595,13 +590,7 @@ void DaqDecoderICARUSTPCwROI::processSingleFragment(size_t                      
         {
            icarus_signal_processing::VectorFloat& rawDataVec = channelArrayPair.second[chanIdx];
            for (size_t tick = 0; tick < nSamplesPerChannel; ++tick)
-           {
-             uint32_t advValue = physCrateFragment.adc_val(board, chanIdx, tick); 
              rawDataVec[tick] = physCrateFragment.adc_val(board, chanIdx, tick);
-             if (advValue != rawDataVec[tick])
-               mf::LogInfo(fLogCategory)
-                 << "FragmentID " << std::hex << fragmentID << std::dec << ", Crate " << crateName<< ",  board " << board << ", channel " << chanIdx << ", sample " << tick << " has ADC value " << advValue << "(" << rawDataVec[tick] << " as a short)";
-           }
 
           // Keep track of the channel
           channelArrayPair.first[chanIdx] = channelPlanePairVec[chanIdx];
