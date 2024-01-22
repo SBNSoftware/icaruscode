@@ -124,13 +124,14 @@ namespace reprocessRaw
       {
         size_t nChannels = f.metadata<MetaData>()->channels_per_board();
         size_t nSamples  = f.metadata<MetaData>()->samples_per_channel();
-        uint16_t const* boardData = reinterpret_cast<uint16_t const*>(f.dataBeginBytes() + (b+1)*28 + (b+1)*8 + b*(nChannels*nSamples* + 4)*sizeof(uint16_t));
+        uint16_t const* boardData = reinterpret_cast<uint16_t const*>(f.dataBeginBytes() + (b+1)*28 + (b+1)*8 + b*(nChannels*nSamples + 4)*sizeof(uint16_t));
         return *(boardData + s*nChannels + c) & (~(1<<(f.metadata<MetaData>()->num_adc_bits()+1)));
       }
       artdaq::Fragment compressArtdaqFragment(artdaq::Fragment const & f);
 
     private:
       std::vector<art::InputTag> fFragmentLabelVec; // which Fragments are we pulling in?
+      bool fDebug; // run with debugging?
 
   }; // end ICARUSProduceCompressed class
 
@@ -146,6 +147,7 @@ namespace reprocessRaw
   {
     // What are we procesing
     fFragmentLabelVec = pset.get<std::vector<art::InputTag>>("FragmentLabelVec");
+    fDebug = pset.get<bool>("RunDebugger", false);
     
     for (auto const& fragLabel : fFragmentLabelVec)
     {
@@ -189,7 +191,6 @@ namespace reprocessRaw
 
       // since the 0th sample is used as a reference, store it as is
       compressionKeys[board*nSamples] = {};
-      boardDataTileSize += SampleBytesFromKey({});
       for (size_t channel = 0; channel < nChannels; ++channel)
       {
         uint16_t sampleADC  = (adc_val(f, board, channel, 0) & 0x0FFF);
@@ -198,6 +199,7 @@ namespace reprocessRaw
         ++compressedDataOffset;
         ++uncompressedDataOffset;
       } // done with channel in sample 0
+      boardDataTileSize += SampleBytesFromKey({});
 
       // from here on we store the difference between samples for each channel
       for (size_t sample = 1; sample < nSamples; ++sample)
@@ -276,7 +278,6 @@ namespace reprocessRaw
 
     return compressed_fragment;
   }
-
   //------------------------------------------------
   void ICARUSProduceCompressed::produceForLabel(art::Event& evt, art::InputTag fFragmentLabel)
   {
@@ -291,8 +292,72 @@ namespace reprocessRaw
     // fill the new fragments vector
     for (auto const& old_fragment : old_fragments)
     {
+      size_t nBoards   = old_fragment.metadata<MetaData>()->num_boards();
+      size_t nChannels = old_fragment.metadata<MetaData>()->channels_per_board();
+      size_t nSamples  = old_fragment.metadata<MetaData>()->samples_per_channel();
+
       artdaq::Fragment new_fragment = compressArtdaqFragment(old_fragment);
       new_fragments->emplace_back(new_fragment);
+
+      if (fDebug)
+      {
+        // store ADC vals
+        std::vector<uint16_t> adcValues(nBoards*nChannels*nSamples, std::numeric_limits<uint16_t>::min());
+
+        // loop to fill
+        uint64_t fragWord = 0;
+        for (size_t b = 0; b < nBoards; b++)
+        {
+          // skip board headers...
+          fragWord += ((28 + 8) / sizeof(uint16_t));
+          for (size_t s = 0; s < nSamples; s++)
+          {
+            size_t keyCount = 0;
+            for (size_t bit = 0; bit < nChannels/4; bit++)
+            {
+              uint16_t word = getA2795Word(new_fragment, fragWord);
+              bool isCompressed = (((word & 0xF000) != 0x8000));
+              for (size_t cInSet = 0; cInSet < 4; ++ cInSet)
+              {
+                size_t c = 4*bit + cInSet;
+                if (not isCompressed)
+                {
+                  uint16_t tempWord = getA2795Word(new_fragment, fragWord + cInSet);
+                  int16_t twelveBitDiff = (tempWord & 0x0FFF);
+                  bool isNeg = (twelveBitDiff >> 11) && (s != 0);
+                  uint16_t prevSample = (s != 0) ? adcValues[b*nSamples*nChannels + c*nSamples + s - 1] : 0;
+                  uint16_t currSample = (isNeg*0xF000 + twelveBitDiff + prevSample);
+                  adcValues.at(b*nSamples*nChannels + c*nSamples + s) = currSample;
+                } else {
+                  int16_t fourBitDiff = (word >> (4*cInSet)) & 0x000F;
+                  bool isNeg = (fourBitDiff >> 3);
+                  uint16_t prevSample = (s != 0) ? adcValues[b*nSamples*nChannels + c*nSamples + s - 1] : 0;
+                  uint16_t currSample = (isNeg*0xFFF0 + fourBitDiff + prevSample);
+                  adcValues.at(b*nSamples*nChannels + c*nSamples + s) = currSample;
+                }
+              }
+              fragWord += (isCompressed) ? 1 : 4;
+              keyCount += isCompressed;
+            }
+            if ((keyCount % 2) == 1)
+              fragWord += 1;
+          }
+          // ...and skip board trailers
+          fragWord += 4;
+        }
+        for (size_t board = 0; board < nBoards; ++board)
+          for (size_t sample = 0; sample < nSamples; ++sample)
+            for (size_t channel = 0; channel < nChannels; ++channel)
+            {
+              uint16_t oldADC = adc_val(old_fragment, board, channel, sample);
+              uint16_t newADC = adcValues.at(board*nSamples*nChannels + channel*nSamples + sample);
+              if (oldADC != newADC)
+                MF_LOG_VERBATIM("ICARUSProduceCompressed")
+                  << "ERROR - ADC Mismatch in board " << board << ", sample " << sample << ", channel " << channel << '\n'
+                  << "  old: " << oldADC << '\n'
+                  << "  new: " << newADC;
+            }
+      }
     }
 
     // put the new fragments into the event
