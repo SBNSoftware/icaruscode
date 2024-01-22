@@ -33,14 +33,3 @@ physics: {
 outputs: {
   rootoutput: @local::icarus_rootoutput
 }
-
-# Field Responce input customisation
-# physics.producers.daq.wcls_main.params.files_fields: "icarus_testFR_1.json.bz2"
-
-#
-# customisation
-#
-
-# we are suppressing channels with no signal in the TPC
-# physics.producers.daq.SuppressNoSignal: true
-

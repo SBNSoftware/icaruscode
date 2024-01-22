@@ -10,13 +10,13 @@
 # Drop all output from the 2D deconvolution stage
 # Drop the recob::Wire output from the roifinder2d (but keep the ChannelROIs)
 outputs.rootOutput.outputCommands:         ["keep *_*_*_*", 
-                                            "drop *_daq_*_*", 
-                                            "drop *_MCDecodeTPCROI_*_*", 
+                                            #"drop *_daq_*_*", # Temporarily remove
+                                            "drop *_MCDecodeTPCROI_*_*",
                                             "drop *_decon1droi_*_*", 
                                             "drop *_decon2droi*_*_*", 
                                             "drop recob::Wire*_roifinder_*_*",
                                             "drop recob::Wire*_roifinder2d_*_*",
-                                            "keep raw::RawDigit*_MCDecodeTPCROI_*_*",
-                                            "keep *_daq_simpleSC*_*" 
+                                            "keep raw::RawDigit*_MCDecodeTPCROI_*_*"
+                                            #"keep *_daq_simpleSC*_*"  # Temporarily remove
                                            ]
 
