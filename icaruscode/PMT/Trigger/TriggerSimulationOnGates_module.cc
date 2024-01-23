@@ -1593,7 +1593,7 @@ std::uint64_t icarus::trigger::TriggerSimulationOnGates::TimestampToUTC
   (art::Timestamp const& ts)
 {
   return static_cast<std::uint64_t>(ts.timeHigh())
-    + static_cast<std::uint64_t>(event.time().timeLow()) * 1'000'000'000ULL;
+    + static_cast<std::uint64_t>(ts.timeLow()) * 1'000'000'000ULL;
 } // icarus::trigger::TriggerSimulationOnGates::TimestampToUTC()
 
 
