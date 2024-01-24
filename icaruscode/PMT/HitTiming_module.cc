@@ -135,12 +135,15 @@ class icarus::HitTiming : public art::EDAnalyzer {
 		int m_cryo; 
 		int m_flash_id;
 		double m_flash_time;
+		double m_flash_z;
+		double m_flash_y;
 		double m_flash_pe;
 		int m_flash_nhits;
 		std::vector<int> m_channel_id;
 		std::vector<double> m_start_time;
 		std::vector<double> m_peak_time;
 		std::vector<double> m_rise_time;
+		std::vector<double> m_hit_pe;
 };
 
 // --------------------------------------------------------------------------
@@ -183,11 +186,14 @@ void icarus::HitTiming::beginJob() {
 			ttree->Branch("flash_id",&m_flash_id);
 			ttree->Branch("flash_time",&m_flash_time);
 			ttree->Branch("flash_pe",&m_flash_pe);
+			ttree->Branch("flash_z",&m_flash_z);
+			ttree->Branch("flash_y",&m_flash_y);
 			ttree->Branch("flash_nhits",&m_flash_nhits);
 			ttree->Branch("channels",&m_channel_id);
 			ttree->Branch("start_time",&m_start_time);
 			ttree->Branch("peak_time",&m_peak_time);
 			ttree->Branch("rise_time",&m_rise_time);
+			ttree->Branch("hit_pe",&m_hit_pe);
 
 			fOpFlashTrees.push_back( ttree );
 		}
@@ -355,18 +361,22 @@ void icarus::HitTiming::analyze(art::Event const& e)
 					m_start_time.clear();
 					m_peak_time.clear();
 					m_rise_time.clear();
+					m_hit_pe.clear();
 
 					m_flash_id = idx;
 					auto const & flash = (*flash_handle)[idx];
 
 					m_flash_time = flash.Time();
 					m_flash_pe = flash.TotalPE();
+					m_flash_z = flash.ZCenter();
+					m_flash_y = flash.YCenter();
 
 					auto const & ophits = ophitsPtr.at(idx);
 
 					std::map<int,double> hitmap;
 					std::map<int,double> peakmap;
 					std::map<int,double> risemap;
+					std::map<int,double> pemap;
 
 					// loop all hits in the flash: save only the first one
 					for ( auto const hit : ophits ){
@@ -375,17 +385,20 @@ void icarus::HitTiming::analyze(art::Event const& e)
 						double ts = hit->StartTime();
 						double tp = hit->PeakTime();
 						double tr = hit->RiseTime();
+						double pe = hit->PE();
 	
 						if ( hitmap.find(ch) != hitmap.end() ){
 							if ( ts < hitmap[ch] ){
 								hitmap[ch] = ts;
 								peakmap[ch] = tp;
 								risemap[ch] = tr;
+								pemap[ch] = pe;
 							}	
 						}else{
 							 hitmap.insert(std::make_pair(ch,ts));
 							 peakmap.insert(std::make_pair(ch,tp));
 							 risemap.insert(std::make_pair(ch,tr));
+							 pemap.insert(std::make_pair(ch,pe));
 						}
 					}
 
@@ -396,6 +409,7 @@ void icarus::HitTiming::analyze(art::Event const& e)
 						m_start_time.push_back(it->second);
 						m_peak_time.push_back(peakmap.at(it->first));
 						m_rise_time.push_back(risemap.at(it->first));
+						m_hit_pe.push_back(pemap.at(it->first));
 						//std::cout<< "ch " << it->first << " t " << it->second << std::endl;
 					}		  
 
@@ -403,6 +417,7 @@ void icarus::HitTiming::analyze(art::Event const& e)
 					hitmap.clear();
 					peakmap.clear();
 					risemap.clear();
+					pemap.clear();
 				}
 			}
 		}
