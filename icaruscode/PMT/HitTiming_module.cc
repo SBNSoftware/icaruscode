@@ -24,6 +24,7 @@
 #include "art_root_io/TFileService.h"
 
 // LArSoft libraries
+#include "icaruscode/Decode/DataProducts/TriggerConfiguration.h"
 #include "lardataobj/RecoBase/OpFlash.h"
 #include "lardataobj/RecoBase/OpHit.h"
 #include "icaruscode/IcarusObj/PMTWaveformTimeCorrection.h"
@@ -33,7 +34,6 @@
 #include "lardataalg/DetectorInfo/DetectorTimings.h"
 #include "lardataalg/DetectorInfo/DetectorTimingTypes.h" // electronics_time
 #include "lardataobj/RawData/OpDetWaveform.h"
-#include "lardataobj/Simulation/BeamGateInfo.h"
 #include "lardataobj/RawData/TriggerData.h"
 #include "sbnobj/Common/Trigger/ExtraTriggerInfo.h"
 
@@ -66,6 +66,10 @@ class icarus::HitTiming : public art::EDAnalyzer {
 				fhicl::Name("CorrectionLabel"),
 				fhicl::Comment("Instance for correction info")
 			};
+			fhicl::Atom<art::InputTag> TriggerConfigLabel {
+				fhicl::Name("TriggerConfigLabel"),
+				fhicl::Comment("Trigger configuration label")
+			};
 			
 
 		}; // struct Config 
@@ -83,14 +87,18 @@ class icarus::HitTiming : public art::EDAnalyzer {
 		
 		void analyze(art::Event const& e) override;
 		void beginJob();
+		void beginRun(const art::Run& run) override;
 		void endJob();
 
 	private:
 
 		art::ServiceHandle<art::TFileService> tfs;
+  		icarus::TriggerConfiguration fTriggerConfiguration;
+
 		std::vector<art::InputTag> fFlashLabels;
   		art::InputTag fTriggerLabel;
 		art::InputTag fCorrectionLabel;
+		art::InputTag fTriggerConfigurationLabel;
 
 		/// data members
 		std::vector<TTree*> fOpFlashTrees;
@@ -101,15 +109,14 @@ class icarus::HitTiming : public art::EDAnalyzer {
 		int m_timestamp; 
 
 		// trigger info 
-  		double m_beam_gate_start;
-  		double m_beam_gate_width;
-  		int m_beam_type=-1;
+		unsigned int m_gate_type;
   		int m_trigger_type=-1;
   		std::string m_gate_name;
   		uint64_t m_trigger_timestamp;
-  		uint64_t m_gate_start_timestamp;
+  		uint64_t m_beam_gate_timestamp;
   		double m_beam_us;
   		double m_trigger_us;
+		double m_beam_gate_width;
 			
 		// special signal
 		int m_n_ew;
@@ -142,6 +149,7 @@ icarus::HitTiming::HitTiming(Parameters const& config)
 	  , fFlashLabels( config().FlashLabels() )
     	  , fTriggerLabel( config().TriggerLabel() )
 	  , fCorrectionLabel( config().CorrectionLabel() ) 
+	  , fTriggerConfigurationLabel( config().TriggerConfigLabel() )
 { 
 
 }
@@ -162,15 +170,14 @@ void icarus::HitTiming::beginJob() {
 			ttree->Branch("event",&m_event);
 			ttree->Branch("timestamp",&m_timestamp);
   
-			ttree->Branch("beam_gate_start", &m_beam_gate_start, "beam_gate_start/F");
-  			ttree->Branch("beam_gate_width", &m_beam_gate_width, "beam_gate_width/F");
-  			ttree->Branch("beam_type", &m_beam_type, "beam_type/I");
+  			ttree->Branch("gate_type", &m_gate_type);
   			ttree->Branch("gate_name", &m_gate_name);
   			ttree->Branch("beam_gate_us", &m_beam_us);
   			ttree->Branch("trigger_us", &m_trigger_us);
+			ttree->Branch("beam_gate_width",&m_beam_gate_width);
   			ttree->Branch("trigger_type", &m_trigger_type, "trigger_type/I");
   			ttree->Branch("trigger_timestamp", &m_trigger_timestamp, "trigger_timestamp/l");
- 			ttree->Branch("gate_start_timestamp", &m_gate_start_timestamp, "gate_start_timestamp/l");
+ 			ttree->Branch("beam_gate_timestamp", &m_beam_gate_timestamp, "beam_gate_timestamp/l");
 	
 			ttree->Branch("cryo",&m_cryo);
 			ttree->Branch("flash_id",&m_flash_id);
@@ -273,6 +280,14 @@ template<typename T>
     return startbin;
 }
 
+
+// ------------------------------------------------------------------------------ 
+
+void icarus::HitTiming::beginRun(const art::Run& r)
+{
+  fTriggerConfiguration = r.getProduct<icarus::TriggerConfiguration>(fTriggerConfigurationLabel);
+}
+
 // -------------------------------------------------------------------------------
 
 void icarus::HitTiming::analyze(art::Event const& e)
@@ -288,38 +303,29 @@ void icarus::HitTiming::analyze(art::Event const& e)
   	// We work out the trigger information here 
   	if( !fTriggerLabel.empty() ) { 
 
-      	// Beam information
-      	art::Handle<std::vector<sim::BeamGateInfo>> beamgate_handle;
-      	e.getByLabel( fTriggerLabel, beamgate_handle );
-      
-      	if( beamgate_handle.isValid() ) {
+      		// Trigger information
+      		art::Handle<sbn::ExtraTriggerInfo> trigger_handle;
+      		e.getByLabel( fTriggerLabel, trigger_handle );
 
-        	for( auto const & beamgate : *beamgate_handle ) {
-          		m_beam_gate_start = beamgate.Start(); 
-          		m_beam_gate_width = beamgate.Width(); 
-         	 	m_beam_type = beamgate.BeamType() ; 
-        	}
-      	}else {
-        	mf::LogError("HitTiming") << "No sim::BeamGateInfo associated to label: " << fTriggerLabel.label() << "\n" ;
-      }
-      // Trigger information
-      art::Handle<sbn::ExtraTriggerInfo> trigger_handle;
-      e.getByLabel( fTriggerLabel, trigger_handle );
+      		if( trigger_handle.isValid() ) {
 
-      if( trigger_handle.isValid() ) {
+        		sbn::triggerSource bit = trigger_handle->sourceType;
 
-        sbn::triggerSource bit = trigger_handle->sourceType;
-
-        m_gate_name = bitName(bit); //1 BNB 2 NumI 3 offbeamBNB 4 offbeamNuMi
-        m_trigger_type = value( trigger_handle->triggerType ); //1 majority, 2 minbias
-        m_trigger_timestamp = trigger_handle->triggerTimestamp;
-        m_gate_start_timestamp =  trigger_handle->beamGateTimestamp;
+        		m_gate_name = bitName(bit); //1 BNB 2 NumI 3 offbeamBNB 4 offbeamNuMi
+			m_gate_type = (unsigned int)bit;
+        		m_trigger_type = value( trigger_handle->triggerType ); //1 majority, 2 minbias
+        
+			// absolute timestamp
+			m_trigger_timestamp = trigger_handle->triggerTimestamp;
+        		m_beam_gate_timestamp =  trigger_handle->beamGateTimestamp;
      
-	m_trigger_us = triggerTime.value();
-	m_beam_us = beamGateTime.value();
+			// time in electronics time
+			m_trigger_us = triggerTime.value();
+			m_beam_us = beamGateTime.value();
+			m_beam_gate_width = fTriggerConfiguration.getGateWidth(m_gate_type);
 
-      }
-	}
+      		}
+}
 	if ( !fFlashLabels.empty() ) {
 
 		for ( size_t iFlashLabel=0; iFlashLabel<fFlashLabels.size(); iFlashLabel++  ) {

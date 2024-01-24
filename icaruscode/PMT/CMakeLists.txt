@@ -198,6 +198,7 @@ art_make_library(
             lardata::Utilities)
 set(      MODULE_LIBRARIES
 	    sbnobj::Common_Trigger
+    	    icaruscode::Decode_DataProducts
             larcorealg::Geometry
             larana::OpticalDetector
             larcore::Geometry_Geometry_service
