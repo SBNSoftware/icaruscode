@@ -1,5 +1,6 @@
 // std inlcudes
 #include <arpa/inet.h>
+#include <array>
 #include <string>
 #include <vector>
 
