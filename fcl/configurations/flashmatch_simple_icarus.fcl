@@ -13,6 +13,7 @@ icarus_simple_flashmatch_E: {
   OpHitProducer: "ophit"
   OpFlashProducer: ["opflashCryoE"]
   OpFlashHitProducer: ["opflashCryoE"]
+  Verbose: false
   BeamSpillTimeStart:      -1.7  # us, with some tolerance # TODO: workaround to accomodate MC and Data different times
   BeamSpillTimeEnd:         1.7  # us, with some tolerance # TODO: workaround to accomodate MC and Data different times
   FlashFindingTimeStart: -100.   # us # TODO: tune
