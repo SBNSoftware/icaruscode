@@ -14,7 +14,7 @@ PMT_CalibrationTags_Run1: {
 }
 
 # These are the standard tags for analyses on Run 1 and Run 2 data (as of August 2023)
-# These tagged versions of the databases only contain tables relevant for Run 1 and Run 2.
+# These tagged versions of the databases contain tables relevant for Run 1 and Run 2.
 # Notes: 
 #  - No cosmics corrections are available for Run 2
 #  - Laser and cable corrections do not cover the entire Run 2 period
@@ -25,7 +25,7 @@ PMT_CalibrationTags_Run2_August2023: {
 }
 
 # These are the standard tags for analyses on Run 1 and Run 2 data (as of September 2023)
-# These tagged versions of the databases only contain tables relevant for Run 1 and Run 2.
+# These tagged versions of the databases contain tables relevant for Run 1 and Run 2.
 # Notes: 
 #  - No cosmics corrections are available for Run 2
 PMT_CalibrationTags_Run2_Sept2023: {
@@ -35,13 +35,24 @@ PMT_CalibrationTags_Run2_Sept2023: {
 }
 
 # These are the standard tags for analyses on Run 1 and Run 2 data (as of December 2023)
-# These tagged versions of the databases only contain tables relevant for Run 1 and Run 2.
+# These tagged versions of the databases contain tables relevant for Run 1 and Run 2.
 # Notes: 
 #  - Updated cable delays with new phase offsets
 #  - Full laser and cosmics corrections for all Run 2.
 PMT_CalibrationTags_Run2_Dec2023: {
   pmt_cables_delays_data:    "v2r3"  # tables for run>=0 (null), run>=8046, run>=9301, run>=9628, run>=9773 and run>=10369
   pmt_laser_timing_data:     "v2r1"  # tables for run>=0 (null), run>=8046, run>=9301, run>=9628 and run>=9773
+  pmt_cosmics_timing_data:   "v2r1"  # tables for run>=0 (null), run>=8046, run>=9301, run>=9628 and run>=9773 
+}
+
+# These are the standard tags for analyses on Run 1, Run 2 and future Run 3 data (as of December 2023)
+# These tagged versions of the databases contain tables relevant for Run 1, Run 2 and Run 3.
+# Notes: 
+#   - New cable delays (mapping changes, upgrades to laser distribution)
+#   - New laser table for the beginning of Run 3 (new signal cables)
+PMT_CalibrationTags_Run3_Dec2023: {
+  pmt_cables_delays_data:    "v2r4"  # tables for run>=0 (null), run>=8046, run>=9301, run>=9628, run>=9773, run>=10369 and run>=10865
+  pmt_laser_timing_data:     "v2r2"  # tables for run>=0 (null), run>=8046, run>=9301, run>=9628, run>=9773 and run>=10908
   pmt_cosmics_timing_data:   "v2r1"  # tables for run>=0 (null), run>=8046, run>=9301, run>=9628 and run>=9773 
 }
 
