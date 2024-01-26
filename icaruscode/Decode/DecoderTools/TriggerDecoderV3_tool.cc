@@ -24,10 +24,9 @@
 #include "lardata/DetectorInfoServices/DetectorClocksService.h"
 #include "lardataalg/DetectorInfo/DetectorTimings.h"
 #include "lardataalg/Utilities/quantities/spacetime.h" // util::quantities::nanosecond
-#include "lardataobj/RawData/ExternalTrigger.h" //JCZ: TBD, placeholder for now to represent the idea
+#include "lardataobj/RawData/ExternalTrigger.h"
 #include "lardataobj/RawData/TriggerData.h" // raw::Trigger
-#include "lardataobj/Simulation/BeamGateInfo.h" //JCZ:, another placeholder I am unsure if this and above will be combined at some point into a dedicated object 
-
+#include "lardataobj/Simulation/BeamGateInfo.h"
 #include "sbndaq-artdaq-core/Overlays/ICARUS/ICARUSTriggerV3Fragment.hh"
 
 #include "sbnobj/Common/Trigger/ExtraTriggerInfo.h"
@@ -239,7 +238,7 @@ namespace daq
     TriggerPtr fPrevTrigger;
     std::unique_ptr<RelativeTriggerCollection> fRelTrigger;
     ExtraInfoPtr fTriggerExtra;
-    BeamGateInfoPtr fBeamGateInfo; 
+    BeamGateInfoPtr fBeamGateInfo;
     art::InputTag fTriggerConfigTag; ///< Data product with hardware trigger configuration.
     bool fDiagnosticOutput; ///< Produces large number of diagnostic messages, use with caution!
     bool fDebug; ///< Use this for debugging this tool
@@ -290,11 +289,24 @@ namespace daq
     static long long int timestampDiff(std::uint64_t a, std::uint64_t b)
       { return static_cast<long long int>(a) - static_cast<long long int>(b); }
 
+    /// Fills one `cryostat` information of `sbn::ExtraTriggerInfo`.
+    static sbn::ExtraTriggerInfo::CryostatInfo unpackPrimitiveBits(
+      std::size_t cryostat, bool firstEvent, unsigned long int counts,
+      std::uint64_t connectors01, std::uint64_t connectors23
+      );
+
     /// Encodes the `connectorWord` LVDS bits from the specified `cryostat`
     /// and `connector` into the format required by `sbn::ExtraTriggerInfo`.
     static std::uint64_t encodeLVDSbits
       (short int cryostat, short int connector, std::uint64_t connectorWord);
     
+    static std::uint16_t encodeSectorBits
+      (short int cryostat, short int connector, std::uint64_t connectorWord);
+    
+    /// Returns the `nBits` bits of `value` from `startBit` on.
+    template <unsigned int startBit, unsigned int nBits, typename T>
+    static constexpr T bits(T value);
+
     /// Returns the beam type corresponding to the specified trigger `source`.
     static sim::BeamType_t simGateType(sbn::triggerSource source);
     
@@ -688,49 +700,28 @@ namespace daq
     else if(triggerLocation == 7)
       locationMask = mask(sbn::triggerLocation::CryoEast, sbn::triggerLocation::CryoWest);
     fTriggerExtra->triggerLocationBits = locationMask;
-    fTriggerExtra->cryostats[sbn::ExtraTriggerInfo::EastCryostat]
-      = {
-      // triggerCount
-      (fTriggerExtra->triggerID <= 1)
-      ? 0UL: parsedData.getItem("Cryo1 EAST counts").getNumber<unsigned long int>(0),
-      // LVDSstatus
+    
+    //
+    // fill sbn::ExtraTriggerInfo::cryostats
+    //
+    auto setCryoInfo = [&extra=*fTriggerExtra,isFirstEvent=(triggerID <= 1)]
+      (std::size_t cryo, icarus::KeyValuesData const& data)
       {
-        (triggerLocation & 1) // EE
-        ? encodeLVDSbits(
-                         sbn::ExtraTriggerInfo::EastCryostat, 2, /* any of the connectors */
-                         parsedData.getItem("Cryo1 EAST Connector 2 and 3").getNumber<std::uint64_t>(0, 16)
-                         )
-        : 0ULL,
-        (triggerLocation & 1) // EW
-        ? encodeLVDSbits(
-                         sbn::ExtraTriggerInfo::EastCryostat, 0, /* any of the connectors */
-                         parsedData.getItem("Cryo1 EAST Connector 0 and 1").getNumber<std::uint64_t>(0, 16)
-                         )
-        : 0ULL
-      }
-    };
-    fTriggerExtra->cryostats[sbn::ExtraTriggerInfo::WestCryostat]
-      = {
-      // triggerCount
-      (fTriggerExtra->triggerID <= 1)
-      ? 0UL: parsedData.getItem("Cryo2 WEST counts").getNumber<unsigned long int>(0),
-      // LVDSstatus
-      {
-        (triggerLocation & 2) // WE
-        ? encodeLVDSbits(
-                         sbn::ExtraTriggerInfo::WestCryostat, 2, /* any of the connectors */
-                         parsedData.getItem("Cryo2 WEST Connector 2 and 3").getNumber<std::uint64_t>(0, 16)
-                         )
-        : 0ULL,
-        (triggerLocation & 2) // WW
-        ? encodeLVDSbits(
-                         sbn::ExtraTriggerInfo::WestCryostat, 0, /* any of the connectors */
-                         parsedData.getItem("Cryo2 WEST Connector 0 and 1").getNumber<std::uint64_t>(0, 16)
-                         )
-        : 0ULL
-      }
-    };
-
+        std::string const SIDE = (cryo == sbn::ExtraTriggerInfo::EastCryostat)
+          ? "Cryo1 EAST": "Cryo2 WEST";
+        extra.cryostats[cryo] = unpackPrimitiveBits(
+          cryo, isFirstEvent,
+          data.getItem(SIDE + " counts").getNumber<unsigned long int>(0),
+          data.getItem(SIDE + " Connector 0 and 1").getNumber<std::uint64_t>(0, 16),
+          data.getItem(SIDE + " Connector 2 and 3").getNumber<std::uint64_t>(0, 16)
+          );
+      };
+    
+    if (triggerLocation & 1)
+      setCryoInfo(sbn::ExtraTriggerInfo::EastCryostat, parsedData);
+    if (triggerLocation & 2)
+      setCryoInfo(sbn::ExtraTriggerInfo::WestCryostat, parsedData);
+    
     //
     // absolute time trigger (raw::ExternalTrigger)
     //
@@ -769,20 +760,19 @@ namespace daq
       : 0.0
       };
     
-    // beam gate - trigger: hope it's negative...
+    // beam gate, defined in simulation time, which should match beam gate time
+    // ... trivial:
+    fBeamGateInfo->emplace_back(0, gateWidth.value(), simGateType(beamGateBit));
+    
+    //
+    // relative time trigger (raw::Trigger)
+    //
     nanoseconds const gateStartFromTrigger{
       static_cast<double>(timestampDiff
         (fTriggerExtra->beamGateTimestamp, fTriggerExtra->triggerTimestamp)
         )
       }; // narrowing!!
     auto const elecGateStart = fDetTimings.TriggerTime() + gateStartFromTrigger;
-    auto const simGateStart = fDetTimings.toSimulationTime(elecGateStart);
-    fBeamGateInfo->emplace_back
-      (simGateStart.value(), gateWidth.value(), simGateType(beamGateBit));
-    
-    //
-    // relative time trigger (raw::Trigger)
-    //
     fRelTrigger->emplace_back(
       fTriggerExtra->triggerID,                               // counter
       fDetTimings.TriggerTime().value(),                      // trigger_time
@@ -811,7 +801,31 @@ namespace daq
     return { s.data(), std::min(s.find_first_of(endl), s.size()) };
   }
   
-
+  
+  sbn::ExtraTriggerInfo::CryostatInfo TriggerDecoderV3::unpackPrimitiveBits(
+    std::size_t cryostat, bool firstEvent, unsigned long int counts,
+    std::uint64_t connectors01, std::uint64_t connectors23
+  ) {
+    sbn::ExtraTriggerInfo::CryostatInfo cryoInfo;
+    
+    // there is (or was?) a bug on the first event in the run,
+    // which would make this triggerCount wrong
+    cryoInfo.triggerCount = firstEvent? 0UL: counts,
+    
+    cryoInfo.LVDSstatus = {
+      encodeLVDSbits(cryostat, 2 /* any of the connectors */, connectors23),
+      encodeLVDSbits(cryostat, 0 /* any of the connectors */, connectors01)
+      };
+    
+    cryoInfo.SectorStatus = {
+      encodeSectorBits(cryostat, 2 /* any of the connectors */, connectors23),
+      encodeSectorBits(cryostat, 0 /* any of the connectors */, connectors01)
+      };
+    
+    return cryoInfo;
+  } // TriggerDecoderV3::unpackPrimitiveBits()
+  
+  
   std::uint64_t TriggerDecoderV3::encodeLVDSbits
     (short int cryostat, short int connector, std::uint64_t connectorWord)
   {
@@ -823,15 +837,50 @@ namespace daq
      * * east wall:  `00<C3P2><C3P1><C3P0>00<C2P2><C2P1><C2P0>`
      * * west wall:  `00<C1P2><C1P1><C1P0>00<C0P2><C0P1><C0P0>`
      * Therefore, the two 32-bit half-words need to be swapped
-     * This holds for both cryostats, and both walls.  
+     * This holds for both cryostats, and both walls.
+     * (note that the `00` bits may actually contain information from adders)
      */
 
-    std::uint64_t lsw = connectorWord & 0xFFFFFFFFULL;
-    std::uint64_t msw = connectorWord >> 32ULL;
-    assert(connectorWord == ((msw << 32ULL) | lsw));
+    std::uint64_t lsw = connectorWord & 0x00FFFFFFULL;
+    std::uint64_t msw = (connectorWord >> 32ULL) & 0x00FFFFFFULL;
+    assert((connectorWord & 0x00FF'FFFF'00FF'FFFF) == ((msw << 32ULL) | lsw));
     std::swap(lsw, msw);
     return (msw << 32ULL) | lsw;
   } // TriggerDecoderV3::encodeLVDSbits()
+  
+  
+  template <unsigned int startBit, unsigned int nBits, typename T>
+  constexpr T TriggerDecoderV3::bits(T value) {
+    constexpr T nBitsMask = (nBits == sizeof(T)*8)? ~T{0}: T((1 << nBits) - 1);
+    return (value >> T(startBit)) & nBitsMask;
+  }
+  
+  
+  std::uint16_t TriggerDecoderV3::encodeSectorBits
+    (short int cryostat, short int connector, std::uint64_t connectorWord)
+  {
+    /*
+     * Encoding of the LVDS channels from the trigger (cf. `encodeLVDSbits()`):
+     *  * connector 0: east wall south, LSB the south-most one
+     *  * connector 1: east wall north, LSB the south-most one
+     *  * connector 2: west wall south, LSB the south-most one
+     *  * connector 3: west wall north, LSB the south-most one
+     * Target:
+     *  * [0]: 00000000 00nnnsss (east wall)
+     *  * [1]: 00000000 00nnnsss (west wall)
+     */
+    
+    // connector (32 bit): 00000SSS LVDSLVDS LVDSLVDS LVDSLVDS
+    constexpr std::size_t BitsPerConnector = 32;
+    constexpr std::size_t FirstSectorBit = 27;
+    constexpr std::size_t SectorBitsPerConnector = 3;
+    
+    // TODO check the order of the bits: [ ] the blocks of 3 and [ ] within each block
+    return static_cast<std::uint16_t>(
+        (bits<BitsPerConnector+FirstSectorBit, SectorBitsPerConnector>(connectorWord) << SectorBitsPerConnector)
+      | (bits<FirstSectorBit,                  SectorBitsPerConnector>(connectorWord)                          )
+      );
+  } // TriggerDecoderV3::encodeSectorBits()
   
   
   sim::BeamType_t TriggerDecoderV3::simGateType(sbn::triggerSource source)

@@ -24,9 +24,9 @@
 #include "lardata/DetectorInfoServices/DetectorClocksService.h"
 #include "lardataalg/DetectorInfo/DetectorTimings.h"
 #include "lardataalg/Utilities/quantities/spacetime.h" // util::quantities::nanosecond
-#include "lardataobj/RawData/ExternalTrigger.h" //JCZ: TBD, placeholder for now to represent the idea
+#include "lardataobj/RawData/ExternalTrigger.h"
 #include "lardataobj/RawData/TriggerData.h" // raw::Trigger
-#include "lardataobj/Simulation/BeamGateInfo.h" //JCZ:, another placeholder I am unsure if this and above will be combined at some point into a dedicated object 
+#include "lardataobj/Simulation/BeamGateInfo.h"
 
 #include "sbndaq-artdaq-core/Overlays/ICARUS/ICARUSTriggerV2Fragment.hh"
 
@@ -715,20 +715,19 @@ namespace daq
       : 0.0
       };
     
-    // beam gate - trigger: hope it's negative...
+    // beam gate, defined in simulation time, which should match beam gate time
+    // ... trivial:
+    fBeamGateInfo->emplace_back(0, gateWidth.value(), simGateType(beamGateBit));
+    
+    //
+    // relative time trigger (raw::Trigger)
+    //
     nanoseconds const gateStartFromTrigger{
       static_cast<double>(timestampDiff
         (fTriggerExtra->beamGateTimestamp, fTriggerExtra->triggerTimestamp)
         )
       }; // narrowing!!
     auto const elecGateStart = fDetTimings.TriggerTime() + gateStartFromTrigger;
-    auto const simGateStart = fDetTimings.toSimulationTime(elecGateStart);
-    fBeamGateInfo->emplace_back
-      (simGateStart.value(), gateWidth.value(), simGateType(beamGateBit));
-    
-    //
-    // relative time trigger (raw::Trigger)
-    //
     fRelTrigger->emplace_back(
       static_cast<unsigned int>(datastream_info.wr_event_no), // counter
       fDetTimings.TriggerTime().value(),                      // trigger_time

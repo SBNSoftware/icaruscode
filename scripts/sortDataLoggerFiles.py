@@ -16,6 +16,8 @@
 #   fixed a bug where first logger option value would be ignored
 # 20220222 (petrillo@slac.fnal.gov) [1.3]
 #   added support for a new file name format, and for multiple formats
+# 20230822 (petrillo@slac.fnal.gov) [1.4]
+#   including the first timestamp in the file stats, if available
 #
 
 import sys, os
@@ -70,28 +72,30 @@ class FileNameParser:
   Patterns = [
     {
       'Name': 'general',
-      # pattern parameters:   data logger stream stream name run  pass  filler (timestamp)
-      #                              <1>  <2>    <3>         <4>   <5>  <6>
-      'Pattern': re.compile(r"data_dl(\d+)(_fstrm([^_]*))?_run(\d+)_(\d+)_(.*)\.root"),
+      # pattern parameters:   data logger stream stream name  run   pass   timestamp       filler
+      #                              <1>  <2>    <3>          <4>   <5>  . <7>             <8>
+      'Pattern': re.compile(r"data_dl(\d+)(_fstrm([^_]*))?_run(\d+)_(\d+)(_(\d{8}T\d{6}))?(_.*)?\.root"),
       'Parameters': {
         'DataLogger': ( 1, int ),
         'StreamName': ( 3, str ),
         'RunNumber' : ( 4, int ),
         'PassCount' : ( 5, int ),
+        'Timestamp' : ( 7, str ),
       },
     }, # general
     {
       'Name': 'multistream',
-      # pattern parameters:   stream name data logger run  pass  filler (timestamp)
-      #                       <1>            <2>      <3>   <4>   <5>
-      'Pattern': re.compile(r"([^_]+)_data_dl(\d+)_run(\d+)_(\d+)_(.*)\.root"),
+      # pattern parameters:   stream name data logger run  pass    timestamp      filler (timestamp)
+      #                       <1>            <2>      <3>   <4>  . <6>             <7>
+      'Pattern': re.compile(r"([^_]+)_data_dl(\d+)_run(\d+)_(\d+)(_(\d{8}T\d{6}))?(_.*)?\.root"),
       'Parameters': {
         'DataLogger': ( 2, int ),
         'StreamName': ( 1, str ),
         'RunNumber' : ( 3, int ),
         'PassCount' : ( 4, int ),
+        'Timestamp' : ( 6, str ),
       },
-    }, # general
+    }, # multistream
   ] # Patterns
   
   class ParsedNameClass:
@@ -99,7 +103,7 @@ class FileNameParser:
       self.name = name
       self.fields = fields
     # __init__()
-    def __nonzero__(self): return len(self.fields) > 0
+    def __bool__(self): return len(self.fields) > 0
     def get(self, *fieldNames):
       return tuple(self.fields.get(fieldName, None) for fieldName in fieldNames)
   # class ParsedNameClass
@@ -162,8 +166,8 @@ class FileInfoClass:
     parsedName = FileNameParser.match(self.name)
     self.is_file = bool(parsedName)
     if self.is_file:
-      self.dataLogger, self.run, self.stream, self.pass_ \
-        = parsedName.get('DataLogger', 'RunNumber', 'StreamName', 'PassCount')
+      self.dataLogger, self.run, self.stream, self.pass_, self.timestamp \
+        = parsedName.get('DataLogger', 'RunNumber', 'StreamName', 'PassCount', 'Timestamp')
   # __init__()
   
   def __lt__(self, other):
@@ -182,6 +186,9 @@ class FileInfoClass:
       return \
         FileInfoClass._DataLoggerSorter.less(self.dataLogger, other.dataLogger)
     
+    if self.timestamp < other.timestamp: return True
+    if self.timestamp > other.timestamp: return False
+    
     assert (self.stream is None) == (other.stream is None)
     return False if self.stream is None else self.stream < other.stream
     
@@ -189,6 +196,7 @@ class FileInfoClass:
   
   def __str__(self):
     s = f"Run {self.run} cycle {self.pass_} data logger {self.dataLogger}"
+    if self.timestamp: s += f" time {self.timestamp}"
     if self.stream: s += f" stream {self.stream}"
     return s
   
@@ -250,8 +258,10 @@ def findFirstCycle(files, stream):
     elif not wrapped and info.dataLogger < firstLogger: wrapped = True
     
     firstPassFiles.append(info)
-    logging.debug("Added cycle %d logger %d stream %s to first cycle list",
-      info.pass_, info.dataLogger, info.stream)
+    logging.debug("Added cycle %d logger %d stream %s time %s to first cycle list",
+      info.pass_, info.dataLogger, info.stream,
+      (info.timestamp if info.timestamp else "unknown"),
+      )
   # for
   return firstPassFiles
 # findFirstCycle()
@@ -293,9 +303,12 @@ def detectFirstLogger(fileInfo):
       firstEvent = extractFirstEvent(info.pathToXRootD())
       if firstEvent is not None:
         lowestEvent.add(info, key=firstEvent)
-        if firstEvent == 1: break # can't get lower than this!
+        if firstEvent == 1: # can't get lower than this!
+          firstLogger = info.dataLogger
+          logging.debug("Definitively detected first logger: %d", firstLogger)
+          return firstLogger
     # for files
-  # for 
+  # for
   try: firstLogger = lowestEvent.min().dataLogger
   except AttributeError:
     # this is in general a problem because it implies that we are failing to
@@ -310,7 +323,7 @@ def buildFileIndex(
   fileInfo: "list with information from all files",
   ) -> "a dictionary: { key -> list of files }":
   
-  fileKey = lambda info: ( info.run, info.pass_, info.dataLogger, info.stream, )
+  fileKey = lambda info: ( info.run, info.pass_, info.dataLogger, info.stream, info.timestamp )
   index = {}
   for info in fileInfo:
     index.setdefault(fileKey(info), []).append(info)
@@ -440,7 +453,7 @@ if __name__ == "__main__":
         if duplicateFiles is not None: duplicateFiles.extend(fileList[1:])
         if printDuplicates:
           firstSource = mainInfo.source[0]
-          msg += f"{mainInfo} with {len(fileList) - 1} duplicates of"
+          msg = f"{mainInfo} with {len(fileList) - 1} duplicates of"
           
           if len(sources) > 1: msg += f" {sources[mainInfo.source[0]]}"
           if mainInfo.source[1] is not None: msg += f" line {mainInfo.source[1]}"

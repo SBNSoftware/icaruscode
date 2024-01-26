@@ -12,7 +12,6 @@
 
 
 #include "sbnobj/Common/CRT/CRTPMTMatching.hh"
-#include <map> // until https://github.com/LArSoft/lardataalg/pull/41
 #include "lardataalg/Utilities/MultipleChoiceSelection.h"
 
 
