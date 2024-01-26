@@ -17,6 +17,8 @@
 #include "canvas/Utilities/InputTag.h"
 #include "canvas/Utilities/Exception.h"
 #include "canvas/Persistency/Common/FindManyP.h"
+#include "canvas/Persistency/Common/FindOneP.h"
+#include "canvas/Persistency/Common/FindOne.h"
 #include "canvas/Persistency/Common/Assns.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
 #include "fhiclcpp/types/Atom.h"
@@ -36,6 +38,8 @@
 #include "lardataobj/RawData/OpDetWaveform.h"
 #include "lardataobj/RawData/TriggerData.h"
 #include "sbnobj/Common/Trigger/ExtraTriggerInfo.h"
+#include "icaruscode/CRT/CRTUtils/CRTPMTMatchingUtils.h"
+#include "sbnobj/Common/CRT/CRTPMTMatching.hh"
 
 // ROOT libraries
 #include "TTree.h"
@@ -70,8 +74,11 @@ class icarus::HitTiming : public art::EDAnalyzer {
 				fhicl::Name("TriggerConfigLabel"),
 				fhicl::Comment("Trigger configuration label")
 			};
+			fhicl::Atom<art::InputTag> CRTPMTMatchingLabel {
+				fhicl::Name("CRTPMTMatchingLabel"),
+				fhicl::Comment("CRTPMT matching label")
+			};
 			
-
 		}; // struct Config 
 
 		using Parameters = art::EDAnalyzer::Table<Config>;
@@ -99,6 +106,7 @@ class icarus::HitTiming : public art::EDAnalyzer {
   		art::InputTag fTriggerLabel;
 		art::InputTag fCorrectionLabel;
 		art::InputTag fTriggerConfigurationLabel;
+		art::InputTag fCRTPMTMatchingLabel;
 
 		/// data members
 		std::vector<TTree*> fOpFlashTrees;
@@ -144,6 +152,19 @@ class icarus::HitTiming : public art::EDAnalyzer {
 		std::vector<double> m_peak_time;
 		std::vector<double> m_rise_time;
 		std::vector<double> m_hit_pe;
+
+		//crt-pmt match
+		int m_flash_ingate;
+		int m_flash_inbeam;
+		int m_flash_classification;
+		int m_flash_ncrthits;
+		std::vector<double> m_crthit_x;
+		std::vector<double> m_crthit_y;
+		std::vector<double> m_crthit_z;
+		std::vector<double> m_crttime_us;
+		std::vector<double> m_crtpmttimediff_ns;
+		std::vector<int> m_crtsys;
+		std::vector<int> m_crtregion;
 };
 
 // --------------------------------------------------------------------------
@@ -153,6 +174,7 @@ icarus::HitTiming::HitTiming(Parameters const& config)
     	  , fTriggerLabel( config().TriggerLabel() )
 	  , fCorrectionLabel( config().CorrectionLabel() ) 
 	  , fTriggerConfigurationLabel( config().TriggerConfigLabel() )
+	  , fCRTPMTMatchingLabel( config().CRTPMTMatchingLabel() )
 { 
 
 }
@@ -194,6 +216,18 @@ void icarus::HitTiming::beginJob() {
 			ttree->Branch("peak_time",&m_peak_time);
 			ttree->Branch("rise_time",&m_rise_time);
 			ttree->Branch("hit_pe",&m_hit_pe);
+
+			ttree->Branch("flash_ingate",&m_flash_ingate); 
+			ttree->Branch("flash_inbeam",&m_flash_inbeam); 
+			ttree->Branch("flash_classification",&m_flash_classification);
+			ttree->Branch("flash_ncrthits",&m_flash_ncrthits);
+			ttree->Branch("crthit_x",&m_crthit_x);
+			ttree->Branch("crthit_y",&m_crthit_y);
+			ttree->Branch("crthit_z",&m_crthit_z);
+			ttree->Branch("crthit_sys",&m_crtsys);
+			ttree->Branch("crthit_region",&m_crtregion);
+			ttree->Branch("crttime_us",&m_crttime_us);
+			ttree->Branch("crtpmttimediff_ns",&m_crtpmttimediff_ns);
 
 			fOpFlashTrees.push_back( ttree );
 		}
@@ -353,6 +387,7 @@ void icarus::HitTiming::analyze(art::Event const& e)
 			else {
 
 				art::FindManyP<recob::OpHit> ophitsPtr( flash_handle, e, label );
+				art::FindOneP<sbn::crt::CRTPMTMatching> matchPtr( flash_handle, e, fCRTPMTMatchingLabel );
 
 				// loop all flashes
 				for ( size_t idx=0; idx<flash_handle->size(); idx++ ) {
@@ -362,6 +397,13 @@ void icarus::HitTiming::analyze(art::Event const& e)
 					m_peak_time.clear();
 					m_rise_time.clear();
 					m_hit_pe.clear();
+					m_crthit_x.clear();
+					m_crthit_y.clear();
+					m_crthit_z.clear();
+					m_crttime_us.clear();
+					m_crtpmttimediff_ns.clear();
+					m_crtsys.clear();
+					m_crtregion.clear();
 
 					m_flash_id = idx;
 					auto const & flash = (*flash_handle)[idx];
@@ -371,8 +413,34 @@ void icarus::HitTiming::analyze(art::Event const& e)
 					m_flash_z = flash.ZCenter();
 					m_flash_y = flash.YCenter();
 
-					auto const & ophits = ophitsPtr.at(idx);
+					auto const & match = matchPtr.at(idx);
 
+					// if there is no match, there is no product
+					// fill null parameters
+					if( !match ) {
+						m_flash_ingate = -1;
+						m_flash_inbeam = -1;
+						m_flash_classification = -1;
+						m_flash_ncrthits = 0;		
+					} else {
+						m_flash_ingate = match->flashInGate;					
+						m_flash_inbeam = match->flashInBeam;
+						m_flash_classification = static_cast<int>(match->flashClassification);
+						m_flash_ncrthits = match->matchedCRTHits.size();
+					
+						for( auto const& crthit: match->matchedCRTHits ){
+							m_crthit_x.push_back(crthit.position.X());
+							m_crthit_y.push_back(crthit.position.Y());
+							m_crthit_z.push_back(crthit.position.Z());
+							m_crttime_us.push_back(crthit.time);
+							m_crtpmttimediff_ns.push_back(1e3*crthit.PMTTimeDiff);
+							m_crtsys.push_back(crthit.sys);
+							m_crtregion.push_back(crthit.region);
+						}
+					}
+				
+					auto const & ophits = ophitsPtr.at(idx);
+					
 					std::map<int,double> hitmap;
 					std::map<int,double> peakmap;
 					std::map<int,double> risemap;
