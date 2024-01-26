@@ -50,7 +50,7 @@ icarus_simwire_wirecell:
             # driftSpeed: 1.5756
             # Scaling Parameters from int and coh noise components
 	        int_noise_scale: 1.0
-	        coh_noise_scale: 1.09
+	        coh_noise_scale: 1.0
 
             # Gain and shaping time
             gain0: 14.9654 # mV/fC 
