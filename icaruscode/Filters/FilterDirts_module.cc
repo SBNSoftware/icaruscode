@@ -9,9 +9,6 @@
  */
 
 
-// ICARUS libraries
-#include "icarusalg/Utilities/WeakCurrentType.h"
-
 // LArSoft libraries
 #include "larcore/Geometry/Geometry.h"
 #include "larcore/CoreUtils/ServiceUtil.h" // lar::providerFrom()
@@ -54,20 +51,21 @@
 #include <utility> // std::move()
 #include <cmath> // std::abs()
 
+#include "canvas/Utilities/InputTag.h"
 
 // -----------------------------------------------------------------------------
 namespace icarus::simfilter { class FilterDirts; }
 
 
 /**
- * @brief The filter selects "qualifying" neutrino interactions that:
+ * The filter selects "qualifying" events that:
  * 
- *  * have interaction vertex outside the active volume or outside specific volumes that can be indicated using the fhicl parameters
- *  * deposit an energy > 0 ( the filter can be improved introducing a threshold that can be set using a fhicl parameter )
+ *  * have interaction vertex outside the active volume or outside specific volumes that can be indicated using the configuration parameters
+ *  * deposit an energy > 0 ( the filter can be improved introducing a threshold that can be set using a configuration parameter )
  * 
  * The event is kept if there is _at least_ one qualifying interaction.
  * In that case, the whole event is passed (including any other interaction).
- * Please note: this class has been created starting from te FilterNeutrinoActive filter
+ * Please note: this class has been created starting from the `FilterNeutrinoActive` filter
  *
  *
  *
@@ -159,6 +157,12 @@ public:
             Comment("rejects events with interactions in TPC active volumes"),
             false // default
         };
+
+        fhicl::Atom<art::InputTag> TPCchannelTag {
+            Name("TPCchannelTag"),
+            Comment("data product with simulated TPC channel charge"),
+            "larg4intime" // default
+        };
         
         fhicl::OptionalSequence<fhicl::Table<BoxCoordConfig>> volumeBoxes {
             Name("volumeBoxes"),
@@ -197,7 +201,7 @@ private:
     
     /// Volumes for qualifying interactions.
     std::vector<geo::BoxBoundedGeo> fVolumes;
-    
+    art::InputTag const fTPCchannelTag; ///< `sim::SimChannel` data product tag.   
     std::string const fLogCategory; ///< Category name for the output stream.
     
     // --- END -- Configuration parameters -------------------------------------
@@ -243,6 +247,7 @@ private:
 icarus::simfilter::FilterDirts::FilterDirts
 (Parameters const& config)
 : art::EDFilter(config)
+, fTPCchannelTag(config().TPCchannelTag())
 , fLogCategory(config().logCategory())
 {
     
@@ -290,27 +295,27 @@ bool icarus::simfilter::FilterDirts::filter(art::Event& event) {
     //std::vector<art::Handle<std::vector<simb::MCTruth>>> allTruth;
     //event.getManyByType(allTruth);
     
-    std::vector<sim::SimChannel> const& charge   = *(event.getValidHandle<std::vector<sim::SimChannel>>("larg4intime"));
+    std::vector<sim::SimChannel> const& charge   = *(event.getValidHandle<std::vector<sim::SimChannel>>(fTPCchannelTag));
     
     float total_quenched_energy=0;
-    for (std::size_t chargechannel = 0;  chargechannel<charge.size(); ++chargechannel) //loop on SimChannel
-    {
-        auto const& channeltdcide = charge.at(chargechannel).TDCIDEMap();
-        for (std::size_t TDCnu = 0;  TDCnu<channeltdcide.size(); ++TDCnu)     //loop on TDC
+
+	for (sim::SimChannel const& chargechannel: charge) //loop on SimChannel
+    	{	
+        for (sim::TDCIDE const& tdcide: chargechannel.TDCIDEMap()) //loop on TDC
         {
-            sim::TDCIDE const& tdcide = channeltdcide.at(TDCnu);
-            for (std::size_t IDEnu = 0;  IDEnu<tdcide.second.size(); ++IDEnu)     //loop on IDE
+            for (sim::IDE const& ide: tdcide.second) //loop on IDE
             {
-                sim::IDE const& ida = tdcide.second.at(IDEnu);
-                total_quenched_energy      = total_quenched_energy + ida.energy;
+                total_quenched_energy += ide.energy;
             }    //loop on IDE
         }     //loop on TDC
-    }//loop on SimChannel
-    
-    std::cout << total_quenched_energy << std::endl;
+    	}//loop on SimChannel
+
+
+    mf::LogDebug(fLogCategory) << "Total energy: " << total_quenched_energy;
+   
     if(total_quenched_energy==0)return false;
     
-    int outside_volume=0;
+    bool outside_volume = false;
     auto allTruth = event.getMany<std::vector<simb::MCTruth>>();
     
     if (allTruth.empty()) { // is this real data?
@@ -324,7 +329,7 @@ bool icarus::simfilter::FilterDirts::filter(art::Event& event) {
     
     for (auto const& handle: allTruth) {
         
-        art::InputTag const& tag [[gnu::unused]] = handle.provenance()->inputTag();
+        art::InputTag const& tag [[maybe_unused]] = handle.provenance()->inputTag();
         
         std::vector<simb::MCTruth> const& truths = *handle;
         if (truths.empty()) {
@@ -339,8 +344,11 @@ bool icarus::simfilter::FilterDirts::filter(art::Event& event) {
             << "Processing record [" << (iTruth + 1U) << "/" << truths.size()
             << "] from " << tag.encode();
             
-            if (!qualifying(truth))outside_volume=1;
-            
+            if (!qualifying(truth))
+		{
+		outside_volume = true;
+		break;
+ 		}           
         } // for truth record
         
     } // for truth data product
@@ -348,8 +356,7 @@ bool icarus::simfilter::FilterDirts::filter(art::Event& event) {
     //mf::LogTrace(fLogCategory) << "Event " << event.id() << " (#" << fNObserved
     //<< ")  does not pass the filter (" << fNPassed << "/" << fNObserved
     //<< " passed so far).";
-    if(outside_volume==1)return true;
-    return false;
+    return outside_volume;
     
 } // icarus::simfilter::FilterDirts::filter()
 
