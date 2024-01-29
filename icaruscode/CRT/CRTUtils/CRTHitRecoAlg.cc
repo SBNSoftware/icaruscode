@@ -478,7 +478,7 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeTopHit(
   // //Obsolete
   double corr = 0;
   if (findz == true && findx == true) corr = TopCRT_TimingCorr[sector];
-  thit -= (int64_t)round(corr);
+  thit -= (uint64_t)round(corr);
   thit1 -= (int64_t)round(corr);
 
   auto const hitpoint =
