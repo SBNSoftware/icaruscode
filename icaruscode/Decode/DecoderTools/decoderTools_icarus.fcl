@@ -89,8 +89,9 @@ TPCNoiseFilter1DTool: {
     NSigmaForTrucation: 3.5
     StructuringElement: 16
     FilterWindow:       10
-    Threshold:          [12.0, 12.0, 12.0] #[8., 7.0 , 8.0] #[2.75, 2.75, 2.75] # changing threshold scheme from dynamic to static
+    Threshold:          [1.0,1.0,1.0]
     FilterModeVec:      ["e","g","d"]
+    LowFreqCorrection:  true
     UseFFTFilter:       false
     FFTSigmaVals:       [ [1.5,20.], [1.5,20.], [1.5,20.] ]
     FFTCutoffVals:      [ [8.,800.], [8.,800.], [4.0,800.] ]
