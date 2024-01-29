@@ -13,6 +13,15 @@ SPE202202: {  # amplitude set to 4 mV, gain 9.7x10^6 with R = 50 ohm
   Shift: 0.
 }
 
-SPE: @local::SPE202202
+# the following is based on SPE202202 rescaling it to gain 7.5x10^6;
+# this is an empirical choice attempting to reconciliate the mean value
+# of MC hit amplitude with data; see e.g. SBN DocDB 34640
+SPE202401patch: {  # amplitude set to 3.23 mV, gain 7.5x10^6 with R = 50 ohm
+  Area: 256.658      # ADC x (2 ns)
+  Amplitude: 26.4258 # ADC (= 3.23 mV / 2 V x 2^14 bit)
+  Shift: 0.
+}
+
+SPE: @local::SPE202401patch
 
 END_PROLOG
