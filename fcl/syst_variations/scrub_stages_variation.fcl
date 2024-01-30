@@ -1,0 +1,39 @@
+# This fcl purely removes products made in the post-G4step1 processes.
+# This allows for keeping the identical simulated event on the file and running
+# a variation of the downstream detector simulation / reconstruction.
+#
+# Author Jacob Zettlemoyer (jzettle@fnal.gov), originally implemented by H. Lay for SBND
+
+#include "rootoutput_icarus.fcl"
+
+process_name: Scrub
+
+source:
+{
+  module_type:   RootInput
+  inputCommands: [ "keep *_*_*_*",
+  		   "drop *_mcreco_*_*",
+		   "drop *_sedlite_*_*",
+		   "drop *_ionization_*_*",
+                   "drop *_*_*_DetSim",
+		   "drop *_*_*_MCstage0",
+                   "drop *_*_*_MCstage1" ]
+}
+
+outputs:
+{
+  out1:
+  {
+    compressionLevel: 1
+    dataTier: "simulated"
+    fileName: "Scrubbed_%tc.root"
+    module_type: "RootOutput"
+    saveMemoryObjectThreshold: 0
+  }
+}
+
+physics:
+{
+  stream1:   [ out1 ]
+  end_paths: [ stream1 ]
+}
