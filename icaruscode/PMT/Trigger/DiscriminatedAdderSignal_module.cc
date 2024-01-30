@@ -1221,7 +1221,7 @@ auto icarus::trigger::DiscriminatedAdderSignal::computeTimeInterval(
   while (true) {
     runningWindow = nextWindow(coverage, runningWindow);
     if (runningWindow.empty()) break; // no more openings left
-    assert(runningWindow.end != TimeCoverage_t::MaxTick);
+    assert(runningWindow.stop != TimeCoverage_t::MaxTick);
     
     auto const windowDuration = runningWindow.duration();
     if (duration > windowDuration) continue; // smaller window, discarded
