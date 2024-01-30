@@ -24,6 +24,7 @@ set(          MODULE_LIBRARIES
                         larevt::Filters
                         lardataobj::RawData
                         lardata::ArtDataHelper
+                        icaruscode::Decode_DecoderTools_Dumpers
                         Eigen3::Eigen
 )
 

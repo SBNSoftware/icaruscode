@@ -1,0 +1,36 @@
+#include "CheckRawDigits.fcl"
+#include "messages_icarus.fcl"
+#include "channelmapping_icarus.fcl"
+#include "services_common_icarus.fcl"
+
+process_name: CheckRawDigits
+
+services:
+  {
+    # Load the service that manages root files for histograms.
+    TFileService: { fileName: "check_raw_hist.root" closeFileFast: false }
+    message: @local::icarus_message_services_interactive_debug
+    IICARUSChannelMap: @local::icarus_channelmappinggservice
+  }
+
+outputs:
+  {
+    validate:
+      {
+        module_type: RootOutput
+        fileName: "check_raw_out.root"
+        results:
+          {
+            producers:
+              {
+                check_raw : @local::standard_checkrawdigits
+              }
+            rpPath: [ check_raw ]
+          }
+      }
+  }
+
+physics:
+  {
+    stream1: [ validate ]
+  }
