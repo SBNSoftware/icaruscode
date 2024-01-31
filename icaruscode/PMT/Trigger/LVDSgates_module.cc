@@ -23,7 +23,6 @@
 #include "larcorealg/CoreUtils/values.h" // util::const_values()
 #include "larcorealg/CoreUtils/get_elements.h" // util::get_elements()
 #include "lardataobj/RawData/OpDetWaveform.h"
-// #include "larcorealg/CoreUtils/DebugUtils.h" // lar::debug::::static_assert_on<>
 
 // framework libraries
 #include "art/Framework/Services/Registry/ServiceHandle.h"
@@ -44,6 +43,7 @@
 #include <map>
 #include <set>
 #include <vector>
+#include <regex>
 #include <string>
 #include <memory> // std::unique_ptr
 #include <utility> // std::move()
@@ -109,7 +109,7 @@ namespace icarus::trigger { class LVDSgates; }
  * A terse description of the parameters is printed by running
  * `lar --print-description LVDSgates`.
  * 
- * * `TriggerGatesTag` (string, default: `discrimopdaq`): name of the module
+ * * `TriggerGatesTag` (string, mandatory): name of the module
  *     instance which produced the discriminated waveforms; it must not include
  *     any instance name, as the instance names will be automatically added from
  *     `Thresholds` parameter. This value is used as module name for all
@@ -117,15 +117,19 @@ namespace icarus::trigger { class LVDSgates; }
  * * `Thresholds` (list of tags, mandatory): list of the discrimination
  *     thresholds to consider. A data product containing a digital signal is
  *     read for each one of the thresholds; each threshold entry is expected
- *     to be a input tag in the form `"[ModuleLabel:]InstanceName"`, and if the
- *     module label part is not specified, the one from `TriggerGatesTag` is
- *     used as default. In this way, thresholds can be specified simply by a
- *     number, e.g. `[ 200, 400, 600 ]`, which will be translated into e.g.
- *     `"discrimopdaq:200"`, `"discrimopdaq:400"` and `"discrimopdaq:600"`,
- *     while a full specification can be also used: `[ 200, "discrim:config" ]`
- *     will turn into `"discrimopdaq:200"` and `"discrim:config"` (to specify
- *     a label with no instance name, set it ending with a colon, like in
- *     `"discrim:"`).
+ *     to be a input tag in the form `"ModuleLabel:InstanceName"`; both
+ *     `ModuleName` and `InstanceName` may be omitted, in which case the colon
+ *     `:` may also be omitted. In case the colon is omitted, the parameter will
+ *     be considered an instance name if it represents an integer, and a module
+ *     name otherwise. When the parameter is considered an instance name, the
+ *     module is taken from the `TriggerGatesTag` parameter; when the instance
+ *     name is omitted, it is considered empty. In this way, thresholds can be
+ *     specified simply by a number, e.g. `[ 200, 400, 600 ]`, which will be
+ *     translated into e.g. `"pmtfixedthr:200"`, `"pmtfixedthr:400"` and
+ *     `"pmtfixedthr:600"`, while a full specification can be also used:
+ *     `[ 200, "pmtthr:config" ]`, which will turn into `"pmtfixedthr:200"` and
+ *     `"pmtthr:config"`; or a label-only one: `[ 200, "pmtthr" ]`, which will
+ *     turn into `"pmtfixedthr:200"` and `"pmtthr"`.
  * * `ChannelPairing` (list of integral number lists): channels to combine;
  *     each element of this list is itself a list of optical detector channel
  *     numbers. The channels within each group are combined according to
@@ -428,7 +432,7 @@ icarus::trigger::LVDSgates::LVDSgates
     log << nConfiguredChannels
       << " optical channels configured to be combined into "
       << fChannelPairing.size() << " LVDS outputs.";
-    log << "\nignored " << fIgnoreChannels.size() << " channels.";
+    log << "\nIgnored " << fIgnoreChannels.size() << " channels.";
     log << "\nConfigured " << fADCthresholds.size() << " thresholds (ADC):";
     for (auto const& [ threshold, srcInfo ]: fADCthresholds) {
       log << "\n * " << threshold
@@ -861,7 +865,11 @@ auto icarus::trigger::LVDSgates::ReadTriggerGates(
 art::InputTag icarus::trigger::LVDSgates::makeTag
   (std::string const& thresholdStr, std::string const& defModule)
 {
-  return (thresholdStr.find(':') != std::string::npos)
+  auto const isNumber = [pattern=std::regex{ "[+-]?[0-9]+" }]
+    (std::string const& s) -> bool
+    { return std::regex_match(s, pattern); };
+  return 
+    ((thresholdStr.find(':') != std::string::npos) || !isNumber(thresholdStr))
     ? art::InputTag{ thresholdStr }
     : defModule.empty()
       ? throw (art::Exception(art::errors::Configuration)

@@ -1,0 +1,21 @@
+BEGIN_PROLOG
+
+standard_validatecompression:
+{
+  plugin_type: "ValidateFragmentCompression"
+  FragmentsLabel: "daq:PHYSCRATEDATA"
+}
+
+standard_validatecompression_EE: @local::standard_validatecompression
+standard_validatecompression_EE.FragmentsLabel: "daq:PHYSCRATEDATATPCEE"
+
+standard_validatecompression_EW: @local::standard_validatecompression
+standard_validatecompression_EW.FragmentsLabel: "daq:PHYSCRATEDATATPCEW"
+
+standard_validatecompression_WE: @local::standard_validatecompression
+standard_validatecompression_WE.FragmentsLabel: "daq:PHYSCRATEDATATPCWE"
+
+standard_validatecompression_WW: @local::standard_validatecompression
+standard_validatecompression_WW.FragmentsLabel: "daq:PHYSCRATEDATATPCWW"
+
+END_PROLOG

@@ -7,6 +7,7 @@ art_make_library(
     "WriteBeamGateInfo_module.cc"
     "FixBeamGateInfo_module.cc"
     "DiscriminatePMTwaveformsByChannel_module.cc"
+    "DiscriminatedAdderSignal_module.cc"
     "MajorityTriggerSimulation_module.cc"
     "SlidingWindowTrigger_module.cc"
     "SlidingWindowTriggerSimulation_module.cc"
@@ -82,9 +83,10 @@ cet_build_plugin(LVDSgates art::module LIBRARIES ${MODULE_LIBRARIES})
 
 cet_build_plugin(WriteBeamGateInfo art::module LIBRARIES
   lardataobj::Simulation
+  lardata::Utilities
   larcorealg::headers
   lardataalg::headers
-  ) 
+  )
 
 cet_build_plugin(FixBeamGateInfo art::module LIBRARIES
   lardataobj::Simulation
@@ -94,25 +96,43 @@ cet_build_plugin(FixBeamGateInfo art::module LIBRARIES
 
 cet_build_plugin(DiscriminatePMTwaveformsByChannel art::module
                 LIBRARIES
-		icaruscode::PMT_Trigger_Algorithms
-		sbnobj::ICARUS_PMT_Trigger_Data
-		sbnobj::ICARUS_PMT_Data
-		sbnobj::Common_PMT_Data
-		icaruscode::PMT_Trigger_Utilities
-		icaruscode::PMT_Algorithms
-		lardataobj::RawData
-		lardata::Utilities
-		lardata::DetectorInfoServices_DetectorClocksServiceStandard_service
-		larcore::Geometry_Geometry_service
-		art::Framework_Services_Registry
-		art::Framework_Principal
-		art::Framework_Core
-		canvas::canvas
-		messagefacility::MF_MessageLogger
-		fhiclcpp::fhiclcpp
-		cetlib_except::cetlib_except
-		ROOT::Core
-		) 
+  icaruscode::PMT_Trigger_Algorithms
+  sbnobj::ICARUS_PMT_Trigger_Data
+  sbnobj::ICARUS_PMT_Data
+  sbnobj::Common_PMT_Data
+  icaruscode::PMT_Trigger_Utilities
+  icaruscode::PMT_Algorithms
+  lardataobj::RawData
+  lardata::Utilities
+  lardata::DetectorInfoServices_DetectorClocksServiceStandard_service
+  larcore::Geometry_Geometry_service
+  art::Framework_Services_Registry
+  art::Framework_Principal
+  art::Framework_Core
+  canvas::canvas
+  messagefacility::MF_MessageLogger
+  fhiclcpp::fhiclcpp
+  cetlib_except::cetlib_except
+  ROOT::Core
+  )
+
+cet_build_plugin(DiscriminatedAdderSignal art::module
+  LIBRARIES
+    icaruscode::PMT_Trigger_Algorithms
+    icaruscode::PMT_Trigger_Utilities
+    icaruscode::PMT_Algorithms
+    icaruscode::IcarusObj
+    sbnobj::ICARUS_PMT_Trigger_Data
+    sbnobj::ICARUS_PMT_Data
+    lardata::headers
+    larcore::headers
+    lardataalg::DetectorInfo
+    lardataalg::headers
+    larcorealg::Geometry
+    larcorealg::CoreUtils
+    lardataobj::RawData
+    art::Framework_Services_Registry
+  )
 
 cet_build_plugin(SlidingWindowTrigger art::module
                 LIBRARIES
@@ -149,12 +169,6 @@ cet_build_plugin(MajorityTriggerSimulation art::module
 		art_root_io::TFileService_service
 		art_root_io::tfile_support
 		art::Framework_Services_Registry
-		art::Framework_Principal
-		art::Framework_Core
-		canvas::canvas
-		messagefacility::MF_MessageLogger
-		fhiclcpp::fhiclcpp
-		cetlib_except::cetlib_except
 		ROOT::Hist
 		ROOT::Core
 		) 

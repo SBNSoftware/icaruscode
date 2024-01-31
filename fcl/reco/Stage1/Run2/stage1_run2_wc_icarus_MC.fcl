@@ -39,9 +39,11 @@ physics.reco: [
 
 # Turn on truth-info for track skimmer 
 physics.analyzers.caloskimE.G4producer: "largeant"
-physics.analyzers.caloskimE.SimChannelproducer: "largeant"
+physics.analyzers.caloskimE.SimChannelproducer: "daq:simpleSC"
+physics.analyzers.caloskimE.RawDigitproducers: ["MCDecodeTPCROI:PHYSCRATEDATATPCEW", "MCDecodeTPCROI:PHYSCRATEDATATPCEE"]
 physics.analyzers.caloskimW.G4producer: "largeant"
-physics.analyzers.caloskimW.SimChannelproducer: "largeant"
+physics.analyzers.caloskimW.SimChannelproducer: "daq:simpleSC"
+physics.analyzers.caloskimW.RawDigitproducers: ["MCDecodeTPCROI:PHYSCRATEDATATPCWW", "MCDecodeTPCROI:PHYSCRATEDATATPCWE"]
 
 physics.outana:            [ caloskimE, caloskimW, simpleLightAna, CRTDataAnalysis]
 physics.trigger_paths:     [ reco ]

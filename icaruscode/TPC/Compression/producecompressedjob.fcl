@@ -1,0 +1,52 @@
+#include "services_common_icarus.fcl"
+
+#include "ProduceCompressed.fcl"
+
+process_name: TestReprocessRaw
+
+services:
+{
+  @table::icarus_basic_services
+  IICARUSChannelMap: {
+    ChannelMappingTool: {
+      CalibDBFileName: "crt_gain_reco_data"
+      DBFileName: "ChannelMapICARUS_20230829.db"
+      Tag: "v1r0"
+      tool_type: "ChannelMapSQLite"
+    }
+    DiagnosticOutput: false
+    service_provider: "ICARUSChannelMap"
+  }
+}
+
+source:
+{
+}
+
+physics:
+{
+  producers:
+  {
+    daq: @local::standard_producecompressed
+  }
+
+  reproProduce: [ daq ]
+
+  stream1: [ out1 ]
+
+  trigger_paths: [ reproProduce ]
+
+  end_paths: [ stream1 ]
+}
+
+outputs:
+{
+  out1:
+  {
+    module_type: RootOutput
+    fileName: "test_reproduced_out.root"
+    outputCommands: [ "keep *_*_*_*",
+                      "drop *_daq_PHYSCRATEDATATPC??_DAQEVB??" ]
+  }
+}
+

@@ -131,15 +131,16 @@ namespace sbn {
  * @brief Converter from `raw::OpDetWaveform` into `sbn::OpDetWaveformMeta`.
  * 
  * An object of this class is initialized once with some timings (e.g. once per
- * event), used to `make()` multiple `sbn::OpDetWaveformMeta` and then discarded:
+ * event), and then used to `make()` multiple `sbn::OpDetWaveformMeta`:
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~{.cpp}
  * 
  * detinfo::DetectorTimings const detTimings = detinfo::makeDetectorTimings
  *   (art::ServiceHandle<detinfo::DetectorClocksService const>()->DataFor(event));
  * 
  * std::vector<sbn::OpDetWaveformMeta> PMTinfo;
+ * sbn::OpDetWaveformMetaMaker const makeMetadata{ detTimings };
  * for (raw::OpDetWaveform const& waveform: waveforms)
- *   PMTinfo.push_back(makeOpDetWaveformMeta(waveform));
+ *   PMTinfo.push_back(makeMetadata(waveform));
  * 
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  * 
@@ -158,7 +159,6 @@ class sbn::OpDetWaveformMetaMaker {
   /// Constructor: allows creation of `sbn::OpDetWaveformMeta` with full
   /// information.
   OpDetWaveformMetaMaker(detinfo::DetectorTimings const& detTimings);
-  
   
   /// Constructor: allows creation of `sbn::OpDetWaveformMeta` with no
   /// detector clocks service.

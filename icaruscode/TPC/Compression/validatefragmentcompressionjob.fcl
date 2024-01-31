@@ -1,0 +1,39 @@
+#include "ValidateFragmentCompression.fcl"
+#include "messages_icarus.fcl"
+#include "channelmapping_icarus.fcl"
+#include "services_common_icarus.fcl"
+
+process_name: ValidateCompression
+
+services:
+  {
+    # Load the service that manages root files for histograms.
+    TFileService: { fileName: "validateCompression_hist.root" closeFileFast: false }
+    message: @local::icarus_message_services_interactive_debug
+    IICARUSChannelMap: @local::icarus_channelmappinggservice
+  }
+
+outputs:
+  {
+    validate:
+      {
+        module_type: RootOutput
+        fileName: "validateCompression_out.root"
+        results:
+          {
+            producers:
+              {
+                validComp_ee: { @table::standard_validatecompression_EE }
+                validComp_ew: { @table::standard_validatecompression_EW }
+                validComp_we: { @table::standard_validatecompression_WE }
+                validComp_ww: { @table::standard_validatecompression_WW }
+              }
+            rpPath: [ validComp_ee, validComp_ew, validComp_we, validComp_ww ]
+          }
+      }
+  }
+
+physics:
+  {
+    stream1: [ validate ]
+  }

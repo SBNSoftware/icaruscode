@@ -86,6 +86,9 @@ icarus_triggergate_basic.Baseline: 15000
 # This is the primary PMT discrimination threshold, chosen for the hardware.
 icarus_triggergate_basic.SelectedThreshold: 400 # ADC
 
+# This is the primary PMT adder discrimination threshold (in ADC equivalent).
+icarus_triggergate_basic.SelectedAdderThreshold: 492  # 60 mV x (2^14 / 2 V) => 491.52 ADC#
+
 
 # thresholds for channel trigger gate opening [ADC counts]
 # in this default, we have a 1-photoelectron threshold, a loose-but-reachable
@@ -101,6 +104,14 @@ icarus_triggergate_basic.ChannelThresholds:
 # (V1730B) will open a gate signal for some amount of time in order to evaluate
 # the LVDS pair signal. This value determines that amount of time.
 icarus_triggergate_basic.PMTdiscrGateWidth: "160 ns"
+
+
+# adder signal emulation builds upon digitized waveforms;
+# discrimination thresholds need to be compared to a SPR of ~3.75 mV (as above)
+# that in an adder becomes ~3.7 mV x0.05 = 0.187 mV.
+# The thresholds chosen here are:         [ 320,      533,     1067     ] photoelectrons or
+#                                         [ "60 mV", "100 mV", "200 mV" ]
+icarus_triggergate_basic.AdderThresholds: [ 492,      819,     1638     ]
 
 
 #
@@ -206,9 +217,6 @@ icarus_dynamictriggergate: {
   tool_type: DynamicTriggerGateBuilderTool
   
   ChannelThresholds: @local::icarus_triggergate_basic.ChannelThresholds
-  
-  # minimum duration of a trigger gate
-  GateDuration: @local::icarus_triggergate_basic.PMTdiscrGateWidth
   
 } # icarus_dynamictriggergate
 
@@ -404,6 +412,7 @@ icarus_triggergate_basic.patterns.S10: {
 
 icarus_triggergate_basic.SelectedPattern: @local::icarus_triggergate_basic.patterns.S5
 icarus_triggergate_basic.SelectedPrimitivePattern: @local::icarus_triggergate_basic.patterns.S10
+icarus_triggergate_basic.SelectedAdderPattern: @local::icarus_triggergate_basic.patterns.M1
 
 
 

@@ -25,3 +25,7 @@ physics.producers.cafmaker.TrackChi2PidLabel: "pandoraPidGausSCE"
 physics.producers.cafmaker.TrackMCSLabel:     "pandoraTrackSCEMCS"
 physics.producers.cafmaker.TrackRangeLabel:   "pandoraTrackSCERange"
 physics.producers.cafmaker.FlashMatchLabel:   "fmatchSCE"
+
+# Use SCE FlashMatch modules
+physics.producers.cafmaker.FlashMatchSCECryoSuffixes: ["CryoESCE", "CryoWSCE"]
+
