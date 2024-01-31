@@ -120,6 +120,9 @@ class icarus::crt::CRTHitRecoAlg {
   std::ofstream filecsv;
   bool fData;  ///< look for only data
   double fGlobalT0Offset;  ///< Offset to be applied to MC CRT hit times.
+  // See DocDB 34763 for CRT Time distributions before and after this 
+  // fGlobalT0Offset parameter was moved to the  CRTHitRecoAlg.
+
   const icarusDB::IICARUSChannelMap* fChannelMap = nullptr;
 
   // Given top CRTData product, produce CRTHit
