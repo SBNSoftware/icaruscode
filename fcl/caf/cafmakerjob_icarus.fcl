@@ -50,7 +50,9 @@ physics:
 # MCT0Offset for MC ()
 # ref1 : https://github.com/SBNSoftware/icaruscode/blob/v09_37_02_01/icaruscode/CRT/crtsimmodules_icarus.fcl#L11
 # ref2 : https://github.com/SBNSoftware/icaruscode/blob/v09_64_01/icaruscode/CRT/crttruehitproducer.fcl#L8
-physics.producers.cafmaker.CRTSimT0Offset: @local::standard_icarus_crtsimalg.GlobalT0Offset
+# physics.producers.cafmaker.CRTSimT0Offset: @local::standard_icarus_crtsimalg.GlobalT0Offset
+# instead, apply this^ offset in CRTHitRecoAlg.cc, see https://github.com/SBNSoftware/icaruscode/pull/660
+
 # Blinding not needed for MC
 physics.producers.cafmaker.CreateBlindedCAF: false
 # MC times are already measured w.r.t. the beam gate

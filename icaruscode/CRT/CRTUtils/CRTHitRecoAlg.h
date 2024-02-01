@@ -76,79 +76,7 @@ class icarus::crt::CRTHitRecoAlg {
  public:
   using CRTData = icarus::crt::CRTData;
   using CRTHit = sbn::crt::CRTHit;
-  /*//OLD
-  struct Config {
-    using Name = fhicl::Name;
-    using Comment = fhicl::Comment;
-    fhicl::Atom<bool> UseReadoutWindow {
-      Name("UseReadoutWindow"),
-        Comment("Only reconstruct hits within readout window")
-        };
-    fhicl::Atom<double> QPed {
-      Name("QPed"),
-        Comment("Pedestal offset [ADC]")
-        };
-    fhicl::Atom<double> QSlope {
-      Name("QSlope"),
-        Comment("Pedestal slope [ADC/photon]")
-        };
-    fhicl::Atom<bool> Verbose {
-      Name("Verbose"),
-        Comment("Output verbosity")
-        };
-    fhicl::Atom<bool> Data {
-      Name("Data"),
-        Comment("choose data/mc")
-        };
-    fhicl::Atom<bool> outCSVFile {
-      Name("outCSVFile"),
-        Comment("Output a csv file")
-        };
-    fhicl::Atom<std::string> CSVFile {
-      Name("CSVFile"),
-        Comment("file name for output CSV File")
-        };
-    fhicl::Atom<double> PropDelay {
-      Name("PropDelay"),
-        Comment("group velocity in WLS fiber [ns/cm]")
-        };
-    fhicl::Atom<double> PEThresh {
-      Name("PEThresh"),
-        Comment("threshold in photoelectrons above which charge amplitudes used
-  in hit reco")
-        };
-    fhicl::Atom<double> topGain {
-      Name("topGain"),
-        Comment("Dummy Gain value for Top CRT")
-        };
-    fhicl::Atom<double> topPed {
-      Name("topPed"),
-        Comment("Dummy Pedestal value for Top CRT")
-        };
-    fhicl::Atom<uint64_t> SiPMtoFEBdelay {
-      Name("SiPMtoFEBdelay"),
-        Comment("Delay for SiPM to FEB signal correction 11.6 [ns]")
-        };
-    fhicl::Atom<uint64_t> CoinWindow {
-      Name("CoinWindow"),
-        Comment("window for finding side CRT trigger coincidences [ns]")
-        };
-    fhicl::Atom<uint64_t> CrtWindow {
-      Name("CrtWindow"),
-        Comment("window for looking data [ns]")
-        };
-  };//Config
-
-  //OLD constructors
-  CRTHitRecoAlg(const Config& config);
-  CRTHitRecoAlg(const fhicl::ParameterSet& pset) :
-    CRTHitRecoAlg{fhicl::Table<Config>{pset}()} {}
-  CRTHitRecoAlg();
-
-  //OLD configure module from fcl file
-  void reconfigure(const Config& config);*/
-
-  // new constructors
+  
   explicit CRTHitRecoAlg(const fhicl::ParameterSet& pset);
   CRTHitRecoAlg();
   void reconfigure(const fhicl::ParameterSet& pset);
@@ -191,6 +119,10 @@ class icarus::crt::CRTHitRecoAlg {
   uint64_t fCrtWindow;  ///< Looking data window within trigger timestamp [ns]
   std::ofstream filecsv;
   bool fData;  ///< look for only data
+  double fGlobalT0Offset;  ///< Offset to be applied to MC CRT hit times.
+  // See DocDB 34763 for CRT Time distributions before and after this 
+  // fGlobalT0Offset parameter was moved to the  CRTHitRecoAlg.
+
   const icarusDB::IICARUSChannelMap* fChannelMap = nullptr;
 
   // Given top CRTData product, produce CRTHit
