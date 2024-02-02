@@ -1,3 +1,0 @@
-#include "larcv_icarus.fcl"
-
-process_name: larcvVar
