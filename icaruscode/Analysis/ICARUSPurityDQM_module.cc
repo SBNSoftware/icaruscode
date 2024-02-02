@@ -151,7 +151,7 @@ int fdsclusfcl;
 
       TTree* fpurTree;
       int run_tree;
-      int subrun_tree;
+      //int subrun_tree;
       int event_tree;
       int tpc_tree;
       int qhits_tree;
@@ -959,12 +959,12 @@ if(delta_sample_selected>1900)
 			    float intercetta_purezza=fit->GetParameter(0);
 			    
 			    TH1F *h111 = new TH1F("h111","delta aree",200,-10,10);
-			    float sum_per_rms_test=0;
+			    //float sum_per_rms_test=0;
                             int quanti_in_h111=0;
 			    for(int k=0;k<(int)hitareagood->size();k++)
 			      {
 				h111->Fill(area[k]-slope_purity*tempo[k]-intercetta_purezza);
-				sum_per_rms_test+=(area[k]-slope_purity*tempo[k]-intercetta_purezza)*(area[k]-slope_purity*tempo[k]-intercetta_purezza);
+				//sum_per_rms_test+=(area[k]-slope_purity*tempo[k]-intercetta_purezza)*(area[k]-slope_purity*tempo[k]-intercetta_purezza);
                                 if((area[k]-slope_purity*tempo[k]-intercetta_purezza)>-10 && (area[k]-slope_purity*tempo[k]-intercetta_purezza)<10)quanti_in_h111+=1;
 			      }
                        
