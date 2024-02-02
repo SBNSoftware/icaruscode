@@ -24,8 +24,8 @@ physics:
     {
       module_type: "LArSoftSuperaDriver"
       supera_params: "supera_icarus_MC_all_cryo_PMT_CRT.fcl"
-      out_filename: "larcv_%tc.root"
-      unique_filename: false
+      out_filename: "larcv.root"
+      unique_filename: true
       stream: "mc"
       Verbosity: 2
       StrictDataLoading: false
