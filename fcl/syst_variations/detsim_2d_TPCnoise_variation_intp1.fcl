@@ -1,5 +1,0 @@
-#include "detsim_2d_icarus_fitFR.fcl"
-
-process_name: DetSimVar
-
-icarus_simwire_wirecell_fitSR.wcls_main.structs.int_noise_scale: 1.0376

@@ -1,5 +1,5 @@
-#include "g4step2_MC_icarus.fcl"
+#include "standard_g4_icarus_step2"
 
 services.SpaceChargeService.InputFilename: "SCEoffsets/SCEoffsets_ICARUS_E500_DoubleCharge_voxelTH3.root"
 
-process_name: G4step2Var
+process_name: G4step2SCEVar
