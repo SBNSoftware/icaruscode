@@ -24,6 +24,7 @@ outputs.out1.SelectEvents: [ reco ]
 # Drop all output from the 2D deconvolution stage
 # Drop the recob::Wire output from the roifinder2d (but keep the ChannelROIs)
 outputs.rootOutput.outputCommands:         ["keep *_*_*_*", 
+                                            "drop artdaq::Fragments_*_*_ICARUSReprocessRaw",
                                             "drop *_*_*_DAQ*", 
                                             "drop *_daqTPCROI_*_*", 
                                             "drop *_decon1droi_*_*", 
