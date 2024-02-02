@@ -1,0 +1,5 @@
+#include "standard_g4_icarus.fcl"
+
+process_name: G4step1
+
+physics.simulate: [rns, largeant ]
