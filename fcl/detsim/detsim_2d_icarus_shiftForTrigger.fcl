@@ -58,6 +58,8 @@ physics: {
 
 } # physics
 
+physics.producers.daq: @local::icarus_simwire_wirecell_fitSR
+
 physics.producers.pmtlvdsgatesinit: {
   @table::physics.producers.pmtlvdsgates
   TriggerGatesTag: "pmtfixedthrinit"
@@ -68,7 +70,7 @@ physics.producers.pmttriggerwindowsinit: {
 }
 physics.producers.triggersimgatesinit: {
   @table::physics.producers.triggersimgates
-  BeamGateTag: "shiftIonization"
+  BeamGateTag: "beamgate"
 }
 physics.producers.emuTriggerinit: {
   @table::physics.producers.emuTrigger
@@ -79,19 +81,21 @@ physics.producers.pmtfixedthr: {
   @table::physics.producers.pmtfixedthrinit
   OpticalWaveforms: "shiftIonization"
 }
+physics.producers.triggersimgates.BeamGateTag: "shiftIonization"
 
 outputs: {
-  rootoutput: @local::icarus_rootoutput
+  rootoutput: {
+    @table::icarus_rootoutput
+    outputCommands: [
+      "keep *",
+      "drop *_emuTriggerinit_*_*",
+      "drop *_pmtlvdsgatesinit_*_*",
+      "drop *_pmtfixedthrinit_*_*",
+      "drop *_pmttriggerwindowsinit_*_*",
+      "drop *_triggersimgatesinit_*_*"
+      ]
+  }
 }
-
-outputs.rootoutput.outputCommands: [
-  "keep *_*_*_*",
-  "drop *_emuTriggerinit_*_*",
-  "drop *_pmtlvdsgatesinit_*_*",
-  "drop *_pmtfixedthrinit_*_*",
-  "drop *_pmttriggerwindowsinit_*_*",
-  "drop *_triggersimgatesinit_*_*"
-  ]
 
 # Field Responce input customisation
 # physics.producers.daq.wcls_main.params.files_fields: "icarus_testFR_1.json.bz2"
