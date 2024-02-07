@@ -61,6 +61,8 @@ physics: {
 
 } # physics
 
+physics.producers.daq: @local::icarus_simwire_wirecell_fitSR
+
 physics.producers.pmtlvdsgatesinit: {
   @table::physics.producers.pmtlvdsgates
   TriggerGatesTag: "pmtfixedthrinit"
@@ -86,6 +88,7 @@ physics.producers.pmtfixedthr: {
   @table::physics.producers.pmtfixedthrinit
   OpticalWaveforms: "shiftIonization"
 }
+physics.producers.triggersimgates.BeamGateTag: "shiftIonization"
 
 physics.producers.triggersimgates.BeamGateTag: "shiftIonization"
 
