@@ -95,7 +95,7 @@ local wcls_input = {
         	data: {
             	model: "",
             	scale: -1, //scale is -1 to correct a sign error in the SimDepoSource converter.
-		art_tag: "ionization", //name of upstream art producer of depos "label:instance:processName"
+		art_tag: "shiftIonization", //name of upstream art producer of depos "label:instance:processName"
             	assn_art_tag: "",
               id_is_track: false,    // Use this for "id-is-index" in the output
         	},
@@ -122,14 +122,14 @@ local duoanodes = [
     // anodes_tn: ["AnodePlane:anode110", "AnodePlane:anode120"],
     anodes_tn: [wc.tn(a) for a in tools.anodes[2*n:2*(n+1)]],
     // anodes_tn: [wc.tn(tools.anodes[2*n]), wc.tn(tools.anodes[2*n+1])],
-  }, 
+  },
 }
 for n in std.range(0,3)];
 local volname = ["EE", "EW", "WE", "WW"];
 local wcls_output = {
   // ADC output from simulation
   // sim_digits: wcls.output.digits(name="simdigits", tags=["orig"]),
-  sim_digits: [ 
+  sim_digits: [
   g.pnode({
     type: 'wclsFrameSaver',
     name: 'simdigits%d' %n,
@@ -201,7 +201,7 @@ local sp = sp_maker(params, tools);
 local sp_pipes = [sp.make_sigproc(a) for a in tools.anodes];
 
 local rng = tools.random;
-local wcls_simchannel_sink_old = 
+local wcls_simchannel_sink_old =
   g.pnode({
     type: 'wclsDepoSetSimChannelSink',
     name: 'postdriftold',
