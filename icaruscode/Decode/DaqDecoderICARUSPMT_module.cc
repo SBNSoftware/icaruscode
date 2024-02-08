@@ -401,6 +401,9 @@ namespace icarus { class DaqDecoderICARUSPMT; }
  *     * `triggerSource` (unsigned integer): value of the trigger source bit
  *       (from `sbn::ExtraTriggerInfo::triggerSource`; see
  *       `sbn::bits::triggerSource`).
+ *     * `triggerLocation` (unsigned integer): value of the trigger location bit
+ *       (from `sbn::ExtraTriggerInfo::triggerLocationBits`; see
+ *       `sbn::bits::triggerLocation`).
  *     * `gateID` (unsigned integer): number of this gate from run start
  *       (note: this used to be `gateCount` until around `v09_80_00`).
  *     * `gateCount` (unsigned integer): number of gates from this trigger
@@ -800,6 +803,7 @@ class icarus::DaqDecoderICARUSPMT: public art::EDProducer {
     unsigned int gateCount = 0U; ///< Gate number for this source.
     sbn::triggerSource sourceType; ///< Trigger source bit.
     sbn::triggerType triggerType; ///< Type of trigger (minimum bias, majority).
+    sbn::triggerLocationMask triggerLocation; ///< Where the trigger came from.
     electronics_time relTriggerTime; ///< Trigger time.
     electronics_time relBeamGateTime; ///< Beam gate time.
   }; // TriggerInfo_t
@@ -1033,6 +1037,8 @@ class icarus::DaqDecoderICARUSPMT: public art::EDProducer {
       unsigned int triggerBits = 0x0; ///< Trigger bits, from `raw::Trigger`.
       
       unsigned int triggerSource = 0x0; ///< Trigger source bit.
+      
+      unsigned int triggerLocation = 0x0; ///< Trigger location bit mask.
       
       unsigned int gateID = 0U; ///< The number of gates of this source so far.
       
@@ -2241,6 +2247,7 @@ auto icarus::DaqDecoderICARUSPMT::fetchTriggerTimestamp
       , 0U                                       // gateCount
       , sbn::triggerSource::NBits                // sourceType
       , sbn::triggerType::NBits                  // triggerType
+      , sbn::triggerLocationMask{}               // triggerLocation
       , fDetTimings.TriggerTime()                // relTriggerTime
       , fDetTimings.BeamGateTime()               // relBeamGateTime
     };
@@ -2293,6 +2300,7 @@ auto icarus::DaqDecoderICARUSPMT::fetchTriggerTimestamp
     , extraTrigger.gateCount              // gateCount
     , extraTrigger.sourceType             // sourceType
     , extraTrigger.triggerType            // triggerType
+    , extraTrigger.triggerLocation()      // triggerLocation
     , relTriggerTime                      // relTriggerTime
     , relBeamGateTime                     // relBeamGateTime
     };
@@ -2863,6 +2871,7 @@ void icarus::DaqDecoderICARUSPMT::fillPMTfragmentTree(
   fTreeFragment->data.waveformSize = fragInfo.nSamplesPerChannel;
   fTreeFragment->data.triggerBits = triggerInfo.bits;
   fTreeFragment->data.triggerSource = value(triggerInfo.sourceType);
+  fTreeFragment->data.triggerLocation = triggerInfo.triggerLocation.bits;
   fTreeFragment->data.gateID = triggerInfo.gateID;
   fTreeFragment->data.gateCount = triggerInfo.gateCount;
   fTreeFragment->data.onGlobalTrigger
