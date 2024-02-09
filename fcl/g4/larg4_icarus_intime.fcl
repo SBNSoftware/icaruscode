@@ -12,7 +12,7 @@
 physics.producers.pdfastsimintime: @local::icarus_pdfastsim_pvs
 physics.producers.pdfastsimintime.SimulationLabel: "ionandscintintime:priorSCE"
 physics.producers.simdriftintime: @local::icarus_simdrift
-physics.producers.genericcrtintime: @local::sbnd_genericCRT
+physics.producers.genericcrtintime: @local::icarus_genericCRT
 
 # Add a geant4 process, that will run only on the outtime cosmics
 physics.producers.loader: { module_type: "PhysListLoader" }
@@ -20,7 +20,7 @@ physics.producers.larg4outtime: @local::standard_larg4
 physics.producers.ionandscintouttime: @local::icarus_ionandscint
 physics.producers.pdfastsimouttime: @local::icarus_pdfastsim_pvs
 physics.producers.simdriftouttime: @local::icarus_simdrift
-physics.producers.genericcrtouttime: @local::sbnd_genericCRT
+physics.producers.genericcrtouttime: @local::icarus_genericCRT
 
 # Set the appropriate input labels, to run geant4 only on the outtime cosmics
 physics.producers.simdriftintime.SimulationLabel: "ionandscintintime:priorSCE"
