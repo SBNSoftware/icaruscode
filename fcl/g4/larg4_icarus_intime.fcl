@@ -1,0 +1,102 @@
+# File:    g4_simphotontime_filter.fcl
+# Purpose: A geant4 fcl, supposed to run after prodcorsika_proton_intime_filter.fcl, or similar,
+#          for making cosmics in time samples.
+#
+# This runs the new, refactored, LArG4 simulation.
+
+#include "mergesimsources_icarus.fcl"
+
+#include "larg4_icarus.fcl"
+
+# Add process to finish the electron drift simulation for the intimes
+physics.producers.pdfastsimintime: @local::icarus_pdfastsim_pvs
+physics.producers.pdfastsimintime.SimulationLabel: "ionandscintintime:priorSCE"
+physics.producers.simdriftintime: @local::icarus_simdrift
+physics.producers.genericcrtintime: @local::sbnd_genericCRT
+
+# Add a geant4 process, that will run only on the outtime cosmics
+physics.producers.loader: { module_type: "PhysListLoader" }
+physics.producers.larg4outtime: @local::standard_larg4
+physics.producers.ionandscintouttime: @local::icarus_ionandscint
+physics.producers.pdfastsimouttime: @local::icarus_pdfastsim_pvs
+physics.producers.simdriftouttime: @local::icarus_simdrift
+physics.producers.genericcrtouttime: @local::sbnd_genericCRT
+
+# Set the appropriate input labels, to run geant4 only on the outtime cosmics
+physics.producers.simdriftintime.SimulationLabel: "ionandscintintime:priorSCE"
+physics.producers.genericcrtintime.LArG4Label: "larg4intime"
+physics.producers.larg4outtime.inputCollections: [ "GenInTimeSorter:outtime" ]
+physics.producers.ionandscintouttime.InputModuleLabels: ["larg4outtime"]
+physics.producers.pdfastsimouttime.SimulationLabel: "ionandscintouttime:priorSCE"
+physics.producers.simdriftouttime.SimulationLabel: "ionandscintouttime:priorSCE"
+physics.producers.genericcrtouttime.LArG4Label: "larg4outtime"
+
+# Add a process that merges the MCParticles
+physics.producers.largeant: @local::icarus_merge_sim_sources
+physics.producers.largeant.FillMCParticles: true
+physics.producers.largeant.InputSourcesLabels: [ "larg4intime", "larg4outtime"]
+
+# Add a process that merges the SimEnergyDeposits
+physics.producers.ionandscint: @local::icarus_merge_sim_sources
+physics.producers.ionandscint.FillSimEnergyDeposits: true
+physics.producers.ionandscint.InputSourcesLabels: [ "ionandscintintime", "ionandscintouttime"]
+
+# Add a process that merges the SimChannels
+physics.producers.simdrift: @local::icarus_merge_sim_sources
+physics.producers.simdrift.FillSimChannels: true
+physics.producers.simdrift.InputSourcesLabels: [ "simdriftintime", "simdriftouttime"]
+
+# Add a process that merges the AuxDetSimChannels
+physics.producers.genericcrt: @local::icarus_merge_sim_sources
+physics.producers.genericcrt.FillAuxDetSimChannels: true
+physics.producers.genericcrt.InputSourcesLabels: [ "genericcrtintime", "genericcrtouttime"]
+
+# Add a process that merges the SimPhotons
+physics.producers.pdfastsim: @local::icarus_merge_sim_sources
+physics.producers.pdfastsim.FillSimPhotons: true
+physics.producers.pdfastsim.InputSourcesLabels: [ "pdfastsimintime", "pdfastsimouttime"]
+
+# Add all these new modules to the simulate path
+physics.simulate: [ rns
+                  ### Complete intime drift simulation and generic CRT
+                  , pdfastsimintime
+                  , simdriftintime
+                  , genericcrtintime
+                  ### Do full Geant4 simulation for the outtimes
+                  , loader
+                  , larg4outtime
+                  , ionandscintouttime
+                  , pdfastsimouttime
+                  , simdriftouttime
+                  , genericcrtouttime
+                  ### Merge the intime and outtime paths
+                  , largeant
+                  , ionandscint
+                  , simdrift
+                  , pdfastsim
+                  , genericcrt
+                  ### Do truth-level reconstruction
+                  , mcreco
+                  ]
+
+services.ParticleListAction.keepGenTrajectories: ["GenInTimeSorter"]
+
+# Drop the intime and outtime collections, which have now been
+# been merged into a 'largeant' collection
+outputs.out1.outputCommands: [ "keep *_*_*_*"
+                             # Drop G4
+                             , "drop *_larg4intime_*_*"
+                             , "drop *_larg4outtime_*_*"
+                             # Drop IonAndScint
+                             , "drop *_ionandscintintime_*_*"
+                             , "drop *_ionandscintouttime_*_*"
+                             # Drop PDFastSim
+                             , "drop *_pdfastsimintime_*_*"
+                             , "drop *_pdfastsimouttime_*_*"
+                             # Drop SimDrift
+                             , "drop *_simdriftintime_*_*"
+                             , "drop *_simdriftouttime_*_*"
+                             # Drop LArG4 AuxDetHits, now replaced by AuxDetSimChannels
+                             , "drop sim::AuxDetHits_*_*_*"
+                             ]
+
