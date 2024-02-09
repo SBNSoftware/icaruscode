@@ -37,9 +37,10 @@ physics.producers.largeant.FillMCParticles: true
 physics.producers.largeant.InputSourcesLabels: [ "larg4intime", "larg4outtime"]
 
 # Add a process that merges the SimEnergyDeposits
-physics.producers.ionandscint: @local::icarus_merge_sim_sources
-physics.producers.ionandscint.FillSimEnergyDeposits: true
-physics.producers.ionandscint.InputSourcesLabels: [ "ionandscintintime", "ionandscintouttime"]
+physics.producers.ionization: @local::icarus_merge_sim_sources
+physics.producers.ionization.FillSimEnergyDeposits: true
+physics.producers.ionization.EnergyDepositInstanceLabels: [ "" ]
+physics.producers.ionization.InputSourcesLabels: [ "ionandscintintime", "ionandscintouttime"]
 
 # Add a process that merges the SimChannels
 physics.producers.simdrift: @local::icarus_merge_sim_sources
@@ -71,7 +72,7 @@ physics.simulate: [ rns
                   , genericcrtouttime
                   ### Merge the intime and outtime paths
                   , largeant
-                  , ionandscint
+                  , ionization
                   , simdrift
                   , pdfastsim
                   , genericcrt

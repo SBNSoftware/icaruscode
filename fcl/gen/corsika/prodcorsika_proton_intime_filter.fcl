@@ -7,6 +7,7 @@
 
 #include "filtersgenintime_icarus.fcl"
 #include "filterssimphotonlitetime_icarus.fcl"
+#include "beamgates_icarus.fcl"
 
 #include "ionandscint_icarus.fcl"
 #include "PDFastSim_icarus.fcl"
@@ -27,6 +28,8 @@ services: {
 # Rename generator to corsika
 physics.producers.corsika: @local::physics.producers.generator
 
+physics.producers.beamgate:  @local::icarus_standardbeamgate_BNB  # from beamgates_icarus.fcl
+
 # Add a generation filter, that splits in intime and outtime cosmics
 physics.filters.GenInTimeSorter: @local::icarus_filtergenintime
 
@@ -46,6 +49,7 @@ physics.simulate: [ corsika
                   , larg4intime
                   , ionandscintintime
                   , pdfastsimintime
+                  , beamgate
                   , timefilter
                   , rns
                   ]
