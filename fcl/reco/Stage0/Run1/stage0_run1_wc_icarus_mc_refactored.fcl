@@ -1,0 +1,3 @@
+#include "stage0_run1_wc_icarus_mc.fcl"
+
+physics.producers.mcophit.SimPhotonsProducer: "pdfastsim"
