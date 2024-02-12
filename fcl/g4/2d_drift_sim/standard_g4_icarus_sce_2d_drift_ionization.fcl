@@ -1,0 +1,7 @@
+#include "standard_g4_icarus.fcl"
+#include "enable_spacecharge_services_icarus_2D_DriftSimOnly.fcl"
+
+process_name: G4ion
+
+physics.simulate: [ rns, ionization, sedlite, mcreco ]
+

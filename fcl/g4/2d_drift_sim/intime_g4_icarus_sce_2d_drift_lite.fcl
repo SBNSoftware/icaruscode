@@ -1,0 +1,23 @@
+#-------------------------------------------------------------------
+#
+# Name: intime_g4_icarus_sce_lite.fcl
+#
+# Purpose: Lite version of intime_g4_icarus_sce.fcl
+#
+# Created: 05-Apr-2022  H. Greenlee
+#
+# Automatically generated.
+#
+#-------------------------------------------------------------------
+
+#include "g4_drops.fcl"
+#include "intime_g4_icarus_sce_2d_drift.fcl"
+
+# Use lite photons.
+
+services.LArG4Parameters.UseLitePhotons: true
+
+# Drop truth data products.
+
+outputs.out1.outputCommands: [ @sequence::outputs.out1.outputCommands,
+                               @sequence::g4_drops ]
