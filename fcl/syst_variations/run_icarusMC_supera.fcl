@@ -1,0 +1,36 @@
+#include "services_common_icarus.fcl"
+#include "channelmapping_icarus.fcl"
+
+process_name: Supera
+
+services:
+{
+  RandomNumberGenerator: {}
+  NuRandomService: @local::random_NuRandomService
+  IICARUSChannelMap:      @local::icarus_channelmappinggservice
+                          @table::icarus_wirecalibration_services
+}
+
+source:
+{
+  module_type: RootInput
+}
+
+physics:
+{
+  analyzers:
+  {
+    supera:
+    {
+      module_type: "LArSoftSuperaDriver"
+      supera_params: "supera_icarus_MC_all_cryo_PMT_CRT.fcl"
+      out_filename: "larcv.root"
+      unique_filename: true
+      stream: "mc"
+      Verbosity: 2
+      StrictDataLoading: false
+    }
+  }
+  analyze: [supera]
+  end_paths: [analyze]
+}
