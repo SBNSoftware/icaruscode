@@ -6,7 +6,7 @@
 #include "ionandscint_icarus.fcl"
 #include "simdrift_icarus.fcl"
 #include "PDFastSim_icarus.fcl"
-#include "config_genericCRT.fcl"
+#include "icarus_genericCRT.fcl"
 #include "mcreco.fcl"
 
 process_name: G4
@@ -48,7 +48,7 @@ physics:
     mcreco: @local::standard_mcreco
 
     # Generic CRT
-    genericcrt: @local::sbnd_genericCRT
+    genericcrt: @local::icarus_genericCRT
 
   }
 
