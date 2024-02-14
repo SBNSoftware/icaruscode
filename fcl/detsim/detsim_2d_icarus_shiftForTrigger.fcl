@@ -32,6 +32,7 @@ physics: {
          InputSimPhotonsLabel: "largeant"
          InputTriggerLabel: "emuTriggerinit"
          InputWaveformLabel: "opdaq"
+         AdditionalOffset: 0.0 # [us] Additional offset to apply to the time shift
        }
 
        rns:         { module_type: "RandomNumberSaver" }
