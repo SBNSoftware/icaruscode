@@ -1,5 +1,4 @@
 #include "trigger_emulation_icarus.fcl"
-
 #include "services_icarus_simulation.fcl"
 #include "detsimmodules_wirecell_ICARUS.fcl"
 #include "opdetsim_pmt_icarus.fcl"
@@ -10,7 +9,6 @@ process_name: DetSim
 
 services: {
   @table::icarus_detsim_services
-  #FileCatalogMetadata:  @local::art_file_catalog_mc
 } # services
 
 
@@ -33,6 +31,10 @@ physics: {
          InputTriggerLabel: "emuTriggerinit"
          InputWaveformLabel: "opdaq"
          AdditionalOffset: 0.0 # [us] Additional offset to apply to the time shift
+         ShiftSimEnergyDeposits: true
+         ShiftSimPhotons: true
+         ShiftWaveforms: true
+         ShiftBeamGateInfo: true
        }
 
        rns:         { module_type: "RandomNumberSaver" }
@@ -61,7 +63,6 @@ physics: {
 
 physics.producers.daq: @local::icarus_simwire_wirecell_fitSR
 
-physics.producers.pmtlvdsgatesinit: {
   @table::physics.producers.pmtlvdsgates
   TriggerGatesTag: "pmtfixedthrinit"
 }
@@ -89,6 +90,7 @@ outputs: {
     @table::icarus_rootoutput
     outputCommands: [
       "keep *",
+      "drop *_ionization_*_*",
       "drop *_emuTriggerinit_*_*",
       "drop *_pmtlvdsgatesinit_*_*",
       "drop *_pmtfixedthrinit_*_*",
@@ -97,14 +99,3 @@ outputs: {
       ]
   }
 }
-
-# Field Responce input customisation
-# physics.producers.daq.wcls_main.params.files_fields: "icarus_testFR_1.json.bz2"
-
-#
-# customisation
-#
-
-# we are suppressing channels with no signal in the TPC
-# physics.producers.daq.SuppressNoSignal: true
-
