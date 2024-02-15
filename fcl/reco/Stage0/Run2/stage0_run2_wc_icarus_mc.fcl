@@ -5,7 +5,7 @@
 #include "stage0_icarus_mc_defs.fcl"
 #include "stage0_icarus_driver_common.fcl"
 
-process_name: MCstage0Test
+process_name: MCstage0
 
 ## Add the MC module to the list of producers
 physics.producers: {  @table::icarus_stage0_producers
