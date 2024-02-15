@@ -8,6 +8,21 @@
 
 process_name: MCstage1
 
+# Disabled Space-Charge service for calorimetry
+services.SpaceChargeService: {
+    EnableCalEfieldSCE: false
+    EnableCalSpatialSCE: false
+    EnableCorrSCE: false
+    EnableSimEfieldSCE: false
+    EnableSimSpatialSCE: false
+    InputFilename: "SCEoffsets/SCEoffsets_ICARUS_E500_voxelTH3.root"
+    RepresentationType: "Voxelized_TH3"
+    service_provider: "SpaceChargeServiceICARUS"
+}
+
+services.BackTrackerService:        @local::standard_backtrackerservice
+services.ParticleInventoryService:  @local::standard_particleinventoryservice
+
 ## Add the MC module to the list of producers
 physics.producers: {
             @table::icarus_stage1_producers
@@ -32,18 +47,10 @@ physics.producers: {
 physics.reco: [ 
                 @sequence::icarus_reco_Gauss_CryoE ,
                 @sequence::icarus_reco_Gauss_CryoW ,
-		@sequence::icarus_reco_fm,
+		            @sequence::icarus_reco_fm,
                 caloskimCalorimetryCryoE, caloskimCalorimetryCryoW,
                 mcassociationsGausCryoE,  mcassociationsGausCryoW
               ]
-
-# Turn on truth-info for track skimmer 
-physics.analyzers.caloskimE.G4producer: "largeant"
-physics.analyzers.caloskimE.SimChannelproducer: "daq:simpleSC"
-physics.analyzers.caloskimE.RawDigitproducers: ["MCDecodeTPCROI:PHYSCRATEDATATPCEW", "MCDecodeTPCROI:PHYSCRATEDATATPCEE"]
-physics.analyzers.caloskimW.G4producer: "largeant"
-physics.analyzers.caloskimW.SimChannelproducer: "daq:simpleSC"
-physics.analyzers.caloskimW.RawDigitproducers: ["MCDecodeTPCROI:PHYSCRATEDATATPCWW", "MCDecodeTPCROI:PHYSCRATEDATATPCWE"]
 
 physics.outana:            [ caloskimE, caloskimW, simpleLightAna, CRTDataAnalysis]
 physics.trigger_paths:     [ reco ]
@@ -56,20 +63,13 @@ outputs.out1.outputCommands: [
   "drop *_caloskimCalorimetryCryoW_*_*"
 ]
 
-# Disabled Space-Charge service for calorimetry
-services.SpaceChargeService: {
-    EnableCalEfieldSCE: false
-    EnableCalSpatialSCE: false
-    EnableCorrSCE: false
-    EnableSimEfieldSCE: false
-    EnableSimSpatialSCE: false
-    InputFilename: "SCEoffsets/SCEoffsets_ICARUS_E500_voxelTH3.root"
-    RepresentationType: "Voxelized_TH3"
-    service_provider: "SpaceChargeServiceICARUS"
-}
-
-services.BackTrackerService:        @local::standard_backtrackerservice
-services.ParticleInventoryService:  @local::standard_particleinventoryservice
+# Turn on truth-info for track skimmer 
+physics.analyzers.caloskimE.G4producer: "largeant"
+physics.analyzers.caloskimE.SimChannelproducer: "daq:simpleSC"
+physics.analyzers.caloskimE.RawDigitproducers: ["MCDecodeTPCROI:PHYSCRATEDATATPCEW", "MCDecodeTPCROI:PHYSCRATEDATATPCEE"]
+physics.analyzers.caloskimW.G4producer: "largeant"
+physics.analyzers.caloskimW.SimChannelproducer: "daq:simpleSC"
+physics.analyzers.caloskimW.RawDigitproducers: ["MCDecodeTPCROI:PHYSCRATEDATATPCWW", "MCDecodeTPCROI:PHYSCRATEDATATPCWE"]
 
 physics.producers.cluster3DCryoW.Hit3DBuilderAlg.HitFinderTagVec:                    ["gaushit2dTPCWW", "gaushit2dTPCWE"]
 physics.producers.cluster3DCryoE.Hit3DBuilderAlg.HitFinderTagVec:                    ["gaushit2dTPCEW", "gaushit2dTPCEE"]
