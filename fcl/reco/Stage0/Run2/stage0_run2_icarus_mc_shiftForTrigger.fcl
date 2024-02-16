@@ -1,14 +1,13 @@
 #include "stage0_run2_icarus_mc.fcl"
 
 physics.path: [
-
-		 pmtbaselines,
-		 ophit,
-		 mcophit,
-		 opflashCryoE,
-		 opflashCryoW
-                 MCDecodeTPCROI,
-                 @sequence::icarus_stage0_multiTPC,
-                 simChannelROI,
-                 @sequence::icarus_stage0_mc_crt
+    pmtbaselines,
+    ophit,
+    mcophit,
+    opflashCryoE,
+    opflashCryoW
+    MCDecodeTPCROI,
+    @sequence::icarus_stage0_multiTPC,
+    simChannelROI,
+    @sequence::icarus_stage0_mc_crt
 ]
