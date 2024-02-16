@@ -1,6 +1,6 @@
-# This extends to the 2D deconvolution
+# Modify to use 2D deconvolution
 
-#include "stage1_run2_icarus_MC.fcl"
+#include "stage1_run2_icarus.fcl"
 
 physics.producers.cluster3DCryoW.Hit3DBuilderAlg.HitFinderTagVec: ["gaushit2dTPCWW", "gaushit2dTPCWE"]
 physics.producers.cluster3DCryoE.Hit3DBuilderAlg.HitFinderTagVec: ["gaushit2dTPCEW", "gaushit2dTPCEE"]

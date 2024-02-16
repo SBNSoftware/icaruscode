@@ -39,7 +39,6 @@ physics.producers.ophit.InputModule: "opdaq"
 physics.producers.MCDecodeTPCROI.FragmentsLabelVec:   ["daq:TPCWW","daq:TPCWE","daq:TPCEW","daq:TPCEE"]
 physics.producers.MCDecodeTPCROI.OutInstanceLabelVec: ["PHYSCRATEDATATPCWW", "PHYSCRATEDATATPCWE", "PHYSCRATEDATATPCEW", "PHYSCRATEDATATPCEE"]
 physics.producers.decon1droi.RawDigitLabelVec:        ["MCDecodeTPCROI:PHYSCRATEDATATPCWW","MCDecodeTPCROI:PHYSCRATEDATATPCWE","MCDecodeTPCROI:PHYSCRATEDATATPCEW","MCDecodeTPCROI:PHYSCRATEDATATPCEE"]
-physics.producers.roifinder.WireModuleLabelVec:       ["decon1droi:PHYSCRATEDATATPCWW","decon1droi:PHYSCRATEDATATPCWE","decon1droi:PHYSCRATEDATATPCEW","decon1droi:PHYSCRATEDATATPCEE"]
 
 physics.producers.simChannelROI.SimChannelLabelVec:  ["daq:simpleSC"]
 physics.producers.simChannelROI.OutInstanceLabelVec: ["All"]
