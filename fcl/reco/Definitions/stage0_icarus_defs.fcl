@@ -79,10 +79,10 @@ icarus_stage0_producers:
   roifinder2d:                    @local::icarus_roifinder
 
   ### TPC hit-finder producers
-  guashit1dTPCWW:                 @local::gaus_hitfinder_icarus
-  guashit1dTPCWE:                 @local::gaus_hitfinder_icarus
-  guashit1dTPCEW:                 @local::gaus_hitfinder_icarus
-  guashit1dTPCEE:                 @local::gaus_hitfinder_icarus
+  gaushit1dTPCWW:                 @local::gaus_hitfinder_icarus
+  gaushit1dTPCWE:                 @local::gaus_hitfinder_icarus
+  gaushit1dTPCEW:                 @local::gaus_hitfinder_icarus
+  gaushit1dTPCEE:                 @local::gaus_hitfinder_icarus
 
   gaushit2dTPCWW:                 @local::gaus_hitfinder_icarus
   gaushit2dTPCWE:                 @local::gaus_hitfinder_icarus
@@ -210,12 +210,12 @@ icarus_stage0_multiTPC_2d_TPC:      [ decon1droi,
                                       roifinder2d
                                     ]
 
-icarus_stage0_EastHits_TPC:         [ guashit1dTPCEW,
-                                      guashit1dTPCEE
+icarus_stage0_EastHits_TPC:         [ gaushit1dTPCEW,
+                                      gaushit1dTPCEE
                                     ]
 
-icarus_stage0_WestHits_TPC:         [ guashit1dTPCWW,
-                                      guashit1dTPCWE
+icarus_stage0_WestHits_TPC:         [ gaushit1dTPCWW,
+                                      gaushit1dTPCWE
                                     ]
 
 icarus_stage0_EastHits2d_TPC:       [ gaushit2dTPCEW,
@@ -383,10 +383,10 @@ icarus_stage0_producers.roifinder2d.OutInstanceLabelVec:                        
 icarus_stage0_producers.roifinder2d.OutputMorphed:                                             false
 
 ### Set up hit finding for multiple TPC readout
-icarus_stage0_producers.guashit1dTPCWW.CalDataModuleLabel:                                     "roifinder1d:PHYSCRATEDATATPCWW"
-icarus_stage0_producers.guashit1dTPCWE.CalDataModuleLabel:                                     "roifinder1d:PHYSCRATEDATATPCWE"
-icarus_stage0_producers.guashit1dTPCEW.CalDataModuleLabel:                                     "roifinder1d:PHYSCRATEDATATPCEW"
-icarus_stage0_producers.guashit1dTPCEE.CalDataModuleLabel:                                     "roifinder1d:PHYSCRATEDATATPCEE"
+icarus_stage0_producers.gaushit1dTPCWW.CalDataModuleLabel:                                     "roifinder1d:PHYSCRATEDATATPCWW"
+icarus_stage0_producers.gaushit1dTPCWE.CalDataModuleLabel:                                     "roifinder1d:PHYSCRATEDATATPCWE"
+icarus_stage0_producers.gaushit1dTPCEW.CalDataModuleLabel:                                     "roifinder1d:PHYSCRATEDATATPCEW"
+icarus_stage0_producers.gaushit1dTPCEE.CalDataModuleLabel:                                     "roifinder1d:PHYSCRATEDATATPCEE"
 
 icarus_stage0_producers.gaushit2dTPCWW.CalDataModuleLabel:                                     "roifinder2d:PHYSCRATEDATATPCWW"
 icarus_stage0_producers.gaushit2dTPCWE.CalDataModuleLabel:                                     "roifinder2d:PHYSCRATEDATATPCWE"
