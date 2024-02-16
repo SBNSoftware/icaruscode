@@ -1,0 +1,110 @@
+#include "trigger_emulation_icarus.fcl"
+#include "services_icarus_simulation.fcl"
+#include "detsimmodules_wirecell_ICARUS.fcl"
+#include "opdetsim_pmt_icarus.fcl"
+#include "crtsimmodules_icarus.fcl"
+#include "rootoutput_icarus.fcl"
+
+
+process_name: DetSim
+
+services: {
+  @table::icarus_detsim_services
+} # services
+
+
+physics: {
+
+  producers: {
+    crtdaq:         @local::icarus_crtsim
+     opdaq:         @local::icarus_simpmt
+       daq:         @local::icarus_simwire_wirecell
+
+    @table::icarus_standard_triggersim.producers
+    pmtfixedthrinit:       @local::icarus_pmtdiscriminatethr_fixed_MC
+
+       shiftIonization:
+       {
+         module_type: AdjustSimForTrigger
+         InputBeamGateInfoLabel: "beamgate"
+         InputSimEnergyDepositLabel: "ionization"
+         InputSimPhotonsLabel: "pdfastsim"
+         InputTriggerLabel: "emuTriggerinit"
+         InputWaveformLabel: "opdaq"
+         AdditionalOffset: 0.0 # [us] Additional offset to apply to the time shift
+         ShiftSimEnergyDeposits: true
+         ShiftSimPhotons: true
+         ShiftWaveforms: true
+         ShiftBeamGateInfo: true
+       }
+
+       rns:         { module_type: "RandomNumberSaver" }
+  } # producers
+
+
+  simulate: [
+      rns,
+      opdaq,
+      pmtfixedthrinit,
+      pmtlvdsgatesinit,
+      pmttriggerwindowsinit,
+      triggersimgatesinit,
+      emuTriggerinit,
+      shiftIonization,
+      pmtfixedthr,
+      @sequence::icarus_standard_triggersim.path,
+      daq,
+      crtdaq
+  ]
+
+  # define the output stream, there could be more than one if using filters
+  stream:  [ rootoutput ]
+
+} # physics
+
+physics.producers.daq.wcls_main.configs: ["pgrapher/experiment/icarus/wcls-multitpc-sim-drift-simchannel-shifted-refactored.jsonnet"]
+physics.producers.crtdaq.G4ModuleLabel: "genericcrt"
+physics.producers.opdaq.InputModule: "pdfastsim"
+
+physics.producers.pmtlvdsgatesinit: {
+  @table::physics.producers.pmtlvdsgates
+  TriggerGatesTag: "pmtfixedthrinit"
+}
+
+physics.producers.pmttriggerwindowsinit: {
+  @table::physics.producers.pmttriggerwindows
+  TriggerGatesTag: "pmtlvdsgatesinit"
+}
+
+physics.producers.triggersimgatesinit: {
+  @table::physics.producers.triggersimgates
+  BeamGateTag: "beamgate"
+}
+
+physics.producers.emuTriggerinit: {
+  @table::physics.producers.emuTrigger
+  BeamGates: "triggersimgatesinit"
+  TriggerGatesTag: "pmttriggerwindowsinit"
+}
+
+physics.producers.pmtfixedthr: {
+  @table::physics.producers.pmtfixedthrinit
+  OpticalWaveforms: "shiftIonization"
+}
+
+physics.producers.triggersimgates.BeamGateTag: "shiftIonization"
+
+outputs: {
+  rootoutput: {
+    @table::icarus_rootoutput
+    outputCommands: [
+      "keep *",
+      "drop *_ionization_*_*",
+      "drop *_emuTriggerinit_*_*",
+      "drop *_pmtlvdsgatesinit_*_*",
+      "drop *_pmtfixedthrinit_*_*",
+      "drop *_pmttriggerwindowsinit_*_*",
+      "drop *_triggersimgatesinit_*_*"
+      ]
+  }
+}
