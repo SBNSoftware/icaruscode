@@ -1,0 +1,27 @@
+#
+# Purpose: Processes generated Monte Carlo events through GEANT4 detector simulation
+# 
+# 
+# Input
+# ------
+# 
+# * all `simb::MCTruth` collection data products are used as input
+# 
+# 
+# Output
+# -------
+# 
+# * `largeant` ("legacy" `LArG4` module):
+#     * `simb::MCParticle` collection: all initial, intermediate and final
+#       particles propagated through the detector (exceptions apply)
+#     * `sim::SimEnergyDeposit` collections: `TPCActive` and `Others`
+#     * `sim::SimChannel` collection: ionisation drifted to TPC channels
+#     * `sim::SimPhoton` collection: scintillation photons converting into PMT
+#     * `sim::AuxDetSimChannel` collection: hits from auxiliary detectors (CRT)
+#
+
+#include "standard_g4_icarus.fcl"
+
+process_name: G4step1
+
+physics.simulate: [rns, largeant ]
