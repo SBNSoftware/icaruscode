@@ -1,6 +1,6 @@
 // #include "decoderTools_icarus.fcl"
 #include "decoderdefs_icarus.fcl"
-// #include "trigger_emulation_icarus.fcl"
+#include "trigger_emulation_icarus.fcl"
 #include "icarus_ophitfinder.fcl"
 #include "icarus_flashfinder.fcl"
 #include "icarus_opana_modules.fcl"
@@ -31,29 +31,29 @@ icarus_stage0_mc_producers:
 
     simChannelROI:     @local::icarus_simchannelroi
 
-    # pmtfixedthr:       @local::icarus_pmtdiscriminatethr_fixed_MC
+    pmtfixedthr:       @local::icarus_pmtdiscriminatethr_fixed_MC
 
-    # @table::icarus_standard_triggersim.producers  # from trigger_emulation_icarus.fcl
-
+    @table::icarus_standard_triggersim.producers  # from trigger_emulation_icarus.fcl
+    
     pmtbaselines:      @local::icarus_opreco_pedestal_fromchannel_MC  # from icarus_ophitfinder.fcl
     opdetonbeam:       @local::copyPMTonBeam  # from decoderdefs_icarus.fcl
     ophit:             @local::icarus_ophit_data
     mcophit:           @local::ICARUSMCOpHit
 
-    ## crt producer
+    ## crt producer   
     crthit:            @local::standard_crtsimhitproducer
     crttrack:          @local::standard_crttrackproducer
     crtpmt: 	       @local::standard_crtpmtmatchingproducer
-    }
+    }  
 
 # make the following modifications to job flow for MC vs the data
-# icarus_stage0_mc_trigger: [
-#                          pmtfixedthr
-#                          , @sequence::icarus_standard_triggersim.path  # from trigger_emulation_icarus.fcl
-#                        ]
+icarus_stage0_mc_trigger: [
+                         pmtfixedthr
+                         , @sequence::icarus_standard_triggersim.path  # from trigger_emulation_icarus.fcl
+                       ]
 
 icarus_stage0_mc_PMT:  [
-                         # @sequence::icarus_stage0_mc_trigger,
+                         @sequence::icarus_stage0_mc_trigger,
                          pmtbaselines,
                          ophit,
                          mcophit,
@@ -62,8 +62,8 @@ icarus_stage0_mc_PMT:  [
                        ]
 
 icarus_stage0_mc_crt:  [ crthit,
-                         #crttzero
-                         crttrack,
+                         #crttzero 
+                         crttrack, 
                        	 crtpmt
 		       ]
 
