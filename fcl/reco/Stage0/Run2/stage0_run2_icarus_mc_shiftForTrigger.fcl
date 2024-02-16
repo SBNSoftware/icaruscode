@@ -5,7 +5,7 @@ physics.path: [
     ophit,
     mcophit,
     opflashCryoE,
-    opflashCryoW
+    opflashCryoW,
     MCDecodeTPCROI,
     @sequence::icarus_stage0_multiTPC,
     simChannelROI,
