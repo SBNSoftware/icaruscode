@@ -63,26 +63,32 @@ physics: {
 
 physics.producers.daq: @local::icarus_simwire_wirecell_fitSR
 
+physics.producers.pmtlvdsgatesinit: {
   @table::physics.producers.pmtlvdsgates
   TriggerGatesTag: "pmtfixedthrinit"
 }
+
 physics.producers.pmttriggerwindowsinit: {
   @table::physics.producers.pmttriggerwindows
   TriggerGatesTag: "pmtlvdsgatesinit"
 }
+
 physics.producers.triggersimgatesinit: {
   @table::physics.producers.triggersimgates
   BeamGateTag: "beamgate"
 }
+
 physics.producers.emuTriggerinit: {
   @table::physics.producers.emuTrigger
   BeamGates: "triggersimgatesinit"
   TriggerGatesTag: "pmttriggerwindowsinit"
 }
+
 physics.producers.pmtfixedthr: {
   @table::physics.producers.pmtfixedthrinit
   OpticalWaveforms: "shiftIonization"
 }
+
 physics.producers.triggersimgates.BeamGateTag: "shiftIonization"
 
 outputs: {
