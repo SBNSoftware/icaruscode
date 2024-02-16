@@ -1,5 +1,7 @@
 #include "stage1_run2_icarus_MC.fcl"
 
+process_name: MCstage1redo
+
 # Makes smaller output files to save stage1 
 outputs.out1.outputCommands: [
   "keep *_*_*_*",
