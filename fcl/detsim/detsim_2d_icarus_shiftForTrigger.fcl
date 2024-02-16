@@ -61,8 +61,6 @@ physics: {
 
 } # physics
 
-physics.producers.daq: @local::icarus_simwire_wirecell_fitSR
-
 physics.producers.pmtlvdsgatesinit: {
   @table::physics.producers.pmtlvdsgates
   TriggerGatesTag: "pmtfixedthrinit"
