@@ -49,6 +49,34 @@ cet_build_plugin(SignalShapingICARUSService art::service LIBRARIES ${icarus_util
 cet_build_plugin(SIOVChannelStatusICARUSService art::service LIBRARIES ${icarus_util_lib_list})
 cet_build_plugin(TFileMetadataICARUS art::service LIBRARIES ${icarus_util_lib_list})
 
+## Det Prop Service
+art_make_library(
+  LIBRARY_NAME
+  icaruscode_DetProp
+  SOURCE
+  DetectorPropertiesICARUSClockOffsetMC.cxx
+  LIBRARIES
+  PUBLIC
+  lardataalg::DetectorInfo
+  lardataobj::RawData
+  larcorealg::Geometry
+  larcoreobj::SimpleTypesAndConstants
+  canvas::canvas
+  messagefacility::MF_MessageLogger
+  fhiclcpp::types
+  fhiclcpp::fhiclcpp
+  cetlib_except::cetlib_except
+  PRIVATE
+  cetlib::cetlib
+  ROOT::Core
+  ROOT::Hist
+)
+
+cet_build_plugin(DetectorPropertiesServiceICARUSClockOffsetMC art::service
+								 LIBRARIES
+								 ${icarus_util_lib_list}
+								 icaruscode_DetProp
+								)
 
 install_headers()
 install_source()
