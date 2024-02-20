@@ -4,5 +4,5 @@
 ##
 #include "stage0_run2_icarus.fcl"
 
-## use a sequence without the CRT/PMT matching filter
-physics.path:     [ @sequence::icarus_stage0_data ]
+SpillOnly:  true     # Discard events where there are not flashes within the beam spill window.
+FilterLevel:           "medium"       # loose: accept everything ; medium: reject Top CRT matched entering cosmics; thight: rejects everything matched with an entering CRT Hit; default is loose.

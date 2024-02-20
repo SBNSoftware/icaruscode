@@ -1,0 +1,7 @@
+###
+## This fhicl file is used to run "stage0" processing specifically for the case where
+## the CRTPMT filter is applied with "medium" level (events where the triggering flash
+## is preceded by one or more Top CRT hits) and the considered flash are inSpill.
+##
+#include "stage0_run2_icarus.fcl"
+
