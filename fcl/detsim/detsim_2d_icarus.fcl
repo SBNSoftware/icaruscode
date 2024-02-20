@@ -17,7 +17,7 @@ physics: {
   producers: {
     crtdaq:         @local::icarus_crtsim
      opdaq:         @local::icarus_simpmt
-       daq:         @local::icarus_simwire_wirecell
+       daq:         @local::icarus_simwire_wirecell_fitSR_P0nom
 
        rns:         { module_type: "RandomNumberSaver" }
   } # producers

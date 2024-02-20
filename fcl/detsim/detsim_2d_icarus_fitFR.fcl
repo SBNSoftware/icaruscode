@@ -1,3 +1,0 @@
-#include "detsim_2d_icarus.fcl"
-
-physics.producers.daq: @local::icarus_simwire_wirecell_fitSR

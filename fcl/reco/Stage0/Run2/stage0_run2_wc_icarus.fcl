@@ -44,10 +44,10 @@ physics.producers.gaushitTPCEW.CalDataModuleLabel:  "roifinder2d:PHYSCRATEDATATP
 physics.producers.gaushitTPCEE.CalDataModuleLabel:  "roifinder2d:PHYSCRATEDATATPCEE"
 
 # Add below as per Gray Putnam (should we move to jsonnet files?)
-physics.producers.decon2droiEE.wcls_main.structs.gain0: 10.2636323 
-physics.producers.decon2droiEW.wcls_main.structs.gain0: 10.2636323 
-physics.producers.decon2droiWE.wcls_main.structs.gain0: 10.2636323 
-physics.producers.decon2droiWW.wcls_main.structs.gain0: 10.2636323 
+physics.producers.decon2droiEE.wcls_main.structs.gain0: 17.05212 
+physics.producers.decon2droiEW.wcls_main.structs.gain0: 17.05212 
+physics.producers.decon2droiWE.wcls_main.structs.gain0: 17.05212 
+physics.producers.decon2droiWW.wcls_main.structs.gain0: 17.05212 
 
 
 physics.producers.decon2droiEE.wcls_main.structs.gain1: 12.1420344 
