@@ -202,7 +202,7 @@ bool icarus::crt::FilterCRTPMTMatching::filter(art::Event& e) {
   m_gate_width = fTriggerConfiguration.getGateWidth(m_gate_type);
 
   auto const& crtpmtMatches = e.getProduct<std::vector<CRTPMTMatching>>(fCrtPmtModuleLabel);
-
+  std::cout<<"Filter Level: "<<fFilterLevel<<" InSpill "<<fSpillOnly<<std::endl;
   if ((fFilterLevel != "loose") && (fFilterLevel != "medium") && (fFilterLevel != "tight"))
     throw art::Exception{ art::errors::Configuration } << "Invalid CRT/PMT filter level: '" << fFilterLevel << "'\n";
 
@@ -237,6 +237,7 @@ bool icarus::crt::FilterCRTPMTMatching::filter(art::Event& e) {
       else
      	isCosmic = false;
       hasOnlyCosmics = hasOnlyCosmics && isCosmic;
+      std::cout<<"This Flash type "<<(int) f.flashClassification <<" hasCosmics "<<hasOnlyCosmics<<std::endl;
     }
   }
   else if (fFilterLevel == "tight") {

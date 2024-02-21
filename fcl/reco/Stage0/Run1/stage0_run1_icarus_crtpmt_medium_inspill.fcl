@@ -3,10 +3,11 @@
 ## the CRTPMT filter is applied with "medium" level (events where the triggering flash
 ## is preceded by one or more Top CRT hits) and the considered flash are inSpill.
 ##
-#include "stage0_run2_icarus.fcl"
+#include "stage0_run1_icarus.fcl"
 
 
 physics.filters.crtpmtmatchingfilter.FilterLevel: "medium"
 physics.filters.crtpmtmatchingfilter.SpillOnly: "true"
+
 
 

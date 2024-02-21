@@ -1,0 +1,5 @@
+#include "cafmakerjob_icarus_detsim2d_systtools_and_fluxwgt.fcl"
+
+physics.producers.cafmaker.TrackHitFillRRStartCut: -1.
+physics.producers.cafmaker.TrackHitFillRREndCut: 1000.
+
