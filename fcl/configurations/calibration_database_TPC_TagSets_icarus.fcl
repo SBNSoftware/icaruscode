@@ -4,7 +4,7 @@
 BEGIN_PROLOG
 
 ## Valid for Run A,1, and 2
-## - Files decoded with release __ to __ should use v3r1 
+## - Files decoded with release <v09_66_02 should use v3r1 
 TPC_CalibrationTags_Oct2023: {
 
   tpc_channelstatus_data: "v3r1"
@@ -16,7 +16,7 @@ TPC_CalibrationTags_Oct2023: {
 
 ## Valid for Run A,1, and 2
 ## - tpc_channelstatus_data updated to v3r2, where we reverted back "flange=WE20M AND board=1 or 5" to "Good" status.
-## - Files decoded with versions __ to __ should use v3r2
+## - Files decoded with release >=v09_66_02 should use v3r2
 TPC_CalibrationTags_Feb2024: {
 
   tpc_channelstatus_data: "v3r2"
