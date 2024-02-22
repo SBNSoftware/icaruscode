@@ -13,7 +13,8 @@
 
 
 // ICARUS libraries
-#include "icaruscode/Decode/ChannelMapping/ICARUSChannelMapProvider.h"
+#include "icaruscode/Decode/ChannelMapping/ICARUSChannelMapSQLiteProvider.h"
+#include "icaruscode/Decode/ChannelMapping/IICARUSChannelMap.h"
 #include "icaruscode/Decode/ChannelMapping/RunPeriods.h"
 
 // LArSoft and framework libraries
@@ -71,9 +72,7 @@ class Pager {
 
 
 // -----------------------------------------------------------------------------
-void dumpTPCmapping(icarusDB::ICARUSChannelMapProvider const& mapping) {
-  
-  // TODO
+void dumpTPCmapping(icarusDB::IICARUSChannelMap const& mapping) {
   
   constexpr unsigned int FragmentIDoffset = 0x1000;
   
@@ -151,7 +150,7 @@ void dumpTPCmapping(icarusDB::ICARUSChannelMapProvider const& mapping) {
 
 
 // -----------------------------------------------------------------------------
-void dumpPMTmapping(icarusDB::ICARUSChannelMapProvider const& mapping) {
+void dumpPMTmapping(icarusDB::IICARUSChannelMap const& mapping) {
   
   mf::LogVerbatim log("PMTchannelMappingDumper");
   unsigned int nFragmentIDs = mapping.nPMTfragmentIDs();
@@ -199,7 +198,7 @@ void dumpPMTmapping(icarusDB::ICARUSChannelMapProvider const& mapping) {
 
 
 // -----------------------------------------------------------------------------
-void dumpCRTmapping(icarusDB::ICARUSChannelMapProvider const& mapping) {
+void dumpCRTmapping(icarusDB::IICARUSChannelMap const& mapping) {
   
   mf::LogVerbatim log("PMTchannelMappingDumper");
   
@@ -225,7 +224,7 @@ void dumpCRTmapping(icarusDB::ICARUSChannelMapProvider const& mapping) {
 
 
 // -----------------------------------------------------------------------------
-void dumpMapping(icarusDB::ICARUSChannelMapProvider const& channelMapping) {
+void dumpMapping(icarusDB::IICARUSChannelMap const& channelMapping) {
   
   mf::LogVerbatim("PMTchannelMappingDumper") << std::string(80, '-');
   dumpTPCmapping(channelMapping);
@@ -264,7 +263,7 @@ int main(int argc, char** argv) {
 
   Environment const Env { config };
   
-  icarusDB::ICARUSChannelMapProvider channelMapping
+  icarusDB::ICARUSChannelMapSQLiteProvider channelMapping
     { Env.ServiceParameters("IICARUSChannelMap") };
   
   for (icarusDB::RunPeriod const period: icarusDB::RunPeriods::All)
