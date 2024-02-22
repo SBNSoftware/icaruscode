@@ -13,8 +13,18 @@
 // ICARUS libraries
 #include "icaruscode/Decode/ChannelMapping/RunPeriods.h"
 
-// Framework Includes
-#include "fhiclcpp/ParameterSet.h"
+// LArSoft libraries
+#include "larcorealg/CoreUtils/enumerate.h"
+
+// C/C++ standard libraries
+#include <algorithm> // std::transform()
+#include <array>
+#include <vector>
+#include <map>
+#include <string>
+#include <tuple>
+#include <cctype> // std::tolower()
+
 
 //------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -100,6 +110,32 @@ namespace icarusDB
 
     virtual int BuildSideCRTCalibrationMap(SideCRTChannelToCalibrationMap&) const = 0;
 
+    // --- BEGIN --- Utility functions for the implementation ------------------
+    
+    static constexpr unsigned int ChannelsPerTPCreadoutBoard = 64;
+    
+    /// Turns and returns a string into lowercase.
+    template <typename String>
+    static void makeLowerCase(String& s) {
+      using std::cbegin, std::cend, std::begin, std::end;
+      std::transform(cbegin(s), cend(s), begin(s),
+        [](unsigned char c){ return std::tolower(c); });
+    }
+    
+    /// Returns the plane identified by `planeStr`: `0` to `2`; `3` if invalid.
+    static unsigned int TPCplaneIdentifierToPlane(std::string planeStr)
+      {
+        using namespace std::string_literals;
+        makeLowerCase(planeStr); // Make sure lower case... (sigh...)
+        static std::array const PlaneNames
+          = { "induction 1"s, "induction 2"s, "collection"s };
+        for (auto const& [ plane, planeName ]: util::enumerate(PlaneNames))
+          if (planeStr.find(planeName) != std::string::npos) return plane;
+        return PlaneNames.size();
+      }
+    
+    // --- BEGIN --- Utility functions for the implementation ------------------
+    
 };
 
 } // namespace lar_cluster3d

@@ -10,6 +10,17 @@ art_make_library(
 		cetlib_except::cetlib_except
 		cetlib::cetlib
 		larcorealg::CoreUtils
+		
+		# for SQLite algorithms (includes duplicates above)
+		icarusalg::Utilities
+		larevt::CalibrationDBI_Providers
+		larcorealg::CoreUtils
+		messagefacility::MF_MessageLogger
+		fhiclcpp::fhiclcpp
+		cetlib::cetlib
+		cetlib_except::cetlib_except
+		SQLite::SQLite3
+		
 )
 
 set(	SERVICE_LIBRARIES
@@ -58,9 +69,21 @@ set(	TOOL_LIBRARIES
 	)
 
 cet_build_plugin(ChannelMapPostGres art::tool LIBRARIES ${TOOL_LIBRARIES})
-cet_build_plugin(ChannelMapSQLite art::tool LIBRARIES ${TOOL_LIBRARIES})
+# cet_build_plugin(ChannelMapSQLite art::tool LIBRARIES ${TOOL_LIBRARIES})
 cet_build_plugin(ICARUSChannelMap art::service LIBRARIES ${SERVICE_LIBRARIES})
 
+cet_build_plugin(ICARUSChannelMapSQLite art::service
+	LIBRARIES
+		icaruscode::Decode_ChannelMapping
+		art::Framework_Principal
+		messagefacility::MF_MessageLogger
+		messagefacility::headers
+	)
+
+cet_build_plugin(ChannelMapSQLite art::tool
+	LIBRARIES
+		icaruscode::Decode_ChannelMapping
+	)
 
 cet_make_exec(NAME "PMTChannelMapDumper"
 	LIBRARIES
