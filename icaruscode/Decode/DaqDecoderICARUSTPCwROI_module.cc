@@ -561,16 +561,13 @@ void DaqDecoderICARUSTPCwROI::processSingleFragment(size_t                      
             mf::LogInfo(fLogCategory) << "==> Found board/boardSlot mismatch, crate: " << crateName << ", board: " << board << ", boardSlot: " << boardSlot << " channelPlanePair: " << fChannelMap->getChannelPlanePair(boardIDVec[board]).front().first << "/"  << fChannelMap->getChannelPlanePair(boardIDVec[board]).front().second << ", slot: " << channelPlanePairVec[0].first << "/" << channelPlanePairVec[0].second;
         }
 
-        // Get the pointer to the start of this board's block of data
-        const icarus::A2795DataBlock::data_t* dataBlock = physCrateFragment.BoardData(board);
-
         // Copy to input data array
         for(size_t chanIdx = 0; chanIdx < nChannelsPerBoard; chanIdx++)
         {
            icarus_signal_processing::VectorFloat& rawDataVec = channelArrayPair.second[chanIdx];
 
             for(size_t tick = 0; tick < nSamplesPerChannel; tick++)
-                rawDataVec[tick] = -dataBlock[chanIdx + tick * nChannelsPerBoard];
+                rawDataVec[tick] = -physCrateFragment.adc_val(board, chanIdx, tick);
 
             // Keep track of the channel
             channelArrayPair.first[chanIdx] = channelPlanePairVec[chanIdx];
