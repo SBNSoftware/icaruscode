@@ -11,6 +11,15 @@ art_make_library(
 		cetlib::cetlib
 		larcorealg::CoreUtils
 		
+		# for PostGres algorithms (includes duplicates above)
+		icarusalg::Utilities
+		larcorealg::CoreUtils
+		messagefacility::MF_MessageLogger
+		fhiclcpp::fhiclcpp
+		cetlib::cetlib
+		cetlib_except::cetlib_except
+		wda::wda
+		
 		# for SQLite algorithms (includes duplicates above)
 		icarusalg::Utilities
 		larevt::CalibrationDBI_Providers
@@ -68,8 +77,6 @@ set(	TOOL_LIBRARIES
 		larevt::CalibrationDBI_Providers
 	)
 
-cet_build_plugin(ChannelMapPostGres art::tool LIBRARIES ${TOOL_LIBRARIES})
-# cet_build_plugin(ChannelMapSQLite art::tool LIBRARIES ${TOOL_LIBRARIES})
 cet_build_plugin(ICARUSChannelMap art::service LIBRARIES ${SERVICE_LIBRARIES})
 
 cet_build_plugin(ICARUSChannelMapSQLite art::service
