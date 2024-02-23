@@ -33,10 +33,13 @@ namespace icarusDB { class ICARUSChannelMapSQLiteProvider; }
  * Configuration parameters
  * =========================
  * 
- * * `ChannelMappingTool` (
+ * * `ChannelMappingTool` (algorithm configuration): see
+ *     `icarusDB::ChannelMapSQLite` configuration.
  * * `DiagnosticOutput` (flag, default: `false`): verbosely load parameters
  *     and in general prints more messages to console
- * 
+ * * `LogCategory` (string, default: `"ICARUSChannelMapSQLiteProvider"`):
+ *     name of the messagefacility category used to send messages to console,
+ *     useful for filtering messages.
  * 
  */
 class icarusDB::ICARUSChannelMapSQLiteProvider: public IICARUSChannelMap {
