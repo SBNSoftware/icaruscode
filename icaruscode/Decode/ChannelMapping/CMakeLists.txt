@@ -80,11 +80,6 @@ cet_build_plugin(ICARUSChannelMapSQLite art::service
 		messagefacility::headers
 	)
 
-cet_build_plugin(ChannelMapSQLite art::tool
-	LIBRARIES
-		icaruscode::Decode_ChannelMapping
-	)
-
 cet_make_exec(NAME "PMTChannelMapDumper"
 	LIBRARIES
 		icaruscode::Decode_ChannelMapping
@@ -100,3 +95,4 @@ install_headers()
 install_fhicl()
 install_source()
 
+add_subdirectory("Legacy")
