@@ -1,11 +1,11 @@
 ////////////////////////////////////////////////////////////////////////
-/// \file   icaruscode/Decode/ChannelMapping/ICARUSChannelMapProvider.cxx
-/// \author T. Usher (factorized by Gianluca Petrillo, petrillo@slac.stanford.edu)
-/// \see    icaruscode/Decode/ChannelMapping/ICARUSChannelMapProvider.h
+/// \file   icaruscode/Decode/ChannelMapping/Legacy/ICARUSChannelMapProvider.cxx
+/// \author T. Usher (factorized by G. Petrillo, petrillo@slac.stanford.edu)
+/// \see    icaruscode/Decode/ChannelMapping/Legacy/ICARUSChannelMapProvider.h
 ////////////////////////////////////////////////////////////////////////
 
 // library header
-#include "icaruscode/Decode/ChannelMapping/ICARUSChannelMapProvider.h"
+#include "icaruscode/Decode/ChannelMapping/Legacy/ICARUSChannelMapProvider.h"
 
 #include "icaruscode/Decode/ChannelMapping/RunPeriods.h"
 
