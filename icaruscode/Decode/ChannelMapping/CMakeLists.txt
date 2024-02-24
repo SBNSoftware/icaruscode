@@ -1,7 +1,7 @@
 cet_enable_asserts()
 
 art_make_library(
-  EXCLUDE "PMTChannelMapDumper.cxx"
+  EXCLUDE "ChannelMapDumper.cxx"
   LIBRARIES
     icarusalg::Utilities
     larcorealg::CoreUtils
@@ -41,7 +41,7 @@ cet_build_plugin(ICARUSChannelMapSQLite art::service
 
 add_subdirectory("Legacy")
 
-cet_make_exec(NAME "PMTChannelMapDumper"
+cet_make_exec(NAME "ChannelMapDumper"
   LIBRARIES
     icaruscode::Decode_ChannelMapping_Legacy
     icaruscode::Decode_ChannelMapping
