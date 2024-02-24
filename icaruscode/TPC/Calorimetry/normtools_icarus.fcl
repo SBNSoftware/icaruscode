@@ -58,8 +58,8 @@ yznorm_sql: {
   Verbose: false
 }
 
-icarus_calonormtools: [@local::driftnorm, @local::yznorm, @local::tpcgain]
-# icarus_calonormtools: [@local::driftnorm_sql, @local::yznorm_sql, @local::tpcgain_sql]
+#icarus_calonormtools: [@local::driftnorm, @local::yznorm, @local::tpcgain]
+ icarus_calonormtools: [@local::driftnorm_sql, @local::yznorm_sql, @local::tpcgain_sql]
 
 # Gain with angular dep. recombination
 # Assume equal on planes -- this is __wrong__ -- will need to be fixed when they are calibrated
