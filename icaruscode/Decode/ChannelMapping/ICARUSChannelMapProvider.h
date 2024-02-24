@@ -83,17 +83,17 @@ private:
     
     bool fDiagnosticOutput;
       
-    IChannelMapping::TPCFragmentIDToReadoutIDMap   fFragmentToReadoutMap;
+    TPCFragmentIDToReadoutIDMap   fFragmentToReadoutMap;
       
-    IChannelMapping::TPCReadoutBoardToChannelMap   fReadoutBoardToChannelMap;
+    TPCReadoutBoardToChannelMap   fReadoutBoardToChannelMap;
 
-    IChannelMapping::FragmentToDigitizerChannelMap fFragmentToDigitizerMap; 
+    FragmentToDigitizerChannelMap fFragmentToDigitizerMap; 
 
-    IChannelMapping::CRTChannelIDToHWtoSimMacAddressPairMap fCRTChannelIDToHWtoSimMacAddressPairMap;
+    CRTChannelIDToHWtoSimMacAddressPairMap fCRTChannelIDToHWtoSimMacAddressPairMap;
 
-    IChannelMapping::TopCRTHWtoSimMacAddressPairMap fTopCRTHWtoSimMacAddressPairMap;
+    TopCRTHWtoSimMacAddressPairMap fTopCRTHWtoSimMacAddressPairMap;
 
-    IChannelMapping::SideCRTChannelToCalibrationMap fSideCRTChannelToCalibrationMap;
+    SideCRTChannelToCalibrationMap fSideCRTChannelToCalibrationMap;
 
     std::unique_ptr<IChannelMapping>               fChannelMappingTool;
 

@@ -15,8 +15,6 @@
 #include "art/Framework/Services/Registry/ServiceTable.h"
 #include "art/Framework/Principal/Run.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
-#include "fhiclcpp/ParameterSet.h"
-#include "cetlib_except/exception.h"
 
 
 // -----------------------------------------------------------------------------
@@ -28,22 +26,23 @@ namespace icarusDB { class ICARUSChannelMapPostGres; }
  * PostgreSQL database.
  * 
  * This service implements the generic channel mapping access service provider
- * interface `icarusDB::ICARUSChannelMap`.
- * To use the channel mapping, include in your code the header of
- * `icarusDB::ICARUSChannelMap`, and access the service provider via:
+ * interface `icarusDB::IICARUSChannelMapProvider`.
+ * To use the channel mapping, include in your code the header of the service
+ * interface `icarusDB::IICARUSChannelMap`, and access the service provider via:
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~{.cpp}
- * icarusDB::IICARUSChannelMap const& channelMapping
- *   = *lar::providerFrom<icarusDB::ICARUSChannelMap>();
+ * icarusDB::IICARUSChannelMapProvider const& channelMapping
+ *   = *lar::providerFrom<icarusDB::IICARUSChannelMap>();
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  * or similar (`lar::providerFrom()` is in `larcore/CoreUtils/ServiceUtils.h`)
  * or directly the service via
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~{.cpp}
- * icarusDB::ICARUSChannelMap const& channelMapping
- *   = *art::ServiceHandle<icarusDB::ICARUSChannelMap>();
+ * icarusDB::IICARUSChannelMapProvider const& channelMapping
+ *   = *art::ServiceHandle<icarusDB::IICARUSChannelMap>();
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  * 
- * For details on the interface, see `icarusDB::IICARUSChannelMap`.
- * For details on the implementation, see `icarusDB::ICARUSChannelMap`.
+ * For details on the interface, see `icarusDB::IICARUSChannelMapProvider`.
+ * For details on the implementation, see
+ * `icarusDB::ICARUSChannelMapPostGresProvider`.
  * 
  * @note For production and processes that need robustness, using the SQLite
  *       database and backend (`icarusDB::ICARUSChannelMapSQLite`) is suggested
@@ -52,7 +51,7 @@ namespace icarusDB { class ICARUSChannelMapPostGres; }
  * 
  */
 class icarusDB::ICARUSChannelMapPostGres
-  : public ICARUSChannelMapPostGresProvider
+  : public IICARUSChannelMap, public ICARUSChannelMapPostGresProvider,
 {
   
   /// Prepares the mapping for the specified run.

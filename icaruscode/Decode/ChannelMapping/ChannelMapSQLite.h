@@ -88,37 +88,34 @@ class icarusDB::ChannelMapSQLite
   virtual bool SelectPeriod(RunPeriod period) override;
   
   
-  /**
-   *  @brief Define the returned data structures for a mapping between TPC Fragment IDs
-   *         and the related crate and readout information. 
-   *         Then define the function interface to fill these data structures 
-   */
-  virtual int BuildTPCFragmentIDToReadoutIDMap(TPCFragmentIDToReadoutIDMap&) const override;
+  /// Fill mapping between TPC Fragment IDs and the related crate and readout
+  /// information.
+  virtual int BuildTPCFragmentIDToReadoutIDMap
+    (TPCFragmentIDToReadoutIDMap&) const override;
   
-  /**
-   *  @brief Define the returned data structures for a mapping between TPC readout boards
-   *         and the channel information 
-   *         Then define the function interface to fill these data structures 
-   */
-  virtual int BuildTPCReadoutBoardToChannelMap(TPCReadoutBoardToChannelMap&) const override;
+  /// Fill mapping between TPC readout boards and the channel information.
+  virtual int BuildTPCReadoutBoardToChannelMap
+    (TPCReadoutBoardToChannelMap&) const override;
   
-  /**
-   *  @brief Define the returned data structures for a mapping between PMT Fragment IDs
-   *         and the related crate and readout information. 
-   *         Then define the function interface to fill these data structures 
-   */
-  virtual int BuildFragmentToDigitizerChannelMap(FragmentToDigitizerChannelMap&) const override;
+  /// Fill mapping between PMT fragment IDs and the related crate and readout
+  /// information.
+  virtual int BuildFragmentToDigitizerChannelMap
+    (FragmentToDigitizerChannelMap&) const override;
   
   
-  /**
-   *  @brief Define the returned data structures for a mapping between CRT hardware mac_address
-   *         to the simulated mac_address.
-   *         Then define the function interface to fill these data structures
-   */
-  virtual int BuildCRTChannelIDToHWtoSimMacAddressPairMap(CRTChannelIDToHWtoSimMacAddressPairMap&) const override;
-  virtual int BuildTopCRTHWtoSimMacAddressPairMap(TopCRTHWtoSimMacAddressPairMap&) const override;
-
-  virtual int BuildSideCRTCalibrationMap(SideCRTChannelToCalibrationMap&) const override;
+  /// Fill mapping between side CRT hardware mac_address and the simulated
+  /// mac_address.
+  virtual int BuildCRTChannelIDToHWtoSimMacAddressPairMap
+    (CRTChannelIDToHWtoSimMacAddressPairMap&) const override;
+  
+  /// Fill mapping between top CRT channel ID and the simulated mac_address.
+  virtual int BuildTopCRTHWtoSimMacAddressPairMap(TopCRTHWtoSimMacAddressPairMap&) const
+    override;
+  
+  /// Fill CRT calibration information.
+  virtual int BuildSideCRTCalibrationMap(SideCRTChannelToCalibrationMap&) const
+    override;
+  
   
     private:
 
@@ -129,12 +126,13 @@ class icarusDB::ChannelMapSQLite
     std::string PMTfragmentMap;
     std::string CRTsideMap;
     std::string CRTtopMap;
-    // NOTE: CRT side calibration is is a different type of database which uses a timestamp
+    // NOTE: CRT side calibration is is a different type of database which uses a (currently hard-coded) timestamp
   };
   
   /// SQLite callback function: SQLite will call this including `argc` arguments
   /// each from a column named from `colNames` with the value in `argv`.
-  using SQLiteCallbackFunc_t = int(*)(void* data, int argc, char** argv, char** colNames);
+  using SQLiteCallbackFunc_t
+    = int(*)(void* data, int argc, char** argv, char** colNames);
 
 
   // --- BEGIN --- Configuration parameters ------------------------------------

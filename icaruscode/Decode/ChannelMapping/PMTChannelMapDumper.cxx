@@ -4,7 +4,7 @@
  * @author Gianluca Petrillo (petrillo@slac.stanford.edu)
  * 
  * This utility can be run with any configuration file including a configuration
- * for `IICARUSChannelMap` service.
+ * for `IICARUSChannelMap` service featuring SQLite backend.
  * 
  * It is using _art_ facilities for tool loading, but it does not run in _art_
  * environment. So it may break without warning and without solution.
@@ -14,7 +14,9 @@
 
 // ICARUS libraries
 #include "icaruscode/Decode/ChannelMapping/ICARUSChannelMapSQLiteProvider.h"
-#include "icaruscode/Decode/ChannelMapping/IICARUSChannelMap.h"
+#include "icaruscode/Decode/ChannelMapping/ICARUSChannelMapPostGresProvider.h"
+#include "icaruscode/Decode/ChannelMapping/ICARUSChannelMapProvider.h"
+#include "icaruscode/Decode/ChannelMapping/IICARUSChannelMapProvider.h"
 #include "icaruscode/Decode/ChannelMapping/RunPeriods.h"
 
 // LArSoft and framework libraries
@@ -27,6 +29,7 @@
 #include <iomanip> // std::setw()
 #include <iostream>
 #include <algorithm>
+#include <memory>
 #include <numeric> // std::iota()
 #include <array>
 
@@ -72,7 +75,7 @@ class Pager {
 
 
 // -----------------------------------------------------------------------------
-void dumpTPCmapping(icarusDB::IICARUSChannelMap const& mapping) {
+void dumpTPCmapping(icarusDB::IICARUSChannelMapProvider const& mapping) {
   
   constexpr unsigned int FragmentIDoffset = 0x1000;
   
@@ -150,7 +153,7 @@ void dumpTPCmapping(icarusDB::IICARUSChannelMap const& mapping) {
 
 
 // -----------------------------------------------------------------------------
-void dumpPMTmapping(icarusDB::IICARUSChannelMap const& mapping) {
+void dumpPMTmapping(icarusDB::IICARUSChannelMapProvider const& mapping) {
   
   mf::LogVerbatim log("PMTchannelMappingDumper");
   unsigned int nFragmentIDs = mapping.nPMTfragmentIDs();
@@ -158,7 +161,7 @@ void dumpPMTmapping(icarusDB::IICARUSChannelMap const& mapping) {
   
   // hard-coded list of fragment ID; don't like it?
   // ask for an extension of the channel mapping features.
-  std::array<unsigned int, 24U> FragmentIDs;
+  std::vector<unsigned int> FragmentIDs(nFragmentIDs);
   std::iota(FragmentIDs.begin(), FragmentIDs.end(), 0x2000);
   
   log << "\nPMT fragment IDs:";
@@ -198,7 +201,7 @@ void dumpPMTmapping(icarusDB::IICARUSChannelMap const& mapping) {
 
 
 // -----------------------------------------------------------------------------
-void dumpCRTmapping(icarusDB::IICARUSChannelMap const& mapping) {
+void dumpCRTmapping(icarusDB::IICARUSChannelMapProvider const& mapping) {
   
   mf::LogVerbatim log("PMTchannelMappingDumper");
   
@@ -224,7 +227,7 @@ void dumpCRTmapping(icarusDB::IICARUSChannelMap const& mapping) {
 
 
 // -----------------------------------------------------------------------------
-void dumpMapping(icarusDB::IICARUSChannelMap const& channelMapping) {
+void dumpMapping(icarusDB::IICARUSChannelMapProvider const& channelMapping) {
   
   mf::LogVerbatim("PMTchannelMappingDumper") << std::string(80, '-');
   dumpTPCmapping(channelMapping);
@@ -260,19 +263,54 @@ int main(int argc, char** argv) {
       << std::endl;
     return 1;
   }
-
+  
   Environment const Env { config };
   
-  icarusDB::ICARUSChannelMapSQLiteProvider channelMapping
-    { Env.ServiceParameters("IICARUSChannelMap") };
+  //
+  // create the service provider object
+  //
+  // limited selection of available service providers, hard-coded
+  // 
+  std::unique_ptr<icarusDB::IICARUSChannelMapProvider> channelMapping;
+  fhicl::ParameterSet channelMapConfig
+    = Env.ServiceParameters("IICARUSChannelMap");
+  std::string const serviceType = channelMapConfig.get<std::string>
+    ("service_provider", "ICARUSChannelMapSQLite");
+  channelMapConfig.erase("service_provider"); // if not present, still friends
+  mf::LogVerbatim("PMTChannelMapDumper")
+    << "Initializing a provider of type '" << serviceType << "'";
+  mf::LogTrace("PMTChannelMapDumper")
+    << "with configuration:\n{" << channelMapConfig.to_indented_string(1)
+    << "\n}";
+  if (serviceType == "ICARUSChannelMapSQLite") {
+    channelMapping = std::make_unique<icarusDB::ICARUSChannelMapSQLiteProvider>
+      (channelMapConfig);
+  }
+  else if (serviceType == "ICARUSChannelMapPostGres") {
+    channelMapping
+      = std::make_unique<icarusDB::ICARUSChannelMapPostGresProvider>
+      (channelMapConfig);
+  }
+  else if (serviceType == "ICARUSChannelMap") { // legacy
+    channelMapping = std::make_unique<icarusDB::ICARUSChannelMapProvider>
+      (channelMapConfig);
+  }
+  else {
+    mf::LogError("PMTChannelMapDumper")
+      << "Fatal: don't know what to do with IICARUSChannelMap.service_type: '"
+      << serviceType << "'.";
+    return 1;
+  }
   
-  for (icarusDB::RunPeriod const period: icarusDB::RunPeriods::All)
-  {
-    mf::LogVerbatim("PMTchannelMappingDumper")
+  //
+  // dump
+  //
+  for (icarusDB::RunPeriod const period: icarusDB::RunPeriods::All) {
+    mf::LogVerbatim("PMTchannelMapDumper")
       << std::string(80, '=') << "\nRun period #"
       << static_cast<unsigned int>(period) << ":\n";
-    channelMapping.forPeriod(period);
-    dumpMapping(channelMapping);
+    channelMapping->forPeriod(period);
+    dumpMapping(*channelMapping);
   }
   
   mf::LogVerbatim("PMTchannelMappingDumper")

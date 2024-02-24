@@ -9,13 +9,12 @@
 
 // ICARUS libraries
 
-// framework libraries
-#include "messagefacility/MessageLogger/MessageLogger.h"
-// #include "wda.h"
-
 // LArSoft libraries
 #include "larevt/CalibrationDBI/Providers/DBFolder.h"
 #include "larcorealg/CoreUtils/counter.h"
+
+// framework libraries
+#include "messagefacility/MessageLogger/MessageLogger.h"
 #include "cetlib/search_path.h"
 
 // SQLite
@@ -265,8 +264,8 @@ int icarusDB::ChannelMapSQLite::buildTPCFragmentIDToReadoutIDMap_callback
 {
   const unsigned int tpcIdentifier(0x00001000);
 
-  auto& fragmentBoardMap = *static_cast
-    <icarusDB::IChannelMapping::TPCFragmentIDToReadoutIDMap*>(dataOut);
+  auto& fragmentBoardMap
+    = *static_cast<icarusDB::TPCFragmentIDToReadoutIDMap*>(dataOut);
 
   // Include a by hand mapping of fragment ID to crate
   // Note that we now know we can get this from the "flanges" table... so an upgrade coming soon...
@@ -423,8 +422,7 @@ int icarusDB::ChannelMapSQLite::buildTPCReadoutBoardToChannelMap_callback
   constexpr std::size_t ChannelNumberColumn    =  5;
   constexpr std::size_t FragmentBufferColumn   = 10;
   
-  auto& rbChanMap
-    = *static_cast<IChannelMapping::TPCReadoutBoardToChannelMap*>(dataOut);
+  auto& rbChanMap= *static_cast<TPCReadoutBoardToChannelMap*>(dataOut);
   
   unsigned int readoutBoardID = std::stol(argv[ReadoutBoardIDcolumn]);
   
@@ -484,7 +482,7 @@ int icarusDB::ChannelMapSQLite::buildFragmentToDigitizerChannelMap_callback
   constexpr std::size_t FragmentIDcolumn       = 18;
   
   auto& fragmentToDigitizerChannelMap
-    = *static_cast<IChannelMapping::FragmentToDigitizerChannelMap*>(dataOut);
+    = *static_cast<FragmentToDigitizerChannelMap*>(dataOut);
   
   // Start extracting info
   unsigned int const fragmentID         = std::stol(argv[FragmentIDcolumn]);
@@ -549,7 +547,7 @@ int icarusDB::ChannelMapSQLite::buildCRTChannelIDToHWtoSimMacAddressPairMap_call
   constexpr std::size_t HWaddressColumn     = 12;
   
   auto& crtChannelIDToHWtoSimMacAddressPairMap
-    = *static_cast<IChannelMapping::CRTChannelIDToHWtoSimMacAddressPairMap*>
+    = *static_cast<CRTChannelIDToHWtoSimMacAddressPairMap*>
     (dataOut);
 
   // extracting info
@@ -607,7 +605,7 @@ int icarusDB::ChannelMapSQLite::buildTopCRTHWtoSimMacAddressPairMap_callback
   constexpr std::size_t HWaddressColumn     =  3;
   
   auto& topcrtHWtoSimMacAddressPairMap
-    = *static_cast<IChannelMapping::TopCRTHWtoSimMacAddressPairMap*>(dataOut);
+    = *static_cast<TopCRTHWtoSimMacAddressPairMap*>(dataOut);
   
   auto const valueOrNone
     = [](const char* s){ return std::strcmp(s, "None") == 0? 0: std::stol(s); };
