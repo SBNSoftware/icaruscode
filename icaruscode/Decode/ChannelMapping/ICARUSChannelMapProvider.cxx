@@ -193,7 +193,7 @@ unsigned int ICARUSChannelMapProvider::nTPCfragmentIDs() const {
 
 const std::string&  ICARUSChannelMapProvider::getCrateName(const unsigned int fragmentID) const
 {
-    IChannelMapping::TPCFragmentIDToReadoutIDMap::const_iterator fragToReadoutItr = fFragmentToReadoutMap.find(fragmentID);
+    TPCFragmentIDToReadoutIDMap::const_iterator fragToReadoutItr = fFragmentToReadoutMap.find(fragmentID);
 
     if (fragToReadoutItr == fFragmentToReadoutMap.end())
         throw cet::exception("ICARUSChannelMapProvider") << "Fragment ID " << fragmentID << " not found in lookup map when looking up crate name \n";
@@ -203,7 +203,7 @@ const std::string&  ICARUSChannelMapProvider::getCrateName(const unsigned int fr
 
 const ReadoutIDVec& ICARUSChannelMapProvider::getReadoutBoardVec(const unsigned int fragmentID) const
 {
-    IChannelMapping::TPCFragmentIDToReadoutIDMap::const_iterator fragToReadoutItr = fFragmentToReadoutMap.find(fragmentID);
+    TPCFragmentIDToReadoutIDMap::const_iterator fragToReadoutItr = fFragmentToReadoutMap.find(fragmentID);
 
     if (fragToReadoutItr == fFragmentToReadoutMap.end())
         throw cet::exception("ICARUSChannelMapProvider") << "Fragment ID " << fragmentID << " not found in lookup map when looking up board vector \n";
@@ -231,7 +231,7 @@ unsigned int ICARUSChannelMapProvider::nTPCboardIDs() const {
 
 unsigned int ICARUSChannelMapProvider::getBoardSlot(const unsigned int boardID)  const
 {
-    IChannelMapping::TPCReadoutBoardToChannelMap::const_iterator readoutBoardItr = fReadoutBoardToChannelMap.find(boardID);
+    TPCReadoutBoardToChannelMap::const_iterator readoutBoardItr = fReadoutBoardToChannelMap.find(boardID);
 
     if (readoutBoardItr == fReadoutBoardToChannelMap.end())
         throw cet::exception("ICARUSChannelMapProvider") << "Board ID " << boardID << " not found in lookup map when looking up board slot \n";
@@ -241,7 +241,7 @@ unsigned int ICARUSChannelMapProvider::getBoardSlot(const unsigned int boardID) 
 
  const ChannelPlanePairVec& ICARUSChannelMapProvider::getChannelPlanePair(const unsigned int boardID) const
 {
-    IChannelMapping::TPCReadoutBoardToChannelMap::const_iterator readoutBoardItr = fReadoutBoardToChannelMap.find(boardID);
+    TPCReadoutBoardToChannelMap::const_iterator readoutBoardItr = fReadoutBoardToChannelMap.find(boardID);
 
     if (readoutBoardItr == fReadoutBoardToChannelMap.end())
         throw cet::exception("ICARUSChannelMapProvider") << "Board ID " << boardID << " not found in lookup map when looking up channel/plane pair \n";

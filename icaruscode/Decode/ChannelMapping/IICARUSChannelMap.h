@@ -7,137 +7,67 @@
 #ifndef ICARUSCODE_DECODE_CHANNELMAPPING_IICARUSCHANNELMAP_H
 #define ICARUSCODE_DECODE_CHANNELMAPPING_IICARUSCHANNELMAP_H
 
-#include "icaruscode/Decode/ChannelMapping/RunPeriods.h"
+// ICARUS libraries
+#include "icaruscode/Decode/ChannelMapping/IICARUSChannelMapProvider.h"
 
+// framework libraries
 #include "art/Framework/Services/Registry/ServiceDeclarationMacros.h"
 
-#include <vector>
-#include <map>
-#include <string>
-#include <tuple>
 
-namespace icarusDB {
+namespace icarusDB { class IICARUSChannelMap; };
 
-using ReadoutIDVec                     = std::vector<unsigned int>;
-using ChannelPlanePair                 = std::pair<unsigned int, unsigned int>;
-using ChannelPlanePairVec              = std::vector<ChannelPlanePair>;
-
-using DigitizerChannelChannelIDPair    = std::tuple<size_t,size_t, size_t>;
-using DigitizerChannelChannelIDPairVec = std::vector<DigitizerChannelChannelIDPair>;
-
-using ChannelPlanePair                 = std::pair<unsigned int, unsigned int>;
-using ChannelPlanePairVec              = std::vector<ChannelPlanePair>;
-using SlotChannelVecPair               = std::pair<unsigned int, ChannelPlanePairVec>;
-using TPCReadoutBoardToChannelMap      = std::map<unsigned int, SlotChannelVecPair>;
-
-class IICARUSChannelMap //: private lar::EnsureOnlyOneSchedule
+/**
+ * @brief Interface for ICARUS channel mapping service.
+ * @see icarusDB::IICARUSChannelMapProvider
+ * 
+ * This class represents the interface of the _art_ service to access ICARUS
+ * channel mapping. The exposed interface is the same as the service provider
+ * interface, `icarusDB::IICARUSChannelMapProvider`.
+ * 
+ * The only reason for the existence of this object is the overhead to make any
+ * class a framework service.
+ * 
+ * To use the channel mapping, include in your code the header of this service
+ * interface and access the service provider via:
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~{.cpp}
+ * icarusDB::IICARUSChannelMapProvider const& channelMapping
+ *   = *lar::providerFrom<icarusDB::IICARUSChannelMap>();
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ * or similar (`lar::providerFrom()` is in `larcore/CoreUtils/ServiceUtils.h`)
+ * or directly the service via
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~{.cpp}
+ * icarusDB::IICARUSChannelMapProvider const& channelMapping
+ *   = *art::ServiceHandle<icarusDB::IICARUSChannelMap>();
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ * The FHiCL configuration will route the service interface to the correct
+ * implementation.
+ * 
+ * For details on the interface, see `icarusDB::IICARUSChannelMapProvider`.
+ * For details on the implementation, see the chosen service implementation.
+ * 
+ * For use in environments other than _art_, use directly the service provider
+ * implementation of your choice (any implementation of
+ * `icarusDB::IICARUSChannelMapProvider`, for example
+ * `icarusDB::IICARUSChannelMapProviderSQLite`).
+ * 
+ * 
+ * Implementation details
+ * -----------------------
+ * 
+ * This interface directly exposes the interface of the service provider,
+ * deriving from it. It is foreseen that the implementations of this service
+ * derive directly from their framework-independent service provider,
+ * and therefore they expose the provider interface already. For this reason
+ * both the service provider and the service interface need to have virtual
+ * inheritance from the service provider interface, to make sure that there is
+ * only one underlying interface object.
+ * 
+ */
+class icarusDB::IICARUSChannelMap
+  : virtual public icarusDB::IICARUSChannelMapProvider
 {
-public:
-    virtual ~IICARUSChannelMap() noexcept = default;
-    
-    
-    /// --- BEGIN --- Data period selection ------------------------------------
-    /// @name Data period selection
-    /// @{
-    
-    /// Loads the mapping for `run`, returns whether a new mapping was loaded.
-    virtual bool                                    forRun(int run)                               = 0;
-    
-    /// Loads the mapping for `period`, returns whether a new mapping was loaded.
-    virtual bool                                    forPeriod(icarusDB::RunPeriod period)         = 0;
-    
-    /// @}
-    /// --- END ----- Data period selection ------------------------------------
-    
-    
-    /// --- BEGIN --- TPC information ------------------------------------------
-    /// @name TPC information
-    /// @{
-    
-    /// --- BEGIN - - TPC fragment information - - - - - - - - - - - - - - - - -
-    /// @name TPC fragment information
-    /// @{
-    
-    /// Returns whether the specified `ID` is a known TPC fragment ID.
-    virtual bool                                    hasFragmentID(const unsigned int ID)       const = 0;
-    /// Returns the number of TPC fragment IDs known to the service.
+};
 
-    /// Returns the number of known TPC fragments.
-    virtual unsigned int                            nTPCfragmentIDs() const = 0;
-    
-    /// Returns the name of the crate served by the specified `fragmentID`.
-    virtual const std::string&                      getCrateName(const unsigned int fragmentID) const = 0;
-    
-    /// Returns the list of board IDs included in the specified `fragmentID`.
-    virtual const ReadoutIDVec&                     getReadoutBoardVec(const unsigned int fragmentID) const = 0;
-    
-    /// @}
-    /// --- END - - - TPC fragment information - - - - - - - - - - - - - - - - -
-    
-    /**
-     * @brief Returns the full TPC channel mapping.
-     * 
-     * The returned mapping is an associative container, associating each board
-     * ID (`boardID`) to the following information (in a `std::tuple`):
-     *  * `[0]` slot number the board is on (like `getBoardSlot(boardID)`)
-     *  * `[1]` list of channels served by the board, and their plane
-     *          (like `getChannelPlanePair(boardID)`)
-     * 
-     */
-    virtual const TPCReadoutBoardToChannelMap&      getReadoutBoardToChannelMap()           const = 0;
-    
-    /// --- BEGIN - - TPC board information  - - - - - - - - - - - - - - - - - -
-    /// @name TPC board information
-    /// @{
-    
-    /// Returns whether there is a board with the specified `ID`.
-    virtual bool                                    hasBoardID(const unsigned int ID)          const = 0;
-    /// Returns the number of TPC board IDs known to the service.
-    virtual unsigned int                            nTPCboardIDs() const = 0;
-    /// Returns the number of slot the `boardID` is on.
-    virtual unsigned int                            getBoardSlot(const unsigned int boardID) const = 0;
-    /// Returns a list of channels served by the `boardID` and for each the plane it is on (`0` to `2`).
-    virtual const ChannelPlanePairVec&              getChannelPlanePair(const unsigned int boardID) const = 0;
-
-    /// @}
-    /// --- END - - - TPC board information  - - - - - - - - - - - - - - - - - -
-    
-    
-    /// --- BEGIN --- PMT information ------------------------------------------
-    /// @name PMT information
-    /// @{
-    
-    /// Returns whether the specified fragment `ID` is known to the mapping.
-    virtual bool                                    hasPMTDigitizerID(const unsigned int ID) const = 0;
-    
-    /// Returns the number of PMT fragment IDs known to the mapping.
-    virtual unsigned int                            nPMTfragmentIDs() const = 0;
-    
-    /// Returns a list of triplets: 
-    virtual const DigitizerChannelChannelIDPairVec& getChannelIDPairVec(const unsigned int) const = 0;
-    
-    /// @}
-    /// --- END ----- PMT information ------------------------------------------
-
-
-    /// --- BEGIN --- CRT information ------------------------------------------
-    /// @name CRT information
-    /// @{
-    
-    /// Returns the sim Mac address corresponding to the specified side CRT hardware address.
-    virtual unsigned int                            getSimMacAddress(const unsigned int hwmacaddress)    const = 0;
-    /// Returns the sim Mac address corresponding to the specified top CRT hardware address.
-    virtual unsigned int                         gettopSimMacAddress(const unsigned int)    const = 0;
-
-    /// Returns the Gain and Pedestal for Side CRT.
-    virtual std::pair<double, double>          getSideCRTCalibrationMap(int mac5, int chan) const = 0;
-    
-    /// @}
-    /// --- END ----- CRT information ------------------------------------------
-
-}; // IICARUSChannelMap
-
-} // namespace icarusDB
 
 DECLARE_ART_SERVICE_INTERFACE(icarusDB::IICARUSChannelMap, SHARED)
 
