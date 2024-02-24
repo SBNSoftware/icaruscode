@@ -1,5 +1,5 @@
 /**
- * @file   icaruscode/Decode/ChannelMapping/PMTChannelMapDumper.cxx
+ * @file   icaruscode/Decode/ChannelMapping/ChannelMapDumper.cxx
  * @brief  Utility dumping the content of PMT channel mapping on screen.
  * @author Gianluca Petrillo (petrillo@slac.stanford.edu)
  * 
@@ -79,7 +79,7 @@ void dumpTPCmapping(icarusDB::IICARUSChannelMapProvider const& mapping) {
   
   constexpr unsigned int FragmentIDoffset = 0x1000;
   
-  mf::LogVerbatim log("PMTchannelMappingDumper");
+  mf::LogVerbatim log("ChannelMapDumper");
   
   // by fragment
   unsigned int nFragmentIDs = mapping.nTPCfragmentIDs();
@@ -155,7 +155,7 @@ void dumpTPCmapping(icarusDB::IICARUSChannelMapProvider const& mapping) {
 // -----------------------------------------------------------------------------
 void dumpPMTmapping(icarusDB::IICARUSChannelMapProvider const& mapping) {
   
-  mf::LogVerbatim log("PMTchannelMappingDumper");
+  mf::LogVerbatim log("ChannelMapDumper");
   unsigned int nFragmentIDs = mapping.nPMTfragmentIDs();
   log << "Reported " << nFragmentIDs << " PMT fragment IDs.";
   
@@ -203,7 +203,7 @@ void dumpPMTmapping(icarusDB::IICARUSChannelMapProvider const& mapping) {
 // -----------------------------------------------------------------------------
 void dumpCRTmapping(icarusDB::IICARUSChannelMapProvider const& mapping) {
   
-  mf::LogVerbatim log("PMTchannelMappingDumper");
+  mf::LogVerbatim log("ChannelMapDumper");
   
   constexpr unsigned int MaxHWmac = 1000;
   
@@ -229,16 +229,16 @@ void dumpCRTmapping(icarusDB::IICARUSChannelMapProvider const& mapping) {
 // -----------------------------------------------------------------------------
 void dumpMapping(icarusDB::IICARUSChannelMapProvider const& channelMapping) {
   
-  mf::LogVerbatim("PMTchannelMappingDumper") << std::string(80, '-');
+  mf::LogVerbatim("ChannelMapDumper") << std::string(80, '-');
   dumpTPCmapping(channelMapping);
   
-  mf::LogVerbatim("PMTchannelMappingDumper") << std::string(80, '-');
+  mf::LogVerbatim("ChannelMapDumper") << std::string(80, '-');
   dumpPMTmapping(channelMapping);
   
-  mf::LogVerbatim("PMTchannelMappingDumper") << std::string(80, '-');
+  mf::LogVerbatim("ChannelMapDumper") << std::string(80, '-');
   dumpCRTmapping(channelMapping);
   
-  mf::LogVerbatim("PMTchannelMappingDumper") << std::string(80, '-');
+  mf::LogVerbatim("ChannelMapDumper") << std::string(80, '-');
 }
 
 
@@ -248,7 +248,7 @@ int main(int argc, char** argv) {
   using Environment
     = testing::TesterEnvironment<testing::BasicEnvironmentConfiguration>;
   
-  testing::BasicEnvironmentConfiguration config("PMTchannelMappingDumper");
+  testing::BasicEnvironmentConfiguration config("ChannelMapDumper");
 
   //
   // parameter parsing
@@ -277,9 +277,9 @@ int main(int argc, char** argv) {
   std::string const serviceType = channelMapConfig.get<std::string>
     ("service_provider", "ICARUSChannelMapSQLite");
   channelMapConfig.erase("service_provider"); // if not present, still friends
-  mf::LogVerbatim("PMTChannelMapDumper")
+  mf::LogVerbatim("ChannelMapDumper")
     << "Initializing a provider of type '" << serviceType << "'";
-  mf::LogTrace("PMTChannelMapDumper")
+  mf::LogTrace("ChannelMapDumper")
     << "with configuration:\n{" << channelMapConfig.to_indented_string(1)
     << "\n}";
   if (serviceType == "ICARUSChannelMapSQLite") {
@@ -296,7 +296,7 @@ int main(int argc, char** argv) {
       (channelMapConfig);
   }
   else {
-    mf::LogError("PMTChannelMapDumper")
+    mf::LogError("ChannelMapDumper")
       << "Fatal: don't know what to do with IICARUSChannelMap.service_type: '"
       << serviceType << "'.";
     return 1;
@@ -306,14 +306,14 @@ int main(int argc, char** argv) {
   // dump
   //
   for (icarusDB::RunPeriod const period: icarusDB::RunPeriods::All) {
-    mf::LogVerbatim("PMTchannelMapDumper")
+    mf::LogVerbatim("ChannelMapDumper")
       << std::string(80, '=') << "\nRun period #"
       << static_cast<unsigned int>(period) << ":\n";
     channelMapping->forPeriod(period);
     dumpMapping(*channelMapping);
   }
   
-  mf::LogVerbatim("PMTchannelMappingDumper")
+  mf::LogVerbatim("ChannelMapDumper")
     << std::string(80, '=')
     << "\nDumped " << icarusDB::RunPeriods::All.size() << " run periods."
     ;
