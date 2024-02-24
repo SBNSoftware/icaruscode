@@ -1,10 +1,10 @@
 /**
- * @file   icaruscode/Decode/ChannelMapping/ICARUSChannelMap_service.cc
+ * @file   icaruscode/Decode/ChannelMapping/Legacy/ICARUSChannelMap_service.cc
  * @brief  Wrapper service for `icarusDB::ICARUSChannelMapProvider`.
  * @author Gianluca Petrillo (petrillo@slac.stanford.edu)
  */
 
-#include "icaruscode/Decode/ChannelMapping/ICARUSChannelMapProvider.h"
+#include "icaruscode/Decode/ChannelMapping/Legacy/ICARUSChannelMapProvider.h"
 #include "icaruscode/Decode/ChannelMapping/RunPeriods.h"
 
 // framework libraries

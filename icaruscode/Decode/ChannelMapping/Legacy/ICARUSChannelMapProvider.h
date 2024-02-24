@@ -1,11 +1,11 @@
 ////////////////////////////////////////////////////////////////////////
-/// \file   icaruscode/Decode/ChannelMapping/ICARUSChannelMapProvider.h
-/// \author T. Usher (factorised by Gianluca Petrillo, petrillo@slac.stanford.edu)
+/// \file   icaruscode/Decode/ChannelMapping/Legacy/ICARUSChannelMapProvider.h
+/// \author T. Usher (factorised by G. Petrillo, petrillo@slac.stanford.edu)
 /// \see    icaruscode/Decode/ChannelMapping/ICARUSChannelMapProvider.cxx
 ////////////////////////////////////////////////////////////////////////
 
-#ifndef ICARUSCODE_DECODE_CHANNELMAPPING_ICARUSCHANNELMAPPROVIDER_H
-#define ICARUSCODE_DECODE_CHANNELMAPPING_ICARUSCHANNELMAPPROVIDER_H
+#ifndef ICARUSCODE_DECODE_CHANNELMAPPING_LEGACY_ICARUSCHANNELMAPPROVIDER_H
+#define ICARUSCODE_DECODE_CHANNELMAPPING_LEGACY_ICARUSCHANNELMAPPROVIDER_H
 
 // ICARUS libraries
 #include "icaruscode/Decode/ChannelMapping/IICARUSChannelMap.h"
@@ -114,4 +114,4 @@ private:
 
 // -----------------------------------------------------------------------------
 
-#endif // ICARUSCODE_DECODE_CHANNELMAPPING_ICARUSCHANNELMAPPROVIDER_H
+#endif // ICARUSCODE_DECODE_CHANNELMAPPING_LEGACY_ICARUSCHANNELMAPPROVIDER_H

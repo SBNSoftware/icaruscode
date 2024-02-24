@@ -1,5 +1,5 @@
 /**
- * @file icaruscode/Decode/ChannelMapping/ChannelMapSQLite_tool.cc
+ * @file icaruscode/Decode/ChannelMapping/Legacy/ChannelMapSQLite_tool.cc
  * @brief _art_ tool wrapping ICARUS channel mapping SQLite database helper.
  * @author Gianluca Petrillo (petrillo@slac.stanford.edu)
  * @see icaruscode/Decode/ChannelMapping/ChannelMapSQLite.cxx

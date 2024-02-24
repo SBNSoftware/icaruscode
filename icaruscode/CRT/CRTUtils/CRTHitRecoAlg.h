@@ -41,8 +41,6 @@
 #include "sbnobj/Common/CRT/CRTHit.hh"
 #include "sbnobj/ICARUS/CRT/CRTData.hh"
 
-#include "icaruscode/Decode/ChannelMapping/ICARUSChannelMapProvider.h"
-#include "icaruscode/Decode/ChannelMapping/IChannelMapping.h"
 #include "icaruscode/Decode/ChannelMapping/IICARUSChannelMap.h"
 // c++
 #include <stdio.h>

@@ -4,18 +4,18 @@
  * @author Gianluca Petrillo (petrillo@slac.stanford.edu)
  * 
  * This utility can be run with any configuration file including a configuration
- * for `IICARUSChannelMap` service featuring SQLite backend.
+ * for `IICARUSChannelMap` service featuring a few hard-coded backends.
  * 
- * It is using _art_ facilities for tool loading, but it does not run in _art_
- * environment. So it may break without warning and without solution.
+ * It may be using _art_ facilities for tool loading, but it does not run in
+ * _art_ environment. So it may break without warning and without solution.
  * 
  */
 
 
 // ICARUS libraries
+#include "icaruscode/Decode/ChannelMapping/Legacy/ICARUSChannelMapProvider.h"
 #include "icaruscode/Decode/ChannelMapping/ICARUSChannelMapSQLiteProvider.h"
 #include "icaruscode/Decode/ChannelMapping/ICARUSChannelMapPostGresProvider.h"
-#include "icaruscode/Decode/ChannelMapping/ICARUSChannelMapProvider.h"
 #include "icaruscode/Decode/ChannelMapping/IICARUSChannelMapProvider.h"
 #include "icaruscode/Decode/ChannelMapping/RunPeriods.h"
 

@@ -1,5 +1,5 @@
 /**
- * @file icaruscode/Decode/ChannelMapping/ChannelMapPostGres_tool.cc
+ * @file icaruscode/Decode/ChannelMapping/Legacy/ChannelMapPostGres_tool.cc
  * @brief _art_ tool wrapping ICARUS channel mapping PostGres database helper.
  * @author Gianluca Petrillo (petrillo@slac.stanford.edu)
  * @see icaruscode/Decode/ChannelMapping/ChannelMapPostGres.cxx
