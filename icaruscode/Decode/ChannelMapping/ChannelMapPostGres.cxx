@@ -47,7 +47,43 @@ namespace icarusDB::details {
     operator Tuple() const { return get(); }
   };
   
-} // local namespace
+  
+  /// Wrapper of `PositionFinder` to extract the names from a `WDATuple`.
+  class WDAPositionFinder
+    : public icarus::ns::util::PositionFinder<std::vector<std::string>>
+  {
+    
+    std::vector<std::string> fNames; ///< Storage for the column names
+    
+      public:
+    WDAPositionFinder(WDATuple&& namesTuple)
+      : icarus::ns::util::PositionFinder<std::vector<std::string>>{ fNames }
+      , fNames{ tupleToVector(namesTuple) }
+      {}
+    
+    static std::vector<std::string> tupleToVector(WDATuple& namesTuple)
+      {
+        unsigned int const n = getNfields(namesTuple);
+        std::vector<std::string> names{ n };
+        for (unsigned int const i: util::counter(n)) {
+          std::string& name = names[i]; // util::enumerate() fails on l-values
+          int error = 0;
+          name.resize(128, '\0');
+          std::size_t const length
+            = getStringValue(namesTuple, i, name.data(), name.size(), &error);
+          if (error) { // we know very little of the context... sorry, use gdb
+            throw cet::exception{ "ChannelMapPostGres" }
+              << "Failed (code: " << error << ") to extract column #" << i
+              << " name from a channel mapping database table";
+          }
+          name.erase(length);
+        }
+        return names;
+      } // tupleToVector()
+    
+  }; // WDAPositionFinder
+  
+} // namespace icarusDB::details
 
 
 // -----------------------------------------------------------------------------
@@ -133,6 +169,8 @@ icarusDB::details::WDADataset icarusDB::ChannelMapPostGres::GetCRTCaldata
 }
 
 
+// -----------------------------------------------------------------------------
+// ---  TPC
 // -----------------------------------------------------------------------------
 int icarusDB::ChannelMapPostGres::BuildTPCFragmentIDToReadoutIDMap
   (TPCFragmentIDToReadoutIDMap& fragmentBoardMap) const
@@ -244,12 +282,21 @@ int icarusDB::ChannelMapPostGres::BuildTPCFragmentIDToReadoutIDMap
     {   8, "EE20B" }
   }; // flangeIDToCrateMap[]
 
-  constexpr std::size_t ReadoutBoardIDcolumn = 0;
-  constexpr std::size_t FlangeIDcolumn = 1;
-  constexpr std::size_t FragmentIDcolumn = 8;
+  // Loop through the data to recover the channels;
+  // find the position of the columns we need from the first row
+  /*
+   * [20240224] 9 columns:
+   *  [0] "readout_board_id" [1] "flange_id"   [2] "chimney_number"
+   *  [3] "tpc_id"           [4] "create_time" [5] "create_user"
+   *  [6] "update_time"      [7] "update_user" [8] "fragement_id"
+   */
+  // technical detail: `PositionFinder` uses `operator==` to compare, and the
+  // input is C-strings; we force the other term of comparison to C++ strings
+  using namespace std::string_literals;
+  auto const [ ReadoutBoardIDcolumn, FlangeIDcolumn, FragmentIDcolumn ]
+    = details::WDAPositionFinder{ getTuple(dataset, 0) }
+             ("readout_board_id"s,  "flange_id"s,   "fragement_id"s   );
   
-  // Loop through the data to recover the channels
-  // NOTE that we skip the first row because that is just the labels
   for (int const row: util::counter(1, getNtuples(dataset))) {
     // Recover the row
     details::WDATuple tuple { getTuple(dataset, row) };
@@ -305,11 +352,25 @@ int icarusDB::ChannelMapPostGres::BuildTPCReadoutBoardToChannelMap
   std::string const dataType { "daq_channels" };
   details::WDADataset dataset = GetDataset(name, fDBURL, dataType);
   
-  constexpr std::size_t ChannelIDcolumn        =  0;
-  constexpr std::size_t ReadoutBoardIDcolumn   =  2;
-  constexpr std::size_t ReadoutBoardSlotColumn =  4;
-  constexpr std::size_t ChannelNumberColumn    =  5;
-  constexpr std::size_t PlaneIdentifierColumn  = 10;
+  // find the position of the columns we need from the first row
+  /*
+   * [20240224] 13 columns:
+   *  [0] "channel_id"      [1] "wire_number"         [2] "readout_board_id" 
+   *  [3] "chimney_number"  [4] "readout_board_slot"  [5] "channel_number"
+   *  [6] "create_time"     [7] "create_user"         [8] "update_time"
+   *  [9] "update_user"    [10] "plane"              [11] "cable_label_number"
+   * [12] "channel_type"
+   */
+  // technical detail: `PositionFinder` uses `operator==` to compare, and the
+  // input is C-strings; we force the other term of comparison to C++ strings
+  using namespace std::string_literals;
+  auto const [
+     ChannelIDcolumn,     ReadoutBoardIDcolumn, ReadoutBoardSlotColumn,
+     ChannelNumberColumn, PlaneIdentifierColumn
+  ]= details::WDAPositionFinder{ getTuple(dataset, 0) }(
+    "channel_id"s,       "readout_board_id"s,  "readout_board_slot"s,
+    "channel_number"s,   "plane"s
+    );
   
   // Loop through the data to recover the channels,
   // making sure to skip the first (header) row
@@ -377,6 +438,8 @@ int icarusDB::ChannelMapPostGres::BuildTPCReadoutBoardToChannelMap
 
 
 // -----------------------------------------------------------------------------
+// ---  PMT
+// -----------------------------------------------------------------------------
 int icarusDB::ChannelMapPostGres::BuildPMTFragmentToDigitizerChannelMap
   (FragmentToDigitizerChannelMap& fragmentToDigitizerChannelMap) const
 {
@@ -392,7 +455,29 @@ int icarusDB::ChannelMapPostGres::BuildPMTFragmentToDigitizerChannelMap
     { "&w=period_active:eq:" + fCurrentPMTTimestamp };
   details::WDADataset dataset
     = GetDataset(name, fDBURL + period_query, dataType);
-
+  
+  // find the position of the columns we need from the first row
+  /*
+   * [20240224] 20 columns:
+   *  [0] "pmt_id"               [1] "period_active"      [2] "pmt_in_tpc_plane"
+   *  [3] "channel_id"           [4] "pmt_sn"             [5] "sector_label" 
+   *  [6] "ch_number"            [7] "pmt_position_code"  [8] "hv_cable_label"
+   *  [9] "signal_cable_label"  [10] "light_fiber_label" [11] "digitizer_label"
+   * [12] "digitizer_ch_number" [13] "hv_supply_label" [14]"hv_supply_ch_number"
+   * [15] "fragment_id"         [16] "create_time"       [17] "update_user"
+   * [18] "update_time"         [19] "create_user"
+   */
+  // technical detail: `PositionFinder` uses `operator==` to compare, and the
+  // input is C-strings; we force the other term of comparison to C++ strings
+  using namespace std::string_literals;
+  auto const [
+     ChannelIDcolumn,          LaserChannelColumn,   DigitizerColumn,
+     DigitizerChannelNoColumn, FragmentIDcolumn
+  ]= details::WDAPositionFinder{ getTuple(dataset, 0) }(
+    "channel_id"s,            "light_fiber_label"s, "digitizer_label"s,
+    "digitizer_ch_number"s,   "fragment_id"s
+    );
+  
   // Ok, now we can start extracting the information
   // We do this by looping through the database and building the map from that
   // NOTE that we skip the first row because that is just the labels
@@ -400,12 +485,6 @@ int icarusDB::ChannelMapPostGres::BuildPMTFragmentToDigitizerChannelMap
     // Recover the row
     details::WDATuple tuple { getTuple(dataset, row) };
     if (!tuple) continue;
-    
-    constexpr std::size_t ChannelIDcolumn          =  3;
-    constexpr std::size_t LaserChannelColumn       = 10;
-    constexpr std::size_t DigitizerColumn          = 11;
-    constexpr std::size_t DigitizerChannelNoColumn = 12;
-    constexpr std::size_t FragmentIDcolumn         = 15;
     
     int error = 0;
     
@@ -461,6 +540,8 @@ int icarusDB::ChannelMapPostGres::BuildPMTFragmentToDigitizerChannelMap
 
 
 // -----------------------------------------------------------------------------
+// ---  CRT
+// -----------------------------------------------------------------------------
 int icarusDB::ChannelMapPostGres::BuildCRTChannelIDToHWtoSimMacAddressPairMap
   (CRTChannelIDToHWtoSimMacAddressPairMap& crtChannelIDToHWtoSimMacAddressPairMap)
   const
@@ -473,9 +554,21 @@ int icarusDB::ChannelMapPostGres::BuildCRTChannelIDToHWtoSimMacAddressPairMap
   std::string const dataType { "feb_channels" };
   details::WDADataset dataset = GetDataset(name, fDBURL, dataType);
   
-  constexpr std::size_t ChannelIDcolumn     = 10;
-  constexpr std::size_t SimMacAddressColumn = 11;
-  constexpr std::size_t HWMacAddressColumn  = 12;
+  // find the position of the columns we need from the first row
+  /*
+   * [20240224] 13 columns:
+   *  [0] "feb_id"            [1] "feb_channel"  [2] "pedestal"
+   *  [3] "threshold_adjust"  [4] "bias"         [5] "hg"
+   *  [6] "create_time"       [7] "update_user"  [8] "update_time"
+   *  [9] "create_user"      [10] "channel_id"  [11] "feb_index"
+   * [12] "mac_address"
+   */
+  // technical detail: `PositionFinder` uses `operator==` to compare, and the
+  // input is C-strings; we force the other term of comparison to C++ strings
+  using namespace std::string_literals;
+  auto const [ ChannelIDcolumn, SimMacAddressColumn, HWMacAddressColumn ]
+    = details::WDAPositionFinder{ getTuple(dataset, 0) }
+             ("channel_id"s,   "feb_index"s,        "mac_address"s      );
   
   // Ok, now we can start extracting the information
   // We do this by looping through the database and building the map from that
@@ -532,9 +625,31 @@ int icarusDB::ChannelMapPostGres::BuildTopCRTHWtoSimMacAddressPairMap
 
   details::WDADataset dataset = GetDataset(name, fDBURL, dataType);
   
-  constexpr std::size_t SimMacAddressColumn = 41;
-  constexpr std::size_t HWMacAddressColumn  =  3;
-
+  /*
+   * [20240224] 42 columns:
+   *  [0] "feb_barcode"  [1] "serialnum"    [2] "mac_add8b"
+   *  [3] "mac_add"      [4] "voltage"      [5] "ch0"
+   *  [6] "ch1"          [7] "ch2"          [8] "ch3"
+   *  [9] "ch4"         [10] "ch5"         [11] "ch6"
+   * [12] "ch7"         [13] "ch8"         [14] "ch9"
+   * [15] "ch10"        [16] "ch11"        [17] "ch12"
+   * [18] "ch13"        [19] "ch14"        [20] "ch15"
+   * [21] "ch16"        [22] "ch17"        [23] "ch18"
+   * [24] "ch19"        [25] "ch20"        [26] "ch21"
+   * [27] "ch22"        [28] "ch23"        [29] "ch24"
+   * [30] "ch25"        [31] "ch26"        [32] "ch27"
+   * [33] "ch28"        [34] "ch29"        [35] "ch30"
+   * [36] "ch31"        [37] "create_time" [38] "update_user"
+   * [39] "update_time" [40] "create_user" [41] "feb_index"
+   */
+  
+  // technical detail: `PositionFinder` uses `operator==` to compare, and the
+  // input is C-strings; we force the other term of comparison to C++ strings
+  using namespace std::string_literals;
+  auto const [ SimMacAddressColumn, HWMacAddressColumn ]
+    = details::WDAPositionFinder{ getTuple(dataset, 0) }
+             ("feb_index"s,        "mac_add"s      );
+  
   // Ok, now we can start extracting the information
   // We do this by looping through the database and building the map from that
   for(int const row: util::counter(1, getNtuples(dataset))) {
@@ -576,6 +691,10 @@ int icarusDB::ChannelMapPostGres::BuildSideCRTCalibrationMap
   
   details::WDADataset dataset = GetCRTCaldata(name, fCRTcalibrationDBURL);
   printDatasetError(dataset); // probably never prints since on error throws
+  
+  // the shape of this database is different from the others,
+  // there is no header row and there is some "introductory" data
+  // (which we'll skip) in the first rows
 
   for (int const row: util::counter(getNtuples(dataset))) {
     
