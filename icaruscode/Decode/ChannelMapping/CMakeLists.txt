@@ -28,6 +28,7 @@ art_make_library(
     cetlib::cetlib
     cetlib_except::cetlib_except
     SQLite::SQLite3
+    Microsoft.GSL::GSL
     
 )
 

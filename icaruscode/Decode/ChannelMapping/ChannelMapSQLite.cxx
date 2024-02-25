@@ -6,6 +6,7 @@
 
 // library header
 #include "icaruscode/Decode/ChannelMapping/ChannelMapSQLite.h"
+#include "icaruscode/Decode/ChannelMapping/PositionFinder.h"
 
 // ICARUS libraries
 
@@ -18,7 +19,10 @@
 #include "cetlib/search_path.h"
 
 // SQLite
-#include <sqlite3.h>
+#include "sqlite3.h"
+
+// Guildelines library
+#include "gsl/span"
 
 // C++ standard libraries
 #include <algorithm> // std::transform()
@@ -152,6 +156,14 @@ namespace {
 
 
 // -----------------------------------------------------------------------------
+void dumpColumnNames(std::string const& tag, int n, char** names) {
+  mf::LogInfo out{ tag };
+  out << tag << ": " << n << " columns:";
+  for (int i: util::counter(n))
+    out << " [" << i << "] \"" << names[i] << "\"";
+}
+
+// -----------------------------------------------------------------------------
 std::array
   <icarusDB::ChannelMapSQLite::TableNames_t, icarusDB::RunPeriods::NPeriods>
 const icarusDB::ChannelMapSQLite::TableNameSets{
@@ -255,15 +267,26 @@ int icarusDB::ChannelMapSQLite::GetDataset
 
 
 // -----------------------------------------------------------------------------
-// The aim of this function is to build a map between the
-// TPC Fragment IDs and the readout board IDs. Here we 
-// expect there will be some number of boards per Fragment
-//-----------------------------------------------------
+// ---  TPC
+// -----------------------------------------------------------------------------
 int icarusDB::ChannelMapSQLite::buildTPCFragmentIDToReadoutIDMap_callback
   (void* dataOut, int argc, char**argv, char** azColName)
 {
-  const unsigned int tpcIdentifier(0x00001000);
-
+  constexpr unsigned int tpcIdentifier(0x00001000);
+  // find the position of the columns we need
+  /*
+   * [20240224] 9 columns:
+   * [0] "readout_board_id" [1] "flange_id"   [2] "chimney_number"
+   * [3] "tpc_id"           [4] "create_time" [5] "create_user"
+   * [6] "update_time"      [7] "update_user" [8] "fragement_id"
+   */
+  // technical detail: `PositionFinder` uses `operator==` to compare, and the
+  // input is C-strings; we force the other term of comparison to C++ strings
+  using namespace std::string_literals;
+  auto const [ ReadoutBoardIDcolumn, FlangeIDcolumn, FragmentIDcolumn ]
+    = icarus::ns::util::PositionFinder{ gsl::span{azColName, (unsigned) argc} }
+             ("readout_board_id"s,  "flange_id"s,   "fragement_id"s   );
+  
   auto& fragmentBoardMap
     = *static_cast<icarusDB::TPCFragmentIDToReadoutIDMap*>(dataOut);
 
@@ -368,10 +391,6 @@ int icarusDB::ChannelMapSQLite::buildTPCFragmentIDToReadoutIDMap_callback
     {   8, "EE20B" }
   }; // flangeIDToCrateMap[]
 
-  constexpr std::size_t ReadoutBoardIDcolumn = 0;
-  constexpr std::size_t FlangeIDcolumn = 1;
-  constexpr std::size_t FragmentIDcolumn = 8;
-  
   unsigned int const fragmentID
     = std::stol(argv[FragmentIDcolumn], nullptr, 16);
   
@@ -416,11 +435,26 @@ int icarusDB::ChannelMapSQLite::BuildTPCFragmentIDToReadoutIDMap
 int icarusDB::ChannelMapSQLite::buildTPCReadoutBoardToChannelMap_callback
   (void* dataOut, int argc, char**argv, char** azColName)
 {
-  constexpr std::size_t ChannelIDcolumn        =  0;
-  constexpr std::size_t ReadoutBoardIDcolumn   =  2;
-  constexpr std::size_t ReadoutBoardSlotColumn =  4;
-  constexpr std::size_t ChannelNumberColumn    =  5;
-  constexpr std::size_t FragmentBufferColumn   = 10;
+  
+  // find the position of the columns we need
+  /*
+   * [20240224] 19 columns:
+   *  [0] "channel_id"     [1] "wire_number"         [2] "readout_board_id"
+   *  [3] "chimney_number" [4] "readout_board_slot"  [5] "channel_number"
+   *  [6] "create_time"    [7] "create_user"         [8] "update_time"
+   *  [9] "update_user"   [10] "plane"              [11] "cable_label_number"
+   * [12] "channel_type"
+   */
+  // technical detail: `PositionFinder` uses `operator==` to compare, and the
+  // input is C-strings; we force the other term of comparison to C++ strings
+  using namespace std::string_literals;
+  auto const [
+     ChannelIDcolumn,     ReadoutBoardIDcolumn, ReadoutBoardSlotColumn,
+     ChannelNumberColumn, PlaneIdentifierColumn
+  ] = icarus::ns::util::PositionFinder{ gsl::span{azColName, (unsigned) argc} }(
+    "channel_id"s,       "readout_board_id"s,  "readout_board_slot"s,
+    "channel_number"s,   "plane"s
+    );
   
   auto& rbChanMap= *static_cast<TPCReadoutBoardToChannelMap*>(dataOut);
   
@@ -436,7 +470,7 @@ int icarusDB::ChannelMapSQLite::buildTPCReadoutBoardToChannelMap_callback
   unsigned int channelNum = std::stol(argv[ChannelNumberColumn]);
   unsigned int channelID  = std::stol(argv[ChannelIDcolumn]);
   
-  std::string const fragmentBuffer = argv[FragmentBufferColumn];
+  std::string const fragmentBuffer = argv[PlaneIdentifierColumn];
   unsigned int const plane = TPCplaneIdentifierToPlane(fragmentBuffer);
   if (plane >= 3) {
     mf::LogError{ "ChannelMapSQLite" } << "YIKES!!! Plane is " << plane
@@ -473,13 +507,33 @@ int icarusDB::ChannelMapSQLite::BuildTPCReadoutBoardToChannelMap
 
 
 // -----------------------------------------------------------------------------
+// --- PMT
+// -----------------------------------------------------------------------------
 int icarusDB::ChannelMapSQLite::buildFragmentToDigitizerChannelMap_callback
   (void* dataOut, int argc, char**argv, char** azColName)
 {
-  constexpr std::size_t LaserChannelColumn     =  7;
-  constexpr std::size_t DigitizerChannelColumn =  9;
-  constexpr std::size_t ChannelIDcolumn        = 17;
-  constexpr std::size_t FragmentIDcolumn       = 18;
+  // find the position of the columns we need
+  /*
+   * [20240224] 19 columns:
+   * [0] "pmt_id"               [1] "pmt_sn"            [2] "sector_label"
+   * [3] "ch_number"            [4] "pmt_position_code" [5] "hv_cable_label"
+   * [6] "signal_cable_label"   [7] "light_fiber_label" [8] "digitizer_label"
+   * [9] "digitizer_ch_number" [10] "hv_supply_label" [11] "hv_supply_ch_number"
+   * [12] "create_time"        [13] "update_user"      [14] "update_time"
+   * [15] "create_user"        [16] "pmt_in_tpc_plane" [17] "channel_id"
+   * [18] "fragment_id"
+   * Look for the ones we care of:
+   */
+  // technical detail: `PositionFinder` uses `operator==` to compare, and the
+  // input is C-strings; we force the other term of comparison to C++ strings
+  using namespace std::string_literals;
+  auto const [
+     LaserChannelColumn,   DigitizerChannelColumn, ChannelIDcolumn,
+     FragmentIDcolumn
+  ] = icarus::ns::util::PositionFinder{ gsl::span{azColName, (unsigned) argc} }(
+    "light_fiber_label"s, "digitizer_ch_number"s, "channel_id"s,
+    "fragment_id"s
+    );
   
   auto& fragmentToDigitizerChannelMap
     = *static_cast<FragmentToDigitizerChannelMap*>(dataOut);
@@ -539,12 +593,25 @@ int icarusDB::ChannelMapSQLite::BuildFragmentToDigitizerChannelMap
 
 
 // -----------------------------------------------------------------------------
+// --- CRT
+// -----------------------------------------------------------------------------
 int icarusDB::ChannelMapSQLite::buildCRTChannelIDToHWtoSimMacAddressPairMap_callback
   (void* dataOut, int argc, char**argv, char** azColName)
 {
-  constexpr std::size_t ChannelIDcolumn     = 10;
-  constexpr std::size_t SimMACaddressColumn = 11;
-  constexpr std::size_t HWaddressColumn     = 12;
+  /*
+   * [20240224] 13 columns:
+   *  [0] "feb_id"            [1] "feb_channel"  [2] "pedestal"
+   *  [3] "threshold_adjust"  [4] "bias"         [5] "hg"
+   *  [6] "create_time"       [7] "update_user"  [8] "update_time"
+   *  [9] "create_user"      [10] "channel_id"  [11] "feb_index"
+   * [12] "mac_address"
+   */
+  // technical detail: `PositionFinder` uses `operator==` to compare, and the
+  // input is C-strings; we force the other term of comparison to C++ strings
+  using namespace std::string_literals;
+  auto const [ ChannelIDcolumn, SimMACaddressColumn, HWaddressColumn ]
+    = icarus::ns::util::PositionFinder{ gsl::span{azColName, (unsigned) argc} }
+             ("channel_id"s,   "feb_index"s,        "mac_address"s   );
   
   auto& crtChannelIDToHWtoSimMacAddressPairMap
     = *static_cast<CRTChannelIDToHWtoSimMacAddressPairMap*>
@@ -601,8 +668,29 @@ int icarusDB::ChannelMapSQLite::BuildCRTChannelIDToHWtoSimMacAddressPairMap
 int icarusDB::ChannelMapSQLite::buildTopCRTHWtoSimMacAddressPairMap_callback
   (void* dataOut, int argc, char**argv, char** azColName)
 {
-  constexpr std::size_t SimMACaddressColumn = 41;
-  constexpr std::size_t HWaddressColumn     =  3;
+  /*
+   * [20240224] 42 columns:
+   *  [0] "feb_barcode"  [1] "serialnum"    [2] "mac_add8b"
+   *  [3] "mac_add"      [4] "voltage"      [5] "ch0"
+   *  [6] "ch1"          [7] "ch2"          [8] "ch3"
+   *  [9] "ch4"         [10] "ch5"         [11] "ch6"
+   * [12] "ch7"         [13] "ch8"         [14] "ch9"
+   * [15] "ch10"        [16] "ch11"        [17] "ch12"
+   * [18] "ch13"        [19] "ch14"        [20] "ch15"
+   * [21] "ch16"        [22] "ch17"        [23] "ch18"
+   * [24] "ch19"        [25] "ch20"        [26] "ch21" 
+   * [27] "ch22"        [28] "ch23"        [29] "ch24" 
+   * [30] "ch25"        [31] "ch26"        [32] "ch27" 
+   * [33] "ch28"        [34] "ch29"        [35] "ch30" 
+   * [36] "ch31"        [37] "create_time" [38] "update_user" 
+   * [39] "update_time" [40] "create_user" [41] "feb_index"
+   */
+  // technical detail: `PositionFinder` uses `operator==` to compare, and the
+  // input is C-strings; we force the other term of comparison to C++ strings
+  using namespace std::string_literals;
+  auto const [ SimMACaddressColumn, HWaddressColumn      ]
+    = icarus::ns::util::PositionFinder{ gsl::span{azColName, (unsigned) argc} }
+             ("feb_index"s,        "mac_add"s            );
   
   auto& topcrtHWtoSimMacAddressPairMap
     = *static_cast<TopCRTHWtoSimMacAddressPairMap*>(dataOut);
