@@ -201,7 +201,7 @@ auto icarusDB::ICARUSChannelMapProviderBase<ChMapAlg>::getChannelIDPairVec
   -> DigitizerChannelChannelIDPairVec const&
 {
   mfLogTrace()
-    << "Call to: ICARUSChannelMapProviderBase<ChMapAlg>::getChannelIDPairVec("
+    << "Call to: ICARUSChannelMapProviderBase::getChannelIDPairVec("
     << fragmentID << ")";
   
   DigitizerChannelChannelIDPairVec const* digitizerPair
