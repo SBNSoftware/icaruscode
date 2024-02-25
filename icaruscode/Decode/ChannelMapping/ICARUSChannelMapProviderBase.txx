@@ -74,14 +74,15 @@ template <typename ChMapAlg>
 bool icarusDB::ICARUSChannelMapProviderBase<ChMapAlg>::hasFragmentID
   (const unsigned int fragmentID) const
 {
-  return fFragmentToReadoutMap.find(fragmentID) != fFragmentToReadoutMap.end();
+  return
+    fTPCFragmentToReadoutMap.find(fragmentID) != fTPCFragmentToReadoutMap.end();
 }
 
 
 // -----------------------------------------------------------------------------
 template <typename ChMapAlg>
 unsigned int icarusDB::ICARUSChannelMapProviderBase<ChMapAlg>::nTPCfragmentIDs() const {
-  return fFragmentToReadoutMap.size();
+  return fTPCFragmentToReadoutMap.size();
 }
 
 
@@ -90,9 +91,9 @@ template <typename ChMapAlg>
 std::string const& icarusDB::ICARUSChannelMapProviderBase<ChMapAlg>::getCrateName
   (const unsigned int fragmentID) const
 {
-  auto const fragToReadoutItr = fFragmentToReadoutMap.find(fragmentID);
+  auto const fragToReadoutItr = fTPCFragmentToReadoutMap.find(fragmentID);
 
-  if (fragToReadoutItr == fFragmentToReadoutMap.end()) {
+  if (fragToReadoutItr == fTPCFragmentToReadoutMap.end()) {
     throw myException() << "Fragment ID " << fragmentID
       << " not found in lookup map when looking up crate name \n";
   }
@@ -106,9 +107,9 @@ template <typename ChMapAlg>
 auto icarusDB::ICARUSChannelMapProviderBase<ChMapAlg>::getReadoutBoardVec
   (const unsigned int fragmentID) const -> icarusDB::ReadoutIDVec const&
 {
-  auto const fragToReadoutItr = fFragmentToReadoutMap.find(fragmentID);
+  auto const fragToReadoutItr = fTPCFragmentToReadoutMap.find(fragmentID);
 
-  if (fragToReadoutItr == fFragmentToReadoutMap.end()) {
+  if (fragToReadoutItr == fTPCFragmentToReadoutMap.end()) {
     throw myException() << "Fragment ID " << fragmentID
       << " not found in lookup map when looking up board vector.\n";
   }
@@ -122,7 +123,7 @@ template <typename ChMapAlg>
 auto icarusDB::ICARUSChannelMapProviderBase<ChMapAlg>::getReadoutBoardToChannelMap()
   const -> const TPCReadoutBoardToChannelMap&
 {
-  return fReadoutBoardToChannelMap;
+  return fTPCReadoutBoardToChannelMap;
 }
 
 
@@ -132,14 +133,14 @@ bool icarusDB::ICARUSChannelMapProviderBase<ChMapAlg>::hasBoardID
   (const unsigned int boardID)  const
 {
   return
-    fReadoutBoardToChannelMap.find(boardID) != fReadoutBoardToChannelMap.end();
+    fTPCReadoutBoardToChannelMap.find(boardID) != fTPCReadoutBoardToChannelMap.end();
 }
 
 
 // -----------------------------------------------------------------------------
 template <typename ChMapAlg>
 unsigned int icarusDB::ICARUSChannelMapProviderBase<ChMapAlg>::nTPCboardIDs() const {
-  return fReadoutBoardToChannelMap.size();
+  return fTPCReadoutBoardToChannelMap.size();
 }
 
 
@@ -148,9 +149,9 @@ template <typename ChMapAlg>
 unsigned int icarusDB::ICARUSChannelMapProviderBase<ChMapAlg>::getBoardSlot
   (const unsigned int boardID)  const
 {
-  auto const readoutBoardItr = fReadoutBoardToChannelMap.find(boardID);
+  auto const readoutBoardItr = fTPCReadoutBoardToChannelMap.find(boardID);
 
-  if (readoutBoardItr == fReadoutBoardToChannelMap.end()) {
+  if (readoutBoardItr == fTPCReadoutBoardToChannelMap.end()) {
     throw myException() << "Board ID " << boardID
       << " not found in lookup map when looking up board slot.\n";
   }
@@ -164,9 +165,9 @@ template <typename ChMapAlg>
 auto icarusDB::ICARUSChannelMapProviderBase<ChMapAlg>::getChannelPlanePair
   (const unsigned int boardID) const -> ChannelPlanePairVec const&
 {
-  auto const readoutBoardItr = fReadoutBoardToChannelMap.find(boardID);
+  auto const readoutBoardItr = fTPCReadoutBoardToChannelMap.find(boardID);
 
-  if (readoutBoardItr == fReadoutBoardToChannelMap.end()) {
+  if (readoutBoardItr == fTPCReadoutBoardToChannelMap.end()) {
     throw myException() << "Board ID " << boardID
       << " not found in lookup map when looking up channel/plane pair.\n";
   }
@@ -189,7 +190,7 @@ template <typename ChMapAlg>
 unsigned int icarusDB::ICARUSChannelMapProviderBase<ChMapAlg>::nPMTfragmentIDs()
   const
 {
-  return fFragmentToDigitizerMap.size();
+  return fPMTFragmentToDigitizerMap.size();
 }
 
 
@@ -256,8 +257,8 @@ template <typename ChMapAlg>
 auto icarusDB::ICARUSChannelMapProviderBase<ChMapAlg>::findPMTfragmentEntry
   (unsigned int fragmentID) const -> DigitizerChannelChannelIDPairVec const*
 {
-  auto it = fFragmentToDigitizerMap.find(PMTfragmentIDtoDBkey(fragmentID));
-  return (it == fFragmentToDigitizerMap.end())? nullptr: &(it->second);
+  auto it = fPMTFragmentToDigitizerMap.find(PMTfragmentIDtoDBkey(fragmentID));
+  return (it == fPMTFragmentToDigitizerMap.end())? nullptr: &(it->second);
 }
 
 
@@ -271,8 +272,8 @@ void icarusDB::ICARUSChannelMapProviderBase<ChMapAlg>::readFromDatabase() {
   // TPC fragment-based mapping
   cet::cpu_timer theClockFragmentIDs;
   theClockFragmentIDs.start();
-  fFragmentToReadoutMap.clear();
-  if (fChannelMappingAlg.BuildTPCFragmentIDToReadoutIDMap(fFragmentToReadoutMap))
+  fTPCFragmentToReadoutMap.clear();
+  if (fChannelMappingAlg.BuildTPCFragmentIDToReadoutIDMap(fTPCFragmentToReadoutMap))
   {
     throw myException()
       << "Cannot recover the TPC fragment ID channel map from the database.\n";
@@ -280,9 +281,9 @@ void icarusDB::ICARUSChannelMapProviderBase<ChMapAlg>::readFromDatabase() {
   else if (fDiagnosticOutput) {
     
     auto log = mfLogVerbatim();
-    log << "FragmentID to Readout ID map has " << fFragmentToReadoutMap.size()
+    log << "FragmentID to Readout ID map has " << fTPCFragmentToReadoutMap.size()
       << " elements";
-    for(auto const& [ fragmentID, crateAndBoards ]: fFragmentToReadoutMap) {
+    for(auto const& [ fragmentID, crateAndBoards ]: fTPCFragmentToReadoutMap) {
       log << "\n   Frag: " << std::hex << fragmentID << std::dec << ", Crate: "
         << crateAndBoards.first << ", # boards: "
         << crateAndBoards.second.size();
@@ -298,9 +299,9 @@ void icarusDB::ICARUSChannelMapProviderBase<ChMapAlg>::readFromDatabase() {
   cet::cpu_timer theClockReadoutIDs;
   theClockReadoutIDs.start();
 
-  fReadoutBoardToChannelMap.clear();
+  fTPCReadoutBoardToChannelMap.clear();
   if (fChannelMappingAlg.BuildTPCReadoutBoardToChannelMap
-    (fReadoutBoardToChannelMap)
+    (fTPCReadoutBoardToChannelMap)
   ) {
     mfLogError() << "******* FAILED TO CONFIGURE CHANNEL MAP ********";
     throw myException() << "Failed to read the database.\n";
@@ -315,18 +316,18 @@ void icarusDB::ICARUSChannelMapProviderBase<ChMapAlg>::readFromDatabase() {
   
   // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   // PMT channel mapping
-  fFragmentToDigitizerMap.clear();
-  if (fChannelMappingAlg.BuildFragmentToDigitizerChannelMap(fFragmentToDigitizerMap))
+  fPMTFragmentToDigitizerMap.clear();
+  if (fChannelMappingAlg.BuildPMTFragmentToDigitizerChannelMap(fPMTFragmentToDigitizerMap))
   {
     throw myException() 
       << "Cannot recover the PMT fragment ID channel map from the database.\n";
   }
   else if (fDiagnosticOutput) {
     auto log = mfLogVerbatim();
-    log << "FragmentID to Readout ID map has " << fFragmentToDigitizerMap.size()
+    log << "FragmentID to Readout ID map has " << fPMTFragmentToDigitizerMap.size()
       << " Fragment IDs";
     
-    for(auto const& [ fragmentID, digitizers ]: fFragmentToDigitizerMap) {
+    for(auto const& [ fragmentID, digitizers ]: fPMTFragmentToDigitizerMap) {
       log << "\n   Frag: " << std::hex << fragmentID << std::dec
         << ", # pairs: " << digitizers.size();
     }

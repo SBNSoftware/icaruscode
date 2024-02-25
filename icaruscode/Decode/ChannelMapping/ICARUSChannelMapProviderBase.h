@@ -108,7 +108,7 @@ class icarusDB::ICARUSChannelMapProviderBase
     {}
   
   
-  /// --- BEGIN --- Data period selection ------------------------------------
+  /// --- BEGIN --- Data period selection --------------------------------------
   /// @name Data period selection
   /// @{
   
@@ -119,10 +119,10 @@ class icarusDB::ICARUSChannelMapProviderBase
   virtual bool forPeriod(icarusDB::RunPeriod period) override;
   
   /// @}
-  /// --- END ----- Data period selection ------------------------------------
+  /// --- END ----- Data period selection --------------------------------------
   
   
-  /// --- BEGIN --- TPC information ------------------------------------------
+  /// --- BEGIN --- TPC information --------------------------------------------
   /// @name TPC information
   /// @{
   
@@ -183,7 +183,7 @@ class icarusDB::ICARUSChannelMapProviderBase
   /// --- END - - - TPC board information  - - - - - - - - - - - - - - - - - -
   
   
-  /// --- BEGIN --- PMT information ------------------------------------------
+  /// --- BEGIN --- PMT information --------------------------------------------
   /// @name PMT information
   /// @{
   
@@ -199,18 +199,20 @@ class icarusDB::ICARUSChannelMapProviderBase
     (unsigned int) const override;
   
   /// @}
-  /// --- END ----- PMT information ------------------------------------------
+  /// --- END ----- PMT information --------------------------------------------
 
 
-  /// --- BEGIN --- CRT information ------------------------------------------
+  /// --- BEGIN --- CRT information --------------------------------------------
   /// @name CRT information
   /// @{
   
-  /// Returns the sim Mac address corresponding to the specified side CRT hardware address.
+  /// Returns the sim Mac address corresponding to the specified side CRT
+  /// hardware address.
   virtual unsigned int getSimMacAddress(unsigned int hwmacaddress) const
     override;
   
-  /// Returns the sim Mac address corresponding to the specified top CRT hardware address.
+  /// Returns the sim Mac address corresponding to the specified top CRT
+  /// hardware address.
   virtual unsigned int gettopSimMacAddress(unsigned int) const override;
 
   /// Returns the Gain and Pedestal for Side CRT.
@@ -218,12 +220,13 @@ class icarusDB::ICARUSChannelMapProviderBase
     (int mac5, int chan) const override;
   
   /// @}
-  /// --- END ----- CRT information ------------------------------------------
+  /// --- END ----- CRT information --------------------------------------------
 
   /// Returns the channel mapping database key for the specified PMT fragment ID.
   static constexpr unsigned int PMTfragmentIDtoDBkey(unsigned int fragmentID);
   
-  /// Returns the PMT fragment ID for the specified channel mapping database key.
+  /// Returns the PMT fragment ID for the specified channel mapping database
+  /// key.
   static constexpr unsigned int DBkeyToPMTfragmentID(unsigned int DBkey);
 
 
@@ -244,11 +247,11 @@ class icarusDB::ICARUSChannelMapProviderBase
   
   // --- BEGIN --- Cache -------------------------------------------------------
   
-  icarusDB::TPCFragmentIDToReadoutIDMap fFragmentToReadoutMap;
+  icarusDB::TPCFragmentIDToReadoutIDMap fTPCFragmentToReadoutMap;
   
-  icarusDB::TPCReadoutBoardToChannelMap fReadoutBoardToChannelMap;
+  icarusDB::TPCReadoutBoardToChannelMap fTPCReadoutBoardToChannelMap;
 
-  icarusDB::FragmentToDigitizerChannelMap fFragmentToDigitizerMap; 
+  icarusDB::FragmentToDigitizerChannelMap fPMTFragmentToDigitizerMap; 
 
   icarusDB::CRTChannelIDToHWtoSimMacAddressPairMap
     fCRTChannelIDToHWtoSimMacAddressPairMap;

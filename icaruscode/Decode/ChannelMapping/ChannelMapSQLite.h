@@ -99,7 +99,7 @@ class icarusDB::ChannelMapSQLite
   
   /// Fill mapping between PMT fragment IDs and the related crate and readout
   /// information.
-  virtual int BuildFragmentToDigitizerChannelMap
+  virtual int BuildPMTFragmentToDigitizerChannelMap
     (FragmentToDigitizerChannelMap&) const override;
   
   
@@ -207,7 +207,7 @@ class icarusDB::ChannelMapSQLite
     (void* dataOut, int argc, char**argv, char** azColName);
   
   /// Fills the PMT fragment map with the information from one channel.
-  static int buildFragmentToDigitizerChannelMap_callback
+  static int buildPMTFragmentToDigitizerChannelMap_callback
     (void* dataOut, int argc, char**argv, char** azColName);
   
   /// Fills the channel mapping for side CRT.
