@@ -156,14 +156,6 @@ namespace {
 
 
 // -----------------------------------------------------------------------------
-void dumpColumnNames(std::string const& tag, int n, char** names) {
-  mf::LogInfo out{ tag };
-  out << tag << ": " << n << " columns:";
-  for (int i: util::counter(n))
-    out << " [" << i << "] \"" << names[i] << "\"";
-}
-
-// -----------------------------------------------------------------------------
 std::array
   <icarusDB::ChannelMapSQLite::TableNames_t, icarusDB::RunPeriods::NPeriods>
 const icarusDB::ChannelMapSQLite::TableNameSets{
@@ -509,7 +501,7 @@ int icarusDB::ChannelMapSQLite::BuildTPCReadoutBoardToChannelMap
 // -----------------------------------------------------------------------------
 // --- PMT
 // -----------------------------------------------------------------------------
-int icarusDB::ChannelMapSQLite::buildFragmentToDigitizerChannelMap_callback
+int icarusDB::ChannelMapSQLite::buildPMTFragmentToDigitizerChannelMap_callback
   (void* dataOut, int argc, char**argv, char** azColName)
 {
   // find the position of the columns we need
@@ -560,11 +552,11 @@ int icarusDB::ChannelMapSQLite::buildFragmentToDigitizerChannelMap_callback
     (digitizerChannelNo, channelID, laserChannel);
   
   return 0;
-} // icarusDB::ChannelMapSQLite::buildFragmentToDigitizerChannelMap_callback()
+} // ...::ChannelMapSQLite::buildPMTFragmentToDigitizerChannelMap_callback()
 
 
 // -----------------------------------------------------------------------------
-int icarusDB::ChannelMapSQLite::BuildFragmentToDigitizerChannelMap
+int icarusDB::ChannelMapSQLite::BuildPMTFragmentToDigitizerChannelMap
   (FragmentToDigitizerChannelMap& fragmentToDigitizerChannelMap) const
 {
   // clearing is cleansing
@@ -576,7 +568,7 @@ int icarusDB::ChannelMapSQLite::BuildFragmentToDigitizerChannelMap
   
   // Recover the data from the database
   int error = GetDataset(
-    dataType, buildFragmentToDigitizerChannelMap_callback,
+    dataType, buildPMTFragmentToDigitizerChannelMap_callback,
     &fragmentToDigitizerChannelMap
   );
   
@@ -589,7 +581,7 @@ int icarusDB::ChannelMapSQLite::BuildFragmentToDigitizerChannelMap
   }
   
   return error;
-} // icarusDB::ChannelMapSQLite::BuildFragmentToDigitizerChannelMap()
+} // icarusDB::ChannelMapSQLite::BuildPMTFragmentToDigitizerChannelMap()
 
 
 // -----------------------------------------------------------------------------

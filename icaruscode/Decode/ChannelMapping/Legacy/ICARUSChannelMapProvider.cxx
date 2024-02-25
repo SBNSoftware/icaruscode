@@ -111,7 +111,7 @@ void ICARUSChannelMapProvider::readFromDatabase() {
 
     // Do the channel mapping initialization
     fFragmentToDigitizerMap.clear();
-    if (fChannelMappingTool->BuildFragmentToDigitizerChannelMap(fFragmentToDigitizerMap))
+    if (fChannelMappingTool->BuildPMTFragmentToDigitizerChannelMap(fFragmentToDigitizerMap))
       {
 	throw cet::exception("ICARUSChannelMapProvider") << "Cannot recover the Fragment ID channel map from the database \n";
       }

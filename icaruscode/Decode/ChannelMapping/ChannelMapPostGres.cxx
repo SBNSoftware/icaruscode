@@ -377,7 +377,7 @@ int icarusDB::ChannelMapPostGres::BuildTPCReadoutBoardToChannelMap
 
 
 // -----------------------------------------------------------------------------
-int icarusDB::ChannelMapPostGres::BuildFragmentToDigitizerChannelMap
+int icarusDB::ChannelMapPostGres::BuildPMTFragmentToDigitizerChannelMap
   (FragmentToDigitizerChannelMap& fragmentToDigitizerChannelMap) const
 {
   assert( !fCurrentPMTTimestamp.empty() );
@@ -457,7 +457,7 @@ int icarusDB::ChannelMapPostGres::BuildFragmentToDigitizerChannelMap
   } // for
   
   return 0;
-} // icarusDB::ChannelMapPostGres::BuildFragmentToDigitizerChannelMap()
+} // icarusDB::ChannelMapPostGres::BuildPMTFragmentToDigitizerChannelMap()
 
 
 // -----------------------------------------------------------------------------

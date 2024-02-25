@@ -74,7 +74,7 @@ class icarusDB::IChannelMapping {
   
   /// Fill the mapping between PMT Fragment IDs and the related crate and
   /// readout information.
-  virtual int BuildFragmentToDigitizerChannelMap
+  virtual int BuildPMTFragmentToDigitizerChannelMap
     (FragmentToDigitizerChannelMap&) const = 0;
 
   /// @}
