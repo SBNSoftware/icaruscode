@@ -21,15 +21,21 @@ physics.producers.ionandscintouttime: @local::icarus_ionandscint
 physics.producers.pdfastsimouttime: @local::icarus_pdfastsim_pvs
 physics.producers.simdriftouttime: @local::icarus_simdrift
 physics.producers.genericcrtouttime: @local::icarus_genericCRT
+physics.producers.sedliteouttime: @local::sbn_largeant_info_reducer
 
 # Set the appropriate input labels, to run geant4 only on the outtime cosmics
 physics.producers.simdriftintime.SimulationLabel: "ionandscintintime:priorSCE"
 physics.producers.genericcrtintime.LArG4Label: "larg4intime"
 physics.producers.larg4outtime.inputCollections: [ "GenInTimeSorter:outtime" ]
+physics.producers.larg4outtime.FillSimEnergyDeposits: true
+physics.producers.larg4outtime.EnergyDepositInstanceLabels: ["LArG4DetectorServicevolTPCActive"]
 physics.producers.ionandscintouttime.InputModuleLabels: ["larg4outtime"]
 physics.producers.pdfastsimouttime.SimulationLabel: "ionandscintouttime:priorSCE"
 physics.producers.simdriftouttime.SimulationLabel: "ionandscintouttime:priorSCE"
 physics.producers.genericcrtouttime.LArG4Label: "larg4outtime"
+#info reducer
+physics.producers.sedliteouttime.SimEnergyDepositLabel: "larg4outtime:LArG4DetectorServicevolTPCActive"
+physics.producers.sedliteouttime.useOrigTrackID: true #needed since origTrackID not filled for sedlite in SBND
 
 # Add a process that merges the MCParticles
 physics.producers.largeant: @local::icarus_merge_sim_sources
@@ -57,6 +63,9 @@ physics.producers.pdfastsim: @local::icarus_merge_sim_sources
 physics.producers.pdfastsim.FillSimPhotons: true
 physics.producers.pdfastsim.InputSourcesLabels: [ "pdfastsimintime", "pdfastsimouttime"]
 
+#Add a process that merges the dropped MCParticles
+physics.producers.sedlite: @local::icarus_merge_intime_dropped_mcparts
+
 # Add all these new modules to the simulate path
 physics.simulate: [ rns
                   ### Complete intime drift simulation and generic CRT
@@ -70,6 +79,7 @@ physics.simulate: [ rns
                   , pdfastsimouttime
                   , simdriftouttime
                   , genericcrtouttime
+                  , sedliteouttime
                   ### Merge the intime and outtime paths
                   , largeant
                   , ionization
@@ -78,6 +88,7 @@ physics.simulate: [ rns
                   , genericcrt
                   ### Do truth-level reconstruction
                   , mcreco
+                  , sedlite 
                   ]
 
 services.ParticleListAction.keepGenTrajectories: ["GenInTimeSorter"]
