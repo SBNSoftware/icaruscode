@@ -31,6 +31,13 @@ physics.producers.cafmaker.GenLabel: ""
 physics.producers.cafmaker.SimChannelLabel: ""
 physics.producers.cafmaker.SystWeightLabels: []
 
+# use different angular resolution for MCS in data
+physics.producers.pandoraTrackMCSCryoE: @local::mcs_icarus_data
+physics.producers.pandoraTrackMCSCryoE.TrackLabel: pandoraTrackGausCryoE
+
+physics.producers.pandoraTrackMCSCryoW: @local::mcs_icarus_data
+physics.producers.pandoraTrackMCSCryoW.TrackLabel: pandoraTrackGausCryoW
+
 physics.producers.cafmaker.TriggerLabel: "daqTrigger" # the general configuration, for MC, has a different one (see also https://github.com/SBNSoftware/icaruscode/issues/556)
 
 #include "icarus_data_recombination.fcl"
