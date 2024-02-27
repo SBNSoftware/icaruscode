@@ -1,0 +1,4 @@
+#include "alp_corsika_p_gen_icarus.fcl"
+
+alpM: 0.3
+#include "set_alpM.fcl"

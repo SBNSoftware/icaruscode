@@ -1,0 +1,6 @@
+#include "corsika_icarus.fcl"
+#include "alp_gen_icarus.fcl"
+
+physics.producers.cosmgen: @local::icarus_corsika_p
+physics.runprod: [@sequence::physics.runprod, cosmgen]
+

@@ -78,11 +78,11 @@ private:
     ScaleBin const* findBin(const Point& point) const noexcept;
 
   };
-  // Cache timestamp requests
+  // Cache run requests
   std::map<uint64_t, ScaleInfo> fScaleInfos;
 
   // Helpers
-  const ScaleInfo& GetScaleInfo(uint64_t timestamp);
+  const ScaleInfo& GetScaleInfo(uint64_t run);
 };
 
 DEFINE_ART_CLASS_TOOL(NormalizeYZSQL)
@@ -153,16 +153,18 @@ icarus::calo::NormalizeYZSQL::NormalizeYZSQL(fhicl::ParameterSet const &pset):
 
 void icarus::calo::NormalizeYZSQL::configure(const fhicl::ParameterSet& pset) {}
 
-const icarus::calo::NormalizeYZSQL::ScaleInfo& icarus::calo::NormalizeYZSQL::GetScaleInfo(uint64_t timestamp) {
+const icarus::calo::NormalizeYZSQL::ScaleInfo& icarus::calo::NormalizeYZSQL::GetScaleInfo(uint64_t run) {
   // check the cache
-  if (fScaleInfos.count(timestamp)) {
-    return fScaleInfos.at(timestamp);
+  if (fScaleInfos.count(run)) {
+    return fScaleInfos.at(run);
   }
 
-  // Prep data
-  fDB.UpdateData(timestamp*1e9);
+  // Look up the run
+  //
+  // Translate the run into a fake "timestamp"
+  fDB.UpdateData((run+1000000000)*1000000000);
 
-  // Collect the timestamp info
+  // Collect the run info
   ScaleInfo thisscale;
 
   // Lookup the channels
@@ -207,7 +209,7 @@ const icarus::calo::NormalizeYZSQL::ScaleInfo& icarus::calo::NormalizeYZSQL::Get
   std::sort(thisscale.bins.begin(), thisscale.bins.end());
 
   // Set the cache
-  return fScaleInfos[timestamp] = std::move(thisscale);
+  return fScaleInfos[run] = std::move(thisscale);
 
 }
 

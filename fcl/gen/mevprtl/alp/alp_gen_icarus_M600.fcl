@@ -1,0 +1,6 @@
+#include "alp_corsika_p_gen_icarus.fcl"
+
+alpM: 0.6
+#include "set_alpM.fcl"
+alpfa: 1e6
+#include "set_alpfa.fcl"

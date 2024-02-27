@@ -1,0 +1,4 @@
+#include "alp_tree_icarus.fcl"
+
+alpM: 0.5
+#include "set_alpM.fcl"
