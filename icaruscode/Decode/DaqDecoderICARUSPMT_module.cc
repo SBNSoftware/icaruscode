@@ -3340,6 +3340,7 @@ void icarus::DaqDecoderICARUSPMT::initFragmentsTree() {
   tree->Branch("waveformSize", &data.waveformSize);
   tree->Branch("triggerBits", &data.triggerBits);
   tree->Branch("triggerSource", &data.triggerSource);
+  tree->Branch("triggerLocation", &data.triggerLocation);
   tree->Branch("gateID", &data.gateID);
   tree->Branch("gateCount", &data.gateCount);
   tree->Branch("onGlobal", &data.onGlobalTrigger);
