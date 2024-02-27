@@ -168,6 +168,11 @@ namespace daq
    *            
    *            For the expected matching with PMT, see the documentation of
    *            `sbn::ExtraTriggerInfo::CryostatInfo::LVDSstatus`.
+   *        * `sectorStatus`: information for detector sector (one per TPC),
+   *            reporting the discrimination status of the adder signals at
+   *            the time of the global trigger: `00000000 00NnnssS`, with `S`
+   *            (least significant bit) the southernmost adder, and then
+   *            northward until the northernmost one, `N`.
    *     
    *     Information may be missing. If a count is not available, its value is
    *     set to `0` (which is an invalid value because their valid range starts
@@ -817,7 +822,7 @@ namespace daq
       encodeLVDSbits(cryostat, 0 /* any of the connectors */, connectors01)
       };
     
-    cryoInfo.SectorStatus = {
+    cryoInfo.sectorStatus = {
       encodeSectorBits(cryostat, 2 /* any of the connectors */, connectors23),
       encodeSectorBits(cryostat, 0 /* any of the connectors */, connectors01)
       };
