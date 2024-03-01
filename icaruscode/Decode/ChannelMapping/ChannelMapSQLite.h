@@ -100,7 +100,7 @@ class icarusDB::ChannelMapSQLite
   /// Fill mapping between PMT fragment IDs and the related crate and readout
   /// information.
   virtual int BuildPMTFragmentToDigitizerChannelMap
-    (FragmentToDigitizerChannelMap&) const override;
+    (PMTFragmentToDigitizerChannelMap&) const override;
   
   
   /// Fill mapping between side CRT hardware mac_address and the simulated

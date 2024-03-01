@@ -2450,8 +2450,8 @@ auto icarus::DaqDecoderICARUSPMT::createFragmentWaveforms(
   std::optional<mf::LogVerbatim> diagOut;
   if (fDiagnosticOutput) diagOut.emplace(fLogCategory);
   
-  icarusDB::DigitizerChannelChannelIDPairVec const& digitizerChannelVec
-    = fChannelMap.getChannelIDPairVec
+  icarusDB::PMTdigitizerInfoVec const& digitizerChannelVec
+    = fChannelMap.getPMTchannelInfo
       (effectivePMTboardFragmentID(fragInfo.fragmentID))
     ;
   
@@ -2465,8 +2465,8 @@ auto icarus::DaqDecoderICARUSPMT::createFragmentWaveforms(
   auto channelNumberToChannel
     = [&digitizerChannelVec](unsigned short int channelNumber) -> raw::Channel_t
     {
-      for (auto const & [ chNo, chID, _ ]: digitizerChannelVec) // too pythonic? 
-        if (chNo == channelNumber) return chID;
+      for (icarusDB::PMTChannelInfo_t const & chInfo: digitizerChannelVec)
+        if (chInfo.digitizerChannelNo == channelNumber) return chInfo.channelID;
       return sbn::V1730channelConfiguration::NoChannelID;
     };
   

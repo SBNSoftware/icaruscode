@@ -131,10 +131,9 @@ class icarusDB::IICARUSChannelMapProvider {
   /// Returns the number of PMT fragment IDs known to the mapping.
   virtual unsigned int nPMTfragmentIDs() const = 0;
   
-  /// Returns a list of triplets: digitizer channel number, channel ID and
-  /// laser channel.
-  virtual DigitizerChannelChannelIDPairVec const& getChannelIDPairVec
-    (unsigned int) const = 0;
+  /// Returns records on all the PMT channels covered by the fragment `ID`.
+  virtual PMTdigitizerInfoVec const& getPMTchannelInfo(unsigned int ID) const
+    = 0;
   
   /// @}
   /// --- END ----- PMT information --------------------------------------------

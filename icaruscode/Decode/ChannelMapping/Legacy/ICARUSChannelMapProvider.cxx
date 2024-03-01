@@ -261,13 +261,14 @@ unsigned int ICARUSChannelMapProvider::nPMTfragmentIDs() const {
 }
 
 
-const DigitizerChannelChannelIDPairVec& ICARUSChannelMapProvider::getChannelIDPairVec(const unsigned int fragmentID) const
+/// Returns records on all the PMT channels covered by the fragment `ID`.
+const PMTdigitizerInfoVec& ICARUSChannelMapProvider::getPMTchannelInfo(unsigned int fragmentID) const
 {
     mf::LogTrace{ "ICARUSChannelMapProvider" }
       << "Call to: ICARUSChannelMapProvider::getChannelIDPairVec(" << fragmentID << ")";
-    DigitizerChannelChannelIDPairVec const* digitizerPair = findPMTfragmentEntry(fragmentID);
+    PMTdigitizerInfoVec const* digitizerInfo = findPMTfragmentEntry(fragmentID);
     
-    if (digitizerPair) return *digitizerPair;
+    if (digitizerInfo) return *digitizerInfo;
     throw cet::exception("ICARUSChannelMapProvider") << "Fragment ID " << fragmentID << " not found in lookup map when looking for PMT channel info \n";
     
 }
@@ -309,7 +310,7 @@ const DigitizerChannelChannelIDPairVec& ICARUSChannelMapProvider::getChannelIDPa
   }
 
 auto ICARUSChannelMapProvider::findPMTfragmentEntry(unsigned int fragmentID) const
-  -> DigitizerChannelChannelIDPairVec const*
+  -> PMTdigitizerInfoVec const*
 {
   auto it = fFragmentToDigitizerMap.find(PMTfragmentIDtoDBkey(fragmentID));
   return (it == fFragmentToDigitizerMap.end())? nullptr: &(it->second);

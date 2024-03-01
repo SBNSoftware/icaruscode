@@ -12,6 +12,7 @@
 #include <map>
 #include <tuple>
 #include <string>
+#include <limits>
 #include <cstddef> // std::size_t
 
 
@@ -62,18 +63,36 @@ namespace icarusDB {
   /// @name Data structures for PMT channel mapping.
   /// @{
   
-  /// A pair of tree: PMT digitizer channel number, LArSoft channel ID
-  /// and laser channel.
-  using DigitizerChannelChannelIDPair
-    = std::tuple<std::size_t, std::size_t, std::size_t>;
+  /// Collection of information pertaining a single PMT.
+  struct PMTChannelInfo_t {
+    static constexpr int NoDigitizerChannel
+      = std::numeric_limits<unsigned int>::max();
+    static constexpr unsigned int NoChannelID
+      = std::numeric_limits<unsigned int>::max();
+    static constexpr unsigned int NoLaserChannel
+      = std::numeric_limits<unsigned int>::max();
+    
+    /// Number of the channel within its digitizer.
+    unsigned int digitizerChannelNo = NoDigitizerChannel;
+    
+    /// LArSoft channel ID.
+    unsigned int channelID = NoChannelID;
+    
+    /// Number of laser channel shining into this PMT.
+    unsigned int laserChannelNo = NoLaserChannel;
+    
+    /// Sorting by channel ID.
+    constexpr bool operator< (PMTChannelInfo_t const& other) const noexcept
+      { return channelID < other.channelID; }
+    
+  }; // PMTChannelInfo_t
   
   /// A sequence of PMT channel information for a single digitizer.
-  using DigitizerChannelChannelIDPairVec
-    = std::vector<DigitizerChannelChannelIDPair>;
+  using PMTdigitizerInfoVec = std::vector<PMTChannelInfo_t>;
 
   /// Map from PMT fragment ID to information on all its digitizer channels.
-  using FragmentToDigitizerChannelMap
-    = std::map<size_t, DigitizerChannelChannelIDPairVec>;
+  using PMTFragmentToDigitizerChannelMap
+    = std::map<unsigned int, PMTdigitizerInfoVec>;
   
   /// @}
   

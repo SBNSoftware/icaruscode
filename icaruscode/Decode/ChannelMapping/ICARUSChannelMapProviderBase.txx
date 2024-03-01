@@ -196,18 +196,15 @@ unsigned int icarusDB::ICARUSChannelMapProviderBase<ChMapAlg>::nPMTfragmentIDs()
 
 // -----------------------------------------------------------------------------
 template <typename ChMapAlg>
-auto icarusDB::ICARUSChannelMapProviderBase<ChMapAlg>::getChannelIDPairVec
-  (const unsigned int fragmentID) const
-  -> DigitizerChannelChannelIDPairVec const&
+auto icarusDB::ICARUSChannelMapProviderBase<ChMapAlg>::getPMTchannelInfo
+  (unsigned int fragmentID) const -> PMTdigitizerInfoVec const&
 {
-  mfLogTrace()
-    << "Call to: ICARUSChannelMapProviderBase::getChannelIDPairVec("
+  mfLogTrace() << "Call to: ICARUSChannelMapProviderBase::getPMTchannelInfo("
     << fragmentID << ")";
   
-  DigitizerChannelChannelIDPairVec const* digitizerPair
-    = findPMTfragmentEntry(fragmentID);
+  PMTdigitizerInfoVec const* digitizerInfo = findPMTfragmentEntry(fragmentID);
   
-  if (digitizerPair) return *digitizerPair;
+  if (digitizerInfo) return *digitizerInfo;
   throw myException() << "Fragment ID " << fragmentID
     << " not found in lookup map when looking for PMT channel info.\n";
   
@@ -255,7 +252,7 @@ auto icarusDB::ICARUSChannelMapProviderBase<ChMapAlg>::getSideCRTCalibrationMap
 // -----------------------------------------------------------------------------
 template <typename ChMapAlg>
 auto icarusDB::ICARUSChannelMapProviderBase<ChMapAlg>::findPMTfragmentEntry
-  (unsigned int fragmentID) const -> DigitizerChannelChannelIDPairVec const*
+  (unsigned int fragmentID) const -> PMTdigitizerInfoVec const*
 {
   auto it = fPMTFragmentToDigitizerMap.find(PMTfragmentIDtoDBkey(fragmentID));
   return (it == fPMTFragmentToDigitizerMap.end())? nullptr: &(it->second);

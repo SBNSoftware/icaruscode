@@ -35,24 +35,6 @@
 
 
 // -----------------------------------------------------------------------------
-template <std::size_t KeyNo = 0U>
-struct SortByElement {
-  
-  template <typename TupleA, typename TupleB>
-  bool operator() (TupleA const& A, TupleB const& B) const
-    { return less(A, B); }
-  
-  template <typename Tuple>
-  static decltype(auto) key(Tuple const& t) { return std::get<KeyNo>(t); }
-  
-  template <typename TupleA, typename TupleB>
-  static bool less(TupleA const& A, TupleB const& B)
-    { using std::less; return less{}(key(A), key(B)); }
-  
-}; // SortByElement<>
-
-
-// -----------------------------------------------------------------------------
 /// Helper to split text in rows.
 class Pager {
   unsigned int fLinesPerPage;
@@ -175,24 +157,23 @@ void dumpPMTmapping(icarusDB::IICARUSChannelMapProvider const& mapping) {
       continue;
     }
     
-    icarusDB::DigitizerChannelChannelIDPairVec digitizerChannels
-      = mapping.getChannelIDPairVec(effFragmentID);
+    icarusDB::PMTdigitizerInfoVec digitizerChannels
+      = mapping.getPMTchannelInfo(effFragmentID);
     
-    std::sort
-      (digitizerChannels.begin(), digitizerChannels.end(), SortByElement<1U>{});
+    std::sort(digitizerChannels.begin(), digitizerChannels.end());
     
     
     log
       << "\n[" << iFragment << "] 0x" << std::hex << fragmentID << std::dec
       << " includes " << digitizerChannels.size()
-      << " LArSoft channels between " << std::get<1U>( digitizerChannels.front() )
-      << " and " << std::get<1U>( digitizerChannels.back() )
+      << " LArSoft channels between " << digitizerChannels.front().channelID
+      << " and " << digitizerChannels.back().channelID
       << " [board channel index in brackets]:";
     Pager pager{ 8 };
-    for(auto const & [ digitizerChannel, channelID, laserChannel ]: digitizerChannels) {
+    for(auto const & chInfo: digitizerChannels) {
       if (pager.nextHasNewLine()) log << "\n     ";
-      log << " "  << std::setw(3) << channelID
-        << " [" << std::setw(3) << digitizerChannel << "]";
+      log << " "  << std::setw(3) << chInfo.channelID
+        << " [" << std::setw(3) << chInfo.digitizerChannelNo << "]";
     } // for channel
     
   } // for fragment
