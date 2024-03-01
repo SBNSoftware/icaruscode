@@ -113,7 +113,8 @@ class icarusDB::ChannelMapPostGres
    *         and the related crate and readout information. 
    *         Then define the function interface to fill these data structures 
    */
-  virtual int BuildPMTFragmentToDigitizerChannelMap(FragmentToDigitizerChannelMap&) const override;
+  virtual int BuildPMTFragmentToDigitizerChannelMap
+    (PMTFragmentToDigitizerChannelMap&) const override;
 
 
   /**

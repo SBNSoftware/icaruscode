@@ -189,9 +189,9 @@ void pmtcalo::PMTLaserCalibration::beginJob()
 
   for( std::size_t fragId=0; fragId<24; fragId++ ){
   
-    for( auto const & [_,channelId,laserChannel] : fChannelMap.getChannelIDPairVec(fragId) ){
+    for( icarusDB::PMTChannelInfo_t const & chInfo: fChannelMap.getPMTchannelInfo(fragId) ){
   
-      if( laserChannel == fLaserChannel ){ fIlluminatedChannels.push_back( channelId ); };
+      if( chInfo.laserChannelNo == fLaserChannel ){ fIlluminatedChannels.push_back( chInfo.channelID ); };
 
     }
   

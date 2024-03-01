@@ -56,8 +56,8 @@ public:
     bool                                    hasPMTDigitizerID(const unsigned int)   const override;
 
     /// Returns the number of PMT fragment IDs known to the service.
-    unsigned int                            nPMTfragmentIDs() const override;
-    const DigitizerChannelChannelIDPairVec& getChannelIDPairVec(const unsigned int) const override;
+    unsigned int                            nPMTfragmentIDs()                       const override;
+    const PMTdigitizerInfoVec&              getPMTchannelInfo(unsigned int)         const override;
 
     // Section for CRT channel mapping    
     unsigned int                            getSimMacAddress   (const unsigned int)    const override;
@@ -87,7 +87,7 @@ private:
       
     TPCReadoutBoardToChannelMap   fReadoutBoardToChannelMap;
 
-    FragmentToDigitizerChannelMap fFragmentToDigitizerMap; 
+    PMTFragmentToDigitizerChannelMap fFragmentToDigitizerMap; 
 
     CRTChannelIDToHWtoSimMacAddressPairMap fCRTChannelIDToHWtoSimMacAddressPairMap;
 
@@ -102,9 +102,10 @@ private:
     void readFromDatabase();
 
     
-    /// Returns the list of board channel-to-PMT channel ID mapping within the specified fragment.
+    /// Returns the list of records of all channels in the PMT readout board with
+    /// the specified fragment.
     /// @returns a pointer to the mapping list, or `nullptr` if invalid fragment
-    DigitizerChannelChannelIDPairVec const* findPMTfragmentEntry
+    PMTdigitizerInfoVec const* findPMTfragmentEntry
       (unsigned int fragmentID) const;
     
     

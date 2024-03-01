@@ -441,7 +441,7 @@ int icarusDB::ChannelMapPostGres::BuildTPCReadoutBoardToChannelMap
 // ---  PMT
 // -----------------------------------------------------------------------------
 int icarusDB::ChannelMapPostGres::BuildPMTFragmentToDigitizerChannelMap
-  (FragmentToDigitizerChannelMap& fragmentToDigitizerChannelMap) const
+  (PMTFragmentToDigitizerChannelMap& fragmentToDigitizerChannelMap) const
 {
   assert( !fCurrentPMTTimestamp.empty() );
   
@@ -496,6 +496,9 @@ int icarusDB::ChannelMapPostGres::BuildPMTFragmentToDigitizerChannelMap
         << ") retrieving PMT digitizer from channel mapping database\n";
     }
     
+    
+    PMTChannelInfo_t chInfo;
+    
     // fragment id
     unsigned long const fragmentID
       = getLongValue(tuple, FragmentIDcolumn, &error);
@@ -505,7 +508,7 @@ int icarusDB::ChannelMapPostGres::BuildPMTFragmentToDigitizerChannelMap
     }
     
     // digitizer channel number
-    unsigned int const digitizerChannelNo
+    chInfo.digitizerChannelNo
       = getLongValue(tuple, DigitizerChannelNoColumn, &error);
     if (error) {
       throw myException() << "Error (code: " << error << " on row " << row
@@ -513,7 +516,7 @@ int icarusDB::ChannelMapPostGres::BuildPMTFragmentToDigitizerChannelMap
     }
     
     // LArsoft channel ID
-    unsigned int const channelID = getLongValue(tuple, ChannelIDcolumn, &error);
+    chInfo.channelID = getLongValue(tuple, ChannelIDcolumn, &error);
     if (error) {
       throw myException() << "Error (code: " << error << " on row " << row
         << ") reading PMT channel ID\n";
@@ -526,12 +529,10 @@ int icarusDB::ChannelMapPostGres::BuildPMTFragmentToDigitizerChannelMap
         << ") retrieving PMT laser channel from channel mapping database\n";
     }
     // will throw on error:
-    unsigned int const laserChannel
-      = std::stol(laserChannelLabel.value().substr(2));
+    chInfo.laserChannelNo = std::stol(laserChannelLabel.value().substr(2));
     
     // fill the map
-    fragmentToDigitizerChannelMap[fragmentID].emplace_back
-      (digitizerChannelNo, channelID, laserChannel);
+    fragmentToDigitizerChannelMap[fragmentID].push_back(std::move(chInfo));
     
   } // for
   

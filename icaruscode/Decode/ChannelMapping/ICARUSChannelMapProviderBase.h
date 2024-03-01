@@ -193,10 +193,9 @@ class icarusDB::ICARUSChannelMapProviderBase
   /// Returns the number of PMT fragment IDs known to the mapping.
   virtual unsigned int nPMTfragmentIDs() const override;
   
-  /// Returns a list of triplets: digitizer channel number, channel ID and
-  /// laser channel.
-  virtual DigitizerChannelChannelIDPairVec const& getChannelIDPairVec
-    (unsigned int) const override;
+  /// Returns records on all the PMT channels covered by the fragment `ID`.
+  virtual PMTdigitizerInfoVec const& getPMTchannelInfo (unsigned int ID) const
+    override;
   
   /// @}
   /// --- END ----- PMT information --------------------------------------------
@@ -251,7 +250,7 @@ class icarusDB::ICARUSChannelMapProviderBase
   
   icarusDB::TPCReadoutBoardToChannelMap fTPCReadoutBoardToChannelMap;
 
-  icarusDB::FragmentToDigitizerChannelMap fPMTFragmentToDigitizerMap; 
+  icarusDB::PMTFragmentToDigitizerChannelMap fPMTFragmentToDigitizerMap; 
 
   icarusDB::CRTChannelIDToHWtoSimMacAddressPairMap
     fCRTChannelIDToHWtoSimMacAddressPairMap;
@@ -266,10 +265,10 @@ class icarusDB::ICARUSChannelMapProviderBase
   /// Has the channel mapping tool fill the mapping caches.
   void readFromDatabase();
   
-  /// Returns the list of board channel-to-PMT channel ID mapping within the
-  /// specified fragment.
-  /// @returns a pointer to the mapping list, or `nullptr` if invalid fragment
-  icarusDB::DigitizerChannelChannelIDPairVec const* findPMTfragmentEntry
+  /// Returns the list of records of all channels in the PMT readout board with
+  /// the specified fragment.
+  /// @returns a pointer to the list, or `nullptr` if invalid fragment
+  icarusDB::PMTdigitizerInfoVec const* findPMTfragmentEntry
     (unsigned int fragmentID) const;
   
   /// Returns an exception signed by this object.

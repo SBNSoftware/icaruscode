@@ -528,7 +528,7 @@ int icarusDB::ChannelMapSQLite::buildPMTFragmentToDigitizerChannelMap_callback
     );
   
   auto& fragmentToDigitizerChannelMap
-    = *static_cast<FragmentToDigitizerChannelMap*>(dataOut);
+    = *static_cast<PMTFragmentToDigitizerChannelMap*>(dataOut);
   
   // Start extracting info
   unsigned int const fragmentID         = std::stol(argv[FragmentIDcolumn]);
@@ -548,8 +548,8 @@ int icarusDB::ChannelMapSQLite::buildPMTFragmentToDigitizerChannelMap_callback
   }
 
   // Fill the map
-  fragmentToDigitizerChannelMap[fragmentID].emplace_back
-    (digitizerChannelNo, channelID, laserChannel);
+  fragmentToDigitizerChannelMap[fragmentID].push_back
+    ({ digitizerChannelNo, channelID, laserChannel });
   
   return 0;
 } // ...::ChannelMapSQLite::buildPMTFragmentToDigitizerChannelMap_callback()
@@ -557,7 +557,7 @@ int icarusDB::ChannelMapSQLite::buildPMTFragmentToDigitizerChannelMap_callback
 
 // -----------------------------------------------------------------------------
 int icarusDB::ChannelMapSQLite::BuildPMTFragmentToDigitizerChannelMap
-  (FragmentToDigitizerChannelMap& fragmentToDigitizerChannelMap) const
+  (PMTFragmentToDigitizerChannelMap& fragmentToDigitizerChannelMap) const
 {
   // clearing is cleansing
   fragmentToDigitizerChannelMap.clear();
