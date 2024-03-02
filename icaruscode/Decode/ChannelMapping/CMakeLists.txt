@@ -40,6 +40,14 @@ cet_build_plugin(ICARUSChannelMapSQLite art::service
     messagefacility::headers
   )
 
+cet_build_plugin(ICARUSChannelMapPostGres art::service
+  LIBRARIES
+    icaruscode::Decode_ChannelMapping
+    art::Framework_Principal
+    messagefacility::MF_MessageLogger
+    messagefacility::headers
+  )
+
 add_subdirectory("Legacy")
 
 cet_make_exec(NAME "ChannelMapDumper"

@@ -6,6 +6,7 @@
 
 // ICARUS libraries
 #include "icaruscode/Decode/ChannelMapping/ICARUSChannelMapPostGresProvider.h"
+#include "icaruscode/Decode/ChannelMapping/IICARUSChannelMap.h"
 #include "icaruscode/Decode/ChannelMapping/RunPeriods.h"
 
 // framework libraries
@@ -51,7 +52,7 @@ namespace icarusDB { class ICARUSChannelMapPostGres; }
  * 
  */
 class icarusDB::ICARUSChannelMapPostGres
-  : public IICARUSChannelMap, public ICARUSChannelMapPostGresProvider,
+  : public IICARUSChannelMap, public ICARUSChannelMapPostGresProvider
 {
   
   /// Prepares the mapping for the specified run.
