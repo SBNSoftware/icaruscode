@@ -282,7 +282,7 @@ class icarusDB::ICARUSChannelMapProviderBase
 // ---  template implementation
 // -----------------------------------------------------------------------------
 
-#include "icaruscode/Decode/ChannelMapping/ICARUSChannelMapProviderBase.txx"
+#include "icaruscode/Decode/ChannelMapping/ICARUSChannelMapProviderBase.tcc"
 
 // -----------------------------------------------------------------------------
 
