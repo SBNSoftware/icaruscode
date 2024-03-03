@@ -175,112 +175,32 @@ icarusDB::details::WDADataset icarusDB::ChannelMapPostGres::GetCRTCaldata
 int icarusDB::ChannelMapPostGres::BuildTPCFragmentIDToReadoutIDMap
   (TPCFragmentIDToReadoutIDMap& fragmentBoardMap) const
 {
-  const unsigned int tpcIdentifier(0x00001000);
+  using namespace std::string_literals;
+  constexpr unsigned int tpcIdentifier(0x00001000);
   
   // Recover the data from the database
   std::string const name { "icarus_hw_readoutboard" };
   std::string const dataType { "readout_boards" };
   details::WDADataset dataset = GetDataset(name, fDBURL, dataType);
   
-  // Include a by hand mapping of fragment ID to crate
-  static std::map<std::size_t, std::string> const flangeIDToCrateMap = {
-    {  19, "WW01T" },
-    {  68, "WW01M" },
-    {  41, "WW01B" },
-    {  11, "WW02"  },
-    {  17, "WW03"  },
-    {  36, "WW04"  },
-    {  18, "WW05"  },
-    {  58, "WW06"  },
-    {  71, "WW07"  },
-    {  14, "WW08"  },
-    {  25, "WW09"  },
-    {  34, "WW10"  },
-    {  67, "WW11"  },
-    {  33, "WW12"  },
-    {  87, "WW13"  },
-    {  10, "WW14"  },
-    {  59, "WW15"  },
-    {  95, "WW16"  },
-    {  22, "WW17"  },
-    {  91, "WW18"  },
-    {  61, "WW19"  },
-    {  55, "WW20T" },
-    {  97, "WW20M" },
-    { 100, "WW20B" },
-    {  83, "WE01T" },
-    {  85, "WE01M" },
-    {   7, "WE01B" },
-    {  80, "WE02"  },
-    {  52, "WE03"  },
-    {  32, "WE04"  },
-    {  70, "WE05"  },
-    {  74, "WE06"  },
-    {  46, "WE07"  },
-    {  81, "WE08"  },
-    {  63, "WE09"  },
-    {  30, "WE10"  },
-    {  51, "WE11"  },
-    {  90, "WE12"  },
-    {  23, "WE13"  },
-    {  93, "WE14"  },
-    {  92, "WE15"  },
-    {  88, "WE16"  },
-    {  73, "WE17"  },
-    {   1, "WE18"  },
-    {  66, "WE19"  },
-    {  48, "WE20T" },
-    {  13, "WE20M" },
-    {  56, "WE20B" },
-    {  94, "EW01T" },
-    {  77, "EW01M" },
-    {  72, "EW01B" },
-    {  65, "EW02"  },
-    {   4, "EW03"  },
-    {  89, "EW04"  },
-    {  37, "EW05"  },
-    {  76, "EW06"  },
-    {  49, "EW07"  },
-    {  60, "EW08"  },
-    {  21, "EW09"  },
-    {   6, "EW10"  },
-    {  62, "EW11"  },
-    {   2, "EW12"  },
-    {  29, "EW13"  },
-    {  44, "EW14"  },
-    {   9, "EW15"  },
-    {  31, "EW16"  },
-    {  98, "EW17"  },
-    {  38, "EW18"  },
-    {  99, "EW19"  },
-    {  53, "EW20T" },
-    {  82, "EW20M" },
-    {  35, "EW20B" },
-    {  96, "EE01T" },
-    {  28, "EE01M" },
-    {  16, "EE01T" },
-    {  69, "EE02"  },
-    {  20, "EE03"  },
-    {  79, "EE04"  },
-    {  50, "EE05"  },
-    {  45, "EE06"  },
-    {  84, "EE07"  },
-    {  42, "EE08"  },
-    {  39, "EE09"  },
-    {  26, "EE10"  },
-    {  64, "EE11"  },
-    {  43, "EE12"  },
-    {  47, "EE13"  },
-    {  15, "EE14"  },
-    {   3, "EE15"  },
-    {  27, "EE16"  },
-    {  24, "EE17"  },
-    {  40, "EE18"  },
-    {  75, "EE19"  },
-    {  86, "EE20T" },
-    {  54, "EE20M" },
-    {   8, "EE20B" }
-  }; // flangeIDToCrateMap[]
+  // Include a by hand mapping of fragment ID to position in "corner" chimneys
+  // (this information is not present in the database)
+  static std::map<unsigned int, std::string> const flangeIDsuffixes = {
+    {  19, "T"s }, {  68, "M"s }, {  41, "B"s }, // WW01
+    {  55, "T"s }, {  97, "M"s }, { 100, "B"s }, // WW20
+    {  83, "T"s }, {  85, "M"s }, {   7, "B"s }, // WE01
+    {  48, "T"s }, {  13, "M"s }, {  56, "B"s }, // WE20
+    {  94, "T"s }, {  77, "M"s }, {  72, "B"s }, // EW01
+    {  53, "T"s }, {  82, "M"s }, {  35, "B"s }, // EW20
+    {  96, "T"s }, {  28, "M"s }, {  16, "B"s }, // EE01
+    {  86, "T"s }, {  54, "M"s }, {   8, "B"s }  // EE20
+  }; // flangeIDsuffixes[]
+  
+  auto const flangeSuffix = [](int flangeID) -> std::string
+    {
+      auto const it = flangeIDsuffixes.find(flangeID);
+      return (it == flangeIDsuffixes.end())? std::string{}: it->second;
+    };
 
   // Loop through the data to recover the channels;
   // find the position of the columns we need from the first row
@@ -292,10 +212,13 @@ int icarusDB::ChannelMapPostGres::BuildTPCFragmentIDToReadoutIDMap
    */
   // technical detail: `PositionFinder` uses `operator==` to compare, and the
   // input is C-strings; we force the other term of comparison to C++ strings
-  using namespace std::string_literals;
-  auto const [ ReadoutBoardIDcolumn, FlangeIDcolumn, FragmentIDcolumn ]
-    = details::WDAPositionFinder{ getTuple(dataset, 0) }
-             ("readout_board_id"s,  "flange_id"s,   "fragement_id"s   );
+  auto const [
+    ReadoutBoardIDcolumn, FlangeIDcolumn,   FragmentIDcolumn,
+    TPCIDcolumn,          ChimneyNoColumn
+  ] = details::WDAPositionFinder{ getTuple(dataset, 0) }(
+   "readout_board_id"s,  "flange_id"s,     "fragement_id"s,
+   "tpc_id"s,            "chimney_number"s
+    );
   
   for (int const row: util::counter(1, getNtuples(dataset))) {
     // Recover the row
@@ -319,14 +242,35 @@ int icarusDB::ChannelMapPostGres::BuildTPCFragmentIDToReadoutIDMap
     if (!(fragmentID & tpcIdentifier)) continue;
     
     if (fragmentBoardMap.find(fragmentID) == fragmentBoardMap.end()) {
+      
       unsigned int const flangeID
         = getLongValue(tuple, FlangeIDcolumn, &error);
       if (error) {
         throw myException() << "Error (code: " << error << " on row " << row
           << ") retrieving TPC flange ID from channel mapping database\n";
       }
-      fragmentBoardMap[fragmentID].first = flangeIDToCrateMap.at(flangeID);
-    }
+      
+      // build the flange name
+      Expected const chimneyNoString = getStringFromTuple(tuple, ChimneyNoColumn);
+      if (!chimneyNoString) {
+        throw myException() << "Error (code: " << chimneyNoString.code()
+          << " on row " << row
+          << ") retrieving chimney number from channel mapping database\n";
+      }
+      
+      Expected const TPCIDstring = getStringFromTuple(tuple, TPCIDcolumn);
+      if (!TPCIDstring) {
+        throw myException() << "Error (code: " << TPCIDstring.code()
+          << " on row " << row
+          << ") retrieving TPC tag from channel mapping database\n";
+      }
+      
+      std::string const flangeTag = TPCIDstring.value()
+        + std::string(std::max(0, 2-(int)chimneyNoString.value().length()), '0')
+        + chimneyNoString.value() + flangeSuffix(flangeID);
+      
+      fragmentBoardMap[fragmentID].first = flangeTag;
+    } // if first time with this flange
     
     unsigned int const readoutID
       = getLongValue(tuple, ReadoutBoardIDcolumn, &error);
