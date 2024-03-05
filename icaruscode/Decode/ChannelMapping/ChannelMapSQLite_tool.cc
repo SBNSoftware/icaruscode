@@ -144,11 +144,18 @@ ChannelMapSQLite::TableNameSets{
     , "crtfeb"          // CRTtopMap
   },
   TableNames_t{
-      "readout_boards"          // TPCfragmentMap
-    , "daq_channels"            // TPCreadoutBoardMap
-    , "pmt_placements_Aug2023"  // PMTfragmentMap
-    , "feb_channels"            // CRTsideMap
-    , "crtfeb"                  // CRTtopMap
+      "readout_boards"            // TPCfragmentMap
+    , "daq_channels"              // TPCreadoutBoardMap
+    , "pmt_placements_23Aug2023"  // PMTfragmentMap
+    , "feb_channels"              // CRTsideMap
+    , "crtfeb"                    // CRTtopMap
+  },
+  TableNames_t{
+      "readout_boards"            // TPCfragmentMap
+    , "daq_channels"              // TPCreadoutBoardMap
+    , "pmt_placements_29Aug2023"  // PMTfragmentMap
+    , "feb_channels"              // CRTsideMap
+    , "crtfeb"                    // CRTtopMap
   }
 };
 
@@ -236,7 +243,8 @@ int callback(void *data, int argc, char **argv, char **azColName)
     else 
       {
         mf::LogDebug("ChannelMapSQLite")
-          << "ChannelMapSQLite::GetDataset: Successfully read database";
+          << "ChannelMapSQLite::GetDataset: Successfully read database table '"
+          << table << "'";
       }
     
     sqlite3_close(database);
@@ -487,7 +495,8 @@ int buildTPCFragmentIDToReadoutIDMap_callback(void* dataIn, int argc, char**argv
     
     // If there was an error the function above would have printed a message so bail out
     if (error)
-      throw cet::exception("ChannelMapSQLite::BuildFragmentToDigitizerChannelMap") << "Encountered error in reading the database: '" << error << "'\n";
+      throw cet::exception("ChannelMapSQLite::BuildFragmentToDigitizerChannelMap")
+        << "Encountered error (code: " << error << ") in reading the database\n";
     
     return error;
   }

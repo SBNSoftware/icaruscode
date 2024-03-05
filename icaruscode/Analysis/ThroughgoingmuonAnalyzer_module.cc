@@ -807,7 +807,7 @@ void ThroughgoingmuonAnalyzer::analyze(art::Event const& evt)
 //          projPairDirVec.normalize();
 
     	      // Set up to extract the "best" parameters in the event of more than one hit for this pulse train
-            float          nElectronsTotalBest(0.);
+            // float          nElectronsTotalBest(0.); // unused
             float          hitSummedADCBest(0.);
             float          hitIntegralBest(0.);
             float          hitPeakTimeBest(0.);
@@ -860,7 +860,7 @@ void ThroughgoingmuonAnalyzer::analyze(art::Event const& evt)
     		        // Find a match?
                 if (bestHit)
                 {
-                    nElectronsTotalBest = 0.;
+                    // nElectronsTotalBest = 0.; // unused
                     hitPeakTimeBest     = bestHit->PeakTime();
                     hitIntegralBest     = bestHit->Integral();
                     hitSummedADCBest    = bestHit->SummedADC();
@@ -872,15 +872,17 @@ void ThroughgoingmuonAnalyzer::analyze(art::Event const& evt)
 		    //hitSnippetLenBest   = bestHit->EndTick() - bestHit->StartTick();
 		    hitBaselineBest     = 0.;  // To do...
              
+/* entire block unused
     	         		  // Get the number of electrons
     	         		  for(unsigned short tick = hitStartTickBest; tick <= hitStopTickBest; tick++)
                     {
                         unsigned short hitTDC = clockData.TPCTick2TDC(tick - fOffsetVec[plane]);
              
-                        TDCToIDEMap::iterator ideIterator = tdcToIDEMap.find(hitTDC);
+                        TDCToIDEMap::iterator ideIterator = tdcToIDEMap.find(hitTDC); // unused
 			
-                        if (ideIterator != tdcToIDEMap.end()) nElectronsTotalBest += ideIterator->second.numElectrons;
+                        if (ideIterator != tdcToIDEMap.end()) nElectronsTotalBest += ideIterator->second.numElectrons; // unused
 		      }
+*/
                     // Ok, now we need to figure out which trajectory point this hit is associated to 
                     // Use the associated IDE to get the x,y,z position for this hit
                     Eigen::Vector3f hitIDEPos(avePosition[0],avePosition[1],avePosition[2]);

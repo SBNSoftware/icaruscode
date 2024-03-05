@@ -30,9 +30,11 @@
 # 20210212 (petrillo@slac.stanford.edu)
 #   updated baseline to reflect the one in data
 # 20210615 (petrillo@slac.stanford.edu)
-#  updated PMT readout enable window to 2 ms
+#   updated PMT readout enable window to 2 ms
 # 20220706 (petrillo@slac.stanford.edu)
-#  introduced configuration for SPR 202202
+#   introduced configuration for SPR 202202
+# 20240125 (petrillo@slac.stanford.edu)
+#   introduced experimental setting PMT gain to 7.5 x 10^6 (and q.e. elsewhere)
 #
 
 #include "opticalproperties_icarus.fcl"
@@ -47,7 +49,7 @@ BEGIN_PROLOG
 ### Detector and readout parameters
 ### - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-icarus_settings_opdet: {
+icarus_settings_opdet_2022: {
   
   nominalPMTgain: 9.7e6  # PMT multiplication gain factor
   
@@ -62,7 +64,25 @@ icarus_settings_opdet: {
   
   NominalPedestal:      14999.5   # in ADC#; try to balance rounding errors
   
-} # icarus_settings_opdet
+} # icarus_settings_opdet_2022
+
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# the following is based on `icarus_settings_opdet_2022` rescaling it to gain
+# 7.5x10^6; this is an empirical choice attempting to reconciliate the mean
+# value of MC hit amplitude with data; see e.g. SBN DocDB 34640
+icarus_settings_opdet_202401patch: {
+  
+  @table::icarus_settings_opdet_2022
+  
+  nominalPMTgain: 7.5e6  # PMT multiplication gain factor
+  
+} # icarus_settings_opdet_202401patch
+
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# settings used in the standard configurations:
+icarus_settings_opdet: @local::icarus_settings_opdet_202401patch
 
 
 
@@ -70,7 +90,7 @@ icarus_settings_opdet: {
 ### Single photoelectron response configurations
 ### - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #
-# Single photoelectron response with a Gaussian rise and a fall shape.
+# single photoelectron response with a Gaussian rise and a fall shape.
 # 
 # Parameters are as used since forever to at least v08_46_00.
 # 
@@ -230,13 +250,15 @@ icarus_pmtsimulation.disable_noise: {
 } # icarus_pmtsimulation.disable_noise
 
 
-# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+################################################################################
 ###
 ### The standard configuration (`icarus_pmtsimulationalg_standard`) is chosen
 ### below.
 ###
 ###
-# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+
+### - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 ### Configuration "2022":
 ###  * based on SPR202202
 ###  * gain: 9.7 x 10^6
@@ -281,7 +303,7 @@ icarus_pmtsimulationalg_202202_noise: {
   PreTrigFraction:           0.25           # fraction (1+3 us)
 
   ##Threshold in ADC counts for a PMT self-trigger.
-  # 15 ADC = 5x 3 ADC (RMS, see ElectronicsNoise above),~45% of standard SPR (4 mV, 33 ADC);
+  # 15 ADC = 5x 3 ADC (RMS, see ElectronicsNoise above),~55% of standard SPR (4 mV, 33 ADC);
   # number of noise samples above 15 ADC: ~206 samples for 2 ms x 360 channels (300 Hz)
   # number of noise samples above 18 ADC: ~0.36 samples for 2 ms x 360 channels (0.5 Hz)
   ##NOTE this is assumed to be positive-going and ABOVE BASELINE! Pulse polarity is corrected before determining trigger.
@@ -317,6 +339,29 @@ icarus_pmtsimulationalg_202202_nonoise: {
 }
 
 icarus_pmtsimulationalg_202202: @local::icarus_pmtsimulationalg_202202_noise
+
+
+### - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+### Configuration 202401patch:
+###  * explicitly based on the configuration "2022" below
+###  * gain and quantum efficiency adapted to reconciliate signal amplitude
+###    (SBN DocDB 34640)
+###  * gain updated to 7.5 x 10^6
+###  * threshold for digitization scaled down
+###
+
+icarus_pmtsimulationalg_202401patch: {
+  @table::icarus_pmtsimulationalg_202202_noise
+  
+  ## Threshold in ADC counts for a PMT self-trigger
+  ## (actual readout simulation is still required downstream).
+  # 
+  # 15 ADC = 5x 3 ADC (RMS, see ElectronicsNoise above),~58% of standard SPR (3.2 mV, 26 ADC);
+  # number of noise samples above 15 ADC: ~206 samples for 2 ms x 360 channels (300 Hz), +~1 MB data
+  # number of noise samples above 18 ADC: ~0.36 samples for 2 ms x 360 channels (0.5 Hz), +~1 kB data
+  ThresholdADC:              15             # ADC counts
+  
+} # icarus_pmtsimulationalg_202401patch
 
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -395,7 +440,7 @@ icarus_pmtsimulationalg_2018_nonoise: {
 #
 # Includes noise.
 #
-icarus_pmtsimulationalg_standard: @local::icarus_pmtsimulationalg_202202
+icarus_pmtsimulationalg_standard: @local::icarus_pmtsimulationalg_202401patch
 
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

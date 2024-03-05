@@ -83,7 +83,7 @@ void dumpMapping(icarusDB::ICARUSChannelMapProvider const& channelMapping) {
       << " [board channel index in brackets]:";
     constexpr unsigned int Cols = 8U;
     unsigned int n = 0;
-    for(auto const [ digitizerChannel, channelID, laserChannel ]: digitizerChannels) {
+    for(auto const & [ digitizerChannel, channelID, laserChannel ]: digitizerChannels) {
       if (n-- == 0) { log << "\n     "; n = Cols - 1U; }
       log << " "  << std::setw(3) << channelID
         << " [" << std::setw(3) << digitizerChannel << "]";

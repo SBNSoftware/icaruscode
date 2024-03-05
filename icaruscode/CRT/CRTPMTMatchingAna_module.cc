@@ -246,6 +246,7 @@ class icarus::crt::CRTPMTMatchingAna : public art::EDAnalyzer {
   double fOpFlashTime_us;  // Time of the optical Flash w.r.t. Global Trigger
   double fOpFlashTimehit_us;
   double fOpFlashTimeAbs;
+  int fnOpHitAboveThreshold; // Number of Optical Hits above threshold
   bool fInTime;  // Was the OpFlash in beam spill time?
   bool fInTime_gate;
   bool fInTime_beam;
@@ -346,6 +347,7 @@ icarus::crt::CRTPMTMatchingAna::CRTPMTMatchingAna(fhicl::ParameterSet const& p)
   fMatchTree->Branch("opHit_z", &fOpHitZ);
   fMatchTree->Branch("opHit_t", &fOpHitT);
   fMatchTree->Branch("opHit_amplitude", &fOpHitA);
+  fMatchTree->Branch("nOpHitOverThreshold", &fnOpHitAboveThreshold);
   fMatchTree->Branch("inTime", &fInTime);
   fMatchTree->Branch("inTime_beam", &fInTime_beam);
   fMatchTree->Branch("inTime_gate", &fInTime_gate);
@@ -476,7 +478,7 @@ void icarus::crt::CRTPMTMatchingAna::analyze(art::Event const& e) {
       double firstTime = 999999;
       geo::vect::MiddlePointAccumulator flashCentroid;
       // double flash_pos[3]={0,0,0};
-      double ampsum = 0, t_m = 0;
+      // double ampsum = 0, t_m = 0; // unused
       for (auto const& hit : hits) {
         if (hit->Amplitude() > fPMTADCThresh) nPMTsTriggering++;
         if (firstTime > hit->StartTime()) firstTime = hit->StartTime();
@@ -484,20 +486,23 @@ void icarus::crt::CRTPMTMatchingAna::analyze(art::Event const& e) {
             fGeometryService->OpDetGeoFromOpChannel(hit->OpChannel())
                 .GetCenter();
         double amp = hit->Amplitude();
-        ampsum += amp;
+        // ampsum += amp; // unused
         fOpHitX.push_back(pos.X());
         fOpHitY.push_back(pos.Y());
         fOpHitZ.push_back(pos.Z());
         fOpHitT.push_back(hit->StartTime());
         fOpHitA.push_back(amp);
         flashCentroid.add(pos, amp);
-        t_m = t_m + hit->StartTime();
+        // t_m = t_m + hit->StartTime(); // unused
       }
       geo::Point_t flash_pos = flashCentroid.middlePoint();
-      t_m = t_m / nPMTsTriggering;
+      // t_m = t_m / nPMTsTriggering; // unused
+      // F. Poppi: I will leave this commented in case we want to revert it to the original A. Scarpelli suggestion. 
+      // I'd rather have this as a variable to cut when doing the analysis.
+      /*if (nPMTsTriggering < fnOpHitToTrigger) {
       if (nPMTsTriggering < fnOpHitToTrigger) {
         continue;
-      }
+      }*/
       bool inTime = flashInTime(firstTime, m_gate_type, m_trigger_gate_diff, m_gate_width);
       fRelGateTime = m_trigger_gate_diff + (tAbsflash - 1500) * 1e3;
       fInTime_gate = false;
@@ -518,6 +523,7 @@ void icarus::crt::CRTPMTMatchingAna::analyze(art::Event const& e) {
       // Now get the CRT. Search the CRT Hits within -100 from the flash time
       //  for the future a differentiation between Top and Side and some
       //  considerations based on the proximity of the light are necessary
+      fnOpHitAboveThreshold=nPMTsTriggering;
       icarus::crt::MatchedCRT CRTmatches =
           CRTHitmatched(firstTime, flash_pos, crtHitList, 0.1);
       int TopEn = 0, TopEx = 0, SideEn = 0, SideEx = 0;

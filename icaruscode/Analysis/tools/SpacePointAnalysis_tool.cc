@@ -173,6 +173,7 @@ public:
         tree->Branch("SP_z",               "std::vector<float>", &fSP_z);
 
         tree->Branch("Num2DHits",          "std::vector<int>",   &fNum2DHitsVec);
+        tree->Branch("HitPlane",           "std::vector<int>",   &fHitPlaneVec);
         tree->Branch("NumLongHitsSP",      "std::vector<int>",   &fNumLongHitsVec);
         tree->Branch("NumIntersectSet",    "std::vector<int>",   &fNumIntersectSetVec);
         tree->Branch("ClusterNSP",         "std::vector<int>",   &fClusterNSPVec);
@@ -212,6 +213,7 @@ public:
         fSP_z.clear();
 
         fNum2DHitsVec.clear();
+        fHitPlaneVec.clear();
         fNumLongHitsVec.clear();
         fNumIntersectSetVec.clear();
         fClusterNSPVec.clear();
@@ -243,6 +245,7 @@ public:
     std::vector<float> fSP_z;
 
     std::vector<int>   fNum2DHitsVec;
+    std::vector<int>   fHitPlaneVec;
     std::vector<int>   fNumLongHitsVec;
     std::vector<int>   fNumIntersectSetVec;
     std::vector<int>   fClusterNSPVec;
@@ -564,6 +567,7 @@ void SpacePointAnalysis::processSpacePoints(const art::Event&                  e
             float              smallestPH      = std::numeric_limits<float>::max();
             float              largestPH       = 0.;
             int                numHits         = 0;
+            int                hitPlane        = 0;
             float              averagePH       = 0.;
             float              averagePT       = 0.;
             float              largestDelT     = 0.;
@@ -595,6 +599,7 @@ void SpacePointAnalysis::processSpacePoints(const art::Event&                  e
 
                 recobHitVec[plane] = hitPtr.get();
                 numHits++;
+                hitPlane   += 1 << plane;
                 averagePH  += peakAmplitude;
                 smallestPH  = std::min(peakAmplitude,smallestPH);
                 largestPH   = std::max(peakAmplitude,largestPH);
@@ -640,6 +645,7 @@ void SpacePointAnalysis::processSpacePoints(const art::Event&                  e
             fHitSpacePointObj.fLargestDelTVec.emplace_back(largestDelT);
             fHitSpacePointObj.fSmallestDelTVec.emplace_back(smallestDelT);
             fHitSpacePointObj.fNum2DHitsVec.emplace_back(numHits);
+            fHitSpacePointObj.fHitPlaneVec.emplace_back(hitPlane);
             fHitSpacePointObj.fNumLongHitsVec.emplace_back(numLongHits);
             fHitSpacePointObj.fNumIntersectSetVec.emplace_back(numIntersections);
             fHitSpacePointObj.fClusterNSPVec.emplace_back(nSpacePointsInPFParticle);

@@ -1,0 +1,63 @@
+###
+## This fhicl file is used to run "stage0" processing specifically for the case where all
+## TPC data is included in an artdaq data product from a single instance
+##
+#include "stage0_icarus_mc_defs.fcl"
+#include "stage0_icarus_driver_common.fcl"
+
+process_name: MCstage0
+
+## Add the MC module to the list of producers
+physics.producers: {  @table::icarus_stage0_producers
+                      @table::icarus_stage0_mc_producers
+                   }
+
+## Use the following to run the full defined stage0 set of modules
+physics.path: [   @sequence::icarus_stage0_mc_PMT, 
+                  MCDecodeTPCROI, 
+                  @sequence::icarus_stage0_2d_multiTPC,
+                  @sequence::icarus_stage0_EastGauss_TPC,
+                  @sequence::icarus_stage0_WestGauss_TPC,
+                  @sequence::icarus_stage0_mc_crt
+              ]
+
+## boiler plate...
+physics.outana:        [ purityinfoana0, purityinfoana1 ]
+physics.trigger_paths: [ path ]
+physics.end_paths:     [ outana, streamROOT ]
+
+# Drop the daq format files on output, 
+# Drop all output from the TPC decoder stage
+# Drop all output from the 1D deconvolution stage
+# Drop all ouptut for the first running of the ROI finder (on the 1Dsingularity shell --nv -B /cvmfs,/media/usher/analysis/LArSoft/ICARUS slf7-essentials_latest.sif decon)
+# Drop all output from the 2D deconvolution stage
+# Drop the recob::Wire output from the roifinder2d (but keep the ChannelROIs)
+outputs.rootOutput.outputCommands: ["keep *_*_*_*", 
+                                    "drop *_daq_*_*", 
+                                    "drop *_MCDecodeTPCROI_*_*", 
+                                    "drop *_decon1droi_*_*", 
+                                    "drop *_decon2Droi*_*_*", 
+                                    "drop recob::Wire*_roifinder*_*_*", 
+                                    "keep *_daq_simpleSC*_*" ]
+
+
+# Set the expected input for ophit
+physics.producers.ophit.InputModule: "opdaq"
+
+# Set up for the single module mutliple TPC mode...
+physics.producers.MCDecodeTPCROI.FragmentsLabelVec:               ["daq:TPCWW","daq:TPCWE","daq:TPCEW","daq:TPCEE"]
+physics.producers.MCDecodeTPCROI.OutInstanceLabelVec:             ["PHYSCRATEDATATPCWW", "PHYSCRATEDATATPCWE", "PHYSCRATEDATATPCEW", "PHYSCRATEDATATPCEE"]
+
+physics.producers.decon1droi.RawDigitLabelVec:                    ["MCDecodeTPCROI:PHYSCRATEDATATPCWW","MCDecodeTPCROI:PHYSCRATEDATATPCWE","MCDecodeTPCROI:PHYSCRATEDATATPCEW","MCDecodeTPCROI:PHYSCRATEDATATPCEE"]
+
+physics.producers.decon2droiEE.wcls_main.params.raw_input_label:  "MCDecodeTPCROI:PHYSCRATEDATATPCEE"
+physics.producers.decon2droiEW.wcls_main.params.raw_input_label:  "MCDecodeTPCROI:PHYSCRATEDATATPCEW"
+physics.producers.decon2droiWE.wcls_main.params.raw_input_label:  "MCDecodeTPCROI:PHYSCRATEDATATPCWE"
+physics.producers.decon2droiWW.wcls_main.params.raw_input_label:  "MCDecodeTPCROI:PHYSCRATEDATATPCWW"
+
+## Need overrides for the purity monitor
+physics.analyzers.purityinfoana0.SelectEvents: [ path ]
+physics.analyzers.purityinfoana1.SelectEvents: [ path ]
+physics.producers.purityana0.RawModuleLabel:   ["MCDecodeTPCROI:PHYSCRATEDATATPCWW","MCDecodeTPCROI:PHYSCRATEDATATPCWE","MCDecodeTPCROI:PHYSCRATEDATATPCEW","MCDecodeTPCROI:PHYSCRATEDATATPCEE"]
+physics.producers.purityana1.RawModuleLabel:   ["MCDecodeTPCROI:PHYSCRATEDATATPCWW","MCDecodeTPCROI:PHYSCRATEDATATPCWE","MCDecodeTPCROI:PHYSCRATEDATATPCEW","MCDecodeTPCROI:PHYSCRATEDATATPCEE"]
+

@@ -9,15 +9,18 @@
 // library header
 #include "icaruscode/PMT/Algorithms/PMTverticalSlicingAlg.h"
 #include "icarusalg/Utilities/SimpleClustering.h" // util::clusterBy()
+#include "icarusalg/Utilities/sortLike.h"
 
 // LArSoft libraries
 #include "lardataalg/Utilities/StatCollector.h"
 #include "larcorealg/Geometry/GeometryCore.h"
 #include "larcorealg/Geometry/CryostatGeo.h"
 #include "larcorealg/Geometry/OpDetGeo.h"
+#include "larcorealg/Geometry/geo_vectors_utils.h" // MiddlePointAccumulator
 #include "larcorealg/CoreUtils/counter.h"
 #include "larcorealg/CoreUtils/enumerate.h"
 #include "larcorealg/CoreUtils/RealComparisons.h" // lar::util::Vector3DComparisons
+#include "larcoreobj/SimpleTypesAndConstants/geo_vectors.h" // geo::Point_t
 
 // C/C++ standard library
 #include <vector>
@@ -25,8 +28,32 @@
 #include <iterator> // std::make_move_iterator(), std::back_inserter()
 #include <limits>
 #include <cmath> // std::abs()
+#include <cstdint> // std::int_fast8_t
 #include <cassert>
 
+
+//------------------------------------------------------------------------------
+struct StandardLArSoftGeometrySorter {
+  
+  bool operator() (geo::Point_t const& a, geo::Point_t const& b) const
+    { return cmp(a, b) < 0; }
+  
+  static std::int_fast8_t cmp(double a, double b)
+    {
+      if (a < b) return -1; // std::strong_ordering::less
+      if (a > b) return +1; // std::strong_ordering::greater
+      return 0;             // std::strong_ordering::equal
+    }
+  
+  static std::int_fast8_t cmp(geo::Point_t const& a, geo::Point_t const& b)
+    {
+      // C++20: use three-way comparison
+      if (int const res = cmp(a.X(), b.X())) return res;
+      if (int const res = cmp(b.Z(), a.Z())) return res;
+      return cmp(a.Y(), b.Y());
+    } // cmp()
+  
+}; // StandardLArSoftGeometrySorter
 
 //------------------------------------------------------------------------------
 namespace {
@@ -115,6 +142,7 @@ void icarus::trigger::PMTverticalSlicingAlg::appendSlices(
   /*
    * 1. group PMT by plane (cluster on drift direction)
    * 2. group PMT in each plane by width coordinate (cluster by width direction)
+   * 3. sort them by central coordinate using LArSoft standards
    */
 
   //
@@ -158,7 +186,39 @@ void icarus::trigger::PMTverticalSlicingAlg::appendSlices(
   } // for planes
   
   assert(NClusteredPMTs == PMTs.size());
+  
+  //
+  // 3. sort them by central coordinate using LArSoft standards
+  //
+  // the decision here is to sort globally, including the existing entries
+  mf::LogTrace{ fLogCategory } << "Reordering " << slices.size() << " planes";
+  std::vector<geo::Point_t> wallCenters;
+  for (PMTtowerOnPlane_t const& wall: slices) {
+    wallCenters.push_back(PMTwallCenter(wall));
+    mf::LogTrace{ fLogCategory }
+      << " - wall from " << wall.size() << " towers at " << wallCenters.back();
+  }
+  util::sortLike(
+    slices.begin(), slices.end(), wallCenters.cbegin(), wallCenters.cend(),
+    StandardLArSoftGeometrySorter{}
+    );
 
+  {
+    // BEGIN debug
+    mf::LogTrace log { fLogCategory };
+    log << PMTs.size() << " PMTs grouped into " << slices.size() << " planes:";
+    for (auto const& [ iWall, wall ]: util::enumerate(slices)) {
+      log << "\n  [#" << iWall << "] " << wall.size() << " towers:";
+      for (auto&& [ iSlice, slice ]: util::enumerate(wall)) {
+        log << "\n  [#" << iWall << ":" << iSlice << "] "
+          << slice.size() << " PMT:";
+        for (geo::OpDetGeo const* opDet: slice)
+          log << " <" << opDet->ID() << ">";
+      } // for wall
+    } // for slices
+    // END debug
+  }
+  
 } // icarus::trigger::PMTverticalSlicingAlg::appendSlices()
 
 
@@ -250,6 +310,21 @@ bool icarus::trigger::PMTverticalSlicingAlg::areParallel
   lar::util::Vector3DComparison cmp { 1e-4 };
   return cmp.zero(a.Cross(b));
 } // icarus::trigger::PMTverticalSlicingAlg::areParallel()
+
+
+//------------------------------------------------------------------------------
+geo::Point_t icarus::trigger::PMTverticalSlicingAlg::PMTwallCenter
+  (PMTtowerOnPlane_t const& wall)
+{
+  geo::vect::MiddlePointAccumulator wallCenter;
+  for (PMTtower_t const& tower: wall) {
+    for (geo::OpDetGeo const* PMT: tower) {
+      wallCenter.add(PMT->GetCenter());
+    } // for PMTs
+  } // for towers
+  assert(!wallCenter.empty()); // don't know what to do with an empty plane
+  return wallCenter.middlePoint();
+} // icarus::trigger::PMTverticalSlicingAlg::PMTwallCenter()
 
 
 //------------------------------------------------------------------------------

@@ -24,10 +24,10 @@ function(params, tools, override = {}) {
       dft: wc.tn(tools.dft),
       field_response: wc.tn(tools.field),
       ftoffset: 0.0, // default 0.0
-      ctoffset: 0.0*wc.microsecond, // default -8.0
+      ctoffset: 2.0*wc.microsecond, // default -8.0
       per_chan_resp: pc.name,
       fft_flag: 0,  // 1 is faster but higher memory, 0 is slightly slower but lower memory
-      elecresponse : wc.tn(tools.elec_resp),
+      elecresponse : wc.tn(tools.elec_resp[2]),
       postgain: 1,  // default 1.2
       ADC_mV: 4096 / (3300.0 * wc.mV),  // default 4096/2000
       troi_col_th_factor: 5.0,  // default 5
@@ -52,7 +52,7 @@ function(params, tools, override = {}) {
       gauss_tag: 'gauss%d' % anode.data.ident,
 
       use_roi_debug_mode: false,
-      use_roi_refinement: false, // default: true
+      use_roi_refinement: true, //false, // default: true
       tight_lf_tag: 'tight_lf%d' % anode.data.ident,
       loose_lf_tag: 'loose_lf%d' % anode.data.ident,
       cleanup_roi_tag: 'cleanup_roi%d' % anode.data.ident,
@@ -60,6 +60,8 @@ function(params, tools, override = {}) {
       break_roi_loop2_tag: 'break_roi_2nd%d' % anode.data.ident,
       shrink_roi_tag: 'shrink_roi%d' % anode.data.ident,
       extend_roi_tag: 'extend_roi%d' % anode.data.ident,
+
+      decon_charge_tag: 'decon%d' % anode.data.ident,
 
       use_multi_plane_protection: false,
       mp3_roi_tag: 'mp3_roi%d' % anode.data.ident,
@@ -69,6 +71,6 @@ function(params, tools, override = {}) {
       process_planes: [0, util.anode_split(anode.data.ident)], // balance the left and right split
 
     } + override,
-  }, nin=1, nout=1, uses=[anode, tools.dft, tools.field, tools.elec_resp] + pc.uses + spfilt),
+  }, nin=1, nout=1, uses=[anode, tools.dft, tools.field, tools.elec_resp[2]] + pc.uses + spfilt),
 
 }

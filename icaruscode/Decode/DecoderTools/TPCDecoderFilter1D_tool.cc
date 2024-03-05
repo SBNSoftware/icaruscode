@@ -248,6 +248,8 @@ void TPCDecoderFilter1D::configure(fhicl::ParameterSet const &pset)
     {
         for(int plane = 0; plane < 3; plane++)
         {
+            std::cout << "--TPCDecoderFilter1D plane:" << plane << ", sigmas: " << fFFTSigmaValsVec[plane].first << ", " << fFFTSigmaValsVec[plane].second
+                      << ", offsets: " << fFFTCutoffValsVec[plane].first << ", " << fFFTCutoffValsVec[plane].second << std::endl;
             if (plane < 3) fFFTFilterFunctionVec.emplace_back(std::make_unique<icarus_signal_processing::WindowFFTFilter>(fFFTSigmaValsVec[plane], fFFTCutoffValsVec[plane]));
             else           fFFTFilterFunctionVec.emplace_back(std::make_unique<icarus_signal_processing::NoFFTFilter>());
 
@@ -394,9 +396,6 @@ void TPCDecoderFilter1D::process_fragment(detinfo::DetectorClocksData const&,
         // This is where we would recover the base channel for the board from database/module
         size_t boardOffset = nChannelsPerBoard * board;
 
-        // Get the pointer to the start of this board's block of data
-        const icarus::A2795DataBlock::data_t* dataBlock = physCrateFragment.BoardData(board);
-
         // Copy to input data array
         for(size_t chanIdx = 0; chanIdx < nChannelsPerBoard; chanIdx++)
         {
@@ -404,9 +403,8 @@ void TPCDecoderFilter1D::process_fragment(detinfo::DetectorClocksData const&,
             size_t channelOnBoard = boardOffset + chanIdx;
 
             icarus_signal_processing::VectorFloat& rawDataVec = fRawWaveforms[channelOnBoard];
-
-            for(size_t tick = 0; tick < nSamplesPerChannel; tick++)
-                rawDataVec[tick] = -dataBlock[chanIdx + tick * nChannelsPerBoard];
+            for (size_t tick = 0; tick < nSamplesPerChannel; ++tick)
+              rawDataVec[tick] = -physCrateFragment.adc_val(board, chanIdx, tick);
 
             icarus_signal_processing::VectorFloat& pedCorDataVec = fPedCorWaveforms[channelOnBoard];
 
@@ -457,8 +455,21 @@ void TPCDecoderFilter1D::process_fragment(detinfo::DetectorClocksData const&,
                                                        fNumTruncBins[channelOnBoard],
                                                        fRangeBins[channelOnBoard]);
 
+            std::cout << "==>rawDataVec: " << rawDataVec[0] << ", " << rawDataVec[1] << ", " << rawDataVec[2] << ", " << rawDataVec[3] << ", " << rawDataVec[4] << ", " << rawDataVec[5] << std::endl;
+
             // Convolve with a filter function
-            if (fUseFFTFilter) (*fFFTFilterFunctionVec[plane])(pedCorDataVec);
+            //if (fUseFFTFilter) (*fFFTFilterFunctionVec[plane])(pedCorDataVec);
+            if (fUseFFTFilter)
+            {
+                // Temporary diagnostics
+                icarus_signal_processing::VectorFloat medianSmoothVec(nSamplesPerChannel);
+
+                waveformTools.medianSmooth(pedCorDataVec, medianSmoothVec, 5);
+
+                std::transform(pedCorDataVec.begin(),pedCorDataVec.end(), medianSmoothVec.begin(), pedCorDataVec.begin(), std::minus<float>());
+
+                std::copy(medianSmoothVec.begin(),medianSmoothVec.end(),rawDataVec.begin());
+            }
 
             if (fDiagnosticOutput)
             {

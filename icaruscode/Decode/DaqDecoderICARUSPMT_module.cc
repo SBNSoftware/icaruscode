@@ -2411,7 +2411,7 @@ auto icarus::DaqDecoderICARUSPMT::createFragmentWaveforms(
   auto channelNumberToChannel
     = [&digitizerChannelVec](unsigned short int channelNumber) -> raw::Channel_t
     {
-      for (auto const [ chNo, chID, _ ]: digitizerChannelVec) // too pythonic? 
+      for (auto const & [ chNo, chID, _ ]: digitizerChannelVec) // too pythonic? 
         if (chNo == channelNumber) return chID;
       return sbn::V1730channelConfiguration::NoChannelID;
     };

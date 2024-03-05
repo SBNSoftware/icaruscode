@@ -23,12 +23,12 @@ physics.end_paths:     [ outana, streamROOT ]
 # Drop the recob::Wire output from the roifinder2d (but keep the ChannelROIs)
 # Keep the Trigger fragment
 outputs.rootOutput.outputCommands:         ["keep *_*_*_*", 
+                                            "drop artdaq::Fragments_*_*_ICARUSReprocessRaw",
                                             "drop *_*_*_DAQ*", 
                                             "drop *_daqTPCROI_*_*", 
                                             "drop *_decon1droi_*_*", 
                                             "drop *_decon2droi*_*_*", 
-                                            "drop recob::Wire*_roifinder_*_*",
-                                            "drop recob::Wire*_roifinder2d_*_*", 
+                                            "drop recob::Wire*_roifinder*_*_*",
                                             "keep *_daq_ICARUSTriggerV*_*"
                                            ]
 
@@ -36,12 +36,45 @@ outputs.rootOutput.outputCommands:         ["keep *_*_*_*",
 physics.analyzers.purityinfoana0.SelectEvents:    [ path ]
 physics.analyzers.purityinfoana1.SelectEvents:    [ path ]
 
+# Add below as per Gray Putnam (should we move to jsonnet files?)
+physics.producers.decon2droiEE.wcls_main.structs.gain0: 10.2636323 
+physics.producers.decon2droiEW.wcls_main.structs.gain0: 10.2636323 
+physics.producers.decon2droiWE.wcls_main.structs.gain0: 10.2636323 
+physics.producers.decon2droiWW.wcls_main.structs.gain0: 10.2636323 
+
+
+physics.producers.decon2droiEE.wcls_main.structs.gain1: 12.1420344 
+physics.producers.decon2droiEW.wcls_main.structs.gain1: 12.1420344 
+physics.producers.decon2droiWE.wcls_main.structs.gain1: 12.1420344 
+physics.producers.decon2droiWW.wcls_main.structs.gain1: 12.1420344 
+
+physics.producers.decon2droiEE.wcls_main.structs.gain2: 13.0261362 
+physics.producers.decon2droiEW.wcls_main.structs.gain2: 13.0261362 
+physics.producers.decon2droiWE.wcls_main.structs.gain2: 13.0261362 
+physics.producers.decon2droiWW.wcls_main.structs.gain2: 13.0261362 
+
+
+physics.producers.decon2droiEE.wcls_main.structs.shaping0: 1.3  
+physics.producers.decon2droiEW.wcls_main.structs.shaping0: 1.3  
+physics.producers.decon2droiWE.wcls_main.structs.shaping0: 1.3  
+physics.producers.decon2droiWW.wcls_main.structs.shaping0: 1.3  
+
+physics.producers.decon2droiEE.wcls_main.structs.shaping1: 1.45  
+physics.producers.decon2droiEW.wcls_main.structs.shaping1: 1.45  
+physics.producers.decon2droiWE.wcls_main.structs.shaping1: 1.45  
+physics.producers.decon2droiWW.wcls_main.structs.shaping1: 1.45  
+
+physics.producers.decon2droiEE.wcls_main.structs.shaping2: 1.3  
+physics.producers.decon2droiEW.wcls_main.structs.shaping2: 1.3  
+physics.producers.decon2droiWE.wcls_main.structs.shaping2: 1.3  
+physics.producers.decon2droiWW.wcls_main.structs.shaping2: 1.3  
+
 services.message.destinations :
 {
   STDCOUT:
   {
      type:      "cout"      #tells the message service to output this destination to cout
-     threshold: "DEBUG"     #tells the message service that this destination applies to WARNING and higher level messages
+     threshold: "WARNING"   #tells the message service that this destination applies to WARNING and higher level messages
      categories:
      {
        CRTSimHitProducer:
@@ -51,8 +84,8 @@ services.message.destinations :
        }
        default:
        {
-         limit: 0  #don't print anything at the infomsg level except the explicitly named categories
-         reportEvery: 0
+         limit: 5  #don't print anything at the infomsg level except the explicitly named categories
+         reportEvery: 1
        }
      }
   }

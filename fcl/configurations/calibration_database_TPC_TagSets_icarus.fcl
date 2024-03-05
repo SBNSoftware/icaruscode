@@ -1,0 +1,16 @@
+# File:    calibration_database_GlobalTags.fcl
+# Purpose: Collection of tag info for the TPC calibration database
+
+BEGIN_PROLOG
+
+## Valid for Run A,1, and 2
+TPC_CalibrationTags_Oct2023: {
+
+  tpc_channelstatus_data: "v3r1"
+  tpc_elifetime_data: "v2r1"
+  tpc_dqdxcalibration_data: "v2r1"
+  tpc_yz_correction_data: "v2r1"
+
+}
+
+END_PROLOG

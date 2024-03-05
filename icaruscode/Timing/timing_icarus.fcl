@@ -1,4 +1,4 @@
-#include "timing_corrections_tags.fcl"
+#include "calibration_database_GlobalTags_icarus.fcl"
 
 BEGIN_PROLOG
 
@@ -6,7 +6,11 @@ icarus_pmttimingservice:
 {
     # service name:   IPMTTimingCorrectionService
     service_provider: PMTTimingCorrectionService
-    CorrectionsTags:  @local::PMTtimingCorrectionsTags_Run2_August2023
+    CorrectionTags: {
+      CablesTag: @local::ICARUS_Calibration_GlobalTags.pmt_cables_delays_data
+      LaserTag: @local::ICARUS_Calibration_GlobalTags.pmt_laser_timing_data
+      CosmicsTag: @local::ICARUS_Calibration_GlobalTags.pmt_cosmics_timing_data
+    }
     Verbose:          false
 }
 

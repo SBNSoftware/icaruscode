@@ -30,9 +30,9 @@
 # Configuration parameters
 # -------------------------
 # 
-# The following parameters can be overridden by setting them with `@ignore:`
-# before including this configuration file. Unless otherwise specified,
-# the default definition is in `trigger_icarus.fcl`.
+# The following parameters can be overridden by setting them with
+# `@protect_ignore:` before including this configuration file. Unless otherwise
+# specified, the default definition is in `trigger_icarus.fcl`.
 # 
 # * icarus_triggergate_basic.ChannelThresholds: the set of thresholds emulated
 #     in the trigger.
