@@ -11,7 +11,7 @@ icarus_pmttimingservice:
       LaserTag: @local::ICARUS_Calibration_GlobalTags.pmt_laser_timing_data
       CosmicsTag: @local::ICARUS_Calibration_GlobalTags.pmt_cosmics_timing_data
     }
-    Verbose:          false
+    Verbose:          true
 }
 
 icarus_ophit_timing_correction:
