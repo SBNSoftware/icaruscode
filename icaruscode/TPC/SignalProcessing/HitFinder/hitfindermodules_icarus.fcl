@@ -71,21 +71,34 @@ gaus_hitfinder_icarus.PeakFitter.FloatBaseline:                                 
 gaus_hitfinder_icarus.PeakFitter.tool_type:                                        "PeakFitterMrqdt"
 gaus_hitfinder_icarus.LongMaxHits:                                                 [25, 25, 25]
 gaus_hitfinder_icarus.LongPulseWidth:                                              [10, 10, 10]
-gaus_hitfinder_icarus.HitFinderToolVec.CandidateHitsPlane0:                        @local::candhitfinder_morphological
+
+# Keeping these here even though not used in case we want to know working values for testing
+#gaus_hitfinder_icarus.HitFinderToolVec.CandidateHitsPlane0:                        @local::candhitfinder_morphological
+#gaus_hitfinder_icarus.HitFinderToolVec.CandidateHitsPlane0.Plane:                  0
+#gaus_hitfinder_icarus.HitFinderToolVec.CandidateHitsPlane0.MinDeltaTicks:          4
+#gaus_hitfinder_icarus.HitFinderToolVec.CandidateHitsPlane0.MinDeltaPeaks:          2.5
+#gaus_hitfinder_icarus.HitFinderToolVec.CandidateHitsPlane0.DilationThreshold:      8
+#gaus_hitfinder_icarus.HitFinderToolVec.CandidateHitsPlane1:                        @local::candhitfinder_morphological
+#gaus_hitfinder_icarus.HitFinderToolVec.CandidateHitsPlane1.Plane:                  1
+#gaus_hitfinder_icarus.HitFinderToolVec.CandidateHitsPlane1.MinDeltaTicks:          4
+#gaus_hitfinder_icarus.HitFinderToolVec.CandidateHitsPlane1.MinDeltaPeaks:          2.5
+#gaus_hitfinder_icarus.HitFinderToolVec.CandidateHitsPlane1.DilationThreshold:      8
+#gaus_hitfinder_icarus.HitFinderToolVec.CandidateHitsPlane2:                        @local::candhitfinder_morphological
+#gaus_hitfinder_icarus.HitFinderToolVec.CandidateHitsPlane2.Plane:                  2
+#gaus_hitfinder_icarus.HitFinderToolVec.CandidateHitsPlane2.MinDeltaTicks:          4
+#gaus_hitfinder_icarus.HitFinderToolVec.CandidateHitsPlane2.MinDeltaPeaks:          2.5
+#gaus_hitfinder_icarus.HitFinderToolVec.CandidateHitsPlane2.DilationThreshold:      8
+
+# These are default settings for production running
+gaus_hitfinder_icarus.HitFinderToolVec.CandidateHitsPlane0:                        @local::candhitfinder_standard      # Sets hit finding for plane 0
 gaus_hitfinder_icarus.HitFinderToolVec.CandidateHitsPlane0.Plane:                  0
-gaus_hitfinder_icarus.HitFinderToolVec.CandidateHitsPlane0.MinDeltaTicks:          4
-gaus_hitfinder_icarus.HitFinderToolVec.CandidateHitsPlane0.MinDeltaPeaks:          2.5
-gaus_hitfinder_icarus.HitFinderToolVec.CandidateHitsPlane0.DilationThreshold:      8
-gaus_hitfinder_icarus.HitFinderToolVec.CandidateHitsPlane1:                        @local::candhitfinder_morphological
+gaus_hitfinder_icarus.HitFinderToolVec.CandidateHitsPlane0.RoiThreshold:           9.
+gaus_hitfinder_icarus.HitFinderToolVec.CandidateHitsPlane1:                        @local::candhitfinder_standard      # Sets hit finding for plane 1
 gaus_hitfinder_icarus.HitFinderToolVec.CandidateHitsPlane1.Plane:                  1
-gaus_hitfinder_icarus.HitFinderToolVec.CandidateHitsPlane1.MinDeltaTicks:          4
-gaus_hitfinder_icarus.HitFinderToolVec.CandidateHitsPlane1.MinDeltaPeaks:          2.5
-gaus_hitfinder_icarus.HitFinderToolVec.CandidateHitsPlane1.DilationThreshold:      8
-gaus_hitfinder_icarus.HitFinderToolVec.CandidateHitsPlane2:                        @local::candhitfinder_morphological
+gaus_hitfinder_icarus.HitFinderToolVec.CandidateHitsPlane1.RoiThreshold:           9.5
+gaus_hitfinder_icarus.HitFinderToolVec.CandidateHitsPlane2:                        @local::candhitfinder_standard      # Sets hit finding for plane 2
 gaus_hitfinder_icarus.HitFinderToolVec.CandidateHitsPlane2.Plane:                  2
-gaus_hitfinder_icarus.HitFinderToolVec.CandidateHitsPlane2.MinDeltaTicks:          4
-gaus_hitfinder_icarus.HitFinderToolVec.CandidateHitsPlane2.MinDeltaPeaks:          2.5
-gaus_hitfinder_icarus.HitFinderToolVec.CandidateHitsPlane2.DilationThreshold:      8
+gaus_hitfinder_icarus.HitFinderToolVec.CandidateHitsPlane2.RoiThreshold:           9.
 
 
 # Define icarus version of test version gausshit finder
