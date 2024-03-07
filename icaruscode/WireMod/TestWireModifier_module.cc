@@ -16,7 +16,6 @@
 // larsoft includes
 #include "larcore/Geometry/Geometry.h"
 #include "larcore/CoreUtils/ServiceUtil.h" // lar::providerFrom()
-#include "lardata/DetectorInfoServices/DetectorClocksService.h"
 #include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
 #include "lardata/Utilities/AssociationUtil.h"
 #include "lardataobj/RawData/RawDigit.h"
@@ -84,7 +83,6 @@ namespace wiremod
     art::ServiceHandle<art::TFileService> tfs;
 
     // get a clock and det props for the event
-    const detinfo::DetectorClocksData    detClock = art::ServiceHandle<detinfo::DetectorClocksService const    >()->DataFor(evt);
     const detinfo::DetectorPropertiesData detProp = art::ServiceHandle<detinfo::DetectorPropertiesService const>()->DataFor(evt);
 
     // get the things to do the things on
@@ -111,7 +109,7 @@ namespace wiremod
     //std::unique_ptr<art::Assns<raw::RawDigit, recob::Wire>> new_digit_assn(new art::Assns<raw::RawDigit, recob::Wire>());
 
     // let's just try making the damn thing
-    sys::WireModUtility wmUtil(fGeometry, detClock, detProp); // geometry, clock, properties
+    sys::WireModUtility wmUtil(fGeometry, detProp); // detector geometry & properties
 
     // it's all fake, so each plane is the same
     for (size_t i = 0; i < 3; ++i)
