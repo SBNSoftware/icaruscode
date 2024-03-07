@@ -44,6 +44,8 @@ namespace wiremod
       TGraph2DErrors fDummyGraph_sigma;
       art::InputTag fWireLabel; // which wires are we pulling in?
       art::InputTag fHitLabel; // which hits are we pulling in?
+      bool fSaveHistsByChannel; // save modified signals by channel?
+      bool fSaveHistsByWire; // save modified signals by wire?
 
   }; // end TestWireModifier class
 
@@ -60,6 +62,10 @@ namespace wiremod
     // For now we aren't configuring anything because we're just getting it running
     fWireLabel  = pset.get<art::InputTag>("WireLabel", "roifinder:PHYSCRATEDATATPCEE");
     fHitLabel   = pset.get<art::InputTag>("HitLabel", "gaushitTPCEE");
+
+    // what, if anything, are we putting in the histogram files
+    fSaveHistsByChannel = pset.get<bool>("SaveByChannel", false);
+    fSaveHistsByWire    = pset.get<bool>("SaveByWire"   , false);
 
     // we'll make the splines and the like here since they are FAKE atm
     // later you'd read them in from a file
@@ -152,14 +158,9 @@ namespace wiremod
     MF_LOG_VERBATIM("TestWireModifier")
       << "Got Hit Map.";
 
-    // match old and new wires
-    std::vector<std::pair<size_t, size_t>> oldNew_wireIdx;
-
     // loop-de-loop
     for(size_t i_w = 0; i_w < wireVec.size(); ++i_w)
     {
-      bool isModified = false;
-
       MF_LOG_DEBUG("TestWireModifier")
         << "Checking wire " << i_w;
 
@@ -189,6 +190,9 @@ namespace wiremod
         MF_LOG_DEBUG("TestWireModifier")
           << "Wire is on unsupported plane. Skip.";
       }
+
+      // keep track of if this wire is modified
+      bool isModified = false;
 
       for(size_t i_r = 0; i_r < wire.SignalROI().get_ranges().size(); ++i_r)
       {
@@ -286,11 +290,10 @@ namespace wiremod
             if ( truth_vals.total_energy < 0.3 && subroi_prop.total_q > 80 ) {
               scale_vals.r_Q     = 1.;
               scale_vals.r_sigma = 1.;
-              isModified = false;
             } 
             else {
               scale_vals = wmUtil.GetScaleValues(truth_vals, roi_properties);
-              mf::LogVerbatim("TestWireModifier")
+              mf::LogDebug("TestWireModifier")
                 << "Scaling! Q scale: " << scale_vals.r_Q
                 << "     sigma sclae: " << scale_vals.r_sigma;
               isModified = true;
@@ -299,36 +302,69 @@ namespace wiremod
           else {
             scale_vals.r_Q     = 1.;
             scale_vals.r_sigma = 1.;
-            isModified = false;
           }
 
           SubROIMatchedScalesMap[key] = scale_vals;
         }
-
-        // store old ROI
-        TH1F* oldROI = new TH1F(("oldROI__Wire_"+std::to_string(i_w)+"_ROI_"+std::to_string(i_r)).c_str(), ";Sample;Arbitrary Units", modified_data.size(), 0, modified_data.size());
-        for (size_t bin = 1; bin < modified_data.size() + 1; ++bin)
-          oldROI->SetBinContent(bin, modified_data[bin - 1]);
-
+        
         wmUtil.ModifyROI(modified_data, roi_properties, subROIPropVec, SubROIMatchedScalesMap);
-
-        // store new ROI
-        TH1F* newROI = new TH1F(("newROI_Wire_"+std::to_string(i_w)+"_ROI_"+std::to_string(i_r)).c_str(), ";Sample;Arbitrary Units", modified_data.size(), 0, modified_data.size());
-        for (size_t bin = 1; bin < modified_data.size() + 1; ++bin)
-          newROI->SetBinContent(bin, modified_data[bin - 1]);
-
-        if (isModified)
-        {
-          TH1F* oldROI_saved = tfs->make<TH1F>(*oldROI);
-          TH1F* newROI_saved = tfs->make<TH1F>(*newROI);
-          mf::LogVerbatim("TestWireModifier")
-            << "Wrote histograms " << oldROI_saved->GetName() << " and " << newROI_saved->GetName();
-        }
-
         new_rois.add_range(roi_properties.begin, modified_data);
       }
 
       new_wires->emplace_back(new_rois, wire.Channel(), wire.View());
+
+      if (fSaveHistsByChannel && isModified)
+      {
+        readout::ROPID ropID = fGeometry->ChannelToROP(wire.Channel());  
+        std::string titleStr =  "Cryo-"         + std::to_string(ropID.Cryostat)
+                             + "_TPCset-"       + std::to_string(ropID.TPCset)
+                             + "_ReadOutPlane-" + std::to_string(ropID.ROP)
+                             + "_Channel-"      + std::to_string(wire.Channel());
+        TH1F* oldChannelHist = new TH1F(("Old_" + titleStr).c_str(), ";Sample;Arbitrary Units", wmUtil.readoutWindowTicks, 0, wmUtil.readoutWindowTicks);
+        TH1F* newChannelHist = new TH1F(("New_" + titleStr).c_str(), ";Sample;Arbitrary Units", wmUtil.readoutWindowTicks, 0, wmUtil.readoutWindowTicks);
+        for (size_t tick = 0; tick < wmUtil.readoutWindowTicks; ++tick)
+        {
+          float oldSample = (tick <     wire         .Signal().size() ) ?     wire         .Signal().at(tick) : 0;
+          float newSample = (tick < new_wires->back().Signal().size() ) ? new_wires->back().Signal().at(tick) : 0;
+          oldChannelHist->SetBinContent(tick + 1, oldSample);
+          newChannelHist->SetBinContent(tick + 1, newSample);
+        }
+          
+        TH1F* oldChannelHist_toSave = tfs->make<TH1F>(*oldChannelHist);
+        TH1F* newChannelHist_toSave = tfs->make<TH1F>(*newChannelHist);
+        mf::LogDebug("TestWireModifier")
+          << "Saved histograms " << oldChannelHist_toSave->GetName() << '\n'
+          << "             and " << newChannelHist_toSave->GetName();
+      }
+
+      if (fSaveHistsByWire && isModified)
+      {
+        std::vector<geo::WireID> wireIDs = fGeometry->ChannelToWire(wire.Channel());
+        mf::LogDebug("TestWireModifier")
+          << "Channel " << wire.Channel() << " has " << wireIDs.size() << " wire(s)";
+        for (auto const& wireID : wireIDs)
+        {
+          std::string titleStr =  "Cryo-"  + std::to_string(wireID.Cryostat)
+                               + "_TPC-"   + std::to_string(wireID.TPC)
+                               + "_Plane-" + std::to_string(wireID.Plane)
+                               + "_Wire-"  + std::to_string(wireID.Wire);
+          TH1F* oldWireHist = new TH1F(("Old_" + titleStr).c_str(), ";Sample;Arbitrary Units", wmUtil.readoutWindowTicks, 0, wmUtil.readoutWindowTicks);
+          TH1F* newWireHist = new TH1F(("New_" + titleStr).c_str(), ";Sample;Arbitrary Units", wmUtil.readoutWindowTicks, 0, wmUtil.readoutWindowTicks);
+          for (size_t tick = 0; tick < wmUtil.readoutWindowTicks; ++tick)
+          {
+            float oldSample = (tick <     wire         .Signal().size() ) ?     wire         .Signal().at(tick) : 0;
+            float newSample = (tick < new_wires->back().Signal().size() ) ? new_wires->back().Signal().at(tick) : 0;
+            oldWireHist->SetBinContent(tick + 1, oldSample);
+            newWireHist->SetBinContent(tick + 1, newSample);
+          }
+
+          TH1F* oldWireHist_toSave = tfs->make<TH1F>(*oldWireHist);
+          TH1F* newWireHist_toSave = tfs->make<TH1F>(*newWireHist);
+          mf::LogDebug("TestWireModifier")
+            << "Saved histograms " << oldWireHist_toSave->GetName() << '\n'
+            << "             and " << newWireHist_toSave->GetName();
+        }
+      }
 
       //auto const& rd_ptrs = digit_assn.at(i_w);
       //for(auto const& rd_ptr : rd_ptrs)
