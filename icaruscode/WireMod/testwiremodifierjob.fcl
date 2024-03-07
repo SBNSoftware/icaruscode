@@ -19,10 +19,13 @@ physics:
 {
   producers:
   {
-    wiremod: @local::standard_testwiremod
+    wiremodEE: @local::ee_testwiremod
+    wiremodEW: @local::ew_testwiremod
+    wiremodWE: @local::we_testwiremod
+    wiremodWW: @local::ww_testwiremod
   }
 
-  wmproduce: [ wiremod ]
+  wmproduce: [ wiremodEE, wiremodEW, wiremodWE, wiremodWW ]
 
   # you gotta have an output stream
   stream1: [ out1 ]

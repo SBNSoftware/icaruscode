@@ -3,37 +3,37 @@ BEGIN_PROLOG
 standard_testwiremod:
 {
   module_type:         "TestWireModifier"
-  WireLabel:           "roifinder:PHYSCRATEDATATPCEE"
-  HitLabel:            "gaushitTPCEE"
+  WireLabel:           "roifinder1d:PHYSCRATEDATATPCEE"
+  HitLabel:            "gaushit1dTPCEE"
   OutputInstanceLabel: "PHYSCRATEDATATPCEE"
   CryoNumber         : 0
   TPCNumbers         : [ 0, 1 ]
 }
 
 ww_testwiremod: @local::standard_testwiremod
-ww_testwiremod.WireLabel:          "roifinder:PHYSCRATEDATATPCWW"
-ww_testwiremod.HitLabel:           "gaushitTPCWW"
+ww_testwiremod.WireLabel:          "roifinder1d:PHYSCRATEDATATPCWW"
+ww_testwiremod.HitLabel:           "gaushit1dTPCWW"
 ww_testwiremodOutputInstanceLabel: "PHYSCRATEDATATPCWW"
 ww_testwiremod.CryoNumber:         1
 ww_testwiremod.TPCNumbers:         [ 2, 3 ]
 
 we_testwiremod: @local::standard_testwiremod
-we_testwiremod.WireLabel:          "roifinder:PHYSCRATEDATATPCWE"
-we_testwiremod.HitLabel:           "gaushitTPCWE"
+we_testwiremod.WireLabel:          "roifinder1d:PHYSCRATEDATATPCWE"
+we_testwiremod.HitLabel:           "gaushit1dTPCWE"
 we_testwiremodOutputInstanceLabel: "PHYSCRATEDATATPCWE"
 we_testwiremod.CryoNumber:         1
 we_testwiremod.TPCNumbers:         [ 0, 1 ]
 
 ew_testwiremod: @local::standard_testwiremod
-ew_testwiremod.WireLabel:          "roifinder:PHYSCRATEDATATPCEW"
-ew_testwiremod.HitLabel:           "gaushitTPCEW"
+ew_testwiremod.WireLabel:          "roifinder1d:PHYSCRATEDATATPCEW"
+ew_testwiremod.HitLabel:           "gaushit1dTPCEW"
 ew_testwiremodOutputInstanceLabel: "PHYSCRATEDATATPCEW"
 ew_testwiremod.CryoNumber:         0
 ew_testwiremod.TPCNumbers:         [ 2, 3 ]
 
 ee_testwiremod: @local::standard_testwiremod
-ee_testwiremod.WireLabel:          "roifinder:PHYSCRATEDATATPCEE"
-ee_testwiremod.HitLabel:           "gaushitTPCEE"
+ee_testwiremod.WireLabel:          "roifinder1d:PHYSCRATEDATATPCEE"
+ee_testwiremod.HitLabel:           "gaushit1dTPCEE"
 ee_testwiremodOutputInstanceLabel: "PHYSCRATEDATATPCEE"
 ee_testwiremod.CryoNumber:         0
 ee_testwiremod.TPCNumbers:         [ 0, 1 ]

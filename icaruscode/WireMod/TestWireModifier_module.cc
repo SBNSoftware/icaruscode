@@ -73,7 +73,7 @@ namespace wiremod
     fDummyGraph_sigma   = TGraph2DErrors(3, pnts, pnts, vals_inv);
 
     // we make these things
-    //produces<std::vector<recob::Wire>>();
+    produces<std::vector<recob::Wire>>();
     //produces<art::Assns<raw::RawDigit, recob::Wire>>();
   }
 
@@ -95,11 +95,11 @@ namespace wiremod
     art::FindManyP<raw::RawDigit> digit_assn(wireHandle, evt, fWireLabel);
 
     art::Handle< std::vector<sim::SimEnergyDeposit> > edepShiftedHandle;
-    evt.getByLabel("ionization", edepShiftedHandle);
+    evt.getByLabel("largeant:TPCActive", edepShiftedHandle);
     auto const& edepShiftedVec(*edepShiftedHandle);
 
     art::Handle< std::vector<sim::SimEnergyDeposit> > edepOrigHandle;
-    evt.getByLabel("largeant:TPCActive", edepOrigHandle);
+    evt.getByLabel("ionization", edepOrigHandle);
     auto const& edepOrigVec(*edepOrigHandle);
       
     art::Handle< std::vector<recob::Hit> > hitHandle;
@@ -108,7 +108,7 @@ namespace wiremod
 
     // put the new stuff somewhere
     std::unique_ptr<std::vector<recob::Wire>> new_wires(new std::vector<recob::Wire>());
-    std::unique_ptr<art::Assns<raw::RawDigit, recob::Wire>> new_digit_assn(new art::Assns<raw::RawDigit, recob::Wire>());
+    //std::unique_ptr<art::Assns<raw::RawDigit, recob::Wire>> new_digit_assn(new art::Assns<raw::RawDigit, recob::Wire>());
 
     // let's just try making the damn thing
     sys::WireModUtility wmUtil(fGeometry, detClock, detProp); // geometry, clock, properties
@@ -140,44 +140,10 @@ namespace wiremod
       << "  applydEdXScale:     " << wmUtil.applydEdXScale     << '\n'
       << "  readoutWindowTicks: " << wmUtil.readoutWindowTicks << '\n'
       << "  tickOffset:         " << wmUtil.tickOffset         << '\n'
-      //<< "  wiresPercm:         " << wmUtil.wiresPercm         << '\n'
-      //<< "  originWire_plane0:  " << wmUtil.originWire_plane0  << '\n'
-      //<< "  originWire_plane1:  " << wmUtil.originWire_plane1  << '\n'
-      //<< "  originWire_plane2:  " << wmUtil.originWire_plane2  << '\n'
-      //<< "  ticksPercm:         " << wmUtil.ticksPercm         << '\n'
-      //<< "  zeroTick:           " << wmUtil.zeroTick           << '\n'
-      //<< "  angle_plane0:       " << wmUtil.angle_plane0       << '\n'
-      //<< "  angle_plane1:       " << wmUtil.angle_plane1       << '\n'
-      //<< "  angle_plane2:       " << wmUtil.angle_plane2       << '\n'
-      //<< "  plane0_boundary:    " << wmUtil.plane0_boundary    << '\n'
-      //<< "  plane1_boundary:    " << wmUtil.plane1_boundary    << '\n'
-      //<< "  plane2_boundary:    " << wmUtil.plane2_boundary    << '\n'
       << "---------------------------------------------------";
 
-    // add some debugging here
-
-    // timing things
-    double nu_t = 0.;
-    //art::Handle<std::vector<simb::MCTruth> > mctruth_h;
-    //evt.getByLabel("generator", mctruth_h);
-    //if(not mctruth_h.isValid())
-    //{
-    //  MF_LOG_VERBATIM("TestWireModifier")
-    //    << "Invalid truth info. Bail.";
-    //    return;
-    //}
-    //std::vector<art::Ptr<simb::MCTruth> > MCTruthVec;
-    //art::fill_ptr_vector(MCTruthVec, mctruth_h);
-    //for (auto& mctruth : MCTruthVec ) {
-    //  const simb::MCParticle& truth_mcparticle = mctruth->GetParticle(0);
-    //  nu_t = truth_mcparticle.T( 0 );
-    //}
-    double offset_ADC = (nu_t + detClock.TriggerOffsetTPC()) / detClock.TPCClock().TickPeriod();
-    //double offset_ADC = 0;
-    MF_LOG_VERBATIM("TestWireModifier")
-      << "nu time is " << nu_t << ", so offset_ADC is " << offset_ADC << " = (" <<nu_t << " + " << detClock.TriggerOffsetTPC() << ") / " << detClock.TPCClock().TickPeriod();
-
     // do the things
+    double offset_ADC = 0; // don't use an offset atm
     MF_LOG_VERBATIM("TestWireModifier")
       << "Get Edep Map";
     wmUtil.FillROIMatchedEdepMap(edepShiftedVec, wireVec, offset_ADC);
@@ -371,7 +337,7 @@ namespace wiremod
       //  util::CreateAssn(*this, evt, *new_wires, rd_ptr, *new_digit_assn, new_wires->size() - 1);
     } // end loop over wires
 
-    //evt.put(std::move(new_wires));
+    evt.put(std::move(new_wires));
     //evt.put(std::move(new_digit_assn));
   }
   DEFINE_ART_MODULE(TestWireModifier)
