@@ -28,7 +28,7 @@ physics: {
          InputBeamGateInfoLabel: "beamgate"
          InputSimEnergyDepositLabel: "ionization"
          InputSimPhotonsLabel: "largeant"
-         InputTriggerLabel: "emuTriggerinit"
+         InputTriggerLabel: "emuTriggerUnshifted"
          InputWaveformLabel: "opdaq"
          AdditionalOffset: 0.0 # [us] Additional offset to apply to the time shift
          ShiftSimEnergyDeposits: true
@@ -48,10 +48,8 @@ physics: {
       pmtlvdsgatesinit,
       pmttriggerwindowsinit,
       triggersimgatesinit,
-      emuTriggerinit,
+      emuTriggerUnshifted,
       shiftIonization,
-      pmtfixedthr,
-      @sequence::icarus_standard_triggersim.path,
       daq,
       crtdaq
   ]
@@ -76,15 +74,10 @@ physics.producers.triggersimgatesinit: {
   BeamGateTag: "beamgate"
 }
 
-physics.producers.emuTriggerinit: {
+physics.producers.emuTriggerUnshifted: {
   @table::physics.producers.emuTrigger
   BeamGates: "triggersimgatesinit"
   TriggerGatesTag: "pmttriggerwindowsinit"
-}
-
-physics.producers.pmtfixedthr: {
-  @table::physics.producers.pmtfixedthrinit
-  OpticalWaveforms: "shiftIonization"
 }
 
 physics.producers.triggersimgates.BeamGateTag: "shiftIonization"
@@ -97,7 +90,6 @@ outputs: {
     outputCommands: [
       "keep *",
       "drop *_ionization_*_*",
-      "drop *_emuTriggerinit_*_*",
       "drop *_pmtlvdsgatesinit_*_*",
       "drop *_pmtfixedthrinit_*_*",
       "drop *_pmttriggerwindowsinit_*_*",
