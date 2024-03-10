@@ -168,12 +168,22 @@ void dumpPMTmapping(icarusDB::IICARUSChannelMapProvider const& mapping) {
       << " includes " << digitizerChannels.size()
       << " LArSoft channels between " << digitizerChannels.front().channelID
       << " and " << digitizerChannels.back().channelID
-      << " [board channel index in brackets]:";
-    Pager pager{ 8 };
+      << " [board channel info in brackets]:";
+    Pager pager{ 3 };
     for(auto const & chInfo: digitizerChannels) {
       if (pager.nextHasNewLine()) log << "\n     ";
-      log << " "  << std::setw(3) << chInfo.channelID
-        << " [" << std::setw(3) << chInfo.digitizerChannelNo << "]";
+      log << " " << std::setw(3) << chInfo.channelID
+        << " [" << chInfo.digitizerLabel << "@"
+        << std::setfill('0') << std::setw(2) << chInfo.digitizerChannelNo;
+      if (chInfo.hasLVDSinfo()) {
+        log << ", LVDS:" << chInfo.LVDSconnector << "-"
+          << std::setw(2) << chInfo.LVDSbit;
+      }
+      if (chInfo.hasAdderInfo()) {
+        log << ", adder:" << chInfo.adderConnector << "-"
+          << std::setw(2) << chInfo.adderBit;
+      }
+      log << "]";
     } // for channel
     
   } // for fragment

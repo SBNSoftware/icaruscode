@@ -12,12 +12,16 @@
 #include "icaruscode/Decode/ChannelMapping/ICARUSChannelMapDataTypes.h"
 
 // LArSoft libraries
+#include "larcorealg/CoreUtils/counter.h"
 #include "larcorealg/CoreUtils/enumerate.h"
 
 // C/C++ standard libraries
 #include <algorithm> // std::transform()
 #include <array>
 #include <string>
+#include <string_view>
+#include <system_error> // std::make_error_code()
+#include <charconv> // std::from_char()
 #include <cctype> // std::tolower()
 
 
@@ -126,9 +130,59 @@ class icarusDB::IChannelMapping {
       return PlaneNames.size();
     }
   
+  /// Splits `s` into `N` integers of type `Integer` separated by `sep`.
+  /// @return an array of `N` integers of type `Integer` extracted from `s`
+  template <std::size_t N = 2, typename Integer = int>
+  static std::array<Integer, N> splitIntegers
+    (std::string const& s, std::string const& sep);
+  
   // --- END ----- Utility functions for the implementation --------------------
   
 }; // icarusDB::IChannelMapping
+
+
+// -----------------------------------------------------------------------------
+// ---  template implementation
+// -----------------------------------------------------------------------------
+template <std::size_t N /* = 2 */, typename Integer /* = int */>
+std::array<Integer, N> icarusDB::IChannelMapping::splitIntegers
+  (std::string const& s, std::string const& sep)
+{
+  std::array<Integer, N> values;
+  
+  auto convert = [](std::string_view s)
+    {
+      Integer value;
+      std::from_chars_result const res
+        = std::from_chars(s.cbegin(), s.cend(), value);
+      if (res.ec != std::errc{}) {
+        std::error_code ec = std::make_error_code(res.ec);
+        throw std::runtime_error{ "Failed to convert '" + std::string{ s }
+          + "' into an integer: " + ec.message() + " (code: "
+          + std::to_string(ec.value()) + ")."
+          };
+      }
+      return value;
+    };
+  
+  std::string_view const sv{ s };
+  std::size_t c = 0; // cursor
+  for (std::size_t const i: util::counter(N - 1)) {
+    std::size_t sc = sv.find(sep, c);
+    if (sc == std::string_view::npos) {
+      throw std::runtime_error{ "Separator '" + std::string{ sep }
+        + "' not found after number #" + std::to_string(i) + " of string '"
+        + std::string{ s } + "'"
+        };
+    }
+    values[i] = convert(sv.substr(c, sc));
+    c = sc + sep.length();
+  } // for
+  
+  values[N - 1] = convert(sv.substr(c));
+  
+  return values;
+} // icarusDB::IChannelMapping::splitIntegers()
 
 
 // -----------------------------------------------------------------------------

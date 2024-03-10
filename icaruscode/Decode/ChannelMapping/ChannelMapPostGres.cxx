@@ -1,7 +1,7 @@
 /**
  * @file   icaruscode/Decode/ChannelMapping/ChannelMapPostGres.cxx
  * @brief  Interface with ICARUS channel mapping PostGres database.
- * @author T. Usher (factorised by Gianluca Petrillo, petrillo@slac.stanford.edu)
+ * @author T. Usher (factorised by G. Petrillo, petrillo@slac.stanford.edu)
  * @see    icaruscode/Decode/ChannelMapping/ChannelMapPostGres.h
  */
 
@@ -415,11 +415,13 @@ int icarusDB::ChannelMapPostGres::BuildPMTFragmentToDigitizerChannelMap
   // input is C-strings; we force the other term of comparison to C++ strings
   using namespace std::string_literals;
   auto const [
-     ChannelIDcolumn,          LaserChannelColumn,   DigitizerColumn,
-     DigitizerChannelNoColumn, FragmentIDcolumn
+     LaserChannelColumn,     DigitizerChannelColumn, ChannelIDcolumn,
+     FragmentIDcolumn,       DigitizerLabelColumn,   LVDSconnectorColumn,
+     AdderConnectorColumn
   ]= details::WDAPositionFinder{ getTuple(dataset, 0) }(
-    "channel_id"s,            "light_fiber_label"s, "digitizer_label"s,
-    "digitizer_ch_number"s,   "fragment_id"s
+    "light_fiber_label"s,   "digitizer_ch_number"s, "channel_id"s,
+    "fragment_id"s,         "digitizer_label"s,     "FPGA_connector_DIO"s,
+    "adder_connector_DIO"s
     );
   
   // Ok, now we can start extracting the information
@@ -432,16 +434,18 @@ int icarusDB::ChannelMapPostGres::BuildPMTFragmentToDigitizerChannelMap
     
     int error = 0;
     
-    // nice... and currently unused
-    Expected const digitizerLabel = getStringFromTuple(tuple, DigitizerColumn);
+    PMTChannelInfo_t chInfo;
+    auto const nFields = static_cast<std::size_t>(getNfields(tuple));
+    
+    // digitizer label
+    Expected const digitizerLabel
+      = getStringFromTuple(tuple, DigitizerLabelColumn);
     if (!digitizerLabel) {
       throw myException() << "Error (code: " << digitizerLabel.code()
         << " on row " << row
         << ") retrieving PMT digitizer from channel mapping database\n";
     }
-    
-    
-    PMTChannelInfo_t chInfo;
+    chInfo.digitizerLabel = digitizerLabel;
     
     // fragment id
     unsigned long const fragmentID
@@ -453,7 +457,7 @@ int icarusDB::ChannelMapPostGres::BuildPMTFragmentToDigitizerChannelMap
     
     // digitizer channel number
     chInfo.digitizerChannelNo
-      = getLongValue(tuple, DigitizerChannelNoColumn, &error);
+      = getLongValue(tuple, DigitizerChannelColumn, &error);
     if (error) {
       throw myException() << "Error (code: " << error << " on row " << row
         << ") reading PMT readout board channel number\n";
@@ -474,6 +478,36 @@ int icarusDB::ChannelMapPostGres::BuildPMTFragmentToDigitizerChannelMap
     }
     // will throw on error:
     chInfo.laserChannelNo = std::stol(laserChannelLabel.value().substr(2));
+    
+    // LVDS connector and bit
+    if (LVDSconnectorColumn < nFields) {
+      Expected LVDSconnectorLabel
+        = getStringFromTuple(tuple, LVDSconnectorColumn);
+      if (!LVDSconnectorLabel) {
+        throw myException() << "Error (code: " << LVDSconnectorLabel.code()
+          << " on row " << row
+          << ") retrieving LVDS connector from channel mapping database\n";
+      }
+      auto const [ LVDSconnector, LVDSbit ]
+        = splitIntegers<2, unsigned short int>(LVDSconnectorLabel, "-");
+      chInfo.LVDSconnector = LVDSconnector;
+      chInfo.LVDSbit = LVDSbit;
+    }
+    
+    // adder connector and bit
+    if (AdderConnectorColumn < nFields) {
+      Expected adderConnectorLabel
+        = getStringFromTuple(tuple, AdderConnectorColumn);
+      if (!adderConnectorLabel) {
+        throw myException() << "Error (code: " << adderConnectorLabel.code()
+          << " on row " << row
+          << ") retrieving adder connector from channel mapping database\n";
+      }
+      auto const [ adderConnector, adderBit ]
+        = splitIntegers<2, unsigned short int>(adderConnectorLabel, "-");
+      chInfo.adderConnector = adderConnector;
+      chInfo.adderBit = adderBit;
+    }
     
     // fill the map
     fragmentToDigitizerChannelMap[fragmentID].push_back(std::move(chInfo));
