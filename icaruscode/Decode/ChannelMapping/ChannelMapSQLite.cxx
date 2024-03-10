@@ -450,11 +450,13 @@ int icarusDB::ChannelMapSQLite::buildPMTFragmentToDigitizerChannelMap_callback
   // input is C-strings; we force the other term of comparison to C++ strings
   using namespace std::string_literals;
   auto const [
-     LaserChannelColumn,   DigitizerChannelColumn, ChannelIDcolumn,
-     FragmentIDcolumn
+     LaserChannelColumn,     DigitizerChannelColumn, ChannelIDcolumn,
+     FragmentIDcolumn,       DigitizerLabelColumn,   LVDSconnectorColumn,
+     AdderConnectorColumn
   ] = icarus::ns::util::PositionFinder{ gsl::span{azColName, (unsigned) argc} }(
-    "light_fiber_label"s, "digitizer_ch_number"s, "channel_id"s,
-    "fragment_id"s
+    "light_fiber_label"s,   "digitizer_ch_number"s, "channel_id"s,
+    "fragment_id"s,         "digitizer_label"s,     "FPGA_connector_DIO"s,
+    "adder_connector_DIO"s
     );
   
   auto& fragmentToDigitizerChannelMap
@@ -462,7 +464,9 @@ int icarusDB::ChannelMapSQLite::buildPMTFragmentToDigitizerChannelMap_callback
   
   // Start extracting info
   unsigned int const fragmentID         = std::stol(argv[FragmentIDcolumn]);
-  unsigned int const digitizerChannelNo = std::stol(argv[DigitizerChannelColumn]);
+  std::string digitizerLabel            = argv[DigitizerLabelColumn];
+  unsigned int const digitizerChannelNo
+    = std::stol(argv[DigitizerChannelColumn]);
   unsigned int const channelID          = std::stol(argv[ChannelIDcolumn]);
 
   // Read the laser channel; format is `L-<number>`. <number> is int from [1-41]
@@ -476,10 +480,30 @@ int icarusDB::ChannelMapSQLite::buildPMTFragmentToDigitizerChannelMap_callback
       << "Failed to convert laser channel '" << laserChannelLabel
       << "' into a channel number for channel " << channelID << "!\n";
   }
+  
+  // PMT discriminated signal connector and bit
+  auto const [ LVDSconnector, LVDSbit ]
+    = (LVDSconnectorColumn < (std::size_t)argc)
+    ? splitIntegers<2, unsigned short int>(argv[LVDSconnectorColumn], "-")
+    : std::array
+      { PMTChannelInfo_t::NoConnector, PMTChannelInfo_t::NoConnectorBit }
+    ;
+  
+  // adder discriminated signal connector and bit
+  auto const [ adderConnector, adderBit ]
+    = (AdderConnectorColumn < (std::size_t)argc)
+    ? splitIntegers<2, unsigned short int>(argv[AdderConnectorColumn], "-")
+    : std::array
+      { PMTChannelInfo_t::NoConnector, PMTChannelInfo_t::NoConnectorBit }
+    ;
 
   // Fill the map
-  fragmentToDigitizerChannelMap[fragmentID].push_back
-    ({ digitizerChannelNo, channelID, laserChannel });
+  fragmentToDigitizerChannelMap[fragmentID].push_back({ // C++20: name members
+    std::move(digitizerLabel), digitizerChannelNo,
+    channelID, laserChannel,
+    LVDSconnector, LVDSbit,
+    adderConnector, adderBit
+    });
   
   return 0;
 } // ...::ChannelMapSQLite::buildPMTFragmentToDigitizerChannelMap_callback()
