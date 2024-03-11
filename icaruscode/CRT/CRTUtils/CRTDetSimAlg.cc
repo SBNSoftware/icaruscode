@@ -496,7 +496,7 @@ namespace icarus{
 	      path += "/";
 	    }
 	  }
-	  if (path.find(adGeo.Name())!=std::string::npos && path.find("strip"+stripn)!=std::string::npos) break;
+	  if (path.find(adsGeo.TotalVolume()->GetName())!=std::string::npos) break;
 	  else path = "";
 	}
 

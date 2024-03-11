@@ -10,7 +10,8 @@ services: {
   @table::icarus_detsim_services
   #FileCatalogMetadata:  @local::art_file_catalog_mc
 } # services
-
+services.Geometry.GDML: "icarus_complete_20220518_overburden.gdml"
+services.Geometry.ROOT: "icarus_complete_20220518_overburden.gdml"
 
 physics: {
 
