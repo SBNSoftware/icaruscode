@@ -610,6 +610,9 @@ string CRTCommonUtils::AuxDetNameToRegion(string name) {
     }
     base+="module###";
 
+    //keep compatibility with legacy g4
+    name.erase(std::remove(name.begin(), name.end(), '_'), name.end());
+
     //module name has 2 possible formats
     //  volAuxDet_<subsystem>_module_###_<region>
     //  volAuxDet_<subsystem>_module_###_cut###_<region>
