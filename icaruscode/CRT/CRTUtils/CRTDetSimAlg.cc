@@ -496,7 +496,9 @@ namespace icarus{
 	      path += "/";
 	    }
 	  }
-	  if ( (path.find(adGeo.Name())!=std::string::npos && path.find("strip"+stripn)!=std::string::npos) || path.find(adsGeo.TotalVolume()->GetName())!=std::string::npos) break;
+	  if ( (path.find(adGeo.Name())!=std::string::npos && path.find("strip"+stripn)!=std::string::npos) || //refactored
+	       (std::string(adsGeo.TotalVolume()->GetName()).find("_")!=std::string::npos && path.find(adsGeo.TotalVolume()->GetName())!=std::string::npos) ) //legacy
+	    break;
 	  else path = "";
 	}
 
