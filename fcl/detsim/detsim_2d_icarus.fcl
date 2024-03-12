@@ -34,3 +34,7 @@ physics: {
 outputs: {
   rootoutput: @local::icarus_rootoutput
 }
+
+physics.producers.daq.wcls_main.configs: ["pgrapher/experiment/icarus/wcls-multitpc-sim-drift-simchannel.jsonnet"]
+physics.producers.crtdaq.G4ModuleLabel: "largeant"
+physics.producers.opdaq.InputModule: "largeant"
