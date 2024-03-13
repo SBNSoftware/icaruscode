@@ -408,7 +408,7 @@ constexpr unsigned int icarusDB::ICARUSChannelMapProviderBase<ChMapAlg>::PMTfrag
   
   // protest if this is a fragment not from the PMT;
   // but make an exception for old PMT fragment IDs (legacy)
-  assert(((fragmentID & ~0xFF) == 0x00) || ((fragmentID & ~0xFF) == 0x20));
+  assert(((fragmentID & ~0xFF) == 0x0000) || ((fragmentID & ~0xFF) == 0x2000));
   
   return fragmentID & 0xFF;
   
