@@ -817,7 +817,7 @@ namespace daq
       encodeLVDSbits(cryostat, 0 /* any of the connectors */, connectors01)
       };
     
-    cryoInfo.SectorStatus = {
+    cryoInfo.sectorStatus = {
       encodeSectorBits(cryostat, 2 /* any of the connectors */, connectors23),
       encodeSectorBits(cryostat, 0 /* any of the connectors */, connectors01)
       };
