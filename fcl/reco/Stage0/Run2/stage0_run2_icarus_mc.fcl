@@ -54,7 +54,5 @@ physics.analyzers.purityinfoana1.SelectEvents: [ path ]
 physics.producers.purityana0.RawModuleLabel:   ["MCDecodeTPCROI:PHYSCRATEDATATPCWW","MCDecodeTPCROI:PHYSCRATEDATATPCWE","MCDecodeTPCROI:PHYSCRATEDATATPCEW","MCDecodeTPCROI:PHYSCRATEDATATPCEE"]
 physics.producers.purityana1.RawModuleLabel:   ["MCDecodeTPCROI:PHYSCRATEDATATPCWW","MCDecodeTPCROI:PHYSCRATEDATATPCWE","MCDecodeTPCROI:PHYSCRATEDATATPCEW","MCDecodeTPCROI:PHYSCRATEDATATPCEE"]
 
-# restore legacy G4 gdml and label
+# restore legacy G4 labels
 physics.producers.mcophit.SimPhotonsProducer: "largeant"
-services.Geometry.GDML: "icarus_complete_20220518_overburden.gdml"
-services.Geometry.ROOT: "icarus_complete_20220518_overburden.gdml"
