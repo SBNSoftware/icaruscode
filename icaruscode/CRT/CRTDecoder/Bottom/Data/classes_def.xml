@@ -1,0 +1,32 @@
+<!-- 
+  File: classes_def.xml
+  Brief: Data product definitions for CRT::Trigger used in Cosmic Ray Tagger I/O.  
+  Author: Andrew Olivier aolivier@ur.rochester.edu
+-->
+
+<lcgdict>
+  <!-- The data product added in this directory -->
+  <class name="CRT::Hit" ClassVersion="10">
+   <version ClassVersion="10" checksum="3475780026"/>
+  </class>
+  <class name="CRT::Trigger" ClassVersion="10">
+   <version ClassVersion="10" checksum="1208803994"/>
+  </class>
+
+  <!-- Classes that ART will need to instantiate to store CRT::Trigger.  I have 
+       added std::vector<CRT::Hit> on a hunch because CRT::Trigger contains a 
+       std::vector<CRT::Hit> -->
+  <class name="art::Ptr<CRT::Trigger>"/>
+  <class name="std::vector<CRT::Trigger>"/>
+  <class name="std::vector<CRT::Hit>"/>
+  <class name="art::Wrapper<std::vector<CRT::Trigger>>"/>
+  <class name="art::Wrapper<CRT::Trigger>"/>
+
+  <!-- Actual ART class template instantiations using CRT::Trigger -->
+  <class name="art::Assns<sim::AuxDetSimChannel, CRT::Trigger, void>" />  
+  <class name="art::Assns<CRT::Trigger, sim::AuxDetSimChannel, void>" />
+  <class name="std::pair<art::Ptr<CRT::Trigger>, art::Ptr<sim::AuxDetSimChannel>>" />
+  <class name="art::Wrapper<art::Assns<CRT::Trigger, sim::AuxDetSimChannel>>" />
+  <class name="std::pair<art::Ptr<sim::AuxDetSimChannel>, art::Ptr<CRT::Trigger>>" />
+  <class name="art::Wrapper<art::Assns<sim::AuxDetSimChannel, CRT::Trigger>>" />
+</lcgdict>

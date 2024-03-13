@@ -1,0 +1,51 @@
+#This is the default configuration file
+#include "CRTRawDecoder.fcl"
+
+services:
+{
+  TimeTracker:       {}
+  RandomNumberGenerator: {}
+  TFileService: {
+   closeFileFast: true  # default
+   fileName:  "RunRawDecoderTFile.root"
+   tmpDir: "<parent-path-of-filename>"  # default
+  }
+
+  IFBeam:            {}
+
+}
+
+physics:
+{
+  producers:
+  {
+
+    crtrawdecoder: @local::crt_raw_decoder
+
+  }
+
+  produce: [  crtrawdecoder ]
+  output: [ out1 ]
+  trigger_paths : [ produce ]
+  end_paths: [ output ]
+}
+
+outputs:
+{
+  out1:
+  {
+    outputCommands: [ "keep *"]//, "drop artdaq::Fragments_*_*TPC_*", "drop artdaq::Fragments_*_*FELIX_*" ]
+    compressionLevel: 1
+    module_type: RootOutput
+    fileName: "%ifb_decode.root"
+  }
+
+}
+
+source:
+{
+  module_type: RootInput
+  maxEvents : -1
+}
+
+process_name: RunRawDecoder

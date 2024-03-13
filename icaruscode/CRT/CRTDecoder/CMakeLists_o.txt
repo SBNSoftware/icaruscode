@@ -174,9 +174,7 @@ cet_build_plugin( DecoderICARUSCRT art::module
   icaruscode_Utilities
   art::Framework_Services_Registry
   art_root_io::tfile_support
-  art_root_io::TFileService_service 
-  icaruscode::CRT_CRTDecoder_Bottom_Data
-  icaruscode::CRT_CRTDecoder_Bottom_Fragments
+  art_root_io::TFileService_service
   ROOT::Core ROOT::Tree ROOT::Hist
   artdaq_core::artdaq-core_Utilities
   sbndaq_artdaq_core::sbndaq-artdaq-core_Overlays_Common
@@ -185,11 +183,25 @@ cet_build_plugin( DecoderICARUSCRT art::module
 )
 
 cet_build_plugin( CRTRawDecoder art::module
+  
+  icaruscode_Utilities
+  sbndaq_online_storage
+  sbndaq_online_hiredis
   artdaq_core::artdaq-core_Data
-  #ICARUS-raw-data_CRT
-  icaruscode::CRT_CRTDecoder_Bottom_Data
-  icaruscode::CRT_CRTDecoder_Bottom_Fragments
-  ROOT::Hist  
+  artdaq_core::artdaq-core_Utilities
+  sbndaq_artdaq_core::sbndaq-artdaq-core_Overlays_Common
+  icarusCRT-raw-data_Overlays
+  art::Framework_Core
+  art::Framework_Principal
+  art::Framework_Services_Registry
+  art_root_io::tfile_support
+  ROOT::Core
+  art_root_io::TFileService_service
+  ART_PERSISTENCY_PROVENANCE
+  messagefacility::MF_MessageLogger
+  CETLIB
+  ROOT_BASIC_LIB_LIST
+  BASENAME_ONLY
 )
 
 
@@ -197,5 +209,3 @@ cet_build_plugin( CRTRawDecoder art::module
 
 
 install_fhicl()
-install_headers()
-install_source()

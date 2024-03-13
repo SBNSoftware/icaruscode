@@ -1,0 +1,40 @@
+#File: CRT.fcet
+#Brief: Defines default parameters for CRT-related modules
+#Author: Andrew Olivier aolivier@ur.rochester.edu
+
+BEGIN_PROLOG
+
+# Simulation
+# CRTSim module
+CRTSim_standard:
+{
+  module_type:       "CRTSim"
+  SimLabel:          "largeant"
+  GeVToADC:          5e5 #MIP gives ~1000 ADC in commissioning
+  IntegrationTime:   20 #ns
+  ReadoutWindowSize: 4 #IntegrationTimes
+  Deadtime:          5 #Discriminator dead time in IntegrationTimes
+  DACThreshold:      100 #TODO: Set DAC threshold to 2 PE for commissioning.  In ADC countss for now.
+}
+
+# CRTSimValidation module
+CRTSimValidation_standard:
+{
+  module_type: "CRTSimValidation"
+  CRTLabel: "crt"
+}
+
+CRTOnlineMonitor_standard:
+{
+  module_type: "CRTOnlineMonitor"
+  CRTLabel: "crtrawdecoder"
+}
+
+CRTTimeOffset_standard:
+{
+  module_type: "TimeOffset"
+  CRTLabel: "crtrawdecoder"
+  TimestampLabel: "timingrawdecoder:daq"
+}
+
+END_PROLOG

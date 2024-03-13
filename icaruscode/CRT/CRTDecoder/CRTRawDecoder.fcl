@@ -1,0 +1,11 @@
+BEGIN_PROLOG
+
+crt_raw_decoder:
+{
+  module_type: "CRTRawDecoder"
+  RawDataTag: "daq:ContainerBottomCRT"
+  LookForContainer: true
+  MatchOfflineMapping: false
+}
+
+END_PROLOG

@@ -2,7 +2,7 @@
 #include "channelmapping_icarus.fcl"
 #include "crt_decoderdefs_icarus.fcl"
 #include "decoderdefs_icarus.fcl"
-#include "crt_raw_decoder.fcl"
+
 process_name: crtdecoder
 
 services:
@@ -42,12 +42,11 @@ physics:
    daqCRT: @local::crtdaq_icarus
    daqTrigger: @local::decodeTriggerAutodetect
    triggerconfig: @local::extractTriggerConfig
-   crtrawdecoder: @local::crt_raw_decoder
  }
 
  #define the producer and filter modules for this path, order matters, 
  #filters reject all following items.  see lines starting physics.producers below
- daq: [ triggerconfig, daqTrigger, daqCRT, crtrawdecoder]
+ daq: [ triggerconfig, daqTrigger, daqCRT]
 
  #define the output stream, there could be more than one if using filters 
  stream1:  [ out1 ]

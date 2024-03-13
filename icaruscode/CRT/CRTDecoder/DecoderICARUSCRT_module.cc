@@ -51,10 +51,15 @@
 #include <iomanip>
 #include <vector>
 #include <iostream>
-#include<stdlib.h>
+#include <stdlib.h>
 #include <map>
 
+//Bottom specific includes
+#include "TGraph.h"
+#include "Bottom/Fragments/CRTFragment.hh"
+#include "Bottom/Data/CRTTrigger.h"
 
+using namespace CRT;
 namespace crt {
   class DecoderICARUSCRT;
 }
@@ -79,6 +84,8 @@ private:
   uint64_t CalculateTimestamp(icarus::crt::BernCRTTranslator& hit);
   void     CorrectForCableDelay(icarus::crt::BernCRTTranslator & hit);
   bool     IsSideCRT(icarus::crt::BernCRTTranslator & hit);
+  bool     IsTopCRT(icarus::crt::BernCRTTranslator & hit);
+  
 
   // Declare member data here.
   const icarusDB::IICARUSChannelMap* fChannelMap = nullptr;
@@ -89,24 +96,41 @@ private:
   
   std::map<uint8_t, int32_t> FEB_delay_side; //<mac5, delay in ns>
   std::map<uint8_t, int32_t> FEB_delay_top;  //<mac5, delay in ns>
+  //Bottom variables and functions
+  const art::InputTag fFragTag;
+  const bool fLookForContainer;
+  uint64_t fEarliestTime;
+  std::vector<size_t> fChannelMapB; //Simple map from raw data module number to offline module number.
+  // Compartmentalize internal functionality so that I can reuse it with both regular Fragments and "container" Fragments
+  void FragmentToTriggers(const artdaq::Fragment& artFrag, std::unique_ptr<std::vector<CRT::Trigger>>& triggers);
+  // For the first Event of every job, I want to set fEarliestTime to the earliest time in that Event
+  void SetEarliestTime(const artdaq::Fragment& frag);
+  //Counting variables for sub module event. for debugging
+  uint64_t      topCount = 0; 
+  uint64_t      sideCount = 0;
+  uint64_t      bottomCount = 0;
+  uint64_t      totalCount = 0;
 };
 
 
-crt::DecoderICARUSCRT::DecoderICARUSCRT(fhicl::ParameterSet const& p)
-  : EDProducer{p}
-  , fInputTagPatterns{
+crt::DecoderICARUSCRT::DecoderICARUSCRT(fhicl::ParameterSet const& p): EDProducer{p},
+    fInputTagPatterns{
     util::RegexDataProductSelector::makePatterns(p.get(
       "FragmentTagPatterns",
       std::vector<std::string>{ "daq:(Container)?BERNCRT.*" }
       ))
-    }
-  , fDropRawDataAfterUse{ p.get<bool>("DropRawDataAfterUse", true) }
-{
-  fChannelMap = art::ServiceHandle<icarusDB::IICARUSChannelMap const>{}.get();
-  produces< std::vector<icarus::crt::CRTData> >();
-  
-  mayConsumeMany<artdaq::Fragments>();
+    }, 
+    fDropRawDataAfterUse( p.get<bool>("DropRawDataAfterUse", true) ),
+    fFragTag(p.get<std::string>("RawDataTag","hello")), 
+    fLookForContainer(p.get<bool>("LookForContainer", false)),    
+    fEarliestTime(std::numeric_limits<decltype(fEarliestTime)>::max())
 
+{
+std::cout<<"RawDataTag: "<<fFragTag<<'\n';  
+fChannelMap = art::ServiceHandle<icarusDB::IICARUSChannelMap const>{}.get();
+  produces< std::vector<icarus::crt::CRTData> >();
+  //mayConsumeMany<artdaq::Fragments>();
+  consumes<std::vector<artdaq::Fragment>>(fFragTag);
   {
     std::vector<std::vector<int32_t> > delays =  p.get<std::vector<std::vector<int32_t> > >("FEB_delay_side");
     for(auto & feb : delays) {
@@ -131,6 +155,12 @@ bool crt::DecoderICARUSCRT::IsSideCRT(icarus::crt::BernCRTTranslator & hit) {
    * Fragment ID described in SBN doc 16111
    */
   return (hit.fragment_ID & 0x3100) == 0x3100;
+}
+bool crt::DecoderICARUSCRT::IsTopCRT(icarus::crt::BernCRTTranslator & hit) {
+  /**
+   * Fragment ID described in SBN doc 16111
+   */
+  return (hit.fragment_ID & 0x3200) == 0x3200;
 }
 void crt::DecoderICARUSCRT::CorrectForCableDelay(icarus::crt::BernCRTTranslator & hit) {
   if(!hit.IsReference_TS0() && !hit.IsReference_TS1()) { //don't correct reference T0 and T1 hits for cable length
@@ -169,12 +199,80 @@ uint64_t crt::DecoderICARUSCRT::CalculateTimestamp(icarus::crt::BernCRTTranslato
     - (ts0 - mean_poll_time_ns >  500'000'000) * 1000'000'000;
 }
 
+//Bottom functions
+
+void crt::DecoderICARUSCRT::FragmentToTriggers(const artdaq::Fragment& artFrag, std::unique_ptr<std::vector<CRT::Trigger>>& triggers)
+  {
+    CRT::Fragment frag(artFrag);                                                                                                                                                   
+    TLOG(TLVL_DEBUG,"CRT") << "Is this Fragment good?  " << ((frag.good_event())?"true":"false") << "\n";                                                                                                                                                   
+    std::vector<CRT::Hit> hits;
+    //Make Channel Mapping array
+    size_t map_array[64] = {};
+    int count = 1;
+    bool alternativeMapping = false;
+    if (alternativeMapping){
+     //Basic alternative map filling.
+     for (int i = 64; i>= 1; i--){ 
+ 	     map_array[i] = count;
+	     count++; 
+     }
+    }
+    else{
+    //Apropriate map filling.
+     int even = 64;
+     int odd = 63;
+     for (int i = 1; i<= 64; i++){
+       if (count <= 4) {
+       map_array [i] = even;
+       even-=2;
+       count++;
+       }
+       else if (count <= 8){
+        map_array[i] = odd;
+        odd-=2;
+        if (count != 8){
+        count++;
+        }
+        else{
+        count = 1;
+        }
+       }
+     }
+    }
+  
+    //Make a CRT::Hit from each non-zero ADC value in this Fragment
+    for(size_t hitNum = 0; hitNum < frag.num_hits(); ++hitNum)
+    {
+      const auto hit = *(frag.hit(hitNum)); 
+      size_t offline_channel = map_array[hit.channel]; 
+      hits.emplace_back(offline_channel, hit.adc);      
+    }
+                                                                                                                                                   
+    try
+    {  
+      triggers->emplace_back(fChannelMapB.at(frag.module_num()), frag.fifty_mhz_time(), std::move(hits)); 
+    }
+    catch(const std::out_of_range& e)
+    {
+       TLOG(TLVL_WARNING,"CRT")<< "Got CRT channel number " << frag.module_num() << " that is greater than the number of boards"
+                                        << " in the channel map: " << fChannelMapB.size() << ".  Throwing out this Trigger.\n";
+    }    
+
+  }
+
+void crt::DecoderICARUSCRT::SetEarliestTime(const artdaq::Fragment& frag)
+  {
+    CRT::Fragment crt(frag);
+    if(crt.fifty_mhz_time() < fEarliestTime) fEarliestTime = crt.fifty_mhz_time();
+  }
+  
+
 void crt::DecoderICARUSCRT::produce(art::Event& evt)
 {
-
+  
   util::LocalArtHandleTrackerManager dataCacheRemover
     (evt, fDropRawDataAfterUse);
-  
+  //Side and Top Fragment Handles:
   std::vector<art::Handle<artdaq::Fragments>> fragmentHandles
      = evt.getMany<artdaq::Fragments>(fInputTagPatterns);
   
@@ -482,8 +580,9 @@ void crt::DecoderICARUSCRT::produce(art::Event& evt)
         }
         allCRTdata.push_back(data);
       } // for all recipes
+      sideCount++;
     }
-    else { //not side CRT, therefore top CRT
+    else if (IsTopCRT(hit)) { //not side CRT, therefore check if top CRT
       //this code needs review by the TOP CRT group!!!
         icarus::crt::CRTData data;
         data.fMac5  = fChannelMap->gettopSimMacAddress(hit.mac5); 
@@ -500,19 +599,101 @@ void crt::DecoderICARUSCRT::produce(art::Event& evt)
         memcpy(data.fAdc, hit.adc, 32*sizeof(hit.adc[0]));
         
         allCRTdata.push_back(data);
+        topCount++;
     }
-
+    totalCount++;
   } // loop over all hits in an event
 
-  // move the data which is actually present in the final data product
-  auto crtdata = std::make_unique<std::vector<icarus::crt::CRTData>>();
+
+//Bottom pieces:
+auto triggers = std::make_unique<std::vector<CRT::Trigger>>();
+//Next two lines map each index to itself, taken for begin_job from bottom decoder
+const size_t nModules = 56; //
+for(size_t module = 0; module < nModules; ++module) fChannelMapB.push_back(module);
+try
+    {      
+      std::cout<<"In the bottom try"<<'\n';  
+      //-----
+      //Try to get artdaq::Fragments produced from CRT data.  The following line is the reason for 
+      //this try-catch block.  I don't expect anything else to throw a cet::Exception.
+      const auto& fragHandle = evt.getValidHandle<std::vector<artdaq::Fragment>>(fFragTag);
+      //std::cout<<"In the try for produce function"<<'\n';//AC:Added to see where just running the decoder goes. 
+      if(fLookForContainer)
+      {
+        //If this is the first event, set fEarliestTime
+        if(fEarliestTime == std::numeric_limits<decltype(fEarliestTime)>::max())
+        {
+	  //Loop every fragment in the Event for each fragment create a containerFragment and loop over each block. Calling SetEarliestTime for each one. 
+          for(const auto& frag: *fragHandle) 
+          {
+            artdaq::ContainerFragment container(frag);
+            for(size_t pos = 0; pos < container.block_count(); ++pos) SetEarliestTime(*container[pos]);
+          }
+        }
+        
+        for(const auto& artFrag: *fragHandle)
+        {
+          artdaq::ContainerFragment container(artFrag);
+          for(size_t pos = 0; pos < container.block_count(); ++pos) FragmentToTriggers(*container[pos], triggers); 
+        }
+      }
+      else
+      {
+        //If this is the first event, set fEarliestTime
+        if(fEarliestTime == std::numeric_limits<decltype(fEarliestTime)>::max())
+        {
+          for(const auto& frag: *fragHandle) SetEarliestTime(frag);
+        }
+
+        //Convert each fragment into a CRT::Trigger.
+        for(const auto& artFrag: *fragHandle) FragmentToTriggers(artFrag, triggers);
+      }
+    }//End of bottom try to make Triggers vector equivalent to the hit_vector
+
+catch(const cet::exception& exc) //If there are no artdaq::Fragments in this Event, just add an empty container of CRT::Triggers.
+    {
+       //TLOG(TLVL_WARNING,"CRT") << "No artdaq::Fragments produced by " << fFragTag << " in this event, so "
+       //                             << "not doing anything.\n";
+        std::cout << "No artdaq::Fragments produced by " << fFragTag << " in this event, so "
+                              << "not doing anything.\n";
+    }
+
+for(const auto& trigger: *triggers)
+       {
+        std::cout<<"In the bottom triggers loop"<<'\n';
+        //template<typename T, int N>
+        //using raw_array = T[N];
+        //auto adc_array =  raw_array<decltype(auto),64> {};
+        icarus::crt::CRTData data;
+          //trigger.dump(outputStream);
+          data.fMac5 = trigger.Channel();
+          data.fTs0 = trigger.Timestamp();	          
+          for(const auto& hit: trigger.Hits()){
+            //adc_array[hit.Channel()] = hit.ADC();    
+            //data.fAdc = adc_array;
+            std::cout<<"ADC: "<<hit.ADC()<<'\n';
+            bottomCount++;          
+            totalCount++;   
+            allCRTdata.push_back(data);
+          }           
+       }
+
+
+// move the data which is actually present in the final data product
+auto crtdata = std::make_unique<std::vector<icarus::crt::CRTData>>();
   for (icarus::crt::CRTData& crtDataElem: allCRTdata) {
     if (crtDataElem.fMac5 == 0) continue; // not a valid Mac5, data is not present
     crtdata->push_back(std::move(crtDataElem));
   }
+evt.put(std::move(crtdata));
 
-  evt.put(std::move(crtdata));
 
-}
+//Testing counts
+  std::cout<<"Hit counts for each subdetector. Total count: "<<totalCount<<'\n';
+  std::cout<<"Top count: "<<topCount<<'\n';
+  std::cout<<"Side count: "<<sideCount<<'\n';
+  std::cout<<"Bottom count: "<<bottomCount<<'\n';
+}//End of produce
 
 DEFINE_ART_MODULE(crt::DecoderICARUSCRT)
+
