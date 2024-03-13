@@ -25,13 +25,6 @@ physics.trigger_paths: [ path ]
 physics.end_paths:     [ outana, streamROOT ]
 
 # Drop the artdaq format files on output
-outputs.rootOutput.outputCommands:         ["keep *_*_*_*", 
-                                            "drop *_daq_*_*", 
-                                            "drop *_MCDecodeTPCROI_*_*", 
-                                            "drop *_decon1droi_*_*", 
-                                            "drop *_decon2droi*_*_*", 
-                                            "drop recob::Wire*_roifinder*_*_*"
-                                           ]
 outputs.rootOutput.outputCommands: ["keep *_*_*_*", 
                                     "drop *_daq*_*_*", 
                                     "drop *_MCDecodeTPCROI_*_*", 
@@ -55,10 +48,10 @@ physics.producers.decon2droiWE.wcls_main.params.raw_input_label:  "MCDecodeTPCRO
 physics.producers.decon2droiWW.wcls_main.params.raw_input_label:  "MCDecodeTPCROI:PHYSCRATEDATATPCWW"
 
 # As per Gray Putname...
-physics.producers.decon2droiEE.wcls_main.structs.gain0: 10.2636323 
-physics.producers.decon2droiEW.wcls_main.structs.gain0: 10.2636323 
-physics.producers.decon2droiWE.wcls_main.structs.gain0: 10.2636323 
-physics.producers.decon2droiWW.wcls_main.structs.gain0: 10.2636323 
+physics.producers.decon2droiEE.wcls_main.structs.gain0: 17.05212 
+physics.producers.decon2droiEW.wcls_main.structs.gain0: 17.05212 
+physics.producers.decon2droiWE.wcls_main.structs.gain0: 17.05212 
+physics.producers.decon2droiWW.wcls_main.structs.gain0: 17.05212 
 
 
 physics.producers.decon2droiEE.wcls_main.structs.gain1: 12.1420344 
