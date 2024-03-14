@@ -79,6 +79,3 @@ outputs.out1.SelectEvents: [ "simulate" ]
 outputs.out1.fileName:	"prodcorsika_protononly_intime_icarus_bnb_%tc-%p.root"
 
 process_name: CosmicsCorsikaProtonGenAndG4InTime
-
-services.Geometry.GDML: "icarus_complete_20220518_overburden.gdml"
-services.Geometry.ROOT: "icarus_complete_20220518_overburden.gdml"
