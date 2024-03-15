@@ -5,6 +5,8 @@ BEGIN_PROLOG
 beam_signal_extractor: 
 {
     module_type: "PMTBeamSignalsExtractor"
+    EWlabel: "daqPMT:EW"
+    RWMlabel: "daqPMT:RWM"
     TriggerCorrectionLabel: "daqPMT:globtrg"
     ADCThreshold: 200
     BoardSetup: @local::icarus_V1730_setup

@@ -12,11 +12,13 @@
 #include <limits>
 
 namespace icarus::timing{
+		
+        /// Special value to denote no special channel information
+        static constexpr auto NoChannel = std::numeric_limits<unsigned int>::max();
+        /// Special value to denote no time channel information
+        static constexpr auto NoTime = std::numeric_limits<double>::lowest();
 
 	struct PMTBeamSignal {
-		
-		/// Special value to denote no special channel information
-		static constexpr auto NoChannel = std::numeric_limits<unsigned int>::max();
 		
 		/// The special channel this time was extracted from
 		unsigned int channel = NoChannel;
@@ -26,16 +28,18 @@ namespace icarus::timing{
                 std::string crate = "";    
 		/// Sample within the waveform where the reference signal is found
 		size_t sample = std::numeric_limits<size_t>::lowest();
-		/// Start time w.r.t. trigger time [us]
-		double startTime = 0.0;
+		/// Start time in electronics time [us]
+		double startTimeAbs = NoTime;
+		/// Start time relative to trigger time [us]
+		double startTime = NoTime;
 		
                 PMTBeamSignal(unsigned int ch, std::string b, std::string c,
-			      size_t s, double t):
+			      size_t s, double t, double tt):
 			     channel(ch), digitizerLabel(b), crate(c), sample(s),
-			     startTime(t) {};
+			     startTimeAbs(t), startTime(tt) {};
 
 		/// Returns whether the time is valid.
-		bool isValid() const { return channel != NoChannel; }
+		bool isValid() const { return startTimeAbs > NoTime; }
 
 	};
 
