@@ -8,7 +8,7 @@ beam_signal_extractor:
     TriggerCorrectionLabel: "daqPMT:globtrg"
     ADCThreshold: 200
     BoardSetup: @local::icarus_V1730_setup
-    DebugTrees: true
+    DebugTrees: false
     SaveWaveforms: false
 }
 
