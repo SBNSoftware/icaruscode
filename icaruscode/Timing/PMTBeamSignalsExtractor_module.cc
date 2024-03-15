@@ -72,7 +72,7 @@ private:
   short int fADCThreshold;
   std::vector<fhicl::ParameterSet> fBoardSetup;
 
-  std::map<int, std::string> boardBySpecialChannel;
+  std::map<int, std::string> fBoardBySpecialChannel;
 
   TTree* fRWMTree;
   TTree* fEWTree;
@@ -103,24 +103,24 @@ private:
   // (they stayed on the same board)
   // FIXME: get it from the mapping db
   
-  std::map< std::string, int> singleChannelPerBoard = 
+  std::map< std::string, int> fSingleChannelPerBoard = 
   {
-    { "EE-BOT-C", 14 },
+    { "EE-BOT-C", 4 },
     { "EE-BOT-B", 24 },
     { "EE-TOP-C", 54 },
-    { "EE-TOP-B", 74 },
-    { "EW-BOT-C", 104 },
+    { "EE-TOP-B", 64 },
+    { "EW-BOT-C", 94 },
     { "EW-BOT-B", 114 },
     { "EW-TOP-C", 144 },
-    { "EW-TOP-B", 164 },
-    { "WE-BOT-C", 194 },
+    { "EW-TOP-B", 154 },
+    { "WE-BOT-C", 184 },
     { "WE-BOT-B", 204 },
     { "WE-TOP-C", 234 },
-    { "WE-TOP-B", 254 },
-    { "WW-BOT-C", 284 },
+    { "WE-TOP-B", 244 },
+    { "WW-BOT-C", 274 },
     { "WW-BOT-B", 294 },
-    { "WW-TOP-C", 324 },
-    { "WW-TOP-B", 344 },
+    { "WW-TOP-C", 320 },
+    { "WW-TOP-B", 339 },
   };
 
 };
@@ -137,7 +137,7 @@ icarus::timing::PMTBeamSignalsExtractor::PMTBeamSignalsExtractor(fhicl::Paramete
   
   for (fhicl::ParameterSet const& setup : fBoardSetup ) {
     auto innerSet = setup.get<std::vector<fhicl::ParameterSet>>("SpecialChannels");
-    boardBySpecialChannel[ innerSet[0].get<int>("Channel") ] = setup.get<std::string>("Name");
+    fBoardBySpecialChannel[ innerSet[0].get<int>("Channel") ] = setup.get<std::string>("Name");
   }
 
   // Call appropriate produces<>() functions here.
@@ -319,7 +319,7 @@ double icarus::timing::PMTBeamSignalsExtractor::getTriggerCorrection(int channel
        std::vector<icarus::timing::PMTWaveformTimeCorrection> const& corrections){
 
   // get the board name, convert to digitizer_label
-  std::string board = boardBySpecialChannel[channel];
+  std::string board = fBoardBySpecialChannel[channel];
   
   std::string head = "icaruspmt";
   std::string dash = "-";
@@ -334,7 +334,7 @@ double icarus::timing::PMTBeamSignalsExtractor::getTriggerCorrection(int channel
   // trigger-hardware corrections are shared by all channels on the same board
   // mapping currently does not expose channel<->board relationship
   // using ad-hoc configuration... FIXME!
-  int pmtch = singleChannelPerBoard[digitizer_label];
+  int pmtch = fSingleChannelPerBoard[digitizer_label];
 
   // trigger-hardware correction are in order
   // index of vector is pmtch
