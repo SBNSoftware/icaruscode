@@ -21,6 +21,7 @@
 #include "art_root_io/TFileService.h"
 
 #include "icaruscode/IcarusObj/PMTWaveformTimeCorrection.h"
+#include "icaruscode/IcarusObj/PMTBeamSignal.h"
 #include "lardata/DetectorInfoServices/DetectorClocksService.h"
 #include "lardataalg/DetectorInfo/DetectorTimings.h"
 #include "lardataalg/DetectorInfo/DetectorTimingTypes.h" // electronics_time
@@ -32,6 +33,7 @@
 #include <vector>
 #include <string>
 #include <algorithm>
+#include <utility>
 
 namespace icarus {
   namespace timing {
@@ -53,6 +55,8 @@ public:
 
   //trigger-hardware timing correction
   double getTriggerCorrection(int channel, std::vector<icarus::timing::PMTWaveformTimeCorrection> const& corrections);
+  std::string getDigitizerLabel(int channel);
+  std::string getCrate(int channel);
 
   // Plugins should not be copied or assigned.
   PMTBeamSignalsExtractor(PMTBeamSignalsExtractor const&) = delete;
@@ -64,14 +68,15 @@ public:
   void produce(art::Event& e) override;
 
 private:
-
+ 
+  // configuration parameters
   art::ServiceHandle<art::TFileService> tfs;
   bool fDebugTrees;
   bool fSaveWaveforms;
   art::InputTag fTriggerCorrectionLabel;
   short int fADCThreshold;
   std::vector<fhicl::ParameterSet> fBoardSetup;
-
+ 
   std::map<int, std::string> fBoardBySpecialChannel;
 
   TTree* fRWMTree;
@@ -89,7 +94,7 @@ private:
   double m_rwm_utime;
   double m_rwm_time;
   std::vector<short> m_rwm_wf;
- 
+  
   // ew signal 
   int m_n_ew;
   int m_ew_channel;
@@ -123,8 +128,15 @@ private:
     { "WW-TOP-B", 339 },
   };
 
+  using BeamSignalCollection = std::vector<icarus::timing::PMTBeamSignal>;
+  using BeamSignalCollectionPtr = std::unique_ptr<BeamSignalCollection>;
+
+  BeamSignalCollectionPtr fRWMcollection;
+  BeamSignalCollectionPtr fEWcollection;
+
 };
 
+// -----------------------------------------------------------------------------
 
 icarus::timing::PMTBeamSignalsExtractor::PMTBeamSignalsExtractor(fhicl::ParameterSet const& pset)
   : EDProducer{pset}
@@ -141,8 +153,8 @@ icarus::timing::PMTBeamSignalsExtractor::PMTBeamSignalsExtractor(fhicl::Paramete
   }
 
   // Call appropriate produces<>() functions here.
-
-  // Call appropriate consumes<>() for any products to be retrieved by this module.
+  produces<std::vector<PMTBeamSignal>>("RWM");
+  produces<std::vector<PMTBeamSignal>>("EW");
 }
 
 // -----------------------------------------------------------------------------
@@ -184,6 +196,11 @@ void icarus::timing::PMTBeamSignalsExtractor::beginJob()
 
 void icarus::timing::PMTBeamSignalsExtractor::produce(art::Event& e)
 {
+  
+  // initialize the data product 
+  fEWcollection = std::make_unique<BeamSignalCollection>();
+  fRWMcollection = std::make_unique<BeamSignalCollection>();
+
   m_run = e.id().run();
   m_event = e.id().event();
   m_timestamp = e.time().timeHigh(); // precision to the second    
@@ -222,8 +239,11 @@ void icarus::timing::PMTBeamSignalsExtractor::produce(art::Event& e)
     m_ew_wfstart = tstart.value() ;
     m_ew_utime = (sample_rise > 0) ? tstart.value() + 0.002*sample_rise : -1;
     m_ew_time = (sample_rise > 0) ? m_ew_utime + getTriggerCorrection(m_ew_channel, wfCorrections) : -1;
+
+    fRWMcollection->emplace_back( m_ew_channel, getDigitizerLabel(m_ew_channel), getCrate(m_ew_channel),
+				  sample_rise, m_ew_time );
+    
     if(fSaveWaveforms) m_ew_wf = wave.Waveform();
-  
     fEWTree->Fill();
   }
   
@@ -236,11 +256,23 @@ void icarus::timing::PMTBeamSignalsExtractor::produce(art::Event& e)
     m_rwm_wfstart = tstart.value() ;
     m_rwm_utime = (sample_rise > 0) ? tstart.value() + 0.002*sample_rise : -1;
     m_rwm_time = (sample_rise > 0) ? m_rwm_utime + getTriggerCorrection(m_rwm_channel, wfCorrections) : -1;
+    
+    fRWMcollection->emplace_back( m_rwm_channel, getDigitizerLabel(m_rwm_channel), getCrate(m_rwm_channel),
+				  sample_rise, m_rwm_time );
+
     if(fSaveWaveforms) m_rwm_wf = wave.Waveform();
-  
     fRWMTree->Fill();
   }
 
+  // place the data products in the stream
+  // fix the cable swap for part of Run 2
+  if( m_run > 9704 && m_run < 11443 ){
+    e.put(std::move(fRWMcollection),"EW"); 
+    e.put(std::move(fEWcollection),"RWM");
+  } else {
+    e.put(std::move(fRWMcollection),"RWM"); 
+    e.put(std::move(fEWcollection),"EW"); 
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -314,10 +346,9 @@ template<typename T>
 }
 
 // -----------------------------------------------------------------------------
-  
-double icarus::timing::PMTBeamSignalsExtractor::getTriggerCorrection(int channel, 
-       std::vector<icarus::timing::PMTWaveformTimeCorrection> const& corrections){
 
+std::string icarus::timing::PMTBeamSignalsExtractor::getDigitizerLabel(int channel){
+  
   // get the board name, convert to digitizer_label
   std::string board = fBoardBySpecialChannel[channel];
   
@@ -329,7 +360,26 @@ double icarus::timing::PMTBeamSignalsExtractor::getTriggerCorrection(int channel
   std::transform(board.begin(), board.end(), board.begin(), ::toupper);
   board.insert( 2, dash);
   board.insert( 6, dash);
-  std::string digitizer_label = board.substr(0,board.size()-2) + letter;
+
+  return board.substr(0,board.size()-2) + letter;
+
+}
+
+// -----------------------------------------------------------------------------
+
+std::string icarus::timing::PMTBeamSignalsExtractor::getCrate(int channel){
+ 
+  std::string digitizer_label = getDigitizerLabel(channel);
+  return digitizer_label.substr( 0, digitizer_label.size()-2 );
+
+}
+
+// -----------------------------------------------------------------------------
+  
+double icarus::timing::PMTBeamSignalsExtractor::getTriggerCorrection(int channel, 
+       std::vector<icarus::timing::PMTWaveformTimeCorrection> const& corrections){
+
+  std::string digitizer_label = getDigitizerLabel(channel);
 
   // trigger-hardware corrections are shared by all channels on the same board
   // mapping currently does not expose channel<->board relationship
