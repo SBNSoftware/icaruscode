@@ -230,15 +230,15 @@ int icarusDB::ChannelMapPostGres::BuildTPCFragmentIDToReadoutIDMap
     // Note that the fragment ID is stored in the database as a string which
     // reads as a hex number, meaning we have to read back as a string and
     // decode to get the numerical value
-    Expected const fragmentIDString
+    util::Expected const fragmentIDString
       = getStringFromTuple(tuple, FragmentIDcolumn);
     if (!fragmentIDString) {
-      throw myException() << "Error (code: " << fragmentIDString.code()
+      throw myException() << "Error (code: " << fragmentIDString.error()
         << " on row " << row
         << ") retrieving TPC fragment ID from channel mapping database\n";
     }
     
-    unsigned int const fragmentID = std::stol(fragmentIDString, nullptr, 16);
+    unsigned int const fragmentID = std::stol(*fragmentIDString, nullptr, 16);
     if (!(fragmentID & tpcIdentifier)) continue;
     
     if (fragmentBoardMap.find(fragmentID) == fragmentBoardMap.end()) {
@@ -251,16 +251,17 @@ int icarusDB::ChannelMapPostGres::BuildTPCFragmentIDToReadoutIDMap
       }
       
       // build the flange name
-      Expected const chimneyNoString = getStringFromTuple(tuple, ChimneyNoColumn);
+      util::Expected const chimneyNoString
+        = getStringFromTuple(tuple, ChimneyNoColumn);
       if (!chimneyNoString) {
-        throw myException() << "Error (code: " << chimneyNoString.code()
+        throw myException() << "Error (code: " << chimneyNoString.error()
           << " on row " << row
           << ") retrieving chimney number from channel mapping database\n";
       }
       
-      Expected const TPCIDstring = getStringFromTuple(tuple, TPCIDcolumn);
+      util::Expected const TPCIDstring = getStringFromTuple(tuple, TPCIDcolumn);
       if (!TPCIDstring) {
-        throw myException() << "Error (code: " << TPCIDstring.code()
+        throw myException() << "Error (code: " << TPCIDstring.error()
           << " on row " << row
           << ") retrieving TPC tag from channel mapping database\n";
       }
@@ -358,14 +359,14 @@ int icarusDB::ChannelMapPostGres::BuildTPCReadoutBoardToChannelMap
     }
     
     // Recover the plane identifier
-    Expected const fragmentBuffer
+    util::Expected const fragmentBuffer
       = getStringFromTuple(tuple, PlaneIdentifierColumn);
     if (!fragmentBuffer) {
-      throw myException() << "Error (code: " << fragmentBuffer.code()
+      throw myException() << "Error (code: " << fragmentBuffer.error()
         << " on row " << row << ") reading plane type\n";
     }
     // Make sure lower case... (sigh...)
-    unsigned int const plane = TPCplaneIdentifierToPlane(fragmentBuffer);
+    unsigned int const plane = TPCplaneIdentifierToPlane(*fragmentBuffer);
     if (plane >= 3) {
       mf::LogError{ "ChannelMapSQLite" } << "YIKES!!! Plane is " << plane
         << " for channel " << channelID << " with type "
@@ -438,14 +439,14 @@ int icarusDB::ChannelMapPostGres::BuildPMTFragmentToDigitizerChannelMap
     auto const nFields = static_cast<std::size_t>(getNfields(tuple));
     
     // digitizer label
-    Expected const digitizerLabel
+    util::Expected const digitizerLabel
       = getStringFromTuple(tuple, DigitizerLabelColumn);
     if (!digitizerLabel) {
-      throw myException() << "Error (code: " << digitizerLabel.code()
+      throw myException() << "Error (code: " << digitizerLabel.error()
         << " on row " << row
         << ") retrieving PMT digitizer from channel mapping database\n";
     }
-    chInfo.digitizerLabel = digitizerLabel;
+    chInfo.digitizerLabel = *digitizerLabel;
     
     // fragment id
     unsigned long const fragmentID
@@ -470,9 +471,10 @@ int icarusDB::ChannelMapPostGres::BuildPMTFragmentToDigitizerChannelMap
         << ") reading PMT channel ID\n";
     }
     // laser channel number
-    Expected laserChannelLabel = getStringFromTuple(tuple, LaserChannelColumn);
+    util::Expected laserChannelLabel
+      = getStringFromTuple(tuple, LaserChannelColumn);
     if (!laserChannelLabel) {
-      throw myException() << "Error (code: " << laserChannelLabel.code()
+      throw myException() << "Error (code: " << laserChannelLabel.error()
         << " on row " << row
         << ") retrieving PMT laser channel from channel mapping database\n";
     }
@@ -481,30 +483,30 @@ int icarusDB::ChannelMapPostGres::BuildPMTFragmentToDigitizerChannelMap
     
     // LVDS connector and bit
     if (LVDSconnectorColumn < nFields) {
-      Expected LVDSconnectorLabel
+      util::Expected LVDSconnectorLabel
         = getStringFromTuple(tuple, LVDSconnectorColumn);
       if (!LVDSconnectorLabel) {
-        throw myException() << "Error (code: " << LVDSconnectorLabel.code()
+        throw myException() << "Error (code: " << LVDSconnectorLabel.error()
           << " on row " << row
           << ") retrieving LVDS connector from channel mapping database\n";
       }
       auto const [ LVDSconnector, LVDSbit ]
-        = splitIntegers<2, unsigned short int>(LVDSconnectorLabel, "-");
+        = splitIntegers<2, unsigned short int>(*LVDSconnectorLabel, "-");
       chInfo.LVDSconnector = LVDSconnector;
       chInfo.LVDSbit = LVDSbit;
     }
     
     // adder connector and bit
     if (AdderConnectorColumn < nFields) {
-      Expected adderConnectorLabel
+      util::Expected adderConnectorLabel
         = getStringFromTuple(tuple, AdderConnectorColumn);
       if (!adderConnectorLabel) {
-        throw myException() << "Error (code: " << adderConnectorLabel.code()
+        throw myException() << "Error (code: " << adderConnectorLabel.error()
           << " on row " << row
           << ") retrieving adder connector from channel mapping database\n";
       }
       auto const [ adderConnector, adderBit ]
-        = splitIntegers<2, unsigned short int>(adderConnectorLabel, "-");
+        = splitIntegers<2, unsigned short int>(*adderConnectorLabel, "-");
       chInfo.adderConnector = adderConnector;
       chInfo.adderBit = adderBit;
     }
@@ -739,8 +741,8 @@ bool icarusDB::ChannelMapPostGres::printDatasetError
 
 // -----------------------------------------------------------------------------
 template <std::size_t BufferSize /* = 32 */>
-auto icarusDB::ChannelMapPostGres::getStringFromTuple
-  (details::WDATuple const& tuple, std::size_t column) -> Expected<std::string>
+util::Expected<std::string> icarusDB::ChannelMapPostGres::getStringFromTuple
+  (details::WDATuple const& tuple, std::size_t column)
 {
   int error = 0;
   std::string buffer(BufferSize, '\0');
