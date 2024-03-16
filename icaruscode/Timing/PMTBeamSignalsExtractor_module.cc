@@ -279,7 +279,7 @@ void icarus::timing::PMTBeamSignalsExtractor::produce(art::Event& e)
     m_ew_time_abs = (m_ew_sample > 0) ? m_ew_utime + getTriggerCorrection(m_ew_channel, wfCorrections) : icarus::timing::NoTime;
     m_ew_time = (m_ew_sample > 0) ? m_ew_time_abs-trigger_time : icarus::timing::NoTime;
 
-    fRWMcollection->emplace_back( m_ew_channel, getDigitizerLabel(m_ew_channel), getCrate(m_ew_channel),
+    fEWcollection->emplace_back( m_ew_channel, getDigitizerLabel(m_ew_channel), getCrate(m_ew_channel),
 				  m_ew_sample, m_ew_time_abs, m_ew_time );
     
     if(fSaveWaveforms) m_ew_wf = wave.Waveform();
