@@ -490,10 +490,12 @@ int icarusDB::ChannelMapPostGres::BuildPMTFragmentToDigitizerChannelMap
           << " on row " << row
           << ") retrieving LVDS connector from channel mapping database\n";
       }
-      auto const [ LVDSconnector, LVDSbit ]
-        = splitIntegers<2, unsigned short int>(*LVDSconnectorLabel, "-");
-      chInfo.LVDSconnector = LVDSconnector;
-      chInfo.LVDSbit = LVDSbit;
+      if (!LVDSconnectorLabel->empty() && (*LVDSconnectorLabel != "-")) {
+        auto const [ LVDSconnector, LVDSbit ]
+          = splitIntegers<2, unsigned short int>(*LVDSconnectorLabel, "-");
+        chInfo.LVDSconnector = LVDSconnector;
+        chInfo.LVDSbit = LVDSbit;
+      }
     }
     
     // adder connector and bit
@@ -505,10 +507,12 @@ int icarusDB::ChannelMapPostGres::BuildPMTFragmentToDigitizerChannelMap
           << " on row " << row
           << ") retrieving adder connector from channel mapping database\n";
       }
-      auto const [ adderConnector, adderBit ]
-        = splitIntegers<2, unsigned short int>(*adderConnectorLabel, "-");
-      chInfo.adderConnector = adderConnector;
-      chInfo.adderBit = adderBit;
+      if (!adderConnectorLabel->empty() && (*adderConnectorLabel != "-")) {
+        auto const [ adderConnector, adderBit ]
+          = splitIntegers<2, unsigned short int>(*adderConnectorLabel, "-");
+        chInfo.adderConnector = adderConnector;
+        chInfo.adderBit = adderBit;
+      }
     }
     
     // fill the map

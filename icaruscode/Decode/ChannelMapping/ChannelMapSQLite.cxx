@@ -27,6 +27,7 @@
 // C++ standard libraries
 #include <algorithm> // std::transform()
 #include <string>
+#include <string_view>
 #include <memory>
 #include <cctype> // std::tolower()
 
@@ -481,17 +482,27 @@ int icarusDB::ChannelMapSQLite::buildPMTFragmentToDigitizerChannelMap_callback
       << "' into a channel number for channel " << channelID << "!\n";
   }
   
-  // PMT discriminated signal connector and bit
+  // connector bits; if the column is not present or if the value is empty or
+  // just "-", fall back to invalid values
+  auto const isValidConnectorBit = [argv,argc](std::size_t column)
+    {
+      if (column >= (std::size_t) argc) return false;
+      std::string_view const value = argv[column];
+      return !value.empty() && (value != "-");
+    };
+  
+  // PMT discriminated signal connector and bit;
   auto const [ LVDSconnector, LVDSbit ]
-    = (LVDSconnectorColumn < (std::size_t)argc)
+    = isValidConnectorBit(LVDSconnectorColumn)
     ? splitIntegers<2, unsigned short int>(argv[LVDSconnectorColumn], "-")
     : std::array
       { PMTChannelInfo_t::NoConnector, PMTChannelInfo_t::NoConnectorBit }
     ;
   
   // adder discriminated signal connector and bit
+  // if the column is not present or if the value is empty or "-", fall back
   auto const [ adderConnector, adderBit ]
-    = (AdderConnectorColumn < (std::size_t)argc)
+    = isValidConnectorBit(AdderConnectorColumn)
     ? splitIntegers<2, unsigned short int>(argv[AdderConnectorColumn], "-")
     : std::array
       { PMTChannelInfo_t::NoConnector, PMTChannelInfo_t::NoConnectorBit }
