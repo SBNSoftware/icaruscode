@@ -315,6 +315,9 @@ namespace daq
     /// Returns the beam type corresponding to the specified trigger `source`.
     static sim::BeamType_t simGateType(sbn::triggerSource source);
     
+    /// Returns `s` with non-printable characters replaced.
+    static std::string sanitize(std::string const& s);
+    
   };
 
 
@@ -556,7 +559,7 @@ namespace daq
         << parsedData << std::endl;
       
       if (fDebug) { // this grows tiresome quickly when processing many events
-        std::cout << "Trigger packet content:\n" << data
+        std::cout << "Trigger packet content:\n" << sanitize(data)
           << "\nFull trigger fragment dump:"
           << sbndaq::dumpFragment(fragment) << std::endl;
       }
@@ -904,6 +907,35 @@ namespace daq
         return sim::kUnknown;
     } // switch source
   } // TriggerDecoderV3::simGateType()
+  
+  
+  std::string TriggerDecoderV3::sanitize(std::string const& s) {
+    
+    static char const HexChar[] = "012345789ABCDEF";
+    
+    std::string ss;
+    ss.reserve(s.size());
+    
+    for (char c: s) {
+      if (!std::isprint(static_cast<unsigned char>(c)) && (c != '\n')) {
+        ss += '<';
+        switch (c) {
+          case '\x00': ss += "NUL"; break;
+          case '\x09': ss += "TAB"; break;
+          case '\x1E': ss += "ESC"; break;
+          default:
+            ss += HexChar[(c >> 4) & 0xF];
+            ss += HexChar[c & 0xF];
+        } // switch
+        ss += '>';
+      }
+      else
+        ss.push_back(c);
+      
+    } // for
+    
+    return ss;
+  } // TriggerDecoderV3::sanitize()
   
   
   DEFINE_ART_CLASS_TOOL(TriggerDecoderV3)
