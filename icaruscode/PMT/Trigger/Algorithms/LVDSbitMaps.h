@@ -15,7 +15,9 @@
 #include "cetlib_except/coded_exception.h"
 
 // C/C++ standard libraries
-#include <iosfwd> // std::ostream
+#include <ostream>
+#include <iomanip> // std::setw(), std::setfill()
+#include <initializer_list>
 #include <vector>
 #include <string>
 #include <array>
@@ -25,13 +27,15 @@
 // forward declarations
 namespace icarus::trigger {
   
-  struct LVDSbitID;
+  struct PMTpairBitID;
+  struct AdderBitID;
   struct LVDSHWbitID;
   struct LVDSinfo_t;
+  struct AdderInfo_t;
   
-  class PMTpairBitMap;
+  class LVDSbitMaps;
   
-  std::ostream& operator<< (std::ostream& out, LVDSbitID const& bit);
+  std::ostream& operator<< (std::ostream& out, PMTpairBitID const& bit);
   std::ostream& operator<< (std::ostream& out, LVDSHWbitID const& bit);
   
 } // namespace icarus::trigger
@@ -40,12 +44,20 @@ namespace icarusDB { class IICARUSChannelMapProvider; }
 
 
 // -----------------------------------------------------------------------------
-/// Identifier of a "logical" LVDS bit
+/// Identifier of a "logical" LVDS bit for PMT pairs
 /// following `sbn::ExtraTriggerInfo` convention.
-struct icarus::trigger::LVDSbitID {
+namespace icarus::trigger::details {
+  template <std::size_t MaxBits = 64> struct PMTwallBitID;
+  template <std::size_t MaxBits>
+  std::ostream& operator<<
+    (std::ostream& out, PMTwallBitID<MaxBits> const& bit);
+}
+template <std::size_t MaxBits /* = 64 */>
+struct icarus::trigger::details::PMTwallBitID {
   
+  using BitID_t = PMTwallBitID<MaxBits>; ///< This ID type.
   using StatusBit_t = unsigned short int; ///< Type for bit in the status word.
-  using Index_t = unsigned short int; ///< Type for LVDS bit ID index.
+  using Index_t = unsigned short int; ///< Type for bit ID index.
   
   /// How many cryostats in the detector.
   static constexpr std::size_t NCryostats = 2;
@@ -54,7 +66,7 @@ struct icarus::trigger::LVDSbitID {
   static constexpr std::size_t NPMTwallsPerCryostat = 2;
   
   /// How many bits in a status word.
-  static constexpr unsigned short int NStatusWordBits = 64;
+  static constexpr unsigned short int NStatusWordBits = MaxBits;
   
   
   /// Special value to identify the absence of cryostat information.
@@ -113,13 +125,41 @@ struct icarus::trigger::LVDSbitID {
   
   
   /// Rebuilds an ID object from its index.
-  static LVDSbitID fromIndex(Index_t index);
+  static constexpr BitID_t fromIndex(Index_t index);
   
   /// Returns the number of possible indices (`0` to `NIndices() - 1`).
   static constexpr Index_t NIndices()
     { return NCryostats * NPMTwallsPerCryostat * NStatusWordBits; }
   
-}; // icarus::trigger::LVDSbitID
+}; // icarus::trigger::details::PMTwallBitID
+
+
+// -----------------------------------------------------------------------------
+/// Identifier of a "logical" LVDS bit for PMT pairs
+/// following `sbn::ExtraTriggerInfo` convention.
+struct icarus::trigger::PMTpairBitID: public details::PMTwallBitID<64> {
+  
+  using BaseID_t = details::PMTwallBitID<64>;
+  
+  /// Rebuilds an ID object from its index.
+  static PMTpairBitID fromIndex(Index_t index)
+    { return { BaseID_t::fromIndex(index) }; }
+  
+}; // icarus::trigger::PMTpairBitID
+
+
+// -----------------------------------------------------------------------------
+/// Identifier of a "logical" LVDS bit for adders
+/// following `sbn::ExtraTriggerInfo` convention.
+struct icarus::trigger::AdderBitID: public details::PMTwallBitID<16> {
+  
+  using BaseID_t = details::PMTwallBitID<16>;
+  
+  /// Rebuilds an ID object from its index.
+  static AdderBitID fromIndex(Index_t index)
+    { return { BaseID_t::fromIndex(index) }; }
+  
+}; // icarus::trigger::AdderBitID
 
 
 // -----------------------------------------------------------------------------
@@ -132,7 +172,7 @@ struct icarus::trigger::LVDSHWbitID {
   using Index_t = unsigned short int; ///< Type for LVDS bit ID index.
   
   /// How many cryostats in the detector.
-  static constexpr unsigned short int NCryostats = LVDSbitID::NCryostats;
+  static constexpr unsigned short int NCryostats = PMTpairBitID::NCryostats;
   
   /// How many 32-bit connectors come out of each cryostat.
   static constexpr unsigned short int NConnectorsPerCryostat = 4;
@@ -198,9 +238,10 @@ struct icarus::trigger::LVDSHWbitID {
 
 
 // -----------------------------------------------------------------------------
-/// Description of a (logical) LVDS bit and additional information
-/// (none so far).
+/// Information about a PMT pair: source bit and connected channels.
 struct icarus::trigger::LVDSinfo_t {
+  
+  PMTpairBitID ID; ///< Identifier of this bit.
   
   LVDSHWbitID source; ///< Identifier of the hardware LVDS bit feeding this one.
   
@@ -209,11 +250,29 @@ struct icarus::trigger::LVDSinfo_t {
   /// Returns whether this information is fully valid (both channel and ID).
   operator bool() const { return source; }
   
-  /// Order operator: sorted after the LVDS index.
-  bool operator< (LVDSinfo_t const& other) const
-    { return source.index() < other.source.index(); }
+  /// Order operator: sorted after the ID.
+  bool operator< (LVDSinfo_t const& other) const { return ID < other.ID; }
   
 }; // icarus::trigger::LVDSinfo_t
+
+
+// -----------------------------------------------------------------------------
+/// Description of a (logical) adder bit and additional information.
+struct icarus::trigger::AdderInfo_t {
+  
+  AdderBitID ID; ///< Identifier of this bit.
+  
+  LVDSHWbitID source; ///< Identifier of the hardware LVDS bit feeding this one.
+  
+  std::vector<raw::Channel_t> channels; ///< PMT channels covered by this bit.
+  
+  /// Returns whether this information is fully valid (both channel and ID).
+  operator bool() const { return source; }
+  
+  /// Order operator: sorted after the source index.
+  bool operator< (AdderInfo_t const& other) const { return ID < other.ID; }
+  
+}; // icarus::trigger::AdderInfo_t
 
 
 // -----------------------------------------------------------------------------
@@ -236,13 +295,20 @@ struct icarus::trigger::LVDSinfo_t {
  * --------------------
  * 
  * The logic mapping is described in `sbn::ExtraTriggerInfo::LVDSstatus`.
- * Compared with that mapping, the LVDS bit ID are assigned so that
+ * Compared with that mapping, the PMT pair bit ID are assigned so that
  *  * the index of the ID, modulo 64 bits, matches the `LVDSstatus` words;
  *  * cryostats and PMT walls of the IDs are honoured, so that they can be used
- *    to directly adderss `LVDSstatus`.
+ *    to directly address `LVDSstatus`.
  * 
- * This results in the following mapping, "first bit" meaning the most significant:
+ * Likewise, the adder bit ID are assigned so that
+ *  * the index of the ID, modulo 6 bits, matches the `sectorStatus` words;
+ *  * cryostats and PMT walls of the IDs are honoured, so that they can be used
+ *    to directly address `sectorStatus`.
  * 
+ * This results in the following mapping, "first bit" meaning the most
+ * significant.
+ * 
+ * PMT pairs:
  * * east cryostat, east wall: `0x00aAbBcC'00dDeEfF`, channel `0` the most
  *   significant bit in `a` (bit #55) and channel `45` the one in `d` (bit 23);
  * * east cryostat, west wall: `0x00aAbBcC'00dDeEfF`, channel `90` the most
@@ -251,6 +317,16 @@ struct icarus::trigger::LVDSinfo_t {
  *   significant bit in `a` (bit #55) and channel `225` the one in `d` (bit 23);
  * * west cryostat, west wall: `0x00aAbBcC'00dDeEfF`, channel `270` the most
  *   significant bit in `a` (bit #55) and channel `315` the one in `d` (bit 23).
+ * 
+ * Adders:
+ * * east cryostat, east wall: `0b00000000'00abcdef`, with `a` to `f` covering
+ *   adders starting with channel `0`, `15`, 30`, `45`, 60` and `75`;
+ * * east cryostat, west wall: `0b00000000'00abcdef`, with `a` to `f` covering
+ *   adders starting with channel `90`, `105`, 120`, `135`, 150` and `165`;
+ * * west cryostat, east wall: `0b00000000'00abcdef`, with `a` to `f` covering
+ *   adders starting with channel `180`, `195`, 210`, `225`, 240` and `255`;
+ * * west cryostat, west wall: `0b00000000'00abcdef`, with `a` to `f` covering
+ *   adders starting with channel `270`, `285`, 300`, `315`, 330` and `345`.
  * 
  * 
  * Naming conventions
@@ -273,7 +349,7 @@ struct icarus::trigger::LVDSinfo_t {
  *   the PMT feeding the bit. This is equivalent to the logical PMT channel
  *   number described above, and here we call it a "logical LVDS bit ID".
  *   Analyzers will typically deal with this logical ID only. It is described by
- *   `icarus::trigger::LVDSbitID` data type.
+ *   `icarus::trigger::PMTpairBitID` data type.
  * * The assembly of the bits in hardware includes the combination of 8-bit
  *   information from groups of three PMT readout boards, physically using LVDS
  *   format and for that often just dubbed "the LVDS signals", via custom LVDS
@@ -285,7 +361,7 @@ struct icarus::trigger::LVDSinfo_t {
  *   PMT channels is encoded in the hardware database; analyzers typically don't
  *   have to deal with them, because the trigger decoding software will
  *   translate them into the `sbn::ExtraTriggerInfo` convention (using, in fact,
- *   this `PMTpairBitMap` object for the mapping). The data type devoted to this
+ *   this `LVDSbitMaps` object for the mapping). The data type devoted to this
  *   concept is `LVDSHWbitID`. Note that the NIM FPGA boards combine two 32-bit
  *   connector words into 64-bit words for transportation. These 64-bit words
  *   are stored in the trigger DAQ fragment. At first look, these 64-bit words
@@ -297,7 +373,7 @@ struct icarus::trigger::LVDSinfo_t {
  *   as the most significant 32-bit word, 1 and 3 as the least significant one).
  *
  */
-class icarus::trigger::PMTpairBitMap {
+class icarus::trigger::LVDSbitMaps {
   
     public:
   
@@ -319,12 +395,19 @@ class icarus::trigger::PMTpairBitMap {
   
   /// Error codes from this object. See `errorMessage()` code for descriptions.
   enum class Errors {
-    NoError,              ///< No error condition.
-    Error,                ///< An unspecified error condition.
-    NoDatabase,           ///< No channel mapping database access.
-    NoPMTfragment,        ///< Missing a required PMT fragment information.
-    NoPairBitInformation, ///< No PMT pair bit information in the database.
-    Unknown               ///< Unknown error.
+    NoError,               ///< No error condition.
+    Error,                 ///< An unspecified error condition.
+    NoDatabase,            ///< No channel mapping database access.
+    NoPMTfragment,         ///< Missing a required PMT fragment information.
+    NoPairBitInformation,  ///< No PMT pair bit information in the database.
+    NoAdderBitInformation, ///< No adder bit information in the database.
+    Unknown                ///< Unknown error.
+  };
+  
+  /// Supported maps.
+  enum class Map {
+    PMTpairs,  ///< Map of PMT pairs ("LVDS").
+    Adders,    ///< Map of adder signals.
   };
   
   /// Returns a predefined message describing the specified error `code`.
@@ -334,20 +417,31 @@ class icarus::trigger::PMTpairBitMap {
   using Exception = cet::coded_exception<Errors, &errorMessage>;
   
   /// Default constructor: maps empty until `rebuild()` is called.
-  PMTpairBitMap() = default;
+  LVDSbitMaps() = default;
   
   /// Constructor: builds all the maps based on the specified PMT channel map.
-  PMTpairBitMap(icarusDB::IICARUSChannelMapProvider const& channelMap)
+  LVDSbitMaps(icarusDB::IICARUSChannelMapProvider const& channelMap)
     { buildAllMaps(channelMap); }
+  
+  /// Constructor: builds the specified maps based on the specified PMT channel
+  /// map.
+  LVDSbitMaps(
+    icarusDB::IICARUSChannelMapProvider const& channelMap,
+    std::initializer_list<Map> maps
+  )
+    { buildMaps(channelMap, std::move(maps)); }
   
   
   // --- BEGIN -----  Query interface  -----------------------------------------
   /// @name Query interface.
   /// @{
   
+  /// Returns whether the specified map is present.
+  bool hasMap(Map map) const;
+  
   /**
-   * @brief Returns the source bit for the specified encoded bit.
-   * @param bit ID of the logical LVDS bit to get the source information of
+   * @brief Returns the source bit for the specified encoded PMT pair bit.
+   * @param bit ID of the logical PMT pair bit to get the source information of
    * @return the number of hardware connector and bit where to find the value
    * @throws std::out_of_range if the specified bit is not in the map
    * 
@@ -358,11 +452,33 @@ class icarus::trigger::PMTpairBitMap {
    * The returned information includes:
    *  * the cryostat the bit comes from (the same as the one in `bit`);
    *  * the hardware connector number the bit comes from;
-   *  * the hardware bit (wire) in the connector which carries the `bit` value.
+   *  * the hardware bit (wire) in the connector which carries the `bit` value;
+   *  * the PMT channels covered by the bit.
    * 
-   * See `buildLVDSsourceMap()` for details of the mapping definitions.
+   * See `buildPMTpairSourceMap()` for details of the mapping definitions.
    */
-  LVDSinfo_t bitSource(LVDSbitID bit) const;
+  LVDSinfo_t bitSource(PMTpairBitID const& bit) const;
+  
+  
+  /**
+   * @brief Returns the source bit for the specified encoded adder bit.
+   * @param bit ID of the logical adder bit to get the source information of
+   * @return the number of hardware connector and bit where to find the value
+   * @throws std::out_of_range if the specified bit is not in the map
+   * 
+   * The output `connector`/`bit` bits are sorted according to the prescription
+   * of `sbn::ExtraTriggerInfo`, which requires the least significant bit to
+   * have the most upstream adder signal (i.e. the lowest channels).
+   * 
+   * The returned information includes:
+   *  * the cryostat the bit comes from (the same as the one in `bit`);
+   *  * the hardware connector number the bit comes from;
+   *  * the hardware bit (wire) in the connector which carries the `bit` value;
+   *  * the PMT channels covered by the bit.
+   * 
+   * See `buildAdderSourceMap()` for details of the mapping definitions.
+   */
+  AdderInfo_t bitSource(AdderBitID const& bit) const;
   
   
   /**
@@ -402,47 +518,110 @@ class icarus::trigger::PMTpairBitMap {
     
     raw::Channel_t channel = NoChannel; ///< ID of an associated PMT channel.
     
-    LVDSHWbitID LVDSsource; ///< Identifier of the LVDS bit source.
+    LVDSHWbitID PMTpairSource; ///< Identifier of the PMT pair bit source.
+    LVDSHWbitID adderSource; ///< Identifier of the adder bit source.
     
     /// Returns an "unique" index for the LVDS source.
-    constexpr unsigned short int index() const { return LVDSsource.index(); }
+    constexpr unsigned short int index() const { return PMTpairSource.index(); }
     
     /// Returns whether this information is fully valid (both channel and ID).
-    operator bool() const { return (channel != NoChannel) && LVDSsource; }
+    operator bool() const
+      { return (channel != NoChannel) && PMTpairSource && adderSource; }
     
     /// Order operator: sorted after the channel ID only.
     bool operator< (LVDSchannel_t const& other) const
       { return channel < other.channel; }
     
   }; // LVDSchannel_t
-
-
-  /// For each logic LVDS bit index, the HW LVDS ID and information are stored.
+  
+  
+  /// Cached information of each PMT (sorted by PMT channel).
+  std::vector<LVDSchannel_t> fPMTchannelInfo;
+  
+  /// For each PMT pair bit index, the HW LVDS ID and information are stored.
   std::vector<LVDSinfo_t> fLVDSinfoMap;
+  
+  /// For each adder bit ID, adder information is stored.
+  std::vector<AdderInfo_t> fAdderInfoMap;
   
   
   /// Builds all the maps
-  void buildAllMaps(icarusDB::IICARUSChannelMapProvider const& channelMap)
-    {
-      fLVDSinfoMap = buildLVDSsourceMap(channelMap);
-    }
+  void buildAllMaps(icarusDB::IICARUSChannelMapProvider const& channelMap);
+  
+  /// Builds the specified maps. If any error occurs, an `Exception` is thrown.
+  void buildMaps(
+    icarusDB::IICARUSChannelMapProvider const& channelMap,
+    std::initializer_list<Map> maps
+    );
+  
+  /**
+   * @brief Fills a list of PMT channels and their relevant information
+   * @param channelMap service provider to associate each PMT channel to LVDS
+   * @return the list, sorted by PMT channel ID
+   */
+  std::vector<LVDSchannel_t> buildChannelInfo
+    (icarusDB::IICARUSChannelMapProvider const& channelMap) const;
   
   /**
    * @brief Builds the LVDS map connecting each bit to its hardware source.
    * @param channelMap service provider to associate each PMT channel to LVDS
    * @return a map
    * 
-   * The map is multi-level. The first level is the cryostat index (up to
-   * `NCryostats - 1`), then for each cryostat a vector hosts in each index
-   * the information of the LVDS ID matching that index.
-   * The information includes the source in the hardware connector of the bit.
-   * 
+   * The map is associating the unique PMT pair bit ID (`PMTpairBitID::index()`)
+   * and the information of the LVDS ID matching that ID.
+   * The information includes the source in the hardware connector of the bit
+   * and the involved channels (see `LVDSinfo_t` for more).
    */
-  std::vector<LVDSinfo_t> buildLVDSsourceMap
+  std::vector<LVDSinfo_t> buildPMTpairSourceMap
     (icarusDB::IICARUSChannelMapProvider const& channelMap) const;
   
+  /**
+   * @brief Builds the adder map connecting each bit to its hardware source.
+   * @param channelMap service provider to associate each PMT channel to LVDS
+   * @return a map
+   * 
+   * The map is associating the unique adder bit ID (`AdderBitID::index()`)
+   * and the information of the hardware LVDS ID matching that ID.
+   * The information includes the source in the hardware connector of the bit
+   * and the involved channels (see `AdderInfo_t` for more).
+   * 
+   */
+  std::vector<AdderInfo_t> buildAdderSourceMap
+    (icarusDB::IICARUSChannelMapProvider const& channelMap) const;
+
   
-}; // icarus::trigger::PMTpairBitMap
+}; // icarus::trigger::LVDSbitMaps
+
+
+// -----------------------------------------------------------------------------
+// ---  template implementation
+// -----------------------------------------------------------------------------
+// ---  icarus::trigger::PMTwallBitID
+// -----------------------------------------------------------------------------
+template <std::size_t MaxBits>
+constexpr auto icarus::trigger::details::PMTwallBitID<MaxBits>::fromIndex
+  (Index_t index) -> BitID_t
+{
+  auto const [ cryostat, wb ]
+    = std::div(index, NPMTwallsPerCryostat * NStatusWordBits);
+  auto const [ wall, bit ] = std::div(wb, NStatusWordBits);
+  return { (std::size_t) cryostat, (std::size_t) wall, (StatusBit_t) bit };
+} // icarus::trigger::PMTwallBitID<>::fromIndex()
+
+
+// -----------------------------------------------------------------------------
+template <std::size_t MaxBits>
+std::ostream& icarus::trigger::details::operator<<
+  (std::ostream& out, PMTwallBitID<MaxBits> const& bit)
+{
+  static constexpr char Side[] = "EW";
+  auto const fillch = out.fill(); // width is reset to 0, fill character is not
+  out << (bit.hasCryostat()? Side[bit.cryostat]: '?')
+    << '/' << (bit.hasPMTwall()? Side[bit.PMTwall]: '?')
+    << '/' << std::setw(2) << std::setfill('0') << bit.statusBit
+    << std::setfill(fillch);
+  return out;
+}
 
 
 // -----------------------------------------------------------------------------
