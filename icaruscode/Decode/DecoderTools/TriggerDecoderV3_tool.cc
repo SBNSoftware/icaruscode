@@ -165,6 +165,10 @@ namespace daq
    *            the trigger window; only the first one becomes the global
    *            trigger, but we still keep the count of how many happen.
    *            Its value is `0` when trigger happened from elsewhere.
+   *        * `triggerLogicBits`: whether the trigger on this cryostat was from
+   *            adder logic, trigger logic or both. The definition of "both"
+   *            is taken by the hardware, based on an allowed overlapping time
+   *            between the signals of the different logics, properly delayed.
    *        * `LVDSstatus`: information per PMT wall (i.e. TPC; east first, then
    *            west) of the LVDS signals of the discriminated PMT pairs at the
    *            time of the global trigger. All bits are `0` when trigger
@@ -793,24 +797,38 @@ namespace daq
     //
     // fill sbn::ExtraTriggerInfo::cryostats
     //
-    auto setCryoInfo
-      = [this,&extra=*fTriggerExtra,isFirstEvent=(triggerID <= 1)]
-        (std::size_t cryo, icarus::KeyValuesData const& data)
+    auto setCryoInfo = [
+      this,&extra=*fTriggerExtra,isFirstEvent=(triggerID <= 1),data=parsedData
+      ]
+        (std::size_t cryo)
       {
-        std::string const SIDE = (cryo == sbn::ExtraTriggerInfo::EastCryostat)
+        std::string const Side
+          = (cryo == sbn::ExtraTriggerInfo::EastCryostat) ? "EAST": "WEST";
+        std::string const CrSide = (cryo == sbn::ExtraTriggerInfo::EastCryostat)
           ? "Cryo1 EAST": "Cryo2 WEST";
+        // trigger logic: 0x01=adders; 0x02=majority; 0x07=both
+        std::string const triggerLogicKey = "MJ_Adder Source " + Side;
+        int const triggerLogicCode = data.hasItem(triggerLogicKey)
+          ? data.getItem(triggerLogicKey).getNumber<int>(0): 0;
+        sbn::bits::triggerLogicMask triggerLogicMask;
+        if(triggerLogicCode == 1)
+          triggerLogicMask = mask(sbn::triggerLogic::PMTAnalogSum);
+        else if(triggerLogicCode == 2)
+          triggerLogicMask = mask(sbn::triggerLogic::PMTPairMajority);
+        else if(triggerLogicCode >= 3) // should be 7
+          triggerLogicMask = mask(sbn::triggerLogic::PMTAnalogSum, sbn::triggerLogic::PMTPairMajority);
+        
         extra.cryostats[cryo] = unpackPrimitiveBits(
           cryo, isFirstEvent,
-          data.getItem(SIDE + " counts").getNumber<unsigned long int>(0),
-          data.getItem(SIDE + " Connector 0 and 1").getNumber<std::uint64_t>(0, 16),
-          data.getItem(SIDE + " Connector 2 and 3").getNumber<std::uint64_t>(0, 16)
+          data.getItem(CrSide + " counts").getNumber<unsigned long int>(0),
+          data.getItem(CrSide + " Connector 0 and 1").getNumber<std::uint64_t>(0, 16),
+          data.getItem(CrSide + " Connector 2 and 3").getNumber<std::uint64_t>(0, 16),
+          triggerLogicMask
           );
       };
     
-    if (triggerLocation & 1)
-      setCryoInfo(sbn::ExtraTriggerInfo::EastCryostat, parsedData);
-    if (triggerLocation & 2)
-      setCryoInfo(sbn::ExtraTriggerInfo::WestCryostat, parsedData);
+    if (triggerLocation & 1) setCryoInfo(sbn::ExtraTriggerInfo::EastCryostat);
+    if (triggerLocation & 2) setCryoInfo(sbn::ExtraTriggerInfo::WestCryostat);
     
     //
     // absolute time trigger (raw::ExternalTrigger)
@@ -894,7 +912,8 @@ namespace daq
   
   sbn::ExtraTriggerInfo::CryostatInfo TriggerDecoderV3::unpackPrimitiveBits(
     std::size_t cryostat, bool firstEvent, unsigned long int counts,
-    std::uint64_t connectors01, std::uint64_t connectors23
+    std::uint64_t connectors01, std::uint64_t connectors23,
+    sbn::bits::triggerLogicMask triggerLogic
   ) const {
     sbn::ExtraTriggerInfo::CryostatInfo cryoInfo;
     
@@ -906,6 +925,8 @@ namespace daq
     
     cryoInfo.sectorStatus
       = encodeSectorBits(cryostat, connectors01, connectors23);
+    
+    cryoInfo.triggerLogicBits = static_cast<unsigned int>(triggerLogic);
     
     return cryoInfo;
   } // TriggerDecoderV3::unpackPrimitiveBits()
