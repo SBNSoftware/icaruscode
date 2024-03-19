@@ -786,7 +786,7 @@ namespace daq
       locationMask = mask(sbn::triggerLocation::CryoEast);
     else if(triggerLocation == 2)
       locationMask = mask(sbn::triggerLocation::CryoWest);
-    else if(triggerLocation == 7)
+    else if(triggerLocation >= 3) // should be 7
       locationMask = mask(sbn::triggerLocation::CryoEast, sbn::triggerLocation::CryoWest);
     fTriggerExtra->triggerLocationBits = locationMask;
     
