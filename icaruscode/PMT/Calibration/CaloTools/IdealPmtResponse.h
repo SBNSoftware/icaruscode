@@ -23,9 +23,9 @@ class  IdealPmtResponse {
 		double operator() (double *x, double *par) {
 
 			double mu = par[0];
-    		double q = par[1];
-    		double sigma = par[2];
-    		double amplitude = par[3];
+    			double q = par[1];
+    			double sigma = par[2];
+    			double amplitude = par[3];
 
 			double val = 0;
 

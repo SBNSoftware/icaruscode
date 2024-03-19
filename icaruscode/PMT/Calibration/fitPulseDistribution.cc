@@ -23,8 +23,10 @@ int main( int argc, char **argv ){
   int endch = 359; 
 
   float fitRangeLow=0.3, fitRangeHigh=2.0;
-  float ampCutLow=1.22, ampCutHigh=4.;
   int modelPedestal=0;
+  int nSum = 4;  
+
+  float ampCutLow=1.22, ampCutHigh=4.;
   int cutOnAmplitude=0;
 
   for ( int i=1; i<argc; i=i+2 )
@@ -33,9 +35,10 @@ int main( int argc, char **argv ){
     else if ( std::string(argv[i]) == "-d" ) destinationFolder = argv[i+1];
     else if ( std::string(argv[i]) == "-l" ) fitRangeLow = atof(argv[i+1]);
     else if ( std::string(argv[i]) == "-h" ) fitRangeHigh = atof(argv[i+1]);
-    else if ( std::string(argv[i]) == "-al" ) ampCutLow = atof(argv[i+1]);
-    else if ( std::string(argv[i]) == "-ah" ) ampCutHigh = atof(argv[i+1]);
+    else if ( std::string(argv[i]) == "-al") ampCutLow = atof(argv[i+1]);
+    else if ( std::string(argv[i]) == "-ah") ampCutHigh = atof(argv[i+1]);
     else if ( std::string(argv[i]) == "-p" ) modelPedestal = atoi(argv[i+1]);
+    else if ( std::string(argv[i]) == "-n" ) nSum = atoi(argv[i+1]);
     else if ( std::string(argv[i]) == "-c" ) cutOnAmplitude = atoi(argv[i+1]);
     else if ( std::string(argv[i]) == "-v" ) debug = atoi(argv[i+1]);
     else if ( std::string(argv[i]) == "-s" ) startch = atoi(argv[i+1]);
@@ -51,7 +54,7 @@ int main( int argc, char **argv ){
   if( modelPedestal == 1 ) 
     hasExponential=true;
 
-  IdealPmtResponse idealPmtResponseFunct(1, 4, hasExponential);
+  IdealPmtResponse idealPmtResponseFunct(1, nSum, hasExponential);
   FitBackgroundPhotons fitPMTResponse(6, idealPmtResponseFunct);
   fitPMTResponse.setFitRange( fitRangeLow, fitRangeHigh );
 
