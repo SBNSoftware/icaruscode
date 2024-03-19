@@ -1,4 +1,5 @@
 #include "FitBackgroundPhotons.h"
+#include "TCanvas.h"
 
 FitBackgroundPhotons::FitBackgroundPhotons(){}
 
@@ -48,4 +49,15 @@ void FitBackgroundPhotons::fitHistogram( TH1D *hist, std::string fitoption )
 
 	m_fitstatus=fitstatus;
 
+}
+
+
+void FitBackgroundPhotons::SaveToPdf( TH1D *hist, std::string name ){
+
+        char cname[200];
+	sprintf( cname, "c_%s", hist->GetName() );
+	TCanvas *c = new TCanvas(cname,"fit",800.,600.); 	
+        hist->Draw();
+	m_fitf->Draw("SAME");
+	c->Print(name.c_str(),"pdf");
 }

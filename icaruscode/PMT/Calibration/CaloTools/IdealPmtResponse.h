@@ -35,8 +35,7 @@ class  IdealPmtResponse {
 			if( m_useExpPedestal ){
 
 				double a0 = par[4];
-    			double c0 = par[5];
-
+  	  			double c0 = par[5];
 				val += pedestal( x[0], a0, c0 );
 			}
 
