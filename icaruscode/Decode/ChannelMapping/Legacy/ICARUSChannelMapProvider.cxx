@@ -1,11 +1,11 @@
 ////////////////////////////////////////////////////////////////////////
-/// \file   icaruscode/Decode/ChannelMapping/ICARUSChannelMapProvider.cxx
-/// \author T. Usher (factorized by Gianluca Petrillo, petrillo@slac.stanford.edu)
-/// \see    icaruscode/Decode/ChannelMapping/ICARUSChannelMapProvider.h
+/// \file   icaruscode/Decode/ChannelMapping/Legacy/ICARUSChannelMapProvider.cxx
+/// \author T. Usher (factorized by G. Petrillo, petrillo@slac.stanford.edu)
+/// \see    icaruscode/Decode/ChannelMapping/Legacy/ICARUSChannelMapProvider.h
 ////////////////////////////////////////////////////////////////////////
 
 // library header
-#include "icaruscode/Decode/ChannelMapping/ICARUSChannelMapProvider.h"
+#include "icaruscode/Decode/ChannelMapping/Legacy/ICARUSChannelMapProvider.h"
 
 #include "icaruscode/Decode/ChannelMapping/RunPeriods.h"
 
@@ -111,7 +111,7 @@ void ICARUSChannelMapProvider::readFromDatabase() {
 
     // Do the channel mapping initialization
     fFragmentToDigitizerMap.clear();
-    if (fChannelMappingTool->BuildFragmentToDigitizerChannelMap(fFragmentToDigitizerMap))
+    if (fChannelMappingTool->BuildPMTFragmentToDigitizerChannelMap(fFragmentToDigitizerMap))
       {
 	throw cet::exception("ICARUSChannelMapProvider") << "Cannot recover the Fragment ID channel map from the database \n";
       }
@@ -193,7 +193,7 @@ unsigned int ICARUSChannelMapProvider::nTPCfragmentIDs() const {
 
 const std::string&  ICARUSChannelMapProvider::getCrateName(const unsigned int fragmentID) const
 {
-    IChannelMapping::TPCFragmentIDToReadoutIDMap::const_iterator fragToReadoutItr = fFragmentToReadoutMap.find(fragmentID);
+    TPCFragmentIDToReadoutIDMap::const_iterator fragToReadoutItr = fFragmentToReadoutMap.find(fragmentID);
 
     if (fragToReadoutItr == fFragmentToReadoutMap.end())
         throw cet::exception("ICARUSChannelMapProvider") << "Fragment ID " << fragmentID << " not found in lookup map when looking up crate name \n";
@@ -203,7 +203,7 @@ const std::string&  ICARUSChannelMapProvider::getCrateName(const unsigned int fr
 
 const ReadoutIDVec& ICARUSChannelMapProvider::getReadoutBoardVec(const unsigned int fragmentID) const
 {
-    IChannelMapping::TPCFragmentIDToReadoutIDMap::const_iterator fragToReadoutItr = fFragmentToReadoutMap.find(fragmentID);
+    TPCFragmentIDToReadoutIDMap::const_iterator fragToReadoutItr = fFragmentToReadoutMap.find(fragmentID);
 
     if (fragToReadoutItr == fFragmentToReadoutMap.end())
         throw cet::exception("ICARUSChannelMapProvider") << "Fragment ID " << fragmentID << " not found in lookup map when looking up board vector \n";
@@ -231,7 +231,7 @@ unsigned int ICARUSChannelMapProvider::nTPCboardIDs() const {
 
 unsigned int ICARUSChannelMapProvider::getBoardSlot(const unsigned int boardID)  const
 {
-    IChannelMapping::TPCReadoutBoardToChannelMap::const_iterator readoutBoardItr = fReadoutBoardToChannelMap.find(boardID);
+    TPCReadoutBoardToChannelMap::const_iterator readoutBoardItr = fReadoutBoardToChannelMap.find(boardID);
 
     if (readoutBoardItr == fReadoutBoardToChannelMap.end())
         throw cet::exception("ICARUSChannelMapProvider") << "Board ID " << boardID << " not found in lookup map when looking up board slot \n";
@@ -241,7 +241,7 @@ unsigned int ICARUSChannelMapProvider::getBoardSlot(const unsigned int boardID) 
 
  const ChannelPlanePairVec& ICARUSChannelMapProvider::getChannelPlanePair(const unsigned int boardID) const
 {
-    IChannelMapping::TPCReadoutBoardToChannelMap::const_iterator readoutBoardItr = fReadoutBoardToChannelMap.find(boardID);
+    TPCReadoutBoardToChannelMap::const_iterator readoutBoardItr = fReadoutBoardToChannelMap.find(boardID);
 
     if (readoutBoardItr == fReadoutBoardToChannelMap.end())
         throw cet::exception("ICARUSChannelMapProvider") << "Board ID " << boardID << " not found in lookup map when looking up channel/plane pair \n";
@@ -261,13 +261,14 @@ unsigned int ICARUSChannelMapProvider::nPMTfragmentIDs() const {
 }
 
 
-const DigitizerChannelChannelIDPairVec& ICARUSChannelMapProvider::getChannelIDPairVec(const unsigned int fragmentID) const
+/// Returns records on all the PMT channels covered by the fragment `ID`.
+const PMTdigitizerInfoVec& ICARUSChannelMapProvider::getPMTchannelInfo(unsigned int fragmentID) const
 {
     mf::LogTrace{ "ICARUSChannelMapProvider" }
       << "Call to: ICARUSChannelMapProvider::getChannelIDPairVec(" << fragmentID << ")";
-    DigitizerChannelChannelIDPairVec const* digitizerPair = findPMTfragmentEntry(fragmentID);
+    PMTdigitizerInfoVec const* digitizerInfo = findPMTfragmentEntry(fragmentID);
     
-    if (digitizerPair) return *digitizerPair;
+    if (digitizerInfo) return *digitizerInfo;
     throw cet::exception("ICARUSChannelMapProvider") << "Fragment ID " << fragmentID << " not found in lookup map when looking for PMT channel info \n";
     
 }
@@ -309,7 +310,7 @@ const DigitizerChannelChannelIDPairVec& ICARUSChannelMapProvider::getChannelIDPa
   }
 
 auto ICARUSChannelMapProvider::findPMTfragmentEntry(unsigned int fragmentID) const
-  -> DigitizerChannelChannelIDPairVec const*
+  -> PMTdigitizerInfoVec const*
 {
   auto it = fFragmentToDigitizerMap.find(PMTfragmentIDtoDBkey(fragmentID));
   return (it == fFragmentToDigitizerMap.end())? nullptr: &(it->second);
