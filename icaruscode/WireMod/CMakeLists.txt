@@ -1,4 +1,4 @@
-set(EXCLUDED_PLUGINS NewWireModifier_plugin.cc WireModMakeHists_plugin.cc TestWireModifier_module.cc)
+set(EXCLUDED_PLUGINS WireModMakeHists_plugin.cc WireModifier_module.cc)
 
 add_subdirectory(Utility)
 
@@ -43,37 +43,6 @@ art_make(
 
 find_library( sbncode::sbncode_WireMod_Utility_LIBRARY NAMES sbncode::sbncode_WireMod_Utility )
 
-simple_plugin(NewWireModifier "plugin"
-             ${ART_FRAMEWORK_CORE}
-             ${MF_MESSAGELOGGER}
-             ${Boost_SYSTEM_LIBRARY}
-             ${ROOT_BASIC_LIB_LIST}
-             ${ROOT_HIST}
-             art_root_io::TFileService_service
-             lardataobj::AnalysisBase
-             lardataobj::RawData
-             lardataobj::RecoBase
-             lardata::RecoObjects
-             larreco::RecoAlg
-             ${LARRECO_LIB}
-             ${LARDATA_LIB}
-             ${ART_FRAMEWORK_CORE}
-             ${ART_FRAMEWORK_PRINCIPAL}
-             ${ART_FRAMEWORK_SERVICES_REGISTRY}
-             ${ART_FRAMEWORK_SERVICES_OPTIONAL}
-             ${ART_FRAMEWORK_SERVICES_OPTIONAL_RANDOMNUMBERGENERATOR_SERVICE}
-             ${ART_FRAMEWORK_SERVICES_OPTIONAL_TFILESERVICE_SERVICE}
-             ${MF_MESSAGELOGGER}
-             ${FHICLCPP}
-             ${CLHEP}
-             ${ROOT_GEOM}
-             ${ROOT_XMLIO}
-             ${ROOT_GDML}
-             ${ROOT_BASIC_LIB_LIST}
-             ${ROOT_HIST}
-             BASENAME_ONLY
-)
-
 simple_plugin(WireModMakeHists "plugin"
               ${ART_FRAMEWORK_CORE}
               ${MF_MESSAGELOGGER}
@@ -105,7 +74,7 @@ simple_plugin(WireModMakeHists "plugin"
               BASENAME_ONLY
 )
 
-simple_plugin(TestWireModifier "module"
+simple_plugin(WireModifier "module"
               ${ART_FRAMEWORK_CORE}
               ${MF_MESSAGELOGGER}
               ${Boost_SYSTEM_LIBRARY}
@@ -138,10 +107,7 @@ simple_plugin(TestWireModifier "module"
               lardataalg::DetectorInfo
               lardata::Utilities
               lardata::DetectorInfoServices_DetectorClocksServiceStandard_service
-              #sbncode::sbncode_WireMod_Utility
-              #sbncode::sbncode_WireMod_Utility_WireModUtility
-              #icaruscode::icaruscode_WireMod_Utility
-              #"/icarus/app/users/hhausner/icarusDev/localProducts_larsoft_develop_e20_prof/sbncode/v09_75_03_02/lib/libsbncode_WireMod_Utilities.so"
+              sbnobj::ICARUS_TPC
               BASENAME_ONLY
 )
 
