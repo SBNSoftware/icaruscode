@@ -121,15 +121,16 @@ crt::DecoderICARUSCRT::DecoderICARUSCRT(fhicl::ParameterSet const& p): EDProduce
       ))
     }, 
     fDropRawDataAfterUse( p.get<bool>("DropRawDataAfterUse", true) ),
-    fFragTag(p.get<std::string>("RawDataTag","hello")), 
+    fFragTag(p.get<std::string>("RawDataTag","daq:ContainerBottomCRT")), 
     fLookForContainer(p.get<bool>("LookForContainer", false)),    
     fEarliestTime(std::numeric_limits<decltype(fEarliestTime)>::max())
 
 {
 std::cout<<"RawDataTag: "<<fFragTag<<'\n';  
-fChannelMap = art::ServiceHandle<icarusDB::IICARUSChannelMap const>{}.get();
+fChannelMap = art::ServiceHandle<icarusDB::IICARUSChannelMap const>{}.get();     
   produces< std::vector<icarus::crt::CRTData> >();
-  //mayConsumeMany<artdaq::Fragments>();
+  produces<std::vector<CRT::Trigger>>();
+  mayConsumeMany<artdaq::Fragments>();
   consumes<std::vector<artdaq::Fragment>>(fFragTag);
   {
     std::vector<std::vector<int32_t> > delays =  p.get<std::vector<std::vector<int32_t> > >("FEB_delay_side");
@@ -620,9 +621,11 @@ try
       //std::cout<<"In the try for produce function"<<'\n';//AC:Added to see where just running the decoder goes. 
       if(fLookForContainer)
       {
+        std::cout<<"In the look for container if"<<'\n';
         //If this is the first event, set fEarliestTime
         if(fEarliestTime == std::numeric_limits<decltype(fEarliestTime)>::max())
         {
+        std::cout<<"In the Earliest time == if"<<'\n';
 	  //Loop every fragment in the Event for each fragment create a containerFragment and loop over each block. Calling SetEarliestTime for each one. 
           for(const auto& frag: *fragHandle) 
           {
@@ -639,9 +642,11 @@ try
       }
       else
       {
+        std::cout<<"In the look for container if else block"<<'\n';
         //If this is the first event, set fEarliestTime
         if(fEarliestTime == std::numeric_limits<decltype(fEarliestTime)>::max())
         {
+          std::cout<<"In the earliest time == if, in the else"<<'\n';
           for(const auto& frag: *fragHandle) SetEarliestTime(frag);
         }
 
@@ -667,7 +672,9 @@ for(const auto& trigger: *triggers)
         icarus::crt::CRTData data;
           //trigger.dump(outputStream);
           data.fMac5 = trigger.Channel();
-          data.fTs0 = trigger.Timestamp();	          
+          data.fTs0 = trigger.Timestamp();	 
+          std::cout << "Bottom timestamp: " << trigger.Timestamp() << '\n';        
+	  std::cout << "Number of elements in trigger.Hits(): " << trigger.Hits().size() << std::endl;
           for(const auto& hit: trigger.Hits()){
             //adc_array[hit.Channel()] = hit.ADC();    
             //data.fAdc = adc_array;
@@ -677,6 +684,8 @@ for(const auto& trigger: *triggers)
             allCRTdata.push_back(data);
           }           
        }
+
+evt.put(std::move(triggers));
 
 
 // move the data which is actually present in the final data product

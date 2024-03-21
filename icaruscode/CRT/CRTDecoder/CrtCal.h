@@ -8,7 +8,7 @@
 #include <climits>
 
 //ROOT includes
-#include<TH1F.h>
+#include <TH1F.h>
 #include <TTree.h>
 #include <TFile.h>
 #include <TCanvas.h>

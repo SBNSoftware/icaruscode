@@ -492,7 +492,8 @@ simple_plugin(CRTTPCTruthEff module
               icaruscode_CRTUtils
               larcorealg::Geometry
               larcore::Geometry_Geometry_service
-              larsim::Simulation lardataobj::Simulation
+              larsim::Simulation 
+              lardataobj::Simulation
               larsim::MCCheater_BackTrackerService_service
               larsim::MCCheater_ParticleInventoryService_service
               lardata::Utilities

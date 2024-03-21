@@ -164,7 +164,8 @@ void sbndaq::BernCRTAna::analyze(art::Event const & evt) {
     ts0      = hit.ts0;
     ts1      = hit.ts1;
     coinc    = hit.coinc;
-
+    //std::cout<<"HitType: "<<std::to_string(subSys)<<'\n';
+    //std::cout<<"mac5: "<<std::to_string(mac5)<<'\n';
     for(int ch=0; ch<32; ch++) adc[ch] = hit.adc[ch];
 
     run_start_time            = hit.run_start_time;
