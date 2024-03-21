@@ -29,6 +29,7 @@ icarusDB::ICARUSChannelMapProviderBase<ChMapAlg>::ICARUSChannelMapProviderBase
   , fDiagnosticOutput  { config.DiagnosticOutput() }
   , fChannelMappingAlg { config.ChannelMappingTool() }
 {
+  addCacheTags({ "TPC", "PMT", "CRT" }); // all caches updated at the same time
 }
 
 
@@ -265,13 +266,16 @@ void icarusDB::ICARUSChannelMapProviderBase<ChMapAlg>::readFromDatabase() {
 
   mfLogInfo() << "Building the channel mapping";
 
+  updateCacheID("TPC");
+  
   // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   // TPC fragment-based mapping
   cet::cpu_timer theClockFragmentIDs;
   theClockFragmentIDs.start();
   fTPCFragmentToReadoutMap.clear();
-  if (fChannelMappingAlg.BuildTPCFragmentIDToReadoutIDMap(fTPCFragmentToReadoutMap))
-  {
+  if (
+   fChannelMappingAlg.BuildTPCFragmentIDToReadoutIDMap(fTPCFragmentToReadoutMap)
+  ) {
     throw myException()
       << "Cannot recover the TPC fragment ID channel map from the database.\n";
   }
@@ -311,6 +315,8 @@ void icarusDB::ICARUSChannelMapProviderBase<ChMapAlg>::readFromDatabase() {
     << ", Readout IDs time: " << readoutIDsTime;
   
   
+  updateCacheID("PMT");
+  
   // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   // PMT channel mapping
   fPMTFragmentToDigitizerMap.clear();
@@ -330,6 +336,8 @@ void icarusDB::ICARUSChannelMapProviderBase<ChMapAlg>::readFromDatabase() {
     }
   }
   
+  
+  updateCacheID("CRT");
   
   // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   // Side CRT channel mapping
@@ -408,7 +416,7 @@ constexpr unsigned int icarusDB::ICARUSChannelMapProviderBase<ChMapAlg>::PMTfrag
   
   // protest if this is a fragment not from the PMT;
   // but make an exception for old PMT fragment IDs (legacy)
-  assert(((fragmentID & ~0xFF) == 0x00) || ((fragmentID & ~0xFF) == 0x20));
+  assert(((fragmentID & ~0xFF) == 0x0000) || ((fragmentID & ~0xFF) == 0x2000));
   
   return fragmentID & 0xFF;
   

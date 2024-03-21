@@ -31,6 +31,21 @@ namespace icarusDB {
  * @tparam ChMapAlg type of channel mapping helper to be used
  * 
  * 
+ * Caches
+ * -------
+ * 
+ * This implementation relies on a database backend reading the full information
+ * from the database and caching the result, every time a new run period is
+ * requested. To help users who in turn cache information from this object to
+ * track whether _their_ caches are invalidated by such occurrences, this object
+ * uses the `util::CacheCounter` facility to version every cache.
+ * Users will want to use the `util::CacheGuard` tool to monitor the cache.
+ * Three caches are tracked, with tags `"TPC"`, `"PMT"` and `"CRT"`, plus
+ * the overall cache tracking (tagged with an empty name `""`).
+ * At the moment of writing, the three caches are actually updated all at the
+ * same times.
+ * 
+ * 
  * Configuration parameters
  * =========================
  * 

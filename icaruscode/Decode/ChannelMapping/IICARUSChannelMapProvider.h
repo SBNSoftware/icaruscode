@@ -10,6 +10,7 @@
 // ICARUS libraries
 #include "icaruscode/Decode/ChannelMapping/RunPeriods.h"
 #include "icaruscode/Decode/ChannelMapping/ICARUSChannelMapDataTypes.h"
+#include "icaruscode/Utilities/CacheCounter.h"
 
 // C/C++ standard libraries
 #include <vector>
@@ -39,9 +40,12 @@ namespace icarusDB { class IICARUSChannelMapProvider; }
  * expected that implementations cache results in their final form and provide
  * direct access to that cache.
  * 
- * 
+ * The interface includes cache tracking support via `util::CacheCounter`.
+ * Implementations are expected to maintain the tracking of the cache with the
+ * default (empty) name; by default the cache will be always considered
+ * outdated.
  */
-class icarusDB::IICARUSChannelMapProvider {
+class icarusDB::IICARUSChannelMapProvider: public util::CacheCounter {
     
     public:
   

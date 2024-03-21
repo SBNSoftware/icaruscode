@@ -66,6 +66,14 @@ namespace icarusDB { class IICARUSChannelMap; };
 class icarusDB::IICARUSChannelMap
   : virtual public icarusDB::IICARUSChannelMapProvider
 {
+    public:
+  
+  /// Type of the service provider.
+  using provider_type = icarusDB::IICARUSChannelMapProvider;
+  
+  /// Returns the service provider.
+  provider_type const* provider() const { return this; }
+  
 };
 
 

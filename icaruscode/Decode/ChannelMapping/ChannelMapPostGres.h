@@ -1,7 +1,7 @@
 /**
  * @file   icaruscode/Decode/ChannelMapping/ChannelMapPostGres.h
  * @brief  Interface with ICARUS channel mapping PostGres database.
- * @author T. Usher (factorised by Gianluca Petrillo, petrillo@slac.stanford.edu)
+ * @author T. Usher (factorised by G. Petrillo, petrillo@slac.stanford.edu)
  * @see    icaruscode/Decode/ChannelMapping/ChannelMapPostGres.cxx
  */
 
@@ -12,6 +12,7 @@
 // ICARUS libraries
 #include "icaruscode/Decode/ChannelMapping/IChannelMapping.h"
 #include "icaruscode/Decode/ChannelMapping/RunPeriods.h"
+#include "icaruscode/Utilities/Expected.h"
 #include "icarusalg/Utilities/mfLoggingClass.h"
 
 // framework libraries
@@ -133,33 +134,6 @@ class icarusDB::ChannelMapPostGres
   virtual int BuildSideCRTCalibrationMap(SideCRTChannelToCalibrationMap&) const override;
 
     private:
-
-  /// Loosely based on C++-20 `std::expected`.
-  template <typename T, typename E = int>
-  class Expected {
-    std::variant<T, E> fValue;
-      public:
-    constexpr Expected(E e = E{}): fValue{ std::move(e) } {}
-    constexpr Expected(T t): fValue{ std::move(t) } {}
-    
-    Expected<T, E>& operator= (E e) { fValue = std::move(e); return *this; }
-    Expected<T, E>& operator= (T t) { fValue = std::move(t); return *this; }
-    template <typename... Args>
-    T& emplace(Args&&... args)
-      { return fValue.emplace(std::forward<Args>(args)...); }
-    
-    bool has_value() const { return std::holds_alternative<T>(fValue); }
-    
-    E code() const { return std::get<E>(fValue); }
-    T const& value() const { return std::get<T>(fValue); }
-    
-    operator T const& () const { return value(); }
-    T const& operator*() const { return value(); }
-    
-    explicit operator bool() const { return has_value(); }
-    
-  }; // Expected
-  
   
   // --- BEGIN --- Configuration parameters ------------------------------------
   
@@ -225,7 +199,7 @@ class icarusDB::ChannelMapPostGres
   /// Returns the string on the specified `column` of the `tuple`.
   /// @return the requested string, or an error code from libwda on error
   template <std::size_t BufferSize = 32>
-  static Expected<std::string> getStringFromTuple
+  static util::Expected<std::string> getStringFromTuple
     (details::WDATuple const& tuple, std::size_t column);
 
   /// Returns an exception object pre-approved with our signature.

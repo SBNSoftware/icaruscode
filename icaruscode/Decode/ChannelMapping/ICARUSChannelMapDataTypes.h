@@ -71,6 +71,13 @@ namespace icarusDB {
       = std::numeric_limits<unsigned int>::max();
     static constexpr unsigned int NoLaserChannel
       = std::numeric_limits<unsigned int>::max();
+    static constexpr unsigned short int NoConnector
+      = std::numeric_limits<short int>::max();
+    static constexpr unsigned short int NoConnectorBit
+      = std::numeric_limits<short int>::max();
+    
+    /// Label of the digitizer this channel is on (e.g. `WW-TOP-A`).
+    std::string digitizerLabel;
     
     /// Number of the channel within its digitizer.
     unsigned int digitizerChannelNo = NoDigitizerChannel;
@@ -80,6 +87,25 @@ namespace icarusDB {
     
     /// Number of laser channel shining into this PMT.
     unsigned int laserChannelNo = NoLaserChannel;
+    
+    /// Number of the connector with the LVDS signal of this channel.
+    unsigned short int LVDSconnector = NoConnector;
+    
+    /// Number of the connector bit carrying the LVDS signal of this channel.
+    unsigned short int LVDSbit = NoConnectorBit;
+    
+    /// Number of the connector with the adder signal including this channel.
+    unsigned short int adderConnector = NoConnector;
+    
+    /// Number of the connector bit carrying the adder signal including this
+    /// channel.
+    unsigned short int adderBit = NoConnectorBit;
+    
+    /// Returns whether the LVDS connector bit information is available.
+    constexpr bool hasLVDSinfo() const { return LVDSbit != NoConnectorBit; }
+    
+    /// Returns whether the adder connector bit information is available.
+    constexpr bool hasAdderInfo() const { return adderBit != NoConnectorBit; }
     
     /// Sorting by channel ID.
     constexpr bool operator< (PMTChannelInfo_t const& other) const noexcept
