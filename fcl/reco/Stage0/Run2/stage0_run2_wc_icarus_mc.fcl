@@ -5,7 +5,7 @@
 #include "stage0_icarus_mc_defs.fcl"
 #include "stage0_icarus_driver_common.fcl"
 
-process_name: MCstage0Test
+process_name: MCstage0
 
 ## Add the MC module to the list of producers
 physics.producers: {  @table::icarus_stage0_producers
@@ -26,27 +26,12 @@ physics.end_paths:     [ outana, streamROOT ]
 
 # Drop the artdaq format files on output
 outputs.rootOutput.outputCommands: ["keep *_*_*_*", 
-                                    "drop *_daq_*_*", 
+                                    "drop *_daq*_*_*", 
                                     "drop *_MCDecodeTPCROI_*_*", 
                                     "drop *_decon1droi_*_*", 
-                                    "drop *_decon2Droi*_*_*", 
+                                    "drop *_decon2droi*_*_*", 
                                     "drop recob::Wire*_roifinder*_*_*", 
-                                    "keep *_daq_simpleSC_*" ]
-
-# Drop the daq format files on output, 
-# Drop all output from the TPC decoder stage
-# Drop all output from the 1D deconvolution stage
-# Drop all ouptut for the first running of the ROI finder (on the 1Dsingularity shell --nv -B /cvmfs,/media/usher/analysis/LArSoft/ICARUS slf7-essentials_latest.sif decon)
-# Drop all output from the 2D deconvolution stage
-# Drop the recob::Wire output from the roifinder2d (but keep the ChannelROIs)
-outputs.rootOutput.outputCommands:         ["keep *_*_*_*", 
-                                            "drop *_daq_*_*", 
-                                            "drop *_MCDecodeTPCROI_*_*", 
-                                            "drop *_decon1droi_*_*", 
-                                            "drop *_decon2droi*_*_*", 
-                                            "drop recob::Wire*_roifinder_*_*",
-                                            "drop recob::Wire*_roifinder2d_*_*" 
-                                           ]
+                                    "keep *_daq_simpleSC*_*"]
 
 # Set the expected input for ophit
 physics.producers.ophit.InputModule: "opdaq"
@@ -62,20 +47,11 @@ physics.producers.decon2droiEW.wcls_main.params.raw_input_label:  "MCDecodeTPCRO
 physics.producers.decon2droiWE.wcls_main.params.raw_input_label:  "MCDecodeTPCROI:PHYSCRATEDATATPCWE"
 physics.producers.decon2droiWW.wcls_main.params.raw_input_label:  "MCDecodeTPCROI:PHYSCRATEDATATPCWW"
 
-# Make sure ROI finder uses correct info
-physics.producers.roifinder2d.WireModuleLabelVec:  ["decon2droiWW:decon","decon2droiWE:decon","decon2droiEW:decon","decon2droiEE:decon"]
-
-# Override the hit finder input 
-physics.producers.gaushitTPCWW.CalDataModuleLabel: "roifinder2d:PHYSCRATEDATATPCWW"
-physics.producers.gaushitTPCWE.CalDataModuleLabel: "roifinder2d:PHYSCRATEDATATPCWE"
-physics.producers.gaushitTPCEW.CalDataModuleLabel: "roifinder2d:PHYSCRATEDATATPCEW"
-physics.producers.gaushitTPCEE.CalDataModuleLabel: "roifinder2d:PHYSCRATEDATATPCEE"
-
 # As per Gray Putname...
-physics.producers.decon2droiEE.wcls_main.structs.gain0: 10.2636323 
-physics.producers.decon2droiEW.wcls_main.structs.gain0: 10.2636323 
-physics.producers.decon2droiWE.wcls_main.structs.gain0: 10.2636323 
-physics.producers.decon2droiWW.wcls_main.structs.gain0: 10.2636323 
+physics.producers.decon2droiEE.wcls_main.structs.gain0: 17.05212 
+physics.producers.decon2droiEW.wcls_main.structs.gain0: 17.05212 
+physics.producers.decon2droiWE.wcls_main.structs.gain0: 17.05212 
+physics.producers.decon2droiWW.wcls_main.structs.gain0: 17.05212 
 
 
 physics.producers.decon2droiEE.wcls_main.structs.gain1: 12.1420344 

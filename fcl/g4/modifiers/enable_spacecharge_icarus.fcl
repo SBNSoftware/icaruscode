@@ -4,6 +4,7 @@
 
 services.SpaceChargeService.EnableSimSpatialSCE: true
 services.SpaceChargeService.EnableSimEfieldSCE: true
+services.SpaceChargeService.is2DdriftSimHack: false
 
 services.SpaceChargeService.RepresentationType: "Voxelized_TH3"
 
