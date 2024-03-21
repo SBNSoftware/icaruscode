@@ -80,10 +80,6 @@ physics.producers.emuTriggerUnshifted: {
   TriggerGatesTag: "pmttriggerwindowsinit"
 }
 
-physics.producers.triggersimgates.BeamGateTag: "shiftIonization"
-
-physics.producers.triggersimgates.BeamGateTag: "shiftIonization"
-
 outputs: {
   rootoutput: {
     @table::icarus_rootoutput
