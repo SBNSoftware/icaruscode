@@ -19,6 +19,7 @@
 #include "messagefacility/MessageLogger/MessageLogger.h"
 #include "art_root_io/TFileService.h"
 
+#include "icaruscode/Decode/ChannelMapping/IICARUSChannelMap.h"
 #include "icaruscode/IcarusObj/PMTWaveformTimeCorrection.h"
 #include "icaruscode/IcarusObj/PMTBeamSignal.h"
 #include "lardata/DetectorInfoServices/DetectorClocksService.h"
@@ -69,7 +70,9 @@ public:
 private:
  
   art::ServiceHandle<art::TFileService> tfs;
-
+  
+  /// Channel mappping
+  icarusDB::IICARUSChannelMap const & fChannelMap; 
   /// Save plain ROOT TTrees for debugging
   bool fDebugTrees;
   /// Save raw waveforms in debug TTrees
@@ -113,29 +116,7 @@ private:
   double m_ew_time_abs;	
   std::vector<short> m_ew_wf;
 
-  // these channels have been chosen because they 
-  // were not affected by the mapping change 
-  // (they stayed on the same board)
-  // FIXME: get it from the mapping db 
-  std::map< std::string, int> fSingleChannelPerBoard = 
-  {
-    { "EE-BOT-C", 4 },
-    { "EE-BOT-B", 24 },
-    { "EE-TOP-C", 54 },
-    { "EE-TOP-B", 64 },
-    { "EW-BOT-C", 94 },
-    { "EW-BOT-B", 114 },
-    { "EW-TOP-C", 144 },
-    { "EW-TOP-B", 154 },
-    { "WE-BOT-C", 184 },
-    { "WE-BOT-B", 204 },
-    { "WE-TOP-C", 234 },
-    { "WE-TOP-B", 244 },
-    { "WW-BOT-C", 274 },
-    { "WW-BOT-B", 294 },
-    { "WW-TOP-C", 320 },
-    { "WW-TOP-B", 339 },
-  };
+  std::map< std::string, int> fBoardEffFragmentID;
 
   // prepare pointers for data products
   using BeamSignalCollection = std::vector<icarus::timing::PMTBeamSignal>;
@@ -150,6 +131,7 @@ private:
 
 icarus::timing::PMTBeamSignalsExtractor::PMTBeamSignalsExtractor(fhicl::ParameterSet const& pset)
   : EDProducer{pset}
+  , fChannelMap( *(art::ServiceHandle<icarusDB::IICARUSChannelMap const>{}) )
   , fDebugTrees( pset.get<bool>("DebugTrees") )
   , fSaveWaveforms( pset.get<bool>("SaveWaveforms") )
   , fRWMlabel( pset.get<art::InputTag>("RWMlabel") )
@@ -164,6 +146,12 @@ icarus::timing::PMTBeamSignalsExtractor::PMTBeamSignalsExtractor(fhicl::Paramete
   for (fhicl::ParameterSet const& setup : fBoardSetup ) {
     auto innerSet = setup.get<std::vector<fhicl::ParameterSet>>("SpecialChannels");
     fBoardBySpecialChannel[ innerSet[0].get<int>("Channel") ] = setup.get<std::string>("Name");
+  }
+
+  // pre-save the association between digitizer_label and effective fragment ID
+  for (unsigned int fragid=0; fragid<fChannelMap.nPMTfragmentIDs(); fragid++){
+    auto pmtinfo  = fChannelMap.getPMTchannelInfo(fragid)[0]; //pick first pmt on board
+    fBoardEffFragmentID[ pmtinfo.digitizerLabel ] = fragid;  
   }
 
   // Call appropriate consumes<>() functions here.
@@ -425,9 +413,10 @@ double icarus::timing::PMTBeamSignalsExtractor::getTriggerCorrection(int channel
   std::string digitizer_label = getDigitizerLabel(channel);
 
   // trigger-hardware corrections are shared by all channels on the same board
-  // mapping currently does not expose channel<->board relationship
-  // using ad-hoc configuration... FIXME!
-  int pmtch = fSingleChannelPerBoard[digitizer_label];
+  // we can pick the first channel on the desired board
+  int fragID = fBoardEffFragmentID[digitizer_label];
+  auto pmtinfo = fChannelMap.getPMTchannelInfo(fragID)[0]; //pick first ch on board
+  int pmtch = pmtinfo.channelID;
 
   // trigger-hardware correction are in order
   // index of vector is pmtch
