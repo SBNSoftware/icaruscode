@@ -60,6 +60,9 @@ physics: {
 
 } # physics
 
+physics.producers.daq.wcls_main.configs: ["pgrapher/experiment/icarus/wcls-multitpc-sim-drift-simchannel-shifted.jsonnet"]
+physics.producers.crtdaq.G4ModuleLabel: "genericcrt"
+
 physics.producers.pmtlvdsgatesinit: {
   @table::physics.producers.pmtlvdsgates
   TriggerGatesTag: "pmtfixedthrinit"
