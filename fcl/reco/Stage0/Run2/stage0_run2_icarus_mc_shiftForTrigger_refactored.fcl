@@ -1,9 +1,0 @@
-#include "stage0_run2_icarus_mc.fcl"
-
-
-physics.producers.mcophit.SimPhotonsProducer: "shiftIonization"
-physics.producers.ophit.InputModule: "shiftIonization"
-physics.producers.opdetonbeam.Waveforms: "shiftIonization"
-physics.producers.pmtbaselines.OpticalWaveforms: "shiftIonization"
-physics.producers.pmtfixedthr.OpticalWaveforms: "shiftIonization"
-physics.producers.triggersimgates.BeamGateTag: "shiftIonization"
