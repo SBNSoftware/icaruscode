@@ -13,9 +13,9 @@ icarus_calorimetryalgmc.CalAreaConstants: [0.01343, 0.01338, 0.01219]
 
 icarus_calorimetryalgdata.CalAreaConstants: @local::icarus_data_calconst
 icarus_calorimetryalgdata.CaloDoLifeTimeCorrection: false # handled by NormTools
-icarus_calorimetryalgdata.ModBoxA: 0.906
+icarus_calorimetryalgdata.ModBoxA: 0.903
 icarus_calorimetryalgdata.ModBoxBTF1: "[0]/TMath::Sqrt(TMath::Sin(x*TMath::Pi()/180)**2 + TMath::Cos(x*TMath::Pi()/180)**2/[1]**2)"
-icarus_calorimetryalgdata.ModBoxBParam: [0.203, 1.25]
+icarus_calorimetryalgdata.ModBoxBParam: [0.205, 1.25]
 
 standard_gnocchicaloicarus:
 {

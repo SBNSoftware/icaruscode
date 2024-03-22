@@ -63,6 +63,6 @@ icarus_calonormtools: [@local::driftnorm, @local::yznorm, @local::tpcgain]
 
 # Gain with angular dep. recombination
 # Assume equal on planes -- this is __wrong__ -- will need to be fixed when they are calibrated
-icarus_data_calconst: [0.013316, 0.013316, 0.013316]
+icarus_data_calconst: [0.013351, 0.013351, 0.013351]
 
 END_PROLOG

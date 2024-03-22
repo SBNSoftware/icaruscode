@@ -14,5 +14,5 @@ physics.producers.mcreco.SimChannelLabel: "daq:simpleSC"
 # this_cal_constants: [1.343e-2, 1.338e-2, 0.01227]
 # Post signal shape tuning, post gain fixing
 # See docdb 32139
-this_cal_constants: [1.343e-2, 1.338e-2, 0.01265]
+this_cal_constants: [1.343e-2, 1.338e-2, 0.0128041]
 #include "set_caf_calconst.fcl"
