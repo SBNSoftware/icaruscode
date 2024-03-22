@@ -63,7 +63,7 @@ physics: {
 } # physics
 
 physics.producers.daq.wcls_main.configs: ["pgrapher/experiment/icarus/wcls-multitpc-sim-drift-simchannel-shifted-refactored.jsonnet"]
-physics.producers.crtdaq.G4ModuleLabel: "genericcrt"
+physics.producers.crtdaq.G4ModuleLabel: "shiftIonization"
 physics.producers.opdaq.InputModule: "pdfastsim"
 
 physics.producers.pmtlvdsgatesinit: {
