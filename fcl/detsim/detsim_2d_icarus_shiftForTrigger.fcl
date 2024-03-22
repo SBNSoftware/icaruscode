@@ -30,6 +30,7 @@ physics: {
          InputSimPhotonsLabel: "largeant"
          InputTriggerLabel: "emuTriggerUnshifted"
          InputWaveformLabel: "opdaq"
+         InputAuxDetSimChannelLabel: "genericcrt"
          AdditionalOffset: 0.0 # [us] Additional offset to apply to the time shift
          ShiftSimEnergyDeposits: true
          ShiftSimPhotons: true
@@ -73,6 +74,8 @@ physics.producers.triggersimgatesinit: {
   @table::physics.producers.triggersimgates
   BeamGateTag: "beamgate"
 }
+
+physics.producers.crtdaq.G4ModuleLabel: "shiftIonization"
 
 physics.producers.emuTriggerUnshifted: {
   @table::physics.producers.emuTrigger
