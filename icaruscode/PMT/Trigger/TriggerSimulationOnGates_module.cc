@@ -16,10 +16,11 @@
 #include "icaruscode/PMT/Trigger/Algorithms/TriggerTypes.h" // ADCCounts_t
 #include "icaruscode/PMT/Trigger/Algorithms/details/TriggerInfo_t.h"
 #include "icaruscode/PMT/Trigger/Utilities/TriggerDataUtils.h" // FillTriggerGates()
+#include "icaruscode/Utilities/DetectorClocksHelpers.h" // makeDetTimings()...
+#include "icarusalg/Utilities/CommonChoiceSelectors.h" // util::TimeScale...
 #include "icarusalg/Utilities/PlotSandbox.h"
 #include "icarusalg/Utilities/ROOTutils.h" // util::ROOT
 #include "icarusalg/Utilities/BinningSpecs.h"
-#include "icaruscode/Utilities/DetectorClocksHelpers.h" // makeDetTimings()...
 #include "icarusalg/Utilities/FixedBins.h"
 #include "icarusalg/Utilities/PassCounter.h"
 #include "icarusalg/Utilities/mfLoggingClass.h"
@@ -72,7 +73,7 @@
 
 // C/C++ standard libraries
 #include <ostream>
-#include <algorithm> // std::fill()
+#include <algorithm> // std::fill(), std::any_of()
 #include <map>
 #include <vector>
 #include <iterator> // std::make_move_iterator()
@@ -80,6 +81,7 @@
 #include <string>
 #include <atomic>
 #include <optional>
+#include <functional> // std::mem_fn()
 #include <utility> // std::pair<>, std::move()
 #include <cmath> // std::ceil()
 #include <cstddef> // std::size_t
@@ -126,6 +128,10 @@ namespace icarus::trigger { class TriggerSimulationOnGates; }
  * Configuration
  * ==============
  * 
+ * Run `lar --print-description TriggerSimulationOnGates` for a configuration
+ * example and terse explanations (it will also include the full list of
+ * available options for multiple choice parameters like `BeamGateReference`).
+ * 
  * * `TriggerGatesTag` (string, mandatory): name of the module instance which
  *     produced the trigger primitives to be used as input; it must not include
  *     any instance name, as the instance names will be automatically added from
@@ -160,6 +166,11 @@ namespace icarus::trigger { class TriggerSimulationOnGates; }
  *     a `sbn::bits::triggerSource` mask reflecting the content of the input
  *     beam gate bits, which basically can distinguish only between BNB, NuMI
  *     and others, "unknown" (see also `daq::TriggerDecoder` tool).
+ * * `BeamGateReference` (text, default: `BeamGate`): time reference of the
+ *     input gates in the data product defined by `BeamGates`. By LArSoft
+ *     standard, that is simulation time in Monte Carlo, which is mirrored in
+ *     data by the hardware beam gate time (although the latter allows a margin
+ *     around the beam spill opening a bit before neutrinos are expected).
  * * `DeadTime` (time, default: forever): when looking for sequences of
  *     triggers, ignore this much time after every trigger found. This applies
  *     only within each requested gate: a trigger at the very end of a gate
@@ -425,6 +436,12 @@ class icarus::trigger::TriggerSimulationOnGates
       Comment("bits to be set in the trigger object as beam identifier")
       };
 
+    fhicl::Atom<util::TimeScale> BeamGateReference {
+      Name{ "BeamGateReference" },
+      Comment{ "time scale the beam gates refer to" },
+      util::TimeScale::BeamGate
+      };
+    
     fhicl::Atom<bool> EmitEmpty {
       Name("EmitEmpty"),
       Comment("produce a trigger object even for gates with no firing trigger"),
@@ -550,6 +567,8 @@ class icarus::trigger::TriggerSimulationOnGates
   WindowPattern const fPattern;
   
   art::InputTag const fBeamGateTag; ///< Data product of beam gates to simulate.
+  
+  util::TimeScale const fBeamGateReference; ///< Reference time of beam gates.
   
   /// Bits for the beam gate being simulated.
   std::optional<std::uint32_t> fBeamBits;
@@ -717,6 +736,20 @@ class icarus::trigger::TriggerSimulationOnGates
   /// Prints the summary of fired triggers on screen.
   void printSummary() const;
   
+  /**
+   * @brief Converts a time into beam gate time.
+   * @param time the time to be converted
+   * @param detTimings detector timings helper
+   * @return delay from the start of beam gate opening time to `time`
+   * 
+   * The time value is assumed to be in the reference as `fBeamGateReference`
+   * and converted into the beam gate time scale.
+   */
+  nanoseconds toBeamGateTime(
+    util::quantities::nanosecond time,
+    detinfo::DetectorTimings const& detTimings
+    ) const;
+
   /// Creates and returns a 1D histogram filled with `binnedContent`.
   TH1* makeHistogramFromBinnedContent(
     PlotSandbox_t& plots,
@@ -733,6 +766,9 @@ class icarus::trigger::TriggerSimulationOnGates
   
   /// Fills an `EventAux_t` from the information found in the argument.
   static EventAux_t extractEventInfo(art::Event const& event);
+  
+  /// Converts a standard _art_ timestamp into an UTC time [ns]
+  static std::uint64_t TimestampToUTC(art::Timestamp const& ts);
   
   /// Returns the ID of the cryostat the specified window belongs to.
   static geo::CryostatID WindowCryostat
@@ -801,6 +837,7 @@ icarus::trigger::TriggerSimulationOnGates::TriggerSimulationOnGates
   // configuration
   , fPattern              (config().Pattern())
   , fBeamGateTag          (config().BeamGates())
+  , fBeamGateReference    (config().BeamGateReference())
   , fBeamBits             (config().BeamBits())
   , fEmitEmpty            (config().EmitEmpty())
   , fExtraInfo            (config().ExtraInfo())
@@ -889,8 +926,20 @@ icarus::trigger::TriggerSimulationOnGates::TriggerSimulationOnGates
     log << "\nConfigured " << fADCthresholds.size() << " thresholds (ADC):";
     for (auto const& [ thresholdTag, dataTag ]: fADCthresholds)
       log << "\n * " << thresholdTag << " (from '" << dataTag.encode() << "')";
+#if 0 // TODO restore after adoption of https://github.com/LArSoft/lardataalg/pull/44
     log << "\nOther parameters:"
-      << "\n * trigger time resolution: " << fTriggerTimeResolution;
+      << "\n * trigger time resolution: " << fTriggerTimeResolution
+      << "\n * input beam gate reference time: "
+        << util::StandardSelectorFor<util::TimeScale>{}
+          .get(fBeamGateReference).name()
+#else
+    util::StandardSelectorFor<util::TimeScale> const timeScaleSelector;
+    log << "\nOther parameters:"
+      << "\n * trigger time resolution: " << fTriggerTimeResolution
+      << "\n * input beam gate reference time: "
+        << timeScaleSelector.get(fBeamGateReference).name()
+#endif
+      ;
     if (fDeadTime == std::numeric_limits<nanoseconds>::max())
       log << "\n * only one trigger per beam gate (infinite dead time)";
     else {
@@ -984,8 +1033,8 @@ void icarus::trigger::TriggerSimulationOnGates::produce(art::Event& event)
     log << "\n * threshold " << thrTag << ": ";
     icarus::ns::util::PassCounter gateResults;
     for (std::vector<WindowTriggerInfo_t> const& triggerInfo: triggers) {
-      if (triggerInfo.empty()) continue;
-      gateResults.add(triggerInfo.front().info.fired());
+      gateResults.add(std::any_of(triggerInfo.cbegin(), triggerInfo.cend(),
+        std::mem_fn(&WindowTriggerInfo_t::info)));
     }
     log << gateResults.passed() << "/" << gateResults.total()
       << " gates triggered"; // ... at least once
@@ -1303,8 +1352,9 @@ auto icarus::trigger::TriggerSimulationOnGates::produceForThreshold(
     std::vector<WindowTriggerInfo_t> triggerInfos;
     
     // relative to the beam gate time (also simulation time for MC);
-    nanoseconds start{ beamGate.Start() };
-    nanoseconds const stop{ beamGate.Start() + beamGate.Width() };
+    nanoseconds start{ toBeamGateTime
+      (util::quantities::nanosecond{ beamGate.Start() }, detTimings) };
+    nanoseconds const stop{ start + nanoseconds{ beamGate.Width() } };
     
     while (start < stop) {
       
@@ -1480,14 +1530,71 @@ void icarus::trigger::TriggerSimulationOnGates::printSummary() const {
 
 
 //------------------------------------------------------------------------------
+auto icarus::trigger::TriggerSimulationOnGates::toBeamGateTime(
+  util::quantities::nanosecond time, detinfo::DetectorTimings const& detTimings
+) const
+  -> nanoseconds
+{
+  // currently (LArSoft v09_77_00) `detinfo::DetectorTimings` does not support
+  // beam gate timescale conversion, so we need to do it "by hand" from...
+  // electronics time, as usual
+  
+  detinfo::timescales::electronics_time time_es;
+  switch (fBeamGateReference) {
+    case util::TimeScale::Electronics:
+      time_es = detinfo::timescales::electronics_time{ time };
+      break;
+    case util::TimeScale::BeamGate:
+      return nanoseconds{ time };
+    case util::TimeScale::Trigger:
+      time_es = detTimings.toElectronicsTime
+        (detinfo::timescales::trigger_time{ time });
+      break;
+    case util::TimeScale::Simulation:
+      time_es = detTimings.toElectronicsTime
+        (detinfo::timescales::simulation_time{ time });
+      break;
+    default:
+#if 0 // TODO restore after adoption of https://github.com/LArSoft/lardataalg/pull/44
+      throw art::Exception{ art::errors::Configuration }
+        << "Conversion of times from reference '"
+        << util::StandardSelectorFor<util::TimeScale>{}
+          .get(fBeamGateReference).name()
+        << "' not supported.\n";
+#else
+    {
+      util::StandardSelectorFor<util::TimeScale> const timeScaleSelector;
+      throw art::Exception{ art::errors::Configuration }
+        << "Conversion of times from reference '"
+        << timeScaleSelector.get(fBeamGateReference).name()
+        << "' not supported.\n";
+    }
+#endif
+  } // switch
+  
+  return time_es - detTimings.BeamGateTime();
+  
+} // icarus::trigger::TriggerSimulationOnGates::rebaseTime()
+
+
+//------------------------------------------------------------------------------
 auto icarus::trigger::TriggerSimulationOnGates::extractEventInfo
   (art::Event const& event) -> EventAux_t
 {
   return {
-      event.time().value()  // time
-    , event.event()         // event
+      TimestampToUTC(event.time()) // time
+    , event.event()                // event
     };
 } // icarus::trigger::TriggerSimulationOnGates::extractEventInfo()
+
+
+//------------------------------------------------------------------------------
+std::uint64_t icarus::trigger::TriggerSimulationOnGates::TimestampToUTC
+  (art::Timestamp const& ts)
+{
+  return static_cast<std::uint64_t>(ts.timeHigh())
+    + static_cast<std::uint64_t>(ts.timeLow()) * 1'000'000'000ULL;
+} // icarus::trigger::TriggerSimulationOnGates::TimestampToUTC()
 
 
 //------------------------------------------------------------------------------

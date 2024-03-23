@@ -1,0 +1,122 @@
+#
+# File:    simulation_genie_icarus_bnb.fcl
+# Purpose: "Standard" simulation of neutrinos from BnB in ICARUS.
+# Date:    August 19, 2019
+# Version: 1.0
+#
+# The simulation generates interactions of neutrinos from BnB into the ICARUS
+# detector. Details of the settings can be found in `genie_icarus_bnb.fcl`.
+# 
+#
+# Changes
+# --------
+# 
+# 20190819 (petrillo@slac.stanford.edu) [v1.0]
+#   original version from `simulation_genie_icarus_Mar2019.fcl`
+#
+#
+#include "corsika_icarus.fcl"
+#include "services_icarus_simulation.fcl"
+#include "genie_icarus_bnb.fcl"
+#include "beamgates_icarus.fcl"
+#include "largeantmodules_icarus.fcl"
+#include "FilterDirts.fcl"
+
+process_name: GenGenie
+
+
+services: {
+  
+  @table::icarus_gen_services
+  
+  IFDH:         {}
+  
+  # Load the service that manages root files for histograms.
+  TFileService: { fileName: "Supplemental-simulation_genie_icarus_bnb_%tc-%p.root" }
+  
+#  FileCatalogMetadata:  @local::art_file_catalog_mc
+  @table::icarus_g4_services
+
+} # services
+
+
+source: {
+  module_type:     EmptyEvent
+  timestampPlugin: { plugin_type: "GeneratedEventTimestamp" }
+  maxEvents:       10          # Number of events to create
+  firstRun:        1           # Run number to use for this file
+  firstEvent:      1           # number of first event in the file
+} # source
+
+
+physics: {
+  
+  producers: {
+    
+    rns:       { module_type: "RandomNumberSaver" }
+    generator: @local::icarus_genie_BNB # from `genie_icarus_bnb.fcl`
+   larg4intime: @local::icarus_largeant
+    beamgate:  @local::icarus_standardbeamgate_BNB  # from beamgates_icarus.fcl
+    generator2: @local::icarus_corsika_p
+    
+  } # producers
+  
+
+ filters:
+ {
+    eventActive: @local::icarus_FilterDirts
+
+       GenInTimeSorter: {
+        KeepOnlyMuons: false
+        MinKE: 0 # some energy threshold to produce a PE
+        MaxT: 1900 # [ns] add a little buffer on the far end of the photon time window
+        MinT: -200 # [ns] Change: filter to only allow muons starting at the beam spill (with a small buffer)
+        SortParticles: true
+        module_type: "FilterGenInTime"
+        }
+  }
+
+
+  simulate:     [ rns, generator, larg4intime, beamgate, eventActive, generator2 ]
+
+  #simulate:     [ rns, generator, larg4intime, beamgate, eventActive, generator2, GenInTimeSorter ] 
+  
+  outputstream: [ rootoutput ]
+  
+  trigger_paths: [ simulate ]
+  end_paths:     [ outputstream ]
+  
+} # physics
+
+
+outputs: {
+  
+  rootoutput: {
+    module_type: RootOutput
+    
+    fileName:    "simulation_genie_icarus_bnb_%tc-%p.root"
+    dataTier:    "simulated"
+    
+    compressionLevel: 1
+    saveMemoryObjectThreshold: 0
+    
+    SelectEvents: [ simulate ]
+    
+  } # rootoutput
+  
+} # outputs
+
+
+#
+# overrides
+#
+physics.producers.generator.TopVolume: "volWorld"
+physics.producers.generator.EventsPerSpill: 1
+physics.producers.generator.POTPerSpill: 0
+physics.producers.generator.FluxFiles: [
+            "gsimple_bnb_neutrino_icarus_dirt_*.root"
+         ]
+physics.producers.generator2.SubBoxLength: "subboxLength 60 "
+physics.producers.generator.FluxSearchPaths: "/pnfs/sbn/persistent/users/zarko/icarus_dirt_gsimple/20210310/"
+physics.producers.larg4intime.StoreDroppedMCParticles: true
+physics.producers.larg4intime.KeepParticlesInVolumes: [ "volDetEnclosure" ]

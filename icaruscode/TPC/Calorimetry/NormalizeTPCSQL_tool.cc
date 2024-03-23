@@ -49,9 +49,9 @@ private:
   };
 
   // Helpers
-  ScaleInfo GetScaleInfo(uint64_t timestamp);
+  ScaleInfo GetScaleInfo(uint64_t run);
 
-  // Cache timestamp requests
+  // Cache run requests
   std::map<uint64_t, ScaleInfo> fScaleInfos;
 };
 
@@ -69,16 +69,18 @@ icarus::calo::NormalizeTPCSQL::NormalizeTPCSQL(fhicl::ParameterSet const &pset):
 
 void icarus::calo::NormalizeTPCSQL::configure(const fhicl::ParameterSet& pset) {}
 
-icarus::calo::NormalizeTPCSQL::ScaleInfo icarus::calo::NormalizeTPCSQL::GetScaleInfo(uint64_t timestamp) {
+icarus::calo::NormalizeTPCSQL::ScaleInfo icarus::calo::NormalizeTPCSQL::GetScaleInfo(uint64_t run) {
   // check the cache
-  if (fScaleInfos.count(timestamp)) {
-    return fScaleInfos.at(timestamp);
+  if (fScaleInfos.count(run)) {
+    return fScaleInfos.at(run);
   }
 
-  // Lookup the data
-  fDB.UpdateData(timestamp*1e9);
+  // Look up the run
+  //
+  // Translate the run into a fake "timestamp"
+  fDB.UpdateData((run+1000000000)*1000000000);
 
-  // Collect the timestamp info
+  // Collect the run info
   ScaleInfo thisscale;
 
   // Iterate over the rows
@@ -89,7 +91,7 @@ icarus::calo::NormalizeTPCSQL::ScaleInfo icarus::calo::NormalizeTPCSQL::GetScale
     thisscale.scale[ch] = scale;
   }
   // Set the cache
-  fScaleInfos[timestamp] = thisscale;
+  fScaleInfos[run] = thisscale;
 
   return thisscale;
 }
@@ -97,7 +99,7 @@ icarus::calo::NormalizeTPCSQL::ScaleInfo icarus::calo::NormalizeTPCSQL::GetScale
 double icarus::calo::NormalizeTPCSQL::Normalize(double dQdx, const art::Event &e, 
     const recob::Hit &hit, const geo::Point_t &location, const geo::Vector_t &direction, double t0) {
   // Get the info
-  ScaleInfo i = GetScaleInfo(e.time().timeHigh());
+  ScaleInfo i = GetScaleInfo(e.id().runID().run());
 
   // Lookup the TPC, cryo
   unsigned tpc = hit.WireID().TPC;

@@ -35,10 +35,6 @@ timetracktreestorage_base: {
   module_type: "TimeTrackTreeStorage"
   BeamGateProducer: "daqTrigger"
   TriggerProducer:  "daqTrigger"
-  MODA: 0.930
-  MODB: 0.212
-  Wion: 0.0000236016
-  Efield: 0.5
   ForceDowngoing: true
 }
 

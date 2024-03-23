@@ -23,9 +23,11 @@ physics: {
   producers: {
     fmatchCryoE: @local::icarus_simple_flashmatch_E
     fmatchCryoW: @local::icarus_simple_flashmatch_W
+    fmatchopCryoE: @local::icarus_simple_flashmatch_E_op
+    fmatchopCryoW: @local::icarus_simple_flashmatch_W_op
   }
 
-  reco: [fmatchCryoE, fmatchCryoW]
+  reco: [fmatchCryoE, fmatchCryoW, fmatchopCryoE, fmatchopCryoW]
   stream: [out]
   end_paths: [stream]
 }

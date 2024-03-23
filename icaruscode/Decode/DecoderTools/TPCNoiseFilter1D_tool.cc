@@ -146,8 +146,6 @@ public:
 
 private:
 
-    void principleComponents(const icarus_signal_processing::VectorFloat&) const;
-
     using FloatPairVec = std::vector<std::pair<float,float>>;
 
     float                                          fSigmaForTruncation;     //< Selection cut for truncated rms calculation
@@ -156,9 +154,11 @@ private:
     size_t                                         fMorphWindow;            //< Window for filter
     std::vector<float>                             fThreshold;              //< Threshold to apply for saving signal
     bool                                           fUseFFTFilter;           //< Turn on/off the use of the FFT filter
+    bool                                           fLowFreqCorrection;      //< Apply low frequency noise correction
     bool                                           fDiagnosticOutput;       //< If true will spew endless messages to output
     FloatPairVec                                   fFFTSigmaValsVec;        //< Gives the sigmas for the filter function
     FloatPairVec                                   fFFTCutoffValsVec;       //< Gives the cutoffs for the filter function
+    std::string                                    fDenoiserType;           //< Describes the specific denoiser to use
       
     std::vector<std::string>                       fFilterModeVec;          //< Allowed modes for the filter
 
@@ -226,11 +226,14 @@ void TPCNoiseFilter1DMC::configure(fhicl::ParameterSet const &pset)
     fMorphWindow           = pset.get<size_t                  >("FilterWindow",         10);
     fThreshold             = pset.get<std::vector<float>      >("Threshold",           std::vector<float>()={5.0,3.5,3.5});
     fUseFFTFilter          = pset.get<bool                    >("UseFFTFilter",        true);
+    fLowFreqCorrection     = pset.get<bool                    >("LowFreqCorrection",   true);
     fDiagnosticOutput      = pset.get<bool                    >("DiagnosticOutput",    false);
     fFilterModeVec         = pset.get<std::vector<std::string>>("FilterModeVec",       std::vector<std::string>()={"e","g","d"});
 
     fFFTSigmaValsVec       = pset.get<FloatPairVec            >("FFTSigmaVals",        FloatPairVec()={{1.5,20.}, {1.5,20.}, {2.0,20.}});
     fFFTCutoffValsVec      = pset.get<FloatPairVec            >("FFTCutoffVals",       FloatPairVec()={{8.,800.}, {8.,800.}, {0.0,800.}});
+
+    fDenoiserType          = pset.get<std::string             >("DenoiserType",        "default");
 
     fGeometry   = art::ServiceHandle<geo::Geometry const>{}.get();
 
@@ -282,13 +285,27 @@ void TPCNoiseFilter1DMC::process_fragment(detinfo::DetectorClocksData const&,
     if (fNumTruncBins.size()     < numChannels)  fNumTruncBins.resize(numChannels);
     if (fRangeBins.size()        < numChannels)  fRangeBins.resize(numChannels);
 
-    size_t ngroups = std::max(numChannels/coherentNoiseGrouping,size_t(1));
-    if (fThresholdVec.size()     < ngroups)  fThresholdVec.resize(ngroups);
+    if (fThresholdVec.size()     < numChannels)  fThresholdVec.resize(numChannels);
 
     if (fFilterFunctionVec.size() < numChannels) fFilterFunctionVec.resize(numChannels);
 
-//    icarus_signal_processing::Denoiser1D_Protect   denoiser;
-    icarus_signal_processing::Denoiser1D           denoiser;
+    //icarus_signal_processing::IDenoiser1D* denoiser = nullptr;
+
+    //denoiser = std::unique_ptr<icarus_signal_processing::Denoiser1D_NoCoherent>(new icarus_signal_processing::Denoiser1D_NoCoherent()).get();
+
+
+    // Assume we don't ask for coherent noise subtraction
+    std::unique_ptr<icarus_signal_processing::IDenoiser1D> denoiser(new icarus_signal_processing::Denoiser1D());
+
+    if (!fDenoiserType.compare("nonoise"))
+            denoiser = std::unique_ptr<icarus_signal_processing::IDenoiser1D>(new icarus_signal_processing::Denoiser1D_NoCoherent());
+
+    if (!fDenoiserType.compare("pca"))
+            denoiser = std::unique_ptr<icarus_signal_processing::IDenoiser1D>(new icarus_signal_processing::Denoiser1D_PCA());
+
+    if (!fDenoiserType.compare("ave"))
+            denoiser = std::unique_ptr<icarus_signal_processing::IDenoiser1D>(new icarus_signal_processing::Denoiser1D_Ave());
+
     icarus_signal_processing::WaveformTools<float> waveformTools(5);
 
     // Make a pass throught to do pedestal corrections and get raw waveform information
@@ -308,7 +325,7 @@ void TPCNoiseFilter1DMC::process_fragment(detinfo::DetectorClocksData const&,
         unsigned int plane = channelPlaneVec[idx].second % 3;
 
         // Set the threshold which toggles between planes
-        fThresholdVec[idx / coherentNoiseGrouping] = fThreshold[plane];
+        fThresholdVec[idx] = fThreshold[plane];
 
         switch(fFilterModeVec[plane][0])
         {
@@ -334,6 +351,12 @@ void TPCNoiseFilter1DMC::process_fragment(detinfo::DetectorClocksData const&,
 
         std::copy(dataArray[idx].begin(),dataArray[idx].end(),rawDataVec.begin());
 
+        Eigen::Vector2f meanPos;
+        Eigen::Matrix2f eigenVectors {{0.,0.},{0.,0.}};
+        Eigen::Vector2f eigenValues {0.,0.};
+
+        if (fLowFreqCorrection) waveformTools.principalComponents(rawDataVec, meanPos, eigenVectors, eigenValues, 6.);
+
         // Now determine the pedestal and correct for it
         waveformTools.getPedestalCorrectedWaveform(rawDataVec,
                                                    pedCorDataVec,
@@ -351,8 +374,6 @@ void TPCNoiseFilter1DMC::process_fragment(detinfo::DetectorClocksData const&,
             // Temporary diagnostics
             icarus_signal_processing::VectorFloat medianSmoothVec(numTicks);
 
-            principleComponents(pedCorDataVec);
-
             //waveformTools.medianSmooth(pedCorDataVec, medianSmoothVec, 201);
             waveformTools.truncAveSmooth(pedCorDataVec, medianSmoothVec, 201);
 
@@ -360,103 +381,45 @@ void TPCNoiseFilter1DMC::process_fragment(detinfo::DetectorClocksData const&,
 
             std::copy(medianSmoothVec.begin(),medianSmoothVec.end(),rawDataVec.begin());
         }
+        // Otherwise let's make our PCA into a raw data waveform
+//        else
+//        {
+//            // Correct the baseline
+//            float yVelocity = eigenVectors.row(0)(0);
+//
+//            // Create a waveform of the eigenvector but inflate by a factor of 4 to account for rounding to int on output
+//            // Note that we scale the output since it will get truncated to nearest integer and we would like some resolution...
+//            for(size_t eigenIdx = 0; eigenIdx < rawDataVec.size(); eigenIdx++)
+//                rawDataVec[eigenIdx] = fPedestalVals[idx] + 16. * (float(eigenIdx) - meanPos(0)) * yVelocity;
+//
+//            // Add the transverse eigen values
+//            rawDataVec[  rawDataVec.size()/2] =  16. * std::sqrt(eigenValues(0));
+//            rawDataVec[1+rawDataVec.size()/2] = -16. * std::sqrt(eigenValues(0));
+//        }
 
         // Make sure our selection and ROI arrays are initialized
         std::fill(fSelectVals[idx].begin(),fSelectVals[idx].end(),false);
     }
 
-    denoiser(fWaveLessCoherent.begin(),
-             fPedCorWaveforms.begin(),
-             fMorphedWaveforms.begin(),
-             fIntrinsicRMS.begin(),
-             fSelectVals.begin(),
-             fROIVals.begin(),
-             fCorrectedMedians.begin(),
-             fFilterFunctionVec.begin(),
-             fThresholdVec,
-             numChannels,
-             coherentNoiseGrouping,
-             fCoherentNoiseOffset,
-             fMorphWindow);
+    (*denoiser)(fWaveLessCoherent.begin(),
+                fPedCorWaveforms.begin(),
+                fMorphedWaveforms.begin(),
+                fIntrinsicRMS.begin(),
+                fSelectVals.begin(),
+                fROIVals.begin(),
+                fCorrectedMedians.begin(),
+                fFilterFunctionVec.begin(),
+                fThresholdVec,
+                numChannels,
+                coherentNoiseGrouping,
+                fCoherentNoiseOffset,
+                fMorphWindow);
 
     theClockTotal.stop();
 
     double totalTime = theClockTotal.accumulated_real_time();
 
     mf::LogDebug("TPCNoiseFilter1DMC") << "    *totalTime: " << totalTime << std::endl;
-
-    return;
-}
-
-void TPCNoiseFilter1DMC::principleComponents(const icarus_signal_processing::VectorFloat& waveform) const
-{
-
-    // Define elements of our covariance matrix
-    float xi2(0.);
-    float xiyi(0.);
-    float xizi(0.0);
-    float yi2(0.0);
-    float yizi(0.0);
-    float zi2(0.);
-//    float weightSum(0.);
-
-    std::cout << "Entering principle components alg, size: " << waveform.size() << std::endl;
-
-    Eigen::Vector3f meanPos(float(waveform.size()/2),waveform[waveform.size()/2],0.);
-
-    for (size_t waveIdx = 0; waveIdx < waveform.size(); waveIdx++)
-    {
-        float x = float(waveIdx)    - meanPos(0);
-        float y = waveform[waveIdx] - meanPos(1);
-        float z = 0.;
-
-        xi2  += x * x;
-        xiyi += x * y;
-        xizi += x * z;
-        yi2  += y * y;
-        yizi += y * z;
-        zi2  += z;
-    }
-
-    // Using Eigen package
-    Eigen::Matrix2f sig;
-
-//    sig << xi2, xiyi, xizi, xiyi, yi2, yizi, xizi, yizi, zi2;
-    sig << xi2, xiyi, xiyi, yi2;
-
-//    sig *= 1. / weightSum;
-
-    Eigen::SelfAdjointEigenSolver<Eigen::Matrix2f> eigenMat(sig);
-
-    if (eigenMat.info() == Eigen::ComputationInfo::Success) 
-    {
-        // Now copy output
-        Eigen::Matrix2f eigenVectors = eigenMat.eigenvectors().transpose();
-        Eigen::Vector2f eigenValues  = eigenMat.eigenvalues();
-
-        std::cout << "-- eigenvalues and vectors" << std::endl;
-        std::cout << eigenValues << std::endl;
-        std::cout << eigenVectors << std::endl;
-//      // The returned eigen values and vectors will be returned in an xyz system where x is the smallest spread,
-//      // y is the next smallest and z is the largest. Adopt that convention going forward
-//      reco::PrincipalComponents::EigenValues recobEigenVals = eigenMat.eigenvalues().cast<float>();
-//      reco::PrincipalComponents::EigenVectors recobEigenVecs =
-//        eigenMat.eigenvectors().transpose().cast<float>();
-//
-//      // Check for a special case (which may have gone away with switch back to doubles for computation?)
-//      if (std::isnan(recobEigenVals[0])) {
-//        std::cout << "==> Third eigenvalue returns a nan" << std::endl;
-//
-//        recobEigenVals[0] = 0.;
-//
-//        // Assume the third axis is also kaput?
-//        recobEigenVecs.row(0) = recobEigenVecs.row(1).cross(recobEigenVecs.row(2));
-//      }
-//
-//      // Store away
-//      pca = reco::PrincipalComponents(
-//        true, numPairsInt, recobEigenVals, recobEigenVecs, meanPos.cast<float>());
-    }
 
     return;
 }

@@ -81,6 +81,7 @@ namespace spacecharge
       bool fEnableCalSpatialSCE;
       bool fEnableCalEfieldSCE;
       bool fEnableCorrSCE;
+      bool f_2D_drift_sim_hack;
       std::string fRepresentationType;
       std::string fInputFilename;
 

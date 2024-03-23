@@ -7,6 +7,25 @@
 
 process_name: MCstage1
 
+# Disabled Space-Charge service for calorimetry
+services.SpaceChargeService: {
+    EnableCalEfieldSCE: false
+    EnableCalSpatialSCE: false
+    EnableCorrSCE: false
+    EnableSimEfieldSCE: false
+    EnableSimSpatialSCE: false
+    InputFilename: "SCEoffsets/SCEoffsets_ICARUS_E500_voxelTH3.root"
+    RepresentationType: "Voxelized_TH3"
+    service_provider: "SpaceChargeServiceICARUS"
+}
+
+services.BackTrackerService:        @local::standard_backtrackerservice
+# In the 2D-detsim, SimChannel objects are made by the WireCell
+# drift simulation (daq), not LArG4 (largeant). Thus, we need
+# to overwrite the truth matching labels in the calibration ntuple maker
+services.BackTrackerService.BackTracker.SimChannelModuleLabel: "daq:simpleSC"
+services.ParticleInventoryService:  @local::standard_particleinventoryservice
+
 ## Add the MC module to the list of producers
 physics.producers: {
             @table::icarus_stage1_producers
@@ -32,17 +51,10 @@ physics.reco: [
                 @sequence::icarus_reco_Gauss_CryoE ,
                 @sequence::icarus_reco_Gauss_CryoW ,
 		            @sequence::icarus_reco_fm,
+                @sequence::icarus_tpcpmtbarycentermatch,
                 caloskimCalorimetryCryoE, caloskimCalorimetryCryoW,
                 mcassociationsGausCryoE,  mcassociationsGausCryoW
               ]
-
-# Turn on truth-info for track skimmer 
-physics.analyzers.caloskimE.G4producer: "largeant"
-physics.analyzers.caloskimE.SimChannelproducer: "daq:simpleSC"
-physics.analyzers.caloskimE.RawDigitproducers: ["MCDecodeTPCROI:PHYSCRATEDATATPCEW", "MCDecodeTPCROI:PHYSCRATEDATATPCEE"]
-physics.analyzers.caloskimW.G4producer: "largeant"
-physics.analyzers.caloskimW.SimChannelproducer: "daq:simpleSC"
-physics.analyzers.caloskimW.RawDigitproducers: ["MCDecodeTPCROI:PHYSCRATEDATATPCWW", "MCDecodeTPCROI:PHYSCRATEDATATPCWE"]
 
 physics.outana:            [ @sequence::icarus_analysis_modules ]
 physics.trigger_paths:     [ reco ]
@@ -55,24 +67,17 @@ outputs.out1.outputCommands: [
   "drop *_caloskimCalorimetryCryoW_*_*"
 ]
 
-# Disabled Space-Charge service for calorimetry
-services.SpaceChargeService: {
-    EnableCalEfieldSCE: false
-    EnableCalSpatialSCE: false
-    EnableCorrSCE: false
-    EnableSimEfieldSCE: false
-    EnableSimSpatialSCE: false
-    InputFilename: "SCEoffsets/SCEoffsets_ICARUS_E500_voxelTH3.root"
-    RepresentationType: "Voxelized_TH3"
-    service_provider: "SpaceChargeServiceICARUS"
-}
+#Redefine TPCPMTBarycenterMatch producers with MC parameters
+physics.producers.tpcpmtbarycentermatchCryoE: @local::mc_tpcpmtbarycentermatchproducer_east
+physics.producers.tpcpmtbarycentermatchCryoW: @local::mc_tpcpmtbarycentermatchproducer_west
 
-services.BackTrackerService:        @local::standard_backtrackerservice
-# In the 2D-detsim, SimChannel objects are made by the WireCell
-# drift simulation (daq), not LArG4 (largeant). Thus, we need
-# to overwrite the truth matching labels in the calibration ntuple maker
-services.BackTrackerService.BackTracker.SimChannelModuleLabel: "daq:simpleSC"
-services.ParticleInventoryService:  @local::standard_particleinventoryservice
+# Turn on truth-info for track skimmer 
+physics.analyzers.caloskimE.G4producer: "largeant"
+physics.analyzers.caloskimE.SimChannelproducer: "daq:simpleSC"
+physics.analyzers.caloskimE.RawDigitproducers: ["MCDecodeTPCROI:PHYSCRATEDATATPCEW", "MCDecodeTPCROI:PHYSCRATEDATATPCEE"]
+physics.analyzers.caloskimW.G4producer: "largeant"
+physics.analyzers.caloskimW.SimChannelproducer: "daq:simpleSC"
+physics.analyzers.caloskimW.RawDigitproducers: ["MCDecodeTPCROI:PHYSCRATEDATATPCWW", "MCDecodeTPCROI:PHYSCRATEDATATPCWE"]
 
 physics.producers.mcassociationsGausCryoE.HitParticleAssociations.HitModuleLabelVec: ["cluster3DCryoE"]
 physics.producers.mcassociationsGausCryoW.HitParticleAssociations.HitModuleLabelVec: ["cluster3DCryoW"]

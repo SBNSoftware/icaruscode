@@ -20,6 +20,7 @@
 #include "nusimdata/SimulationBase/MCParticle.h"
 
 #include "sbnobj/ICARUS/TPC/ChannelROI.h"
+#include "icaruscode/IcarusObj/Hit.h"
 
 // Eigen
 #include <Eigen/Dense>
@@ -112,6 +113,7 @@ private:
     std::vector<art::InputTag>  fRawDigitProducerLabelVec;
     std::vector<art::InputTag>  fWireProducerLabelVec;
     std::vector<art::InputTag>  fHitProducerLabelVec;
+    std::vector<art::InputTag>  fTHitProducerLabelVec;
     art::InputTag               fMCParticleProducerLabel;
     art::InputTag               fSimChannelProducerLabel;
     art::InputTag               fBadChannelProducerLabel;
@@ -147,6 +149,7 @@ private:
 
     mutable std::vector<short>   fNMatchedWires;
     mutable std::vector<short>   fNMatchedHits;
+    mutable std::vector<short>   fNMatchedTHits;
 
     mutable std::vector<short>   fROIMaxValVec;
     mutable std::vector<short>   fROIMaxTickVec;
@@ -167,6 +170,21 @@ private:
     mutable std::vector<short>   fHitLocalIndexVec;
     mutable std::vector<float>   fHitGoodnessVec;
     mutable std::vector<short>   fNumDegreesVec;
+    
+    mutable std::vector<float>   fTHitPeakTimeVec;
+    mutable std::vector<float>   fTHitPeakAmpVec;
+    mutable std::vector<float>   fTHitPeakRMSVec;
+    mutable std::vector<float>   fTHitBaselinevec;
+    mutable std::vector<float>   fTHitSummedADCVec;
+    mutable std::vector<float>   fTHitIntegralVec;
+    mutable std::vector<short>   fTHitStartTickVec;
+    mutable std::vector<short>   fTHitStopTickVec;
+    mutable std::vector<short>   fTHitDeltaTVec;
+    mutable std::vector<short>   fTSnippetLengthVec;
+    mutable std::vector<short>   fTHitMultiplicityVec;
+    mutable std::vector<short>   fTHitLocalIndexVec;
+    mutable std::vector<float>   fTHitGoodnessVec;
+    mutable std::vector<short>   fTNumDegreesVec;
 
     // Useful services, keep copies for now (we can update during begin run periods)
     const geo::GeometryCore*           fGeometry;             ///< pointer to Geometry service
@@ -203,18 +221,19 @@ TrackHitEfficiencyAnalysis::~TrackHitEfficiencyAnalysis()
 ///
 void TrackHitEfficiencyAnalysis::configure(fhicl::ParameterSet const & pset)
 {
-    fRawDigitProducerLabelVec = pset.get< std::vector<art::InputTag>>("RawDigitLabelVec",   std::vector<art::InputTag>() = {"rawdigitfilter"});
-    fWireProducerLabelVec     = pset.get< std::vector<art::InputTag>>("WireModuleLabelVec", std::vector<art::InputTag>() = {"decon1droi"});
-    fHitProducerLabelVec      = pset.get< std::vector<art::InputTag>>("HitModuleLabelVec",  std::vector<art::InputTag>() = {"gauss"});
-    fMCParticleProducerLabel  = pset.get< art::InputTag             >("MCParticleLabel",    "largeant");
-    fSimChannelProducerLabel  = pset.get< art::InputTag             >("SimChannelLabel",    "largeant");
-    fBadChannelProducerLabel  = pset.get< art::InputTag             >("BadChannelLabel",    "simnfspl1:badchannels");
-    fUseBadChannelDB          = pset.get< bool                      >("UseBadChannelDB",    true);
-    fLocalDirName             = pset.get<std::string                >("LocalDirName",       std::string("wow"));
-    fOffsetVec                = pset.get<std::vector<int>           >("OffsetVec",          std::vector<int>()={0,0,0});
-    fSigmaVec                 = pset.get<std::vector<float>         >("SigmaVec",           std::vector<float>()={1.,1.,1.});
+    fRawDigitProducerLabelVec = pset.get< std::vector<art::InputTag>>("RawDigitLabelVec",       std::vector<art::InputTag>() = {"rawdigitfilter"});
+    fWireProducerLabelVec     = pset.get< std::vector<art::InputTag>>("WireModuleLabelVec",     std::vector<art::InputTag>() = {"decon1droi"});
+    fHitProducerLabelVec      = pset.get< std::vector<art::InputTag>>("HitModuleLabelVec",      std::vector<art::InputTag>() = {"gauss"});
+    fTHitProducerLabelVec     = pset.get< std::vector<art::InputTag>>("TestHitModuleLabelVec",  std::vector<art::InputTag>() = {"gauss"});
+    fMCParticleProducerLabel  = pset.get< art::InputTag             >("MCParticleLabel",        "largeant");
+    fSimChannelProducerLabel  = pset.get< art::InputTag             >("SimChannelLabel",        "largeant");
+    fBadChannelProducerLabel  = pset.get< art::InputTag             >("BadChannelLabel",        "simnfspl1:badchannels");
+    fUseBadChannelDB          = pset.get< bool                      >("UseBadChannelDB",        true);
+    fLocalDirName             = pset.get<std::string                >("LocalDirName",           std::string("wow"));
+    fOffsetVec                = pset.get<std::vector<int>           >("OffsetVec",              std::vector<int>()={0,0,0});
+    fSigmaVec                 = pset.get<std::vector<float>         >("SigmaVec",               std::vector<float>()={1.,1.,1.});
     fMinAllowedChanStatus     = pset.get< int                       >("MinAllowedChannelStatus");
-    fSimChannelMinEnergy      = pset.get<float                      >("SimChannelMinEnergy", std::numeric_limits<float>::epsilon());
+    fSimChannelMinEnergy      = pset.get<float                      >("SimChannelMinEnergy",    std::numeric_limits<float>::epsilon());
 }
 
 //----------------------------------------------------------------------------
@@ -249,6 +268,7 @@ void TrackHitEfficiencyAnalysis::initializeTuple(TTree* tree)
     
     fTree->Branch("NMatchedWires",       "std::vector<short>",   &fNMatchedWires);
     fTree->Branch("NMatchedHits",        "std::vector<short>",   &fNMatchedHits);
+    fTree->Branch("NMatchedTHits",       "std::vector<short>",   &fNMatchedTHits);
 
     fTree->Branch("RawDigitPulseHeight", "std::vector<short>",   &fRawDigitPulseHeightVec);
     fTree->Branch("RawDigitMaxTick",     "std::vector<short>",   &fRawDigitMaxTickVec);
@@ -273,6 +293,21 @@ void TrackHitEfficiencyAnalysis::initializeTuple(TTree* tree)
     fTree->Branch("HitLocalIndex",       "std::vector<short>",   &fHitLocalIndexVec);
     fTree->Branch("HitGoodness",         "std::vector<float>",   &fHitGoodnessVec);
     fTree->Branch("HitNumDegrees",       "std::vector<short>",   &fNumDegreesVec);
+
+    fTree->Branch("THitPeakTimeVec",     "std::vector<float>",   &fTHitPeakTimeVec);
+    fTree->Branch("THitPeakAmpVec",      "std::vector<float>",   &fTHitPeakAmpVec);
+    fTree->Branch("THitPeakRMSVec",      "std::vector<float>",   &fTHitPeakRMSVec);
+    fTree->Branch("THitBaselineVec",     "std::vector<float>",   &fTHitBaselinevec);
+    fTree->Branch("THitSummedADCVec",    "std::vector<float>",   &fTHitSummedADCVec);
+    fTree->Branch("THitIntegralVec",     "std::vector<float>",   &fTHitIntegralVec);
+    fTree->Branch("THitStartTickVec",    "std::vector<short>",   &fTHitStartTickVec);
+    fTree->Branch("THitStopTickVec",     "std::vector<short>",   &fTHitStopTickVec);
+    fTree->Branch("THitDeltaTVec",       "std::vector<short>",   &fTHitDeltaTVec);
+    fTree->Branch("TSnippetLengthkVec",  "std::vector<short>",   &fTSnippetLengthVec);
+    fTree->Branch("THitMultiplicity",    "std::vector<short>",   &fTHitMultiplicityVec);
+    fTree->Branch("THitLocalIndex",      "std::vector<short>",   &fTHitLocalIndexVec);
+    fTree->Branch("THitGoodness",        "std::vector<float>",   &fTHitGoodnessVec);
+    fTree->Branch("THitNumDegrees",      "std::vector<short>",   &fTNumDegreesVec);
   
     clear();
 
@@ -303,6 +338,7 @@ void TrackHitEfficiencyAnalysis::clear() const
     
     fNMatchedWires.clear();
     fNMatchedHits.clear();
+    fNMatchedTHits.clear();
 
     fROIMaxValVec.clear();
     fROIMaxTickVec.clear();
@@ -323,6 +359,21 @@ void TrackHitEfficiencyAnalysis::clear() const
     fHitLocalIndexVec.clear();
     fHitGoodnessVec.clear();
     fNumDegreesVec.clear();
+
+    fTHitPeakTimeVec.clear();
+    fTHitPeakAmpVec.clear();
+    fTHitPeakRMSVec.clear();
+    fTHitBaselinevec.clear();
+    fTHitSummedADCVec.clear();
+    fTHitIntegralVec.clear();
+    fTHitStartTickVec.clear();
+    fTHitStopTickVec.clear();
+    fTHitDeltaTVec.clear();
+    fTSnippetLengthVec.clear();
+    fTHitMultiplicityVec.clear();
+    fTHitLocalIndexVec.clear();
+    fTHitGoodnessVec.clear();
+    fTNumDegreesVec.clear();
     
     return;
 }
@@ -387,6 +438,17 @@ void TrackHitEfficiencyAnalysis::fillHistograms(const art::Event& event) const
         event.getByLabel(hitLabel, hitHandle);
 
         for(const auto& hit : *hitHandle) channelToHitVec[hit.Channel()].emplace_back(&hit);
+    }
+    
+    ChanToHitVecMap channelToTHitVec;
+    
+    // And now fill it
+    for(const auto& hitLabel : fTHitProducerLabelVec)
+    {
+        art::Handle< std::vector<recob::Hit> > hitHandle;
+        event.getByLabel(hitLabel, hitHandle);
+
+        for(const auto& hit : *hitHandle) channelToTHitVec[hit.Channel()].emplace_back(&hit);
     }
     
     // It is useful to create a mapping between trackID and MCParticle
@@ -503,6 +565,7 @@ void TrackHitEfficiencyAnalysis::fillHistograms(const art::Event& event) const
 
             int   nMatchedWires(0);
             int   nMatchedHits(0);
+            int   nMatchedTHits(0);
             int   bestTrackID(0);
 //            int   bestOrigTrackID(0);
 //            short bestStartTDC(0);
@@ -613,6 +676,20 @@ void TrackHitEfficiencyAnalysis::fillHistograms(const art::Event& event) const
                     unsigned short hitStopTickBest(0);
                     unsigned short hitStartTickBest(0);
                     int            hitDeltaTBest(4096);
+                    float          tHitSummedADCBest(0.);
+                    float          tHitIntegralBest(0.);
+                    float          tHitPeakTimeBest(0.);
+                    float          tHitPeakAmpBest(-100.);
+                    float          tHitRMSBest(0.);
+                    int            tHitMultiplicityBest(0);
+                    int            tHitLocalIndexBest(0);
+                    float          tHitGoodnessBest(0.);
+                    int            tHitNumDegreesBest(0);
+                    float          tHitBaselineBest(0.);
+                    float          tHitSnippetLenBest(0.);
+                    unsigned short tHitStopTickBest(0);
+                    unsigned short tHitStartTickBest(0);
+                    int            tHitDeltaTBest(4096);
                     unsigned short rawDigitPulseHeight(0);
                     int            rawDigitMaxTick(0);
                     int            rawDigitMinTick(0);
@@ -682,8 +759,10 @@ void TrackHitEfficiencyAnalysis::fillHistograms(const art::Event& event) const
 
                             const recob::Hit* rejectedHit = 0;
                             const recob::Hit* bestHit     = 0;
+                            const recob::Hit* tBestHit    = 0;
 
                             nMatchedWires++;
+
                             // The next mission is to recover the hits associated to this Wire
                             // The easiest way to do this is to simply look up all the hits on this channel and then match
                             ChanToHitVecMap::iterator hitIter = channelToHitVec.find(channel);
@@ -701,6 +780,7 @@ void TrackHitEfficiencyAnalysis::fillHistograms(const art::Event& event) const
                                     int            hitPeakTime  = hit->PeakTime();
                                     unsigned short hitStartTick = hitPeakTime - fSigmaVec[plane] * hit->RMS();
                                     unsigned short hitStopTick  = hitPeakTime + fSigmaVec[plane] * hit->RMS();
+
                                     // If hit is out of range then skip, it is not related to this particle
                                     if (hitStartTick > stopTick || hitStopTick < startTick || std::abs(hitPeakTime - maxElectronsTick) > std::abs(hitDeltaTBest))
                                     {
@@ -747,6 +827,50 @@ void TrackHitEfficiencyAnalysis::fillHistograms(const art::Event& event) const
                                     mf::LogDebug("TrackHitEfficiencyAnalysis") << "==> No match, TPC/Plane/Wire: " << "/" << wids[0].TPC << "/" << wids[0].Plane << "/" << wids[0].Wire << ", # electrons: " << totalElectrons << ",           startTick: " << startTick << ", stopTick: " << stopTick << std::endl;
                                 }
                             }
+
+                            // The next mission is to recover the hits from the test version of the gauss hit finder
+                            // The easiest way to do this is to simply look up all the hits on this channel and then match
+                            ChanToHitVecMap::iterator tHitIter = channelToTHitVec.find(channel);
+
+                            if (tHitIter != channelToTHitVec.end())
+                            {
+                                // Loop through the hits for this channel and look for matches
+                                // In the event of more than one hit associated to the sim channel range, keep only
+                                // the best match (assuming the nearby hits are "extra")
+                                // Note that assumption breaks down for long pulse trains but worry about that later
+                                for(const auto& hit : tHitIter->second)
+                                {
+                                    int            hitPeakTime  = hit->PeakTime();
+                                    unsigned short hitStartTick = hitPeakTime - fSigmaVec[plane] * hit->RMS();
+                                    unsigned short hitStopTick  = hitPeakTime + fSigmaVec[plane] * hit->RMS();
+
+                                    // If hit is out of range then skip, it is not related to this particle
+                                    if (hitStartTick > stopTick || hitStopTick < startTick || std::abs(hitPeakTime - maxElectronsTick) > std::abs(tHitDeltaTBest)) continue;
+
+                                    float hitHeight   = hit->PeakAmplitude();
+                                    tHitPeakAmpBest   = hitHeight;
+                                    tBestHit          = hit;
+                                    tHitStartTickBest = hitStartTick;
+                                    tHitStopTickBest  = hitStopTick;
+                                    tHitDeltaTBest    = hitPeakTime - maxElectronsTick;
+                                }
+
+                                // Find a match?
+                                if (tBestHit)
+                                {
+                                    tHitPeakTimeBest     = tBestHit->PeakTime();
+                                    tHitIntegralBest     = tBestHit->Integral();
+                                    tHitSummedADCBest    = tBestHit->SummedADC();
+                                    tHitRMSBest          = tBestHit->RMS();
+                                    tHitMultiplicityBest = tBestHit->Multiplicity();
+                                    tHitLocalIndexBest   = tBestHit->LocalIndex();
+                                    tHitGoodnessBest     = tBestHit->GoodnessOfFit();
+                                    tHitNumDegreesBest   = tBestHit->DegreesOfFreedom();
+                                    tHitSnippetLenBest   = tBestHit->EndTick() - tBestHit->StartTick();
+                                    tHitBaselineBest     = 0.;  // To do...
+                                    nMatchedTHits++;
+                                }
+                            }
                         }
                     }
 
@@ -770,10 +894,12 @@ void TrackHitEfficiencyAnalysis::fillHistograms(const art::Event& event) const
                     fRawDigitMinTickVec.emplace_back(rawDigitMinTick);
                     fNMatchedWires.emplace_back(nMatchedWires);
                     fNMatchedHits.emplace_back(nMatchedHits);
+                    fNMatchedTHits.emplace_back(nMatchedTHits);
                     fROIMaxValVec.emplace_back(roiMaxValue);
                     fROIMaxTickVec.emplace_back(roiMaxValueTick);
                     fROILenVec.emplace_back(roiLen);
                     fROIDeltaTVec.emplace_back(roiDeltaT);
+
                     fHitPeakTimeVec.emplace_back(hitPeakTimeBest);
                     fHitPeakAmpVec.emplace_back(hitPeakAmpBest);
                     fHitPeakRMSVec.emplace_back(hitRMSBest);
@@ -788,6 +914,21 @@ void TrackHitEfficiencyAnalysis::fillHistograms(const art::Event& event) const
                     fHitLocalIndexVec.emplace_back(hitLocalIndexBest);
                     fHitGoodnessVec.emplace_back(hitGoodnessBest);
                     fNumDegreesVec.emplace_back(hitNumDegreesBest);
+
+                    fTHitPeakTimeVec.emplace_back(tHitPeakTimeBest);
+                    fTHitPeakAmpVec.emplace_back(tHitPeakAmpBest);
+                    fTHitPeakRMSVec.emplace_back(tHitRMSBest);
+                    fTHitBaselinevec.emplace_back(tHitBaselineBest);
+                    fTHitSummedADCVec.emplace_back(tHitSummedADCBest);
+                    fTHitIntegralVec.emplace_back(tHitIntegralBest);
+                    fTHitStartTickVec.emplace_back(tHitStartTickBest);
+                    fTHitStopTickVec.emplace_back(tHitStopTickBest);
+                    fTHitDeltaTVec.emplace_back(tHitDeltaTBest);
+                    fTSnippetLengthVec.emplace_back(tHitSnippetLenBest);
+                    fTHitMultiplicityVec.emplace_back(tHitMultiplicityBest);
+                    fTHitLocalIndexVec.emplace_back(tHitLocalIndexBest);
+                    fTHitGoodnessVec.emplace_back(tHitGoodnessBest);
+                    fTNumDegreesVec.emplace_back(tHitNumDegreesBest);
                 }
             }
         } // Looping over TDC bins

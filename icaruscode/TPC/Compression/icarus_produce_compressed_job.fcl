@@ -1,0 +1,42 @@
+#include "services_common_icarus.fcl"
+
+#include "ICARUS_Produce_Compressed.fcl"
+
+process_name: ICARUSReprocessRaw
+
+services:
+{
+  @table::icarus_basic_services
+}
+
+source:
+{
+}
+
+physics:
+{
+  producers:
+  {
+    daq: @local::standard_producecompressed
+  }
+
+  reproProduce: [ daq ]
+
+  stream1: [ out1 ]
+
+  trigger_paths: [ reproProduce ]
+
+  end_paths: [ stream1 ]
+}
+
+outputs:
+{
+  out1:
+  {
+    module_type: RootOutput
+    fileName: "icarus_reproduced_out.root"
+    outputCommands: [ "keep *_*_*_*",
+                      "drop *_daq_PHYSCRATEDATATPC??_DAQEVB??" ]
+  }
+}
+

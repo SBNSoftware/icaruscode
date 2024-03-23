@@ -5,11 +5,12 @@ file(GLOB lib_srcs *.cxx)
 art_make_library(
         SOURCE ${lib_srcs}
 	LIBRARIES
-		icaruscode_Decode_DecoderTools
+		icaruscode::Decode_DecoderTools
+		icarusalg::Utilities
 		larcorealg::Geometry
 		lardataobj::RawData
-		icarusalg::Utilities
-                Microsoft.GSL::GSL
+		larcoreobj::headers
+		Microsoft.GSL::GSL
 		canvas::canvas
 		messagefacility::MF_MessageLogger
 		messagefacility::headers

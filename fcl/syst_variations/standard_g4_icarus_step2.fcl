@@ -1,0 +1,21 @@
+#
+# Purpose: Processes G4 detector simulated events through the charge and light transportation processes
+# 
+# 
+# Input
+# ------
+# 
+# * all `largeant` data products are used as input
+# 
+# 
+# Output
+# -------
+# 
+# * `ionization` (`sim::SimEnergyDeposit` collection)
+#
+
+#include "standard_g4_icarus.fcl"
+
+process_name: G4step2
+
+physics.simulate: [ rns, ionization, sedlite, mcreco ] 
