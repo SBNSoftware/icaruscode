@@ -20,6 +20,7 @@ pmt_bkgphotons_calibration:
   ADCmV: 0.122      
   ADCpC: 0.00488  
   ChannelMask: [  ]  
+  FilterInGate: [ -3., 7. ] #in us
   FilterInTime: true
   TimeWindow: 0.5 # in us 
   AmplitudeBinning: [ 0., 30., 0.15 ] # in mV 

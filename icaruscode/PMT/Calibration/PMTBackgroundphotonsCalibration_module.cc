@@ -63,6 +63,7 @@ public:
   PMTBackgroundphotonsCalibration& operator=(PMTBackgroundphotonsCalibration&&) = delete;
 
   virtual void beginJob() override;
+  bool inGate(double const & time, std::vector<double> & bounds);
 
   void analyze(art::Event const& event) override;
 
@@ -92,7 +93,9 @@ private:
   double echarge = 1.602176634; // In units of 10^-7 pC
 
   // dead/broken channels to be skipped
-  std::vector<unsigned int > m_channel_mask;
+  std::vector<unsigned int> m_channel_mask;
+  // limit to select in-gate ophits
+  std::vector<double> m_filter_ingate;
 
   // select isolated ophits  
   bool m_filter_intime;
@@ -127,7 +130,7 @@ pmtcalo::PMTBackgroundphotonsCalibration::PMTBackgroundphotonsCalibration(fhicl:
 
    m_channel_mask = pset.get< std::vector< unsigned int > >
                             ("ChannelMask", std::vector< unsigned int >());
-
+   m_filter_ingate = pset.get< std::vector<double> >("FilterInGate", std::vector< double >()); // in us
    m_filter_intime = pset.get<bool>("FilterInTime", true); 
    m_time_window = pset.get<double>("TimeWindow", 0.2 ); //in us
 
@@ -191,6 +194,12 @@ void pmtcalo::PMTBackgroundphotonsCalibration::beginJob()
 
 //-----------------------------------------------------------------------------
 
+bool pmtcalo::PMTBackgroundphotonsCalibration::inGate(double const & time, std::vector<double> & bounds ){
+  return (time >= bounds[0]) && ( time <= bounds[1] );
+}
+
+
+//-----------------------------------------------------------------------------
 
 void pmtcalo::PMTBackgroundphotonsCalibration::analyze(art::Event const& event)
 {
@@ -233,7 +242,9 @@ void pmtcalo::PMTBackgroundphotonsCalibration::analyze(art::Event const& event)
       
      // remove OpHits from known channels that are not working
      if( hasChannel(opch, m_channel_mask) ) continue;
-    
+     // remove OpHits that are not within a subset of the beam gate (thus unbiased)
+     if( !inGate( ophit.StartTime(), m_filter_ingate ) ) continue; 
+   
      auto nextIt = std::next(it);
      auto prevIt = std::prev(it); 
 
