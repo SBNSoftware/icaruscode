@@ -10,8 +10,8 @@
 //
 // Update for ICARUS by Bruce Howard and Jaesung Kim
 ////////////////////////////////////////////////////////////////////////
-#ifndef DETINFO_DETECTORPROPERTIESICARUS_H
-#define DETINFO_DETECTORPROPERTIESICARUS_H
+#ifndef ICARUSCODE_UTILITIES_DETECTORPROPERTIESICARUSCLOCKOFFSETMC_H
+#define ICARUSCODE_UTILITIES_DETECTORPROPERTIESICARUSCLOCKOFFSETMC_H
 
 // LArSoft libraries
 #include "larcorealg/CoreUtils/ProviderPack.h"
@@ -291,4 +291,4 @@ namespace detinfo {
   }; // class DetectorPropertiesICARUSClockOffsetMC
 } // namespace detinfo
 
-#endif // DETINFO_DETECTORPROPERTIESICARUS_H
+#endif // ICARUSCODE_UTILITIES_DETECTORPROPERTIESICARUSCLOCKOFFSETMC_H

@@ -49,6 +49,31 @@ cet_build_plugin(DummyProducer art::module)
 cet_build_plugin(DummyAnalyzer art::module)
 cet_build_plugin(FilterOnArtPathOutcome art::module)
 
+## Det Prop Service
+art_make_library(
+  LIBRARY_NAME
+  icaruscode_DetectorPropertiesClockOffsetMC
+  SOURCE
+  DetectorPropertiesICARUSClockOffsetMC.cxx
+  LIBRARIES
+  PUBLIC
+  lardataalg::DetectorInfo
+  lardataobj::RawData
+  larcorealg::Geometry
+  larcoreobj::SimpleTypesAndConstants
+  canvas::canvas
+  messagefacility::MF_MessageLogger
+  fhiclcpp::types
+  fhiclcpp::fhiclcpp
+  cetlib_except::cetlib_except
+  PRIVATE
+  cetlib::cetlib
+)
+
+cet_build_plugin(DetectorPropertiesServiceICARUSClockOffsetMC art::service
+                                                                 LIBRARIES
+                                                                 icaruscode_DetectorPropertiesClockOffsetMC
+                                                                )
 
 install_headers()
 install_source()
