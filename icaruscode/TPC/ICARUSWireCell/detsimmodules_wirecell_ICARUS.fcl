@@ -68,8 +68,8 @@ icarus_simwire_wirecell:
 
             # Time offsets for truth matching
             time_offset_u: 0.0 # us
-            time_offset_v: 0.5 # us
-            time_offset_y: 1.0 # us
+            time_offset_v: 0.0 # us
+            time_offset_y: 0.0 # us
            
         }
     }
