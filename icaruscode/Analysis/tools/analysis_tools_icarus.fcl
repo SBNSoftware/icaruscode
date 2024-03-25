@@ -20,6 +20,7 @@ TrackHitEfficiencyAnalysisTool:
   SimChannelLabel:         "largeant"
   LocalDirName:            "EfficHists"
   OffsetVec:               [0,0,0]
+  THitOffsetVec:           [0,0,0]
   SigmaVec:                [1.,1.,1.]
   MinAllowedChannelStatus: 1
 }

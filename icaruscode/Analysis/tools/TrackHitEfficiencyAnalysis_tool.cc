@@ -120,6 +120,7 @@ private:
     bool                        fUseBadChannelDB;
     std::string                 fLocalDirName;           ///< Fraction for truncated mean
     std::vector<int>            fOffsetVec;              ///< Allow offsets for each plane
+    std::vector<float>          fTHitOffsetVec;          ///< Allow offsets for the secondary hits by plane
     std::vector<float>          fSigmaVec;               ///< Window size for matching to SimChannels
     int                         fMinAllowedChanStatus;   ///< Don't consider channels with lower status
     float                       fSimChannelMinEnergy;
@@ -231,9 +232,13 @@ void TrackHitEfficiencyAnalysis::configure(fhicl::ParameterSet const & pset)
     fUseBadChannelDB          = pset.get< bool                      >("UseBadChannelDB",        true);
     fLocalDirName             = pset.get<std::string                >("LocalDirName",           std::string("wow"));
     fOffsetVec                = pset.get<std::vector<int>           >("OffsetVec",              std::vector<int>()={0,0,0});
+    fTHitOffsetVec            = pset.get<std::vector<float>         >("THitOffsetVec",          std::vector<float>()={0.,0.,0.});
     fSigmaVec                 = pset.get<std::vector<float>         >("SigmaVec",               std::vector<float>()={1.,1.,1.});
     fMinAllowedChanStatus     = pset.get< int                       >("MinAllowedChannelStatus");
     fSimChannelMinEnergy      = pset.get<float                      >("SimChannelMinEnergy",    std::numeric_limits<float>::epsilon());
+
+
+    std::cout << "TrackHitEfficiencyAnalysis THitOffsetVec: " << fTHitOffsetVec[0] << ", " << fTHitOffsetVec[1] << ", " << fTHitOffsetVec[2] << std::endl;
 }
 
 //----------------------------------------------------------------------------
@@ -387,6 +392,8 @@ void TrackHitEfficiencyAnalysis::fillHistograms(const art::Event& event) const
     
     // Always clear the tuple
     clear();
+
+    std::cout << "TrackHitEfficiencyAnalysis: SimChannel label: " << fSimChannelProducerLabel << std::endl;
     
     art::Handle< std::vector<sim::SimChannel>> simChannelHandle;
     event.getByLabel(fSimChannelProducerLabel, simChannelHandle);
@@ -737,11 +744,26 @@ void TrackHitEfficiencyAnalysis::fillHistograms(const art::Event& event) const
                             raw::TDCtick_t roiFirstBinTick = range.begin_index();
                             raw::TDCtick_t roiLastBinTick  = range.end_index();
 
+                            // There must be some overlap between the two
                             if (roiFirstBinTick > stopTick)  break;
                             if (roiLastBinTick  < startTick) continue;
 
+                            // How much overlap is there?
+                            float overlapFraction(0.);
+
+                            if (startTick >= roiFirstBinTick && stopTick <= roiLastBinTick) overlapFraction = 1.;
+                            else
+                            {
+                                int overlapCount(0);
+
+                                for(int tickIdx = startTick; tickIdx <= stopTick; tickIdx++)
+                                    if (tickIdx >= roiFirstBinTick && tickIdx <= roiLastBinTick) overlapCount++;
+
+                                overlapFraction = float(overlapCount) / float(stopTick-startTick);
+                            }
+
                             // Require the simulated charge deposit is full contained in the ROI
-                            if (startTick > roiFirstBinTick && stopTick < roiLastBinTick) wireRangePtr = &range;
+                            if (overlapFraction > 0.9) wireRangePtr = &range;
                             break;
                         }
 
@@ -840,7 +862,7 @@ void TrackHitEfficiencyAnalysis::fillHistograms(const art::Event& event) const
                                 // Note that assumption breaks down for long pulse trains but worry about that later
                                 for(const auto& hit : tHitIter->second)
                                 {
-                                    int            hitPeakTime  = hit->PeakTime();
+                                    int            hitPeakTime  = hit->PeakTime() - fTHitOffsetVec[hit->WireID().Plane];
                                     unsigned short hitStartTick = hitPeakTime - fSigmaVec[plane] * hit->RMS();
                                     unsigned short hitStopTick  = hitPeakTime + fSigmaVec[plane] * hit->RMS();
 
