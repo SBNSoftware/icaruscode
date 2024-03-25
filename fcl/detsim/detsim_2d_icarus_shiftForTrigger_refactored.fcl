@@ -31,12 +31,12 @@ physics: {
          InputSimPhotonsLabel: "pdfastsim"
          InputTriggerLabel: "emuTriggerUnshifted"
          InputWaveformLabel: "opdaq"
-         InputAuxDetSimChannelLabel: "genericcrt"
+         # InputAuxDetSimChannelLabel: "genericcrt"
          AdditionalOffset: 0.0 # [us] Additional offset to apply to the time shift
          ShiftSimEnergyDeposits: true
          ShiftSimPhotons: true
          ShiftWaveforms: true
-         ShiftAuxDetIDEs: true
+         # ShiftAuxDetIDEs: true
          ShiftBeamGateInfo: true
        }
 
@@ -63,7 +63,7 @@ physics: {
 } # physics
 
 physics.producers.daq.wcls_main.configs: ["pgrapher/experiment/icarus/wcls-multitpc-sim-drift-simchannel-shifted-refactored.jsonnet"]
-physics.producers.crtdaq.G4ModuleLabel: "shiftIonization"
+# physics.producers.crtdaq.G4ModuleLabel: "shiftIonization"
 physics.producers.opdaq.InputModule: "pdfastsim"
 
 physics.producers.pmtlvdsgatesinit: {
