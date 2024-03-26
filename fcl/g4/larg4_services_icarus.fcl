@@ -46,6 +46,7 @@ icarus_particle_list_action:
   keepEMShowerDaughters: false             # If false, does not store electromagnetic shower daughter
                                            # particles in the MCParticles data product.
   storeTrajectories: true
+  KeepDroppedParticlesInVolumes: ["volTPCActive"] 
   keepGenTrajectories: ["generator"]       # list of generator labels for which we want to store
                                            # trajectory points.
   keepOnlyPrimaryFullTrajectories: false   # (defaults to false in larg4) If set to true, only
