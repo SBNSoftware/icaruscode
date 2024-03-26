@@ -19,6 +19,7 @@
 #include "messagefacility/MessageLogger/MessageLogger.h"
 #include "art_root_io/TFileService.h"
 
+#include "sbnobj/Common/Trigger/ExtraTriggerInfo.h"
 #include "icaruscode/Decode/ChannelMapping/IICARUSChannelMap.h"
 #include "icaruscode/IcarusObj/PMTWaveformTimeCorrection.h"
 #include "icaruscode/IcarusObj/PMTBeamSignal.h"
@@ -77,6 +78,8 @@ private:
   bool fDebugTrees;
   /// Save raw waveforms in debug TTrees
   bool fSaveWaveforms;
+  /// Trigger instance label
+  art::InputTag fTriggerLabel;
   /// RWM waveform instance label
   art::InputTag fRWMlabel;
   /// EW waveform instance label
@@ -134,6 +137,7 @@ icarus::timing::PMTBeamSignalsExtractor::PMTBeamSignalsExtractor(fhicl::Paramete
   , fChannelMap( *(art::ServiceHandle<icarusDB::IICARUSChannelMap const>{}) )
   , fDebugTrees( pset.get<bool>("DebugTrees") )
   , fSaveWaveforms( pset.get<bool>("SaveWaveforms") )
+  , fTriggerLabel( pset.get<art::InputTag>("TriggerLabel") )
   , fRWMlabel( pset.get<art::InputTag>("RWMlabel") )
   , fEWlabel( pset.get<art::InputTag>("EWlabel") )
   , fTriggerCorrectionLabel( pset.get<art::InputTag>("TriggerCorrectionLabel") )
@@ -219,6 +223,24 @@ void icarus::timing::PMTBeamSignalsExtractor::produce(art::Event& e)
   auto const detTimings = detinfo::makeDetectorTimings(art::ServiceHandle<detinfo::DetectorClocksService const>()->DataFor(e));
   double trigger_time = detTimings.TriggerTime().value();
 
+  // this module should run on beam-only events
+  // check the current beam gate
+  auto const trigger_handle = e.getProduct<sbn::ExtraTriggerInfo>(fTriggerLabel);
+  sbn::triggerSource const gateType = trigger_handle.sourceType; 
+  std::string beamType = "";  
+
+  switch (gateType) {
+      case sbn::triggerSource::BNB:
+        beamType = "BNB";
+      case sbn::triggerSource::NuMI:
+        beamType = "NuMI";
+      default:
+    	mf::LogTrace("PMTBeamSignalsExtractor") << "Skipping offbeam gate '" << name(gateType) << "'"; 
+        e.put(std::move(fRWMcollection),"RWM"); 
+        e.put(std::move(fEWcollection),"EW"); 
+        return;
+  }
+
   // get the trigger-hardware corrections that are applied on all signal waveforms
   // if EW or RWM is to be compared to the PMT signals, it must be applied on them as well
   // it also takes care of board-to-board offsets (see SBN-doc-34631, slide 5)
@@ -297,7 +319,7 @@ void icarus::timing::PMTBeamSignalsExtractor::produce(art::Event& e)
   // place the data products in the stream
   // fix the cable swap for part of Run 2 right here
   // see SBN-doc-34631 for details 
-  if( m_run > 9704 && m_run < 11443 ){
+  if( beamType=="BNB" && m_run > 9704 && m_run < 11443 ){
     e.put(std::move(fRWMcollection),"EW"); 
     e.put(std::move(fEWcollection),"RWM");
   } else {

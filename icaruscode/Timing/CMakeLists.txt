@@ -2,6 +2,7 @@ cet_enable_asserts()
 
 set(    MODULE_LIBRARIES
         lardataobj::RecoBase
+	sbnobj::Common_Trigger
         larcore::Geometry_Geometry_service
         lardata::DetectorInfoServices_DetectorClocksServiceStandard_service
 	art_root_io::TFileService_service
