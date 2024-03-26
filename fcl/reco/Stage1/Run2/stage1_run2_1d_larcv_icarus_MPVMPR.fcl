@@ -1,0 +1,6 @@
+# This runs larcv as part of stage 1 processing for MC (MPVMPR)
+
+#include "stage1_run2_1d_icarus_MC.fcl"
+
+physics.outana:    [  @sequence::icarus_analysis_modules, @sequence::icarus_analysis_superaMPVMPR ]
+physics.end_paths: [ outana, stream1 ]
