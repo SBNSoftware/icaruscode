@@ -122,7 +122,7 @@ crt::DecoderICARUSCRT::DecoderICARUSCRT(fhicl::ParameterSet const& p): EDProduce
     }, 
     fDropRawDataAfterUse( p.get<bool>("DropRawDataAfterUse", true) ),
     fFragTag(p.get<std::string>("RawDataTag","daq:ContainerBottomCRT")), 
-    fLookForContainer(p.get<bool>("LookForContainer", false)),    
+    fLookForContainer(p.get<bool>("LookForContainer", true)),    
     fEarliestTime(std::numeric_limits<decltype(fEarliestTime)>::max())
 
 {
