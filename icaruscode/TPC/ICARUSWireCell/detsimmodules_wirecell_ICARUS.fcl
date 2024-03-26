@@ -16,7 +16,7 @@ icarus_simwire_wirecell:
         // loglevels: ["magnify:debug"]
         plugins: ["WireCellPgraph", "WireCellGen","WireCellSio","WireCellRoot","WireCellLarsoft"]
         // needs to be found via your WIRECELL_PATH 
-        configs: ["pgrapher/experiment/icarus/wcls-multitpc-sim-drift-simchannel.jsonnet"]
+        configs: ["pgrapher/experiment/icarus/wcls-multitpc-sim-drift-simchannel-refactored.jsonnet"]
         // Contract note: these exact "type:name" must be used to identify
         // the configuration data structures for these components in the Jsonnet.
         inputers: ["wclsSimDepoSetSource:electron"]
