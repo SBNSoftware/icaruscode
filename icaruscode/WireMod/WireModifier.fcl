@@ -1,0 +1,55 @@
+BEGIN_PROLOG
+
+standard_wiremod:
+{
+  module_type:         "WireModifier"
+  WireLabel:           "roifinder1d:PHYSCRATEDATATPCEE"
+  HitLabel:            "gaushit1dTPCEE"
+  OutputInstanceLabel: "PHYSCRATEDATATPCEE"
+  CryoNumber         : 0
+  TPCNumbers         : [ 0, 1 ]
+}
+
+ww_wiremod: @local::standard_wiremod
+ww_wiremod.WireLabel:          "roifinder1d:PHYSCRATEDATATPCWW"
+ww_wiremod.HitLabel:           "gaushit1dTPCWW"
+ww_wiremodOutputInstanceLabel: "PHYSCRATEDATATPCWW"
+ww_wiremod.CryoNumber:         1
+ww_wiremod.TPCNumbers:         [ 2, 3 ]
+
+we_wiremod: @local::standard_wiremod
+we_wiremod.WireLabel:          "roifinder1d:PHYSCRATEDATATPCWE"
+we_wiremod.HitLabel:           "gaushit1dTPCWE"
+we_wiremodOutputInstanceLabel: "PHYSCRATEDATATPCWE"
+we_wiremod.CryoNumber:         1
+we_wiremod.TPCNumbers:         [ 0, 1 ]
+
+ew_wiremod: @local::standard_wiremod
+ew_wiremod.WireLabel:          "roifinder1d:PHYSCRATEDATATPCEW"
+ew_wiremod.HitLabel:           "gaushit1dTPCEW"
+ew_wiremodOutputInstanceLabel: "PHYSCRATEDATATPCEW"
+ew_wiremod.CryoNumber:         0
+ew_wiremod.TPCNumbers:         [ 2, 3 ]
+
+ee_wiremod: @local::standard_wiremod
+ee_wiremod.WireLabel:          "roifinder1d:PHYSCRATEDATATPCEE"
+ee_wiremod.HitLabel:           "gaushit1dTPCEE"
+ee_wiremodOutputInstanceLabel: "PHYSCRATEDATATPCEE"
+ee_wiremod.CryoNumber:         0
+ee_wiremod.TPCNumbers:         [ 0, 1 ]
+
+wiremod_allTPC: [
+                  WireModEE,
+                  WireModEW,
+                  WireModWE,
+                  WireModWW
+                ]
+
+wiremod_Producers: {
+                     WireModEE: @local::ee_wiremod
+                     WireModEW: @local::ew_wiremod
+                     WireModWE: @local::we_wiremod
+                     WireModWW: @local::ww_wiremod
+                   }
+
+END_PROLOG
