@@ -5,7 +5,7 @@
 ////////////////////////////////////////////////////////////////////////
 
 // icaruscode includes
-#include "icaruscode/TPC/Utilities/DetectorPropertiesServiceICARUSClockOffsetMC.h"
+#include "icaruscode/Utilities/DetectorPropertiesServiceICARUSClockOffsetMC.h"
 
 // Art includes
 #include "art/Framework/Services/Registry/ServiceDefinitionMacros.h"

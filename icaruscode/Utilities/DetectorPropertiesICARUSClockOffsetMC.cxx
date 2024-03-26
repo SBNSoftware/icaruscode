@@ -9,7 +9,7 @@
 // Framework includes
 
 // icaruscode includes
-#include "icaruscode/TPC/Utilities/DetectorPropertiesICARUSClockOffsetMC.h"
+#include "icaruscode/Utilities/DetectorPropertiesICARUSClockOffsetMC.h"
 
 // LArSoft includes
 #include "larcorealg/CoreUtils/ProviderUtil.h" // lar::IgnorableProviderConfigKeys()

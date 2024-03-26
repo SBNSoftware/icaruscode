@@ -61,8 +61,10 @@ art_make_library(
   lardataobj::RawData
   larcorealg::Geometry
   larcoreobj::SimpleTypesAndConstants
+  lardata::Utilities
   canvas::canvas
   messagefacility::MF_MessageLogger
+  art_root_io::RootDB
   fhiclcpp::types
   fhiclcpp::fhiclcpp
   cetlib_except::cetlib_except

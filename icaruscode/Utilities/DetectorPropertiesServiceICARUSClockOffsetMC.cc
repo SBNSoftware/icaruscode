@@ -6,7 +6,7 @@
 // Framework includes
 
 // icaruscode includes
-#include "icaruscode/TPC/Utilities/DetectorPropertiesServiceICARUSClockOffsetMC.h"
+#include "icaruscode/Utilities/DetectorPropertiesServiceICARUSClockOffsetMC.h"
 
 // LArSoft includes
 #include "larcore/Geometry/Geometry.h"

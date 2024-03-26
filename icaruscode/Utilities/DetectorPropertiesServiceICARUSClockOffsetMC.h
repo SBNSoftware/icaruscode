@@ -11,7 +11,7 @@
 #define DETECTORPROPERTIESSERVICESICARUSCLOCKOFFSETMC_H
 
 #include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
-#include "icaruscode/TPC/Utilities/DetectorPropertiesICARUSClockOffsetMC.h"
+#include "icaruscode/Utilities/DetectorPropertiesICARUSClockOffsetMC.h"
 
 #include "art/Framework/Principal/Run.h"
 #include "art/Framework/Services/Registry/ActivityRegistry.h"
