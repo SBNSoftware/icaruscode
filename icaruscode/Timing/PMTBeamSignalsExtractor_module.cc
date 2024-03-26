@@ -232,8 +232,10 @@ void icarus::timing::PMTBeamSignalsExtractor::produce(art::Event& e)
   switch (gateType) {
       case sbn::triggerSource::BNB:
         beamType = "BNB";
+        break;
       case sbn::triggerSource::NuMI:
         beamType = "NuMI";
+        break;
       default:
     	mf::LogTrace("PMTBeamSignalsExtractor") << "Skipping offbeam gate '" << name(gateType) << "'"; 
         e.put(std::move(fRWMcollection),"RWM"); 
