@@ -3,10 +3,37 @@
 import logging
 import time
 
-__doc__ = """Manages SAM definitions for ICARUS data run."""
 __author__ = "Gianluca Petrillo (petrillo@slac.stanford.edu)"
 __date__ = time.strptime("July 7, 2021", "%B %d, %Y")
 __version__ = "1.0"
+__doc__ = """
+Manages SAM definitions for ICARUS data run.
+
+This script can query SAM database for the files in a run, or create and manage
+dataset definitions. The convenience lies in the uniform format for the
+definition names, so that they are predictable and easy to encode in programs.
+
+The program selects specific characteristics (stream, stage, project version) of
+the file metadata. If no selection is provided, it will have one definition per
+stage and per project version, while the rest of the metadata will be ignored.
+
+Examples:
+
+1. See how many BNB majority raw files (both off-beam and on-beam) are available
+   for runs 11803 and 11806:
+    
+    %(prog)s  --query --stream=%%bnbmajority --stage=raw 11803 11806
+    
+2. Create two new datasets with all stage0 files of runs 11803 and 11806:
+    
+    %(prog)s  --create --stage=stage0 11803 11806
+    
+3. Have I already created a definition for stage1 for those runs?
+    
+    %(prog)s  --query --stage=stage1 11803 11806
+    
+
+"""
 
 from samweb_client.client import SAMWebClient
 import samweb_client.exceptions as samexcpt
@@ -14,12 +41,13 @@ import samweb_client.exceptions as samexcpt
 logging.basicConfig()
 
 ExperimentName = "ICARUS"
+SAMExperimentName = ExperimentName.lower()
 DefaultStages = [ 'raw', 'stage0', 'stage1', ]
 
 StageDimensions = {
   'raw':    "data_tier raw",
   'stage0': "icarus_project.stage stage0",
-  'stage1': "icarus_project.stage stage1",
+  'stage1': "icarus_project.stage in ( stage1, stage1_caf_larcv )",
 } # StageDimensions
 
 # this is a modal flag that is dangerous enough to be not user-controlled:
@@ -29,11 +57,15 @@ AllowAllRuns = False
 
 # ------------------------------------------------------------------------------
 class SampleInfo:
-  def __init__(self, run=None, stage=None, stream=None, projectVersion=None, ):
+  def __init__(self,
+    run=None, stage=None, stream=None, projectVersion=None,
+    minSize: "MiB" = None,
+    ):
     self.run = SampleInfo._copyList(run)
     self.stage = SampleInfo._copyList(stage)
     self.stream = SampleInfo._copyList(stream)
     self.projectVersion = SampleInfo._copyList(projectVersion)
+    self.minSize = minSize if minSize else 0
   # __init__()
   
   def isRunDefined(self) -> "returns if run is collapsed to a value":
@@ -62,7 +94,7 @@ class SampleInfo:
     if self.isStageComplete() and self.stage is not None:
       components.append(self.stage)
     if self.isStreamComplete() and self.stream is not None:
-      components.append(self.stream)
+      components.append(self.stream.replace("%", "")) # remove SAM wildcards
     if self.isProjectVersionComplete() and self.projectVersion is not None:
       components.append(self.projectVersion)
     return "_".join(filter(None, components))
@@ -73,6 +105,7 @@ class SampleInfo:
     kwargs.setdefault('stage', self.stage),
     kwargs.setdefault('stream', self.stream),
     kwargs.setdefault('projectVersion', self.projectVersion),
+    kwargs.setdefault('minSize', self.minSize),
     return SampleInfo(**kwargs)
   # copy()
   
@@ -117,6 +150,10 @@ class DimensionQueryMaker:
       DimensionQueryMaker.simpleItem('data_stream', info.stream),
       DimensionQueryMaker.simpleItem('icarus_project.version', info.projectVersion),
       ]
+    if info.minSize > 0:
+      dims.append(
+        DimensionQueryMaker.comparedItem('file_size', info.minSize << 20, ">=")
+        )
     query = " and ".join(filter(None, dims))
     if len(dims) < minimum:
       raise RuntimeError(f"Query resulted in only {len(dims)} constraints: '{query}'")
@@ -137,6 +174,13 @@ class DimensionQueryMaker:
 
 
   @staticmethod
+  def comparedItem(key, value, compType=None):
+    if value is not None: return f"({key} {compType} {value})"
+    else: return ""
+  # comparedItem()
+
+
+  @staticmethod
   def multiItem(queries, values, typeName):
     values = SampleInfo.makeOptionList(values)
     if not values or None in values: return ""
@@ -145,7 +189,10 @@ class DimensionQueryMaker:
       try:
         dims.append(queries[value])
       except KeyError:
-        raise RuntimeError(f"{typeName} '{value}' not supported.")
+        raise RuntimeError(
+          f"{typeName} '{value}' not supported (expected one of: {', '.join(map(str, queries))})."
+          )
+      # try ... except
     # for
     if len(dims) > 1: dims = list(map(DimensionQueryMaker.addParentheses, dims))
     query = " or ".join(dims) if dims else ""
@@ -166,9 +213,11 @@ class SampleBrowser:
   def iterateProjectVersions(self, info: "SampleInfo object defining iteration ranges"):
     assert self.samweb, "SAM web client not initialized. We do not go anywhere."
     
+    forceSeparateVersions =  (info.projectVersion == '%')
+    
     # expand the project versions: each version will be treated separately
-    if info.projectVersion is None:
-      if info.stage != 'raw':
+    if info.projectVersion is None or forceSeparateVersions:
+      if info.stage != 'raw' or forceSeparateVersions:
         versionQuery = DimensionQueryMaker()(info, minimum=2)
         projectVersions = self._discoverProjectVersions(versionQuery)
       else: projectVersions = [ None ] # no version constraint is ok for raw files
@@ -241,7 +290,7 @@ class SampleProcessClass:
   
   def __init__(self, samweb, create=False, query=False, printDefs=False,
    describe=False, check=False, delete=False,
-   fake=False, force=False, prependUser=True,
+   fake=False, force=False, prependUser=True, minSize=None,
    ):
     # action collection
     self.actions = []
@@ -256,6 +305,7 @@ class SampleProcessClass:
     self.fake = fake
     self.force = force
     self.prependUser = prependUser
+    self.minSize = minSize if minSize else 0
     
     self.samweb = samweb if samweb else SAMWebClient()
     self.buildQuery = DimensionQueryMaker()
@@ -327,17 +377,26 @@ class SampleProcessClass:
       return None
     try:
       summary = self.getSummary(info=info, defName=defName, dims=dim)
+      queryError = None
     except samexcpt.Error as e:
       logging.error(f"Query of definition {defName} (query: '{dim}') failed: %s", e)
       summary = None
+      queryError = e
     else:
-      print(f"{info}: {(summary['total_event_count'] if summary['total_event_count'] else 'unknown')} events"
-            f" in {summary['file_count']} files"
-            f" ({summary['total_file_size']/(1 << 30):g} GiB)"
-            )
+      msg = str(info) + ":"
+      msg +=  " " + (
+        str(summary['total_event_count']) if summary['total_event_count']
+          else "unknown number of"
+        )
+      msg += f" events in {summary['file_count']} files"
+      msg += (
+        " (0 GiB)" if summary['total_file_size'] is None
+        else f" ({summary['total_file_size']/(1 << 30):g} GiB)"
+        )
+      print(msg)
       e = None
     # try ... else
-    return summary if summary else e
+    return summary if summary else queryError
   # doQuery()
   
   def doCheck(self, defName):
@@ -497,7 +556,7 @@ class SampleProcessClass:
       try: return self.samweb.listFilesSummary(dims)
       except samexcpt.Error as e: queryError = e
     
-    raise e
+    raise queryError
   # getSummary()
   
   
@@ -528,18 +587,23 @@ if __name__ == "__main__":
   import sys
   import argparse
   
-  parser = argparse.ArgumentParser(description=__doc__)
+  parser = argparse.ArgumentParser(description=__doc__,
+    formatter_class=argparse.RawDescriptionHelpFormatter)
   
   SampleGroup = parser.add_argument_group(title="Sample selection")
-  SampleGroup.add_argument("runs", nargs="*", type=int, help="runs to process")
+  SampleGroup.add_argument("runs", nargs="*" if AllowAllRuns else "+", type=int,
+                      help="runs to process")
   SampleGroup.add_argument("--stage", "-s", action="append",
-    help="stages to include {DefaultStages}")
+    help=f"stages to include {DefaultStages}")
   SampleGroup.add_argument("--prjversion", "-p", action="append",
     help="project versions to include [autodetect (resource-intensive!)]")
   SampleGroup.add_argument("--stream", "-f", action="append",
     help="data streams to include (use 'any' for... any) [any]")
   SampleGroup.add_argument("--global", "-g", dest='globalDef',
     action="store_true", help="do not prepend SAM user name to definitions")
+  SampleGroup.add_argument("--minsize", "-S", dest='minimumSize',
+    action='store', nargs='?', default=None, const=8, type=int,
+    help="include only files larger than this size (MiB) [8 MiB if no value]")
   
   ActionGroup = parser.add_argument_group(title="Actions")
   ActionGroup.add_argument("--check", action="store_true",
@@ -556,8 +620,10 @@ if __name__ == "__main__":
     help="attempts to remove one definition per sample")
   
   GeneralOptGroup = parser.add_argument_group(title="General options")
-  GeneralOptGroup.add_argument("--test", action="store_true",
-    help="tests the connection to SAM and exits")
+  GeneralOptGroup.add_argument("--experiment", "-e", default=ExperimentName,
+    help="sets the experiment name (for definitions) [%(default)s]")
+  GeneralOptGroup.add_argument("--samexperiment", "-E",
+    help="sets the experiment name (chooses SAM database) [same as --experiment]")
   GeneralOptGroup.add_argument("--force", "-F", action="store_true",
     help="skips safety checks of some operations")
   GeneralOptGroup.add_argument("--fake", "--dryrun", "-n", action="store_true",
@@ -565,8 +631,7 @@ if __name__ == "__main__":
   GeneralOptGroup.add_argument("--debug", action="store_true",
     help="enable verbose debugging output")
   GeneralOptGroup.add_argument("--version", "-V", action="version",
-    version=f"%(prog)s v{__version__} ({time.asctime(__date__)})",
-    help="prints the version number")
+    version="%(prog)s v" + __version__, help="prints the version number")
   
   args = parser.parse_args()
   
@@ -574,34 +639,17 @@ if __name__ == "__main__":
   if args.stage is None: args.stage = DefaultStages
   if args.stream:
     args.stream = [ None if s == "any" else s for s in args.stream ]
-  
-  try: samweb = SAMWebClient()
-  except samexcpt.Error as e:
-    if args.test:
-      print("Failed to connect to SAM.");
-    else:
-      logging.error("Failed to connect to SAM: %s", e)
-    sys.exit(1)
-  # try ... except
-  if args.test:
-    try: print(samweb.serverInfo())
-    except samexcpt.Error as e:
-      logging.error("Test connection to SAM failed: %s", e)
-      sys.exit(1)
-    print("\nConnection test succeeded.")
-    sys.exit(0)
-  # if test
-  
-  if not AllowAllRuns and not args.runs:
-    logging.error("At least one run MUST be specified.")
-    sys.exit(1)
-  #
+  ExperimentName = args.experiment
+  SAMexperiment = args.samexperiment if args.samexperiment else ExperimentName.lower()
 
+  logging.debug("Using SAM database '%s'.", SAMexperiment)
+  samweb = SAMWebClient(experiment=SAMexperiment)
   iterateSamples = SampleBrowser(samweb)
   processInfo = SampleProcessClass(samweb,
     create=args.create, query=args.query, printDefs=args.defname,
     describe=args.describe, check=args.check, delete=args.delete,
-    fake=args.fake, force=args.force, prependUser=not args.globalDef
+    fake=args.fake, force=args.force,
+    prependUser=not args.globalDef,
     )
   
   baseSampleInfo = SampleInfo(
@@ -609,6 +657,7 @@ if __name__ == "__main__":
     stage=collapseList(args.stage),
     stream=collapseList(args.stream), # None means any
     projectVersion=collapseList(args.prjversion), # None for autodetect
+    minSize=args.minimumSize,
     )
   
   for sampleInfo in iterateSamples(baseSampleInfo):
