@@ -257,7 +257,7 @@ icarusalg			v09_87_00	-
 icarusutil			v09_87_00	-
 libwda				v2_30_0a	-
 sbncode				v09_87_00	-
-cetmodules			v3_20_00	-	only_for_build
+cetmodules			v3_24_01	-	only_for_build
 end_product_list
 ####################################
 
