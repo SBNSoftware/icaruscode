@@ -1,0 +1,11 @@
+#include "opticalTools_icarus.fcl"
+
+BEGIN_PROLOG
+	
+icarus_opdetwaveform_dumper:	
+{
+  module_type:         "OpDetWaveformDumper"
+  InputLabel:          "daqPMT"
+}
+
+END_PROLOG
