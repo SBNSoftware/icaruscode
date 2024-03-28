@@ -239,7 +239,7 @@ cet_build_plugin(PMTcoordinates art::module LIBRARIES ${MODULE_LIBRARIES})
 cet_build_plugin(PhotonPropogationICARUS art::module LIBRARIES ${MODULE_LIBRARIES})
 cet_build_plugin(TrigInfo art::module LIBRARIES ${MODULE_LIBRARIES})
 cet_build_plugin(wvfAnaicarus art::module LIBRARIES ${MODULE_LIBRARIES})
-cet_build_plugin(OpDetWaveformDumper art::module LIBRARIES ${MODULE_LIBRARIES})
+cet_build_plugin(OpDetWaveformDumper art::module LIBRARIES ${MODULE_LIBRARIES} sbnobj::ICARUS_PMT_Data)
 
 cet_build_plugin(RequireOnBeamWaveforms art::module
   LIBRARIES

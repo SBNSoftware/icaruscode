@@ -6,6 +6,7 @@ icarus_opdetwaveform_dumper:
 {
   module_type:         "OpDetWaveformDumper"
   InputLabel:          "daqPMT"
+  BaselineLabel:       "pmtbaselines"
 }
 
 END_PROLOG
