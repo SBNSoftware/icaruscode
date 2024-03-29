@@ -1,0 +1,11 @@
+#include "larg4_icarus_sce.fcl"
+
+physics.simulate: [ rns
+	    , ionization
+            , pdfastsim
+            , simdrift
+            , mcreco
+            , genericcrt
+          ]
+
+process_name: G4Step2Var

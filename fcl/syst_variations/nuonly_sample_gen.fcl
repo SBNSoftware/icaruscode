@@ -1,0 +1,3 @@
+#include "prodcorsika_genie_standard_icarus.fcl"
+
+physics.simulate: [ rns, generator, beamgate ]

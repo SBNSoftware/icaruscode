@@ -1,0 +1,3 @@
+#include "stage0_variation_icarus.fcl"
+
+physics.producers.mcophit.SimPhotonsProducer: "pdfastsim"

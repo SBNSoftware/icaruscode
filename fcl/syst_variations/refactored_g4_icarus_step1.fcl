@@ -1,0 +1,6 @@
+#include "larg4_icarus_sce.fcl"
+
+physics.simulate: [ rns
+            , loader
+            , largeant
+          ]

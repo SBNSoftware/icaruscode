@@ -1,0 +1,6 @@
+#include "stage1_run2_icarus_MC.fcl"
+
+process_name: MCstage1Var
+
+icarus_stage1_analyzers.caloskimE: @local::caloskim_cryoe_nodigits_goldentracks_not0
+icarus_stage1_analyzers.caloskimW: @local::caloskim_cryow_nodigits_goldentracks_not0
