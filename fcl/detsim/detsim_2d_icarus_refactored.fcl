@@ -1,5 +1,34 @@
-#include "detsim_2d_icarus.fcl"
+#include "services_icarus_simulation.fcl"
+#include "detsimmodules_wirecell_ICARUS.fcl"
+#include "opdetsim_pmt_icarus.fcl"
+#include "crtsimmodules_icarus.fcl"
+#include "rootoutput_icarus.fcl"
 
-physics.producers.daq.wcls_main.configs: ["pgrapher/experiment/icarus/wcls-multitpc-sim-drift-simchannel-refactored.jsonnet"]
-physics.producers.crtdaq.G4ModuleLabel: "genericcrt"
-physics.producers.opdaq.InputModule: "pdfastsim"
+process_name: DetSim
+
+services: {
+  @table::icarus_detsim_services
+  #FileCatalogMetadata:  @local::art_file_catalog_mc
+} # services
+
+physics: {
+
+  producers: {
+    crtdaq:         @local::icarus_crtsim
+     opdaq:         @local::icarus_simpmt
+       daq:         @local::icarus_simwire_wirecell
+
+       rns:         { module_type: "RandomNumberSaver" }
+  } # producers
+
+  simulate: [ rns, opdaq, daq, crtdaq ]
+
+  # define the output stream, there could be more than one if using filters
+  stream:  [ rootoutput ]
+
+} # physics
+
+
+outputs: {
+  rootoutput: @local::icarus_rootoutput
+}

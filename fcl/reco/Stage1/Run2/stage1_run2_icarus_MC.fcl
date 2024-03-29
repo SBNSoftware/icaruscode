@@ -7,59 +7,6 @@
 
 process_name: MCstage1
 
-## Add the MC module to the list of producers
-physics.producers: {
-            @table::icarus_stage1_producers
-
-            mcophit:                        @local::ICARUSMCOpHit
-            mcopflashTPC0:                  @local::ICARUSMCOpFlashTPC0
-            mcopflashTPC1:                  @local::ICARUSMCOpFlashTPC1
-            mcopflashTPC2:                  @local::ICARUSMCOpFlashTPC2
-            mcopflashTPC3:                  @local::ICARUSMCOpFlashTPC3
-          
-            cheatopflashTPC0:               @local::ICARUSCheatOpFlashTPC0
-            cheatopflashTPC1:               @local::ICARUSCheatOpFlashTPC1
-            cheatopflashTPC2:               @local::ICARUSCheatOpFlashTPC2
-            cheatopflashTPC3:               @local::ICARUSCheatOpFlashTPC3
-
-            ### mc producers
-            mchitfinder:                    @local::standard_mchitfinder
-            mcassociationsGausCryoE:        @local::standard_mcparticlehitmatching
-            mcassociationsGausCryoW:        @local::standard_mcparticlehitmatching
-}
-
-#Redefine TPCPMTBarycenterMatch producers with MC parameters
-physics.producers.tpcpmtbarycentermatchCryoE: @local::mc_tpcpmtbarycentermatchproducer_east
-physics.producers.tpcpmtbarycentermatchCryoW: @local::mc_tpcpmtbarycentermatchproducer_west
-
-physics.reco: [ 
-                @sequence::icarus_reco_Gauss_CryoE ,
-                @sequence::icarus_reco_Gauss_CryoW ,
-		            @sequence::icarus_reco_fm,
-                @sequence::icarus_tpcpmtbarycentermatch,
-                caloskimCalorimetryCryoE, caloskimCalorimetryCryoW,
-                mcassociationsGausCryoE,  mcassociationsGausCryoW
-              ]
-
-# Turn on truth-info for track skimmer 
-physics.analyzers.caloskimE.G4producer: "largeant"
-physics.analyzers.caloskimE.SimChannelproducer: "daq:simpleSC"
-physics.analyzers.caloskimE.RawDigitproducers: ["MCDecodeTPCROI:PHYSCRATEDATATPCEW", "MCDecodeTPCROI:PHYSCRATEDATATPCEE"]
-physics.analyzers.caloskimW.G4producer: "largeant"
-physics.analyzers.caloskimW.SimChannelproducer: "daq:simpleSC"
-physics.analyzers.caloskimW.RawDigitproducers: ["MCDecodeTPCROI:PHYSCRATEDATATPCWW", "MCDecodeTPCROI:PHYSCRATEDATATPCWE"]
-
-physics.outana:            [ @sequence::icarus_analysis_modules ]
-physics.trigger_paths:     [ reco ]
-physics.end_paths:         [ outana, stream1 ]
-outputs.out1.fileName:     "%ifb_%tc-%p.root"
-outputs.out1.dataTier:     "reconstructed"
-outputs.out1.outputCommands: [
-  "keep *_*_*_*",
-  "drop *_caloskimCalorimetryCryoE_*_*",
-  "drop *_caloskimCalorimetryCryoW_*_*"
-]
-
 # Disabled Space-Charge service for calorimetry
 services.SpaceChargeService: {
     EnableCalEfieldSCE: false
@@ -78,6 +25,59 @@ services.BackTrackerService:        @local::standard_backtrackerservice
 # to overwrite the truth matching labels in the calibration ntuple maker
 services.BackTrackerService.BackTracker.SimChannelModuleLabel: "daq:simpleSC"
 services.ParticleInventoryService:  @local::standard_particleinventoryservice
+
+## Add the MC module to the list of producers
+physics.producers: {
+            @table::icarus_stage1_producers
+
+            #mcophit:                        @local::ICARUSMCOpHit
+            mcopflashTPC0:                  @local::ICARUSMCOpFlashTPC0
+            mcopflashTPC1:                  @local::ICARUSMCOpFlashTPC1
+            mcopflashTPC2:                  @local::ICARUSMCOpFlashTPC2
+            mcopflashTPC3:                  @local::ICARUSMCOpFlashTPC3
+          
+            cheatopflashTPC0:               @local::ICARUSCheatOpFlashTPC0
+            cheatopflashTPC1:               @local::ICARUSCheatOpFlashTPC1
+            cheatopflashTPC2:               @local::ICARUSCheatOpFlashTPC2
+            cheatopflashTPC3:               @local::ICARUSCheatOpFlashTPC3
+
+            ### mc producers
+            mchitfinder:                    @local::standard_mchitfinder
+            mcassociationsGausCryoE:        @local::standard_mcparticlehitmatching
+            mcassociationsGausCryoW:        @local::standard_mcparticlehitmatching
+}
+
+physics.reco: [ 
+                @sequence::icarus_reco_Gauss_CryoE ,
+                @sequence::icarus_reco_Gauss_CryoW ,
+		            @sequence::icarus_reco_fm,
+                @sequence::icarus_tpcpmtbarycentermatch,
+                caloskimCalorimetryCryoE, caloskimCalorimetryCryoW,
+                mcassociationsGausCryoE,  mcassociationsGausCryoW
+              ]
+
+physics.outana:            [ @sequence::icarus_analysis_modules ]
+physics.trigger_paths:     [ reco ]
+physics.end_paths:         [ outana, stream1 ]
+outputs.out1.fileName:     "%ifb_%tc-%p.root"
+outputs.out1.dataTier:     "reconstructed"
+outputs.out1.outputCommands: [
+  "keep *_*_*_*",
+  "drop *_caloskimCalorimetryCryoE_*_*",
+  "drop *_caloskimCalorimetryCryoW_*_*"
+]
+
+#Redefine TPCPMTBarycenterMatch producers with MC parameters
+physics.producers.tpcpmtbarycentermatchCryoE: @local::mc_tpcpmtbarycentermatchproducer_east
+physics.producers.tpcpmtbarycentermatchCryoW: @local::mc_tpcpmtbarycentermatchproducer_west
+
+# Turn on truth-info for track skimmer 
+physics.analyzers.caloskimE.G4producer: "largeant"
+physics.analyzers.caloskimE.SimChannelproducer: "daq:simpleSC"
+physics.analyzers.caloskimE.RawDigitproducers: ["MCDecodeTPCROI:PHYSCRATEDATATPCEW", "MCDecodeTPCROI:PHYSCRATEDATATPCEE"]
+physics.analyzers.caloskimW.G4producer: "largeant"
+physics.analyzers.caloskimW.SimChannelproducer: "daq:simpleSC"
+physics.analyzers.caloskimW.RawDigitproducers: ["MCDecodeTPCROI:PHYSCRATEDATATPCWW", "MCDecodeTPCROI:PHYSCRATEDATATPCWE"]
 
 physics.producers.mcassociationsGausCryoE.HitParticleAssociations.HitModuleLabelVec: ["cluster3DCryoE"]
 physics.producers.mcassociationsGausCryoW.HitParticleAssociations.HitModuleLabelVec: ["cluster3DCryoW"]

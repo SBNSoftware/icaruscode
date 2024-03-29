@@ -178,7 +178,24 @@ local chndb = [{
 local nf_maker = import 'pgrapher/experiment/icarus/nf.jsonnet';
 local nf_pipes = [nf_maker(params, tools.anodes[n], chndb[n], tools, name='nf%d' % n) for n in std.range(0, std.length(tools.anodes) - 1)];
 
-local sp = sp_maker(params, tools, { sparse: sigoutform == 'sparse', use_roi_debug_mode: true, });
+local sp_override = { // assume all tages sets in base sp.jsonnet
+    sparse: sigoutform == 'sparse',
+    // wiener_tag: "",
+    // gauss_tag: "",
+    use_roi_refinement: false,
+    use_roi_debug_mode: true,
+    tight_lf_tag: "",
+    // loose_lf_tag: "",
+    cleanup_roi_tag: "",
+    break_roi_loop1_tag: "",
+    break_roi_loop2_tag: "",
+    shrink_roi_tag: "",
+    extend_roi_tag: "",
+    // m_decon_charge_tag: "",
+    use_multi_plane_protection: false,
+    mp_tick_resolution: 10,
+};
+local sp = sp_maker(params, tools, sp_override);
 local sp_pipes = [sp.make_sigproc(a) for a in tools.anodes];
 
 local util = import 'pgrapher/experiment/icarus/funcs.jsonnet';
