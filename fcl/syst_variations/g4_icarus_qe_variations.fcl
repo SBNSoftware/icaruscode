@@ -1,0 +1,5 @@
+#include "standard_g4_icarus.fcl"
+
+process_name: G4FullQEVar
+
+services.LArPropertiesService.ScintPreScale: 4.0e-2

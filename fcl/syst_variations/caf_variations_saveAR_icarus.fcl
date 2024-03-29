@@ -1,1 +1,3 @@
 #include "cafmakerjob_icarus_detsim2d.fcl"
+
+physics.stream1: [ outpid ]
