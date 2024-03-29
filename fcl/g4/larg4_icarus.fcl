@@ -9,6 +9,7 @@
 #include "icarus_genericCRT.fcl"
 #include "mcreco.fcl"
 #include "g4inforeducer.fcl"
+#include "simplemerge_icarus.fcl"
 
 process_name: G4
 
@@ -55,6 +56,9 @@ physics:
     # Generic CRT
     genericcrt: @local::icarus_genericCRT
 
+    # simplemerge for ML
+    simplemerge: @local::simplemerge
+
   }
 
   # All producers and filters modules for this path, order matters
@@ -67,6 +71,7 @@ physics:
             , sedlite
             , mcreco
             , genericcrt
+	    , simplemerge
           ]
 
   # The output stream, there could be more than one if using filters
