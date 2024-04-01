@@ -1,0 +1,4 @@
+#include "refactored_g4_icarus_step2_variations.fcl"
+
+services.LArG4Parameters.UseModBoxRecomb: false
+services.LArG4Parameters.UseEllipsModBoxRecomb: true 
