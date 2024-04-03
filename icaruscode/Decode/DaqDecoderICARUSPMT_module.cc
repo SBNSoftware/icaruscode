@@ -410,9 +410,15 @@ namespace icarus { class DaqDecoderICARUSPMT; }
  *        no trigger in the respective cryostat.
  *     * `gateID` (unsigned integer): number of this gate from run start
  *       (note: this used to be `gateCount` until around `v09_80_00`).
+ *     * `triggerCount` (unsigned integer): number of triggers from this source
+ *       since run start, including this one;
+ *       from `sbn::ExtraTriggerInfo::triggerCount`.
  *     * `gateCount` (unsigned integer): number of gates from this trigger
  *       source since run start, including this one (note: this used to be the
  *       number of _all_ gates regardless the source until around `v09_80_00`).
+ *     * `gateCountFromPreviousTrigger` (unsigned integer): number of gates from
+ *       this trigger source since the previous trigger also from this trigger
+ *       source (from `sbn::ExtraTriggerInfo::gateCountFromPreviousTrigger`).
  *     * `onGlobalTrigger` (boolean): whether the waveform covers the nominal
  *       trigger time (which should be equivalent to whether the fragment was
  *       triggered by the global trigger).
@@ -804,7 +810,9 @@ class icarus::DaqDecoderICARUSPMT: public art::EDProducer {
     long int beamToEnable; ///< Enable gate time relative to beam gate [ns].
     sbn::triggerSourceMask bits; ///< Trigger bits.
     unsigned int gateID = 0U; ///< Gate number from the beginning of run.
+    unsigned int triggerCount = 0U; ///< Trigger number for this source.
     unsigned int gateCount = 0U; ///< Gate number for this source.
+    unsigned int gateCountFromPreviousTrigger = 0U; ///< Gates from last trig.
     sbn::triggerSource sourceType; ///< Trigger source bit.
     sbn::triggerType triggerType; ///< Type of trigger (minimum bias, majority).
     sbn::triggerLocationMask triggerLocation; ///< Where the trigger came from.
@@ -1051,7 +1059,13 @@ class icarus::DaqDecoderICARUSPMT: public art::EDProducer {
       
       unsigned int gateID = 0U; ///< The number of gates of this source so far.
       
-      unsigned int gateCount = 0U; ///< The number of gate from run start.
+      /// The number of triggers from run start.
+      unsigned int triggerCount = 0U;
+      
+      unsigned int gateCount = 0U; ///< The number of gates from run start.
+      
+      ///< The number of gates from the previous trigger.
+      unsigned int gateCountFromPreviousTrigger = 0U;
       
       /// Whether waveforms cover nominal trigger time.
       bool onGlobalTrigger = false;
@@ -1781,7 +1795,10 @@ void icarus::DaqDecoderICARUSPMT::produce(art::Event& event) {
       log << " }";
     } // if
     log << ", type: " << name(triggerInfo.triggerType);
-    if (fTriggerTag) log << ", spill count: " << triggerInfo.gateCount;
+    if (fTriggerTag) {
+      log << ", trigger count: " << triggerInfo.triggerCount
+        << ", spill count: " << triggerInfo.gateCount;
+    }
   } // local block
   
   //
@@ -2253,7 +2270,9 @@ auto icarus::DaqDecoderICARUSPMT::fetchTriggerTimestamp
       , std::numeric_limits<std::int64_t>::min() // beamToEnable
       , {}                                       // bits
       , 0U                                       // gateID
+      , 0U                                       // triggerCount
       , 0U                                       // gateCount
+      , 0U                                       // gateCountFromPreviousTrigger
       , sbn::triggerSource::NBits                // sourceType
       , sbn::triggerType::NBits                  // triggerType
       , sbn::triggerLocationMask{}               // triggerLocation
@@ -2308,7 +2327,10 @@ auto icarus::DaqDecoderICARUSPMT::fetchTriggerTimestamp
     , clampInto<long int>(relEnableGate)  // beamToEnable
     , {trigger.TriggerBits()}             // bits
     , extraTrigger.gateID                 // gateID
+    , extraTrigger.triggerCount           // triggerCount
     , extraTrigger.gateCount              // gateCount
+    , extraTrigger.gateCountFromPreviousTrigger
+                                          // gateCountFromPreviousTrigger
     , extraTrigger.sourceType             // sourceType
     , extraTrigger.triggerType            // triggerType
     , extraTrigger.triggerLocation()      // triggerLocation
@@ -2890,7 +2912,10 @@ void icarus::DaqDecoderICARUSPMT::fillPMTfragmentTree(
   fTreeFragment->data.triggerLogicE = triggerInfo.triggerLogicE.bits;
   fTreeFragment->data.triggerLogicW = triggerInfo.triggerLogicW.bits;
   fTreeFragment->data.gateID = triggerInfo.gateID;
+  fTreeFragment->data.triggerCount = triggerInfo.triggerCount;
   fTreeFragment->data.gateCount = triggerInfo.gateCount;
+  fTreeFragment->data.gateCountFromPreviousTrigger
+    = triggerInfo.gateCountFromPreviousTrigger;
   fTreeFragment->data.onGlobalTrigger
     = containsGlobalTrigger(waveformTimestamp, fragInfo.nSamplesPerChannel);
   fTreeFragment->data.minimumBias
@@ -3361,7 +3386,10 @@ void icarus::DaqDecoderICARUSPMT::initFragmentsTree() {
   tree->Branch("triggerLogicE", &data.triggerLogicE);
   tree->Branch("triggerLogicW", &data.triggerLogicW);
   tree->Branch("gateID", &data.gateID);
+  tree->Branch("triggerCount", &data.triggerCount);
   tree->Branch("gateCount", &data.gateCount);
+  tree->Branch
+    ("gateCountFromPreviousTrigger", &data.gateCountFromPreviousTrigger);
   tree->Branch("onGlobal", &data.onGlobalTrigger);
   tree->Branch("minimumBias", &data.minimumBias);
   
