@@ -1,4 +1,0 @@
-#include "detsim_2d_icarus_shiftForTrigger.fcl"
-
-physics.producers.daq: @local::icarus_simwire_wirecell_fitSR
-physics.producers.daq.wcls_main.configs: ["pgrapher/experiment/icarus/wcls-multitpc-sim-drift-simchannel-shifted.jsonnet"]

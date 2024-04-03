@@ -34,17 +34,17 @@ icarus_stage0_mc_producers:
     pmtfixedthr:       @local::icarus_pmtdiscriminatethr_fixed_MC
 
     @table::icarus_standard_triggersim.producers  # from trigger_emulation_icarus.fcl
-    
+
     pmtbaselines:      @local::icarus_opreco_pedestal_fromchannel_MC  # from icarus_ophitfinder.fcl
     opdetonbeam:       @local::copyPMTonBeam  # from decoderdefs_icarus.fcl
     ophit:             @local::icarus_ophit_data
     mcophit:           @local::ICARUSMCOpHit
 
-    ## crt producer   
+    ## crt producer
     crthit:            @local::standard_crtsimhitproducer
     crttrack:          @local::standard_crttrackproducer
     crtpmt: 	       @local::standard_crtpmtmatchingproducer
-    }  
+    }
 
 # make the following modifications to job flow for MC vs the data
 icarus_stage0_mc_trigger: [
@@ -62,13 +62,18 @@ icarus_stage0_mc_PMT:  [
                        ]
 
 icarus_stage0_mc_crt:  [ crthit,
-                         #crttzero 
-                         crttrack, 
+                         #crttzero
+                         crttrack,
                        	 crtpmt
 		       ]
 
 # adapt input labels
-icarus_stage0_mc_producers.opdetonbeam.Waveforms:              opdaq
+icarus_stage0_mc_producers.emuTrigger.BeamGates:               shifted
+icarus_stage0_mc_producers.mcophit.SimPhotonsProducer:         shifted
+icarus_stage0_mc_producers.ophit.InputModule:                  shifted
+icarus_stage0_mc_producers.opdetonbeam.Waveforms:              shifted
 icarus_stage0_mc_producers.opdetonbeam.WaveformBaselineAssns:  pmtbaselines
+icarus_stage0_mc_producers.pmtbaselines.OpticalWaveforms:      shifted
+icarus_stage0_mc_producers.pmtfixedthr.OpticalWaveforms:       shifted
 
 END_PROLOG
