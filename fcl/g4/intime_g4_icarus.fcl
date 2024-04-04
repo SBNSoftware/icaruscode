@@ -60,6 +60,18 @@ physics:
       InputSourcesLabels: [ "larg4intime","larg4outtime"]
       TrackIDOffsets: [ 10000000,20000000 ]
     }
+    largeantdropped: {
+      module_type: "MergeSimSourcesSBN"
+      InputSourcesLabels: [ "larg4intime:droppedMCParticles", "larg4outtime:droppedMCParticles"]
+      FillMCParticles: true
+      FillMCParticlesLite: false
+      FillMCParticlesAssociated: false
+      FillSimPhotons:              false
+      FillSimChannels:             false
+      FillAuxDetSimChannels:       false
+      FillSimEnergyDeposits:       false
+      FillAuxDetHits:              false
+    }
     ionization: {
                   module_type: "larsim/ElectronDrift/ShiftEdepSCE"
                   EDepTag:     "largeant:TPCActive"
@@ -75,7 +87,7 @@ physics:
 
  #define the producer and filter modules for this path, order matters, 
  #filters reject all following items.  see lines starting physics.producers below
- merge: [rns, larg4outtime, largeant, ionization, sedlite, mcreco]
+ merge: [rns, larg4outtime, largeant, largeantdropped, ionization, sedlite, mcreco]
  
  #define the output stream, there could be more than one if using filters 
  stream1:  [ out1 ]
@@ -104,9 +116,6 @@ services.LArG4Parameters.ParticleKineticEnergyCut: 0.0005
 physics.producers.larg4outtime.KeepParticlesInVolumes: [ "volDetEnclosure" ]
 physics.producers.larg4outtime.InputLabels: [ "GenInTimeSorter:outtime" ]
 
-# Store MCParticleLite in G4 to store dropped particles from KeepEMShowerDaughters: false
-physics.producers.larg4outtime.StoreDroppedMCParticles: true
-
 # ------------------------------------------------------------------------------
 
 # Configure mcreco to read SEDLite instead of SED and MCParticleLite in addition to MCParticle
@@ -117,7 +126,7 @@ physics.producers.mcreco.UseSimEnergyDeposit: false
 physics.producers.mcreco.MCRecoPart.SavePathPDGList: [13,-13,211,-211,111,311,310,130,321,-321,2212,2112,2224,2214,2114,1114,3122,1000010020,1000010030,1000020030,1000020040]
 physics.producers.mcreco.UseSimEnergyDepositLite: true
 physics.producers.mcreco.IncludeDroppedParticles: true
-physics.producers.mcreco.MCParticleDroppedLabel: "largeant:droppedMCParticles"
+physics.producers.mcreco.MCParticleDroppedLabel: "largeantdropped"
 
 services.message.destinations :
 {
