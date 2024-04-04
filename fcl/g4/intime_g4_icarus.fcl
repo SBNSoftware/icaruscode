@@ -71,6 +71,7 @@ physics:
       FillAuxDetSimChannels:       false
       FillSimEnergyDeposits:       false
       FillAuxDetHits:              false
+      TrackIDOffsets:              [ 10000000, 20000000 ]
     }
     ionization: {
                   module_type: "larsim/ElectronDrift/ShiftEdepSCE"
