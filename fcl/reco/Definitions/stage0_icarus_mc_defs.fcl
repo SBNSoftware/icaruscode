@@ -69,6 +69,7 @@ icarus_stage0_mc_crt:  [ crthit,
 
 # adapt input labels
 icarus_stage0_mc_producers.emuTrigger.BeamGates:               shifted
+icarus_stage0_mc_producers.triggersimgates.module_type:        DummyProducer  # Don't rerun. We have already adjusted the BeamGate
 icarus_stage0_mc_producers.mcophit.SimPhotonsProducer:         shifted
 icarus_stage0_mc_producers.ophit.InputModule:                  shifted
 icarus_stage0_mc_producers.opdetonbeam.Waveforms:              shifted
