@@ -36,7 +36,6 @@ process_name: G4
 
 # ------------------------------------------------------------------------------
 services: @local::icarus_g4_services
-services.ParticleListAction.KeepDroppedParticlesInVolumes: ["volDetEnclosure"] #This should be put in the services file in the future
 services.Geometry.GDML: "icarus_complete_20220518_overburden.gdml"
 services.Geometry.ROOT: "icarus_complete_20220518_overburden.gdml"
 
