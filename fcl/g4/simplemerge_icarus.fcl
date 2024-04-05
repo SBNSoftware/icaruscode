@@ -1,0 +1,9 @@
+BEGIN_PROLOG
+
+simplemerge : {
+  module_type: "SimpleMerge"
+  InputSourcesLabels: ["largeant", "largeant:droppedMCParticles"]
+  ResetMotherIDs: [ 0 ]
+}
+
+END_PROLOG
