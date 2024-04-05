@@ -59,6 +59,7 @@ physics:
       module_type: "MergeSimSourcesSBN"
       InputSourcesLabels: [ "larg4intime","larg4outtime"]
       TrackIDOffsets: [ 10000000,20000000 ]
+      FillMCParticlesLite: false
     }
     largeantdropped: {
       module_type: "MergeSimSourcesSBN"
