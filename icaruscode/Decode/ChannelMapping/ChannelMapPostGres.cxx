@@ -421,8 +421,8 @@ int icarusDB::ChannelMapPostGres::BuildPMTFragmentToDigitizerChannelMap
      AdderConnectorColumn
   ]= details::WDAPositionFinder{ getTuple(dataset, 0) }(
     "light_fiber_label"s,   "digitizer_ch_number"s, "channel_id"s,
-    "fragment_id"s,         "digitizer_label"s,     "FPGA_connector_DIO"s,
-    "adder_connector_DIO"s
+    "fragment_id"s,         "digitizer_label"s,     "fpga_connector_dio"s,
+    "adder_connector_dio"s
     );
   
   // Ok, now we can start extracting the information
