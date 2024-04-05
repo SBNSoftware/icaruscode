@@ -113,6 +113,9 @@ outputs:
  }
 }
 
+# Store MCParticleLite in G4 to store dropped particles from KeepEMShowerDaughters: false
+physics.producers.larg4outtime.StoreDroppedMCParticles: true #needed for legacy larg4
+
 services.LArG4Parameters.ParticleKineticEnergyCut: 0.0005
 physics.producers.larg4outtime.KeepParticlesInVolumes: [ "volDetEnclosure" ]
 physics.producers.larg4outtime.InputLabels: [ "GenInTimeSorter:outtime" ]
