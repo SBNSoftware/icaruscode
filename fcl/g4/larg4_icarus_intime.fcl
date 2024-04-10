@@ -21,7 +21,7 @@ physics.producers.ionandscintouttime: @local::icarus_ionandscint
 physics.producers.pdfastsimouttime: @local::icarus_pdfastsim_pvs
 physics.producers.simdriftouttime: @local::icarus_simdrift
 physics.producers.genericcrtouttime: @local::icarus_genericCRT
-physics.producers.sedliteouttime: @local::sbn_largeant_info_reducer
+#physics.producers.sedliteouttime: @local::sbn_largeant_info_reducer
 
 # Set the appropriate input labels, to run geant4 only on the outtime cosmics
 physics.producers.simdriftintime.SimulationLabel: "ionandscintintime:priorSCE"
@@ -34,12 +34,14 @@ physics.producers.pdfastsimouttime.SimulationLabel: "ionandscintouttime:priorSCE
 physics.producers.simdriftouttime.SimulationLabel: "ionandscintouttime:priorSCE"
 physics.producers.genericcrtouttime.LArG4Label: "larg4outtime"
 #info reducer
-physics.producers.sedliteouttime.SimEnergyDepositLabel: "larg4outtime:LArG4DetectorServicevolTPCActive"
-physics.producers.sedliteouttime.useOrigTrackID: true #needed since origTrackID not filled for sedlite in SBND
+#physics.producers.sedliteouttime.SimEnergyDepositLabel: "larg4outtime:LArG4DetectorServicevolTPCActive"
+#physics.producers.sedliteouttime.useOrigTrackID: true #needed since origTrackID not filled for sedlite in SBND
 
 # Add a process that merges the MCParticles
 physics.producers.largeant: @local::icarus_merge_sim_sources
 physics.producers.largeant.FillMCParticles: true
+physics.producers.largeant.FillSimEnergyDeposits: true
+physics.producers.largeant.EnergyDepositInstanceLabels: @local::largeant_volumes
 physics.producers.largeant.InputSourcesLabels: [ "larg4intime", "larg4outtime"]
 
 # Add a process that merges the SimEnergyDeposits
@@ -64,7 +66,19 @@ physics.producers.pdfastsim.FillSimPhotons: true
 physics.producers.pdfastsim.InputSourcesLabels: [ "pdfastsimintime", "pdfastsimouttime"]
 
 #Add a process that merges the dropped MCParticles
-physics.producers.sedlite: @local::icarus_merge_intime_dropped_mcparts
+physics.producers.largeantdropped: @local::icarus_merge_intime_dropped_mcparts
+physics.producers.largeantdropped.InputSourcesLabels: [ "larg4intime:droppedMCParticles", "larg4outtime:droppedMCParticles"]
+
+#Add a process for sedlite generation
+physics.producers.sedlite: @local::sbn_largeant_info_reducer 
+physics.producers.sedlite.SimEnergyDepositLabel: "largeant:LArG4DetectorServicevolTPCActive"
+
+# mcreco dropped label for intime
+physics.producers.mcreco.MCParticleDroppedLabel: "largeantdropped"
+
+# simplemerge for intime
+# simplemerge for ML
+physics.producers.simplemerge.InputSourcesLabels: ["largeant", "largeantdropped"]
 
 # Add all these new modules to the simulate path
 physics.simulate: [ rns
@@ -79,16 +93,18 @@ physics.simulate: [ rns
                   , pdfastsimouttime
                   , simdriftouttime
                   , genericcrtouttime
-                  , sedliteouttime
+                  #, sedliteouttime
                   ### Merge the intime and outtime paths
                   , largeant
+		  , largeantdropped
                   , ionization
                   , simdrift
                   , pdfastsim
                   , genericcrt
                   ### Do truth-level reconstruction
+		  , sedlite
                   , mcreco
-                  , sedlite 
+		  , simplemerge
                   ]
 
 services.ParticleListAction.keepGenTrajectories: ["GenInTimeSorter"]
@@ -110,5 +126,8 @@ outputs.rootoutput.outputCommands: [ "keep *_*_*_*"
                              , "drop *_simdriftouttime_*_*"
                              # Drop LArG4 AuxDetHits, now replaced by AuxDetSimChannels
                              , "drop sim::AuxDetHits_*_*_*"
+			     # Drop sedlite
+			     , "drop *_sedliteintime_*_*"
+			     , "drop *_sedliteouttime_*_*"
                              ]
 
