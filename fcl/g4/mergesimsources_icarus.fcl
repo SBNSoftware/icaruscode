@@ -19,7 +19,7 @@ icarus_merge_sim_sources : {
 largeant_volumes: [ "LArG4DetectorServicevolTPCPlaneV"
                   , "LArG4DetectorServicevolTPC0"
                   , "LArG4DetectorServicevolTPCPlaneU"
-                  , "LArG4DetectorServicevolOpDetSensitive" #is this needed?
+                  #, "LArG4DetectorServicevolOpDetSensitive" #is this needed?
                   , "LArG4DetectorServicevolTPCPlaneY"
                   , "LArG4DetectorServicevolTPCActive"
                   ]
