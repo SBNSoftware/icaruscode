@@ -1,11 +1,11 @@
 ////////////////////////////////////////////////////////////////////////
-/// \file   icaruscode/Decode/ChannelMapping/ICARUSChannelMapProvider.h
-/// \author T. Usher (factorised by Gianluca Petrillo, petrillo@slac.stanford.edu)
+/// \file   icaruscode/Decode/ChannelMapping/Legacy/ICARUSChannelMapProvider.h
+/// \author T. Usher (factorised by G. Petrillo, petrillo@slac.stanford.edu)
 /// \see    icaruscode/Decode/ChannelMapping/ICARUSChannelMapProvider.cxx
 ////////////////////////////////////////////////////////////////////////
 
-#ifndef ICARUSCODE_DECODE_CHANNELMAPPING_ICARUSCHANNELMAPPROVIDER_H
-#define ICARUSCODE_DECODE_CHANNELMAPPING_ICARUSCHANNELMAPPROVIDER_H
+#ifndef ICARUSCODE_DECODE_CHANNELMAPPING_LEGACY_ICARUSCHANNELMAPPROVIDER_H
+#define ICARUSCODE_DECODE_CHANNELMAPPING_LEGACY_ICARUSCHANNELMAPPROVIDER_H
 
 // ICARUS libraries
 #include "icaruscode/Decode/ChannelMapping/IICARUSChannelMap.h"
@@ -56,8 +56,8 @@ public:
     bool                                    hasPMTDigitizerID(const unsigned int)   const override;
 
     /// Returns the number of PMT fragment IDs known to the service.
-    unsigned int                            nPMTfragmentIDs() const override;
-    const DigitizerChannelChannelIDPairVec& getChannelIDPairVec(const unsigned int) const override;
+    unsigned int                            nPMTfragmentIDs()                       const override;
+    const PMTdigitizerInfoVec&              getPMTchannelInfo(unsigned int)         const override;
 
     // Section for CRT channel mapping    
     unsigned int                            getSimMacAddress   (const unsigned int)    const override;
@@ -83,17 +83,17 @@ private:
     
     bool fDiagnosticOutput;
       
-    IChannelMapping::TPCFragmentIDToReadoutIDMap   fFragmentToReadoutMap;
+    TPCFragmentIDToReadoutIDMap   fFragmentToReadoutMap;
       
-    IChannelMapping::TPCReadoutBoardToChannelMap   fReadoutBoardToChannelMap;
+    TPCReadoutBoardToChannelMap   fReadoutBoardToChannelMap;
 
-    IChannelMapping::FragmentToDigitizerChannelMap fFragmentToDigitizerMap; 
+    PMTFragmentToDigitizerChannelMap fFragmentToDigitizerMap; 
 
-    IChannelMapping::CRTChannelIDToHWtoSimMacAddressPairMap fCRTChannelIDToHWtoSimMacAddressPairMap;
+    CRTChannelIDToHWtoSimMacAddressPairMap fCRTChannelIDToHWtoSimMacAddressPairMap;
 
-    IChannelMapping::TopCRTHWtoSimMacAddressPairMap fTopCRTHWtoSimMacAddressPairMap;
+    TopCRTHWtoSimMacAddressPairMap fTopCRTHWtoSimMacAddressPairMap;
 
-    IChannelMapping::SideCRTChannelToCalibrationMap fSideCRTChannelToCalibrationMap;
+    SideCRTChannelToCalibrationMap fSideCRTChannelToCalibrationMap;
 
     std::unique_ptr<IChannelMapping>               fChannelMappingTool;
 
@@ -102,9 +102,10 @@ private:
     void readFromDatabase();
 
     
-    /// Returns the list of board channel-to-PMT channel ID mapping within the specified fragment.
+    /// Returns the list of records of all channels in the PMT readout board with
+    /// the specified fragment.
     /// @returns a pointer to the mapping list, or `nullptr` if invalid fragment
-    DigitizerChannelChannelIDPairVec const* findPMTfragmentEntry
+    PMTdigitizerInfoVec const* findPMTfragmentEntry
       (unsigned int fragmentID) const;
     
     
@@ -114,4 +115,4 @@ private:
 
 // -----------------------------------------------------------------------------
 
-#endif // ICARUSCODE_DECODE_CHANNELMAPPING_ICARUSCHANNELMAPPROVIDER_H
+#endif // ICARUSCODE_DECODE_CHANNELMAPPING_LEGACY_ICARUSCHANNELMAPPROVIDER_H

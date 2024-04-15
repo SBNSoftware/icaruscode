@@ -24,6 +24,8 @@
 #include "lardata/DetectorInfoServices/DetectorClocksService.h"
 #include "lardataalg/DetectorInfo/DetectorTimings.h"
 #include "lardataalg/Utilities/quantities/spacetime.h" // util::quantities::nanosecond
+#include "larcorealg/CoreUtils/enumerate.h"
+#include "larcorealg/CoreUtils/counter.h"
 #include "lardataobj/RawData/ExternalTrigger.h"
 #include "lardataobj/RawData/TriggerData.h" // raw::Trigger
 #include "lardataobj/Simulation/BeamGateInfo.h"
@@ -36,12 +38,17 @@
 #include "icaruscode/Decode/DecoderTools/Dumpers/FragmentDumper.h" // dumpFragment()
 #include "icaruscode/Decode/DecoderTools/details/KeyedCSVparser.h"
 #include "icaruscode/Decode/DecoderTools/details/KeyValuesData.h"
+#include "icaruscode/Decode/ChannelMapping/IICARUSChannelMap.h"
+#include "icaruscode/Decode/ChannelMapping/IICARUSChannelMapProvider.h"
+#include "icaruscode/PMT/Trigger/Algorithms/LVDSbitMaps.h"
+#include "icaruscode/Utilities/CacheCounter.h" // util::CacheGuard
 #include "icarusalg/Utilities/BinaryDumpUtils.h" // hexdump() DEBUG
 
 #include <cstdlib>
 #include <iostream>
 #include <iomanip> // std::setw(), std::setfill()
 #include <string_view>
+#include <optional>
 #include <memory>
 #include <array>
 
@@ -158,16 +165,37 @@ namespace daq
    *            the trigger window; only the first one becomes the global
    *            trigger, but we still keep the count of how many happen.
    *            Its value is `0` when trigger happened from elsewhere.
+   *        * `triggerLogicBits`: whether the trigger on this cryostat was from
+   *            adder logic, trigger logic or both. The definition of "both"
+   *            is taken by the hardware, based on an allowed overlapping time
+   *            between the signals of the different logics, properly delayed.
    *        * `LVDSstatus`: information per PMT wall (i.e. TPC; east first, then
    *            west) of the LVDS signals of the discriminated PMT pairs at the
    *            time of the global trigger. All bits are `0` when trigger
-   *            happened elsewhere. Otherwise, the encoding is currently
-   *            implemented in terms of hardware connectors as follows:
-   *            * east wall:  `00<C3P2><C3P1><C3P0>00<C2P2><C2P1><C2P0>`
-   *            * west wall:  `00<C1P2><C1P1><C1P0>00<C0P2><C0P1><C0P0>`
+   *            happened elsewhere. Otherwise, the encoding implements the
+   *            prescription documented in `sbn::ExtraTriggerInfo` using
+   *            information from the PMT channel mapping service
+   *            (`icarusDB::IICARUSChannelMap`) if it was configured. Otherwise,
+   *            the encoding is not guaranteed to be correct, and it is
+   *            implemented in terms of hardware connector ports as follows:
+   *            * east wall: `00<C0P2><C0P1><C0P0>00<C1P2><C1P1><C1P0>`
+   *            * west wall: `00<C2P2><C2P1><C2P0>00<C3P2><C3P1><C3P0>`
    *            
    *            For the expected matching with PMT, see the documentation of
    *            `sbn::ExtraTriggerInfo::CryostatInfo::LVDSstatus`.
+   *        * `sectorStatus`: information for detector sector (one per TPC),
+   *            reporting the discrimination status of the adder signals at
+   *            the time of the global trigger. All bits are `0` when trigger
+   *            happened elsewhere. Otherwise, the encoding implements the
+   *            prescription documented in `sbn::ExtraTriggerInfo` using
+   *            information from the PMT channel mapping service
+   *            (`icarusDB::IICARUSChannelMap`) if it was configured. Otherwise,
+   *            the encoding is not guaranteed to be correct, and it is
+   *            implemented extracting bits from port 3 of the connectors:
+   *            * east wall: `0000'0000'00ss'snnn` with <C0P3> = `0000'0sss`
+   *                and <C1P3> = `0000'0nnn`
+   *            * west wall: `0000'0000'00ss'snnn` with <C2P3> = `0000'0sss`
+   *                and <C3P3> = `0000'0nnn`
    *     
    *     Information may be missing. If a count is not available, its value is
    *     set to `0` (which is an invalid value because their valid range starts
@@ -206,6 +234,11 @@ namespace daq
    *     module) to be used. Specifying its tag is mandatory, but if it is
    *     explicitly specified empty, the decoder will try to work around its
    *     absence.
+   * * `AllowDefaultLVDSmap` (flag, default: `false`): if set, when PMT channel
+   *     mapping service is not available a legacy encoding pattern will be used
+   *     for the `LVDSstatus` bits, and a warning will be printed. If unset and
+   *     the PMT channel mapping database is not available, an exception will be
+   *     thrown.
    * * `DiagnosticOutput` (flag, default: `false`): prints on console trigger
    *     data diagnostics (including a full dump of the parsed content).
    * * `Debug` (flag, default: `false`): prints on console decoding debug
@@ -240,6 +273,7 @@ namespace daq
     ExtraInfoPtr fTriggerExtra;
     BeamGateInfoPtr fBeamGateInfo;
     art::InputTag fTriggerConfigTag; ///< Data product with hardware trigger configuration.
+    bool fAllowDefaultLVDSmap; ///< Allow LVDS mapping without mapping database.
     bool fDiagnosticOutput; ///< Produces large number of diagnostic messages, use with caution!
     bool fDebug; ///< Use this for debugging this tool
     
@@ -247,9 +281,17 @@ namespace daq
     
     detinfo::DetectorTimings const fDetTimings; ///< Detector clocks and timings.
     
+    /// PMT channel mapping service provider.
+    icarusDB::IICARUSChannelMapProvider const* fChannelMap = nullptr;
+    
+    ///< Tracks the cache of `IICARUSChannelMapProvider`.
+    util::CacheGuard fChannelMapCacheGuard;
+    
     /// Cached pointer to the trigger configuration of the current run, if any.
     icarus::TriggerConfiguration const* fTriggerConfiguration = nullptr;
     
+    /// Map of LVDS bits.
+    std::optional<icarus::trigger::LVDSbitMaps> fPMTpairMap;
     
     /// Creates a `ICARUSTriggerInfo` from a generic fragment.
     icarus::ICARUSTriggerV3Fragment makeTriggerFragment
@@ -290,17 +332,30 @@ namespace daq
       { return static_cast<long long int>(a) - static_cast<long long int>(b); }
 
     /// Fills one `cryostat` information of `sbn::ExtraTriggerInfo`.
-    static sbn::ExtraTriggerInfo::CryostatInfo unpackPrimitiveBits(
+    sbn::ExtraTriggerInfo::CryostatInfo unpackPrimitiveBits(
       std::size_t cryostat, bool firstEvent, unsigned long int counts,
-      std::uint64_t connectors01, std::uint64_t connectors23
-      );
+      std::uint64_t connectors01, std::uint64_t connectors23,
+      sbn::bits::triggerLogicMask triggerLogic
+      ) const;
 
+    /// Encodes all the LVDS bits for the specified `cryostat`.
+    std::array<std::uint64_t, sbn::ExtraTriggerInfo::MaxWalls> encodeLVDSbits(
+      short int cryostat,
+      std::uint64_t connector01word, std::uint64_t connector23word
+      ) const;
+    
+    /// Encodes all the adder bits for the specified `cryostat`.
+    std::array<std::uint16_t, sbn::ExtraTriggerInfo::MaxWalls> encodeSectorBits(
+      short int cryostat,
+      std::uint64_t connector01word, std::uint64_t connector23word
+      ) const;
+    
     /// Encodes the `connectorWord` LVDS bits from the specified `cryostat`
     /// and `connector` into the format required by `sbn::ExtraTriggerInfo`.
-    static std::uint64_t encodeLVDSbits
+    static std::uint64_t encodeLVDSbitsLegacy
       (short int cryostat, short int connector, std::uint64_t connectorWord);
     
-    static std::uint16_t encodeSectorBits
+    static std::uint16_t encodeSectorBitsLegacy
       (short int cryostat, short int connector, std::uint64_t connectorWord);
     
     /// Returns the `nBits` bits of `value` from `startBit` on.
@@ -309,6 +364,9 @@ namespace daq
 
     /// Returns the beam type corresponding to the specified trigger `source`.
     static sim::BeamType_t simGateType(sbn::triggerSource source);
+    
+    /// Returns `s` with non-printable characters replaced.
+    static std::string sanitize(std::string const& s);
     
   };
 
@@ -320,8 +378,24 @@ namespace daq
   TriggerDecoderV3::TriggerDecoderV3(fhicl::ParameterSet const &pset)
     : fDetTimings
       { art::ServiceHandle<detinfo::DetectorClocksService>()->DataForJob() }
+    , fChannelMapCacheGuard{ "PMT" } // track the PMT cache only
   {
     this->configure(pset);
+    try {
+      fChannelMap
+        = art::ServiceHandle<icarusDB::IICARUSChannelMap>()->provider();
+    }
+    catch (art::Exception const& e) {
+      if ((e.categoryCode() != art::errors::ServiceNotFound)
+        || !fAllowDefaultLVDSmap
+      ) {
+        throw;
+      }
+      mf::LogWarning{ "TriggerDecoderV3" }
+        << "PMT channel mapping service not available: the correct order"
+        " of bits in sbn::ExtraTriggerInfo::cryostats is not guaranteed.";
+    }
+    if (fChannelMap) fChannelMapCacheGuard.setCache(*fChannelMap);
   }
 
   
@@ -343,6 +417,7 @@ namespace daq
   void TriggerDecoderV3::configure(fhicl::ParameterSet const &pset) 
   {
     fTriggerConfigTag = pset.get<std::string>("TrigConfigLabel");
+    fAllowDefaultLVDSmap = pset.get<bool>("AllowDefaultLVDSmap", false);
     fDiagnosticOutput = pset.get<bool>("DiagnosticOutput", false);
     fDebug = pset.get<bool>("Debug", false);
     if (pset.has_key("TimeOffset")) {
@@ -444,6 +519,24 @@ namespace daq
       ? nullptr
       : &(run.getProduct<icarus::TriggerConfiguration>(fTriggerConfigTag))
       ;
+    
+    // refresh the LVDS bit map
+    if (fChannelMap && fChannelMapCacheGuard.update()) {
+      // old versions of the database do not have all needed information;
+      // this is going to be supported since the older run periods will never
+      // have that information.
+      fPMTpairMap.emplace(*fChannelMap);
+      if (!fPMTpairMap->hasMap(icarus::trigger::LVDSbitMaps::Map::PMTpairs)) {
+        mf::LogWarning("TriggerDecoder")
+          << "PMT pair mapping could not be extracted."
+          << " A legacy, hard-coded one will be used.";
+      }
+      if (!fPMTpairMap->hasMap(icarus::trigger::LVDSbitMaps::Map::Adders)) {
+        mf::LogWarning("TriggerDecoder")
+          << "Adder mapping could not be extracted."
+          << " A legacy, hard-coded one will be used.";
+      }
+    }
     
   } // TriggerDecoderV3::setupRun()
   
@@ -551,7 +644,7 @@ namespace daq
         << parsedData << std::endl;
       
       if (fDebug) { // this grows tiresome quickly when processing many events
-        std::cout << "Trigger packet content:\n" << data
+        std::cout << "Trigger packet content:\n" << sanitize(data)
           << "\nFull trigger fragment dump:"
           << sbndaq::dumpFragment(fragment) << std::endl;
       }
@@ -697,30 +790,45 @@ namespace daq
       locationMask = mask(sbn::triggerLocation::CryoEast);
     else if(triggerLocation == 2)
       locationMask = mask(sbn::triggerLocation::CryoWest);
-    else if(triggerLocation == 7)
+    else if(triggerLocation >= 3) // should be 7
       locationMask = mask(sbn::triggerLocation::CryoEast, sbn::triggerLocation::CryoWest);
     fTriggerExtra->triggerLocationBits = locationMask;
     
     //
     // fill sbn::ExtraTriggerInfo::cryostats
     //
-    auto setCryoInfo = [&extra=*fTriggerExtra,isFirstEvent=(triggerID <= 1)]
-      (std::size_t cryo, icarus::KeyValuesData const& data)
+    auto setCryoInfo = [
+      this,&extra=*fTriggerExtra,isFirstEvent=(triggerID <= 1),data=parsedData
+      ]
+        (std::size_t cryo)
       {
-        std::string const SIDE = (cryo == sbn::ExtraTriggerInfo::EastCryostat)
+        std::string const Side
+          = (cryo == sbn::ExtraTriggerInfo::EastCryostat) ? "EAST": "WEST";
+        std::string const CrSide = (cryo == sbn::ExtraTriggerInfo::EastCryostat)
           ? "Cryo1 EAST": "Cryo2 WEST";
+        // trigger logic: 0x01=adders; 0x02=majority; 0x07=both
+        std::string const triggerLogicKey = "MJ_Adder Source " + Side;
+        int const triggerLogicCode = data.hasItem(triggerLogicKey)
+          ? data.getItem(triggerLogicKey).getNumber<int>(0): 0;
+        sbn::bits::triggerLogicMask triggerLogicMask;
+        if(triggerLogicCode == 1)
+          triggerLogicMask = mask(sbn::triggerLogic::PMTAnalogSum);
+        else if(triggerLogicCode == 2)
+          triggerLogicMask = mask(sbn::triggerLogic::PMTPairMajority);
+        else if(triggerLogicCode >= 3) // should be 7
+          triggerLogicMask = mask(sbn::triggerLogic::PMTAnalogSum, sbn::triggerLogic::PMTPairMajority);
+        
         extra.cryostats[cryo] = unpackPrimitiveBits(
           cryo, isFirstEvent,
-          data.getItem(SIDE + " counts").getNumber<unsigned long int>(0),
-          data.getItem(SIDE + " Connector 0 and 1").getNumber<std::uint64_t>(0, 16),
-          data.getItem(SIDE + " Connector 2 and 3").getNumber<std::uint64_t>(0, 16)
+          data.getItem(CrSide + " counts").getNumber<unsigned long int>(0),
+          data.getItem(CrSide + " Connector 0 and 1").getNumber<std::uint64_t>(0, 16),
+          data.getItem(CrSide + " Connector 2 and 3").getNumber<std::uint64_t>(0, 16),
+          triggerLogicMask
           );
       };
     
-    if (triggerLocation & 1)
-      setCryoInfo(sbn::ExtraTriggerInfo::EastCryostat, parsedData);
-    if (triggerLocation & 2)
-      setCryoInfo(sbn::ExtraTriggerInfo::WestCryostat, parsedData);
+    if (triggerLocation & 1) setCryoInfo(sbn::ExtraTriggerInfo::EastCryostat);
+    if (triggerLocation & 2) setCryoInfo(sbn::ExtraTriggerInfo::WestCryostat);
     
     //
     // absolute time trigger (raw::ExternalTrigger)
@@ -804,29 +912,27 @@ namespace daq
   
   sbn::ExtraTriggerInfo::CryostatInfo TriggerDecoderV3::unpackPrimitiveBits(
     std::size_t cryostat, bool firstEvent, unsigned long int counts,
-    std::uint64_t connectors01, std::uint64_t connectors23
-  ) {
+    std::uint64_t connectors01, std::uint64_t connectors23,
+    sbn::bits::triggerLogicMask triggerLogic
+  ) const {
     sbn::ExtraTriggerInfo::CryostatInfo cryoInfo;
     
     // there is (or was?) a bug on the first event in the run,
     // which would make this triggerCount wrong
     cryoInfo.triggerCount = firstEvent? 0UL: counts,
     
-    cryoInfo.LVDSstatus = {
-      encodeLVDSbits(cryostat, 2 /* any of the connectors */, connectors23),
-      encodeLVDSbits(cryostat, 0 /* any of the connectors */, connectors01)
-      };
+    cryoInfo.LVDSstatus = encodeLVDSbits(cryostat, connectors01, connectors23);
     
-    cryoInfo.SectorStatus = {
-      encodeSectorBits(cryostat, 2 /* any of the connectors */, connectors23),
-      encodeSectorBits(cryostat, 0 /* any of the connectors */, connectors01)
-      };
+    cryoInfo.sectorStatus
+      = encodeSectorBits(cryostat, connectors01, connectors23);
+    
+    cryoInfo.triggerLogicBits = static_cast<unsigned int>(triggerLogic);
     
     return cryoInfo;
   } // TriggerDecoderV3::unpackPrimitiveBits()
   
   
-  std::uint64_t TriggerDecoderV3::encodeLVDSbits
+  std::uint64_t TriggerDecoderV3::encodeLVDSbitsLegacy
     (short int cryostat, short int connector, std::uint64_t connectorWord)
   {
     /*
@@ -846,7 +952,180 @@ namespace daq
     assert((connectorWord & 0x00FF'FFFF'00FF'FFFF) == ((msw << 32ULL) | lsw));
     std::swap(lsw, msw);
     return (msw << 32ULL) | lsw;
+  } // TriggerDecoderV3::encodeLVDSbitsLegacy()
+  
+  
+  std::array<std::uint64_t, sbn::ExtraTriggerInfo::MaxWalls>
+  TriggerDecoderV3::encodeLVDSbits(
+    short int cryostat,
+    std::uint64_t connector01word, std::uint64_t connector23word
+  ) const {
+    
+    if (!fPMTpairMap
+      || !fPMTpairMap->hasMap(icarus::trigger::LVDSbitMaps::Map::PMTpairs)
+    ) {
+      // use legacy approach
+      return {
+        encodeLVDSbitsLegacy
+          (cryostat, sbn::ExtraTriggerInfo::EastPMTwall, connector01word),
+        encodeLVDSbitsLegacy
+          (cryostat, sbn::ExtraTriggerInfo::WestPMTwall, connector23word)
+        };
+    } // if no channel mapping
+    
+    std::array<std::uint64_t, sbn::ExtraTriggerInfo::MaxWalls> outputWords;
+    outputWords.fill(0);
+    
+    /*
+     * The (first) two `LVDSstatus` 64-bit words are initialized according to
+     * the prescription in the class documentation: LVDS bits from PMT with
+     * lower channel ID end in lower (least significant) bits in `LVDSstatus`.
+     * 
+     * The algorithm will fill the bits of the output words in sequence,
+     * each time picking the value from the appropriate bits in the input
+     * connector words. The correct bit is determined by a precooked map.
+     */
+    
+    // connector words have the first connector in the most significant 32 bits:
+    std::array<std::uint32_t, 4U> const connectorBits {
+      static_cast<std::uint32_t>(connector01word >> 32ULL & 0x00FF'FFFFULL),
+      static_cast<std::uint32_t>(connector01word          & 0x00FF'FFFFULL),
+      static_cast<std::uint32_t>(connector23word >> 32ULL & 0x00FF'FFFFULL),
+      static_cast<std::uint32_t>(connector23word          & 0x00FF'FFFFULL)
+    };
+    
+    // --- BEGIN DEBUG -----
+    mf::LogTrace debugLog{ "TriggerDecoderV3" };
+    debugLog << "Cryostat " << cryostat << ":";
+    for (auto const [ iConn, word ]: util::enumerate(connectorBits))
+      debugLog << " [" << iConn << "]=0x" << std::hex << word << std::dec;
+    // --- END DEBUG -------
+    
+    auto const mask
+      = [](auto bitNo){ return 1ULL << static_cast<std::uint64_t>(bitNo); };
+    
+    using icarus::trigger::PMTpairBitID;
+    for (std::size_t const PMTwall:
+      { sbn::ExtraTriggerInfo::EastPMTwall, sbn::ExtraTriggerInfo::WestPMTwall }
+    ) {
+      
+      for (auto const bit: util::counter<PMTpairBitID::StatusBit_t>(64)) {
+        
+        PMTpairBitID const bitID{ (unsigned) cryostat, PMTwall, bit };
+        
+        icarus::trigger::LVDSHWbitID const source
+          = fPMTpairMap->bitSource(bitID).source;
+        
+        if (!source) continue; // bit not mapped to anything
+        
+        assert(source.cryostat == cryostat);
+        bool const bitValue
+          = connectorBits.at(source.connector) & mask(source.bit);
+        
+        if (bitValue) {
+          outputWords[PMTwall] |= mask(bit);
+          debugLog << "\nLogic LVDS bit " << bitID << " from HW bit " << source;
+        }
+        
+      } // bit
+    } // PMT wall
+    
+    // --- BEGIN DEBUG -----
+    for (auto const [ iWord, word ]: util::enumerate(outputWords)) {
+      debugLog<< "\nPMT pair status[" << cryostat << "][" << iWord << "]="
+        << icarus::ns::util::bin(word)
+        << " (0x" << std::hex << word << std::dec << ")";
+    }
+    // --- END DEBUG -------
+    
+    return outputWords;
   } // TriggerDecoderV3::encodeLVDSbits()
+  
+  
+  std::array<std::uint16_t, sbn::ExtraTriggerInfo::MaxWalls>
+  TriggerDecoderV3::encodeSectorBits(
+    short int cryostat,
+    std::uint64_t connector01word, std::uint64_t connector23word
+  ) const {
+    
+    if (!fPMTpairMap
+      || !fPMTpairMap->hasMap(icarus::trigger::LVDSbitMaps::Map::Adders)
+    ) {
+      // use legacy approach
+      return {
+        encodeSectorBitsLegacy(cryostat, 2, connector23word),
+        encodeSectorBitsLegacy(cryostat, 0, connector01word)
+        };
+    } // if no channel mapping
+    
+    std::array<std::uint16_t, sbn::ExtraTriggerInfo::MaxWalls> outputWords;
+    outputWords.fill(0);
+    
+    /*
+     * The (first) two `LVDSstatus` 64-bit words are initialized according to
+     * the prescription in the class documentation: LVDS bits from PMT with
+     * lower channel ID end in lower (least significant) bits in `LVDSstatus`.
+     * 
+     * The algorithm will fill the bits of the output words in sequence,
+     * each time picking the value from the appropriate bits in the input
+     * connector words. The correct bit is determined by a precooked map.
+     */
+    
+    // connector words have the first connector in the most significant 32 bits:
+    std::array<std::uint32_t, 4U> const connectorBits {
+      static_cast<std::uint32_t>(connector01word >> 32ULL & 0xFF00'0000ULL),
+      static_cast<std::uint32_t>(connector01word          & 0xFF00'0000ULL),
+      static_cast<std::uint32_t>(connector23word >> 32ULL & 0xFF00'0000ULL),
+      static_cast<std::uint32_t>(connector23word          & 0xFF00'0000ULL)
+    };
+    
+    // --- BEGIN DEBUG -----
+    mf::LogTrace debugLog{ "TriggerDecoderV3" };
+    debugLog << "Cryostat " << cryostat << ":";
+    for (auto const [ iConn, word ]: util::enumerate(connectorBits))
+      debugLog << " [" << iConn << "]=0x" << std::hex << word << std::dec;
+    // --- END DEBUG -------
+    
+    auto const mask
+      = [](auto bitNo){ return 1ULL << static_cast<std::uint64_t>(bitNo); };
+    
+    using icarus::trigger::AdderBitID;
+    for (std::size_t const PMTwall:
+      { sbn::ExtraTriggerInfo::EastPMTwall, sbn::ExtraTriggerInfo::WestPMTwall }
+    ) {
+      
+      for (auto const bit: util::counter<AdderBitID::StatusBit_t>(16)) {
+        
+        AdderBitID const bitID{ (unsigned) cryostat, PMTwall, bit };
+        
+        icarus::trigger::LVDSHWbitID const source
+          = fPMTpairMap->bitSource(bitID).source;
+        
+        if (!source) continue; // bit not mapped to anything
+        
+        assert(source.cryostat == cryostat);
+        bool const bitValue
+          = connectorBits.at(source.connector) & mask(source.bit);
+        
+        if (bitValue) {
+          outputWords[PMTwall] |= mask(bit);
+          debugLog
+            << "\nLogic adder bit " << bitID << " from HW bit " << source;
+        }
+        
+      } // bit
+    } // PMT wall
+    
+    // --- BEGIN DEBUG -----
+    for (auto const [ iWord, word ]: util::enumerate(outputWords)) {
+      debugLog<< "\nAdder status[" << cryostat << "][" << iWord << "]="
+        << icarus::ns::util::bin(word)
+        << " (0x" << std::hex << word << std::dec << ")";
+    }
+    // --- END DEBUG -------
+    
+    return outputWords;
+  } // TriggerDecoderV3::encodeSectorBits()
   
   
   template <unsigned int startBit, unsigned int nBits, typename T>
@@ -856,7 +1135,7 @@ namespace daq
   }
   
   
-  std::uint16_t TriggerDecoderV3::encodeSectorBits
+  std::uint16_t TriggerDecoderV3::encodeSectorBitsLegacy
     (short int cryostat, short int connector, std::uint64_t connectorWord)
   {
     /*
@@ -866,8 +1145,7 @@ namespace daq
      *  * connector 2: west wall south, LSB the south-most one
      *  * connector 3: west wall north, LSB the south-most one
      * Target:
-     *  * [0]: 00000000 00nnnsss (east wall)
-     *  * [1]: 00000000 00nnnsss (west wall)
+     *  * 00000000 00sssnnn (both east and wall)
      */
     
     // connector (32 bit): 00000SSS LVDSLVDS LVDSLVDS LVDSLVDS
@@ -875,12 +1153,11 @@ namespace daq
     constexpr std::size_t FirstSectorBit = 27;
     constexpr std::size_t SectorBitsPerConnector = 3;
     
-    // TODO check the order of the bits: [ ] the blocks of 3 and [ ] within each block
     return static_cast<std::uint16_t>(
-        (bits<BitsPerConnector+FirstSectorBit, SectorBitsPerConnector>(connectorWord) << SectorBitsPerConnector)
-      | (bits<FirstSectorBit,                  SectorBitsPerConnector>(connectorWord)                          )
+        (bits<FirstSectorBit, SectorBitsPerConnector>(connectorWord) << SectorBitsPerConnector)
+      | (bits<BitsPerConnector+FirstSectorBit, SectorBitsPerConnector>(connectorWord))
       );
-  } // TriggerDecoderV3::encodeSectorBits()
+  } // TriggerDecoderV3::encodeSectorBitsLegacy()
   
   
   sim::BeamType_t TriggerDecoderV3::simGateType(sbn::triggerSource source)
@@ -899,6 +1176,35 @@ namespace daq
         return sim::kUnknown;
     } // switch source
   } // TriggerDecoderV3::simGateType()
+  
+  
+  std::string TriggerDecoderV3::sanitize(std::string const& s) {
+    
+    static char const HexChar[] = "012345789ABCDEF";
+    
+    std::string ss;
+    ss.reserve(s.size());
+    
+    for (char c: s) {
+      if (!std::isprint(static_cast<unsigned char>(c)) && (c != '\n')) {
+        ss += '<';
+        switch (c) {
+          case '\x00': ss += "NUL"; break;
+          case '\x09': ss += "TAB"; break;
+          case '\x1E': ss += "ESC"; break;
+          default:
+            ss += HexChar[(c >> 4) & 0xF];
+            ss += HexChar[c & 0xF];
+        } // switch
+        ss += '>';
+      }
+      else
+        ss.push_back(c);
+      
+    } // for
+    
+    return ss;
+  } // TriggerDecoderV3::sanitize()
   
   
   DEFINE_ART_CLASS_TOOL(TriggerDecoderV3)

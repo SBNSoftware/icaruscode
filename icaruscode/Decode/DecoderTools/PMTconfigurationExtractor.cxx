@@ -160,17 +160,19 @@ sbn::PMTconfiguration icarus::PMTconfigurationExtractor::finalize
       continue;
     }
   
-    icarusDB::DigitizerChannelChannelIDPairVec const& digitizerChannelVec
-      = fChannelMap->getChannelIDPairVec(fragmentID);
+    icarusDB::PMTdigitizerInfoVec const& digitizerChannelVec
+      = fChannelMap->getPMTchannelInfo(fragmentID);
     
     // finds the channel ID matching the specified channel number of this board
     auto const toChannelID = [&channelIDs=digitizerChannelVec]
       (short unsigned int channelNo)
       {
         auto const it = std::find_if(channelIDs.begin(), channelIDs.end(),
-          [channelNo](auto const& p){ return std::get<0U>(p) == channelNo; });
+          [channelNo](auto const& p)
+            { return p.digitizerChannelNo == channelNo; }
+          );
         return (it != channelIDs.end())
-          ? std::get<1U>(*it)
+          ? it->channelID
           : sbn::V1730channelConfiguration::NoChannelID
           ;
       };

@@ -1,0 +1,7 @@
+# This includes running larcv as part of stage 1 processing
+
+#include "stage1_run2_1d_icarus.fcl"
+
+physics.outana:    [ @sequence::icarus_analysis_larcv_modules ]
+physics.end_paths: [ outana, stream1 ]
+

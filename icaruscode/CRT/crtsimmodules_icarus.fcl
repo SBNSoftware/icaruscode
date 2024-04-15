@@ -85,7 +85,7 @@ icarus_crtsim:
 {
   module_type: "icaruscode/CRT/CRTDetSim"
 
-  G4ModuleLabel: "largeant"
+  G4ModuleLabel: "genericcrt"
 
   DetSimAlg: @local::standard_icarus_crtsimalg
 }
