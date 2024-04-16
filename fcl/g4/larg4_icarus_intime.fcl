@@ -75,6 +75,7 @@ physics.producers.sedlite.SimEnergyDepositLabel: "largeant:LArG4DetectorServicev
 
 # mcreco dropped label for intime
 physics.producers.mcreco.MCParticleDroppedLabel: "largeantdropped"
+physics.producers.mcreco.MCRecoPart.TrackIDOffsets: [0,10000000,20000000] #Account for track ID offsets in labeling primaries
 
 # simplemerge for intime
 # simplemerge for ML
@@ -107,7 +108,7 @@ physics.simulate: [ rns
 		  , simplemerge
                   ]
 
-services.ParticleListAction.keepGenTrajectories: ["GenInTimeSorter"]
+services.ParticleListAction.keepGenTrajectories: ["corsika", "GenInTimeSorter"]
 
 # Drop the intime and outtime collections, which have now been
 # been merged into a 'largeant' collection
