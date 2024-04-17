@@ -1,10 +1,8 @@
 #originally developed by G. Putnam and adapt when that PR is merged
 # Fit field responses, turned up noise on each plane
 #
-#include "detsim_2d_icarus_refactored.fcl"
 
-# Add in the tuned field responses
-physics.producers.daq: @local::icarus_simwire_wirecell_fitSR
+#include "detsim_2d_variation_refactored_icarus.fcl"
 
 # variation on ind 0
 physics.producers.daq.wcls_main.params.files_fields: "icarus_fnal_fit_ks_ind1bin14.json.bz2"
