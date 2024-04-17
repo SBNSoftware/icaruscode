@@ -90,7 +90,7 @@ physics.producers.largeant.StoreDroppedMCParticles: false
 
 # ------------------------------------------------------------------------------
 # Configure mcreco to read SEDLite instead of SED and MCParticleLite in addition to MCParticle
-physics.producers.mcreco.G4ModName: "largeant" #"simdrift"
+physics.producers.mcreco.G4ModName: "simdrift"
 physics.producers.mcreco.SimChannelLabel: "sedlite"
 physics.producers.mcreco.MCParticleLabel: "largeant"
 physics.producers.mcreco.UseSimEnergyDepositLite: true
