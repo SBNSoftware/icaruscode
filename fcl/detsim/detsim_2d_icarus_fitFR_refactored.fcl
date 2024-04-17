@@ -1,0 +1,4 @@
+#include "detsim_2d_icarus_refactored.fcl"
+
+# Add in the tuned field responses
+physics.producers.daq: @local::icarus_simwire_wirecell_fitSR

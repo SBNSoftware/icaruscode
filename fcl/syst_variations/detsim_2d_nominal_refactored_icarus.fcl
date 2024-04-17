@@ -1,5 +1,0 @@
-#include "detsim_2d_icarus_fitFR.fcl"
-
-physics.producers.daq.wcls_main.configs: ["pgrapher/experiment/icarus/wcls-multitpc-sim-drift-simchannel-refactored.jsonnet"]
-physics.producers.crtdaq.G4ModuleLabel: "genericcrt"
-physics.producers.opdaq.InputModule: "pdfastsim"
