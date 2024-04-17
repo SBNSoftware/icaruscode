@@ -1,4 +1,4 @@
-#include "detsim_2d_variation_refactored_icarus.fcl"
+#include "detsim_2d_variation_fitFR_refactored_icarus.fcl"
 
 process_name: TPCIntNoiseVarp1
 
