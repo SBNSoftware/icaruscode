@@ -4,3 +4,5 @@ physics.simulate: [ rns
             , loader
             , largeant
           ]
+
+process_name: G4Step1

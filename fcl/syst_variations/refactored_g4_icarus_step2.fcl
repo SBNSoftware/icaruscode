@@ -8,3 +8,5 @@ physics.simulate: [ rns
             , mcreco
             , genericcrt
           ]
+
+process_name: G4Step2
