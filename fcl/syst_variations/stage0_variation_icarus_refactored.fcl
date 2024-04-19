@@ -1,3 +1,3 @@
-#include "stage0_variation_icarus.fcl"
+#include "stage0_run2_icarus_mc_refactored.fcl"
 
-physics.producers.mcophit.SimPhotonsProducer: "pdfastsim"
+process_name: MCStage0Var
