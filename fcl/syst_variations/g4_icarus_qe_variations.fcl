@@ -1,4 +1,4 @@
-#include "standard_g4_icarus.fcl"
+#include "refactored_g4_icarus_step2_variations.fcl"
 
 process_name: G4FullQEVar
 
