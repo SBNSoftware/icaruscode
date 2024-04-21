@@ -95,7 +95,7 @@ services.ParticleListAction.keepGenTrajectories: ["GenInTimeSorter"]
 
 # Drop the intime and outtime collections, which have now been
 # been merged into a 'largeant' collection
-outputs.out1.outputCommands: [ "keep *_*_*_*"
+outputs.rootoutput.outputCommands: [ "keep *_*_*_*"
                              # Drop G4
                              , "drop *_larg4intime_*_*"
                              , "drop *_larg4outtime_*_*"
