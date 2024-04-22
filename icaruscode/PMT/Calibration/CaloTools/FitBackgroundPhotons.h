@@ -22,7 +22,7 @@ namespace pmtcalo{
 
       // preparing and executing the fit
       void setFitRange( float low, float high ){ m_fitrange[0]=low; m_fitrange[1]=high; };
-      void setFitParameters(std::vector<double> params);
+      void setFitParameters(std::vector<double> params, float qmin=0.1, float qmax=1.0);
       void fixFitParameter(int num, float param){ m_fitf->FixParameter(num, param); };
       void fitHistogram( TH1D *hist, std::string fitoption="RQ0+" );
 

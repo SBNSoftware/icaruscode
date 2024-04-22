@@ -7,7 +7,7 @@ pmtcalo::FitBackgroundPhotons::FitBackgroundPhotons( unsigned int nparameters, S
   m_fitf = new TF1( "fitFunction", fitf, m_fitrange[0], m_fitrange[1], m_nparameters);
 }
 
-void pmtcalo::FitBackgroundPhotons::setFitParameters( std::vector<double> params )
+void pmtcalo::FitBackgroundPhotons::setFitParameters( std::vector<double> params, float qmin, float qmax)
 {
 
   // set parameters
@@ -16,7 +16,7 @@ void pmtcalo::FitBackgroundPhotons::setFitParameters( std::vector<double> params
 	
   // set reasonable limits for the poissonGauss
   m_fitf->SetParLimits( 0, 0.0, 2.0 );
-  m_fitf->SetParLimits( 1, 0.0, 2.0 );
+  m_fitf->SetParLimits( 1, qmin, qmax );
   m_fitf->SetParLimits( 2, 0.0, 2.0 );
   m_fitf->SetParLimits( 3, 0.0, params[3]*12.5);
 

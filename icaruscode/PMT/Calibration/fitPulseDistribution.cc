@@ -59,6 +59,7 @@ int main( int argc, char **argv ){
   float fitRangeLow=0., fitRangeHigh=3.0;
   int nSum = 2;  
   float ampCutLow=1.22, ampCutHigh=4.;
+  float qmin = 0.15, qmax = 1.0;
 
   for ( int i=1; i<argc; i=i+2 )
   {
@@ -78,6 +79,8 @@ int main( int argc, char **argv ){
     else if ( std::string(argv[i]) == "-h" ) fitRangeHigh = atof(argv[i+1]);
     else if ( std::string(argv[i]) == "-al") ampCutLow = atof(argv[i+1]);
     else if ( std::string(argv[i]) == "-ah") ampCutHigh = atof(argv[i+1]);
+    else if ( std::string(argv[i]) == "-qmin") qmin = atof(argv[i+1]);
+    else if ( std::string(argv[i]) == "-qmax") qmax = atof(argv[i+1]);
     else {
       std::cout << "Unknown option \n" << argv[i+1] << std::endl;
       return 1;
@@ -230,8 +233,8 @@ int main( int argc, char **argv ){
 
     // Set the starting values for the parameters
     // the last two will need to be FIXED later if using the logistic function
-    std::vector<double> params = {  0.1, 0.8, 0.3, hintegral[pmt]->Integral()*0.2, hintegral[pmt]->Integral()*0.8, -3. };
-    fitPMTResponse.setFitParameters( params );
+    std::vector<double> params = {  0.1,(qmax-qmin)/2.,0.3,hintegral[pmt]->Integral()*0.2,hintegral[pmt]->Integral()*0.8,-3. };
+    fitPMTResponse.setFitParameters( params, qmin, qmax );
 
     // if we created a new histogram for the fit, save it for book-keeping
     // find the logistic function parameters (if requested) and update the fitting function
@@ -280,9 +283,12 @@ int main( int argc, char **argv ){
 
     if( debug>0 ){
       std::cout << line << std::endl;
-      if( pmt == startch ) fitPMTResponse.SaveToPdf(hintegral[pmt],hintegralcut[pmt],"plots.pdf(",cutOnAmplitude);
-      else if( pmt == endch ) fitPMTResponse.SaveToPdf(hintegral[pmt],hintegralcut[pmt],"plots.pdf)",cutOnAmplitude);
-      else fitPMTResponse.SaveToPdf(hintegral[pmt],hintegralcut[pmt],"plots.pdf",cutOnAmplitude);
+      std::string fname = "run" + std::to_string(run) + "_plots.pdf";
+      std::string sfname = fname + "(";
+      std::string efname = fname + ")";
+      if( pmt == startch ) fitPMTResponse.SaveToPdf(hintegral[pmt],hintegralcut[pmt],sfname,cutOnAmplitude);
+      else if( pmt == endch ) fitPMTResponse.SaveToPdf(hintegral[pmt],hintegralcut[pmt],efname,cutOnAmplitude);
+      else fitPMTResponse.SaveToPdf(hintegral[pmt],hintegralcut[pmt],fname,cutOnAmplitude);
     }
 
   }
