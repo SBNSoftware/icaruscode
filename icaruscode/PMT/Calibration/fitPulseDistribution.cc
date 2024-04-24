@@ -2,6 +2,8 @@
 #include "TTree.h"
 #include "TH1D.h"
 #include "TF1.h"
+#include "TCanvas.h"
+#include "TLine.h"
 
 #include "CaloTools/SPEChargeResponse.h"
 #include "CaloTools/SPEChargeIdealResponse.h"
@@ -76,6 +78,23 @@ void computeLogisticFunction( TH1D* hist, TH1D* histcut, double &x0, double &k )
 
   if( status < 0 ) std::cout << "Logistic function fit FAILED for " << hist->GetTitle() << std::endl;
 
+}
+
+void saveToPdf(TH1D* hist, std::string name, double threshold){
+
+  char cname[200];
+  sprintf( cname, "c_%s", hist->GetName() );
+  TCanvas *c = new TCanvas(cname,"fit",800.,600.); 	
+        
+  hist->Draw();
+  // add line that shows threshold
+  TLine *l = new TLine(threshold,0.,threshold,hist->GetMaximum()); 
+  l->SetLineColor(kRed);
+  l->SetLineStyle(kDashed);
+  l->Draw("SAME");
+
+  // add canvas to pdf
+  c->Print(name.c_str(),"pdf");
 }
 
 // ---------------------------------------------------------------------
@@ -239,6 +258,15 @@ int main( int argc, char **argv ){
         //change name to later save it in the file
     	sprintf(histname, "hintegralcut%d", pmt);
     	hintegralcut[pmt]->SetName(histname); 
+    
+        if( debug>0 ){
+          std::string fname = "run" + std::to_string(run) + "_thresholds.pdf";
+          std::string sfname = fname + "(";
+          std::string efname = fname + ")";
+          if( pmt == startch ) saveToPdf(hamplitude,sfname,thresholds[pmt]);
+          else if( pmt == endch ) saveToPdf(hamplitude,efname,thresholds[pmt]);
+          else saveToPdf(hamplitude,fname,thresholds[pmt]);
+        }
     }    
   }
 

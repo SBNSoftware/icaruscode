@@ -22,7 +22,7 @@ pmt_bkgphotons_calibration:
   ChannelMask: [  ]  
   FilterInGate: [ -3., 7. ] #in us
   FilterInTime: true
-  TimeWindow: 0.5 # in us 
+  TimeWindow: 1.0 # in us 
   AmplitudeBinning: [ 0., 30., 0.15 ] # in mV 
   IntegralBinning: [ 0., 8., 0.04 ] # in 10^7 electrons
 }
