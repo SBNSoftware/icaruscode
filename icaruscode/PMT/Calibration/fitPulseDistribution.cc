@@ -13,6 +13,42 @@
 #include <iostream>
 
 // ---------------------------------------------------------------------
+/*  This macro computes the fits to the PMT pulse charge distribution
+ *  to extract the gain for each channel. It takes as input an output
+ *  file produced by PMTBackgroundphotonsCalibration_module.cc
+ *
+ *  The fitting itself is managed by CaloTools/FitBackgroundPhotons.cc
+ *  Two SPE charge response functions are currently available (and more
+ *  can be defined by deriving from CaloTools/SPEChargeResponse.h).
+ *  All fitting options can be set via CLI arguments.
+ *
+ *  List of available arguments:
+ *  -i input filename 
+ *  -d destination folder (default: calibrationdb)
+ *  -v debug verbosity (default: 0)
+ *  -s start channel (default: 0)
+ *  -e end channel (default: 0)
+ *  -r useIdealResponse (default: 0);     
+ *  -p useNoisePedestal, only for ideal response (default: 0)
+ *  -c cutOnAmplitude, always true for logistic response (default: 1)
+ *  -n number of poisson-gaussians in sum (default: 2)
+ *  -l fitRangeLow (default: 0.0)
+ *  -h fitRangeHigh (default: 3.0)
+ *  -al ampCutLowLimit (default: 1.22)
+ *  -ah ampCutHighLimit (default: 4.0) 
+ *  -qmin gain low fit limit (default: 0.15)
+ *  -qmax gain high fit limit (default: 1.0)
+ *
+ *  The default settings use the amplitude distribution to find a
+ *  selection thresholds between 1.22 mV and 4. mV to remove the noise
+ *  pedestal. The ratio between the charge distribution before and after
+ *  the cut is used to determine the parameters of the logistic function.
+ *  The fit function is then an ideal response (sum of two poisson-gaussians)
+ *  multiplied by the pre-determined logistic function.
+ *
+ *  The output is saved as .csv file in the destination folder.
+*/
+// ---------------------------------------------------------------------
 
 void computeLogisticFunction( TH1D* hist, TH1D* histcut, double &x0, double &k ){
 
