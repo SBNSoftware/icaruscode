@@ -47,6 +47,7 @@
  *  multiplied by the pre-determined logistic function.
  *
  *  The output is saved as .csv file in the destination folder.
+ *  If debug>0, it also produces a .pdf file to visually inspect all fits.
 */
 // ---------------------------------------------------------------------
 
