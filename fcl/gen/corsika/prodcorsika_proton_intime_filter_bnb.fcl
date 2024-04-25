@@ -72,7 +72,7 @@ physics.producers.sedliteintime.useOrigTrackID: true #needed
 physics.filters.timefilter.SimPhotonsLiteCollectionLabel: "pdfastsimintime"
 
 
-services.ParticleListAction.keepGenTrajectories: ["GenInTimeSorter"]
+services.ParticleListAction.keepGenTrajectories: ["corsika", "GenInTimeSorter:intime", "GenInTimeSorter:outtime"]
 services.LArG4Parameters.UseLitePhotons: true
 
 outputs.out1.SelectEvents: [ "simulate" ]
