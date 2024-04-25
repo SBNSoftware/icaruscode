@@ -298,7 +298,7 @@ int main( int argc, char **argv ){
 
     // Set the starting values for the parameters
     // the last two will need to be FIXED later if using the logistic function
-    std::vector<double> params = {  0.1,(qmax-qmin)/2.,0.3,hintegral[pmt]->Integral()*0.2,hintegral[pmt]->Integral()*0.8,-3. };
+    std::vector<double> params = {  0.1,(qmax+qmin)/2.,0.3,hintegral[pmt]->Integral()*0.2,hintegral[pmt]->Integral()*0.8,-3. };
     fitPMTResponse.setFitParameters( params, qmin, qmax );
 
     // if we created a new histogram for the fit, save it for book-keeping
