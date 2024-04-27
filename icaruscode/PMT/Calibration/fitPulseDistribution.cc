@@ -25,9 +25,10 @@
  *  All fitting options can be set via CLI arguments.
  *
  *  List of available arguments:
- *  -i input filename 
- *  -d destination folder (default: calibrationdb)
- *  -v debug verbosity (default: 0)
+ *  -i inputFilename 
+ *  -d destinationFolder (default: calibrationdb)
+ *  -w writeOutut (default: 1)
+ *  -v verbosity (default: 0)
  *  -s start channel (default: 0)
  *  -e end channel (default: 0)
  *  -r useIdealResponse (default: 0);     
@@ -108,6 +109,7 @@ int main( int argc, char **argv ){
   int debug =0;
   int startch = 0; 
   int endch = 359; 
+  int writeOutput = 1;
 
   int useIdealResponse = 0;
   int usePedestal=0;
@@ -123,6 +125,7 @@ int main( int argc, char **argv ){
     if      ( std::string(argv[i]) == "-i" ) inputFilename = argv[i+1];
     else if ( std::string(argv[i]) == "-d" ) destinationFolder = argv[i+1];
     else if ( std::string(argv[i]) == "-v" ) debug = atoi(argv[i+1]);
+    else if ( std::string(argv[i]) == "-w" ) writeOutput = atoi(argv[i+1]);
     // channel selection
     else if ( std::string(argv[i]) == "-s" ) startch = atoi(argv[i+1]);
     else if ( std::string(argv[i]) == "-e" ) endch = atoi(argv[i+1]);
@@ -287,9 +290,13 @@ int main( int argc, char **argv ){
   char csvFilename[100];
   sprintf( csvFilename, "%s/backgroundphotons_run%d_%d.csv", destinationFolder.c_str(), run, timestamp );
 
-  std::ofstream myfile; myfile.open( csvFilename );
+  std::ofstream myfile; 
   std::string line = "pmt,nentries,mu,emu,q,eq,sigma,esigma,amplitude,eamplitude,chi2,ndf,fitstatus\n";
-  myfile << line;
+  
+  if ( writeOutput ){
+    myfile.open( csvFilename );
+    myfile << line;
+  }
   if( debug>0 ) std::cout << line << std::endl;
    
   // Now we fit the histograms
@@ -307,10 +314,10 @@ int main( int argc, char **argv ){
 
     int nentries = -1;
 
-    if( cutOnAmplitude == 1 ){
+    if( cutOnAmplitude ){
 
       tfile->cd("bkgcalibration");
-      hintegralcut[pmt]->Write();
+      if( writeOutput ) hintegralcut[pmt]->Write();
       tfile->cd();
 
       double x0 = 2., k = 1.;
@@ -344,7 +351,7 @@ int main( int argc, char **argv ){
     line += std::to_string(fitPMTResponse.getChi2()) + "," + std::to_string(fitPMTResponse.getNDF()) + "," ;
     line += std::to_string(fitPMTResponse.getFitStatus()) + "\n" ;
 
-    myfile << line;
+    if( writeOutput ) myfile << line;
 
     if( debug>0 ){
       std::cout << line << std::endl;
