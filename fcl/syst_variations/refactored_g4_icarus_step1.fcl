@@ -1,4 +1,4 @@
-#include "larg4_icarus_sce.fcl"
+#include "larg4_icarus_cosmics_sce_2d_drift.fcl"
 
 physics.simulate: [ rns
             , loader
