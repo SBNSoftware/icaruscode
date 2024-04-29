@@ -7,6 +7,7 @@ physics.simulate: [ rns
 	    , sedlite
             , mcreco
             , genericcrt
+	    , simplemerge
           ]
 
 process_name: G4Step2Var
