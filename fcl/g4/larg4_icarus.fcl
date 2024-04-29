@@ -93,9 +93,9 @@ physics.producers.largeant.StoreDroppedMCParticles: false
 physics.producers.mcreco.G4ModName: "simdrift"
 physics.producers.mcreco.SimChannelLabel: "sedlite"
 physics.producers.mcreco.MCParticleLabel: "largeant"
-physics.producers.mcreco.UseSimEnergyDepositLite: false #true
+physics.producers.mcreco.UseSimEnergyDepositLite: true
 physics.producers.mcreco.UseSimEnergyDeposit: false
-physics.producers.mcreco.IncludeDroppedParticles: false #this needs to be set to true once the ML chain is ready
+physics.producers.mcreco.IncludeDroppedParticles: true #this is now true with larsoft v09_89 and newer
 physics.producers.mcreco.MCParticleDroppedLabel: "largeant:droppedMCParticles"
 physics.producers.mcreco.MCRecoPart.SavePathPDGList: [13,-13,211,-211,111,311,310,130,321,-321,2212,2112,2224,2214,2114,1114,3122,1000010020,1000010030,1000020030,1000020040]
 physics.producers.mcreco.MCRecoPart.TrackIDOffsets: [0,10000000,20000000] #Account for track ID offsets in labeling primaries
