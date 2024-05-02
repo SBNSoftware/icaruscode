@@ -42,20 +42,82 @@ namespace icarus {
   }
 }
 
+/**
+ * @brief Extracts RWM and EW times from special waveforms.
+ * 
+ * This module extracts the RWM and EW from the waveforms recorded in the
+ * spare PMT channels and associates these times with all the channels 
+ * in the same PMT readout crate.
+ *
+ * Input parameters
+ * ------------------------
+ *  
+ * This modules requires the following products:
+ *
+ * * `TriggerLabel` (input tag): tag for the `sbn::ExtraTriggerInfo`
+ *    data product. This is required to check if it's a beam event or not.
+ * * `RWMlabel` (input tag): tag for the `std::vector<raw::OpDetWaveform>`
+ *    product containing the RWM special waveforms.
+ * * `EWlabel` (input tag): tag for the `std::vector<raw::OpDetWaveform>`
+ *    product containign the EW special waveforms.
+ * *  `TriggerCorrectionLabel` (input tag): tag for the 
+ *    std::vector<icarus::timing::PMTWaveformTimeCorrection> product that
+ *    stores the channel-by-channel waveform timing corrections
+ * *  `BoardSetup` (fhicl parameter set): description of the current
+ *    V1730 setup from `CAEN_V1730_setup_icarus.fcl` mapping the special signals.
+ * *  `ADCThreshold` (int): detection threshold to avoid cross-talk 
+ *    noise if one signal is missing from its waveform.
+ * *  `DebugTrees` (bool): flag to produce plain ROOT trees for debugging.
+ * *  `SaveWaveforms` (bool): flag to save full waveforms in the debug trees.
+ * 
+ * Signal timing extraction
+ * -------------------------
+ * 
+ * The algorithm is quite unsophisticated and follows what is done for
+ * the digitized trigger signal in `PMTWaveformTimeCorrectionExtractor`.
+ * The reference signal is expected to be a sharp square wave in negative
+ * polarity. The time is based on the front side of that wave:
+ * 
+ *  * the absolute minimum of the waveform is found
+ *  * an interval starting 20 ticks before that minimum is considered
+ *  * the baseline level is defined as the value at the start of that interval
+ *  * if the baseline-minimum is below a threshold, it is assume to be noise
+ *    and no time is returned
+ *  * if not, the start time is set to the exact tick with an amplitude exceeding 20%
+ *    of the miminum of the signal from the baseline
+ *
+ *
+ * Output products
+ * -------------------------
+ * 
+ * This modules produces two `std::vector<icarus::timing::PMTBeamSignal>` 
+ * with 360 elements each, representing the relevent RWM or EW time for 
+ * the corresponding PMT channel.
+ * 
+ * If the event is offbeam or minbias, these vectors are produced empty.
+ *
+ */
+
 
 class icarus::timing::PMTBeamSignalsExtractor : public art::EDProducer {
 public:
 
   explicit PMTBeamSignalsExtractor(fhicl::ParameterSet const& pset);
 		
-  //process waveforms
+  // process waveforms
+  void extractBeamSignalTime(art::Event& e, art::InputTag label );
   template<typename T> T Median(std::vector<T> data) const;
   template<typename T> static size_t getMaxBin(std::vector<T> const& vv, size_t startElement, size_t endElement);
   template<typename T> static size_t getMinBin(std::vector<T> const& vv, size_t startElement, size_t endElement);
   template<typename T> static size_t getStartSample( std::vector<T> const& vv, T thres );
 
-  //trigger-hardware timing correction
-  double getTriggerCorrection(int channel, std::vector<icarus::timing::PMTWaveformTimeCorrection> const& corrections);
+  // associate times to PMT channels
+  void associateBeamSignalsToChannels(art::InputTag label);
+
+  // trigger-hardware timing correction
+  double getTriggerCorrection(int channel);
+
+  // quick mapping conversions
   std::string getDigitizerLabel(int channel);
   std::string getCrate(int channel);
 
@@ -92,41 +154,32 @@ private:
   std::vector<fhicl::ParameterSet> fBoardSetup;
  
   std::map<int, std::string> fBoardBySpecialChannel;
+  std::vector<icarus::timing::PMTWaveformTimeCorrection> fCorrections;
+  std::map<std::string, int> fBoardEffFragmentID;
+  double ftrigger_time;
 
   // output TTrees 
-  TTree* fRWMTree;
-  TTree* fEWTree;
-
+  std::map<std::string, TTree*> fOutTree;
+  // event info
   int m_run;
   int m_event;
   int m_timestamp; 
-  // rwm signal
-  int m_n_rwm;
-  int m_rwm_channel;
-  double m_rwm_wfstart;
-  double m_rwm_utime;
-  size_t m_rwm_sample;
-  double m_rwm_time;
-  double m_rwm_time_abs;	
-  std::vector<short> m_rwm_wf;
-  // ew signal 
-  int m_n_ew;
-  int m_ew_channel;
-  double m_ew_wfstart;
-  double m_ew_utime;
-  size_t m_ew_sample;
-  double m_ew_time;
-  double m_ew_time_abs;	
-  std::vector<short> m_ew_wf;
-
-  std::map< std::string, int> fBoardEffFragmentID;
+  // special signal info
+  int m_n_channels;
+  int m_channel;
+  double m_wfstart;
+  size_t m_sample;
+  double m_time;
+  double m_time_abs;	
+  double m_utime_abs;
+  std::vector<short> m_wf;
 
   // prepare pointers for data products
   using BeamSignalCollection = std::vector<icarus::timing::PMTBeamSignal>;
   using BeamSignalCollectionPtr = std::unique_ptr<BeamSignalCollection>;
 
-  BeamSignalCollectionPtr fRWMcollection;
-  BeamSignalCollectionPtr fEWcollection;
+  std::map<std::string, std::map<std::string, icarus::timing::PMTBeamSignal>> fBeamSignals;
+  std::map<std::string, BeamSignalCollectionPtr> fSignalCollection;
 
 };
 
@@ -174,37 +227,28 @@ void icarus::timing::PMTBeamSignalsExtractor::beginJob()
   // prepare outupt TTrees if requested
   if( !fDebugTrees ) return;
 
-  fRWMTree = tfs->make<TTree>("rwmtree","RWM info");
-  fRWMTree->Branch("run",&m_run);
-  fRWMTree->Branch("event",&m_event);
-  fRWMTree->Branch("timestamp",&m_timestamp);
-  fRWMTree->Branch("n_rwm",&m_n_rwm);
-  fRWMTree->Branch("rwm_channel",&m_rwm_channel);
-  fRWMTree->Branch("rwm_wfstart", &m_rwm_wfstart);
-  fRWMTree->Branch("rwm_sample", &m_rwm_sample);
-  fRWMTree->Branch("rwm_utime", &m_rwm_utime);
-  fRWMTree->Branch("rwm_time", &m_rwm_time);
-  fRWMTree->Branch("rwm_time_abs",&m_rwm_time_abs);
+  std::vector<std::string> labels = { fRWMlabel.instance(), fEWlabel.instance() };
+  for (auto l : labels ){
+    std::string name = l + "tree";
+    std::string desc = l + " info";
+    fOutTree[l] = tfs->make<TTree>(name.c_str(),desc.c_str());
+    fOutTree[l]->Branch("run",&m_run);
+    fOutTree[l]->Branch("event",&m_event);
+    fOutTree[l]->Branch("timestamp",&m_timestamp);
+    fOutTree[l]->Branch("n_channels",&m_n_channels);
+    fOutTree[l]->Branch("channel",&m_channel);
+    fOutTree[l]->Branch("wfstart", &m_wfstart);
+    fOutTree[l]->Branch("sample", &m_sample);
+    fOutTree[l]->Branch("utime_abs", &m_utime_abs);
+    fOutTree[l]->Branch("time_abs",&m_time_abs);
+    fOutTree[l]->Branch("time", &m_time);
   
-  fEWTree = tfs->make<TTree>("ewtree","EW info");
-  fEWTree->Branch("run",&m_run);
-  fEWTree->Branch("event",&m_event);
-  fEWTree->Branch("timestamp",&m_timestamp);
-  fEWTree->Branch("n_ew",&m_n_ew);
-  fEWTree->Branch("ew_channel",&m_ew_channel);
-  fEWTree->Branch("ew_wfstart", &m_ew_wfstart);
-  fEWTree->Branch("ew_sample", &m_ew_sample);
-  fEWTree->Branch("ew_utime", &m_ew_utime);
-  fEWTree->Branch("ew_time", &m_ew_time);
-  fEWTree->Branch("ew_time_abs",&m_ew_time_abs);
-
-  // add std::vector with full waveforms
-  // this can quickly make the TTrees quite heavy
-  if(fSaveWaveforms){
-    fRWMTree->Branch("rwm_wf",&m_rwm_wf);
-    fEWTree->Branch("ew_wf",&m_ew_wf);
+    // add std::vector with full waveforms
+    // this can quickly make the TTrees quite heavy
+    if(fSaveWaveforms){
+      fOutTree[l]->Branch("wf",&m_wf);
+    }
   }
-
 }
 
 // -----------------------------------------------------------------------------
@@ -213,15 +257,16 @@ void icarus::timing::PMTBeamSignalsExtractor::produce(art::Event& e)
 {
   
   // initialize the data products 
-  fEWcollection = std::make_unique<BeamSignalCollection>();
-  fRWMcollection = std::make_unique<BeamSignalCollection>();
+  fBeamSignals.clear();
+  fSignalCollection[fRWMlabel.instance()] = std::make_unique<BeamSignalCollection>();
+  fSignalCollection[fEWlabel.instance()]  = std::make_unique<BeamSignalCollection>();
 
   // extract meta event information
   m_run = e.id().run();
   m_event = e.id().event();
   m_timestamp = e.time().timeHigh(); // precision to the second    
   auto const detTimings = detinfo::makeDetectorTimings(art::ServiceHandle<detinfo::DetectorClocksService const>()->DataFor(e));
-  double trigger_time = detTimings.TriggerTime().value();
+  ftrigger_time = detTimings.TriggerTime().value();
 
   // this module should run on beam-only events
   // check the current beam gate
@@ -238,95 +283,90 @@ void icarus::timing::PMTBeamSignalsExtractor::produce(art::Event& e)
         break;
       default:
     	mf::LogTrace("PMTBeamSignalsExtractor") << "Skipping offbeam gate '" << name(gateType) << "'"; 
-        e.put(std::move(fRWMcollection),"RWM"); 
-        e.put(std::move(fEWcollection),"EW"); 
+        e.put(std::move(fSignalCollection[fRWMlabel.instance()]),"RWM"); 
+        e.put(std::move(fSignalCollection[fEWlabel.instance()]),"EW"); 
         return;
   }
 
   // get the trigger-hardware corrections that are applied on all signal waveforms
   // if EW or RWM is to be compared to the PMT signals, it must be applied on them as well
   // it also takes care of board-to-board offsets (see SBN-doc-34631, slide 5)
-  // Note: this a vector of 360 elements, one correction for each signal channel
-  //       however, corrections are the same for all channels on the same board
-  //       for EW/RWM, we pick the correction from any of the other channels on the same board
-  auto const& wfCorrections = e.getProduct<std::vector<icarus::timing::PMTWaveformTimeCorrection>>(fTriggerCorrectionLabel);
-  int ntrig = wfCorrections.size();
+  // Note: this is a vector of 360 elements, one correction for each signal channel
+  fCorrections = e.getProduct<std::vector<icarus::timing::PMTWaveformTimeCorrection>>(fTriggerCorrectionLabel);
+  int ntrig = fCorrections.size();
 			
   if( ntrig < 1 ) 
     mf::LogError("PMTBeamSignalsExtractor") << "Not found PMTWaveformTimeCorrections with label '" 
-                                            << fTriggerCorrectionLabel.label() << "'"; 
+                                            << fTriggerCorrectionLabel.instance() << "'"; 
   else if ( ntrig < 360 )
-    mf::LogError("PMTBeamSignalsExtractor") << "Missing some PMTWaveformTimeCorrections with label '" 
-                                            << fTriggerCorrectionLabel.label() << "'"; 
+    mf::LogError("PMTBeamSignalsExtractor") << "Missing " << 360-ntrig << " PMTWaveformTimeCorrections with label '" 
+                                            << fTriggerCorrectionLabel.instance() << "'"; 
   
-  // now the main course: EW and RWM waveforms
-  auto const& ewWaveforms = e.getProduct<std::vector<raw::OpDetWaveform>>(fEWlabel);
-  auto const& rwmWaveforms = e.getProduct<std::vector<raw::OpDetWaveform>>(fRWMlabel);
-  m_n_ew = ewWaveforms.size();
-  m_n_rwm = rwmWaveforms.size();
-  if( m_n_ew< 1 ) 
-    mf::LogError("PMTBeamSignalsExtractor") << "Not found raw::OpDetWaveform with label '" << fEWlabel.label() << "'"; 
-  if( m_n_rwm< 1 ) 
-    mf::LogError("PMTBeamSignalsExtractor") << "Not found raw::OpDetWaveform with label '" << fRWMlabel.label() << "'"; 
-  
-  m_rwm_wf.clear();
-  m_ew_wf.clear();
-  
-  // get the start sample of both signals, using threshold to skip spikes from electronical-crosstalk 
-  // see SBN-doc-34928, slides 4-5
-  // if no signal is found, set both time to "NoTime" so that it triggers the isValid() call of PMTBeamSignal
-  // save the digitizer_label as well as the crate for future use
-  // (namenly, each ophit will be corrected with the RWM/EW coming digitized in the same crate)
-  
-  for( auto const & wave : ewWaveforms ){
-    
-    detinfo::timescales::electronics_time tstart = util::quantities::points::microsecond{wave.TimeStamp()};
-    
-    // if nothing is found, first sample is returned (0)
-    m_ew_sample = getStartSample( wave.Waveform(), fADCThreshold );
-    
-    m_ew_channel = wave.ChannelNumber();
-    m_ew_wfstart = tstart.value() ;
-    m_ew_utime = (m_ew_sample > 0) ? tstart.value() + 0.002*m_ew_sample : icarus::timing::NoTime;
-    m_ew_time_abs = (m_ew_sample > 0) ? m_ew_utime + getTriggerCorrection(m_ew_channel, wfCorrections) : icarus::timing::NoTime;
-    m_ew_time = (m_ew_sample > 0) ? m_ew_time_abs-trigger_time : icarus::timing::NoTime;
+  // now the main course: getting EW and RWM waveforms
+  // information is stored by PMT crate name
+  extractBeamSignalTime(e, fRWMlabel); 
+  extractBeamSignalTime(e, fEWlabel); 
 
-    fEWcollection->emplace_back( m_ew_channel, getDigitizerLabel(m_ew_channel), getCrate(m_ew_channel),
-				  m_ew_sample, m_ew_time_abs, m_ew_time );
-    
-    if(fSaveWaveforms) m_ew_wf = wave.Waveform();
-    if(fDebugTrees) fEWTree->Fill();
-  }
+  // associating the proper RWM and EW time to each PMT channel
+  associateBeamSignalsToChannels( fRWMlabel );
+  associateBeamSignalsToChannels( fEWlabel );
   
-  for( auto const & wave : rwmWaveforms ){
-    
-    detinfo::timescales::electronics_time tstart = util::quantities::points::microsecond{wave.TimeStamp()};
-    
-    // if nothing is found, first sample is returned (0)
-    m_rwm_sample = getStartSample( wave.Waveform(), fADCThreshold );
-    
-    m_rwm_channel = wave.ChannelNumber();
-    m_rwm_wfstart = tstart.value() ;
-    m_rwm_utime = (m_rwm_sample > 0) ? tstart.value() + 0.002*m_rwm_sample : icarus::timing::NoTime;
-    m_rwm_time_abs = (m_rwm_sample > 0) ? m_rwm_utime + getTriggerCorrection(m_rwm_channel, wfCorrections) : icarus::timing::NoTime;
-    m_rwm_time = (m_rwm_sample > 0) ? m_rwm_time_abs-trigger_time : icarus::timing::NoTime;
-
-    fRWMcollection->emplace_back( m_rwm_channel, getDigitizerLabel(m_rwm_channel), getCrate(m_rwm_channel),
-				  m_rwm_sample, m_rwm_time_abs, m_rwm_time );
-
-    if(fSaveWaveforms) m_rwm_wf = wave.Waveform();
-    if(fDebugTrees) fRWMTree->Fill();
-  }
-
-  // place the data products in the stream
-  // fix the cable swap for part of Run 2 right here
+  // place data products in the stream
+  // fix the cable swap for part of Run 2 right here!!
   // see SBN-doc-34631 for details 
   if( beamType=="BNB" && m_run > 9704 && m_run < 11443 ){
-    e.put(std::move(fRWMcollection),"EW"); 
-    e.put(std::move(fEWcollection),"RWM");
-  } else {
-    e.put(std::move(fRWMcollection),"RWM"); 
-    e.put(std::move(fEWcollection),"EW"); 
+
+    e.put(std::move(fSignalCollection[fRWMlabel.instance()]),"EW"); 
+    e.put(std::move(fSignalCollection[fEWlabel.instance()]),"RWM");
+
+  } else { // STANDARD BEHAVIOR
+
+    e.put(std::move(fSignalCollection[fRWMlabel.instance()]),"RWM"); 
+    e.put(std::move(fSignalCollection[fEWlabel.instance()]),"EW"); 
+  }
+}
+
+// -----------------------------------------------------------------------------
+
+void icarus::timing::PMTBeamSignalsExtractor::extractBeamSignalTime(art::Event& e, art::InputTag label) {
+
+  std::string l = label.instance();
+  auto const& waveforms = e.getProduct<std::vector<raw::OpDetWaveform>>(label);
+  m_n_channels = waveforms.size();
+  
+  if( m_n_channels < 1 ) 
+    mf::LogError("PMTBeamSignalsExtractor") << "Not found raw::OpDetWaveform with label '" << l << "'"; 
+  else if( m_n_channels < 8 )
+    mf::LogError("PMTBeamSignalsExtractor") << "Missing " << 8-m_n_channels << " raw::OpDetWaveform with label '" << l << "'"; 
+
+  m_wf.clear();
+  
+  // get the start sample of the signals, one instance per PMT crate
+  // use threshold to skip spikes from electric crosstalk see SBN-doc-34928, slides 4-5.
+  // if no signal is found, set both time to "NoTime" so that it triggers the isValid() call of PMTBeamSignal
+  
+  for( auto const & wave : waveforms ){
+    
+    detinfo::timescales::electronics_time tstart = util::quantities::points::microsecond{wave.TimeStamp()};
+    
+    // if nothing is found, first sample is returned (0)
+    m_sample = getStartSample(wave.Waveform(), fADCThreshold);
+    
+    m_channel = wave.ChannelNumber();
+    m_wfstart = tstart.value() ;
+    m_utime_abs = (m_sample != icarus::timing::NoSample) ? 
+		  tstart.value() + 0.002*m_sample : icarus::timing::NoTime;
+    m_time_abs  = (m_sample != icarus::timing::NoSample) ? 
+                  m_utime_abs + getTriggerCorrection(m_channel) : icarus::timing::NoTime;
+    m_time      = (m_sample != icarus::timing::NoSample) ? 
+                  m_time_abs-ftrigger_time : icarus::timing::NoTime;
+
+    std::string crate = getCrate(m_channel);
+    fBeamSignals[l].insert(std::make_pair( crate, PMTBeamSignal(m_channel, getDigitizerLabel(m_channel), crate, m_sample, m_time_abs, m_time) ));
+   
+    if(fSaveWaveforms) m_wf = wave.Waveform();
+    if(fDebugTrees) fOutTree[l]->Fill();
+  
   }
 }
 
@@ -383,7 +423,7 @@ template<typename T>
     auto delta = vv[maxbin]-vv[minbin];
 
     if( delta < thres ) //just noise
-      return 0; //return first bin   
+      return icarus::timing::NoSample; //return no sample   
 
     for( size_t bin=maxbin; bin<minbin; bin++ ){
       auto val = vv[maxbin]-vv[bin];
@@ -431,8 +471,7 @@ std::string icarus::timing::PMTBeamSignalsExtractor::getCrate(int channel){
 
 // -----------------------------------------------------------------------------
   
-double icarus::timing::PMTBeamSignalsExtractor::getTriggerCorrection(int channel, 
-       std::vector<icarus::timing::PMTWaveformTimeCorrection> const& corrections){
+double icarus::timing::PMTBeamSignalsExtractor::getTriggerCorrection(int channel){
 
   std::string digitizer_label = getDigitizerLabel(channel);
 
@@ -444,8 +483,45 @@ double icarus::timing::PMTBeamSignalsExtractor::getTriggerCorrection(int channel
 
   // trigger-hardware correction are in order
   // index of vector is pmtch
-  return corrections.at(pmtch).startTime;
+  return fCorrections.at(pmtch).startTime;
 
 }
+
+
+// -----------------------------------------------------------------------------
+
+void icarus::timing::PMTBeamSignalsExtractor::associateBeamSignalsToChannels(art::InputTag label){
+
+  std::string l = label.instance();
+
+  // loop through the signals which are one per PMT crate
+  // for each crate, find the corresponding digitizers
+  for( auto signal : fBeamSignals[l] ){
+   
+    // build the PMT digitizer labels that live in this crate
+    // then convert it into fragment id
+    std::vector<std::string> letters = { "-A", "-B", "-C" };
+    for( auto letter : letters ){
+
+      std::string digitizer_label = signal.first + letter;
+      int fragID = fBoardEffFragmentID[digitizer_label];
+  
+      // use the fragment id to access the PMT channels
+      // mapping works via fragment id (it's very annoying..)
+      // loop through the PMT channels and set their RWM/EW time
+      for( auto pmtinfo : fChannelMap.getPMTchannelInfo(fragID) ) {
+        
+        size_t channel = pmtinfo.channelID;
+	// make sure there is enough room in the collection (channel -> vector index)
+        if (channel >= fSignalCollection[l]->size()) fSignalCollection[l]->resize(channel + 1);
+
+        fSignalCollection[l]->at(channel) = signal.second;
+
+      } //for each channel 
+    } //for each board 
+  } //for each crate
+
+}
+
 
 DEFINE_ART_MODULE(icarus::timing::PMTBeamSignalsExtractor)
