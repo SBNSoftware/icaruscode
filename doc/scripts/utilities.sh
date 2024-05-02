@@ -112,8 +112,8 @@ function isExperiment() {
     ExperimentHostNames[$Name]="${Name,,}"
     ExperimentDirectories[$Name]="${Name,,}"
   done
-  ExperimentHostNames['MicroBooNE']='uboone'
-  ExperimentDirectories['MicroBooNE']='uboone'
+  ExperimentHostNames[MicroBooNE]='uboone'
+  ExperimentDirectories[MicroBooNE]='uboone'
 
   local -a Experiments
   local ExperimentCandidate ExperimentHostName
