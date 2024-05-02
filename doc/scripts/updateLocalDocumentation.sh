@@ -166,7 +166,7 @@ function UpdateLArSoftTag() {
 #   local LArSoftVersion="$(UPSversion 'larsoft')"
 
   # Only one documented version: hope you like it
-  UpdateTag 'LArSoft.tag' 'http://nusoft.fnal.gov/larsoft/doxsvn/html/doxytags-larsoft.xml' "LArSoft"
+  UpdateTag 'LArSoft.tag' 'https://code-doc.larsoft.org/docs/latest/html/doxytags-larsoft.xml' "LArSoft"
 
 } # UpdateLArSoftTag()
 
