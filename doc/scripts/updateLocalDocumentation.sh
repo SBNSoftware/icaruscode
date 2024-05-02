@@ -122,6 +122,27 @@ function UpdateTag() {
   
   rm "$TempFile"
 
+  while true ; do
+    local FileType="$(file --brief --mime-type "$TagFile")"
+  
+    case "$FileType" in
+      ( 'application/xml' ) break ;; # already ok
+      ( 'application/x-gzip' )
+        echo "Uncompressing tag file '${TagFile}'${Description:+ (${Description})} (${FileType})"
+        if [[ ! "$TagFile" =~ \.gz$ ]]; then
+          local NewName="${TagFile}.gz"
+          mv "$TagFile" "$NewName"
+          TagFile="$NewName"
+        fi
+        gunzip "$TagFile"
+        TagFile="${TagFile%.gz}"
+        ;;
+      ( * )
+        ERROR 1 "Tag file '${TagFile}'${Description:+ (${Description})} of unexpected type ${FileType}."
+        break
+        ;;
+    esac
+  done
 } # UpdateTag()
 
 
