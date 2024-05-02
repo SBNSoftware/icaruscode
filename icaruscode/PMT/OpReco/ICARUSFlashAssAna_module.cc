@@ -144,7 +144,6 @@ class opana::ICARUSFlashAssAna : public art::EDAnalyzer {
     float fPEOpHitThreshold;
     bool fDebug;
 
-
     TTree *fEventTree;
     std::vector<TTree*> fOpDetWaveformTrees;
     std::vector<TTree*> fOpFlashTrees;
@@ -236,7 +235,6 @@ void opana::ICARUSFlashAssAna::beginJob() {
     auto const PMTxyz = fGeom->OpDetGeoFromOpChannel(opch).GetCenter();
 
     //std::cout << PMTxyz[0] << " " << PMTxyz[1] << " " << PMTxyz[2] << std::endl;
-
     m_pmt_x.push_back(PMTxyz.X());
     m_pmt_y.push_back(PMTxyz.Y());
     m_pmt_z.push_back(PMTxyz.Z());
@@ -269,7 +267,7 @@ void opana::ICARUSFlashAssAna::beginJob() {
   
     for( auto const & label : fOpDetWaveformLabels ) {
 
-      std::string name = label.label()+"wfttree";
+      std::string name = label.label()+label.instance()+"wfttree";
       std::string info = "TTree with aggregated optical waveform information with label: " + label.label();
 
       TTree* ttree = tfs->make<TTree>(name.c_str(), info.c_str());
