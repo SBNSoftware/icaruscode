@@ -40,6 +40,7 @@
 #include "lardataobj/Simulation/BeamGateInfo.h"
 #include "lardataobj/RawData/TriggerData.h"
 #include "sbnobj/Common/Trigger/ExtraTriggerInfo.h"
+#include "icaruscode/IcarusObj/PMTBeamSignal.h"
 
 #include "TTree.h"
 
@@ -72,7 +73,7 @@ class opana::ICARUSFlashAssAna : public art::EDAnalyzer {
         Name("DumpWaveformsInfo"),
         Comment("Set the option to save some aggregated waveform information")
       };
-
+      
       fhicl::Sequence<art::InputTag> OpDetWaveformLabels {
         Name("OpDetWaveformLabels"),
         Comment("Tags for the raw::OpDetWaveform data products")
@@ -86,6 +87,11 @@ class opana::ICARUSFlashAssAna : public art::EDAnalyzer {
       fhicl::Sequence<art::InputTag> FlashLabels {
         Name("FlashLabels"),
         Comment("Tags for the recob::Flashe data products")
+      };
+      
+      fhicl::Atom<art::InputTag> RWMLabel {
+        Name("RWMLabel"),
+        Comment("Tag for the RWM std::vector<icarus::timing::PMTBeamSignal> data product")
       };
 
       fhicl::Atom<float> PEOpHitThreshold {
@@ -128,11 +134,14 @@ class opana::ICARUSFlashAssAna : public art::EDAnalyzer {
                         float &sum_pe_left, float &sum_pe_right, 
                         float *xyz, 
                         std::vector<double> &pmt_start_time,
+                        std::vector<double> &pmt_start_rwm_time,
                         std::vector<double> &pmt_pe,
                         std::vector<double> &pmt_max_amplitude,
                         TTree *ophittree   ); 
 
     static std::string_view firstLine(std::string const& s, const char* endl = "\r");
+
+    float getRWMRelativeTime(int channel, float t);
 
   private:
 
@@ -141,6 +150,7 @@ class opana::ICARUSFlashAssAna : public art::EDAnalyzer {
     std::vector<art::InputTag> fOpDetWaveformLabels;
     std::vector<art::InputTag> fOpHitLabels;
     std::vector<art::InputTag> fFlashLabels;
+    art::InputTag fRWMLabel;
     float fPEOpHitThreshold;
     bool fDebug;
 
@@ -185,6 +195,7 @@ class opana::ICARUSFlashAssAna : public art::EDAnalyzer {
     float m_flash_z;
     float m_flash_width_z;
     std::vector<double> m_pmt_time;
+    std::vector<double> m_pmt_rwm_time;
     std::vector<double> m_pmt_pe;
     std::vector<double> m_pmt_max_amplitude;
 
@@ -194,6 +205,7 @@ class opana::ICARUSFlashAssAna : public art::EDAnalyzer {
     float m_start_time;
     float m_peak_time;
     float m_rise_time;
+    float m_rwm_time;
     float m_width;
     float m_abs_start_time;
     float m_pe;
@@ -204,6 +216,7 @@ class opana::ICARUSFlashAssAna : public art::EDAnalyzer {
     std::vector<float> m_pmt_z;
 
     geo::GeometryCore const* fGeom;
+    std::vector<icarus::timing::PMTBeamSignal> fRWMTimes;
 
 };
 
@@ -215,6 +228,7 @@ opana::ICARUSFlashAssAna::ICARUSFlashAssAna(Parameters const& config)
   , fOpDetWaveformLabels( config().OpDetWaveformLabels() )
   , fOpHitLabels( config().OpHitLabels() )
   , fFlashLabels( config().FlashLabels() )
+  , fRWMLabel( config().RWMLabel() )
   , fPEOpHitThreshold( config().PEOpHitThreshold() )
   , fDebug( config().Debug() )
   , fGeom( lar::providerFrom<geo::Geometry>() )
@@ -285,7 +299,6 @@ void opana::ICARUSFlashAssAna::beginJob() {
 
   }
 
-
   // This ttree will hold the ophit information when a flash is not found in the event
   // NB: information of the optical hits in events where flashes are present are lost
       
@@ -304,6 +317,7 @@ void opana::ICARUSFlashAssAna::beginJob() {
       ttree->Branch("start_time", &m_start_time, "start_time/F");
       ttree->Branch("peak_time", &m_peak_time, "peak_time/F");
       ttree->Branch("rise_time", &m_rise_time, "rise_time/F");
+      ttree->Branch("rwm_time", &m_rwm_time, "rwm_time/F");
       ttree->Branch("abs_start_time", &m_abs_start_time, "abs_start_time/F");
       ttree->Branch("pe", &m_pe, "pe/F");
       ttree->Branch("width", &m_width, "width/F");
@@ -344,6 +358,7 @@ void opana::ICARUSFlashAssAna::beginJob() {
         ttree->Branch("pmt_y",&m_pmt_y);
         ttree->Branch("pmt_z",&m_pmt_z);
         ttree->Branch("time_pmt", & m_pmt_time);
+        ttree->Branch("time_pmt_rwm", & m_pmt_rwm_time);
         ttree->Branch("pe_pmt", & m_pmt_pe );
         ttree->Branch("amplitude_pmt", &m_pmt_max_amplitude);
 
@@ -364,6 +379,7 @@ void opana::ICARUSFlashAssAna::beginJob() {
         ophittree->Branch("start_time", &m_start_time, "start_time/F");
         ophittree->Branch("peak_time", &m_peak_time, "peak_time/F");
         ophittree->Branch("rise_time", &m_rise_time, "rise_time/F");
+        ophittree->Branch("rwm_time", &m_rwm_time, "rwm_time/F");
         ophittree->Branch("abs_start_time", &m_abs_start_time, "abs_start_time/F");
         ophittree->Branch("pe", &m_pe, "pe/F");
         ophittree->Branch("width", &m_width, "width/F");
@@ -423,6 +439,19 @@ int opana::ICARUSFlashAssAna::getSideByChannel( const int channel ) {
 }
 
 
+float opana::ICARUSFlashAssAna::getRWMRelativeTime(int channel, float t) {
+
+  if( fRWMTimes.empty() ) return 0;
+
+  auto rwm = fRWMTimes.at(channel);
+  if ( !rwm.isValid() ) return 0;
+
+  float rwm_trigger = rwm.startTime; //rwm time w.r.t. trigger time [us]
+  return (t - rwm_trigger);
+
+}
+
+
 void opana::ICARUSFlashAssAna::processOpHits( art::Event const& e, unsigned int cryo ) {
 
 
@@ -463,6 +492,7 @@ void opana::ICARUSFlashAssAna::processOpHits( art::Event const& e, unsigned int 
           m_start_time = ophit.StartTime();
           m_peak_time = ophit.PeakTime();
           m_rise_time = ophit.RiseTime();
+          m_rwm_time = getRWMRelativeTime(channel_id,m_start_time);
           m_width = ophit.Width();
           m_abs_start_time = ophit.PeakTimeAbs() + (m_start_time - m_peak_time);
           m_pe = ophit.PE();
@@ -483,6 +513,7 @@ void opana::ICARUSFlashAssAna::processOpHitsFlash( std::vector<art::Ptr<recob::O
                                               float &sum_pe_left, float &sum_pe_right, 
                                               float *xyz, 
                                               std::vector<double> &pmt_start_time,
+                                              std::vector<double> &pmt_start_rwm_time,
                                               std::vector<double> &pmt_pe,
                                               std::vector<double> &pmt_max_amplitude,
                                               TTree *ophittree  ) {
@@ -505,6 +536,7 @@ void opana::ICARUSFlashAssAna::processOpHitsFlash( std::vector<art::Ptr<recob::O
     m_start_time = ophit->StartTime();
     m_peak_time = ophit->PeakTime();
     m_rise_time = ophit->RiseTime();
+    m_rwm_time = getRWMRelativeTime(channel_id,m_start_time);
     m_width = ophit->Width();
     m_abs_start_time = ophit->PeakTimeAbs() + (m_start_time - m_peak_time);
     m_pe = ophit->PE();
@@ -514,6 +546,7 @@ void opana::ICARUSFlashAssAna::processOpHitsFlash( std::vector<art::Ptr<recob::O
 
     if( ( pmt_start_time[channel_id] == 0 ) || ( pmt_start_time[channel_id] > m_start_time )) {
       pmt_start_time[channel_id] = m_start_time;
+      pmt_start_rwm_time[channel_id] = m_rwm_time;
       pmt_max_amplitude[channel_id] = m_amplitude;
     }
 
@@ -559,11 +592,9 @@ void opana::ICARUSFlashAssAna::analyze(art::Event const& e) {
   m_event = e.id().event();
   m_timestamp = e.time().timeHigh(); // precision to the second 
 
-
   /*
   This part is for the trigger information
   */
-
 
   // We work out the trigger information here 
   if( !fTriggerLabel.empty() ) { 
@@ -581,7 +612,6 @@ void opana::ICARUSFlashAssAna::analyze(art::Event const& e) {
           m_beam_type = beamgate.BeamType() ; 
 
         }
-
       }
 
       else {
@@ -611,13 +641,21 @@ void opana::ICARUSFlashAssAna::analyze(art::Event const& e) {
       else{
          mf::LogError("ICARUSFlashAssAna") << "No raw::Trigger associated to label: " << fTriggerLabel.label() << "\n" ; 
       }
-
   }
 
   else {
      mf::LogError("ICARUSFlashAssAna") << "Trigger Data product " << fTriggerLabel.label() << " not found!\n" ; 
   }
 
+  /* 
+  Now fetch RWM times
+  */
+  
+  fRWMTimes = e.getProduct<std::vector<icarus::timing::PMTBeamSignal>>(fRWMLabel);
+
+  if ( fRWMTimes.empty() )
+    mf::LogWarning("ICARUSFlashAssAna") << "Data product std::vector<icarus::timing::PMTBeamSignal for " << fRWMLabel.label()
+                                        << " is empty in " << m_gate_name << " event!";
 
   /* 
   Now we work on the waveforms if we are allowed to
@@ -683,6 +721,7 @@ void opana::ICARUSFlashAssAna::analyze(art::Event const& e) {
 
           m_pmt_pe.resize(360);
           m_pmt_time.resize(360);
+          m_pmt_rwm_time.resize(360);
           m_pmt_max_amplitude.resize(360);
 
           m_flash_id = idx;
@@ -706,7 +745,7 @@ void opana::ICARUSFlashAssAna::analyze(art::Event const& e) {
           processOpHitsFlash( ophits, 
                               m_multiplicity_left, m_multiplicity_right, 
                               m_sum_pe_left, m_sum_pe_right, xyz, 
-                              m_pmt_time, m_pmt_pe, m_pmt_max_amplitude, 
+                              m_pmt_time, m_pmt_rwm_time, m_pmt_pe, m_pmt_max_amplitude, 
                               fOpHitFlashTrees[iFlashLabel] );
 
           m_multiplicity = m_multiplicity_left+m_multiplicity_right;
@@ -722,6 +761,7 @@ void opana::ICARUSFlashAssAna::analyze(art::Event const& e) {
 
           m_pmt_pe.clear();
           m_pmt_time.clear();
+          m_pmt_rwm_time.clear();
 
         }
       }
