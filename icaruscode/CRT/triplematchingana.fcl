@@ -53,6 +53,8 @@ physics:
       TriggerLabel:  "daqTrigger" 
       TriggerConfiguration: "triggerconfig" 
 
+      CrtPmtModuleLabel:  "crtpmt"
+
       TPCTrackLabel:       ["pandoraTrackGausCryoE", "pandoraTrackGausCryoW"]     # Track producer module label
       PFParticleLabel: 	   ["pandoraGausCryoE", "pandoraGausCryoW"] # PFParticle producer module label
 

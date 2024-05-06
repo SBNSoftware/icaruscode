@@ -44,6 +44,8 @@
 #include "sbnobj/Common/CRT/CRTHit.hh"
 #include "sbnobj/Common/CRT/CRTTrack.hh"
 #include "sbnobj/Common/Trigger/ExtraTriggerInfo.h"
+#include "sbnobj/Common/CRT/CRTPMTMatching.hh"
+
 // C++ includes
 #include <map>
 #include <numeric>
@@ -59,9 +61,145 @@ using std::vector;
 
 namespace icarus {
 namespace crt {
+
 class TripleMatchingAna;
 
+namespace triplematching {
+double const vdrift=0.157; //cm/us
+double const tics=0.4; // 0.4 us, 400 ns
+double const minLimitW=61.7; // cm Anode WE position
+double const maxLimitW=358.73; // cm Anode WW position
+double const minLimitE=-61.7; // cm Anode EW position
+double const maxLimitE=-358.73; // cm Anode WW position
+double const cathW=210; // cm Cathode W position
+double const cathE=-210; // cm Cathode E position
+double const exc=2; // cm max displacement out of boundaries
 
+struct TrackBarycenter {
+    float BarX; // Track Barycenter X coordinate
+    float BarY; // Track Barycenter Y coordinate
+    float BarZ; // Track Barycenter Z coordinate
+    bool isGood; // Track Barycenter quality
+};
+
+struct DriftedTrack {
+    std::vector<float> spx; // Drifted Track Hit Points X coordinate
+    std::vector<float> spy; // Drifted Track Hit Points Y coordinate
+    std::vector<float> spz; // Drifted Track Hit Points Z coordinate
+    int outbound; // Number of hit points out of the logical volume of the TPC
+    double startx; // Drifted Track StartX coordinate
+    double endx; // Drifted Track EndX coordinate
+};
+
+TrackBarycenter GetTrackBarycenter (std::vector<float> hx, std::vector<float> hy, std::vector<float> hz, std::vector<float> hi){
+    float average_z_charge=0;
+    float average_y_charge=0;
+    float average_x_charge=0;
+    float total_charge=0;
+    bool isGood;
+    for (unsigned i = 0; i < hz.size(); i++) {
+        if(isnan(hz[i])) continue;
+        
+        if(hz[i]>-1000 && hz[i]<1000){
+            average_z_charge+=hz[i]*hi[i];
+            average_y_charge+=hy[i]*hi[i];
+            average_x_charge+=hx[i]*hi[i];
+            total_charge+=hi[i];
+        }
+    }
+    average_z_charge=average_z_charge/total_charge;
+    average_y_charge=average_y_charge/total_charge;
+    average_x_charge=average_x_charge/total_charge;
+    if(total_charge==0) isGood=false;
+    else isGood=true;
+    TrackBarycenter ThisTrackBary = {average_x_charge, average_y_charge, average_z_charge, isGood};
+    return ThisTrackBary;
+}
+
+void DriftTrack (std::vector<art::Ptr<recob::Hit>>* hits, double time, int cryo){
+  //int outBound=0;
+  /*double cath;
+  double maxLimit;
+  double minLimit;
+  std::vector<float> recX, recY, recZ;
+  if(cryo==0){ // this Cryo is East
+      cath=cathE;
+      maxLimit=maxLimitE;
+      minLimit=minLimitE;        
+  } else if(cryo==1) { // this Cryo is West
+      cath=cathW;
+      maxLimit=maxLimitW;
+      minLimit=minLimitW;                
+  }*/
+  for(size_t j=0; j<hits->size(); j++){
+      //std::cout<<"Hit number "<<j<<" integral "<<hits.at(j)->Integral()<<" time "<<hits.at(j)->PeakTime()<<" plane "<<hits.at(j)->WireID().Plane<<" TPC "<<hits.at(j)->WireID().TPC<<std::endl;
+      //int driftDirection = DriftDirection(ogTrack.tpc[i]);
+      double recoX = (hits->at(j)->PeakTime()-846-time/tics)*tics*vdrift;
+      std::cout<<"Hit "<<j<<" Tic "<<hits->at(j)->PeakTime()<<" recoX "<<recoX<<std::endl;
+  }
+  /* for(size_t i = 0; i < ogTrack.spx.size(); i++){
+      //if(isnan(ogTrack.spx[i])) continue;
+      int driftDirection = DriftDirection(ogTrack.tpc[i]);
+      double recoX = (ogTrack.tic[i]-846-time/tics)*tics*vdrift;
+      double planeX;
+      double realX; 
+      if(driftDirection==-1 && cryo==1) {
+          planeX=minLimit;
+          realX=planeX+recoX;
+      } else if (driftDirection==1 && cryo==1) {
+          planeX=maxLimit;
+          realX=planeX-recoX;
+      } else if (driftDirection==-1 && cryo==0) {
+          planeX=maxLimit;
+          realX=planeX+recoX;
+      } else if (driftDirection==1 && cryo==0) {
+          planeX=minLimit;
+          realX=planeX-recoX;
+      }
+      if(cryo==1){
+          if(ogTrack.tpc[i]==0 || ogTrack.tpc[i]==1){
+              if(realX>(cath+exc)||realX<(minLimit-exc)){
+                  //std::cout<<"Fuori dalla Drift Region 0/1 "<<std::endl;
+                  outBound++;
+              }
+          }
+          if(ogTrack.tpc[i]==2 || ogTrack.tpc[i]==3){
+              if(realX<(cath-TripleMatchingUtils::exc)||realX>(maxLimit+TripleMatchingUtils::exc)){
+                  outBound++;
+              }
+          }
+      } else if (cryo==0) {
+          if(ogTrack.tpc[i]==0 || ogTrack.tpc[i]==1){
+              if(realX>(cath+TripleMatchingUtils::exc)||realX<(maxLimit-TripleMatchingUtils::exc)){
+                  //std::cout<<"Fuori dalla Drift Region 0/1 "<<std::endl;
+                  outBound++;
+              }
+          }
+          if(ogTrack.tpc[i]==2 || ogTrack.tpc[i]==3){
+              if(realX<(cath-TripleMatchingUtils::exc)||realX>(minLimit+TripleMatchingUtils::exc)){
+                  outBound++;
+              }
+          }
+      }
+      //if(abs(hx[i]-realX)<15 && realX<0)std::cout<<"Real X "<< hx[i] <<" Reco X  "<<recoX<<" TPC  "<<htpc[i]<<"  realX "<<realX<<"  outbound "<<outBound<<std::endl;
+      
+      recX.push_back(realX);
+      recY.push_back(ogTrack.spy[i]);
+      recZ.push_back(ogTrack.spz[i]);
+      if(ogTrack.spx[i]==ogTrack.startx && ogTrack.spy[i]==ogTrack.starty && ogTrack.spz[i]==ogTrack.startz) {
+          startx=realX;
+      }
+      if(ogTrack.spx[i]==ogTrack.endx && ogTrack.spy[i]==ogTrack.endy && ogTrack.spz[i]==ogTrack.endz){
+          endx=realX; 
+      }
+      
+  }
+  TripleMatchingUtils::DriftedTrack thisDriftedTrack = {recX, recY, recZ, outBound, startx, endx};
+  return thisDriftedTrack;*/
+}
+
+
+}  // namespace triplematching
 }  // namespace crt
 }  // namespace icarus
 
@@ -70,7 +208,7 @@ using namespace icarus::crt;
 class icarus::crt::TripleMatchingAna : public art::EDAnalyzer {
  public:
   using CRTHit = sbn::crt::CRTHit;
-
+  using CRTPMTMatching = sbn::crt::CRTPMTMatching;
   explicit TripleMatchingAna(fhicl::ParameterSet const& p);
   // The compiler-generated destructor is fine for non-base
   // classes without bare pointers or other resource use.
@@ -98,6 +236,7 @@ class icarus::crt::TripleMatchingAna : public art::EDAnalyzer {
   art::InputTag fCrtHitModuleLabel;
   art::InputTag fTriggerLabel;
   art::InputTag fTriggerConfigurationLabel;
+  art::InputTag fCrtPmtModuleLabel;
   // tart::InputTag fCrtTrackModuleLabel;
   std::vector<art::InputTag> fTPCTrackLabel; ///< labels for source of tracks
   std::vector<art::InputTag> fPFParticleLabel; ///< labels for source of PFParticle
@@ -167,6 +306,7 @@ icarus::crt::TripleMatchingAna::TripleMatchingAna(fhicl::ParameterSet const& p)
       fTriggerLabel(p.get<art::InputTag>("TriggerLabel", "daqTrigger")),
       fTriggerConfigurationLabel(
           p.get<art::InputTag>("TriggerConfiguration", "triggerconfig")),
+      fCrtPmtModuleLabel(p.get<art::InputTag>("CrtPmtModuleLabel")),
       fTPCTrackLabel(p.get< std::vector<art::InputTag> >("TPCTrackLabel",             {""})),
       fPFParticleLabel(p.get< std::vector<art::InputTag> >("PFParticleLabel",             {""})),  
       crtutil(new CRTCommonUtils())
@@ -278,6 +418,11 @@ void icarus::crt::TripleMatchingAna::analyze(art::Event const& e) {
 
   // fNCrt = crtHitList.size();
 
+  auto const& crtpmtMatches = e.getProduct<std::vector<CRTPMTMatching>>(fCrtPmtModuleLabel);
+  auto const crtpmtHandle = e.getHandle<std::vector<CRTPMTMatching>>(fCrtPmtModuleLabel);
+  art::FindMany<CRTHit> fmCRTHits(crtpmtHandle, e, fCrtPmtModuleLabel);
+  art::FindMany<recob::OpFlash> fmCRTPMTFlash(crtpmtHandle, e, fCrtPmtModuleLabel);
+
   // Tracks
   int cryo=-1;
   int thisTrackID=-1;
@@ -301,13 +446,14 @@ void icarus::crt::TripleMatchingAna::analyze(art::Event const& e) {
     art::FindManyP<recob::Hit> findManyHits(tpcTrackHandle, e, trackLabel);
     art::FindManyP<recob::Hit, recob::TrackHitMeta> fmtrkHits(tpcTrackHandle, e, trackLabel);
 
-    std::cout<<"Label "<<trackLabel<<std::endl;
+    //std::cout<<"Label "<<trackLabel<<std::endl;
     for (auto const& tpcTrack : (*tpcTrackHandle)){
       thisTrackID++;
-      //std::cout<<"Type of tpcTrack "<<typeid(tpcTrack).name()<<std::endl;
-      std::cout<<"This Track is long "<<tpcTrack.Length()<<std::endl;
-      std::cout<<"This Track start "<<tpcTrack.Start().X()<<" "<<tpcTrack.Start().Y()<<" "<<tpcTrack.Start().Z()<<std::endl;
-      std::cout<<"This Track end "<<tpcTrack.End().X()<<" "<<tpcTrack.End().Y()<<" "<<tpcTrack.End().Z()<<std::endl;
+      if(tpcTrack.Length()>30){
+        std::cout<<"This Track is long "<<tpcTrack.Length()<<std::endl;
+        std::cout<<"This Track start "<<tpcTrack.Start().X()<<" "<<tpcTrack.Start().Y()<<" "<<tpcTrack.Start().Z()<<std::endl;
+        std::cout<<"This Track end "<<tpcTrack.End().X()<<" "<<tpcTrack.End().Y()<<" "<<tpcTrack.End().Z()<<std::endl;
+      }
       fTrackLength=tpcTrack.Length();
       fTrackStartX=tpcTrack.Start().X();
       fTrackStartY=tpcTrack.Start().Y();
@@ -326,7 +472,7 @@ void icarus::crt::TripleMatchingAna::analyze(art::Event const& e) {
 	      auto t0s = fmt0pandora.at(pfps[0].key()); 
 	      if (!t0s.empty()){  
 	        t0 = t0s[0]->Time();   //Get T0  
-          std::cout<<"The Slice is not empty, size "<<pfps.size()<<std::endl;
+          //std::cout<<"The Slice is not empty, size "<<pfps.size()<<std::endl;
 	      }
         auto const pfpmeta = PFPMetaDataAssoc.at(pfps[0].key());
         //std::cout<<"Type of pfpmeta "<<typeid(pfpmeta[0]).name()<<std::endl;
@@ -337,7 +483,7 @@ void icarus::crt::TripleMatchingAna::analyze(art::Event const& e) {
         double nuScore = (pfpNuScoreIter == propertiesMap.end()) ? -5.f : pfpNuScoreIter->second;
         auto const &pfpIsClearCosmicScoreIter(propertiesMap.find("IsClearCosmic"));
         double isClearCosmic = (pfpIsClearCosmicScoreIter == propertiesMap.end()) ? -5.f : pfpIsClearCosmicScoreIter->second;
-        std::cout<<"Track Score "<<trackScore<<" ; NuScore "<<nuScore<<" ; isClearCosmic "<<isClearCosmic<<std::endl;
+        //std::cout<<"Track Score "<<trackScore<<" ; NuScore "<<nuScore<<" ; isClearCosmic "<<isClearCosmic<<std::endl;
         fTrackScore=trackScore;
         fNuScore=nuScore;
         fClearCosmic=isClearCosmic;
@@ -345,13 +491,14 @@ void icarus::crt::TripleMatchingAna::analyze(art::Event const& e) {
       //std::cout<<"Type of pfps "<<typeid(pfps).name()<<std::endl;
       std::vector<art::Ptr<recob::Hit>> hits = findManyHits.at(tpcTrack.ID());
       const std::vector<const recob::TrackHitMeta*> hitsmeta=fmtrkHits.data(tpcTrack.ID());
-	    std::cout<< "This Track has hits "<<hits.size()<<" and meta size "<<hitsmeta.size()<<" entries and T0: " <<  (Long64_t) t0 << std::endl;
+	    //std::cout<< "This Track has hits "<<hits.size()<<" and meta size "<<hitsmeta.size()<<" entries and T0: " <<  (Long64_t) t0 << std::endl;
       fSizeHits=hits.size();
       fT0Track=t0;
       double dirXAvg=0, dirYAvg=0, dirZAvg=0;
+      std::vector<float> hx, hy, hz, hi;
       int gCounts=0;
       for(size_t j=0; j<hits.size(); j++){
-        std::cout<<"Hit number "<<j<<" integral "<<hits.at(j)->Integral()<<" time "<<hits.at(j)->PeakTime()<<" plane "<<hits.at(j)->WireID().Plane<<" TPC "<<hits.at(j)->WireID().TPC<<std::endl;
+        //std::cout<<"Hit number "<<j<<" integral "<<hits.at(j)->Integral()<<" time "<<hits.at(j)->PeakTime()<<" plane "<<hits.at(j)->WireID().Plane<<" TPC "<<hits.at(j)->WireID().TPC<<std::endl;
         geo::Point_t loc = tpcTrack.LocationAtPoint(j);
         geo::Vector_t dir = tpcTrack.DirectionAtPoint(j);
         if(loc.X()==-999) continue;
@@ -361,16 +508,31 @@ void icarus::crt::TripleMatchingAna::analyze(art::Event const& e) {
         fTPx.push_back(loc.X());
         fTPy.push_back(loc.Y());
         fTPz.push_back(loc.Z());
-        
-        std::cout<<"----> Position X "<<loc.X()<<" Y "<<loc.Y()<<" Z "<<loc.Z()<<std::endl;
-        std::cout<<"----> Direction dirX "<<dir.X()<<" dirY "<<dir.Y()<<" dirZ "<<dir.Z()<<std::endl;
+        hx.push_back(loc.X());
+        hy.push_back(loc.Y());
+        hz.push_back(loc.Z());
+        hi.push_back(hits.at(j)->Integral());        
+        //std::cout<<"----> Position X "<<loc.X()<<" Y "<<loc.Y()<<" Z "<<loc.Z()<<std::endl;
+        //std::cout<<"----> Direction dirX "<<dir.X()<<" dirY "<<dir.Y()<<" dirZ "<<dir.Z()<<std::endl;
         gCounts++;
+      }
+      if(tpcTrack.Length()>30){
+        icarus::crt::triplematching::TrackBarycenter TrackBarycenter = icarus::crt::triplematching::GetTrackBarycenter(hx, hy, hz, hi);
+        for(const auto& crtpmtM : crtpmtMatches){
+          if(cryo==0 && crtpmtM.flashPosition.X()>0) continue;
+          else if(cryo==1 && crtpmtM.flashPosition.X()<0) continue;
+          std::cout<<"Flash Time "<<crtpmtM.flashTime<<" Flash Type "<<(int)crtpmtM.flashClassification<<" Position X "<<crtpmtM.flashPosition.X()<<" Y "<<crtpmtM.flashPosition.Y()<<" Z "<<crtpmtM.flashPosition.Z()<<std::endl;
+          std::cout<<"Delta Z "<<abs(TrackBarycenter.BarZ-crtpmtM.flashPosition.Z())<<std::endl;
+          if(abs(TrackBarycenter.BarZ-crtpmtM.flashPosition.Z())<30){
+            icarus::crt::triplematching::DriftTrack(&hits, crtpmtM.flashTime,cryo);
+          }
+        }
       }
       fDirXAvg=dirXAvg/gCounts;
       fDirYAvg=dirYAvg/gCounts;
       fDirZAvg=dirZAvg/gCounts;
       fIDTrack=thisTrackID;
-      fCryo=Cryo;
+      fCryo=cryo;
       fMatchTree->Fill();
       ClearVecs();
       //if (hits.size() == 0) continue;
