@@ -12,7 +12,6 @@ services: {
   #FileCatalogMetadata:  @local::art_file_catalog_mc
 } # services
 
-
 physics: {
 
   producers: {
@@ -32,8 +31,6 @@ physics: {
 
 } # physics
 
-physics.producers.crtdaq.G4ModuleLabel: "shifted"
-
 outputs: {
   rootoutput: {
     @table::icarus_rootoutput
@@ -52,3 +49,4 @@ outputs: {
 services.Geometry.GDML: "icarus_complete_20220518_overburden.gdml"
 services.Geometry.ROOT: "icarus_complete_20220518_overburden.gdml"
 physics.producers.daq.wcls_main.configs: ["pgrapher/experiment/icarus/wcls-multitpc-sim-drift-simchannel-shifted.jsonnet"]
+physics.producers.crtdaq.G4ModuleLabel: "shifted"

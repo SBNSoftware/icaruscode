@@ -16,6 +16,7 @@
 #include "LArG4.fcl"
 #include "services_icarus_simulation.fcl"
 #include "larg4_services_icarus.fcl"
+#include "g4inforeducer.fcl"
 
 #include "prodcorsika_protononly_icarus.fcl"
 
@@ -38,6 +39,7 @@ physics.producers.loader: { module_type: "PhysListLoader" }
 physics.producers.larg4intime: @local::standard_larg4
 physics.producers.ionandscintintime: @local::icarus_ionandscint
 physics.producers.pdfastsimintime: @local::icarus_pdfastsim_pvs
+physics.producers.sedliteintime: @local::sbn_largeant_info_reducer
 
 # Add a filter on the geant4 intime output, based on sim photons
 physics.filters.timefilter: @local::icarus_timefilterssimphotonlitetime
@@ -47,6 +49,7 @@ physics.simulate: [ corsika
                   , GenInTimeSorter
                   , loader
                   , larg4intime
+                  , sedliteintime
                   , ionandscintintime
                   , pdfastsimintime
                   , beamgate
@@ -59,14 +62,20 @@ physics.producers.generator: @erase
 
 # Set the appropriate input labels
 physics.producers.larg4intime.inputCollections: ["GenInTimeSorter:intime"]
+physics.producers.larg4intime.FillSimEnergyDeposits: true
+physics.producers.larg4intime.EnergyDepositInstanceLabels: ["LArG4DetectorServicevolTPCActive"]
 physics.producers.ionandscintintime.InputModuleLabels: ["larg4intime"]
 physics.producers.pdfastsimintime.SimulationLabel: "ionandscintintime:priorSCE"
+physics.producers.sedliteintime.SimEnergyDepositLabel: "larg4intime:LArG4DetectorServicevolTPCActive"
+physics.producers.sedliteintime.useOrigTrackID: true #needed
+
 physics.filters.timefilter.SimPhotonsLiteCollectionLabel: "pdfastsimintime"
 
-services.ParticleListAction.keepGenTrajectories: ["GenInTimeSorter"]
+
+services.ParticleListAction.keepGenTrajectories: ["corsika", "GenInTimeSorter:intime", "GenInTimeSorter:outtime"]
 services.LArG4Parameters.UseLitePhotons: true
 
 outputs.out1.SelectEvents: [ "simulate" ]
-outputs.out1.fileName:	"prodcorsika_protononly_intime_icarus_numi_%tc-%p.root"
+outputs.out1.fileName:	"prodcorsika_protononly_intime_icarus_bnb_%tc-%p.root"
 
 process_name: CosmicsCorsikaProtonGenAndG4InTime

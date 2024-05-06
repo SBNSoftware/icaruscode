@@ -13,5 +13,3 @@ physics.end_paths:     [ outana, streamROOT ]
 ## Need overrides for the purity monitor
 physics.analyzers.purityinfoana0.SelectEvents: [ path ]
 physics.analyzers.purityinfoana1.SelectEvents: [ path ]
-physics.producers.purityana0.RawModuleLabel:   ["MCDecodeTPCROI:PHYSCRATEDATATPCWW","MCDecodeTPCROI:PHYSCRATEDATATPCWE","MCDecodeTPCROI:PHYSCRATEDATATPCEW","MCDecodeTPCROI:PHYSCRATEDATATPCEE"]
-physics.producers.purityana1.RawModuleLabel:   ["MCDecodeTPCROI:PHYSCRATEDATATPCWW","MCDecodeTPCROI:PHYSCRATEDATATPCWE","MCDecodeTPCROI:PHYSCRATEDATATPCEW","MCDecodeTPCROI:PHYSCRATEDATATPCEE"]

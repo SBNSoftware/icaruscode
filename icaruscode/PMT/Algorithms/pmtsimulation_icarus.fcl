@@ -195,6 +195,7 @@ icarus_photoelectronresponse_standard: @local::icarus_photoelectronresponse_2022
 ### - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 ### Electronics noise configurations
 ### - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# pedestal noise generator tool configuration:
 icarus_pmt_electronicsnoise_gauss: {
   tool_type: PMTgausNoiseGeneratorTool
   RMS:       @local::icarus_settings_opdet.NoiseRMS
@@ -202,7 +203,7 @@ icarus_pmt_electronicsnoise_gauss: {
 
 icarus_pmt_electronicsnoise_gauss_fast: {
   tool_type: PMTfastGausNoiseGeneratorTool
-  RMS:       @local::icarus_pmt_electronicsnoise_gauss.RMS
+  RMS:       @local::icarus_settings_opdet.NoiseRMS
 }
 
 icarus_pmt_electronicsnoise_nonoise: {
@@ -213,28 +214,21 @@ icarus_pmt_electronicsnoise_nonoise: {
 icarus_pmt_electronicsnoise_standard: @local::icarus_pmt_electronicsnoise_gauss_fast
 
 
+# pedestal generator tool configuration (uses the pedestal noise generator too):
 icarus_pmt_pedestal_gaussnoise: {
   tool_type: PMTconstantPedestalGeneratorTool
   Pedestal:       @local::icarus_settings_opdet.NominalPedestal
-  NoiseGenerator: {
-    tool_type:      PMTgausNoiseGeneratorTool
-    RMS:            @local::icarus_settings_opdet.NoiseRMS
-  }
+  NoiseGenerator: @local::icarus_pmt_electronicsnoise_gauss
 } # icarus_pmt_pedestal_gaussnoise
 
 icarus_pmt_pedestal_fastgaussnoise: {
   @table::icarus_pmt_pedestal_gaussnoise
-  NoiseGenerator: {
-    tool_type:      PMTfastGausNoiseGeneratorTool
-    RMS:            @local::icarus_pmt_electronicsnoise_gauss.RMS
-  }
+  NoiseGenerator: @local::icarus_pmt_electronicsnoise_gauss_fast
 } # icarus_pmt_pedestal_fastgaussnoise
 
 icarus_pmt_pedestal_nonoise: {
   @table::icarus_pmt_pedestal_gaussnoise
-  NoiseGenerator: {
-    tool_type:      NoNoiseGeneratorTool
-  }
+  NoiseGenerator: @local::icarus_pmt_electronicsnoise_nonoise
 } # icarus_pmt_pedestal_nonoise
 
 icarus_pmt_pedestal_standard: @local::icarus_pmt_pedestal_fastgaussnoise

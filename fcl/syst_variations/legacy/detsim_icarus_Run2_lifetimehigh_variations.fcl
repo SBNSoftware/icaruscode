@@ -1,0 +1,8 @@
+#include "detsim_2d_icarus_fitFR.fcl"
+
+#Highest value of e- lifetime across both TPCs in Run 2 (9.2 ms in West cryostat) - Values provided by C. Farnese
+services.DetectorPropertiesService.Electronlifetime: 9200 
+icarus_simwire_wirecell_fitSR.wcls_main.structs.lifetime: 9200
+
+
+process_name: ELRun2MaxVar

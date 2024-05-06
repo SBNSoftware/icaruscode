@@ -12,12 +12,11 @@ services: {
   #FileCatalogMetadata:  @local::art_file_catalog_mc
 } # services
 
-
 physics: {
 
   producers: {
     @table::icarus_shifting_triggersim.producers
-
+    
     crtdaq:         @local::icarus_crtsim
      opdaq:         @local::icarus_simpmt
        daq:         @local::icarus_simwire_wirecell
@@ -32,13 +31,6 @@ physics: {
 
 } # physics
 
-physics.producers.crtdaq.G4ModuleLabel: "shifted"
-physics.producers.opdaq.InputModule: "pdfastsim"
-physics.producers.daq.wcls_main.configs: ["pgrapher/experiment/icarus/wcls-multitpc-sim-drift-simchannel-shifted-refactored.jsonnet"]
-physics.producers.shifted.InitAuxDetSimChannelLabel: "genericcrt"
-physics.producers.shifted.InitSimPhotonsLabel: "pdfastsim"
-
-
 outputs: {
   rootoutput: {
     @table::icarus_rootoutput
@@ -52,3 +44,9 @@ outputs: {
       ]
   }
 }
+
+physics.producers.daq.wcls_main.configs: ["pgrapher/experiment/icarus/wcls-multitpc-sim-drift-simchannel-shifted-refactored.jsonnet"]
+physics.producers.crtdaq.G4ModuleLabel: "shifted"
+physics.producers.opdaq.InputModule: "pdfastsim"
+physics.producers.shifted.InitAuxDetSimChannelLabel: "genericcrt"
+physics.producers.shifted.InitSimPhotonsLabel: "pdfastsim"

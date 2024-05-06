@@ -1,3 +1,0 @@
-#include "cafmakerjob_icarus_detsim2d.fcl"
-
-process_name: CAFmakerVar

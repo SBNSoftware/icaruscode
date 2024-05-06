@@ -1,0 +1,6 @@
+#include "refactored_g4_icarus_step2_variations.fcl"
+
+process_name: G4FullQEVar
+
+services.LArPropertiesService.ScintPreScale: 4.0e-2
+physics.producers.opdaq.QE: 4.0
