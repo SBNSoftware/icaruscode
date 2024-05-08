@@ -90,7 +90,7 @@ class icarus::crt::CRTHitRecoAlg {
   // Function to make filling a CRTHit a bit faster
   CRTHit FillCRTHit(vector<uint8_t> tfeb_id,
                     map<uint8_t, vector<pair<int, float>>> tpesmap,
-                    float peshit, uint64_t time0, Long64_t time1, int plane,
+                    float peshit, double flag, uint64_t time0, Long64_t time1, int plane,
                     double x, double ex, double y, double ey, double z,
                     double ez, string tagger);
 

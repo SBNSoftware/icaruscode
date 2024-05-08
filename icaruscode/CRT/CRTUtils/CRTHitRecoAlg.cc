@@ -339,13 +339,13 @@ vector<pair<sbn::crt::CRTHit, vector<int>>> CRTHitRecoAlg::CreateCRTHits(
 // Function to make filling a CRTHit a bit faster
 sbn::crt::CRTHit CRTHitRecoAlg::FillCRTHit(
     vector<uint8_t> tfeb_id, map<uint8_t, vector<pair<int, float>>> tpesmap,
-    float peshit, uint64_t time0, Long64_t time1, int plane, double x,
+    float peshit, double flag, uint64_t time0, Long64_t time1, int plane, double x,
     double ex, double y, double ey, double z, double ez, string tagger) {
   CRTHit crtHit;
   crtHit.feb_id = tfeb_id;
   crtHit.pesmap = tpesmap;
   crtHit.peshit = peshit;
-  crtHit.ts0_s_corr = time0 / 1'000'000'000;
+  crtHit.ts0_s_corr = flag;
   crtHit.ts0_ns = time0 % 1'000'000'000;
   crtHit.ts0_ns_corr = time0;
   crtHit.ts1_ns =
@@ -457,7 +457,7 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeTopHit(
 
   // no channels above threshold? return empty hit
   if (nabove == 0 || !findx || !findz)
-    return FillCRTHit({}, {}, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, "");
+    return FillCRTHit({}, {}, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, "");
 
   // hitpos*=1.0/petot; //hit position weighted by deposited charge
   // hitpos*=1.0/nabove;
@@ -495,9 +495,9 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeTopHit(
   // T0 reset events
   if ((sum < 10000 && thit1 < 2'001'000 && thit1 > 2'000'000) ||
       data->IsReference_TS1() || data->IsReference_TS0())
-    return FillCRTHit({}, {}, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, "");
+    return FillCRTHit({}, {}, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, "");
 
-  CRTHit hit = FillCRTHit({mac}, pesmap, petot, thit, thit1, plane,
+  CRTHit hit = FillCRTHit({mac}, pesmap, petot, 0, thit, thit1, plane,
                           hitpoint.X(), hitpointerr[0], hitpoint.Y(),
                           hitpointerr[1], hitpoint.Z(), hitpointerr[2], region);
 
@@ -543,7 +543,7 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeBottomHit(art::Ptr<CRTData> data) {
   }
 
   // no channels above threshold? return empty hit
-  if (nabove == 0) return FillCRTHit({}, {}, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, "");
+  if (nabove == 0) return FillCRTHit({}, {}, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, "");
 
   hitpos *= 1.0 / petot;  // hit position weighted by deposited charge
   geo::AuxDetGeo::LocalPoint_t const hitlocal{hitpos.X(), 0., 0.};
@@ -560,7 +560,7 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeBottomHit(art::Ptr<CRTData> data) {
   hitpointerr[1] = adGeo.HalfHeight();
   hitpointerr[2] = adsGeo.Length() / sqrt(12);
 
-  CRTHit hit = FillCRTHit({mac}, pesmap, petot, thit, thit1, plane, hitpoint.X(),
+  CRTHit hit = FillCRTHit({mac}, pesmap, petot, 0, thit, thit1, plane, hitpoint.X(),
                           hitpointerr[0], hitpoint.Y(), hitpointerr[1],
                           hitpoint.Z(), hitpointerr[2], region);
 
@@ -576,7 +576,17 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeSideHit(
 
   vector<uint8_t> macs;
   map<uint8_t, vector<pair<int, float>>> pesmap;
-
+  double flag = 0.;// Flag for Side CRT Hits to destinguish between good and bad 
+                   //  reconstructed positions. - AH on 2/3/2023, see docdb 29972
+                   /* Note on flag variables: 
+		      flag = 0 : OK z position
+		      flag = 1 : single ended readout on one layer, OK z position
+		      flag = 2 : single ended readout on opposite ends on inner and outer layers
+		      flag = 3 : reco z position beyond length of module on layer A or layer B 
+		      flag = 4 : final reco z position beyond length of module 
+		      flag = 5 : timestamps on opposite ends of module are >50 ns apart 
+		      flag = 6 : single ended readout on same end on inner and outer layers
+		   */
   struct info {
     uint8_t mac5s;
     int channel;
@@ -600,15 +610,12 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeSideHit(
 
   TVector3 postrig;
 
-  vector<uint64_t> ttrigs;
-  vector<uint64_t> t1trigs;
+  vector<uint64_t> ttrigs, t1trigs;
   vector<TVector3> tpos;
   double zmin = DBL_MAX, zmax = -DBL_MAX;
   double ymin = DBL_MAX, ymax = -DBL_MAX;
   double xmin = DBL_MAX, xmax = -DBL_MAX;
-  std::vector<int> layID;
-  std::vector<int> febA;
-  std::vector<int> febB;
+  std::vector<int> layID, febA, febB;
 
   uint64_t southt0_v = -999, southt0_h = -999;
 
@@ -876,7 +883,7 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeSideHit(
       mf::LogInfo("CRTHitRecoAlg: ") << "no channels above threshold!" << '\n';
     if (layID.size() < 2 && fVerbose)
       mf::LogInfo("CRTHitRecoAlg: ") << "no coincidence found" << '\n';
-    return FillCRTHit({}, {}, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, "");
+    return FillCRTHit({}, {}, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, "");
   }
 
   //-----------------------------------------------------------
@@ -1224,7 +1231,7 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeSideHit(
   else thit1 = thit - fGlobalT0Offset;
 
   // generate hit
-  CRTHit hit = FillCRTHit(macs, pesmap, petot, thit, thit1, plane, hitpoint[0],
+  CRTHit hit = FillCRTHit(macs, pesmap, petot, thit, flag, thit1, plane, hitpoint[0],
                           hitpointerr[0], hitpoint[1], hitpointerr[1],
                           hitpoint[2], hitpointerr[2], region);
 
