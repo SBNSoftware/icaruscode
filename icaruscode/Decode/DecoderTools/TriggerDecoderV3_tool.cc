@@ -505,8 +505,8 @@ namespace daq
   {
     icarus::details::KeyedCSVparser parser;
     parser.addPatterns({
-        { "Cryo. (EAST|WEST) Connector . and .", 1U }
-        , { "Trigger Type", 1U }
+        { "Cryo. (EAST|WEST) Connector . and .", 1U } // hex value looks like key
+        , { "Trigger Type", 1U } // might have been a string (currently it's not)
       });
     std::string_view const dataLine = firstLine(data);
     try {
@@ -811,20 +811,19 @@ namespace daq
       ]
         (std::size_t cryo, bool present)
       {
-        std::string const SIDE
-          = (cryo == sbn::ExtraTriggerInfo::EastCryostat) ? "EAST": "WEST";
         std::string const Side
-          = (cryo == sbn::ExtraTriggerInfo::EastCryostat) ? "East": "West";
+          = (cryo == sbn::ExtraTriggerInfo::EastCryostat) ? "EAST": "WEST";
         std::string const CrSide = (cryo == sbn::ExtraTriggerInfo::EastCryostat)
           ? "Cryo1 EAST": "Cryo2 WEST";
         // trigger logic: 0x01=adders; 0x02=majority; 0x07=both
-        std::string const triggerLogicKey = "MJ_Adder Source " + SIDE;
-        std::string const cryoTriggerFlagKey = "MinBias_" + Side;
+        std::string const triggerLogicKey = "MJ_Adder Source " + Side;
+        std::string const cryoTriggerFlagKey = "Flag_" + Side;
         
         // information about the cryostat is always assumed to be available if
         // the global trigger is located in it; but it can also be available if
         // the trigger tick is not invalid (even in cases like the minimum bias
         // in version 3+ which do not have any trigger location set)
+        // `Flag_XXX` is new in trigger string Version 3
         bool const hasBeamToTriggerInfo
           = data.hasItem(cryoTriggerFlagKey) && data.getItem(cryoTriggerFlagKey).getNumber<int>(0);
         bool const hasBitInfo = present || hasBeamToTriggerInfo;
@@ -839,6 +838,7 @@ namespace daq
         else if(triggerLogicCode >= 3) // should be 7
           triggerLogicMask = mask(sbn::triggerLogic::PMTAnalogSum, sbn::triggerLogic::PMTPairMajority);
         
+        // `Delay_XXX` is new in trigger string Version 3
         unsigned int const beamToTriggerTicks = hasBeamToTriggerInfo
           ? data.getItem("Delay_" + Side).getNumber<int>(0)
           : std::numeric_limits<unsigned int>::max();
