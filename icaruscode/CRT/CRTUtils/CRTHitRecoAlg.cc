@@ -629,8 +629,29 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeSideHit(
   }
 
   if (fVerbose)
-    std ::cout << "line 451: size of febA: \t" << (int)febA.size()
-               << " size of febB: " << (int)febB.size() << '\n';
+    mf::LogInfo("CRTHitRecoAlg:MakeSideHit") 
+    << "size of febA: " << (int)febA.size()
+    << ", size of febB: " << (int)febB.size() << '\n';
+  // *** Flag = 6: Check and flag single ended readouts
+  if ((int)febA.size() == 1 and (int)febB.size() == 1 and region!="South" and region!="North"){
+    flag = 6;
+    if(fVerbose) 
+      mf::LogInfo("CRTHitRecoAlg:MakeSideHit") 
+	<< "single ended readout for both layers! setting flag == 6 ... \n";
+  }
+  // *** Flag = 1: Check and flag single ended readout on one layer 
+  else if ((int)febA.size() == 1 and region!="South" and region!="North"){
+    if(fVerbose)
+      mf::LogInfo("CRTHitRecoAlg:MakeSideHit") 
+	<< "single ended readout for feb A, 1st layer! setting flag == 1 ... \n";
+    flag = 1;
+  }
+  else if ((int)febB.size() == 1 and region!="South" and region!="North"){
+    if(fVerbose)
+      mf::LogInfo("CRTHitRecoAlg:MakeSideHit") 
+	<< "single ended readout for feb B, 2nd layer! setting flag == 1 ... \n";
+    flag = 1;
+  }
 
   // loop over FEBs
   for (auto const& data : coinData) {
