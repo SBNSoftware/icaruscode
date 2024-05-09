@@ -88,7 +88,7 @@ icarus_stage1_analyzers:
   superaMC:        @local::icarus_supera_MC_PMT_CRT
   superaNu:        @local::icarus_supera_generator_PMT_CRT
   superaMPVMPR:	   @local::icarus_supera_MC_MPVMPR_cryoE_PMT_CRT
-
+  superaCosmic:    @local::icarus_supera_cosmgen_all_cryo_PMT_CRT
   CRTDataAnalysis: 
    {
      module_type:   "CRTDataAnalysis"
@@ -161,7 +161,8 @@ icarus_analysis_superaNu:          [ superaNu
 
 icarus_analysis_superaMPVMPR:      [ superaMPVMPR
                                    ]
-
+icarus_analysis_superaCosmic:      [ superaCosmic
+				   ]
 icarus_analysis_larcv_modules:     [  @sequence::icarus_analysis_modules
                                      ,@sequence::icarus_analysis_supera 
                                    ]

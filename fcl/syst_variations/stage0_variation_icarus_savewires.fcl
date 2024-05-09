@@ -1,0 +1,3 @@
+#include "stage0_variation_icarus_refactored.fcl"
+
+outputs.rootOutput.outputCommands: ["keep *_*_*_*"]

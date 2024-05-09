@@ -14,7 +14,7 @@
 # * `ionization` (`sim::SimEnergyDeposit` collection)
 #
 
-#include "standard_g4_icarus.fcl"
+#include "standard_g4_icarus_sce.fcl"
 
 process_name: G4step2
 

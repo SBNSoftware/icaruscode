@@ -1,0 +1,5 @@
+#include "detsim_2d_icarus_fitFR_refactored.fcl"
+
+physics.producers.opdaq.QE: 0.04
+
+process_name: DetSimLightVar
