@@ -983,8 +983,25 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeSideHit(
             << ", deltat : " << int64_t(t1_1 - t1_2) << '\n';
 
       float zaxixpos = 0.5 * (int64_t(t1_1 - t1_2) / fPropDelay);
-
       posA = adsGeo.GetCenter() + geo::Zaxis() * zaxixpos;
+      if (fVerbose) 
+	mf::LogInfo("CRTHitRecoAlg:MakeSideHit") 
+	  << "---\n\tFEB A: (mac_1,mac_2 = " << (int)infn.mac5s << "," 
+	  << (int)informationA[i+1].mac5s<< "), delta_t = t1_1 - t1_2 = " 
+	  << t1_1 << " - " << t1_2 << " = " << int64_t(t1_1 - t1_2) << "\n"
+	  << "\tFEB A z hit pos = .5*(delta_t)/prop + center = .5*(" 
+	  << int64_t(t1_1 - t1_2) << ")/ " << fPropDelay << " + " 
+	  << 1.0*adsGeo.GetCenter().Z() << " = " << posA.Z() << "\n";
+
+      // *** Flag 5: Check and flag if 1st modules delta_t > 50 ns
+      // 50 ns ~= 800 cm (full module length) x 0.062 ns/cm (prop delay)  = 49.5 ns
+      if(std::abs(int64_t(t1_1 - t1_2))>50){
+	flag = 5;
+	if (fVerbose) 
+	  mf::LogInfo("CRTHitRecoAlg:MakeSideHit") 
+	    << "*** FEB A delta_t greater than 54! delta_t = " 
+	    << int64_t(t1_1 - t1_2) << ", setting flag == 5 ... \n";
+      }
 
       if (fVerbose)
         mf::LogInfo("CRTHitRecoAlg: ")
@@ -1046,8 +1063,24 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeSideHit(
       // if (foutCSVFile) filecsv << plane << "\t"<<  int64_t(t2_1 - t2_2) <<
       // "\n";
       float zaxixpos = 0.5 * (int64_t(t2_1 - t2_2) / fPropDelay);
-
       posB = adsGeo.GetCenter() + geo::Zaxis() * zaxixpos;
+      if (fVerbose)
+	mf::LogInfo("CRTHitRecoAlg:MakeSideHit") 
+	  << "---\n\tFEB B: (mac_1,mac_2 = " << (int)infn.mac5s << "," 
+	  << (int)informationB[i+1].mac5s << "), delta_t = t2_1 - t2_2 = " 
+	  << t2_1 << " - " << t2_2 << " = " << int64_t(t2_1 - t2_2) << "\n"
+	  << "\tFEB B z hit pos = .5*(delta_t)/prop + center = .5*(" 
+	  << int64_t(t2_1 - t2_2) << ")/ "<< fPropDelay << " + " 
+	  << 1.0*adsGeo.GetCenter().Z() << " = " << posB.Z() << "\n";
+
+      // *** Flag 5: Check and flag if 2nd modules delta_t > 50 ns
+      if(std::abs(int64_t(t2_1 - t2_2))>50){
+	flag = 5;
+	if (fVerbose)
+	  mf::LogInfo("CRTHitRecoAlg:MakeSideHit")
+	    << "*** FEB B delta_t greater than 54! delta_t = "
+	    << int64_t(t2_1 - t2_2) << ", setting flag == 5 ... \n";
+      }
 
       if (fVerbose)
         mf::LogInfo("CRTHitRecoAlg:")
