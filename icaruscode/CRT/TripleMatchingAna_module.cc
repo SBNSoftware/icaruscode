@@ -24,6 +24,7 @@
 #include "larcore/Geometry/Geometry.h"
 #include "larcorealg/Geometry/GeometryCore.h"
 #include "lardata/DetectorInfoServices/DetectorClocksService.h"
+#include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
 #include "lardataobj/RecoBase/PFParticle.h"
 #include "lardataobj/AnalysisBase/T0.h"
 #include "lardataobj/RecoBase/PFParticleMetadata.h"
@@ -55,6 +56,13 @@
 // ROOT includes
 #include "TTree.h"
 #include "TVector3.h"
+#include "TMatrixD.h"
+#include "TMatrixDEigen.h"
+#include "TGraph2D.h"
+#include <Math/Vector3D.h>
+#include <Fit/Fitter.h>
+#include <Math/Functor.h>
+
 
 using std::map;
 using std::vector;
@@ -86,10 +94,35 @@ struct DriftedTrack {
     std::vector<float> spx; // Drifted Track Hit Points X coordinate
     std::vector<float> spy; // Drifted Track Hit Points Y coordinate
     std::vector<float> spz; // Drifted Track Hit Points Z coordinate
+    std::vector<float> spx2; // Drifted Track Hit Points X coordinate
+    std::vector<float> spy2; // Drifted Track Hit Points Y coordinate
+    std::vector<float> spz2; // Drifted Track Hit Points Z coordinate
+
+
     int outbound; // Number of hit points out of the logical volume of the TPC
-    double startx; // Drifted Track StartX coordinate
-    double endx; // Drifted Track EndX coordinate
+    // double startx; // Drifted Track StartX coordinate
+    // double endx; // Drifted Track EndX coordinate
 };
+
+struct Direction {
+    double dirx; // Direction of the Track: X 
+    double diry; // Direction of the Track: Y 
+    double dirz; // Direction of the Track: Z 
+    double meanx; // Mean Point of the Track: X 
+    double meany; // Mean Point of the Track: Y 
+    double meanz; // Mean Point of the Track: Z n
+};
+
+int DriftDirection(int TPC){
+  int drift=0;
+  if(TPC==0 || TPC==1){
+      drift=1;
+  }
+  else if(TPC==2 || TPC==3){
+      drift=-1;
+  }
+  return drift;
+}
 
 TrackBarycenter GetTrackBarycenter (std::vector<float> hx, std::vector<float> hy, std::vector<float> hz, std::vector<float> hi){
     float average_z_charge=0;
@@ -116,9 +149,103 @@ TrackBarycenter GetTrackBarycenter (std::vector<float> hx, std::vector<float> hy
     return ThisTrackBary;
 }
 
-void DriftTrack (std::vector<art::Ptr<recob::Hit>>* hits, double time, int cryo){
-  //int outBound=0;
-  /*double cath;
+Direction PCAfit (std::vector<float> x, std::vector<float> y, std::vector<float> z){
+	int min=0;
+  int max=x.size();
+  int size=max-min;
+  double xavg=0, yavg=0, zavg=0;
+  for(int k=min; k<max; k++) {
+      xavg+=x[k]; yavg+=y[k]; zavg+=z[k];
+  }
+  xavg=xavg/size;
+  yavg=yavg/size;
+  zavg=zavg/size;
+  float x2=0, y2=0, z2=0, xiy=0, xiz=0, yiz=0;
+  for(int k=min; k<max; k++){
+      float xadj = x[k] - xavg;
+      float yadj = y[k] - yavg;
+      float zadj = z[k] - zavg;
+      x2+=xadj*xadj;
+      y2+=yadj*yadj;
+      z2+=zadj*zadj;
+      xiy+=xadj*yadj;
+      xiz+=xadj*zadj;
+      yiz+= yadj*zadj;
+  }//end loop calculating covariance matrix elements
+  x2=x2/size;
+  y2=y2/size;
+  z2=z2/size; 
+  xiy=xiy/size;
+  xiz=xiz/size;
+  yiz=yiz/size;
+  //Now covariance elements are ready, make covariance matrix and do PCA analysis
+  TMatrixD covmat(3,3);
+  covmat[0][0] = x2; covmat[1][1]=y2; covmat[2][2]=z2;
+  covmat[0][1] = xiy; covmat[1][0] = xiy;
+  covmat[0][2] = xiz; covmat[2][0] = xiz;
+  covmat[2][1] = yiz; covmat[1][2] = yiz;
+  TMatrixDEigen thiscov(covmat);
+  TMatrixD this_eval = thiscov.GetEigenValues();
+  TMatrixD this_evec = thiscov.GetEigenVectors();
+  if(this_eval.GetNrows()!=3 || this_eval.GetNcols()!=3 || this_evec.GetNrows()!=3 || this_evec.GetNcols()!=3){ 
+      std::cout << "evals/evects wrong size! continuing....\n";
+  }//end if evals/evects aren't 3x3 matrices as expected
+  int max_eval = -999999; int maxevalpos = -1;
+  for(int k = 0; k < 3; k++){
+      if(this_eval[k][k]>max_eval){
+          max_eval = this_eval[k][k];
+          maxevalpos = k;
+      }//end if(this_eval[k][k]>max_eval)
+  }//end loop looking for best eval
+    		
+  Direction thDirection= {this_evec[0][maxevalpos] , this_evec[1][maxevalpos], this_evec[2][maxevalpos], xavg, yavg, zavg};
+  return thDirection;
+}
+
+DriftedTrack upgDriftTrack(const std::vector<art::Ptr<recob::Hit>>& trkHits, const std::vector<const recob::TrackHitMeta*>& trkHitMetas, const geo::GeometryCore *GeometryService, detinfo::DetectorPropertiesData const& detProp, double time, int cryo, const recob::Track& tpcTrack){
+  int outBound=0;
+  std::vector<float> recX, recY, recZ;
+  std::vector<float> rec2X, rec2Y, rec2Z;
+  for(size_t i=0; i<trkHits.size(); i++){
+    bool badhit = (trkHitMetas[i]->Index() == std::numeric_limits<unsigned int>::max()) ||
+                    (!tpcTrack.HasValidPoint(trkHitMetas[i]->Index()));
+    if(badhit) continue;
+    geo::Point_t loc = tpcTrack.LocationAtPoint(trkHitMetas[i]->Index());
+    if(loc.X()==-999) continue;
+    if(trkHits[i]->WireID().Plane)  continue;
+    const geo::TPCGeo& tpcGeo = GeometryService->TPC(trkHits[i]->WireID());
+    int tpc=trkHits[i]->WireID().TPC;
+    double v_drift=detProp.DriftVelocity();
+    //std::cout<<"Detector Geometry:  driftDirection "<<(short int)tpcGeo.DetectDriftDirection()<<" TPCID "<<hits.at(i)->WireID().TPC<<" XCoordinate "<<tpcGeo.GetCenter().X()<<" Drift Velocity "<<v_drift<<std::endl;
+    double recoX=(trkHits[i]->PeakTime()-850-time/tics)*tics*v_drift;
+    //if(cryo==0 && (tpc==0 || tpc==1)) plane=-359.354;
+    //else if(cryo==0 && (tpc==2 || tpc==3)) plane=-61.115;
+    //else if(cryo==1 && (tpc==0 || tpc==1)) plane=61.115;
+    //else if(cryo==1 && (tpc==2 || tpc==3)) plane=359.354;
+    double plane=tpcGeo.FirstPlane().GetCenter().X();
+    double X=plane-tpcGeo.DetectDriftDirection()*recoX;
+    if(cryo==0 && (tpc==0 || tpc==1) && (X>(cathE+exc)||X<(plane-exc))) outBound++;
+    else if(cryo==0 && (tpc==2 || tpc==3)&& (X>(cathE-exc)||X>(plane+exc))) outBound++;
+    else if(cryo==1 && (tpc==0 || tpc==1)&& (X>(cathW+exc)||X<(plane-exc))) outBound++;
+    else if(cryo==1 && (tpc==2 || tpc==3)&& (X>(cathW-exc)||X>(plane+exc))) outBound++;
+    geo::Point_t driftedLoc = loc;
+    tpcGeo.DriftPoint(driftedLoc,time*v_drift*tpcGeo.DetectDriftDirection());
+    recX.push_back(X);
+    recY.push_back(loc.Y());
+    recZ.push_back(loc.Z());
+    rec2X.push_back(driftedLoc.X());
+    rec2Y.push_back(driftedLoc.Y());
+    rec2Z.push_back(driftedLoc.Z());
+    
+  }
+  std::cout<<"OutBound "<<outBound<<std::endl;
+  DriftedTrack thisDriftedTrack = {recX, recY, recZ, rec2X, rec2Y, rec2Z, outBound};
+  return thisDriftedTrack;
+}
+
+/*DriftedTrack DriftTrack (std::vector<float> x, std::vector<float> y, std::vector<float> z, std::vector<float> t, std::vector<int> tpc, std::vector<int> plane, double time, int cryo){
+  int outBound=0;
+  double cath;
   double maxLimit;
   double minLimit;
   std::vector<float> recX, recY, recZ;
@@ -130,73 +257,59 @@ void DriftTrack (std::vector<art::Ptr<recob::Hit>>* hits, double time, int cryo)
       cath=cathW;
       maxLimit=maxLimitW;
       minLimit=minLimitW;                
-  }*/
-  for(size_t j=0; j<hits->size(); j++){
-      //std::cout<<"Hit number "<<j<<" integral "<<hits.at(j)->Integral()<<" time "<<hits.at(j)->PeakTime()<<" plane "<<hits.at(j)->WireID().Plane<<" TPC "<<hits.at(j)->WireID().TPC<<std::endl;
-      //int driftDirection = DriftDirection(ogTrack.tpc[i]);
-      double recoX = (hits->at(j)->PeakTime()-846-time/tics)*tics*vdrift;
-      std::cout<<"Hit "<<j<<" Tic "<<hits->at(j)->PeakTime()<<" recoX "<<recoX<<std::endl;
   }
-  /* for(size_t i = 0; i < ogTrack.spx.size(); i++){
-      //if(isnan(ogTrack.spx[i])) continue;
-      int driftDirection = DriftDirection(ogTrack.tpc[i]);
-      double recoX = (ogTrack.tic[i]-846-time/tics)*tics*vdrift;
-      double planeX;
-      double realX; 
-      if(driftDirection==-1 && cryo==1) {
-          planeX=minLimit;
-          realX=planeX+recoX;
-      } else if (driftDirection==1 && cryo==1) {
-          planeX=maxLimit;
-          realX=planeX-recoX;
-      } else if (driftDirection==-1 && cryo==0) {
-          planeX=maxLimit;
-          realX=planeX+recoX;
-      } else if (driftDirection==1 && cryo==0) {
-          planeX=minLimit;
-          realX=planeX-recoX;
+  for(size_t j=0; j<x.size(); j++){
+    //std::cout<<"Hit number "<<j<<" integral "<<hits.at(j)->Integral()<<" time "<<hits.at(j)->PeakTime()<<" plane "<<hits.at(j)->WireID().Plane<<" TPC "<<hits.at(j)->WireID().TPC<<std::endl;
+    int driftDirection = DriftDirection(tpc.at(j));
+    double recoX = (t.at(j)-850-time/tics)*tics*vdrift;
+    double planeX;
+    double realX; 
+    if(driftDirection==-1 && cryo==1) {
+      planeX=minLimit;
+      realX=planeX+recoX;
+    } else if (driftDirection==1 && cryo==1) {
+      planeX=maxLimit;
+      realX=planeX-recoX;
+    } else if (driftDirection==-1 && cryo==0) {
+      planeX=maxLimit;
+      realX=planeX+recoX;
+    } else if (driftDirection==1 && cryo==0) {
+      planeX=minLimit;
+      realX=planeX-recoX;
+    }
+    if(cryo==1){
+      if( tpc.at(j)==0 || tpc.at(j)==1){
+        if(realX>(cath+exc)||realX<(minLimit-exc)){
+            //std::cout<<"Fuori dalla Drift Region 0/1 "<<std::endl;
+            outBound++;
+        }
       }
-      if(cryo==1){
-          if(ogTrack.tpc[i]==0 || ogTrack.tpc[i]==1){
-              if(realX>(cath+exc)||realX<(minLimit-exc)){
-                  //std::cout<<"Fuori dalla Drift Region 0/1 "<<std::endl;
-                  outBound++;
-              }
-          }
-          if(ogTrack.tpc[i]==2 || ogTrack.tpc[i]==3){
-              if(realX<(cath-TripleMatchingUtils::exc)||realX>(maxLimit+TripleMatchingUtils::exc)){
-                  outBound++;
-              }
-          }
-      } else if (cryo==0) {
-          if(ogTrack.tpc[i]==0 || ogTrack.tpc[i]==1){
-              if(realX>(cath+TripleMatchingUtils::exc)||realX<(maxLimit-TripleMatchingUtils::exc)){
-                  //std::cout<<"Fuori dalla Drift Region 0/1 "<<std::endl;
-                  outBound++;
-              }
-          }
-          if(ogTrack.tpc[i]==2 || ogTrack.tpc[i]==3){
-              if(realX<(cath-TripleMatchingUtils::exc)||realX>(minLimit+TripleMatchingUtils::exc)){
-                  outBound++;
-              }
-          }
+      if(tpc.at(j)==2 || tpc.at(j)==3){
+        if(realX<(cath-exc)||realX>(maxLimit+exc)){
+            outBound++;
+        }
       }
-      //if(abs(hx[i]-realX)<15 && realX<0)std::cout<<"Real X "<< hx[i] <<" Reco X  "<<recoX<<" TPC  "<<htpc[i]<<"  realX "<<realX<<"  outbound "<<outBound<<std::endl;
-      
-      recX.push_back(realX);
-      recY.push_back(ogTrack.spy[i]);
-      recZ.push_back(ogTrack.spz[i]);
-      if(ogTrack.spx[i]==ogTrack.startx && ogTrack.spy[i]==ogTrack.starty && ogTrack.spz[i]==ogTrack.startz) {
-          startx=realX;
+    } else if (cryo==0) {
+      if(tpc.at(j)==0 || tpc.at(j)==1){
+        if(realX>(cath+exc)||realX<(maxLimit-exc)){
+            //std::cout<<"Fuori dalla Drift Region 0/1 "<<std::endl;
+            outBound++;
+        }
       }
-      if(ogTrack.spx[i]==ogTrack.endx && ogTrack.spy[i]==ogTrack.endy && ogTrack.spz[i]==ogTrack.endz){
-          endx=realX; 
+      if(tpc.at(j)==2 || tpc.at(j)==3){
+        if(realX<(cath-exc)||realX>(minLimit+exc)){
+            outBound++;
+        }
       }
-      
+    }
+    //std::cout<<"Hit "<<j<<" Tic "<<t.at(j)<<" recoX "<<recoX<<" realX "<<realX<<" og x "<<x.at(j)<<" DELTAX "<<x.at(j)-realX<<" Plane "<<plane.at(j)<<" tpc "<<tpc.at(j)<<std::endl;
+    recX.push_back(realX);
+    recY.push_back(y.at(j));
+    recZ.push_back(z.at(j));
   }
-  TripleMatchingUtils::DriftedTrack thisDriftedTrack = {recX, recY, recZ, outBound, startx, endx};
-  return thisDriftedTrack;*/
-}
+  DriftedTrack thisDriftedTrack = {recX, recY, recZ, outBound};
+  return thisDriftedTrack;
+}*/
 
 
 }  // namespace triplematching
@@ -240,6 +353,8 @@ class icarus::crt::TripleMatchingAna : public art::EDAnalyzer {
   // tart::InputTag fCrtTrackModuleLabel;
   std::vector<art::InputTag> fTPCTrackLabel; ///< labels for source of tracks
   std::vector<art::InputTag> fPFParticleLabel; ///< labels for source of PFParticle
+  std::vector<art::InputTag> fHitLabel; ///< labels for source of hits
+  art::InputTag fTRKHMproducer; 
   
   std::optional<icarus::TriggerConfiguration> fTriggerConfiguration;
 
@@ -267,11 +382,33 @@ class icarus::crt::TripleMatchingAna : public art::EDAnalyzer {
   double fDirXAvg;
   double fDirYAvg;
   double fDirZAvg;
+  double fDirXPCA;
+  double fDirYPCA;
+  double fDirZPCA;
   std::vector<float> fTPx;
   std::vector<float> fTPy;
   std::vector<float> fTPz;
+  std::vector<float> fDriftedx;
+  std::vector<float> fDriftedy;
+  std::vector<float> fDriftedz;
+  std::vector<float> fDrifted2x;
+  std::vector<float> fDrifted2y;
+  std::vector<float> fDrifted2z;
+  std::vector<int> fPlane;
+  std::vector<int> fTPC;
+
+
+  double fFlashTime;
+  int fOutBound;
   int fIDTrack;
   int fCryo;
+  int fNMatch;
+  float fDeltaZ;
+  float fCRTx;
+  float fCRTy;
+  float fCRTz;
+  
+  
 
   // add trigger data product vars
   unsigned int m_gate_type;
@@ -309,6 +446,8 @@ icarus::crt::TripleMatchingAna::TripleMatchingAna(fhicl::ParameterSet const& p)
       fCrtPmtModuleLabel(p.get<art::InputTag>("CrtPmtModuleLabel")),
       fTPCTrackLabel(p.get< std::vector<art::InputTag> >("TPCTrackLabel",             {""})),
       fPFParticleLabel(p.get< std::vector<art::InputTag> >("PFParticleLabel",             {""})),  
+      fHitLabel(p.get< std::vector<art::InputTag> >("HitLabel",             {""})),
+      fTRKHMproducer(p.get< art::InputTag   > ("TRKHMproducer", "")),
       crtutil(new CRTCommonUtils())
 // More initializers here.
 {
@@ -343,12 +482,32 @@ icarus::crt::TripleMatchingAna::TripleMatchingAna(fhicl::ParameterSet const& p)
   fMatchTree->Branch("dirXAvg", &fDirXAvg);
   fMatchTree->Branch("dirYAvg", &fDirYAvg);
   fMatchTree->Branch("dirZAvg", &fDirZAvg);
+  fMatchTree->Branch("dirXPCA", &fDirXPCA);
+  fMatchTree->Branch("dirYPCA", &fDirYPCA);
+  fMatchTree->Branch("dirZPCA", &fDirZPCA);
   fMatchTree->Branch("TrackID", &fIDTrack);
   fMatchTree->Branch("TPX", &fTPx);
   fMatchTree->Branch("TPY", &fTPy);
   fMatchTree->Branch("TPZ", &fTPz);
+  fMatchTree->Branch("Plane", &fPlane);
+  fMatchTree->Branch("TPC", &fTPC);
+  
+  fMatchTree->Branch("DriftedX", &fDriftedx);
+  fMatchTree->Branch("DriftedY", &fDriftedy);
+  fMatchTree->Branch("DriftedZ", &fDriftedz);
+  fMatchTree->Branch("Drifted2X", &fDrifted2x);
+  fMatchTree->Branch("Drifted2Y", &fDrifted2y);
+  fMatchTree->Branch("Drifted2Z", &fDrifted2z);
+  
+  fMatchTree->Branch("FlashTime", &fFlashTime);
+  fMatchTree->Branch("OutBound", &fOutBound);
+  fMatchTree->Branch("NMatch", &fNMatch);
+  fMatchTree->Branch("DeltaZ", &fDeltaZ);
   fMatchTree->Branch("cryo", &fCryo);
-
+  fMatchTree->Branch("CRTX", &fCRTx);
+  fMatchTree->Branch("CRTY", &fCRTy);
+  fMatchTree->Branch("CRTZ", &fCRTz);
+  
 }
 
 
@@ -366,7 +525,8 @@ void icarus::crt::TripleMatchingAna::beginRun(art::Run const& r) {
 
 void icarus::crt::TripleMatchingAna::analyze(art::Event const& e) {
   // Implementation of required member function here.
-  
+  auto const clockData = art::ServiceHandle<detinfo::DetectorClocksService const>()->DataFor(e);
+  auto const detProp = art::ServiceHandle<detinfo::DetectorPropertiesService const>()->DataFor(e, clockData);
   if (!fTriggerConfiguration) {
     mf::LogDebug("TripleMatchingAna")
       << "Skipping because no data (or at least no trigger configuration).";
@@ -423,161 +583,178 @@ void icarus::crt::TripleMatchingAna::analyze(art::Event const& e) {
   art::FindMany<CRTHit> fmCRTHits(crtpmtHandle, e, fCrtPmtModuleLabel);
   art::FindMany<recob::OpFlash> fmCRTPMTFlash(crtpmtHandle, e, fCrtPmtModuleLabel);
 
-  // Tracks
   int cryo=-1;
-  int thisTrackID=-1;
-  for(const auto& trackLabel : fTPCTrackLabel) {
-    cryo++;
-    auto it = &trackLabel - fTPCTrackLabel.data();
-    // Get reconstructed tracks from the event    
-    auto tpcTrackHandle = e.getValidHandle<std::vector<recob::Track>>(trackLabel);
-    if (!tpcTrackHandle.isValid()) continue;
-
-    //Get PFParticles
-    auto pfpListHandle = e.getValidHandle<std::vector<recob::PFParticle> >(fPFParticleLabel[it]);
-    if (!pfpListHandle.isValid()) continue;
-
-    //Get PFParticle-Track association
-    art::FindManyP<recob::PFParticle> fmpfp(tpcTrackHandle, e, trackLabel); 
-
-    //Get T0-PFParticle association
-    art::FindManyP<anab::T0> fmt0pandora(pfpListHandle, e, fPFParticleLabel[it]);
-    art::FindManyP<larpandoraobj::PFParticleMetadata> PFPMetaDataAssoc(pfpListHandle, e, fPFParticleLabel[it]);
-    art::FindManyP<recob::Hit> findManyHits(tpcTrackHandle, e, trackLabel);
-    art::FindManyP<recob::Hit, recob::TrackHitMeta> fmtrkHits(tpcTrackHandle, e, trackLabel);
-
-    //std::cout<<"Label "<<trackLabel<<std::endl;
-    for (auto const& tpcTrack : (*tpcTrackHandle)){
-      thisTrackID++;
-      if(tpcTrack.Length()>30){
-        std::cout<<"This Track is long "<<tpcTrack.Length()<<std::endl;
-        std::cout<<"This Track start "<<tpcTrack.Start().X()<<" "<<tpcTrack.Start().Y()<<" "<<tpcTrack.Start().Z()<<std::endl;
-        std::cout<<"This Track end "<<tpcTrack.End().X()<<" "<<tpcTrack.End().Y()<<" "<<tpcTrack.End().Z()<<std::endl;
-      }
-      fTrackLength=tpcTrack.Length();
-      fTrackStartX=tpcTrack.Start().X();
-      fTrackStartY=tpcTrack.Start().Y();
-      fTrackStartZ=tpcTrack.Start().Z();
-      fTrackEndX=tpcTrack.End().X();
-      fTrackEndY=tpcTrack.End().Y();
-      fTrackEndZ=tpcTrack.End().Z();
       
-	    //auto idx = &tpcTrack - (*tpcTrackHandle).data();
-      double t0 = -999999999;
-	    //Find PFParticle for track i
-	    //art::Ptr::key() gives the index in the vector 
-	    auto pfps = fmpfp.at(tpcTrack.ID());
-	    if (!pfps.empty()){
-	      //Find T0 for PFParticle
-	      auto t0s = fmt0pandora.at(pfps[0].key()); 
-	      if (!t0s.empty()){  
-	        t0 = t0s[0]->Time();   //Get T0  
-          //std::cout<<"The Slice is not empty, size "<<pfps.size()<<std::endl;
-	      }
-        auto const pfpmeta = PFPMetaDataAssoc.at(pfps[0].key());
-        //std::cout<<"Type of pfpmeta "<<typeid(pfpmeta[0]).name()<<std::endl;
-        auto const &propertiesMap (pfpmeta[0]->GetPropertiesMap());
-        auto const &pfpTrackScoreIter(propertiesMap.find("TrackScore"));
-        double trackScore = (pfpTrackScoreIter == propertiesMap.end()) ? -5.f : pfpTrackScoreIter->second;
-        auto const &pfpNuScoreIter(propertiesMap.find("NuScore"));
-        double nuScore = (pfpNuScoreIter == propertiesMap.end()) ? -5.f : pfpNuScoreIter->second;
-        auto const &pfpIsClearCosmicScoreIter(propertiesMap.find("IsClearCosmic"));
-        double isClearCosmic = (pfpIsClearCosmicScoreIter == propertiesMap.end()) ? -5.f : pfpIsClearCosmicScoreIter->second;
-        //std::cout<<"Track Score "<<trackScore<<" ; NuScore "<<nuScore<<" ; isClearCosmic "<<isClearCosmic<<std::endl;
-        fTrackScore=trackScore;
-        fNuScore=nuScore;
-        fClearCosmic=isClearCosmic;
-      }
-      //std::cout<<"Type of pfps "<<typeid(pfps).name()<<std::endl;
-      std::vector<art::Ptr<recob::Hit>> hits = findManyHits.at(tpcTrack.ID());
-      const std::vector<const recob::TrackHitMeta*> hitsmeta=fmtrkHits.data(tpcTrack.ID());
-	    //std::cout<< "This Track has hits "<<hits.size()<<" and meta size "<<hitsmeta.size()<<" entries and T0: " <<  (Long64_t) t0 << std::endl;
-      fSizeHits=hits.size();
+  for(const auto& PFPLabel : fPFParticleLabel) {
+    cryo++;
+    auto it = &PFPLabel - fPFParticleLabel.data();
+    std::vector<art::Ptr<recob::PFParticle>> PFParticleList;
+    art::ValidHandle<std::vector<recob::PFParticle>> pfparticles = e.getValidHandle<std::vector<recob::PFParticle>>(PFPLabel);
+    art::fill_ptr_vector(PFParticleList, pfparticles);
+
+    // Pandora MetaData
+    art::FindManyP<anab::T0> fmt0pandora(pfparticles, e, PFPLabel);
+    art::FindManyP<larpandoraobj::PFParticleMetadata> PFPMetaDataAssoc(pfparticles, e, PFPLabel);
+
+    // Tracks
+    art::ValidHandle<std::vector<recob::Track>> tracks = e.getValidHandle<std::vector<recob::Track>>(fTPCTrackLabel[it]);
+
+    // Track - associated data
+    art::FindManyP<recob::Track> fmTracks(PFParticleList, e, fTPCTrackLabel[it]);
+
+    // Collect all hits
+    art::ValidHandle<std::vector<recob::Hit>> allhit_handle = e.getValidHandle<std::vector<recob::Hit>>(fHitLabel[it]);
+    std::vector<art::Ptr<recob::Hit>> allHits;
+    art::fill_ptr_vector(allHits, allhit_handle);
+
+    for (art::Ptr<recob::PFParticle> p_pfp: PFParticleList) {
+      //const recob::PFParticle &pfp = *p_pfp;
+      const std::vector<art::Ptr<recob::Track>> thisTrack = fmTracks.at(p_pfp.key());
+      if (thisTrack.size() != 1) continue;
+      
+      art::Ptr<recob::Track> trkPtr = thisTrack.at(0);
+      const recob::Track &track = *trkPtr;
+
+      art::InputTag thm_label = fTRKHMproducer.empty() ? fTPCTrackLabel[it] : fTRKHMproducer;
+      art::FindManyP<recob::Hit, recob::TrackHitMeta> fmtrkHits(tracks, e, thm_label);
+      std::vector<art::Ptr<recob::Hit>> emptyHitVector;
+      const std::vector<art::Ptr<recob::Hit>> &trkHits  = fmtrkHits.isValid() ? fmtrkHits.at(trkPtr.key()) : emptyHitVector;
+
+      std::vector<const recob::TrackHitMeta*> emptyTHMVector;
+      const std::vector<const recob::TrackHitMeta*> &trkHitMetas = fmtrkHits.isValid() ? fmtrkHits.data(trkPtr.key()) : emptyTHMVector;
+
+      // T0
+      float t0 = std::numeric_limits<float>::signaling_NaN();
+      auto t0s = fmt0pandora.at(p_pfp.key());
+      if (!t0s.empty()){  
+	      t0 = t0s[0]->Time();   //Get T0  
+        std::cout<<"Timestamp from Pandora "<<(Long64_t)t0<<std::endl;
+	    }
+
+      // Other MetaData
+      auto const pfpmeta = PFPMetaDataAssoc.at(p_pfp.key());
+      auto const &propertiesMap (pfpmeta[0]->GetPropertiesMap());
+      auto const &pfpTrackScoreIter(propertiesMap.find("TrackScore"));
+      double trackScore = (pfpTrackScoreIter == propertiesMap.end()) ? -5.f : pfpTrackScoreIter->second;
+      auto const &pfpNuScoreIter(propertiesMap.find("NuScore"));
+      double nuScore = (pfpNuScoreIter == propertiesMap.end()) ? -5.f : pfpNuScoreIter->second;
+      auto const &pfpIsClearCosmicScoreIter(propertiesMap.find("IsClearCosmic"));
+      double isClearCosmic = (pfpIsClearCosmicScoreIter == propertiesMap.end()) ? -5.f : pfpIsClearCosmicScoreIter->second;
+      fTrackScore=trackScore;
+      fNuScore=nuScore;
+      fClearCosmic=isClearCosmic;
+      //Track ID -> trkPtr->ID()
+
+      fTrackLength=track.Length();
+      
+      if(fTrackLength<30) continue;
+
+      fTrackStartX=track.Start().X();
+      fTrackStartY=track.Start().Y();
+      fTrackStartZ=track.Start().Z();
+      fTrackEndX=track.End().X();
+      fTrackEndY=track.End().Y();
+      fTrackEndZ=track.End().Z();
+      
+      fSizeHits=trkHits.size();
       fT0Track=t0;
       double dirXAvg=0, dirYAvg=0, dirZAvg=0;
-      std::vector<float> hx, hy, hz, hi;
+
+      std::vector<float> hx, hy, hz, hi, ht;
+      std::vector<int> htpc, hplane;
       int gCounts=0;
-      for(size_t j=0; j<hits.size(); j++){
-        //std::cout<<"Hit number "<<j<<" integral "<<hits.at(j)->Integral()<<" time "<<hits.at(j)->PeakTime()<<" plane "<<hits.at(j)->WireID().Plane<<" TPC "<<hits.at(j)->WireID().TPC<<std::endl;
-        geo::Point_t loc = tpcTrack.LocationAtPoint(j);
-        geo::Vector_t dir = tpcTrack.DirectionAtPoint(j);
-        if(loc.X()==-999) continue;
-        dirXAvg+=dir.X();
-        dirYAvg+=dir.Y();
-        dirZAvg+=dir.Z();
-        fTPx.push_back(loc.X());
-        fTPy.push_back(loc.Y());
-        fTPz.push_back(loc.Z());
-        hx.push_back(loc.X());
-        hy.push_back(loc.Y());
-        hz.push_back(loc.Z());
-        hi.push_back(hits.at(j)->Integral());        
-        //std::cout<<"----> Position X "<<loc.X()<<" Y "<<loc.Y()<<" Z "<<loc.Z()<<std::endl;
-        //std::cout<<"----> Direction dirX "<<dir.X()<<" dirY "<<dir.Y()<<" dirZ "<<dir.Z()<<std::endl;
-        gCounts++;
-      }
-      if(tpcTrack.Length()>30){
-        icarus::crt::triplematching::TrackBarycenter TrackBarycenter = icarus::crt::triplematching::GetTrackBarycenter(hx, hy, hz, hi);
-        for(const auto& crtpmtM : crtpmtMatches){
-          if(cryo==0 && crtpmtM.flashPosition.X()>0) continue;
-          else if(cryo==1 && crtpmtM.flashPosition.X()<0) continue;
-          std::cout<<"Flash Time "<<crtpmtM.flashTime<<" Flash Type "<<(int)crtpmtM.flashClassification<<" Position X "<<crtpmtM.flashPosition.X()<<" Y "<<crtpmtM.flashPosition.Y()<<" Z "<<crtpmtM.flashPosition.Z()<<std::endl;
-          std::cout<<"Delta Z "<<abs(TrackBarycenter.BarZ-crtpmtM.flashPosition.Z())<<std::endl;
-          if(abs(TrackBarycenter.BarZ-crtpmtM.flashPosition.Z())<30){
-            icarus::crt::triplematching::DriftTrack(&hits, crtpmtM.flashTime,cryo);
-          }
+      for(size_t i=0; i<trkHits.size(); i++){
+        bool badhit = (trkHitMetas[i]->Index() == std::numeric_limits<unsigned int>::max()) ||
+                    (!track.HasValidPoint(trkHitMetas[i]->Index()));
+
+        if (!badhit) {
+          geo::Point_t loc = track.LocationAtPoint(trkHitMetas[i]->Index());
+          hx.push_back(loc.X());
+          hy.push_back(loc.Y());
+          hz.push_back(loc.Z());
+          geo::Vector_t dir = track.DirectionAtPoint(trkHitMetas[i]->Index());
+          dirXAvg+=dir.X();
+          dirYAvg+=dir.Y();
+          dirZAvg+=dir.Z();
+          fTPx.push_back(loc.X());
+          fTPy.push_back(loc.Y());
+          fTPz.push_back(loc.Z());
+          
+          fPlane.push_back(trkHits[i]->WireID().Plane);
+          fTPC.push_back(trkHits[i]->WireID().TPC);
+          hplane.push_back(trkHits[i]->WireID().Plane);
+          htpc.push_back(trkHits[i]->WireID().TPC);
+          ht.push_back(trkHits[i]->PeakTime());
+          hi.push_back(trkHits[i]->Integral());
+          gCounts++;
         }
       }
       fDirXAvg=dirXAvg/gCounts;
       fDirYAvg=dirYAvg/gCounts;
       fDirZAvg=dirZAvg/gCounts;
-      fIDTrack=thisTrackID;
+      fIDTrack=trkPtr->ID();
+      fCRTx=-9999;
+      fCRTy=-9999;
+      fCRTz=-9999;
       fCryo=cryo;
-      fMatchTree->Fill();
+      int nMatch=0;
+      icarus::crt::triplematching::Direction trackDir={-5,-5,-5,0,0,0};
+      if(gCounts>5) trackDir=icarus::crt::triplematching::PCAfit(hx, hy, hz);
+      icarus::crt::triplematching::TrackBarycenter TrackBarycenter = icarus::crt::triplematching::GetTrackBarycenter(hx, hy, hz, hi);
+      for(const auto& crtpmtM : crtpmtMatches){
+        if(cryo==0 && crtpmtM.flashPosition.X()>0) continue;
+        else if(cryo==1 && crtpmtM.flashPosition.X()<0) continue;
+        std::cout<<"Flash Time "<<crtpmtM.flashTime<<" Flash Type "<<(int)crtpmtM.flashClassification<<" Position X "<<crtpmtM.flashPosition.X()<<" Y "<<crtpmtM.flashPosition.Y()<<" Z "<<crtpmtM.flashPosition.Z()<<std::endl;
+        if(crtpmtM.matchedCRTHits.size()!=0){
+          for(size_t u=0; u<crtpmtM.matchedCRTHits.size(); u++){
+            std::cout<<"Hit region "<<crtpmtM.matchedCRTHits.at(u).region<<" X "<<crtpmtM.matchedCRTHits.at(u).position.X()<<" Y "<<crtpmtM.matchedCRTHits.at(u).position.Y()<<" Z "<<crtpmtM.matchedCRTHits.at(u).position.Z()<<std::endl;
+          }
+        }
+        if((int)crtpmtM.flashClassification==1){
+          fCRTx=crtpmtM.matchedCRTHits.at(0).position.X();
+          fCRTy=crtpmtM.matchedCRTHits.at(0).position.Y();
+          fCRTz=crtpmtM.matchedCRTHits.at(0).position.Z(); 
+        }
+        std::cout<<"Delta Z "<<abs(TrackBarycenter.BarZ-crtpmtM.flashPosition.Z())<<std::endl;
+        if(abs(TrackBarycenter.BarZ-crtpmtM.flashPosition.Z())<100){
+          nMatch++;
+          //icarus::crt::triplematching::DriftedTrack thisDriftedTrack = icarus::crt::triplematching::DriftTrack(hx, hy, hz, ht, htpc, hplane, crtpmtM.flashTime, cryo);
+          icarus::crt::triplematching::DriftedTrack thisDriftedTrack = icarus::crt::triplematching::upgDriftTrack(trkHits, trkHitMetas, fGeometryService, detProp, crtpmtM.flashTime, cryo, track);
+          fDriftedx=thisDriftedTrack.spx;
+          fDriftedy=thisDriftedTrack.spy;
+          fDriftedz=thisDriftedTrack.spz;
+          fDrifted2x=thisDriftedTrack.spx2;
+          fDrifted2y=thisDriftedTrack.spy2;
+          fDrifted2z=thisDriftedTrack.spz2;
+          fOutBound=thisDriftedTrack.outbound;
+          fFlashTime=crtpmtM.flashTime;
+          fNMatch=nMatch;
+          fDeltaZ=TrackBarycenter.BarZ-crtpmtM.flashPosition.Z();
+          if(thisDriftedTrack.outbound>0) {
+            std::cout<<"ATTENTION PLEASE, THIS TIME IS NOT GOOD FOR THIS TRACK! "<<thisDriftedTrack.outbound<<std::endl;
+            continue;
+          }
+          icarus::crt::triplematching::Direction driftedTrackDir={-5,-5,-5,0,0,0};
+          if(thisDriftedTrack.spx.size()>5) driftedTrackDir=icarus::crt::triplematching::PCAfit(thisDriftedTrack.spx, thisDriftedTrack.spy, thisDriftedTrack.spz);
+          fDirXPCA=driftedTrackDir.dirx;
+          fDirYPCA=driftedTrackDir.diry;
+          fDirZPCA=driftedTrackDir.dirz;
+          fMatchTree->Fill();
+        }
+      } // End CRTPMT
       ClearVecs();
-      //if (hits.size() == 0) continue;
-      
-    }
-    
-  }
-
-  for (art::InputTag const& flashLabel : fFlashLabels) {
-    auto const flashHandle =
-        e.getHandle<std::vector<recob::OpFlash>>(flashLabel);
-    art::FindMany<recob::OpHit> findManyHits(flashHandle, e, flashLabel);
-
-    for (auto const& [iflash, flash] : util::enumerate(*flashHandle)) {
-      //double tflash = flash.Time();
-      //double tAbsflash = flash.AbsTime();
-      vector<recob::OpHit const*> const& hits = findManyHits.at(iflash);
-      //int nPMTsTriggering = 0;
-      double firstStartTime = 999999, firstPeakTime = 999999, firstRiseTime = 999999;
-      geo::vect::MiddlePointAccumulator flashCentroid;
-      // double flash_pos[3]={0,0,0};
-      // double ampsum = 0, t_m = 0; // unused
-      for (auto const& hit : hits) {
-        if (firstStartTime > hit->StartTime()) firstStartTime = hit->StartTime();
-        if (firstPeakTime > hit->PeakTime()) firstPeakTime = hit->PeakTime();
-        if (firstRiseTime > hit->StartTime()+hit->RiseTime()) firstRiseTime = hit->StartTime()+hit->RiseTime();
-        geo::Point_t const pos =
-            fGeometryService->OpDetGeoFromOpChannel(hit->OpChannel())
-                .GetCenter();
-        double amp = hit->Amplitude();
-        flashCentroid.add(pos, amp);
-        // t_m = t_m + hit->StartTime(); // unused
-      }
-      //geo::Point_t flash_pos = flashCentroid.middlePoint();
-      //fMatchTree->Fill();
-      ClearVecs();
-    }  // for Flash
-  }
+    } // End PFP
+  } // End of PFP Labels
 }
+
 
 void icarus::crt::TripleMatchingAna::ClearVecs() {
   // matchTree
   fTPx.clear();
   fTPy.clear();
   fTPz.clear();
+  fPlane.clear();
+  fTPC.clear();
 }
 
 DEFINE_ART_MODULE(icarus::crt::TripleMatchingAna)

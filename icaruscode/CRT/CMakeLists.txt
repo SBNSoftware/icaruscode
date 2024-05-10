@@ -25,6 +25,7 @@ art_make(
         CRTPMTMatchingAna_module.cc
         CRTTPCTruthEff_module.cc
         TripleMatchingAna_module.cc
+	TrackSplittingAna_module.cc
     LIBRARY_NAME
         icaruscode_CRTData
     SOURCE
@@ -273,6 +274,28 @@ cet_build_plugin(CRTPMTMatchingAna art::module
 )
 
 cet_build_plugin(TripleMatchingAna art::module
+     LIBRARIES
+        sbnobj::ICARUS_CRT
+        icaruscode_CRT
+        sbnobj::Common_CRT
+        icaruscode_CRTUtils
+        icaruscode::Decode_DataProducts
+        larcore::Geometry_Geometry_service
+        larcorealg::Geometry
+        nusimdata::SimulationBase
+        lardataobj::RecoBase
+        lardataalg::DetectorInfo
+        art::Framework_Services_Registry
+        art_root_io::tfile_support ROOT::Core
+        art_root_io::TFileService_service
+        lardataalg::DetectorInfo
+        messagefacility::MF_MessageLogger
+        messagefacility::headers
+        ROOT::Core
+        ROOT::Tree
+)
+
+cet_build_plugin(TrackSplittingAna art::module
      LIBRARIES
         sbnobj::ICARUS_CRT
         icaruscode_CRT

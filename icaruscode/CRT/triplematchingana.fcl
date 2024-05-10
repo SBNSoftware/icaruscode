@@ -57,6 +57,7 @@ physics:
 
       TPCTrackLabel:       ["pandoraTrackGausCryoE", "pandoraTrackGausCryoW"]     # Track producer module label
       PFParticleLabel: 	   ["pandoraGausCryoE", "pandoraGausCryoW"] # PFParticle producer module label
+      HitLabel:   ["cluster3DCryoE" , "cluster3DCryoW"]
 
       # note 19/04/2023: parameters are set to run2,
       # they can be set to run1, but currently values are the same 
