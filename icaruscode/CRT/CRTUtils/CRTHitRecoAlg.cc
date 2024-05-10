@@ -940,12 +940,14 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeSideHit(
   int mac5_1 = -555;  //layer 1 mac5 (used to check for hits that cross module)
   int mac5_2 = -555;  //layer 2 mac5 (used to check for hits that cross module)
   geo::Point_t center;
-
+  int zrange_min = 0, zrange_max = 0;
   for (auto const& infn : informationA) {
     auto i = &infn - informationA.data();
     auto const& adsGeo = adGeo.SensitiveVolume(infn.strip);  // trigger stripi
     center = adsGeo.GetCenter();
-
+    // rough Z boundaries for each module (relevent for side E+W)
+    zrange_min = center.Z() - adsGeo.HalfLength();
+    zrange_max = center.Z() + adsGeo.HalfLength();
     if (fVerbose)
       mf::LogInfo("CRTHitRecoAlg: ")
           << "A type ----------> time: " << (long long int)infn.t0 << " ,macs "
@@ -1002,7 +1004,14 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeSideHit(
 	    << "*** FEB A delta_t greater than 54! delta_t = " 
 	    << int64_t(t1_1 - t1_2) << ", setting flag == 5 ... \n";
       }
-
+      // *** Flag 3: Check and flag if reco z beyond length of module A
+      else if((posA.Z() < zrange_min || posA.Z() > zrange_max ) and region!="South" && region!="North" and flag==0){
+	flag = 3;
+	if (fVerbose) 
+	  mf::LogInfo("CRTHitRecoAlg:MakeSideHit") 
+	    << "*** reco Z beyond length of module!! posA.Z = " 
+	    << posA.Z() << ", minz,maxz = " << zrange_min << ", " << zrange_max << "\n";
+      }
       if (fVerbose)
         mf::LogInfo("CRTHitRecoAlg: ")
 	  << "posA (==0): " << posA << '\n'
@@ -1030,7 +1039,9 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeSideHit(
     auto i = &infn - informationB.data();
     auto const& adsGeo = adGeo.SensitiveVolume(infn.strip);  // trigger stripi
     center = adsGeo.GetCenter();
-    
+    // rough Z boundaries for each module (relevent for side E+W)
+    zrange_min = center.Z() - adsGeo.HalfLength();
+    zrange_max = center.Z() + adsGeo.HalfLength();
     if (((int)infn.mac5s != (int)informationB[i + 1].mac5s and
 	 i < (int)informationB.size() - 1) || flag == 6) {
       if((int)febB.size()==1 and i > 0) continue;
@@ -1081,7 +1092,14 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeSideHit(
 	    << "*** FEB B delta_t greater than 54! delta_t = "
 	    << int64_t(t2_1 - t2_2) << ", setting flag == 5 ... \n";
       }
-
+      // *** Flag 3: Check and flag if reco z beyond length of module B
+      else if((posB.Z() < zrange_min || posB.Z() > zrange_max) and region!="South" && region!="North" and flag == 0){
+	flag = 3;
+	if (fVerbose)
+	  mf::LogInfo("CRTHitRecoAlg:MakeSideHit")
+	    << "*** reco Z beyond length of module!! posB.Z = "
+	    << posB.Z() << ", minz,maxz = " << zrange_min << ", " << zrange_max << "\n";
+      }
       if (fVerbose)
         mf::LogInfo("CRTHitRecoAlg:")
 	  << "posB (== 0): " << posB << '\n'
@@ -1233,7 +1251,22 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeSideHit(
   hitpoint[0] = hitpos.X();
   hitpoint[1] = hitpos.Y();
   hitpoint[2] = hitpos.Z();
+  //check if final z pos is out of the z range of that wall 
+  // (if not flagged with bad positions earlier on, double check z positions again now...)
 
+  
+  if(fVerbose)
+    mf::LogInfo("CRTHitRecoAlg: ") << "is (hitpoint[2] " << hitpoint[2] << " < zrange_min " 
+				   << zrange_min << " or > zrange_max " <<  zrange_max << "? (flag = " << flag << "\n";
+  // *** Flag 4: Check and flag if final reco z beyond length of module 
+  if((hitpoint[2] < zrange_min || hitpoint[2] > zrange_max) and flag!=5 and region!="South" && region!="North"){
+    flag = 4;
+    if (fVerbose) 
+      mf::LogInfo("CRTHitRecoAlg: ") 
+	<< "*** Zpos of hit in " << region << " is off the wall! z=" 
+	<< hitpoint[2] << "is beyond bounds for " << region << " : (zmin,zmax=" 
+	<< zrange_min << ", " << zrange_max <<"), setting flag = 4 ... " << flag << "\n"; 
+  }
   if (region == "South" && hitpoint[0] >= 366. && hitpoint[1] > 200. &&
       fVerbose)
     mf::LogInfo("CRTHitRecoAlg: ")
@@ -1344,6 +1377,14 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeSideHit(
     }
     std::cout << ") in region " << region << " with flag " << flag << "\n";
     std::cout << " final (x,y,z) = ( " <<  hitpoint[0] << ", " << hitpoint[1] << ", " << hitpoint[2] << ")\n";
+    std::cout << " region bounds = (zmin, zmax) = (" << zrange_min << ", " << zrange_max << ")\n";
+    std::cout << "\t is final Z within bounds? ";
+    if (hitpoint[2] < zrange_min || hitpoint[2] > zrange_max){
+      std::cout << " out of bounds, flag " << flag << " \n";
+      if (hitpoint[2] < zrange_min ) std::cout << " final Z " << hitpoint[2] << " is < " << zrange_min << ", out of bounds on south end \n";
+      if (hitpoint[2] > zrange_max ) std::cout << " final Z " << hitpoint[2] << " is > " << zrange_max << ", out of bounds on north end \n";
+    }
+    else std::cout << " within bounds, flag " << flag << "\n";
     std::cout << " final T0 = " << thit << ", T1 = " << thit1 << "\n";
     std::cout << "flag = " << flag << "\n-------------------------------\n";
   }
