@@ -41,8 +41,8 @@ namespace wiremod
       const geo::GeometryCore* fGeometry = lar::providerFrom<geo::Geometry>(); // get the geometry
       TSpline3 fDummySpline_charge; // we're faking it!
       TSpline3 fDummySpline_sigma;
-      TGraph2DErrors fDummyGraph_charge; // yup, still fake 
-      TGraph2DErrors fDummyGraph_sigma;
+      TGraph2D fDummyGraph_charge; // yup, still fake 
+      TGraph2D fDummyGraph_sigma;
       art::InputTag fWireLabel; // which wires are we pulling in?
       art::InputTag fHitLabel; // which hits are we pulling in?
 
@@ -69,8 +69,8 @@ namespace wiremod
     double vals_inv[3] = {1.0 / 1.2, 1.0 / 1.2, 1.0 / 1.2};
     fDummySpline_charge = TSpline3("dummySpline", pnts[0], pnts[2], vals, 3);
     fDummySpline_sigma  = TSpline3("dummySpline", pnts[0], pnts[2], vals_inv, 3);
-    fDummyGraph_charge  = TGraph2DErrors(3, pnts, pnts, vals);
-    fDummyGraph_sigma   = TGraph2DErrors(3, pnts, pnts, vals_inv);
+    fDummyGraph_charge  = TGraph2D(3, pnts, pnts, vals);
+    fDummyGraph_sigma   = TGraph2D(3, pnts, pnts, vals_inv);
 
     // we make these things
     //produces<std::vector<recob::Wire>>();
