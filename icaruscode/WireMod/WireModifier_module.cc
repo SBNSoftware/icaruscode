@@ -43,8 +43,8 @@ namespace wiremod
       std::string fRatioFileName; // there is where we try to grab the splines/graphs (if they exist)
       std::vector<TSpline3*> fSpline_charge;
       std::vector<TSpline3*> fSpline_sigma;
-      std::vector<TGraph2DErrors*> fGraph_charge; 
-      std::vector<TGraph2DErrors*> fGraph_sigma;
+      std::vector<TGraph2D*> fGraph_charge; 
+      std::vector<TGraph2D*> fGraph_sigma;
       art::InputTag fWireLabel; // which wires are we pulling in?
       art::InputTag fHitLabel; // which hits are we pulling in?
       bool fSaveHistsByChannel; // save modified signals by channel?
@@ -83,8 +83,8 @@ namespace wiremod
       {
         fSpline_charge.push_back(new TSpline3("dummySpline", pnts[0], pnts[2], vals, 3)    );
         fSpline_sigma .push_back(new TSpline3("dummySpline", pnts[0], pnts[2], vals_inv, 3));
-        fGraph_charge .push_back(new TGraph2DErrors(3, pnts, pnts, vals)                   );
-        fGraph_sigma  .push_back(new TGraph2DErrors(3, pnts, pnts, vals_inv)               );
+        fGraph_charge .push_back(new TGraph2D(3, pnts, pnts, vals)                         );
+        fGraph_sigma  .push_back(new TGraph2D(3, pnts, pnts, vals_inv)                     );
       }
     } else {
       TFile* ratioFile = new TFile(fRatioFileName.c_str(), "READ"); // read only
@@ -92,10 +92,10 @@ namespace wiremod
       // for now hard code what the names should be
       for (size_t plane = 0; plane < 3; ++plane)
       {
-        fSpline_charge.push_back(ratioFile->Get<TSpline3>      (("Spline_charge_" + std::to_string(plane)).c_str()));
-        fSpline_sigma .push_back(ratioFile->Get<TSpline3>      (("Spline_sigma_"  + std::to_string(plane)).c_str()));
-        fGraph_charge .push_back(ratioFile->Get<TGraph2DErrors>(("Graph_charge_"  + std::to_string(plane)).c_str()));
-        fGraph_sigma  .push_back(ratioFile->Get<TGraph2DErrors>(("Graph_sigma_"   + std::to_string(plane)).c_str()));
+        fSpline_charge.push_back(ratioFile->Get<TSpline3>(("Spline_charge_" + std::to_string(plane)).c_str()));
+        fSpline_sigma .push_back(ratioFile->Get<TSpline3>(("Spline_sigma_"  + std::to_string(plane)).c_str()));
+        fGraph_charge .push_back(ratioFile->Get<TGraph2D>(("Graph_charge_"  + std::to_string(plane)).c_str()));
+        fGraph_sigma  .push_back(ratioFile->Get<TGraph2D>(("Graph_sigma_"   + std::to_string(plane)).c_str()));
       }
     }
 
