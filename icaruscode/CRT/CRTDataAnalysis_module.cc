@@ -621,7 +621,6 @@ namespace crt {
 		}	
   	     }
 	  } else if (fHitSubSys==1) {
-	    std::cout << "hitFlag = " << hit.ts0_s_corr << "\n";
 	     int arrpos=-1;
 	     std::map<uint8_t, std::vector<std::pair<int,float>>>::const_iterator it;
 	     for (it = hit.pesmap.begin(); it!=hit.pesmap.end();it++){
