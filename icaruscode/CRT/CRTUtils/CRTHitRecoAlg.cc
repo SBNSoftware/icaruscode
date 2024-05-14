@@ -1389,7 +1389,7 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeSideHit(
     std::cout << "flag = " << flag << "\n-------------------------------\n";
   }
   // generate hit
-  CRTHit hit = FillCRTHit(macs, pesmap, petot, thit, flag, thit1, plane, hitpoint[0],
+  CRTHit hit = FillCRTHit(macs, pesmap, petot, flag, thit, thit1, plane, hitpoint[0],
                           hitpointerr[0], hitpoint[1], hitpointerr[1],
                           hitpoint[2], hitpointerr[2], region);
 
