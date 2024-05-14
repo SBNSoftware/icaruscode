@@ -229,7 +229,7 @@ namespace crt {
     int       fHitMod;
     int       fNHitFeb;
     float     fHitTotPe;
-
+    double fHitFlag; // CRT Hit flag for side CRT Z reconstruction
     //CRT-PMT Matching vars
     int          fMatchEvent;///< Event number.
     int          fMatchRun;///< Run number.
@@ -404,7 +404,7 @@ namespace crt {
     fHitNtuple->Branch("gate_crt_diff",&m_gate_crt_diff, "gate_crt_diff/l");
     fHitNtuple->Branch("crt_global_trigger",&m_crt_global_trigger,"crt_global_trigger/l");
     fHitNtuple->Branch("crtGT_trig_diff",&m_crtGT_trig_diff,"crtGT_trig_diff/L");
-    
+    fHitNtuple->Branch("hitFlag", &fHitFlag, "hitFlag/D");
     // Define the branches of our CRTPMTMatch ntuple
     fCRTPMTNtuple->Branch("event", &fMatchEvent, "event/I");
     fCRTPMTNtuple->Branch("run", &fMatchRun, "run/I");
@@ -587,7 +587,7 @@ namespace crt {
 	  fZErrHit = hit.z_err;
 	  fT0Hit   = hit.ts0_ns;
 	  fT1Hit   = hit.ts1_ns;
-	   
+	  fHitFlag = 0; //default flag = 0, only fill var. below for side CRT hits
 	  fNHitFeb  = hit.feb_id.size();
 	  fHitTotPe = hit.peshit;
 	  int mactmp = hit.feb_id[0];
@@ -621,6 +621,7 @@ namespace crt {
 		}	
   	     }
 	  } else if (fHitSubSys==1) {
+	    std::cout << "hitFlag = " << hit.ts0_s_corr << "\n";
 	     int arrpos=-1;
 	     std::map<uint8_t, std::vector<std::pair<int,float>>>::const_iterator it;
 	     for (it = hit.pesmap.begin(); it!=hit.pesmap.end();it++){
@@ -636,8 +637,14 @@ namespace crt {
                 }
              }
 	  }
+						      
+	  // Load in CRTHitFlag for side CRT Hits only
+	  // hit.ts0_s_corr was an unused variable in the sbn/common/CRTHit.h, repurposed this var for the hit flag to classify side CRT Z-position reconstruction 
+	  // if hitFlags are filled, hit.ts0_s_corr should be < 7, or else a timestamp is saved in ts0_s_corr
+	  if (hit.ts0_s_corr < 7) fHitFlag = hit.ts0_s_corr; 
+						      
 	  int chantmp = (*ittmp).second[0].first;
-	  
+						      
 	  fHitMod  = fCrtutils->MacToAuxDetID(mactmp, chantmp);
 	  fHitStrip = fCrtutils->ChannelToAuxDetSensitiveID(mactmp, chantmp);
 	  
