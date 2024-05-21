@@ -72,12 +72,6 @@ vector<art::Ptr<CRTData>> CRTHitRecoAlg::PreselectCRTData(
             !crtList[febdat_i]->IsReference_TS0())
           continue;  // filter out low PE and non-T1 and non-T0 ref values
         presel = true;
-        /*if (fVerbose)
-          mf::LogInfo("CRTHitRecoAlg: ")
-              << "\nfebP (mac5, channel, gain, pedestal, adc, pe) = ("
-              << (int)crtList[febdat_i]->fMac5 << ", " << chan << ", "
-              << chg_cal.first << ", " << chg_cal.second << ","
-              << crtList[febdat_i]->fAdc[chan] << "," << pe << ")\n";*/
       }
     } else if (type == 'c') { // 'c' = CERN, Top CRTs
       for (int chan = 0; chan < 32; chan++) {
@@ -597,22 +591,13 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeSideHit(
   std::vector<int> layID, febA, febB;
 
   uint64_t southt0_v = -999, southt0_h = -999;
-  int layA = fCrtutils.GetMINOSLayerID(adid); // layer ID
   // loop over coinData to group FEBs into inner or outer layers (febA or febB)
   for (auto const& data : coinData) {
-    int modID = (int)fCrtutils.MacToAuxDetID((int)data->fMac5, 0);
-    int lay_X = fCrtutils.GetMINOSLayerID(modID); //layerID of data entry in coinData
     if (adid == (int)fCrtutils.MacToAuxDetID((int)data->fMac5, 0)) {
       febA.push_back(data->fMac5);
-      if (fVerbose)
-	mf::LogInfo("CRTHitRecoAlg: ") 
-	  << "FEB A: mac " << int(data->fMac5) << ", modID " << modID << ", layer " << layA << "\n";
     } 
     else {
       febB.push_back(data->fMac5);
-      if (fVerbose)
-	mf::LogInfo("CRTHitRecoAlg: ") 
-	  << "FEB B: mac " << int(data->fMac5) << ", modID " << modID << ", layer " << lay_X << "\n";
     }
   }
   if (fVerbose)
