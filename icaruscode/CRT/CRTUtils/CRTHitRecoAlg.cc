@@ -1300,7 +1300,7 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeSideHit(
     hitpointerr[1] = adsGeo.HalfWidth1() * 2 / sqrt(12);
     hitpointerr[2] = (zmax - zmin) / sqrt(12);
   }
-  if (flag == 6 and region!="South" && region!="North"){
+  if (flag == 5 and region!="South" && region!="North"){
     if (fVerbose)
       mf::LogInfo("CRTHitRecoAlg:")
 	<< "single ended readout on same end of module! "
