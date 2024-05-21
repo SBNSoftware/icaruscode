@@ -30,6 +30,7 @@ physics.producers.cafmaker.G4Label: ""
 physics.producers.cafmaker.GenLabel: ""
 physics.producers.cafmaker.SimChannelLabel: ""
 physics.producers.cafmaker.SystWeightLabels: []
+physics.producers.cafmaker.SaveGENIEEventRecord: false
 
 # use different angular resolution for MCS in data
 physics.producers.pandoraTrackMCSCryoE: @local::mcs_icarus_data
