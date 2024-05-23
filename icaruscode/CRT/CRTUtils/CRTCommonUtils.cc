@@ -527,6 +527,8 @@ void CRTCommonUtils::FillFebMap() {
     cet::search_path searchPath("FW_SEARCH_PATH");
     searchPath.find_file("feb_map.txt",fullFileName);
     std::ifstream fin;
+    //fullFileName = "/exp/icarus/app/users/bcaxel/testdir/srcs/icaruscode/icaruscode/CRT/CRTDecoder/testGeoBottom.txt";
+    std::cout <<"The full file path for the geometry file for FillFebMap: "<< fullFileName<<'\n';
     fin.open(fullFileName,std::ios::in);
 
     if(!fin.good())
@@ -565,7 +567,9 @@ void CRTCommonUtils::FillFebMap() {
     }
 //    std::cout << "filled febMap with " << fAuxDetIdToFeb.size() << " entries" << std::endl;
     fin.close();
+
 }
+
 
 //------------------------------------------------------------------------
 void CRTCommonUtils::FillAuxDetMaps() {
@@ -591,6 +595,8 @@ void CRTCommonUtils::FillAuxDetMaps() {
         fNameToAuxDetId[name] = ad.first;
         fAuxDetIdToRegion[ad.first] = AuxDetNameToRegion(name);
     }
+
+
 
 }
 

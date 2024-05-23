@@ -3,7 +3,12 @@ BEGIN_PROLOG
 
 crtdaq_icarus: { 
                  module_type: "DecoderICARUSCRT"
-       
+		 
+                 #Paramaters for the bottom decoder
+		 RawDataTag: "daq:ContainerBottomCRT"
+		 LookForContainer: true
+ 		 MatchOfflineMapping: false
+	 
                  #cable delay due to T0 propagation in cables for each FEB, format [mac5, delay in ns], updated on Oct 14, 2021
                  FEB_delay_side: [
   

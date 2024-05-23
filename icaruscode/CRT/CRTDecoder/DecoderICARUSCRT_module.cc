@@ -120,15 +120,14 @@ crt::DecoderICARUSCRT::DecoderICARUSCRT(fhicl::ParameterSet const& p): EDProduce
       std::vector<std::string>{ "daq:(Container)?BERNCRT.*" }
       ))
     }, 
-    fDropRawDataAfterUse( p.get<bool>("DropRawDataAfterUse", true) ),
+    fDropRawDataAfterUse( p.get<bool>("DropRawDataAfterUse", true) ),     
     fFragTag(p.get<std::string>("RawDataTag","daq:ContainerBottomCRT")), 
     fLookForContainer(p.get<bool>("LookForContainer", true)),    
     fEarliestTime(std::numeric_limits<decltype(fEarliestTime)>::max())
 
 {
-std::cout<<"RawDataTag: "<<fFragTag<<'\n';  
 fChannelMap = art::ServiceHandle<icarusDB::IICARUSChannelMap const>{}.get();     
-  produces< std::vector<icarus::crt::CRTData> >();
+  produces<std::vector<icarus::crt::CRTData> >();
   produces<std::vector<CRT::Trigger>>();
   mayConsumeMany<artdaq::Fragments>();
   consumes<std::vector<artdaq::Fragment>>(fFragTag);
@@ -613,19 +612,15 @@ const size_t nModules = 56; //
 for(size_t module = 0; module < nModules; ++module) fChannelMapB.push_back(module);
 try
     {      
-      std::cout<<"In the bottom try"<<'\n';  
       //-----
       //Try to get artdaq::Fragments produced from CRT data.  The following line is the reason for 
       //this try-catch block.  I don't expect anything else to throw a cet::Exception.
       const auto& fragHandle = evt.getValidHandle<std::vector<artdaq::Fragment>>(fFragTag);
-      //std::cout<<"In the try for produce function"<<'\n';//AC:Added to see where just running the decoder goes. 
       if(fLookForContainer)
       {
-        std::cout<<"In the look for container if"<<'\n';
         //If this is the first event, set fEarliestTime
         if(fEarliestTime == std::numeric_limits<decltype(fEarliestTime)>::max())
         {
-        std::cout<<"In the Earliest time == if"<<'\n';
 	  //Loop every fragment in the Event for each fragment create a containerFragment and loop over each block. Calling SetEarliestTime for each one. 
           for(const auto& frag: *fragHandle) 
           {
@@ -642,11 +637,9 @@ try
       }
       else
       {
-        std::cout<<"In the look for container if else block"<<'\n';
         //If this is the first event, set fEarliestTime
         if(fEarliestTime == std::numeric_limits<decltype(fEarliestTime)>::max())
         {
-          std::cout<<"In the earliest time == if, in the else"<<'\n';
           for(const auto& frag: *fragHandle) SetEarliestTime(frag);
         }
 
@@ -662,27 +655,32 @@ catch(const cet::exception& exc) //If there are no artdaq::Fragments in this Eve
         std::cout << "No artdaq::Fragments produced by " << fFragTag << " in this event, so "
                               << "not doing anything.\n";
     }
-
+//Lots of debugging couts
 for(const auto& trigger: *triggers)
        {
-        std::cout<<"In the bottom triggers loop"<<'\n';
-        //template<typename T, int N>
-        //using raw_array = T[N];
-        //auto adc_array =  raw_array<decltype(auto),64> {};
         icarus::crt::CRTData data;
           //trigger.dump(outputStream);
-          data.fMac5 = trigger.Channel();
+          //int bottomAdc[32];
+          data.fMac5 = trigger.Channel()+93;
           data.fTs0 = trigger.Timestamp();	 
-          std::cout << "Bottom timestamp: " << trigger.Timestamp() << '\n';        
-	  std::cout << "Number of elements in trigger.Hits(): " << trigger.Hits().size() << std::endl;
+          std::cout << "Timestamp(t0): " << trigger.Timestamp() << '\n';        
+          std::cout << "Physical module number: " << trigger.Channel() << '\n';        
+          std::cout << "Modified module number: " << trigger.Channel()+93 << '\n'; 
+	  //std::cout << "Number of elements in trigger.Hits(): " << trigger.Hits().size() << std::endl;
+          std::cout << "Start of ADC values: " << '\n';        
           for(const auto& hit: trigger.Hits()){
-            //adc_array[hit.Channel()] = hit.ADC();    
-            //data.fAdc = adc_array;
-            std::cout<<"ADC: "<<hit.ADC()<<'\n';
+	    //uncomment to reset the channel adc value array to 0's in between each hit.
+	    //for (int i = 0; i<64;i++){
+	    //data.fAdc[i] = 0;
+	    //}
+            std::cout<<"Channel: "<<hit.Channel(); 
+            std::cout<<"  ADC: "<<hit.ADC()<<'\n';
+	    data.fAdc[hit.Channel()-1] = hit.ADC();
             bottomCount++;          
             totalCount++;   
-            allCRTdata.push_back(data);
-          }           
+            //allCRTdata.push_back(data); Not pushing for each adc hit. Instead pushinh for each trigger.
+          }
+          allCRTdata.push_back(data);
        }
 
 evt.put(std::move(triggers));
@@ -694,6 +692,35 @@ auto crtdata = std::make_unique<std::vector<icarus::crt::CRTData>>();
     if (crtDataElem.fMac5 == 0) continue; // not a valid Mac5, data is not present
     crtdata->push_back(std::move(crtDataElem));
   }
+
+//Debugging output for bottom:
+/*
+size_t x = 100; // Change this to the desired number of instances
+
+    // Iterate over the vector and print out properties of each CRTData object
+    size_t tCount = 0;
+    for (const auto& loopData : *crtdata) {
+        // Check if we have printed x instances already
+        if (tCount >= x) {
+            break;
+        }
+     
+        // Check if fMac5 is greater than 1000
+        if (loopData.fTs0 == 73) {
+            // Print properties of CRTData object
+            std::cout << "CRTData instance " << tCount + 1 << ":\n";
+            std::cout << "fMac5: " << std::to_string(static_cast<int>(loopData.fMac5)) << std::endl;
+            std::cout << "fTs0: " << loopData.fTs0 << std::endl; 
+	    std::cout << "output data adc values:" <<'\n';           
+            for (int i = 0; i < 32; ++i) {
+            std::cout << "Element " << i + 1 << ": " << loopData.fAdc[i] << std::endl;
+	    }	    
+            // Increment the count of printed instances
+            tCount++;
+        }
+    }
+
+*/
 evt.put(std::move(crtdata));
 
 

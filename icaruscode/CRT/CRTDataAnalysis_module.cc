@@ -516,10 +516,18 @@ namespace crt {
 	  presel = true;
 
       }else if ( type == 'd'){
+        std::cout<<"The pe threshold is: "<<fPEThresh<<'\n';
+	std::cout<<"Module(fMac5 in crtList): "<<crtList[febdat_i]->fMac5<<'\n';
+        std::cout<<"Timestamp: "<<crtList[febdat_i]->fTs0<<'\n';
+        float peBottomThresh = 0;
+	 //Preselection pe threshold set to 0 as a method to obtain the calibration values for adc/photon per channel needs created. 	
 	for(int chan=0; chan<64; chan++) {
-	  float pe = (crtList[febdat_i]->fAdc[chan]-fQPed)/fQSlope;
-	  if(pe<=fPEThresh) continue;
+	  //float pe = (crtList[febdat_i]->fAdc[chan]-fQPed)/fQSlope;// OLD pe calculation 
+	  float pe = (crtList[febdat_i]->fAdc[chan])/fQSlope;  // New pe calculation removed the baseline subtraction
+  	  //std::cout<<"Channel: "<< chan << " ADC: "<<crtList[febdat_i]->fAdc[chan]<<" pe: "<<pe<<'\n';
+	 if(pe<=peBottomThresh) continue;
 	  presel = true;
+           
 	}
       }
       if (presel) crtData.push_back(crtList[febdat_i]);
@@ -554,7 +562,8 @@ namespace crt {
 	  if (pe < 0) continue;
 	  fPE[ch] = pe;
 	}else{
-	  float pe = (fADC[ch]-fQPed)/fQSlope;
+	  //edited the method used to calculat the pe  for the bottom by removing the baseline subtraction as this is done upstream.
+	  float pe = (fADC[ch])/fQSlope;
 	  if (pe < 0) continue;
           fPE[ch] = pe;
 	} 
@@ -562,7 +571,9 @@ namespace crt {
       }
             
       fDAQNtuple->Fill();
-      
+    std::cout << "Subsys and Region: "<< fCrtutils->MacToRegion(fMac5) << '\n';
+    std::cout << "Module: "<<fMac5<<'\n';
+    std::cout << "SubSys: "<<fDetSubSys<<'\n';
     } //for CRT FEB events
     
   
@@ -590,7 +601,10 @@ namespace crt {
 	   
 	  fNHitFeb  = hit.feb_id.size();
 	  fHitTotPe = hit.peshit;
-	  int mactmp = hit.feb_id[0];
+	  int mactmp = hit.feb_id[0]; 
+	  TVector3 ch_pos = fCrtutils.ChanToLocalCoords(mactmp, 0);
+	  std::cout << "x coordinate = " << ch_pos.X() << "\n";
+	  std::cout << "z coordinate = " << ch_pos.Z() << "\n";
 	  fHitReg  = fCrtutils->AuxDetRegionNameToNum(fCrtutils->MacToRegion(mactmp));
 	  fHitSubSys =  fCrtutils->MacToTypeCode(mactmp);
 	  std::fill( std::begin( fHitPE ), std::end( fHitPE ), -1 );
@@ -643,6 +657,9 @@ namespace crt {
 	  
 	  fHitNtuple->Fill();
        }//for CRT Hits
+
+	
+	
     }//if CRT Hits
     
     else  mf::LogError("CRTDataAnalysis") << "CRTHit products not found! (expected if decoder step)" << std::endl;
