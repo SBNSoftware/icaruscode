@@ -602,9 +602,9 @@ namespace crt {
 	  fNHitFeb  = hit.feb_id.size();
 	  fHitTotPe = hit.peshit;
 	  int mactmp = hit.feb_id[0]; 
-	  TVector3 ch_pos = fCrtutils.ChanToLocalCoords(mactmp, 0);
-	  std::cout << "x coordinate = " << ch_pos.X() << "\n";
-	  std::cout << "z coordinate = " << ch_pos.Z() << "\n";
+	  //TVector3 ch_pos = fCrtutils.ChanToLocalCoords(mactmp, 0);
+	  //std::cout << "x coordinate = " << ch_pos.X() << "\n";
+	  //std::cout << "z coordinate = " << ch_pos.Z() << "\n";
 	  fHitReg  = fCrtutils->AuxDetRegionNameToNum(fCrtutils->MacToRegion(mactmp));
 	  fHitSubSys =  fCrtutils->MacToTypeCode(mactmp);
 	  std::fill( std::begin( fHitPE ), std::end( fHitPE ), -1 );
