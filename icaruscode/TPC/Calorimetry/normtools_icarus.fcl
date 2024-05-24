@@ -46,7 +46,7 @@ tpcgain_sql: {
 
 tpcgain_local: {
   tool_type: NormalizeTPCLocal
-  # Relative normalization of the TPCs
+  # Relative normalization of the TPCs: see e.g. Figure 30 on Page 31 of doc-db 35168 v2
   CalConstants: [1.0118, 1.0000, 1.0333, 1.0230]
   Verbose: false
 }
@@ -63,6 +63,7 @@ icarus_calonormtools: [@local::driftnorm, @local::yznorm, @local::tpcgain]
 
 # Gain with angular dep. recombination
 # Assume equal on planes -- this is __wrong__ -- will need to be fixed when they are calibrated
+# See Table 2 on Page 20 of doc-db 32501 v4
 icarus_data_calconst: [0.013316, 0.013316, 0.013316]
 
 END_PROLOG
