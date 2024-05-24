@@ -124,7 +124,7 @@ icarus::opdet::PMTsimulationAlg::PMTsimulationAlg
     mf::LogWarning("PMTsimulationAlg")
       << "WARNING: Quantum efficiency set in the configuration (QE="
         << fParams.QEbase << ") seems to be too large!"
-      "\nThe photon visibility library is assumed to already include a"
+      "\nAccording to the job configuration, the input already includes a"
         " quantum efficiency of " << fParams.larProp->ScintPreScale() <<
         " (`ScintPreScale` setting of `LArProperties` service)"
         " and here we are requesting a higher one."
