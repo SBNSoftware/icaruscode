@@ -64,6 +64,8 @@ icarus_calonormtools: [@local::driftnorm, @local::yznorm, @local::tpcgain]
 # Gain with angular dep. recombination
 # Assume equal on planes -- this is __wrong__ -- will need to be fixed when they are calibrated
 # See Table 2 on Page 20 of doc-db 32501 v4
+# BH, from private conversation with G. Putnam: the value for gain found in the paper is slightly different than this one (from the tech note) due to a change in the energy scale measurement.
+# BH: The new gain value is very slightly different from the one in the paper and we'll stick with this calconst for now.
 icarus_data_calconst: [0.013316, 0.013316, 0.013316]
 
 END_PROLOG
