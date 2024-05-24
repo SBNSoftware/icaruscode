@@ -41,14 +41,28 @@ namespace wiremod
     private:
       const geo::GeometryCore* fGeometry = lar::providerFrom<geo::Geometry>(); // get the geometry
       std::string fRatioFileName; // there is where we try to grab the splines/graphs (if they exist)
-      std::vector<TSpline3*> fSpline_charge;
-      std::vector<TSpline3*> fSpline_sigma;
-      std::vector<TGraph2D*> fGraph_charge; 
-      std::vector<TGraph2D*> fGraph_sigma;
+      TSpline3*              fSpline_charge_Channel;
+      TSpline3*              fSpline_sigma_Channel;
+      std::vector<TSpline3*> fSpline_charge_X;
+      std::vector<TSpline3*> fSpline_sigma_X;
+      std::vector<TSpline3*> fSpline_charge_XZAngle;
+      std::vector<TSpline3*> fSpline_sigma_XZAngle;
+      std::vector<TSpline3*> fSpline_charge_YZAngle;
+      std::vector<TSpline3*> fSpline_sigma_YZAngle;
+      std::vector<TSpline3*> fSpline_charge_dEdX;
+      std::vector<TSpline3*> fSpline_sigma_dEdX;
+      std::vector<TGraph2D*> fGraph_charge_YZ; 
+      std::vector<TGraph2D*> fGraph_sigma_YZ;
       art::InputTag fWireLabel; // which wires are we pulling in?
-      art::InputTag fHitLabel; // which hits are we pulling in?
+      art::InputTag fHitLabel;  // which hits are we pulling in?
+      bool fApplyChannel;       // do we apply the channel scaling?
+      bool fApplyX;             // do we apply the X scaling?
+      bool fApplyYZ;            // do we apply the YZ scaling?
+      bool fApplyXZAngle;       // do we apply the XZ angle scaling?
+      bool fApplyYZAngle;       // do we apply the YZ angle scaling?
+      bool fApplydEdX;          // do we apply the dEdX scaling?
       bool fSaveHistsByChannel; // save modified signals by channel?
-      bool fSaveHistsByWire; // save modified signals by wire?
+      bool fSaveHistsByWire;    // save modified signals by wire?
 
   }; // end WireModifier class
 
@@ -67,35 +81,219 @@ namespace wiremod
     fHitLabel   = pset.get<art::InputTag>("HitLabel", "gaushitTPCEE");
 
     // what, if anything, are we putting in the histogram files
-    fSaveHistsByChannel = pset.get<bool>("SaveByChannel", false);
+    //fSaveHistsByChannel = pset.get<bool>("SaveByChannel", false);
+    fSaveHistsByChannel = pset.get<bool>("SaveByChannel", true);
     fSaveHistsByWire    = pset.get<bool>("SaveByWire"   , false);
 
     // try to read in the graphs/splines from a file
     // if that file does not exist then fake them
     fRatioFileName = pset.get<std::string>("RatioFileName", "NOFILE");
+    fApplyChannel = pset.get<bool>("ApplyChannelScale", false);
+    fApplyX       = pset.get<bool>("ApplyXScale"      , false);
+    fApplyYZ      = pset.get<bool>("ApplyYZScale"     , false);
+    fApplyXZAngle = pset.get<bool>("ApplyXZAngleScale", false);
+    fApplyYZAngle = pset.get<bool>("ApplyYZAngleScale", false);
+    fApplydEdX    = pset.get<bool>("ApplydEdXscale"   , false);
     if (fRatioFileName == "NOFILE")
     {
-      // if we can't find the file, take the ratios
-      double pnts[3] = {-1000, 0, 1000}; // start and end "points" for the splines/graphs. just make sure this covers the detector
-      double vals[3] = {0.9, 0.9, 0.9};
-      double vals_inv[3] = {1.0, 1.0, 1.0};
-      for (size_t plane = 0; plane < 3; ++plane)
-      {
-        fSpline_charge.push_back(new TSpline3("dummySpline", pnts[0], pnts[2], vals, 3)    );
-        fSpline_sigma .push_back(new TSpline3("dummySpline", pnts[0], pnts[2], vals_inv, 3));
-        fGraph_charge .push_back(new TGraph2D(3, pnts, pnts, vals)                         );
-        fGraph_sigma  .push_back(new TGraph2D(3, pnts, pnts, vals_inv)                     );
-      }
+      mf::LogVerbatim("WireModifier")
+        << "WireModifier::reconfigure - No ratio file given. No scaling is applied...";
     } else {
       TFile* ratioFile = new TFile(fRatioFileName.c_str(), "READ"); // read only
       // the file exists! pull the ratios
-      // for now hard code what the names should be
-      for (size_t plane = 0; plane < 3; ++plane)
+      if (fApplyChannel)
       {
-        fSpline_charge.push_back(ratioFile->Get<TSpline3>(("Spline_charge_" + std::to_string(plane)).c_str()));
-        fSpline_sigma .push_back(ratioFile->Get<TSpline3>(("Spline_sigma_"  + std::to_string(plane)).c_str()));
-        fGraph_charge .push_back(ratioFile->Get<TGraph2D>(("Graph_charge_"  + std::to_string(plane)).c_str()));
-        fGraph_sigma  .push_back(ratioFile->Get<TGraph2D>(("Graph_sigma_"   + std::to_string(plane)).c_str()));
+        mf::LogVerbatim("WireModifier")
+          << "WireModifier::reconfigure - Getting Channel Scales...";
+        std::string name_charge_Channel = pset.get<std::string>("ChannelScaleHeight");
+        std::string name_sigma_Channel  = pset.get<std::string>("ChannelScaleWidth");
+        fSpline_charge_Channel = ratioFile->Get<TSpline3>(name_charge_Channel.c_str());
+        fSpline_sigma_Channel  = ratioFile->Get<TSpline3>(name_sigma_Channel .c_str());
+      }
+      if (fApplyX)
+      {
+        mf::LogVerbatim("WireModifier")
+          << "WireModifier::reconfigure - Getting X Scales...";
+        std::vector<std::string> nameVec_charge_X = pset.get<std::vector<std::string>>("XScaleHeight");
+        for (auto const& name : nameVec_charge_X)
+        {
+          mf::LogDebug("WireModifier")
+            << "WireModifier::reconfigure - Looking for " << name << " in TFile " << fRatioFileName << "...";
+          TSpline3* temp = ratioFile->Get<TSpline3>(name.c_str());
+          if (temp != nullptr)
+          {
+            mf::LogDebug("WireModifier")
+              << "WireModifier::reconfigure -  ...found";
+            fSpline_charge_X.push_back(temp);
+          } else {
+            mf::LogDebug("WireModifier")
+              << "WireModifier::reconfigure -  ...not found";
+          }
+        }
+        std::vector<std::string> nameVec_sigma_X = pset.get<std::vector<std::string>>("XScaleHeight");
+        for (auto const& name : nameVec_sigma_X)
+        {
+          mf::LogDebug("WireModifier")
+            << "WireModifier::reconfigure - Looking for " << name << " in TFile " << fRatioFileName << "...";
+          TSpline3* temp = ratioFile->Get<TSpline3>(name.c_str());
+          if (temp != nullptr)
+          {
+            mf::LogDebug("WireModifier")
+              << "WireModifier::reconfigure -  ...found";
+            fSpline_sigma_X.push_back(temp);
+          } else {
+            mf::LogDebug("WireModifier")
+              << "WireModifier::reconfigure -  ...not found";
+          }
+        }
+      }
+      if (fApplyYZ)
+      {
+        mf::LogVerbatim("WireModifier")
+          << "WireModifier::reconfigure - Getting YZ Scales...";
+        std::vector<std::string> nameVec_charge_YZ = pset.get<std::vector<std::string>>("YZScaleHeight");
+        for (auto const& name : nameVec_charge_YZ)
+        {
+          mf::LogDebug("WireModifier")
+            << "WireModifier::reconfigure - Looking for " << name << " in TFile " << fRatioFileName << "...";
+          TGraph2D* temp = ratioFile->Get<TGraph2D>(name.c_str());
+          if (temp != nullptr)
+          {
+            mf::LogDebug("WireModifier")
+              << "WireModifier::reconfigure -  ...found";
+            fGraph_charge_YZ.push_back(temp);
+          } else {
+            mf::LogDebug("WireModifier")
+              << "WireModifier::reconfigure -  ...not found";
+          }
+        }
+        std::vector<std::string> nameVec_sigma_YZ = pset.get<std::vector<std::string>>("YZScaleHeight");
+        for (auto const& name : nameVec_sigma_YZ)
+        {
+          mf::LogDebug("WireModifier")
+            << "WireModifier::reconfigure - Looking for " << name << " in TFile " << fRatioFileName << "...";
+          TGraph2D* temp = ratioFile->Get<TGraph2D>(name.c_str());
+          if (temp != nullptr)
+          {
+            mf::LogDebug("WireModifier")
+              << "WireModifier::reconfigure -  ...found";
+            fGraph_sigma_YZ.push_back(temp);
+          } else {
+            mf::LogDebug("WireModifier")
+              << "WireModifier::reconfigure -  ...not found";
+          }
+        }
+      }
+      if (fApplyXZAngle)
+      {
+        mf::LogVerbatim("WireModifier")
+          << "WireModifier::reconfigure - Getting XZ Angle Scales...";
+        std::vector<std::string> nameVec_charge_XZAngle = pset.get<std::vector<std::string>>("XZAngleScaleHeight");
+        for (auto const& name : nameVec_charge_XZAngle)
+        {
+          mf::LogDebug("WireModifier")
+            << "WireModifier::reconfigure - Looking for " << name << " in TFile " << fRatioFileName << "...";
+          TSpline3* temp = ratioFile->Get<TSpline3>(name.c_str());
+          if (temp != nullptr)
+          {
+            mf::LogDebug("WireModifier")
+              << "WireModifier::reconfigure -  ...found";
+            fSpline_charge_XZAngle.push_back(temp);
+          } else {
+            mf::LogDebug("WireModifier")
+              << "WireModifier::reconfigure -  ...not found";
+          }
+        }
+        std::vector<std::string> nameVec_sigma_XZAngle = pset.get<std::vector<std::string>>("XZAngleScaleHeight");
+        for (auto const& name : nameVec_sigma_XZAngle)
+        {
+          mf::LogDebug("WireModifier")
+            << "WireModifier::reconfigure - Looking for " << name << " in TFile " << fRatioFileName << "...";
+          TSpline3* temp = ratioFile->Get<TSpline3>(name.c_str());
+          if (temp != nullptr)
+          {
+            mf::LogDebug("WireModifier")
+              << "WireModifier::reconfigure -  ...found";
+            fSpline_sigma_XZAngle.push_back(temp);
+          } else {
+            mf::LogDebug("WireModifier")
+              << "WireModifier::reconfigure -  ...not found";
+          }
+        }
+      }
+      if (fApplyYZAngle)
+      {
+        mf::LogVerbatim("WireModifier")
+          << "WireModifier::reconfigure - Getting YZ Angle Scales...";
+        std::vector<std::string> nameVec_charge_YZAngle = pset.get<std::vector<std::string>>("YZAngleScaleHeight");
+        for (auto const& name : nameVec_charge_YZAngle)
+        {
+          mf::LogDebug("WireModifier")
+            << "WireModifier::reconfigure - Looking for " << name << " in TFile " << fRatioFileName << "...";
+          TSpline3* temp = ratioFile->Get<TSpline3>(name.c_str());
+          if (temp != nullptr)
+          {
+            mf::LogDebug("WireModifier")
+              << "WireModifier::reconfigure -  ...found";
+            fSpline_charge_YZAngle.push_back(temp);
+          } else {
+            mf::LogDebug("WireModifier")
+              << "WireModifier::reconfigure -  ...not found";
+          }
+        }
+        std::vector<std::string> nameVec_sigma_YZAngle = pset.get<std::vector<std::string>>("YZAngleScaleHeight");
+        for (auto const& name : nameVec_sigma_YZAngle)
+        {
+          mf::LogDebug("WireModifier")
+            << "WireModifier::reconfigure - Looking for " << name << " in TFile " << fRatioFileName << "...";
+          TSpline3* temp = ratioFile->Get<TSpline3>(name.c_str());
+          if (temp != nullptr)
+          {
+            mf::LogDebug("WireModifier")
+              << "WireModifier::reconfigure -  ...found";
+            fSpline_sigma_YZAngle.push_back(temp);
+          } else {
+            mf::LogDebug("WireModifier")
+              << "WireModifier::reconfigure -  ...not found";
+          }
+        }
+      }
+      if (fApplydEdX)
+      {
+        mf::LogVerbatim("WireModifier")
+          << "WireModifier::reconfigure - Getting dEdX Scales...";
+        std::vector<std::string> nameVec_charge_dEdX = pset.get<std::vector<std::string>>("dEdXScaleHeight");
+        for (auto const& name : nameVec_charge_dEdX)
+        {
+          mf::LogDebug("WireModifier")
+            << "WireModifier::reconfigure - Looking for " << name << " in TFile " << fRatioFileName << "...";
+          TSpline3* temp = ratioFile->Get<TSpline3>(name.c_str());
+          if (temp != nullptr)
+          {
+            mf::LogDebug("WireModifier")
+              << "WireModifier::reconfigure -  ...found";
+            fSpline_charge_dEdX.push_back(temp);
+          } else {
+            mf::LogDebug("WireModifier")
+              << "WireModifier::reconfigure -  ...not found";
+          }
+        }
+        std::vector<std::string> nameVec_sigma_dEdX = pset.get<std::vector<std::string>>("dEdXScaleHeight");
+        for (auto const& name : nameVec_sigma_dEdX)
+        {
+          mf::LogDebug("WireModifier")
+            << "WireModifier::reconfigure - Looking for " << name << " in TFile " << fRatioFileName << "...";
+          TSpline3* temp = ratioFile->Get<TSpline3>(name.c_str());
+          if (temp != nullptr)
+          {
+            mf::LogDebug("WireModifier")
+              << "WireModifier::reconfigure -  ...found";
+            fSpline_sigma_dEdX.push_back(temp);
+          } else {
+            mf::LogDebug("WireModifier")
+              << "WireModifier::reconfigure -  ...not found";
+          }
+        }
       }
     }
 
@@ -138,20 +336,43 @@ namespace wiremod
     std::unique_ptr<std::vector<recob::ChannelROI>> new_crois(new std::vector<recob::ChannelROI>());
     //std::unique_ptr<art::Assns<raw::RawDigit, recob::Wire>> new_digit_assn(new art::Assns<raw::RawDigit, recob::Wire>());
 
-    // let's just try making the damn thing
     sys::WireModUtility wmUtil(fGeometry, detProp); // detector geometry & properties
-
-    // set the ratios
-    wmUtil.splines_Charge_X       = fSpline_charge;
-    wmUtil.splines_Sigma_X        = fSpline_sigma;
-    wmUtil.splines_Charge_XZAngle = fSpline_charge;
-    wmUtil.splines_Sigma_XZAngle  = fSpline_sigma;
-    wmUtil.splines_Charge_YZAngle = fSpline_charge;
-    wmUtil.splines_Sigma_YZAngle  = fSpline_sigma;
-    wmUtil.splines_Charge_dEdX    = fSpline_charge;
-    wmUtil.splines_Sigma_dEdX     = fSpline_sigma;
-    wmUtil.graph2Ds_Charge_YZ     = fGraph_charge;
-    wmUtil.graph2Ds_Sigma_YZ      = fGraph_sigma;
+    wmUtil.applyChannelScale = fApplyChannel;
+    wmUtil.applyXScale       = fApplyX;
+    wmUtil.applyYZScale      = fApplyYZ;
+    wmUtil.applyXZAngleScale = fApplyXZAngle;
+    wmUtil.applyYZAngleScale = fApplyYZAngle;
+    wmUtil.applydEdXScale    = fApplydEdX;
+    if (wmUtil.applyChannelScale)
+    {
+      wmUtil.spline_Charge_Channel = fSpline_charge_Channel;
+      wmUtil.spline_Sigma_Channel  = fSpline_sigma_Channel;
+    }
+    if (wmUtil.applyXScale)
+    {
+      wmUtil.splines_Charge_X = fSpline_charge_X;
+      wmUtil.splines_Sigma_X  = fSpline_sigma_X;
+    }
+    if (wmUtil.applyYZScale)
+    {
+      wmUtil.graph2Ds_Charge_YZ = fGraph_charge_YZ;
+      wmUtil.graph2Ds_Sigma_YZ  = fGraph_sigma_YZ;
+    }
+    if (wmUtil.applyXZAngleScale)
+    {
+      wmUtil.splines_Charge_XZAngle = fSpline_charge_XZAngle;
+      wmUtil.splines_Sigma_XZAngle  = fSpline_sigma_XZAngle;
+    }
+    if (wmUtil.applyYZAngleScale)
+    {
+      wmUtil.splines_Charge_YZAngle = fSpline_charge_YZAngle;
+      wmUtil.splines_Sigma_YZAngle  = fSpline_sigma_YZAngle;
+    }
+    if (wmUtil.applydEdXScale)
+    {
+      wmUtil.splines_Charge_dEdX = fSpline_charge_dEdX;
+      wmUtil.splines_Sigma_dEdX  = fSpline_sigma_dEdX;
+    }
 
     // add some debugging here
     MF_LOG_VERBATIM("WireModifier")
@@ -317,7 +538,7 @@ namespace wiremod
               scale_vals = wmUtil.GetScaleValues(truth_vals, roi_properties);
               mf::LogDebug("WireModifier")
                 << "Scaling! Q scale: " << scale_vals.r_Q
-                << "     sigma sclae: " << scale_vals.r_sigma;
+                << "     sigma scale: " << scale_vals.r_sigma;
               isModified = true;
             }
           }

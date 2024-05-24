@@ -3,40 +3,91 @@ BEGIN_PROLOG
 standard_wiremod:
 {
   module_type:         "WireModifier"
-  WireLabel:           "roifinder1d:PHYSCRATEDATATPCEE"
-  HitLabel:            "gaushit1dTPCEE"
+  WireLabel:           "roifinder:PHYSCRATEDATATPCEE"
+  HitLabel:            "gaushitTPCEE"
   OutputInstanceLabel: "PHYSCRATEDATATPCEE"
   CryoNumber         : 0
   TPCNumbers         : [ 0, 1 ]
+  ApplyChannelScale  : false
+  ApplyXScale        : false
+  ApplyYZScale       : false
+  ApplyXZAngleScale  : false
+  ApplyYZAngleScale  : false
+  ApplydEdXScale     : false
+  RatioFileName      : "NOFILE"
+  ChannelScaleHeight : "channelHeight_ratio"
+  ChannelScaleWidth  : "channelWidth_ratio"
+  XScaleHeight       : [ "xHeight_0_ratio_prof"            , "xHeight_1_ratio_prof"            , "xHeight_2_ratio_prof" ]
+  XScaleWidth        : [ "xWidth_0_ratio_prof"             , "xWidth_1_ratio_prof"             , "xWidth_2_ratio_prof" ]
+  YZScaleHeight      : [ "Graph2D_from_yzHeight_EE_0_ratio", "Graph2D_from_yzHeight_EE_1_ratio", "Graph2D_from_yzHeight_EE_2_ratio" ]
+  YZScaleWidth       : [ "Graph2D_from_yzWidth_EE_0_ratio" , "Graph2D_from_yzWidth_EE_1_ratio" , "Graph2D_from_yzWidth_EE_0_ratio" ]
+  XZAngleScaleHeight : [ "thHeight_EE_0_ratio"             , "thHeight_EE_1_ratio"             , "thHeight_EE_2_ratio" ]
+  XZAngleScaleWidth  : [ "thWidth_EE_0_ratio"              , "thWidth_EE_1_ratio"              , "thWidth_EE_2_ratio" ]
+  YZAngleScaleHeight : [ "phHeight_EE_0_ratio"             , "phHeight_EE_1_ratio"             , "phHeight_EE_2_ratio" ]
+  YZAngleScaleWidth  : [ "phWidth_EE_0_ratio"              , "phWidth_EE_1_ratio"              , "phWidth_EE_2_ratio" ]
+  dEdXScaleHeight    : [ "dEdXHeight_EE_0_ratio"           , "dEdXHeight_EE_1_ratio"           , "dEdXHeight_EE_2_ratio" ]
+  dEdXScaleWidth     : [ "dEdXWidth_EE_0_ratio"            , "dEdXWidth_EE_1_ratio"            , "dEdXWidth_EE_2_ratio" ]
 }
 
 ww_wiremod: @local::standard_wiremod
-ww_wiremod.WireLabel:          "roifinder1d:PHYSCRATEDATATPCWW"
-ww_wiremod.HitLabel:           "gaushit1dTPCWW"
+ww_wiremod.WireLabel:          "roifinder:PHYSCRATEDATATPCWW"
+ww_wiremod.HitLabel:           "gaushitTPCWW"
 ww_wiremodOutputInstanceLabel: "PHYSCRATEDATATPCWW"
 ww_wiremod.CryoNumber:         1
 ww_wiremod.TPCNumbers:         [ 2, 3 ]
+ww_wiremod.YZScaleHeight      : [ "Graph2D_from_yzHeight_WW_0_ratio", "Graph2D_from_yzHeight_WW_1_ratio", "Graph2D_from_yzHeight_WW_2_ratio" ]
+ww_wiremod.YZScaleWidth       : [ "Graph2D_from_yzWidth_WW_0_ratio" , "Graph2D_from_yzWidth_WW_1_ratio" , "Graph2D_from_yzWidth_WW_0_ratio" ]
+ww_wiremod.XZAngleScaleHeight : [ "thHeight_WW_0_ratio"             , "thHeight_WW_1_ratio"             , "thHeight_WW_2_ratio" ]
+ww_wiremod.XZAngleScaleWidth  : [ "thWidth_WW_0_ratio"              , "thWidth_WW_1_ratio"              , "thWidth_WW_2_ratio" ]
+ww_wiremod.YZAngleScaleHeight : [ "phHeight_WW_0_ratio"             , "phHeight_WW_1_ratio"             , "phHeight_WW_2_ratio" ]
+ww_wiremod.YZAngleScaleWidth  : [ "phWidth_WW_0_ratio"              , "phWidth_WW_1_ratio"              , "phWidth_WW_2_ratio" ]
+ww_wiremod.dEdXScaleHeight    : [ "dEdXHeight_WW_0_ratio"           , "dEdXHeight_WW_1_ratio"           , "dEdXHeight_WW_2_ratio" ]
+ww_wiremod.dEdXScaleWidth     : [ "dEdXWidth_WW_0_ratio"            , "dEdXWidth_WW_1_ratio"            , "dEdXWidth_WW_2_ratio" ]
 
 we_wiremod: @local::standard_wiremod
-we_wiremod.WireLabel:          "roifinder1d:PHYSCRATEDATATPCWE"
-we_wiremod.HitLabel:           "gaushit1dTPCWE"
+we_wiremod.WireLabel:          "roifinder:PHYSCRATEDATATPCWE"
+we_wiremod.HitLabel:           "gaushitTPCWE"
 we_wiremodOutputInstanceLabel: "PHYSCRATEDATATPCWE"
 we_wiremod.CryoNumber:         1
 we_wiremod.TPCNumbers:         [ 0, 1 ]
+we_wiremod.YZScaleHeight      : [ "Graph2D_from_yzHeight_WE_0_ratio", "Graph2D_from_yzHeight_WE_1_ratio", "Graph2D_from_yzHeight_WE_2_ratio" ]
+we_wiremod.YZScaleWidth       : [ "Graph2D_from_yzWidth_WE_0_ratio" , "Graph2D_from_yzWidth_WE_1_ratio" , "Graph2D_from_yzWidth_WE_0_ratio" ]
+we_wiremod.XZAngleScaleHeight : [ "thHeight_WE_0_ratio"             , "thHeight_WE_1_ratio"             , "thHeight_WE_2_ratio" ]
+we_wiremod.XZAngleScaleWidth  : [ "thWidth_WE_0_ratio"              , "thWidth_WE_1_ratio"              , "thWidth_WE_2_ratio" ]
+we_wiremod.YZAngleScaleHeight : [ "phHeight_WE_0_ratio"             , "phHeight_WE_1_ratio"             , "phHeight_WE_2_ratio" ]
+we_wiremod.YZAngleScaleWidth  : [ "phWidth_WE_0_ratio"              , "phWidth_WE_1_ratio"              , "phWidth_WE_2_ratio" ]
+we_wiremod.dEdXScaleHeight    : [ "dEdXHeight_WE_0_ratio"           , "dEdXHeight_WE_1_ratio"           , "dEdXHeight_WE_2_ratio" ]
+we_wiremod.dEdXScaleWidth     : [ "dEdXWidth_WE_0_ratio"            , "dEdXWidth_WE_1_ratio"            , "dEdXWidth_WE_2_ratio" ]
 
 ew_wiremod: @local::standard_wiremod
-ew_wiremod.WireLabel:          "roifinder1d:PHYSCRATEDATATPCEW"
-ew_wiremod.HitLabel:           "gaushit1dTPCEW"
+ew_wiremod.WireLabel:          "roifinder:PHYSCRATEDATATPCEW"
+ew_wiremod.HitLabel:           "gaushitTPCEW"
 ew_wiremodOutputInstanceLabel: "PHYSCRATEDATATPCEW"
 ew_wiremod.CryoNumber:         0
 ew_wiremod.TPCNumbers:         [ 2, 3 ]
+ew_wiremod.YZScaleHeight      : [ "Graph2D_from_yzHeight_EW_0_ratio", "Graph2D_from_yzHeight_EW_1_ratio", "Graph2D_from_yzHeight_EW_2_ratio" ]
+ew_wiremod.YZScaleWidth       : [ "Graph2D_from_yzWidth_EW_0_ratio" , "Graph2D_from_yzWidth_EW_1_ratio" , "Graph2D_from_yzWidth_EW_0_ratio" ]
+ew_wiremod.XZAngleScaleHeight : [ "thHeight_EW_0_ratio"             , "thHeight_EW_1_ratio"             , "thHeight_EW_2_ratio" ]
+ew_wiremod.XZAngleScaleWidth  : [ "thWidth_EW_0_ratio"              , "thWidth_EW_1_ratio"              , "thWidth_EW_2_ratio" ]
+ew_wiremod.YZAngleScaleHeight : [ "phHeight_EW_0_ratio"             , "phHeight_EW_1_ratio"             , "phHeight_EW_2_ratio" ]
+ew_wiremod.YZAngleScaleWidth  : [ "phWidth_EW_0_ratio"              , "phWidth_EW_1_ratio"              , "phWidth_EW_2_ratio" ]
+ew_wiremod.dEdXScaleHeight    : [ "dEdXHeight_EW_0_ratio"           , "dEdXHeight_EW_1_ratio"           , "dEdXHeight_EW_2_ratio" ]
+ew_wiremod.dEdXScaleWidth     : [ "dEdXWidth_EW_0_ratio"            , "dEdXWidth_EW_1_ratio"            , "dEdXWidth_EW_2_ratio" ]
 
 ee_wiremod: @local::standard_wiremod
-ee_wiremod.WireLabel:          "roifinder1d:PHYSCRATEDATATPCEE"
-ee_wiremod.HitLabel:           "gaushit1dTPCEE"
+ee_wiremod.WireLabel:          "roifinder:PHYSCRATEDATATPCEE"
+ee_wiremod.HitLabel:           "gaushitTPCEE"
 ee_wiremodOutputInstanceLabel: "PHYSCRATEDATATPCEE"
 ee_wiremod.CryoNumber:         0
 ee_wiremod.TPCNumbers:         [ 0, 1 ]
+ee_wiremod.YZScaleHeight      : [ "Graph2D_from_yzHeight_EE_0_ratio", "Graph2D_from_yzHeight_EE_1_ratio", "Graph2D_from_yzHeight_EE_2_ratio" ]
+ee_wiremod.YZScaleWidth       : [ "Graph2D_from_yzWidth_EE_0_ratio" , "Graph2D_from_yzWidth_EE_1_ratio" , "Graph2D_from_yzWidth_EE_0_ratio" ]
+ee_wiremod.XZAngleScaleHeight : [ "thHeight_EE_0_ratio"             , "thHeight_EE_1_ratio"             , "thHeight_EE_2_ratio" ]
+ee_wiremod.XZAngleScaleWidth  : [ "thWidth_EE_0_ratio"              , "thWidth_EE_1_ratio"              , "thWidth_EE_2_ratio" ]
+ee_wiremod.YZAngleScaleHeight : [ "phHeight_EE_0_ratio"             , "phHeight_EE_1_ratio"             , "phHeight_EE_2_ratio" ]
+ee_wiremod.YZAngleScaleWidth  : [ "phWidth_EE_0_ratio"              , "phWidth_EE_1_ratio"              , "phWidth_EE_2_ratio" ]
+ee_wiremod.dEdXScaleHeight    : [ "dEdXHeight_EE_0_ratio"           , "dEdXHeight_EE_1_ratio"           , "dEdXHeight_EE_2_ratio" ]
+ee_wiremod.dEdXScaleWidth     : [ "dEdXWidth_EE_0_ratio"            , "dEdXWidth_EE_1_ratio"            , "dEdXWidth_EE_2_ratio" ]
 
 wiremod_allTPC: [
                   WireModEE,

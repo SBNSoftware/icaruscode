@@ -1,4 +1,4 @@
-set(EXCLUDED_PLUGINS WireModMakeHists_plugin.cc WireModifier_module.cc)
+set(EXCLUDED_PLUGINS WireModMakeHists_plugin.cc ROICounter_plugin.cc HitComp_plugin.cc WireModifier_module.cc)
 
 add_subdirectory(Utility)
 
@@ -44,6 +44,67 @@ art_make(
 find_library( sbncode::sbncode_WireMod_Utility_LIBRARY NAMES sbncode::sbncode_WireMod_Utility )
 
 simple_plugin(WireModMakeHists "plugin"
+              ${ART_FRAMEWORK_CORE}
+              ${MF_MESSAGELOGGER}
+              ${Boost_SYSTEM_LIBRARY}
+              ${ROOT_BASIC_LIB_LIST}
+              ${ROOT_HIST}
+              art_root_io::TFileService_service
+              lardataobj::AnalysisBase
+              lardataobj::RawData
+              lardataobj::RecoBase
+              lardata::RecoObjects
+              larreco::RecoAlg
+              ${LARRECO_LIB}
+              ${LARDATA_LIB}
+              ${ART_FRAMEWORK_CORE}
+              ${ART_FRAMEWORK_PRINCIPAL}
+              ${ART_FRAMEWORK_SERVICES_REGISTRY}
+              ${ART_FRAMEWORK_SERVICES_OPTIONAL}
+              ${ART_FRAMEWORK_SERVICES_OPTIONAL_RANDOMNUMBERGENERATOR_SERVICE}
+              ${ART_FRAMEWORK_SERVICES_OPTIONAL_TFILESERVICE_SERVICE}
+              ${MF_MESSAGELOGGER}
+              ${FHICLCPP}
+              ${CLHEP}
+              ${ROOT_GEOM}
+              ${ROOT_XMLIO}
+              ${ROOT_GDML}
+              ${ROOT_BASIC_LIB_LIST}
+              ${ROOT_HIST}
+              BASENAME_ONLY
+)
+
+simple_plugin(HitComp "plugin"
+              ${ART_FRAMEWORK_CORE}
+              ${MF_MESSAGELOGGER}
+              ${Boost_SYSTEM_LIBRARY}
+              ${ROOT_BASIC_LIB_LIST}
+              ${ROOT_HIST}
+              art_root_io::TFileService_service
+              lardataobj::AnalysisBase
+              lardataobj::RawData
+              lardataobj::RecoBase
+              lardata::RecoObjects
+              larreco::RecoAlg
+              ${LARRECO_LIB}
+              ${LARDATA_LIB}
+              ${ART_FRAMEWORK_CORE}
+              ${ART_FRAMEWORK_PRINCIPAL}
+              ${ART_FRAMEWORK_SERVICES_REGISTRY}
+              ${ART_FRAMEWORK_SERVICES_OPTIONAL}
+              ${ART_FRAMEWORK_SERVICES_OPTIONAL_RANDOMNUMBERGENERATOR_SERVICE}
+              ${ART_FRAMEWORK_SERVICES_OPTIONAL_TFILESERVICE_SERVICE}
+              ${MF_MESSAGELOGGER}
+              ${FHICLCPP}
+              ${CLHEP}
+              ${ROOT_GEOM}
+              ${ROOT_XMLIO}
+              ${ROOT_GDML}
+              ${ROOT_BASIC_LIB_LIST}
+              ${ROOT_HIST}
+              BASENAME_ONLY
+)
+simple_plugin(ROICounter "plugin"
               ${ART_FRAMEWORK_CORE}
               ${MF_MESSAGELOGGER}
               ${Boost_SYSTEM_LIBRARY}

@@ -1,0 +1,32 @@
+#include "ROICounter.fcl"
+#include "messages_icarus.fcl"
+
+process_name: ROICounter
+
+services:
+{
+  TFileService: { fileName: "roicount_hist.root" closeFileFast: false }
+  message: @local::icarus_message_services_interactive_debug
+}
+
+outputs:
+{
+  countroi:
+  {
+    module_type: RootOutput
+    fileName: "roicount_out.root"
+    results:
+    {
+      producers:
+      {
+        roicounts: { @table::standard_roicounter }
+      }
+      rpPath: [roicounts]
+    }
+  }
+}
+
+physics:
+{
+  stream1: [ countroi ]
+}
