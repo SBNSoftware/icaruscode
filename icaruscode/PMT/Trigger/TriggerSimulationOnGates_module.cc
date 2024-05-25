@@ -195,6 +195,15 @@ namespace icarus::trigger { class TriggerSimulationOnGates; }
  *     standard, that is simulation time in Monte Carlo, which is mirrored in
  *     data by the hardware beam gate time (although the latter allows a margin
  *     around the beam spill opening a bit before neutrinos are expected).
+ * * `TriggerOnTransition` (flag, default: `False`): if set, a trigger candidate
+ *     is issued only when there is a transition from non-satisfying the trigger
+ *     requirements to satisfying them. This implicitly excludes all candidates
+ *     coming earlier than the beam gate opening. The default setting of `false`
+ *     reflects ICARUS trigger behaviour until Run2 (included), when only the
+ *     current status of the trigger was considered. The setting of `true`
+ *     reflects the trigger from run `11649` on (and from Run3 on), which
+ *     effectively removes the peak of triggers at the time of the opening of
+ *     the beam gate.
  * * `DeadTime` (time, default: forever): when looking for sequences of
  *     triggers, ignore this much time after every trigger found. This applies
  *     only within each requested gate: a trigger at the very end of a gate
@@ -258,10 +267,11 @@ namespace icarus::trigger { class TriggerSimulationOnGates; }
  *    needs to remember or be associated to physical PMT.
  * * `BeamGates` (`std::vector<sim::BeamGateInfo>`): the beam gate intervals
  *     to run the simulation on; one trigger result is produced and saved for
- *     each of the gates in this data product. The gates are interpreted
- *     following LArSoft convention for the simulation, with the times in
- *     nanoseconds and in
+ *     each of the gates in this data product. By default the gates are
+ *     interpreted following LArSoft convention for the simulation, with the
+ *     times in nanoseconds and in
  *     @ref DetectorClocksSimulationTime "simulation time reference".
+ *     The parameter `BeamGateReference` can change that interpretation.
  * 
  * 
  * Output data products
@@ -278,7 +288,9 @@ namespace icarus::trigger { class TriggerSimulationOnGates; }
  *     there is only one threshold (see `TriggerGatesTag`, `Thresholds` and
  *     `KeepThresholdName` configuration parameters);
  *     at least one trigger object is produced for each of the beam gates found
- *     in the input data product specified by the `BeamGates` parameter.
+ *     in the input data product specified by the `BeamGates` parameter,
+ *     unless `EmitEmpty` is set, in which case beam gates with no trigger fired
+ *     will not contribute any object.
  *     Each trigger object has the time stamp matching the time the trigger
  *     criteria are satisfied. All triggers feature the bits specified in
  *     `BeamBits` configuration parameter, with the following exceptions:
@@ -510,6 +522,12 @@ class icarus::trigger::TriggerSimulationOnGates
       false
       };
 
+    fhicl::Atom<bool> TriggerOnTransition {
+      Name("TriggerOnTransition"),
+      Comment("only emit triggers on the first tick the requirements are met"),
+      false
+      };
+
     fhicl::Atom<nanoseconds> DeadTime {
       Name("DeadTime"),
       Comment("veto time after each trigger found"),
@@ -651,6 +669,9 @@ class icarus::trigger::TriggerSimulationOnGates
   
   bool const fExtraInfo; ///< Whether to produce a `sbn::ExtraTriggerInfo`.
   
+  /// Whether to trigger only the moment requirements are met.
+  bool const fTriggerOnTransition;
+  
   nanoseconds const fDeadTime; ///< Veto time after a trigger in a gate.
   
   /// Bit mask set for triggers after the first one in a gate.
@@ -773,6 +794,20 @@ class icarus::trigger::TriggerSimulationOnGates
     );
   
   /**
+   * @brief Returns the first trigger in the specified gate.
+   * @param start time start for the gate, in optical ticks
+   * @param stop time end for the gate, in optical ticks
+   * @param gates the trigger gates from all the windows needed in the pattern
+   * @param detTimings detector timings helper
+   * @return information about the first time trigger requirements were met
+   */
+  WindowTriggerInfo_t findFirstTrigger(
+    optical_tick start, optical_tick stop,
+    icarus::trigger::SlidingWindowPatternAlg::TriggerGates_t const& gates,
+    detinfo::DetectorTimings const& detTimings
+    ) const;
+  
+  /**
    * @brief Converts the trigger information into trigger objects.
    * @param detTimings detector clocks service provider proxy
    * @param beamGates list of all beam gates to evaluate
@@ -812,6 +847,21 @@ class icarus::trigger::TriggerSimulationOnGates
   /// Prints the summary of fired triggers on screen.
   void printSummary() const;
   
+  
+  /**
+   * @brief Converts a time into electronics time scale.
+   * @param time the time to be converted
+   * @param detTimings detector timings helper
+   * @return `time` in electronics time scale
+   * 
+   * The time value is assumed to be in the reference as `fBeamGateReference`
+   * and converted into the electronics time scale.
+   */
+  detinfo::timescales::electronics_time toElectronicsTime(
+    util::quantities::nanosecond time,
+    detinfo::DetectorTimings const& detTimings
+    ) const;
+  
   /**
    * @brief Converts a time into beam gate time.
    * @param time the time to be converted
@@ -825,7 +875,8 @@ class icarus::trigger::TriggerSimulationOnGates
     util::quantities::nanosecond time,
     detinfo::DetectorTimings const& detTimings
     ) const;
-
+  
+  
   /// Creates and returns a 1D histogram filled with `binnedContent`.
   TH1* makeHistogramFromBinnedContent(
     PlotSandbox_t& plots,
@@ -879,7 +930,7 @@ namespace {
     
     static constexpr T max = std::numeric_limits<T>::max();
     
-    T const max_d = max - a;
+    auto const max_d = max - a;
     a = (b > max_d)? max: a + b;
     
     if constexpr(sizeof...(Others) > 0) {
@@ -932,6 +983,7 @@ icarus::trigger::TriggerSimulationOnGates::TriggerSimulationOnGates
   , fBeamBits             (config().BeamBits())
   , fEmitEmpty            (config().EmitEmpty())
   , fExtraInfo            (config().ExtraInfo())
+  , fTriggerOnTransition  (config().TriggerOnTransition())
   , fDeadTime             (config().DeadTime())
   , fRetriggeringMask     (bitMask<TriggerBits_t>(config().RetriggeringBit()))
   , fTriggerLogicMask     (mask(config().TriggerLogicBit()))
@@ -1062,9 +1114,14 @@ icarus::trigger::TriggerSimulationOnGates::TriggerSimulationOnGates
 
     log << "\nOther parameters:"
       << "\n * trigger time clock period: " << fTriggerClock
-      << "\n * input beam gate reference time: "
-        << util::StandardSelectorFor<util::TimeScale>{}
+      << "\n * input beam gate: '" << fBeamGateTag.encode()
+        << "', reference time: " << util::StandardSelectorFor<util::TimeScale>{}
           .get(fBeamGateReference).name()
+      << "\n * emit triggers"
+        << (fTriggerOnTransition
+          ? " at the instant requirements become satisfied"
+          : " any time the requirements are met"
+          )
       ;
     if (fDeadTime == std::numeric_limits<nanoseconds>::max())
       log << "\n * only one trigger per beam gate (infinite dead time)";
@@ -1488,42 +1545,63 @@ auto icarus::trigger::TriggerSimulationOnGates::produceForThreshold(
   std::unique_ptr<sbn::ExtraTriggerInfo> firstExtraInfo;
   unsigned int triggerNumber = firstTriggerNumber;
   
-  detinfo::DetectorClocksData const& detClocks = detTimings.clockData();
   EventAux_t const eventInfo = extractEventInfo(event);
+  
+  // after each trigger, skip
+  // at least one trigger resolution unit, and at least the dead time
+  optical_time_ticks const skipTicks
+    = (fDeadTime == std::numeric_limits<nanoseconds>::max())
+    ? std::numeric_limits<optical_time_ticks>::max()
+    : detTimings.toOpticalTicks(std::max(fDeadTime, fTriggerClock));
+  
+  auto const nextTrigger
+    = [this, &gates, &detTimings](optical_tick start, optical_tick stop)
+    { return findFirstTrigger(start, stop, gates, detTimings); };
   
   for (sim::BeamGateInfo const& beamGate: beamGates) {
     std::vector<WindowTriggerInfo_t> triggerInfos;
     
     // relative to the beam gate time (also simulation time for MC);
-    nanoseconds start{ toBeamGateTime
-      (util::quantities::nanosecond{ beamGate.Start() }, detTimings) };
-    nanoseconds const stop{ start + nanoseconds{ beamGate.Width() } };
+    optical_tick start = detTimings.toOpticalTick(
+      toElectronicsTime
+        (util::quantities::nanosecond{ beamGate.Start() }, detTimings)
+      );
+    optical_tick const stop = start + detTimings.toOpticalTicks
+      (util::quantities::nanosecond{ beamGate.Width() });
+    
+    // we want to start a tick earlier, to see if a trigger is already there:
+    if (fTriggerOnTransition) start -= optical_time_ticks{ 1 };
     
     while (start < stop) {
       
-      icarus::trigger::ApplyBeamGateClass const applyBeamGate
-       = makeApplyBeamGate(stop - start, start, detClocks, fLogCategory);
-      
-      mf::LogTrace(fLogCategory) << "Applying gate: " << applyBeamGate;
-      
-      WindowTriggerInfo_t const triggerInfo
-        = fPatternAlg->simulateResponse(applyBeamGate.applyToAll(gates));
-      
+      WindowTriggerInfo_t triggerInfo = nextTrigger(start, stop);
       if (!triggerInfo) break;
+      
+      // if detecting transitions, `start` will be kept at the closing of the
+      // current trigger;
+      // otherwise, after a dead time from the previous trigger
+      if (fTriggerOnTransition && (triggerInfo.info.atTick() == start)) {
+        // trigger at the very start means no transition occurred,
+        // need to look for another one
+        // shouldn't happen after the first trigger:
+        assert(triggerInfos.empty());
+        start = triggerInfo.info.endTick();
+        triggerInfo = nextTrigger(start, stop);
+        if (!triggerInfo) break;
+      }
       
       // FIXME what do we do with statistics and plots?
 //       plotInfo.eventTimes.add(eventTimestampInSeconds(event));
-      
-      // set the next starting point to the trigger we just found...
-      start = detTimings.toElectronicsTime(triggerInfo.info.atTick())
-        - detTimings.BeamGateTime();
       
       mf::LogTrace(fLogCategory) << "Found a trigger at optical tick "
         << triggerInfo.info.atTick() << " (" << start
         << ") from window #" << triggerInfo.extra.windowIndex;
       
-      // ... plus the dead time (or at least some time)
-      start = cappedSum(start, std::max(fDeadTime, fTriggerClock));
+      // restart after some dead time (if may be infinite, so needs cap);
+      // if triggering on transitions, skip at least to the end of this trigger
+      start = fTriggerOnTransition
+        ? std::max(triggerInfo.info.endTick(), cappedSum(start, skipTicks))
+        : cappedSum(start, skipTicks);
       
       triggerInfos.push_back(std::move(triggerInfo));
       
@@ -1673,6 +1751,39 @@ void icarus::trigger::TriggerSimulationOnGates::printSummary() const {
 
 
 //------------------------------------------------------------------------------
+auto icarus::trigger::TriggerSimulationOnGates::toElectronicsTime(
+  util::quantities::nanosecond time, detinfo::DetectorTimings const& detTimings
+) const
+  -> detinfo::timescales::electronics_time
+{
+  // currently (LArSoft v09_77_00) `detinfo::DetectorTimings` does not support
+  // beam gate timescale conversion, so we need to do it "by hand" from...
+  // electronics time, as usual
+  
+  switch (fBeamGateReference) {
+    case util::TimeScale::Electronics:
+      return detinfo::timescales::electronics_time{ time };
+    case util::TimeScale::BeamGate:
+      return detTimings.BeamGateTime() + nanoseconds{ time };
+    case util::TimeScale::Trigger:
+      return detTimings.toElectronicsTime
+        (detinfo::timescales::trigger_time{ time });
+      break;
+    case util::TimeScale::Simulation:
+      return detTimings.toElectronicsTime
+        (detinfo::timescales::simulation_time{ time });
+    default:
+      throw art::Exception{ art::errors::Configuration }
+        << "Conversion of times from reference '"
+        << util::StandardSelectorFor<util::TimeScale>{}
+          .get(fBeamGateReference).name()
+        << "' not supported.\n";
+  } // switch
+  
+} // icarus::trigger::TriggerSimulationOnGates::toElectronicsTime()
+
+
+//------------------------------------------------------------------------------
 auto icarus::trigger::TriggerSimulationOnGates::toBeamGateTime(
   util::quantities::nanosecond time, detinfo::DetectorTimings const& detTimings
 ) const
@@ -1682,42 +1793,10 @@ auto icarus::trigger::TriggerSimulationOnGates::toBeamGateTime(
   // beam gate timescale conversion, so we need to do it "by hand" from...
   // electronics time, as usual
   
-  detinfo::timescales::electronics_time time_es;
-  switch (fBeamGateReference) {
-    case util::TimeScale::Electronics:
-      time_es = detinfo::timescales::electronics_time{ time };
-      break;
-    case util::TimeScale::BeamGate:
-      return nanoseconds{ time };
-    case util::TimeScale::Trigger:
-      time_es = detTimings.toElectronicsTime
-        (detinfo::timescales::trigger_time{ time });
-      break;
-    case util::TimeScale::Simulation:
-      time_es = detTimings.toElectronicsTime
-        (detinfo::timescales::simulation_time{ time });
-      break;
-    default:
-#if 0 // TODO restore after adoption of https://github.com/LArSoft/lardataalg/pull/44
-      throw art::Exception{ art::errors::Configuration }
-        << "Conversion of times from reference '"
-        << util::StandardSelectorFor<util::TimeScale>{}
-          .get(fBeamGateReference).name()
-        << "' not supported.\n";
-#else
-    {
-      util::StandardSelectorFor<util::TimeScale> const timeScaleSelector;
-      throw art::Exception{ art::errors::Configuration }
-        << "Conversion of times from reference '"
-        << timeScaleSelector.get(fBeamGateReference).name()
-        << "' not supported.\n";
-    }
-#endif
-  } // switch
+  return fBeamGateReference == util::TimeScale::BeamGate
+    ? time: toElectronicsTime(time, detTimings) - detTimings.BeamGateTime();
   
-  return time_es - detTimings.BeamGateTime();
-  
-} // icarus::trigger::TriggerSimulationOnGates::rebaseTime()
+} // icarus::trigger::TriggerSimulationOnGates::toBeamGateTime()
 
 
 //------------------------------------------------------------------------------
@@ -1738,6 +1817,25 @@ std::uint64_t icarus::trigger::TriggerSimulationOnGates::TimestampToUTC
   return static_cast<std::uint64_t>(ts.timeHigh())
     + static_cast<std::uint64_t>(ts.timeLow()) * 1'000'000'000ULL;
 } // icarus::trigger::TriggerSimulationOnGates::TimestampToUTC()
+
+
+//------------------------------------------------------------------------------
+auto icarus::trigger::TriggerSimulationOnGates::findFirstTrigger(
+    optical_tick start, optical_tick stop,
+  icarus::trigger::SlidingWindowPatternAlg::TriggerGates_t const& gates,
+  detinfo::DetectorTimings const& detTimings
+) const -> WindowTriggerInfo_t {
+  
+  detinfo::DetectorClocksData const& detClocks = detTimings.clockData();
+  
+  icarus::trigger::ApplyBeamGateClass const applyBeamGate
+   = makeApplyBeamGate(start, stop - start, detClocks, fLogCategory);
+  
+  mf::LogTrace(fLogCategory) << "Applying gate: " << applyBeamGate;
+  
+  return fPatternAlg->simulateResponse(applyBeamGate.applyToAll(gates));
+  
+} // icarus::trigger::TriggerSimulationOnGates::findFirstTrigger()
 
 
 //------------------------------------------------------------------------------
@@ -1765,6 +1863,7 @@ icarus::trigger::TriggerSimulationOnGates::triggerInfoToTriggerData(
   std::vector<raw::Trigger> triggers;
   
   sbn::ExtraTriggerInfo extraInfo;
+  assert(extraInfo.triggerID == sbn::ExtraTriggerInfo::NoID);
   // these are fixed by the gate and set this way whether trigger fired or not:
   extraInfo.triggerType = sbn::bits::triggerType::Majority;
   extraInfo.sourceType  = beamTypeToTriggerSource(beamGate.BeamType());
@@ -1847,6 +1946,7 @@ icarus::trigger::TriggerSimulationOnGates::triggerInfoToTriggerData(
             ];
           cryoInfo.triggerLogicBits = fTriggerLogicMask;
           cryoInfo.beamToTrigger = beamToTrigger;
+          ++cryoInfo.triggerCount;
         } // cryostat info
       } // if extra info
       
@@ -1862,8 +1962,6 @@ icarus::trigger::TriggerSimulationOnGates::triggerInfoToTriggerData(
         extraInfo.triggerID    = sbn::ExtraTriggerInfo::NoID;
       } // if extra info
     } // if fired... else
-    
-    fillExtraInfo = false;
     
   } // for
   

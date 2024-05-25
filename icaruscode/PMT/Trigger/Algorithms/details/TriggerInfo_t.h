@@ -66,6 +66,9 @@ struct icarus::trigger::details::TriggerInfo_t {
     /// Tick at which the trigger fired.
     optical_tick tick = std::numeric_limits<optical_tick>::min();
     
+    /// Tick at which trigger requirements are not met any more.
+    optical_tick endTick = std::numeric_limits<optical_tick>::min();
+    
     Opening_t level = 0U; ///< Maximum level on the main trigger opening.
     
     /// Identified of the trigger location.
@@ -77,10 +80,10 @@ struct icarus::trigger::details::TriggerInfo_t {
     
     /// Constructor: specify `tick`, the rest is optional.
     OpeningInfo_t(
-      optical_tick tick,
+      optical_tick tick, optical_tick endTick,
       Opening_t level = 0U, std::size_t locationID = UnknownLocation
       )
-      : tick(tick), level(level), locationID(locationID) {}
+      : tick(tick), endTick(endTick), level(level), locationID(locationID) {}
     
     /// Returns whether the location is set.
     bool hasLocation() const { return locationID != UnknownLocation; }
@@ -175,6 +178,9 @@ struct icarus::trigger::details::TriggerInfo_t {
   /// Returns the time of the trigger (undefined if `!fired()`).
   optical_tick atTick() const { return main().tick; }
   
+  /// Returns the time of the trigger (undefined if `!fired()`).
+  optical_tick endTick() const { return main().endTick; }
+  
   /// Returns the opening level of the trigger (undefined if `!fired()`).
   Opening_t level() const { return main().level; }
   
@@ -231,7 +237,7 @@ struct icarus::trigger::details::TriggerInfo_t {
  * By default, the closing threshold is one less than the opening one (i.e. as
  * soon as the level goes below the opening threshold, the gate closes).
  * 
- * This algorithm will not work in multi-threading.
+ * This class does not support multi-threading (it does have a mutable state).
  */
 template <typename Gate>
 class icarus::trigger::details::GateOpeningInfoExtractor {
@@ -433,6 +439,7 @@ auto icarus::trigger::details::GateOpeningInfoExtractor<Gate>::findNextOpening()
   
   return std::optional<OpeningInfo_t>{ std::in_place,
     detinfo::timescales::optical_tick{ start },
+    detinfo::timescales::optical_tick{ closing },
     gate.openingCount(gate.findMaxOpen(start, closing)),
     location()
     };

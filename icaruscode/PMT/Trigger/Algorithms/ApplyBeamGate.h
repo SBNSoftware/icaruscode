@@ -64,6 +64,23 @@ namespace icarus::trigger {
     std::string const& logCategory = "ApplyBeamGateClass"
     );
   
+  /**
+   * @brief Returns a new `ApplyBeamGateClass` object with the specified gate.
+   * @param start the start of the gate, in ticks on the optical time scale
+   * @param duration the desired duration of the gate, in optical ticks
+   * @param clockData the current detector clocks service provider data
+   * @param logCategory message category the returned object will use
+   * @return a new `ApplyBeamGateClass` object with the specified parameters
+   * 
+   * The gate starts at the nominal beam gate time as reported by `clockData`.
+   */
+  ApplyBeamGateClass makeApplyBeamGate(
+    detinfo::timescales::optical_tick start,
+    detinfo::timescales::optical_time_ticks duration,
+    detinfo::DetectorClocksData const& clockData,
+    std::string const& logCategory = "ApplyBeamGateClass"
+    );
+  
   std::ostream& operator<<
     (std::ostream& out, icarus::trigger::ApplyBeamGateClass const& gate);
   
@@ -177,6 +194,22 @@ inline auto icarus::trigger::makeApplyBeamGate(
     using namespace util::quantities::time_literals;
     return makeApplyBeamGate(duration, 0.0_us, clockData, logCategory);
   }
+
+
+// -----------------------------------------------------------------------------
+inline auto icarus::trigger::makeApplyBeamGate(
+  detinfo::timescales::optical_tick start,
+  detinfo::timescales::optical_time_ticks duration,
+  detinfo::DetectorClocksData const& clockData,
+  std::string const& logCategory /* = "ApplyBeamGateClass" */
+  ) -> ApplyBeamGateClass
+{
+  return {
+    icarus::trigger::makeBeamGateStruct
+      (detinfo::DetectorTimings{ clockData }, start, duration),
+    logCategory
+    };
+} // icarus::trigger::makeApplyBeamGate()
 
 
 // -----------------------------------------------------------------------------

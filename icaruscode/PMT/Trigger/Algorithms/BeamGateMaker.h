@@ -45,6 +45,8 @@ namespace icarus::trigger {
  * 
  * The time of the gate is in
  * @ref DetectorClocksOpticalElectronicsTime "optical detector electronics ticks".
+ * 
+ * In alternative, an optical tick start and duration can be specified.
  */
 class icarus::trigger::BeamGateMaker {
   
@@ -75,8 +77,14 @@ class icarus::trigger::BeamGateMaker {
   /// @name Start and end time
   /// @{
   
-  /// Time of beam gate opening, in optical time scale.
-  /// @param delay opening delay after the nominal beam gate time
+  /**
+   * @brief Time of beam gate opening, in optical time scale.
+   * @param delay opening delay after the nominal beam gate time
+   * @return time of beam gate opening, in optical time scale
+   * 
+   * @note Optical time scale is assumed to start with the electronics time
+   *       scale.
+   */
   optical_time startTime(time_interval const delay = DefaultDelay) const
     { return fDetTimings.BeamGateTime() + delay; }
   
@@ -118,18 +126,43 @@ class icarus::trigger::BeamGateMaker {
    */
   template <typename Gate = icarus::trigger::OpticalTriggerGate>
   Gate make(time_interval length, time_interval delay = DefaultDelay) const
-    {
-      icarus::trigger::OpticalTriggerGate beamGate;
-      beamGate.gateLevels().openFor
-        (startTick(delay).value(), fDetTimings.toOpticalTicks(length).value());
-      return beamGate;
-    }
+    { return make(startTick(delay), fDetTimings.toOpticalTicks(length)); }
   
   // alias
   template <typename Gate = icarus::trigger::OpticalTriggerGate>
   Gate operator()
     (time_interval length, time_interval delay = DefaultDelay) const
     { return make<Gate>(length, delay); }
+  // @}
+  
+  
+  // @{
+  /**
+   * @brief Returns a gate object of the specified duration.
+   * @tparam Gate type of gate object to be returned
+   *              (default: `icarus::trigger::OpticalTriggerGate`)
+   * @param start tick to open the beam gate on (optical time scale)
+   * @param length duration of the gate to be open
+   * @return a `Gate` object representing a gate opened at beam gate time
+   * 
+   * The returned object represents a gate opening relative to the `start` of
+   * the optical detector time scale for the specified duration.
+   * The time of the gate is in also in
+   * @ref DetectorClocksOpticalElectronicsTime "optical ticks".
+   */
+  template <typename Gate = icarus::trigger::OpticalTriggerGate>
+  Gate make(optical_tick start, optical_time_ticks length) const
+    {
+      icarus::trigger::OpticalTriggerGate beamGate; // straight to the point:
+      beamGate.gateLevels().openFor(start.value(), length.value());
+      return beamGate;
+    }
+  
+  // alias
+  template <typename Gate = icarus::trigger::OpticalTriggerGate>
+  Gate operator()
+    (optical_tick start, optical_time_ticks length) const
+    { return make<Gate>(start, length); }
   // @}
   
 }; // class icarus::trigger::BeamGateMaker

@@ -46,6 +46,22 @@ namespace icarus::trigger {
       = util::quantities::intervals::microseconds{ 0.0 }
     );
   
+  /**
+   * @brief Creates a `BeamGateStruct` object at specified optical ticks.
+   * @param detTimings object used for time conversions
+   * @param start optical tick the gate opens at (in optical time scale)
+   * @param duration length of the gate, in ticks
+   * @return a `BeamGateStruct`
+   * 
+   * This is for when I will regret to have coupled `BeamGateStruct` interface
+   * to `detinfo::DetectorTimings`.
+   */
+  BeamGateStruct makeBeamGateStruct(
+    detinfo::DetectorTimings const& detTimings,
+    detinfo::timescales::optical_tick start,
+    detinfo::timescales::optical_time_ticks duration
+    );
+  
 } // icarus::trigger
 
 
@@ -62,6 +78,7 @@ struct icarus::trigger::BeamGateStruct {
   using electronics_time = detinfo::timescales::electronics_time;
   using simulation_time = detinfo::timescales::simulation_time;
   using optical_tick = detinfo::timescales::optical_tick;
+  using optical_time_ticks = detinfo::timescales::optical_time_ticks;
   
   /// Utility class expressing a time range.
   template <typename Time>
@@ -82,6 +99,17 @@ struct icarus::trigger::BeamGateStruct {
    */
   BeamGateStruct(
     microseconds duration, microseconds delay,
+    detinfo::DetectorTimings const& detTimings
+    );
+  
+  /**
+   * @brief Constructor: gate of specified start tick and duration.
+   * @param start optical tick the gate opens at (in optical time scale)
+   * @param duration length of the gate, in ticks
+   * @param detTimings object used for time conversions
+   */
+  BeamGateStruct(
+    optical_tick start, optical_time_ticks duration,
     detinfo::DetectorTimings const& detTimings
     );
   
@@ -161,6 +189,26 @@ icarus::trigger::BeamGateStruct::BeamGateStruct(
 
 
 // -----------------------------------------------------------------------------
+icarus::trigger::BeamGateStruct::BeamGateStruct(
+  optical_tick start, optical_time_ticks duration,
+  detinfo::DetectorTimings const& detTimings
+  )
+  : fGate{ icarus::trigger::BeamGateMaker{detTimings}(start, duration) }
+  , fRangeElec
+    {
+      detTimings.toElectronicsTime(start),
+      detTimings.toElectronicsTime(start + duration)
+    }
+  , fRangeSim
+    {
+      detTimings.toSimulationTime(fRangeElec.start()),
+      detTimings.toSimulationTime(fRangeElec.end())
+    }
+  , fRangeOpt { start, start + duration }
+{} // icarus::trigger::BeamGateStruct::BeamGateStruct()
+
+
+// -----------------------------------------------------------------------------
 namespace icarus::trigger {
   
   template <typename Time>
@@ -187,7 +235,19 @@ icarus::trigger::BeamGateStruct icarus::trigger::makeBeamGateStruct(
   
   return { duration, delay, detTimings };
   
-} // icarus::trigger::makeBeamGateStruct()
+} // icarus::trigger::makeBeamGateStruct(beam gate times)
+
+
+// -----------------------------------------------------------------------------
+icarus::trigger::BeamGateStruct icarus::trigger::makeBeamGateStruct(
+  detinfo::DetectorTimings const& detTimings,
+  detinfo::timescales::optical_tick start,
+  detinfo::timescales::optical_time_ticks duration
+) {
+  
+  return { start, duration, detTimings };
+  
+} // icarus::trigger::makeBeamGateStruct(optical ticks)
 
 
 // -----------------------------------------------------------------------------
