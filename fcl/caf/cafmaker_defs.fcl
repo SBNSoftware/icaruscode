@@ -15,7 +15,7 @@
 #include "eventweight_genie_systtools.fcl"
 #include "eventweight_flux_sbn.fcl"
 #include "mcreco.fcl"
-#include "mcsproducer.fcl"
+#include "mcsproducer_icarus.fcl"
 #include "rangeproducer.fcl"
 #include "crthitconverter_producer.fcl"
 #include "flashmatch_simple_icarus.fcl"
@@ -96,8 +96,8 @@ standard_crtt0producer_cryoW.PFParticleLabel: ["pandoraGausCryoW"]
 recoana_caf_preprocess_producers: {
   mcreco: @local::standard_mcreco
 
-  pandoraTrackMCSCryoE: @local::mcs_sbn
-  pandoraTrackMCSCryoW: @local::mcs_sbn
+  pandoraTrackMCSCryoE: @local::mcs_icarus_mc
+  pandoraTrackMCSCryoW: @local::mcs_icarus_mc
 
   pandoraTrackRangeCryoE: @local::range_sbn
   pandoraTrackRangeCryoW: @local::range_sbn
