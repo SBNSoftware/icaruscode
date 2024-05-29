@@ -99,6 +99,17 @@ BEGIN_PROLOG
 triggeremu_config_icarus.settings.missing_pmt_channels:
   @local::icarus_trigger_channel_ignore_202101  # from trigger_icarus.fcl
 
+#
+# trigger timings
+#
+
+# Run3 delay extracted comparing emulated and hardware trigger time
+# from run 11952 (majority only), not presented yet
+triggeremu_config_icarus.settings.TriggerDelay_Run3: "350 ns"
+triggeremu_config_icarus.settings.TriggerDelay:
+  @local::triggeremu_config_icarus.settings.TriggerDelay_Run3
+
+
 # beam gate window for trigger emulation:
 #  - duration (BNB: 1.6 us; NuMI: 9.5 us; and some buffer)
 triggeremu_config_icarus.settings.BeamGate.Duration: "1.70 us"
