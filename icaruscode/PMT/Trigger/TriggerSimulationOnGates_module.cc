@@ -324,6 +324,17 @@ namespace icarus::trigger { class TriggerSimulationOnGates; }
  *       in which case `triggerID` is `sbn::ExtraTriggerInfo::NoID` and
  *       `triggerCount` is `0`, both in their default values.
  *     * `gateID` and `gateCount` match the event number.
+ *     * `cryostats`: information per cryostat:
+ *         * `beamToTrigger`: time from beam gate opening to the time trigger
+ *           conditions are met. This interval does not include the
+ *           `TriggerDelay`. The resolution of this time only reflects the
+ *           digitized input resolution, without any quantization (e.g., from
+ *           hardware clocks).
+ *         * `triggerLogicBits`: value from `TriggerLogicBit` configuration
+ *           parameter (`0` if no trigger happened).
+ *         * `triggerCount`: number of triggers found in the gate. This is the
+ *           actual number of triggers found, and there is no attempt to
+ *           emulate the equivalent count in the hardware.
  *   
  *     If the first gate did not emit a trigger, the object will be left
  *     default-constructed, noticeably with an invalid trigger timestamp
@@ -1879,9 +1890,9 @@ icarus::trigger::TriggerSimulationOnGates::triggerInfoToTriggerData(
   
   static constexpr auto NoTime = std::numeric_limits<unsigned int>::max();
   struct PreviousTriggerInfo_t {
-    unsigned int beamToTrigger = NoTime;
+    unsigned int beamToTriggerTicks = NoTime;
     geo::CryostatID cryo;
-    constexpr operator bool() const { return beamToTrigger != NoTime; }
+    constexpr operator bool() const { return beamToTriggerTicks != NoTime; }
     constexpr bool operator!() const { return !bool(*this); }
   };
   
@@ -1922,14 +1933,15 @@ icarus::trigger::TriggerSimulationOnGates::triggerInfoToTriggerData(
         ? (fCryostatZeroMask << triggeringCryo.Cryostat): 0U;
       
       // round to the next tick (because that's what the hardware must do):
-      auto const beamToTrigger = static_cast<unsigned int>
-        (std::ceil((triggerTime - beamTime) / fTriggerClock));
+      nanoseconds const beamToTrigger = triggerTime - beamTime;
+      auto const beamToTriggerTicks
+        = static_cast<unsigned int>(std::ceil(beamToTrigger / fTriggerClock));
       
       bool isFirstTrigger = triggers.empty(); // might still be merging tough
       
       // if the previous trigger is from a different cryostat and close in time,
       if (prevTrigger && (prevTrigger.cryo != triggeringCryo)
-        && (beamToTrigger - prevTrigger.beamToTrigger <= fOverlapTicks)
+        && (beamToTriggerTicks - prevTrigger.beamToTriggerTicks <= fOverlapTicks)
       ) { // ... merge
         assert(!triggers.empty());
         isFirstTrigger = (triggers.size() <= 1);
@@ -1946,7 +1958,7 @@ icarus::trigger::TriggerSimulationOnGates::triggerInfoToTriggerData(
         
       } // if merging trigger
       else { // new trigger
-        prevTrigger = { beamToTrigger, triggeringCryo };
+        prevTrigger = { beamToTriggerTicks, triggeringCryo };
         
         TriggerBits_t bits = beamBits | sourceMask;
         if (!isFirstTrigger) bits |= fRetriggeringMask;
@@ -1982,7 +1994,8 @@ icarus::trigger::TriggerSimulationOnGates::triggerInfoToTriggerData(
             ];
           if (cryoInfo.triggerCount++ == 0) { // first trigger in the cryostat
             cryoInfo.triggerLogicBits = fTriggerLogicMask;
-            cryoInfo.beamToTrigger = beamToTrigger;
+            cryoInfo.beamToTrigger
+              = static_cast<unsigned int>(beamToTrigger.value());
           }
         } // cryostat info
       } // if extra info
