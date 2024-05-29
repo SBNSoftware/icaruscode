@@ -210,6 +210,8 @@ namespace icarus::trigger { class TriggerSimulationOnGates; }
  *     will not suppress one at the beginning of the next one even if that is
  *     within the set dead time. If set to a very large value (as the default),
  *     only one trigger will be found per input gate.
+ * * `TriggerDelay` (time, default: `0 ns`): fixed time to add to the time of
+ *     all the triggers.
  * * `EmitEmpty` (flag, default: `true`): if set, each gate gets at least a
  *     trigger object, and if there is no trigger during a gate its trigger
  *     object will be marked by having no bit set. If unset, when there is no
@@ -291,8 +293,9 @@ namespace icarus::trigger { class TriggerSimulationOnGates; }
  *     in the input data product specified by the `BeamGates` parameter,
  *     unless `EmitEmpty` is set, in which case beam gates with no trigger fired
  *     will not contribute any object.
- *     Each trigger object has the time stamp matching the time the trigger
- *     criteria are satisfied. All triggers feature the bits specified in
+ *     Each trigger object has the time stamp matching the time when the trigger
+ *     criteria were satisfied, plus the fixed delay in the `TriggerDelay`
+ *     configuration parameter. All triggers feature the bits specified in
  *     `BeamBits` configuration parameter, with the following exceptions:
  *     if there was no trigger found, the bits will all be cleared; and if there
  *     was more than one trigger found in the same gate, all triggers except the
@@ -331,7 +334,7 @@ namespace icarus::trigger { class TriggerSimulationOnGates; }
  *     will return `true` even when there was no trigger firing.
  * 
  * 
- * ### Trigger bits
+ * ### Trigger bits in `raw::Trigger`
  * 
  * The trigger bits may be overridden by the `BeamBits` configuration parameter.
  * If they are not, the bits from an input "beam" gate will be used verbatim for
@@ -351,6 +354,21 @@ namespace icarus::trigger { class TriggerSimulationOnGates; }
  * 
  * For the options where a bit position can be specified, specifying a position
  * beyond the number of available bits effectively disables that option.
+ * 
+ * 
+ * ### Trigger timing
+ * 
+ * This module replicates the logic used by the hardware to provide a trigger
+ * response, but it does not attempt to emulate the delays that occur in the
+ * hardware. The trigger time is by default the instant when in the input
+ * waveforms the conditions are met, assuming that their synchronization already
+ * reflects the one on the hardware input.
+ * The only allowance to the hardware timing is the option to add a _fixed_
+ * delay (`TriggerDelay` configuration parameter) to all trigger times produced
+ * by this module. The `beamToTrigger` delay, on the other end, is deliberately
+ * excluded from that delay, and no specific delay is offered for it.
+ * 
+ * 
  * 
  * 
  * Trigger logic algorithm
@@ -534,6 +552,12 @@ class icarus::trigger::TriggerSimulationOnGates
       std::numeric_limits<nanoseconds>::max()
       };
     
+    fhicl::Atom<nanoseconds> TriggerDelay {
+      Name("TriggerDelay"),
+      Comment("trigger response delay, added to the trigger times"),
+      0_ns // default
+      };
+    
     fhicl::Atom<unsigned int> RetriggeringBit {
       Name("RetriggeringBit"),
       Comment(
@@ -673,6 +697,8 @@ class icarus::trigger::TriggerSimulationOnGates
   bool const fTriggerOnTransition;
   
   nanoseconds const fDeadTime; ///< Veto time after a trigger in a gate.
+  
+  nanoseconds const fTriggerDelay; ///< Time to be added to the trigger time.
   
   /// Bit mask set for triggers after the first one in a gate.
   TriggerBits_t const fRetriggeringMask;
@@ -985,6 +1011,7 @@ icarus::trigger::TriggerSimulationOnGates::TriggerSimulationOnGates
   , fExtraInfo            (config().ExtraInfo())
   , fTriggerOnTransition  (config().TriggerOnTransition())
   , fDeadTime             (config().DeadTime())
+  , fTriggerDelay         (config().TriggerDelay())
   , fRetriggeringMask     (bitMask<TriggerBits_t>(config().RetriggeringBit()))
   , fTriggerLogicMask     (mask(config().TriggerLogicBit()))
   , fCryostatZeroMask     (bitMask<TriggerBits_t>(config().CryostatFirstBit()))
@@ -1114,6 +1141,7 @@ icarus::trigger::TriggerSimulationOnGates::TriggerSimulationOnGates
 
     log << "\nOther parameters:"
       << "\n * trigger time clock period: " << fTriggerClock
+      << "\n * trigger response delay: " << fTriggerDelay
       << "\n * input beam gate: '" << fBeamGateTag.encode()
         << "', reference time: " << util::StandardSelectorFor<util::TimeScale>{}
           .get(fBeamGateReference).name()
@@ -1128,8 +1156,10 @@ icarus::trigger::TriggerSimulationOnGates::TriggerSimulationOnGates
     else {
       log << "\n * veto time after a trigger in one gate: " << fDeadTime
         << "\n * retriggering bit:";
-      if (config().RetriggeringBit() >= NTriggerBits)
-        log << " none (#" << config().RetriggeringBit() << ", 0x" << std::hex << fRetriggeringMask << std::dec << ")";
+      if (config().RetriggeringBit() >= NTriggerBits) {
+        log << " none (#" << config().RetriggeringBit()
+          << ", 0x" << std::hex << fRetriggeringMask << std::dec << ")";
+      }
       else {
         log << " #" << config().RetriggeringBit() << " (0x"
           << std::hex << fRetriggeringMask << std::dec << ")";
@@ -1188,7 +1218,7 @@ void icarus::trigger::TriggerSimulationOnGates::produce(art::Event& event)
 
   
   { // BEGIN local block
-    mf::LogDebug log { fLogCategory };
+    mf::LogDebug log(fLogCategory);
     log << "Trigger simulation for " << beamGates.size() << " gates";
     if (!beamGates.empty()) {
       log << " ('" << fBeamGateTag.encode() << "'):";
@@ -1881,6 +1911,10 @@ icarus::trigger::TriggerSimulationOnGates::triggerInfoToTriggerData(
       detinfo::timescales::electronics_time const triggerTime
         = detTimings.toElectronicsTime(trInfo.info.atTick());
       
+      // include the delay from timestamping (and all other fixed delays)
+      detinfo::timescales::electronics_time const timestampedTriggerTime
+        = triggerTime + fTriggerDelay;
+      
       // find the location and set the bits accordingly
       geo::CryostatID const triggeringCryo
         = WindowCryostat(fWindowMapMan->info(trInfo.extra.windowIndex));
@@ -1918,14 +1952,14 @@ icarus::trigger::TriggerSimulationOnGates::triggerInfoToTriggerData(
         if (!isFirstTrigger) bits |= fRetriggeringMask;
         
         triggers.emplace_back(
-          triggerNumber,        // counter
-          double(triggerTime),  // trigger time
-          double(beamTime),     // beam gate
-          bits                  // bits
+          triggerNumber,                   // counter
+          double(timestampedTriggerTime),  // trigger time
+          double(beamTime),                // beam gate
+          bits                             // bits
           );
         
         if (fExtraInfo && isFirstTrigger) {
-          nanoseconds const relTrigTime = triggerTime - beamTime;
+          nanoseconds const relTrigTime = timestampedTriggerTime - beamTime;
           
           extraInfo.triggerTimestamp  = eventInfo.time;
           extraInfo.beamGateTimestamp = extraInfo.triggerTimestamp
