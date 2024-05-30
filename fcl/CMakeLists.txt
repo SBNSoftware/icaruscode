@@ -9,5 +9,6 @@ add_subdirectory(caf)
 add_subdirectory(services)
 add_subdirectory(utilities)
 add_subdirectory(compatibility)
+add_subdirectory(numi-anaA)
 
 install_fhicl()

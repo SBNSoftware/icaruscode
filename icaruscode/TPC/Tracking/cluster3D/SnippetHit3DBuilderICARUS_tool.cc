@@ -1798,6 +1798,10 @@ void SnippetHit3DBuilderICARUS::CollectArtHits(const art::Event& evt) const
     auto const clock_data = art::ServiceHandle<detinfo::DetectorClocksService const>()->DataFor(evt);
     auto const det_prop   = art::ServiceHandle<detinfo::DetectorPropertiesService const>()->DataFor(evt, clock_data);
 
+    // Bad channel list
+    const lariov::ChannelStatusProvider& channelStatus(
+      art::ServiceHandle<lariov::ChannelStatusService const>()->GetProvider());
+
     // Try to output a formatted string
     std::string debugMessage("");
 
@@ -1853,6 +1857,11 @@ void SnippetHit3DBuilderICARUS::CollectArtHits(const art::Event& evt) const
     {
         // Reject hits with negative charge, these are misreconstructed
         if (recobHit->Integral() < 0.) continue;
+
+        // Reject hits with on a bad channel
+        if (channelStatus.IsBad(recobHit->Channel())) {
+          continue;
+        }
 
         // For some detectors we can have multiple wire ID's associated to a given channel.
         // So we recover the list of these wire IDs
