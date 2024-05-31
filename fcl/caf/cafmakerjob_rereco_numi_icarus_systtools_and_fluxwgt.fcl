@@ -36,7 +36,7 @@ physics.runprod: [
   # @sequence::icarus_crttrack,
   # @sequence::icarus_crtt0match,
   caloskimCalorimetryCryoE, caloskimCalorimetryCryoW,
-  systtools, fluxweight, geant4weight,
+  systtools, fluxweight,
   
   @sequence::physics.runprod
 ]
@@ -55,6 +55,6 @@ source.inputCommands: [
 physics.analyzers.caloskimE.SelectEvents: [ runprod ]
 physics.analyzers.caloskimW.SelectEvents: [ runprod ]
 
-physics.producers.cafmaker.SystWeightLabels: ["systtools", "fluxweight", "geant4weight"]
+physics.producers.cafmaker.SystWeightLabels: ["systtools", "fluxweight"]
 #include "cafmaker_add_detsim2d_icarus.fcl"
 
