@@ -698,6 +698,7 @@ class icarus::trigger::TriggerSimulationOnGates
   // for convenience:
   using OpticalTriggerGateData_t = icarus::trigger::OpticalTriggerGateData_t;
   using optical_tick = detinfo::timescales::optical_tick;
+  using optical_time_ticks = detinfo::timescales::optical_time_ticks;
   
   /// Information about the input for a single threshold.
   struct InputInfo_t {
@@ -812,6 +813,9 @@ class icarus::trigger::TriggerSimulationOnGates
   
   bool const fSaveLVDSbits; ///< Whether we need to save LVDS state.
   
+  /// Number of ticks that get ignored after each trigger.
+  optical_time_ticks const fTicksSkippedAfterTrigger;
+  
   /// Output data product instance names (same order as `fInputInfo`).
   std::vector<std::string> fOutputInstances;
   
@@ -911,6 +915,13 @@ class icarus::trigger::TriggerSimulationOnGates
     std::size_t const iThr, std::string const& thrTag,
     unsigned int firstTriggerNumber
     );
+  
+  /// Returns all the triggers from `gates` within the `beamGate`.
+  std::vector<WindowTriggerInfo_t> findTriggers(
+    sim::BeamGateInfo const& beamGate,
+    icarus::trigger::SlidingWindowPatternAlg::TriggerGates_t const& gates,
+    detinfo::DetectorTimings const& detTimings
+    ) const;
   
   /**
    * @brief Returns the first trigger in the specified gate.
@@ -1020,6 +1031,9 @@ class icarus::trigger::TriggerSimulationOnGates
     BinnedContent_t const& binnedContent
     ) const;
   
+  
+  /// Returns the amount of ticks configured to be skipped after a trigger.
+  optical_time_ticks skipTicksAfterTrigger() const;
   
   //@{
   /// Returns the time of the event in seconds from The Epoch.
@@ -1135,7 +1149,8 @@ icarus::trigger::TriggerSimulationOnGates::TriggerSimulationOnGates
   , fChannelMapCacheGuard{ "PMT" } // track the PMT cache only
   // internal and cached
   , fSaveLVDSbits         (fExtraInfo && !config().LVDSgatesTag().empty())
-  , fWindowMapMan{ makeWindowMapManager() }
+  , fTicksSkippedAfterTrigger{ skipTicksAfterTrigger() }
+  , fWindowMapMan         { makeWindowMapManager() }
 #if 0
   , fPlots{
     *art::ServiceHandle<art::TFileService>(),
@@ -1754,65 +1769,10 @@ auto icarus::trigger::TriggerSimulationOnGates::produceForThreshold(
   
   EventAux_t const eventInfo = extractEventInfo(event);
   
-  // after each trigger, skip
-  // at least one trigger resolution unit, and at least the dead time
-  optical_time_ticks const skipTicks
-    = (fDeadTime == std::numeric_limits<nanoseconds>::max())
-    ? std::numeric_limits<optical_time_ticks>::max()
-    : detTimings.toOpticalTicks(std::max(fDeadTime, fTriggerClock));
-  
-  auto const nextTrigger
-    = [this, &gates, &detTimings](optical_tick start, optical_tick stop)
-    { return findFirstTrigger(start, stop, gates, detTimings); };
-  
   for (sim::BeamGateInfo const& beamGate: beamGates) {
-    std::vector<WindowTriggerInfo_t> triggerInfos;
     
-    // relative to the beam gate time (also simulation time for MC);
-    optical_tick start = detTimings.toOpticalTick(
-      toElectronicsTime
-        (util::quantities::nanosecond{ beamGate.Start() }, detTimings)
-      );
-    optical_tick const stop = start + detTimings.toOpticalTicks
-      (util::quantities::nanosecond{ beamGate.Width() });
-    
-    // we want to start a tick earlier, to see if a trigger is already there:
-    if (fTriggerOnTransition) start -= optical_time_ticks{ 1 };
-    
-    while (start < stop) {
-      
-      WindowTriggerInfo_t triggerInfo = nextTrigger(start, stop);
-      if (!triggerInfo) break;
-      
-      // if detecting transitions, `start` will be kept at the closing of the
-      // current trigger;
-      // otherwise, after a dead time from the previous trigger
-      if (fTriggerOnTransition && (triggerInfo.info.atTick() == start)) {
-        // trigger at the very start means no transition occurred,
-        // need to look for another one
-        // shouldn't happen after the first trigger:
-        assert(triggerInfos.empty());
-        start = triggerInfo.info.endTick();
-        triggerInfo = nextTrigger(start, stop);
-        if (!triggerInfo) break;
-      }
-      
-      // FIXME what do we do with statistics and plots?
-//       plotInfo.eventTimes.add(eventTimestampInSeconds(event));
-      
-      mf::LogTrace(fLogCategory) << "Found a trigger at optical tick "
-        << triggerInfo.info.atTick() << " (" << start
-        << ") from window #" << triggerInfo.extra.windowIndex;
-      
-      // restart after some dead time (if may be infinite, so needs cap);
-      // if triggering on transitions, skip at least to the end of this trigger
-      start = fTriggerOnTransition
-        ? std::max(triggerInfo.info.endTick(), cappedSum(start, skipTicks))
-        : cappedSum(start, skipTicks);
-      
-      triggerInfos.push_back(std::move(triggerInfo));
-      
-    } // while
+    std::vector<WindowTriggerInfo_t> triggerInfos
+      = findTriggers(beamGate, gates, detTimings);
     
     if (!triggerInfos.empty()) ++fTriggerCount[iThr]; // keep the unique count
     
@@ -2029,6 +1989,70 @@ std::uint64_t icarus::trigger::TriggerSimulationOnGates::TimestampToUTC
 
 
 //------------------------------------------------------------------------------
+auto icarus::trigger::TriggerSimulationOnGates::findTriggers(
+  sim::BeamGateInfo const& beamGate,
+  icarus::trigger::SlidingWindowPatternAlg::TriggerGates_t const& gates,
+  detinfo::DetectorTimings const& detTimings
+) const -> std::vector<WindowTriggerInfo_t> {
+
+  auto const nextTrigger
+    = [this, &gates, &detTimings](optical_tick start, optical_tick stop)
+    { return findFirstTrigger(start, stop, gates, detTimings); };
+    
+  std::vector<WindowTriggerInfo_t> triggerInfos;
+    
+  // relative to the beam gate time (also simulation time for MC);
+  optical_tick start = detTimings.toOpticalTick(
+    toElectronicsTime
+      (util::quantities::nanosecond{ beamGate.Start() }, detTimings)
+    );
+    optical_tick const stop = start + detTimings.toOpticalTicks
+      (util::quantities::nanosecond{ beamGate.Width() });
+    
+  // we want to start a tick earlier, to see if a trigger is already there:
+  if (fTriggerOnTransition) start -= optical_time_ticks{ 1 };
+  
+  while (start < stop) {
+    
+    WindowTriggerInfo_t triggerInfo = nextTrigger(start, stop);
+    if (!triggerInfo) break;
+    
+    // if detecting transitions, `start` will be kept at the closing of the
+    // current trigger; otherwise, after a dead time from the previous trigger
+    if (fTriggerOnTransition && (triggerInfo.info.atTick() == start)) {
+      // trigger at the very start means no transition occurred,
+      // need to look for another one
+      // shouldn't happen after the first trigger:
+      assert(triggerInfos.empty());
+      start = triggerInfo.info.endTick();
+      triggerInfo = nextTrigger(start, stop);
+      if (!triggerInfo) break;
+    }
+    
+    // FIXME what do we do with statistics and plots?
+//     plotInfo.eventTimes.add(eventTimestampInSeconds(event));
+    
+    mf::LogTrace(fLogCategory) << "Found a trigger at optical tick "
+      << triggerInfo.info.atTick() << " (" << start
+      << ") from window #" << triggerInfo.extra.windowIndex;
+    
+    // restart after some dead time (if may be infinite, so needs cap);
+    // if triggering on transitions, skip at least to the end of this trigger
+    start = fTriggerOnTransition
+      ? std::max
+       (triggerInfo.info.endTick(), cappedSum(start, fTicksSkippedAfterTrigger))
+      : cappedSum(start, fTicksSkippedAfterTrigger)
+      ;
+    
+    triggerInfos.push_back(std::move(triggerInfo));
+    
+  } // while
+  
+  return triggerInfos;
+} // icarus::trigger::TriggerSimulationOnGates::findTriggers()
+
+
+//------------------------------------------------------------------------------
 auto icarus::trigger::TriggerSimulationOnGates::findFirstTrigger(
     optical_tick start, optical_tick stop,
   icarus::trigger::SlidingWindowPatternAlg::TriggerGates_t const& gates,
@@ -2153,6 +2177,10 @@ icarus::trigger::TriggerSimulationOnGates::triggerInfoToTriggerData(
             assert(PMTpairGates);
             optical_tick const LVDSfreezeTick
               = detTimings.toOpticalTick(triggerTime + fLVDSstatusDelay);
+            mf::LogTrace(fLogCategory) << "Freezing LVDS states at tick "
+              << LVDSfreezeTick << " (" << triggerTime << " trigger + "
+              << fLVDSstatusDelay << " delay = "
+              << (triggerTime + fLVDSstatusDelay) << ")";
             LVDSbitArrays_t const LVDSbits
               = extractLVDSstatus(LVDSfreezeTick, *PMTpairGates);
             for (std::size_t const cryo
@@ -2389,6 +2417,20 @@ icarus::trigger::TriggerSimulationOnGates::makeHistogramFromBinnedContent(
   hist->SetEntries(static_cast<double>(total));
   return hist;
 } // icarus::trigger::TriggerSimulationOnGates::makeHistogramFromBinnedContent
+
+
+//------------------------------------------------------------------------------
+auto icarus::trigger::TriggerSimulationOnGates::skipTicksAfterTrigger() const
+  -> optical_time_ticks
+{
+  detinfo::DetectorTimings const detTimings
+    {art::ServiceHandle<detinfo::DetectorClocksService const>()->DataForJob() };
+  // after each trigger, skip
+  // at least one trigger resolution unit, and at least the dead time
+  return (fDeadTime == std::numeric_limits<nanoseconds>::max())
+    ? std::numeric_limits<optical_time_ticks>::max()
+    : detTimings.toOpticalTicks(std::max(fDeadTime, fTriggerClock));
+} // icarus::trigger::TriggerSimulationOnGates::skipTicksAfterTrigger()
 
 
 //------------------------------------------------------------------------------
