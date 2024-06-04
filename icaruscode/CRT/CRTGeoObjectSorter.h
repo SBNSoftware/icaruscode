@@ -12,9 +12,8 @@
 #ifndef ICARUS_CRTGeoObjectSorter_h
 #define ICARUS_CRTGeoObjectSorter_h
 
-#include <vector>
-
 #include "larcorealg/Geometry/AuxDetGeoObjectSorter.h"
+#include "fhiclcpp/fwd.h"
 
 //namespace icarus {
 //namespace crt {
@@ -22,14 +21,13 @@ namespace geo{
 
   class CRTGeoObjectSorter : public AuxDetGeoObjectSorter {
   public:
+    CRTGeoObjectSorter();
+    CRTGeoObjectSorter(fhicl::ParameterSet const&);
 
-    CRTGeoObjectSorter(fhicl::ParameterSet const& p);
-
-    void SortAuxDets (std::vector<geo::AuxDetGeo>& adgeo) const;
-    void SortAuxDetSensitive(std::vector<geo::AuxDetSensitiveGeo>& adsgeo) const;
-    void SortCRTs (std::vector<geo::AuxDetGeo>& adgeo) const;
-    void SortCRTSensitive (std::vector<std::pair< int, geo::AuxDetSensitiveGeo> >& adsgeo) const;
-
+  private:
+    bool compareAuxDets(AuxDetGeo const& ad1, AuxDetGeo const& ad2) const override;
+    bool compareAuxDetSensitives(AuxDetSensitiveGeo const& ads1,
+                                 AuxDetSensitiveGeo const& ads2) const override;
   };
 
 } //namespace crt

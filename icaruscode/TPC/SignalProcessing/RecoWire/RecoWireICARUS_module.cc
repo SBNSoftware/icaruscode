@@ -31,7 +31,7 @@
 
 // LArSoft includes
 #include "larcoreobj/SimpleTypesAndConstants/RawTypes.h" // raw::ChannelID_t
-#include "larcore/Geometry/Geometry.h"
+#include "larcore/Geometry/WireReadout.h"
 #include "larcorealg/Geometry/PlaneGeo.h"
 #include "lardataobj/RawData/RawDigit.h"
 #include "lardataobj/RawData/raw.h"
@@ -180,11 +180,6 @@ namespace recowire{
   //////////////////////////////////////////////////////
   void RecoWireICARUS::produce(art::Event& evt)
   {
-    
-      
-    // get the geometry
-    art::ServiceHandle<geo::Geometry> geom;
-
     std::vector<double> decayConsts;  
     std::vector<int> kernMap;
     std::vector<std::vector<std::complex<double>>> kernel; 
@@ -232,6 +227,9 @@ namespace recowire{
     std::vector<short> rawadc(transformSize);  // vector holding uncompressed adc values
     std::vector<std::complex<double>> freqHolder(transformSize+1); // temporary frequency data
     wirecol->reserve(digitVecHandle->size()); 
+
+    auto const& wireReadoutAlg = art::ServiceHandle<geo::WireReadout const>()->Get();
+
     // loop over all wires    
     for(unsigned int rdIter = 0; rdIter < digitVecHandle->size(); ++rdIter){ // ++ move
       holder.clear();
@@ -249,7 +247,7 @@ namespace recowire{
       for(bin = 0; bin < dataSize; ++bin) 
 	holder[bin]=(rawadc[bin]-digitVec->GetPedestal());
       // fExpEndBins only nonzero for detectors needing exponential tail fitting
-      geo::SigType_t sigtype = geom->SignalType(channel);
+      geo::SigType_t sigtype = wireReadoutAlg.SignalType(channel);
       size_t k;
       if(sigtype == geo::kInduction)
 	k = 0;
@@ -395,4 +393,3 @@ namespace recowire{
 
 
 #endif // RecoWireICARUS_H
-

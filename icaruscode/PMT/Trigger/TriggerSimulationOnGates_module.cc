@@ -32,6 +32,7 @@
 
 // LArSoft libraries
 #include "lardata/DetectorInfoServices/DetectorClocksService.h"
+#include "larcore/Geometry/WireReadout.h"
 #include "larcore/Geometry/Geometry.h"
 #include "larcore/CoreUtils/ServiceUtil.h" // lar::providerFrom()
 #include "lardataalg/DetectorInfo/DetectorTimings.h"
@@ -851,7 +852,9 @@ icarus::trigger::TriggerSimulationOnGates::TriggerSimulationOnGates
   , fOutputDir (*art::ServiceHandle<art::TFileService>())
   // internal and cached
   , fWindowMapMan
-    { *lar::providerFrom<geo::Geometry>(), fLogCategory + "_WindowMapManager" }
+    { *lar::providerFrom<geo::Geometry>(),
+      art::ServiceHandle<geo::WireReadout const>()->Get(),
+      fLogCategory + "_WindowMapManager" }
   , fPlots(
      fOutputDir, "", "requirement: " + fPattern.description()
     )

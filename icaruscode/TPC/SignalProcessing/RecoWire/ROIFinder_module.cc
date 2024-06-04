@@ -34,8 +34,7 @@
 // LArSoft libraries
 #include "larcoreobj/SimpleTypesAndConstants/RawTypes.h" // raw::ChannelID_t
 #include "larcorealg/CoreUtils/enumerate.h"
-#include "larcore/Geometry/Geometry.h"
-#include "larcore/CoreUtils/ServiceUtil.h" // lar::providerFrom()
+#include "larcore/Geometry/WireReadout.h"
 #include "lardataobj/RecoBase/Wire.h"
 #include "lardataobj/RawData/RawDigit.h"
 #include "lardata/DetectorInfoServices/DetectorClocksService.h"
@@ -168,7 +167,7 @@ private:
     
     std::map<size_t,std::unique_ptr<icarus_tool::IROILocator>> fROIToolMap;
 
-    const geo::GeometryCore*                                   fGeometry = lar::providerFrom<geo::Geometry>();
+    const geo::WireReadoutGeom& fChannelMapAlg = art::ServiceHandle<geo::WireReadout const>()->Get();
     
 }; // class ROIFinder
 
@@ -290,7 +289,7 @@ void ROIFinder::produce(art::Event& evt)
         {
             raw::ChannelID_t channel = wire.Channel();
            
-            std::vector<geo::WireID> wireIDVec = fGeometry->ChannelToWire(channel);
+            std::vector<geo::WireID> wireIDVec = fChannelMapAlg.ChannelToWire(channel);
 
             if (wireIDVec.empty()) continue;
     
@@ -303,7 +302,7 @@ void ROIFinder::produce(art::Event& evt)
                 // Make sure the array is initialized
                 if (mapItr == planeIDToDataPairMap.end())
                 {
-                    unsigned int nWires = fGeometry->Nwires(planeID);
+                    unsigned int nWires = fChannelMapAlg.Nwires(planeID);
     
                     std::pair<PlaneIDToDataPairMap::iterator,bool> mapInsert = planeIDToDataPairMap.insert({planeID,PlaneIDToDataPair()});
     
@@ -344,12 +343,12 @@ void ROIFinder::produce(art::Event& evt)
 
                     ROIVec.add_range(0, std::move(zeroVec));
 
-                    std::vector<geo::WireID> wireIDVec = fGeometry->ChannelToWire(channelVec[idx]);
+                    std::vector<geo::WireID> wireIDVec = fChannelMapAlg.ChannelToWire(channelVec[idx]);
 
                     // Given channel a large number so we know to not save
                     mapInfo.second.first[idx] = 100000 + idx;
 
-                    tempWireVec.emplace_back(recob::WireCreator(std::move(ROIVec),idx,fGeometry->View(wireIDVec[0].planeID())).move());
+                    tempWireVec.emplace_back(recob::WireCreator(std::move(ROIVec),idx,fChannelMapAlg.Plane(wireIDVec[0].planeID()).View()).move());
 
                     mapInfo.second.second.addWire(idx,tempWireVec.back());
                }
@@ -427,9 +426,9 @@ void  ROIFinder::processPlane(size_t                          idx,
             ROIVec.add_range(0, std::move(outputArray[waveIdx]));
 
             raw::ChannelID_t channel = channelVec[waveIdx];
-            geo::View_t      view    = fGeometry->View(channel);
+            geo::View_t      view    = fChannelMapAlg.View(channel);
         
-            std::vector<geo::WireID> chanIDVec = fGeometry->ChannelToWire(channel);
+            std::vector<geo::WireID> chanIDVec = fChannelMapAlg.ChannelToWire(channel);
 
             morphedVec.push_back(recob::WireCreator(std::move(ROIVec),channel,view).move());
         }
@@ -519,7 +518,7 @@ void  ROIFinder::processPlane(size_t                          idx,
             {
                 raw::ChannelID_t channel = channelVec[waveIdx];
 
-                std::vector<geo::WireID> wireIDVec = fGeometry->ChannelToWire(channel);
+                std::vector<geo::WireID> wireIDVec = fChannelMapAlg.ChannelToWire(channel);
 
                 if (wireIDVec.size() > 1)
                 {
@@ -606,11 +605,11 @@ void  ROIFinder::processPlane(size_t                          idx,
                 tbb::spin_mutex::scoped_lock lock(roifinderSpinMutex);
 
                 raw::ChannelID_t channel = channelVec[waveIdx];
-                geo::View_t      view    = fGeometry->View(channel);
+                geo::View_t      view    = fChannelMapAlg.View(channel);
 
                 // Since we process logical TPC images we need to watch for duplicating entries 
                 // We can do that by checking to see if a channel has already been added...
-                std::vector<geo::WireID> wireIDVec = fGeometry->ChannelToWire(channel);
+                std::vector<geo::WireID> wireIDVec = fChannelMapAlg.ChannelToWire(channel);
 
                 if (channelROIVec.size() != wireColVec.size())
                     throw art::Exception(art::errors::LogicError) << "===> ROI output mismatch, channelROIVec, size: " << channelROIVec.size() << ", wireColVec, size: " << wireColVec.size() << "\n";

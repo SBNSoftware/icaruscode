@@ -15,7 +15,7 @@
 
 // LArSoft libraries
 #include "lardata/DetectorInfoServices/DetectorClocksService.h"
-#include "larcore/Geometry/Geometry.h"
+#include "larcore/Geometry/WireReadout.h"
 #include "lardataalg/DetectorInfo/DetectorTimings.h"
 #include "lardataalg/DetectorInfo/DetectorTimingTypes.h" // electronics_time
 #include "lardataalg/Utilities/quantities/spacetime.h" // nanoseconds
@@ -707,9 +707,9 @@ void icarus::PMTWaveformBaselinesFromChannelData::setupPlots
 {
   
   auto const& tfs = *(frame.serviceHandle<art::TFileService>());
-  auto const& geom = *(frame.serviceHandle<geo::Geometry>()->provider());
+  auto const& wireReadoutAlg = frame.serviceHandle<geo::WireReadout>()->Get();
   
-  fNPlotChannels = geom.NOpChannels();
+  fNPlotChannels = wireReadoutAlg.NOpChannels();
   
   fHBaselines = tfs.make<TH2F>(
     "Baselines",

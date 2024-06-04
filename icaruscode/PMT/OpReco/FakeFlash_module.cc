@@ -24,6 +24,7 @@
 #include "larcoreobj/SummaryData/RunData.h"
 #include "lardataobj/Simulation/SimPhotons.h"
 #include "lardata/DetectorInfoServices/DetectorClocksService.h"
+#include "larcore/Geometry/WireReadout.h"
 #include "larcore/Geometry/Geometry.h"
 #include "larcore/CoreUtils/ServiceUtil.h" // lar::providerFrom()
 #include "larsim/PhotonPropagation/PhotonVisibilityService.h"
@@ -104,9 +105,8 @@ FakeFlash::FakeFlash(fhicl::ParameterSet const& p)
   _slow_tau  = p.get<double>("SlowTimeConstant",1.5);
 
   // channel range to simulate
-  auto geop = lar::providerFrom<geo::Geometry>();
   _ch_min = 0;
-  _ch_max = geop->NOpChannels() - 1;
+  _ch_max = art::ServiceHandle<geo::WireReadout const>()->Get().NOpChannels() - 1;
   _ch_min = p.get<size_t>("ChannelMin",_ch_min);
   _ch_max = p.get<size_t>("ChannelMax",_ch_max);
   assert(_ch_min<_ch_max);

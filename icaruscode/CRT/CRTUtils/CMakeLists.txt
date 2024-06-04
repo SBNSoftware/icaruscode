@@ -37,8 +37,6 @@ art_make_library(LIBRARY_NAME icaruscode_CRTUtils
 	Boost::system
 	sbnobj::ICARUS_CRT
 	sbnobj::Common_CRT
-	icaruscode_CRT
-	icaruscode_CRTData
 	lardata::DetectorInfoServices_DetectorClocksServiceStandard_service
 	nurandom::RandomUtils_NuRandomService_service
 	)

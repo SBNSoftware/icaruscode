@@ -8,6 +8,7 @@
 #include "art_root_io/TFileDirectory.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
 
+#include "larcore/Geometry/WireReadout.h"
 #include "larcore/Geometry/Geometry.h"
 #include "larcore/CoreUtils/ServiceUtil.h" // lar::providerFrom()
 #include "lardata/DetectorInfoServices/DetectorClocksService.h"
@@ -53,7 +54,7 @@ namespace TrackHitEfficiencyAnalysis
     // Created by Tracy Usher (usher@slac.stanford.edu) on February 19, 2016
     //
     ////////////////////////////////////////////////////////////////////////
-    
+
 // The following typedefs will, obviously, be useful
 using HitPtrVec       = std::vector<art::Ptr<recob::Hit>>;
 using ViewHitMap      = std::map<size_t,HitPtrVec>;
@@ -68,12 +69,12 @@ public:
      *  @param  pset
      */
     explicit TrackHitEfficiencyAnalysis(fhicl::ParameterSet const & pset);
-    
+
     /**
      *  @brief  Destructor
      */
     ~TrackHitEfficiencyAnalysis();
-    
+
     // provide for initialization
     void configure(fhicl::ParameterSet const & pset) override;
 
@@ -98,17 +99,17 @@ public:
      *  @param int            number of events to use for normalization
      */
     void endJob(int numEvents) override;
-    
+
     /**
      *  @brief Interface for filling histograms
      */
     void fillHistograms(const art::Event&)  const override;
-    
+
 private:
-    
+
     // Clear mutable variables
     void clear() const;
-    
+
     // Fcl parameters.
     std::vector<art::InputTag>  fRawDigitProducerLabelVec;
     std::vector<art::InputTag>  fWireProducerLabelVec;
@@ -127,12 +128,12 @@ private:
 
     // TTree variables
     mutable TTree*             fTree;
-    
+
     mutable std::vector<short>   fTPCVec;
     mutable std::vector<short>   fCryoVec;
     mutable std::vector<short>   fPlaneVec;
     mutable std::vector<short>   fWireVec;
-    
+
     mutable std::vector<float>   fTotalElectronsVec;
     mutable std::vector<float>   fMaxElectronsVec;
     mutable std::vector<short>   fmaxElectronsTickVec;
@@ -156,7 +157,7 @@ private:
     mutable std::vector<short>   fROIMaxTickVec;
     mutable std::vector<short>   fROILenVec;
     mutable std::vector<short>   fROIDeltaTVec;
-    
+
     mutable std::vector<float>   fHitPeakTimeVec;
     mutable std::vector<float>   fHitPeakAmpVec;
     mutable std::vector<float>   fHitPeakRMSVec;
@@ -189,8 +190,9 @@ private:
 
     // Useful services, keep copies for now (we can update during begin run periods)
     const geo::GeometryCore*           fGeometry;             ///< pointer to Geometry service
+    const geo::WireReadoutGeom*        fWireReadout;
 };
-    
+
 //----------------------------------------------------------------------------
 /// Constructor.
 ///
@@ -201,9 +203,9 @@ private:
 TrackHitEfficiencyAnalysis::TrackHitEfficiencyAnalysis(fhicl::ParameterSet const & pset) : fTree(nullptr)
 {
     fGeometry           = lar::providerFrom<geo::Geometry>();
-    
+    fWireReadout        = &art::ServiceHandle<geo::WireReadout const>()->Get();
     configure(pset);
-    
+
     // Report.
     mf::LogInfo("TrackHitEfficiencyAnalysis") << "TrackHitEfficiencyAnalysis configured\n";
 }
@@ -247,19 +249,19 @@ void TrackHitEfficiencyAnalysis::initializeHists(art::ServiceHandle<art::TFileSe
 {
     // Make a directory for these histograms
 //    art::TFileDirectory dir = tfs->mkdir(dirName.c_str());
-    
+
     return;
 }
-    
+
 void TrackHitEfficiencyAnalysis::initializeTuple(TTree* tree)
 {
     fTree = tree;
-    
+
     fTree->Branch("CryostataVec",        "std::vector<short>",   &fCryoVec);
     fTree->Branch("TPCVec",              "std::vector<short>",   &fTPCVec);
     fTree->Branch("PlaneVec",            "std::vector<short>",   &fPlaneVec);
     fTree->Branch("WireVec",             "std::vector<short>",   &fWireVec);
-    
+
     fTree->Branch("TotalElectronsVec",   "std::vector<float>",   &fTotalElectronsVec);
     fTree->Branch("MaxElectronsVec",     "std::vector<float>",   &fMaxElectronsVec);
     fTree->Branch("StartTick",           "std::vector<short>",   &fStartTickVec);
@@ -270,7 +272,7 @@ void TrackHitEfficiencyAnalysis::initializeTuple(TTree* tree)
     fTree->Branch("PartDirY",            "std::vector<float>",   &fPartDirY);
     fTree->Branch("PartDirZ",            "std::vector<float>",   &fPartDirZ);
     fTree->Branch("CosThetaXZ",          "std::vector<float>",   &fCosThetaXZVec);
-    
+
     fTree->Branch("NMatchedWires",       "std::vector<short>",   &fNMatchedWires);
     fTree->Branch("NMatchedHits",        "std::vector<short>",   &fNMatchedHits);
     fTree->Branch("NMatchedTHits",       "std::vector<short>",   &fNMatchedTHits);
@@ -318,7 +320,7 @@ void TrackHitEfficiencyAnalysis::initializeTuple(TTree* tree)
 
     return;
 }
-    
+
 void TrackHitEfficiencyAnalysis::clear() const
 {
     fTPCVec.clear();
@@ -340,7 +342,7 @@ void TrackHitEfficiencyAnalysis::clear() const
     fRawDigitPulseHeightVec.clear();
     fRawDigitMaxTickVec.clear();
     fRawDigitMinTickVec.clear();
-    
+
     fNMatchedWires.clear();
     fNMatchedHits.clear();
     fNMatchedTHits.clear();
@@ -389,7 +391,7 @@ void TrackHitEfficiencyAnalysis::fillHistograms(const art::Event& event) const
     // Basic assumption is that the producer label vecs for RawDigits and Wire data are
     // all the same length and in the same order. Here we just check for length
     if (fRawDigitProducerLabelVec.size() != fWireProducerLabelVec.size()) return;
-    
+
     // Always clear the tuple
     clear();
 
@@ -397,24 +399,24 @@ void TrackHitEfficiencyAnalysis::fillHistograms(const art::Event& event) const
     
     art::Handle< std::vector<sim::SimChannel>> simChannelHandle;
     event.getByLabel(fSimChannelProducerLabel, simChannelHandle);
-    
+
     art::Handle< std::vector<simb::MCParticle>> mcParticleHandle;
     event.getByLabel(fMCParticleProducerLabel, mcParticleHandle);
 
     // If there is no sim channel informaton then exit
     if (!simChannelHandle.isValid() || simChannelHandle->empty() || !mcParticleHandle.isValid()) return;
-    
+
     // what needs to be done?
     // First we define a straightforward channel to Wire map so we can look up a given
     // channel's Wire data as we loop over SimChannels.
     using ChanToWireMap = std::unordered_map<raw::ChannelID_t,const recob::ChannelROI*>;
-    
+
     ChanToWireMap channelToWireMap;
-    
+
     // We will use the presence of a RawDigit as an indicator of a good channel... So
     // we want a mapping between channel and RawDigit
     using ChanToRawDigitMap = std::unordered_map<raw::ChannelID_t,const raw::RawDigit*>;
-    
+
     ChanToRawDigitMap chanToRawDigitMap;
 
     // Now start a loop over the individual TPCs to build out the structures for RawDigits and Wires
@@ -427,17 +429,17 @@ void TrackHitEfficiencyAnalysis::fillHistograms(const art::Event& event) const
         event.getByLabel(fWireProducerLabelVec[tpcID], wireHandle);
 
         if (!rawDigitHandle.isValid() || !wireHandle.isValid()) return;
-        
+
         for(const auto& wire : *wireHandle) channelToWireMap[wire.Channel()] = &wire;
-        
+
         for(const auto& rawDigit : *rawDigitHandle) chanToRawDigitMap[rawDigit.Channel()] = &rawDigit;
     }
-    
+
     // Now we create a data structure to relate hits to their channel ID
     using ChanToHitVecMap = std::unordered_map<raw::ChannelID_t,std::vector<const recob::Hit*>>;
-    
+
     ChanToHitVecMap channelToHitVec;
-    
+
     // And now fill it
     for(const auto& hitLabel : fHitProducerLabelVec)
     {
@@ -460,22 +462,22 @@ void TrackHitEfficiencyAnalysis::fillHistograms(const art::Event& event) const
     
     // It is useful to create a mapping between trackID and MCParticle
     using TrackIDToMCParticleMap = std::unordered_map<int, const simb::MCParticle*>;
-    
+
     TrackIDToMCParticleMap trackIDToMCParticleMap;
-    
+
     for(const auto& mcParticle : *mcParticleHandle) trackIDToMCParticleMap[mcParticle.TrackId()] = &mcParticle;
-    
+
     std::vector<int> nSimChannelHitVec  = {0,0,0};
     std::vector<int> nRecobHitVec       = {0,0,0};
     std::vector<int> nFakeHitVec        = {0,0,0};
     std::vector<int> nSimulatedWiresVec = {0,0,0};
-    
+
     unsigned int lastwire=-1;
-    
+
     auto const clockData = art::ServiceHandle<detinfo::DetectorClocksService const>()->DataFor(event);
-    
+
 //    const lariov::ChannelStatusProvider& chanFilt = art::ServiceHandle<lariov::ChannelStatusService>()->GetProvider();
-    
+
     // There are several things going on here... for each channel we have particles (track id's) depositing energy in a range to ticks
     // So... for each channel we want to build a structure that relates particles to tdc ranges and deposited energy (or electrons)
     // Here is a complicated structure:
@@ -483,13 +485,13 @@ void TrackHitEfficiencyAnalysis::fillHistograms(const art::Event& event) const
     using ChanToTDCIDEMap         = std::unordered_map<raw::ChannelID_t,TickTDCIDEVec>;
     using PartToChanToTDCToIDEMap = std::unordered_map<int, ChanToTDCIDEMap>;
     using ChannelToSimChannelMap  = std::unordered_map<raw::ChannelID_t,const sim::SimChannel*>;
-    
+
     PartToChanToTDCToIDEMap partToChanToTDCToIDEMap;
     ChannelToSimChannelMap  channelToSimChannelMap;
 
     using StartStopChargeTuple    = std::tuple<short,short,float,int>;  // start, stop, total charge
     using StartStopChargeTupleMap = std::map<int,StartStopChargeTuple>; // reference by track id
-    
+
     // Build out the above data structure
     for(const auto& simChannel : *simChannelHandle)
     {
@@ -526,14 +528,14 @@ void TrackHitEfficiencyAnalysis::fillHistograms(const art::Event& event) const
 
                 short curTDC = tdcIdeItr->first;
 
-                // If there is a gap to the last TDC then we process those values 
+                // If there is a gap to the last TDC then we process those values
                 // (we'll then re-enter this loop looking for the next set)
                 if (curTDC - stopItr->first > 7) break;
 
                 float electronsThisTDC(0.);
                 float maxElectronsByTrackID(0.);
 
-                for(const auto& ide : tdcIdeItr->second) 
+                for(const auto& ide : tdcIdeItr->second)
                 {
                     electronsThisTDC += ide.numElectrons;
 
@@ -623,12 +625,12 @@ void TrackHitEfficiencyAnalysis::fillHistograms(const art::Event& event) const
 
                 // Make sure normalized
                 partAveDir.normalize();
-                
+
                 float cosThetaXZ = partAveDir[0];
 
                 // The below try-catch block may no longer be necessary
                 // Decode the channel and make sure we have a valid one
-                std::vector<geo::WireID> wids = fGeometry->ChannelToWire(channel);
+                std::vector<geo::WireID> wids = fWireReadout->ChannelToWire(channel);
 
                 // Recover plane and wire in the plane
                 unsigned int plane = wids[0].Plane;
@@ -656,13 +658,13 @@ void TrackHitEfficiencyAnalysis::fillHistograms(const art::Event& event) const
                 stopTick         += fOffsetVec[plane];
                 maxElectronsTick += fOffsetVec[plane];
 
-//                std::cout << "  --> startTick/stopTick/maxElectronsTick: " << startTick << "/" << stopTick << "/" << maxElectronsTick 
+//                std::cout << "  --> startTick/stopTick/maxElectronsTick: " << startTick << "/" << stopTick << "/" << maxElectronsTick
 //                          << " which is from TDC values: " << startItr->first << "/" << stopItr->first << "/" << maxElectronsItr->first << std::endl;
 
-                // Apparently it can happen that we have a start tick that exceeds the length of the input waveform. 
+                // Apparently it can happen that we have a start tick that exceeds the length of the input waveform.
                 // We should also make cuts at edges of readout so we don't have distorted waveforms
                 // When this happens skip
-                if (startTick > 10 && stopTick < 4085) 
+                if (startTick > 10 && stopTick < 4085)
                 {
                     // Set up to extract the "best" parameters in the event of more than one hit for this pulse train
                     short          roiMaxValue(0);
@@ -702,7 +704,7 @@ void TrackHitEfficiencyAnalysis::fillHistograms(const art::Event& event) const
                     int            rawDigitMinTick(0);
 
                     // Start by getting an estimate of the pulse height from the RawDigits
-                    ChanToRawDigitMap::const_iterator rawDigitItr = chanToRawDigitMap.find(channel); 
+                    ChanToRawDigitMap::const_iterator rawDigitItr = chanToRawDigitMap.find(channel);
 
                     if (rawDigitItr != chanToRawDigitMap.end())
                     {
@@ -837,7 +839,7 @@ void TrackHitEfficiencyAnalysis::fillHistograms(const art::Event& event) const
                                 if (nMatchedHits > 0)
                                     nRecobHitVec[plane]++;
                                 else if (rejectedHit)
-                                { 
+                                {
                                     unsigned short hitStartTick = rejectedHit->PeakTime() - fSigmaVec[plane] * rejectedHit->RMS();
                                     unsigned short hitStopTick  = rejectedHit->PeakTime() + fSigmaVec[plane] * rejectedHit->RMS();
 
@@ -960,12 +962,12 @@ void TrackHitEfficiencyAnalysis::fillHistograms(const art::Event& event) const
 
     return;
 }
-    
+
 // Useful for normalizing histograms
 void TrackHitEfficiencyAnalysis::endJob(int numEvents)
 {
     return;
 }
-    
+
 DEFINE_ART_CLASS_TOOL(TrackHitEfficiencyAnalysis)
 }

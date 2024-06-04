@@ -19,7 +19,7 @@
 #include "TFile.h"
 
 // LArSoft include
-#include "larcore/Geometry/Geometry.h"
+#include "larcore/Geometry/WireReadout.h"
 #include "larcorealg/Geometry/TPCGeo.h"
 #include "larcorealg/Geometry/PlaneGeo.h"
 
@@ -99,10 +99,10 @@ const icarus_tool::IResponse& SignalShapingICARUSService::GetResponse(size_t cha
 {
     if (!fInit) init();
     
-    art::ServiceHandle<geo::Geometry> geom;
+    geo::WireReadoutGeom const& wireReadoutAlg = art::ServiceHandle<geo::WireReadout const>{}->Get();
     
         //use channel number to set some useful numbers
-    size_t planeIdx = geom->ChannelToWire(channel)[0].Plane;
+    size_t planeIdx = wireReadoutAlg.ChannelToWire(channel)[0].Plane;
 
     return *fPlaneToResponseMap.at(planeIdx).front();
 }
@@ -121,7 +121,7 @@ void SignalShapingICARUSService::init()
     {
         // Do ICARUS-specific configuration of SignalShaping by providing
         // ICARUS response and filter functions.
-        art::ServiceHandle<geo::Geometry> geo;
+        geo::WireReadoutGeom const& wireReadoutAlg = art::ServiceHandle<geo::WireReadout const>{}->Get();
 
         auto const samplingRate = sampling_rate(art::ServiceHandle<detinfo::DetectorClocksService const>()->DataForJob());
 
@@ -129,7 +129,7 @@ void SignalShapingICARUSService::init()
         double integral = fPlaneToResponseMap.at(fPlaneForNormalization).front().get()->getFieldResponse()->getIntegral();
         double weight   = 1. / integral;
         
-        for(size_t planeIdx = 0; planeIdx < geo->Nplanes(); planeIdx++)
+        for(size_t planeIdx = 0; planeIdx < wireReadoutAlg.Nplanes(); planeIdx++)
         {
           fPlaneToResponseMap[planeIdx].front().get()->setResponse(samplingRate, weight);
         }
@@ -159,7 +159,7 @@ void SignalShapingICARUSService::init()
 void SignalShapingICARUSService::SetDecon(double const samplingRate,
                                           size_t fftsize, size_t channel)
 {
-    art::ServiceHandle<geo::Geometry> geo;
+    geo::WireReadoutGeom const& wireReadoutAlg = art::ServiceHandle<geo::WireReadout const>{}->Get();
     
     if (!fInit) init();
     
@@ -167,7 +167,7 @@ void SignalShapingICARUSService::SetDecon(double const samplingRate,
     double integral = fPlaneToResponseMap.at(fPlaneForNormalization).front().get()->getFieldResponse()->getIntegral();
     double weight   = 1. / integral;
     
-    for(size_t planeIdx = 0; planeIdx < geo->Nplanes(); planeIdx++)
+    for(size_t planeIdx = 0; planeIdx < wireReadoutAlg.Nplanes(); planeIdx++)
     {
         fPlaneToResponseMap.at(planeIdx).front()->setResponse(samplingRate, weight);
     }
@@ -178,8 +178,8 @@ double SignalShapingICARUSService::GetASICGain(unsigned int channel) const
 {
     static const double fcToElectrons(6241.50975);
 
-    art::ServiceHandle<geo::Geometry> geom;
-    size_t planeIdx = geom->ChannelToWire(channel)[0].Plane;
+    geo::WireReadoutGeom const& wireReadoutAlg = art::ServiceHandle<geo::WireReadout const>{}->Get();
+    size_t planeIdx = wireReadoutAlg.ChannelToWire(channel)[0].Plane;
     
     double gain = fPlaneToResponseMap.at(planeIdx).front()->getElectronicsResponse()->getFCperADCMicroS() * fcToElectrons;
     
@@ -196,8 +196,8 @@ double SignalShapingICARUSService::GetShapingTime(unsigned int planeIdx) const
 
 double SignalShapingICARUSService::GetRawNoise(unsigned int const channel) const
 {
-    art::ServiceHandle<geo::Geometry> geom;
-    size_t planeIdx = geom->ChannelToWire(channel)[0].Plane;
+    geo::WireReadoutGeom const& wireReadoutAlg = art::ServiceHandle<geo::WireReadout const>{}->Get();
+    size_t planeIdx = wireReadoutAlg.ChannelToWire(channel)[0].Plane;
 
     double gain         = fPlaneToResponseMap.at(planeIdx).front()->getElectronicsResponse()->getFCperADCMicroS();
     double shaping_time = fPlaneToResponseMap.at(planeIdx).front()->getElectronicsResponse()->getASICShapingTime();
@@ -224,8 +224,8 @@ double SignalShapingICARUSService::GetRawNoise(unsigned int const channel) const
 
 double SignalShapingICARUSService::GetDeconNoise(unsigned int const channel) const
 {
-    art::ServiceHandle<geo::Geometry> geom;
-    size_t planeIdx = geom->ChannelToWire(channel)[0].Plane;
+    geo::WireReadoutGeom const& wireReadoutAlg = art::ServiceHandle<geo::WireReadout const>{}->Get();
+    size_t planeIdx = wireReadoutAlg.ChannelToWire(channel)[0].Plane;
     
     double shaping_time = fPlaneToResponseMap.at(planeIdx).front()->getElectronicsResponse()->getASICShapingTime();
     int temp;
@@ -251,9 +251,9 @@ int SignalShapingICARUSService::ResponseTOffset(unsigned int const channel) cons
 {
     if (!fInit) init();
     
-    art::ServiceHandle<geo::Geometry> geom;
+    geo::WireReadoutGeom const& wireReadoutAlg = art::ServiceHandle<geo::WireReadout const>{}->Get();
     
-    size_t planeIdx = geom->ChannelToWire(channel)[0].Plane;
+    size_t planeIdx = wireReadoutAlg.ChannelToWire(channel)[0].Plane;
 
     return fPlaneToResponseMap.at(planeIdx).front()->getTOffset();
 }

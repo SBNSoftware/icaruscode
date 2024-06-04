@@ -40,6 +40,7 @@
 #include "tbb/spin_mutex.h"
 #include "tbb/concurrent_vector.h"
 
+#include "larcore/Geometry/WireReadout.h"
 #include "larcore/Geometry/Geometry.h"
 #include "lardata/DetectorInfoServices/DetectorClocksService.h"
 #include "lardataobj/RawData/RawDigit.h"
@@ -211,6 +212,7 @@ DaqDecoderICARUSTPCwROI::DaqDecoderICARUSTPCwROI(fhicl::ParameterSet const & pse
 {
     fGeometry   = art::ServiceHandle<geo::Geometry const>{}.get();
     fChannelMap = art::ServiceHandle<icarusDB::IICARUSChannelMap const>{}.get();
+    geo::WireReadoutGeom const& wireReadoutAlg = art::ServiceHandle<geo::WireReadout const>()->Get();
 
     configure(pset);
 
@@ -259,14 +261,14 @@ DaqDecoderICARUSTPCwROI::DaqDecoderICARUSTPCwROI(fhicl::ParameterSet const & pse
             {
                 geo::PlaneID planeID(cryoIdx,logicalTPCIdx,planeIdx);
 
-                raw::ChannelID_t channel = fGeometry->PlaneWireToChannel(geo::WireID(planeID, 0));
+                raw::ChannelID_t channel = wireReadoutAlg.PlaneWireToChannel(geo::WireID(planeID, 0));
 
-                readout::ROPID ropID = fGeometry->ChannelToROP(channel);
+                readout::ROPID ropID = wireReadoutAlg.ChannelToROP(channel);
 
                 fPlaneToROPPlaneMap[planeID]      = ropID.ROP;
                 fPlaneToWireOffsetMap[planeID]    = channel;
-                planeToLastWireOffsetMap[planeID] = fGeometry->PlaneWireToChannel(geo::WireID(planeID, fGeometry->Nwires(planeID)));
-                fROPToNumWiresMap[ropID.ROP]      = fGeometry->Nwires(planeID);
+                planeToLastWireOffsetMap[planeID] = wireReadoutAlg.PlaneWireToChannel(geo::WireID(planeID, wireReadoutAlg.Nwires(planeID)));
+                fROPToNumWiresMap[ropID.ROP]      = wireReadoutAlg.Nwires(planeID);
 
                 if (ropID.ROP > fNumROPs) fNumROPs = ropID.ROP;
 

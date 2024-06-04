@@ -11,7 +11,7 @@
 #include "messagefacility/MessageLogger/MessageLogger.h"
 #include "cetlib_except/exception.h"
 #include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
-#include "larcore/Geometry/Geometry.h"
+#include "larcore/Geometry/WireReadout.h"
 #include "larcore/CoreUtils/ServiceUtil.h" // lar::providerFrom()
 #include "lardataobj/RecoBase/Wire.h"
 
@@ -45,7 +45,7 @@ private:
     // fhicl parameters
     std::vector<art::InputTag> fROILabelVec;          ///< List of input files to search
 
-    const geo::GeometryCore* fGeometry = lar::providerFrom<geo::Geometry>();
+    const geo::WireReadoutGeom& fChannelMapAlg = art::ServiceHandle<geo::WireReadout const>()->Get();
 };
     
 //----------------------------------------------------------------------
@@ -117,7 +117,7 @@ void ROIFromDecoder::FindROIs(const art::Event& event, const ArrayFloat& inputIm
 
         for(const auto& wireData : *wireVecHandle)
         {
-            std::vector<geo::WireID> wireIDVec = fGeometry->ChannelToWire(wireData.Channel());
+            std::vector<geo::WireID> wireIDVec = fChannelMapAlg.ChannelToWire(wireData.Channel());
 
             for(const auto& wireID : wireIDVec)
             {
@@ -145,7 +145,7 @@ void ROIFromDecoder::FindROIs(const art::Event& event, const ArrayFloat& inputIm
                 const recob::Wire& wireData = *(wireItr->second);
 
                 // Get the WireIDs (again)
-                std::vector<geo::WireID> wireIDVec = fGeometry->ChannelToWire(channel);
+                std::vector<geo::WireID> wireIDVec = fChannelMapAlg.ChannelToWire(channel);
 
                 for(const auto& wireID : wireIDVec)
                 {

@@ -18,7 +18,7 @@
 #include "messagefacility/MessageLogger/MessageLogger.h"
 
 // LArSoft includes
-#include "larcore/Geometry/Geometry.h"
+#include "larcore/Geometry/WireReadout.h"
 
 #include "sbndaq-artdaq-core/Overlays/ICARUS/PhysCrateFragment.hh"
 
@@ -176,7 +176,7 @@ private:
    
     std::vector<unsigned int>                      fPlaneVec;
        
-    const geo::Geometry*                           fGeometry;              //< pointer to the Geometry service
+    const geo::WireReadoutGeom*                      fChannelMapAlg;
     const icarusDB::IICARUSChannelMap*             fChannelMap;
 
     // Keep track of the FFT 
@@ -229,7 +229,7 @@ void TPCDecoderFilter2D::configure(fhicl::ParameterSet const &pset)
 
     for(const auto& idPair : tempIDVec) fFragmentIDMap[idPair.first] = idPair.second;
 
-    fGeometry               = art::ServiceHandle<geo::Geometry const>{}.get();
+    fChannelMapAlg          = &art::ServiceHandle<geo::WireReadout const>{}->Get();
     fChannelMap             = art::ServiceHandle<icarusDB::IICARUSChannelMap const>{}.get();
 
 //    std::vector<double> highPassSigma = {3.5, 3.5, 0.5};
@@ -416,7 +416,7 @@ void TPCDecoderFilter2D::process_fragment(detinfo::DetectorClocksData const&,
 
             if (fDiagnosticOutput)
             {
-                std::vector<geo::WireID> widVec = fGeometry->ChannelToWire(channelPlanePairVec[chanIdx].first);
+                std::vector<geo::WireID> widVec = fChannelMapAlg->ChannelToWire(channelPlanePairVec[chanIdx].first);
 
                 if (widVec.empty()) std::cout << channelPlanePairVec[chanIdx].first << "/" << chanIdx  << "=" << fFullRMSVals[channelOnBoard] << " * ";
                 else std::cout << fChannelIDVec[channelOnBoard] << "-" << widVec[0].Cryostat << "/" << widVec[0].TPC << "/" << widVec[0].Plane << "/" << widVec[0].Wire << "=" << fFullRMSVals[channelOnBoard] << " * ";
