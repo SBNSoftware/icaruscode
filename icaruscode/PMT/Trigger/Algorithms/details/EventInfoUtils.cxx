@@ -12,6 +12,7 @@
 
 // LArSoft libraries
 #include "lardataalg/Utilities/quantities/spacetime.h" // microseconds
+#include "larcorealg/Geometry/WireReadoutGeom.h"
 #include "larcorealg/Geometry/GeometryCore.h"
 #include "larcorealg/Geometry/TPCGeo.h"
 
@@ -100,6 +101,7 @@ icarus::trigger::details::EventInfoExtractor::EventInfoExtractor(
   TimeSpan_t inSpillTimes,
   TimeSpan_t inPreSpillTimes,
   geo::GeometryCore const& geom,
+  geo::WireReadoutGeom const& wireReadoutAlg,
   detinfo::DetectorPropertiesData const* detProps,
   detinfo::DetectorTimings const* detTimings,
   std::string logCategory
@@ -108,6 +110,7 @@ icarus::trigger::details::EventInfoExtractor::EventInfoExtractor(
   , fEnergyDepositTags(std::move(edepTags))
   , fLogCategory(std::move(logCategory))
   , fGeom(geom)
+  , fWireReadoutGeom(wireReadoutAlg)
   , fDetProps(detProps)
   , fDetTimings(detTimings)
   , fInSpillTimes(std::move(inSpillTimes))
@@ -277,11 +280,11 @@ void icarus::trigger::details::EventInfoExtractor::addEnergyDepositionInfo
     
     // only channels on any of the first induction planes
     std::vector<geo::WireID> const& wires
-      = fGeom.ChannelToWire(channel.Channel());
+      = fWireReadoutGeom.ChannelToWire(channel.Channel());
     if (empty(wires)) continue; // ghost channel or something; move on
     if (wires.front().Plane != 0) continue; // not the first induction plane
     
-    geo::PlaneGeo const& plane = fGeom.Plane(wires.front());
+    geo::PlaneGeo const& plane = fWireReadoutGeom.Plane(wires.front());
     
     for (auto const& [ tdc, IDEs ]: channel.TDCIDEMap()) {
       
@@ -357,6 +360,7 @@ icarus::trigger::details::EventInfoExtractorMaker::EventInfoExtractorMaker(
   std::vector<art::InputTag> truthTags,
   EDepTags_t edepTags,
   geo::GeometryCore const& geom,
+  geo::WireReadoutGeom const& wireReadoutAlg,
   detinfo::DetectorPropertiesData const* detProps,
   detinfo::DetectorTimings const* detTimings,
   std::string logCategory
@@ -365,6 +369,7 @@ icarus::trigger::details::EventInfoExtractorMaker::EventInfoExtractorMaker(
   , fEnergyDepositTags(std::move(edepTags))
   , fLogCategory(std::move(logCategory))
   , fGeom(geom)
+  , fWireReadoutGeom{wireReadoutAlg}
   , fDetProps(detProps)
   , fDetTimings(detTimings)
   {}
@@ -378,7 +383,7 @@ icarus::trigger::details::EventInfoExtractorMaker::make
   return EventInfoExtractor{
     fGeneratorTags, fEnergyDepositTags,
     inSpillTimes, inPreSpillTimes,
-    fGeom, fDetProps, fDetTimings, fLogCategory
+    fGeom, fWireReadoutGeom, fDetProps, fDetTimings, fLogCategory
     };
 } // icarus::trigger::details::EventInfoExtractorMaker::make()
 

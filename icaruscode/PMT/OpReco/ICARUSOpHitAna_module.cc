@@ -17,6 +17,7 @@
 #include "fhiclcpp/ParameterSet.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
 
+#include "larcore/Geometry/WireReadout.h"
 #include "larcore/Geometry/Geometry.h"
 #include "larcore/CoreUtils/ServiceUtil.h" // lar::providerFrom()
 #include "lardataobj/RawData/OpDetWaveform.h"
@@ -142,13 +143,14 @@ void ICARUSOpHitAna::beginJob()
   std::vector<double> pmtX, pmtY, pmtZ;
   std::vector<double> minX, minY, minZ;
   std::vector<double> maxX, maxY, maxZ;
-  auto const geop = lar::providerFrom<geo::Geometry>();
-  for(size_t opch=0; opch<geop->NOpChannels(); ++opch) {
-    auto const PMTxyz = geop->OpDetGeoFromOpChannel(opch).GetCenter();
+  auto const& wireReadoutAlg = art::ServiceHandle<geo::WireReadout const>()->Get();
+  for(size_t opch=0; opch<wireReadoutAlg.NOpChannels(); ++opch) {
+    auto const PMTxyz = wireReadoutAlg.OpDetGeoFromOpChannel(opch).GetCenter();
     pmtX.push_back(PMTxyz.X());
     pmtY.push_back(PMTxyz.Y());
     pmtZ.push_back(PMTxyz.Z());
   }
+  auto const geop = lar::providerFrom<geo::Geometry>();
   for(auto const& tpc : geop->Iterate<geo::TPCGeo>()) {
     minX.push_back(tpc.BoundingBox().MinX());
     minY.push_back(tpc.BoundingBox().MinY());
@@ -215,8 +217,8 @@ void ICARUSOpHitAna::analyze(art::Event const& e)
   //               value = mchit location (i.e. array index number)
   std::vector<std::map<double,int> > mchit_db;
   // fill the map
-  auto const geop = lar::providerFrom<geo::Geometry>();
-  mchit_db.resize(geop->NOpChannels());
+  auto const& wireReadoutAlg = art::ServiceHandle<geo::WireReadout const>()->Get();
+  mchit_db.resize(wireReadoutAlg.NOpChannels());
   for(size_t mchit_index=0; mchit_index < mchit_h->size(); ++mchit_index) {
     auto const& mchit = (*mchit_h)[mchit_index];
     _pe_true = mchit.PE();

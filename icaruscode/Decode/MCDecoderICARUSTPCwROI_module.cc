@@ -40,7 +40,7 @@
 #include "tbb/spin_mutex.h"
 #include "tbb/concurrent_vector.h"
 
-#include "larcore/Geometry/Geometry.h"
+#include "larcore/Geometry/WireReadout.h"
 #include "lardata/DetectorInfoServices/DetectorClocksService.h"
 #include "lardataobj/RawData/RawDigit.h"
 #include "lardataobj/RawData/raw.h"
@@ -198,7 +198,7 @@ private:
     std::vector<std::unique_ptr<INoiseFilter>>                  fDecoderToolVec;       ///< Decoder tools
 
     // Useful services, keep copies for now (we can update during begin run periods)
-    geo::GeometryCore const*                                    fGeometry;             ///< pointer to Geometry service
+    geo::WireReadoutGeom const*                                   fChannelMapAlg;
     const icarusDB::IICARUSChannelMap*                          fChannelMap;
 };
 
@@ -215,7 +215,7 @@ MCDecoderICARUSTPCwROI::MCDecoderICARUSTPCwROI(fhicl::ParameterSet const & pset,
                         art::ReplicatedProducer(pset, frame),
                         fLogCategory("MCDecoderICARUSTPCwROI"),fNumEvent(0), fNumROPs(0)
 {
-    fGeometry   = art::ServiceHandle<geo::Geometry const>{}.get();
+    fChannelMapAlg = &art::ServiceHandle<geo::WireReadout const>()->Get();
     fChannelMap = art::ServiceHandle<icarusDB::IICARUSChannelMap const>{}.get();
 
     configure(pset);
@@ -262,14 +262,14 @@ MCDecoderICARUSTPCwROI::MCDecoderICARUSTPCwROI(fhicl::ParameterSet const & pset,
             {
                 geo::PlaneID planeID(cryoIdx,logicalTPCIdx,planeIdx);
 
-                raw::ChannelID_t channel = fGeometry->PlaneWireToChannel(geo::WireID(planeID, 0));
+                raw::ChannelID_t channel = fChannelMapAlg->PlaneWireToChannel(geo::WireID(planeID, 0));
 
-                readout::ROPID ropID = fGeometry->ChannelToROP(channel);
+                readout::ROPID ropID = fChannelMapAlg->ChannelToROP(channel);
 
                 fPlaneToROPPlaneMap[planeID]      = ropID.ROP;
                 fPlaneToWireOffsetMap[planeID]    = channel;
-                planeToLastWireOffsetMap[planeID] = fGeometry->PlaneWireToChannel(geo::WireID(planeID, fGeometry->Nwires(planeID)));
-                fROPToNumWiresMap[ropID.ROP]      = fGeometry->Nwires(planeID);
+                planeToLastWireOffsetMap[planeID] = fChannelMapAlg->PlaneWireToChannel(geo::WireID(planeID, fChannelMapAlg->Nwires(planeID)));
+                fROPToNumWiresMap[ropID.ROP]      = fChannelMapAlg->Nwires(planeID);
 
                 // Special case handling
 //                if (ropID.ROP > 1) fROPToNumWiresMap[ropID.ROP] *= 2;
@@ -692,7 +692,7 @@ void MCDecoderICARUSTPCwROI::processSingleImage(const detinfo::DetectorClocksDat
             roiIdx++;
         }
 
-        concurrentROIs.push_back(recob::WireCreator(std::move(ROIVec),channel,fGeometry->View(channel)).move());
+        concurrentROIs.push_back(recob::WireCreator(std::move(ROIVec),channel,fChannelMapAlg->View(channel)).move());
     }//loop over channel indices
 
     return;

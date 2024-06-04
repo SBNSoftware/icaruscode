@@ -8,8 +8,8 @@
 process_name: MCstage0
 
 ## Revert the geometry for now
-services.Geometry:               @local::icarus_legacy_base_geometry
-services.ExptGeoHelperInterface: @local::icarus_legacy_base_geometry_helper
+services.Geometry:    @local::icarus_legacy_base_geometry
+services.WireReadout: @local::icarus_legacy_base_wire_readout
 
 ## Add the MC module to the list of producers
 physics.producers: {  @table::icarus_stage0_producers

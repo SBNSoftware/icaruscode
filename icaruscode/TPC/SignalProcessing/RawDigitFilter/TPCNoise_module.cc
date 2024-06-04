@@ -8,7 +8,7 @@
 ////////////////////////////////////////////////////////////////////////
 
 // LArSoft Includes
-#include "larcore/Geometry/Geometry.h"
+#include "larcore/Geometry/WireReadout.h"
 #include "larcoreobj/SimpleTypesAndConstants/geo_types.h"
 #include "lardataobj/RawData/RawDigit.h"
 #include "lardataobj/RawData/raw.h"
@@ -286,7 +286,7 @@ std::cout << " end constructor " << std::endl;
 void tpcnoise::TPCNoise::analyze(const art::Event& e)
 {
 std::cout << " begin analyze " << std::endl;
-   art::ServiceHandle<geo::Geometry> geom;
+   auto const& wireReadoutAlg = art::ServiceHandle<geo::WireReadout const>()->Get();
 
   // Clear vectors before filling for this event.
   fChannel.clear();
@@ -331,7 +331,7 @@ std::cout << " run " << fRun << std::endl;
 
       // Calculate mean values.
       float mean(float(std::accumulate(SortedADC.begin(),SortedADC.end(),0))/float(SortedADC.size()));
-std::vector<geo::WireID> widVec = geom->ChannelToWire(RawDigit.Channel());
+std::vector<geo::WireID> widVec = wireReadoutAlg.ChannelToWire(RawDigit.Channel());
         size_t                   plane  = widVec[0].Plane;
  size_t                   wire  = widVec[0].Wire;
 
@@ -440,7 +440,7 @@ std::cout << " intrinsic instance " << fIntrinsicInstance << std::endl;
       RawLessPed.resize(RawADC.size());
       std::transform(RawADC.begin(),RawADC.end(),RawLessPed.begin(),std::bind(std::minus<double>(),std::placeholders::_1,median));
       fFFT->getFFTPower(RawLessPed, power);
-std::vector<geo::WireID> widVec = geom->ChannelToWire(RawDigit.Channel());
+std::vector<geo::WireID> widVec = wireReadoutAlg.ChannelToWire(RawDigit.Channel());
         size_t                   plane  = widVec[0].Plane;
 
 if(plane==0)  { std::transform(fIntrinsicPowerI1.at(0).begin(), fIntrinsicPowerI1.at(0).end(), power.begin(), fIntrinsicPowerI1.at(0).begin(), std::plus<float>());  }
@@ -512,7 +512,7 @@ std::cout << " coherent instance " << fCoherentInstance << std::endl;
       RawLessPed.resize(RawADC.size());
       std::transform(RawADC.begin(),RawADC.end(),RawLessPed.begin(),std::bind(std::minus<double>(),std::placeholders::_1,median));
       fFFT->getFFTPower(RawLessPed, power);
-std::vector<geo::WireID> widVec = geom->ChannelToWire(RawDigit.Channel());
+std::vector<geo::WireID> widVec = wireReadoutAlg.ChannelToWire(RawDigit.Channel());
         size_t                   plane  = widVec[0].Plane;
      
 if(plane==0)  { std::transform(fCoherentPowerI1.at(0).begin(), fCoherentPowerI1.at(0).end(), power.begin(), fCoherentPowerI1.at(0).begin(), std::plus<float>());  }

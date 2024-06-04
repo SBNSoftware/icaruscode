@@ -18,6 +18,7 @@
 #include "messagefacility/MessageLogger/MessageLogger.h"
 
 #include "nusimdata/SimulationBase/MCTruth.h"
+#include "larcore/Geometry/WireReadout.h"
 #include "larcore/Geometry/Geometry.h"
 #include "larcore/CoreUtils/ServiceUtil.h" // lar::providerFrom()
 #include "lardataobj/RawData/OpDetWaveform.h"
@@ -125,13 +126,14 @@ void ICARUSOpFlashAna::beginJob()
   std::vector<double> pmtX, pmtY, pmtZ;
   std::vector<double> minX, minY, minZ;
   std::vector<double> maxX, maxY, maxZ;
-  auto const geop = lar::providerFrom<geo::Geometry>();
-  for(size_t opch=0; opch<geop->NOpChannels(); ++opch) {
-    auto const PMTxyz = geop->OpDetGeoFromOpChannel(opch).GetCenter();
+  auto const& wireReadoutAlg = art::ServiceHandle<geo::WireReadout const>()->Get();
+  for(size_t opch=0; opch<wireReadoutAlg.NOpChannels(); ++opch) {
+    auto const PMTxyz = wireReadoutAlg.OpDetGeoFromOpChannel(opch).GetCenter();
     pmtX.push_back(PMTxyz.X());
     pmtY.push_back(PMTxyz.Y());
     pmtZ.push_back(PMTxyz.Z());
   }
+  auto const geop = lar::providerFrom<geo::Geometry>();
   for(auto const& tpc : geop->Iterate<geo::TPCGeo>()) {
     minX.push_back(tpc.ActiveBoundingBox().MinX());
     minY.push_back(tpc.ActiveBoundingBox().MinY());

@@ -26,6 +26,7 @@
 #include "lardataobj/Simulation/SimChannel.h"
 #include "lardataobj/Simulation/SimEnergyDeposit.h"
 #include "lardataobj/RawData/TriggerData.h"
+#include "larcore/Geometry/WireReadout.h"
 #include "larcore/Geometry/Geometry.h"
 #include "larcorealg/Geometry/GeometryCore.h"
 
@@ -164,8 +165,6 @@ void SimTestPulse::produce(art::Event & e)
     geo::Point_t chargeDepCoords = {0., 0., 0.};
 
     auto const clockData = art::ServiceHandle<detinfo::DetectorClocksService const>()->DataFor(e);
-    art::ServiceHandle<geo::Geometry> geo;
-
     auto const detProp = art::ServiceHandle<detinfo::DetectorPropertiesService const>()->DataForJob(clockData);
     
     fPlane0Channel_v.clear();
@@ -178,6 +177,12 @@ void SimTestPulse::produce(art::Event & e)
     
     auto& pholder = alternative::ParamHolder::get();
     pholder.Clear();
+
+    geo::WireReadoutGeom const& wireReadoutAlg = art::ServiceHandle<geo::WireReadout const>()->Get();
+    const geo::PlaneGeo& planeGeo = wireReadoutAlg.Plane(geo::PlaneID(0,0,0)); // Get the coordinates of the first wire plane
+
+    auto planeCoords = planeGeo.GetCenter();
+    auto planeNormal = planeGeo.GetNormalDirection();
 
     for(size_t index=0; index < fSimTime_v.size(); ++index) {
         
@@ -194,11 +199,6 @@ void SimTestPulse::produce(art::Event & e)
             << " as it results in negative TDC (invalid)" << std::endl;
             continue;
         }
-
-        const geo::PlaneGeo& planeGeo = geo->Plane(geo::PlaneID(0,0,0)); // Get the coordinates of the first wire plane
-
-        auto planeCoords = planeGeo.GetCenter();
-        auto planeNormal = planeGeo.GetNormalDirection();
 
         // Assume C=0, T=1
         chargeDepCoords = geo::Point_t(planeCoords.X() + planeNormal.X(),fY_v[index],fZ_v[index]);
@@ -226,12 +226,12 @@ void SimTestPulse::produce(art::Event & e)
         for(size_t plane=0; plane<3; ++plane) {
             geo::PlaneID planeID(0,0,plane);
             std::cout << "++ Searching for nearest wire id for planeID: " << planeID << ", xyz: "  << chargeDepCoords.X() << "," << chargeDepCoords.Y() << "," << chargeDepCoords.Z() << std::endl;
-            geo::WireID nearestID = geo->NearestWireID(chargeDepCoords,planeID);
+            geo::WireID nearestID = wireReadoutAlg.NearestWireID(chargeDepCoords,planeID);
             std::cout << "   WireID: " << nearestID << std::endl;
             std::cout << "** Searching for nearest channel with plane: " << plane << ", xyz: " << chargeDepCoords.X() << "," << chargeDepCoords.Y() << "," << chargeDepCoords.Z() << std::endl;
-            auto channel = geo->NearestChannel(chargeDepCoords,planeID);
+            auto channel = wireReadoutAlg.NearestChannel(chargeDepCoords,planeID);
             std::cout << "   Returned with channel: " << channel << std::endl;
-            auto wire = geo->ChannelToWire(channel).front().Wire;
+            auto wire = wireReadoutAlg.ChannelToWire(channel).front().Wire;
             std::cout << "   which gives wire: " << wire << std::endl;
             if(fVerbose) std::cout << "[BUFFOON!]    plane " << plane << " channel "
                 << channel << " ... wire " << wire << std::endl;

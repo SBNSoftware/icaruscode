@@ -3,13 +3,14 @@
 #include "larcore/CoreUtils/ServiceUtil.h"  // lar::providerFrom()
 using namespace icarus::crt;
 
+
 CRTHitRecoAlg::CRTHitRecoAlg(const fhicl::ParameterSet& pset)
     : CRTHitRecoAlg() {
   this->reconfigure(pset);
 }
 
 CRTHitRecoAlg::CRTHitRecoAlg()
-    : fGeometryService(lar::providerFrom<geo::Geometry>()),
+    : fAuxDetGeom(art::ServiceHandle<geo::AuxDetGeometry const>()->GetProviderPtr()),
       fChannelMap(
           art::ServiceHandle<icarusDB::IICARUSChannelMap const>{}.get()) {}
 
@@ -385,7 +386,7 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeTopHit(
 
   map<uint8_t, vector<pair<int, float>>> pesmap;
   int adid = fCrtutils.MacToAuxDetID(mac, 0);          // module ID
-  auto const& adGeo = fGeometryService->AuxDet(adid);  // module
+  auto const& adGeo = fAuxDetGeom->AuxDet(adid);  // module
   string region = fCrtutils.GetAuxDetRegion(adid);
   int plane = fCrtutils.AuxDetRegionNameToNum(region);
   double hitpointerr[3];
@@ -510,7 +511,7 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeBottomHit(art::Ptr<CRTData> data) {
   uint8_t mac = data->fMac5;
   map<uint8_t, vector<pair<int, float>>> pesmap;
   int adid = fCrtutils.MacToAuxDetID(mac, 0);          // module ID
-  auto const& adGeo = fGeometryService->AuxDet(adid);  // module
+  auto const& adGeo = fAuxDetGeom->AuxDet(adid);  // module
   string region = fCrtutils.GetAuxDetRegion(adid);
   int plane = fCrtutils.AuxDetRegionNameToNum(region);
   double hitpointerr[3];
@@ -588,9 +589,10 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeSideHit(
   vector<info> informationA, informationB;
 
   int adid = fCrtutils.MacToAuxDetID(coinData[0]->fMac5, 0);  // module ID
-  auto const& adGeo = fGeometryService->AuxDet(adid);         // module
-  string region = fCrtutils.GetAuxDetRegion(adid);            //region name
-  int plane = fCrtutils.AuxDetRegionNameToNum(region);        //region code (ranges from 30-50)
+  auto const& adGeo = fAuxDetGeom->AuxDet(adid);         // module
+  string region = fCrtutils.GetAuxDetRegion(adid);       //region name
+  int plane = fCrtutils.AuxDetRegionNameToNum(region);   //region code (ranges from 30-50)
+
   double hitpoint[3], hitpointerr[3];
   TVector3 hitpos(0., 0., 0.);
 

@@ -253,9 +253,9 @@ std::cout << " after filling vectors " << std::endl;
     }
 
     // Set up the board->correlated factors map
-    const auto& channelMap = art::ServiceHandle<icarusDB::IICARUSChannelMap const>{}.get();
+    const auto& wireReadout = art::ServiceHandle<icarusDB::IICARUSChannelMap const>{}.get();
 
-    const icarusDB::TPCReadoutBoardToChannelMap& readoutBoardToChannelMap = channelMap->getReadoutBoardToChannelMap();
+    const icarusDB::TPCReadoutBoardToChannelMap& readoutBoardToChannelMap = wireReadout->getReadoutBoardToChannelMap();
 
     for(const auto& boardPair : readoutBoardToChannelMap)
     {

@@ -37,8 +37,7 @@
 
 // LArSoft libraries
 #include "larcoreobj/SimpleTypesAndConstants/RawTypes.h" // raw::ChannelID_t
-#include "larcore/Geometry/Geometry.h"
-#include "larcore/CoreUtils/ServiceUtil.h" // lar::providerFrom()
+#include "larcore/Geometry/WireReadout.h"
 #include "lardataobj/RawData/RawDigit.h"
 #include "lardataobj/RawData/raw.h"
 #include "lardataobj/RecoBase/Wire.h"
@@ -95,7 +94,7 @@ class RecoWireROIICARUS : public art::EDProducer
 
     icarus_signal_processing::WaveformTools<float>          fWaveformTool;
     
-    const geo::GeometryCore*                                fGeometry = lar::providerFrom<geo::Geometry>();
+    const geo::WireReadoutGeom& fChannelMapAlg = art::ServiceHandle<geo::WireReadout const>()->Get();
     
     // Define here a temporary set of histograms...
     std::vector<TH1F*>     fPedestalOffsetVec;
@@ -185,8 +184,8 @@ void RecoWireROIICARUS::reconfigure(fhicl::ParameterSet const& pset)
             fFullRMSVec[planeIdx]        = tfs->make<TH1F>(    Form("RMSFPlane_%02zu",planeIdx),           "Full RMS;RMS (ADC);", 100, 0., 10.);
             fTruncRMSVec[planeIdx]       = tfs->make<TH1F>(    Form("RMSTPlane_%02zu",planeIdx),           "Truncated RMS;RMS (ADC);", 100, 0., 10.);
             fNumTruncBinsVec[planeIdx]   = tfs->make<TH1F>(    Form("NTruncBins_%02zu",planeIdx),          ";# bins",     640, 0., 6400.);
-            fPedByChanVec[planeIdx]      = tfs->make<TProfile>(Form("PedByWirePlane_%02zu",planeIdx),      ";Wire#", fGeometry->Nwires(planeID), 0., fGeometry->Nwires(planeID), -5., 5.);
-            fTruncRMSByChanVec[planeIdx] = tfs->make<TProfile>(Form("TruncRMSByWirePlane_%02zu",planeIdx), ";Wire#", fGeometry->Nwires(planeID), 0., fGeometry->Nwires(planeID),  0., 10.);
+            fPedByChanVec[planeIdx]      = tfs->make<TProfile>(Form("PedByWirePlane_%02zu",planeIdx),      ";Wire#", fChannelMapAlg.Nwires(planeID), 0., fChannelMapAlg.Nwires(planeID), -5., 5.);
+            fTruncRMSByChanVec[planeIdx] = tfs->make<TProfile>(Form("TruncRMSByWirePlane_%02zu",planeIdx), ";Wire#", fChannelMapAlg.Nwires(planeID), 0., fChannelMapAlg.Nwires(planeID),  0., 10.);
             fNumROIsHistVec[planeIdx]    = tfs->make<TH1F>(    Form("NROISplane_%02zu",planeIdx),          ";# ROIs;",   100, 0, 100);
             fROILenHistVec[planeIdx]     = tfs->make<TH1F>(    Form("ROISIZEplane_%02zu",planeIdx),        ";ROI size;", 500, 0, 500);
         }
@@ -261,7 +260,7 @@ void RecoWireROIICARUS::produce(art::Event& evt)
             size_t dataSize = digitVec->Samples();
             
             // Recover the plane info
-            std::vector<geo::WireID> wids    = fGeometry->ChannelToWire(channel);
+            std::vector<geo::WireID> wids    = fChannelMapAlg.ChannelToWire(channel);
             const geo::PlaneID&      planeID = wids[0].planeID();
 
             // vector holding uncompressed adc values
@@ -302,7 +301,7 @@ void RecoWireROIICARUS::produce(art::Event& evt)
             if (fOutputHistograms)
             {
                 // First up, determine what kind of wire we have
-                std::vector<geo::WireID> wids    = fGeometry->ChannelToWire(channel);
+                std::vector<geo::WireID> wids    = fChannelMapAlg.ChannelToWire(channel);
                 const geo::PlaneID&      planeID = wids[0].planeID();
                 
                 fNumROIsHistVec.at(planeID.Plane)->Fill(candRoiVec.size(), 1.);
@@ -390,7 +389,7 @@ float RecoWireROIICARUS::fixTheFreakingWaveform(const std::vector<float>& wavefo
     // Fill histograms
     if (fOutputHistograms)
     {
-        std::vector<geo::WireID> wids = fGeometry->ChannelToWire(channel);
+        std::vector<geo::WireID> wids = fChannelMapAlg.ChannelToWire(channel);
     
         // Recover plane and wire in the plane
         size_t plane = wids[0].Plane;

@@ -16,8 +16,8 @@
 #include "art_root_io/TFileService.h"
 #include "fhiclcpp/ParameterSet.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
-#include "larcore/Geometry/Geometry.h"
-#include "larcorealg/Geometry/GeometryCore.h"
+#include "larcore/Geometry/WireReadout.h"
+#include "larcorealg/Geometry/WireReadoutGeom.h"
 #include "lardataobj/RawData/RawDigit.h"
 #include "lardataobj/RecoBase/Wire.h"
 #include "lardataobj/RecoBase/Hit.h"
@@ -193,7 +193,7 @@ void SimTestPulseAna::endJob()
 
 void SimTestPulseAna::analyze(art::Event const & e)
 {
-    art::ServiceHandle<geo::Geometry> geo;
+    geo::WireReadoutGeom const& wireReadoutAlg = art::ServiceHandle<geo::WireReadout const>()->Get();
     _run = e.id().run();
     _subrun = e.id().subRun();
     _event = e.id().event();
@@ -222,7 +222,7 @@ void SimTestPulseAna::analyze(art::Event const & e)
             
             for(auto const& ch : hit.channel_list) {
                 _ch = ch;
-                auto const wid = geo->ChannelToWire(ch).front();
+                auto const wid = wireReadoutAlg.ChannelToWire(ch).front();
                 _wire = (int)(wid.Wire);
                 _plane = wid.Plane;
                 bool found=false;
@@ -272,7 +272,7 @@ void SimTestPulseAna::analyze(art::Event const & e)
             
             for(auto const& ch : hit.channel_list) {
                 _ch = ch;
-                auto const wid = geo->ChannelToWire(ch).front();
+                auto const wid = wireReadoutAlg.ChannelToWire(ch).front();
                 _wire = wid.Wire;
                 _plane = wid.Plane;
                 bool found=false;
@@ -323,7 +323,7 @@ void SimTestPulseAna::analyze(art::Event const & e)
             for(auto const& ch : hit.channel_list)
             {
                 _ch = ch;
-                auto const wid = geo->ChannelToWire(ch).front();
+                auto const wid = wireReadoutAlg.ChannelToWire(ch).front();
                 _wire = wid.Wire;
                 _plane = wid.Plane;
                 bool found=false;
@@ -381,7 +381,7 @@ void SimTestPulseAna::analyze(art::Event const & e)
             for(auto const& ch : hit.channel_list)
             {
                 _ch = ch;
-                auto const wid = geo->ChannelToWire(ch).front();
+                auto const wid = wireReadoutAlg.ChannelToWire(ch).front();
                 _wire = wid.Wire;
                 _plane = wid.Plane;
                 bool found=false;

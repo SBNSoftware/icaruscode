@@ -10,8 +10,7 @@
 #include "lardata/DetectorInfoServices/DetectorClocksService.h"
 #include "canvas/Persistency/Common/FindManyP.h"
 
-#include "larcore/Geometry/Geometry.h"
-#include "larcore/CoreUtils/ServiceUtil.h" // lar::providerFrom()
+#include "larcore/Geometry/WireReadout.h"
 #include "lardata/DetectorInfoServices/DetectorClocksService.h"
 #include "larevt/CalibrationDBI/Interface/ChannelStatusService.h"
 #include "larevt/CalibrationDBI/Interface/ChannelStatusProvider.h"
@@ -429,7 +428,7 @@ private:
     mutable HitSpacePointObj    fHitSpacePointObj;
 
     // Useful services, keep copies for now (we can update during begin run periods)
-    const geo::GeometryCore*           fGeometry;             ///< pointer to Geometry service
+    const geo::WireReadoutGeom*          fChannelMapAlg;
 };
 
 //----------------------------------------------------------------------------
@@ -441,7 +440,7 @@ private:
 ///
 SpacePointAnalysisMC::SpacePointAnalysisMC(fhicl::ParameterSet const & pset) : fTree(nullptr)
 {
-    fGeometry           = lar::providerFrom<geo::Geometry>();
+    fChannelMapAlg      = &art::ServiceHandle<geo::WireReadout const>()->Get();
 
     configure(pset);
 
@@ -502,9 +501,9 @@ void SpacePointAnalysisMC::initializeTuple(TTree* tree)
 
     fHitSpacePointObj.setBranches(locTree);
 
-    fHitSimObjVec.resize(fGeometry->Nplanes());
+    fHitSimObjVec.resize(fChannelMapAlg->Nplanes());
 
-    for(size_t plane = 0; plane < fGeometry->Nplanes(); plane++)
+    for(size_t plane = 0; plane < fChannelMapAlg->Nplanes(); plane++)
     {
         // Set up specific branch for space points
         locTree = tfs->makeAndRegister<TTree>("MatchedHits_P"+std::to_string(plane),"Matched Hits Tuple plane "+std::to_string(plane));
@@ -571,7 +570,7 @@ void SpacePointAnalysisMC::fillHistograms(const art::Event& event) const
     {
         raw::ChannelID_t channel = simChannel.Channel();
 
-        geo::WireID wireID = fGeometry->ChannelToWire(channel).front();
+        geo::WireID wireID = fChannelMapAlg->ChannelToWire(channel).front();
 
         for(const auto& tdcide : simChannel.TDCIDEMap())
         {

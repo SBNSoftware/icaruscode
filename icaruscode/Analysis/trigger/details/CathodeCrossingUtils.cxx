@@ -10,6 +10,7 @@
 #include "icaruscode/Analysis/trigger/details/CathodeCrossingUtils.h"
 
 // LArSoft libraries
+#include "larcorealg/Geometry/WireReadoutGeom.h"
 #include "larcorealg/Geometry/GeometryCore.h"
 #include "larcorealg/Geometry/CryostatGeo.h"
 #include "larcorealg/Geometry/TPCGeo.h"
@@ -18,14 +19,14 @@
 
 // -----------------------------------------------------------------------------
 icarus::CathodeDesc_t icarus::findTPCcathode
-(geo::Point_t const& point, geo::GeometryCore const& geom)
+  (geo::Point_t const& point, geo::GeometryCore const& geom)
 {
   geo::CryostatGeo const* pCryo = geom.PositionToCryostatPtr(point);
   if (!pCryo) return {}; // all invalid, goodbye
   
   return {
-    findCathodeCenter(*pCryo)                   // center
-      , -(pCryo->TPC(0).DriftDir())  // normal
+      findCathodeCenter(*pCryo)                 // center
+      , -geom.TPC({pCryo->ID(), 0}).DriftDir()  // normal
       };
   
 } // icarus::findTPCcathode()

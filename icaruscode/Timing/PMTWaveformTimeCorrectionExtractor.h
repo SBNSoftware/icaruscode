@@ -93,7 +93,7 @@ class icarus::timing::PMTWaveformTimeCorrectionExtractor {
 
         PMTWaveformTimeCorrectionExtractor(
             detinfo::DetectorClocksData const detTimingService,
-            icarusDB::IICARUSChannelMap const & channelMapService,
+            icarusDB::IICARUSChannelMap const & wireReadoutService,
             icarusDB::PMTTimingCorrections const* pmtTimingCorrectionsService, 
             bool verbose );
 

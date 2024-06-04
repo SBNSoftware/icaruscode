@@ -4,15 +4,15 @@
  * @see     `icaruscode/Geometry/IcarusGeometryHelper_service.cc`
  *
  * Handles Icarus-specific information for the generic Geometry service
- * within LArSoft. Derived from the `geo::ExptGeoHelperInterface` class.
+ * within LArSoft. Derived from the `geo::WireReadout` class.
  */
 
-#ifndef ICARUSCODE_GEOMETRY_ICARUSGEOMETRYHELPER_H
-#define ICARUSCODE_GEOMETRY_ICARUSGEOMETRYHELPER_H
+#ifndef ICARUSCODE_GEOMETRY_ICARUSWIREREADOUT_H
+#define ICARUSCODE_GEOMETRY_ICARUSWIREREADOUT_H
 
 // LArSoft libraries
-// #include "larcore/Geometry/ChannelMapSetupTool.h"
-#include "larcore/Geometry/ExptGeoHelperInterface.h"
+#include "larcorealg/Geometry/fwd.h"
+#include "larcore/Geometry/WireReadout.h"
 
 // framework libraries
 #include "art/Framework/Services/Registry/ServiceDeclarationMacros.h"
@@ -24,12 +24,11 @@
 
 // -----------------------------------------------------------------------------
 // Forward declarations
-namespace geo { class ChannelMapAlg; }
-namespace icarus { class IcarusGeometryHelper; }
+namespace icarus { class IcarusWireReadout; }
 
 // -----------------------------------------------------------------------------
 /**
- * @brief Implementation of `geo::ExptGeoHelperInterface` for ICARUS.
+ * @brief Implementation of `geo::WireReadout` for ICARUS.
  *
  * This service utilizes a _art_ tool to create the proper channel mapper
  * algorithm instance.
@@ -47,35 +46,27 @@ namespace icarus { class IcarusGeometryHelper; }
  *
  *
  */
-class icarus::IcarusGeometryHelper: public geo::ExptGeoHelperInterface {
+class icarus::IcarusWireReadout: public geo::WireReadout {
 
     public:
 
   /// Constructor: records the configuration.
-  IcarusGeometryHelper(fhicl::ParameterSet const& pset): fPset(pset) {}
+  IcarusWireReadout(fhicl::ParameterSet const& pset);
 
     private:
 
-  fhicl::ParameterSet fPset; ///< Copy of configuration parameter set.
+  std::unique_ptr<geo::WireReadoutGeom> fWireReadoutGeom;
 
   // --- BEGIN -- Virtual interface definitions --------------------------------
-  virtual ChannelMapAlgPtr_t doConfigureChannelMapAlg(
-    fhicl::ParameterSet const& /* sortingParameters */,
-    std::string const& detectorName
-    ) const override;
-
+  geo::WireReadoutGeom const& wireReadoutGeom() const override { return *fWireReadoutGeom; }
   // --- END -- Virtual interface definitions ----------------------------------
 
-  /// Creates and returns the channel mapping instance via a _art_ tool.
-  std::unique_ptr<geo::ChannelMapAlg> makeChannelMapping
-    (fhicl::ParameterSet const& parameters) const;
-
-}; // icarus::IcarusGeometryHelper
+}; // icarus::IcarusWireReadout
 
 
 // -----------------------------------------------------------------------------
-DECLARE_ART_SERVICE_INTERFACE_IMPL(icarus::IcarusGeometryHelper,
-                                   geo::ExptGeoHelperInterface,
+DECLARE_ART_SERVICE_INTERFACE_IMPL(icarus::IcarusWireReadout,
+                                   geo::WireReadout,
                                    SHARED)
 
-#endif // ICARUSCODE_GEOMETRY_ICARUSGEOMETRYHELPER_H
+#endif // ICARUSCODE_GEOMETRY_ICARUSWIREREADOUT_H

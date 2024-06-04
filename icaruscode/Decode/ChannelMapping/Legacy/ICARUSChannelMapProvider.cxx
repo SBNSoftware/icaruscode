@@ -33,10 +33,10 @@ ICARUSChannelMapProvider::ICARUSChannelMapProvider(const fhicl::ParameterSet& ps
     fDiagnosticOutput = pset.get<bool>("DiagnosticOutput", false);
 
     // Recover the vector of fhicl parameters for the ROI tools
-    const fhicl::ParameterSet&channelMappingParams = pset.get<fhicl::ParameterSet>("ChannelMappingTool");
+    const fhicl::ParameterSet&wireReadoutpingParams = pset.get<fhicl::ParameterSet>("ChannelMappingTool");
 
     // Get instance of the mapping tool (allowing switch between database instances)
-    fChannelMappingTool = art::make_tool<IChannelMapping>(channelMappingParams);
+    fChannelMappingTool = art::make_tool<IChannelMapping>(wireReadoutpingParams);
 
 }
 

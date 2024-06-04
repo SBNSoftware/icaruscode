@@ -25,7 +25,6 @@
 
 // LArSoft libraries
 #include "larcoreobj/SimpleTypesAndConstants/RawTypes.h" // raw::ChannelID_t
-#include "larcore/Geometry/Geometry.h"
 #include "larcore/CoreUtils/ServiceUtil.h" // lar::providerFrom()
 #include "larcorealg/CoreUtils/zip.h"
 #include "lardataobj/RecoBase/Hit.h"
@@ -52,8 +51,6 @@ private:
     bool                                                       fDiagnosticOutput;           ///< secret diagnostics flag
     size_t                                                     fEventCount;                 ///< count of event processed
 
-    const geo::GeometryCore*                                   fGeometry = lar::providerFrom<geo::Geometry>();
-    
 }; // class HitConvert
 
 DEFINE_ART_MODULE(HitConvert)

@@ -39,8 +39,7 @@
 #include "tbb/spin_mutex.h"
 #include "tbb/concurrent_vector.h"
 
-#include "larcore/Geometry/Geometry.h"
-#include "larcore/CoreUtils/ServiceUtil.h" // lar::providerFrom()
+#include "larcore/Geometry/WireReadout.h"
 #include "lardata/DetectorInfoServices/DetectorClocksService.h"
 #include "lardataobj/RawData/RawDigit.h"
 
@@ -133,8 +132,6 @@ private:
 
     size_t                                       fFragmentOffset;       ///< The fragment offset to set channel numbering
 
-    // Useful services, keep copies for now (we can update during begin run periods)
-    geo::GeometryCore const*                     fGeometry;             ///< pointer to Geometry service
 };
 
 DEFINE_ART_MODULE(FilterNoiseICARUS)
@@ -150,7 +147,7 @@ FilterNoiseICARUS::FilterNoiseICARUS(fhicl::ParameterSet const & pset, art::Proc
                       art::ReplicatedProducer(pset, frame),
                       fNumEvent(0)
 {
-    fGeometry = lar::providerFrom<geo::Geometry>();
+    geo::WireReadoutGeom const& wireReadoutAlg = art::ServiceHandle<geo::WireReadout const>()->Get();
 
     configure(pset);
 
@@ -172,17 +169,17 @@ FilterNoiseICARUS::FilterNoiseICARUS(fhicl::ParameterSet const & pset, art::Proc
 
     // Compute the fragment offset from the channel number for the desired plane
     // Get a base channel number for the plane we want
-    mf::LogDebug("FilterNoiseICARUS") << "ICARUS has " << fGeometry->Nchannels() << " in total with " << fGeometry->Views().size() << " views" << std::endl;
+    mf::LogDebug("FilterNoiseICARUS") << "ICARUS has " << wireReadoutAlg.Nchannels() << " in total with " << wireReadoutAlg.Views().size() << " views" << std::endl;
 
     geo::WireID wireID(0, 0, fPlaneToSimulate, 0);
 
     mf::LogDebug("FilterNoiseICARUS") << "WireID: " << wireID << std::endl;
 
-    geo::WireID firstWireID = fGeometry->GetBeginWireID(geo::PlaneID(0,0,fPlaneToSimulate));
+    geo::WireID firstWireID = *wireReadoutAlg.begin<geo::WireID>(geo::PlaneID(0,0,fPlaneToSimulate));
 
     mf::LogDebug("FilterNoiseICARUS") << "From geo, first WireID: " << firstWireID << std::endl;
 
-    raw::ChannelID_t channel = fGeometry->PlaneWireToChannel(wireID);
+    raw::ChannelID_t channel = wireReadoutAlg.PlaneWireToChannel(wireID);
 
     mf::LogDebug("FilterNoiseICARUS") << "Channel: " << channel << std::endl;
 
@@ -192,7 +189,7 @@ FilterNoiseICARUS::FilterNoiseICARUS(fhicl::ParameterSet const & pset, art::Proc
         geo::PlaneID tempPlaneID = tempWireID.planeID();
 
         mf::LogDebug("FilterNoiseICARUS") << "thePlane: " << thePlane << ", WireID: " << tempWireID << ", channel: " << 
-        fGeometry->PlaneWireToChannel(tempWireID) << ", view: " << fGeometry->View(tempPlaneID) << std::endl;
+          wireReadoutAlg.PlaneWireToChannel(tempWireID) << ", view: " << wireReadoutAlg.Plane(tempPlaneID).View() << std::endl;
     }
 
     fFragmentOffset = channel / 576;

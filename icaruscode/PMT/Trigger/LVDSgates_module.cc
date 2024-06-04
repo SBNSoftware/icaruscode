@@ -15,10 +15,10 @@
 #include "sbnobj/ICARUS/PMT/Trigger/Data/OpticalTriggerGate.h"
 
 // LArSoft libraries
-#include "larcore/Geometry/Geometry.h"
+#include "larcore/Geometry/WireReadout.h"
 #include "larcore/CoreUtils/ServiceUtil.h" // lar::providerFrom()
 #include "lardataalg/Utilities/MultipleChoiceSelection.h"
-#include "larcorealg/Geometry/GeometryCore.h"
+#include "larcorealg/Geometry/WireReadoutGeom.h"
 #include "larcorealg/CoreUtils/StdUtils.h" // util::to_string()
 #include "larcorealg/CoreUtils/values.h" // util::const_values()
 #include "larcorealg/CoreUtils/get_elements.h" // util::get_elements()
@@ -697,7 +697,7 @@ unsigned int icarus::trigger::LVDSgates::checkPairings() const {
   //
   // collect all the errors first
   //
-  auto const& geom = *(lar::providerFrom<geo::Geometry>());
+  auto const& wireReadoutAlg = art::ServiceHandle<geo::WireReadout const>()->Get();
 
 
   // collect configured and duplicate channel numbers
@@ -717,14 +717,14 @@ unsigned int icarus::trigger::LVDSgates::checkPairings() const {
   // collect invalid channel numbers
   std::vector<raw::Channel_t> invalidChannels;
   for (raw::Channel_t channel: configuredChannels) {
-    if (!geom.IsValidOpChannel(channel)) invalidChannels.push_back(channel);
+    if (!wireReadoutAlg.IsValidOpChannel(channel)) invalidChannels.push_back(channel);
   } // for configured channels
 
   // collect missing channels
-  auto const endChannel = geom.MaxOpChannel() + 1U;
+  auto const endChannel = wireReadoutAlg.MaxOpChannel() + 1U;
   std::vector<raw::Channel_t> missingChannels;
   for (auto channel: util::counter<raw::Channel_t>(endChannel)) {
-    if (!geom.IsValidOpChannel(channel)) continue;
+    if (!wireReadoutAlg.IsValidOpChannel(channel)) continue;
     if (configuredChannels.count(channel) > 0U) continue;
     missingChannels.push_back(channel);
   } // for channel

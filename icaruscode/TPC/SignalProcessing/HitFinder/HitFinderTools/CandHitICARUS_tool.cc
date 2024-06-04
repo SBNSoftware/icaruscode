@@ -9,7 +9,7 @@
 #include "art/Utilities/make_tool.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
 #include "cetlib_except/exception.h"
-#include "larcore/Geometry/Geometry.h"
+#include "larcore/Geometry/WireReadout.h"
 #include "larcore/CoreUtils/ServiceUtil.h" // lar::providerFrom()
 
 #include <cmath>
@@ -62,7 +62,7 @@ private:
     float                fMinHitHeight;         //< Drop candidate hits with height less than this
     size_t               fNumInterveningTicks;  //< Number ticks between candidate hits to merge
 
-    const geo::GeometryCore*  fGeometry = lar::providerFrom<geo::Geometry>();
+  const geo::WireReadoutGeom* fChannelMapAlg = &art::ServiceHandle<geo::WireReadout const>()->Get();
 };
 
 //----------------------------------------------------------------------
@@ -99,7 +99,7 @@ void CandHitICARUS::findHitCandidates(const recob::Wire::RegionsOfInterest_t::da
                                       HitCandidateVec&                                     hits) const
 {
     // get the WireID for this hit
-    std::vector<geo::WireID> wids = fGeometry->ChannelToWire(channel);
+    std::vector<geo::WireID> wids = fChannelMapAlg->ChannelToWire(channel);
     // for now, just take the first option returned from ChannelToWire
     geo::WireID wid  = wids[0];
     // We need to know the plane to look up parameters

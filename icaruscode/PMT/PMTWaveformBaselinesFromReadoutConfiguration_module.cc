@@ -13,7 +13,7 @@
 // #include "icaruscode/Utilities/DataProductPointerMap.h"
 
 // LArSoft libraries
-#include "larcore/Geometry/Geometry.h"
+#include "larcore/Geometry/WireReadout.h"
 #include "larcore/CoreUtils/ServiceUtil.h" // lar::providerFrom()
 #include "lardataobj/RawData/OpDetWaveform.h"
 #include "larcorealg/Geometry/GeometryCore.h"
@@ -422,9 +422,9 @@ void icarus::PMTWaveformBaselinesFromReadoutConfiguration::produce
 void icarus::PMTWaveformBaselinesFromReadoutConfiguration::setupPlots() {
   
   auto const& tfs = *(art::ServiceHandle<art::TFileService>());
-  auto const& geom = *(lar::providerFrom<geo::Geometry const>());
+  auto const& wireReadoutAlg = art::ServiceHandle<geo::WireReadout const>()->Get();
   
-  unsigned int const nChannels = geom.NOpChannels();
+  unsigned int const nChannels = wireReadoutAlg.NOpChannels();
   
   fHBaselines = tfs.make<TH2F>(
     "Baselines",

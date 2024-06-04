@@ -8,7 +8,7 @@
 using namespace icarus::crt;
 
 CRTCommonUtils::CRTCommonUtils() {
-  // fGeoService = art::ServiceHandle<geo::AuxDetGeometry const>()->GetProviderPtr();
+  fAuxDetGeom = art::ServiceHandle<geo::AuxDetGeometry const>()->GetProviderPtr();
   fGeoService  = lar::providerFrom<geo::Geometry>();
   FillFebMap();
   FillAuxDetMaps();
@@ -309,7 +309,7 @@ double CRTCommonUtils::LengthIDE(sim::AuxDetIDE ide) {
 int CRTCommonUtils::GetLayerID(sim::AuxDetSimChannel const& adsc){
     int layer = -1;
 
-    auto const& adGeo = fGeoService->AuxDet(adsc.AuxDetID());
+    auto const& adGeo = fAuxDetGeom->AuxDet(adsc.AuxDetID());
     auto const& adsGeo = adGeo.SensitiveVolume(adsc.AuxDetSensitiveID());
     int region = AuxDetRegionNameToNum(GetAuxDetRegion(adsc.AuxDetID()));
     char type = GetAuxDetType(adsc.AuxDetID());
@@ -371,7 +371,7 @@ int CRTCommonUtils::GetLayerID(sim::AuxDetSimChannel const& adsc){
 int CRTCommonUtils::GetLayerID(const art::Ptr<sim::AuxDetSimChannel> adsc){
     int layer = -1;
 
-    auto const& adGeo = fGeoService->AuxDet(adsc->AuxDetID());
+    auto const& adGeo = fAuxDetGeom->AuxDet(adsc->AuxDetID());
     auto const& adsGeo = adGeo.SensitiveVolume(adsc->AuxDetSensitiveID());
     int region = AuxDetRegionNameToNum(GetAuxDetRegion(adsc->AuxDetID()));
     char type = GetAuxDetType(adsc->AuxDetID());
@@ -434,7 +434,7 @@ int CRTCommonUtils::GetMINOSLayerID(size_t adid) {
 
     int region = AuxDetRegionNameToNum(GetAuxDetRegion(adid));
     char type = GetAuxDetType(adid);
-    auto const& adGeo = fGeoService->AuxDet(adid);
+    auto const& adGeo = fAuxDetGeom->AuxDet(adid);
     if(type!='m') {
         mf::LogError("CRTCommonUtils") << "non-MINOS module provided to GetMINOSLayerID";
         return layer;
@@ -490,7 +490,7 @@ TVector3 CRTCommonUtils::ChanToLocalCoords(uint8_t mac, int chan) {
 
     TVector3 coords(0.,0.,0.);
     size_t adid  = MacToAuxDetID(mac,chan); //CRT module ID
-    auto const& adGeo = fGeoService->AuxDet(adid); //CRT module
+    auto const& adGeo = fAuxDetGeom->AuxDet(adid); //CRT module
     int adsid = ChannelToAuxDetSensitiveID(mac,chan); //CRT strip ID
     auto const& adsGeo = adGeo.SensitiveVolume(adsid); //CRT strip
 
@@ -507,7 +507,7 @@ TVector3 CRTCommonUtils::ChanToWorldCoords(uint8_t mac, int chan) {
 
     TVector3 coords(0.,0.,0.);
     int adid  = MacToAuxDetID(mac,chan); //CRT module ID
-    auto const& adGeo = fGeoService->AuxDet(adid); //CRT module
+    auto const& adGeo = fAuxDetGeom->AuxDet(adid); //CRT module
     int adsid = ChannelToAuxDetSensitiveID(mac,chan); //CRT strip ID
     auto const& adsGeo = adGeo.SensitiveVolume(adsid); //CRT strip
 
@@ -571,7 +571,7 @@ void CRTCommonUtils::FillFebMap() {
 void CRTCommonUtils::FillAuxDetMaps() {
 
     for(auto const& ad : fAuxDetIdToFeb){
-        auto const& adGeo = fGeoService->AuxDet(ad.first);
+        auto const& adGeo = fAuxDetGeom->AuxDet(ad.first);
 
         //AuxDetType
         switch(adGeo.NSensitiveVolume()) {
@@ -628,7 +628,7 @@ string CRTCommonUtils::AuxDetNameToRegion(string name) {
 TVector3 CRTCommonUtils::WorldToModuleCoords(TVector3 point, size_t adid) {
 
     char type = GetAuxDetType(adid);
-    auto const& adGeo = fGeoService->AuxDet(adid);
+    auto const& adGeo = fAuxDetGeom->AuxDet(adid);
     geo::Point_t const world{point.X(), point.Y(), point.Z()};
     auto const local = adGeo.toLocalCoords(world);
     TVector3 localpoint(local.X(),local.Y(),local.Z());
