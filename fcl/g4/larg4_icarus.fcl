@@ -6,8 +6,10 @@
 #include "ionandscint_icarus.fcl"
 #include "simdrift_icarus.fcl"
 #include "PDFastSim_icarus.fcl"
-#include "config_genericCRT.fcl"
+#include "icarus_genericCRT.fcl"
 #include "mcreco.fcl"
+#include "g4inforeducer.fcl"
+#include "simplemerge_icarus.fcl"
 
 process_name: G4
 
@@ -47,8 +49,15 @@ physics:
     # Truth-level reconstruction
     mcreco: @local::standard_mcreco
 
+    # needs to run right after largeant
+    sedlite:    @local::sbn_largeant_info_reducer 
+
+
     # Generic CRT
-    genericcrt: @local::sbnd_genericCRT
+    genericcrt: @local::icarus_genericCRT
+
+    # simplemerge for ML
+    simplemerge: @local::simplemerge
 
   }
 
@@ -59,8 +68,10 @@ physics:
             , ionization
             , pdfastsim
             , simdrift
+            , sedlite
             , mcreco
             , genericcrt
+	    , simplemerge
           ]
 
   # The output stream, there could be more than one if using filters
@@ -73,8 +84,24 @@ physics:
   end_paths: [ stream1 ]
 }
 
+# Store MCParticleLite in G4 to store dropped particles from KeepEMShowerDaughters: false
+physics.producers.largeant.StoreDroppedMCParticles: false
+#services.ParticleListAction.KeepDroppedParticlesInVolumes: ["volDetEnclosure"] 
+
+# ------------------------------------------------------------------------------
+# Configure mcreco to read SEDLite instead of SED and MCParticleLite in addition to MCParticle
 physics.producers.mcreco.G4ModName: "simdrift"
+physics.producers.mcreco.SimChannelLabel: "sedlite"
 physics.producers.mcreco.MCParticleLabel: "largeant"
-physics.producers.mcreco.SimChannelLabel: "simdrift"
+physics.producers.mcreco.UseSimEnergyDepositLite: true
+physics.producers.mcreco.UseSimEnergyDeposit: false
+physics.producers.mcreco.IncludeDroppedParticles: true #this is now true with larsoft v09_89 and newer
+physics.producers.mcreco.MCParticleDroppedLabel: "largeant:droppedMCParticles"
+physics.producers.mcreco.MCRecoPart.SavePathPDGList: [13,-13,211,-211,111,311,310,130,321,-321,2212,2112,2224,2214,2114,1114,3122,1000010020,1000010030,1000020030,1000020040]
+physics.producers.mcreco.MCRecoPart.TrackIDOffsets: [0,10000000,20000000] #Account for track ID offsets in labeling primaries
+
+#info reducer
+physics.producers.sedlite.SimEnergyDepositLabel: "largeant:LArG4DetectorServicevolTPCActive"
+physics.producers.sedlite.useOrigTrackID: true #needed since origTrackID not filled for sedlite in SBND
 
 outputs.rootoutput: @local::icarus_rootoutput

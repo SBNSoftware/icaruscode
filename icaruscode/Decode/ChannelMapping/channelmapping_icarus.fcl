@@ -2,25 +2,104 @@
 
 BEGIN_PROLOG
 
+################################################################################
+###  Database access parameters
+###
 
+# for icarusDB::ChannelMapPostGres:
 ChannelMappingPostGres: {
-    tool_type:          ChannelMapPostGres
-    Nothing:            0
+    DatabaseURL: "https://dbdata0vm.fnal.gov:9443/QE/hw/app/SQ/query?dbname=icarus_hardware_prd"
+    CRTcalibrationDatabaseURL: "https://dbdata0vm.fnal.gov:9443/icarus_con_prod/app/data?f=crt_gain_reco_data&t=1638918270"
 }
 
+# for icarusDB::ChannelMapSQLite:
 ChannelMappingSQLite: {
-    tool_type:          ChannelMapSQLite
-    DBFileName:         "ChannelMapICARUS_20230829.db"
+    DBFileName:         "ChannelMapICARUS_20240318.db"
     CalibDBFileName:    "crt_gain_reco_data"
     Tag:                @local::ICARUS_Calibration_GlobalTags.crt_gain_reco_data
-	
 }
 
-icarus_channelmappinggservice:
+################################################################################
+###  art service configuration
+################################################################################
+#
+# Available configurations:
+#  * icarus_channelmappinggservice_sqlite
+#  * icarus_channelmappinggservice_postgres
+#  * icarus_channelmappinggservice_legacy
+#
+
+###
+### SQLite backend
+### 
+#
+# Use it with:
+#     
+#     services.IICARUSChannelMap: @local::icarus_channelmappinggservice_sqlite
+#     
+#
+# For direct configuration of the service providers, use this table but @erase
+# the art-specific `service_provider` key.
+#
+icarus_channelmappinggservice_sqlite:
 {
-    service_provider:   ICARUSChannelMap
+    service_provider:   ICARUSChannelMapSQLite
     DiagnosticOutput:   false
     ChannelMappingTool: @local::ChannelMappingSQLite
 }
+
+###
+### PostgreSQL backend
+### 
+#
+# Use it with:
+#     
+#     services.IICARUSChannelMap: @local::icarus_channelmappinggservice_postgres
+#     
+#
+# For direct configuration of the service providers, use this table but @erase
+# the art-specific `service_provider` key.
+#
+icarus_channelmappinggservice_postgres:
+{
+    service_provider:   ICARUSChannelMapPostGres
+    DiagnosticOutput:   false
+    ChannelMappingTool: @local::ChannelMappingPostGres
+}
+
+###
+### Legacy service
+###
+#
+# Use it, if you really have to, with:
+#     
+#     services.IICARUSChannelMap: @local::icarus_channelmappinggservice_legacy
+#     
+#
+# This service still uses the double-choice pattern, where one has to choose
+# both which service and which database backend to use.
+# Prefer the new services above.
+#
+
+icarus_channelmappinggservice_legacy:
+{
+    service_provider:   ICARUSChannelMap
+    DiagnosticOutput:   false
+    ChannelMappingTool: {
+                            @table::ChannelMappingSQLite
+        tool_type:          ChannelMapSQLite
+    }
+}
+
+
+################################################################################
+###  Default ICARUS configuration
+###
+#
+# Use this configuration unless there are specific reasons not to.
+#
+icarus_channelmappinggservice: @local::icarus_channelmappinggservice_sqlite
+
+################################################################################
 
 END_PROLOG

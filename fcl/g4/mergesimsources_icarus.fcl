@@ -1,0 +1,60 @@
+BEGIN_PROLOG
+
+icarus_merge_sim_sources : {
+  module_type: "MergeSimSources"
+  FillMCParticles:             false
+  FillSimPhotons:              false
+  FillSimChannels:             false
+  FillAuxDetSimChannels:       false
+  FillSimEnergyDeposits:       false
+  FillAuxDetHits:              false
+  InputSourcesLabels:          [ "larg4intime", "larg4outtime"]
+  TrackIDOffsets:              [ 10000000, 20000000 ]
+  StoreReflected:              false
+  EnergyDepositInstanceLabels: [ "priorSCE" ]
+  AuxDetHitsInstanceLabels:    [ "" ]
+}
+
+# Save the list of volumes (instance names) in which largeant creates SimEnergyDeposits
+largeant_volumes: [ "LArG4DetectorServicevolTPCPlaneV"
+                  , "LArG4DetectorServicevolTPC0"
+                  , "LArG4DetectorServicevolTPCPlaneU"
+                  #, "LArG4DetectorServicevolOpDetSensitive" #is this needed?
+                  , "LArG4DetectorServicevolTPCPlaneY"
+                  , "LArG4DetectorServicevolTPCActive"
+                  ]
+largeant_crt_volumes: [ "LArG4DetectorServicevolAuxDetSensitiveCERNbot"
+                      , "LArG4DetectorServicevolAuxDetSensitiveMINOScut309"
+                      , "LArG4DetectorServicevolAuxDetSensitiveMINOS"
+                      , "LArG4DetectorServicevolAuxDetSensitiveMINOScut256"
+                      , "LArG4DetectorServicevolAuxDetSensitiveDC"
+                      , "LArG4DetectorServicevolAuxDetSensitiveMINOScut508"
+                      , "LArG4DetectorServicevolAuxDetSensitiveMINOScut497"
+                      , "LArG4DetectorServicevolAuxDetSensitiveMINOScut325"
+                      , "LArG4DetectorServicevolAuxDetSensitiveMINOScut485"
+                      , "LArG4DetectorServicevolAuxDetSensitiveCERNtop"
+                      , "LArG4DetectorServicevolAuxDetSensitiveMINOScut400"
+                      ]
+
+# Merge seperate instances of largeant for GENIE and CORSIKA
+icarus_merge_overlay_sim_sources : {
+  @table::icarus_merge_sim_sources
+  FillMCParticles:             true
+  FillSimEnergyDeposits:       true
+  FillAuxDetHits:              true
+  InputSourcesLabels:          [ "largeantnu", "largeantcosmic"]
+  EnergyDepositInstanceLabels: @local::largeant_volumes
+  AuxDetHitsInstanceLabels:    @local::largeant_crt_volumes
+}
+
+icarus_merge_intime_dropped_mcparts: 
+{
+    @table::icarus_merge_sim_sources
+    module_type: "MergeSimSourcesSBN"
+    InputSourcesLabels: ["larg4intime:droppedMCParticles","larg4outtime:droppedMCParticles"]
+    FillMCParticles: true
+    FillMCParticlesLite: false
+    FillMCParticlesAssociated: false
+}
+
+END_PROLOG

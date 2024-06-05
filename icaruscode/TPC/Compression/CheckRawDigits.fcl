@@ -1,0 +1,9 @@
+BEGIN_PROLOG
+
+standard_checkrawdigits:
+{
+  plugin_type: "CheckRawDigits"
+  RawDigitLabelVec: [ "daqTPCROI:PHYSCRATEDATATPCEE", "daqTPCROI:PHYSCRATEDATATPCEW", "daqTPCROI:PHYSCRATEDATATPCWE", "daqTPCROI:PHYSCRATEDATATPCWW" ]
+}
+
+END_PROLOG

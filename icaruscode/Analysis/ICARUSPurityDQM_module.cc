@@ -65,6 +65,7 @@
 #include "TF1.h"
 #include "TCanvas.h"
 #include "TNtuple.h"
+#include "TFitResultPtr.h"
 
 //Redis connection 
 //#include "sbndaq-redis-plugin/Utilities.h"
@@ -101,7 +102,7 @@ namespace icarus {
 
 
 
-    TH1F* purityvalues;
+    //TH1F* purityvalues;
     TH1F* purityvalues2;
     TH1F* h_hit_height;
        TH1F* h_hit_area;
@@ -114,7 +115,7 @@ namespace icarus {
        TH1F* h_ratio;
        TH1F* h_ratio_after;
         TH1F* h_ratio_after_2;
-       TH2D* h_ratio_after_3;
+    //TH2D* h_ratio_after_3;
        TH2D* h_ratio_3;
 
 
@@ -150,17 +151,19 @@ int fdsclusfcl;
 
       TTree* fpurTree;
       int run_tree;
-      int subrun_tree;
+      //int subrun_tree;
       int event_tree;
       int tpc_tree;
       int qhits_tree;
       float dwire_tree;
+      float awire_tree;
       float dtime_tree;
       float earea_tree;
       float marea_tree;
       float slope_tree;
       float errslope_tree;
       float chi_tree;
+      long time_tree;
 
       
   }; // class ICARUSPurityDQM
@@ -211,7 +214,7 @@ namespace icarus{
     // get access to the TFile service
     art::ServiceHandle<art::TFileService> tfs;
   
-    purityvalues = tfs->make<TH1F>("purityvalues","purityvalues",20000,-10,10);
+    //purityvalues = tfs->make<TH1F>("purityvalues","purityvalues",20000,-10,10);
     h_basediff = tfs->make<TH1F>("h_basediff","h_basediff",10000,-20,20);
     h_basebase = tfs->make<TH1F>("h_basebase","h_basebase",10000,-20,20);
     h_base1 = tfs->make<TH1F>("h_base1","h_base1",10000,-20,20);
@@ -239,18 +242,20 @@ namespace icarus{
     h_ratio = tfs->make<TH1F>("h_ratio","h_ratio",20000,0,5);
     h_ratio_after = tfs->make<TH1F>("h_ratio_after","h_ratio_after",20000,0,5);
     h_ratio_after_2 = tfs->make<TH1F>("h_ratio_after_2","",2000,0,2);
-    h_ratio_after_3 = tfs->make<TH2D>("h_ratio_after_3","",1300,0,2600,2000,0,2);
-    h_ratio_3 = tfs->make<TH2D>("h_ratio_3","",1300,0,2600,2000,0,2);
+    //h_ratio_after_3 = tfs->make<TH2D>("h_ratio_after_3","",1300,0,2600,2000,0,2);
+    h_ratio_3 = tfs->make<TH2D>("h_ratio_3","",300,2000,2600,2000,0,2);
 
 
 
       fpurTree = tfs->make<TTree>("puritytree","tree for the purity studies");
       fpurTree->Branch("run",&run_tree,"run/I");
-      fpurTree->Branch("subrun",&subrun_tree,"subrun/I");
+      //fpurTree->Branch("subrun",&subrun_tree,"subrun/I");
       fpurTree->Branch("event",&event_tree,"event/I");
+      fpurTree->Branch("time",&time_tree,"time/L");
       fpurTree->Branch("tpc",&tpc_tree,"tpc/I");
       fpurTree->Branch("qhits",&qhits_tree,"qhits/I");
       fpurTree->Branch("deltawire",&dwire_tree,"deltawire/F");
+      fpurTree->Branch("averagewire",&awire_tree,"averagewire/F");
       fpurTree->Branch("deltatime",&dtime_tree,"deltatime/F");
       fpurTree->Branch("errarea",&earea_tree,"errarea/F");
       fpurTree->Branch("meanarea",&marea_tree,"meanarea/F");
@@ -354,8 +359,8 @@ std::sort(usedhere->begin(),usedhere->end(), [](float &c, float &d){ return c<d;
       
       //to get run and event info, you use this "eventAuxillary()" object.
       //art::Timestamp ts = evt.time();
-//      //std::cout << "Processing for Purity " << " Run " << evt.run() << ", " << "Event " << evt.event() << " and Time " << evt.time().timeHigh() << std::endl;
-    
+      //std::cout << "Processing for Purity " << " Run " << evt.run() << ", " << "Event " << evt.event() << " and Time " << evt.time().timeHigh() << std::endl;
+      
       //fRun->Fill(evt.run());
       //fRunSub->Fill(evt.run(),evt.subRun());
       art::Handle< std::vector<raw::RawDigit> > digitVecHandle;
@@ -733,9 +738,11 @@ if(((*shc)[j]-clusters_mintime[icl]<200) || ((*shc)[j]-clusters_mintime[icl])>21
 				    quanti+=1;
 				  }
 			      }
-			    ////////std::cout << quanti << std::endl;
+			    //std::cout << quanti << " FIRST FIT " << std::endl;
 			    TGraphErrors *gr3 = new TGraphErrors(quanti,wires,samples,ex,ey);
-			    gr3->Fit("pol1","Q");
+			    TFitResultPtr fp1 = gr3->Fit("pol1", "MQ");//std::cout << int(fp1) <<std::endl;
+
+			    //gr3->Fit("pol1","Q");
 			    TF1 *fitfunc = gr3->GetFunction("pol1");
 			    pendenza=fitfunc->GetParameter(1);
 			    intercetta=fitfunc->GetParameter(0);
@@ -860,7 +867,7 @@ quante_hit_nel_range_tempo+=1;
                                 sample_minimo=minimo/0.4;
                             h_ratio_after->Fill(((float)quante_hit_nel_range_tempo)/fabs(delta_wire_selected));
                             h_ratio_after_2->Fill(((float)quante_hit_nel_range_tempo)/fabs(wire_massimo-wire_minimo+1));
-                            h_ratio_after_3->Fill(delta_sample_selected,((float)quante_hit_nel_range_tempo)/fabs(wire_massimo-wire_minimo+1));
+                            //h_ratio_after_3->Fill(delta_sample_selected,((float)quante_hit_nel_range_tempo)/fabs(wire_massimo-wire_minimo+1));
 
                             ////std::cout << "RATIO INFO 2 " << (float)hitarea->size() << " " << fabs(delta_wire_selected) << " " << (((float)hitarea->size())/fabs(delta_wire_selected)) << std::endl;
 
@@ -941,27 +948,31 @@ if(delta_sample_selected>1900)
 			    ////std::cout<<""<<std::endl;
 			    ////std::cout<<"HERE line 872"<<std::endl;
 			    ////std::cout<<""<<std::endl;
+			    //std::cout<<hitareagood->size() <<" SECOND FIT "<<std::endl;
 			    TGraphErrors *gr31 = new TGraphErrors(hitareagood->size(),tempo,area,ex,ey);
 			    //TGraphErrors *gr4 = new TGraphErrors(hitareagood->size(),tempo,nologarea,ex,ey);
-			    gr31->Fit("pol1","Q");
+			    TFitResultPtr fp31 = gr31->Fit("pol1", "MQ");//std::cout << int(fp31) <<std::endl;
+			    //gr31->Fit("pol1","Q");
 			    TF1 *fit = gr31->GetFunction("pol1");
 			    float slope_purity=fit->GetParameter(1);
 			    //float error_slope_purity=fit->GetParError(1);
 			    float intercetta_purezza=fit->GetParameter(0);
 			    
 			    TH1F *h111 = new TH1F("h111","delta aree",200,-10,10);
-			    // float sum_per_rms_test=0; // unused
+			    //float sum_per_rms_test=0;
                             int quanti_in_h111=0;
 			    for(int k=0;k<(int)hitareagood->size();k++)
 			      {
 				h111->Fill(area[k]-slope_purity*tempo[k]-intercetta_purezza);
-				// sum_per_rms_test+=(area[k]-slope_purity*tempo[k]-intercetta_purezza)*(area[k]-slope_purity*tempo[k]-intercetta_purezza); // unused
+				//sum_per_rms_test+=(area[k]-slope_purity*tempo[k]-intercetta_purezza)*(area[k]-slope_purity*tempo[k]-intercetta_purezza);
                                 if((area[k]-slope_purity*tempo[k]-intercetta_purezza)>-10 && (area[k]-slope_purity*tempo[k]-intercetta_purezza)<10)quanti_in_h111+=1;
 			      }
                        
                         float error=100.;
-                        if(quanti_in_h111>1){
-                        h111->Fit("gaus","Q");
+                        //std::cout << quanti_in_h111 << " quanti h111 " << error << std::endl;
+                         if(quanti_in_h111>1){
+			   TFitResultPtr fph111 = h111->Fit("gaus", "MQ");//std::cout << int(fph111) <<std::endl;
+			 //h111->Fit("gaus","Q");
                         TF1 *fitg = h111->GetFunction("gaus");
                         error=fitg->GetParameter(2);
                         }
@@ -970,10 +981,12 @@ if(delta_sample_selected>1900)
                         ////std::cout << " error vero" << error_2 << std::endl;
                         h111->Delete();
 
+			//std::cout<<hitareagood->size() <<" THIRD FIT "<<std::endl;
 
 
 		      TGraphErrors *gr4 = new TGraphErrors(hitareagood->size(),tempo,nologarea,ex,ey);
-		      gr4->Fit("expo","Q");
+		      TFitResultPtr fp = gr4->Fit("expo", "MQ");//std::cout << int(fp) <<std::endl;
+		      //gr4->Fit("expo","Q");
 		      TF1 *fite = gr4->GetFunction("expo");
 		      slope_purity=fite->GetParameter(1);
 		      intercetta_purezza=fite->GetParameter(0);
@@ -990,13 +1003,15 @@ if(delta_sample_selected>1900)
 			}
                       
                       float error_expo=1000.;
-                      if(quanti_in_h111e>1)
+		      //std::cout << quanti_in_h111e << " quanti h111e " << error << std::endl;
+                     if(quanti_in_h111e>1)
                       { 
-		      h111e->Fit("gaus","Q");
+			TFitResultPtr fp111e = h111e->Fit("gaus", "MQ");//std::cout << int(fp111e) <<std::endl;
+		      //h111e->Fit("gaus","Q");
 		      TF1 *fitge = h111e->GetFunction("gaus");
 		      error_expo=fitge->GetParameter(2);
                       }
-		      //std::cout << " errors " << error << " " << error_expo << std::endl;
+		     //std::cout << " errors " << error << " " << error_expo << std::endl;
 		      h_errors->Fill(error_expo);
 		      h111e->Delete();//fitge->Delete();fite->Delete();
 
@@ -1009,38 +1024,42 @@ if(delta_sample_selected>1900)
 			////std::cout<<""<<std::endl;
 			////std::cout<<"HERE line 906"<<std::endl;
 			////std::cout<<""<<std::endl;
+			//std::cout<<hitareagood->size() <<" FOURTH FIT "<<std::endl;
 
-                        TGraphErrors *gr32 = new TGraphErrors(hitareagood->size(),tempo,area,ex,ey);
-                        gr32->Fit("pol1","Q");
+                        //TGraphErrors *gr32 = new TGraphErrors(hitareagood->size(),tempo,area,ex,ey);
+			//TFitResultPtr fp2 = gr32->Fit("pol1", "MQ");std::cout << int(fp2) <<std::endl;
+                        //gr32->Fit("pol1","Q");
                   
-                        TF1 *fit2 = gr32->GetFunction("pol1");
-                        float slope_purity_2=fit2->GetParameter(1);
-                        float error_slope_purity_2=fit2->GetParError(1);
+                        //TF1 *fit2 = gr32->GetFunction("pol1");
+                        //float slope_purity_2=fit2->GetParameter(1);
+                        //float error_slope_purity_2=fit2->GetParError(1);
                         //float intercetta_purezza_2=fit2->GetParameter(0);
-                        float chiquadro=fit2->GetChisquare()/(hitareagood->size()-2);
-			std::ofstream goodpuro("purity_results.out",std::ios::app);
+                        //float chiquadro=fit2->GetChisquare()/(hitareagood->size()-2);
+			//std::ofstream goodpuro("purity_results.out",std::ios::app);
                         std::ofstream goodpuro2("purity_results2.out",std::ios::app);
 			
                         ////std::cout << -1/slope_purity_2 << std::endl;
                         ////std::cout << -1/(slope_purity_2+error_slope_purity_2)+1/slope_purity_2 << std::endl;
                         ////std::cout << 1/slope_purity_2-1/(slope_purity_2-error_slope_purity_2) << std::endl;
-                        TGraphAsymmErrors *gr41 = new TGraphAsymmErrors (hitareagood->size(),tempo,nologarea,ex,ex,ez,ek);
-                        gr41->Fit("expo","Q");
+ 			//std::cout<<hitareagood->size() <<" FIFTH FIT "<<std::endl;
+                       TGraphAsymmErrors *gr41 = new TGraphAsymmErrors (hitareagood->size(),tempo,nologarea,ex,ex,ez,ek);
+		       TFitResultPtr fp41 = gr41->Fit("expo", "MQ");//std::cout << int(fp41) <<std::endl;
+		       //gr41->Fit("expo","Q");
                         TF1 *fitexo = gr41->GetFunction("expo");
                         float slope_purity_exo=fitexo->GetParameter(1);
                         float error_slope_purity_exo=fitexo->GetParError(1);
                         //fRunSubPurity2->Fill(evt.run(),evt.subRun(),-slope_purity_exo*1000.);
                         //fRunSubPurity->Fill(evt.run(),evt.subRun(),-slope_purity_2*1000.);
                         ////std::cout << -1/slope_purity_exo << std::endl;
-                        ////std::cout << -1/(slope_purity_exo+error_slope_purity_exo)+1/slope_purity_exo << std::endl;
+                        //std::cout << slope_purity_exo << " " << error_slope_purity_exo<< std::endl;
                         ////std::cout << 1/slope_purity_exo-1/(slope_purity_exo-error_slope_purity_exo) << std::endl;
                         ////std::cout << fitexo->GetChisquare()/(hitareagood->size()-2) << std::endl;
 			
 			
-                        if(fabs(slope_purity_2)<0.01 || fabs(slope_purity_exo)<0.01)
+                        if(/*fabs(slope_purity_2)<0.01 || */fabs(slope_purity_exo)<0.01)
 			  {
-			    if(fabs(slope_purity_2)<0.01)purityvalues->Fill(-slope_purity_2*1000.);
-                            if(fabs(slope_purity_2)<0.01)goodpuro << evt.run() << " " << evt.subRun() << "  " << evt.event() << "  " << tpc_number << "  " << slope_purity_2 << "  " << error_slope_purity_2 << " " << chiquadro << " " << clusters_dw[icl] << " " << clusters_ds[icl] << std::endl;
+			    //if(fabs(slope_purity_exo)<0.01)purityvalues->Fill(-slope_purity_exo*1000.);
+                            //if(fabs(slope_purity_2)<0.01)goodpuro << evt.run() << " " << evt.subRun() << "  " << evt.event() << "  " << tpc_number << "  " << slope_purity_2 << "  " << error_slope_purity_2 << " " << chiquadro << " " << clusters_dw[icl] << " " << clusters_ds[icl] << std::endl;
 			    
 			    if(fabs(slope_purity_exo)<0.01)goodpuro2<< evt.run() << " " << evt.subRun() << " " << evt.event() << " " << tpc_number+fcryofcl*10 << " " << slope_purity_exo << " " << error_slope_purity_exo << " " << fitexo->GetChisquare()/(hitareagood->size()-2) << " " << clusters_dw[icl] << " " << clusters_ds[icl] << " " << clusters_mw[icl] << " " << clusters_ms[icl] << " " << delta_wire_selected << " " << delta_sample_selected << " " << sample_minimo << " " << sample_massimo << " " << wire_del_minimo << " " << wire_del_massimo << " " << wire_minimo << " " << wire_massimo << " " << whc->size() << " " << hitarea->size() << " " << quante_hit_nel_range_tempo << " " << error_expo << " " << clusters_mintime[icl] << " " << mean_hit_area << std::endl;
 
@@ -1048,7 +1067,7 @@ if(delta_sample_selected>1900)
                   if(fabs(slope_purity_exo)<0.01)
                   {
                       run_tree=evt.run();
-                      subrun_tree=evt.subRun();
+                      //subrun_tree=evt.subRun();
                       event_tree=evt.event();
                       tpc_tree=tpc_number+fcryofcl*10;
                       slope_tree=-slope_purity_exo*1000;
@@ -1056,9 +1075,11 @@ if(delta_sample_selected>1900)
                       chi_tree=fitexo->GetChisquare()/(hitareagood->size()-2);
                       dtime_tree=delta_sample_selected;
                       dwire_tree=wire_massimo-wire_minimo+1;
+                      awire_tree=(wire_massimo+wire_minimo)*0.5;
                       earea_tree=error_expo;
                       marea_tree=mean_hit_area;
                       qhits_tree=hitarea->size();
+		      time_tree=evt.time().timeHigh()-1600000000;
                       fpurTree->Fill();
                   }
                   if(fabs(slope_purity_exo)<0.01)purityvalues2->Fill(-slope_purity_exo*1000.);

@@ -16,6 +16,10 @@
 #   fixed a bug where first logger option value would be ignored
 # 20220222 (petrillo@slac.fnal.gov) [1.3]
 #   added support for a new file name format, and for multiple formats
+# 20230822 (petrillo@slac.fnal.gov) [1.4]
+#   including the first timestamp in the file stats, if available
+# 20240326 (petrillo@slac.fnal.gov) [1.5]
+#   added support for another a new file name format
 #
 
 import sys, os
@@ -47,7 +51,7 @@ for duplication altogether.
 
 __author__ = 'Gianluca Petrillo (petrillo@slac.stanford.edu)'
 __date__ = 'February 22, 2022'
-__version__ = '1.3'
+__version__ = '1.5'
 
 
 class CycleCompareClass:
@@ -61,6 +65,21 @@ class CycleCompareClass:
 # class CycleCompareClass
 
 
+class DAQIndex:
+  def __init__(self, builder, thread = 1):
+    if isinstance(builder, str): builder = eval(builder)
+    try:
+      self.builder, self.thread = map(int, builder) # support first parameter being a pair
+      assert thread == 1, "When builder is a pair, thread should not be specified."
+    except TypeError:
+      self.builder = int(builder)
+      self.thread = int(thread)
+  def key(self): return ( self.builder, self.thread )
+  def __lt__(self, other): return self.key() < other.key()
+  def __str__(self): return f"EventBuilder{self.builder}_art{self.thread}"
+# class DAQIndex
+
+
 class FileNameParser:
   """Static object (namespace?) containing file name parsing utilities.
   
@@ -69,29 +88,44 @@ class FileNameParser:
   """
   Patterns = [
     {
-      'Name': 'general',
-      # pattern parameters:   data logger stream stream name run  pass  filler (timestamp)
-      #                              <1>  <2>    <3>         <4>   <5>  <6>
-      'Pattern': re.compile(r"data_dl(\d+)(_fstrm([^_]*))?_run(\d+)_(\d+)_(.*)\.root"),
+      'Name': 'multibuilder',
+      # pattern parameters:           run            builder  thread  pass  stream name    timestamp      filler (timestamp)
+      #                               <1>               <2>      <3>  <4>         <5>    . <7>             <8>
+      'Pattern': re.compile(r"data_run(\d+)_EventBuilder(\d+)_art(\d+)_(\d+)_fstrm([^_]*)(_(\d{8}T\d{6}))?(_.*)\.root"),
       'Parameters': {
-        'DataLogger': ( 1, int ),
+        'DataLogger': ( (2, 3), DAQIndex ),
+        'StreamName': ( 5, str ),
+        'RunNumber' : ( 1, int ),
+        'PassCount' : ( 4, int ),
+        'Timestamp' : ( 7, str ),
+      },
+    }, # multibuilder
+    {
+      'Name': 'multistream',
+      # pattern parameters:   data logger stream stream name run  pass     timestamp      filler (timestamp)
+      #                              <1>  <2>    <3>         <4>   <5>   . <7>            <8>
+      'Pattern': re.compile(r"data_dl(\d+)(_fstrm([^_]*))?_run(\d+)_(\d+)(_(\d{8}T\d{6}))?(_.*)\.root"),
+      'Parameters': {
+        'DataLogger': ( 1, DAQIndex ),
         'StreamName': ( 3, str ),
         'RunNumber' : ( 4, int ),
         'PassCount' : ( 5, int ),
+        'Timestamp' : ( 7, str ),
       },
-    }, # general
+    }, # multistream
     {
-      'Name': 'multistream',
-      # pattern parameters:   stream name data logger run  pass  filler (timestamp)
-      #                       <1>            <2>      <3>   <4>   <5>
-      'Pattern': re.compile(r"([^_]+)_data_dl(\d+)_run(\d+)_(\d+)_(.*)\.root"),
+      'Name': 'general',
+      # pattern parameters:   stream name data logger run  pass    timestamp      filler (timestamp)
+      #                       <1>            <2>      <3>   <4>  . <6>             <7>
+      'Pattern': re.compile(r"([^_]+)_data_dl(\d+)_run(\d+)_(\d+)(_(\d{8}T\d{6}))?(_.*)?\.root"),
       'Parameters': {
-        'DataLogger': ( 2, int ),
+        'DataLogger': ( 2, DAQIndex ),
         'StreamName': ( 1, str ),
         'RunNumber' : ( 3, int ),
         'PassCount' : ( 4, int ),
+        'Timestamp' : ( 6, str ),
       },
-    }, # general
+    }, # multistream
   ] # Patterns
   
   class ParsedNameClass:
@@ -99,7 +133,7 @@ class FileNameParser:
       self.name = name
       self.fields = fields
     # __init__()
-    def __nonzero__(self): return len(self.fields) > 0
+    def __bool__(self): return len(self.fields) > 0
     def get(self, *fieldNames):
       return tuple(self.fields.get(fieldName, None) for fieldName in fieldNames)
   # class ParsedNameClass
@@ -109,13 +143,14 @@ class FileNameParser:
   @staticmethod
   def match(name):
     # the first successful pattern is used
+    mkl = lambda v: (( v, ) if isinstance(v, int) else v) # make list
     for patternInfo in FileNameParser.Patterns:
       match = patternInfo['Pattern'].match(name)
       if match is None: continue
-      d = dict(
-          ( name, ( type_(value) if (value := match.group(index)) else None ) )
-          for name, ( index, type_ ) in patternInfo['Parameters'].items()
-        )
+      d = {
+        name: ( type_(value) if (value := match.group(*mkl(index))) else None )
+        for name, ( index, type_ ) in patternInfo['Parameters'].items()
+        }
       d['Name'] = patternInfo['Name']
       return FileNameParser.ParsedNameClass(name, d)
     else: return FileNameParser.ParsedNameClass(name, {})
@@ -142,7 +177,7 @@ class FileInfoClass:
     + XRootDprotocolDir.replace('.', r'\.')
     + r"/(.*)"
     )
-  _DataLoggerSorter = CycleCompareClass(first=4)
+  _DataLoggerSorter = CycleCompareClass(first=DAQIndex(4))
   
   @staticmethod
   def getFirstDataLogger(index): return FileInfoClass._DataLoggerSorter.first
@@ -162,8 +197,8 @@ class FileInfoClass:
     parsedName = FileNameParser.match(self.name)
     self.is_file = bool(parsedName)
     if self.is_file:
-      self.dataLogger, self.run, self.stream, self.pass_ \
-        = parsedName.get('DataLogger', 'RunNumber', 'StreamName', 'PassCount')
+      self.dataLogger, self.run, self.stream, self.pass_, self.timestamp \
+        = parsedName.get('DataLogger', 'RunNumber', 'StreamName', 'PassCount', 'Timestamp')
   # __init__()
   
   def __lt__(self, other):
@@ -182,6 +217,9 @@ class FileInfoClass:
       return \
         FileInfoClass._DataLoggerSorter.less(self.dataLogger, other.dataLogger)
     
+    if self.timestamp < other.timestamp: return True
+    if self.timestamp > other.timestamp: return False
+    
     assert (self.stream is None) == (other.stream is None)
     return False if self.stream is None else self.stream < other.stream
     
@@ -189,6 +227,7 @@ class FileInfoClass:
   
   def __str__(self):
     s = f"Run {self.run} cycle {self.pass_} data logger {self.dataLogger}"
+    if self.timestamp: s += f" time {self.timestamp}"
     if self.stream: s += f" stream {self.stream}"
     return s
   
@@ -250,8 +289,10 @@ def findFirstCycle(files, stream):
     elif not wrapped and info.dataLogger < firstLogger: wrapped = True
     
     firstPassFiles.append(info)
-    logging.debug("Added cycle %d logger %d stream %s to first cycle list",
-      info.pass_, info.dataLogger, info.stream)
+    logging.debug("Added cycle %d logger %s stream %s time %s to first cycle list",
+      info.pass_, info.dataLogger, info.stream,
+      (info.timestamp if info.timestamp else "unknown"),
+      )
   # for
   return firstPassFiles
 # findFirstCycle()
@@ -290,18 +331,23 @@ def detectFirstLogger(fileInfo):
   for stream, files in fileInfo.items():
     if not len(files): continue
     for info in files:
+      
+      
       firstEvent = extractFirstEvent(info.pathToXRootD())
       if firstEvent is not None:
         lowestEvent.add(info, key=firstEvent)
-        if firstEvent == 1: break # can't get lower than this!
+        if firstEvent == 1: # can't get lower than this!
+          firstLogger = info.dataLogger
+          logging.debug("Definitively detected first logger: %d", firstLogger)
+          return firstLogger
     # for files
-  # for 
+  # for
   try: firstLogger = lowestEvent.min().dataLogger
   except AttributeError:
     # this is in general a problem because it implies that we are failing to
     # correctly parse the list of input files
     raise RuntimeError("No data found for the first data logger pass.")
-  logging.debug("Detected first logger: %d", firstLogger)
+  logging.debug("Detected first logger: %s", firstLogger)
   return firstLogger
 # detectFirstLogger()
 
@@ -310,7 +356,7 @@ def buildFileIndex(
   fileInfo: "list with information from all files",
   ) -> "a dictionary: { key -> list of files }":
   
-  fileKey = lambda info: ( info.run, info.pass_, info.dataLogger, info.stream, )
+  fileKey = lambda info: ( info.run, info.pass_, info.dataLogger.key(), info.stream, info.timestamp )
   index = {}
   for info in fileInfo:
     index.setdefault(fileKey(info), []).append(info)
@@ -329,7 +375,7 @@ if __name__ == "__main__":
   
   parser.add_argument('inputFiles', nargs="*", metavar='inputFileNames',
     help='input file lists [one from stdin by default]')
-  parser.add_argument('--firstlogger', type=int,
+  parser.add_argument('--firstlogger',
     help='index of the first data logger in the cycle')
   parser.add_argument('--output', '-o', default=None,
     help=
@@ -381,8 +427,6 @@ if __name__ == "__main__":
         for file_ in args.inputFiles 
     ) if args.inputFiles else [ sys.stdin, ]
   
-  # example: /pnfs/icarus/persistent/users/ascarpel/trigger/4989/decoded/17247391_0/data_dl2_run4989_1_20210219T015125_20210219T200434-decode.root
-  
   preComments = []
   postComments = []
   fileInfo = []
@@ -417,7 +461,8 @@ if __name__ == "__main__":
       for stream in Streams )
     assert firstPassFiles
     firstLogger = detectFirstLogger(firstPassFiles)
-  else: firstLogger = args.firstlogger if args.firstlogger is not None else 4
+  else:
+    firstLogger = DAQIndex(args.firstlogger if args.firstlogger is not None else 4)
   
   FileInfoClass.setFirstDataLogger(firstLogger)
   
@@ -440,7 +485,7 @@ if __name__ == "__main__":
         if duplicateFiles is not None: duplicateFiles.extend(fileList[1:])
         if printDuplicates:
           firstSource = mainInfo.source[0]
-          msg += f"{mainInfo} with {len(fileList) - 1} duplicates of"
+          msg = f"{mainInfo} with {len(fileList) - 1} duplicates of"
           
           if len(sources) > 1: msg += f" {sources[mainInfo.source[0]]}"
           if mainInfo.source[1] is not None: msg += f" line {mainInfo.source[1]}"

@@ -1,0 +1,6 @@
+#include "detsim_2d_variation_fitFR_refactored_icarus.fcl"
+
+process_name: TPCIntNoiseVarm1
+
+#Noise adjustment from preliminary study by J. Mueller looking at the range over a set of events the uncertainty on the intrinsic noise in the TPC (subject to change, this is a test case)
+physics.producers.daq.wcls_main.structs.int_noise_scale: 0.9624

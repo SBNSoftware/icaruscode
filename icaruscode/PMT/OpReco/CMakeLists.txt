@@ -16,6 +16,7 @@ cet_build_plugin(ICARUSOpHitFinder art::module
 
 
 set(	MODULE_LIBRARIES
+                        icarusalg::Utilities
 			sbnobj::Common_Trigger
 			larcorealg::Geometry
 			larcore::Geometry_Geometry_service
@@ -59,6 +60,7 @@ cet_build_plugin(ICARUSOpFlashAna art::module LIBRARIES ${MODULE_LIBRARIES})
 cet_build_plugin(ICARUSOpHitAna art::module LIBRARIES ${MODULE_LIBRARIES})
 cet_build_plugin(ICARUSOpHitTuple art::module LIBRARIES ${MODULE_LIBRARIES})
 cet_build_plugin(ICARUSParticleAna art::module LIBRARIES ${MODULE_LIBRARIES})
+cet_build_plugin(TPCPMTBarycenterMatchProducer art::module LIBRARIES ${MODULE_LIBRARIES})
 
 
 install_headers()
