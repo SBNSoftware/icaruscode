@@ -1,12 +1,12 @@
 #include "WireModMakeHists.fcl"
-#include "messages_icarus.fcl"
+#include "services_common_icarus.fcl"
 
 process_name: WireModMakeHist
 
 services:
 {
+  @table::icarus_basic_services
   TFileService: { fileName: "wireMod_hist.root" closeFileFast: false }
-  message: @local::icarus_message_services_interactive_debug
 }
 
 outputs:
