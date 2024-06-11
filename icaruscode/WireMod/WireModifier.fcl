@@ -1,10 +1,14 @@
+#include "stage0_icarus_defs.fcl"
+
 BEGIN_PROLOG
 
 standard_wiremod:
 {
   module_type:         "WireModifier"
-  WireLabel:           "roifinder:PHYSCRATEDATATPCEE"
-  HitLabel:            "gaushitTPCEE"
+  WireLabel:           "roifinder1d:PHYSCRATEDATATPCEE"
+  HitLabel:            "gaushit1dTPCEE"
+  EDepOrigLabel:       "ionization"
+  EDepShftLabel:       "largeant:TPCActive"
   OutputInstanceLabel: "PHYSCRATEDATATPCEE"
   CryoNumber         : 0
   TPCNumbers         : [ 0, 1 ]
@@ -30,8 +34,8 @@ standard_wiremod:
 }
 
 ww_wiremod: @local::standard_wiremod
-ww_wiremod.WireLabel:          "roifinder:PHYSCRATEDATATPCWW"
-ww_wiremod.HitLabel:           "gaushitTPCWW"
+ww_wiremod.WireLabel:          "roifinder1d:PHYSCRATEDATATPCWW"
+ww_wiremod.HitLabel:           "gaushit1dTPCWW"
 ww_wiremodOutputInstanceLabel: "PHYSCRATEDATATPCWW"
 ww_wiremod.CryoNumber:         1
 ww_wiremod.TPCNumbers:         [ 2, 3 ]
@@ -45,8 +49,8 @@ ww_wiremod.dEdXScaleHeight    : [ "dEdXHeight_WW_0_ratio"           , "dEdXHeigh
 ww_wiremod.dEdXScaleWidth     : [ "dEdXWidth_WW_0_ratio"            , "dEdXWidth_WW_1_ratio"            , "dEdXWidth_WW_2_ratio" ]
 
 we_wiremod: @local::standard_wiremod
-we_wiremod.WireLabel:          "roifinder:PHYSCRATEDATATPCWE"
-we_wiremod.HitLabel:           "gaushitTPCWE"
+we_wiremod.WireLabel:          "roifinder1d:PHYSCRATEDATATPCWE"
+we_wiremod.HitLabel:           "gaushit1dTPCWE"
 we_wiremodOutputInstanceLabel: "PHYSCRATEDATATPCWE"
 we_wiremod.CryoNumber:         1
 we_wiremod.TPCNumbers:         [ 0, 1 ]
@@ -60,8 +64,8 @@ we_wiremod.dEdXScaleHeight    : [ "dEdXHeight_WE_0_ratio"           , "dEdXHeigh
 we_wiremod.dEdXScaleWidth     : [ "dEdXWidth_WE_0_ratio"            , "dEdXWidth_WE_1_ratio"            , "dEdXWidth_WE_2_ratio" ]
 
 ew_wiremod: @local::standard_wiremod
-ew_wiremod.WireLabel:          "roifinder:PHYSCRATEDATATPCEW"
-ew_wiremod.HitLabel:           "gaushitTPCEW"
+ew_wiremod.WireLabel:          "roifinder1d:PHYSCRATEDATATPCEW"
+ew_wiremod.HitLabel:           "gaushit1dTPCEW"
 ew_wiremodOutputInstanceLabel: "PHYSCRATEDATATPCEW"
 ew_wiremod.CryoNumber:         0
 ew_wiremod.TPCNumbers:         [ 2, 3 ]
@@ -75,8 +79,8 @@ ew_wiremod.dEdXScaleHeight    : [ "dEdXHeight_EW_0_ratio"           , "dEdXHeigh
 ew_wiremod.dEdXScaleWidth     : [ "dEdXWidth_EW_0_ratio"            , "dEdXWidth_EW_1_ratio"            , "dEdXWidth_EW_2_ratio" ]
 
 ee_wiremod: @local::standard_wiremod
-ee_wiremod.WireLabel:          "roifinder:PHYSCRATEDATATPCEE"
-ee_wiremod.HitLabel:           "gaushitTPCEE"
+ee_wiremod.WireLabel:          "roifinder1d:PHYSCRATEDATATPCEE"
+ee_wiremod.HitLabel:           "gaushit1dTPCEE"
 ee_wiremodOutputInstanceLabel: "PHYSCRATEDATATPCEE"
 ee_wiremod.CryoNumber:         0
 ee_wiremod.TPCNumbers:         [ 0, 1 ]
@@ -89,6 +93,21 @@ ee_wiremod.YZAngleScaleWidth  : [ "phWidth_EE_0_ratio"              , "phWidth_E
 ee_wiremod.dEdXScaleHeight    : [ "dEdXHeight_EE_0_ratio"           , "dEdXHeight_EE_1_ratio"           , "dEdXHeight_EE_2_ratio" ]
 ee_wiremod.dEdXScaleWidth     : [ "dEdXWidth_EE_0_ratio"            , "dEdXWidth_EE_1_ratio"            , "dEdXWidth_EE_2_ratio" ]
 
+wiremod_Producers: {
+                     WireModEE: @local::ee_wiremod
+                     WireModEW: @local::ew_wiremod
+                     WireModWE: @local::we_wiremod
+                     WireModWW: @local::ww_wiremod
+                     gaushit1dWireModTPCEE: @local::icarus_stage0_producers.gaushit1dTPCEE
+                     gaushit1dWireModTPCEW: @local::icarus_stage0_producers.gaushit1dTPCEW
+                     gaushit1dWireModTPCWE: @local::icarus_stage0_producers.gaushit1dTPCWE
+                     gaushit1dWireModTPCWW: @local::icarus_stage0_producers.gaushit1dTPCWW
+                   }
+wiremod_Producers.gaushit1dWireModTPCEE.CalDataModuleLabel: "WireModEE"
+wiremod_Producers.gaushit1dWireModTPCEW.CalDataModuleLabel: "WireModEW"
+wiremod_Producers.gaushit1dWireModTPCWE.CalDataModuleLabel: "WireModWE"
+wiremod_Producers.gaushit1dWireModTPCWW.CalDataModuleLabel: "WireModWW"
+
 wiremod_allTPC: [
                   WireModEE,
                   WireModEW,
@@ -96,11 +115,11 @@ wiremod_allTPC: [
                   WireModWW
                 ]
 
-wiremod_Producers: {
-                     WireModEE: @local::ee_wiremod
-                     WireModEW: @local::ew_wiremod
-                     WireModWE: @local::we_wiremod
-                     WireModWW: @local::ww_wiremod
-                   }
+icarus_stage0_WireModTPC: [
+                            gaushit1dWireModTPCEE,
+                            gaushit1dWireModTPCEW,
+                            gaushit1dWireModTPCWE,
+                            gaushit1dWireModTPCWW
+                          ]
 
 END_PROLOG

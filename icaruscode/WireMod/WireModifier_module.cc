@@ -53,16 +53,18 @@ namespace wiremod
       std::vector<TSpline3*> fSpline_sigma_dEdX;
       std::vector<TGraph2D*> fGraph_charge_YZ; 
       std::vector<TGraph2D*> fGraph_sigma_YZ;
-      art::InputTag fWireLabel; // which wires are we pulling in?
-      art::InputTag fHitLabel;  // which hits are we pulling in?
-      bool fApplyChannel;       // do we apply the channel scaling?
-      bool fApplyX;             // do we apply the X scaling?
-      bool fApplyYZ;            // do we apply the YZ scaling?
-      bool fApplyXZAngle;       // do we apply the XZ angle scaling?
-      bool fApplyYZAngle;       // do we apply the YZ angle scaling?
-      bool fApplydEdX;          // do we apply the dEdX scaling?
-      bool fSaveHistsByChannel; // save modified signals by channel?
-      bool fSaveHistsByWire;    // save modified signals by wire?
+      art::InputTag fWireLabel;     // which wires are we pulling in?
+      art::InputTag fHitLabel;      // which hits are we pulling in?
+      art::InputTag fEDepOrigLabel; // which are the unshifted EDeps?
+      art::InputTag fEDepShftLabel; // which are the shifted EDeps?
+      bool fApplyChannel;           // do we apply the channel scaling?
+      bool fApplyX;                 // do we apply the X scaling?
+      bool fApplyYZ;                // do we apply the YZ scaling?
+      bool fApplyXZAngle;           // do we apply the XZ angle scaling?
+      bool fApplyYZAngle;           // do we apply the YZ angle scaling?
+      bool fApplydEdX;              // do we apply the dEdX scaling?
+      bool fSaveHistsByChannel;     // save modified signals by channel?
+      bool fSaveHistsByWire;        // save modified signals by wire?
 
   }; // end WireModifier class
 
@@ -76,9 +78,10 @@ namespace wiremod
   //------------------------------------------------
   void WireModifier::reconfigure(fhicl::ParameterSet const& pset)
   {
-    // For now we aren't configuring anything because we're just getting it running
-    fWireLabel  = pset.get<art::InputTag>("WireLabel", "roifinder:PHYSCRATEDATATPCEE");
-    fHitLabel   = pset.get<art::InputTag>("HitLabel", "gaushitTPCEE");
+    fWireLabel     = pset.get<art::InputTag>("WireLabel", "roifinder:PHYSCRATEDATATPCEE");
+    fHitLabel      = pset.get<art::InputTag>("HitLabel", "gaushitTPCEE");
+    fEDepOrigLabel = pset.get<art::InputTag>("EDepOrigLabel", "ionization");
+    fEDepShftLabel = pset.get<art::InputTag>("EDepShftLabel", "largeant:TPCActive");
 
     // what, if anything, are we putting in the histogram files
     //fSaveHistsByChannel = pset.get<bool>("SaveByChannel", false);
@@ -319,14 +322,14 @@ namespace wiremod
 
     art::FindManyP<raw::RawDigit> digit_assn(wireHandle, evt, fWireLabel);
 
-    art::Handle< std::vector<sim::SimEnergyDeposit> > edepShiftedHandle;
-    evt.getByLabel("largeant:TPCActive", edepShiftedHandle);
-    auto const& edepShiftedVec(*edepShiftedHandle);
-
     art::Handle< std::vector<sim::SimEnergyDeposit> > edepOrigHandle;
-    evt.getByLabel("ionization", edepOrigHandle);
+    evt.getByLabel(fEDepOrigLabel, edepOrigHandle);
     auto const& edepOrigVec(*edepOrigHandle);
       
+    art::Handle< std::vector<sim::SimEnergyDeposit> > edepShiftedHandle;
+    evt.getByLabel(fEDepShftLabel, edepShiftedHandle);
+    auto const& edepShiftedVec(*edepShiftedHandle);
+
     art::Handle< std::vector<recob::Hit> > hitHandle;
     evt.getByLabel(fHitLabel, hitHandle);
     auto const& hitVec(*hitHandle);
