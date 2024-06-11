@@ -516,19 +516,22 @@ namespace crt {
 	  presel = true;
 
       }else if ( type == 'd'){
-        std::cout<<"The pe threshold is: "<<fPEThresh<<'\n';
-	std::cout<<"Module(fMac5 in crtList): "<<crtList[febdat_i]->fMac5<<'\n';
-        std::cout<<"Timestamp: "<<crtList[febdat_i]->fTs0<<'\n';
-        float peBottomThresh = 0;
-	 //Preselection pe threshold set to 0 as a method to obtain the calibration values for adc/photon per channel needs created. 	
+        //std::cout<<"The pe threshold is: "<<fPEThresh<<'\n';
+	//std::cout<<"Bottom values: "<<'\n';        
+	//std::cout<<"Timestamp: "<<crtList[febdat_i]->fTs0<<'\n';
+        float peBottomThresh = 100.;
+	 //Preselection pe threshold set to 100 as a method to obtain the calibration values for adc/photon per channel needs created. 	
 	for(int chan=0; chan<64; chan++) {
 	  //float pe = (crtList[febdat_i]->fAdc[chan]-fQPed)/fQSlope;// OLD pe calculation 
-	  float pe = (crtList[febdat_i]->fAdc[chan])/fQSlope;  // New pe calculation removed the baseline subtraction
-  	  //std::cout<<"Channel: "<< chan << " ADC: "<<crtList[febdat_i]->fAdc[chan]<<" pe: "<<pe<<'\n';
-	 if(pe<=peBottomThresh) continue;
-	  presel = true;
-           
+	  float pe = (crtList[febdat_i]->fAdc[chan])/81.;  // New pe calculation removed the baseline subtraction
+  	   if (crtList[febdat_i]->fAdc[chan]>0){
+           //std::cout<<"Channel: "<< chan << " ADC: "<<crtList[febdat_i]->fAdc[chan]<<" pe: "<<pe<<'\n';
+	   }
+	   if(pe<=peBottomThresh){
+           presel = true;       
+	   }    
 	}
+	//presel = true;
       }
       if (presel) crtData.push_back(crtList[febdat_i]);
       presel = false;
@@ -564,16 +567,24 @@ namespace crt {
 	}else{
 	  //edited the method used to calculat the pe  for the bottom by removing the baseline subtraction as this is done upstream.
 	  float pe = (fADC[ch])/fQSlope;
-	  if (pe < 0) continue;
+          if (pe < 100) continue;
           fPE[ch] = pe;
 	} 
 	
       }
             
       fDAQNtuple->Fill();
+    //Bottom Debug print outs
+    /*
     std::cout << "Subsys and Region: "<< fCrtutils->MacToRegion(fMac5) << '\n';
     std::cout << "Module: "<<fMac5<<'\n';
-    std::cout << "SubSys: "<<fDetSubSys<<'\n';
+    std::cout << "SubSys: "<<fDetSubSys<<'\n';    
+    std::cout << "Timestamp: "<<fT0<<'\n';    
+    for (int i = 0; i < fNMaxCh; i++) {
+      std::cout << "Channel " << i + 1 <<" ADC: "<< fADC[i] << std::endl;
+    }
+    */
+    
     } //for CRT FEB events
     
   

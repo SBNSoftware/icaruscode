@@ -208,7 +208,7 @@ vector<pair<sbn::crt::CRTHit, vector<int>>> CRTHitRecoAlg::CreateCRTHits(
       if (IsEmptyHit(hit))
         nMissD++;
       else {
-	std::cout<<"In the else for bottom"<<'\n';
+	//std::cout<<"In the else for bottom"<<'\n';
         dataIds.push_back(febdat_i);
         returnHits.push_back(std::make_pair(hit, dataIds));
         if ((regs.insert(region)).second)
@@ -394,7 +394,6 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeTopHit(
     ULong64_t GlobalTrigger[305]) {  // single GT: GlobalTrigger[305], 3
                                      // seperate GT: GlobalTrigger[232]
   uint8_t mac = data->fMac5;
-  std::cout<<"Making a top hit"<<'\n';
   if (fCrtutils.MacToType(mac) != 'c')
     mf::LogError("CRTHitRecoAlg::MakeTopHit")
         << "CRTUtils returned wrong type!" << '\n';
@@ -535,10 +534,12 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeBottomHit(art::Ptr<CRTData> data) {
   int adsid_max = -1, nabove = 0;
   TVector3 postrig;
   double xmin = 0., xmax = 0.;
-  std::cout<<"Making a bottom hit" <<'\n';
   for (int chan = 0; chan < 64; chan++) {
-    float pe = (data->fAdc[chan] - fQPed) / fQSlope;
-    if (pe <= fPEThresh) continue;
+    //When calculating pe there needs to be a way to fetch the values from calibration.
+    //For now we hardcode in 81 as the conversion factor. Bottom already has baseline subtracted.
+    //float pe = (data->fAdc[chan] - fQPed) / fQSlope; Original pe calculation
+    float pe = (data->fAdc[chan])/81.;
+    //if (pe <= fPEThresh) continue;Remove pe threshold for now.
     nabove++;
     int adsid = fCrtutils.ChannelToAuxDetSensitiveID(mac, chan);
     petot += pe;
@@ -560,7 +561,6 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeBottomHit(art::Ptr<CRTData> data) {
 
   // no channels above threshold? return empty hit
   if (nabove == 0){
-  std::cout<<"Returned an empty hit for bottom."<<'\n';
   return FillCRTHit({}, {}, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, "");
   }
   hitpos *= 1.0 / petot;  // hit position weighted by deposited charge

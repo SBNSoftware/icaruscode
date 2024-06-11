@@ -22,11 +22,11 @@
   <class name="art::Wrapper<std::vector<CRT::Trigger>>"/>
   <class name="art::Wrapper<CRT::Trigger>"/>
 
-  <!-- Actual ART class template instantiations using CRT::Trigger -->
+  <!-- Actual ART class template instantiations using CRT::Trigger
   <class name="art::Assns<sim::AuxDetSimChannel, CRT::Trigger, void>" />  
   <class name="art::Assns<CRT::Trigger, sim::AuxDetSimChannel, void>" />
   <class name="std::pair<art::Ptr<CRT::Trigger>, art::Ptr<sim::AuxDetSimChannel>>" />
   <class name="art::Wrapper<art::Assns<CRT::Trigger, sim::AuxDetSimChannel>>" />
   <class name="std::pair<art::Ptr<sim::AuxDetSimChannel>, art::Ptr<CRT::Trigger>>" />
-  <class name="art::Wrapper<art::Assns<sim::AuxDetSimChannel, CRT::Trigger>>" />
+  <class name="art::Wrapper<art::Assns<sim::AuxDetSimChannel, CRT::Trigger>>" /> -->
 </lcgdict>
