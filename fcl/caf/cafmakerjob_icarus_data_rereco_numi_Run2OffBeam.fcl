@@ -1,0 +1,4 @@
+#include "cafmakerjob_icarus_data_rereco_numi.fcl"
+
+# Get EXT
+physics.runprod: [numiextinfo, @sequence::physics.runprod]
