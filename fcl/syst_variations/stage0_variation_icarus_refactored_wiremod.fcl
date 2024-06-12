@@ -1,0 +1,50 @@
+#include "WireModifier.fcl"
+#include "stage0_run2_icarus_mc_refactored.fcl"
+
+process_name: MCStage0Var
+
+physics.producers: {
+                     @table::physics.producers
+                     @table::wiremod_Producers
+                     gaushit1dTEMPTPCEE: @local::icarus_stage0_producers.gaushit1dTPCEE
+                     gaushit1dTEMPTPCEW: @local::icarus_stage0_producers.gaushit1dTPCEW
+                     gaushit1dTEMPTPCWE: @local::icarus_stage0_producers.gaushit1dTPCWE
+                     gaushit1dTEMPTPCWW: @local::icarus_stage0_producers.gaushit1dTPCWW
+                   }
+physics.path: [
+                @sequence::icarus_stage0_mc_PMT,
+                MCDecodeTPCROI,
+                @sequence::icarus_stage0_multiTPC_TPC,
+                gaushit1dTEMPTPCEW,
+                gaushit1dTEMPTPCEE,
+                gaushit1dTEMPTPCWW,
+                gaushit1dTEMPTPCWE,
+                @sequence::icarus_purity_monitor,
+                simChannelROI,
+                @sequence::icarus_stage0_mc_crt,
+                @sequence::wiremod_allTPC,
+                @sequence::icarus_stage0_EastHits_TPC,
+                @sequence::icarus_stage0_WestHits_TPC
+              ]
+
+physics.producers.WireModEE.EDepShftLabel: "largeant:LArG4DetectorServicevolTPCActive"
+physics.producers.WireModEW.EDepShftLabel: "largeant:LArG4DetectorServicevolTPCActive"
+physics.producers.WireModWE.EDepShftLabel: "largeant:LArG4DetectorServicevolTPCActive"
+physics.producers.WireModWW.EDepShftLabel: "largeant:LArG4DetectorServicevolTPCActive"
+
+physics.producers.WireModEE.HitLabel: "gaushit1dTEMPTPCEE"
+physics.producers.WireModEW.HitLabel: "gaushit1dTEMPTPCEW"
+physics.producers.WireModWE.HitLabel: "gaushit1dTEMPTPCWE"
+physics.producers.WireModWW.HitLabel: "gaushit1dTEMPTPCWW"
+
+physics.producers.gaushit1dTPCEE.CalDataModuleLabel: "WireModEE"
+physics.producers.gaushit1dTPCEW.CalDataModuleLabel: "WireModEW"
+physics.producers.gaushit1dTPCWE.CalDataModuleLabel: "WireModWE"
+physics.producers.gaushit1dTPCWW.CalDataModuleLabel: "WireModWW"
+
+outputs.rootOutput.outputCommands: [
+                                     @sequence::outputs.rootOutput.outputCommands,
+                                     "drop *_roifinder1d_*_*",
+                                     "drop *_WireMod??_*_*",
+                                     "drop *_gaushit1dTEMPTPC??_*_*"
+                                   ]
