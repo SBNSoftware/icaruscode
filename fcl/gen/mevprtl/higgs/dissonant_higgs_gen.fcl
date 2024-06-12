@@ -1,4 +1,5 @@
 #include "dissonant_higgs.fcl"
+#include "beamspilltimings.fcl"
 #include "beamgates_icarus.fcl"
 # service configuration
 #
