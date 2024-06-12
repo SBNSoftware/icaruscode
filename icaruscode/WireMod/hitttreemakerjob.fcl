@@ -1,0 +1,61 @@
+#include "services_common_icarus.fcl"
+#include "HitTTreeMaker.fcl"
+
+process_name: HitTTreeMaker
+
+services:
+{
+  @table::icarus_basic_services
+  TFileService: { fileName: "hitttreemaker_hist.root" closeFileFast: false }
+  message: @local::icarus_message_services_interactive_debug
+}
+
+outputs:
+{
+  hitttreemaker:
+  {
+    module_type: RootOutput
+    fileName: "hitttreemaker_out.root"
+    results:
+    {
+      producers:
+      {
+        originalEE: { @table::standard_hitttreemaker }
+        originalEW: { @table::standard_hitttreemaker }
+        originalWE: { @table::standard_hitttreemaker }
+        originalWW: { @table::standard_hitttreemaker }
+        modifiedEE: { @table::standard_hitttreemaker }
+        modifiedEW: { @table::standard_hitttreemaker }
+        modifiedWE: { @table::standard_hitttreemaker }
+        modifiedWW: { @table::standard_hitttreemaker }
+      }
+      rpPath: [originalEE, originalEW, originalWE, originalWW, modifiedEE, modifiedEW, modifiedWE, modifiedWW]
+    }
+  }
+}
+
+physics:
+{
+  stream1: [ hitttreemaker ]
+}
+
+outputs.hitttreemaker.results.producers.originalEE: { @table::standard_hitttreemaker }
+outputs.hitttreemaker.results.producers.originalEE.Label: "gaushitTPCEE"
+outputs.hitttreemaker.results.producers.originalEW: { @table::standard_hitttreemaker }
+outputs.hitttreemaker.results.producers.originalEW.Label: "gaushitTPCEW"
+outputs.hitttreemaker.results.producers.originalWE: { @table::standard_hitttreemaker }
+outputs.hitttreemaker.results.producers.originalWE.Label: "gaushitTPCWE"
+outputs.hitttreemaker.results.producers.originalWW: { @table::standard_hitttreemaker }
+outputs.hitttreemaker.results.producers.originalWW.Label: "gaushitTPCWW"
+outputs.hitttreemaker.results.producers.modifiedEE: { @table::standard_hitttreemaker }
+outputs.hitttreemaker.results.producers.modifiedEE.Label: "gaushit1dTPCEE"
+outputs.hitttreemaker.results.producers.modifiedEE.Process: "WireModifier"
+outputs.hitttreemaker.results.producers.modifiedEW: { @table::standard_hitttreemaker }
+outputs.hitttreemaker.results.producers.modifiedEW.Label: "gaushit1dTPCEW"
+outputs.hitttreemaker.results.producers.modifiedEW.Process: "WireModifier"
+outputs.hitttreemaker.results.producers.modifiedWE: { @table::standard_hitttreemaker }
+outputs.hitttreemaker.results.producers.modifiedWE.Label: "gaushit1dTPCWE"
+outputs.hitttreemaker.results.producers.modifiedWE.Process: "WireModifier"
+outputs.hitttreemaker.results.producers.modifiedWW: { @table::standard_hitttreemaker }
+outputs.hitttreemaker.results.producers.modifiedWW.Label: "gaushit1dTPCWW"
+outputs.hitttreemaker.results.producers.modifiedWW.Process: "WireModifier"
