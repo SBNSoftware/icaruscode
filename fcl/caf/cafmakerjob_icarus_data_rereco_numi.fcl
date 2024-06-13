@@ -1,0 +1,68 @@
+#include "stage1_icarus_defs.fcl"
+#include "cafmakerjob_icarus_data.fcl"
+
+process_name: stage1REDO
+
+services:
+{
+  TFileService:           { }
+  IICARUSChannelMap:      @local::icarus_channelmappinggservice
+                          @table::icarus_wirecalibration_services
+  SpaceChargeService: @local::icarus_spacecharge
+  IFBeam: {}
+}
+
+physics.producers: {
+  @table::physics.producers
+  @table::icarus_stage1_producers
+}
+
+physics.filters: {
+  @table::icarus_stage1_filters
+}
+
+physics.analyzers: {
+  @table::icarus_stage1_analyzers
+}
+
+physics.runprod: [
+  @sequence::icarus_filter_cluster3D,
+  @sequence::icarus_pandora_Gauss,
+  # @sequence::icarus_reco_fm,
+  # @sequence::icarus_crttrack,
+  # @sequence::icarus_crtt0match,
+  caloskimCalorimetryCryoE, caloskimCalorimetryCryoW,
+  
+  @sequence::physics.runprod
+]
+physics.outana:            [ caloskimE, caloskimW]
+physics.stream1: []
+
+physics.trigger_paths:     [ runprod ]
+physics.end_paths:         [ outana, stream1 ]
+
+source.inputCommands: [
+  "keep *_*_*_*",
+  "drop *_*_*_stage1"
+]
+
+physics.analyzers.caloskimE.SelectEvents: [ runprod ]
+physics.analyzers.caloskimW.SelectEvents: [ runprod ]
+
+services.SpaceChargeService: {
+    EnableCalEfieldSCE: false
+    EnableCalSpatialSCE: false
+    EnableCorrSCE: false
+    EnableSimEfieldSCE: false
+    EnableSimSpatialSCE: false
+    InputFilename: "SCEoffsets/SCEoffsets_ICARUS_E500_voxelTH3.root"
+    RepresentationType: "Voxelized_TH3"
+    service_provider: "SpaceChargeServiceICARUS"
+}
+
+### adding t0 info in the calorimetry variables
+physics.producers.pandoraCaloGausCryoE.T0ModuleLabel: "pandoraGausCryoE"
+physics.producers.pandoraCaloGausCryoW.T0ModuleLabel: "pandoraGausCryoW" 
+
+# physics.producers.pandoraCaloGausCryoE.ChargeMethod: 2 # SumADC
+# physics.producers.pandoraCaloGausCryoW.ChargeMethod: 2 # SumADC
