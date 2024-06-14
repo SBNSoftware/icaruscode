@@ -326,11 +326,15 @@ namespace icarus::trigger { class TriggerSimulationOnGates; }
  *     always present, and reflecting the triggers on the first beam gate: if a
  *     trigger fired in that beam gate, a _reduced_ version of
  *     `sbn::ExtraTriggerInfo` is provided; currently it is guaranteed to have:
- *     * `triggerTimestamp`: based on the _art_ event timestamp, or invalid
- *       timestamp if the trigger did not fire.
- *     * `beamGateTimestamp`: set accordingly to the relative time of the
- *       trigger vs. simulated beam gate opening, if the trigger happened.
- *       Otherwise, it will be set at the event time.
+ *     * `triggerTimestamp`: the absolute (UTC) timestamp of the simulated
+ *       trigger; it is based on the _art_ event timestamp, which in ICARUS data
+ *       matches the hardware trigger timestamp and in simulation carries no
+ *       physics meaning. If the trigger simulation did not fire a trigger, the
+ *       timestamp is set to the invalid value
+ *       (`sbn::ExtraTriggerInfo::NoTimestamp`).
+ *     * `beamGateTimestamp`: absolute time of the beam gate opened for the
+ *       trigger simulation, set in the same reference as `triggerTimestamp`
+ *       above.
  *     * `sourceType`: interpreted according to the trigger bits of the input
  *       beam gate object, it may be `sbn::triggerSource::BNB`,
  *       `sbn::bits::triggerSource::NuMI` or `sbn::bits::triggerSource::Unknown`
@@ -699,6 +703,7 @@ class icarus::trigger::TriggerSimulationOnGates
   using OpticalTriggerGateData_t = icarus::trigger::OpticalTriggerGateData_t;
   using optical_tick = detinfo::timescales::optical_tick;
   using optical_time_ticks = detinfo::timescales::optical_time_ticks;
+  using electronics_time = detinfo::timescales::electronics_time;
   
   /// Information about the input for a single threshold.
   struct InputInfo_t {
@@ -714,8 +719,10 @@ class icarus::trigger::TriggerSimulationOnGates
   
   /// Event-level information.
   struct EventAux_t {
-    std::uint64_t time; ///< Event timestamp [ns]
-    unsigned int event; ///< Event number.
+    std::uint64_t time;            ///< Event timestamp [ns]
+    unsigned int event;            ///< Event number.
+    electronics_time triggerTime;  ///< Time of hardware trigger.
+    electronics_time beamGateTime; ///< Time of hardware beam gate.
   };
 
   /// Content for future histograms, binned.
@@ -1004,7 +1011,7 @@ class icarus::trigger::TriggerSimulationOnGates
    * The time value is assumed to be in the reference as `fBeamGateReference`
    * and converted into the electronics time scale.
    */
-  detinfo::timescales::electronics_time toElectronicsTime(
+  electronics_time toElectronicsTime(
     util::quantities::nanosecond time,
     detinfo::DetectorTimings const& detTimings
     ) const;
@@ -1041,8 +1048,25 @@ class icarus::trigger::TriggerSimulationOnGates
   static double eventTimestampInSeconds(art::Event const& event);
   //@}
   
+  
+  /**
+   * @brief Converts a time into an absolute UTC timestamp.
+   * @param t time to convert, in electronics time scale
+   * @param eventInfo information from the event (only trigger times are used)
+   * @return the timestamp in UTC [ns]
+   * 
+   * This method translates the specified time `t` from electronics time into
+   * an absolute UTC timestamp. It bridges between the two scales by comparing
+   * the same time point (the hardware trigger) in the UTC and electronics time
+   * scales; this information is expected to be part of the `eventInfo` content,
+   * in `EventAux_t::time` and `EventAux_t::triggerTime` respectively.
+   */
+  std::uint64_t electronicsTimeToTimestamp
+    (electronics_time t, EventAux_t const& eventInfo) const;
+  
   /// Fills an `EventAux_t` from the information found in the argument.
-  static EventAux_t extractEventInfo(art::Event const& event);
+  EventAux_t extractEventInfo
+    (art::Event const& event, detinfo::DetectorTimings const& detTimings) const;
   
   /// Converts a standard _art_ timestamp into an UTC time [ns]
   static std::uint64_t TimestampToUTC(art::Timestamp const& ts);
@@ -1767,7 +1791,7 @@ auto icarus::trigger::TriggerSimulationOnGates::produceForThreshold(
   std::unique_ptr<sbn::ExtraTriggerInfo> firstExtraInfo;
   unsigned int triggerNumber = firstTriggerNumber;
   
-  EventAux_t const eventInfo = extractEventInfo(event);
+  EventAux_t const eventInfo = extractEventInfo(event, detTimings);
   
   for (sim::BeamGateInfo const& beamGate: beamGates) {
     
@@ -1923,7 +1947,7 @@ void icarus::trigger::TriggerSimulationOnGates::printSummary() const {
 auto icarus::trigger::TriggerSimulationOnGates::toElectronicsTime(
   util::quantities::nanosecond time, detinfo::DetectorTimings const& detTimings
 ) const
-  -> detinfo::timescales::electronics_time
+  -> electronics_time
 {
   // currently (LArSoft v09_77_00) `detinfo::DetectorTimings` does not support
   // beam gate timescale conversion, so we need to do it "by hand" from...
@@ -1931,7 +1955,7 @@ auto icarus::trigger::TriggerSimulationOnGates::toElectronicsTime(
   
   switch (fBeamGateReference) {
     case util::TimeScale::Electronics:
-      return detinfo::timescales::electronics_time{ time };
+      return electronics_time{ time };
     case util::TimeScale::BeamGate:
       return detTimings.BeamGateTime() + nanoseconds{ time };
     case util::TimeScale::Trigger:
@@ -1970,11 +1994,14 @@ auto icarus::trigger::TriggerSimulationOnGates::toBeamGateTime(
 
 //------------------------------------------------------------------------------
 auto icarus::trigger::TriggerSimulationOnGates::extractEventInfo
-  (art::Event const& event) -> EventAux_t
+  (art::Event const& event, detinfo::DetectorTimings const& detTimings) const
+  -> EventAux_t
 {
   return {
-      TimestampToUTC(event.time()) // time
+      TimestampToUTC(event.time()) // time (absolute)
     , event.event()                // event
+    , detTimings.TriggerTime()     // hardware trigger time (relative)
+    , detTimings.BeamGateTime()    // hardware beam gate time (relative)
     };
 } // icarus::trigger::TriggerSimulationOnGates::extractEventInfo()
 
@@ -1983,8 +2010,8 @@ auto icarus::trigger::TriggerSimulationOnGates::extractEventInfo
 std::uint64_t icarus::trigger::TriggerSimulationOnGates::TimestampToUTC
   (art::Timestamp const& ts)
 {
-  return static_cast<std::uint64_t>(ts.timeHigh())
-    + static_cast<std::uint64_t>(ts.timeLow()) * 1'000'000'000ULL;
+  return static_cast<std::uint64_t>(ts.timeLow())
+    + static_cast<std::uint64_t>(ts.timeHigh()) * 1'000'000'000ULL;
 } // icarus::trigger::TriggerSimulationOnGates::TimestampToUTC()
 
 
@@ -2089,7 +2116,7 @@ icarus::trigger::TriggerSimulationOnGates::triggerInfoToTriggerData(
     constexpr bool operator!() const { return !bool(*this); }
   };
   
-  detinfo::timescales::electronics_time const beamTime
+  electronics_time const beamTime
     = detTimings.BeamGateTime() + nanoseconds{ beamGate.Start() };
   TriggerBits_t const beamBits
     = fBeamBits.value_or(makeTriggerBits(beamGate.BeamType()));
@@ -2101,7 +2128,7 @@ icarus::trigger::TriggerSimulationOnGates::triggerInfoToTriggerData(
   assert(extraInfo.triggerLocationBits == 0);
   assert(extraInfo.triggerTimestamp == sbn::ExtraTriggerInfo::NoTimestamp);
   // these are fixed by the gate and set this way whether trigger fired or not:
-  extraInfo.beamGateTimestamp = eventInfo.time;
+  extraInfo.beamGateTimestamp = electronicsTimeToTimestamp(beamTime, eventInfo);
   extraInfo.triggerType       = sbn::bits::triggerType::Majority;
   extraInfo.sourceType        = beamTypeToTriggerSource(beamGate.BeamType());
   extraInfo.gateID            = eventInfo.event;
@@ -2112,11 +2139,11 @@ icarus::trigger::TriggerSimulationOnGates::triggerInfoToTriggerData(
     
     if (trInfo.info.fired()) { // trigger fired
       
-      detinfo::timescales::electronics_time const triggerTime
+      electronics_time const triggerTime
         = detTimings.toElectronicsTime(trInfo.info.atTick());
       
       // include the delay from timestamping (and all other fixed delays)
-      detinfo::timescales::electronics_time const timestampedTriggerTime
+      electronics_time const timestampedTriggerTime
         = triggerTime + fTriggerDelay;
       
       // find the location and set the bits accordingly
@@ -2164,11 +2191,8 @@ icarus::trigger::TriggerSimulationOnGates::triggerInfoToTriggerData(
           );
         
         if (fExtraInfo && isFirstTrigger) {
-          nanoseconds const relTrigTime = timestampedTriggerTime - beamTime;
-          
-          extraInfo.triggerTimestamp  = eventInfo.time;
-          extraInfo.beamGateTimestamp = extraInfo.triggerTimestamp
-            - static_cast<std::int64_t>(std::round(relTrigTime.value()));
+          extraInfo.triggerTimestamp
+            = electronicsTimeToTimestamp(timestampedTriggerTime, eventInfo);
           
           extraInfo.triggerID    = triggerNumber;
           extraInfo.triggerCount = triggerNumber;
@@ -2431,6 +2455,16 @@ auto icarus::trigger::TriggerSimulationOnGates::skipTicksAfterTrigger() const
     ? std::numeric_limits<optical_time_ticks>::max()
     : detTimings.toOpticalTicks(std::max(fDeadTime, fTriggerClock));
 } // icarus::trigger::TriggerSimulationOnGates::skipTicksAfterTrigger()
+
+
+//------------------------------------------------------------------------------
+std::uint64_t
+icarus::trigger::TriggerSimulationOnGates::electronicsTimeToTimestamp
+  (electronics_time t, EventAux_t const& eventInfo) const
+{
+  return eventInfo.time
+    + std::llround((t - eventInfo.triggerTime).convertInto<nanoseconds>().value());
+}
 
 
 //------------------------------------------------------------------------------
