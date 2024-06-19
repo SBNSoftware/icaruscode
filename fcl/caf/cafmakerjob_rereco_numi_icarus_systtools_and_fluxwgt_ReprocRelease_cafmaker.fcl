@@ -28,13 +28,6 @@ physics.analyzers: {
 }
 
 physics.runprod: [
-  rns, 
-  @sequence::icarus_filter_cluster3D,
-  @sequence::icarus_pandora_Gauss,
-  # @sequence::icarus_reco_fm,
-  # @sequence::icarus_crttrack,
-  # @sequence::icarus_crtt0match,
-  caloskimCalorimetryCryoE, caloskimCalorimetryCryoW,
   systtools, fluxweight,
   
   @sequence::physics.runprod
