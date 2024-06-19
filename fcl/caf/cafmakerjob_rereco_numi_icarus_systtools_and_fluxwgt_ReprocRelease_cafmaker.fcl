@@ -2,7 +2,7 @@
 #include "services_icarus_simulation.fcl"
 #include "cafmakerjob_icarus.fcl"
 
-process_name: stage1REDO
+process_name: cafREDO
 
 services:
 {

@@ -13,6 +13,7 @@ services:
   ParticleInventoryService: @local::standard_particleinventoryservice
   IFBeam: {}
 }
+services.DetectorPropertiesService.service_provider: "DetectorPropertiesServiceICARUSClockOffsetMC"
 
 physics.producers: {
   @table::physics.producers
