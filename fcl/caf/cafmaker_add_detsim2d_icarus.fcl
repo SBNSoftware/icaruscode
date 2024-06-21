@@ -14,5 +14,7 @@ physics.producers.mcreco.SimChannelLabel: "daq:simpleSC"
 # this_cal_constants: [1.343e-2, 1.338e-2, 0.01227]
 # Post signal shape tuning, post gain fixing
 # See docdb 32139
+# For gputnam_DP2023G_reprodD_NuMIPhase2MC and gputnam_DMCP2023F_F-MCNuPhase2_flatcafs, 0.0128 was used.
+# But this value (0.0128041) is in this release and current develop (21JUN2024), which is very close to that
 this_cal_constants: [1.343e-2, 1.338e-2, 0.0128041]
 #include "set_caf_calconst.fcl"
