@@ -1,6 +1,7 @@
 #include "cafmakerjob_icarus_data_rereco_numi.fcl"
 
 # Get POT
+# JK) Commenting out; we will run_numiinfo_sbn.fcl before we run cafmaker
 #physics.runprod: [numiinfo, @sequence::physics.runprod]
 
 physics.stream1: [ out1 ]
