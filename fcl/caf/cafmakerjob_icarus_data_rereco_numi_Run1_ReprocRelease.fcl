@@ -1,3 +1,8 @@
+# Note)
+# - Similar as cafmakerjob_icarus_data_rereco_numi_Run1.fcl, but outputs stage1 file as well
+# - Save all calo hits
+# - Turn off T0 module label (we don't use this)
+
 #include "cafmakerjob_icarus_data_rereco_numi.fcl"
 
 services.Geometry: @local::icarus_geometry_services_no_overburden_legacy_icarus_v3.Geometry
