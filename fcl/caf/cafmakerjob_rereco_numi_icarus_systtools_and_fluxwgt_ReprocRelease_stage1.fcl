@@ -1,3 +1,8 @@
+# Note)
+# - Similar to cafmakerjob_rereco_numi_icarus_systtools_and_fluxwgt_ReprocRelease.fcl, 
+#   but only up to stage1; basically a "stage1" fhicl
+# - But we shift MC T0 for the reco hits by the time of trigger
+
 #include "stage1_icarus_defs.fcl"
 #include "services_icarus_simulation.fcl"
 #include "cafmakerjob_icarus.fcl"
@@ -13,7 +18,10 @@ services:
   ParticleInventoryService: @local::standard_particleinventoryservice
   IFBeam: {}
 }
+# Shift T0 in reco
 services.DetectorPropertiesService.service_provider: "DetectorPropertiesServiceICARUSClockOffsetMC"
+services.DetectorClocksService.TrigModuleName: "emuTrigger"
+services.DetectorClocksService.InheritClockConfig: false
 
 physics.producers: {
   @table::physics.producers
@@ -52,9 +60,6 @@ source.inputCommands: [
 physics.analyzers.caloskimE.SelectEvents: [ runprod ]
 physics.analyzers.caloskimW.SelectEvents: [ runprod ]
 
-physics.producers.cafmaker.SystWeightLabels: ["systtools", "fluxweight"]
-#include "cafmaker_add_detsim2d_icarus.fcl"
-
 outputs: {
    out1: {
       SelectEvents: [
@@ -72,5 +77,3 @@ outputs: {
       saveMemoryObjectThreshold: 0
    }
 }
-
-physics.producers.cafmaker.TrackHitFillRREndCut: 9999999

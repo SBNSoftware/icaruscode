@@ -1,3 +1,7 @@
+# Note) 
+# - Copy of the fhicl used for gputnam_DP2023G_reprodD_NuMIPhase2MC, gputnam_DMCP2023F_F-MCNuPhase2_flatcafs
+# - Redo stage1 and then run cafmaker in a single job
+
 #include "stage1_icarus_defs.fcl"
 #include "services_icarus_simulation.fcl"
 #include "cafmakerjob_icarus.fcl"
@@ -10,9 +14,9 @@ services:
   IICARUSChannelMap:      @local::icarus_channelmappinggservice
                           @table::icarus_wirecalibration_services
   SpaceChargeService: @local::icarus_spacecharge
+  ParticleInventoryService: @local::standard_particleinventoryservice
   IFBeam: {}
 }
-services.ParticleInventoryService:  @local::standard_particleinventoryservice
 
 
 physics.producers: {

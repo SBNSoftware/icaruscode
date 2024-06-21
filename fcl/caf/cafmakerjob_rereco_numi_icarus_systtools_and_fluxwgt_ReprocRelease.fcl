@@ -1,3 +1,6 @@
+# Note)
+# - Same as cafmakerjob_rereco_numi_icarus_systtools_and_fluxwgt.fcl but outputs stage1 file as well
+
 #include "stage1_icarus_defs.fcl"
 #include "services_icarus_simulation.fcl"
 #include "cafmakerjob_icarus.fcl"
