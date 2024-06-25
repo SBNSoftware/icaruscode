@@ -1,0 +1,30 @@
+#include "cafmakerjob_icarus_data_rereco_numi.fcl"
+
+# Get EXT
+# JK) Commenting out; we will run_numiextinfo_sbn.fcl before we run cafmaker
+#physics.runprod: [numiextinfo, @sequence::physics.runprod]
+
+physics.stream1: [ out1 ]
+
+outputs: {
+   out1: {
+      SelectEvents: [
+         "runprod"
+      ]
+      compressionLevel: 1
+      dataTier: "reconstructed"
+      fileName: "%ifb_%tc-%p.root"
+      module_type: "RootOutput"
+      outputCommands: [
+         "keep *_*_*_*",
+         "drop *_caloskimCalorimetryCryoE_*_*",
+         "drop *_caloskimCalorimetryCryoW_*_*"
+      ]
+      saveMemoryObjectThreshold: 0
+   }
+}
+
+physics.producers.cafmaker.TrackHitFillRREndCut: 9999999
+
+physics.producers.pandoraCaloGausCryoE.T0ModuleLabel: ""
+physics.producers.pandoraCaloGausCryoW.T0ModuleLabel: ""

@@ -1,0 +1,5 @@
+# Note)
+# - CAFMaker with saving all calo hits
+
+#include "cafmakerjob_icarus_detsim2d_systtools_and_fluxwgt.fcl"
+physics.producers.cafmaker.TrackHitFillRREndCut: 9999999

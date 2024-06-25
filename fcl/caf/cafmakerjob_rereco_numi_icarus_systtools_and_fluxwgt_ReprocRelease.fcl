@@ -1,6 +1,5 @@
-# Note) 
-# - Copy of the fhicl used for gputnam_DP2023G_reprodD_NuMIPhase2MC, gputnam_DMCP2023F_F-MCNuPhase2_flatcafs
-# - Redo stage1 and then run cafmaker in a single job
+# Note)
+# - Same as cafmakerjob_rereco_numi_icarus_systtools_and_fluxwgt.fcl but outputs stage1 file as well
 
 #include "stage1_icarus_defs.fcl"
 #include "services_icarus_simulation.fcl"
@@ -17,7 +16,6 @@ services:
   ParticleInventoryService: @local::standard_particleinventoryservice
   IFBeam: {}
 }
-
 
 physics.producers: {
   @table::physics.producers
@@ -46,7 +44,7 @@ physics.runprod: [
 ]
 
 physics.outana:            [ caloskimE, caloskimW]
-physics.stream1: []
+physics.stream1: [ out1 ]
 
 physics.trigger_paths:     [ runprod ]
 physics.end_paths:         [ outana, stream1 ]
@@ -62,3 +60,22 @@ physics.analyzers.caloskimW.SelectEvents: [ runprod ]
 physics.producers.cafmaker.SystWeightLabels: ["systtools", "fluxweight"]
 #include "cafmaker_add_detsim2d_icarus.fcl"
 
+outputs: {
+   out1: {
+      SelectEvents: [
+         "runprod"
+      ]
+      compressionLevel: 1
+      dataTier: "reconstructed"
+      fileName: "%ifb_%tc-%p.root"
+      module_type: "RootOutput"
+      outputCommands: [
+         "keep *_*_*_*",
+         "drop *_caloskimCalorimetryCryoE_*_*",
+         "drop *_caloskimCalorimetryCryoW_*_*"
+      ]
+      saveMemoryObjectThreshold: 0
+   }
+}
+
+physics.producers.cafmaker.TrackHitFillRREndCut: 9999999

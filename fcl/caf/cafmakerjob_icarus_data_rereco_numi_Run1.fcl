@@ -1,3 +1,6 @@
+# Note)
+# - Similar to cafmakerjob_icarus_data_rereco_numi.fcl, but updating geometry
+
 #include "cafmakerjob_icarus_data_rereco_numi.fcl"
 
 services.Geometry: @local::icarus_geometry_services_no_overburden_legacy_icarus_v3.Geometry
