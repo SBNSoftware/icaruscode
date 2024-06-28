@@ -51,7 +51,7 @@ physics.end_paths:         [ outana, stream1 ]
 source.inputCommands: [
   "keep *_*_*_*",
   "drop *_*_*_stage1",
-  "keep *_crthit_*_stage1" # Run1 input stage 1files have crthit objects produced during the stage1 step, so we should not drop them here
+  "keep *_crthit_*_stage1" # Run1 input stage1 files have crthit objects produced during the stage1 step, so we should not drop them here
 ]
 
 physics.analyzers.caloskimE.SelectEvents: [ runprod ]
