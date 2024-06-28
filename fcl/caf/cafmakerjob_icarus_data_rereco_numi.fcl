@@ -35,9 +35,10 @@ physics.analyzers: {
 physics.runprod: [
   @sequence::icarus_filter_cluster3D,
   @sequence::icarus_pandora_Gauss,
-  # @sequence::icarus_reco_fm,
-  # @sequence::icarus_crttrack,
-  # @sequence::icarus_crtt0match,
+  @sequence::icarus_reco_fm,
+  @sequence::icarus_tpcpmtbarycentermatch,
+  @sequence::icarus_crttrack,
+  @sequence::icarus_crtt0match,
   caloskimCalorimetryCryoE, caloskimCalorimetryCryoW,
   
   @sequence::physics.runprod
@@ -50,7 +51,8 @@ physics.end_paths:         [ outana, stream1 ]
 
 source.inputCommands: [
   "keep *_*_*_*",
-  "drop *_*_*_stage1"
+  "drop *_*_*_stage1",
+  "keep *_crthit_*_stage1" # Run1 input files has crthit objects produced during stage1, and we need to save ethem
 ]
 
 physics.analyzers.caloskimE.SelectEvents: [ runprod ]
