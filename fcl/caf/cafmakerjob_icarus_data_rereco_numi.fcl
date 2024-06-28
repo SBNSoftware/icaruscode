@@ -3,7 +3,6 @@
 #   gputnam_DMCP2023F_F-Run1-OnBeam_flatcafs, gputnam_DMCP2023F_F2-Run2-OffBeam_flatcafs,
 #   gputnam_DMCP2023F_F4-Run2-OnBeam_flatcafs, gputnam_DMCP2023F_F-Run1-OffBeam_flatcafs
 # - Redo stage1 and then run cafmaker in a single job
-# - Skipping flash matching and crt related modules
 
 #include "stage1_icarus_defs.fcl"
 #include "cafmakerjob_icarus_data.fcl"
