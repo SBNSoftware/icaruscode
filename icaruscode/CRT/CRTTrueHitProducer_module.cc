@@ -131,7 +131,7 @@ void icarus::crt::CRTTrueHitProducer::produce(art::Event & event)
     event.put(std::move(CRTHitcol));
     event.put(std::move(IDEcol));
     event.put(std::move(Hitassn));
-  
+    std::cout<<"Exectued CRTTrueHitProducer"<<'\n'; 
     mf::LogInfo("CRTTrueHitProducer")
       <<"Number of CRT hits produced = "<<nHits;
   

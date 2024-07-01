@@ -219,9 +219,9 @@ namespace crt {
     uint64_t    fT0Hit; ///< hit time w.r.t. PPS
     Long64_t    fT1Hit; ///< hit time w.r.t. global trigger
     int       fHitNChan;
-    float     fHitPE[32];
-    int       fHitMac[32];
-    int	      fHitChan[32];
+    float     fHitPE[64];//changed to 64 from 32 toa ccount for bottom.
+    int       fHitMac[64];
+    int	      fHitChan[64];
     int       fHitReg; ///< region code of CRT hit
     int       fHitSubSys;
     int       fNHit; ///< number of CRT hits for this event
@@ -386,9 +386,9 @@ namespace crt {
     fHitNtuple->Branch("t0",          &fT0Hit,       "t0/l");
     fHitNtuple->Branch("t1",          &fT1Hit,       "t1/L");
     fHitNtuple->Branch("NChan",       &fHitNChan,       "nChan/I");
-    fHitNtuple->Branch("PEs",         &fHitPE,       "PEs[32]/F");
-    fHitNtuple->Branch("Macs",        &fHitMac,      "Mac[32]/I");
-    fHitNtuple->Branch("Chans",       &fHitChan,     "Chans[32]/I");
+    fHitNtuple->Branch("PEs",         &fHitPE,       "PEs[64]/F");//changed from 32
+    fHitNtuple->Branch("Macs",        &fHitMac,      "Mac[64]/I");//changed from 32
+    fHitNtuple->Branch("Chans",       &fHitChan,     "Chans[64]/I");//changed from 32
     fHitNtuple->Branch("region",      &fHitReg,      "region/I");  
     //    fHitNtuple->Branch("tagger",      &ftagger,      "tagger/C");  
     fHitNtuple->Branch("subSys",      &fHitSubSys,   "subSys/I");
@@ -660,7 +660,30 @@ namespace crt {
 		   fHitChan[arrpos]=thisHit[k].first;
                 }
              }
-	  }
+	  } else if (fHitSubSys==2){
+             std::cout<<"When filling HitTree found a hit with subSys = 2 aka Bottom Hit."<<'\n';
+	     std::map<uint8_t, std::vector<std::pair<int,float>>>::const_iterator it;
+	     for (it = hit.pesmap.begin(); it!=hit.pesmap.end();it++){
+		std::vector<std::pair<int,float>> thisHit = it->second;
+		int hitsize = (int) thisHit.size();
+	     	for(int k=0; k< hitsize; k++){
+		   fHitPE[thisHit[k].first]=thisHit[k].second;
+		   fHitChan[thisHit[k].first]=thisHit[k].first;
+		   fHitMac[thisHit[k].first]=(int)it->first;
+		   /*
+                   if (thisHit[k].second>0){ 
+                   std::cout<<"Hit PE: "<<thisHit[k].second<<"   ";
+		   std::cout<<"Hit Chan: "<<thisHit[k].first<<"   ";
+		   std::cout<<"Hit Mac: "<<(int)it->first<<"   ";
+                   std::cout<<"Hit T0: "<<fT0Hit<<"   ";
+	  	   std::cout<<"Hit T1: "<<fT1Hit<<'\n';
+                   }
+                   */
+		   if(thisHit[k].second>1) fHitNChan++;
+		}	
+  	     }
+
+          }
 	  int chantmp = (*ittmp).second[0].first;
 	  
 	  fHitMod  = fCrtutils->MacToAuxDetID(mactmp, chantmp);
