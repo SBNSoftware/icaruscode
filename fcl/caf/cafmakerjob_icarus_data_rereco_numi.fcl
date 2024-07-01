@@ -3,7 +3,6 @@
 #   gputnam_DMCP2023F_F-Run1-OnBeam_flatcafs, gputnam_DMCP2023F_F2-Run2-OffBeam_flatcafs,
 #   gputnam_DMCP2023F_F4-Run2-OnBeam_flatcafs, gputnam_DMCP2023F_F-Run1-OffBeam_flatcafs
 # - Redo stage1 and then run cafmaker in a single job
-# - Skipping flash matching and crt related modules
 
 #include "stage1_icarus_defs.fcl"
 #include "cafmakerjob_icarus_data.fcl"
@@ -35,9 +34,10 @@ physics.analyzers: {
 physics.runprod: [
   @sequence::icarus_filter_cluster3D,
   @sequence::icarus_pandora_Gauss,
-  # @sequence::icarus_reco_fm,
-  # @sequence::icarus_crttrack,
-  # @sequence::icarus_crtt0match,
+  @sequence::icarus_reco_fm,
+  @sequence::icarus_tpcpmtbarycentermatch,
+  @sequence::icarus_crttrack,
+  @sequence::icarus_crtt0match,
   caloskimCalorimetryCryoE, caloskimCalorimetryCryoW,
   
   @sequence::physics.runprod
@@ -50,7 +50,8 @@ physics.end_paths:         [ outana, stream1 ]
 
 source.inputCommands: [
   "keep *_*_*_*",
-  "drop *_*_*_stage1"
+  "drop *_*_*_stage1",
+  "keep *_crthit_*_stage1" # Run1 input stage1 files have crthit objects produced during the stage1 step, so we should not drop them here
 ]
 
 physics.analyzers.caloskimE.SelectEvents: [ runprod ]
