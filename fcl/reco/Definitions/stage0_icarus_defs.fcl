@@ -201,14 +201,20 @@ icarus_stage0_multiTPC_TPC:         [ decon1droi,
                                       roifinder1d
                                     ]
 
-icarus_stage0_multiTPC_2d_TPC:      [ decon1droi,
+icarus_stage0_multiTPC_2d_TPC_init_E:[ decon1droi,
                                       roifinder1d,
                                       decon2droiEE,
-                                      decon2droiEW,
+                                      decon2droiEW
+                                    ]
+
+icarus_stage0_multiTPC_2d_TPC_finish_W:[ 
                                       decon2droiWE,
                                       decon2droiWW,
                                       roifinder2d
                                     ]
+
+icarus_stage0_multiTPC_2d_TPC: [@sequence::icarus_stage0_multiTPC_2d_TPC_init_E, @sequence::icarus_stage0_multiTPC_2d_TPC_finish_W]
+
 
 icarus_stage0_EastHits_TPC:         [ gaushit1dTPCEW,
                                       gaushit1dTPCEE
@@ -274,6 +280,16 @@ icarus_stage0_2d_multiTPC:          [ @sequence::icarus_stage0_multiTPC_2d_TPC,
                                       @sequence::icarus_stage0_WestHits2d_TPC,
                                       @sequence::icarus_purity_monitor
                                     ]
+
+icarus_stage0_2d_multiTPC_init_E:   [ @sequence::icarus_stage0_multiTPC_2d_TPC_init_E]
+icarus_stage0_2d_multiTPC_finish_W: [ @sequence::icarus_stage0_multiTPC_2d_TPC_finish_W,
+                                      @sequence::icarus_stage0_EastHits_TPC,
+                                      @sequence::icarus_stage0_WestHits_TPC,
+                                      @sequence::icarus_stage0_EastHits2d_TPC,
+                                      @sequence::icarus_stage0_WestHits2d_TPC,
+                                      @sequence::icarus_purity_monitor
+                                    ]
+ 
  
 icarus_stage0_CRT:                  [
                                       daqCRT,
@@ -341,30 +357,44 @@ icarus_stage0_producers.decon2droi.wcls_main.outputers:                         
 icarus_stage0_producers.decon2droi.wcls_main.params.raw_input_label:                           "daqTPC"
 icarus_stage0_producers.decon2droi.wcls_main.params.tpc_volume_label:                          0
 icarus_stage0_producers.decon2droi.wcls_main.params.signal_output_form:                        "dense"
+icarus_stage0_producers.decon2droi.wcls_main.logsinks: ["stdout"]
+icarus_stage0_producers.decon2droi.wcls_main.loglevels: ["debug", "pgraph:info"]
 
 icarus_stage0_producers.decon2droiEE.wcls_main.inputers:                                       ["wclsRawFrameSource:rfsrc0"]
 icarus_stage0_producers.decon2droiEE.wcls_main.outputers:                                      ["wclsFrameSaver:spsaver0"]
 icarus_stage0_producers.decon2droiEE.wcls_main.params.raw_input_label:                         "daqTPCROI:PHYSCRATEDATATPCEE"
 icarus_stage0_producers.decon2droiEE.wcls_main.params.tpc_volume_label:                        0
 icarus_stage0_producers.decon2droiEE.wcls_main.params.signal_output_form:                      "dense"
+icarus_stage0_producers.decon2droiEE.wcls_main.logsinks: ["stdout"]
+icarus_stage0_producers.decon2droiEE.wcls_main.loglevels: ["debug", "pgraph:info"]
+icarus_stage0_producers.decon2droiEE.wcls_main.plugins: [@sequence::icarus_stage0_producers.decon2droiEE.wcls_main.plugins, "WireCellHio"]
 
 icarus_stage0_producers.decon2droiEW.wcls_main.inputers:                                       ["wclsRawFrameSource:rfsrc1"]
 icarus_stage0_producers.decon2droiEW.wcls_main.outputers:                                      ["wclsFrameSaver:spsaver1"]
 icarus_stage0_producers.decon2droiEW.wcls_main.params.raw_input_label:                         "daqTPCROI:PHYSCRATEDATATPCEW"
 icarus_stage0_producers.decon2droiEW.wcls_main.params.tpc_volume_label:                        1
 icarus_stage0_producers.decon2droiEW.wcls_main.params.signal_output_form:                      "dense"
+icarus_stage0_producers.decon2droiEW.wcls_main.logsinks: ["stdout"]
+icarus_stage0_producers.decon2droiEW.wcls_main.loglevels: ["debug", "pgraph:info"]
+icarus_stage0_producers.decon2droiEW.wcls_main.plugins: [@sequence::icarus_stage0_producers.decon2droiEW.wcls_main.plugins, "WireCellHio"]
 
 icarus_stage0_producers.decon2droiWE.wcls_main.inputers:                                       ["wclsRawFrameSource:rfsrc2"]
 icarus_stage0_producers.decon2droiWE.wcls_main.outputers:                                      ["wclsFrameSaver:spsaver2"]
 icarus_stage0_producers.decon2droiWE.wcls_main.params.raw_input_label:                         "daqTPCROI:PHYSCRATEDATATPCWE"
 icarus_stage0_producers.decon2droiWE.wcls_main.params.tpc_volume_label:                        2
 icarus_stage0_producers.decon2droiWE.wcls_main.params.signal_output_form:                      "dense"
+icarus_stage0_producers.decon2droiWE.wcls_main.logsinks: ["stdout"]
+icarus_stage0_producers.decon2droiWE.wcls_main.loglevels: ["debug", "pgraph:info"]
+icarus_stage0_producers.decon2droiWE.wcls_main.plugins: [@sequence::icarus_stage0_producers.decon2droiWE.wcls_main.plugins, "WireCellHio"]
 
 icarus_stage0_producers.decon2droiWW.wcls_main.inputers:                                       ["wclsRawFrameSource:rfsrc3"]
 icarus_stage0_producers.decon2droiWW.wcls_main.outputers:                                      ["wclsFrameSaver:spsaver3"]
 icarus_stage0_producers.decon2droiWW.wcls_main.params.raw_input_label:                         "daqTPCROI:PHYSCRATEDATATPCWW"
 icarus_stage0_producers.decon2droiWW.wcls_main.params.tpc_volume_label:                        3
 icarus_stage0_producers.decon2droiWW.wcls_main.params.signal_output_form:                      "dense"
+icarus_stage0_producers.decon2droiWW.wcls_main.logsinks: ["stdout"]
+icarus_stage0_producers.decon2droiWW.wcls_main.loglevels: ["debug", "pgraph:info"]
+icarus_stage0_producers.decon2droiWW.wcls_main.plugins: [@sequence::icarus_stage0_producers.decon2droiWW.wcls_main.plugins, "WireCellHio"]
 
 ### Set up to output ROIs from full waveforms
 icarus_stage0_producers.roifinder1d.WireModuleLabelVec:                                        ["decon1droi:PHYSCRATEDATATPCWW","decon1droi:PHYSCRATEDATATPCWE","decon1droi:PHYSCRATEDATATPCEW","decon1droi:PHYSCRATEDATATPCEE"]

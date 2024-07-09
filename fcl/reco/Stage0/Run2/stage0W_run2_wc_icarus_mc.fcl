@@ -1,0 +1,6 @@
+#include "stage0_run2_wc_icarus_mc.fcl"
+
+# Run the West 2D deconv and finish TPC stage0
+physics.path: [@sequence::icarus_stage0_2d_multiTPC_finish_W]
+
+process_name: MCstage0W
