@@ -4,7 +4,7 @@ standard_hitttreemaker:
 {
   plugin_type: "HitTTreeMaker"
   Label: "gaushit1dTPCEE"
-  Process: "MCstage0Var"
+  Process: "MCStage0Var"
 }
 
 END_PROLOG

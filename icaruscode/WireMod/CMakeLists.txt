@@ -207,4 +207,4 @@ simple_plugin(WireModifier "module"
 install_headers()
 install_fhicl()
 install_source()
-
+install(FILES wiremod_ratio_hists_withXCorr.root DESTINATION root)
