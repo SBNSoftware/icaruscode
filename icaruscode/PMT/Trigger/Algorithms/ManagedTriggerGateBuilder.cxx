@@ -25,6 +25,8 @@ icarus::trigger::ManagedTriggerGateBuilder::ManagedTriggerGateBuilder
   (Config const& config)
   : Base_t{ config.baseConfig() }
   , fPolarity{ config.Polarity() }
+  , fSamplePrescale(std::max(config.SamplePrescale(), std::size_t{ 1 }))
+  , fSampleOffset(config.SampleOffset())
 {
   //
   // configuration check

@@ -4,6 +4,7 @@
  * @author Gianluca Petrillo (petrillo@slac.stanford.edu)
  * @date   April 1, 2019
  * @see    `icaruscode/PMT/Trigger/Algorithms/ManagedTriggerGateBuilder.h`
+ *         `icaruscode/PMT/Trigger/Algorithms/ManagedTriggerGateBuilder.cxx`
  * 
  */
 
@@ -227,7 +228,10 @@ void icarus::trigger::ManagedTriggerGateBuilder::buildChannelGates(
     if (!channelThresholds().empty())
       ppUpperThreshold = channelThresholds().begin(); // std::optional behavior
     
-    for (auto iSample: util::counter<std::ptrdiff_t>(waveform.size())) {
+    std::ptrdiff_t const sStart = fSampleOffset;
+    std::ptrdiff_t const sStep = fSamplePrescale;
+    std::ptrdiff_t const sEnd = waveform.size();
+    for (std::ptrdiff_t iSample = sStart; iSample < sEnd; iSample += sStep) {
       
       // baseline subtraction is always a subtraction (as in "A minus B"),
       // regardless the polarity of the waveform
