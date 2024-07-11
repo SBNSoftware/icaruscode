@@ -38,3 +38,31 @@ void icarus::trigger::FixedTriggerGateBuilder::setup
 
 
 //------------------------------------------------------------------------------
+void icarus::trigger::FixedTriggerGateBuilder::doDumpConfiguration(
+  std::ostream& out,
+  std::string const& indent, std::string const& firstIndent
+) const {
+  
+  dumpLocalConfiguration(out, indent, firstIndent);
+  Base_t::doDumpConfiguration(out, indent, "\n" + indent);
+  
+} // icarus::trigger::FixedTriggerGateBuilder::doDumpConfiguration()
+
+
+//------------------------------------------------------------------------------
+void icarus::trigger::FixedTriggerGateBuilder::dumpLocalConfiguration(
+  std::ostream& out,
+  std::string const& indent, std::string const& firstIndent
+) const {
+  
+  out << firstIndent << " * algorithm: FixedTriggerGateBuilder"
+    << "\n" << indent << " * open a " << fGateDuration
+      << " gate at threshold crossing"
+    << "\n" << indent << " * if a crossing happens in while the gate is open, "
+      << (fExtendGate? "extend the gate": "ignore it")
+    ;
+  
+} // icarus::trigger::FixedTriggerGateBuilder::dumpLocalConfiguration()
+
+
+//------------------------------------------------------------------------------

@@ -102,6 +102,23 @@ class icarus::trigger::DynamicTriggerGateBuilder
     { return unifiedBuild(DynamicGateManager(), waveforms); }
   
   
+  /// Prints the class configuration.
+  /// 
+  /// Assumes the start of a new line and does not break the last one.
+  virtual void doDumpConfiguration(
+    std::ostream& out,
+    std::string const& indent, std::string const& firstIndent
+    ) const override;
+  
+  /// Prints the algorithm-specific configuration.
+  ///
+  /// Assumes the start of a new line and does not break the last one.
+  void dumpLocalConfiguration(
+    std::ostream& out,
+    std::string const& indent, std::string const& firstIndent
+    ) const;
+  
+  
 }; // class icarus::trigger::DynamicTriggerGateBuilder
 
 

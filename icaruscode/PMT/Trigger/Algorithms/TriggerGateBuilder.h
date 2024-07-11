@@ -31,6 +31,7 @@
 #include "fhiclcpp/types/Sequence.h"
 
 // C/C++ standard libraries
+#include <iosfwd> // std::ostream
 #include <vector>
 #include <algorithm> // std::count_if()
 #include <functional> // std::mem_fn()
@@ -198,6 +199,22 @@ class icarus::trigger::TriggerGateBuilder {
   optical_tick timeStampToOpticalTick(raw::TimeStamp_t time) const;
 
   
+  //@{
+  /// Prints the configuration in a human-readable way.
+  ///
+  /// Assumes the start of a new line and does not break the last one.
+  std::ostream& dumpConfiguration(
+    std::ostream& out,
+    std::string const& indent, std::string const& firstIndent
+    ) const
+    { doDumpConfiguration(out, indent, firstIndent); return out; }
+  
+  std::ostream& dumpConfiguration
+    (std::ostream& out, std::string const& indent = "") const
+    { return dumpConfiguration(out, indent, indent); }
+  //@}
+  
+  
   /// Returns whether `channel` is valid.
   static constexpr bool isValidChannel(Channel_t channel)
     { return channel != InvalidChannel; }
@@ -299,6 +316,23 @@ class icarus::trigger::TriggerGateBuilder {
   /// Sets all thresholds anew.
   virtual void doSetThresholds(std::vector<ADCCounts_t> const& thresholds)
     { fChannelThresholds = thresholds; }
+  
+  
+  /// Prints the class configuration.
+  /// 
+  /// Assumes the start of a new line and does not break the last one.
+  virtual void doDumpConfiguration(
+    std::ostream& out,
+    std::string const& indent, std::string const& firstIndent
+    ) const;
+  
+  /// Prints the base class configuration.
+  ///
+  /// Assumes the start of a new line and does not break the last one.
+  void dumpLocalConfiguration(
+    std::ostream& out,
+    std::string const& indent, std::string const& firstIndent
+    ) const;
   
     private:
   

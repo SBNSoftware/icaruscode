@@ -53,6 +53,7 @@
 #include "fhiclcpp/ParameterSet.h"
 
 // C/C++ standard libraries
+#include <sstream>
 #include <map>
 #include <optional>
 #include <vector>
@@ -403,7 +404,11 @@ class icarus::trigger::DiscriminatePMTwaveformsByChannel: public art::EDProducer
   
   /// Prints the current thresholds to the message logger.
   template <typename Logger = mf::LogInfo>
-  void printCurrentThresholdsAndBaselines() const;
+  void printCurrentThresholdsAndBaselines(Logger& log) const;
+  
+  /// Prints the current thresholds to the message logger.
+  void printCurrentThresholdsAndBaselines() const
+    { mf::LogInfo l{ fLogCategory }; printCurrentThresholdsAndBaselines(l); }
   
   // --- END Algorithms --------------------------------------------------------
   
@@ -524,7 +529,7 @@ icarus::trigger::DiscriminatePMTwaveformsByChannel::DiscriminatePMTwaveformsByCh
   
   refreshCurrentThresholds();
   refreshCurrentBaselines();
-  if (!fThresholdsFromPMTconfig) printCurrentThresholdsAndBaselines();
+  
   
   //
   // declaration of input
@@ -548,6 +553,20 @@ icarus::trigger::DiscriminatePMTwaveformsByChannel::DiscriminatePMTwaveformsByCh
       (fOutputInstanceName);
     produces<art::Assns<sbn::OpDetWaveformMeta, TriggerGateData_t>>
       (fOutputInstanceName);
+  }
+  
+  //
+  // configuration dump
+  //
+  
+  {
+    mf::LogInfo log { fLogCategory };
+    if (!fThresholdsFromPMTconfig) printCurrentThresholdsAndBaselines(log);
+    log << "Algorithm configuration:\n";
+    std::ostringstream sstr;
+    fTriggerGateBuilder->dumpConfiguration(sstr, /* indent */ "  ");
+    log << sstr.str().c_str() // C strings are treated special (and faster)
+      << "\nDiscrimination thresholds will be overwritten with DAQ values.";
   }
   
 } // icarus::trigger::DiscriminatePMTwaveformsByChannel::DiscriminatePMTwaveformsByChannel()
@@ -890,9 +909,8 @@ icarus::trigger::DiscriminatePMTwaveformsByChannel::refreshCurrentBaselines()
 template <typename Logger /* mf::LogInfo */>
 void
 icarus::trigger::DiscriminatePMTwaveformsByChannel::printCurrentThresholdsAndBaselines
-  () const
+  (Logger& log) const
 {
-  Logger log { fLogCategory };
   
   auto const printSourceTag = [&log](Source_t source)
     {

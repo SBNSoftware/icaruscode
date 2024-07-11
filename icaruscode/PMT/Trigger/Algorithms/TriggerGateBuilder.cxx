@@ -23,6 +23,7 @@
 #include "cetlib_except/exception.h"
 
 // C/C++ standard libraries
+#include <ostream>
 #include <algorithm> // std::lower_bound(), std::transform()
 #include <cctype> // std::isblank()
 #include <iterator> // std::back_inserter()
@@ -160,6 +161,31 @@ auto icarus::trigger::TriggerGateBuilder::prepareAllGates() const
   return allGates;
   
 } // icarus::trigger::TriggerGateBuilder::prepareAllGates()
+
+
+//------------------------------------------------------------------------------
+void icarus::trigger::TriggerGateBuilder::doDumpConfiguration(
+  std::ostream& out,
+  std::string const& indent, std::string const& firstIndent
+) const {
+  
+  dumpLocalConfiguration(out, indent, firstIndent);
+  
+} // icarus::trigger::TriggerGateBuilder::doDumpConfiguration()
+
+
+//------------------------------------------------------------------------------
+void icarus::trigger::TriggerGateBuilder::dumpLocalConfiguration(
+  std::ostream& out,
+  std::string const& indent, std::string const& firstIndent
+) const {
+  
+  out << firstIndent << " * configured " << fChannelThresholds.size()
+    << " discrimination thresholds:";
+  for (ADCCounts_t const thr: fChannelThresholds)
+    out << " " << thr;
+  
+} // icarus::trigger::TriggerGateBuilder::dumpLocalConfiguration()
 
 
 //------------------------------------------------------------------------------

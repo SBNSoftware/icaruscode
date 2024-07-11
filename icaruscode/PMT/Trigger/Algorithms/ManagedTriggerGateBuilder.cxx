@@ -48,3 +48,36 @@ icarus::trigger::ManagedTriggerGateBuilder::ManagedTriggerGateBuilder
 
 
 //------------------------------------------------------------------------------
+void icarus::trigger::ManagedTriggerGateBuilder::doDumpConfiguration(
+  std::ostream& out,
+  std::string const& indent, std::string const& firstIndent
+) const {
+  
+  Base_t::doDumpConfiguration(out, indent, firstIndent);
+  dumpLocalConfiguration(out, indent, indent);
+  
+} // icarus::trigger::ManagedTriggerGateBuilder::doDumpConfiguration()
+
+
+//------------------------------------------------------------------------------
+void icarus::trigger::ManagedTriggerGateBuilder::dumpLocalConfiguration(
+  std::ostream& out,
+  std::string const& indent, std::string const& firstIndent
+) const {
+  
+  out << firstIndent << " * signal polarity: "
+    << util::StandardSelectorFor<util::SignalPolarity>{}.get(fPolarity).name();
+
+  if (fSamplePrescale > 1) {
+    out << '\n' << indent
+      << " * use only one out of " << fSamplePrescale << " samples";
+  }
+  if (fSampleOffset > 0) {
+    out << '\n' << indent
+      << " * skip the first " << fSampleOffset << " samples of each waveform";
+  }
+  
+} // icarus::trigger::ManagedTriggerGateBuilder::dumpLocalConfiguration()
+
+
+//------------------------------------------------------------------------------
