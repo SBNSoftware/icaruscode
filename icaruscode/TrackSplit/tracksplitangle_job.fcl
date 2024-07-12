@@ -1,0 +1,34 @@
+#include "services_common_icarus.fcl"
+#include "TrackSplitAngle.fcl"
+
+process_name: TrackSplitAngle
+
+services:
+{
+  @table::icarus_basic_services
+  TFileService: { fileName: "TrackSplitAngle_hist.root" closeFileFast: false }
+  message: @local::icarus_message_services_interactive_debug
+}
+
+outputs:
+{
+  trackanglesplit:
+  {
+    module_type: RootOutput
+    fileName: "TrackSplitAngle_out.root"
+    results:
+    {
+      producers:
+      {
+        tracksE: {@table::tracksplitangle_East}
+        tracksW: {@table::tracksplitangle_West}
+      }
+      rpPath: [tracksE, tracksW]
+    }
+  }
+}
+
+physics:
+{
+  stream1: [trackanglesplit]
+}
