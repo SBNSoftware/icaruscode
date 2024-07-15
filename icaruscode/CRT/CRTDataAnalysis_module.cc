@@ -661,7 +661,7 @@ namespace crt {
                 }
              }
 	  } else if (fHitSubSys==2){
-             std::cout<<"When filling HitTree found a hit with subSys = 2 aka Bottom Hit."<<'\n';
+             //std::cout<<"When filling HitTree found a hit with subSys = 2 aka Bottom Hit."<<'\n';
 	     std::map<uint8_t, std::vector<std::pair<int,float>>>::const_iterator it;
 	     for (it = hit.pesmap.begin(); it!=hit.pesmap.end();it++){
 		std::vector<std::pair<int,float>> thisHit = it->second;

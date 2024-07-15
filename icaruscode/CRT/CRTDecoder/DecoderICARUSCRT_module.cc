@@ -663,18 +663,18 @@ for(const auto& trigger: *triggers)
           //int bottomAdc[32];
           data.fMac5 = trigger.Channel()+93;
           data.fTs0 = trigger.Timestamp();	 
-          std::cout << "Timestamp(t0): " << trigger.Timestamp() << '\n';        
-          std::cout << "Physical module number: " << trigger.Channel() << '\n';        
-          std::cout << "Modified module number: " << trigger.Channel()+93 << '\n'; 
+          //std::cout << "Timestamp(t0): " << trigger.Timestamp() << '\n';        
+          //std::cout << "Physical module number: " << trigger.Channel() << '\n';        
+          //std::cout << "Modified module number: " << trigger.Channel()+93 << '\n'; 
 	  //std::cout << "Number of elements in trigger.Hits(): " << trigger.Hits().size() << std::endl;
-          std::cout << "Start of ADC values: " << '\n';        
+          //std::cout << "Start of ADC values: " << '\n';        
           for(const auto& hit: trigger.Hits()){
 	    //uncomment to reset the channel adc value array to 0's in between each hit.
 	    //for (int i = 0; i<64;i++){
 	    //data.fAdc[i] = 0;
 	    //}
-            std::cout<<"Channel: "<<hit.Channel(); 
-            std::cout<<"  ADC: "<<hit.ADC()<<'\n';
+            //std::cout<<"Channel: "<<hit.Channel(); 
+            //std::cout<<"  ADC: "<<hit.ADC()<<'\n';
 	    data.fAdc[hit.Channel()-1] = hit.ADC();
             bottomCount++;          
             totalCount++;   
@@ -725,10 +725,10 @@ evt.put(std::move(crtdata));
 
 
 //Testing counts
-  std::cout<<"Hit counts for each subdetector. Total count: "<<totalCount<<'\n';
-  std::cout<<"Top count: "<<topCount<<'\n';
-  std::cout<<"Side count: "<<sideCount<<'\n';
-  std::cout<<"Bottom count: "<<bottomCount<<'\n';
+  //std::cout<<"Hit counts for each subdetector. Total count: "<<totalCount<<'\n';
+  //std::cout<<"Top count: "<<topCount<<'\n';
+  //std::cout<<"Side count: "<<sideCount<<'\n';
+  //std::cout<<"Bottom count: "<<bottomCount<<'\n';
 }//End of produce
 
 DEFINE_ART_MODULE(crt::DecoderICARUSCRT)

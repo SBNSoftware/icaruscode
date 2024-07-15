@@ -561,19 +561,25 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeBottomHit(art::Ptr<CRTData> data) {
     nabove++;
     int adsid = fCrtutils.ChannelToAuxDetSensitiveID(mac, chan);
     petot += pe;
+    //std::cout<<"petot cumulative: "<<petot<<'\n';
     pesmap[static_cast<int>(mac)].push_back(std::make_pair(chan, pe));
     
     //Debug print outs
+    /*
     std::cout << "mac = " << static_cast<int>(mac) 
               << ", chan = " << chan 
               << ", adc value = " << data->fAdc[chan] 
               << ", pe = " << pe 
               << ", adsid = " << adsid 
               << std::endl;
-
+    */
     TVector3 postmp = fCrtutils.ChanToLocalCoords(mac, chan);
+    TVector3 postmpW = fCrtutils.ChanToWorldCoords(mac, chan);
     // all strips along z-direction
+    //std::cout << "ChanToLocalCoords...X: "<<postmp.X()<<"  Y: "<<postmp.Y()<<"  Z: "<<postmp.Z()<<'\n';
+    //std::cout << "ChanToWorldCoords...X: "<<postmpW.X()<<"  Y: "<<postmpW.Y()<<"  Z: "<<postmpW.Z()<<'\n';
     hitpos.SetX(pe * postmp.X() + hitpos.X());
+    //std::cout << "hitPosX before petot weight: "<<hitpos.X()<<'\n';
     if (postmp.X() < xmin) xmin = postmp.X();
     if (postmp.X() > xmax) xmax = postmp.X();
 
@@ -590,14 +596,15 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeBottomHit(art::Ptr<CRTData> data) {
   return FillCRTHit({}, {}, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, "");
   }
   hitpos *= 1.0 / petot;  // hit position weighted by deposited charge
+  //std::cout << "hitPosX after petot weight: "<<hitpos.X()<<'\n';
   geo::AuxDetGeo::LocalPoint_t const hitlocal{hitpos.X(), 0., 0.};
 
   auto const& adsGeo = adGeo.SensitiveVolume(adsid_max);  // trigger strip
   //For Bottom cable delays and adjustments are made inside of the fragment generator.
   uint64_t thit = data->fTs0;// - adsGeo.HalfLength() * fPropDelay;
   Long64_t thit1; //Full timestamps for bottom needs ot be checked to add any offsets if more are required.
-  if (fData) thit1 = data->fTs0;// - adsGeo.HalfLength() * fPropDelay; // this should probably be revisited, but we dont currently reconstruct bottom CRT entries anyway
-  else thit1 = data->fTs0;// - fGlobalT0Offset;
+  if (fData) thit1 = data->fTs0-fGlobalT0Offset;// - adsGeo.HalfLength() * fPropDelay; // this should probably be revisited, but we dont currently reconstruct bottom CRT entries anyway
+  else thit1 = data->fTs0-fGlobalT0Offset;
   auto const hitpoint =
       adGeo.toWorldCoords(hitlocal);  // tranform from module to world coords
 
@@ -610,7 +617,8 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeBottomHit(art::Ptr<CRTData> data) {
                           hitpoint.Z(), hitpointerr[2], region);
 
 
-    // Print the pesmap for debugging
+    // Print for debugging
+    /*
     for (const auto& entry : pesmap) {
         uint8_t mac = entry.first;
         const auto& vec = entry.second;
@@ -622,11 +630,16 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeBottomHit(art::Ptr<CRTData> data) {
             std::cout << "  Channel: " << chan << ", PE: " << pe << std::endl;
         }
     }
+    std::cout<< "Bottom x pos (hitpoint): " << hitpoint.X() <<'\n';
+    std::cout<< "Bottom y pos (hitpoint): " << hitpoint.Y() <<'\n';
+    std::cout<< "Bottom z pos (hitpoint): " << hitpoint.Z() <<'\n';
     std::cout<< "Bottom x error: " << hitpointerr[0] <<'\n';
     std::cout<< "Bottom y error: " << hitpointerr[1] <<'\n';
     std::cout<< "Bottom z error: " << hitpointerr[2] <<'\n';
     std::cout<< "Bottom t0 (data->fTs0): " << thit <<'\n';
     std::cout<< "Bottom t1 (data->fTs0): " << thit1 <<'\n';
+    std::cout<< "Bottom petot: " << petot <<'\n';
+    */
   return hit;
 
 }  // CRTHitRecoAlg::MakeBottomHit
