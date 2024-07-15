@@ -435,7 +435,7 @@ namespace crt {
     fCRTPMTNtuple->Branch("topCRTAfter", &fNtopCRTAfter);
     fCRTPMTNtuple->Branch("sideCRTBefore", &fNsideCRTBefore);
     fCRTPMTNtuple->Branch("sideCRTAfter", &fNsideCRTAfter);
-}
+  }
   
   void CRTDataAnalysis::beginRun(const art::Run&)
   {
@@ -572,11 +572,11 @@ namespace crt {
     bool isCRTHit = event.getByLabel(fCRTHitProducerLabel, crtHitHandle);
     std::vector<int> ids;
     fNHit = 0;
-    if (isCRTHit) {
+    if (isCRTHit){
       
-       mf::LogError("CRTDataAnalysis") << "looping over reco hits..." << std::endl;
+      mf::LogError("CRTDataAnalysis") << "looping over reco hits..." << std::endl;
       for ( auto const& hit : *crtHitHandle )
-        {
+	{
 	  fNHit++;
 	  fHitEvent = fEvent;
 	  fXHit    = hit.x_pos;
@@ -587,7 +587,7 @@ namespace crt {
 	  fZErrHit = hit.z_err;
 	  fT0Hit   = hit.ts0_ns;
 	  fT1Hit   = hit.ts1_ns;
-	   
+	  
 	  fNHitFeb  = hit.feb_id.size();
 	  fHitTotPe = hit.peshit;
 	  int mactmp = hit.feb_id[0];
@@ -598,8 +598,9 @@ namespace crt {
 	  std::fill( std::begin( fHitMac ), std::end( fHitChan ), -1 );
 	  m_gate_crt_diff = m_gate_start_timestamp - hit.ts0_ns;
 	  m_crt_global_trigger = hit.ts0_ns - hit.ts1_ns;
-	  m_crtGT_trig_diff = m_crt_global_trigger - (m_trigger_timestamp%1'000'000'000);//'''						      
+	  m_crtGT_trig_diff = m_crt_global_trigger - (m_trigger_timestamp%1'000'000'000);//'''
 	  auto ittmp = hit.pesmap.find(mactmp);
+						      
 	  if (ittmp==hit.pesmap.end()) {
 	     mf::LogError("CRTDataAnalysis") << "hitreg: " << fHitReg << std::endl;
 	     mf::LogError("CRTDataAnalysis") << "fHitSubSys: "<< fHitSubSys << std::endl;
@@ -633,16 +634,36 @@ namespace crt {
                    fHitPE[arrpos]=thisHit[k].second;
                    fHitMac[arrpos]=(int)it->first;
 		   fHitChan[arrpos]=thisHit[k].first;
-                }
+		   std::cout << "mac: " << fHitMac[arrpos] << ", chan: " << fHitChan[arrpos] << ", pe(@chan) = " << fHitPE[arrpos] << "\n";
+		}
              }
 	  }
-	  int chantmp = (*ittmp).second[0].first;
+	  std::cout << "mactmp = " << mactmp << ", t0 = " << fT0Hit << "\n";
+						      /*if(ittmp==hit.pesmap.end()){
+	    std::cout << "iterator ittmp is invalid for mac: " << mactmp << "\n";
+	    }
+	  if((*ittmp).second.empty()){
+	    std::cout << " empty vector for mac " << mactmp << "\n";
+	    }*/
+	  if (/*ittmp != yourMap.end() &&*/ !(*ittmp).second.empty()) {
+	    // the vector is not empty
+	    int chantmp = (*ittmp).second[0].first;
+	    std::cout << "mac: " << mactmp << ", chantmp = " << chantmp << ", pe(@chantmp) = " << (*ittmp).second[0].second << "\n";
+	    fHitMod = fCrtutils->MacToAuxDetID(mactmp, chantmp);
+	    fHitStrip = fCrtutils->ChannelToAuxDetSensitiveID(mactmp, chantmp);
+	  } else {
+	    // Handle the case where the vector is empty
+	    std::cerr << "empty vector for mac: " << mactmp << "\n";
+	  }
+						      //int chantmp = (*ittmp).second[0].first;
+						      //	  std::cout << "mac: " << mactmp << ", chantmp = " << chantmp << ", pe(@chantmp) = " << (*ittmp).second[0].second << "\n";
 	  
-	  fHitMod  = fCrtutils->MacToAuxDetID(mactmp, chantmp);
-	  fHitStrip = fCrtutils->ChannelToAuxDetSensitiveID(mactmp, chantmp);
+	  
+						      //fHitMod  = fCrtutils->MacToAuxDetID(mactmp, chantmp);
+						      //fHitStrip = fCrtutils->ChannelToAuxDetSensitiveID(mactmp, chantmp);
 	  
 	  fHitNtuple->Fill();
-       }//for CRT Hits
+      }//for CRT Hits
     }//if CRT Hits
     
     else  mf::LogError("CRTDataAnalysis") << "CRTHit products not found! (expected if decoder step)" << std::endl;

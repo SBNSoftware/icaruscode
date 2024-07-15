@@ -93,7 +93,14 @@ class icarus::crt::CRTHitRecoAlg {
                     float peshit, uint64_t time0, Long64_t time1, int plane,
                     double x, double ex, double y, double ey, double z,
                     double ez, string tagger);
-
+  
+  struct info {
+    uint8_t mac5s;
+    int channel;
+    uint64_t t0;
+    TVector3 pos;
+    int strip;
+  };
  private:
   geo::GeometryCore const* fGeometryService;
 
@@ -135,6 +142,30 @@ class icarus::crt::CRTHitRecoAlg {
   // function to appply appropriate prop delay for Side full vs cut modules
   // (North and South walls are cut modules)
   int64_t RegionDelay(std::string const& region) const;
+  void groupByLayer(const std::vector<uint8_t>& layer, 
+				    std::unordered_map<int, std::pair<uint8_t, 
+				    uint8_t>>& layer_map, const char* layer_name);
+
+  void processChannel(int chan, uint8_t mac, art::Ptr<CRTData> data, std::vector<info>& information, 
+		      float& petot, map<uint8_t, vector<pair<int, float>>>& pesmap, 
+		      TVector3& hitpos, int& nx, int& ny, int& nz, 
+		      //double& xmin, double& xmax, double& ymin, double& ymax, double& zmin, double& zmax,
+		      int& adsid_max, float& pemax, TVector3& postrig);
+  void recoZwithTiming(uint8_t mac1, uint8_t mac2, uint64_t t0_1, uint64_t t0_2, float fPropDelay, float& zpos, bool& is_deltaT_over50ns);
+  int checkNextModID(std::unordered_map<int,std::pair<uint8_t,uint8_t>> layer_map, int i, const std::vector<info>& information);
+  void recoZwithPE(uint8_t mac1, uint8_t mac2, map<uint8_t, vector<pair<int, float>>> tpesmap, float& zpos); // just for fun 
+  //void checkNextModID(std::unordered_map<int,std::pair<uint8_t,uint8_t>> layer_map, int i, const std::vector<info>& information, int index);
+  //void processInformation(const std::vector<info>& information, fGeometryService& adGeo, int fVerbose, bool& layer, uint64_t& t1, uint64_t& t2, TVector3& pos, float fPropDelay);
+  //void processHitInformation(const std::vector<info>& informationA, const std::vector<info>& informationB, CRTGeo& adGeo, int fVerbose, bool& layer1, uint64_t& t1_1, uint64_t& t1_2, TVector3& posA, bool& layer2, uint64_t& t2_1, uint64_t& t2_2, TVector3& posB, float fPropDelay);
+
+  /*void processChannels(int mac, int adid, int i, const std::string& layer, 
+		       std::unordered_map<int, std::pair<uint8_t, uint8_t>>& layer_map,
+		       std::vector<uint8_t>& layer_data, std::vector<info>& information);
+
+  void processLayerData(int i, std::vector<uint8_t>& layerA, std::vector<uint8_t>& layerB, int adid, 
+			std::unordered_map<int, std::pair<uint8_t, uint8_t>>& layer1_map,
+			std::unordered_map<int, std::pair<uint8_t, uint8_t>>& layer2_map,
+			std::vector<info>& informationA, std::vector<info>& informationB);*/
 
   std::map<uint8_t, int32_t> FEB_T1delay_side;  //<mac5, delay in ns>
   std::map<uint8_t, int32_t> FEB_T0delay_side;  //<mac5, delay in ns>
