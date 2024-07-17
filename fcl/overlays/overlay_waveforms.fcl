@@ -1,0 +1,105 @@
+###
+## This fhicl file is used to run "stage0" processing specifically for the case where all
+## TPC data is included in an artdaq data product from a single instance
+##
+#include "stage0_icarus_mc_defs.fcl"
+#include "stage0_icarus_driver_common.fcl"
+
+process_name: Overlay
+
+## Add the MC module to the list of producers
+physics.producers: {
+		      crthit: @local::standard_crtsimhitproducer
+		      overlayTPCRawEE:
+		      {
+		        module_type: "OverlayProducts"
+			TPCOverlayRaw: true
+			TPCOverlayHits: false
+			TPCHitsWireAssn: false
+			TPCOverlayROI: false
+                        PMTOverlayRaw: false
+                        PMTOverlayHits: false
+                        CRTOverlayHits: false
+			TPCRawInputLabels: ["daqTPCROI:PHYSCRATEDATATPCEERAW", "daq:TPCEE"]
+		      }
+		      overlayTPCRawEW:
+                      {
+                        module_type: "OverlayProducts"
+                        TPCOverlayRaw: true
+                        TPCOverlayHits: false
+			TPCHitsWireAssn: false
+			TPCOverlayROI: false
+                        PMTOverlayRaw: false
+                        PMTOverlayHits:	false
+                        CRTOverlayHits: false
+			TPCRawInputLabels: ["daqTPCROI:PHYSCRATEDATATPCEWRAW", "daq:TPCEW"]
+                      }
+		      overlayTPCRawWE:
+                      {
+                        module_type: "OverlayProducts"
+                        TPCOverlayRaw: true
+                        TPCOverlayHits: false
+			TPCHitsWireAssn: false
+			TPCOverlayROI: false
+                        PMTOverlayRaw: false
+                        PMTOverlayHits:	false
+                        CRTOverlayHits: false
+                        TPCRawInputLabels: ["daqTPCROI:PHYSCRATEDATATPCWERAW", "daq:TPCWE"]
+                      }
+		      overlayTPCRawWW:
+                      {
+                        module_type: "OverlayProducts"
+                        TPCOverlayRaw: true
+                        TPCOverlayHits: false
+			TPCHitsWireAssn: false
+			TPCOverlayROI: false
+                        PMTOverlayRaw: false
+                        PMTOverlayHits:	false
+                        CRTOverlayHits: false
+			TPCRawInputLabels: ["daqTPCROI:PHYSCRATEDATATPCWWRAW", "daq:TPCWW"]
+                      }
+
+		      overlayOpWaveforms:
+                      {
+                        module_type: "OverlayProducts"
+                        TPCOverlayRaw: false
+                        TPCOverlayHits: false
+                        TPCHitsWireAssn: false
+                        TPCOverlayROI: false
+                        PMTOverlayRaw: true
+                        PMTOverlayHits: false
+                        CRTOverlayHits: false
+                        PMTWaveDataLabel: "daqPMT"
+			PMTWaveSimLabel: "opdaq"
+			PMTWaveBaseLabel: "pmtbaselines"
+                      }
+
+		      overlayCRTHit:
+                      {
+                        module_type: "OverlayProducts"
+                        TPCOverlayRaw: false
+                        TPCOverlayHits:	false
+                        TPCHitsWireAssn: false
+                        TPCOverlayROI: false
+                        PMTOverlayRaw: false
+                        PMTOverlayHits: false
+                        CRTOverlayHits: true
+                        CRTHitInputLabels: ["crthit::stage0","crthit::Overlay"]
+                      }
+                   }
+
+## Use the following to run the full defined stage0 set of modules
+physics.reco: [ crthit, overlayTPCRawWW, overlayTPCRawWE, overlayTPCRawEW, overlayTPCRawEE, overlayOpWaveforms, overlayCRTHit]
+
+## boiler plate...
+physics.outana:        [ ]
+physics.trigger_paths: [ reco ]
+physics.end_paths:     [ outana, streamROOT ]
+
+## Note that for output we hijack the "rootOutput" definition (but change the naming convention to make more generic for MC)
+outputs.rootOutput.fileName: "%ifb_%tc-%p.root"
+outputs.rootOutput.dataTier: "reconstructed"
+outputs.rootOutput.SelectEvents: ["reco"]
+
+# Drop the artdaq format files on output
+outputs.rootOutput.outputCommands: ["keep *_*_*_*","drop *_gaushitTPC*_*_*","drop *_ophit*_*_*","drop *_opflash*_*_*","drop *_crthit*_*_*","drop *_crttrack*_*_*"] #TODO: drop raw waveforms that arent from this module. Keep wf from this module to feed to later stages
