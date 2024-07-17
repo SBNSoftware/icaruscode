@@ -1,0 +1,54 @@
+###
+## This fhicl file is used to run "stage0" processing specifically for the case where all
+## TPC data is included in an artdaq data product from a single instance
+##
+#include "stage0_icarus_mc_defs.fcl"
+#include "stage0_icarus_driver_common.fcl"
+
+process_name: MCstage0
+
+## Add the MC module to the list of producers
+physics.producers: {  @table::icarus_stage0_producers
+                      @table::icarus_stage0_mc_producers
+                   }
+
+## Use the following to run the full defined stage0 set of modules
+physics.path: [   @sequence::icarus_stage0_mc_PMT, 
+                  MCDecodeTPCROI, 
+                  @sequence::icarus_stage0_multiTPC,
+                  @sequence::icarus_stage0_mc_crt
+              ]
+
+## boiler plate...
+physics.outana:        [ purityinfoana0, purityinfoana1 ]
+physics.trigger_paths: [ path ]
+physics.end_paths:     [ outana, streamROOT ]
+
+# Drop data products that are no longer needed, but make sure to keep important items!
+# For example, we need to drop the RawDigits from the detector simulation stage but want to keep the SimChannel info from WireCell...
+outputs.rootOutput.outputCommands: ["keep *_*_*_*", "drop *_daq*_*_*", "drop *_MCDecodeTPCROI_*_*", "drop *_decon1droi_*_*", "drop recob::Wire*_roifinder_*_*", "keep *_daq_simpleSC_*"]
+
+# Set the expected input for ophit
+physics.producers.ophit.InputModule: "opdaq"
+
+# Note the default assumption is that our detector simulation input will come from the WireCell 2D drift simulation, a la 'daq'
+# If we are running the 1D drift simulation we need to switch to using:
+# `physics.producers.MCDecodeTPCROI.FragmentsLabelVec:   ["daq3:PHYSCRATEDATATPCWW","daq2:PHYSCRATEDATATPCWE","daq1:PHYSCRATEDATATPCEW","daq0:PHYSCRATEDATATPCEE"]`
+#
+
+physics.producers.MCDecodeTPCROI.FragmentsLabelVec: ["overlayTPCRawEE", "overlayTPCRawEW", "overlayTPCRawWE", "overlayTPCRawWW"]
+physics.producers.MCDecodeTPCROI.OutInstanceLabelVec: ["PHYSCRATEDATATPCWW", "PHYSCRATEDATATPCWE", "PHYSCRATEDATATPCEW", "PHYSCRATEDATATPCEE"]
+physics.producers.decon1droi.RawDigitLabelVec:        ["MCDecodeTPCROI:PHYSCRATEDATATPCWW","MCDecodeTPCROI:PHYSCRATEDATATPCWE","MCDecodeTPCROI:PHYSCRATEDATATPCEW","MCDecodeTPCROI:PHYSCRATEDATATPCEE"]
+physics.producers.roifinder.WireModuleLabelVec:       ["decon1droi:PHYSCRATEDATATPCWW","decon1droi:PHYSCRATEDATATPCWE","decon1droi:PHYSCRATEDATATPCEW","decon1droi:PHYSCRATEDATATPCEE"]
+
+physics.producers.decon2droiEE.wcls_main.params.raw_input_label:  "MCDecodeTPCROI:PHYSCRATEDATATPCEE"
+physics.producers.decon2droiEW.wcls_main.params.raw_input_label:  "MCDecodeTPCROI:PHYSCRATEDATATPCEW"
+physics.producers.decon2droiWE.wcls_main.params.raw_input_label:  "MCDecodeTPCROI:PHYSCRATEDATATPCWE"
+physics.producers.decon2droiWW.wcls_main.params.raw_input_label:  "MCDecodeTPCROI:PHYSCRATEDATATPCWW"
+
+## Need overrides for the purity monitor
+physics.analyzers.purityinfoana0.SelectEvents: [ path ]
+physics.analyzers.purityinfoana1.SelectEvents: [ path ]
+physics.producers.purityana0.RawModuleLabel:   ["MCDecodeTPCROI:PHYSCRATEDATATPCWW","MCDecodeTPCROI:PHYSCRATEDATATPCWE","MCDecodeTPCROI:PHYSCRATEDATATPCEW","MCDecodeTPCROI:PHYSCRATEDATATPCEE"]
+physics.producers.purityana1.RawModuleLabel:   ["MCDecodeTPCROI:PHYSCRATEDATATPCWW","MCDecodeTPCROI:PHYSCRATEDATATPCWE","MCDecodeTPCROI:PHYSCRATEDATATPCEW","MCDecodeTPCROI:PHYSCRATEDATATPCEE"]
+
