@@ -1,0 +1,48 @@
+###
+## This fhicl file is used to run "stage0" processing specifically for the case where all
+## TPC data is included in an artdaq data product from a single instance
+##
+#include "stage0_icarus_driver_common.fcl"
+
+process_name: stage0
+
+## Define the path we'll execute
+physics.path:     [ "filterdataintegrity",
+      "triggerconfig",
+      "daqTrigger",                # Note sure if we actually need some of these trigger and PMT stuff other than daqPMT... Gianluca?
+      "pmtconfig",
+      "daqPMT",
+      "pmtconfigbaselines",
+      "pmtthr",                    # ???
+      "pmtbaselines",
+      "daqCRT",
+      "crthit",
+      #"crtpmt",                    # Can we run this later: we probably want to, to have the PMT/CRT info for the nu
+      "daqTPCROI" ]
+
+## boiler plate...
+physics.outana:        [ ]
+physics.trigger_paths: [ path ]
+physics.end_paths:     [ outana, streamROOT ]
+
+# Drop the artdaq format files on output, 
+# Drop all output from the TPC decoder stage
+# Drop all output from the 1D deconvolution stage
+# Drop the recob::Wire output from the roifinder (but keep the ChannelROIs)
+# Drop the reconstructed optical hits before the timing correction
+# Drop the PMT waveforms (will keep the ones from daqPMTonbeam)
+# Keep the Trigger fragment
+outputs.rootOutput.outputCommands: [
+    "keep *_*_*_*", 
+    "drop *_*_*_DAQ*",
+    "drop *_ophituncorrected_*_*",
+    #"drop raw::OpDetWaveforms_daqPMT__*",
+    "drop *_decon1droi_*_*", 
+    "drop recob::Wire*_roifinder_*_*",
+    "keep *_daq_ICARUSTriggerV*_*"]
+
+## Modify the event selection for the purity analyzers
+physics.analyzers.purityinfoana0.SelectEvents:    [ path ]
+physics.analyzers.purityinfoana1.SelectEvents:    [ path ]
+
+physics.producers.daqTPCROI.OutputRawWaveform: true
