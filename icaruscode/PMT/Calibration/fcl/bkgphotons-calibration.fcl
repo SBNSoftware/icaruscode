@@ -1,11 +1,11 @@
 #include "services_common_icarus.fcl"
 #include "channelmapping_icarus.fcl"
+
 #include "decoderdefs_icarus.fcl"
-#include "icarus_ophitfinder.fcl"
-#include "icarus_flashfinder.fcl"
-#include "pmt-calibration.fcl"
-#include "icarus_opana_modules.fcl"
 #include "timing_icarus.fcl"
+#include "icarus_ophitfinder.fcl"
+
+#include "pmt-calibration.fcl"
 
 process_name: BkgphotonsCalibration
 
@@ -18,9 +18,6 @@ services:
    IICARUSChannelMap: @local::icarus_channelmappinggservice
    PMTTimingCorrections: @local::icarus_pmttimingservice
 }
-
-services.IICARUSChannelMap.ChannelMappingTool: @local::ChannelMappingPostGres
-
 
 #Look at the input files
 source:
@@ -35,58 +32,40 @@ services.NuRandomService: @erase
 
 physics:
 {
+   producers:
+   {
+      triggerconfig: @local::extractTriggerConfig
+      pmtconfig:     @local::extractPMTconfig
+    
+      daqTrigger:    @local::decodeTriggerAutodetect   
+      daqPMT:        @local::decodePMT
 
-    // now also have something produce the digits and headers
-    producers:
-    {
+      ophituncorrected:  @local::icarus_ophit_data
+   }
 
-        triggerconfig: @local::extractTriggerConfig
+   analyzers: 
+   {
+     bkgcalibration: @local::pmt_bkgphotons_calibration 
+   }
 
-        pmtconfig: @local::extractPMTconfig 
+   my_producer_modules: [ triggerconfig, pmtconfig, daqTrigger, daqPMT, ophituncorrected ]
 
-	    daqTrigger: @local::decodeTriggerV2
+   ana: [ bkgcalibration ]
 
-        daqPMT: @local::decodePMT
-
-        ophit: @local::icarus_ophit_data
-
-        opflashCryoE: @local::ICARUSSimpleFlashDataCryoE
-
-        opflashCryoW: @local::ICARUSSimpleFlashDataCryoW
-
-    }
-
-    analyzers: 
-    {
-	
-        simpleLightAna: @local::ICARUSFlashAssAna
-
-    	bkgcalibration: @local::pmt_bkgphotons_calibration 
-    }
-
-    my_producer_modules: [ triggerconfig, pmtconfig, daqTrigger, daqPMT, ophit, opflashCryoE, opflashCryoW ]
-
-    ana: [ bkgcalibration ]
-
-    end_paths: [ana]
+   end_paths: [ana]
 }
+
+### REQUIRED PRODUCERS ###
+physics.producers.daqTrigger.DecoderTool.Decoders[0].ToolConfig.TrigConfigLabel: triggerconfig
+physics.producers.daqTrigger.DecoderTool.Decoders[1].ToolConfig.TrigConfigLabel: triggerconfig
+physics.producers.daqTrigger.DecoderTool.Decoders[2].ToolConfig.TrigConfigLabel: triggerconfig
+physics.producers.daqPMT.PMTconfigTag: pmtconfig # required
+physics.producers.daqPMT.TriggerTag:   daqTrigger # required
 
 physics.producers.daqPMT.RequireBoardConfig: false
 physics.producers.daqPMT.RequireKnownBoards: false
 
-physics.producers.daqTrigger.DecoderTool.TrigConfigLabel: triggerconfig
-physics.producers.daqPMT.PMTconfigTag: pmtconfig  # required
-physics.producers.daqPMT.TriggerTag:   daqTrigger # required
-
-# workaround for the configurations where the trigger vero is not set
-physics.producers.daqTrigger.DecoderTool.TrigConfigLabel: ""
-physics.producers.triggerconfig.module_type: DummyProducer
-
-
-physics.producers.ophit.PedAlgoPset.PedRangeMax: 18000
-physics.producers.ophit.PedAlgoPset.PedRangeMin: 12000
-
 ## CALIBRATION CONFIGURATION
-physics.analyzers.bkgcalibration.OpHitModule: "ophit" 
-physics.analyzers.bkgcalibration.TriggerModule: "daqTrigger"  
-physics.analyzers.bkgcalibration.FilterInTime: [ -3, 7] #in us 
+physics.analyzers.bkgcalibration.OpHitModule: "ophituncorrected" 
+physics.analyzers.bkgcalibration.TriggerModule: "daqTrigger" 
+physics.analyzers.bkgcalibration.ChannelMask: [  ]  
