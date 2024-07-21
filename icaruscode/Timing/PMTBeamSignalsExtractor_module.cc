@@ -308,6 +308,7 @@ void icarus::timing::PMTBeamSignalsExtractor::produce(art::Event& e)
   extractBeamSignalTime(e, fEWlabel); 
 
   // associating the proper RWM and EW time to each PMT channel
+  // collections are vectors of 360 elements (one value for each channel)
   associateBeamSignalsToChannels( fRWMlabel );
   associateBeamSignalsToChannels( fEWlabel );
   
