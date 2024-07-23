@@ -159,9 +159,6 @@ class opana::ICARUSFlashAssAna : public art::EDAnalyzer {
                         std::vector<double> &pmt_amplitude,
                         TTree *ophittree   ); 
 
-    /// ????
-    static std::string_view firstLine(std::string const& s, const char* endl = "\r");
-
     /// Return RWM-relative time from a trigger-relative time
     float getRWMRelativeTime(int channel, float t);
  
@@ -331,8 +328,8 @@ void opana::ICARUSFlashAssAna::beginJob() {
   fEventTree->Branch("trigger_gate_diff", &m_trigger_gate_diff, "trigger_gate_diff/l");
   fEventTree->Branch("lvdsCryoE", &lvdsCryoE, "lvdsCryoE[2]/l");
   fEventTree->Branch("lvdsCryoW", &lvdsCryoW, "lvdsCryoW[2]/l");
-  fEventTree->Branch("addersCryoE", &addersCryoE, "addersCryoE[2]/l");
-  fEventTree->Branch("addersCryoW", &addersCryoW, "addersCryoW[2]/l");
+  fEventTree->Branch("addersCryoE", &addersCryoE, "addersCryoE[2]/s");
+  fEventTree->Branch("addersCryoW", &addersCryoW, "addersCryoW[2]/s");
   
   // Setting up the WAVEFORM trees (one per product label)
   // This tree will hold some aggregated optical waveform information
@@ -525,7 +522,7 @@ float opana::ICARUSFlashAssAna::getFlashBunchTime(std::vector<double> pmt_start_
   for(size_t i=0; i<pmt_start_time_rwm.size(); i++ ){
   
     int cryo = getSideByChannel(i);
-    float t = pmt_start_time_rwm[i] + pmt_rise_time[i];
+    float t = pmt_start_time_rwm[i] + pmt_rise_time[i]; // rise time w.r.t. rwm
 
     // if RWM is missing for some PMT channels, 
     // it might not be possible to use the first hits (might not have RMW time)
@@ -765,7 +762,7 @@ void opana::ICARUSFlashAssAna::analyze(art::Event const& e) {
           m_wf_start = wave.TimeStamp();
           
           // try using icarus::WaveformBaseline, default to median if not
-          // doesn't work with daqPMTonbeam as order gets messed up, so check size is the same
+          // doesn't work with daqPMTonbeam as order gets messed up, so check if size is the same
           // FIXME: move to use art:Assn which can work both for daqPMT and daqPMTonbeam?
           m_baseline = (fUseSharedBaseline && (baselines.size()==waveforms.size())) ? 
                        baselines.at(idx).baseline() : Median(wave.Waveform()); 
@@ -776,7 +773,9 @@ void opana::ICARUSFlashAssAna::analyze(art::Event const& e) {
           // if required, save the full waveforms as well
           if( fSaveRawWaveforms ) m_wf = wave.Waveform();
 
-          fOpDetWaveformTrees[i]->Fill();    
+          fOpDetWaveformTrees[i]->Fill();   
+          idx++;
+ 
         }
       } else {
         mf::LogWarning("ICARUSFlashAssAna") << "Data product std::vector<raw::OpDetWaveform> for " << wflabel.label()
@@ -799,7 +798,8 @@ void opana::ICARUSFlashAssAna::analyze(art::Event const& e) {
     for ( size_t iFlashLabel=0; iFlashLabel<fFlashLabels.size(); iFlashLabel++  ) {
 
       auto const label = fFlashLabels[iFlashLabel];
-      auto const& flashes = e.getProduct<std::vector<recob::OpFlash>>(label);
+      auto const& flash_handle = e.getValidHandle<std::vector<recob::OpFlash>>(label);
+      auto const& flashes = *flash_handle;
 
       // want our flashes to be valid and not empty
       if( flashes.empty() ) {
@@ -808,7 +808,7 @@ void opana::ICARUSFlashAssAna::analyze(art::Event const& e) {
       }
       else {
 
-        art::FindManyP<recob::OpHit> ophitsPtr( e.getHandle<std::vector<recob::OpFlash>>(label), e, label );
+        art::FindManyP<recob::OpHit> ophitsPtr( flash_handle, e, label );
 
         size_t idx = 0;
         for( auto const& flash : flashes ){
@@ -857,6 +857,7 @@ void opana::ICARUSFlashAssAna::analyze(art::Event const& e) {
           m_pmt_rise_time.clear();
           m_pmt_start_time_rwm.clear();
 
+          idx++;
         }
       }
     } 

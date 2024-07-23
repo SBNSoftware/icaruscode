@@ -104,11 +104,24 @@ ICARUSFlashAssAna: {
     module_type: "ICARUSFlashAssAna"
     TriggerLabel: "daqTrigger"
     DumpWaveformsInfo: true
+    SaveRawWaveforms: false
+    UseSharedBaseline: true
     OpDetWaveformLabels: ["daqPMT"]
+    BaselineLabels: ["pmtbaselines"]
     OpHitLabels: ["ophit"]
     FlashLabels: ["opflashCryoE", "opflashCryoW"]
+    RWMLabel: "RWM"
     PEOpHitThreshold: 0
     Debug: false
+}
+
+ICARUSBeamStructureAna: {
+    module_type: "ICARUSBeamStructureAna"
+    FlashLabels: ["opflashCryoE", "opflashCryoW"]
+    TriggerLabel: "daqTrigger"
+    RWMLabel: "RWM"
+    TriggerConfigLabel: "triggerconfig"
+    CRTPMTMatchingLabel: "crtpmt"
 }
 
 END_PROLOG
