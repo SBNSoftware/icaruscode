@@ -45,11 +45,14 @@ physics:
     
       daqTrigger:    @local::decodeTriggerAutodetect   
       daqPMT:        @local::decodePMT
+      daqCRT:        @local::crtdaq_icarus
+
       ophituncorrected:  @local::icarus_ophit_data
       ophit:             @local::icarus_ophit_timing_correction
       beam:          @local::icarus_beam_signal_extractor
       opflashCryoE: @local::ICARUSSimpleFlashDataCryoE
       opflashCryoW: @local::ICARUSSimpleFlashDataCryoW
+      
       crthit:        @local::standard_crthitproducer
       crtpmt:        @local::standard_crtpmtmatchingproducer
     }
@@ -59,8 +62,7 @@ physics:
       beamana:       @local::ICARUSBeamStructureAna
     }
 
-    my_producers: [ triggerconfig, pmtconfig, daqTrigger, daqPMT, ophituncorrected, ophit, 
-                    beam, opflashCryoE, opflashCryoW, crthit, crtpmt ]
+    my_producers: [ triggerconfig, pmtconfig, daqTrigger, daqPMT, daqCRT, ophituncorrected, ophit, beam, opflashCryoE, opflashCryoW, crthit, crtpmt ]
     my_analyzers: [ beamana ]
 
     trigger_paths: [ my_producers ]
