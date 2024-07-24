@@ -1,0 +1,74 @@
+#######################################################
+# File: run_flashana.fcl
+# Author: Matteo Vicenzi (mvicenzi@bnl.gov)
+# Description:
+# Simple off-the-shelf example to run the light analysis
+# directly from raw files
+
+#include "services_common_icarus.fcl"
+#include "channelmapping_icarus.fcl"
+#include "timing_icarus.fcl"
+#include "timing_beam.fcl"
+
+#include "decoderdefs_icarus.fcl"
+#include "icarus_ophitfinder.fcl"
+#include "icarus_flashfinder.fcl"
+#include "icarus_opana_modules.fcl"
+
+process_name: flashana
+
+services:
+{
+  @table::icarus_art_services    # from services_common_icarus.fcl
+  @table::icarus_basic_services  # from services_basic_icarus.fcl
+  @table::icarus_geometry_services
+  DetectorClocksService:       @local::icarus_detectorclocks
+  IICARUSChannelMap:           @local::icarus_channelmappinggservice
+  IPMTTimingCorrectionService: @local::icarus_pmttimingservice
+  TFileService: { fileName: "supplemental-%ifb-%p.root" }
+}
+
+physics:
+{
+    producers:
+    {
+      triggerconfig: @local::extractTriggerConfig
+      pmtconfig:     @local::extractPMTconfig
+   
+      daqTrigger:    @local::decodeTriggerAutodetect   
+      daqPMT:        @local::decodePMT
+
+      pmtbaselines:  @local::icarus_opreco_pedestal_fromchannel_data  # from icarus_ophitfinder.fcl
+      ophituncorrected:  @local::icarus_ophit_data
+      ophit:             @local::icarus_ophit_timing_correction
+      beam:          @local::icarus_beam_signal_extractor
+      opflashCryoE: @local::ICARUSSimpleFlashDataCryoE
+      opflashCryoW: @local::ICARUSSimpleFlashDataCryoW
+    }
+
+    analyzers:
+    {
+      flashana:     @local::ICARUSFlashAssAna
+    }
+
+    my_producers: [ triggerconfig, pmtconfig, daqTrigger, daqPMT, pmtbaselines, ophituncorrected, ophit, beam, opflashCryoE, opflashCryoW ]
+    my_analyzers: [ flashana ]
+    
+    trigger_paths: [ my_producers ]
+    end_paths: [ my_analyzers ]
+}
+    
+### REQUIRED PRODUCERS ###
+physics.producers.daqTrigger.DecoderTool.Decoders[0].ToolConfig.TrigConfigLabel: triggerconfig
+physics.producers.daqTrigger.DecoderTool.Decoders[1].ToolConfig.TrigConfigLabel: triggerconfig
+physics.producers.daqTrigger.DecoderTool.Decoders[2].ToolConfig.TrigConfigLabel: triggerconfig
+
+physics.producers.daqPMT.PMTconfigTag: pmtconfig # required
+physics.producers.daqPMT.TriggerTag:   daqTrigger # required
+
+physics.producers.ophit.InputLabels:  [ "ophituncorrected" ]
+physics.producers.beam.DebugTrees: false
+
+physics.analyzers.flashana.DumpWaveformsInfo: true
+physics.analyzers.flashana.SaveRawWaveforms: false
+physics.analyzers.flashana.UseSharedBaseline: true

@@ -2,7 +2,7 @@
 
 BEGIN_PROLOG
 
-beam_signal_extractor: 
+icarus_beam_signal_extractor: 
 {
     module_type: "PMTBeamSignalsExtractor"
     TriggerLabel: "daqTrigger"

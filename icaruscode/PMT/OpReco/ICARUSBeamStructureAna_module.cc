@@ -287,8 +287,9 @@ void opana::ICARUSBeamStructureAna::analyze(art::Event const& e)
 
   fRWMTimes = e.getProduct<std::vector<icarus::timing::PMTBeamSignal>>(fRWMLabel);
   if ( fRWMTimes.empty() )
-    mf::LogWarning("ICARUSBeamStructureAna") << "Data product std::vector<icarus::timing::PMTBeamSignal for " << fRWMLabel.label()
-                                        << " is empty in " << m_gate_name << " event!";
+    mf::LogTrace("ICARUSBeamStructureAna") << "Data product std::vector<icarus::timing::PMTBeamSignal> for '" << fRWMLabel.label()
+                                             << "' is empty in " << m_gate_name << " event!";
+  
   // ----
   // FLASH/CRT timing information
 
@@ -353,15 +354,11 @@ void opana::ICARUSBeamStructureAna::analyze(art::Event const& e)
 
 	  auto const & ophits = ophitsPtr.at(idx);
      
-          m_channel_id.resize(360);     
-          m_hit_start_time.resize(360);
-          m_hit_peak_time.resize(360);
-          m_hit_rise_time.resize(360);
-          m_hit_start_time_rwm.resize(360);
-          m_hit_peak_time_rwm.resize(360);
-          m_hit_rise_time_rwm.resize(360);
-          m_hit_pe.resize(360);
-				
+          std::map<int,double> startmap;
+	  std::map<int,double> peakmap;
+	  std::map<int,double> risemap;
+	  std::map<int,double> pemap;
+		
           // loop all hits in the flash: save only the first one
           for ( auto const hit : ophits ){
             
@@ -372,16 +369,34 @@ void opana::ICARUSBeamStructureAna::analyze(art::Event const& e)
 	    double pe = hit->PE();
 	
             // select the first ophit (by time) in each channel
-            if( ( m_hit_start_time[ch] == 0 ) || ( m_hit_start_time[ch] > ts )) {
-              m_channel_id[ch] = ch;
-              m_hit_start_time[ch] = ts;
-              m_hit_peak_time[ch] = tp;
-              m_hit_rise_time[ch] = ts + tr;
-              m_hit_start_time_rwm[ch] = getRWMRelativeTime(ch, ts);
-              m_hit_peak_time_rwm[ch] = getRWMRelativeTime(ch, tp);
-              m_hit_rise_time_rwm[ch] = getRWMRelativeTime(ch, ts+tr);
-              m_hit_pe[ch] = pe;
-            }
+            if ( startmap.find(ch) != startmap.end() ){
+              if ( ts < startmap[ch] ){
+                startmap[ch] = ts;
+		peakmap[ch] = tp;
+		risemap[ch] = ts+tr;
+		pemap[ch] = pe;
+	      }	
+	    } else {
+              startmap[ch] = ts;
+              peakmap[ch] = tp;
+              risemap[ch] = ts+tr;
+              pemap[ch] = pe;
+	    }
+          }
+
+          // get number of unique PMTs in flash
+          m_flash_nhits = startmap.size();
+
+          for(auto it = startmap.begin(); it!=startmap.end(); it++) {
+            int ch = it->first;
+            m_channel_id.push_back(ch);
+            m_hit_start_time.push_back(it->second);
+            m_hit_peak_time.push_back(peakmap[ch]);
+            m_hit_rise_time.push_back(risemap[ch]);
+            m_hit_start_time_rwm.push_back(getRWMRelativeTime(ch,it->second));
+            m_hit_peak_time_rwm.push_back(getRWMRelativeTime(ch,peakmap[ch]));
+            m_hit_rise_time_rwm.push_back(getRWMRelativeTime(ch,risemap[ch]));
+            m_hit_pe.push_back(pemap[ch]);
           }
 
           // get the flash interaction time w.r.t. RWM
@@ -389,7 +404,9 @@ void opana::ICARUSBeamStructureAna::analyze(art::Event const& e)
           m_flash_time_rwm = getFlashBunchTime(m_hit_rise_time_rwm);
 
           fOpFlashTrees[iFlashLabel]->Fill();
-          clear();	  
+
+          clear();
+          idx++;	  
         }
       }
     }
@@ -422,7 +439,13 @@ double opana::ICARUSBeamStructureAna::getRWMRelativeTime(int channel, double t) 
   if( fRWMTimes.empty() ) return 0;
 
   auto rwm = fRWMTimes.at(channel);
-  if ( !rwm.isValid() ) return 0;
+  if ( !rwm.isValid() ){
+    mf::LogTrace("ICARUSBeamStructureAna") << "No RWM signal for channel " << channel << " "
+                                           << "(Crate " << rwm.crate << ", Board " << rwm.digitizerLabel 
+                                           << ", SpecialChannel " << rwm.specialChannel << ")"
+                                           << " in event " << m_event << " gate " << m_gate_name; 
+    return 0;
+  }
 
   double rwm_trigger = rwm.startTime; //rwm time w.r.t. trigger time [us]
   return (t - rwm_trigger);

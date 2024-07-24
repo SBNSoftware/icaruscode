@@ -500,8 +500,14 @@ float opana::ICARUSFlashAssAna::getRWMRelativeTime(int channel, float t) {
   if( fRWMTimes.empty() ) return 0;
 
   auto rwm = fRWMTimes.at(channel);
-  if ( !rwm.isValid() ) return 0;
-
+  if ( !rwm.isValid() ){
+    mf::LogTrace("ICARUSBeamStructureAna") << "No RWM signal for channel " << channel << " "
+                                           << "(Crate " << rwm.crate << ", Board " << rwm.digitizerLabel 
+                                           << ", SpecialChannel " << rwm.specialChannel << ")"
+                                           << " in event " << m_event << " gate " << m_gate_name; 
+    return 0;
+  }
+ 
   float rwm_trigger = rwm.startTime; //rwm time w.r.t. trigger time [us]
   return (t - rwm_trigger);
 
@@ -731,8 +737,8 @@ void opana::ICARUSFlashAssAna::analyze(art::Event const& e) {
   
   fRWMTimes = e.getProduct<std::vector<icarus::timing::PMTBeamSignal>>(fRWMLabel);
   if ( fRWMTimes.empty() )
-    mf::LogWarning("ICARUSFlashAssAna") << "Data product std::vector<icarus::timing::PMTBeamSignal for " << fRWMLabel.label()
-                                        << " is empty in " << m_gate_name << " event!";
+    mf::LogTrace("ICARUSBeamStructureAna") << "Data product std::vector<icarus::timing::PMTBeamSignal> for '" << fRWMLabel.label()
+                                           << "' is empty in " << m_gate_name << " event!";
 
   // -----
   // WAVEFORM INFO
