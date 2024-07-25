@@ -525,22 +525,42 @@ float opana::ICARUSFlashAssAna::getFlashBunchTime(std::vector<double> pmt_start_
   // return zero as well for the flash
   if (fRWMTimes.empty()) return 0;
   
+  int nleft = 0;
+  int nright = 0;
   for(size_t i=0; i<pmt_start_time_rwm.size(); i++ ){
   
-    int cryo = getSideByChannel(i);
+    int side = getSideByChannel(i);
     float t = pmt_start_time_rwm[i] + pmt_rise_time[i]; // rise time w.r.t. rwm
+ 
+    // exclude channels that have no signals
+    // these have time == 0
+    if( t > -1e-10 && t < 1e-10 ) continue;
 
     // if RWM is missing for some PMT channels, 
     // it might not be possible to use the first hits (might not have RMW time)
     // so return zero as in other bad cases
     if( !fRWMTimes[i].isValid() ) return 0; 
- 
-    if( (cryo == 0) && (t < tfirst_left) )
-      tfirst_left = t;   
-    if( (cryo == 1) && (t < tfirst_right) )
-      tfirst_right = t;   
-  } 
+    
+    // count hits separetely on the two walls
+    if( side == 0 ){
+      nleft++;
+      if(t < tfirst_left) tfirst_left = t;   
+    }
+    else if( side == 1 ){
+      nright++;
+      if(t < tfirst_right) tfirst_right = t;   
+    } 
+  }
 
+  // if there are no hits in one of the walls...
+  if( nleft<1 || nright <1 ){
+    mf::LogWarning("ICARUSFlashAssAna") << "Flash " << m_flash_id << " doesn't have hits on both walls!"
+                                        << "Left: " << nleft << " t " << tfirst_left << " " 
+                                        << "Right: " << nright << " t " << tfirst_right;
+    // return what we have...
+    return (tfirst_left < tfirst_right) ? tfirst_left :  tfirst_right;
+  }
+ 
   return (tfirst_left + tfirst_right)/2.;
 
 } 
