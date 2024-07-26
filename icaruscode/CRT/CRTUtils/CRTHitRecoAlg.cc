@@ -81,11 +81,14 @@ vector<art::Ptr<CRTData>> CRTHitRecoAlg::PreselectCRTData(
               << crtList[febdat_i]->fAdc[chan] << "," << pe << ")\n";*/
       }
     } else if (type == 'c') { // 'c' = CERN, Top CRTs
-      for (int chan = 0; chan < 32; chan++) {
+//      for (int chan = 0; chan < 32; chan++) {
         // float pe = (crtList[febdat_i]->fAdc[chan]-fQPed)/fQSlope;
         // if(pe<=fPEThresh) continue;
+        //Currently we are doing no preselection for the Top CRT.
+        //Left loop commented out in case future CRTers want to 
+        //add it back in. -TB 07/18/24
         presel = true;
-      }
+//      }
     } else if (type == 'd') { //'d' = Double Chooz, Bottom CRTs
       for (int chan = 0; chan < 64; chan++) {
         float pe = (crtList[febdat_i]->fAdc[chan] - fQPed) / fQSlope;
@@ -257,8 +260,9 @@ vector<pair<sbn::crt::CRTHit, vector<int>>> CRTHitRecoAlg::CreateCRTHits(
               << "size ..  " << coinData.size()
               << " data products before coincidence" << '\n';*/
         
-        if ((crtList[indices[index_j]]->fTs0 >=
-                 crtList[indices[index_i]]->fTs0 &&
+	//Below 'if' statement checks if the FEB data at indices i and j are within coincidence window of each other
+	//Maybe just do a std::abs instead of this long statement?
+        if ((crtList[indices[index_j]]->fTs0 >= crtList[indices[index_i]]->fTs0 &&
              (crtList[indices[index_j]]->fTs0 -
               crtList[indices[index_i]]->fTs0) < fCoinWindow) ||
             (crtList[indices[index_j]]->fTs0 <
@@ -690,6 +694,10 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeSideHit(
   }
   std::cout << "adsid_max = " << adsid_max << ", pemax = " << pemax << ", postrig.x = " << postrig.X() << "\n";
     
+
+  //Below are vectors/maps to hold information for the estimation of deposited energy 
+  std::map<std::pair<int,int>,float> recochans_energy_estimate;//pair is expected to be <channel_mac,channel_num>; float will be estimated energy deposited
+
   std::cout << "macs.size = " << macs.size() << /*", nabove = " << nabove <<*/ "\n";
   std::cout << "infoA.size = " << informationA.size() << ", infoB.size = " << informationB.size() << "\n";
   bool layer1 = false, layer2 = false;
@@ -740,6 +748,43 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeSideHit(
 	    
 	    //pesmap[
 	    //	   recoZwithPE(infn.mac5s, informationA[i+1].mac5s,)
+
+	  //Begin section for energy estimation
+	  std::pair<int,int> south_channel, north_channel;	   
+	  float south_pe_estimate=0, north_pe_estimate=0;
+	  if(infn.mac5s%2==0){
+
+		south_channel=std::make_pair(static_cast<int>(infn.mac5s),static_cast<int>(infn.channel));	
+		north_channel=std::make_pair(static_cast<int>(informationA[i+1].mac5s),static_cast<int>(informationA[i+1].channel));
+
+		float south_pe_init=get_channel_PE(south_channel.first,south_channel.second,pesmap);
+		float north_pe_init=get_channel_PE(north_channel.first,north_channel.second,pesmap);
+
+		//employ function to get estimations of energy deposition
+		get_energy_estimates(zpos_local, south_pe_init, north_pe_init, south_pe_estimate, north_pe_estimate);
+
+		if(south_pe_estimate!=0) recochans_energy_estimate[south_channel]=south_pe_estimate;
+		if(north_pe_estimate!=0) recochans_energy_estimate[north_channel]=north_pe_estimate;
+
+	  }//end if infn is the South end channel
+	  else if(infn.mac5s%2==1){
+
+		south_channel=std::make_pair(static_cast<int>(informationA[i+1].mac5s),static_cast<int>(informationA[i+1].channel));
+		north_channel=std::make_pair(static_cast<int>(infn.mac5s),static_cast<int>(infn.channel));
+
+		float south_pe_init=get_channel_PE(south_channel.first,south_channel.second,pesmap);
+		float north_pe_init=get_channel_PE(north_channel.first,north_channel.second,pesmap);
+
+		//employ function to get estimations of energy deposition
+		get_energy_estimates(zpos_local, south_pe_init, north_pe_init, south_pe_estimate, north_pe_estimate);
+
+		if(south_pe_estimate!=0) recochans_energy_estimate[south_channel]=south_pe_estimate;
+		if(north_pe_estimate!=0) recochans_energy_estimate[north_channel]=north_pe_estimate;
+
+	  }//end if infn is the North end channel
+	  //end energy estimation section
+		
+
 	}
 	else{
 	  std::cout << "infoA: modIDs dont match.. look for rest in list\n";// index = "<< index <<"\n";
@@ -759,6 +804,42 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeSideHit(
 	    std::cout << "zpos_PE = zpos_local_pe + center = " << zpos_local_pe << " + " << center.Z() << " = " << zpos_local_pe+center.Z() << "\n";
 	    //posA = geo::Zaxis()*(zpos_local_pe+center.Z());
 	    //zposA_vec.push_back(zpos_local_pe+center.Z());
+
+	    //Begin section for energy estimation
+	    std::pair<int,int> south_channel, north_channel;	   
+	    float south_pe_estimate=0, north_pe_estimate=0;
+	    if(infn.mac5s%2==0){
+
+		south_channel=std::make_pair(static_cast<int>(infn.mac5s),static_cast<int>(infn.channel));	
+		north_channel=std::make_pair(static_cast<int>(informationA[matched_index].mac5s),static_cast<int>(informationA[matched_index].channel));
+
+		float south_pe_init=get_channel_PE(south_channel.first,south_channel.second,pesmap);
+		float north_pe_init=get_channel_PE(north_channel.first,north_channel.second,pesmap);
+
+		//employ function to get estimations of energy deposition
+		get_energy_estimates(zpos_local, south_pe_init, north_pe_init, south_pe_estimate, north_pe_estimate);
+
+		if(south_pe_estimate!=0) recochans_energy_estimate[south_channel]=south_pe_estimate;
+		if(north_pe_estimate!=0) recochans_energy_estimate[north_channel]=north_pe_estimate;
+
+	    }//end if infn is the South end channel
+	    else if(infn.mac5s%2==1){
+
+		south_channel=std::make_pair(static_cast<int>(informationA[matched_index].mac5s),static_cast<int>(informationA[matched_index].channel));
+		north_channel=std::make_pair(static_cast<int>(infn.mac5s),static_cast<int>(infn.channel));
+
+		float south_pe_init=get_channel_PE(south_channel.first,south_channel.second,pesmap);
+		float north_pe_init=get_channel_PE(north_channel.first,north_channel.second,pesmap);
+
+		//employ function to get estimations of energy deposition
+		get_energy_estimates(zpos_local, south_pe_init, north_pe_init, south_pe_estimate, north_pe_estimate);
+
+		if(south_pe_estimate!=0) recochans_energy_estimate[south_channel]=south_pe_estimate;
+		if(north_pe_estimate!=0) recochans_energy_estimate[north_channel]=north_pe_estimate;
+
+	    }//end if infn is the North end channel
+	    //end energy estimation section
+
 	  }
 	}
       }
@@ -812,7 +893,42 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeSideHit(
 	  std::cout << "zpos_PE = zpos_local_pe + center = " << zpos_local_pe << " + " << center.Z() << " = " << zpos_local_pe+center.Z() << "\n";
 	  //posB = geo::Zaxis()*(zpos_local_pe+center.Z());
 	  //zposB_vec.push_back(zpos_local_pe+center.Z());
-	  
+
+	  //Begin section for energy estimation
+	    std::pair<int,int> south_channel, north_channel;	   
+	    float south_pe_estimate=0, north_pe_estimate=0;
+	    if(infn.mac5s%2==0){
+
+		south_channel=std::make_pair(static_cast<int>(infn.mac5s),static_cast<int>(infn.channel));	
+		north_channel=std::make_pair(static_cast<int>(informationB[i+1].mac5s),static_cast<int>(informationB[i+1].channel));
+
+		float south_pe_init=get_channel_PE(south_channel.first,south_channel.second,pesmap);
+		float north_pe_init=get_channel_PE(north_channel.first,north_channel.second,pesmap);
+
+		//employ function to get estimations of energy deposition
+		get_energy_estimates(zpos_local, south_pe_init, north_pe_init, south_pe_estimate, north_pe_estimate);
+
+		if(south_pe_estimate!=0) recochans_energy_estimate[south_channel]=south_pe_estimate;
+		if(north_pe_estimate!=0) recochans_energy_estimate[north_channel]=north_pe_estimate;
+
+	    }//end if infn is the South end channel
+	    else if(infn.mac5s%2==1){
+
+		south_channel=std::make_pair(static_cast<int>(informationB[i+1].mac5s),static_cast<int>(informationB[i+1].channel));
+		north_channel=std::make_pair(static_cast<int>(infn.mac5s),static_cast<int>(infn.channel));
+
+		float south_pe_init=get_channel_PE(south_channel.first,south_channel.second,pesmap);
+		float north_pe_init=get_channel_PE(north_channel.first,north_channel.second,pesmap);
+
+		//employ function to get estimations of energy deposition
+		get_energy_estimates(zpos_local, south_pe_init, north_pe_init, south_pe_estimate, north_pe_estimate);
+
+		if(south_pe_estimate!=0) recochans_energy_estimate[south_channel]=south_pe_estimate;
+		if(north_pe_estimate!=0) recochans_energy_estimate[north_channel]=north_pe_estimate;
+
+	    }//end if infn is the North end channel
+	    //end energy estimation section
+  
 	}
 	else{
 	  //int index = -5;
@@ -840,6 +956,42 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeSideHit(
 	    std::cout << "zpos_PE = zpos_local_pe + center = " << zpos_local_pe << " + " << center.Z() << " = " << zpos_local_pe+center.Z() << "\n";
 	    //posB = geo::Zaxis()*(zpos_local_pe+center.Z());
 	    //zposB_vec.push_back(zpos_local_pe+center.Z());
+
+	    //Begin section for energy estimation
+	    std::pair<int,int> south_channel, north_channel;	   
+	    float south_pe_estimate=0, north_pe_estimate=0;
+	    if(infn.mac5s%2==0){
+
+		south_channel=std::make_pair(static_cast<int>(infn.mac5s),static_cast<int>(infn.channel));	
+		north_channel=std::make_pair(static_cast<int>(informationB[matched_index].mac5s),static_cast<int>(informationB[matched_index].channel));
+
+		float south_pe_init=get_channel_PE(south_channel.first,south_channel.second,pesmap);
+		float north_pe_init=get_channel_PE(north_channel.first,north_channel.second,pesmap);
+
+		//employ function to get estimations of energy deposition
+		get_energy_estimates(zpos_local, south_pe_init, north_pe_init, south_pe_estimate, north_pe_estimate);
+
+		if(south_pe_estimate!=0) recochans_energy_estimate[south_channel]=south_pe_estimate;
+		if(north_pe_estimate!=0) recochans_energy_estimate[north_channel]=north_pe_estimate;
+
+	    }//end if infn is the South end channel
+	    else if(infn.mac5s%2==1){
+
+		south_channel=std::make_pair(static_cast<int>(informationB[matched_index].mac5s),static_cast<int>(informationB[matched_index].channel));
+		north_channel=std::make_pair(static_cast<int>(infn.mac5s),static_cast<int>(infn.channel));
+
+		float south_pe_init=get_channel_PE(south_channel.first,south_channel.second,pesmap);
+		float north_pe_init=get_channel_PE(north_channel.first,north_channel.second,pesmap);
+
+		//employ function to get estimations of energy deposition
+		get_energy_estimates(zpos_local, south_pe_init, north_pe_init, south_pe_estimate, north_pe_estimate);
+
+		if(south_pe_estimate!=0) recochans_energy_estimate[south_channel]=south_pe_estimate;
+		if(north_pe_estimate!=0) recochans_energy_estimate[north_channel]=north_pe_estimate;
+
+	    }//end if infn is the North end channel
+	    //end energy estimation section
+
 	  }
 	}
 	/*std::cout << "zposB = " << zposB << "\n";
@@ -1136,6 +1288,22 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeSideHit(
 	    << hitpointerr[0] << ", " << hitpointerr[1] << ", " << hitpointerr[2] 
 	    << ")\n\tthit, T0 = " << thit << ", T1 = " << thit1 << "\n";
 
+
+	//Begin section doing final averaging of estimated energy and putting it into petot:
+	std::cout << "Calculating deposited energy average:\n";
+	int countpes=0; float sumpes=0;
+	for(const auto& thischan : recochans_energy_estimate){
+
+		countpes++;
+		sumpes+=thischan.second;
+
+		std::cout << "(mac,chan)=(" << thischan.first.first << "," << thischan.first.second << ")\t";
+		std::cout << "PE=" << thischan.second << std::endl;
+
+	}//end loop over recochans_energy_estimate
+
+	petot=sumpes/static_cast<float>(countpes);
+	std::cout << "Deposited energy estimate: " << petot << std::endl;
 
   // generate hit
   CRTHit hit = FillCRTHit(macs, pesmap, petot, thit, thit1, plane, hitpoint[0],
@@ -1555,4 +1723,31 @@ void CRTHitRecoAlg::processLayerData(int i, std::vector<uint8_t>& layerA, std::v
     processChannels(mac, adid, i, "layer2", layer2_map, layerB, informationB);
   }
   }*/
+float CRTHitRecoAlg::get_channel_PE(int mac, int chan, map<uint8_t, vector<pair<int, float>>> tpesmap){
+
+	vector<pair<int,float>> chans_to_PEs = tpesmap[static_cast<uint8_t>(mac)];
+
+	for(int i=0; i<static_cast<int>(chans_to_PEs.size()); i++){
+
+		if(chans_to_PEs[i].first==chan) return chans_to_PEs[i].second;
+
+	}//end loop over PEs found for mac in tpesmap
+
+	return 0;
+
+}//end float get_channel_PE(int mac, int chan, map<uint8_t, vector<pair<int, float>>> tpesmap)
+
+void CRTHitRecoAlg::get_energy_estimates(float local_z, float south_pe_init, float north_pe_init, float &south_pe_estimate, float &north_pe_estimate){
+
+
+	float MINOS_BULK_ATTENUATION = 630;//5 meters
+
+	float south_local_z = local_z+400;
+	float north_local_z = 400-local_z;
+
+	south_pe_estimate = south_pe_init*exp(south_local_z/MINOS_BULK_ATTENUATION);
+	north_pe_estimate = north_pe_init*exp(north_local_z/MINOS_BULK_ATTENUATION);
+
+
+}//end definition of function get_energy_estimates
 //-----------------------------------------------------------------------------
