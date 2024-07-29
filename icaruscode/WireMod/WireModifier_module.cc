@@ -3,6 +3,8 @@
 #include <vector>
 
 // ROOT includes
+#include "TF1.h"
+#include "TGraph.h"
 #include "TH1D.h"
 
 // art includes
@@ -37,6 +39,7 @@ namespace wiremod
       explicit WireModifier(fhicl::ParameterSet const& pset);
       void reconfigure(fhicl::ParameterSet const& pset);
       void produce(art::Event& evt) override;
+      void produceData(art::Event& evt);
 
     private:
       const geo::GeometryCore* fGeometry = lar::providerFrom<geo::Geometry>(); // get the geometry
@@ -65,6 +68,7 @@ namespace wiremod
       bool fApplydEdX;              // do we apply the dEdX scaling?
       bool fSaveHistsByChannel;     // save modified signals by channel?
       bool fSaveHistsByWire;        // save modified signals by wire?
+      bool fIsData;                 // DEBUG: get data wires
 
   }; // end WireModifier class
 
@@ -87,6 +91,7 @@ namespace wiremod
     //fSaveHistsByChannel = pset.get<bool>("SaveByChannel", false);
     fSaveHistsByChannel = pset.get<bool>("SaveByChannel", true);
     fSaveHistsByWire    = pset.get<bool>("SaveByWire"   , false);
+    fIsData             = pset.get<bool>("IsData"       , false);
 
     // try to read in the graphs/splines from a file
     // if that file does not exist then fake them
@@ -307,8 +312,185 @@ namespace wiremod
   }
 
   //------------------------------------------------
+  void WireModifier::produceData(art::Event& evt)
+  {
+    // DEBUG: get data wires
+    mf::LogVerbatim("WireModifier")
+      << "DEBUG: get data wires!";
+
+    // here's where the "magic" happens
+    art::ServiceHandle<art::TFileService> tfs;
+
+    // get a clock and det props for the event
+    const detinfo::DetectorPropertiesData detProp = art::ServiceHandle<detinfo::DetectorPropertiesService const>()->DataFor(evt);
+
+    // get the things to do the things on
+    //art::Handle< std::vector<recob::Wire> > wireHandle;
+    //evt.getByLabel(fWireLabel, wireHandle);
+    //auto const& wireVec(*wireHandle);
+
+    //art::FindManyP<raw::RawDigit> digit_assn(wireHandle, evt, fWireLabel);
+
+    // get the _hits_
+    art::Handle< std::vector<recob::Hit> > hitHandle;
+    evt.getByLabel(fHitLabel, hitHandle);
+    //auto const& hitVec(*hitHandle);
+    std::vector<art::Ptr<recob::Hit>> hitPtrVec;
+    art::fill_ptr_vector(hitPtrVec, hitHandle);
+    art::FindOneP<recob::Wire> hitToWireAssns(hitHandle, evt, fHitLabel);
+
+    // put the new stuff somewhere
+    std::unique_ptr<std::vector<recob::Wire      >> new_wires(new std::vector<recob::Wire      >());
+    std::unique_ptr<std::vector<recob::ChannelROI>> new_crois(new std::vector<recob::ChannelROI>());
+    //std::unique_ptr<art::Assns<raw::RawDigit, recob::Wire>> new_digit_assn(new art::Assns<raw::RawDigit, recob::Wire>());
+
+    sys::WireModUtility wmUtil(fGeometry, detProp); // detector geometry & properties
+    wmUtil.applyChannelScale = fApplyChannel;
+    wmUtil.applyXScale       = fApplyX;
+    wmUtil.applyYZScale      = fApplyYZ;
+    wmUtil.applyXZAngleScale = fApplyXZAngle;
+    wmUtil.applyYZAngleScale = fApplyYZAngle;
+    wmUtil.applydEdXScale    = fApplydEdX;
+    if (wmUtil.applyChannelScale)
+    {
+      wmUtil.spline_Charge_Channel = fSpline_charge_Channel;
+      wmUtil.spline_Sigma_Channel  = fSpline_sigma_Channel;
+    }
+    if (wmUtil.applyXScale)
+    {
+      wmUtil.splines_Charge_X = fSpline_charge_X;
+      wmUtil.splines_Sigma_X  = fSpline_sigma_X;
+    }
+    if (wmUtil.applyYZScale)
+    {
+      wmUtil.graph2Ds_Charge_YZ = fGraph_charge_YZ;
+      wmUtil.graph2Ds_Sigma_YZ  = fGraph_sigma_YZ;
+    }
+    if (wmUtil.applyXZAngleScale)
+    {
+      wmUtil.splines_Charge_XZAngle = fSpline_charge_XZAngle;
+      wmUtil.splines_Sigma_XZAngle  = fSpline_sigma_XZAngle;
+    }
+    if (wmUtil.applyYZAngleScale)
+    {
+      wmUtil.splines_Charge_YZAngle = fSpline_charge_YZAngle;
+      wmUtil.splines_Sigma_YZAngle  = fSpline_sigma_YZAngle;
+    }
+    if (wmUtil.applydEdXScale)
+    {
+      wmUtil.splines_Charge_dEdX = fSpline_charge_dEdX;
+      wmUtil.splines_Sigma_dEdX  = fSpline_sigma_dEdX;
+    }
+
+    // add some debugging here
+    MF_LOG_VERBATIM("WireModifier")
+      << "DUMP CONFIG:" << '\n'
+      << "---------------------------------------------------" << '\n'
+      << "  applyChannelScale:  " << wmUtil.applyChannelScale  << '\n'
+      << "  applyXScale:        " << wmUtil.applyXScale        << '\n'
+      << "  applyYZScale:       " << wmUtil.applyYZScale       << '\n'
+      << "  applyXZAngleScale:  " << wmUtil.applyXZAngleScale  << '\n'
+      << "  applyYZAngleScale:  " << wmUtil.applyYZAngleScale  << '\n'
+      << "  applydEdXScale:     " << wmUtil.applydEdXScale     << '\n'
+      << "  readoutWindowTicks: " << wmUtil.readoutWindowTicks << '\n'
+      << "  tickOffset:         " << wmUtil.tickOffset         << '\n'
+      << "---------------------------------------------------";
+
+    // loop-de-loop
+    for(size_t i_w = 0; i_w < hitPtrVec.size(); ++i_w)
+    {
+      MF_LOG_DEBUG("WireModifier")
+        << "Checking hit " << i_w;
+
+      art::Ptr<recob::Hit> hitPtr = hitPtrVec.at(i_w);
+
+      if (std::abs(hitPtr->RMS() - 10.0 / 3.0) > 0.00001)
+        continue;
+      mf::LogVerbatim("WireModified")
+        << "HIT " << i_w << ": Does Integral / (Amplitude * Sigma * sqrt(2*pi)) = 1? "
+        << "(" << hitPtr->Integral() << ") / (" << hitPtr->PeakAmplitude() << " * " << hitPtr->RMS() << " * 2.506628275) = " << (hitPtr->Integral() / (hitPtr->PeakAmplitude() * hitPtr->RMS() * 2.506628275));
+      art::Ptr<recob::Wire> wirePtr = hitToWireAssns.at(hitPtr.key());
+
+      readout::ROPID ropID = fGeometry->ChannelToROP(wirePtr->Channel());
+      std::string titleStr =  "Cryo_"         + std::to_string(ropID.Cryostat)
+                           + "_TPCset_"       + std::to_string(ropID.TPCset)
+                           + "_ReadOutPlane_" + std::to_string(ropID.ROP)
+                           + "_Hit_"          + std::to_string(i_w);
+      TH1F* dataHitHist = new TH1F(("Data_" + titleStr).c_str(), ";Sample;Arbitrary Units", hitPtr->EndTick() - hitPtr->StartTick() + 10, hitPtr->StartTick() - 5, hitPtr->EndTick() + 5);
+      for (int tick = hitPtr->StartTick() - 5; tick < hitPtr->EndTick() + 5; ++tick)
+      {
+        float dataSample = 0.0;
+        if (tick < (int)wirePtr->Signal().size() && tick > 0)
+          dataSample = wirePtr->Signal().at(tick);
+        dataHitHist->SetBinContent(tick - (hitPtr->StartTick() - 5) + 1, dataSample);
+      }
+      TH1F* dataHitHist_toSave = tfs->make<TH1F>(*dataHitHist);
+      TF1* fitHitHist = new TF1(("Fit_" + titleStr).c_str(), "gaus(0)", hitPtr->StartTick(), hitPtr->EndTick());
+      fitHitHist->SetParameters(hitPtr->PeakAmplitude(), hitPtr->PeakTime(), hitPtr->RMS());
+      TGraph* fitHitGraph = tfs->make<TGraph>(fitHitHist);
+      fitHitGraph->Write();
+
+      mf::LogDebug("WireModifier")
+        << "Saved histogram " << dataHitHist_toSave->GetName() << " with fit " << fitHitGraph->GetName();
+
+      //if (fSaveHistsByChannel)
+      //{
+      //  readout::ROPID ropID = fGeometry->ChannelToROP(wirePtr->Channel());  
+      //  std::string titleStr =  "Cryo-"         + std::to_string(ropID.Cryostat)
+      //                       + "_TPCset-"       + std::to_string(ropID.TPCset)
+      //                       + "_ReadOutPlane-" + std::to_string(ropID.ROP)
+      //                       + "_Channel-"      + std::to_string(wirePtr->Channel());
+      //  TH1F* dataChannelHist = new TH1F(("Data_" + titleStr).c_str(), ";Sample;Arbitrary Units", wmUtil.readoutWindowTicks, 0, wmUtil.readoutWindowTicks);
+      //  for (size_t tick = 0; tick < wmUtil.readoutWindowTicks; ++tick)
+      //  {
+      //    float dataSample = (tick < wirePtr->Signal().size()) ? wirePtr->Signal().at(tick) : 0;
+      //    dataChannelHist->SetBinContent(tick + 1, dataSample);
+      //  }
+      //    
+      //  TH1F* dataChannelHist_toSave = tfs->make<TH1F>(*dataChannelHist);
+      //  mf::LogDebug("WireModifier")
+      //    << "Saved histograms " << dataChannelHist_toSave->GetName();
+      //}
+
+      //if (fSaveHistsByWire)
+      //{
+      //  std::vector<geo::WireID> wireIDs = fGeometry->ChannelToWire(wirePtr->Channel());
+      //  mf::LogDebug("WireModifier")
+      //    << "Channel " << wirePtr->Channel() << " has " << wireIDs.size() << " wire(s)";
+      //  for (auto const& wireID : wireIDs)
+      //  {
+      //    std::string titleStr =  "Cryo-"  + std::to_string(wireID.Cryostat)
+      //                         + "_TPC-"   + std::to_string(wireID.TPC)
+      //                         + "_Plane-" + std::to_string(wireID.Plane)
+      //                         + "_Wire-"  + std::to_string(wireID.Wire);
+      //    TH1F* dataWireHist = new TH1F(("Data_" + titleStr).c_str(), ";Sample;Arbitrary Units", wmUtil.readoutWindowTicks, 0, wmUtil.readoutWindowTicks);
+      //    for (size_t tick = 0; tick < wmUtil.readoutWindowTicks; ++tick)
+      //    {
+      //      float dataSample = (tick < wirePtr->Signal().size()) ? wirePtr->Signal().at(tick) : 0;
+      //      dataWireHist->SetBinContent(tick + 1, dataSample);
+      //    }
+
+      //    TH1F* dataWireHist_toSave = tfs->make<TH1F>(*dataWireHist);
+      //    mf::LogDebug("WireModifier")
+      //      << "Saved histograms " << dataWireHist_toSave->GetName();
+      //  }
+      //}
+    }
+
+    evt.put(std::move(new_wires));
+    evt.put(std::move(new_crois));
+  }
+
+  //------------------------------------------------
   void WireModifier::produce(art::Event& evt)
   {
+    //DEBUG: data mode
+    if (fIsData)
+    {
+      this->produceData(evt);
+      return;
+    }
+
     // here's where the "magic" happens
     art::ServiceHandle<art::TFileService> tfs;
 
@@ -410,6 +592,7 @@ namespace wiremod
         << "Checking wire " << i_w;
 
       auto const& wire = wireVec[i_w];
+
 
       recob::Wire::RegionsOfInterest_t new_rois;
       recob::ChannelROI::RegionsOfInterest_t new_rois_ints;
