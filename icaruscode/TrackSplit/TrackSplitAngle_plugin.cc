@@ -82,12 +82,19 @@ namespace TrackSplit {
     {
       // get the first track
       art::Ptr<recob::Track> track1(trackHandle, idx_1);
+
+      // get the track info
       std::vector<art::Ptr<recob::Hit>> trackHits1 = hitsFromTracks.at(track1.key());
       std::vector<const recob::TrackHitMeta*> trackMetas1 = hitsFromTracks.data(track1.key());
       recob::Track::Vector_t startDir1 = track1->StartDirection();
       recob::Track::Vector_t   endDir1 = track1->EndDirection();
       recob::Track::Point_t  startPos1 = track1->Start();
       recob::Track::Point_t    endPos1 = track1->End();
+      double                   length1 = track1->Length();
+
+      // if the track is short, skip it
+      if (length1 < 20)
+        continue;
       
       // get start and stop ticks for track
       // loop over hits and store min/max peak time
@@ -109,12 +116,19 @@ namespace TrackSplit {
       {
         // get the second track
         art::Ptr<recob::Track> track2(trackHandle, idx_2);
+
+        // get the track info
         std::vector<art::Ptr<recob::Hit>> trackHits2 = hitsFromTracks.at(track2.key());
         std::vector<const recob::TrackHitMeta*> trackMetas2 = hitsFromTracks.data(track2.key());
         recob::Track::Vector_t startDir2 = track2->StartDirection();
         recob::Track::Vector_t   endDir2 = track2->EndDirection();
         recob::Track::Point_t  startPos2 = track2->Start();
         recob::Track::Point_t    endPos2 = track2->End();
+        double                   length2 = track2->Length();
+
+        // if the track is short, skip it
+        if (length2 < 20)
+          continue;
 
         // get start and stop ticks for track
         // loop over hits and store min/max peak time
@@ -148,12 +162,16 @@ namespace TrackSplit {
           recob::Track::Vector_t unit2 = startDir2.Unit();
           recob::Track::Vector_t unitC = unit1.Cross(unit2);
           recob::Track::Vector_t trackDis = (startPos2 - endPos1);
+          // if the gap is greater than 100 cm, skip it
+          if (std::sqrt(trackDis.Mag2()) > 100)
+            continue;
           // if the the directions are parallel, take the angle between the common direction and the line connecting the start and end
           // subtracks this from Pi to approximate a difflection angle. Not perfect, but this is an edge case and the choice goes to Pi
           // as the tracks line up with each other
+          double angle = std::numeric_limits<double>::max();
           if (unitC.Mag2() == 0)
           {
-            double angle = fPi - std::acos( endDir1.Dot(trackDis) / std::sqrt(endDir1.Mag2() * trackDis.Mag2()));
+            angle = fPi - std::acos( endDir1.Dot(trackDis) / std::sqrt(endDir1.Mag2() * trackDis.Mag2()));
             fHist->Fill(angle);
             fHist2d->Fill(angle, std::sqrt(trackDis.Mag2()));
           } else {
@@ -172,10 +190,16 @@ namespace TrackSplit {
             recob::Track::Point_t midpoint = closest1 + 0.5*closestSep; // in a just world I could just average recob::Track::Point_t...
             recob::Track::Vector_t startToMid = (midpoint - startPos2);
             recob::Track::Vector_t   endToMid = (midpoint -   endPos1);
-            double angle = std::acos( startToMid.Dot(endToMid) / std::sqrt(startToMid.Mag2() * endToMid.Mag2()));
+            angle = std::acos( startToMid.Dot(endToMid) / std::sqrt(startToMid.Mag2() * endToMid.Mag2()));
             fHist->Fill(angle);
             fHist2d->Fill(angle, std::sqrt(trackDis.Mag2()));
           }
+          if (angle > (8.0 * fPi / 9.0))
+            mf::LogVerbatim("TrackSplitAngle")
+              << "Run " << evt.run() << ", Subrun " << evt.subRun() << ", event " << evt.event() << '\n'
+              << "  Point 1 to 2: Track split with angle of " << angle << " rad, and gap " << std::sqrt(trackDis.Mag2()) << " cm" << '\n'
+              << "  Track 1: Length " << length1 << " cm, Theta " << track1->Theta() << ", Phi "<< track1->Phi() << '\n'
+              << "  Track 2: Length " << length2 << " cm, Theta " << track2->Theta() << ", Phi "<< track2->Phi();
         } else if (point2to1 && track2before1) {
           // these are useful in both cases
           // don't recall if the directions are unit vectors, but best to play it safe
@@ -183,12 +207,16 @@ namespace TrackSplit {
           recob::Track::Vector_t unit2 =   endDir2.Unit();
           recob::Track::Vector_t unitC = unit1.Cross(unit2);
           recob::Track::Vector_t trackDis = (endPos2 - startPos1);
+          // if the gap is greater than 100 cm, skip it
+          if (std::sqrt(trackDis.Mag2()) > 100)
+            continue;
           // if the the directions are parallel, take the angle between the common direction and the line connecting the start and end
           // subtracks this from Pi to approximate a difflection angle. Not perfect, but this is an edge case and the choice goes to Pi
           // as the tracks line up with each other
+          double angle = std::numeric_limits<double>::max();
           if (unitC.Mag2() == 0)
           {
-            double angle = fPi - std::acos( endDir2.Dot(trackDis) / std::sqrt(endDir2.Mag2() * trackDis.Mag2()));
+            angle = fPi - std::acos( endDir2.Dot(trackDis) / std::sqrt(endDir2.Mag2() * trackDis.Mag2()));
             fHist->Fill(angle);
             fHist2d->Fill(angle, std::sqrt(trackDis.Mag2()));
           } else {
@@ -207,10 +235,16 @@ namespace TrackSplit {
             recob::Track::Point_t midpoint = closest1 + 0.5*closestSep; // in a just world I could just average recob::Track::Point_t...
             recob::Track::Vector_t startToMid = (midpoint - startPos1);
             recob::Track::Vector_t   endToMid = (midpoint -   endPos2);
-            double angle = std::acos( startToMid.Dot(endToMid) / std::sqrt(startToMid.Mag2() * endToMid.Mag2()));
+            angle = std::acos( startToMid.Dot(endToMid) / std::sqrt(startToMid.Mag2() * endToMid.Mag2()));
             fHist->Fill(angle);
             fHist2d->Fill(angle, std::sqrt(trackDis.Mag2()));
           }
+          if (angle > (8.0 * fPi / 9.0))
+            mf::LogVerbatim("TrackSplitAngle")
+              << "Run " << evt.run() << ", Subrun " << evt.subRun() << ", event " << evt.event() << '\n'
+              << "  Point 2 to 1: Track split with angle of " << angle << " rad, and gap " << std::sqrt(trackDis.Mag2()) << " cm" << '\n'
+              << "  Track 1: Length " << length1 << " cm, Theta " << track1->Theta() << ", Phi "<< track1->Phi() << '\n'
+              << "  Track 2: Length " << length2 << " cm, Theta " << track2->Theta() << ", Phi "<< track2->Phi();
         }
       }
     }
