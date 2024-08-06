@@ -695,8 +695,11 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeSideHit(
   std::cout << "adsid_max = " << adsid_max << ", pemax = " << pemax << ", postrig.x = " << postrig.X() << "\n";
     
 
+//TB_changes_for_Anna//////////////////////////////////////////////////////////////////////////////////////
   //Below are vectors/maps to hold information for the estimation of deposited energy 
-  std::map<std::pair<int,int>,float> recochans_energy_estimate;//pair is expected to be <channel_mac,channel_num>; float will be estimated energy deposited
+  std::vector<int> south_macs, south_chans, north_macs, north_chans;
+  std::vector<float> south_est_dep_pes, north_est_dep_pes, south_init_pes, north_init_pes, south_zposloc, north_zposloc;
+////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
   std::cout << "macs.size = " << macs.size() << /*", nabove = " << nabove <<*/ "\n";
   std::cout << "infoA.size = " << informationA.size() << ", infoB.size = " << informationB.size() << "\n";
@@ -749,6 +752,7 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeSideHit(
 	    //pesmap[
 	    //	   recoZwithPE(infn.mac5s, informationA[i+1].mac5s,)
 
+//TB_changes_for_Anna//////////////////////////////////////////////////////////////////////////////////////
 	  //Begin section for energy estimation
 	  std::pair<int,int> south_channel, north_channel;	   
 	  float south_pe_estimate=0, north_pe_estimate=0;
@@ -763,8 +767,21 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeSideHit(
 		//employ function to get estimations of energy deposition
 		get_energy_estimates(zpos_local, south_pe_init, north_pe_init, south_pe_estimate, north_pe_estimate);
 
-		if(south_pe_estimate!=0) recochans_energy_estimate[south_channel]=south_pe_estimate;
-		if(north_pe_estimate!=0) recochans_energy_estimate[north_channel]=north_pe_estimate;
+		if(south_pe_estimate!=0&&north_pe_estimate!=0){
+
+			south_macs.push_back(south_channel.first);
+			south_chans.push_back(south_channel.second);
+			south_est_dep_pes.push_back(south_pe_estimate);
+			south_init_pes.push_back(south_pe_init);
+			south_zposloc.push_back(zpos_local+400);
+
+			north_macs.push_back(north_channel.first);
+			north_chans.push_back(north_channel.second);
+			north_est_dep_pes.push_back(north_pe_estimate);
+			north_init_pes.push_back(north_pe_init);
+			north_zposloc.push_back(400 - zpos_local);
+
+		}//end if both estimates aren't zero 
 
 	  }//end if infn is the South end channel
 	  else if(infn.mac5s%2==1){
@@ -778,12 +795,25 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeSideHit(
 		//employ function to get estimations of energy deposition
 		get_energy_estimates(zpos_local, south_pe_init, north_pe_init, south_pe_estimate, north_pe_estimate);
 
-		if(south_pe_estimate!=0) recochans_energy_estimate[south_channel]=south_pe_estimate;
-		if(north_pe_estimate!=0) recochans_energy_estimate[north_channel]=north_pe_estimate;
+		if(south_pe_estimate!=0&&north_pe_estimate!=0){
+
+			south_macs.push_back(south_channel.first);
+			south_chans.push_back(south_channel.second);
+			south_est_dep_pes.push_back(south_pe_estimate);
+			south_init_pes.push_back(south_pe_init);
+			south_zposloc.push_back(zpos_local+400);
+
+			north_macs.push_back(north_channel.first);
+			north_chans.push_back(north_channel.second);
+			north_est_dep_pes.push_back(north_pe_estimate);
+			north_init_pes.push_back(north_pe_init);
+			north_zposloc.push_back(400 - zpos_local);
+
+		}//end if both estimates aren't zero 
 
 	  }//end if infn is the North end channel
 	  //end energy estimation section
-		
+////////////////////////////////////////////////////////////////////////////////////////////////////		
 
 	}
 	else{
@@ -805,6 +835,7 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeSideHit(
 	    //posA = geo::Zaxis()*(zpos_local_pe+center.Z());
 	    //zposA_vec.push_back(zpos_local_pe+center.Z());
 
+//TB_changes_for_Anna//////////////////////////////////////////////////////////////////////////////////////
 	    //Begin section for energy estimation
 	    std::pair<int,int> south_channel, north_channel;	   
 	    float south_pe_estimate=0, north_pe_estimate=0;
@@ -819,8 +850,21 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeSideHit(
 		//employ function to get estimations of energy deposition
 		get_energy_estimates(zpos_local, south_pe_init, north_pe_init, south_pe_estimate, north_pe_estimate);
 
-		if(south_pe_estimate!=0) recochans_energy_estimate[south_channel]=south_pe_estimate;
-		if(north_pe_estimate!=0) recochans_energy_estimate[north_channel]=north_pe_estimate;
+		if(south_pe_estimate!=0&&north_pe_estimate!=0){
+
+			south_macs.push_back(south_channel.first);
+			south_chans.push_back(south_channel.second);
+			south_est_dep_pes.push_back(south_pe_estimate);
+			south_init_pes.push_back(south_pe_init);
+			south_zposloc.push_back(zpos_local+400);
+
+			north_macs.push_back(north_channel.first);
+			north_chans.push_back(north_channel.second);
+			north_est_dep_pes.push_back(north_pe_estimate);
+			north_init_pes.push_back(north_pe_init);
+			north_zposloc.push_back(400 - zpos_local);
+
+		}//end if both estimates aren't zero 
 
 	    }//end if infn is the South end channel
 	    else if(infn.mac5s%2==1){
@@ -834,12 +878,25 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeSideHit(
 		//employ function to get estimations of energy deposition
 		get_energy_estimates(zpos_local, south_pe_init, north_pe_init, south_pe_estimate, north_pe_estimate);
 
-		if(south_pe_estimate!=0) recochans_energy_estimate[south_channel]=south_pe_estimate;
-		if(north_pe_estimate!=0) recochans_energy_estimate[north_channel]=north_pe_estimate;
+		if(south_pe_estimate!=0&&north_pe_estimate!=0){
+
+			south_macs.push_back(south_channel.first);
+			south_chans.push_back(south_channel.second);
+			south_est_dep_pes.push_back(south_pe_estimate);
+			south_init_pes.push_back(south_pe_init);
+			south_zposloc.push_back(zpos_local+400);
+
+			north_macs.push_back(north_channel.first);
+			north_chans.push_back(north_channel.second);
+			north_est_dep_pes.push_back(north_pe_estimate);
+			north_init_pes.push_back(north_pe_init);
+			north_zposloc.push_back(400 - zpos_local);
+
+		}//end if both estimates aren't zero 
 
 	    }//end if infn is the North end channel
 	    //end energy estimation section
-
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	  }
 	}
       }
@@ -894,6 +951,7 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeSideHit(
 	  //posB = geo::Zaxis()*(zpos_local_pe+center.Z());
 	  //zposB_vec.push_back(zpos_local_pe+center.Z());
 
+//TB_changes_for_Anna//////////////////////////////////////////////////////////////////////////////////////
 	  //Begin section for energy estimation
 	    std::pair<int,int> south_channel, north_channel;	   
 	    float south_pe_estimate=0, north_pe_estimate=0;
@@ -908,8 +966,21 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeSideHit(
 		//employ function to get estimations of energy deposition
 		get_energy_estimates(zpos_local, south_pe_init, north_pe_init, south_pe_estimate, north_pe_estimate);
 
-		if(south_pe_estimate!=0) recochans_energy_estimate[south_channel]=south_pe_estimate;
-		if(north_pe_estimate!=0) recochans_energy_estimate[north_channel]=north_pe_estimate;
+		if(south_pe_estimate!=0&&north_pe_estimate!=0){
+
+			south_macs.push_back(south_channel.first);
+			south_chans.push_back(south_channel.second);
+			south_est_dep_pes.push_back(south_pe_estimate);
+			south_init_pes.push_back(south_pe_init);
+			south_zposloc.push_back(zpos_local+400);
+
+			north_macs.push_back(north_channel.first);
+			north_chans.push_back(north_channel.second);
+			north_est_dep_pes.push_back(north_pe_estimate);
+			north_init_pes.push_back(north_pe_init);
+			north_zposloc.push_back(400 - zpos_local);
+
+		}//end if both estimates aren't zero 
 
 	    }//end if infn is the South end channel
 	    else if(infn.mac5s%2==1){
@@ -923,12 +994,26 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeSideHit(
 		//employ function to get estimations of energy deposition
 		get_energy_estimates(zpos_local, south_pe_init, north_pe_init, south_pe_estimate, north_pe_estimate);
 
-		if(south_pe_estimate!=0) recochans_energy_estimate[south_channel]=south_pe_estimate;
-		if(north_pe_estimate!=0) recochans_energy_estimate[north_channel]=north_pe_estimate;
+		if(south_pe_estimate!=0&&north_pe_estimate!=0){
+
+			south_macs.push_back(south_channel.first);
+			south_chans.push_back(south_channel.second);
+			south_est_dep_pes.push_back(south_pe_estimate);
+			south_init_pes.push_back(south_pe_init);
+			south_zposloc.push_back(zpos_local+400);
+
+			north_macs.push_back(north_channel.first);
+			north_chans.push_back(north_channel.second);
+			north_est_dep_pes.push_back(north_pe_estimate);
+			north_init_pes.push_back(north_pe_init);
+			north_zposloc.push_back(400 - zpos_local);
+
+		}//end if both estimates aren't zero 
+
 
 	    }//end if infn is the North end channel
 	    //end energy estimation section
-  
+//////////////////////////////////////////////////////////////////////////////////////////////
 	}
 	else{
 	  //int index = -5;
@@ -957,6 +1042,7 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeSideHit(
 	    //posB = geo::Zaxis()*(zpos_local_pe+center.Z());
 	    //zposB_vec.push_back(zpos_local_pe+center.Z());
 
+//TB_changes_for_Anna//////////////////////////////////////////////////////////////////////////////////////
 	    //Begin section for energy estimation
 	    std::pair<int,int> south_channel, north_channel;	   
 	    float south_pe_estimate=0, north_pe_estimate=0;
@@ -971,9 +1057,21 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeSideHit(
 		//employ function to get estimations of energy deposition
 		get_energy_estimates(zpos_local, south_pe_init, north_pe_init, south_pe_estimate, north_pe_estimate);
 
-		if(south_pe_estimate!=0) recochans_energy_estimate[south_channel]=south_pe_estimate;
-		if(north_pe_estimate!=0) recochans_energy_estimate[north_channel]=north_pe_estimate;
+		if(south_pe_estimate!=0&&north_pe_estimate!=0){
 
+			south_macs.push_back(south_channel.first);
+			south_chans.push_back(south_channel.second);
+			south_est_dep_pes.push_back(south_pe_estimate);
+			south_init_pes.push_back(south_pe_init);
+			south_zposloc.push_back(zpos_local+400);
+
+			north_macs.push_back(north_channel.first);
+			north_chans.push_back(north_channel.second);
+			north_est_dep_pes.push_back(north_pe_estimate);
+			north_init_pes.push_back(north_pe_init);
+			north_zposloc.push_back(400 - zpos_local);
+
+		}//end if both estimates aren't zero 
 	    }//end if infn is the South end channel
 	    else if(infn.mac5s%2==1){
 
@@ -986,12 +1084,25 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeSideHit(
 		//employ function to get estimations of energy deposition
 		get_energy_estimates(zpos_local, south_pe_init, north_pe_init, south_pe_estimate, north_pe_estimate);
 
-		if(south_pe_estimate!=0) recochans_energy_estimate[south_channel]=south_pe_estimate;
-		if(north_pe_estimate!=0) recochans_energy_estimate[north_channel]=north_pe_estimate;
+		if(south_pe_estimate!=0&&north_pe_estimate!=0){
+
+			south_macs.push_back(south_channel.first);
+			south_chans.push_back(south_channel.second);
+			south_est_dep_pes.push_back(south_pe_estimate);
+			south_init_pes.push_back(south_pe_init);
+			south_zposloc.push_back(zpos_local+400);
+
+			north_macs.push_back(north_channel.first);
+			north_chans.push_back(north_channel.second);
+			north_est_dep_pes.push_back(north_pe_estimate);
+			north_init_pes.push_back(north_pe_init);
+			north_zposloc.push_back(400 - zpos_local);
+
+		}//end if both estimates aren't zero 
 
 	    }//end if infn is the North end channel
 	    //end energy estimation section
-
+///////////////////////////////////////////////////////////////////////////////////////////////////////
 	  }
 	}
 	/*std::cout << "zposB = " << zposB << "\n";
@@ -1288,23 +1399,43 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeSideHit(
 	    << hitpointerr[0] << ", " << hitpointerr[1] << ", " << hitpointerr[2] 
 	    << ")\n\tthit, T0 = " << thit << ", T1 = " << thit1 << "\n";
 
-
+//TB_changes_for_Anna//////////////////////////////////////////////////////////////////////////////////////
 	//Begin section doing final averaging of estimated energy and putting it into petot:
 	std::cout << "Calculating deposited energy average:\n";
-	int countpes=0; float sumpes=0;
-	for(const auto& thischan : recochans_energy_estimate){
-
-		countpes++;
-		sumpes+=thischan.second;
-
-		std::cout << "(mac,chan)=(" << thischan.first.first << "," << thischan.first.second << ")\t";
-		std::cout << "PE=" << thischan.second << std::endl;
-
-	}//end loop over recochans_energy_estimate
-
+	std::cout << "foutCSVFile=" << foutCSVFile << std::endl;
+	int countpes=0, numpairs=0; float sumpes=0;
+	bool output_singlepes=true;//turn off if you don't want single channel PEs to be passed to output .CSV file
+//	if(foutCSVFile&&output_singlepes) filecsv << "unique_id,mac,chan,PE\n";//commented out bc it will repeat every time funtion is called, but a guide to the columns for future users
+	for(int thispe=0; thispe<static_cast<int>(south_macs.size()); thispe++){
+		numpairs++;
+		countpes+=2;
+		sumpes+=south_est_dep_pes[thispe]+north_est_dep_pes[thispe];
+	}//end first loop for calculating average PEs
 	petot=sumpes/static_cast<float>(countpes);
-	std::cout << "Deposited energy estimate: " << petot << std::endl;
 
+	for(int thispe=0; thispe<static_cast<int>(south_macs.size()); thispe++){
+
+		auto now = std::chrono::high_resolution_clock::now();
+    		auto milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch());  
+
+		std::stringstream ss;
+		ss << milliseconds.count();
+		string output_milliseconds = ss.str();
+
+		//expected format is t1(uniqueID),south_mac,south_chan,south_init_pe,south_z,south_estimated_pe_deposited,north_mac,north_chan,north_init_pe,north_z,north_estimated_pe,final_avg_pe,num_pairs_chans
+		if(foutCSVFile&&output_singlepes) { 
+
+			filecsv << output_milliseconds << ","; 
+			filecsv << south_macs[thispe] << "," << south_chans[thispe] << "," << south_init_pes[thispe] << "," << south_zposloc[thispe] << "," << south_est_dep_pes[thispe] << ","; 
+			filecsv << north_macs[thispe] << "," << north_chans[thispe] << "," << north_init_pes[thispe] << "," << north_zposloc[thispe] << "," << north_est_dep_pes[thispe] << ","; 
+			filecsv << petot << "," << numpairs << "\n";
+
+		}//end if(foutCSVFile&&output_singlepes)
+
+	}//end loop over estimated energies
+
+	std::cout << "Deposited energy estimate: " << petot << std::endl;
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   // generate hit
   CRTHit hit = FillCRTHit(macs, pesmap, petot, thit, thit1, plane, hitpoint[0],
                           hitpointerr[0], hitpoint[1], hitpointerr[1],
@@ -1723,6 +1854,8 @@ void CRTHitRecoAlg::processLayerData(int i, std::vector<uint8_t>& layerA, std::v
     processChannels(mac, adid, i, "layer2", layer2_map, layerB, informationB);
   }
   }*/
+
+//TB_changes_for_Anna//////////////////////////////////////////////////////////////////////////////////////
 float CRTHitRecoAlg::get_channel_PE(int mac, int chan, map<uint8_t, vector<pair<int, float>>> tpesmap){
 
 	vector<pair<int,float>> chans_to_PEs = tpesmap[static_cast<uint8_t>(mac)];
@@ -1750,4 +1883,5 @@ void CRTHitRecoAlg::get_energy_estimates(float local_z, float south_pe_init, flo
 
 
 }//end definition of function get_energy_estimates
+//////////////////////////////////////////////////////////////////////////////////////////////////////////
 //-----------------------------------------------------------------------------

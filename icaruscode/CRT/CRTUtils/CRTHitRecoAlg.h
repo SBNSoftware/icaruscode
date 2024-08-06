@@ -53,6 +53,8 @@
 #include <sstream>
 #include <utility>
 #include <vector>
+#include <chrono>//added by TB for testing individual channel PEs
+#include <sstream>//also added by TB for testing individual channel PEs
 // ROOT
 #include "TGeoManager.h"
 #include "TVector3.h"
@@ -154,8 +156,11 @@ class icarus::crt::CRTHitRecoAlg {
   void recoZwithTiming(uint8_t mac1, uint8_t mac2, uint64_t t0_1, uint64_t t0_2, float fPropDelay, float& zpos, bool& is_deltaT_over50ns);
   int checkNextModID(std::unordered_map<int,std::pair<uint8_t,uint8_t>> layer_map, int i, const std::vector<info>& information);
   void recoZwithPE(uint8_t mac1, uint8_t mac2, map<uint8_t, vector<pair<int, float>>> tpesmap, float& zpos); // just for fun 
+
+  //TB_changes_for_Anna//////////////////////////////////////////////////////////////////////////////
   float get_channel_PE(int mac, int chan, map<uint8_t, vector<pair<int, float>>> tpesmap);
   void get_energy_estimates(float local_z, float south_pe_init, float north_pe_init, float &south_pe_estimate, float &north_pe_estimate);
+  ///////////////////////////////////////////////////////////////////////////////////////////////////
 
   //void checkNextModID(std::unordered_map<int,std::pair<uint8_t,uint8_t>> layer_map, int i, const std::vector<info>& information, int index);
   //void processInformation(const std::vector<info>& information, fGeometryService& adGeo, int fVerbose, bool& layer, uint64_t& t1, uint64_t& t2, TVector3& pos, float fPropDelay);
