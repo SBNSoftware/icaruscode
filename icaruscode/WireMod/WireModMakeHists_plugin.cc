@@ -43,11 +43,11 @@ namespace WireMod {
 
   // 5D map to store all of the data to be made in Histograms
   /* The Following are what the indices correspond to:
-  a = 0,1,2 are the planes
-  b = 0,1 are E and W
-  c = 0,1,2,3 are E, E, W, W respectively
-  d = 0,1,2,3,4,5,6, 7, 8 correspond to values of x,y,z,theta,phi,maximum,fwhm, gaussian height, and gaussian chi^2 respectively
-  e = 0,1: 1 indicates if the track crosses any anode or cathode
+  a = 0, 1, 2 are the planes
+  b = 0, 1 are E and W
+  c = 0, 1, 2, 3 are E, E, W, W respectively
+  d = 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 correspond to values of x, y, z, theta, phi, inetgral, fwhm, gaussian width, gaussian integral, and gaussian chi^2 respectively
+  e = 0, 1: 1 indicates if the track crosses any anode or cathode
   */
   class FiveDMap {
     class FourDMap {
@@ -173,7 +173,7 @@ namespace WireMod {
   const std::vector<std::string> planes = {"0", "1", "2"};
   const std::vector<std::string> tpc0s = {"E", "W"};
   const std::vector<std::string> tpc1s = {"E", "E", "W", "W"};
-  const std::vector<std::string> variables = {"X", "Y", "Z", "Theta", "Phi", "Amplitude", "FWHM", "GaussWidth", "GaussHeight", "GaussFit"};
+  const std::vector<std::string> variables = {"X", "Y", "Z", "Theta", "Phi", "Integral", "FWHM", "GaussWidth", "GaussIntegral", "GaussFit"};
   const std::vector<std::string> hitchoices = {"ALL_HITS", "SELECTED_HITS"};
 
   
@@ -531,40 +531,42 @@ namespace WireMod {
                                               endTick + endBuffer);                                                     //> upper edge
               // ROOT counts from 1, everyone else counts from 0
               //for (size_t bin = 1; bin < endTick - fstTick + 1; ++bin)
+              double integral = 0;
               for (size_t bin = 1; bin < hitWidth + fstBuffer + endBuffer + 1; ++bin){
-                float wvfmVal = (wirePtr->Signal())[fstTick - fstBuffer + bin - 1]; 
+                float wvfmVal = (wirePtr->Signal())[fstTick - fstBuffer + bin - 1];
+                integral += wvfmVal;
                 waveformHist->SetBinContent(bin, wvfmVal);
               }
               
-              // Calculate amplitude and FWHM and adding to vector of data
+              // Calculate integral and FWHM and adding to vector of data
               double amplitude = waveformHist-> GetMaximum();
               double half_max = amplitude / 2.0;
               int bin1 = waveformHist->FindFirstBinAbove(half_max);
               int bin2 = waveformHist->FindLastBinAbove(half_max);
               double fwhm = waveformHist->GetBinCenter(bin2) - waveformHist->GetBinCenter(bin1);
               
-              data[planeID][cryoID][tpcID][5][0].push_back(amplitude);
-              loopdata[planeID][cryoID][tpcID][5][0].push_back(amplitude);
+              data[planeID][cryoID][tpcID][5][0].push_back(integral);
+              loopdata[planeID][cryoID][tpcID][5][0].push_back(integral);
               data[planeID][cryoID][tpcID][6][0].push_back(fwhm);
               loopdata[planeID][cryoID][tpcID][6][0].push_back(fwhm);
 
               //getting the gaussian information
-              double gaussheight = hitPtr->PeakAmplitude();
+              double gaussintegral = hitPtr->Integral();
               double gausswidth = hitPtr->RMS();
               double gaussfit = hitPtr->GoodnessOfFit();
               if (fXCorrection)
               {
-                TSpline3* heightSpline = fXCorrFile->Get<TSpline3>(("xHeight_" + std::to_string(planeID) + "_ratio_prof").c_str());
+                TSpline3* integralSpline = fXCorrFile->Get<TSpline3>(("xIntegral_" + std::to_string(planeID) + "_ratio_prof").c_str());
                 TSpline3* widthSpline  = fXCorrFile->Get<TSpline3>(("xWidth_"  + std::to_string(planeID) + "_ratio_prof").c_str());
-                gaussheight *= heightSpline->Eval(hitLoc.X());
+                gaussintegral *= integralSpline->Eval(hitLoc.X());
                 gausswidth  *= widthSpline ->Eval(hitLoc.X());
               }
 
               data[planeID][cryoID][tpcID][7][0].push_back(gausswidth);
-              data[planeID][cryoID][tpcID][8][0].push_back(gaussheight);
+              data[planeID][cryoID][tpcID][8][0].push_back(gaussintegral);
               data[planeID][cryoID][tpcID][9][0].push_back(gaussfit);
               loopdata[planeID][cryoID][tpcID][7][0].push_back(gausswidth);
-              loopdata[planeID][cryoID][tpcID][8][0].push_back(gaussheight);
+              loopdata[planeID][cryoID][tpcID][8][0].push_back(gaussintegral);
               loopdata[planeID][cryoID][tpcID][9][0].push_back(gaussfit);
 
               //Adding values to vectors for plotting
