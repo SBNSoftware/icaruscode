@@ -48,6 +48,7 @@ namespace TrackSplit {
 
   private:
     const double fPi = std::acos(-1);
+    const geo::GeometryCore* fGeometry = lar::providerFrom<geo::Geometry>(); // get the geometry
     art::InputTag fTag;
     TH1D* fHist;
     TH2D* fHist2d;
@@ -91,6 +92,34 @@ namespace TrackSplit {
       recob::Track::Point_t  startPos1 = track1->Start();
       recob::Track::Point_t    endPos1 = track1->End();
       double                   length1 = track1->Length();
+
+      // DEMO - check the channels the end of track1 is on (check only the first track to not print too much)
+      // iterate over the plane geometries to find the channel in that plane which sees the point
+      if (idx_1 == 0)
+      {
+        mf::LogVerbatim("Demo")
+          << "****************************************************";
+        for (auto const& planeGeom : fGeometry->Iterate<geo::PlaneGeo>())
+        {
+          // try to find the nearest channel, catch exceptions where it can't find one
+          try
+          {
+            raw::ChannelID_t endChannel = fGeometry->NearestChannel(endPos1, planeGeom.ID());
+            mf::LogVerbatim("Demo")
+              << planeGeom.ID().toString() << " has channel " << endChannel << " nearest to the end of track 1";
+          }
+          catch(const std::exception& e)
+          {
+            mf::LogVerbatim("Demo")
+              << planeGeom.ID().toString() << " does not have a channel which is near the end of track1" << '\n'
+              << "  exception:" << '\n' << e.what();
+          }
+        }
+        mf::LogVerbatim("Demo")
+          << "****************************************************";
+      }
+      // END DEMO
+       
 
       // if the track is short, skip it
       if (length1 < 20)
