@@ -501,10 +501,10 @@ float opana::ICARUSFlashAssAna::getRWMRelativeTime(int channel, float t) {
 
   auto rwm = fRWMTimes.at(channel);
   if ( !rwm.isValid() ){
-    mf::LogTrace("ICARUSBeamStructureAna") << "No RWM signal for channel " << channel << " "
-                                           << "(Crate " << rwm.crate << ", Board " << rwm.digitizerLabel 
-                                           << ", SpecialChannel " << rwm.specialChannel << ")"
-                                           << " in event " << m_event << " gate " << m_gate_name; 
+    mf::LogTrace("ICARUSFlashAssAna") << "No RWM signal for channel " << channel << " "
+                                      << "(Crate " << rwm.crate << ", Board " << rwm.digitizerLabel 
+                                      << ", SpecialChannel " << rwm.specialChannel << ")"
+                                      << " in event " << m_event << " gate " << m_gate_name; 
     return 0;
   }
  
@@ -744,22 +744,22 @@ void opana::ICARUSFlashAssAna::analyze(art::Event const& e) {
 
     } else { 
       mf::LogError("ICARUSFlashAssAna") << "No raw::Trigger associated to label: " << fTriggerLabel.label() << "!" ; 
-    }
-  
-  } else {
-    mf::LogError("ICARUSFlashAssAna") << "Trigger Data product " << fTriggerLabel.label() << " not found!\n" ; 
-  }
+    }  
+  } 
 
   // -----
   // RWM INFO
   // We work out the RWM information here 
   // it might be empty if offbeam or missing, bu that's okay!
   
-  fRWMTimes = e.getProduct<std::vector<icarus::timing::PMTBeamSignal>>(fRWMLabel);
-  if ( fRWMTimes.empty() )
-    mf::LogTrace("ICARUSBeamStructureAna") << "Data product std::vector<icarus::timing::PMTBeamSignal> for '" << fRWMLabel.label()
-                                           << "' is empty in " << m_gate_name << " event!";
+  if( !fRWMLabel.empty() ){ 
 
+    fRWMTimes = e.getProduct<std::vector<icarus::timing::PMTBeamSignal>>(fRWMLabel);
+    if ( fRWMTimes.empty() )
+      mf::LogTrace("ICARUSFlashAssAna") << "Data product std::vector<icarus::timing::PMTBeamSignal> for '"
+                                             << fRWMLabel.label() << "' is empty in " << m_gate_name << " event!";
+  }
+  
   // -----
   // WAVEFORM INFO
   // Now we work on the waveforms if we are allowed to
