@@ -75,6 +75,13 @@ icarus_simwire_wirecell:
     }
 }
 
+# SimChannel only (SConly) CONFIG
+icarus_simwire_wirecell_SConly: @local::icarus_simwire_wirecell
+icarus_simwire_wirecell_SConly.wcls_main.configs: ["pgrapher/experiment/icarus/wcls-multitpc-sim-drift-simchannel-true.jsonnet"]
+icarus_simwire_wirecell_SConly.wcls_main.outputers:[
+            "wclsDepoFluxWriter:postdrift"
+]
+
 # TUNED FR CONFIG
 icarus_simwire_wirecell_fitSR: @local::icarus_simwire_wirecell
 # Add in the ER tail
