@@ -180,7 +180,7 @@ namespace WireMod {
   // Bin information
   const int nbins_amp = 100;
   const std::vector<double> mins = {-360.0, -182.0, -896, 0, 0, 0, 0, 0, 0, 0};
-  const std::vector<double> maxs = {360.0, 182.0, 896, acos(0), acos(0), 200, 200, 20, 200, 200};
+  const std::vector<double> maxs = {360.0, 182.0, 896, acos(0), acos(0), 2000, 2000, 200, 2000, 2000};
 
 
   /**
@@ -192,13 +192,15 @@ namespace WireMod {
    * @param maxX The maximum value for the X axis.
    * @param x_values The vector of X values to fill the histogram.
    * @param y_values The vector of Y values to fill the histogram.
+   * @param minY The minimum value for the Y axis.
+   * @param maxY The maximum value for the Y axis.
    */
-  void CreateAndSaveHist(const char* name, const char* title, int nbinsX, double minX, double maxX, std::vector<double>& x_values, std::vector<double>& y_values) {
+  void CreateAndSaveHist(const char* name, const char* title, int nbinsX, double minX, double maxX, std::vector<double>& x_values, std::vector<double>& y_values, double minY, double maxY) {
     if (x_values.size() != y_values.size() || x_values.empty()) {
       return;
     }
     art::ServiceHandle<art::TFileService> tfs;
-    TH2D* hist = tfs->make<TH2D>(name, title, nbinsX, minX, maxX, nbins_amp, 0, 200);
+    TH2D* hist = tfs->make<TH2D>(name, title, nbinsX, minX, maxX, nbins_amp, minY, maxY);
     for (size_t i = 0; i < x_values.size(); i++) {
       hist->Fill(x_values[i], y_values[i]);
     }
