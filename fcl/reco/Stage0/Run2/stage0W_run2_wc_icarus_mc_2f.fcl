@@ -1,0 +1,6 @@
+#include "stage0W_run2_wc_icarus_mc.fcl"
+
+physics.producers.decon2droiEE.wcls_main.configs: ["pgrapher/experiment/icarus/wcls-decode-to-sig-twofaced.jsonnet"]
+physics.producers.decon2droiEW.wcls_main.configs: ["pgrapher/experiment/icarus/wcls-decode-to-sig-twofaced.jsonnet"]
+physics.producers.decon2droiWE.wcls_main.configs: ["pgrapher/experiment/icarus/wcls-decode-to-sig-twofaced.jsonnet"]
+physics.producers.decon2droiWW.wcls_main.configs: ["pgrapher/experiment/icarus/wcls-decode-to-sig-twofaced.jsonnet"]
