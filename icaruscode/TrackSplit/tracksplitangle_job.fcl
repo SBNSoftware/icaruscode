@@ -20,10 +20,12 @@ outputs:
     {
       producers:
       {
-        tracksE: {@table::tracksplitangle_East}
-        tracksW: {@table::tracksplitangle_West}
+        #tracksE: {@table::tracksplitangle_East}
+        #tracksW: {@table::tracksplitangle_West}
+        allTracks: {@table::standard_tracksplitangle}
       }
-      rpPath: [tracksE, tracksW]
+      #rpPath: [tracksE, tracksW]
+      rpPath: [allTracks]
     }
   }
 }

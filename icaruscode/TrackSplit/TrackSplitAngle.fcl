@@ -3,10 +3,10 @@ BEGIN_PROLOG
 standard_tracksplitangle:
 {
   plugin_type: "TrackSplitAngle"
-  Label: "pandoraTrackGausCryoE"
 }
 
 tracksplitangle_East: @local::standard_tracksplitangle
+tracksplitangle_East.Label: "pandoraTrackGausCryoE"
 tracksplitangle_West: @local::standard_tracksplitangle
 tracksplitangle_West.Label: "pandoraTrackGausCryoW"
 

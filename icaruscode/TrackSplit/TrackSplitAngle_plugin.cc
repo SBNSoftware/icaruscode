@@ -29,6 +29,7 @@
 #include "art_root_io/TFileDirectory.h"
 #include "fhiclcpp/ParameterSet.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
+#include "canvas/Persistency/Common/FindManyP.h"
 #include "canvas/Utilities/InputTag.h"
 #include "lardata/Utilities/AssociationUtil.h"
 #include "lardataobj/RecoBase/Track.h"
@@ -52,6 +53,7 @@ namespace TrackSplit {
     art::InputTag fTag;
     TH1D* fHist;
     TH2D* fHist2d;
+    bool  fBothCryo = false; // run both cryostats?
   };//end TrackSplitAngle class
 
   //-------------------------------------------------------------
@@ -63,7 +65,8 @@ namespace TrackSplit {
   //-------------------------------------------------------------
   void TrackSplitAngle::reconfigure(fhicl::ParameterSet const& pset)
   {
-    fTag = pset.get<art::InputTag>("Label", "pandoraTrackGausCryoE");
+    fTag = pset.get<art::InputTag>("Label", "");
+    fBothCryo = (fTag.empty());
 
     art::ServiceHandle<art::TFileService> tfs;
     fHist   = tfs->make<TH1D>(("AnglesBtwnTracks_"     +fTag.label()).c_str(), ";Opening Angle Between Tracks (rad);Pairs of Tracks" , 360, 0, fPi);
@@ -74,19 +77,33 @@ namespace TrackSplit {
   void TrackSplitAngle::event(art::Event const& evt)
   {
     // get the tracks
-    art::Handle<std::vector<recob::Track>> trackHandle;
-    evt.getByLabel(fTag, trackHandle);
-    art::FindManyP<recob::Hit, recob::TrackHitMeta> hitsFromTracks(trackHandle, evt, fTag);
+    art::Handle<std::vector<recob::Track>> trackHandle1;
+    art::Handle<std::vector<recob::Track>> trackHandle2;
+    size_t sizeHandle2 = 0;
+    if (not fBothCryo)
+    {
+      evt.getByLabel(fTag, trackHandle1);
+    } else {
+      evt.getByLabel("pandoraTrackGausCryoE", trackHandle1);
+      evt.getByLabel("pandoraTrackGausCryoE", trackHandle2);
+      sizeHandle2 = trackHandle2->size();
+    }
+
 
     // loop over the tracks
-    for (size_t idx_1 = 0; idx_1 < trackHandle->size(); ++idx_1)
+    for (size_t idx_1 = 0; idx_1 < (trackHandle1->size() + sizeHandle2); ++idx_1)
     {
       // get the first track
-      art::Ptr<recob::Track> track1(trackHandle, idx_1);
+      bool track1_inHandle1 = (idx_1 < trackHandle1->size());
+      art::Ptr<recob::Track> track1 = (track1_inHandle1) ? art::Ptr<recob::Track>(trackHandle1, idx_1)
+                                    :                      art::Ptr<recob::Track>(trackHandle2, idx_1 - trackHandle1->size());
 
       // get the track info
-      std::vector<art::Ptr<recob::Hit>> trackHits1 = hitsFromTracks.at(track1.key());
-      std::vector<const recob::TrackHitMeta*> trackMetas1 = hitsFromTracks.data(track1.key());
+      art::FindManyP<recob::Hit, recob::TrackHitMeta> hitsFromTracks1 = (not fBothCryo)    ? art::FindManyP<recob::Hit, recob::TrackHitMeta>(trackHandle1, evt, fTag)
+                                                                      : (track1_inHandle1) ? art::FindManyP<recob::Hit, recob::TrackHitMeta>(trackHandle1, evt, "pandoraTrackGausCryoE")
+                                                                      :                      art::FindManyP<recob::Hit, recob::TrackHitMeta>(trackHandle2, evt, "pandoraTrackGausCryoW");
+      std::vector<art::Ptr<recob::Hit>> trackHits1 = hitsFromTracks1.at(track1.key());
+      std::vector<const recob::TrackHitMeta*> trackMetas1 = hitsFromTracks1.data(track1.key());
       recob::Track::Vector_t startDir1 = track1->StartDirection();
       recob::Track::Vector_t   endDir1 = track1->EndDirection();
       recob::Track::Point_t  startPos1 = track1->Start();
@@ -141,14 +158,19 @@ namespace TrackSplit {
       }
 
       // idx_1 sets the first track, pair off with all sub
-      for (size_t idx_2 = idx_1 + 1; idx_2 < trackHandle->size(); ++idx_2)
+      for (size_t idx_2 = idx_1 + 1; idx_2 < (trackHandle1->size() + sizeHandle2); ++idx_2)
       {
         // get the second track
-        art::Ptr<recob::Track> track2(trackHandle, idx_2);
+        bool track2_inHandle1 = (idx_2 < trackHandle1->size());
+        art::Ptr<recob::Track> track2 = (track2_inHandle1) ? art::Ptr<recob::Track>(trackHandle1, idx_2)
+                                      :                      art::Ptr<recob::Track>(trackHandle2, idx_2 - trackHandle1->size());
 
         // get the track info
-        std::vector<art::Ptr<recob::Hit>> trackHits2 = hitsFromTracks.at(track2.key());
-        std::vector<const recob::TrackHitMeta*> trackMetas2 = hitsFromTracks.data(track2.key());
+        art::FindManyP<recob::Hit, recob::TrackHitMeta> hitsFromTracks2 = (not fBothCryo)    ? art::FindManyP<recob::Hit, recob::TrackHitMeta>(trackHandle1, evt, fTag)
+                                                                        : (track2_inHandle1) ? art::FindManyP<recob::Hit, recob::TrackHitMeta>(trackHandle1, evt, "pandoraTrackGausCryoE")
+                                                                        :                      art::FindManyP<recob::Hit, recob::TrackHitMeta>(trackHandle2, evt, "pandoraTrackGausCryoW");
+        std::vector<art::Ptr<recob::Hit>> trackHits2 = hitsFromTracks2.at(track2.key());
+        std::vector<const recob::TrackHitMeta*> trackMetas2 = hitsFromTracks2.data(track2.key());
         recob::Track::Vector_t startDir2 = track2->StartDirection();
         recob::Track::Vector_t   endDir2 = track2->EndDirection();
         recob::Track::Point_t  startPos2 = track2->Start();
