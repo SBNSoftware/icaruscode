@@ -195,7 +195,7 @@ namespace WireMod {
    * @param minY The minimum value for the Y axis.
    * @param maxY The maximum value for the Y axis.
    */
-  void CreateAndSaveHist(const char* name, const char* title, int nbinsX, double minX, double maxX, std::vector<double>& x_values, std::vector<double>& y_values, double minY, double maxY) {
+  void CreateAndSaveHist(const char* name, const char* title, int nbinsX, double minX, double maxX, std::vector<double>& x_values, double minY, double maxY, std::vector<double>& y_values) {
     if (x_values.size() != y_values.size() || x_values.empty()) {
       return;
     }
@@ -288,6 +288,8 @@ namespace WireMod {
                                   mins[d],
                                   maxs[d],
                                   data[a][b][c][d][e],
+                                  mins[5],
+                                  maxs[5],
                                   data[a][b][c][5][e]
                                 );
               //FWHM Histograms
@@ -297,6 +299,8 @@ namespace WireMod {
                                   mins[d],
                                   maxs[d],
                                   data[a][b][c][d][e],
+                                  mins[6],
+                                  maxs[6],
                                   data[a][b][c][6][e]
                                 );
               //Gaussian Hitograms               
@@ -306,6 +310,8 @@ namespace WireMod {
                                   mins[d],
                                   maxs[d],
                                   data[a][b][c][d][e],
+                                  mins[7],
+                                  maxs[7],
                                   data[a][b][c][7][e]
                                 );
               CreateAndSaveHist(("Plane_" + planes[a] + "_" + tpc0s[b] + "_" +  tpc0s[c] + "_" + variables[d] + "_" + variables[8] + "_" + hitchoices[e]).c_str(),
@@ -314,6 +320,8 @@ namespace WireMod {
                                   mins[d],
                                   maxs[d],
                                   data[a][b][c][d][e],
+                                  mins[8],
+                                  maxs[8],
                                   data[a][b][c][8][e]
                                 );
               CreateAndSaveHist(("Plane_" + planes[a] + "_" + tpc0s[b] + "_" +  tpc0s[c] + "_" + variables[d] + "_" + variables[9] + "_" + hitchoices[e]).c_str(),
@@ -322,6 +330,8 @@ namespace WireMod {
                                   mins[d],
                                   maxs[d],
                                   data[a][b][c][d][e],
+                                  mins[9],
+                                  maxs[9],
                                   data[a][b][c][9][e]
                                 );                                                  
               }

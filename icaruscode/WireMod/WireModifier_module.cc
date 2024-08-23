@@ -736,7 +736,8 @@ namespace wiremod
           SubROIMatchedScalesMap[key] = scale_vals;
         }
         
-        wmUtil.ModifyROI(modified_data, roi_properties, subROIPropVec, SubROIMatchedScalesMap);
+        //wmUtil.ModifyROI(modified_data, roi_properties, subROIPropVec, SubROIMatchedScalesMap);
+        wmUtil.ModifyROI_Alt(modified_data, roi_properties, subROIPropVec, SubROIMatchedScalesMap);
         new_rois     .add_range(roi_properties.begin, modified_data);
         new_rois_ints.add_range(roi_properties.begin, modified_data);
       }
