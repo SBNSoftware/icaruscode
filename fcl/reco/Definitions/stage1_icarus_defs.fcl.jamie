@@ -12,6 +12,7 @@
 #include "icarus_trackcalo_skimmer.fcl"
 #include "icarus_opana_modules.fcl"
 #include "icarus_FilterNumberTPCHits.fcl"
+
 ### JCZ: Add simple flashmatch to this area
 #include "flashmatch_simple_icarus.fcl"
 #include "crttrackproducer_icarus.fcl"
@@ -75,9 +76,10 @@ icarus_stage1_producers:
  mcsubooneGausCryoW:                @local::mcsfitproducer_uboone
  mcsubooneGausCryoE:                @local::mcsfitproducer_uboone
  mcsubooneGausCryoWinicut:                @local::mcsfitproducer_uboone_inicut
- mcsubooneGausCryoEinicut:                @local::mcsfitproducer_uboone_inicut 
+ mcsubooneGausCryoEinicut:                @local::mcsfitproducer_uboone_inicut
  mcsubooneGausCryoEfincut:                @local::mcsfitproducer_uboone_fincut
- mcsubooneGausCryoWfincut:                @local::mcsfitproducer_uboone_fincut
+ mcsubooneGausCryoWfincut:                @local::mcsfitproducer_uboone_fincut 
+
 ##range
  rangeproducerCryoW:                @local::range_sbn
  rangeproducerCryoE:                @local::range_sbn
@@ -163,8 +165,13 @@ icarus_stage1_analyzers.caloskimE.MCSproducerUIC: mcsubooneGausCryoEinicut
 icarus_stage1_analyzers.caloskimE.MCSproducerIIC: mcsicarusGausCryoEinicut
 icarus_stage1_analyzers.caloskimE.MCSproducerUFC: mcsubooneGausCryoEfincut
 icarus_stage1_analyzers.caloskimE.MCSproducerIFC: mcsicarusGausCryoEfincut
+icarus_stage1_analyzers.caloskimE.G4producer: "largeant"
+icarus_stage1_analyzers.caloskimE.SimChannelproducer: "daq:simpleSC"
 icarus_stage1_analyzers.caloskimE.RangeInputtag: "rangeproducerCryoE:muon"
 icarus_stage1_analyzers.caloskimE.SilenceMissingDataProducts: true
+icarus_stage1_analyzers.caloskimE.RequireT0: false
+icarus_stage1_analyzers.caloskimE.SelectionTools: [@local::stopping_selection, @local::a2c_selection, @local::throughgoing_selection, @local::selectall]
+
 
 icarus_stage1_analyzers.caloskimW.SelectEvents: [reco]
 icarus_stage1_analyzers.caloskimW.CALOproducer: caloskimCalorimetryCryoW 
@@ -174,9 +181,13 @@ icarus_stage1_analyzers.caloskimW.MCSproducerUIC: mcsubooneGausCryoWinicut
 icarus_stage1_analyzers.caloskimW.MCSproducerIIC: mcsicarusGausCryoWinicut
 icarus_stage1_analyzers.caloskimW.MCSproducerUFC: mcsubooneGausCryoWfincut
 icarus_stage1_analyzers.caloskimW.MCSproducerIFC: mcsicarusGausCryoWfincut
+icarus_stage1_analyzers.caloskimW.G4producer: "largeant"
+icarus_stage1_analyzers.caloskimW.SimChannelproducer: "daq:simpleSC"
 icarus_stage1_analyzers.caloskimW.RangeInputtag: "rangeproducerCryoW:muon"
-
 icarus_stage1_analyzers.caloskimW.SilenceMissingDataProducts: true
+icarus_stage1_analyzers.caloskimW.RequireT0: false
+icarus_stage1_analyzers.caloskimW.SelectionTools: [@local::stopping_selection, @local::a2c_selection, @local::throughgoing_selection, @local::selectall]
+
 
 icarus_stage1_analyzers.supera.unique_filename: true
 
@@ -219,6 +230,7 @@ icarus_reco_pandoraGausCryoW:      [ pandoraGausCryoW,
 ,mcsicarusGausCryoWfincut
 ,mcsubooneGausCryoWinicut
 ,mcsicarusGausCryoWinicut
+
 ,rangeproducerCryoW
 #                                     ,pandoraKalmanTrackGausCryoW,
 #                                     ,SBNShowerGausCryoW
@@ -280,8 +292,8 @@ icarus_stage1_filters.TPCHitFilterCryoE.MaximumHits:     60000
 
 ## Definitions for running the 3D clustering by Cryostat
 icarus_stage1_producers.cluster3DCryoW.MakeSpacePointsOnly:                                      true
-icarus_stage1_producers.cluster3DCryoW.Hit3DBuilderAlg.HitFinderTagVec:                          ["gaushit1dTPCWW", "gaushit1dTPCWE"]
-#icarus_stage1_producers.cluster3DCryoW.Hit3DBuilderAlg.HitFinderTagVec:                          ["gaushitTPCWW", "gaushitTPCWE"]
+#icarus_stage1_producers.cluster3DCryoW.Hit3DBuilderAlg.HitFinderTagVec:                          ["gaushit1dTPCWW", "gaushit1dTPCWE"]
+icarus_stage1_producers.cluster3DCryoW.Hit3DBuilderAlg.HitFinderTagVec:                          ["gaushitTPCWW", "gaushitTPCWE"]
 icarus_stage1_producers.cluster3DCryoW.Hit3DBuilderAlg.PulseHeightFraction:                      0. #0.75 #0.25
 icarus_stage1_producers.cluster3DCryoW.Hit3DBuilderAlg.PHLowSelection:                           0. #4.0 # 20.
 icarus_stage1_producers.cluster3DCryoW.Hit3DBuilderAlg.MaxHitChiSquare:                          1000000.
@@ -289,8 +301,8 @@ icarus_stage1_producers.cluster3DCryoW.Hit3DBuilderAlg.MaxMythicalChiSquare:    
 icarus_stage1_producers.cluster3DCryoW.Hit3DBuilderAlg.OutputHistograms:                         false
 
 icarus_stage1_producers.cluster3DCryoE.MakeSpacePointsOnly:                                      true
-icarus_stage1_producers.cluster3DCryoE.Hit3DBuilderAlg.HitFinderTagVec:                          ["gaushit1dTPCEW", "gaushit1dTPCEE"]
-#icarus_stage1_producers.cluster3DCryoE.Hit3DBuilderAlg.HitFinderTagVec:                          ["gaushitTPCEW", "gaushitTPCEE"]
+#icarus_stage1_producers.cluster3DCryoE.Hit3DBuilderAlg.HitFinderTagVec:                          ["gaushit1dTPCEW", "gaushit1dTPCEE"]
+icarus_stage1_producers.cluster3DCryoE.Hit3DBuilderAlg.HitFinderTagVec:                          ["gaushitTPCEW", "gaushitTPCEE"]
 icarus_stage1_producers.cluster3DCryoE.Hit3DBuilderAlg.PulseHeightFraction:                      0. #0.75 #0.25
 icarus_stage1_producers.cluster3DCryoE.Hit3DBuilderAlg.PHLowSelection:                           0. #4.0 # 20.
 icarus_stage1_producers.cluster3DCryoE.Hit3DBuilderAlg.MaxHitChiSquare:                          1000000.
@@ -355,6 +367,7 @@ icarus_stage1_producers.mcsubooneGausCryoWfincut.fitter.cutMode:                
 icarus_stage1_producers.mcsubooneGausCryoEfincut.fitter.cutMode:                               1 
 
 
+
 icarus_stage1_producers.mcsicarusGausCryoWinicut.fitter.cutLength:                               98.
 icarus_stage1_producers.mcsicarusGausCryoEinicut.fitter.cutLength:                               98.
 icarus_stage1_producers.mcsubooneGausCryoWinicut.fitter.cutLength:                               98.
@@ -364,19 +377,7 @@ icarus_stage1_producers.mcsicarusGausCryoEfincut.fitter.cutLength:              
 icarus_stage1_producers.mcsubooneGausCryoWfincut.fitter.cutLength:                               50.
 icarus_stage1_producers.mcsubooneGausCryoEfincut.fitter.cutLength:                               50.
 
-icarus_stage1_producers.mcsicarusGausCryoWinicut.fitter.pMin:                               100.
-icarus_stage1_producers.mcsicarusGausCryoEinicut.fitter.pMin:                               100.
-icarus_stage1_producers.mcsicarusGausCryoWfincut.fitter.pMin:                               100.
-icarus_stage1_producers.mcsicarusGausCryoEfincut.fitter.pMin:                               100.
-icarus_stage1_producers.mcsicarusGausCryoWinicut.fitter.pStep:                               100.
-icarus_stage1_producers.mcsicarusGausCryoEinicut.fitter.pStep:                               100.
-icarus_stage1_producers.mcsicarusGausCryoWfincut.fitter.pStep:                               100.
-icarus_stage1_producers.mcsicarusGausCryoEfincut.fitter.pStep:                               100.
 
-icarus_stage1_producers.mcsicarusGausCryoWinicut.fitter.pMax:                               600.
-icarus_stage1_producers.mcsicarusGausCryoEinicut.fitter.pMax:                               600.
-icarus_stage1_producers.mcsicarusGausCryoWfincut.fitter.pMax:                               600.
-icarus_stage1_producers.mcsicarusGausCryoEfincut.fitter.pMax:                               600.
 
 icarus_stage1_producers.rangeproducerCryoW.TrackLabel:                               "pandoraTrackGausCryoW"
 icarus_stage1_producers.rangeproducerCryoE.TrackLabel:                               "pandoraTrackGausCryoE"

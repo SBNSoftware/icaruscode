@@ -364,19 +364,19 @@ icarus_stage1_producers.mcsicarusGausCryoEfincut.fitter.cutLength:              
 icarus_stage1_producers.mcsubooneGausCryoWfincut.fitter.cutLength:                               50.
 icarus_stage1_producers.mcsubooneGausCryoEfincut.fitter.cutLength:                               50.
 
-icarus_stage1_producers.mcsicarusGausCryoWinicut.fitter.pMin:                               100.
-icarus_stage1_producers.mcsicarusGausCryoEinicut.fitter.pMin:                               100.
-icarus_stage1_producers.mcsicarusGausCryoWfincut.fitter.pMin:                               100.
-icarus_stage1_producers.mcsicarusGausCryoEfincut.fitter.pMin:                               100.
+icarus_stage1_producers.mcsicarusGausCryoWinicut.fitter.pMin:                               600.
+icarus_stage1_producers.mcsicarusGausCryoEinicut.fitter.pMin:                               600.
+icarus_stage1_producers.mcsicarusGausCryoWfincut.fitter.pMin:                               600.
+icarus_stage1_producers.mcsicarusGausCryoEfincut.fitter.pMin:                               600.
 icarus_stage1_producers.mcsicarusGausCryoWinicut.fitter.pStep:                               100.
 icarus_stage1_producers.mcsicarusGausCryoEinicut.fitter.pStep:                               100.
 icarus_stage1_producers.mcsicarusGausCryoWfincut.fitter.pStep:                               100.
 icarus_stage1_producers.mcsicarusGausCryoEfincut.fitter.pStep:                               100.
 
-icarus_stage1_producers.mcsicarusGausCryoWinicut.fitter.pMax:                               600.
-icarus_stage1_producers.mcsicarusGausCryoEinicut.fitter.pMax:                               600.
-icarus_stage1_producers.mcsicarusGausCryoWfincut.fitter.pMax:                               600.
-icarus_stage1_producers.mcsicarusGausCryoEfincut.fitter.pMax:                               600.
+icarus_stage1_producers.mcsicarusGausCryoWinicut.fitter.pMax:                               1000.
+icarus_stage1_producers.mcsicarusGausCryoEinicut.fitter.pMax:                               1000.
+icarus_stage1_producers.mcsicarusGausCryoWfincut.fitter.pMax:                               1000.
+icarus_stage1_producers.mcsicarusGausCryoEfincut.fitter.pMax:                               1000.
 
 icarus_stage1_producers.rangeproducerCryoW.TrackLabel:                               "pandoraTrackGausCryoW"
 icarus_stage1_producers.rangeproducerCryoE.TrackLabel:                               "pandoraTrackGausCryoE"
