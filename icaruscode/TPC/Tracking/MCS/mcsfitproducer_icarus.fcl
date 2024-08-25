@@ -12,10 +12,12 @@ mcsfitproducericarus_raw: {
 	minHitsPerSegment: 2
 	nElossSteps: 10
 	eLossMode: 0
-	pMin: 0.01
-	pMax: 7.50
-	pStep: 0.01
+	pMin: 100.
+	pMax: 600.
+	pStep: 100.
 	angResol: 3.0
+        cutMode: 0
+        cutLength: 0.
   }
 }
 mcsfitproducericarus_gaus: {
@@ -30,10 +32,52 @@ mcsfitproducericarus_gaus: {
 	minHitsPerSegment: 2
 	nElossSteps: 10
 	eLossMode: 0
-	pMin: 0.01
-	pMax: 7.50
-	pStep: 0.01
+	pMin: 100.
+	pMax: 600.
+	pStep: 100.
 	angResol: 3.0
+        cutMode: 0
+        cutLength: 0.
+  }
+}
+mcsfitproducericarus_gaus_inicut: {
+  module_type:  MCSFitProducerICARUS
+  inputs: {
+        inputLabel: "pandoraTrackGaus"
+  }
+  fitter: {
+  	pIdHypothesis: 13
+	minNumSegments: 6
+	segmentLength: 14.0
+	minHitsPerSegment: 2
+	nElossSteps: 10
+	eLossMode: 0
+	pMin: 100.
+	pMax: 600.
+	pStep: 100.
+	angResol: 3.0
+        cutMode: 2
+        cutLength: 100.
+  }
+}
+mcsfitproducericarus_gaus_fincut: {
+  module_type:  MCSFitProducerICARUS
+  inputs: {
+        inputLabel: "pandoraTrackGaus"
+  }
+  fitter: {
+  	pIdHypothesis: 13
+	minNumSegments: 6
+	segmentLength: 14.0
+	minHitsPerSegment: 2
+	nElossSteps: 10
+	eLossMode: 0
+	pMin: 100.
+	pMax: 600.
+	pStep: 100.
+	angResol: 3.0
+        cutMode: 1
+        cutLength: 50.
   }
 }
 END_PROLOG

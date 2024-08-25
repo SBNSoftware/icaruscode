@@ -9,6 +9,9 @@
 #include "lardataobj/RecoBase/Track.h"
 #include "lardataobj/RecoBase/Hit.h"
 #include "lardata/RecoObjects/TrackState.h"
+#include "TMatrixDSym.h"
+
+
 
 namespace trkf {
   /**
@@ -89,10 +92,18 @@ namespace trkf {
 	Comment("Angular resolution parameter used in modified Highland formula. Unit is mrad."),
 	3.0
       };
+      fhicl::Atom<int> cutMode{
+        Name("cutMode"),
+        Comment("Flag of track cutting mode. 0=full track, 1=cut final XX cm, 2=keep initial XX cm. XX is given by cutLength variables"),
+        0};
+      fhicl::Atom<float> cutLength{
+        Name("cutLength"),
+        Comment("initial or final cutting length to use for MCS"),
+        0.};
     };
     using Parameters = fhicl::Table<Config>;
     //
-    TrajectoryMCSFitterICARUS(int pIdHyp, int minNSegs, double segLen, int minHitsPerSegment, int nElossSteps, int eLossMode, double pMin, double pMax, double pStep, double angResol){
+    TrajectoryMCSFitterICARUS(int pIdHyp, int minNSegs, double segLen, int minHitsPerSegment, int nElossSteps, int eLossMode, double pMin, double pMax, double pStep, double angResol, double cutMode, double cutLength){
       pIdHyp_ = pIdHyp;
       minNSegs_ = minNSegs;
       segLen_ = segLen;
@@ -103,9 +114,11 @@ namespace trkf {
       pMax_ = pMax;
       pStep_ = pStep;
       angResol_ = angResol;
+      cutMode_=cutMode;
+      cutLength_=cutLength;
     }
     explicit TrajectoryMCSFitterICARUS(const Parameters & p)
-      : TrajectoryMCSFitterICARUS(p().pIdHypothesis(),p().minNumSegments(),p().segmentLength(),p().minHitsPerSegment(),p().nElossSteps(),p().eLossMode(),p().pMin(),p().pMax(),p().pStep(),p().angResol()) {}
+      : TrajectoryMCSFitterICARUS(p().pIdHypothesis(),p().minNumSegments(),p().segmentLength(),p().minHitsPerSegment(),p().nElossSteps(),p().eLossMode(),p().pMin(),p().pMax(),p().pStep(),p().angResol(),p().cutMode(),p().cutLength()) {}
     //
     recob::MCSFitResult fitMcs(const recob::TrackTrajectory& traj, bool momDepConst = true) const { return fitMcs(traj,pIdHyp_,momDepConst); }
     recob::MCSFitResult fitMcs(const recob::Track& track,          bool momDepConst = true) const { return fitMcs(track,pIdHyp_,momDepConst); }
@@ -119,11 +132,11 @@ namespace trkf {
       return fitMcs(tt,pid,momDepConst);
     }
     //
-    void breakTrajInSegments(const recob::TrackTrajectory& traj, std::vector<size_t>& breakpoints, std::vector<float>& segradlengths, std::vector<float>& cumseglens) const;
+    void breakTrajInSegments(const recob::TrackTrajectory& traj, std::vector<size_t>& breakpoints, std::vector<float>& segradlengths, std::vector<float>& cumseglens, int cutMode, float cutLength) const;
     void findSegmentBarycenter(const recob::TrackTrajectory& traj, const size_t firstPoint, const size_t lastPoint, recob::tracking::Vector_t& pcdir) const;
     void linearRegression(const recob::TrackTrajectory& traj, const size_t firstPoint, const size_t lastPoint, recob::tracking::Vector_t& pcdir) const;
     double mcsLikelihood(double p, double theta0x, std::vector<float>& dthetaij, std::vector<float>& seg_nradl, std::vector<float>& cumLen, bool fwd, bool momDepConst, int pid) const;
-double GetOptimalSegLen(const double guess_p, const int n_points, const int plane, const double length_travelled) const;
+double GetOptimalSegLen(const recob::TrackTrajectory& tr,const double guess_p, const int n_points, const int plane, const double length_travelled) const;
 double computeResidual(int i, double& alfa) const;
 void ComputeD3P()   ;
 
@@ -136,6 +149,17 @@ void ComputeD3P()   ;
     };
     //
     const ScanResult doLikelihoodScan(std::vector<float>& dtheta, std::vector<float>& seg_nradlengths, std::vector<float>& cumLen, bool fwdFit, bool momDepConst, int pid) const;
+
+    const double C2Function(const recob::TrackTrajectory& tr, std::vector<float> cumseglens, std::vector<long unsigned int> breakpoints, double p0) const;
+
+
+    const void FillCovMatrixSegOnly(recob::TrackTrajectory tr, TMatrixDSym mat,unsigned int jp,double sms,double serr,TMatrixDSym materr,std::vector<long unsigned int> breaks) const;
+    const void AddSegmentCovariance(recob::TrackTrajectory tr,TMatrixDSym mat, int jm) const;
+    const void FillCovMatrix(recob::TrackTrajectory tr,TMatrixDSym  mat,int jp,double sms,double serr, TMatrixDSym matms, TMatrixDSym materr, std::vector<long unsigned int> breaks) const;
+
+    const void FillCovMixTerms(recob::TrackTrajectory tr,TMatrixDSym mat,int jp,int ns,double sms,double serr) const;
+    const ScanResult C2Fit(std::vector<float>& dtheta, std::vector<float>& seg_nradlengths, std::vector<float>& cumLen,std::vector<size_t>& breaks, bool fwdFit, bool momDepConst, int pid, float sigma, const recob::TrackTrajectory& traj) const;
+  //fit C2(p) function with expected dependency (see ICARUS MCS paper)
     //
     inline double MomentumDependentConstant(const double p) const {
       //these are from https://arxiv.org/abs/1703.06187
@@ -157,6 +181,15 @@ void ComputeD3P()   ;
     void set2DHits(std::vector<recob::Hit> h) {hits2d=h;}
   //  void projectHitsOnPlane(art::Event & e,const recob::Track& traj,int p) const
     //
+
+  double cutMode() const { return cutMode_; }
+ double cutLength() const { return cutLength_; }
+ static Double_t funzio(Double_t *x, Double_t *par) {
+ return 1./(par[0]+par[1]/x[0]/x[0]);
+  // return par[0]+par[1]*x[0];
+ } 
+ double collLength() const;
+double collWireLength();
   private:
     int    pIdHyp_;
     int    minNSegs_;
@@ -168,9 +201,11 @@ void ComputeD3P()   ;
     double pMax_;
     double pStep_;
     double angResol_;
-
+    double cutMode_;
+ double cutLength_;
     std::vector<recob::Hit> hits2d;
     float d3p;
+
   };
 }
 
