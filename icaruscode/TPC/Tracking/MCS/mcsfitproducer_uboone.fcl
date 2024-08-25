@@ -1,0 +1,78 @@
+BEGIN_PROLOG
+mcsfitproducer_uboone: {
+  module_type:  MCSFitProducerUBoone
+  inputs: {
+        inputLabel: @nil
+  }
+  fitter: {
+  	pIdHypothesis: 13
+	minNumSegments: 3
+	segmentLength: 14.0
+	minHitsPerSegment: 2
+	nElossSteps: 10
+	eLossMode: 0
+	pMin: 0.01
+	pMax: 15.0
+	pStepCoarse: 0.1
+	pStep: 0.001
+	fineScanWindow: 1.0
+	angResol: [0., 0., 5.5, -3.5, 0.]
+	hlParams: [0.,0.,11.5,0.,0.]
+        segLenTolerance: 0.1
+        applySCEcorr: true
+        cutMode: 0
+        cutLength: 0.
+     
+  }
+}
+mcsfitproducer_uboone_inicut: {
+  module_type:  MCSFitProducerUBoone
+  inputs: {
+        inputLabel: @nil
+  }
+  fitter: {
+  	pIdHypothesis: 13
+	minNumSegments: 3
+	segmentLength: 14.0
+	minHitsPerSegment: 2
+	nElossSteps: 10
+	eLossMode: 0
+	pMin: 0.01
+	pMax: 15.0
+	pStepCoarse: 0.1
+	pStep: 0.001
+	fineScanWindow: 1.0
+	angResol: [0., 0., 5.5, -3.5, 0.]
+	hlParams: [0.,0.,11.5,0.,0.]
+        segLenTolerance: 0.1
+        applySCEcorr: true
+        cutMode: 2
+        cutLength: 100.
+  }
+}
+mcsfitproducer_uboone_fincut: {
+  module_type:  MCSFitProducerUBoone
+  inputs: {
+        inputLabel: @nil
+  }
+  fitter: {
+  	pIdHypothesis: 13
+	minNumSegments: 3
+	segmentLength: 14.0
+	minHitsPerSegment: 2
+	nElossSteps: 10
+	eLossMode: 0
+	pMin: 0.01
+	pMax: 15.0
+	pStepCoarse: 0.1
+	pStep: 0.001
+	fineScanWindow: 1.0
+	angResol: [0., 0., 5.5, -3.5, 0.]
+	hlParams: [0.,0.,11.5,0.,0.]
+        segLenTolerance: 0.1
+        applySCEcorr: true
+        cutMode: 1
+        cutLength: 50.
+  }
+}
+END_PROLOG
