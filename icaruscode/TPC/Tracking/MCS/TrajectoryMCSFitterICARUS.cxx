@@ -103,7 +103,6 @@ dbcm/=norm;
       }
   }
   //
-  // Perform likelihood scan in forward and backward directions
   //
  std::cout << " before computing c2 " << std::endl;
  double c2= C2Function(traj,cumseglens,breakpoints,1000.);
@@ -175,53 +174,6 @@ else break;
 //exit(33);
   return;
 }
-
-const TrajectoryMCSFitterICARUS::ScanResult TrajectoryMCSFitterICARUS::doLikelihoodScan(std::vector<float>& dtheta, std::vector<float>& seg_nradlengths, std::vector<float>& cumLen, bool fwdFit, bool momDepConst, int pid) const {
-  int    best_idx  = -1;
-  double best_logL = std::numeric_limits<double>::max();
-  double best_p    = -1.0;
-  std::vector<float> vlogL;
- for (double p_test = pMin_; p_test <= pMax_; p_test+=pStep_) {
-    double logL = mcsLikelihood(p_test, angResol_, dtheta, seg_nradlengths, cumLen, fwdFit, momDepConst, pid);
-    if (logL < best_logL) {
-      best_p    = p_test;
-      best_logL = logL;
-      best_idx  = vlogL.size();
-    }
-// std::cout << " ptest " << p_test << " likeli " << logL << " bestp "<< best_p << std::endl;
-//compute likelihood for MC momentum
-  /*  double logL = mcsLikelihood(2., angResol_, dtheta, seg_nradlengths, cumLen, fwdFit, momDepConst, pid);
-    if (logL < best_logL) {
-      best_p    = 2.;
-      best_logL = logL;
-      best_idx  = vlogL.size();
-    }*/
-    vlogL.push_back(logL);
-  }
-  //
-  //uncertainty from left side scan
-  double lunc = -1.0;
-  if (best_idx>0) {
-    for (int j=best_idx-1;j>=0;j--) {
-      double dLL = vlogL[j]-vlogL[best_idx];
-      if ( dLL<0.5 ) {
-	lunc = (best_idx-j)*pStep_;
-      } else break;
-    }
-  }
-  //uncertainty from right side scan
-  double runc = -1.0;
-  if (best_idx<int(vlogL.size()-1)) {  
-    for (unsigned int j=best_idx+1;j<vlogL.size();j++) {
-      double dLL = vlogL[j]-vlogL[best_idx];
-      if ( dLL<0.5 ) {
-	runc = (j-best_idx)*pStep_;
-      } else break;
-    }
-  }
-  
-  return ScanResult(best_p, std::max(lunc,runc), best_logL);
-}
 void TrajectoryMCSFitterICARUS::findSegmentBarycenter(const recob::TrackTrajectory& traj, const size_t firstPoint, const size_t lastPoint, Vector_t& bary) const {
   int npoints = 0;
   geo::vect::MiddlePointAccumulator middlePointCalc;
@@ -288,62 +240,6 @@ void TrajectoryMCSFitterICARUS::linearRegression(const recob::TrackTrajectory& t
   //
 }
 
-double TrajectoryMCSFitterICARUS::mcsLikelihood(double p, double theta0x, std::vector<float>& dthetaij, std::vector<float>& seg_nradl, std::vector<float>& cumLen, bool fwd, bool momDepConst, int pid) const {
-  //
-  const int beg  = (fwd ? 0 : (dthetaij.size()-1));
-  const int end  = (fwd ? dthetaij.size() : -1);
-  const int incr = (fwd ? +1 : -1);
-  //
-//  bool print;
-//  if(p>1.29&&p<1.32)  print = true;//(p>1.999 && p<2.001);
-//  else print=false;
-  //
-  const double m = mass(pid);
-  const double m2 = m*m;
-  const double Etot = sqrt(p*p + m2);//Initial energy
-  double Eij2 = 0.;
-  //
-  double const fixedterm = 0.5 * std::log( 2.0 * M_PI );
-  double result = 0;
-  for (int i = beg; i != end; i+=incr ) {
-    if (dthetaij[i]<0) {
-      //cout << "skip segment with too few points" << endl;
-      continue;
-    }
-    //
-    if (eLossMode_==1) {
-      // ELoss mode: MIP (constant)
-      constexpr double kcal = 0.002105;
-      const double Eij = Etot - kcal*cumLen[i];//energy at this segment
-      Eij2 = Eij*Eij;
-    } else {
-      // Non constant energy loss distribution
-      const double Eij = GetE(Etot,cumLen[i],m);
-      Eij2 = Eij*Eij;
-    }
-    //
-    if ( Eij2 <= m2 ) {
-      result = std::numeric_limits<double>::max();
-      
-      break;
-    }
-    const double pij = sqrt(Eij2 - m2);//momentum at this segment
-    const double beta = sqrt( 1. - ((m2)/(pij*pij + m2)) );
-    constexpr double tuned_HL_term1 = 11.0038; // https://arxiv.org/abs/1703.06187
-    constexpr double HL_term2 = 0.038;
-    const double tH0 = ( (momDepConst ? MomentumDependentConstant(pij) : tuned_HL_term1) / (pij*beta) ) * ( 1.0 + HL_term2 * std::log( seg_nradl[i] ) ) * sqrt( seg_nradl[i] );
-    const double rms = sqrt( 2.0*( tH0 * tH0 + theta0x * theta0x ) );
-    if (rms==0.0) {
-      //std::cout << " Error : RMS cannot be zero ! " << std::endl;
-      return std::numeric_limits<double>::max();
-    } 
-    const double arg = dthetaij[i]/rms;
-    result += ( std::log( rms ) + 0.5 * arg * arg + fixedterm);
-//    if (print && fwd==true) cout << "TrajectoryMCSFitterICARUS pij=" << pij << " dthetaij[i]=" << dthetaij[i] << " tH0=" << tH0 << " rms=" << rms << " prob=" << ( std::log( rms ) + 0.5 * arg * arg + fixedterm) << " const=" << (momDepConst ? MomentumDependentConstant(pij) : tuned_HL_term1) << " beta=" << beta << " red_length=" << seg_nradl[i] <<  " result " << result << endl;
-  }
-  //std::cout << " momentum " << p <<" likelihood " << result << std::endl; 
-  return result;
-}
 
 double TrajectoryMCSFitterICARUS::energyLossLandau(const double mass2,const double e2, const double x) const {
   //
