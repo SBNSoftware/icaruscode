@@ -5,7 +5,7 @@ import time
 
 __author__ = "Gianluca Petrillo (petrillo@slac.stanford.edu)"
 __date__ = time.strptime("July 7, 2021", "%B %d, %Y")
-__version__ = "1.0"
+__version__ = "1.1"
 __doc__ = """
 Manages SAM definitions for ICARUS data run.
 
@@ -38,7 +38,7 @@ Examples:
 from samweb_client.client import SAMWebClient
 import samweb_client.exceptions as samexcpt
 
-logging.basicConfig()
+logging.basicConfig(format="[%(levelname)s] %(message)s")
 
 ExperimentName = "ICARUS"
 SAMExperimentName = ExperimentName.lower()
@@ -624,6 +624,8 @@ if __name__ == "__main__":
     help="sets the experiment name (for definitions) [%(default)s]")
   GeneralOptGroup.add_argument("--samexperiment", "-E",
     help="sets the experiment name (chooses SAM database) [same as --experiment]")
+  GeneralOptGroup.add_argument("--auth", dest="AuthMode", choices=[ 'token', 'cert' ],
+    default='token', help="choose authentication method for SAM [%(default)s]")
   GeneralOptGroup.add_argument("--force", "-F", action="store_true",
     help="skips safety checks of some operations")
   GeneralOptGroup.add_argument("--fake", "--dryrun", "-n", action="store_true",
@@ -643,7 +645,11 @@ if __name__ == "__main__":
   SAMexperiment = args.samexperiment if args.samexperiment else ExperimentName.lower()
 
   logging.debug("Using SAM database '%s'.", SAMexperiment)
-  samweb = SAMWebClient(experiment=SAMexperiment)
+  samweb = SAMWebClient(
+    experiment=SAMexperiment,
+    disable_cert_auth=(args.AuthMode != 'cert'),
+    disable_token_auth=(args.AuthMode != 'token'),
+    )
   iterateSamples = SampleBrowser(samweb)
   processInfo = SampleProcessClass(samweb,
     create=args.create, query=args.query, printDefs=args.defname,

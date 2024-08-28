@@ -1,8 +1,11 @@
 #!/usr/bin/env python
 #
 # Changes:
-# 20230922 (petrillo@slac.fnal.gov) [1.0]
+# 20230922 (petrillo@slac.stanford.edu) [1.0]
 #   first public version
+# 20240829 (petrillo@slac.stanford.edu) [1.1]
+#   enables token authentication (requires sam_web_client >=v3_3);
+#   changed the console output (logging) style
 #
 
 import sys, os
@@ -35,14 +38,14 @@ By default, existing file lists are not overwritten.
 
 """
 
-__author__ = 'Gianluca Petrillo (petrillo@slac.stanford.edu)'
-__date__ = 'September 22, 2023'
-__version__ = '1.0'
+__author__  = 'Gianluca Petrillo (petrillo@slac.stanford.edu)'
+__date__    = 'August 28, 2024'
+__version__ = '1.1'
 
 from samweb_client.client import SAMWebClient
 import samweb_client.exceptions as samexcpt
 
-logging.basicConfig()
+logging.basicConfig(format="[%(levelname)s] %(message)s")
 logger = logging.getLogger(__name__)
 
 
@@ -192,6 +195,7 @@ class FileListMakerClass:
       schema=options.schema,
       output=getattr(options, 'output', None),
       experiment=getattr(options, 'SAMexperiment', None),
+      auth=getattr(options, 'auth', 'token'),
       maxFiles=getattr(options, 'maxFiles', None),
       header=getattr(options, 'header', False),
       overwrite=getattr(options, 'overwrite', False),
@@ -201,7 +205,11 @@ class FileListMakerClass:
       location=getattr(options, 'location', None),
       )
     if not samweb:
-      samweb = SAMWebClient(experiment=self.options['SAMexperiment'])
+      samweb = SAMWebClient(
+        experiment=self.options['SAMexperiment'],
+        disable_cert_auth=(self.options['auth'] != 'cert'),
+        disable_token_auth=(self.options['auth'] != 'token'),
+        )
     self.samweb = samweb
   # __init__
 
@@ -450,6 +458,8 @@ if __name__ == "__main__":
   
   parser.add_argument("--experiment", "-e", dest="SAMexperiment",
     default=None, help="override the SAM station name to use")
+  parser.add_argument("--auth", dest="AuthMode", choices=[ 'token', 'cert' ],
+    default='token', help="choose authentication method [%(default)s]")
   parser.add_argument("--debug", action="store_true",
     help="prints out debugging messages")
   parser.add_argument \
@@ -459,7 +469,11 @@ if __name__ == "__main__":
   
   logger.setLevel(logging.DEBUG if args.debug else logging.INFO)
   
-  samweb = SAMWebClient(experiment=args.SAMexperiment)
+  samweb = SAMWebClient(
+    experiment=args.SAMexperiment,
+    disable_cert_auth=(args.AuthMode != 'cert'),
+    disable_token_auth=(args.AuthMode != 'token'),
+    )
   processor = FileListMakerClass(samweb=samweb, options=args)
   
   inputSpecs = list(args.inputSpecs)

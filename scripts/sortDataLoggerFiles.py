@@ -338,7 +338,7 @@ def detectFirstLogger(fileInfo):
         lowestEvent.add(info, key=firstEvent)
         if firstEvent == 1: # can't get lower than this!
           firstLogger = info.dataLogger
-          logging.debug("Definitively detected first logger: %d", firstLogger)
+          logging.debug("Definitively detected first logger: %s", firstLogger)
           return firstLogger
     # for files
   # for
