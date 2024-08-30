@@ -56,6 +56,8 @@ cumseglens.clear();
   vector<float> dtheta;
   Vector_t pcdir0;
   Vector_t pcdir1;
+    std::cout << " segradl size " << segradlengths.size() << " cumseg size " << cumseglens.size() <<  std::endl;
+
   for (unsigned int p = 0; p<segradlengths.size(); p++) {
     linearRegression(traj, breakpoints[p], breakpoints[p+1], pcdir1);
     if (p>0) {
@@ -65,9 +67,15 @@ cumseglens.clear();
 	const double cosval = pcdir0.X()*pcdir1.X()+pcdir0.Y()*pcdir1.Y()+pcdir0.Z()*pcdir1.Z();
 	//assert(std::abs(cosval)<=1);
 	//units are mrad
-	double dt = 1000.*acos(cosval);//should we try to use expansion for small angles?
+	double dt = acos(cosval);//should we try to use expansion for small angles?
 	dtheta.push_back(dt);
-    //std::cout << " linearfit angle " << dt << std::endl;
+  //if(dt>3.) {
+    cout << " pcdir0 "<< pcdir0 << endl;
+    cout << " pcdir1 "<< pcdir1 << endl;
+
+  //}
+  //if(dt>3.) 
+  std::cout << " cosval " << cosval << " linearfit angle " << dt <<  " dtheta size " << dtheta.size() << std::endl;
   }
     }
     pcdir0 = pcdir1;
@@ -82,7 +90,7 @@ for (unsigned int p = 0; p<segradlengths.size(); p++) {
 }
 for (unsigned int p = 2; p<segradlengths.size(); p++) {
       if (segradlengths[p]<-100. || segradlengths[p-1]<-100. || segradlengths[p-2]<-100.) {
-	dtheta.push_back(-999.);
+	dthetaPoly.push_back(-999.);
       } else {
         Vector_t dbcp=barycenters[p]-barycenters[p-1];
         float norm=sqrt(dbcp.X()*dbcp.X()+dbcp.Y()*dbcp.Y()+dbcp.Z()*dbcp.Z());
@@ -96,7 +104,7 @@ dbcm/=norm;
 	//assert(std::abs(cosval)<=1);
 	//units are mrad
      //  std::cout << " cosval " << cosval << std::endl;
-       double dt = 1000.*acos(cosval);//should we try to use expansion for small angles?
+       double dt = acos(cosval);//should we try to use expansion for small angles?
 	dthetaPoly.push_back(dt);
     //std::cout << " polygonal angle " << dt << std::endl;
 
@@ -105,10 +113,11 @@ dbcm/=norm;
   //
   //
  std::cout << " before computing c2 " << std::endl;
- double c2= C2Function(traj,cumseglens,breakpoints,1000.);
+ double c2= C2Function(traj,cumseglens,breakpoints,dtheta,dthetaPoly,600.);
  std::cout << " c2 " << c2 << std::endl;
+ //exit(11);
 //return recob::MCSFitResult(pid,0.,0.,0.,0.,0.,0.,segradlengths,dtheta);
-const ScanResult fwdResult = C2Fit(dtheta, segradlengths, cumseglens, breakpoints,true,  1., pid,0.05,traj);
+const ScanResult fwdResult = C2Fit(dtheta,dthetaPoly, segradlengths, cumseglens, breakpoints,true,  1., pid,0.05,traj);
 
   return recob::MCSFitResult(pid, fwdResult.p,fwdResult.pUnc,fwdResult.logL,fwdResult.p,fwdResult.pUnc,fwdResult.logL,segradlengths,dtheta);
 }
@@ -431,7 +440,7 @@ float x2=h2.WireID().Wire*3; auto y2=h2.PeakTime()*0.622;
 	   return res;
 }
 
-const double TrajectoryMCSFitterICARUS::C2Function(const recob::TrackTrajectory& tr, std::vector<float> cumseglens, std::vector<long unsigned int> breakpoints, double p0) const
+const double TrajectoryMCSFitterICARUS::C2Function(const recob::TrackTrajectory& tr, std::vector<float> cumseglens, std::vector<long unsigned int> breakpoints, std::vector<float> dtheta,std::vector<float> dthetaPoly, double p0) const
   //compute RMS of R distribution (see MCS ICARUS paper) i.e. ratio between measured 2D scattering angle and expcted theta_MS
 {
   std::vector<double> wtcov,wtnew,chi2norm;
@@ -446,7 +455,7 @@ double thetams,thetaerr;
  double dstot,beta,alfa;
  int n;
  int np=tr.NPoints();
- unsigned int nseg=cumseglens.size();
+ unsigned int nseg=cumseglens.size()-1;
  // int ncut;
  if(np<=2) {
    // ncut=-1;
@@ -490,7 +499,7 @@ double tpmedio=0;
   if(cutMode()==0) dstot=sqrt((tr.LocationAtPoint(np-1)-tr.LocationAtPoint(0)).Mag2());
   if(cutMode()>0) dstot=cutLength();
   
-
+ cout << " nseg " << nseg <<  " dtheta size " << dtheta.size() << endl;
 for(unsigned int jp=1;jp<nseg;jp++) {
   // if(tr.point(jp).isUsed()&&(!tr.point(jp).wIsOut()))
   //{
@@ -535,19 +544,9 @@ for(unsigned int jp=1;jp<nseg;jp++) {
    //int m;
    //IcarusPoint& pprev=tr->point(jp-1);
    
-  TVector3 curr, prev;
-  curr=tr.DirectionAtPoint<TVector3>(breakpoints[jp]);
-  prev=tr.DirectionAtPoint<TVector3>(breakpoints[jp-1]);
-  if(jp==nseg-1) curr=tr.DirectionAtPoint<TVector3>(breakpoints[jp]-1);
-  
-  std::cout << " curr prev " <<jp << " breakpoint " << breakpoints[jp] <<  std::endl;
-  TVector3 diff=curr-prev;
-  curr.Print(); 
-  prev.Print();
-  diff.Print();
-  //double a=diff[2];
-  double a=acos(curr*prev/(curr.Mag()*prev.Mag()));
-  cout<< " a " << a << endl;
+
+  double a=dtheta[jp-1];
+  cout<< " filling a: jp " << jp << " jp-1 " << jp-1 << " a " << a << endl;
   double eseg=0;
 
   double MMU=105.6;
@@ -624,6 +623,7 @@ cout << " end fit part ttall size " << ttall.size() << " np " << np << endl;
 
 for(unsigned int jp=1;jp<nseg-1;jp++) {
   std::cout << jp << " breakpoint " << breakpoints[jp] << " momentum " << tr.MomentumAtPoint(breakpoints[jp]) << std::endl;
+  std::cout << "elossmode " << eLossMode_ << std::endl;
   float cp=0;  float ds=0;
 
   if(jp) { 
@@ -653,13 +653,8 @@ for(unsigned int jp=1;jp<nseg-1;jp++) {
       }
 
 
-   //IcarusPoint& pprev=tr->point(jp-1);
- TVector3 curr,prev;
-  curr=tr.LocationAtPoint<TVector3>(breakpoints[jp]);
-  prev=tr.LocationAtPoint<TVector3>(breakpoints[jp-1]);
-  if(jp==nseg-1) curr=tr.LocationAtPoint<TVector3>(breakpoints[jp]-1);
-  TVector3 diff=curr-prev;
-  double a=acos(curr*prev/(curr.Mag()*prev.Mag()));
+  double a=dthetaPoly[jp-1];
+
   cout<< a << endl;
   double eseg=0;
 
@@ -1233,7 +1228,7 @@ if(ip<ns-3) {
 
 }
 /**********************************************************/
-const TrajectoryMCSFitterICARUS::ScanResult TrajectoryMCSFitterICARUS::C2Fit(std::vector<float>& dtheta, std::vector<float>& seg_nradlengths, std::vector<float>& cumLen,std::vector<size_t>& breaks, bool fwdFit, bool momDepConst, int pid, float sigma, const recob::TrackTrajectory& traj) const
+const TrajectoryMCSFitterICARUS::ScanResult TrajectoryMCSFitterICARUS::C2Fit(std::vector<float>& dtheta,std::vector<float>& dthetaPoly, std::vector<float>& seg_nradlengths, std::vector<float>& cumLen,std::vector<size_t>& breaks, bool fwdFit, bool momDepConst, int pid, float sigma, const recob::TrackTrajectory& traj) const
   //fit C2(p) function with expected dependency (see ICARUS MCS paper)
 {
 //if(!fwdFit) exit(22);
@@ -1247,28 +1242,44 @@ std::cout << " begin c2fit " << nMom << std::endl;
 
 int jMom=0;
 std::cout << " before loop " << std::endl;
-
+double firstValid=0;
 for (double p_test = pMin_; p_test <= pMax_; p_test+=pStep_) {
 //for (double p_test = 500; p_test <= 500; p_test+=pStep_) {
 std::cout << " before c2function " << std::endl;
    // double c2 = C2Function(p_test, angResol_, dtheta, seg_nradlengths, cumLen, breaks,fwdFit, momDepConst, pid, 0,traj);
-   double c2= C2Function(traj,cumLen,breaks,p_test); 
+   double c2= C2Function(traj,cumLen,breaks,dtheta,dthetaPoly,p_test); 
 std::cout << " p_test " << p_test << " c2 " << c2 << std::endl;
 std::cout << " jmom " << jMom << " nMom " << nMom << std::endl;
-    wmom[jMom]=p_test;
+    wmom[jMom]=p_test/1000.;
  wc2[jMom]=c2; wsigma[jMom]=sigma*c2; wsmom[jMom]=1;
-   
+   if(firstValid<0.01&&c2>0.01) firstValid=jMom;
     jMom++;
 }
 std::cout << " after momentum loop " << jMom << std::endl;
-const TVectorD cmom=wmom;
-const TVectorD cc2=wc2;
-const TVectorD csmom=wsmom;
-const TVectorD csigma=wsigma;
+TVectorD rmom(nMom-firstValid);
+ TVectorD rsmom(nMom-firstValid);
+ TVectorD rsigma(nMom-firstValid);
+ TVectorD rc2(nMom-firstValid);
+for(int jp=firstValid;jp<jMom;jp++) {
+rmom[jp-firstValid]=wmom[jp];
+rsmom[jp-firstValid]=wsmom[jp];
+rsigma[jp-firstValid]=wsigma[jp];
+rc2[jp-firstValid]=wc2[jp];
+}
+ 
+const TVectorD cmom=rmom;
+const TVectorD cc2=rc2;
+const TVectorD csmom=rsmom;
+const TVectorD csigma=rsigma;
+
+cout << " firstValid " << firstValid << " wmom " << wmom[firstValid] << endl;
+cmom.Print();
+cc2.Print();
+
 
  TGraphErrors *gr3 = new TGraphErrors(cmom,cc2,csmom,csigma);
- TF1* fitfunc= new TF1("fitfunc",funzio,pMin_,pMax_,2);
-fitfunc->SetParLimits(0,-0.5,1);
+ TF1* fitfunc= new TF1("fitfunc",funzio,wmom[firstValid],pMax_,2);
+fitfunc->SetParLimits(0,-0.5,1.);
       gr3->Fit("fitfunc"); 
 
     double fixedTerm,momTerm;
@@ -1286,7 +1297,7 @@ fitfunc->SetParLimits(0,-0.5,1);
   double best_p=sqrt(momTerm/(1-fixedTerm));
   double error_p=sqrt(pow(eMomTerm,2.)/(4*momTerm*(1-fixedTerm))+momTerm*pow(eFixedTerm,2.)/(4*pow((1-fixedTerm),3.)));
   std::cout << " end c2fit best_p" << best_p << std::endl;
-  exit(11);
+  //exit(11);
   return ScanResult(best_p/1000., error_p/1000., 0.);
 }
 
