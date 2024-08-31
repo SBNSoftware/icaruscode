@@ -1231,6 +1231,7 @@ if(ip<ns-3) {
 const TrajectoryMCSFitterICARUS::ScanResult TrajectoryMCSFitterICARUS::C2Fit(std::vector<float>& dtheta,std::vector<float>& dthetaPoly, std::vector<float>& seg_nradlengths, std::vector<float>& cumLen,std::vector<size_t>& breaks, bool fwdFit, bool momDepConst, int pid, float sigma, const recob::TrackTrajectory& traj) const
   //fit C2(p) function with expected dependency (see ICARUS MCS paper)
 {
+  
 //if(!fwdFit) exit(22);
 int nMom=ceil((pMax_-pMin_)/pStep_)+1;
 
@@ -1297,7 +1298,9 @@ fitfunc->SetParLimits(0,-0.5,1.);
   double best_p=sqrt(momTerm/(1-fixedTerm));
   double error_p=sqrt(pow(eMomTerm,2.)/(4*momTerm*(1-fixedTerm))+momTerm*pow(eFixedTerm,2.)/(4*pow((1-fixedTerm),3.)));
   std::cout << " end c2fit best_p" << best_p << std::endl;
-  //exit(11);
+  exit(11);
+  
+  //float best_p=0; float error_p=0;
   return ScanResult(best_p/1000., error_p/1000., 0.);
 }
 
