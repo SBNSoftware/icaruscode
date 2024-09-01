@@ -148,7 +148,7 @@ void ComputeD3P()   ;
     };
     //
 
-    const double C2Function(const recob::TrackTrajectory& tr, std::vector<float> cumseglens, std::vector<long unsigned int> breakpoints, double p0) const;
+    const double C2Function(const recob::TrackTrajectory& tr, std::vector<float> cumseglens, std::vector<long unsigned int> breakpoints, std::vector<float> dtheta,std::vector<float> dthetaPoly,double p0) const;
 
 
     const void FillCovMatrixSegOnly(recob::TrackTrajectory tr, TMatrixDSym mat,unsigned int jp,double sms,double serr,TMatrixDSym materr,std::vector<long unsigned int> breaks) const;
@@ -156,7 +156,7 @@ void ComputeD3P()   ;
     const void FillCovMatrix(recob::TrackTrajectory tr,TMatrixDSym  mat,int jp,double sms,double serr, TMatrixDSym matms, TMatrixDSym materr, std::vector<long unsigned int> breaks) const;
 
     const void FillCovMixTerms(recob::TrackTrajectory tr,TMatrixDSym mat,int jp,int ns,double sms,double serr) const;
-    const ScanResult C2Fit(std::vector<float>& dtheta, std::vector<float>& seg_nradlengths, std::vector<float>& cumLen,std::vector<size_t>& breaks, bool fwdFit, bool momDepConst, int pid, float sigma, const recob::TrackTrajectory& traj) const;
+    const ScanResult C2Fit(std::vector<float>& dtheta,std::vector<float>& dthetaPoly, std::vector<float>& seg_nradlengths, std::vector<float>& cumLen,std::vector<size_t>& breaks,bool fwdFit, bool momDepConst, int pid, float sigma, const recob::TrackTrajectory& traj) const;
   //fit C2(p) function with expected dependency (see ICARUS MCS paper)
     //
     inline double MomentumDependentConstant(const double p) const {
