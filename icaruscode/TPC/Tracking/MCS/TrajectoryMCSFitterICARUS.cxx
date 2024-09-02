@@ -462,10 +462,10 @@ double thetams,thetaerr;
  double dstot,beta,alfa;
  int n;
  int np=tr.NPoints();
- int firstseg=0;
+ int firstseg=1;
  unsigned int lastseg=cumseglens.size()-1;
  for(unsigned int js=0;js<cumseglens.size()-1;js++) {
-  if(dtheta[js]!=-999)
+  if(dtheta[js]!=-999&&js)
    {
     firstseg=js;
     break;
@@ -523,7 +523,7 @@ double tpmedio=0;
   if(cutMode()==0) dstot=sqrt((tr.LocationAtPoint(np-1)-tr.LocationAtPoint(0)).Mag2());
   if(cutMode()>0) dstot=cutLength();
   
- cout << " nseg " << nseg <<  " dtheta size " << dtheta.size() << endl;
+ cout << " nseg " << nseg <<  " dtheta size " << dtheta.size() << " firstseg " << firstseg << endl;
 for(unsigned int jp=firstseg;jp<lastseg;jp++) {
   // if(tr.point(jp).isUsed()&&(!tr.point(jp).wIsOut()))
   //{
