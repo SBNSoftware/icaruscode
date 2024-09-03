@@ -9,24 +9,12 @@ services:
   message: @local::icarus_message_services_interactive_debug
 }
 
-outputs:
-{
-  countroi:
-  {
-    module_type: RootOutput
-    fileName: "roicount_out.root"
-    results:
-    {
-      producers:
-      {
-        roicounts: { @table::standard_roicounter }
-      }
-      rpPath: [roicounts]
-    }
-  }
-}
-
 physics:
 {
-  stream1: [ countroi ]
+  analyzers:
+  {
+    roicounts: @local::standard_roicounter
+  }
+  countroi: [ roicounts ]
+  end_paths: [ countroi ]
 }

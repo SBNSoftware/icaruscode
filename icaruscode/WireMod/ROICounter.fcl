@@ -2,7 +2,7 @@ BEGIN_PROLOG
 
 standard_roicounter: 
 {
-  plugin_type: "ROICounter"
+  module_type: "ROICounter"
   Label: "roifinder"
 }
 
