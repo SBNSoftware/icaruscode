@@ -168,7 +168,7 @@ std::cout << " in while cycle " << nextValid << std::endl;
  bool condition=true;
   auto rrange = traj.Length(nextValid);
   float lengthFromStart=sqrt((traj.LocationAtPoint(nextValid)-traj.LocationAtPoint(traj.FirstValidPoint())).Mag2());
-   if(cutMode==2) std::cout << " lengthFromStart "<< lengthFromStart << " iniUsedLen " << cutLength <<  std::endl;
+  // if(cutMode==2) std::cout << " lengthFromStart "<< lengthFromStart << " iniUsedLen " << cutLength <<  std::endl;
   if(cutMode==1) condition=( rrange>cutLength);
   if(cutMode==2) condition=(lengthFromStart<cutLength);
       std::cout << " nextValid "<< nextValid << " thislen " << thislen << "thisSegLen " << thisSegLen << " condition " << condition << std::endl;
@@ -491,7 +491,7 @@ double thetams,thetaerr;
 
 TMatrixDSym mat(2*nseg-3);
  std::cout << " before mat " << np << std::endl;
- mat(1,1)=0;
+// mat(1,1)=0;
  std::cout << " after mat " << np << std::endl;
 //TMatrixDSym mat(np-2,np-2,0);
 //TMatrixDSym mat(np-1,np-1,0);
@@ -1280,6 +1280,8 @@ cc2.Print();
  TGraphErrors *gr3 = new TGraphErrors(cmom,cc2,csmom,csigma);
  TF1* fitfunc= new TF1("fitfunc",funzio,wmom[firstValid],pMax_,2);
 fitfunc->SetParLimits(0,-0.5,1.);
+fitfunc->SetParLimits(1,-0.,5.);
+
       gr3->Fit("fitfunc"); 
 
     double fixedTerm,momTerm;
@@ -1297,10 +1299,24 @@ fitfunc->SetParLimits(0,-0.5,1.);
   double best_p=sqrt(momTerm/(1-fixedTerm));
   double error_p=sqrt(pow(eMomTerm,2.)/(4*momTerm*(1-fixedTerm))+momTerm*pow(eFixedTerm,2.)/(4*pow((1-fixedTerm),3.)));
   std::cout << " end c2fit best_p" << best_p << std::endl;
+  if(best_p<.001) { //naive interpolation
+  int over=-1;
+  if(rc2[0]>1) over=0;
+ for(int jp=1;jp<nMom-firstValid;jp++) {
+if(rc2[jp]>1.&&rc2[jp-1]<1.) over=jp;
+ }
+ if(over>0&&over<nMom-firstValid) best_p=rmom[over-1]+(rmom[over]-rmom[over-1])/(rc2[over]-rc2[over-1]);
+ if(over==0) best_p=rmom[0]; //underflow
+if(over==-1) best_p=rmom[nMom-firstValid-1]; //overflow
+  std::cout << " end c2fit naive best_p" << best_p << std::endl;
+
+  }
+
+  
  // exit(11);
   
   //float best_p=0; float error_p=0;
-  return ScanResult(best_p/1000., error_p/1000., 0.);
+  return ScanResult(best_p, error_p, 0.);
 }
 
  
