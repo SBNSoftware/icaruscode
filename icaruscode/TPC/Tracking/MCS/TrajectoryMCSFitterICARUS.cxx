@@ -209,7 +209,31 @@ void TrajectoryMCSFitterICARUS::findSegmentBarycenter(const recob::TrackTrajecto
   bary=avgpos;
   //std::cout << " avgpos " << avgpos << std::endl;
 }
+/*
+void TrajectoryMCSFitterICARUS::find2DSegmentBarycenter(const recob::TrackTrajectory& traj, const size_t firstPoint, const size_t lastPoint, Vector_t& bary) const {
+  int npoints = 0;
+  float wsum=0; float ssum=0;
+  size_t nextValid = firstPoint;
+  std::vector<recob::Hit> v;
+  // Get track collection proxy and parallel mcs fit data (associated hits loaded by default)
+  // Note: if tracks were produced from a TrackTrajectory collection you could access the original trajectories adding ',proxy::withOriginalTrajectory()' to the list of arguments
 
+  while (nextValid<lastPoint) {
+   TrackPointData pd=pdata[nextValid];
+   auto hit=std::get<1>(pd);
+  
+   wsum+=hit.WireID().Wire*3; 
+   ssum+=hit.PeakTime()*0.622;
+    nextValid = traj.NextValidPoint(nextValid+1);
+    npoints++;
+  }
+  const auto wmed = float(wsum/npoints);
+  const auto smed = float(ssum/npoints);
+ 
+ Vector_t bary={wmed,smed};
+  //std::cout << " avgpos " << avgpos << std::endl;
+}
+*/
 void TrajectoryMCSFitterICARUS::linearRegression(const recob::TrackTrajectory& traj, const size_t firstPoint, const size_t lastPoint, Vector_t& pcdir) const {
   //
   int npoints = 0;
@@ -481,13 +505,13 @@ double thetams,thetaerr;
   
  unsigned int nseg=lastseg-firstseg+1;
  // int ncut;
- if(np<=2) {
+ if(nseg<2) {
    // ncut=-1;
-   return -1;
+   return 0;
 }
  // int np=tr.nPointsUsed();
 
- std::cout << " before matrices " << np << std::endl;
+ std::cout << " before matrices " << nseg << std::endl;
 
 TMatrixDSym mat(2*nseg-3);
  std::cout << " before mat " << np << std::endl;
