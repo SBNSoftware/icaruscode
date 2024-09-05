@@ -10,8 +10,7 @@
 #include "lardataobj/RecoBase/Hit.h"
 #include "lardata/RecoObjects/TrackState.h"
 #include "TMatrixDSym.h"
-
-
+#include "lardata/RecoBaseProxy/Track.h" //needed only if you do use the proxies
 
 namespace trkf {
   /**
@@ -134,6 +133,9 @@ namespace trkf {
     //
     void breakTrajInSegments(const recob::TrackTrajectory& traj, std::vector<size_t>& breakpoints, std::vector<float>& segradlengths, std::vector<float>& cumseglens, int cutMode, float cutLength) const;
     void findSegmentBarycenter(const recob::TrackTrajectory& traj, const size_t firstPoint, const size_t lastPoint, recob::tracking::Vector_t& pcdir) const;
+   void find2DSegmentBarycenter(const recob::TrackTrajectory& traj, const size_t firstPoint, const size_t lastPoint, recob::tracking::Vector_t& pcdir) const;
+    void linearRegression2D(const recob::TrackTrajectory& traj, const size_t firstPoint, const size_t lastPoint, recob::tracking::Vector_t& pcdir) const;
+
     void linearRegression(const recob::TrackTrajectory& traj, const size_t firstPoint, const size_t lastPoint, recob::tracking::Vector_t& pcdir) const;
 double GetOptimalSegLen(const recob::TrackTrajectory& tr,const double guess_p, const int n_points, const int plane, const double length_travelled) const;
 double computeResidual(int i, double& alfa) const;
@@ -177,6 +179,7 @@ void ComputeD3P()   ;
     //
     double GetE(const double initial_E, const double length_travelled, const double mass) const;
     void set2DHits(std::vector<recob::Hit> h) {hits2d=h;}
+    void setPointData(std::vector<proxy::TrackPointData> h) {pdata=h;}
   //  void projectHitsOnPlane(art::Event & e,const recob::Track& traj,int p) const
     //
 
@@ -202,6 +205,7 @@ double collWireLength();
     double cutMode_;
  double cutLength_;
     std::vector<recob::Hit> hits2d;
+    std::vector<proxy::TrackPointData> pdata;
     float d3p;
 
   };

@@ -71,7 +71,7 @@ namespace trkf {
     MCSFitProducerICARUS & operator = (MCSFitProducerICARUS &&) = delete;
 
     void produce(art::Event & e) override;
-std::vector<recob::Hit> projectHitsOnPlane(art::Event & e,const recob::Track& traj,unsigned int p) const;
+std::vector<recob::Hit> projectHitsOnPlane(art::Event & e,const recob::Track& traj,unsigned int p, std::vector<proxy::TrackPointData>& pdata) const;
 
   private:
     Parameters p_;
@@ -101,59 +101,83 @@ void trkf::MCSFitProducerICARUS::produce(art::Event & e)
   const auto& inputVec = *(inputH.product());
 
 std::cout << " inputh size " << inputVec.size() << std::endl;
-size_t count=0;
+
 float minLen=40;
 //float cutFinLen=40;
-
+std::vector<int> count;
+count.push_back(-1);count.push_back(-1);
 for (const auto& element : inputVec) {
-
+ std::vector<float> dum;
+  recob::MCSFitResult result=recob::MCSFitResult(0,
+			    0,0,0,
+0,0,0,
+			     dum,dum);
  
 //cut final length to simulate non-contained
 
     //fit
     std::vector<recob::Hit> hits2d;
     hits2d.clear();
- if(element.Length()>minLen) std::cout << " track " << count << " length " << element.Length() << std::endl;
+    std::vector<proxy::TrackPointData> pdata;
+    pdata.clear();
    // for (size_t jp=0;jp<element.NPoints();jp++)
-     std::cout << " element length " << element.Length(0) << std::endl;
-    if(element.Length()>minLen) hits2d=projectHitsOnPlane(e,element,2);
-count++;
+    // std::cout << " element length " << element.Length(0) << std::endl;
+    if(element.Length()>minLen) hits2d=projectHitsOnPlane(e,element,2,pdata);
+
     mcsfitter.set2DHits(hits2d);
+    mcsfitter.setPointData(pdata);
 
     mcsfitter.ComputeD3P();
   
+auto x=element.LocationAtPoint(0).X();
+    int cryo=-1;
+    if(x>0) cryo=1;
+    else cryo=0;
+    count[cryo]++;
+     //if(element.Length()>minLen) std::cout << " track " << count << " length " << element.Length() << std::endl;
 
-    try{
+   // std::cout << " x " << x << " cryo " << cryo << std::endl;
 
-    recob::MCSFitResult result = mcsfitter.fitMcs(element);
+   // if(count[cryo]==2&&cryo==0) {
+   
+    std::cout << " fitting icarus trackIdx " << count[cryo] << " cryo " << cryo << " length " << element.Length() << std::endl;
+   
+    if(element.Length()>minLen) result = mcsfitter.fitMcs(element);
     if(result.fwdMomentum()>0.) std::cout << " mcs momentum " << result.fwdMomentum() << std::endl;
-    output->emplace_back(std::move(result));
-    } catch(...)
-    {
-      
-        continue;
-    }
+
+    
+output->emplace_back(std::move(result));
+  // }
+
   }
 
   e.put(std::move(output));
+
 }
 
-std::vector<recob::Hit> trkf::MCSFitProducerICARUS::projectHitsOnPlane(art::Event & e,const recob::Track& traj,unsigned int p) const
+std::vector<recob::Hit> trkf::MCSFitProducerICARUS::projectHitsOnPlane(art::Event & e,const recob::Track& traj,unsigned int p,std::vector<proxy::TrackPointData>& pdata) const
 {
 std::vector<recob::Hit> v;
   // Get track collection proxy and parallel mcs fit data (associated hits loaded by default)
   // Note: if tracks were produced from a TrackTrajectory collection you could access the original trajectories adding ',proxy::withOriginalTrajectory()' to the list of arguments
 
 auto const& tracks   = proxy::getCollection<proxy::Tracks>(e,inputTag);
-
 const auto& track = tracks[0];
-
- 
-        for (const art::Ptr<recob::Hit>& h : track.hits())
+//auto hap=track.hitAtPoint(0);
+        for (const art::Ptr<recob::Hit>& h : track.hits()) {
          if(h->WireID().Plane == p) {
-         std::cout << "collection hit wire=" << h->WireID() << " peak time=" << h->PeakTime() << std::endl;
+        // std::cout << "collection hit wire=" << h->WireID() << " peak time=" << h->PeakTime() << std::endl;
           v.emplace_back(*h);
         }
+        }
+        std::cout << " making trackpointdata npoints " << traj.NPoints() << std::endl;
+               for (unsigned int jp; jp<traj.NPoints();jp++) {
+auto pd=proxy::makeTrackPointData(track,jp);
+         std::cout << " emplacing pdata " << jp << std::endl;
+          pdata.emplace_back(pd);
+          
+        }
+
 return v;
 }
 

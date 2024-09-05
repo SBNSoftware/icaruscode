@@ -59,7 +59,7 @@ cumseglens.clear();
     std::cout << " segradl size " << segradlengths.size() << " cumseg size " << cumseglens.size() <<  std::endl;
 
   for (unsigned int p = 0; p<segradlengths.size(); p++) {
-    linearRegression(traj, breakpoints[p], breakpoints[p+1], pcdir1);
+    linearRegression2D(traj, breakpoints[p], breakpoints[p+1], pcdir1);
     if (p>0) {
       cout << " p " << p << " segradlength " << segradlengths[p] << endl;
       if (segradlengths[p]<-100. || segradlengths[p-1]<-100.
@@ -94,7 +94,7 @@ cumseglens.clear();
  Vector_t bary;
 vector<float> dthetaPoly;
 for (unsigned int p = 0; p<segradlengths.size(); p++) {
-    findSegmentBarycenter(traj, breakpoints[p], breakpoints[p+1], bary);
+    find2DSegmentBarycenter(traj, breakpoints[p], breakpoints[p+1], bary);
     barycenters.push_back(bary);
 }
 for (unsigned int p = 2; p<segradlengths.size(); p++) {
@@ -209,7 +209,7 @@ void TrajectoryMCSFitterICARUS::findSegmentBarycenter(const recob::TrackTrajecto
   bary=avgpos;
   //std::cout << " avgpos " << avgpos << std::endl;
 }
-/*
+
 void TrajectoryMCSFitterICARUS::find2DSegmentBarycenter(const recob::TrackTrajectory& traj, const size_t firstPoint, const size_t lastPoint, Vector_t& bary) const {
   int npoints = 0;
   float wsum=0; float ssum=0;
@@ -217,23 +217,74 @@ void TrajectoryMCSFitterICARUS::find2DSegmentBarycenter(const recob::TrackTrajec
   std::vector<recob::Hit> v;
   // Get track collection proxy and parallel mcs fit data (associated hits loaded by default)
   // Note: if tracks were produced from a TrackTrajectory collection you could access the original trajectories adding ',proxy::withOriginalTrajectory()' to the list of arguments
-
+cout << " pdata size " << pdata.size() << endl;
   while (nextValid<lastPoint) {
-   TrackPointData pd=pdata[nextValid];
+   proxy::TrackPointData pd=pdata[nextValid];
    auto hit=std::get<1>(pd);
   
-   wsum+=hit.WireID().Wire*3; 
-   ssum+=hit.PeakTime()*0.622;
+   wsum+=hit->WireID().Wire*3; 
+   ssum+=hit->PeakTime()*0.622;
     nextValid = traj.NextValidPoint(nextValid+1);
     npoints++;
   }
   const auto wmed = float(wsum/npoints);
   const auto smed = float(ssum/npoints);
  
- Vector_t bary={wmed,smed};
-  //std::cout << " avgpos " << avgpos << std::endl;
+ //Vector_t bary;
+ bary.SetXYZ(wmed,smed,0);
+std::cout << " wmed " << wmed << " smed " << smed << std::endl;
 }
-*/
+
+void TrajectoryMCSFitterICARUS::linearRegression2D(const recob::TrackTrajectory& traj, const size_t firstPoint, const size_t lastPoint, Vector_t& pcdir) const {
+  //
+  int npoints = 0;
+  geo::vect::MiddlePointAccumulator middlePointCalc;
+  size_t nextValid = firstPoint;
+  while (nextValid<lastPoint) {
+    middlePointCalc.add(traj.LocationAtPoint(nextValid));
+    nextValid = traj.NextValidPoint(nextValid+1);
+    npoints++;
+  }
+
+  Vector_t avgpos;
+  find2DSegmentBarycenter(traj,firstPoint,lastPoint,avgpos);
+  const double norm = 1./double(npoints);
+  //
+  //assert(npoints>0);
+  //
+  TMatrixDSym m(2);
+  nextValid = firstPoint;
+  while (nextValid<lastPoint) {
+    const auto p = traj.LocationAtPoint(nextValid);
+    const double xxw0 = p.X()-avgpos.X();
+    const double yyw0 = p.Y()-avgpos.Y();
+    m(0, 0) += xxw0*xxw0*norm;
+    m(0, 1) += xxw0*yyw0*norm;
+    m(1, 0) += yyw0*xxw0*norm;
+    m(1, 1) += yyw0*yyw0*norm;
+  
+    nextValid = traj.NextValidPoint(nextValid+1);
+  }
+  //
+  const TMatrixDSymEigen me(m);
+  const auto& eigenval = me.GetEigenValues();
+  const auto& eigenvec = me.GetEigenVectors();
+  //
+  int maxevalidx = 0;
+  double maxeval = eigenval(0);
+  for (int i=1; i<2; ++i) {
+    if (eigenval(i)>maxeval) {
+      maxevalidx = i;
+      maxeval = eigenval(i);
+    }
+  } 
+  //
+  pcdir = Vector_t(eigenvec(0, maxevalidx),eigenvec(1, maxevalidx),0.);
+  if (traj.DirectionAtPoint(firstPoint).Dot(pcdir)<0.) pcdir*=-1.;
+  //
+  cout << " pcdir " << pcdir.X() << " " << pcdir.Y() << endl;
+}
+
 void TrajectoryMCSFitterICARUS::linearRegression(const recob::TrackTrajectory& traj, const size_t firstPoint, const size_t lastPoint, Vector_t& pcdir) const {
   //
   int npoints = 0;
