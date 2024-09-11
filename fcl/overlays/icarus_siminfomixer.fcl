@@ -1,0 +1,33 @@
+BEGIN_PROLOG
+
+icarus_siminfomixer:
+{
+  module_type : SimInfoOverlayFilter
+  SimInputFileNames : [ "genfile.root.local" ]
+  AuxDetSimChannelInputModuleLabels: []
+  SimEnergyDepositInputModuleLabels: [] 
+  MCParticleInputModuleLabels: []
+  MCTruthGTruthAssnsInputModuleLabels: []
+  MCTruthInputModuleLabels: [] 
+  SimChannelInputModuleLabels: []
+  SimPhotonsInputModuleLabels: []
+  MCTruthMCParticleAssnsMap: []
+  MCTruthMCParticleAssnsInputModuleLabels: []
+  BeamGateInputModuleLabels: []
+  MCParticleLiteInputModuleLabels: []
+  MCFluxInputModuleLabels: []
+  MCTruthMCFluxAssnsInputModuleLabels: []
+
+  Verbosity: -1
+  FillPOTInfo: false
+  POTSummaryTag: "generator::GenieGenFiltered"
+  detail : {}
+}
+
+icarus_subrunpotinevent:
+{
+  module_type : SubRunPOTInEvent
+  InputTag: "generator:SubRunPOT"
+}
+
+END_PROLOG

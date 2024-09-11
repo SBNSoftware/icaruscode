@@ -45,7 +45,8 @@ outputs.rootOutput.outputCommands: [
     "drop raw::RawDigits_daqTPCROI_PHYSCRATEDATATPCWE_decoder",  #RawDigits_daqTPCROI_PHYSCRATEDATATPCWW_decoder.obj
     "drop raw::RawDigits_daqTPCROI_PHYSCRATEDATATPCWW_decoder",
     "drop raw::RawDigits_daqTPCROI_PHYSCRATEDATATPCEW_decoder",
-    "drop raw::RawDigits_daqTPCROI_PHYSCRATEDATATPCEE_decoder"
+    "drop raw::RawDigits_daqTPCROI_PHYSCRATEDATATPCEE_decoder",
+    "drop artdaq::Fragments_daq_*_ICARUSReprocessRaw"
     ]
 
 ## Modify the event selection for the purity analyzers
