@@ -1,0 +1,73 @@
+#include "icarus_siminfomixer.fcl"
+#include "local_gen_include.fcl"
+
+//========================================
+
+services:
+{
+  scheduler:    { defaultExceptions: false }    # Make all uncaught exceptions fatal.
+  # Load the service that manages root files for histograms.
+  TFileService: { fileName: "gen_hist.root" }
+  
+  RandomNumberGenerator: {} #ART native random number generator
+  FileCatalogMetadata:  @local::art_file_catalog_mc
+  #@table::microboone_g4_services
+}
+
+process_name : SimInfoMixer1     #The process name must NOT contain any underscores
+
+source:
+{
+  module_type: RootInput
+  saveMemoryObjectThreshold: 0
+  maxEvents: -1
+}
+
+outputs: {
+  out: { module_type: RootOutput
+  	 fileName: "%ifb_%tc_simmxd1.root"
+	 compressionLevel: 1
+	 dataTier: "generated"
+         SelectEvents: ["mixer_path"]
+       }
+}
+
+physics: {
+
+  producers : {
+  }
+
+  analyzers: {
+  }
+
+  filters : {
+    generator: @local::icarus_siminfomixer
+    beamgate: @local::icarus_siminfomixer
+    GenInTimeSorter: @local::icarus_siminfomixer
+    larg4intime: @local::icarus_siminfomixer
+  }
+
+  mixer_path : [ generator, beamgate, GenInTimeSorter, larg4intime ]
+  trigger_paths : [ mixer_path ]
+
+  output : [ out ]
+  end_paths: [ output ]
+
+}
+
+##<module_label>:<optional instance name>:<optional process name>
+physics.filters.generator.SimInputFileNames : [ "genfile.root.local" ]
+
+physics.filters.larg4intime.AuxDetSimChannelInputModuleLabels: ["larg4intime::CosmicsCorsikaPGenAndG4InTime"]
+physics.filters.larg4intime.MCParticleLiteInputModuleLabels: ["larg4intime::CosmicsCorsikaPGenAndG4InTime"]
+
+physics.filters.larg4intime.MCParticleInputModuleLabels: ["larg4intime::CosmicsCorsikaPGenAndG4InTime"]
+physics.filters.larg4intime.MCTruthMCParticleAssnsInputModuleLabels: ["larg4intime::CosmicsCorsikaPGenAndG4InTime"]
+physics.filters.larg4intime.SimEnergyDepositInputModuleLabels: ["larg4intime:TPCActive:CosmicsCorsikaPGenAndG4InTime"] 
+
+physics.filters.beamgate.BeamGateInputModuleLabels: ["beamgate::CosmicsCorsikaPGenAndG4InTime"]
+physics.filters.GenInTimeSorter.MCTruthInputModuleLabels: ["GenInTimeSorter:intime:CosmicsCorsikaPGenAndG4InTime"] #std::vector<simb::MCTruth> intime
+physics.filters.larg4intime.SimChannelInputModuleLabels: ["larg4intime::CosmicsCorsikaPGenAndG4InTime"]
+physics.filters.generator.MCTruthInputModuleLabels: ["GenInTimeSorter:intime:CosmicsCorsikaPGenAndG4InTime"] #std::vector<simb::MCTruth> #no label
+physics.filters.generator.MCTruthInputModuleLabels: ["GenInTimeSorter::CosmicsCorsikaPGenAndG4InTime"] #std::vector<simb::MCTruth> #no label
+physics.filters.larg4intime.SimPhotonsInputModuleLabels: ["larg4intime::CosmicsCorsikaPGenAndG4InTime"]
