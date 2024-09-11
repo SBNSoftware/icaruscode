@@ -84,7 +84,7 @@ physics.producers: {
                         PMTOverlayRaw: false
                         PMTOverlayHits: false
                         CRTOverlayHits: true
-                        CRTHitInputLabels: ["crthit::stage0","crthit::Overlay"]
+                        CRTHitInputLabels: ["crthit::decoder","crthit::Overlay"]
                       }
                    }
 
