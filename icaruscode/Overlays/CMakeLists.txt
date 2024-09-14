@@ -1,8 +1,8 @@
 find_package(gallery         REQUIRED)
 
-find_package(larwirecell REQUIRED )
-find_package(jsoncpp REQUIRED)
-find_package(spdlog REQUIRED)
+#find_package(larwirecell REQUIRED )
+#find_package(jsoncpp REQUIRED)
+#find_package(spdlog REQUIRED)
 
 include_directories( $ENV{JSONCPP_INC} )
 link_directories( $ENV{JSONCPP_LIB} )
@@ -35,9 +35,15 @@ art_make_library(
         ${JSONCPP}
 	larevt::CalibrationDBI_Providers
 	lardata::ArtDataHelper
-        ${WIRECELL_LIBS}
         ${FHICLCPP}
         cetlib_except::cetlib_except
+	WireCellGen
+	WireCellUtil
+	WireCellAux
+	WireCellIface
+	WireCellPgraph
+	WireCellRoot
+	jsoncpp
 )
 
 
