@@ -25,7 +25,7 @@ cet_build_plugin(
 
 # This is what's needed for building the WireCellubsim WCT component
 art_make_library(
-  LIBRARY_NAME ICARUSWCDrifter
+  LIBRARY_NAME WireCellICARUSDrifter
   SOURCE ICARUSDrifter.cxx
   LIBRARIES
         art::Framework_Services_Registry
