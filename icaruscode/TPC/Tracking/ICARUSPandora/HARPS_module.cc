@@ -101,7 +101,8 @@ HARPS::HARPS(fhicl::ParameterSet const& p)
   fMaskNWires                ( p.get< std::vector<int> >("MaskNWires", {-1}) ),
   fTPCHitsWireAssn           ( p.get< bool >("TPCHitsWireAssn", true) ),
   fTPCHitCreatorInstanceName ( p.get<std::string>("TPCHitCreatorInstanaceName","") ),
-  fFlatEngine                ( art::ServiceHandle<rndm::NuRandomService>()->createEngine(*this, "HepJamesRandom", "Gen", p, "Seed") ),
+  fFlatEngine                ( art::ServiceHandle<rndm::NuRandomService>()->registerAndSeedEngine(
+    createEngine(0, "HepJamesRandom", "Gen"), "HepJamesRandom", "Gen", p, "Seed") ),
   fTagDaughters              ( p.get< bool >("TagDaughters", false) ),
   fKeepContext               ( p.get< bool >("KeepContext", false) )
 {
