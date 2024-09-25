@@ -110,7 +110,7 @@ ICARUSFlashAssAna: {
     BaselineLabels: ["pmtbaselines"]
     OpHitLabels: ["ophit"]
     FlashLabels: ["opflashCryoE", "opflashCryoW"]
-    RWMLabel: "beam:RWM"
+    RWMLabel: "beamTiming:RWM"
     PEOpHitThreshold: 0
     Debug: false
 }
@@ -119,7 +119,7 @@ ICARUSBeamStructureAna: {
     module_type: "ICARUSBeamStructureAna"
     FlashLabels: ["opflashCryoE", "opflashCryoW"]
     TriggerLabel: "daqTrigger"
-    RWMLabel: "beam:RWM"
+    RWMLabel: "beamTiming:RWM"
     TriggerConfigLabel: "triggerconfig"
     CRTPMTMatchingLabel: "crtpmt"
 }

@@ -49,7 +49,7 @@ physics:
 
       ophituncorrected:  @local::icarus_ophit_data
       ophit:             @local::icarus_ophit_timing_correction
-      beam:          @local::icarus_beam_signal_extractor
+      beamTiming:        @local::icarus_beam_signal_extractor
       opflashCryoE: @local::ICARUSSimpleFlashDataCryoE
       opflashCryoW: @local::ICARUSSimpleFlashDataCryoW
       
@@ -62,7 +62,7 @@ physics:
       beamana:       @local::ICARUSBeamStructureAna
     }
 
-    my_producers: [ triggerconfig, pmtconfig, daqTrigger, daqPMT, daqCRT, ophituncorrected, ophit, beam, opflashCryoE, opflashCryoW, crthit, crtpmt ]
+    my_producers: [ triggerconfig, pmtconfig, daqTrigger, daqPMT, daqCRT, ophituncorrected, ophit, beamTiming, opflashCryoE, opflashCryoW, crthit, crtpmt ]
     my_analyzers: [ beamana ]
 
     trigger_paths: [ my_producers ]
@@ -78,5 +78,5 @@ physics.producers.daqPMT.PMTconfigTag: pmtconfig # required
 physics.producers.daqPMT.TriggerTag:   daqTrigger # required
 physics.producers.ophit.InputLabels:  [ "ophituncorrected" ]
 
-physics.producers.beam.DebugTrees: true
-physics.analyzers.beamana.RWMLabel: "beam:RWM"
+physics.producers.beamTiming.DebugTrees: true
+physics.analyzers.beamana.RWMLabel: "beamTiming:RWM"
