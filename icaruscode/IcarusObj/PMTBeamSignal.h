@@ -60,12 +60,6 @@ namespace icarus::timing
     /// Start time relative to trigger time [us].
     double startTime = NoTime;
 
-    PMTBeamSignal(unsigned int ch, std::string b, std::string c,
-                  std::size_t s, double t, double tt) : specialChannel(ch), digitizerLabel(b), crate(c), sample(s),
-                                                        startTimeAbs(t), startTime(tt) {};
-
-    PMTBeamSignal() {};
-
     /// Returns whether the time is valid.
     bool isValid() const { return ((sample != NoSample) && (startTime != NoTime)); }
   };

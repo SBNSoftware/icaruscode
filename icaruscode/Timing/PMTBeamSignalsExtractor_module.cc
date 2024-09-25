@@ -171,7 +171,7 @@ private:
   int m_timestamp;
   // special signal info
   int m_n_channels;
-  int m_channel;
+  unsigned int m_channel;
   double m_wfstart;
   std::size_t m_sample;
   double m_time;
@@ -365,7 +365,8 @@ void icarus::timing::PMTBeamSignalsExtractor::extractBeamSignalTime(art::Event &
     m_time = (m_sample != icarus::timing::NoSample) ? m_time_abs - ftrigger_time : icarus::timing::NoTime;
 
     std::string crate = getCrate(m_channel);
-    fBeamSignals[l].insert(std::make_pair(crate, PMTBeamSignal(m_channel, getDigitizerLabel(m_channel), crate, m_sample, m_time_abs, m_time)));
+    icarus::timing::PMTBeamSignal beamTime{m_channel, getDigitizerLabel(m_channel), crate, m_sample, m_time_abs, m_time};
+    fBeamSignals[l].insert(std::make_pair(crate, beamTime));
 
     if (fSaveWaveforms)
       m_wf = wave.Waveform();
