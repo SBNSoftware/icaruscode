@@ -50,6 +50,7 @@
 #include <string>
 #include <vector>
 #include <map>
+#include <cstddef>
 
 // -----------------------------------------------------------------------------
 namespace opana
@@ -301,7 +302,7 @@ void opana::ICARUSBeamStructureAna::analyze(art::Event const &e)
   if (!fFlashLabels.empty())
   {
 
-    for (size_t iFlashLabel = 0; iFlashLabel < fFlashLabels.size(); iFlashLabel++)
+    for (std::size_t iFlashLabel = 0; iFlashLabel < fFlashLabels.size(); iFlashLabel++)
     {
 
       auto const label = fFlashLabels[iFlashLabel];
@@ -326,7 +327,7 @@ void opana::ICARUSBeamStructureAna::analyze(art::Event const &e)
         art::FindOneP<sbn::crt::CRTPMTMatching> matchPtr(flash_handle, e, fCRTPMTMatchingLabel);
 
         // loop all flashes
-        size_t idx = 0;
+        std::size_t idx = 0;
         for (auto const &flash : flashes)
         {
 
@@ -493,7 +494,7 @@ double opana::ICARUSBeamStructureAna::getFlashBunchTime(std::vector<int> channel
 
   int nleft = 0;
   int nright = 0;
-  for (size_t i = 0; i < hit_rise_time_rwm.size(); i++)
+  for (std::size_t i = 0; i < hit_rise_time_rwm.size(); i++)
   {
 
     int ch = channels[i];

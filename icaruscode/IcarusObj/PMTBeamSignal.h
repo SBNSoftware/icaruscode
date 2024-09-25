@@ -10,6 +10,8 @@
 
 // C/C++ standard libraries
 #include <limits>
+#include <string>
+#include <cstddef>
 
 namespace icarus::timing
 {
@@ -19,7 +21,7 @@ namespace icarus::timing
   /// Special value to denote no time channel informatio
   static constexpr double NoTime = 0.;
   // Special value to denote no sample information
-  static constexpr size_t NoSample = 0;
+  static constexpr std::size_t NoSample = 0;
 
   struct PMTBeamSignal
   {
@@ -34,7 +36,7 @@ namespace icarus::timing
     std::string crate = "";
 
     /// Sample within the waveform where the reference signal is found
-    size_t sample = NoSample;
+    std::size_t sample = NoSample;
 
     /// Start time in electronics time [us]
     double startTimeAbs = NoTime;
@@ -43,8 +45,8 @@ namespace icarus::timing
     double startTime = NoTime;
 
     PMTBeamSignal(unsigned int ch, std::string b, std::string c,
-                  size_t s, double t, double tt) : specialChannel(ch), digitizerLabel(b), crate(c), sample(s),
-                                                   startTimeAbs(t), startTime(tt) {};
+                  std::size_t s, double t, double tt) : specialChannel(ch), digitizerLabel(b), crate(c), sample(s),
+                                                        startTimeAbs(t), startTime(tt) {};
 
     PMTBeamSignal() {};
 

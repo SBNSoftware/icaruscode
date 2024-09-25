@@ -50,6 +50,7 @@
 #include <map>
 #include <numeric> // std::accumulate
 #include <limits>
+#include <cstddef>
 
 namespace opana
 {
@@ -277,7 +278,7 @@ void opana::ICARUSFlashAssAna::beginJob()
   fGeoTree->Branch("pmt_y", &m_pmt_y);
   fGeoTree->Branch("pmt_z", &m_pmt_z);
 
-  for (size_t opch = 0; opch < fGeom->NOpChannels(); ++opch)
+  for (std::size_t opch = 0; opch < fGeom->NOpChannels(); ++opch)
   {
 
     auto const PMTxyz = fGeom->OpDetGeoFromOpChannel(opch).GetCenter();
@@ -511,7 +512,7 @@ float opana::ICARUSFlashAssAna::getFlashBunchTime(std::vector<double> pmt_start_
 
   int nleft = 0;
   int nright = 0;
-  for (size_t i = 0; i < pmt_start_time_rwm.size(); i++)
+  for (std::size_t i = 0; i < pmt_start_time_rwm.size(); i++)
   {
 
     int side = getSideByChannel(i);
@@ -568,7 +569,7 @@ void opana::ICARUSFlashAssAna::processOpHits(art::Event const &e, unsigned int c
     return;
   }
 
-  for (size_t iOpHitLabel = 0; iOpHitLabel < fOpHitLabels.size(); iOpHitLabel++)
+  for (std::size_t iOpHitLabel = 0; iOpHitLabel < fOpHitLabels.size(); iOpHitLabel++)
   {
 
     auto const label = fOpHitLabels[iOpHitLabel];
@@ -778,7 +779,7 @@ void opana::ICARUSFlashAssAna::analyze(art::Event const &e)
   if (!fOpDetWaveformLabels.empty() && fSaveWaveformInfo)
   {
 
-    for (size_t i = 0; i < fOpDetWaveformLabels.size(); i++)
+    for (std::size_t i = 0; i < fOpDetWaveformLabels.size(); i++)
     {
 
       auto const wflabel = fOpDetWaveformLabels[i];
@@ -791,7 +792,7 @@ void opana::ICARUSFlashAssAna::analyze(art::Event const &e)
       if (!waveforms.empty())
       {
 
-        size_t idx = 0;
+        std::size_t idx = 0;
         for (auto const &wave : waveforms)
         {
 
@@ -836,7 +837,7 @@ void opana::ICARUSFlashAssAna::analyze(art::Event const &e)
     // hold the cryostat information
     std::vector<unsigned int> cids;
 
-    for (size_t iFlashLabel = 0; iFlashLabel < fFlashLabels.size(); iFlashLabel++)
+    for (std::size_t iFlashLabel = 0; iFlashLabel < fFlashLabels.size(); iFlashLabel++)
     {
 
       auto const label = fFlashLabels[iFlashLabel];
@@ -854,7 +855,7 @@ void opana::ICARUSFlashAssAna::analyze(art::Event const &e)
 
         art::FindManyP<recob::OpHit> ophitsPtr(flash_handle, e, label);
 
-        size_t idx = 0;
+        std::size_t idx = 0;
         for (auto const &flash : flashes)
         {
 

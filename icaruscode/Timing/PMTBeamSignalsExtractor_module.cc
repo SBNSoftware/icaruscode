@@ -35,6 +35,7 @@
 #include <string>
 #include <algorithm>
 #include <utility>
+#include <cstddef>
 
 namespace icarus
 {
@@ -110,11 +111,11 @@ public:
   template <typename T>
   T Median(std::vector<T> data) const;
   template <typename T>
-  static size_t getMaxBin(std::vector<T> const &vv, size_t startElement, size_t endElement);
+  static std::size_t getMaxBin(std::vector<T> const &vv, std::size_t startElement, std::size_t endElement);
   template <typename T>
-  static size_t getMinBin(std::vector<T> const &vv, size_t startElement, size_t endElement);
+  static std::size_t getMinBin(std::vector<T> const &vv, std::size_t startElement, std::size_t endElement);
   template <typename T>
-  static size_t getStartSample(std::vector<T> const &vv, T thres);
+  static std::size_t getStartSample(std::vector<T> const &vv, T thres);
 
   // associate times to PMT channels
   void associateBeamSignalsToChannels(art::InputTag label);
@@ -172,7 +173,7 @@ private:
   int m_n_channels;
   int m_channel;
   double m_wfstart;
-  size_t m_sample;
+  std::size_t m_sample;
   double m_time;
   double m_time_abs;
   double m_utime_abs;
@@ -386,13 +387,13 @@ T icarus::timing::PMTBeamSignalsExtractor::Median(std::vector<T> data) const
 // -----------------------------------------------------------------------------
 
 template <typename T>
-size_t icarus::timing::PMTBeamSignalsExtractor::getMinBin(
-    std::vector<T> const &vv, size_t startElement, size_t endElement)
+std::size_t icarus::timing::PMTBeamSignalsExtractor::getMinBin(
+    std::vector<T> const &vv, std::size_t startElement, std::size_t endElement)
 {
 
   auto minel =
       std::min_element(vv.begin() + startElement, vv.begin() + endElement);
-  size_t minsample = std::distance(vv.begin() + startElement, minel);
+  std::size_t minsample = std::distance(vv.begin() + startElement, minel);
 
   return minsample;
 }
@@ -400,14 +401,14 @@ size_t icarus::timing::PMTBeamSignalsExtractor::getMinBin(
 // -----------------------------------------------------------------------------
 
 template <typename T>
-size_t icarus::timing::PMTBeamSignalsExtractor::getMaxBin(
-    std::vector<T> const &vv, size_t startElement, size_t endElement)
+std::size_t icarus::timing::PMTBeamSignalsExtractor::getMaxBin(
+    std::vector<T> const &vv, std::size_t startElement, std::size_t endElement)
 {
 
   auto maxel =
       std::max_element(vv.begin() + startElement, vv.begin() + endElement);
 
-  size_t maxsample = std::distance(vv.begin() + startElement, maxel);
+  std::size_t maxsample = std::distance(vv.begin() + startElement, maxel);
 
   return maxsample;
 }
@@ -415,24 +416,24 @@ size_t icarus::timing::PMTBeamSignalsExtractor::getMaxBin(
 // -----------------------------------------------------------------------------
 
 template <typename T>
-size_t icarus::timing::PMTBeamSignalsExtractor::getStartSample(std::vector<T> const &vv, T thres)
+std::size_t icarus::timing::PMTBeamSignalsExtractor::getStartSample(std::vector<T> const &vv, T thres)
 {
 
   // We are thinking in inverted polarity
-  size_t minbin = getMinBin(vv, 0, vv.size());
+  std::size_t minbin = getMinBin(vv, 0, vv.size());
 
   // Search only a cropped region of the waveform backward from the min
-  size_t maxbin = minbin - 20;
+  std::size_t maxbin = minbin - 20;
 
   // Now we crawl betweem maxbin and minbin and we stop when:
   // bin value  > (maxbin value - bin value )*0.2
-  size_t startbin = maxbin;
+  std::size_t startbin = maxbin;
   auto delta = vv[maxbin] - vv[minbin];
 
   if (delta < thres)                 // just noise
     return icarus::timing::NoSample; // return no sample
 
-  for (size_t bin = maxbin; bin < minbin; bin++)
+  for (std::size_t bin = maxbin; bin < minbin; bin++)
   {
     auto val = vv[maxbin] - vv[bin];
     if (val >= 0.2 * delta)
@@ -524,7 +525,7 @@ void icarus::timing::PMTBeamSignalsExtractor::associateBeamSignalsToChannels(art
       for (auto pmtinfo : fChannelMap.getPMTchannelInfo(fragID))
       {
 
-        size_t channel = pmtinfo.channelID;
+        std::size_t channel = pmtinfo.channelID;
         // make sure there is enough room in the collection (channel -> vector index)
         if (channel >= fSignalCollection[l]->size())
           fSignalCollection[l]->resize(channel + 1);
