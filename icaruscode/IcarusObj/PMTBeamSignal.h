@@ -19,7 +19,7 @@ namespace icarus::timing
   /// Special value to denote no special channel information.
   static constexpr auto NoChannel = std::numeric_limits<unsigned int>::max();
   /// Special value to denote no time channel information.
-  static constexpr double NoTime = 0.;
+  static constexpr double NoTime = std::numeric_limits<double>::max();
   // Special value to denote no sample information.
   static constexpr std::size_t NoSample = 0;
 
@@ -61,7 +61,7 @@ namespace icarus::timing
     double startTime = NoTime;
 
     /// Returns whether the time is valid.
-    bool isValid() const { return ((sample != NoSample) && (startTime != NoTime)); }
+    bool isValid() const { return (sample != NoSample); }
   };
 
 } // namespace icarus::timing
