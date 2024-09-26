@@ -516,16 +516,11 @@ namespace crt {
 	  presel = true;
 
       }else if ( type == 'd'){
-        //std::cout<<"The pe threshold is: "<<fPEThresh<<'\n';
-	//std::cout<<"Bottom values: "<<'\n';        
-	//std::cout<<"Timestamp: "<<crtList[febdat_i]->fTs0<<'\n';
         float peBottomThresh = 100.;
 	 //Preselection pe threshold set to 100 as a method to obtain the calibration values for adc/photon per channel needs created. 	
 	for(int chan=0; chan<64; chan++) {
-	  //float pe = (crtList[febdat_i]->fAdc[chan]-fQPed)/fQSlope;// OLD pe calculation 
 	  float pe = (crtList[febdat_i]->fAdc[chan])/81.;  // New pe calculation removed the baseline subtraction
   	   if (crtList[febdat_i]->fAdc[chan]>0){
-           //std::cout<<"Channel: "<< chan << " ADC: "<<crtList[febdat_i]->fAdc[chan]<<" pe: "<<pe<<'\n';
 	   }
 	   if(pe<=peBottomThresh){
            presel = true;       
@@ -613,9 +608,6 @@ namespace crt {
 	  fNHitFeb  = hit.feb_id.size();
 	  fHitTotPe = hit.peshit;
 	  int mactmp = hit.feb_id[0]; 
-	  //TVector3 ch_pos = fCrtutils.ChanToLocalCoords(mactmp, 0);
-	  //std::cout << "x coordinate = " << ch_pos.X() << "\n";
-	  //std::cout << "z coordinate = " << ch_pos.Z() << "\n";
 	  fHitReg  = fCrtutils->AuxDetRegionNameToNum(fCrtutils->MacToRegion(mactmp));
 	  fHitSubSys =  fCrtutils->MacToTypeCode(mactmp);
 	  std::fill( std::begin( fHitPE ), std::end( fHitPE ), -1 );
@@ -661,7 +653,6 @@ namespace crt {
                 }
              }
 	  } else if (fHitSubSys==2){
-             //std::cout<<"When filling HitTree found a hit with subSys = 2 aka Bottom Hit."<<'\n';
 	     std::map<uint8_t, std::vector<std::pair<int,float>>>::const_iterator it;
 	     for (it = hit.pesmap.begin(); it!=hit.pesmap.end();it++){
 		std::vector<std::pair<int,float>> thisHit = it->second;
@@ -670,15 +661,6 @@ namespace crt {
 		   fHitPE[thisHit[k].first]=thisHit[k].second;
 		   fHitChan[thisHit[k].first]=thisHit[k].first;
 		   fHitMac[thisHit[k].first]=(int)it->first;
-		   /*
-                   if (thisHit[k].second>0){ 
-                   std::cout<<"Hit PE: "<<thisHit[k].second<<"   ";
-		   std::cout<<"Hit Chan: "<<thisHit[k].first<<"   ";
-		   std::cout<<"Hit Mac: "<<(int)it->first<<"   ";
-                   std::cout<<"Hit T0: "<<fT0Hit<<"   ";
-	  	   std::cout<<"Hit T1: "<<fT1Hit<<'\n';
-                   }
-                   */
 		   if(thisHit[k].second>1) fHitNChan++;
 		}	
   	     }

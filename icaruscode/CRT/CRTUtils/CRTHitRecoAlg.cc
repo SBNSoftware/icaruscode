@@ -29,6 +29,7 @@ void CRTHitRecoAlg::reconfigure(const fhicl::ParameterSet& pset) {
   fCSVFile = pset.get<std::string>("CSVFile", "");
   fData = pset.get<bool>("Data", false);
   fGlobalT0Offset = pset.get<double>("GlobalT0Offset",0.);
+  fbottomSlope = pset.get<double>("bottomSlope", 81.);
   if (!fCSVFile.empty()) filecsv.open(fCSVFile);
   /*{
     std::vector<std::vector<int32_t> > T1delays =
@@ -63,9 +64,6 @@ vector<art::Ptr<CRTData>> CRTHitRecoAlg::PreselectCRTData(
                                    << " CRTData found in an event" << '\n';
   vector<art::Ptr<CRTData>> crtdata;
   bool presel = false;
-  int side_amount = 0;
-  int top_amount = 0;
-  int bottom_amount = 0;
 
 for (size_t febdat_i = 0; febdat_i < crtList.size(); febdat_i++) {
     uint8_t mac = crtList[febdat_i]->fMac5;
@@ -101,31 +99,24 @@ for (size_t febdat_i = 0; febdat_i < crtList.size(); febdat_i++) {
               << chg_cal.first << ", " << chg_cal.second << ","
               << crtList[febdat_i]->fAdc[chan] << "," << pe << ")\n";
       }
-	side_amount++;
     } else if (type == 'c') { // 'c' = CERN, Top CRTs
       for (int chan = 0; chan < 32; chan++) {
         // float pe = (crtList[febdat_i]->fAdc[chan]-fQPed)/fQSlope;
         // if(pe<=fPEThresh) continue;
         presel = true;
       }
-	top_amount++;
     } else if (type == 'd') { //'d' = Double Chooz, Bottom CRTs
       for (int chan = 0; chan < 64; chan++) {
         //float pe = (crtList[febdat_i]->fAdc[chan] - fQPed) / fQSlope;
         //if (pe <= fPEThresh) continue;
         presel = true;
       }
-	bottom_amount++;
     }
 
     if (presel) crtdata.push_back(crtList[febdat_i]);
     presel = false;
   }
   
-std::cout<<"Side amount: "<<side_amount<<'\n';
-std::cout<<"Top amount: "<<top_amount<<'\n';
-std::cout<<"Bottom amount: "<<bottom_amount<<'\n';  
-
   mf::LogInfo("CRTHitRecoAlg:")
       << "Found " << crtdata.size() << " after preselection " << '\n';
   return crtdata;
@@ -225,7 +216,6 @@ vector<pair<sbn::crt::CRTHit, vector<int>>> CRTHitRecoAlg::CreateCRTHits(
       if (IsEmptyHit(hit))
         nMissD++;
       else {
-	//std::cout<<"In the else for bottom"<<'\n';
         dataIds.push_back(febdat_i);
         returnHits.push_back(std::make_pair(hit, dataIds));
         if ((regs.insert(region)).second)
@@ -552,34 +542,30 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeBottomHit(art::Ptr<CRTData> data) {
   TVector3 postrig;
   double xmin = 0., xmax = 0.;
   for (int chan = 0; chan < 64; chan++) {
-    //When calculating pe there needs to be a way to fetch the values from calibration.
-    //For now we hardcode in 81 as the conversion factor. Bottom already has baseline subtracted.
+    //When calculating pe there needs to be a way to fetch the values from calibration and add them to the fcl config.
+    //Bottom slope is the conversion factor for the bottom. Bottom already has baseline subtracted.
     //May also need to lookat whether 0 to 63 is the appropriate way to deal with the channels.
     //float pe = (data->fAdc[chan] - fQPed) / fQSlope; Original pe calculation
-    float pe = static_cast<float>(data->fAdc[chan]) /81.;
-    //if (pe <= fPEThresh) continue;Remove pe threshold for now.
+    float pe = static_cast<float>(data->fAdc[chan]) /fbottomSlope;
+    //if (pe <= fPEThresh) continue;  //pe threshold for Bottom.
     nabove++;
     int adsid = fCrtutils.ChannelToAuxDetSensitiveID(mac, chan);
     petot += pe;
-    //std::cout<<"petot cumulative: "<<petot<<'\n';
     pesmap[static_cast<int>(mac)].push_back(std::make_pair(chan, pe));
     
     //Debug print outs
-    /*
-    std::cout << "mac = " << static_cast<int>(mac) 
+    if (fVerbose)
+    mf::LogInfo("CRTHitRecoAlg: ") << "Bottom hit: "<<
+              << "mac = " << static_cast<int>(mac) 
               << ", chan = " << chan 
               << ", adc value = " << data->fAdc[chan] 
               << ", pe = " << pe 
               << ", adsid = " << adsid 
               << std::endl;
-    */
+    
     TVector3 postmp = fCrtutils.ChanToLocalCoords(mac, chan);
     TVector3 postmpW = fCrtutils.ChanToWorldCoords(mac, chan);
-    // all strips along z-direction
-    //std::cout << "ChanToLocalCoords...X: "<<postmp.X()<<"  Y: "<<postmp.Y()<<"  Z: "<<postmp.Z()<<'\n';
-    //std::cout << "ChanToWorldCoords...X: "<<postmpW.X()<<"  Y: "<<postmpW.Y()<<"  Z: "<<postmpW.Z()<<'\n';
     hitpos.SetX(pe * postmp.X() + hitpos.X());
-    //std::cout << "hitPosX before petot weight: "<<hitpos.X()<<'\n';
     if (postmp.X() < xmin) xmin = postmp.X();
     if (postmp.X() > xmax) xmax = postmp.X();
 
@@ -596,7 +582,6 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeBottomHit(art::Ptr<CRTData> data) {
   return FillCRTHit({}, {}, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, "");
   }
   hitpos *= 1.0 / petot;  // hit position weighted by deposited charge
-  //std::cout << "hitPosX after petot weight: "<<hitpos.X()<<'\n';
   geo::AuxDetGeo::LocalPoint_t const hitlocal{hitpos.X(), 0., 0.};
 
   auto const& adsGeo = adGeo.SensitiveVolume(adsid_max);  // trigger strip
@@ -617,29 +602,6 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeBottomHit(art::Ptr<CRTData> data) {
                           hitpoint.Z(), hitpointerr[2], region);
 
 
-    // Print for debugging
-    /*
-    for (const auto& entry : pesmap) {
-        uint8_t mac = entry.first;
-        const auto& vec = entry.second;
-
-        std::cout << "MAC: " << static_cast<int>(mac) << std::endl;
-        for (const auto& chan_pe : vec) {
-            int chan = chan_pe.first;
-            float pe = chan_pe.second;
-            std::cout << "  Channel: " << chan << ", PE: " << pe << std::endl;
-        }
-    }
-    std::cout<< "Bottom x pos (hitpoint): " << hitpoint.X() <<'\n';
-    std::cout<< "Bottom y pos (hitpoint): " << hitpoint.Y() <<'\n';
-    std::cout<< "Bottom z pos (hitpoint): " << hitpoint.Z() <<'\n';
-    std::cout<< "Bottom x error: " << hitpointerr[0] <<'\n';
-    std::cout<< "Bottom y error: " << hitpointerr[1] <<'\n';
-    std::cout<< "Bottom z error: " << hitpointerr[2] <<'\n';
-    std::cout<< "Bottom t0 (data->fTs0): " << thit <<'\n';
-    std::cout<< "Bottom t1 (data->fTs0): " << thit1 <<'\n';
-    std::cout<< "Bottom petot: " << petot <<'\n';
-    */
   return hit;
 
 }  // CRTHitRecoAlg::MakeBottomHit
@@ -797,7 +759,6 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeSideHit(
 
     // loop over channels
     for (int chan = 0; chan < 32; chan++) {
-      // std :: cout << "chan: ---------------- " << chan << " , "<<
       // fCrtutils.ChannelToAuxDetSensitiveID(macs.back(),chan) << '\n';
       std::pair<double, double> const chg_cal =
           fChannelMap->getSideCRTCalibrationMap((int)data->fMac5, chan);
