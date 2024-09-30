@@ -508,18 +508,17 @@ std::string icarus::timing::PMTBeamSignalsExtractor::getDigitizerLabel(int chann
 {
 
   // get the board name, convert to digitizer_label
-  std::string board = fBoardBySpecialChannel.at(channel);
+  std::string board = fBoardBySpecialChannel.at(channel); // eg. icaruspmtewtop02
 
   std::string head = "icaruspmt";
-  std::string dash = "-";
-  std::string letter = (board.substr(board.size() - 2, board.size()) == "02") ? "B" : "C";
+  char letter = board.back() - '1' + 'A'; // converts 01,02,03 to A,B,C
 
-  board.erase(board.find(head), head.size());
-  std::transform(board.begin(), board.end(), board.begin(), ::toupper);
-  board.insert(2, dash);
-  board.insert(6, dash);
+  board.erase(board.find(head), head.size());                           // eg. ewtop02
+  std::transform(board.begin(), board.end(), board.begin(), ::toupper); // eg. EWTOP02
+  board.insert(2, 1, '-');                                              // insert dash at position 2, e.g: EW-TOP02
+  board.insert(6, 1, '-');                                              // insert dash at position 6, e.g: EW-TOP-02
 
-  return board.substr(0, board.size() - 2) + letter;
+  return board.substr(0, board.size() - 2) + letter; // e.g: EW-TOP-B
 }
 
 // -----------------------------------------------------------------------------
@@ -563,7 +562,7 @@ void icarus::timing::PMTBeamSignalsExtractor::associateBeamSignalsToChannels(art
 
     // build the PMT digitizer labels that live in this crate
     // then convert it into fragment id
-    std::array const letters = {"-A", "-B", "-C"};
+    std::array const letters{"-A", "-B", "-C"};
     for (auto letter : letters)
     {
 
