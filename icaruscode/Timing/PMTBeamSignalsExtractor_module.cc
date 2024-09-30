@@ -62,8 +62,8 @@ namespace icarus::timing
  *    stores the channel-by-channel waveform timing corrections
  * *  `BoardSetup` (fhicl parameter set): description of the current
  *    V1730 setup from `CAEN_V1730_setup_icarus.fcl` mapping the special signals.
-      It is meant to be the same configuration as used by the PMT decoding
-      (see `BoardSetup` configuration parameter in `icarus::DaqDecoderICARUSPMT`).
+ *    It is meant to be the same configuration as used by the PMT decoding
+ *    (see `BoardSetup` configuration parameter in `icarus::DaqDecoderICARUSPMT`).
 
  * *  `ADCThreshold` (int): detection threshold to avoid cross-talk
  *    noise if one signal is missing from its waveform.
@@ -81,7 +81,7 @@ namespace icarus::timing
  *  * the absolute minimum of the waveform is found
  *  * an interval starting 20 ticks before that minimum is considered
  *  * the baseline level is defined as the value at the start of that interval
- *  * if the baseline-minimum difference is below a threshold, it is assume to be noise
+ *  * if the baseline-minimum difference is below a threshold, it is assumed to be noise
  *    and no time is returned
  *  * if not, the start time is set to the exact tick with an amplitude exceeding 20%
  *    of the minimum of the signal from the baseline
@@ -92,9 +92,12 @@ namespace icarus::timing
  *
  * This modules produces two `std::vector<icarus::timing::PMTBeamSignal>`
  * with 360 elements each, representing the relevent RWM or EW time for
- * the corresponding PMT channel. When the discrimination algorithm decides the "peak" on a waveform to be noise, the corresponding entries are placed into the vector with an invalid value (`isValid()` returns `false`, but the identification data fields are correctly set).
+ * the corresponding PMT channel. When the discrimination algorithm decides
+ * the "peak" on a waveform to be noise, the corresponding entries are placed
+ * into the vector with an invalid value (`isValid()` returns `false`,
+ * but the identification data fields are correctly set).
  *
- * If the event is offbeam or minbias, these vectors are produced empty.
+ * If the event is offbeam, these vectors are produced empty.
  *
  */
 
@@ -134,8 +137,6 @@ public:
   void produce(art::Event &e) override;
 
 private:
-  art::ServiceHandle<art::TFileService> tfs;
-
   /// Channel mappping
   icarusDB::IICARUSChannelMap const &fChannelMap;
   /// Save plain ROOT TTrees for debugging
@@ -194,14 +195,14 @@ icarus::timing::PMTBeamSignalsExtractor::PMTBeamSignalsExtractor(fhicl::Paramete
   // saving special_channel <-> board association in a map
   for (fhicl::ParameterSet const &setup : fBoardSetup)
   {
-    auto const& innerSet = setup.get<std::vector<fhicl::ParameterSet>>("SpecialChannels");
+    auto const &innerSet = setup.get<std::vector<fhicl::ParameterSet>>("SpecialChannels");
     fBoardBySpecialChannel[innerSet[0].get<int>("Channel")] = setup.get<std::string>("Name");
   }
 
   // pre-save the association between digitizer_label and effective fragment ID
   for (unsigned int fragid = 0; fragid < fChannelMap.nPMTfragmentIDs(); fragid++)
   {
-    auto const& pmtinfo = fChannelMap.getPMTchannelInfo(fragid)[0]; // pick first pmt on board
+    auto const &pmtinfo = fChannelMap.getPMTchannelInfo(fragid)[0]; // pick first pmt on board
     fBoardEffFragmentID[pmtinfo.digitizerLabel] = fragid;
   }
 
@@ -222,6 +223,7 @@ void icarus::timing::PMTBeamSignalsExtractor::beginJob()
   if (!fDebugTrees)
     return;
 
+  art::ServiceHandle<art::TFileService> tfs;
   std::vector<std::string> labels = {fRWMlabel.instance(), fEWlabel.instance()};
   for (auto l : labels)
   {
