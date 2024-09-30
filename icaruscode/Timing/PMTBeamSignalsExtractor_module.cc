@@ -455,10 +455,10 @@ std::size_t icarus::timing::PMTBeamSignalsExtractor::getStartSample(std::vector<
   std::size_t minbin = getMinBin(vv, 0, vv.size());
 
   // Search only a cropped region of the waveform backward from the min
-  std::size_t maxbin = minbin - 20;
+  std::size_t maxbin = (minbin - 20) ? (minbin - 20) : 0;
 
   // Now we crawl betweem maxbin and minbin and we stop when:
-  // bin value  > (maxbin value - bin value )*0.2
+  // maxbin value - bin value > (maxbin value - minbin value )*0.2
   std::size_t startbin = maxbin;
   auto delta = vv[maxbin] - vv[minbin];
 
@@ -540,7 +540,7 @@ double icarus::timing::PMTBeamSignalsExtractor::getTriggerCorrection(int channel
 
   // trigger-hardware corrections are shared by all channels on the same board
   // we can pick the first channel on the desired board
-  int fragID = fBoardEffFragmentID[digitizer_label];
+  int fragID = fBoardEffFragmentID.at(digitizer_label);
   auto pmtinfo = fChannelMap.getPMTchannelInfo(fragID)[0]; // pick first ch on board
   int pmtch = pmtinfo.channelID;
 
