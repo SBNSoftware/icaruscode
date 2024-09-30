@@ -191,7 +191,7 @@ icarus::timing::PMTBeamSignalsExtractor::PMTBeamSignalsExtractor(fhicl::Paramete
   // saving special_channel <-> board association in a map
   for (fhicl::ParameterSet const &setup : fBoardSetup)
   {
-    auto innerSet = setup.get<std::vector<fhicl::ParameterSet>>("SpecialChannels");
+    auto const& innerSet = setup.get<std::vector<fhicl::ParameterSet>>("SpecialChannels");
     fBoardBySpecialChannel[innerSet[0].get<int>("Channel")] = setup.get<std::string>("Name");
   }
 
