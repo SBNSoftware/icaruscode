@@ -37,12 +37,9 @@
 #include <utility>
 #include <cstddef>
 
-namespace icarus
+namespace icarus::timing
 {
-  namespace timing
-  {
-    class PMTBeamSignalsExtractor;
-  }
+  class PMTBeamSignalsExtractor;
 }
 
 /**
