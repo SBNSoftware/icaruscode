@@ -135,21 +135,21 @@ private:
   /// Channel mappping
   icarusDB::IICARUSChannelMap const &fChannelMap;
   /// Save plain ROOT TTrees for debugging
-  bool fDebugTrees;
+  bool const fDebugTrees;
   /// Save raw waveforms in debug TTrees
-  bool fSaveWaveforms;
+  bool const fSaveWaveforms;
   /// Trigger instance label
-  art::InputTag fTriggerLabel;
+  art::InputTag const fTriggerLabel;
   /// RWM waveform instance label
-  art::InputTag fRWMlabel;
+  art::InputTag const fRWMlabel;
   /// EW waveform instance label
-  art::InputTag fEWlabel;
+  art::InputTag const fEWlabel;
   /// Trigger-hardware correction instance
-  art::InputTag fTriggerCorrectionLabel;
+  art::InputTag const fTriggerCorrectionLabel;
   /// Threshold for pulse selection
-  short int fADCThreshold;
+  short int const fADCThreshold;
   /// V1730 special channels setup
-  std::vector<fhicl::ParameterSet> fBoardSetup;
+  std::vector<fhicl::ParameterSet> const fBoardSetup;
 
   std::map<int, std::string> fBoardBySpecialChannel;
   std::vector<icarus::timing::PMTWaveformTimeCorrection> fCorrections;
