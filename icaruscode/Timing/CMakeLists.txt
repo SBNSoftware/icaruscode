@@ -8,14 +8,6 @@ set(    MODULE_LIBRARIES
 	art_root_io::TFileService_service
         art_root_io::tfile_support
         lardataobj::RawData
-        art::Framework_Core
-        art::Framework_Principal
-        art::Utilities
-        canvas::canvas
-        messagefacility::MF_MessageLogger
-        fhiclcpp::fhiclcpp
-        cetlib::cetlib
-        cetlib_except::cetlib_except
         ROOT::Tree
 )
 set(	LIB_LIBRARIES
