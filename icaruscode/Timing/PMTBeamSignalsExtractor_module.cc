@@ -130,7 +130,7 @@ public:
   PMTBeamSignalsExtractor &operator=(PMTBeamSignalsExtractor const &) = delete;
   PMTBeamSignalsExtractor &operator=(PMTBeamSignalsExtractor &&) = delete;
 
-  void beginJob();
+  void beginJob() override;
   void produce(art::Event &e) override;
 
 private:
