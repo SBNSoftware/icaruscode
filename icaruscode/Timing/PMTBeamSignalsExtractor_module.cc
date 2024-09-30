@@ -117,6 +117,9 @@ public:
   template <typename T>
   static std::size_t getStartSample(std::vector<T> const &vv, T thres);
 
+  // unpack the V1730 special channels settings in a useful way
+  static std::map<int, std::string> extractBoardBySpecialChannel(std::vector<fhicl::ParameterSet> const &setup);
+
   // associate times to PMT channels
   void associateBeamSignalsToChannels(art::InputTag label);
 
@@ -134,6 +137,7 @@ public:
   PMTBeamSignalsExtractor &operator=(PMTBeamSignalsExtractor &&) = delete;
 
   void beginJob() override;
+  void beginRun(art::Run &run) override;
   void produce(art::Event &e) override;
 
 private:
@@ -153,10 +157,9 @@ private:
   art::InputTag const fTriggerCorrectionLabel;
   /// Threshold for pulse selection
   short int const fADCThreshold;
-  /// V1730 special channels setup
-  std::vector<fhicl::ParameterSet> const fBoardSetup;
+  /// Special channel to board association in a map
+  std::map<int, std::string> const fBoardBySpecialChannel;
 
-  std::map<int, std::string> fBoardBySpecialChannel;
   std::vector<icarus::timing::PMTWaveformTimeCorrection> fCorrections;
   std::map<std::string, int> fBoardEffFragmentID;
   double ftrigger_time;
@@ -188,24 +191,17 @@ private:
 // -----------------------------------------------------------------------------
 
 icarus::timing::PMTBeamSignalsExtractor::PMTBeamSignalsExtractor(fhicl::ParameterSet const &pset)
-    : EDProducer{pset}, fChannelMap(*(art::ServiceHandle<icarusDB::IICARUSChannelMap const>{})), fDebugTrees(pset.get<bool>("DebugTrees")), fSaveWaveforms(pset.get<bool>("SaveWaveforms")), fTriggerLabel(pset.get<art::InputTag>("TriggerLabel")), fRWMlabel(pset.get<art::InputTag>("RWMlabel")), fEWlabel(pset.get<art::InputTag>("EWlabel")), fTriggerCorrectionLabel(pset.get<art::InputTag>("TriggerCorrectionLabel")), fADCThreshold(pset.get<short int>("ADCThreshold")), fBoardSetup(pset.get<std::vector<fhicl::ParameterSet>>("BoardSetup"))
+    : EDProducer{pset},
+      fChannelMap(*(art::ServiceHandle<icarusDB::IICARUSChannelMap const>{})),
+      fDebugTrees(pset.get<bool>("DebugTrees")),
+      fSaveWaveforms(pset.get<bool>("SaveWaveforms")),
+      fTriggerLabel(pset.get<art::InputTag>("TriggerLabel")),
+      fRWMlabel(pset.get<art::InputTag>("RWMlabel")),
+      fEWlabel(pset.get<art::InputTag>("EWlabel")),
+      fTriggerCorrectionLabel(pset.get<art::InputTag>("TriggerCorrectionLabel")),
+      fADCThreshold(pset.get<short int>("ADCThreshold")),
+      fBoardBySpecialChannel(extractBoardBySpecialChannel(pset.get<std::vector<fhicl::ParameterSet>>("BoardSetup")))
 {
-
-  // unpack the V1730 special channels settings in a useful way
-  // saving special_channel <-> board association in a map
-  for (fhicl::ParameterSet const &setup : fBoardSetup)
-  {
-    auto const &innerSet = setup.get<std::vector<fhicl::ParameterSet>>("SpecialChannels");
-    fBoardBySpecialChannel[innerSet[0].get<int>("Channel")] = setup.get<std::string>("Name");
-  }
-
-  // pre-save the association between digitizer_label and effective fragment ID
-  for (unsigned int fragid = 0; fragid < fChannelMap.nPMTfragmentIDs(); fragid++)
-  {
-    auto const &pmtinfo = fChannelMap.getPMTchannelInfo(fragid)[0]; // pick first pmt on board
-    fBoardEffFragmentID[pmtinfo.digitizerLabel] = fragid;
-  }
-
   // Call appropriate consumes<>() functions here.
   consumes<std::vector<raw::OpDetWaveform>>(fEWlabel);
   consumes<std::vector<raw::OpDetWaveform>>(fRWMlabel);
@@ -248,6 +244,21 @@ void icarus::timing::PMTBeamSignalsExtractor::beginJob()
       tree->Branch("wf", &m_wf);
     }
     fOutTree[l] = tree;
+  }
+}
+
+// -----------------------------------------------------------------------------
+
+void icarus::timing::PMTBeamSignalsExtractor::beginRun(art::Run &run)
+{
+  // pre-save the association between digitizer_label and effective fragment ID
+  // needs to be done at the begin of each run in case mapping changed
+  fBoardEffFragmentID.clear();
+
+  for (unsigned int fragid = 0; fragid < fChannelMap.nPMTfragmentIDs(); fragid++)
+  {
+    auto const &pmtinfo = fChannelMap.getPMTchannelInfo(fragid)[0]; // pick first pmt on board
+    fBoardEffFragmentID[pmtinfo.digitizerLabel] = fragid;
   }
 }
 
@@ -378,7 +389,7 @@ void icarus::timing::PMTBeamSignalsExtractor::extractBeamSignalTime(art::Event &
 // ---------------------------------------------------------------------------
 
 template <typename T>
-T icarus::timing::PMTBeamSignalsExtractor::Median(std::vector<T> data) const
+T icarus::timing::PMTBeamSignalsExtractor::Median(std::vector<T> data)
 {
 
   std::nth_element(data.begin(), data.begin() + data.size() / 2, data.end());
@@ -454,11 +465,30 @@ std::size_t icarus::timing::PMTBeamSignalsExtractor::getStartSample(std::vector<
 
 // -----------------------------------------------------------------------------
 
+std::map<int, std::string> icarus::timing::PMTBeamSignalsExtractor::extractBoardBySpecialChannel(
+    std::vector<fhicl::ParameterSet> const &setup)
+{
+
+  // map from special PMT channel to corresponding board
+  std::map<int, std::string> boardBySpecialChannel;
+
+  // unpack the V1730 special channels settings in a useful way
+  for (fhicl::ParameterSet const &s : setup)
+  {
+    auto const &innerSet = s.get<std::vector<fhicl::ParameterSet>>("SpecialChannels");
+    boardBySpecialChannel[innerSet[0].get<int>("Channel")] = s.get<std::string>("Name");
+  }
+
+  return boardBySpecialChannel;
+}
+
+// -----------------------------------------------------------------------------
+
 std::string icarus::timing::PMTBeamSignalsExtractor::getDigitizerLabel(int channel)
 {
 
   // get the board name, convert to digitizer_label
-  std::string board = fBoardBySpecialChannel[channel];
+  std::string board = fBoardBySpecialChannel.at(channel);
 
   std::string head = "icaruspmt";
   std::string dash = "-";
