@@ -106,7 +106,7 @@ public:
   // process waveforms
   void extractBeamSignalTime(art::Event &e, art::InputTag label);
   template <typename T>
-  T Median(std::vector<T> data) const;
+  static T Median(std::vector<T> data);
   template <typename T>
   static std::size_t getMaxBin(std::vector<T> const &vv, std::size_t startElement, std::size_t endElement);
   template <typename T>
