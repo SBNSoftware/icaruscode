@@ -145,11 +145,11 @@ public:
   void associateBeamSignalsToChannels(art::InputTag const &label);
 
   // trigger-hardware timing correction
-  double getTriggerCorrection(int channel);
+  double getTriggerCorrection(int channel) const;
 
   // quick mapping conversions
-  std::string getDigitizerLabel(int channel);
-  std::string getCrate(int channel);
+  std::string getDigitizerLabel(int channel) const;
+  std::string getCrate(int channel) const;
 
   // Plugins should not be copied or assigned.
   PMTBeamSignalsExtractor(PMTBeamSignalsExtractor const &) = delete;
@@ -350,17 +350,10 @@ void icarus::timing::PMTBeamSignalsExtractor::produce(art::Event &e)
   // fix the cable swap for part of Run 2 right here!!
   // see SBN-doc-34631 for details
   if (gateType == sbn::triggerSource::BNB && m_run > 9704 && m_run < 11443)
-  {
+    std::swap(fSignalCollection[fRWMlabel.instance()], fSignalCollection[fEWlabel.instance()]);
 
-    e.put(std::move(fSignalCollection[fRWMlabel.instance()]), "EW");
-    e.put(std::move(fSignalCollection[fEWlabel.instance()]), "RWM");
-  }
-  else
-  { // STANDARD BEHAVIOR
-
-    e.put(std::move(fSignalCollection[fRWMlabel.instance()]), "RWM");
-    e.put(std::move(fSignalCollection[fEWlabel.instance()]), "EW");
-  }
+  e.put(std::move(fSignalCollection[fRWMlabel.instance()]), "RWM");
+  e.put(std::move(fSignalCollection[fEWlabel.instance()]), "EW");
 }
 
 // -----------------------------------------------------------------------------
@@ -399,7 +392,7 @@ void icarus::timing::PMTBeamSignalsExtractor::extractBeamSignalTime(art::Event &
 
     std::string crate = getCrate(m_channel);
     icarus::timing::PMTBeamSignal beamTime{m_channel, getDigitizerLabel(m_channel), crate, m_sample, m_time_abs, m_time};
-    fBeamSignals[l].insert(std::make_pair(crate, beamTime));
+    fBeamSignals[l].emplace(crate, std::move(beamTime));
 
     if (fDebugTrees)
     {
@@ -511,7 +504,7 @@ std::map<int, std::string> icarus::timing::PMTBeamSignalsExtractor::extractBoard
 
 // -----------------------------------------------------------------------------
 
-std::string icarus::timing::PMTBeamSignalsExtractor::getDigitizerLabel(int channel)
+std::string icarus::timing::PMTBeamSignalsExtractor::getDigitizerLabel(int channel) const
 {
 
   // get the board name, convert to digitizer_label
@@ -531,7 +524,7 @@ std::string icarus::timing::PMTBeamSignalsExtractor::getDigitizerLabel(int chann
 
 // -----------------------------------------------------------------------------
 
-std::string icarus::timing::PMTBeamSignalsExtractor::getCrate(int channel)
+std::string icarus::timing::PMTBeamSignalsExtractor::getCrate(int channel) const
 {
 
   std::string digitizer_label = getDigitizerLabel(channel);
@@ -540,7 +533,7 @@ std::string icarus::timing::PMTBeamSignalsExtractor::getCrate(int channel)
 
 // -----------------------------------------------------------------------------
 
-double icarus::timing::PMTBeamSignalsExtractor::getTriggerCorrection(int channel)
+double icarus::timing::PMTBeamSignalsExtractor::getTriggerCorrection(int channel) const
 {
 
   std::string digitizer_label = getDigitizerLabel(channel);
@@ -565,12 +558,12 @@ void icarus::timing::PMTBeamSignalsExtractor::associateBeamSignalsToChannels(art
 
   // loop through the signals which are one per PMT crate
   // for each crate, find the corresponding digitizers
-  for (auto signal : fBeamSignals[l])
+  for (auto const &signal : fBeamSignals[l])
   {
 
     // build the PMT digitizer labels that live in this crate
     // then convert it into fragment id
-    std::vector<std::string> letters = {"-A", "-B", "-C"};
+    std::array const letters = {"-A", "-B", "-C"};
     for (auto letter : letters)
     {
 
