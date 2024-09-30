@@ -201,7 +201,7 @@ icarus::timing::PMTBeamSignalsExtractor::PMTBeamSignalsExtractor(fhicl::Paramete
   // pre-save the association between digitizer_label and effective fragment ID
   for (unsigned int fragid = 0; fragid < fChannelMap.nPMTfragmentIDs(); fragid++)
   {
-    auto pmtinfo = fChannelMap.getPMTchannelInfo(fragid)[0]; // pick first pmt on board
+    auto const& pmtinfo = fChannelMap.getPMTchannelInfo(fragid)[0]; // pick first pmt on board
     fBoardEffFragmentID[pmtinfo.digitizerLabel] = fragid;
   }
 
