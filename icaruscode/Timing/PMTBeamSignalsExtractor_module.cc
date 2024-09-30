@@ -33,6 +33,7 @@
 #include <algorithm>
 #include <utility>
 #include <cstddef>
+#include <array>
 
 namespace icarus::timing
 {
@@ -99,6 +100,26 @@ namespace icarus::timing
  *
  * If the event is offbeam, these vectors are produced empty.
  *
+ * *
+ * Debugging tree
+ * ---------------
+ *
+ * There are two debugging trees, enabled by `DebugTrees`, one for the Early Warning (EW) signals,
+ * named after the instance name of `EWlabel`, and one for the Resistive Wall Monitor (RWM) signals,
+ * named after the instance name of `RWMlabel`. Each entry in the tree represents a single signal
+ * in an event (thus, typically for ICARUS there are 8 entries per event).
+ * The content of an entry includes:
+ *   * `run`, `event`: identifier of the event.
+ *   * `timestamp`: timestamp of the event (in UTC), truncated at the second.
+ *   * `n_channels`: the number of special signal channels in the event.
+ *   * `channel`: the special channel nummber assigned to this signal.
+ *   * `wfstart`: (uncorrected) waveform time start.
+ *   * `sample`: the sample number in the waveform at which the signal was found.
+ *   * `utime_abs`: uncorrected signal time [&micro;s]
+ *   * `time_abs`:  corrected signal time [&micro;s]
+ *   * `time`: corrected signal time (relative to the trigger time) [&micro;s]
+ *   * `nsize` (only if `SaveWaveforms` is set): number of samples in waveform
+ *   * `wf` (only if `SaveWaveforms` is set): full waveform.
  */
 
 class icarus::timing::PMTBeamSignalsExtractor : public art::EDProducer
@@ -107,7 +128,7 @@ public:
   explicit PMTBeamSignalsExtractor(fhicl::ParameterSet const &pset);
 
   // process waveforms
-  void extractBeamSignalTime(art::Event &e, art::InputTag label);
+  void extractBeamSignalTime(art::Event &e, art::InputTag const &label);
   template <typename T>
   static T Median(std::vector<T> data);
   template <typename T>
@@ -121,7 +142,7 @@ public:
   static std::map<int, std::string> extractBoardBySpecialChannel(std::vector<fhicl::ParameterSet> const &setup);
 
   // associate times to PMT channels
-  void associateBeamSignalsToChannels(art::InputTag label);
+  void associateBeamSignalsToChannels(art::InputTag const &label);
 
   // trigger-hardware timing correction
   double getTriggerCorrection(int channel);
@@ -178,6 +199,7 @@ private:
   double m_time;
   double m_time_abs;
   double m_utime_abs;
+  std::size_t m_nsize;
   std::vector<short> m_wf;
 
   // prepare pointers for data products
@@ -220,7 +242,7 @@ void icarus::timing::PMTBeamSignalsExtractor::beginJob()
     return;
 
   art::ServiceHandle<art::TFileService> tfs;
-  std::vector<std::string> labels = {fRWMlabel.instance(), fEWlabel.instance()};
+  std::array const labels = {fRWMlabel.instance(), fEWlabel.instance()};
   for (auto l : labels)
   {
     std::string name = l + "tree";
@@ -241,6 +263,7 @@ void icarus::timing::PMTBeamSignalsExtractor::beginJob()
     // this can quickly make the TTrees quite heavy
     if (fSaveWaveforms)
     {
+      tree->Branch("nsize", &m_nsize);
       tree->Branch("wf", &m_wf);
     }
     fOutTree[l] = tree;
@@ -339,10 +362,10 @@ void icarus::timing::PMTBeamSignalsExtractor::produce(art::Event &e)
 
 // -----------------------------------------------------------------------------
 
-void icarus::timing::PMTBeamSignalsExtractor::extractBeamSignalTime(art::Event &e, art::InputTag label)
+void icarus::timing::PMTBeamSignalsExtractor::extractBeamSignalTime(art::Event &e, art::InputTag const &label)
 {
 
-  std::string l = label.instance();
+  std::string const &l = label.encode();
   auto const &waveforms = e.getProduct<std::vector<raw::OpDetWaveform>>(label);
   m_n_channels = waveforms.size();
 
@@ -355,8 +378,8 @@ void icarus::timing::PMTBeamSignalsExtractor::extractBeamSignalTime(art::Event &
 
   // get the start sample of the signals, one instance per PMT crate
   // use threshold to skip spikes from electric crosstalk see SBN-doc-34928, slides 4-5.
-  // if no signal is found, set both time to "NoTime" so that it triggers the isValid() call of PMTBeamSignal
-
+  // if no signal is found, set both times to icarus::timing::NoTime
+  // so that `isValid()` in PMTBeamSignal will complain if someone checks it
   for (auto const &wave : waveforms)
   {
 
@@ -375,10 +398,15 @@ void icarus::timing::PMTBeamSignalsExtractor::extractBeamSignalTime(art::Event &
     icarus::timing::PMTBeamSignal beamTime{m_channel, getDigitizerLabel(m_channel), crate, m_sample, m_time_abs, m_time};
     fBeamSignals[l].insert(std::make_pair(crate, beamTime));
 
-    if (fSaveWaveforms)
-      m_wf = wave.Waveform();
     if (fDebugTrees)
+    {
+      if (fSaveWaveforms)
+      {
+        m_wf = wave.Waveform();
+        m_nsize = m_wf.size();
+      }
       fOutTree[l]->Fill();
+    }
   }
 }
 
@@ -527,10 +555,10 @@ double icarus::timing::PMTBeamSignalsExtractor::getTriggerCorrection(int channel
 
 // -----------------------------------------------------------------------------
 
-void icarus::timing::PMTBeamSignalsExtractor::associateBeamSignalsToChannels(art::InputTag label)
+void icarus::timing::PMTBeamSignalsExtractor::associateBeamSignalsToChannels(art::InputTag const &label)
 {
 
-  std::string l = label.instance();
+  std::string const &l = label.instance();
 
   // loop through the signals which are one per PMT crate
   // for each crate, find the corresponding digitizers
