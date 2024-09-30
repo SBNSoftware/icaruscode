@@ -227,24 +227,25 @@ void icarus::timing::PMTBeamSignalsExtractor::beginJob()
   {
     std::string name = l + "tree";
     std::string desc = l + " info";
-    fOutTree[l] = tfs->make<TTree>(name.c_str(), desc.c_str());
-    fOutTree[l]->Branch("run", &m_run);
-    fOutTree[l]->Branch("event", &m_event);
-    fOutTree[l]->Branch("timestamp", &m_timestamp);
-    fOutTree[l]->Branch("n_channels", &m_n_channels);
-    fOutTree[l]->Branch("channel", &m_channel);
-    fOutTree[l]->Branch("wfstart", &m_wfstart);
-    fOutTree[l]->Branch("sample", &m_sample);
-    fOutTree[l]->Branch("utime_abs", &m_utime_abs);
-    fOutTree[l]->Branch("time_abs", &m_time_abs);
-    fOutTree[l]->Branch("time", &m_time);
+    TTree* tree = tfs->make<TTree>(name.c_str(), desc.c_str());
+    tree->Branch("run", &m_run);
+    tree->Branch("event", &m_event);
+    tree->Branch("timestamp", &m_timestamp);
+    tree->Branch("n_channels", &m_n_channels);
+    tree->Branch("channel", &m_channel);
+    tree->Branch("wfstart", &m_wfstart);
+    tree->Branch("sample", &m_sample);
+    tree->Branch("utime_abs", &m_utime_abs);
+    tree->Branch("time_abs", &m_time_abs);
+    tree->Branch("time", &m_time);
 
     // add std::vector with full waveforms
     // this can quickly make the TTrees quite heavy
     if (fSaveWaveforms)
     {
-      fOutTree[l]->Branch("wf", &m_wf);
+      tree->Branch("wf", &m_wf);
     }
+    fOutTree[l] = tree;
   }
 }
 
