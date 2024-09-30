@@ -1,10 +1,10 @@
 ////////////////////////////////////////////////////////////////////////
-// Class:       PMTBeamSignalsExtractor
-// Plugin Type: producer (Unknown Unknown)
-// File:        PMTBeamSignalsExtractor_module.cc
-//
-// Generated at Sun Feb 11 11:37:14 2024 by Matteo Vicenzi using cetskelgen
-// from  version .
+/**
+ * @file icaruscode/Timing/PMTBeamSignalsExtractor_module.cc
+ * @brief `icarus::timing::PMTBeamSignalsExtractor` producer module.
+ * @author Matteo Vicenzi (mvicenzi@bnl.gov)
+ * @date  Sun Feb 11 11:37:14 2024
+ **/
 ////////////////////////////////////////////////////////////////////////
 
 #include "art/Framework/Core/EDProducer.h"
@@ -225,7 +225,7 @@ void icarus::timing::PMTBeamSignalsExtractor::beginJob()
   {
     std::string name = l + "tree";
     std::string desc = l + " info";
-    TTree* tree = tfs->make<TTree>(name.c_str(), desc.c_str());
+    TTree *tree = tfs->make<TTree>(name.c_str(), desc.c_str());
     tree->Branch("run", &m_run);
     tree->Branch("event", &m_event);
     tree->Branch("timestamp", &m_timestamp);
@@ -283,15 +283,12 @@ void icarus::timing::PMTBeamSignalsExtractor::produce(art::Event &e)
   // check the current beam gate
   auto const trigger_handle = e.getProduct<sbn::ExtraTriggerInfo>(fTriggerLabel);
   sbn::triggerSource const gateType = trigger_handle.sourceType;
-  std::string beamType = "";
 
   switch (gateType)
   {
   case sbn::triggerSource::BNB:
-    beamType = "BNB";
     break;
   case sbn::triggerSource::NuMI:
-    beamType = "NuMI";
     break;
   default:
     mf::LogTrace("PMTBeamSignalsExtractor") << "Skipping offbeam gate '" << name(gateType) << "'";
@@ -327,7 +324,7 @@ void icarus::timing::PMTBeamSignalsExtractor::produce(art::Event &e)
   // place data products in the stream
   // fix the cable swap for part of Run 2 right here!!
   // see SBN-doc-34631 for details
-  if (beamType == "BNB" && m_run > 9704 && m_run < 11443)
+  if (gateType == sbn::triggerSource::BNB && m_run > 9704 && m_run < 11443)
   {
 
     e.put(std::move(fSignalCollection[fRWMlabel.instance()]), "EW");
