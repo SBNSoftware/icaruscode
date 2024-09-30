@@ -81,10 +81,10 @@ namespace icarus::timing
  *  * the absolute minimum of the waveform is found
  *  * an interval starting 20 ticks before that minimum is considered
  *  * the baseline level is defined as the value at the start of that interval
- *  * if the baseline-minimum is below a threshold, it is assume to be noise
+ *  * if the baseline-minimum difference is below a threshold, it is assume to be noise
  *    and no time is returned
  *  * if not, the start time is set to the exact tick with an amplitude exceeding 20%
- *    of the miminum of the signal from the baseline
+ *    of the minimum of the signal from the baseline
  *
  *
  * Output products
