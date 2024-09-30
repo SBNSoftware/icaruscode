@@ -19,10 +19,9 @@
 #include "icaruscode/Decode/ChannelMapping/IICARUSChannelMap.h"
 #include "icaruscode/IcarusObj/PMTWaveformTimeCorrection.h"
 #include "icaruscode/IcarusObj/PMTBeamSignal.h"
-#include "lardata/DetectorInfoServices/DetectorClocksService.h"
-#include "lardataalg/DetectorInfo/DetectorTimings.h"
 #include "lardataalg/DetectorInfo/DetectorTimingTypes.h" // electronics_time
 #include "lardataobj/RawData/OpDetWaveform.h"
+#include "lardataobj/RawData/TriggerData.h"
 
 #include "TTree.h"
 
@@ -162,7 +161,7 @@ private:
 
   std::vector<icarus::timing::PMTWaveformTimeCorrection> fCorrections;
   std::map<std::string, int> fBoardEffFragmentID;
-  double ftrigger_time;
+  double ftriggerTime;
 
   // output TTrees
   std::map<std::string, TTree *> fOutTree;
@@ -275,14 +274,13 @@ void icarus::timing::PMTBeamSignalsExtractor::produce(art::Event &e)
   // extract meta event information
   m_run = e.id().run();
   m_event = e.id().event();
-  m_timestamp = e.time().timeHigh(); // precision to the second
-  auto const detTimings = detinfo::makeDetectorTimings(art::ServiceHandle<detinfo::DetectorClocksService const>()->DataFor(e));
-  ftrigger_time = detTimings.TriggerTime().value();
+  m_timestamp = e.time().timeHigh();                                                         // precision to the second
+  ftriggerTime = e.getProduct<std::vector<raw::Trigger>>(fTriggerLabel).at(0).TriggerTime(); // us
 
   // this module should run on beam-only events
   // check the current beam gate
-  auto const trigger_handle = e.getProduct<sbn::ExtraTriggerInfo>(fTriggerLabel);
-  sbn::triggerSource const gateType = trigger_handle.sourceType;
+  auto const &triggerInfo = e.getProduct<sbn::ExtraTriggerInfo>(fTriggerLabel);
+  sbn::triggerSource const gateType = triggerInfo.sourceType;
 
   switch (gateType)
   {
@@ -370,7 +368,7 @@ void icarus::timing::PMTBeamSignalsExtractor::extractBeamSignalTime(art::Event &
     m_wfstart = tstart.value();
     m_utime_abs = (m_sample != icarus::timing::NoSample) ? tstart.value() + 0.002 * m_sample : icarus::timing::NoTime;
     m_time_abs = (m_sample != icarus::timing::NoSample) ? m_utime_abs + getTriggerCorrection(m_channel) : icarus::timing::NoTime;
-    m_time = (m_sample != icarus::timing::NoSample) ? m_time_abs - ftrigger_time : icarus::timing::NoTime;
+    m_time = (m_sample != icarus::timing::NoSample) ? m_time_abs - ftriggerTime : icarus::timing::NoTime;
 
     std::string crate = getCrate(m_channel);
     icarus::timing::PMTBeamSignal beamTime{m_channel, getDigitizerLabel(m_channel), crate, m_sample, m_time_abs, m_time};

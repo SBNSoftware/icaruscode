@@ -30,9 +30,7 @@
 #include "lardataobj/RecoBase/OpFlash.h"
 #include "lardataobj/RecoBase/OpHit.h"
 #include "icaruscode/Decode/ChannelMapping/IICARUSChannelMap.h"
-#include "larcore/CoreUtils/ServiceUtil.h" // lar::providerFrom()
-#include "lardata/DetectorInfoServices/DetectorClocksService.h"
-#include "lardataalg/DetectorInfo/DetectorTimings.h"
+#include "larcore/CoreUtils/ServiceUtil.h"               // lar::providerFrom()
 #include "lardataalg/DetectorInfo/DetectorTimingTypes.h" // electronics_time
 #include "lardataobj/RawData/OpDetWaveform.h"
 #include "lardataobj/Simulation/BeamGateInfo.h"
@@ -251,11 +249,6 @@ void opana::ICARUSBeamStructureAna::analyze(art::Event const &e)
 
   // ----
   // Trigger metadata information
-  detinfo::DetectorTimings const detTimings = detinfo::makeDetectorTimings(
-      art::ServiceHandle<detinfo::DetectorClocksService const>()->DataFor(e));
-  detinfo::timescales::electronics_time triggerTime = detTimings.TriggerTime();
-  detinfo::timescales::electronics_time beamGateTime = detTimings.BeamGateTime();
-
   if (!fTriggerLabel.empty())
   {
 
@@ -274,8 +267,8 @@ void opana::ICARUSBeamStructureAna::analyze(art::Event const &e)
       m_beam_gate_timestamp = extraInfo.beamGateTimestamp;
 
       // time in electronics time
-      m_trigger_us = triggerTime.value();
-      m_beam_us = beamGateTime.value();
+      m_trigger_us = e.getProduct<std::vector<raw::Trigger>>(fTriggerLabel).at(0).TriggerTime(); // us
+      m_beam_us = e.getProduct<std::vector<raw::Trigger>>(fTriggerLabel).at(0).BeamGateTime();   // us
       m_beam_gate_width = fTriggerConfiguration.getGateWidth(m_gate_type);
     }
     else
