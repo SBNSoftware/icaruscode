@@ -20,6 +20,7 @@
 #include "icaruscode/IcarusObj/PMTWaveformTimeCorrection.h"
 #include "icaruscode/IcarusObj/PMTBeamSignal.h"
 #include "lardataalg/DetectorInfo/DetectorTimingTypes.h" // electronics_time
+#include "lardataalg/Utilities/quantities/spacetime.h"
 #include "lardataobj/RawData/OpDetWaveform.h"
 #include "lardataobj/RawData/TriggerData.h"
 

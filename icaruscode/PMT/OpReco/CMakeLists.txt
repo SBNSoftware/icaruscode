@@ -16,10 +16,10 @@ cet_build_plugin(ICARUSOpHitFinder art::module
 
 
 set(	MODULE_LIBRARIES
-                        icarusalg::Utilities
+            icarusalg::Utilities
 			sbnobj::Common_Trigger
-    	                icaruscode::Decode_DataProducts
-                        larcorealg::Geometry
+    	    icaruscode::Decode_DataProducts
+            larcorealg::Geometry
 			larcore::Geometry_Geometry_service
 			lardataobj::RecoBase
 			lardataobj::Simulation
@@ -49,7 +49,7 @@ set(	MODULE_LIBRARIES
 			ROOT::Gdml
 			ROOT::FFTW
 			ROOT::Core
-                        ROOT::Tree
+            ROOT::Tree
 )
 cet_build_plugin(FakeFlash art::module LIBRARIES ${MODULE_LIBRARIES})
 cet_build_plugin(FakePhotoS art::module LIBRARIES ${MODULE_LIBRARIES})

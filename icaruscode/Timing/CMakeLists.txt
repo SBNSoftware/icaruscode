@@ -4,7 +4,7 @@ set(    MODULE_LIBRARIES
         lardataobj::RecoBase
 	sbnobj::Common_Trigger
         larcore::Geometry_Geometry_service
-        lardata::DetectorInfoServices_DetectorClocksServiceStandard_service
+        lardata::DetectorClocksService
 	art_root_io::TFileService_service
         art_root_io::tfile_support
         lardataobj::RawData
@@ -24,7 +24,7 @@ set(	SERVICE_LIBRARIES
 	icaruscode_Timing
         icaruscode_IcarusObj
         larcore::Geometry_Geometry_service
-        lardata::DetectorInfoServices_DetectorClocksServiceStandard_service
+        lardata::DetectorClocksService
 )
 
 file(GLOB lib_srcs *.cxx)
