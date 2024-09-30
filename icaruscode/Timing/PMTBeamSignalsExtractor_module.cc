@@ -62,6 +62,9 @@ namespace icarus::timing
  *    stores the channel-by-channel waveform timing corrections
  * *  `BoardSetup` (fhicl parameter set): description of the current
  *    V1730 setup from `CAEN_V1730_setup_icarus.fcl` mapping the special signals.
+      It is meant to be the same configuration as used by the PMT decoding
+      (see `BoardSetup` configuration parameter in `icarus::DaqDecoderICARUSPMT`).
+
  * *  `ADCThreshold` (int): detection threshold to avoid cross-talk
  *    noise if one signal is missing from its waveform.
  * *  `DebugTrees` (bool): flag to produce plain ROOT trees for debugging.
