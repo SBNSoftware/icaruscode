@@ -183,6 +183,8 @@ private:
 
   /// PMT sample duration [&micro;s]
   static constexpr double fPMTsamplingTick = 0.002;
+  /// Number of PMT channels
+  static constexpr std::size_t fNPMTChannels = 360;
 
   std::vector<icarus::timing::PMTWaveformTimeCorrection> fCorrections;
   std::map<std::string, int> fBoardEffFragmentID;
@@ -322,18 +324,23 @@ void icarus::timing::PMTBeamSignalsExtractor::produce(art::Event &e)
     return;
   }
 
+  // reside the collections to match the expected 360 PMT channels
+  // this is to avoid dynamic resizing later on
+  for (auto &collection : fSignalCollection)
+    collection.second->resize(fNPMTChannels);
+
   // get the trigger-hardware corrections that are applied on all signal waveforms
   // if EW or RWM is to be compared to the PMT signals, it must be applied on them as well
   // it also takes care of board-to-board offsets (see SBN-doc-34631, slide 5)
   // Note: this is a vector of 360 elements, one correction for each signal channel
   fCorrections = e.getProduct<std::vector<icarus::timing::PMTWaveformTimeCorrection>>(fTriggerCorrectionLabel);
-  int ntrig = fCorrections.size();
+  std::size_t ntrig = fCorrections.size();
 
   if (ntrig < 1)
     mf::LogError("PMTBeamSignalsExtractor") << "Not found PMTWaveformTimeCorrections with label '"
                                             << fTriggerCorrectionLabel.instance() << "'";
-  else if (ntrig < 360)
-    mf::LogError("PMTBeamSignalsExtractor") << "Missing " << 360 - ntrig << " PMTWaveformTimeCorrections with label '"
+  else if (ntrig < fNPMTChannels)
+    mf::LogError("PMTBeamSignalsExtractor") << "Missing " << fNPMTChannels - ntrig << " PMTWaveformTimeCorrections with label '"
                                             << fTriggerCorrectionLabel.instance() << "'";
 
   // now the main course: getting EW and RWM waveforms
@@ -576,10 +583,8 @@ void icarus::timing::PMTBeamSignalsExtractor::associateBeamSignalsToChannels(art
       {
 
         std::size_t channel = pmtinfo.channelID;
-        // make sure there is enough room in the collection (channel -> vector index)
-        if (channel >= fSignalCollection[l]->size())
-          fSignalCollection[l]->resize(channel + 1);
-
+        // collections are resized to fNPMTChannels
+        // always room in the collection (channel -> vector index)
         fSignalCollection[l]->at(channel) = signal.second;
 
       } // for each channel
