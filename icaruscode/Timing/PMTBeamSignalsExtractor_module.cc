@@ -181,6 +181,9 @@ private:
   /// Special channel to board association in a map
   std::map<int, std::string> const fBoardBySpecialChannel;
 
+  /// PMT sample duration [&micro;s]
+  static constexpr double fPMTsamplingTick = 0.002;
+
   std::vector<icarus::timing::PMTWaveformTimeCorrection> fCorrections;
   std::map<std::string, int> fBoardEffFragmentID;
   double ftriggerTime;
@@ -390,7 +393,7 @@ void icarus::timing::PMTBeamSignalsExtractor::extractBeamSignalTime(art::Event &
 
     m_channel = wave.ChannelNumber();
     m_wfstart = tstart.value();
-    m_utime_abs = (m_sample != icarus::timing::NoSample) ? tstart.value() + 0.002 * m_sample : icarus::timing::NoTime;
+    m_utime_abs = (m_sample != icarus::timing::NoSample) ? tstart.value() + fPMTsamplingTick * m_sample : icarus::timing::NoTime;
     m_time_abs = (m_sample != icarus::timing::NoSample) ? m_utime_abs + getTriggerCorrection(m_channel) : icarus::timing::NoTime;
     m_time = (m_sample != icarus::timing::NoSample) ? m_time_abs - ftriggerTime : icarus::timing::NoTime;
 
