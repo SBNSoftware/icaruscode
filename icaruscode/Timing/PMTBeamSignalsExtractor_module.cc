@@ -92,7 +92,7 @@ namespace icarus::timing
  *
  * This modules produces two `std::vector<icarus::timing::PMTBeamSignal>`
  * with 360 elements each, representing the relevent RWM or EW time for
- * the corresponding PMT channel.
+ * the corresponding PMT channel. When the discrimination algorithm decides the "peak" on a waveform to be noise, the corresponding entries are placed into the vector with an invalid value (`isValid()` returns `false`, but the identification data fields are correctly set).
  *
  * If the event is offbeam or minbias, these vectors are produced empty.
  *
