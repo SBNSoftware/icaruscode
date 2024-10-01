@@ -247,7 +247,7 @@ void icarus::timing::PMTBeamSignalsExtractor::beginJob()
     return;
 
   art::ServiceHandle<art::TFileService> tfs;
-  std::array const labels = {fRWMlabel.instance(), fEWlabel.instance()};
+  std::array const labels{fRWMlabel.instance(), fEWlabel.instance()};
   for (auto l : labels)
   {
     std::string name = l + "tree";
@@ -368,14 +368,15 @@ void icarus::timing::PMTBeamSignalsExtractor::produce(art::Event &e)
 void icarus::timing::PMTBeamSignalsExtractor::extractBeamSignalTime(art::Event &e, art::InputTag const &label)
 {
 
-  std::string const &l = label.encode();
+  std::string const &l = label.instance();
   auto const &waveforms = e.getProduct<std::vector<raw::OpDetWaveform>>(label);
   m_n_channels = waveforms.size();
 
   if (m_n_channels < 1)
-    mf::LogError("PMTBeamSignalsExtractor") << "Not found raw::OpDetWaveform with label '" << l << "'";
+    mf::LogError("PMTBeamSignalsExtractor") << "Not found raw::OpDetWaveform with label '" << label.encode() << "'";
   else if (m_n_channels < 8)
-    mf::LogError("PMTBeamSignalsExtractor") << "Missing " << 8 - m_n_channels << " raw::OpDetWaveform with label '" << l << "'";
+    mf::LogError("PMTBeamSignalsExtractor") << "Missing " << 8 - m_n_channels << " raw::OpDetWaveform with label '"
+                                            << label.encode() << "'";
 
   m_wf.clear();
 
