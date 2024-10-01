@@ -199,7 +199,7 @@ uint64_t crt::DecoderICARUSCRT::CalculateTimestamp(icarus::crt::BernCRTTranslato
     - (ts0 - mean_poll_time_ns >  500'000'000) * 1000'000'000;
 }
 
-//Bottom functions
+//Functions used for the Bottom fragments.
 
 void crt::DecoderICARUSCRT::FragmentToTriggers(const artdaq::Fragment& artFrag, std::unique_ptr<std::vector<CRT::Trigger>>& triggers)
   {
@@ -605,7 +605,7 @@ void crt::DecoderICARUSCRT::produce(art::Event& evt)
   } // loop over all hits in an event
 
 
-//Bottom pieces:
+//The following is used to decode for Bottom sub system.
 auto triggers = std::make_unique<std::vector<CRT::Trigger>>();
 //Next two lines map each index to itself, taken for begin_job from bottom decoder
 const size_t nModules = 56; //
@@ -655,30 +655,16 @@ catch(const cet::exception& exc) //If there are no artdaq::Fragments in this Eve
         std::cout << "No artdaq::Fragments produced by " << fFragTag << " in this event, so "
                               << "not doing anything.\n";
     }
-//Lots of debugging couts
 for(const auto& trigger: *triggers)
        {
         icarus::crt::CRTData data;
-          //trigger.dump(outputStream);
-          //int bottomAdc[32];
-          data.fMac5 = trigger.Channel()+93;
-          data.fTs0 = trigger.Timestamp();	 
-          //std::cout << "Timestamp(t0): " << trigger.Timestamp() << '\n';        
-          //std::cout << "Physical module number: " << trigger.Channel() << '\n';        
-          //std::cout << "Modified module number: " << trigger.Channel()+93 << '\n'; 
-	  //std::cout << "Number of elements in trigger.Hits(): " << trigger.Hits().size() << std::endl;
-          //std::cout << "Start of ADC values: " << '\n';        
+          data.fMac5 = trigger.Channel()+93;//Module ID (1-9), we add 93 to the Module number to match up with the index assigned to the bottom modules (93-102)
+          data.fTs0 = trigger.Timestamp();//Get raw unix timestamp for each of the triggers.	 
           for(const auto& hit: trigger.Hits()){
-	    //uncomment to reset the channel adc value array to 0's in between each hit.
-	    //for (int i = 0; i<64;i++){
-	    //data.fAdc[i] = 0;
-	    //}
-            //std::cout<<"Channel: "<<hit.Channel(); 
-            //std::cout<<"  ADC: "<<hit.ADC()<<'\n';
 	    data.fAdc[hit.Channel()-1] = hit.ADC();
             bottomCount++;          
             totalCount++;   
-            //allCRTdata.push_back(data); Not pushing for each adc hit. Instead pushinh for each trigger.
+            //allCRTdata.push_back(data); //Not pushing for each channel, instead pushing for each trigger with multiple channel hits.
           }
           allCRTdata.push_back(data);
        }
@@ -693,34 +679,6 @@ auto crtdata = std::make_unique<std::vector<icarus::crt::CRTData>>();
     crtdata->push_back(std::move(crtDataElem));
   }
 
-//Debugging output for bottom:
-/*
-size_t x = 100; // Change this to the desired number of instances
-
-    // Iterate over the vector and print out properties of each CRTData object
-    size_t tCount = 0;
-    for (const auto& loopData : *crtdata) {
-        // Check if we have printed x instances already
-        if (tCount >= x) {
-            break;
-        }
-     
-        // Check if fMac5 is greater than 1000
-        if (loopData.fTs0 == 73) {
-            // Print properties of CRTData object
-            std::cout << "CRTData instance " << tCount + 1 << ":\n";
-            std::cout << "fMac5: " << std::to_string(static_cast<int>(loopData.fMac5)) << std::endl;
-            std::cout << "fTs0: " << loopData.fTs0 << std::endl; 
-	    std::cout << "output data adc values:" <<'\n';           
-            for (int i = 0; i < 32; ++i) {
-            std::cout << "Element " << i + 1 << ": " << loopData.fAdc[i] << std::endl;
-	    }	    
-            // Increment the count of printed instances
-            tCount++;
-        }
-    }
-
-*/
 evt.put(std::move(crtdata));
 
 

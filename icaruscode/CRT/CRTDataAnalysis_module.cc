@@ -517,16 +517,11 @@ namespace crt {
 
       }else if ( type == 'd'){
         float peBottomThresh = 100.;
-	 //Preselection pe threshold set to 100 as a method to obtain the calibration values for adc/photon per channel needs created. 	
 	for(int chan=0; chan<64; chan++) {
-	  float pe = (crtList[febdat_i]->fAdc[chan])/81.;  // New pe calculation removed the baseline subtraction
-  	   if (crtList[febdat_i]->fAdc[chan]>0){
-	   }
-	   if(pe<=peBottomThresh){
-           presel = true;       
-	   }    
+	  float pe = (crtList[febdat_i]->fAdc[chan])/81.;//81. conversion factor should be added as a configurable parameter. This is the calibrated adc to pe ratio.
+	  if(pe<=peBottomThresh) continue;
+          presel = true;       	       
 	}
-	//presel = true;
       }
       if (presel) crtData.push_back(crtList[febdat_i]);
       presel = false;
@@ -559,8 +554,8 @@ namespace crt {
 	  float pe = (fADC[ch]-chg_cal.second)/chg_cal.first;
 	  if (pe < 0) continue;
 	  fPE[ch] = pe;
-	}else{
-	  //edited the method used to calculat the pe  for the bottom by removing the baseline subtraction as this is done upstream.
+	}
+        else{ //If neither top or side then bottom.
 	  float pe = (fADC[ch])/fQSlope;
           if (pe < 100) continue;
           fPE[ch] = pe;
@@ -569,18 +564,6 @@ namespace crt {
       }
             
       fDAQNtuple->Fill();
-    //Bottom Debug print outs
-    /*
-    std::cout << "Subsys and Region: "<< fCrtutils->MacToRegion(fMac5) << '\n';
-    std::cout << "Module: "<<fMac5<<'\n';
-    std::cout << "SubSys: "<<fDetSubSys<<'\n';    
-    std::cout << "Timestamp: "<<fT0<<'\n';    
-    for (int i = 0; i < fNMaxCh; i++) {
-      std::cout << "Channel " << i + 1 <<" ADC: "<< fADC[i] << std::endl;
-    }
-    */
-    
-    } //for CRT FEB events
     
   
     // Fill CRT Hit Tree
@@ -653,6 +636,7 @@ namespace crt {
                 }
              }
 	  } else if (fHitSubSys==2){
+             fT1Hit -= m_trigger_timestamp;//Subtracting trigger timestamp from raw unix timestamp.
 	     std::map<uint8_t, std::vector<std::pair<int,float>>>::const_iterator it;
 	     for (it = hit.pesmap.begin(); it!=hit.pesmap.end();it++){
 		std::vector<std::pair<int,float>> thisHit = it->second;
