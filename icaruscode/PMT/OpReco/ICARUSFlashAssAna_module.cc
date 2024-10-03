@@ -260,7 +260,19 @@ private:
 // ----------------------------------------------------------------------------
 
 opana::ICARUSFlashAssAna::ICARUSFlashAssAna(Parameters const &config)
-    : EDAnalyzer(config), fTriggerLabel(config().TriggerLabel()), fSaveWaveformInfo(config().DumpWaveformsInfo()), fSaveRawWaveforms(config().SaveRawWaveforms()), fUseSharedBaseline(config().UseSharedBaseline()), fOpDetWaveformLabels(config().OpDetWaveformLabels()), fBaselineLabels(config().BaselineLabels()), fOpHitLabels(config().OpHitLabels()), fFlashLabels(config().FlashLabels()), fRWMLabel(config().RWMLabel()), fPEOpHitThreshold(config().PEOpHitThreshold()), fDebug(config().Debug()), fGeom(lar::providerFrom<geo::Geometry>())
+    : EDAnalyzer(config),
+      fTriggerLabel(config().TriggerLabel()),
+      fSaveWaveformInfo(config().DumpWaveformsInfo()),
+      fSaveRawWaveforms(config().SaveRawWaveforms()),
+      fUseSharedBaseline(config().UseSharedBaseline()),
+      fOpDetWaveformLabels(config().OpDetWaveformLabels()),
+      fBaselineLabels(config().BaselineLabels()),
+      fOpHitLabels(config().OpHitLabels()),
+      fFlashLabels(config().FlashLabels()),
+      fRWMLabel(config().RWMLabel()),
+      fPEOpHitThreshold(config().PEOpHitThreshold()),
+      fDebug(config().Debug()),
+      fGeom(lar::providerFrom<geo::Geometry>())
 {
 }
 
@@ -480,7 +492,7 @@ float opana::ICARUSFlashAssAna::getRWMRelativeTime(int channel, float t)
 {
 
   if (fRWMTimes.empty())
-    return 0;
+    return icarus::timing::NoTime;
 
   auto rwm = fRWMTimes.at(channel);
   if (!rwm.isValid())
@@ -489,7 +501,7 @@ float opana::ICARUSFlashAssAna::getRWMRelativeTime(int channel, float t)
                                       << "(Crate " << rwm.crate << ", Board " << rwm.digitizerLabel
                                       << ", SpecialChannel " << rwm.specialChannel << ")"
                                       << " in event " << m_event << " gate " << m_gate_name;
-    return 0;
+    return icarus::timing::NoTime;
   }
 
   float rwm_trigger = rwm.startTime; // rwm time w.r.t. trigger time [us]
@@ -505,10 +517,10 @@ float opana::ICARUSFlashAssAna::getFlashBunchTime(std::vector<double> pmt_start_
   float tfirst_left = std::numeric_limits<float>::max();
   float tfirst_right = std::numeric_limits<float>::max();
 
-  // if no RWM info available, all pmt_start_time_rwm is zero
-  // return zero as well for the flash
+  // if no RWM info available, all pmt_start_time_rwm are invalid
+  // return icarus::timing::NoTime as well for the flash
   if (fRWMTimes.empty())
-    return 0;
+    return icarus::timing::NoTime;
 
   int nleft = 0;
   int nright = 0;
@@ -523,11 +535,11 @@ float opana::ICARUSFlashAssAna::getFlashBunchTime(std::vector<double> pmt_start_
     if (t > -1e-10 && t < 1e-10)
       continue;
 
-    // if RWM is missing for some PMT channels,
-    // it might not be possible to use the first hits (might not have RMW time)
-    // so return zero as in other bad cases
+    // if any RWM copy is missing (therefore missing for an entire PMT crate),
+    // it might not be possible to use the first hits (they might not have a RMW time)
+    // so return icarus::timing::NoTime as in other bad cases
     if (!fRWMTimes[i].isValid())
-      return 0;
+      return icarus::timing::NoTime;
 
     // count hits separetely on the two walls
     if (side == 0)

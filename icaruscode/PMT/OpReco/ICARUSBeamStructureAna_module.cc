@@ -161,7 +161,12 @@ private:
 
 // --------------------------------------------------------------------------
 opana::ICARUSBeamStructureAna::ICARUSBeamStructureAna(Parameters const &config)
-    : art::EDAnalyzer(config), fFlashLabels(config().FlashLabels()), fTriggerLabel(config().TriggerLabel()), fRWMLabel(config().RWMLabel()), fTriggerConfigurationLabel(config().TriggerConfigLabel()), fCRTPMTMatchingLabel(config().CRTPMTMatchingLabel())
+    : art::EDAnalyzer(config),
+      fFlashLabels(config().FlashLabels()),
+      fTriggerLabel(config().TriggerLabel()),
+      fRWMLabel(config().RWMLabel()),
+      fTriggerConfigurationLabel(config().TriggerConfigLabel()),
+      fCRTPMTMatchingLabel(config().CRTPMTMatchingLabel())
 {
 }
 
@@ -456,7 +461,7 @@ double opana::ICARUSBeamStructureAna::getRWMRelativeTime(int channel, double t)
 {
 
   if (fRWMTimes.empty())
-    return 0;
+    return icarus::timing::NoTime;
 
   auto rwm = fRWMTimes.at(channel);
   if (!rwm.isValid())
@@ -465,7 +470,7 @@ double opana::ICARUSBeamStructureAna::getRWMRelativeTime(int channel, double t)
                                            << "(Crate " << rwm.crate << ", Board " << rwm.digitizerLabel
                                            << ", SpecialChannel " << rwm.specialChannel << ")"
                                            << " in event " << m_event << " gate " << m_gate_name;
-    return 0;
+    return icarus::timing::NoTime;
   }
 
   double rwm_trigger = rwm.startTime; // rwm time w.r.t. trigger time [us]
@@ -480,10 +485,10 @@ double opana::ICARUSBeamStructureAna::getFlashBunchTime(std::vector<int> channel
   double tfirst_left = std::numeric_limits<double>::max();
   double tfirst_right = std::numeric_limits<double>::max();
 
-  // if no RWM info available, all pmt_start_time_rwm is zero
-  // return zero as well for the flash
+  // if no RWM info available, all pmt_start_time_rwm are invalid
+  // return icarus::timing::NoTime as well for the flash
   if (fRWMTimes.empty())
-    return 0;
+    return icarus::timing::NoTime;
 
   int nleft = 0;
   int nright = 0;
@@ -494,11 +499,11 @@ double opana::ICARUSBeamStructureAna::getFlashBunchTime(std::vector<int> channel
     int side = getSideByChannel(ch);
     double t = hit_rise_time_rwm[i]; // rise time w.r.t. rwm
 
-    // if RWM is missing for some PMT channels,
-    // it might not be possible to use the first hits (might not have RMW time)
-    // so return zero as in other bad cases
+    // if any RWM copy is missing (therefore missing for an entire PMT crate),
+    // it might not be possible to use the first hits (they might not have a RMW time)
+    // so return icarus::timing::NoTime as in other bad cases
     if (!fRWMTimes[i].isValid())
-      return 0;
+      return icarus::timing::NoTime;
 
     // count hits separetely on the two walls
     if (side == 0)
@@ -515,7 +520,7 @@ double opana::ICARUSBeamStructureAna::getFlashBunchTime(std::vector<int> channel
     }
   }
 
-  // if there are no hits in one of the walls...
+  // if there are no hits in one of the walls... very rare?
   if (nleft < 1 || nright < 1)
   {
     mf::LogWarning("ICARUSBeamStructureAna") << "Flash " << m_flash_id << " doesn't have hits on both walls!"
