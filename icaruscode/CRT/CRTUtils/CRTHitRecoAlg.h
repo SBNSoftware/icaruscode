@@ -111,6 +111,7 @@ class icarus::crt::CRTHitRecoAlg {
                      ///< hit reco
   double ftopGain;   ///< Dummy Top CRT Gain Value
   double ftopPed;    ///< Dummy Top CRT Pedestal Value
+  double fbottomSlope; ///< Dummy Bottom CRT pe conversion factor.
   uint64_t fSiPMtoFEBdelay;  ///< SiPM to FEB cable induced delay: 11.6 [ns]
   uint64_t fCoinWindow;      ///< Coincidence window used for grouping side CRT
                              ///< triggers [ns]

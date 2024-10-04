@@ -555,7 +555,7 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeBottomHit(art::Ptr<CRTData> data) {
     
     //Debug print outs
     if (fVerbose)
-    mf::LogInfo("CRTHitRecoAlg: ") << "Bottom hit: "<<
+    mf::LogInfo("CRTHitRecoAlg: ") << "Bottom hit: "
               << "mac = " << static_cast<int>(mac) 
               << ", chan = " << chan 
               << ", adc value = " << data->fAdc[chan] 
