@@ -565,7 +565,7 @@ namespace crt {
             
       fDAQNtuple->Fill();
     
-  
+    } 
     // Fill CRT Hit Tree
     art::Handle<std::vector<sbn::crt::CRTHit>> crtHitHandle;
     
