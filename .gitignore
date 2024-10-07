@@ -77,3 +77,5 @@ Thumbs.db
 
 # emacs back up
 \#*\#
+compile_commands.json
+.cache

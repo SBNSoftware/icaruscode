@@ -23,10 +23,12 @@ standard_gnocchicaloicarus:
   TrackModuleLabel: "track3d"
   T0ModuleLabel: ""
   AssocHitModuleLabel: ""
+  PFPModuleLabel: ""
   ChargeMethod: 1
   FieldDistortion: false
   FieldDistortionEfield: false
   TrackIsFieldDistortionCorrected: false
+  FieldDistortionCorrectionXSign: 1
   Cryostat: 0
   CaloAlg: @local::icarus_calorimetryalgdata
   NormTools: @local::icarus_calonormtools
