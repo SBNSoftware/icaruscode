@@ -103,7 +103,7 @@ ICARUSParticleAna: {
 ICARUSFlashAssAna: {
     module_type: "ICARUSFlashAssAna"
     TriggerLabel: "daqTrigger"
-    DumpWaveformsInfo: true
+    DumpWaveformsInfo: false
     SaveRawWaveforms: false
     UseSharedBaseline: true
     OpDetWaveformLabels: ["daqPMT"]
