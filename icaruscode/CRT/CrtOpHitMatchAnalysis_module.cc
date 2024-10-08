@@ -25,6 +25,7 @@
 #include "larcore/CoreUtils/ServiceUtil.h"
 #include "lardata/DetectorInfoServices/DetectorClocksService.h"
 #include "larcorealg/Geometry/GeometryCore.h"
+#include "larcore/Geometry/WireReadout.h"
 #include "larcore/Geometry/Geometry.h"
 //#include "larsim/MCCheater/PhotonBackTrackerService.h"
 
@@ -169,6 +170,7 @@ class icarus::crt::CrtOpHitMatchAnalysis : public art::EDAnalyzer {
   vector<vector<double>> fFlashDelta;
 
   geo::GeometryCore const* fGeometryService;   ///< pointer to Geometry provider
+  geo::WireReadoutGeom const* fChannelMapAlg;
 };
 
 
@@ -202,6 +204,7 @@ CrtOpHitMatchAnalysis::CrtOpHitMatchAnalysis(fhicl::ParameterSet const& p)
 
   // Get a pointer to the geometry service provider.
   fGeometryService = lar::providerFrom<geo::Geometry>();  
+  fChannelMapAlg = &art::ServiceHandle<geo::WireReadout const>()->Get();
 
   art::ServiceHandle<art::TFileService> tfs;
 
@@ -338,7 +341,7 @@ void CrtOpHitMatchAnalysis::analyze(art::Event const& e)
         double t = ophit->StartTime()*1e3-fOpDelay;
         fHitPE.push_back(ophit->PE());
         fHitChan.push_back(ophit->OpChannel());
-        auto const pos = fGeometryService->OpDetGeoFromOpChannel(ophit->OpChannel()).GetCenter();
+        auto const pos = fChannelMapAlg->OpDetGeoFromOpChannel(ophit->OpChannel()).GetCenter();
         fHitXYZT.push_back({pos.X(), pos.Y(), pos.Z(), t});
   }
 
@@ -576,7 +579,7 @@ void CrtOpHitMatchAnalysis::analyze(art::Event const& e)
                           flashHitPE = hit->PE();
 
                           //FlashHit position/time
-                          auto const pos = fGeometryService->OpDetGeoFromOpChannel(hit->OpChannel()).GetCenter();
+                          auto const pos = fChannelMapAlg->OpDetGeoFromOpChannel(hit->OpChannel()).GetCenter();
                           flashHitxyzt = {pos.X(), pos.Y(), pos.Z(), flashHitT};
                           flashHitDiff = (rcrt - pos).R();
                       }
@@ -620,7 +623,7 @@ void CrtOpHitMatchAnalysis::analyze(art::Event const& e)
               pemax = hit->PE();
 
               //hitXYZT
-              auto const pos = fGeometryService->OpDetGeoFromOpChannel(hit->OpChannel()).GetCenter();
+              auto const pos = fChannelMapAlg->OpDetGeoFromOpChannel(hit->OpChannel()).GetCenter();
               rdiff = (rcrt-pos).R();
 
               //double vel = abs(vdiff.Mag()/(tcrt-thit));

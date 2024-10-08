@@ -35,6 +35,7 @@
 
 // LArSoft includes
 #include "larcoreobj/SimpleTypesAndConstants/RawTypes.h" // raw::ChannelID_t
+#include "larcore/Geometry/WireReadout.h"
 #include "larcore/Geometry/Geometry.h"
 #include "larcore/CoreUtils/ServiceUtil.h" // lar::providerFrom()
 #include "larcorealg/Geometry/PlaneGeo.h"
@@ -118,8 +119,7 @@ namespace recowireraw{
   //////////////////////////////////////////////////////
   void RecoWireICARUSRaw::produce(art::Event& evt)
   {
-    // get the geometry
-    art::ServiceHandle<geo::Geometry> geom;
+    auto const& wireReadoutAlg = art::ServiceHandle<geo::WireReadout const>()->Get();
       
     // make a collection of Wires
     std::unique_ptr<std::vector<recob::Wire> > wirecol(new std::vector<recob::Wire>);
@@ -160,7 +160,7 @@ namespace recowireraw{
             // The following test is meant to be temporary until the "correct" solution is implemented
             if (!fChannelFilter->IsPresent(channel)) continue;
 
-            std::vector<geo::WireID> wids = geom->ChannelToWire(channel);
+            std::vector<geo::WireID> wids = wireReadoutAlg.ChannelToWire(channel);
 
             if (wids.empty()) continue;
             
@@ -365,4 +365,3 @@ namespace recowireraw{
 
 
 #endif // RecoWireICARUSRawH
-

@@ -211,6 +211,7 @@ namespace icarus{
   private:
 
     geo::GeometryCore const* fGeometryService;
+    geo::WireReadoutGeom const* fChannelMap;
     spacecharge::SpaceCharge  const* fSCE;
 
     double fMinTrackLength;

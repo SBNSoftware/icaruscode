@@ -27,6 +27,7 @@
 
 // LArSoft libraries
 #include "lardata/DetectorInfoServices/DetectorClocksService.h"
+#include "larcore/Geometry/WireReadout.h"
 #include "larcore/Geometry/Geometry.h"
 #include "larcore/CoreUtils/ServiceUtil.h" // lar::providerFrom()
 #include "lardataalg/DetectorInfo/DetectorTimings.h"
@@ -380,6 +381,7 @@ class icarus::trigger::MakeTriggerSimulationTree: public art::EDAnalyzer {
   // --- BEGIN Setup variables -------------------------------------------------
   
   geo::GeometryCore const& fGeom;
+  geo::WireReadoutGeom const& fChannelMapAlg;
   
   // --- END Setup variables ---------------------------------------------------
 
@@ -569,6 +571,7 @@ icarus::trigger::MakeTriggerSimulationTree::MakeTriggerSimulationTree
   , fLogCategory(config().LogCategory())
   // setup
   , fGeom(*lar::providerFrom<geo::Geometry>())
+  , fChannelMapAlg{art::ServiceHandle<geo::WireReadout const>()->Get()}
   // other data
   , fIDTree(*(art::ServiceHandle<art::TFileService>()
       ->make<TTree>(config().EventTreeName().c_str(), "Event information")
@@ -580,6 +583,7 @@ icarus::trigger::MakeTriggerSimulationTree::MakeTriggerSimulationTree
     makeEdepTag(config().EnergyDepositTags, config().EnergyDepositSummaryTag),
                                            // edepTags
     fGeom,                                 // geom
+    fChannelMapAlg,
     nullptr,                               // detProps
     nullptr,                               // detTimings
     fLogCategory,                          // logCategory
@@ -731,7 +735,7 @@ geo::Point_t icarus::trigger::MakeTriggerSimulationTree::gateChannelCentroid
   for (auto const channel: gate.channels()) {
     
     try {
-      centroid.add(fGeom.OpDetGeoFromOpChannel(channel).GetCenter());
+      centroid.add(fChannelMapAlg.OpDetGeoFromOpChannel(channel).GetCenter());
     }
     catch (cet::exception const& e) {
       throw cet::exception("MakeTriggerSimulationTree", "", e)

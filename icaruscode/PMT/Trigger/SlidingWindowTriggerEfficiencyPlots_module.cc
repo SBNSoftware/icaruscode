@@ -23,6 +23,7 @@
 #include "lardata/DetectorInfoServices/DetectorClocksService.h"
 #include "lardata/Utilities/TensorIndices.h" // util::MatrixIndices
 #include "lardataalg/DetectorInfo/DetectorTimingTypes.h" // optical_time_ticks..
+#include "larcore/Geometry/WireReadout.h"
 #include "larcorealg/Geometry/GeometryCore.h"
 #include "larcorealg/Geometry/geo_vectors_utils.h" // MiddlePointAccumulator
 #include "larcorealg/CoreUtils/counter.h"
@@ -557,6 +558,7 @@ icarus::trigger::SlidingWindowTriggerEfficiencyPlots::SlidingWindowTriggerEffici
   // internal variables
   , fWindowMapMan{
       helper().geometry(),
+      art::ServiceHandle<geo::WireReadout const>()->Get(),
       helper().logCategory() + "_WindowMapManager"
       }
 {

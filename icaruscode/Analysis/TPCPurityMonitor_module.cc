@@ -32,8 +32,7 @@
 #include "cetlib/cpu_timer.h"
 
 // LArSoft includes
-#include "larcore/Geometry/Geometry.h"
-#include "larcore/CoreUtils/ServiceUtil.h" // lar::providerFrom()
+#include "larcore/Geometry/WireReadout.h"
 #include "larcoreobj/SimpleTypesAndConstants/geo_types.h"
 #include "lardata/DetectorInfoServices/LArPropertiesService.h"
 #include "lardata/DetectorInfoServices/DetectorClocksService.h"
@@ -247,7 +246,7 @@ private:
     int fNumEvents;
 
     // Other variables that will be shared between different methods.
-    const geo::GeometryCore*                   fGeometry;       // pointer to Geometry service
+    geo::WireReadoutGeom const& fChannelMap = art::ServiceHandle<geo::WireReadout>()->Get();
 }; // class TPCPurityMonitor
 
 // This macro has to be defined for this module to be invoked from a
@@ -266,8 +265,6 @@ TPCPurityMonitor::TPCPurityMonitor(fhicl::ParameterSet const& parameterSet)
       fNumEvents(0)
 
 {
-    fGeometry = lar::providerFrom<geo::Geometry>();
-
     // We're going to output purity objects
     produces<std::vector<anab::TPCPurityInfo>>("",art::Persistable::Yes);
 
@@ -469,7 +466,7 @@ void TPCPurityMonitor::produce(art::Event& event)
                 {
                     geo::Point_t        hitPos  = track->LocationAtPoint(trkHitIndex);
                     geo::Vector_t       hitDir  = track->DirectionAtPoint(trkHitIndex);
-                    const geo::WireGeo& wireGeo = fGeometry->Wire(hitMetaPair.first->WireID());
+                    const geo::WireGeo& wireGeo = fChannelMap.Wire(hitMetaPair.first->WireID());
                     geo::Vector_t       wireDir = wireGeo.Direction();
 
                     pointCloud.emplace_back(hitPos);

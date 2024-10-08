@@ -7,7 +7,7 @@ services:
 }
 # explicitly set the split wire geometry 
 services.Geometry: @local::icarus_geometry
-services.ExptGeoHelperInterface: @local::icarus_geometry_helper
+services.WireReadout: @local::icarus_wire_readout
 
 process_name: wclssim
 physics :{

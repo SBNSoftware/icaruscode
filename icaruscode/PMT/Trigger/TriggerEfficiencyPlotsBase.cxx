@@ -22,6 +22,7 @@
 // LArSoft libraries
 #include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
 #include "lardata/DetectorInfoServices/DetectorClocksService.h"
+#include "larcore/Geometry/WireReadout.h"
 #include "larcore/Geometry/Geometry.h"
 #include "larcore/CoreUtils/ServiceUtil.h" // lar::providerFrom()
 #include "lardataalg/DetectorInfo/DetectorTimingTypes.h" // optical_time_ticks..
@@ -505,6 +506,7 @@ icarus::trigger::TriggerEfficiencyPlotsBase::TriggerEfficiencyPlotsBase
   , fLogCategory          (config.LogCategory())
   // services
   , fGeom      (*lar::providerFrom<geo::Geometry>())
+  , fChannelMapAlg(art::ServiceHandle<geo::WireReadout const>()->Get())
   , fOutputDir (*art::ServiceHandle<art::TFileService>())
   // cached
   , fEventInfoExtractorMaker(
@@ -512,12 +514,13 @@ icarus::trigger::TriggerEfficiencyPlotsBase::TriggerEfficiencyPlotsBase
       makeEdepTag(config.EnergyDepositTags, config.EnergyDepositSummaryTag),
                                            // edepTags
       fGeom,                               // geom
+      fChannelMapAlg,
       nullptr,                             // detProps
       nullptr,                             // detTimings
       fLogCategory,                        // logCategory
       consumer                             // consumesCollector
     )
-  , fChannelCryostat(makeChannelCryostatMap(fGeom))
+  , fChannelCryostat(makeChannelCryostatMap(fChannelMapAlg))
 {
   //
   // more complex parameter parsing
@@ -1061,7 +1064,7 @@ void icarus::trigger::TriggerEfficiencyPlotsBase::initializePMTplots
   (PlotSandbox& plots) const
 {
   
-  unsigned int const nOpChannels = fGeom.NOpChannels();
+  unsigned int const nOpChannels = fChannelMapAlg.NOpChannels();
   
   //
   // plots independent of the trigger primitive requirements
@@ -1453,17 +1456,17 @@ bool icarus::trigger::TriggerEfficiencyPlotsBase::deleteEmptyPlots
 
 //------------------------------------------------------------------------------
 auto icarus::trigger::TriggerEfficiencyPlotsBase::makeChannelCryostatMap
-  (geo::GeometryCore const& geom) -> std::vector<geo::CryostatID>
+  (geo::WireReadoutGeom const& wireReadoutAlg) -> std::vector<geo::CryostatID>
 {
   
-  auto const nOpChannels = geom.NOpChannels();
+  auto const nOpChannels = wireReadoutAlg.NOpChannels();
   
   std::vector<geo::CryostatID> channelCryostatMap(nOpChannels);
   
   for (auto const opChannel: util::counter(nOpChannels)) {
-    if (!geom.IsValidOpChannel(opChannel)) continue;
+    if (!wireReadoutAlg.IsValidOpChannel(opChannel)) continue;
     channelCryostatMap.at(opChannel)
-      = geom.OpDetGeoFromOpChannel(opChannel).ID();
+      = wireReadoutAlg.OpDetGeoFromOpChannel(opChannel).ID();
   } // for all channels
   
   return channelCryostatMap;

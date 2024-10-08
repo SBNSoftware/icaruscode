@@ -437,7 +437,7 @@ unsigned int icarus::simfilter::FilterDirts::addVolumeByName
     { std::smatch match; return (std::regex_match(s, match, pattern)); };
     auto const findVolume = [&volumePaths, &patternMatcher=matchMe](auto& path)
     {
-        if (patternMatcher(path.current().GetVolume()->GetName()))
+        if (patternMatcher(path.current()->GetVolume()->GetName()))
             volumePaths.push_back(path);
         return true;
     };
@@ -461,11 +461,11 @@ unsigned int icarus::simfilter::FilterDirts::addVolumeByName
         //
         // find the coordinates of the volume in local coordinates
         //
-        TGeoShape const* pShape = path.current().GetVolume()->GetShape();
+        TGeoShape const* pShape = path.current()->GetVolume()->GetShape();
         auto pBox = dynamic_cast<TGeoBBox const*>(pShape);
         if (!pBox) {
             throw cet::exception("FilterDirts") << "Volume '"
-            << path.current().GetName() << "' is a " << pShape->IsA()->GetName()
+            << path.current()->GetName() << "' is a " << pShape->IsA()->GetName()
             << ", not a TGeoBBox.\n";
         }
         
@@ -493,7 +493,7 @@ unsigned int icarus::simfilter::FilterDirts::addVolumeByName
         
         mf::LogVerbatim(fLogCategory)
         << " c* [volume #" << fVolumes.size() << "] volume box '"
-        << path.current().GetVolume()->GetName()
+        << path.current()->GetVolume()->GetName()
         << "' [(" << (iVolume + 1U) << "/" << volumePaths.size()
         << "): [ " << box.Min() << " -- " << box.Max() << " ]";
         
