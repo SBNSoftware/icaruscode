@@ -107,10 +107,6 @@ public:
         Name("PEOpHitThreshold"),
         Comment("Threshold in PE for an OpHit to be considered in the information calculated for a flash")};
 
-    fhicl::Atom<bool> Debug{
-        Name("Debug"),
-        Comment("Be more verbose"),
-        false};
   };
 
   using Parameters = art::EDAnalyzer::Table<Config>;
@@ -271,7 +267,6 @@ opana::ICARUSFlashAssAna::ICARUSFlashAssAna(Parameters const &config)
       fFlashLabels(config().FlashLabels()),
       fRWMLabel(config().RWMLabel()),
       fPEOpHitThreshold(config().PEOpHitThreshold()),
-      fDebug(config().Debug()),
       fGeom(lar::providerFrom<geo::Geometry>())
 {
 }

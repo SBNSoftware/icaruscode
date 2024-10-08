@@ -103,7 +103,7 @@ ICARUSParticleAna: {
 ICARUSFlashAssAna: {
     module_type: "ICARUSFlashAssAna"
     TriggerLabel: "daqTrigger"
-    DumpWaveformsInfo: true
+    DumpWaveformsInfo: false
     SaveRawWaveforms: false
     UseSharedBaseline: true
     OpDetWaveformLabels: ["daqPMT"]
@@ -112,7 +112,6 @@ ICARUSFlashAssAna: {
     FlashLabels: ["opflashCryoE", "opflashCryoW"]
     RWMLabel: "beamTiming:RWM"
     PEOpHitThreshold: 0
-    Debug: false
 }
 
 ICARUSBeamStructureAna: {
