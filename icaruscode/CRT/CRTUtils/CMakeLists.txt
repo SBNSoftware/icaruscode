@@ -46,3 +46,5 @@ art_make_library(LIBRARY_NAME icaruscode_CRTUtils
 install_headers()
 install_fhicl()
 install_source()
+
+add_subdirectory(CRTScripts)

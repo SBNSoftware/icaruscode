@@ -56,6 +56,7 @@
 #include <memory>
 
 // ROOT
+#include <vector>
 #include "TVector3.h"
 #include "TGeoManager.h"
 
