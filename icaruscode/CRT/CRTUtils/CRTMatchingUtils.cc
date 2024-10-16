@@ -84,7 +84,7 @@ CrtPlane DeterminePlane(sbn::crt::CRTHit CRThit)
     return std::make_pair(Plane, Pos);
 }
 
-CrossPoint CalculateProjection(double& dirx, double& diry, double& dirz, double& x0, double& y0, double& z0, double position)
+ProjectionPoint CalculateProjection(double dirx, double diry, double dirz, double x0, double y0, double z0, double position)
 {
     double Lambda = (position-x0)/dirx;
     double PosAtY = (Lambda*diry+y0);
@@ -94,25 +94,47 @@ CrossPoint CalculateProjection(double& dirx, double& diry, double& dirz, double&
     return CrossingPoint;
 }
 
-CrossPoint DetermineProjection(Direction thisDir, int plane, double position)
+CrossPoint CalculateForPlane(const Direction& dir, int plane, double position)
 {
-    CrossPoint CrossingPoint;
-    if(plane==0) // Plane at Y e.g. Top CRT Horizontal Plane
-    {
-      CrossPoint thisCase=CalculateProjection(thisDir.diry, thisDir.dirx, thisDir.dirz, thisDir.meany, thisDir.meanx, thisDir.meanz, position);
-      CrossingPoint={thisCase.Y, thisCase.X, thisCase.Z};
-    } 
-    else if (plane==1) // Plane at X e.g. Side CRT West, East, Top CRT Vertical Rim West and East
-    {
-      CrossPoint thisCase=CalculateProjection(thisDir.dirx, thisDir.diry, thisDir.dirz, thisDir.meanx, thisDir.meany, thisDir.meanz, position);
-      CrossingPoint={thisCase.X, thisCase.Y, thisCase.Z};
-    } 
-    else if (plane==2) // Plane at Z e.g. Side CRT South, North, Top CRT Vertical Rime South and North
-    {
-      CrossPoint thisCase=CalculateProjection(thisDir.dirz, thisDir.diry, thisDir.dirx, thisDir.meanz, thisDir.meany, thisDir.meanx, position);
-      CrossingPoint={thisCase.Z, thisCase.Y, thisCase.X};
+    double dirX, dirY, dirZ;
+    double meanX, meanY, meanZ;
+
+    switch(plane) {
+        case 0: // Piano a Y
+            dirX = dir.diry; dirY = dir.dirx; dirZ = dir.dirz;
+            meanX = dir.meany; meanY = dir.meanx; meanZ = dir.meanz;
+            break;
+        case 1: // Piano a X
+            dirX = dir.dirx; dirY = dir.diry; dirZ = dir.dirz;
+            meanX = dir.meanx; meanY = dir.meany; meanZ = dir.meanz;
+            break;
+        case 2: // Piano a Z
+            dirX = dir.dirz; dirY = dir.diry; dirZ = dir.dirx;
+            meanX = dir.meanz; meanY = dir.meany; meanZ = dir.meanx;
+            break;
+        default:
+            throw std::invalid_argument("Error");
     }
-    return CrossingPoint;
+    return CalculateProjection(static_cast<double>(dirX), 
+                               static_cast<double>(dirY), 
+                               static_cast<double>(dirZ), 
+                               static_cast<double>(meanX), 
+                               static_cast<double>(meanY), 
+                               static_cast<double>(meanZ), 
+                               static_cast<double>(position));
+}
+
+CrossPoint DetermineProjection(const Direction& dir, int plane, double position)
+{
+    CrossPoint thisCase = CalculateForPlane(dir, plane, position);
+
+    switch(plane) {
+        case 0: return {thisCase.Y, thisCase.X, thisCase.Z}; // Plane at Y e.g. Top CRT Horizontal Plane
+        case 1: return {thisCase.X, thisCase.Y, thisCase.Z}; // Plane at X e.g. Side CRT West, East, Top CRT
+        case 2: return {thisCase.Z, thisCase.Y, thisCase.X}; // Plane at Z e.g. Side CRT South, North, Top CRT 
+        default:
+            throw std::invalid_argument("Error");
+    }
 }
 
 TrackBarycenter GetTrackBarycenter (std::vector<float> hx, std::vector<float> hy, std::vector<float> hz, std::vector<float> hw)
@@ -308,8 +330,12 @@ TopCrtTransformations LoadTopCrtTransformations()
 {
     std::string fullFileName;
     cet::search_path searchPath("FW_SEARCH_PATH");
-    searchPath.find_file("TopCrtCorrectionByTPC.txt",fullFileName);
-    std::ifstream corrFile.open(fullFileName,std::ios::in);
+    searchPath.find_file("TopCrtCorrectionByTPC.txt", fullFileName);
+    /*if (!searchPath.find_file("TopCrtCorrectionByTPC.txt", fullFileName)) {
+        mf::LogError("CRTMatchingUtils_LoadTopCrtTransformation")
+        << "Top CRT Correction transformation file not found in FW_SEARCH_PATH.";
+    }*/
+    std::ifstream corrFile(fullFileName, std::ios::in);
 
     std::map<int, AffineTrans> Type0Corr;
     std::map<int, AffineTrans> Type1Corr;
@@ -319,7 +345,8 @@ TopCrtTransformations LoadTopCrtTransformations()
     std::map<int, AffineTrans> Type5Corr;
 
     if (!corrFile.is_open()) {
-        mf::LogError("CRTMatchingUtils_LoadTopCrtTransformation") << "Top CRT Correction transformation file not found.";
+        mf::LogError("CRTMatchingUtils_LoadTopCrtTransformation")
+        << "Failed to open Top CRT Correction transformation file: " << fullFileName;
     }
     std::string line;
     while (std::getline(corrFile, line)) {

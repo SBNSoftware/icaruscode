@@ -11,6 +11,9 @@
 #include <iostream>
 #include <stdio.h>
 #include <sstream>
+#include <fstream>  // Aggiunto per l'uso di ifstream
+#include <string>
+#include <cetlib/search_path.h>
 #include <vector>
 #include <map>
 #include <utility>
@@ -78,6 +81,8 @@ struct CrossPoint
     double Y;
     double Z;
 };
+
+typedef CrossPoint ProjectionPoint;
 
 struct TrackBarycenter
 {
@@ -157,9 +162,11 @@ Direction PCAfit (std::vector<float> x, std::vector<float> y, std::vector<float>
 
 CrtPlane DeterminePlane(sbn::crt::CRTHit CRThit);
 
-CrossPoint CalculateProjection(double&, double&, double&, double&, double&, double&, double);
+// ProjectionPoint CalculateProjection(double, double, double, double, double, double, double);
 
-CrossPoint DetermineProjection(Direction thisDir, int plane, double position);
+// CrossPoint CalculateForPlane(const Direction& dir, int plane, double position);
+
+CrossPoint DetermineProjection(const Direction& dir, int plane, double position);
 
 TrackBarycenter GetTrackBarycenter(std::vector<float> hx, std::vector<float> hy, std::vector<float> hz, std::vector<float> hw);
 
