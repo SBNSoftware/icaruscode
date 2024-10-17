@@ -2,7 +2,6 @@
 add_subdirectory(CRTUtils)
 add_subdirectory(CRTDecoder)
 
-
 art_make(
     NO_PLUGINS
     EXCLUDE
@@ -13,7 +12,6 @@ art_make(
         CRTTrueHitProducer_module.cc
         CRTTzeroProducer_module.cc
         CRTTrackProducer_module.cc
-        CRTT0Tagging_module.cc
         CRTSimAnalysis_module.cc
         CRTDataAnalysis_module.cc
         CrtOpHitMatchAnalysis_module.cc
@@ -25,6 +23,7 @@ art_make(
         CRTTPCMatchingAna_module.cc	
         CRTPMTMatchingAna_module.cc
         CRTTPCTruthEff_module.cc
+        CRTT0Tagging_module.cc
     LIBRARY_NAME
         icaruscode_CRTData
     SOURCE
@@ -61,6 +60,41 @@ art_make_library(
                 CLHEP::CLHEP
                 ROOT::Geom
                 cetlib::cetlib
+        )
+
+art_make_library(
+        LIBRARY_NAME
+                icaruscode_CRTMatchingUtils
+        SOURCE
+                CRTUtils/CRTMatchingUtils.cxx
+        LIBRARIES
+                sbnobj::ICARUS_CRT
+                sbnobj::Common_CRT
+                icaruscode_CRTUtils
+                larcorealg::Geometry
+                larcore::Geometry_Geometry_service
+                larsim::Simulation lardataobj::Simulation
+                larsim::MCCheater_BackTrackerService_service
+                larsim::MCCheater_ParticleInventoryService_service
+                lardata::Utilities
+                larevt::Filters
+                lardataobj::RawData
+                lardataobj::RecoBase
+                lardataobj::AnalysisBase
+                lardata::RecoObjects
+                larpandora::LArPandoraInterface
+                larcorealg::Geometry
+                nusimdata::SimulationBase
+                art::Persistency_Common canvas::canvas
+                art::Persistency_Provenance
+                art::Utilities
+                ROOT::Core
+                ROOT::Geom
+                ROOT::XMLIO
+                ROOT::Gdml
+                ROOT::Spectrum
+                ROOT::RooFit
+                ROOT::RooFitCore
         )
 
 cet_build_plugin(CRTGeometryHelper art::service
@@ -164,44 +198,6 @@ cet_build_plugin(CRTTrackProducer art::module
         messagefacility::headers
         CLHEP::CLHEP
         )
-
-cet_build_plugin(CRTT0Tagging art::module
-     LIBRARIES
-        icaruscode_CRTData
-        icaruscode_CRT
-        sbnobj::Common_CRT
-        icaruscode_CRTUtils
-        larcore::Geometry_Geometry_service
-        larsim::Simulation lardataobj::Simulation
-        larsim::MCCheater_BackTrackerService_service
-        larsim::MCCheater_ParticleInventoryService_service
-        lardata::Utilities
-        larevt::Filters
-        lardataobj::RawData
-        lardataobj::RecoBase
-        lardataobj::AnalysisBase
-        lardata::RecoObjects
-        larpandora::LArPandoraInterface
-        larcorealg::Geometry
-        nusimdata::SimulationBase
-        art::Framework_Core
-        art::Framework_Principal
-        art::Framework_Services_Registry
-        art_root_io::tfile_support
-        art_root_io::TFileService_service
-        art::Persistency_Common canvas::canvas
-        art::Persistency_Provenance
-        art::Utilities
-        messagefacility::MF_MessageLogger
-        ROOT::Core
-        ROOT::Geom
-        ROOT::XMLIO
-        ROOT::Gdml
-        ROOT::Tree
-        ROOT::Spectrum
-        ROOT::RooFit
-        ROOT::RooFitCore
-   )
 
 cet_build_plugin(CRTSimAnalysis art::module
      LIBRARIES
@@ -556,6 +552,37 @@ simple_plugin(CRTTPCTruthEff module
 
 )
 
+cet_build_plugin(CRTT0Tagging art::module
+     LIBRARIES
+        icaruscode_CRTMatchingUtils
+        sbnobj::ICARUS_CRT
+        sbnobj::Common_CRT
+        icaruscode_CRTUtils
+        larcorealg::Geometry
+        larcore::Geometry_Geometry_service
+        larsim::Simulation lardataobj::Simulation
+        larsim::MCCheater_BackTrackerService_service
+        larsim::MCCheater_ParticleInventoryService_service
+        lardata::Utilities
+        larevt::Filters
+        lardataobj::RawData
+        lardataobj::RecoBase
+        lardataobj::AnalysisBase
+        lardata::RecoObjects
+        larpandora::LArPandoraInterface
+        larcorealg::Geometry
+        nusimdata::SimulationBase
+        art::Persistency_Common canvas::canvas
+        art::Persistency_Provenance
+        art::Utilities
+        ROOT::Core
+        ROOT::Geom
+        ROOT::XMLIO
+        ROOT::Gdml
+        ROOT::Spectrum
+        ROOT::RooFit
+        ROOT::RooFitCore
+   )
 
 install_headers()
 install_fhicl()

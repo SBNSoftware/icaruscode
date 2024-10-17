@@ -62,7 +62,7 @@
 #include "TVector3.h"
 #include "TTree.h"
 
-#include "CRTUtils/CRTMatchingUtils.h"
+#include "icaruscode/CRT/CRTUtils/CRTMatchingUtils.h"
 
 namespace icarus {
 namespace crt {
