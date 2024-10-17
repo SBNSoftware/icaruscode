@@ -128,7 +128,7 @@ CrossPoint DetermineProjection(const Direction& dir, CrtPlane plane)
 {
     CrossPoint thisCase = CalculateForPlane(dir, plane.first, plane.second);
 
-    switch(plane) {
+    switch(plane.first) {
         case 0: return {thisCase.Y, thisCase.X, thisCase.Z}; // Plane at Y e.g. Top CRT Horizontal Plane
         case 1: return {thisCase.X, thisCase.Y, thisCase.Z}; // Plane at X e.g. Side CRT West, East, Top CRT
         case 2: return {thisCase.Z, thisCase.Y, thisCase.X}; // Plane at Z e.g. Side CRT South, North, Top CRT 

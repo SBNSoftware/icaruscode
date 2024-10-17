@@ -13,6 +13,7 @@ art_make(
         CRTTrueHitProducer_module.cc
         CRTTzeroProducer_module.cc
         CRTTrackProducer_module.cc
+        CRTT0Tagging_module.cc
         CRTSimAnalysis_module.cc
         CRTDataAnalysis_module.cc
         CrtOpHitMatchAnalysis_module.cc
