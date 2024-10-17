@@ -124,9 +124,9 @@ CrossPoint CalculateForPlane(const Direction& dir, int plane, double position)
                                static_cast<double>(position));
 }
 
-CrossPoint DetermineProjection(const Direction& dir, int plane, double position)
+CrossPoint DetermineProjection(const Direction& dir, CrtPlane plane)
 {
-    CrossPoint thisCase = CalculateForPlane(dir, plane, position);
+    CrossPoint thisCase = CalculateForPlane(dir, plane.first, plane.second);
 
     switch(plane) {
         case 0: return {thisCase.Y, thisCase.X, thisCase.Z}; // Plane at Y e.g. Top CRT Horizontal Plane

@@ -97,7 +97,7 @@ struct DriftedTrack
     std::vector<float> spx; // Drifted Track Hit Points X coordinate
     std::vector<float> spy; // Drifted Track Hit Points Y coordinate
     std::vector<float> spz; // Drifted Track Hit Points Z coordinate
-    std::vector<float> spi; // Drifted Track Hit Points Z coordinate
+    std::vector<float> spi; // Drifted Track Hit Points integral
     int outbound; // Number of hit points out of the logical volume of the TPC
     //double drifted_startx; // 
     //double drifted_endx;
@@ -111,6 +111,13 @@ struct Direction
     double meanx; // Mean Point of the Track: X 
     double meany; // Mean Point of the Track: Y 
     double meanz; // Mean Point of the Track: Z
+};
+
+struct CandCRT{
+    sbn::crt::CRTHit CRThit;
+    double distance;
+    double deltaX;
+    double deltaZ;
 };
 
 struct ModuleCenter
@@ -166,7 +173,7 @@ CrtPlane DeterminePlane(sbn::crt::CRTHit CRThit);
 
 // CrossPoint CalculateForPlane(const Direction& dir, int plane, double position);
 
-CrossPoint DetermineProjection(const Direction& dir, int plane, double position);
+CrossPoint DetermineProjection(const Direction& dir, CrtPlane plane);
 
 TrackBarycenter GetTrackBarycenter(std::vector<float> hx, std::vector<float> hy, std::vector<float> hz, std::vector<float> hw);
 
