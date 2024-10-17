@@ -9,9 +9,8 @@
 ///
 /////////////////////////////////////////////////////////////////////////////
 
-// sbndcode includes
 #include "sbnobj/Common/CRT/CRTHit.hh"
-#include "icaruscode/CRT/CRTUtils/CRTT0MatchAlg.h"
+//#include "icaruscode/CRT/CRTUtils/CRTT0MatchAlg.h"
 
 // Framework includes
 #include "art/Framework/Core/EDProducer.h"
@@ -63,7 +62,7 @@
 #include "TVector3.h"
 #include "TTree.h"
 
-#include "CRTMatchingUtils.h"
+#include "CRTUtils/CRTMatchingUtils.h"
 
 namespace icarus {
 namespace crt {
@@ -93,8 +92,8 @@ public:
   CRTT0Tagging& operator=(CRTT0Tagging&&) = delete;
 
   // Required functions.
-  void beginRun(art::Run const& r) override;
-  void produce(art::Event const& e) override;
+  void beginRun(art::Run& r) override;
+  void produce(art::Event& e) override;
   void endJob() override;
 
 private:
@@ -113,7 +112,7 @@ private:
   std::optional<icarus::TriggerConfiguration> fTriggerConfiguration;
 
   geo::GeometryCore const* fGeometryService;  ///< pointer to Geometry provider
-  CRTCommonUtils* fCrtutils; 
+  CRTCommonUtils* fCrtUtils; 
   icarus::crt::matchingutils::TopCRTCentersMap fTopCRTCenterMap;
   icarus::crt::matchingutils::TopCrtTransformations fTopCrtTransformations;
 
@@ -129,20 +128,21 @@ icarus::crt::CRTT0Tagging::CRTT0Tagging(fhicl::ParameterSet const& p)
       fPFParticleLabel(p.get< std::vector<art::InputTag> >("PFParticleLabel",             {""})),  
       fHitLabel(p.get< std::vector<art::InputTag> >("HitLabel",             {""})),
       fTRKHMproducer(p.get< art::InputTag   > ("TRKHMproducer", "")),
-      crtutil(new CRTCommonUtils())
+      fCrtUtils(new CRTCommonUtils())
 {
   
   // Get a pointer to the geometry service provider.
   produces< std::vector<anab::T0>                   >();
   produces< art::Assns<recob::Track , anab::T0>     >();
   produces< art::Assns<sbn::crt::CRTHit, anab::T0>  >();
+
   fGeometryService = lar::providerFrom<geo::Geometry>();
 
   art::ServiceHandle<art::TFileService> tfs;
 
 }
 
-void icarus::crt::CRTT0Tagging::beginRun(art::Run const& r)
+void icarus::crt::CRTT0Tagging::beginRun(art::Run& r)
 {
   // we don't know if this is data or not; if not, there will be no trigger config
   auto const& trigConfHandle = 
@@ -156,7 +156,7 @@ void icarus::crt::CRTT0Tagging::beginRun(art::Run const& r)
 
 }
 
-void icarus::crt::CRTT0Tagging::produce(art::Event & e)
+void icarus::crt::CRTT0Tagging::produce(art::Event& e)
 {
   
   auto const clockData = art::ServiceHandle<detinfo::DetectorClocksService const>()->DataFor(e);
@@ -168,35 +168,12 @@ void icarus::crt::CRTT0Tagging::produce(art::Event & e)
   }
 
   mf::LogDebug("CRTT0Tagging: ") << "beginning production" << '\n';
- 
-  fEvent  = e.id().event(); 
-  fRun    = e.run();
-  fSubRun = e.subRun();
 
-  // add trigger info
-  if (!fTriggerLabel.empty()) {
-    art::Handle<sbn::ExtraTriggerInfo> trigger_handle;
-    e.getByLabel(fTriggerLabel, trigger_handle);
-    if (trigger_handle.isValid()) {
-      sbn::triggerSource bit = trigger_handle->sourceType;
-      m_gate_type = (unsigned int)bit;
-      m_gate_name = bitName(bit);
-      m_trigger_timestamp = trigger_handle->triggerTimestamp;
-      m_gate_start_timestamp = trigger_handle->beamGateTimestamp;
-      m_trigger_gate_diff =
-          trigger_handle->triggerTimestamp - trigger_handle->beamGateTimestamp;
-      // Read Beam Gate Size
-      m_gate_width = fTriggerConfiguration->getGateWidth(m_gate_type);
-    } else {
-      mf::LogError("CRTT0Tagging:")
-          << "No sbn::ExtraTriggerInfo associated to label: "
-          << fTriggerLabel.encode() << "\n";
-    }
-  }
-
-  std::unique_ptr< std::vector<anab::T0> > t0Col( new std::vector<anab::T0>);
-  std::unique_ptr< art::Assns<recob::Track, anab::T0> > trackAssn( new art::Assns<recob::Track, anab::T0>);
-  std::unique_ptr< art::Assns <sbn::crt::CRTHit, anab::T0> > t0CrtHitAssn( new art::Assns<sbn::crt::CRTHit, anab::T0> );
+  auto t0TaggedTracksColl = std::make_unique<std::vector<anab::T0>>();
+  art::PtrMaker<anab::T0> const makeInfoPtr(e);
+  auto trackAssociation = std::make_unique<art::Assns<anab::T0, recob::Track>>();
+  auto crtAssociation = std::make_unique<art::Assns<anab::T0, sbn::crt::CRTHit>>();
+  auto trackAndCrtAssociation = std::make_unique<art::Assns<recob::Track, sbn::crt::CRTHit>>();
 
   // CRTHits
   std::vector<art::Ptr<CRTHit>> CRTHitList;
@@ -239,13 +216,15 @@ void icarus::crt::CRTT0Tagging::produce(art::Event & e)
       std::vector<const recob::TrackHitMeta*> emptyTHMVector;
       const std::vector<const recob::TrackHitMeta*> &trkHitMetas = fmtrkHits.isValid() ? fmtrkHits.data(trkPtr.key()) : emptyTHMVector;
       
+      if(track.Length()<40) continue;
+
       // T0
       float t0 = std::numeric_limits<float>::signaling_NaN();
       auto t0s = fmt0pandora.at(p_pfp.key());
       if (!t0s.empty()){  
         t0 = t0s[0]->Time();   //Get T0  
 	    }
-
+      if(!isnan(t0)) std::cout<<"This Track T0 "<<t0<<std::endl;
       int goodHits=0;
       int countE=0, countW=0;
       // These counters are used to determine if track is CC-E, EE, EW, CC-W, WE, WW
@@ -267,6 +246,7 @@ void icarus::crt::CRTT0Tagging::produce(art::Event & e)
 
       }
 
+      int trackType=-1;
       if(countW!=0 && countE!=0 && cryo==0) trackType=0; //CCEast
       else if(countW!=0 && countE==0 && cryo==0) trackType=2; //East-West
       else if(countW==0 && countE!=0 && cryo==0) trackType=1; //East-East      
@@ -286,14 +266,14 @@ void icarus::crt::CRTT0Tagging::produce(art::Event & e)
       
       trackRes= track.Length()/goodHits;
       deltaP = deltaP/(goodHits-1);
-
+      if(trackRes>10) std::cout<<"Track Res very bad "<<trackRes<<" "<<deltaP<<std::endl;
       icarus::crt::matchingutils::Direction trackPCADir={-5,-5,-5,0,0,0};
 
       if(goodHits<5) {
         mf::LogDebug("CRTT0Tagging:")<<"Track does not have the minimal requirements of good hits: "<<goodHits;
         continue;
       }
-      trackPCADir=PCAfit(hx, hy, hz);
+      trackPCADir=icarus::crt::matchingutils::PCAfit(hx, hy, hz);
       std::vector<icarus::crt::matchingutils::CandCRT> crtCands;
 
       for(art::Ptr<CRTHit> p_crthit: CRTHitList){
@@ -301,7 +281,7 @@ void icarus::crt::CRTT0Tagging::produce(art::Event & e)
         double crtTime=crtHit.ts1_ns/1e3;
         icarus::crt::matchingutils::DriftedTrack thisDriftedTrack = icarus::crt::matchingutils::DriftTrack(trkHits, trkHitMetas, fGeometryService, detProp, crtTime, cryo, track);
         if(thisDriftedTrack.outbound>0) continue;
-        driftedTrackDir=icarus::crt::matchingutils::PCAfit(thisDriftedTrack.spx, thisDriftedTrack.spy, thisDriftedTrack.spz);
+        icarus::crt::matchingutils::Direction driftedTrackDir=icarus::crt::matchingutils::PCAfit(thisDriftedTrack.spx, thisDriftedTrack.spy, thisDriftedTrack.spz);
         
         int crtSys=-1;
         if(crtHit.plane<=34) crtSys=0;
@@ -313,7 +293,7 @@ void icarus::crt::CRTT0Tagging::produce(art::Event & e)
         double deltaZ=std::numeric_limits<float>::signaling_NaN();
         double crtDistance=std::numeric_limits<float>::signaling_NaN();
 
-        icarus::crt::matchingutils::CrtPlane thisCrtPlane = icarus::crt::triplematching::DeterminePlane(crtHit);
+        icarus::crt::matchingutils::CrtPlane thisCrtPlane = icarus::crt::matchingutils::DeterminePlane(crtHit);
         icarus::crt::matchingutils::CrossPoint crossPoint = icarus::crt::matchingutils::DetermineProjection(driftedTrackDir, thisCrtPlane);
 
         double crtX=crtHit.x_pos;
@@ -353,7 +333,7 @@ void icarus::crt::CRTT0Tagging::produce(art::Event & e)
         }
         crtDistance=sqrt(pow(deltaX,2)+pow(deltaZ,2));
         if(crtDistance>300) continue;
-        icarus::crt::matchingutils::CandCRT thisCrtCand={crtHit, crtDistance, deltaX, deltaZ};
+        icarus::crt::matchingutils::CandCRT thisCrtCand={crtHit,p_crthit, crtDistance, deltaX, deltaZ};
         crtCands.push_back(thisCrtCand);
       } // End of CRT Hit loop
       if(crtCands.empty()) {
@@ -366,23 +346,30 @@ void icarus::crt::CRTT0Tagging::produce(art::Event & e)
       icarus::crt::matchingutils::CandCRT& bestCrtCand=*minElementIt;
       if(bestCrtCand.distance<=96){
         int matchedSys=-1;
-        if(bestCrtCand.crtHit.plane<=34) matchedSys=0;
-        else if (bestCrtCand.crtHit.plane==50) matchedSys=2;
+        if(bestCrtCand.CRThit.plane<=34) matchedSys=0;
+        else if (bestCrtCand.CRThit.plane==50) matchedSys=2;
         else matchedSys=1;
         if(matchedSys==2) continue; // lets discard Bottom CRT Hits for the moment
         mf::LogInfo("CRTT0Tagging")
 	      <<"Matched CRT time = "<<bestCrtCand.CRThit.ts1_ns/1e3<<" [us] to track "<<track.ID()<<" with projection-hit distance = "<<bestCrtCand.distance;
-	      t0col->push_back(anab::T0(bestCrtCand.CRThit.ts1_ns, track.ID(), matchedSys, bestCrtCand.crtHit.plane,bestCrtCand.distance));
-	      util::CreateAssn(*this, e, *t0col, track, *trackAssn);
+	      //t0Col->push_back(anab::T0(bestCrtCand.CRThit.ts1_ns, track.ID(), matchedSys, bestCrtCand.CRThit.plane,bestCrtCand.distance));
+	      
+        art::Ptr<anab::T0> const infoPtr = makeInfoPtr(t0TaggedTracksColl->size());
+        trackAssociation->addSingle(infoPtr, trkPtr);
+        crtAssociation->addSingle(infoPtr, bestCrtCand.ptrCRThit);
+        trackAndCrtAssociation->addSingle(trkPtr, bestCrtCand.ptrCRThit);
+        t0TaggedTracksColl->push_back(std::move(anab::T0(bestCrtCand.CRThit.ts1_ns, track.ID(), matchedSys, bestCrtCand.CRThit.plane,bestCrtCand.distance)));
+        //util::CreateAssn(*this, e, *t0Col, track, *trackAssn);
+        //util::CreateAssn(*this, e, *t0Col, bestCrtCand.CRThit, *t0CrtHitAssn);
       }
-      util::CreateAssn(*this, event, *t0col, bestCrtCand.CRThit, *t0CrtHitAssn);
 	 
 	  } // End of Track Loop
 	  
 	} // End of Cryo Loop
-  e.put(std::move(t0Col));
-  e.put(std::move(trackAssn));
-  e.put(std::move(t0CrtHitAssn));
+  e.put(std::move(t0TaggedTracksColl));
+  e.put(std::move(crtAssociation));
+  e.put(std::move(trackAssociation));
+  e.put(std::move(trackAndCrtAssociation));
 }
 
 void CRTT0Tagging::endJob()

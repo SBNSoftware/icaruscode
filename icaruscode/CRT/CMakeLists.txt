@@ -165,6 +165,44 @@ cet_build_plugin(CRTTrackProducer art::module
         CLHEP::CLHEP
         )
 
+cet_build_plugin(CRTT0Tagging art::module
+     LIBRARIES
+        icaruscode_CRTData
+        icaruscode_CRT
+        sbnobj::Common_CRT
+        icaruscode_CRTUtils
+        larcore::Geometry_Geometry_service
+        larsim::Simulation lardataobj::Simulation
+        larsim::MCCheater_BackTrackerService_service
+        larsim::MCCheater_ParticleInventoryService_service
+        lardata::Utilities
+        larevt::Filters
+        lardataobj::RawData
+        lardataobj::RecoBase
+        lardataobj::AnalysisBase
+        lardata::RecoObjects
+        larpandora::LArPandoraInterface
+        larcorealg::Geometry
+        nusimdata::SimulationBase
+        art::Framework_Core
+        art::Framework_Principal
+        art::Framework_Services_Registry
+        art_root_io::tfile_support
+        art_root_io::TFileService_service
+        art::Persistency_Common canvas::canvas
+        art::Persistency_Provenance
+        art::Utilities
+        messagefacility::MF_MessageLogger
+        ROOT::Core
+        ROOT::Geom
+        ROOT::XMLIO
+        ROOT::Gdml
+        ROOT::Tree
+        ROOT::Spectrum
+        ROOT::RooFit
+        ROOT::RooFitCore
+   )
+
 cet_build_plugin(CRTSimAnalysis art::module
      LIBRARIES
         sbnobj::ICARUS_CRT

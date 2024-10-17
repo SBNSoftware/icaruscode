@@ -1,5 +1,5 @@
-#ifndef CRTMATCHINGUTILS_H_SEEN
-#define CRTMATCHINGUTILS_H_SEEN
+#ifndef CRTMATCHINGUTILS_H
+#define CRTMATCHINGUTILS_H
 
 ///////////////////////////////////////////////
 // CRTMatchingUtils.h
@@ -115,6 +115,7 @@ struct Direction
 
 struct CandCRT{
     sbn::crt::CRTHit CRThit;
+    art::Ptr<sbn::crt::CRTHit> ptrCRThit;
     double distance;
     double deltaX;
     double deltaZ;
