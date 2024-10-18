@@ -40,6 +40,7 @@
 #include "icaruscode/Decode/DecoderTools/details/KeyValuesData.h"
 #include "icaruscode/Decode/ChannelMapping/IICARUSChannelMap.h"
 #include "icaruscode/Decode/ChannelMapping/IICARUSChannelMapProvider.h"
+#include "icaruscode/PMT/Trigger/Algorithms/encodeTriggerLVDSbits.h"
 #include "icaruscode/PMT/Trigger/Algorithms/LVDSbitMaps.h"
 #include "icaruscode/Utilities/CacheCounter.h" // util::CacheGuard
 #include "icarusalg/Utilities/BinaryDumpUtils.h" // hexdump() DEBUG
@@ -1004,66 +1005,14 @@ namespace daq
         };
     } // if no channel mapping
     
-    std::array<std::uint64_t, sbn::ExtraTriggerInfo::MaxWalls> outputWords;
-    outputWords.fill(0);
-    
-    /*
-     * The (first) two `LVDSstatus` 64-bit words are initialized according to
-     * the prescription in the class documentation: LVDS bits from PMT with
-     * lower channel ID end in lower (least significant) bits in `LVDSstatus`.
-     * 
-     * The algorithm will fill the bits of the output words in sequence,
-     * each time picking the value from the appropriate bits in the input
-     * connector words. The correct bit is determined by a precooked map.
-     */
-    
-    // connector words have the first connector in the most significant 32 bits:
-    std::array<std::uint32_t, 4U> const connectorBits {
-      static_cast<std::uint32_t>(connector01word >> 32ULL & 0x00FF'FFFFULL),
-      static_cast<std::uint32_t>(connector01word          & 0x00FF'FFFFULL),
-      static_cast<std::uint32_t>(connector23word >> 32ULL & 0x00FF'FFFFULL),
-      static_cast<std::uint32_t>(connector23word          & 0x00FF'FFFFULL)
-    };
-    
+    std::array<std::uint64_t, sbn::ExtraTriggerInfo::MaxWalls> const outputWords
+      = icarus::trigger::encodeTriggerLVDSbits
+        (*fPMTpairMap, cryostat, connector01word, connector23word, false);
+
     // --- BEGIN DEBUG -----
     mf::LogTrace debugLog{ "TriggerDecoderV3" };
-    debugLog << "Cryostat " << cryostat << ":";
-    for (auto const [ iConn, word ]: util::enumerate(connectorBits))
-      debugLog << " [" << iConn << "]=0x" << std::hex << word << std::dec;
-    // --- END DEBUG -------
-    
-    auto const mask
-      = [](auto bitNo){ return 1ULL << static_cast<std::uint64_t>(bitNo); };
-    
-    using icarus::trigger::PMTpairBitID;
-    for (std::size_t const PMTwall:
-      { sbn::ExtraTriggerInfo::EastPMTwall, sbn::ExtraTriggerInfo::WestPMTwall }
-    ) {
-      
-      for (auto const bit: util::counter<PMTpairBitID::StatusBit_t>(64)) {
-        
-        PMTpairBitID const bitID{ (unsigned) cryostat, PMTwall, bit };
-        
-        icarus::trigger::LVDSHWbitID const source
-          = fPMTpairMap->bitSource(bitID).source;
-        
-        if (!source) continue; // bit not mapped to anything
-        
-        assert(source.cryostat == cryostat);
-        bool const bitValue
-          = connectorBits.at(source.connector) & mask(source.bit);
-        
-        if (bitValue) {
-          outputWords[PMTwall] |= mask(bit);
-          debugLog << "\nLogic LVDS bit " << bitID << " from HW bit " << source;
-        }
-        
-      } // bit
-    } // PMT wall
-    
-    // --- BEGIN DEBUG -----
     for (auto const [ iWord, word ]: util::enumerate(outputWords)) {
-      debugLog<< "\nPMT pair status[" << cryostat << "][" << iWord << "]="
+      debugLog << "\nPMT pair status[" << cryostat << "][" << iWord << "]="
         << icarus::ns::util::bin(word)
         << " (0x" << std::hex << word << std::dec << ")";
     }
