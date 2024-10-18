@@ -143,8 +143,11 @@ physics.producers.simTiledORM4O4.Thresholds: [ pmtthr ]
 physics.producers.simTiledORM5O5.Thresholds: [ pmtthr ]
 physics.producers.simTiledORM6O6.Thresholds: [ pmtthr ]
 physics.producers.simTiledORS3.Thresholds: [ pmtthr ]
+physics.producers.simTiledORS4.Thresholds: [ pmtthr ]
 physics.producers.simTiledORS5.Thresholds: [ pmtthr ]
+physics.producers.simTiledORS7.Thresholds: [ pmtthr ]
 physics.producers.simTiledORS8.Thresholds: [ pmtthr ]
+physics.producers.simTiledORS9.Thresholds: [ pmtthr ]
 physics.producers.simTiledORS10.Thresholds: [ pmtthr ]
 physics.producers.simTiledORS15.Thresholds: [ pmtthr ]
 physics.producers.simSlidingORM1.Thresholds: [ pmtthr ]
@@ -158,8 +161,11 @@ physics.producers.simSlidingORM4O4.Thresholds: [ pmtthr ]
 physics.producers.simSlidingORM5O5.Thresholds: [ pmtthr ]
 physics.producers.simSlidingORM6O6.Thresholds: [ pmtthr ]
 physics.producers.simSlidingORS3.Thresholds: [ pmtthr ]
+physics.producers.simSlidingORS4.Thresholds: [ pmtthr ]
 physics.producers.simSlidingORS5.Thresholds: [ pmtthr ]
+physics.producers.simSlidingORS7.Thresholds: [ pmtthr ]
 physics.producers.simSlidingORS8.Thresholds: [ pmtthr ]
+physics.producers.simSlidingORS9.Thresholds: [ pmtthr ]
 physics.producers.simSlidingORS10.Thresholds: [ pmtthr ]
 physics.producers.simSlidingORS15.Thresholds: [ pmtthr ]
 
@@ -187,11 +193,11 @@ physics.triggerOR: [
   # trigger simulation: tiling
   simTiledORM1, simTiledORM2, simTiledORM3, simTiledORM4, simTiledORM5, simTiledORM6,
   simTiledORM3O3, simTiledORM4O4, simTiledORM5O5, simTiledORM6O6,
-  simTiledORS3, simTiledORS5, simTiledORS8, simTiledORS10, simTiledORS15,
+  simTiledORS3, simTiledORS4, simTiledORS5, simTiledORS7, simTiledORS8, simTiledORS9, simTiledORS10, simTiledORS15,
   # trigger simulation: sliding
   simSlidingORM1, simSlidingORM2, simSlidingORM3, simSlidingORM4, simSlidingORM5, simSlidingORM6,
   simSlidingORM3O3, simSlidingORM4O4, simSlidingORM5O5, simSlidingORM6O6,
-  simSlidingORS3, simSlidingORS5, simSlidingORS8, simSlidingORS10, simSlidingORS15
+  simSlidingORS3, simSlidingORS4, simSlidingORS5, simSlidingORS7, simSlidingORS8, simSlidingORS9, simSlidingORS10, simSlidingORS15
 ]
 
 

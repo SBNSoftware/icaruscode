@@ -117,27 +117,30 @@ icarus_trigger_channel_pairings_nosingle: [
 # settings for plotting efficiency under patterns of sliding window triggers
 # firing during beam time
 SlidingWindowTriggerPatternsSingleWindow: [
-  { inMainWindow: 1                       },
-  { inMainWindow: 2                       },
-  { inMainWindow: 3                       },
-  { inMainWindow: 4                       },
-  { inMainWindow: 5                       },
-  { inMainWindow: 6                       }
+  { inMainWindow: 1                       },  # [0] M1
+  { inMainWindow: 2                       },  # [1] M2
+  { inMainWindow: 3                       },  # [2] M3
+  { inMainWindow: 4                       },  # [3] M4
+  { inMainWindow: 5                       },  # [4] M5
+  { inMainWindow: 6                       }   # [5] M6
 ] # SlidingWindowTriggerPatternsSingleWindow
 
 
 SlidingWindowTriggerPatternsWindowPair: [
-  { inMainWindow: 1   inOppositeWindow: 1 },       # [0]
-  { inMainWindow: 2   inOppositeWindow: 2 },       # [1]
-  { inMainWindow: 3   inOppositeWindow: 3 },       # [2]
-  { inMainWindow: 4   inOppositeWindow: 4 },       # [3]
-  { inMainWindow: 5   inOppositeWindow: 5 },       # [4]
-  { inMainWindow: 6   inOppositeWindow: 6 },       # [5]
-  { inMainWindow: 2   sumOfOppositeWindows:  3 },  # [6]
-  { inMainWindow: 3   sumOfOppositeWindows:  5 },  # [7]
-  { inMainWindow: 4   sumOfOppositeWindows:  8 },  # [8]
-  { inMainWindow: 5   sumOfOppositeWindows: 10 },  # [9]
-  { inMainWindow: 8   sumOfOppositeWindows: 15 }   # [10]
+  { inMainWindow: 1   inOppositeWindow: 1 },       # [0]  M1O1
+  { inMainWindow: 2   inOppositeWindow: 2 },       # [1]  M2O2
+  { inMainWindow: 3   inOppositeWindow: 3 },       # [2]  M3O3
+  { inMainWindow: 4   inOppositeWindow: 4 },       # [3]  M4O4
+  { inMainWindow: 5   inOppositeWindow: 5 },       # [4]  M5O5
+  { inMainWindow: 6   inOppositeWindow: 6 },       # [5]  M6O6
+  { inMainWindow: 2   sumOfOppositeWindows:  3 },  # [6]  S3
+  { inMainWindow: 3   sumOfOppositeWindows:  5 },  # [7]  S5
+  { inMainWindow: 4   sumOfOppositeWindows:  8 },  # [8]  S8
+  { inMainWindow: 5   sumOfOppositeWindows: 10 },  # [9]  S10
+  { inMainWindow: 8   sumOfOppositeWindows: 15 }   # [10] S15
+  { inMainWindow: 2   sumOfOppositeWindows:  4 }   # [11] S4
+  { inMainWindow: 4   sumOfOppositeWindows:  7 }   # [12] S7
+  { inMainWindow: 5   sumOfOppositeWindows:  9 }   # [13] S9
 ] # SlidingWindowTriggerPatternsWindowPair
 
 
@@ -372,11 +375,11 @@ physics: {
     # trigger simulation: tiling
     simTiledORM1, simTiledORM2, simTiledORM3, simTiledORM4, simTiledORM5, simTiledORM6,
     simTiledORM3O3, simTiledORM4O4, simTiledORM5O5, simTiledORM6O6,
-    simTiledORS3, simTiledORS5, simTiledORS8, simTiledORS10, simTiledORS15,
+    simTiledORS3, simTiledORS4, simTiledORS5, simTiledORS7, simTiledORS8, simTiledORS9, simTiledORS10, simTiledORS15,
     # trigger simulation: sliding
     simSlidingORM1, simSlidingORM2, simSlidingORM3, simSlidingORM4, simSlidingORM5, simSlidingORM6,
     simSlidingORM3O3, simSlidingORM4O4, simSlidingORM5O5, simSlidingORM6O6,
-    simSlidingORS3, simSlidingORS5, simSlidingORS8, simSlidingORS10, simSlidingORS15
+    simSlidingORS3, simSlidingORS4, simSlidingORS5, simSlidingORS7, simSlidingORS8, simSlidingORS9, simSlidingORS10, simSlidingORS15
     ]
   
   plotsOR:  [
@@ -506,14 +509,29 @@ physics.producers.simTiledORS3: {
   Pattern: @local::SlidingWindowTriggerPatternsWindowPair[6]  # S3
 }
 
+physics.producers.simTiledORS4: {
+  @table::physics.producers.simTiledORM1
+  Pattern: @local::SlidingWindowTriggerPatternsWindowPair[11] # S4
+}
+
 physics.producers.simTiledORS5: {
   @table::physics.producers.simTiledORM1
   Pattern: @local::SlidingWindowTriggerPatternsWindowPair[7]  # S5
 }
 
+physics.producers.simTiledORS7: {
+  @table::physics.producers.simTiledORM1
+  Pattern: @local::SlidingWindowTriggerPatternsWindowPair[12] # S7
+}
+
 physics.producers.simTiledORS8: {
   @table::physics.producers.simTiledORM1
   Pattern: @local::SlidingWindowTriggerPatternsWindowPair[8]  # S8
+}
+
+physics.producers.simTiledORS9: {
+  @table::physics.producers.simTiledORM1
+  Pattern: @local::SlidingWindowTriggerPatternsWindowPair[13] # S9
 }
 
 physics.producers.simTiledORS10: {
@@ -581,14 +599,29 @@ physics.producers.simSlidingORS3: {
   Pattern: @local::SlidingWindowTriggerPatternsWindowPair[6]  # S3
 }
 
+physics.producers.simSlidingORS4: {
+  @table::physics.producers.simSlidingORM1
+  Pattern: @local::SlidingWindowTriggerPatternsWindowPair[11] # S4
+}
+
 physics.producers.simSlidingORS5: {
   @table::physics.producers.simSlidingORM1
   Pattern: @local::SlidingWindowTriggerPatternsWindowPair[7]  # S5
 }
 
+physics.producers.simSlidingORS7: {
+  @table::physics.producers.simSlidingORM1
+  Pattern: @local::SlidingWindowTriggerPatternsWindowPair[12] # S7
+}
+
 physics.producers.simSlidingORS8: {
   @table::physics.producers.simSlidingORM1
   Pattern: @local::SlidingWindowTriggerPatternsWindowPair[8]  # S8
+}
+
+physics.producers.simSlidingORS9: {
+  @table::physics.producers.simSlidingORM1
+  Pattern: @local::SlidingWindowTriggerPatternsWindowPair[13] # S9
 }
 
 physics.producers.simSlidingORS10: {

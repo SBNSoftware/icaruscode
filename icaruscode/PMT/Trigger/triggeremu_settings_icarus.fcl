@@ -104,8 +104,8 @@ triggeremu_config_icarus.settings.missing_pmt_channels:
 #
 
 # Run3 delay extracted comparing emulated and hardware trigger time
-# from run 11952 (majority only), not presented yet
-triggeremu_config_icarus.settings.TriggerDelay_Run3: "350 ns"
+# from run 11965 (majority only), not presented yet
+triggeremu_config_icarus.settings.TriggerDelay_Run3: "325 ns"
 triggeremu_config_icarus.settings.TriggerDelay:
   @local::triggeremu_config_icarus.settings.TriggerDelay_Run3
 
@@ -184,7 +184,10 @@ triggeremu_config_icarus.settings.SlidingWindowTriggerPatternsWindowPair: [
   { inMainWindow: 3   sumOfOppositeWindows:  5 },  # [7]
   { inMainWindow: 4   sumOfOppositeWindows:  8 },  # [8]
   { inMainWindow: 5   sumOfOppositeWindows: 10 },  # [9]
-  { inMainWindow: 8   sumOfOppositeWindows: 15 }   # [10]
+  { inMainWindow: 8   sumOfOppositeWindows: 15 },  # [10]
+  { inMainWindow: 2   sumOfOppositeWindows:  4 },  # [11]
+  { inMainWindow: 4   sumOfOppositeWindows:  7 },  # [12]
+  { inMainWindow: 5   sumOfOppositeWindows:  9 }   # [13]
 ] # SlidingWindowTriggerPatternsWindowPair
 
 

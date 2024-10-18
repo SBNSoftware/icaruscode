@@ -394,14 +394,29 @@ icarus_triggergate_basic.patterns.S3: {
   inMainWindow:         2  # relevant only to disambiguate the location
 }
 
+icarus_triggergate_basic.patterns.S4: {
+  sumOfOppositeWindows: 4
+  inMainWindow:         2  # irrelevant
+}
+
 icarus_triggergate_basic.patterns.S5: {
   sumOfOppositeWindows: 5
   inMainWindow:         3  # relevant only to disambiguate the location
 }
 
+icarus_triggergate_basic.patterns.S7: {
+  sumOfOppositeWindows: 7
+  inMainWindow:         4  # relevant only to disambiguate the location
+}
+
 icarus_triggergate_basic.patterns.S8: {
   sumOfOppositeWindows: 8
   inMainWindow:         4  # irrelevant
+}
+
+icarus_triggergate_basic.patterns.S9: {
+  sumOfOppositeWindows: 9
+  inMainWindow:         5  # relevant only to disambiguate the location
 }
 
 icarus_triggergate_basic.patterns.S10: {
