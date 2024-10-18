@@ -142,8 +142,7 @@ struct icarus::trigger::PMTpairBitID: public details::PMTwallBitID<64> {
   using BaseID_t = details::PMTwallBitID<64>;
   
   /// Rebuilds an ID object from its index.
-  static PMTpairBitID fromIndex(Index_t index)
-    { return { BaseID_t::fromIndex(index) }; }
+  static PMTpairBitID fromIndex(Index_t index);
   
 }; // icarus::trigger::PMTpairBitID
 
@@ -156,8 +155,7 @@ struct icarus::trigger::AdderBitID: public details::PMTwallBitID<16> {
   using BaseID_t = details::PMTwallBitID<16>;
   
   /// Rebuilds an ID object from its index.
-  static AdderBitID fromIndex(Index_t index)
-    { return { BaseID_t::fromIndex(index) }; }
+  static AdderBitID fromIndex(Index_t index);
   
 }; // icarus::trigger::AdderBitID
 
@@ -621,6 +619,25 @@ std::ostream& icarus::trigger::details::operator<<
     << '/' << std::setw(2) << std::setfill('0') << bit.statusBit
     << std::setfill(fillch);
   return out;
+}
+
+
+// -----------------------------------------------------------------------------
+// ---  icarus::trigger::PMTpairBitID
+// -----------------------------------------------------------------------------
+inline auto icarus::trigger::PMTpairBitID::fromIndex(Index_t index)
+  -> PMTpairBitID
+{
+  return { BaseID_t::fromIndex(index) };
+}
+
+
+// -----------------------------------------------------------------------------
+// ---  icarus::trigger::AdderBitID
+// -----------------------------------------------------------------------------
+inline auto icarus::trigger::AdderBitID::fromIndex(Index_t index) -> AdderBitID
+{
+  return { BaseID_t::fromIndex(index) };
 }
 
 

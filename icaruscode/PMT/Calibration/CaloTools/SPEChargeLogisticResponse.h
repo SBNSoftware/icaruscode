@@ -1,5 +1,5 @@
 #ifndef __SPEChargeLogisticResponse_H
-#define __SPEChargeLogitsticResponse_H
+#define __SPEChargeLogisticResponse_H
 
 #include "TMath.h"
 
