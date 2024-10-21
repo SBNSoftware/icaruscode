@@ -11,6 +11,7 @@
 
 #include "sbnobj/Common/CRT/CRTHit.hh"
 //#include "icaruscode/CRT/CRTUtils/CRTT0MatchAlg.h"
+#include "icaruscode/CRT/CRTUtils/CRTMatchingUtils.h"
 
 // Framework includes
 #include "art/Framework/Core/EDProducer.h"
@@ -62,8 +63,6 @@
 #include "TVector3.h"
 #include "TTree.h"
 
-#include "icaruscode/CRT/CRTUtils/CRTMatchingUtils.h"
-
 namespace icarus {
 namespace crt {
 
@@ -113,8 +112,10 @@ private:
 
   geo::GeometryCore const* fGeometryService;  ///< pointer to Geometry provider
   CRTCommonUtils* fCrtUtils; 
-  icarus::crt::matchingutils::TopCRTCentersMap fTopCRTCenterMap;
-  icarus::crt::matchingutils::TopCrtTransformations fTopCrtTransformations;
+  icarus::crt::TopCRTCentersMap fTopCRTCenterMap;
+  icarus::crt::TopCrtTransformations fTopCrtTransformations;
+
+  CRTMatchingAlg fMatchingAlg;
 
 };
 
@@ -128,7 +129,8 @@ icarus::crt::CRTT0Tagging::CRTT0Tagging(fhicl::ParameterSet const& p)
       fPFParticleLabel(p.get< std::vector<art::InputTag> >("PFParticleLabel",             {""})),  
       fHitLabel(p.get< std::vector<art::InputTag> >("HitLabel",             {""})),
       fTRKHMproducer(p.get< art::InputTag   > ("TRKHMproducer", "")),
-      fCrtUtils(new CRTCommonUtils())
+      fCrtUtils(new CRTCommonUtils()),
+      fMatchingAlg(p.get<fhicl::ParameterSet> ("MatchingAlg"))
 {
   
   // Get a pointer to the geometry service provider.
@@ -151,8 +153,8 @@ void icarus::crt::CRTT0Tagging::beginRun(art::Run& r)
   fTriggerConfiguration
     = trigConfHandle.isValid()? std::make_optional(*trigConfHandle): std::nullopt;
 
-  fTopCRTCenterMap=icarus::crt::matchingutils::LoadTopCRTCenters();
-  fTopCrtTransformations=icarus::crt::matchingutils::LoadTopCrtTransformations();
+  fTopCRTCenterMap=icarus::crt::LoadTopCRTCenters();
+  fTopCrtTransformations=icarus::crt::LoadTopCrtTransformations();
 
 }
 
@@ -254,7 +256,7 @@ void icarus::crt::CRTT0Tagging::produce(art::Event& e)
       else if(countW!=0 && countE==0 && cryo==1) trackType=5; //West-West
       else if(countW==0 && countE!=0 && cryo==1) trackType=4; //West-East      
       
-      icarus::crt::matchingutils::TopCRTCorrectionMap TopCrtCorrection;
+      icarus::crt::TopCRTCorrectionMap TopCrtCorrection;
       if(trackType==0) TopCrtCorrection=fTopCrtTransformations.EastCC;
       else if(trackType==1) TopCrtCorrection=fTopCrtTransformations.EE;
       else if(trackType==2) TopCrtCorrection=fTopCrtTransformations.EW;
@@ -267,21 +269,21 @@ void icarus::crt::CRTT0Tagging::produce(art::Event& e)
       trackRes= track.Length()/goodHits;
       deltaP = deltaP/(goodHits-1);
       if(trackRes>10) std::cout<<"Track Res very bad "<<trackRes<<" "<<deltaP<<std::endl;
-      icarus::crt::matchingutils::Direction trackPCADir={-5,-5,-5,0,0,0};
+      icarus::crt::Direction trackPCADir={-5,-5,-5,0,0,0};
 
       if(goodHits<5) {
         mf::LogDebug("CRTT0Tagging:")<<"Track does not have the minimal requirements of good hits: "<<goodHits;
         continue;
       }
-      trackPCADir=icarus::crt::matchingutils::PCAfit(hx, hy, hz);
-      std::vector<icarus::crt::matchingutils::CandCRT> crtCands;
+      trackPCADir=fMatchingAlg.PCAfit(hx, hy, hz);
+      std::vector<icarus::crt::CandCRT> crtCands;
 
       for(art::Ptr<CRTHit> p_crthit: CRTHitList){
         const CRTHit &crtHit = *p_crthit;
         double crtTime=crtHit.ts1_ns/1e3;
-        icarus::crt::matchingutils::DriftedTrack thisDriftedTrack = icarus::crt::matchingutils::DriftTrack(trkHits, trkHitMetas, fGeometryService, detProp, crtTime, cryo, track);
+        icarus::crt::DriftedTrack thisDriftedTrack = fMatchingAlg.DriftTrack(trkHits, trkHitMetas, fGeometryService, detProp, crtTime, cryo, track);
         if(thisDriftedTrack.outbound>0) continue;
-        icarus::crt::matchingutils::Direction driftedTrackDir=icarus::crt::matchingutils::PCAfit(thisDriftedTrack.spx, thisDriftedTrack.spy, thisDriftedTrack.spz);
+        icarus::crt::Direction driftedTrackDir=fMatchingAlg.PCAfit(thisDriftedTrack.spx, thisDriftedTrack.spy, thisDriftedTrack.spz);
         
         int crtSys=-1;
         if(crtHit.plane<=34) crtSys=0;
@@ -293,8 +295,8 @@ void icarus::crt::CRTT0Tagging::produce(art::Event& e)
         double deltaZ=std::numeric_limits<float>::signaling_NaN();
         double crtDistance=std::numeric_limits<float>::signaling_NaN();
 
-        icarus::crt::matchingutils::CrtPlane thisCrtPlane = icarus::crt::matchingutils::DeterminePlane(crtHit);
-        icarus::crt::matchingutils::CrossPoint crossPoint = icarus::crt::matchingutils::DetermineProjection(driftedTrackDir, thisCrtPlane);
+        icarus::crt::CrtPlane thisCrtPlane = fMatchingAlg.DeterminePlane(crtHit);
+        icarus::crt::CrossPoint crossPoint = fMatchingAlg.DetermineProjection(driftedTrackDir, thisCrtPlane);
 
         double crtX=crtHit.x_pos;
         double crtY=crtHit.y_pos;
@@ -305,18 +307,18 @@ void icarus::crt::CRTT0Tagging::produce(art::Event& e)
           centerDX=crtX-fTopCRTCenterMap[(int)crtHit.feb_id[0]].X;
           centerDY=crtY-fTopCRTCenterMap[(int)crtHit.feb_id[0]].Y;
           centerDZ=crtZ-fTopCRTCenterMap[(int)crtHit.feb_id[0]].Z;
-          icarus::crt::matchingutils::AffineTrans thisAffine=TopCrtCorrection[(int)crtHit.feb_id[0]];
+          icarus::crt::AffineTrans thisAffine=TopCrtCorrection[(int)crtHit.feb_id[0]];
           std::pair<double,double> transCrt;
           if(crtHit.plane==30) {
-            transCrt=icarus::crt::matchingutils::AffineTransformation(centerDX, centerDZ, thisAffine);
+            transCrt=icarus::crt::AffineTransformation(centerDX, centerDZ, thisAffine);
             crtX=transCrt.first;
             crtZ=transCrt.second;
           } else if(crtHit.plane==31 ||crtHit.plane==32) {
-            transCrt=icarus::crt::matchingutils::AffineTransformation(centerDY, centerDZ, thisAffine);
+            transCrt=icarus::crt::AffineTransformation(centerDY, centerDZ, thisAffine);
             crtY=transCrt.first;
             crtZ=transCrt.second;            
           } else if(crtHit.plane==33 ||crtHit.plane==34){
-            transCrt=icarus::crt::matchingutils::AffineTransformation(centerDX, centerDY, thisAffine);
+            transCrt=icarus::crt::AffineTransformation(centerDX, centerDY, thisAffine);
             crtX=transCrt.first;
             crtY=transCrt.second;            
           } 
@@ -333,17 +335,17 @@ void icarus::crt::CRTT0Tagging::produce(art::Event& e)
         }
         crtDistance=sqrt(pow(deltaX,2)+pow(deltaZ,2));
         if(crtDistance>300) continue;
-        icarus::crt::matchingutils::CandCRT thisCrtCand={crtHit,p_crthit, crtDistance, deltaX, deltaZ};
+        icarus::crt::CandCRT thisCrtCand={crtHit,p_crthit, crtDistance, deltaX, deltaZ};
         crtCands.push_back(thisCrtCand);
       } // End of CRT Hit loop
       if(crtCands.empty()) {
         mf::LogDebug("CRTT0Tagging:")<<"No Good CRT match candidates for this track";
         continue;
       }
-      auto minElementIt = std::min_element(crtCands.begin(), crtCands.end(), [](const icarus::crt::matchingutils::CandCRT& a, const icarus::crt::matchingutils::CandCRT& b) {
+      auto minElementIt = std::min_element(crtCands.begin(), crtCands.end(), [](const icarus::crt::CandCRT& a, const icarus::crt::CandCRT& b) {
         return a.distance < b.distance;
       });
-      icarus::crt::matchingutils::CandCRT& bestCrtCand=*minElementIt;
+      icarus::crt::CandCRT& bestCrtCand=*minElementIt;
       if(bestCrtCand.distance<=96){
         int matchedSys=-1;
         if(bestCrtCand.CRThit.plane<=34) matchedSys=0;

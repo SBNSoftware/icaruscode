@@ -23,7 +23,6 @@ art_make(
         CRTTPCMatchingAna_module.cc	
         CRTPMTMatchingAna_module.cc
         CRTTPCTruthEff_module.cc
-        CRTT0Tagging_module.cc
     LIBRARY_NAME
         icaruscode_CRTData
     SOURCE

@@ -11,7 +11,7 @@
 #include <iostream>
 #include <stdio.h>
 #include <sstream>
-#include <fstream>  // Aggiunto per l'uso di ifstream
+#include <fstream> 
 #include <string>
 #include <cetlib/search_path.h>
 #include <vector>
@@ -63,7 +63,7 @@
 #include "TVector3.h"
 #include "TGeoManager.h"
 
-namespace icarus::crt::matchingutils{
+namespace icarus::crt{
 
 double const vdrift=0.157; //cm/us
 double const tics=0.4; // 0.4 us, 400 ns
@@ -166,19 +166,32 @@ TransformedCrtHit AffineTransformation(double DX, double DZ,AffineTrans affine);
 
 TopCrtTransformations LoadTopCrtTransformations();
 
-Direction PCAfit (std::vector<float> x, std::vector<float> y, std::vector<float> z);
 
-CrtPlane DeterminePlane(sbn::crt::CRTHit CRThit);
+class CRTMatchingAlg {
+public:
 
-// ProjectionPoint CalculateProjection(double, double, double, double, double, double, double);
+    explicit CRTMatchingAlg(const fhicl::ParameterSet& pset);
+    CRTMatchingAlg();
 
-// CrossPoint CalculateForPlane(const Direction& dir, int plane, double position);
+    void reconfigure(const fhicl::ParameterSet& pset);
 
-CrossPoint DetermineProjection(const Direction& dir, CrtPlane plane);
+    Direction PCAfit (std::vector<float> x, std::vector<float> y, std::vector<float> z);
 
-TrackBarycenter GetTrackBarycenter(std::vector<float> hx, std::vector<float> hy, std::vector<float> hz, std::vector<float> hw);
+    CrtPlane DeterminePlane(sbn::crt::CRTHit CRThit);
 
-DriftedTrack DriftTrack(const std::vector<art::Ptr<recob::Hit>>& trkHits, const std::vector<const recob::TrackHitMeta*>& trkHitMetas, const geo::GeometryCore *GeometryService, detinfo::DetectorPropertiesData const& detProp, double time, int cryo, const recob::Track& tpcTrack);
+    ProjectionPoint CalculateProjection(double, double, double, double, double, double, double);
+
+    CrossPoint CalculateForPlane(const Direction& dir, int plane, double position);
+
+    CrossPoint DetermineProjection(const Direction& dir, CrtPlane plane);
+
+    TrackBarycenter GetTrackBarycenter(std::vector<float> hx, std::vector<float> hy, std::vector<float> hz, std::vector<float> hw);
+
+    DriftedTrack DriftTrack(const std::vector<art::Ptr<recob::Hit>>& trkHits, const std::vector<const recob::TrackHitMeta*>& trkHitMetas, const geo::GeometryCore *GeometryService, detinfo::DetectorPropertiesData const& detProp, double time, int cryo, const recob::Track& tpcTrack);
+
+private:
+
+};
 
 }
 
