@@ -330,6 +330,7 @@ cafmaker.TriggerLabel: "emuTrigger"
 cafmaker.FlashTrigLabel: "" # unavailable
 cafmaker.SimChannelLabel: "largeant"
 cafmaker.SystWeightLabels: ["genieweight", "fluxweight"]
+cafmaker.SaveGENIEEventRecord: true # save GENIE event record by default. Turn this off for data cafmaker fcl
 cafmaker.TPCPMTBarycenterMatchLabel: "tpcpmtbarycentermatch"
 cafmaker.TrackHitFillRREndCut: 30 # include entire PID region
 
