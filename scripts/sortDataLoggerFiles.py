@@ -163,7 +163,8 @@ class FileInfoClass:
   criterium.
   """
   
-  XRootDprotocolHead = 'root://fndca1.fnal.gov:1094/'
+  DefaultXRootDprotocolHead = 'root://fndca1.fnal.gov:1094/'
+  GenericXRootDprotocolHead = r'root://fn\w+\.fnal\.gov:[0-9]{1,5}/'
   XRootDprotocolDir = 'pnfs/fnal.gov/usr'
   POSIXprotocolHead = '/'
   POSIXprotocolDir = 'pnfs'
@@ -173,7 +174,7 @@ class FileInfoClass:
     + POSIXprotocolDir.replace('.', r'\.')
     + r"/([^/]+)/(.*)")
   XRootDPattern = re.compile(
-    XRootDprotocolHead.replace('.', r'\.')
+    GenericXRootDprotocolHead
     + XRootDprotocolDir.replace('.', r'\.')
     + r"/(.*)"
     )
@@ -239,7 +240,7 @@ class FileInfoClass:
     # if not file
     match = FileInfoClass.POSIXPattern.match(self.path)
     return os.path.join(
-      FileInfoClass.XRootDprotocolHead, FileInfoClass.XRootDprotocolDir,
+      FileInfoClass.DefaultXRootDprotocolHead, FileInfoClass.XRootDprotocolDir,
       *match.group(1, 2)
       ) if match else self.path
     
