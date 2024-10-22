@@ -1,6 +1,0 @@
-#include "detsim_2d_icarus_fitFR_refactored.fcl"
-
-physics.producers.daq.wcls_main.params.file_rcresp: ""
-physics.producers.daq.wcls_main.params.files_fields: "garfield-icarus-fnal-rev2.json.bz2"
-
-process_name: UntunedSigShapeFRVar
