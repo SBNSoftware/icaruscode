@@ -1,0 +1,31 @@
+BEGIN_PROLOG
+
+standard_crtmatchingalg:
+{
+    MinimalTrackLength:     40.     # Minimal TrackLength to match with a CRT
+    MinimumGoodHits:     5     # Minimum number of good hits to perform the fit
+    
+    CrtHitModuleLabel:  "crthit"
+    TriggerLabel:  "daqTrigger" 
+    TriggerConfiguration: "triggerconfig" 
+    TPCTrackLabel:       ["pandoraTrackGausCryoE", "pandoraTrackGausCryoW"]     # Track producer module label
+    PFParticleLabel: 	   ["pandoraGausCryoE", "pandoraGausCryoW"] # PFParticle producer module label
+    HitLabel:   ["cluster3DCryoE" , "cluster3DCryoW"]
+
+}
+
+
+icarus_crtt0tagging:
+{
+    module_type:         "icaruscode/CRT/CRTMatchingAlg"
+    CrtHitModuleLabel:  "crthit"
+    TriggerLabel:  "daqTrigger" 
+    TriggerConfiguration: "triggerconfig" 
+    TPCTrackLabel:       ["pandoraTrackGausCryoE", "pandoraTrackGausCryoW"]     # Track producer module label
+    PFParticleLabel: 	   ["pandoraGausCryoE", "pandoraGausCryoW"] # PFParticle producer module label
+    HitLabel:   ["cluster3DCryoE" , "cluster3DCryoW"]
+    MatchingAlg:    @local::standard_crtmatchingalg
+}
+
+
+END_PROLOG

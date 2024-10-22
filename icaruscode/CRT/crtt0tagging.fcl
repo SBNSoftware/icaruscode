@@ -1,0 +1,17 @@
+#include "crtmatchingalg_icarus.fcl"
+
+BEGIN_PROLOG
+
+standard_crtt0tagging:
+{
+   module_type:         "CRTT0Tagging"
+   CrtHitModuleLabel:  "crthit"
+   TriggerLabel:  "daqTrigger" 
+   TriggerConfiguration: "triggerconfig" 
+   TPCTrackLabel:       ["pandoraTrackGausCryoE", "pandoraTrackGausCryoW"]     # Track producer module label
+   PFParticleLabel: 	   ["pandoraGausCryoE", "pandoraGausCryoW"] # PFParticle producer module label
+   HitLabel:   ["cluster3DCryoE" , "cluster3DCryoW"]
+   MatchingAlg: @local::standard_crtmatchingalg
+}
+
+END_PROLOG

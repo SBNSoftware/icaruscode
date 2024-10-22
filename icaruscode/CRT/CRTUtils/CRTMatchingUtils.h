@@ -65,7 +65,6 @@
 
 namespace icarus::crt{
 
-double const vdrift=0.157; //cm/us
 double const tics=0.4; // 0.4 us, 400 ns
 double const minLimitW=61.7; // cm Anode WE position
 double const maxLimitW=358.73; // cm Anode WW position
@@ -190,7 +189,7 @@ public:
     DriftedTrack DriftTrack(const std::vector<art::Ptr<recob::Hit>>& trkHits, const std::vector<const recob::TrackHitMeta*>& trkHitMetas, const geo::GeometryCore *GeometryService, detinfo::DetectorPropertiesData const& detProp, double time, int cryo, const recob::Track& tpcTrack);
 
 private:
-
+    double fMinimalTrackLength;
 };
 
 }

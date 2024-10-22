@@ -212,7 +212,7 @@ namespace icarus::crt{
     CRTMatchingAlg::CRTMatchingAlg() = default;
 
     void CRTMatchingAlg::reconfigure(const fhicl::ParameterSet& pset){
-
+        fMinimalTrackLength = pset.get<double>("MinimalTrackLength", 40.0);
         return;
     }
 
@@ -372,7 +372,11 @@ namespace icarus::crt{
         std::vector<float> recX, recY, recZ, recI;
         //double avgDisplacement=0, startX=0, endX=0, driftedStartX=0, driftedEndX=0;
         for(size_t i=0; i<trkHits.size(); i++){
+            bool badhit = (trkHitMetas[i]->Index() == std::numeric_limits<unsigned int>::max()) ||
+                        (!tpcTrack.HasValidPoint(trkHitMetas[i]->Index()));
+            if(badhit) continue;
             geo::Point_t loc = tpcTrack.LocationAtPoint(trkHitMetas[i]->Index());
+            if(loc.X()==-999) continue;
             const geo::TPCGeo& tpcGeo = GeometryService->TPC(trkHits[i]->WireID());
             int tpc=trkHits[i]->WireID().TPC;
             double vDrift=detProp.DriftVelocity();
