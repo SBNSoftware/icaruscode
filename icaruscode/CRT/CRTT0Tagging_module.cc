@@ -117,6 +117,9 @@ private:
   CRTMatchingAlg fMatchingAlg;
   double fMinimalTrackLength;
   int fMinimumGoodHits;
+  double fMaximalCRTDistance;
+  double fGoodCandidateDistance;
+
 };
 
 icarus::crt::CRTT0Tagging::CRTT0Tagging(fhicl::ParameterSet const& p)
@@ -141,6 +144,8 @@ icarus::crt::CRTT0Tagging::CRTT0Tagging(fhicl::ParameterSet const& p)
   fGeometryService = lar::providerFrom<geo::Geometry>();
   fMinimalTrackLength = p.get<double>("MinimalTrackLength", 40.0);
   fMinimumGoodHits = p.get<double>("MinimumGoodHits", 5);
+  fMaximalCRTDistance = p.get<double>("MaximalCRTDistance", 300.);
+  fGoodCandidateDistance = p.get<double>("GoodCandidateDistance", 100.);
 
   art::ServiceHandle<art::TFileService> tfs;
 
@@ -327,7 +332,7 @@ void icarus::crt::CRTT0Tagging::produce(art::Event& e)
           deltaZ=crtY-crossPoint.Y;          
         }
         crtDistance=sqrt(pow(deltaX,2)+pow(deltaZ,2));
-        if(crtDistance>300) continue;
+        if(crtDistance>fMaximalCRTDistance) continue;
         icarus::crt::CandCRT thisCrtCand={crtHit,p_crthit, crtDistance, deltaX, deltaZ};
         crtCands.push_back(thisCrtCand);
       } // End of CRT Hit loop
@@ -339,7 +344,7 @@ void icarus::crt::CRTT0Tagging::produce(art::Event& e)
         return a.distance < b.distance;
       });
       icarus::crt::CandCRT& bestCrtCand=*minElementIt;
-      if(bestCrtCand.distance<=96){ /////// MAGIC
+      if(bestCrtCand.distance<=fGoodCandidateDistance){ 
         int matchedSys=-1;
         if(bestCrtCand.CRThit.plane<=34) matchedSys=0;
         else if (bestCrtCand.CRThit.plane==50) matchedSys=2;
