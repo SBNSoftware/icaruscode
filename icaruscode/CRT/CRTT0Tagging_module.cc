@@ -133,15 +133,14 @@ icarus::crt::CRTT0Tagging::CRTT0Tagging(fhicl::ParameterSet const& p)
       fMatchingAlg(p.get<fhicl::ParameterSet> ("MatchingAlg"))
 {
   
-  // Get a pointer to the geometry service provider.
   produces< std::vector<anab::T0>                   >();
   produces< art::Assns<recob::Track , anab::T0>     >();
   produces< art::Assns<sbn::crt::CRTHit, anab::T0>  >();
 
+  // Get a pointer to the geometry service provider.
   fGeometryService = lar::providerFrom<geo::Geometry>();
   fMinimalTrackLength = p.get<double>("MinimalTrackLength", 40.0);
   fMinimumGoodHits = p.get<double>("MinimumGoodHits", 5);
-
 
   art::ServiceHandle<art::TFileService> tfs;
 
@@ -162,7 +161,6 @@ void icarus::crt::CRTT0Tagging::beginRun(art::Run& r)
 
 void icarus::crt::CRTT0Tagging::produce(art::Event& e)
 {
-  
   auto const clockData = art::ServiceHandle<detinfo::DetectorClocksService const>()->DataFor(e);
   auto const detProp = art::ServiceHandle<detinfo::DetectorPropertiesService const>()->DataFor(e, clockData);
   if (!fTriggerConfiguration) {
@@ -173,11 +171,9 @@ void icarus::crt::CRTT0Tagging::produce(art::Event& e)
 
   mf::LogDebug("CRTT0Tagging: ") << "beginning production" << '\n';
 
-  auto t0TaggedTracksColl = std::make_unique<std::vector<anab::T0>>();
-  art::PtrMaker<anab::T0> const makeInfoPtr(e);
-  auto trackAssociation = std::make_unique<art::Assns<anab::T0, recob::Track>>();
-  auto crtAssociation = std::make_unique<art::Assns<anab::T0, sbn::crt::CRTHit>>();
-  auto trackAndCrtAssociation = std::make_unique<art::Assns<recob::Track, sbn::crt::CRTHit>>();
+  std::unique_ptr< std::vector<anab::T0> > t0col( new std::vector<anab::T0>);
+  std::unique_ptr< art::Assns<recob::Track, anab::T0> > trackAssn( new art::Assns<recob::Track, anab::T0>);
+  std::unique_ptr< art::Assns <sbn::crt::CRTHit, anab::T0> > t0CrtHitAssn( new art::Assns<sbn::crt::CRTHit, anab::T0> );
 
   // CRTHits
   std::vector<art::Ptr<CRTHit>> CRTHitList;
@@ -350,25 +346,19 @@ void icarus::crt::CRTT0Tagging::produce(art::Event& e)
         else matchedSys=1;
         if(matchedSys==2) continue; // lets discard Bottom CRT Hits for the moment
         mf::LogInfo("CRTT0Tagging")
-	      <<"Matched CRT time = "<<bestCrtCand.CRThit.ts1_ns/1e3<<" [us] to track "<<track.ID()<<" with projection-hit distance = "<<bestCrtCand.distance;
-	      //t0Col->push_back(anab::T0(bestCrtCand.CRThit.ts1_ns, track.ID(), matchedSys, bestCrtCand.CRThit.plane,bestCrtCand.distance));
-	      
-        art::Ptr<anab::T0> const infoPtr = makeInfoPtr(t0TaggedTracksColl->size());
-        trackAssociation->addSingle(infoPtr, trkPtr);
-        crtAssociation->addSingle(infoPtr, bestCrtCand.ptrCRThit);
-        trackAndCrtAssociation->addSingle(trkPtr, bestCrtCand.ptrCRThit);
-        t0TaggedTracksColl->push_back(std::move(anab::T0(bestCrtCand.CRThit.ts1_ns, track.ID(), matchedSys, bestCrtCand.CRThit.plane,bestCrtCand.distance)));
-        //util::CreateAssn(*this, e, *t0Col, track, *trackAssn);
-        //util::CreateAssn(*this, e, *t0Col, bestCrtCand.CRThit, *t0CrtHitAssn);
+	      <<"Matched CRT time = "<<bestCrtCand.CRThit.ts1_ns/1e3<<" [us] to track "<<track.ID()<<" with projection-hit distance = "<<bestCrtCand.distance;        
+        t0col->push_back(anab::T0(bestCrtCand.CRThit.ts1_ns, track.ID(), matchedSys, bestCrtCand.CRThit.plane,bestCrtCand.distance));
+        util::CreateAssn(*this, e, *t0col, trkPtr, *trackAssn);
+        util::CreateAssn(*this, e, *t0col, bestCrtCand.ptrCRThit, *t0CrtHitAssn);
+
       }
 	 
 	  } // End of Track Loop
 	  
 	} // End of Cryo Loop
-  e.put(std::move(t0TaggedTracksColl));
-  e.put(std::move(crtAssociation));
-  e.put(std::move(trackAssociation));
-  e.put(std::move(trackAndCrtAssociation));
+  e.put(std::move(t0col));
+  e.put(std::move(trackAssn));
+  e.put(std::move(t0CrtHitAssn));
 }
 
 void CRTT0Tagging::endJob()
