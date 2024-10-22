@@ -119,6 +119,7 @@ private:
   int fMinimumGoodHits;
   double fMaximalCRTDistance;
   double fGoodCandidateDistance;
+  double fMaximumDeltaT;
 
 };
 
@@ -146,7 +147,7 @@ icarus::crt::CRTT0Tagging::CRTT0Tagging(fhicl::ParameterSet const& p)
   fMinimumGoodHits = p.get<double>("MinimumGoodHits", 5);
   fMaximalCRTDistance = p.get<double>("MaximalCRTDistance", 300.);
   fGoodCandidateDistance = p.get<double>("GoodCandidateDistance", 100.);
-
+  fMaximumDeltaT = p.get<double>("MaximumDeltaT", 10000.);
   art::ServiceHandle<art::TFileService> tfs;
 
 }
@@ -229,7 +230,6 @@ void icarus::crt::CRTT0Tagging::produce(art::Event& e)
       if (!t0s.empty()){  
         t0 = t0s[0]->Time();   //Get T0  
 	    }
-      if(!isnan(t0)) std::cout<<"This Track T0 "<<t0<<std::endl;
       int goodHits=0;
       int countE=0, countW=0;
       // These counters are used to determine if track is CC-E, EE, EW, CC-W, WE, WW
@@ -280,6 +280,9 @@ void icarus::crt::CRTT0Tagging::produce(art::Event& e)
       for(art::Ptr<CRTHit> p_crthit: CRTHitList){
         const CRTHit &crtHit = *p_crthit;
         double crtTime=crtHit.ts1_ns/1e3;
+        if(!isnan(t0)){
+          if(fabs(t0-crtHit.ts1_ns)>fMaximumDeltaT) continue;
+        }
         icarus::crt::DriftedTrack thisDriftedTrack = fMatchingAlg.DriftTrack(trkHits, trkHitMetas, fGeometryService, detProp, crtTime, cryo, track);    
         if(thisDriftedTrack.outbound>0) continue;
         icarus::crt::Direction driftedTrackDir=fMatchingAlg.PCAfit(thisDriftedTrack.spx, thisDriftedTrack.spy, thisDriftedTrack.spz);
@@ -351,7 +354,8 @@ void icarus::crt::CRTT0Tagging::produce(art::Event& e)
         else matchedSys=1;
         if(matchedSys==2) continue; // lets discard Bottom CRT Hits for the moment
         mf::LogInfo("CRTT0Tagging")
-	      <<"Matched CRT time = "<<bestCrtCand.CRThit.ts1_ns/1e3<<" [us] to track "<<track.ID()<<" with projection-hit distance = "<<bestCrtCand.distance;        
+	      <<"Matched CRT time = "<<bestCrtCand.CRThit.ts1_ns/1e3<<" [us] to track "<<track.ID()<<" with projection-hit distance = "<<bestCrtCand.distance<<" Track T0 "<<t0
+	      <<"\n Matched CRT hit plane: "<<bestCrtCand.CRThit.plane<<" xpos "<<bestCrtCand.CRThit.x_pos<<" ypos "<<bestCrtCand.CRThit.y_pos<<" zpos "<<bestCrtCand.CRThit.z_pos;
         t0col->push_back(anab::T0(bestCrtCand.CRThit.ts1_ns, track.ID(), matchedSys, bestCrtCand.CRThit.plane,bestCrtCand.distance));
         util::CreateAssn(*this, e, *t0col, trkPtr, *trackAssn);
         util::CreateAssn(*this, e, *t0col, bestCrtCand.ptrCRThit, *t0CrtHitAssn);

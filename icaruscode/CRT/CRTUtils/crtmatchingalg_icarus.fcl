@@ -3,9 +3,10 @@ BEGIN_PROLOG
 standard_crtmatchingalg:
 {
     MinimalTrackLength:     40.     # Minimal TrackLength to match with a CRT
-    MinimumGoodHits:     5          # Minimum number of good hits to perform the fit
-    MaximalCRTDistance: 300.        # Maximal distance between CRT Hit Candidate and Track Projection
-    GoodCandidateDistance: 100.     # 96 cm maximizes EfficiencyXPurity (both > 92%) 
+    MinimumGoodHits:        5       # Minimum number of good hits to perform the fit
+    MaximalCRTDistance:     300.    # Maximal distance between CRT Hit Candidate and Track Projection
+    GoodCandidateDistance:  100.    # 96 cm maximizes EfficiencyXPurity (both > 92%) 
+    MaximumDeltaT:          10000.     # Maximal Time difference between a T0 tagged track and CRT Hit time for the combination to be considered acceptable. [ns]
     
     CrtHitModuleLabel:  "crthit"
     TriggerLabel:  "daqTrigger" 
