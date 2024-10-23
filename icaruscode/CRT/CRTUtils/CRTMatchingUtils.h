@@ -65,15 +65,6 @@
 
 namespace icarus::crt{
 
-double const tics=0.4; // 0.4 us, 400 ns
-double const minLimitW=61.7; // cm Anode WE position
-double const maxLimitW=358.73; // cm Anode WW position
-double const minLimitE=-61.7; // cm Anode EW position
-double const maxLimitE=-358.73; // cm Anode WW position
-double const cathW=210; // cm Cathode W position
-double const cathE=-210; // cm Cathode E position
-double const exc=2; // cm max displacement out of boundaries
-
 struct CrossPoint
 {
     double X;
@@ -186,10 +177,14 @@ public:
 
     TrackBarycenter GetTrackBarycenter(std::vector<float> hx, std::vector<float> hy, std::vector<float> hz, std::vector<float> hw);
 
-    DriftedTrack DriftTrack(const std::vector<art::Ptr<recob::Hit>>& trkHits, const std::vector<const recob::TrackHitMeta*>& trkHitMetas, const geo::GeometryCore *GeometryService, detinfo::DetectorPropertiesData const& detProp, double time, int cryo, const recob::Track& tpcTrack);
+    DriftedTrack DriftTrack(const std::vector<art::Ptr<recob::Hit>>& trkHits, const std::vector<const recob::TrackHitMeta*>& trkHitMetas, const geo::GeometryCore *GeometryService, detinfo::DetectorPropertiesData const& detProp, double time, const recob::Track& tpcTrack);
 
 private:
-    double fMinimalTrackLength;
+
+    double fTickPeriod;
+    double fTickAtAnode;
+    double fAllowedOffsetCM;
+
 };
 
 }

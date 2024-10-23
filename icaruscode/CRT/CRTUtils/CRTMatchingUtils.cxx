@@ -212,7 +212,9 @@ namespace icarus::crt{
     CRTMatchingAlg::CRTMatchingAlg() = default;
 
     void CRTMatchingAlg::reconfigure(const fhicl::ParameterSet& pset){
-        fMinimalTrackLength = pset.get<double>("MinimalTrackLength", 40.0);
+        fTickPeriod = pset.get<double>("TickPeriod", 0.4);
+        fTickAtAnode = pset.get<double>("TickAtAnode", 850.);
+        fAllowedOffsetCM = pset.get<double>("AllowedOffsetCM", 1.57);
         return;
     }
 
@@ -366,11 +368,10 @@ namespace icarus::crt{
         return ThisTrackBary;
     }
 
-    DriftedTrack CRTMatchingAlg::DriftTrack(const std::vector<art::Ptr<recob::Hit>>& trkHits, const std::vector<const recob::TrackHitMeta*>& trkHitMetas, const geo::GeometryCore *GeometryService, detinfo::DetectorPropertiesData const& detProp, double time, int cryo, const recob::Track& tpcTrack)
+    DriftedTrack CRTMatchingAlg::DriftTrack(const std::vector<art::Ptr<recob::Hit>>& trkHits, const std::vector<const recob::TrackHitMeta*>& trkHitMetas, const geo::GeometryCore *GeometryService, detinfo::DetectorPropertiesData const& detProp, double time, const recob::Track& tpcTrack)
     {
         int outBound=0;
         std::vector<float> recX, recY, recZ, recI;
-        //double avgDisplacement=0, startX=0, endX=0, driftedStartX=0, driftedEndX=0;
         for(size_t i=0; i<trkHits.size(); i++){
             bool badhit = (trkHitMetas[i]->Index() == std::numeric_limits<unsigned int>::max()) ||
                         (!tpcTrack.HasValidPoint(trkHitMetas[i]->Index()));
@@ -378,23 +379,22 @@ namespace icarus::crt{
             geo::Point_t loc = tpcTrack.LocationAtPoint(trkHitMetas[i]->Index());
             if(loc.X()==-999) continue;
             const geo::TPCGeo& tpcGeo = GeometryService->TPC(trkHits[i]->WireID());
+            int const cryo = trkHits[i]->WireID().Cryostat;
             int tpc=trkHits[i]->WireID().TPC;
             double vDrift=detProp.DriftVelocity();
-            double recoX=(trkHits[i]->PeakTime()-850-time/tics)*tics*vDrift;
+            double recoX=(trkHits[i]->PeakTime()-fTickAtAnode-time/fTickPeriod)*fTickPeriod*vDrift;
             double plane=tpcGeo.FirstPlane().GetCenter().X();
+            double cathode=tpcGeo.GetCathodeCenter().X();
             double X=plane-tpcGeo.DetectDriftDirection()*recoX;
-            //double displacement= X-loc.X();
-            if(cryo==0 && (tpc==0 || tpc==1) && (X>(cathE+exc)||X<(plane-exc))) outBound++;
-            else if(cryo==0 && (tpc==2 || tpc==3)&& (X<(cathE-exc)||X>(plane+exc))) outBound++;
-            else if(cryo==1 && (tpc==0 || tpc==1)&& (X>(cathW+exc)||X<(plane-exc))) outBound++;
-            else if(cryo==1 && (tpc==2 || tpc==3)&& (X<(cathW-exc)||X>(plane+exc))) outBound++;
+            if(cryo==0 && (tpc==0 || tpc==1) && (X>(cathode+fAllowedOffsetCM)||X<(plane-fAllowedOffsetCM))) outBound++;
+            else if(cryo==0 && (tpc==2 || tpc==3)&& (X<(cathode-fAllowedOffsetCM)||X>(plane+fAllowedOffsetCM))) outBound++;
+            else if(cryo==1 && (tpc==0 || tpc==1)&& (X>(cathode+fAllowedOffsetCM)||X<(plane-fAllowedOffsetCM))) outBound++;
+            else if(cryo==1 && (tpc==2 || tpc==3)&& (X<(cathode-fAllowedOffsetCM)||X>(plane+fAllowedOffsetCM))) outBound++;
             recX.push_back(X);
             recY.push_back(loc.Y());
             recZ.push_back(loc.Z());
             recI.push_back(trkHits[i]->Integral());
-            //avgDisplacement +=displacement;
         }
-        //avgDisplacement=avgDisplacement/trkHits.size();
         DriftedTrack thisDriftedTrack = {recX, recY, recZ, recI, outBound};
         return thisDriftedTrack;
     }

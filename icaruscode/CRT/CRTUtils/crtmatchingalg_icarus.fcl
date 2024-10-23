@@ -6,8 +6,18 @@ standard_crtmatchingalg:
     MinimumGoodHits:        5       # Minimum number of good hits to perform the fit
     MaximalCRTDistance:     300.    # Maximal distance between CRT Hit Candidate and Track Projection
     GoodCandidateDistance:  100.    # 96 cm maximizes EfficiencyXPurity (both > 92%) 
-    MaximumDeltaT:          10000.     # Maximal Time difference between a T0 tagged track and CRT Hit time for the combination to be considered acceptable. [ns]
-    
+    MaximumDeltaT:          10000.  # Maximal Time difference between a T0 tagged track and CRT Hit time for the combination to be considered acceptable. [ns]
+    TickPeriod:             0.4     # 0.4 us tick period
+    TickAtAnode:            850     # Tick at the Anode, de facto Offset Ticks
+    AllowedOffsetCM:        1.57    # When trying to determine if a track and a time are compatible, you reconstructruct the track at that time
+                                    # you then check if the reconstructed track is out of the boundaries of the cathode and of the anode,
+                                    # this variable gives you the maximum excess of the track wrt cathode or anode to consider the track/time pair.
+                                    # Since we are allowing for MaximumDeltaT of 10 us (see above), this corresponds to a maximum excess
+                                    # of 10 us * 0.157 cm/us = 1.57 cm.
+                                    # As this is phrased, one could think of this as the two variables are related, that is not necessarily
+                                    # the case, but is still a good guess.
+
+
     CrtHitModuleLabel:  "crthit"
     TriggerLabel:  "daqTrigger" 
     TriggerConfiguration: "triggerconfig" 
