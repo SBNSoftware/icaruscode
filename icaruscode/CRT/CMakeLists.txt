@@ -2,7 +2,6 @@
 add_subdirectory(CRTUtils)
 add_subdirectory(CRTDecoder)
 
-
 art_make(
     NO_PLUGINS
     EXCLUDE
@@ -60,6 +59,41 @@ art_make_library(
                 CLHEP::CLHEP
                 ROOT::Geom
                 cetlib::cetlib
+        )
+
+art_make_library(
+        LIBRARY_NAME
+                icaruscode_CRTMatchingUtils
+        SOURCE
+                CRTUtils/CRTMatchingUtils.cxx
+        LIBRARIES
+                sbnobj::ICARUS_CRT
+                sbnobj::Common_CRT
+                icaruscode_CRTUtils
+                larcorealg::Geometry
+                larcore::Geometry_Geometry_service
+                larsim::Simulation lardataobj::Simulation
+                larsim::MCCheater_BackTrackerService_service
+                larsim::MCCheater_ParticleInventoryService_service
+                lardata::Utilities
+                larevt::Filters
+                lardataobj::RawData
+                lardataobj::RecoBase
+                lardataobj::AnalysisBase
+                lardata::RecoObjects
+                larpandora::LArPandoraInterface
+                larcorealg::Geometry
+                nusimdata::SimulationBase
+                art::Persistency_Common canvas::canvas
+                art::Persistency_Provenance
+                art::Utilities
+                ROOT::Core
+                ROOT::Geom
+                ROOT::XMLIO
+                ROOT::Gdml
+                ROOT::Spectrum
+                ROOT::RooFit
+                ROOT::RooFitCore
         )
 
 cet_build_plugin(CRTGeometryHelper art::service
@@ -517,6 +551,38 @@ simple_plugin(CRTTPCTruthEff module
 
 )
 
+cet_build_plugin(CRTT0Tagging art::module
+     LIBRARIES
+        icaruscode::IcarusObj
+        icaruscode_CRTMatchingUtils
+        sbnobj::ICARUS_CRT
+        sbnobj::Common_CRT
+        icaruscode_CRTUtils
+        larcorealg::Geometry
+        larcore::Geometry_Geometry_service
+        larsim::Simulation lardataobj::Simulation
+        larsim::MCCheater_BackTrackerService_service
+        larsim::MCCheater_ParticleInventoryService_service
+        lardata::Utilities
+        larevt::Filters
+        lardataobj::RawData
+        lardataobj::RecoBase
+        lardataobj::AnalysisBase
+        lardata::RecoObjects
+        larpandora::LArPandoraInterface
+        larcorealg::Geometry
+        nusimdata::SimulationBase
+        art::Persistency_Common canvas::canvas
+        art::Persistency_Provenance
+        art::Utilities
+        ROOT::Core
+        ROOT::Geom
+        ROOT::XMLIO
+        ROOT::Gdml
+        ROOT::Spectrum
+        ROOT::RooFit
+        ROOT::RooFitCore
+   )
 
 install_headers()
 install_fhicl()
