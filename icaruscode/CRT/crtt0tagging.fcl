@@ -11,6 +11,29 @@ standard_crtt0tagging:
    GoodCandidateDistance:  100.    # 96 cm maximizes EfficiencyXPurity (both > 92%) 
    MaximumDeltaT:          10000.     # Maximal Time difference between a T0 tagged track and CRT Hit time for the combination to be considered acceptable. [ns]
   
+   isData:                 true    # Data
+
+   module_type:         "CRTT0Tagging"
+   CrtHitModuleLabel:  "crthit"
+   TriggerLabel:  "daqTrigger" 
+   TriggerConfiguration: "triggerconfig" 
+   TPCTrackLabel:       ["pandoraTrackGausCryoE", "pandoraTrackGausCryoW"]     # Track producer module label
+   PFParticleLabel: 	   ["pandoraGausCryoE", "pandoraGausCryoW"] # PFParticle producer module label
+   HitLabel:   ["cluster3DCryoE" , "cluster3DCryoW"]
+   MatchingAlg: @local::standard_crtmatchingalg
+}
+
+standard_crtt0taggingmc:
+{
+
+   MinimalTrackLength:     40.     # Minimal TrackLength to match with a CRT
+   MinimumGoodHits:        5       # Minimum number of good hits to perform the fit
+   MaximalCRTDistance:     300.    # Maximal distance between CRT Hit Candidate and Track Projection
+   GoodCandidateDistance:  100.    # 96 cm maximizes EfficiencyXPurity (both > 92%) 
+   MaximumDeltaT:          10000.     # Maximal Time difference between a T0 tagged track and CRT Hit time for the combination to be considered acceptable. [ns]
+  
+   isData:                 false  #MC
+
    module_type:         "CRTT0Tagging"
    CrtHitModuleLabel:  "crthit"
    TriggerLabel:  "daqTrigger" 

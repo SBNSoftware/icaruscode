@@ -120,6 +120,7 @@ private:
   double fMaximalCRTDistance;
   double fGoodCandidateDistance;
   double fMaximumDeltaT;
+  bool fData;
 
 };
 
@@ -148,6 +149,7 @@ icarus::crt::CRTT0Tagging::CRTT0Tagging(fhicl::ParameterSet const& p)
   fMaximalCRTDistance = p.get<double>("MaximalCRTDistance", 300.);
   fGoodCandidateDistance = p.get<double>("GoodCandidateDistance", 100.);
   fMaximumDeltaT = p.get<double>("MaximumDeltaT", 10000.);
+  fData = p.get<bool>("isData", true);
   art::ServiceHandle<art::TFileService> tfs;
 
 }
@@ -169,24 +171,20 @@ void icarus::crt::CRTT0Tagging::produce(art::Event& e)
 {
   auto const clockData = art::ServiceHandle<detinfo::DetectorClocksService const>()->DataFor(e);
   auto const detProp = art::ServiceHandle<detinfo::DetectorPropertiesService const>()->DataFor(e, clockData);
+  
   if (!fTriggerConfiguration) {
     mf::LogDebug("CRTT0Tagging")
       << "Skipping because no data (or at least no trigger configuration).";
-    return;
   }
-  std::cout<<"Maximal CRT-Track distance "<<fMaximalCRTDistance<<std::endl;
-
   mf::LogDebug("CRTT0Tagging: ") << "beginning production" << '\n';
-
   std::unique_ptr< std::vector<anab::T0> > t0col( new std::vector<anab::T0>);
   std::unique_ptr< art::Assns<recob::Track, anab::T0> > trackAssn( new art::Assns<recob::Track, anab::T0>);
   std::unique_ptr< art::Assns <sbn::crt::CRTHit, anab::T0> > t0CrtHitAssn( new art::Assns<sbn::crt::CRTHit, anab::T0> );
-
+  
   // CRTHits
   std::vector<art::Ptr<CRTHit>> CRTHitList;
   art::ValidHandle<std::vector<CRTHit>> crthits = e.getValidHandle<std::vector<CRTHit>>(fCrtHitModuleLabel);
   art::fill_ptr_vector(CRTHitList, crthits);
-
   for(const auto& PFPLabel : fPFParticleLabel) {
     auto it = &PFPLabel - fPFParticleLabel.data();
     std::vector<art::Ptr<recob::PFParticle>> PFParticleList;
@@ -207,7 +205,6 @@ void icarus::crt::CRTT0Tagging::produce(art::Event& e)
     art::ValidHandle<std::vector<recob::Hit>> allhit_handle = e.getValidHandle<std::vector<recob::Hit>>(fHitLabel[it]);
     std::vector<art::Ptr<recob::Hit>> allHits;
     art::fill_ptr_vector(allHits, allhit_handle);
-
     // Start looping on the particles
     for (art::Ptr<recob::PFParticle> p_pfp: PFParticleList) {
       const std::vector<art::Ptr<recob::Track>> thisTrack = fmTracks.at(p_pfp.key());
@@ -299,27 +296,29 @@ void icarus::crt::CRTT0Tagging::produce(art::Event& e)
         double crtY=crtHit.y_pos;
         double crtZ=crtHit.z_pos;
 
-        if(crtSys==0){
-          double centerDX, centerDY, centerDZ;
-          centerDX=crtX-fTopCRTCenterMap[(int)crtHit.feb_id[0]].X;
-          centerDY=crtY-fTopCRTCenterMap[(int)crtHit.feb_id[0]].Y;
-          centerDZ=crtZ-fTopCRTCenterMap[(int)crtHit.feb_id[0]].Z;
-          icarus::crt::AffineTrans thisAffine=TopCrtCorrection[(int)crtHit.feb_id[0]];
-          std::pair<double,double> transCrt;
-          if(crtHit.plane==30) {
-            transCrt=icarus::crt::AffineTransformation(centerDX, centerDZ, thisAffine);
-            crtX=transCrt.first;
-            crtZ=transCrt.second;
-          } else if(crtHit.plane==31 ||crtHit.plane==32) {
-            transCrt=icarus::crt::AffineTransformation(centerDY, centerDZ, thisAffine);
-            crtY=transCrt.first;
-            crtZ=transCrt.second;            
-          } else if(crtHit.plane==33 ||crtHit.plane==34){
-            transCrt=icarus::crt::AffineTransformation(centerDX, centerDY, thisAffine);
-            crtX=transCrt.first;
-            crtY=transCrt.second;            
+        if(fData){ // Realignment only applies to Data, not MC
+          if(crtSys==0){
+            double centerDX, centerDY, centerDZ;
+            centerDX=crtX-fTopCRTCenterMap[(int)crtHit.feb_id[0]].X;
+            centerDY=crtY-fTopCRTCenterMap[(int)crtHit.feb_id[0]].Y;
+            centerDZ=crtZ-fTopCRTCenterMap[(int)crtHit.feb_id[0]].Z;
+            icarus::crt::AffineTrans thisAffine=TopCrtCorrection[(int)crtHit.feb_id[0]];
+            std::pair<double,double> transCrt;
+            if(crtHit.plane==30) {
+              transCrt=icarus::crt::AffineTransformation(centerDX, centerDZ, thisAffine);
+              crtX=transCrt.first;
+              crtZ=transCrt.second;
+            } else if(crtHit.plane==31 ||crtHit.plane==32) {
+              transCrt=icarus::crt::AffineTransformation(centerDY, centerDZ, thisAffine);
+              crtY=transCrt.first;
+              crtZ=transCrt.second;            
+            } else if(crtHit.plane==33 ||crtHit.plane==34){
+              transCrt=icarus::crt::AffineTransformation(centerDX, centerDY, thisAffine);
+              crtX=transCrt.first;
+              crtY=transCrt.second;            
+            }
+
           }
-          
         }
         if(thisCrtPlane.first==0){
           deltaX=crtX-crossPoint.X;
