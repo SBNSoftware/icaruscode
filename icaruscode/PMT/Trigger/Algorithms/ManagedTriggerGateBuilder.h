@@ -43,10 +43,43 @@ namespace icarus::trigger { class ManagedTriggerGateBuilder; }
  * The allowed customization includes what to do when a threshold is crossed
  * in a gate.
  * 
- * Note that actions are performed only when the sample crosses a threshold.
+ * The algorithm considers samples grouped in blocks of fixed (but configurable)
+ * size. Each block is treated as a "macro-sample" and assigned a level based on
+ * the value of its samples and a time based on a fixed, configurable offset
+ * from its first sample (`BlockTimeReference`).
+ * Currently, the level of the block is always taken as the _largest_ of the
+ * levels of the enabled samples in the block (`SamplingPattern`), where the
+ * level of the sample is how much above the baseline the sample is.
+ * 
+ * Note that actions are performed only when a block crosses a threshold.
  * The algorithm keeps track at each time of which are the thresholds enclosing
  * the signal level, and if the level crosses one of them, the gates associated
  * to those thresholds, and only them, are offered a chance to react.
+ * 
+ * 
+ * 
+ * ### Time alignment of the waveforms
+ * 
+ * The algorithm uses "blocks" of samples to determine the state of the gate.
+ * The start of the first block is always aligned with the start of the waveform
+ * (effectively, the algorithm uses the index of the sample in the waveform).
+ * While this is arbitrary, it happens to be appropriate for the CAEN V1730
+ * boards, which can "trigger" only in multiples of 16 nanoseconds from an
+ * absolute reference, provided that the required alignment is a divisor
+ * 16 ns.
+ * 
+ * Note that the timestamp of the waveforms may have an arbitrary shift,
+ * which is common to all waveforms on the same channel in the entire event.
+ * This timestamp is eventually used to turn the block tick into a time on the
+ * output gate, so that the gates from different channels are correctly
+ * synchronised (and can be used to simulate real time coincidence).
+ * The blocks themselves may appear not to be synchronized between channels due
+ * to the channel-dependent time offsets and corrections.
+ * 
+ * For simulation, the input waveforms need to preserve this discretization
+ * (16 ns) in order for this mechanism to exactly reproduce the hardware.
+ * If that's not the case, simulation will not yield the exact result that
+ * hardware would, however the results should be statistically equivalent.
  * 
  * 
  * Specific configuration
@@ -54,28 +87,35 @@ namespace icarus::trigger { class ManagedTriggerGateBuilder; }
  * 
  * All classes derived by this base algorithm should support the following
  * configuration parameters:
- *  * `SamplePrescale` (positive integer; default: `1`): only consider one
- *    sample every `SamplePrescale` for discrimination. For example, if
- *    `SamplePrescale` is set to `4` (and `SampleOffset` is `0`), each waveform
- *    in input will be discriminated considering only samples #0, #4, #8 and so
- *    on (with a sampling rate of 2 ns this means the discrimination is
- *    performed only every 8 nanoseconds).
- *    This implies that if the waveform passes the threshold at sample #1 and by
- *    sample #4 is back to not passing the threshold, the crossing is not
- *    detected. The same holds if at sample #0 the threshold is already passed,
- *    at sample #1 it is not any more, but by sample #4 it passed again.
- *    If the parameter is set to `1` (default value), or `0` (special case),
- *    all samples are considered.
+ *  * `SamplingPattern` (sequence of switches, default: `[ true ]`): the sample
+ *    pattern used to detect a single gate change. The size of this sequence
+ *    determines the size of the block of samples used to detect a change.
+ *    The state is open if any of the samples in the block marked with `true`
+ *    passes the threshold, and closed if all the samples in the block marked
+ *    with `true` do not pass the threshold; the values of samples marked with
+ *    `false` is always ignored. The first block starts with the sample `0` of
+ *    the input, unless `SampleOffset` is specified, in which case it starts
+ *    from it instead (see below).
+ *    For example, a pattern of `[ true, true, true, true ]` will determine the
+ *    state based on the values of four samples, declaring an open state if any
+ *    of the four samples passes the threshold, and a closed state if no sample
+ *    out of four passes that threshold. A pattern of
+ *    `[ true, false, false, false ]` will instead only use one sample every
+ *    four to determine the state of the gate for all four samples, ignoring the
+ *    other three. The default, `[ true ]`, treats all the samples
+ *    independently.
+ *  * `BlockTimeReference` (integer, default: `0`): for each pattern, which
+ *    is the sample providing its time; for example, if `BlockTimeReference`
+ *    is `2` when an opening or closing is caused by a pattern, that change is
+ *    recorded at the time of its third (#2) sample.
  *  * `SampleOffset` (non-negative integer; default: `0`): skips this many
  *    samples at the beginning of each waveform. This parameter is intended to
- *    provide an offset for the prescale: for example, in case the
- *    discrimination were desired for the last sample in a group of four instead
- *    of the first one, this could be achieved by setting `SamplePrescale` to
- *    `4` and `SampleOffset` to `3`.
- *    Note however that this parameter is honoured regardless of the prescale
- *    settings (i.e. even if prescale is `1`, and even if it is smaller than
- *    the specified offset).
+ *    provide an offset for the block alignment.
  * 
+ * The configuration option `SamplePrescale` has been discontinued. It is
+ * possible to achieve the same functionality of `SamplePrescale: N` by
+ * specifying a pattern of `N` elements with only the first set, like in
+ * `[ 1, 0, 0, ... ]`.
  */
 class icarus::trigger::ManagedTriggerGateBuilder
   : public icarus::trigger::TriggerGateBuilder
@@ -97,12 +137,18 @@ class icarus::trigger::ManagedTriggerGateBuilder
       util::SignalPolarity::Negative
       };
     
-    fhicl::Atom<std::size_t> SamplePrescale {
-      Name("SamplePrescale"),
-      Comment("only consider one sample out of this many (1 = consider all)"),
-      1 // default: all
+    fhicl::Sequence<bool> SamplingPattern {
+      Name("SamplingPattern"),
+      Comment("which samples to test within each block (default: one sample per block)"),
+      std::vector{ true } // default: all, independently
       };
     
+    fhicl::Atom<std::ptrdiff_t> BlockTimeReference {
+      Name("BlockTimeReference"),
+      Comment("the sample within the block which represents the block time"),
+      0 // default: the first sample in the block
+      };
+      
     fhicl::Atom<std::size_t> SampleOffset {
       Name("SampleOffset"),
       Comment("skip this many samples from the beginning of each waveform"),
@@ -153,7 +199,13 @@ class icarus::trigger::ManagedTriggerGateBuilder
   
   util::SignalPolarity const fPolarity; ///< Polarity of the input waveforms.
   
-  std::size_t const fSamplePrescale; ///< Use only one out of this many samples.
+  /// Offsets of the samples included in the pattern.
+  std::vector<std::ptrdiff_t> fPatternIndices;
+  
+  std::size_t const fBlockSize; ///< How many samples are in each block.
+  
+  /// Which sample to use for the time of a block.
+  std::ptrdiff_t const fBlockTimeReference;
   
   std::size_t const fSampleOffset; ///< Skip this many samples at the beginning.
   
@@ -191,6 +243,14 @@ class icarus::trigger::ManagedTriggerGateBuilder
     std::ostream& out,
     std::string const& indent, std::string const& firstIndent
     ) const;
+  
+  
+    private:
+  
+  /// Returns the indices of non-null elements of the `pattern`.
+  static std::vector<std::ptrdiff_t> patternToIndices
+    (std::vector<bool> const& pattern);
+  
 
 }; // class icarus::trigger::ManagedTriggerGateBuilder
 

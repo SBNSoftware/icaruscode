@@ -225,7 +225,12 @@ icarus_dynamictriggergate: {
 ###
 ### icarus_dynamictriggergate: fixed length gates
 ###
-icarus_fixedtriggergate: {
+
+# The "legacy" configuration has been used until icaruscode v09_92_00;
+# it is based on a misunderstanding (the way the discrimination happens)
+# and a hardware misconfiguration (wrong waveform discrimination polarity).
+# In Run4 the misconfiguration is fixed.
+icarus_fixedtriggergate_legacy: {
   
   tool_type: FixedTriggerGateBuilderTool
   
@@ -234,7 +239,39 @@ icarus_fixedtriggergate: {
   # minimum duration of a trigger gate
   GateDuration: @local::icarus_triggergate_basic.PMTdiscrGateWidth
   
-} # icarus_fixedtriggergate
+} # icarus_fixedtriggergate_legacy
+
+# The hardware until Run3 included was set to discriminate PMT waveforms on
+# the rising edge of a signal ("positive" polarity).
+# This table attempts to reproduce the effect of that configuration.
+# The discrimination mode based on 4 samples is also activated here
+# (the hardware always used it, but we were not aware of that).
+# Fixed before Run4 (TODO: when?)
+icarus_fixedtriggergate_run3: {
+  
+  @table::icarus_fixedtriggergate_legacy
+  
+  # use for discrimination the "highest" of four samples;
+  # time is referred to the first of the four samples.
+  SamplingPattern: [ true, true, true, true ]
+  
+  # TODO
+  
+} # icarus_fixedtriggergate_run3
+
+
+# Configuration to reproduce at the best of our understanding the hardware
+# configuration in Run4. Compared to Run3, PMT signal polarity is flipped.
+icarus_fixedtriggergate_run4: {
+  
+  @table::icarus_fixedtriggergate_run3
+  
+  # TODO
+  
+} # icarus_fixedtriggergate_run4
+
+
+icarus_fixedtriggergate: @local::icarus_fixedtriggergate_run4
 
 
 
