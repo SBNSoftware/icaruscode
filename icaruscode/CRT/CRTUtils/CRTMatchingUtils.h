@@ -106,9 +106,14 @@ struct Direction
 struct CandCRT{
     sbn::crt::CRTHit CRThit;
     art::Ptr<sbn::crt::CRTHit> ptrCRThit;
+    int plane;
     double distance;
     double deltaX;
+    double deltaY;
     double deltaZ;
+    double crossX;
+    double crossY;
+    double crossZ;
 };
 
 struct ModuleCenter

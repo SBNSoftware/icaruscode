@@ -12,6 +12,7 @@
 #include "sbnobj/Common/CRT/CRTHit.hh"
 //#include "icaruscode/CRT/CRTUtils/CRTT0MatchAlg.h"
 #include "icaruscode/CRT/CRTUtils/CRTMatchingUtils.h"
+#include "icaruscode/IcarusObj/CRTTPCMatchingInfo.h"
 
 // Framework includes
 #include "art/Framework/Core/EDProducer.h"
@@ -56,6 +57,7 @@
 #include "lardataobj/RecoBase/PFParticle.h"
 #include "lardataobj/AnalysisBase/T0.h"
 #include "lardataobj/RecoBase/PFParticleMetadata.h"
+
 // ROOT
 #include "TVector3.h"
 #include "TH1.h"
@@ -140,7 +142,11 @@ icarus::crt::CRTT0Tagging::CRTT0Tagging(fhicl::ParameterSet const& p)
   
   produces< std::vector<anab::T0>                   >();
   produces< art::Assns<recob::Track , anab::T0>     >();
-  produces< art::Assns<sbn::crt::CRTHit, anab::T0>  >();
+  produces< art::Assns<sbn::crt::CRTHit, anab::T0>  >();  
+  produces< art::Assns<icarus::CRTTPCMatchingInfo, anab::T0>  >();  
+  produces< std::vector<icarus::CRTTPCMatchingInfo> >();
+  produces< art::Assns<recob::Track , icarus::CRTTPCMatchingInfo>     >();
+  produces< art::Assns<sbn::crt::CRTHit, icarus::CRTTPCMatchingInfo>  >();
 
   // Get a pointer to the geometry service provider.
   fGeometryService = lar::providerFrom<geo::Geometry>();
@@ -176,11 +182,16 @@ void icarus::crt::CRTT0Tagging::produce(art::Event& e)
     mf::LogDebug("CRTT0Tagging")
       << "Skipping because no data (or at least no trigger configuration).";
   }
+
   mf::LogDebug("CRTT0Tagging: ") << "beginning production" << '\n';
   std::unique_ptr< std::vector<anab::T0> > t0col( new std::vector<anab::T0>);
   std::unique_ptr< art::Assns<recob::Track, anab::T0> > trackAssn( new art::Assns<recob::Track, anab::T0>);
-  std::unique_ptr< art::Assns <sbn::crt::CRTHit, anab::T0> > t0CrtHitAssn( new art::Assns<sbn::crt::CRTHit, anab::T0> );
-  
+  std::unique_ptr< art::Assns <sbn::crt::CRTHit, anab::T0> > t0CrtHitAssn( new art::Assns<sbn::crt::CRTHit, anab::T0>);
+  std::unique_ptr< std::vector<icarus::CRTTPCMatchingInfo> > matchInfoCol( new std::vector<icarus::CRTTPCMatchingInfo>);
+  std::unique_ptr< art::Assns<anab::T0,icarus::CRTTPCMatchingInfo> > t0matchInfoAssn( new art::Assns<anab::T0, icarus::CRTTPCMatchingInfo>);
+  std::unique_ptr< art::Assns<recob::Track, icarus::CRTTPCMatchingInfo> > trackMatchInfoAssn( new art::Assns<recob::Track, icarus::CRTTPCMatchingInfo>);
+  std::unique_ptr< art::Assns <sbn::crt::CRTHit, icarus::CRTTPCMatchingInfo> > matchInfoCrtHitAssn( new art::Assns<sbn::crt::CRTHit, icarus::CRTTPCMatchingInfo>);
+
   // CRTHits
   std::vector<art::Ptr<CRTHit>> CRTHitList;
   art::ValidHandle<std::vector<CRTHit>> crthits = e.getValidHandle<std::vector<CRTHit>>(fCrtHitModuleLabel);
@@ -287,6 +298,7 @@ void icarus::crt::CRTT0Tagging::produce(art::Event& e)
         if(crtSys==2) continue; // lets discard Bottom CRT Hits for the moment
 
         double deltaX=std::numeric_limits<float>::signaling_NaN();
+        double deltaY=std::numeric_limits<float>::signaling_NaN();
         double deltaZ=std::numeric_limits<float>::signaling_NaN();
         double crtDistance=std::numeric_limits<float>::signaling_NaN();
 
@@ -317,22 +329,25 @@ void icarus::crt::CRTT0Tagging::produce(art::Event& e)
               crtX=transCrt.first;
               crtY=transCrt.second;            
             }
-
           }
         }
+
         if(thisCrtPlane.first==0){
           deltaX=crtX-crossPoint.X;
+          deltaY=0;
           deltaZ=crtZ-crossPoint.Z;
         } else if(thisCrtPlane.first==1){
-          deltaX=crtY-crossPoint.Y;
+          deltaX=0;
+          deltaY=crtY-crossPoint.Y;
           deltaZ=crtZ-crossPoint.Z;
         } else if(thisCrtPlane.first==2){
           deltaX=crtX-crossPoint.X;
-          deltaZ=crtY-crossPoint.Y;          
+          deltaY=crtY-crossPoint.Y;          
+          deltaZ=0;
         }
-        crtDistance=sqrt(pow(deltaX,2)+pow(deltaZ,2));
+        crtDistance=sqrt(pow(deltaX,2)+pow(deltaZ,2)+pow(deltaY,2));
         if(crtDistance>fMaximalCRTDistance) continue;
-        icarus::crt::CandCRT thisCrtCand={crtHit,p_crthit, crtDistance, deltaX, deltaZ};
+        icarus::crt::CandCRT thisCrtCand={crtHit,p_crthit, thisCrtPlane.first, crtDistance, deltaX, deltaY, deltaZ, crossPoint.X, crossPoint.Y, crossPoint.Z};
         crtCands.push_back(thisCrtCand);
       } // End of CRT Hit loop
       if(crtCands.empty()) {
@@ -349,13 +364,18 @@ void icarus::crt::CRTT0Tagging::produce(art::Event& e)
         else if (bestCrtCand.CRThit.plane==50) matchedSys=2;
         else matchedSys=1;
         if(matchedSys==2) continue; // lets discard Bottom CRT Hits for the moment
+
         mf::LogInfo("CRTT0Tagging")
 	      <<"Matched CRT time = "<<bestCrtCand.CRThit.ts1_ns/1e3<<" [us] to track "<<track.ID()<<" with projection-hit distance = "<<bestCrtCand.distance<<" Track T0 "<<t0
 	      <<"\nMatched CRT hit plane: "<<bestCrtCand.CRThit.plane<<" xpos "<<bestCrtCand.CRThit.x_pos<<" ypos "<<bestCrtCand.CRThit.y_pos<<" zpos "<<bestCrtCand.CRThit.z_pos;
         t0col->push_back(anab::T0(bestCrtCand.CRThit.ts1_ns, track.ID(), matchedSys, bestCrtCand.CRThit.plane,bestCrtCand.distance));
         util::CreateAssn(*this, e, *t0col, trkPtr, *trackAssn);
         util::CreateAssn(*this, e, *t0col, bestCrtCand.ptrCRThit, *t0CrtHitAssn);
-
+        //icarus::CRTTPCMatchingInfo matchInfo = {bestCrtCand.distance, matchedSys, bestCrtCand.CRThit.plane, bestCrtCand.CRThit.ts1_ns, bestCrtCand.deltaX, bestCrtCand.deltaY, bestCrtCand.deltaZ, bestCrtCand.crossX, bestCrtCand.crossY, bestCrtCand.crossZ, bestCrtCand.plane};        
+        //matchInfoCol->push_back(matchInfo);
+        //util::CreateAssn(*this, e, *t0col, *matchInfoCol, *t0matchInfoAssn);
+        //util::CreateAssn(*this, e, *matchInfoCol, trkPtr, *trackMatchInfoAssn);
+        //util::CreateAssn(*this, e, *matchInfoCol, bestCrtCand.ptrCRThit, *matchInfoCrtHitAssn);
       }
 	 
 	  } // End of Track Loop
@@ -364,6 +384,10 @@ void icarus::crt::CRTT0Tagging::produce(art::Event& e)
   e.put(std::move(t0col));
   e.put(std::move(trackAssn));
   e.put(std::move(t0CrtHitAssn));
+  e.put(std::move(matchInfoCol));
+  e.put(std::move(t0matchInfoAssn));
+  e.put(std::move(trackMatchInfoAssn));
+  e.put(std::move(matchInfoCrtHitAssn));
 }
 
 void CRTT0Tagging::endJob()

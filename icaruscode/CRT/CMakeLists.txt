@@ -553,6 +553,7 @@ simple_plugin(CRTTPCTruthEff module
 
 cet_build_plugin(CRTT0Tagging art::module
      LIBRARIES
+        icaruscode::IcarusObj
         icaruscode_CRTMatchingUtils
         sbnobj::ICARUS_CRT
         sbnobj::Common_CRT
