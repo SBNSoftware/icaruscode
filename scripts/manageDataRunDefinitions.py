@@ -1,11 +1,18 @@
 #!/usr/bin/env python
+#
+# Changes:
+# 20241024 (petrillo@slac.stanford.edu) [v1.2]
+#   added no authentication option and additional diagnostics for operations
+#   known to require authentication (i.e. creation of SAM definitions)
+#
+#
 
 import logging
 import time
 
 __author__ = "Gianluca Petrillo (petrillo@slac.stanford.edu)"
 __date__ = time.strptime("July 7, 2021", "%B %d, %Y")
-__version__ = "1.1"
+__version__ = "1.2"
 __doc__ = """
 Manages SAM definitions for ICARUS data run.
 
@@ -53,6 +60,18 @@ StageDimensions = {
 # this is a modal flag that is dangerous enough to be not user-controlled:
 # if `True`, queries without specifying a run number will be allowed.
 AllowAllRuns = False
+
+
+# ------------------------------------------------------------------------------
+def isSAMauthenticated(samweb) -> "whether samweb connection is authenticated":
+  if not samweb: return False
+  try:
+    serverInfo = samweb.serverInfo()
+  except:
+    logging.debug("Failed to get SAM server information!")
+    return False
+  return "unauthenticated" not in serverInfo.lower()
+# isSAMauthenticated()
 
 
 # ------------------------------------------------------------------------------
@@ -208,7 +227,8 @@ class SampleBrowser:
   
   def __init__(self, samweb):
     self.samweb = samweb if samweb else SAMWebClient()
-  
+    self.isAuthenticated = isSAMauthenticated(self.samweb)
+  # __init__()
   
   def iterateProjectVersions(self, info: "SampleInfo object defining iteration ranges"):
     assert self.samweb, "SAM web client not initialized. We do not go anywhere."
@@ -308,6 +328,10 @@ class SampleProcessClass:
     self.minSize = minSize if minSize else 0
     
     self.samweb = samweb if samweb else SAMWebClient()
+    self.isAuthenticated = isSAMauthenticated(self.samweb)
+    if not self.isAuthenticated:
+      logging.debug("Connection to SAM appears not to be authenticated.")
+    
     self.buildQuery = DimensionQueryMaker()
     
     try: self.SAMuser = samweb.get_user()
@@ -440,8 +464,18 @@ class SampleProcessClass:
         self.samweb.createDefinition(defname=defName, dims=dim, description=descr)
         print(f"{defName} created ({count} files)")
       except samexcpt.Error as e:
-        logging.error \
-          (f"Failed to create definition {defName} from query='{dim}': %s", e)
+        if not self.isAuthenticated:
+          logging.error(
+            f"Failed to create definition {defName} from query='{dim}'"
+            " (%s exception)."
+            "\nSAM connection is not authenticated,"
+            " which may be the cause of the issue.",
+            e.__class__.__name__,
+            )
+        else:
+          logging.error \
+            (f"Failed to create definition {defName} from query='{dim}': %s", e)
+        # if ... else
         return None
     # if
     return defName
@@ -624,7 +658,8 @@ if __name__ == "__main__":
     help="sets the experiment name (for definitions) [%(default)s]")
   GeneralOptGroup.add_argument("--samexperiment", "-E",
     help="sets the experiment name (chooses SAM database) [same as --experiment]")
-  GeneralOptGroup.add_argument("--auth", dest="AuthMode", choices=[ 'token', 'cert' ],
+  GeneralOptGroup.add_argument("--auth", dest="AuthMode",
+    choices=[ 'token', 'cert', 'none' ],
     default='token', help="choose authentication method for SAM [%(default)s]")
   GeneralOptGroup.add_argument("--force", "-F", action="store_true",
     help="skips safety checks of some operations")
