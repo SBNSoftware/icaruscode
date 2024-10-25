@@ -1,4 +1,4 @@
-#include "detsim_2d_variation_refactored_icarus.fcl"
+#include "detsim_2d_icarus_refactored.fcl"
 
 #Average value of e- lifetime in East Cryostat in Run 2 (4.0 ms in East cryostat)
 services.DetectorPropertiesService.Electronlifetime: 4000 
