@@ -13,6 +13,8 @@
 //#include "icaruscode/CRT/CRTUtils/CRTT0MatchAlg.h"
 #include "icaruscode/CRT/CRTUtils/CRTMatchingUtils.h"
 #include "icaruscode/IcarusObj/CRTTPCMatchingInfo.h"
+#include "icaruscode/CRT/CRTUtils/RecoUtils.h"
+#include "icaruscode/CRT/CRTUtils/CRTCommonUtils.h"
 
 // Framework includes
 #include "art/Framework/Core/EDProducer.h"
@@ -38,6 +40,9 @@
 #include <algorithm>
 
 // LArSoft
+#include "larsim/MCCheater/BackTrackerService.h"
+#include "larsim/MCCheater/BackTracker.h"
+#include "larsim/MCCheater/ParticleInventoryService.h"
 #include "larcore/Geometry/Geometry.h"
 #include "larcorealg/Geometry/GeometryCore.h"
 #include "larcorealg/Geometry/PlaneGeo.h"
@@ -101,6 +106,15 @@ private:
 
   // Declare member data here.
 
+  // MC Truth
+  art::InputTag fSimulationProducerLabel; 
+  art::InputTag fAuxDetSimProducerLabel;
+  //art::InputTag fCRTSimHitProducerLabel; 
+  //art::InputTag fCRTTrueHitProducerLabel;
+  //art::InputTag fCRTDetSimProducerLabel;
+  //art::InputTag fCRTSimTrackProducerLabel;
+  std::string fSimChannelProducerLabel;
+
   art::InputTag fCrtHitModuleLabel;
   art::InputTag fTriggerLabel;
   art::InputTag fTriggerConfigurationLabel;
@@ -111,12 +125,16 @@ private:
   art::InputTag fTRKHMproducer; ///< labels for hit metadata
   
   std::optional<icarus::TriggerConfiguration> fTriggerConfiguration;
+  art::ServiceHandle<art::TFileService> tfs;
 
   geo::GeometryCore const* fGeometryService;  ///< pointer to Geometry provider
   CRTCommonUtils* fCrtUtils; 
   icarus::crt::TopCRTCentersMap fTopCRTCenterMap;
   icarus::crt::TopCrtTransformations fTopCrtTransformations;
+  
+  
   CRTMatchingAlg fMatchingAlg;
+
   double fMinimalTrackLength;
   int fMinimumGoodHits;
   double fMaximalCRTDistance;
@@ -124,10 +142,33 @@ private:
   double fMaximumDeltaT;
   bool fData;
 
+  TTree* fTree;
+  int fEvent;        ///< number of the event being processed
+  int fRun;          ///< number of the run being processed
+  int fSubRun;       ///< number of the sub-run being processed
+  int fCrtRegion;
+  int fCrtSys;
+  int fCryo;
+  double fTrackLength;
+  double fTrackCrtDistance;
+  double fTrackCrtDeltaX;
+  double fTrackCrtDeltaY;
+  double fTrackCrtDeltaZ;
+  double fCrtX;
+  double fCrtY;
+  double fCrtZ;
+  double fCrossPointX;
+  double fCrossPointY;
+  double fCrossPointZ;      
+  bool fTrueMatch;
+
 };
 
 icarus::crt::CRTT0Tagging::CRTT0Tagging(fhicl::ParameterSet const& p)
     : EDProducer{p},
+      fSimulationProducerLabel(p.get<art::InputTag>("SimulationLabel","largeant")),
+      fAuxDetSimProducerLabel(p.get<art::InputTag>("AuxDetSimProducerLabel","genericcrt")),
+      fSimChannelProducerLabel(p.get< std::string>("SimChannelProducer", {"daq:simpleSC"})),
       fCrtHitModuleLabel(p.get<art::InputTag>("CrtHitModuleLabel", "crthit")),
       fTriggerLabel(p.get<art::InputTag>("TriggerLabel", "daqTrigger")),
       fTriggerConfigurationLabel(
@@ -143,10 +184,10 @@ icarus::crt::CRTT0Tagging::CRTT0Tagging(fhicl::ParameterSet const& p)
   produces< std::vector<anab::T0>                   >();
   produces< art::Assns<recob::Track , anab::T0>     >();
   produces< art::Assns<sbn::crt::CRTHit, anab::T0>  >();  
-  produces< art::Assns<icarus::CRTTPCMatchingInfo, anab::T0>  >();  
   produces< std::vector<icarus::CRTTPCMatchingInfo> >();
-  produces< art::Assns<recob::Track , icarus::CRTTPCMatchingInfo>     >();
-  produces< art::Assns<sbn::crt::CRTHit, icarus::CRTTPCMatchingInfo>  >();
+  //produces< art::Assns<icarus::CRTTPCMatchingInfo, anab::T0>  >();  
+  //produces< art::Assns<recob::Track, icarus::CRTTPCMatchingInfo>  >();
+  //produces< art::Assns<sbn::crt::CRTHit, icarus::CRTTPCMatchingInfo>  >();
 
   // Get a pointer to the geometry service provider.
   fGeometryService = lar::providerFrom<geo::Geometry>();
@@ -156,7 +197,6 @@ icarus::crt::CRTT0Tagging::CRTT0Tagging(fhicl::ParameterSet const& p)
   fGoodCandidateDistance = p.get<double>("GoodCandidateDistance", 100.);
   fMaximumDeltaT = p.get<double>("MaximumDeltaT", 10000.);
   fData = p.get<bool>("isData", true);
-  art::ServiceHandle<art::TFileService> tfs;
 
 }
 
@@ -171,6 +211,27 @@ void icarus::crt::CRTT0Tagging::beginRun(art::Run& r)
 
   fTopCRTCenterMap=icarus::crt::LoadTopCRTCenters();
   fTopCrtTransformations=icarus::crt::LoadTopCrtTransformations();
+
+  fTree = tfs->make<TTree>("matchTree","CRTHit - TPC track matching analysis");
+
+  fTree->Branch("Event",              &fEvent,              "Event/I");
+  fTree->Branch("SubRun",             &fSubRun,             "SubRun/I");
+  fTree->Branch("Run",                &fRun,                "Run/I");
+  fTree->Branch("Cryo",               &fCryo,               "Cryo/I");
+  fTree->Branch("CrtSys",             &fCrtSys,             "CrtSys/I");
+  fTree->Branch("CrtRegion",          &fCrtRegion,          "CrtRegion/I");
+  fTree->Branch("TrackLength",        &fTrackLength        );
+  fTree->Branch("TrackCrtDistance",   &fTrackCrtDistance   );
+  fTree->Branch("TrackCrtDeltaX",     &fTrackCrtDeltaX     );
+  fTree->Branch("TrackCrtDeltaY",     &fTrackCrtDeltaY     );
+  fTree->Branch("TrackCrtDeltaZ",     &fTrackCrtDeltaZ     );
+  fTree->Branch("CrtX",               &fCrtX               );
+  fTree->Branch("CrtY",               &fCrtY               );
+  fTree->Branch("CrtZ",               &fCrtZ               );
+  fTree->Branch("CrossPointX",        &fCrossPointX        );
+  fTree->Branch("CrossPointY",        &fCrossPointY        );
+  fTree->Branch("CrossPointZ",        &fCrossPointZ        );
+  fTree->Branch("TrueMatch",          &fTrueMatch          );
 }
 
 void icarus::crt::CRTT0Tagging::produce(art::Event& e)
@@ -186,16 +247,106 @@ void icarus::crt::CRTT0Tagging::produce(art::Event& e)
   mf::LogDebug("CRTT0Tagging: ") << "beginning production" << '\n';
   std::unique_ptr< std::vector<anab::T0> > t0col( new std::vector<anab::T0>);
   std::unique_ptr< art::Assns<recob::Track, anab::T0> > trackAssn( new art::Assns<recob::Track, anab::T0>);
-  std::unique_ptr< art::Assns <sbn::crt::CRTHit, anab::T0> > t0CrtHitAssn( new art::Assns<sbn::crt::CRTHit, anab::T0>);
+  std::unique_ptr< art::Assns<sbn::crt::CRTHit, anab::T0> > t0CrtHitAssn( new art::Assns<sbn::crt::CRTHit, anab::T0>);
   std::unique_ptr< std::vector<icarus::CRTTPCMatchingInfo> > matchInfoCol( new std::vector<icarus::CRTTPCMatchingInfo>);
-  std::unique_ptr< art::Assns<anab::T0,icarus::CRTTPCMatchingInfo> > t0matchInfoAssn( new art::Assns<anab::T0, icarus::CRTTPCMatchingInfo>);
-  std::unique_ptr< art::Assns<recob::Track, icarus::CRTTPCMatchingInfo> > trackMatchInfoAssn( new art::Assns<recob::Track, icarus::CRTTPCMatchingInfo>);
-  std::unique_ptr< art::Assns <sbn::crt::CRTHit, icarus::CRTTPCMatchingInfo> > matchInfoCrtHitAssn( new art::Assns<sbn::crt::CRTHit, icarus::CRTTPCMatchingInfo>);
+  //std::unique_ptr< art::Assns<icarus::CRTTPCMatchingInfo, anab::T0> > t0matchInfoAssn( new art::Assns<icarus::CRTTPCMatchingInfo, anab::T0>);
+  //std::unique_ptr< art::Assns<recob::Track, icarus::CRTTPCMatchingInfo> > trackMatchInfoAssn( new art::Assns<recob::Track, icarus::CRTTPCMatchingInfo>);
+  //std::unique_ptr< art::Assns<sbn::crt::CRTHit, icarus::CRTTPCMatchingInfo> > matchInfoCrtHitAssn( new art::Assns<sbn::crt::CRTHit, icarus::CRTTPCMatchingInfo>);
+
+  std::map< int, const simb::MCParticle*> particleMap;
+  std::map<std::pair<int,double>,std::vector<int>> crtParticleMap;
+  std::map<int,bool> isNuMap;
+  std::vector<art::Ptr<sim::SimChannel>> simchannels;
 
   // CRTHits
   std::vector<art::Ptr<CRTHit>> CRTHitList;
   art::ValidHandle<std::vector<CRTHit>> crthits = e.getValidHandle<std::vector<CRTHit>>(fCrtHitModuleLabel);
   art::fill_ptr_vector(CRTHitList, crthits);
+
+  if(!fData){
+    art::ServiceHandle<cheat::ParticleInventoryService> partInventory;
+    if (fSimChannelProducerLabel.size()) {
+      art::ValidHandle<std::vector<sim::SimChannel>> simchannel_handle = e.getValidHandle<std::vector<sim::SimChannel>>(fSimChannelProducerLabel);
+      art::fill_ptr_vector(simchannels, simchannel_handle);
+    }
+
+    // Define "handle" to Generator level MCTruth objects
+    art::Handle< vector<simb::MCTruth>> genHandle;
+    // Define a "handle" to point to a vector of MCParticle objects.
+    art::Handle< vector<simb::MCParticle> > particleHandle;
+
+    if (!e.getByLabel("generator", genHandle)) {
+        std::cout << "could not get handle to gen objects!!!" << std::endl;
+    }
+
+    if (!e.getByLabel(fSimulationProducerLabel, particleHandle)) 
+      {
+	      // If we have no MCParticles at all in an event, then we're in
+	      // big trouble. Throw an exception.
+	      throw cet::exception("CRTT0Tagging") 
+	        << " No simb::MCParticle objects in this event - "
+	        << " Line " << __LINE__ << " in file " << __FILE__ << std::endl;
+      }
+
+    // Handle to AuxDetSimChannel (CRT module) objects generated by LArG4
+    art::Handle<vector<sim::AuxDetSimChannel> > auxDetSimChannelHandle;
+    if (!e.getByLabel(fAuxDetSimProducerLabel, auxDetSimChannelHandle)) {
+        throw cet::exception("CRTT0Tagging")
+          << " No sim::AuxDetSimChannel objects in this event - "
+          << " Line " << __LINE__ << " in file " << __FILE__ << std::endl;
+    }
+    //if((*genHandle).size()>1) 
+    //      throw cet::exception("CRTT0Tagging") << "gen stage MCParticle vector has more than 1 entry!" << '\n';
+
+    for ( auto const& particle : (*particleHandle) ){
+      // Add the address of the MCParticle to the map, with the
+      // track ID as the key.
+      particleMap.insert(std::make_pair(particle.TrackId(),&particle));
+      
+      art::Ptr<simb::MCTruth> getMCTruth=partInventory->ParticleToMCTruth_P(&particle);
+      
+      bool isNu=false;
+      
+      if (getMCTruth->Origin() == simb::kBeamNeutrino) isNu=true;
+
+      isNuMap.insert(std::make_pair(particle.TrackId(),isNu));
+
+      for ( auto const& channel : (*auxDetSimChannelHandle) ){
+        auto const& auxDetIDEs = channel.AuxDetIDEs();
+        for ( auto const& ide : auxDetIDEs ){
+          if ( ide.trackID != particle.TrackId() ) continue;
+	  	    if ( ide.energyDeposited * 1.0e6 < 50 ) continue; 
+          size_t adid = channel.AuxDetID();
+          uint32_t region=fCrtUtils->AuxDetRegionNameToNum(fCrtUtils->GetAuxDetRegion(adid));
+          uint32_t modID=channel.AuxDetID();
+          float entryT=ide.entryT;
+          float exitT=ide.exitT;
+          
+          for(auto const& crthit : CRTHitList){
+            if(crthit->plane!=(int)region) continue;
+            if(abs((entryT+exitT)/2-crthit->ts1_ns)>200) continue;
+            bool modFound=false;
+            for(auto const& mactopes : crthit->pesmap){
+              for(auto const& chanpe : mactopes.second) {
+                int thisModID =(int)fCrtUtils->MacToAuxDetID(mactopes.first, chanpe.first);
+                if(thisModID==(int)modID) modFound=true;
+              }
+            }
+            if(!modFound)continue;
+            std::pair<int,double> thisMatch=std::make_pair((int)crthit->feb_id[0],crthit->ts1_ns);
+            if (crtParticleMap.find(thisMatch) != crtParticleMap.end()){
+              crtParticleMap[thisMatch].push_back(particle.TrackId());
+            } else {
+              crtParticleMap.insert(std::pair<std::pair<int,double>,std::vector<int>>(thisMatch, std::vector<int>()));
+              crtParticleMap[thisMatch].push_back(particle.TrackId());
+            }
+          }
+        }
+      }
+    }
+
+  }
+
   for(const auto& PFPLabel : fPFParticleLabel) {
     auto it = &PFPLabel - fPFParticleLabel.data();
     std::vector<art::Ptr<recob::PFParticle>> PFParticleList;
@@ -216,6 +367,16 @@ void icarus::crt::CRTT0Tagging::produce(art::Event& e)
     art::ValidHandle<std::vector<recob::Hit>> allhit_handle = e.getValidHandle<std::vector<recob::Hit>>(fHitLabel[it]);
     std::vector<art::Ptr<recob::Hit>> allHits;
     art::fill_ptr_vector(allHits, allhit_handle);
+
+    std::map<int, std::vector<std::pair<geo::WireID, const sim::IDE*>>> id_to_ide_map;
+    std::map<int, std::vector<art::Ptr<recob::Hit>>> id_to_truehit_map;
+
+    if(simchannels.size() && !fData){
+      art::ServiceHandle<cheat::BackTrackerService> btServ;
+      id_to_ide_map = RecoUtils::PrepSimChannels(simchannels, *fGeometryService);
+      id_to_truehit_map = RecoUtils::PrepTrueHits(allHits, clockData, *btServ.get());
+    }
+    
     // Start looping on the particles
     for (art::Ptr<recob::PFParticle> p_pfp: PFParticleList) {
       const std::vector<art::Ptr<recob::Track>> thisTrack = fmTracks.at(p_pfp.key());
@@ -231,6 +392,9 @@ void icarus::crt::CRTT0Tagging::produce(art::Event& e)
       
       if(track.Length()<fMinimalTrackLength) continue;
 
+      int trueTrackId=-9;
+      if(!fData) trueTrackId= abs(RecoUtils::TrueParticleIDFromTotalRecoHits(clockData, trkHits, false));
+      
       // T0
       float t0 = std::numeric_limits<float>::signaling_NaN();
       auto t0s = fmt0pandora.at(p_pfp.key());
@@ -364,18 +528,51 @@ void icarus::crt::CRTT0Tagging::produce(art::Event& e)
         else if (bestCrtCand.CRThit.plane==50) matchedSys=2;
         else matchedSys=1;
         if(matchedSys==2) continue; // lets discard Bottom CRT Hits for the moment
+        bool trueMatch=false;
+        if(!fData){
+          std::vector<int> crtTracks, crtPdgs;
+          std::pair<int,double> thisMatch=std::make_pair((int)bestCrtCand.CRThit.feb_id[0], bestCrtCand.CRThit.ts1_ns);
+          if(crtParticleMap.find(thisMatch) != crtParticleMap.end()){
+            for(size_t j=0; j<crtParticleMap[thisMatch].size(); j++){
+              crtTracks.push_back(crtParticleMap[thisMatch].at(j));
+              crtPdgs.push_back(particleMap[crtParticleMap[thisMatch].at(j)]->PdgCode());
+            }   
+          }
+          for(size_t thisID=0; thisID<crtTracks.size(); thisID++){
+            if(crtTracks[thisID]==trueTrackId) trueMatch=true;
+          }
+        }
 
+        fEvent=e.id().event();
+        fRun=e.run();
+        fRun=e.subRun();
+        fCrtRegion=bestCrtCand.CRThit.plane;
+        fCrtSys=matchedSys;
+        fCryo=cryo;
+        fTrackLength=track.Length();
+        fTrackCrtDistance=bestCrtCand.distance;
+        fTrackCrtDeltaX=bestCrtCand.deltaX;
+        fTrackCrtDeltaY=bestCrtCand.deltaY;
+        fTrackCrtDeltaZ=bestCrtCand.deltaZ;
+        fCrtX=bestCrtCand.CRThit.x_pos;
+        fCrtY=bestCrtCand.CRThit.y_pos;
+        fCrtZ=bestCrtCand.CRThit.z_pos;
+        fCrossPointX=bestCrtCand.crossX;
+        fCrossPointY=bestCrtCand.crossY;
+        fCrossPointZ=bestCrtCand.crossZ;    
+        fTrueMatch=trueMatch;
+        fTree->Fill();
         mf::LogInfo("CRTT0Tagging")
 	      <<"Matched CRT time = "<<bestCrtCand.CRThit.ts1_ns/1e3<<" [us] to track "<<track.ID()<<" with projection-hit distance = "<<bestCrtCand.distance<<" Track T0 "<<t0
 	      <<"\nMatched CRT hit plane: "<<bestCrtCand.CRThit.plane<<" xpos "<<bestCrtCand.CRThit.x_pos<<" ypos "<<bestCrtCand.CRThit.y_pos<<" zpos "<<bestCrtCand.CRThit.z_pos;
         t0col->push_back(anab::T0(bestCrtCand.CRThit.ts1_ns, track.ID(), matchedSys, bestCrtCand.CRThit.plane,bestCrtCand.distance));
         util::CreateAssn(*this, e, *t0col, trkPtr, *trackAssn);
         util::CreateAssn(*this, e, *t0col, bestCrtCand.ptrCRThit, *t0CrtHitAssn);
-        //icarus::CRTTPCMatchingInfo matchInfo = {bestCrtCand.distance, matchedSys, bestCrtCand.CRThit.plane, bestCrtCand.CRThit.ts1_ns, bestCrtCand.deltaX, bestCrtCand.deltaY, bestCrtCand.deltaZ, bestCrtCand.crossX, bestCrtCand.crossY, bestCrtCand.crossZ, bestCrtCand.plane};        
-        //matchInfoCol->push_back(matchInfo);
+        icarus::CRTTPCMatchingInfo matchInfo = {bestCrtCand.distance, matchedSys, bestCrtCand.CRThit.plane, bestCrtCand.CRThit.ts1_ns, bestCrtCand.deltaX, bestCrtCand.deltaY, bestCrtCand.deltaZ, bestCrtCand.crossX, bestCrtCand.crossY, bestCrtCand.crossZ, bestCrtCand.plane};        
+        matchInfoCol->push_back(matchInfo);
         //util::CreateAssn(*this, e, *t0col, *matchInfoCol, *t0matchInfoAssn);
-        //util::CreateAssn(*this, e, *matchInfoCol, trkPtr, *trackMatchInfoAssn);
-        //util::CreateAssn(*this, e, *matchInfoCol, bestCrtCand.ptrCRThit, *matchInfoCrtHitAssn);
+        // util::CreateAssn(*this, e, *matchInfoCol, trkPtr, *trackMatchInfoAssn);
+        // util::CreateAssn(*this, e, *matchInfoCol, bestCrtCand.ptrCRThit, *matchInfoCrtHitAssn);
       }
 	 
 	  } // End of Track Loop
@@ -385,9 +582,9 @@ void icarus::crt::CRTT0Tagging::produce(art::Event& e)
   e.put(std::move(trackAssn));
   e.put(std::move(t0CrtHitAssn));
   e.put(std::move(matchInfoCol));
-  e.put(std::move(t0matchInfoAssn));
-  e.put(std::move(trackMatchInfoAssn));
-  e.put(std::move(matchInfoCrtHitAssn));
+  //e.put(std::move(t0matchInfoAssn));
+  //e.put(std::move(trackMatchInfoAssn));
+  //e.put(std::move(matchInfoCrtHitAssn));
 }
 
 void CRTT0Tagging::endJob()

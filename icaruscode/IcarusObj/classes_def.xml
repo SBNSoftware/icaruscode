@@ -72,7 +72,16 @@
    <version ClassVersion="10" checksum="3174835328"/>
   </class>
   <class name="std::vector<icarus::CRTTPCMatchingInfo>" />
-  
+  <class name="art::Wrapper<vector<icarus::CRTTPCMatchingInfo>>" />
+
+  <!-- class name="std::pair<anab::T0,icarus::CRTTPCMatchingInfo>" />
+  <class name="std::pair<icarus::CRTTPCMatchingInfo,anab::T0>" />  
+
+  <class name="art::Assns<anab::T0,icarus::CRTTPCMatchingInfo, void>" />
+  <class name="art::Assns<icarus::CRTTPCMatchingInfo,anab::T0, void>" />
+  <class name="art::Wrapper<art::Assns<anab::T0,icarus::CRTTPCMatchingInfo>>" />
+  <class name="art::Wrapper<art::Assns<icarus::CRTTPCMatchingInfo,anab::T0>>" /> -->
+
   <!-- recob::Track - anab::T0 associations with CRT matching metadata -->
 <!--  <class name="art::Assns<recob::Track, anab::T0, icarus::CRTTPCMatchingInfo>" />
   <class name="art::Assns<anab::T0, recob::Track, icarus::CRTTPCMatchingInfo>" />
@@ -80,11 +89,16 @@
   <class name="art::Wrapper<art::Assns<anab::T0, recob::Track, icarus::CRTTPCMatchingInfo>>" /> -->
   
   <!-- sbn::crt::CRTHit - anab::T0 associations with CRT matching metadata -->
-  <class name="art::Assns<sbn::crt::CRTHit, anab::T0, icarus::CRTTPCMatchingInfo>" />
+  <!-- class name="art::Assns<sbn::crt::CRTHit, anab::T0, icarus::CRTTPCMatchingInfo>" />
   <class name="art::Assns<anab::T0, sbn::crt::CRTHit, icarus::CRTTPCMatchingInfo>" />
   <class name="art::Wrapper<art::Assns<sbn::crt::CRTHit, anab::T0, icarus::CRTTPCMatchingInfo>>" />
   <class name="art::Wrapper<art::Assns<anab::T0, sbn::crt::CRTHit, icarus::CRTTPCMatchingInfo>>" /> 
 
+  <class name="art::Assns<anab::T0,recob::Track,icarus::CRTTPCMatchingInfo>" />
+  <class name="art::Assns<recob::Track,anab::T0,icarus::CRTTPCMatchingInfo>" />
+  <class name="art::Wrapper<art::Assns<anab::T0,recob::Track,icarus::CRTTPCMatchingInfo>>" />
+  <class name="art::Wrapper<art::Assns<recob::Track,anab::T0,icarus::CRTTPCMatchingInfo>>" /> -->
+  
   <!-- icarus::Hit -->
     <class name="icarus::Hit" ClassVersion="-1">
     <version ClassVersion="-1" checksum="3524685965"/>

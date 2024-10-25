@@ -1,9 +1,8 @@
 #include "services_common_icarus.fcl"
 #include "crtt0matchingalg_icarus.fcl"
-
 #include "services_icarus_simulation.fcl"
 #include "simulationservices.fcl"
-
+#include "backtrackerservice.fcl"
 #include "crtt0tagging.fcl"
 
 
@@ -14,11 +13,13 @@ services:
 {
   # Load the service that manages root files for histograms.
   TFileService:           { fileName: "crtt0tagging_hist.root" }
-  
+  ParticleInventoryService:   @local::standard_particleinventoryservice
+  BackTrackerService:         @local::standard_backtrackerservice       # from `backtrackerservice.fcl` (`larsim`)
   message:                @local::icarus_message_services_prod_debug
                           @table::icarus_common_services
 
 } # services
+services.BackTrackerService.BackTracker.SimChannelModuleLabel: "daq:simpleSC"
 
 source:
 {

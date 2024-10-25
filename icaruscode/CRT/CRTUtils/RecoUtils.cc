@@ -25,7 +25,35 @@ int RecoUtils::TrueParticleID(detinfo::DetectorClocksData const& clockData,
   return likely_track_id;
 }
 
+std::map<int, std::vector<std::pair<geo::WireID, const sim::IDE*>>> RecoUtils::PrepSimChannels(const std::vector<art::Ptr<sim::SimChannel>> &simchannels, const geo::GeometryCore &geo) {
+  std::map<int, std::vector<std::pair<geo::WireID, const sim::IDE*>>> ret;
 
+  for (const art::Ptr<sim::SimChannel> sc : simchannels) {
+    // Lookup the wire of this channel
+    raw::ChannelID_t channel = sc->Channel();
+    std::vector<geo::WireID> maybewire = geo.ChannelToWire(channel);
+    geo::WireID thisWire; // Default constructor makes invalid wire
+    if (maybewire.size()) thisWire = maybewire[0];
+    for (const auto &item : sc->TDCIDEMap()) {
+      for (const sim::IDE &ide: item.second) {
+        // indexing initializes empty vector
+        ret[abs(ide.trackID)].push_back({thisWire, &ide});
+      }
+    }
+  }
+  return ret;
+}
+
+std::map<int, std::vector<art::Ptr<recob::Hit>>> RecoUtils::PrepTrueHits(const std::vector<art::Ptr<recob::Hit>> &allHits, 
+  const detinfo::DetectorClocksData &clockData, const cheat::BackTrackerService &backtracker) {
+  std::map<int, std::vector<art::Ptr<recob::Hit>>> ret;
+  for (const art::Ptr<recob::Hit> h: allHits) {
+    for (int ID: backtracker.HitToTrackIds(clockData, *h)) {
+      ret[abs(ID)].push_back(h);
+    }
+  }
+  return ret;
+}
 
 int RecoUtils::TrueParticleIDFromTotalTrueEnergy(detinfo::DetectorClocksData const& clockData, const std::vector<art::Ptr<recob::Hit> >& hits, bool rollup_unsaved_ids) {
   art::ServiceHandle<cheat::BackTrackerService> bt_serv;

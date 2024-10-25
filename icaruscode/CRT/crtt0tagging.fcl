@@ -42,6 +42,9 @@ standard_crtt0taggingmc:
    PFParticleLabel: 	   ["pandoraGausCryoE", "pandoraGausCryoW"] # PFParticle producer module label
    HitLabel:   ["cluster3DCryoE" , "cluster3DCryoW"]
    MatchingAlg: @local::standard_crtmatchingalg
+   SimulationLabel: "largeant"
+   AuxDetSimProducerLabel: "genericcrt"
+   SimChannelProducer:  "daq:simpleSC"
 }
 
 END_PROLOG
