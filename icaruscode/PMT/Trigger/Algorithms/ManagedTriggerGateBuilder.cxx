@@ -21,6 +21,57 @@
 #include <algorithm> // std::max()
 
 
+// -----------------------------------------------------------------------------
+// ---  icarus::trigger::details::ThresholdsBand implementation
+// -----------------------------------------------------------------------------
+icarus::trigger::details::ThresholdsBand::Threshold::operator std::string() const
+  { return (hasThreshold()? util::to_string(threshold()): "none"); }
+
+
+// TODO different direction may require different starting point (maybe not though)
+icarus::trigger::details::ThresholdsBand::ThresholdsBand
+  (std::vector<ADCCounts_t> const& thresholds)
+  : bottom{ thresholds.begin() }
+  , top{ thresholds.end() }
+  , lower{ std::nullopt }
+  , upper{ thresholds.empty()? std::nullopt: bottom }
+{}
+
+
+bool icarus::trigger::details::ThresholdsBand::lowerThanLower
+  (ADCCounts_t sample) const
+  { return lower.sampleLower(sample); }
+
+
+bool icarus::trigger::details::ThresholdsBand::higherThanUpper
+  (ADCCounts_t sample) const
+  { return upper.sampleHigher(sample); }
+
+
+bool icarus::trigger::details::ThresholdsBand::stepLower() {
+  if (!lower.hasThreshold()) return false;
+  // was this the bottom threshold?
+  upper = lower;
+  if (lower.thr == bottom) {
+    lower.remove();
+    return false;
+  }
+  lower.goLower(); // point to previous threshold
+  return true;
+} // icarus::trigger::details::ThresholdsBand::stepLower()
+
+
+bool icarus::trigger::details::ThresholdsBand::stepHigher() {
+  if (!upper.hasThreshold()) return false; // ?!
+  lower = upper;
+  upper.goHigher(); // point to next threshold
+  // was it the top threshold?
+  if (upper.thr != top) return true;
+  upper.remove();
+  return false;
+} // icarus::trigger::details::ThresholdsBand::stepHigher()
+
+
 //------------------------------------------------------------------------------
 //--- ManagedTriggerGateBuilder implementation
 //------------------------------------------------------------------------------

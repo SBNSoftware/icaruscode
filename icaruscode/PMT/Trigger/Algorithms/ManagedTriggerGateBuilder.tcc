@@ -44,6 +44,83 @@
 
 
 //------------------------------------------------------------------------------
+namespace icarus::trigger::details {
+
+  /// An interval between thresholds; may be open (no upper or lower threshold).
+  struct ThresholdsBand {
+    
+    /// Type of a sequence of thresholds, lowest to highest.
+    using ThresholdCollection_t = std::vector<ADCCounts_t>;
+    
+    /// An iterator to one of the thresholds in a sequence.
+    using ThresholdIterPtr_t
+      = std::optional<ThresholdCollection_t::const_iterator>;
+    
+    /// An optional threshold (there may be no threshold at all).
+    struct Threshold {
+      
+      ThresholdIterPtr_t thr = std::nullopt;
+      
+      /// Returns whether this threshold is set.
+      bool hasThreshold() const { return thr.has_value(); }
+      
+      /// Returns the value of the threshold (unchecked).
+      ADCCounts_t threshold() const { return **thr; }
+      
+      /// Rendering to string of the value of the threshold, if any.
+      operator std::string() const;
+      
+      /// Set to no threshold.
+      void remove() { thr = std::nullopt; }
+      
+      /// Jump to the higher threshold (unchecked).
+      void goHigher() { ++*thr; }
+      
+      /// Jump to the lower threshold (unchecked).
+      void goLower() { --*thr; }
+      
+      /// Returns whether `sample` is lower than the threshold.
+      bool sampleLower(ADCCounts_t sample) const
+        { return hasThreshold() && lower(sample); }
+      
+      /// Returns whether `sample` is not lower than the threshold.
+      bool sampleHigher(ADCCounts_t sample) const
+        { return hasThreshold() && !lower(sample); }
+      
+        private:
+      
+      /// Unchecked threshold comparison for `sampleLower()`.
+      bool lower(ADCCounts_t sample) const { return sample < **thr; }
+      
+    }; // Threshold
+    
+    ThresholdIterPtr_t const bottom; ///< Iterator to the lowest threshold.
+    ThresholdIterPtr_t const top; ///< Iterator to the highest threshold.
+    
+    Threshold lower; /// Current lower threshold.
+    Threshold upper; /// Current upper threshold.
+    
+    /// Constructor: spans the lowest and highest `thresholds`, starts from low.
+    ThresholdsBand(ThresholdCollection_t const& thresholds);
+    
+    /// Returns whether `sample` is lower than the current lower threshold.
+    bool lowerThanLower(ADCCounts_t sample) const;
+    
+    /// Returns whether `sample` is higher than the current upper threshold.
+    bool higherThanUpper(ADCCounts_t sample) const;
+    
+    /// Moves the current band to the next lower threshold available.
+    bool stepLower();
+    
+    /// Moves the current band to the next higher threshold available.
+    bool stepHigher();
+    
+  }; // ThresholdsBand
+
+} // namespace icarus::trigger::details
+
+
+//------------------------------------------------------------------------------
 //--- icarus::trigger::ManagedTriggerGateBuilder
 //------------------------------------------------------------------------------
 template <typename GateMgr>
@@ -209,9 +286,6 @@ void icarus::trigger::ManagedTriggerGateBuilder::buildChannelGates(
     assert(lastWaveformTick <= waveformTickStart);
     lastWaveformTick = waveformTickEnd;
     
-    auto const tbegin = channelThresholds().begin();
-    auto const tend = channelThresholds().end();
-    
     // register this waveform with the gates (this feature is unused here)
     for (auto& gateInfo: channelGates) gateInfo.addTrackingInfo(waveform);
     
@@ -222,13 +296,9 @@ void icarus::trigger::ManagedTriggerGateBuilder::buildChannelGates(
     // we keep track of whether we have no lower or higher thresholds available
     // to simplify the checks;
     // we name them "pp" because they behave (almost) like pointers to pointers
-    using ThresholdIterPtr_t
-      = std::optional<std::vector<ADCCounts_t>::const_iterator>;
+    
     // start at bottom with no lower threshold:
-    ThresholdIterPtr_t ppLowerThreshold = std::nullopt;
-    ThresholdIterPtr_t ppUpperThreshold = std::nullopt;
-    if (!channelThresholds().empty())
-      ppUpperThreshold = channelThresholds().begin(); // std::optional behavior
+    details::ThresholdsBand thresholds{ channelThresholds() };
     
     std::ptrdiff_t const bStart = fSampleOffset;
     std::ptrdiff_t const bStep = fBlockSize;
@@ -267,9 +337,8 @@ void icarus::trigger::ManagedTriggerGateBuilder::buildChannelGates(
       // this is too much also for regular debugging...
       MF_LOG_TRACE(details::TriggerGateDebugLog)
         << "block level: " << blockRelSample << ", thresholds lower: "
-          << (ppLowerThreshold? util::to_string(**ppLowerThreshold): "none")
-        << ", upper: "
-          << (ppUpperThreshold? util::to_string(**ppUpperThreshold): "none")
+          << std::string(thresholds.lower)
+        << ", upper: " << std::string(thresholds.upper) << " [*]"
         ;
       #endif
       
@@ -280,7 +349,7 @@ void icarus::trigger::ManagedTriggerGateBuilder::buildChannelGates(
       // if the level of this block is lower than the current lower threshold,
       // we are just tracking the thresholds: gate closing has already happened
       //
-      if (ppLowerThreshold && (blockRelSample < **ppLowerThreshold)) {
+      if (thresholds.lowerThanLower(blockRelSample)) {
         
         MF_LOG_TRACE(details::TriggerGateDebugLog)
           << "Block " << iBStart << " (" << blockRelSample << " on "
@@ -297,19 +366,11 @@ void icarus::trigger::ManagedTriggerGateBuilder::buildChannelGates(
             ->belowThresholdAt(waveformTickStart + blockTimeTick);
           
           MF_LOG_TRACE(details::TriggerGateDebugLog)
-            << "  => decreasing threshold " << **ppLowerThreshold;
+            << "  => decreasing threshold " << thresholds.lower.threshold();
           
-          if (*ppLowerThreshold == tbegin) { // was this the bottom threshold?
-            ppLowerThreshold = std::nullopt;
-            break;
-          }
-          --*ppLowerThreshold; // point to previous threshold
+          thresholds.stepLower();
           
-        } while (blockRelSample < **ppLowerThreshold);
-        
-        // we can't be at the top since we just closed a gate
-        ppUpperThreshold
-          = ppLowerThreshold? std::next(*ppLowerThreshold): tbegin;
+        } while (thresholds.lowerThanLower(blockRelSample));
         
       } // if closing gate
       
@@ -317,7 +378,7 @@ void icarus::trigger::ManagedTriggerGateBuilder::buildChannelGates(
       // if this sample is greater or matching the next threshold,
       // we *are* opening gate(s)
       //
-      else if (ppUpperThreshold && (blockRelSample >= **ppUpperThreshold)) {
+      else if (thresholds.higherThanUpper(blockRelSample)) {
         
         MF_LOG_TRACE(details::TriggerGateDebugLog)
           << "Block " << iBStart << " (" << blockRelSample << " on "
@@ -333,20 +394,14 @@ void icarus::trigger::ManagedTriggerGateBuilder::buildChannelGates(
           assert(nextGateToOpen != channelGates.end());
           
           MF_LOG_TRACE(details::TriggerGateDebugLog)
-            << "Opening thr=" << (**ppUpperThreshold);
+            << "Opening thr=" << thresholds.upper.threshold();
+          
+          thresholds.stepHigher();
           
           (nextGateToOpen++)
             ->aboveThresholdAt(waveformTickStart + blockTimeTick);
           
-          if (++*ppUpperThreshold == tend) { // was this the top threshold?
-            ppUpperThreshold = std::nullopt;
-            break;
-          }
-          
-        } while (blockRelSample >= **ppUpperThreshold);
-        
-        // we can't be at the bottom since we just opened a gate
-        ppLowerThreshold = std::prev(ppUpperThreshold? *ppUpperThreshold: tend);
+        } while (thresholds.higherThanUpper(blockRelSample));
         
       } // if opening gate
       
