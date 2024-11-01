@@ -1,0 +1,497 @@
+# File:    trigger_emulation_data_icarus.fcl
+# Purpose: settings for ICARUS trigger emulation on full detector data
+# Author:  Gianluca Petrillo (petrillo@slac.stanford.edu)
+# Date:    September 12, 2023
+# Version: 2.0
+#
+# These settings can be used to build a job configuration running emulation
+# on stage0, decoded or raw ICARUS data files.
+# They are designed to either emulate or confirm the trigger response on actual
+# ICARUS data, for minimum bias and calibration, and for majority triggers,
+# respectively.
+# 
+# Settings for trigger adder emulation are not included here.
+# 
+# It is possible to use multiple thresholds and for each one multiple trigger
+# patterns.
+# Some shortcuts can be taken if only the standard discrimination threshold is
+# desired, in which case the `pmtfixedthr` module is not needed, and when using
+# Stage0 data `pmtthr` and `pmtlvdsgates` have already been produced
+# (but beware that older processing of Run3 have the wrong discrimination
+# algorithm, so that `pmtthr` and following should still be rerun).
+#
+# Provisions are left to cope with bad quality input, too.
+# In particular, these are the filter `requireOnBeam` and settings to
+# selectively deal with specific exceptions.
+# 
+# 
+# Some trigger emulation settings
+# --------------------------------
+#
+# The settings used in this configuration were called for a while "rerun 4":
+# 
+#  * beam gate window:                  150 ns earlier than nominal beam gate
+#  * emulated trigger timestamp delay:  325 ns added
+#
+#
+# Output
+# -------
+#
+# * `std::vector<raw::Trigger>`, `sbn::ExtraTriggerInfo` (very partial):
+#   the time at which the trigger from adders would have happened.
+#   One data product is produced for each combination of pattern and threshold.
+#   If there is no trigger, the `raw::Trigger` collection will be empty.
+# * other intermediate data products
+# * enough data products to run this configuration again on the output of it;
+#   the dominant contribution is from the waveforms, which can be dropped if
+#   no new discrimination thresholds is being introduced.
+#
+#
+# Required inputs
+# ----------------
+#
+# Four paths are provided.
+#  1. full path (`decodeAndEmulate`): from ICARUS raw data files
+#  2. emulation on top of Stage0 (`emulate`): from ICARUS Stage0/Stage1 files,
+#     using the hardware discrimination threshold:
+#     * hardware beam gate: `daqTrigger`
+#     * discriminated PMT waveforms: `pmtthr`
+#  3. emulation on top of optical detector waveforms (`discrAndEmulate`),
+#     (also compatible with Stage0/Stage1 input files):
+#     * hardware beam gate: `daqTrigger`
+#     * optical detector readout: `daqPMTonbeam`
+#     * PMT baselines: `pmtbaselinesonbeam`
+#  4. decoding and discrimination (`decodeAndDiscr`), in case the needed
+#     emulation settings are special and the the ones provided with
+#     `decodeAndEmulate` are not desired.
+#
+#
+# Required services
+# ------------------
+#
+#  * GeometryService
+#  * DetectorClocksService
+#  * IICARUSChannelMap (when decoding)
+#  * PMTTimingCorrections (when decoding)
+#
+#
+# Changes
+# --------
+# 
+# 20230912 (petrillo@slac.stanford.edu) [v1.0]
+# :   original version
+# 20240624 (petrillo@slac.stanford.edu) [v1.1]
+# :   added paths to explicitly support Stage0 input
+# 20240710 (petrillo@slac.stanford.edu) [v2.0]
+# :   extracted from `triggeremulation_icarus_data.fcl` v1.2
+# 20241031 (petrillo@slac.stanford.edu) [v3.0]
+# :   introduced into icaruscode
+#
+
+# ------------------------------------------------------------------------------
+# 
+# Override PROLOG: add here the settings that need to override standard ones
+# from `trigger_emulation_data_config_icarus.fcl`,
+# using "@protect_ignore:" as assignment separator instead of ":"
+# 
+BEGIN_PROLOG
+
+# do not suppress any PMT in the trigger formation (like in hardware)
+triggeremu_data_config_icarus.settings.missing_pmt_channels @protect_ignore: [ ]
+
+# fixed thresholds (need to include `pmtfixedthr` for them to be used)
+# triggeremu_data_config_icarus.settings.PMTADCthresholds @protect_ignore: [ 370, 390, 410, 430, 450, 500, 600 ]
+triggeremu_data_config_icarus.settings.PMTADCthresholds @protect_ignore: [ ]
+
+# if the hardware thresholds are not desired, the first item here should be
+# removed; otherwise, everything is set (thresholds above are already included);
+# this is not an override, but it's left here for visibility
+CompleteThresholdList:
+  [ "pmtthr", @sequence::triggeremu_data_config_icarus.settings.PMTADCthresholds ]
+
+END_PROLOG
+
+
+# ------------------------------------------------------------------------------
+#include "trigger_emulation_data_config_icarus.fcl"
+#include "decoderdefs_icarus.fcl"
+#include "rootoutput_icarus.fcl"
+#include "services_common_icarus.fcl"
+#include "channelmapping_icarus.fcl"
+#include "timing_icarus.fcl"
+
+
+# ------------------------------------------------------------------------------
+# 
+# Local PROLOG: add here the settings that are local to this module and are not
+# supposed to affect the default settings.
+# 
+BEGIN_PROLOG
+
+trigSimTemplate: {
+
+  module_type: TriggerSimulationOnGates
+
+  TriggerGatesTag:        pmttriggerwindows
+  LVDSgatesTag:           pmtlvdsgates
+
+  Thresholds:            @local::CompleteThresholdList
+  
+  # to be overridden with the desired pattern
+  # (use `lar --print-description TriggerSimulationOnGates` to see the syntax)
+  Pattern:               @nil
+
+  # Beam gate from the trigger hardware (with a kick):
+  BeamGates:              shiftedTriggerGate
+  BeamGateReference:      BeamGate
+  
+  # for trigger time plots:
+  EventTimeBinning:       900 # seconds-> 15'
+  
+  # for... nothing
+  TriggerTimeResolution: "8 ns"
+  
+  TriggerDelay:           @local::triggeremu_config_icarus.settings.TriggerDelay # triggeremu_settings_icarus.fcl via trigger_emulation_data_config_icarus.fcl
+  
+  # specific for Run3:
+  TriggerOnTransition: true
+  
+  ExtraInfo:              true
+  
+  # for the absolute timestamps:
+  TriggerTag:             daqTrigger
+  
+} # trigSimTemplate
+
+
+# ------------------------------------------------------------------------------
+triggeremulation_data_producers: {
+  
+  # --------------------------------------------------------------------------
+  triggerconfig: @local::extractTriggerConfig  ## from decoderdefs_icarus.fcl
+  
+  pmtconfig: @local::extractPMTconfig          ## from decoderdefs_icarus.fcl
+
+  daqTrigger: @local::decodeTriggerAutodetect  ## from decoderdefs_icarus.fcl
+
+  daqPMT: @local::decodePMT                    ## from decoderdefs_icarus.fcl
+  
+  
+  # --------------------------------------------------------------------------
+  daqPMTonbeam: @local::copyPMTonBeam          ## from decoderdefs_icarus.fcl
+  
+  
+  pmtconfigbaselinesonbeam: {
+  
+    #
+    # this module is needed for discrimination; if this job does not run its
+    # own discrimination, this module is also not needed
+    # (to be verified that its "side effects" are also not needed)
+    #
+    module_type: ReassociatePMTbaselines
+    
+    # baselines:
+    #  * pmtconfigbaselines: from readout configuration
+    #  * pmtbaselines:       from waveform content
+    
+    OriginalWaveformTag: daqPMT
+    WaveformTag:         daqPMTonbeam
+    BaselineTag:         pmtconfigbaselines
+    RMSTag:             ""  # not available
+    
+    RecreateMetaAssns:   true
+  
+  } # pmtconfigbaselinesonbeam
+  
+  
+  pmtconfigbaselinesonbeam: {
+    # yes, this temporarily overrides the above, because that module is not
+    # fully ready yet
+    @table::triggeremu_data_config_icarus.producers.pmtconfigbaselines
+    
+    OpticalWaveforms: "daqPMTonbeam"
+  }
+  
+  
+  #
+  # At this stage, the discrimination thresholds are handled separately
+  # depending on the intent:
+  #  * thresholds as set into the hardware: the module name is `pmtthr` and
+  #    it should already have been run by Stage0 standard job.
+  #    (needs to verify that the broken associations are not needed though)
+  #  * fixed relative thresholds: relative thresholds are configured above
+  #    in `triggeremu_data_config_icarus.settings.PMTADCthresholds`; the
+  #    module running them is labelled `pmtfixedthr`.
+  #    The baseline should not be necessary
+  #    (to be verified that is not used and that is not required).
+  #
+  # These two options may co-exist, and if only one of them is needed, some
+  # configuration may need editing.
+  #
+  pmtthr: {
+    
+    @table::triggeremu_data_config_icarus.producers.pmtthr  # from trigger_emulation_data_config_icarus.fcl
+    
+    OpticalWaveforms: daqPMTonbeam
+    Baselines:        pmtconfigbaselinesonbeam
+    
+  } # pmtthr
+  
+  
+  pmtfixedthr: {
+  
+    @table::triggeremu_data_config_icarus.producers.pmtfixedthr  # from trigger_emulation_data_config_icarus.fcl
+
+    OpticalWaveforms: daqPMTonbeam
+    Baselines:        pmtconfigbaselinesonbeam
+    
+  } # pmtfixedthr
+
+
+  pmtlvdsgates: {
+    #
+    # Depending on the option chosen for `pmtthr`:
+    #  * if `pmtthr` is not rerun and `pmtfixedthr` is not needed, this module
+    #    should not be rerun either, as it was already run in the standard
+    #    Stage0 job
+    #  * otherwise, this module must be rerun
+    # 
+    # It's this simple.
+    #
+    @table::triggeremu_data_config_icarus.producers.lvdsgatesOR  # from trigger_emulation_data_config_icarus.fcl
+    Thresholds: @local::CompleteThresholdList
+  }
+  
+  
+  pmttriggerwindows: {
+    # this module is not part of the standard Stage0 job, so it's always needed
+    # definitions covering only part of the detector start in this module
+    # (see `lar --print-description SlidingWindowTrigger`, configuration
+    # parameters `DisableWindows` and `EnableOnlyWindows`)
+    
+    @table::triggeremu_data_config_icarus.producers.trigslidewindowOR # from trigger_emulation_data_config_icarus.fcl
+  
+    TriggerGatesTag: "pmtlvdsgates"
+    
+    Thresholds: @local::CompleteThresholdList
+    
+  } # pmtaddertriggerwindows
+  
+  shiftedTriggerGate: {
+    BeamGateTag: "daqTrigger"
+    Changes: [{Start: {Add: "-150 ns"}  Select: { Types: [ "BNB", "NuMI" ] }}]
+    module_type: FixBeamGateInfo
+  }
+  
+  emuTrigger: { # this is S4
+    @table::trigSimTemplate
+    Pattern:       @local::icarus_triggergate_basic.patterns.S4
+  }
+  
+  # --------------------------------------------------------------------------
+  
+} # triggeremulation_data_producers
+
+# disable abundant output on console and the optical waveforms
+triggeremulation_data_producers.daqPMT.SaveCorrectionsFrom: []
+triggeremulation_data_producers.daqPMT.DiagnosticOutput:    false
+triggeremulation_data_producers.daqTrigger.DecoderTool.Decoders[0].ToolConfig.DiagnosticOutput: false
+triggeremulation_data_producers.daqTrigger.DecoderTool.Decoders[1].ToolConfig.DiagnosticOutput: false
+triggeremulation_data_producers.daqTrigger.DecoderTool.Decoders[2].ToolConfig.DiagnosticOutput: false
+
+# enable the writing on the PMT debugging tree (because after all this it's cheap)
+triggeremulation_data_producers.daqPMT.DataTrees: [ "PMTfragments" ]
+
+# module name connections
+triggeremulation_data_producers.daqPMT.PMTconfigTag:                pmtconfig
+triggeremulation_data_producers.daqPMT.TriggerTag:                  daqTrigger
+triggeremulation_data_producers.daqPMTonbeam.Waveforms:             daqPMT
+triggeremulation_data_producers.daqPMTonbeam.WaveformBaselineAssns: ""
+
+
+# ------------------------------------------------------------------------------
+triggeremulation_data_filters: {
+  # this is a data quality filter; it should not be needed for "good" runs
+  requireOnBeam: {
+    module_type:           RequireOnBeamWaveforms
+
+    WaveformTag:           daqPMTonbeam        # check waveforms directly, so:
+    TriggerTag:            daqTrigger
+    WaveformMetaAssnsTag:  pmtconfigbaselinesonbeam  # ... superfluous
+    ForceWaveformPresence: true                      # ... also superfluous
+    # ThrowOnFailure:       "WaveformRequirementsNotMet"
+    MissingChannels:      @local::triggeremu_data_config_icarus.settings.missing_pmt_channels
+  }
+} # triggeremulation_data_filters
+
+
+# ------------------------------------------------------------------------------
+triggeremulation_data_analyzers: {
+
+  dumphwtrigger: {
+    module_type:    DumpTrigger
+    TriggerTag:    "daqTrigger"
+    OutputCategory: DumpHWTriggers
+  }
+  
+  dumpemutrigger: {
+    module_type:    DumpTrigger
+    TriggerTag:    "emuTrigger"
+    OutputCategory: DumpEmuTriggers
+  }
+  
+} # triggeremulation_data_analyzers
+
+
+# ------------------------------------------------------------------------------
+triggeremulation_data_paths: {
+
+  # trigger paths
+  decode: [
+      triggerconfig
+    , pmtconfig
+    , daqTrigger
+    , daqPMT
+    , daqPMTonbeam
+    ]
+  stage0prepare: [
+      pmtconfigbaselinesonbeam
+    , pmtthr
+    ]
+  emulationPrep: [
+      pmtlvdsgates
+    , pmttriggerwindows
+    ]
+  emulation: [
+      shiftedTriggerGate
+    , emuTrigger
+    ]
+  
+  # (more to follow)
+  
+  # end paths
+  dumpers: [ dumphwtrigger, dumpemutrigger ]
+  
+} # triggeremulation_data_paths
+
+triggeremulation_data_paths.emulate: [
+    @sequence::triggeremulation_data_paths.emulationPrep
+  , @sequence::triggeremulation_data_paths.emulation
+]
+triggeremulation_data_paths.discrAndEmulate: [
+    @sequence::triggeremulation_data_paths.stage0prepare
+  , @sequence::triggeremulation_data_paths.emulate
+]
+triggeremulation_data_paths.decodeAndDiscr: [
+    @sequence::triggeremulation_data_paths.decode
+  , @sequence::triggeremulation_data_paths.stage0prepare
+]
+triggeremulation_data_paths.decodeAndEmulate: [
+    @sequence::triggeremulation_data_paths.decode
+  , @sequence::triggeremulation_data_paths.discrAndEmulate
+]
+
+
+triggeremulation_data_output: {
+  
+  # @table::icarus_rootoutput # from rootoutput_icarus.fcl
+  @table::icarus_rootoutput_one_output_per_input # from rootoutput_icarus.fcl
+  
+  # this drops all optical detector waveforms
+  outputCommands: [
+      "drop *"
+    # keep the useful data products that would be produced by `decode` path
+    # (which may actually be already in the input)
+    , "keep *_triggerconfig_*_*"
+    , "keep *_pmtconfig_*_*"
+    , "keep *_daqTrigger_*_*"
+    , "keep *_pmtconfigbaselines_*_*"
+    # keep the useful data products that would be produced by `stage0prepare` path
+    # (which may actually be already in the input)
+    , "keep *_pmtconfigbaselinesonbeam_*_*"
+    , "keep *_pmtthr_*_*"
+    # keep everything that was produced by this job (except for raw waveforms)
+    # (which may actually be already in the input)
+    , "keep *_*_*_TrgEmu*"
+    , "drop raw::OpDetWaveforms_daqPMT_*_*"
+    , "drop raw::OpDetWaveforms_daqPMTonbeam_*_*"
+    # also keep all trigger results
+    , "keep sbn::ExtraTriggerInfo_*_*_*"
+    , "keep raw::ExternalTriggers_*_*_*"
+    , "keep sim::BeamGateInfos_*_*_*"
+    , "keep raw::Triggers_*_*_*"
+    ]
+
+} # triggeremulation_data_output
+
+
+# ------------------------------------------------------------------------------
+# trigger dumps:
+
+# template:
+triggeremulation_data_logging.LogBase: {
+  type:       file
+  filename:  @nil
+  threshold:  INFO
+  categories: {
+    default:        { limit: 0 }
+  }
+}
+
+# the following tables are to be inserted into services.message.destinations:
+
+triggeremulation_data_logging.HWtriggersLog: @local::triggeremulation_data_logging.LogBase
+triggeremulation_data_logging.HWtriggersLog.filename:  "HardwareTriggers.log"
+triggeremulation_data_logging.HWtriggersLog.categories.DumpHWTriggers: { limit: -1 }
+
+triggeremulation_data_logging.EmuTriggersLog: @local::triggeremulation_data_logging.LogBase
+triggeremulation_data_logging.EmuTriggersLog.filename:  "EmulatedTriggers.log"
+triggeremulation_data_logging.EmuTriggersLog.categories.DumpEmuTriggers: { limit: -1 }
+
+triggeremulation_data_logging.TriggerEmuLog: {
+  type:       file
+  filename:  "TriggerEmu.log"
+  threshold:  DEBUG
+  categories: {
+    TriggerSimulationOnGates: { limit: -1 }
+    default:                  { limit: 0 }
+  }
+} # triggeremulation_data_logging.TriggerEmuLog
+
+triggeremulation_data_logging.LogDebugFile: {
+  type:       file
+  filename:  "debug.log"
+  threshold:  DEBUG
+  categories: {
+    default:    { limit: -1 }
+  }
+} # triggeremulation_data_logging.LogDebugFile
+
+
+
+# ------------------------------------------------------------------------------
+triggeremulation_data_logging.emulation_services: {
+  TFileService:           { fileName: "Trees-%ifb_%tc-%p.root" }
+  @table::icarus_geometry_services
+  DetectorClocksService:  @local::icarus_detectorclocks
+  
+                          @table::icarus_basic_services
+  
+  IICARUSChannelMap:      @local::icarus_channelmappinggservice  # from channelmapping_icarus.fcl
+  
+  TimeTracker:            {} # no DB file
+  MemoryTracker: @erase
+} # triggeremulation_data_logging.emulation_services
+
+
+triggeremulation_data_logging.decoding_emulation_services: {
+  @table::triggeremulation_data_logging.emulation_services
+  
+  PMTTimingCorrections:   @local::icarus_pmttimingservice  # from timing_icarus.fcl
+  
+} # triggeremulation_data_logging.decoding_emulation_services
+
+
+# ------------------------------------------------------------------------------
+
+END_PROLOG

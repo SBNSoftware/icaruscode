@@ -16,4 +16,5 @@ add_subdirectory(larcv)
 add_subdirectory(ntuple)
 add_subdirectory(Stage0)
 add_subdirectory(Stage1)
+add_subdirectory(trigger)
 

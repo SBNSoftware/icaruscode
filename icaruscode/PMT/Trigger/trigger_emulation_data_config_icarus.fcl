@@ -1,5 +1,5 @@
 #
-# File:    triggeremu_data_config_icarus.fcl
+# File:    trigger_emulation_data_config_icarus.fcl
 # Purpose: Settings for emulation of ICARUS trigger (only trigger outcome).
 # Authors: Gianluca Petrillo (petrillo@slac.stanford.edu), Jacob Zettlemoyer (jzettle@fnal.gov)
 # Date:    November 9, 2021

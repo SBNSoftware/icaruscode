@@ -1,0 +1,114 @@
+# File:    run_triggeremulation_icarus_data_raw.fcl
+# Purpose: runs ICARUS trigger emulation only on full detector data
+# Author:  Gianluca Petrillo (petrillo@slac.stanford.edu)
+# Version: 3.0
+#
+# This is a top-level configuration that can be run directly.
+#
+# This job uses raw ICARUS data files, performs full trigger and PMT decoding,
+# discriminates PMT waveforms and computes the LVDS-based trigger logic with
+# them at the nominal (hardware) beam gate time.
+# It is designed to either emulate or confirm the trigger response on actual
+# ICARUS data, for minimum bias and calibration, and for majority triggers,
+# respectively.
+# 
+# In this job trigger adders are not emulated.
+# 
+# 
+# Some trigger emulation settings
+# --------------------------------
+#
+# Settings are left untouched with respect to the reference configuration
+# specified in `triggeremulation_data_icarus.fcl`.
+#
+#
+# Output
+# -------
+#
+# * `std::vector<raw::Trigger>`, `sbn::ExtraTriggerInfo` (very partial):
+#   the time at which the trigger from adders would have happened.
+#   One data product is produced for each combination of pattern and threshold.
+#   If there is no trigger, the `raw::Trigger` collection will be empty.
+# * other intermediate data products
+# * enough data products to run emulation again on the output of it provided
+#   that no new discrimination thresholds or different sampling prescale is
+#   desired (i.e. PMT waveforms are all dropped).
+#
+# Required inputs
+# ----------------
+# 
+# * ICARUS raw data files (PMT and trigger fragments, and DAQ configuration)
+#
+#
+# Required services
+# ------------------
+#
+#  * GeometryService
+#  * DetectorClocksService
+#  * IICARUSChannelMap
+#  * PMTTimingCorrections
+#
+#
+# Changes
+# --------
+# 
+# 20230912 (petrillo@slac.stanford.edu) [v1.0]
+# :   original version
+# 20240624 (petrillo@slac.stanford.edu) [v1.1]
+# :   added paths to explicitly support Stage0 input
+# 20240710 (petrillo@slac.stanford.edu) [v2.0]
+# :   refactored into a configuration FHiCL and a job FHiCL (this is the latter)
+# 20241031 (petrillo@slac.stanford.edu) [v3.0]
+# :   integrated into icaruscode
+#
+
+# ------------------------------------------------------------------------------
+#include "trigger_emulation_data_icarus_defs.fcl"
+
+
+# ------------------------------------------------------------------------------
+process_name: TrgEmu
+
+
+# ------------------------------------------------------------------------------
+services: {
+  @table::triggeremulation_data_logging.decoding_emulation_services
+}
+
+# services.scheduler.FailPath: [ "WaveformRequirementsNotMet" ]
+# services.scheduler.SkipEvent: [ "WaveformRequirementsNotMet" ]
+
+
+# ------------------------------------------------------------------------------
+# swallow every producer and analyzer configuration from the preset
+
+physics.producers: @local::triggeremulation_data_producers
+physics.analyzers: @local::triggeremulation_data_analyzers
+
+physics.output:  [ rootoutput ]
+
+physics: { # import all paths from triggeremulation_data_icarus
+  @table::physics
+  @table::triggeremulation_data_paths
+}
+
+physics.trigger_paths: [ decodeAndEmulate ]
+physics.end_paths: [ output, dumpers ]
+
+outputs.rootoutput: @local::triggeremulation_data_output
+
+
+# ##############################################################################
+#
+# manage logging output
+#
+services.message.destinations.TriggerEmuLog:
+  @local::triggeremulation_data_logging.TriggerEmuLog
+services.message.destinations.HWtriggersLog:
+  @local::triggeremulation_data_logging.HWtriggersLog
+services.message.destinations.EmuTriggersLog:
+  @local::triggeremulation_data_logging.EmuTriggersLog
+
+services.message.destinations.LogSeeds: @erase
+services.message.destinations.LogDebugFile:
+  @local::triggeremulation_data_logging.LogDebugFile

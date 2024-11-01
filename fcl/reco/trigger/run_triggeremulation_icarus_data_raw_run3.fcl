@@ -1,0 +1,26 @@
+# File:    run_triggeremulation_icarus_data_raw_run3.fcl
+# Purpose: runs ICARUS trigger emulation only on full detector Run3 data
+# Author:  Gianluca Petrillo (petrillo@slac.stanford.edu)
+# Version: 1.0
+#
+# This is a top-level configuration that can be run directly.
+# 
+# This is a variation of `run_triggeremulation_icarus_data_raw.fcl` specific
+# for data taken in Run3, including majority-4 trigger (but no adder emulation)
+# and the discrimination on the trailing edge of the signal.
+#
+# Changes
+# --------
+# 
+# 20241031 (petrillo@slac.stanford.edu) [v1.0]
+# :   based on `run_triggeremulation_icarus_data_raw.fcl` v3.0
+#
+
+# ------------------------------------------------------------------------------
+#include "run_triggeremulation_icarus_data_raw.fcl"
+
+# override discrimination settings
+physics.producers.pmtthr.TriggerGateBuilder: @local::icarus_triggergate_run3 # from trigger_icarus.fcl
+
+# override trigger logic
+physics.producers.emuTrigger.Pattern: @local::icarus_triggergate_basic.patterns.S4

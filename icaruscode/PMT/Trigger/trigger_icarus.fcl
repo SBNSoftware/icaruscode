@@ -223,7 +223,7 @@ icarus_dynamictriggergate: {
 
 ################################################################################
 ###
-### icarus_dynamictriggergate: fixed length gates
+### icarus_fixedtriggergate: fixed length gates
 ###
 
 # The "legacy" configuration has been used until icaruscode v09_92_00;
@@ -241,37 +241,43 @@ icarus_fixedtriggergate_legacy: {
   
 } # icarus_fixedtriggergate_legacy
 
-# The hardware until Run3 included was set to discriminate PMT waveforms on
-# the rising edge of a signal ("positive" polarity).
-# This table attempts to reproduce the effect of that configuration.
+# These settings are historical of ICARUS Run3.
+# The hardware until Run3 (included) was set to discriminate PMT waveforms on
+# the trailing edge of a signal
+# (or, equivalently, the leading edge of a signal with "positive" polarity).
 # The discrimination mode based on 4 samples is also activated here
 # (the hardware always used it, but we were not aware of that).
-# Fixed before Run4 (TODO: when?)
-icarus_fixedtriggergate_run3: {
+icarus_triggergate_run3: {
   
-  @table::icarus_fixedtriggergate_legacy
+  tool_type: TrailingFixedTriggerGateBuilderTool
   
+  ChannelThresholds: @local::icarus_triggergate_basic.ChannelThresholds
+  
+  # duration of a trigger gate
+  GateDuration: "160 ns"
+
   # use for discrimination the "highest" of four samples;
   # time is referred to the first of the four samples.
   SamplingPattern: [ true, true, true, true ]
   
-  # TODO
-  
-} # icarus_fixedtriggergate_run3
+} # icarus_triggergate_run3
 
 
 # Configuration to reproduce at the best of our understanding the hardware
-# configuration in Run4. Compared to Run3, PMT signal polarity is flipped.
-icarus_fixedtriggergate_run4: {
+# configuration in Run4. Compared to Run3, PMT signals are discriminated at the
+# leading egde.
+icarus_triggergate_run4: {
   
-  @table::icarus_fixedtriggergate_run3
+  @table::icarus_triggergate_run3
   
-  # TODO
+  # the configuration of TrailingFixedTriggerGateBuilderTool
+  # and FixedTriggerGateBuilderTool are the same
+  tool_type: FixedTriggerGateBuilderTool
   
-} # icarus_fixedtriggergate_run4
+} # icarus_triggergate_run4
 
 
-icarus_fixedtriggergate: @local::icarus_fixedtriggergate_run4
+icarus_fixedtriggergate: @local::icarus_triggergate_run4
 
 
 
