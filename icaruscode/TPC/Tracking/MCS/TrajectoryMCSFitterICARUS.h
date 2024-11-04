@@ -10,6 +10,7 @@
 #include "lardataobj/RecoBase/Hit.h"
 #include "lardata/RecoObjects/TrackState.h"
 #include "TMatrixDSym.h"
+#include "TMatrixD.h"
 #include "lardata/RecoBaseProxy/Track.h" //needed only if you do use the proxies
 
 namespace trkf {
@@ -191,6 +192,8 @@ void ComputeD3P()   ;
  } 
  double collLength() const;
 double collWireLength();
+TMatrixD ReferenceFrame(int plane, int tpc,int cryo) const;
+double DriftOrigin(int plane, int tpc,int cryo) const;
   private:
     int    pIdHyp_;
     int    minNSegs_;
@@ -207,6 +210,7 @@ double collWireLength();
     std::vector<recob::Hit> hits2d;
     std::vector<proxy::TrackPointData> pdata;
     float d3p;
+ 
 
   };
 }

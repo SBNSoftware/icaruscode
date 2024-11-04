@@ -59,7 +59,8 @@ cumseglens.clear();
     std::cout << " segradl size " << segradlengths.size() << " cumseg size " << cumseglens.size() <<  std::endl;
 
   for (unsigned int p = 0; p<segradlengths.size(); p++) {
-    linearRegression2D(traj, breakpoints[p], breakpoints[p+1], pcdir1);
+    //linearRegression2D(traj, breakpoints[p], breakpoints[p+1], pcdir1);
+    linearRegression(traj, breakpoints[p], breakpoints[p+1], pcdir1);
     if (p>0) {
       cout << " p " << p << " segradlength " << segradlengths[p] << endl;
       if (segradlengths[p]<-100. || segradlengths[p-1]<-100.
@@ -94,7 +95,9 @@ cumseglens.clear();
  Vector_t bary;
 vector<float> dthetaPoly;
 for (unsigned int p = 0; p<segradlengths.size(); p++) {
-    find2DSegmentBarycenter(traj, breakpoints[p], breakpoints[p+1], bary);
+    cout << " before finding 2d barycenters for poly " << endl;
+   // find2DSegmentBarycenter(traj, breakpoints[p], breakpoints[p+1], bary);
+   findSegmentBarycenter(traj, breakpoints[p], breakpoints[p+1], bary);
     barycenters.push_back(bary);
 }
 for (unsigned int p = 2; p<segradlengths.size(); p++) {
@@ -106,18 +109,19 @@ for (unsigned int p = 2; p<segradlengths.size(); p++) {
         Vector_t dbcp=barycenters[p]-barycenters[p-1];
         float norm=sqrt(dbcp.X()*dbcp.X()+dbcp.Y()*dbcp.Y()+dbcp.Z()*dbcp.Z());
         dbcp/=norm;
-       // std::cout << " dbcp " << dbcp << std::endl;
+        cout << " barycenters " << barycenters[p-1] << " " << barycenters[p-2] << endl;
+       std::cout << " dbcp " << dbcp << std::endl;
         Vector_t dbcm=barycenters[p-1]-barycenters[p-2];
          norm=sqrt(dbcm.X()*dbcm.X()+dbcm.Y()*dbcm.Y()+dbcm.Z()*dbcm.Z());
 dbcm/=norm;
-      //  std::cout << " dbcm " << dbcm << std::endl;
+     std::cout << " dbcm " << dbcm << std::endl;
 	const double cosval = dbcp.X()*dbcm.X()+dbcp.Y()*dbcm.Y()+dbcp.Z()*dbcm.Z();
 	//assert(std::abs(cosval)<=1);
 	//units are mrad
-     //  std::cout << " cosval " << cosval << std::endl;
+      std::cout << " cosval " << cosval << std::endl;
        double dt = acos(cosval);//should we try to use expansion for small angles?
 	dthetaPoly.push_back(dt);
-    //std::cout << " polygonal angle " << dt << std::endl;
+    std::cout << " polygonal angle " << dt << std::endl;
 
       }
   }
@@ -207,7 +211,7 @@ void TrajectoryMCSFitterICARUS::findSegmentBarycenter(const recob::TrackTrajecto
   }
   const auto avgpos = middlePointCalc.middlePoint();
   bary=avgpos;
-  //std::cout << " avgpos " << avgpos << std::endl;
+  std::cout << " 3dbary avgpos " << avgpos << std::endl;
 }
 
 void TrajectoryMCSFitterICARUS::find2DSegmentBarycenter(const recob::TrackTrajectory& traj, const size_t firstPoint, const size_t lastPoint, Vector_t& bary) const {
@@ -215,17 +219,30 @@ void TrajectoryMCSFitterICARUS::find2DSegmentBarycenter(const recob::TrackTrajec
   float wsum=0; float ssum=0;
   size_t nextValid = firstPoint;
   std::vector<recob::Hit> v;
+  //unsigned int iniTPC=0;
   // Get track collection proxy and parallel mcs fit data (associated hits loaded by default)
   // Note: if tracks were produced from a TrackTrajectory collection you could access the original trajectories adding ',proxy::withOriginalTrajectory()' to the list of arguments
 cout << " pdata size " << pdata.size() << endl;
   while (nextValid<lastPoint) {
    proxy::TrackPointData pd=pdata[nextValid];
    auto hit=std::get<1>(pd);
-  
-   wsum+=hit->WireID().Wire*3; 
-   ssum+=hit->PeakTime()*0.622;
-    nextValid = traj.NextValidPoint(nextValid+1);
+  if(hit->WireID().Plane==2) {
+ unsigned int tpc=hit->WireID().TPC;
+ unsigned int cryo=hit->WireID().Cryostat;
+  unsigned int plane=hit->WireID().Plane;
+TVectorD proj(3);
+proj(0)=hit->WireID().Wire*3; proj(1)=(hit->PeakTime()*0.622); proj[2]=0;
+TVectorD xyz=ReferenceFrame(plane,tpc,cryo)*proj;
+double ori=DriftOrigin(plane,tpc,cryo);
+cout << " reference frame xyz " << xyz(0) << " " << xyz(1) << " " << xyz(2) << endl;
+wsum+=xyz(0);
+double absx=xyz(1)+ori;
+ssum+=absx;
+   cout << "2dbary wireid " << hit->WireID() << " peaktime " << hit->PeakTime() << " xyz1 " << xyz[1] <<" absx " << absx << endl;
     npoints++;
+  }
+      nextValid = traj.NextValidPoint(nextValid+1);
+
   }
   const auto wmed = float(wsum/npoints);
   const auto smed = float(ssum/npoints);
@@ -247,7 +264,10 @@ void TrajectoryMCSFitterICARUS::linearRegression2D(const recob::TrackTrajectory&
   }
 
   Vector_t avgpos;
-  find2DSegmentBarycenter(traj,firstPoint,lastPoint,avgpos);
+   cout << " before finding 2d barycenters for fit " << endl;
+   //find2DSegmentBarycenter(traj,0,traj.NPoints()-1,avgpos);
+  //find2DSegmentBarycenter(traj,firstPoint,lastPoint,avgpos);
+  findSegmentBarycenter(traj,firstPoint,lastPoint,avgpos);
   const double norm = 1./double(npoints);
   //
   //assert(npoints>0);
@@ -556,7 +576,7 @@ double thetams,thetaerr;
   
  unsigned int nseg=lastseg-firstseg+1;
  // int ncut;
- if(nseg<2) {
+ if(nseg<3) {
    // ncut=-1;
    return 0;
 }
@@ -591,7 +611,7 @@ double tpmedio=0;
   projColl[0]=1; projColl[1]=sqrt(3.)/2.; projColl[2]=0.5;
  //double  cos=avdir*projColl;
  double sinb=avdir*projColl;
- double cos=(collLength()/(tr.Length()));
+ double cos=(collLength()/10./(tr.Length()));
  sinb=1;
  cout << " sinb " << sinb << endl;
  //  double dstot;
@@ -685,17 +705,17 @@ thetams=13.6/cp;
   
    std::cout << " all that stuff " << thetams << thetaerr << dstot << cos << beta << alfa << cp << ds<< n << ap0 << apmedio << tpmedio << cc<< washout << dxmedio << endl;
  
-  // FillCovMatrixSegOnly(tr,mat,jp,thetams*thetams,thetaerr*thetaerr,materr,breakpoints);
-   std::cout << " after segonly " << std::endl;
+   FillCovMatrixSegOnly(tr,mat,jp,thetams*thetams,thetaerr*thetaerr,materr,breakpoints);
+   std::cout << " before addsegcov nseg " << nseg << std::endl;
 
-  // AddSegmentCovariance(tr,mat,jp);
+   //AddSegmentCovariance(tr,mat,jp);
    std::cout << " after addsegcov " << jp << std::endl;
  //}
  }
 
-cout << " end fit part ttall size " << ttall.size() << " np " << np << endl;
+cout << " firstseg " << firstseg << " lastseg " << lastseg << endl;
 
-for(unsigned int jp=firstseg+1;jp<lastseg;jp++) {
+for(unsigned int jp=firstseg;jp<lastseg-1;jp++) {
   std::cout << jp << " breakpoint " << breakpoints[jp] << " momentum " << tr.MomentumAtPoint(breakpoints[jp]) << std::endl;
   std::cout << "elossmode " << eLossMode_ << std::endl;
   float cp=0;  float ds=0;
@@ -789,9 +809,9 @@ double washout=0.8585;
  
   //cout << " poly thetams " << thetams << " thetaerr " << thetaerr << endl;
 	 cout << " before covma "  << jp << endl;
-   //FillCovMatrix(tr,matpoly,jp,thetams*thetams,thetaerr*thetaerr,matpolyms,matpolyerr,breakpoints);
+   FillCovMatrix(tr,matpoly,jp,thetams*thetams,thetaerr*thetaerr,matpolyms,matpolyerr,breakpoints);
 	 cout << "before mixx "  << jp << endl;
-   //FillCovMixTerms(tr,matmix,jp,np-2,thetams*thetams,thetaerr*thetaerr);
+   //FillCovMixTerms(tr,matmix,jp,nseg-2,thetams*thetams,thetaerr*thetaerr);
 	 cout << "after mixx "  << jp << endl;
 	 //AddSegmentCovariance(tr,matpoly,jp);
 	 std::cout << " after fillmatrix1  " << jp << std::endl; 
@@ -814,15 +834,13 @@ TMatrixD cov(TMatrixD::kUnit,mat);
  std::cout << " after ending loop cov " << std::endl;
  cov.Print();
 TMatrixD vtall(ttall.size(),1);
- cout << " both vtall "  << endl;
 for(unsigned int jv=0;jv<ttall.size();jv++)
   vtall(jv,0)=ttall[jv]; 
-cout << " both vtall 2"  << endl;
 
 TMatrixD invcov=cov.Invert();
  //TMatrixD invcov=cov;
  std::cout << " invcov 1 " << cov.GetNrows() << std::endl;
-invcov.Print();
+//invcov.Print();
 cout << " ttall size " << ttall.size() << endl;
 // TVector vtcov=Mult(vtall,cov.Invert(),vtall);
  TMatrixD vtcov=invcov*vtall;
@@ -1032,8 +1050,7 @@ TMatrixDSym matbd(np);
   TVector3 avdir=end-start;
   TVector3 projColl(0,0,0);
   projColl[0]=1; projColl[1]=sqrt(3.)/2.; projColl[2]=0.5;
- double cos=(collLength()/(tr.Length()));
- cout << cos << endl;
+
 double t0p=0;
 double t0m=0;
 
@@ -1077,48 +1094,50 @@ t2=tpp*tpp*sp*sp/dxp/dxp;
 t3=tmm*tmm*sm*sm/dxm/dxm;
 
 //if(jm==3) {
-//cout << " t1 " << t1 << " t2 " << t2 << " t3 " << t3 << endl;
+cout << " t1 " << t1 << " t2 " << t2 << " t3 " << t3 << " ip " << ip << endl;
 //cout << " DIAG0 " << t00*t00	 << " DIAG1 " << tpp*tpp << " DIAG2 " << tmm*tmm << endl;
 //cout << " ANG0 " << (1/dxp+1/dxm)*s0 << " ANG1 " << 1/dxp/dxp*s0*s0 << " ANG2 " << 1/dxm/dxm*s0*s0 << endl;
 //cout << " s0 " << point(jm).Sin2B() << " dxm " << dxm << " dxp " << dxp << endl;
 //}
 
 
-matbd[ip][ip]=(t1+t2+t3);
-matbd[ip][ip]+=(-2*t0p*t0p*s0*sp/dxp*(1/dxp+1/dxm)-2*t0m*t0m*s0*sm/dxm*(1/dxp+1/dxm));
+matbd(ip,ip)=(t1+t2+t3);
+matbd(ip,ip)+=(-2*t0p*t0p*s0*sp/dxp*(1/dxp+1/dxm)-2*t0m*t0m*s0*sm/dxm*(1/dxp+1/dxm));
  cout << " t4 " << (-2*t0p*t0p*s0*sp/dxp*(1/dxp+1/dxm)-2*t0m*t0m*s0*sm/dxm*(1/dxp+1/dxm)) << endl;
 
  if(jp<mat.GetNrows()){
    //double spp=point(jm+2).Sin2B();
    /// double spp=1;
-  matbd[ip][ip+1]=-t00*t00*s0*s0/dxp*(1/dxm+1/dxp)-tpp*tpp*sp*sp/dxp*(1/dxpp+1/dxp);
-//cout << " board off " << ip << " " << ip+1 << 
-matbd[ip][ip+1]+=(tppp*tppp*sp*s0/dxpp/dxp+t0m*t0m*s0*sp/dxp/dxm+t0p*t0p*s0*sp*(1/dxp/dxp+(1/dxp+1/dxm)*(1/dxp+1/dxpp)));
+   cout << " ip " << ip << " ip+1 " << ip+1 <<" matbd size " << matbd.GetNrows() << " " << matbd.GetNcols() << endl;
+  matbd(ip,ip+1)=-t00*t00*s0*s0/dxp*(1/dxm+1/dxp)-tpp*tpp*sp*sp/dxp*(1/dxpp+1/dxp);
+cout << " board off " << ip << " " << ip+1 << endl;
+matbd(ip,ip+1)+=(tppp*tppp*sp*s0/dxpp/dxp+t0m*t0m*s0*sp/dxp/dxm+t0p*t0p*s0*sp*(1/dxp/dxp+(1/dxp+1/dxm)*(1/dxp+1/dxpp)));
 //cout << " board off term 1 " << tppp*tppp*sp*s0/dxpp/dxp << " term2 " << t0m*t0m*s0*sp/dxp/dxm << " term3 " << t0p*t0p*s0*sp*(1/dxp/dxp+(1/dxp+1/dxm)*(1/dxpp+1/dxp)) << endl;
 }
  if(jp<mat.GetNrows()-1) {
-  matbd[ip][ip+2]=tpp*tpp*sp*sp/dxp/dxpp;
+   cout << " plus2 ip " << ip << " jp " << jp <<" matbd size " << matbd.GetNrows() << endl;
+  matbd(ip,ip+2)=tpp*tpp*sp*sp/dxp/dxpp;
   //double spp=point(jp+2).Sin2B();
   double spp=1;
 auto pos3 = tr.LocationAtPoint(jp+2);
 auto pos4 = tr.LocationAtPoint(jp+3);
 double dxppp= ( (pos4-pos3).R() );
- matbd[ip][ip+2]+=-t0p*t0p*s0*spp/dxpp*(1/dxp+1/dxm)-tppp*tppp*s0*spp/dxp*(1/dxppp+1/dxpp);
+ matbd(ip,ip+2)+=-t0p*t0p*s0*spp/dxpp*(1/dxp+1/dxm)-tppp*tppp*s0*spp/dxp*(1/dxppp+1/dxpp);
  //cout << " board offoff " << ip << " " << ip+2 <<  " term1 " << t0p*t0p*s0*sp/dxp*(1/dxp+1/dxm) << " t0p2 " << t0p*t0p << " angle " << s0*sp/dxp*(1/dxp+1/dxm) << endl;
 }
  if(jp<mat.GetNrows()-2) {
    //double spp=point(jm+2).Sin2B();
    double spp=1;
- matbd[ip][ip+3]=tppp*tppp*sp*spp/dxp/dxpp;
+ matbd(ip,ip+2)=tppp*tppp*sp*spp/dxp/dxpp;
 
 }
-
+cout << " before symmetrization " << endl;
  if(jp<mat.GetNrows())
-matbd[ip+1][ip]=matbd[ip][ip+1];
+matbd(ip+1,ip)=matbd(ip,ip+1);
  if(jp<mat.GetNrows()-1) 
-matbd[ip+2][ip]=matbd[ip][ip+2];
+matbd(ip+2,ip)=matbd(ip,ip+2);
  if(jp<mat.GetNrows()-2) 
-matbd[ip+3][ip]=matbd[ip][ip+3];
+matbd(ip+3,ip)=matbd(ip,ip+3);
 
 mat+=matbd;
 
@@ -1126,7 +1145,7 @@ mat+=matbd;
 const void TrajectoryMCSFitterICARUS::FillCovMatrix(recob::TrackTrajectory tr,TMatrixDSym mat,int jp,double sms,double serr, TMatrixDSym matms, TMatrixDSym materr,std::vector<long unsigned int> breakpoints) const
 {
 
-  int np=breakpoints.size()-2;
+  int matsize=mat.GetNrows();
   //cout << " before filling MATMS " << matms << endl;
  //cout << " sms " << sms << " serr " << serr <<  " np " << np << endl;
 
@@ -1179,7 +1198,7 @@ c0=sms/p0/p0/b0/b0*(dxp+dxm)/2+serr*(s0*s0/e0/e0*(1/dxp+1/dxm)*(1/dxp+1/dxm)+sp*
  materr(ip,ip)=serr*(s0*s0/e0/e0*(1/dxp+1/dxm)*(1/dxp+1/dxm)+sp*sp/ep/ep/dxp/dxp+sm*sm/em/em/dxm/dxm);
 //point(jp).setMMR(serr*(s0*s0/e0/e0*(1/dxp+1/dxm)*(1/dxp+1/dxm)+sp*sp/ep/ep/dxp/dxp+sm*sm/em/em/dxm/dxm)/(sms*(dxp+dxm)/2));
  std::cout << " before 1 " << std::endl;
-  if(jp<np) {
+  if(jp<matsize-1) {
     //dxp=point(ip+1).DS();
 auto pos3 = tr.LocationAtPoint(jp+2);
 double dxpp= ( (pos3-pos2).R() );
@@ -1190,14 +1209,14 @@ double dxpp= ( (pos3-pos2).R() );
 double errp=serr*(s0*s0/e0/e0/dxp*(1/dxm+1/dxp)+sp*sp/ep/ep/dxp*(1/dxpp+1/dxp));
 
   cp=-errp+smsp*dxp*0.393;
-  mat(ip,ip+1)=cp;
+  mat(jp,jp+1)=cp;
 
-matms(ip,ip+1)=smsp*(dxp)*0.393;
-materr(ip,ip+1)=-errp;
+matms(jp,jp+1)=smsp*(dxp)*0.393;
+materr(jp,jp+1)=-errp;
 
   }
-  std::cout << " before -1 " << std::endl;
-  if(jp<np-1) {
+  std::cout << " before -1 matsize " << matsize << " jp " << jp << " ip " << ip << std::endl;
+  if(jp<matsize-2) {
 auto pos3 = tr.LocationAtPoint(jp+2);
 double dxpp= ( (pos3-pos2).R() );
 //ppp=point(jp+2).CP();
@@ -1211,30 +1230,30 @@ double errpp=serr*sp*sp/ep/ep;
  // dxpp=dxmedio;
   cpp=errpp/dxp/dxpp;
 //double smspp=sms*p0/sqrt(ppp*p0);
- mat(ip,ip+2)=cpp+smspp*(dxp+dxpp)/2*0.0148;
-matms(ip,ip+2)=smspp*(dxp+dxpp)/2*0.0148;
-materr(ip,ip+2)=cpp;
+ mat(jp,jp+2)=cpp+smspp*(dxp+dxpp)/2*0.0148;
+matms(jp,jp+2)=smspp*(dxp+dxpp)/2*0.0148;
+materr(jp,jp+2)=cpp;
  
   }
   std::cout << " before symmetrize " << std::endl;
 
 //SYMMETRIZE
- if(jp<np) {
-mat(ip+1,ip)=mat(ip,ip+1);
-matms(ip+1,ip)=matms(ip,ip+1);
-materr(ip+1,ip)=materr(ip,ip+1);
+ if(jp<matsize-1) {
+mat(jp+1,jp)=mat(jp,jp+1);
+matms(jp+1,jp)=matms(jp,jp+1);
+materr(jp+1,jp)=materr(jp,jp+1);
 }
-if(jp<np-1) {
-mat(ip+2,ip)=mat(ip,ip+2);
-matms(ip+2,ip)=matms(ip,ip+2);
-materr(ip+2,ip)=materr(ip,ip+2);
+if(jp<matsize-2) {
+mat(jp+2,jp)=mat(jp,jp+2);
+matms(jp+2,jp)=matms(jp,jp+2);
+materr(jp+2,jp)=materr(jp,jp+2);
 }
 
 }
  ///////////////////////////////////////////////////////////
 const void TrajectoryMCSFitterICARUS::FillCovMixTerms(recob::TrackTrajectory tr, TMatrixDSym mat,int jp,int ns,double sms,double serr) const
 {
-  // int np=mat.GetNrows();
+//int np=mat.GetNrows();
  cout << " sms " << sms << " serr " << serr << endl;
 
  //double dxmedio=76.7179;
@@ -1265,37 +1284,40 @@ double washfit=0.859;
  if(ip<ns-1) {
 
 double  c0=sms*(dxp+dxm)/2/p0/p0*washfit*wash0;
- std::cout << " mix term " << ip  << " " << ip+ns-2 << " value " << c0 << std::endl; 
+ std::cout << " mix term a " << ip  << " " << ip+ns-2 << " value " << c0 << std::endl; 
+  std::cout << " jp " << jp  << " ip " << ip << " ns " << ns << std::endl; 
+
  mat(ip,ip+ns-2)=c0;
  //mat[ip+ns-2][ip]=c0;
  //cout << " mix term " << ip  << " " << ip+ns-2 << " value " << c0 << endl; 
  //cout << " mix term " <<  ip  << " " << ip+ns-2 << " sms " << sms << " dx " << (dxp+dxm)/2 << endl;
  }
   if(ip<ns-2) {
-    std::cout << " filling covmix matrix " << jp << "," << jp << " : " << c0 << std::endl; 
+    std::cout << " filling covmix matrix b" << jp << "," << jp << " : " << c0 << std::endl; 
+     cout << " mix term b " << ip  << " " << ip+ns-1 << " value " << c0 << endl; 
+      std::cout << " jp " << jp  << " ip " << ip << " ns " << ns << std::endl; 
+
  c0=sms*(dxp+dxm)/2/p0/p0*washfit*wash0;
 
   mat(ip,ip+ns-2)=c0;
- //mat[ip+ns-1][ip]=c0;
- cout << " mix term " << ip  << " " << ip+ns-1 << " value " << c0 << endl; 
-// cout << " mix term " << ip+ns-1  << " " << ip << " value " << c0 << endl; 
+ 
 }
 if(ip<ns-3) {
-   cout << " filling covmix matrix " << jp << "," << jp << " : " << c0 << endl; 
-   c0=sms*(dxp+dxm)/2/p0/p0*washfit*wash1;
-
-   mat(ip,ip+ns)=c0;
-   //mat[ip+ns][ip]=c0;
-   cout << " mix term " << ip  << " " << ip+ns << " value " << c0 << endl; 
-   // cout << " mix term " << ip+ns  << " " << ip << " value " << c0 << endl; 
- }
- if(ip<ns) {
-   cout << " filling covmix matrix " << jp << "," << jp << " : " << c0 << endl; 
+   cout << " filling covmix matrix c " << jp << "," << jp << " : " << c0 << endl; 
    c0=sms*(dxp+dxm)/2/p0/p0*washfit*wash1;
 
    mat(ip,ip+ns-3)=c0;
+   //mat[ip+ns][ip]=c0;
+   cout << " mix term c " << ip  << " " << ip+ns << " value " << c0 << endl; 
+   // cout << " mix term " << ip+ns  << " " << ip << " value " << c0 << endl; 
+ }
+ if(ip<ns) {
+   cout << " filling covmix matrix d " << jp << "," << jp << " : " << c0 << endl; 
+   c0=sms*(dxp+dxm)/2/p0/p0*washfit*wash1;
+
+   mat(ip,ip+ns)=c0;
    //mat[ip+ns-3][ip]=c0;
-   cout << " mix term " << ip  << " " << ip+ns-3 << " value " << c0 << endl; 
+   cout << " mix term d " << ip  << " " << ip+ns-3 << " value " << c0 << endl; 
  }
 
 
@@ -1438,4 +1460,93 @@ recob::Hit hf=hits2d[hits2d.size()-1];
 float x0=h0.WireID().Wire*3; 
 float xf=hf.WireID().Wire*3; 
 return xf-x0;
+}
+
+/******************************************************************/
+TMatrixD TrajectoryMCSFitterICARUS::ReferenceFrame(int plane, int tpc, int cryo) const  { 
+  //! Initialize reference frames relative to wire planes (views)
+cout << " begin reference frame " << plane << " " << tpc << endl;
+ TVector vec1(3);TVector vec2(3);TVector vec3(3);
+
+//const double PITCH=2.99;
+const double PIG=3.1416;
+
+if(plane==0) {
+  //view 0 (induction 1)
+  vec1(0)=1;vec1(1)=vec1[2]=0;
+  vec2(1)=1;vec2(0)=vec2[2]=0;
+  vec3[2]=1;vec3(0)=vec3(1)=0;
+ 
+}
+
+if(plane==1) {
+   //view 1 (induction 2)
+  if(tpc>1) { 
+
+  vec1(0)=-cos(PIG/3);vec1(1)=0;vec1[2]=sin(PIG/3);
+  vec2(1)=-1;vec2(0)=vec2[2]=0;
+  vec3(0)=sin(PIG/3);vec3(1)=0;vec3[2]=cos(PIG/3);
+  }
+  else {
+
+  vec1(0)=cos(PIG/3);vec1(1)=0;vec1[2]=sin(PIG/3);
+  vec2(1)=1;vec2(0)=vec2[2]=0;
+  vec3(0)=sin(PIG/3);vec3(1)=0;vec3[2]=-cos(PIG/3);
+  }
+}
+  if(plane==2) {
+  //view 2 (collection)
+    if(tpc>1) { 
+ cout << " before vec "<< endl;
+ vec1(0)=cos(PIG/3); vec1(1)=0;vec1[2]=sin(PIG/3);
+  vec2(1)=1;vec2(0)=vec2[2]=0;
+  vec3(0)=sin(PIG/3);vec3(1)=0;vec3[2]=-cos(PIG/3);
+   cout << " after vec "<< endl;
+  
+  }
+  else {
+
+  vec1(0)=-cos(PIG/3);vec1(1)=0;vec1[2]=sin(PIG/3);
+  vec2(1)=1;vec2(0)=vec2[2]=0;
+  vec3(0)=sin(PIG/3);vec3(1)=0;vec3[2]=cos(PIG/3);
+ 
+  }
+  } 
+/*SISTEMARE DIVERSE TPC LOGICHE IN CASO DI INDUZIONE 1!
+
+
+  //view 3 (half of induction 1)
+ 
+  vec1(0)=-1;vec1(1)=vec1[2]=0;
+  vec2(1)=1;vec2(0)=vec2[2]=0;
+  vec3[2]=-1;vec3(0)=vec3(1)=0;
+
+  ori(0)=2112*PITCH;  
+
+ReferenceFrame rf3(ori,vec1,vec2,vec3);
+
+  rf3.setOrigin(ori); 
+  rf3.setRefMatrix();
+
+  addRefFrame(rf3);
+*/
+TMatrixD mat(3,3);
+cout << " reference frame mat before fill " << endl;
+for(int j=0;j<3;j++) {
+mat(0,j)=vec1(j);
+mat(1,j)=vec2(j);
+mat(2,j)=vec3(j);
+}
+cout << " reference frame mat after fill " << endl;
+mat.Print();
+return mat;
+  }
+  /******************************************************************/
+double TrajectoryMCSFitterICARUS::DriftOrigin(int plane, int tpc, int cryo) const  { 
+double x0;
+if(cryo==1&&tpc>1) x0=3596.3;
+if(cryo==0&&tpc<=1) x0=-3596.3;
+if(cryo==1&&tpc<=1) x0=608.0;
+if(cryo==0&&tpc>1) x0=-608.0;
+  return x0;
 }
