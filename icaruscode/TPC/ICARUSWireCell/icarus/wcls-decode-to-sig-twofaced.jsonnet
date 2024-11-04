@@ -159,7 +159,7 @@ local wcls_output = {
       // frame_scale: [0.009,0.009,0.009,0.009,0.009,0.009,0.009,0.009],
 
       frame_tags: ['gauss', 'wiener', 'looseLf'],
-      frame_scale: [0.009,0.009,0.009],
+      frame_scale: [std.extVar('gain_ADC_per_e'), std.extVar('gain_ADC_per_e'), std.extVar('gain_ADC_per_e')],
 
       // nticks: params.daq.nticks,
       chanmaskmaps: [],

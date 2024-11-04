@@ -1,5 +1,5 @@
-#include "stage0E_run2_wc_icarus_mc.fcl"
-#
+#include "stage0_run2_wc_icarus_mc.fcl"
+
 # Turn on PCA noise suppression
 # physics.producers.MCDecodeTPCROI.DecoderTool.DenoiserType: "pca"
 

@@ -1,0 +1,3 @@
+#include "stage0W_run2_wc_icarus_mc.fcl"
+
+physics.producers.roifinder2d.WireModuleLabelVec: ["decon2droiWW:gauss","decon2droiWE:gauss","decon2droiEW:gauss","decon2droiEE:gauss"]

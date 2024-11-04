@@ -9,3 +9,4 @@ physics.path: [   @sequence::icarus_stage0_mc_PMT,
 
 physics.outana:        []
 
+process_name: MCstage0E

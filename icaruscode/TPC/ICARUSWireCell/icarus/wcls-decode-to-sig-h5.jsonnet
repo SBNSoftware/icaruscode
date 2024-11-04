@@ -118,7 +118,7 @@ local wcls_input = {
 // FHiCL that loads this file.
 local mega_anode = {
   type: 'MegaAnodePlane',
-  name: 'meganodes',
+  name: 'meganodes%d' % volume,
   data: {
     anodes_tn: if volume != -1 then [wc.tn(a) for a in tools.anodes[2*volume:2*(volume+1)]] // single volume
     else [wc.tn(anode) for anode in tools.anodes], // all volumes
@@ -156,7 +156,7 @@ local wcls_output = {
       digitize: false,  // true means save as RawDigit, else recob::Wire
       // frame_tags: ['gauss', 'wiener', 'looseLf','shrinkROI','extendROI'],
       // frame_scale: [0.1, 0.1, 0.1],
-      frame_tags: ['gauss','wiener','looseLf','shrinkROI','extendROI'],
+      frame_tags: ['gauss','wiener','looseLf','decon','mp3ROI','mp2ROI'],
       frame_scale: [std.extVar('gain_ADC_per_e'), std.extVar('gain_ADC_per_e'), std.extVar('gain_ADC_per_e'), std.extVar('gain_ADC_per_e'), std.extVar('gain_ADC_per_e')],
       // nticks: params.daq.nticks,
       chanmaskmaps: [],
@@ -166,21 +166,18 @@ local wcls_output = {
 
   h5io: g.pnode({
       type: 'HDF5FrameTap',
-      name: 'hio_sp',
+      name: 'hio_sp%d' % volume,
       data: {
         anode: wc.tn(mega_anode),
-        trace_tags: ['gauss'
-	, 'wiener'
-	, 'tightLf'
-	, 'looseLf'
-	, 'decon'
-        , 'cleanupROI'
-        , 'breakROI1'
-        , 'breakROI2'
-        , 'shrinkROI'
-        , 'extendROI'
+        trace_tags: ['gauss' 
+	, 'wiener' 
+	, 'tightLf' 
+	, 'looseLf' 
+	, 'decon' 
+	, 'mp3ROI' 
+	, 'mp2ROI' 
         ],
-        filename: "wc-sp-%d.h5" % volume,
+        filename: "wc-sp-%d.h5" % volume ,
         chunk: [0, 0], // ncol, nrow
         gzip: 2,
         high_throughput: true,
@@ -213,10 +210,10 @@ local sp_override = { // assume all tages sets in base sp.jsonnet
     cleanup_roi_tag: "",
     break_roi_loop1_tag: "",
     break_roi_loop2_tag: "",
-    //shrink_roi_tag: "",
-    //extend_roi_tag: "",
-     m_decon_charge_tag: "",
-    use_multi_plane_protection: false,
+    shrink_roi_tag: "",
+    extend_roi_tag: "",
+    // m_decon_charge_tag: "",
+    use_multi_plane_protection: true,
     mp_tick_resolution: 10,
 };
 local sp = sp_maker(params, tools, sp_override);
@@ -278,17 +275,19 @@ local fanin_tag_rules = [
               '.*': 'framefanin',
             },
             trace: {
-              ['extend_roi%d'%ind]:'extend_roi%d'%ind,
-              ['shrink_roi%d'%ind]:'shrink_roi%d'%ind,
+            //  ['extend_roi%d'%ind]:'extend_roi%d'%ind,
+            //  ['shrink_roi%d'%ind]:'shrink_roi%d'%ind,
           //    ['break_roi_2nd%d'%ind]:'break_roi_2nd%d'%ind,
           //    ['break_roi_1st%d'%ind]:'break_roi_1st%d'%ind,
            //   ['cleanup_roi%d'%ind]:'cleanup_roi%d'%ind,
               ['gauss%d'%ind]:'gauss%d'%ind,
               ['wiener%d'%ind]:'wiener%d'%ind,
+	['mp3_roi%d'%ind]:'mp3_roi%d'%ind,
+['mp2_roi%d'%ind]:'mp2_roi%d'%ind,
             //  ['threshold%d'%ind]:'threshold%d'%ind,
             //  ['tight_lf%d'%ind]:'tight_lf%d'%ind,
               ['loose_lf%d'%ind]:'loose_lf%d'%ind,
-             // ['decon%d'%ind]:'decon%d'%ind,
+              ['decon%d'%ind]:'decon%d'%ind,
             },
 
           }
@@ -311,12 +310,14 @@ local retagger = g.pnode({
         'wiener\\d\\d\\d': 'wiener',
        // 'tight_lf\\d\\d\\d': 'tightLf',
         'loose_lf\\d\\d\\d': 'looseLf',
-       // 'decon\\d\\d\\d': 'decon',
+        'decon\\d\\d\\d': 'decon',
        // 'cleanup_roi\\d\\d\\d': 'cleanupROI',
        // 'break_roi_1st\\d\\d\\d': 'breakROI1',
        // 'break_roi_2nd\\d\\d\\d': 'breakROI2',
-        'shrink_roi\\d\\d\\d': 'shrinkROI',
-        'extend_roi\\d\\d\\d': 'extendROI',
+       // 'shrink_roi\\d\\d\\d': 'shrinkROI',
+       // 'extend_roi\\d\\d\\d': 'extendROI',
+	'mp3_roi\\d\\d\\d': 'mp3ROI',
+	'mp2_roi\\d\\d\\d': 'mp2ROI',
       },
     }],
   },
@@ -324,8 +325,8 @@ local retagger = g.pnode({
 
 local sink = g.pnode({ type: 'DumpFrames' }, nin=1, nout=0);
 
-//wcls_output.h5ioa
-local graph = g.pipeline([wcls_input.adc_digits, fanpipe, retagger,  wcls_output.sp_signals, sink]);
+//wcls_output.h5io
+local graph = g.pipeline([wcls_input.adc_digits, fanpipe, retagger, wcls_output.h5io, wcls_output.sp_signals, sink]);
 
 local app = {
   type: 'Pgrapher',
