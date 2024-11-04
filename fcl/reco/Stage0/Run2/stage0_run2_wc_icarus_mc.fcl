@@ -52,11 +52,10 @@ physics.producers.decon2droiWE.wcls_main.params.raw_input_label:  "MCDecodeTPCRO
 physics.producers.decon2droiWW.wcls_main.params.raw_input_label:  "MCDecodeTPCROI:PHYSCRATEDATATPCWW"
 
 # As per Gray Putname...
-physics.producers.decon2droiEE.wcls_main.structs.gain0: 11.9918701 
-physics.producers.decon2droiEW.wcls_main.structs.gain0: 11.9918701 
-physics.producers.decon2droiWE.wcls_main.structs.gain0: 11.9918701 
-physics.producers.decon2droiWW.wcls_main.structs.gain0: 11.9918701 
-
+physics.producers.decon2droiEE.wcls_main.structs.gain0: 17.05212
+physics.producers.decon2droiEW.wcls_main.structs.gain0: 17.05212
+physics.producers.decon2droiWE.wcls_main.structs.gain0: 17.05212
+physics.producers.decon2droiWW.wcls_main.structs.gain0: 17.05212
 
 physics.producers.decon2droiEE.wcls_main.structs.gain1: 12.1420344 
 physics.producers.decon2droiEW.wcls_main.structs.gain1: 12.1420344 
