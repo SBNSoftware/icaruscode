@@ -1,0 +1,39 @@
+BEGIN_PROLOG
+
+spana1d_east: {
+  module_type: SPAna
+  Cryostat: 0
+  HitProducers: ["gaushit1dTPCEE", "gaushit1dTPCEW"]
+  WireProducers: ["roifinder1d:PHYSCRATEDATATPCEE", "roifinder1d:PHYSCRATEDATATPCEW"]
+  G4Producer: "largeant"
+  SimChannelProducer: "daq:simpleSC"
+}
+
+spana1d_west: {
+  module_type: SPAna
+  Cryostat: 1
+  HitProducers: ["gaushit1dTPCWE", "gaushit1dTPCWW"]
+  WireProducers: ["roifinder1d:PHYSCRATEDATATPCWE", "roifinder1d:PHYSCRATEDATATPCWW"]
+  G4Producer: "largeant"
+  SimChannelProducer: "daq:simpleSC"
+}
+
+spana2d_east: {
+  module_type: SPAna
+  Cryostat: 0
+  HitProducers: ["gaushit2dTPCEE", "gaushit2dTPCEW"]
+  WireProducers: ["roifinder2d:PHYSCRATEDATATPCEE", "roifinder2d:PHYSCRATEDATATPCEW"]
+  G4Producer: "largeant"
+  SimChannelProducer: "daq:simpleSC"
+}
+
+spana2d_west: {
+  module_type: SPAna
+  Cryostat: 1
+  HitProducers: ["gaushit2dTPCWE", "gaushit2dTPCWW"]
+  WireProducers: ["roifinder2d:PHYSCRATEDATATPCWE", "roifinder2d:PHYSCRATEDATATPCWW"]
+  G4Producer: "largeant"
+  SimChannelProducer: "daq:simpleSC"
+}
+
+END_PROLOG
