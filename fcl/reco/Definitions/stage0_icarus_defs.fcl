@@ -372,7 +372,7 @@ icarus_stage0_producers.decon2droiEE.wcls_main.params.tpc_volume_label:         
 icarus_stage0_producers.decon2droiEE.wcls_main.params.signal_output_form:                      "dense"
 icarus_stage0_producers.decon2droiEE.wcls_main.logsinks: ["stdout"]
 icarus_stage0_producers.decon2droiEE.wcls_main.loglevels: ["debug", "pgraph:info"]
-icarus_stage0_producers.decon2droiEE.wcls_main.plugins: [@sequence::icarus_stage0_producers.decon2droiEE.wcls_main.plugins, "WireCellHio"]
+icarus_stage0_producers.decon2droiEE.wcls_main.plugins: [@sequence::icarus_stage0_producers.decon2droiEE.wcls_main.plugins, "WireCellHio", "WireCellPytorch"]
 
 icarus_stage0_producers.decon2droiEW.wcls_main.inputers:                                       ["wclsRawFrameSource:rfsrc1"]
 icarus_stage0_producers.decon2droiEW.wcls_main.outputers:                                      ["wclsFrameSaver:spsaver1"]
@@ -381,7 +381,7 @@ icarus_stage0_producers.decon2droiEW.wcls_main.params.tpc_volume_label:         
 icarus_stage0_producers.decon2droiEW.wcls_main.params.signal_output_form:                      "dense"
 icarus_stage0_producers.decon2droiEW.wcls_main.logsinks: ["stdout"]
 icarus_stage0_producers.decon2droiEW.wcls_main.loglevels: ["debug", "pgraph:info"]
-icarus_stage0_producers.decon2droiEW.wcls_main.plugins: [@sequence::icarus_stage0_producers.decon2droiEW.wcls_main.plugins, "WireCellHio"]
+icarus_stage0_producers.decon2droiEW.wcls_main.plugins: [@sequence::icarus_stage0_producers.decon2droiEW.wcls_main.plugins, "WireCellHio", "WireCellPytorch"]
 
 icarus_stage0_producers.decon2droiWE.wcls_main.inputers:                                       ["wclsRawFrameSource:rfsrc2"]
 icarus_stage0_producers.decon2droiWE.wcls_main.outputers:                                      ["wclsFrameSaver:spsaver2"]
@@ -390,7 +390,7 @@ icarus_stage0_producers.decon2droiWE.wcls_main.params.tpc_volume_label:         
 icarus_stage0_producers.decon2droiWE.wcls_main.params.signal_output_form:                      "dense"
 icarus_stage0_producers.decon2droiWE.wcls_main.logsinks: ["stdout"]
 icarus_stage0_producers.decon2droiWE.wcls_main.loglevels: ["debug", "pgraph:info"]
-icarus_stage0_producers.decon2droiWE.wcls_main.plugins: [@sequence::icarus_stage0_producers.decon2droiWE.wcls_main.plugins, "WireCellHio"]
+icarus_stage0_producers.decon2droiWE.wcls_main.plugins: [@sequence::icarus_stage0_producers.decon2droiWE.wcls_main.plugins, "WireCellHio", "WireCellPytorch"]
 
 icarus_stage0_producers.decon2droiWW.wcls_main.inputers:                                       ["wclsRawFrameSource:rfsrc3"]
 icarus_stage0_producers.decon2droiWW.wcls_main.outputers:                                      ["wclsFrameSaver:spsaver3"]
@@ -399,7 +399,7 @@ icarus_stage0_producers.decon2droiWW.wcls_main.params.tpc_volume_label:         
 icarus_stage0_producers.decon2droiWW.wcls_main.params.signal_output_form:                      "dense"
 icarus_stage0_producers.decon2droiWW.wcls_main.logsinks: ["stdout"]
 icarus_stage0_producers.decon2droiWW.wcls_main.loglevels: ["debug", "pgraph:info"]
-icarus_stage0_producers.decon2droiWW.wcls_main.plugins: [@sequence::icarus_stage0_producers.decon2droiWW.wcls_main.plugins, "WireCellHio"]
+icarus_stage0_producers.decon2droiWW.wcls_main.plugins: [@sequence::icarus_stage0_producers.decon2droiWW.wcls_main.plugins, "WireCellHio", "WireCellPytorch"]
 
 ### Set up to output ROIs from full waveforms
 icarus_stage0_producers.roifinder1d.WireModuleLabelVec:                                        ["decon1droi:PHYSCRATEDATATPCWW","decon1droi:PHYSCRATEDATATPCWE","decon1droi:PHYSCRATEDATATPCEW","decon1droi:PHYSCRATEDATATPCEE"]
@@ -423,10 +423,10 @@ icarus_stage0_producers.gaushit1dTPCWE.CalDataModuleLabel:                      
 icarus_stage0_producers.gaushit1dTPCEW.CalDataModuleLabel:                                     "roifinder1d:PHYSCRATEDATATPCEW"
 icarus_stage0_producers.gaushit1dTPCEE.CalDataModuleLabel:                                     "roifinder1d:PHYSCRATEDATATPCEE"
 
-icarus_stage0_producers.gaushit2dTPCWW.CalDataModuleLabel:                                     "roifinder2d:PHYSCRATEDATATPCWW"
-icarus_stage0_producers.gaushit2dTPCWE.CalDataModuleLabel:                                     "roifinder2d:PHYSCRATEDATATPCWE"
-icarus_stage0_producers.gaushit2dTPCEW.CalDataModuleLabel:                                     "roifinder2d:PHYSCRATEDATATPCEW"
-icarus_stage0_producers.gaushit2dTPCEE.CalDataModuleLabel:                                     "roifinder2d:PHYSCRATEDATATPCEE"
+icarus_stage0_producers.gaushit2dTPCWW.CalDataModuleLabel:                                     "decon2droiWW:gauss"
+icarus_stage0_producers.gaushit2dTPCWE.CalDataModuleLabel:                                     "decon2droiWE:gauss"
+icarus_stage0_producers.gaushit2dTPCEW.CalDataModuleLabel:                                     "decon2droiEW:gauss"
+icarus_stage0_producers.gaushit2dTPCEE.CalDataModuleLabel:                                     "decon2droiEE:gauss"
 
 icarus_stage0_producers.gausshitTPCWW.CalDataModuleLabel:                                      "roifinder:PHYSCRATEDATATPCWW"
 icarus_stage0_producers.gausshitTPCWE.CalDataModuleLabel:                                      "roifinder:PHYSCRATEDATATPCWE"

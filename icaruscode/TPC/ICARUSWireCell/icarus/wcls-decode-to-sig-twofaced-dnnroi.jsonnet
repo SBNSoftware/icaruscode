@@ -34,7 +34,11 @@ local volume = if volume_label == '' then -1 else std.parseInt(volume_label);
 // local data_params = import 'params.jsonnet';
 // local simu_params = import 'simparams.jsonnet';
 // local params_init = if reality == 'data' then data_params else simu_params;
-local base = import 'pgrapher/experiment/icarus/simparams.jsonnet';
+local params_twofaced = import 'pgrapher/experiment/icarus/params_twofaced.jsonnet';
+
+# Load the sim-params, overwrite the volume config for the two-faced version
+local base_params = import 'pgrapher/experiment/icarus/simparams.jsonnet';
+local base = base_params + params_twofaced; 
 
 // load the electronics response parameters
 local er_params = [
@@ -116,14 +120,9 @@ local wcls_input = {
 // Collect all the wc/ls output converters for use below.  Note the
 // "name" MUST match what is used in theh "outputers" parameter in the
 // FHiCL that loads this file.
-local mega_anode = {
-  type: 'MegaAnodePlane',
-  name: 'meganodes',
-  data: {
-    anodes_tn: if volume != -1 then [wc.tn(a) for a in tools.anodes[2*volume:2*(volume+1)]] // single volume
-    else [wc.tn(anode) for anode in tools.anodes], // all volumes
-  },
-};
+
+local this_anode = tools.anodes[volume];
+
 local wcls_output = {
   // The noise filtered "ADC" values.  These are truncated for
   // art::Event but left as floats for the WCT SP.  Note, the tag
@@ -134,13 +133,13 @@ local wcls_output = {
     name: 'nfsaver',
     data: {
       // anode: wc.tn(tools.anode),
-      anode: wc.tn(mega_anode),
+      anode: wc.tn(this_anode),
       digitize: true,  // true means save as RawDigit, else recob::Wire
       frame_tags: ['raw'],
       // nticks: params.daq.nticks,
       chanmaskmaps: ['bad'],
     },
-  }, nin=1, nout=1, uses=[mega_anode]),
+  }, nin=1, nout=1, uses=[this_anode]),
 
 
   // The output of signal processing.  Note, there are two signal
@@ -152,23 +151,27 @@ local wcls_output = {
     name: 'spsaver%d' %volume, // to use multiple wirecell instances in a fhicl job
     data: {
       // anode: wc.tn(tools.anode),
-      anode: wc.tn(mega_anode),
+      anode: wc.tn(this_anode),
       digitize: false,  // true means save as RawDigit, else recob::Wire
       // frame_tags: ['gauss', 'wiener', 'looseLf','shrinkROI','extendROI'],
       // frame_scale: [0.1, 0.1, 0.1],
-      frame_tags: ['gauss','wiener','looseLf','shrinkROI','extendROI'],
-      frame_scale: [std.extVar('gain_ADC_per_e'), std.extVar('gain_ADC_per_e'), std.extVar('gain_ADC_per_e'), std.extVar('gain_ADC_per_e'), std.extVar('gain_ADC_per_e')],
+      // frame_tags: ['gauss','wiener','looseLf','shrinkROI','extendROI','mp3ROI','mp2ROI', 'cleanupROI'],
+      // frame_scale: [0.009,0.009,0.009,0.009,0.009,0.009,0.009,0.009],
+
+      frame_tags: ['gauss', 'wiener', 'looseLf', 'dnnsp'],
+      frame_scale: [std.extVar('gain_ADC_per_e'), std.extVar('gain_ADC_per_e'), std.extVar('gain_ADC_per_e'), std.extVar('gain_ADC_per_e')],
+
       // nticks: params.daq.nticks,
       chanmaskmaps: [],
       nticks: -1,
     },
-  }, nin=1, nout=1, uses=[mega_anode]),
+  }, nin=1, nout=1, uses=[this_anode]),
 
   h5io: g.pnode({
       type: 'HDF5FrameTap',
-      name: 'hio_sp',
+      name: 'hio_sp%d' % volume,
       data: {
-        anode: wc.tn(mega_anode),
+        anode: wc.tn(this_anode),
         trace_tags: ['gauss'
 	, 'wiener'
 	, 'tightLf'
@@ -179,13 +182,16 @@ local wcls_output = {
         , 'breakROI2'
         , 'shrinkROI'
         , 'extendROI'
+	, 'mp3ROI' 
+	, 'mp2ROI' 
+        , 'dnnsp'
         ],
         filename: "wc-sp-%d.h5" % volume,
         chunk: [0, 0], // ncol, nrow
         gzip: 2,
         high_throughput: true,
       },
-    }, nin=1, nout=1, uses=[mega_anode]),
+    }, nin=1, nout=1, uses=[this_anode]),
 
 };
 
@@ -210,14 +216,17 @@ local sp_override = { // assume all tages sets in base sp.jsonnet
   //   gauss_tag: "",
     tight_lf_tag: "",
     // loose_lf_tag: "",
-    cleanup_roi_tag: "",
     break_roi_loop1_tag: "",
     break_roi_loop2_tag: "",
     //shrink_roi_tag: "",
     //extend_roi_tag: "",
-     m_decon_charge_tag: "",
-    use_multi_plane_protection: false,
+    use_multi_plane_protection: true,
     mp_tick_resolution: 10,
+    process_planes: [0, 1, 2],
+    isWrapped: true,
+    nwires_separate_planes: [
+      [1056, 1056], [5600], [5600]
+    ]
 };
 local sp = sp_maker(params, tools, sp_override);
 local sp_pipes = [sp.make_sigproc(a) for a in tools.anodes];
@@ -228,7 +237,7 @@ local chsel_pipes = [
     type: 'ChannelSelector',
     name: 'chsel%d' % n,
     data: {
-      channels: util.anode_channels(n),
+      channels: util.anode_channels_twofaced(n),
       //tags: ['orig%d' % n], // traces tag
     },
   }, nin=1, nout=1)
@@ -239,6 +248,27 @@ local magoutput = 'icarus-data-check.root';
 local magnify = import 'pgrapher/experiment/icarus/magnify-sinks.jsonnet';
 local magnifyio = magnify(tools, magoutput);
 
+local dnnroi = import 'pgrapher/experiment/icarus/dnnroi.jsonnet';
+local ts_u = {
+    type: "TorchService",
+    name: "dnnroi_u",
+    data: {
+        model: "NNs/UNet-optfilter-opaqueMC_U_Plane.ts",
+        device: "cpu",
+        concurrency: 1,
+    },
+};
+
+local ts_v = {
+    type: "TorchService",
+    name: "dnnroi_v",
+    data: {
+        model: "NNs/UNet-optfilter-opaqueMC_V_Plane.ts",
+        device: "cpu",
+        concurrency: 1,
+    },
+};
+
 local nfsp_pipes = [
   g.pipeline([
                chsel_pipes[n],
@@ -246,14 +276,14 @@ local nfsp_pipes = [
 
                // nf_pipes[n],
                // magnifyio.raw_pipe[n],
-
                sp_pipes[n],
+               dnnroi(tools.anodes[n], ts_u, ts_v, output_scale=1),
                // magnifyio.decon_pipe[n],
                // magnifyio.threshold_pipe[n],
                // magnifyio.debug_pipe[n], // use_roi_debug_mode: true in sp.jsonnet
              ],
              'nfsp_pipe_%d' % n)
-  for n in std.range(0, std.length(tools.anodes) - 1)
+  for n in [volume]
 ];
 
 local fanout_tag_rules = [ 
@@ -267,10 +297,9 @@ local fanout_tag_rules = [
               //'.*': 'orig',
             },
           }
-          for n in std.range(0, std.length(tools.anodes) - 1)
+          for n in [volume]
         ];
 
-local anode_ident = [tools.anodes[n].data.ident for n in std.range(0, std.length(tools.anodes) - 1)];
 local fanin_tag_rules = [
           {
             frame: {
@@ -282,8 +311,11 @@ local fanin_tag_rules = [
               ['shrink_roi%d'%ind]:'shrink_roi%d'%ind,
           //    ['break_roi_2nd%d'%ind]:'break_roi_2nd%d'%ind,
           //    ['break_roi_1st%d'%ind]:'break_roi_1st%d'%ind,
-           //   ['cleanup_roi%d'%ind]:'cleanup_roi%d'%ind,
+              ['cleanup_roi%d'%ind]:'cleanup_roi%d'%ind,
+              ['mp2_roi%d'%ind]:'mp2_roi%d'%ind,
+              ['mp3_roi%d'%ind]:'mp3_roi%d'%ind,
               ['gauss%d'%ind]:'gauss%d'%ind,
+              ['dnnsp%d'%ind]:'dnnsp%d'%ind,
               ['wiener%d'%ind]:'wiener%d'%ind,
             //  ['threshold%d'%ind]:'threshold%d'%ind,
             //  ['tight_lf%d'%ind]:'tight_lf%d'%ind,
@@ -292,9 +324,9 @@ local fanin_tag_rules = [
             },
 
           }
-          for ind in anode_ident
+          for ind in [this_anode.data.ident]
         ];
-local fanpipe = util.fanpipe('FrameFanout', nfsp_pipes, 'FrameFanin', 'nfsp', [], fanout_tag_rules, fanin_tag_rules);
+// local fanpipe = util.fanpipe('FrameFanout', nfsp_pipes, 'FrameFanin', 'nfsp', [], fanout_tag_rules, fanin_tag_rules);
 
 local retagger = g.pnode({
   type: 'Retagger',
@@ -307,16 +339,19 @@ local retagger = g.pnode({
         '.*': 'retagger',
       },
       merge: {
-        'gauss\\d\\d\\d': 'gauss',
-        'wiener\\d\\d\\d': 'wiener',
-       // 'tight_lf\\d\\d\\d': 'tightLf',
-        'loose_lf\\d\\d\\d': 'looseLf',
-       // 'decon\\d\\d\\d': 'decon',
-       // 'cleanup_roi\\d\\d\\d': 'cleanupROI',
-       // 'break_roi_1st\\d\\d\\d': 'breakROI1',
-       // 'break_roi_2nd\\d\\d\\d': 'breakROI2',
-        'shrink_roi\\d\\d\\d': 'shrinkROI',
-        'extend_roi\\d\\d\\d': 'extendROI',
+        'dnnsp\\d': 'dnnsp',
+        'gauss\\d': 'gauss',
+        'wiener\\d': 'wiener',
+       // 'tight_lf\\d': 'tightLf',
+        'loose_lf\\d': 'looseLf',
+       // 'decon\\d': 'decon',
+        'cleanup_roi\\d': 'cleanupROI',
+       // 'break_roi_1st\\d': 'breakROI1',
+       // 'break_roi_2nd\\d': 'breakROI2',
+        'shrink_roi\\d': 'shrinkROI',
+        'extend_roi\\d': 'extendROI',
+	'mp3_roi\\d': 'mp3ROI',
+	'mp2_roi\\d': 'mp2ROI',
       },
     }],
   },
@@ -324,8 +359,7 @@ local retagger = g.pnode({
 
 local sink = g.pnode({ type: 'DumpFrames' }, nin=1, nout=0);
 
-//wcls_output.h5ioa
-local graph = g.pipeline([wcls_input.adc_digits, fanpipe, retagger,  wcls_output.sp_signals, sink]);
+local graph = g.pipeline([wcls_input.adc_digits, chsel_pipes[volume], sp_pipes[volume], dnnroi(this_anode, ts_u, ts_v, output_scale=1), retagger, wcls_output.h5io, wcls_output.sp_signals, sink]);
 
 local app = {
   type: 'Pgrapher',

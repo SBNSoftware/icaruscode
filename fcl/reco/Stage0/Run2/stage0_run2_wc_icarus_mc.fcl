@@ -3,6 +3,7 @@
 ## TPC data is included in an artdaq data product from a single instance
 ##
 #include "stage0_icarus_mc_defs.fcl"
+#include "sp_filter_parameters.fcl"
 #include "stage0_icarus_driver_common.fcl"
 
 process_name: MCstage0
@@ -86,43 +87,49 @@ physics.producers.decon2droiWW.wcls_main.structs.shaping2: 1.3
 # restore legacy G4 labels
 physics.producers.mcophit.SimPhotonsProducer: "largeant"
 
+# Defines final gain, in ADC/e-
+physics.producers.decon2droiEE.wcls_main.structs.gain_ADC_per_e: @local::gain_ADC_per_e
+physics.producers.decon2droiEW.wcls_main.structs.gain_ADC_per_e: @local::gain_ADC_per_e
+physics.producers.decon2droiWE.wcls_main.structs.gain_ADC_per_e: @local::gain_ADC_per_e
+physics.producers.decon2droiWW.wcls_main.structs.gain_ADC_per_e: @local::gain_ADC_per_e
+
 # Filter parameters
-physics.producers.decon2droiEE.wcls_main.structs.Gaus_wide_sigma: 0.12
-physics.producers.decon2droiEE.wcls_main.structs.Wiener_tight_U_sigma: 0.148788
-physics.producers.decon2droiEE.wcls_main.structs.Wiener_tight_U_power: 3.76194
-physics.producers.decon2droiEE.wcls_main.structs.Wiener_tight_V_sigma: 0.1596568
-physics.producers.decon2droiEE.wcls_main.structs.Wiener_tight_V_power: 4.36125
-physics.producers.decon2droiEE.wcls_main.structs.Wiener_tight_W_sigma: 0.13623
-physics.producers.decon2droiEE.wcls_main.structs.Wiener_tight_W_power: 3.35324
-physics.producers.decon2droiEE.wcls_main.structs.Wire_ind_sigma: 0.75
-physics.producers.decon2droiEE.wcls_main.structs.Wire_col_sigma: 3.0
+physics.producers.decon2droiEE.wcls_main.structs.Gaus_wide_sigma: @local::Gaus_wide_sigma
+physics.producers.decon2droiEE.wcls_main.structs.Wiener_tight_U_sigma: @local::Wiener_tight_U_sigma
+physics.producers.decon2droiEE.wcls_main.structs.Wiener_tight_U_power: @local::Wiener_tight_U_power
+physics.producers.decon2droiEE.wcls_main.structs.Wiener_tight_V_sigma: @local::Wiener_tight_V_sigma
+physics.producers.decon2droiEE.wcls_main.structs.Wiener_tight_V_power: @local::Wiener_tight_V_power
+physics.producers.decon2droiEE.wcls_main.structs.Wiener_tight_W_sigma: @local::Wiener_tight_W_sigma
+physics.producers.decon2droiEE.wcls_main.structs.Wiener_tight_W_power: @local::Wiener_tight_W_power
+physics.producers.decon2droiEE.wcls_main.structs.Wire_ind_sigma: @local::Wire_ind_sigma
+physics.producers.decon2droiEE.wcls_main.structs.Wire_col_sigma: @local::Wire_col_sigma
 
-physics.producers.decon2droiEW.wcls_main.structs.Gaus_wide_sigma: 0.12
-physics.producers.decon2droiEW.wcls_main.structs.Wiener_tight_U_sigma: 0.148788
-physics.producers.decon2droiEW.wcls_main.structs.Wiener_tight_U_power: 3.76194
-physics.producers.decon2droiEW.wcls_main.structs.Wiener_tight_V_sigma: 0.1596568
-physics.producers.decon2droiEW.wcls_main.structs.Wiener_tight_V_power: 4.36125
-physics.producers.decon2droiEW.wcls_main.structs.Wiener_tight_W_sigma: 0.13623
-physics.producers.decon2droiEW.wcls_main.structs.Wiener_tight_W_power: 3.35324
-physics.producers.decon2droiEW.wcls_main.structs.Wire_ind_sigma: 0.75
-physics.producers.decon2droiEW.wcls_main.structs.Wire_col_sigma: 3.0
+physics.producers.decon2droiEW.wcls_main.structs.Gaus_wide_sigma: @local::Gaus_wide_sigma
+physics.producers.decon2droiEW.wcls_main.structs.Wiener_tight_U_sigma: @local::Wiener_tight_U_sigma
+physics.producers.decon2droiEW.wcls_main.structs.Wiener_tight_U_power: @local::Wiener_tight_U_power
+physics.producers.decon2droiEW.wcls_main.structs.Wiener_tight_V_sigma: @local::Wiener_tight_V_sigma
+physics.producers.decon2droiEW.wcls_main.structs.Wiener_tight_V_power: @local::Wiener_tight_V_power
+physics.producers.decon2droiEW.wcls_main.structs.Wiener_tight_W_sigma: @local::Wiener_tight_W_sigma
+physics.producers.decon2droiEW.wcls_main.structs.Wiener_tight_W_power: @local::Wiener_tight_W_power
+physics.producers.decon2droiEW.wcls_main.structs.Wire_ind_sigma: @local::Wire_ind_sigma
+physics.producers.decon2droiEW.wcls_main.structs.Wire_col_sigma: @local::Wire_col_sigma
 
-physics.producers.decon2droiWE.wcls_main.structs.Gaus_wide_sigma: 0.12
-physics.producers.decon2droiWE.wcls_main.structs.Wiener_tight_U_sigma: 0.148788
-physics.producers.decon2droiWE.wcls_main.structs.Wiener_tight_U_power: 3.76194
-physics.producers.decon2droiWE.wcls_main.structs.Wiener_tight_V_sigma: 0.1596568
-physics.producers.decon2droiWE.wcls_main.structs.Wiener_tight_V_power: 4.36125
-physics.producers.decon2droiWE.wcls_main.structs.Wiener_tight_W_sigma: 0.13623
-physics.producers.decon2droiWE.wcls_main.structs.Wiener_tight_W_power: 3.35324
-physics.producers.decon2droiWE.wcls_main.structs.Wire_ind_sigma: 0.75
-physics.producers.decon2droiWE.wcls_main.structs.Wire_col_sigma: 3.0
+physics.producers.decon2droiWE.wcls_main.structs.Gaus_wide_sigma: @local::Gaus_wide_sigma
+physics.producers.decon2droiWE.wcls_main.structs.Wiener_tight_U_sigma: @local::Wiener_tight_U_sigma
+physics.producers.decon2droiWE.wcls_main.structs.Wiener_tight_U_power: @local::Wiener_tight_U_power
+physics.producers.decon2droiWE.wcls_main.structs.Wiener_tight_V_sigma: @local::Wiener_tight_V_sigma
+physics.producers.decon2droiWE.wcls_main.structs.Wiener_tight_V_power: @local::Wiener_tight_V_power
+physics.producers.decon2droiWE.wcls_main.structs.Wiener_tight_W_sigma: @local::Wiener_tight_W_sigma
+physics.producers.decon2droiWE.wcls_main.structs.Wiener_tight_W_power: @local::Wiener_tight_W_power
+physics.producers.decon2droiWE.wcls_main.structs.Wire_ind_sigma: @local::Wire_ind_sigma
+physics.producers.decon2droiWE.wcls_main.structs.Wire_col_sigma: @local::Wire_col_sigma
 
-physics.producers.decon2droiWW.wcls_main.structs.Gaus_wide_sigma: 0.12
-physics.producers.decon2droiWW.wcls_main.structs.Wiener_tight_U_sigma: 0.148788
-physics.producers.decon2droiWW.wcls_main.structs.Wiener_tight_U_power: 3.76194
-physics.producers.decon2droiWW.wcls_main.structs.Wiener_tight_V_sigma: 0.1596568
-physics.producers.decon2droiWW.wcls_main.structs.Wiener_tight_V_power: 4.36125
-physics.producers.decon2droiWW.wcls_main.structs.Wiener_tight_W_sigma: 0.13623
-physics.producers.decon2droiWW.wcls_main.structs.Wiener_tight_W_power: 3.35324
-physics.producers.decon2droiWW.wcls_main.structs.Wire_ind_sigma: 0.75
-physics.producers.decon2droiWW.wcls_main.structs.Wire_col_sigma: 3.0
+physics.producers.decon2droiWW.wcls_main.structs.Gaus_wide_sigma: @local::Gaus_wide_sigma
+physics.producers.decon2droiWW.wcls_main.structs.Wiener_tight_U_sigma: @local::Wiener_tight_U_sigma
+physics.producers.decon2droiWW.wcls_main.structs.Wiener_tight_U_power: @local::Wiener_tight_U_power
+physics.producers.decon2droiWW.wcls_main.structs.Wiener_tight_V_sigma: @local::Wiener_tight_V_sigma
+physics.producers.decon2droiWW.wcls_main.structs.Wiener_tight_V_power: @local::Wiener_tight_V_power
+physics.producers.decon2droiWW.wcls_main.structs.Wiener_tight_W_sigma: @local::Wiener_tight_W_sigma
+physics.producers.decon2droiWW.wcls_main.structs.Wiener_tight_W_power: @local::Wiener_tight_W_power
+physics.producers.decon2droiWW.wcls_main.structs.Wire_ind_sigma: @local::Wire_ind_sigma
+physics.producers.decon2droiWW.wcls_main.structs.Wire_col_sigma: @local::Wire_col_sigma

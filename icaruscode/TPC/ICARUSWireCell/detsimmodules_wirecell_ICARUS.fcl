@@ -12,9 +12,10 @@ icarus_simwire_wirecell:
     {
         tool_type: WCLS
         apps: ["Pgrapher"]
-        // logsinks: ["stdout"]
+        logsinks: ["stdout"]
         // loglevels: ["magnify:debug"]
-        plugins: ["WireCellPgraph", "WireCellGen","WireCellSio","WireCellRoot","WireCellLarsoft"]
+        loglevels: ["debug", "pgraph:info"]
+        plugins: ["WireCellPgraph", "WireCellGen","WireCellSio","WireCellRoot","WireCellLarsoft", "WireCellHio"]
         // needs to be found via your WIRECELL_PATH 
         configs: ["pgrapher/experiment/icarus/wcls-multitpc-sim-drift-simchannel-refactored.jsonnet"]
         // Contract note: these exact "type:name" must be used to identify

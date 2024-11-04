@@ -18,14 +18,14 @@ function(params, tools, anode, name=null) {
             // Run wirecell-gen morse-* to find these numbers that match the extra
             // spread the sigproc induces.
             "smear_long": [
-                2.691862363980221,
-                2.6750200122535057,
-                2.7137567141154055
+                4.55,
+                4.55,
+                4.55,
             ],
             "smear_tran": [
-                0.7377218875719689,
-                0.7157764520393882,
-                0.13980698710556544
+                1.55,
+                1.55,
+                0.175,
             ]
         },
     }, nin=1, nout=1, uses=[anode, tools.field]),
