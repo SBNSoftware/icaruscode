@@ -1,0 +1,67 @@
+#include "services_common_icarus.fcl"
+#include "simulationservices_icarus.fcl"
+
+#include "larproperties.fcl"
+#include "backtrackerservice.fcl"
+#include "particleinventoryservice.fcl"
+#include "detectorproperties_icarus.fcl"
+#include "spacecharge.fcl"
+
+#include "spana_icarus.fcl"
+
+process_name: SPAna
+
+services:
+{
+  @table::icarus_basic_services 
+  @table::icarus_wirecalibration_services
+  @table::icarus_backtracking_services # from `simulationservices_icarus.fcl`
+  SpaceChargeService: @local::icarus_spacecharge
+}
+services.SpaceChargeService: {
+    EnableCalEfieldSCE: false
+    EnableCalSpatialSCE: false
+    EnableCorrSCE: false
+    EnableSimEfieldSCE: false
+    EnableSimSpatialSCE: false
+    InputFilename: "SCEoffsets/SCEoffsets_ICARUS_E500_voxelTH3.root"
+    RepresentationType: "Voxelized_TH3"
+    service_provider: "SpaceChargeServiceICARUS"
+}
+
+services.TFileService.fileName: "SPAna.root"
+
+#Start each new event with an empty event.
+source:
+{
+  module_type: RootInput
+  maxEvents:   -1        # Number of events to create
+}
+
+outputs:
+{
+}
+
+
+# Define and configure some modules to do work on each event.
+# First modules are defined; they are scheduled later.
+# Modules are grouped by type.
+physics:
+{
+  producers:{}
+
+  filters: {}
+
+  # evtfilter: [filter]
+
+  analyzers:
+  {
+    spanaE: @local::spana1d_east
+    spanaW: @local::spana1d_west
+  }
+
+  runprod: []
+  stream1:       [spanaE, spanaW]
+  trigger_paths: [] 
+  end_paths:     [ stream1 ]
+}
