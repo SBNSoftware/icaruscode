@@ -92,14 +92,14 @@ gaus_hitfinder_icarus.LongPulseWidth:                                           
 # These are default settings for production running
 gaus_hitfinder_icarus.HitFinderToolVec.CandidateHitsPlane0:                        @local::candhitfinder_standard      # Sets hit finding for plane 0
 gaus_hitfinder_icarus.HitFinderToolVec.CandidateHitsPlane0.Plane:                  0
-gaus_hitfinder_icarus.HitFinderToolVec.CandidateHitsPlane0.RoiThreshold:           9.
+gaus_hitfinder_icarus.HitFinderToolVec.CandidateHitsPlane0.RoiThreshold:           5.
 gaus_hitfinder_icarus.HitFinderToolVec.CandidateHitsPlane1:                        @local::candhitfinder_standard      # Sets hit finding for plane 1
 gaus_hitfinder_icarus.HitFinderToolVec.CandidateHitsPlane1.Plane:                  1
-gaus_hitfinder_icarus.HitFinderToolVec.CandidateHitsPlane1.RoiThreshold:           9.5
+gaus_hitfinder_icarus.HitFinderToolVec.CandidateHitsPlane1.RoiThreshold:           5
 gaus_hitfinder_icarus.HitFinderToolVec.CandidateHitsPlane2:                        @local::candhitfinder_standard      # Sets hit finding for plane 2
 gaus_hitfinder_icarus.HitFinderToolVec.CandidateHitsPlane2.Plane:                  2
-gaus_hitfinder_icarus.HitFinderToolVec.CandidateHitsPlane2.RoiThreshold:           9.
-
+gaus_hitfinder_icarus.HitFinderToolVec.CandidateHitsPlane2.RoiThreshold:           5.
+gaus_hitfinder_icarus.HitFilterAlg.MinPulseHeight: [3., 3., 3.] 
 
 # Define icarus version of test version gausshit finder
 gauss_hitfinder_icarus: @local::gaus_hitfinder
@@ -117,13 +117,13 @@ gauss_hitfinder_icarus.LongMaxHits:                                             
 gauss_hitfinder_icarus.LongPulseWidth:                                                        [10, 10, 10]
 gauss_hitfinder_icarus.HitFinderToolVec.CandidateHitsPlane0:                                  @local::candhitfinder_standard
 gauss_hitfinder_icarus.HitFinderToolVec.CandidateHitsPlane0.Plane:                            0
-gauss_hitfinder_icarus.gaushit2dTPCWW.HitFinderToolVec.CandidateHitsPlane0.RoiThreshold:      9.
+gauss_hitfinder_icarus.gaushit2dTPCWW.HitFinderToolVec.CandidateHitsPlane0.RoiThreshold:      5.
 gauss_hitfinder_icarus.HitFinderToolVec.CandidateHitsPlane1:                                  @local::candhitfinder_standard
 gauss_hitfinder_icarus.HitFinderToolVec.CandidateHitsPlane1.Plane:                            1
-gauss_hitfinder_icarus.gaushit2dTPCWW.HitFinderToolVec.CandidateHitsPlane0.RoiThreshold:      9.5
+gauss_hitfinder_icarus.gaushit2dTPCWW.HitFinderToolVec.CandidateHitsPlane0.RoiThreshold:      5.
 gauss_hitfinder_icarus.HitFinderToolVec.CandidateHitsPlane2:                                  @local::candhitfinder_standard
 gauss_hitfinder_icarus.HitFinderToolVec.CandidateHitsPlane2.Plane:                            2
-gauss_hitfinder_icarus.gaushit2dTPCWW.HitFinderToolVec.CandidateHitsPlane0.RoiThreshold:      9.
+gauss_hitfinder_icarus.gaushit2dTPCWW.HitFinderToolVec.CandidateHitsPlane0.RoiThreshold:      5.
 
 
 icarus_hitconverter:
