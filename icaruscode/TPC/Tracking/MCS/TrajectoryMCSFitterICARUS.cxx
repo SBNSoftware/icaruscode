@@ -96,7 +96,7 @@ cumseglens.clear();
 vector<float> dthetaPoly;
 for (unsigned int p = 0; p<segradlengths.size(); p++) {
     cout << " before finding 2d barycenters for poly " << endl;
-   // find2DSegmentBarycenter(traj, breakpoints[p], breakpoints[p+1], bary);
+  //  find2DSegmentBarycenter(traj, breakpoints[p], breakpoints[p+1], bary);
    findSegmentBarycenter(traj, breakpoints[p], breakpoints[p+1], bary);
     barycenters.push_back(bary);
 }
@@ -178,10 +178,12 @@ std::cout << " in while cycle " << nextValid << std::endl;
       std::cout << " nextValid "<< nextValid << " thislen " << thislen << "thisSegLen " << thisSegLen << " condition " << condition << std::endl;
     if (thislen>=thisSegLen) {
      if(condition) {
-   //   std::cout << " adding breakpoint " <<  breakpoints.size() << std::endl;
+     std::cout << " adding breakpoint " <<  breakpoints.size() << std::endl;
       breakpoints.push_back(nextValid);
       if (npoints>=minHitsPerSegment_) segradlengths.push_back(thislen*lar_radl_inv);
       else segradlengths.push_back(-999.);
+      if(segradlengths[segradlengths.size()-1]==-999.) 
+       cout << " adding weird segradlength npoints " << npoints << endl;
       cumseglens.push_back(cumseglens.back()+thislen);
       thislen = 0.;
       npoints = 0;
@@ -809,7 +811,7 @@ double washout=0.8585;
  
   //cout << " poly thetams " << thetams << " thetaerr " << thetaerr << endl;
 	 cout << " before covma "  << jp << endl;
-   FillCovMatrix(tr,matpoly,jp,thetams*thetams,thetaerr*thetaerr,matpolyms,matpolyerr,breakpoints);
+   FillCovMatrix(tr,matpoly,jp,thetams*thetams,thetaerr*thetaerr,matpolyms,matpolyerr,breakpoints,firstseg);
 	 cout << "before mixx "  << jp << endl;
    //FillCovMixTerms(tr,matmix,jp,nseg-2,thetams*thetams,thetaerr*thetaerr);
 	 cout << "after mixx "  << jp << endl;
@@ -1142,7 +1144,7 @@ matbd(ip+3,ip)=matbd(ip,ip+3);
 mat+=matbd;
 
 }
-const void TrajectoryMCSFitterICARUS::FillCovMatrix(recob::TrackTrajectory tr,TMatrixDSym mat,int jp,double sms,double serr, TMatrixDSym matms, TMatrixDSym materr,std::vector<long unsigned int> breakpoints) const
+const void TrajectoryMCSFitterICARUS::FillCovMatrix(recob::TrackTrajectory tr,TMatrixDSym mat,int jp,double sms,double serr, TMatrixDSym matms, TMatrixDSym materr,std::vector<long unsigned int> breakpoints, int firstseg) const
 {
 
   int matsize=mat.GetNrows();
@@ -1159,7 +1161,7 @@ auto pos1 = tr.LocationAtPoint(jp);
 auto pos2 = tr.LocationAtPoint(jp+1);
 double dxm= ( (pos1-pos0).R() );
 double dxp= ( (pos2-pos1).R() );
-  int ip=jp-1;
+  int ip=jp-firstseg;
 
 double pp,ppp,p0;
 p0=tr.MomentumAtPoint(jp);
@@ -1497,11 +1499,11 @@ if(plane==1) {
   if(plane==2) {
   //view 2 (collection)
     if(tpc>1) { 
- cout << " before vec "<< endl;
+ 
  vec1(0)=cos(PIG/3); vec1(1)=0;vec1[2]=sin(PIG/3);
   vec2(1)=1;vec2(0)=vec2[2]=0;
   vec3(0)=sin(PIG/3);vec3(1)=0;vec3[2]=-cos(PIG/3);
-   cout << " after vec "<< endl;
+ 
   
   }
   else {
@@ -1531,14 +1533,14 @@ ReferenceFrame rf3(ori,vec1,vec2,vec3);
   addRefFrame(rf3);
 */
 TMatrixD mat(3,3);
-cout << " reference frame mat before fill " << endl;
+//cout << " reference frame mat before fill " << endl;
 for(int j=0;j<3;j++) {
 mat(0,j)=vec1(j);
 mat(1,j)=vec2(j);
 mat(2,j)=vec3(j);
 }
-cout << " reference frame mat after fill " << endl;
-mat.Print();
+//cout << " reference frame mat after fill " << endl;
+//mat.Print();
 return mat;
   }
   /******************************************************************/
