@@ -18,12 +18,17 @@
 #include "wcls-decode-to-sig-base.fcl"
 #include "icarus_FilterDataIntegrity.fcl"
 #include "icarus_FilterCRTPMTMatching.fcl"
+#include "spana_icarus.fcl"
+#include "sp_filter_parameters.fcl"
 
 BEGIN_PROLOG
 
 ### Analyzers employed during stage 0 processing ###
 icarus_stage0_analyzers:
 {
+  spanaE: @local::spana1d_east
+  spanaW: @local::spana1d_east
+
   purityinfoana0: { module_type:     "TPCPurityInfoAna"
                     PurityInfoLabel: "purityana0"
                     PrintInfo:       false
@@ -201,19 +206,17 @@ icarus_stage0_multiTPC_TPC:         [ decon1droi,
                                       roifinder1d
                                     ]
 
-icarus_stage0_multiTPC_2d_TPC_init_E:[ decon1droi,
-                                      roifinder1d,
+icarus_stage0_multiTPC_2d_TPC_E:[ 
                                       decon2droiEE,
                                       decon2droiEW
                                     ]
 
-icarus_stage0_multiTPC_2d_TPC_finish_W:[ 
+icarus_stage0_multiTPC_2d_TPC_W:[ 
                                       decon2droiWE,
                                       decon2droiWW,
-                                      roifinder2d
                                     ]
 
-icarus_stage0_multiTPC_2d_TPC: [@sequence::icarus_stage0_multiTPC_2d_TPC_init_E, @sequence::icarus_stage0_multiTPC_2d_TPC_finish_W]
+icarus_stage0_multiTPC_2d_TPC: [@sequence::icarus_stage0_multiTPC_2d_TPC_E, @sequence::icarus_stage0_multiTPC_2d_TPC_W]
 
 
 icarus_stage0_EastHits_TPC:         [ gaushit1dTPCEW,
@@ -274,23 +277,14 @@ icarus_stage0_multiTPC:             [ @sequence::icarus_stage0_multiTPC_TPC,
                                     ]
  
 icarus_stage0_2d_multiTPC:          [ @sequence::icarus_stage0_multiTPC_2d_TPC,
-                                      @sequence::icarus_stage0_EastHits_TPC,
-                                      @sequence::icarus_stage0_WestHits_TPC,
                                       @sequence::icarus_stage0_EastHits2d_TPC,
                                       @sequence::icarus_stage0_WestHits2d_TPC,
                                       @sequence::icarus_purity_monitor
                                     ]
 
-icarus_stage0_2d_multiTPC_init_E:   [ @sequence::icarus_stage0_multiTPC_2d_TPC_init_E]
-icarus_stage0_2d_multiTPC_finish_W: [ @sequence::icarus_stage0_multiTPC_2d_TPC_finish_W,
-                                      @sequence::icarus_stage0_EastHits_TPC,
-                                      @sequence::icarus_stage0_WestHits_TPC,
-                                      @sequence::icarus_stage0_EastHits2d_TPC,
-                                      @sequence::icarus_stage0_WestHits2d_TPC,
-                                      @sequence::icarus_purity_monitor
-                                    ]
- 
- 
+icarus_stage0_2d_multiTPC_E: [ @sequence::icarus_stage0_multiTPC_2d_TPC_E, @sequence::icarus_stage0_EastHits2d_TPC]
+icarus_stage0_2d_multiTPC_W: [ @sequence::icarus_stage0_multiTPC_2d_TPC_W, @sequence::icarus_stage0_WestHits2d_TPC]
+
 icarus_stage0_CRT:                  [
                                       daqCRT,
                                       crthit,
@@ -395,6 +389,85 @@ icarus_stage0_producers.decon2droiWW.wcls_main.params.signal_output_form:       
 icarus_stage0_producers.decon2droiWW.wcls_main.logsinks: ["stdout"]
 icarus_stage0_producers.decon2droiWW.wcls_main.loglevels: ["debug", "pgraph:info"]
 icarus_stage0_producers.decon2droiWW.wcls_main.plugins: [@sequence::icarus_stage0_producers.decon2droiWW.wcls_main.plugins, "WireCellHio", "WireCellPytorch"]
+
+# Signal processing values
+icarus_stage0_producers.decon2droiEE.wcls_main.structs.gain0: 17.05212
+icarus_stage0_producers.decon2droiEW.wcls_main.structs.gain0: 17.05212
+icarus_stage0_producers.decon2droiWE.wcls_main.structs.gain0: 17.05212
+icarus_stage0_producers.decon2droiWW.wcls_main.structs.gain0: 17.05212
+
+icarus_stage0_producers.decon2droiEE.wcls_main.structs.gain1: 12.1420344 
+icarus_stage0_producers.decon2droiEW.wcls_main.structs.gain1: 12.1420344 
+icarus_stage0_producers.decon2droiWE.wcls_main.structs.gain1: 12.1420344 
+icarus_stage0_producers.decon2droiWW.wcls_main.structs.gain1: 12.1420344 
+
+icarus_stage0_producers.decon2droiEE.wcls_main.structs.gain2: 13.0261362 
+icarus_stage0_producers.decon2droiEW.wcls_main.structs.gain2: 13.0261362 
+icarus_stage0_producers.decon2droiWE.wcls_main.structs.gain2: 13.0261362 
+icarus_stage0_producers.decon2droiWW.wcls_main.structs.gain2: 13.0261362 
+
+
+icarus_stage0_producers.decon2droiEE.wcls_main.structs.shaping0: 1.3  
+icarus_stage0_producers.decon2droiEW.wcls_main.structs.shaping0: 1.3  
+icarus_stage0_producers.decon2droiWE.wcls_main.structs.shaping0: 1.3  
+icarus_stage0_producers.decon2droiWW.wcls_main.structs.shaping0: 1.3  
+
+icarus_stage0_producers.decon2droiEE.wcls_main.structs.shaping1: 1.45  
+icarus_stage0_producers.decon2droiEW.wcls_main.structs.shaping1: 1.45  
+icarus_stage0_producers.decon2droiWE.wcls_main.structs.shaping1: 1.45  
+icarus_stage0_producers.decon2droiWW.wcls_main.structs.shaping1: 1.45  
+
+icarus_stage0_producers.decon2droiEE.wcls_main.structs.shaping2: 1.3  
+icarus_stage0_producers.decon2droiEW.wcls_main.structs.shaping2: 1.3  
+icarus_stage0_producers.decon2droiWE.wcls_main.structs.shaping2: 1.3  
+icarus_stage0_producers.decon2droiWW.wcls_main.structs.shaping2: 1.3  
+
+# Defines final gain, in ADC/e-
+icarus_stage0_producers.decon2droiEE.wcls_main.structs.gain_ADC_per_e: @local::gain_ADC_per_e
+icarus_stage0_producers.decon2droiEW.wcls_main.structs.gain_ADC_per_e: @local::gain_ADC_per_e
+icarus_stage0_producers.decon2droiWE.wcls_main.structs.gain_ADC_per_e: @local::gain_ADC_per_e
+icarus_stage0_producers.decon2droiWW.wcls_main.structs.gain_ADC_per_e: @local::gain_ADC_per_e
+
+# Filter parameters
+icarus_stage0_producers.decon2droiEE.wcls_main.structs.Gaus_wide_sigma: @local::Gaus_wide_sigma
+icarus_stage0_producers.decon2droiEE.wcls_main.structs.Wiener_tight_U_sigma: @local::Wiener_tight_U_sigma
+icarus_stage0_producers.decon2droiEE.wcls_main.structs.Wiener_tight_U_power: @local::Wiener_tight_U_power
+icarus_stage0_producers.decon2droiEE.wcls_main.structs.Wiener_tight_V_sigma: @local::Wiener_tight_V_sigma
+icarus_stage0_producers.decon2droiEE.wcls_main.structs.Wiener_tight_V_power: @local::Wiener_tight_V_power
+icarus_stage0_producers.decon2droiEE.wcls_main.structs.Wiener_tight_W_sigma: @local::Wiener_tight_W_sigma
+icarus_stage0_producers.decon2droiEE.wcls_main.structs.Wiener_tight_W_power: @local::Wiener_tight_W_power
+icarus_stage0_producers.decon2droiEE.wcls_main.structs.Wire_ind_sigma: @local::Wire_ind_sigma
+icarus_stage0_producers.decon2droiEE.wcls_main.structs.Wire_col_sigma: @local::Wire_col_sigma
+
+icarus_stage0_producers.decon2droiEW.wcls_main.structs.Gaus_wide_sigma: @local::Gaus_wide_sigma
+icarus_stage0_producers.decon2droiEW.wcls_main.structs.Wiener_tight_U_sigma: @local::Wiener_tight_U_sigma
+icarus_stage0_producers.decon2droiEW.wcls_main.structs.Wiener_tight_U_power: @local::Wiener_tight_U_power
+icarus_stage0_producers.decon2droiEW.wcls_main.structs.Wiener_tight_V_sigma: @local::Wiener_tight_V_sigma
+icarus_stage0_producers.decon2droiEW.wcls_main.structs.Wiener_tight_V_power: @local::Wiener_tight_V_power
+icarus_stage0_producers.decon2droiEW.wcls_main.structs.Wiener_tight_W_sigma: @local::Wiener_tight_W_sigma
+icarus_stage0_producers.decon2droiEW.wcls_main.structs.Wiener_tight_W_power: @local::Wiener_tight_W_power
+icarus_stage0_producers.decon2droiEW.wcls_main.structs.Wire_ind_sigma: @local::Wire_ind_sigma
+icarus_stage0_producers.decon2droiEW.wcls_main.structs.Wire_col_sigma: @local::Wire_col_sigma
+
+icarus_stage0_producers.decon2droiWE.wcls_main.structs.Gaus_wide_sigma: @local::Gaus_wide_sigma
+icarus_stage0_producers.decon2droiWE.wcls_main.structs.Wiener_tight_U_sigma: @local::Wiener_tight_U_sigma
+icarus_stage0_producers.decon2droiWE.wcls_main.structs.Wiener_tight_U_power: @local::Wiener_tight_U_power
+icarus_stage0_producers.decon2droiWE.wcls_main.structs.Wiener_tight_V_sigma: @local::Wiener_tight_V_sigma
+icarus_stage0_producers.decon2droiWE.wcls_main.structs.Wiener_tight_V_power: @local::Wiener_tight_V_power
+icarus_stage0_producers.decon2droiWE.wcls_main.structs.Wiener_tight_W_sigma: @local::Wiener_tight_W_sigma
+icarus_stage0_producers.decon2droiWE.wcls_main.structs.Wiener_tight_W_power: @local::Wiener_tight_W_power
+icarus_stage0_producers.decon2droiWE.wcls_main.structs.Wire_ind_sigma: @local::Wire_ind_sigma
+icarus_stage0_producers.decon2droiWE.wcls_main.structs.Wire_col_sigma: @local::Wire_col_sigma
+
+icarus_stage0_producers.decon2droiWW.wcls_main.structs.Gaus_wide_sigma: @local::Gaus_wide_sigma
+icarus_stage0_producers.decon2droiWW.wcls_main.structs.Wiener_tight_U_sigma: @local::Wiener_tight_U_sigma
+icarus_stage0_producers.decon2droiWW.wcls_main.structs.Wiener_tight_U_power: @local::Wiener_tight_U_power
+icarus_stage0_producers.decon2droiWW.wcls_main.structs.Wiener_tight_V_sigma: @local::Wiener_tight_V_sigma
+icarus_stage0_producers.decon2droiWW.wcls_main.structs.Wiener_tight_V_power: @local::Wiener_tight_V_power
+icarus_stage0_producers.decon2droiWW.wcls_main.structs.Wiener_tight_W_sigma: @local::Wiener_tight_W_sigma
+icarus_stage0_producers.decon2droiWW.wcls_main.structs.Wiener_tight_W_power: @local::Wiener_tight_W_power
+icarus_stage0_producers.decon2droiWW.wcls_main.structs.Wire_ind_sigma: @local::Wire_ind_sigma
+icarus_stage0_producers.decon2droiWW.wcls_main.structs.Wire_col_sigma: @local::Wire_col_sigma
 
 ### Set up to output ROIs from full waveforms
 icarus_stage0_producers.roifinder1d.WireModuleLabelVec:                                        ["decon1droi:PHYSCRATEDATATPCWW","decon1droi:PHYSCRATEDATATPCWE","decon1droi:PHYSCRATEDATATPCEW","decon1droi:PHYSCRATEDATATPCEE"]
