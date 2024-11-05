@@ -4,7 +4,6 @@
 #include "stage0_icarus_defs.fcl"
 #include "services_common_icarus.fcl"
 #include "channelmapping_icarus.fcl"
-#include "simulationservices_icarus.fcl"
 
 process_name: Stage0
 
@@ -14,20 +13,7 @@ services:
   IICARUSChannelMap:           @local::icarus_channelmappinggservice
   IPMTTimingCorrectionService: @local::icarus_pmttimingservice
                                @table::icarus_wirecalibration_minimum_services
-  @table::icarus_backtracking_services # from `simulationservices_icarus.fcl`
-
 }
-services.SpaceChargeService: {
-    EnableCalEfieldSCE: false
-    EnableCalSpatialSCE: false
-    EnableCorrSCE: false
-    EnableSimEfieldSCE: false
-    EnableSimSpatialSCE: false
-    InputFilename: "SCEoffsets/SCEoffsets_ICARUS_E500_voxelTH3.root"
-    RepresentationType: "Voxelized_TH3"
-    service_provider: "SpaceChargeServiceICARUS"
-}
-
 
 #source is a root file
 source:
