@@ -707,7 +707,7 @@ thetams=13.6/cp;
   
    std::cout << " all that stuff " << thetams << thetaerr << dstot << cos << beta << alfa << cp << ds<< n << ap0 << apmedio << tpmedio << cc<< washout << dxmedio << endl;
  
-   FillCovMatrixSegOnly(tr,mat,jp,thetams*thetams,thetaerr*thetaerr,materr,breakpoints);
+   //FillCovMatrixSegOnly(tr,mat,jp,thetams*thetams,thetaerr*thetaerr,materr,breakpoints);
    std::cout << " before addsegcov nseg " << nseg << std::endl;
 
    //AddSegmentCovariance(tr,mat,jp);
@@ -961,41 +961,44 @@ double ttnewrms=vtcovmed;
 
 const void TrajectoryMCSFitterICARUS::FillCovMatrixSegOnly(recob::TrackTrajectory tr, TMatrixDSym mat,unsigned int jp,double sms,double serr,TMatrixDSym materr,std::vector<long unsigned int> breaks) const
 {
-  /*
+   /*
   std::cout << " begin segonly " << std::endl;
  unsigned int ip=jp-1;
 auto pos0 = tr.LocationAtPoint(ip);
 auto pos1 = tr.LocationAtPoint(jp);
 double dx= ( (pos1-pos0).R() );
-//double dxp=point(jp+1).DX();
-//double dxtot=tr.Length();
- //double dxmedio=dxtot/(tr.NPoints()-1);
- std::cout << " before s0sp " << std::endl;
+auto pos2 = tr.LocationAtPoint(jp+1);
+double dxp= ( (pos2-pos1).R() );
+ double dxmed=(dxp+dx)/2;
+if(dx<0.00001)
+  dxmed=dxp;
+  c0=sms*dxmed+serr;
+
 
  double s0=1/double(breaks[jp]-breaks[ip]);
 double sp=1/double(breaks[jp+1]-breaks[jp]);
 std::cout << " segonly s0 " << s0 << " sp " << sp << std::endl;
 
 
- double c0=1;
+// double c0=1;
  //double cp;//,cm,cpp,cmm;
 
 
- //double wash1=0.174;
- //double wash0=0.859;
+ double wash1=0.174;
+ double wash0=0.859;
 
 // double serrmod=serr*sp;
 
  //c0=sms*dx*wash0+serr/dx/dx*s0+serr*sp/dx/dx;
  //c0=sms*dxmed;
- */
+ 
   std::cout << " before filling mat "  << std::endl;
   
-  mat(0,0)=0;
+  mat(jp,jp)=c0;
   
 
    std::cout << " after filling mat "  << std::endl;
-   /*
+   
   //materr[ip][ip]=serr/dx/dx*s0+serr*sp/dx/dx;
 //cout << " diagonal error " << serr/dx/dx*s0+serr*sp/dx/dx+tcard << " diagonal tcard " << tcard << endl;
  std::cout << " filling covsegonly MS " << jp << "," << jp << " : " << sms*dx*wash0 << std::endl; 
@@ -1006,21 +1009,12 @@ std::cout << " segonly s0 " << s0 << " sp " << sp << std::endl;
 
 //cout << " np " << np << endl;
  if(jp<tr.NPoints()-1) {
-auto pos2 = tr.LocationAtPoint(jp+1);
-double dxp= ( (pos2-pos1).R() );
-// double dxp=point(jp+1).DX();
 
- //dxpp=dxmedio;
- //double spp=1/(breaks[jp+1]-breaks[jp]);
- //double spp=1/(point(jp+1).NSeg());
-		    //tcard=0.33333333*scard*scard/dx/dxp;
-//tcard=0;
-//double cp=-serr*sp/dx/dxp+sms*wash1*dx;
+
+double cp=-serr*sp/dx/dxp+sms*wash1*dx;
 
  std::cout << " offdiagonal error " << serr*sp/dx/dxp << std::endl;
- //mat[ip][ip+1]=cp;
- //materr[ip][ip+1]=-serr*sp/dx/dxp;
- //matms[ip][ip+1]=cp;
+ mat(ip,ip+1)=cp;
 if(ip==0) {
   //cout << "segonly serrsp " << serr*sp <<  " sp " << sp << " dx " << dx << " dxp " << dxp <<endl;
   //cout << "segonly product "<< -serr*sp/dx/dxp << endl;
@@ -1031,11 +1025,60 @@ if(ip==0) {
 //SYMMETRIZE
   if(jp<tr.NPoints()) {
     //mat[ip+1][ip]=mat[ip][ip+1];
-//matms[ip+1][ip]=matms[ip][ip+1];
-//materr[ip+1][ip]=materr[ip][ip+1];
 }
 //debu << mat << endl;
   std::cout << " end segonly " << std::endl;
+
+
+ double dxm,dxmm,dxp,dxpp;
+
+  int ip=jp-1;
+ dxm=point(jp-1).DS();
+ dxp=point(jp).DS();
+ // dxm=dxmedio;
+ //dxp=dxmedio;
+ cout <<" point " << jp << " dxm " << dxm << " dxp " << dxp << endl;
+
+
+ double c0,cp,cm,cpp,cmm;
+ double dxmed=(dxp+dxm)/2;
+ if(dxm<0.00001)
+  dxmed=dxp;
+  c0=sms*dxmed+serr;
+ //c0=sms*dxmed;
+ cout << " serr " << serr << " dxp " << dxp << " dxm " << dxm << " dxmed " << dxmed << endl;
+ cout << " MS term " << sms*dxmed << " measurement term " << 2*serr << endl;
+ cout << "measMS ratio" << 2*serr/(sms*dxmed) << endl;
+  mat[ip][ip]=c0;
+
+  cout << " filling covseg matrix " << jp << "," << jp << " : " << c0 << endl; 
+cout << " np " << np << endl;
+  if(jp<np+1) {
+    //dxp=point(ip+1).DS();
+dxpp=point(jp+1).DS();
+ //dxpp=dxmedio;
+double errp=point(jp+1).SMSeg(); 
+double errm=point(jp).SMSeg(); 
+ cp=-abs(errm*errp);
+  cout << " serr " << serr << " sqrt " << sqrt(serr) << " errp " << errp << endl;
+ cout << " cp " << cp << endl;
+ mat[ip][ip+1]=cp;
+  cout << " filling covseg matrix " << jp << "," << jp+1 << " : " << cp << endl; 
+  }
+
+ if(jp>1) {
+ dxmm=point(jp-1).DS();
+ //dxmm=dxmedio;
+ // if(jp==21||jp==22) {
+ //cout << " check- element " << jp << " point " << ip << " dxp " << dxp <<" dxm " << dxm << " dxmm " << dxmm << endl;
+ //cout << " term1 " << 2/dxm/dxm << " term2 " << 1/dxm/dxp << " term 3 " << 1/dxm/dxmm << endl;
+ // }
+double errm=point(jp-1).SMSeg(); 
+double errp=point(jp).SMSeg(); 
+ cm=-abs(errp*errm);
+   cout << " filling covseg matrix " << jp << "," << jp-1 << " : " << cm << endl; 
+   mat[ip][ip-1]=cm;
+ }
  */
 }
  
