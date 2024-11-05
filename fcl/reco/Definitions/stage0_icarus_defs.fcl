@@ -358,6 +358,7 @@ icarus_stage0_producers.decon2droi.wcls_main.params.tpc_volume_label:           
 icarus_stage0_producers.decon2droi.wcls_main.params.signal_output_form:                        "dense"
 icarus_stage0_producers.decon2droi.wcls_main.logsinks: ["stdout"]
 icarus_stage0_producers.decon2droi.wcls_main.loglevels: ["debug", "pgraph:info"]
+icarus_stage0_producers.decon2droi.wcls_main.configs: ["pgrapher/experiment/icarus/wcls-decode-to-sig-twofaced.jsonnet"]
 
 icarus_stage0_producers.decon2droiEE.wcls_main.inputers:                                       ["wclsRawFrameSource:rfsrc0"]
 icarus_stage0_producers.decon2droiEE.wcls_main.outputers:                                      ["wclsFrameSaver:spsaver0"]
@@ -367,6 +368,7 @@ icarus_stage0_producers.decon2droiEE.wcls_main.params.signal_output_form:       
 icarus_stage0_producers.decon2droiEE.wcls_main.logsinks: ["stdout"]
 icarus_stage0_producers.decon2droiEE.wcls_main.loglevels: ["debug", "pgraph:info"]
 icarus_stage0_producers.decon2droiEE.wcls_main.plugins: [@sequence::icarus_stage0_producers.decon2droiEE.wcls_main.plugins, "WireCellHio", "WireCellPytorch"]
+icarus_stage0_producers.decon2droiEE.wcls_main.configs: ["pgrapher/experiment/icarus/wcls-decode-to-sig-twofaced.jsonnet"]
 
 icarus_stage0_producers.decon2droiEW.wcls_main.inputers:                                       ["wclsRawFrameSource:rfsrc1"]
 icarus_stage0_producers.decon2droiEW.wcls_main.outputers:                                      ["wclsFrameSaver:spsaver1"]
@@ -376,6 +378,7 @@ icarus_stage0_producers.decon2droiEW.wcls_main.params.signal_output_form:       
 icarus_stage0_producers.decon2droiEW.wcls_main.logsinks: ["stdout"]
 icarus_stage0_producers.decon2droiEW.wcls_main.loglevels: ["debug", "pgraph:info"]
 icarus_stage0_producers.decon2droiEW.wcls_main.plugins: [@sequence::icarus_stage0_producers.decon2droiEW.wcls_main.plugins, "WireCellHio", "WireCellPytorch"]
+icarus_stage0_producers.decon2droiEW.wcls_main.configs: ["pgrapher/experiment/icarus/wcls-decode-to-sig-twofaced.jsonnet"]
 
 icarus_stage0_producers.decon2droiWE.wcls_main.inputers:                                       ["wclsRawFrameSource:rfsrc2"]
 icarus_stage0_producers.decon2droiWE.wcls_main.outputers:                                      ["wclsFrameSaver:spsaver2"]
@@ -385,6 +388,7 @@ icarus_stage0_producers.decon2droiWE.wcls_main.params.signal_output_form:       
 icarus_stage0_producers.decon2droiWE.wcls_main.logsinks: ["stdout"]
 icarus_stage0_producers.decon2droiWE.wcls_main.loglevels: ["debug", "pgraph:info"]
 icarus_stage0_producers.decon2droiWE.wcls_main.plugins: [@sequence::icarus_stage0_producers.decon2droiWE.wcls_main.plugins, "WireCellHio", "WireCellPytorch"]
+icarus_stage0_producers.decon2droiWE.wcls_main.configs: ["pgrapher/experiment/icarus/wcls-decode-to-sig-twofaced.jsonnet"]
 
 icarus_stage0_producers.decon2droiWW.wcls_main.inputers:                                       ["wclsRawFrameSource:rfsrc3"]
 icarus_stage0_producers.decon2droiWW.wcls_main.outputers:                                      ["wclsFrameSaver:spsaver3"]
@@ -394,6 +398,7 @@ icarus_stage0_producers.decon2droiWW.wcls_main.params.signal_output_form:       
 icarus_stage0_producers.decon2droiWW.wcls_main.logsinks: ["stdout"]
 icarus_stage0_producers.decon2droiWW.wcls_main.loglevels: ["debug", "pgraph:info"]
 icarus_stage0_producers.decon2droiWW.wcls_main.plugins: [@sequence::icarus_stage0_producers.decon2droiWW.wcls_main.plugins, "WireCellHio", "WireCellPytorch"]
+icarus_stage0_producers.decon2droiWW.wcls_main.configs: ["pgrapher/experiment/icarus/wcls-decode-to-sig-twofaced.jsonnet"]
 
 # Signal processing values
 icarus_stage0_producers.decon2droiEE.wcls_main.structs.gain0: 17.05212
