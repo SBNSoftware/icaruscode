@@ -3,8 +3,4 @@
 # Run the West 2D deconv and finish TPC stage0
 physics.path: [@sequence::icarus_stage0_2d_multiTPC_W]
 
-# Make hit-finding analysis point to WireCell wiener ROI output
-physics.analyzers.spanaE.WireProducers: ["decon2droiEE:wiener", "decon2droiEW:wiener"]
-physics.analyzers.spanaW.WireProducers: ["decon2droiWE:wiener", "decon2droiWW:wiener"]
-
 process_name: MCstage0W

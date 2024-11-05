@@ -7,6 +7,4 @@ physics.path: [   @sequence::icarus_stage0_mc_PMT,
                   @sequence::icarus_stage0_mc_crt
               ]
 
-physics.outana:        []
-
 process_name: MCstage0E
