@@ -20,17 +20,18 @@ physics.path: [   @sequence::icarus_stage0_mc_PMT,
               ]
 
 ## boiler plate...
+physics.outana:        [ ]
 physics.trigger_paths: [ path ]
-physics.end_paths:     [ streamROOT ]
+physics.end_paths:     [ outana, streamROOT ]
 
 # Drop the artdaq format files on output
 outputs.rootOutput.outputCommands: ["keep *_*_*_*", 
                                     "drop *_daq*_*_*", 
-                                   "drop *_MCDecodeTPCROI_*_*", 
-                                   "drop *_decon1droi_*_*", 
-                                   "drop *_decon2droi*_*_*", 
-                                   "drop recob::Wire*_roifinder*_*_*", 
-                                   "keep *_daq_simpleSC*_*"]
+                                    "drop *_MCDecodeTPCROI_*_*", 
+                                    "drop *_decon1droi_*_*", 
+                                    "drop *_decon2droi*_*_*", 
+                                    "drop recob::Wire*_roifinder*_*_*", 
+                                    "keep *_daq_simpleSC*_*"]
 
 # Set the expected input for ophit
 physics.producers.ophit.InputModule: "opdaq"
