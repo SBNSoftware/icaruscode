@@ -3,7 +3,7 @@
 # Run the PMT+CRT stage0, initial TPC and East 2D deconv
 physics.path: [   @sequence::icarus_stage0_mc_PMT,
                   MCDecodeTPCROI,
-                  @sequence::icarus_stage0_2d_multiTPC_init_E,
+                  @sequence::icarus_stage0_2d_multiTPC_E,
                   @sequence::icarus_stage0_mc_crt
               ]
 
