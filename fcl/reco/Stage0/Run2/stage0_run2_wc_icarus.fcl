@@ -32,39 +32,6 @@ outputs.rootOutput.outputCommands:         ["keep *_*_*_*",
                                             "keep *_daq_ICARUSTriggerV*_*"
                                            ]
 
-# Add below as per Gray Putnam (should we move to jsonnet files?)
-physics.producers.decon2droiEE.wcls_main.structs.gain0: 17.05212 
-physics.producers.decon2droiEW.wcls_main.structs.gain0: 17.05212 
-physics.producers.decon2droiWE.wcls_main.structs.gain0: 17.05212 
-physics.producers.decon2droiWW.wcls_main.structs.gain0: 17.05212 
-
-
-physics.producers.decon2droiEE.wcls_main.structs.gain1: 12.1420344 
-physics.producers.decon2droiEW.wcls_main.structs.gain1: 12.1420344 
-physics.producers.decon2droiWE.wcls_main.structs.gain1: 12.1420344 
-physics.producers.decon2droiWW.wcls_main.structs.gain1: 12.1420344 
-
-physics.producers.decon2droiEE.wcls_main.structs.gain2: 13.0261362 
-physics.producers.decon2droiEW.wcls_main.structs.gain2: 13.0261362 
-physics.producers.decon2droiWE.wcls_main.structs.gain2: 13.0261362 
-physics.producers.decon2droiWW.wcls_main.structs.gain2: 13.0261362 
-
-
-physics.producers.decon2droiEE.wcls_main.structs.shaping0: 1.3  
-physics.producers.decon2droiEW.wcls_main.structs.shaping0: 1.3  
-physics.producers.decon2droiWE.wcls_main.structs.shaping0: 1.3  
-physics.producers.decon2droiWW.wcls_main.structs.shaping0: 1.3  
-
-physics.producers.decon2droiEE.wcls_main.structs.shaping1: 1.45  
-physics.producers.decon2droiEW.wcls_main.structs.shaping1: 1.45  
-physics.producers.decon2droiWE.wcls_main.structs.shaping1: 1.45  
-physics.producers.decon2droiWW.wcls_main.structs.shaping1: 1.45  
-
-physics.producers.decon2droiEE.wcls_main.structs.shaping2: 1.3  
-physics.producers.decon2droiEW.wcls_main.structs.shaping2: 1.3  
-physics.producers.decon2droiWE.wcls_main.structs.shaping2: 1.3  
-physics.producers.decon2droiWW.wcls_main.structs.shaping2: 1.3  
-
 services.message.destinations :
 {
   STDCOUT:

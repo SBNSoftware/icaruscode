@@ -1,0 +1,10 @@
+#include "stage0_run2_wc_icarus.fcl"
+
+physics.path: [
+    filterdataintegrity,
+    @sequence::icarus_stage0_PMT,
+    @sequence::icarus_stage0_CRT,
+    daqTPCROI,
+    @sequence::icarus_stage0_multiTPC_2d_TPC_E,
+    @sequence::icarus_stage0_EastHits2d_TPC
+]
