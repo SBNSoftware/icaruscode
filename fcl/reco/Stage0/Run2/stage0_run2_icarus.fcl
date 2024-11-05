@@ -10,7 +10,7 @@ process_name: stage0
 physics.path:     [ @sequence::icarus_stage0_data_crtpmtfilter ]
 
 ## boiler plate...
-physics.outana:        [ spanaE, spanaW, purityinfoana0, purityinfoana1 ]
+physics.outana:        [ purityinfoana0, purityinfoana1 ]
 physics.trigger_paths: [ path ]
 physics.end_paths:     [ outana, streamROOT ]
 

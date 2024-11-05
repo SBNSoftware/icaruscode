@@ -21,7 +21,7 @@ physics.path: [   @sequence::icarus_stage0_mc_PMT,
               ]
 
 ## boiler plate...
-physics.outana:        [ spanaE, spanaW, purityinfoana0, purityinfoana1 ]
+physics.outana:        [ purityinfoana0, purityinfoana1 ]
 physics.trigger_paths: [ path ]
 physics.end_paths:     [ outana, streamROOT ]
 
