@@ -1,0 +1,9 @@
+#include "stage0W_run2_wc_icarus.fcl"
+
+# Turn on PCA noise suppression
+# physics.producers.MCDecodeTPCROI.DecoderTool.DenoiserType: "pca"
+
+physics.producers.decon2droiEE.wcls_main.configs: ["pgrapher/experiment/icarus/wcls-decode-to-sig-twofaced-dnnroi.jsonnet"]
+physics.producers.decon2droiEW.wcls_main.configs: ["pgrapher/experiment/icarus/wcls-decode-to-sig-twofaced-dnnroi.jsonnet"]
+physics.producers.decon2droiWE.wcls_main.configs: ["pgrapher/experiment/icarus/wcls-decode-to-sig-twofaced-dnnroi.jsonnet"]
+physics.producers.decon2droiWW.wcls_main.configs: ["pgrapher/experiment/icarus/wcls-decode-to-sig-twofaced-dnnroi.jsonnet"]
