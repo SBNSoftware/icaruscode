@@ -7,3 +7,8 @@ physics.producers.decon2droiEE.wcls_main.configs: ["pgrapher/experiment/icarus/w
 physics.producers.decon2droiEW.wcls_main.configs: ["pgrapher/experiment/icarus/wcls-decode-to-sig-twofaced-dnnroi.jsonnet"]
 physics.producers.decon2droiWE.wcls_main.configs: ["pgrapher/experiment/icarus/wcls-decode-to-sig-twofaced-dnnroi.jsonnet"]
 physics.producers.decon2droiWW.wcls_main.configs: ["pgrapher/experiment/icarus/wcls-decode-to-sig-twofaced-dnnroi.jsonnet"]
+
+physics.producers.gaushit2dTPCEE.CalDataModuleLabel: "decon2droiEE:dnnsp"
+physics.producers.gaushit2dTPCEW.CalDataModuleLabel: "decon2droiEW:dnnsp"
+physics.producers.gaushit2dTPCWE.CalDataModuleLabel: "decon2droiWE:dnnsp"
+physics.producers.gaushit2dTPCWW.CalDataModuleLabel: "decon2droiWW:dnnsp"
