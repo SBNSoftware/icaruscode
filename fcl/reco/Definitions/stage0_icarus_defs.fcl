@@ -501,6 +501,27 @@ icarus_stage0_producers.gaushit2dTPCWE.CalDataModuleLabel:                      
 icarus_stage0_producers.gaushit2dTPCEW.CalDataModuleLabel:                                     "decon2droiEW:gauss"
 icarus_stage0_producers.gaushit2dTPCEE.CalDataModuleLabel:                                     "decon2droiEE:gauss"
 
+# Lower thresholds for tighter filter width
+icarus_stage0_producers.gaushit2dTPCEE.HitFinderToolVec.CandidateHitsPlane0.RoiThreshold:      5.
+icarus_stage0_producers.gaushit2dTPCEE.HitFinderToolVec.CandidateHitsPlane1.RoiThreshold:      5.
+icarus_stage0_producers.gaushit2dTPCEE.HitFinderToolVec.CandidateHitsPlane2.RoiThreshold:      5.
+icarus_stage0_producers.gaushit2dTPCEE.HitFilterAlg.MinPulseHeight:                            [3., 3., 3.]
+
+icarus_stage0_producers.gaushit2dTPCEW.HitFinderToolVec.CandidateHitsPlane0.RoiThreshold:      5.
+icarus_stage0_producers.gaushit2dTPCEW.HitFinderToolVec.CandidateHitsPlane1.RoiThreshold:      5.
+icarus_stage0_producers.gaushit2dTPCEW.HitFinderToolVec.CandidateHitsPlane2.RoiThreshold:      5.
+icarus_stage0_producers.gaushit2dTPCEW.HitFilterAlg.MinPulseHeight:                            [3., 3., 3.]
+
+icarus_stage0_producers.gaushit2dTPCWE.HitFinderToolVec.CandidateHitsPlane0.RoiThreshold:      5.
+icarus_stage0_producers.gaushit2dTPCWE.HitFinderToolVec.CandidateHitsPlane1.RoiThreshold:      5.
+icarus_stage0_producers.gaushit2dTPCWE.HitFinderToolVec.CandidateHitsPlane2.RoiThreshold:      5.
+icarus_stage0_producers.gaushit2dTPCWE.HitFilterAlg.MinPulseHeight:                            [3., 3., 3.]
+
+icarus_stage0_producers.gaushit2dTPCWW.HitFinderToolVec.CandidateHitsPlane0.RoiThreshold:      5.
+icarus_stage0_producers.gaushit2dTPCWW.HitFinderToolVec.CandidateHitsPlane1.RoiThreshold:      5.
+icarus_stage0_producers.gaushit2dTPCWW.HitFinderToolVec.CandidateHitsPlane2.RoiThreshold:      5.
+icarus_stage0_producers.gaushit2dTPCWW.HitFilterAlg.MinPulseHeight:                            [3., 3., 3.]
+
 icarus_stage0_producers.gausshitTPCWW.CalDataModuleLabel:                                      "roifinder:PHYSCRATEDATATPCWW"
 icarus_stage0_producers.gausshitTPCWE.CalDataModuleLabel:                                      "roifinder:PHYSCRATEDATATPCWE"
 icarus_stage0_producers.gausshitTPCEW.CalDataModuleLabel:                                      "roifinder:PHYSCRATEDATATPCEW"
