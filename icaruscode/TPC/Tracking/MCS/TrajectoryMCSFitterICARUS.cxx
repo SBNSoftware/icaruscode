@@ -46,6 +46,7 @@ cumseglens.clear();
 breakpoints.clear();
 segradlengths.clear();
 cumseglens.clear();
+
  breakTrajInSegments(traj, breakpoints, segradlengths, cumseglens, cutMode_, cutLength_);
 
   std::cout << " n segments " << segradlengths.size() << std::endl;
@@ -178,27 +179,39 @@ std::cout << " in while cycle " << nextValid << std::endl;
       std::cout << " nextValid "<< nextValid << " thislen " << thislen << "thisSegLen " << thisSegLen << " condition " << condition << std::endl;
     if (thislen>=thisSegLen) {
      if(condition) {
-     std::cout << " adding breakpoint " <<  breakpoints.size() << std::endl;
+     std::cout << " adding breakpoint " <<  nextValid << std::endl;
+
       breakpoints.push_back(nextValid);
+          std::cout << " break size " << breakpoints.size() << " last break " << breakpoints[breakpoints.size()-1] << std::endl;
+
       if (npoints>=minHitsPerSegment_) segradlengths.push_back(thislen*lar_radl_inv);
       else segradlengths.push_back(-999.);
       if(segradlengths[segradlengths.size()-1]==-999.) 
        cout << " adding weird segradlength npoints " << npoints << endl;
       cumseglens.push_back(cumseglens.back()+thislen);
+     std::cout << " break size " << breakpoints.size() << " last cumseglen " << cumseglens[cumseglens.size()-1] << " last segradlen " << segradlengths[segradlengths.size()-1] <<std::endl;
+
       thislen = 0.;
       npoints = 0;
 }
-else break;
-    }
-    nextValid = traj.NextValidPoint(nextValid+1);
-  }
-  //then add last segment
+else {
   if (thislen>0.) {
-    breakpoints.push_back(traj.LastValidPoint()+1);
+    //then add last segment
+    breakpoints.push_back(nextValid);
+      std::cout << " break size " << breakpoints.size() << " very last break " << breakpoints[breakpoints.size()-1] << std::endl;
+
     segradlengths.push_back(thislen*lar_radl_inv);
     cumseglens.push_back(cumseglens.back()+thislen);
+    std::cout << " break size " << breakpoints.size() << " very last cumseglen " << cumseglens[cumseglens.size()-1] << " last segradlen " << segradlengths[segradlengths.size()-1] <<std::endl;
+
   }
-  std::cout << " icarus nseg " << breakpoints.size() << std::endl;
+break;
+}
+    }
+    nextValid = traj.NextValidPoint(nextValid+1);
+  
+
+  }
 //exit(33);
   return;
 }
@@ -558,7 +571,6 @@ double thetams,thetaerr;
   vector<double> tt,tt0;
  double dstot,beta,alfa;
  int n;
- int np=tr.NPoints();
  int firstseg=1;
  unsigned int lastseg=cumseglens.size()-1;
  for(unsigned int js=0;js<cumseglens.size()-1;js++) {
@@ -582,16 +594,10 @@ double thetams,thetaerr;
    // ncut=-1;
    return 0;
 }
- // int np=tr.nPointsUsed();
-
  std::cout << " before matrices " << nseg << std::endl;
 
 TMatrixDSym mat(2*nseg-3);
- std::cout << " before mat " << np << std::endl;
-// mat(1,1)=0;
- std::cout << " after mat " << np << std::endl;
-//TMatrixDSym mat(np-2,np-2,0);
-//TMatrixDSym mat(np-1,np-1,0);
+
 TMatrixDSym materr(nseg-1);
 TMatrixDSym matpolyerr(nseg-2);
 TMatrixDSym matpolyms(nseg-2);
@@ -605,7 +611,7 @@ double tpmedio=0;
  int nbstop=0;
  double MMU=105.6;
  
- 
+ int np=tr.NPoints();
   TVector3 start=tr.LocationAtPoint<TVector3>(0);
   TVector3 end=tr.LocationAtPoint<TVector3>(np-1);
   TVector3 avdir=end-start;
@@ -613,7 +619,8 @@ double tpmedio=0;
   projColl[0]=1; projColl[1]=sqrt(3.)/2.; projColl[2]=0.5;
  //double  cos=avdir*projColl;
  double sinb=avdir*projColl;
- double cos=(collLength()/10./(tr.Length()));
+ //double cos=(collLength()/10./(tr.Length()));
+ double cos=1;
  sinb=1;
  cout << " sinb " << sinb << endl;
  //  double dstot;
@@ -694,15 +701,29 @@ if(cutMode()==2) dstot=cutLength();
    //sigma0=0.715;
 double washout=0.8585;
    double dxmedio=dstot/double(nsegtot);
-   // thetams=13.6/cp/beta*sqrt(1./140./cos)*alfa/cos*sqrt(dxmedio);
-thetams=13.6/cp;
-    std::cout << " beta " << beta << " alfa " << alfa << " cp " << cp << " dxmedio " << dxmedio << std::endl;
+   washout=1;
+thetams=13.6/cp/beta*sqrt(1./140./cos)*alfa/cos*washout*sqrt(dxmedio);
+//3d
+   thetams*=sqrt(1.5);
+double thetams0=13.6/cp;
 
-    thetaerr=sigma0*sqrt(12.)/(dxmedio)/sqrt(np/nsegtot);
+    std::cout << " poly beta " << beta << " alfa " << alfa << " cp " << cp << " dxmedio " << dxmedio << std::endl;
+    std::cout << " complex thetams  " << thetams << " basic thetams " << thetams0 << std::endl;
+
+   float collPointsRatio=float(hits2d.size())/float(tr.NPoints());
+
+float avCollPointsSeg=collPointsRatio*float(breakpoints[breakpoints.size()-1] )/breakpoints.size();
+cout << " hits2d " << hits2d.size() << " n points " << tr.NPoints() << endl;
+cout << " last breakpoint " << breakpoints[breakpoints.size()-1] << " n seg " << cumseglens.size() << endl;
+cout << " collpointsratio " << collPointsRatio << endl;
+cout << " avcollpointsseg " << avCollPointsSeg << endl;
+
+sinb=cosTrackDrift(tr);  
+    thetaerr=sigma0*sqrt(12.)/(dxmedio)/avCollPointsSeg/sinb;
   // thetaerr=0;
     double thetacorr=sqrt(thetams*thetams+thetaerr*thetaerr);
     // ttall.push_back(acorr/thetams);
-     std::cout << " filling ttall fit " << a << " " << thetams << " " << thetaerr  << std::endl;
+     std::cout << " filling ttall fit " << a*1000. << " " << thetams*1000. << " " << thetaerr*1000.  << std::endl;
     ttall.push_back(a/thetacorr);
   
    std::cout << " all that stuff " << thetams << thetaerr << dstot << cos << beta << alfa << cp << ds<< n << ap0 << apmedio << tpmedio << cc<< washout << dxmedio << endl;
@@ -780,7 +801,7 @@ int nsegtot=cumseglens.size()-1;
     alfa=1+0.038*log(dstot/nsegtot/140/cos);
 std::cout << " checking n " << n << " alfa " << alfa << " dstot " << dstot << " cos " << cos <<std::endl;
    //sigma0=0.715;
-double washout=0.8585;
+double washout=0.7388;
    double dxmedio=dstot/double(nsegtot);
   // thetaerr=0;
   //  double thetacorr=sqrt(thetams*thetams+thetaerr*thetaerr);
@@ -790,15 +811,29 @@ double washout=0.8585;
    std::cout << " all that stuff again " << thetams << thetaerr << dstot << cos << beta << alfa << cp << ds<< n << ap0 << apmedio << tpmedio << cc<< washout << dxmedio << endl;
 
    // sigma0=0.715;
-    
-   //thetams=13.6/cp/beta*sqrt(1./140./cos)*alfa/cos*0.7388*sqrt(dxmedio);
-   thetams=13.6/cp;
-    thetaerr=sigma0/(dxmedio)/sqrt(np/nsegtot);
+    washout=1;
+   thetams=13.6/cp/beta*sqrt(1./140./cos)*alfa/cos*washout*sqrt(dxmedio);
+   //3d
+   thetams*=sqrt(1.5);
+   //thetams=13.6/cp;
+   float collPointsRatio=float(hits2d.size())/float(tr.NPoints());
+   float avCollPointsSeg=collPointsRatio*float(breakpoints[breakpoints.size()-1] )/breakpoints.size();
+
+
+
+cout << " hits2d " << hits2d.size() << " n points " << tr.NPoints() << endl;
+cout << " last breakpoint " << breakpoints[breakpoints.size()-1] << " n seg " << cumseglens.size() << endl;
+cout << " collpointsratio " << collPointsRatio << endl;
+cout << " avcollpointsseg " << avCollPointsSeg << endl;
+sinb=cosTrackDrift(tr);  
+    thetaerr=sigma0/(dxmedio)/avCollPointsSeg/sinb;
+
+    cout << " npnsegtot ratio " << np/nsegtot <<" np " << np << " nsegtot " << nsegtot << endl;
   // thetaerr=0;
    double thetacorr=sqrt(thetams*thetams+thetaerr*thetaerr);
    std::cout << " beta " << beta << " alfa " << alfa << " cp " << cp << " dstot " << dstot << std::endl;
 
-   std::cout << " filling ttall poly " << a << " thetams " << thetams << " thetaerr " << thetaerr << std::endl;
+     std::cout << " filling ttall poly " << a*1000. << " " << thetams*1000. << " " << thetaerr*1000.  << std::endl;
    ttall.push_back(a/thetacorr);
     
      //apmedio+=abs(a*a);
@@ -811,7 +846,7 @@ double washout=0.8585;
  
   //cout << " poly thetams " << thetams << " thetaerr " << thetaerr << endl;
 	 cout << " before covma "  << jp << endl;
-   FillCovMatrix(tr,matpoly,jp,thetams*thetams,thetaerr*thetaerr,matpolyms,matpolyerr,breakpoints,firstseg);
+   //FillCovMatrix(tr,matpoly,jp,thetams*thetams,thetaerr*thetaerr,matpolyms,matpolyerr,breakpoints,firstseg);
 	 cout << "before mixx "  << jp << endl;
    //FillCovMixTerms(tr,matmix,jp,nseg-2,thetams*thetams,thetaerr*thetaerr);
 	 cout << "after mixx "  << jp << endl;
@@ -1506,7 +1541,15 @@ float x0=h0.WireID().Wire*3;
 float xf=hf.WireID().Wire*3; 
 return xf-x0;
 }
+ double TrajectoryMCSFitterICARUS::cosTrackDrift( recob::TrackTrajectory tr) const
+{
+auto start=tr.Start();  
+auto end=tr.End();
+auto l3d=sqrt((end-start).Mag2()); 
+auto l1d=(end-start).X();
+return l1d/l3d;
 
+}
 /******************************************************************/
 TMatrixD TrajectoryMCSFitterICARUS::ReferenceFrame(int plane, int tpc, int cryo) const  { 
   //! Initialize reference frames relative to wire planes (views)

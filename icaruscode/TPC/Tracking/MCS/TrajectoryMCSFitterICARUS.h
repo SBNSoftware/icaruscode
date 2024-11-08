@@ -192,6 +192,7 @@ void ComputeD3P()   ;
  } 
  double collLength() const;
 double collWireLength();
+ double cosTrackDrift( recob::TrackTrajectory) const;
 TMatrixD ReferenceFrame(int plane, int tpc,int cryo) const;
 double DriftOrigin(int plane, int tpc,int cryo) const;
   private:
