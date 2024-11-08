@@ -700,11 +700,11 @@ if(cutMode()==2) dstot=cutLength();
     
    //sigma0=0.715;
 double washout=0.8585;
-   double dxmedio=dstot/double(nsegtot);
-   washout=1;
+   double dxmedio=dstot/double(nsegtot)*10.; //mm
+   //washout=1;
 thetams=13.6/cp/beta*sqrt(1./140./cos)*alfa/cos*washout*sqrt(dxmedio);
 //3d
-   thetams*=sqrt(1.5);
+ //  thetams*=sqrt(1.5);
 double thetams0=13.6/cp;
 
     std::cout << " poly beta " << beta << " alfa " << alfa << " cp " << cp << " dxmedio " << dxmedio << std::endl;
@@ -719,7 +719,7 @@ cout << " collpointsratio " << collPointsRatio << endl;
 cout << " avcollpointsseg " << avCollPointsSeg << endl;
 
 sinb=cosTrackDrift(tr);  
-    thetaerr=sigma0*sqrt(12.)/(dxmedio)/avCollPointsSeg/sinb;
+    thetaerr=sigma0*sqrt(24.)/(dxmedio)/sqrt(float(avCollPointsSeg))/sinb;
   // thetaerr=0;
     double thetacorr=sqrt(thetams*thetams+thetaerr*thetaerr);
     // ttall.push_back(acorr/thetams);
@@ -728,10 +728,10 @@ sinb=cosTrackDrift(tr);
   
    std::cout << " all that stuff " << thetams << thetaerr << dstot << cos << beta << alfa << cp << ds<< n << ap0 << apmedio << tpmedio << cc<< washout << dxmedio << endl;
  
-   //FillCovMatrixSegOnly(tr,mat,jp,thetams*thetams,thetaerr*thetaerr,materr,breakpoints);
+   FillCovMatrixSegOnly(tr,mat,jp,thetams*thetams,thetaerr*thetaerr,materr,breakpoints);
    std::cout << " before addsegcov nseg " << nseg << std::endl;
 
-   //AddSegmentCovariance(tr,mat,jp);
+  // AddSegmentCovariance(tr,mat,jp);
    std::cout << " after addsegcov " << jp << std::endl;
  //}
  }
@@ -802,7 +802,7 @@ int nsegtot=cumseglens.size()-1;
 std::cout << " checking n " << n << " alfa " << alfa << " dstot " << dstot << " cos " << cos <<std::endl;
    //sigma0=0.715;
 double washout=0.7388;
-   double dxmedio=dstot/double(nsegtot);
+   double dxmedio=dstot/double(nsegtot)*10.;//mm
   // thetaerr=0;
   //  double thetacorr=sqrt(thetams*thetams+thetaerr*thetaerr);
     // ttall.push_back(acorr/thetams);
@@ -811,10 +811,10 @@ double washout=0.7388;
    std::cout << " all that stuff again " << thetams << thetaerr << dstot << cos << beta << alfa << cp << ds<< n << ap0 << apmedio << tpmedio << cc<< washout << dxmedio << endl;
 
    // sigma0=0.715;
-    washout=1;
+    //washout=1;
    thetams=13.6/cp/beta*sqrt(1./140./cos)*alfa/cos*washout*sqrt(dxmedio);
    //3d
-   thetams*=sqrt(1.5);
+   //thetams*=sqrt(1.5);
    //thetams=13.6/cp;
    float collPointsRatio=float(hits2d.size())/float(tr.NPoints());
    float avCollPointsSeg=collPointsRatio*float(breakpoints[breakpoints.size()-1] )/breakpoints.size();
@@ -826,8 +826,9 @@ cout << " last breakpoint " << breakpoints[breakpoints.size()-1] << " n seg " <<
 cout << " collpointsratio " << collPointsRatio << endl;
 cout << " avcollpointsseg " << avCollPointsSeg << endl;
 sinb=cosTrackDrift(tr);  
-    thetaerr=sigma0/(dxmedio)/avCollPointsSeg/sinb;
-
+    thetaerr=sigma0*sqrt(6.)/(dxmedio)/sqrt(float(avCollPointsSeg))/sinb;
+cout << " thetaerr " << thetaerr << endl;
+cout << " sigma0" << sigma0 << " dxmedio " << dxmedio << " sqrt " << sqrt(float(avCollPointsSeg)) << " sinb " << sinb << endl;
     cout << " npnsegtot ratio " << np/nsegtot <<" np " << np << " nsegtot " << nsegtot << endl;
   // thetaerr=0;
    double thetacorr=sqrt(thetams*thetams+thetaerr*thetaerr);
@@ -909,8 +910,8 @@ cout << " ttall size " << ttall.size() << endl;
  
  // compute chi2 before truncation
 
- /*
- for(unsigned int kk=1;kk<breakpoints.size();kk++) {
+ 
+
   vector<double> ttrunc;
 vector<int> tails;
 double ttrunctot=0;
@@ -930,15 +931,15 @@ for (unsigned int jt=0;jt<ttall.size();jt++) {
     }
   }
  std::cout << " after tails " << std::endl;
- for (int jt=0;jt<np-2;jt++) {
+ /*for (int jt=0;jt<np-2;jt++) {
     int ist=0;
  for(unsigned int jta=0;jta<tails.size();jta++) {
 if(tails[jta]==jt-1)
-   //ist=1;
+   ist=1;
  //std::cout << " ist " << ist << std::endl;
   }
  }
-   
+   */
   TMatrixD vtrunc(atrunc.size(),1);
  for(unsigned int jv=0;jv<atrunc.size();jv++)
    vtrunc(jv,0)=atrunc[jv];
@@ -954,9 +955,9 @@ std::cout << " after vtrunc " << std::endl;
 std::cout << " after covmoc " << std::endl;
  if(!cov.GetNrows())
    return -999;
-// TMatrixD invcov=cov.Invert();
-TMatrixD invcov=cov;
+
 std::cout << " after invcov " << std::endl;
+/*
 invcov.Print();
 vtrunc.Print();
  TMatrixD vtnew=invcov*vtrunc;
@@ -973,7 +974,7 @@ vtrunc.Print();
     vtnewtot+=vtnew(jt,0);
 std::cout << " after vtnewtot " << std::endl;
 
-int ndf=ttall.size()-tails.size();
+//int ndf=ttall.size()-tails.size();
 */
 double ttnewrms=vtcovmed;
  std::cout << " ttnewrms " << ttnewrms << std::endl; 
