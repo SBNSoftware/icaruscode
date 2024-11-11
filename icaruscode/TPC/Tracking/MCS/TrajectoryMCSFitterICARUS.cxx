@@ -698,9 +698,12 @@ if(cutMode()==2) dstot=cutLength();
    else
     alfa=1+0.038*log(dstot/nsegtot/140./cos);
     
+alfa=1.;
+
    //sigma0=0.715;
 double washout=0.8585;
    double dxmedio=dstot/double(nsegtot)*10.; //mm
+   cout << " weird dxmedio " << dxmedio << " dstot " << dstot << " nsegtot " << nsegtot << " cutmode " << cutMode() << endl;
    dxmedio=140.;
    //washout=1;
 thetams=13.6/cp/beta*sqrt(1./140./cos)*alfa/cos*washout*sqrt(dxmedio);
@@ -800,10 +803,13 @@ int nsegtot=cumseglens.size()-1;
      alfa=1;
    else
     alfa=1+0.038*log(dstot/nsegtot/140/cos);
+
+  alfa=1.;
 std::cout << " checking n " << n << " alfa " << alfa << " dstot " << dstot << " cos " << cos <<std::endl;
    //sigma0=0.715;
 double washout=0.7388;
    double dxmedio=dstot/double(nsegtot)*10.;//mm
+   cout << " weird dxmedio " << dxmedio << endl;
    dxmedio=140;
   // thetaerr=0;
   //  double thetacorr=sqrt(thetams*thetams+thetaerr*thetaerr);
