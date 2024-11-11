@@ -701,6 +701,7 @@ if(cutMode()==2) dstot=cutLength();
    //sigma0=0.715;
 double washout=0.8585;
    double dxmedio=dstot/double(nsegtot)*10.; //mm
+   dxmedio=140.;
    //washout=1;
 thetams=13.6/cp/beta*sqrt(1./140./cos)*alfa/cos*washout*sqrt(dxmedio);
 //3d
@@ -803,6 +804,7 @@ std::cout << " checking n " << n << " alfa " << alfa << " dstot " << dstot << " 
    //sigma0=0.715;
 double washout=0.7388;
    double dxmedio=dstot/double(nsegtot)*10.;//mm
+   dxmedio=140;
   // thetaerr=0;
   //  double thetacorr=sqrt(thetams*thetams+thetaerr*thetaerr);
     // ttall.push_back(acorr/thetams);
@@ -813,6 +815,7 @@ double washout=0.7388;
    // sigma0=0.715;
     //washout=1;
    thetams=13.6/cp/beta*sqrt(1./140./cos)*alfa/cos*washout*sqrt(dxmedio);
+   cout << " thetams poly cp " << cp << " beta " << beta << " alfa " << alfa << " dxmedio " << dxmedio << endl;
    //3d
    //thetams*=sqrt(1.5);
    //thetams=13.6/cp;
@@ -907,7 +910,7 @@ cout << " ttall size " << ttall.size() << endl;
  std::cout << " vtcovmed " << vtcovmed << std::endl;
 
  
- 
+ /*
  // compute chi2 before truncation
 
  
@@ -931,7 +934,7 @@ for (unsigned int jt=0;jt<ttall.size();jt++) {
     }
   }
  std::cout << " after tails " << std::endl;
- /*for (int jt=0;jt<np-2;jt++) {
+ for (int jt=0;jt<np-2;jt++) {
     int ist=0;
  for(unsigned int jta=0;jta<tails.size();jta++) {
 if(tails[jta]==jt-1)
@@ -939,13 +942,13 @@ if(tails[jta]==jt-1)
  //std::cout << " ist " << ist << std::endl;
   }
  }
-   */
+   
   TMatrixD vtrunc(atrunc.size(),1);
  for(unsigned int jv=0;jv<atrunc.size();jv++)
    vtrunc(jv,0)=atrunc[jv];
 
   TMatrixD cov0=cov;
-std::cout << " after vtrunc " << std::endl;
+std::cout << " after vtrunc tails size " << tails.size() << std::endl;
  if(tails.size())
     for(int jta=tails.size()-1;jta>=0;jta--) {   
       //  TMatrixDSym covmod=CleanCovariance(cov,tails[jta]); 
@@ -957,9 +960,9 @@ std::cout << " after covmoc " << std::endl;
    return -999;
 
 std::cout << " after invcov " << std::endl;
-/*
-invcov.Print();
-vtrunc.Print();
+
+//invcov.Print();
+//vtrunc.Print();
  TMatrixD vtnew=invcov*vtrunc;
  std::cout << " after vtnew " << std::endl;
 
