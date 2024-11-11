@@ -1,0 +1,10 @@
+#include "stage0_run2_icarus_overlay.fcl"
+
+outputs.rootOutput.outputCommands: [
+									"keep *_*_*_*", 
+									"drop *_daq*_*_*", 
+									"drop *_MCDecodeTPCROI_*_*", 
+									"drop *_decon1droi_*_*", 
+									"drop recob::Wire*_roifinder_*_*", 
+									"keep *_daq_simpleSC_*"
+									]
