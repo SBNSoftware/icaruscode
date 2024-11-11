@@ -55,7 +55,8 @@ physics: {
 
 }
 
-##<module_label>:<optional instance name>:<optional process name>
+##<module_label>:<optional instance name>:<optional process name> 2:3:1
+##PROCESS NAME...... | MODULE LABEL... | PRODUCT INSTANCE NAME.... | DATA PRODUCT TYPE.................................................... | .SIZE
 physics.filters.generator.SimInputFileNames : [ "genfile.root.local" ]
 
 physics.filters.larg4intime.AuxDetSimChannelInputModuleLabels: ["larg4intime::CosmicsCorsikaPGenAndG4InTime"]
@@ -70,4 +71,5 @@ physics.filters.GenInTimeSorter.MCTruthInputModuleLabels: ["GenInTimeSorter:inti
 physics.filters.larg4intime.SimChannelInputModuleLabels: ["larg4intime::CosmicsCorsikaPGenAndG4InTime"]
 physics.filters.generator.MCTruthInputModuleLabels: ["GenInTimeSorter:intime:CosmicsCorsikaPGenAndG4InTime"] #std::vector<simb::MCTruth> #no label
 physics.filters.generator.MCTruthInputModuleLabels: ["GenInTimeSorter::CosmicsCorsikaPGenAndG4InTime"] #std::vector<simb::MCTruth> #no label
+physics.filters.generator.MCTruthInputModuleLabels: ["generator::CosmicsCorsikaPGenAndG4InTime"]
 physics.filters.larg4intime.SimPhotonsInputModuleLabels: ["larg4intime::CosmicsCorsikaPGenAndG4InTime"]
