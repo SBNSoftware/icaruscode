@@ -194,6 +194,8 @@ void ComputeD3P()   ;
 double collWireLength();
  double cosTrackDrift( recob::TrackTrajectory) const;
 TMatrixD ReferenceFrame(int plane, int tpc,int cryo) const;
+TMatrix CleanCovariance(TMatrix  cov, int jtail) const;
+
 double DriftOrigin(int plane, int tpc,int cryo) const;
   private:
     int    pIdHyp_;

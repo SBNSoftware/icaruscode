@@ -60,8 +60,8 @@ cumseglens.clear();
     std::cout << " segradl size " << segradlengths.size() << " cumseg size " << cumseglens.size() <<  std::endl;
 
   for (unsigned int p = 0; p<segradlengths.size(); p++) {
-    //linearRegression2D(traj, breakpoints[p], breakpoints[p+1], pcdir1);
-    linearRegression(traj, breakpoints[p], breakpoints[p+1], pcdir1);
+    //linearRegression2D(traj, breakpoints[p], breakpoints[p+1], pcdir1); //2d
+    linearRegression(traj, breakpoints[p], breakpoints[p+1], pcdir1); //3d
     if (p>0) {
       cout << " p " << p << " segradlength " << segradlengths[p] << endl;
       if (segradlengths[p]<-100. || segradlengths[p-1]<-100.
@@ -97,8 +97,8 @@ cumseglens.clear();
 vector<float> dthetaPoly;
 for (unsigned int p = 0; p<segradlengths.size(); p++) {
     cout << " before finding 2d barycenters for poly " << endl;
-  //  find2DSegmentBarycenter(traj, breakpoints[p], breakpoints[p+1], bary);
-   findSegmentBarycenter(traj, breakpoints[p], breakpoints[p+1], bary);
+  //  find2DSegmentBarycenter(traj, breakpoints[p], breakpoints[p+1], bary); //2d
+   findSegmentBarycenter(traj, breakpoints[p], breakpoints[p+1], bary); //3d
     barycenters.push_back(bary);
 }
 for (unsigned int p = 2; p<segradlengths.size(); p++) {
@@ -122,7 +122,7 @@ dbcm/=norm;
       std::cout << " cosval " << cosval << std::endl;
        double dt = acos(cosval);//should we try to use expansion for small angles?
 	dthetaPoly.push_back(dt);
-    std::cout << " polygonal angle " << dt << std::endl;
+    std::cout << " polygonal angle " << dt*1000. << std::endl;
 
       }
   }
@@ -280,9 +280,8 @@ void TrajectoryMCSFitterICARUS::linearRegression2D(const recob::TrackTrajectory&
 
   Vector_t avgpos;
    cout << " before finding 2d barycenters for fit " << endl;
-   //find2DSegmentBarycenter(traj,0,traj.NPoints()-1,avgpos);
-  //find2DSegmentBarycenter(traj,firstPoint,lastPoint,avgpos);
-  findSegmentBarycenter(traj,firstPoint,lastPoint,avgpos);
+  //find2DSegmentBarycenter(traj,firstPoint,lastPoint,avgpos); //2d
+  findSegmentBarycenter(traj,firstPoint,lastPoint,avgpos); //3d
   const double norm = 1./double(npoints);
   //
   //assert(npoints>0);
@@ -449,12 +448,11 @@ double sigma=d3p; //to be replaced by computed D3P when ready!
 //double cosa=1;
 double sinb=1; //both to be replaced by angles when ready!
  double DsTot;
- int np=tr.NPoints();
- if(cutMode()==0) DsTot=sqrt((tr.LocationAtPoint(np-1)-tr.LocationAtPoint(0)).Mag2());
+ if(cutMode()==0) DsTot=sqrt((tr.LocationAtPoint(tr.LastValidPoint())-tr.LocationAtPoint(0)).Mag2());
 if(cutMode()==2) DsTot=cutLength();
- if(cutMode()==1) DsTot=sqrt((tr.LocationAtPoint(np-1)-tr.LocationAtPoint(0)).Mag2())-cutLength();
+ if(cutMode()==1) DsTot=sqrt((tr.LocationAtPoint(tr.LastValidPoint())-tr.LocationAtPoint(0)).Mag2())-cutLength();
  TVector3 start=tr.LocationAtPoint<TVector3>(0);
-  TVector3 end=tr.LocationAtPoint<TVector3>(np-1);
+  TVector3 end=tr.LocationAtPoint<TVector3>(tr.LastValidPoint());
   TVector3 avdir=end-start;
   TVector3 projColl(0,0,0);
   projColl[0]=1; projColl[1]=sqrt(3.)/2.; projColl[2]=0.5;
@@ -613,19 +611,18 @@ double tpmedio=0;
  
  int np=tr.NPoints();
   TVector3 start=tr.LocationAtPoint<TVector3>(0);
-  TVector3 end=tr.LocationAtPoint<TVector3>(np-1);
+  TVector3 end=tr.LocationAtPoint<TVector3>(tr.LastValidPoint());
   TVector3 avdir=end-start;
   TVector3 projColl(0,0,0);
   projColl[0]=1; projColl[1]=sqrt(3.)/2.; projColl[2]=0.5;
  //double  cos=avdir*projColl;
  double sinb=avdir*projColl;
- //double cos=(collLength()/10./(tr.Length()));
- double cos=1;
+ double cos=(collLength()/10./(tr.Length())); //2d
+  cos=1; //3d
  sinb=1;
  cout << " sinb " << sinb << endl;
  //  double dstot;
-  if(cutMode()==0) dstot=sqrt((tr.LocationAtPoint(np-1)-tr.LocationAtPoint(0)).Mag2());
-  if(cutMode()>0) dstot=cutLength();
+
   
  cout << " nseg " << nseg <<  " dtheta size " << dtheta.size() << " firstseg " << firstseg << endl;
 for(unsigned int jp=firstseg;jp<lastseg;jp++) {
@@ -675,24 +672,16 @@ for(unsigned int jp=firstseg;jp<lastseg;jp++) {
   //ComputeD3P();
   sigma0=d3p;
   cout << " eseg " << eseg << " sigma0 " <<sigma0 << endl;
-  sinb=1;
- 
+
  int np=tr.NPoints();
- if(cutMode()==0) dstot=sqrt((tr.LocationAtPoint(np-1)-tr.LocationAtPoint(0)).Mag2());
+ if(cutMode()==0) dstot=sqrt((tr.LocationAtPoint(tr.LastValidPoint())-tr.LocationAtPoint(0)).Mag2());
 if(cutMode()==2) dstot=cutLength();
- if(cutMode()==1) dstot=sqrt((tr.LocationAtPoint(np-1)-tr.LocationAtPoint(0)).Mag2())-cutLength();
+ if(cutMode()==1) dstot=sqrt((tr.LocationAtPoint(tr.LastValidPoint())-tr.LocationAtPoint(0)).Mag2())-cutLength();
+ 
  int nsegtot=cumseglens.size()-1;
   n=(int)(np/nsegtot);
 
-   // }
-   // else {
-     //sigma0=tr->D3PIU()/sqrt(double(tr->NGrpI()));
-     // sinb=tr->SinBI();
-     //dstot=tr->DsTotI();
-     //  m=tr->nPoints();
-  
-     //n=tr->NGrpI();
-   // }
+
    if(!n)
      alfa=1;
    else
@@ -707,23 +696,25 @@ double washout=0.8585;
    dxmedio=140.;
    //washout=1;
 thetams=13.6/cp/beta*sqrt(1./140./cos)*alfa/cos*washout*sqrt(dxmedio);
-//3d
- //  thetams*=sqrt(1.5);
+
 double thetams0=13.6/cp;
 
     std::cout << " poly beta " << beta << " alfa " << alfa << " cp " << cp << " dxmedio " << dxmedio << std::endl;
     std::cout << " complex thetams  " << thetams << " basic thetams " << thetams0 << std::endl;
 
    float collPointsRatio=float(hits2d.size())/float(tr.NPoints());
-
+   float avPointsSeg=float(breakpoints[breakpoints.size()-1] )/breakpoints.size();
 float avCollPointsSeg=collPointsRatio*float(breakpoints[breakpoints.size()-1] )/breakpoints.size();
+
 cout << " hits2d " << hits2d.size() << " n points " << tr.NPoints() << endl;
 cout << " last breakpoint " << breakpoints[breakpoints.size()-1] << " n seg " << cumseglens.size() << endl;
 cout << " collpointsratio " << collPointsRatio << endl;
 cout << " avcollpointsseg " << avCollPointsSeg << endl;
 
-sinb=cosTrackDrift(tr);  
-    thetaerr=sigma0*sqrt(24.)/(dxmedio)/sqrt(float(avCollPointsSeg))/sinb;
+sinb=cosTrackDrift(tr); //3d
+//sinb=1; //2d
+    thetaerr=sigma0*sqrt(24.)/(dxmedio)/sqrt(float(avCollPointsSeg))/sinb; //2d
+    thetaerr=sigma0*sqrt(24.)/(dxmedio)/sqrt(float(avPointsSeg))/sinb; //3d
   // thetaerr=0;
     double thetacorr=sqrt(thetams*thetams+thetaerr*thetaerr);
     // ttall.push_back(acorr/thetams);
@@ -787,14 +778,15 @@ for(unsigned int jp=firstseg;jp<lastseg-1;jp++) {
   sigma0=d3p;
   cout << " eseg " << eseg << " sigma0 " << sigma0 << endl;
   sinb=1;
-  cos=1;
-  cos=(collLength()/10./(tr.Length()));
+  
+  cos=(collLength()/10./(tr.Length())); //2d
+  cos=1; //3d
   //std::cout << " colllength " << collLength() << " trlength " << tr.Length() << " cosine " << cos << std::endl;
  
 
- if(cutMode()==0) dstot=sqrt((tr.LocationAtPoint(np-1)-tr.LocationAtPoint(0)).Mag2());
+ if(cutMode()==0) dstot=sqrt((tr.LocationAtPoint(tr.LastValidPoint())-tr.LocationAtPoint(0)).Mag2());
 if(cutMode()==2) dstot=cutLength();
- if(cutMode()==1) dstot=sqrt((tr.LocationAtPoint(np-1)-tr.LocationAtPoint(0)).Mag2())-cutLength();
+ if(cutMode()==1) dstot=sqrt((tr.LocationAtPoint(tr.LastValidPoint())-tr.LocationAtPoint(0)).Mag2())-cutLength();
  
   n=(int)(np/cumseglens.size()-1);
 int nsegtot=cumseglens.size()-1;
@@ -810,7 +802,7 @@ std::cout << " checking n " << n << " alfa " << alfa << " dstot " << dstot << " 
 double washout=0.7388;
    double dxmedio=dstot/double(nsegtot)*10.;//mm
    cout << " weird dxmedio " << dxmedio << endl;
-   dxmedio=140;
+   dxmedio=140.;
   // thetaerr=0;
   //  double thetacorr=sqrt(thetams*thetams+thetaerr*thetaerr);
     // ttall.push_back(acorr/thetams);
@@ -822,20 +814,20 @@ double washout=0.7388;
     //washout=1;
    thetams=13.6/cp/beta*sqrt(1./140./cos)*alfa/cos*washout*sqrt(dxmedio);
    cout << " thetams poly cp " << cp << " beta " << beta << " alfa " << alfa << " dxmedio " << dxmedio << endl;
-   //3d
-   //thetams*=sqrt(1.5);
-   //thetams=13.6/cp;
+   
    float collPointsRatio=float(hits2d.size())/float(tr.NPoints());
    float avCollPointsSeg=collPointsRatio*float(breakpoints[breakpoints.size()-1] )/breakpoints.size();
-
+   float avPointsSeg=float(breakpoints[breakpoints.size()-1] )/breakpoints.size();
 
 
 cout << " hits2d " << hits2d.size() << " n points " << tr.NPoints() << endl;
 cout << " last breakpoint " << breakpoints[breakpoints.size()-1] << " n seg " << cumseglens.size() << endl;
 cout << " collpointsratio " << collPointsRatio << endl;
 cout << " avcollpointsseg " << avCollPointsSeg << endl;
-sinb=cosTrackDrift(tr);  
-    thetaerr=sigma0*sqrt(6.)/(dxmedio)/sqrt(float(avCollPointsSeg))/sinb;
+sinb=cosTrackDrift(tr);  //3d
+//sinb=1; //2d
+    thetaerr=sigma0*sqrt(6.)/(dxmedio)/sqrt(float(avCollPointsSeg))/sinb; //2d
+    thetaerr=sigma0*sqrt(6.)/(dxmedio)/sqrt(float(avPointsSeg))/sinb; //3d
 cout << " thetaerr " << thetaerr << endl;
 cout << " sigma0" << sigma0 << " dxmedio " << dxmedio << " sqrt " << sqrt(float(avCollPointsSeg)) << " sinb " << sinb << endl;
     cout << " npnsegtot ratio " << np/nsegtot <<" np " << np << " nsegtot " << nsegtot << endl;
@@ -869,123 +861,105 @@ for(int jmm=0;jmm<matpoly.GetNrows();jmm++)
  std::cout << " after matpoly  " << jp << " np " << nseg << std::endl; 
 }
 
-
-
-
 //mat+=matmix;
 
-//std::cout << " MATERR " << std::endl;
-// TMatrixD cov=mat;
-
 TMatrixD cov(TMatrixD::kUnit,mat);
- std::cout << " after ending loop cov " << std::endl;
- cov.Print();
+
 TMatrixD vtall(ttall.size(),1);
 for(unsigned int jv=0;jv<ttall.size();jv++)
   vtall(jv,0)=ttall[jv]; 
 
 TMatrixD invcov=cov.Invert();
- //TMatrixD invcov=cov;
- std::cout << " invcov 1 " << cov.GetNrows() << std::endl;
-//invcov.Print();
-cout << " ttall size " << ttall.size() << endl;
-// TVector vtcov=Mult(vtall,cov.Invert(),vtall);
- TMatrixD vtcov=invcov*vtall;
- std::cout << " invcov 2 " << cov.GetNrows() << std::endl;
- // m1.Print();
-  TMatrixD tvtall(TMatrixD::kTransposed,vtall);
-  tvtall.Print();
- 
- std::cout << " invcov 3 " << cov.GetNrows() << std::endl;
+TMatrixD vtcov=invcov*vtall;
+TMatrixD tvtall(TMatrixD::kTransposed,vtall); 
 
  double vtcovmed=0;
- std::cout << " print vtcov " << std::endl;
- vtcov.Print(); 
  std::vector<double> terms;
  for(unsigned int jv=0;jv<ttall.size();jv++) {
- //double term=tvtall(0,jv)*ttall[jv];
  double term=tvtall(0,jv)*vtcov(jv,0);
  terms.push_back(term);
- std::cout << " term " << tvtall(0,jv)*ttall[jv] << std::endl;
  vtcovmed+=term;
  }
- std::cout << " invcov 4 " << cov.GetNrows() << std::endl;
-
- //double vtcovtot=vtcovmed;
  vtcovmed/=(ttall.size());
- std::cout << " vtcovmed " << vtcovmed << std::endl;
-
  
- /*
+ 
+ 
  // compute chi2 before truncation
 
- 
-
-  vector<double> ttrunc;
+vector<double> ttrunc;
 vector<int> tails;
 double ttrunctot=0;
 vector<double> atrunc;
 //nsigma=999;
  int nsigma=3;
 for (unsigned int jt=0;jt<ttall.size();jt++) {
-  if(abs(vtcov(jt,0))<vtcovmed*nsigma*nsigma) {
+  cout << " threshold " << vtcovmed*nsigma*nsigma << " term " << terms[jt] << endl;
+  if(terms[jt]<vtcovmed*nsigma*nsigma) {
 //   {
-    ttrunctot+=vtcov(jt,0);
+    ttrunctot+=terms[jt];
     atrunc.push_back(ttall[jt]);
-    ttrunc.push_back(vtcov(jt,0));
-     std::cout << " keeping value " << jt << std::endl;
+    ttrunc.push_back(terms[jt]);
+    std::cout << " keeping value " << jt << std::endl;
    }
     else {
       tails.push_back(jt);
     }
   }
- std::cout << " after tails " << std::endl;
- for (int jt=0;jt<np-2;jt++) {
-    int ist=0;
- for(unsigned int jta=0;jta<tails.size();jta++) {
-if(tails[jta]==jt-1)
-   ist=1;
- //std::cout << " ist " << ist << std::endl;
-  }
- }
    
   TMatrixD vtrunc(atrunc.size(),1);
  for(unsigned int jv=0;jv<atrunc.size();jv++)
    vtrunc(jv,0)=atrunc[jv];
 
-  TMatrixD cov0=cov;
 std::cout << " after vtrunc tails size " << tails.size() << std::endl;
- if(tails.size())
+
+   std::vector<TMatrix> covs;
+   covs.push_back(cov);
+ if(tails.size()) {
     for(int jta=tails.size()-1;jta>=0;jta--) {   
-      //  TMatrixDSym covmod=CleanCovariance(cov,tails[jta]); 
-      TMatrixD covmod=cov;
-      cov=covmod;     
+    cout << " cleaning covariance jta " << jta << endl; 
+     TMatrix covtemp=CleanCovariance(covs[covs.size()-1],tails[jta]); 
+     cout << " after cleaning jta " << jta << endl;
+covs.push_back(covtemp);
+
 }
-std::cout << " after covmoc " << std::endl;
- if(!cov.GetNrows())
+}
+TMatrix covcut=covs[covs.size()-1];
+std::cout << " after covcut " << std::endl;
+ if(!covcut.GetNrows())
    return -999;
 
-std::cout << " after invcov " << std::endl;
+std::cout << " before invcovmod " << std::endl;
+ TMatrixD invcovmod=covcut.Invert();
+std::cout << " vtrunc " << std::endl;
+vtrunc.Print();
+ TMatrixD vtcovmod=invcovmod*vtrunc;
+std::cout << "  vtcovmod " << std::endl;
+vtcovmod.Print();
+TMatrixD tvtrunc(TMatrixD::kTransposed,vtrunc); 
+std::cout << " after tvtrunc " << std::endl;
 
-//invcov.Print();
-//vtrunc.Print();
- TMatrixD vtnew=invcov*vtrunc;
- std::cout << " after vtnew " << std::endl;
+ double vmediomod=0;
+ std::vector<double> tterms;
+ for(unsigned int jv=0;jv<ttrunc.size();jv++) {
+  cout << " jv " << jv << endl;
+ double tterm=tvtrunc(0,jv)*vtcovmod(jv,0);
+ cout << " adding term " << tterm << endl;
+ tterms.push_back(tterm);
+ vmediomod+=tterm;
+ }
+ std::cout << " after vmediomod " << std::endl;
 
- // TMatrixD test2=(cov.Invert()*vtrunc);
- //vector<double> ttnew;
- //for(unsigned int jv=0;jv<atrunc.size();jv++)
- // ttnew.push_back((vtrunc)[jv]*test2[jv][0]);
+ vmediomod/=(ttrunc.size());
 
- double vtnewtot=0;
+ double vtrunctot=0;
 
-  for ( int jt=0;jt<vtnew.GetNrows();jt++) 
-    vtnewtot+=vtnew(jt,0);
-std::cout << " after vtnewtot " << std::endl;
+  for ( int jt=0;jt<vtrunc.GetNrows();jt++) 
+    vtrunctot+=vtrunc(jt,0);
+ std::cout << " after vtrunctot " << std::endl;
 
 //int ndf=ttall.size()-tails.size();
-*/
-double ttnewrms=vtcovmed;
+
+double ttnewrms=vmediomod;
  std::cout << " ttnewrms " << ttnewrms << std::endl; 
  //exit(11);
  // ncut=ttall.size()-vtnew.GetNrows();
@@ -1136,7 +1110,7 @@ TMatrixDSym matbd(np);
  std::cout << " after creating matbd " << std::endl;
 
   TVector3 start=tr.LocationAtPoint<TVector3>(0);
-  TVector3 end=tr.LocationAtPoint<TVector3>(np-1);
+  TVector3 end=tr.LocationAtPoint<TVector3>(tr.LastValidPoint());
   TVector3 avdir=end-start;
   TVector3 projColl(0,0,0);
   projColl[0]=1; projColl[1]=sqrt(3.)/2.; projColl[2]=0.5;
@@ -1647,4 +1621,29 @@ if(cryo==0&&tpc<=1) x0=-3596.3;
 if(cryo==1&&tpc<=1) x0=608.0;
 if(cryo==0&&tpc>1) x0=-608.0;
   return x0;
+}
+TMatrix TrajectoryMCSFitterICARUS::CleanCovariance(TMatrix  cov, int jtail) const
+{
+  int ncov=cov.GetNrows();
+  cout << " clean ncov " << ncov << endl;
+  cout << " clean jtail " << jtail << endl;
+
+  TMatrix covmod(ncov-1,ncov-1);
+
+  for(int jrow=0;jrow<ncov;jrow++) {
+    for(int jcol=0;jcol<ncov;jcol++) {
+      if(jrow<jtail&&jcol<jtail) {
+	cout << " writingcov " << jrow << " " << jcol << endl;
+	covmod(jrow,jcol)=cov(jrow,jcol);
+	}
+          if(jrow>jtail&&jcol>jtail){
+	    cout << " movingcov " << jrow << " " << jcol << endl;
+      	covmod(jrow-1,jcol-1)=cov(jrow,jcol);
+	}
+    }}
+
+cout << " cleaned matrix " << endl;
+covmod.Print();
+return covmod;
+ 
 }

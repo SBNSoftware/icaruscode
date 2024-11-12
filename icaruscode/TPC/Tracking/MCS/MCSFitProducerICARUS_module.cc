@@ -71,7 +71,7 @@ namespace trkf {
     MCSFitProducerICARUS & operator = (MCSFitProducerICARUS &&) = delete;
 
     void produce(art::Event & e) override;
-std::vector<recob::Hit> projectHitsOnPlane(art::Event & e,const recob::Track& traj,unsigned int p, std::vector<proxy::TrackPointData>& pdata) const;
+std::vector<recob::Hit> projectHitsOnPlane(art::Event & e,const recob::Track& traj,int idx,unsigned int p, std::vector<proxy::TrackPointData>& pdata) const;
 
   private:
     Parameters p_;
@@ -120,14 +120,8 @@ for (const auto& element : inputVec) {
     hits2d.clear();
     std::vector<proxy::TrackPointData> pdata;
     pdata.clear();
-   // for (size_t jp=0;jp<element.NPoints();jp++)
-    // std::cout << " element length " << element.Length(0) << std::endl;
-    if(element.Length()>minLen) hits2d=projectHitsOnPlane(e,element,2,pdata);
-
-    mcsfitter.set2DHits(hits2d);
-    mcsfitter.setPointData(pdata);
-
-    mcsfitter.ComputeD3P();
+   
+ 
   
 auto x=element.LocationAtPoint(0).X();
     int cryo=-1;
@@ -138,16 +132,25 @@ auto x=element.LocationAtPoint(0).X();
 
    // std::cout << " x " << x << " cryo " << cryo << std::endl;
 
-   // if(count[cryo]==2&&cryo==0) {
-   
+    //if(count[cryo]==1&&cryo==0) { //0 EAST 1 WEST
+
+       if(element.Length()>minLen) hits2d=projectHitsOnPlane(e,element,count[cryo],2,pdata);
+
+    mcsfitter.set2DHits(hits2d);
+    mcsfitter.setPointData(pdata);
+
+    mcsfitter.ComputeD3P();
+ 
     std::cout << " fitting icarus trackIdx " << count[cryo] << " cryo " << cryo << " length " << element.Length() << std::endl;
-   
+    std::cout << " 3dpoints " << element.NPoints() << " coll hits " << hits2d.size() << " length " << element.Length() << std::endl;
+    std::cout << " average 3d pitch " << element.Length()/element.NPoints() << " average coll pitch " << element.Length()/hits2d.size() << std::endl;
+
     if(element.Length()>minLen) result = mcsfitter.fitMcs(element);
-    if(result.fwdMomentum()>0.) std::cout << " mcs momentum " << result.fwdMomentum() << std::endl;
+    if(result.fwdMomentum()>0.) std::cout << " fitting icarus trackIdx " << count[cryo] << " cryo " << cryo << " mcs momentum " << result.fwdMomentum() << std::endl;
 
     
 output->emplace_back(std::move(result));
-  // }
+  //}
 
   }
 
@@ -155,25 +158,26 @@ output->emplace_back(std::move(result));
 
 }
 
-std::vector<recob::Hit> trkf::MCSFitProducerICARUS::projectHitsOnPlane(art::Event & e,const recob::Track& traj,unsigned int p,std::vector<proxy::TrackPointData>& pdata) const
+std::vector<recob::Hit> trkf::MCSFitProducerICARUS::projectHitsOnPlane(art::Event & e,const recob::Track& traj, int idx, unsigned int p,std::vector<proxy::TrackPointData>& pdata) const
 {
 std::vector<recob::Hit> v;
   // Get track collection proxy and parallel mcs fit data (associated hits loaded by default)
   // Note: if tracks were produced from a TrackTrajectory collection you could access the original trajectories adding ',proxy::withOriginalTrajectory()' to the list of arguments
 
 auto const& tracks   = proxy::getCollection<proxy::Tracks>(e,inputTag);
-const auto& track = tracks[0];
+std::cout << " tracks size in projecting " << tracks.size() << std::endl;
+const auto& track = tracks[idx];
 //auto hap=track.hitAtPoint(0);
         for (const art::Ptr<recob::Hit>& h : track.hits()) {
          if(h->WireID().Plane == p) {
-        // std::cout << "collection hit wire=" << h->WireID() << " peak time=" << h->PeakTime() << std::endl;
+          std::cout << v.size() << "th hit wire=" << h->WireID() << " peak time=" << h->PeakTime() << std::endl;
           v.emplace_back(*h);
         }
         }
         std::cout << " making trackpointdata npoints " << traj.NPoints() << std::endl;
                for (unsigned int jp; jp<traj.NPoints();jp++) {
 auto pd=proxy::makeTrackPointData(track,jp);
-         std::cout << " emplacing pdata " << jp << std::endl;
+         //std::cout << " emplacing pdata " << jp << std::endl;
           pdata.emplace_back(pd);
           
         }
