@@ -217,7 +217,7 @@ icarus_stage0_multiTPC_2d_TPC_E:[
 
 icarus_stage0_multiTPC_2d_TPC_W:[ 
                                       decon2droiWE,
-                                      decon2droiWW,
+                                      decon2droiWW
                                     ]
 
 icarus_stage0_multiTPC_2d_TPC: [@sequence::icarus_stage0_multiTPC_2d_TPC_E, @sequence::icarus_stage0_multiTPC_2d_TPC_W]
