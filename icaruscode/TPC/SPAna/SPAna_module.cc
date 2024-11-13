@@ -500,7 +500,7 @@ sbn::HitInfo SPAna::MakeHit(const recob::Hit &hit,
 
   // information from the hit object
   h.integral = hit.Integral();
-  h.sumadc = hit.SummedADC();
+  h.sumadc = hit.ROISummedADC();
   h.width = hit.RMS();
   h.time = hit.PeakTime();
   h.mult = hit.Multiplicity();
