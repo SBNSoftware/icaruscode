@@ -482,19 +482,24 @@ m2+=0.5;
 return m2;
 
 }
-void TrajectoryMCSFitterICARUS::ComputeD3P()  {
+void TrajectoryMCSFitterICARUS::ComputeD3P(int plane)  {
 {   
     double res;
     vector<double> h0;
     vector<double> alf;
     
-    TH1D* hd3pv=new TH1D("hd3pv","hd3pv",100,-5.,5.);
-if(!hits2d.size()) return;    
+    std::vector<recob::Hit> hits;
+    if(plane==0) hits=hits2dI1;
+    if(plane==1) hits=hits2dI2;
+    if(plane==2) hits=hits2dC;
 
-    for (unsigned int j=0;j<hits2d.size()-2;j+=3) {
+    TH1D* hd3pv=new TH1D("hd3pv","hd3pv",100,-5.,5.);
+if(!hits.size()) return;    
+
+    for (unsigned int j=0;j<hits.size()-2;j+=3) {
             
             double a;
-            res=computeResidual(j,a);
+            res=computeResidual(j,a,hits);
             //cout << " point "  << j << " residual " <<res << endl;
             //! for each triplet of consecutive hits, save absolute value of residuale
             if(abs(res)<5) { //mm
@@ -521,7 +526,7 @@ if(!hits2d.size()) return;
     //return d3p;
 }
 }
-double TrajectoryMCSFitterICARUS::computeResidual(int i, double& alfa) const
+double TrajectoryMCSFitterICARUS::computeResidual(int i, double& alfa, std::vector<recob::Hit> hits2d) const
 {
 
 
@@ -702,11 +707,11 @@ double thetams0=13.6/cp;
     std::cout << " poly beta " << beta << " alfa " << alfa << " cp " << cp << " dxmedio " << dxmedio << std::endl;
     std::cout << " complex thetams  " << thetams << " basic thetams " << thetams0 << std::endl;
 
-   float collPointsRatio=float(hits2d.size())/float(tr.NPoints());
+   float collPointsRatio=float(hits2dC.size())/float(tr.NPoints());
    float avPointsSeg=float(breakpoints[breakpoints.size()-1] )/breakpoints.size();
 float avCollPointsSeg=collPointsRatio*float(breakpoints[breakpoints.size()-1] )/breakpoints.size();
 
-cout << " hits2d " << hits2d.size() << " n points " << tr.NPoints() << endl;
+cout << " hits2d " << hits2dC.size() << " n points " << tr.NPoints() << endl;
 cout << " last breakpoint " << breakpoints[breakpoints.size()-1] << " n seg " << cumseglens.size() << endl;
 cout << " collpointsratio " << collPointsRatio << endl;
 cout << " avcollpointsseg " << avCollPointsSeg << endl;
@@ -815,12 +820,12 @@ double washout=0.7388;
    thetams=13.6/cp/beta*sqrt(1./140./cos)*alfa/cos*washout*sqrt(dxmedio);
    cout << " thetams poly cp " << cp << " beta " << beta << " alfa " << alfa << " dxmedio " << dxmedio << endl;
    
-   float collPointsRatio=float(hits2d.size())/float(tr.NPoints());
+   float collPointsRatio=float(hits2dC.size())/float(tr.NPoints());
    float avCollPointsSeg=collPointsRatio*float(breakpoints[breakpoints.size()-1] )/breakpoints.size();
    float avPointsSeg=float(breakpoints[breakpoints.size()-1] )/breakpoints.size();
 
 
-cout << " hits2d " << hits2d.size() << " n points " << tr.NPoints() << endl;
+cout << " hits2d " << hits2dC.size() << " n points " << tr.NPoints() << endl;
 cout << " last breakpoint " << breakpoints[breakpoints.size()-1] << " n seg " << cumseglens.size() << endl;
 cout << " collpointsratio " << collPointsRatio << endl;
 cout << " avcollpointsseg " << avCollPointsSeg << endl;
@@ -1483,19 +1488,19 @@ if(over==-1) best_p=rmom[nMom-firstValid-1]; //overflow
  
 double TrajectoryMCSFitterICARUS::collLength() const
 {
-recob::Hit h0=hits2d[0];
-int jf=hits2d.size()-1;
+recob::Hit h0=hits2dC[0];
+int jf=hits2dC.size()-1;
 int NS0=h0.WireID().TPC;
 //float x0=h0.WireID().Wire*3; auto y0=h0.PeakTime()*0.622;
 int jb=jf;
-for(unsigned int jh=0;jh<hits2d.size();jh++) {
-  int NS=hits2d[jh].WireID().TPC;
+for(unsigned int jh=0;jh<hits2dC.size();jh++) {
+  int NS=hits2dC[jh].WireID().TPC;
   if(NS!=NS0)
    jb=jh-1;
 }
-recob::Hit hf=hits2d[jf];
-recob::Hit hb=hits2d[jb];
-recob::Hit hbp=hits2d[jb+1];
+recob::Hit hf=hits2dC[jf];
+recob::Hit hb=hits2dC[jb];
+recob::Hit hbp=hits2dC[jb+1];
 
 int w0=h0.WireID().Wire;
 int wf=hf.WireID().Wire;
@@ -1519,8 +1524,8 @@ return sqrt(dxf*dxf+dyf*dyf);
 }
 double TrajectoryMCSFitterICARUS::collWireLength()
 {
-recob::Hit h0=hits2d[0];
-recob::Hit hf=hits2d[hits2d.size()-1];
+recob::Hit h0=hits2dC[0];
+recob::Hit hf=hits2dC[hits2dC.size()-1];
 float x0=h0.WireID().Wire*3; 
 float xf=hf.WireID().Wire*3; 
 return xf-x0;

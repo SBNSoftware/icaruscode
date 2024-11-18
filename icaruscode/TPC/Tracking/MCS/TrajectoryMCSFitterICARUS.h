@@ -139,8 +139,8 @@ namespace trkf {
 
     void linearRegression(const recob::TrackTrajectory& traj, const size_t firstPoint, const size_t lastPoint, recob::tracking::Vector_t& pcdir) const;
 double GetOptimalSegLen(const recob::TrackTrajectory& tr,const double guess_p, const int n_points, const int plane, const double length_travelled) const;
-double computeResidual(int i, double& alfa) const;
-void ComputeD3P()   ;
+double computeResidual(int i, double& alfa, std::vector<recob::Hit> h) const;
+void ComputeD3P(int plane)   ;
 
 
     //
@@ -179,7 +179,9 @@ void ComputeD3P()   ;
     double energyLossLandau(const double mass2,const double E2, const double x) const;
     //
     double GetE(const double initial_E, const double length_travelled, const double mass) const;
-    void set2DHits(std::vector<recob::Hit> h) {hits2d=h;}
+    void set2DHitsC(std::vector<recob::Hit> h) {hits2dC=h;}
+    void set2DHitsI2(std::vector<recob::Hit> h) {hits2dI2=h;}
+    void set2DHitsI1(std::vector<recob::Hit> h) {hits2dI1=h;}
     void setPointData(std::vector<proxy::TrackPointData> h) {pdata=h;}
   //  void projectHitsOnPlane(art::Event & e,const recob::Track& traj,int p) const
     //
@@ -210,7 +212,9 @@ double DriftOrigin(int plane, int tpc,int cryo) const;
     double angResol_;
     double cutMode_;
  double cutLength_;
-    std::vector<recob::Hit> hits2d;
+    std::vector<recob::Hit> hits2dC;
+    std::vector<recob::Hit> hits2dI2;
+    std::vector<recob::Hit> hits2dI1;
     std::vector<proxy::TrackPointData> pdata;
     float d3p;
  

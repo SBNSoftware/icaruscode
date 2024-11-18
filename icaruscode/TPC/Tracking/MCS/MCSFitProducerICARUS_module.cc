@@ -116,8 +116,12 @@ for (const auto& element : inputVec) {
 //cut final length to simulate non-contained
 
     //fit
-    std::vector<recob::Hit> hits2d;
-    hits2d.clear();
+    std::vector<recob::Hit> hits2dC;
+    hits2dC.clear();
+      std::vector<recob::Hit> hits2dI2;
+    hits2dI2.clear();
+      std::vector<recob::Hit> hits2dI1;
+    hits2dI1.clear();
     std::vector<proxy::TrackPointData> pdata;
     pdata.clear();
    
@@ -132,18 +136,26 @@ auto x=element.LocationAtPoint(0).X();
 
    // std::cout << " x " << x << " cryo " << cryo << std::endl;
 
-    //if(count[cryo]==1&&cryo==0) { //0 EAST 1 WEST
+   // if(count[cryo]==12&&cryo==1) { //0 EAST 1 WEST
 
-       if(element.Length()>minLen) hits2d=projectHitsOnPlane(e,element,count[cryo],2,pdata);
+       if(element.Length()>minLen) {
+       hits2dC=projectHitsOnPlane(e,element,count[cryo],2,pdata);
+       hits2dI2=projectHitsOnPlane(e,element,count[cryo],1,pdata);
+       hits2dI1=projectHitsOnPlane(e,element,count[cryo],0,pdata);
+       }
 
-    mcsfitter.set2DHits(hits2d);
+    mcsfitter.set2DHitsC(hits2dC);
+    mcsfitter.set2DHitsI2(hits2dI2);
+    mcsfitter.set2DHitsI1(hits2dI1);
     mcsfitter.setPointData(pdata);
 
-    mcsfitter.ComputeD3P();
+    mcsfitter.ComputeD3P(0);
+    mcsfitter.ComputeD3P(1);
+    mcsfitter.ComputeD3P(2);
  
     std::cout << " fitting icarus trackIdx " << count[cryo] << " cryo " << cryo << " length " << element.Length() << std::endl;
-    std::cout << " 3dpoints " << element.NPoints() << " coll hits " << hits2d.size() << " length " << element.Length() << std::endl;
-    std::cout << " average 3d pitch " << element.Length()/element.NPoints() << " average coll pitch " << element.Length()/hits2d.size() << std::endl;
+    std::cout << " 3dpoints " << element.NPoints() << " coll hits " << hits2dC.size() << " length " << element.Length() << std::endl;
+    std::cout << " average 3d pitch " << element.Length()/element.NPoints() << " average coll pitch " << element.Length()/hits2dC.size() << std::endl;
 
     if(element.Length()>minLen) result = mcsfitter.fitMcs(element);
     if(result.fwdMomentum()>0.) std::cout << " fitting icarus trackIdx " << count[cryo] << " cryo " << cryo << " mcs momentum " << result.fwdMomentum() << std::endl;
