@@ -1,6 +1,7 @@
 
 #include "TrajectoryMCSFitterICARUS.h"
 #include "lardataobj/RecoBase/Track.h"
+#include "lardataobj/RecoBase/SpacePoint.h"
 #include "larcorealg/Geometry/geo_vectors_utils.h"
 #include "TMatrixDSym.h"
 #include "TMatrixDSymEigen.h"
@@ -559,6 +560,49 @@ float x2=h2.WireID().Wire*3; auto y2=h2.PeakTime()*0.622;
    // cout << " deltafit residual " << res << endl;
 	   return res;
 }
+double TrajectoryMCSFitterICARUS::computeResidual3D(recob::TrackTrajectory tr, int i, double& alfa) const
+{
+/*
+
+auto p0=tr.LocationAtPoint(i);
+auto p1=tr.LocationAtPoint(i+1);
+auto p2=tr.LocationAtPoint(i+2);
+
+
+//std::cout << " PeakTime " << h0.PeakTime() << std::endl;
+
+float x0=p0.X(); auto y0=p0.Y(); auto z0=p0.Z();
+float x1=p1.X(); auto y1=p1.Y(); auto z1=p1.Z();
+float x2=p2.X(); auto y2=p2.Y(); auto z2=p2.Z();
+
+//retta che unisce punto 0 e punto 2
+//(x,y,z)=(x0,y0,z0)+k*(x2-x0,y2-y0,z2-z0);
+//calcolo distanza punto-retta lungo la coordinata x. Impongo k tale che y=y1
+
+    double xmy=x0+(y1-y0)/(y2-y0)*(x2-x0);
+    double xmz=x0+(y1-y0)/(y2-y0)*(x2-x0);
+
+    if((p0-p2).Mag2()<0.001)
+        return -999;
+    if((p1-p2).Mag2()<0.001)
+        return -999;
+    if((p0-p1).Mag2()<0.001)
+        return -999;
+      
+    double Ky=(y1-y0)/(y2-y0);
+    double Kz=(z1-z0)/(z2-z0);
+    
+    double alfay=1/sqrt(1+Ky*Ky+(1-Ky)*(1-Ky));
+    double alfaz=1/sqrt(1+Kz*Kz+(1-Kz)*(1-Kz));
+    double dx=x1-xm;
+    double res=dx*sqrt(alfay*alfay+alfaz*alfaz);
+   
+    //cout << " y1 " << y1 << " ym " << ym << " alfa " << alfa << endl;
+   // cout << " deltafit residual " << res << endl;
+   
+	   return res;*/
+     return -999;
+}
 
 const double TrajectoryMCSFitterICARUS::C2Function(const recob::TrackTrajectory& tr, std::vector<float> cumseglens, std::vector<long unsigned int> breakpoints, std::vector<float> dtheta,std::vector<float> dthetaPoly,std::vector<float>& ttall, double p0) const
   //compute RMS of R distribution (see MCS ICARUS paper) i.e. ratio between measured 2D scattering angle and expcted theta_MS
@@ -699,7 +743,7 @@ double washout=0.8585;
    double dxmedio=dstot/double(nsegtot)*10.; //mm
    cout << " weird dxmedio " << dxmedio << " dstot " << dstot << " nsegtot " << nsegtot << " cutmode " << cutMode() << endl;
    dxmedio=140.;
-   //washout=1;
+   washout=1;
 thetams=13.6/cp/beta*sqrt(1./140./cos)*alfa/cos*washout*sqrt(dxmedio);
 
 double thetams0=13.6/cp;
@@ -816,7 +860,7 @@ double washout=0.7388;
    std::cout << " all that stuff again " << thetams << thetaerr << dstot << cos << beta << alfa << cp << ds<< n << ap0 << apmedio << tpmedio << cc<< washout << dxmedio << endl;
 
    // sigma0=0.715;
-    //washout=1;
+    washout=1;
    thetams=13.6/cp/beta*sqrt(1./140./cos)*alfa/cos*washout*sqrt(dxmedio);
    cout << " thetams poly cp " << cp << " beta " << beta << " alfa " << alfa << " dxmedio " << dxmedio << endl;
    
@@ -1651,4 +1695,50 @@ cout << " cleaned matrix " << endl;
 covmod.Print();
 return covmod;
  
+}
+void TrajectoryMCSFitterICARUS::ComputeD3P3D(recob::TrackTrajectory tr)  
+{   
+  /*
+    double res;
+    vector<double> h0;
+    vector<double> alf;
+    
+    TH1D* hd3pv=new TH1D("hd3pv","hd3pv",100,-5.,5.);    
+
+
+  int nextValid = tr.NextValidPoint(0);
+  int npoints = 0;
+ 
+
+  while (nextValid != recob::TrackTrajectory::InvalidIndex) {
+            
+            double a;
+
+            res=computeResidual3D(tr,nextValid,a);
+            //cout << " point "  << j << " residual " <<res << endl;
+            //! for each triplet of consecutive hits, save absolute value of residuale
+            if(abs(res)<5) { //mm
+                h0.push_back(res);
+                alf.push_back(a);
+                hd3pv->Fill(res);
+               
+            }}
+    
+        bool writeHisto=true;
+        if(writeHisto) {
+       TFile *f = new TFile("d3phisto.root","UPDATE");
+    hd3pv->Write();
+        f->Close();
+        f->Delete();
+        }
+
+    if(!h0.size())
+       d3p=0.4;
+    else
+       d3p=hd3pv->GetRMS();
+    
+    //d3pvector=h0;
+    //return d3p;
+*/
+
 }
