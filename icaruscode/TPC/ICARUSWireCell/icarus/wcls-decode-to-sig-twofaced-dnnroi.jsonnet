@@ -281,7 +281,7 @@ local nfsp_pipes = [
                // nf_pipes[n],
                // magnifyio.raw_pipe[n],
                sp_pipes[n],
-               dnnroi(tools.anodes[n], ts_u, ts_v, output_scale=1, nchunk_u=2, nchunk_v=4),
+               dnnroi(tools.anodes[n], ts_u, ts_v, output_scale=1),
                // magnifyio.decon_pipe[n],
                // magnifyio.threshold_pipe[n],
                // magnifyio.debug_pipe[n], // use_roi_debug_mode: true in sp.jsonnet
