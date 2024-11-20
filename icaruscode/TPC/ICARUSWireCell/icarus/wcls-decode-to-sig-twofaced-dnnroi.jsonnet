@@ -257,7 +257,7 @@ local ts_u = {
     type: "TorchService",
     name: "dnnroi_u",
     data: {
-        model: "NNs/UNet-optfilter-opaqueMC_U_Plane.ts",
+        model: "NNsv2/UNet-randMC_Plane0.ts",
         device: "cpu",
         concurrency: 1,
     },
@@ -267,7 +267,7 @@ local ts_v = {
     type: "TorchService",
     name: "dnnroi_v",
     data: {
-        model: "NNs/UNet-optfilter-opaqueMC_V_Plane.ts",
+        model: "NNsv2/UNet-randMC_Plane1.ts",
         device: "cpu",
         concurrency: 1,
     },
