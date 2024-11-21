@@ -488,6 +488,9 @@ namespace icarus{
 	string stripn = std::to_string(adsid);
 	if (stripn.length()==1) stripn = "0"+stripn;
 
+	// whether we are using the "legacy" geometry naming scheme
+	bool const isLegacy = std::string(adsGeo.TotalVolume()->GetName()).find("_")!=std::string::npos;
+
         string path = "";
 	for (size_t ip=0;ip<paths.size();ip++) {
 	  for (size_t inode=0; inode<paths.at(ip).size(); inode++) {
@@ -496,7 +499,9 @@ namespace icarus{
 	      path += "/";
 	    }
 	  }
-	  if (path.find(adGeo.Name())!=std::string::npos && path.find("strip"+stripn)!=std::string::npos) break;
+	  if ( (path.find(adGeo.Name())!=std::string::npos && path.find("strip"+stripn)!=std::string::npos) || //refactored
+	       (isLegacy && path.find(adsGeo.TotalVolume()->GetName())!=std::string::npos) ) //legacy
+	    break;
 	  else path = "";
 	}
 

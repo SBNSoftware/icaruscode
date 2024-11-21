@@ -136,3 +136,6 @@ physics.producers.larg4intime.InputLabels: [ "GenInTimeSorter:intime" ]
 
 # Store MCParticleLite in G4 to store dropped particles from KeepEMShowerDaughters: false
 physics.producers.larg4intime.StoreDroppedMCParticles: true
+
+services.Geometry.GDML: "icarus_complete_20220518_overburden.gdml"
+services.Geometry.ROOT: "icarus_complete_20220518_overburden.gdml"

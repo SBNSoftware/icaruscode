@@ -16,7 +16,7 @@ icarus_simwire_wirecell:
         // loglevels: ["magnify:debug"]
         plugins: ["WireCellPgraph", "WireCellGen","WireCellSio","WireCellRoot","WireCellLarsoft"]
         // needs to be found via your WIRECELL_PATH 
-        configs: ["pgrapher/experiment/icarus/wcls-multitpc-sim-drift-simchannel.jsonnet"]
+        configs: ["pgrapher/experiment/icarus/wcls-multitpc-sim-drift-simchannel-refactored.jsonnet"]
         // Contract note: these exact "type:name" must be used to identify
         // the configuration data structures for these components in the Jsonnet.
         inputers: ["wclsSimDepoSetSource:electron"]
@@ -34,7 +34,9 @@ icarus_simwire_wirecell:
         ]
         // Make available parameters via Jsonnet's std.extVar()
         params: {
-	    files_fields: "garfield-icarus-fnal-rev2.json.bz2"
+        // Changing this to match Gray's latest data drive field responses
+	    //files_fields: "garfield-icarus-fnal-rev2.json.bz2"
+	    files_fields: "icarus_fnal_fit_ks_P0nom.json.bz2"
 	    file_rcresp: "" # use the RCResponse by default
 	    }
         structs: {
@@ -53,9 +55,12 @@ icarus_simwire_wirecell:
 	        coh_noise_scale: 1.0
 
             # Gain and shaping time
-            gain0: 14.9654 # mV/fC 
-            gain1: 14.9654 # mV/fC 
-            gain2: 14.9654 # mV/fC 
+            //gain0: 14.9654 # mV/fC 
+            //gain1: 14.9654 # mV/fC 
+            //gain2: 14.9654 # mV/fC 
+            gain0: 17.05212   # mV/fC 
+            gain1: 12.6181926 # mV/fC 
+            gain2: 13.0261362 # mV/fC 
 
             shaping0: 1.3 # us
             shaping1: 1.3 # us
@@ -63,21 +68,34 @@ icarus_simwire_wirecell:
 
             # Time offsets for truth matching
             time_offset_u: 0.0 # us
-            time_offset_v: 0.5 # us
-            time_offset_y: 1.0 # us
+            time_offset_v: 0.0 # us
+            time_offset_y: 0.0 # us
            
         }
     }
 }
 
+# TUNED FR CONFIG
 icarus_simwire_wirecell_fitSR: @local::icarus_simwire_wirecell
 # Add in the ER tail
 icarus_simwire_wirecell_fitSR.wcls_main.params.file_rcresp: "icarus_fnal_rc_tail.json"
 # Add in the tuned field responses
-icarus_simwire_wirecell_fitSR.wcls_main.params.files_fields: "icarus_fnal_fit_ks.json.bz2"
+icarus_simwire_wirecell_fitSR.wcls_main.params.files_fields: "icarus_fnal_fit_ks_P0nom.json.bz2"
 # futz with shaping+gain values (note these are really just scale factors and should not be taken literally)
 icarus_simwire_wirecell_fitSR.wcls_main.structs.gain0: 11.9918701 # mV/fC 
 icarus_simwire_wirecell_fitSR.wcls_main.structs.gain1: 12.6181926 # mV/fC
 icarus_simwire_wirecell_fitSR.wcls_main.structs.gain2: 13.0261362 # mV/fC
 icarus_simwire_wirecell_fitSR.wcls_main.structs.shaping1: 1.45 # us
+
+# TUNED FR CONFIG w/ Front Induction Nominal
+icarus_simwire_wirecell_fitSR_P0nom: @local::icarus_simwire_wirecell
+# Add in the ER tail
+icarus_simwire_wirecell_fitSR_P0nom.wcls_main.params.file_rcresp: "icarus_fnal_rc_tail.json"
+# Add in the tuned field responses (except for P0)
+icarus_simwire_wirecell_fitSR_P0nom.wcls_main.params.files_fields: "icarus_fnal_fit_ks_P0nom.json.bz2"
+# futz with shaping+gain values (note these are really just scale factors and should not be taken literally)
+icarus_simwire_wirecell_fitSR_P0nom.wcls_main.structs.gain0: 17.05212 # mV/fC 
+icarus_simwire_wirecell_fitSR_P0nom.wcls_main.structs.gain1: 12.6181926 # mV/fC
+icarus_simwire_wirecell_fitSR_P0nom.wcls_main.structs.gain2: 13.0261362 # mV/fC
+icarus_simwire_wirecell_fitSR_P0nom.wcls_main.structs.shaping1: 1.45 # us
 END_PROLOG

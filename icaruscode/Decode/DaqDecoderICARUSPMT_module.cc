@@ -293,13 +293,11 @@ namespace icarus { class DaqDecoderICARUSPMT; }
  *   in the same TAI scale as the global trigger; the difference between TTT
  *   and the global trigger pins down the end of the readout buffer in the
  *   electronics time scale;
- * 3. a delay is subtracted to the timestamp, which encompasses all fixed delays
- *   occurring in the trigger signal transportation; the most prominent is the
- *   delay occurring between the start of the "new" TAI second and when the
- *   TTT reset signal reaches and is honoured by the readout board.
- *   This value must be independently measured and provided to this decoder via
- *   configuration as setup information (`TTTresetDelay`); if not present in the
- *   setup, this delay is not added;
+ * 3. the computation above assumes that the last full second of the global trigger
+ *   timestamp corresponds to the same second at which the TTT counter was reset.
+ *   If the global trigger is close to the changing of the second, its timestamp
+ *   and that of the end of the data buffer might end up on opposite sides.
+ *   In these cases, a correction of +/- 1s is applied to the timestamp.
  * 4. finally, the time of the beginning of the waveform, that is the target
  *   for `raw::OpDetWaveform` timestamp, is obtained from the time of its end
  *   by simply subtracting the readout buffer length.
@@ -309,7 +307,7 @@ namespace icarus { class DaqDecoderICARUSPMT; }
  * data fragment was triggered by the global trigger (e.g. in the simplest
  * minimum/zero bias trigger). It has the advantage that it does not use the TTT
  * information. It can be enabled explicitly by setting the option
- * `TTTresetEverySecond` to `true`, or by removing the specification of the
+ * `TTTresetEverySecond` to `false`, or by removing the specification of the
  * trigger time data product tag (`TriggerTag`).
  * 1. The trigger primitive time is assumed to be the global trigger time too,
  *   so that the trigger primitive time in electronics time also matches the
@@ -335,7 +333,7 @@ namespace icarus { class DaqDecoderICARUSPMT; }
  *   not present in the setup, this delay is not added.
  *   Note that the particular contribution of the daisy chain to the delay does
  *   not need to be explicitly taken into account in the main mode, because the
- *   TTT reset is independent  and not daisy-chained, so that the TTT times
+ *   TTT reset is independent and not daisy-chained, so that the TTT times
  *   are all synchronized and when the primitive trigger arrives (via daisy
  *   chain) the TTT value at that instant is already including the delay.
  * 
@@ -343,22 +341,44 @@ namespace icarus { class DaqDecoderICARUSPMT; }
  * ### Further time corrections
  * @anchor icarus_PMTDecoder_TimeCorr
  * 
- * Time corrections are also applied for cable delays unless 
- * `ApplyCableDelayCorrection` is unset. These corrections are learned via
- * `IPMTTimingCorrectionService` service.
+ * Further time corrections are necessary for the waveform timestamps.
+ * An assumption of the timestamp computation is that the "TTT" counter 
+ * is reset every "TAI" second for all boards. However, there are delays
+ * in the propagation of the reset signals, and historically these delays 
+ * have been different between East and West boards. At the same time,
+ * while delay in the trigger propagation is common to all the boards,
+ * the TTT counter is updated only every two clock periods (8ns).
+ * As a result, incoming triggers are tagged with a 16 ns jitter.
  * 
- * Also, a timing correction can be applied to the waveforms based on a special
- * waveform digitizing a trigger signal. The correction is the same for all the
- * channels sharing the trigger signal, and more precisely, for all the channels
- * in the same readout crate (which have the trigger signal propagate in chain
- * from one to the next). The algorithm used to extract the correction from the
- * special waveforms is `icarus::timing::PMTWaveformTimeCorrectionExtractor`.
- * The decoder allows the extraction and saving of corrections from different
- * types ("categories", as defined in the `BoardSetup` configuration) of special
- * waveforms (see `SaveCorrectionsFrom`), but only the correction from a single
- * category, chosen by `CorrectionInstance`, are applied to all the "standard"
- * waveforms. Special waveforms have their time not corrected.
+ * These synchronization issues are resolved by applying a timing correction
+ * to the waveforms based on a special waveform digitizing the global trigger
+ * signal. The global trigger signal is sent via fan-out to the spare channels
+ * of the first boards in each readout crate. Boards on the same readout crate
+ * share the clock and trigger signal via daisy-chain, so they are not affected 
+ * by jittering. Since the global trigger timestamp is known, recording a copy
+ * of the global trigger itself in the readout buffers of each crate allows 
+ * to re-align all of the waveform timestamps so that the global trigger happens
+ * at the expected time in all boards. 
  * 
+ * The algorithm used to extract the corrections from the spare channel waveforms
+ * is `icarus::timing::PMTWaveformTimeCorrectionExtractor`. The decoder allows the
+ * extraction and use of corrections from different types ("categories", as defined
+ * in the `BoardSetup` configuration) of special waveforms (see `SaveCorrectionsFrom`),
+ * however only a single one is applied to all the "standard" waveforms; this is
+ * chosen via `CorrectionInstance`.
+ * If `ApplyCableDelayCorrection` is set to `true`, these waveform time corrections
+ * also include the cable delays in the propagation of the copies of the global triggers
+ * and possible board-by-board phase offsets. These values are learned via the
+ * `IPMTTimingCorrectionService` service and come from the timing calibration database.
+ * 
+ * If no waveform corrections are available (e.g.: `CorrectionInstance` is empty), but
+ * `ApplyCableDelayCorrection` is still set to `true`, a correction is provided for
+ * for the cable delays in the propagation of TTT reset signals. These values are also
+ * learned via the `IPMTTimingCorrectionService` service. This is not the recommended
+ * procedure as it does not correct for the 16ns jittering of the TTT timestamps.
+ * 
+ * Note that the timestamps of special waveforms (all the "categories" from which
+ * corrections can be extracted) are not corrected.
  * 
  * 
  * Data trees
@@ -383,7 +403,10 @@ namespace icarus { class DaqDecoderICARUSPMT; }
  *     * `triggerSec`, `triggerNS` (32-bit integer each): same time as `trigger`
  *       branch, split into second and nanosecond components.
  *     * `relBeamGateNS`, (32-bit integer): beam gate time opening relative to
- *       the trigger time, in nanoseconds; it may be affected by rounding.
+ *       the trigger time, in nanoseconds.
+ *     * `relEnableGateNS`, (32-bit integer): enable gate time opening relative
+ *       to the beam gate time, in nanoseconds. If larger than 2.1 seconds (
+ *       @f$\pm 2^{31}@f$ ns), it is capped.
  *       branch, split into second and nanosecond components.
  *     * `fragTime` (64-bit signed integer), `fragTimeSec` (32-bit signed
  *       integer): the timestamp of the PMT fragment, assigned by the board
@@ -395,7 +418,27 @@ namespace icarus { class DaqDecoderICARUSPMT; }
  *     * `waveformSize` (unsigned integer): number of ticks for the waveforms
  *       from this fragment.
  *     * `triggerBits` (unsigned integer): bits from the `raw::Trigger`.
- *     * `gateCount` (unsigned integer): number of this gate from run start.
+ *     * `triggerSource` (unsigned integer): value of the trigger source bit
+ *       (from `sbn::ExtraTriggerInfo::triggerSource`; see
+ *       `sbn::bits::triggerSource`).
+ *     * `triggerLocation` (unsigned integer): value of the trigger location bit
+ *       (from `sbn::ExtraTriggerInfo::triggerLocationBits`; see
+ *       `sbn::bits::triggerLocation`).
+ *     * `triggerLogicE`, `triggerLogicW` (unsigned integer): value of the
+ *        trigger logic bits (from `sbn::ExtraTriggerInfo::triggerLogicBits`;
+ *        see `sbn::bits::triggerLogic`) for the two cryostats; `0` if there was
+ *        no trigger in the respective cryostat.
+ *     * `gateID` (unsigned integer): number of this gate from run start
+ *       (note: this used to be `gateCount` until around `v09_80_00`).
+ *     * `triggerCount` (unsigned integer): number of triggers from this source
+ *       since run start, including this one;
+ *       from `sbn::ExtraTriggerInfo::triggerCount`.
+ *     * `gateCount` (unsigned integer): number of gates from this trigger
+ *       source since run start, including this one (note: this used to be the
+ *       number of _all_ gates regardless the source until around `v09_80_00`).
+ *     * `gateCountFromPreviousTrigger` (unsigned integer): number of gates from
+ *       this trigger source since the previous trigger also from this trigger
+ *       source (from `sbn::ExtraTriggerInfo::gateCountFromPreviousTrigger`).
  *     * `onGlobalTrigger` (boolean): whether the waveform covers the nominal
  *       trigger time (which should be equivalent to whether the fragment was
  *       triggered by the global trigger).
@@ -595,13 +638,6 @@ class icarus::DaqDecoderICARUSPMT: public art::EDProducer {
       0_ns
       };
     
-    fhicl::Atom<nanoseconds> TTTresetDelay {
-      fhicl::Name("TTTresetDelay"),
-      fhicl::Comment
-        ("assume that V1730 counter (Trigger Time Tag) is reset every second"),
-      0_ns
-      };
-    
     fhicl::OptionalSequence<fhicl::Table<ChannelSetupConfig>> SpecialChannels {
       fhicl::Name("SpecialChannels"),
       fhicl::Comment("special settings for selected channels on the board")
@@ -772,7 +808,6 @@ class icarus::DaqDecoderICARUSPMT: public art::EDProducer {
     nanoseconds bufferLength;
     nanoseconds preTriggerTime;
     nanoseconds PMTtriggerDelay;
-    nanoseconds TTTresetDelay;
     AllChannelSetup_t const* specialChannelSetup = nullptr;
     
     AllChannelSetup_t const& channelSetup() const
@@ -784,9 +819,17 @@ class icarus::DaqDecoderICARUSPMT: public art::EDProducer {
   struct TriggerInfo_t {
     SplitTimestamp_t time; ///< Time of the trigger (absolute).
     long int trigToBeam; ///< Time of beam gate relative to trigger [ns].
+    long int beamToEnable; ///< Enable gate time relative to beam gate [ns].
     sbn::triggerSourceMask bits; ///< Trigger bits.
-    unsigned int gateCount = 0U; ///< Gate number from the beginning of run.
+    unsigned int gateID = 0U; ///< Gate number from the beginning of run.
+    unsigned int triggerCount = 0U; ///< Trigger number for this source.
+    unsigned int gateCount = 0U; ///< Gate number for this source.
+    unsigned int gateCountFromPreviousTrigger = 0U; ///< Gates from last trig.
+    sbn::triggerSource sourceType; ///< Trigger source bit.
     sbn::triggerType triggerType; ///< Type of trigger (minimum bias, majority).
+    sbn::triggerLocationMask triggerLocation; ///< Where the trigger came from.
+    sbn::triggerLogicMask triggerLogicE; ///< Logic of east cryostat trigger.
+    sbn::triggerLogicMask triggerLogicW; ///< Logic of west cryostat trigger.
     electronics_time relTriggerTime; ///< Trigger time.
     electronics_time relBeamGateTime; ///< Beam gate time.
   }; // TriggerInfo_t
@@ -1010,6 +1053,7 @@ class icarus::DaqDecoderICARUSPMT: public art::EDProducer {
       SplitTimestamp_t fragTime; ///< PMT fragment time stamp.
       
       long int relBeamGate; ///< Beam gate start relative to trigger [ns].
+      long int relEnableGate; ///< Enable gate start relative to beam gate [ns].
       
       /// Time assigned to the waveforms.
       double waveformTime = std::numeric_limits<double>::lowest();
@@ -1018,7 +1062,22 @@ class icarus::DaqDecoderICARUSPMT: public art::EDProducer {
       
       unsigned int triggerBits = 0x0; ///< Trigger bits, from `raw::Trigger`.
       
-      unsigned int gateCount = 0U; ///< The number of gate from run start.
+      unsigned int triggerSource = 0x0; ///< Trigger source bit.
+      
+      unsigned int triggerLocation = 0x0; ///< Trigger location bit mask.
+      
+      unsigned int triggerLogicE = 0x0; ///< Trigger logic bit mask (east).
+      unsigned int triggerLogicW = 0x0; ///< Trigger logic bit mask (west).
+      
+      unsigned int gateID = 0U; ///< The number of gates of this source so far.
+      
+      /// The number of triggers from run start.
+      unsigned int triggerCount = 0U;
+      
+      unsigned int gateCount = 0U; ///< The number of gates from run start.
+      
+      ///< The number of gates from the previous trigger.
+      unsigned int gateCountFromPreviousTrigger = 0U;
       
       /// Whether waveforms cover nominal trigger time.
       bool onGlobalTrigger = false;
@@ -1341,6 +1400,17 @@ class icarus::DaqDecoderICARUSPMT: public art::EDProducer {
 //------------------------------------------------------------------------------
 namespace {
   
+  /// Converts `v` into type `T`, returning `min()`/`max()` if out of `T` range.
+  template <typename T, typename U>
+  T clampInto(U v) {
+    
+    using traits_t = std::numeric_limits<T>;
+    
+    if (v > traits_t::max()) return traits_t::max();
+    if (v < traits_t::min()) return traits_t::min();
+    return static_cast<T>(v);
+  } // clampInto()
+  
   /// Moves the contend of `src` into the end of `dest`.
   template <typename T>
   std::vector<T>& appendTo(std::vector<T>& dest, std::vector<T>&& src) {
@@ -1381,7 +1451,6 @@ namespace icarus {
       , config.FragmentID()
           .value_or(daq::details::BoardSetup_t::NoFragmentID)  // fragmentID
       , config.TriggerDelay()                                  // triggerDelay
-      , config.TTTresetDelay()                                 // TTTresetDelay
       };
     
     // set the special configuration for the board channels that have one;
@@ -1737,7 +1806,10 @@ void icarus::DaqDecoderICARUSPMT::produce(art::Event& event) {
       log << " }";
     } // if
     log << ", type: " << name(triggerInfo.triggerType);
-    if (fTriggerTag) log << ", spill count: " << triggerInfo.gateCount;
+    if (fTriggerTag) {
+      log << ", trigger count: " << triggerInfo.triggerCount
+        << ", spill count: " << triggerInfo.gateCount;
+    }
   } // local block
   
   //
@@ -1844,6 +1916,9 @@ void icarus::DaqDecoderICARUSPMT::produce(art::Event& event) {
     timeCorrectionProducts[fCorrectionInstance] = {};
   }
   // process each (proto)waveform in a category marked as correction source
+  mf::LogTrace{ fLogCategory }
+    << "We have now " << protoWaveforms.size() << " protoWaveforms.";
+  
   for (ProtoWaveform_t const& waveform: protoWaveforms) {
     
     // extract correction only from waveforms on global trigger,
@@ -1858,6 +1933,14 @@ void icarus::DaqDecoderICARUSPMT::produce(art::Event& event) {
     auto const itCorr
       = timeCorrectionProducts.find(waveform.channelSetup->category);
     if (itCorr == timeCorrectionProducts.end()) continue; // we don't need this
+    
+    mf::LogTrace{ fLogCategory }
+      << "Time corr. from CH=" << std::hex << waveform.waveform.ChannelNumber()
+      << " for category " << waveform.channelSetup->category;
+    if (!itCorr->second.empty()) {
+      mf::LogTrace{ fLogCategory }
+        << "  already " << itCorr->second.size() << " present";
+    }
     
     try {
       fPMTWaveformTimeCorrectionManager.findWaveformTimeCorrections(
@@ -1880,7 +1963,7 @@ void icarus::DaqDecoderICARUSPMT::produce(art::Event& event) {
         << waveform.channelSetup->category << "'.\n";
     }
     
-  }
+  } // for protowaveforms
 
   // ---------------------------------------------------------------------------
   // output
@@ -2176,9 +2259,6 @@ auto icarus::DaqDecoderICARUSPMT::fetchNeededBoardInfo(
     // PMTtriggerDelay
     , ((boardInfo && boardInfo->setup)
         ? boardInfo->setup->triggerDelay: nanoseconds{ 0.0 })
-    // TTTresetDelay
-    , ((boardInfo && boardInfo->setup)
-        ? boardInfo->setup->TTTresetDelay: nanoseconds{ 0.0 })
     , ((boardInfo && boardInfo->setup)?
         &(boardInfo->setup->channelSettings): nullptr)
     };
@@ -2192,14 +2272,22 @@ auto icarus::DaqDecoderICARUSPMT::fetchTriggerTimestamp
 {
   
   if (!fTriggerTag) {
-    return { 
-        SplitTimestamp_t(event.time().value())  // time
-      , 0U                                      // trigToBeam
-      , {}                                      // bits
-      , 0U                                      // gateCount
-      , sbn::triggerType::NBits                 // triggerType
-      , fDetTimings.TriggerTime()               // relTriggerTime
-      , fDetTimings.BeamGateTime()              // relBeamGateTime
+    return {
+        SplitTimestamp_t(event.time().value())   // time
+      , std::numeric_limits<std::int64_t>::min() // trigToBeam
+      , std::numeric_limits<std::int64_t>::min() // beamToEnable
+      , {}                                       // bits
+      , 0U                                       // gateID
+      , 0U                                       // triggerCount
+      , 0U                                       // gateCount
+      , 0U                                       // gateCountFromPreviousTrigger
+      , sbn::triggerSource::NBits                // sourceType
+      , sbn::triggerType::NBits                  // triggerType
+      , sbn::triggerLocationMask{}               // triggerLocation
+      , sbn::triggerLogicMask{}                  // triggerLogicE
+      , sbn::triggerLogicMask{}                  // triggerLogicW
+      , fDetTimings.TriggerTime()                // relTriggerTime
+      , fDetTimings.BeamGateTime()               // relBeamGateTime
     };
   }
   
@@ -2232,23 +2320,34 @@ auto icarus::DaqDecoderICARUSPMT::fetchTriggerTimestamp
   
   long long int const relBeamGate = timestampDiff
     (extraTrigger.beamGateTimestamp, extraTrigger.triggerTimestamp);
+  long long int const relEnableGate = timestampDiff
+    (extraTrigger.enableGateTimestamp, extraTrigger.beamGateTimestamp);
   
   electronics_time const relTriggerTime
     { util::quantities::microsecond{ trigger.TriggerTime() } };
   electronics_time const relBeamGateTime
     { util::quantities::microsecond{ trigger.BeamGateTime() } };
   
-  unsigned int const gateCount = extraTrigger.gateID;
-  
   return {
-      SplitTimestamp_t          // time
+      SplitTimestamp_t                    // time
         { static_cast<long long int>(extraTrigger.triggerTimestamp) }
-    , relBeamGate               // trigToBeam
-    , {trigger.TriggerBits()}   // bits
-    , gateCount                 // gateCount
-    , extraTrigger.triggerType  // triggerType
-    , relTriggerTime            // relTriggerTime
-    , relBeamGateTime           // relBeamGateTime
+    , relBeamGate                         // trigToBeam
+    , clampInto<long int>(relEnableGate)  // beamToEnable
+    , {trigger.TriggerBits()}             // bits
+    , extraTrigger.gateID                 // gateID
+    , extraTrigger.triggerCount           // triggerCount
+    , extraTrigger.gateCount              // gateCount
+    , extraTrigger.gateCountFromPreviousTrigger
+                                          // gateCountFromPreviousTrigger
+    , extraTrigger.sourceType             // sourceType
+    , extraTrigger.triggerType            // triggerType
+    , extraTrigger.triggerLocation()      // triggerLocation
+    , extraTrigger.cryostats[sbn::ExtraTriggerInfo::EastCryostat].triggerLogic()
+                                          // triggerLogicE
+    , extraTrigger.cryostats[sbn::ExtraTriggerInfo::WestCryostat].triggerLogic()
+                                          // triggerLogicW
+    , relTriggerTime                      // relTriggerTime
+    , relBeamGateTime                     // relBeamGateTime
     };
   
 } // icarus::DaqDecoderICARUSPMT::fetchTriggerTimestamp()
@@ -2396,8 +2495,8 @@ auto icarus::DaqDecoderICARUSPMT::createFragmentWaveforms(
   std::optional<mf::LogVerbatim> diagOut;
   if (fDiagnosticOutput) diagOut.emplace(fLogCategory);
   
-  icarusDB::DigitizerChannelChannelIDPairVec const& digitizerChannelVec
-    = fChannelMap.getChannelIDPairVec
+  icarusDB::PMTdigitizerInfoVec const& digitizerChannelVec
+    = fChannelMap.getPMTchannelInfo
       (effectivePMTboardFragmentID(fragInfo.fragmentID))
     ;
   
@@ -2411,8 +2510,8 @@ auto icarus::DaqDecoderICARUSPMT::createFragmentWaveforms(
   auto channelNumberToChannel
     = [&digitizerChannelVec](unsigned short int channelNumber) -> raw::Channel_t
     {
-      for (auto const & [ chNo, chID, _ ]: digitizerChannelVec) // too pythonic? 
-        if (chNo == channelNumber) return chID;
+      for (icarusDB::PMTChannelInfo_t const & chInfo: digitizerChannelVec)
+        if (chInfo.digitizerChannelNo == channelNumber) return chInfo.channelID;
       return sbn::V1730channelConfiguration::NoChannelID;
     };
   
@@ -2810,12 +2909,21 @@ void icarus::DaqDecoderICARUSPMT::fillPMTfragmentTree(
   fTreeFragment->data.TriggerTimeTag = fragInfo.TTT;
   fTreeFragment->data.trigger = triggerInfo.time;
   fTreeFragment->data.relBeamGate = triggerInfo.trigToBeam;
+  fTreeFragment->data.relEnableGate = triggerInfo.beamToEnable;
   fTreeFragment->data.fragTime
     = { static_cast<long long int>(fragInfo.fragmentTimestamp) };
   fTreeFragment->data.waveformTime = waveformTimestamp.value();
   fTreeFragment->data.waveformSize = fragInfo.nSamplesPerChannel;
   fTreeFragment->data.triggerBits = triggerInfo.bits;
+  fTreeFragment->data.triggerSource = value(triggerInfo.sourceType);
+  fTreeFragment->data.triggerLocation = triggerInfo.triggerLocation.bits;
+  fTreeFragment->data.triggerLogicE = triggerInfo.triggerLogicE.bits;
+  fTreeFragment->data.triggerLogicW = triggerInfo.triggerLogicW.bits;
+  fTreeFragment->data.gateID = triggerInfo.gateID;
+  fTreeFragment->data.triggerCount = triggerInfo.triggerCount;
   fTreeFragment->data.gateCount = triggerInfo.gateCount;
+  fTreeFragment->data.gateCountFromPreviousTrigger
+    = triggerInfo.gateCountFromPreviousTrigger;
   fTreeFragment->data.onGlobalTrigger
     = containsGlobalTrigger(waveformTimestamp, fragInfo.nSamplesPerChannel);
   fTreeFragment->data.minimumBias
@@ -2978,9 +3086,6 @@ auto icarus::DaqDecoderICARUSPMT::fragmentWaveformTimestampFromTTT(
    *    relative to the global trigger
    * 4. TTT tags the last (or after the last?) sample of the collected waveform;
    *    the time of the first sample precedes that tag by the full buffer length
-   * 5. the PMT trigger itself is subject to a sequence of delays compared to
-   *    the (local or global) trigger from SPEXi; here we quantify these delays
-   *    from calibration offsets collectively passed via job configuration.
    */
   
   using namespace util::quantities::time_literals;
@@ -3065,28 +3170,11 @@ auto icarus::DaqDecoderICARUSPMT::fragmentWaveformTimestampFromTTT(
   //
   waveformTime -= fragInfo.nSamplesPerChannel * fOpticalTick;
   
-  //
-  // 5. correction for calibrated delays
-  //
-  /*
-   * Waveform time has been expressed based on the "absolute" trigger time plus
-   * an offset based on the Trigger Time Tag, which is synchronous with the
-   * global trigger and reset every second.
-   * We are missing a possible delay between the time of the trigger time scale
-   * stepping into a new second and the the time TTT reset is effective.
-   * 
-   * 
-   */
-  
-  waveformTime += boardInfo.TTTresetDelay;
-  
   mf::LogTrace(fLogCategory) << "V1730 board '" << boardInfo.name
     << "' has data starting at electronics time " << waveformTime
     << " = " << fNominalTriggerTime << " (global trigger)"
     << " + " << nanoseconds(fragmentRelTime) << " (TTT - global trigger)"
-    << " - " << (fragInfo.nSamplesPerChannel * fOpticalTick) << " (buffer size)"
-    << " + " << boardInfo.TTTresetDelay << " (reset delay)"
-    ;
+    << " - " << (fragInfo.nSamplesPerChannel * fOpticalTick) << " (buffer size)";
   
   return waveformTime;
   
@@ -3277,10 +3365,19 @@ void icarus::DaqDecoderICARUSPMT::initFragmentsTree() {
   tree->Branch("triggerSec", &data.trigger.split.seconds);
   tree->Branch("triggerNS", &data.trigger.split.nanoseconds);
   tree->Branch("relBeamGateNS", &data.relBeamGate, "relBeamGateNS/I"); // ROOT 6.24 can't handle `long` neither
+  tree->Branch("relEnableGateNS", &data.relEnableGate, "relEnableGateNS/I"); // ditto
   tree->Branch("waveformTime", &data.waveformTime);
   tree->Branch("waveformSize", &data.waveformSize);
   tree->Branch("triggerBits", &data.triggerBits);
+  tree->Branch("triggerSource", &data.triggerSource);
+  tree->Branch("triggerLocation", &data.triggerLocation);
+  tree->Branch("triggerLogicE", &data.triggerLogicE);
+  tree->Branch("triggerLogicW", &data.triggerLogicW);
+  tree->Branch("gateID", &data.gateID);
+  tree->Branch("triggerCount", &data.triggerCount);
   tree->Branch("gateCount", &data.gateCount);
+  tree->Branch
+    ("gateCountFromPreviousTrigger", &data.gateCountFromPreviousTrigger);
   tree->Branch("onGlobal", &data.onGlobalTrigger);
   tree->Branch("minimumBias", &data.minimumBias);
   

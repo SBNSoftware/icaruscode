@@ -30,7 +30,7 @@ services.ParticleInventoryService:  @local::standard_particleinventoryservice
 physics.producers: {
             @table::icarus_stage1_producers
 
-            mcophit:                        @local::ICARUSMCOpHit
+            #mcophit:                        @local::ICARUSMCOpHit
             mcopflashTPC0:                  @local::ICARUSMCOpFlashTPC0
             mcopflashTPC1:                  @local::ICARUSMCOpFlashTPC1
             mcopflashTPC2:                  @local::ICARUSMCOpFlashTPC2
@@ -50,7 +50,7 @@ physics.producers: {
 physics.reco: [ 
                 @sequence::icarus_reco_Gauss_CryoE ,
                 @sequence::icarus_reco_Gauss_CryoW ,
-		            @sequence::icarus_reco_fm,
+                @sequence::icarus_reco_fm,
                 @sequence::icarus_tpcpmtbarycentermatch,
                 caloskimCalorimetryCryoE, caloskimCalorimetryCryoW,
                 mcassociationsGausCryoE,  mcassociationsGausCryoW
@@ -81,6 +81,11 @@ physics.analyzers.caloskimW.RawDigitproducers: ["MCDecodeTPCROI:PHYSCRATEDATATPC
 
 physics.producers.mcassociationsGausCryoE.HitParticleAssociations.HitModuleLabelVec: ["cluster3DCryoE"]
 physics.producers.mcassociationsGausCryoW.HitParticleAssociations.HitModuleLabelVec: ["cluster3DCryoW"]
+
+# Remove missing products in MC
+physics.analyzers.simpleLightAna.TriggerLabel: ""
+physics.analyzers.simpleLightAna.RWMLabel: ""
+physics.analyzers.simpleLightAna.OpDetWaveformLabels: ["opdaq"]
 
 services.message.destinations :
 {

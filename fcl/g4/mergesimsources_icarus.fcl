@@ -19,7 +19,7 @@ icarus_merge_sim_sources : {
 largeant_volumes: [ "LArG4DetectorServicevolTPCPlaneV"
                   , "LArG4DetectorServicevolTPC0"
                   , "LArG4DetectorServicevolTPCPlaneU"
-                  , "LArG4DetectorServicevolOpDetSensitive" #is this needed?
+                  #, "LArG4DetectorServicevolOpDetSensitive" #is this needed?
                   , "LArG4DetectorServicevolTPCPlaneY"
                   , "LArG4DetectorServicevolTPCActive"
                   ]
@@ -45,6 +45,16 @@ icarus_merge_overlay_sim_sources : {
   InputSourcesLabels:          [ "largeantnu", "largeantcosmic"]
   EnergyDepositInstanceLabels: @local::largeant_volumes
   AuxDetHitsInstanceLabels:    @local::largeant_crt_volumes
+}
+
+icarus_merge_intime_dropped_mcparts: 
+{
+    @table::icarus_merge_sim_sources
+    module_type: "MergeSimSourcesSBN"
+    InputSourcesLabels: ["larg4intime:droppedMCParticles","larg4outtime:droppedMCParticles"]
+    FillMCParticles: true
+    FillMCParticlesLite: false
+    FillMCParticlesAssociated: false
 }
 
 END_PROLOG

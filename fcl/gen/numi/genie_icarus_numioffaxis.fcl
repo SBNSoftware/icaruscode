@@ -57,8 +57,8 @@ icarus_genie_NuMI_base: {
   FluxType:             "dk2nu"
   BeamName:             "numi"
   DetectorLocation:     "icarus-numi"
-  FluxSearchPaths:      "/cvmfs/sbn.osgstorage.org/pnfs/fnal.gov/usr/sbn/persistent/stash/physics/beam/GENIE/NuMI/standard/v02_00/"
-  FluxFiles:            ["g4numiv6_minervame*.root"]
+  FluxSearchPaths:      "/cvmfs/sbn.osgstorage.org/pnfs/fnal.gov/usr/sbn/persistent/stash/physics/beam/GENIE/NuMI/standard/v03_00/"
+  FluxFiles:            ["g4numi*.root"]
   
   POTPerSpill:          6.0e13 # same as BnB per batch, but 6 batches in spill
   
@@ -92,7 +92,7 @@ icarus_genie_NuMI_rock.DetectorLocation: "icarus-numi-rock"
 
 # RHC Config
 icarus_genie_NuMI_RHC: @local::icarus_genie_NuMI
-icarus_genie_NuMI_RHC.FluxSearchPaths: "/cvmfs/sbn.osgstorage.org/pnfs/fnal.gov/usr/sbn/persistent/stash/physics/beam/GENIE/NuMI/standard/v02_00_RHC/"
+icarus_genie_NuMI_RHC.FluxSearchPaths: "/cvmfs/sbn.osgstorage.org/pnfs/fnal.gov/usr/sbn/persistent/stash/physics/beam/GENIE/NuMI/standard/v03_00_RHC/"
 
 ################################################################################
 

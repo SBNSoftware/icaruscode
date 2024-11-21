@@ -24,7 +24,7 @@ FakeFlash: {
 ICARUSMCOpHit: {
     module_type: "ICARUSMCOpHit"
     MergePeriod: 0.01
-    SimPhotonsProducer: "largeant"
+    SimPhotonsProducer: "pdfastsim"
     SPEArea: @local::SPE.Area
     SPEAmplitude: @local::SPE.Amplitude
 }
@@ -103,12 +103,24 @@ ICARUSParticleAna: {
 ICARUSFlashAssAna: {
     module_type: "ICARUSFlashAssAna"
     TriggerLabel: "daqTrigger"
-    DumpWaveformsInfo: true
+    DumpWaveformsInfo: false
+    SaveRawWaveforms: false
+    UseSharedBaseline: true
     OpDetWaveformLabels: ["daqPMT"]
+    BaselineLabels: ["pmtbaselines"]
     OpHitLabels: ["ophit"]
     FlashLabels: ["opflashCryoE", "opflashCryoW"]
+    RWMLabel: "beamTiming:RWM"
     PEOpHitThreshold: 0
-    Debug: false
+}
+
+ICARUSBeamStructureAna: {
+    module_type: "ICARUSBeamStructureAna"
+    FlashLabels: ["opflashCryoE", "opflashCryoW"]
+    TriggerLabel: "daqTrigger"
+    RWMLabel: "beamTiming:RWM"
+    TriggerConfigLabel: "triggerconfig"
+    CRTPMTMatchingLabel: "crtpmt"
 }
 
 END_PROLOG

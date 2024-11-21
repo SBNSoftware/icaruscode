@@ -80,3 +80,5 @@ services.message.destinations :
      }
   }
 }
+
+physics.producers.mcophit.SimPhotonsProducer: "largeant"

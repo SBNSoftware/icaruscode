@@ -20,7 +20,12 @@ physics:
     daq: @local::standard_producecompressed
   }
 
-  reproProduce: [ daq ]
+  filters:
+  {
+    filterdataintegrity: { module_type: "FilterDataIntegrity"}
+  }
+
+  reproProduce: [ filterdataintegrity, daq ]
 
   stream1: [ out1 ]
 
@@ -35,6 +40,7 @@ outputs:
   {
     module_type: RootOutput
     fileName: "icarus_reproduced_out.root"
+    SelectEvents: ["reproProduce"]
     outputCommands: [ "keep *_*_*_*",
                       "drop *_daq_PHYSCRATEDATATPC??_DAQEVB??" ]
   }
