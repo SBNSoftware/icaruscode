@@ -112,14 +112,19 @@ for(size_t trackIdx = 0; trackIdx < inputVec.size(); trackIdx++) {
     int cryo=-1;
     if(x>0) cryo=1;
     else cryo=0;
-    std::cout << " x " << x << " cryo " << cryo << std::endl;
+    //std::cout << " x " << x << " cryo " << cryo << std::endl;
     /*    geo::Point_t vtx=element.Vertex();
     geo::CryostatID cryoID=geom->PositionToCryostatID(vtx);
     */
     //if(trackIdx==2&&cryo==0) {
-   
-    std::cout << " fitting uboone trackIdx " << trackIdx << " cryo " << cryo << " length " << element.Length() << std::endl;
-   
+    std::cout << " " << std::endl;
+    if (cryo == 0) {
+      std::cout << "starting uboone algorithm, track with id = " << trackIdx << " in cryostat EAST" << std::endl;
+    }
+    if (cryo == 1) {
+      std::cout << "starting uboone algorithm, track with id = " << trackIdx << " in cryostat WEST" << std::endl;
+    }
+    std::cout << " " << std::endl;
     if(element.Length()>minLen) result = mcsfitter.fitMcs(element);
     //}
 output->emplace_back(std::move(result));
