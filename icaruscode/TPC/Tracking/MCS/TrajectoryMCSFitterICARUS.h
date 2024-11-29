@@ -140,10 +140,10 @@ namespace trkf {
     void linearRegression(const recob::TrackTrajectory& traj, const size_t firstPoint, const size_t lastPoint, recob::tracking::Vector_t& pcdir) const;
 double GetOptimalSegLen(const recob::TrackTrajectory& tr,const double guess_p, const int n_points, const int plane, const double length_travelled) const;
 double computeResidual(int i, double& alfa, std::vector<recob::Hit> h) const;
-double computeResidual3D(recob::TrackTrajectory tr, int i, double& alfa) const;
+double computeResidual3D(recob::Track tr, int i, double& alfa) const;
 
-void ComputeD3P(int plane)   ;
-void ComputeD3P3D(const recob::TrackTrajectory tr)   ;
+void ComputeD3P(int plane)  ;
+float ComputeD3P3D( const recob::Track& tr) ;
 
 
 
@@ -220,8 +220,8 @@ double DriftOrigin(int plane, int tpc,int cryo) const;
     std::vector<recob::Hit> hits2dI2;
     std::vector<recob::Hit> hits2dI1;
     std::vector<proxy::TrackPointData> pdata;
-    float d3p;
- 
+    float d3pC; float d3pI1; float d3pI2;
+    float d3p3d;
 
   };
 }

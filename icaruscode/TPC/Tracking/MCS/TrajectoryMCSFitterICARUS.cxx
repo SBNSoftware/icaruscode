@@ -444,7 +444,7 @@ double initial_p=guess_p*-0.211*length_travelled;
 double MIN_P=1000;
 if(initial_p<MIN_P) initial_p=MIN_P;
 
-double sigma=d3p; //to be replaced by computed D3P when ready!
+double sigma=d3pC; //to be replaced by computed D3P when ready!
 
 //double cosa=1;
 double sinb=1; //both to be replaced by angles when ready!
@@ -519,9 +519,9 @@ if(!hits.size()) return;
         }
 
     if(!h0.size())
-       d3p=0.4;
+       d3pC=0.4;
     else
-       d3p=hd3pv->GetRMS();
+       d3pC=hd3pv->GetRMS();
     
     //d3pvector=h0;
     //return d3p;
@@ -560,7 +560,7 @@ float x2=h2.WireID().Wire*3; auto y2=h2.PeakTime()*0.622;
    // cout << " deltafit residual " << res << endl;
 	   return res;
 }
-double TrajectoryMCSFitterICARUS::computeResidual3D(recob::TrackTrajectory tr, int i, double& alfa) const
+double TrajectoryMCSFitterICARUS::computeResidual3D(recob::Track tr, int i, double& alfa) const
 {
 /*
 
@@ -719,7 +719,7 @@ for(unsigned int jp=firstseg;jp<lastseg;jp++) {
   
    //  if(tr->D3PCU()>0) {
   //ComputeD3P();
-  sigma0=d3p;
+  sigma0=d3pC;
   cout << " eseg " << eseg << " sigma0 " <<sigma0 << endl;
 
  int np=tr.NPoints();
@@ -824,7 +824,7 @@ for(unsigned int jp=firstseg;jp<lastseg-1;jp++) {
   double sigma0;
 
   //ComputeD3P();
-  sigma0=d3p;
+  sigma0=d3pC;
   cout << " eseg " << eseg << " sigma0 " << sigma0 << endl;
   sinb=1;
   
@@ -1696,7 +1696,7 @@ covmod.Print();
 return covmod;
  
 }
-void TrajectoryMCSFitterICARUS::ComputeD3P3D(recob::TrackTrajectory tr)  
+float TrajectoryMCSFitterICARUS::ComputeD3P3D(const recob::Track& tr)  
 {   
   /*
     double res;
@@ -1740,5 +1740,6 @@ void TrajectoryMCSFitterICARUS::ComputeD3P3D(recob::TrackTrajectory tr)
     //d3pvector=h0;
     //return d3p;
 */
+return -999;
 
 }
