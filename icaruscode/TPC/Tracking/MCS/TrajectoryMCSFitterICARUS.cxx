@@ -30,9 +30,7 @@ if(traj.Length()<minlen) {
 			     dum,dum);
 }
 
-
- GetOptimalSegLen(traj,1000,traj.NPoints(),2,traj.Length());
-
+//d3p3d=ComputeD3P3D(traj);
  // std::cout << " D3p " << d3p << std::endl;
   //
   // Break the trajectory in segments of length approximately equal to segLen_
@@ -483,8 +481,10 @@ m2+=0.5;
 return m2;
 
 }
-void TrajectoryMCSFitterICARUS::ComputeD3P(int plane)  {
+void TrajectoryMCSFitterICARUS::ComputeD3P(int plane)  
 {   
+
+    float d3p;
     double res;
     vector<double> h0;
     vector<double> alf;
@@ -519,13 +519,16 @@ if(!hits.size()) return;
         }
 
     if(!h0.size())
-       d3pC=0.4;
+       d3p=0.4;
     else
-       d3pC=hd3pv->GetRMS();
+       d3p=hd3pv->GetRMS();
     
     //d3pvector=h0;
     //return d3p;
-}
+    if(plane==0) d3pI1=d3p;
+    if(plane==1) d3pI2=d3p;
+    if(plane==2) d3pC=d3p;
+
 }
 double TrajectoryMCSFitterICARUS::computeResidual(int i, double& alfa, std::vector<recob::Hit> hits2d) const
 {
@@ -562,7 +565,7 @@ float x2=h2.WireID().Wire*3; auto y2=h2.PeakTime()*0.622;
 }
 double TrajectoryMCSFitterICARUS::computeResidual3D(recob::Track tr, int i, double& alfa) const
 {
-/*
+
 
 auto p0=tr.LocationAtPoint(i);
 auto p1=tr.LocationAtPoint(i+1);
@@ -594,14 +597,15 @@ float x2=p2.X(); auto y2=p2.Y(); auto z2=p2.Z();
     
     double alfay=1/sqrt(1+Ky*Ky+(1-Ky)*(1-Ky));
     double alfaz=1/sqrt(1+Kz*Kz+(1-Kz)*(1-Kz));
+    double xm=0.5*(xmy+xmz);
     double dx=x1-xm;
     double res=dx*sqrt(alfay*alfay+alfaz*alfaz);
    
     //cout << " y1 " << y1 << " ym " << ym << " alfa " << alfa << endl;
    // cout << " deltafit residual " << res << endl;
    
-	   return res;*/
-     return -999;
+	   return res;
+   
 }
 
 const double TrajectoryMCSFitterICARUS::C2Function(const recob::TrackTrajectory& tr, std::vector<float> cumseglens, std::vector<long unsigned int> breakpoints, std::vector<float> dtheta,std::vector<float> dthetaPoly,std::vector<float>& ttall, double p0) const
@@ -642,15 +646,23 @@ double thetams,thetaerr;
    return 0;
 }
  std::cout << " before matrices " << nseg << std::endl;
-
+//matrice di covarianza totale, somma di MCS e misura
 TMatrixDSym mat(2*nseg-3);
-
-TMatrixDSym materr(nseg-1);
-TMatrixDSym matpolyerr(nseg-2);
-TMatrixDSym matpolyms(nseg-2);
-TMatrixDSym matpoly(nseg-2);
-TMatrixDSym matcard(nseg-2);
+//matrice di covarianza totale, somma di MCS e misura (parte lineare)
+TMatrixDSym matLin(nseg-1);
+//matrice di covarianza totale, somma di MCS e misura (parte poly)
+TMatrixDSym matPoly(nseg-2);
+//matrice di covarianza MCS, parte lineare
+TMatrixDSym matMCSLin(nseg-1);
+//matrice di covarianza di misura, parte lineare
+TMatrixDSym matErrLin(nseg-1);
+//matrice di covarianza MCS, parte poly
+TMatrixDSym matMCSPoly(nseg-2);
+//matrice di covarianza di misura, parte poly
+TMatrixDSym matErrPoly(nseg-2);
+//matrice con termini misti
 TMatrixDSym matmix(2*nseg-3);
+
  double ap0=0;
 double apmedio=0;
 double tpmedio=0;
@@ -706,7 +718,7 @@ for(unsigned int jp=firstseg;jp<lastseg;jp++) {
         nbstop++; 
 
 
-  double a=dtheta[jp];
+  double a=dtheta[jp]*1000.;
  
   cout<< " filling a: jp " << jp << " jp-1 " << jp-1 << " a " << a << endl;
   double eseg=0;
@@ -717,8 +729,6 @@ for(unsigned int jp=firstseg;jp<lastseg;jp++) {
   alfa=1;
   double sigma0;
   
-   //  if(tr->D3PCU()>0) {
-  //ComputeD3P();
   sigma0=d3pC;
   cout << " eseg " << eseg << " sigma0 " <<sigma0 << endl;
 
@@ -746,10 +756,10 @@ double washout=0.8585;
    washout=1;
 thetams=13.6/cp/beta*sqrt(1./140./cos)*alfa/cos*washout*sqrt(dxmedio);
 
-double thetams0=13.6/cp;
+
 
     std::cout << " poly beta " << beta << " alfa " << alfa << " cp " << cp << " dxmedio " << dxmedio << std::endl;
-    std::cout << " complex thetams  " << thetams << " basic thetams " << thetams0 << std::endl;
+    std::cout << " complex thetams  " << thetams << std::endl;
 
    float collPointsRatio=float(hits2dC.size())/float(tr.NPoints());
    float avPointsSeg=float(breakpoints[breakpoints.size()-1] )/breakpoints.size();
@@ -764,15 +774,17 @@ sinb=cosTrackDrift(tr); //3d
 //sinb=1; //2d
     thetaerr=sigma0*sqrt(24.)/(dxmedio)/sqrt(float(avCollPointsSeg))/sinb; //2d
     thetaerr=sigma0*sqrt(24.)/(dxmedio)/sqrt(float(avPointsSeg))/sinb; //3d
+    thetams*=1000; //mrad
+    thetaerr*=1000; //mrad
   // thetaerr=0;
-    double thetacorr=sqrt(thetams*thetams+thetaerr*thetaerr);
     // ttall.push_back(acorr/thetams);
-     std::cout << " filling ttall fit " << a*1000. << " " << thetams*1000. << " " << thetaerr*1000.  << std::endl;
-    ttall.push_back(a/thetacorr);
-  
-   std::cout << " all that stuff " << thetams << thetaerr << dstot << cos << beta << alfa << cp << ds<< n << ap0 << apmedio << tpmedio << cc<< washout << dxmedio << endl;
- 
-   FillCovMatrixSegOnly(tr,mat,jp,thetams*thetams,thetaerr*thetaerr,materr,breakpoints);
+     std::cout << " filling ttall fit " << a << " " << thetams << " " << thetaerr  << std::endl;
+   // ttall.push_back(a/thetacorr);
+    ttall.push_back(a);
+   matMCSLin(jp-firstseg,jp-firstseg)=thetams*thetams;
+   matErrLin(jp-firstseg,jp-firstseg)=thetaerr*thetaerr;
+   
+   //FillCovMatrixSegOnly(tr,mat,jp,thetams*thetams,thetaerr*thetaerr,materr,breakpoints);
    std::cout << " before addsegcov nseg " << nseg << std::endl;
 
   // AddSegmentCovariance(tr,mat,jp);
@@ -812,7 +824,7 @@ for(unsigned int jp=firstseg;jp<lastseg-1;jp++) {
         nbstop++; 
 
 
-  double a=dthetaPoly[jp-1];
+  double a=dthetaPoly[jp-1]*1000.;
 
   cout<< a << endl;
   double eseg=0;
@@ -823,7 +835,6 @@ for(unsigned int jp=firstseg;jp<lastseg-1;jp++) {
   alfa=1;
   double sigma0;
 
-  //ComputeD3P();
   sigma0=d3pC;
   cout << " eseg " << eseg << " sigma0 " << sigma0 << endl;
   sinb=1;
@@ -850,12 +861,7 @@ std::cout << " checking n " << n << " alfa " << alfa << " dstot " << dstot << " 
    //sigma0=0.715;
 double washout=0.7388;
    double dxmedio=dstot/double(nsegtot)*10.;//mm
-   cout << " weird dxmedio " << dxmedio << endl;
    dxmedio=140.;
-  // thetaerr=0;
-  //  double thetacorr=sqrt(thetams*thetams+thetaerr*thetaerr);
-    // ttall.push_back(acorr/thetams);
-   //  ttall.push_back(a/thetacorr);
   
    std::cout << " all that stuff again " << thetams << thetaerr << dstot << cos << beta << alfa << cp << ds<< n << ap0 << apmedio << tpmedio << cc<< washout << dxmedio << endl;
 
@@ -880,46 +886,67 @@ sinb=cosTrackDrift(tr);  //3d
 cout << " thetaerr " << thetaerr << endl;
 cout << " sigma0" << sigma0 << " dxmedio " << dxmedio << " sqrt " << sqrt(float(avCollPointsSeg)) << " sinb " << sinb << endl;
     cout << " npnsegtot ratio " << np/nsegtot <<" np " << np << " nsegtot " << nsegtot << endl;
-  // thetaerr=0;
-   double thetacorr=sqrt(thetams*thetams+thetaerr*thetaerr);
-   std::cout << " beta " << beta << " alfa " << alfa << " cp " << cp << " dstot " << dstot << std::endl;
+  // thetaerr=0;    
+  thetams*=1000; //mrad
+    thetaerr*=1000; //mrad
 
-     std::cout << " filling ttall poly " << a*1000. << " " << thetams*1000. << " " << thetaerr*1000.  << std::endl;
-   ttall.push_back(a/thetacorr);
-    
-     //apmedio+=abs(a*a);
-     // ap0+=a;
-     //tpmedio+=(thetams*thetams*d+thetaerr*thetaerr*6/d/d);
-     // cc+=(a*a)/(thetams*thetams*d+6*thetaerr*thetaerr/d/d);
+     std::cout << " filling ttall poly " << a << " " << thetams << " " << thetaerr  << std::endl;
+   //ttall.push_back(a/thetacorr);
+    ttall.push_back(a);
+   matMCSPoly(jp-firstseg,jp-firstseg)=thetams*thetams;
+   matErrPoly(jp-firstseg,jp-firstseg)=thetaerr*thetaerr; 
 
-     	 
- 
- 
-  //cout << " poly thetams " << thetams << " thetaerr " << thetaerr << endl;
-	 cout << " before covma "  << jp << endl;
    //FillCovMatrix(tr,matpoly,jp,thetams*thetams,thetaerr*thetaerr,matpolyms,matpolyerr,breakpoints,firstseg);
 	 cout << "before mixx "  << jp << endl;
    //FillCovMixTerms(tr,matmix,jp,nseg-2,thetams*thetams,thetaerr*thetaerr);
 	 cout << "after mixx "  << jp << endl;
 	 //AddSegmentCovariance(tr,matpoly,jp);
-	 std::cout << " after fillmatrix1  " << jp << std::endl; 
-for(int jm=0;jm<matpoly.GetNrows();jm++)
-for(int jmm=0;jmm<matpoly.GetNrows();jmm++)
-  mat(jm+nseg-1,jmm+nseg-1)=matpoly(jm,jmm);
+
 //if(jp==np-2)
+ cout << " after filling matpoly mat " << endl;
+ //mat.Print();
  std::cout << " after matpoly  " << jp << " np " << nseg << std::endl; 
 }
 
-//mat+=matmix;
+//sum MCS and error matrices 
+for(int jm=0;jm<matMCSLin.GetNrows();jm++) {
+for(int jmm=0;jmm<matMCSLin.GetNrows();jmm++) {  
+cout << " filling matlin " << jm << " " << jmm << endl;
+matLin(jm,jmm)=matMCSLin(jm,jmm)+matErrLin(jm,jmm);}}
+for(int jm=0;jm<matMCSPoly.GetNrows();jm++) {
+for(int jmm=0;jmm<matMCSPoly.GetNrows();jmm++) {
+cout << " filling poly " << jm << " " << jmm << endl;
+matPoly(jm,jmm)=matMCSPoly(jm,jmm)+matErrPoly(jm,jmm);}}
 
-TMatrixD cov(TMatrixD::kUnit,mat);
+//merge linear and poly matrices 
+for(int jm=0;jm<matLin.GetNrows();jm++) {
+for(int jmm=0;jmm<matLin.GetNrows();jmm++) { 
+  cout << " merging matlin " << jm << " " << jmm << endl;
+  mat(jm,jmm)=matLin(jm,jmm);}}
 
+for(int jm=0;jm<matPoly.GetNrows();jm++) {
+for(int jmm=0;jmm<matPoly.GetNrows();jmm++) {
+    cout << " merging matpoly " << jm << " " << jmm << endl;
+  mat(jm+matLin.GetNrows(),jmm+matLin.GetNrows())=matPoly(jm,jmm);}}
+
+ cout << " after merging " << endl;
+//TMatrixD cov(TMatrixD::kUnit,mat);
+TMatrixD cov=mat;
+cout << " before initializing cov " << endl;
+mat.Print();
+//exit(11);
 TMatrixD vtall(ttall.size(),1);
 for(unsigned int jv=0;jv<ttall.size();jv++)
   vtall(jv,0)=ttall[jv]; 
+cout << " after initializing cov " << endl;
 
 TMatrixD invcov=cov.Invert();
+cout << " after initializing invcov " << endl;
+invcov.Print();
 TMatrixD vtcov=invcov*vtall;
+
+cout << " after initializing vtcov " << endl;
+vtcov.Print();
 TMatrixD tvtall(TMatrixD::kTransposed,vtall); 
 
  double vtcovmed=0;
@@ -927,6 +954,7 @@ TMatrixD tvtall(TMatrixD::kTransposed,vtall);
  for(unsigned int jv=0;jv<ttall.size();jv++) {
  double term=tvtall(0,jv)*vtcov(jv,0);
  terms.push_back(term);
+ cout << " term " << term << endl;
  vtcovmed+=term;
  }
  vtcovmed/=(ttall.size());
@@ -961,8 +989,8 @@ for (unsigned int jt=0;jt<ttall.size();jt++) {
 
 std::cout << " after vtrunc tails size " << tails.size() << std::endl;
 
-   std::vector<TMatrix> covs;
-   covs.push_back(cov);
+   std::vector<TMatrixD> covs;
+   covs.push_back(mat);
  if(tails.size()) {
     for(int jta=tails.size()-1;jta>=0;jta--) {   
     cout << " cleaning covariance jta " << jta << endl; 
@@ -977,8 +1005,11 @@ std::cout << " after covcut " << std::endl;
  if(!covcut.GetNrows())
    return -999;
 
-std::cout << " before invcovmod " << std::endl;
+ std::cout << " after covcut " << std::endl;
+covcut.Print();
  TMatrixD invcovmod=covcut.Invert();
+ std::cout << " after invcovmod " << std::endl;
+invcovmod.Print();
 std::cout << " vtrunc " << std::endl;
 vtrunc.Print();
  TMatrixD vtcovmod=invcovmod*vtrunc;
@@ -1696,9 +1727,10 @@ covmod.Print();
 return covmod;
  
 }
-float TrajectoryMCSFitterICARUS::ComputeD3P3D(const recob::Track& tr)  
+float TrajectoryMCSFitterICARUS::ComputeD3P3D(const recob::Track& tr) 
 {   
-  /*
+  cout << " beginning d3p3d " <<endl;
+    float d3p;
     double res;
     vector<double> h0;
     vector<double> alf;
@@ -1706,27 +1738,29 @@ float TrajectoryMCSFitterICARUS::ComputeD3P3D(const recob::Track& tr)
     TH1D* hd3pv=new TH1D("hd3pv","hd3pv",100,-5.,5.);    
 
 
-  int nextValid = tr.NextValidPoint(0);
-  int npoints = 0;
- 
-
-  while (nextValid != recob::TrackTrajectory::InvalidIndex) {
+  unsigned int nextValid = tr.NextValidPoint(0); 
+cout << " nextValid " << nextValid << " lastvalid " << tr.LastValidPoint() << endl;
+  while (nextValid != tr.LastValidPoint()) {
             
             double a;
 
             res=computeResidual3D(tr,nextValid,a);
-            //cout << " point "  << j << " residual " <<res << endl;
+            cout << " point "  << nextValid << " 3dresidual " <<res << endl;
             //! for each triplet of consecutive hits, save absolute value of residuale
             if(abs(res)<5) { //mm
                 h0.push_back(res);
                 alf.push_back(a);
                 hd3pv->Fill(res);
                
-            }}
+            }
+                nextValid = tr.NextValidPoint(nextValid+1);
+cout << " nextValid " << nextValid << " lastvalid " << tr.LastValidPoint() << endl;
+
+            }
     
-        bool writeHisto=true;
+        bool writeHisto=false;
         if(writeHisto) {
-       TFile *f = new TFile("d3phisto.root","UPDATE");
+       TFile *f = new TFile("d3phisto3D.root","UPDATE");
     hd3pv->Write();
         f->Close();
         f->Delete();
@@ -1737,9 +1771,9 @@ float TrajectoryMCSFitterICARUS::ComputeD3P3D(const recob::Track& tr)
     else
        d3p=hd3pv->GetRMS();
     
+   // exit(11);
     //d3pvector=h0;
-    //return d3p;
-*/
-return -999;
+    cout << " end d3p3d " << d3p << endl;
+return d3p;
 
 }
