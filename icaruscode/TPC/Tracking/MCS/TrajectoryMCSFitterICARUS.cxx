@@ -30,9 +30,8 @@ if(traj.Length()<minlen) {
 			     dum,dum);
 }
 
-//d3p3d=ComputeD3P3D(traj);
- // std::cout << " D3p " << d3p << std::endl;
-  //
+
+  
   // Break the trajectory in segments of length approximately equal to segLen_
   //
   vector<size_t> breakpoints;
@@ -512,7 +511,7 @@ if(!hits.size()) return;
     
         bool writeHisto=true;
         if(writeHisto) {
-       TFile *f = new TFile("d3phisto.root","UPDATE");
+       TFile *f = new TFile("d3phisto.root","RECREATE");
     hd3pv->Write();
         f->Close();
         f->Delete();
@@ -563,7 +562,7 @@ float x2=h2.WireID().Wire*3; auto y2=h2.PeakTime()*0.622;
    // cout << " deltafit residual " << res << endl;
 	   return res;
 }
-double TrajectoryMCSFitterICARUS::computeResidual3D(recob::Track tr, int i, double& alfa) const
+double TrajectoryMCSFitterICARUS::computeResidual3D(recob::TrackTrajectory tr, int i, double& alfa) const
 {
 
 
@@ -573,10 +572,10 @@ auto p2=tr.LocationAtPoint(i+2);
 
 
 //std::cout << " PeakTime " << h0.PeakTime() << std::endl;
-
-float x0=p0.X(); auto y0=p0.Y(); auto z0=p0.Z();
-float x1=p1.X(); auto y1=p1.Y(); auto z1=p1.Z();
-float x2=p2.X(); auto y2=p2.Y(); auto z2=p2.Z();
+//convert cm to mm
+float x0=p0.X()*10.; auto y0=p0.Y()*10.; auto z0=p0.Z()*10.;
+float x1=p1.X()*10.; auto y1=p1.Y()*10.; auto z1=p1.Z()*10.;
+float x2=p2.X()*10.; auto y2=p2.Y()*10.; auto z2=p2.Z()*10.;
 
 //retta che unisce punto 0 e punto 2
 //(x,y,z)=(x0,y0,z0)+k*(x2-x0,y2-y0,z2-z0);
@@ -730,6 +729,9 @@ for(unsigned int jp=firstseg;jp<lastseg;jp++) {
   double sigma0;
   
   sigma0=d3pC;
+  float d3p3d=ComputeD3P3D(tr);
+  sigma0=d3p3d;
+    std::cout << " D3p3d " << d3p3d << std::endl;
   cout << " eseg " << eseg << " sigma0 " <<sigma0 << endl;
 
  int np=tr.NPoints();
@@ -835,7 +837,9 @@ for(unsigned int jp=firstseg;jp<lastseg-1;jp++) {
   alfa=1;
   double sigma0;
 
-  sigma0=d3pC;
+ sigma0=d3pC;
+  float d3p3d=ComputeD3P3D(tr);
+  sigma0=d3p3d;
   cout << " eseg " << eseg << " sigma0 " << sigma0 << endl;
   sinb=1;
   
@@ -1555,7 +1559,8 @@ if(over==-1) best_p=rmom[nMom-firstValid-1]; //overflow
 
   
  // exit(11);
-  
+  cout << " icarus mcs momentum " << best_p << endl;
+  exit(22);
   //float best_p=0; float error_p=0;
   return ScanResult(best_p, error_p, 0.);
 }
@@ -1727,7 +1732,7 @@ covmod.Print();
 return covmod;
  
 }
-float TrajectoryMCSFitterICARUS::ComputeD3P3D(const recob::Track& tr) 
+float TrajectoryMCSFitterICARUS::ComputeD3P3D(const recob::TrackTrajectory& tr) const
 {   
   cout << " beginning d3p3d " <<endl;
     float d3p;
@@ -1735,7 +1740,7 @@ float TrajectoryMCSFitterICARUS::ComputeD3P3D(const recob::Track& tr)
     vector<double> h0;
     vector<double> alf;
     
-    TH1D* hd3pv=new TH1D("hd3pv","hd3pv",100,-5.,5.);    
+    TH1D* hd3pv=new TH1D("hd3pv","hd3pv",100,-0.5,0.5);    
 
 
   unsigned int nextValid = tr.NextValidPoint(0); 
@@ -1758,9 +1763,9 @@ cout << " nextValid " << nextValid << " lastvalid " << tr.LastValidPoint() << en
 
             }
     
-        bool writeHisto=false;
+        bool writeHisto=true;
         if(writeHisto) {
-       TFile *f = new TFile("d3phisto3D.root","UPDATE");
+       TFile *f = new TFile("d3phisto3D.root","RECREATE");
     hd3pv->Write();
         f->Close();
         f->Delete();

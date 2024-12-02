@@ -152,6 +152,7 @@ auto x=element.LocationAtPoint(0).X();
     mcsfitter.ComputeD3P(0);
     mcsfitter.ComputeD3P(1);
     mcsfitter.ComputeD3P(2);
+    
  
     std::cout << " fitting icarus trackIdx " << count[cryo] << " cryo " << cryo << " length " << element.Length() << std::endl;
     std::cout << " 3dpoints " << element.NPoints() << " coll hits " << hits2dC.size() << " length " << element.Length() << std::endl;
