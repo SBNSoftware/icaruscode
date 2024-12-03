@@ -532,7 +532,7 @@ void HitEfficiencyAnalysis::fillHistograms(const art::Event& event) const
                                 nElectronsTotalBest = 0.;
                                 hitPeakTimeBest     = bestHit->PeakTime();
                                 hitIntegralBest     = bestHit->Integral();
-                                hitSummedADCBest    = bestHit->SummedADC();
+                                hitSummedADCBest    = bestHit->ROISummedADC();
                                 hitRMSBest          = bestHit->RMS();
                                 hitBaselineBest     = 0.;  // To do...
         
@@ -567,7 +567,7 @@ void HitEfficiencyAnalysis::fillHistograms(const art::Event& event) const
                                 unsigned short hitStopTick  = rejectedHit->PeakTime() + fSigmaVec.at(plane) * rejectedHit->RMS();
         
                                 std::cout << "**> TPC: " << rejectedHit->WireID().TPC << ", Plane " << rejectedHit->WireID().Plane << ", wire: " << rejectedHit->WireID().Wire << ", hit start/ stop     tick: " << hitStartTick <<     "/" << hitStopTick << ", start/stop ticks: " << startTick << "/" << stopTick << std::endl;
-                                std::cout << "    TPC/Plane/Wire: " << wids[0].TPC << "/" << plane << "/" << wids[0].Wire << ", Track # hits: " << partToChanInfo.second.size() << ", # hits: "     <<  hitIter->second.size() << ", #  electrons: " << totalElectrons << ", pulse Height: " << rejectedHit->PeakAmplitude() << ", charge: " << rejectedHit->Integral()  << ", " << rejectedHit->SummedADC() << std::endl;
+                                std::cout << "    TPC/Plane/Wire: " << wids[0].TPC << "/" << plane << "/" << wids[0].Wire << ", Track # hits: " << partToChanInfo.second.size() << ", # hits: "     <<  hitIter->second.size() << ", #  electrons: " << totalElectrons << ", pulse Height: " << rejectedHit->PeakAmplitude() << ", charge: " << rejectedHit->Integral()  << ", " << rejectedHit->ROISummedADC() << std::endl;
                             }
                             else
                             {

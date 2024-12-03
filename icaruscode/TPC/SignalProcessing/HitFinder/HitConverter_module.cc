@@ -122,6 +122,7 @@ void HitConvert::produce(art::Event& evt)
                                     hit.PeakAmplitude(),
                                     hit.SigmaPeakAmplitude(),
                                     hit.SummedADC(),
+                                    hit.SummedADC(),
                                     hit.Integral(),
                                     hit.SigmaIntegral(),
                                     hit.Multiplicity(),

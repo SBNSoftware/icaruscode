@@ -479,7 +479,7 @@ void TPCPurityMonitor::produce(art::Event& event)
                     }
                     else deltaX = maxDeltaX;
 
-                    double charge = fUseHitIntegral ? hitMetaPair.first->Integral() : hitMetaPair.first->SummedADC(); 
+                    double charge = fUseHitIntegral ? hitMetaPair.first->Integral() : hitMetaPair.first->ROISummedADC(); 
 
                     hitStatusChargePairVec.emplace_back(hitMetaPair,StatusChargePair(true,charge/deltaX));
                     hitPointDirTupleMap[hitMetaPair.first.get()] = PointDirTuple(hitPos,hitDir,wireDir);

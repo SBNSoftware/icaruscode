@@ -42,6 +42,12 @@
   <class name="art::Wrapper<std::vector<icarus::timing::PMTWaveformTimeCorrection> >"/>
 
   <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
+  <!-- icarus::timing::PMTBeamSignal -->
+  <class name="art::Wrapper<vector<icarus::timing::PMTBeamSignal> >"/>
+  <class name="icarus::timing::PMTBeamSignal"/>
+  <class name="vector<icarus::timing::PMTBeamSignal>"/>
+
+  <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
   <!-- LArSoft object associations that are missing from LArSoft             -->
   
   <!-- recob::PFParticle - sim::BeamGateInfo associations -->

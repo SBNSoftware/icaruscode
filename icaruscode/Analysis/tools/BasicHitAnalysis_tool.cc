@@ -313,7 +313,7 @@ void BasicHitAnalysis::fillHistograms(const HitPtrVec& hitPtrVec) const
         int                hitMult  = hitPtr->Multiplicity();
         float              peakTime = std::min(float(3199.),hitPtr->PeakTime());
         float              charge   = hitPtr->Integral();
-        float              sumADC   = hitPtr->SummedADC();
+        float              sumADC   = hitPtr->ROISummedADC();
         float              hitPH    = std::min(hitPtr->PeakAmplitude(),float(149.8));
         float              hitSigma = hitPtr->RMS();
         
