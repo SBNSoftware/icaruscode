@@ -582,12 +582,14 @@ namespace sbn::crt {
           << firstOpHitPeakTime << " us, centroid: " << flash_pos << " cm";
       }
       
+      // For the time being this is considered a bug, I (Francesco) I will update the CRTPMTMatching object to include as a member the number of OpHits above a certain threhsold
+      /*
       if (nPMTsTriggering < fnOpHitToTrigger) {
         mf::LogTrace("CRTPMTMatchingProducer")
           << "  => skipped (only " << nPMTsTriggering << " < " << fnOpHitToTrigger
           << " hits above threshold)";
         continue;
-      }
+      } */
       
       double const thisRelGateTime = triggerGateDiff + tflash * 1e3; // ns
       bool const thisInTime_gate
