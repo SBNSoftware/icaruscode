@@ -22,7 +22,7 @@ spana2d_east: {
   module_type: SPAna
   Cryostat: 0
   HitProducers: ["gaushit2dTPCEE", "gaushit2dTPCEW"]
-  WireProducers: ["roifinder2d:PHYSCRATEDATATPCEE", "roifinder2d:PHYSCRATEDATATPCEW"]
+  WireProducers: ["decon2droiEE:gauss", "decon2droiEW:gauss"]
   G4Producer: "largeant"
   SimChannelProducer: "daq:simpleSC"
 }
@@ -31,7 +31,7 @@ spana2d_west: {
   module_type: SPAna
   Cryostat: 1
   HitProducers: ["gaushit2dTPCWE", "gaushit2dTPCWW"]
-  WireProducers: ["roifinder2d:PHYSCRATEDATATPCWE", "roifinder2d:PHYSCRATEDATATPCWW"]
+  WireProducers: ["decon2droiWE:gauss", "decon2droiWW:gauss"]
   G4Producer: "largeant"
   SimChannelProducer: "daq:simpleSC"
 }

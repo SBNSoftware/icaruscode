@@ -56,8 +56,8 @@ physics:
 
   analyzers:
   {
-    spanaE: @local::spana1d_east
-    spanaW: @local::spana1d_west
+    spanaE: @local::spana2d_east
+    spanaW: @local::spana2d_west
   }
 
   runprod: []
