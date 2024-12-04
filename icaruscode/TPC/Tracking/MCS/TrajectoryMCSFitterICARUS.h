@@ -92,6 +92,10 @@ namespace trkf {
 	Comment("Angular resolution parameter used in modified Highland formula. Unit is mrad."),
 	3.0
       };
+        fhicl::Atom<int> dimMode{
+        Name("dimMode"),
+        Comment("Flag of dimension mode for ICARUS fit. 2 for 2d, 3 for 3d."),
+        0};
       fhicl::Atom<int> cutMode{
         Name("cutMode"),
         Comment("Flag of track cutting mode. 0=full track, 1=cut final XX cm, 2=keep initial XX cm. XX is given by cutLength variables"),
@@ -103,7 +107,7 @@ namespace trkf {
     };
     using Parameters = fhicl::Table<Config>;
     //
-    TrajectoryMCSFitterICARUS(int pIdHyp, int minNSegs, double segLen, int minHitsPerSegment, int nElossSteps, int eLossMode, double pMin, double pMax, double pStep, double angResol, double cutMode, double cutLength){
+    TrajectoryMCSFitterICARUS(int pIdHyp, int minNSegs, double segLen, int minHitsPerSegment, int nElossSteps, int eLossMode, double pMin, double pMax, double pStep, double angResol, double cutMode, double cutLength, int dimMode){
       pIdHyp_ = pIdHyp;
       minNSegs_ = minNSegs;
       segLen_ = segLen;
@@ -115,10 +119,12 @@ namespace trkf {
       pStep_ = pStep;
       angResol_ = angResol;
       cutMode_=cutMode;
+            dimMode_=dimMode;
+
       cutLength_=cutLength;
     }
     explicit TrajectoryMCSFitterICARUS(const Parameters & p)
-      : TrajectoryMCSFitterICARUS(p().pIdHypothesis(),p().minNumSegments(),p().segmentLength(),p().minHitsPerSegment(),p().nElossSteps(),p().eLossMode(),p().pMin(),p().pMax(),p().pStep(),p().angResol(),p().cutMode(),p().cutLength()) {}
+      : TrajectoryMCSFitterICARUS(p().pIdHypothesis(),p().minNumSegments(),p().segmentLength(),p().minHitsPerSegment(),p().nElossSteps(),p().eLossMode(),p().pMin(),p().pMax(),p().pStep(),p().angResol(),p().cutMode(),p().cutLength(),p().dimMode()) {}
     //
     recob::MCSFitResult fitMcs(const recob::TrackTrajectory& traj, bool momDepConst = true) const { return fitMcs(traj,pIdHyp_,momDepConst); }
     recob::MCSFitResult fitMcs(const recob::Track& track,          bool momDepConst = true) const { return fitMcs(track,pIdHyp_,momDepConst); }
@@ -190,6 +196,7 @@ float ComputeD3P3D( const recob::TrackTrajectory& tr) const;
   //  void projectHitsOnPlane(art::Event & e,const recob::Track& traj,int p) const
     //
 
+ int dimMode() const { return dimMode_; }
   double cutMode() const { return cutMode_; }
  double cutLength() const { return cutLength_; }
  static Double_t funzio(Double_t *x, Double_t *par) {
@@ -215,6 +222,7 @@ double DriftOrigin(int plane, int tpc,int cryo) const;
     double pStep_;
     double angResol_;
     double cutMode_;
+    int dimMode_;
  double cutLength_;
     std::vector<recob::Hit> hits2dC;
     std::vector<recob::Hit> hits2dI2;

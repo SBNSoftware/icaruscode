@@ -18,6 +18,7 @@ mcsfitproducericarus_raw: {
 	angResol: 3.0
         cutMode: 0
         cutLength: 0.
+	dimMode: 3
   }
 }
 mcsfitproducericarus_gaus: {
@@ -38,6 +39,7 @@ mcsfitproducericarus_gaus: {
 	angResol: 3.0
         cutMode: 0
         cutLength: 0.
+	dimMode: 2
   }
 }
 mcsfitproducericarus_gaus_inicut: {
@@ -58,6 +60,7 @@ mcsfitproducericarus_gaus_inicut: {
 	angResol: 3.0
         cutMode: 2
         cutLength: 100.
+		dimMode: 2
   }
 }
 mcsfitproducericarus_gaus_fincut: {
@@ -78,6 +81,7 @@ mcsfitproducericarus_gaus_fincut: {
 	angResol: 3.0
         cutMode: 1
         cutLength: 50.
+		dimMode: 2
   }
 }
 END_PROLOG

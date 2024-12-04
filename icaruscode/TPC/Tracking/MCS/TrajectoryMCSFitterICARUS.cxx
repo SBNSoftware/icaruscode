@@ -58,8 +58,8 @@ cumseglens.clear();
     std::cout << " segradl size " << segradlengths.size() << " cumseg size " << cumseglens.size() <<  std::endl;
 
   for (unsigned int p = 0; p<segradlengths.size(); p++) {
-    //linearRegression2D(traj, breakpoints[p], breakpoints[p+1], pcdir1); //2d
-    linearRegression(traj, breakpoints[p], breakpoints[p+1], pcdir1); //3d
+    if(dimMode_==2) linearRegression2D(traj, breakpoints[p], breakpoints[p+1], pcdir1); //2d
+    if(dimMode_==3) linearRegression(traj, breakpoints[p], breakpoints[p+1], pcdir1); //3d
     if (p>0) {
       cout << " p " << p << " segradlength " << segradlengths[p] << endl;
       if (segradlengths[p]<-100. || segradlengths[p-1]<-100.
@@ -93,10 +93,11 @@ cumseglens.clear();
  vector<Vector_t> barycenters;
  Vector_t bary;
 vector<float> dthetaPoly;
+cout << " dimmode " << dimMode_ << endl;
 for (unsigned int p = 0; p<segradlengths.size(); p++) {
     cout << " before finding 2d barycenters for poly " << endl;
-  //  find2DSegmentBarycenter(traj, breakpoints[p], breakpoints[p+1], bary); //2d
-   findSegmentBarycenter(traj, breakpoints[p], breakpoints[p+1], bary); //3d
+    if(dimMode_==2) find2DSegmentBarycenter(traj, breakpoints[p], breakpoints[p+1], bary); //2d
+    if(dimMode_==3)findSegmentBarycenter(traj, breakpoints[p], breakpoints[p+1], bary); //3d
     barycenters.push_back(bary);
 }
 for (unsigned int p = 2; p<segradlengths.size(); p++) {
@@ -278,8 +279,8 @@ void TrajectoryMCSFitterICARUS::linearRegression2D(const recob::TrackTrajectory&
 
   Vector_t avgpos;
    cout << " before finding 2d barycenters for fit " << endl;
-  //find2DSegmentBarycenter(traj,firstPoint,lastPoint,avgpos); //2d
-  findSegmentBarycenter(traj,firstPoint,lastPoint,avgpos); //3d
+     if(dimMode_==2) find2DSegmentBarycenter(traj,firstPoint,lastPoint,avgpos); //2d
+   if(dimMode_==3)findSegmentBarycenter(traj,firstPoint,lastPoint,avgpos); //3d
   const double norm = 1./double(npoints);
   //
   //assert(npoints>0);
@@ -573,16 +574,23 @@ auto p2=tr.LocationAtPoint(i+2);
 
 //std::cout << " PeakTime " << h0.PeakTime() << std::endl;
 //convert cm to mm
-float x0=p0.X()*10.; auto y0=p0.Y()*10.; auto z0=p0.Z()*10.;
-float x1=p1.X()*10.; auto y1=p1.Y()*10.; auto z1=p1.Z()*10.;
-float x2=p2.X()*10.; auto y2=p2.Y()*10.; auto z2=p2.Z()*10.;
+//float x0=p0.X()*10.; auto y0=p0.Y()*10.; auto z0=p0.Z()*10.;
+//float x1=p1.X()*10.; auto y1=p1.Y()*10.; auto z1=p1.Z()*10.;
+//float x2=p2.X()*10.; auto y2=p2.Y()*10.; auto z2=p2.Z()*10.;
 
 //retta che unisce punto 0 e punto 2
 //(x,y,z)=(x0,y0,z0)+k*(x2-x0,y2-y0,z2-z0);
 //calcolo distanza punto-retta lungo la coordinata x. Impongo k tale che y=y1
 
-    double xmy=x0+(y1-y0)/(y2-y0)*(x2-x0);
-    double xmz=x0+(y1-y0)/(y2-y0)*(x2-x0);
+//calcolo distanza punto-retta in 3d: https://mathworld.wolfram.com/Point-LineDistance3-Dimensional.html
+
+float dist02=sqrt((p0-p2).Mag2());
+auto cross=(p1-p0).Cross(p1-p2);
+auto crossmag=sqrt(cross.Mag2());
+float d=crossmag/dist02;
+
+    /*double xmy=x0+(y1-y0)/(y2-y0)*(x2-x0);
+    double xmz=x0+(z1-z0)/(z2-z0)*(x2-x0);
 
     if((p0-p2).Mag2()<0.001)
         return -999;
@@ -598,11 +606,12 @@ float x2=p2.X()*10.; auto y2=p2.Y()*10.; auto z2=p2.Z()*10.;
     double alfaz=1/sqrt(1+Kz*Kz+(1-Kz)*(1-Kz));
     double xm=0.5*(xmy+xmz);
     double dx=x1-xm;
-    double res=dx*sqrt(alfay*alfay+alfaz*alfaz);
+    double res=dx*sqrt(alfay*alfay+alfaz*alfaz);*/
+    
    
     //cout << " y1 " << y1 << " ym " << ym << " alfa " << alfa << endl;
    // cout << " deltafit residual " << res << endl;
-   
+   double res=d;
 	   return res;
    
 }
@@ -676,10 +685,13 @@ double tpmedio=0;
   TVector3 projColl(0,0,0);
   projColl[0]=1; projColl[1]=sqrt(3.)/2.; projColl[2]=0.5;
  //double  cos=avdir*projColl;
- double sinb=avdir*projColl;
- double cos=(collLength()/10./(tr.Length())); //2d
-  cos=1; //3d
- sinb=1;
+ double sinb;
+  if(dimMode_==2) sinb=avdir*projColl;
+   if(dimMode_==3) sinb=1;
+ double cos;
+  if(dimMode_==2) cos=(collLength()/10./(tr.Length())); //2d
+  if(dimMode_==3) cos=1; //3d
+
  cout << " sinb " << sinb << endl;
  //  double dstot;
 
@@ -728,10 +740,10 @@ for(unsigned int jp=firstseg;jp<lastseg;jp++) {
   alfa=1;
   double sigma0;
   
+  
+  //float d3p3d=ComputeD3P3D(tr);
+  //sigma0=d3p3d;
   sigma0=d3pC;
-  float d3p3d=ComputeD3P3D(tr);
-  sigma0=d3p3d;
-    std::cout << " D3p3d " << d3p3d << std::endl;
   cout << " eseg " << eseg << " sigma0 " <<sigma0 << endl;
 
  int np=tr.NPoints();
@@ -771,11 +783,12 @@ cout << " hits2d " << hits2dC.size() << " n points " << tr.NPoints() << endl;
 cout << " last breakpoint " << breakpoints[breakpoints.size()-1] << " n seg " << cumseglens.size() << endl;
 cout << " collpointsratio " << collPointsRatio << endl;
 cout << " avcollpointsseg " << avCollPointsSeg << endl;
+ double sinb;
+   if(dimMode_==3) sinb=cosTrackDrift(tr);;
+   if(dimMode_==2) sinb=1;
 
-sinb=cosTrackDrift(tr); //3d
-//sinb=1; //2d
-    thetaerr=sigma0*sqrt(24.)/(dxmedio)/sqrt(float(avCollPointsSeg))/sinb; //2d
-    thetaerr=sigma0*sqrt(24.)/(dxmedio)/sqrt(float(avPointsSeg))/sinb; //3d
+   if(dimMode_==2)   thetaerr=sigma0*sqrt(24.)/(dxmedio)/sqrt(float(avCollPointsSeg))/sinb; //2d
+   if(dimMode_==3) thetaerr=sigma0*sqrt(24.)/(dxmedio)/sqrt(float(avPointsSeg))/sinb; //3d
     thetams*=1000; //mrad
     thetaerr*=1000; //mrad
   // thetaerr=0;
@@ -837,14 +850,15 @@ for(unsigned int jp=firstseg;jp<lastseg-1;jp++) {
   alfa=1;
   double sigma0;
 
- sigma0=d3pC;
-  float d3p3d=ComputeD3P3D(tr);
-  sigma0=d3p3d;
+ // float d3p3d=ComputeD3P3D(tr);
+ // sigma0=d3p3d;
+   sigma0=d3pC;
+
   cout << " eseg " << eseg << " sigma0 " << sigma0 << endl;
   sinb=1;
   
-  cos=(collLength()/10./(tr.Length())); //2d
-  cos=1; //3d
+     if(dimMode_==2)  cos=(collLength()/10./(tr.Length())); //2d
+     if(dimMode_==3) cos=1; //3d
   //std::cout << " colllength " << collLength() << " trlength " << tr.Length() << " cosine " << cos << std::endl;
  
 
@@ -883,10 +897,11 @@ cout << " hits2d " << hits2dC.size() << " n points " << tr.NPoints() << endl;
 cout << " last breakpoint " << breakpoints[breakpoints.size()-1] << " n seg " << cumseglens.size() << endl;
 cout << " collpointsratio " << collPointsRatio << endl;
 cout << " avcollpointsseg " << avCollPointsSeg << endl;
-sinb=cosTrackDrift(tr);  //3d
-//sinb=1; //2d
-    thetaerr=sigma0*sqrt(6.)/(dxmedio)/sqrt(float(avCollPointsSeg))/sinb; //2d
-    thetaerr=sigma0*sqrt(6.)/(dxmedio)/sqrt(float(avPointsSeg))/sinb; //3d
+   if(dimMode_==2) sinb=1;  
+    if(dimMode_==3) sinb=cosTrackDrift(tr);  //3d
+
+ if(dimMode_==2)   thetaerr=sigma0*sqrt(6.)/(dxmedio)/sqrt(float(avCollPointsSeg))/sinb; //2d
+ if(dimMode_==3)   thetaerr=sigma0*sqrt(6.)/(dxmedio)/sqrt(float(avPointsSeg))/sinb; //3d
 cout << " thetaerr " << thetaerr << endl;
 cout << " sigma0" << sigma0 << " dxmedio " << dxmedio << " sqrt " << sqrt(float(avCollPointsSeg)) << " sinb " << sinb << endl;
     cout << " npnsegtot ratio " << np/nsegtot <<" np " << np << " nsegtot " << nsegtot << endl;
@@ -1740,17 +1755,17 @@ float TrajectoryMCSFitterICARUS::ComputeD3P3D(const recob::TrackTrajectory& tr) 
     vector<double> h0;
     vector<double> alf;
     
-    TH1D* hd3pv=new TH1D("hd3pv","hd3pv",100,-0.5,0.5);    
+    TH1D* hd3pv=new TH1D("hd3pv","hd3pv",500,-0.5,0.5);    
 
 
   unsigned int nextValid = tr.NextValidPoint(0); 
-cout << " nextValid " << nextValid << " lastvalid " << tr.LastValidPoint() << endl;
+//cout << " nextValid " << nextValid << " lastvalid " << tr.LastValidPoint() << endl;
   while (nextValid != tr.LastValidPoint()) {
             
             double a;
 
             res=computeResidual3D(tr,nextValid,a);
-            cout << " point "  << nextValid << " 3dresidual " <<res << endl;
+            //cout << " point "  << nextValid << " 3dresidual " <<res << endl;
             //! for each triplet of consecutive hits, save absolute value of residuale
             if(abs(res)<5) { //mm
                 h0.push_back(res);
@@ -1759,7 +1774,7 @@ cout << " nextValid " << nextValid << " lastvalid " << tr.LastValidPoint() << en
                
             }
                 nextValid = tr.NextValidPoint(nextValid+1);
-cout << " nextValid " << nextValid << " lastvalid " << tr.LastValidPoint() << endl;
+//cout << " nextValid " << nextValid << " lastvalid " << tr.LastValidPoint() << endl;
 
             }
     
