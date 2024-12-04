@@ -138,6 +138,11 @@ local wcls_output = {
       frame_tags: ['raw'],
       // nticks: params.daq.nticks,
       chanmaskmaps: ['bad'],
+      plane_map: {
+        "1": 3, // front induction: WireCell::kULayer -> geo::kH (1 -> 3)
+        "2": 1, // middle induction: WireCell:kVLayer -> geo::kV (2 -> 1)
+        "4": 0, // collection: WireCell::kWLayer -> geo::kU (4 -> 0)
+      },
     },
   }, nin=1, nout=1, uses=[this_anode]),
 
@@ -164,6 +169,11 @@ local wcls_output = {
       // nticks: params.daq.nticks,
       chanmaskmaps: [],
       nticks: -1,
+      plane_map: {
+        "1": 3, // front induction: WireCell::kULayer -> geo::kH (1 -> 3)
+        "2": 1, // middle induction: WireCell:kVLayer -> geo::kV (2 -> 1)
+        "4": 0, // collection: WireCell::kWLayer -> geo::kU (4 -> 0)
+      },
     },
   }, nin=1, nout=1, uses=[this_anode]),
 
@@ -187,7 +197,7 @@ local wcls_output = {
         ],
         filename: "wc-sp-%d.h5" % volume,
         chunk: [0, 0], // ncol, nrow
-        gzip: 2,
+        gzip: 0,
         high_throughput: true,
       },
     }, nin=1, nout=1, uses=[this_anode]),
@@ -209,9 +219,9 @@ local nf_pipes = [nf_maker(params, tools.anodes[n], chndb[n], tools, name='nf%d'
 
 local sp_override = { // assume all tages sets in base sp.jsonnet
     sparse: sigoutform == 'sparse',
-    use_roi_refinement: false,
+    use_roi_refinement: true,
     use_roi_debug_mode: false,
-    wiener_tag: "",
+    // wiener_tag: "",
     // gauss_tag: "",
     tight_lf_tag: "",
     loose_lf_tag: "",
@@ -219,7 +229,7 @@ local sp_override = { // assume all tages sets in base sp.jsonnet
     break_roi_loop2_tag: "",
     shrink_roi_tag: "",
     extend_roi_tag: "",
-    m_decon_charge_tag: "",
+    decon_charge_tag: "",
     cleanup_roi_tag: "",
     mp2_roi_tag: "",
     mp3_roi_tag: "",
@@ -340,7 +350,7 @@ local retagger = g.pnode({
 
 local sink = g.pnode({ type: 'DumpFrames' }, nin=1, nout=0);
 
-local graph = g.pipeline([wcls_input.adc_digits, fanpipe, retagger, wcls_output.h5io, wcls_output.sp_signals, sink]);
+local graph = g.pipeline([wcls_input.adc_digits, fanpipe, retagger, wcls_output.sp_signals, sink]);
 
 local app = {
   type: 'Pgrapher',
