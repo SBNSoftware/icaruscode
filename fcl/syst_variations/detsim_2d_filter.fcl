@@ -1,8 +1,9 @@
 #include "icarus_simedepfilter.fcl"
 #include "detsim_2d_icarus_refactored.fcl"
 
-physics.producers.filtersed: @local::filter_ind1gap
-physics.producers.daq: @local::icarus_simwire_wirecell_filtersed
+physics.producers.filtersed: @local::simedepfilter_ind1gap
+physics.producers.daq.wcls_main.configs: ["pgrapher/experiment/icarus/wcls-multitpc-sim-drift-simchannel-refactored-filtersed.jsonnet"] 
+
 physics.simulate: [rns, opdaq, filtersed, daq, crtdaq]
 
 process_name: DetSimFilterSED
