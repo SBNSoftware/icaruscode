@@ -13,4 +13,14 @@ TPC_CalibrationTags_Oct2023: {
 
 }
 
+## TEMPORARY
+TPC_CalibrationTags_Dec2024_TEMP_FOR_HARPS: {
+
+  tpc_channelstatus_data: "v3r1"
+  tpc_elifetime_data: "v2r1"
+  tpc_dqdxcalibration_data: "v2r1"
+  tpc_yz_correction_allplanes_data: "v1r0"
+
+}
+
 END_PROLOG
