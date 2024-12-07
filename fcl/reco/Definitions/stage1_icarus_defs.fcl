@@ -26,6 +26,9 @@
 #include "rangeproducer.fcl"
 #include "mcsfitproducer_icarus.fcl"
 #include "mcsfitproducer_uboone.fcl"
+#include "crtt0matchingalg_icarus.fcl"
+#include "crtt0tagging.fcl"
+
 
 BEGIN_PROLOG
 
@@ -95,6 +98,7 @@ icarus_stage1_producers:
   CRTT0Matching:     @local::standard_crtt0producer
   CRTT0MatchingW:    @local::standard_crtt0producerW
   CRTT0MatchingE:    @local::standard_crtt0producerE
+  CRTT0Tagging: @local::standard_crtt0tagging
 
   tpcpmtbarycentermatchCryoE: @local::data_tpcpmtbarycentermatchproducer_east
   tpcpmtbarycentermatchCryoW: @local::data_tpcpmtbarycentermatchproducer_west
@@ -165,6 +169,7 @@ icarus_stage1_analyzers.caloskimE.MCSproducerUFC: mcsubooneGausCryoEfincut
 icarus_stage1_analyzers.caloskimE.MCSproducerIFC: mcsicarusGausCryoEfincut
 icarus_stage1_analyzers.caloskimE.RangeInputtag: "rangeproducerCryoE:muon"
 icarus_stage1_analyzers.caloskimE.SilenceMissingDataProducts: true
+#icarus_stage1_analyzers.caloskimE.SelectionTools: [@local::stopping_selection, @local::a2c_selection, @local::throughgoing_selection, @local::selectall]
 
 icarus_stage1_analyzers.caloskimW.SelectEvents: [reco]
 icarus_stage1_analyzers.caloskimW.CALOproducer: caloskimCalorimetryCryoW 
@@ -175,7 +180,7 @@ icarus_stage1_analyzers.caloskimW.MCSproducerIIC: mcsicarusGausCryoWinicut
 icarus_stage1_analyzers.caloskimW.MCSproducerUFC: mcsubooneGausCryoWfincut
 icarus_stage1_analyzers.caloskimW.MCSproducerIFC: mcsicarusGausCryoWfincut
 icarus_stage1_analyzers.caloskimW.RangeInputtag: "rangeproducerCryoW:muon"
-
+#icarus_stage1_analyzers.caloskimE.SelectionTools: [@local::stopping_selection, @local::a2c_selection, @local::throughgoing_selection, @local::selectall]
 icarus_stage1_analyzers.caloskimW.SilenceMissingDataProducts: true
 
 icarus_stage1_analyzers.supera.unique_filename: true
@@ -183,12 +188,16 @@ icarus_stage1_analyzers.supera.unique_filename: true
 ### Below are a list of convenient sequences that can be used for production/typical users. ###
 
 # Set up the standard analysis chain
+
+icarus_crtt0tagging_francesco: [CRTT0Tagging]
+
 icarus_analysis_modules:           [
+                                     ,simpleLightAna
+                                     ,CRTDataAnalysis
+				                             ,CRTAnalysis,
   caloskimE 
                                      ,caloskimW 
-#                                     ,simpleLightAna
-#                                     ,CRTDataAnalysis
-#				                             ,CRTAnalysis
+
                                    ]
 
 icarus_analysis_supera:            [ supera
@@ -268,6 +277,8 @@ icarus_crttrack:                   [crttrack]
 icarus_crtt0match:                 [CRTT0Matching]
 
 icarus_crtt0match_eff:             [CRTT0MatchingE, CRTT0MatchingW]
+
+
 
 ### Below we include overrides for the modules above
 
