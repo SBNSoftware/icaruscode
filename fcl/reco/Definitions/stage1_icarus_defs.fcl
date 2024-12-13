@@ -169,6 +169,7 @@ icarus_stage1_analyzers.caloskimE.MCSproducerUFC: mcsubooneGausCryoEfincut
 icarus_stage1_analyzers.caloskimE.MCSproducerIFC: mcsicarusGausCryoEfincut
 icarus_stage1_analyzers.caloskimE.RangeInputtag: "rangeproducerCryoE:muon"
 icarus_stage1_analyzers.caloskimE.SilenceMissingDataProducts: true
+icarus_stage1_analyzers.caloskimE.crtTagproducer: ["CRTT0Tagging"]
 #icarus_stage1_analyzers.caloskimE.SelectionTools: [@local::stopping_selection, @local::a2c_selection, @local::throughgoing_selection, @local::selectall]
 
 icarus_stage1_analyzers.caloskimW.SelectEvents: [reco]
@@ -182,6 +183,7 @@ icarus_stage1_analyzers.caloskimW.MCSproducerIFC: mcsicarusGausCryoWfincut
 icarus_stage1_analyzers.caloskimW.RangeInputtag: "rangeproducerCryoW:muon"
 #icarus_stage1_analyzers.caloskimE.SelectionTools: [@local::stopping_selection, @local::a2c_selection, @local::throughgoing_selection, @local::selectall]
 icarus_stage1_analyzers.caloskimW.SilenceMissingDataProducts: true
+icarus_stage1_analyzers.caloskimW.crtTagproducer: ["CRTT0Tagging"]
 
 icarus_stage1_analyzers.supera.unique_filename: true
 
@@ -388,6 +390,16 @@ icarus_stage1_producers.mcsicarusGausCryoWinicut.fitter.pMax:                   
 icarus_stage1_producers.mcsicarusGausCryoEinicut.fitter.pMax:                               1500.
 icarus_stage1_producers.mcsicarusGausCryoWfincut.fitter.pMax:                               1500.
 icarus_stage1_producers.mcsicarusGausCryoEfincut.fitter.pMax:                               1500.
+
+icarus_stage1_producers.mcsicarusGausCryoEfincut.inputs.ThmLabel:                               "pandoraTrackGausCryoE"
+icarus_stage1_producers.mcsicarusGausCryoEinicut.inputs.ThmLabel:                               "pandoraTrackGausCryoE"
+icarus_stage1_producers.mcsicarusGausCryoWfincut.inputs.ThmLabel:                               "pandoraTrackGausCryoW"
+icarus_stage1_producers.mcsicarusGausCryoWinicut.inputs.ThmLabel:                               "pandoraTrackGausCryoW"
+
+icarus_stage1_producers.mcsicarusGausCryoEfincut.inputs.CRTT0Label:                               "CRTT0Tagging"
+icarus_stage1_producers.mcsicarusGausCryoEinicut.inputs.CRTT0Label:                               "CRTT0Tagging"
+icarus_stage1_producers.mcsicarusGausCryoWfincut.inputs.CRTT0Label:                               "CRTT0Tagging"
+icarus_stage1_producers.mcsicarusGausCryoWinicut.inputs.CRTT0Label:                               "CRTT0Tagging"
 
 icarus_stage1_producers.rangeproducerCryoW.TrackLabel:                               "pandoraTrackGausCryoW"
 icarus_stage1_producers.rangeproducerCryoE.TrackLabel:                               "pandoraTrackGausCryoE"
