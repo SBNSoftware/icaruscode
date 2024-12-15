@@ -4,6 +4,11 @@
 #include "art/Framework/Principal/Handle.h"
 #include "art/Framework/Principal/Run.h"
 #include "art/Framework/Principal/SubRun.h"
+#include "larcore/Geometry/Geometry.h"
+#include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
+
+#include "larcorealg/Geometry/GeometryCore.h"
+#include "larcore/CoreUtils/ServiceUtil.h" // lar::providerFrom()
 
 #include "messagefacility/MessageLogger/MessageLogger.h"
 
@@ -16,6 +21,9 @@
 #include "lardataobj/RecoBase/MCSFitResult.h"
 #include "lardataobj/RecoBase/Track.h"
 #include "lardataobj/RecoBase/Cluster.h"
+#include "lardataobj/RecoBase/TrackHitMeta.h"
+#include "lardataobj/AnalysisBase/T0.h"
+
 
 //#include "larreco/RecoAlg/TrajectoryMCSFitter.h"
 #include "icaruscode/TPC/Tracking/MCS/TrajectoryMCSFitterICARUS.h"
@@ -48,6 +56,14 @@ namespace trkf {
 	Name("inputLabel"),
 	Comment("Label of recob::TrackTrajectory Collection to be fit")
       };
+           fhicl::Atom<art::InputTag> thmLabel {
+	Name("ThmLabel"),
+	Comment("Label of TrackHitMetas")
+      };   
+             fhicl::Atom<art::InputTag> crtT0Label {
+	Name("CRTT0Label"),
+	Comment("Label of CRTT0")
+      };
     };
 
     struct Config {
@@ -72,10 +88,13 @@ namespace trkf {
 
     void produce(art::Event & e) override;
 std::vector<recob::Hit> projectHitsOnPlane(art::Event & e,const recob::Track& traj,int idx,unsigned int p, std::vector<proxy::TrackPointData>& pdata) const;
+//float CRTT0Shift(const std::vector<recob::Hit>& trkHits, const std::vector<const recob::TrackHitMeta*>& trkHitMetas, const geo::GeometryCore *GeometryService, detinfo::DetectorPropertiesData const& detProp, double time, const recob::Track& tpcTrack);
 
   private:
     Parameters p_;
     art::InputTag inputTag;
+    art::InputTag thmTag;
+     art::InputTag crtT0tag;
     TrajectoryMCSFitterICARUS mcsfitter;
   };
 }
@@ -84,6 +103,9 @@ trkf::MCSFitProducerICARUS::MCSFitProducerICARUS(trkf::MCSFitProducerICARUS::Par
   : EDProducer{p}, p_(p), mcsfitter(p_().fitter)
 {
   inputTag = art::InputTag(p_().inputs().inputLabel());
+    thmTag = art::InputTag(p_().inputs().thmLabel());
+    crtT0tag = art::InputTag(p_().inputs().crtT0Label());
+
   produces<std::vector<recob::MCSFitResult> >();
 }
 
@@ -100,13 +122,44 @@ void trkf::MCSFitProducerICARUS::produce(art::Event & e)
   if (!ok) throw cet::exception("MCSFitProducerICARUS") << "Cannot find input art::Handle with inputTag " << inputTag;
   const auto& inputVec = *(inputH.product());
 
+
+
+// Track - associated data
+//art::FindManyP<recob::Track> fmTracks(PFParticleList, e, fTPCTrackLabel[it]);
+//
+// Collect all hits
+//art::ValidHandle<std::vector<recob::Hit>> allhit_handle = e.getValidHandle<std::vector<recob::Hit>>(fHitLabel[it]);
+//std::vector<art::Ptr<recob::Hit>> allHits;
+//art::fill_ptr_vector(allHits, allhit_handle);
+
+//for (art::Ptr<recob::PFParticle> p_pfp: PFParticleList) {
+//      const std::vector<art::Ptr<recob::Track>> thisTrack = fmTracks.at(p_pfp.key());
+//      if (thisTrack.size() != 1) continue;    
+//      art::Ptr<recob::Track> trkPtr = thisTrack.at(0);
+//      const recob::Track &track = *trkPtr;
+  art::ValidHandle<std::vector<recob::Track>> tracks = e.getValidHandle<std::vector<recob::Track>>(inputTag); 
+
+ art::FindManyP<recob::Hit, recob::TrackHitMeta> fmtrkHits(tracks, e,thmTag);
+      
+
 std::cout << " inputh size " << inputVec.size() << std::endl;
 
 float minLen=40;
 //float cutFinLen=40;
 std::vector<int> count;
 count.push_back(-1);count.push_back(-1);
-for (const auto& element : inputVec) {
+
+ std::vector<art::Ptr<recob::Track>> allPtrs;
+    art::fill_ptr_vector(allPtrs, inputH);
+    std::cout << " allptrs size " << allPtrs.size() << std::endl;
+
+    //t0
+art::FindManyP<anab::T0> fmCRTTaggedT0(allPtrs,e,crtT0tag);
+std::cout << " fmCRTT0 size" << fmCRTTaggedT0.size() << std::endl;
+std::cout << " fmCRTT0 0" << fmCRTTaggedT0.at(0).size() << std::endl;
+
+for (unsigned int je=0;je<inputVec.size();je++) {
+  auto element=inputVec.at(je);
  std::vector<float> dum;
   recob::MCSFitResult result=recob::MCSFitResult(0,
 			    0,0,0,
@@ -125,8 +178,6 @@ for (const auto& element : inputVec) {
     std::vector<proxy::TrackPointData> pdata;
     pdata.clear();
    
- 
-  
 auto x=element.LocationAtPoint(0).X();
     int cryo=-1;
     if(x>0) cryo=1;
@@ -136,13 +187,47 @@ auto x=element.LocationAtPoint(0).X();
 
    // std::cout << " x " << x << " cryo " << cryo << std::endl;
 
-   // if(count[cryo]==12&&cryo==1) { //0 EAST 1 WEST
+   // if(count[cryo]==4&&cryo==1) { //0 EAST 1 WEST
 
        if(element.Length()>minLen) {
        hits2dC=projectHitsOnPlane(e,element,count[cryo],2,pdata);
        hits2dI2=projectHitsOnPlane(e,element,count[cryo],1,pdata);
        hits2dI1=projectHitsOnPlane(e,element,count[cryo],0,pdata);
        }
+     std::vector<art::Ptr<recob::Hit>> emptyHitVector;
+     art::Ptr<recob::Track> trkPtr=allPtrs.at(je);
+   //   const std::vector<art::Ptr<recob::Hit>> &trkHits  = fmtrkHits.isValid() ? fmtrkHits.at(trkPtr.key()) : emptyHitVector;
+   //  std::vector<const recob::TrackHitMeta*> emptyTHMVector;
+   //const std::vector<const recob::TrackHitMeta*> &trkHitMetas = fmtrkHits.isValid() ? fmtrkHits.data(trkPtr.key()) : emptyTHMVector;
+  auto const clockData = art::ServiceHandle<detinfo::DetectorClocksService const>()->DataFor(e);
+
+ //geo::GeometryCore const* fGeometryService = lar::providerFrom<geo::Geometry>();
+    auto const detProp = art::ServiceHandle<detinfo::DetectorPropertiesService const>()->DataFor(e, clockData);
+
+float CRTT0=std::numeric_limits<float>::signaling_NaN();
+for(unsigned i_t0=0;i_t0<fmCRTTaggedT0.size();i_t0++) {
+
+//std::cout << " key "<< trkPtr.key() << " fmcrttaggedt0 size " << fmCRTTaggedT0.size() << " fmcrttaggedt0[0] size " << fmCRTTaggedT0[i_t0].size() << std::endl;
+
+	if(fmCRTTaggedT0.isValid() && fmCRTTaggedT0.at(trkPtr.key()).size()) {
+         std::cout << " triggerbits " << fmCRTTaggedT0.at(trkPtr.key()).at(0)->TriggerBits() << " triggerconfidence " << fmCRTTaggedT0.at(trkPtr.key()).at(0)->TriggerConfidence() << std::endl;
+            if(fmCRTTaggedT0.at(trkPtr.key()).at(0)->TriggerBits() != 0) continue;
+        if(fmCRTTaggedT0.at(trkPtr.key()).at(0)->TriggerConfidence() > 70.) continue;
+           CRTT0=fmCRTTaggedT0.at(trkPtr.key()).at(0)->Time();
+  }}
+  float CRTshift=0;
+   double vDrift=detProp.DriftVelocity();
+   float fTickAtAnode=850.;
+   float fTickPeriod=0.4;
+   std::cout << " crt ratio " << CRTT0/fTickPeriod/1000. << std::endl;
+   std::cout << " crt tickshift " << CRTT0/1000./fTickPeriod-fTickAtAnode << std::endl;
+
+  if(!std::isnan(CRTT0)) 
+CRTshift=(CRTT0/1000./fTickPeriod-fTickAtAnode)*fTickPeriod*vDrift;
+    
+  std::cout << " CRTT0 " << CRTT0 << std::endl;
+    std::cout << " CRTshift " << CRTshift << std::endl;
+   // float shift=CRTT0Shift(hits2dC, trkHitMetas, fGeometryService, detProp, time, element);
 
     mcsfitter.set2DHitsC(hits2dC);
     mcsfitter.set2DHitsI2(hits2dI2);
@@ -163,7 +248,7 @@ auto x=element.LocationAtPoint(0).X();
 
     
 output->emplace_back(std::move(result));
-  //}
+ // }
 
   }
 
@@ -197,6 +282,35 @@ auto pd=proxy::makeTrackPointData(track,jp);
 
 return v;
 }
-
-
+/*
+float trkf::MCSFitProducerICARUS::CRTT0Shift(const std::vector<recob::Hit>& trkHits, const std::vector<const recob::TrackHitMeta*>& trkHitMetas, const geo::GeometryCore *GeometryService, detinfo::DetectorPropertiesData const& detProp, double time, const recob::Track& tpcTrack)
+    {
+        int outBound=0;
+        std::vector<float> recX, recY, recZ, recI;
+        for(size_t i=0; i<trkHits.size(); i++){
+            bool badhit = (trkHitMetas[i]->Index() == std::numeric_limits<unsigned int>::max()) ||
+                        (!tpcTrack.HasValidPoint(trkHitMetas[i]->Index()));
+            if(badhit) continue;
+            geo::Point_t loc = tpcTrack.LocationAtPoint(trkHitMetas[i]->Index());
+            if(loc.X()==-999) continue;
+            const geo::TPCGeo& tpcGeo = GeometryService->TPC(trkHits[i].WireID());
+            int const cryo = trkHits[i].WireID().Cryostat;
+            int tpc=trkHits[i].WireID().TPC;
+            double vDrift=detProp.DriftVelocity();
+            double recoX=(trkHits[i].PeakTime()-fTickAtAnode-time/fTickPeriod)*fTickPeriod*vDrift;
+            double plane=tpcGeo.FirstPlane().GetCenter().X();
+            double cathode=tpcGeo.GetCathodeCenter().X();
+            double X=plane-tpcGeo.DetectDriftDirection()*recoX;
+            if(cryo==0 && (tpc==0 || tpc==1) && (X>(cathode+fAllowedOffsetCM)||X<(plane-fAllowedOffsetCM))) outBound++;
+            else if(cryo==0 && (tpc==2 || tpc==3)&& (X<(cathode-fAllowedOffsetCM)||X>(plane+fAllowedOffsetCM))) outBound++;
+            else if(cryo==1 && (tpc==0 || tpc==1)&& (X>(cathode+fAllowedOffsetCM)||X<(plane-fAllowedOffsetCM))) outBound++;
+            else if(cryo==1 && (tpc==2 || tpc==3)&& (X<(cathode-fAllowedOffsetCM)||X>(plane+fAllowedOffsetCM))) outBound++;
+            recX.push_back(X);
+            recY.push_back(loc.Y());
+            recZ.push_back(loc.Z());
+            recI.push_back(trkHits[i].Integral());
+        }
+        return recoX;
+    }
+*/
 DEFINE_ART_MODULE(trkf::MCSFitProducerICARUS)
