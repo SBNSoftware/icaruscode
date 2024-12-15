@@ -226,10 +226,10 @@ icarus_reco_cluster3DCryoE:        [ cluster3DCryoE ]
 
 icarus_reco_pandoraGausCryoW:      [ pandoraGausCryoW,
                                      pandoraTrackGausCryoW
- ,mcsubooneGausCryoWfincut
-,mcsicarusGausCryoWfincut
-,mcsubooneGausCryoWinicut
-,mcsicarusGausCryoWinicut
+# ,mcsubooneGausCryoWfincut
+#,mcsicarusGausCryoWfincut
+#,mcsubooneGausCryoWinicut
+#,mcsicarusGausCryoWinicut
 ,rangeproducerCryoW
 #                                     ,pandoraKalmanTrackGausCryoW,
 #                                     ,SBNShowerGausCryoW
@@ -238,14 +238,26 @@ icarus_reco_pandoraGausCryoW:      [ pandoraGausCryoW,
 
 icarus_reco_pandoraGausCryoE:      [ pandoraGausCryoE,
                                      pandoraTrackGausCryoE
-,mcsubooneGausCryoEfincut
-,mcsicarusGausCryoEfincut
-,mcsubooneGausCryoEinicut
-,mcsicarusGausCryoEinicut
+#,mcsubooneGausCryoEfincut
+#,mcsicarusGausCryoEfincut
+#,mcsubooneGausCryoEinicut
+#,mcsicarusGausCryoEinicut
 , rangeproducerCryoE
 #                                     ,pandoraKalmanTrackGausCryoE,
 #                                    ,SBNShowerGausCryoE
 
+                                   ]
+icarus_reco_pandoraMCSCryoE:      [ 
+mcsubooneGausCryoEfincut
+,mcsicarusGausCryoEfincut
+,mcsubooneGausCryoEinicut
+,mcsicarusGausCryoEinicut
+                                   ]
+icarus_reco_pandoraMCSCryoW:      [ 
+mcsubooneGausCryoWfincut
+,mcsicarusGausCryoWfincut
+,mcsubooneGausCryoWinicut
+,mcsicarusGausCryoWinicut
                                    ]
 
 icarus_reco_Gauss_CryoW:           [ 
@@ -261,6 +273,10 @@ icarus_reco_Gauss_CryoE:           [
 icarus_pandora_Gauss:              [
                                     @sequence::icarus_reco_pandoraGausCryoE,
                                      @sequence::icarus_reco_pandoraGausCryoW
+                                   ]
+icarus_MCS_Gauss:              [
+                                    @sequence::icarus_reco_pandoraMCSCryoE,
+                                     @sequence::icarus_reco_pandoraMCSCryoW
                                    ]
 
 #Add flash matching
