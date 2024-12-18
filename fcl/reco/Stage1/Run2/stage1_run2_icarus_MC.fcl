@@ -52,6 +52,7 @@ physics.reco: [
                 @sequence::icarus_reco_Gauss_CryoW ,
 		            @sequence::icarus_reco_fm,
                 @sequence::icarus_tpcpmtbarycentermatch,
+                @sequence::icarus_MCS_Gauss,
                 caloskimCalorimetryCryoE, caloskimCalorimetryCryoW,
                 mcassociationsGausCryoE,  mcassociationsGausCryoW
               ]

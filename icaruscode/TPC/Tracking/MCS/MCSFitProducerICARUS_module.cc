@@ -153,11 +153,14 @@ count.push_back(-1);count.push_back(-1);
     art::fill_ptr_vector(allPtrs, inputH);
     std::cout << " allptrs size " << allPtrs.size() << std::endl;
 
+
+
     //t0
 art::FindManyP<anab::T0> fmCRTTaggedT0(allPtrs,e,crtT0tag);
+if(fmCRTTaggedT0.isValid()) {
 std::cout << " fmCRTT0 size" << fmCRTTaggedT0.size() << std::endl;
 std::cout << " fmCRTT0 0" << fmCRTTaggedT0.at(0).size() << std::endl;
-
+}
 for (unsigned int je=0;je<inputVec.size();je++) {
   auto element=inputVec.at(je);
  std::vector<float> dum;
@@ -205,16 +208,17 @@ auto x=element.LocationAtPoint(0).X();
     auto const detProp = art::ServiceHandle<detinfo::DetectorPropertiesService const>()->DataFor(e, clockData);
 
 float CRTT0=std::numeric_limits<float>::signaling_NaN();
+if(fmCRTTaggedT0.isValid()) {
 for(unsigned i_t0=0;i_t0<fmCRTTaggedT0.size();i_t0++) {
 
 //std::cout << " key "<< trkPtr.key() << " fmcrttaggedt0 size " << fmCRTTaggedT0.size() << " fmcrttaggedt0[0] size " << fmCRTTaggedT0[i_t0].size() << std::endl;
 
-	if(fmCRTTaggedT0.isValid() && fmCRTTaggedT0.at(trkPtr.key()).size()) {
+	if(fmCRTTaggedT0.at(trkPtr.key()).size()) {
          std::cout << " triggerbits " << fmCRTTaggedT0.at(trkPtr.key()).at(0)->TriggerBits() << " triggerconfidence " << fmCRTTaggedT0.at(trkPtr.key()).at(0)->TriggerConfidence() << std::endl;
             if(fmCRTTaggedT0.at(trkPtr.key()).at(0)->TriggerBits() != 0) continue;
         if(fmCRTTaggedT0.at(trkPtr.key()).at(0)->TriggerConfidence() > 70.) continue;
            CRTT0=fmCRTTaggedT0.at(trkPtr.key()).at(0)->Time();
-  }}
+  }}}
   float CRTshift=0;
    double vDrift=detProp.DriftVelocity();
    float fTickAtAnode=850.;
@@ -237,6 +241,8 @@ CRTshift=(CRTT0/1000./fTickPeriod-fTickAtAnode)*fTickPeriod*vDrift;
     mcsfitter.ComputeD3P(0);
     mcsfitter.ComputeD3P(1);
     mcsfitter.ComputeD3P(2);
+
+    mcsfitter.setCRTShift(CRTshift);
     
  
     std::cout << " fitting icarus trackIdx " << count[cryo] << " cryo " << cryo << " length " << element.Length() << std::endl;
@@ -282,35 +288,5 @@ auto pd=proxy::makeTrackPointData(track,jp);
 
 return v;
 }
-/*
-float trkf::MCSFitProducerICARUS::CRTT0Shift(const std::vector<recob::Hit>& trkHits, const std::vector<const recob::TrackHitMeta*>& trkHitMetas, const geo::GeometryCore *GeometryService, detinfo::DetectorPropertiesData const& detProp, double time, const recob::Track& tpcTrack)
-    {
-        int outBound=0;
-        std::vector<float> recX, recY, recZ, recI;
-        for(size_t i=0; i<trkHits.size(); i++){
-            bool badhit = (trkHitMetas[i]->Index() == std::numeric_limits<unsigned int>::max()) ||
-                        (!tpcTrack.HasValidPoint(trkHitMetas[i]->Index()));
-            if(badhit) continue;
-            geo::Point_t loc = tpcTrack.LocationAtPoint(trkHitMetas[i]->Index());
-            if(loc.X()==-999) continue;
-            const geo::TPCGeo& tpcGeo = GeometryService->TPC(trkHits[i].WireID());
-            int const cryo = trkHits[i].WireID().Cryostat;
-            int tpc=trkHits[i].WireID().TPC;
-            double vDrift=detProp.DriftVelocity();
-            double recoX=(trkHits[i].PeakTime()-fTickAtAnode-time/fTickPeriod)*fTickPeriod*vDrift;
-            double plane=tpcGeo.FirstPlane().GetCenter().X();
-            double cathode=tpcGeo.GetCathodeCenter().X();
-            double X=plane-tpcGeo.DetectDriftDirection()*recoX;
-            if(cryo==0 && (tpc==0 || tpc==1) && (X>(cathode+fAllowedOffsetCM)||X<(plane-fAllowedOffsetCM))) outBound++;
-            else if(cryo==0 && (tpc==2 || tpc==3)&& (X<(cathode-fAllowedOffsetCM)||X>(plane+fAllowedOffsetCM))) outBound++;
-            else if(cryo==1 && (tpc==0 || tpc==1)&& (X>(cathode+fAllowedOffsetCM)||X<(plane-fAllowedOffsetCM))) outBound++;
-            else if(cryo==1 && (tpc==2 || tpc==3)&& (X<(cathode-fAllowedOffsetCM)||X>(plane+fAllowedOffsetCM))) outBound++;
-            recX.push_back(X);
-            recY.push_back(loc.Y());
-            recZ.push_back(loc.Z());
-            recI.push_back(trkHits[i].Integral());
-        }
-        return recoX;
-    }
-*/
+
 DEFINE_ART_MODULE(trkf::MCSFitProducerICARUS)

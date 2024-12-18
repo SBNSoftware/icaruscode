@@ -1,87 +1,193 @@
 BEGIN_PROLOG
+
 mcsfitproducericarus_raw: {
-#mcsfitproducericarus: {
-  module_type:  MCSFitProducerICARUS
-  inputs: {
-        inputLabel: "pandoraTrackICARUS"
-  }
+  module_type: MCSFitProducerICARUS
+  inputs: { inputLabel: "pandoraTrackICARUS" }
   fitter: {
   	pIdHypothesis: 13
-	minNumSegments: 6
+	minNumSegments: 7
 	segmentLength: 14.0
-	minHitsPerSegment: 2
+	minHitsPerSegment: 3
 	nElossSteps: 10
 	eLossMode: 0
-	pMin: 100.
-	pMax: 600.
-	pStep: 100.
-	angResol: 3.0
-        cutMode: 0
-        cutLength: 0.
-	dimMode: 3
-  }
-}
-mcsfitproducericarus_gaus: {
-  module_type:  MCSFitProducerICARUS
-  inputs: {
-        inputLabel: "pandoraTrackGaus"
-  }
-  fitter: {
-  	pIdHypothesis: 13
-	minNumSegments: 6
-	segmentLength: 14.0
-	minHitsPerSegment: 2
-	nElossSteps: 10
-	eLossMode: 0
-	pMin: 100.
-	pMax: 600.
-	pStep: 100.
-	angResol: 3.0
-        cutMode: 0
-        cutLength: 0.
+	pMin: 400.
+	pMax: 1500.
+	pStep: 50.
+	cutMode: 0
+	cutLength: 0.
 	dimMode: 2
-  }
-}
-mcsfitproducericarus_gaus_inicut: {
-  module_type:  MCSFitProducerICARUS
-  inputs: {
-        inputLabel: "pandoraTrackGaus"
-  }
+	planeMode: 2
+	fitMode: 0 } }
+
+mcsfitproducerI: {
+  module_type: MCSFitProducerICARUS
+  inputs: { inputLabel: "pandoraTrackGaus" }
   fitter: {
   	pIdHypothesis: 13
-	minNumSegments: 6
+	minNumSegments: 7
 	segmentLength: 14.0
-	minHitsPerSegment: 2
+	minHitsPerSegment: 3
 	nElossSteps: 10
 	eLossMode: 0
-	pMin: 100.
-	pMax: 600.
-	pStep: 100.
-	angResol: 3.0
-        cutMode: 2
-        cutLength: 100.
-		dimMode: 2
-  }
-}
-mcsfitproducericarus_gaus_fincut: {
-  module_type:  MCSFitProducerICARUS
-  inputs: {
-        inputLabel: "pandoraTrackGaus"
-  }
+	pMin: 400.
+	pMax: 1500.
+	pStep: 50.
+	cutMode: 0
+	cutLength: 0.
+	dimMode: 2
+	planeMode: 2
+	fitMode: 0 } }
+
+mcsfitproducerIF3D: {
+  module_type: MCSFitProducerICARUS
+  inputs: { inputLabel: "pandoraTrackGaus" }
   fitter: {
   	pIdHypothesis: 13
-	minNumSegments: 6
+	minNumSegments: 7
 	segmentLength: 14.0
-	minHitsPerSegment: 2
+	minHitsPerSegment: 3
 	nElossSteps: 10
 	eLossMode: 0
-	pMin: 100.
-	pMax: 600.
-	pStep: 100.
-	angResol: 3.0
-        cutMode: 1
-        cutLength: 50.
-		dimMode: 2
-  }
-}
+	pMin: 400.
+	pMax: 1500.
+	pStep: 50.
+	cutMode: 1
+	cutLength: 50.
+	dimMode: 3
+	planeMode: 2
+	fitMode: 0 } }
+
+mcsfitproducerIF2DI1: {
+  module_type: MCSFitProducerICARUS
+  inputs: { inputLabel: "pandoraTrackGaus" }
+  fitter: {
+  	pIdHypothesis: 13
+	minNumSegments: 7
+	segmentLength: 14.0
+	minHitsPerSegment: 3
+	nElossSteps: 10
+	eLossMode: 0
+	pMin: 400.
+	pMax: 1500.
+	pStep: 50.
+	cutMode: 1
+	cutLength: 50.
+	dimMode: 2
+	planeMode: 0
+	fitMode: 0 } }
+
+mcsfitproducerIF2DI2: {
+  module_type: MCSFitProducerICARUS
+  inputs: { inputLabel: "pandoraTrackGaus" }
+  fitter: {
+  	pIdHypothesis: 13
+	minNumSegments: 7
+	segmentLength: 14.0
+	minHitsPerSegment: 3
+	nElossSteps: 10
+	eLossMode: 0
+	pMin: 400.
+	pMax: 1500.
+	pStep: 50.
+	cutMode: 1
+	cutLength: 50.
+	dimMode: 2
+	planeMode: 1
+	fitMode: 0 } }
+
+mcsfitproducerIF2DC: {
+  module_type: MCSFitProducerICARUS
+  inputs: { inputLabel: "pandoraTrackGaus" }
+  fitter: {
+  	pIdHypothesis: 13
+	minNumSegments: 7
+	segmentLength: 14.0
+	minHitsPerSegment: 3
+	nElossSteps: 10
+	eLossMode: 0
+	pMin: 400.
+	pMax: 1500.
+	pStep: 50.
+	cutMode: 1
+	cutLength: 50.
+	dimMode: 2
+	planeMode: 2
+	fitMode: 0 } }
+
+mcsfitproducerII3D: {
+  module_type: MCSFitProducerICARUS
+  inputs: { inputLabel: "pandoraTrackGaus" }
+  fitter: {
+  	pIdHypothesis: 13
+	minNumSegments: 7
+	segmentLength: 14.0
+	minHitsPerSegment: 3
+	nElossSteps: 10
+	eLossMode: 0
+	pMin: 400.
+	pMax: 1500.
+	pStep: 50.
+	cutMode: 2
+	cutLength: 100.
+	dimMode: 3
+	planeMode: 2
+	fitMode: 0 } }
+
+mcsfitproducerII2DI1: {
+  module_type: MCSFitProducerICARUS
+  inputs: { inputLabel: "pandoraTrackGaus" }
+  fitter: {
+  	pIdHypothesis: 13
+	minNumSegments: 7
+	segmentLength: 14.0
+	minHitsPerSegment: 3
+	nElossSteps: 10
+	eLossMode: 0
+	pMin: 400.
+	pMax: 1500.
+	pStep: 50.
+	cutMode: 2
+	cutLength: 100.
+	dimMode: 2
+	planeMode: 0
+	fitMode: 0 } }
+
+mcsfitproducerII2DI2: {
+  module_type: MCSFitProducerICARUS
+  inputs: { inputLabel: "pandoraTrackGaus" }
+  fitter: {
+  	pIdHypothesis: 13
+	minNumSegments: 7
+	segmentLength: 14.0
+	minHitsPerSegment: 3
+	nElossSteps: 10
+	eLossMode: 0
+	pMin: 400.
+	pMax: 1500.
+	pStep: 50.
+	cutMode: 2
+	cutLength: 100.
+	dimMode: 2
+	planeMode: 1
+	fitMode: 0 } }
+
+mcsfitproducerII2DC: {
+  module_type: MCSFitProducerICARUS
+  inputs: { inputLabel: "pandoraTrackGaus" }
+  fitter: {
+  	pIdHypothesis: 13
+	minNumSegments: 7
+	segmentLength: 14.0
+	minHitsPerSegment: 3
+	nElossSteps: 10
+	eLossMode: 0
+	pMin: 400.
+	pMax: 1500.
+	pStep: 50.
+	cutMode: 2
+	cutLength: 100.
+	dimMode: 2
+	planeMode: 2
+	fitMode: 0 } }
+
 END_PROLOG

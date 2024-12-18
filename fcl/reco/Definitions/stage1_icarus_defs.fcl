@@ -36,68 +36,81 @@ BEGIN_PROLOG
 icarus_stage1_producers:
 {
   ### Cluster3D
-  cluster3DCryoW:                 @local::icarus_cluster3d
-  cluster3DCryoE:                 @local::icarus_cluster3d
+  cluster3DCryoW: @local::icarus_cluster3d
+  cluster3DCryoE: @local::icarus_cluster3d
 
   ### pandora
-  pandoraGausCryoW:               @local::icarus_pandora
-  pandoraTrackGausCryoW:          @local::icarus_pandoraTrackCreation
-  pandoraGausCryoE:               @local::icarus_pandora
-  pandoraTrackGausCryoE:          @local::icarus_pandoraTrackCreation
+  pandoraGausCryoW: @local::icarus_pandora
+  pandoraTrackGausCryoW: @local::icarus_pandoraTrackCreation
+  pandoraGausCryoE: @local::icarus_pandora
+  pandoraTrackGausCryoE: @local::icarus_pandoraTrackCreation
 
   ### PM algorithm for pandora
-  pandoraKalmanTrackGausCryoW:    @local::icarus_pandora_kalmantrack
-  pandoraKalmanTrackGausCryoE:    @local::icarus_pandora_kalmantrack
+  pandoraKalmanTrackGausCryoW: @local::icarus_pandora_kalmantrack
+  pandoraKalmanTrackGausCryoE: @local::icarus_pandora_kalmantrack
 
   ### Showers
-  SBNShowerGausCryoW:             @local::icarus_pandorashower_3dTraj
-  SBNShowerGausCryoE:             @local::icarus_pandorashower_3dTraj
+  SBNShowerGausCryoW: @local::icarus_pandorashower_3dTraj
+  SBNShowerGausCryoE: @local::icarus_pandorashower_3dTraj
 
-  # pandora CALO and PID
-#  pandoraGausCaloCryoW:		      @local::icarus_calomc
-#  pandoraGausPidCryoW:		        @local::icarus_chi2pid
-#  pandoraGausCaloCryoE:		      @local::icarus_calomc
-#  pandoraGausPidCryoE:		        @local::icarus_chi2pid
+  ### pandora CALO and PID
+  # pandoraGausCaloCryoW: @local::icarus_calomc
+  # pandoraGausPidCryoW: @local::icarus_chi2pid
+  # pandoraGausCaloCryoE: @local::icarus_calomc
+  # pandoraGausPidCryoE: @local::icarus_chi2pid
 
-  # Placeholder uncalibrated calorimetry
-  caloskimCalorimetryCryoE:       @local::caloskim_calorimetry
-  caloskimCalorimetryCryoW:       @local::caloskim_calorimetry
+  ### Placeholder uncalibrated calorimetry
+  caloskimCalorimetryCryoE: @local::caloskim_calorimetry
+  caloskimCalorimetryCryoW: @local::caloskim_calorimetry
 
-### mcs
- mcsstandardGausCryoW:                @local::mcsfitproducer
- mcsstandardGausCryoE:                @local::mcsfitproducer
-### mcs
- mcsicarusGausCryoW:                @local::mcsfitproducericarus_gaus
- mcsicarusGausCryoE:                @local::mcsfitproducericarus_gaus
- mcsicarusGausCryoWinicut:                @local::mcsfitproducericarus_gaus_inicut
- mcsicarusGausCryoEinicut:                @local::mcsfitproducericarus_gaus_inicut
- mcsicarusGausCryoWfincut:                @local::mcsfitproducericarus_gaus_fincut
- mcsicarusGausCryoEfincut:                @local::mcsfitproducericarus_gaus_fincut
+  ### MCS standard
+  mcsstandardGausCryoW: @local::mcsfitproducer
+  mcsstandardGausCryoE: @local::mcsfitproducer
 
-### mcs
- mcsubooneGausCryoW:                @local::mcsfitproducer_uboone
- mcsubooneGausCryoE:                @local::mcsfitproducer_uboone
- mcsubooneGausCryoWinicut:                @local::mcsfitproducer_uboone_inicut
- mcsubooneGausCryoEinicut:                @local::mcsfitproducer_uboone_inicut 
- mcsubooneGausCryoEfincut:                @local::mcsfitproducer_uboone_fincut
- mcsubooneGausCryoWfincut:                @local::mcsfitproducer_uboone_fincut
-##range
- rangeproducerCryoW:                @local::range_sbn
- rangeproducerCryoE:                @local::range_sbn
+  ### MCS icarus
+  mcsicarusGausCryoW: @local::mcsfitproducerI
+  mcsicarusGausCryoWF3D: @local::mcsfitproducerIF3D
+  mcsicarusGausCryoWF2DI1: @local::mcsfitproducerIF2DI1
+  mcsicarusGausCryoWF2DI2: @local::mcsfitproducerIF2DI2
+  mcsicarusGausCryoWF2DC: @local::mcsfitproducerIF2DC
+  mcsicarusGausCryoWI3D: @local::mcsfitproducerII3D
+  mcsicarusGausCryoWI2DI1: @local::mcsfitproducerII2DI1
+  mcsicarusGausCryoWI2DI2: @local::mcsfitproducerII2DI2
+  mcsicarusGausCryoWI2DC: @local::mcsfitproducerII2DC
+  mcsicarusGausCryoE: @local::mcsfitproducerI
+  mcsicarusGausCryoEF3D: @local::mcsfitproducerIF3D
+  mcsicarusGausCryoEF2DI1: @local::mcsfitproducerIF2DI1
+  mcsicarusGausCryoEF2DI2: @local::mcsfitproducerIF2DI2
+  mcsicarusGausCryoEF2DC: @local::mcsfitproducerIF2DC
+  mcsicarusGausCryoEI3D: @local::mcsfitproducerII3D
+  mcsicarusGausCryoEI2DI1: @local::mcsfitproducerII2DI1
+  mcsicarusGausCryoEI2DI2: @local::mcsfitproducerII2DI2
+  mcsicarusGausCryoEI2DC: @local::mcsfitproducerII2DC
 
+  ### MCS uboone
+  mcsubooneGausCryoW: @local::mcsfitproducerU
+  mcsubooneGausCryoWF: @local::mcsfitproducerUF
+  mcsubooneGausCryoWI: @local::mcsfitproducerUI
+  mcsubooneGausCryoE: @local::mcsfitproducerU
+  mcsubooneGausCryoEF: @local::mcsfitproducerUF
+  mcsubooneGausCryoEI: @local::mcsfitproducerUI 
 
-  ## Attempt to include simple flash matching here
-  ## Simple Flash Matching, right now cryo0 and 1 are identical
-  fmatchCryoE:                    @local::icarus_simple_flashmatch_E
-  fmatchCryoW:                    @local::icarus_simple_flashmatch_W
-  fmatchopCryoE:                  @local::icarus_simple_flashmatch_E_op
-  fmatchopCryoW:                  @local::icarus_simple_flashmatch_W_op
+  ### range
+  rangeproducerCryoW: @local::range_sbn
+  rangeproducerCryoE: @local::range_sbn
 
- ## crt producer
-  crttrack:          @local::standard_crttrackproducer
-  CRTT0Matching:     @local::standard_crtt0producer
-  CRTT0MatchingW:    @local::standard_crtt0producerW
-  CRTT0MatchingE:    @local::standard_crtt0producerE
+  ### Attempt to include simple flash matching here
+  ### Simple Flash Matching, right now cryo0 and 1 are identical
+  fmatchCryoE: @local::icarus_simple_flashmatch_E
+  fmatchCryoW: @local::icarus_simple_flashmatch_W
+  fmatchopCryoE: @local::icarus_simple_flashmatch_E_op
+  fmatchopCryoW: @local::icarus_simple_flashmatch_W_op
+
+  ### CRT producer
+  crttrack: @local::standard_crttrackproducer
+  CRTT0Matching: @local::standard_crtt0producer
+  CRTT0MatchingW: @local::standard_crtt0producerW
+  CRTT0MatchingE: @local::standard_crtt0producerE
   CRTT0Tagging: @local::standard_crtt0tagging
 
   tpcpmtbarycentermatchCryoE: @local::data_tpcpmtbarycentermatchproducer_east
@@ -112,78 +125,96 @@ icarus_stage1_filters:
 
 icarus_stage1_analyzers:
 {
-  caloskimE:       @local::caloskim_cryoe_goldentracks
-  caloskimW:       @local::caloskim_cryow_goldentracks
-  simpleLightAna:  @local::ICARUSFlashAssAna
-  supera:          @local::icarus_supera_data
-  superaMC:        @local::icarus_supera_MC_PMT_CRT
+  caloskimE: @local::caloskim_cryoe_goldentracks
+  caloskimW: @local::caloskim_cryow_goldentracks
+  simpleLightAna: @local::ICARUSFlashAssAna
+  supera: @local::icarus_supera_data
+  superaMC: @local::icarus_supera_MC_PMT_CRT
 
   CRTDataAnalysis: 
    {
-     module_type:   "CRTDataAnalysis"
-     CRTHitLabel:   "crthit"
-     CRTDAQLabel:   "daqCRT"
-     TriggerLabel:  "daqTrigger"
-     CRTPMTLabel:   "crtpmt"
+     module_type: "CRTDataAnalysis"
+     CRTHitLabel: "crthit"
+     CRTDAQLabel: "daqCRT"
+     TriggerLabel: "daqTrigger"
+     CRTPMTLabel: "crtpmt"
 
-     QPed:                 60     # Pedestal offset [ADC]
-     QSlope:               70     # Pedestal slope [ADC/photon]
-     PEThresh:             7.5    # PE threshold above which charge amplitudes used
-     CrtWindow:            3e6    # time window for looking data within trigger timestamp [ns]
+     QPed: 60 # Pedestal offset [ADC]
+     QSlope: 70 # Pedestal slope [ADC/photon]
+     PEThresh: 7.5 # PE threshold above which charge amplitudes used
+     CrtWindow: 3e6 # time window for looking data within trigger timestamp [ns]
    }
   CRTAnalysis:
-   {
-     module_type:   "CRTPMTMatchingAna"
+  {
+    module_type: "CRTPMTMatchingAna"
 
-     CrtHitModuleLabel:  "crthit"
-     OpHitModuleLabel:   "ophit"
-     OpFlashModuleLabel0: "opflashCryoE"
-     OpFlashModuleLabel1: "opflashCryoW"
+    CrtHitModuleLabel: "crthit"
+    OpHitModuleLabel: "ophit"
+    OpFlashModuleLabel0: "opflashCryoE"
+    OpFlashModuleLabel1: "opflashCryoW"
 
-     TriggerLabel:   "daqTrigger"
-     TriggerConfiguration:  "triggerconfig"
+    TriggerLabel: "daqTrigger"
+    TriggerConfiguration: "triggerconfig"
 
-     #  Beam Gate and inBeam gate parameters were evaluated from the BNB and NuMI plots
-     #  reported in DocDB-30190 slides 17 (BNB) and 19 (NuMI).
-     #  Note1: in the plots a 500 ns offset was added to have start of the gate right at 0.
-     #  Note2: the inBeam parameters were determined experimentally by selecting the beam
-     #  excess time window. At the current state of the CRTPMT filter, the requirement to
-     #  have the optical flashes within the BeamExcess time window is not applied. 
+    # Beam Gate and inBeam gate parameters were evaluated from the BNB and NuMI plots
+    # reported in DocDB-30190 slides 17 (BNB) and 19 (NuMI).
+    # Note1: in the plots a 500 ns offset was added to have start of the gate right at 0.
+    # Note2: the inBeam parameters were determined experimentally by selecting the beam
+    # excess time window. At the current state of the CRTPMT filter, the requirement to
+    # have the optical flashes within the BeamExcess time window is not applied. 
 
-      # note 19/04/2023: parameters are set to run2,
-      # they can be set to run1, but currently values are the same 
-   
-      @table::CRTMatchBNBBeamGate_run2
-      @table::CRTMatchNuMIBeamGate_run2
-      @table::CRTPMTmatchingparams_standard
-   }
- }
+    # note 19/04/2023: parameters are set to run2,
+    # they can be set to run1, but currently values are the same 
+  
+    @table::CRTMatchBNBBeamGate_run2
+    @table::CRTMatchNuMIBeamGate_run2
+    @table::CRTPMTmatchingparams_standard
+  }
+}
+
+icarus_stage1_analyzers.caloskimW.SelectEvents: [reco]
+icarus_stage1_analyzers.caloskimW.CALOproducer: caloskimCalorimetryCryoW 
+
+icarus_stage1_analyzers.caloskimW.MCSproducerU: mcsubooneGausCryoW
+icarus_stage1_analyzers.caloskimW.MCSproducerUF: mcsubooneGausCryoWF
+icarus_stage1_analyzers.caloskimW.MCSproducerUI: mcsubooneGausCryoWI
+
+icarus_stage1_analyzers.caloskimW.MCSproducerI: mcsicarusGausCryoW
+icarus_stage1_analyzers.caloskimW.MCSproducerIF3D: mcsicarusGausCryoWF3D
+icarus_stage1_analyzers.caloskimW.MCSproducerIF2DI1: mcsicarusGausCryoWF2DI1
+icarus_stage1_analyzers.caloskimW.MCSproducerIF2DI2: mcsicarusGausCryoWF2DI2
+icarus_stage1_analyzers.caloskimW.MCSproducerIF2DC: mcsicarusGausCryoWF2DC
+icarus_stage1_analyzers.caloskimW.MCSproducerII3D: mcsicarusGausCryoWI3D
+icarus_stage1_analyzers.caloskimW.MCSproducerII2DI1: mcsicarusGausCryoWI2DI1
+icarus_stage1_analyzers.caloskimW.MCSproducerII2DI2: mcsicarusGausCryoWI2DI2
+icarus_stage1_analyzers.caloskimW.MCSproducerII2DC: mcsicarusGausCryoWI2DC
+
+icarus_stage1_analyzers.caloskimW.RangeInputtag: "rangeproducerCryoW:muon"
+icarus_stage1_analyzers.caloskimW.SilenceMissingDataProducts: true
+icarus_stage1_analyzers.caloskimW.crtTagproducer: ["CRTT0Tagging"]
+#icarus_stage1_analyzers.caloskimW.SelectionTools: [@local::stopping_selection, @local::a2c_selection, @local::throughgoing_selection, @local::selectall]
 
 icarus_stage1_analyzers.caloskimE.SelectEvents: [reco]
 icarus_stage1_analyzers.caloskimE.CALOproducer: caloskimCalorimetryCryoE 
+
 icarus_stage1_analyzers.caloskimE.MCSproducerU: mcsubooneGausCryoE
+icarus_stage1_analyzers.caloskimE.MCSproducerUF: mcsubooneGausCryoEF
+icarus_stage1_analyzers.caloskimE.MCSproducerUI: mcsubooneGausCryoEI
+
 icarus_stage1_analyzers.caloskimE.MCSproducerI: mcsicarusGausCryoE
-icarus_stage1_analyzers.caloskimE.MCSproducerUIC: mcsubooneGausCryoEinicut
-icarus_stage1_analyzers.caloskimE.MCSproducerIIC: mcsicarusGausCryoEinicut
-icarus_stage1_analyzers.caloskimE.MCSproducerUFC: mcsubooneGausCryoEfincut
-icarus_stage1_analyzers.caloskimE.MCSproducerIFC: mcsicarusGausCryoEfincut
+icarus_stage1_analyzers.caloskimE.MCSproducerIF3D: mcsicarusGausCryoEF3D
+icarus_stage1_analyzers.caloskimE.MCSproducerIF2DI1: mcsicarusGausCryoEF2DI1
+icarus_stage1_analyzers.caloskimE.MCSproducerIF2DI2: mcsicarusGausCryoEF2DI2
+icarus_stage1_analyzers.caloskimE.MCSproducerIF2DC: mcsicarusGausCryoEF2DC
+icarus_stage1_analyzers.caloskimE.MCSproducerII3D: mcsicarusGausCryoEI3D
+icarus_stage1_analyzers.caloskimE.MCSproducerII2DI1: mcsicarusGausCryoEI2DI1
+icarus_stage1_analyzers.caloskimE.MCSproducerII2DI2: mcsicarusGausCryoEI2DI2
+icarus_stage1_analyzers.caloskimE.MCSproducerII2DC: mcsicarusGausCryoEI2DC
+
 icarus_stage1_analyzers.caloskimE.RangeInputtag: "rangeproducerCryoE:muon"
 icarus_stage1_analyzers.caloskimE.SilenceMissingDataProducts: true
 icarus_stage1_analyzers.caloskimE.crtTagproducer: ["CRTT0Tagging"]
 #icarus_stage1_analyzers.caloskimE.SelectionTools: [@local::stopping_selection, @local::a2c_selection, @local::throughgoing_selection, @local::selectall]
-
-icarus_stage1_analyzers.caloskimW.SelectEvents: [reco]
-icarus_stage1_analyzers.caloskimW.CALOproducer: caloskimCalorimetryCryoW 
-icarus_stage1_analyzers.caloskimW.MCSproducerU: mcsubooneGausCryoW
-icarus_stage1_analyzers.caloskimW.MCSproducerI: mcsicarusGausCryoW
-icarus_stage1_analyzers.caloskimW.MCSproducerUIC: mcsubooneGausCryoWinicut
-icarus_stage1_analyzers.caloskimW.MCSproducerIIC: mcsicarusGausCryoWinicut
-icarus_stage1_analyzers.caloskimW.MCSproducerUFC: mcsubooneGausCryoWfincut
-icarus_stage1_analyzers.caloskimW.MCSproducerIFC: mcsicarusGausCryoWfincut
-icarus_stage1_analyzers.caloskimW.RangeInputtag: "rangeproducerCryoW:muon"
-#icarus_stage1_analyzers.caloskimE.SelectionTools: [@local::stopping_selection, @local::a2c_selection, @local::throughgoing_selection, @local::selectall]
-icarus_stage1_analyzers.caloskimW.SilenceMissingDataProducts: true
-icarus_stage1_analyzers.caloskimW.crtTagproducer: ["CRTT0Tagging"]
 
 icarus_stage1_analyzers.supera.unique_filename: true
 
@@ -191,235 +222,272 @@ icarus_stage1_analyzers.supera.unique_filename: true
 
 # Set up the standard analysis chain
 
-icarus_crtt0tagging_francesco: [CRTT0Tagging]
+icarus_crtt0tagging_francesco: [
+  CRTT0Tagging
+]
 
-icarus_analysis_modules:           [
-                                     ,simpleLightAna
-                                     ,CRTDataAnalysis
-				                             ,CRTAnalysis,
-  caloskimE 
-                                     ,caloskimW 
+icarus_analysis_modules: [
+  simpleLightAna,
+  CRTDataAnalysis,
+  CRTAnalysis,
+  caloskimE,
+  caloskimW
+]
 
-                                   ]
+icarus_analysis_supera: [
+  supera
+]
 
-icarus_analysis_supera:            [ supera
-                                   ]
+icarus_analysis_superaMC: [
+  superaMC
+]
 
-icarus_analysis_superaMC:          [ superaMC
-                                   ]
-
-icarus_analysis_larcv_modules:     [  @sequence::icarus_analysis_modules
-                                     ,@sequence::icarus_analysis_supera 
-                                   ]
+icarus_analysis_larcv_modules: [
+  @sequence::icarus_analysis_modules,
+  @sequence::icarus_analysis_supera
+]
 
 # Set up filtering of cluster3D hits by cryostat
 # Changed slightly to faciliate larcv processing
-icarus_filter_cluster3D:           [ cluster3DCryoE,
-                                     cluster3DCryoW,
-                                     TPCHitFilterCryoE,
-                                     TPCHitFilterCryoW
-                                   ]
 
-icarus_reco_cluster3DCryoW:        [ cluster3DCryoW ]
+icarus_filter_cluster3D: [
+  cluster3DCryoE,
+  cluster3DCryoW,
+  TPCHitFilterCryoE,
+  TPCHitFilterCryoW
+]
 
-icarus_reco_cluster3DCryoE:        [ cluster3DCryoE ]
+icarus_reco_cluster3DCryoW: [
+  cluster3DCryoW
+]
 
-icarus_reco_pandoraGausCryoW:      [ pandoraGausCryoW,
-                                     pandoraTrackGausCryoW
-# ,mcsubooneGausCryoWfincut
-#,mcsicarusGausCryoWfincut
-#,mcsubooneGausCryoWinicut
-#,mcsicarusGausCryoWinicut
-,rangeproducerCryoW
-#                                     ,pandoraKalmanTrackGausCryoW,
-#                                     ,SBNShowerGausCryoW
+icarus_reco_cluster3DCryoE: [
+  cluster3DCryoE
+]
 
-                                   ]
+icarus_reco_pandoraGausCryoW: [
+  pandoraGausCryoW,
+  pandoraTrackGausCryoW,
+  rangeproducerCryoW
+  #pandoraKalmanTrackGausCryoW,
+  #SBNShowerGausCryoW
+]
 
-icarus_reco_pandoraGausCryoE:      [ pandoraGausCryoE,
-                                     pandoraTrackGausCryoE
-#,mcsubooneGausCryoEfincut
-#,mcsicarusGausCryoEfincut
-#,mcsubooneGausCryoEinicut
-#,mcsicarusGausCryoEinicut
-, rangeproducerCryoE
-#                                     ,pandoraKalmanTrackGausCryoE,
-#                                    ,SBNShowerGausCryoE
+icarus_reco_pandoraGausCryoE: [
+  pandoraGausCryoE,
+  pandoraTrackGausCryoE,
+  rangeproducerCryoE
+  #pandoraKalmanTrackGausCryoE,
+  #SBNShowerGausCryoE
+]
 
-                                   ]
-icarus_reco_pandoraMCSCryoE:      [ 
-mcsubooneGausCryoEfincut
-,mcsicarusGausCryoEfincut
-,mcsubooneGausCryoEinicut
-,mcsicarusGausCryoEinicut
-                                   ]
-icarus_reco_pandoraMCSCryoW:      [ 
-mcsubooneGausCryoWfincut
-,mcsicarusGausCryoWfincut
-,mcsubooneGausCryoWinicut
-,mcsicarusGausCryoWinicut
-                                   ]
+icarus_reco_pandoraMCSCryoE: [ 
+  mcsubooneGausCryoEF,
+  mcsubooneGausCryoEI,
+  mcsicarusGausCryoEF3D,
+  mcsicarusGausCryoEF2DI1,
+  mcsicarusGausCryoEF2DI2,
+  mcsicarusGausCryoEF2DC,
+  mcsicarusGausCryoEI3D,
+  mcsicarusGausCryoEI2DI1,
+  mcsicarusGausCryoEI2DI2,
+  mcsicarusGausCryoEI2DC
+]
 
-icarus_reco_Gauss_CryoW:           [ 
-                                     @sequence::icarus_reco_cluster3DCryoW,
-                                     @sequence::icarus_reco_pandoraGausCryoW
-                                   ]
+icarus_reco_pandoraMCSCryoW: [ 
+  mcsubooneGausCryoWF,
+  mcsubooneGausCryoWI,
+  mcsicarusGausCryoWF3D,
+  mcsicarusGausCryoWF2DI1,
+  mcsicarusGausCryoWF2DI2,
+  mcsicarusGausCryoWF2DC,
+  mcsicarusGausCryoWI3D,
+  mcsicarusGausCryoWI2DI1,
+  mcsicarusGausCryoWI2DI2,
+  mcsicarusGausCryoWI2DC
+]
 
-icarus_reco_Gauss_CryoE:           [ 
-                                     @sequence::icarus_reco_cluster3DCryoE,
-                                     @sequence::icarus_reco_pandoraGausCryoE
-                                   ]
+icarus_reco_Gauss_CryoW: [
+  @sequence::icarus_reco_cluster3DCryoW,
+  @sequence::icarus_reco_pandoraGausCryoW
+]
 
-icarus_pandora_Gauss:              [
-                                    @sequence::icarus_reco_pandoraGausCryoE,
-                                     @sequence::icarus_reco_pandoraGausCryoW
-                                   ]
-icarus_MCS_Gauss:              [
-                                    @sequence::icarus_reco_pandoraMCSCryoE,
-                                     @sequence::icarus_reco_pandoraMCSCryoW
-                                   ]
+icarus_reco_Gauss_CryoE: [ 
+  @sequence::icarus_reco_cluster3DCryoE,
+  @sequence::icarus_reco_pandoraGausCryoE
+]
+
+icarus_pandora_Gauss: [
+  @sequence::icarus_reco_pandoraGausCryoE,
+  @sequence::icarus_reco_pandoraGausCryoW
+]
+
+icarus_MCS_Gauss: [
+  @sequence::icarus_reco_pandoraMCSCryoE,
+  @sequence::icarus_reco_pandoraMCSCryoW
+]
 
 #Add flash matching
-icarus_reco_fm:                    [ fmatchCryoE,
-                                     fmatchCryoW,
-                                     fmatchopCryoE,
-                                     fmatchopCryoW ]
+icarus_reco_fm: [ 
+  fmatchCryoE,
+  fmatchCryoW,
+  fmatchopCryoE,
+  fmatchopCryoW
+]
 
-icarus_tpcpmtbarycentermatch:      [
-                                     tpcpmtbarycentermatchCryoE, 
-                                     tpcpmtbarycentermatchCryoW
-                                   ]
+icarus_tpcpmtbarycentermatch: [
+  tpcpmtbarycentermatchCryoE, 
+  tpcpmtbarycentermatchCryoW
+]
 
-icarus_crttrack:                   [crttrack]
+icarus_crttrack: [
+  crttrack
+]
 
-icarus_crtt0match:                 [CRTT0Matching]
+icarus_crtt0match: [
+  CRTT0Matching
+]
 
-icarus_crtt0match_eff:             [CRTT0MatchingE, CRTT0MatchingW]
-
-
+icarus_crtt0match_eff: [
+  CRTT0MatchingE, 
+  CRTT0MatchingW
+]
 
 ### Below we include overrides for the modules above
 
-## Overrides for filtering of cluster3D hits
+### Overrides for filtering of cluster3D hits
+
 icarus_stage1_filters.TPCHitFilterCryoW.HitDataLabelVec: ["cluster3DCryoW"]
-icarus_stage1_filters.TPCHitFilterCryoW.MaximumHits:     60000 
+icarus_stage1_filters.TPCHitFilterCryoW.MaximumHits: 60000 
 
 icarus_stage1_filters.TPCHitFilterCryoE.HitDataLabelVec: ["cluster3DCryoE"]
-icarus_stage1_filters.TPCHitFilterCryoE.MaximumHits:     60000 
+icarus_stage1_filters.TPCHitFilterCryoE.MaximumHits: 60000 
 
-## Definitions for running the 3D clustering by Cryostat
-icarus_stage1_producers.cluster3DCryoW.MakeSpacePointsOnly:                                      true
-icarus_stage1_producers.cluster3DCryoW.Hit3DBuilderAlg.HitFinderTagVec:                          ["gaushit1dTPCWW", "gaushit1dTPCWE"]
-#icarus_stage1_producers.cluster3DCryoW.Hit3DBuilderAlg.HitFinderTagVec:                          ["gaushitTPCWW", "gaushitTPCWE"]
-icarus_stage1_producers.cluster3DCryoW.Hit3DBuilderAlg.PulseHeightFraction:                      0. #0.75 #0.25
-icarus_stage1_producers.cluster3DCryoW.Hit3DBuilderAlg.PHLowSelection:                           0. #4.0 # 20.
-icarus_stage1_producers.cluster3DCryoW.Hit3DBuilderAlg.MaxHitChiSquare:                          1000000.
-icarus_stage1_producers.cluster3DCryoW.Hit3DBuilderAlg.MaxMythicalChiSquare:                     30.
-icarus_stage1_producers.cluster3DCryoW.Hit3DBuilderAlg.OutputHistograms:                         false
+### Definitions for running the 3D clustering by Cryostat
 
-icarus_stage1_producers.cluster3DCryoE.MakeSpacePointsOnly:                                      true
-icarus_stage1_producers.cluster3DCryoE.Hit3DBuilderAlg.HitFinderTagVec:                          ["gaushit1dTPCEW", "gaushit1dTPCEE"]
-#icarus_stage1_producers.cluster3DCryoE.Hit3DBuilderAlg.HitFinderTagVec:                          ["gaushitTPCEW", "gaushitTPCEE"]
-icarus_stage1_producers.cluster3DCryoE.Hit3DBuilderAlg.PulseHeightFraction:                      0. #0.75 #0.25
-icarus_stage1_producers.cluster3DCryoE.Hit3DBuilderAlg.PHLowSelection:                           0. #4.0 # 20.
-icarus_stage1_producers.cluster3DCryoE.Hit3DBuilderAlg.MaxHitChiSquare:                          1000000.
-icarus_stage1_producers.cluster3DCryoE.Hit3DBuilderAlg.MaxMythicalChiSquare:                     30.
-icarus_stage1_producers.cluster3DCryoE.Hit3DBuilderAlg.OutputHistograms:                         false
+icarus_stage1_producers.cluster3DCryoW.MakeSpacePointsOnly: true
+icarus_stage1_producers.cluster3DCryoW.Hit3DBuilderAlg.HitFinderTagVec: ["gaushit1dTPCWW", "gaushit1dTPCWE"]
+#icarus_stage1_producers.cluster3DCryoW.Hit3DBuilderAlg.HitFinderTagVec: ["gaushitTPCWW", "gaushitTPCWE"]
+icarus_stage1_producers.cluster3DCryoW.Hit3DBuilderAlg.PulseHeightFraction: 0. #0.75 #0.25
+icarus_stage1_producers.cluster3DCryoW.Hit3DBuilderAlg.PHLowSelection: 0. #4.0 # 20.
+icarus_stage1_producers.cluster3DCryoW.Hit3DBuilderAlg.MaxHitChiSquare: 1000000.
+icarus_stage1_producers.cluster3DCryoW.Hit3DBuilderAlg.MaxMythicalChiSquare: 30.
+icarus_stage1_producers.cluster3DCryoW.Hit3DBuilderAlg.OutputHistograms: false
+
+icarus_stage1_producers.cluster3DCryoE.MakeSpacePointsOnly: true
+icarus_stage1_producers.cluster3DCryoE.Hit3DBuilderAlg.HitFinderTagVec: ["gaushit1dTPCEW", "gaushit1dTPCEE"]
+#icarus_stage1_producers.cluster3DCryoE.Hit3DBuilderAlg.HitFinderTagVec: ["gaushitTPCEW", "gaushitTPCEE"]
+icarus_stage1_producers.cluster3DCryoE.Hit3DBuilderAlg.PulseHeightFraction: 0. #0.75 #0.25
+icarus_stage1_producers.cluster3DCryoE.Hit3DBuilderAlg.PHLowSelection: 0. #4.0 # 20.
+icarus_stage1_producers.cluster3DCryoE.Hit3DBuilderAlg.MaxHitChiSquare: 1000000.
+icarus_stage1_producers.cluster3DCryoE.Hit3DBuilderAlg.MaxMythicalChiSquare: 30.
+icarus_stage1_producers.cluster3DCryoE.Hit3DBuilderAlg.OutputHistograms: false
 
 ### Definitions for a pandora by cryostat
-icarus_stage1_producers.pandoraGausCryoW.HitFinderModuleLabel:                                   "cluster3DCryoW"
-icarus_stage1_producers.pandoraTrackGausCryoW.PFParticleLabel:                                   "pandoraGausCryoW"
-icarus_stage1_producers.pandoraTrackGausCryoW.UseAllParticles:                                   true
-icarus_stage1_producers.pandoraKalmanTrackGausCryoW.inputCollection:                             "pandoraGausCryoW"
-icarus_stage1_producers.pandoraKalmanTrackGausCryoW.trackInputTag:                               "pandoraTrackGausCryoW"
 
-icarus_stage1_producers.pandoraGausCryoE.HitFinderModuleLabel:                                   "cluster3DCryoE"
-icarus_stage1_producers.pandoraTrackGausCryoE.PFParticleLabel:                                   "pandoraGausCryoE"
-icarus_stage1_producers.pandoraTrackGausCryoE.UseAllParticles:                                   true
-icarus_stage1_producers.pandoraKalmanTrackGausCryoE.inputCollection:                             "pandoraGausCryoE"
-icarus_stage1_producers.pandoraKalmanTrackGausCryoE.trackInputTag:                               "pandoraTrackGausCryoE"
+icarus_stage1_producers.pandoraGausCryoW.HitFinderModuleLabel: "cluster3DCryoW"
+icarus_stage1_producers.pandoraTrackGausCryoW.PFParticleLabel: "pandoraGausCryoW"
+icarus_stage1_producers.pandoraTrackGausCryoW.UseAllParticles: true
+icarus_stage1_producers.pandoraKalmanTrackGausCryoW.inputCollection: "pandoraGausCryoW"
+icarus_stage1_producers.pandoraKalmanTrackGausCryoW.trackInputTag: "pandoraTrackGausCryoW"
 
+icarus_stage1_producers.pandoraGausCryoE.HitFinderModuleLabel: "cluster3DCryoE"
+icarus_stage1_producers.pandoraTrackGausCryoE.PFParticleLabel: "pandoraGausCryoE"
+icarus_stage1_producers.pandoraTrackGausCryoE.UseAllParticles: true
+icarus_stage1_producers.pandoraKalmanTrackGausCryoE.inputCollection: "pandoraGausCryoE"
+icarus_stage1_producers.pandoraKalmanTrackGausCryoE.trackInputTag: "pandoraTrackGausCryoE"
 
-icarus_stage1_producers.caloskimCalorimetryCryoE.TrackModuleLabel:                               "pandoraTrackGausCryoE"
-icarus_stage1_producers.caloskimCalorimetryCryoW.TrackModuleLabel:                               "pandoraTrackGausCryoW"
+### Caloskim stuff
 
+icarus_stage1_producers.caloskimCalorimetryCryoW.TrackModuleLabel: "pandoraTrackGausCryoW"
+icarus_stage1_producers.caloskimCalorimetryCryoE.TrackModuleLabel: "pandoraTrackGausCryoE"
 
-## Switch pandora back to just gaushits?
-#icarus_stage1_producers.pandoraGausCryoW.ConfigFile:                                             "PandoraSettings_Master_ICARUS_RawICARUS.xml"
-#icarus_stage1_producers.pandoraGausCryoE.ConfigFile:                                             "PandoraSettings_Master_ICARUS_RawICARUS.xml"
+### Switch pandora back to just gaushits?
 
-## Definitions for shower finding (both single and by cryostat)
-icarus_stage1_producers.SBNShowerGausCryoW.PFParticleLabel:                                      "pandoraGausCryoW"
-icarus_stage1_producers.SBNShowerGausCryoE.PFParticleLabel:                                      "pandoraGausCryoE"
+#icarus_stage1_producers.pandoraGausCryoW.ConfigFile: "PandoraSettings_Master_ICARUS_RawICARUS.xml"
+#icarus_stage1_producers.pandoraGausCryoE.ConfigFile: "PandoraSettings_Master_ICARUS_RawICARUS.xml"
 
-icarus_stage1_producers.SBNShowerGausCryoW.UseAllParticles:                                      true
+### Definitions for shower finding (both single and by cryostat)
 
-icarus_stage1_producers.SBNShowerGausCryoE.UseAllParticles:                                      true
+icarus_stage1_producers.SBNShowerGausCryoW.PFParticleLabel: "pandoraGausCryoW"
+icarus_stage1_producers.SBNShowerGausCryoW.UseAllParticles: true
 
+icarus_stage1_producers.SBNShowerGausCryoE.PFParticleLabel: "pandoraGausCryoE"
+icarus_stage1_producers.SBNShowerGausCryoE.UseAllParticles: true
 
-icarus_stage1_producers.mcsicarusGausCryoW.inputs.inputLabel:                               "pandoraTrackGausCryoW"
-icarus_stage1_producers.mcsicarusGausCryoE.inputs.inputLabel:                               "pandoraTrackGausCryoE"
-icarus_stage1_producers.mcsubooneGausCryoW.inputs.inputLabel:                               "pandoraTrackGausCryoW"
-icarus_stage1_producers.mcsubooneGausCryoE.inputs.inputLabel:                               "pandoraTrackGausCryoE"
-icarus_stage1_producers.mcsicarusGausCryoWinicut.inputs.inputLabel:                               "pandoraTrackGausCryoW"
-icarus_stage1_producers.mcsicarusGausCryoEinicut.inputs.inputLabel:                               "pandoraTrackGausCryoE"
-icarus_stage1_producers.mcsubooneGausCryoWinicut.inputs.inputLabel:                               "pandoraTrackGausCryoW"
-icarus_stage1_producers.mcsubooneGausCryoEinicut.inputs.inputLabel:                               "pandoraTrackGausCryoE"
-icarus_stage1_producers.mcsicarusGausCryoWfincut.inputs.inputLabel:                               "pandoraTrackGausCryoW"
-icarus_stage1_producers.mcsicarusGausCryoEfincut.inputs.inputLabel:                               "pandoraTrackGausCryoE"
-icarus_stage1_producers.mcsubooneGausCryoWfincut.inputs.inputLabel:                               "pandoraTrackGausCryoW"
-icarus_stage1_producers.mcsubooneGausCryoEfincut.inputs.inputLabel:                               "pandoraTrackGausCryoE"
+### MCS stuff
 
-icarus_stage1_producers.mcsicarusGausCryoW.fitter.cutMode:                               0
-icarus_stage1_producers.mcsicarusGausCryoE.fitter.cutMode:                               0
-icarus_stage1_producers.mcsubooneGausCryoW.fitter.cutMode:                               0
-icarus_stage1_producers.mcsubooneGausCryoE.fitter.cutMode:                               0
-icarus_stage1_producers.mcsicarusGausCryoWinicut.fitter.cutMode:                               2
-icarus_stage1_producers.mcsicarusGausCryoEinicut.fitter.cutMode:                               2
-icarus_stage1_producers.mcsubooneGausCryoWinicut.fitter.cutMode:                               2
-icarus_stage1_producers.mcsubooneGausCryoEinicut.fitter.cutMode:                               2 
-icarus_stage1_producers.mcsicarusGausCryoWfincut.fitter.cutMode:                               1
-icarus_stage1_producers.mcsicarusGausCryoEfincut.fitter.cutMode:                               1
-icarus_stage1_producers.mcsubooneGausCryoWfincut.fitter.cutMode:                               1
-icarus_stage1_producers.mcsubooneGausCryoEfincut.fitter.cutMode:                               1 
+icarus_stage1_producers.mcsubooneGausCryoW.inputs.inputLabel: "pandoraTrackGausCryoW"
+icarus_stage1_producers.mcsubooneGausCryoWF.inputs.inputLabel: "pandoraTrackGausCryoW"
+icarus_stage1_producers.mcsubooneGausCryoWI.inputs.inputLabel: "pandoraTrackGausCryoW"
 
+icarus_stage1_producers.mcsubooneGausCryoE.inputs.inputLabel: "pandoraTrackGausCryoE"
+icarus_stage1_producers.mcsubooneGausCryoEF.inputs.inputLabel: "pandoraTrackGausCryoE"
+icarus_stage1_producers.mcsubooneGausCryoEI.inputs.inputLabel: "pandoraTrackGausCryoE"
 
-icarus_stage1_producers.mcsicarusGausCryoWinicut.fitter.cutLength:                               98.
-icarus_stage1_producers.mcsicarusGausCryoEinicut.fitter.cutLength:                               98.
-icarus_stage1_producers.mcsubooneGausCryoWinicut.fitter.cutLength:                               98.
-icarus_stage1_producers.mcsubooneGausCryoEinicut.fitter.cutLength:                               98.
-icarus_stage1_producers.mcsicarusGausCryoWfincut.fitter.cutLength:                               50.
-icarus_stage1_producers.mcsicarusGausCryoEfincut.fitter.cutLength:                               50.
-icarus_stage1_producers.mcsubooneGausCryoWfincut.fitter.cutLength:                               50.
-icarus_stage1_producers.mcsubooneGausCryoEfincut.fitter.cutLength:                               50.
+icarus_stage1_producers.mcsicarusGausCryoW.inputs.inputLabel: "pandoraTrackGausCryoW"
+icarus_stage1_producers.mcsicarusGausCryoWF3D.inputs.inputLabel: "pandoraTrackGausCryoW"
+icarus_stage1_producers.mcsicarusGausCryoWF2DI1.inputs.inputLabel: "pandoraTrackGausCryoW"
+icarus_stage1_producers.mcsicarusGausCryoWF2DI2.inputs.inputLabel: "pandoraTrackGausCryoW"
+icarus_stage1_producers.mcsicarusGausCryoWF2DC.inputs.inputLabel: "pandoraTrackGausCryoW"
+icarus_stage1_producers.mcsicarusGausCryoWI3D.inputs.inputLabel: "pandoraTrackGausCryoW"
+icarus_stage1_producers.mcsicarusGausCryoWI2DI1.inputs.inputLabel: "pandoraTrackGausCryoW"
+icarus_stage1_producers.mcsicarusGausCryoWI2DI2.inputs.inputLabel: "pandoraTrackGausCryoW"
+icarus_stage1_producers.mcsicarusGausCryoWI2DC.inputs.inputLabel: "pandoraTrackGausCryoW"
 
-icarus_stage1_producers.mcsicarusGausCryoWinicut.fitter.pMin:                               100.
-icarus_stage1_producers.mcsicarusGausCryoEinicut.fitter.pMin:                               100.
-icarus_stage1_producers.mcsicarusGausCryoWfincut.fitter.pMin:                               100.
-icarus_stage1_producers.mcsicarusGausCryoEfincut.fitter.pMin:                               100.
-icarus_stage1_producers.mcsicarusGausCryoWinicut.fitter.pStep:                              100.
-icarus_stage1_producers.mcsicarusGausCryoEinicut.fitter.pStep:                              100.
-icarus_stage1_producers.mcsicarusGausCryoWfincut.fitter.pStep:                              100.
-icarus_stage1_producers.mcsicarusGausCryoEfincut.fitter.pStep:                              100.
+icarus_stage1_producers.mcsicarusGausCryoE.inputs.inputLabel: "pandoraTrackGausCryoE"
+icarus_stage1_producers.mcsicarusGausCryoEF3D.inputs.inputLabel: "pandoraTrackGausCryoE"
+icarus_stage1_producers.mcsicarusGausCryoEF2DI1.inputs.inputLabel: "pandoraTrackGausCryoE"
+icarus_stage1_producers.mcsicarusGausCryoEF2DI2.inputs.inputLabel: "pandoraTrackGausCryoE"
+icarus_stage1_producers.mcsicarusGausCryoEF2DC.inputs.inputLabel: "pandoraTrackGausCryoE"
+icarus_stage1_producers.mcsicarusGausCryoEI3D.inputs.inputLabel: "pandoraTrackGausCryoE"
+icarus_stage1_producers.mcsicarusGausCryoEI2DI1.inputs.inputLabel: "pandoraTrackGausCryoE"
+icarus_stage1_producers.mcsicarusGausCryoEI2DI2.inputs.inputLabel: "pandoraTrackGausCryoE"
+icarus_stage1_producers.mcsicarusGausCryoEI2DC.inputs.inputLabel: "pandoraTrackGausCryoE"
 
-icarus_stage1_producers.mcsicarusGausCryoWinicut.fitter.pMax:                               1500.
-icarus_stage1_producers.mcsicarusGausCryoEinicut.fitter.pMax:                               1500.
-icarus_stage1_producers.mcsicarusGausCryoWfincut.fitter.pMax:                               1500.
-icarus_stage1_producers.mcsicarusGausCryoEfincut.fitter.pMax:                               1500.
+icarus_stage1_producers.mcsicarusGausCryoW.inputs.ThmLabel: "pandoraTrackGausCryoW"
+icarus_stage1_producers.mcsicarusGausCryoWF3D.inputs.ThmLabel: "pandoraTrackGausCryoW"
+icarus_stage1_producers.mcsicarusGausCryoWF2DI1.inputs.ThmLabel: "pandoraTrackGausCryoW"
+icarus_stage1_producers.mcsicarusGausCryoWF2DI2.inputs.ThmLabel: "pandoraTrackGausCryoW"
+icarus_stage1_producers.mcsicarusGausCryoWF2DC.inputs.ThmLabel: "pandoraTrackGausCryoW"
+icarus_stage1_producers.mcsicarusGausCryoWI3D.inputs.ThmLabel: "pandoraTrackGausCryoW"
+icarus_stage1_producers.mcsicarusGausCryoWI2DI1.inputs.ThmLabel: "pandoraTrackGausCryoW"
+icarus_stage1_producers.mcsicarusGausCryoWI2DI2.inputs.ThmLabel: "pandoraTrackGausCryoW"
+icarus_stage1_producers.mcsicarusGausCryoWI2DC.inputs.ThmLabel: "pandoraTrackGausCryoW"
 
-icarus_stage1_producers.mcsicarusGausCryoEfincut.inputs.ThmLabel:                               "pandoraTrackGausCryoE"
-icarus_stage1_producers.mcsicarusGausCryoEinicut.inputs.ThmLabel:                               "pandoraTrackGausCryoE"
-icarus_stage1_producers.mcsicarusGausCryoWfincut.inputs.ThmLabel:                               "pandoraTrackGausCryoW"
-icarus_stage1_producers.mcsicarusGausCryoWinicut.inputs.ThmLabel:                               "pandoraTrackGausCryoW"
+icarus_stage1_producers.mcsicarusGausCryoE.inputs.ThmLabel: "pandoraTrackGausCryoE"
+icarus_stage1_producers.mcsicarusGausCryoEF3D.inputs.ThmLabel: "pandoraTrackGausCryoE"
+icarus_stage1_producers.mcsicarusGausCryoEF2DI1.inputs.ThmLabel: "pandoraTrackGausCryoE"
+icarus_stage1_producers.mcsicarusGausCryoEF2DI2.inputs.ThmLabel: "pandoraTrackGausCryoE"
+icarus_stage1_producers.mcsicarusGausCryoEF2DC.inputs.ThmLabel: "pandoraTrackGausCryoE"
+icarus_stage1_producers.mcsicarusGausCryoEI3D.inputs.ThmLabel: "pandoraTrackGausCryoE"
+icarus_stage1_producers.mcsicarusGausCryoEI2DI1.inputs.ThmLabel: "pandoraTrackGausCryoE"
+icarus_stage1_producers.mcsicarusGausCryoEI2DI2.inputs.ThmLabel: "pandoraTrackGausCryoE"
+icarus_stage1_producers.mcsicarusGausCryoEI2DC.inputs.ThmLabel: "pandoraTrackGausCryoE"
 
-icarus_stage1_producers.mcsicarusGausCryoEfincut.inputs.CRTT0Label:                               "CRTT0Tagging"
-icarus_stage1_producers.mcsicarusGausCryoEinicut.inputs.CRTT0Label:                               "CRTT0Tagging"
-icarus_stage1_producers.mcsicarusGausCryoWfincut.inputs.CRTT0Label:                               "CRTT0Tagging"
-icarus_stage1_producers.mcsicarusGausCryoWinicut.inputs.CRTT0Label:                               "CRTT0Tagging"
+icarus_stage1_producers.mcsicarusGausCryoW.inputs.CRTT0Label: "CRTT0Tagging"
+icarus_stage1_producers.mcsicarusGausCryoWF3D.inputs.CRTT0Label: "CRTT0Tagging"
+icarus_stage1_producers.mcsicarusGausCryoWF2DI1.inputs.CRTT0Label: "CRTT0Tagging"
+icarus_stage1_producers.mcsicarusGausCryoWF2DI2.inputs.CRTT0Label: "CRTT0Tagging"
+icarus_stage1_producers.mcsicarusGausCryoWF2DC.inputs.CRTT0Label: "CRTT0Tagging"
+icarus_stage1_producers.mcsicarusGausCryoWI3D.inputs.CRTT0Label: "CRTT0Tagging"
+icarus_stage1_producers.mcsicarusGausCryoWI2DI1.inputs.CRTT0Label: "CRTT0Tagging"
+icarus_stage1_producers.mcsicarusGausCryoWI2DI2.inputs.CRTT0Label: "CRTT0Tagging"
+icarus_stage1_producers.mcsicarusGausCryoWI2DC.inputs.CRTT0Label: "CRTT0Tagging"
 
-icarus_stage1_producers.rangeproducerCryoW.TrackLabel:                               "pandoraTrackGausCryoW"
-icarus_stage1_producers.rangeproducerCryoE.TrackLabel:                               "pandoraTrackGausCryoE"
-icarus_stage1_producers.rangeproducerCryoW.TrackLabel:                               "pandoraTrackGausCryoW"
-icarus_stage1_producers.rangeproducerCryoE.TrackLabel:                               "pandoraTrackGausCryoE"
+icarus_stage1_producers.mcsicarusGausCryoE.inputs.CRTT0Label: "CRTT0Tagging"
+icarus_stage1_producers.mcsicarusGausCryoEF3D.inputs.CRTT0Label: "CRTT0Tagging"
+icarus_stage1_producers.mcsicarusGausCryoEF2DI1.inputs.CRTT0Label: "CRTT0Tagging"
+icarus_stage1_producers.mcsicarusGausCryoEF2DI2.inputs.CRTT0Label: "CRTT0Tagging"
+icarus_stage1_producers.mcsicarusGausCryoEF2DC.inputs.CRTT0Label: "CRTT0Tagging"
+icarus_stage1_producers.mcsicarusGausCryoEI3D.inputs.CRTT0Label: "CRTT0Tagging"
+icarus_stage1_producers.mcsicarusGausCryoEI2DI1.inputs.CRTT0Label: "CRTT0Tagging"
+icarus_stage1_producers.mcsicarusGausCryoEI2DI2.inputs.CRTT0Label: "CRTT0Tagging"
+icarus_stage1_producers.mcsicarusGausCryoEI2DC.inputs.CRTT0Label: "CRTT0Tagging"
+
+### range momentum stuff
+
+icarus_stage1_producers.rangeproducerCryoW.TrackLabel: "pandoraTrackGausCryoW"
+icarus_stage1_producers.rangeproducerCryoE.TrackLabel: "pandoraTrackGausCryoE"
 
 END_PROLOG

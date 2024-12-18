@@ -1,9 +1,8 @@
 BEGIN_PROLOG
-mcsfitproducer_uboone: {
+
+mcsfitproducerU: {
   module_type: MCSFitProducerUBoone
-  inputs: {
-    inputLabel: @nil
-  }
+  inputs: { inputLabel: @nil }
   fitter: {
   	pIdHypothesis: 13
     minNumSegments: 3
@@ -18,36 +17,11 @@ mcsfitproducer_uboone: {
     fiducialVolumeInsets: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0] 
     excludeVolumes: [180.0, 240.0, -9999.0, 9999.0, -9999.0, 9999.0] 
     cutMode: 0
-    cutLength: 0.
-  }
-}
-mcsfitproducer_uboone_inicut: {
+    cutLength: 0. } }
+
+mcsfitproducerUF: {
   module_type: MCSFitProducerUBoone
-  inputs: {
-    inputLabel: @nil
-  }
-  fitter: {
-  	pIdHypothesis: 13
-    minNumSegments: 3
-    segmentLength: 14.0
-    minHitsPerSegment: 2
-    nElossSteps: 10
-    eLossMode: 0
-    pMin: 0.01
-    pMax: 15.0
-    pStep: 0.001
-    angResol: 10.0
-    fiducialVolumeInsets: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0] 
-    excludeVolumes: [180.0, 240.0, -9999.0, 9999.0, -9999.0, 9999.0] 
-    cutMode: 2
-    cutLength: 100.
-  }
-}
-mcsfitproducer_uboone_fincut: {
-  module_type: MCSFitProducerUBoone
-  inputs: {
-    inputLabel: @nil
-  }
+  inputs: { inputLabel: @nil }
   fitter: {
   	pIdHypothesis: 13
     minNumSegments: 3
@@ -62,7 +36,25 @@ mcsfitproducer_uboone_fincut: {
     fiducialVolumeInsets: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0] 
     excludeVolumes: [180.0, 240.0, -9999.0, 9999.0, -9999.0, 9999.0] 
     cutMode: 1
-    cutLength: 50.
-  }
-}
+    cutLength: 50. } }
+
+mcsfitproducerUI: {
+  module_type: MCSFitProducerUBoone
+  inputs: { inputLabel: @nil }
+  fitter: {
+  	pIdHypothesis: 13
+    minNumSegments: 3
+    segmentLength: 14.0
+    minHitsPerSegment: 2
+    nElossSteps: 10
+    eLossMode: 0
+    pMin: 0.01
+    pMax: 15.0
+    pStep: 0.001
+    angResol: 10.0
+    fiducialVolumeInsets: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0] 
+    excludeVolumes: [180.0, 240.0, -9999.0, 9999.0, -9999.0, 9999.0] 
+    cutMode: 2
+    cutLength: 100. } }
+
 END_PROLOG
