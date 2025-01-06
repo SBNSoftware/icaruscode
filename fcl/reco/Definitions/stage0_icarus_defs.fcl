@@ -28,7 +28,7 @@ BEGIN_PROLOG
 icarus_stage0_analyzers:
 {
   spanaE: @local::spana1d_east
-  spanaW: @local::spana1d_east
+  spanaW: @local::spana1d_west
 
   purityinfoana0: { module_type:     "TPCPurityInfoAna"
                     PurityInfoLabel: "purityana0"
