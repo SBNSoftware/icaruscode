@@ -19,8 +19,6 @@ services: {
 physics: {
 
   producers: {
-    @table::icarus_shifting_triggersim.producers
-    
     crtdaq:         @local::icarus_crtsim
      opdaq:         @local::icarus_simpmt
        daq:         @local::icarus_simwire_wirecell
@@ -29,7 +27,7 @@ physics: {
        rns:         { module_type: "RandomNumberSaver" }
   } # producers
 
-  simulate: [ rns, opdaq, @sequence::icarus_shifting_triggersim.path, daq, merge, crtdaq ]
+  simulate: [ rns, opdaq, daq, merge, crtdaq ]
 
   # define the output stream, there could be more than one if using filters
   stream:  [ rootoutput ]
