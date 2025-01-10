@@ -1,13 +1,8 @@
-/////////////////////////////////////////////////////////////////////////////
-/// Class:       CRTT0Tagging
-/// Module Type: producer
-/// File:        CRTT0Tagging_module.cc
-///
-/// Author:         Francesco Poppi
-/// E-mail address: poppi@bo.infn.it 
-/// October 2024
-///
-/////////////////////////////////////////////////////////////////////////////
+/**
+ * @file   icaruscode/CRT/CRTT0Tagging_module.cc
+ * @author Francesco Poppi (poppi@bo.infn.it)
+ * @date   October 2024
+ */
 
 #include "sbnobj/Common/CRT/CRTHit.hh"
 //#include "icaruscode/CRT/CRTUtils/CRTT0MatchAlg.h"
@@ -70,13 +65,11 @@
 #include "TVector3.h"
 #include "TTree.h"
 
-namespace icarus {
-namespace crt {
+namespace icarus::crt {
 
 class CRTT0Tagging;
 
-}  // namespace crt
-}  // namespace icarus
+}  // namespace icarus::crt
 
 using namespace icarus::crt;
 
@@ -128,7 +121,7 @@ private:
   art::ServiceHandle<art::TFileService> tfs;
 
   geo::GeometryCore const* fGeometryService;  ///< pointer to Geometry provider
-  CRTCommonUtils* fCrtUtils; 
+  CRTCommonUtils fCrtUtils; 
   icarus::crt::TopCRTCentersMap fTopCRTCenterMap;
   icarus::crt::TopCrtTransformations fTopCrtTransformations;
   
@@ -171,14 +164,20 @@ icarus::crt::CRTT0Tagging::CRTT0Tagging(fhicl::ParameterSet const& p)
       fSimChannelProducerLabel(p.get< std::string>("SimChannelProducer", {"daq:simpleSC"})),
       fCrtHitModuleLabel(p.get<art::InputTag>("CrtHitModuleLabel", "crthit")),
       fTriggerLabel(p.get<art::InputTag>("TriggerLabel", "daqTrigger")),
-      fTriggerConfigurationLabel(
-          p.get<art::InputTag>("TriggerConfiguration", "triggerconfig")),
+      fTriggerConfigurationLabel(p.get<art::InputTag>("TriggerConfiguration", "triggerconfig")),
       fTPCTrackLabel(p.get< std::vector<art::InputTag> >("TPCTrackLabel",             {""})),
       fPFParticleLabel(p.get< std::vector<art::InputTag> >("PFParticleLabel",             {""})),  
       fHitLabel(p.get< std::vector<art::InputTag> >("HitLabel",             {""})),
       fTRKHMproducer(p.get< art::InputTag   > ("TRKHMproducer", "")),
       fCrtUtils(new CRTCommonUtils()),
-      fMatchingAlg(p.get<fhicl::ParameterSet> ("MatchingAlg"))
+      fMatchingAlg(p.get<fhicl::ParameterSet> ("MatchingAlg")),
+      fGeometryService(lar::providerFrom<geo::Geometry>()),
+      fMinimalTrackLength(p.get<double>("MinimalTrackLength", 40.0)),
+      fMinimumGoodHits(p.get<double>("MinimumGoodHits", 5)),
+      fMaximalCRTDistance(p.get<double>("MaximalCRTDistance", 300.)),
+      fGoodCandidateDistance(p.get<double>("GoodCandidateDistance", 100.)),
+      fMaximumDeltaT(p.get<double>("MaximumDeltaT", 10000.)),
+      fData(p.get<bool>("isData", true))
 {
   
   produces< std::vector<anab::T0>                   >();
@@ -188,26 +187,13 @@ icarus::crt::CRTT0Tagging::CRTT0Tagging(fhicl::ParameterSet const& p)
   //produces< art::Assns<icarus::CRTTPCMatchingInfo, anab::T0>  >();  
   //produces< art::Assns<recob::Track, icarus::CRTTPCMatchingInfo>  >();
   //produces< art::Assns<sbn::crt::CRTHit, icarus::CRTTPCMatchingInfo>  >();
-
-  // Get a pointer to the geometry service provider.
-  fGeometryService = lar::providerFrom<geo::Geometry>();
-  fMinimalTrackLength = p.get<double>("MinimalTrackLength", 40.0);
-  fMinimumGoodHits = p.get<double>("MinimumGoodHits", 5);
-  fMaximalCRTDistance = p.get<double>("MaximalCRTDistance", 300.);
-  fGoodCandidateDistance = p.get<double>("GoodCandidateDistance", 100.);
-  fMaximumDeltaT = p.get<double>("MaximumDeltaT", 10000.);
-  fData = p.get<bool>("isData", true);
-
 }
 
 void icarus::crt::CRTT0Tagging::beginRun(art::Run& r)
 {
-  // we don't know if this is data or not; if not, there will be no trigger config
-  auto const& trigConfHandle = 
-    r.getHandle<icarus::TriggerConfiguration>(fTriggerConfigurationLabel);
-  
-  fTriggerConfiguration
-    = trigConfHandle.isValid()? std::make_optional(*trigConfHandle): std::nullopt;
+  fTriggerConfiguration = (fData && fTriggerConfigurationLabel)
+    ? std::make_optional(r.getProduct<icarus::TriggerConfiguration>(fTriggerConfigurationLabel))
+    : std::nullopt;
 
   fTopCRTCenterMap=icarus::crt::LoadTopCRTCenters();
   fTopCrtTransformations=icarus::crt::LoadTopCrtTransformations();
@@ -317,7 +303,7 @@ void icarus::crt::CRTT0Tagging::produce(art::Event& e)
           if ( ide.trackID != particle.TrackId() ) continue;
 	  	    if ( ide.energyDeposited * 1.0e6 < 50 ) continue; 
           size_t adid = channel.AuxDetID();
-          uint32_t region=fCrtUtils->AuxDetRegionNameToNum(fCrtUtils->GetAuxDetRegion(adid));
+          uint32_t region=fCrtUtils.AuxDetRegionNameToNum(fCrtUtils.GetAuxDetRegion(adid));
           uint32_t modID=channel.AuxDetID();
           float entryT=ide.entryT;
           float exitT=ide.exitT;
@@ -328,7 +314,7 @@ void icarus::crt::CRTT0Tagging::produce(art::Event& e)
             bool modFound=false;
             for(auto const& mactopes : crthit->pesmap){
               for(auto const& chanpe : mactopes.second) {
-                int thisModID =(int)fCrtUtils->MacToAuxDetID(mactopes.first, chanpe.first);
+                int thisModID =(int)fCrtUtils.MacToAuxDetID(mactopes.first, chanpe.first);
                 if(thisModID==(int)modID) modFound=true;
               }
             }
