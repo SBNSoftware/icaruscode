@@ -167,6 +167,18 @@ void HARPS::produce(art::Event& e)
     return;
   }
 
+  // DON'T THINK I ACTUALLY WANT THESE COMMENTS ANY MORE NOW THAT I FIGURED OUT THE ISSUE...
+  //std::cout << "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << std::endl;
+  //std::cout << "~~HARPS~~ We're looking at event " << evtID << std::endl;
+  //std::cout << "~~HARPS~~ And we want PFP(s): East " << fParticleListCryo0[evtID].size() << ", West " << fParticleListCryo1[evtID].size() << std::endl;
+  //if ( fParticleListCryo0.find(evtID) != fParticleListCryo0.end() )
+  //  std::cout << "~~        Cryo0: " << fParticleListCryo0[evtID].size() << " ... "
+  //	      << (fParticleListCryo0[evtID].size() > 0 ? fParticleListCryo0[evtID][0] : 0) << std::endl;
+  //if ( fParticleListCryo1.find(evtID) == fParticleListCryo1.end() )
+  //  std::cout << "~~        Cryo1: " << fParticleListCryo1[evtID].size() << " ... "
+  //	      << (fParticleListCryo1[evtID].size() > 0 ? fParticleListCryo1[evtID][0] : 0) << std::endl;
+  //std::cout << "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << std::endl;
+
   //std::cout << "!!!! --- Got here 1" << std::endl;
 
   // Load in the PFParticles, Tracks, and Hits & the necessary FindManyP's
@@ -591,10 +603,10 @@ void HARPS::produce(art::Event& e)
 
 double HARPS::FindNearestTrajPointRR( const std::map<std::tuple<double,double,double>, double>& trjPtToRR, const double* in_xyz )
 {
-  std::cout << "The hit spacepoint at (" << in_xyz[0] << ", " << in_xyz[1] << ", " << in_xyz[2] << ") ";
+  //std::cout << "The hit spacepoint at (" << in_xyz[0] << ", " << in_xyz[1] << ", " << in_xyz[2] << ") ";
 
   if ( trjPtToRR.empty() ) {
-    std::cout << " ... has no match." << std::endl;
+    //  std::cout << " ... has no match." << std::endl;
     return -5.;
   }
 
