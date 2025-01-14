@@ -67,33 +67,15 @@ art_make_library(
         SOURCE
                 CRTUtils/CRTMatchingUtils.cxx
         LIBRARIES
-                sbnobj::ICARUS_CRT
-                sbnobj::Common_CRT
-                icaruscode_CRTUtils
-                larcorealg::Geometry
-                larcore::Geometry_Geometry_service
-                larsim::Simulation lardataobj::Simulation
-                larsim::MCCheater_BackTrackerService_service
-                larsim::MCCheater_ParticleInventoryService_service
-                lardata::Utilities
-                larevt::Filters
-                lardataobj::RawData
-                lardataobj::RecoBase
-                lardataobj::AnalysisBase
-                lardata::RecoObjects
-                larpandora::LArPandoraInterface
-                larcorealg::Geometry
-                nusimdata::SimulationBase
-                art::Persistency_Common canvas::canvas
-                art::Persistency_Provenance
-                art::Utilities
-                ROOT::Core
-                ROOT::Geom
-                ROOT::XMLIO
-                ROOT::Gdml
-                ROOT::Spectrum
-                ROOT::RooFit
-                ROOT::RooFitCore
+        fhiclcpp::fhiclcpp
+        canvas::canvas
+        lardataobj::RecoBase
+        larcorealg::Geometry
+        lardataalg::DetectorInfo
+        sbnobj::Common_CRT
+        cetlib::cetlib
+        messagefacility::MF_MessageLogger
+        ROOT::Matrix
         )
 
 cet_build_plugin(CRTGeometryHelper art::service

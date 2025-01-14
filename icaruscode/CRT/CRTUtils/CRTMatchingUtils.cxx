@@ -1,11 +1,22 @@
-///////////////////////////////////////////////
-// CRTMatchingUtils.h
-//
-// Functions for CRT matching
-// Francesco Poppi (poppi@bo.infn.it), October 2024
-///////////////////////////////////////////////
+/**
+ * @file   icaruscode/CRT/CRTUtils/CRTMatchingUtils.cxx
+ * @author Francesco Poppi (poppi@bo.infn.it)
+ * @date   January 2025
+ */
 
 #include "icaruscode/CRT/CRTUtils/CRTMatchingUtils.h"
+
+#include <string>
+#include <limits>
+#include <stdexcept>
+#include <sstream>
+#include <fstream>
+#include <cetlib/search_path.h>
+#include "messagefacility/MessageLogger/MessageLogger.h"
+#include "TMatrixD.h"
+#include "TMatrixDEigen.h"
+#include "larcorealg/Geometry/TPCGeo.h"
+#include "larcorealg/Geometry/PlaneGeo.h"
 
 namespace icarus::crt{
 
@@ -14,6 +25,49 @@ namespace icarus::crt{
     {
         TopCRTCentersMap TopCRTCenters;
 
+        //  The follwing numbers have been extracted from the Top CRT modules geometry.
+        //  The numbers are respectively moduleID and X,Y,Z coordinates of the
+        //  module center (X markes the spot in the sketch below).
+        //  The CRT modules are perfect square with 8 bars per side.
+        //  The fixed coordinate (e.g. Y for Top CRT Horizontal) is returned from geometry.
+        //  The transverce coordinate is returned from the average position of P1 and P2
+        //  the average position of P1 and P3.
+        //  The transformed CRT Hits are in cm.
+        //
+        //          ---------------------------------------------------------
+        //          |      |      |      |      |      |      |      |      |       
+        //          |      |      |      |      |      |      |      |      |       
+        //          |      |      |      |      |      |      |      |      |       
+        //          ---------------------------------------------------------
+        //          |      |      |      |      |      |      |      |      |       
+        //          |      |      |      |      |      |      |      |      |       
+        //          |      |      |      |      |      |      |      |      |       
+        //          ---------------------------------------------------------
+        //          |      |      |      |      |      |      |      |      |       
+        //          |      |      |      |      |      |      |      |      |       
+        //          |      |      |      |      |      |      |      |      |       
+        //          ---------------------------------------------------------
+        //          |      |      |      |      |      |      |      |      |       
+        //          |      |      |      |  P1  |  P2  |      |      |      |       
+        //          |      |      |      |      |      |      |      |      |       
+        //          --------------------------- X ---------------------------
+        //          |      |      |      |      |      |      |      |      |       
+        //          |      |      |      |  P3  |      |      |      |      |       
+        //          |      |      |      |      |      |      |      |      |       
+        //          ---------------------------------------------------------
+        //          |      |      |      |      |      |      |      |      |       
+        //          |      |      |      |      |      |      |      |      |       
+        //          |      |      |      |      |      |      |      |      |       
+        //          ---------------------------------------------------------
+        //          |      |      |      |      |      |      |      |      |       
+        //          |      |      |      |      |      |      |      |      |       
+        //          |      |      |      |      |      |      |      |      |       
+        //          ---------------------------------------------------------
+        //          |      |      |      |      |      |      |      |      |       
+        //          |      |      |      |      |      |      |      |      |       
+        //          |      |      |      |      |      |      |      |      |       
+        //          ---------------------------------------------------------
+        //
         TopCRTCenters = {{108, { -460.975, 617.388,-1050.61}},
                         {109, { -460.975,617.388,-866.215}},
                         {110, { -460.975,617.388,-681.825}},
@@ -131,6 +185,7 @@ namespace icarus::crt{
                         {222, { -92.195, 496.038, -1143.4}},
                         {223, { 92.195, 496.038, -1143.4}},
                         {224, { 276.585, 496.038, -1143.4}},
+                        // This module does not exist in reality, but exists in simulation
                         {225, { 0, 0, 0}},
                         {226, { -460.975, 525.038, 1533.608}},
                         {227, { -276.585, 525.038, 1533.608}},
@@ -141,14 +196,14 @@ namespace icarus::crt{
         return TopCRTCenters;
     }
 
-    TransformedCrtHit AffineTransformation(double DX, double DZ,AffineTrans affine)
+    TransformedCRTHit AffineTransformation(double DX, double DZ,AffineTrans affine)
     {
         double CRTX=affine.B1+DZ*affine.A12+DX*affine.A11;
         double CRTZ=affine.B2+DZ*affine.A22+DX*affine.A21;
         return std::make_pair(CRTX, CRTZ);
     }
 
-    TopCrtTransformations LoadTopCrtTransformations()
+    TopCRTTransformations LoadTopCRTTransformations()
     {
         std::string fullFileName;
         cet::search_path searchPath("FW_SEARCH_PATH");
@@ -167,7 +222,7 @@ namespace icarus::crt{
         std::map<int, AffineTrans> Type5Corr;
 
         if (!corrFile.is_open()) {
-            mf::LogError("CRTMatchingUtils_LoadTopCrtTransformation")
+            mf::LogError("CRTMatchingUtils_LoadTopCRTTransformation")
             << "Failed to open Top CRT Correction transformation file: " << fullFileName;
         }
         std::string line;
@@ -199,7 +254,7 @@ namespace icarus::crt{
             Type4Corr.insert({variables.at(0), Type4});
             Type5Corr.insert({variables.at(0), Type5});
         }
-        TopCrtTransformations LoadedTransformations={Type2Corr, Type1Corr, Type0Corr, Type4Corr, Type5Corr, Type3Corr};
+        TopCRTTransformations LoadedTransformations={Type2Corr, Type1Corr, Type0Corr, Type4Corr, Type5Corr, Type3Corr};
         return LoadedTransformations;
     }
 
@@ -218,7 +273,7 @@ namespace icarus::crt{
         return;
     }
 
-    Direction CRTMatchingAlg::PCAfit (std::vector<float> x, std::vector<float> y, std::vector<float> z)
+    Direction CRTMatchingAlg::PCAfit (std::vector<double> const& x, std::vector<double> const& y, std::vector<double> const& z)
     {
         int min=0;
         int max=x.size();
@@ -230,11 +285,11 @@ namespace icarus::crt{
         xavg=xavg/size;
         yavg=yavg/size;
         zavg=zavg/size;
-        float x2=0, y2=0, z2=0, xiy=0, xiz=0, yiz=0;
+        double x2=0, y2=0, z2=0, xiy=0, xiz=0, yiz=0;
         for(int k=min; k<max; k++){
-            float xadj = x[k] - xavg;
-            float yadj = y[k] - yavg;
-            float zadj = z[k] - zavg;
+            double xadj = x[k] - xavg;
+            double yadj = y[k] - yavg;
+            double zadj = z[k] - zavg;
             x2+=xadj*xadj;
             y2+=yadj*yadj;
             z2+=zadj*zadj;
@@ -259,9 +314,9 @@ namespace icarus::crt{
         TMatrixD this_eval = thiscov.GetEigenValues();
         TMatrixD this_evec = thiscov.GetEigenVectors();
         if(this_eval.GetNrows()!=3 || this_eval.GetNcols()!=3 || this_evec.GetNrows()!=3 || this_evec.GetNcols()!=3){ 
-            mf::LogDebug("CRTMatchingUtils_PCA") << "evals/evects wrong size! continuing....";
+            throw std::logic_error("CRTMatchingAlg::PCAfit: evals/evects wrong size!");
         }//end if evals/evects aren't 3x3 matrices as expected
-        int max_eval = -999999; int maxevalpos = -1;
+        double max_eval = std::numeric_limits<double>::lowest(); int maxevalpos = -1;
         for(int k = 0; k < 3; k++){
             if(this_eval[k][k]>max_eval){
                 max_eval = this_eval[k][k];
@@ -273,27 +328,31 @@ namespace icarus::crt{
         return thDirection;
     }
 
-    CrtPlane CRTMatchingAlg::DeterminePlane(sbn::crt::CRTHit CRThit)
+    CRTPlane CRTMatchingAlg::DeterminePlane(sbn::crt::CRTHit const& CRThit)
     {
         int Plane;
         double Pos;
-        if(CRThit.plane==30) {
+        switch (CRThit.plane) {
+          case 30:
             Plane=0;
             Pos=CRThit.y_pos;
-        }
-        else if(CRThit.plane==31 || CRThit.plane== 32 || CRThit.plane==40 || CRThit.plane==41 || CRThit.plane==42 || CRThit.plane==43 || CRThit.plane==44 || CRThit.plane==45) {
+            break;
+          case 31: case 32:
+          case 40: case 41: case 42: case 43: case 44: case 45:
             Plane=1;
             Pos=CRThit.x_pos;
-        }
-        else {
+            break;
+          default:
             Plane=2;
             Pos=CRThit.z_pos;
-        }
+            break;
+        } // switch
         return std::make_pair(Plane, Pos);
     }
     
-    ProjectionPoint CRTMatchingAlg::CalculateProjection(double dirx, double diry, double dirz, double x0, double y0, double z0, double position)
+    ProjectionPoint CRTMatchingAlg::TranslatePointTo(double dirx, double diry, double dirz, double x0, double y0, double z0, double position)
     {
+        if(dirx==0) throw std::invalid_argument("CRTMatchingAlg::TranslatePointTo: dirx is 0");
         double Lambda = (position-x0)/dirx;
         double PosAtY = (Lambda*diry+y0);
         double PosAtZ = (Lambda*dirz+z0);
@@ -308,31 +367,25 @@ namespace icarus::crt{
         double meanX, meanY, meanZ;
 
         switch(plane) {
-            case 0: // Piano a Y
+            case 0: // Fixed Coordinate: Y
                 dirX = dir.diry; dirY = dir.dirx; dirZ = dir.dirz;
                 meanX = dir.meany; meanY = dir.meanx; meanZ = dir.meanz;
                 break;
-            case 1: // Piano a X
+            case 1: // Fixed Coordinate: X
                 dirX = dir.dirx; dirY = dir.diry; dirZ = dir.dirz;
                 meanX = dir.meanx; meanY = dir.meany; meanZ = dir.meanz;
                 break;
-            case 2: // Piano a Z
+            case 2: // Fixed Coordinate: Z
                 dirX = dir.dirz; dirY = dir.diry; dirZ = dir.dirx;
                 meanX = dir.meanz; meanY = dir.meany; meanZ = dir.meanx;
                 break;
             default:
-                throw std::invalid_argument("Error");
+                throw std::invalid_argument("CRTMatchingAlg::CalculateForPlane(): invalid plane");
         }
-        return CRTMatchingAlg::CalculateProjection(static_cast<double>(dirX), 
-                                   static_cast<double>(dirY), 
-                                   static_cast<double>(dirZ), 
-                                   static_cast<double>(meanX), 
-                                   static_cast<double>(meanY), 
-                                   static_cast<double>(meanZ), 
-                                   static_cast<double>(position));
+        return CRTMatchingAlg::TranslatePointTo(dirX, dirY, dirZ, meanX, meanY, meanZ, position);
     }
 
-    CrossPoint CRTMatchingAlg::DetermineProjection(const Direction& dir, CrtPlane plane)
+    CrossPoint CRTMatchingAlg::DetermineProjection(const Direction& dir, CRTPlane plane)
     {
         CrossPoint thisCase = CRTMatchingAlg::CalculateForPlane(dir, plane.first, plane.second);
 
@@ -341,13 +394,13 @@ namespace icarus::crt{
             case 1: return {thisCase.X, thisCase.Y, thisCase.Z}; // Plane at X e.g. Side CRT West, East, Top CRT
             case 2: return {thisCase.Z, thisCase.Y, thisCase.X}; // Plane at Z e.g. Side CRT South, North, Top CRT 
             default:
-                throw std::invalid_argument("Error");
+                throw std::invalid_argument("CRTMatchingAlg::DetermineProjection(): invalid plane");
         }
     }
 
-    TrackBarycenter CRTMatchingAlg::GetTrackBarycenter (std::vector<float> hx, std::vector<float> hy, std::vector<float> hz, std::vector<float> hw)
+    TrackBarycenter CRTMatchingAlg::GetTrackBarycenter (std::vector<double> hx, std::vector<double> hy, std::vector<double> hz, std::vector<double> hw)
     {
-        float average_x_charge=0, average_y_charge=0, average_z_charge=0, total_charge=0;
+        double average_x_charge=0, average_y_charge=0, average_z_charge=0, total_charge=0;
         bool isGood;
         for (unsigned i = 0; i < hz.size(); i++) {
             if(isnan(hz[i])) continue;
@@ -368,34 +421,51 @@ namespace icarus::crt{
         return ThisTrackBary;
     }
 
-    DriftedTrack CRTMatchingAlg::DriftTrack(const std::vector<art::Ptr<recob::Hit>>& trkHits, const std::vector<const recob::TrackHitMeta*>& trkHitMetas, const geo::GeometryCore *GeometryService, detinfo::DetectorPropertiesData const& detProp, double time, const recob::Track& tpcTrack)
+    DriftedTrack CRTMatchingAlg::DriftTrack(const std::vector<art::Ptr<recob::Hit>>& trkHits, const std::vector<const recob::TrackHitMeta*>& trkHitMetas, const geo::GeometryCore *GeometryService, detinfo::DetectorPropertiesData const& detProp, double time, const recob::Track& tpcTrack) const
     {
         int outBound=0;
-        std::vector<float> recX, recY, recZ, recI;
+        int outBound1=0;
+        int count=0;
+        std::vector<double> recX, recY, recZ, recI;
         for(size_t i=0; i<trkHits.size(); i++){
-            bool badhit = (trkHitMetas[i]->Index() == std::numeric_limits<unsigned int>::max()) ||
+            bool badhit = !trkHitMetas[i] || (trkHitMetas[i]->Index() == std::numeric_limits<unsigned int>::max()) ||
                         (!tpcTrack.HasValidPoint(trkHitMetas[i]->Index()));
             if(badhit) continue;
             geo::Point_t loc = tpcTrack.LocationAtPoint(trkHitMetas[i]->Index());
-            if(loc.X()==-999) continue;
+            //if(loc.X()==-999) continue;
             const geo::TPCGeo& tpcGeo = GeometryService->TPC(trkHits[i]->WireID());
             int const cryo = trkHits[i]->WireID().Cryostat;
             int tpc=trkHits[i]->WireID().TPC;
             double vDrift=detProp.DriftVelocity();
+            // recoX: distance of the hit charge from the plane
+            //  * `trkHits[i]->PeakTime()-fTickAtAnode`: TPC ticks from the trigger to when charge gets to plane
+            //  * `time`: t0 [CRT or Flash] (with respect to trigger) in TPC ticks
+            //  * difference is how many ticks passed from the track to when charge gets to plane: drift ticks
             double recoX=(trkHits[i]->PeakTime()-fTickAtAnode-time/fTickPeriod)*fTickPeriod*vDrift;
-            double plane=tpcGeo.FirstPlane().GetCenter().X();
+
+            double plane=tpcGeo.PlanePtr(trkHits[i]->WireID().Plane)->GetCenter().X();
             double cathode=tpcGeo.GetCathodeCenter().X();
-            double X=plane-tpcGeo.DetectDriftDirection()*recoX;
+            double X=plane-tpcGeo.DriftDir().X()*recoX;
             if(cryo==0 && (tpc==0 || tpc==1) && (X>(cathode+fAllowedOffsetCM)||X<(plane-fAllowedOffsetCM))) outBound++;
             else if(cryo==0 && (tpc==2 || tpc==3)&& (X<(cathode-fAllowedOffsetCM)||X>(plane+fAllowedOffsetCM))) outBound++;
             else if(cryo==1 && (tpc==0 || tpc==1)&& (X>(cathode+fAllowedOffsetCM)||X<(plane-fAllowedOffsetCM))) outBound++;
             else if(cryo==1 && (tpc==2 || tpc==3)&& (X<(cathode-fAllowedOffsetCM)||X>(plane+fAllowedOffsetCM))) outBound++;
+
+            double fAllowedRel = 1+fAllowedOffsetCM / tpcGeo.DriftDistance();
+            if(!tpcGeo.ActiveBoundingBox().ContainsX(X, fAllowedRel)) outBound1++;
+
+            if(outBound!=outBound1 && count<=10){
+                std::cout<<"Active Bounding Box MinX "<<tpcGeo.ActiveBoundingBox().MinX()<<" MaxX "<<tpcGeo.ActiveBoundingBox().MaxX()<<std::endl;
+                std::cout<<"OutBound "<<outBound<<" outBound1 "<<outBound1<<" cryo "<<cryo<<" TPC "<<tpc<<" recoX "<<recoX<<" plane "<<plane<<" view "<<trkHits[i]->WireID().Plane<<" X "<<X<<" allowed cm "<<fAllowedOffsetCM<<" allowed % "<<fAllowedRel<<std::endl;
+                count++;
+            }
             recX.push_back(X);
             recY.push_back(loc.Y());
             recZ.push_back(loc.Z());
             recI.push_back(trkHits[i]->Integral());
         }
         DriftedTrack thisDriftedTrack = {recX, recY, recZ, recI, outBound};
+        std::cout<<"--> Outbound cm "<<outBound<<" ; Outbound % "<<outBound1<<std::endl;
         return thisDriftedTrack;
     }
 

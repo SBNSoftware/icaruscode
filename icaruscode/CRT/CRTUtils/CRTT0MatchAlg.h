@@ -1,13 +1,11 @@
 #ifndef CRTT0MATCHALG_H_SEEN
 #define CRTT0MATCHALG_H_SEEN
 
-
-///////////////////////////////////////////////
-// CRTT0MatchAlg.h
-//
-// Functions for CRT t0 matching
-// T Brooks (tbrooks@fnal.gov), November 2018
-///////////////////////////////////////////////
+/**
+ * @file   icaruscode/CRT/CRTUtils/CRTT0MatchAlg.h
+ * @author Francesco Poppi (poppi@bo.infn.it)
+ * @date   January 2025
+ */
 
 // framework
 #include "art/Framework/Principal/Event.h"
@@ -45,18 +43,7 @@
 //#include "icaruscode/Geometry/GeometryWrappers/TPCGeoAlg.h"
 #include "icaruscode/CRT/CRTUtils/TPCGeoUtil.h"
 
-// c++
-#include <iostream>
-#include <stdio.h>
-#include <sstream>
-#include <vector>
-#include <map>
-#include <utility>
-#include <cmath> 
-#include <memory>
-
 // ROOT
-#include <vector>
 #include "TVector3.h"
 #include "TGeoManager.h"
 

@@ -1,67 +1,28 @@
-#ifndef CRTMATCHINGUTILS_H
-#define CRTMATCHINGUTILS_H
+#ifndef ICARUSCODE_CRT_CRTUTILS_CRTMATCHINGUTILS_H
+#define ICARUSCODE_CRT_CRTUTILS_CRTMATCHINGUTILS_H
 
-///////////////////////////////////////////////
-// CRTMatchingUtils.h
-//
-// Functions for CRT matching
-// Francesco Poppi (poppi@bo.infn.it), October 2024
-///////////////////////////////////////////////
+/**
+ * @file   icaruscode/CRT/CRTUtils/CRTMatchingUtils.h
+ * @author Francesco Poppi (poppi@bo.infn.it)
+ * @date   January 2025
+ */
 
-#include <iostream>
-#include <stdio.h>
-#include <sstream>
-#include <fstream> 
-#include <string>
-#include <cetlib/search_path.h>
 #include <vector>
+#include <utility> // std::pair
 #include <map>
-#include <utility>
-#include <cmath> 
-#include <memory>
 
+#include "fhiclcpp/ParameterSet.h"
 #include "canvas/Persistency/Common/Ptr.h" 
-#include "TMatrixD.h"
-#include "TMatrixDEigen.h"
-#include "TGraph2D.h"
-
-// LArSoft includes
-#include "larcore/CoreUtils/ServiceUtil.h"
-#include "larcore/Geometry/Geometry.h"
-#include "larcorealg/Geometry/GeometryCore.h"
-#include "lardata/DetectorInfoServices/DetectorClocksService.h"
-#include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
-#include "lardataobj/RecoBase/PFParticle.h"
-#include "lardataobj/AnalysisBase/T0.h"
-#include "lardataobj/RecoBase/PFParticleMetadata.h"
+// LArSoft headers
 #include "lardataobj/RecoBase/Hit.h"
 #include "lardataobj/RecoBase/Track.h"
 #include "lardataobj/RecoBase/TrackHitMeta.h"
-#include "larsim/MCCheater/BackTracker.h"
-#include "larsim/MCCheater/PhotonBackTracker.h"
-#include "larsim/MCCheater/BackTrackerService.h"
-#include "larsim/MCCheater/PhotonBackTrackerService.h"
-#include "larsim/MCCheater/ParticleInventoryService.h"
-
-// Data product includes
-#include "icaruscode/CRT/CRTUtils/CRTBackTracker.h"
-#include "icaruscode/CRT/CRTUtils/CRTCommonUtils.h"
-#include "icaruscode/Decode/DataProducts/TriggerConfiguration.h"
-#include "larcorealg/CoreUtils/enumerate.h"
-#include "lardataobj/RecoBase/OpFlash.h"
-#include "lardataobj/RecoBase/OpHit.h"
-#include "nusimdata/SimulationBase/MCGeneratorInfo.h"
-#include "nusimdata/SimulationBase/MCParticle.h"
-#include "nusimdata/SimulationBase/MCTruth.h"
+#include "larcorealg/Geometry/GeometryCore.h"
+#include "lardataalg/DetectorInfo/DetectorPropertiesData.h"
+// Data product headers
 #include "sbnobj/Common/CRT/CRTHit.hh"
-#include "sbnobj/Common/CRT/CRTTrack.hh"
 #include "sbnobj/Common/Trigger/ExtraTriggerInfo.h"
 #include "sbnobj/Common/CRT/CRTPMTMatching.hh"
-
-// ROOT
-#include <vector>
-#include "TVector3.h"
-#include "TGeoManager.h"
 
 namespace icarus::crt{
 
@@ -72,22 +33,22 @@ struct CrossPoint
     double Z;
 };
 
-typedef CrossPoint ProjectionPoint;
+using ProjectionPoint = CrossPoint;
 
 struct TrackBarycenter
 {
-    float BarX; // Track Barycenter X coordinate
-    float BarY; // Track Barycenter Y coordinate
-    float BarZ; // Track Barycenter Z coordinate
+    double BarX; // Track Barycenter X coordinate
+    double BarY; // Track Barycenter Y coordinate
+    double BarZ; // Track Barycenter Z coordinate
     bool isGood; // Track Barycenter quality
 };
 
 struct DriftedTrack
 {
-    std::vector<float> spx; // Drifted Track Hit Points X coordinate
-    std::vector<float> spy; // Drifted Track Hit Points Y coordinate
-    std::vector<float> spz; // Drifted Track Hit Points Z coordinate
-    std::vector<float> spi; // Drifted Track Hit Points integral
+    std::vector<double> spx; // Drifted Track Hit Points X coordinate
+    std::vector<double> spy; // Drifted Track Hit Points Y coordinate
+    std::vector<double> spz; // Drifted Track Hit Points Z coordinate
+    std::vector<double> spi; // Drifted Track Hit Points integral
     int outbound; // Number of hit points out of the logical volume of the TPC
     //double drifted_startx; // 
     //double drifted_endx;
@@ -135,11 +96,11 @@ struct AffineTrans
     double N;
 };
 
-typedef int feb_index;
+using FebIndex_t = int;
 
-typedef std::map<feb_index, AffineTrans> TopCRTCorrectionMap;
+using TopCRTCorrectionMap = std::map<FebIndex_t, AffineTrans>;
 
-struct TopCrtTransformations
+struct TopCRTTransformations
 {
     TopCRTCorrectionMap EE;
     TopCRTCorrectionMap EW;
@@ -149,17 +110,25 @@ struct TopCrtTransformations
     TopCRTCorrectionMap WestCC;
 };
 
-typedef std::map<feb_index, ModuleCenter> TopCRTCentersMap;
+using TopCRTCentersMap = std::map<FebIndex_t, ModuleCenter>;
 
-typedef std::pair<int, double> CrtPlane;
+/// CRTPlane corresponds to a pair of:
+/// 1st CRT fixed coordinate plane (e.g. 0 is X coordinate)
+/// 2nd value of the  CRT fixed coordinate plane (e.g. for Top CRT Horizontal this value is ~618 cm.
+using CRTPlane = std::pair<int,double>;
 
-typedef std::pair<double, double> TransformedCrtHit;
+/// The transformed CRT Hits are in cm
+using TransformedCRTHit = std::pair<double, double>;
 
+/// This function loads the Top CRT modules centers.
 TopCRTCentersMap LoadTopCRTCenters();
 
-TransformedCrtHit AffineTransformation(double DX, double DZ,AffineTrans affine);
+/// This function performs the affine transformation of the CRT hit points.
+/// The AffineTransformation requires input variables in cm.
+TransformedCRTHit AffineTransformation(double DX, double DZ, AffineTrans affine);
 
-TopCrtTransformations LoadTopCrtTransformations();
+/// This functions loads the Affine Transformation TXT files.
+TopCRTTransformations LoadTopCRTTransformations();
 
 
 class CRTMatchingAlg {
@@ -169,20 +138,37 @@ public:
     CRTMatchingAlg();
 
     void reconfigure(const fhicl::ParameterSet& pset);
+    
+    /// This function runs the PCA analysis on three vectors of spatial coordinates x,y,z and return the principal eigenvector.
+    /// The entries in the i-th index of X, Y and Z vectors must correspond to the same point.
+    static Direction PCAfit (std::vector<double> const& x, std::vector<double> const& y, std::vector<double> const& z);
+    
+    /// This function determines the coordinate in which the CRT module is constant.
+    /// e.g. in the Top CRT Horizontal Plane, the Y coordinate is fixed, in the Side CRT West Walll, the X Coordinate is fixed, ...
+    CRTPlane DeterminePlane(sbn::crt::CRTHit const& CRThit);
 
-    Direction PCAfit (std::vector<float> x, std::vector<float> y, std::vector<float> z);
+    /// This function evaluates the Track Crossing point onto the CRT plane considered.
+    /// dir1, dir2, dir3 are the three cosine directors of a track.
+    /// p1, p2 and p3 are the coordinates of the CRT hit position.
+    static ProjectionPoint TranslatePointTo(double dir1, double dir2, double dir3, double p1, double p2, double p3, double position);
+    //static ProjectionPoint CalculateProjection(double dir1, double dir2, double dir3, double p1, double p2, double p3, double position);
 
-    CrtPlane DeterminePlane(sbn::crt::CRTHit CRThit);
-
-    ProjectionPoint CalculateProjection(double, double, double, double, double, double, double);
-
+    /// This function runs the CalculateProjection function, after deciding the director cosine order expected from
+    /// the CalculateProjection function, assuming the evaluated CRTPlane (fixed coordinate and value of the coordinate).
     CrossPoint CalculateForPlane(const Direction& dir, int plane, double position);
 
-    CrossPoint DetermineProjection(const Direction& dir, CrtPlane plane);
+    /// This function returns the "correct" predicted crossing point given the cosine directors of the track fitted with PCA
+    /// and a CRTPlane (fixed coordinate and value of the coordinate).
+    CrossPoint DetermineProjection(const Direction& dir, CRTPlane plane);
 
-    TrackBarycenter GetTrackBarycenter(std::vector<float> hx, std::vector<float> hy, std::vector<float> hz, std::vector<float> hw);
+    /// This function evaluates the TrackBarycenter with weighted mean. hx, hy, hz and hw are vectors with the x, y z coordinates
+    /// and w is the weight (e.g. one could use integral or peak amplitude or more...).
+    /// The entries in the i-th index of hx, hy, hz and hw vectors must correspond to the same point.
+    TrackBarycenter GetTrackBarycenter(std::vector<double> hx, std::vector<double> hy, std::vector<double> hz, std::vector<double> hw);
 
-    DriftedTrack DriftTrack(const std::vector<art::Ptr<recob::Hit>>& trkHits, const std::vector<const recob::TrackHitMeta*>& trkHitMetas, const geo::GeometryCore *GeometryService, detinfo::DetectorPropertiesData const& detProp, double time, const recob::Track& tpcTrack);
+    /// Function which drifts the track x coordinates assuming a time (in the trigger reference system).
+    /// The function also returns the number of hit points which would be outside of the physical boundaries of the TPCs at the considered time.
+    DriftedTrack DriftTrack(const std::vector<art::Ptr<recob::Hit>>& trkHits, const std::vector<const recob::TrackHitMeta*>& trkHitMetas, const geo::GeometryCore *GeometryService, detinfo::DetectorPropertiesData const& detProp, double time, const recob::Track& tpcTrack) const;
 
 private:
 
