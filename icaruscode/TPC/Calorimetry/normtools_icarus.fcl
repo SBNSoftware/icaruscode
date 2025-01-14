@@ -53,8 +53,8 @@ tpcgain_local: {
 
 yznorm_sql: {
   tool_type: NormalizeYZSQL
-  DBFileName: tpc_yz_correction_data
-  DBTag: @local::ICARUS_Calibration_GlobalTags.tpc_yz_correction_data
+  DBFileName: tpc_yz_correction_allplanes_data
+  DBTag: @local::ICARUS_Calibration_GlobalTags.tpc_yz_correction_allplanes_data
   Verbose: false
 }
 
