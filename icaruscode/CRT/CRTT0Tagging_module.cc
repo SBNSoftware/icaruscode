@@ -15,6 +15,7 @@
 #include "art/Framework/Core/EDProducer.h"
 #include "art/Framework/Core/ModuleMacros.h"
 #include "canvas/Persistency/Common/FindManyP.h"
+#include "canvas/Persistency/Common/FindOne.h"
 #include "art/Framework/Principal/Handle.h"
 #include "art/Framework/Principal/Event.h" 
 #include "canvas/Persistency/Common/Ptr.h" 
@@ -42,6 +43,7 @@
 #include "larcorealg/Geometry/GeometryCore.h"
 #include "larcorealg/Geometry/PlaneGeo.h"
 #include "larcorealg/Geometry/WireGeo.h"
+#include "larcorealg/CoreUtils/zip.h"
 #include "lardataobj/AnalysisBase/T0.h"
 #include "lardataobj/RecoBase/Hit.h"
 #include "lardataobj/RecoBase/Track.h"
@@ -91,6 +93,7 @@ public:
   CRTT0Tagging& operator=(CRTT0Tagging&&) = delete;
 
   // Required functions.
+  bool hasModID(std::uint32_t modID, sbn::crt::CRTHit const& crthit);
   //void beginRun(art::Run& r) override;
   void beginJob() override;
   void produce(art::Event& e) override;
@@ -114,7 +117,7 @@ private:
   std::vector<art::InputTag> fTPCTrackLabel; ///< labels for source of tracks
   std::vector<art::InputTag> fPFParticleLabel; ///< labels for source of PFParticle
   std::vector<art::InputTag> fHitLabel; ///< labels for source of hits
-  art::InputTag fTRKHMproducer; ///< labels for hit metadata
+  std::vector<art::InputTag> fTRKHMLabel; ///< labels for hit metadata
   
   art::ServiceHandle<art::TFileService> tfs;
 
@@ -128,10 +131,10 @@ private:
   double fGoodCandidateDistance;
   double fMaximumDeltaT;
   bool fData;
+  bool fSkipTruth;
 
   icarus::crt::TopCRTCentersMap fTopCRTCenterMap;
   icarus::crt::TopCRTTransformations fTopCRTTransformations;
-
 
   TTree* fTree;
   int fEvent;        ///< number of the event being processed
@@ -164,7 +167,7 @@ icarus::crt::CRTT0Tagging::CRTT0Tagging(fhicl::ParameterSet const& p)
       fTPCTrackLabel(p.get< std::vector<art::InputTag> >("TPCTrackLabel",             {""})),
       fPFParticleLabel(p.get< std::vector<art::InputTag> >("PFParticleLabel",             {""})),  
       fHitLabel(p.get< std::vector<art::InputTag> >("HitLabel",             {""})),
-      fTRKHMproducer(p.get< art::InputTag   > ("TRKHMproducer", "")),
+      fTRKHMLabel(p.get< std::vector<art::InputTag> > ("TRKHMLabel", {""})),
       fMatchingAlg(p.get<fhicl::ParameterSet> ("MatchingAlg")),
       fGeometryService(lar::providerFrom<geo::Geometry>()),
       fMinimalTrackLength(p.get<double>("MinimalTrackLength", 40.0)),
@@ -172,7 +175,8 @@ icarus::crt::CRTT0Tagging::CRTT0Tagging(fhicl::ParameterSet const& p)
       fMaximalCRTDistance(p.get<double>("MaximalCRTDistance", 300.)),
       fGoodCandidateDistance(p.get<double>("GoodCandidateDistance", 100.)),
       fMaximumDeltaT(p.get<double>("MaximumDeltaT", 10000.)),
-      fData(p.get<bool>("isData", true))
+      fData(p.get<bool>("isData", true)),
+      fSkipTruth(p.get<bool>("skipTruth", false))
 {
   
   produces< std::vector<anab::T0>                   >();
@@ -182,6 +186,38 @@ icarus::crt::CRTT0Tagging::CRTT0Tagging(fhicl::ParameterSet const& p)
   //produces< art::Assns<icarus::CRTTPCMatchingInfo, anab::T0>  >();  
   //produces< art::Assns<recob::Track, icarus::CRTTPCMatchingInfo>  >();
   //produces< art::Assns<sbn::crt::CRTHit, icarus::CRTTPCMatchingInfo>  >();
+
+  if (fTPCTrackLabel.size() != fPFParticleLabel.size()) {
+    throw art::Exception{ art::errors::Configuration }
+      << fTPCTrackLabel.size() << " TPC track data products configured (`TPCTrackLabel`), should have been "
+      << fPFParticleLabel.size();
+  }
+  if (fHitLabel.size() != fPFParticleLabel.size()) {
+    throw art::Exception{ art::errors::Configuration }
+      << fHitLabel.size() << " TPC hit data products configured (`HitLabel`), should have been "
+      << fPFParticleLabel.size();
+  }
+
+  if (fTRKHMLabel.size() > fPFParticleLabel.size()) {
+    throw art::Exception{ art::errors::Configuration }
+      << fTRKHMLabel.size() << " track-hit metadata data products configured (`TRKHMproducer`), should have been "
+      << fPFParticleLabel.size();
+  }
+  fTRKHMLabel.resize(fPFParticleLabel.size()); // extend with empty labels
+  // replace empty defaults with the actual input tag value, assumed the same as tracks
+  for (std::size_t i = 0; i < fTRKHMLabel.size(); ++i)
+    if (fTRKHMLabel[i].empty()) fTRKHMLabel[i] = fTPCTrackLabel[i];
+
+}
+
+bool icarus::crt::CRTT0Tagging::hasModID(std::uint32_t modID, sbn::crt::CRTHit const& crthit){
+  for(auto const& mactopes: crthit.pesmap){
+    for(auto const& chanpe: mactopes.second){
+      int thisModID=(int)fCrtUtils.MacToAuxDetID(mactopes.first, chanpe.first);
+      if(thisModID==(int)modID) return true;
+    }
+  }
+  return false;
 }
 
 //void icarus::crt::CRTT0Tagging::beginRun(art::Run& r)
@@ -237,7 +273,22 @@ void icarus::crt::CRTT0Tagging::produce(art::Event& e)
   art::ValidHandle<std::vector<CRTHit>> crthits = e.getValidHandle<std::vector<CRTHit>>(fCrtHitModuleLabel);
   art::fill_ptr_vector(CRTHitList, crthits);
 
+  // If it is not data is MC.
+  // Retrieving MC truth information.
+  // Three maps (particleMap, crtParticleMap and isNuMap) are filled.
+  // -> particleMap maps truth level informations for all the MC particles. The key is the Geant4 TrackID
+  // -> crtParticleMap maps the CRTHits at truth level. The key is a pair of reconstructed CRT Hit module and time.
+  // The object of the map is a vector of Geant4 Track IDs of the particles that generated that hit.
+  // -> isNuMap maps the reconstructed tracks. The key is the Track ID and the object is a boolean True/False if
+  // the Track was a neutrino related interaction or not.
   if(!fData){
+    if(fSkipTruth){
+      mf::LogInfo("CRTT0Tagging") <<"This is MC, but MC truth is not considered!";
+    } else{
+      mf::LogInfo("CRTT0Tagging") <<"This is MC, MC truth is considered!";
+    }   
+  }
+  if(!fData && !fSkipTruth){
     art::ServiceHandle<cheat::ParticleInventoryService> partInventory;
 
     art::Handle< std::vector<sim::SimChannel>> simChannelHandle;
@@ -258,8 +309,8 @@ void icarus::crt::CRTT0Tagging::produce(art::Event& e)
     }
 
     if (!e.getByLabel(fSimulationProducerLabel, particleHandle)) {
-	    // If we have no MCParticles at all in an event, then we're in
-	    // big trouble. Throw an exception.
+	    // If we have no MCParticles at all in an event, but we are requiring
+      // to have MC truth information, throw exception.
 	    throw cet::exception("CRTT0Tagging") 
 	      << " No simb::MCParticle objects in this event - "
 	      << " Line " << __LINE__ << " in file " << __FILE__ << std::endl;
@@ -274,7 +325,6 @@ void icarus::crt::CRTT0Tagging::produce(art::Event& e)
     }
     //if((*genHandle).size()>1) 
     //      throw cet::exception("CRTT0Tagging") << "gen stage MCParticle vector has more than 1 entry!" << '\n';
-
     for ( auto const& particle : (*particleHandle) ){
       // Add the address of the MCParticle to the map, with the
       // track ID as the key.
@@ -299,101 +349,82 @@ void icarus::crt::CRTT0Tagging::produce(art::Event& e)
           for(auto const& crthit : CRTHitList){
             if(crthit->plane!=(int)region) continue;
             if(abs(aveT-crthit->ts1_ns)>200) continue;
-            bool modFound=false;
-            for(auto const& mactopes : crthit->pesmap){
-              for(auto const& chanpe : mactopes.second) {
-                int thisModID =(int)fCrtUtils.MacToAuxDetID(mactopes.first, chanpe.first);
-                if(thisModID==(int)modID) modFound=true;
-              }
-            }
+            bool modFound=hasModID(modID, *crthit);
             if(!modFound)continue;
-            std::pair<int,double> thisMatch=std::make_pair((int)crthit->feb_id[0],crthit->ts1_ns);
-            if (crtParticleMap.find(thisMatch) != crtParticleMap.end()){
-              crtParticleMap[thisMatch].push_back(particle.TrackId());
-            } else {
-              crtParticleMap.insert(std::pair<std::pair<int,double>,std::vector<int>>(thisMatch, std::vector<int>()));
-              crtParticleMap[thisMatch].push_back(particle.TrackId());
-            }
-          }
-        }
-      }
-    }
-
-  }
-
-  for(const auto& PFPLabel : fPFParticleLabel) {
-    auto it = &PFPLabel - fPFParticleLabel.data();
+            std::pair<int,double> thisMatch = std::make_pair((int)crthit->feb_id[0],crthit->ts1_ns);
+            crtParticleMap[thisMatch].push_back(particle.TrackId());
+          } // CRT Hits loop
+        } // Energy deposits loop
+      } // CRT sim channels loop
+    } // MC particles loop
+  } // End MC Only
+  for(const auto& [ PFPLabel, TPCTrackLabel, HitLabel, TRKHMLabel ]: util::zip(fPFParticleLabel, fTPCTrackLabel, fHitLabel, fTRKHMLabel)){
     std::vector<art::Ptr<recob::PFParticle>> PFParticleList;
     art::ValidHandle<std::vector<recob::PFParticle>> pfparticles = e.getValidHandle<std::vector<recob::PFParticle>>(PFPLabel);
     art::fill_ptr_vector(PFParticleList, pfparticles);
 
     // Pandora MetaData
-    art::FindManyP<anab::T0> fmt0pandora(pfparticles, e, PFPLabel);
-    art::FindManyP<larpandoraobj::PFParticleMetadata> PFPMetaDataAssoc(pfparticles, e, PFPLabel);
+    art::FindOne<anab::T0> fmt0pandora(pfparticles, e, PFPLabel);
+    art::FindOne<larpandoraobj::PFParticleMetadata> PFPMetaDataAssoc(pfparticles, e, PFPLabel);
 
     // Tracks
-    art::ValidHandle<std::vector<recob::Track>> tracks = e.getValidHandle<std::vector<recob::Track>>(fTPCTrackLabel[it]);
+    art::ValidHandle<std::vector<recob::Track>> tracks = e.getValidHandle<std::vector<recob::Track>>(TPCTrackLabel);
 
     // Track - associated data
-    art::FindManyP<recob::Track> fmTracks(PFParticleList, e, fTPCTrackLabel[it]);
+    art::FindManyP<recob::Track> fmTracks(PFParticleList, e, TPCTrackLabel);
 
     // Collect all hits
-    art::ValidHandle<std::vector<recob::Hit>> allhit_handle = e.getValidHandle<std::vector<recob::Hit>>(fHitLabel[it]);
+    art::ValidHandle<std::vector<recob::Hit>> allhit_handle = e.getValidHandle<std::vector<recob::Hit>>(HitLabel);
     std::vector<art::Ptr<recob::Hit>> allHits;
     art::fill_ptr_vector(allHits, allhit_handle);
 
     std::map<int, std::vector<std::pair<geo::WireID, const sim::IDE*>>> id_to_ide_map;
     std::map<int, std::vector<art::Ptr<recob::Hit>>> id_to_truehit_map;
-
-    if(simchannels.size() && !fData){
+    if(!simchannels.empty() && !fData){
       art::ServiceHandle<cheat::BackTrackerService> btServ;
+      // ID (TrackID) refers to the reconstructed TrackID, it is not the Geant4 ID.
       id_to_ide_map = RecoUtils::PrepSimChannels(simchannels, *fGeometryService);
-      id_to_truehit_map = RecoUtils::PrepTrueHits(allHits, clockData, *btServ.get());
+      id_to_truehit_map = RecoUtils::buildTrackIDtoHitsMap(allHits, clockData, *btServ.get());
     }
-    
     // Start looping on the particles
-    for (art::Ptr<recob::PFParticle> p_pfp: PFParticleList) {
+    for (art::Ptr<recob::PFParticle> const& p_pfp: PFParticleList) {
       const std::vector<art::Ptr<recob::Track>> thisTrack = fmTracks.at(p_pfp.key());
       if (thisTrack.size() != 1) continue;    
       art::Ptr<recob::Track> trkPtr = thisTrack.at(0);
       const recob::Track &track = *trkPtr;
-      art::InputTag thm_label = fTRKHMproducer.empty() ? fTPCTrackLabel[it] : fTRKHMproducer;
+      if(track.Length()<fMinimalTrackLength) continue;
+      art::InputTag thm_label = TRKHMLabel;
       art::FindManyP<recob::Hit, recob::TrackHitMeta> fmtrkHits(tracks, e, thm_label);
       std::vector<art::Ptr<recob::Hit>> emptyHitVector;
       const std::vector<art::Ptr<recob::Hit>> &trkHits  = fmtrkHits.isValid() ? fmtrkHits.at(trkPtr.key()) : emptyHitVector;
       std::vector<const recob::TrackHitMeta*> emptyTHMVector;
       const std::vector<const recob::TrackHitMeta*> &trkHitMetas = fmtrkHits.isValid() ? fmtrkHits.data(trkPtr.key()) : emptyTHMVector;
-      
-      if(track.Length()<fMinimalTrackLength) continue;
-
       int trueTrackId=-9;
       if(!fData) trueTrackId= abs(RecoUtils::TrueParticleIDFromTotalRecoHits(clockData, trkHits, false));
-      
       // T0
-      float t0 = std::numeric_limits<float>::signaling_NaN();
-      auto t0s = fmt0pandora.at(p_pfp.key());
-      if (!t0s.empty()){  
-        t0 = t0s[0]->Time();   //Get T0  
-	    }
+      double t0 = std::numeric_limits<float>::signaling_NaN();
+      if( auto const& t0ref = fmt0pandora.at(p_pfp.key())) t0 = t0ref.ref().Time();
+
       int goodHits=0;
       int countE=0, countW=0;
       
       // These counters are used to determine if track is CC-E, EE, EW, CC-W, WE, WW
-      // depending on the track type, the Top CRT uses the appropriate position corretions
-
+      // depending on the track type, the Top CRT uses the appropriate position corrections
       std::vector<double> hx, hy, hz, ht;
-      for(size_t i=0; i<trkHits.size(); i++){
-        bool badhit = (trkHitMetas[i]->Index() == std::numeric_limits<unsigned int>::max()) ||
-                    (!track.HasValidPoint(trkHitMetas[i]->Index()));
-        geo::Point_t loc = track.LocationAtPoint(trkHitMetas[i]->Index());
-        if(loc.X()==-999) continue;
-        if(badhit) continue;        
+      for(auto const& [trkHit, trkHitMeta]: util::zip(trkHits, trkHitMetas)){
+        bool badhit = (trkHitMeta->Index() == std::numeric_limits<unsigned int>::max()) ||
+                    (!track.HasValidPoint(trkHitMeta->Index()));
+        if(badhit) continue;
+        geo::Point_t loc = track.LocationAtPoint(trkHitMeta->Index());
         hx.push_back(loc.X()); hy.push_back(loc.Y()); hz.push_back(loc.Z());
-        ht.push_back(trkHits[i]->PeakTime());
+        ht.push_back(trkHit->PeakTime());
         goodHits++;
-        if(trkHits[i]->WireID().TPC==0 || trkHits[i]->WireID().TPC==1) countE++;
+        if(trkHit->WireID().TPC==0 || trkHit->WireID().TPC==1) countE++;
         else countW++;
-
+      }
+      if(goodHits<fMinimumGoodHits) {
+        mf::LogDebug("CRTT0Tagging:")<<"Track does not have the minimal requirements of good hits: "<<goodHits;
+        continue;
       }
       int trackType=-1;
       int const cryo = trkHits[0]->WireID().Cryostat;
@@ -403,7 +434,6 @@ void icarus::crt::CRTT0Tagging::produce(art::Event& e)
       else if(countW!=0 && countE!=0 && cryo==1) trackType=3; //CCWest
       else if(countW!=0 && countE==0 && cryo==1) trackType=5; //West-West
       else if(countW==0 && countE!=0 && cryo==1) trackType=4; //West-East     
-
       icarus::crt::TopCRTCorrectionMap TopCRTCorrection;
       if(trackType==0) TopCRTCorrection=fTopCRTTransformations.EastCC;
       else if(trackType==1) TopCRTCorrection=fTopCRTTransformations.EE;
@@ -412,13 +442,6 @@ void icarus::crt::CRTT0Tagging::produce(art::Event& e)
       else if(trackType==4) TopCRTCorrection=fTopCRTTransformations.WE;
       else if(trackType==5) TopCRTCorrection=fTopCRTTransformations.WW;
       
-      icarus::crt::Direction trackPCADir={-5,-5,-5,0,0,0};
-
-      if(goodHits<fMinimumGoodHits) {
-        mf::LogDebug("CRTT0Tagging:")<<"Track does not have the minimal requirements of good hits: "<<goodHits;
-        continue;
-      }
-      trackPCADir=fMatchingAlg.PCAfit(hx, hy, hz);
       std::vector<icarus::crt::CandCRT> crtCands;
       for(art::Ptr<CRTHit> p_crthit: CRTHitList){
         const CRTHit &crtHit = *p_crthit;
@@ -428,7 +451,8 @@ void icarus::crt::CRTT0Tagging::produce(art::Event& e)
         }
         icarus::crt::DriftedTrack thisDriftedTrack = fMatchingAlg.DriftTrack(trkHits, trkHitMetas, fGeometryService, detProp, crtTime, track);    
         if(thisDriftedTrack.outbound>0) continue;
-        icarus::crt::Direction driftedTrackDir=fMatchingAlg.PCAfit(thisDriftedTrack.spx, thisDriftedTrack.spy, thisDriftedTrack.spz);
+        icarus::crt::PCAResults driftedPCAResults=fMatchingAlg.PCAfit(thisDriftedTrack.spx, thisDriftedTrack.spy, thisDriftedTrack.spz);
+        icarus::crt::TranslationVector translVector = {driftedPCAResults.eigenVector1, driftedPCAResults.mean};
         int crtSys=-1;
         if(crtHit.plane<=34) crtSys=0;
         else if (crtHit.plane==50) crtSys=2;
@@ -441,7 +465,8 @@ void icarus::crt::CRTT0Tagging::produce(art::Event& e)
         double crtDistance=std::numeric_limits<float>::signaling_NaN();
 
         icarus::crt::CRTPlane thisCRTPlane = fMatchingAlg.DeterminePlane(crtHit);
-        icarus::crt::CrossPoint crossPoint = fMatchingAlg.DetermineProjection(driftedTrackDir, thisCRTPlane);
+        icarus::crt::CrossingPoint crossPoint = fMatchingAlg.DetermineProjection(translVector, thisCRTPlane);
+
         double crtX=crtHit.x_pos;
         double crtY=crtHit.y_pos;
         double crtZ=crtHit.z_pos;
@@ -471,21 +496,21 @@ void icarus::crt::CRTT0Tagging::produce(art::Event& e)
         }
 
         if(thisCRTPlane.first==0){
-          deltaX=crtX-crossPoint.X;
+          deltaX=crtX-crossPoint.X();
           deltaY=0;
-          deltaZ=crtZ-crossPoint.Z;
+          deltaZ=crtZ-crossPoint.Z();
         } else if(thisCRTPlane.first==1){
           deltaX=0;
-          deltaY=crtY-crossPoint.Y;
-          deltaZ=crtZ-crossPoint.Z;
+          deltaY=crtY-crossPoint.Y();
+          deltaZ=crtZ-crossPoint.Z();
         } else if(thisCRTPlane.first==2){
-          deltaX=crtX-crossPoint.X;
-          deltaY=crtY-crossPoint.Y;          
+          deltaX=crtX-crossPoint.X();
+          deltaY=crtY-crossPoint.Y();          
           deltaZ=0;
         }
         crtDistance=sqrt(pow(deltaX,2)+pow(deltaZ,2)+pow(deltaY,2));
         if(crtDistance>fMaximalCRTDistance) continue;
-        icarus::crt::CandCRT thisCrtCand={crtHit,p_crthit, thisCRTPlane.first, crtDistance, deltaX, deltaY, deltaZ, crossPoint.X, crossPoint.Y, crossPoint.Z};
+        icarus::crt::CandCRT thisCrtCand={crtHit,p_crthit, thisCRTPlane.first, crtDistance, deltaX, deltaY, deltaZ, crossPoint};
         crtCands.push_back(thisCrtCand);
       } // End of CRT Hit loop
       if(crtCands.empty()) {
@@ -503,7 +528,7 @@ void icarus::crt::CRTT0Tagging::produce(art::Event& e)
         else matchedSys=1;
         if(matchedSys==2) continue; // lets discard Bottom CRT Hits for the moment
         bool trueMatch=false;
-        if(!fData){
+        if(!fData && !fSkipTruth){
           std::vector<int> crtTracks, crtPdgs;
           std::pair<int,double> thisMatch=std::make_pair((int)bestCrtCand.CRThit.feb_id[0], bestCrtCand.CRThit.ts1_ns);
           if(crtParticleMap.find(thisMatch) != crtParticleMap.end()){
@@ -531,9 +556,9 @@ void icarus::crt::CRTT0Tagging::produce(art::Event& e)
         fCrtX=bestCrtCand.CRThit.x_pos;
         fCrtY=bestCrtCand.CRThit.y_pos;
         fCrtZ=bestCrtCand.CRThit.z_pos;
-        fCrossPointX=bestCrtCand.crossX;
-        fCrossPointY=bestCrtCand.crossY;
-        fCrossPointZ=bestCrtCand.crossZ;    
+        fCrossPointX=bestCrtCand.crossPoint.X();
+        fCrossPointY=bestCrtCand.crossPoint.Y();
+        fCrossPointZ=bestCrtCand.crossPoint.Z();    
         fTrueMatch=trueMatch;
         fTree->Fill();
         mf::LogInfo("CRTT0Tagging")
@@ -542,13 +567,12 @@ void icarus::crt::CRTT0Tagging::produce(art::Event& e)
         t0col->push_back(anab::T0(bestCrtCand.CRThit.ts1_ns, track.ID(), matchedSys, bestCrtCand.CRThit.plane,bestCrtCand.distance));
         util::CreateAssn(*this, e, *t0col, trkPtr, *trackAssn);
         util::CreateAssn(*this, e, *t0col, bestCrtCand.ptrCRThit, *t0CrtHitAssn);
-        icarus::CRTTPCMatchingInfo matchInfo = {bestCrtCand.distance, matchedSys, bestCrtCand.CRThit.plane, bestCrtCand.CRThit.ts1_ns, bestCrtCand.deltaX, bestCrtCand.deltaY, bestCrtCand.deltaZ, bestCrtCand.crossX, bestCrtCand.crossY, bestCrtCand.crossZ, bestCrtCand.plane};        
+        icarus::CRTTPCMatchingInfo matchInfo = {bestCrtCand.distance, matchedSys, bestCrtCand.CRThit.plane, bestCrtCand.CRThit.ts1_ns, bestCrtCand.deltaX, bestCrtCand.deltaY, bestCrtCand.deltaZ, bestCrtCand.crossPoint.X(), bestCrtCand.crossPoint.Y(), bestCrtCand.crossPoint.Z(), bestCrtCand.plane};        
         matchInfoCol->push_back(matchInfo);
         //util::CreateAssn(*this, e, *t0col, *matchInfoCol, *t0matchInfoAssn);
         // util::CreateAssn(*this, e, *matchInfoCol, trkPtr, *trackMatchInfoAssn);
         // util::CreateAssn(*this, e, *matchInfoCol, bestCrtCand.ptrCRThit, *matchInfoCrtHitAssn);
       }
-	 
 	  } // End of Track Loop
 	  
 	} // End of Cryo Loop

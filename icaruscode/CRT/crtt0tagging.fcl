@@ -10,8 +10,8 @@ standard_crtt0tagging:
    MaximalCRTDistance:     300.    # Maximal distance between CRT Hit Candidate and Track Projection
    GoodCandidateDistance:  100.    # 96 cm maximizes EfficiencyXPurity (both > 92%) 
    MaximumDeltaT:          10000.     # Maximal Time difference between a T0 tagged track and CRT Hit time for the combination to be considered acceptable. [ns]
-  
    isData:                 true    # Data
+   skipTruth:              false   # skipTruth
 
    module_type:         "CRTT0Tagging"
    CrtHitModuleLabel:  "crthit"
@@ -19,6 +19,7 @@ standard_crtt0tagging:
    TriggerConfiguration: "triggerconfig" 
    TPCTrackLabel:       ["pandoraTrackGausCryoE", "pandoraTrackGausCryoW"]     # Track producer module label
    PFParticleLabel: 	   ["pandoraGausCryoE", "pandoraGausCryoW"] # PFParticle producer module label
+   TRKHMLabel:  ["pandoraTrackGausCryoE", "pandoraTrackGausCryoW"]     # TrackHit Metadata producer module label
    HitLabel:   ["cluster3DCryoE" , "cluster3DCryoW"]
    MatchingAlg: @local::standard_crtmatchingalg
 }
@@ -30,9 +31,9 @@ standard_crtt0taggingmc:
    MinimumGoodHits:        5       # Minimum number of good hits to perform the fit
    MaximalCRTDistance:     300.    # Maximal distance between CRT Hit Candidate and Track Projection
    GoodCandidateDistance:  100.    # 96 cm maximizes EfficiencyXPurity (both > 92%) 
-   MaximumDeltaT:          10000.     # Maximal Time difference between a T0 tagged track and CRT Hit time for the combination to be considered acceptable. [ns]
-  
-   isData:                 false  #MC
+   MaximumDeltaT:          10000.     # Maximal Time difference between a T0 tagged track and CRT Hit time for the combination to be considered acceptable. [ns]  
+   isData:                 false   # MC
+   skipTruth:              false   # skipTruth
 
    module_type:         "CRTT0Tagging"
    CrtHitModuleLabel:  "crthit"
@@ -40,6 +41,7 @@ standard_crtt0taggingmc:
    TriggerConfiguration: "triggerconfig" 
    TPCTrackLabel:       ["pandoraTrackGausCryoE", "pandoraTrackGausCryoW"]     # Track producer module label
    PFParticleLabel: 	   ["pandoraGausCryoE", "pandoraGausCryoW"] # PFParticle producer module label
+   TRKHMLabel:  ["pandoraTrackGausCryoE", "pandoraTrackGausCryoW"]     # TrackHit Metadata producer module label
    HitLabel:   ["cluster3DCryoE" , "cluster3DCryoW"]
    MatchingAlg: @local::standard_crtmatchingalg
    SimulationLabel: "largeant"

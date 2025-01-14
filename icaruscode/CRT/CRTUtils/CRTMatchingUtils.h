@@ -26,15 +26,6 @@
 
 namespace icarus::crt{
 
-struct CrossPoint
-{
-    double X;
-    double Y;
-    double Z;
-};
-
-using ProjectionPoint = CrossPoint;
-
 struct TrackBarycenter
 {
     double BarX; // Track Barycenter X coordinate
@@ -54,15 +45,22 @@ struct DriftedTrack
     //double drifted_endx;
 };
 
-struct Direction
-{
-    double dirx; // Direction of the Track: X 
-    double diry; // Direction of the Track: Y 
-    double dirz; // Direction of the Track: Z 
-    double meanx; // Mean Point of the Track: X 
-    double meany; // Mean Point of the Track: Y 
-    double meanz; // Mean Point of the Track: Z
+struct TranslationVector{
+    geo::Vector_t dir;
+    geo::Point_t mean;
 };
+
+struct PCAResults{
+    geo::Vector_t eigenVector1; // First EigenVector
+    geo::Vector_t eigenVector2; // Second EigenVector
+    geo::Vector_t eigenVector3; // Third EigenVector
+    double eigenValue1; // First EigenValue
+    double eigenValue2; // Second EigenValue
+    double eigenValue3; // Third EigenValue
+    geo::Point_t mean; // Mean X,Y,Z coordinates
+};
+
+using CrossingPoint = geo::Point_t;
 
 struct CandCRT{
     sbn::crt::CRTHit CRThit;
@@ -72,9 +70,7 @@ struct CandCRT{
     double deltaX;
     double deltaY;
     double deltaZ;
-    double crossX;
-    double crossY;
-    double crossZ;
+    CrossingPoint crossPoint;
 };
 
 struct ModuleCenter
@@ -141,26 +137,28 @@ public:
     
     /// This function runs the PCA analysis on three vectors of spatial coordinates x,y,z and return the principal eigenvector.
     /// The entries in the i-th index of X, Y and Z vectors must correspond to the same point.
-    static Direction PCAfit (std::vector<double> const& x, std::vector<double> const& y, std::vector<double> const& z);
+    //static Direction PCAfit (std::vector<double> const& x, std::vector<double> const& y, std::vector<double> const& z);
+    static PCAResults PCAfit (std::vector<double> const& x, std::vector<double> const& y, std::vector<double> const& z);
     
     /// This function determines the coordinate in which the CRT module is constant.
+    /// 0 for fixed Y, 1 for fixed X, 2 for fixed Z,
     /// e.g. in the Top CRT Horizontal Plane, the Y coordinate is fixed, in the Side CRT West Walll, the X Coordinate is fixed, ...
     CRTPlane DeterminePlane(sbn::crt::CRTHit const& CRThit);
 
     /// This function evaluates the Track Crossing point onto the CRT plane considered.
-    /// dir1, dir2, dir3 are the three cosine directors of a track.
-    /// p1, p2 and p3 are the coordinates of the CRT hit position.
-    static ProjectionPoint TranslatePointTo(double dir1, double dir2, double dir3, double p1, double p2, double p3, double position);
-    //static ProjectionPoint CalculateProjection(double dir1, double dir2, double dir3, double p1, double p2, double p3, double position);
+    /// dir is the track direction in the CRTWall reference system.
+    /// mean is the mean value of the track in the CRTWall reference system.
+    static CrossingPoint TranslatePointTo(geo::Vector_t dir, geo::Point_t mean, CRTPlane CRTWall);
 
-    /// This function runs the CalculateProjection function, after deciding the director cosine order expected from
-    /// the CalculateProjection function, assuming the evaluated CRTPlane (fixed coordinate and value of the coordinate).
-    CrossPoint CalculateForPlane(const Direction& dir, int plane, double position);
+    /// This function rotate the translation vector (direction and mean position) from the TPC reference system, to the CRTWall one.
+    TranslationVector RotateToLocalCRTPlane(const TranslationVector& transl, CRTPlane CRTWall);
+
+    /// This function rotate the CrossingPoint from the CRTWall reference system, to the TPC one.
+    CrossingPoint RotateFromLocalCRTPlane(CrossingPoint crossPointCRT, CRTPlane CRTWall);
 
     /// This function returns the "correct" predicted crossing point given the cosine directors of the track fitted with PCA
     /// and a CRTPlane (fixed coordinate and value of the coordinate).
-    CrossPoint DetermineProjection(const Direction& dir, CRTPlane plane);
-
+    CrossingPoint DetermineProjection(const TranslationVector& dir, CRTPlane CRTWall);
     /// This function evaluates the TrackBarycenter with weighted mean. hx, hy, hz and hw are vectors with the x, y z coordinates
     /// and w is the weight (e.g. one could use integral or peak amplitude or more...).
     /// The entries in the i-th index of hx, hy, hz and hw vectors must correspond to the same point.
@@ -175,7 +173,6 @@ private:
     double fTickPeriod;
     double fTickAtAnode;
     double fAllowedOffsetCM;
-
 };
 
 }

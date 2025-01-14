@@ -16,12 +16,13 @@ standard_crtmatchingalg:
                                     # of 10 us * 0.157 cm/us = 1.57 cm.
                                     # As this is phrased, one could think of this as the two variables are related, that is not necessarily
                                     # the case, but is still a good guess.
-    isData:                   true  # IsData
-
+    isData:                 true    # IsData
+    
     CrtHitModuleLabel:  "crthit"
     TriggerLabel:  "daqTrigger" 
     TriggerConfiguration: "triggerconfig" 
     TPCTrackLabel:       ["pandoraTrackGausCryoE", "pandoraTrackGausCryoW"]     # Track producer module label
+    TRKHMLabel:  ["pandoraTrackGausCryoE", "pandoraTrackGausCryoW"]     # TrackHit Metadata producer module label
     PFParticleLabel: 	   ["pandoraGausCryoE", "pandoraGausCryoW"] # PFParticle producer module label
     HitLabel:   ["cluster3DCryoE" , "cluster3DCryoW"]
 
@@ -35,6 +36,7 @@ icarus_crtt0tagging:
     TriggerLabel:  "daqTrigger" 
     TriggerConfiguration: "triggerconfig" 
     TPCTrackLabel:       ["pandoraTrackGausCryoE", "pandoraTrackGausCryoW"]     # Track producer module label
+    TRKHMLabel:  ["pandoraTrackGausCryoE", "pandoraTrackGausCryoW"]     # TrackHit Metadata producer module label
     PFParticleLabel: 	   ["pandoraGausCryoE", "pandoraGausCryoW"] # PFParticle producer module label
     HitLabel:   ["cluster3DCryoE" , "cluster3DCryoW"]
     MatchingAlg:    @local::standard_crtmatchingalg

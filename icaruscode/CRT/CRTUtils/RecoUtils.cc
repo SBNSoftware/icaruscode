@@ -44,10 +44,10 @@ std::map<int, std::vector<std::pair<geo::WireID, const sim::IDE*>>> RecoUtils::P
   return ret;
 }
 
-std::map<int, std::vector<art::Ptr<recob::Hit>>> RecoUtils::PrepTrueHits(const std::vector<art::Ptr<recob::Hit>> &allHits, 
+std::map<int, std::vector<art::Ptr<recob::Hit>>> RecoUtils::buildTrackIDtoHitsMap(const std::vector<art::Ptr<recob::Hit>> &allHits, 
   const detinfo::DetectorClocksData &clockData, const cheat::BackTrackerService &backtracker) {
   std::map<int, std::vector<art::Ptr<recob::Hit>>> ret;
-  for (const art::Ptr<recob::Hit> h: allHits) {
+  for (const art::Ptr<recob::Hit>& h: allHits) {
     for (int ID: backtracker.HitToTrackIds(clockData, *h)) {
       ret[abs(ID)].push_back(h);
     }

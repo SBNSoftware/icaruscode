@@ -14,7 +14,9 @@
 #include <cetlib/search_path.h>
 #include "messagefacility/MessageLogger/MessageLogger.h"
 #include "TMatrixD.h"
+#include "TMatrixDSym.h"
 #include "TMatrixDEigen.h"
+#include "TMatrixDSymEigen.h"
 #include "larcorealg/Geometry/TPCGeo.h"
 #include "larcorealg/Geometry/PlaneGeo.h"
 
@@ -273,7 +275,7 @@ namespace icarus::crt{
         return;
     }
 
-    Direction CRTMatchingAlg::PCAfit (std::vector<double> const& x, std::vector<double> const& y, std::vector<double> const& z)
+    PCAResults CRTMatchingAlg::PCAfit (std::vector<double> const& x, std::vector<double> const& y, std::vector<double> const& z)
     {
         int min=0;
         int max=x.size();
@@ -282,50 +284,35 @@ namespace icarus::crt{
         for(int k=min; k<max; k++) {
             xavg+=x[k]; yavg+=y[k]; zavg+=z[k];
         }
-        xavg=xavg/size;
-        yavg=yavg/size;
-        zavg=zavg/size;
+        xavg=xavg/size; yavg=yavg/size; zavg=zavg/size;
         double x2=0, y2=0, z2=0, xiy=0, xiz=0, yiz=0;
         for(int k=min; k<max; k++){
             double xadj = x[k] - xavg;
             double yadj = y[k] - yavg;
             double zadj = z[k] - zavg;
-            x2+=xadj*xadj;
-            y2+=yadj*yadj;
-            z2+=zadj*zadj;
-            xiy+=xadj*yadj;
-            xiz+=xadj*zadj;
-            yiz+= yadj*zadj;
+            x2+=xadj*xadj; y2+=yadj*yadj; z2+=zadj*zadj;
+            xiy+=xadj*yadj; xiz+=xadj*zadj; yiz+= yadj*zadj;
         }//end loop calculating covariance matrix elements
-        x2=x2/size;
-        y2=y2/size;
-        z2=z2/size; 
-        xiy=xiy/size;
-        xiz=xiz/size;
-        yiz=yiz/size;
-
+        x2=x2/size; y2=y2/size; z2=z2/size; 
+        xiy=xiy/size; xiz=xiz/size; yiz=yiz/size;
         //Now covariance elements are ready, make covariance matrix and do PCA analysis
-        TMatrixD covmat(3,3);
-        covmat[0][0] = x2; covmat[1][1]=y2; covmat[2][2]=z2;
-        covmat[0][1] = xiy; covmat[1][0] = xiy;
-        covmat[0][2] = xiz; covmat[2][0] = xiz;
-        covmat[2][1] = yiz; covmat[1][2] = yiz;
-        TMatrixDEigen thiscov(covmat);
-        TMatrixD this_eval = thiscov.GetEigenValues();
+        TMatrixDSym covmat(3);
+        covmat(0, 0) = x2; covmat(1, 1) = y2; covmat(2, 2) = z2;
+        covmat(0, 1) = xiy; covmat(1, 0) = xiy;
+        covmat(0, 2) = xiz; covmat(2, 0) = xiz;
+        covmat(1, 2) = yiz; covmat(2, 1) = yiz;
+        TMatrixDSymEigen thiscov(covmat);
+        TVectorD this_eval = thiscov.GetEigenValues();
         TMatrixD this_evec = thiscov.GetEigenVectors();
-        if(this_eval.GetNrows()!=3 || this_eval.GetNcols()!=3 || this_evec.GetNrows()!=3 || this_evec.GetNcols()!=3){ 
-            throw std::logic_error("CRTMatchingAlg::PCAfit: evals/evects wrong size!");
-        }//end if evals/evects aren't 3x3 matrices as expected
-        double max_eval = std::numeric_limits<double>::lowest(); int maxevalpos = -1;
-        for(int k = 0; k < 3; k++){
-            if(this_eval[k][k]>max_eval){
-                max_eval = this_eval[k][k];
-                maxevalpos = k;
-            }//end if(this_eval[k][k]>max_eval)
-        }//end loop looking for best eval
 
-        Direction thDirection= {this_evec[0][maxevalpos] , this_evec[1][maxevalpos], this_evec[2][maxevalpos], xavg, yavg, zavg};
-        return thDirection;
+        if(this_eval.NonZeros()!=3) throw std::logic_error("CRTMatchingAlg::PCAfit: evals/evects wrong size!");
+        geo::Point_t mean = {xavg, yavg, zavg};        
+        geo::Vector_t first = {this_evec[0][0], this_evec[1][0], this_evec[2][0]};
+        geo::Vector_t second = {this_evec[0][1], this_evec[1][1], this_evec[2][1]};
+        geo::Vector_t third = {this_evec[0][2], this_evec[1][2], this_evec[2][2]};
+
+        PCAResults thPCAResult = {first, second, third, this_eval[0], this_eval[1], this_eval[2], mean};
+        return thPCAResult;
     }
 
     CRTPlane CRTMatchingAlg::DeterminePlane(sbn::crt::CRTHit const& CRThit)
@@ -349,53 +336,50 @@ namespace icarus::crt{
         } // switch
         return std::make_pair(Plane, Pos);
     }
-    
-    ProjectionPoint CRTMatchingAlg::TranslatePointTo(double dirx, double diry, double dirz, double x0, double y0, double z0, double position)
-    {
-        if(dirx==0) throw std::invalid_argument("CRTMatchingAlg::TranslatePointTo: dirx is 0");
-        double Lambda = (position-x0)/dirx;
-        double PosAtY = (Lambda*diry+y0);
-        double PosAtZ = (Lambda*dirz+z0);
 
-        CrossPoint CrossingPoint = {position, PosAtY, PosAtZ};
-        return CrossingPoint;
+    CrossingPoint CRTMatchingAlg::TranslatePointTo(geo::Vector_t dirVector, geo::Point_t meanPos, CRTPlane CRTwall){
+        
+        if(dirVector.X()==0) throw std::invalid_argument("CRTMatchingAlg::TranslatePointTo: Cosine Director is null");
+        return meanPos + dirVector * (CRTwall.second - meanPos.X()) / dirVector.X();
     }
 
-    CrossPoint CRTMatchingAlg::CalculateForPlane(const Direction& dir, int plane, double position)
-    {
-        double dirX, dirY, dirZ;
-        double meanX, meanY, meanZ;
+    TranslationVector CRTMatchingAlg::RotateToLocalCRTPlane(const TranslationVector& transl, CRTPlane CRTwall){
+        geo::Vector_t rotatedDir;
+        geo::Point_t rotatedMean;
 
-        switch(plane) {
+        switch(CRTwall.first) {
             case 0: // Fixed Coordinate: Y
-                dirX = dir.diry; dirY = dir.dirx; dirZ = dir.dirz;
-                meanX = dir.meany; meanY = dir.meanx; meanZ = dir.meanz;
+                rotatedDir={transl.dir.Y(), transl.dir.X(), transl.dir.Z()};
+                rotatedMean={transl.mean.Y(), transl.mean.X(), transl.mean.Z()};
                 break;
             case 1: // Fixed Coordinate: X
-                dirX = dir.dirx; dirY = dir.diry; dirZ = dir.dirz;
-                meanX = dir.meanx; meanY = dir.meany; meanZ = dir.meanz;
+                rotatedDir={transl.dir.X(), transl.dir.Y(), transl.dir.Z()};
+                rotatedMean={transl.mean.X(), transl.mean.Y(), transl.mean.Z()};
                 break;
             case 2: // Fixed Coordinate: Z
-                dirX = dir.dirz; dirY = dir.diry; dirZ = dir.dirx;
-                meanX = dir.meanz; meanY = dir.meany; meanZ = dir.meanx;
+                rotatedDir={transl.dir.Z(), transl.dir.Y(), transl.dir.X()};
+                rotatedMean={transl.mean.Z(), transl.mean.Y(), transl.mean.X()};
                 break;
             default:
-                throw std::invalid_argument("CRTMatchingAlg::CalculateForPlane(): invalid plane");
+                throw std::invalid_argument("CRTMatchingAlg::RotateToLocalCRTPlane(): invalid plane");
         }
-        return CRTMatchingAlg::TranslatePointTo(dirX, dirY, dirZ, meanX, meanY, meanZ, position);
+        return {rotatedDir, rotatedMean};
     }
 
-    CrossPoint CRTMatchingAlg::DetermineProjection(const Direction& dir, CRTPlane plane)
-    {
-        CrossPoint thisCase = CRTMatchingAlg::CalculateForPlane(dir, plane.first, plane.second);
-
-        switch(plane.first) {
-            case 0: return {thisCase.Y, thisCase.X, thisCase.Z}; // Plane at Y e.g. Top CRT Horizontal Plane
-            case 1: return {thisCase.X, thisCase.Y, thisCase.Z}; // Plane at X e.g. Side CRT West, East, Top CRT
-            case 2: return {thisCase.Z, thisCase.Y, thisCase.X}; // Plane at Z e.g. Side CRT South, North, Top CRT 
+    CrossingPoint CRTMatchingAlg::RotateFromLocalCRTPlane(CrossingPoint crossPointCRT, CRTPlane CRTWall){
+        switch(CRTWall.first) {
+            case 0: return {crossPointCRT.Y(), crossPointCRT.X(), crossPointCRT.Z()}; // Plane at Y e.g. Top CRT Horizontal Plane
+            case 1: return {crossPointCRT.X(), crossPointCRT.Y(), crossPointCRT.Z()}; // Plane at X e.g. Side CRT West, East, Top CRT
+            case 2: return {crossPointCRT.Z(), crossPointCRT.Y(), crossPointCRT.X()}; // Plane at Z e.g. Side CRT South, North, Top CRT 
             default:
-                throw std::invalid_argument("CRTMatchingAlg::DetermineProjection(): invalid plane");
+                throw std::invalid_argument("CRTMatchingAlg::RotateFromLocalCRTPlane(): invalid plane");
         }
+    }
+
+    CrossingPoint CRTMatchingAlg::DetermineProjection(const TranslationVector& dir, CRTPlane CRTWall){
+        TranslationVector directionPlaneCoordinate = CRTMatchingAlg::RotateToLocalCRTPlane(dir, CRTWall);
+        CrossingPoint crossingPointPlaneCoordinate = CRTMatchingAlg::TranslatePointTo(directionPlaneCoordinate.dir, directionPlaneCoordinate.mean, CRTWall);
+        return CRTMatchingAlg::RotateFromLocalCRTPlane(crossingPointPlaneCoordinate, CRTWall);
     }
 
     TrackBarycenter CRTMatchingAlg::GetTrackBarycenter (std::vector<double> hx, std::vector<double> hy, std::vector<double> hz, std::vector<double> hw)
@@ -455,8 +439,8 @@ namespace icarus::crt{
             if(!tpcGeo.ActiveBoundingBox().ContainsX(X, fAllowedRel)) outBound1++;
 
             if(outBound!=outBound1 && count<=10){
-                std::cout<<"Active Bounding Box MinX "<<tpcGeo.ActiveBoundingBox().MinX()<<" MaxX "<<tpcGeo.ActiveBoundingBox().MaxX()<<std::endl;
-                std::cout<<"OutBound "<<outBound<<" outBound1 "<<outBound1<<" cryo "<<cryo<<" TPC "<<tpc<<" recoX "<<recoX<<" plane "<<plane<<" view "<<trkHits[i]->WireID().Plane<<" X "<<X<<" allowed cm "<<fAllowedOffsetCM<<" allowed % "<<fAllowedRel<<std::endl;
+                //std::cout<<"Active Bounding Box MinX "<<tpcGeo.ActiveBoundingBox().MinX()<<" MaxX "<<tpcGeo.ActiveBoundingBox().MaxX()<<std::endl;
+                //std::cout<<"OutBound "<<outBound<<" outBound1 "<<outBound1<<" cryo "<<cryo<<" TPC "<<tpc<<" recoX "<<recoX<<" plane "<<plane<<" view "<<trkHits[i]->WireID().Plane<<" X "<<X<<" allowed cm "<<fAllowedOffsetCM<<" allowed % "<<fAllowedRel<<std::endl;
                 count++;
             }
             recX.push_back(X);
@@ -465,8 +449,7 @@ namespace icarus::crt{
             recI.push_back(trkHits[i]->Integral());
         }
         DriftedTrack thisDriftedTrack = {recX, recY, recZ, recI, outBound};
-        std::cout<<"--> Outbound cm "<<outBound<<" ; Outbound % "<<outBound1<<std::endl;
+        //std::cout<<"--> Outbound cm "<<outBound<<" ; Outbound % "<<outBound1<<std::endl;
         return thisDriftedTrack;
     }
-
 }
