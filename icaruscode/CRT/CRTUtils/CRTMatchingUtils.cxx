@@ -21,245 +21,7 @@
 #include "larcorealg/Geometry/PlaneGeo.h"
 
 namespace icarus::crt{
-
-
-    TopCRTCentersMap LoadTopCRTCenters()
-    {
-        TopCRTCentersMap TopCRTCenters;
-
-        //  The follwing numbers have been extracted from the Top CRT modules geometry.
-        //  The numbers are respectively moduleID and X,Y,Z coordinates of the
-        //  module center (X markes the spot in the sketch below).
-        //  The CRT modules are perfect square with 8 bars per side.
-        //  The fixed coordinate (e.g. Y for Top CRT Horizontal) is returned from geometry.
-        //  The transverce coordinate is returned from the average position of P1 and P2
-        //  the average position of P1 and P3.
-        //  The transformed CRT Hits are in cm.
-        //
-        //          ---------------------------------------------------------
-        //          |      |      |      |      |      |      |      |      |       
-        //          |      |      |      |      |      |      |      |      |       
-        //          |      |      |      |      |      |      |      |      |       
-        //          ---------------------------------------------------------
-        //          |      |      |      |      |      |      |      |      |       
-        //          |      |      |      |      |      |      |      |      |       
-        //          |      |      |      |      |      |      |      |      |       
-        //          ---------------------------------------------------------
-        //          |      |      |      |      |      |      |      |      |       
-        //          |      |      |      |      |      |      |      |      |       
-        //          |      |      |      |      |      |      |      |      |       
-        //          ---------------------------------------------------------
-        //          |      |      |      |      |      |      |      |      |       
-        //          |      |      |      |  P1  |  P2  |      |      |      |       
-        //          |      |      |      |      |      |      |      |      |       
-        //          --------------------------- X ---------------------------
-        //          |      |      |      |      |      |      |      |      |       
-        //          |      |      |      |  P3  |      |      |      |      |       
-        //          |      |      |      |      |      |      |      |      |       
-        //          ---------------------------------------------------------
-        //          |      |      |      |      |      |      |      |      |       
-        //          |      |      |      |      |      |      |      |      |       
-        //          |      |      |      |      |      |      |      |      |       
-        //          ---------------------------------------------------------
-        //          |      |      |      |      |      |      |      |      |       
-        //          |      |      |      |      |      |      |      |      |       
-        //          |      |      |      |      |      |      |      |      |       
-        //          ---------------------------------------------------------
-        //          |      |      |      |      |      |      |      |      |       
-        //          |      |      |      |      |      |      |      |      |       
-        //          |      |      |      |      |      |      |      |      |       
-        //          ---------------------------------------------------------
-        //
-        TopCRTCenters = {{108, { -460.975, 617.388,-1050.61}},
-                        {109, { -460.975,617.388,-866.215}},
-                        {110, { -460.975,617.388,-681.825}},
-                        {111, { -460.975,617.388,-497.435}},
-                        {112, { -460.975,617.388,-313.045}},
-                        {113, { -460.975,617.388,-128.655}},
-                        {114, { -460.975,617.388,55.735}},
-                        {115, { -460.975,617.388,240.125}},
-                        {116, { -460.975,617.388,424.515}},
-                        {117, { -460.975,617.388,608.905}},
-                        {118, { -460.975,617.388,793.295}},
-                        {119, { -460.975,617.388,977.685}},
-                        {120, { -460.975,617.388,1162.07}},
-                        {121, { -460.975,617.388,1346.46}},
-                        {122, { -276.585,617.388,-1050.61}},
-                        {123, { -276.585,617.388,-866.215}},
-                        {124, { -276.585,617.388,-681.825}},
-                        {125, { -276.585,617.388,-497.435}},
-                        {126, { -276.585,617.388,-313.045}},
-                        {127, { -276.585,617.388,-128.655}},
-                        {128, { -276.585,617.388, 55.735}},
-                        {129, { -276.585,617.388, 240.125}},
-                        {130, { -276.585,617.388, 424.515}},
-                        {131, { -276.585,617.388, 608.905}},
-                        {132, { -276.585,617.388, 793.295}},
-                        {133, { -276.585,617.388, 977.685}},
-                        {134, { -276.585,617.388, 1162.07}},
-                        {135, { -276.585,617.388, 1346.46}},
-                        {136, { -92.195 ,617.388,-1050.61}},
-                        {137, { -92.195 ,617.388,-866.215}},
-                        {138, { -92.195 ,617.388,-681.825}},
-                        {139, { -92.195 ,617.388,-497.435}},
-                        {140, { -92.195 ,617.388,-313.045}},
-                        {141, { -92.195 ,617.388,-128.655}},
-                        {142, { -92.195 ,617.388, 55.735}},
-                        {143, { -92.195 ,617.388, 240.125}},
-                        {144, { -92.195 ,617.388, 424.515}},
-                        {145, { -92.195 ,617.388, 608.905}},
-                        {146, { -92.195 ,617.388, 793.295}},
-                        {147, { -92.195 ,617.388, 977.685}},
-                        {148, { -92.195 ,617.388, 1162.07}},
-                        {149, { -92.195 ,617.388, 1346.46}},
-                        {150, { 92.195 , 617.388, -1050.61}},
-                        {151, { 92.195 , 617.388, -866.215}},
-                        {152, { 92.195 , 617.388, -681.825}},
-                        {153, { 92.195 , 617.388, -497.435}},
-                        {154, { 92.195 , 617.388, -313.045}},
-                        {155, { 92.195 , 617.388, -128.655}},
-                        {156, { 92.195 ,617.388, 55.735}},
-                        {157, { 92.195 ,617.388, 240.125}},
-                        {158, { 92.195 ,617.388, 424.515}},
-                        {159, { 92.195 ,617.388, 608.905}},
-                        {160, { 92.195 ,617.388, 793.295}},
-                        {161, { 92.195 ,617.388, 977.685}},
-                        {162, { 92.195 ,617.388, 1162.07}},
-                        {163, { 92.195 ,617.388, 1346.46}},
-                        {164, { 276.585,617.388, -1050.61}},
-                        {165, { 276.585,617.388, -866.215}},
-                        {166, { 276.585,617.388, -681.825}},
-                        {167, { 276.585,617.388, -497.435}},
-                        {168, { 276.585,617.388, -313.045}},
-                        {169, { 276.585,617.388, -128.655}},
-                        {170, { 276.585,617.388, 55.735}},
-                        {171, { 276.585,617.388, 240.125}},
-                        {172, { 276.585,617.388, 424.515}},
-                        {173, { 276.585,617.388, 608.905}},
-                        {174, { 276.585,617.388, 793.295}},
-                        {175, { 276.585,617.388, 977.685}},
-                        {176, { 276.585,617.388, 1162.07}},
-                        {177, { 276.585,617.388, 1346.46}},
-                        {178, { 460.975,617.388, -1050.61}},
-                        {179, { 460.975,617.388, -866.215}},
-                        {180, { 460.975,617.388, -681.825}},
-                        {181, { 460.975,617.388, -497.435}},
-                        {182, { 460.975,617.388, -313.045}},
-                        {183, { 460.975,617.388, -128.655}},
-                        {184, { 460.975,617.388, 55.735}},
-                        {185, { 460.975,617.388, 240.125}},
-                        {186, { 460.975,617.388, 424.515}},
-                        {187, { 460.975,617.388, 608.905}},
-                        {188, { 460.975,617.388, 793.295}},
-                        {189, { 460.975,617.388, 977.685}},
-                        {190, { 460.975,617.388, 1162.07}},
-                        {191, { 460.975,617.388, 1346.46}},
-                        {192, { 555.265, 496.038, -1050.61}},
-                        {193, { 555.265, 496.038, -866.215}},
-                        {194, { 555.265, 496.038, -681.825}},
-                        {195, { 555.265, 496.038, -497.435}},
-                        {196, { 555.265, 496.038, -313.045}},
-                        {197, { 555.265, 496.038, -128.655}},
-                        {198, { 555.265, 496.038, 55.735}},
-                        {199, { 555.265, 496.038, 240.125}},
-                        {200, { 555.265, 496.038, 424.515}},
-                        {201, { 555.265, 496.038, 608.905}},
-                        {202, { 555.265, 496.038, 793.295}},
-                        {203, { 555.265, 496.038, 977.685}},
-                        {204, { 555.265, 496.038, 1162.07}},
-                        {205, { 555.265, 496.038, 1346.46}},
-                        {206, { -555.265, 496.038, -1050.61}},
-                        {207, { -555.265, 496.038, -866.215}},
-                        {208, { -555.265, 496.038, -681.825}},
-                        {209, { -555.265, 496.038, -497.435}},
-                        {210, { -555.265, 496.038, -313.045}},
-                        {211, { -555.265, 496.038, -128.655}},
-                        {212, { -555.265, 496.038, 55.735}},
-                        {213, { -555.265, 496.038, 240.125}},
-                        {214, { -555.265, 496.038, 424.515}},
-                        {215, { -555.265, 496.038, 608.905}},
-                        {216, { -555.265, 496.038, 793.295}},
-                        {217, { -555.265, 496.038, 977.685}},
-                        {218, { -555.265, 496.038, 1162.07}},
-                        {219, { -555.265, 496.038, 1346.46}},
-                        {220, { -460.975, 496.038, -1143.4}},
-                        {221, { -276.585, 496.038, -1143.4}},
-                        {222, { -92.195, 496.038, -1143.4}},
-                        {223, { 92.195, 496.038, -1143.4}},
-                        {224, { 276.585, 496.038, -1143.4}},
-                        // This module does not exist in reality, but exists in simulation
-                        {225, { 0, 0, 0}},
-                        {226, { -460.975, 525.038, 1533.608}},
-                        {227, { -276.585, 525.038, 1533.608}},
-                        {228, { -92.195, 525.038, 1533.608}},
-                        {229, { 92.195, 525.038, 1533.608}},
-                        {230, { 276.585, 525.038, 1533.608}},
-                        {231, { 460.975, 525.038, 1533.608}}};
-        return TopCRTCenters;
-    }
-
-    TransformedCRTHit AffineTransformation(double DX, double DZ,AffineTrans affine)
-    {
-        double CRTX=affine.B1+DZ*affine.A12+DX*affine.A11;
-        double CRTZ=affine.B2+DZ*affine.A22+DX*affine.A21;
-        return std::make_pair(CRTX, CRTZ);
-    }
-
-    TopCRTTransformations LoadTopCRTTransformations()
-    {
-        std::string fullFileName;
-        cet::search_path searchPath("FW_SEARCH_PATH");
-        searchPath.find_file("TopCrtCorrectionByTPC.txt", fullFileName);
-        /*if (!searchPath.find_file("TopCrtCorrectionByTPC.txt", fullFileName)) {
-            mf::LogError("CRTMatchingUtils_LoadTopCrtTransformation")
-            << "Top CRT Correction transformation file not found in FW_SEARCH_PATH.";
-        }*/
-        std::ifstream corrFile(fullFileName, std::ios::in);
-
-        std::map<int, AffineTrans> Type0Corr;
-        std::map<int, AffineTrans> Type1Corr;
-        std::map<int, AffineTrans> Type2Corr;
-        std::map<int, AffineTrans> Type3Corr;
-        std::map<int, AffineTrans> Type4Corr;
-        std::map<int, AffineTrans> Type5Corr;
-
-        if (!corrFile.is_open()) {
-            mf::LogError("CRTMatchingUtils_LoadTopCRTTransformation")
-            << "Failed to open Top CRT Correction transformation file: " << fullFileName;
-        }
-        std::string line;
-        while (std::getline(corrFile, line)) {
-            std::istringstream iss(line);
-            std::vector<double> variables;
-            double var;
-            while (iss >> var) {
-                variables.push_back(var);
-            }
-
-            int pos=0;
-
-            AffineTrans Type0 = {variables.at(1+pos),variables.at(2+pos),variables.at(3+pos),variables.at(4+pos),variables.at(5+pos),variables.at(6+pos), variables.at(7+pos),variables.at(8+pos)};
-            pos=pos+8;
-            AffineTrans Type1 = {variables.at(1+pos),variables.at(2+pos),variables.at(3+pos),variables.at(4+pos),variables.at(5+pos),variables.at(6+pos), variables.at(7+pos),variables.at(8+pos)};
-            pos=pos+8;
-            AffineTrans Type2 = {variables.at(1+pos),variables.at(2+pos),variables.at(3+pos),variables.at(4+pos),variables.at(5+pos),variables.at(6+pos), variables.at(7+pos),variables.at(8+pos)};
-            pos=pos+8;
-            AffineTrans Type3 = {variables.at(1+pos),variables.at(2+pos),variables.at(3+pos),variables.at(4+pos),variables.at(5+pos),variables.at(6+pos), variables.at(7+pos),variables.at(8+pos)};
-            pos=pos+8;
-            AffineTrans Type4 = {variables.at(1+pos),variables.at(2+pos),variables.at(3+pos),variables.at(4+pos),variables.at(5+pos),variables.at(6+pos), variables.at(7+pos),variables.at(8+pos)};
-            pos=pos+8;
-            AffineTrans Type5 = {variables.at(1+pos),variables.at(2+pos),variables.at(3+pos),variables.at(4+pos),variables.at(5+pos),variables.at(6+pos), variables.at(7+pos),variables.at(8+pos)};
-            Type0Corr.insert({variables.at(0), Type0});
-            Type1Corr.insert({variables.at(0), Type1});
-            Type2Corr.insert({variables.at(0), Type2});
-            Type3Corr.insert({variables.at(0), Type3});
-            Type4Corr.insert({variables.at(0), Type4});
-            Type5Corr.insert({variables.at(0), Type5});
-        }
-        TopCRTTransformations LoadedTransformations={Type2Corr, Type1Corr, Type0Corr, Type4Corr, Type5Corr, Type3Corr};
-        return LoadedTransformations;
-    }
-
+    
     CRTMatchingAlg::CRTMatchingAlg(const fhicl::ParameterSet& pset)
     {
         this->reconfigure(pset);
@@ -268,28 +30,29 @@ namespace icarus::crt{
 
     CRTMatchingAlg::CRTMatchingAlg() = default;
 
-    void CRTMatchingAlg::reconfigure(const fhicl::ParameterSet& pset){
+    void CRTMatchingAlg::reconfigure(const fhicl::ParameterSet& pset)
+    {
         fTickPeriod = pset.get<double>("TickPeriod", 0.4);
         fTickAtAnode = pset.get<double>("TickAtAnode", 850.);
         fAllowedOffsetCM = pset.get<double>("AllowedOffsetCM", 1.57);
         return;
     }
 
-    PCAResults CRTMatchingAlg::PCAfit (std::vector<double> const& x, std::vector<double> const& y, std::vector<double> const& z)
+    PCAResults CRTMatchingAlg::PCAfit (std::vector<geo::Point_t> const& sp)
     {
         int min=0;
-        int max=x.size();
+        int max=sp.size();
         int size=max-min;
         double xavg=0, yavg=0, zavg=0;
         for(int k=min; k<max; k++) {
-            xavg+=x[k]; yavg+=y[k]; zavg+=z[k];
+            xavg+=sp[k].X(); yavg+=sp[k].Y(); zavg+=sp[k].Z();
         }
         xavg=xavg/size; yavg=yavg/size; zavg=zavg/size;
         double x2=0, y2=0, z2=0, xiy=0, xiz=0, yiz=0;
         for(int k=min; k<max; k++){
-            double xadj = x[k] - xavg;
-            double yadj = y[k] - yavg;
-            double zadj = z[k] - zavg;
+            double xadj = sp[k].X() - xavg;
+            double yadj = sp[k].Y() - yavg;
+            double zadj = sp[k].Z() - zavg;
             x2+=xadj*xadj; y2+=yadj*yadj; z2+=zadj*zadj;
             xiy+=xadj*yadj; xiz+=xadj*zadj; yiz+= yadj*zadj;
         }//end loop calculating covariance matrix elements
@@ -337,13 +100,15 @@ namespace icarus::crt{
         return std::make_pair(Plane, Pos);
     }
 
-    CrossingPoint CRTMatchingAlg::TranslatePointTo(geo::Vector_t dirVector, geo::Point_t meanPos, CRTPlane CRTwall){
+    CrossingPoint CRTMatchingAlg::TranslatePointTo(geo::Vector_t dirVector, geo::Point_t meanPos, CRTPlane CRTwall)
+    {
         
         if(dirVector.X()==0) throw std::invalid_argument("CRTMatchingAlg::TranslatePointTo: Cosine Director is null");
         return meanPos + dirVector * (CRTwall.second - meanPos.X()) / dirVector.X();
     }
 
-    TranslationVector CRTMatchingAlg::RotateToLocalCRTPlane(const TranslationVector& transl, CRTPlane CRTwall){
+    TranslationVector CRTMatchingAlg::RotateToLocalCRTPlane(const TranslationVector& transl, CRTPlane CRTwall)
+    {
         geo::Vector_t rotatedDir;
         geo::Point_t rotatedMean;
 
@@ -366,7 +131,8 @@ namespace icarus::crt{
         return {rotatedDir, rotatedMean};
     }
 
-    CrossingPoint CRTMatchingAlg::RotateFromLocalCRTPlane(CrossingPoint crossPointCRT, CRTPlane CRTWall){
+    CrossingPoint CRTMatchingAlg::RotateFromLocalCRTPlane(CrossingPoint crossPointCRT, CRTPlane CRTWall)
+    {
         switch(CRTWall.first) {
             case 0: return {crossPointCRT.Y(), crossPointCRT.X(), crossPointCRT.Z()}; // Plane at Y e.g. Top CRT Horizontal Plane
             case 1: return {crossPointCRT.X(), crossPointCRT.Y(), crossPointCRT.Z()}; // Plane at X e.g. Side CRT West, East, Top CRT
@@ -376,23 +142,24 @@ namespace icarus::crt{
         }
     }
 
-    CrossingPoint CRTMatchingAlg::DetermineProjection(const TranslationVector& dir, CRTPlane CRTWall){
+    CrossingPoint CRTMatchingAlg::DetermineProjection(const TranslationVector& dir, CRTPlane CRTWall)
+    {
         TranslationVector directionPlaneCoordinate = CRTMatchingAlg::RotateToLocalCRTPlane(dir, CRTWall);
         CrossingPoint crossingPointPlaneCoordinate = CRTMatchingAlg::TranslatePointTo(directionPlaneCoordinate.dir, directionPlaneCoordinate.mean, CRTWall);
         return CRTMatchingAlg::RotateFromLocalCRTPlane(crossingPointPlaneCoordinate, CRTWall);
     }
 
-    TrackBarycenter CRTMatchingAlg::GetTrackBarycenter (std::vector<double> hx, std::vector<double> hy, std::vector<double> hz, std::vector<double> hw)
+    TrackBarycenter CRTMatchingAlg::GetTrackBarycenter (std::vector<geo::Point_t> sp, std::vector<double> hw)
     {
         double average_x_charge=0, average_y_charge=0, average_z_charge=0, total_charge=0;
         bool isGood;
-        for (unsigned i = 0; i < hz.size(); i++) {
-            if(isnan(hz[i])) continue;
+        for (unsigned i = 0; i < sp.size(); i++) {
+            if(isnan(sp[i].Z())) continue;
 
-            if(hz[i]>-1000 && hz[i]<1000){
-                average_z_charge+=hz[i]*hw[i];
-                average_y_charge+=hy[i]*hw[i];
-                average_x_charge+=hx[i]*hw[i];
+            if(sp[i].Z()>-1000 && sp[i].Z()<1000){
+                average_z_charge+=sp[i].Z()*hw[i];
+                average_y_charge+=sp[i].Y()*hw[i];
+                average_x_charge+=sp[i].X()*hw[i];
                 total_charge+=hw[i];
             }
         }
@@ -410,13 +177,13 @@ namespace icarus::crt{
         int outBound=0;
         int outBound1=0;
         int count=0;
-        std::vector<double> recX, recY, recZ, recI;
+        std::vector<double> recI;
+        std::vector<geo::Point_t> driftedPositionVector;
         for(size_t i=0; i<trkHits.size(); i++){
             bool badhit = !trkHitMetas[i] || (trkHitMetas[i]->Index() == std::numeric_limits<unsigned int>::max()) ||
                         (!tpcTrack.HasValidPoint(trkHitMetas[i]->Index()));
             if(badhit) continue;
             geo::Point_t loc = tpcTrack.LocationAtPoint(trkHitMetas[i]->Index());
-            //if(loc.X()==-999) continue;
             const geo::TPCGeo& tpcGeo = GeometryService->TPC(trkHits[i]->WireID());
             int const cryo = trkHits[i]->WireID().Cryostat;
             int tpc=trkHits[i]->WireID().TPC;
@@ -443,13 +210,11 @@ namespace icarus::crt{
                 //std::cout<<"OutBound "<<outBound<<" outBound1 "<<outBound1<<" cryo "<<cryo<<" TPC "<<tpc<<" recoX "<<recoX<<" plane "<<plane<<" view "<<trkHits[i]->WireID().Plane<<" X "<<X<<" allowed cm "<<fAllowedOffsetCM<<" allowed % "<<fAllowedRel<<std::endl;
                 count++;
             }
-            recX.push_back(X);
-            recY.push_back(loc.Y());
-            recZ.push_back(loc.Z());
+            //geo::Point_t driftedPosition={X, loc.Y(), loc.Z()};
+            driftedPositionVector.push_back({X, loc.Y(), loc.Z()});
             recI.push_back(trkHits[i]->Integral());
         }
-        DriftedTrack thisDriftedTrack = {recX, recY, recZ, recI, outBound};
-        //std::cout<<"--> Outbound cm "<<outBound<<" ; Outbound % "<<outBound1<<std::endl;
+        DriftedTrack thisDriftedTrack = {driftedPositionVector, recI, outBound};
         return thisDriftedTrack;
     }
 }

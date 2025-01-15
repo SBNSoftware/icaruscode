@@ -36,12 +36,10 @@ struct TrackBarycenter
 
 struct DriftedTrack
 {
-    std::vector<double> spx; // Drifted Track Hit Points X coordinate
-    std::vector<double> spy; // Drifted Track Hit Points Y coordinate
-    std::vector<double> spz; // Drifted Track Hit Points Z coordinate
+    std::vector<geo::Point_t> sp; // Drifted space points
     std::vector<double> spi; // Drifted Track Hit Points integral
     int outbound; // Number of hit points out of the logical volume of the TPC
-    //double drifted_startx; // 
+    //double drifted_startx; 
     //double drifted_endx;
 };
 
@@ -73,59 +71,10 @@ struct CandCRT{
     CrossingPoint crossPoint;
 };
 
-struct ModuleCenter
-{
-    double X;
-    double Y;
-    double Z;
-};
-
-struct AffineTrans
-{
-    double A11;
-    double A12;
-    double A21;
-    double A22;
-    double B1;
-    double B2;
-    double Accuracy;
-    double N;
-};
-
-using FebIndex_t = int;
-
-using TopCRTCorrectionMap = std::map<FebIndex_t, AffineTrans>;
-
-struct TopCRTTransformations
-{
-    TopCRTCorrectionMap EE;
-    TopCRTCorrectionMap EW;
-    TopCRTCorrectionMap EastCC;
-    TopCRTCorrectionMap WE;
-    TopCRTCorrectionMap WW;
-    TopCRTCorrectionMap WestCC;
-};
-
-using TopCRTCentersMap = std::map<FebIndex_t, ModuleCenter>;
-
 /// CRTPlane corresponds to a pair of:
 /// 1st CRT fixed coordinate plane (e.g. 0 is X coordinate)
 /// 2nd value of the  CRT fixed coordinate plane (e.g. for Top CRT Horizontal this value is ~618 cm.
 using CRTPlane = std::pair<int,double>;
-
-/// The transformed CRT Hits are in cm
-using TransformedCRTHit = std::pair<double, double>;
-
-/// This function loads the Top CRT modules centers.
-TopCRTCentersMap LoadTopCRTCenters();
-
-/// This function performs the affine transformation of the CRT hit points.
-/// The AffineTransformation requires input variables in cm.
-TransformedCRTHit AffineTransformation(double DX, double DZ, AffineTrans affine);
-
-/// This functions loads the Affine Transformation TXT files.
-TopCRTTransformations LoadTopCRTTransformations();
-
 
 class CRTMatchingAlg {
 public:
@@ -135,10 +84,8 @@ public:
 
     void reconfigure(const fhicl::ParameterSet& pset);
     
-    /// This function runs the PCA analysis on three vectors of spatial coordinates x,y,z and return the principal eigenvector.
-    /// The entries in the i-th index of X, Y and Z vectors must correspond to the same point.
-    //static Direction PCAfit (std::vector<double> const& x, std::vector<double> const& y, std::vector<double> const& z);
-    static PCAResults PCAfit (std::vector<double> const& x, std::vector<double> const& y, std::vector<double> const& z);
+    /// This function runs the PCA analysis on the spatial coordinates vector and return the PCAResults.
+    static PCAResults PCAfit (std::vector<geo::Point_t> const& sp);
     
     /// This function determines the coordinate in which the CRT module is constant.
     /// 0 for fixed Y, 1 for fixed X, 2 for fixed Z,
@@ -159,10 +106,11 @@ public:
     /// This function returns the "correct" predicted crossing point given the cosine directors of the track fitted with PCA
     /// and a CRTPlane (fixed coordinate and value of the coordinate).
     CrossingPoint DetermineProjection(const TranslationVector& dir, CRTPlane CRTWall);
-    /// This function evaluates the TrackBarycenter with weighted mean. hx, hy, hz and hw are vectors with the x, y z coordinates
+    
+    /// This function evaluates the TrackBarycenter with weighted mean. posVector is a vector of track spacepoints
     /// and w is the weight (e.g. one could use integral or peak amplitude or more...).
-    /// The entries in the i-th index of hx, hy, hz and hw vectors must correspond to the same point.
-    TrackBarycenter GetTrackBarycenter(std::vector<double> hx, std::vector<double> hy, std::vector<double> hz, std::vector<double> hw);
+    /// The entries in the i-th index of posVector and hw vectors must correspond to the same point.
+    TrackBarycenter GetTrackBarycenter(std::vector<geo::Point_t> posVector, std::vector<double> hw);
 
     /// Function which drifts the track x coordinates assuming a time (in the trigger reference system).
     /// The function also returns the number of hit points which would be outside of the physical boundaries of the TPCs at the considered time.

@@ -133,8 +133,8 @@ private:
   bool fData;
   bool fSkipTruth;
 
-  icarus::crt::TopCRTCentersMap fTopCRTCenterMap;
-  icarus::crt::TopCRTTransformations fTopCRTTransformations;
+  icarus::crt::dataTools::TopCRTCentersMap fTopCRTCenterMap;
+  icarus::crt::dataTools::TopCRTTransformations fTopCRTTransformations;
 
   TTree* fTree;
   int fEvent;        ///< number of the event being processed
@@ -144,6 +144,9 @@ private:
   int fCrtSys;
   int fCryo;
   double fTrackLength;
+  double fFirstEigenValue;
+  double fSecondEigenValue;
+  double fThirdEigenValue;
   double fTrackCrtDistance;
   double fTrackCrtDeltaX;
   double fTrackCrtDeltaY;
@@ -223,8 +226,8 @@ bool icarus::crt::CRTT0Tagging::hasModID(std::uint32_t modID, sbn::crt::CRTHit c
 //void icarus::crt::CRTT0Tagging::beginRun(art::Run& r)
 void icarus::crt::CRTT0Tagging::beginJob()
 {
-  fTopCRTCenterMap=icarus::crt::LoadTopCRTCenters();
-  fTopCRTTransformations=icarus::crt::LoadTopCRTTransformations();
+  fTopCRTCenterMap=icarus::crt::dataTools::LoadTopCRTCenters();
+  fTopCRTTransformations=icarus::crt::dataTools::LoadTopCRTTransformations();
 
   fTree = tfs->make<TTree>("matchTree","CRTHit - TPC track matching analysis");
 
@@ -235,6 +238,9 @@ void icarus::crt::CRTT0Tagging::beginJob()
   fTree->Branch("CrtSys",             &fCrtSys,             "CrtSys/I");
   fTree->Branch("CrtRegion",          &fCrtRegion,          "CrtRegion/I");
   fTree->Branch("TrackLength",        &fTrackLength        );
+  fTree->Branch("FirstEigenValue",    &fFirstEigenValue    );
+  fTree->Branch("SecondEigenValue",   &fSecondEigenValue   );
+  fTree->Branch("ThirdEigenValue",    &fThirdEigenValue    );
   fTree->Branch("TrackCrtDistance",   &fTrackCrtDistance   );
   fTree->Branch("TrackCrtDeltaX",     &fTrackCrtDeltaX     );
   fTree->Branch("TrackCrtDeltaY",     &fTrackCrtDeltaY     );
@@ -410,13 +416,14 @@ void icarus::crt::CRTT0Tagging::produce(art::Event& e)
       
       // These counters are used to determine if track is CC-E, EE, EW, CC-W, WE, WW
       // depending on the track type, the Top CRT uses the appropriate position corrections
-      std::vector<double> hx, hy, hz, ht;
+      std::vector<double> ht;
+      std::vector<geo::Point_t> positionVector;
       for(auto const& [trkHit, trkHitMeta]: util::zip(trkHits, trkHitMetas)){
         bool badhit = (trkHitMeta->Index() == std::numeric_limits<unsigned int>::max()) ||
                     (!track.HasValidPoint(trkHitMeta->Index()));
         if(badhit) continue;
         geo::Point_t loc = track.LocationAtPoint(trkHitMeta->Index());
-        hx.push_back(loc.X()); hy.push_back(loc.Y()); hz.push_back(loc.Z());
+        positionVector.push_back(loc);
         ht.push_back(trkHit->PeakTime());
         goodHits++;
         if(trkHit->WireID().TPC==0 || trkHit->WireID().TPC==1) countE++;
@@ -434,7 +441,7 @@ void icarus::crt::CRTT0Tagging::produce(art::Event& e)
       else if(countW!=0 && countE!=0 && cryo==1) trackType=3; //CCWest
       else if(countW!=0 && countE==0 && cryo==1) trackType=5; //West-West
       else if(countW==0 && countE!=0 && cryo==1) trackType=4; //West-East     
-      icarus::crt::TopCRTCorrectionMap TopCRTCorrection;
+      icarus::crt::dataTools::TopCRTCorrectionMap TopCRTCorrection;
       if(trackType==0) TopCRTCorrection=fTopCRTTransformations.EastCC;
       else if(trackType==1) TopCRTCorrection=fTopCRTTransformations.EE;
       else if(trackType==2) TopCRTCorrection=fTopCRTTransformations.EW;
@@ -443,15 +450,16 @@ void icarus::crt::CRTT0Tagging::produce(art::Event& e)
       else if(trackType==5) TopCRTCorrection=fTopCRTTransformations.WW;
       
       std::vector<icarus::crt::CandCRT> crtCands;
-      for(art::Ptr<CRTHit> p_crthit: CRTHitList){
+      for(art::Ptr<CRTHit> const& p_crthit: CRTHitList){
         const CRTHit &crtHit = *p_crthit;
         double crtTime=crtHit.ts1_ns/1e3;
+        // If the Track has a Pandora T0, this is also used to look for compatible CRT Hits 
         if(!isnan(t0)){
           if(fabs(t0-crtHit.ts1_ns)>fMaximumDeltaT) continue;
         }
         icarus::crt::DriftedTrack thisDriftedTrack = fMatchingAlg.DriftTrack(trkHits, trkHitMetas, fGeometryService, detProp, crtTime, track);    
         if(thisDriftedTrack.outbound>0) continue;
-        icarus::crt::PCAResults driftedPCAResults=fMatchingAlg.PCAfit(thisDriftedTrack.spx, thisDriftedTrack.spy, thisDriftedTrack.spz);
+        icarus::crt::PCAResults driftedPCAResults=fMatchingAlg.PCAfit(thisDriftedTrack.sp);
         icarus::crt::TranslationVector translVector = {driftedPCAResults.eigenVector1, driftedPCAResults.mean};
         int crtSys=-1;
         if(crtHit.plane<=34) crtSys=0;
@@ -477,18 +485,18 @@ void icarus::crt::CRTT0Tagging::produce(art::Event& e)
             centerDX=crtX-fTopCRTCenterMap[(int)crtHit.feb_id[0]].X;
             centerDY=crtY-fTopCRTCenterMap[(int)crtHit.feb_id[0]].Y;
             centerDZ=crtZ-fTopCRTCenterMap[(int)crtHit.feb_id[0]].Z;
-            icarus::crt::AffineTrans thisAffine=TopCRTCorrection[(int)crtHit.feb_id[0]];
+            icarus::crt::dataTools::AffineTrans thisAffine=TopCRTCorrection[(int)crtHit.feb_id[0]];
             std::pair<double,double> transCrt;
             if(crtHit.plane==30) {
-              transCrt=icarus::crt::AffineTransformation(centerDX, centerDZ, thisAffine);
+              transCrt=icarus::crt::dataTools::AffineTransformation(centerDX, centerDZ, thisAffine);
               crtX=transCrt.first;
               crtZ=transCrt.second;
             } else if(crtHit.plane==31 ||crtHit.plane==32) {
-              transCrt=icarus::crt::AffineTransformation(centerDY, centerDZ, thisAffine);
+              transCrt=icarus::crt::dataTools::AffineTransformation(centerDY, centerDZ, thisAffine);
               crtY=transCrt.first;
               crtZ=transCrt.second;            
             } else if(crtHit.plane==33 ||crtHit.plane==34){
-              transCrt=icarus::crt::AffineTransformation(centerDX, centerDY, thisAffine);
+              transCrt=icarus::crt::dataTools::AffineTransformation(centerDX, centerDY, thisAffine);
               crtX=transCrt.first;
               crtY=transCrt.second;            
             }
@@ -542,13 +550,20 @@ void icarus::crt::CRTT0Tagging::produce(art::Event& e)
           }
         }
 
-        fEvent=e.id().event();
+        icarus::crt::DriftedTrack thisMatchedDriftedTrack = fMatchingAlg.DriftTrack(trkHits, trkHitMetas, fGeometryService, detProp, bestCrtCand.CRThit.ts1_ns/1e3, track);
+        icarus::crt::PCAResults driftedMatchedPCAResults=fMatchingAlg.PCAfit(thisMatchedDriftedTrack.sp);
+        
+        fEvent=e.event();
         fRun=e.run();
         fRun=e.subRun();
         fCrtRegion=bestCrtCand.CRThit.plane;
         fCrtSys=matchedSys;
         fCryo=cryo;
         fTrackLength=track.Length();
+        fFirstEigenValue=driftedMatchedPCAResults.eigenValue1;
+        fSecondEigenValue=driftedMatchedPCAResults.eigenValue2;
+        fThirdEigenValue=driftedMatchedPCAResults.eigenValue3;
+        std::cout<<fFirstEigenValue<<" "<<fSecondEigenValue<<" "<<fThirdEigenValue<<std::endl;
         fTrackCrtDistance=bestCrtCand.distance;
         fTrackCrtDeltaX=bestCrtCand.deltaX;
         fTrackCrtDeltaY=bestCrtCand.deltaY;
