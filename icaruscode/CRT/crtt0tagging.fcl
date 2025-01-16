@@ -2,48 +2,34 @@
 
 BEGIN_PROLOG
 
-standard_crtt0tagging:
+icarus_crtt0tagging_data:
 {
-
-   MinimalTrackLength:     40.     # Minimal TrackLength to match with a CRT
-   MinimumGoodHits:        5       # Minimum number of good hits to perform the fit
-   MaximalCRTDistance:     300.    # Maximal distance between CRT Hit Candidate and Track Projection
-   GoodCandidateDistance:  100.    # 96 cm maximizes EfficiencyXPurity (both > 92%) 
-   MaximumDeltaT:          10000.     # Maximal Time difference between a T0 tagged track and CRT Hit time for the combination to be considered acceptable. [ns]
+   @table::icarus_crtt0tagging_base
    isData:                 true    # Data
    skipTruth:              false   # skipTruth
 
    module_type:         "CRTT0Tagging"
    CrtHitModuleLabel:  "crthit"
-   TriggerLabel:  "daqTrigger" 
-   TriggerConfiguration: "triggerconfig" 
    TPCTrackLabel:       ["pandoraTrackGausCryoE", "pandoraTrackGausCryoW"]     # Track producer module label
    PFParticleLabel: 	   ["pandoraGausCryoE", "pandoraGausCryoW"] # PFParticle producer module label
    TRKHMLabel:  ["pandoraTrackGausCryoE", "pandoraTrackGausCryoW"]     # TrackHit Metadata producer module label
    HitLabel:   ["cluster3DCryoE" , "cluster3DCryoW"]
-   MatchingAlg: @local::standard_crtmatchingalg
+   MatchingAlg: @local::icarus_crtmatchingalg
 }
 
-standard_crtt0taggingmc:
+icarus_crtt0taggingmc:
 {
-
-   MinimalTrackLength:     40.     # Minimal TrackLength to match with a CRT
-   MinimumGoodHits:        5       # Minimum number of good hits to perform the fit
-   MaximalCRTDistance:     300.    # Maximal distance between CRT Hit Candidate and Track Projection
-   GoodCandidateDistance:  100.    # 96 cm maximizes EfficiencyXPurity (both > 92%) 
-   MaximumDeltaT:          10000.     # Maximal Time difference between a T0 tagged track and CRT Hit time for the combination to be considered acceptable. [ns]  
+   @table::icarus_crtt0tagging_base
    isData:                 false   # MC
    skipTruth:              false   # skipTruth
 
    module_type:         "CRTT0Tagging"
    CrtHitModuleLabel:  "crthit"
-   TriggerLabel:  "daqTrigger" 
-   TriggerConfiguration: "triggerconfig" 
    TPCTrackLabel:       ["pandoraTrackGausCryoE", "pandoraTrackGausCryoW"]     # Track producer module label
    PFParticleLabel: 	   ["pandoraGausCryoE", "pandoraGausCryoW"] # PFParticle producer module label
    TRKHMLabel:  ["pandoraTrackGausCryoE", "pandoraTrackGausCryoW"]     # TrackHit Metadata producer module label
    HitLabel:   ["cluster3DCryoE" , "cluster3DCryoW"]
-   MatchingAlg: @local::standard_crtmatchingalg
+   MatchingAlg: @local::icarus_crtmatchingalg
    SimulationLabel: "largeant"
    AuxDetSimProducerLabel: "genericcrt"
    SimChannelProducer:  "daq:simpleSC"

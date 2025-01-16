@@ -67,15 +67,17 @@ art_make_library(
         SOURCE
                 CRTUtils/CRTMatchingUtils.cxx
         LIBRARIES
-        fhiclcpp::fhiclcpp
-        canvas::canvas
-        lardataobj::RecoBase
-        larcorealg::Geometry
-        lardataalg::DetectorInfo
-        sbnobj::Common_CRT
-        cetlib::cetlib
-        messagefacility::MF_MessageLogger
-        ROOT::Matrix
+                fhiclcpp::fhiclcpp
+                canvas::canvas
+                lardataobj::RecoBase
+                lardata::Utilities
+	        lardata::ArtDataHelper
+                larcorealg::Geometry
+                lardataalg::DetectorInfo
+                sbnobj::Common_CRT
+                cetlib::cetlib
+                messagefacility::MF_MessageLogger
+                ROOT::Matrix
         )
 
 cet_build_plugin(CRTGeometryHelper art::service
@@ -537,34 +539,22 @@ cet_build_plugin(CRTT0Tagging art::module
      LIBRARIES
         icaruscode::IcarusObj
         icaruscode_CRTMatchingUtils
-        sbnobj::ICARUS_CRT
-        sbnobj::Common_CRT
         icaruscode_CRTUtils
+        sbnobj::Common_CRT
         larcorealg::Geometry
+        lardataalg::DetectorInfo
         larcore::Geometry_Geometry_service
         larsim::Simulation lardataobj::Simulation
         larsim::MCCheater_BackTrackerService_service
         larsim::MCCheater_ParticleInventoryService_service
-        lardata::Utilities
-        larevt::Filters
-        lardataobj::RawData
+        lardata::headers
         lardataobj::RecoBase
         lardataobj::AnalysisBase
-        lardata::RecoObjects
-        larpandora::LArPandoraInterface
-        larcorealg::Geometry
         nusimdata::SimulationBase
-        art::Persistency_Common canvas::canvas
-        art::Persistency_Provenance
-        art::Utilities
-        ROOT::Core
-        ROOT::Geom
-        ROOT::XMLIO
-        ROOT::Gdml
-        ROOT::Spectrum
-        ROOT::RooFit
-        ROOT::RooFitCore
-   )
+        art_root_io::TFileService_service
+        art_root_io::tfile_support
+        ROOT::Tree
+)
 
 install_headers()
 install_fhicl()

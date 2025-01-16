@@ -5,66 +5,46 @@
  */
 
 #include "sbnobj/Common/CRT/CRTHit.hh"
-//#include "icaruscode/CRT/CRTUtils/CRTT0MatchAlg.h"
 #include "icaruscode/CRT/CRTUtils/CRTMatchingUtils.h"
 #include "icaruscode/IcarusObj/CRTTPCMatchingInfo.h"
 #include "icaruscode/CRT/CRTUtils/RecoUtils.h"
 #include "icaruscode/CRT/CRTUtils/CRTCommonUtils.h"
-
 // Framework includes
 #include "art/Framework/Core/EDProducer.h"
 #include "art/Framework/Core/ModuleMacros.h"
-#include "canvas/Persistency/Common/FindManyP.h"
-#include "canvas/Persistency/Common/FindOne.h"
 #include "art/Framework/Principal/Handle.h"
 #include "art/Framework/Principal/Event.h" 
+#include "art/Framework/Principal/Run.h"
+#include "canvas/Utilities/Exception.h"
 #include "canvas/Persistency/Common/Ptr.h" 
 #include "canvas/Persistency/Common/PtrVector.h" 
-#include "art/Framework/Principal/Run.h"
-#include "art/Framework/Principal/SubRun.h"
+#include "art/Persistency/Common/PtrMaker.h"
+#include "canvas/Persistency/Common/FindManyP.h"
+#include "canvas/Persistency/Common/FindOne.h"
 #include "art_root_io/TFileService.h"
-#include "art_root_io/TFileDirectory.h"
-
 #include "canvas/Utilities/InputTag.h"
 #include "fhiclcpp/ParameterSet.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
-
 #include <memory>
-#include <iostream>
+#include <vector>
 #include <map>
-#include <iterator>
 #include <algorithm>
-
+#include <cmath> // std::abs(), std::hypot()
 // LArSoft
-#include "larsim/MCCheater/BackTrackerService.h"
-#include "larsim/MCCheater/BackTracker.h"
-#include "larsim/MCCheater/ParticleInventoryService.h"
-#include "larcore/Geometry/Geometry.h"
 #include "larcorealg/Geometry/GeometryCore.h"
-#include "larcorealg/Geometry/PlaneGeo.h"
-#include "larcorealg/Geometry/WireGeo.h"
 #include "larcorealg/CoreUtils/zip.h"
 #include "lardataobj/AnalysisBase/T0.h"
 #include "lardataobj/RecoBase/Hit.h"
 #include "lardataobj/RecoBase/Track.h"
+#include "lardataobj/RecoBase/PFParticleMetadata.h"
+#include "lardataobj/RecoBase/PFParticle.h"
 #include "larcore/CoreUtils/ServiceUtil.h" // lar::providerFrom()
-#include "lardata/Utilities/AssociationUtil.h"
+#include "larcore/Geometry/Geometry.h"
 #include "lardata/DetectorInfoServices/LArPropertiesService.h"
 #include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
-#include "lardataobj/RawData/ExternalTrigger.h"
-#include "larcoreobj/SimpleTypesAndConstants/PhysicalConstants.h"
-#include "lardataobj/AnalysisBase/ParticleID.h"
 #include "larsim/MCCheater/BackTrackerService.h"
-#include "sbnobj/Common/Trigger/ExtraTriggerInfo.h"
-#include "lardataobj/RecoBase/PFParticle.h"
-#include "lardataobj/AnalysisBase/T0.h"
-#include "lardataobj/RecoBase/PFParticleMetadata.h"
-
+#include "larsim/MCCheater/ParticleInventoryService.h"
 // ROOT
-#include "TVector3.h"
-#include "TH1.h"
-#include "TH2.h"
-#include "TVector3.h"
 #include "TTree.h"
 
 namespace icarus::crt {
@@ -97,7 +77,6 @@ public:
   //void beginRun(art::Run& r) override;
   void beginJob() override;
   void produce(art::Event& e) override;
-  void endJob() override;
 
 private:
 
@@ -268,6 +247,8 @@ void icarus::crt::CRTT0Tagging::produce(art::Event& e)
   //auto t0matchInfoAssn = std::make_unique< art::Assns<icarus::CRTTPCMatchingInfo, anab::T0> >();
   //auto trackMatchInfoAssn = std::make_unique< art::Assns<recob::Track, icarus::CRTTPCMatchingInfo> >();
   //auto matchInfoCrtHitAssn = std::make_unique< art::Assns<sbn::crt::CRTHit, icarus::CRTTPCMatchingInfo> >();
+
+  art::PtrMaker<anab::T0> makeT0ptr{ e }; // create art pointers to the new T0 
 
   std::map< int, const simb::MCParticle*> particleMap;
   std::map<std::pair<int,double>,std::vector<int>> crtParticleMap;
@@ -457,68 +438,31 @@ void icarus::crt::CRTT0Tagging::produce(art::Event& e)
         if(!isnan(t0)){
           if(fabs(t0-crtHit.ts1_ns)>fMaximumDeltaT) continue;
         }
-        icarus::crt::DriftedTrack thisDriftedTrack = fMatchingAlg.DriftTrack(trkHits, trkHitMetas, fGeometryService, detProp, crtTime, track);    
+        icarus::crt::DriftedTrack thisDriftedTrack = fMatchingAlg.DriftTrack(trkHits, trkHitMetas, fGeometryService, detProp, clockData, crtTime, track, 0);    
         if(thisDriftedTrack.outbound>0) continue;
         icarus::crt::PCAResults driftedPCAResults=fMatchingAlg.PCAfit(thisDriftedTrack.sp);
         icarus::crt::TranslationVector translVector = {driftedPCAResults.eigenVector1, driftedPCAResults.mean};
-        int crtSys=-1;
-        if(crtHit.plane<=34) crtSys=0;
-        else if (crtHit.plane==50) crtSys=2;
-        else crtSys=1;
+        int crtSys=fCrtUtils.MacToTypeCode(crtHit.feb_id[0]);
         if(crtSys==2) continue; // lets discard Bottom CRT Hits for the moment
 
-        double deltaX=std::numeric_limits<float>::signaling_NaN();
-        double deltaY=std::numeric_limits<float>::signaling_NaN();
-        double deltaZ=std::numeric_limits<float>::signaling_NaN();
+        geo::Point_t delta = {std::numeric_limits<float>::signaling_NaN(), std::numeric_limits<float>::signaling_NaN(), std::numeric_limits<float>::signaling_NaN()};
+
         double crtDistance=std::numeric_limits<float>::signaling_NaN();
 
         icarus::crt::CRTPlane thisCRTPlane = fMatchingAlg.DeterminePlane(crtHit);
         icarus::crt::CrossingPoint crossPoint = fMatchingAlg.DetermineProjection(translVector, thisCRTPlane);
 
-        double crtX=crtHit.x_pos;
-        double crtY=crtHit.y_pos;
-        double crtZ=crtHit.z_pos;
+        geo::Point_t CRTHitCoordinate = {crtHit.x_pos, crtHit.y_pos, crtHit.z_pos};
 
         if(fData){ // Realignment only applies to Data, not MC
           if(crtSys==0){
-            double centerDX, centerDY, centerDZ;
-            centerDX=crtX-fTopCRTCenterMap[(int)crtHit.feb_id[0]].X;
-            centerDY=crtY-fTopCRTCenterMap[(int)crtHit.feb_id[0]].Y;
-            centerDZ=crtZ-fTopCRTCenterMap[(int)crtHit.feb_id[0]].Z;
-            icarus::crt::dataTools::AffineTrans thisAffine=TopCRTCorrection[(int)crtHit.feb_id[0]];
-            std::pair<double,double> transCrt;
-            if(crtHit.plane==30) {
-              transCrt=icarus::crt::dataTools::AffineTransformation(centerDX, centerDZ, thisAffine);
-              crtX=transCrt.first;
-              crtZ=transCrt.second;
-            } else if(crtHit.plane==31 ||crtHit.plane==32) {
-              transCrt=icarus::crt::dataTools::AffineTransformation(centerDY, centerDZ, thisAffine);
-              crtY=transCrt.first;
-              crtZ=transCrt.second;            
-            } else if(crtHit.plane==33 ||crtHit.plane==34){
-              transCrt=icarus::crt::dataTools::AffineTransformation(centerDX, centerDY, thisAffine);
-              crtX=transCrt.first;
-              crtY=transCrt.second;            
-            }
+            CRTHitCoordinate = icarus::crt::dataTools::ApplyTransformation(crtHit, TopCRTCorrection, fTopCRTCenterMap);
           }
         }
-
-        if(thisCRTPlane.first==0){
-          deltaX=crtX-crossPoint.X();
-          deltaY=0;
-          deltaZ=crtZ-crossPoint.Z();
-        } else if(thisCRTPlane.first==1){
-          deltaX=0;
-          deltaY=crtY-crossPoint.Y();
-          deltaZ=crtZ-crossPoint.Z();
-        } else if(thisCRTPlane.first==2){
-          deltaX=crtX-crossPoint.X();
-          deltaY=crtY-crossPoint.Y();          
-          deltaZ=0;
-        }
-        crtDistance=sqrt(pow(deltaX,2)+pow(deltaZ,2)+pow(deltaY,2));
+        delta=CRTHitCoordinate-crossPoint;
+        crtDistance=std::hypot(delta.X(), delta.Y(), delta.Z());
         if(crtDistance>fMaximalCRTDistance) continue;
-        icarus::crt::CandCRT thisCrtCand={crtHit,p_crthit, thisCRTPlane.first, crtDistance, deltaX, deltaY, deltaZ, crossPoint};
+        icarus::crt::CandCRT thisCrtCand={crtHit,p_crthit, thisCRTPlane.first, crtDistance, delta, crossPoint};
         crtCands.push_back(thisCrtCand);
       } // End of CRT Hit loop
       if(crtCands.empty()) {
@@ -530,32 +474,30 @@ void icarus::crt::CRTT0Tagging::produce(art::Event& e)
       });
       icarus::crt::CandCRT& bestCrtCand=*minElementIt;
       if(bestCrtCand.distance<=fGoodCandidateDistance){ 
-        int matchedSys=-1;
-        if(bestCrtCand.CRThit.plane<=34) matchedSys=0;
-        else if (bestCrtCand.CRThit.plane==50) matchedSys=2;
-        else matchedSys=1;
+        int matchedSys=fCrtUtils.MacToTypeCode(bestCrtCand.CRThit.feb_id[0]);
         if(matchedSys==2) continue; // lets discard Bottom CRT Hits for the moment
         bool trueMatch=false;
         if(!fData && !fSkipTruth){
           std::vector<int> crtTracks, crtPdgs;
           std::pair<int,double> thisMatch=std::make_pair((int)bestCrtCand.CRThit.feb_id[0], bestCrtCand.CRThit.ts1_ns);
-          if(crtParticleMap.find(thisMatch) != crtParticleMap.end()){
-            for(size_t j=0; j<crtParticleMap[thisMatch].size(); j++){
-              crtTracks.push_back(crtParticleMap[thisMatch].at(j));
-              crtPdgs.push_back(particleMap[crtParticleMap[thisMatch].at(j)]->PdgCode());
-            }   
+          auto const itMatch = crtParticleMap.find(thisMatch);
+          if(itMatch != crtParticleMap.end()){
+            for(int trackID: itMatch->second){
+              crtTracks.push_back(trackID);
+              crtPdgs.push_back(particleMap.at(trackID)->PdgCode());
+            }
           }
-          for(size_t thisID=0; thisID<crtTracks.size(); thisID++){
-            if(crtTracks[thisID]==trueTrackId) trueMatch=true;
+          for(int trackID: crtTracks){
+            if(trackID == trueTrackId){
+              trueMatch=true;
+              break;
+            }
           }
         }
-
-        icarus::crt::DriftedTrack thisMatchedDriftedTrack = fMatchingAlg.DriftTrack(trkHits, trkHitMetas, fGeometryService, detProp, bestCrtCand.CRThit.ts1_ns/1e3, track);
+        icarus::crt::DriftedTrack thisMatchedDriftedTrack = fMatchingAlg.DriftTrack(trkHits, trkHitMetas, fGeometryService, detProp, clockData, bestCrtCand.CRThit.ts1_ns/1e3, track, 0);
         icarus::crt::PCAResults driftedMatchedPCAResults=fMatchingAlg.PCAfit(thisMatchedDriftedTrack.sp);
-        
         fEvent=e.event();
         fRun=e.run();
-        fRun=e.subRun();
         fCrtRegion=bestCrtCand.CRThit.plane;
         fCrtSys=matchedSys;
         fCryo=cryo;
@@ -565,9 +507,9 @@ void icarus::crt::CRTT0Tagging::produce(art::Event& e)
         fThirdEigenValue=driftedMatchedPCAResults.eigenValue3;
         std::cout<<fFirstEigenValue<<" "<<fSecondEigenValue<<" "<<fThirdEigenValue<<std::endl;
         fTrackCrtDistance=bestCrtCand.distance;
-        fTrackCrtDeltaX=bestCrtCand.deltaX;
-        fTrackCrtDeltaY=bestCrtCand.deltaY;
-        fTrackCrtDeltaZ=bestCrtCand.deltaZ;
+        fTrackCrtDeltaX=bestCrtCand.delta.X();
+        fTrackCrtDeltaY=bestCrtCand.delta.Y();
+        fTrackCrtDeltaZ=bestCrtCand.delta.Z();
         fCrtX=bestCrtCand.CRThit.x_pos;
         fCrtY=bestCrtCand.CRThit.y_pos;
         fCrtZ=bestCrtCand.CRThit.z_pos;
@@ -577,33 +519,24 @@ void icarus::crt::CRTT0Tagging::produce(art::Event& e)
         fTrueMatch=trueMatch;
         fTree->Fill();
         mf::LogInfo("CRTT0Tagging")
-	      <<"Matched CRT time = "<<bestCrtCand.CRThit.ts1_ns/1e3<<" [us] to track "<<track.ID()<<" with projection-hit distance = "<<bestCrtCand.distance<<" Track T0 "<<t0
-	      <<"\nMatched CRT hit plane: "<<bestCrtCand.CRThit.plane<<" xpos "<<bestCrtCand.CRThit.x_pos<<" ypos "<<bestCrtCand.CRThit.y_pos<<" zpos "<<bestCrtCand.CRThit.z_pos;
+	        <<"Matched CRT time = "<<bestCrtCand.CRThit.ts1_ns/1e3<<" [us] to track "<<track.ID()<<" with projection-hit distance = "<<bestCrtCand.distance<<" Track T0 "<<t0
+	        <<"\nMatched CRT hit plane: "<<bestCrtCand.CRThit.plane<<" xpos "<<bestCrtCand.CRThit.x_pos<<" ypos "<<bestCrtCand.CRThit.y_pos<<" zpos "<<bestCrtCand.CRThit.z_pos
+          <<"\nDelta: X "<<bestCrtCand.delta.X()<<" Y "<<bestCrtCand.delta.Y()<<" Z "<<bestCrtCand.delta.Z();
         t0col->push_back(anab::T0(bestCrtCand.CRThit.ts1_ns, track.ID(), matchedSys, bestCrtCand.CRThit.plane,bestCrtCand.distance));
-        util::CreateAssn(*this, e, *t0col, trkPtr, *trackAssn);
-        util::CreateAssn(*this, e, *t0col, bestCrtCand.ptrCRThit, *t0CrtHitAssn);
-        icarus::CRTTPCMatchingInfo matchInfo = {bestCrtCand.distance, matchedSys, bestCrtCand.CRThit.plane, bestCrtCand.CRThit.ts1_ns, bestCrtCand.deltaX, bestCrtCand.deltaY, bestCrtCand.deltaZ, bestCrtCand.crossPoint.X(), bestCrtCand.crossPoint.Y(), bestCrtCand.crossPoint.Z(), bestCrtCand.plane};        
+
+        art::Ptr<anab::T0> const newT0ptr = makeT0ptr(t0col->size()-1); // index of the last T0
+        trackAssn->addSingle(trkPtr, newT0ptr);
+        t0CrtHitAssn->addSingle(bestCrtCand.ptrCRThit, newT0ptr);
+
+        icarus::CRTTPCMatchingInfo matchInfo {bestCrtCand.distance, matchedSys, bestCrtCand.CRThit.plane, bestCrtCand.CRThit.ts1_ns, bestCrtCand.delta.X(), bestCrtCand.delta.Y(), bestCrtCand.delta.Z(), bestCrtCand.crossPoint.X(), bestCrtCand.crossPoint.Y(), bestCrtCand.crossPoint.Z(), bestCrtCand.plane};        
         matchInfoCol->push_back(matchInfo);
-        //util::CreateAssn(*this, e, *t0col, *matchInfoCol, *t0matchInfoAssn);
-        // util::CreateAssn(*this, e, *matchInfoCol, trkPtr, *trackMatchInfoAssn);
-        // util::CreateAssn(*this, e, *matchInfoCol, bestCrtCand.ptrCRThit, *matchInfoCrtHitAssn);
       }
 	  } // End of Track Loop
-	  
 	} // End of Cryo Loop
   e.put(std::move(t0col));
   e.put(std::move(trackAssn));
   e.put(std::move(t0CrtHitAssn));
   e.put(std::move(matchInfoCol));
-  //e.put(std::move(t0matchInfoAssn));
-  //e.put(std::move(trackMatchInfoAssn));
-  //e.put(std::move(matchInfoCrtHitAssn));
 }
-
-void CRTT0Tagging::endJob()
-{
-
-} // CRTT0Tagging::endJob()
-
 
 DEFINE_ART_MODULE(CRTT0Tagging)

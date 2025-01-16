@@ -18,11 +18,17 @@
 #include "lardataobj/RecoBase/Track.h"
 #include "lardataobj/RecoBase/TrackHitMeta.h"
 #include "larcorealg/Geometry/GeometryCore.h"
+#include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
+#include "lardata/DetectorInfoServices/DetectorClocksService.h"
 #include "lardataalg/DetectorInfo/DetectorPropertiesData.h"
+#include "lardataalg/DetectorInfo/DetectorClocksData.h"
+#include "lardataalg/DetectorInfo/DetectorClocks.h"
 // Data product headers
 #include "sbnobj/Common/CRT/CRTHit.hh"
 #include "sbnobj/Common/Trigger/ExtraTriggerInfo.h"
 #include "sbnobj/Common/CRT/CRTPMTMatching.hh"
+
+
 
 namespace icarus::crt{
 
@@ -65,9 +71,7 @@ struct CandCRT{
     art::Ptr<sbn::crt::CRTHit> ptrCRThit;
     int plane;
     double distance;
-    double deltaX;
-    double deltaY;
-    double deltaZ;
+    geo::Point_t delta;
     CrossingPoint crossPoint;
 };
 
@@ -114,12 +118,9 @@ public:
 
     /// Function which drifts the track x coordinates assuming a time (in the trigger reference system).
     /// The function also returns the number of hit points which would be outside of the physical boundaries of the TPCs at the considered time.
-    DriftedTrack DriftTrack(const std::vector<art::Ptr<recob::Hit>>& trkHits, const std::vector<const recob::TrackHitMeta*>& trkHitMetas, const geo::GeometryCore *GeometryService, detinfo::DetectorPropertiesData const& detProp, double time, const recob::Track& tpcTrack) const;
+    DriftedTrack DriftTrack(const std::vector<art::Ptr<recob::Hit>>& trkHits, const std::vector<const recob::TrackHitMeta*>& trkHitMetas, const geo::GeometryCore *GeometryService, detinfo::DetectorPropertiesData const& detProp, detinfo::DetectorClocksData  const& detClock, double time, const recob::Track& tpcTrack, int maxOutBoundPoints) const;
 
 private:
-
-    double fTickPeriod;
-    double fTickAtAnode;
     double fAllowedOffsetCM;
 };
 

@@ -237,6 +237,36 @@ TopCRTTransformations LoadTopCRTTransformations()
   return LoadedTransformations;
 }
 
+geo::Point_t ApplyTransformation(const sbn::crt::CRTHit& crthit, const TopCRTCorrectionMap& TopCRTCorrections, const TopCRTCentersMap& TopCRTCenters){
+  double centerDX=crthit.x_pos - TopCRTCenters.at((int)crthit.feb_id[0]).X();
+  double centerDY=crthit.y_pos - TopCRTCenters.at((int)crthit.feb_id[0]).Y();
+  double centerDZ=crthit.z_pos - TopCRTCenters.at((int)crthit.feb_id[0]).Z();
+  AffineTrans thisAffine=TopCRTCorrections.at((int)crthit.feb_id[0]);
+  std::pair<double,double> transCrt;
+  double crtX=crthit.x_pos, crtY=crthit.y_pos, crtZ=crthit.z_pos;
+  switch (crthit.plane){
+    case 30:
+      transCrt=icarus::crt::dataTools::AffineTransformation(centerDX, centerDZ, thisAffine);
+      crtX=transCrt.first;
+      crtZ=transCrt.second;
+      break;
+    case 31: case 32:
+      transCrt=icarus::crt::dataTools::AffineTransformation(centerDY, centerDZ, thisAffine);
+      crtY=transCrt.first;
+      crtZ=transCrt.second; 
+      break;
+    case 33: case 34:
+      transCrt=icarus::crt::dataTools::AffineTransformation(centerDX, centerDY, thisAffine);
+      crtX=transCrt.first;
+      crtY=transCrt.second;
+      break;
+    default:
+      throw std::logic_error("TopCRTAffineTransformationError: CRT plane/region not valid!");
+      break;
+  }
+  return {crtX, crtY, crtZ};
+}
+
 }
 
 int RecoUtils::TrueParticleID(detinfo::DetectorClocksData const& clockData,

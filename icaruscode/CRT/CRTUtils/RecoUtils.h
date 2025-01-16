@@ -32,6 +32,7 @@
 //#include "lardataobj/AnalysisBase/ParticleID.h"
 #include "larsim/MCCheater/BackTrackerService.h"
 #include "larcore/Geometry/Geometry.h"
+#include "sbnobj/Common/CRT/CRTHit.hh"
 namespace detinfo { class DetectorClocksData; }
 
 
@@ -45,12 +46,7 @@ namespace detinfo { class DetectorClocksData; }
 
 namespace icarus::crt::dataTools{
 
-struct ModuleCenter
-{
-  double X;
-  double Y;
-  double Z;
-};
+using ModuleCenter = geo::Point_t;
 
 struct AffineTrans
 {
@@ -92,6 +88,9 @@ TransformedCRTHit AffineTransformation(double DX, double DZ, AffineTrans affine)
 
 /// This functions loads the Affine Transformation TXT files.
 TopCRTTransformations LoadTopCRTTransformations();
+
+/// This function transforms a CRTHit with AffineTransformationFunctions.
+geo::Point_t ApplyTransformation(const sbn::crt::CRTHit& crthit, const TopCRTCorrectionMap& TopCRTCorrections, const TopCRTCentersMap& TopCRTCenters);
 
 }
 

@@ -19,7 +19,6 @@
 #include "TMatrixDSymEigen.h"
 #include "larcorealg/Geometry/TPCGeo.h"
 #include "larcorealg/Geometry/PlaneGeo.h"
-
 namespace icarus::crt{
     
     CRTMatchingAlg::CRTMatchingAlg(const fhicl::ParameterSet& pset)
@@ -32,8 +31,6 @@ namespace icarus::crt{
 
     void CRTMatchingAlg::reconfigure(const fhicl::ParameterSet& pset)
     {
-        fTickPeriod = pset.get<double>("TickPeriod", 0.4);
-        fTickAtAnode = pset.get<double>("TickAtAnode", 850.);
         fAllowedOffsetCM = pset.get<double>("AllowedOffsetCM", 1.57);
         return;
     }
@@ -172,11 +169,9 @@ namespace icarus::crt{
         return ThisTrackBary;
     }
 
-    DriftedTrack CRTMatchingAlg::DriftTrack(const std::vector<art::Ptr<recob::Hit>>& trkHits, const std::vector<const recob::TrackHitMeta*>& trkHitMetas, const geo::GeometryCore *GeometryService, detinfo::DetectorPropertiesData const& detProp, double time, const recob::Track& tpcTrack) const
+    DriftedTrack CRTMatchingAlg::DriftTrack(const std::vector<art::Ptr<recob::Hit>>& trkHits, const std::vector<const recob::TrackHitMeta*>& trkHitMetas, const geo::GeometryCore *GeometryService, detinfo::DetectorPropertiesData const& detProp, detinfo::DetectorClocksData  const& detClock, double time, const recob::Track& tpcTrack, int maxOutBoundPoints) const
     {
         int outBound=0;
-        int outBound1=0;
-        int count=0;
         std::vector<double> recI;
         std::vector<geo::Point_t> driftedPositionVector;
         for(size_t i=0; i<trkHits.size(); i++){
@@ -185,32 +180,20 @@ namespace icarus::crt{
             if(badhit) continue;
             geo::Point_t loc = tpcTrack.LocationAtPoint(trkHitMetas[i]->Index());
             const geo::TPCGeo& tpcGeo = GeometryService->TPC(trkHits[i]->WireID());
-            int const cryo = trkHits[i]->WireID().Cryostat;
-            int tpc=trkHits[i]->WireID().TPC;
             double vDrift=detProp.DriftVelocity();
+
             // recoX: distance of the hit charge from the plane
             //  * `trkHits[i]->PeakTime()-fTickAtAnode`: TPC ticks from the trigger to when charge gets to plane
             //  * `time`: t0 [CRT or Flash] (with respect to trigger) in TPC ticks
             //  * difference is how many ticks passed from the track to when charge gets to plane: drift ticks
-            double recoX=(trkHits[i]->PeakTime()-fTickAtAnode-time/fTickPeriod)*fTickPeriod*vDrift;
-
+            double recoX=(trkHits[i]->PeakTime()-detClock.Time2Tick(detClock.TriggerTime())-time/detClock.TPCClock().TickPeriod())*detClock.TPCClock().TickPeriod()*vDrift;
             double plane=tpcGeo.PlanePtr(trkHits[i]->WireID().Plane)->GetCenter().X();
-            double cathode=tpcGeo.GetCathodeCenter().X();
             double X=plane-tpcGeo.DriftDir().X()*recoX;
-            if(cryo==0 && (tpc==0 || tpc==1) && (X>(cathode+fAllowedOffsetCM)||X<(plane-fAllowedOffsetCM))) outBound++;
-            else if(cryo==0 && (tpc==2 || tpc==3)&& (X<(cathode-fAllowedOffsetCM)||X>(plane+fAllowedOffsetCM))) outBound++;
-            else if(cryo==1 && (tpc==0 || tpc==1)&& (X>(cathode+fAllowedOffsetCM)||X<(plane-fAllowedOffsetCM))) outBound++;
-            else if(cryo==1 && (tpc==2 || tpc==3)&& (X<(cathode-fAllowedOffsetCM)||X>(plane+fAllowedOffsetCM))) outBound++;
-
-            double fAllowedRel = 1+fAllowedOffsetCM / tpcGeo.DriftDistance();
-            if(!tpcGeo.ActiveBoundingBox().ContainsX(X, fAllowedRel)) outBound1++;
-
-            if(outBound!=outBound1 && count<=10){
-                //std::cout<<"Active Bounding Box MinX "<<tpcGeo.ActiveBoundingBox().MinX()<<" MaxX "<<tpcGeo.ActiveBoundingBox().MaxX()<<std::endl;
-                //std::cout<<"OutBound "<<outBound<<" outBound1 "<<outBound1<<" cryo "<<cryo<<" TPC "<<tpc<<" recoX "<<recoX<<" plane "<<plane<<" view "<<trkHits[i]->WireID().Plane<<" X "<<X<<" allowed cm "<<fAllowedOffsetCM<<" allowed % "<<fAllowedRel<<std::endl;
-                count++;
+            double AllowedRel = 1+fAllowedOffsetCM / abs(tpcGeo.GetCathodeCenter().X()-tpcGeo.PlanePtr(trkHits[i]->WireID().Plane)->GetCenter().X());
+            if(!tpcGeo.ActiveBoundingBox().ContainsX((X), AllowedRel)) outBound++;
+            if(outBound>maxOutBoundPoints) {
+                return {{},{},maxOutBoundPoints+1};
             }
-            //geo::Point_t driftedPosition={X, loc.Y(), loc.Z()};
             driftedPositionVector.push_back({X, loc.Y(), loc.Z()});
             recI.push_back(trkHits[i]->Integral());
         }
