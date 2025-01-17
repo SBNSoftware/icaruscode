@@ -15,7 +15,7 @@ mcsfitproducerU: {
     pStep: 0.001
     angResol: 10.0
     fiducialVolumeInsets: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0] 
-    excludeVolumes: [180.0, 240.0, -9999.0, 9999.0, -9999.0, 9999.0] 
+    excludeVolumes: [-9999.0, -9999.0, -9999.0, 9999.0, -9999.0, 9999.0] 
     cutMode: 0
     cutLength: 0. } }
 
@@ -34,7 +34,7 @@ mcsfitproducerUF: {
     pStep: 0.001
     angResol: 10.0
     fiducialVolumeInsets: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0] 
-    excludeVolumes: [180.0, 240.0, -9999.0, 9999.0, -9999.0, 9999.0] 
+    excludeVolumes: [-9999.0, -9999.0, -9999.0, 9999.0, -9999.0, 9999.0] 
     cutMode: 1
     cutLength: 50. } }
 
@@ -53,7 +53,7 @@ mcsfitproducerUI: {
     pStep: 0.001
     angResol: 10.0
     fiducialVolumeInsets: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0] 
-    excludeVolumes: [180.0, 240.0, -9999.0, 9999.0, -9999.0, 9999.0] 
+    excludeVolumes: [-9999.0, -9999.0, -9999.0, 9999.0, -9999.0, 9999.0] 
     cutMode: 2
     cutLength: 100. } }
 

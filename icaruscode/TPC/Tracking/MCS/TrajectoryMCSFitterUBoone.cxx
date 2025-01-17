@@ -21,9 +21,18 @@ using PointFlags_t=recob::TrajectoryPointFlags;
 using Flags_t=std::vector<PointFlags_t>;
 
 recob::MCSFitResult TrajectoryMCSFitterUBoone::fitMcs(const recob::TrackTrajectory& traj, int pid, bool momDepConst) const {
-  //notify algorithm has started
-  cout << "starting uboone fitting... " << endl;
-
+  //print some fhicl parameters
+  cout << "cut mode = " << cutMode_ << endl;
+  cout << " " << endl;
+  
+  //check if track length is less than a certain value, return null
+  auto lenmin = 100;
+  auto lenrec = traj.Length();
+  auto lenval = sqrt((traj.LocationAtPoint(traj.LastValidPoint()) - traj.LocationAtPoint(traj.FirstValidPoint())).Mag2());
+  if (lenrec < lenmin || lenval < lenmin) {
+    cout << "length less than " << lenmin << " cm, stopping fit" << endl;
+    return recob::MCSFitResult(); }
+  
   //define vector breakpoints, that will be filled with integer indexes of trajectory segmentation
   vector<size_t> breakpoints;
   //define vector breakpointsgood, that will be filled with boolean indexes of trajectory segmentation
@@ -35,19 +44,16 @@ recob::MCSFitResult TrajectoryMCSFitterUBoone::fitMcs(const recob::TrackTrajecto
   //divide trajectory in segments and fill vectors defined above
   breakTrajInSegments(traj, breakpoints, segradlengths, cumseglens, breakpointsgood, cutMode_, cutLength_);
 
-  //return empty recob::MCSFitResult if there are less than 2 segments
-  if (segradlengths.size() < 2) return recob::MCSFitResult();
+  //return empty recob::MCSFitResult if there are less than a certain number of segments
+  if (segradlengths.size() < minNSegs_) {
+    cout << "number of segments less than " << minNSegs_ << ", stopping fit" << endl;
+    return recob::MCSFitResult();
+  }
   //define vector dtheta, that will be filled with scattering angles between adjacent segments
   vector<float> dtheta;
   //define vectors pcdir, that will be filled with directions of two adjacent segments
   Vector_t pcdir0;
   Vector_t pcdir1;
-
-  //print cut mode
-  if (cutMode_ == 0) {cout << "type of cut = no cut" << endl;}
-  if (cutMode_ == 1) {cout << "type of cut = final cut" << endl;}
-  if (cutMode_ == 2) {cout << "type of cut = initial cut" << endl;}
-  cout << " " << endl;
   
   //iterate for every pair of adjacent segments
   for (unsigned int p = 0; p < segradlengths.size(); p++) {
@@ -66,11 +72,6 @@ recob::MCSFitResult TrajectoryMCSFitterUBoone::fitMcs(const recob::TrackTrajecto
         cout << "WARNING! invalid segment length found!" << endl;
         dtheta.push_back(-9.);
       } 
-      //ignore current iteration if segmentation index is wrong
-      if (!breakpointsgood[p]) {
-        cout << "WARNING! breakpoint less than 25 cm from cathode!" << endl;
-        dtheta.push_back(-3.);
-      }
       else {
         //print positions of first and last point of segment
         auto startpos = traj.LocationAtPoint(breakpoints[p-1]);
@@ -139,110 +140,17 @@ recob::MCSFitResult TrajectoryMCSFitterUBoone::fitMcs(const recob::TrackTrajecto
   }
 
   //print vector of segment lengths
-  cout << "segment lengths [cm] = ";
-  for (auto i : segradlengths) {
-    cout << 14. * i << ' ';
-  } 
-  cout << endl;
-
-  //print vector of cumulative segment lengths
-  cout << "cumulative segment length [cm] = ";
-  for (auto i : cumseglens) {
-    cout << i << ' ';
-  }
-  cout << endl;
-
-  //remove hits from 1 of the 2 tpcs
-  if (cutMode_ == 1) {
-    //find last angle not computed due to proximity to cathode
-    auto lastAngleNearToCat = std::find(dtheta.rbegin(), dtheta.rend(), -3.);
-    
-    //if no angles are not computed due to proximity to cathode, break; else, continue
-    if (lastAngleNearToCat == dtheta.rend()) {
-      dtheta=dtheta;
-    } else {
-      //get index of last angle not computed due to proximity to cathode
-      int lastAngleNearToCatIndex = dtheta.size() - 1 - std::distance(dtheta.rbegin(), lastAngleNearToCat);
-
-      //count how many angles there are after last angle not computed
-      int positiveCount = 0;
-      for (size_t i = lastAngleNearToCatIndex + 1; i < dtheta.size(); ++i) {
-        if (dtheta[i] > 0.) {
-          positiveCount++;
-        } else {
-          break;
-        }
-      }
-
-      //verify that there are at least 7 angles after proximity to cathode
-      if (positiveCount >= 7) {
-        //remove from dtheta angles belonging to the other TPC (before proximity to cathode)
-        for (int i = lastAngleNearToCatIndex - 1; i >= 0; --i) {
-          if (dtheta[i] > 0.) {
-            dtheta[i] = -4.;
-          } else {
-            continue; 
-          }
-        }
-      } else {
-        //remove from dtheta all angles
-        for (float &val : dtheta) {
-          if (val > 0.) {
-            val = -4.;
-          }
-        }
-      }
-    }
-  } else if (cutMode_ == 2) {
-    //find first 7 consecutive angles correctly computed
-    size_t startIndex = dtheta.size();
-    int consecutiveCount = 0;
-    for (size_t i = 0; i < dtheta.size(); ++i) {
-      if (dtheta[i] > 0.) {
-        consecutiveCount++;
-        if (consecutiveCount == 7) {
-          //get index of first of 7 consecutive angles correctly computed
-          startIndex = i - 6;
-          break;
-        }
-      } else {
-        consecutiveCount = 0;
-      }
-    }
-    
-    //verify that there are 7 consecutive angles correctly computed
-    if (consecutiveCount == 7) {
-      for (size_t i = 0; i < dtheta.size(); ++i) {
-        if (dtheta[i] > 0. && (i < startIndex || i >= startIndex + 7)) {
-          dtheta[i] = -5.;
-        }
-      }
-    } else {
-      //remove from dtheta all angles
-      for (float &val : dtheta) {
-        if (val > 0.) {
-          val = -5.;
-        }
-      }
-    }
-  }
+  cout << "segment lengths [cm] = "; for (auto i : segradlengths) cout << 14. * i << ' '; cout << endl;
 
   //print vector of scattering angles
-  cout << "scattering angles [mrad] = ";
-  for (auto i : dtheta) {
-    cout << i << ' ';
-  }
-  cout << endl;
+  cout << "scattering angles [mrad] = "; for (auto i : dtheta) cout << i << ' '; cout << endl;
 
   //define vectors cumLen to memorize cumulative segment lengths, forward and backward
   vector<float> cumLenFwd;
-  vector<float> cumLenBwd;
   //iterate for every segment to fill vectors cumLen
   for (unsigned int i = 0; i < cumseglens.size() - 2; i++) {
     //fill vector cumLenFwd with cumulative lengths from first to secondlast segment
     cumLenFwd.push_back(cumseglens[i]);
-    //fill vector cumLenFwd with cumulative lengths from secondlast to first segment
-    cumLenBwd.push_back(cumseglens.back() - cumseglens[i + 2]);
   }
 
   //perform a likelihood scan (forward; backward is ignored)
@@ -268,9 +176,9 @@ void TrajectoryMCSFitterUBoone::breakTrajInSegments(const recob::TrackTrajectory
   //define segment length in function of trajectory length being less or greater than minimum length
   const double thisSegLen = (trajlen > (segLen_ * minNSegs_) ? segLen_ : trajlen / double(minNSegs_));
   //print required segment length, considered segment length, number of segments
-  cout << "required segment length [cm] = " << segLen_ << endl;
-  cout << "considered segment length [cm] = " << thisSegLen << endl;
-  cout << "number of segments = " << max(minNSegs_, int(trajlen / segLen_)) << endl;
+  cout << "segment length [cm] = " << thisSegLen << endl;
+  unsigned int nss = trajlen / segLen_;
+  cout << "number of segments = " << max(minNSegs_, nss) << endl;
 
   //define inverse of Argon radiation length X0 = 14 cm
   constexpr double lar_radl_inv = 1. / 14.0;
@@ -418,12 +326,14 @@ void TrajectoryMCSFitterUBoone::linearRegression(const recob::TrackTrajectory& t
   size_t nextValid = firstPoint;
   //iterate until last valid point of the segment
   while (nextValid < lastPoint) {
-    //add position of current valid point to vector middlePointCalc
-    middlePointCalc.add(traj.LocationAtPoint(nextValid));
+    if (isintpc(nextValid, lasttpc(traj))) {
+      //add position of current valid point to vector middlePointCalc
+      middlePointCalc.add(traj.LocationAtPoint(nextValid));
+      //increase number of valid points in the segment
+      npoints++;
+    }
     //determine index of next valid point
     nextValid = traj.NextValidPoint(nextValid + 1);
-    //increase number of valid points in the segment
-    npoints++;
   }
 
   //determine position of average point of segment from position of valid points in the segment
@@ -437,22 +347,24 @@ void TrajectoryMCSFitterUBoone::linearRegression(const recob::TrackTrajectory& t
   nextValid = firstPoint;
   //iterate until last valid point of the segment
   while (nextValid < lastPoint) {
-    //determine position of current valid point
-    auto p = traj.LocationAtPoint(nextValid);
-    //compute coordinate differences between current valid point and average point
-    const double xxw0 = p.X() - avgpos.X();
-    const double yyw0 = p.Y() - avgpos.Y();
-    const double zzw0 = p.Z() - avgpos.Z();
-    //update covariance matrix values with normalized values of coordinate differences above
-    m(0, 0) += xxw0 * xxw0 * norm;
-    m(0, 1) += xxw0 * yyw0 * norm;
-    m(0, 2) += xxw0 * zzw0 * norm;
-    m(1, 0) += yyw0 * xxw0 * norm;
-    m(1, 1) += yyw0 * yyw0 * norm;
-    m(1, 2) += yyw0 * zzw0 * norm;
-    m(2, 0) += zzw0 * xxw0 * norm;
-    m(2, 1) += zzw0 * yyw0 * norm;
-    m(2, 2) += zzw0 * zzw0 * norm;
+    if (isintpc(nextValid, lasttpc(traj))) {
+      //determine position of current valid point
+      auto p = traj.LocationAtPoint(nextValid);
+      //compute coordinate differences between current valid point and average point
+      const double xxw0 = p.X() - avgpos.X();
+      const double yyw0 = p.Y() - avgpos.Y();
+      const double zzw0 = p.Z() - avgpos.Z();
+      //update covariance matrix values with normalized values of coordinate differences above
+      m(0, 0) += xxw0 * xxw0 * norm;
+      m(0, 1) += xxw0 * yyw0 * norm;
+      m(0, 2) += xxw0 * zzw0 * norm;
+      m(1, 0) += yyw0 * xxw0 * norm;
+      m(1, 1) += yyw0 * yyw0 * norm;
+      m(1, 2) += yyw0 * zzw0 * norm;
+      m(2, 0) += zzw0 * xxw0 * norm;
+      m(2, 1) += zzw0 * yyw0 * norm;
+      m(2, 2) += zzw0 * zzw0 * norm;
+    }
     //determine index of next valid point
     nextValid = traj.NextValidPoint(nextValid + 1);
   }
@@ -692,3 +604,19 @@ bool TrajectoryMCSFitterUBoone::isInVolume(const std::vector<geo::BoxBoundedGeo>
   }
   return false;
 }
+
+//check if some point is in tpc = t
+bool TrajectoryMCSFitterUBoone::isintpc(size_t index, unsigned int t) const {
+  proxy::TrackPointData pd = pdata[index];
+  art::Ptr<recob::Hit> hit = get<1>(pd);
+  unsigned int tpc = hit->WireID().TPC;
+  if (tpc == t) return true;
+  else return false; }
+
+//check tpc of last valid point
+unsigned int TrajectoryMCSFitterUBoone::lasttpc(const recob::TrackTrajectory& traj) const {
+  size_t index = traj.LastValidPoint();
+  proxy::TrackPointData pd = pdata[index];
+  art::Ptr<recob::Hit> hit = get<1>(pd);
+  unsigned int tpc = hit->WireID().TPC;
+  return tpc; }

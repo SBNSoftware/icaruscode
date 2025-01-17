@@ -8,8 +8,10 @@ physics.reco: [ @sequence::icarus_filter_cluster3D,
                 @sequence::icarus_tpcpmtbarycentermatch,
                 @sequence::icarus_crttrack,
                 @sequence::icarus_crtt0match,
-              @sequence::icarus_crtt0tagging_francesco,
-                caloskimCalorimetryCryoE, caloskimCalorimetryCryoW]
+                @sequence::icarus_crtt0tagging_francesco,
+                @sequence::icarus_MCS_Gauss,
+                caloskimCalorimetryCryoE, 
+                caloskimCalorimetryCryoW]
 
 physics.outana:            [ @sequence::icarus_analysis_modules ]
 physics.trigger_paths:     [ reco ]

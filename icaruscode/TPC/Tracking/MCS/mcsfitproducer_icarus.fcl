@@ -5,18 +5,20 @@ mcsfitproducericarus_raw: {
   inputs: { inputLabel: "pandoraTrackICARUS" }
   fitter: {
   	pIdHypothesis: 13
+	minNumAngles: 3
 	minNumSegments: 7
 	segmentLength: 14.0
 	minHitsPerSegment: 3
+	minHits: 30
 	nElossSteps: 10
 	eLossMode: 0
-	pMin: 400.
+	pMin: 100.
 	pMax: 1500.
-	pStep: 50.
+	pStep: 20.
 	cutMode: 0
-	cutLength: 0.
+	cutAngles: 0
 	dimMode: 2
-	planeMode: 2
+	planeMode: 3
 	fitMode: 0 } }
 
 mcsfitproducerI: {
@@ -24,18 +26,20 @@ mcsfitproducerI: {
   inputs: { inputLabel: "pandoraTrackGaus" }
   fitter: {
   	pIdHypothesis: 13
+	minNumAngles: 3
 	minNumSegments: 7
 	segmentLength: 14.0
 	minHitsPerSegment: 3
+	minHits: 30
 	nElossSteps: 10
 	eLossMode: 0
-	pMin: 400.
+	pMin: 100.
 	pMax: 1500.
-	pStep: 50.
+	pStep: 20.
 	cutMode: 0
-	cutLength: 0.
-	dimMode: 2
-	planeMode: 2
+	cutAngles: 0
+	dimMode: 3
+	planeMode: 3
 	fitMode: 0 } }
 
 mcsfitproducerIF3D: {
@@ -43,18 +47,20 @@ mcsfitproducerIF3D: {
   inputs: { inputLabel: "pandoraTrackGaus" }
   fitter: {
   	pIdHypothesis: 13
+	minNumAngles: 3
 	minNumSegments: 7
 	segmentLength: 14.0
 	minHitsPerSegment: 3
+	minHits: 30
 	nElossSteps: 10
 	eLossMode: 0
-	pMin: 400.
+	pMin: 100.
 	pMax: 1500.
-	pStep: 50.
+	pStep: 20.
 	cutMode: 1
-	cutLength: 50.
+	cutAngles: 3
 	dimMode: 3
-	planeMode: 2
+	planeMode: 3
 	fitMode: 0 } }
 
 mcsfitproducerIF2DI1: {
@@ -62,16 +68,18 @@ mcsfitproducerIF2DI1: {
   inputs: { inputLabel: "pandoraTrackGaus" }
   fitter: {
   	pIdHypothesis: 13
+	minNumAngles: 3
 	minNumSegments: 7
 	segmentLength: 14.0
 	minHitsPerSegment: 3
+	minHits: 30
 	nElossSteps: 10
 	eLossMode: 0
-	pMin: 400.
+	pMin: 100.
 	pMax: 1500.
-	pStep: 50.
+	pStep: 20.
 	cutMode: 1
-	cutLength: 50.
+	cutAngles: 3
 	dimMode: 2
 	planeMode: 0
 	fitMode: 0 } }
@@ -81,16 +89,18 @@ mcsfitproducerIF2DI2: {
   inputs: { inputLabel: "pandoraTrackGaus" }
   fitter: {
   	pIdHypothesis: 13
+	minNumAngles: 3
 	minNumSegments: 7
 	segmentLength: 14.0
 	minHitsPerSegment: 3
+	minHits: 30
 	nElossSteps: 10
 	eLossMode: 0
-	pMin: 400.
+	pMin: 100.
 	pMax: 1500.
-	pStep: 50.
+	pStep: 20.
 	cutMode: 1
-	cutLength: 50.
+	cutAngles: 3
 	dimMode: 2
 	planeMode: 1
 	fitMode: 0 } }
@@ -100,16 +110,18 @@ mcsfitproducerIF2DC: {
   inputs: { inputLabel: "pandoraTrackGaus" }
   fitter: {
   	pIdHypothesis: 13
+	minNumAngles: 3
 	minNumSegments: 7
 	segmentLength: 14.0
 	minHitsPerSegment: 3
+	minHits: 30
 	nElossSteps: 10
 	eLossMode: 0
-	pMin: 400.
+	pMin: 100.
 	pMax: 1500.
-	pStep: 50.
+	pStep: 20.
 	cutMode: 1
-	cutLength: 50.
+	cutAngles: 3
 	dimMode: 2
 	planeMode: 2
 	fitMode: 0 } }
@@ -119,18 +131,20 @@ mcsfitproducerII3D: {
   inputs: { inputLabel: "pandoraTrackGaus" }
   fitter: {
   	pIdHypothesis: 13
+	minNumAngles: 3
 	minNumSegments: 7
 	segmentLength: 14.0
 	minHitsPerSegment: 3
+	minHits: 30
 	nElossSteps: 10
 	eLossMode: 0
-	pMin: 400.
+	pMin: 100.
 	pMax: 1500.
-	pStep: 50.
+	pStep: 20.
 	cutMode: 2
-	cutLength: 100.
+	cutAngles: 7
 	dimMode: 3
-	planeMode: 2
+	planeMode: 3
 	fitMode: 0 } }
 
 mcsfitproducerII2DI1: {
@@ -138,16 +152,18 @@ mcsfitproducerII2DI1: {
   inputs: { inputLabel: "pandoraTrackGaus" }
   fitter: {
   	pIdHypothesis: 13
+	minNumAngles: 3
 	minNumSegments: 7
 	segmentLength: 14.0
 	minHitsPerSegment: 3
+	minHits: 30
 	nElossSteps: 10
 	eLossMode: 0
-	pMin: 400.
+	pMin: 100.
 	pMax: 1500.
-	pStep: 50.
+	pStep: 20.
 	cutMode: 2
-	cutLength: 100.
+	cutAngles: 7
 	dimMode: 2
 	planeMode: 0
 	fitMode: 0 } }
@@ -157,16 +173,18 @@ mcsfitproducerII2DI2: {
   inputs: { inputLabel: "pandoraTrackGaus" }
   fitter: {
   	pIdHypothesis: 13
+	minNumAngles: 3
 	minNumSegments: 7
 	segmentLength: 14.0
 	minHitsPerSegment: 3
+	minHits: 30
 	nElossSteps: 10
 	eLossMode: 0
-	pMin: 400.
+	pMin: 100.
 	pMax: 1500.
-	pStep: 50.
+	pStep: 20.
 	cutMode: 2
-	cutLength: 100.
+	cutAngles: 7
 	dimMode: 2
 	planeMode: 1
 	fitMode: 0 } }
@@ -176,16 +194,18 @@ mcsfitproducerII2DC: {
   inputs: { inputLabel: "pandoraTrackGaus" }
   fitter: {
   	pIdHypothesis: 13
+	minNumAngles: 3
 	minNumSegments: 7
 	segmentLength: 14.0
 	minHitsPerSegment: 3
+	minHits: 30
 	nElossSteps: 10
 	eLossMode: 0
-	pMin: 400.
+	pMin: 100.
 	pMax: 1500.
-	pStep: 50.
+	pStep: 20.
 	cutMode: 2
-	cutLength: 100.
+	cutAngles: 7
 	dimMode: 2
 	planeMode: 2
 	fitMode: 0 } }

@@ -21,6 +21,7 @@
 #include "larcore/Geometry/Geometry.h"
 #include "larcorealg/Geometry/GeometryCore.h"
 #include "larcorealg/Geometry/geo_vectors_utils.h"
+#include "lardata/RecoBaseProxy/Track.h" //needed only if you do use the proxies
 
 #include <array>
 #include <utility>
@@ -60,7 +61,7 @@ namespace trkf {
         Name("pIdHypothesis"),
         Comment("Default particle Id Hypothesis to be used in the fit when not specified."),
         13};
-      fhicl::Atom<int> minNumSegments{
+      fhicl::Atom<unsigned int> minNumSegments{
         Name("minNumSegments"),
         Comment("Minimum number of segments the track is split into."),
         3};
@@ -111,7 +112,7 @@ namespace trkf {
     using Parameters = fhicl::Table<Config>;
     //
     TrajectoryMCSFitterUBoone(int pIdHyp,
-                              int minNSegs,
+                              unsigned int minNSegs,
                               double segLen,
                               int minHitsPerSegment,
                               int nElossSteps,
@@ -194,6 +195,11 @@ namespace trkf {
         double p, pUnc, logL;
     };
     //
+    void set2DHitsC(std::vector<recob::Hit> h) {hits2dC = h;}
+    void set2DHitsI2(std::vector<recob::Hit> h) {hits2dI2 = h;}
+    void set2DHitsI1(std::vector<recob::Hit> h) {hits2dI1 = h;}
+    void setPointData(std::vector<proxy::TrackPointData> h) {pdata = h;}
+    //
     const ScanResult doLikelihoodScan(std::vector<float>& dtheta,
                                       std::vector<float>& seg_nradlengths,
                                       std::vector<float>& cumLen,
@@ -220,31 +226,43 @@ namespace trkf {
     //
     double GetE(const double initial_E, const double length_travelled, const double mass) const;
     //
-    int minNSegs() const { return minNSegs_; }
+    unsigned int minNSegs() const { return minNSegs_; }
     double segLen() const { return segLen_; }
     //
     std::vector<geo::BoxBoundedGeo> setFiducialVolumes() const;
     std::vector<geo::BoxBoundedGeo> setExcludeVolumes() const;
     bool isInVolume(const std::vector<geo::BoxBoundedGeo> &volumes, const geo::Point_t &point) const;
+
+    bool isintpc(
+      size_t index, 
+      unsigned int t) const;
+
+    unsigned int lasttpc(
+      const recob::TrackTrajectory& traj) const;
+      
     //
     int cutMode() const { return cutMode_; }
     float cutLength() const { return cutLength_; }
     //
   private:
-    int    pIdHyp_;
-    int    minNSegs_;
+    int pIdHyp_;
+    unsigned int minNSegs_;
     double segLen_;
-    int    minHitsPerSegment_;
-    int    nElossSteps_;
-    int    eLossMode_;
+    int minHitsPerSegment_;
+    int nElossSteps_;
+    int eLossMode_;
     double pMin_;
     double pMax_;
     double pStep_;
     double angResol_;
     std::vector<double> fiducialVolumeInsets_;
     std::vector<double> excludeVolumes_;
-    int    cutMode_;
-    float  cutLength_;
+    int cutMode_;
+    float cutLength_;
+    std::vector<recob::Hit> hits2dC;
+    std::vector<recob::Hit> hits2dI2;
+    std::vector<recob::Hit> hits2dI1;
+    std::vector<proxy::TrackPointData> pdata;
   };
 }
 
