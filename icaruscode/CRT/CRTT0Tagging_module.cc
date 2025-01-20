@@ -518,7 +518,8 @@ void icarus::crt::CRTT0Tagging::produce(art::Event& e)
         fTrueMatch=trueMatch;
         fTree->Fill();
 
-        sbn::crt::CRTTaggingTrackFit trackFit = sbn::crt::CRTTaggingTrackFit::pca; 
+        sbn::crt::CRTTaggingTrackFit trackFit = sbn::crt::CRTTaggingTrackFit::pca;
+        sbn::crt::CRTTaggingMethod matchMethod = sbn::crt::CRTTaggingMethod::crtHits;
 
         mf::LogInfo("CRTT0Tagging")
 	        <<"Matched CRT time = "<<bestCrtCand.CRThit.ts1_ns/1e3<<" [us] to track "<<track.ID()<<" with projection-hit distance = "<<bestCrtCand.distance<<" Track T0 "<<t0
@@ -530,7 +531,7 @@ void icarus::crt::CRTT0Tagging::produce(art::Event& e)
         trackAssn->addSingle(trkPtr, newT0ptr);
         t0CrtHitAssn->addSingle(bestCrtCand.ptrCRThit, newT0ptr);
 
-        sbn::crt::CRTT0TaggingInfo matchInfo {bestCrtCand.distance, matchedSys, bestCrtCand.CRThit.plane, bestCrtCand.CRThit.ts1_ns, bestCrtCand.delta.X(), bestCrtCand.delta.Y(), bestCrtCand.delta.Z(), bestCrtCand.crossPoint.X(), bestCrtCand.crossPoint.Y(), bestCrtCand.crossPoint.Z(), trackFit, bestCrtCand.plane, trueMatch};        
+        sbn::crt::CRTT0TaggingInfo matchInfo {bestCrtCand.distance, matchedSys, bestCrtCand.CRThit.plane, bestCrtCand.CRThit.ts1_ns, bestCrtCand.delta.X(), bestCrtCand.delta.Y(), bestCrtCand.delta.Z(), bestCrtCand.crossPoint.X(), bestCrtCand.crossPoint.Y(), bestCrtCand.crossPoint.Z(), bestCrtCand.plane, trackFit, matchMethod, trueMatch};        
         matchInfoCol->push_back(matchInfo);
       }
 	  } // End of Track Loop
