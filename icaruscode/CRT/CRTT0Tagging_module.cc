@@ -6,7 +6,7 @@
 
 #include "sbnobj/Common/CRT/CRTHit.hh"
 #include "icaruscode/CRT/CRTUtils/CRTMatchingUtils.h"
-#include "icaruscode/IcarusObj/CRTTPCMatchingInfo.h"
+#include "sbnobj/Common/CRT/CRTT0TaggingInfo.hh"
 #include "icaruscode/CRT/CRTUtils/RecoUtils.h"
 #include "icaruscode/CRT/CRTUtils/CRTCommonUtils.h"
 // Framework includes
@@ -164,7 +164,7 @@ icarus::crt::CRTT0Tagging::CRTT0Tagging(fhicl::ParameterSet const& p)
   produces< std::vector<anab::T0>                   >();
   produces< art::Assns<recob::Track , anab::T0>     >();
   produces< art::Assns<sbn::crt::CRTHit, anab::T0>  >();  
-  produces< std::vector<icarus::CRTTPCMatchingInfo> >();
+  produces< std::vector<sbn::crt::CRTT0TaggingInfo> >();
   //produces< art::Assns<icarus::CRTTPCMatchingInfo, anab::T0>  >();  
   //produces< art::Assns<recob::Track, icarus::CRTTPCMatchingInfo>  >();
   //produces< art::Assns<sbn::crt::CRTHit, icarus::CRTTPCMatchingInfo>  >();
@@ -243,7 +243,7 @@ void icarus::crt::CRTT0Tagging::produce(art::Event& e)
   auto t0col = std::make_unique< std::vector<anab::T0> > ();
   auto trackAssn = std::make_unique< art::Assns<recob::Track, anab::T0> >();
   auto t0CrtHitAssn = std::make_unique< art::Assns<sbn::crt::CRTHit, anab::T0> >();
-  auto matchInfoCol = std::make_unique< std::vector<icarus::CRTTPCMatchingInfo> >();
+  auto matchInfoCol = std::make_unique< std::vector<sbn::crt::CRTT0TaggingInfo> >();
   //auto t0matchInfoAssn = std::make_unique< art::Assns<icarus::CRTTPCMatchingInfo, anab::T0> >();
   //auto trackMatchInfoAssn = std::make_unique< art::Assns<recob::Track, icarus::CRTTPCMatchingInfo> >();
   //auto matchInfoCrtHitAssn = std::make_unique< art::Assns<sbn::crt::CRTHit, icarus::CRTTPCMatchingInfo> >();
@@ -505,7 +505,6 @@ void icarus::crt::CRTT0Tagging::produce(art::Event& e)
         fFirstEigenValue=driftedMatchedPCAResults.eigenValue1;
         fSecondEigenValue=driftedMatchedPCAResults.eigenValue2;
         fThirdEigenValue=driftedMatchedPCAResults.eigenValue3;
-        std::cout<<fFirstEigenValue<<" "<<fSecondEigenValue<<" "<<fThirdEigenValue<<std::endl;
         fTrackCrtDistance=bestCrtCand.distance;
         fTrackCrtDeltaX=bestCrtCand.delta.X();
         fTrackCrtDeltaY=bestCrtCand.delta.Y();
@@ -518,6 +517,9 @@ void icarus::crt::CRTT0Tagging::produce(art::Event& e)
         fCrossPointZ=bestCrtCand.crossPoint.Z();    
         fTrueMatch=trueMatch;
         fTree->Fill();
+
+        sbn::crt::CRTTaggingTrackFit trackFit = sbn::crt::CRTTaggingTrackFit::pca; 
+
         mf::LogInfo("CRTT0Tagging")
 	        <<"Matched CRT time = "<<bestCrtCand.CRThit.ts1_ns/1e3<<" [us] to track "<<track.ID()<<" with projection-hit distance = "<<bestCrtCand.distance<<" Track T0 "<<t0
 	        <<"\nMatched CRT hit plane: "<<bestCrtCand.CRThit.plane<<" xpos "<<bestCrtCand.CRThit.x_pos<<" ypos "<<bestCrtCand.CRThit.y_pos<<" zpos "<<bestCrtCand.CRThit.z_pos
@@ -528,7 +530,7 @@ void icarus::crt::CRTT0Tagging::produce(art::Event& e)
         trackAssn->addSingle(trkPtr, newT0ptr);
         t0CrtHitAssn->addSingle(bestCrtCand.ptrCRThit, newT0ptr);
 
-        icarus::CRTTPCMatchingInfo matchInfo {bestCrtCand.distance, matchedSys, bestCrtCand.CRThit.plane, bestCrtCand.CRThit.ts1_ns, bestCrtCand.delta.X(), bestCrtCand.delta.Y(), bestCrtCand.delta.Z(), bestCrtCand.crossPoint.X(), bestCrtCand.crossPoint.Y(), bestCrtCand.crossPoint.Z(), bestCrtCand.plane};        
+        sbn::crt::CRTT0TaggingInfo matchInfo {bestCrtCand.distance, matchedSys, bestCrtCand.CRThit.plane, bestCrtCand.CRThit.ts1_ns, bestCrtCand.delta.X(), bestCrtCand.delta.Y(), bestCrtCand.delta.Z(), bestCrtCand.crossPoint.X(), bestCrtCand.crossPoint.Y(), bestCrtCand.crossPoint.Z(), trackFit, bestCrtCand.plane, trueMatch};        
         matchInfoCol->push_back(matchInfo);
       }
 	  } // End of Track Loop
