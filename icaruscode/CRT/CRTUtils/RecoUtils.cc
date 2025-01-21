@@ -191,10 +191,10 @@ TopCRTTransformations LoadTopCRTTransformations()
   std::string fullFileName;
   cet::search_path searchPath("FW_SEARCH_PATH");
   searchPath.find_file("TopCrtCorrectionByTPC.txt", fullFileName);
-  /*if (!searchPath.find_file("TopCrtCorrectionByTPC.txt", fullFileName)) {
+  if (!searchPath.find_file("TopCrtCorrectionByTPC.txt", fullFileName)) {
       mf::LogError("CRTMatchingUtils_LoadTopCrtTransformation")
       << "Top CRT Correction transformation file not found in FW_SEARCH_PATH.";
-  }*/
+  }
   std::ifstream corrFile(fullFileName, std::ios::in);
   std::map<int, AffineTrans> Type0Corr;
   std::map<int, AffineTrans> Type1Corr;
