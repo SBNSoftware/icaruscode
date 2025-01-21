@@ -72,6 +72,7 @@ struct TopCRTTransformations
   TopCRTCorrectionMap WE;
   TopCRTCorrectionMap WW;
   TopCRTCorrectionMap WestCC;
+  bool imported;
 };
 
 using TopCRTCentersMap = std::map<FebIndex_t, ModuleCenter>;

@@ -454,7 +454,7 @@ void icarus::crt::CRTT0Tagging::produce(art::Event& e)
 
         geo::Point_t CRTHitCoordinate = {crtHit.x_pos, crtHit.y_pos, crtHit.z_pos};
 
-        if(fData){ // Realignment only applies to Data, not MC
+        if(fData && fTopCRTTransformations.imported){ // Realignment only applies to Data, not MC
           if(crtSys==0){
             CRTHitCoordinate = icarus::crt::dataTools::ApplyTransformation(crtHit, TopCRTCorrection, fTopCRTCenterMap);
           }

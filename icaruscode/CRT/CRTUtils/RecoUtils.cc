@@ -190,6 +190,7 @@ TopCRTTransformations LoadTopCRTTransformations()
 {
   std::string fullFileName;
   cet::search_path searchPath("FW_SEARCH_PATH");
+  bool imported = false;
   searchPath.find_file("TopCrtCorrectionByTPC.txt", fullFileName);
   if (!searchPath.find_file("TopCrtCorrectionByTPC.txt", fullFileName)) {
       mf::LogError("CRTMatchingUtils_LoadTopCrtTransformation")
@@ -232,8 +233,9 @@ TopCRTTransformations LoadTopCRTTransformations()
       Type3Corr.insert({variables.at(0), Type3});
       Type4Corr.insert({variables.at(0), Type4});
       Type5Corr.insert({variables.at(0), Type5});
+      imported = true;
   }
-  TopCRTTransformations LoadedTransformations={Type2Corr, Type1Corr, Type0Corr, Type4Corr, Type5Corr, Type3Corr};
+  TopCRTTransformations LoadedTransformations={Type2Corr, Type1Corr, Type0Corr, Type4Corr, Type5Corr, Type3Corr, imported};
   return LoadedTransformations;
 }
 
