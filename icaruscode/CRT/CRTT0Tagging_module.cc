@@ -165,6 +165,10 @@ icarus::crt::CRTT0Tagging::CRTT0Tagging(fhicl::ParameterSet const& p)
   produces< art::Assns<recob::Track , anab::T0>     >();
   produces< art::Assns<sbn::crt::CRTHit, anab::T0>  >();  
   produces< std::vector<sbn::crt::CRTT0TaggingInfo> >();
+  produces< art::Assns<recob::Track , sbn::crt::CRTT0TaggingInfo> >();
+  produces< art::Assns<recob::PFParticle , anab::T0>     >();
+  produces< art::Assns<recob::PFParticle , sbn::crt::CRTT0TaggingInfo> >();
+
   //produces< art::Assns<icarus::CRTTPCMatchingInfo, anab::T0>  >();  
   //produces< art::Assns<recob::Track, icarus::CRTTPCMatchingInfo>  >();
   //produces< art::Assns<sbn::crt::CRTHit, icarus::CRTTPCMatchingInfo>  >();
@@ -244,11 +248,13 @@ void icarus::crt::CRTT0Tagging::produce(art::Event& e)
   auto trackAssn = std::make_unique< art::Assns<recob::Track, anab::T0> >();
   auto t0CrtHitAssn = std::make_unique< art::Assns<sbn::crt::CRTHit, anab::T0> >();
   auto matchInfoCol = std::make_unique< std::vector<sbn::crt::CRTT0TaggingInfo> >();
-  //auto t0matchInfoAssn = std::make_unique< art::Assns<icarus::CRTTPCMatchingInfo, anab::T0> >();
-  //auto trackMatchInfoAssn = std::make_unique< art::Assns<recob::Track, icarus::CRTTPCMatchingInfo> >();
-  //auto matchInfoCrtHitAssn = std::make_unique< art::Assns<sbn::crt::CRTHit, icarus::CRTTPCMatchingInfo> >();
+
+  auto pfpAssn = std::make_unique< art::Assns<recob::PFParticle, anab::T0> >();
+  auto trackMatchInfoAssn = std::make_unique< art::Assns<recob::Track , sbn::crt::CRTT0TaggingInfo> >();
+  auto pfpMatchInfoAssn = std::make_unique< art::Assns<recob::PFParticle , sbn::crt::CRTT0TaggingInfo> >();
 
   art::PtrMaker<anab::T0> makeT0ptr{ e }; // create art pointers to the new T0 
+  art::PtrMaker<sbn::crt::CRTT0TaggingInfo> makeMatchInfoPtr{ e }; // create art pointers to the CRTT0TaggingInfo
 
   std::map< int, const simb::MCParticle*> particleMap;
   std::map<std::pair<int,double>,std::vector<int>> crtParticleMap;
@@ -525,14 +531,20 @@ void icarus::crt::CRTT0Tagging::produce(art::Event& e)
 	        <<"Matched CRT time = "<<bestCrtCand.CRThit.ts1_ns/1e3<<" [us] to track "<<track.ID()<<" with projection-hit distance = "<<bestCrtCand.distance<<" Track T0 "<<t0
 	        <<"\nMatched CRT hit plane: "<<bestCrtCand.CRThit.plane<<" xpos "<<bestCrtCand.CRThit.x_pos<<" ypos "<<bestCrtCand.CRThit.y_pos<<" zpos "<<bestCrtCand.CRThit.z_pos
           <<"\nDelta: X "<<bestCrtCand.delta.X()<<" Y "<<bestCrtCand.delta.Y()<<" Z "<<bestCrtCand.delta.Z();
-        t0col->push_back(anab::T0(bestCrtCand.CRThit.ts1_ns, track.ID(), matchedSys, bestCrtCand.CRThit.plane,bestCrtCand.distance));
 
+        t0col->push_back(anab::T0(bestCrtCand.CRThit.ts1_ns, track.ID(), matchedSys, bestCrtCand.CRThit.plane,bestCrtCand.distance));
         art::Ptr<anab::T0> const newT0ptr = makeT0ptr(t0col->size()-1); // index of the last T0
         trackAssn->addSingle(trkPtr, newT0ptr);
         t0CrtHitAssn->addSingle(bestCrtCand.ptrCRThit, newT0ptr);
+        pfpAssn->addSingle(p_pfp, newT0ptr);
 
         sbn::crt::CRTT0TaggingInfo matchInfo {bestCrtCand.distance, matchedSys, bestCrtCand.CRThit.plane, bestCrtCand.CRThit.ts1_ns, bestCrtCand.delta.X(), bestCrtCand.delta.Y(), bestCrtCand.delta.Z(), bestCrtCand.crossPoint.X(), bestCrtCand.crossPoint.Y(), bestCrtCand.crossPoint.Z(), bestCrtCand.plane, trackFit, matchMethod, trueMatch};        
         matchInfoCol->push_back(matchInfo);
+
+        art::Ptr<sbn::crt::CRTT0TaggingInfo> const newMatchInfoPtr = makeMatchInfoPtr(matchInfoCol->size()-1); // index of the last CRTT0TaggingInfo
+        trackMatchInfoAssn->addSingle(trkPtr, newMatchInfoPtr);
+        pfpMatchInfoAssn->addSingle(p_pfp, newMatchInfoPtr);
+
       }
 	  } // End of Track Loop
 	} // End of Cryo Loop
@@ -540,6 +552,9 @@ void icarus::crt::CRTT0Tagging::produce(art::Event& e)
   e.put(std::move(trackAssn));
   e.put(std::move(t0CrtHitAssn));
   e.put(std::move(matchInfoCol));
+  e.put(std::move(pfpAssn));
+  e.put(std::move(trackMatchInfoAssn));
+  e.put(std::move(pfpMatchInfoAssn));
 }
 
 DEFINE_ART_MODULE(CRTT0Tagging)
