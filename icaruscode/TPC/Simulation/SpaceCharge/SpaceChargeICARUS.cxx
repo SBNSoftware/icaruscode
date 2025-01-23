@@ -28,7 +28,8 @@ bool spacecharge::SpaceChargeICARUS::Configure(fhicl::ParameterSet const& pset)
   //fEnableCorrSCE = pset.get<bool>("EnableCorrSCE");
   fEnableCalSpatialSCE = pset.get<bool>("EnableCalSpatialSCE");
   fEnableCalEfieldSCE = pset.get<bool>("EnableCalEfieldSCE");
-
+  f_2D_drift_sim_hack = pset.get<bool>("is2DdriftSimHack","false");
+  
   std::cout << "Configuring SpaceCharge..." << std::endl;
 
   if((fEnableSimSpatialSCE == true) || (fEnableSimEfieldSCE == true)){
@@ -140,14 +141,24 @@ geo::Vector_t spacecharge::SpaceChargeICARUS::GetPosOffsets(geo::Point_t const& 
     // cathode spans x=210.14 and x=210.29 in pos cryostat
     if(xx>0){
       cryo_corr=1.0;
+
+      if(f_2D_drift_sim_hack==true)
+	tpc_corr=-1.0;     
+                 
       if(xx<210.14){
 	tpc_corr=-1.0;
       }
+      
     }else{
       cryo_corr=-1.0;
+      
+      if(f_2D_drift_sim_hack==true)
+	tpc_corr=-1.0;     
+      
       if(xx<-210.29){
-	tpc_corr=-1.0;
+	tpc_corr=-1.0;	
       }
+            
     }
     fixCoords(&xx, &yy, &zz); //bring into AV and x = abs(x)
     double offset_x=0., offset_y=0., offset_z=0.;
