@@ -4,6 +4,10 @@
 local wc = import "wirecell.jsonnet";
 local base = import "pgrapher/common/params.jsonnet";
 
+local cathode_input_format = std.extVar('cathode_input_format'); // scalar, array
+local east = import "cathode-east.jsonnet";
+local west = import "cathode-west.jsonnet";
+
 base {
     det : {
 
