@@ -3,11 +3,11 @@
 #
 #include "detsim_2d_icarus_refactored.fcl"
 
-#Increase electronics response width by 10%
-physics.producers.daq.wcls_main.structs.gain0: 15.5019272727
-physics.producers.daq.wcls_main.structs.gain1: 11.4710841818
-physics.producers.daq.wcls_main.structs.gain2: 11.841942
-physics.producers.daq.wcls_main.structs.shaping0: 1.43
-physics.producers.daq.wcls_main.structs.shaping1: 1.43
-physics.producers.daq.wcls_main.structs.shaping2: 1.43
+#Increase electronics response width by 30%
+physics.producers.daq.wcls_main.structs.gain0: 13.11701538
+physics.producers.daq.wcls_main.structs.gain1: 9.70630200
+physics.producers.daq.wcls_main.structs.gain2: 10.02010477
+physics.producers.daq.wcls_main.structs.shaping0: 1.69
+physics.producers.daq.wcls_main.structs.shaping1: 1.69
+physics.producers.daq.wcls_main.structs.shaping2: 1.69
 process_name: DetSimSigShapeStretch
