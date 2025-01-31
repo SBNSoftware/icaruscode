@@ -38,6 +38,7 @@ icarus_simwire_wirecell:
 	    //files_fields: "garfield-icarus-fnal-rev2.json.bz2"
 	    files_fields: "icarus_fnal_fit_ks_P0nom.json.bz2"
 	    file_rcresp: "" # use the RCResponse by default
+	    cathode_input_format: "scalar" # scalar or array
 	    }
         structs: {
             # load values from simulationservices_icarus.fcl
