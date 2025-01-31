@@ -54,7 +54,13 @@ base {
                         {
                             anode: xanode[a],
                             response: xresponse[a],
-                            cathode: xcathode[a],
+                            //cathode: xcathode[a],
+			    cathode: if cathode_input_format == 'scalar' then xcathode[a]
+                                     else {
+                                       x: if anode<2 then [v*wc.cm for v in east.x] else [v*wc.cm for v in west.x],
+                                       y: if anode<2 then [v*wc.cm for v in east.y] else [v*wc.cm for v in west.y],
+                                       z: if anode<2 then [v*wc.cm for v in east.z] else [v*wc.cm for v in west.z],
+                                     },
                         },
 
                         null
