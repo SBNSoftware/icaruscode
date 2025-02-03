@@ -6,7 +6,8 @@
 
 #include "sbnobj/Common/CRT/CRTHit.hh"
 #include "icaruscode/CRT/CRTUtils/CRTMatchingUtils.h"
-#include "sbnobj/Common/CRT/CRTT0TaggingInfo.hh"
+#include "sbnobj/Common/CRT/CRTHitT0TaggingInfo.hh"
+#include "sbnobj/Common/CRT/CRTHitT0TaggingTruthInfo.hh"
 #include "icaruscode/CRT/CRTUtils/RecoUtils.h"
 #include "icaruscode/CRT/CRTUtils/CRTCommonUtils.h"
 // Framework includes
@@ -164,10 +165,12 @@ icarus::crt::CRTT0Tagging::CRTT0Tagging(fhicl::ParameterSet const& p)
   produces< std::vector<anab::T0>                   >();
   produces< art::Assns<recob::Track , anab::T0>     >();
   produces< art::Assns<sbn::crt::CRTHit, anab::T0>  >();  
-  produces< std::vector<sbn::crt::CRTT0TaggingInfo> >();
-  produces< art::Assns<recob::Track , sbn::crt::CRTT0TaggingInfo> >();
-  produces< art::Assns<recob::PFParticle , anab::T0>     >();
-  produces< art::Assns<recob::PFParticle , sbn::crt::CRTT0TaggingInfo> >();
+  produces< std::vector<sbn::crt::CRTHitT0TaggingInfo> >();
+  produces< art::Assns<recob::Track , sbn::crt::CRTHitT0TaggingInfo> >();
+  produces< art::Assns<recob::PFParticle , anab::T0>  >();
+  produces< art::Assns<recob::PFParticle , sbn::crt::CRTHitT0TaggingInfo> >();
+  produces< std::vector<sbn::crt::CRTHitT0TaggingTruthInfo> >();
+  produces< art::Assns<sbn::crt::CRTHitT0TaggingInfo, sbn::crt::CRTHitT0TaggingTruthInfo> >();
 
   //produces< art::Assns<icarus::CRTTPCMatchingInfo, anab::T0>  >();  
   //produces< art::Assns<recob::Track, icarus::CRTTPCMatchingInfo>  >();
@@ -247,14 +250,18 @@ void icarus::crt::CRTT0Tagging::produce(art::Event& e)
   auto t0col = std::make_unique< std::vector<anab::T0> > ();
   auto trackAssn = std::make_unique< art::Assns<recob::Track, anab::T0> >();
   auto t0CrtHitAssn = std::make_unique< art::Assns<sbn::crt::CRTHit, anab::T0> >();
-  auto matchInfoCol = std::make_unique< std::vector<sbn::crt::CRTT0TaggingInfo> >();
+  auto matchInfoCol = std::make_unique< std::vector<sbn::crt::CRTHitT0TaggingInfo> >();
+  auto matchInfoTruthCol = std::make_unique< std::vector<sbn::crt::CRTHitT0TaggingTruthInfo> >();
 
   auto pfpAssn = std::make_unique< art::Assns<recob::PFParticle, anab::T0> >();
-  auto trackMatchInfoAssn = std::make_unique< art::Assns<recob::Track , sbn::crt::CRTT0TaggingInfo> >();
-  auto pfpMatchInfoAssn = std::make_unique< art::Assns<recob::PFParticle , sbn::crt::CRTT0TaggingInfo> >();
+  auto trackMatchInfoAssn = std::make_unique< art::Assns<recob::Track , sbn::crt::CRTHitT0TaggingInfo> >();
+  auto pfpMatchInfoAssn = std::make_unique< art::Assns<recob::PFParticle , sbn::crt::CRTHitT0TaggingInfo> >();
+
+  auto truthAssn = std::make_unique< art::Assns<sbn::crt::CRTHitT0TaggingInfo, sbn::crt::CRTHitT0TaggingTruthInfo> >();
 
   art::PtrMaker<anab::T0> makeT0ptr{ e }; // create art pointers to the new T0 
-  art::PtrMaker<sbn::crt::CRTT0TaggingInfo> makeMatchInfoPtr{ e }; // create art pointers to the CRTT0TaggingInfo
+  art::PtrMaker<sbn::crt::CRTHitT0TaggingInfo> makeMatchInfoPtr{ e }; // create art pointers to the CRTHitT0TaggingInfo
+  art::PtrMaker<sbn::crt::CRTHitT0TaggingTruthInfo> makeMatchTruthInfoPtr{ e }; // create art pointers to the CRTHitT0TaggingTruthInfo
 
   std::map< int, const simb::MCParticle*> particleMap;
   std::map<std::pair<int,double>,std::vector<int>> crtParticleMap;
@@ -482,7 +489,12 @@ void icarus::crt::CRTT0Tagging::produce(art::Event& e)
       if(bestCrtCand.distance<=fGoodCandidateDistance){ 
         int matchedSys=fCrtUtils.MacToTypeCode(bestCrtCand.CRThit.feb_id[0]);
         if(matchedSys==2) continue; // lets discard Bottom CRT Hits for the moment
+        bool truthFound=false;
         bool trueMatch=false;
+        bool truthIsNu=false;
+        int trueG4TrackId=std::numeric_limits<int>::lowest();
+        int truePdg=std::numeric_limits<int>::lowest();
+      
         if(!fData && !fSkipTruth){
           std::vector<int> crtTracks, crtPdgs;
           std::pair<int,double> thisMatch=std::make_pair((int)bestCrtCand.CRThit.feb_id[0], bestCrtCand.CRThit.ts1_ns);
@@ -498,6 +510,14 @@ void icarus::crt::CRTT0Tagging::produce(art::Event& e)
               trueMatch=true;
               break;
             }
+          }
+          trueG4TrackId=abs(RecoUtils::TrueParticleIDFromTotalRecoHits(clockData, trkHits, false));
+          if(trueG4TrackId==0){
+            trueG4TrackId=std::numeric_limits<int>::lowest();
+          } else {
+            truthFound=true;
+            truthIsNu=isNuMap.at(trueG4TrackId);
+            truePdg=particleMap.at(trueG4TrackId)->PdgCode();
           }
         }
         icarus::crt::DriftedTrack thisMatchedDriftedTrack = fMatchingAlg.DriftTrack(trkHits, trkHitMetas, fGeometryService, detProp, clockData, bestCrtCand.CRThit.ts1_ns/1e3, track, 0);
@@ -538,12 +558,19 @@ void icarus::crt::CRTT0Tagging::produce(art::Event& e)
         t0CrtHitAssn->addSingle(bestCrtCand.ptrCRThit, newT0ptr);
         pfpAssn->addSingle(p_pfp, newT0ptr);
 
-        sbn::crt::CRTT0TaggingInfo matchInfo {bestCrtCand.distance, matchedSys, bestCrtCand.CRThit.plane, bestCrtCand.CRThit.ts1_ns, bestCrtCand.delta.X(), bestCrtCand.delta.Y(), bestCrtCand.delta.Z(), bestCrtCand.crossPoint.X(), bestCrtCand.crossPoint.Y(), bestCrtCand.crossPoint.Z(), bestCrtCand.plane, trackFit, matchMethod, trueMatch};        
+        sbn::crt::CRTHitT0TaggingInfo matchInfo {bestCrtCand.distance, matchedSys, bestCrtCand.CRThit.plane, bestCrtCand.CRThit.ts1_ns, bestCrtCand.delta.X(), bestCrtCand.delta.Y(), bestCrtCand.delta.Z(), bestCrtCand.crossPoint.X(), bestCrtCand.crossPoint.Y(), bestCrtCand.crossPoint.Z(), bestCrtCand.plane, trackFit, matchMethod};        
         matchInfoCol->push_back(matchInfo);
-
-        art::Ptr<sbn::crt::CRTT0TaggingInfo> const newMatchInfoPtr = makeMatchInfoPtr(matchInfoCol->size()-1); // index of the last CRTT0TaggingInfo
+        
+        art::Ptr<sbn::crt::CRTHitT0TaggingInfo> const newMatchInfoPtr = makeMatchInfoPtr(matchInfoCol->size()-1); // index of the last CRTHitT0TaggingInfo
         trackMatchInfoAssn->addSingle(trkPtr, newMatchInfoPtr);
         pfpMatchInfoAssn->addSingle(p_pfp, newMatchInfoPtr);
+
+        if(!fData && !fSkipTruth){
+          sbn::crt::CRTHitT0TaggingTruthInfo truthInfo {truthFound, trueMatch, trueG4TrackId, truePdg, truthIsNu};        
+          matchInfoTruthCol->push_back(truthInfo);
+          art::Ptr<sbn::crt::CRTHitT0TaggingTruthInfo> const newMatchTruthInfoPtr = makeMatchTruthInfoPtr(matchInfoTruthCol->size()-1); // index of the last CRTHitT0TaggingTruthInfo
+          truthAssn->addSingle(newMatchInfoPtr, newMatchTruthInfoPtr);
+        }
 
       }
 	  } // End of Track Loop
@@ -555,6 +582,8 @@ void icarus::crt::CRTT0Tagging::produce(art::Event& e)
   e.put(std::move(pfpAssn));
   e.put(std::move(trackMatchInfoAssn));
   e.put(std::move(pfpMatchInfoAssn));
+  e.put(std::move(matchInfoTruthCol));
+  e.put(std::move(truthAssn));
 }
 
 DEFINE_ART_MODULE(CRTT0Tagging)
