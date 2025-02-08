@@ -1,9 +1,3 @@
-# add underlying subfolders
-add_subdirectory(SBNNoise)
-add_subdirectory(partial)
-add_subdirectory(commissioning)
-add_subdirectory(archive)
-
 # Install fcl files in /job subdirectory.
 install_fhicl()
 
@@ -11,3 +5,4 @@ install_fhicl()
 
 FILE(GLOB fcl_files *.fcl)
 install_source( EXTRAS ${fcl_files} )
+
