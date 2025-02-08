@@ -38,6 +38,12 @@
 
 
 // -----------------------------------------------------------------------------
+using namespace util::quantities::time_literals;
+using namespace util::quantities::frequency_literals;
+using namespace util::quantities::electronics_literals;
+
+
+// -----------------------------------------------------------------------------
 #if __cplusplus < 202002L // C++20?
 namespace util {
   
@@ -106,12 +112,12 @@ icarus::opdet::PMTsimulationAlg::PMTsimulationAlg
     *(fParams.pulseFunction),
     fSampling,
     fParams.pulseSubsamples, // tick subsampling
-    1.0e-4_ADCf // stop sampling when ADC counts are below this value
+    1.0e-4_ADCf, // stop sampling when signal is closer to baseline than this...
+    20_ns        // ... for at least this long
     )
   , fPedestalGen(fParams.pedestalGen)
   , fDiscrAlgo(selectDiscriminationAlgo(fParams.discrimAlgo))
 {
-  using namespace util::quantities::electronics_literals;
 
   //  mf::LogDebug("PMTsimulationAlg") << "Sampling = " << fSampling << std::endl;
 
@@ -189,9 +195,6 @@ auto icarus::opdet::PMTsimulationAlg::CreateFullWaveform
   const -> Waveform_t
 {
 
-    using namespace util::quantities::time_literals;
-    using namespace util::quantities::frequency_literals;
-    using namespace util::quantities::electronics_literals;
     using namespace detinfo::timescales;
     detinfo::DetectorTimings const& timings = *(fParams.detTimings);
 
@@ -972,7 +975,6 @@ auto icarus::opdet::PMTsimulationAlgMaker::makeParams(
   bool trackSelectedPhotons /* = false */
   ) const -> PMTsimulationAlg::ConfigurationParameters_t
 {
-  using namespace util::quantities::electronics_literals;
   
   //
   // set the configuration
