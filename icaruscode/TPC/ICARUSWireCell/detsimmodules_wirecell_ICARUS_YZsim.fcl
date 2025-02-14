@@ -414,6 +414,7 @@ icarus_simwire_wirecell:
                            "icarus_final_fit_dqdx13.json.bz2",
                            "icarus_final_fit_dqdx14.json.bz2"'
 	    file_rcresp: "" # use the RCResponse by default
+            cathode_input_format: "scalar" # scalar or array
 	    }
         structs: {
             # load values from simulationservices_icarus.fcl
