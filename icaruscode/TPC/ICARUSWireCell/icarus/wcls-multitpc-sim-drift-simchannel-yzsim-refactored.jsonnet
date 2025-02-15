@@ -235,7 +235,7 @@ local scalers = [{
         type: "Scaler",
 	name: "scaler%d" %n, //%std.floor(n/45),
         data: params.lar {
-	        	 yzmap_scale_filename: 'yzmap_gain_icarus_v2_run2.json',
+	        	 yzmap_scale_filename: 'yzmap_gain_icarus_v3_run2.json',
 			 bin_width:  10*wc.cm,
 			 tpc_width: 1500*wc.mm,
 			 bin_height: 10*wc.cm,
@@ -430,7 +430,7 @@ local deposetfilteryz = [ g.pnode({
             type: 'DepoSetFilterYZ',
    	    name: 'deposetfilteryz_resp%d-'%std.mod(r,15)+'plane%d-'%std.mod(std.floor(r/15),3)+tools.anodes[std.floor(r/45)].name,
             data: {
-	    	  yzmap_filename: 'yzmap_icarus_v2_run2.json',
+	    	  yzmap_filename: 'yzmap_icarus_v3_run2.json',
 		  bin_width:  10*wc.cm,
 		  tpc_width: 1500*wc.mm,
 		  bin_height: 10*wc.cm,
@@ -438,7 +438,7 @@ local deposetfilteryz = [ g.pnode({
 		  zoffset: 900*wc.cm,
 		  nbinsy: 31,
 		  nbinsz: 180,
-		  resp: std.mod(r,15),	
+		  resp: std.mod(r,15)+1,	
                   anode: wc.tn(tools.anodes[std.floor(r/45)]),
 		  plane: std.mod(std.floor(r/15),3)	
             	  }
