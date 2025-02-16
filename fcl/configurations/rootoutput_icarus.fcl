@@ -45,6 +45,20 @@ icarus_rootoutput: {
   compressionLevel:  1
   dataTier:         "simulated" # still parroting something I don't understand
   saveMemoryObjectThreshold: 0
+  
+  # this will run the SaveJobEnvironment results producer module every time
+  # RootOutput is used; see
+  # https://cdcvs.fnal.gov/redmine/projects/art/wiki/Release_Notes_11600#-Release-feature-Issue-7449-Analysis-support-requires-ability-to-store-objects-in-file-in-branch-other-than-Run-SubRun-or-Event
+  results: {
+    producers: {
+      writeConfig: {
+        plugin_type: SaveJobEnvironment
+        Repositories: [ icaruscode, sbndcode ]
+      }
+    }
+    result_path: [ writeConfig ]
+  }
+  
 } # icarus_rootoutput
 
 
