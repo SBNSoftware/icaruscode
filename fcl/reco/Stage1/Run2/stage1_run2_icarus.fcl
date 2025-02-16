@@ -7,7 +7,7 @@ physics.reco: [ @sequence::icarus_filter_cluster3D,
                 @sequence::icarus_reco_fm,
                 @sequence::icarus_tpcpmtbarycentermatch,
                 @sequence::icarus_crttrack,
-                @sequence::icarus_crtt0match,
+                @sequence::icarus_crtt0tagging,
                 caloskimCalorimetryCryoE, caloskimCalorimetryCryoW]
 
 physics.outana:            [ @sequence::icarus_analysis_modules ]
