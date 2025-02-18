@@ -438,7 +438,7 @@ local deposetfilteryz = [ g.pnode({
 		  zoffset: 900*wc.cm,
 		  nbinsy: 31,
 		  nbinsz: 180,
-		  resp: std.mod(r,15)+1,	
+		  resp: std.mod(r,15),	
                   anode: wc.tn(tools.anodes[std.floor(r/45)]),
 		  plane: std.mod(std.floor(r/15),3)	
             	  }
