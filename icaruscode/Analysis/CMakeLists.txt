@@ -1,6 +1,7 @@
 add_subdirectory(tools)
 add_subdirectory(overburden)
 add_subdirectory(trigger)
+add_subdirectory(cheating)
 
 set(         MODULE_LIBRARIES
                 larcorealg::Geometry
@@ -52,6 +53,7 @@ cet_build_plugin(ThroughgoingmuonAnalyzer art::module LIBRARIES ${MODULE_LIBRARI
 set_property(SOURCE ThroughgoingmuonAnalyzer_module.cc APPEND PROPERTY COMPILE_DEFINITIONS EIGEN_FFTW_DEFAULT)
 cet_build_plugin(TrackHitAna art::module LIBRARIES ${MODULE_LIBRARIES})
 cet_build_plugin(WireAna art::module LIBRARIES ${MODULE_LIBRARIES})
+
 
 #install_headers()
 install_fhicl()

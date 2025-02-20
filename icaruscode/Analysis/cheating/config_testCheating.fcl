@@ -1,0 +1,13 @@
+BEGIN_PROLOG
+
+test_cheated: {
+    module_type: "testCheated"
+
+    PFParticleLabel:            "pandora"
+    SliceLabel:                 "pandora"
+    PFParticleMetadataLabel:    "pandora"
+    PandoraSuffixes:            ["GausCryoE", "GausCryoW"]
+    VerboseOutput:              true
+}
+
+END_PROLOG
