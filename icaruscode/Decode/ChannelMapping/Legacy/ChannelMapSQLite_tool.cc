@@ -29,7 +29,7 @@
 #include "fhiclcpp/types/TableFragment.h"
 
 
-namespace icarusDB { class ChannelMapSQLiteTool; }
+namespace icarusDB { struct ChannelMapSQLiteTool; }
 
 /// Toolification of `icarusDB::ChannelMapSQLite`.
 struct icarusDB::ChannelMapSQLiteTool: public icarusDB::ChannelMapSQLite {

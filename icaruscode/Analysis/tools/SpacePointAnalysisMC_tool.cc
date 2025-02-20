@@ -273,7 +273,7 @@ public:
         fLocalIndexHitVec.emplace_back(hit->LocalIndex());
         fTimeOrderHitVec.emplace_back(hitOrder);
         fChiSquareHitVec.emplace_back(hit->GoodnessOfFit());
-        fSummedADCHitVec.emplace_back(hit->SummedADC());
+        fSummedADCHitVec.emplace_back(hit->ROISummedADC());
         fIntegralHitVec.emplace_back(hit->Integral());
         fPHHitVec.emplace_back(hit->PeakAmplitude());
         fRMSHitVec.emplace_back(hit->RMS());

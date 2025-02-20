@@ -96,7 +96,7 @@ public:
   void clear();
 
   void analyze(art::Event const &e) override;
-  void beginJob();
+  void beginJob() override;
   void beginRun(const art::Run &run) override;
 
 private:

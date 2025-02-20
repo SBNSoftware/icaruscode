@@ -403,7 +403,7 @@ void SimTestPulseAna::analyze(art::Event const & e)
                         _peakTime      = recoHit.PeakTime();
                         _peakAmplitude = recoHit.PeakAmplitude();
                         _rms           = recoHit.RMS();
-                        _summedADC     = recoHit.SummedADC();
+                        _summedADC     = recoHit.ROISummedADC();
                         _integral      = recoHit.Integral();
                         _chisquare     = recoHit.GoodnessOfFit();
                         _baseline      = _wf[recoHit.StartTick()-_start_tick];

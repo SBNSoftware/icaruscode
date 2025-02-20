@@ -158,9 +158,9 @@ icarus::crt::MatchedCRT CRTHitmatched(
     MatchType = exTop;
   else if (topen == 0 && sideen == 0 && topex == 0 && sideex == 1)
     MatchType = exSide;
-  else if (topen >= 1 && sideen >= 1 && topex == 0 && sideex == 0)
+  else if (topen >= 1 && sideen == 0 && topex == 0 && sideex == 0)
     MatchType = enTop_mult;
-  else if (topen >= 1 && sideen >= 1 && topex == 0 && sideex >= 1)
+  else if (topen >= 1 && sideen == 0 && topex == 0 && sideex >= 1)
     MatchType = enTop_exSide_mult;
   else
     MatchType = others;

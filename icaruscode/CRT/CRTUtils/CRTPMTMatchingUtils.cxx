@@ -109,9 +109,9 @@ icarus::crt::CRTMatches icarus::crt::CRTHitmatched(
   else if (topen == 0 && sideen == 0 && topex == 0 && sideex == 1)
     if(bottomex==0 && bottomen==1) flashType = MatchType::exSide_enBottom;
     else flashType = MatchType::exSide;
-  else if (topen >= 1 && sideen >= 1 && topex == 0 && sideex == 0) // could also add `if (MatchBottomCRT)` here
+  else if (topen >= 1 && sideen == 0 && topex == 0 && sideex == 0) // could also add `if (MatchBottomCRT)` here
     flashType = MatchType::enTop_mult; 
-  else if (topen >= 1 && sideen >= 1 && topex == 0 && sideex >= 1) // and here 
+  else if (topen >= 1 && sideen == 0 && topex == 0 && sideex >= 1) // and here 
     flashType = MatchType::enTop_exSide_mult;
   else
     flashType = MatchType::others;

@@ -669,7 +669,7 @@ sbn::selHitInfo sbn::TimeTrackTreeStorage::makeHit(const recob::Hit &hit,
 
   // information from the hit object
   hinfo.integral = hit.Integral();
-  hinfo.sumadc = hit.SummedADC();
+  hinfo.sumadc = hit.ROISummedADC();
   hinfo.width = hit.RMS();
   hinfo.pk_time = hit.PeakTime();
   hinfo.mult = hit.Multiplicity();

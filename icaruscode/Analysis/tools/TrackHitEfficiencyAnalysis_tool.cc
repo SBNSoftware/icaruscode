@@ -823,7 +823,7 @@ void TrackHitEfficiencyAnalysis::fillHistograms(const art::Event& event) const
                                 {
                                     hitPeakTimeBest     = bestHit->PeakTime();
                                     hitIntegralBest     = bestHit->Integral();
-                                    hitSummedADCBest    = bestHit->SummedADC();
+                                    hitSummedADCBest    = bestHit->ROISummedADC();
                                     hitRMSBest          = bestHit->RMS();
                                     hitMultiplicityBest = bestHit->Multiplicity();
                                     hitLocalIndexBest   = bestHit->LocalIndex();
@@ -842,7 +842,7 @@ void TrackHitEfficiencyAnalysis::fillHistograms(const art::Event& event) const
                                     unsigned short hitStopTick  = rejectedHit->PeakTime() + fSigmaVec[plane] * rejectedHit->RMS();
 
                                     mf::LogDebug("TrackHitEfficiencyAnalysis") << "**> TPC: " << rejectedHit->WireID().TPC << ", Plane " << rejectedHit->WireID().Plane << ", wire: " << rejectedHit->WireID().Wire << ", hit startstop            tick: " << hitStartTick << "/" << hitStopTick << ", start/stop ticks: " << startTick << "/" << stopTick << std::endl;
-                                    mf::LogDebug("TrackHitEfficiencyAnalysis") << "    TPC/Plane/Wire: " << wids[0].TPC << "/" << plane << "/" << wids[0].Wire  << ", # hits: "<< hitIter->second.size() << ", # electrons: " << totalElectrons << ", pulse Height: " << rejectedHit->PeakAmplitude() << ", charge: " << rejectedHit->Integral()      << ", " <<rejectedHit->SummedADC() << std::endl;
+                                    mf::LogDebug("TrackHitEfficiencyAnalysis") << "    TPC/Plane/Wire: " << wids[0].TPC << "/" << plane << "/" << wids[0].Wire  << ", # hits: "<< hitIter->second.size() << ", # electrons: " << totalElectrons << ", pulse Height: " << rejectedHit->PeakAmplitude() << ", charge: " << rejectedHit->Integral()      << ", " <<rejectedHit->ROISummedADC() << std::endl;
                                 }
                                 else
                                 {
@@ -882,7 +882,7 @@ void TrackHitEfficiencyAnalysis::fillHistograms(const art::Event& event) const
                                 {
                                     tHitPeakTimeBest     = tBestHit->PeakTime();
                                     tHitIntegralBest     = tBestHit->Integral();
-                                    tHitSummedADCBest    = tBestHit->SummedADC();
+                                    tHitSummedADCBest    = tBestHit->ROISummedADC();
                                     tHitRMSBest          = tBestHit->RMS();
                                     tHitMultiplicityBest = tBestHit->Multiplicity();
                                     tHitLocalIndexBest   = tBestHit->LocalIndex();

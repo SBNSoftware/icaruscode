@@ -166,7 +166,6 @@ private:
   std::vector<art::InputTag> fFlashLabels;
   art::InputTag fRWMLabel;
   float fPEOpHitThreshold;
-  bool fDebug;
 
   //----------
   // Output trees

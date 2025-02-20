@@ -863,7 +863,7 @@ void ThroughgoingmuonAnalyzer::analyze(art::Event const& evt)
                     // nElectronsTotalBest = 0.; // unused
                     hitPeakTimeBest     = bestHit->PeakTime();
                     hitIntegralBest     = bestHit->Integral();
-                    hitSummedADCBest    = bestHit->SummedADC();
+                    hitSummedADCBest    = bestHit->ROISummedADC();
                     hitRMSBest          = bestHit->RMS();
                     hitMultiplicityBest = bestHit->Multiplicity();
                     hitLocalIndexBest   = bestHit->LocalIndex();

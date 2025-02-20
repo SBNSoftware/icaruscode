@@ -29,7 +29,7 @@
 #include "fhiclcpp/types/TableFragment.h"
 
 
-namespace icarusDB { class ChannelMapPostGresTool; }
+namespace icarusDB { struct ChannelMapPostGresTool; }
 
 /// Toolification of `icarusDB::ChannelMapPostGres`.
 struct icarusDB::ChannelMapPostGresTool: public icarusDB::ChannelMapPostGres {
