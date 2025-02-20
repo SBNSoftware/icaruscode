@@ -1,5 +1,6 @@
-// Same configuration as in wcls-multitpc-sim-drift-simchannel.jsonnet
-// except the sed_label variable name in wclsDepoFluxWriter set to 'ionization'
+// Same configuration as in wcls-sim-drift-simchannel.jsonnet
+// except that this produces four instances of std::vector<RawDigits>
+// one per physics module (WW, WE, EE, EW) in ICARUS
 
 local g = import 'pgraph.jsonnet';
 local f = import 'pgrapher/common/funcs.jsonnet';
@@ -257,7 +258,7 @@ local wcls_simchannel_sink =
       time_offsets: [std.extVar('time_offset_u') * wc.us, std.extVar('time_offset_v') * wc.us, std.extVar('time_offset_y') * wc.us],
 
       // input from art::Event
-      sed_label: 'shifted',
+      sed_label: 'largeant:TPCActive',
 
       // output to art::Event
       simchan_label: 'simpleSC',
@@ -324,11 +325,7 @@ local frame_summers = [
         name: 'framesummer%d' %n,
         data: {
             align: true,
-<<<<<<< HEAD
-            offset: 0.0*wc.s
-=======
             offset: 0.0*wc.s,
->>>>>>> origin/feature/icaro_overlays_Run2
         },
     }, nin=2, nout=1) for n in std.range(0, 3)];
 

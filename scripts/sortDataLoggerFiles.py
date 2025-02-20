@@ -74,9 +74,8 @@ class DAQIndex:
     except TypeError:
       self.builder = int(builder)
       self.thread = int(thread)
-  def __lt__(self, other):
-    if self.builder != other.builder: return self.builder < other.builder
-    return self.thread < other.thread
+  def key(self): return ( self.builder, self.thread )
+  def __lt__(self, other): return self.key() < other.key()
   def __str__(self): return f"EventBuilder{self.builder}_art{self.thread}"
 # class DAQIndex
 
@@ -357,7 +356,7 @@ def buildFileIndex(
   fileInfo: "list with information from all files",
   ) -> "a dictionary: { key -> list of files }":
   
-  fileKey = lambda info: ( info.run, info.pass_, info.dataLogger, info.stream, info.timestamp )
+  fileKey = lambda info: ( info.run, info.pass_, info.dataLogger.key(), info.stream, info.timestamp )
   index = {}
   for info in fileInfo:
     index.setdefault(fileKey(info), []).append(info)

@@ -35,7 +35,7 @@ recoana_mccalo_producers: {
   pandoraCaloGausCryoE: @local::icarus_gnewcalomc
   pandoraCaloGausCryoW: @local::icarus_gnewcalomc
 
-  vertexChargeCryoE: @local::vertex_charge_icarus_cryoE 
+  vertexChargeCryoE: @local::vertex_charge_icarus_cryoE
   vertexChargeCryoW: @local::vertex_charge_icarus_cryoW
 
   vertexStubCryoE: @local::vertex_stub_icarus_cryoE
@@ -66,7 +66,7 @@ recoana_datacalo_producers: {
   pandoraCaloGausCryoE: @local::standard_gnocchicaloicarus
   pandoraCaloGausCryoW: @local::standard_gnocchicaloicarus
 
-  vertexChargeCryoE: @local::vertex_charge_icarus_cryoE 
+  vertexChargeCryoE: @local::vertex_charge_icarus_cryoE
   vertexChargeCryoW: @local::vertex_charge_icarus_cryoW
 
   vertexStubCryoE: @local::vertex_stub_icarus_cryoE
@@ -167,7 +167,7 @@ recoana_sce_producers: {
   pandoraTrackSCERangeCryoE: @local::recoana_caf_preprocess_producers.pandoraTrackRangeCryoE
   pandoraTrackSCERangeCryoW: @local::recoana_caf_preprocess_producers.pandoraTrackRangeCryoW
 
-  vertexChargeCryoE: @local::vertex_charge_icarus_sce_cryoE 
+  vertexChargeCryoE: @local::vertex_charge_icarus_sce_cryoE
   vertexChargeCryoW: @local::vertex_charge_icarus_sce_cryoW
   vertexStubCryoE: @local::vertex_stub_icarus_sce_cryoE
   vertexStubCryoW: @local::vertex_stub_icarus_sce_cryoW
@@ -178,7 +178,7 @@ recoana_sce_producers: {
 recoana_sce_producers.pandoraGausSCECryoE.PFPLabel: pandoraGausCryoE
 recoana_sce_producers.pandoraGausSCECryoE.TrackLabel: pandoraTrackGausCryoE
 # Don't rely on T0's when doing SpaceCharge corrections
-recoana_sce_producers.pandoraGausSCECryoE.T0Labels: [] 
+recoana_sce_producers.pandoraGausSCECryoE.T0Labels: []
 recoana_sce_producers.pandoraGausSCECryoE.T0LabelsCorrectT0: []
 recoana_sce_producers.pandoraGausSCECryoE.CorrectNoT0Tag: true
 
@@ -219,10 +219,10 @@ recoana_sce_producers.pandoraTrackSCERangeCryoE.TrackLabel: pandoraTrackGausSCEC
 recoana_sce_producers.pandoraTrackSCERangeCryoW.TrackLabel: pandoraTrackGausSCECryoW
 
 # Setup CaloAlg for VertexCharge
-recoana_sce_producers.vertexChargeCryoE.CaloAlg: @local::icarus_calorimetryalgmc 
-recoana_sce_producers.vertexChargeCryoW.CaloAlg: @local::icarus_calorimetryalgmc 
-recoana_sce_producers.vertexStubCryoE.CaloAlg: @local::icarus_calorimetryalgmc 
-recoana_sce_producers.vertexStubCryoW.CaloAlg: @local::icarus_calorimetryalgmc 
+recoana_sce_producers.vertexChargeCryoE.CaloAlg: @local::icarus_calorimetryalgmc
+recoana_sce_producers.vertexChargeCryoW.CaloAlg: @local::icarus_calorimetryalgmc
+recoana_sce_producers.vertexStubCryoE.CaloAlg: @local::icarus_calorimetryalgmc
+recoana_sce_producers.vertexStubCryoW.CaloAlg: @local::icarus_calorimetryalgmc
 
 # All the producers together
 caf_preprocess_producers: {
@@ -249,7 +249,7 @@ caf_preprocess_sequence: [ mcreco,
     # Low Energy Proton Reco
     vertexChargeCryoE, vertexChargeCryoW, vertexStubCryoE, vertexStubCryoW,
     # Track Momentum Estimation
-    pandoraTrackMCSCryoE, pandoraTrackMCSCryoW, 
+    pandoraTrackMCSCryoE, pandoraTrackMCSCryoW,
     pandoraTrackRangeCryoE, pandoraTrackRangeCryoW,
     pandoraCRTMatchCryoE, pandoraCRTMatchCryoW,
     # TODO: rns??
@@ -287,7 +287,7 @@ caf_preprocess_sce_sequence: [ mcreco,
   # SCE enabled Proton Reco
   vertexChargeCryoE, vertexChargeCryoW, vertexStubCryoE, vertexStubCryoW,
   # Run Track momentum calcs w/ SCE
-  pandoraTrackSCEMCSCryoE, pandoraTrackSCEMCSCryoW, 
+  pandoraTrackSCEMCSCryoE, pandoraTrackSCEMCSCryoW,
   pandoraTrackSCERangeCryoE, pandoraTrackSCERangeCryoW,
   # Transfer flash-match T0 to the space-charge corrected slice
   fmatchSCECryoE, fmatchSCECryoW, fmatchopSCECryoE, fmatchopSCECryoW
@@ -312,7 +312,7 @@ cafmaker.RecoTrackLabel:    "pandoraTrackGaus"
 cafmaker.RecoShowerLabel:   "SBNShowerGaus"
 cafmaker.ShowerRazzleLabel: "" # unavailable
 cafmaker.RecoShowerSelectionLabel: "" # unavailable
-cafmaker.ShowerCosmicDistLabel: "ShowerCosmicDist" 
+cafmaker.ShowerCosmicDistLabel: "ShowerCosmicDist"
 cafmaker.TrackCaloLabel:    "pandoraCaloGaus"
 cafmaker.TrackChi2PidLabel: "pandoraPidGaus"
 cafmaker.TrackScatterClosestApproachLabel: "" # unavailable
@@ -327,6 +327,7 @@ cafmaker.CRTTrackLabel: "crttrack"
 cafmaker.OpFlashLabel: "opflash"
 # cafmaker.TriggerLabel: "daqTrigger" # see also https://github.com/SBNSoftware/icaruscode/issues/556
 cafmaker.TriggerLabel: "emuTrigger"
+cafmaker.UnshiftedTriggerLabel: "emuTriggerUnshifted"
 cafmaker.FlashTrigLabel: "" # unavailable
 cafmaker.SimChannelLabel: "largeant"
 cafmaker.SystWeightLabels: ["genieweight", "fluxweight"]
