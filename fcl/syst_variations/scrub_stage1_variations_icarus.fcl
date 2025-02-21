@@ -5,6 +5,7 @@
 # Author Jacob Zettlemoyer (jzettle@fnal.gov), originally implemented by H. Lay for SBND
 
 #include "rootoutput_icarus.fcl"
+#include "services_common_icarus.fcl"
 
 process_name: Scrub
 
@@ -12,7 +13,7 @@ source:
 {
   module_type:   RootInput
   inputCommands: [ "keep *_*_*_*",
-  		   "drop *_*_*_G4step2",
+  		   "drop *_*_*_G4Step2",
                    "drop *_*_*_DetSim",
 		   "drop *_*_*_MCstage0",
                    "drop *_*_*_MCstage1" ]

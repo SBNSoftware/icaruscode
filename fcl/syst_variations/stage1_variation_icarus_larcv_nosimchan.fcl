@@ -1,0 +1,8 @@
+#include "stage1_run2_1d_larcv_icarus_MC.fcl"
+
+process_name: MCstage1Var
+
+services.BackTrackerService.BackTracker.SimChannelModuleLabel: "simdrift"
+physics.analyzers.caloskimE.SimChannelproducer: "simdrift"
+physics.analyzers.caloskimW.SimChannelproducer: "simdrift"
+physics.analyzers.superaMC.supera_params: "supera_icarus_MC_all_cryo_PMT_CRT_nosimchan.fcl"

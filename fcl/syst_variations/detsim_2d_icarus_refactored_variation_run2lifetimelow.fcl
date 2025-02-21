@@ -1,7 +1,7 @@
-#include "detsim_2d_variation_fitFR_refactored_icarus.fcl"
+#include "detsim_2d_icarus_refactored.fcl"
 
-#Lowest value of e- lifetime across both TPCs in Run 2 (3.8 ms in East cryostat) - Values provided by C. Farnese
-services.DetectorPropertiesService.Electronlifetime: 3800 
-physics.producers.daq.wcls_main.structs.lifetime: 3800
+#Average value of e- lifetime in East Cryostat in Run 2 (4.0 ms in East cryostat)
+services.DetectorPropertiesService.Electronlifetime: 4000 
+physics.producers.daq.wcls_main.structs.lifetime: 4000
 
 process_name: ELRun2MinVar

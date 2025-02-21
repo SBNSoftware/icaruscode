@@ -1,0 +1,5 @@
+#include "cafmakerjob_icarus.fcl"
+#include "cafmaker_add_detsim2d_icarus.fcl"
+
+#Average value of e- lifetime in West Cryostat in Run 2 (8.0 ms in West cryostat)
+services.DetectorPropertiesService.Electronlifetime: 8000

@@ -582,12 +582,14 @@ namespace sbn::crt {
           << firstOpHitPeakTime << " us, centroid: " << flash_pos << " cm";
       }
       
+      /// Francesco: this was reintroduced as requested for the production release
       if (nPMTsTriggering < fnOpHitToTrigger) {
         mf::LogTrace("CRTPMTMatchingProducer")
           << "  => skipped (only " << nPMTsTriggering << " < " << fnOpHitToTrigger
           << " hits above threshold)";
         continue;
       }
+      
       
       double const thisRelGateTime = triggerGateDiff + tflash * 1e3; // ns
       bool const thisInTime_gate
@@ -596,7 +598,7 @@ namespace sbn::crt {
         = thisRelGateTime > inBeamMin && thisRelGateTime < inBeamMax;
       
       icarus::crt::CRTMatches const crtMatches = icarus::crt::CRTHitmatched(
-        firstOpHitPeakTime, flash_pos, crtHitList, fTimeOfFlightInterval, isRealData, fGlobalT0Offset, fMatchBottomCRT);
+        tflash, flash_pos, crtHitList, fTimeOfFlightInterval, isRealData, fGlobalT0Offset, fMatchBottomCRT);
       
       std::vector<MatchedCRT> thisFlashCRTmatches;
         std::vector<art::Ptr<sbn::crt::CRTHit>> CRTPtrs; // same order as thisFlashCRTmatches

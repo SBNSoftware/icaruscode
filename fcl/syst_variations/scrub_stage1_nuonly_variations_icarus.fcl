@@ -12,8 +12,9 @@ source:
 {
   module_type:   RootInput
   inputCommands: [ "keep *_*_*_*",
-  		   "drop *_*_*_G4step1",
-  		   "drop *_*_*_G4step2",
+  		   "drop *_cosmgen_*_GenBNBbkgr",
+  		   "drop *_*_*_G4Step1",
+  		   "drop *_*_*_G4Step2",
                    "drop *_*_*_DetSim",
 		   "drop *_*_*_MCstage0",
                    "drop *_*_*_MCstage1" ]
