@@ -1,8 +1,9 @@
 BEGIN_PROLOG
 
-test_cheated: {
-    module_type: "testCheated"
+cosmic_test: {
+    module_type: "unambiguousCosmicTest"
 
+    TruthLabel:                 "generator"
     PFParticleLabel:            "pandora"
     SliceLabel:                 "pandora"
     PFParticleMetadataLabel:    "pandora"
