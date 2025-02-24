@@ -7,6 +7,7 @@ cosmic_test: {
     PFParticleLabel:            "pandora"
     SliceLabel:                 "pandora"
     PFParticleMetadataLabel:    "pandora"
+    TrackLabel:                 "pandoraTrack"
     PandoraSuffixes:            ["GausCryoE", "GausCryoW"]
     VerboseOutput:              true
 }

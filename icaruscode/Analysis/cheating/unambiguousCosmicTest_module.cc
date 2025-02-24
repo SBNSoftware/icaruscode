@@ -71,10 +71,11 @@ private:
   // Output TTree + branches
   TTree* fTree;
   double fNoOfSlice, fTotalUnambiguousCosmic, fEventID;
+  double fNoOfSelectedEvents, fNoOfUCSelected;
 
 
   // FHiCL settings;
-  std::string fTruthLabel, fSliceLabel, fPFParticleLabel, fPFParticleMetadataLabel;
+  std::string fTruthLabel, fSliceLabel, fPFParticleLabel, fTrackLabel, fPFParticleMetadataLabel;
   bool fVerbose;
   std::vector<std::string> fPandoraSuffixes;
 
@@ -86,6 +87,7 @@ icaruscode::pandoraCheating::unambiguousCosmicTest::unambiguousCosmicTest(fhicl:
   fTruthLabel(p.get<std::string>("TruthLabel")),
   fSliceLabel(p.get<std::string>("SliceLabel")),
   fPFParticleLabel(p.get<std::string>("PFParticleLabel")),
+  fTrackLabel(p.get<std::string>("TrackLabel")),
   fPFParticleMetadataLabel(p.get<std::string>("PFParticleMetadataLabel")),
   fVerbose(p.get<bool>("VerboseOutput")),
   fPandoraSuffixes(p.get<std::vector<std::string>>("PandoraSuffixes"))
@@ -128,96 +130,252 @@ void icaruscode::pandoraCheating::unambiguousCosmicTest::analyze(art::Event cons
       std::cout << format_utils::space4 << "--> No true numuCC in event" << std::endl;
     return;
   }
+  
+  std::vector<art::Ptr<recob::Slice>> slices;
+  std::vector<std::string> slice_tag_suffixes;
+  std::vector<unsigned>    slice_tag_id;
 
-  // loops over two cryostats FUCKING ICARUS
-  for (auto const &pandora_suffix: fPandoraSuffixes) {
+  // Collect all slices for TPCs
+  for (unsigned tag_i = 0; tag_i<fPandoraSuffixes.size(); tag_i++) {
+    const std::string &pandora_tag_suffix = fPandoraSuffixes[tag_i];
+
+    art::ValidHandle<std::vector<recob::Slice>> thisSlice = 
+      e.getValidHandle<std::vector<recob::Slice>>(fSliceLabel + pandora_tag_suffix);
+
+    if (thisSlice.isValid()) 
+      art::fill_ptr_vector(slices, thisSlice);
+    
+    for (unsigned i = 0; i < thisSlice->size(); i++)
+      slice_tag_suffixes.push_back(pandora_tag_suffix);
+    
+  }
+
+  if (slices.size() == 0) {
+    if (fVerbose)
+      std::cout << format_utils::space8 << "--> No slice(s) reco found" << std::endl;
+    return;
+  }
+
+
+  // Looping over slices
+  for (unsigned sliceID = 0; sliceID < slices.size(); sliceID++) {
+    
+    art::Ptr<recob::Slice> slice = slices[sliceID];
+    const std::string &slice_tag_suff = slice_tag_suffixes[sliceID];
+
 
     if (fVerbose)
-      std::cout << format_utils::space8 << "--> TPC pandora" << pandora_suffix << std::endl;
+      std::cout << format_utils::space8 << "--> Slice " << slice.key() 
+                << ", in tag=pandora" << slice_tag_suff << std::endl;
+    
+    
+    std::vector<art::Ptr<recob::Slice>> sliceList {slice};
 
-    art::ValidHandle<std::vector<recob::Slice>> sliceHandle = 
-      e.getValidHandle<std::vector<recob::Slice>>(fSliceLabel + pandora_suffix);
-    std::vector<art::Ptr<recob::Slice>> slices;
- 
     art::ValidHandle<std::vector<recob::PFParticle>> pfpHandle = 
-      e.getValidHandle<std::vector<recob::PFParticle>>(fPFParticleLabel + pandora_suffix);
-      
+      e.getValidHandle<std::vector<recob::PFParticle>>(fPFParticleLabel + slice_tag_suff);
     art::FindManyP<recob::PFParticle> 
-      slicePfpAssns(sliceHandle, e, fPFParticleLabel + pandora_suffix);
+      slicePfpAssns(sliceList, e, fPFParticleLabel + slice_tag_suff);
     art::FindManyP<larpandoraobj::PFParticleMetadata> 
-      pfpMetadataAssns(pfpHandle, e, fPFParticleMetadataLabel + pandora_suffix);
+      pfpMetadataAssns(pfpHandle, e, fPFParticleMetadataLabel + slice_tag_suff);
+    art::FindManyP<recob::Track>
+      pfpTrackAssns(pfpHandle, e, fTrackLabel + slice_tag_suff);
 
-    if (sliceHandle.isValid())
-      art::fill_ptr_vector(slices, sliceHandle);
+    // Every slice can be both a nu slice (those should all be nu slices) or
+    // a cosmic (IsClearCosmic or Cosmic from second cosmic stage)
 
-    if (slices.size() == 0) {
+    // Get the list of PFPs
+    std::vector<art::Ptr<recob::PFParticle>> slicePfps = slicePfpAssns.at(0);
+
+    if (fVerbose) 
+      std::cout << format_utils::space12 
+                << "This slice has # " << slicePfps.size() << " pfp(s) " 
+                << std::endl;
+
+    int unambiguous_cosmics_for_slice = 0;
+    bool slice_is_neutrino = false;
+
+    for (const art::Ptr<recob::PFParticle> &pfp: slicePfps) {
+      const bool is_primary(pfp->IsPrimary());
+      const bool is_neutrino(std::abs(pfp->PdgCode())==14); // Looking for µ neutrinos
+
+      if(!slice_is_neutrino)
+        slice_is_neutrino = is_neutrino;
+
+      const larpandoraobj::PFParticleMetadata *pfp_meta = pfpMetadataAssns.at(pfp.key()).at(0).get();
+      auto const &properties = pfp_meta->GetPropertiesMap();
+
+      if (properties.count("IsClearCosmic")) {
+        unambiguous_cosmics_for_slice++;
+
+        if (fVerbose && is_primary) 
+          std::cout << format_utils::space12
+                    << "The primary for this slice IsClearCosmic" 
+                    << " (this slice will we classified as is_clear_cosmic)" 
+                    << std::endl;
+        if (fVerbose)
+          std::cout << format_utils::space12
+                    << "This is a clear cosmic with pdg = " 
+                    << pfp->PdgCode() 
+                    << std::endl;
+      }
+
+      std::vector<art::Ptr<recob::Track>> tracks = pfpTrackAssns.at(pfp.key());
+
       if (fVerbose)
-        std::cout << format_utils::space12 << "--> No slice(s) reco found" << std::endl;
-      continue;
-    }
-
-    for (const art::Ptr<recob::Slice> &slice: slices) {
-      // Every slice can be both a nu slice (those should all be nu slices) or
-      // a cosmic (IsClearCosmic or Cosmic from second cosmic stage)
-
-      if (fVerbose)
-        std::cout << format_utils::space12 << "--> Slice " << slice.key() << std::endl;
-      
-      // 1. If the slice is neutrino, then check whether it has some PFP
-      //    identified as clear cosmics
-      // 2. If not neutrino slice (odd...) check IsClearCosmic anyway...
-      
-      std::vector<art::Ptr<recob::PFParticle>> slicePfps = slicePfpAssns.at(slice.key());
-
-      int unambiguous_cosmics_for_slice = 0;
-      bool slice_is_neutrino = false;
-      // bool slice_is_primary = false;
-
-      for (const art::Ptr<recob::PFParticle> &pfp: slicePfps) {
-        const bool is_primary(pfp->IsPrimary());
-        const bool is_neutrino(std::abs(pfp->PdgCode()) == 14);
-        if(!slice_is_neutrino)
-          slice_is_neutrino = is_neutrino;
-        // slice_is_primary = is_primary;
-
-        // Also look at 
-        const larpandoraobj::PFParticleMetadata *pfp_meta = pfpMetadataAssns.at(pfp.key()).at(0).get();
-        auto const &properties = pfp_meta->GetPropertiesMap();
-
-
-        if (properties.count("IsClearCosmic")) {
-          unambiguous_cosmics_for_slice++;
-          
-          if (fVerbose && is_primary) 
-            std::cout << format_utils::space16 
-                      << "The primary for this slice IsClearCosmic" 
-                      << " (this slice will we classified as is_clear_cosmic)" 
-                      << std::endl;
-          if (fVerbose)
-            std::cout << format_utils::space16 
-                      << "This is a clear cosmic with pdg = " 
-                      << pfp->PdgCode() 
-                      << std::endl;
-        }
-      } // single pfp
-      
-      if (unambiguous_cosmics_for_slice>0)
-        fTotalUnambiguousCosmic++;
-      
-      if (fVerbose) 
         std::cout << format_utils::space16 
-                  << "This slice " << ((unambiguous_cosmics_for_slice>0) ? "is" : "is NOT")
-                  << " unambiguous cosmic. " 
-                  << " Is this Neutrino? " 
-                  << (slice_is_neutrino ? "yes" : "NO")
-                  << ". Found # pfp = " 
-                  << slicePfps.size() 
-                  << " for this slice "
-                  << std::endl;
-    } // single slice
-    fNoOfSlice = slices.size();
-  }
-  fTree->Fill(); 
+                  << "Found a total of " << tracks.size() 
+                  << " track(s) for this pfp" << std::endl;
+                    
+      for (const art::Ptr<recob::Track> &track: tracks) {
+        if (fVerbose)
+          std::cout << format_utils::space16 << format_utils::space4
+                    << "-->  starting from (" 
+                    << track->Start().X() << ", "
+                    << track->Start().Y() << ", "
+                    << track->Start().Z() << ") and ending in ("
+                    << track->End().X() << ", "
+                    << track->End().Y() << ", "
+                    << track->End().Z() << ")"
+                    <<std::endl;
+      }
+    } // pfps loop
+
+    if (unambiguous_cosmics_for_slice>0) {
+      fTotalUnambiguousCosmic++;
+      fNoOfUCSelected += fTotalUnambiguousCosmic;
+    }
+    
+    if (fVerbose) 
+      std::cout << format_utils::space16 
+                << "This slice " << ((unambiguous_cosmics_for_slice>0) ? "is" : "is NOT")
+                << " unambiguous cosmic. " 
+                << " Is this Neutrino? " 
+                << (slice_is_neutrino ? "yes" : "NO")
+                << ". Found # pfp = " 
+                << slicePfps.size() 
+                << " for this slice "
+                << std::endl;
+  } // slices loop
+
+  fNoOfSlice = slices.size();
+  fNoOfSelectedEvents += slices.size();
+  fTree->Fill();
+
+  /////////// OLD IMPLEMENTATION ///////////
+
+  // // loops over two cryostats FUCKING ICARUS
+  // for (auto const &pandora_suffix: fPandoraSuffixes) {
+
+  //   if (fVerbose)
+  //     std::cout << format_utils::space8 << "--> TPC pandora" << pandora_suffix << std::endl;
+
+  //   art::ValidHandle<std::vector<recob::Slice>> sliceHandle = 
+  //     e.getValidHandle<std::vector<recob::Slice>>(fSliceLabel + pandora_suffix);
+  //   art::ValidHandle<std::vector<recob::PFParticle>> pfpHandle = 
+  //     e.getValidHandle<std::vector<recob::PFParticle>>(fPFParticleLabel + pandora_suffix);
+  //   // art::ValidHandle<std::vector<recob::Track>> trackHandle = 
+  //   //   e.getValidHandle<std::vector<recob::Track>>(fTrackLabel + pandora_suffix);
+    
+  //   art::FindManyP<recob::PFParticle> 
+  //     slicePfpAssns(sliceHandle, e, fPFParticleLabel + pandora_suffix);
+  //   art::FindManyP<larpandoraobj::PFParticleMetadata> 
+  //     pfpMetadataAssns(pfpHandle, e, fPFParticleMetadataLabel + pandora_suffix);
+  //   art::FindManyP<recob::Track>
+  //     pfpTrackAssns(pfpHandle, e, fTrackLabel + pandora_suffix);
+    
+  //   std::vector<art::Ptr<recob::Slice>> slices;
+
+  //   if (sliceHandle.isValid())
+  //     art::fill_ptr_vector(slices, sliceHandle);
+
+  //   if (slices.size() == 0) {
+  //     if (fVerbose)
+  //       std::cout << format_utils::space12 << "--> No slice(s) reco found" << std::endl;
+  //     continue;
+  //   }
+
+  //   for (const art::Ptr<recob::Slice> &slice: slices) {
+  //     // Every slice can be both a nu slice (those should all be nu slices) or
+  //     // a cosmic (IsClearCosmic or Cosmic from second cosmic stage)
+
+  //     if (fVerbose)
+  //       std::cout << format_utils::space12 << "--> Slice " << slice.key() << std::endl;
+      
+  //     // 1. If the slice is neutrino, then check whether it has some PFP
+  //     //    identified as clear cosmics
+  //     // 2. If not neutrino slice (odd...) check IsClearCosmic anyway...
+      
+  //     std::vector<art::Ptr<recob::PFParticle>> slicePfps = slicePfpAssns.at(slice.key());
+
+  //     int unambiguous_cosmics_for_slice = 0;
+  //     bool slice_is_neutrino = false;
+  //     // bool slice_is_primary = false;
+
+  //     for (const art::Ptr<recob::PFParticle> &pfp: slicePfps) {
+  //       const bool is_primary(pfp->IsPrimary());
+  //       const bool is_neutrino(std::abs(pfp->PdgCode()) == 14);
+  //       if(!slice_is_neutrino)
+  //         slice_is_neutrino = is_neutrino;
+  //       // slice_is_primary = is_primary;
+
+  //       // Also look at 
+  //       const larpandoraobj::PFParticleMetadata *pfp_meta = pfpMetadataAssns.at(pfp.key()).at(0).get();
+  //       auto const &properties = pfp_meta->GetPropertiesMap();
+
+
+  //       if (properties.count("IsClearCosmic")) {
+  //         unambiguous_cosmics_for_slice++;
+          
+  //         if (fVerbose && is_primary) 
+  //           std::cout << format_utils::space16 
+  //                     << "The primary for this slice IsClearCosmic" 
+  //                     << " (this slice will we classified as is_clear_cosmic)" 
+  //                     << std::endl;
+  //         if (fVerbose)
+  //           std::cout << format_utils::space16 
+  //                     << "This is a clear cosmic with pdg = " 
+  //                     << pfp->PdgCode() 
+  //                     << std::endl;
+  //       }
+
+  //       std::vector<art::Ptr<recob::Track>> tracks = pfpTrackAssns.at(pfp.key());
+
+  //       if (fVerbose)
+  //         std::cout << format_utils::space16 
+  //                   << "Found a total of " << tracks.size() 
+  //                   << " track(s) for this pfp" << std::endl;
+                    
+  //       for (const art::Ptr<recob::Track> &track: tracks) {
+  //         if (fVerbose)
+  //           std::cout << format_utils::space16 << format_utils::space4
+  //                     << "-->  starting from (" 
+  //                     << track->Start().X() << ", "
+  //                     << track->Start().Y() << ", "
+  //                     << track->Start().Z() << ") and ending in ("
+  //                     << track->End().X() << ", "
+  //                     << track->End().Y() << ", "
+  //                     << track->End().Z() << ")"
+  //                     <<std::endl;
+  //       }
+  //     } // single pfp
+      
+  //     if (unambiguous_cosmics_for_slice>0)
+  //       fTotalUnambiguousCosmic++;
+      
+  //     if (fVerbose) 
+  //       std::cout << format_utils::space16 
+  //                 << "This slice " << ((unambiguous_cosmics_for_slice>0) ? "is" : "is NOT")
+  //                 << " unambiguous cosmic. " 
+  //                 << " Is this Neutrino? " 
+  //                 << (slice_is_neutrino ? "yes" : "NO")
+  //                 << ". Found # pfp = " 
+  //                 << slicePfps.size() 
+  //                 << " for this slice "
+  //                 << std::endl;
+  //   } // single slice
+  //   fNoOfSlice = slices.size();
+  //   fTree->Fill(); 
+  // } // loop pandora_suffixes
 }
 
 void icaruscode::pandoraCheating::unambiguousCosmicTest::beginJob()
@@ -227,11 +385,20 @@ void icaruscode::pandoraCheating::unambiguousCosmicTest::beginJob()
   fTree->Branch("eventID", &fEventID);
   fTree->Branch("noOfUnambiguousCosmics", &fTotalUnambiguousCosmic);
   fTree->Branch("noOfSlices", &fNoOfSlice);
+
+  fNoOfSelectedEvents = 0;
+  fNoOfUCSelected = 0;
 }
 
 void icaruscode::pandoraCheating::unambiguousCosmicTest::endJob()
 {
   // Implementation of optional member function here.
+
+  if (fVerbose) 
+    std::cout << "Found a total of # cosmic slices = " << fNoOfUCSelected 
+              << " over a sampe of # slices = " << fNoOfSelectedEvents
+              << ", corresponding to a fraction of " << fNoOfUCSelected/fNoOfSelectedEvents*100 
+              << "% " << std::endl;
 }
 
 DEFINE_ART_MODULE(icaruscode::pandoraCheating::unambiguousCosmicTest)
