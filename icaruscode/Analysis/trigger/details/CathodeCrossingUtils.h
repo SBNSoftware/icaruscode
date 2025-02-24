@@ -14,6 +14,7 @@
 #include "icaruscode/Utilities/TrajectoryUtils.h" // util::findCrossingSegment()
 
 // LArSoft libraries
+#include "larcorealg/Geometry/fwd.h"
 #include "larcoreobj/SimpleTypesAndConstants/geo_vectors.h" // geo::Point_t ...
 
 // C/C++ standard libraries
@@ -21,14 +22,6 @@
 #include <iterator> // std::distance()
 #include <type_traits> // std::is_same_v
 #include <cmath> // std::abs()
-
-
-// -----------------------------------------------------------------------------
-// forward declarations
-namespace geo {
-  class GeometryCore;
-  class CryostatGeo;
-}
 
 
 // -----------------------------------------------------------------------------

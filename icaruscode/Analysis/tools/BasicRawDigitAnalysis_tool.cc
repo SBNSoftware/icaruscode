@@ -9,8 +9,7 @@
 #include "art_root_io/TFileDirectory.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
 
-#include "larcore/Geometry/Geometry.h"
-#include "larcore/CoreUtils/ServiceUtil.h" // lar::providerFrom()
+#include "larcore/Geometry/WireReadout.h"
 #include "icaruscode/TPC/Utilities/SignalShapingICARUSService_service.h"
 #include "lardataalg/DetectorInfo/DetectorClocks.h"
 #include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
@@ -137,7 +136,7 @@ private:
     FFTPointer                               fFFT;                   //< Object to handle thread safe FFT
 
     // Useful services, keep copies for now (we can update during begin run periods)
-    const geo::GeometryCore&                 fGeometry;             ///< pointer to Geometry service
+    const geo::WireReadoutGeom&                fChannelMapAlg;        ///< pointer to ChannelMapAlg
     icarusutil::SignalShapingICARUSService&  fSignalServices;       ///< The signal shaping service
     const lariov::DetPedestalProvider&       fPedestalRetrievalAlg; ///< Keep track of an instance to the pedestal retrieval alg
 };
@@ -151,7 +150,7 @@ private:
 ///
 BasicRawDigitAnalysis::BasicRawDigitAnalysis(fhicl::ParameterSet const & pset) :
     fCharacterizationAlg(pset.get<fhicl::ParameterSet>("CharacterizationAlg")),
-    fGeometry(*lar::providerFrom<geo::Geometry>()),
+    fChannelMapAlg(art::ServiceHandle<geo::WireReadout const>()->Get()),
     fSignalServices(*art::ServiceHandle<icarusutil::SignalShapingICARUSService>()),
     fPedestalRetrievalAlg(*lar::providerFrom<lariov::DetPedestalService>())
 {
@@ -227,7 +226,7 @@ void BasicRawDigitAnalysis::initializeHists(detinfo::DetectorClocksData const& c
     fAveFFTImaginaryVec.resize(3);
     fAveSmoothPowerVec.resize(3);
 
-    for(size_t plane = 0; plane < fGeometry.Nplanes(); plane++)
+    for(size_t plane = 0; plane < fChannelMapAlg.Nplanes(); plane++)
     {
         size_t numHists = fHiWireByPlane[plane] - fLoWireByPlane[plane];
         
@@ -305,7 +304,7 @@ void BasicRawDigitAnalysis::initializeHists(detinfo::DetectorClocksData const& c
         fFullRmsHist[plane] = dir.make<TH1D>(histName.c_str(), ";ADC", 100, 0., 20.);
         
         // Need a channel...
-        raw::ChannelID_t channel = fGeometry.PlaneWireToChannel(geo::WireID(0, 0, plane, 0));
+        raw::ChannelID_t channel = fChannelMapAlg.PlaneWireToChannel(geo::WireID(0, 0, plane, 0));
         
         // Recover the filter from signal shaping services...
         const icarusutil::FrequencyVec& response = fSignalServices.GetResponse(channel).getConvKernel();
@@ -325,7 +324,7 @@ void BasicRawDigitAnalysis::initializeHists(detinfo::DetectorClocksData const& c
 void BasicRawDigitAnalysis::fillHistograms(const detinfo::DetectorClocksData& clockData,
                                            const detinfo::DetectorPropertiesData& detProp,
                                            const IRawDigitHistogramTool::RawDigitPtrVec& rawDigitPtrVec,
-                                           const IRawDigitHistogramTool::SimChannelMap&  channelMap) const
+                                           const IRawDigitHistogramTool::SimChannelMap&  wireReadout) const
 {
     // Sadly, the RawDigits come to us in an unsorted condition which is not optimal for
     // what we want to do here. So we make a vector of pointers to the input raw digits and sort them
@@ -381,7 +380,7 @@ void BasicRawDigitAnalysis::fillHistograms(const detinfo::DetectorClocksData& cl
         // Decode the channel and make sure we have a valid one
         std::vector<geo::WireID> wids;
         try {
-            wids = fGeometry.ChannelToWire(channel);
+            wids = fChannelMapAlg.ChannelToWire(channel);
         }
         catch(...)
         {
@@ -404,7 +403,7 @@ void BasicRawDigitAnalysis::fillHistograms(const detinfo::DetectorClocksData& cl
         }
         
         // If MC, does this channel have signal?
-        bool hasSignal = channelMap.find(channel) != channelMap.end();
+        bool hasSignal = wireReadout.find(channel) != wireReadout.end();
 
         // vector holding uncompressed adc values
         std::vector<short>& rawadc = rawDataWireTimeVec[0];
@@ -570,7 +569,7 @@ void BasicRawDigitAnalysis::endJob(int numEvents)
     
     // A task to complete is to fit the average power displays with aim to develop a "good" filter function and
     // get the signal to noise ratio
-    for(size_t planeIdx = 0; planeIdx < fGeometry.Nplanes(); planeIdx++)
+    for(size_t planeIdx = 0; planeIdx < fChannelMapAlg.Nplanes(); planeIdx++)
     {
         TH1* avePowerHist = fAveFFTPowerVec[planeIdx];
         

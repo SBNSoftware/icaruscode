@@ -206,11 +206,11 @@ void RawDigitAna::analyze(const art::Event& event)
         
         // Recover list of simChannels mapped by channel to make
         // look up easier below
-        IRawDigitHistogramTool::SimChannelMap channelMap;
+        IRawDigitHistogramTool::SimChannelMap wireReadout;
         
         if (simChannelHandle.isValid())
         {
-            for(const auto& simChannel : *simChannelHandle) channelMap[simChannel.Channel()] = &simChannel;
+            for(const auto& simChannel : *simChannelHandle) wireReadout[simChannel.Channel()] = &simChannel;
         }
         
         if (rawDigitHandle.isValid())
@@ -218,7 +218,7 @@ void RawDigitAna::analyze(const art::Event& event)
             IRawDigitHistogramTool::RawDigitPtrVec allRawDigitVec;
             art::fill_ptr_vector(allRawDigitVec, rawDigitHandle);
             
-            for(auto& rawDigitHistTool : fRawDigitHistogramToolVec) rawDigitHistTool->fillHistograms(clockData, detProp, allRawDigitVec,channelMap);
+            for(auto& rawDigitHistTool : fRawDigitHistogramToolVec) rawDigitHistTool->fillHistograms(clockData, detProp, allRawDigitVec,wireReadout);
         }
     }
 

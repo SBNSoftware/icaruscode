@@ -10,8 +10,7 @@
 #include "messagefacility/MessageLogger/MessageLogger.h"
 #include "canvas/Persistency/Common/FindManyP.h"
 
-#include "larcore/Geometry/Geometry.h"
-#include "larcore/CoreUtils/ServiceUtil.h" // lar::providerFrom()
+#include "larcore/Geometry/WireReadout.h"
 
 #include "lardataobj/RecoBase/Hit.h"
 
@@ -96,8 +95,6 @@ private:
     TH2D*     fPulseHVsWidth[3];
     TProfile* fPulseHVsHitNo[3];
     
-    // Useful services, keep copies for now (we can update during begin run periods)
-    const geo::GeometryCore*           fGeometry;             ///< pointer to Geometry service
 };
     
 //----------------------------------------------------------------------------
@@ -109,8 +106,6 @@ private:
 ///
 BasicTrackAnalysis::BasicTrackAnalysis(fhicl::ParameterSet const & pset)
 {
-    fGeometry           = lar::providerFrom<geo::Geometry>();
-    
     configure(pset);
     
     // Report.
@@ -142,9 +137,10 @@ void BasicTrackAnalysis::initializeHists(art::ServiceHandle<art::TFileService>& 
     // Make a directory for these histograms
     art::TFileDirectory dir = tfs->mkdir(dirName.c_str());
 
-    auto const n_wires_0 = fGeometry->Nwires(geo::PlaneID{0, 0, 0});
-    auto const n_wires_1 = fGeometry->Nwires(geo::PlaneID{0, 0, 1});
-    auto const n_wires_2 = fGeometry->Nwires(geo::PlaneID{0, 0, 2});
+    auto const& wireReadout = art::ServiceHandle<geo::WireReadout>()->Get();
+    auto const n_wires_0 = wireReadout.Nwires(geo::PlaneID{0, 0, 0});
+    auto const n_wires_1 = wireReadout.Nwires(geo::PlaneID{0, 0, 1});
+    auto const n_wires_2 = wireReadout.Nwires(geo::PlaneID{0, 0, 2});
     fHitsByWire[0]    = dir.make<TH1D>("HitsByWire0", ";Wire #", n_wires_0, 0., n_wires_0);
     fHitsByWire[1]    = dir.make<TH1D>("HitsByWire1", ";Wire #", n_wires_1, 0., n_wires_1);
     fHitsByWire[2]    = dir.make<TH1D>("HitsByWire2", ";Wire #", n_wires_2, 0., n_wires_2);

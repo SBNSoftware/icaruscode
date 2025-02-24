@@ -25,7 +25,7 @@
 
 // LArSoft libraries
 #include "larcoreobj/SimpleTypesAndConstants/RawTypes.h" // raw::ChannelID_t
-#include "larcore/Geometry/Geometry.h"
+#include "larcore/Geometry/WireReadout.h"
 #include "larcore/CoreUtils/ServiceUtil.h" // lar::providerFrom()
 #include "larcorealg/CoreUtils/zip.h"
 #include "lardataobj/RecoBase/Wire.h"
@@ -53,7 +53,7 @@ private:
     bool                                                       fDiagnosticOutput;           ///< secret diagnostics flag
     size_t                                                     fEventCount;                 ///< count of event processed
 
-    const geo::GeometryCore*                                   fGeometry = lar::providerFrom<geo::Geometry>();
+  const geo::WireReadoutGeom* fChannelMapAlg = &art::ServiceHandle<geo::WireReadout const>()->Get();
     
 }; // class ROIConvert
 
@@ -126,7 +126,7 @@ void ROIConvert::produce(art::Event& evt)
             {
                 // Recover the channel and the view
                 raw::ChannelID_t channel = channelROI.Channel();
-                geo::View_t      view    = fGeometry->View(channel);
+                geo::View_t      view    = fChannelMapAlg->View(channel);
 
                 // Create an ROI vector for output
                 recob::Wire::RegionsOfInterest_t ROIVec;

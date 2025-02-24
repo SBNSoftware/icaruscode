@@ -33,6 +33,7 @@
 #include "canvas/Persistency/Common/FindOneP.h"
 #include "canvas/Persistency/Common/Assns.h"
 
+#include "larcore/Geometry/WireReadout.h"
 #include "larcore/Geometry/Geometry.h"
 #include "larcore/CoreUtils/ServiceUtil.h" // lar::providerFrom()
 #include "lardataobj/RawData/OpDetWaveform.h"
@@ -248,7 +249,8 @@ private:
   //----------
   // Support variables/products
 
-  geo::GeometryCore const *fGeom;
+  geo::GeometryCore const* fGeom;
+  geo::WireReadoutGeom const* fChannelMapAlg;
   std::vector<icarus::timing::PMTBeamSignal> fRWMTimes;
 };
 
@@ -266,7 +268,8 @@ opana::ICARUSFlashAssAna::ICARUSFlashAssAna(Parameters const &config)
       fFlashLabels(config().FlashLabels()),
       fRWMLabel(config().RWMLabel()),
       fPEOpHitThreshold(config().PEOpHitThreshold()),
-      fGeom(lar::providerFrom<geo::Geometry>())
+      fGeom(lar::providerFrom<geo::Geometry>()), 
+      fChannelMapAlg(&art::ServiceHandle<geo::WireReadout const>()->Get())
 {
 }
 
@@ -277,17 +280,14 @@ void opana::ICARUSFlashAssAna::beginJob()
 
   art::ServiceHandle<art::TFileService const> tfs;
 
-  // Setting up the GEOMETRY tree
-  // Channel id corresponds to vector index
   TTree *fGeoTree = tfs->make<TTree>("geotree", "geometry information");
   fGeoTree->Branch("pmt_x", &m_pmt_x);
   fGeoTree->Branch("pmt_y", &m_pmt_y);
   fGeoTree->Branch("pmt_z", &m_pmt_z);
-
-  for (std::size_t opch = 0; opch < fGeom->NOpChannels(); ++opch)
+  
+  for(size_t opch=0; opch<fChannelMapAlg->NOpChannels(); ++opch) 
   {
-
-    auto const PMTxyz = fGeom->OpDetGeoFromOpChannel(opch).GetCenter();
+    auto const PMTxyz = fChannelMapAlg->OpDetGeoFromOpChannel(opch).GetCenter();
     m_pmt_x.push_back(PMTxyz.X());
     m_pmt_y.push_back(PMTxyz.Y());
     m_pmt_z.push_back(PMTxyz.Z());
@@ -453,8 +453,7 @@ T opana::ICARUSFlashAssAna::Median(std::vector<T> data) const
 
 geo::CryostatID::CryostatID_t opana::ICARUSFlashAssAna::getCryostatByChannel(int channel)
 {
-
-  const geo::OpDetGeo &opdetgeo = fGeom->OpDetGeoFromOpChannel(channel);
+  const geo::OpDetGeo &opdetgeo = fChannelMapAlg->OpDetGeoFromOpChannel(channel);
   geo::CryostatID::CryostatID_t cid = opdetgeo.ID().Cryostat;
   return cid;
 }

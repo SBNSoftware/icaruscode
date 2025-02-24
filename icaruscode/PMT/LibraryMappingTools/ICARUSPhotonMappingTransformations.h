@@ -12,6 +12,7 @@
 
 // LArSoft libraries
 #include "larsim/PhotonPropagation/LibraryMappingTools/IPhotonMappingTransformations.h"
+#include "larcore/Geometry/WireReadout.h"
 #include "larcore/Geometry/Geometry.h"
 #include "larcore/CoreUtils/ServiceUtil.h" // lar::providerFrom()
 #include "larcorealg/Geometry/GeometryCore.h"
@@ -231,6 +232,7 @@ namespace phot {
     
     /// Detector geometry service provider. Not really used.
     geo::GeometryCore const* fGeom = nullptr;
+    geo::WireReadoutGeom const* fChannelMapAlg = nullptr;
     
     
     //

@@ -20,8 +20,9 @@
 #include "nusimdata/SimulationBase/MCTruth.h"
 #include "lardataobj/Simulation/SimPhotons.h"
 #include "lardata/DetectorInfoServices/DetectorClocksService.h"
-#include "larcore/Geometry/Geometry.h"
+#include "larcore/Geometry/WireReadout.h"
 #include "larcore/CoreUtils/ServiceUtil.h" // lar::providerFrom()
+#include "larcorealg/Geometry/OpDetGeo.h"
 #include "lardataobj/RecoBase/OpHit.h"
 #include "lardataobj/RecoBase/OpFlash.h"
 
@@ -99,7 +100,7 @@ ICARUSMCOpFlash::ICARUSMCOpFlash(fhicl::ParameterSet const& p)
 
 void ICARUSMCOpFlash::produce(art::Event& e)
 {
-  auto const geop = lar::providerFrom<geo::Geometry>();
+  auto const& wireReadoutAlg = art::ServiceHandle<geo::WireReadout const>()->Get();
   auto opf_v = std::unique_ptr<std::vector<recob::OpFlash> >(new std::vector<recob::OpFlash>());
 
   art::Handle< std::vector< simb::MCTruth > > mct_h;
@@ -135,7 +136,7 @@ void ICARUSMCOpFlash::produce(art::Event& e)
   }
 
   for(auto const& flash_time : flash_time_v) {
-    std::vector<double> pe_v(geop->NOpChannels(),0.);
+    std::vector<double> pe_v(wireReadoutAlg.NOpChannels(),0.);
     double pe_total=-1.;
     // double pe_sum=0.; // unused
     // double pe_sum1=0.; // unused
@@ -177,7 +178,7 @@ void ICARUSMCOpFlash::GetFlashLocation(std::vector<double> pePerOpChannel,
 {
 
   // Reset variables
-  auto const geop = lar::providerFrom<geo::Geometry>();
+  auto const& wireReadoutAlg = art::ServiceHandle<geo::WireReadout const>()->Get();
   Ycenter = Zcenter = -1.e20;
   Ywidth  = Zwidth  = -1.e20;
   double totalPE = 0.;
@@ -186,7 +187,7 @@ void ICARUSMCOpFlash::GetFlashLocation(std::vector<double> pePerOpChannel,
   for (unsigned int opch = 0; opch < pePerOpChannel.size(); opch++) {
 
     // Get physical detector location for this opChannel 
-    auto const PMTxyz = geop->OpDetGeoFromOpChannel(opch).GetCenter();
+    auto const PMTxyz = wireReadoutAlg.OpDetGeoFromOpChannel(opch).GetCenter();
 
     // Add up the position, weighting with PEs 
     sumy    += pePerOpChannel[opch]*PMTxyz.Y();

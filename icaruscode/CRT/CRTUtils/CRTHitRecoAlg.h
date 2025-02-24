@@ -95,7 +95,7 @@ class icarus::crt::CRTHitRecoAlg {
                     double ez, string tagger);
 
  private:
-  geo::GeometryCore const* fGeometryService;
+  geo::AuxDetGeometryCore const* fAuxDetGeom;
 
   CRTCommonUtils fCrtutils;
 

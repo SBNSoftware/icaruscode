@@ -24,6 +24,7 @@
 #include "larcoreobj/SummaryData/RunData.h"
 #include "lardataobj/Simulation/SimPhotons.h"
 #include "lardata/DetectorInfoServices/DetectorClocksService.h"
+#include "larcore/Geometry/WireReadout.h"
 #include "larcore/Geometry/Geometry.h"
 #include "larcore/CoreUtils/ServiceUtil.h" // lar::providerFrom()
 
@@ -127,9 +128,9 @@ void FakePhotoS::produce(art::Event& e)
   auto simph_v = std::unique_ptr<std::vector<sim::SimPhotons> >(new std::vector<sim::SimPhotons>());
 
   if(_ch_v.empty()) {
-    auto const geop = lar::providerFrom<geo::Geometry>();
-    _ch_v.reserve(geop->NOpChannels());
-    for(size_t opch=0; opch<geop->NOpChannels(); ++opch) 
+    auto const nOpChannels = art::ServiceHandle<geo::WireReadout const>()->Get().NOpChannels();
+    _ch_v.reserve(nOpChannels);
+    for(size_t opch=0; opch<nOpChannels; ++opch)
       _ch_v.push_back(opch);
   }
   simph_v->reserve(_ch_v.size());

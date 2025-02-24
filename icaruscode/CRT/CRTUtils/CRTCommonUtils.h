@@ -83,7 +83,7 @@ class icarus::crt::CRTCommonUtils {
 
 
  private:
-    //geo::AuxDetGeometryCore const* fGeoService;
+    geo::AuxDetGeometryCore const* fAuxDetGeom;
     geo::GeometryCore const* fGeoService;
     map<size_t,vector<pair<uint8_t,int>>> fAuxDetIdToFeb;
     map<uint8_t,vector<size_t>> fFebToAuxDetId;

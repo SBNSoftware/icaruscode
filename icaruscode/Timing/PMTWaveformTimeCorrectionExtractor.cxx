@@ -90,11 +90,11 @@ auto icarus::timing::PMTWaveformTimeCorrectionExtractor::UnknownCrate::makeBaseE
 
 icarus::timing::PMTWaveformTimeCorrectionExtractor::PMTWaveformTimeCorrectionExtractor(
             detinfo::DetectorClocksData const detTimingService,
-            icarusDB::IICARUSChannelMap const & channelMapService,
+            icarusDB::IICARUSChannelMap const & wireReadoutService,
             icarusDB::PMTTimingCorrections const* pmtTimingCorrectionsService, 
             bool verbose )
 : fClocksData( detTimingService )
-, fChannelMap( channelMapService )
+, fChannelMap( wireReadoutService )
 , fPMTTimingCorrectionsService( pmtTimingCorrectionsService )
 , fVerbose( verbose )
 {}

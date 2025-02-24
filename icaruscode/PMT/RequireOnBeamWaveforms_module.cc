@@ -10,11 +10,10 @@
 #include "icaruscode/IcarusObj/OpDetWaveformMeta.h"
 #include "icarusalg/Utilities/AtomicPassCounter.h"
 #include "lardata/DetectorInfoServices/DetectorClocksService.h"
-#include "larcore/Geometry/Geometry.h"
+#include "larcore/Geometry/WireReadout.h"
 #include "larcore/CoreUtils/ServiceUtil.h" // lar::providerFrom()
 #include "lardataalg/DetectorInfo/DetectorTimings.h" // DetectorClocksWithUnits
 #include "lardataalg/Utilities/quantities/spacetime.h" // nanoseconds, ...
-#include "larcorealg/Geometry/GeometryCore.h"
 #include "larcorealg/CoreUtils/enumerate.h"
 #include "lardataobj/RawData/OpDetWaveform.h"
 #include "lardataobj/RawData/TriggerData.h"
@@ -348,7 +347,7 @@ std::vector<bool> RequireOnBeamWaveforms::buildRequiredChannelList
   (std::vector<raw::Channel_t> const& skipChannels /* = {} */)
 {
   std::vector<bool> mask
-    (lar::providerFrom<geo::Geometry>()->MaxOpChannel(), true);
+    (art::ServiceHandle<geo::WireReadout>()->Get().MaxOpChannel(), true);
   
   // they will be never missed
   for (raw::Channel_t const channel: skipChannels) mask[channel] = false;

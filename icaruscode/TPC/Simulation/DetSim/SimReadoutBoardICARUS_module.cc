@@ -48,8 +48,7 @@
 #include "lardataobj/RawData/raw.h"
 #include "lardataobj/RawData/TriggerData.h"
 #include "lardataobj/Simulation/SimChannel.h"
-#include "larcore/Geometry/Geometry.h"
-#include "larcorealg/Geometry/GeometryCore.h"
+#include "larcore/Geometry/WireReadout.h"
 #include "lardata/Utilities/LArFFT.h"
 #include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
 #include "lardata/DetectorInfoServices/DetectorClocksService.h"
@@ -138,7 +137,7 @@ private:
     FFTPointer                              fFFT;                   //< Object to handle thread safe FFT
     
     //services
-    const geo::GeometryCore&                fGeometry;
+    const geo::WireReadoutGeom&               fChannelMapAlg;
     icarusutil::SignalShapingICARUSService* fSignalShapingService;  //< Access to the response functions
     const icarusDB::IICARUSChannelMap*      fChannelMap;
     
@@ -151,7 +150,7 @@ SimReadoutBoardICARUS::SimReadoutBoardICARUS(fhicl::ParameterSet const& pset)
     , fPedestalEngine(art::ServiceHandle<rndm::NuRandomService>()->registerAndSeedEngine(createEngine(0, "HepJamesRandom", "pedestal"), "HepJamesRandom", "pedestal", pset, "SeedPedestal"))
     , fUncNoiseEngine(art::ServiceHandle<rndm::NuRandomService>()->registerAndSeedEngine(createEngine(0, "HepJamesRandom", "noise"   ), "HepJamesRandom", "noise",    pset, "Seed"))
     , fCorNoiseEngine(art::ServiceHandle<rndm::NuRandomService>()->registerAndSeedEngine(createEngine(0, "HepJamesRandom", "cornoise"), "HepJamesRandom", "cornoise", pset, "Seed"))
-    , fGeometry(*lar::providerFrom<geo::Geometry>())
+    , fChannelMapAlg{art::ServiceHandle<geo::WireReadout const>{}->Get()}
     , fChannelMap(art::ServiceHandle<icarusDB::IICARUSChannelMap const>{}.get())
 {
     this->reconfigure(pset);
@@ -220,11 +219,11 @@ void SimReadoutBoardICARUS::beginJob()
     // If in test mode create a test data set
     if(fTest)
     {
-        if(fGeometry.Nchannels()<=fTestWire)
+        if(fChannelMapAlg.Nchannels()<=fTestWire)
             throw cet::exception(__FUNCTION__)<<"Invalid test wire channel: "<<fTestWire;
         std::vector<unsigned int> channels;
-        for(auto const& plane_id : fGeometry.Iterate<geo::PlaneID>())
-          channels.push_back(fGeometry.PlaneWireToChannel(geo::WireID(plane_id,fTestWire)));
+        for(auto const& plane_id : fChannelMapAlg.Iterate<geo::PlaneID>())
+          channels.push_back(fChannelMapAlg.PlaneWireToChannel(geo::WireID(plane_id,fTestWire)));
         double xyz[3] = { std::numeric_limits<double>::max() };
         for(auto const& ch : channels)
         {
@@ -265,7 +264,7 @@ void SimReadoutBoardICARUS::produce(art::Event& evt)
     auto const clockData = art::ServiceHandle<detinfo::DetectorClocksService const>()->DataFor(evt);
     
     // get the geometry to be able to figure out signal types and chan -> plane mappings
-    const raw::ChannelID_t maxChannel = fGeometry.Nchannels();
+    const raw::ChannelID_t maxChannel = fChannelMapAlg.Nchannels();
 
     //--------------------------------------------------------------------
     //
@@ -332,7 +331,7 @@ void SimReadoutBoardICARUS::produce(art::Event& evt)
 
         for(const auto& channelPair : boardPair.second.second)
         {
-            wireIDVec = fGeometry.ChannelToWire(channelPair.first);
+            wireIDVec = fChannelMapAlg.ChannelToWire(channelPair.first);
 
             if (wireIDVec.size() > 0) break;
         }
@@ -405,7 +404,7 @@ void SimReadoutBoardICARUS::produce(art::Event& evt)
             }
 
             // Check where this wire is located
-            std::vector<geo::WireID> widVec = fGeometry.ChannelToWire(channel);
+            std::vector<geo::WireID> widVec = fChannelMapAlg.ChannelToWire(channel);
 
             // For now skip the channels with no info
 //            if (widVec.empty()) continue;
@@ -476,7 +475,7 @@ void SimReadoutBoardICARUS::produce(art::Event& evt)
 
                 if(area>0)
                 {
-                    std::vector<geo::WireID> widVec = fGeometry.ChannelToWire(channel);
+                    std::vector<geo::WireID> widVec = fChannelMapAlg.ChannelToWire(channel);
 
                     fSimCharge->Fill(area);
                     fSimChargeWire->Fill(widVec[0].Wire,area);

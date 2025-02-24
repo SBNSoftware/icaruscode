@@ -18,6 +18,7 @@
 
 // LArSoft libraries
 // #include "lardata/DetectorInfoServices/DetectorClocksService.h"
+#include "larcore/Geometry/WireReadout.h"
 #include "larcore/Geometry/Geometry.h"
 #include "larcore/CoreUtils/ServiceUtil.h" // lar::providerFrom()
 #include "larcorealg/Geometry/GeometryCore.h"
@@ -276,7 +277,7 @@ public:
                           const recob::Track &trk,
                           const recob::TrackHitMeta &thm,
                           const std::vector<art::Ptr<anab::Calorimetry>> &calo,
-                          const geo::GeometryCore *geo);
+                          const geo::WireReadoutGeom &wireReadoutAlg);
 
   void analyze(art::Event const& e) override;
   
@@ -419,6 +420,7 @@ sbn::TimeTrackTreeStorage::TimeTrackTreeStorage(Parameters const& p)
 void sbn::TimeTrackTreeStorage::analyze(art::Event const& e)
 {
   const geo::GeometryCore *geom = lar::providerFrom<geo::Geometry>();
+  const geo::WireReadoutGeom &wireReadoutAlg = art::ServiceHandle<geo::WireReadout const>()->Get();
   // Implementation of required member function here.
   fEvent = e.event();
   fSubRun = e.subRun();
@@ -597,7 +599,7 @@ void sbn::TimeTrackTreeStorage::analyze(art::Event const& e)
     for (size_t ih = 0; ih < allHits.size(); ++ih)
     {
       //hits[allHits[ih]->WireID().Plane].push_back(ih);
-      sbn::selHitInfo hinfo = makeHit(*allHits[ih], allHits[ih].key(), *trackPtr, *trkmetas[ih], calorimetrycol, geom);
+      sbn::selHitInfo hinfo = makeHit(*allHits[ih], allHits[ih].key(), *trackPtr, *trkmetas[ih], calorimetrycol, wireReadoutAlg);
       if(hinfo.plane == 2)
         fHitStore.push_back(hinfo);
 
@@ -661,7 +663,7 @@ sbn::selHitInfo sbn::TimeTrackTreeStorage::makeHit(const recob::Hit &hit,
                                                    const recob::Track &trk,
                                                    const recob::TrackHitMeta &thm,
                                                    const std::vector<art::Ptr<anab::Calorimetry>> &calo,
-                                                   const geo::GeometryCore *geo)
+                                                   const geo::WireReadoutGeom &wireReadoutAlg)
 {
 
   // TrackHitInfo to save
@@ -675,7 +677,7 @@ sbn::selHitInfo sbn::TimeTrackTreeStorage::makeHit(const recob::Hit &hit,
   hinfo.mult = hit.Multiplicity();
   hinfo.wire = hit.WireID().Wire;
   hinfo.plane = hit.WireID().Plane;
-  hinfo.channel = geo->PlaneWireToChannel(hit.WireID());
+  hinfo.channel = wireReadoutAlg.PlaneWireToChannel(hit.WireID());
   hinfo.tpc = hit.WireID().TPC;
   hinfo.end = hit.EndTick();
   hinfo.start = hit.StartTick();
@@ -734,6 +736,7 @@ void sbn::TimeTrackTreeStorage::endJob() {
 std::vector<std::pair<double, std::vector<raw::Channel_t>>>
 sbn::TimeTrackTreeStorage::computePMTwalls() const {
   
+  geo::WireReadoutGeom const& wireReadoutAlg = art::ServiceHandle<geo::WireReadout const>()->Get();
   geo::GeometryCore const& geom { *lar::providerFrom<geo::Geometry>() };
   
   // run the algorithm to identify the PMT walls (as groups of geo::OpDetGeo)
@@ -743,8 +746,9 @@ sbn::TimeTrackTreeStorage::computePMTwalls() const {
   // and weirdly, the only portable way to go from a OpDetGeo to its channel
   // is to build a map (maybe because it's not guaranteed to be 1-to-1?)
   std::map<geo::OpDetGeo const*, raw::Channel_t> opDetToChannel;
-  for (auto const channel: util::counter<raw::Channel_t>(geom.MaxOpChannel()))
-    opDetToChannel[&geom.OpDetGeoFromOpChannel(channel)] = channel;
+  for (auto const channel: util::counter<raw::Channel_t>(wireReadoutAlg.MaxOpChannel())) {
+    opDetToChannel[&wireReadoutAlg.OpDetGeoFromOpChannel(channel)] = channel;
+  }
   
   // rewrite the data structure replacing each detector with its readout channel
   std::vector<std::pair<double, std::vector<raw::Channel_t>>> channelWalls;
