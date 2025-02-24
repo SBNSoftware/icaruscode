@@ -13,9 +13,10 @@ cet_build_plugin(CRTGeoObjectSorter art::tool
         cetlib::cetlib
 )
 
-cet_build_plugin(CRTAuxDetInitializer art::tool
+cet_build_plugin(CRTAuxDetInitializerICARUS art::tool
   LIBRARIES
                 larcorealg::Geometry
+                icarusalg::Geometry
                 cetlib_except::cetlib_except
                 messagefacility::MF_MessageLogger
                 messagefacility::headers
