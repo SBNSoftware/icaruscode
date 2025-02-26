@@ -92,7 +92,11 @@ icarus_genie_NuMI_rock.DetectorLocation: "icarus-numi-rock"
 
 # RHC Config
 icarus_genie_NuMI_RHC: @local::icarus_genie_NuMI
+<<<<<<< HEAD
 icarus_genie_NuMI_RHC.FluxSearchPaths: "/cvmfs/sbn.osgstorage.org/pnfs/fnal.gov/usr/sbn/persistent/stash/physics/beam/GENIE/NuMI/standard/v03_00_RHC/"
+=======
+icarus_genie_NuMI_RHC.FluxSearchPaths: "/cvmfs/sbn.osgstorage.org/pnfs/fnal.gov/usr/sbn/persistent/stash/physics/beam/GENIE/NuMI/standard/v03_01_RHC/"
+>>>>>>> origin/feature/icaro_overlays_v09_89_02_00p02
 
 ################################################################################
 

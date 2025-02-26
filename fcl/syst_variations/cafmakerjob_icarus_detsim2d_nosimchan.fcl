@@ -1,0 +1,6 @@
+#include "cafmakerjob_icarus.fcl"
+#include "cafmaker_add_detsim2d_icarus.fcl"
+
+physics.producers.mcreco.SimChannelLabel: "simdrift"
+services.BackTrackerService.BackTracker.SimChannelModuleLabel: "simdrift"
+physics.producers.cafmaker.SimChannelLabel: "simdrift" 

@@ -583,12 +583,14 @@ namespace sbn::crt {
           << firstOpHitPeakTime << " us, centroid: " << flash_pos << " cm";
       }
       
+      /// Francesco: this was reintroduced as requested for the production release
       if (nPMTsTriggering < fnOpHitToTrigger) {
         mf::LogTrace("CRTPMTMatchingProducer")
           << "  => skipped (only " << nPMTsTriggering << " < " << fnOpHitToTrigger
           << " hits above threshold)";
         continue;
       }
+      
       
       double const thisRelGateTime = triggerGateDiff + tflash * 1e3; // ns
       bool const thisInTime_gate

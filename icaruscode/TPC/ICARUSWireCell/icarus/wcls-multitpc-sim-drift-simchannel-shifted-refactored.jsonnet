@@ -324,7 +324,11 @@ local frame_summers = [
         name: 'framesummer%d' %n,
         data: {
             align: true,
+<<<<<<< HEAD
+            offset: 0.0*wc.s
+=======
             offset: 0.0*wc.s,
+>>>>>>> origin/feature/icaro_overlays_Run2
         },
     }, nin=2, nout=1) for n in std.range(0, 3)];
 

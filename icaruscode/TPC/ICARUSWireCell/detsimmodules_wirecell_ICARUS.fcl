@@ -12,8 +12,8 @@ icarus_simwire_wirecell:
     {
         tool_type: WCLS
         apps: ["Pgrapher"]
-        // logsinks: ["stdout"]
-        // loglevels: ["magnify:debug"]
+        //logsinks: ["stdout"]
+        //loglevels: ["magnify:debug"]
         plugins: ["WireCellPgraph", "WireCellGen","WireCellSio","WireCellRoot","WireCellLarsoft"]
         // needs to be found via your WIRECELL_PATH 
         configs: ["pgrapher/experiment/icarus/wcls-multitpc-sim-drift-simchannel-refactored.jsonnet"]
@@ -38,6 +38,7 @@ icarus_simwire_wirecell:
 	    //files_fields: "garfield-icarus-fnal-rev2.json.bz2"
 	    files_fields: "icarus_fnal_fit_ks_P0nom.json.bz2"
 	    file_rcresp: "" # use the RCResponse by default
+	    cathode_input_format: "scalar" # scalar or array
 	    }
         structs: {
             # load values from simulationservices_icarus.fcl
@@ -98,4 +99,5 @@ icarus_simwire_wirecell_fitSR_P0nom.wcls_main.structs.gain0: 17.05212 # mV/fC
 icarus_simwire_wirecell_fitSR_P0nom.wcls_main.structs.gain1: 12.6181926 # mV/fC
 icarus_simwire_wirecell_fitSR_P0nom.wcls_main.structs.gain2: 13.0261362 # mV/fC
 icarus_simwire_wirecell_fitSR_P0nom.wcls_main.structs.shaping1: 1.45 # us
+
 END_PROLOG

@@ -18,7 +18,6 @@ cmake_minimum_required(VERSION 3.20 FATAL_ERROR)
 
 find_package(cetmodules 3.24.01 REQUIRED)
 project(icaruscode VERSION 09.92.00 LANGUAGES CXX)
-
 message(STATUS
   "\n-- ============================================================================="
   "\n-- === *** Start of configuration of ${PROJECT_NAME} ***"
