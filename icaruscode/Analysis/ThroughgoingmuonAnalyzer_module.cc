@@ -238,10 +238,8 @@ private:
 
   // Useful services, keep copies for now (we can update during begin run periods)
   const geo::GeometryCore*           fGeometry;             ///< pointer to Geometry service
-  const geo::WireReadoutGeom*          fChannelMapAlg;        ///< pointer to ChannelMapAlg
+  const geo::WireReadoutGeom*        fChannelMapAlg;        ///< pointer to ChannelMapAlg
 
-  // Get geometry.
-  //  art::ServiceHandle<geo::Geometry> geom;
 };
 
 

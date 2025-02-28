@@ -35,9 +35,9 @@ CoherentNoiseFactorProvider::CoherentNoiseFactorProvider(const fhicl::ParameterS
     fDiagnosticOutput = pset.get<bool>("DiagnosticOutput", false);
 
     // Set up the board->correlated factors map
-    const auto& wireReadout = art::ServiceHandle<icarusDB::IICARUSChannelMap const>{}.get();
+    const auto& channelMap = art::ServiceHandle<icarusDB::IICARUSChannelMap const>{}.get();
 
-    const icarusDB::TPCReadoutBoardToChannelMap& readoutBoardToChannelMap = wireReadout->getReadoutBoardToChannelMap();
+    const icarusDB::TPCReadoutBoardToChannelMap& readoutBoardToChannelMap = channelMap->getReadoutBoardToChannelMap();
 
     for(const auto& boardPair : readoutBoardToChannelMap)
     {

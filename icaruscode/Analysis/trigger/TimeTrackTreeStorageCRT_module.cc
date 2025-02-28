@@ -459,7 +459,7 @@ private:
     recob::Track const& track,
     double timeShift,
     std::vector<geo::TPCID> const& TPCs,
-    geo::GeometryCore const& geometry,
+    geo::GeometryCore const& geom,
     detinfo::DetectorPropertiesData const& detProp
     ) const;
 
@@ -1237,23 +1237,23 @@ geo::Vector_t sbn::TimeTrackTreeStorage::posShiftFromCRTtime(
   recob::Track const& track,
   double timeShift,
   std::vector<geo::TPCID> const& TPCs,
-  geo::GeometryCore const& geometry,
+  geo::GeometryCore const& geom,
   detinfo::DetectorPropertiesData const& detProp
 ) const {
   if (TPCs.empty()) return {};
 
   auto iTPC = TPCs.begin();
-  geo::Vector_t const driftDir = geometry.TPC(*iTPC).DriftDir(); // toward anode
+  geo::Vector_t const driftDir = geom.TPC(*iTPC).DriftDir(); // toward anode
 
   // check for consistency of the drift direction
   while (++iTPC != TPCs.end()) {
-    if (driftDir == geometry.TPC(*iTPC).DriftDir()) continue;
+    if (driftDir == geom.TPC(*iTPC).DriftDir()) continue;
     mf::LogPrint log(fLogCategory);
     log << "Warning: track ID=" << track.ID()
       << " (from " << track.Start() << " to " << track.End()
       << " cm) with no TPC T0 crosses TPCs with different drifts:";
     for (geo::TPCID const& tpcid: TPCs)
-      log << " " << tpcid << " " << geometry.TPC(tpcid).DriftDir();
+      log << " " << tpcid << " " << geom.TPC(tpcid).DriftDir();
     return {};
   } // while
 

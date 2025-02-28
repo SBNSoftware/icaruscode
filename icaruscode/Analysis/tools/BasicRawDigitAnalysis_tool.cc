@@ -136,7 +136,7 @@ private:
     FFTPointer                               fFFT;                   //< Object to handle thread safe FFT
 
     // Useful services, keep copies for now (we can update during begin run periods)
-    const geo::WireReadoutGeom&                fChannelMapAlg;        ///< pointer to ChannelMapAlg
+    const geo::WireReadoutGeom&              fChannelMapAlg;        ///< pointer to ChannelMapAlg
     icarusutil::SignalShapingICARUSService&  fSignalServices;       ///< The signal shaping service
     const lariov::DetPedestalProvider&       fPedestalRetrievalAlg; ///< Keep track of an instance to the pedestal retrieval alg
 };
@@ -324,7 +324,7 @@ void BasicRawDigitAnalysis::initializeHists(detinfo::DetectorClocksData const& c
 void BasicRawDigitAnalysis::fillHistograms(const detinfo::DetectorClocksData& clockData,
                                            const detinfo::DetectorPropertiesData& detProp,
                                            const IRawDigitHistogramTool::RawDigitPtrVec& rawDigitPtrVec,
-                                           const IRawDigitHistogramTool::SimChannelMap&  wireReadout) const
+                                           const IRawDigitHistogramTool::SimChannelMap&  channelMap) const
 {
     // Sadly, the RawDigits come to us in an unsorted condition which is not optimal for
     // what we want to do here. So we make a vector of pointers to the input raw digits and sort them
@@ -403,7 +403,7 @@ void BasicRawDigitAnalysis::fillHistograms(const detinfo::DetectorClocksData& cl
         }
         
         // If MC, does this channel have signal?
-        bool hasSignal = wireReadout.find(channel) != wireReadout.end();
+        bool hasSignal = channelMap.find(channel) != channelMap.end();
 
         // vector holding uncompressed adc values
         std::vector<short>& rawadc = rawDataWireTimeVec[0];

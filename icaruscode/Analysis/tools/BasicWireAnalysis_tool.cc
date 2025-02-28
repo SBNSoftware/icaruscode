@@ -252,7 +252,7 @@ void BasicWireAnalysis::initializeHists(art::ServiceHandle<art::TFileService>& t
 }
     
 void BasicWireAnalysis::fillHistograms(const IWireHistogramTool::WirePtrVec&     wirePtrVec,
-                                       const IWireHistogramTool::SimChannelMap&  wireReadout,
+                                       const IWireHistogramTool::SimChannelMap&  channelMap,
                                        int                                       eventNum) const
 {
     // Sadly, the RawDigits come to us in an unsorted condition which is not optimal for
@@ -281,7 +281,7 @@ void BasicWireAnalysis::fillHistograms(const IWireHistogramTool::WirePtrVec&    
         art::TFileDirectory dir = fHistDirectory->mkdir(Form("WavePlane_%1zu/c%1zu/c%1zut%1zuwire_%05zu",plane,size_t(eventNum),cryo,tpc,wireNum));
 
         // If MC, does this channel have signal?
-        bool hasSignal = wireReadout.find(channel) != wireReadout.end();
+        bool hasSignal = channelMap.find(channel) != channelMap.end();
         
         if (!hasSignal) continue;
         

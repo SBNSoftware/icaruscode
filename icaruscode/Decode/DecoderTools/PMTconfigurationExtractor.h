@@ -319,7 +319,7 @@ class icarus::PMTconfigurationExtractor
   
   /// Constructor: use channel mapping to `finalize()` channel IDs.
   PMTconfigurationExtractor
-    (icarusDB::IICARUSChannelMap const& wireReadoutpingService);
+    (icarusDB::IICARUSChannelMap const& channelMappingService);
   
   
   // --- BEGIN -- Interface ----------------------------------------------------
@@ -402,8 +402,8 @@ class icarus::PMTconfigurationExtractor
 // --- Inline implementation
 // -----------------------------------------------------------------------------
 icarus::PMTconfigurationExtractor::PMTconfigurationExtractor
-  (icarusDB::IICARUSChannelMap const& wireReadoutpingService)
-  : fChannelMap(&wireReadoutpingService)
+  (icarusDB::IICARUSChannelMap const& channelMappingService)
+  : fChannelMap(&channelMappingService)
   {}
 
 
