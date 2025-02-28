@@ -85,6 +85,19 @@ auto icarus::timing::PMTWaveformTimeCorrectionExtractor::UnknownCrate::makeBaseE
 }
 
 
+icarus::timing::PMTWaveformTimeCorrectionExtractor::NoSignalFound::NoSignalFound
+  (unsigned int channel, double threshold)
+    : Error{ makeBaseException(channel, threshold) }
+    {}
+
+auto icarus::timing::PMTWaveformTimeCorrectionExtractor::NoSignalFound::makeBaseException
+  (unsigned int channel, double threshold) -> Error
+{
+  return Error{}
+  << "No signal found in special channel ID " << channel
+  << " (0x" << std::hex << channel << ") with " << threshold << " ADC threshold.\n";
+}
+
 
 // -----------------------------------------------------------------------------
 
@@ -92,79 +105,17 @@ auto icarus::timing::PMTWaveformTimeCorrectionExtractor::UnknownCrate::makeBaseE
 icarus::timing::PMTWaveformTimeCorrectionExtractor::PMTWaveformTimeCorrectionExtractor(
             detinfo::DetectorClocksData const detTimingService,
             icarusDB::IICARUSChannelMap const & channelMapService,
-            icarusDB::PMTTimingCorrections const* pmtTimingCorrectionsService, 
+            icarusDB::PMTTimingCorrections const* pmtTimingCorrectionsService,
+            icarus::timing::ExtractionMethod const pulseStartExtractionMethod, 
+            double pulseStartExtractionThreshold,
             bool verbose )
 : fClocksData( detTimingService )
 , fChannelMap( channelMapService )
 , fPMTTimingCorrectionsService( pmtTimingCorrectionsService )
+, fPulseStartExtractionMethod( pulseStartExtractionMethod )
+, fPulseStartExtractionThreshold( pulseStartExtractionThreshold )
 , fVerbose( verbose )
 {}
-
-
-// -----------------------------------------------------------------------------
-
-
-template<typename T>
-  size_t icarus::timing::PMTWaveformTimeCorrectionExtractor::getMinBin( 
-        std::vector<T> const& vv, size_t startElement, size_t endElement ){
-
-    auto minel = 
-        std::min_element( vv.begin()+startElement, vv.begin()+endElement );
-    size_t minsample = std::distance( vv.begin()+startElement, minel );
-
-    return minsample;
-}
-
-
-// -----------------------------------------------------------------------------
-
-
-template<typename T>
-  size_t icarus::timing::PMTWaveformTimeCorrectionExtractor::getMaxBin( 
-            std::vector<T> const& vv, size_t startElement, size_t endElement){
-
-    auto maxel = 
-        std::max_element( vv.begin()+startElement, vv.begin()+endElement );
-    
-    size_t maxsample = std::distance( vv.begin()+startElement, maxel );
-
-    return maxsample;
-} 
-
-
-// -----------------------------------------------------------------------------
-
-
-template<typename T>
-  size_t icarus::timing::PMTWaveformTimeCorrectionExtractor::getStartSample( std::vector<T> const& vv ){
-    
-    // NOTE: when changing this algorithm, also update the documentation
-    // in the section "Signal timing extraction" of the class documentation
-
-    // We are thinking in inverted polarity
-    size_t minbin = getMinBin( vv, 0, vv.size() );
-
-    //Search only a cropped region of the waveform backward from the min
-    size_t maxbin =  minbin-20; //getMaxBin( wave, minbin-20, minbin );
-
-    // Now we crawl betweem maxbin and minbin and we stop when:
-      //( maxbin value - minbin value )*0.05 > (maxbin value - bin value )
-    size_t startbin = maxbin;
-    auto delta = vv[maxbin]-vv[minbin];
-    for( size_t bin=maxbin; bin<minbin; bin++ ){
-      auto val = vv[maxbin]-vv[bin];
-      if( val >= 0.2*delta ){
-        startbin = bin - 1;
-        break;
-      }
-    }
-
-    if( startbin < maxbin ){
-      startbin=maxbin;
-    }
-
-    return startbin;
-}
 
 
 //---------------------------------------------------------------------------------------
@@ -190,19 +141,13 @@ void icarus::timing::PMTWaveformTimeCorrectionExtractor::findWaveformTimeCorrect
         throw UnknownCrate{ waveChannelID };
 
     // This will be the first sample of the falling edge of the special channel signal
-    // Which corresponds to the global trigger time. 
-    PulseStartExtractor extractor(PulseStartExtractor::SIGMOID_FIT, 500.0);
+    // which corresponds to the global trigger time. 
+    icarus::timing::PulseStartExtractor extractor(fPulseStartExtractionMethod, fPulseStartExtractionThreshold);
     double startSampleSignal = extractor.extractStart(wave);
 
-    PulseStartExtractor extractor1(PulseStartExtractor::CONSTANT_FRACTION, 500.0);
-    double startSampleSignal1 = extractor1.extractStart(wave);
-    
-    std::cout << "channel " << waveChannelID << " crate " << crateSignalID << " sample " << startSampleSignal1 << " fit " << startSampleSignal << 
-                 "diff " << startSampleSignal - startSampleSignal1 << std::endl;
-
-    //int startSampleSignal = static_cast<int>( getStartSample( wave ) );
-    if (startSampleSignal<1)
-      throw Error("Can't find digitized trigger signal!");
+    // if it returns the first sample, it means no signal was found
+    if (startSampleSignal < 1 )
+      throw NoSignalFound(waveChannelID, fPulseStartExtractionThreshold);
 
     // allocates room for correction for `channel`; intermediate ones are defaulted
     auto correctionFor

@@ -12,6 +12,7 @@
 #include "icaruscode/Decode/ChannelMapping/IICARUSChannelMap.h"
 #include "icaruscode/Timing/PMTTimingCorrections.h"
 #include "icaruscode/IcarusObj/PMTWaveformTimeCorrection.h"
+#include "icaruscode/Timing/Tools/PulseStartExtractor.h"
 
 // LArSoft libraries
 #include "lardataobj/RawData/OpDetWaveform.h"
@@ -47,16 +48,13 @@ namespace icarus::timing { class PMTWaveformTimeCorrectionExtractor; }
  * Signal timing extraction
  * -------------------------
  * 
- * The detection algorithm is currently quite unsophisticated.
- * 
  * The reference signal is expected to be a sharp square wave in negative
- * polarity. The time of the correction is based on the front side of that wave:
+ * polarity. The time of the correction is based on the front side of that wave.
+ * The extraction is perfomed by `icarus::timing::PulseStartExtractor` by
+ * specifying one of the available extraction methods (constant-fraction discrimation,
+ * logitstic function fit) and an ADC threshold for the signal identification.
  * 
- *  * the absolute minimum of the waveform is found
- *  * an interval starting 20 ticks before that minimum is considered
- *  * the baseline level is defined as the value at the start of that interval
- *  * the start time is set to the exact tick with an amplitude exceeding 20%
- *    of the maximum of the signal from the baseline
+ * @see `icarus::timing::PulseStartExtractor` for details.
  * 
  */
 class icarus::timing::PMTWaveformTimeCorrectionExtractor {
@@ -88,13 +86,21 @@ class icarus::timing::PMTWaveformTimeCorrectionExtractor {
             private: static Error makeBaseException(unsigned int channel);
         };
 
+        /// Exception thrown when no signal is found above threshold
+        struct NoSignalFound: Error {
+            NoSignalFound(unsigned int channel, double threshold);
+            private: static Error makeBaseException(unsigned int channel, double threshold);
+        };
+
         // --- END ---- Exceptions ---------------------------------------------
 
 
         PMTWaveformTimeCorrectionExtractor(
             detinfo::DetectorClocksData const detTimingService,
             icarusDB::IICARUSChannelMap const & channelMapService,
-            icarusDB::PMTTimingCorrections const* pmtTimingCorrectionsService, 
+            icarusDB::PMTTimingCorrections const* pmtTimingCorrectionsService,
+            icarus::timing::ExtractionMethod const pulseStartExtractionMethod,
+            double threshold,
             bool verbose );
 
         /**
@@ -106,6 +112,7 @@ class icarus::timing::PMTWaveformTimeCorrectionExtractor {
          * @throw UnknownCrate if `wave` is from an unexpected readout crate
          * @throw MultipleCorrectionsForChannel if `corrections` already contains
          *   a correction for any of the channels we are associating to the new correction
+         * @throw NoSignalFound if `wave` does not contain any pulse above threshold
          * 
          * This function performs the analysis of the reference waveform `wave`,
          * extracts the correction out of it and associates it in `corrections`
@@ -141,6 +148,10 @@ class icarus::timing::PMTWaveformTimeCorrectionExtractor {
 
         icarusDB::PMTTimingCorrections const* fPMTTimingCorrectionsService = nullptr;
 
+        icarus::timing::ExtractionMethod const fPulseStartExtractionMethod;
+
+        double const fPulseStartExtractionThreshold;
+
         bool const fVerbose;
 
         std::map<unsigned int, std::vector<unsigned int>> const
@@ -154,21 +165,6 @@ class icarus::timing::PMTWaveformTimeCorrectionExtractor {
                 {0x0010 , { 18, 19, 20 }}, 
                 {0x0000 , { 21, 22, 23 }}, 
             }; 
-
-        template<typename T>
-            static size_t getMaxBin( 
-                std::vector<T> const& vv,
-                size_t startElement, 
-                size_t endElement);
-
-        template<typename T>
-            static size_t getMinBin( 
-                std::vector<T> const& vv,
-                size_t startElement, 
-                size_t endElement);
-
-        template<typename T>
-            static size_t getStartSample( std::vector<T> const& vv );
 
 };
 

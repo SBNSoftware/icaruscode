@@ -15,6 +15,7 @@
 #include "icaruscode/Decode/ChannelMapping/IICARUSChannelMap.h"
 #include "icaruscode/IcarusObj/PMTWaveformTimeCorrection.h"
 #include "icaruscode/Timing/PMTWaveformTimeCorrectionExtractor.h"
+#include "icaruscode/Timing/Tools/PulseStartExtractor.h"
 #include "icaruscode/Timing/IPMTTimingCorrectionService.h"
 #include "icaruscode/Timing/PMTTimingCorrections.h"
 #include "icarusalg/Utilities/BinaryDumpUtils.h" // icarus::ns::util::bin()
@@ -192,6 +193,12 @@ namespace icarus { class DaqDecoderICARUSPMT; }
  *     waveform-based timing correction is used.
  * * `ApplyCableDelayCorrection` (flag, default: `true`): if set, applies the
  *     cable delay corrections from a database.
+ * * `PulseStartExtractionMethod` (string, default: `LogisticFit`): pulse start
+ *     extraction method for the time corrections. 
+ *     @see icarus::timing::PulseStartExtractor for details and options.
+ * * `PulseStartExtractionThreshold` (double, default: `500.`): detection threshold
+ *     in ADC counts for the extraction of time corrections.
+ *     @see icarus::timing::PulseStartExtractor for details and options.
  * * `DataTrees` (list of strings, default: none): list of data trees to be
  *     produced; if none (default), then `TFileService` is not required.
  * * `SkipWaveforms` (flag, default: `false`) if set, waveforms won't be
@@ -702,6 +709,18 @@ class icarus::DaqDecoderICARUSPMT: public art::EDProducer {
       Name("ApplyCableDelayCorrection"),
       Comment("apply cable delay corrections from the database channel-wise"),
       true
+      };
+
+    fhicl::Atom<std::string> PulseStartExtractionMethod {
+      Name("PulseStartExtractionMethod"),
+      Comment("pulse start extraction method for the time corrections"),
+      "LogisticFit"
+    };
+
+    fhicl::Atom<double> PulseStartExtractionThreshold {
+      Name("PulseStartExtractionThreshold"),
+      Comment("detection threshold in ADC counts for the extraction of time corrections"),
+      500.
       };
 
     fhicl::OptionalAtom<art::InputTag> PMTconfigTag {
@@ -1632,7 +1651,10 @@ icarus::DaqDecoderICARUSPMT::DaqDecoderICARUSPMT(Parameters const& params)
     }
   , fPMTWaveformTimeCorrectionManager{
       fDetTimings.clockData(), fChannelMap,
-      fPMTTimingCorrectionsService, fDiagnosticOutput
+      fPMTTimingCorrectionsService,
+      icarus::timing::stringToExtractionMethod.at(params().PulseStartExtractionMethod()),
+      params().PulseStartExtractionThreshold(),
+      fDiagnosticOutput
       }
   , fOpticalTick{ fDetTimings.OpticalClockPeriod() }
   , fNominalTriggerTime{ fDetTimings.TriggerTime() }
