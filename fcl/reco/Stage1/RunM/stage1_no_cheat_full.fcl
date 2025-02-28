@@ -1,0 +1,39 @@
+############################################
+# Running stage 1 in icarus (w/o cheating)
+# M Sotgia
+# feb. 5th 2025
+############################################
+
+
+BEGIN_PROLOG
+
+pandora_configuration: {
+    # ConfigFile:             "PandoraSettings_Master_ICARUS.xml" ##< Master file to run in reconstruction
+    EnableMCParticles:      true                                    ##< To be able to cheat is necessary to collapse to MC particles
+    SimChannelModuleLabel:  "daq:simpleSC"                          ##< Correct sim channel to enable MC particles
+
+
+    # PrintOverallRecoStatus:     true
+
+    # # Settings for the reconstruction
+    # ShouldRunAllHitsCosmicReco:       true
+    # ShouldRunStitching:               true 
+    # ShouldRunCosmicHitRemoval:        true
+    # ShouldRunSlicing:                 true 
+    # ShouldRunNeutrinoRecoOption:      true 
+    # ShouldRunCosmicRecoOption:        true
+    # ShouldPerformSliceId:             true
+}
+
+END_PROLOG
+
+#include "stage1_run2_1d_larcv_icarus_MC.fcl"
+
+physics.producers.pandoraGausCryoE: {
+    @table::physics.producers.pandoraGausCryoE
+    @table::pandora_configuration
+}
+physics.producers.pandoraGausCryoW: {
+    @table::physics.producers.pandoraGausCryoW
+    @table::pandora_configuration
+}

@@ -204,7 +204,8 @@ void icaruscode::pandoraCheating::unambiguousCosmicTest::analyze(art::Event cons
       const larpandoraobj::PFParticleMetadata *pfp_meta = pfpMetadataAssns.at(pfp.key()).at(0).get();
       auto const &properties = pfp_meta->GetPropertiesMap();
 
-      if (properties.count("IsClearCosmic")) {
+      if (properties.count("IsClearCosmic") && is_primary) {
+        assert(!properties.count("IsNeutrino"));
         unambiguous_cosmics_for_slice++;
 
         if (fVerbose && is_primary) 
