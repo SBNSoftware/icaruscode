@@ -1,3 +1,5 @@
+add_subdirectory(Tools)
+
 cet_enable_asserts()
 
 set(    MODULE_LIBRARIES
@@ -19,6 +21,7 @@ set(	LIB_LIBRARIES
         sbnobj::Common_PMT_Data
 	larevt::CalibrationDBI_IOVData
 	larevt::CalibrationDBI_Providers
+        icaruscode_Timing_Tools
 )
 set(	SERVICE_LIBRARIES
 	icaruscode_Timing

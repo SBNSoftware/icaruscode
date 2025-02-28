@@ -10,6 +10,7 @@
 #include "icaruscode/Decode/ChannelMapping/IICARUSChannelMap.h"
 #include "icaruscode/Timing/PMTTimingCorrections.h"
 #include "icaruscode/Timing/PMTWaveformTimeCorrectionExtractor.h"
+#include "icaruscode/Timing/Tools/PulseStartExtractor.h"
 
 // framework libraries
 #include "canvas/Persistency/Provenance/ProcessConfiguration.h"
@@ -190,8 +191,19 @@ void icarus::timing::PMTWaveformTimeCorrectionExtractor::findWaveformTimeCorrect
 
     // This will be the first sample of the falling edge of the special channel signal
     // Which corresponds to the global trigger time. 
-    int startSampleSignal = static_cast<int>( getStartSample( wave ) );
+    PulseStartExtractor extractor(PulseStartExtractor::SIGMOID_FIT, 500.0);
+    double startSampleSignal = extractor.extractStart(wave);
+
+    PulseStartExtractor extractor1(PulseStartExtractor::CONSTANT_FRACTION, 500.0);
+    double startSampleSignal1 = extractor1.extractStart(wave);
     
+    std::cout << "channel " << waveChannelID << " crate " << crateSignalID << " sample " << startSampleSignal1 << " fit " << startSampleSignal << 
+                 "diff " << startSampleSignal - startSampleSignal1 << std::endl;
+
+    //int startSampleSignal = static_cast<int>( getStartSample( wave ) );
+    if (startSampleSignal<1)
+      throw Error("Can't find digitized trigger signal!");
+
     // allocates room for correction for `channel`; intermediate ones are defaulted
     auto correctionFor
       = [&corrections](unsigned int channel) -> PMTWaveformTimeCorrection& 

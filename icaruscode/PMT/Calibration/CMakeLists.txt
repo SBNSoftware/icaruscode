@@ -6,7 +6,7 @@ cet_build_plugin(PMTLaserCalibration art::module
                 icaruscode_PMT_Algorithms
                 icaruscode_PMT_Calibration_CaloTools
                 icaruscode_IcarusObj
-		lardataobj::RawData
+                lardataobj::RawData
                 lardataobj::Simulation
                 lardataobj::RecoBase
                 art::Framework_Core
