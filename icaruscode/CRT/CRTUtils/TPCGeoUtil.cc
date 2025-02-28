@@ -54,7 +54,7 @@ namespace icarus {
 //      geo::TPCID tpcID = hits[0]->WireID().asTPCID();
 //      const geo::TPCGeo& tpcGeo = geometry.GetElement(tpcID);
       auto const [axis, sign] = geometry.TPC(hits[0]->WireID()).DriftAxisWithSign();
-      if(axis == geo::Coordinate::X) return 0;
+      if(axis != geo::Coordinate::X) return 0;
       return to_int(sign);
     }
 
