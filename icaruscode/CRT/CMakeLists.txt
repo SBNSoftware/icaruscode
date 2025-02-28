@@ -2,29 +2,6 @@ add_subdirectory(CRTUtils)
 add_subdirectory(CRTDecoder)
 
 
-cet_build_plugin(CRTGeoObjectSorter art::tool
-  LIBRARIES
-        larcorealg::Geometry
-        canvas::canvas
-        cetlib_except::cetlib_except
-        fhiclcpp::fhiclcpp
-        CLHEP::CLHEP
-        ROOT::Geom
-        cetlib::cetlib
-)
-
-cet_build_plugin(CRTAuxDetInitializer art::tool
-  LIBRARIES
-                larcorealg::Geometry
-                cetlib_except::cetlib_except
-                messagefacility::MF_MessageLogger
-                messagefacility::headers
-                fhiclcpp::fhiclcpp
-                CLHEP::CLHEP
-                ROOT::Geom
-                cetlib::cetlib
-        )
-
 cet_build_plugin(CRTDetSim art::module
      LIBRARIES
         larcorealg::Geometry
