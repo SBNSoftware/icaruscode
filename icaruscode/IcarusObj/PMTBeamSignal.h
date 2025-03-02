@@ -52,7 +52,7 @@ namespace icarus::timing
     std::string crate = "";
 
     /// Sample within the waveform where the reference signal is found.
-    std::size_t sample = NoSample;
+    double sample = NoSample;
 
     /// Start time in electronics time [us].
     double startTimeAbs = NoTime;

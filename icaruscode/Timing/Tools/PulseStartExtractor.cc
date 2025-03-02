@@ -30,7 +30,7 @@ namespace icarus::timing {
 
   // --------------------------------------------------------------------------------
   template <typename T>
-  std::size_t PulseStartExtractor::findMinBin(const std::vector<T> &wf, std::size_t start, std::size_t end)
+  std::size_t PulseStartExtractor::findMinBin(const std::vector<T> &wf, std::size_t start, std::size_t end) const
   {
     auto minel = std::min_element(wf.begin() + start, wf.begin() + end);
     size_t minsample = std::distance(wf.begin() + start, minel);
@@ -38,7 +38,7 @@ namespace icarus::timing {
   }
 
   template <typename T>
-  std::size_t PulseStartExtractor::findMaxBin(const std::vector<T> &wf, std::size_t start, std::size_t end)
+  std::size_t PulseStartExtractor::findMaxBin(const std::vector<T> &wf, std::size_t start, std::size_t end) const
   {
     auto maxel = std::max_element(wf.begin() + start, wf.begin() + end);
     size_t maxsample = std::distance(wf.begin() + start, maxel);
@@ -47,7 +47,7 @@ namespace icarus::timing {
 
   // --------------------------------------------------------------------------------
   template <typename T>
-  T PulseStartExtractor::computeMedian(const std::vector<T> &data)
+  T PulseStartExtractor::computeMedian(const std::vector<T> &data) const
   {
     std::vector<T> copy = data;
     std::nth_element(copy.begin(), copy.begin() + copy.size() / 2, copy.end());
@@ -56,7 +56,7 @@ namespace icarus::timing {
 
   // --------------------------------------------------------------------------------
   template <typename T>
-  double PulseStartExtractor::extractStart(const std::vector<T> &wf)
+  double PulseStartExtractor::extractStart(const std::vector<T> &wf) const
   {
 
     // Try constant-fraction discrimination (default method)
@@ -85,7 +85,7 @@ namespace icarus::timing {
   // --------------------------------------------------------------------------------
 
   template <typename T>
-  std::size_t PulseStartExtractor::extractStartSampleCF(const std::vector<T> &wf, double thres)
+  std::size_t PulseStartExtractor::extractStartSampleCF(const std::vector<T> &wf, double thres) const
   {
     // Find the position of the minimum along the waveform
     std::size_t minbin = findMinBin(wf, 0, wf.size());
@@ -119,7 +119,7 @@ namespace icarus::timing {
   // --------------------------------------------------------------------------------
 
   template <typename T>
-  bool PulseStartExtractor::extractStartLogisticFit(const std::vector<T> &wf, std::size_t guess, double par[4])
+  bool PulseStartExtractor::extractStartLogisticFit(const std::vector<T> &wf, std::size_t guess, double par[4]) const
   {
     std::size_t nsize = wf.size();
     std::vector<double> x(nsize);
@@ -190,29 +190,29 @@ namespace icarus::timing {
   }
 
 
-  template double PulseStartExtractor::extractStart<short>(const std::vector<short>& wf);
-  template double PulseStartExtractor::extractStart<int>(const std::vector<int>& wf);
-  template double PulseStartExtractor::extractStart<float>(const std::vector<float>& wf);
-  template double PulseStartExtractor::extractStart<double>(const std::vector<double>& wf);
+  template double PulseStartExtractor::extractStart<short>(const std::vector<short>& wf) const;
+  template double PulseStartExtractor::extractStart<int>(const std::vector<int>& wf) const;
+  template double PulseStartExtractor::extractStart<float>(const std::vector<float>& wf) const;
+  template double PulseStartExtractor::extractStart<double>(const std::vector<double>& wf) const;
 
-  template std::size_t PulseStartExtractor::extractStartSampleCF<short>(const std::vector<short>& wf, double thres);
-  template std::size_t PulseStartExtractor::extractStartSampleCF<int>(const std::vector<int>& wf, double thres);
-  template std::size_t PulseStartExtractor::extractStartSampleCF<float>(const std::vector<float>& wf, double thres);
-  template std::size_t PulseStartExtractor::extractStartSampleCF<double>(const std::vector<double>& wf, double thres);
+  template std::size_t PulseStartExtractor::extractStartSampleCF<short>(const std::vector<short>& wf, double thres) const;
+  template std::size_t PulseStartExtractor::extractStartSampleCF<int>(const std::vector<int>& wf, double thres) const;
+  template std::size_t PulseStartExtractor::extractStartSampleCF<float>(const std::vector<float>& wf, double thres) const;
+  template std::size_t PulseStartExtractor::extractStartSampleCF<double>(const std::vector<double>& wf, double thres) const;
 
-  template std::size_t PulseStartExtractor::findMinBin<short>(const std::vector<short>& wf, std::size_t start, std::size_t end);
-  template std::size_t PulseStartExtractor::findMinBin<int>(const std::vector<int>& wf, std::size_t start, std::size_t end);
-  template std::size_t PulseStartExtractor::findMinBin<float>(const std::vector<float>& wf, std::size_t start, std::size_t end);
-  template std::size_t PulseStartExtractor::findMinBin<double>(const std::vector<double>& wf, std::size_t start, std::size_t end);
+  template std::size_t PulseStartExtractor::findMinBin<short>(const std::vector<short>& wf, std::size_t start, std::size_t end) const;
+  template std::size_t PulseStartExtractor::findMinBin<int>(const std::vector<int>& wf, std::size_t start, std::size_t end) const;
+  template std::size_t PulseStartExtractor::findMinBin<float>(const std::vector<float>& wf, std::size_t start, std::size_t end) const;
+  template std::size_t PulseStartExtractor::findMinBin<double>(const std::vector<double>& wf, std::size_t start, std::size_t end) const;
 
-  template short PulseStartExtractor::computeMedian<short>(const std::vector<short>& data);
-  template int PulseStartExtractor::computeMedian<int>(const std::vector<int>& data);
-  template float PulseStartExtractor::computeMedian<float>(const std::vector<float>& data);
-  template double PulseStartExtractor::computeMedian<double>(const std::vector<double>& data);
+  template short PulseStartExtractor::computeMedian<short>(const std::vector<short>& data) const;
+  template int PulseStartExtractor::computeMedian<int>(const std::vector<int>& data) const;
+  template float PulseStartExtractor::computeMedian<float>(const std::vector<float>& data) const;
+  template double PulseStartExtractor::computeMedian<double>(const std::vector<double>& data) const;
 
-  template bool PulseStartExtractor::extractStartLogisticFit<short>(const std::vector<short>& wf, std::size_t guess, double par[4]);
-  template bool PulseStartExtractor::extractStartLogisticFit<int>(const std::vector<int>& wf, std::size_t guess, double par[4]);
-  template bool PulseStartExtractor::extractStartLogisticFit<float>(const std::vector<float>& wf, std::size_t guess, double par[4]);
-  template bool PulseStartExtractor::extractStartLogisticFit<double>(const std::vector<double>& wf, std::size_t guess, double par[4]);
+  template bool PulseStartExtractor::extractStartLogisticFit<short>(const std::vector<short>& wf, std::size_t guess, double par[4]) const;
+  template bool PulseStartExtractor::extractStartLogisticFit<int>(const std::vector<int>& wf, std::size_t guess, double par[4]) const;
+  template bool PulseStartExtractor::extractStartLogisticFit<float>(const std::vector<float>& wf, std::size_t guess, double par[4]) const;
+  template bool PulseStartExtractor::extractStartLogisticFit<double>(const std::vector<double>& wf, std::size_t guess, double par[4]) const;
 
 } // icarus::timing namespace

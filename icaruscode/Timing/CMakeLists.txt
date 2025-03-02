@@ -11,6 +11,7 @@ set(    MODULE_LIBRARIES
         art_root_io::tfile_support
         lardataobj::RawData
         ROOT::Tree
+        icaruscode_Timing_Tools
 )
 set(	LIB_LIBRARIES
         art::Framework_Services_Registry

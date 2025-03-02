@@ -9,7 +9,8 @@ icarus_beam_signal_extractor:
     EWlabel: "daqPMT:EW"
     RWMlabel: "daqPMT:RWM"
     TriggerCorrectionLabel: "daqPMT:globtrg"
-    ADCThreshold: 200
+    TimeExtractionMethod: "LogisticFit"
+    ADCThreshold: 500
     BoardSetup: @local::icarus_V1730_setup
     DebugTrees: false
     SaveWaveforms: false

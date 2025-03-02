@@ -116,7 +116,7 @@ namespace icarus::timing {
     // Templated public function to extract the start sample from a waveform.
     // Returns the start sample index (std::size_t).
     template <typename T>
-    double extractStart(const std::vector<T> &wf);
+    double extractStart(const std::vector<T> &wf) const;
 
   private:
     ExtractionMethod fMethod;
@@ -124,24 +124,24 @@ namespace icarus::timing {
 
     // Templated helper: constant-fraction extraction.
     template <typename T>
-    std::size_t extractStartSampleCF(const std::vector<T> &wf, double thres);
+    std::size_t extractStartSampleCF(const std::vector<T> &wf, double thres) const;
 
     // Templated helper: finds the index of the minimum element in the range [start, end).
     template <typename T>
-    std::size_t findMinBin(const std::vector<T> &wf, std::size_t start, std::size_t end);
+    std::size_t findMinBin(const std::vector<T> &wf, std::size_t start, std::size_t end) const;
 
     // Templated helper: finds the index of the maximum element in the range [start, end).
     template <typename T>
-    std::size_t findMaxBin(const std::vector<T> &wf, std::size_t start, std::size_t end);
+    std::size_t findMaxBin(const std::vector<T> &wf, std::size_t start, std::size_t end) const;
 
     // Templated helper: computes the median of a vector.
     template <typename T>
-    T computeMedian(const std::vector<T> &data);
+    T computeMedian(const std::vector<T> &data) const;
 
     // Templated helper: logistic-fit extraction; fills par[4] with fit parameters.
     // Returns true if the fit converged.
     template <typename T>
-    bool extractStartLogisticFit(const std::vector<T> &wf, std::size_t guess, double par[4]);
+    bool extractStartLogisticFit(const std::vector<T> &wf, std::size_t guess, double par[4]) const;
   };
 
 } // icarus::timing namespace

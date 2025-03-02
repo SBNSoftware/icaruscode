@@ -19,6 +19,7 @@
 #include "icaruscode/Decode/ChannelMapping/IICARUSChannelMap.h"
 #include "icaruscode/IcarusObj/PMTWaveformTimeCorrection.h"
 #include "icaruscode/IcarusObj/PMTBeamSignal.h"
+#include "icaruscode/Timing/Tools/PulseStartExtractor.h"
 #include "lardataalg/DetectorInfo/DetectorTimingTypes.h" // electronics_time
 #include "lardataalg/Utilities/quantities/spacetime.h"
 #include "lardataobj/RawData/OpDetWaveform.h"
@@ -65,7 +66,8 @@ namespace icarus::timing
  *    V1730 setup from `CAEN_V1730_setup_icarus.fcl` mapping the special signals.
  *    It is meant to be the same configuration as used by the PMT decoding
  *    (see `BoardSetup` configuration parameter in `icarus::DaqDecoderICARUSPMT`).
-
+ * *  `TimeExtractionMethod` (string): pulse start time extraction method. 
+ *     @see icarus::timing::PulseStartExtractor for details and options.
  * *  `ADCThreshold` (int): detection threshold to avoid cross-talk
  *    noise if one signal is missing from its waveform.
  * *  `DebugTrees` (bool): flag to produce plain ROOT trees for debugging.
@@ -74,18 +76,13 @@ namespace icarus::timing
  * Signal timing extraction
  * -------------------------
  *
- * The algorithm is quite unsophisticated and follows what is done for
- * the digitized trigger signal in `PMTWaveformTimeCorrectionExtractor`.
- * The reference signal is expected to be a sharp square wave in negative
- * polarity. The time is based on the front side of that wave:
- *
- *  * the absolute minimum of the waveform is found
- *  * an interval starting 20 ticks before that minimum is considered
- *  * the baseline level is defined as the value at the start of that interval
- *  * if the baseline-minimum difference is below a threshold, it is assumed to be noise
- *    and no time is returned
- *  * if not, the start time is set to the exact tick with an amplitude exceeding 20%
- *    of the minimum of the signal from the baseline
+ * The RWM/EW signals are expected to be a sharp square wave in negative
+ * polarity. The time of the correction is based on the front side of that wave.
+ * The extraction is perfomed by `icarus::timing::PulseStartExtractor` by
+ * specifying one of the available extraction methods (constant-fraction discrimation,
+ * logitstic function fit) and an ADC threshold for the signal identification.
+ * 
+ * @see `icarus::timing::PulseStartExtractor` for details.
  *
  *
  * Output products
@@ -100,7 +97,7 @@ namespace icarus::timing
  *
  * If the event is offbeam, these vectors are produced empty.
  *
- * *
+ * 
  * Debugging tree
  * ---------------
  *
@@ -129,14 +126,6 @@ public:
 
   // process waveforms
   void extractBeamSignalTime(art::Event &e, art::InputTag const &label);
-  template <typename T>
-  static T Median(std::vector<T> data);
-  template <typename T>
-  static std::size_t getMaxBin(std::vector<T> const &vv, std::size_t startElement, std::size_t endElement);
-  template <typename T>
-  static std::size_t getMinBin(std::vector<T> const &vv, std::size_t startElement, std::size_t endElement);
-  template <typename T>
-  static std::size_t getStartSample(std::vector<T> const &vv, T thres);
 
   // unpack the V1730 special channels settings in a useful way
   static std::map<int, std::string> extractBoardBySpecialChannel(std::vector<fhicl::ParameterSet> const &setup);
@@ -176,8 +165,8 @@ private:
   art::InputTag const fEWlabel;
   /// Trigger-hardware correction instance
   art::InputTag const fTriggerCorrectionLabel;
-  /// Threshold for pulse selection
-  short int const fADCThreshold;
+  /// Manager for pulse start extraction
+  icarus::timing::PulseStartExtractor const fPulseStartExtractor;
   /// Special channel to board association in a map
   std::map<int, std::string> const fBoardBySpecialChannel;
 
@@ -200,7 +189,7 @@ private:
   int m_n_channels;
   unsigned int m_channel;
   double m_wfstart;
-  std::size_t m_sample;
+  double m_sample;
   double m_time;
   double m_time_abs;
   double m_utime_abs;
@@ -226,7 +215,8 @@ icarus::timing::PMTBeamSignalsExtractor::PMTBeamSignalsExtractor(fhicl::Paramete
       fRWMlabel(pset.get<art::InputTag>("RWMlabel")),
       fEWlabel(pset.get<art::InputTag>("EWlabel")),
       fTriggerCorrectionLabel(pset.get<art::InputTag>("TriggerCorrectionLabel")),
-      fADCThreshold(pset.get<short int>("ADCThreshold")),
+      fPulseStartExtractor{ icarus::timing::stringToExtractionMethod.at(pset.get<std::string>("TimeExtractionMethod")), 
+                            pset.get<double>("ADCThreshold")},
       fBoardBySpecialChannel(extractBoardBySpecialChannel(pset.get<std::vector<fhicl::ParameterSet>>("BoardSetup")))
 {
   // Call appropriate consumes<>() functions here.
@@ -389,16 +379,22 @@ void icarus::timing::PMTBeamSignalsExtractor::extractBeamSignalTime(art::Event &
 
     detinfo::timescales::electronics_time tstart = util::quantities::points::microsecond{wave.TimeStamp()};
 
-    // if nothing is found, first sample is returned (0)
-    m_sample = getStartSample(wave.Waveform(), fADCThreshold);
-
     m_channel = wave.ChannelNumber();
     m_wfstart = tstart.value();
+    std::string crate = getCrate(m_channel);
+
+    // if nothing is found, first sample is returned (0)
+    m_sample = fPulseStartExtractor.extractStart(wave.Waveform());
+    if (m_sample < 1){
+      m_sample = icarus::timing::NoSample;
+      mf::LogTrace("PMTBeamSignalsExtractor") << "No " << label.encode() << " signal found in channel " << m_channel
+                                              << " (crate " << crate << ")";
+    }
+
     m_utime_abs = (m_sample != icarus::timing::NoSample) ? tstart.value() + fPMTsamplingTick * m_sample : icarus::timing::NoTime;
     m_time_abs = (m_sample != icarus::timing::NoSample) ? m_utime_abs + getTriggerCorrection(m_channel) : icarus::timing::NoTime;
     m_time = (m_sample != icarus::timing::NoSample) ? m_time_abs - ftriggerTime : icarus::timing::NoTime;
 
-    std::string crate = getCrate(m_channel);
     icarus::timing::PMTBeamSignal beamTime{m_channel, getDigitizerLabel(m_channel), crate, m_sample, m_time_abs, m_time};
     fBeamSignals[l].emplace(crate, std::move(beamTime));
 
@@ -412,83 +408,6 @@ void icarus::timing::PMTBeamSignalsExtractor::extractBeamSignalTime(art::Event &
       fOutTree[l]->Fill();
     }
   }
-}
-
-// ---------------------------------------------------------------------------
-
-template <typename T>
-T icarus::timing::PMTBeamSignalsExtractor::Median(std::vector<T> data)
-{
-
-  std::nth_element(data.begin(), data.begin() + data.size() / 2, data.end());
-  return data[data.size() / 2];
-}
-
-// -----------------------------------------------------------------------------
-
-template <typename T>
-std::size_t icarus::timing::PMTBeamSignalsExtractor::getMinBin(
-    std::vector<T> const &vv, std::size_t startElement, std::size_t endElement)
-{
-
-  auto minel =
-      std::min_element(vv.begin() + startElement, vv.begin() + endElement);
-  std::size_t minsample = std::distance(vv.begin() + startElement, minel);
-
-  return minsample;
-}
-
-// -----------------------------------------------------------------------------
-
-template <typename T>
-std::size_t icarus::timing::PMTBeamSignalsExtractor::getMaxBin(
-    std::vector<T> const &vv, std::size_t startElement, std::size_t endElement)
-{
-
-  auto maxel =
-      std::max_element(vv.begin() + startElement, vv.begin() + endElement);
-
-  std::size_t maxsample = std::distance(vv.begin() + startElement, maxel);
-
-  return maxsample;
-}
-
-// -----------------------------------------------------------------------------
-
-template <typename T>
-std::size_t icarus::timing::PMTBeamSignalsExtractor::getStartSample(std::vector<T> const &vv, T thres)
-{
-
-  // We are thinking in inverted polarity
-  std::size_t minbin = getMinBin(vv, 0, vv.size());
-
-  // Search only a cropped region of the waveform backward from the min
-  std::size_t maxbin = (minbin - 20) ? (minbin - 20) : 0;
-
-  // Now we crawl betweem maxbin and minbin and we stop when:
-  // maxbin value - bin value > (maxbin value - minbin value )*0.2
-  std::size_t startbin = maxbin;
-  auto delta = vv[maxbin] - vv[minbin];
-
-  if (delta < thres)                 // just noise
-    return icarus::timing::NoSample; // return no sample
-
-  for (std::size_t bin = maxbin; bin < minbin; bin++)
-  {
-    auto val = vv[maxbin] - vv[bin];
-    if (val >= 0.2 * delta)
-    { // 20%
-      startbin = bin - 1;
-      break;
-    }
-  }
-
-  if (startbin < maxbin)
-  {
-    startbin = maxbin;
-  }
-
-  return startbin;
 }
 
 // -----------------------------------------------------------------------------
