@@ -9,8 +9,7 @@
 #include "art_root_io/TFileDirectory.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
 
-#include "larcore/Geometry/Geometry.h"
-#include "larcore/CoreUtils/ServiceUtil.h" // lar::providerFrom()
+#include "larcore/Geometry/WireReadout.h"
 #include "larevt/CalibrationDBI/Interface/DetPedestalService.h"
 #include "larevt/CalibrationDBI/Interface/DetPedestalProvider.h"
 #include "larreco/HitFinder/HitFinderTools/IWaveformTool.h"
@@ -150,7 +149,7 @@ private:
     art::TFileDirectory*                fHistDirectory;
 
     // Useful services, keep copies for now (we can update during begin run periods)
-    const geo::GeometryCore&                fGeometry;             ///< pointer to Geometry service
+    const geo::WireReadoutGeom&               fChannelMapAlg;
     icarusutil::SignalShapingICARUSService& fSignalServices;       ///< The signal shaping service
     const lariov::DetPedestalProvider&      fPedestalRetrievalAlg; ///< Keep track of an instance to the pedestal retrieval alg
 };
@@ -163,7 +162,7 @@ private:
 /// pset - Fcl parameters.
 ///
 BasicWireAnalysis::BasicWireAnalysis(fhicl::ParameterSet const & pset) :
-    fGeometry(*lar::providerFrom<geo::Geometry>()),
+    fChannelMapAlg(art::ServiceHandle<geo::WireReadout const>()->Get()),
     fSignalServices(*art::ServiceHandle<icarusutil::SignalShapingICARUSService>()),
     fPedestalRetrievalAlg(*lar::providerFrom<lariov::DetPedestalService>())
 {
@@ -222,7 +221,7 @@ void BasicWireAnalysis::initializeHists(art::ServiceHandle<art::TFileService>& t
     fDeltaTicksHist.resize(3);
     fRangeHist.resize(3);
 
-    for(size_t plane = 0; plane < fGeometry.Nplanes(); plane++)
+    for(size_t plane = 0; plane < fChannelMapAlg.Nplanes(); plane++)
     {
         std::string histName = "TruncMean_" + std::to_string(plane);
         
@@ -272,7 +271,7 @@ void BasicWireAnalysis::fillHistograms(const IWireHistogramTool::WirePtrVec&    
         raw::ChannelID_t channel = wire->Channel();
 
         // Try to limit to the wire number (since we are already segregated by plane)
-        std::vector<geo::WireID> wids    = fGeometry.ChannelToWire(channel);
+        std::vector<geo::WireID> wids    = fChannelMapAlg.ChannelToWire(channel);
         size_t                   cryo    = wids[0].Cryostat;
         size_t                   tpc     = wids[0].TPC;
         size_t                   plane   = wids[0].Plane;

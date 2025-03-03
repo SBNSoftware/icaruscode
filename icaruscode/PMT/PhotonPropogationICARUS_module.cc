@@ -20,7 +20,7 @@
 // LArSoft libraries
 #include "larsim/PhotonPropagation/PhotonVisibilityService.h"
 #include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
-#include "larcore/Geometry/Geometry.h"
+#include "larcore/Geometry/WireReadout.h"
 #include "larcore/CoreUtils/ServiceUtil.h" // lar::providerFrom()
 #include "larcorealg/Geometry/OpDetGeo.h"
 #include "larcorealg/Geometry/geo_vectors_utils.h" // geo::vect::toPoint()
@@ -73,7 +73,7 @@ private:
     unsigned int fNumEvent = 0;        ///< Number of events seen.
     
     // Useful services, keep copies for now (we can update during begin run periods)
-    geo::GeometryCore const* fGeometry = nullptr; ///< Pointer to Geometry service.
+    geo::WireReadoutGeom const* fChannelMapAlg = nullptr; ///< Pointer to Geometry service.
     CLHEP::HepRandomEngine&  fPhotonEngine;
     
     /// We don't keep more than this number of photons per `sim::SimPhoton`.
@@ -91,7 +91,7 @@ DEFINE_ART_MODULE(PhotonPropogationICARUS)
 /// pset - Fcl parameters.
 ///
 PhotonPropogationICARUS::PhotonPropogationICARUS(fhicl::ParameterSet const & pset)
-  : EDProducer{pset}, fGeometry(lar::providerFrom<geo::Geometry>())
+  : EDProducer{pset}, fChannelMapAlg(&art::ServiceHandle<geo::WireReadout const>()->Get())
   , fPhotonEngine(art::ServiceHandle<rndm::NuRandomService>()->registerAndSeedEngine(
        createEngine(0, "HepJamesRandom", "icarusphoton"),
        "HepJamesRandom", "icarusphoton", pset, "SeedPhoton"))
@@ -176,7 +176,7 @@ void PhotonPropogationICARUS::produce(art::Event & event)
         auto const channel = simPhoton.OpChannel();
         if (simPhoton.empty()) continue;
         
-        auto const& PMTcenter = fGeometry->OpDetGeoFromOpChannel(channel).GetCenter();
+        auto const& PMTcenter = fChannelMapAlg->OpDetGeoFromOpChannel(channel).GetCenter();
        
         // TODO restore the "MF_LOG_TRACE" line for normal operations
         // (MF_LOG_TRACE will print only in debug mode, with debug qualifiers and proper messagefacility settings)

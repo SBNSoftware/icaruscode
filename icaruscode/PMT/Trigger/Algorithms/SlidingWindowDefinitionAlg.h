@@ -13,6 +13,7 @@
 #include "icaruscode/PMT/Trigger/Algorithms/SlidingWindowDefs.h"
 
 // LArSoft libraries
+#include "larcorealg/Geometry/fwd.h"
 #include "lardataobj/RawData/OpDetWaveform.h" // raw::Channel_t
 
 // framework libraries
@@ -29,9 +30,6 @@
 //
 // forward declarations
 // 
-namespace geo { class GeometryCore; }
-
-// -----------------------------------------------------------------------------
 namespace icarus::trigger { class SlidingWindowDefinitionAlg; }
 /**
  * @brief Groups optical detector channels into windows based on position.

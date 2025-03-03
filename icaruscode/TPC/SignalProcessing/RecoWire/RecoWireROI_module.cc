@@ -36,7 +36,7 @@
 
 // LArSoft libraries
 #include "larcoreobj/SimpleTypesAndConstants/RawTypes.h" // raw::ChannelID_t
-#include "larcore/Geometry/Geometry.h"
+#include "larcore/Geometry/WireReadout.h"
 #include "larcore/CoreUtils/ServiceUtil.h" // lar::providerFrom()
 #include "lardataobj/RawData/RawDigit.h"
 #include "lardataobj/RawData/raw.h"
@@ -111,7 +111,7 @@ private:
 
     float SubtractBaseline(const std::vector<float>& holder);
     
-    const geo::GeometryCore&                        fGeometry;
+    const geo::WireReadoutGeom&                       fChannelMapAlg;
     icarusutil::SignalShapingICARUSService&         fSignalServices;
     const lariov::ChannelStatusProvider&            fChanFilt;
     std::unique_ptr<icarus_signal_processing::ICARUSFFT<double>>  fFFT;                  ///< Object to handle thread safe FFT
@@ -121,7 +121,7 @@ DEFINE_ART_MODULE(RecoWireROI)
   
 //-------------------------------------------------
 RecoWireROI::RecoWireROI(fhicl::ParameterSet const& pset) : EDProducer{pset},
-    fGeometry(*lar::providerFrom<geo::Geometry>()),
+    fChannelMapAlg(art::ServiceHandle<geo::WireReadout const>()->Get()),
     fSignalServices(*art::ServiceHandle<icarusutil::SignalShapingICARUSService>()),
     fChanFilt(art::ServiceHandle<lariov::ChannelStatusService>()->GetProvider())
 {
@@ -290,7 +290,7 @@ void RecoWireROI::produce(art::Event& evt)
             // vector holding uncompressed adc values
             std::vector<short> rawadc(dataSize);
             
-            std::vector<geo::WireID> wids     = fGeometry.ChannelToWire(channel);
+            std::vector<geo::WireID> wids     = fChannelMapAlg.ChannelToWire(channel);
             size_t                   thePlane = wids[0].Plane;
             
             // Set up the deconvolution and the vector to deconvolve

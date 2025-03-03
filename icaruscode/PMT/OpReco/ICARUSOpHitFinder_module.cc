@@ -25,7 +25,7 @@
 #include "larana/OpticalDetector/OpHitFinder/PedAlgoUB.h"
 #include "larana/OpticalDetector/OpHitFinder/PulseRecoManager.h"
 #include "larana/OpticalDetector/OpHitFinder/OpticalRecoTypes.h" // pmtana::Waveform_t
-#include "larcore/Geometry/Geometry.h"
+#include "larcore/Geometry/WireReadout.h"
 #include "lardata/DetectorInfoServices/DetectorClocksService.h"
 #include "lardataalg/DetectorInfo/DetectorClocksData.h"
 #include "lardataobj/RecoBase/OpHit.h"
@@ -490,7 +490,7 @@ opdet::ICARUSOpHitFinder::ICARUSOpHitFinder
   , fHitThreshold{ params().HitThreshold() }
   , fUseStartTime{ params().UseStartTime() }
   // caches
-  , fMaxOpChannel{ frame.serviceHandle<geo::Geometry>()->MaxOpChannel() }
+  , fMaxOpChannel{ frame.serviceHandle<geo::WireReadout const>()->Get().MaxOpChannel() }
   // algorithms
   , fPulseRecoMgr{}
   , fThreshAlg
@@ -599,7 +599,6 @@ void opdet::ICARUSOpHitFinder::produce
   std::vector<sim::BeamGateInfo const*> const beamGateArray
     = fetchBeamGates(event);
 
-  auto const& geom = *(frame.serviceHandle<geo::Geometry>()->provider());
   auto const clockData
     = frame.serviceHandle<detinfo::DetectorClocksService const>()
       ->DataFor(event)
@@ -610,7 +609,7 @@ void opdet::ICARUSOpHitFinder::produce
   RunHitFinder(
     *waveforms, opHits,
     fPulseRecoMgr, *fThreshAlg,
-    geom,
+    frame.serviceHandle<geo::WireReadout const>()->Get(),
     fHitThreshold,
     clockData,
     *fCalib,

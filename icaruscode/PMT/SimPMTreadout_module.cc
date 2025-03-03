@@ -15,6 +15,7 @@
 #include "icaruscode/IcarusObj/OpDetWaveformMeta.h"
 
 // LArSoft libraries
+#include "larcore/Geometry/WireReadout.h"
 #include "larcore/Geometry/Geometry.h"
 #include "larcore/CoreUtils/ServiceUtil.h"
 #include "lardata/DetectorInfoServices/DetectorClocksService.h"
@@ -438,11 +439,11 @@ class icarus::opdet::SimPMTreadout: public art::EDProducer {
     
     /// Creates a map of all PMT channels into cryostat ID.
     static std::vector<geo::CryostatID> makeChannelMap
-      (geo::GeometryCore const& geom);
+      (geo::WireReadoutGeom const& wireReadoutAlg);
     
       public:
     
-    PrimitiveManager(geo::GeometryCore const& geom);
+    PrimitiveManager(geo::GeometryCore const& geom, geo::WireReadoutGeom const& wireReadoutAlg);
     
     /// Returns all the readout windows for the specified channel.
     std::vector<electronics_time> const& forChannel
@@ -487,6 +488,7 @@ class icarus::opdet::SimPMTreadout: public art::EDProducer {
   // --- BEGIN -- Cached values ------------------------------------------------
   
   geo::GeometryCore const& fGeom; ///< Geometry service provider.
+  geo::WireReadoutGeom const& fChannelMapAlg;
   detinfo::DetectorTimings const fDetTimings; ///< Timing conversion utility.
   
   unsigned int const fNOpChannels; ///< Number of optical detector channels.
@@ -662,19 +664,19 @@ void icarus::opdet::SimPMTreadout::PrimitiveManager::refreshCaches
 // -----------------------------------------------------------------------------
 std::vector<geo::CryostatID>
 icarus::opdet::SimPMTreadout::PrimitiveManager::makeChannelMap
-  (geo::GeometryCore const& geom)
+  (geo::WireReadoutGeom const& wireReadoutAlg)
 {
   std::vector<geo::CryostatID> cryos;
-  for (auto channel: util::counter(geom.NOpChannels()))
-    cryos.push_back(geom.OpDetGeoFromOpChannel(channel).ID());
+  for (auto channel: util::counter(wireReadoutAlg.NOpChannels()))
+    cryos.push_back(wireReadoutAlg.OpDetGeoFromOpChannel(channel).ID());
   return cryos;
 } // icarus::opdet::SimPMTreadout::PrimitiveManager::makeChannelMap()
 
 
 // -----------------------------------------------------------------------------
 icarus::opdet::SimPMTreadout::PrimitiveManager::PrimitiveManager
-  (geo::GeometryCore const& geom)
-  : fCryostatOf{ makeChannelMap(geom) }
+  (geo::GeometryCore const& geom, geo::WireReadoutGeom const& wireReadoutAlg)
+  : fCryostatOf{ makeChannelMap(wireReadoutAlg) }
   , fPrimitives{ geom.Ncryostats() }
   {}
 
@@ -728,8 +730,9 @@ icarus::opdet::SimPMTreadout::SimPMTreadout(Parameters const& config)
   , fLogCategory      { config().LogCategory() }
   // caches
   , fGeom       { *(lar::providerFrom<geo::Geometry>()) }
+  , fChannelMapAlg{art::ServiceHandle<geo::WireReadout const>()->Get()}
   , fDetTimings { icarus::ns::util::makeDetTimings() }
-  , fNOpChannels{ fGeom.NOpChannels() }
+  , fNOpChannels{ fChannelMapAlg.NOpChannels() }
   , fNCryostats { fGeom.Ncryostats() }
   , fOpticalTick{ fDetTimings.OpticalClockPeriod() }
   , fNoiseGeneratorEngine{
@@ -839,7 +842,7 @@ void icarus::opdet::SimPMTreadout::produce(art::Event& event) {
   //
   // determine the primitives and the channels they affect
   //
-  PrimitiveManager primitives{ fGeom };
+  PrimitiveManager primitives{ fGeom, fChannelMapAlg };
   
   // add the trigger primitives
   for (art::InputTag const& tag: fPrimitiveTags) {

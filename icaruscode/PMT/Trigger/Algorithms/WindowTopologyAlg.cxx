@@ -14,13 +14,16 @@
 #include "icarusalg/Utilities/sortBy.h" // also icarus::util::sortCollBy()
 
 // LArSoft libraries
+#include "larcorealg/Geometry/WireReadoutGeom.h"
 #include "larcorealg/Geometry/GeometryCore.h"
 #include "larcorealg/Geometry/CryostatGeo.h"
 #include "larcorealg/Geometry/OpDetGeo.h"
 #include "larcorealg/Geometry/TPCGeo.h"
 #include "larcorealg/Geometry/geo_vectors_utils.h" // MiddlePointAccumulator
 #include "larcorealg/CoreUtils/enumerate.h"
-#include "larcorealg/CoreUtils/zip.h"
+
+// External libraries
+#include "range/v3/view.hpp"
 
 // C/C++ standard libraries
 #include <algorithm> // std::move(), std::sort()
@@ -53,10 +56,12 @@ namespace {
 //------------------------------------------------------------------------------
 icarus::trigger::WindowTopologyAlg::WindowTopologyAlg(
   geo::GeometryCore const& geom,
+  geo::WireReadoutGeom const& wireReadoutAlg,
   std::string const& logCategory /* = "WindowTopologyAlg" */
 )
   : icarus::ns::util::mfLoggingClass(logCategory)
   , fGeom(&geom)
+  , fWireReadoutGeom{&wireReadoutAlg}
 {}
 
 
@@ -69,13 +74,12 @@ auto icarus::trigger::WindowTopologyAlg::createFromGates
   std::vector<WindowChannelMap::WindowInfo_t> windows;
   
   for (auto const& [ cryoGates, cryo ]
-         : util::zip(gates, fGeom->Iterate<geo::CryostatGeo>()))
+         : ::ranges::views::zip(gates, fGeom->Iterate<geo::CryostatGeo>()))
   {
-    
     append(
       windows,
       createWindowsFromCryostat
-        (extractGateChannels(cryoGates), cryo, *fGeom, windows.size())
+        (extractGateChannels(cryoGates), cryo, *fWireReadoutGeom, windows.size())
       );
     
   } // for cryostats
@@ -98,7 +102,7 @@ auto icarus::trigger::WindowTopologyAlg::createFromGates
     assert(!cid.isValid);
     
     for (raw::Channel_t const channel: gate.channels()) {
-      geo::OpDetGeo const& opDet = fGeom->OpDetGeoFromOpChannel(channel);
+      geo::OpDetGeo const& opDet = fWireReadoutGeom->OpDetGeoFromOpChannel(channel);
       geo::OpDetID const oid = opDet.ID();
       if (!cid) cid = oid;
       else if (cid != oid) { // just in case
@@ -122,7 +126,7 @@ auto icarus::trigger::WindowTopologyAlg::createFromCryostatGates
   -> WindowChannelMap
 {
   return emplaceAndDumpMap(
-    createWindowsFromCryostat(extractGateChannels(windowChannels), cryo, *fGeom)
+    createWindowsFromCryostat(extractGateChannels(windowChannels), cryo, *fWireReadoutGeom)
     );
 } // icarus::trigger::WindowTopologyAlg::createFromCryostatGates()
 
@@ -151,7 +155,7 @@ auto icarus::trigger::WindowTopologyAlg::emplaceAndDumpMap(Args&&... args) const
 auto icarus::trigger::WindowTopologyAlg::createWindowsFromCryostat(
   WindowChannelColl_t const& windowChannels,
   geo::CryostatGeo const& cryo,
-  geo::GeometryCore const& geom,
+  geo::WireReadoutGeom const& wireReadoutAlg,
   std::size_t firstWindowIndex /* = 0U */
   ) -> std::vector<WindowChannelMap::WindowInfo_t>
 {
@@ -189,13 +193,13 @@ auto icarus::trigger::WindowTopologyAlg::createWindowsFromCryostat(
     std::sort(wComp.channels.begin(), wComp.channels.end());
     wComp.cryoid = channels.empty()
       ? geo::CryostatID{}
-      : geom.OpDetGeoFromOpChannel(channels.front()).ID().asCryostatID()
+      : wireReadoutAlg.OpDetGeoFromOpChannel(channels.front()).ID().asCryostatID()
       ;
     
     geo::vect::MiddlePointAccumulator middlePoint;
     for (raw::Channel_t const channel: channels) {
       // documentation of OpDetGeoFromOpChannel() does not say what on error...
-      geo::OpDetGeo const& opDet = geom.OpDetGeoFromOpChannel(channel);
+      geo::OpDetGeo const& opDet = wireReadoutAlg.OpDetGeoFromOpChannel(channel);
       middlePoint.add(opDet.GetCenter());
       if (opDet.ID() != wComp.cryoid) wComp.cryoid = geo::CryostatID{};
     } // for channel
@@ -209,8 +213,9 @@ auto icarus::trigger::WindowTopologyAlg::createWindowsFromCryostat(
   //
   // 2. sort the windows in drift plane (first cryostat TPC as reference)
   //
-  auto const normalProjection = [&refTPC](auto const* info)
-    { return refTPC.DistanceFromReferencePlane(info->composition.center); };
+  auto const& refPlane = wireReadoutAlg.Plane({refTPC.ID(), 0});
+  auto const normalProjection = [&refPlane](auto const* info)
+    { return refPlane.DistanceFromPlane(info->composition.center); };
   WindowInfoPtrs_t const windowsByNormal
     = util::sortCollBy(cryoWindowInfo, normalProjection);
   
@@ -218,8 +223,7 @@ auto icarus::trigger::WindowTopologyAlg::createWindowsFromCryostat(
   // 3. split the windows per plane
   //
   // split the list in two; there is a good deal of faith here
-  auto const beamCoordinate
-    = [&refPlane=refTPC.ReferencePlane()](auto const* info)
+  auto const beamCoordinate = [&refPlane](auto const* info)
       {
         return refPlane.PointWidthDepthProjection(info->composition.center).X();
       }

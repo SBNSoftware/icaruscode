@@ -25,6 +25,7 @@
 
 // LArSoft libraries
 #include "lardata/DetectorInfoServices/DetectorClocksService.h"
+#include "larcore/Geometry/WireReadout.h"
 #include "larcore/Geometry/Geometry.h"
 #include "larcore/CoreUtils/ServiceUtil.h" // lar::providerFrom()
 #include "lardataalg/DetectorInfo/DetectorTimings.h"
@@ -147,6 +148,7 @@ class icarus::trigger::GeometryChannelSplitter
   
   GeometryChannelSplitter(
     geo::GeometryCore const& geom,
+    geo::WireReadoutGeom const& wireReadoutAlg,
     std::string const& logCategory = "GeometryChannelSplitter"
     );
   
@@ -165,7 +167,7 @@ class icarus::trigger::GeometryChannelSplitter
   
   /// Creates a map like `fChannelCryostat` from the geometry information.
   static std::vector<geo::CryostatID> makeChannelCryostatMap
-    (geo::GeometryCore const& geom);
+    (geo::WireReadoutGeom const& wireReadoutAlg);
   
 }; // class icarus::trigger::GeometryChannelSplitter
 
@@ -173,11 +175,12 @@ class icarus::trigger::GeometryChannelSplitter
 //------------------------------------------------------------------------------
 icarus::trigger::GeometryChannelSplitter::GeometryChannelSplitter(
   geo::GeometryCore const& geom,
+  geo::WireReadoutGeom const& wireReadoutAlg,
   std::string const& logCategory /* = "GeometryChannelSplitter" */
   )
   : icarus::ns::util::mfLoggingClass(logCategory)
   , fNCryostats(geom.Ncryostats())
-  , fChannelCryostat(makeChannelCryostatMap(geom))
+  , fChannelCryostat(makeChannelCryostatMap(wireReadoutAlg))
 {}
 
 
@@ -200,17 +203,17 @@ icarus::trigger::GeometryChannelSplitter::byCryostat
 
 //------------------------------------------------------------------------------
 auto icarus::trigger::GeometryChannelSplitter::makeChannelCryostatMap
-  (geo::GeometryCore const& geom) -> std::vector<geo::CryostatID>
+  (geo::WireReadoutGeom const& wireReadoutAlg) -> std::vector<geo::CryostatID>
 {
   
-  auto const nOpChannels = geom.NOpChannels();
+  auto const nOpChannels = wireReadoutAlg.NOpChannels();
   
   std::vector<geo::CryostatID> channelCryostatMap(nOpChannels);
   
   for (auto const opChannel: util::counter(nOpChannels)) {
-    if (!geom.IsValidOpChannel(opChannel)) continue;
+    if (!wireReadoutAlg.IsValidOpChannel(opChannel)) continue;
     channelCryostatMap.at(opChannel)
-      = geom.OpDetGeoFromOpChannel(opChannel).ID();
+      = wireReadoutAlg.OpDetGeoFromOpChannel(opChannel).ID();
   } // for all channels
   
   return channelCryostatMap;
@@ -615,7 +618,9 @@ icarus::trigger::MajorityTriggerSimulation::MajorityTriggerSimulation
   , fOutputDir (*art::ServiceHandle<art::TFileService>())
   // internal and cached
   , fCombiner       (fLogCategory)
-  , fChannelSplitter(fGeom, fLogCategory)
+  , fChannelSplitter(fGeom,
+                     art::ServiceHandle<geo::WireReadout const>()->Get(),
+                     fLogCategory)
   , fPlots(
      fOutputDir, "", "minimum primitives: " + std::to_string(fMinimumPrimitives)
     )

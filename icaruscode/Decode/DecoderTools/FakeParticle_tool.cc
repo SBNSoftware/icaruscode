@@ -17,7 +17,7 @@
 #include "messagefacility/MessageLogger/MessageLogger.h"
 
 // LArSoft includes
-#include "larcore/Geometry/Geometry.h"
+#include "larcore/Geometry/WireReadout.h"
 #include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
 
 // ICARUS package includes
@@ -92,7 +92,7 @@ private:
 
     FFTPointer                               fFFT;                   //< Object to handle thread safe FFT
 
-    const geo::Geometry*                     fGeometry;              //< pointer to the Geometry service
+    const geo::WireReadoutGeom*                fChannelMapAlg;
     const detinfo::DetectorProperties*       fDetector;              //< Pointer to the detector properties
     icarusutil::SignalShapingICARUSService*  fSignalShapingService;  //< Access to the response functions
 };
@@ -119,7 +119,7 @@ void FakeParticle::configure(fhicl::ParameterSet const &pset)
     fNumElectronsPerMM = pset.get<int                >("NumElectronsPerMM",                       6000);
     fPlaneToSimulate   = {0, 0, pset.get<unsigned int>("PlaneToSimulate",                            2)};
                                   
-    fGeometry           = art::ServiceHandle<geo::Geometry const>{}.get();
+    fChannelMapAlg      = &art::ServiceHandle<geo::WireReadout const>()->Get();
     fSignalShapingService = art::ServiceHandle<icarusutil::SignalShapingICARUSService>{}.get();
 
     // Convert ticks in us to mm by taking the drift velocity and multiplying by the tick period
@@ -130,7 +130,7 @@ void FakeParticle::configure(fhicl::ParameterSet const &pset)
 
     fMMPerTick = driftVelocity * samplingRate;
 
-    fMMPerWire = fGeometry->WirePitch() * 10.;  // wire pitch returned in cm, want mm
+    fMMPerWire = fChannelMapAlg->Plane({0, 0, 0}).WirePitch() * 10.;  // wire pitch returned in cm, want mm
 
     // Get slope (tan(theta)) and related angles
     fTanTheta   = std::tan(fStartAngle * M_PI / 180.);
@@ -183,7 +183,7 @@ void FakeParticle::overlayFakeParticle(detinfo::DetectorClocksData const& clockD
     float asicGain = fSignalShapingService->GetASICGain(0) * sampling_rate(clockData) / 1000.;  // something like 67.4
 
     // Get a base channel number for the plane we want
-    raw::ChannelID_t channel = fGeometry->PlaneWireToChannel(geo::WireID{fPlaneToSimulate, 0});
+    raw::ChannelID_t channel = fChannelMapAlg->PlaneWireToChannel(geo::WireID{fPlaneToSimulate, 0});
 
     // Recover the response function information for this channel
     const icarus_tool::IResponse& response = fSignalShapingService->GetResponse(channel);

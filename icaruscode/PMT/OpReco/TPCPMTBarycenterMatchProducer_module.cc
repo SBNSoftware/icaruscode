@@ -36,6 +36,7 @@
 #include "lardataalg/DetectorInfo/DetectorClocksData.h"
 #include "lardataalg/Utilities/quantities/spacetime.h" // microseconds
 #include "larcore/Geometry/Geometry.h"
+#include "larcore/Geometry/WireReadout.h"
 #include "larcorealg/Geometry/GeometryCore.h"
 #include "larcore/CoreUtils/ServiceUtil.h"
 
@@ -315,7 +316,7 @@ TPCPMTBarycenterMatchProducer::TPCPMTBarycenterMatchProducer(fhicl::ParameterSet
   fGeom(*lar::providerFrom<geo::Geometry>()),
   fDetClocks(*art::ServiceHandle<detinfo::DetectorClocksService>()),
   fDetProp(*art::ServiceHandle<detinfo::DetectorPropertiesService>()),
-  fTimeIntervalMaker{ fGeom }
+  fTimeIntervalMaker{ fGeom, art::ServiceHandle<geo::WireReadout>()->Get() }
 {
   // Call appropriate produces<>() functions here.
 

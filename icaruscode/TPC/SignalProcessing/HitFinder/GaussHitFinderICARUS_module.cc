@@ -41,7 +41,7 @@
 #include "fhiclcpp/ParameterSet.h"
 
 // LArSoft Includes
-#include "larcore/Geometry/Geometry.h"
+#include "larcore/Geometry/WireReadout.h"
 #include "larcoreobj/SimpleTypesAndConstants/RawTypes.h" // raw::ChannelID_t
 #include "lardataobj/RecoBase/Hit.h"
 #include "larreco/HitFinder/HitFilterAlg.h"
@@ -182,8 +182,7 @@ namespace hit {
         "GaussHitFinderICARUS::FillOutHitParameterVector ERROR! Input config vector has zero size.");
 
     std::vector<double> output;
-    art::ServiceHandle<geo::Geometry const> geom;
-    const unsigned int N_PLANES = geom->Nplanes();
+    const unsigned int N_PLANES = art::ServiceHandle<geo::WireReadout>()->Get().Nplanes();
 
     if (input.size() == 1)
       output.resize(N_PLANES, input[0]);
@@ -228,7 +227,7 @@ namespace hit {
     // ################################
     // ### Calling Geometry service ###
     // ################################
-    art::ServiceHandle<geo::Geometry const> geom;
+    auto const& wireReadout = art::ServiceHandle<geo::WireReadout>()->Get();
 
     // ###############################################
     // ### Making a ptr vector to put on the event ###
@@ -304,7 +303,7 @@ namespace hit {
         raw::ChannelID_t channel = wire->Channel();
 
         // get the WireID for this hit
-        std::vector<geo::WireID> wids = geom->ChannelToWire(channel);
+        std::vector<geo::WireID> wids = wireReadout.ChannelToWire(channel);
         // for now, just take the first option returned from ChannelToWire
         geo::WireID wid = wids[0];
         // We need to know the plane to look up parameters

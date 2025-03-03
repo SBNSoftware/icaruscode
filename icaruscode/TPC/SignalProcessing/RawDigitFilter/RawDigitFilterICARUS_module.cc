@@ -48,7 +48,7 @@
 #include "canvas/Persistency/Common/Ptr.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
 
-#include "larcore/Geometry/Geometry.h"
+#include "larcore/Geometry/WireReadout.h"
 #include "larevt/CalibrationDBI/Interface/DetPedestalService.h"
 #include "larevt/CalibrationDBI/Interface/DetPedestalProvider.h"
 #include "larevt/CalibrationDBI/Interface/ChannelStatusService.h"
@@ -117,7 +117,7 @@ private:
     std::map<size_t,std::unique_ptr<icarus_tool::IFilter>> fFilterToolMap;
 
     // Useful services, keep copies for now (we can update during begin run periods)
-    geo::GeometryCore const*           fGeometry;             ///< pointer to Geometry service
+    geo::WireReadoutGeom const*          fChannelMapAlg;
     const lariov::DetPedestalProvider& fPedestalRetrievalAlg; ///< Keep track of an instance to the pedestal retrieval alg
 
 };
@@ -140,7 +140,7 @@ RawDigitFilterICARUS::RawDigitFilterICARUS(fhicl::ParameterSet const & pset, art
                       fPedestalRetrievalAlg(*lar::providerFrom<lariov::DetPedestalService>())
 {
 
-    fGeometry = lar::providerFrom<geo::Geometry>();
+    fChannelMapAlg = &art::ServiceHandle<geo::WireReadout const>()->Get();
 
     configure(pset);
     produces<std::vector<raw::RawDigit> >();
@@ -239,7 +239,7 @@ void RawDigitFilterICARUS::produce(art::Event & event, art::ProcessingFrame cons
     // Require a valid handle
     if (digitVecHandle.isValid() && digitVecHandle->size()>0 )
     {
-        unsigned int maxChannels    = fGeometry->Nchannels();
+        unsigned int maxChannels    = fChannelMapAlg->Nchannels();
 
         // Sadly, the RawDigits come to us in an unsorted condition which is not optimal for
         // what we want to do here. So we make a vector of pointers to the input raw digits and sort them
@@ -308,7 +308,7 @@ void RawDigitFilterICARUS::produce(art::Event & event, art::ProcessingFrame cons
 
             // The below try-catch block may no longer be necessary
             // Decode the channel and make sure we have a valid one
-            std::vector<geo::WireID> wids = fGeometry->ChannelToWire(channel);
+            std::vector<geo::WireID> wids = fChannelMapAlg->ChannelToWire(channel);
 
             if (channel >= maxChannels || wids.empty()) continue;
 

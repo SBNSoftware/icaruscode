@@ -34,8 +34,9 @@
 #include <utility>
 
 // LArSoft
-#include "larcore/Geometry/Geometry.h"
-#include "larcorealg/Geometry/GeometryCore.h"
+#include "larcore/Geometry/WireReadout.h"
+#include "larcorealg/Geometry/OpDetGeo.h"
+#include "larcorealg/Geometry/WireReadoutGeom.h"
 #include "larcore/CoreUtils/ServiceUtil.h" // lar::providerFrom()
 #include "larcorealg/Geometry/geo_vectors_utils.h" // MiddlePointAccumulator
 #include "larcorealg/CoreUtils/enumerate.h"
@@ -374,7 +375,7 @@ namespace sbn::crt {
     double const fNuMIinBeamMin;
     double const fNuMIinBeamMax;
 
-    geo::GeometryCore const* const fGeometryService;  ///< Pointer to Geometry provider.
+    geo::WireReadoutGeom const& fWireReadout;  ///< Pointer to Geometry provider.
     
     /**
      * @brief Returns a `MatchedCRT` out of the provided information.
@@ -407,7 +408,7 @@ namespace sbn::crt {
     fNuMIBeamGateMax{p().NuMIBeamGateMax()},
     fNuMIinBeamMin{p().NuMIinBeamMin()},
     fNuMIinBeamMax{p().NuMIinBeamMax()},
-    fGeometryService{lar::providerFrom<geo::Geometry>()}
+    fWireReadout{art::ServiceHandle<geo::WireReadout const>()->Get()}
   {
     async<art::InEvent>();
     
@@ -565,7 +566,7 @@ namespace sbn::crt {
         }
 
         geo::Point_t const pos =
-          fGeometryService->OpDetGeoFromOpChannel(hit->OpChannel())
+          fWireReadout.OpDetGeoFromOpChannel(hit->OpChannel())
           .GetCenter();
         double const amp = hit->Amplitude();
         flashCentroid.add(pos, amp);

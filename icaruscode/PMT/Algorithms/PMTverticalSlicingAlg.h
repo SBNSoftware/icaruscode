@@ -11,6 +11,7 @@
 
 // LArSoft libraries
 #include "larcorealg/CoreUtils/StdUtils.h" // util::begin(), util::end()
+#include "larcorealg/Geometry/fwd.h"
 #include "larcoreobj/SimpleTypesAndConstants/geo_vectors.h" // geo::Vector_t
 
 // framework libraries
@@ -20,16 +21,6 @@
 // C/C++ standard libraries
 #include <vector>
 #include <string>
-
-
-// -----------------------------------------------------------------------------
-// --- forward declarations
-// ---
-namespace geo {
-  class GeometryCore;
-  class CryostatGeo;
-  class OpDetGeo;
-} // namespace geo
 
 
 //------------------------------------------------------------------------------
@@ -64,7 +55,8 @@ class icarus::trigger::PMTverticalSlicingAlg {
 
 
   /// Computes slices from all PMT in `cryo` and appends them to `slices`.
-  void appendCryoSlices(Slices_t& slices, geo::CryostatGeo const& cryo) const;
+  void appendCryoSlices(Slices_t& slices,
+                        geo::CryostatGeo const& cryo) const;
 
   /**
    * @brief Groups optical detectors under the specified cryostat into walls.

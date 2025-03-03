@@ -17,6 +17,7 @@
 // LArSoft libraries
 #include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
 #include "lardata/DetectorInfoServices/DetectorClocksService.h"
+#include "larcore/Geometry/WireReadout.h"
 #include "larcore/Geometry/Geometry.h"
 #include "larcore/CoreUtils/ServiceUtil.h" // lar::providerFrom()
 #include "lardataalg/DetectorInfo/DetectorTimings.h" // detinfo::DetectorTimings
@@ -298,6 +299,7 @@ icarus::trigger::ExtractEnergyDepositionSummary::ExtractEnergyDepositionSummary
     , makeEnergyDepSourceTag(config().EnergyDepositTags, config().SimChannelTag)
                                                        // edepTags
     , fGeom                                            // geom
+    , art::ServiceHandle<geo::WireReadout const>()->Get()
     , (fDetProps? &(fDetProps->detProps): nullptr)     // detProps
     , (fDetProps? &(fDetProps->detTimings): nullptr)   // detTimings
     , fLogCategory                                     // logCategory

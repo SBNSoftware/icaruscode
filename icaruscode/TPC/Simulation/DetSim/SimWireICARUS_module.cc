@@ -48,8 +48,7 @@
 #include "lardataobj/RawData/raw.h"
 #include "lardataobj/RawData/TriggerData.h"
 #include "lardataobj/Simulation/SimChannel.h"
-#include "larcore/Geometry/Geometry.h"
-#include "larcorealg/Geometry/GeometryCore.h"
+#include "larcore/Geometry/WireReadout.h"
 #include "lardata/Utilities/LArFFT.h"
 #include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
 #include "lardata/DetectorInfoServices/DetectorClocksService.h"
@@ -137,7 +136,7 @@ private:
     FFTPointer                              fFFT;                   //< Object to handle thread safe FFT
     
     //services
-    const geo::GeometryCore&                fGeometry;
+    const geo::WireReadoutGeom&               fChannelMapAlg;
     icarusutil::SignalShapingICARUSService* fSignalShapingService;  //< Access to the response functions
     
 }; // class SimWireICARUS
@@ -149,7 +148,7 @@ SimWireICARUS::SimWireICARUS(fhicl::ParameterSet const& pset)
     , fPedestalEngine(art::ServiceHandle<rndm::NuRandomService>()->registerAndSeedEngine(createEngine(0, "HepJamesRandom", "pedestal"), "HepJamesRandom", "pedestal", pset, "SeedPedestal"))
     , fUncNoiseEngine(art::ServiceHandle<rndm::NuRandomService>()->registerAndSeedEngine(createEngine(0, "HepJamesRandom", "noise"   ), "HepJamesRandom", "noise",    pset, "Seed"))
     , fCorNoiseEngine(art::ServiceHandle<rndm::NuRandomService>()->registerAndSeedEngine(createEngine(0, "HepJamesRandom", "cornoise"), "HepJamesRandom", "cornoise", pset, "Seed"))
-    , fGeometry(*lar::providerFrom<geo::Geometry>())
+    , fChannelMapAlg{art::ServiceHandle<geo::WireReadout const>{}->Get()}
 {
     this->reconfigure(pset);
     
@@ -220,11 +219,11 @@ void SimWireICARUS::beginJob()
     // If in test mode create a test data set
     if(fTest)
     {
-        if(fGeometry.Nchannels()<=fTestWire)
+        if(fChannelMapAlg.Nchannels()<=fTestWire)
             throw cet::exception(__FUNCTION__)<<"Invalid test wire channel: "<<fTestWire;
         std::vector<unsigned int> channels;
-        for(auto const& plane_id : fGeometry.Iterate<geo::PlaneID>())
-            channels.push_back(fGeometry.PlaneWireToChannel(geo::WireID(plane_id,fTestWire)));
+        for(auto const& plane_id : fChannelMapAlg.Iterate<geo::PlaneID>())
+            channels.push_back(fChannelMapAlg.PlaneWireToChannel(geo::WireID(plane_id,fTestWire)));
         double xyz[3] = { std::numeric_limits<double>::max() };
         for(auto const& ch : channels)
         {
@@ -265,7 +264,7 @@ void SimWireICARUS::produce(art::Event& evt)
     auto const clockData = art::ServiceHandle<detinfo::DetectorClocksService const>()->DataFor(evt);
     
     // get the geometry to be able to figure out signal types and chan -> plane mappings
-    const raw::ChannelID_t maxChannel = fGeometry.Nchannels();
+    const raw::ChannelID_t maxChannel = fChannelMapAlg.Nchannels();
 
     //--------------------------------------------------------------------
     //
@@ -327,10 +326,10 @@ void SimWireICARUS::produce(art::Event& evt)
    
     for (geo::TPCID const& tpcid : fTPCVec) 
     {
-        for (geo::PlaneGeo const& plane : fGeometry.Iterate<geo::PlaneGeo>(tpcid))
+        for (geo::PlaneGeo const& plane : fChannelMapAlg.Iterate<geo::PlaneGeo>(tpcid))
         {
-            raw::ChannelID_t const planeStartChannel = fGeometry.PlaneWireToChannel({ plane.ID(), 0U });
-            raw::ChannelID_t const planeEndChannel = fGeometry.PlaneWireToChannel({ plane.ID(), plane.Nwires() - 1U }) + 1;
+            raw::ChannelID_t const planeStartChannel = fChannelMapAlg.PlaneWireToChannel({ plane.ID(), 0U });
+            raw::ChannelID_t const planeEndChannel = fChannelMapAlg.PlaneWireToChannel({ plane.ID(), plane.Nwires() - 1U }) + 1;
 
             channelPairVec.emplace_back(planeStartChannel, planeEndChannel);            
         } // for planes in TPC
@@ -378,7 +377,7 @@ void SimWireICARUS::produce(art::Event& evt)
             noisetmp.resize(fNTimeSamples, 0.);     //just in case
             
             //use channel number to set some useful numbers
-            std::vector<geo::WireID> widVec  = fGeometry.ChannelToWire(channel);
+            std::vector<geo::WireID> widVec  = fChannelMapAlg.ChannelToWire(channel);
             size_t                   plane   = widVec[0].Plane;
             size_t                   wire    = widVec[0].Wire;
             size_t                   board   = wire / 32;
