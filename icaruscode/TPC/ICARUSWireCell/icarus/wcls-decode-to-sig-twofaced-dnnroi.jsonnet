@@ -267,7 +267,7 @@ local ts_u = {
     type: "TorchService",
     name: "dnnroi_u",
     data: {
-        model: "NNsv2/UNet-randMC_Plane0.ts",
+        model: "NNsv5/plane0.ts",
         device: "cpu",
         concurrency: 1,
     },
@@ -277,7 +277,7 @@ local ts_v = {
     type: "TorchService",
     name: "dnnroi_v",
     data: {
-        model: "NNsv2/UNet-randMC_Plane1.ts",
+        model: "NNsv5/plane1.ts",
         device: "cpu",
         concurrency: 1,
     },
@@ -291,7 +291,7 @@ local nfsp_pipes = [
                nf_pipes[n],
                // magnifyio.raw_pipe[n],
                sp_pipes[n],
-               dnnroi(tools.anodes[n], ts_u, ts_v, output_scale=1),
+               dnnroi(tools.anodes[n], ts_u, ts_v),
                // magnifyio.decon_pipe[n],
                // magnifyio.threshold_pipe[n],
                // magnifyio.debug_pipe[n], // use_roi_debug_mode: true in sp.jsonnet
