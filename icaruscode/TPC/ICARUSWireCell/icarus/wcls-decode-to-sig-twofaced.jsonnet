@@ -221,6 +221,7 @@ local sp_override = { // assume all tages sets in base sp.jsonnet
     sparse: sigoutform == 'sparse',
     use_roi_refinement: true,
     use_roi_debug_mode: false,
+    save_negtive_charge: true,
     // wiener_tag: "",
     // gauss_tag: "",
     tight_lf_tag: "",
@@ -320,7 +321,7 @@ local fanin_tag_rules = [
           }
           for ind in anode_ident
         ];
-local fanpipe = util.fanpipe('FrameFanout', nfsp_pipes, 'FrameFanin', 'nfsp', [], fanout_tag_rules, fanin_tag_rules);
+local fanpipe = util.fanpipe('FrameFanout', nfsp_pipes, 'FrameFanin', 'nfsp%d' % volume, [], fanout_tag_rules, fanin_tag_rules);
 
 local retagger = g.pnode({
   type: 'Retagger',
