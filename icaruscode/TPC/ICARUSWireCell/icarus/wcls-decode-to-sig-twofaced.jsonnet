@@ -239,7 +239,9 @@ local sp_override = { // assume all tages sets in base sp.jsonnet
     isWrapped: true,
     nwires_separate_planes: [
       [1056, 1056], [5600], [5600]
-    ]
+    ],
+    troi_col_th_factor: std.parseJson(std.extVar('col_threshold_factor'))*1.0, // multiply by 1 to make into float
+    troi_ind_th_factor: std.parseJson(std.extVar('ind_threshold_factor'))*1.0
 };
 local sp = sp_maker(params, tools, sp_override);
 local sp_pipes = [sp.make_sigproc(a) for a in tools.anodes];
