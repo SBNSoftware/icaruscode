@@ -167,7 +167,7 @@ local wcls_output = {
       frame_scale: [std.extVar('gain_ADC_per_e')],
 
       // nticks: params.daq.nticks,
-      chanmaskmaps: [],
+      chanmaskmaps: ['bad'],
       nticks: -1,
       plane_map: {
         "1": 3, // front induction: WireCell::kULayer -> geo::kH (1 -> 3)
@@ -216,7 +216,7 @@ local chndb = [{
 } for n in std.range(0, std.length(tools.anodes) - 1)];
 
 local nf_maker = import 'pgrapher/experiment/icarus/nf.jsonnet';
-local nf_pipes = [nf_maker(params, tools.anodes[n], chndb[n], tools, name='nf%d' % n) for n in std.range(0, std.length(tools.anodes) - 1)];
+local nf_pipes = [nf_maker(tools.anodes[n], chndb[n], tools, name='nf%d' % n) for n in std.range(0, std.length(tools.anodes) - 1)];
 
 local sp_override = { // assume all tages sets in base sp.jsonnet
     sparse: sigoutform == 'sparse',
@@ -288,7 +288,7 @@ local nfsp_pipes = [
                chsel_pipes[n],
                // magnifyio.orig_pipe[n],
 
-               // nf_pipes[n],
+               nf_pipes[n],
                // magnifyio.raw_pipe[n],
                sp_pipes[n],
                dnnroi(tools.anodes[n], ts_u, ts_v, output_scale=1),
