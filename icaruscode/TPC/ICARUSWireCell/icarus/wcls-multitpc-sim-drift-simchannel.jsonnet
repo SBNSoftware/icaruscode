@@ -150,6 +150,35 @@ local wcls_output = {
   }, nin=1, nout=1, uses=[duoanodes[n]])
   for n in std.range(0,3)],
 
+  // Output to H5 files
+  h5io: [g.pnode({
+      type: 'HDF5FrameTap',
+      name: 'hio_sp%d' % n,
+      data: {
+        anode: wc.tn(duoanodes[n]),
+        trace_tags: ['TPC%s' %volname[n]
+        , 'loose_lf%s' % volname[n]
+        , 'tight_lf%s' % volname[n]
+        , 'cleanup_roi%s' % volname[n]
+        , 'break_roi_1st%s' % volname[n]
+        , 'break_roi_2nd%s' % volname[n]
+        , 'shrink_roi%s' % volname[n]
+        , 'extend_roi%s' % volname[n]
+        , 'mp3_roi%s' % volname[n]
+        , 'mp2_roi%s' % volname[n]
+        , 'decon_charge%s' % volname[n]
+        , 'wiener%s' % volname[n]
+        , 'gauss%s' % volname[n]],
+        filename: "wc-rd-%s.h5" % volname[n],
+        chunk: [0, 0], // ncol, nrow
+        gzip: 2,
+        high_throughput: true,
+      },
+    }, nin=1, nout=1),
+    for n in std.range(0, 3)],
+
+  
+
   // The noise filtered "ADC" values.  These are truncated for
   // art::Event but left as floats for the WCT SP.  Note, the tag
   // "raw" is somewhat historical as the output is not equivalent to
@@ -195,10 +224,6 @@ local chndb = [{
 // local nf_maker = import 'pgrapher/experiment/icarus/nf.jsonnet';
 // local nf_pipes = [nf_maker(params, tools.anodes[n], chndb_pipes[n]) for n in std.range(0, std.length(tools.anodes)-1)];
 // local nf_pipes = [nf_maker(params, tools.anodes[n], chndb[n], n, name='nf%d' % n) for n in anode_iota];
-
-local sp_maker = import 'pgrapher/experiment/icarus/sp.jsonnet';
-local sp = sp_maker(params, tools);
-local sp_pipes = [sp.make_sigproc(a) for a in tools.anodes];
 
 local rng = tools.random;
 local wcls_simchannel_sink_old = 
@@ -329,8 +354,12 @@ local frame_summers = [
         },
     }, nin=2, nout=1) for n in std.range(0, 3)];
 
-local actpipes = [g.pipeline([noises[n], coh_noises[n], digitizers[n], /*retaggers[n],*/ wcls_output.sim_digits[n]], name="noise-digitizer%d" %n) for n in std.range(0,3)];
 local util = import 'pgrapher/experiment/icarus/funcs.jsonnet';
+
+// local actpipes = [g.pipeline([noises[n], coh_noises[n], digitizers[n], /*retaggers[n],*/ wcls_output.sim_digits[n]], name="noise-digitizer%d" %n) for n in std.range(0,3)];
+
+local actpipes = [g.pipeline([noises[n], coh_noises[n], digitizers[n], wcls_output.h5io[n], wcls_output.sim_digits[n]], name="noise-digitizer%d" %n) for n in std.range(0,3)];
+
 local outtags = ['orig%d' % n for n in std.range(0, 3)];
 local pipe_reducer = util.fansummer('DepoSetFanout', analog_pipes, frame_summers, actpipes, 'FrameFanin', 'fansummer', outtags);
 
@@ -356,7 +385,7 @@ local sink = sim.frame_sink;
 
 // local graph = g.pipeline([wcls_input.depos, drifter,  wcls_simchannel_sink.simchannels, bagger, pipe_reducer, retagger, wcls_output.sim_digits, sink]);
 //local graph = g.pipeline([wcls_input.depos, drifter,  wcls_simchannel_sink, bagger, pipe_reducer, sink]);
-local graph = g.pipeline([wcls_input.deposet, setdrifter, wcls_simchannel_sink_old, wcls_simchannel_sink, pipe_reducer, sink]);
+local graph = g.pipeline([wcls_input.deposet, setdrifter, wcls_simchannel_sink, wcls_simchannel_sink_old, pipe_reducer, sink]);
 
 local app = {
   type: 'Pgrapher',
