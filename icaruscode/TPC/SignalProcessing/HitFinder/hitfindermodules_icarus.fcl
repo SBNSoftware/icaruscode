@@ -100,7 +100,6 @@ gaus_hitfinder_icarus.HitFinderToolVec.CandidateHitsPlane2:                     
 gaus_hitfinder_icarus.HitFinderToolVec.CandidateHitsPlane2.Plane:                  2
 gaus_hitfinder_icarus.HitFinderToolVec.CandidateHitsPlane2.RoiThreshold:           9.
 
-
 # Define icarus version of test version gausshit finder
 gauss_hitfinder_icarus: @local::gaus_hitfinder
 

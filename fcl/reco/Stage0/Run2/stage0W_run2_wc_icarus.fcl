@@ -1,0 +1,8 @@
+#include "stage0_run2_wc_icarus.fcl"
+
+physics.path: [
+    @sequence::icarus_stage0_multiTPC_2d_TPC_W,
+    @sequence::icarus_stage0_WestHits2d_TPC
+]
+
+process_name: stage0W
