@@ -128,7 +128,23 @@ base {
     files: {
         wires: "icarus-wires-dualanode-v5.json.bz2",
 
-        fields: ["icarus_fnal_fit_ks_P0nom.json.bz2"],
+        //fields: ["garfield-icarus-fnal-rev2.json.bz2"],
+
+        fields:["icarus_final_fit_dqdx0.json.bz2",
+	        "icarus_final_fit_dqdx1.json.bz2",
+		   "icarus_final_fit_dqdx2.json.bz2",
+		   "icarus_final_fit_dqdx3.json.bz2",
+		   "icarus_final_fit_dqdx4.json.bz2",
+		   "icarus_final_fit_dqdx5.json.bz2",
+		   "icarus_final_fit_dqdx6.json.bz2",
+		   "icarus_final_fit_dqdx7.json.bz2",
+		   "icarus_final_fit_dqdx8.json.bz2",
+		   "icarus_final_fit_dqdx9.json.bz2",
+		   "icarus_final_fit_dqdx10.json.bz2",
+		   "icarus_final_fit_dqdx11.json.bz2",
+		   "icarus_final_fit_dqdx12.json.bz2",
+		   "icarus_final_fit_dqdx13.json.bz2",
+		   "icarus_final_fit_dqdx14.json.bz2"],
 
        // noise: ["icarus_noise_model_int_TPCEE.json.bz2","icarus_noise_model_int_TPCEW.json.bz2","icarus_noise_model_int_TPCWE.json.bz2","icarus_noise_model_int_TPCWW.json.bz2"],
        // coherent_noise: ["icarus_noise_model_coh_TPCEE.json.bz2","icarus_noise_model_coh_TPCEW.json.bz2","icarus_noise_model_coh_TPCWE.json.bz2","icarus_noise_model_coh_TPCWW.json.bz2"],	
