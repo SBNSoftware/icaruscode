@@ -61,7 +61,7 @@ namespace icarus::timing
     double startTime = NoTime;
 
     /// Returns whether the time is valid.
-    bool isValid() const { return (sample != NoSample); }
+    bool isValid() const { return (startTime != NoTime); }
   };
 
 } // namespace icarus::timing
