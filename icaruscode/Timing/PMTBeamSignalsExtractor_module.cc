@@ -141,6 +141,7 @@ public:
 
   // filter times based on consensus among crates
   void filterBeamSignalsByCryostat(std::string const &l, std::vector<double> const &times, std::string const &c);
+  double stdDev(std::vector<double> data, double mean);
 
   // associate times to PMT channels
   void associateBeamSignalsToChannels(art::InputTag const &label);
@@ -458,6 +459,13 @@ void icarus::timing::PMTBeamSignalsExtractor::extractBeamSignalTime(art::Event &
 
 // -----------------------------------------------------------------------------
 
+double icarus::timing::PMTBeamSignalsExtractor::stdDev(std::vector<double> data, double mean)
+{
+  double sum = 0;
+  for(auto d : data) sum += (d-mean)*(d-mean);
+  return TMath::Sqrt(sum/data.size());
+}
+
 void icarus::timing::PMTBeamSignalsExtractor::filterBeamSignalsByCryostat(
   std::string const &l, std::vector<double> const &times, std::string const &c)
 {
@@ -468,7 +476,8 @@ void icarus::timing::PMTBeamSignalsExtractor::filterBeamSignalsByCryostat(
 
   // compute stddev and median among valid signals (consensus)
   double median = TMath::Median(times.size(), times.data());
-  double stddev = TMath::RMS(times.size(), times.data());
+  double mean = TMath::Mean(times.size(), times.data());
+  double stddev = stdDev(times, mean);
 
   for (auto const& [crate, signal] : fBeamSignals[l]){
     
@@ -484,6 +493,7 @@ void icarus::timing::PMTBeamSignalsExtractor::filterBeamSignalsByCryostat(
       fBeamSignals[l][crate].time_abs = median; 
       fBeamSignals[l][crate].time = median - ftriggerTime;
     }
+
   } 
 
 }
