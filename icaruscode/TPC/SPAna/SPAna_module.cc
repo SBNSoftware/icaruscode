@@ -44,6 +44,7 @@
 #include "lardata/DetectorInfoServices/DetectorClocksService.h"
 #include "larcore/Geometry/Geometry.h"
 #include "larcore/CoreUtils/ServiceUtil.h"
+#include "larcore/Geometry/WireReadout.h"
 #include "larcorealg/Geometry/GeometryCore.h"
 #include "larsim/MCCheater/BackTrackerService.h"
 #include "larsim/MCCheater/ParticleInventoryService.h"
@@ -74,7 +75,7 @@ public:
   sbn::HitInfo MakeHit(const recob::Hit &hit,
     unsigned hkey,
     const art::Ptr<recob::SpacePoint> &sp,
-    const geo::GeometryCore *geo,
+    const geo::WireReadoutGeom &wireReadout,
     const detinfo::DetectorClocksData &dclock,
     const cheat::BackTrackerService *bt_serv);
 
@@ -82,7 +83,7 @@ public:
     const simb::MCParticle &particle,
     const std::map<int, std::vector<std::tuple<geo::WireID, short, const sim::IDE*>>> id_to_ide_map,
     const detinfo::DetectorPropertiesData &dprop,
-    const geo::GeometryCore *geo);
+    const geo::WireReadoutGeom &wireReadout);
 
   void BuildHitRanges(const std::vector<art::Ptr<recob::Hit>> &hits);
   void BuildWireRanges(const std::vector<art::Ptr<recob::Wire>> &wires);
@@ -242,13 +243,13 @@ void SPAna::Clear() {
   _reco_wire_true_energy.clear();
 }
 
-std::map<int, std::vector<std::tuple<geo::WireID, short, const sim::IDE*>>> PrepSimChannels(const std::vector<art::Ptr<sim::SimChannel>> &simchannels, const geo::GeometryCore &geo) {
+std::map<int, std::vector<std::tuple<geo::WireID, short, const sim::IDE*>>> PrepSimChannels(const std::vector<art::Ptr<sim::SimChannel>> &simchannels, const geo::WireReadoutGeom &wireReadout) {
     std::map<int, std::vector<std::tuple<geo::WireID, short, const sim::IDE*>>> ret;
 
     for (const art::Ptr<sim::SimChannel> sc : simchannels) {
       // Lookup the wire of this channel
       raw::ChannelID_t channel = sc->Channel();
-      std::vector<geo::WireID> maybewire = geo.ChannelToWire(channel);
+      std::vector<geo::WireID> maybewire = wireReadout.ChannelToWire(channel);
       geo::WireID thisWire; // Default constructor makes invalid wire
       if (maybewire.size()) thisWire = maybewire[0];
 
@@ -305,7 +306,7 @@ std::pair<std::vector<sbn::TrueHit>, std::vector<sbn::Vector3D>> SPAna::Particle
     const simb::MCParticle &particle,
     const std::map<int, std::vector<std::tuple<geo::WireID, short, const sim::IDE*>>> id_to_ide_map,
     const detinfo::DetectorPropertiesData &dprop,
-    const geo::GeometryCore *geo) {
+    const geo::WireReadoutGeom &wireReadout) {
 
   // Organize deposition info into per-wire true "Hits" -- key is the Channel Number
   std::map<unsigned, sbn::TrueHit> truehits; 
@@ -320,7 +321,7 @@ std::pair<std::vector<sbn::TrueHit>, std::vector<sbn::Vector3D>> SPAna::Particle
     // cut on cryostat
     if ((int)w.Cryostat != _cryo) continue;
 
-    unsigned c = geo->PlaneWireToChannel(w);
+    unsigned c = wireReadout.PlaneWireToChannel(w);
     const sim::IDE *ide = std::get<2>(ide_tup);
 
     // Set stuff
@@ -359,7 +360,7 @@ std::pair<std::vector<sbn::TrueHit>, std::vector<sbn::Vector3D>> SPAna::Particle
     // cut on cryostat
     if ((int)w.Cryostat != _cryo) continue;
 
-    unsigned c = geo->PlaneWireToChannel(w);
+    unsigned c = wireReadout.PlaneWireToChannel(w);
     const sim::IDE *ide = std::get<2>(ide_tup);
 
     geo::Point_t ide_p(ide->x, ide->y, ide->z);
@@ -390,7 +391,7 @@ std::pair<std::vector<sbn::TrueHit>, std::vector<sbn::Vector3D>> SPAna::Particle
   for (sbn::TrueHit &h: truehits_v) {
     // TODO: fix magic number
     h.time -= 2900; // == (G4RefTime - TriggerOffsetTPC)/TickPeriod = (1500 - 340)/0.4
-    double xdrift = abs(h.p.x - geo->Plane(geo::PlaneID(h.cryo, h.tpc, 0)).GetCenter().X());
+    double xdrift = abs(h.p.x - wireReadout.Plane(geo::PlaneID(h.cryo, h.tpc, 0)).GetCenter().X());
     h.tdrift = xdrift / dprop.DriftVelocity(); 
   }
 
@@ -418,10 +419,11 @@ std::pair<std::vector<sbn::TrueHit>, std::vector<sbn::Vector3D>> SPAna::Particle
 
     // If we got a direction, get the pitch
     if (closest_dist >= 0. && direction.Mag() > 1e-4) {
-      geo::PlaneID plane(h.cryo, h.tpc, h.plane);
-      float angletovert = geo->WireAngleToVertical(geo->View(plane), plane) - 0.5*::util::pi<>();
+      geo::PlaneID planeid(h.cryo, h.tpc, h.plane);
+      geo::PlaneGeo const& plane = wireReadout.Plane(planeid);
+      float angletovert = wireReadout.WireAngleToVertical(plane.View(), planeid) - 0.5*::util::pi<>();
       float cosgamma = abs(cos(angletovert) * direction.Z() + sin(angletovert) * direction.Y());
-      float pitch = geo->WirePitch(plane) / cosgamma;
+      float pitch = plane.WirePitch() / cosgamma;
       h.pitch = pitch;
     }
     else {
@@ -429,19 +431,20 @@ std::pair<std::vector<sbn::TrueHit>, std::vector<sbn::Vector3D>> SPAna::Particle
     }
     // And the pitch induced by SCE
     if (closest_dist >= 0. && direction.Mag() > 1e-4) {
-      geo::PlaneID plane(h.cryo, h.tpc, h.plane);
-      float angletovert = geo->WireAngleToVertical(geo->View(plane), plane) - 0.5*::util::pi<>();
+      geo::PlaneID planeid(h.cryo, h.tpc, h.plane);
+      geo::PlaneGeo const& plane = wireReadout.Plane(planeid);
+      float angletovert = wireReadout.WireAngleToVertical(plane.View(), planeid) - 0.5*::util::pi<>();
 
-      TVector3 loc_mdx_v = h_p - direction * (geo->WirePitch(geo->View(plane)) / 2.);
-      TVector3 loc_pdx_v = h_p + direction * (geo->WirePitch(geo->View(plane)) / 2.);
+      TVector3 loc_mdx_v = h_p - direction * (plane.WirePitch() / 2.);
+      TVector3 loc_pdx_v = h_p + direction * (plane.WirePitch() / 2.);
 
       // Convert types for helper functions
       geo::Point_t loc_mdx(loc_mdx_v.X(), loc_mdx_v.Y(), loc_mdx_v.Z());
       geo::Point_t loc_pdx(loc_pdx_v.X(), loc_pdx_v.Y(), loc_pdx_v.Z());
       geo::Point_t h_p_point(h_p.X(), h_p.Y(), h_p.Z());
 
-      loc_mdx = TrajectoryToWirePosition(loc_mdx, plane);
-      loc_pdx = TrajectoryToWirePosition(loc_pdx, plane);
+      loc_mdx = TrajectoryToWirePosition(loc_mdx, planeid);
+      loc_pdx = TrajectoryToWirePosition(loc_pdx, planeid);
       
       // Direction at wires
       geo::Vector_t dir = (loc_pdx - loc_mdx) /  (loc_mdx - loc_pdx).r(); 
@@ -450,17 +453,17 @@ std::pair<std::vector<sbn::TrueHit>, std::vector<sbn::Vector3D>> SPAna::Particle
       double cosgamma = std::abs(std::sin(angletovert)*dir.Y() + std::cos(angletovert)*dir.Z());
       double pitch;
       if (cosgamma) {
-        pitch = geo->WirePitch(geo->View(plane))/cosgamma;
+        pitch = plane.WirePitch()/cosgamma;
       }
       else {
         pitch = 0.;
       }
 
       // Now bring that back to the particle trajectory
-      geo::Point_t loc_w = TrajectoryToWirePosition(h_p_point, plane);
+      geo::Point_t loc_w = TrajectoryToWirePosition(h_p_point, planeid);
       
-      geo::Point_t locw_pdx_traj = WireToTrajectoryPosition(loc_w + pitch*dir, plane);
-      geo::Point_t loc = WireToTrajectoryPosition(loc_w, plane);
+      geo::Point_t locw_pdx_traj = WireToTrajectoryPosition(loc_w + pitch*dir, planeid);
+      geo::Point_t loc = WireToTrajectoryPosition(loc_w, planeid);
       
       h.pitch_sce = (locw_pdx_traj - loc).R();
     }
@@ -491,7 +494,7 @@ std::pair<std::vector<sbn::TrueHit>, std::vector<sbn::Vector3D>> SPAna::Particle
 sbn::HitInfo SPAna::MakeHit(const recob::Hit &hit,
     unsigned hkey,
     const art::Ptr<recob::SpacePoint> &sp,
-    const geo::GeometryCore *geo,
+    const geo::WireReadoutGeom &wireReadout,
     const detinfo::DetectorClocksData &dclock,
     const cheat::BackTrackerService *bt_serv) {
 
@@ -506,7 +509,7 @@ sbn::HitInfo SPAna::MakeHit(const recob::Hit &hit,
   h.mult = hit.Multiplicity();
   h.wire = hit.WireID().Wire;
   h.plane = hit.WireID().Plane;
-  h.channel = geo->PlaneWireToChannel(hit.WireID());
+  h.channel = wireReadout.PlaneWireToChannel(hit.WireID());
   h.tpc = hit.WireID().TPC;
   h.end = hit.EndTick();
   h.start = hit.StartTick();
@@ -571,7 +574,8 @@ void SPAna::analyze(art::Event const& e)
   Clear();
 
   // Load services
-  const geo::GeometryCore *geometry = lar::providerFrom<geo::Geometry>();
+  const geo::WireReadoutGeom &wireReadout =
+    art::ServiceHandle<geo::WireReadout>()->Get();
   auto const clock_data = art::ServiceHandle<detinfo::DetectorClocksService const>()->DataFor(e);
   auto const dprop =
     art::ServiceHandle<detinfo::DetectorPropertiesService const>()->DataFor(e, clock_data);
@@ -607,13 +611,13 @@ void SPAna::analyze(art::Event const& e)
   art::fill_ptr_vector(simchannels, simchannel_handle);
 
   // Prep matching info
-  std::map<int, std::vector<std::tuple<geo::WireID, short, const sim::IDE*>>> id_to_ide_map = PrepSimChannels(simchannels, *geometry);
+  std::map<int, std::vector<std::tuple<geo::WireID, short, const sim::IDE*>>> id_to_ide_map = PrepSimChannels(simchannels, wireReadout);
   BuildHitRanges(hitList);
   BuildWireRanges(wireList);
 
   // Save hits
   for (unsigned i = 0; i < hitList.size(); i++) {
-    _reco_hits.push_back(MakeHit(*hitList[i], hitList[i].key(), {} /*allHitSps.at(hitList[i].key())*/, geometry, clock_data, bt_serv.get()));
+    _reco_hits.push_back(MakeHit(*hitList[i], hitList[i].key(), {} /*allHitSps.at(hitList[i].key())*/, wireReadout, clock_data, bt_serv.get()));
   }
 
   // Save wires
@@ -621,8 +625,8 @@ void SPAna::analyze(art::Event const& e)
     art::Ptr<recob::Wire> wire = wireList[i];
 
     unsigned channel = wire->Channel();
-    unsigned plane_id = geometry->ChannelToWire(wire->Channel()).at(0).Plane;
-    unsigned wire_id = geometry->ChannelToWire(wire->Channel()).at(0).Wire;
+    unsigned plane_id = wireReadout.ChannelToWire(wire->Channel()).at(0).Plane;
+    unsigned wire_id = wireReadout.ChannelToWire(wire->Channel()).at(0).Wire;
     for (auto const &range: wire->SignalROI().get_ranges()) {
 
       _reco_wire_start.push_back(range.begin_index());
@@ -657,7 +661,7 @@ void SPAna::analyze(art::Event const& e)
   // Save truth info
   for (unsigned i = 0; i < mcparticles.size(); i++) {
     const simb::MCParticle &p = *mcparticles[i];
-    auto ret = ParticleTrueHits(p, id_to_ide_map, dprop, geometry);
+    auto ret = ParticleTrueHits(p, id_to_ide_map, dprop, wireReadout);
 
     for (const sbn::TrueHit &th: ret.first) _true_hits.push_back(th);
     for (const sbn::Vector3D &d: ret.second) {
