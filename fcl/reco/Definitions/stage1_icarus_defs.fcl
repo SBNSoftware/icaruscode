@@ -164,7 +164,7 @@ icarus_analysis_modules:           [  caloskimE
 				                             ,CRTAnalysis
                                    ]
 
-icarus_analysis_modules_test:      [  caloskimE 
+icarus_analysis_modules_nolight:      [  caloskimE 
                                      ,caloskimW 
                                      ,CRTDataAnalysis
 				                             ,CRTAnalysis

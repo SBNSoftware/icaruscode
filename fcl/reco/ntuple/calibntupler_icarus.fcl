@@ -35,7 +35,7 @@ physics:
      @table::icarus_stage1_analyzers_crthittagged
  }
 
- outana: [ @sequence::icarus_analysis_modules_test ]
+ outana: [ @sequence::icarus_analysis_modules ]
  reco: []
  trigger_paths: [reco]
  end_paths: [outana]
