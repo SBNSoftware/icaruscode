@@ -104,4 +104,8 @@ physics.producers.mcreco.MCRecoPart.TrackIDOffsets: [0,10000000,20000000] #Accou
 physics.producers.sedlite.SimEnergyDepositLabel: "largeant:LArG4DetectorServicevolTPCActive"
 physics.producers.sedlite.useOrigTrackID: true #needed since origTrackID not filled for sedlite in SBND
 
+# avoid huge log files
+services.message.destinations.LogErrorFile.categories.SimDriftElectrons: { limit: 0 }
+services.message.destinations.LogStandardOut.categories.SimDriftElectrons: { limit: 0 }
+
 outputs.rootoutput: @local::icarus_rootoutput
