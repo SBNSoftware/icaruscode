@@ -58,6 +58,11 @@ In order to successfully run it, the additional library scripts `settings.sh`
 and `utilities.sh` must also be in the same directory as the main script.
 In addition, `experiment_settings.sh` overriding the general settings is also
 parsed.
+
+> **NOTE** This script uses the deployment system, currently UPS, to discover
+> the version of all the repositories to pull in. UPS must be available in
+> the system where the script is run, possibly using a container.    
+
 There are two possibilities:
 
 * clone the GIT repository altogether, and find the scripts in
@@ -74,7 +79,7 @@ Note that the script *must* be executed from outside the `icaruscode` GIT
 repository, like in the example above.
 
 Normally this will clone or _update_ the repository, and run Doxygen on it.
-Note that **"update"**: the script `updateLocalDocumentation.sh` **does** mess
+Note the word "update": the script `updateLocalDocumentation.sh` **does** mess
 up with the GIT repository, and while there is some provision not to lose data,
 if that repository has anything valuable it should be backed up or pushed before
 running.
@@ -132,6 +137,12 @@ For this operation to succeed, the user must have permissions to write into the
 web content directory; and before that, the node where this script is ran must
 have POSIX (e.g. NFS) access to that directory. Enabling these is matter of
 Fermilab service desk requests.
+
+> **NOTE** If running in a container because of the requirements of the previous
+> step, that container needs to bind the appropriate directory (the path is set
+> by `PublishBaseDir` variable in `settings.sh`) in read/write mode.
+> However, neither the publishing nor the version list update currently require
+> access to UPS nor a container.
 
 If the directory already exists, the script will refuse to proceed. This is
 intentional, to prevent a potentially complex script from unintentionally
