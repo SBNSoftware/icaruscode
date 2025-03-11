@@ -197,11 +197,14 @@ local wcls_output = {
 };
 
 //local deposio = io.numpy.depos(output);
-local drifter = sim.drifter;
+
+local overlay_drifter = std.extVar("overlay_drifter");
+
+local drifter = if overlay_drifter then sim.overlay_drifter else sim.drifter;
 local setdrifter = g.pnode({
             type: 'DepoSetDrifter',
             data: {
-                drifter: "Drifter"
+                drifter: if overlay_drifter then "wclsICARUSDrifter" else "Drifter"
             }
         }, nin=1, nout=1,
         uses=[drifter]);
