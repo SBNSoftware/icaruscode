@@ -61,7 +61,7 @@ parsed.
 
 > **NOTE** This script uses the deployment system, currently UPS, to discover
 > the version of all the repositories to pull in. UPS must be available in
-> the system where the script is run, possibly using a container.    
+> the system where the script is run, possibly using a container.
 
 There are two possibilities:
 
