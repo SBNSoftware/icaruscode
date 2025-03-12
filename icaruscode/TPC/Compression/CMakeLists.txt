@@ -67,6 +67,7 @@ simple_plugin(ValidateFragmentCompression "plugin"
 cet_build_plugin(ProduceCompressedFragment art::module LIBRARIES ${MODULE_LIBRARIES})
 cet_build_plugin(TestProduceCompressed art::module LIBRARIES ${MODULE_LIBRARIES})
 cet_build_plugin(ProduceCompressed art::module LIBRARIES ${MODULE_LIBRARIES})
+cet_build_plugin(FragmentPlots art::module LIBRARIES ${MODULE_LIBRARIES})
 
 simple_plugin(CheckRawDigits "plugin"
                 ${MODULE_LIBRARIES})

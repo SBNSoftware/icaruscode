@@ -1,0 +1,20 @@
+BEGIN_PROLOG
+
+standard_fragmentplots
+{
+  module_type: "FragmentPlots"
+  FragmenntLabel: "daq:PHYSCRATEDATATPCWW"
+}
+
+fragmentplots_ww: @local::standard_fragmentplots
+
+fragmentplots_we: @local::standard_fragmentplots
+fragmentplots_we.FragmenntLabel: "daq:PHYSCRATEDATATPCWE"
+
+fragmentplots_ew: @local::standard_fragmentplots
+fragmentplots_ew.FragmenntLabel: "daq:PHYSCRATEDATATPCEW"
+
+fragmentplots_ee: @local::standard_fragmentplots
+fragmentplots_ee.FragmenntLabel: "daq:PHYSCRATEDATATPCEE"
+
+END_PROLOG

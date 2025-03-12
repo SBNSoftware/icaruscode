@@ -1,0 +1,54 @@
+#include "FragmentPlots.fcl"
+#include "messages_icarus.fcl"
+#include "services_common_icarus.fcl"
+
+process_name: FragmentPlots
+
+# what services do we need?
+services:
+{
+  TFileService: { fileName: "check_raw_hist.root" closeFileFast: false } # we make a file for our histograms
+  message: @local::icarus_message_services_interactive_debug # we want debugging messages
+}
+
+# what's our input?
+source:
+{
+  module_type: RootInput # a root file
+  maxEvents: -1 # ie all of them
+}
+
+# the interesting stuff
+physics:
+{
+  # what do we produce?
+  producers:
+  {
+    # nothing
+  }
+
+  # what analyzers do we run?
+  analyzers:
+  {
+    fragments_ww: @local::fragmentplots_ww
+    fragments_we: @local::fragmentplots_we
+    fragments_ew: @local::fragmentplots_ew
+    fragments_ee: @local::fragmentplots_ee
+  }
+
+  # what filters do we require?
+  filters:
+  {
+    # nothing
+  }
+
+  # paths
+  prod: [  ]
+  anal: [ fragments_ww, fragments_we, fragments_ew, fragments_ee ]
+  filt: [  ]
+
+  # trigger_paths — things that modify the event
+  # end_paths - things which don't modify the event
+  trigger_paths: [ filt, prod ]
+  end_paths: [ anal ]
+}
