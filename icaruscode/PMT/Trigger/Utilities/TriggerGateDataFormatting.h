@@ -105,6 +105,12 @@ std::ostream& icarus::trigger::details::operator<<
   else out << "no channel";
   out << "] " << gate.gateLevels();
   
+  if (unsigned int const maxTime = gate.findMaxOpen(); maxTime != gate.MaxTick)
+  {
+    unsigned int const maxOpening = gate.openingCount(maxTime);
+    out << " (maximum: " << maxOpening << " at " << maxTime << ")";
+  }
+  
   return out;
 } // icarus::trigger::operator<< (GateWrapper)
 

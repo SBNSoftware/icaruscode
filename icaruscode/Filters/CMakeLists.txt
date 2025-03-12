@@ -45,6 +45,7 @@ cet_build_plugin(FilterOpFlash art::module LIBRARIES ${MODULE_LIBRARIES})
 cet_build_plugin(FilterParticlesActiveVolume art::module LIBRARIES ${MODULE_LIBRARIES})
 cet_build_plugin(TriggerTypeFilter art::module LIBRARIES ${MODULE_LIBRARIES})
 cet_build_plugin(FilterCRTPMTMatching art::module LIBRARIES ${MODULE_LIBRARIES})
+cet_build_plugin(FilterDirts art::module LIBRARIES ${MODULE_LIBRARIES})
 
 # install_headers()
 install_fhicl()

@@ -323,13 +323,17 @@
     <OutputVertexListName>DaughterVertices3D</OutputVertexListName>
   </algorithm>
   <algorithm type = "LArBdtPfoCharacterisation">
+    <TrainingSetMode>false</TrainingSetMode>
+    <CaloHitListName>CaloHitList2D</CaloHitListName>
+    <MCParticleListName>Input</MCParticleListName>
+    <TrainingOutputFileName>BNBPfoCharTraining</TrainingOutputFileName>
     <TrackPfoListName>TrackParticles3D</TrackPfoListName>
     <ShowerPfoListName>ShowerParticles3D</ShowerPfoListName>
     <UseThreeDInformation>true</UseThreeDInformation>
     <PersistFeatures>true</PersistFeatures>
-    <MvaFileName>PandoraBdt_v08_33_00_SBND.xml</MvaFileName>
+    <MvaFileName>PandoraBdt_v09_72_01_ICARUS_pfochar_bnb.xml</MvaFileName>
     <MvaName>PfoCharBDT</MvaName>
-    <MvaFileNameNoChargeInfo>PandoraBdt_v08_33_00_SBND.xml</MvaFileNameNoChargeInfo>
+    <MvaFileNameNoChargeInfo>PandoraBdt_v09_72_01_ICARUS_pfochar_bnb.xml</MvaFileNameNoChargeInfo>
     <MvaNameNoChargeInfo>PfoCharBDTNoChargeInfo</MvaNameNoChargeInfo>
     <FeatureTools>
       <tool type = "LArThreeDLinearFitFeatureTool"/>
@@ -337,12 +341,13 @@
       <tool type = "LArThreeDPCAFeatureTool"/>
       <tool type = "LArThreeDOpeningAngleFeatureTool"/>
       <tool type = "LArThreeDChargeFeatureTool"/>
+      <tool type = "LArConeChargeFeatureTool"/>
     </FeatureTools>
     <FeatureToolsNoChargeInfo>
       <tool type = "LArThreeDLinearFitFeatureTool"/>
       <tool type = "LArThreeDVertexDistanceFeatureTool"/>
       <tool type = "LArThreeDPCAFeatureTool"/>
-      <tool type = "LArThreeDOpeningAngleFeatureTool"/>
+      <tool type = "LArThreeDOpeningAngleFeatureTool"/>      
     </FeatureToolsNoChargeInfo>
   </algorithm>
   <algorithm type = "LArNeutrinoProperties">

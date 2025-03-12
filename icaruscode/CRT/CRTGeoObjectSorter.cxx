@@ -22,8 +22,12 @@ namespace geo{
     // sort based off of GDML name, module number
     std::string ad1name = (ad1.TotalVolume())->GetName();
     std::string ad2name = (ad2.TotalVolume())->GetName();
-    // assume volume name is "volAuxDet_<subsystem>_module_###_<region>"
-    std::string modulePrefix = "module_";
+    // assume volume name is "volAuxDet<subsystem>module###<region>"
+    std::string modulePrefix = "module";
+
+    //keep compatibility with legacy g4
+    ad1name.erase(std::remove(ad1name.begin(), ad1name.end(), '_'), ad1name.end());
+    ad2name.erase(std::remove(ad2name.begin(), ad2name.end(), '_'), ad2name.end());
 
     int ad1Num = atoi( ad1name.substr(ad1name.find(modulePrefix)+modulePrefix.length(),3).c_str() );
     int ad2Num = atoi( ad2name.substr(ad2name.find(modulePrefix)+modulePrefix.length(), 3).c_str() );
@@ -39,9 +43,13 @@ namespace geo{
     // sort based off of GDML name, assuming ordering is encoded
     std::string ad1name = (ad1.TotalVolume())->GetName();
     std::string ad2name = (ad2.TotalVolume())->GetName();
-    // assume volume name is "volAuxDetSensitive_<subsystem>_module_###_(<cut<###>,top or bot>_)strip_##"
-    std::string modulePrefix = "module_";
-    std::string stripPrefix = "strip_";
+    // assume volume name is "volAuxDetSensitive<subsystem>module###(<cut<###>,top or bot>)strip##"
+    std::string modulePrefix = "module";
+    std::string stripPrefix = "strip";
+
+    //keep compatibility with legacy g4
+    ad1name.erase(std::remove(ad1name.begin(), ad1name.end(), '_'), ad1name.end());
+    ad2name.erase(std::remove(ad2name.begin(), ad2name.end(), '_'), ad2name.end());
 
     int ad1Num = atoi( ad1name.substr(ad1name.find(modulePrefix)+modulePrefix.length(), 3).c_str() );
     int ad2Num = atoi( ad2name.substr(ad2name.find(modulePrefix)+modulePrefix.length(), 3).c_str() );

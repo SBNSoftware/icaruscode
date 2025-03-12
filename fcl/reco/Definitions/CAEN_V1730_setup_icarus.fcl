@@ -27,8 +27,8 @@ BEGIN_PROLOG
 #   the offset measured against a (supposedly) common reference via the
 #   Trigger Time Tag counter of the readout board settles to 48 ns
 #   (the counter tick is worth 16 ns).
-# Archeology research suggests that these delays might be outdated even for Run0
-# but there is no definitive evidence.
+# Archaeology research suggests that these delays might be outdated even for
+# Run0 but there is no definitive evidence.
 #
 icarus_V1730_West_setup_Run0: [
 

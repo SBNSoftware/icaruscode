@@ -1,0 +1,11 @@
+BEGIN_PROLOG
+
+# keep all interactions that are in the active volume
+icarus_FilterDirts: {
+
+  module_type:              "FilterDirts"
+  inActive: true
+
+} # icarus_FilterNeutrinoActive
+
+END_PROLOG

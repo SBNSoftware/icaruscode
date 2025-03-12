@@ -203,9 +203,9 @@ void icarus::timing::PMTWaveformTimeCorrectionExtractor::findWaveformTimeCorrect
     // we now access the channels that we need
     for( auto const & crateFragID : itCrateFragment->second ){
       
-        for( auto const & mapRow : fChannelMap.getChannelIDPairVec(crateFragID) ){
+        for( auto const & mapRow : fChannelMap.getPMTchannelInfo(crateFragID) ){
         
-            unsigned int channelID = std::get<1U>(mapRow);
+            unsigned int channelID = mapRow.channelID;
 
             double cableDelay = 0; 
 

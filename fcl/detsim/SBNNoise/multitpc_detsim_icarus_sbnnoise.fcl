@@ -113,3 +113,8 @@ outputs:
  }
 }
 
+#legacy G4 configs
+services.Geometry.GDML: "icarus_complete_20220518_overburden.gdml"
+services.Geometry.ROOT: "icarus_complete_20220518_overburden.gdml"
+physics.producers.crtdaq.G4ModuleLabel: "largeant"
+physics.producers.opdaq.InputModule: "largeant"

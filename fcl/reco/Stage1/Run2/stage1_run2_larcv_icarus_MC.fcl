@@ -2,5 +2,5 @@
 
 #include "stage1_run2_icarus_MC.fcl"
 
-physics.outana:    [ @sequence::icarus_analysis_larcv_modules]
+physics.outana:    [ @sequence::icarus_analysis_modules, @sequence::icarus_analysis_superaMC]
 physics.end_paths: [ outana, stream1 ]

@@ -176,7 +176,7 @@ void pmtcalo::PMTBackgroundphotonsCalibration::beginJob()
 
 bool pmtcalo::PMTBackgroundphotonsCalibration::inTime( 
                         double const & time, std::vector<double> & bounds ){
-  return (time >= bounds[0]) & ( time <= bounds[1] );
+  return (time >= bounds[0]) && ( time <= bounds[1] );
 }
 
 
@@ -221,7 +221,7 @@ void pmtcalo::PMTBackgroundphotonsCalibration::analyze(art::Event const& event)
 
       // Remove OpHits from known channels that are not working + OpHits that are not
       // In the trigger window
-      if( hasChannel(opch, m_channel_mask) | 
+      if( hasChannel(opch, m_channel_mask) || 
             !inTime( ophit.StartTime(), m_filter_intime ) | !_is_minbias )
         continue;
 

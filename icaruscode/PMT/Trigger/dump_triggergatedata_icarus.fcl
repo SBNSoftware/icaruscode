@@ -21,63 +21,42 @@
 
 process_name: DumpTriggerGateData
 
-services: {
+services.message.destinations: {
   
-  message: {
-    destinations: {
-      
-      # grab all the "DumpTriggerGateData" messages and put them in DumpTriggerGateData.log
-      LogGates: {
-        append: false
-        categories: {
-          DumpTriggerGateData: { limit: -1 }
-          default: { limit: 0 }
-        }
-        filename: "DumpTriggerGateData.log"
-        threshold: "INFO"
-        type: "file"
-      } # LogGates
-      
-      LogStandardOut: {
-        categories: {
-          DumpTriggerGateData: { limit: 0 }
-          default: {}
-        }
+  # grab all the "DumpTriggerGateData" messages and put them in DumpTriggerGateData.log
+  LogGates: {
+    append: false
+    categories: {
+      DumpTriggerGateData: { limit: -1 }
+      default: { limit: 0 }
+    }
+    filename: "DumpTriggerGateData.log"
+    threshold: "INFO"
+    type: "file"
+  } # LogGates
+  
+  LogStandardOut: {
+    categories: {
+      DumpTriggerGateData: { limit: 0 }
+      default: {}
+    }
 #         threshold: "WARNING"
-        threshold: "DEBUG"
-        type: "cout"
-      } # LogStandardOut
-      
-    } # destinations
-  } # message
-} # services
-
-
-source: {
-  module_type: RootInput
-  maxEvents:  -1            # number of events to read
-} # source
-
-
-physics: {
-  producers:{}
-  filters:  {}
-  analyzers: {
-    dumptriggergatedata: {
-      module_type:  DumpTriggerGateData
-      
-      # specify the input tag of the raw::OpDetWaveform producer
-      TriggerGateDataTag: "discrimopdaq:100"
-      
-      # output category ("TriggerGateDataTag" by default), useful for filtering (see above)
-      OutputCategory: "DumpTriggerGateData"
-      
-    } # dumptriggergatedata
-  } # analyzers
+    threshold: "DEBUG"
+    type: "cout"
+  } # LogStandardOut
   
-  dumpers:  [ dumptriggergatedata ]
-  
-  trigger_paths: []
-  end_paths:     [ dumpers ]
-} # physics
+} # services.message.destinations
 
+
+physics.analyzers.dumptriggergatedata: {
+  module_type:  DumpTriggerGateData
+  
+  # specify the input tag of the raw::OpDetWaveform producer
+  TriggerGateDataTag: "discrimopdaq:100"
+  
+  # output category ("TriggerGateDataTag" by default), useful for filtering (see above)
+  OutputCategory: "DumpTriggerGateData"
+  
+} # physics.analyzers.dumptriggergatedata
+
+physics.dumpers:  [ dumptriggergatedata ]

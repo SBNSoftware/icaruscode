@@ -8,4 +8,4 @@
 # Drop all output from the TPC decoder stage
 # Drop all output from the 1D deconvolution stage
 # Drop the recob::Wire output from the roifinder (but keep the ChannelROIs)
-outputs.rootOutput.outputCommands:         ["keep *_*_*_*", "drop *_*_*_DAQ*", "drop recob::Wire*_daqTPCROI_*_*", "drop *_decon1droi_*_*", "drop recob::Wire*_roifinder_*_*" ]
+outputs.rootOutput.outputCommands:         ["keep *_*_*_*", "drop artdaq::Fragments_*_*_ICARUSReprocessRaw", "drop *_*_*_DAQ*", "drop recob::Wire*_daqTPCROI_*_*", "drop *_decon1droi_*_*", "drop recob::Wire*_roifinder*_*_*" ]

@@ -43,6 +43,8 @@ physics:
 
       SimulationLabel: "largeant"
 
+      AuxDetSimProducerLabel: "genericcrt"
+
       CRTSimHitLabel:   "crthit"
 
       CRTTrueHitLabel:   "crttruehit"

@@ -57,10 +57,10 @@ private:
   };
 
   // Helpers
-  const ScaleInfo& GetScaleInfo(uint64_t timestamp);
-  std::string URL(uint64_t timestamp);
+  const ScaleInfo& GetScaleInfo(uint64_t run);
+  std::string URL(uint64_t run);
 
-  // Cache timestamp requests
+  // Cache run requests
   std::map<uint64_t, ScaleInfo> fScaleInfos;
 };
 
@@ -80,19 +80,19 @@ void icarus::calo::NormalizeYZ::configure(const fhicl::ParameterSet& pset) {
   fVerbose = pset.get<bool>("Verbose", false);
 }
 
-std::string icarus::calo::NormalizeYZ::URL(uint64_t timestamp) {
-  return fURL + std::to_string(timestamp);
+std::string icarus::calo::NormalizeYZ::URL(uint64_t run) {
+  return fURL + std::to_string(run);
 }
 
-const icarus::calo::NormalizeYZ::ScaleInfo& icarus::calo::NormalizeYZ::GetScaleInfo(uint64_t timestamp) {
+const icarus::calo::NormalizeYZ::ScaleInfo& icarus::calo::NormalizeYZ::GetScaleInfo(uint64_t run) {
   // check the cache
-  if (fScaleInfos.count(timestamp)) {
-    return fScaleInfos.at(timestamp);
+  if (fScaleInfos.count(run)) {
+    return fScaleInfos.at(run);
   }
 
   // Otherwise, look it up
   int error = 0;
-  std::string url = URL(timestamp);
+  std::string url = URL(run);
 
   if (fVerbose) std::cout << "NormalizeYZ Tool -- New Scale info, requesting data from url:\n" << url << std::endl;
 
@@ -109,7 +109,7 @@ const icarus::calo::NormalizeYZ::ScaleInfo& icarus::calo::NormalizeYZ::GetScaleI
       << "). HTTP error status: " << getHTTPstatus(d) << ". HTTP error message: " << getHTTPmessage(d);
   }
 
-  // Collect the timestamp info
+  // Collect the run info
   ScaleInfo thisscale;
 
   // Get the First row to get tzero
@@ -132,18 +132,18 @@ const icarus::calo::NormalizeYZ::ScaleInfo& icarus::calo::NormalizeYZ::GetScaleI
       thisscale = scale;
       found_scale_t0 = true;
 
-      if (fVerbose) std::cout << "NormalizeYZ Tool -- Found prior matching T0 from timestamp: " << scale_pair.first << std::endl;
+      if (fVerbose) std::cout << "NormalizeYZ Tool -- Found prior matching T0 from run: " << scale_pair.first << std::endl;
 
       break;
     }
   }
 
   if (found_scale_t0) {
-    fScaleInfos[timestamp] = thisscale;
-    return fScaleInfos.at(timestamp);
+    fScaleInfos[run] = thisscale;
+    return fScaleInfos.at(run);
   }
 
-  // We haven't seen this timestamp before and we haven't seen the valid t0 before.
+  // We haven't seen this run before and we haven't seen the valid t0 before.
   //
   // Process the HTTP response
   thisscale.tzero = tzero;
@@ -213,14 +213,14 @@ const icarus::calo::NormalizeYZ::ScaleInfo& icarus::calo::NormalizeYZ::GetScaleI
   }
 
   // Set the cache
-  fScaleInfos[timestamp] = thisscale;
-  return fScaleInfos.at(timestamp);
+  fScaleInfos[run] = thisscale;
+  return fScaleInfos.at(run);
 }
 
 double icarus::calo::NormalizeYZ::Normalize(double dQdx, const art::Event &e, 
     const recob::Hit &hit, const geo::Point_t &location, const geo::Vector_t &direction, double t0) {
   // Get the info
-  ScaleInfo i = GetScaleInfo(e.time().timeHigh());
+  ScaleInfo i = GetScaleInfo(e.id().runID().run());
 
   double scale = 1;
   bool found_bin = false;;

@@ -1,0 +1,13 @@
+# File:    calibration_database_GlobalTags.fcl
+# Purpose: Collection of tag info for the TPC calibration database
+
+BEGIN_PROLOG
+
+## Valid for Run A,1, and 2
+CRT_CalibrationTags_Oct2023: {
+
+  crt_gain_reco_data: "v1r0"
+
+}
+
+END_PROLOG

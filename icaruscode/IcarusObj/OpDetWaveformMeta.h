@@ -11,6 +11,7 @@
 
 
 // LArSoft libraries
+#include <cstdint>  // uint16_t in OpDetWaveform.h
 #include "lardataobj/RawData/OpDetWaveform.h"
 #include "lardataobj/Utilities/FlagSet.h"
 

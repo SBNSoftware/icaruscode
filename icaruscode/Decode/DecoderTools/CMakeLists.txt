@@ -27,6 +27,8 @@ set(        TOOL_LIBRARIES
                 icarus_signal_processing::Detection
                 icarus_signal_processing::Filters
                 icaruscode::TPC_Utilities_SignalShapingICARUSService_service
+                icaruscode::PMT_Trigger_Algorithms
+                icaruscode::Decode_ChannelMapping
                 icaruscode::Decode_DecoderTools
                 icaruscode::Decode_DecoderTools_Dumpers
                 icaruscode::Utilities

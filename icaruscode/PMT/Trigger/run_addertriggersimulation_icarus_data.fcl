@@ -1,0 +1,269 @@
+#
+# File:    run_addertriggersimulation_icarus_data.fcl
+# Purpose: Runs the simulation of ICARUS adder triggers.
+# Author:  Gianluca Petrillo (petrillo@slac.stanford.edu)
+# Date:    July 5, 2023
+# Version: 1.0
+#
+# This is a top-level configuration that can be run directly.
+#
+# This job reads the already digitized PMT waveforms, creates added "analogue"
+# waveforms, discriminates them and computes a trigger logic on them.
+#
+#
+# Output
+# -------
+#
+# * `std::vector<raw::Trigger>`, `sbn::ExtraTriggerInfo` (very partial):
+#   the time at which the trigger from adders would have happened.
+#
+# Required inputs
+# ----------------
+#
+#  * optical detector readout: `daqPMT`
+#
+#
+# Required services
+# ------------------
+#
+#  * GeometryService
+#  * DetectorClocksService
+#
+#
+# Changes
+# --------
+# 
+# 20230705 (petrillo@slac.stanford.edu) [v1.0]
+# :   original version
+#
+
+#include "services_common_icarus.fcl"
+#include "rootoutput_icarus.fcl"
+#include "trigger_emulation_icarus.fcl"
+
+
+BEGIN_PROLOG
+
+adderTrigSimTemplate: {
+  
+  module_type: TriggerSimulationOnGates
+  
+  TriggerGatesTag: "pmtaddertriggerwindows"
+  
+#  Thresholds: [ @local::icarus_triggergate_basic.SelectedAdderThreshold ]  # from trigger_icarus.fcl
+  Thresholds: @local::icarus_triggergate_basic.AdderThresholds  # from trigger_icarus.fcl
+  
+  Pattern: @local::icarus_triggergate_basic.SelectedAdderPattern  # from trigger_icarus.fcl
+  
+  BeamGates:         daqTrigger
+  BeamGateReference: trigger
+  
+  # we set the bits with a magic value
+  BeamBits: 0x800000
+  
+  # do not produce "non-triggers" (triggers which did not fire)
+  EmitEmpty: false
+  
+  # "infinite" dead time: we only keep the first trigger
+  DeadTime: @erase
+  
+  # disable the retriggering bit, which won't make sense in a 2 ms gate
+  RetriggeringBit: 64
+  
+  # use bit 20 for triggers on cryostat 0, bit 21 for the ones on cryostat 1
+  CryostatFirstBit: 20
+  
+  # this should probably be 12 or 24 ns
+  TriggerTimeResolution: "8 ns"
+  
+  # name of the category used for the output
+  LogCategory: "TriggerSimulationOnGates"
+  
+} # adderTrigSimTemplate
+
+
+processWaveforms: [
+    pmtbaselinesonbeam
+  , requireOnBeam
+  , pmtadderthr
+]
+
+
+END_PROLOG
+
+
+# ------------------------------------------------------------------------------
+process_name: AdderTrg
+
+
+# ------------------------------------------------------------------------------
+services: {
+  
+  # this provides: file service, random management (unused),
+  #                Geometry, detector properties and clocks
+  @table::icarus_common_services
+  
+  # currently unused (remove the line if they start mattering):
+  LArPropertiesService:      @erase
+  DetectorPropertiesService: @erase
+  
+} # services
+
+# services.scheduler.FailPath: [ "WaveformRequirementsNotMet" ]
+# services.scheduler.SkipEvent: [ "WaveformRequirementsNotMet" ]
+
+# ------------------------------------------------------------------------------
+physics: {
+  
+  producers: {
+    
+    # --------------------------------------------------------------------------
+    pmtbaselinesonbeam: {
+      module_type: ReassociatePMTbaselines
+      
+      # baselines:
+      #  * pmtconfigbaselines: from readout configuration
+      #  * pmtbaselines:       from waveform content
+      
+      OriginalWaveformTag: daqPMT
+      WaveformTag:         daqPMTonbeam
+      BaselineTag:         pmtbaselines
+      
+      RecreateMetaAssns:   true
+    
+    } # pmtbaselinesonbeam
+    
+    
+    pmtadderthr: {
+      module_type: DiscriminatedAdderSignal
+      
+      WaveformTag: daqPMTonbeam
+      
+      # bug fix: daqPMTonbeam did not save the correct associations, 
+      # `ReassociatePMTbaselines` is fixing that (via `RecreateMetaAssns` above)
+      WaveformMetaTag: pmtbaselinesonbeam
+      
+      # limit the discrimination buffer to this interval (just to save memory);
+      # times are relative to the beam gate
+      TimeInterval: {
+        Start: "-4 us"
+        End:  "+16 us"
+      }
+      
+      # adders take away 5% of PMT signal, our input is 95% of that signal,
+      # so we need a 0.05/0.95 factor here:
+      AmplitudeScale: 0.05263
+      
+      # the actual adders include all the PMT, unconditionally
+      MissingChannels: []
+      
+      BaselineTag: pmtbaselinesonbeam
+      
+      # list of thresholds to consider
+      TriggerGateBuilder: {
+        tool_type: FixedTriggerGateBuilderTool
+        
+        ChannelThresholds: @local::icarus_triggergate_basic.AdderThresholds  # from trigger_icarus.fcl
+        
+        # minimum duration of a trigger gate
+        GateDuration: "1 us"
+      }
+      
+      SaveWaveforms: true
+      
+      LogCategory: DiscriminatedAdderSignal
+      
+    } # pmtadderthr
+    
+    
+    pmtaddertriggerwindows: {
+      module_type:     "SlidingWindowTrigger"
+      
+      TriggerGatesTag: "pmtadderthr"
+      Thresholds:      @local::icarus_triggergate_basic.AdderThresholds  # from trigger_icarus.fcl
+      
+      # the PMT channels are plugged into the adders even if "missing"
+      # MissingChannels: @local::icarus_trigger_channel_ignore
+      
+      # size and stride are in PMT units
+      Stride:          15
+      WindowSize:      15
+      
+    } # pmtaddertriggerwindows
+    
+    
+    emuAdderTrig: {
+                       @table::adderTrigSimTemplate
+      TriggerGatesTag: pmtaddertriggerwindows
+      
+    } # emuAdderTrig
+    
+    # --------------------------------------------------------------------------
+    
+  } # producers
+  
+  filters: {
+    requireOnBeam: {
+      module_type:           RequireOnBeamWaveforms
+
+      WaveformTag:           daqPMTonbeam        # check waveforms directly, so:
+      TriggerTag:            daqTrigger
+      WaveformMetaAssnsTag:  pmtbaselinesonbeam  # ... superfluous
+      ForceWaveformPresence: true                # ... also superfluous
+      # ThrowOnFailure:       "WaveformRequirementsNotMet"
+      MissingChannels:      @local::icarus_trigger_channel_ignore
+    }
+  } # filters
+  
+  trigger: [
+      @sequence::processWaveforms
+    , pmtaddertriggerwindows
+    , emuAdderTrig
+    ]
+  output: [ rootoutput ]
+  
+  trigger_paths: [ trigger ]
+  end_paths:     [ output ]
+  
+} # physics
+
+
+outputs.rootoutput: @local::icarus_rootoutput # from rootoutput_icarus.fcl
+outputs.rootoutput.SelectEvents: [ trigger ]
+outputs.rootoutput.outputCommands: [
+    "drop *"
+#  , "keep *_*_*_stage0"
+#  , "drop *_roifinder_*_stage0"
+  , "keep *_daqTrigger_*_stage0"
+  , "keep *_pmtconfigbaselines_*_stage0"
+  , "keep *_pmtbaselines_*_stage0"
+  , "keep sbn::OpDetWaveformMetas_*_*_stage0"
+  , "keep *_daqPMTonbeam_*_stage0"
+  , "keep *_*_*_AdderTrg"
+  ]
+
+
+# ##############################################################################
+#
+# add debug output to its own file
+#
+services.message.destinations.AdderTrigSimLog: {
+  type:       file
+  filename:  "AdderTrigSim.log"
+  threshold:  DEBUG
+  categories: {
+    DiscriminatedAdderSignal: { limit: -1 }
+    TriggerSimulationOnGates: { limit: -1 }
+    default:                  { limit: 0 }
+  }
+} # services.messages.destinations.AdderTrigSimLog
+
+services.message.destinations.DebugLog: {
+  type:       file
+  filename:  "debug.log"
+  threshold:  DEBUG
+  categories: {
+    default:    { limit: -1 }
+  }
+} # services.messages.destinations.DebugLog
+

@@ -13,9 +13,9 @@
 #include "larcore/Geometry/Geometry.h"
 #include "larcore/CoreUtils/ServiceUtil.h" // lar::providerFrom()
 
-#include "lardataobj/RecoBase/Wire.h"
 #include "lardataobj/RecoBase/Hit.h"
 #include "lardataobj/Simulation/SimChannel.h"
+#include "sbnobj/ICARUS/TPC/ChannelROI.h"
 #include "nusimdata/SimulationBase/MCParticle.h"
 
 #include "TH1.h"
@@ -346,7 +346,7 @@ void HitEfficiencyAnalysis::fillHistograms(const art::Event& event) const
     // Loop over entries in the two producer vectors
     for(size_t tpcID = 0; tpcID < fWireProducerLabelVec.size(); tpcID++)
     {
-        art::Handle< std::vector<recob::Wire> > wireHandle;
+        art::Handle< std::vector<recob::ChannelROI> > wireHandle;
         event.getByLabel(fWireProducerLabelVec[tpcID], wireHandle);
         
         art::Handle< std::vector<recob::Hit> > hitHandle;
@@ -366,7 +366,7 @@ void HitEfficiencyAnalysis::fillHistograms(const art::Event& event) const
         // what needs to be done?
         // First we should build out a straightforward channel to Wire map so we can look up a given
         // channel's Wire data as we loop over SimChannels.
-        using ChanToWireMap = std::map<raw::ChannelID_t,const recob::Wire*>;
+        using ChanToWireMap = std::map<raw::ChannelID_t,const recob::ChannelROI*>;
         
         ChanToWireMap channelToWireMap;
         
@@ -458,8 +458,8 @@ void HitEfficiencyAnalysis::fillHistograms(const art::Event& event) const
         
                 if (wireItr != channelToWireMap.end())
                 {
-                    const recob::Wire::RegionsOfInterest_t&       signalROI = wireItr->second->SignalROI();
-                    const lar::sparse_vector<float>::datarange_t* wireRangePtr(NULL);
+                    const recob::ChannelROI::RegionsOfInterest_t&  signalROI = wireItr->second->SignalROI();
+                    const lar::sparse_vector<short>::datarange_t*  wireRangePtr(NULL);
         
                     // Here we need to match the range of the ROI's on the given Wire with the tick range from the SimChannel
                     for(const auto& range : signalROI.get_ranges())
@@ -469,7 +469,7 @@ void HitEfficiencyAnalysis::fillHistograms(const art::Event& event) const
                         // #################################################
                         //std::vector<float> signal(wire->Signal());
         
-                        const std::vector<float>& signal          = range.data();
+                        const std::vector<short>& signal          = range.data();
                         raw::TDCtick_t            roiFirstBinTick = range.begin_index();
                         raw::TDCtick_t            roiLastBinTick  = roiFirstBinTick + signal.size();
         

@@ -943,7 +943,7 @@ namespace lar_cluster3d {
     skeletonListPtr.front()->setStatusBit(reco::ClusterHit3D::SELECTEDBYMST);
 
     float largestDistance(0.);
-    float averageDistance(0.);
+    // float averageDistance(0.); // unused
 
     // Now run the MST
     // Basically, we loop until the MST list is the same size as the input list
@@ -976,7 +976,7 @@ namespace lar_cluster3d {
 
       if (bestDist > largestDistance) largestDistance = bestDist;
 
-      averageDistance += bestDist;
+      // averageDistance += bestDist; // unused
 
       // Now we add the best hit not in the list to our list, keep track of the distance
       // to the object it was closest to
@@ -991,7 +991,7 @@ namespace lar_cluster3d {
       nextHit3D->setStatusBit(reco::ClusterHit3D::SELECTEDBYMST);
     }
 
-    averageDistance /= float(hit3DList.size());
+    // averageDistance /= float(hit3DList.size()); // unused
 
     float thirdDist = 2. * sqrt(clusterParameters.getSkeletonPCA().getEigenValues()[2]);
 

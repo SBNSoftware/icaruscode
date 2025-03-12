@@ -1,0 +1,10 @@
+BEGIN_PROLOG
+
+icarus_genericCRT:
+{
+  module_type: "GenericCRT"
+  LArG4Label: "largeant"
+  EnergyUnitsScale: "GeV"
+}
+
+END_PROLOG

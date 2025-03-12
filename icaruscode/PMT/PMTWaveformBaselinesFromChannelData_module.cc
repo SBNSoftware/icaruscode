@@ -8,6 +8,7 @@
 // ICARUS libraries
 #include "icaruscode/PMT/Data/WaveformRMS.h"
 #include "icarusalg/PMT/Algorithms/SharedWaveformBaseline.h"
+#include "icarusalg/Utilities/GroupByIndex.h"
 #include "sbnobj/ICARUS/PMT/Data/WaveformBaseline.h"
 #include "sbnobj/Common/PMT/Data/PMTconfiguration.h"
 #include "sbnobj/Common/PMT/Data/V1730Configuration.h"
@@ -393,12 +394,6 @@ class icarus::PMTWaveformBaselinesFromChannelData: public art::SharedProducer {
   /// Removes the empty plots.
   void buildBaselineGraphs(art::ProcessingFrame const& frame);
   
-  /// Returns a common baseline for all the specified `waveforms`.
-  /// Returns a vector of waveforms per channel (which is the index).
-  static std::vector<std::vector<raw::OpDetWaveform const*>> groupByChannel
-    (std::vector<raw::OpDetWaveform> const& waveforms);
-  
-  
 }; // icarus::PMTWaveformBaselinesFromChannelData
 
 
@@ -597,19 +592,22 @@ void icarus::PMTWaveformBaselinesFromChannelData::produce
   std::vector<BaselineInfo_t> channelBaselines;
   VectorExpander baselineForChannel { channelBaselines };
   
-  auto waveformsByChannel = groupByChannel(waveforms);
+  icarus::ns::util::GroupByIndex<raw::OpDetWaveform> waveformsByChannel
+    { waveforms, std::mem_fn(&raw::OpDetWaveform::ChannelNumber) };
   
-  for (auto const& [ channel, waveforms ]: util::enumerate(waveformsByChannel))
+  for
+    (auto const& [ channel, allWaveforms ]: util::enumerate(waveformsByChannel))
   {
-    if (waveforms.empty()) continue;
+    if (allWaveforms.empty()) continue;
     
     mf::LogTrace{ fLogCategory }
-      << "Processing " << waveforms.size() << " waveforms for channel "
+      << "Processing " << allWaveforms.size() << " waveforms for channel "
       << channel;
     
     //
     // remove global trigger waveform
     //
+    std::vector<raw::OpDetWaveform const*> waveforms{ allWaveforms };
     if (waveforms.size() >= fExcludeSpillTimeIfMoreThan) {
       
       unsigned int const nExcluded
@@ -747,23 +745,6 @@ unsigned int icarus::PMTWaveformBaselinesFromChannelData::getPretriggerBuffer
   }
   return prebuffer.min();
 } // icarus::PMTWaveformBaselinesFromChannelData::getPretriggerBuffer()
-
-
-//------------------------------------------------------------------------------
-std::vector<std::vector<raw::OpDetWaveform const*>>
-icarus::PMTWaveformBaselinesFromChannelData::groupByChannel
-  (std::vector<raw::OpDetWaveform> const& waveforms)
-{
-  
-  std::vector<std::vector<raw::OpDetWaveform const*>> groups;
-  VectorExpander groupForChannel { groups };
-  
-  for (raw::OpDetWaveform const& waveform: waveforms) {
-    groupForChannel(waveform.ChannelNumber()).push_back(&waveform);
-  }
-  
-  return groups;
-} // icarus::PMTWaveformBaselinesFromChannelData::groupByChannel()
 
 
 //------------------------------------------------------------------------------

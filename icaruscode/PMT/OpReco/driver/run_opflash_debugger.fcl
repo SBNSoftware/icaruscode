@@ -82,3 +82,6 @@ services.message.destinations :
      }
   }
 }
+
+# restore legacy G4 labels
+physics.producers.mcophit.SimPhotonsProducer: "largeant"

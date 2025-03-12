@@ -1,0 +1,34 @@
+###
+## This fhicl file is used to filter events that do not pass the "medium" level
+## of the CRT-PMT filter. Events passing are saved in the same RAW format as before.
+## For events that fail, the TPC information is dropped while the CRT-PMT information
+## is saved for all events, to allow studies on the filter performance.
+##
+
+#include "stage0_icarus_driver_common.fcl"
+
+process_name: CrtPmtFilter
+
+daq: {
+  FragmentsLabelVec: [ "daq:PHYSCRATEDATATPCEE:DAQEVB09", "daq:PHYSCRATEDATATPCEW:DAQEVB09", "daq:PHYSCRATEDATATPCWE:DAQEVB09", "daq:PHYSCRATEDATATPCWW:DAQEVB09"]
+  module_type: "CopyDaqICARUSTPC"
+}
+
+physics.producers.daq: @local::daq
+
+## Define the path we'll execute
+physics.path:     [ @sequence::icarus_stage0_data_crtpmtfilter_noTPC, daq ]
+
+physics.filters.crtpmtmatchingfilter.FilterLevel: "medium"
+
+outputs.rootOutput.dataTier: "raw"
+outputs.rootOutput.SelectEvents: []
+outputs.rootOutput.outputCommands: [
+         "keep *_*_*_*",
+         "drop *_daq_PHYSCRATEDATATPC*_*",
+         "drop *_*_*_CrtPmtFilter",
+         "keep *_daq_*_CrtPmtFilter"
+      ]
+
+physics.trigger_paths: [ path ]
+physics.end_paths:     [ streamROOT ]

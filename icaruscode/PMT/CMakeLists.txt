@@ -182,6 +182,8 @@ art_make_library(
     "PMTStartCalibTime_module.cc"
     "PMTcoordinates_module.cc"
     "PhotonPropogationICARUS_module.cc"
+    "ReassociatePMTbaselines_module.cc"
+    "RequireOnBeamWaveforms_module.cc"
     "TrigInfo_module.cc"
     "wvfAnaicarus_module.cc"
     "AsymGaussPulseFunctionTool_tool.cc"
@@ -237,6 +239,36 @@ cet_build_plugin(PMTcoordinates art::module LIBRARIES ${MODULE_LIBRARIES})
 cet_build_plugin(PhotonPropogationICARUS art::module LIBRARIES ${MODULE_LIBRARIES})
 cet_build_plugin(TrigInfo art::module LIBRARIES ${MODULE_LIBRARIES})
 cet_build_plugin(wvfAnaicarus art::module LIBRARIES ${MODULE_LIBRARIES})
+
+cet_build_plugin(RequireOnBeamWaveforms art::module
+  LIBRARIES
+    icaruscode::IcarusObj
+    icarusalg::Utilities
+    lardata::DetectorInfoServices_DetectorClocksServiceStandard_service
+    larcore::Geometry_Geometry_service
+    larcore::headers
+    lardataalg::DetectorInfo
+    lardataalg::headers
+    larcorealg::Geometry
+    larcorealg::CoreUtils
+    lardataobj::RawData
+    art::Framework_Services_Registry
+  )
+
+cet_build_plugin(ReassociatePMTbaselines art::module
+  LIBRARIES
+    icaruscode::IcarusObj
+    icaruscode::PMT_Algorithms
+    icaruscode::PMT_Data
+    icarusalg::Utilities
+    sbnobj::ICARUS_PMT_Data
+    lardata::headers
+    lardataalg::headers
+    larcorealg::Geometry
+    lardataobj::RawData
+    art::Framework_Services_Registry
+  )
+
 
 
 install_headers()

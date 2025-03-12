@@ -148,6 +148,9 @@ class icarus::trigger::TriggerGateBuilder {
      */
     GateData_t gates() && { return std::move(fGates); }
     
+    /// Returns the gate for the specified waveform `channel`, `nullptr` if n/a.
+    triggergate_t const* getGateFor(raw::Channel_t const channel) const;
+    
     /// Returns (and creates, if necessary) the gate for the specified waveform.
     triggergate_t& gateFor(raw::OpDetWaveform const& waveform);
     
@@ -166,6 +169,12 @@ class icarus::trigger::TriggerGateBuilder {
       private:
     ADCCounts_t fThreshold; ///< The threshold for all the gates.
     GateData_t fGates; ///< All the gates, at most one per channel.
+    
+    /// Returns an iterator to the gate for `channel`, `fGates.end()` if none.
+    auto findGateFor(raw::Channel_t const channel);
+    
+    /// Returns an iterator to the gate for `channel`, `fGates.end()` if none.
+    auto findGateFor(raw::Channel_t const channel) const;
     
   }; // class TriggerGates
   // --- END Data types --------------------------------------------------------

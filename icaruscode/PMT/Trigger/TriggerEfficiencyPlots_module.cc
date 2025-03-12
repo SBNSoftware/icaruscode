@@ -381,12 +381,12 @@ PlotCategories_t const PlotCategories {
 
   PlotCategory{
     "NuCC_mu", "CC_mu",
-    [](EventInfo_t const& info){ return (info.isWeakChargedCurrent() & info.isNu_mu()); }
+    [](EventInfo_t const& info){ return (info.isWeakChargedCurrent() && info.isNu_mu()); }
     },
 
   PlotCategory{
     "NuCC_e", "CC_e",
-    [](EventInfo_t const& info){ return (info.isWeakChargedCurrent() & info.isNu_e()); }
+    [](EventInfo_t const& info){ return (info.isWeakChargedCurrent() && info.isNu_e()); }
     },
 
   PlotCategory{
@@ -396,12 +396,12 @@ PlotCategories_t const PlotCategories {
 
   PlotCategory{
     "NuNC_mu", "NC_mu",
-    [](EventInfo_t const& info){ return (info.isWeakNeutralCurrent() & info.isNu_mu()); }
+    [](EventInfo_t const& info){ return (info.isWeakNeutralCurrent() && info.isNu_mu()); }
     },
 
   PlotCategory{
     "NuNC_e", "NC_e",
-    [](EventInfo_t const& info){ return (info.isWeakNeutralCurrent() & info.isNu_e()); }
+    [](EventInfo_t const& info){ return (info.isWeakNeutralCurrent() && info.isNu_e()); }
     }
 
 }; // PlotCategories[]

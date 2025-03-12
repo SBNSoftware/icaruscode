@@ -1,0 +1,10 @@
+#include "stage1_multiTPC_icarus_gauss.fcl"
+
+physics.analyzers.caloskimE.SelectionTools: [ ]
+physics.analyzers.caloskimW.SelectionTools: [ ]
+
+physics.analyzers.caloskimE:       @local::caloskim_cryoe_goldentracks_not0
+physics.analyzers.caloskimW:       @local::caloskim_cryow_goldentracks_not0
+physics.analyzers.caloskimE.HitRawDigitsTickCollectWidth: 0
+physics.analyzers.caloskimW.HitRawDigitsTickCollectWidth: 0
+

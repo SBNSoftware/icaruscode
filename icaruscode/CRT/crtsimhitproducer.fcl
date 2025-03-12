@@ -15,6 +15,7 @@ standard_crtsimhitrecoalg:
     CrtWindow:            3e6    # time window for looking data within trigger timestamp [ns]
     outCSVFile:           false  # write the information in to a csv file
     Data:                 false  # for data
+    GlobalT0Offset:       1.6e6         # offset to be applied to simulated CRT Hit times to ensure times are centered around 0. [ns]
     CSVFile:              "data.csv" # dump time difference between both end readouts.  			   
 }
 

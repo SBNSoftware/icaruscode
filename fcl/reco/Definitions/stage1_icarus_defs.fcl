@@ -21,6 +21,7 @@
 ## The below can be found from the softlink to Supera in sbncode
 #include "supera_modules.fcl"
 #include "crtpmtmatching_parameters.fcl"
+#include "tpcpmtbarycentermatch_config.fcl"
 
 BEGIN_PROLOG
 
@@ -59,12 +60,17 @@ icarus_stage1_producers:
   ## Simple Flash Matching, right now cryo0 and 1 are identical
   fmatchCryoE:                    @local::icarus_simple_flashmatch_E
   fmatchCryoW:                    @local::icarus_simple_flashmatch_W
+  fmatchopCryoE:                  @local::icarus_simple_flashmatch_E_op
+  fmatchopCryoW:                  @local::icarus_simple_flashmatch_W_op
 
  ## crt producer
   crttrack:          @local::standard_crttrackproducer
   CRTT0Matching:     @local::standard_crtt0producer
   CRTT0MatchingW:    @local::standard_crtt0producerW
   CRTT0MatchingE:    @local::standard_crtt0producerE
+
+  tpcpmtbarycentermatchCryoE: @local::data_tpcpmtbarycentermatchproducer_east
+  tpcpmtbarycentermatchCryoW: @local::data_tpcpmtbarycentermatchproducer_west
 }
 
 icarus_stage1_filters:
@@ -79,7 +85,10 @@ icarus_stage1_analyzers:
   caloskimW:       @local::caloskim_cryow_goldentracks
   simpleLightAna:  @local::ICARUSFlashAssAna
   supera:          @local::icarus_supera_data
-
+  superaMC:        @local::icarus_supera_MC_PMT_CRT
+  superaNu:        @local::icarus_supera_generator_PMT_CRT
+  superaMPVMPR:	   @local::icarus_supera_MC_MPVMPR_cryoE_PMT_CRT
+  superaCosmic:    @local::icarus_supera_cosmgen_all_cryo_PMT_CRT
   CRTDataAnalysis: 
    {
      module_type:   "CRTDataAnalysis"
@@ -138,12 +147,22 @@ icarus_analysis_modules:           [  caloskimE
                                      ,caloskimW 
                                      ,simpleLightAna
                                      ,CRTDataAnalysis
-				     ,CRTAnalysis
+				                             ,CRTAnalysis
                                    ]
 
 icarus_analysis_supera:            [ supera
                                    ]
 
+icarus_analysis_superaMC:          [ superaMC
+                                   ]
+
+icarus_analysis_superaNu:          [ superaNu
+                                   ]
+
+icarus_analysis_superaMPVMPR:      [ superaMPVMPR
+                                   ]
+icarus_analysis_superaCosmic:      [ superaCosmic
+				   ]
 icarus_analysis_larcv_modules:     [  @sequence::icarus_analysis_modules
                                      ,@sequence::icarus_analysis_supera 
                                    ]
@@ -189,7 +208,14 @@ icarus_pandora_Gauss:              [
 
 #Add flash matching
 icarus_reco_fm:                    [ fmatchCryoE,
-                                     fmatchCryoW ]
+                                     fmatchCryoW,
+                                     fmatchopCryoE,
+                                     fmatchopCryoW ]
+
+icarus_tpcpmtbarycentermatch:      [
+                                     tpcpmtbarycentermatchCryoE, 
+                                     tpcpmtbarycentermatchCryoW
+                                   ]
 
 icarus_crttrack:                   [crttrack]
 
@@ -208,7 +234,7 @@ icarus_stage1_filters.TPCHitFilterCryoE.MaximumHits:     60000
 
 ## Definitions for running the 3D clustering by Cryostat
 icarus_stage1_producers.cluster3DCryoW.MakeSpacePointsOnly:                                      true
-icarus_stage1_producers.cluster3DCryoW.Hit3DBuilderAlg.HitFinderTagVec:                          ["gaushitTPCWW", "gaushitTPCWE"]
+icarus_stage1_producers.cluster3DCryoW.Hit3DBuilderAlg.HitFinderTagVec:                          ["gaushit2dTPCWW", "gaushit2dTPCWE"]
 icarus_stage1_producers.cluster3DCryoW.Hit3DBuilderAlg.PulseHeightFraction:                      0. #0.75 #0.25
 icarus_stage1_producers.cluster3DCryoW.Hit3DBuilderAlg.PHLowSelection:                           0. #4.0 # 20.
 icarus_stage1_producers.cluster3DCryoW.Hit3DBuilderAlg.MaxHitChiSquare:                          1000000.
@@ -216,7 +242,7 @@ icarus_stage1_producers.cluster3DCryoW.Hit3DBuilderAlg.MaxMythicalChiSquare:    
 icarus_stage1_producers.cluster3DCryoW.Hit3DBuilderAlg.OutputHistograms:                         false
 
 icarus_stage1_producers.cluster3DCryoE.MakeSpacePointsOnly:                                      true
-icarus_stage1_producers.cluster3DCryoE.Hit3DBuilderAlg.HitFinderTagVec:                          ["gaushitTPCEW", "gaushitTPCEE"]
+icarus_stage1_producers.cluster3DCryoE.Hit3DBuilderAlg.HitFinderTagVec:                          ["gaushit2dTPCEW", "gaushit2dTPCEE"]
 icarus_stage1_producers.cluster3DCryoE.Hit3DBuilderAlg.PulseHeightFraction:                      0. #0.75 #0.25
 icarus_stage1_producers.cluster3DCryoE.Hit3DBuilderAlg.PHLowSelection:                           0. #4.0 # 20.
 icarus_stage1_producers.cluster3DCryoE.Hit3DBuilderAlg.MaxHitChiSquare:                          1000000.

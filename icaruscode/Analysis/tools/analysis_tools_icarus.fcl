@@ -15,10 +15,12 @@ TrackHitEfficiencyAnalysisTool:
   RawDigitLabelVec:        ["rawdigitfilter"]
   WireModuleLabelVec:      ["decon1droi"]
   HitModuleLabelVec:       ["gaushit"]
+  TestHitModuleLabelVec:   ["gaushit"]
   MCParticleLabel:         "largeant"
   SimChannelLabel:         "largeant"
   LocalDirName:            "EfficHists"
   OffsetVec:               [0,0,0]
+  THitOffsetVec:           [0,0,0]
   SigmaVec:                [1.,1.,1.]
   MinAllowedChannelStatus: 1
 }

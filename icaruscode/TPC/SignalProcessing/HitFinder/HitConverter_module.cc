@@ -116,11 +116,7 @@ void HitConvert::produce(art::Event& evt)
             // Loop through the input ChannelROI collection
             for(const auto& hit : inputHitVec)
             {
-                // Recover the channel and the view
-                raw::ChannelID_t channel = hit.Channel();
-                geo::View_t      view    = fGeometry->View(channel);
-
-                recob::Hit recobHit(channel,
+                recob::Hit recobHit(hit.Channel(),
                                     hit.StartTick(),
                                     hit.EndTick(),
                                     hit.PeakTime(),
@@ -135,7 +131,7 @@ void HitConvert::produce(art::Event& evt)
                                     hit.LocalIndex(),
                                     hit.GoodnessOfFit(),
                                     hit.DegreesOfFreedom(),
-                                    view,
+                                    hit.View(),
                                     hit.SignalType(),
                                     hit.WireID()
                                     );

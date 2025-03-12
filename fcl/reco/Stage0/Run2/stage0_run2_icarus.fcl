@@ -23,6 +23,7 @@ physics.end_paths:     [ outana, streamROOT ]
 # Keep the Trigger fragment
 outputs.rootOutput.outputCommands: [
     "keep *_*_*_*", 
+    "drop artdaq::Fragments_*_*_ICARUSReprocessRaw",
     "drop *_*_*_DAQ*",
     "drop *_ophituncorrected_*_*",
     "drop raw::OpDetWaveforms_daqPMT__*",

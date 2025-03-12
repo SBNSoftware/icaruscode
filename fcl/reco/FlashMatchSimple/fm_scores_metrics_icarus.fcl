@@ -17,3 +17,21 @@ physics.producers.fmatchCryoW.MinInTimeFlashes:      2
 physics.producers.fmatchCryoW.MaxFlashes:            2
 physics.producers.fmatchCryoW.FlashFindingTimeStart: @local::icarus_simple_flashmatch_W.BeamSpillTimeStart
 physics.producers.fmatchCryoW.FlashFindingTimeEnd:   @local::icarus_simple_flashmatch_W.BeamSpillTimeEnd
+
+physics.producers.fmatchopCryoE.MakeTree:              true
+physics.producers.fmatchopCryoE.StoreMCInfo:           true
+physics.producers.fmatchopCryoE.SelectNeutrino:        true
+physics.producers.fmatchopCryoE.CorrectDriftDistance:  false
+physics.producers.fmatchopCryoE.MinInTimeFlashes:      2
+physics.producers.fmatchopCryoE.MaxFlashes:            2
+physics.producers.fmatchopCryoE.FlashFindingTimeStart: @local::icarus_simple_flashmatch_E_op.BeamSpillTimeStart
+physics.producers.fmatchopCryoE.FlashFindingTimeEnd:   @local::icarus_simple_flashmatch_E_op.BeamSpillTimeEnd
+
+physics.producers.fmatchopCryoW.MakeTree:              true
+physics.producers.fmatchopCryoW.StoreMCInfo:           true
+physics.producers.fmatchopCryoW.SelectNeutrino:        true
+physics.producers.fmatchopCryoW.CorrectDriftDistance:  false
+physics.producers.fmatchopCryoW.MinInTimeFlashes:      2
+physics.producers.fmatchopCryoW.MaxFlashes:            2
+physics.producers.fmatchopCryoW.FlashFindingTimeStart: @local::icarus_simple_flashmatch_W_op.BeamSpillTimeStart
+physics.producers.fmatchopCryoW.FlashFindingTimeEnd:   @local::icarus_simple_flashmatch_W_op.BeamSpillTimeEnd

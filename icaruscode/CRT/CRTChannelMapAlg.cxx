@@ -153,7 +153,7 @@ namespace geo {
 
 
       //if volume is a module, not a strip (search doesn't hit end)
-      if (volName.find("volAuxDet_") != std::string::npos) {
+      if (volName.find("volAuxDet") != std::string::npos) {
         //loop over strips
         //for (size_t svID=0; svID<nsv; svID++) {
       //std::cout<< "hello << -------------------------- >> " << std::endl;

@@ -219,7 +219,7 @@ namespace icarus::trigger {
   
   // ---------------------------------------------------------------------------
   /**
-   * @brief Creates a gate object out of trigger gate data products.
+   * @brief Creates gate objects out of trigger gate data products.
    * @tparam OpDetInfo type of the associated waveforms
    * @param gates collection of data from all the gates
    * @param gateToWaveformInfo association between each gate and its waveforms
@@ -228,8 +228,9 @@ namespace icarus::trigger {
    *
    * Objects like `icarus::trigger::TrackedOpticalTriggerGate` include the gate
    * level information plus the connections to the source objects (waveforms).
-   * This structure is complicate enoug that they are not saved directly into an
-   * _art_ event. Rather, they are diced into pieces and the pieces are stored.
+   * These objects are complicate enough that they are not saved directly into
+   * an _art_ event. Rather, they are diced into pieces and the pieces are
+   * stored.
    * 
    * This function stitches the pieces and returns back an object like
    * `icarus::trigger::TrackedOpticalTriggerGate`.
@@ -498,7 +499,9 @@ icarus::trigger::transformIntoOpticalTriggerGate(Gates&& gates) {
   
   std::vector<TriggerGateData_t> gateData;
 
-  for (TriggerGateData_t& gate: icarus::trigger::gatesIn(gates))
+  // this function also captures a `Gate const& gates`, which would yield to
+  // const `gate` in this loop: `auto&&` matches it as exactly as it can
+  for (auto&& gate: icarus::trigger::gatesIn(gates))
     gateData.push_back(std::move(gate));
   
   return gateData;

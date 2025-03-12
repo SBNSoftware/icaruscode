@@ -1,0 +1,6 @@
+#include "detsim_2d_icarus_fitFR.fcl"
+
+process_name: TPCIntNoiseVar
+
+#Noise adjustment from preliminary study by J. Mueller looking at the range over a set of events the uncertainty on the intrinsic noise in the TPC (subject to change, this is a test case)
+icarus_simwire_wirecell_fitSR.wcls_main.structs.int_noise_scale: 1.0376

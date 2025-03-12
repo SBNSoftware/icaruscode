@@ -10,6 +10,8 @@
 # Provided configuration:
 # 
 # * `icarus_rootoutput`: configuration for `RootOutput` module
+# * `icarus_rootoutput_one_output_per_input`: variant of `icarus_rootoutput`
+#      producing one output file per input file
 # * `icarus_rootoutput_fromempty`: (BROKEN) configuration for `EmptyEvent` module
 #
 # See below for usage examples.
@@ -44,6 +46,27 @@ icarus_rootoutput: {
   dataTier:         "simulated" # still parroting something I don't understand
   saveMemoryObjectThreshold: 0
 } # icarus_rootoutput
+
+
+###
+### Variant: produce one output file for each input file, instead of merging
+### all the output in a single file.
+###
+icarus_rootoutput_one_output_per_input: {
+  @table::icarus_rootoutput
+  
+  # set one output file per input file
+  fileProperties: {
+      maxInputFiles: 1
+  }
+  
+  # when fileProperies are specified, RootOutput enforces the presence of a "%#"
+  # in the output file name to ensure no output files end up with the same name;
+  # our output file names include the input file name, so we don't face that
+  # issue and we can disable that check and get away without "%#".
+  checkFileName: false
+  
+} # icarus_rootoutput_one_output_per_input
 
 
 

@@ -12,7 +12,7 @@ process_name: MCstage1
 physics.producers: {
             @table::icarus_stage1_producers
 
-            mcophit:                        @local::ICARUSMCOpHit
+            #mcophit:                        @local::ICARUSMCOpHit
             mcopflashTPC0:                  @local::ICARUSMCOpFlashTPC0
             mcopflashTPC1:                  @local::ICARUSMCOpFlashTPC1
             mcopflashTPC2:                  @local::ICARUSMCOpFlashTPC2

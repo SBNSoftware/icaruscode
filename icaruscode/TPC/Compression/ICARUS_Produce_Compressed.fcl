@@ -1,0 +1,9 @@
+BEGIN_PROLOG
+
+standard_producecompressed:
+{
+  module_type: "ICARUSProduceCompressed"
+  FragmentLabelVec: [ "daq:PHYSCRATEDATATPCEE", "daq:PHYSCRATEDATATPCEW", "daq:PHYSCRATEDATATPCWE", "daq:PHYSCRATEDATATPCWW" ]
+}
+
+END_PROLOG

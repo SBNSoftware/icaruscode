@@ -1,0 +1,2 @@
+#include "simulation_genie_icarus_bnb.fcl"
+#include "set_genie_singleinteraction.fcl"

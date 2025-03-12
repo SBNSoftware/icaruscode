@@ -16,8 +16,11 @@
 cmake_minimum_required(VERSION 3.20 FATAL_ERROR)
 # cmake_policy(VERSION 3.19)
 
-find_package(cetmodules 3.20.00 REQUIRED)
-project(icaruscode VERSION 09.78.06 LANGUAGES CXX)
+find_package(cetmodules 3.24.01 REQUIRED)
+
+#project(icaruscode VERSION 09.89.02 LANGUAGES CXX)
+set(${PROJECT_NAME}_CMAKE_PROJECT_VERSION_STRING 09.89.02.00-p02)
+project(icaruscode LANGUAGES CXX)
 
 message(STATUS
   "\n-- ============================================================================="
@@ -35,7 +38,9 @@ cet_cmake_env()
 cet_set_compiler_flags(DIAGS CAUTIOUS
   WERROR
   NO_UNDEFINED
-  EXTRA_FLAGS -pedantic -I $ENV{CLANG_FQ_DIR}/include/c++/v1
+  EXTRA_FLAGS -pedantic
+              $<$<CXX_COMPILER_ID:GNU>:-Wno-maybe-uninitialized>
+              $<$<CXX_COMPILER_ID:Clang>:-Wno-return-stack-address>
 )
 
 cet_report_compiler_flags(REPORT_THRESHOLD VERBOSE)

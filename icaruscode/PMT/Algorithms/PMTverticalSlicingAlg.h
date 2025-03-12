@@ -138,6 +138,9 @@ class icarus::trigger::PMTverticalSlicingAlg {
   /// Returns a list of all `geo::OpDetGeo` in the whole geometry.
   static PMTlist_t getPMTs(geo::GeometryCore const& geom);
 
+  /// Returns the geometric center of the PMT `wall`.
+  static geo::Point_t PMTwallCenter(PMTtowerOnPlane_t const& wall);
+
   // pretty sure this is already in some feature branch if not in LArSoft...
   /// Returns whether `a` and `b` are parallel.
   static bool areParallel(geo::Vector_t const& a, geo::Vector_t const& b);

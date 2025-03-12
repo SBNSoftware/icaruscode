@@ -88,7 +88,7 @@
     <version ClassVersion="-1" checksum="3524685965"/>
    </class>
   <class name="art::Ptr<icarus::Hit>"/>
-  <class name="art::PtrVector<icarus::Hit>"/>
+  <!-- <class name="art::PtrVector<icarus::Hit>"/> -->
   <class name="std::vector<art::Ptr<icarus::Hit>>"/>
   <class name="std::vector<icarus::Hit>"/>
   <class name="art::Wrapper< std::vector< icarus::Hit>>"/>

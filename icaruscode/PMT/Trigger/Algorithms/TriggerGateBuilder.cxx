@@ -97,14 +97,47 @@ namespace {
 //------------------------------------------------------------------------------
 //--- icarus::trigger::TriggerGateBuilder::TriggerGates
 //------------------------------------------------------------------------------
+auto icarus::trigger::TriggerGateBuilder::TriggerGates::findGateFor
+  (raw::Channel_t const channel) const
+{
+  // keeping the gates sorted by channel
+  auto const gend = fGates.end();
+  auto const iGate
+    = std::lower_bound(fGates.begin(), gend, channel, ::ChannelComparison<>());
+  return (
+      (iGate != gend)
+      && (::ChannelComparison<>::channelOf(*iGate) == channel)
+    )
+    ? iGate: gend;
+} // icarus::trigger::TriggerGateBuilder::TriggerGates::findGateFor()
+
+
+//------------------------------------------------------------------------------
+auto icarus::trigger::TriggerGateBuilder::TriggerGates::findGateFor
+  (raw::Channel_t const channel)
+{
+  return fGates.begin()
+    + (std::as_const(*this).findGateFor(channel) - fGates.cbegin()); // weird
+} // icarus::trigger::TriggerGateBuilder::TriggerGates::findGateFor()
+
+
+//------------------------------------------------------------------------------
+auto icarus::trigger::TriggerGateBuilder::TriggerGates::getGateFor
+  (raw::Channel_t const channel) const -> triggergate_t const*
+{
+  auto const it = findGateFor(channel);
+  return (it == fGates.end())? nullptr: &*it;
+}
+
+//------------------------------------------------------------------------------
 auto icarus::trigger::TriggerGateBuilder::TriggerGates::gateFor
   (raw::OpDetWaveform const& waveform) -> triggergate_t&
 {
   // keeping the gates sorted by channel
   raw::Channel_t const channel = waveform.ChannelNumber();
-  auto iGate = std::lower_bound
-    (fGates.begin(), fGates.end(), waveform, ::ChannelComparison<>());
-  if (iGate != fGates.end()) { // found, it's there already
+  auto iGate = findGateFor(channel);
+  if (iGate != fGates.end()) {
+    // found, it's there already
     MF_LOG_TRACE(details::TriggerGateDebugLog)
       << "Appending waveform to trigger gate (thr=" << threshold()
       << ") of channel " << channel;

@@ -19,7 +19,6 @@
 #include "canvas/Utilities/InputTag.h"
 
 //icarus includes
-#include "icaruscode/TPC/Compression/PhysCrateCompressedFragment.cc"
 #include "icaruscode/Decode/ChannelMapping/IICARUSChannelMap.h"
 
 //sbndaq includes

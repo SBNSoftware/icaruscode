@@ -1,0 +1,7 @@
+#include "detsim_2d_icarus_fitFR.fcl"
+
+#Lowest value of e- lifetime across both TPCs in Run 1 (4.8 ms in West cryostat) - Values provided by C. Farnese
+services.DetectorPropertiesService.Electronlifetime: 4800 
+icarus_simwire_wirecell_fitSR.wcls_main.structs.lifetime: 4800
+
+process_name: ELRun1MaxVar

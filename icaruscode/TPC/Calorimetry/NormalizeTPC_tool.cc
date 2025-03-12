@@ -45,10 +45,10 @@ private:
   };
 
   // Helpers
-  ScaleInfo GetScaleInfo(uint64_t timestamp);
-  std::string URL(uint64_t timestamp);
+  ScaleInfo GetScaleInfo(uint64_t run);
+  std::string URL(uint64_t run);
 
-  // Cache timestamp requests
+  // Cache run requests
   std::map<uint64_t, ScaleInfo> fScaleInfos;
 };
 
@@ -68,19 +68,19 @@ void icarus::calo::NormalizeTPC::configure(const fhicl::ParameterSet& pset) {
   fVerbose = pset.get<bool>("Verbose", false);
 }
 
-std::string icarus::calo::NormalizeTPC::URL(uint64_t timestamp) {
-  return fURL + std::to_string(timestamp);
+std::string icarus::calo::NormalizeTPC::URL(uint64_t run) {
+  return fURL + std::to_string(run);
 }
 
-icarus::calo::NormalizeTPC::ScaleInfo icarus::calo::NormalizeTPC::GetScaleInfo(uint64_t timestamp) {
+icarus::calo::NormalizeTPC::ScaleInfo icarus::calo::NormalizeTPC::GetScaleInfo(uint64_t run) {
   // check the cache
-  if (fScaleInfos.count(timestamp)) {
-    return fScaleInfos.at(timestamp);
+  if (fScaleInfos.count(run)) {
+    return fScaleInfos.at(run);
   }
 
   // Otherwise, look it up
   int error = 0;
-  std::string url = URL(timestamp);
+  std::string url = URL(run);
 
   if (fVerbose) std::cout << "NormalizeTPC Tool -- New Scale info, requesting data from url:\n" << url << std::endl;
 
@@ -97,7 +97,7 @@ icarus::calo::NormalizeTPC::ScaleInfo icarus::calo::NormalizeTPC::GetScaleInfo(u
       << "). HTTP error status: " << getHTTPstatus(d) << ". HTTP error message: " << getHTTPmessage(d);
   }
 
-  // Collect the timestamp info
+  // Collect the run info
   ScaleInfo thisscale;
 
   // Number of rows
@@ -128,7 +128,7 @@ icarus::calo::NormalizeTPC::ScaleInfo icarus::calo::NormalizeTPC::GetScaleInfo(u
   }
 
   // Set the cache
-  fScaleInfos[timestamp] = thisscale;
+  fScaleInfos[run] = thisscale;
 
   return thisscale;
 }
@@ -136,7 +136,7 @@ icarus::calo::NormalizeTPC::ScaleInfo icarus::calo::NormalizeTPC::GetScaleInfo(u
 double icarus::calo::NormalizeTPC::Normalize(double dQdx, const art::Event &e, 
     const recob::Hit &hit, const geo::Point_t &location, const geo::Vector_t &direction, double t0) {
   // Get the info
-  ScaleInfo i = GetScaleInfo(e.time().timeHigh());
+  ScaleInfo i = GetScaleInfo(e.id().runID().run());
 
   // Lookup the TPC, cryo
   unsigned tpc = hit.WireID().TPC;

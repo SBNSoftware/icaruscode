@@ -5,16 +5,17 @@ local wc = import 'wirecell.jsonnet';
 
 local default_dft = { type: 'FftwDFT' };
 
-function(params, anode, chndbobj, n, name='', dft=default_dft)
+function(params, anode, chndbobj, tools, name='', dft=default_dft)
   {
 
     local single = {
-      type: 'pdOneChannelNoise',
+      type: 'icarusOneChannelNoise',
       name: name,
-      uses: [dft, chndbobj, anode],
+      uses: [dft, chndbobj, anode, tools.rc_resp],
       data: {
         noisedb: wc.tn(chndbobj),
         anode: wc.tn(anode),
+        rcresp: wc.tn(tools.rc_resp),
         dft: wc.tn(dft),
       },
     },
@@ -53,7 +54,7 @@ function(params, anode, chndbobj, n, name='', dft=default_dft)
         intraces: 'orig%d' % anode.data.ident,  // frame tag get all traces
         outtraces: 'raw%d' % anode.data.ident,
       },
-    }, uses=[chndbobj, anode, single, grouped], nin=1, nout=1),
+    }, uses=[chndbobj, anode, tools.rc_resp, single, grouped], nin=1, nout=1),
 
 
     pipe: g.pipeline([obnf], name=name),

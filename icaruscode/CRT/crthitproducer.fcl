@@ -15,6 +15,7 @@ standard_crthitrecoalg:
     CrtWindow:            3e6    # time window for looking data within trigger timestamp [ns]
     outCSVFile:           false  # write the information in to a csv file
     Data:                 true   # for data
+    GlobalT0Offset:       0      # offset to be applied for MC only, 0 for data.
     CSVFile:              "data.csv" # dump time difference between both end readouts.
 
 }

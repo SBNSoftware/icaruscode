@@ -453,10 +453,10 @@ void icarus::CopyBeamTimePMTwaveforms::produce
     : nullptr
     ;
   
-  // the assumption: the associations are in the same order as the
-  // original waveforms, and none is missing; this allows us to skip
-  // art::FindOneP calls. If not true... art::FindOneP is a way.
   if (waveMetaAssns && (waveMetaAssns->size() != waveforms.size())) {
+    // the assumption: the associations are in the same order as the
+    // original waveforms, and none is missing; this allows us to skip
+    // art::FindOneP calls. If not true... art::FindOneP is a way.
     throw art::Exception{ art::errors::LogicError }
       << "CopyBeamTimePMTwaveforms association logic assumption is broken"
       " by metadata (I)."

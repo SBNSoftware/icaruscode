@@ -21,9 +21,9 @@
 #include "lardata/DetectorInfoServices/DetectorClocksService.h"
 #include "lardataalg/DetectorInfo/DetectorTimings.h"
 #include "lardataalg/Utilities/quantities/spacetime.h" // util::quantities::nanosecond
-#include "lardataobj/RawData/ExternalTrigger.h" //JCZ: TBD, placeholder for now to represent the idea
+#include "lardataobj/RawData/ExternalTrigger.h"
 #include "lardataobj/RawData/TriggerData.h" // raw::Trigger
-#include "lardataobj/Simulation/BeamGateInfo.h" //JCZ:, another placeholder I am unsure if this and above will be combined at some point into a dedicated object 
+#include "lardataobj/Simulation/BeamGateInfo.h"
 
 #include "sbndaq-artdaq-core/Overlays/ICARUS/ICARUSTriggerUDPFragment.hh"
 
@@ -427,30 +427,24 @@ namespace daq
     //
     // beam gate
     //
-    // beam gate - trigger: hope it's negative...
+    // defined in simulation time, which should match beam gate time... trivial:
     nanoseconds const gateStartFromTrigger{
       static_cast<double>(timestampDiff
         (fTriggerExtra->beamGateTimestamp, fTriggerExtra->triggerTimestamp)
         )
       }; // narrowing!!
-    auto const elecGateStart = fDetTimings.TriggerTime() + gateStartFromTrigger;
-    auto const simGateStart = fDetTimings.toSimulationTime(elecGateStart);
     switch (gate_type) {
       case TriggerGateTypes::BNB:
-        fBeamGateInfo->emplace_back
-          (simGateStart.value(), BNBgateDuration.value(), sim::kBNB);
+        fBeamGateInfo->emplace_back(0.0, BNBgateDuration.value(), sim::kBNB);
         break;
       case TriggerGateTypes::NuMI:
-        fBeamGateInfo->emplace_back
-          (simGateStart.value(), NuMIgateDuration.value(), sim::kNuMI);
+        fBeamGateInfo->emplace_back(0.0, NuMIgateDuration.value(), sim::kNuMI);
         break;
       case TriggerGateTypes::OffbeamBNB:
-        fBeamGateInfo->emplace_back
-          (simGateStart.value(), BNBgateDuration.value(), sim::kBNB);
+        fBeamGateInfo->emplace_back(0.0, BNBgateDuration.value(), sim::kBNB);
         break;
       case TriggerGateTypes::OffbeamNuMI:
-        fBeamGateInfo->emplace_back
-          (simGateStart.value(), NuMIgateDuration.value(), sim::kNuMI);
+        fBeamGateInfo->emplace_back(0.0, NuMIgateDuration.value(), sim::kNuMI);
         break;
       default:
         mf::LogWarning("TriggerDecoder") << "Unsupported gate type #" << gate_type;
@@ -459,6 +453,7 @@ namespace daq
     //
     // relative time trigger (raw::Trigger)
     //
+    auto const elecGateStart = fDetTimings.TriggerTime() + gateStartFromTrigger;
     fRelTrigger->emplace_back(
       static_cast<unsigned int>(datastream_info.wr_event_no), // counter
       fDetTimings.TriggerTime().value(),                      // trigger_time

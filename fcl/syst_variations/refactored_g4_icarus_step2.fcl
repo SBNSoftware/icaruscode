@@ -1,0 +1,13 @@
+#include "larg4_icarus_cosmics_sce_2d_drift.fcl"
+
+physics.simulate: [ rns
+	    , ionization
+            , pdfastsim
+            , simdrift
+	    , sedlite
+            , mcreco
+            , genericcrt
+	    , simplemerge
+          ]
+
+process_name: G4Step2

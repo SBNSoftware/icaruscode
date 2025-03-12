@@ -14,6 +14,7 @@
 // framework libraries
 #include "canvas/Persistency/Provenance/ProcessConfiguration.h"
 #include "canvas/Persistency/Provenance/ProcessHistory.h"
+#include "messagefacility/MessageLogger/MessageLogger.h"
 #include "fhiclcpp/ParameterSet.h"
 #include "fhiclcpp/ParameterSetID.h"
 #include "fhiclcpp/ParameterSetRegistry.h" // also defines ParameterSetID hash
@@ -67,8 +68,7 @@ namespace util {
    * 
    * This function is supposed to be more solid than
    * `readConfigurationFromArtFile()` because it relies less on internals of
-   * how the framework works. , this function relays the same
-   * information after it has been conveniently extracted by the framework.
+   * how the framework works.
    * Also, this function should also be compatible with `gallery::Event` too
    * (which is the reason why it is implemented as template instead of taking
    * a `art::DataViewImpl`, which is _art_-specific), making the name of this
@@ -77,6 +77,12 @@ namespace util {
    * The configuration is returned as a map of process names to parameter sets
    * (note that the key is different from the one returned by
    * `readConfigurationFromArtFile()`).
+   * 
+   * The function extracts the configuration of all the known processes in the
+   * process history. As a workaround to
+   * [`fhiclcpp` issue #14](https://github.com/art-framework-suite/fhicl-cpp/issues/14),
+   * if the configuration is not present, it's not included at all in the
+   * returned container of configurations (used to throw an exception).
    */
   template <typename Principal>
   std::map<std::string, fhicl::ParameterSet>
@@ -104,10 +110,10 @@ util::readConfigurationFromArtPrincipal(Principal const& principal) {
     fhicl::ParameterSet config;
     if (!fhicl::ParameterSetRegistry::get(procConfig.parameterSetID(), config))
     {
-      // this would be, as far as I understand, a logic error
-      throw cet::exception("readConfigurationFromArtPrincipal")
+      mf::LogWarning{ "readConfigurationFromArtPrincipal" }
         << "Configuration of process '" << procConfig.processName()
-        << "' can't be found!\n";
+        << "' can't be found.";
+      continue;
     }
     
     configMap[procConfig.processName()] = std::move(config);

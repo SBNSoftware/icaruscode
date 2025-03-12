@@ -485,14 +485,25 @@ namespace icarus{
         // Find the path to the strip geo node, to locate it in the hierarchy
         set<string> volNames = { adsGeo.TotalVolume()->GetName() };
         vector<vector<TGeoNode const*> > paths = geoService->FindAllVolumePaths(volNames);
+	string stripn = std::to_string(adsid);
+	if (stripn.length()==1) stripn = "0"+stripn;
+
+	// whether we are using the "legacy" geometry naming scheme
+	bool const isLegacy = std::string(adsGeo.TotalVolume()->GetName()).find("_")!=std::string::npos;
 
         string path = "";
-        for (size_t inode=0; inode<paths.at(0).size(); inode++) {
-          path += paths.at(0).at(inode)->GetName();
-          if (inode < paths.at(0).size() - 1) {
-            path += "/";
-          }
-        }
+	for (size_t ip=0;ip<paths.size();ip++) {
+	  for (size_t inode=0; inode<paths.at(ip).size(); inode++) {
+	    path += paths.at(ip).at(inode)->GetName();
+	    if (inode < paths.at(ip).size() - 1) {
+	      path += "/";
+	    }
+	  }
+	  if ( (path.find(adGeo.Name())!=std::string::npos && path.find("strip"+stripn)!=std::string::npos) || //refactored
+	       (isLegacy && path.find(adsGeo.TotalVolume()->GetName())!=std::string::npos) ) //legacy
+	    break;
+	  else path = "";
+	}
 
         TGeoManager* manager = geoService->ROOTGeoManager();
         manager->cd(path.c_str());

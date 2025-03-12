@@ -19,11 +19,10 @@
 #include "canvas/Utilities/InputTag.h"
 
 //icarus includes
-#include "icaruscode/TPC/Compression/PhysCrateCompressedFragment.cc"
 #include "icaruscode/Decode/ChannelMapping/IICARUSChannelMap.h"
 
 //sbndaq includes
-#include "sbndaq-artdaq-core/Overlays/ICARUS/PhysCrateFragment.cc"
+#include "sbndaq-artdaq-core/Overlays/ICARUS/PhysCrateFragment.h"
 
 //lardataobj inlcudes
 #include "lardataobj/RawData/RawDigit.h"

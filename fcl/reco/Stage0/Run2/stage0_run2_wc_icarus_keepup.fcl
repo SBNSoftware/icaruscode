@@ -1,0 +1,15 @@
+###
+## This fhicl file is used to run "stage0" processing specifically for the case where all
+## TPC data is included in an artdaq data product from a single instance
+##
+#include "stage0_run2_wc_icarus.fcl"
+
+## Add the purity monitor
+physics.outana:        [ purityinfoana0, purityinfoana1 ]
+physics.trigger_paths: [ path ]
+physics.end_paths:     [ outana, streamROOT ]
+
+
+## Need overrides for the purity monitor
+physics.analyzers.purityinfoana0.SelectEvents: [ path ]
+physics.analyzers.purityinfoana1.SelectEvents: [ path ]

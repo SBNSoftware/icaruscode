@@ -878,7 +878,7 @@ struct icarus::details::KeyValuesConverter
      // GCC 11 should support std::from_chars() for floating point types;
      // remove this #if branch, and if Clang's is also already removed,
      // remove the workaround too
-#    error "Redundant workaround on std::from_chars() for GCC"
+//#    error "Redundant workaround on std::from_chars() for GCC"
 #  else
 #    define ICARUSCODE_DECODE_DECODERTOOLS_DETAILS_KEYVALUESDATA_NEEDS_FROMCHARS_FLOAT
 #  endif // __GNUC__
@@ -889,7 +889,7 @@ struct icarus::details::KeyValuesConverter
      // Clang 12.0.1 should support std::from_chars() for floating point types;
      // remove this #if branch, and if GCC's is also already removed,
      // remove the workaround too
-#    error "Redundant workaround on std::from_chars() for GCC"
+//#    error "Redundant workaround on std::from_chars() for GCC"
 #  else
 #    define ICARUSCODE_DECODE_DECODERTOOLS_DETAILS_KEYVALUESDATA_NEEDS_FROMCHARS_FLOAT
 #  endif // __clang_major__
