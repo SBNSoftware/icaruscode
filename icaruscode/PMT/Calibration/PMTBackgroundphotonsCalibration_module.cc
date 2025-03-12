@@ -247,9 +247,6 @@ void pmtcalo::PMTBackgroundphotonsCalibration::analyze(art::Event const& event)
      auto nextIt = std::next(it);
      auto prevIt = std::prev(it); 
 
-     std::cout << "--" << std::endl;
-     std::cout << "current ophit: " << opch << " " << ophit.StartTime();
-
      if( m_filter_intime ){
        
        // skip if too close in time with prev ophit 
