@@ -13,4 +13,6 @@ add_subdirectory(numi-anaA)
 add_subdirectory(syst_variations)
 add_subdirectory(decoder)
 add_subdirectory(overlays)
+add_subdirectory(standard)
+
 install_fhicl()
