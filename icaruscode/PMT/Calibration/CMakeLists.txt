@@ -44,6 +44,28 @@ cet_build_plugin(PMTBackgroundphotonsCalibration art::module
                 Boost::system
               )
 
+cet_build_plugin(PMTSPRCalibration art::module
+                    LIBRARIES
+                icaruscode_PMT_Algorithms
+                icaruscode_PMT_Calibration_CaloTools
+                lardataobj::RawData
+                lardataobj::Simulation
+                lardataobj::RecoBase
+                art::Framework_Core
+                art::Framework_Principal
+                art::Framework_Services_Registry
+                art_root_io::TFileService_service
+                art_root_io::tfile_support
+                art::Persistency_Provenance
+                canvas::canvas
+                messagefacility::MF_MessageLogger
+                fhiclcpp::fhiclcpp
+                cetlib::cetlib
+                cetlib_except::cetlib_except
+                Boost::system
+                larana::OpticalDetector_OpHitFinder
+              )
+
 
 art_make_exec(  NAME 
                     fitPulseDistribution 
