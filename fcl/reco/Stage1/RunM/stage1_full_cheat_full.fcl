@@ -8,21 +8,12 @@
 BEGIN_PROLOG
 
 pandora_configuration: {
-    ConfigFile:             "PandoraSettings_Master_noCheating.xml" ##< Master file to run in reconstruction
+    ConfigFile:             "PandoraSettings_Master_fullCheatingNeutrino.xml" ##< Master file to run in reconstruction
     EnableMCParticles:      true                                    ##< To be able to cheat is necessary to collapse to MC particles
     SimChannelModuleLabel:  "daq:simpleSC"                          ##< Correct sim channel to enable MC particles
 
 
     PrintOverallRecoStatus:     true
-
-    # Settings for the reconstruction
-    ShouldRunAllHitsCosmicReco:       true
-    ShouldRunStitching:               true 
-    ShouldRunCosmicHitRemoval:        false
-    ShouldRunSlicing:                 true 
-    ShouldRunNeutrinoRecoOption:      true 
-    ShouldRunCosmicRecoOption:        false
-    ShouldPerformSliceId:             false 
 }
 
 END_PROLOG

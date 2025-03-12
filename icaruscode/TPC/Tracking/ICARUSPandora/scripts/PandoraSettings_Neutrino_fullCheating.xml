@@ -55,7 +55,6 @@
     <VertexXCorrection>0</VertexXCorrection>
   </algorithm>
 
-  <!-- 3D neutrino-induced hit creation -->
   <algorithm type = "LArCheatingPfoCreation">
     <InputClusterListNames>ClustersU ClustersV ClustersW</InputClusterListNames>
     <OutputPfoListName>TrackParticles3D</OutputPfoListName>
@@ -66,11 +65,7 @@
 
   <algorithm type = "LArThreeDHitCreation">
     <InputPfoListName>TrackParticles3D</InputPfoListName>
-    <!-- Even though from the LArCheatingPfoCharacterization -->
-    <!-- only a generic "Particle3D" list is passed, those   -->
-    <!-- hits are interpreted as tracks and showers are      -->
-    <!-- extracted from those. The same is true for clusters -->
-    <OutputCaloHitListName>TrackCaloHitList3D</OutputCaloHitListName>
+    <OutputCaloHitListName>TrackCaloHits3D</OutputCaloHitListName>
     <OutputClusterListName>TrackClusters3D</OutputClusterListName>
     <HitCreationTools>
       <tool type = "LArClearTransverseTrackHits"><MinViews>3</MinViews></tool>
@@ -80,29 +75,16 @@
       <tool type = "LArClearTransverseTrackHits"><MinViews>2</MinViews></tool>
       <tool type = "LArClearLongitudinalTrackHits"><MinViews>2</MinViews></tool>
       <tool type = "LArMultiValuedLongitudinalTrackHits"><MinViews>2</MinViews></tool>
-      <tool type = "LArThreeViewShowerHits"/>
-      <tool type = "LArTwoViewShowerHits"/>
-      <tool type = "LArDeltaRayShowerHits"/>
     </HitCreationTools>
   </algorithm>
   
-  <!-- MISSING somethings here ... -->
-
-  <algorithm type = "LArCheatingPfoCharacterisation">
-    <TrackPfoListName>TrackParticles3D</TrackPfoListName>
-    <ShowerPfoListName>ShowerParticles3D</ShowerPfoListName>
-    <UseThreeDInformation>false</UseThreeDInformation>
-  </algorithm>
-
-  <!-- MISSING somethings here ... -->  
-
   <!-- NeutrinoAlgorithms -->
   <algorithm type = "LArCheatingNeutrinoCreation">
     <CollapseToPrimaryMCParticles>true</CollapseToPrimaryMCParticles>
     <MCParticleListName>Input</MCParticleListName>
     <NeutrinoPfoListName>NeutrinoParticles3D</NeutrinoPfoListName>
     <VertexListName>NeutrinoVertices3D</VertexListName>
-    <DaughterPfoListNames>TrackParticles3D ShowerParticles3D</DaughterPfoListNames>
+    <DaughterPfoListNames>TrackParticles3D</DaughterPfoListNames>
   </algorithm>
   <algorithm type = "LArCheatingNeutrinoDaughterVertices">
     <CollapseToPrimaryMCParticles>true</CollapseToPrimaryMCParticles>
@@ -111,14 +93,13 @@
     <OutputVertexListName>DaughterVertices3D</OutputVertexListName>
   </algorithm>
 
-  <!-- Checking this stage [...] -->
-  <!-- <algorithm type = "LArBdtPfoCharacterisation">
+  <algorithm type = "LArBdtPfoCharacterisation">
     <TrainingSetMode>false</TrainingSetMode>
     <CaloHitListName>CaloHitList2D</CaloHitListName>
     <MCParticleListName>Input</MCParticleListName>
     <TrainingOutputFileName>BNBPfoCharTraining</TrainingOutputFileName>
     <TrackPfoListName>TrackParticles3D</TrackPfoListName>
-    <ShowerPfoListName>ShowerParticles3D</ShowerPfoListName>
+    <ShowerPfoListName>TrackParticles3D</ShowerPfoListName>
     <UseThreeDInformation>true</UseThreeDInformation>
     <PersistFeatures>true</PersistFeatures>
     <MvaFileName>PandoraBdt_v09_72_01_ICARUS_pfochar_bnb.xml</MvaFileName>
@@ -137,10 +118,9 @@
       <tool type = "LArThreeDLinearFitFeatureTool"/>
       <tool type = "LArThreeDVertexDistanceFeatureTool"/>
       <tool type = "LArThreeDPCAFeatureTool"/>
-      <tool type = "LArThreeDOpeningAngleFeatureTool"/>      
+      <tool type = "LArThreeDOpeningAngleFeatureTool"/>
     </FeatureToolsNoChargeInfo>
-  </algorithm> -->
-  <!-- Checking this stage [...] -->
+  </algorithm>
 
   <algorithm type = "LArNeutrinoProperties">
     <NeutrinoPfoListName>NeutrinoParticles3D</NeutrinoPfoListName>
@@ -154,9 +134,9 @@
 
   <!-- Output list management -->
   <algorithm type = "LArPostProcessing">
-    <PfoListNames>NeutrinoParticles3D TrackParticles3D ShowerParticles3D</PfoListNames>
+    <PfoListNames>NeutrinoParticles3D TrackParticles3D</PfoListNames>
     <VertexListNames>NeutrinoVertices3D DaughterVertices3D CandidateVertices3D</VertexListNames>
-    <ClusterListNames>ClustersU ClustersV ClustersW TrackClusters3D ShowerClusters3D</ClusterListNames>
+    <ClusterListNames>ClustersU ClustersV ClustersW TrackClusters3D</ClusterListNames>
     <CaloHitListNames>CaloHitListU CaloHitListV CaloHitListW CaloHitList2D</CaloHitListNames>
     <CurrentPfoListReplacement>NeutrinoParticles3D</CurrentPfoListReplacement>
   </algorithm>

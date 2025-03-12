@@ -11,18 +11,6 @@ pandora_configuration: {
     # ConfigFile:             "PandoraSettings_Master_ICARUS.xml" ##< Master file to run in reconstruction
     EnableMCParticles:      true                                    ##< To be able to cheat is necessary to collapse to MC particles
     SimChannelModuleLabel:  "daq:simpleSC"                          ##< Correct sim channel to enable MC particles
-
-
-    # PrintOverallRecoStatus:     true
-
-    # # Settings for the reconstruction
-    # ShouldRunAllHitsCosmicReco:       true
-    # ShouldRunStitching:               true 
-    # ShouldRunCosmicHitRemoval:        true
-    # ShouldRunSlicing:                 true 
-    # ShouldRunNeutrinoRecoOption:      true 
-    # ShouldRunCosmicRecoOption:        true
-    # ShouldPerformSliceId:             true
 }
 
 END_PROLOG
