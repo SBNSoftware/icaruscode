@@ -95,6 +95,29 @@ function(params, tools) {
     local noises = [add_noise(model) for model in noise_models],
     
     local outtags = ["orig%d"%n for n in std.range(0, nanodes-1)],
+            
+    local xregions = wc.unique_list(std.flattenArrays([v.faces for v in params.det.volumes])),
+    local overlay_drifter_data = params.lar {
+                rng: wc.tn(tools.random),
+                xregions: xregions,
+                time_offset: params.sim.depo_toffset,
+
+                drift_speed: params.lar.drift_speed,
+                fluctuate: params.sim.fluctuate,
+
+                DL: params.lar.DL,
+                DT: params.lar.DT,
+                lifetime: params.lar.lifetime,
+		ar39activity: 0, // no simulated activity
+
+		// DB config
+		DBFileName: "tpc_elifetime_data",
+		DBTag: "v2r1",
+		ELifetimeCorrection: true,
+		Verbose: false,
+		TPC: 0,
+        },
+     
 
     ret : {
 
@@ -120,31 +143,22 @@ function(params, tools) {
         signalyz: f.fanpipe('DepoSetFanout', self.signal_pipelinesyz, 'FrameFanin', "simsignalgraph", outtags),
         splusnyz: f.fanpipe('DepoSetFanout', self.splusn_pipelinesyz, 'FrameFanin', "simsplusngraph", outtags),
 
+        drifter_data: params.lar {
+            rng: wc.tn(tools.random),
+            xregions: xregions,
+            time_offset: params.sim.depo_toffset,
+            drift_speed: params.lar.drift_speed,
+            fluctuate: params.sim.fluctuate,
+            DL: params.lar.DL,
+            DT: params.lar.DT,
+        },
+
         // Drifter for Overlay MC
+        overlay_drifter_data: overlay_drifter_data,
+
         overlay_drifter: g.pnode({
-            local xregions = wc.unique_list(std.flattenArrays([v.faces for v in params.det.volumes])),
-
+            data: overlay_drifter_data,
             type: "wclsICARUSDrifter",
-            data: params.lar {
-                rng: wc.tn(tools.random),
-                xregions: xregions,
-                time_offset: params.sim.depo_toffset,
-
-                drift_speed: params.lar.drift_speed,
-                fluctuate: params.sim.fluctuate,
-
-                DL: params.lar.DL,
-                DT: params.lar.DT,
-                lifetime: params.lar.lifetime,
-		ar39activity: 0, // no simulated activity
-
-		// DB config
-		DBFileName: "tpc_elifetime_data",
-		DBTag: "v2r1",
-		ELifetimeCorrection: true,
-		Verbose: true,
-		TPC: 0,
-            },
         }, nin=1, nout=1, uses=[tools.random]),
 
     } + sim,                    // tack on base for user sugar.

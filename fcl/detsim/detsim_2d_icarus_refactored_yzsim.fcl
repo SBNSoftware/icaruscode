@@ -1,11 +1,12 @@
 #include "services_icarus_simulation.fcl"
 #include "larg4_services_icarus.fcl"  
-#include "detsimmodules_wirecell_ICARUS_YZsim.fcl"
+#include "detsimmodules_wirecell_ICARUS.fcl"
 #include "opdetsim_pmt_icarus.fcl"
 #include "crtsimmodules_icarus.fcl"
 #include "trigger_emulation_icarus.fcl"
 #include "rootoutput_icarus.fcl"
 #include "mergesimsources_icarus.fcl"
+#include "icarus_simedepfilter.fcl"
 
 process_name: DetSim
 
@@ -23,13 +24,14 @@ physics: {
     
     crtdaq:         @local::icarus_crtsim
      opdaq:         @local::icarus_simpmt
-       daq:         @local::icarus_simwire_wirecell
+ filtersed:         @local::simedepfilter_ind1gap
+       daq:         @local::icarus_simwire_wirecell_yz
      merge:         @local::icarus_merge_yz_wirecell_simchans
 
        rns:         { module_type: "RandomNumberSaver" }
   } # producers
 
-  simulate: [ rns, opdaq, @sequence::icarus_shifting_triggersim.path, daq, merge, crtdaq ]
+  simulate: [ rns, opdaq, @sequence::icarus_shifting_triggersim.path, filtersed, daq, merge, crtdaq ]
 
   # define the output stream, there could be more than one if using filters
   stream:  [ rootoutput ]
@@ -50,8 +52,8 @@ outputs: {
   }
 }
 
-physics.producers.daq.wcls_main.configs: ["pgrapher/experiment/icarus/wcls-multitpc-sim-drift-simchannel-yzsim-shifted-refactored.jsonnet"]
 physics.producers.crtdaq.G4ModuleLabel: "shifted"
 physics.producers.opdaq.InputModule: "pdfastsim"
 physics.producers.shifted.InitAuxDetSimChannelLabel: "genericcrt"
 physics.producers.shifted.InitSimPhotonsLabel: "pdfastsim"
+physics.producers.filtersed.InitSimEnergyDepositLabel: "shifted"

@@ -114,7 +114,7 @@ local wcls_input = {
         	data: {
             	model: "",
             	scale: -1, //scale is -1 to correct a sign error in the SimDepoSource converter.
-            	art_tag: "ionization", //name of upstream art producer of depos "label:instance:processName"
+            	art_tag: std.extVar('SimEnergyDepositLabel'), //name of upstream art producer of depos "label:instance:processName"
             	assn_art_tag: "",
               id_is_track: false,    // Use this for "id-is-index" in the output
         	},
@@ -187,32 +187,19 @@ local wcls_output = {
 };
 
 //local deposio = io.numpy.depos(output);
-local drifter = sim.drifter;
-local setdrifter = g.pnode({
-            type: 'DepoSetDrifter',
-            data: {
-                drifter: "Drifter"
-            }
-        }, nin=1, nout=1,
-        uses=[drifter]);
 
+local overlay_drifter = std.extVar("overlay_drifter");
 local localeLiftime = [std.extVar('lifetime') * wc.us,std.extVar('lifetime') * wc.us,std.extVar('lifetime') * wc.us,std.extVar('lifetime') * wc.us,std.extVar('lifetime') * wc.us,std.extVar('lifetime') * wc.us,std.extVar('lifetime') * wc.us,std.extVar('lifetime') * wc.us];
+local drifter_data = if overlay_drifter then sim.overlay_drifter_data else sim.drifter_data;
 
 local drifters = [{
         local xregions = wc.unique_list(std.flattenArrays([v.faces for v in params.det.volumes])),
 
-        type: "Drifter",
+        type: if overlay_drifter then "wclsICARUSDrifter" else "Drifter",
 	name: "drifter%d" %n, //%std.floor(n/45),
-        data: params.lar {
-            rng: wc.tn(tools.random),
-            xregions: xregions,
-            time_offset: params.sim.depo_toffset,
-            drift_speed: params.lar.drift_speed,
-            fluctuate: params.sim.fluctuate,
-
-            DL: params.lar.DL,
-            DT: params.lar.DT,
+        data: params.lar + drifter_data {
             lifetime: localeLiftime[std.floor(n/45)],
+            TPC: std.floor(n/90),
 	    charge_scale: 1 //std.mod(n,15)+1 //needs to be 1 
         },
     } 
@@ -223,7 +210,6 @@ local setdrifters = [g.pnode({
 		     name: 'setdrifters%d' %n, 
                      data: {
 		              drifter: wc.tn(drifters[n])
-			      #drifter: "Drifter"
            		   }
 	             }, nin=1, nout=1,
 	             uses=[drifters[n]])
@@ -341,7 +327,7 @@ local wcls_simchannel_sink =
       process_planes: [std.mod(std.floor(n/15),3)],
 
       // input from art::Event
-      sed_label: 'ionization',
+      sed_label: std.extVar('SimEnergyDepositLabel'),
 
       // output to art::Event
       simchan_label: 'simpleSC%d' %n,
