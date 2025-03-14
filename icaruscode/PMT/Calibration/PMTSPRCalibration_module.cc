@@ -232,7 +232,7 @@ void pmtcalo::PMTSPRCalibration::analyze(art::Event const& event)
        
        // skip if too close in time with prev ophit 
        // check same channel + within time window
-       if ( prevIt != sortableOpHits.begin() ){
+       if ( it != sortableOpHits.begin() ){
          
          auto const &prevOphit = *prevIt;
          unsigned int prevopch = prevOphit.OpChannel();
