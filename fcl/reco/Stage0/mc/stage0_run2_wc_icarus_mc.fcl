@@ -29,7 +29,6 @@ outputs.rootOutput.outputCommands: ["keep *_*_*_*",
                                     "drop *_daq*_*_*", 
                                     "drop *_MCDecodeTPCROI_*_*", 
                                     "drop *_decon1droi_*_*", 
-                                    "drop *_decon2droi*_*_*", 
                                     "drop recob::Wire*_roifinder*_*_*", 
                                     "keep *_daq_simpleSC*_*"]
 
@@ -46,4 +45,4 @@ physics.producers.decon2droiWE.wcls_main.params.raw_input_label:  "MCDecodeTPCRO
 physics.producers.decon2droiWW.wcls_main.params.raw_input_label:  "MCDecodeTPCROI:PHYSCRATEDATATPCWW"
 
 # restore legacy G4 labels
-physics.producers.mcophit.SimPhotonsProducer: "largeant"
+physics.producers.mcophit.SimPhotonsProducer: "shifted"

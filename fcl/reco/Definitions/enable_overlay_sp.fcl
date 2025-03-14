@@ -1,0 +1,2 @@
+physics.producers.MCDecodeTPCROI.FragmentsLabelVec: ["overlayTPCRawWW", "overlayTPCRawWE", "overlayTPCRawEW", "overlayTPCRawEE"]
+physics.producers.ophit.InputModule: "overlayOpWaveforms"

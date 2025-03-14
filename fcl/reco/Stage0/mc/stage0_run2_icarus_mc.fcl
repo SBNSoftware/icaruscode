@@ -15,9 +15,8 @@ physics.producers: {  @table::icarus_stage0_producers
 ## Use the following to run the full defined stage0 set of modules
 physics.path: [   @sequence::icarus_stage0_mc_PMT, 
                   MCDecodeTPCROI, 
-                  @sequence::icarus_stage0_2d_multiTPC,
-                  @sequence::icarus_stage0_EastGauss_TPC,
-                  @sequence::icarus_stage0_WestGauss_TPC,
+                  @sequence::icarus_stage0_multiTPC,
+                  simChannelROI,
                   @sequence::icarus_stage0_mc_crt
               ]
 
@@ -26,29 +25,28 @@ physics.outana:        [ purityinfoana0, purityinfoana1 ]
 physics.trigger_paths: [ path ]
 physics.end_paths:     [ outana, streamROOT ]
 
-# Drop the daq format files on output, 
-# Drop all output from the TPC decoder stage
-# Drop all output from the 1D deconvolution stage
-# Drop all ouptut for the first running of the ROI finder (on the 1Dsingularity shell --nv -B /cvmfs,/media/usher/analysis/LArSoft/ICARUS slf7-essentials_latest.sif decon)
-# Drop all output from the 2D deconvolution stage
-# Drop the recob::Wire output from the roifinder2d (but keep the ChannelROIs)
+# Drop data products that are no longer needed, but make sure to keep important items!
+# For example, we need to drop the RawDigits from the detector simulation stage but want to keep the SimChannel info from WireCell...
 outputs.rootOutput.outputCommands: ["keep *_*_*_*", 
-                                    "drop *_daq_*_*", 
+                                    "drop *_daq*_*_*", 
                                     "drop *_MCDecodeTPCROI_*_*", 
                                     "drop *_decon1droi_*_*", 
-                                    "drop *_decon2Droi*_*_*", 
-                                    "drop recob::Wire*_roifinder*_*_*", 
-                                    "keep *_daq_simpleSC*_*" ]
-
+                                    "drop recob::Wire*_roifinder_*_*", 
+                                    "keep *_daq_simpleSC_*"]
 
 # Set the expected input for ophit
 physics.producers.ophit.InputModule: "opdaq"
 
-# Set up for the single module mutliple TPC mode...
-physics.producers.MCDecodeTPCROI.FragmentsLabelVec:               ["daq:TPCWW","daq:TPCWE","daq:TPCEW","daq:TPCEE"]
-physics.producers.MCDecodeTPCROI.OutInstanceLabelVec:             ["PHYSCRATEDATATPCWW", "PHYSCRATEDATATPCWE", "PHYSCRATEDATATPCEW", "PHYSCRATEDATATPCEE"]
+# Note the default assumption is that our detector simulation input will come from the WireCell 2D drift simulation, a la 'daq'
+# If we are running the 1D drift simulation we need to switch to using:
+# `physics.producers.MCDecodeTPCROI.FragmentsLabelVec:   ["daq3:PHYSCRATEDATATPCWW","daq2:PHYSCRATEDATATPCWE","daq1:PHYSCRATEDATATPCEW","daq0:PHYSCRATEDATATPCEE"]`
+#
+physics.producers.MCDecodeTPCROI.FragmentsLabelVec:   ["daq:TPCWW","daq:TPCWE","daq:TPCEW","daq:TPCEE"]
+physics.producers.MCDecodeTPCROI.OutInstanceLabelVec: ["PHYSCRATEDATATPCWW", "PHYSCRATEDATATPCWE", "PHYSCRATEDATATPCEW", "PHYSCRATEDATATPCEE"]
+physics.producers.decon1droi.RawDigitLabelVec:        ["MCDecodeTPCROI:PHYSCRATEDATATPCWW","MCDecodeTPCROI:PHYSCRATEDATATPCWE","MCDecodeTPCROI:PHYSCRATEDATATPCEW","MCDecodeTPCROI:PHYSCRATEDATATPCEE"]
 
-physics.producers.decon1droi.RawDigitLabelVec:                    ["MCDecodeTPCROI:PHYSCRATEDATATPCWW","MCDecodeTPCROI:PHYSCRATEDATATPCWE","MCDecodeTPCROI:PHYSCRATEDATATPCEW","MCDecodeTPCROI:PHYSCRATEDATATPCEE"]
+physics.producers.simChannelROI.SimChannelLabelVec:  ["merge"]
+physics.producers.simChannelROI.OutInstanceLabelVec: ["All"]
 
 physics.producers.decon2droiEE.wcls_main.params.raw_input_label:  "MCDecodeTPCROI:PHYSCRATEDATATPCEE"
 physics.producers.decon2droiEW.wcls_main.params.raw_input_label:  "MCDecodeTPCROI:PHYSCRATEDATATPCEW"
@@ -62,4 +60,4 @@ physics.producers.purityana0.RawModuleLabel:   ["MCDecodeTPCROI:PHYSCRATEDATATPC
 physics.producers.purityana1.RawModuleLabel:   ["MCDecodeTPCROI:PHYSCRATEDATATPCWW","MCDecodeTPCROI:PHYSCRATEDATATPCWE","MCDecodeTPCROI:PHYSCRATEDATATPCEW","MCDecodeTPCROI:PHYSCRATEDATATPCEE"]
 
 # restore legacy G4 labels
-physics.producers.mcophit.SimPhotonsProducer: "largeant"
+physics.producers.mcophit.SimPhotonsProducer: "shifted"
