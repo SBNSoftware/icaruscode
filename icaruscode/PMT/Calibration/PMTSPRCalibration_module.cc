@@ -282,7 +282,7 @@ void pmtcalo::PMTSPRCalibration::analyze(art::Event const& event)
 
       // find baseline
       fPedAlgo->Evaluate(jt->Waveform());
-      m_baselines = fPedAlgo->Mean();
+      std::vector<double> baselines = fPedAlgo->Mean();
 
       // select samples around the peak for saving
       std::size_t tick_start = (m_sample - m_prepulseSamples > 0) ? m_sample -  m_prepulseSamples : 0;
@@ -295,6 +295,7 @@ void pmtcalo::PMTSPRCalibration::analyze(art::Event const& event)
 
       // cut the waveform
       m_wf = std::vector<short>(jt->Waveform().begin() + tick_start, jt->Waveform().begin() + tick_end);
+      m_baselines = std::vector<double>(baselines.begin() + tick_start, baselines.begin() + tick_end);
 
      }
 
