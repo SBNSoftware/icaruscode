@@ -135,7 +135,7 @@ pmtcalo::PMTSPRCalibration::PMTSPRCalibration(fhicl::ParameterSet const& pset)
    m_filter_intime = pset.get<bool>("FilterInTime", true); 
    m_time_window = pset.get<double>("TimeWindow", 0.2 ); //in us
   
-   m_prepulseSamples = pset.get<std::size_t>("prePulseSamples",200);
+   m_prepulseSamples = pset.get<std::size_t>("prePulseSamples",50);
    m_afterpulseSamples = pset.get<std::size_t>("afterPulseSamples",400);
 
    fPedAlgo = art::make_tool<opdet::IPedAlgoMakerTool>(pset.get<fhicl::ParameterSet>("PedAlgoRollingMeanMaker"))->makeAlgo();
