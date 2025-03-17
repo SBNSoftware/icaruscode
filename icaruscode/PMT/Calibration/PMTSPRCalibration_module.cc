@@ -331,7 +331,10 @@ void pmtcalo::PMTSPRCalibration::analyze(art::Event const& event)
       m_wf = std::vector<short>(jt->Waveform().begin() + tick_start, jt->Waveform().begin() + tick_end);
       m_baselines = std::vector<double>(baselines.begin() + tick_start, baselines.begin() + tick_end);
 
-      // get median from pre-pulse sample (up to hit start)
+      // get median from pre-pulse sample (up to hit start)      
+      if (tick_start >= start_sample) //if hit start < tick_start because hit is large
+        tick_start = (start_sample - m_prepulseSamples > 0) ? start_sample -  m_prepulseSamples : 0;
+
       std::vector<short> prewf = std::vector<short>(jt->Waveform().begin() + tick_start, jt->Waveform().begin() + start_sample);
       m_median = getMedian(prewf);
 
