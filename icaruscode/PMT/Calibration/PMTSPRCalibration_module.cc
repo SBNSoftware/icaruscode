@@ -59,7 +59,8 @@ public:
   PMTSPRCalibration& operator=(PMTSPRCalibration&&) = delete;
 
   virtual void beginJob() override;
-  bool inGate(double const & time, std::vector<double> & bounds);
+  bool inGate(double const & time, std::vector<double> & bounds) const;
+  double getMedian(std::vector<short> v) const;
 
   void analyze(art::Event const& event) override;
 
@@ -85,7 +86,10 @@ private:
   std::size_t m_sample;
   unsigned int m_nsize;
   double m_wfstart;
-  std::size_t m_wfpeak;
+  std::size_t m_hitpeak;
+  std::size_t m_hitstart;
+  std::size_t m_hitend;
+  double m_median;
   std::vector<double> m_baselines;
   std::vector<short> m_wf;
 
@@ -135,7 +139,7 @@ pmtcalo::PMTSPRCalibration::PMTSPRCalibration(fhicl::ParameterSet const& pset)
    m_filter_intime = pset.get<bool>("FilterInTime", true); 
    m_time_window = pset.get<double>("TimeWindow", 0.2 ); //in us
   
-   m_prepulseSamples = pset.get<std::size_t>("prePulseSamples",50);
+   m_prepulseSamples = pset.get<std::size_t>("prePulseSamples",100);
    m_afterpulseSamples = pset.get<std::size_t>("afterPulseSamples",400);
 
    fPedAlgo = art::make_tool<opdet::IPedAlgoMakerTool>(pset.get<fhicl::ParameterSet>("PedAlgoRollingMeanMaker"))->makeAlgo();
@@ -165,7 +169,10 @@ void pmtcalo::PMTSPRCalibration::beginJob()
   m_wf_tree->Branch("sample", &m_sample);
   m_wf_tree->Branch("nsize", &m_nsize);
   m_wf_tree->Branch("wfstart", &m_wfstart, "wfstart/D" );
-  m_wf_tree->Branch("wfpeak", &m_wfpeak);
+  m_wf_tree->Branch("hitpeak", &m_hitpeak);
+  m_wf_tree->Branch("hitstart", &m_hitstart);
+  m_wf_tree->Branch("hitend", &m_hitend);
+  m_wf_tree->Branch("median", &m_median, "median/D");
   m_wf_tree->Branch("baselines", &m_baselines);
   m_wf_tree->Branch("wf", &m_wf);
 
@@ -173,10 +180,25 @@ void pmtcalo::PMTSPRCalibration::beginJob()
 
 //-----------------------------------------------------------------------------
 
-bool pmtcalo::PMTSPRCalibration::inGate(double const & time, std::vector<double> & bounds ){
+bool pmtcalo::PMTSPRCalibration::inGate(double const & time, std::vector<double> & bounds ) const
+{
   return (time >= bounds[0]) && ( time <= bounds[1] );
 }
 
+double pmtcalo::PMTSPRCalibration::getMedian(std::vector<short> v) const
+{
+  std::nth_element(v.begin(), v.begin() + v.size() / 2, v.end());
+  double vn = v[v.size() / 2];
+  
+  // if odd
+  if( v.size() % 2 != 0) 
+    return vn;
+
+  // if even
+  std::nth_element(v.begin(), v.begin() + v.size()/2 - 1, v.end());
+  double vnn = v[v.size() / 2 - 1];
+  return (vn+vnn)/2;
+}
 
 //-----------------------------------------------------------------------------
 
@@ -276,9 +298,19 @@ void pmtcalo::PMTSPRCalibration::analyze(art::Event const& event)
       // ophit must be within the time window covered by the waveform
       if ( m_start_time < m_wfstart || m_start_time > wfend ) continue;
       
-      // find peak sample 
-      double diff = m_peak_time - m_wfstart;
-      m_sample = static_cast<std::size_t>(std::round(diff/fOpticalTick));
+      // find hit peak sample 
+      double diff_peak = m_peak_time - m_wfstart;
+      m_sample = static_cast<std::size_t>(std::round(diff_peak/fOpticalTick));
+
+      // find hit start sample
+      double diff_start = m_start_time - m_wfstart;
+      std::size_t start_sample = static_cast<std::size_t>(std::round(diff_start/fOpticalTick));
+      std::size_t start_to_peak = m_sample - start_sample;
+
+      //find hit end sample
+      double diff_end = m_start_time + m_time_width - m_wfstart;
+      std::size_t end_sample = static_cast<std::size_t>(std::round(diff_end/fOpticalTick));
+      std::size_t peak_to_end = end_sample - m_sample;
 
       // find baseline
       fPedAlgo->Evaluate(jt->Waveform());
@@ -290,12 +322,18 @@ void pmtcalo::PMTSPRCalibration::analyze(art::Event const& event)
       
       // size of waveform snippet
       m_nsize = tick_end - tick_start;
-      // position of peak sample in waveform snippet
-      m_wfpeak = m_prepulseSamples;
+      // position of hit start/peak/end sample in waveform snippet
+      m_hitpeak = m_prepulseSamples;
+      m_hitstart = m_hitpeak - start_to_peak;
+      m_hitend = m_hitpeak + peak_to_end;
 
       // cut the waveform
       m_wf = std::vector<short>(jt->Waveform().begin() + tick_start, jt->Waveform().begin() + tick_end);
       m_baselines = std::vector<double>(baselines.begin() + tick_start, baselines.begin() + tick_end);
+
+      // get median from pre-pulse sample (up to hit start)
+      std::vector<short> prewf = std::vector<short>(jt->Waveform().begin() + tick_start, jt->Waveform().begin() + start_sample);
+      m_median = getMedian(prewf);
 
      }
 
