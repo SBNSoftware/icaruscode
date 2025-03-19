@@ -1,0 +1,26 @@
+# File:    stage0_run2_rawpmt_icarus.fcl
+# Purpose: ICARUS Stage0 data processing with preservation of all PMT waveforms.
+# Author:  Gianluca Petrillo (petrillo@slac.stanford.edu)
+# Date:    August 19, 2024
+#
+# This configuration is a spin-off of the standard "Run2" Stage0 configuration.
+# While that configuration creates and saves a copy of the PMT waveforms at
+# beam gate time and then drops the data product of all the waveforms, this one
+# saves all the PMT waveforms and drops the data product with only the ones
+# at beam gate time (`daqPMTonbeam`).
+# 
+# The module `daqPMTonbeam` is still run, because it's much simpler not to
+# touch that part of the configuration, and also because some downstream code
+# might need the side products of that module.
+# 
+# This configuration was tailored on `stage0_run2_icarus.fcl` from
+# icaruscode `v09_90_00`.
+#
+
+#include "stage0_run2_icarus.fcl"
+
+outputs.rootOutput.outputCommands: [
+    @sequence::outputs.rootOutput.outputCommands
+  , "keep raw::OpDetWaveforms_*_*_*"
+  , "drop raw::OpDetWaveforms_daqPMTonbeam_*_*"  # do not keep the duplicate "on beam"
+]

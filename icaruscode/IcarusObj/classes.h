@@ -6,6 +6,7 @@
 #include "icaruscode/IcarusObj/CRTTPCMatchingInfo.h"
 #include "icaruscode/IcarusObj/OpDetWaveformMeta.h"
 #include "icaruscode/IcarusObj/PMTWaveformTimeCorrection.h"
+#include "icaruscode/IcarusObj/PMTBeamSignal.h"
 #include "icaruscode/IcarusObj/Hit.h"
 //#include "icaruscode/IcarusObj/CRTPMTMatching.h"
 

@@ -31,6 +31,7 @@ phot::ICARUSPhotonMappingTransformations::ICARUSPhotonMappingTransformations
   (Config const& config)
   : fDumpMapping(config.DumpMapping())
   , fGeom(lar::providerFrom<geo::Geometry>())
+  , fChannelMapAlg{&art::ServiceHandle<geo::WireReadout const>()->Get()}
   , fNOpDetChannels(fGeom? fGeom->NOpDets(): 0)
 {
   LibraryIndexToOpDetMap libraryIndices;
@@ -140,10 +141,10 @@ void phot::ICARUSPhotonMappingTransformations::prepareLibraryMappings
     (fGeom->Ncryostats());
   lar::util::MinMaxCollector<OpDetID_t> opDetChannelRange;
   
-  unsigned int const maxOpChannel = fGeom->MaxOpChannel();
+  unsigned int const maxOpChannel = fChannelMapAlg->MaxOpChannel();
   for (unsigned int channel = 0; channel < maxOpChannel; ++channel) {
     
-    geo::OpDetGeo const& opDet = fGeom->OpDetGeoFromOpChannel(channel);
+    geo::OpDetGeo const& opDet = fChannelMapAlg->OpDetGeoFromOpChannel(channel);
     auto const& opDetID = opDet.ID();
     
     if (opDetID.isValid) {
@@ -320,7 +321,7 @@ void phot::ICARUSPhotonMappingTransformations::dumpMapping() const {
   log << "\nMapping of geometry: '" << fGeom->DetectorName() << "':"
     << "\n  - " << fGeom->Ncryostats() << " cryostats"
     << "\n  - optical channels: " << fNOpDetChannels
-    << "\n  - maximum optical detector channel number: " << fGeom->MaxOpChannel()
+    << "\n  - maximum optical detector channel number: " << fChannelMapAlg->MaxOpChannel()
     << "\n"
     ;
   

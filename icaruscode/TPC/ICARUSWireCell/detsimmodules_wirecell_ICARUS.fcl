@@ -75,6 +75,7 @@ icarus_simwire_wirecell:
     }
 }
 
+# TUNED FR CONFIG
 icarus_simwire_wirecell_fitSR: @local::icarus_simwire_wirecell
 # Add in the ER tail
 icarus_simwire_wirecell_fitSR.wcls_main.params.file_rcresp: "icarus_fnal_rc_tail.json"
@@ -85,4 +86,16 @@ icarus_simwire_wirecell_fitSR.wcls_main.structs.gain0: 11.9918701 # mV/fC
 icarus_simwire_wirecell_fitSR.wcls_main.structs.gain1: 12.6181926 # mV/fC
 icarus_simwire_wirecell_fitSR.wcls_main.structs.gain2: 13.0261362 # mV/fC
 icarus_simwire_wirecell_fitSR.wcls_main.structs.shaping1: 1.45 # us
+
+# TUNED FR CONFIG w/ Front Induction Nominal
+icarus_simwire_wirecell_fitSR_P0nom: @local::icarus_simwire_wirecell
+# Add in the ER tail
+icarus_simwire_wirecell_fitSR_P0nom.wcls_main.params.file_rcresp: "icarus_fnal_rc_tail.json"
+# Add in the tuned field responses (except for P0)
+icarus_simwire_wirecell_fitSR_P0nom.wcls_main.params.files_fields: "icarus_fnal_fit_ks_P0nom.json.bz2"
+# futz with shaping+gain values (note these are really just scale factors and should not be taken literally)
+icarus_simwire_wirecell_fitSR_P0nom.wcls_main.structs.gain0: 17.05212 # mV/fC 
+icarus_simwire_wirecell_fitSR_P0nom.wcls_main.structs.gain1: 12.6181926 # mV/fC
+icarus_simwire_wirecell_fitSR_P0nom.wcls_main.structs.gain2: 13.0261362 # mV/fC
+icarus_simwire_wirecell_fitSR_P0nom.wcls_main.structs.shaping1: 1.45 # us
 END_PROLOG

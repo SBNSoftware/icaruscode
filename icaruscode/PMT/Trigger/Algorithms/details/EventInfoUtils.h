@@ -21,6 +21,7 @@
 #include "lardataalg/Utilities/quantities/energy.h" // gigaelectronvolt, ...
 #include "lardataobj/Simulation/SimEnergyDeposit.h"
 #include "lardataobj/Simulation/SimChannel.h"
+#include "larcorealg/Geometry/fwd.h"
 #include "larcoreobj/SimpleTypesAndConstants/geo_vectors.h" // geo::Point_t
 #include "nusimdata/SimulationBase/MCTruth.h"
 
@@ -38,12 +39,6 @@
 //------------------------------------------------------------------------------
 //---forward declarations
 //---
-namespace geo {
-  class TPCGeo;
-  class GeometryCore;
-} // namespace geo
-
-//------------------------------------------------------------------------------
 namespace icarus::trigger::details {
   class EventInfoExtractor;
   class EventInfoExtractorMaker;
@@ -183,6 +178,7 @@ class icarus::trigger::details::EventInfoExtractor {
     TimeSpan_t inSpillTimes,
     TimeSpan_t inPreSpillTimes,
     geo::GeometryCore const& geom,
+    geo::WireReadoutGeom const& wireReadoutAlg,
     detinfo::DetectorPropertiesData const* detProps,
     detinfo::DetectorTimings const* detTimings,
     std::string logCategory = "EventInfoExtractor"
@@ -216,6 +212,7 @@ class icarus::trigger::details::EventInfoExtractor {
     TimeSpan_t inSpillTimes,
     TimeSpan_t inPreSpillTimes,
     geo::GeometryCore const& geom,
+    geo::WireReadoutGeom const& wireReadoutAlg,
     detinfo::DetectorPropertiesData const* detProps,
     detinfo::DetectorTimings const* detTimings,
     std::string logCategory,
@@ -285,6 +282,7 @@ class icarus::trigger::details::EventInfoExtractor {
   // --- BEGIN -- Set up  ------------------------------------------------------
   
   geo::GeometryCore const& fGeom; ///< Geometry service provider.
+  geo::WireReadoutGeom const& fWireReadoutGeom;
   
   ///< Detector properties information.
   detinfo::DetectorPropertiesData const* fDetProps = nullptr;
@@ -376,6 +374,7 @@ class icarus::trigger::details::EventInfoExtractorMaker {
     std::vector<art::InputTag> truthTags,
     EDepTags_t edepTags,
     geo::GeometryCore const& geom,
+    geo::WireReadoutGeom const& wireReadoutAlg,
     detinfo::DetectorPropertiesData const* detProps,
     detinfo::DetectorTimings const* detTimings,
     std::string logCategory
@@ -388,6 +387,7 @@ class icarus::trigger::details::EventInfoExtractorMaker {
     std::vector<art::InputTag> truthTags,
     EDepTags_t edepTags,
     geo::GeometryCore const& geom,
+    geo::WireReadoutGeom const& wireReadoutAlg,
     detinfo::DetectorPropertiesData const* detProps,
     detinfo::DetectorTimings const* detTimings,
     std::string logCategory,
@@ -420,6 +420,7 @@ class icarus::trigger::details::EventInfoExtractorMaker {
   EDepTags_t fEnergyDepositTags;
   std::string const fLogCategory;
   geo::GeometryCore const& fGeom;
+  geo::WireReadoutGeom const& fWireReadoutGeom;
   detinfo::DetectorPropertiesData const* fDetProps = nullptr;
   detinfo::DetectorTimings const* fDetTimings = nullptr;
   
@@ -461,6 +462,7 @@ icarus::trigger::details::EventInfoExtractor::EventInfoExtractor(
   TimeSpan_t inSpillTimes,
   TimeSpan_t inPreSpillTimes,
   geo::GeometryCore const& geom,
+  geo::WireReadoutGeom const& wireReadoutAlg,
   detinfo::DetectorPropertiesData const* detProps,
   detinfo::DetectorTimings const* detTimings,
   std::string logCategory,
@@ -469,7 +471,7 @@ icarus::trigger::details::EventInfoExtractor::EventInfoExtractor(
   : EventInfoExtractor{
       std::move(truthTags), std::move(edepTags),
       inSpillTimes, inPreSpillTimes,
-      geom, detProps, detTimings, std::move(logCategory)
+      geom, wireReadoutAlg, detProps, detTimings, std::move(logCategory)
     }
 {
   declareConsumables(consumesCollector, fGeneratorTags, fEnergyDepositTags);
@@ -608,6 +610,7 @@ icarus::trigger::details::EventInfoExtractorMaker::EventInfoExtractorMaker(
   std::vector<art::InputTag> truthTags,
   EDepTags_t edepTags,
   geo::GeometryCore const& geom,
+  geo::WireReadoutGeom const& wireReadoutAlg,
   detinfo::DetectorPropertiesData const* detProps,
   detinfo::DetectorTimings const* detTimings,
   std::string logCategory,
@@ -615,7 +618,7 @@ icarus::trigger::details::EventInfoExtractorMaker::EventInfoExtractorMaker(
   )
   : EventInfoExtractorMaker(
       std::move(truthTags), std::move(edepTags),
-      geom, detProps, detTimings, std::move(logCategory)
+      geom, wireReadoutAlg, detProps, detTimings, std::move(logCategory)
       )
 {
   EventInfoExtractor::declareConsumables
@@ -627,4 +630,3 @@ icarus::trigger::details::EventInfoExtractorMaker::EventInfoExtractorMaker(
 
 
 #endif // ICARUSCODE_PMT_TRIGGER_ALGORITHM_DETAILS_EVENTINFOUTILS_H
-

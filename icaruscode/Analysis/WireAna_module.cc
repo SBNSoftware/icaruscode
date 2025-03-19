@@ -200,16 +200,16 @@ void WireAna::analyze(const art::Event& event)
         
         // Recover list of simChannels mapped by channel to make
         // look up easier below
-        IWireHistogramTool::SimChannelMap channelMap;
+        IWireHistogramTool::SimChannelMap wireReadout;
         
         if (simChannelHandle.isValid())
         {
-            for(const auto& simChannel : *simChannelHandle) channelMap[simChannel.Channel()] = &simChannel;
+            for(const auto& simChannel : *simChannelHandle) wireReadout[simChannel.Channel()] = &simChannel;
 //            {
 //                raw::ChannelID_t       channel       = simChannel.Channel();
 //                const sim::SimChannel* simChannelPtr = &simChannel;
 //
-//                channelMap.at(channel) = simChannelPtr;
+//                wireReadout.at(channel) = simChannelPtr;
 //            }
         }
     
@@ -218,7 +218,7 @@ void WireAna::analyze(const art::Event& event)
             IWireHistogramTool::WirePtrVec wireVec;
             art::fill_ptr_vector(wireVec, wireHandle);
     
-            for(auto& wireHistTool : fWireHistogramToolVec) wireHistTool->fillHistograms(wireVec,channelMap,fNumEvents);
+            for(auto& wireHistTool : fWireHistogramToolVec) wireHistTool->fillHistograms(wireVec,wireReadout,fNumEvents);
         }
     }
 

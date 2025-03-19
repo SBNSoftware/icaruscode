@@ -27,6 +27,7 @@ art_make(
                         FFTW3::FFTW3
                         Boost::system
 			ROOT::Core
+			ROOT::Gpad
         )
 
 install_headers()

@@ -642,6 +642,7 @@ std::string_view icarus::ParsingToolkit::findFirstUnescaped
     std::size_t pos = 0;
     while (pos < sv.length()) {
       pos = sv.find(*iKey, pos);
+      if (pos == std::string_view::npos) break;
       if (!isCharacterEscaped(sv.begin(), sv.begin() + pos)) break;
       ++pos;
     }

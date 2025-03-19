@@ -1,4 +1,6 @@
 #include "CRTT0MatchAlg.h"
+
+#include "larcore/Geometry/WireReadout.h"
 #include "larcore/CoreUtils/ServiceUtil.h" // lar::providerFrom()
 
 namespace icarus{
@@ -31,6 +33,7 @@ namespace icarus{
     //  fDistEndpointAVedge = pset.get<double>(.DistEndpointAVedge();
 
     fGeometryService    = lar::providerFrom<geo::Geometry>();//GeometryService;
+    fChannelMap         = &art::ServiceHandle<geo::WireReadout>()->Get();
     fSCE                = lar::providerFrom<spacecharge::SpaceChargeService>();
     //fSCE = SCE;
     return;
@@ -357,8 +360,8 @@ namespace icarus{
     auto start = tpcTrack.Vertex();
     auto end = tpcTrack.End();
     // Get the drift direction from the TPC
-    int driftDirection = TPCGeoUtil::DriftDirectionFromHits(fGeometryService, hits);
-    std::pair<double, double> xLimits = TPCGeoUtil::XLimitsFromHits(fGeometryService, hits);
+    int driftDirection = TPCGeoUtil::DriftDirectionFromHits(*fGeometryService, hits);
+    std::pair<double, double> xLimits = TPCGeoUtil::XLimitsFromHits(*fGeometryService, *fChannelMap, hits);
     // Get the allowed t0 range
     std::pair<double, double> t0MinMax = TrackT0Range(detProp, start.X(), end.X(), driftDirection, xLimits);
 
@@ -385,10 +388,10 @@ namespace icarus{
 
 
     // Get the drift direction from the TPC
-    int driftDirection = TPCGeoUtil::DriftDirectionFromHits(fGeometryService, hits);
+    int driftDirection = TPCGeoUtil::DriftDirectionFromHits(*fGeometryService, hits);
     //std::cout << "size of hit in a track: " << hits.size() << ", driftDirection: "<< driftDirection 
     //	      << " , tpc: "<< hits[0]->WireID().TPC << std::endl; //<< " , intpc: "<< icarus::TPCGeoUtil::DetectedInTPC(hits) << std::endl;
-    std::pair<double, double> xLimits = TPCGeoUtil::XLimitsFromHits(fGeometryService, hits);
+    std::pair<double, double> xLimits = TPCGeoUtil::XLimitsFromHits(*fGeometryService, *fChannelMap, hits);
     // Get the allowed t0 range
     std::pair<double, double> t0MinMax = TrackT0Range(detProp, start.X(), end.X(), driftDirection, xLimits);
 
@@ -846,10 +849,10 @@ namespace icarus{
 
 
     // Get the drift direction from the TPC
-    int driftDirection = TPCGeoUtil::DriftDirectionFromHits(fGeometryService, hits);
+    int driftDirection = TPCGeoUtil::DriftDirectionFromHits(*fGeometryService, hits);
     //std::cout << "size of hit in a track: " << hits.size() << ", driftDirection: "<< driftDirection 
     //	      << " , tpc: "<< hits[0]->WireID().TPC << std::endl; //<< " , intpc: "<< icarus::TPCGeoUtil::DetectedInTPC(hits) << std::endl;
-    std::pair<double, double> xLimits = TPCGeoUtil::XLimitsFromHits(fGeometryService, hits);
+    std::pair<double, double> xLimits = TPCGeoUtil::XLimitsFromHits(*fGeometryService, *fChannelMap, hits);
     // Get the allowed t0 range
     std::pair<double, double> t0MinMax = TrackT0Range(detProp, start.X(), end.X(), driftDirection, xLimits);
 

@@ -1,0 +1,13 @@
+#include "dissonant_higgs_gen.fcl"
+
+physics.producers.generator.Decay.AllowPionDecay: false
+physics.producers.generator.Decay.AllowPi0Decay: false
+
+physics.producers.generator.Decay.ReferenceHiggsMixing: 2e-5
+physics.producers.generator.Flux.MixingAngle: 2e-5
+
+physics.producers.generator.RayTrace.MaxWeightFudge: 1.
+physics.producers.generator.RayTrace.ReferenceLabSolidAngle: 1e-4
+
+higgsM: 0.33
+#include "set_higgsM.fcl"

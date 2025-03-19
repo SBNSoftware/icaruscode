@@ -3,6 +3,8 @@
 
 #include "icaruscode/CRT/CRTUtils/CRTDetSimAlg.h"
 
+#include "larcore/Geometry/AuxDetGeometry.h"
+
 namespace icarus{
  namespace crt {
 
@@ -471,10 +473,11 @@ namespace icarus{
                                    const uint32_t adid, const uint32_t adsid, const vector<sim::AuxDetIDE>& ides) {
 
         art::ServiceHandle<geo::Geometry> geoService;
+        auto const& auxDetGeom = art::ServiceHandle<geo::AuxDetGeometry const>()->GetProvider();
         detinfo::ElecClock trigClock = clockData.TriggerClock();
         fHasFilledTaggers = true;
 
-        const geo::AuxDetGeo& adGeo = geoService->AuxDet(adid); //pointer to module object
+        const geo::AuxDetGeo& adGeo = auxDetGeom.AuxDet(adid); //pointer to module object
         const geo::AuxDetSensitiveGeo& adsGeo = adGeo.SensitiveVolume(adsid); //pointer to strip object
         const char auxDetType = fCrtutils->GetAuxDetType(adid); //CRT module type (c, d, or m)
         const string region = fCrtutils->GetAuxDetRegion(adid); //CRT region

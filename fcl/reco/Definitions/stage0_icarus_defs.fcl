@@ -9,6 +9,7 @@
 #include "recowire_icarus.fcl"
 #include "hitfindermodules_icarus.fcl"
 #include "timing_icarus.fcl"
+#include "timing_beam.fcl"
 #include "icarus_ophitfinder.fcl"
 #include "icarus_flashfinder.fcl"
 #include "trigger_emulation_icarus.fcl"
@@ -114,6 +115,9 @@ icarus_stage0_producers:
   opflashCryoW:                   @local::ICARUSSimpleFlashDataCryoW
 
   daqPMTonbeam:                   @local::copyPMTonBeam
+
+  ### Beam timing
+  beamTiming:                     @local::icarus_beam_signal_extractor
 
   ### Purity monitoring
   purityana0:                     { module_type: "ICARUSPurityDQM" }
@@ -243,6 +247,7 @@ icarus_stage0_PMT:                  [ triggerconfig,
                                       daqTrigger,
                                       pmtconfig,
                                       daqPMT,
+                                      beamTiming,
                                       pmtconfigbaselines,
                                       pmtthr,
                                       pmtbaselines,

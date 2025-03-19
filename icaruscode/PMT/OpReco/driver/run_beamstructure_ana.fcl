@@ -1,0 +1,82 @@
+#################################################################
+# File: run_beamstructure_ana.fcl
+# Author: M. Vicenzi (mvicenzi@bnl.gov)
+# 
+# Description:
+# Simple off-the-shelf example to run the beam structure analysis.
+# It produces all ingredients for the light-only reconstruction of the beam bunch structure.
+# This is meant to be run directly on raw files as it defines all the needed producers.
+# Output contains both RWM/EW information and OpFlash/CRT timing information.
+
+#include "services_common_icarus.fcl"
+#include "channelmapping_icarus.fcl"
+#include "timing_icarus.fcl"
+
+#include "decoderdefs_icarus.fcl"
+#include "icarus_ophitfinder.fcl"
+#include "icarus_flashfinder.fcl"
+#include "icarus_opana_modules.fcl"
+#include "timing_beam.fcl"
+
+#include "crt_decoderdefs_icarus.fcl"
+#include "crthitproducer.fcl"
+#include "crtpmtmatchingproducer.fcl"
+#include "icarus_FilterCRTPMTMatching.fcl"
+
+process_name: beamana
+
+services:
+{
+  @table::icarus_art_services    # from services_common_icarus.fcl
+  @table::icarus_basic_services  # from services_basic_icarus.fcl
+  @table::icarus_geometry_services
+  DetectorClocksService:       @local::icarus_detectorclocks
+  IICARUSChannelMap:           @local::icarus_channelmappinggservice
+  IPMTTimingCorrectionService: @local::icarus_pmttimingservice
+  TFileService: { fileName: "supplemental-%ifb-%p.root" }
+}
+
+physics:
+{
+    producers:
+    {
+      triggerconfig: @local::extractTriggerConfig
+      pmtconfig:     @local::extractPMTconfig
+    
+      daqTrigger:    @local::decodeTriggerAutodetect   
+      daqPMT:        @local::decodePMT
+      daqCRT:        @local::crtdaq_icarus
+
+      ophituncorrected:  @local::icarus_ophit_data
+      ophit:             @local::icarus_ophit_timing_correction
+      beamTiming:        @local::icarus_beam_signal_extractor
+      opflashCryoE: @local::ICARUSSimpleFlashDataCryoE
+      opflashCryoW: @local::ICARUSSimpleFlashDataCryoW
+      
+      crthit:        @local::standard_crthitproducer
+      crtpmt:        @local::standard_crtpmtmatchingproducer
+    }
+
+    analyzers:
+    {
+      beamana:       @local::ICARUSBeamStructureAna
+    }
+
+    my_producers: [ triggerconfig, pmtconfig, daqTrigger, daqPMT, daqCRT, ophituncorrected, ophit, beamTiming, opflashCryoE, opflashCryoW, crthit, crtpmt ]
+    my_analyzers: [ beamana ]
+
+    trigger_paths: [ my_producers ]
+    end_paths: [ my_analyzers ]
+}
+    
+### REQUIRED PRODUCERS ###
+physics.producers.daqTrigger.DecoderTool.Decoders[0].ToolConfig.TrigConfigLabel: triggerconfig
+physics.producers.daqTrigger.DecoderTool.Decoders[1].ToolConfig.TrigConfigLabel: triggerconfig
+physics.producers.daqTrigger.DecoderTool.Decoders[2].ToolConfig.TrigConfigLabel: triggerconfig
+
+physics.producers.daqPMT.PMTconfigTag: pmtconfig # required
+physics.producers.daqPMT.TriggerTag:   daqTrigger # required
+physics.producers.ophit.InputLabels:  [ "ophituncorrected" ]
+
+physics.producers.beamTiming.DebugTrees: true
+physics.analyzers.beamana.RWMLabel: "beamTiming:RWM"

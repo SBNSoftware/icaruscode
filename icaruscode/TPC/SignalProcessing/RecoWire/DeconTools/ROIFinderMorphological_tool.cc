@@ -11,7 +11,7 @@
 #include "messagefacility/MessageLogger/MessageLogger.h"
 #include "cetlib_except/exception.h"
 #include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
-#include "larcore/Geometry/Geometry.h"
+#include "larcore/Geometry/WireReadout.h"
 #include "larcore/CoreUtils/ServiceUtil.h" // lar::providerFrom()
 #include "icarus_signal_processing/WaveformTools.h"
 
@@ -108,7 +108,7 @@ private:
     icarus_signal_processing::WaveformTools<float> fWaveformTool;
 
     // Services
-    const geo::GeometryCore*                    fGeometry = lar::providerFrom<geo::Geometry>();
+    const geo::WireReadoutGeom* fChannelMapAlg = &art::ServiceHandle<geo::WireReadout const>()->Get();
 };
     
 //----------------------------------------------------------------------
@@ -648,7 +648,7 @@ icarus_tool::HistogramMap ROIFinderMorphological::initializeHistograms(size_t ch
     if (fOutputWaveforms)
     {
         // Try to limit to the wire number (since we are already segregated by plane)
-        std::vector<geo::WireID> wids  = fGeometry->ChannelToWire(channel);
+        std::vector<geo::WireID> wids  = fChannelMapAlg->ChannelToWire(channel);
         size_t                   cryo  = wids[0].Cryostat;
         size_t                   tpc   = wids[0].TPC;
 //        size_t                   plane = wids[0].Plane;

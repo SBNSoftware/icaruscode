@@ -11,7 +11,7 @@
 #include "messagefacility/MessageLogger/MessageLogger.h"
 #include "cetlib_except/exception.h"
 #include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
-#include "larcore/Geometry/Geometry.h"
+#include "larcore/Geometry/WireReadout.h"
 #include "larcore/CoreUtils/ServiceUtil.h" // lar::providerFrom()
 #include "icarus_signal_processing/WaveformTools.h"
 
@@ -77,7 +77,7 @@ private:
     icarus_signal_processing::WaveformTools<float>         fWaveformTool;
 
     // Services
-    const geo::GeometryCore*                    fGeometry = lar::providerFrom<geo::Geometry>();
+    const geo::WireReadoutGeom* fChannelMapAlg = &art::ServiceHandle<geo::WireReadout const>()->Get();
 };
     
 //----------------------------------------------------------------------
@@ -164,9 +164,9 @@ void ROIFinderDifferential::FindROIs(const Waveform& waveform, size_t channel, s
     // max and min is more than the threshold are kept.
     
     // First up, determine what kind of wire we have
-    std::vector<geo::WireID> wids    = fGeometry->ChannelToWire(channel);
+    std::vector<geo::WireID> wids    = fChannelMapAlg->ChannelToWire(channel);
     const geo::PlaneID&      planeID = wids[0].planeID();
-    geo::SigType_t           sigType = fGeometry->SignalType(planeID);
+    geo::SigType_t           sigType = fChannelMapAlg->SignalType(planeID);
     
     // Local copy of the input waveform
     Waveform waveformDeriv(waveform.size());
@@ -209,7 +209,7 @@ void ROIFinderDifferential::FindROIs(const Waveform& waveform, size_t channel, s
         fDiffRmsHist->Fill(truncRMS, 1.);
         
         // Try to limit to the wire number (since we are already segregated by plane)
-        std::vector<geo::WireID> wids = fGeometry->ChannelToWire(channel);
+        std::vector<geo::WireID> wids = fChannelMapAlg->ChannelToWire(channel);
         size_t                   wire = wids[0].Wire;
         
         // Make a directory for these histograms

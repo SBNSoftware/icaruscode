@@ -1,0 +1,18 @@
+#include "CAEN_V1730_setup_icarus.fcl"
+
+BEGIN_PROLOG
+
+icarus_beam_signal_extractor: 
+{
+    module_type: "PMTBeamSignalsExtractor"
+    TriggerLabel: "daqTrigger"
+    EWlabel: "daqPMT:EW"
+    RWMlabel: "daqPMT:RWM"
+    TriggerCorrectionLabel: "daqPMT:globtrg"
+    ADCThreshold: 200
+    BoardSetup: @local::icarus_V1730_setup
+    DebugTrees: false
+    SaveWaveforms: false
+}
+
+END_PROLOG
