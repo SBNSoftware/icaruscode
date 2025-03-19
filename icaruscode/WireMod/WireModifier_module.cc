@@ -17,6 +17,8 @@
 
 // larsoft includes
 #include "larcore/Geometry/Geometry.h"
+#include "larcore/Geometry/WireReadout.h"
+#include "larcorealg/Geometry/WireReadoutGeom.h"
 #include "larcore/CoreUtils/ServiceUtil.h" // lar::providerFrom()
 #include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
 #include "lardata/Utilities/AssociationUtil.h"
@@ -27,7 +29,6 @@
 
 // wiremod
 #include "sbncode/WireMod/Utility/WireModUtility.hh"
-#include "sbncode/WireMod/Utility/WireModUtility.cc"
 
 //namespace
 namespace wiremod
@@ -43,6 +44,7 @@ namespace wiremod
 
     private:
       const geo::GeometryCore* fGeometry = lar::providerFrom<geo::Geometry>(); // get the geometry
+      const geo::WireReadoutGeom* fWireReadout = &(art::ServiceHandle<geo::WireReadout const>()->Get());
       std::string fRatioFileName; // there is where we try to grab the splines/graphs (if they exist)
       TSpline3*              fSpline_charge_Channel;
       TSpline3*              fSpline_sigma_Channel;
@@ -344,7 +346,7 @@ namespace wiremod
     std::unique_ptr<std::vector<recob::ChannelROI>> new_crois(new std::vector<recob::ChannelROI>());
     //std::unique_ptr<art::Assns<raw::RawDigit, recob::Wire>> new_digit_assn(new art::Assns<raw::RawDigit, recob::Wire>());
 
-    sys::WireModUtility wmUtil(fGeometry, detProp); // detector geometry & properties
+    sys::WireModUtility wmUtil(fGeometry, fWireReadout, detProp); // detector geometry & properties
     wmUtil.applyChannelScale = fApplyChannel;
     wmUtil.applyXScale       = fApplyX;
     wmUtil.applyYZScale      = fApplyYZ;
@@ -411,7 +413,7 @@ namespace wiremod
         << "(" << hitPtr->Integral() << ") / (" << hitPtr->PeakAmplitude() << " * " << hitPtr->RMS() << " * 2.506628275) = " << (hitPtr->Integral() / (hitPtr->PeakAmplitude() * hitPtr->RMS() * 2.506628275));
       art::Ptr<recob::Wire> wirePtr = hitToWireAssns.at(hitPtr.key());
 
-      readout::ROPID ropID = fGeometry->ChannelToROP(wirePtr->Channel());
+      readout::ROPID ropID = fWireReadout->ChannelToROP(wirePtr->Channel());
       std::string titleStr =  "Cryo_"         + std::to_string(ropID.Cryostat)
                            + "_TPCset_"       + std::to_string(ropID.TPCset)
                            + "_ReadOutPlane_" + std::to_string(ropID.ROP)
@@ -521,7 +523,7 @@ namespace wiremod
     std::unique_ptr<std::vector<recob::ChannelROI>> new_crois(new std::vector<recob::ChannelROI>());
     //std::unique_ptr<art::Assns<raw::RawDigit, recob::Wire>> new_digit_assn(new art::Assns<raw::RawDigit, recob::Wire>());
 
-    sys::WireModUtility wmUtil(fGeometry, detProp); // detector geometry & properties
+    sys::WireModUtility wmUtil(fGeometry, fWireReadout, detProp); // detector geometry & properties
     wmUtil.applyChannelScale = fApplyChannel;
     wmUtil.applyXScale       = fApplyX;
     wmUtil.applyYZScale      = fApplyYZ;
@@ -591,7 +593,7 @@ namespace wiremod
       MF_LOG_DEBUG("WireModifier")
         << "Checking wire " << i_w;
 
-      auto const& wire = wireVec[i_w];
+      auto const& wire = wireVec.at(i_w);
 
 
       recob::Wire::RegionsOfInterest_t new_rois;
@@ -600,16 +602,16 @@ namespace wiremod
       new_rois_ints.resize(wire.SignalROI().size());
 
       unsigned int my_plane = geo::kUnknown;
-      if        (wire.View() == fGeometry->View(geo::PlaneID(0, 0, 0)))
+      if (wire.View() == fWireReadout->Plane(geo::PlaneID(0, 0, 0)).View())
       {
         MF_LOG_DEBUG("WireModifier")
           << "Wire is on plane 0, view " << wire.View();
         my_plane = 0;
-      } else if (wire.View() == fGeometry->View(geo::PlaneID(0, 0, 1))) {
+      } else if (wire.View() == fWireReadout->Plane(geo::PlaneID(0, 0, 1)).View()) {
         MF_LOG_DEBUG("WireModifier")
           << "Wire is on plane 1, view " << wire.View();
         my_plane = 1;
-      } else if (wire.View() == fGeometry->View(geo::PlaneID(0, 0, 2))) {
+      } else if (wire.View() == fWireReadout->Plane(geo::PlaneID(0, 0, 2)).View()) {
         MF_LOG_DEBUG("WireModifier")
           << "Wire is on plane 2, view " << wire.View();
         my_plane = 2;
@@ -748,7 +750,7 @@ namespace wiremod
 
       if (fSaveHistsByChannel && isModified)
       {
-        readout::ROPID ropID = fGeometry->ChannelToROP(wire.Channel());  
+        readout::ROPID ropID = fWireReadout->ChannelToROP(wire.Channel());  
         std::string titleStr =  "Cryo-"         + std::to_string(ropID.Cryostat)
                              + "_TPCset-"       + std::to_string(ropID.TPCset)
                              + "_ReadOutPlane-" + std::to_string(ropID.ROP)
@@ -772,7 +774,7 @@ namespace wiremod
 
       if (fSaveHistsByWire && isModified)
       {
-        std::vector<geo::WireID> wireIDs = fGeometry->ChannelToWire(wire.Channel());
+        std::vector<geo::WireID> wireIDs = fWireReadout->ChannelToWire(wire.Channel());
         mf::LogDebug("WireModifier")
           << "Channel " << wire.Channel() << " has " << wireIDs.size() << " wire(s)";
         for (auto const& wireID : wireIDs)

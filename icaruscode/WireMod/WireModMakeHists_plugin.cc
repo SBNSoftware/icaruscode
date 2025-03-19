@@ -18,6 +18,8 @@
 
 // Framework includes
 #include "larcore/Geometry/Geometry.h"
+#include "larcore/Geometry/WireReadout.h"
+#include "larcorealg/Geometry/WireReadoutGeom.h"
 #include "larcore/CoreUtils/ServiceUtil.h" // lar::providerFrom()
 #include "art/Framework/Core/ResultsProducer.h"
 #include "art/Framework/Core/ModuleMacros.h"
@@ -107,6 +109,7 @@ namespace WireMod {
 
   private:
       const geo::GeometryCore* fGeometry = lar::providerFrom<geo::Geometry>();
+      const geo::WireReadoutGeom* fWireReadout = &(art::ServiceHandle<geo::WireReadout const>()->Get());
       art::InputTag fLabel;      ///< Label for hits/wires in the input file
       art::InputTag fTrackLabel; ///< Label for tracks in the input file
       bool fGetHits;             ///< Flag for getting hits
@@ -589,8 +592,8 @@ namespace WireMod {
               loopdata[planeID][cryoID][tpcID][1][0].push_back(hitLoc.Y());
               loopdata[planeID][cryoID][tpcID][2][0].push_back(hitLoc.Z());
 
-              double sinZ = fGeometry->WirePtr(hitPtr->WireID())->SinThetaZ();
-              double cosZ = fGeometry->WirePtr(hitPtr->WireID())->CosThetaZ();
+              double sinZ = fWireReadout->WirePtr(hitPtr->WireID())->SinThetaZ();
+              double cosZ = fWireReadout->WirePtr(hitPtr->WireID())->CosThetaZ();
               double localXDir =      hitDir.X();
               double localYDir = cosZ*hitDir.Y() + sinZ*hitDir.Z();
               double localZDir = cosZ*hitDir.Z() - sinZ*hitDir.Y();

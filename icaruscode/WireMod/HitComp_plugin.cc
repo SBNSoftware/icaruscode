@@ -24,6 +24,8 @@
 #include "messagefacility/MessageLogger/MessageLogger.h"
 #include "canvas/Utilities/InputTag.h"
 #include "larcore/Geometry/Geometry.h"
+#include "larcore/Geometry/WireReadout.h"
+#include "larcorealg/Geometry/WireReadoutGeom.h"
 #include "larcore/CoreUtils/ServiceUtil.h" // lar::providerFrom()
 #include "lardata/Utilities/AssociationUtil.h"
 #include "lardataobj/RecoBase/Track.h"
@@ -43,6 +45,7 @@ namespace WireMod {
 
   private:
     const geo::GeometryCore* fGeometry = lar::providerFrom<geo::Geometry>(); // get the geometry
+    const geo::WireReadoutGeom* fWireReadout = &(art::ServiceHandle<geo::WireReadout const>()->Get());
     const double fPi = std::acos(-1); // get pi so I don't have to care later
 
     art::InputTag fTag;            // how the hits/wires are labeled in the input file
@@ -191,7 +194,7 @@ namespace WireMod {
           if (hitInTrack == std::numeric_limits<unsigned int>::max() || not track->HasValidPoint(hitInTrack))
             continue;
           geo::PlaneID planeID = hit->WireID().planeID();
-          geo::PlaneGeo planeGeo = fGeometry->Plane(planeID);
+          geo::PlaneGeo planeGeo = fWireReadout->Plane(planeID);
           double trackDirX = track->DirectionAtPoint(hitInTrack).X();
           double trackDirY = track->DirectionAtPoint(hitInTrack).Y();
           double trackDirZ = track->DirectionAtPoint(hitInTrack).Z();

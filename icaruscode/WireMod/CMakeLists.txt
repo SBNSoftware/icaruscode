@@ -1,7 +1,5 @@
 set(EXCLUDED_PLUGINS WireModMakeHists_plugin.cc ROICounter_module.cc HitComp_plugin.cc HitTTreeMaker_plugin.cc WireModifier_module.cc)
 
-add_subdirectory(Utility)
-
 art_make( 
 	  LIB_LIBRARIES
 			${ART_FRAMEWORK_CORE}
@@ -201,6 +199,7 @@ simple_plugin(WireModifier "module"
               lardata::Utilities
               lardata::DetectorInfoServices_DetectorClocksServiceStandard_service
               sbnobj::ICARUS_TPC
+              sbncode::WireMod_Utility
               BASENAME_ONLY
 )
 
