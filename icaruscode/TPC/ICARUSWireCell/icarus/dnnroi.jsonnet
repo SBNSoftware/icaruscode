@@ -10,10 +10,10 @@
 local wc = import "wirecell.jsonnet";
 local pg = import "pgraph.jsonnet";
 
-function (anode, ts_u, ts_v, prefix="dnnroi", output_scale=1.0, nchunk_u=2, nchunk_v=4)
+function (anode, ts_u, ts_v, prefix="dnnroi", output_scale=1, nchunk_u=2, nchunk_v=4)
     local apaid = anode.data.ident;
     local prename = prefix + std.toString(apaid);
-    local intags = ['loose_lf%d'%apaid, // 'mp2_roi%d'%apaid,
+    local intags = ['loose_lf%d'%apaid, 'mp2_roi%d'%apaid,
                      'mp3_roi%d'%apaid];
 
     local dnnroi_u = pg.pnode({
@@ -22,12 +22,14 @@ function (anode, ts_u, ts_v, prefix="dnnroi", output_scale=1.0, nchunk_u=2, nchu
         data: {
             anode: wc.tn(anode),
             plane: 0,
+            nticks: 4096,
             intags: intags,
             decon_charge_tag: "decon%d" %apaid,
             outtag: "dnnsp%du"%apaid,
             output_scale: output_scale,
+            input_scale: 0.00025,
             forward: wc.tn(ts_u),
-            tick_per_slice: 8,
+            tick_per_slice: 4,
             nchunks: nchunk_u
         }
     }, nin=1, nout=1, uses=[ts_u, anode]);
@@ -37,12 +39,14 @@ function (anode, ts_u, ts_v, prefix="dnnroi", output_scale=1.0, nchunk_u=2, nchu
         data: {
             anode: wc.tn(anode),
             plane: 1,
+            nticks: 4096,
             intags: intags,
             decon_charge_tag: "decon%d" %apaid,
             outtag: "dnnsp%dv"%apaid,
             output_scale: output_scale,
+            input_scale: 0.00025,
             forward: wc.tn(ts_v),
-            tick_per_slice: 8,
+            tick_per_slice: 4,
             nchunks: nchunk_v
         }
     }, nin=1, nout=1, uses=[ts_v, anode]);

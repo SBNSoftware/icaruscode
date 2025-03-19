@@ -167,7 +167,7 @@ local wcls_output = {
       frame_scale: [std.extVar('gain_ADC_per_e')],
 
       // nticks: params.daq.nticks,
-      chanmaskmaps: [],
+      chanmaskmaps: ['bad'],
       nticks: -1,
       plane_map: {
         "1": 3, // front induction: WireCell::kULayer -> geo::kH (1 -> 3)
@@ -216,12 +216,13 @@ local chndb = [{
 } for n in std.range(0, std.length(tools.anodes) - 1)];
 
 local nf_maker = import 'pgrapher/experiment/icarus/nf.jsonnet';
-local nf_pipes = [nf_maker(params, tools.anodes[n], chndb[n], tools, name='nf%d' % n) for n in std.range(0, std.length(tools.anodes) - 1)];
+local nf_pipes = [nf_maker(tools.anodes[n], chndb[n], tools, name='nf%d' % n) for n in std.range(0, std.length(tools.anodes) - 1)];
 
 local sp_override = { // assume all tages sets in base sp.jsonnet
     sparse: sigoutform == 'sparse',
     use_roi_refinement: true,
     use_roi_debug_mode: true,
+    save_negtive_charge: true,
     wiener_tag: "",
     // gauss_tag: "",
     tight_lf_tag: "",
@@ -240,7 +241,9 @@ local sp_override = { // assume all tages sets in base sp.jsonnet
     isWrapped: true,
     nwires_separate_planes: [
       [1056, 1056], [5600], [5600]
-    ]
+    ],
+    troi_col_th_factor: std.parseJson(std.extVar('col_threshold_factor'))*1.0, // multiply by 1 to make into float
+    troi_ind_th_factor: std.parseJson(std.extVar('ind_threshold_factor'))*1.0
 };
 local sp = sp_maker(params, tools, sp_override);
 local sp_pipes = [sp.make_sigproc(a) for a in tools.anodes];
@@ -288,10 +291,10 @@ local nfsp_pipes = [
                chsel_pipes[n],
                // magnifyio.orig_pipe[n],
 
-               // nf_pipes[n],
+               nf_pipes[n],
                // magnifyio.raw_pipe[n],
                sp_pipes[n],
-               dnnroi(tools.anodes[n], ts_u, ts_v, output_scale=1),
+               dnnroi(tools.anodes[n], ts_u, ts_v),
                // magnifyio.decon_pipe[n],
                // magnifyio.threshold_pipe[n],
                // magnifyio.debug_pipe[n], // use_roi_debug_mode: true in sp.jsonnet
@@ -340,7 +343,7 @@ local fanin_tag_rules = [
           }
           for ind in [this_anode.data.ident]
         ];
-local fanpipe = util.fanpipe('FrameFanout', nfsp_pipes, 'FrameFanin', 'nfsp', [], fanout_tag_rules, fanin_tag_rules);
+local fanpipe = util.fanpipe('FrameFanout', nfsp_pipes, 'FrameFanin', 'nfsp%d' % volume, [], fanout_tag_rules, fanin_tag_rules);
 
 local retagger = g.pnode({
   type: 'Retagger',
