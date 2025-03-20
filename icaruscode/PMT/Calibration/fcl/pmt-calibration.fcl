@@ -38,8 +38,9 @@ pmt_spr_calibration:
   FilterInGate: [ -3., 7. ] #in us
   FilterInTime: true
   TimeWindow: 1.0 # in us 
-  prePulseSamples: 100
-  afterPulseSamples: 400
+  PrePulseSamples: 100
+  AfterPulseSamples: 400
+  AmplitudeMax: 100
 
   PedAlgoRollingMeanMaker: {
     tool_type: "PedAlgoRollingMeanMaker"

@@ -101,6 +101,7 @@ private:
   // select isolated ophits  
   bool m_filter_intime;
   double m_time_window;
+  double m_amplitude_max;
 
   // waveform length
   std::size_t m_prepulseSamples;
@@ -139,8 +140,10 @@ pmtcalo::PMTSPRCalibration::PMTSPRCalibration(fhicl::ParameterSet const& pset)
    m_filter_intime = pset.get<bool>("FilterInTime", true); 
    m_time_window = pset.get<double>("TimeWindow", 0.2 ); //in us
   
-   m_prepulseSamples = pset.get<std::size_t>("prePulseSamples",100);
-   m_afterpulseSamples = pset.get<std::size_t>("afterPulseSamples",400);
+   m_prepulseSamples = pset.get<std::size_t>("PrePulseSamples",100);
+   m_afterpulseSamples = pset.get<std::size_t>("AfterPulseSamples",400);
+
+   m_amplitude_max = pset.get<std::size_t>("AmplitudeMax",0);
 
    fPedAlgo = art::make_tool<opdet::IPedAlgoMakerTool>(pset.get<fhicl::ParameterSet>("PedAlgoRollingMeanMaker"))->makeAlgo();
 }
@@ -284,6 +287,7 @@ void pmtcalo::PMTSPRCalibration::analyze(art::Event const& event)
      m_amplitude = ophit.Amplitude(); // ADC 
      m_integral = ophit.Area(); // ADC x tick = ADC x 2ns
 
+     if( m_amplitude > m_amplitude_max ) continue; //skip large pulses (even if isolated)
 
      for (auto jt = wfCollection.begin(); jt != wfCollection.end(); ++jt) {
 
