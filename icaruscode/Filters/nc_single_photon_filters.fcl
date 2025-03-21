@@ -1,0 +1,51 @@
+# define NC 1phton inclusive filter
+nc_single_photon:
+{
+  module_type: "FinalStateTopologyFilter"
+  GenieModuleLabel: "generator" 
+  # 22: photons, want exactly 1
+  # +/- 13: muons, want exactly 0
+  # +/- 11: electrons, want exactly 0
+  PDG:                 [ 22,    13,  -13,   11,  -11]
+  PDGCount:            [  1,     0,    0,    0,    0]
+  PDGCountExclusivity: [true, true, true, true, true]
+  # We are being inclusive. Accept any hadronic activity
+  IsInclusive: true
+  IsVerbose: true
+}
+
+# define NC 1photon1proton inclusive filter
+nc_single_photon_single_proton:
+{
+  module_type: "FinalStateTopologyFilter"
+  GenieModuleLabel: "generator" 
+  # 22: photons, want exactly 1
+  # 2212: protons, want exactly 1
+  # +/- 13: muons, want exactly 0
+  # +/- 11: electrons, want exactly 0
+  PDG:                 [ 22,  2212,   13,  -13,   11,  -11]
+  PDGCount:            [  1,     1,    0,    0,    0,    0]
+  PDGCountExclusivity: [true, true, true, true, true, true]
+  # We are being inclusive. Accept any (other) hadronic activity
+  IsInclusive: true
+  IsVerbose: true
+}
+
+# define NC 1phton inclusive filter requiring the photons come from a Delta
+nc_single_photon_deltaOrigin:
+{
+  module_type: "FinalStateTopologyFilter"
+  GenieModuleLabel: "generator" 
+  # 22: photons, want exactly 1
+  # +/- 13: muons, want exactly 0
+  # +/- 11: electrons, want exactly 0
+  PDG:                 [ 22,    13,  -13,   11,  -11]
+  PDGCount:            [  1,     0,    0,    0,    0]
+  PDGCountExclusivity: [true, true, true, true, true]
+  # the photons should come from a delta
+  # don't care about the others
+  PDGOrigin:           [[1114, 2114, 2214, 2224], [], [], [], []]
+  # We are being inclusive. Accept any hadronic activity
+  IsInclusive: true
+  IsVerbose: true
+}
