@@ -1,20 +1,21 @@
 BEGIN_PROLOG
 
-standard_fragmentplots
+standard_fragmentplots:
 {
   module_type: "FragmentPlots"
-  FragmenntLabel: "daq:PHYSCRATEDATATPCWW"
+  FragmentLabel: "daq:PHYSCRATEDATATPCWW"
 }
 
 fragmentplots_ww: @local::standard_fragmentplots
+fragmentplots_ww.FragmentLabel: "daq:PHYSCRATEDATATPCWW"
 
 fragmentplots_we: @local::standard_fragmentplots
-fragmentplots_we.FragmenntLabel: "daq:PHYSCRATEDATATPCWE"
+fragmentplots_we.FragmentLabel: "daq:PHYSCRATEDATATPCWE"
 
 fragmentplots_ew: @local::standard_fragmentplots
-fragmentplots_ew.FragmenntLabel: "daq:PHYSCRATEDATATPCEW"
+fragmentplots_ew.FragmentLabel: "daq:PHYSCRATEDATATPCEW"
 
 fragmentplots_ee: @local::standard_fragmentplots
-fragmentplots_ee.FragmenntLabel: "daq:PHYSCRATEDATATPCEE"
+fragmentplots_ee.FragmentLabel: "daq:PHYSCRATEDATATPCEE"
 
 END_PROLOG

@@ -15,7 +15,10 @@ set(MODULE_LIBRARIES
                    artdaq_core::artdaq-core_Utilities
                    art_root_io::TFileService_service
                    icaruscode::Decode_DecoderTools_Dumpers
-                   ${ROOT_BASIC_LIB_LIST}
+                   #${ROOT_BASIC_LIB_LIST}
+                   ROOT::Hist
+                   ROOT::Tree
+                   ROOT::Physics
                    ${ART_FRAMEWORK_CORE}
                    ${ART_FRAMEWORK_PRINCIPAL}
                    ${ART_FRAMEWORK_SERVICES_REGISTRY}

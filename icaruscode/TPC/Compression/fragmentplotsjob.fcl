@@ -30,10 +30,10 @@ physics:
   # what analyzers do we run?
   analyzers:
   {
-    fragments_ww: @local::fragmentplots_ww
-    fragments_we: @local::fragmentplots_we
-    fragments_ew: @local::fragmentplots_ew
-    fragments_ee: @local::fragmentplots_ee
+    fragmentsWW: @local::fragmentplots_ww
+    fragmentsWE: @local::fragmentplots_we
+    fragmentsEW: @local::fragmentplots_ew
+    fragmentsEE: @local::fragmentplots_ee
   }
 
   # what filters do we require?
@@ -44,10 +44,10 @@ physics:
 
   # paths
   prod: [  ]
-  anal: [ fragments_ww, fragments_we, fragments_ew, fragments_ee ]
+  anal: [ fragmentsWW, fragmentsWE, fragmentsEW, fragmentsEE ]
   filt: [  ]
 
-  # trigger_paths — things that modify the event
+  # trigger_paths - things that modify the event
   # end_paths - things which don't modify the event
   trigger_paths: [ filt, prod ]
   end_paths: [ anal ]
