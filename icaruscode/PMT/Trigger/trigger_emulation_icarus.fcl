@@ -413,11 +413,13 @@ icarus_shifting_triggersim: {
        InitAuxDetSimChannelLabel: "largeant"
        InitBeamGateInfoLabel: "triggersimgatesinit"
        InitSimEnergyDepositLabel: "ionization"
+       InitSimEnergyDepositLiteLabel: "sedlite"
        InitSimPhotonsLabel: "largeant"
        InitWaveformLabel: "opdaq"
        ShiftAuxDetIDEs: true
        ShiftBeamGateInfo: true
        ShiftSimEnergyDeposits: true
+       ShiftSimEnergyDepositLites: true
        ShiftSimPhotons: true
        ShiftWaveforms: true
        AdditionalOffset: 0.0 # [us] Additional offset to apply to the time shift
