@@ -11,5 +11,7 @@ add_subdirectory(utilities)
 add_subdirectory(compatibility)
 add_subdirectory(numi-anaA)
 add_subdirectory(syst_variations)
+add_subdirectory(decoder)
+add_subdirectory(overlays)
 
 install_fhicl()
