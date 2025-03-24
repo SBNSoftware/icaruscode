@@ -1,4 +1,0 @@
-#include "intime_g4_icarus_sce.fcl"
-
-physics.producers.larg4outtime.InputLabels: [ "generator2" ]
-
