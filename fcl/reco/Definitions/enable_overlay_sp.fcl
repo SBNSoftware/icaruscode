@@ -1,2 +1,12 @@
+# Exclude crthit from path -- not needed since it's included at overlay stage
+physics.path: [   @sequence::icarus_stage0_mc_PMT, 
+                  MCDecodeTPCROI, 
+                  @sequence::icarus_stage0_2d_multiTPC,
+                  @sequence::icarus_stage0_mc_crtreco
+              ]
+
+# use overlay products
 physics.producers.MCDecodeTPCROI.FragmentsLabelVec: ["overlayTPCRawWW", "overlayTPCRawWE", "overlayTPCRawEW", "overlayTPCRawEE"]
 physics.producers.ophit.InputModule: "overlayOpWaveforms"
+physics.producers.crttrack.DataLabelHits: "overlayCRTHit"
+physics.producers.crtpmt.CrtHitModuleLabel: "overlayCRTHit"

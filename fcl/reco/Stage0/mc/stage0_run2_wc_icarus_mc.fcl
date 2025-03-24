@@ -16,7 +16,8 @@ physics.producers: {  @table::icarus_stage0_producers
 physics.path: [   @sequence::icarus_stage0_mc_PMT, 
                   MCDecodeTPCROI, 
                   @sequence::icarus_stage0_2d_multiTPC,
-                  @sequence::icarus_stage0_mc_crt
+                  @sequence::icarus_stage0_mc_crthit,
+                  @sequence::icarus_stage0_mc_crtreco
               ]
 
 ## boiler plate...

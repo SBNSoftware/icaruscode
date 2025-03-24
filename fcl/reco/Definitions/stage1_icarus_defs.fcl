@@ -239,10 +239,6 @@ icarus_tpcpmtbarycentermatch:      [
 
 icarus_crttrack:                   [crttrack]
 
-icarus_crtt0match:                 [CRTT0Matching]
-
-icarus_crtt0match_eff:             [CRTT0MatchingE, CRTT0MatchingW]
-
 icarus_crtt0tagging:               [CRTT0Tagging]
 
 ### Below we include overrides for the modules above

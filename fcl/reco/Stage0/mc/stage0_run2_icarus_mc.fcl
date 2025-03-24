@@ -17,7 +17,8 @@ physics.path: [   @sequence::icarus_stage0_mc_PMT,
                   MCDecodeTPCROI, 
                   @sequence::icarus_stage0_multiTPC,
                   simChannelROI,
-                  @sequence::icarus_stage0_mc_crt
+                  @sequence::icarus_stage0_mc_crthit,
+                  @sequence::icarus_stage0_mc_crtreco
               ]
 
 ## boiler plate...
