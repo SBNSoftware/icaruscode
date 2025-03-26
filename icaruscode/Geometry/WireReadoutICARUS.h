@@ -8,7 +8,7 @@
 #define ICARUSCODE_GEOMETRY_WIREREADOUTICARUS_H
 
 // ICARUS libraries
-#include "icarusalg/Geometry/ICARUSWireReadoutGeom.h"
+#include "icarusalg/Geometry/WireReadoutGeomICARUS.h"
 
 // LArSoft libraries
 #include "larcore/Geometry/WireReadout.h"
@@ -30,7 +30,7 @@ namespace icarus { class WireReadoutICARUS; }
  * @brief Implementation of `geo::WireReadout` for ICARUS.
  *
  * This _art_ service sets up and returns the ICARUS standard wire readout
- * service provider, `icarus::ICARUSWireReadoutGeom`.
+ * service provider, `icarus::WireReadoutGeomICARUS`.
  *
  * Configuration
  * --------------
@@ -38,8 +38,8 @@ namespace icarus { class WireReadoutICARUS; }
  * * *SortingParameters* (tool parameter set): configuration of the
  *   `geo::WireReadoutSorter` _art_ tool to sort the geometry components under
  *   `WireReadoutGeom` (wire planes and their wires).
- * * *Mapper* (`icarus::ICARUSWireReadoutGeom` parameter set): full
- *   configuration of `icarus::ICARUSWireReadoutGeom`.
+ * * *Mapper* (`icarus::WireReadoutGeomICARUS` parameter set): full
+ *   configuration of `icarus::WireReadoutGeomICARUS`.
  *
  */
 class icarus::WireReadoutICARUS: public geo::WireReadout {
@@ -55,7 +55,7 @@ class icarus::WireReadoutICARUS: public geo::WireReadout {
       Comment{ "configuration of the art tool to sort the wire planes and wires" }
       };
     
-    fhicl::Table<icarus::ICARUSWireReadoutGeom::Config> Mapper {
+    fhicl::Table<icarus::WireReadoutGeomICARUS::Config> Mapper {
       Name{ "Mapper" },
       Comment{ "configuration of the ICARUS channel mapping" }
       };
@@ -71,7 +71,7 @@ class icarus::WireReadoutICARUS: public geo::WireReadout {
   // --- BEGIN  -- Service provider protocol  ----------------------------------
   
   /// Type of the service provider returned.
-  using provider_type = icarus::ICARUSWireReadoutGeom;
+  using provider_type = icarus::WireReadoutGeomICARUS;
   
   /// Returns the owned service provider.
   provider_type const* provider() const { return fWireReadoutGeom.get(); }
