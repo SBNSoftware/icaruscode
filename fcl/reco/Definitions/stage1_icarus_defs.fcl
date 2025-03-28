@@ -86,8 +86,8 @@ icarus_stage1_filters:
 
 icarus_stage1_analyzers:
 {
-  caloskimE:       @local::caloskim_cryoe_goldentracks
-  caloskimW:       @local::caloskim_cryow_goldentracks
+  caloskimE:       @local::caloskim_cryoe_crthittagged_goldentracks
+  caloskimW:       @local::caloskim_cryow_crthittagged_goldentracks
   simpleLightAna:  @local::ICARUSFlashAssAna
   supera:          @local::icarus_supera_data
   superaMC:        @local::icarus_supera_MC_PMT_CRT
@@ -135,24 +135,7 @@ icarus_stage1_analyzers:
    }
  }
 
-icarus_stage1_analyzers.caloskimE.SelectEvents: [reco]
-icarus_stage1_analyzers.caloskimE.CALOproducer: caloskimCalorimetryCryoE 
-icarus_stage1_analyzers.caloskimE.SilenceMissingDataProducts: true
-icarus_stage1_analyzers.caloskimE.T0producers: ["pandoraGausCryoE", "CRTT0Tagging"]
-
-icarus_stage1_analyzers.caloskimW.SelectEvents: [reco]
-icarus_stage1_analyzers.caloskimW.CALOproducer: caloskimCalorimetryCryoW 
-icarus_stage1_analyzers.caloskimW.SilenceMissingDataProducts: true
-icarus_stage1_analyzers.caloskimW.T0producers: ["pandoraGausCryoW", "CRTT0Tagging"]
-
 icarus_stage1_analyzers.supera.unique_filename: true
-
-icarus_stage1_analyzers_crthittagged: @local::icarus_stage1_analyzers
-icarus_stage1_analyzers_crthittagged.caloskimE: @local::caloskim_cryoe_crthittagged_goldentracks
-icarus_stage1_analyzers_crthittagged.caloskimW: @local::caloskim_cryow_crthittagged_goldentracks
-icarus_stage1_analyzers_crthittagged.caloskimE.T0producers: ["pandoraGausCryoE", "CRTT0Tagging"]
-icarus_stage1_analyzers_crthittagged.caloskimW.T0producers: ["pandoraGausCryoW", "CRTT0Tagging"]
-
 
 ### Below are a list of convenient sequences that can be used for production/typical users. ###
 

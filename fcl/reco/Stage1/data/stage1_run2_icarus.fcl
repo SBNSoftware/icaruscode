@@ -22,6 +22,9 @@ outputs.out1.outputCommands: [
   "drop *_caloskimCalorimetryCryoW_*_*"
 ]
 
+physics.analyzers.caloskimE.SelectEvents: [reco]
+physics.analyzers.caloskimW.SelectEvents: [reco]
+
 # Disabled Space-Charge service for calorimetry
 services.SpaceChargeService: {
     EnableCalEfieldSCE: false

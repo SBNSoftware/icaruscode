@@ -77,9 +77,12 @@ physics.producers.tpcpmtbarycentermatchCryoW: @local::mc_tpcpmtbarycentermatchpr
 physics.analyzers.caloskimE.G4producer: "largeant"
 physics.analyzers.caloskimE.SimChannelproducer: "merge"
 physics.analyzers.caloskimE.RawDigitproducers: ["MCDecodeTPCROI:PHYSCRATEDATATPCEW", "MCDecodeTPCROI:PHYSCRATEDATATPCEE"]
+physics.analyzers.caloskimE.SelectEvents: [reco]
+
 physics.analyzers.caloskimW.G4producer: "largeant"
 physics.analyzers.caloskimW.SimChannelproducer: "merge"
 physics.analyzers.caloskimW.RawDigitproducers: ["MCDecodeTPCROI:PHYSCRATEDATATPCWW", "MCDecodeTPCROI:PHYSCRATEDATATPCWE"]
+physics.analyzers.caloskimW.SelectEvents: [reco]
 
 physics.producers.mcassociationsGausCryoE.HitParticleAssociations.HitModuleLabelVec: ["cluster3DCryoE"]
 physics.producers.mcassociationsGausCryoW.HitParticleAssociations.HitModuleLabelVec: ["cluster3DCryoW"]
