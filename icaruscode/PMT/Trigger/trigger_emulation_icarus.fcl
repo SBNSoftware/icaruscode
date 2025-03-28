@@ -413,13 +413,31 @@ icarus_shifting_triggersim: {
        InitAuxDetSimChannelLabel: "largeant"
        InitBeamGateInfoLabel: "triggersimgatesinit"
        InitSimEnergyDepositLabel: "ionization"
+       InitSimEnergyDepositLiteLabel: "sedlite"
        InitSimPhotonsLabel: "largeant"
        InitWaveformLabel: "opdaq"
        ShiftAuxDetIDEs: true
        ShiftBeamGateInfo: true
        ShiftSimEnergyDeposits: true
+       ShiftSimEnergyDepositLites: true
        ShiftSimPhotons: true
        ShiftWaveforms: true
+       AdditionalOffset: 0.0 # [us] Additional offset to apply to the time shift
+    }
+
+    shiftedpriorSCE: {
+       module_type: AdjustSimForTrigger
+       InputTriggerLabel: "emuTriggerUnshifted"
+       InitAuxDetSimChannelLabel: ""
+       InitBeamGateInfoLabel: ""
+       InitSimEnergyDepositLabel: "ionization:priorSCE"
+       InitSimPhotonsLabel: ""
+       InitWaveformLabel: ""
+       ShiftAuxDetIDEs: false
+       ShiftBeamGateInfo: false
+       ShiftSimEnergyDeposits: true
+       ShiftSimPhotons: false
+       ShiftWaveforms: false
        AdditionalOffset: 0.0 # [us] Additional offset to apply to the time shift
     }
 
@@ -432,6 +450,7 @@ icarus_shifting_triggersim: {
   , triggersimgatesinit
   , emuTriggerUnshifted
   , shifted
+  , shiftedpriorSCE
   ]
 
 } # icarus_shifting_triggersim

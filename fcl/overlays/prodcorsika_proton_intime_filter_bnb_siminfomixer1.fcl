@@ -1,0 +1,86 @@
+#include "icarus_siminfomixer.fcl"
+#include "local_gen_include.fcl"
+
+//========================================
+
+services:
+{
+  scheduler:    { defaultExceptions: false }    # Make all uncaught exceptions fatal.
+  # Load the service that manages root files for histograms.
+  TFileService: { fileName: "gen_hist.root" }
+  
+  RandomNumberGenerator: {} #ART native random number generator
+  FileCatalogMetadata:  @local::art_file_catalog_mc
+  #@table::microboone_g4_services
+}
+
+process_name : SimInfoMixer1     #The process name must NOT contain any underscores
+
+source:
+{
+  module_type: RootInput
+  saveMemoryObjectThreshold: 0
+  maxEvents: -1
+}
+
+outputs: {
+  out: { module_type: RootOutput
+  	 fileName: "%ifb_%tc_simmxd1.root"
+	 compressionLevel: 1
+	 dataTier: "generated"
+         SelectEvents: ["mixer_path"]
+       }
+}
+
+physics: {
+
+  producers : {
+  }
+
+  analyzers: {
+  }
+
+  filters : {
+    generator: @local::icarus_siminfomixer
+    beamgate: @local::icarus_siminfomixer
+    GenInTimeSorter: @local::icarus_siminfomixer
+    larg4intime: @local::icarus_siminfomixer
+    ionandscintintime: @local::icarus_siminfomixer
+    pdfastsimintime: @local::icarus_siminfomixer
+    corsika: @local::icarus_siminfomixer
+    sedliteintime: @local::icarus_siminfomixer
+    ionandscintintime: @local::icarus_siminfomixer
+  }
+
+  mixer_path : [ generator, beamgate, GenInTimeSorter, larg4intime, ionandscintintime, pdfastsimintime, corsika, sedliteintime, ionandscintintime ]
+  trigger_paths : [ mixer_path ]
+
+  output : [ out ]
+  end_paths: [ output ]
+
+}
+##<module_label>:<optional instance name>:<optional process name> 2:3:1
+##PROCESS NAME...... | MODULE LABEL... | PRODUCT INSTANCE NAME.... | DATA PRODUCT TYPE.................................................... | .SIZE
+physics.filters.generator.SimInputFileNames : [ "genfile.root.local" ]
+#mixer1
+physics.filters.beamgate.BeamGateInputModuleLabels: ["beamgate::CosmicsCorsikaProtonGenAndG4InTime"]
+physics.filters.GenInTimeSorter.MCTruthInputModuleLabels: ["GenInTimeSorter:intime:CosmicsCorsikaProtonGenAndG4InTime"] #std::vector<simb::MCTruth> intime
+physics.filters.larg4intime.SimEnergyDepositInputModuleLabels: ["larg4intime:LArG4DetectorServicevolTPC0:CosmicsCorsikaProtonGenAndG4InTime"]
+physics.filters.ionandscintintime.SimEnergyDepositInputModuleLabels: ["ionandscintintime:priorSCE:CosmicsCorsikaProtonGenAndG4InTime"]
+physics.filters.larg4intime.MCTruthMCParticleAssnsInputModuleLabels: ["larg4intime::CosmicsCorsikaProtonGenAndG4InTime"]
+physics.filters.pdfastsimintime.OpDetBacktrackerRecordInputModuleLabels: ["pdfastsimintime::CosmicsCorsikaProtonGenAndG4InTime"]
+physics.filters.pdfastsimintime.SimPhotonsLiteInputModuleLabels: ["pdfastsimintime::CosmicsCorsikaProtonGenAndG4InTime"]
+physics.filters.larg4intime.MCParticleInputModuleLabels: ["larg4intime::CosmicsCorsikaProtonGenAndG4InTime"]
+physics.filters.sedliteintime.SimEnergyDepositLiteInputModuleLabels: ["sedliteintime::CosmicsCorsikaProtonGenAndG4InTime"]
+physics.filters.corsika.MCTruthInputModuleLabels: ["corsika::CosmicsCorsikaProtonGenAndG4InTime"]
+#mixer2
+#physics.filters.ionandscintintime.SimEnergyDepositInputModuleLabels: ["ionandscintintime:CosmicsCorsikaProtonGenAndG4InTime"]
+#physics.filters.larg4intime.MCParticleInputModuleLabels: ["larg4intime:droppedMCParticles:CosmicsCorsikaProtonGenAndG4InTime"]
+#physics.filters.GenInTimeSorter.MCTruthInputModuleLabels: ["GenInTimeSorter:outtime:CosmicsCorsikaProtonGenAndG4InTime"] #std::vector<simb::MCTruth> intime
+#physics.filters.larg4intime.SimEnergyDepositInputModuleLabels: ["larg4intime:LArG4DetectorServicevolTPCActive:CosmicsCorsikaProtonGenAndG4InTime"]
+#mixer3
+#physics.filters.larg4intime.SimEnergyDepositInputModuleLabels: ["larg4intime:LArG4DetectorServicevolTPCPlaneY:CosmicsCorsikaProtonGenAndG4InTime"]
+#mixer4
+#physics.filters.larg4intime.SimEnergyDepositInputModuleLabels: ["larg4intime:LArG4DetectorServicevolTPCPlaneV:CosmicsCorsikaProtonGenAndG4InTime"]
+#mixer5
+#physics.filters.larg4intime.SimEnergyDepositInputModuleLabels: ["larg4intime:LArG4DetectorServicevolTPCPlaneU:CosmicsCorsikaProtonGenAndG4InTime"]

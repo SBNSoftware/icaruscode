@@ -94,7 +94,7 @@ local wcls_input = {
         	data: {
             	model: "",
             	scale: -1, //scale is -1 to correct a sign error in the SimDepoSource converter.
-		art_tag: "ionization", //name of upstream art producer of depos "label:instance:processName"
+		art_tag: std.extVar('SimEnergyDepositLabel'), //name of upstream art producer of depos "label:instance:processName"
             	assn_art_tag: "",
               id_is_track: false,    // Use this for "id-is-index" in the output
         	},
@@ -257,7 +257,7 @@ local wcls_simchannel_sink =
       time_offsets: [std.extVar('time_offset_u') * wc.us, std.extVar('time_offset_v') * wc.us, std.extVar('time_offset_y') * wc.us],
 
       // input from art::Event
-      sed_label: 'ionization',
+      sed_label: std.extVar('SimEnergyDepositLabel'),
 
       // output to art::Event
       simchan_label: 'simpleSC',
