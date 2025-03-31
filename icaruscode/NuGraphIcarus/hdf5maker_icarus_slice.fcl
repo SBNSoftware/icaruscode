@@ -1,0 +1,92 @@
+#include "services_common_icarus.fcl"
+#include "services_icarus_simulation.fcl"
+
+process_name: trueenergy
+
+services:
+{
+  TFileService:          { fileName: "reco_hist.root" }
+  TimeTracker:           {}
+  MemoryTracker:         {}
+  RandomNumberGenerator: {}
+  FileCatalogMetadata:   @local::art_file_catalog_mc
+  @table::icarus_geometry_services
+  @table::icarus_common_services
+  @table::icarus_backtracking_services 
+  message:               @local::icarus_message_services_prod_debug
+  ParticleInventoryService: { 
+        ParticleInventory: {
+        EveIdCalculator: "EmEveIdCalculator"
+        G4ModuleLabel: "largeant"
+	OverrideRealData: true
+     }
+  }
+
+                         
+} # services
+
+source:
+{
+  module_type: RootInput
+  maxEvents:   -1
+}
+
+physics:
+{
+
+  analyzers:
+  {
+    hdf5maker: {
+      module_type:  "IcarusHDF5Maker"
+      TruthLabel:   "generator"
+      EventInfo:    "nu"
+      SPLabel: "nuslhits"
+      HitLabel: "nuslhits"
+      PFParticleLabel:"pandoraGausCryoE"
+      OpFlashLabel:"opflashCryoE"
+      OpHitLabel:"ophit"
+      UseMap: false
+      OutputName:   "NeutrinoML"
+    }
+  }
+
+ producers:
+  {
+    #nuslhitsE: { 
+    #  module_type: "IcarusNuSliceHitsProducer"
+    #  BaryMatchLabel: "tpcpmtbarycentermatchCryoE"
+    #  SliceLabel:    "pandoraGausCryoE"
+    #  SpsLabel:      "cluster3DCryoE"
+    #}
+    #nuslhitsW: { 
+    #  module_type: "IcarusNuSliceHitsProducer"
+    #  BaryMatchLabel: "tpcpmtbarycentermatchCryoW"
+    #  SliceLabel:    "pandoraGausCryoW"
+    #  SpsLabel:      "cluster3DCryoW"
+    #}
+    #nuslhits: {
+    #  module_type:             "HitMerger"
+    #  HitProducerLabelVec:     ["nuslhitsE","nuslhitsW"]
+    #}
+    nuslhits: { 
+      #module_type: "IcarusNuSliceHitsProducer"
+      module_type: "IcarusTrueNuSliceHitsProducer"
+      BaryMatchLabel: "tpcpmtbarycentermatchCryoE"
+      SliceLabel:    "pandoraGausCryoE"
+      SpsLabel:      "cluster3DCryoE"
+      DoFlashAssn: true
+    }
+    # sps: cluster3DCryoE
+  }
+ 
+ #reco: [nuslhitsE,nuslhitsW,nuslhits]
+ reco: [nuslhits]
+ ana:       [ hdf5maker ]
+  
+ trigger_paths:       [ reco ]
+ end_paths:     [ ana ]
+  
+}
+
+services.BackTrackerService.BackTracker.G4ModuleLabel: "largeant"
+services.BackTrackerService.BackTracker.SimChannelModuleLabel: "daq:simpleSC"
