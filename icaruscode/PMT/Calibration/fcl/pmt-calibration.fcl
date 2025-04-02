@@ -40,7 +40,6 @@ pmt_spr_calibration:
   TimeWindow: 1.0 # in us 
   PrePulseSamples: 100
   AfterPulseSamples: 400
-  AmplitudeMax: 100
 
   PedAlgoRollingMeanMaker: {
     tool_type: "PedAlgoRollingMeanMaker"
