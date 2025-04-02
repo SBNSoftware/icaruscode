@@ -258,6 +258,13 @@ void pmtcalo::PMTBackgroundphotonsCalibration::analyze(art::Event const& event)
          if( prevopch == opch && ophit.StartTime()-prevOphit.StartTime() < m_time_window ){
            continue;
          }
+
+         // also skip if previous hit was too long 
+         // or we might still be too close in time to its tail!
+         if( prevopch == opch && prevOphit.Width() > m_time_window){
+          continue;
+         }
+
        }
      
        // skip if too close in time with next ophit 
@@ -269,6 +276,12 @@ void pmtcalo::PMTBackgroundphotonsCalibration::analyze(art::Event const& event)
          if( nextopch == opch && nextOphit.StartTime()-ophit.StartTime() < m_time_window ){
            continue;
          }
+       }
+
+       // skip if hit is too long 
+       // its tail might be close to others
+       if ( ophit.Width() > m_time_window ){
+        continue;
        }
   
      }
