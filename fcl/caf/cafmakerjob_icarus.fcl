@@ -36,14 +36,14 @@ outputs:
 
 physics:
 {
- 
+
   producers: {
     @table::caf_preprocess_producers
   }
 
   runprod: [ @sequence::caf_preprocess_sequence, cafmaker]
   stream1:       [  ]
-  trigger_paths: [ runprod ] 
+  trigger_paths: [ runprod ]
   end_paths:     [ stream1 ]
 }
 
@@ -56,6 +56,6 @@ physics:
 # Blinding not needed for MC
 physics.producers.cafmaker.CreateBlindedCAF: false
 # MC times are already measured w.r.t. the beam gate
-physics.producers.cafmaker.ReferencePMTFromTriggerToBeam: false
+physics.producers.cafmaker.ReferencePMTFromTriggerToBeam: true
 # FlashMatcher Cryo suffixes
 physics.producers.cafmaker.FlashMatchSCECryoSuffixes: ["CryoE", "CryoW"]
