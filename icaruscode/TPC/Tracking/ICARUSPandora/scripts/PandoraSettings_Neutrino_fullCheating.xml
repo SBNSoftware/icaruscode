@@ -77,9 +77,9 @@
       <tool type = "LArMultiValuedLongitudinalTrackHits"><MinViews>2</MinViews></tool>
     </HitCreationTools>
   </algorithm>
-  
+
   <!-- NeutrinoAlgorithms -->
-  <algorithm type = "LArCheatingNeutrinoCreation">
+<algorithm type = "LArCheatingNeutrinoCreation">
     <CollapseToPrimaryMCParticles>true</CollapseToPrimaryMCParticles>
     <MCParticleListName>Input</MCParticleListName>
     <NeutrinoPfoListName>NeutrinoParticles3D</NeutrinoPfoListName>
@@ -93,19 +93,28 @@
     <OutputVertexListName>DaughterVertices3D</OutputVertexListName>
   </algorithm>
 
-  <algorithm type = "LArBdtPfoCharacterisation">
-    <TrainingSetMode>false</TrainingSetMode>
+  <!-- LArCutPfoChar : create as copy ShowerParticle3D -->
+  <!-- LArListDeletion : ShowerParticles3D -->
+  
+  <!-- <algorithm type = "LArCutPfoCharacterisation">
+    <TrackPfoListName>TrackParticles3D</TrackPfoListName>
+    <ShowerPfoListName>ShowerParticles3D</ShowerPfoListName>
+    <PostBranchAddition>true</PostBranchAddition>
+    <UseThreeDInformation>true</UseThreeDInformation>
+  </algorithm>
+
+  <algorithm type = "LArListDeletion">
+    <PfoListNames>ShowerParticles3D</PfoListNames>
+  </algorithm> -->
+
+  <algorithm type = "LArCheatingMvaPfoCharacterisation">
     <CaloHitListName>CaloHitList2D</CaloHitListName>
     <MCParticleListName>Input</MCParticleListName>
-    <TrainingOutputFileName>BNBPfoCharTraining</TrainingOutputFileName>
     <TrackPfoListName>TrackParticles3D</TrackPfoListName>
+    <!-- ShowerParticles3D -->
     <ShowerPfoListName>TrackParticles3D</ShowerPfoListName>
     <UseThreeDInformation>true</UseThreeDInformation>
     <PersistFeatures>true</PersistFeatures>
-    <MvaFileName>PandoraBdt_v09_72_01_ICARUS_pfochar_bnb.xml</MvaFileName>
-    <MvaName>PfoCharBDT</MvaName>
-    <MvaFileNameNoChargeInfo>PandoraBdt_v09_72_01_ICARUS_pfochar_bnb.xml</MvaFileNameNoChargeInfo>
-    <MvaNameNoChargeInfo>PfoCharBDTNoChargeInfo</MvaNameNoChargeInfo>
     <FeatureTools>
       <tool type = "LArThreeDLinearFitFeatureTool"/>
       <tool type = "LArThreeDVertexDistanceFeatureTool"/>
