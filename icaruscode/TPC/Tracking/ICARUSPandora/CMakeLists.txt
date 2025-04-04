@@ -34,9 +34,11 @@ set(            MODULE_LIBRARIES
                         ROOT::XMLIO
                         ROOT::Gdml
                         ROOT::FFTW
+			ROOT::Tree
 
         )
 cet_build_plugin(HARPS art::module LIBRARIES ${MODULE_LIBRARIES})
+cet_build_plugin(InputHitAnalysis art::module LIBRARIES ${MODULE_LIBRARIES})
 
 set( TOOL_LIBRARIES
 	larpandora::LArPandoraInterface
