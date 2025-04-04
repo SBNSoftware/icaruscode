@@ -308,7 +308,7 @@ void pmtcalo::PMTSPRCalibration::analyze(art::Event const& event)
       double wfend = m_wfstart + nsize*fOpticalTick;
 
       // ophit must be within the time window covered by the waveform
-      if ( m_start_time < m_wfstart || m_start_time > wfend ) continue;
+      if ( m_start_time <= m_wfstart || m_start_time > wfend ) continue;
       
       // find hit peak sample 
       double diff_peak = m_peak_time - m_wfstart;
@@ -318,18 +318,19 @@ void pmtcalo::PMTSPRCalibration::analyze(art::Event const& event)
       double diff_start = m_start_time - m_wfstart;
       std::size_t start_sample = static_cast<std::size_t>(std::round(diff_start/fOpticalTick));
       std::size_t start_to_peak = m_sample - start_sample;
-
+      
       //find hit end sample
       double diff_end = m_start_time + m_time_width - m_wfstart;
       std::size_t end_sample = static_cast<std::size_t>(std::round(diff_end/fOpticalTick));
       std::size_t peak_to_end = end_sample - m_sample;
-
+      
       // find baseline
       fPedAlgo->Evaluate(jt->Waveform());
       std::vector<double> baselines = fPedAlgo->Mean();
 
       // select samples around the peak for saving
-      std::size_t tick_start = (m_sample - m_prepulseSamples > 0) ? m_sample -  m_prepulseSamples : 0;
+      double underflow = (double)m_sample - (double)m_prepulseSamples;
+      std::size_t tick_start = (underflow > 0) ? m_sample -  m_prepulseSamples : 0;
       std::size_t tick_end = (m_sample + m_afterpulseSamples < nsize) ? m_sample + m_afterpulseSamples : nsize;
       
       // size of waveform snippet
@@ -344,8 +345,10 @@ void pmtcalo::PMTSPRCalibration::analyze(art::Event const& event)
       m_baselines = std::vector<double>(baselines.begin() + tick_start, baselines.begin() + tick_end);
 
       // get median from pre-pulse sample (up to hit start)      
-      if (tick_start >= start_sample) //if hit start < tick_start because hit is large
-        tick_start = (start_sample - m_prepulseSamples > 0) ? start_sample -  m_prepulseSamples : 0;
+      if (tick_start >= start_sample){ //if hit start < tick_start because hit is large
+        underflow = (double)start_sample - (double)m_prepulseSamples;
+        tick_start = (underflow > 0) ? start_sample -  m_prepulseSamples : 0;
+      }
 
       std::vector<short> prewf = std::vector<short>(jt->Waveform().begin() + tick_start, jt->Waveform().begin() + start_sample);
       m_median = getMedian(prewf);
