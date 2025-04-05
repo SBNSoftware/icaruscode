@@ -19,6 +19,8 @@
 
 // LArSoft includes
 #include "larcore/Geometry/WireReadout.h"
+#include "larevt/CalibrationDBI/Interface/ChannelStatusService.h"
+#include "larevt/CalibrationDBI/Interface/ChannelStatusProvider.h"
 
 #include "sbndaq-artdaq-core/Overlays/ICARUS/PhysCrateFragment.hh"
 
@@ -187,9 +189,13 @@ private:
 
     // Keep track of the FFT 
     icarus_signal_processing::FFTFilterFunctionVec fFFTFilterFunctionVec;
+
+    // channel status DB
+    const lariov::ChannelStatusProvider*           fChannelStatus;
 };
 
-TPCNoiseFilter1DMC::TPCNoiseFilter1DMC(fhicl::ParameterSet const &pset)
+TPCNoiseFilter1DMC::TPCNoiseFilter1DMC(fhicl::ParameterSet const &pset) :
+    fChannelStatus(&art::ServiceHandle<lariov::ChannelStatusService const>()->GetProvider())
 {
     this->configure(pset);
 
@@ -314,8 +320,23 @@ void TPCNoiseFilter1DMC::process_fragment(detinfo::DetectorClocksData const&,
         icarus_signal_processing::VectorFloat& rawDataVec    = fRawWaveforms[idx];
         icarus_signal_processing::VectorFloat& pedCorDataVec = fPedCorWaveforms[idx];
 
+        // Recover the channel ID
+        int channelID = channelPlaneVec[idx].first;
+
         // Keep track of the channel
-        fChannelIDVec[idx] = channelPlaneVec[idx].first;
+        fChannelIDVec[idx] = channelID;
+
+        // Is this a valid channel and what is its status?
+        if (fChannelStatus->IsPresent(channelID))
+        {
+            // If the channel is bad then we "protect" the entire channel (it will not be used in noise removal)
+            // Note that the array has already been cleared before calling this function so no need to set opposite case
+            if (fChannelStatus->IsBad(channelID))
+            {   
+//                std::cout << "--> Channel:" << channelID << " is marked as bad by the channel status service" << std::endl;
+                std::fill(fSelectVals[idx].begin(),fSelectVals[idx].end(),true);
+            }
+        }
 
         // We need to recover info on which plane we have
         std::vector<geo::WireID> widVec = fChannelMapAlg->ChannelToWire(fChannelIDVec[idx]);
