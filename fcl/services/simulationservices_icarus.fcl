@@ -27,6 +27,8 @@ icarus_largeantparameters.EnabledPhysics:        [ "Em", "SynchrotronAndGN", "Io
 icarus_largeantparameters.FillSimEnergyDeposits: true
 icarus_largeantparameters.UseModLarqlRecomb:     true   # use LArQL recombination corrections (dependence on EF)
 icarus_largeantparameters.IonAndScintCalculator: "Correlated" # adopt the "correlated" model for ionization and scintillation (SBN DocDB 17964)
+icarus_largeantparameters.UseModBoxRecomb:       false
+icarus_largeantparameters.UseEllipsModBoxRecomb: true
 
 #
 # ICARUS LArVoxelCalculator service configuration.
