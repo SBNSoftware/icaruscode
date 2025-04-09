@@ -16,36 +16,66 @@
 
   <!-- TwoDReconstruction -->
   <algorithm type = "LArClusteringParent">
-    <algorithm type = "LArCheatingClusterCreation" description = "ClusterFormation">
-      <CollapseToPrimaryMCParticles>true</CollapseToPrimaryMCParticles>
-      <MCParticleListName>Input</MCParticleListName>
-    </algorithm>
+    <algorithm type = "LArTrackClusterCreation" description = "ClusterFormation"/>
     <InputCaloHitListName>CaloHitListU</InputCaloHitListName>
     <ClusterListName>ClustersU</ClusterListName>
-    <ReplaceCurrentCaloHitList>false</ReplaceCurrentCaloHitList>
+    <ReplaceCurrentCaloHitList>true</ReplaceCurrentCaloHitList>
     <ReplaceCurrentClusterList>true</ReplaceCurrentClusterList>
+  </algorithm>
+  <algorithm type = "LArLayerSplitting"/>
+  <algorithm type = "LArLongitudinalAssociation"/>
+  <algorithm type = "LArTransverseAssociation"/>
+  <algorithm type = "LArLongitudinalExtension"/>
+  <algorithm type = "LArTransverseExtension"/>
+  <algorithm type = "LArCrossGapsAssociation"/>
+  <algorithm type = "LArCrossGapsExtension"/>
+  <algorithm type = "LArOvershootSplitting"/>
+  <algorithm type = "LArBranchSplitting"/>
+  <algorithm type = "LArKinkSplitting"/>
+  <algorithm type = "LArTrackConsolidation">
+    <algorithm type = "LArSimpleClusterCreation" description = "ClusterRebuilding"/>
   </algorithm>
 
   <algorithm type = "LArClusteringParent">
-    <algorithm type = "LArCheatingClusterCreation" description = "ClusterFormation">
-      <CollapseToPrimaryMCParticles>true</CollapseToPrimaryMCParticles>
-      <MCParticleListName>Input</MCParticleListName>
-    </algorithm>
+    <algorithm type = "LArTrackClusterCreation" description = "ClusterFormation"/>
     <InputCaloHitListName>CaloHitListV</InputCaloHitListName>
     <ClusterListName>ClustersV</ClusterListName>
-    <ReplaceCurrentCaloHitList>false</ReplaceCurrentCaloHitList>
+    <ReplaceCurrentCaloHitList>true</ReplaceCurrentCaloHitList>
     <ReplaceCurrentClusterList>true</ReplaceCurrentClusterList>
+  </algorithm>
+  <algorithm type = "LArLayerSplitting"/>
+  <algorithm type = "LArLongitudinalAssociation"/>
+  <algorithm type = "LArTransverseAssociation"/>
+  <algorithm type = "LArLongitudinalExtension"/>
+  <algorithm type = "LArTransverseExtension"/>
+  <algorithm type = "LArCrossGapsAssociation"/>
+  <algorithm type = "LArCrossGapsExtension"/>
+  <algorithm type = "LArOvershootSplitting"/>
+  <algorithm type = "LArBranchSplitting"/>
+  <algorithm type = "LArKinkSplitting"/>
+  <algorithm type = "LArTrackConsolidation">
+    <algorithm type = "LArSimpleClusterCreation" description = "ClusterRebuilding"/>
   </algorithm>
 
   <algorithm type = "LArClusteringParent">
-    <algorithm type = "LArCheatingClusterCreation" description = "ClusterFormation">
-      <CollapseToPrimaryMCParticles>true</CollapseToPrimaryMCParticles>
-      <MCParticleListName>Input</MCParticleListName>
-    </algorithm>
+    <algorithm type = "LArTrackClusterCreation" description = "ClusterFormation"/>
     <InputCaloHitListName>CaloHitListW</InputCaloHitListName>
     <ClusterListName>ClustersW</ClusterListName>
-    <ReplaceCurrentCaloHitList>false</ReplaceCurrentCaloHitList>
+    <ReplaceCurrentCaloHitList>true</ReplaceCurrentCaloHitList>
     <ReplaceCurrentClusterList>true</ReplaceCurrentClusterList>
+  </algorithm>
+  <algorithm type = "LArLayerSplitting"/>
+  <algorithm type = "LArLongitudinalAssociation"/>
+  <algorithm type = "LArTransverseAssociation"/>
+  <algorithm type = "LArLongitudinalExtension"/>
+  <algorithm type = "LArTransverseExtension"/>
+  <algorithm type = "LArCrossGapsAssociation"/>
+  <algorithm type = "LArCrossGapsExtension"/>
+  <algorithm type = "LArOvershootSplitting"/>
+  <algorithm type = "LArBranchSplitting"/>
+  <algorithm type = "LArKinkSplitting"/>
+  <algorithm type = "LArTrackConsolidation">
+    <algorithm type = "LArSimpleClusterCreation" description = "ClusterRebuilding"/>
   </algorithm>
 
   <!-- VertexAlgorithms -->
@@ -55,6 +85,7 @@
     <VertexXCorrection>0</VertexXCorrection>
   </algorithm>
 
+  <!-- ThreeDTrackAlgorithms -->
   <algorithm type = "LArCheatingPfoCreation">
     <InputClusterListNames>ClustersU ClustersV ClustersW</InputClusterListNames>
     <OutputPfoListName>PfoParticles3D</OutputPfoListName>
@@ -93,25 +124,11 @@
     <OutputVertexListName>DaughterVertices3D</OutputVertexListName>
   </algorithm>
 
-  <!-- LArCutPfoChar : create as copy ShowerParticle3D -->
-  <!-- LArListDeletion : ShowerParticles3D -->
-  
-  <!-- <algorithm type = "LArCutPfoCharacterisation">
-    <TrackPfoListName>PfoParticles3D</TrackPfoListName>
-    <ShowerPfoListName>ShowerParticles3D</ShowerPfoListName>
-    <PostBranchAddition>true</PostBranchAddition>
-    <UseThreeDInformation>true</UseThreeDInformation>
-  </algorithm>
-
-  <algorithm type = "LArListDeletion">
-    <PfoListNames>ShowerParticles3D</PfoListNames>
-  </algorithm> -->
-
+  <!-- MvaPfoAlgorithm -->
   <algorithm type = "LArCheatingMvaPfoCharacterisation">
     <CaloHitListName>CaloHitList2D</CaloHitListName>
     <MCParticleListName>Input</MCParticleListName>
     <TrackPfoListName>PfoParticles3D</TrackPfoListName>
-    <!-- ShowerParticles3D -->
     <ShowerPfoListName>ShowerParticles3D</ShowerPfoListName>
     <UseThreeDInformation>true</UseThreeDInformation>
     <PersistFeatures>true</PersistFeatures>
@@ -130,7 +147,6 @@
       <tool type = "LArThreeDOpeningAngleFeatureTool"/>
     </FeatureToolsNoChargeInfo>
   </algorithm>
-
   <algorithm type = "LArNeutrinoProperties">
     <NeutrinoPfoListName>NeutrinoParticles3D</NeutrinoPfoListName>
   </algorithm>

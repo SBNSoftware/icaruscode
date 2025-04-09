@@ -93,28 +93,19 @@
     <OutputVertexListName>DaughterVertices3D</OutputVertexListName>
   </algorithm>
 
-  <!-- LArCutPfoChar : create as copy ShowerParticle3D -->
-  <!-- LArListDeletion : ShowerParticles3D -->
-  
-  <!-- <algorithm type = "LArCutPfoCharacterisation">
-    <TrackPfoListName>PfoParticles3D</TrackPfoListName>
-    <ShowerPfoListName>ShowerParticles3D</ShowerPfoListName>
-    <PostBranchAddition>true</PostBranchAddition>
-    <UseThreeDInformation>true</UseThreeDInformation>
-  </algorithm>
-
-  <algorithm type = "LArListDeletion">
-    <PfoListNames>ShowerParticles3D</PfoListNames>
-  </algorithm> -->
-
-  <algorithm type = "LArCheatingMvaPfoCharacterisation">
+  <algorithm type = "LArBdtPfoCharacterisation">
+    <TrainingSetMode>false</TrainingSetMode>
     <CaloHitListName>CaloHitList2D</CaloHitListName>
     <MCParticleListName>Input</MCParticleListName>
+    <TrainingOutputFileName>BNBPfoCharTraining</TrainingOutputFileName>
     <TrackPfoListName>PfoParticles3D</TrackPfoListName>
-    <!-- ShowerParticles3D -->
     <ShowerPfoListName>ShowerParticles3D</ShowerPfoListName>
     <UseThreeDInformation>true</UseThreeDInformation>
     <PersistFeatures>true</PersistFeatures>
+    <MvaFileName>PandoraBdt_v09_72_01_ICARUS_pfochar_bnb.xml</MvaFileName>
+    <MvaName>PfoCharBDT</MvaName>
+    <MvaFileNameNoChargeInfo>PandoraBdt_v09_72_01_ICARUS_pfochar_bnb.xml</MvaFileNameNoChargeInfo>
+    <MvaNameNoChargeInfo>PfoCharBDTNoChargeInfo</MvaNameNoChargeInfo>
     <FeatureTools>
       <tool type = "LArThreeDLinearFitFeatureTool"/>
       <tool type = "LArThreeDVertexDistanceFeatureTool"/>
@@ -127,10 +118,9 @@
       <tool type = "LArThreeDLinearFitFeatureTool"/>
       <tool type = "LArThreeDVertexDistanceFeatureTool"/>
       <tool type = "LArThreeDPCAFeatureTool"/>
-      <tool type = "LArThreeDOpeningAngleFeatureTool"/>
+      <tool type = "LArThreeDOpeningAngleFeatureTool"/>      
     </FeatureToolsNoChargeInfo>
   </algorithm>
-
   <algorithm type = "LArNeutrinoProperties">
     <NeutrinoPfoListName>NeutrinoParticles3D</NeutrinoPfoListName>
   </algorithm>
