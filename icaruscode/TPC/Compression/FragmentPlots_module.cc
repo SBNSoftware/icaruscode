@@ -357,7 +357,7 @@ namespace tcpCompression
     art::ServiceHandle<art::TFileService> tfs;
 
     adcDiffs.reset(
-      tfs->make<TH1D>("adcDiffs", ";Difference in Subsequent ADC Samples;Number of Differences;", 21, -10.5, 10.5));
+      tfs->make<TH1D>("adcDiffs", ";Difference in Subsequent ADC Samples;Number of Differences;", 129, -64.5, 64.5));
    
     fragSizeRatio.reset(
       tfs->make<TH1D>("fragSizeRatio", ";Compression Factor;Number of Fragments", 100, 0, 1));
