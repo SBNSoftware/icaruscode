@@ -43,19 +43,22 @@ local wf(name, data={}) = {
   lf('ROI_loose_lf', { tau: 0.0025 * wc.megahertz }),  // 0.0025 
 
   hf('Gaus_tight'),
-  hf('Gaus_wide', { sigma: 0.12 * wc.megahertz }), 
+  hf('Gaus_wide', {
+    sigma: std.extVar("Gaus_wide_sigma")*wc.megahertz //0.12 * wc.megahertz 
+  }), 
 
 
   hf('Wiener_tight_U', {
-    sigma: 0.148788  * wc.megahertz,
-    power: 3.76194,
+    sigma: std.extVar('Wiener_tight_U_sigma')*wc.megahertz, // 0.148788  * wc.megahertz,
+    power: std.extVar('Wiener_tight_U_power'), //3.76194,
   }),
   hf("Wiener_tight_V", {
-    sigma: 0.1596568 * wc.megahertz,
-    power: 4.36125 }),
+    sigma: std.extVar('Wiener_tight_V_sigma')*wc.megahertz, // 0.1596568 * wc.megahertz,
+    power: std.extVar('Wiener_tight_V_power'), // 4.36125 
+  }),
   hf('Wiener_tight_W', {
-    sigma: 0.13623 * wc.megahertz,
-    power: 3.35324,
+    sigma: std.extVar('Wiener_tight_W_sigma')*wc.megahertz, // 0.13623 * wc.megahertz,
+    power: std.extVar('Wiener_tight_W_power'), // 3.35324,
   }),
 
   hf('Wiener_wide_U', {
@@ -71,6 +74,10 @@ local wf(name, data={}) = {
     power: 4.37928,
   }),
 
-  wf('Wire_ind', { sigma: 1.0 / wc.sqrtpi * 0.75 }), 
-  wf('Wire_col', { sigma: 1.0 / wc.sqrtpi * 3.0 }),
+  wf('Wire_ind', { 
+    sigma: 1.0 / wc.sqrtpi * std.extVar("Wire_ind_sigma") // 0.75 
+  }), 
+  wf('Wire_col', { 
+    sigma: 1.0 / wc.sqrtpi * std.extVar("Wire_col_sigma") // 3.0 
+  }),
 ]

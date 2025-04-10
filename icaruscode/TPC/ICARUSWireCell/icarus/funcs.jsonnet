@@ -25,6 +25,12 @@ local g = import 'pgraph.jsonnet';
     anode_channels(n):: std.flattenArrays([std.range(startch[n][w], startch[n][w]+wireplanes[w]) for w in std.range(0,2)]),
     // anode_channels(n):: std.range(1056 * (n % 2) + 13312 * (n - n % 2) / 2, 1056 * (n % 2 + 1) - 1 + 13312 * (n - n % 2) / 2) + std.range(1056 * 2 + 13312 * (n - n % 2) / 2, 13312 - 1 + 13312 * (n - n % 2) / 2),
 
+    // Channels on each anode, in the "two-faced" configuration
+    anode_channels_twofaced(n):: std.range(startch[2*n][0], startch[2*n][0]+wireplanes[0]) + 
+                                 std.range(startch[2*n+1][0], startch[2*n+1][0]+wireplanes[0]) +
+                                 std.range(startch[2*n][1], startch[2*n][1]+wireplanes[1]) + 
+                                 std.range(startch[2*n][2], startch[2*n][2]+wireplanes[2]), 
+
     // Return the number of split (1 or 2) for an anode
     anode_split(ident):: (ident%100 - ident%10)/10,
 
