@@ -54,6 +54,9 @@ icarus_simwire_wirecell:
 	        int_noise_scale: 1.0
 	        coh_noise_scale: 1.0
 
+	    include_noise: true # noise on by default
+	    overlay_drifter: false # default drifter by default
+
             # Gain and shaping time
             //gain0: 14.9654 # mV/fC 
             //gain1: 14.9654 # mV/fC 
