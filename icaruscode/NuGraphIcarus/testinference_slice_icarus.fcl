@@ -55,15 +55,15 @@ physics:
   producers:
   {
     nuslhitsCryoE: { 
-      #module_type: "IcarusNuSliceHitsProducer"
-      module_type: "IcarusTrueNuSliceHitsProducer"
+      module_type: "IcarusNuSliceHitsProducer"
+      #module_type: "IcarusTrueNuSliceHitsProducer"
       BaryMatchLabel: "tpcpmtbarycentermatchCryoE"
       SliceLabel:    "pandoraGausCryoE"
       SpsLabel:      "cluster3DCryoE"
     }
     nuslhitsCryoW: { 
-      #module_type: "IcarusNuSliceHitsProducer"
-      module_type: "IcarusTrueNuSliceHitsProducer"
+      module_type: "IcarusNuSliceHitsProducer"
+      #module_type: "IcarusTrueNuSliceHitsProducer"
       BaryMatchLabel: "tpcpmtbarycentermatchCryoW"
       SliceLabel:    "pandoraGausCryoW"
       SpsLabel:      "cluster3DCryoW"
