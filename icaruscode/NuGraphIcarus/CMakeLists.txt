@@ -57,6 +57,8 @@ simple_plugin(IcarusHDF5Maker "module"
     ${HDF5_LIBRARIES}
 )
 
+add_subdirectory(scripts)
+
 install_headers()
 install_fhicl()
 install_source()
