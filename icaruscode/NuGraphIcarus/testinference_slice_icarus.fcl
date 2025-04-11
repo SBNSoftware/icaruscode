@@ -4,7 +4,7 @@
 
 # in order to setup the triton server locally, please do:
 # > mrbslp
-# > setup_nugraph-v0.sh
+# > setup_tritonservier-nugraph-v0.sh
 # then after the job you can kill the server process with:
 # > killall -9 /cvmfs/oasis.opensciencegrid.org/mis/apptainer/1.3.2/x86_64/libexec/apptainer/libexec/starter
 
