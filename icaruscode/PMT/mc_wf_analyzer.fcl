@@ -1,0 +1,17 @@
+#include "icarus_ophitfinder.fcl"
+
+BEGIN_PROLOG
+
+mc_waveform_ana:
+{
+  module_type: 	OpMCWaveformAnalyzer
+  OpHitModule: "ophit"
+  SimPhotonsModule: "shifted"
+  WaveformModule: "opdaq"
+  PedAlgoRollingMeanMaker: {
+    tool_type: "PedAlgoRollingMeanMaker"
+    PedAlgoPset:    @local::icarus_opreco_pedestal_DocDB24969
+  }
+}
+
+END_PROLOG
