@@ -310,6 +310,7 @@
     <NeutrinoPfoListName>NeutrinoParticles3D</NeutrinoPfoListName>
     <VertexListName>NeutrinoVertices3D</VertexListName>
     <DaughterPfoListNames>TrackParticles3D ShowerParticles3D</DaughterPfoListNames>
+    <VertexTolerance>10</VertexTolerance>
   </algorithm>
   <algorithm type = "LArCheatingNeutrinoDaughterVertices">
     <CollapseToPrimaryMCParticles>true</CollapseToPrimaryMCParticles>

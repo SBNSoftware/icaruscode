@@ -93,23 +93,10 @@
     <OutputVertexListName>DaughterVertices3D</OutputVertexListName>
   </algorithm>
 
-  <!-- LArCutPfoChar : create as copy ShowerParticle3D -->
-  <!-- LArListDeletion : ShowerParticles3D -->
-  
-  <!-- <algorithm type = "LArCutPfoCharacterisation">
-    <TrackPfoListName>PfoParticles3D</TrackPfoListName>
-    <ShowerPfoListName>ShowerParticles3D</ShowerPfoListName>
-    <PostBranchAddition>true</PostBranchAddition>
-    <UseThreeDInformation>true</UseThreeDInformation>
-  </algorithm>
-
-  <algorithm type = "LArListDeletion">
-    <PfoListNames>ShowerParticles3D</PfoListNames>
-  </algorithm> -->
-
   <algorithm type = "LArCheatingMvaPfoCharacterisation">
     <CaloHitListName>CaloHitList2D</CaloHitListName>
     <MCParticleListName>Input</MCParticleListName>
+    <UseCaloHitsMatching>false</UseCaloHitsMatching>
     <TrackPfoListName>PfoParticles3D</TrackPfoListName>
     <!-- ShowerParticles3D -->
     <ShowerPfoListName>ShowerParticles3D</ShowerPfoListName>
@@ -144,7 +131,7 @@
   <!-- Output list management -->
   <algorithm type = "LArPostProcessing">
     <PfoListNames>NeutrinoParticles3D PfoParticles3D ShowerParticles3D</PfoListNames>
-    <VertexListNames>NeutrinoVertices3D DaughterVertices3D CandidateVertices3D</VertexListNames>
+    <VertexListNames>NeutrinoVertices3D DaughterVertices3D</VertexListNames>
     <ClusterListNames>ClustersU ClustersV ClustersW PfoClusters3D</ClusterListNames>
     <CaloHitListNames>CaloHitListU CaloHitListV CaloHitListW CaloHitList2D</CaloHitListNames>
     <CurrentPfoListReplacement>NeutrinoParticles3D</CurrentPfoListReplacement>

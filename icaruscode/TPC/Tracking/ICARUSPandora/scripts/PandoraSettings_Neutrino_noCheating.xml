@@ -6,7 +6,7 @@
   <SingleHitTypeClusteringMode>true</SingleHitTypeClusteringMode>
 
   <!-- ALGORITHM SETTINGS -->
-  <algorithm type = "LArPreProcessing">
+  <algorithm type = "LArPreProcessing"> 
     <OutputCaloHitListNameU>CaloHitListU</OutputCaloHitListNameU>
     <OutputCaloHitListNameV>CaloHitListV</OutputCaloHitListNameV>
     <OutputCaloHitListNameW>CaloHitListW</OutputCaloHitListNameW>

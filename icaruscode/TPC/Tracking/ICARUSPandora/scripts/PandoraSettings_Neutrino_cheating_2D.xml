@@ -49,9 +49,11 @@
   </algorithm>
 
   <!-- VertexAlgorithms -->
+  <!-- USELESS? -->
   <algorithm type = "LArCutClusterCharacterisation">
     <InputClusterListNames>ClustersU ClustersV ClustersW</InputClusterListNames>
   </algorithm>
+  <!-- USELESS? -->
   <algorithm type = "LArCandidateVertexCreation">
     <InputClusterListNames>ClustersU ClustersV ClustersW</InputClusterListNames>
     <OutputVertexListName>CandidateVertices3D</OutputVertexListName>
@@ -74,6 +76,7 @@
       <tool type = "LArRPhiFeature"/>
     </FeatureTools>
   </algorithm>
+  <!-- MAYBE THOSE ARE USELESS? -->
   <algorithm type = "LArCutClusterCharacterisation">
     <InputClusterListNames>ClustersU ClustersV ClustersW</InputClusterListNames>
     <ZeroMode>true</ZeroMode>
@@ -81,6 +84,7 @@
   <algorithm type = "LArVertexSplitting">
     <InputClusterListNames>ClustersU ClustersV ClustersW</InputClusterListNames>
   </algorithm>
+  <!-- END HERE... -->
 
   <!-- ThreeDTrackAlgorithms -->
   <algorithm type = "LArThreeDTransverseTracks">
