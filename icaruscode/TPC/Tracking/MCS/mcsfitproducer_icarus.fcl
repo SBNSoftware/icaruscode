@@ -5,7 +5,7 @@ mcsfitproducericarus_raw: {
   inputs: { inputLabel: "pandoraTrackICARUS" }
   fitter: {
   	pIdHypothesis: 13
-	minNumAngles: 3
+	minNumAngles: 5
 	minNumSegments: 7
 	segmentLength: 14.0
 	minHitsPerSegment: 3
@@ -26,7 +26,7 @@ mcsfitproducerI: {
   inputs: { inputLabel: "pandoraTrackGaus" }
   fitter: {
   	pIdHypothesis: 13
-	minNumAngles: 3
+	minNumAngles: 5
 	minNumSegments: 7
 	segmentLength: 14.0
 	minHitsPerSegment: 3
@@ -47,7 +47,7 @@ mcsfitproducerIF3D: {
   inputs: { inputLabel: "pandoraTrackGaus" }
   fitter: {
   	pIdHypothesis: 13
-	minNumAngles: 3
+	minNumAngles: 5
 	minNumSegments: 7
 	segmentLength: 14.0
 	minHitsPerSegment: 3
@@ -68,7 +68,7 @@ mcsfitproducerIF2DI1: {
   inputs: { inputLabel: "pandoraTrackGaus" }
   fitter: {
   	pIdHypothesis: 13
-	minNumAngles: 3
+	minNumAngles: 5
 	minNumSegments: 7
 	segmentLength: 14.0
 	minHitsPerSegment: 3
@@ -89,7 +89,7 @@ mcsfitproducerIF2DI2: {
   inputs: { inputLabel: "pandoraTrackGaus" }
   fitter: {
   	pIdHypothesis: 13
-	minNumAngles: 3
+	minNumAngles: 5
 	minNumSegments: 7
 	segmentLength: 14.0
 	minHitsPerSegment: 3
@@ -110,7 +110,7 @@ mcsfitproducerIF2DC: {
   inputs: { inputLabel: "pandoraTrackGaus" }
   fitter: {
   	pIdHypothesis: 13
-	minNumAngles: 3
+	minNumAngles: 5
 	minNumSegments: 7
 	segmentLength: 14.0
 	minHitsPerSegment: 3
@@ -131,7 +131,7 @@ mcsfitproducerII3D: {
   inputs: { inputLabel: "pandoraTrackGaus" }
   fitter: {
   	pIdHypothesis: 13
-	minNumAngles: 3
+	minNumAngles: 5
 	minNumSegments: 7
 	segmentLength: 14.0
 	minHitsPerSegment: 3
@@ -152,7 +152,7 @@ mcsfitproducerII2DI1: {
   inputs: { inputLabel: "pandoraTrackGaus" }
   fitter: {
   	pIdHypothesis: 13
-	minNumAngles: 3
+	minNumAngles: 5
 	minNumSegments: 7
 	segmentLength: 14.0
 	minHitsPerSegment: 3
@@ -173,7 +173,7 @@ mcsfitproducerII2DI2: {
   inputs: { inputLabel: "pandoraTrackGaus" }
   fitter: {
   	pIdHypothesis: 13
-	minNumAngles: 3
+	minNumAngles: 5
 	minNumSegments: 7
 	segmentLength: 14.0
 	minHitsPerSegment: 3
@@ -194,7 +194,7 @@ mcsfitproducerII2DC: {
   inputs: { inputLabel: "pandoraTrackGaus" }
   fitter: {
   	pIdHypothesis: 13
-	minNumAngles: 3
+	minNumAngles: 5
 	minNumSegments: 7
 	segmentLength: 14.0
 	minHitsPerSegment: 3

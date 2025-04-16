@@ -368,10 +368,6 @@ namespace trkf {
       int tpc, 
       double x0) const;
 
-    void CathodeDistance(
-      int cryo, 
-      double x0) const;
-
     TMatrixD ReferenceFrame(
       int plane) const;
 
@@ -395,6 +391,10 @@ namespace trkf {
       size_t index, 
       unsigned int p, 
       unsigned int t) const;
+
+    double Integral(
+      const recob::TrackTrajectory& traj, 
+      size_t index) const;
 
     double length1D(
       const recob::TrackTrajectory traj, 
@@ -428,6 +428,16 @@ namespace trkf {
 
     void GeoStopCheck(
       const recob::TrackTrajectory& traj) const;
+    
+    bool DeltaCheck(
+      size_t index) const;
+
+    double CathodeDistance(
+      unsigned int c) const;
+    
+    bool CathodeCheck(
+      const recob::TrackTrajectory& traj,
+      size_t index) const;
 
   private:
     int pIdHyp_;

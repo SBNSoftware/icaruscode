@@ -119,7 +119,6 @@ void trkf::MCSFitProducerICARUS::produce(art::Event & e) {
   std::vector<art::Ptr<recob::Track>> allPtrs;
   art::fill_ptr_vector(allPtrs, inputH);
   art::FindManyP<anab::T0> fmCRTTaggedT0(allPtrs, e, crtT0tag);
-  //if (fmCRTTaggedT0.isValid()) std::cout << " fmCRTT0 size" << fmCRTTaggedT0.size() << " fmCRTT0 0" << fmCRTTaggedT0.at(0).size() << std::endl;
   for (unsigned int je = 0; je < inputVec.size(); je++) {
     auto element = inputVec.at(je);
     std::vector<float> dum;
@@ -135,7 +134,6 @@ void trkf::MCSFitProducerICARUS::produce(art::Event & e) {
     std::cout << " " << std::endl;
     if (cryo == 0) std::cout << "starting gsasso algorithm, event " << e.event() << " track id = " << je << " in cryostat EAST" << std::endl;
     if (cryo == 1) std::cout << "starting gsasso algorithm, event " << e.event() << " track id = " << je << " in cryostat WEST" << std::endl;
-    std::cout << " " << std::endl;
     count[cryo]++;
     if (element.Length() > minLen) {
       hits2dI1 = projectHitsOnPlane(e, element, count[cryo], 0, pdata);
@@ -151,7 +149,6 @@ void trkf::MCSFitProducerICARUS::produce(art::Event & e) {
     if (fmCRTTaggedT0.isValid()) {
       for (unsigned i_t0 = 0; i_t0 < fmCRTTaggedT0.size(); i_t0++) {
 	      if (fmCRTTaggedT0.at(trkPtr.key()).size()) {
-          //std::cout << " triggerbits " << fmCRTTaggedT0.at(trkPtr.key()).at(0)->TriggerBits() << " triggerconfidence " << fmCRTTaggedT0.at(trkPtr.key()).at(0)->TriggerConfidence() << std::endl;
           if (fmCRTTaggedT0.at(trkPtr.key()).at(0)->TriggerBits() != 0) continue;
           if (fmCRTTaggedT0.at(trkPtr.key()).at(0)->TriggerConfidence() > 100.) continue;
           CRTT0 = fmCRTTaggedT0.at(trkPtr.key()).at(0)->Time();
@@ -163,9 +160,9 @@ void trkf::MCSFitProducerICARUS::produce(art::Event & e) {
     double vDrift = detProp.DriftVelocity();
     float fTickAtAnode = 850.;
     float fTickPeriod = 0.4;
-    //std::cout << " crt ratio " << CRTT0/fTickPeriod/1000. << " crt tickshift " << CRTT0/1000./fTickPeriod-fTickAtAnode << std::endl;
     if (!std::isnan(CRTT0)) CRTshift = (CRTT0 / 1000. / fTickPeriod - fTickAtAnode) * fTickPeriod * vDrift;
-    //std::cout << " CRTT0 " << CRTT0 << " CRTshift " << CRTshift << std::endl;
+    std::cout << "CRTT0 = " << CRTT0 << std::endl;
+    std::cout << " " << std::endl;
 
     mcsfitter.set2DHitsI1(hits2dI1);
     mcsfitter.set2DHitsI2(hits2dI2);

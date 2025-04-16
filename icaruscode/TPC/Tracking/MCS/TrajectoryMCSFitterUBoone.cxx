@@ -611,7 +611,7 @@ bool TrajectoryMCSFitterUBoone::isintpc(size_t index, unsigned int t) const {
   art::Ptr<recob::Hit> hit = get<1>(pd);
   unsigned int tpc = hit->WireID().TPC;
   if (tpc == t) return true;
-  else return false; }
+  else return true; }
 
 //check tpc of last valid point
 unsigned int TrajectoryMCSFitterUBoone::lasttpc(const recob::TrackTrajectory& traj) const {
