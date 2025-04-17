@@ -28,4 +28,4 @@ echo "physics.producers.NuGraphCryoW.TritonConfig.serverURL: \"localhost:"$GRPCP
 #
 /cvmfs/oasis.opensciencegrid.org/mis/apptainer/1.3.2/bin/apptainer exec --pid --ipc --home ~/:${HOME} --pwd ${PWD} /cvmfs/icarus.opensciencegrid.org/containers/tritonserver/nugraph-v0/ tritonserver --model-repository /triton-server-config/models --http-port=${HTTPPORT} --grpc-port=${GRPCPORT} --metrics-port=${METRPORT} >& tritonserver_nugraph-v0.log &
 #
-sleep 90
+grep -q "Started" <(tail -f tritonserver_nugraph-v0.log)
