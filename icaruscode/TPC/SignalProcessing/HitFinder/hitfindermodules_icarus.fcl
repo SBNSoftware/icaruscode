@@ -114,7 +114,6 @@ gausshit_sbn.HitFinderToolVec.CandidateHitsPlane1.RoiThreshold:                 
 gausshit_sbn.HitFinderToolVec.CandidateHitsPlane2:                                @local::candhitfinder_standard
 gausshit_sbn.HitFinderToolVec.CandidateHitsPlane2.Plane:                          2
 gausshit_sbn.HitFinderToolVec.CandidateHitsPlane2.RoiThreshold:                   9.
-gausshit_sbn.LongMaxHits:          [ 1,  1,  1]      # disable pulse trains
 
 icarus_hitconverter:
 {
