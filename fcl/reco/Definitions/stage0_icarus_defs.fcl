@@ -7,6 +7,7 @@
 
 #include "decoderdefs_icarus.fcl"
 #include "recowire_icarus.fcl"
+#include "wirechannelroiconverters_sbn.fcl"
 #include "hitfindermodules_icarus.fcl"
 #include "timing_icarus.fcl"
 #include "timing_beam.fcl"
@@ -95,10 +96,10 @@ icarus_stage0_producers:
   gaushit2dTPCEW:                 @local::gaus_hitfinder_icarus
   gaushit2dTPCEE:                 @local::gaus_hitfinder_icarus
 
-  gausshitTPCWW:                  @local::gauss_hitfinder_icarus
-  gausshitTPCWE:                  @local::gauss_hitfinder_icarus
-  gausshitTPCEW:                  @local::gauss_hitfinder_icarus
-  gausshitTPCEE:                  @local::gauss_hitfinder_icarus
+  gausshitTPCWW:                  @local::gausshit_sbn
+  gausshitTPCWE:                  @local::gausshit_sbn
+  gausshitTPCEW:                  @local::gausshit_sbn
+  gausshitTPCEE:                  @local::gausshit_sbn
 
   ### CRT hit finder producer
   crthit:                         @local::standard_crthitproducer	

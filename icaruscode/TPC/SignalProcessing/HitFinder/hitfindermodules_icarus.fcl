@@ -2,6 +2,7 @@
 #include "hitalgorithms.fcl"
 #include "HitFinderTools_ICARUS.fcl"
 #include "hitfindermodules.fcl"
+#include "hitfindermodules_sbn.fcl"
 
 BEGIN_PROLOG
 
@@ -100,30 +101,19 @@ gaus_hitfinder_icarus.HitFinderToolVec.CandidateHitsPlane2:                     
 gaus_hitfinder_icarus.HitFinderToolVec.CandidateHitsPlane2.Plane:                  2
 gaus_hitfinder_icarus.HitFinderToolVec.CandidateHitsPlane2.RoiThreshold:           9.
 
-# Define icarus version of test version gausshit finder
-gauss_hitfinder_icarus: @local::gaus_hitfinder
-
-gauss_hitfinder_icarus.module_type:                                                           GaussHitFinderICARUS
-gauss_hitfinder_icarus.CalDataModuleLabel:                                                    "decon1droi"
-gauss_hitfinder_icarus.AreaNorms:                                                             [  1.0,  1.0,  1.0 ]
-gauss_hitfinder_icarus.MaxMultiHit:                                                           5
-gauss_hitfinder_icarus.TryNplus1Fits:                                                         false
-gauss_hitfinder_icarus.Chi2NDF:                                                               500.
-gauss_hitfinder_icarus.PeakFitter.MinWidth:                                                   1
-gauss_hitfinder_icarus.PeakFitter.FloatBaseline:                                              false
-gauss_hitfinder_icarus.PeakFitter.tool_type:                                                  "PeakFitterMrqdt"
-gauss_hitfinder_icarus.LongMaxHits:                                                           [25, 25, 25]
-gauss_hitfinder_icarus.LongPulseWidth:                                                        [10, 10, 10]
-gauss_hitfinder_icarus.HitFinderToolVec.CandidateHitsPlane0:                                  @local::candhitfinder_standard
-gauss_hitfinder_icarus.HitFinderToolVec.CandidateHitsPlane0.Plane:                            0
-gauss_hitfinder_icarus.gaushit2dTPCWW.HitFinderToolVec.CandidateHitsPlane0.RoiThreshold:      9.
-gauss_hitfinder_icarus.HitFinderToolVec.CandidateHitsPlane1:                                  @local::candhitfinder_standard
-gauss_hitfinder_icarus.HitFinderToolVec.CandidateHitsPlane1.Plane:                            1
-gauss_hitfinder_icarus.gaushit2dTPCWW.HitFinderToolVec.CandidateHitsPlane0.RoiThreshold:      9.5
-gauss_hitfinder_icarus.HitFinderToolVec.CandidateHitsPlane2:                                  @local::candhitfinder_standard
-gauss_hitfinder_icarus.HitFinderToolVec.CandidateHitsPlane2.Plane:                            2
-gauss_hitfinder_icarus.gaushit2dTPCWW.HitFinderToolVec.CandidateHitsPlane0.RoiThreshold:      9.
-
+# Now set parameters for the GaussHitFinderSBN
+# Note these are "default" for ICARUS and will move to a fcl file in icaruscode
+gausshit_sbn.PeakFitter.MinWidth:                                                 1
+gausshit_sbn.PeakFitter.FloatBaseline:                                            false
+gausshit_sbn.HitFinderToolVec.CandidateHitsPlane0:                                @local::candhitfinder_standard
+gausshit_sbn.HitFinderToolVec.CandidateHitsPlane0.Plane:                          0
+gausshit_sbn.HitFinderToolVec.CandidateHitsPlane0.RoiThreshold:                   9.
+gausshit_sbn.HitFinderToolVec.CandidateHitsPlane1:                                @local::candhitfinder_standard
+gausshit_sbn.HitFinderToolVec.CandidateHitsPlane1.Plane:                          1
+gausshit_sbn.HitFinderToolVec.CandidateHitsPlane1.RoiThreshold:                   9.5
+gausshit_sbn.HitFinderToolVec.CandidateHitsPlane2:                                @local::candhitfinder_standard
+gausshit_sbn.HitFinderToolVec.CandidateHitsPlane2.Plane:                          2
+gausshit_sbn.HitFinderToolVec.CandidateHitsPlane2.RoiThreshold:                   9.
 
 icarus_hitconverter:
 {
