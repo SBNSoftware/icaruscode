@@ -30,6 +30,7 @@ function (anode, ts_u, ts_v, prefix="dnnroi", output_scale=1, nchunk_u=2, nchunk
             input_scale: 0.00025,
             forward: wc.tn(ts_u),
             tick_per_slice: 4,
+            save_negative_charge: true,
             nchunks: nchunk_u
         }
     }, nin=1, nout=1, uses=[ts_u, anode]);
@@ -47,6 +48,7 @@ function (anode, ts_u, ts_v, prefix="dnnroi", output_scale=1, nchunk_u=2, nchunk
             input_scale: 0.00025,
             forward: wc.tn(ts_v),
             tick_per_slice: 4,
+            save_negative_charge: true,
             nchunks: nchunk_v
         }
     }, nin=1, nout=1, uses=[ts_v, anode]);
