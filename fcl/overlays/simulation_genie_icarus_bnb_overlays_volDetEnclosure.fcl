@@ -16,9 +16,4 @@ physics.producers.generator.TopVolume: "volDetEnclosure"
 outputs.rootoutput.fileName: "simulation_genie_icarus_bnb_volDetEnclosure_%tc-%p.root"
 services.TFileService.fileName: "Supplemental-simulation_genie_icarus_bnb_volDetEnclosure_%tc-%p.root"
 
-source: {
-  module_type: RootInput
-  maxEvents:  -1                   # Number of events to create
-  saveMemoryObjectThreshold: 0
-} # source
-
+#include "enable_overlay_gen.fcl"

@@ -7,6 +7,9 @@ physics.path: [   @sequence::icarus_stage0_mc_PMT,
 
 # use overlay products
 physics.producers.MCDecodeTPCROI.FragmentsLabelVec: ["overlayTPCRawWW", "overlayTPCRawWE", "overlayTPCRawEW", "overlayTPCRawEE"]
+physics.producers.pmtbaselines.OpticalWaveforms: "overlayOpWaveforms"
+physics.producers.pmtfixedthr.OpticalWaveforms: "overlayOpWaveforms"
+physics.producers.opdetonbeam.OpticalWaveforms: "overlayOpWaveforms"
 physics.producers.ophit.InputModule: "overlayOpWaveforms"
 physics.producers.crttrack.DataLabelHits: "overlayCRTHit"
 physics.producers.crtpmt.CrtHitModuleLabel: "overlayCRTHit"
