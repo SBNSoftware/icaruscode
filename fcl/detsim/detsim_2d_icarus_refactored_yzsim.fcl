@@ -57,3 +57,5 @@ physics.producers.opdaq.InputModule: "pdfastsim"
 physics.producers.shifted.InitAuxDetSimChannelLabel: "genericcrt"
 physics.producers.shifted.InitSimPhotonsLabel: "pdfastsim"
 physics.producers.filtersed.InitSimEnergyDepositLabel: "shifted"
+physics.producers.filtersed.InitSimEnergyDepositLiteLabel: "shifted"
+
