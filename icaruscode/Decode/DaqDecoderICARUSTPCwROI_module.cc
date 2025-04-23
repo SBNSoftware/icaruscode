@@ -652,15 +652,24 @@ void DaqDecoderICARUSTPCwROI::processSingleFragment(size_t                      
 
             if (fOutputMorphed)
             {
-                const icarus_signal_processing::VectorFloat& corrections = decoderTool->getMorphedWaveforms()[chanIdx];
+                const icarus_signal_processing::VectorFloat& morphWaveform = decoderTool->getMorphedWaveforms()[chanIdx];
 
                 // Need to convert from float to short int
-                std::transform(corrections.begin(),corrections.end(),wvfm.begin(),[](const auto& val){return short(std::round(val));});
+                std::transform(morphWaveform.begin(),morphWaveform.end(),wvfm.begin(),[](const auto& val){return short(std::round(val));});
+
+                // Get the morphological waveform mean position and spread from PCA
+                Eigen::Vector<float,2>   meanPos;
+                Eigen::Vector<float,2>   eigenValues;
+                Eigen::Matrix<float,2,2> eigenVectors;
+
+                icarus_signal_processing::VectorFloat localCopy = morphWaveform;
+
+                waveformTools.principalComponents(localCopy, meanPos, eigenVectors, eigenValues, 6., 3., false);
 
                 //ConcurrentRawDigitCol::iterator newRawObjItr = coherentRawDigitCol.emplace_back(channel,wvfm.size(),wvfm); 
                 ConcurrentRawDigitCol::iterator newRawObjItr = morphedRawDigitCol.push_back(raw::RawDigit(channel,wvfm.size(),wvfm)); 
 
-                newRawObjItr->SetPedestal(0.,0.);
+                newRawObjItr->SetPedestal(meanPos[1],std::sqrt(eigenValues[0]));
             }
 
             // Now determine the pedestal and correct for it

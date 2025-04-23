@@ -320,6 +320,9 @@ void TPCNoiseFilter1DMC::process_fragment(detinfo::DetectorClocksData const&,
         icarus_signal_processing::VectorFloat& rawDataVec    = fRawWaveforms[idx];
         icarus_signal_processing::VectorFloat& pedCorDataVec = fPedCorWaveforms[idx];
 
+        // Make sure our selection and ROI arrays are initialized
+        std::fill(fSelectVals[idx].begin(),fSelectVals[idx].end(),false);
+
         // Recover the channel ID
         int channelID = channelPlaneVec[idx].first;
 
@@ -327,16 +330,16 @@ void TPCNoiseFilter1DMC::process_fragment(detinfo::DetectorClocksData const&,
         fChannelIDVec[idx] = channelID;
 
         // Is this a valid channel and what is its status?
-        if (fChannelStatus->IsPresent(channelID))
-        {
-            // If the channel is bad then we "protect" the entire channel (it will not be used in noise removal)
-            // Note that the array has already been cleared before calling this function so no need to set opposite case
-            if (fChannelStatus->IsBad(channelID))
-            {   
-//                std::cout << "--> Channel:" << channelID << " is marked as bad by the channel status service" << std::endl;
-                std::fill(fSelectVals[idx].begin(),fSelectVals[idx].end(),true);
-            }
-        }
+        //if (fChannelStatus->IsPresent(channelID))
+        //{
+        //    // If the channel is bad then we "protect" the entire channel (it will not be used in noise removal)
+        //    // Note that the array has already been cleared before calling this function so no need to set opposite case
+        //    if (fChannelStatus->IsBad(channelID))
+        //    {   
+//      //          std::cout << "--> Channel:" << channelID << " is marked as bad by the channel status service" << std::endl;
+        //        std::fill(fSelectVals[idx].begin(),fSelectVals[idx].end(),true);
+        //    }
+        //}
 
         // We need to recover info on which plane we have
         std::vector<geo::WireID> widVec = fChannelMapAlg->ChannelToWire(fChannelIDVec[idx]);
@@ -388,6 +391,8 @@ void TPCNoiseFilter1DMC::process_fragment(detinfo::DetectorClocksData const&,
                                                    fNumTruncBins[idx],
                                                    fRangeBins[idx]);
 
+        if (fFullRMSVals[idx] < 2.5 || fFullRMSVals[idx] > 40.) std::fill(fSelectVals[idx].begin(),fSelectVals[idx].end(),true);
+
         // Convolve with a filter function
         //if (fUseFFTFilter) (*fFFTFilterFunctionVec[plane])(pedCorDataVec);
         if (fUseFFTFilter)
@@ -417,9 +422,6 @@ void TPCNoiseFilter1DMC::process_fragment(detinfo::DetectorClocksData const&,
 //            rawDataVec[  rawDataVec.size()/2] =  16. * std::sqrt(eigenValues(0));
 //            rawDataVec[1+rawDataVec.size()/2] = -16. * std::sqrt(eigenValues(0));
 //        }
-
-        // Make sure our selection and ROI arrays are initialized
-        std::fill(fSelectVals[idx].begin(),fSelectVals[idx].end(),false);
     }
 
     (*denoiser)(fWaveLessCoherent.begin(),

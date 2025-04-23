@@ -89,7 +89,7 @@ TPCNoiseFilter1DTool: {
     NSigmaForTrucation: 3.5
     StructuringElement: 16
     FilterWindow:       10
-    Threshold:          [1.0,1.0,1.0]
+    Threshold:          [5.0,3.5,3.5] #[20.0,12.,12.]
     FilterModeVec:      ["e","g","d"]
     LowFreqCorrection:  true
     UseFFTFilter:       false
