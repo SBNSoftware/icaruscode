@@ -16,10 +16,6 @@
 #include "flashmatch_simple_icarus.fcl"
 #include "crttrackproducer_icarus.fcl"
 #include "crtbacktracker_icarus.fcl"
-### FPoppi : The following CRT matching algorithms are deprecated.
-#include "crtt0matchingalg_icarus.fcl"
-#include "crtt0producer_icarus.fcl"
-### FPoppi : The following one is mantained.
 #include "crtt0tagging.fcl"
 ## The below can be found from the softlink to Supera in sbncode
 #include "supera_modules.fcl"
@@ -68,10 +64,6 @@ icarus_stage1_producers:
 
  ## crt producer
   crttrack:          @local::standard_crttrackproducer
-  ### FPoppi: the following are deprecated (and the one above not mantained)
-  ## CRTT0Matching:     @local::standard_crtt0producer
-  ## CRTT0MatchingW:    @local::standard_crtt0producerW
-  ## CRTT0MatchingE:    @local::standard_crtt0producerE
   CRTT0Tagging:         @local::icarus_crtt0tagging_data
 
   tpcpmtbarycentermatchCryoE: @local::data_tpcpmtbarycentermatchproducer_east
