@@ -1,5 +1,13 @@
 #
 #include "stage1_run2_icarus.fcl"
 
+physics.reco: [ @sequence::icarus_filter1D_cluster3D,
+                @sequence::icarus_pandora_Gauss,
+                @sequence::icarus_reco_fm,
+                @sequence::icarus_tpcpmtbarycentermatch,
+                @sequence::icarus_crttrack,
+                @sequence::icarus_crtt0tagging,
+                caloskimCalorimetryCryoE, caloskimCalorimetryCryoW]
+
 physics.producers.cluster3DCryoW.Hit3DBuilderAlg.HitFinderTagVec: ["gaushit1dTPCWW", "gaushit1dTPCWE"]
 physics.producers.cluster3DCryoE.Hit3DBuilderAlg.HitFinderTagVec: ["gaushit1dTPCEW", "gaushit1dTPCEE"]

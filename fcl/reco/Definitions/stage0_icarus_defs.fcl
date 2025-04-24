@@ -8,7 +8,6 @@
 #include "decoderdefs_icarus.fcl"
 #include "recowire_icarus.fcl"
 #include "wirechannelroiconverters_sbn.fcl"
-#include "hitfindermodules_icarus.fcl"
 #include "timing_icarus.fcl"
 #include "timing_beam.fcl"
 #include "icarus_ophitfinder.fcl"
@@ -74,6 +73,10 @@ icarus_stage0_producers:
   ### calwire producers
   decon1droi:                     @local::icarus_decon1droi
 
+  ### convert wires to channel rois
+  wire2channelroi:                @local::wiretochannelroi_sbn
+  wire2channelroi2d:              @local::wiretochannelroi_sbn
+
   ### wire-cell decon producers
   decon2droi:                     @local::standard_wirecell_sigproc
   decon2droiEE:                   @local::standard_wirecell_sigproc
@@ -84,22 +87,6 @@ icarus_stage0_producers:
   ### ROI finding on complete deconvolved waveforms
   roifinder1d:                    @local::icarus_roifinder
   roifinder2d:                    @local::icarus_roifinder
-
-  ### TPC hit-finder producers
-  gaushit1dTPCWW:                 @local::gaus_hitfinder_icarus
-  gaushit1dTPCWE:                 @local::gaus_hitfinder_icarus
-  gaushit1dTPCEW:                 @local::gaus_hitfinder_icarus
-  gaushit1dTPCEE:                 @local::gaus_hitfinder_icarus
-
-  gaushit2dTPCWW:                 @local::gaus_hitfinder_icarus
-  gaushit2dTPCWE:                 @local::gaus_hitfinder_icarus
-  gaushit2dTPCEW:                 @local::gaus_hitfinder_icarus
-  gaushit2dTPCEE:                 @local::gaus_hitfinder_icarus
-
-  gausshitTPCWW:                  @local::gausshit_sbn
-  gausshitTPCWE:                  @local::gausshit_sbn
-  gausshitTPCEW:                  @local::gausshit_sbn
-  gausshitTPCEE:                  @local::gausshit_sbn
 
   ### CRT hit finder producer
   crthit:                         @local::standard_crthitproducer	
@@ -208,7 +195,8 @@ icarus_stage0_trigger_Unknown:      [ triggerconfig,
                                     ]
 
 icarus_stage0_multiTPC_TPC:         [ decon1droi,
-                                      roifinder1d
+                                      roifinder1d,
+                                      wire2channelroi
                                     ]
 
 icarus_stage0_multiTPC_2d_TPC_E:[ 
@@ -221,31 +209,10 @@ icarus_stage0_multiTPC_2d_TPC_W:[
                                       decon2droiWW
                                     ]
 
-icarus_stage0_multiTPC_2d_TPC: [@sequence::icarus_stage0_multiTPC_2d_TPC_E, @sequence::icarus_stage0_multiTPC_2d_TPC_W]
-
-
-icarus_stage0_EastHits_TPC:         [ gaushit1dTPCEW,
-                                      gaushit1dTPCEE
-                                    ]
-
-icarus_stage0_WestHits_TPC:         [ gaushit1dTPCWW,
-                                      gaushit1dTPCWE
-                                    ]
-
-icarus_stage0_EastHits2d_TPC:       [ gaushit2dTPCEW,
-                                      gaushit2dTPCEE
-                                    ]
-
-icarus_stage0_WestHits2d_TPC:       [ gaushit2dTPCWW,
-                                      gaushit2dTPCWE
-                                    ]
-
-icarus_stage0_EastGauss_TPC:        [ gausshitTPCEW,
-                                      gausshitTPCEE
-                                    ]
-
-icarus_stage0_WestGauss_TPC:        [ gausshitTPCWW,
-                                      gausshitTPCWE
+icarus_stage0_multiTPC_2d_TPC:      [
+                                      @sequence::icarus_stage0_multiTPC_2d_TPC_E, 
+                                      @sequence::icarus_stage0_multiTPC_2d_TPC_W,
+                                      wire2channelroi2d
                                     ]
 
 icarus_purity_monitor:              [
@@ -277,19 +244,12 @@ icarus_stage0_PMT_NuMI:             [ @sequence::icarus_stage0_PMT,
                                     ]
  
 icarus_stage0_multiTPC:             [ @sequence::icarus_stage0_multiTPC_TPC,
-                                      @sequence::icarus_stage0_EastHits_TPC,
-                                      @sequence::icarus_stage0_WestHits_TPC,
                                       @sequence::icarus_purity_monitor
                                     ]
  
 icarus_stage0_2d_multiTPC:          [ @sequence::icarus_stage0_multiTPC_2d_TPC,
-                                      @sequence::icarus_stage0_EastHits2d_TPC,
-                                      @sequence::icarus_stage0_WestHits2d_TPC,
                                       @sequence::icarus_purity_monitor
                                     ]
-
-icarus_stage0_2d_multiTPC_E: [ @sequence::icarus_stage0_multiTPC_2d_TPC_E, @sequence::icarus_stage0_EastHits2d_TPC]
-icarus_stage0_2d_multiTPC_W: [ @sequence::icarus_stage0_multiTPC_2d_TPC_W, @sequence::icarus_stage0_WestHits2d_TPC]
 
 icarus_stage0_CRT:                  [
                                       daqCRT,
@@ -340,6 +300,12 @@ icarus_stage0_2d_data_crtpmtfilter: [
 ### Below we include overrides for the modules above
 
 physics.producers.daqTrigger.DecoderTool.TrigConfigLabel:                                      triggerconfig
+
+### connect channel ROI converters to input
+icarus_stage0_producers.wire2channelroi.WireModuleLabelVec:                                    ["roifinder1d:PHYSCRATEDATATPCWW", "roifinder1d:PHYSCRATEDATATPCWE", "roifinder1d:PHYSCRATEDATATPCEW", "roifinder1d:PHYSCRATEDATATPCEE"]
+icarus_stage0_producers.wire2channelroi.OutInstanceLabelVec:                                   ["PHYSCRATEDATATPCWW","PHYSCRATEDATATPCWE","PHYSCRATEDATATPCEW","PHYSCRATEDATATPCEE"]
+icarus_stage0_producers.wire2channelroi2d.WireModuleLabelVec:                                  ["decon2droiEE:gauss", "decon2droiEW:gauss", "decon2droiWE:gauss", "decon2droiWW:gauss"]
+icarus_stage0_producers.wire2channelroi2d.OutInstanceLabelVec:                                 ["PHYSCRATEDATATPCWW","PHYSCRATEDATATPCWE","PHYSCRATEDATATPCEW","PHYSCRATEDATATPCEE"]
 
 ### Handle multiple TPC readout with single instances
 icarus_stage0_producers.daqTPC.FragmentsLabelVec:                                              ["daq:PHYSCRATEDATATPCWW","daq:PHYSCRATEDATATPCWE","daq:PHYSCRATEDATATPCEW","daq:PHYSCRATEDATATPCEE"]
@@ -495,43 +461,6 @@ icarus_stage0_producers.roifinder2d.ROIFinderToolVec.ROIFinderPlane2.ROILabelVec
 icarus_stage0_producers.roifinder2d.WireModuleLabelVec:                                        ["decon2droiWW:looseLf","decon2droiWE:looseLf","decon2droiEW:looseLf","decon2droiEE:looseLf"]
 icarus_stage0_producers.roifinder2d.OutInstanceLabelVec:                                       ["PHYSCRATEDATATPCWW","PHYSCRATEDATATPCWE","PHYSCRATEDATATPCEW","PHYSCRATEDATATPCEE"]
 icarus_stage0_producers.roifinder2d.OutputMorphed:                                             false
-
-### Set up hit finding for multiple TPC readout
-icarus_stage0_producers.gaushit1dTPCWW.CalDataModuleLabel:                                     "roifinder1d:PHYSCRATEDATATPCWW"
-icarus_stage0_producers.gaushit1dTPCWE.CalDataModuleLabel:                                     "roifinder1d:PHYSCRATEDATATPCWE"
-icarus_stage0_producers.gaushit1dTPCEW.CalDataModuleLabel:                                     "roifinder1d:PHYSCRATEDATATPCEW"
-icarus_stage0_producers.gaushit1dTPCEE.CalDataModuleLabel:                                     "roifinder1d:PHYSCRATEDATATPCEE"
-
-icarus_stage0_producers.gaushit2dTPCWW.CalDataModuleLabel:                                     "decon2droiWW:gauss"
-icarus_stage0_producers.gaushit2dTPCWE.CalDataModuleLabel:                                     "decon2droiWE:gauss"
-icarus_stage0_producers.gaushit2dTPCEW.CalDataModuleLabel:                                     "decon2droiEW:gauss"
-icarus_stage0_producers.gaushit2dTPCEE.CalDataModuleLabel:                                     "decon2droiEE:gauss"
-
-# Lower thresholds for tighter filter width
-icarus_stage0_producers.gaushit2dTPCEE.HitFinderToolVec.CandidateHitsPlane0.RoiThreshold:      5.
-icarus_stage0_producers.gaushit2dTPCEE.HitFinderToolVec.CandidateHitsPlane1.RoiThreshold:      5.
-icarus_stage0_producers.gaushit2dTPCEE.HitFinderToolVec.CandidateHitsPlane2.RoiThreshold:      5.
-icarus_stage0_producers.gaushit2dTPCEE.HitFilterAlg.MinPulseHeight:                            [3., 3., 3.]
-
-icarus_stage0_producers.gaushit2dTPCEW.HitFinderToolVec.CandidateHitsPlane0.RoiThreshold:      5.
-icarus_stage0_producers.gaushit2dTPCEW.HitFinderToolVec.CandidateHitsPlane1.RoiThreshold:      5.
-icarus_stage0_producers.gaushit2dTPCEW.HitFinderToolVec.CandidateHitsPlane2.RoiThreshold:      5.
-icarus_stage0_producers.gaushit2dTPCEW.HitFilterAlg.MinPulseHeight:                            [3., 3., 3.]
-
-icarus_stage0_producers.gaushit2dTPCWE.HitFinderToolVec.CandidateHitsPlane0.RoiThreshold:      5.
-icarus_stage0_producers.gaushit2dTPCWE.HitFinderToolVec.CandidateHitsPlane1.RoiThreshold:      5.
-icarus_stage0_producers.gaushit2dTPCWE.HitFinderToolVec.CandidateHitsPlane2.RoiThreshold:      5.
-icarus_stage0_producers.gaushit2dTPCWE.HitFilterAlg.MinPulseHeight:                            [3., 3., 3.]
-
-icarus_stage0_producers.gaushit2dTPCWW.HitFinderToolVec.CandidateHitsPlane0.RoiThreshold:      5.
-icarus_stage0_producers.gaushit2dTPCWW.HitFinderToolVec.CandidateHitsPlane1.RoiThreshold:      5.
-icarus_stage0_producers.gaushit2dTPCWW.HitFinderToolVec.CandidateHitsPlane2.RoiThreshold:      5.
-icarus_stage0_producers.gaushit2dTPCWW.HitFilterAlg.MinPulseHeight:                            [3., 3., 3.]
-
-icarus_stage0_producers.gausshitTPCWW.CalDataModuleLabel:                                      "roifinder:PHYSCRATEDATATPCWW"
-icarus_stage0_producers.gausshitTPCWE.CalDataModuleLabel:                                      "roifinder:PHYSCRATEDATATPCWE"
-icarus_stage0_producers.gausshitTPCEW.CalDataModuleLabel:                                      "roifinder:PHYSCRATEDATATPCEW"
-icarus_stage0_producers.gausshitTPCEE.CalDataModuleLabel:                                      "roifinder:PHYSCRATEDATATPCEE"
 
 ###
 ### Optical detector

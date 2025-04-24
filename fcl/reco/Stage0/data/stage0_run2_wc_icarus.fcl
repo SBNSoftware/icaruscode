@@ -13,7 +13,8 @@ physics.path:         [ @sequence::icarus_stage0_2d_data ]
 ## boiler plate...
 physics.outana:        [ ]
 physics.trigger_paths: [ path ]
-physics.end_paths:     [ outana, streamROOT ]
+# physics.end_paths:     [ outana, streamROOT ]
+physics.end_paths:     [ streamROOT ]
 
 # Drop the artdaq format files on output, 
 # Drop all output from the TPC decoder stage
@@ -22,15 +23,20 @@ physics.end_paths:     [ outana, streamROOT ]
 # Drop all output from the 2D deconvolution stage
 # Drop the recob::Wire output from the roifinder2d (but keep the ChannelROIs)
 # Keep the Trigger fragment
-outputs.rootOutput.outputCommands:         ["keep *_*_*_*", 
-                                            "drop artdaq::Fragments_*_*_ICARUSReprocessRaw",
-                                            "drop *_*_*_DAQ*", 
-                                            "drop *_daqTPCROI_*_*", 
-                                            "drop *_decon1droi_*_*", 
-                                            "drop *_decon2droi*_*_*", 
-                                            "drop recob::Wire*_roifinder*_*_*",
-                                            "keep *_daq_ICARUSTriggerV*_*"
-                                           ]
+outputs.rootOutput.outputCommands: [
+    "keep *_*_*_*", 
+    "drop artdaq::Fragments_*_*_ICARUSReprocessRaw",
+    "drop *_*_*_DAQ*",
+    "drop *_ophituncorrected_*_*",
+    "drop raw::OpDetWaveforms_daqPMT__*",
+    "drop *_daqTPCROI_*_*", 
+    "drop *_decon2droiEE_*_*",
+    "drop *_decon2droiEW_*_*",
+    "drop *_decon2droiWE_*_*",
+    "drop *_decon2droiWW_*_*",
+    "drop *_decon1droi_*_*", 
+    "drop recob::Wire*_roifinder_*_*",
+    "keep *_daq_ICARUSTriggerV*_*"]
 
 services.message.destinations :
 {

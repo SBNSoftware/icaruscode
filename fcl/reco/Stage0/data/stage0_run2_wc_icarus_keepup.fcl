@@ -7,7 +7,8 @@
 ## Add the purity monitor
 physics.outana:        [ purityinfoana0, purityinfoana1 ]
 physics.trigger_paths: [ path ]
-physics.end_paths:     [ outana, streamROOT ]
+# physics.end_paths:     [ outana, streamROOT ]
+physics.end_paths:     [ streamROOT ]
 
 
 ## Need overrides for the purity monitor

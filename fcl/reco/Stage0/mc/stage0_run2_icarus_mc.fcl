@@ -24,7 +24,8 @@ physics.path: [   @sequence::icarus_stage0_mc_PMT,
 ## boiler plate...
 physics.outana:        [ purityinfoana0, purityinfoana1 ]
 physics.trigger_paths: [ path ]
-physics.end_paths:     [ outana, streamROOT ]
+# physics.end_paths:     [ outana, streamROOT ]
+physics.end_paths:     [ streamROOT ]
 
 # Drop data products that are no longer needed, but make sure to keep important items!
 # For example, we need to drop the RawDigits from the detector simulation stage but want to keep the SimChannel info from WireCell...
