@@ -1,0 +1,9 @@
+#include "stage0_run2_wcdnn_icarus_mc.fcl"
+
+# restore non-shifted labels
+physics.producers.emuTrigger.BeamGates: "beamgate"
+physics.producers.mcophit.SimPhotonsProducer: "pdfastsim"
+physics.producers.opdetonbeam.Waveforms: "opdaq"
+physics.producers.pmtbaselines.OpticalWaveforms: "opdaq"
+physics.producers.pmtfixedthr.OpticalWaveforms: "opdaq"
+
