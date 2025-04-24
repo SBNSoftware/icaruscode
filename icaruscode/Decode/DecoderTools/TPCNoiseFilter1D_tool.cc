@@ -331,7 +331,7 @@ void TPCNoiseFilter1DMC::process_fragment(detinfo::DetectorClocksData const&,
         {
             // If the channel is bad then we "protect" the entire channel (it will not be used in noise removal)
             // Note that the array has already been cleared before calling this function so no need to set opposite case
-            if (fChannelStatus->IsBad(channelID))
+            if (!fChannelStatus->IsGood(channelID))
             {   
 //                std::cout << "--> Channel:" << channelID << " is marked as bad by the channel status service" << std::endl;
                 std::fill(fSelectVals[idx].begin(),fSelectVals[idx].end(),true);
