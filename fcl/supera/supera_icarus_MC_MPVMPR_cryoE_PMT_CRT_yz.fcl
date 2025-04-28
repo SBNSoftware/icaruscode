@@ -60,7 +60,7 @@ ProcessDriver: {
       #LArMCMiniPartProducer: "largeant"
       DeltaSize: 10
       #LArSimEnergyDepositProducer: "largeant TPCActive"
-      LArSimEnergyDepositLiteProducer: "shifted"
+      LArSimEnergyDepositLiteProducer: "filtersed"
       Meta3DFromCluster3D: "mcst"
       Meta2DFromTensor2D:  ""
       Verbosity: 2
@@ -109,7 +109,7 @@ ProcessDriver: {
       Verbosity: 2
       LArMCTruthProducer: "generator"
       #LArSimEnergyDepositProducer: "largeant TPCActive"
-      LArSimEnergyDepositLiteProducer: "shifted"
+      LArSimEnergyDepositLiteProducer: "filtersed"
 			UseSEDLite: true #false
       Origin: 0
       Cluster3DLabels: ["mcst","pcluster","sed","masked_true2reco"]
@@ -132,7 +132,7 @@ ProcessDriver: {
     SuperaSimEnergyDeposit: {
       Verbosity: 2
       #LArSimEnergyDepositProducer: "largeant TPCActive"
-      LArSimEnergyDepositLiteProducer: "shifted"
+      LArSimEnergyDepositLiteProducer: "filtersed"
       LArMCShowerProducer: "mcreco"
 			UseSEDLite: true #false
       ParticleProducer: "pcluster"
