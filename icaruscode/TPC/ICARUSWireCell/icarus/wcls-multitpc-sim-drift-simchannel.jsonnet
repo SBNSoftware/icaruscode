@@ -168,11 +168,14 @@ local wcls_output = {
 };
 
 //local deposio = io.numpy.depos(output);
-local drifter = sim.drifter;
+
+local overlay_drifter = std.extVar("overlay_drifter");
+
+local drifter = if overlay_drifter then sim.overlay_drifter else sim.drifter;
 local setdrifter = g.pnode({
             type: 'DepoSetDrifter',
             data: {
-                drifter: "Drifter"
+                drifter: if overlay_drifter then "wclsICARUSDrifter" else "Drifter"
             }
         }, nin=1, nout=1,
         uses=[drifter]);
@@ -331,6 +334,16 @@ local frame_summers = [
 
 local actpipes = [g.pipeline([noises[n], coh_noises[n], digitizers[n], /*retaggers[n],*/ wcls_output.sim_digits[n]], name="noise-digitizer%d" %n) for n in std.range(0,3)];
 local util = import 'pgrapher/experiment/icarus/funcs.jsonnet';
+
+// local actpipes = [g.pipeline([noises[n], coh_noises[n], digitizers[n], /*retaggers[n],*/ wcls_output.sim_digits[n]], name="noise-digitizer%d" %n) for n in std.range(0,3)];
+
+local include_noise = std.extVar("include_noise");
+
+local actpipes = if include_noise then 
+		[g.pipeline([noises[n], coh_noises[n], digitizers[n], wcls_output.h5io[n], wcls_output.sim_digits[n]], name="noise-digitizer%d" %n) for n in std.range(0,3)]
+	else 
+		[g.pipeline([digitizers[n], wcls_output.h5io[n], wcls_output.sim_digits[n]], name="noise-digitizer%d" %n) for n in std.range(0,3)];
+
 local outtags = ['orig%d' % n for n in std.range(0, 3)];
 local pipe_reducer = util.fansummer('DepoSetFanout', analog_pipes, frame_summers, actpipes, 'FrameFanin', 'fansummer', outtags);
 
