@@ -36,11 +36,17 @@ outputs: {
     @table::icarus_rootoutput
     outputCommands: [
       "keep *",
-      "drop *_ionization_*_*",
-      "drop *_pmtlvdsgatesinit_*_*",
-      "drop *_pmtfixedthrinit_*_*",
-      "drop *_pmttriggerwindowsinit_*_*",
-      "drop *_triggersimgatesinit_*_*"
+     , "drop *_ionization_*_*"
+     , "drop *_simdrift_*_*"
+     , "drop *_pdfastsim_*_*"
+     , "drop raw::OpDetWaveform*_opdaq_*_*"
+     , "drop sim::SimEnergyDeposits_largeant_*_*"
+     , "drop sim::SimEnergyDepositLites_sedlite_*_*"
+     , "drop sim::SimEnergyDeposits_shifted_*_*"
+     , "drop *_pmtlvdsgatesinit_*_*"
+     , "drop *_pmtfixedthrinit_*_*"
+     , "drop *_pmttriggerwindowsinit_*_*"
+     , "drop *_triggersimgatesinit_*_*"
       ]
   }
 }

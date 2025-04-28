@@ -31,10 +31,12 @@ physics.end_paths:     [ streamROOT ]
 # For example, we need to drop the RawDigits from the detector simulation stage but want to keep the SimChannel info from WireCell...
 outputs.rootOutput.outputCommands: ["keep *_*_*_*", 
                                     "drop *_daq*_*_*", 
+                                    "drop raw::RawDigit*_*_*_*", 
+                                    "drop raw::OpDetWaveform*_opdaq_*_*", 
                                     "drop *_MCDecodeTPCROI_*_*", 
                                     "drop *_decon1droi_*_*", 
-                                    "drop recob::Wire*_roifinder_*_*", 
-                                    "keep *_daq_simpleSC_*"]
+                                    "drop recob::Wire*_roifinder*_*_*", 
+                                    "keep *_daq_simpleSC*_*"]
 
 # Set the expected input for ophit
 physics.producers.ophit.InputModule: "opdaq"

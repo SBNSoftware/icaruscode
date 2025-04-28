@@ -29,9 +29,10 @@ physics.end_paths:     [ streamROOT ]
 # Drop the artdaq format files on output
 outputs.rootOutput.outputCommands: ["keep *_*_*_*", 
                                     "drop *_daq*_*_*", 
+                                    "drop raw::RawDigit*_*_*_*", 
                                     "drop *_MCDecodeTPCROI_*_*", 
                                     "drop *_decon1droi_*_*", 
-                                    "drop *_decon2droi_*_*", 
+                                    "drop *_decon2droi*_*_*",
                                     "drop recob::Wire*_roifinder*_*_*", 
                                     "keep *_daq_simpleSC*_*"]
 
