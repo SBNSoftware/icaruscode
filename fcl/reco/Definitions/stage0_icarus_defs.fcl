@@ -305,7 +305,7 @@ physics.producers.daqTrigger.DecoderTool.TrigConfigLabel:                       
 icarus_stage0_producers.wire2channelroi.WireModuleLabelVec:                                    ["roifinder1d:PHYSCRATEDATATPCWW", "roifinder1d:PHYSCRATEDATATPCWE", "roifinder1d:PHYSCRATEDATATPCEW", "roifinder1d:PHYSCRATEDATATPCEE"]
 icarus_stage0_producers.wire2channelroi.OutInstanceLabelVec:                                   ["PHYSCRATEDATATPCWW","PHYSCRATEDATATPCWE","PHYSCRATEDATATPCEW","PHYSCRATEDATATPCEE"]
 icarus_stage0_producers.wire2channelroi2d.WireModuleLabelVec:                                  ["decon2droiEE:gauss", "decon2droiEW:gauss", "decon2droiWE:gauss", "decon2droiWW:gauss"]
-icarus_stage0_producers.wire2channelroi2d.OutInstanceLabelVec:                                 ["PHYSCRATEDATATPCWW","PHYSCRATEDATATPCWE","PHYSCRATEDATATPCEW","PHYSCRATEDATATPCEE"]
+icarus_stage0_producers.wire2channelroi2d.OutInstanceLabelVec:                                 ["PHYSCRATEDATATPCEE","PHYSCRATEDATATPCEW","PHYSCRATEDATATPCWE","PHYSCRATEDATATPCWW"]
 
 ### Handle multiple TPC readout with single instances
 icarus_stage0_producers.daqTPC.FragmentsLabelVec:                                              ["daq:PHYSCRATEDATATPCWW","daq:PHYSCRATEDATATPCWE","daq:PHYSCRATEDATATPCEW","daq:PHYSCRATEDATATPCEE"]
