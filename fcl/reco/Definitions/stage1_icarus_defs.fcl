@@ -188,12 +188,16 @@ icarus_reco_cluster3DCryoW:        [ cluster3DCryoW ]
 icarus_reco_cluster3DCryoE:        [ cluster3DCryoE ]
 
 icarus_reco_pandoraGausCryoW:      [ pandoraGausCryoW,
+                                     nuslhitsCryoW,
+                                     NuGraphCryoW,
                                      pandoraTrackGausCryoW,
                                      pandoraKalmanTrackGausCryoW,
                                      SBNShowerGausCryoW
                                    ]
 
 icarus_reco_pandoraGausCryoE:      [ pandoraGausCryoE,
+                                     nuslhitsCryoE,
+                                     NuGraphCryoE,
                                      pandoraTrackGausCryoE,
                                      pandoraKalmanTrackGausCryoE,
                                      SBNShowerGausCryoE
@@ -223,13 +227,6 @@ icarus_reco_fm:                    [ fmatchCryoE,
 icarus_tpcpmtbarycentermatch:      [
                                      tpcpmtbarycentermatchCryoE, 
                                      tpcpmtbarycentermatchCryoW
-                                   ]
-
-icarus_nugraph:                    [
-                                     nuslhitsCryoE,
-                                     nuslhitsCryoW,
-                                     NuGraphCryoE,
-                                     NuGraphCryoW
                                    ]
 
 icarus_crttrack:                   [crttrack]
