@@ -1,4 +1,4 @@
-#include "nugraph.fcl"
+#include "nugraph_icarus.fcl"
 #include "services_common_icarus.fcl"
 #include "services_icarus_simulation.fcl"
 
@@ -60,26 +60,14 @@ physics:
 
   producers:
   {
-    nuslhitsCryoE: { 
-      module_type: "IcarusNuSliceHitsProducer"
-      #module_type: "IcarusTrueNuSliceHitsProducer"
-      BaryMatchLabel: "tpcpmtbarycentermatchCryoE"
-      SliceLabel:    "pandoraGausCryoE"
-      SpsLabel:      "cluster3DCryoE"
-    }
-    nuslhitsCryoW: { 
-      module_type: "IcarusNuSliceHitsProducer"
-      #module_type: "IcarusTrueNuSliceHitsProducer"
-      BaryMatchLabel: "tpcpmtbarycentermatchCryoW"
-      SliceLabel:    "pandoraGausCryoW"
-      SpsLabel:      "cluster3DCryoW"
-    }
-    nuslhits: {
-      module_type:             "HitMerger"
-      HitProducerLabelVec:     ["nuslhitsCryoE","nuslhitsCryoW"]
-    }
-    NuGraphCryoE: @local::ApptainerNuGraphNuSonicTriton
-    NuGraphCryoW: @local::ApptainerNuGraphNuSonicTriton
+    nuslhitsCryoE: @local::nuslhitsCryoE
+    nuslhitsCryoW: @local::nuslhitsCryoW
+    #nuslhits: {
+    #  module_type:             "HitMerger"
+    #  HitProducerLabelVec:     ["nuslhitsCryoE","nuslhitsCryoW"]
+    #}
+    NuGraphCryoE: @local::NuGraphCryoE
+    NuGraphCryoW: @local::NuGraphCryoW
   }
   analyzers:
   {
@@ -103,18 +91,10 @@ physics:
  end_paths:          [ ana, streamROOT ]
 }
 
-physics.producers.NuGraphCryoE.LoaderTool.tool_type: "IcarusNuGraphLoader"
-physics.producers.NuGraphCryoE.LoaderTool.hitInput: "nuslhitsCryoE"
-physics.producers.NuGraphCryoE.LoaderTool.spsInput: "nuslhitsCryoE"
-physics.producers.NuGraphCryoE.DecoderTools.SemanticDecoderTool.hitInput: "nuslhitsCryoE"
-physics.producers.NuGraphCryoE.TritonConfig.modelName: "nugraph2_icarus_mpvmprbnb"
-#physics.producers.NuGraphCryoE.debug: true
+#physics.producers.nuslhitsCryoE.module_type: "IcarusTrueNuSliceHitsProducer"
+#physics.producers.nuslhitsCryoW.module_type: "IcarusTrueNuSliceHitsProducer"
 
-physics.producers.NuGraphCryoW.LoaderTool.tool_type: "IcarusNuGraphLoader"
-physics.producers.NuGraphCryoW.LoaderTool.hitInput: "nuslhitsCryoW"
-physics.producers.NuGraphCryoW.LoaderTool.spsInput: "nuslhitsCryoW"
-physics.producers.NuGraphCryoW.DecoderTools.SemanticDecoderTool.hitInput: "nuslhitsCryoW"
-physics.producers.NuGraphCryoW.TritonConfig.modelName: "nugraph2_icarus_mpvmprbnb"
+#physics.producers.NuGraphCryoE.debug: true
 #physics.producers.NuGraphCryoW.debug: true
 
 services.BackTrackerService.BackTracker.G4ModuleLabel: "largeant"

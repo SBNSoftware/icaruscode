@@ -129,9 +129,10 @@ void IcarusNuGraphLoader::loadData(art::Event& e,
   }
 
   // space point table
+  size_t spidx = 0;
   for (size_t i = 0; i < splist.size(); ++i) {
     if (sp2Hit[i].size()==0) continue;
-    spacepoint_table_spacepoint_id_data.push_back(i);
+    spacepoint_table_spacepoint_id_data.push_back(spidx++);
     spacepoint_table_hit_id_u_data.push_back(-1);
     spacepoint_table_hit_id_v_data.push_back(-1);
     spacepoint_table_hit_id_y_data.push_back(-1);
