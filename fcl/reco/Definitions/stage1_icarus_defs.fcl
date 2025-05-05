@@ -187,16 +187,18 @@ icarus_reco_cluster3DCryoW:        [ cluster3DCryoW ]
 
 icarus_reco_cluster3DCryoE:        [ cluster3DCryoE ]
 
-icarus_reco_pandoraGausCryoW:      [ pandoraGausCryoW,
-                                     nuslhitsCryoW,
+icarus_reco_pandoraGausCryoW:      [ pandoraGausCryoW ]
+
+icarus_reco_pandoraGausCryoE:      [ pandoraGausCryoE ]
+
+icarus_reco_postPandoraGausCryoW:  [ nuslhitsCryoW,
                                      NuGraphCryoW,
                                      pandoraTrackGausCryoW,
                                      pandoraKalmanTrackGausCryoW,
                                      SBNShowerGausCryoW
                                    ]
 
-icarus_reco_pandoraGausCryoE:      [ pandoraGausCryoE,
-                                     nuslhitsCryoE,
+icarus_reco_postPandoraGausCryoE:  [ nuslhitsCryoE,
                                      NuGraphCryoE,
                                      pandoraTrackGausCryoE,
                                      pandoraKalmanTrackGausCryoE,
@@ -218,6 +220,11 @@ icarus_pandora_Gauss:              [
                                      @sequence::icarus_reco_pandoraGausCryoW
                                    ]
 
+icarus_postPandora_Gauss:          [
+                                     @sequence::icarus_reco_postPandoraGausCryoE,
+                                     @sequence::icarus_reco_postPandoraGausCryoW
+                                   ]
+
 #Add flash matching
 icarus_reco_fm:                    [ fmatchCryoE,
                                      fmatchCryoW,
@@ -236,7 +243,7 @@ icarus_crtt0match:                 [CRTT0Matching]
 icarus_crtt0match_eff:             [CRTT0MatchingE, CRTT0MatchingW]
 
 ### Below we include overrides for the modules above
-
+q
 ## Overrides for filtering of cluster3D hits
 icarus_stage1_filters.TPCHitFilterCryoW.HitDataLabelVec: ["cluster3DCryoW"]
 icarus_stage1_filters.TPCHitFilterCryoW.MaximumHits:     60000 
