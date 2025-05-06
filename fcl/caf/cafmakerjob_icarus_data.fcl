@@ -32,6 +32,6 @@ physics.producers.cafmaker.SimChannelLabel: ""
 physics.producers.cafmaker.SystWeightLabels: []
 physics.producers.cafmaker.SaveGENIEEventRecord: false
 physics.producers.cafmaker.BNBPOTDataLabel: "icarusbnbinfo"
-physics.producers.cafmaker.OffBeamBNBCountDataLabel: "icarusbnbextinfo"
+physics.producers.cafmaker.OffbeamBNBCountDataLabel: "icarusbnbextinfo"
 
 physics.producers.cafmaker.TriggerLabel: "daqTrigger" # the general configuration, for MC, has a different one (see also https://github.com/SBNSoftware/icaruscode/issues/556)
