@@ -156,7 +156,7 @@ function UpdateROOTtag() {
   ROOTVersionTag="${ROOTVersionTag//.}"
   
   echo "Fetching Doxygen tag for ROOT version ${ROOTVersion}"
-  UpdateTag 'ROOT.tag' "https://root.cern/doc/v${ROOTVersionTag}/ROOT.tag" "ROOT"
+  UpdateTag 'ROOT.tag' "https://root.cern/doc/v${ROOTVersionTag}/ROOT.tag.gz" "ROOT"
 
 } # UpdateROOTtag()
 
