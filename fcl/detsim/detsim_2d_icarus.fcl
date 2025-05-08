@@ -35,7 +35,7 @@ outputs: {
   rootoutput: {
     @table::icarus_rootoutput
     outputCommands: [
-      "keep *",
+      "keep *"
      , "drop *_ionization_*_*"
      , "drop *_simdrift_*_*"
      , "drop *_pdfastsim_*_*"
