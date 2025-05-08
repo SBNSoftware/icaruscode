@@ -1,3 +1,0 @@
-#include "stage1_run2_1d_icarus_MC.fcl"
-
-process_name: MCstage1Var
