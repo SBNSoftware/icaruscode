@@ -1,6 +1,0 @@
-#include "detsim_2d_icarus_refactored.fcl"
-
-#apply cathode bending maps within WireCell
-physics.producers.daq.wcls_main.params.cathode_input_format: "array"
-
-process_name: DetSimCathodeVar
