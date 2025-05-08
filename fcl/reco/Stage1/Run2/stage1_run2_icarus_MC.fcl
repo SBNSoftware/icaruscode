@@ -48,10 +48,11 @@ physics.producers: {
 }
 
 physics.reco: [ 
-                @sequence::icarus_pandora_Gauss ,
+                @sequence::icarus_filter_cluster3D,
+                @sequence::icarus_pandora_Gauss,
                 @sequence::icarus_reco_fm,
                 @sequence::icarus_tpcpmtbarycentermatch,
-                @sequence::icarus_postPandora_Gauss ,
+                @sequence::icarus_postPandora_Gauss,
                 caloskimCalorimetryCryoE, caloskimCalorimetryCryoW,
                 mcassociationsGausCryoE,  mcassociationsGausCryoW
               ]
