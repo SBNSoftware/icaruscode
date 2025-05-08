@@ -33,7 +33,7 @@ set(	TOOL_LIBRARIES
 			CLHEP::Random
 			Eigen3::Eigen
 	)
-cet_build_plugin(Overlay1D art::tool LIBRARIES ${TOOL_LIBRARIES} SOURCE Overlay1D_tool.cc)
+cet_build_plugin(Overlay1D art::tool LIBRARIES ${TOOL_LIBRARIES} REG_SOURCE Overlay1D_tool.cc)
 set_property(SOURCE Overlay1D_tool.cc APPEND PROPERTY COMPILE_DEFINITIONS EIGEN_FFTW_DEFAULT)
 
 install_headers()
