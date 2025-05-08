@@ -47,7 +47,7 @@ cet_build_plugin( CRTTrueHitProducer art::module
         art::Persistency_Provenance
         canvas::canvas
         cetlib_except::cetlib_except
-        lardata::DetectorInfoServices_DetectorClocksServiceStandard_service
+        lardata::DetectorClocksService
         art::Framework_Services_Registry
         messagefacility::MF_MessageLogger
         messagefacility::headers
