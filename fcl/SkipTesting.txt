@@ -82,17 +82,17 @@ job/var_50pe_5hits_3us_020ns.fcl
 job/var_50pe_5hits_5us_020ns.fcl
 job/var_50pe_5hits_7us_020ns.fcl
 # GRAY PUTNAM 5/8/25: BROKEN FCL FILES in Spring 2025 transition
-job/magic_raw_to_triggeremu_icarus_Run1_data.fcl
-job/trigger_eff_stage1_icarus.fcl
-job/cafmakerjob_icarus_data_rereco_numi_Run1.fcl
-job/cafmakerjob_icarus_data_rereco_numi.fcl
-job/cafmakerjob_icarus_data_rereco_numi_Run2OnBeam.fcl
-job/cafmakerjob_icarus_data_rereco_numi_Run2OffBeam.fcl
-job/cafmakerjob_rereco_numi_icarus_systtools_and_fluxwgt.fcl
-job/intime_gen_overlay_SimInfoMixer2.fcl
-job/intime_gen_overlay_SimInfoMixer1.fcl
-job/prodcorsika_proton_intime_filter_bnb_siminfomixer.fcl
-job/prodcorsika_proton_intime_filter_bnb_siminfomixer2.fcl
-job/prodcorsika_proton_intime_filter_bnb_siminfomixer1.fcl
+magic_raw_to_triggeremu_icarus_Run1_data.fcl
+trigger_eff_stage1_icarus.fcl
+cafmakerjob_icarus_data_rereco_numi_Run1.fcl
+cafmakerjob_icarus_data_rereco_numi.fcl
+cafmakerjob_icarus_data_rereco_numi_Run2OnBeam.fcl
+cafmakerjob_icarus_data_rereco_numi_Run2OffBeam.fcl
+cafmakerjob_rereco_numi_icarus_systtools_and_fluxwgt.fcl
+intime_gen_overlay_SimInfoMixer2.fcl
+intime_gen_overlay_SimInfoMixer1.fcl
+prodcorsika_proton_intime_filter_bnb_siminfomixer.fcl
+prodcorsika_proton_intime_filter_bnb_siminfomixer2.fcl
+prodcorsika_proton_intime_filter_bnb_siminfomixer1.fcl
 # GRAY PUTNAM 5/8/25: "Enabler" fcl files that should not be dump'd on their own
-job/enable_overlay_sp.fcl
+enable_overlay_sp.fcl
