@@ -93,5 +93,6 @@ job/intime_gen_overlay_SimInfoMixer2.fcl
 job/intime_gen_overlay_SimInfoMixer1.fcl
 job/prodcorsika_proton_intime_filter_bnb_siminfomixer.fcl
 job/prodcorsika_proton_intime_filter_bnb_siminfomixer2.fcl
+job/prodcorsika_proton_intime_filter_bnb_siminfomixer1.fcl
 # GRAY PUTNAM 5/8/25: "Enabler" fcl files that should not be dump'd on their own
 job/enable_overlay_sp.fcl
