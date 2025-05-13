@@ -19,7 +19,7 @@ physics: {
     
     crtdaq:         @local::icarus_crtsim
      opdaq:         @local::icarus_simpmt
-       daq:         @local::icarus_simwire_wirecell
+       daq:         @local::icarus_simwire_wirecell_filtersed
 
        rns:         { module_type: "RandomNumberSaver" }
   } # producers
@@ -35,17 +35,22 @@ outputs: {
   rootoutput: {
     @table::icarus_rootoutput
     outputCommands: [
-      "keep *",
-      "drop *_ionization_*_*",
-      "drop *_pmtlvdsgatesinit_*_*",
-      "drop *_pmtfixedthrinit_*_*",
-      "drop *_pmttriggerwindowsinit_*_*",
-      "drop *_triggersimgatesinit_*_*"
+      "keep *"
+     , "drop *_ionization_*_*"
+     , "drop *_simdrift_*_*"
+     , "drop *_pdfastsim_*_*"
+     , "drop raw::OpDetWaveform*_opdaq_*_*"
+     , "drop sim::SimEnergyDeposits_largeant_*_*"
+     , "drop sim::SimEnergyDepositLites_sedlite_*_*"
+     , "drop sim::SimEnergyDeposits_shifted_*_*"
+     , "drop *_pmtlvdsgatesinit_*_*"
+     , "drop *_pmtfixedthrinit_*_*"
+     , "drop *_pmttriggerwindowsinit_*_*"
+     , "drop *_triggersimgatesinit_*_*"
       ]
   }
 }
 
-physics.producers.daq.wcls_main.configs: ["pgrapher/experiment/icarus/wcls-multitpc-sim-drift-simchannel-shifted-refactored.jsonnet"]
 physics.producers.crtdaq.G4ModuleLabel: "shifted"
 physics.producers.opdaq.InputModule: "pdfastsim"
 physics.producers.shifted.InitAuxDetSimChannelLabel: "genericcrt"

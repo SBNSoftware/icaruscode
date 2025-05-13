@@ -18,7 +18,16 @@ function(params, tools) {
                      for n in std.range(0, nanodes-1)],
     local transforms = [sim.make_depotransform("depotransform-"+tools.anodes[n].name, tools.anodes[n], tools.pirs[0])
                         for n in std.range(0, nanodes-1)],
+
+
+    local transformsyz = [sim.make_depotransform_withplane("depotransform-%d-"%n+tools.anodes[std.floor(n/45)].name+"-plane%d"%std.mod(std.floor(n/15),3),tools.anodes[std.floor(n/45)], [std.mod(std.floor(n/15),3)],tools.pirs[std.mod(n,15)])
+	                  for n in std.range(0, 359)],
+//    local transformsyz = [sim.make_depotransform_withplane("depotransform-%d-"%n+tools.anodes[std.floor(n/45)].name+"-plane%d"%std.mod(std.floor(n/15),3),tools.anodes[std.floor(n/45)], [std.mod(std.floor(n/15),3)],tools.pirs[0])
+
+
+
     local depos2traces = transforms,
+    local depos2tracesyz = transformsyz,
     //local depos2traces = zippers,
 
     local digitizers = [
@@ -39,6 +48,20 @@ function(params, tools) {
             },
         }, nin=1, nout=1) for n in std.range(0, nanodes-1)],
 
+    local reframersyz = [
+        g.pnode({
+            type: 'Reframer',
+            name: 'reframer-%d-'%n+tools.anodes[std.floor(n/45)].name,
+            data: {
+                anode: wc.tn(tools.anodes[std.floor(n/45)]),
+                tags: [],           // ?? what do?
+                fill: 0.0,
+                tbin: params.sim.reframer.tbin,
+                toffset: 0,
+                nticks: params.sim.reframer.nticks,
+            },
+	    }, nin=1, nout=1) for n in std.range(0, 359)],
+    
 
     // fixme: see https://github.com/WireCell/wire-cell-gen/issues/29
     local make_noise_model = function(anode, csdb=null) {
@@ -72,28 +95,9 @@ function(params, tools) {
     local noises = [add_noise(model) for model in noise_models],
     
     local outtags = ["orig%d"%n for n in std.range(0, nanodes-1)],
-
-    ret : {
-
-        analog_pipelines: [g.pipeline([depos2traces[n], reframers[n]],
-                                      name="simanalogpipe-" + tools.anodes[n].name) for n in std.range(0, nanodes-1)],
-
-        signal_pipelines: [g.pipeline([depos2traces[n], reframers[n],  digitizers[n]],
-                                      name="simsigpipe-" + tools.anodes[n].name) for n in std.range(0, nanodes-1)],
-
-        splusn_pipelines:  [g.pipeline([depos2traces[n], reframers[n], noises[n], digitizers[n]],
-                                       name="simsignoipipe-" + tools.anodes[n].name) for n in std.range(0, nanodes-1)],
-
-        analog: f.fanpipe('DepoSetFanout', self.analog_pipelines, 'FrameFanin', "simanaloggraph", outtags),
-        signal: f.fanpipe('DepoSetFanout', self.signal_pipelines, 'FrameFanin', "simsignalgraph", outtags),
-        splusn: f.fanpipe('DepoSetFanout', self.splusn_pipelines, 'FrameFanin', "simsplusngraph", outtags),
-
-        // Drifter for Overlay MC
-        overlay_drifter: g.pnode({
-            local xregions = wc.unique_list(std.flattenArrays([v.faces for v in params.det.volumes])),
-
-            type: "wclsICARUSDrifter",
-            data: params.lar {
+            
+    local xregions = wc.unique_list(std.flattenArrays([v.faces for v in params.det.volumes])),
+    local overlay_drifter_data = params.lar {
                 rng: wc.tn(tools.random),
                 xregions: xregions,
                 time_offset: params.sim.depo_toffset,
@@ -110,9 +114,51 @@ function(params, tools) {
 		DBFileName: "tpc_elifetime_data",
 		DBTag: "v2r1",
 		ELifetimeCorrection: true,
-		Verbose: true,
+		Verbose: false,
 		TPC: 0,
-            },
+        },
+     
+
+    ret : {
+
+        analog_pipelines: [g.pipeline([depos2traces[n], reframers[n]],
+                                      name="simanalogpipe-" + tools.anodes[n].name) for n in std.range(0, nanodes-1)],
+        signal_pipelines: [g.pipeline([depos2traces[n], reframers[n],  digitizers[n]],
+                                      name="simsigpipe-" + tools.anodes[n].name) for n in std.range(0, nanodes-1)],
+        splusn_pipelines:  [g.pipeline([depos2traces[n], reframers[n], noises[n], digitizers[n]],
+                                       name="simsignoipipe-" + tools.anodes[n].name) for n in std.range(0, nanodes-1)],
+
+        analog: f.fanpipe('DepoSetFanout', self.analog_pipelines, 'FrameFanin', "simanaloggraph", outtags),
+        signal: f.fanpipe('DepoSetFanout', self.signal_pipelines, 'FrameFanin', "simsignalgraph", outtags),
+        splusn: f.fanpipe('DepoSetFanout', self.splusn_pipelines, 'FrameFanin', "simsplusngraph", outtags),
+
+        analog_pipelinesyz: [g.pipeline([depos2tracesyz[n]],
+                                        name="simanalogpipe-%d-"%n + tools.anodes[std.floor(n/45)].name) for n in std.range(0, 359)],
+        signal_pipelinesyz: [g.pipeline([depos2tracesyz[n], reframersyz[n],  digitizers[n]],
+                                      name="simsigpipe-" + tools.anodes[n].name) for n in std.range(0, nanodes-1)],
+        splusn_pipelinesyz:  [g.pipeline([depos2tracesyz[n], reframersyz[n], noises[n], digitizers[n]],
+                                       name="simsignoipipe-" + tools.anodes[n].name) for n in std.range(0, nanodes-1)],
+
+        analogyz: f.fanpipe('DepoSetFanout', self.analog_pipelinesyz, 'FrameFanin', "simanaloggraph", outtags),
+        signalyz: f.fanpipe('DepoSetFanout', self.signal_pipelinesyz, 'FrameFanin', "simsignalgraph", outtags),
+        splusnyz: f.fanpipe('DepoSetFanout', self.splusn_pipelinesyz, 'FrameFanin', "simsplusngraph", outtags),
+
+        drifter_data: params.lar {
+            rng: wc.tn(tools.random),
+            xregions: xregions,
+            time_offset: params.sim.depo_toffset,
+            drift_speed: params.lar.drift_speed,
+            fluctuate: params.sim.fluctuate,
+            DL: params.lar.DL,
+            DT: params.lar.DT,
+        },
+
+        // Drifter for Overlay MC
+        overlay_drifter_data: overlay_drifter_data,
+
+        overlay_drifter: g.pnode({
+            data: overlay_drifter_data,
+            type: "wclsICARUSDrifter",
         }, nin=1, nout=1, uses=[tools.random]),
 
     } + sim,                    // tack on base for user sugar.

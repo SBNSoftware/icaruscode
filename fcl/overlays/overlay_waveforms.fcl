@@ -9,7 +9,7 @@ process_name: Overlay
 
 ## Add the MC module to the list of producers
 physics.producers: {
-		      crthit: @local::standard_crtsimhitproducer
+		      mccrthit: @local::standard_crtsimhitproducer
 		      overlayTPCRawEE:
 		      {
 		        module_type: "OverlayProducts"
@@ -70,7 +70,7 @@ physics.producers: {
                         PMTOverlayHits: false
                         CRTOverlayHits: false
                         PMTWaveDataLabel: "daqPMT"
-			PMTWaveSimLabel: "opdaq"
+			PMTWaveSimLabel: "shifted"
 			PMTWaveBaseLabel: "pmtbaselines"
                       }
 
@@ -84,12 +84,12 @@ physics.producers: {
                         PMTOverlayRaw: false
                         PMTOverlayHits: false
                         CRTOverlayHits: true
-                        CRTHitInputLabels: ["crthit::decoder","crthit::Overlay"]
+                        CRTHitInputLabels: ["crthit","mccrthit"]
                       }
                    }
 
 ## Use the following to run the full defined stage0 set of modules
-physics.reco: [ crthit, overlayTPCRawWW, overlayTPCRawWE, overlayTPCRawEW, overlayTPCRawEE, overlayOpWaveforms, overlayCRTHit]
+physics.reco: [ mccrthit, overlayTPCRawWW, overlayTPCRawWE, overlayTPCRawEW, overlayTPCRawEE, overlayOpWaveforms, overlayCRTHit]
 
 ## boiler plate...
 physics.outana:        [ ]
@@ -102,4 +102,11 @@ outputs.rootOutput.dataTier: "reconstructed"
 outputs.rootOutput.SelectEvents: ["reco"]
 
 # Drop the artdaq format files on output
-outputs.rootOutput.outputCommands: ["keep *_*_*_*","drop *_gaushitTPC*_*_*","drop *_ophit*_*_*","drop *_opflash*_*_*","drop *_crthit*_*_*","drop *_crttrack*_*_*"] #TODO: drop raw waveforms that arent from this module. Keep wf from this module to feed to later stages
+outputs.rootOutput.outputCommands: ["keep *_*_*_*",
+    "drop *_daqTPCROI_*_*",
+    "drop artdaq::Fragment*_daq_PHYSCRATEDATATPC*_*",
+    "drop *_gaushitTPC*_*_*",
+    "drop *_ophit*_*_*",
+    "drop *_opflash*_*_*",
+    "drop *_crthit*_*_*",
+    "drop *_crttrack*_*_*"] #TODO: drop raw waveforms that arent from this module. Keep wf from this module to feed to later stages

@@ -7,7 +7,7 @@
 
 #include "decoderdefs_icarus.fcl"
 #include "recowire_icarus.fcl"
-#include "hitfindermodules_icarus.fcl"
+#include "wirechannelroiconverters_sbn.fcl"
 #include "timing_icarus.fcl"
 #include "timing_beam.fcl"
 #include "icarus_ophitfinder.fcl"
@@ -19,12 +19,17 @@
 #include "wcls-decode-to-sig-base.fcl"
 #include "icarus_FilterDataIntegrity.fcl"
 #include "icarus_FilterCRTPMTMatching.fcl"
+#include "spana_icarus.fcl"
+#include "sp_filter_parameters.fcl"
 
 BEGIN_PROLOG
 
 ### Analyzers employed during stage 0 processing ###
 icarus_stage0_analyzers:
 {
+  spanaE: @local::spana1d_east
+  spanaW: @local::spana1d_west
+
   purityinfoana0: { module_type:     "TPCPurityInfoAna"
                     PurityInfoLabel: "purityana0"
                     PrintInfo:       false
@@ -68,6 +73,10 @@ icarus_stage0_producers:
   ### calwire producers
   decon1droi:                     @local::icarus_decon1droi
 
+  ### convert wires to channel rois
+  wire2channelroi:                @local::wiretochannelroi_sbn
+  wire2channelroi2d:              @local::wiretochannelroi_sbn
+
   ### wire-cell decon producers
   decon2droi:                     @local::standard_wirecell_sigproc
   decon2droiEE:                   @local::standard_wirecell_sigproc
@@ -78,22 +87,6 @@ icarus_stage0_producers:
   ### ROI finding on complete deconvolved waveforms
   roifinder1d:                    @local::icarus_roifinder
   roifinder2d:                    @local::icarus_roifinder
-
-  ### TPC hit-finder producers
-  gaushit1dTPCWW:                 @local::gaus_hitfinder_icarus
-  gaushit1dTPCWE:                 @local::gaus_hitfinder_icarus
-  gaushit1dTPCEW:                 @local::gaus_hitfinder_icarus
-  gaushit1dTPCEE:                 @local::gaus_hitfinder_icarus
-
-  gaushit2dTPCWW:                 @local::gaus_hitfinder_icarus
-  gaushit2dTPCWE:                 @local::gaus_hitfinder_icarus
-  gaushit2dTPCEW:                 @local::gaus_hitfinder_icarus
-  gaushit2dTPCEE:                 @local::gaus_hitfinder_icarus
-
-  gausshitTPCWW:                  @local::gauss_hitfinder_icarus
-  gausshitTPCWE:                  @local::gauss_hitfinder_icarus
-  gausshitTPCEW:                  @local::gauss_hitfinder_icarus
-  gausshitTPCEE:                  @local::gauss_hitfinder_icarus
 
   ### CRT hit finder producer
   crthit:                         @local::standard_crthitproducer	
@@ -202,40 +195,24 @@ icarus_stage0_trigger_Unknown:      [ triggerconfig,
                                     ]
 
 icarus_stage0_multiTPC_TPC:         [ decon1droi,
-                                      roifinder1d
-                                    ]
-
-icarus_stage0_multiTPC_2d_TPC:      [ decon1droi,
                                       roifinder1d,
+                                      wire2channelroi
+                                    ]
+
+icarus_stage0_multiTPC_2d_TPC_E:[ 
                                       decon2droiEE,
-                                      decon2droiEW,
+                                      decon2droiEW
+                                    ]
+
+icarus_stage0_multiTPC_2d_TPC_W:[ 
                                       decon2droiWE,
-                                      decon2droiWW,
-                                      roifinder2d
+                                      decon2droiWW
                                     ]
 
-icarus_stage0_EastHits_TPC:         [ gaushit1dTPCEW,
-                                      gaushit1dTPCEE
-                                    ]
-
-icarus_stage0_WestHits_TPC:         [ gaushit1dTPCWW,
-                                      gaushit1dTPCWE
-                                    ]
-
-icarus_stage0_EastHits2d_TPC:       [ gaushit2dTPCEW,
-                                      gaushit2dTPCEE
-                                    ]
-
-icarus_stage0_WestHits2d_TPC:       [ gaushit2dTPCWW,
-                                      gaushit2dTPCWE
-                                    ]
-
-icarus_stage0_EastGauss_TPC:        [ gausshitTPCEW,
-                                      gausshitTPCEE
-                                    ]
-
-icarus_stage0_WestGauss_TPC:        [ gausshitTPCWW,
-                                      gausshitTPCWE
+icarus_stage0_multiTPC_2d_TPC:      [
+                                      @sequence::icarus_stage0_multiTPC_2d_TPC_E, 
+                                      @sequence::icarus_stage0_multiTPC_2d_TPC_W,
+                                      wire2channelroi2d
                                     ]
 
 icarus_purity_monitor:              [
@@ -267,19 +244,13 @@ icarus_stage0_PMT_NuMI:             [ @sequence::icarus_stage0_PMT,
                                     ]
  
 icarus_stage0_multiTPC:             [ @sequence::icarus_stage0_multiTPC_TPC,
-                                      @sequence::icarus_stage0_EastHits_TPC,
-                                      @sequence::icarus_stage0_WestHits_TPC,
                                       @sequence::icarus_purity_monitor
                                     ]
  
 icarus_stage0_2d_multiTPC:          [ @sequence::icarus_stage0_multiTPC_2d_TPC,
-                                      @sequence::icarus_stage0_EastHits_TPC,
-                                      @sequence::icarus_stage0_WestHits_TPC,
-                                      @sequence::icarus_stage0_EastHits2d_TPC,
-                                      @sequence::icarus_stage0_WestHits2d_TPC,
                                       @sequence::icarus_purity_monitor
                                     ]
- 
+
 icarus_stage0_CRT:                  [
                                       daqCRT,
                                       crthit,
@@ -330,6 +301,12 @@ icarus_stage0_2d_data_crtpmtfilter: [
 
 physics.producers.daqTrigger.DecoderTool.TrigConfigLabel:                                      triggerconfig
 
+### connect channel ROI converters to input
+icarus_stage0_producers.wire2channelroi.WireModuleLabelVec:                                    ["roifinder1d:PHYSCRATEDATATPCWW", "roifinder1d:PHYSCRATEDATATPCWE", "roifinder1d:PHYSCRATEDATATPCEW", "roifinder1d:PHYSCRATEDATATPCEE"]
+icarus_stage0_producers.wire2channelroi.OutInstanceLabelVec:                                   ["PHYSCRATEDATATPCWW","PHYSCRATEDATATPCWE","PHYSCRATEDATATPCEW","PHYSCRATEDATATPCEE"]
+icarus_stage0_producers.wire2channelroi2d.WireModuleLabelVec:                                  ["decon2droiEE:gauss", "decon2droiEW:gauss", "decon2droiWE:gauss", "decon2droiWW:gauss"]
+icarus_stage0_producers.wire2channelroi2d.OutInstanceLabelVec:                                 ["PHYSCRATEDATATPCEE","PHYSCRATEDATATPCEW","PHYSCRATEDATATPCWE","PHYSCRATEDATATPCWW"]
+
 ### Handle multiple TPC readout with single instances
 icarus_stage0_producers.daqTPC.FragmentsLabelVec:                                              ["daq:PHYSCRATEDATATPCWW","daq:PHYSCRATEDATATPCWE","daq:PHYSCRATEDATATPCEW","daq:PHYSCRATEDATATPCEE"]
 icarus_stage0_producers.daqTPCROI.FragmentsLabelVec:                                           ["daq:PHYSCRATEDATATPCWW","daq:PHYSCRATEDATATPCWE","daq:PHYSCRATEDATATPCEW","daq:PHYSCRATEDATATPCEE"]
@@ -346,30 +323,128 @@ icarus_stage0_producers.decon2droi.wcls_main.outputers:                         
 icarus_stage0_producers.decon2droi.wcls_main.params.raw_input_label:                           "daqTPC"
 icarus_stage0_producers.decon2droi.wcls_main.params.tpc_volume_label:                          0
 icarus_stage0_producers.decon2droi.wcls_main.params.signal_output_form:                        "dense"
+icarus_stage0_producers.decon2droi.wcls_main.logsinks: ["stdout"]
+icarus_stage0_producers.decon2droi.wcls_main.loglevels: ["debug", "pgraph:info"]
+icarus_stage0_producers.decon2droi.wcls_main.configs: ["pgrapher/experiment/icarus/wcls-decode-to-sig-twofaced.jsonnet"]
 
 icarus_stage0_producers.decon2droiEE.wcls_main.inputers:                                       ["wclsRawFrameSource:rfsrc0"]
 icarus_stage0_producers.decon2droiEE.wcls_main.outputers:                                      ["wclsFrameSaver:spsaver0"]
 icarus_stage0_producers.decon2droiEE.wcls_main.params.raw_input_label:                         "daqTPCROI:PHYSCRATEDATATPCEE"
 icarus_stage0_producers.decon2droiEE.wcls_main.params.tpc_volume_label:                        0
 icarus_stage0_producers.decon2droiEE.wcls_main.params.signal_output_form:                      "dense"
+icarus_stage0_producers.decon2droiEE.wcls_main.logsinks: ["stdout"]
+icarus_stage0_producers.decon2droiEE.wcls_main.loglevels: ["debug", "pgraph:info"]
+icarus_stage0_producers.decon2droiEE.wcls_main.plugins: [@sequence::icarus_stage0_producers.decon2droiEE.wcls_main.plugins, "WireCellHio", "WireCellPytorch"]
+icarus_stage0_producers.decon2droiEE.wcls_main.configs: ["pgrapher/experiment/icarus/wcls-decode-to-sig-twofaced.jsonnet"]
 
 icarus_stage0_producers.decon2droiEW.wcls_main.inputers:                                       ["wclsRawFrameSource:rfsrc1"]
 icarus_stage0_producers.decon2droiEW.wcls_main.outputers:                                      ["wclsFrameSaver:spsaver1"]
 icarus_stage0_producers.decon2droiEW.wcls_main.params.raw_input_label:                         "daqTPCROI:PHYSCRATEDATATPCEW"
 icarus_stage0_producers.decon2droiEW.wcls_main.params.tpc_volume_label:                        1
 icarus_stage0_producers.decon2droiEW.wcls_main.params.signal_output_form:                      "dense"
+icarus_stage0_producers.decon2droiEW.wcls_main.logsinks: ["stdout"]
+icarus_stage0_producers.decon2droiEW.wcls_main.loglevels: ["debug", "pgraph:info"]
+icarus_stage0_producers.decon2droiEW.wcls_main.plugins: [@sequence::icarus_stage0_producers.decon2droiEW.wcls_main.plugins, "WireCellHio", "WireCellPytorch"]
+icarus_stage0_producers.decon2droiEW.wcls_main.configs: ["pgrapher/experiment/icarus/wcls-decode-to-sig-twofaced.jsonnet"]
 
 icarus_stage0_producers.decon2droiWE.wcls_main.inputers:                                       ["wclsRawFrameSource:rfsrc2"]
 icarus_stage0_producers.decon2droiWE.wcls_main.outputers:                                      ["wclsFrameSaver:spsaver2"]
 icarus_stage0_producers.decon2droiWE.wcls_main.params.raw_input_label:                         "daqTPCROI:PHYSCRATEDATATPCWE"
 icarus_stage0_producers.decon2droiWE.wcls_main.params.tpc_volume_label:                        2
 icarus_stage0_producers.decon2droiWE.wcls_main.params.signal_output_form:                      "dense"
+icarus_stage0_producers.decon2droiWE.wcls_main.logsinks: ["stdout"]
+icarus_stage0_producers.decon2droiWE.wcls_main.loglevels: ["debug", "pgraph:info"]
+icarus_stage0_producers.decon2droiWE.wcls_main.plugins: [@sequence::icarus_stage0_producers.decon2droiWE.wcls_main.plugins, "WireCellHio", "WireCellPytorch"]
+icarus_stage0_producers.decon2droiWE.wcls_main.configs: ["pgrapher/experiment/icarus/wcls-decode-to-sig-twofaced.jsonnet"]
 
 icarus_stage0_producers.decon2droiWW.wcls_main.inputers:                                       ["wclsRawFrameSource:rfsrc3"]
 icarus_stage0_producers.decon2droiWW.wcls_main.outputers:                                      ["wclsFrameSaver:spsaver3"]
 icarus_stage0_producers.decon2droiWW.wcls_main.params.raw_input_label:                         "daqTPCROI:PHYSCRATEDATATPCWW"
 icarus_stage0_producers.decon2droiWW.wcls_main.params.tpc_volume_label:                        3
 icarus_stage0_producers.decon2droiWW.wcls_main.params.signal_output_form:                      "dense"
+icarus_stage0_producers.decon2droiWW.wcls_main.logsinks: ["stdout"]
+icarus_stage0_producers.decon2droiWW.wcls_main.loglevels: ["debug", "pgraph:info"]
+icarus_stage0_producers.decon2droiWW.wcls_main.plugins: [@sequence::icarus_stage0_producers.decon2droiWW.wcls_main.plugins, "WireCellHio", "WireCellPytorch"]
+icarus_stage0_producers.decon2droiWW.wcls_main.configs: ["pgrapher/experiment/icarus/wcls-decode-to-sig-twofaced.jsonnet"]
+
+# Signal processing values
+icarus_stage0_producers.decon2droiEE.wcls_main.structs.gain0: 17.05212
+icarus_stage0_producers.decon2droiEW.wcls_main.structs.gain0: 17.05212
+icarus_stage0_producers.decon2droiWE.wcls_main.structs.gain0: 17.05212
+icarus_stage0_producers.decon2droiWW.wcls_main.structs.gain0: 17.05212
+
+icarus_stage0_producers.decon2droiEE.wcls_main.structs.gain1: 12.1420344 
+icarus_stage0_producers.decon2droiEW.wcls_main.structs.gain1: 12.1420344 
+icarus_stage0_producers.decon2droiWE.wcls_main.structs.gain1: 12.1420344 
+icarus_stage0_producers.decon2droiWW.wcls_main.structs.gain1: 12.1420344 
+
+icarus_stage0_producers.decon2droiEE.wcls_main.structs.gain2: 13.0261362 
+icarus_stage0_producers.decon2droiEW.wcls_main.structs.gain2: 13.0261362 
+icarus_stage0_producers.decon2droiWE.wcls_main.structs.gain2: 13.0261362 
+icarus_stage0_producers.decon2droiWW.wcls_main.structs.gain2: 13.0261362 
+
+
+icarus_stage0_producers.decon2droiEE.wcls_main.structs.shaping0: 1.3  
+icarus_stage0_producers.decon2droiEW.wcls_main.structs.shaping0: 1.3  
+icarus_stage0_producers.decon2droiWE.wcls_main.structs.shaping0: 1.3  
+icarus_stage0_producers.decon2droiWW.wcls_main.structs.shaping0: 1.3  
+
+icarus_stage0_producers.decon2droiEE.wcls_main.structs.shaping1: 1.45  
+icarus_stage0_producers.decon2droiEW.wcls_main.structs.shaping1: 1.45  
+icarus_stage0_producers.decon2droiWE.wcls_main.structs.shaping1: 1.45  
+icarus_stage0_producers.decon2droiWW.wcls_main.structs.shaping1: 1.45  
+
+icarus_stage0_producers.decon2droiEE.wcls_main.structs.shaping2: 1.3  
+icarus_stage0_producers.decon2droiEW.wcls_main.structs.shaping2: 1.3  
+icarus_stage0_producers.decon2droiWE.wcls_main.structs.shaping2: 1.3  
+icarus_stage0_producers.decon2droiWW.wcls_main.structs.shaping2: 1.3  
+
+# Defines final gain, in ADC/e-
+icarus_stage0_producers.decon2droiEE.wcls_main.structs.gain_ADC_per_e: @local::gain_ADC_per_e
+icarus_stage0_producers.decon2droiEW.wcls_main.structs.gain_ADC_per_e: @local::gain_ADC_per_e
+icarus_stage0_producers.decon2droiWE.wcls_main.structs.gain_ADC_per_e: @local::gain_ADC_per_e
+icarus_stage0_producers.decon2droiWW.wcls_main.structs.gain_ADC_per_e: @local::gain_ADC_per_e
+
+# Filter parameters
+icarus_stage0_producers.decon2droiEE.wcls_main.structs.Gaus_wide_sigma: @local::Gaus_wide_sigma
+icarus_stage0_producers.decon2droiEE.wcls_main.structs.Wiener_tight_U_sigma: @local::Wiener_tight_U_sigma
+icarus_stage0_producers.decon2droiEE.wcls_main.structs.Wiener_tight_U_power: @local::Wiener_tight_U_power
+icarus_stage0_producers.decon2droiEE.wcls_main.structs.Wiener_tight_V_sigma: @local::Wiener_tight_V_sigma
+icarus_stage0_producers.decon2droiEE.wcls_main.structs.Wiener_tight_V_power: @local::Wiener_tight_V_power
+icarus_stage0_producers.decon2droiEE.wcls_main.structs.Wiener_tight_W_sigma: @local::Wiener_tight_W_sigma
+icarus_stage0_producers.decon2droiEE.wcls_main.structs.Wiener_tight_W_power: @local::Wiener_tight_W_power
+icarus_stage0_producers.decon2droiEE.wcls_main.structs.Wire_ind_sigma: @local::Wire_ind_sigma
+icarus_stage0_producers.decon2droiEE.wcls_main.structs.Wire_col_sigma: @local::Wire_col_sigma
+
+icarus_stage0_producers.decon2droiEW.wcls_main.structs.Gaus_wide_sigma: @local::Gaus_wide_sigma
+icarus_stage0_producers.decon2droiEW.wcls_main.structs.Wiener_tight_U_sigma: @local::Wiener_tight_U_sigma
+icarus_stage0_producers.decon2droiEW.wcls_main.structs.Wiener_tight_U_power: @local::Wiener_tight_U_power
+icarus_stage0_producers.decon2droiEW.wcls_main.structs.Wiener_tight_V_sigma: @local::Wiener_tight_V_sigma
+icarus_stage0_producers.decon2droiEW.wcls_main.structs.Wiener_tight_V_power: @local::Wiener_tight_V_power
+icarus_stage0_producers.decon2droiEW.wcls_main.structs.Wiener_tight_W_sigma: @local::Wiener_tight_W_sigma
+icarus_stage0_producers.decon2droiEW.wcls_main.structs.Wiener_tight_W_power: @local::Wiener_tight_W_power
+icarus_stage0_producers.decon2droiEW.wcls_main.structs.Wire_ind_sigma: @local::Wire_ind_sigma
+icarus_stage0_producers.decon2droiEW.wcls_main.structs.Wire_col_sigma: @local::Wire_col_sigma
+
+icarus_stage0_producers.decon2droiWE.wcls_main.structs.Gaus_wide_sigma: @local::Gaus_wide_sigma
+icarus_stage0_producers.decon2droiWE.wcls_main.structs.Wiener_tight_U_sigma: @local::Wiener_tight_U_sigma
+icarus_stage0_producers.decon2droiWE.wcls_main.structs.Wiener_tight_U_power: @local::Wiener_tight_U_power
+icarus_stage0_producers.decon2droiWE.wcls_main.structs.Wiener_tight_V_sigma: @local::Wiener_tight_V_sigma
+icarus_stage0_producers.decon2droiWE.wcls_main.structs.Wiener_tight_V_power: @local::Wiener_tight_V_power
+icarus_stage0_producers.decon2droiWE.wcls_main.structs.Wiener_tight_W_sigma: @local::Wiener_tight_W_sigma
+icarus_stage0_producers.decon2droiWE.wcls_main.structs.Wiener_tight_W_power: @local::Wiener_tight_W_power
+icarus_stage0_producers.decon2droiWE.wcls_main.structs.Wire_ind_sigma: @local::Wire_ind_sigma
+icarus_stage0_producers.decon2droiWE.wcls_main.structs.Wire_col_sigma: @local::Wire_col_sigma
+
+icarus_stage0_producers.decon2droiWW.wcls_main.structs.Gaus_wide_sigma: @local::Gaus_wide_sigma
+icarus_stage0_producers.decon2droiWW.wcls_main.structs.Wiener_tight_U_sigma: @local::Wiener_tight_U_sigma
+icarus_stage0_producers.decon2droiWW.wcls_main.structs.Wiener_tight_U_power: @local::Wiener_tight_U_power
+icarus_stage0_producers.decon2droiWW.wcls_main.structs.Wiener_tight_V_sigma: @local::Wiener_tight_V_sigma
+icarus_stage0_producers.decon2droiWW.wcls_main.structs.Wiener_tight_V_power: @local::Wiener_tight_V_power
+icarus_stage0_producers.decon2droiWW.wcls_main.structs.Wiener_tight_W_sigma: @local::Wiener_tight_W_sigma
+icarus_stage0_producers.decon2droiWW.wcls_main.structs.Wiener_tight_W_power: @local::Wiener_tight_W_power
+icarus_stage0_producers.decon2droiWW.wcls_main.structs.Wire_ind_sigma: @local::Wire_ind_sigma
+icarus_stage0_producers.decon2droiWW.wcls_main.structs.Wire_col_sigma: @local::Wire_col_sigma
 
 ### Set up to output ROIs from full waveforms
 icarus_stage0_producers.roifinder1d.WireModuleLabelVec:                                        ["decon1droi:PHYSCRATEDATATPCWW","decon1droi:PHYSCRATEDATATPCWE","decon1droi:PHYSCRATEDATATPCEW","decon1droi:PHYSCRATEDATATPCEE"]
@@ -386,22 +461,6 @@ icarus_stage0_producers.roifinder2d.ROIFinderToolVec.ROIFinderPlane2.ROILabelVec
 icarus_stage0_producers.roifinder2d.WireModuleLabelVec:                                        ["decon2droiWW:looseLf","decon2droiWE:looseLf","decon2droiEW:looseLf","decon2droiEE:looseLf"]
 icarus_stage0_producers.roifinder2d.OutInstanceLabelVec:                                       ["PHYSCRATEDATATPCWW","PHYSCRATEDATATPCWE","PHYSCRATEDATATPCEW","PHYSCRATEDATATPCEE"]
 icarus_stage0_producers.roifinder2d.OutputMorphed:                                             false
-
-### Set up hit finding for multiple TPC readout
-icarus_stage0_producers.gaushit1dTPCWW.CalDataModuleLabel:                                     "roifinder1d:PHYSCRATEDATATPCWW"
-icarus_stage0_producers.gaushit1dTPCWE.CalDataModuleLabel:                                     "roifinder1d:PHYSCRATEDATATPCWE"
-icarus_stage0_producers.gaushit1dTPCEW.CalDataModuleLabel:                                     "roifinder1d:PHYSCRATEDATATPCEW"
-icarus_stage0_producers.gaushit1dTPCEE.CalDataModuleLabel:                                     "roifinder1d:PHYSCRATEDATATPCEE"
-
-icarus_stage0_producers.gaushit2dTPCWW.CalDataModuleLabel:                                     "roifinder2d:PHYSCRATEDATATPCWW"
-icarus_stage0_producers.gaushit2dTPCWE.CalDataModuleLabel:                                     "roifinder2d:PHYSCRATEDATATPCWE"
-icarus_stage0_producers.gaushit2dTPCEW.CalDataModuleLabel:                                     "roifinder2d:PHYSCRATEDATATPCEW"
-icarus_stage0_producers.gaushit2dTPCEE.CalDataModuleLabel:                                     "roifinder2d:PHYSCRATEDATATPCEE"
-
-icarus_stage0_producers.gausshitTPCWW.CalDataModuleLabel:                                      "roifinder:PHYSCRATEDATATPCWW"
-icarus_stage0_producers.gausshitTPCWE.CalDataModuleLabel:                                      "roifinder:PHYSCRATEDATATPCWE"
-icarus_stage0_producers.gausshitTPCEW.CalDataModuleLabel:                                      "roifinder:PHYSCRATEDATATPCEW"
-icarus_stage0_producers.gausshitTPCEE.CalDataModuleLabel:                                      "roifinder:PHYSCRATEDATATPCEE"
 
 ###
 ### Optical detector
