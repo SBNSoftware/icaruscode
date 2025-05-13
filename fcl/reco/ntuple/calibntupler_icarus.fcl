@@ -32,7 +32,7 @@ physics:
 
  analyzers:
  {
-     @table::icarus_stage1_analyzers_crthittagged
+     @table::icarus_stage1_analyzers
  }
 
  outana: [ @sequence::icarus_analysis_modules ]

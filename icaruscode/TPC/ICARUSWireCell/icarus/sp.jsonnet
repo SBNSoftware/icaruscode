@@ -30,7 +30,7 @@ function(params, tools, override = {}) {
       elecresponse : wc.tn(tools.elec_resp[2]),
       postgain: 1,  // default 1.2
       ADC_mV: 4096 / (3300.0 * wc.mV),  // default 4096/2000
-      troi_col_th_factor: 5.0,  // default 5
+      troi_col_th_factor: 3.0,  // default 5
       troi_ind_th_factor: 3.0,  // default 3
       lroi_rebin: 6, // default 6
       lroi_th_factor: 3.5, // default 3.5

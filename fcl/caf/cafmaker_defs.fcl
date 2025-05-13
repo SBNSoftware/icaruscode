@@ -85,7 +85,6 @@ recoana_datacalo_producers.vertexChargeCryoW.NormTools: @local::icarus_calonormt
 recoana_datacalo_producers.vertexStubCryoE.NormTools: @local::icarus_calonormtools
 recoana_datacalo_producers.vertexStubCryoW.NormTools: @local::icarus_calonormtools
 
-
 # Producers for making analysis level products
 recoana_caf_preprocess_producers: {
   mcreco: @local::standard_mcreco
@@ -99,13 +98,9 @@ recoana_caf_preprocess_producers: {
   pandoraPidGausCryoE: @local::icarus_chi2pid
   pandoraPidGausCryoW: @local::icarus_chi2pid
 
-  pandoraCRTMatchCryoE: @local::standard_crtt0producer_cryoE
-  pandoraCRTMatchCryoW: @local::standard_crtt0producer_cryoW
-
   ShowerCosmicDistCryoE: @local::showerCosmicDist_sbn
   ShowerCosmicDistCryoW: @local::showerCosmicDist_sbn
 
-  # crtconvhit: @local::crthitconverter_icarus
   rns: { module_type: "RandomNumberSaver" }
   genieweight: @local::sbn_eventweight_genie
   systtools: @local::sbn_systtools
