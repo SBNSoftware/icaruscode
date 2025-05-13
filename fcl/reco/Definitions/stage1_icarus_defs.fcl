@@ -144,6 +144,10 @@ icarus_stage1_analyzers_crthittagged.caloskimE: @local::caloskim_cryoe_crthittag
 icarus_stage1_analyzers_crthittagged.caloskimW: @local::caloskim_cryow_crthittagged_goldentracks
 icarus_stage1_analyzers_crthittagged.caloskimE.T0producers: ["pandoraGausCryoE", "CRTT0Tagging"]
 icarus_stage1_analyzers_crthittagged.caloskimW.T0producers: ["pandoraGausCryoW", "CRTT0Tagging"]
+icarus_stage1_analyzers_crthittagged.caloskimE.TopCRTDistanceCut_stopping: 100.
+icarus_stage1_analyzers_crthittagged.caloskimE.TopCRTDistanceCut_throughgoing: 100.
+icarus_stage1_analyzers_crthittagged.caloskimW.TopCRTDistanceCut_stopping: 100.
+icarus_stage1_analyzers_crthittagged.caloskimW.TopCRTDistanceCut_throughgoing: 100.
 
 
 ### Below are a list of convenient sequences that can be used for production/typical users. ###
