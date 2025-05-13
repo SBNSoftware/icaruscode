@@ -302,7 +302,8 @@ cafmaker.TrackChi2PidLabel: "pandoraPidGaus"
 cafmaker.TrackScatterClosestApproachLabel: "" # unavailable
 cafmaker.TrackStoppingChi2FitLabel: "" # unavailable
 cafmaker.TrackDazzleLabel: "" # unavailable
-cafmaker.CRTHitMatchLabel: ""
+cafmaker.CRTHitMatchLabel: "CRTT0Tagging"
+cafmaker.CRTHitMatchInfoLabel: "CRTT0Tagging"
 cafmaker.CRTTrackMatchLabel: "" # unavailable
 cafmaker.TrackMCSLabel: "pandoraTrackMCS"
 cafmaker.TrackRangeLabel: "pandoraTrackRange"
