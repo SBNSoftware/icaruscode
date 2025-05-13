@@ -10,6 +10,9 @@ icarus_calorimetryalgmc:	  @local::standard_calorimetryalgmc
 # Informed by MC calibration -- docdb 28639.
 # NOTE: needs to be revisted if/when the data processing is updated
 icarus_calorimetryalgmc.CalAreaConstants: [0.01343, 0.01338, 0.01219]
+icarus_calorimetryalgmc.ModBoxA: 0.904
+icarus_calorimetryalgmc.ModBoxBTF1: "[0]/TMath::Sqrt(TMath::Sin(x*TMath::Pi()/180)**2 + TMath::Cos(x*TMath::Pi()/180)**2/[1]**2)"
+icarus_calorimetryalgmc.ModBoxBParam: [0.204, 1.25]
 
 icarus_calorimetryalgdata.CalAreaConstants: @local::icarus_data_calconst
 icarus_calorimetryalgdata.CaloDoLifeTimeCorrection: false # handled by NormTools

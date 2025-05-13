@@ -1,3 +1,0 @@
-#include "standard_g4_icarus_step2.fcl"
-
-process_name: G4step2Var

@@ -1,3 +1,0 @@
-#include "stage0_run2_icarus_mc_refactored.fcl"
-
-process_name: MCStage0Var
