@@ -300,14 +300,15 @@ recob::MCSFitResultGS TrajectoryMCSFitterICARUS::fitMcs(const recob::TrackTrajec
     fitResult.bestp, fitResult.errp, fitResult.minp, fitResult.maxp,
     fitResult.alpha, fitResult.dalpha, fitResult.beta, fitResult.dbeta,
     fitResult.testp, fitResult.c2function, 
-    c2prange,
+    c2prange, 
     sigma3p, 
     L1D, L2D, L3D, 
     seglens, cumseglens,
     seghits, cumseghits, 
     dthetaLinExp, dthetaLin, 
     dthetaPolyExp, dthetaPoly, 
-    stop); 
+    stop,
+    isDelta); 
 }
 
 //break input trajectory into smaller pieces called segments 

@@ -40,7 +40,7 @@ namespace recob {
       std::vector<int> seghits, std::vector<int> cumseghits,
       std::vector<float> dthetalinexp, std::vector<float> dthetalin,
       std::vector<float> dthetapolyexp, std::vector<float> dthetapoly,
-      bool stop) 
+      bool stop, std::vector<int> isdelta) 
       : pid_(pid), 
         bestp_(bestp), errorp_(errorp), minp_(minp), maxp_(maxp), 
         alpha_(alpha), dalpha_(dalpha), beta_(beta), dbeta_(dbeta), 
@@ -52,7 +52,7 @@ namespace recob {
         seghits_(seghits), cumseghits_(cumseghits),
         dthetalinexp_(dthetalinexp), dthetalin_(dthetalin),
         dthetapolyexp_(dthetapolyexp), dthetapoly_(dthetapoly),
-        stop_(stop)
+        stop_(stop), isdelta_(isdelta)
     {}
 
     /// particle id hypothesis used in the fit
@@ -154,7 +154,10 @@ namespace recob {
     /// geometrical check if track is stopping inside the detector
     bool GeoStopCheck() const { 
       return stop_; }
-    //
+
+    /// vector of check on delta rays
+    std::vector<int> IsDelta() const {
+      return isdelta_; }
   private:
     int pid_;
     float bestp_; float errorp_; float minp_; float maxp_;
@@ -167,7 +170,7 @@ namespace recob {
     std::vector<int> seghits_; std::vector<int> cumseghits_;
     std::vector<float> dthetalinexp_; std::vector<float> dthetalin_; 
     std::vector<float> dthetapolyexp_; std::vector<float> dthetapoly_;
-    bool stop_;
+    bool stop_; std::vector<int> isdelta_;
   };
 }
 
