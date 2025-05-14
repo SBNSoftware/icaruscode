@@ -5,7 +5,7 @@
 #include "fhiclcpp/types/Atom.h"
 #include "fhiclcpp/types/Table.h"
 #include "canvas/Persistency/Common/Ptr.h"
-#include "lardataobj/RecoBase/MCSFitResult.h"
+#include "icaruscode/TPC/Tracking/MCS/MCSFitResultGS.h"
 #include "lardataobj/RecoBase/Track.h"
 #include "lardataobj/RecoBase/Hit.h"
 #include "lardata/RecoObjects/TrackState.h"
@@ -18,20 +18,18 @@ namespace trkf {
    * @file  larreco/RecoAlg/TrajectoryMCSFitterICARUS.h
    * @class trkf::TrajectoryMCSFitterICARUS
    *
-   * @brief Class for Maximum Likelihood fit of Multiple Coulomb Scattering angles between segments within a Track or Trajectory
+   * @brief Class for C2-function fit of Multiple Coulomb Scattering angles between segments within a Track - or Trajectory.
    *
-   * Class for Maximum Likelihood fit of Multiple Coulomb Scattering angles between segments within a Track or Trajectory.
+   * Input are a Track - or Trajectory - and various parameters: pIdHypothesis, minNumSegments, minNumAngles, segmentLength, minHitsPerSegment, minHits, nElossSteps, eLossMode, pMin, pMax, pStep, cutMode, cutAngles, dimMode, planeMode, fitMode.
    *
-   * Inputs are: a Track or Trajectory, and various fit parameters (pIdHypothesis, minNumSegments, segmentLength, pMin, pMax, pStep)
-   *
-   * Outputs are: a recob::MCSFitResult, containing:
+   * Output is a recob::MCSFitResultGS, containing:
    *   resulting momentum, momentum uncertainty, and best likelihood value (both for fwd and bwd fit);
    *   vector of segment (radiation) lengths, vector of scattering angles, and PID hypothesis used in the fit.
    *
-   * For configuration options see TrajectoryMCSFitterICARUS#Configs
+   * Note that the comulative segment length is what is used to compute the energy loss, but the segment length is actually slightly different, so the output can be used to reproduce the original results but they will not be identical (but very close).
    *
-   * @author  G. Cerati (FNAL, MicroBooNE)
-   * @date    2017
+   * @author  G. Chiello (University of Pisa)
+   * @date    2025
    * @version 1.0
    */
   class TrajectoryMCSFitterICARUS {
@@ -42,84 +40,68 @@ namespace trkf {
       fhicl::Atom<int> pIdHypothesis {
         Name("pIdHypothesis"),
 	      Comment("Default particle ID hypothesis to be used in the fit when not specified."),
-	      13
-      };
+	      13 };
       fhicl::Atom<int> minNumSegments {
         Name("minNumSegments"),
 	      Comment("Minimum number of segments the track is split into."),
-	      7
-      };
+	      7 };
       fhicl::Atom<int> minNumAngles {
         Name("minNumAngles"),
 	      Comment("Minimum number of angles the track should have to perform fit correctly."),
-	      3
-      };
+	      3 };
       fhicl::Atom<double> segmentLength {
         Name("segmentLength"),
 	      Comment("Nominal length of track segments used in the fit."),
-	      14.
-      };
+	      14. };
       fhicl::Atom<int> minHitsPerSegment {
         Name("minHitsPerSegment"),
 	      Comment("Exclude segments with less hits than this value."),
-	      3
-      };
+	      3 };
       fhicl::Atom<int> minHits {
         Name("minHits"),
 	      Comment("Exclude tracks with less hits than this value."),
-	      30
-      };
+	      30 };
       fhicl::Atom<int> nElossSteps {
         Name("nElossSteps"),
 	      Comment("Number of steps for computing energy loss uptream to current segment."),
-	      10
-      };
+	      10 };
       fhicl::Atom<int> eLossMode {
         Name("eLossMode"),
 	      Comment("0 (default) for MPV Landau, 1 for MIP, 2 for Bethe-Bloch."),
-	      0
-      };
+	      0 };
       fhicl::Atom<double> pMin {
         Name("pMin"),
-	      Comment("Minimum momentum value in likelihood scan, in units of MeV/c."),
-	      100
-      };
+	      Comment("Minimum momentum value [MeV/c] in C2-function fit."),
+	      100 };
       fhicl::Atom<double> pMax {
         Name("pMax"),
-	      Comment("Maximum momentum value in likelihood scan, in units of MeV/c."),
-	      1500
-      };
+	      Comment("Maximum momentum value [MeV/c] in C2-function fit."),
+	      1500 };
       fhicl::Atom<double> pStep {
         Name("pStep"),
-	      Comment("Step in momentum value in likelihood scan, in units of MeV/c."),
-	      10
-      };
+	      Comment("Step in momentum value [MeV/c] in C2-function fit."),
+	      10 };
       fhicl::Atom<unsigned int> cutMode{
         Name("cutMode"),
         Comment("0 for full track, 1 for cutting final X angles, 2 for keeping initial X angles. X is given by cutAngles."),
-        0
-      };
+        0 };
       fhicl::Atom<unsigned int> cutAngles{
         Name("cutAngles"),
         Comment("Number of angles to cut for MCS fitting."),
-        0
-      };
+        0 };
       fhicl::Atom<unsigned int> dimMode{
         Name("dimMode"),
         Comment("2 for 2D, 3 for 3D. Flag of dimension mode for ICARUS fit."),
-        0
-      };
+        0 };
       fhicl::Atom<unsigned int> planeMode{
         Name("planeMode"),
         Comment("0 for Induction-1, 1 for Induction-2, 2 for Collection view. Flag of plane mode for ICARUS 2D fit."),
-        0
-      };
+        0 };
       fhicl::Atom<unsigned int> fitMode{
         Name("fitMode"),
         Comment("0 for both linear and polygonal angles, 1 for only linear angles, 2 for only polygonal angles. Flag of fit mode for ICARUS fit."),
-        0
-      };
-    };
+        0 }; };
+
     using Parameters = fhicl::Table<Config>;
 
     TrajectoryMCSFitterICARUS(
@@ -154,60 +136,60 @@ namespace trkf {
         cutAngles_ = cutAngles;
         dimMode_ = dimMode;
         planeMode_ = planeMode;
-        fitMode_ = fitMode;
-    }
-    explicit TrajectoryMCSFitterICARUS(const Parameters & p):TrajectoryMCSFitterICARUS(
-      p().pIdHypothesis(),
-      p().minNumSegments(),
-      p().minNumAngles(),
-      p().segmentLength(),
-      p().minHitsPerSegment(),
-      p().minHits(),
-      p().nElossSteps(),
-      p().eLossMode(),
-      p().pMin(),
-      p().pMax(),
-      p().pStep(),
-      p().cutMode(),
-      p().cutAngles(),
-      p().dimMode(),
-      p().planeMode(),
-      p().fitMode()){}
+        fitMode_ = fitMode; }
+
+    explicit TrajectoryMCSFitterICARUS(
+      const Parameters & p) : TrajectoryMCSFitterICARUS(
+        p().pIdHypothesis(),
+        p().minNumSegments(),
+        p().minNumAngles(),
+        p().segmentLength(),
+        p().minHitsPerSegment(),
+        p().minHits(),
+        p().nElossSteps(),
+        p().eLossMode(),
+        p().pMin(),
+        p().pMax(),
+        p().pStep(),
+        p().cutMode(),
+        p().cutAngles(),
+        p().dimMode(),
+        p().planeMode(),
+        p().fitMode()) {}
     
-    recob::MCSFitResult fitMcs(
+    recob::MCSFitResultGS fitMcs(
       const recob::TrackTrajectory& traj, 
       bool momDepConst = true) const { 
         return fitMcs(traj, pIdHyp_, momDepConst); }
 
-    recob::MCSFitResult fitMcs(
+    recob::MCSFitResultGS fitMcs(
       const recob::Track& track, 
       bool momDepConst = true) const { 
         return fitMcs(track, pIdHyp_, momDepConst); }
 
-    recob::MCSFitResult fitMcs(
+    recob::MCSFitResultGS fitMcs(
       const recob::Trajectory& traj, 
       bool momDepConst = true) const { 
         return fitMcs(traj, pIdHyp_, momDepConst); }
 
-    recob::MCSFitResult fitMcs(
+    recob::MCSFitResultGS fitMcs(
       const recob::TrackTrajectory& traj, 
       int pid, 
       bool momDepConst = true) const;
 
-    recob::MCSFitResult fitMcs(
+    recob::MCSFitResultGS fitMcs(
       const recob::Track& track, 
       int pid, 
       bool momDepConst = true) const { 
         return fitMcs(track.Trajectory(), pid, momDepConst); }
 
-    recob::MCSFitResult fitMcs(
+    recob::MCSFitResultGS fitMcs(
       const recob::Trajectory& traj, 
       int pid, 
       bool momDepConst = true) const {
         recob::TrackTrajectory::Flags_t flags(traj.NPoints());
         const recob::TrackTrajectory tt(traj, std::move(flags));
-        return fitMcs(tt, pid, momDepConst);
-    }
+        return fitMcs(tt, pid, momDepConst); }
 
     void breakTrajInSegments(
       const recob::TrackTrajectory& traj, 
@@ -266,33 +248,56 @@ namespace trkf {
 
     struct ScanResult {
       public:
+        double bestp, errp, minp, maxp;
+        double alpha, dalpha, beta, dbeta;
+        std::vector<float> testp, c2function;
+        ScanResult() = default;
         ScanResult(
-          double ap, 
-          double apUnc, 
-          double alogL): p(ap), pUnc(apUnc), logL(alogL) {}
-        double p, pUnc, logL; };
+          double best, double err, double min, double max,
+          double a, double da, double b, double db,
+          std::vector<float> test, std::vector<float> c2) :
+            bestp(best), errp(err), minp(min), maxp(max),
+            alpha(a), dalpha(da), beta(b), dbeta(db),
+            testp(test), c2function(c2) {} };
 
-    void set2DHitsC(std::vector<recob::Hit> h) {hits2dC = h;}
-    void set2DHitsI2(std::vector<recob::Hit> h) {hits2dI2 = h;}
-    void set2DHitsI1(std::vector<recob::Hit> h) {hits2dI1 = h;}
-    void setPointData(std::vector<proxy::TrackPointData> h) {pdata = h;}
-    void setCRTShift(float s) {CRTshift = s;}
+    void set2DHitsC(
+      std::vector<recob::Hit> h) { hits2dC = h; }
 
-    double mass (int pid) const {
-      if (abs(pid) == 13) return mumass;
-      if (abs(pid) == 211) return pimass;
-      if (abs(pid) == 321) return kmass;
-      if (abs(pid) == 2212) return pmass;
-      return util::kBogusD; }
+    void set2DHitsI2(
+      std::vector<recob::Hit> h) { hits2dI2 = h; }
+
+    void set2DHitsI1(
+      std::vector<recob::Hit> h) { hits2dI1 = h; }
+
+    void setPointData(
+      std::vector<proxy::TrackPointData> h) { pdata = h; }
+
+    void setCRTShift(
+      float s) { CRTshift = s; }
+
+    void setRangeP(
+      float r) { rangeP = r; }
+
+    double mass (
+      int pid) const {
+        if (abs(pid) == 13) return mumass;
+        if (abs(pid) == 211) return pimass;
+        if (abs(pid) == 321) return kmass;
+        if (abs(pid) == 2212) return pmass;
+        return util::kBogusD; }
 
     unsigned int cutMode() const { 
       return cutMode_; }
+
     unsigned int cutAngles() const { 
       return cutAngles_; }
+
     unsigned int dimMode() const { 
       return dimMode_; }
+
     unsigned int planeMode() const { 
       return planeMode_; }
+
     unsigned int fitMode() const { 
       return fitMode_; }
 
@@ -416,6 +421,12 @@ namespace trkf {
       const recob::TrackTrajectory& traj, 
       unsigned int plane) const;
 
+    double ThetaExpected(
+      const recob::TrackTrajectory& traj, 
+      double p,
+      double beta,
+      double L) const;
+
     double PrintD3P() const;
 
     void ThetaCheck(
@@ -426,7 +437,7 @@ namespace trkf {
       unsigned int& firstseg, 
       unsigned int& lastseg) const;
 
-    void GeoStopCheck(
+    bool GeoStopCheck(
       const recob::TrackTrajectory& traj) const;
     
     bool DeltaCheck(
@@ -438,6 +449,48 @@ namespace trkf {
     bool CathodeCheck(
       const recob::TrackTrajectory& traj,
       size_t index) const;
+
+    std::vector<float> CleanThetaLin(
+      std::vector<float> dthetaLin) const;
+
+    std::vector<float> CleanThetaPoly(
+      std::vector<float> dthetaPoly) const;
+
+    float C2PRange() { return c2prange; }
+
+    float distance_point_line(
+      const double a0, 
+      const double a1, 
+      const double xdr, 
+      const double ydr) const;
+    
+    void ProcessDeltaRays(
+      const recob::TrackTrajectory& traj, 
+      int viewType, 
+      std::vector<int>& isDelta) const;
+    
+    void Create_ZY_arrays();
+    
+    void Delete_ZY_arrays();
+    
+    void Fill_ZY_arrays(
+      std::vector<double>& Z, 
+      std::vector<double>& Y);
+    
+    void TagOverlappingDeltaRays();
+    
+    void TagDeltaRaysLocal();
+    
+    void TagDeltaRays(
+      const recob::TrackTrajectory& traj, 
+      int viewType, 
+      std::vector<int>& isDelta) const;
+    
+    void TagCloseToDeltaRays();
+    
+    std::vector<int> HitsOnWire(
+      std::vector<recob::Hit> hits,
+      unsigned int iWire) const;
 
   private:
     int pIdHyp_;
@@ -461,6 +514,8 @@ namespace trkf {
     std::vector<recob::Hit> hits2dI1;
     std::vector<proxy::TrackPointData> pdata;
     float d3pC; float d3pI1; float d3pI2; 
-    float CRTshift; }; }
+    float CRTshift;
+    float rangeP;
+    float c2prange; }; }
 
 #endif

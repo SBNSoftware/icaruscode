@@ -5,7 +5,7 @@
 #include "particleinventoryservice.fcl"
 #include "stage1_icarus_driver_common.fcl"
 
-process_name: MCstage1
+process_name: stage1MCCRT
 
 # Disabled Space-Charge service for calorimetry
 services.SpaceChargeService: {

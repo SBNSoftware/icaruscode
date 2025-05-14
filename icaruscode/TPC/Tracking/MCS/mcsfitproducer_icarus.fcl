@@ -2,7 +2,8 @@ BEGIN_PROLOG
 
 mcsfitproducericarus_raw: {
   module_type: MCSFitProducerICARUS
-  inputs: { inputLabel: "pandoraTrackICARUS" }
+  inputs: { inputLabel: "pandoraTrackICARUS" 
+  rangeLabel: "dummy" }
   fitter: {
   	pIdHypothesis: 13
 	minNumAngles: 5
@@ -23,7 +24,8 @@ mcsfitproducericarus_raw: {
 
 mcsfitproducerI: {
   module_type: MCSFitProducerICARUS
-  inputs: { inputLabel: "pandoraTrackGaus" }
+  inputs: { inputLabel: "pandoraTrackGaus" 
+  rangeLabel: "dummy" }
   fitter: {
   	pIdHypothesis: 13
 	minNumAngles: 5
@@ -44,7 +46,8 @@ mcsfitproducerI: {
 
 mcsfitproducerIF3D: {
   module_type: MCSFitProducerICARUS
-  inputs: { inputLabel: "pandoraTrackGaus" }
+  inputs: { inputLabel: "pandoraTrackGaus" 
+  rangeLabel: "dummy" }
   fitter: {
   	pIdHypothesis: 13
 	minNumAngles: 5
@@ -65,7 +68,8 @@ mcsfitproducerIF3D: {
 
 mcsfitproducerIF2DI1: {
   module_type: MCSFitProducerICARUS
-  inputs: { inputLabel: "pandoraTrackGaus" }
+  inputs: { inputLabel: "pandoraTrackGaus" 
+  rangeLabel: "dummy" }
   fitter: {
   	pIdHypothesis: 13
 	minNumAngles: 5
@@ -86,7 +90,8 @@ mcsfitproducerIF2DI1: {
 
 mcsfitproducerIF2DI2: {
   module_type: MCSFitProducerICARUS
-  inputs: { inputLabel: "pandoraTrackGaus" }
+  inputs: { inputLabel: "pandoraTrackGaus" 
+  rangeLabel: "dummy" }
   fitter: {
   	pIdHypothesis: 13
 	minNumAngles: 5
@@ -107,7 +112,8 @@ mcsfitproducerIF2DI2: {
 
 mcsfitproducerIF2DC: {
   module_type: MCSFitProducerICARUS
-  inputs: { inputLabel: "pandoraTrackGaus" }
+  inputs: { inputLabel: "pandoraTrackGaus" 
+  rangeLabel: "dummy" }
   fitter: {
   	pIdHypothesis: 13
 	minNumAngles: 5
@@ -128,7 +134,8 @@ mcsfitproducerIF2DC: {
 
 mcsfitproducerII3D: {
   module_type: MCSFitProducerICARUS
-  inputs: { inputLabel: "pandoraTrackGaus" }
+  inputs: { inputLabel: "pandoraTrackGaus" 
+  rangeLabel: "dummy" }
   fitter: {
   	pIdHypothesis: 13
 	minNumAngles: 5
@@ -149,7 +156,8 @@ mcsfitproducerII3D: {
 
 mcsfitproducerII2DI1: {
   module_type: MCSFitProducerICARUS
-  inputs: { inputLabel: "pandoraTrackGaus" }
+  inputs: { inputLabel: "pandoraTrackGaus" 
+  rangeLabel: "dummy" }
   fitter: {
   	pIdHypothesis: 13
 	minNumAngles: 5
@@ -170,7 +178,8 @@ mcsfitproducerII2DI1: {
 
 mcsfitproducerII2DI2: {
   module_type: MCSFitProducerICARUS
-  inputs: { inputLabel: "pandoraTrackGaus" }
+  inputs: { inputLabel: "pandoraTrackGaus" 
+  rangeLabel: "dummy" }
   fitter: {
   	pIdHypothesis: 13
 	minNumAngles: 5
@@ -191,7 +200,8 @@ mcsfitproducerII2DI2: {
 
 mcsfitproducerII2DC: {
   module_type: MCSFitProducerICARUS
-  inputs: { inputLabel: "pandoraTrackGaus" }
+  inputs: { inputLabel: "pandoraTrackGaus" 
+  rangeLabel: "dummy" }
   fitter: {
   	pIdHypothesis: 13
 	minNumAngles: 5
