@@ -1,1 +1,1 @@
-#include "stage0_run2_icarus_mc_refactored.fcl"
+#include "stage0_run2_icarus_mc.fcl"
