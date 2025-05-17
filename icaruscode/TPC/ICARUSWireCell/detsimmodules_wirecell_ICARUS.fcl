@@ -62,11 +62,10 @@ icarus_simwire_wirecell:
             shaping1: 1.45 # us
             shaping2: 1.3 # us
 
-            # Time offsets for truth matching
-            time_offset_u: 0.0 # us
-            time_offset_v: 0.0 # us
-            time_offset_y: 0.0 # us
-
+            # Time offsets for truth matching -- tuned to 2D deconvolution output
+            time_offset_u: 1.81 # us
+            time_offset_v: 2.08 # us
+            time_offset_y: 1.82 # us
         }
     }
 }
