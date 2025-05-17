@@ -81,6 +81,14 @@ icarus_simwire_wirecell_SConly.wcls_main.outputers:[
 icarus_simwire_wirecell_shifted: @local::icarus_simwire_wirecell
 icarus_simwire_wirecell_shifted.wcls_main.params.SimEnergyDepositLabel: "shifted"
 
+icarus_simwire_wirecell_shifted_overlay: @local::icarus_simwire_wirecell_shifted
+icarus_simwire_wirecell_shifted_overlay.wcls_main.structs.coh_noise_scale: 0.0 # disable noise
+icarus_simwire_wirecell_shifted_overlay.wcls_main.structs.int_noise_scale: 0.0 # ditto
+icarus_simwire_wirecell_shifted_overlay.wcls_main.structs.overlay_drifter: true
+icarus_simwire_wirecell_shifted_overlay.wcls_main.plugins: [@sequence::icarus_simwire_wirecell_shifted_overlay.wcls_main.plugins, "WireCellICARUSDrifter"]
+icarus_simwire_wirecell_shifted_overlay.wcls_main.inputers: ["wclsSimDepoSetSource:electron", "wclsICARUSDrifter:drifter"]
+icarus_simwire_wirecell_shifted_overlay.wcls_main.params.cathode_input_format: "scalar"
+
 icarus_simwire_wirecell_filtersed: @local::icarus_simwire_wirecell
 icarus_simwire_wirecell_filtersed.wcls_main.params.SimEnergyDepositLabel: "filtersed"
 
