@@ -1,0 +1,15 @@
+#
+# File:    decodePMT_icarus_incomplete.fcl
+# Purpose: PMT readout fragment decoding for studies in ICARUS.
+# Author:  Gianluca Petrillo (petrillo@slac.stanford.edu)
+# Date:    May 12, 2021
+# 
+# This is a version of `decodePMT_icarus.fcl` which will ignore missing PMT
+# readout fragments.
+# 
+# See the documentation on `decodePMT_icarus.fcl` for everything else.
+# 
+
+#include "decodePMT_icarus.fcl"
+
+physics.producers.daqPMT.RequireBoardConfig: false
