@@ -1,0 +1,6 @@
+#include "cafmakerjob_icarus_detsim2d.fcl"
+#### _systtools_and_fluxwgt
+
+physics.producers.cafmaker.NuGraphSliceHitLabel: "nuslhits"
+physics.producers.cafmaker.NuGraphFilterLabel: "NuGraph:filter"
+physics.producers.cafmaker.NuGraphSemanticLabel: "NuGraph:semantic"
