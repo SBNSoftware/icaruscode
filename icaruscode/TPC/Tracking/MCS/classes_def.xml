@@ -1,0 +1,7 @@
+<lcgdict>
+  <class name="recob::MCSFitResultGS"/>
+  <class name="art::Ptr<recob::MCSFitResultGS>"/>
+  <class name="art::PtrVector<recob::MCSFitResultGS>"/>
+  <class name="std::vector<recob::MCSFitResultGS>"/>
+  <class name="art::Wrapper<std::vector<recob::MCSFitResultGS>>"/>
+</lcgdict>

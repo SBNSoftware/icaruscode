@@ -1,6 +1,8 @@
 #ifndef MCSFitResultGS_h
 #define MCSFitResultGS_h
 
+#include <vector>
+
 namespace recob {
   /**
    * @file  icaruscode/TPC/Tracking/MCS/MCSFitResultGS.h

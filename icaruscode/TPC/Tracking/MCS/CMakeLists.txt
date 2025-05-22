@@ -1,4 +1,3 @@
-
 art_make_library(
 	LIBRARIES
 		larsim::MCCheater_BackTrackerService_service
@@ -35,8 +34,8 @@ art_make_library(
 		art::Persistency_Common
 		art::Persistency_Provenance
 		art::Utilities
-                art_root_io::tfile_support
-                art_root_io::TFileService_service
+		art_root_io::tfile_support
+		art_root_io::TFileService_service
 		canvas::canvas
 		messagefacility::MF_MessageLogger
 		fhiclcpp::fhiclcpp
@@ -44,7 +43,20 @@ art_make_library(
 		CLHEP::Random
 		ROOT::Minuit
 		ROOT::Minuit2)
-set(	MODULE_LIBRARIES
+
+		art_make_library(
+			LIBRARY_NAME MCSFitResultGSDict
+			SOURCE MCSFitResultGS.cxx
+			LIBRARIES
+				canvas::canvas
+				cetlib::cetlib
+				cetlib_except::cetlib_except
+				art::Persistency_Common
+    			art::Utilities)
+
+set(
+	MODULE_LIBRARIES
+		MCSFitResultGSDict
 		icaruscode::TPC_Tracking_MCS
 		larsim::MCCheater_BackTrackerService_service
 		larsim::MCCheater_ParticleInventoryService_service
@@ -80,8 +92,8 @@ set(	MODULE_LIBRARIES
 		art::Persistency_Common
 		art::Persistency_Provenance
 		art::Utilities
-                art_root_io::tfile_support
-                art_root_io::TFileService_service
+		art_root_io::tfile_support
+		art_root_io::TFileService_service
 		canvas::canvas
 		messagefacility::MF_MessageLogger
 		fhiclcpp::fhiclcpp
@@ -89,12 +101,32 @@ set(	MODULE_LIBRARIES
 		cetlib_except::cetlib_except
 		CLHEP::Random
 		ROOT::Minuit
-		ROOT::Minuit2
-	)
-cet_build_plugin(MCSFitProducerICARUS art::module LIBRARIES ${MODULE_LIBRARIES})
-cet_build_plugin(MCSFitProducerUBoone art::module LIBRARIES ${MODULE_LIBRARIES})
+		ROOT::Minuit2)
+
+include_directories(
+	${ART_INC}
+	${LARDATAOBJ_INC}
+)
+
+build_dictionary(
+  MCSFitResultGSDict
+  DICTIONARY_LIBRARIES
+    art::Persistency_Common
+    art::Utilities
+)
+
+cet_build_plugin(MCSFitProducerICARUS art::module 
+	LIBRARIES
+		MCSFitResultGSDict
+		art::Persistency_Common
+		canvas::canvas
+		cetlib::cetlib
+		cetlib_except::cetlib_except
+		${MODULE_LIBRARIES})
+
+cet_build_plugin(MCSFitProducerUBoone art::module LIBRARIES 
+	${MODULE_LIBRARIES})
 
 install_headers()
 install_fhicl()
 install_source()
-
