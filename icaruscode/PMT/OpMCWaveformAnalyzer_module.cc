@@ -67,6 +67,9 @@ private:
   art::InputTag m_ophit_label;
   art::InputTag m_simphotons_label;
   art::InputTag m_wf_label;
+  // input offset
+  double m_simphoffset_ns;
+  bool m_onlysimphotons;	
 
   // output ttree
   TTree *m_wf_tree; // extracted waveforms
@@ -96,6 +99,9 @@ private:
   std::vector<double> m_sim_time;
   std::vector<double> m_sim_energy;
   std::vector<std::size_t> m_sim_sample;
+  std::vector<double> m_sim_start_x;
+  std::vector<double> m_sim_start_y;
+  std::vector<double> m_sim_start_z;
 
   std::unique_ptr<pmtana::PMTPedestalBase> fPedAlgo;
 
@@ -123,6 +129,8 @@ icarus::OpMCWaveformAnalyzer::OpMCWaveformAnalyzer(fhicl::ParameterSet const& ps
    m_ophit_label = pset.get<art::InputTag>("OpHitModule", "ophit");
    m_simphotons_label = pset.get<art::InputTag>("SimPhotonsModule");
    m_wf_label = pset.get<art::InputTag>("WaveformModule", "opdaq");
+   m_simphoffset_ns = pset.get<double>("SimPhotonsOffset", 55.1); //ns
+   m_onlysimphotons = pset.get<bool>("SaveOnlyWithSimPhotons", false);
 
    fPedAlgo = art::make_tool<opdet::IPedAlgoMakerTool>(pset.get<fhicl::ParameterSet>("PedAlgoRollingMeanMaker"))->makeAlgo();
 }
@@ -161,6 +169,9 @@ void icarus::OpMCWaveformAnalyzer::beginJob()
   m_wf_tree->Branch("sim_time", &m_sim_time );
   m_wf_tree->Branch("sim_energy", &m_sim_energy );
   m_wf_tree->Branch("sim_sample", &m_sim_sample );
+  m_wf_tree->Branch("sim_start_x", &m_sim_start_x );
+  m_wf_tree->Branch("sim_start_y", &m_sim_start_y );
+  m_wf_tree->Branch("sim_start_z", &m_sim_start_z );
 
 }
 
@@ -181,7 +192,11 @@ void icarus::OpMCWaveformAnalyzer::analyze(art::Event const& event)
   // get the data products: ophits, waveforms, and simphotons
   auto const & ophitCollection = event.getProduct<std::vector<recob::OpHit>>(m_ophit_label);
   auto const & wfCollection = event.getProduct<std::vector<raw::OpDetWaveform>>(m_wf_label);
-  auto const & simphotonsCollection = event.getProduct<std::vector<sim::SimPhotons>>(m_simphotons_label);
+
+  static const std::vector<sim::SimPhotons> emptySimPhotons;
+  auto const & simphotonsCollection = (!m_simphotons_label.empty())
+                                      ? event.getProduct<std::vector<sim::SimPhotons>>(m_simphotons_label)
+                                      : emptySimPhotons;
 
   // make sure they are sorted
   auto sortableOpHits = ophitCollection;
@@ -205,6 +220,9 @@ void icarus::OpMCWaveformAnalyzer::analyze(art::Event const& event)
     m_sim_time.clear();
     m_sim_energy.clear();
     m_sim_sample.clear();
+    m_sim_start_x.clear();
+    m_sim_start_y.clear();
+    m_sim_start_z.clear();
 
     // pick this particular waveform
     m_nsize = jt->Waveform().size();
@@ -269,13 +287,17 @@ void icarus::OpMCWaveformAnalyzer::analyze(art::Event const& event)
         
         detinfo::timescales::simulation_time const photonTime { ph.Time };
         detinfo::timescales::trigger_time const mytime = timings.toTriggerTime(photonTime);
+        double t = mytime.value() + m_simphoffset_ns*0.001; // in us
 
-        if( mytime.value() < m_wfstart || mytime.value() > wfend ) continue; //skip if out of current wf
+        if( t < m_wfstart || t > wfend ) continue; //skip if out of current wf
 
-        m_sim_time.push_back(mytime.value());
+        m_sim_time.push_back(t);
         m_sim_energy.push_back(ph.Energy);
+	m_sim_start_x.push_back(ph.InitialPosition.X());
+	m_sim_start_y.push_back(ph.InitialPosition.Y());
+	m_sim_start_z.push_back(ph.InitialPosition.Z());
 
-        double diff = mytime.value() - m_wfstart;
+        double diff = t - m_wfstart;
         m_sim_sample.push_back(static_cast<std::size_t>(std::round(diff/fOpticalTick)));
 
       }
@@ -285,9 +307,11 @@ void icarus::OpMCWaveformAnalyzer::analyze(art::Event const& event)
     //std::cout << "nsimphotons " << m_n_simphotons << std::endl;
 
     if( m_n_ophits == 0 && m_n_simphotons == 0){
-      std::cout << "No Ophits or SimPhotons --> skip!" << std::endl;
-      //continue; //save as well!
+      std::cout << "No Ophits or SimPhotons!" << std::endl;
+      continue; //don't save!
     }
+
+    if(m_onlysimphotons && m_n_simphotons == 0) continue;
 
     // fill tree
     m_wf_tree->Fill(); 

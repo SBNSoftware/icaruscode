@@ -8,6 +8,8 @@ mc_waveform_ana:
   OpHitModule: "ophit"
   SimPhotonsModule: "shifted"
   WaveformModule: "opdaq"
+  SimPhotonsOffset: 55.1
+  SaveOnlyWithSimPhotons: false
   PedAlgoRollingMeanMaker: {
     tool_type: "PedAlgoRollingMeanMaker"
     PedAlgoPset:    @local::icarus_opreco_pedestal_DocDB24969
