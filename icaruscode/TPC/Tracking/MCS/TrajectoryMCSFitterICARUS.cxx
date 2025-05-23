@@ -64,12 +64,13 @@ recob::MCSFitResultGS TrajectoryMCSFitterICARUS::fitMcs(const recob::TrackTrajec
   vector<int> isDelta; 
   std::cout << " before processing delta rays " << planeMode_ <<  std::endl;
   for (unsigned int jp = 0; jp < traj.NPoints(); jp++) isDelta.push_back(0);
-  if (planeMode_ == 2) {
+  if (planeMode_ < 3) {
     ProcessDeltaRays(traj, planeMode_, isDelta);
     std::cout << " after processing delta rays " << planeMode_ <<  std::endl;
     }
   for (unsigned int jp = 0; jp < traj.NPoints(); jp++)
    if (isDelta[jp]) std::cout << " delta candidate " << jp << std::endl;
+
 
   //break track into segments and populate vectors defined above
   breakTrajInSegments(traj, breakpoints, seglens, cumseglens, seghits, cumseghits);
@@ -259,6 +260,8 @@ recob::MCSFitResultGS TrajectoryMCSFitterICARUS::fitMcs(const recob::TrackTrajec
   cout << "measured scattering angles, linear fit [rad] = "; for (auto i : dthetaLin) cout << i << ' '; cout << endl;
   cout << "expected scattering angles, poligonal fit [rad] = "; for (auto i : dthetaPolyExp) cout << i << ' '; cout << endl;
   cout << "measured scattering angles, poligonal fit [rad] = "; for (auto i : dthetaPoly) cout << i << ' '; cout << endl;
+  cout << " " << endl;
+  cout << "check if hit is delta = "; for (auto i : isDelta) cout << i << ' '; cout << endl;
   cout << " " << endl;
 
   /*
