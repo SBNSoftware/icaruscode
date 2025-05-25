@@ -1,0 +1,13 @@
+#include "stage0_run2_wc_icarus.fcl"
+
+#include "enable_dnn_sp.fcl"
+
+physics.producers.decon2droiEE.wcls_main.params.wc_device: "gpu"
+physics.producers.decon2droiEW.wcls_main.params.wc_device: "gpu"
+physics.producers.decon2droiWE.wcls_main.params.wc_device: "gpu"
+physics.producers.decon2droiWW.wcls_main.params.wc_device: "gpu"
+
+physics.producers.decon2droiEE.wcls_main.plugins: [@sequence::icarus_stage0_producers.decon2droiEE.wcls_main.plugins, "WireCellCuda"]
+physics.producers.decon2droiEW.wcls_main.plugins: [@sequence::icarus_stage0_producers.decon2droiEW.wcls_main.plugins, "WireCellCuda"]
+physics.producers.decon2droiWE.wcls_main.plugins: [@sequence::icarus_stage0_producers.decon2droiWE.wcls_main.plugins, "WireCellCuda"]
+physics.producers.decon2droiWW.wcls_main.plugins: [@sequence::icarus_stage0_producers.decon2droiWW.wcls_main.plugins, "WireCellCuda"]
