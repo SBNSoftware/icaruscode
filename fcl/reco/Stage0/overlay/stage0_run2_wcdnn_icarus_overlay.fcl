@@ -1,3 +1,9 @@
 #include "stage0_run2_wcdnn_icarus_mc.fcl"
-#
+
 #include "enable_overlay_sp.fcl"
+
+# for gpus, use stage0_run2_wcdnn_gpu_icarus.fcl instead
+physics.producers.decon2droiEE.wcls_main.params.wc_device: "cpu"
+physics.producers.decon2droiEW.wcls_main.params.wc_device: "cpu"
+physics.producers.decon2droiWE.wcls_main.params.wc_device: "cpu"
+physics.producers.decon2droiWW.wcls_main.params.wc_device: "cpu"
