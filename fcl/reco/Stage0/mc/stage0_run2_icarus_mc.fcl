@@ -38,7 +38,7 @@ outputs.rootOutput.outputCommands: ["keep *_*_*_*",
                                     "keep *_daq_simpleSC*_*"]
 
 # Set the expected input for ophit
-physics.producers.ophit.InputModule: "opdaq"
+physics.producers.ophit.InputModule: "shifted"
 
 # Note the default assumption is that our detector simulation input will come from the WireCell 2D drift simulation, a la 'daq'
 # If we are running the 1D drift simulation we need to switch to using:
