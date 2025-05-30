@@ -171,7 +171,6 @@ local overlay_drifter = std.extVar("overlay_drifter");
 local drifter = if overlay_drifter then {
         local xregions = wc.unique_list(std.flattenArrays([v.faces for v in params.det.volumes])),
         type: "wclsICARUSDrifter",
-	name: "drifter",
         data: params.lar + sim.overlay_drifter_data {
             TPC: 0,
 	    charge_scale: 1 
@@ -181,7 +180,7 @@ local drifter = if overlay_drifter then {
 local setdrifter = g.pnode({
             type: 'DepoSetDrifter',
             data: {
-                drifter: wc.tn(drifter)
+                drifter: if overlay_drifter then "wclsICARUSDrifter" else "Drifter"
             }
         }, nin=1, nout=1,
         uses=[drifter]);
