@@ -1,0 +1,6 @@
+#include "stage1_run2_icarus_overlay.fcl"
+
+physics.producers.mcreco.SimChannelLabel: "sedlite"
+physics.analyzers.caloskimE.SimChannelproducer: "daq:simpleSC"
+physics.analyzers.caloskimW.SimChannelproducer: "daq:simpleSC"
+services.BackTrackerService.BackTracker.SimChannelModuleLabel: "daq:simpleSC"
