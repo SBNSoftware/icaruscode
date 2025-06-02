@@ -35,7 +35,7 @@
 #include <cstddef>
 #include <array>
 
-namespace sbn::timing
+namespace icarus::timing
 {
   class PMTBeamSignalsExtractor;
 }
@@ -59,7 +59,7 @@ namespace sbn::timing
  * * `EWlabel` (input tag): tag for the `std::vector<raw::OpDetWaveform>`
  *    product containign the EW special waveforms.
  * *  `TriggerCorrectionLabel` (input tag): tag for the
- *    std::vector<sbn::timing::PMTWaveformTimeCorrection> product that
+ *    std::vector<icarus::timing::PMTWaveformTimeCorrection> product that
  *    stores the channel-by-channel waveform timing corrections
  * *  `BoardSetup` (fhicl parameter set): description of the current
  *    V1730 setup from `CAEN_V1730_setup_icarus.fcl` mapping the special signals.
@@ -122,7 +122,7 @@ namespace sbn::timing
  *   * `wf` (only if `SaveWaveforms` is set): full waveform.
  */
 
-class sbn::timing::PMTBeamSignalsExtractor : public art::EDProducer
+class icarus::timing::PMTBeamSignalsExtractor : public art::EDProducer
 {
 public:
   explicit PMTBeamSignalsExtractor(fhicl::ParameterSet const &pset);
@@ -217,7 +217,7 @@ private:
 
 // -----------------------------------------------------------------------------
 
-sbn::timing::PMTBeamSignalsExtractor::PMTBeamSignalsExtractor(fhicl::ParameterSet const &pset)
+icarus::timing::PMTBeamSignalsExtractor::PMTBeamSignalsExtractor(fhicl::ParameterSet const &pset)
     : EDProducer{pset},
       fChannelMap(*(art::ServiceHandle<icarusDB::IICARUSChannelMap const>{})),
       fDebugTrees(pset.get<bool>("DebugTrees")),
@@ -234,13 +234,13 @@ sbn::timing::PMTBeamSignalsExtractor::PMTBeamSignalsExtractor(fhicl::ParameterSe
   consumes<std::vector<raw::OpDetWaveform>>(fRWMlabel);
 
   // Call appropriate produces<>() functions here.
-  produces<std::vector<PMTBeamSignal>>("RWM");
-  produces<std::vector<PMTBeamSignal>>("EW");
+  produces<std::vector<sbn::timing::PMTBeamSignal>>("RWM");
+  produces<std::vector<sbn::timing::PMTBeamSignal>>("EW");
 }
 
 // -----------------------------------------------------------------------------
 
-void sbn::timing::PMTBeamSignalsExtractor::beginJob()
+void icarus::timing::PMTBeamSignalsExtractor::beginJob()
 {
   // prepare outupt TTrees if requested
   if (!fDebugTrees)
@@ -277,7 +277,7 @@ void sbn::timing::PMTBeamSignalsExtractor::beginJob()
 
 // -----------------------------------------------------------------------------
 
-void sbn::timing::PMTBeamSignalsExtractor::beginRun(art::Run &run)
+void icarus::timing::PMTBeamSignalsExtractor::beginRun(art::Run &run)
 {
   // pre-save the association between digitizer_label and effective fragment ID
   // needs to be done at the begin of each run in case mapping changed
@@ -292,7 +292,7 @@ void sbn::timing::PMTBeamSignalsExtractor::beginRun(art::Run &run)
 
 // -----------------------------------------------------------------------------
 
-void sbn::timing::PMTBeamSignalsExtractor::produce(art::Event &e)
+void icarus::timing::PMTBeamSignalsExtractor::produce(art::Event &e)
 {
 
   // initialize the data products
@@ -365,7 +365,7 @@ void sbn::timing::PMTBeamSignalsExtractor::produce(art::Event &e)
 
 // -----------------------------------------------------------------------------
 
-void sbn::timing::PMTBeamSignalsExtractor::extractBeamSignalTime(art::Event &e, art::InputTag const &label)
+void icarus::timing::PMTBeamSignalsExtractor::extractBeamSignalTime(art::Event &e, art::InputTag const &label)
 {
 
   std::string const &l = label.instance();
@@ -417,7 +417,7 @@ void sbn::timing::PMTBeamSignalsExtractor::extractBeamSignalTime(art::Event &e, 
 // ---------------------------------------------------------------------------
 
 template <typename T>
-T sbn::timing::PMTBeamSignalsExtractor::Median(std::vector<T> data)
+T icarus::timing::PMTBeamSignalsExtractor::Median(std::vector<T> data)
 {
 
   std::nth_element(data.begin(), data.begin() + data.size() / 2, data.end());
@@ -427,7 +427,7 @@ T sbn::timing::PMTBeamSignalsExtractor::Median(std::vector<T> data)
 // -----------------------------------------------------------------------------
 
 template <typename T>
-std::size_t sbn::timing::PMTBeamSignalsExtractor::getMinBin(
+std::size_t icarus::timing::PMTBeamSignalsExtractor::getMinBin(
     std::vector<T> const &vv, std::size_t startElement, std::size_t endElement)
 {
 
@@ -441,7 +441,7 @@ std::size_t sbn::timing::PMTBeamSignalsExtractor::getMinBin(
 // -----------------------------------------------------------------------------
 
 template <typename T>
-std::size_t sbn::timing::PMTBeamSignalsExtractor::getMaxBin(
+std::size_t icarus::timing::PMTBeamSignalsExtractor::getMaxBin(
     std::vector<T> const &vv, std::size_t startElement, std::size_t endElement)
 {
 
@@ -456,7 +456,7 @@ std::size_t sbn::timing::PMTBeamSignalsExtractor::getMaxBin(
 // -----------------------------------------------------------------------------
 
 template <typename T>
-std::size_t sbn::timing::PMTBeamSignalsExtractor::getStartSample(std::vector<T> const &vv, T thres)
+std::size_t icarus::timing::PMTBeamSignalsExtractor::getStartSample(std::vector<T> const &vv, T thres)
 {
 
   // We are thinking in inverted polarity
@@ -493,7 +493,7 @@ std::size_t sbn::timing::PMTBeamSignalsExtractor::getStartSample(std::vector<T> 
 
 // -----------------------------------------------------------------------------
 
-std::map<int, std::string> sbn::timing::PMTBeamSignalsExtractor::extractBoardBySpecialChannel(
+std::map<int, std::string> icarus::timing::PMTBeamSignalsExtractor::extractBoardBySpecialChannel(
     std::vector<fhicl::ParameterSet> const &setup)
 {
 
@@ -512,7 +512,7 @@ std::map<int, std::string> sbn::timing::PMTBeamSignalsExtractor::extractBoardByS
 
 // -----------------------------------------------------------------------------
 
-std::string sbn::timing::PMTBeamSignalsExtractor::getDigitizerLabel(int channel) const
+std::string icarus::timing::PMTBeamSignalsExtractor::getDigitizerLabel(int channel) const
 {
 
   // get the board name, convert to digitizer_label
@@ -531,7 +531,7 @@ std::string sbn::timing::PMTBeamSignalsExtractor::getDigitizerLabel(int channel)
 
 // -----------------------------------------------------------------------------
 
-std::string sbn::timing::PMTBeamSignalsExtractor::getCrate(int channel) const
+std::string icarus::timing::PMTBeamSignalsExtractor::getCrate(int channel) const
 {
 
   std::string digitizer_label = getDigitizerLabel(channel);
@@ -540,7 +540,7 @@ std::string sbn::timing::PMTBeamSignalsExtractor::getCrate(int channel) const
 
 // -----------------------------------------------------------------------------
 
-double sbn::timing::PMTBeamSignalsExtractor::getTriggerCorrection(int channel) const
+double icarus::timing::PMTBeamSignalsExtractor::getTriggerCorrection(int channel) const
 {
 
   std::string digitizer_label = getDigitizerLabel(channel);
@@ -558,7 +558,7 @@ double sbn::timing::PMTBeamSignalsExtractor::getTriggerCorrection(int channel) c
 
 // -----------------------------------------------------------------------------
 
-void sbn::timing::PMTBeamSignalsExtractor::associateBeamSignalsToChannels(art::InputTag const &label)
+void icarus::timing::PMTBeamSignalsExtractor::associateBeamSignalsToChannels(art::InputTag const &label)
 {
 
   std::string const &l = label.instance();
@@ -593,4 +593,4 @@ void sbn::timing::PMTBeamSignalsExtractor::associateBeamSignalsToChannels(art::I
   } // for each crate
 }
 
-DEFINE_ART_MODULE(sbn::timing::PMTBeamSignalsExtractor)
+DEFINE_ART_MODULE(icarus::timing::PMTBeamSignalsExtractor)
