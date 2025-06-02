@@ -42,7 +42,7 @@
 #include "lardataobj/Simulation/BeamGateInfo.h"
 #include "lardataobj/RawData/TriggerData.h"
 #include "sbnobj/Common/Trigger/ExtraTriggerInfo.h"
-#include "icaruscode/IcarusObj/PMTBeamSignal.h"
+#include "sbnobj/Common/PMT/Data/PMTBeamSignal.hh"
 #include "sbnobj/ICARUS/PMT/Data/WaveformBaseline.h"
 
 #include "TTree.h"
@@ -102,7 +102,7 @@ public:
 
     fhicl::Atom<art::InputTag> RWMLabel{
         Name("RWMLabel"),
-        Comment("Tag for the RWM std::vector<icarus::timing::PMTBeamSignal> data product")};
+        Comment("Tag for the RWM std::vector<sbn::timing::PMTBeamSignal> data product")};
 
     fhicl::Atom<float> PEOpHitThreshold{
         Name("PEOpHitThreshold"),
@@ -251,7 +251,7 @@ private:
 
   geo::GeometryCore const* fGeom;
   geo::WireReadoutGeom const* fChannelMapAlg;
-  std::vector<icarus::timing::PMTBeamSignal> fRWMTimes;
+  std::vector<sbn::timing::PMTBeamSignal> fRWMTimes;
 };
 
 // ----------------------------------------------------------------------------
@@ -485,7 +485,7 @@ float opana::ICARUSFlashAssAna::getRWMRelativeTime(int channel, float t)
 {
 
   if (fRWMTimes.empty())
-    return icarus::timing::NoTime;
+    return sbn::timing::NoTime;
 
   auto rwm = fRWMTimes.at(channel);
   if (!rwm.isValid())
@@ -494,7 +494,7 @@ float opana::ICARUSFlashAssAna::getRWMRelativeTime(int channel, float t)
                                       << "(Crate " << rwm.crate << ", Board " << rwm.digitizerLabel
                                       << ", SpecialChannel " << rwm.specialChannel << ")"
                                       << " in event " << m_event << " gate " << m_gate_name;
-    return icarus::timing::NoTime;
+    return sbn::timing::NoTime;
   }
 
   float rwm_trigger = rwm.startTime; // rwm time w.r.t. trigger time [us]
@@ -511,9 +511,9 @@ float opana::ICARUSFlashAssAna::getFlashBunchTime(std::vector<double> pmt_start_
   float tfirst_right = std::numeric_limits<float>::max();
 
   // if no RWM info available, all pmt_start_time_rwm are invalid
-  // return icarus::timing::NoTime as well for the flash
+  // return sbn::timing::NoTime as well for the flash
   if (fRWMTimes.empty())
-    return icarus::timing::NoTime;
+    return sbn::timing::NoTime;
 
   int nleft = 0;
   int nright = 0;
@@ -530,9 +530,9 @@ float opana::ICARUSFlashAssAna::getFlashBunchTime(std::vector<double> pmt_start_
 
     // if any RWM copy is missing (therefore missing for an entire PMT crate),
     // it might not be possible to use the first hits (they might not have a RMW time)
-    // so return icarus::timing::NoTime as in other bad cases
+    // so return sbn::timing::NoTime as in other bad cases
     if (!fRWMTimes[i].isValid())
-      return icarus::timing::NoTime;
+      return sbn::timing::NoTime;
 
     // count hits separetely on the two walls
     if (side == 0)
@@ -768,9 +768,9 @@ void opana::ICARUSFlashAssAna::analyze(art::Event const &e)
   if (!fRWMLabel.empty())
   {
 
-    fRWMTimes = e.getProduct<std::vector<icarus::timing::PMTBeamSignal>>(fRWMLabel);
+    fRWMTimes = e.getProduct<std::vector<sbn::timing::PMTBeamSignal>>(fRWMLabel);
     if (fRWMTimes.empty())
-      mf::LogTrace("ICARUSFlashAssAna") << "Data product std::vector<icarus::timing::PMTBeamSignal> for '"
+      mf::LogTrace("ICARUSFlashAssAna") << "Data product std::vector<sbn::timing::PMTBeamSignal> for '"
                                         << fRWMLabel.label() << "' is empty in " << m_gate_name << " event!";
   }
 
