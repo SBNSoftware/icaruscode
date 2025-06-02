@@ -1,7 +1,7 @@
 ////////////////////////////////////////////////////////////////////////
 /**
  * @file icaruscode/Timing/PMTBeamSignalsExtractor_module.cc
- * @brief `sbn::timing::PMTBeamSignalsExtractor` producer module.
+ * @brief `icarus::timing::PMTBeamSignalsExtractor` producer module.
  * @author Matteo Vicenzi (mvicenzi@bnl.gov)
  * @date  Sun Feb 11 11:37:14 2024
  **/
