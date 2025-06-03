@@ -1,12 +1,14 @@
 /**
- * @file   icaruscode/IcarusObj/PMTBeamSignal.h
+ * @file   icaruscode/IcarusObj/Legacy/PMTBeamSignal.h
  * @brief  Holds the event-by-event RWM or EW times
  * @author Matteo Vicenzi (mvicenzi@bnl.gov)
  * @date   March 14 2024
+ * @note   PLEASE NOTE : This is a old/LEGACY header for the previous namespace. 
+   @see    sbnobj/Common/PMT/Data/PMTBeamSignal.hh for new/current data product.
  */
 
-#ifndef ICARUSCODE_ICARUSOBJ_PMTBEAMSIGNAL_H
-#define ICARUSCODE_ICARUSOBJ_PMTBEAMSIGNAL_H
+#ifndef ICARUSCODE_ICARUSOBJ_LEGACY_PMTBEAMSIGNAL_H
+#define ICARUSCODE_ICARUSOBJ_LEGACY_PMTBEAMSIGNAL_H
 
 // C/C++ standard libraries
 #include <limits>
@@ -66,4 +68,4 @@ namespace icarus::timing
 
 } // namespace icarus::timing
 
-#endif // ICARUSCODE_ICARUSOBJ_PMTBEAMSIGNAL_H
+#endif // ICARUSCODE_ICARUSOBJ_LEGACY_PMTBEAMSIGNAL_H
