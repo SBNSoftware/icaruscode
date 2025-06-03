@@ -1,9 +1,9 @@
 /**
  * @file   icaruscode/IcarusObj/Legacy/PMTBeamSignal.h
  * @brief  Holds the event-by-event RWM or EW times
- * @author Matteo Vicenzi (mvicenzi@bnl.gov)
- * @date   March 14 2024
- * @note   PLEASE NOTE : This is a old/LEGACY header for the previous namespace. 
+ * @author Matteo Vicenzi (mvicenzi@bnl.gov), moved to legacy by A. Heggestuen
+ * @date   March 14 2024, moved June 3, 2025
+ * @note   PLEASE NOTE : This is an old/LEGACY header for the previous namespace. 
    @see    sbnobj/Common/PMT/Data/PMTBeamSignal.hh for new/current data product.
  */
 
