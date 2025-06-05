@@ -18,6 +18,7 @@
 #include "messagefacility/MessageLogger/MessageLogger.h"
 
 #include "nusimdata/SimulationBase/MCTruth.h"
+#include "larcore/Geometry/WireReadout.h"
 #include "larcore/Geometry/Geometry.h"
 #include "larcore/CoreUtils/ServiceUtil.h" // lar::providerFrom()
 #include "lardataobj/RawData/OpDetWaveform.h"
@@ -138,13 +139,14 @@ void ICARUSOpHitTuple::beginJob()
   std::vector<double> pmtX, pmtY, pmtZ;
   std::vector<double> minX, minY, minZ;
   std::vector<double> maxX, maxY, maxZ;
-  auto const geop = lar::providerFrom<geo::Geometry>();
-  for(size_t opch=0; opch<geop->NOpChannels(); ++opch) {
-    auto const PMTxyz = geop->OpDetGeoFromOpChannel(opch).GetCenter();
+  auto const& wireReadoutAlg = art::ServiceHandle<geo::WireReadout const>()->Get();
+  for(size_t opch=0; opch<wireReadoutAlg.NOpChannels(); ++opch) {
+    auto const PMTxyz = wireReadoutAlg.OpDetGeoFromOpChannel(opch).GetCenter();
     pmtX.push_back(PMTxyz.X());
     pmtY.push_back(PMTxyz.Y());
     pmtZ.push_back(PMTxyz.Z());
   }
+  auto const geop = lar::providerFrom<geo::Geometry>();
   for(auto const& tpc : geop->Iterate<geo::TPCGeo>()) {
     minX.push_back(tpc.BoundingBox().MinX());
     minY.push_back(tpc.BoundingBox().MinY());
@@ -229,10 +231,10 @@ void ICARUSOpHitTuple::analyze(art::Event const& e)
   _event_dr = _event_dx = _event_dy = _event_dz =std::numeric_limits<double>::max();
   _tpc = -1;
   if(_event_time != std::numeric_limits<double>::max()) {
-    auto const geop = lar::providerFrom<geo::Geometry>();
+    auto const& wireReadoutAlg = art::ServiceHandle<geo::WireReadout const>()->Get();
     // measure smallest dr to any pmt
-    for(size_t opch=0; opch<geop->NOpChannels(); ++opch) {
-      auto const PMTxyz = geop->OpDetGeoFromOpChannel(opch).GetCenter();
+    for(size_t opch=0; opch<wireReadoutAlg.NOpChannels(); ++opch) {
+      auto const PMTxyz = wireReadoutAlg.OpDetGeoFromOpChannel(opch).GetCenter();
       // FIXME (KJK): The following code is dubious.  For the first
       //              iteration, _event_x (etc.) are DBL_MAX, which
       //              means that any arithmetic operations performed

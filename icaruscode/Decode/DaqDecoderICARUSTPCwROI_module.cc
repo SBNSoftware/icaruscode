@@ -40,6 +40,7 @@
 #include "tbb/spin_mutex.h"
 #include "tbb/concurrent_vector.h"
 
+#include "larcore/Geometry/WireReadout.h"
 #include "larcore/Geometry/Geometry.h"
 #include "lardata/DetectorInfoServices/DetectorClocksService.h"
 #include "lardataobj/RawData/RawDigit.h"
@@ -159,6 +160,7 @@ private:
 
     // Fcl parameters.
     std::vector<art::InputTag>                                  fFragmentsLabelVec;          ///< The input artdaq fragment label vector (for more than one)
+    bool                                                        fOutputChannelROIs;          ///< Should we output the ROIs we found?
     bool                                                        fOutputRawWaveform;          ///< Should we output pedestal corrected (not noise filtered)?
     bool                                                        fOutputCorrection;           ///< Should we output the coherent noise correction vectors?
     bool                                                        fOutputMorphed;              ///< Should we output the morphological filter vectors?
@@ -211,6 +213,7 @@ DaqDecoderICARUSTPCwROI::DaqDecoderICARUSTPCwROI(fhicl::ParameterSet const & pse
 {
     fGeometry   = art::ServiceHandle<geo::Geometry const>{}.get();
     fChannelMap = art::ServiceHandle<icarusDB::IICARUSChannelMap const>{}.get();
+    geo::WireReadoutGeom const& wireReadoutAlg = art::ServiceHandle<geo::WireReadout const>()->Get();
 
     configure(pset);
 
@@ -236,7 +239,9 @@ DaqDecoderICARUSTPCwROI::DaqDecoderICARUSTPCwROI(fhicl::ParameterSet const & pse
     for(const auto& fragmentLabel : fFragmentsLabelVec)
     {
         produces<std::vector<raw::RawDigit>>(fragmentLabel.instance());
-        produces<std::vector<recob::ChannelROI>>(fragmentLabel.instance());
+
+        if (fOutputChannelROIs)
+            produces<std::vector<recob::ChannelROI>>(fragmentLabel.instance());
 
         if (fOutputRawWaveform)
             produces<std::vector<raw::RawDigit>>(fragmentLabel.instance() + fOutputRawWavePath);
@@ -259,14 +264,14 @@ DaqDecoderICARUSTPCwROI::DaqDecoderICARUSTPCwROI(fhicl::ParameterSet const & pse
             {
                 geo::PlaneID planeID(cryoIdx,logicalTPCIdx,planeIdx);
 
-                raw::ChannelID_t channel = fGeometry->PlaneWireToChannel(geo::WireID(planeID, 0));
+                raw::ChannelID_t channel = wireReadoutAlg.PlaneWireToChannel(geo::WireID(planeID, 0));
 
-                readout::ROPID ropID = fGeometry->ChannelToROP(channel);
+                readout::ROPID ropID = wireReadoutAlg.ChannelToROP(channel);
 
                 fPlaneToROPPlaneMap[planeID]      = ropID.ROP;
                 fPlaneToWireOffsetMap[planeID]    = channel;
-                planeToLastWireOffsetMap[planeID] = fGeometry->PlaneWireToChannel(geo::WireID(planeID, fGeometry->Nwires(planeID)));
-                fROPToNumWiresMap[ropID.ROP]      = fGeometry->Nwires(planeID);
+                planeToLastWireOffsetMap[planeID] = wireReadoutAlg.PlaneWireToChannel(geo::WireID(planeID, wireReadoutAlg.Nwires(planeID)));
+                fROPToNumWiresMap[ropID.ROP]      = wireReadoutAlg.Nwires(planeID);
 
                 if (ropID.ROP > fNumROPs) fNumROPs = ropID.ROP;
 
@@ -307,6 +312,7 @@ DaqDecoderICARUSTPCwROI::~DaqDecoderICARUSTPCwROI()
 void DaqDecoderICARUSTPCwROI::configure(fhicl::ParameterSet const & pset)
 {
     fFragmentsLabelVec     = pset.get<std::vector<art::InputTag>>("FragmentsLabelVec",  std::vector<art::InputTag>()={"daq:PHYSCRATEDATA"});
+    fOutputChannelROIs     = pset.get<bool                      >("OutputChannelROIs",                                                true);
     fOutputRawWaveform     = pset.get<bool                      >("OutputRawWaveform",                                               false);
     fOutputCorrection      = pset.get<bool                      >("OutputCorrection",                                                false);
     fOutputMorphed         = pset.get<bool                      >("OutputMorphed",                                                   false);
@@ -414,14 +420,15 @@ void DaqDecoderICARUSTPCwROI::produce(art::Event & event, art::ProcessingFrame c
         // Now transfer ownership to the event store
         event.put(std::move(rawDigitCollection), fragmentLabel.instance());
 
-        // Do the same to output the candidate ROIs
-        ChannelROICollectionPtr channelROICollection = std::make_unique<std::vector<recob::ChannelROI>>(std::move_iterator(concurrentROIs.begin()),
+        if (fOutputChannelROIs)
+        {
+            // Do the same to output the candidate ROIs
+            ChannelROICollectionPtr channelROICollection = std::make_unique<std::vector<recob::ChannelROI>>(std::move_iterator(concurrentROIs.begin()),
                                                                                                         std::move_iterator(concurrentROIs.end()));
+            std::sort(channelROICollection->begin(),channelROICollection->end(),[](const auto& left, const auto& right){return left.Channel() < right.Channel();});
 
-        std::sort(channelROICollection->begin(),channelROICollection->end(),[](const auto& left, const auto& right){return left.Channel() < right.Channel();});
-
-        event.put(std::move(channelROICollection), fragmentLabel.instance());
-    
+            event.put(std::move(channelROICollection), fragmentLabel.instance());
+        }
     
         if (fOutputRawWaveform)
         {
@@ -650,15 +657,24 @@ void DaqDecoderICARUSTPCwROI::processSingleFragment(size_t                      
 
             if (fOutputMorphed)
             {
-                const icarus_signal_processing::VectorFloat& corrections = decoderTool->getMorphedWaveforms()[chanIdx];
+                const icarus_signal_processing::VectorFloat& morphWaveform = decoderTool->getMorphedWaveforms()[chanIdx];
 
                 // Need to convert from float to short int
-                std::transform(corrections.begin(),corrections.end(),wvfm.begin(),[](const auto& val){return short(std::round(val));});
+                std::transform(morphWaveform.begin(),morphWaveform.end(),wvfm.begin(),[](const auto& val){return short(std::round(val));});
+
+                // Get the morphological waveform mean position and spread from PCA
+                Eigen::Vector<float,2>   meanPos;
+                Eigen::Vector<float,2>   eigenValues;
+                Eigen::Matrix<float,2,2> eigenVectors;
+
+                icarus_signal_processing::VectorFloat localCopy = morphWaveform;
+
+                waveformTools.principalComponents(localCopy, meanPos, eigenVectors, eigenValues, 6., 3., false);
 
                 //ConcurrentRawDigitCol::iterator newRawObjItr = coherentRawDigitCol.emplace_back(channel,wvfm.size(),wvfm); 
                 ConcurrentRawDigitCol::iterator newRawObjItr = morphedRawDigitCol.push_back(raw::RawDigit(channel,wvfm.size(),wvfm)); 
 
-                newRawObjItr->SetPedestal(0.,0.);
+                newRawObjItr->SetPedestal(meanPos[1],std::sqrt(eigenValues[0]));
             }
 
             // Now determine the pedestal and correct for it

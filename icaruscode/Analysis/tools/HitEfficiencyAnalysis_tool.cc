@@ -10,6 +10,7 @@
 #include "lardata/DetectorInfoServices/DetectorClocksService.h"
 #include "canvas/Persistency/Common/FindManyP.h"
 
+#include "larcore/Geometry/WireReadout.h"
 #include "larcore/Geometry/Geometry.h"
 #include "larcore/CoreUtils/ServiceUtil.h" // lar::providerFrom()
 
@@ -156,7 +157,7 @@ private:
     mutable std::vector<int>   fHitStopTickVec;
     
     // Useful services, keep copies for now (we can update during begin run periods)
-    const geo::GeometryCore*           fGeometry;             ///< pointer to Geometry service
+    const geo::WireReadoutGeom*          fChannelMapAlg;
 };
     
 //----------------------------------------------------------------------------
@@ -168,7 +169,7 @@ private:
 ///
 HitEfficiencyAnalysis::HitEfficiencyAnalysis(fhicl::ParameterSet const & pset) : fTree(nullptr)
 {
-    fGeometry           = lar::providerFrom<geo::Geometry>();
+    fChannelMapAlg      = &art::ServiceHandle<geo::WireReadout const>()->Get();
     
     configure(pset);
     
@@ -206,28 +207,29 @@ void HitEfficiencyAnalysis::initializeHists(art::ServiceHandle<art::TFileService
     // Make a directory for these histograms
     art::TFileDirectory dir = tfs->mkdir(dirName.c_str());
     
-    fTotalElectronsHistVec.resize(fGeometry->Nplanes());
-    fMaxElectronsHistVec.resize(fGeometry->Nplanes());
-    fHitElectronsVec.resize(fGeometry->Nplanes());
-    fHitSumADCVec.resize(fGeometry->Nplanes());
-    fHitPulseHeightVec.resize(fGeometry->Nplanes());
-    fHitPulseWidthVec.resize(fGeometry->Nplanes());
-    fSimNumTDCVec.resize(fGeometry->Nplanes());
-    fHitNumTDCVec.resize(fGeometry->Nplanes());
-    fNMatchedHitVec.resize(fGeometry->Nplanes());
-    fDeltaMidTDCVec.resize(fGeometry->Nplanes());
-    fHitVsSimChgVec.resize(fGeometry->Nplanes());
-    fNSimChannelHitsVec.resize(fGeometry->Nplanes());
-    fNRecobHitVec.resize(fGeometry->Nplanes());
-    fHitEfficiencyVec.resize(fGeometry->Nplanes());
+    auto const num_planes = fChannelMapAlg->Nplanes();
+    fTotalElectronsHistVec.resize(num_planes);
+    fMaxElectronsHistVec.resize(num_planes);
+    fHitElectronsVec.resize(num_planes);
+    fHitSumADCVec.resize(num_planes);
+    fHitPulseHeightVec.resize(num_planes);
+    fHitPulseWidthVec.resize(num_planes);
+    fSimNumTDCVec.resize(num_planes);
+    fHitNumTDCVec.resize(num_planes);
+    fNMatchedHitVec.resize(num_planes);
+    fDeltaMidTDCVec.resize(num_planes);
+    fHitVsSimChgVec.resize(num_planes);
+    fNSimChannelHitsVec.resize(num_planes);
+    fNRecobHitVec.resize(num_planes);
+    fHitEfficiencyVec.resize(num_planes);
 
-    fWireEfficVec.resize(fGeometry->Nplanes());
-    fWireEfficPHVec.resize(fGeometry->Nplanes());
+    fWireEfficVec.resize(num_planes);
+    fWireEfficPHVec.resize(num_planes);
 
-    fHitEfficVec.resize(fGeometry->Nplanes());
-    fHitEfficPHVec.resize(fGeometry->Nplanes());
+    fHitEfficVec.resize(num_planes);
+    fHitEfficPHVec.resize(num_planes);
 
-    for(size_t plane = 0; plane < fGeometry->Nplanes(); plane++)
+    for(size_t plane = 0; plane < num_planes; plane++)
     {
         fTotalElectronsHistVec.at(plane)  = dir.make<TH1F>(("TotalElecs"  + std::to_string(plane)).c_str(), ";# electrons", 250,   0.,  100000.);
         fMaxElectronsHistVec.at(plane)    = dir.make<TH1F>(("MaxElecs"    + std::to_string(plane)).c_str(), ";# electrons", 250,   0.,  20000.);
@@ -411,7 +413,7 @@ void HitEfficiencyAnalysis::fillHistograms(const art::Event& event) const
         
                 // The below try-catch block may no longer be necessary
                 // Decode the channel and make sure we have a valid one
-                std::vector<geo::WireID> wids = fGeometry->ChannelToWire(chanToTDCToIDEMap.first);
+                std::vector<geo::WireID> wids = fChannelMapAlg->ChannelToWire(chanToTDCToIDEMap.first);
         
                 // Recover plane and wire in the plane
                 unsigned int plane = wids[0].Plane;
@@ -607,7 +609,7 @@ void HitEfficiencyAnalysis::fillHistograms(const art::Event& event) const
             }
         }
     
-        for(size_t idx = 0; idx < fGeometry->Nplanes();idx++)
+        for(size_t idx = 0; idx < fChannelMapAlg->Nplanes();idx++)
         {
             if (nSimChannelHitVec.at(idx) > 10)
             {

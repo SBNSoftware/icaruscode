@@ -1,0 +1,19 @@
+physics.producers.gaushit2dTPCEE.HitFinderToolVec.CandidateHitsPlane0.RoiThreshold:      2.5
+physics.producers.gaushit2dTPCEE.HitFinderToolVec.CandidateHitsPlane1.RoiThreshold:      2.5
+physics.producers.gaushit2dTPCEE.HitFinderToolVec.CandidateHitsPlane2.RoiThreshold:      2.5
+physics.producers.gaushit2dTPCEE.HitFilterAlg.MinPulseHeight:                            [2., 2., 2.]
+
+physics.producers.gaushit2dTPCEW.HitFinderToolVec.CandidateHitsPlane0.RoiThreshold:      2.5
+physics.producers.gaushit2dTPCEW.HitFinderToolVec.CandidateHitsPlane1.RoiThreshold:      2.5
+physics.producers.gaushit2dTPCEW.HitFinderToolVec.CandidateHitsPlane2.RoiThreshold:      2.5
+physics.producers.gaushit2dTPCEW.HitFilterAlg.MinPulseHeight:                            [2., 2., 2.]
+
+physics.producers.gaushit2dTPCWE.HitFinderToolVec.CandidateHitsPlane0.RoiThreshold:      2.5
+physics.producers.gaushit2dTPCWE.HitFinderToolVec.CandidateHitsPlane1.RoiThreshold:      2.5
+physics.producers.gaushit2dTPCWE.HitFinderToolVec.CandidateHitsPlane2.RoiThreshold:      2.5
+physics.producers.gaushit2dTPCWE.HitFilterAlg.MinPulseHeight:                            [2., 2., 2.]
+
+physics.producers.gaushit2dTPCWW.HitFinderToolVec.CandidateHitsPlane0.RoiThreshold:      2.5
+physics.producers.gaushit2dTPCWW.HitFinderToolVec.CandidateHitsPlane1.RoiThreshold:      2.5
+physics.producers.gaushit2dTPCWW.HitFinderToolVec.CandidateHitsPlane2.RoiThreshold:      2.5
+physics.producers.gaushit2dTPCWW.HitFilterAlg.MinPulseHeight:                            [2., 2., 2.]

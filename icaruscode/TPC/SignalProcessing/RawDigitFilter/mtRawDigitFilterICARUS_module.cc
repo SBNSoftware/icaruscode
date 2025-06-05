@@ -17,7 +17,7 @@
 #include "canvas/Persistency/Common/Ptr.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
 
-#include "larcore/Geometry/Geometry.h"
+#include "larcore/Geometry/WireReadout.h"
 #include "larevt/CalibrationDBI/Interface/DetPedestalService.h"
 #include "larevt/CalibrationDBI/Interface/DetPedestalProvider.h"
 #include "lardata/Utilities/LArFFTWPlan.h"
@@ -138,7 +138,7 @@ private:
     std::map<size_t,std::unique_ptr<icarus_tool::IFilter>> fFilterToolMap;
 
     // Useful services, keep copies for now (we can update during begin run periods)
-    geo::GeometryCore const*           fGeometry;             ///< pointer to Geometry service
+    geo::WireReadoutGeom const*          fChannelMapAlg;
     const lariov::DetPedestalProvider& fPedestalRetrievalAlg; ///< Keep track of an instance to the pedestal retrieval alg
 
     // mwang added
@@ -237,7 +237,7 @@ RawDigitFilterICARUS::RawDigitFilterICARUS(fhicl::ParameterSet const & pset, art
                       fChannelGroups(pset)
 {
 
-    fGeometry = lar::providerFrom<geo::Geometry>();
+    fChannelMapAlg = &art::ServiceHandle<geo::WireReadout const>()->Get();
 
     configure(pset);
     produces<std::vector<raw::RawDigit> >();
@@ -322,7 +322,7 @@ void RawDigitFilterICARUS::produce(art::Event & event, art::ProcessingFrame cons
 
   // ... Require a valid handle
   if (digitVecHandle.isValid() && digitVecHandle->size()>0 ){
-    unsigned int maxChannels	= fGeometry->Nchannels();
+    unsigned int maxChannels	= fChannelMapAlg->Nchannels();
 
     // .. Let's first sort the rawDigitVec
     std::vector<const raw::RawDigit*> rawDigitVec;
@@ -369,7 +369,7 @@ void RawDigitFilterICARUS::produce(art::Event & event, art::ProcessingFrame cons
       bool goodChan(true);
       std::vector<geo::WireID> wids;
       try {
-        wids = fGeometry->ChannelToWire(channel);
+        wids = fChannelMapAlg->ChannelToWire(channel);
       }
       catch(...){
         goodChan = false;

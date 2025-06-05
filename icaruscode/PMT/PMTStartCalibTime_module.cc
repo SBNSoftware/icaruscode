@@ -31,9 +31,10 @@
 // ########################
 // ### LArSoft includes ###
 // ########################
+#include "larcorealg/Geometry/OpDetGeo.h"
 #include "larcoreobj/SimpleTypesAndConstants/geo_types.h"
 #include "larcoreobj/SimpleTypesAndConstants/RawTypes.h" // raw::ChannelID_t
-#include "larcore/Geometry/Geometry.h"
+#include "larcore/Geometry/WireReadout.h"
 #include "lardataobj/RecoBase/Wire.h"
 #include "lardataobj/RecoBase/Hit.h"
 #include "lardataobj/RecoBase/Cluster.h"
@@ -204,7 +205,7 @@ void icarus::PMTStartCalibTime::analyze(art::Event const & evt)
 {
 ////////////////////////////////// Create the LArsoft services and service handle//////////////////////////////
 
-art::ServiceHandle<geo::Geometry> geom;
+geo::WireReadoutGeom const& wireReadoutAlg = art::ServiceHandle<geo::WireReadout const>()->Get();
  
 std::vector<sim::SimPhotons> const& optical  = *(evt.getValidHandle<std::vector<sim::SimPhotons>>(photonLabel));
 std::vector<sim::SimChannel> const& charge   = *(evt.getValidHandle<std::vector<sim::SimChannel>>(chargeLabel));
@@ -323,7 +324,7 @@ for (std::size_t channel = 0; channel < optical.size(); ++channel) {
 	turned_PMT++;
 	}
 
-        auto const xyz = geom->OpDetGeoFromOpChannel(channel).GetCenter();
+        auto const xyz = wireReadoutAlg.OpDetGeoFromOpChannel(channel).GetCenter();
 
         PMTx[channel] = xyz.X();
         PMTy[channel] = xyz.Y();

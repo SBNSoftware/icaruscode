@@ -36,6 +36,7 @@
 #include "lardataalg/Utilities/intervals_fhicl.h" // microseconds from FHiCL
 #include "larcorealg/Geometry/GeometryCore.h"
 #include "larcorealg/Geometry/TPCGeo.h"
+#include "larcorealg/Geometry/fwd.h"
 #include "larcorealg/CoreUtils/get_elements.h"
 #include "larcoreobj/SimpleTypesAndConstants/geo_vectors.h"
 #include "larcoreobj/SimpleTypesAndConstants/geo_types.h" // geo::CryostatID
@@ -1486,6 +1487,7 @@ class icarus::trigger::TriggerEfficiencyPlotsBase {
   // --- BEGIN Service variables -----------------------------------------------
 
   geo::GeometryCore const& fGeom;
+  geo::WireReadoutGeom const& fChannelMapAlg;
 
   /// ROOT directory where all the plots are written.
   art::TFileDirectory fOutputDir;
@@ -1548,7 +1550,7 @@ class icarus::trigger::TriggerEfficiencyPlotsBase {
   
   /// Fills and returns a map of cryostat ID for each optical detector channel.
   static std::vector<geo::CryostatID> makeChannelCryostatMap
-    (geo::GeometryCore const& geom);
+    (geo::WireReadoutGeom const& wireReadoutAlg);
   
   static std::string thrAndCatName
     (std::string const& boxName, std::string const& category)

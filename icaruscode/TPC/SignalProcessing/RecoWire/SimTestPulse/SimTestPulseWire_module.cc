@@ -26,6 +26,7 @@
 
 #include "lardataobj/Simulation/SimChannel.h"
 #include "lardataobj/RawData/TriggerData.h"
+#include "larcore/Geometry/WireReadout.h"
 #include "larcore/Geometry/Geometry.h"
 #include "larcorealg/Geometry/GeometryCore.h"
 
@@ -177,8 +178,6 @@ void SimTestPulseWire::produce(art::Event & e)
     geo::Point_t chargeDepCoords = {0., 0., 0.};
 
     auto const clockData = art::ServiceHandle<detinfo::DetectorClocksService>()->DataFor(e);
-    art::ServiceHandle<geo::Geometry> geo;
-
     auto const detProp = art::ServiceHandle<detinfo::DetectorPropertiesService const>()->DataForJob(clockData);
 
     for(size_t idx = 0; idx < fPlaneChannelVec.size(); idx++)
@@ -191,6 +190,12 @@ void SimTestPulseWire::produce(art::Event & e)
     
     auto& pholder = alternative::ParamHolder::get();
     pholder.Clear();
+
+    geo::WireReadoutGeom const& wireReadoutAlg = art::ServiceHandle<geo::WireReadout const>()->Get();
+    const geo::PlaneGeo& planeGeo = wireReadoutAlg.Plane(geo::PlaneID(fCryostat,fTPC,0)); // Get the coordinates of the first wire plane
+
+    auto planeCoords = planeGeo.GetCenter();
+    auto planeNormal = planeGeo.GetNormalDirection();
 
     for(size_t index=0; index < fSimTime_v.size(); ++index) {
         
@@ -208,11 +213,6 @@ void SimTestPulseWire::produce(art::Event & e)
             continue;
         }
         
-        const geo::PlaneGeo& planeGeo = geo->Plane(geo::PlaneID(fCryostat,fTPC,0)); // Get the coordinates of the first wire plane
-
-        auto planeCoords = planeGeo.GetCenter();
-        auto planeNormal = planeGeo.GetNormalDirection();
-
         // Assume C=0, T=1
         chargeDepCoords = planeCoords;
         chargeDepCoords.SetX(planeCoords.X() + planeNormal.X());
@@ -234,18 +234,18 @@ void SimTestPulseWire::produce(art::Event & e)
 
             geo::WireID wireID(fCryostat,fTPC,plane,wire);
 
-            raw::ChannelID_t channel = geo->PlaneWireToChannel(wireID);
+            raw::ChannelID_t channel = wireReadoutAlg.PlaneWireToChannel(wireID);
 
             fPlaneChannelVec[plane].emplace_back(channel);
 
             // Let's go backwards...
-            std::vector<geo::WireID> wireIDVec = geo->ChannelToWire(channel);
+            std::vector<geo::WireID> wireIDVec = wireReadoutAlg.ChannelToWire(channel);
 
             std::cout << ">>Channel " << channel << ", C/T/P/W: " << wireID.Cryostat << "/" << wireID.TPC << "/" << wireID.Plane << "/" << wireID.Wire 
                       << " returns " << wireIDVec.size() << " IDs, C/T/P/W: " << wireIDVec.front().Cryostat << "/" << wireIDVec.front().TPC << "/" << wireIDVec.front().Plane << "/" << wireIDVec.front().Wire << std::endl;
 
             // Recover the positions 
-            const geo::WireGeo& wireGeo = geo->Wire(wireID);
+            const geo::WireGeo& wireGeo = wireReadoutAlg.Wire(wireID);
 
             auto xyz = wireGeo.GetCenter();
             xyz.SetX(chargeDepCoords.X());

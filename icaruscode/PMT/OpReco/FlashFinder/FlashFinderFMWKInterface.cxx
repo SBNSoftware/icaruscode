@@ -11,6 +11,7 @@
 #include "fhiclcpp/ParameterSet.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
 #include "art_root_io/TFileService.h"
+#include "larcore/Geometry/WireReadout.h"
 #include "larcore/Geometry/Geometry.h"
 
 
@@ -20,17 +21,18 @@ namespace pmtana {
 
   std::vector<size_t> ListOpChannels(int cryostat) {
     std::vector<size_t> res;
-    ::art::ServiceHandle<geo::Geometry> geo;
+    auto const& wireReadoutAlg = art::ServiceHandle<geo::WireReadout const>()->Get();
     if(cryostat<0) {
-      for(size_t opch=0; opch<geo->MaxOpChannel(); ++opch) {
-	if(geo->IsValidOpChannel(opch)) continue;
+      for(size_t opch=0; opch<wireReadoutAlg.MaxOpChannel(); ++opch) {
+        if(wireReadoutAlg.IsValidOpChannel(opch)) continue;
 	res.push_back(opch);
       }
     }else{
+      ::art::ServiceHandle<geo::Geometry> geo;
       auto const& bbox = geo->Cryostat(geo::CryostatID(cryostat)).Boundaries();
-      for(size_t opch=0; opch<geo->MaxOpChannel(); ++opch) {
-	if(geo->IsValidOpChannel(opch)) continue;
-	auto const& pt = geo->OpDetGeoFromOpChannel(opch).GetCenter();
+      for(size_t opch=0; opch<wireReadoutAlg.MaxOpChannel(); ++opch) {
+        if(wireReadoutAlg.IsValidOpChannel(opch)) continue;
+        auto const& pt = wireReadoutAlg.OpDetGeoFromOpChannel(opch).GetCenter();
 	if(!bbox.ContainsPosition(pt)) continue;
 	res.push_back(opch);
       }
@@ -65,13 +67,12 @@ namespace pmtana {
   }
 
   size_t OpDetFromOpChannel(size_t opch) {
-    ::art::ServiceHandle<geo::Geometry> geo;
-    return geo->OpDetFromOpChannel(opch);
+    return art::ServiceHandle<geo::WireReadout const>()->Get().OpDetFromOpChannel(opch);
   }
 
   void OpDetCenterFromOpChannel(size_t opch, double *xyz) {
-    ::art::ServiceHandle<geo::Geometry> geo;
-    auto const tmp = geo->OpDetGeoFromOpChannel(opch).GetCenter();
+    auto const tmp =
+      art::ServiceHandle<geo::WireReadout const>()->Get().OpDetGeoFromOpChannel(opch).GetCenter();
     xyz[0] = tmp.X();
     xyz[1] = tmp.Y();
     xyz[2] = tmp.Z();

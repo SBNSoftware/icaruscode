@@ -10,7 +10,7 @@
 #include "messagefacility/MessageLogger/MessageLogger.h"
 #include "cetlib_except/exception.h"
 #include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
-#include "larcore/Geometry/Geometry.h"
+#include "larcore/Geometry/WireReadout.h"
 #include "larcore/CoreUtils/ServiceUtil.h" // lar::providerFrom()
 #include "icaruscode/TPC/Utilities/SignalShapingICARUSService_service.h"
 
@@ -45,7 +45,7 @@ private:
     std::vector<unsigned short>   fPostROIPad;                 ///< ROI padding
     
     // Services
-    const geo::GeometryCore*                                   fGeometry = lar::providerFrom<geo::Geometry>();
+    const geo::WireReadoutGeom* fChannelMapAlg = &art::ServiceHandle<geo::WireReadout const>()->Get();
     art::ServiceHandle<icarusutil::SignalShapingICARUSService> fSignalShaping;
 };
     
@@ -98,7 +98,7 @@ void ROIFinderStandard::configure(const fhicl::ParameterSet& pset)
 void ROIFinderStandard::FindROIs(const Waveform& waveform, size_t channel, size_t cnt, double rmsNoise, CandidateROIVec& roiVec) const
 {
     // First up, translate the channel to plane
-    std::vector<geo::WireID> wids    = fGeometry->ChannelToWire(channel);
+    std::vector<geo::WireID> wids    = fChannelMapAlg->ChannelToWire(channel);
     const geo::PlaneID&      planeID = wids[0].planeID();
     
     size_t numBins(2 * fNumBinsHalf + 1);

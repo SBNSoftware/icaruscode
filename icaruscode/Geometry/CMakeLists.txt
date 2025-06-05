@@ -1,4 +1,3 @@
-
 art_make_library()
 set(	SERVICE_LIBRARIES
 		icarusalg::Geometry
@@ -16,7 +15,6 @@ set(	SERVICE_LIBRARIES
 set(	TOOL_LIBRARIES
 		icarusalg::Geometry
 		larcorealg::Geometry
-		larcore::Geometry_Geometry_service
 		art::Utilities
 		messagefacility::headers
 		fhiclcpp::fhiclcpp
@@ -28,6 +26,6 @@ set(	TOOL_LIBRARIES
 
 	)
 
-cet_build_plugin(ICARUSsplitInductionChannelMapSetupTool art::tool LIBRARIES ${TOOL_LIBRARIES})
-cet_build_plugin(IcarusGeometryHelper art::service LIBRARIES ${SERVICE_LIBRARIES})
-
+cet_build_plugin(AuxDetGeoObjectSorterICARUS art::tool LIBRARIES ${TOOL_LIBRARIES})
+cet_build_plugin(GeoObjectSorterPMTasTPC art::tool LIBRARIES ${TOOL_LIBRARIES})
+cet_build_plugin(WireReadoutICARUS art::service LIBRARIES ${SERVICE_LIBRARIES})

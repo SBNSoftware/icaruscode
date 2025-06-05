@@ -18,7 +18,9 @@
 #include "messagefacility/MessageLogger/MessageLogger.h"
 
 // LArSoft includes
-#include "larcore/Geometry/Geometry.h"
+#include "larcore/Geometry/WireReadout.h"
+#include "larevt/CalibrationDBI/Interface/ChannelStatusService.h"
+#include "larevt/CalibrationDBI/Interface/ChannelStatusProvider.h"
 
 #include "sbndaq-artdaq-core/Overlays/ICARUS/PhysCrateFragment.hh"
 
@@ -181,15 +183,19 @@ private:
 
     icarus_signal_processing::FilterFunctionVec    fFilterFunctionVec;
     
-    const geo::Geometry*                           fGeometry;              //< pointer to the Geometry service
+    const geo::WireReadoutGeom*                      fChannelMapAlg; //< pointer to the Geometry service
     const icarusDB::IICARUSChannelMap*             fChannelMap;
 
     // Keep track of the FFT 
     icarus_signal_processing::FFTFilterFunctionVec fFFTFilterFunctionVec;
 
+    // channel status DB
+    const lariov::ChannelStatusProvider*           fChannelStatus;
 };
 
-TPCDecoderFilter1D::TPCDecoderFilter1D(fhicl::ParameterSet const &pset)
+TPCDecoderFilter1D::TPCDecoderFilter1D(fhicl::ParameterSet const &pset) :
+    fChannelStatus(&art::ServiceHandle<lariov::ChannelStatusService const>()->GetProvider())
+
 {
     std::cout << "TPCDecoderFilter1D is calling configure method" << std::endl;
     this->configure(pset);
@@ -239,7 +245,7 @@ void TPCDecoderFilter1D::configure(fhicl::ParameterSet const &pset)
 
     for(const auto& idPair : tempIDVec) fFragmentIDMap[idPair.first] = idPair.second;
 
-    fGeometry   = art::ServiceHandle<geo::Geometry const>{}.get();
+    fChannelMapAlg = &art::ServiceHandle<geo::WireReadout const>{}->Get();
     fChannelMap = art::ServiceHandle<icarusDB::IICARUSChannelMap const>{}.get();
 
     fFFTFilterFunctionVec.clear();
@@ -408,8 +414,20 @@ void TPCDecoderFilter1D::process_fragment(detinfo::DetectorClocksData const&,
 
             icarus_signal_processing::VectorFloat& pedCorDataVec = fPedCorWaveforms[channelOnBoard];
 
+            // Recover the channel ID
+            int channelID = channelPlanePairVec[chanIdx].first;
+
             // Keep track of the channel
-            fChannelIDVec[channelOnBoard] = channelPlanePairVec[chanIdx].first;
+            fChannelIDVec[channelOnBoard] = channelID;
+
+            // Is this a valid channel and what is its status?
+            if (fChannelStatus->IsPresent(channelID))
+            {
+                // If the channel is bad then we "protect" the entire channel (it will not be used in noise removal)
+                // Note that the array has already been cleared before calling this function so no need to set opposite case
+                if (fChannelStatus->IsBad(channelID))
+                    std::fill(fSelectVals[channelOnBoard].begin(),fSelectVals[channelOnBoard].end(),true);
+            }
 
             // Handle the filter function to use for this channel
             unsigned int plane = channelPlanePairVec[chanIdx].second;
@@ -473,7 +491,7 @@ void TPCDecoderFilter1D::process_fragment(detinfo::DetectorClocksData const&,
 
             if (fDiagnosticOutput)
             {
-                std::vector<geo::WireID> widVec = fGeometry->ChannelToWire(channelPlanePairVec[chanIdx].first);
+                std::vector<geo::WireID> widVec = fChannelMapAlg->ChannelToWire(channelPlanePairVec[chanIdx].first);
 
                 if (widVec.empty()) std::cout << channelPlanePairVec[chanIdx].first << "/" << chanIdx  << "=" << fFullRMSVals[channelOnBoard] << " * ";
                 else std::cout << fChannelIDVec[channelOnBoard] << "-" << widVec[0].Cryostat << "/" << widVec[0].TPC << "/" << widVec[0].Plane << "/" << widVec[0].Wire << "=" << fFullRMSVals[channelOnBoard] << " * ";

@@ -18,7 +18,9 @@
 #include "messagefacility/MessageLogger/MessageLogger.h"
 
 // LArSoft includes
-#include "larcore/Geometry/Geometry.h"
+#include "larcore/Geometry/WireReadout.h"
+#include "larevt/CalibrationDBI/Interface/ChannelStatusService.h"
+#include "larevt/CalibrationDBI/Interface/ChannelStatusProvider.h"
 
 #include "sbndaq-artdaq-core/Overlays/ICARUS/PhysCrateFragment.hh"
 
@@ -156,6 +158,8 @@ private:
     bool                                           fUseFFTFilter;           //< Turn on/off the use of the FFT filter
     bool                                           fLowFreqCorrection;      //< Apply low frequency noise correction
     bool                                           fDiagnosticOutput;       //< If true will spew endless messages to output
+    bool                                           fRemoveBadChannels;      //< Will remove bad channels from calculation
+    bool                                           fRemoveBadRMS;           //< Will ignore channels with too low or too high rms
     FloatPairVec                                   fFFTSigmaValsVec;        //< Gives the sigmas for the filter function
     FloatPairVec                                   fFFTCutoffValsVec;       //< Gives the cutoffs for the filter function
     std::string                                    fDenoiserType;           //< Describes the specific denoiser to use
@@ -183,13 +187,17 @@ private:
 
     icarus_signal_processing::FilterFunctionVec    fFilterFunctionVec;
     
-    const geo::Geometry*                           fGeometry;              //< pointer to the Geometry service
+    const geo::WireReadoutGeom*                      fChannelMapAlg;
 
     // Keep track of the FFT 
     icarus_signal_processing::FFTFilterFunctionVec fFFTFilterFunctionVec;
+
+    // channel status DB
+    const lariov::ChannelStatusProvider*           fChannelStatus;
 };
 
-TPCNoiseFilter1DMC::TPCNoiseFilter1DMC(fhicl::ParameterSet const &pset)
+TPCNoiseFilter1DMC::TPCNoiseFilter1DMC(fhicl::ParameterSet const &pset) :
+    fChannelStatus(&art::ServiceHandle<lariov::ChannelStatusService const>()->GetProvider())
 {
     this->configure(pset);
 
@@ -228,6 +236,8 @@ void TPCNoiseFilter1DMC::configure(fhicl::ParameterSet const &pset)
     fUseFFTFilter          = pset.get<bool                    >("UseFFTFilter",        true);
     fLowFreqCorrection     = pset.get<bool                    >("LowFreqCorrection",   true);
     fDiagnosticOutput      = pset.get<bool                    >("DiagnosticOutput",    false);
+    fRemoveBadChannels     = pset.get<bool                    >("RemoveBadChannels",   true);
+    fRemoveBadRMS          = pset.get<bool                    >("RemoveBadRMS",        true);
     fFilterModeVec         = pset.get<std::vector<std::string>>("FilterModeVec",       std::vector<std::string>()={"e","g","d"});
 
     fFFTSigmaValsVec       = pset.get<FloatPairVec            >("FFTSigmaVals",        FloatPairVec()={{1.5,20.}, {1.5,20.}, {2.0,20.}});
@@ -235,7 +245,7 @@ void TPCNoiseFilter1DMC::configure(fhicl::ParameterSet const &pset)
 
     fDenoiserType          = pset.get<std::string             >("DenoiserType",        "default");
 
-    fGeometry   = art::ServiceHandle<geo::Geometry const>{}.get();
+    fChannelMapAlg = &art::ServiceHandle<geo::WireReadout const>{}->Get();
 
     fFFTFilterFunctionVec.clear();
 
@@ -314,11 +324,29 @@ void TPCNoiseFilter1DMC::process_fragment(detinfo::DetectorClocksData const&,
         icarus_signal_processing::VectorFloat& rawDataVec    = fRawWaveforms[idx];
         icarus_signal_processing::VectorFloat& pedCorDataVec = fPedCorWaveforms[idx];
 
+        // Make sure our selection and ROI arrays are initialized
+        std::fill(fSelectVals[idx].begin(),fSelectVals[idx].end(),false);
+
+        // Recover the channel ID
+        int channelID = channelPlaneVec[idx].first;
+
         // Keep track of the channel
-        fChannelIDVec[idx] = channelPlaneVec[idx].first;
+        fChannelIDVec[idx] = channelID;
+
+        // Is this a valid channel and what is its status?
+        if (fRemoveBadChannels && fChannelStatus->IsPresent(channelID))
+        {
+            // If the channel is bad then we "protect" the entire channel (it will not be used in noise removal)
+            // Note that the array has already been cleared before calling this function so no need to set opposite case
+            if (!fChannelStatus->IsGood(channelID))
+            {   
+//                std::cout << "--> Channel:" << channelID << " is marked as bad by the channel status service" << std::endl;
+                std::fill(fSelectVals[idx].begin(),fSelectVals[idx].end(),true);
+            }
+        }
 
         // We need to recover info on which plane we have
-        std::vector<geo::WireID> widVec = fGeometry->ChannelToWire(fChannelIDVec[idx]);
+        std::vector<geo::WireID> widVec = fChannelMapAlg->ChannelToWire(fChannelIDVec[idx]);
 
         // Handle the filter function to use for this channel
         // Note the modulus... this to enable a workaround for the wirecell 2D drift which misses the channels with no signal
@@ -367,6 +395,8 @@ void TPCNoiseFilter1DMC::process_fragment(detinfo::DetectorClocksData const&,
                                                    fNumTruncBins[idx],
                                                    fRangeBins[idx]);
 
+        if (fRemoveBadRMS && (fFullRMSVals[idx] < 2.5 || fFullRMSVals[idx] > 40.)) std::fill(fSelectVals[idx].begin(),fSelectVals[idx].end(),true);
+
         // Convolve with a filter function
         //if (fUseFFTFilter) (*fFFTFilterFunctionVec[plane])(pedCorDataVec);
         if (fUseFFTFilter)
@@ -396,9 +426,6 @@ void TPCNoiseFilter1DMC::process_fragment(detinfo::DetectorClocksData const&,
 //            rawDataVec[  rawDataVec.size()/2] =  16. * std::sqrt(eigenValues(0));
 //            rawDataVec[1+rawDataVec.size()/2] = -16. * std::sqrt(eigenValues(0));
 //        }
-
-        // Make sure our selection and ROI arrays are initialized
-        std::fill(fSelectVals[idx].begin(),fSelectVals[idx].end(),false);
     }
 
     (*denoiser)(fWaveLessCoherent.begin(),
