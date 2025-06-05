@@ -71,6 +71,8 @@ namespace icarus::timing
  *     @see icarus::timing::PulseStartExtractor for details and options.
  * *  `ADCThreshold` (int): detection threshold to avoid cross-talk
  *    noise if one signal is missing from its waveform.
+ * *  `ApplyConsensusFiltering` (bool): if true, filter bad or missing times using 
+ *    the consensus among other crates in the same cryostat.
  * *  `DebugTrees` (bool): flag to produce plain ROOT trees for debugging.
  * *  `SaveWaveforms` (bool): flag to save full waveforms in the debug trees.
  *
@@ -188,6 +190,8 @@ private:
   icarus::timing::PulseStartExtractor const fPulseStartExtractor;
   /// Special channel to board association in a map
   std::map<int, std::string> const fBoardBySpecialChannel;
+  /// Apply filtering for bad/missing signals
+  bool const fApplyConsensusFiltering;
 
   /// PMT sample duration [&micro;s]
   static constexpr double fPMTsamplingTick = 0.002;
@@ -251,7 +255,8 @@ icarus::timing::PMTBeamSignalsExtractor::PMTBeamSignalsExtractor(fhicl::Paramete
       fTriggerCorrectionLabel(pset.get<art::InputTag>("TriggerCorrectionLabel")),
       fPulseStartExtractor{ icarus::timing::stringToExtractionMethod.at(pset.get<std::string>("TimeExtractionMethod")), 
                             pset.get<double>("ADCThreshold")},
-      fBoardBySpecialChannel(extractBoardBySpecialChannel(pset.get<std::vector<fhicl::ParameterSet>>("BoardSetup")))
+      fBoardBySpecialChannel(extractBoardBySpecialChannel(pset.get<std::vector<fhicl::ParameterSet>>("BoardSetup"))),
+      fApplyConsensusFiltering(pset.get<bool>("ApplyConsensusFiltering"))
 {
   // Call appropriate consumes<>() functions here.
   consumes<std::vector<raw::OpDetWaveform>>(fEWlabel);
@@ -452,9 +457,10 @@ void icarus::timing::PMTBeamSignalsExtractor::extractBeamSignalTime(art::Event &
 
   // filter out and correct missing signals or large outliers
   // using the consensus from the majority of crates in the same cryostat
-  filterBeamSignalsByCryostat(l, east, "E");
-  filterBeamSignalsByCryostat(l, west, "W");
-  
+  if( fApplyConsensusFiltering ){
+    filterBeamSignalsByCryostat(l, east, "E");
+    filterBeamSignalsByCryostat(l, west, "W");
+  }
 }
 
 // -----------------------------------------------------------------------------
@@ -616,9 +622,9 @@ void icarus::timing::PMTBeamSignalsExtractor::fillDebugTrees()
       m_channel   = signal.channel;
       m_wfstart   = signal.wfstart;
       m_sample    = signal.sample;
-      m_utime_abs = signal.utime_abs;
-      m_itime_abs = signal.itime_abs;
-      m_time_abs  = signal.time_abs;
+      m_utime_abs = signal.utime_abs; //uncorrected
+      m_itime_abs = signal.itime_abs; //pre-filtering
+      m_time_abs  = signal.time_abs;  //post-filtering
       m_time      = signal.time;
 
       if (fSaveWaveforms) {
