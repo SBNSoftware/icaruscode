@@ -1,0 +1,8 @@
+BEGIN_PROLOG
+
+pmtbeamsignalnsconverter:{
+    module_type: "PMTBeamSignalNamespaceConverter"
+    RWMlabel: "beamTiming:RWM"
+}
+
+END_PROLOG
