@@ -10,7 +10,6 @@ services:
   MemoryTracker:         {}
   RandomNumberGenerator: {}
   FileCatalogMetadata:   @local::art_file_catalog_mc
-  @table::icarus_geometry_services
   @table::icarus_common_services
   @table::icarus_backtracking_services 
   message:               @local::icarus_message_services_prod_debug
@@ -42,7 +41,6 @@ physics:
       EventInfo:    "nu"
       SPLabel: "nuslhits"
       HitLabel: "nuslhits"
-      PFParticleLabel:"pandoraGausCryoE"
       OpFlashLabel:"opflashCryoE"
       OpHitLabel:"ophit"
       UseMap: false

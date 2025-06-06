@@ -16,7 +16,6 @@ services:
   TimeTracker:           {}
   MemoryTracker:         {}
   RandomNumberGenerator: {}
-  @table::icarus_geometry_services
   @table::icarus_common_services
   @table::icarus_backtracking_services 
   message:               @local::icarus_message_services_prod_debug
@@ -81,14 +80,14 @@ physics:
     }
   }
 
- reco: [nuslhitsCryoE, nuslhitsCryoW, NuGraphCryoE, NuGraphCryoW]
- #reco: [ nuslhitsCryoE, NuGraphCryoE]
- trigger_paths:       [ reco ]
+  reco: [nuslhitsCryoE, nuslhitsCryoW, NuGraphCryoE, NuGraphCryoW]
+  #reco: [ nuslhitsCryoE, NuGraphCryoE]
+  trigger_paths:       [ reco ]
 
- ana: [NuGraphAnaCryoE,NuGraphAnaCryoW]
- #ana: [NuGraphAnaCryoE]
- streamROOT:         [ rootOutput ]
- end_paths:          [ ana, streamROOT ]
+  ana: [NuGraphAnaCryoE,NuGraphAnaCryoW]
+  #ana: [NuGraphAnaCryoE]
+  streamROOT:         [ rootOutput ]
+  end_paths:          [ ana, streamROOT ]
 }
 
 #physics.producers.nuslhitsCryoE.module_type: "IcarusTrueNuSliceHitsProducer"

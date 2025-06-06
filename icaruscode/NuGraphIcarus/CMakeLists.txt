@@ -2,7 +2,6 @@ cet_enable_asserts()
 
 set( nugraph_tool_lib_list
        lardataobj::RecoBase
-       lardataobj::AnalysisBase
        larrecodnn::NuGraphBaseTools
        TorchScatter::TorchScatter
        art::Framework_Core
@@ -20,11 +19,7 @@ cet_build_plugin(IcarusNuGraphLoader art::tool
 simple_plugin(IcarusNuSliceHitsProducer "module"
     LIBRARIES PRIVATE
     art::Framework_Core
-    nusimdata::SimulationBase
     lardataobj::RecoBase
-    lardataalg::DetectorInfo
-    lardata::DetectorInfoServices_DetectorClocksServiceStandard_service
-    larcore::Geometry_Geometry_service
     sbnobj::Common_Reco
 )
 
@@ -34,11 +29,10 @@ simple_plugin(IcarusTrueNuSliceHitsProducer "module"
     nusimdata::SimulationBase
     lardataobj::RecoBase
     lardataalg::DetectorInfo
-    lardata::DetectorInfoServices_DetectorClocksServiceStandard_service
-    larcore::Geometry_Geometry_service
     sbnobj::Common_Reco
     larsim::MCCheater_BackTrackerService_service           
     larsim::MCCheater_ParticleInventoryService_service
+    lardata::DetectorClocksService
 )
 
 simple_plugin(IcarusHDF5Maker "module"
@@ -48,12 +42,11 @@ simple_plugin(IcarusHDF5Maker "module"
     larsim::MCCheater_BackTrackerService_service           
     larsim::MCCheater_ParticleInventoryService_service
     hep_hpc_hdf5
-    #hep::hpc_Utilities
-    lardata::RecoBaseProxy
     lardataobj::RecoBase
     lardataalg::DetectorInfo
-    lardata::DetectorInfoServices_DetectorClocksServiceStandard_service
-    larcore::Geometry_Geometry_service
+    lardata::DetectorClocksService
+    larcorealg::Geometry
+    larcore::WireReadout
     ${HDF5_LIBRARIES}
 )
 
