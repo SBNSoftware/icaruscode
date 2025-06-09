@@ -11,19 +11,19 @@ set( nugraph_tool_lib_list
 
 include_directories($ENV{HEP_HPC_INC})
 
-cet_build_plugin(IcarusNuGraphLoader art::tool
+cet_build_plugin(ICARUSNuGraphLoader art::tool
   LIBRARIES PRIVATE
   ${nugraph_tool_lib_list}
 )
 
-simple_plugin(IcarusNuSliceHitsProducer "module"
+simple_plugin(ICARUSNuSliceHitsProducer "module"
     LIBRARIES PRIVATE
     art::Framework_Core
     lardataobj::RecoBase
     sbnobj::Common_Reco
 )
 
-simple_plugin(IcarusTrueNuSliceHitsProducer "module"
+simple_plugin(ICARUSTrueNuSliceHitsProducer "module"
     LIBRARIES PRIVATE
     art::Framework_Core
     nusimdata::SimulationBase
@@ -35,7 +35,7 @@ simple_plugin(IcarusTrueNuSliceHitsProducer "module"
     lardata::DetectorClocksService
 )
 
-simple_plugin(IcarusHDF5Maker "module"
+simple_plugin(ICARUSHDF5Maker "module"
     LIBRARIES PRIVATE
     art::Framework_Core
     nusimdata::SimulationBase

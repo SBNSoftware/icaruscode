@@ -1,6 +1,6 @@
 /**
- * @file   icaruscode/NuGraphIcarus/IcarusHDF5Maker_module.cc
- * @brief  Implementation of `IcarusHDF5Maker` _art_ module.
+ * @file   icaruscode/TPC/NuGraph/ICARUSHDF5Maker_module.cc
+ * @brief  Implementation of `ICARUSHDF5Maker` _art_ module.
  * @author Giuseppe Cerati (cerati@fnal.gov), V Hewes
  */
 
@@ -44,15 +44,15 @@
 
 #include "StitchingUtils.h"
 
-class IcarusHDF5Maker : public art::EDAnalyzer {
+class ICARUSHDF5Maker : public art::EDAnalyzer {
 public:
-  explicit IcarusHDF5Maker(fhicl::ParameterSet const& p);
-  ~IcarusHDF5Maker() noexcept {}; // bare pointers are cleaned up by endSubRun
+  explicit ICARUSHDF5Maker(fhicl::ParameterSet const& p);
+  ~ICARUSHDF5Maker() noexcept {}; // bare pointers are cleaned up by endSubRun
 
-  IcarusHDF5Maker(IcarusHDF5Maker const&) = delete;
-  IcarusHDF5Maker(IcarusHDF5Maker&&) = delete;
-  IcarusHDF5Maker& operator=(IcarusHDF5Maker const&) = delete;
-  IcarusHDF5Maker& operator=(IcarusHDF5Maker&&) = delete;
+  ICARUSHDF5Maker(ICARUSHDF5Maker const&) = delete;
+  ICARUSHDF5Maker(ICARUSHDF5Maker&&) = delete;
+  ICARUSHDF5Maker& operator=(ICARUSHDF5Maker const&) = delete;
+  ICARUSHDF5Maker& operator=(ICARUSHDF5Maker&&) = delete;
 
   void beginSubRun(art::SubRun const& sr) override;
   void endSubRun(art::SubRun const& sr) override;
@@ -283,7 +283,7 @@ private:
   int NearWire(const geo::PlaneGeo &plane, float x, float y, float z) const;
 };
 
-IcarusHDF5Maker::IcarusHDF5Maker(fhicl::ParameterSet const& p)
+ICARUSHDF5Maker::ICARUSHDF5Maker(fhicl::ParameterSet const& p)
   : EDAnalyzer{p},
     fTruthLabel(p.get<art::InputTag>("TruthLabel")),
     fHitLabel(  p.get<art::InputTag>("HitLabel")),
@@ -300,7 +300,7 @@ IcarusHDF5Maker::IcarusHDF5Maker(fhicl::ParameterSet const& p)
       << "EventInfo must be \"none\" or \"nu\", not " << fEventInfo;
 }
 
-void IcarusHDF5Maker::analyze(art::Event const& e) {
+void ICARUSHDF5Maker::analyze(art::Event const& e) {
 
   const cheat::BackTrackerService* bt = fUseMap? nullptr: art::ServiceHandle<cheat::BackTrackerService>().get();
   geo::WireReadoutGeom const& geom = art::ServiceHandle<geo::WireReadout const>()->Get();
@@ -329,7 +329,7 @@ void IcarusHDF5Maker::analyze(art::Event const& e) {
   // Fill event table
   if (fEventInfo == "none") {
     fHDFData->eventNtuple->insert( evtID.data() );
-    mf::LogInfo("IcarusHDF5Maker") << "Filling event table"
+    mf::LogInfo("ICARUSHDF5Maker") << "Filling event table"
                              << "\nrun " << evtID[0] << ", subrun " << evtID[1]
                              << ", event " << evtID[2];
   }
@@ -361,7 +361,7 @@ void IcarusHDF5Maker::analyze(art::Event const& e) {
     // 		<< std::endl;
     // }
 
-    mf::LogDebug("IcarusHDF5Maker") << "Filling event table"
+    mf::LogDebug("ICARUSHDF5Maker") << "Filling event table"
 				    << "\nrun " << evtID[0] << ", subrun " << evtID[1]
 				    << ", event " << evtID[2]
 				    << "\nis cc? " << (nutruth.CCNC() == simb::kCC)
@@ -405,7 +405,7 @@ void IcarusHDF5Maker::analyze(art::Event const& e) {
     }
     fHDFData->spacePointNtuple.insert(evtID.data(),splist[i].ID(), pos.data(), hitID.data(),splist[i].Chisq() );
 
-    mf::LogDebug("IcarusHDF5Maker") << "Filling spacepoint table"
+    mf::LogDebug("ICARUSHDF5Maker") << "Filling spacepoint table"
 				    << "\nrun " << evtID[0] << ", subrun " << evtID[1]
 				    << ", event " << evtID[2]
 				    << "\nspacepoint id " << splist[i].ID()
@@ -435,7 +435,7 @@ void IcarusHDF5Maker::analyze(art::Event const& e) {
 			       wireid.Plane, wireid.Wire, hit->PeakTime(),wireid.Cryostat
 			       );
 
-    mf::LogInfo("IcarusHDF5Maker") << "Filling hit table"
+    mf::LogInfo("ICARUSHDF5Maker") << "Filling hit table"
                              << "\nrun " << evtID[0] << ", subrun " << evtID[1]
                              << ", event " << evtID[2]
                              << "\nhit id " << hit.key() << ", integral "
@@ -464,7 +464,7 @@ void IcarusHDF5Maker::analyze(art::Event const& e) {
                                  std::numeric_limits<double>::quiet_NaN(),
                                  std::numeric_limits<double>::quiet_NaN(),
                                  std::numeric_limits<double>::quiet_NaN());
-        mf::LogInfo("IcarusHDF5Maker") << "Filling energy deposit table"
+        mf::LogInfo("ICARUSHDF5Maker") << "Filling energy deposit table"
 				 << "\nrun " << evtID[0] << ", subrun " << evtID[1]
 				 << ", event " << evtID[2]
 				 << "\nhit id " << hit.key() << ", g4 id "
@@ -501,7 +501,7 @@ void IcarusHDF5Maker::analyze(art::Event const& e) {
   // Loop over true particles and fill table
   for (auto [ id, p ] : allIDs) {
     if (!p) {
-      mf::LogError("IcarusHDF5Maker") << "Track ID=" << id << " not tracked back to any particle.";
+      mf::LogError("ICARUSHDF5Maker") << "Track ID=" << id << " not tracked back to any particle.";
       continue;
     }
     auto mct = pi->TrackIdToMCTruth_P(abs(id));
@@ -518,7 +518,7 @@ void IcarusHDF5Maker::analyze(art::Event const& e) {
 				    particleStart.data(), particleEnd.data(),
 				    p->Process(), p->EndProcess()
 				    );
-    mf::LogDebug("IcarusHDF5Maker") << "Filling particle table"
+    mf::LogDebug("ICARUSHDF5Maker") << "Filling particle table"
 				    << "\nrun " << evtID[0] << ", subrun " << evtID[1]
 				    << ", event " << evtID[2]
 				    << "\ng4 id " << abs(id) << ", pdg code "
@@ -575,7 +575,7 @@ void IcarusHDF5Maker::analyze(art::Event const& e) {
       count++;
     }
     flashsumpepmtmap.push_back(sumpepmtmap);
-    mf::LogDebug("IcarusHDF5Maker") << "Filling opflash table"
+    mf::LogDebug("ICARUSHDF5Maker") << "Filling opflash table"
 				    << "\nrun " << evtID[0] << ", subrun " << evtID[1]
 				    << ", event " << evtID[2]
 				    << "\nflash id " << flkey << ", Time " << opflash.Time()
@@ -614,7 +614,7 @@ void IcarusHDF5Maker::analyze(art::Event const& e) {
 				 ophit->Area(),ophit->Amplitude(),ophit->PE(),
 				 (isInFlash ? flashsumpepmtmap[0][ophit->OpChannel()] : -1)
 				 );
-    mf::LogDebug("IcarusHDF5Maker") << "\nFilling ophit table"
+    mf::LogDebug("ICARUSHDF5Maker") << "\nFilling ophit table"
 				    << "\nrun " << evtID[0] << ", subrun " << evtID[1]
 				    << ", event " << evtID[2]
 				    << "\nhit id " << ophit.key() << ", channel "
@@ -625,17 +625,17 @@ void IcarusHDF5Maker::analyze(art::Event const& e) {
   }
   //End optical analyzer
 
-} // function IcarusHDF5Maker::analyze
+} // function ICARUSHDF5Maker::analyze
 
-void IcarusHDF5Maker::beginSubRun(art::SubRun const& sr) {
+void ICARUSHDF5Maker::beginSubRun(art::SubRun const& sr) {
   fHDFData = std::make_unique<HDFDataFile>(fOutputName, fEventInfo, sr.id());
 }
 
-void IcarusHDF5Maker::endSubRun(art::SubRun const& sr) {
+void ICARUSHDF5Maker::endSubRun(art::SubRun const& sr) {
   fHDFData.reset();
 }
 
-int IcarusHDF5Maker::NearWire(const geo::PlaneGeo &plane, float x, float y, float z) const
+int ICARUSHDF5Maker::NearWire(const geo::PlaneGeo &plane, float x, float y, float z) const
 {
   geo::WireID wireID;
   try {
@@ -648,4 +648,4 @@ int IcarusHDF5Maker::NearWire(const geo::PlaneGeo &plane, float x, float y, floa
   return wireID.Wire;
 }
 
-DEFINE_ART_MODULE(IcarusHDF5Maker)
+DEFINE_ART_MODULE(ICARUSHDF5Maker)

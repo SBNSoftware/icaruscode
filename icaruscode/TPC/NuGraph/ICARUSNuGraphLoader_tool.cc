@@ -1,5 +1,5 @@
 /**
- * @file   icaruscode/NuGraphIcarus/IcarusNuGraphLoader_tool.cc
+ * @file   icaruscode/TPC/NuGraph/ICARUSNuGraphLoader_tool.cc
  * @author Giuseppe Cerati (cerati@fnal.gov)
  */
 
@@ -19,7 +19,7 @@
 
 #include "StitchingUtils.h"
 
-class IcarusNuGraphLoader : public LoaderToolBase {
+class ICARUSNuGraphLoader : public LoaderToolBase {
 
 public:
   /**
@@ -27,7 +27,7 @@ public:
    *
    *  @param  pset
    */
-  IcarusNuGraphLoader(const fhicl::ParameterSet& pset);
+  ICARUSNuGraphLoader(const fhicl::ParameterSet& pset);
 
   /**
    * @brief loadData function
@@ -45,11 +45,11 @@ private:
   art::InputTag const fSpsInput;
 };
 
-IcarusNuGraphLoader::IcarusNuGraphLoader(const fhicl::ParameterSet& p)
+ICARUSNuGraphLoader::ICARUSNuGraphLoader(const fhicl::ParameterSet& p)
   : fHitInput{p.get<art::InputTag>("hitInput")}, fSpsInput{p.get<art::InputTag>("spsInput")}
 {}
 
-void IcarusNuGraphLoader::loadData(art::Event& e,
+void ICARUSNuGraphLoader::loadData(art::Event& e,
                               vector<art::Ptr<recob::Hit>>& hitlist,
                               vector<NuGraphInput>& inputs,
                               vector<vector<size_t>>& idsmap)
@@ -91,7 +91,7 @@ void IcarusNuGraphLoader::loadData(art::Event& e,
     hit_table_integral_data.push_back(h->Integral());
     hit_table_rms_data.push_back(h->RMS());
   }
-  mf::LogDebug{ "IcarusNuGraphLoader" } << "loader has nhits=" << hit_table_hit_id_data.size();
+  mf::LogDebug{ "ICARUSNuGraphLoader" } << "loader has nhits=" << hit_table_hit_id_data.size();
 
   // Get spacepoints from the event record
   art::Handle<vector<recob::SpacePoint>> spListHandle;
@@ -126,7 +126,7 @@ void IcarusNuGraphLoader::loadData(art::Event& e,
       if (plane == 2) spacepoint_table_hit_id_y_data.back() = sp2Hit[i][j].key();
     }
   }
-  mf::LogDebug{ "IcarusNuGraphLoader" }  << "loader has nsps=" << spacepoint_table_hit_id_u_data.size();
+  mf::LogDebug{ "ICARUSNuGraphLoader" }  << "loader has nsps=" << spacepoint_table_hit_id_u_data.size();
 
   inputs.emplace_back("hit_table_hit_id", std::move(hit_table_hit_id_data));
   inputs.emplace_back("hit_table_local_plane", std::move(hit_table_local_plane_data));
@@ -140,4 +140,4 @@ void IcarusNuGraphLoader::loadData(art::Event& e,
   inputs.emplace_back("spacepoint_table_hit_id_v", std::move(spacepoint_table_hit_id_v_data));
   inputs.emplace_back("spacepoint_table_hit_id_y", std::move(spacepoint_table_hit_id_y_data));
 }
-DEFINE_ART_CLASS_TOOL(IcarusNuGraphLoader)
+DEFINE_ART_CLASS_TOOL(ICARUSNuGraphLoader)

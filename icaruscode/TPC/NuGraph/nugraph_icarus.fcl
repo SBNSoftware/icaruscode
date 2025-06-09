@@ -3,21 +3,21 @@
 BEGIN_PROLOG
 
 nuslhitsCryoE: { 
-  module_type:    "IcarusNuSliceHitsProducer"
+  module_type:    "ICARUSNuSliceHitsProducer"
   BaryMatchLabel: "tpcpmtbarycentermatchCryoE"
   SliceLabel:     "pandoraGausCryoE"
   SpsLabel:       "cluster3DCryoE"
 }
 
 nuslhitsCryoW: { 
-  module_type:    "IcarusNuSliceHitsProducer"
+  module_type:    "ICARUSNuSliceHitsProducer"
   BaryMatchLabel: "tpcpmtbarycentermatchCryoW"
   SliceLabel:     "pandoraGausCryoW"
   SpsLabel:       "cluster3DCryoW"
 }
 
 NuGraphCryoE: @local::NuGraphLibTorch
-NuGraphCryoE.LoaderTool.tool_type: "IcarusNuGraphLoader"
+NuGraphCryoE.LoaderTool.tool_type: "ICARUSNuGraphLoader"
 NuGraphCryoE.LoaderTool.hitInput: "nuslhitsCryoE"
 NuGraphCryoE.LoaderTool.spsInput: "nuslhitsCryoE"
 NuGraphCryoE.DecoderTools.SemanticDecoderTool.hitInput: "nuslhitsCryoE"

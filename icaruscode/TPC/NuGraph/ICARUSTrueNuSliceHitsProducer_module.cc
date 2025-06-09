@@ -1,8 +1,7 @@
 /**
- * @file   icaruscode/NuGraphIcarus/IcarusNuSliceHitsProducer_module.cc
- * @brief  Implementation of `IcarusNuSliceHitsProducer` _art_ module.
+ * @file   icaruscode/TPC/NuGraph/ICARUSTrueNuSliceHitsProducer_module.cc
+ * @brief  Implementation of `ICARUSTrueNuSliceHitsProducer` module
  * @author Giuseppe Cerati (cerati@fnal.gov)
- * @date   May 25, 2021
  */
 
 #include "art/Framework/Core/EDProducer.h"
@@ -12,12 +11,10 @@
 #include "canvas/Utilities/InputTag.h"
 #include "fhiclcpp/ParameterSet.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
-#include "canvas/Persistency/Common/FindOneP.h"
 #include "canvas/Persistency/Common/FindManyP.h"
 
-#include <algorithm> // std::find()
-#include <cmath> // std::abs()
 #include <memory>
+#include <algorithm> // std::find()
 #include <utility> // std::move()
 #include <vector>
 
@@ -26,31 +23,36 @@
 #include "art/Persistency/Common/PtrMaker.h"
 #include "lardataobj/RecoBase/Hit.h"
 #include "lardataobj/RecoBase/Slice.h"
+#include "lardataobj/RecoBase/PFParticle.h"
 #include "lardataobj/RecoBase/SpacePoint.h"
 
 #include "sbnobj/Common/Reco/TPCPMTBarycenterMatch.h"
+#include "larsim/MCCheater/ParticleInventoryService.h"
+#include "larsim/MCCheater/BackTrackerService.h"
+#include "lardata/DetectorInfoServices/DetectorClocksService.h"
+#include "larcore/CoreUtils/ServiceUtil.h"
 
-class IcarusNuSliceHitsProducer : public art::EDProducer {
+class ICARUSTrueNuSliceHitsProducer : public art::EDProducer {
 
 /**
- * @brief Produce separate collections of hits and space point from the slice identified as most likely from the neutrino interaction.
+ * @brief Produce separate collections of hits and space point from the slice with most true hits from the neutrino interaction.
  *
- * Produce separate collections of hits and space point from the slice identified as most likely from the neutrino interaction.
+ * Produce separate collections of hits and space point from the slice with most true hits from the neutrino interaction.
  * It also produces a vector of ints, that maps the new hit collection to the original one.
- * Optionally, it can store the association to the trigger flash used to pick the slice.
+ * Optionally, it can store the association to the trigger flash matched to the slice.
  *
  */
 
 public:
-  explicit IcarusNuSliceHitsProducer(fhicl::ParameterSet const& p);
+  explicit ICARUSTrueNuSliceHitsProducer(fhicl::ParameterSet const& p);
   // The compiler-generated destructor is fine for non-base
   // classes without bare pointers or other resource use.
 
   // Plugins should not be copied or assigned.
-  IcarusNuSliceHitsProducer(IcarusNuSliceHitsProducer const&) = delete;
-  IcarusNuSliceHitsProducer(IcarusNuSliceHitsProducer&&) = delete;
-  IcarusNuSliceHitsProducer& operator=(IcarusNuSliceHitsProducer const&) = delete;
-  IcarusNuSliceHitsProducer& operator=(IcarusNuSliceHitsProducer&&) = delete;
+  ICARUSTrueNuSliceHitsProducer(ICARUSTrueNuSliceHitsProducer const&) = delete;
+  ICARUSTrueNuSliceHitsProducer(ICARUSTrueNuSliceHitsProducer&&) = delete;
+  ICARUSTrueNuSliceHitsProducer& operator=(ICARUSTrueNuSliceHitsProducer const&) = delete;
+  ICARUSTrueNuSliceHitsProducer& operator=(ICARUSTrueNuSliceHitsProducer&&) = delete;
 
 
 private:
@@ -59,7 +61,7 @@ private:
   art::InputTag const fBaryMatchLabel;
   art::InputTag const fSliceLabel;
   art::InputTag const fSpsLabel;
-  bool doFlashAssn;
+  bool const doFlashAssn;
 
   // Required functions.
   void produce(art::Event& e) override;
@@ -67,11 +69,11 @@ private:
 };
 
 
-IcarusNuSliceHitsProducer::IcarusNuSliceHitsProducer(fhicl::ParameterSet const& p)
+ICARUSTrueNuSliceHitsProducer::ICARUSTrueNuSliceHitsProducer(fhicl::ParameterSet const& p)
   : EDProducer{p},
-  fBaryMatchLabel( p.get<art::InputTag>("BaryMatchLabel","tpcpmtbarycentermatchCryoE")),
-  fSliceLabel(p.get<art::InputTag>("SliceLabel","pandoraGausCryoE")),
-  fSpsLabel(p.get<art::InputTag>("SpsLabel","cluster3DCryoE")),
+  fBaryMatchLabel( p.get<art::InputTag>("BaryMatchLabel") ),
+  fSliceLabel(p.get<art::InputTag>("SliceLabel")),
+  fSpsLabel(p.get<art::InputTag>("SpsLabel")),
   doFlashAssn(p.get<bool>("DoFlashAssn",false))
   // More initializers here.
 {
@@ -85,7 +87,7 @@ IcarusNuSliceHitsProducer::IcarusNuSliceHitsProducer(fhicl::ParameterSet const& 
   // Call appropriate consumes<>() for any products to be retrieved by this module.
 }
 
-void IcarusNuSliceHitsProducer::produce(art::Event& e)
+void ICARUSTrueNuSliceHitsProducer::produce(art::Event& e)
 {
 
   auto outputHits = std::make_unique<std::vector<recob::Hit> >();
@@ -98,44 +100,40 @@ void IcarusNuSliceHitsProducer::produce(art::Event& e)
   auto outputSpsHitAssns = std::make_unique<art::Assns<recob::Hit, recob::SpacePoint>>();
   auto outputSlcFlhAssns = std::make_unique<art::Assns<recob::Slice, recob::OpFlash>>();
 
-  art::ValidHandle< std::vector< sbn::TPCPMTBarycenterMatch > > baryMatchListHandle = e.getValidHandle<std::vector<sbn::TPCPMTBarycenterMatch> >(fBaryMatchLabel);
-  art::FindOneP<recob::Slice> msl(baryMatchListHandle, e, fBaryMatchLabel);
-  art::FindOneP<recob::OpFlash> mfl(baryMatchListHandle, e, fBaryMatchLabel);
-  float minRad = 99999.;
-  art::Ptr<recob::Slice> triggeringSlice;
-  art::Ptr<recob::OpFlash> triggeringFlash;
-  for (size_t ibm=0; ibm<baryMatchListHandle->size(); ++ibm) {
-    sbn::TPCPMTBarycenterMatch const& bm = (*baryMatchListHandle)[ibm];
-    // require the radius to be set (i.e. that there is a best match) and to match the one of the trigger within an arbitrarily small enough margin
-    if (bm.radius_Trigger<=0 || std::abs(bm.radius-bm.radius_Trigger)>=0.00001) continue;
-    art::Ptr<recob::Slice> const& slice = msl.at(ibm);
-    art::Ptr<recob::OpFlash> const& flash = mfl.at(ibm);
-    if (!slice || !flash) throw std::logic_error("Unexpected missing flash or slice in barycenter matching associations");
-    mf::LogTrace{ "IcarusNuSliceHitsProducer" }
-      << "ibm=" << ibm << " radius=" << bm.radius << " radius_Trigger=" << bm.radius_Trigger << " flashTime=" << bm.flashTime
-      << " slkey=" << msl.at(ibm).key() << " center=" << bm.chargeCenter
-      << " flkey=" << mfl.at(ibm).key() << " center=" << bm.flashCenter;
-    if (bm.radius_Trigger<minRad) {
-      minRad = bm.radius_Trigger;
-      triggeringSlice = slice;
-      triggeringFlash = flash;
-    }
-  }
-  mf::LogTrace{ "IcarusNuSliceHitsProducer" } << "keys: slice=" << triggeringSlice.key() << " flash=" << triggeringFlash.key();
-
-  if (doFlashAssn) {
-    if (triggeringSlice && triggeringFlash) {
-      outputSlcFlhAssns->addSingle(triggeringSlice,triggeringFlash);
-    }
-  }
+  auto const* pi = lar::providerFrom<cheat::ParticleInventoryService>();
+  auto const* bt = lar::providerFrom<cheat::BackTrackerService>();
+  auto const clockData = art::ServiceHandle<detinfo::DetectorClocksService const>()->DataFor(e);
 
   art::ValidHandle<std::vector<recob::Slice> > inputSlice = e.getValidHandle<std::vector<recob::Slice> >(fSliceLabel);
   art::FindManyP<recob::Hit> assocSliceHit(inputSlice, e, fSliceLabel);
+  int slkey = -1;
+  int maxCnt = 0;
+  // find the slice with the largest number of hits contributed by neutrino interactions
+  for (size_t sk=0; sk<inputSlice->size(); sk++) {
+    int slhcnt = 0;
+    for (auto hit : assocSliceHit.at(sk)) {
+      std::vector<sim::TrackIDE> const& h_ides = bt->ChannelToTrackIDEs(clockData, hit->Channel(), hit->StartTick(), hit->EndTick());
+      for (auto const& tide : h_ides) {
+      	int tid = tide.trackID;
+	auto mct = pi->TrackIdToMCTruth_P(abs(tid));
+	bool fromNu = mct.isAvailable() && mct->NeutrinoSet();
+	if (fromNu) {
+	  slhcnt++;
+	  break;
+	}
+      }
+    }
+    if (slhcnt>maxCnt) {
+      slkey = sk;
+      maxCnt = slhcnt;
+    }
+  }
+  mf::LogTrace{ "ICARUSTrueNuSliceHitsProducer" } << "keys: slice=" << slkey;
 
-  if (triggeringSlice) {
-    mf::LogTrace{ "IcarusNuSliceHitsProducer" } << "slice hits=" << assocSliceHit.at(triggeringSlice.key()).size();
-    auto const& hits = assocSliceHit.at(triggeringSlice.key());
-    for (auto h : hits) {
+  if (slkey>=0) {
+    auto const& hits = assocSliceHit.at(slkey);
+    mf::LogTrace{ "ICARUSTrueNuSliceHitsProducer" } << "slice hits=" << hits.size();
+    for (auto const& h : hits) {
       assocSliceHitKeys->push_back(h.key());
     }
     std::sort(begin(*assocSliceHitKeys), end(*assocSliceHitKeys));
@@ -152,7 +150,6 @@ void IcarusNuSliceHitsProducer::produce(art::Event& e)
     auto const& assochits = spacePointToHits.at(spIdx);
     // Consider only space points with hits associated on all planes. This is enough for NuGraph.
     if (assochits.size()<3) continue;
-    //if (splist[spIdx]->Chisq()>0.5) continue;
     //
     std::vector<size_t> hitpos;
     for (size_t j = 0; j < assochits.size(); ++j) {
@@ -170,14 +167,40 @@ void IcarusNuSliceHitsProducer::produce(art::Event& e)
     }
     countsps++;
   } // for spacepoint
-  mf::LogTrace{ "IcarusNuSliceHitsProducer" } << "sps count=" << countsps;
+  mf::LogTrace{ "ICARUSTrueNuSliceHitsProducer" } << "sps count=" << countsps;
+
+  art::ValidHandle< std::vector< sbn::TPCPMTBarycenterMatch > > baryMatchListHandle = e.getValidHandle<std::vector<sbn::TPCPMTBarycenterMatch> >(fBaryMatchLabel);
+  art::FindManyP<recob::Slice> msl(baryMatchListHandle, e, fBaryMatchLabel);
+  art::FindManyP<recob::OpFlash> mfl(baryMatchListHandle, e, fBaryMatchLabel);
+  float minRad = 99999.;
+  int mbkey = -1;
+  for (size_t ibm=0; ibm<baryMatchListHandle->size(); ++ibm) {
+    art::Ptr<sbn::TPCPMTBarycenterMatch> bm(baryMatchListHandle,ibm);
+    if (int(msl.at(ibm).at(0).key())!=slkey) continue;
+    if (mfl.at(ibm).size()>0) {
+      mf::LogTrace{ "ICARUSTrueNuSliceHitsProducer" } << "ibm=" << ibm << " radius=" << bm->radius << " radius_Trigger=" << bm->radius_Trigger << " flashTime=" << bm->flashTime
+						  << " slkey=" << msl.at(ibm).at(0).key() << " center=" << bm->chargeCenter
+						  << " flkey=" << mfl.at(ibm).at(0).key() << " center=" << bm->flashCenter;
+      if (bm->radius<minRad) {
+	//this is the triggering flash
+	mbkey = ibm;
+	minRad = bm->radius;
+      }
+    }
+  }
+  mf::LogTrace{ "ICARUSTrueNuSliceHitsProducer" } << "mbkey=" << mbkey;
+  if (doFlashAssn){
+    if (slkey>=0 && mbkey>=0) {
+      art::Ptr<recob::Slice> slp(inputSlice,slkey);
+      outputSlcFlhAssns->addSingle(slp,mfl.at(mbkey).at(0));
+    }
+  }
 
   e.put(std::move(outputHits));
   e.put(std::move(assocSliceHitKeys));
   e.put(std::move(outputSpacepoints));
   e.put(std::move(outputSpsHitAssns));
   if (doFlashAssn) e.put(std::move(outputSlcFlhAssns));
-
 }
 
-DEFINE_ART_MODULE(IcarusNuSliceHitsProducer)
+DEFINE_ART_MODULE(ICARUSTrueNuSliceHitsProducer)

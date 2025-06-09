@@ -41,7 +41,7 @@ physics:
   analyzers:
   {
     hdf5maker: {
-      module_type:  "IcarusHDF5Maker"
+      module_type:  "ICARUSHDF5Maker"
       TruthLabel:   "generator"
       EventInfo:    "nu"
       SPLabel: "nuslhits"
@@ -56,13 +56,13 @@ physics:
  producers:
   {
     #nuslhitsE: { 
-    #  module_type: "IcarusNuSliceHitsProducer"
+    #  module_type: "ICARUSNuSliceHitsProducer"
     #  BaryMatchLabel: "tpcpmtbarycentermatchCryoE"
     #  SliceLabel:    "pandoraGausCryoE"
     #  SpsLabel:      "cluster3DCryoE"
     #}
     #nuslhitsW: { 
-    #  module_type: "IcarusNuSliceHitsProducer"
+    #  module_type: "ICARUSNuSliceHitsProducer"
     #  BaryMatchLabel: "tpcpmtbarycentermatchCryoW"
     #  SliceLabel:    "pandoraGausCryoW"
     #  SpsLabel:      "cluster3DCryoW"
@@ -72,8 +72,8 @@ physics:
     #  HitProducerLabelVec:     ["nuslhitsE","nuslhitsW"]
     #}
     nuslhits: { 
-      #module_type: "IcarusNuSliceHitsProducer"
-      module_type: "IcarusTrueNuSliceHitsProducer"
+      #module_type: "ICARUSNuSliceHitsProducer"
+      module_type: "ICARUSTrueNuSliceHitsProducer"
       BaryMatchLabel: "tpcpmtbarycentermatchCryoE"
       SliceLabel:    "pandoraGausCryoE"
       SpsLabel:      "cluster3DCryoE"
