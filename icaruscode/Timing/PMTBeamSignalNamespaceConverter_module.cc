@@ -21,7 +21,7 @@
 
 #include <memory>
 
-namespace sbn::timing {
+namespace icarus::timing {
   class PMTBeamSignalNamespaceConverter;
 }
 /**
@@ -32,10 +32,23 @@ namespace sbn::timing {
  * `std::vector<sbn::timing::PMTBeamSignal>`. This is to help with backward compatibility for
  * files that are produced with the `icarus::timing::PMTBeamSignal` data product. Converting 
  * the icarus::timing namespace to sbn::timing allows us to fill this variable in the CAFs. 
+
+ * This module is set up to convert either the "RWM" or "EW" instance of the data product 
+ * following what is set in the `SignalLabel` input parameter. 
+ *
+ * Input parameters
+ * ------------------------
+ * * `SignalLabel` (input tag): tag for the "RWM" or "EW" instance of the 
+ *    std::vector<icarus::timing::PMTBeamSignal> data product.
+ * 
+ * Output products
+ * -------------------------
+ * This module produces a `std::vector<sbn::timing::PMTBeamSignal>` with 360 elements 
+ * representing the "RWM" or "EW" time for the corresponding PMT channel.
  * 
  */
 
-class sbn::timing::PMTBeamSignalNamespaceConverter : public art::EDProducer {
+class icarus::timing::PMTBeamSignalNamespaceConverter : public art::EDProducer {
 public:
   explicit PMTBeamSignalNamespaceConverter(fhicl::ParameterSet const& p);
   // The compiler-generated destructor is fine for non-base
@@ -52,51 +65,49 @@ public:
 
 private:
 
-   /// RWM waveform instance label
-  art::InputTag const fRWMlabel;
+  // RWM or EW waveform instance label from fcl 
+  art::InputTag const fSignalLabel;
 
-  // RWM times
-  std::vector<icarus::timing::PMTBeamSignal> fRWMTimes;
-  using BeamSignalCollection = std::vector<icarus::timing::PMTBeamSignal>;
+  // Vector for input data product 
+  std::vector<icarus::timing::PMTBeamSignal> fPMTBeamSignal;
 };
 
 
-sbn::timing::PMTBeamSignalNamespaceConverter::PMTBeamSignalNamespaceConverter(fhicl::ParameterSet const& p)
+icarus::timing::PMTBeamSignalNamespaceConverter::PMTBeamSignalNamespaceConverter(fhicl::ParameterSet const& p)
   : EDProducer{p},  
-    fRWMlabel(p.get<art::InputTag>("RWMlabel"))
+    fSignalLabel(p.get<art::InputTag>("SignalLabel"))
 {
   // Call appropriate produces<>() functions here.
-  produces<std::vector<sbn::timing::PMTBeamSignal>>("RWM"); 
+  produces<std::vector<sbn::timing::PMTBeamSignal>>(fSignalLabel.instance()); 
 
   // Call appropriate consumes<>() for any products to be retrieved by this module.
-  consumes<std::vector<icarus::timing::PMTBeamSignal>>(fRWMlabel);
+  consumes<std::vector<icarus::timing::PMTBeamSignal>>(fSignalLabel);
 }
-
-void sbn::timing::PMTBeamSignalNamespaceConverter::produce(art::Event& e)
+ 
+void icarus::timing::PMTBeamSignalNamespaceConverter::produce(art::Event& e)
 {
   //old `icarus::timing::PMTBeamSignal` data product
-  fRWMTimes = e.getProduct<std::vector<icarus::timing::PMTBeamSignal>>(fRWMlabel);
+  fPMTBeamSignal = e.getProduct<std::vector<icarus::timing::PMTBeamSignal>>(fSignalLabel);
   
   //new `sbn::timing::PMTBeamSignal` data product
   auto PMTBeamSignalColl = std::make_unique<std::vector<sbn::timing::PMTBeamSignal>>();
   
-  if (fRWMTimes.empty())
-    mf::LogTrace("ICARUSBeamStructureAna") << "Data product std::vector<icarus::timing::PMTBeamSignal> for '" << fRWMlabel.label()
+  if (fPMTBeamSignal.empty())
+    mf::LogTrace("ICARUSBeamStructureAna") << "Data product std::vector<icarus::timing::PMTBeamSignal> for '" << fSignalLabel.label()
                                            << "' is empty in event!";
   else{
-      for (size_t i = 0; i < fRWMTimes.size(); i++){
-        //std::cout << "i: " << i << ", fRWMTimes[i].specialChannel = " << fRWMTimes[i].specialChannel << "\n";
-        sbn::timing::PMTBeamSignal newRWMTimes;// = fRWMTimes[i];
-        newRWMTimes.specialChannel = fRWMTimes[i].specialChannel;
-        newRWMTimes.digitizerLabel = fRWMTimes[i].digitizerLabel;
-        newRWMTimes.crate = fRWMTimes[i].crate;
-        newRWMTimes.sample = fRWMTimes[i].sample;
-        newRWMTimes.startTimeAbs = fRWMTimes[i].startTimeAbs;
-        newRWMTimes.startTime = fRWMTimes[i].startTime;
-        PMTBeamSignalColl->push_back(newRWMTimes);
+      for (size_t i = 0; i < fPMTBeamSignal.size(); i++){
+        sbn::timing::PMTBeamSignal newPMTBeamSignal;
+        newPMTBeamSignal.specialChannel = fPMTBeamSignal[i].specialChannel;
+        newPMTBeamSignal.digitizerLabel = fPMTBeamSignal[i].digitizerLabel;
+        newPMTBeamSignal.crate = fPMTBeamSignal[i].crate;
+        newPMTBeamSignal.sample = fPMTBeamSignal[i].sample;
+        newPMTBeamSignal.startTimeAbs = fPMTBeamSignal[i].startTimeAbs;
+        newPMTBeamSignal.startTime = fPMTBeamSignal[i].startTime;
+        PMTBeamSignalColl->push_back(newPMTBeamSignal);
       }
   }
-  e.put(std::move(PMTBeamSignalColl), "RWM");
+  e.put(std::move(PMTBeamSignalColl), fSignalLabel.instance());
 } 
 
-DEFINE_ART_MODULE(sbn::timing::PMTBeamSignalNamespaceConverter)
+DEFINE_ART_MODULE(icarus::timing::PMTBeamSignalNamespaceConverter)
