@@ -43,7 +43,6 @@ physics:
     hdf5maker: {
       module_type:  "ICARUSHDF5Maker"
       TruthLabel:   "generator"
-      EventInfo:    "nu"
       SPLabel: "nuslhits"
       HitLabel: "nuslhits"
       OpFlashLabel:"opflashCryoE"

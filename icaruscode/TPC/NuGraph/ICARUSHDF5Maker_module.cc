@@ -68,7 +68,6 @@ private:
   art::InputTag fOpFlashLabel;
 
   bool fUseMap;
-  std::string fEventInfo;
   std::string fOutputName;
 
   std::vector<double> tpc_ids_checked = {}; // add the TPC ids here so we only check them once
@@ -76,16 +75,13 @@ private:
   struct HDFDataFile {
     hep_hpc::hdf5::File file;  ///< output HDF5 file
 
-    std::optional<hep_hpc::hdf5::Ntuple<hep_hpc::hdf5::Column<int, 1>     // event id (run, subrun, event)
-    >> eventNtuple; ///< event ntuple
-    
-    std::optional<hep_hpc::hdf5::Ntuple<hep_hpc::hdf5::Column<int, 1>,    // event id (run, subrun, event)
-					hep_hpc::hdf5::Column<int, 1>,    // is cc
-					hep_hpc::hdf5::Column<int, 1>, // nu pdg
-					hep_hpc::hdf5::Column<float, 1>,  // nu energy
-					hep_hpc::hdf5::Column<float, 1>,  // lep energy
-					hep_hpc::hdf5::Column<float, 1>   // nu dir (x, y, z)
-    >> eventNtupleNu; ///< event ntuple with neutrino information
+    hep_hpc::hdf5::Ntuple<hep_hpc::hdf5::Column<int, 1>,    // event id (run, subrun, event)
+                          hep_hpc::hdf5::Column<int, 1>,    // is cc
+			  hep_hpc::hdf5::Column<int, 1>, // nu pdg
+			  hep_hpc::hdf5::Column<float, 1>,  // nu energy
+			  hep_hpc::hdf5::Column<float, 1>,  // lep energy
+			  hep_hpc::hdf5::Column<float, 1>   // nu dir (x, y, z)
+    > eventNtupleNu; ///< event ntuple with neutrino information
 
     hep_hpc::hdf5::Ntuple<hep_hpc::hdf5::Column<int, 1>,    // event id (run, subrun, event)
 			  hep_hpc::hdf5::Column<int, 1>,    // spacepoint id
@@ -95,69 +91,69 @@ private:
     > spacePointNtuple; ///< spacepoint ntuple
 
     hep_hpc::hdf5::Ntuple<hep_hpc::hdf5::Column<int, 1>,    // event id (run, subrun, event)
-			  hep_hpc::hdf5::Column<int, 1>,    // hit id
-			  hep_hpc::hdf5::Column<float, 1>,  // hit integral
-			  hep_hpc::hdf5::Column<float, 1>,  // hit rms
-			  hep_hpc::hdf5::Column<int, 1>,    // tpc id
-			  hep_hpc::hdf5::Column<int, 1>,    // global plane
-			  hep_hpc::hdf5::Column<float, 1>,  // global wire
-			  hep_hpc::hdf5::Column<float, 1>,  // global time
-			  hep_hpc::hdf5::Column<int, 1>,    // raw plane
-			  hep_hpc::hdf5::Column<float, 1>,  // raw wire
-			  hep_hpc::hdf5::Column<float, 1>,  // raw time
-			  hep_hpc::hdf5::Column<int, 1>    //cryostat
+    			  hep_hpc::hdf5::Column<int, 1>,    // hit id
+    			  hep_hpc::hdf5::Column<float, 1>,  // hit integral
+    			  hep_hpc::hdf5::Column<float, 1>,  // hit rms
+    			  hep_hpc::hdf5::Column<int, 1>,    // tpc id
+    			  hep_hpc::hdf5::Column<int, 1>,    // global plane
+    			  hep_hpc::hdf5::Column<float, 1>,  // global wire
+    			  hep_hpc::hdf5::Column<float, 1>,  // global time
+    			  hep_hpc::hdf5::Column<int, 1>,    // raw plane
+    			  hep_hpc::hdf5::Column<float, 1>,  // raw wire
+    			  hep_hpc::hdf5::Column<float, 1>,  // raw time
+    			  hep_hpc::hdf5::Column<int, 1>    //cryostat
     > hitNtuple; ///< hit ntuple
 
     hep_hpc::hdf5::Ntuple<hep_hpc::hdf5::Column<int, 1>,    // event id (run, subrun, event)
-			  hep_hpc::hdf5::Column<int, 1>,    // g4 id
-			  hep_hpc::hdf5::Column<int, 1>,    // particle type
-			  hep_hpc::hdf5::Column<int, 1>,    // parent g4 id
-			  hep_hpc::hdf5::Column<int, 1>,    // is from nu
-			  hep_hpc::hdf5::Column<float, 1>,  // momentum
-			  hep_hpc::hdf5::Column<float, 1>,  // start position (x, y, z)
-			  hep_hpc::hdf5::Column<float, 1>,  // end position (x, y, z)
-			  hep_hpc::hdf5::Column<std::string, 1>, // start process
-			  hep_hpc::hdf5::Column<std::string, 1>  // end process
+    			  hep_hpc::hdf5::Column<int, 1>,    // g4 id
+    			  hep_hpc::hdf5::Column<int, 1>,    // particle type
+    			  hep_hpc::hdf5::Column<int, 1>,    // parent g4 id
+    			  hep_hpc::hdf5::Column<int, 1>,    // is from nu
+    			  hep_hpc::hdf5::Column<float, 1>,  // momentum
+    			  hep_hpc::hdf5::Column<float, 1>,  // start position (x, y, z)
+    			  hep_hpc::hdf5::Column<float, 1>,  // end position (x, y, z)
+    			  hep_hpc::hdf5::Column<std::string, 1>, // start process
+    			  hep_hpc::hdf5::Column<std::string, 1>  // end process
     > particleNtuple; ///< particle ntuple
 
     hep_hpc::hdf5::Ntuple<hep_hpc::hdf5::Column<int, 1>,    // event id (run, subrun, event)
-			  hep_hpc::hdf5::Column<int, 1>,    // hit id
-			  hep_hpc::hdf5::Column<int, 1>,    // g4 id
-			  hep_hpc::hdf5::Column<float, 1>,  // deposited energy [ MeV ]
-			  hep_hpc::hdf5::Column<float, 1>,  // x position
-			  hep_hpc::hdf5::Column<float, 1>,  // y position
-			  hep_hpc::hdf5::Column<float, 1>   // z position
+    			  hep_hpc::hdf5::Column<int, 1>,    // hit id
+    			  hep_hpc::hdf5::Column<int, 1>,    // g4 id
+    			  hep_hpc::hdf5::Column<float, 1>,  // deposited energy [ MeV ]
+    			  hep_hpc::hdf5::Column<float, 1>,  // x position
+    			  hep_hpc::hdf5::Column<float, 1>,  // y position
+    			  hep_hpc::hdf5::Column<float, 1>   // z position
     > energyDepNtuple; ///< energy deposition ntuple
 
     hep_hpc::hdf5::Ntuple<hep_hpc::hdf5::Column<int, 1>,    // event id (run, subrun, event)
-			  hep_hpc::hdf5::Column<int, 1>,    // hit id
-			  hep_hpc::hdf5::Column<int, 1>,    // hit_channel
-			  hep_hpc::hdf5::Column<int, 1>,    // wire pos
-			  hep_hpc::hdf5::Column<float, 1>,  // peaktime
-			  hep_hpc::hdf5::Column<float, 1>,  // width
-			  hep_hpc::hdf5::Column<float, 1>,  // area
-			  hep_hpc::hdf5::Column<float, 1>,  // amplitude
-			  hep_hpc::hdf5::Column<float, 1>,  // pe
-			  hep_hpc::hdf5::Column<int, 1>     // usedInFlash
+    			  hep_hpc::hdf5::Column<int, 1>,    // hit id
+    			  hep_hpc::hdf5::Column<int, 1>,    // hit_channel
+    			  hep_hpc::hdf5::Column<int, 1>,    // wire pos
+    			  hep_hpc::hdf5::Column<float, 1>,  // peaktime
+    			  hep_hpc::hdf5::Column<float, 1>,  // width
+    			  hep_hpc::hdf5::Column<float, 1>,  // area
+    			  hep_hpc::hdf5::Column<float, 1>,  // amplitude
+    			  hep_hpc::hdf5::Column<float, 1>,  // pe
+    			  hep_hpc::hdf5::Column<int, 1>     // usedInFlash
     > opHitNtuple; ///< PMT hit ntuple
 
     hep_hpc::hdf5::Ntuple<hep_hpc::hdf5::Column<int, 1>,    // event id (run, subrun, event)
-			  hep_hpc::hdf5::Column<int, 1>,    // flash id
-			  hep_hpc::hdf5::Column<int, 1>,    // wire pos
-			  hep_hpc::hdf5::Column<float, 1>,  // time
-			  hep_hpc::hdf5::Column<float, 1>,  // time width
-			  hep_hpc::hdf5::Column<float, 1>,  // Y center
-			  hep_hpc::hdf5::Column<float, 1>,  // Y width
-			  hep_hpc::hdf5::Column<float, 1>,  // Z center
-			  hep_hpc::hdf5::Column<float, 1>,  // Z width
-			  hep_hpc::hdf5::Column<float, 1>   // totalpe
+    			  hep_hpc::hdf5::Column<int, 1>,    // flash id
+    			  hep_hpc::hdf5::Column<int, 1>,    // wire pos
+    			  hep_hpc::hdf5::Column<float, 1>,  // time
+    			  hep_hpc::hdf5::Column<float, 1>,  // time width
+    			  hep_hpc::hdf5::Column<float, 1>,  // Y center
+    			  hep_hpc::hdf5::Column<float, 1>,  // Y width
+    			  hep_hpc::hdf5::Column<float, 1>,  // Z center
+    			  hep_hpc::hdf5::Column<float, 1>,  // Z width
+    			  hep_hpc::hdf5::Column<float, 1>   // totalpe
     > opFlashNtuple; ///< Flash ntuple
 
     hep_hpc::hdf5::Ntuple<hep_hpc::hdf5::Column<int, 1>,    // event id (run, subrun, event)
-			  hep_hpc::hdf5::Column<int, 1>,    // sumpe id
-			  hep_hpc::hdf5::Column<int, 1>,    // flash id
-			  hep_hpc::hdf5::Column<int, 1>,    // PMT channel
-			  hep_hpc::hdf5::Column<float, 1>   // pe
+    			  hep_hpc::hdf5::Column<int, 1>,    // sumpe id
+    			  hep_hpc::hdf5::Column<int, 1>,    // flash id
+    			  hep_hpc::hdf5::Column<int, 1>,    // PMT channel
+    			  hep_hpc::hdf5::Column<float, 1>   // pe
     > opFlashSumPENtuple; ///< Flash SumPE ntuple
 
     static std::string makeOutputFileName(std::string const& outputName, art::SubRunID const& sr)
@@ -169,32 +165,20 @@ private:
 	       << "_r" << std::setfill('0') << std::setw(5) << sr.run()
 	       << "_s" << std::setfill('0') << std::setw(5) << sr.subRun()
 	       << "_ts" << std::setw(6) << now.tv_usec << ".h5";
+      std::cout << fileName.str() << std::endl;
       return fileName.str();
     }
     
-    HDFDataFile(std::string const& outputName, std::string const& eventInfo, art::SubRunID const& sr)
+    HDFDataFile(std::string const& outputName, art::SubRunID const& sr)
       : file{ makeOutputFileName(outputName, sr), H5F_ACC_TRUNC }
-      , eventNtuple{ (eventInfo == "none")
-	  ? std::optional<hep_hpc::hdf5::Ntuple<hep_hpc::hdf5::Column<int, 1> >
-	       >(hep_hpc::hdf5::make_ntuple({file, "event_table", 1000},
-	         hep_hpc::hdf5::make_column<int>("event_id", 3))
-	  ) : std::nullopt
-	}
-      , eventNtupleNu{ (eventInfo == "nu")
-	  ? std::optional<hep_hpc::hdf5::Ntuple<hep_hpc::hdf5::Column<int, 1>,
-						hep_hpc::hdf5::Column<int, 1>,
-						hep_hpc::hdf5::Column<int, 1>,
-						hep_hpc::hdf5::Column<float, 1>,
-						hep_hpc::hdf5::Column<float, 1>,
-						hep_hpc::hdf5::Column<float, 1> >
-	    >(hep_hpc::hdf5::make_ntuple({file, "event_table", 1000},
-	      hep_hpc::hdf5::make_column<int>("event_id", 3),
-              hep_hpc::hdf5::make_scalar_column<int>("is_cc"),
-              hep_hpc::hdf5::make_scalar_column<int>("nu_pdg"),    
-              hep_hpc::hdf5::make_scalar_column<float>("nu_energy"),
-              hep_hpc::hdf5::make_scalar_column<float>("lep_energy"),
-	      hep_hpc::hdf5::make_column<float>("nu_dir", 3))
-	  ) : std::nullopt
+      , eventNtupleNu{
+      	hep_hpc::hdf5::make_ntuple({file, "event_table", 1000},
+      	hep_hpc::hdf5::make_column<int>("event_id", 3),
+        hep_hpc::hdf5::make_scalar_column<int>("is_cc"),
+        hep_hpc::hdf5::make_scalar_column<int>("nu_pdg"),    
+        hep_hpc::hdf5::make_scalar_column<float>("nu_energy"),
+        hep_hpc::hdf5::make_scalar_column<float>("lep_energy"),
+      	hep_hpc::hdf5::make_column<float>("nu_dir", 3))
         }
       , spacePointNtuple{
         hep_hpc::hdf5::make_ntuple({file, "spacepoint_table", 1000},
@@ -217,7 +201,7 @@ private:
         hep_hpc::hdf5::make_scalar_column<int>("local_plane"),
         hep_hpc::hdf5::make_scalar_column<float>("local_wire"),
         hep_hpc::hdf5::make_scalar_column<float>("local_time"),
-	hep_hpc::hdf5::make_scalar_column<int>("Cryostat"))
+      	hep_hpc::hdf5::make_scalar_column<int>("Cryostat"))
         }
       , particleNtuple{
         hep_hpc::hdf5::make_ntuple({file, "particle_table", 1000},
@@ -230,7 +214,7 @@ private:
         hep_hpc::hdf5::make_column<float>("start_position", 3),
         hep_hpc::hdf5::make_column<float>("end_position", 3),
         hep_hpc::hdf5::make_scalar_column<std::string>("start_process"),
-	hep_hpc::hdf5::make_scalar_column<std::string>("end_process"))
+      	hep_hpc::hdf5::make_scalar_column<std::string>("end_process"))
         }
       , energyDepNtuple{
         hep_hpc::hdf5::make_ntuple({file, "edep_table", 1000},
@@ -240,7 +224,7 @@ private:
         hep_hpc::hdf5::make_scalar_column<float>("energy"),
         hep_hpc::hdf5::make_scalar_column<float>("x_position"),
         hep_hpc::hdf5::make_scalar_column<float>("y_position"),
-	hep_hpc::hdf5::make_scalar_column<float>("z_position"))
+      	hep_hpc::hdf5::make_scalar_column<float>("z_position"))
         }
       , opHitNtuple{
         hep_hpc::hdf5::make_ntuple({file, "ophit_table", 1000},
@@ -253,7 +237,7 @@ private:
         hep_hpc::hdf5::make_scalar_column<float>("area"),
         hep_hpc::hdf5:: make_scalar_column<float>("amplitude"),
         hep_hpc::hdf5::make_scalar_column<float>("pe"),
-	hep_hpc::hdf5::make_scalar_column<int>("sumpe_id"))
+      	hep_hpc::hdf5::make_scalar_column<int>("sumpe_id"))
         }
       , opFlashNtuple{
         hep_hpc::hdf5::make_ntuple({file, "opflash_table", 1000},
@@ -266,7 +250,7 @@ private:
         hep_hpc::hdf5::make_scalar_column<float>("y_width"),
         hep_hpc::hdf5::make_scalar_column<float>("z_center"),
         hep_hpc::hdf5::make_scalar_column<float>("z_width"),
-	hep_hpc::hdf5::make_scalar_column<float>("totalpe"))
+      	hep_hpc::hdf5::make_scalar_column<float>("totalpe"))
         }
       , opFlashSumPENtuple{
         hep_hpc::hdf5::make_ntuple({file, "opflashsumpe_table", 1000},
@@ -274,9 +258,9 @@ private:
         hep_hpc::hdf5::make_scalar_column<int>("sumpe_id"),
         hep_hpc::hdf5::make_scalar_column<int>("flash_id"),
         hep_hpc::hdf5::make_scalar_column<int>("pmt_channel"),
-	hep_hpc::hdf5::make_scalar_column<float>("sumpe"))
+      	hep_hpc::hdf5::make_scalar_column<float>("sumpe"))
         }
-      {}
+      { }
   };
   std::unique_ptr<HDFDataFile> fHDFData;
 
@@ -292,13 +276,8 @@ ICARUSHDF5Maker::ICARUSHDF5Maker(fhicl::ParameterSet const& p)
     fOpHitLabel(  p.get<art::InputTag>("OpHitLabel")),
     fOpFlashLabel(  p.get<art::InputTag>("OpFlashLabel")),
     fUseMap(    p.get<bool>("UseMap", false)),
-    fEventInfo( p.get<std::string>("EventInfo")),
     fOutputName(p.get<std::string>("OutputName"))
-{
-  if (fEventInfo != "none" && fEventInfo != "nu")
-    throw art::Exception(art::errors::Configuration)
-      << "EventInfo must be \"none\" or \"nu\", not " << fEventInfo;
-}
+{ }
 
 void ICARUSHDF5Maker::analyze(art::Event const& e) {
 
@@ -327,49 +306,40 @@ void ICARUSHDF5Maker::analyze(art::Event const& e) {
 
   std::array<int, 3> evtID { run, subrun, event };
   // Fill event table
-  if (fEventInfo == "none") {
-    fHDFData->eventNtuple->insert( evtID.data() );
-    mf::LogInfo("ICARUSHDF5Maker") << "Filling event table"
-                             << "\nrun " << evtID[0] << ", subrun " << evtID[1]
-                             << ", event " << evtID[2];
+  // Get MC truth
+  auto truthHandle = e.getValidHandle<std::vector<simb::MCTruth>>(fTruthLabel);
+  if (truthHandle->size() != 1) {
+    //avoid pile-up, which is not handled downstream
+    return;
   }
+  simb::MCNeutrino const& nutruth = truthHandle->at(0).GetNeutrino();
 
-  if (fEventInfo == "nu") {
-    // Get MC truth
-    auto truthHandle = e.getValidHandle<std::vector<simb::MCTruth>>(fTruthLabel);
-    if (truthHandle->size() != 1) {
-      throw art::Exception(art::errors::LogicError)
-        << "Expected to find exactly one MC truth object!";
-    }
-    simb::MCNeutrino const& nutruth = truthHandle->at(0).GetNeutrino();
+  auto up = nutruth.Nu().Momentum().Vect().Unit();
+  std::array<float, 3> nuMomentum {(float)up.X(),(float)up.Y(),(float)up.Z()};
 
-    auto up = nutruth.Nu().Momentum().Vect().Unit();
-    std::array<float, 3> nuMomentum {(float)up.X(),(float)up.Y(),(float)up.Z()};
+  fHDFData->eventNtupleNu.insert( evtID.data(),
+				  nutruth.CCNC() == simb::kCC,
+				  nutruth.Nu().PdgCode(),
+				  nutruth.Nu().E(),
+				  nutruth.Lepton().E(),
+				  nuMomentum.data()
+				  );
 
-    fHDFData->eventNtupleNu->insert( evtID.data(),
-				    nutruth.CCNC() == simb::kCC,
-				    nutruth.Nu().PdgCode(),
-				    nutruth.Nu().E(),
-				    nutruth.Lepton().E(),
-				    nuMomentum.data()
-				    );
+  // for (int ip=0;ip<truthHandle->at(0).NParticles();ip++) {
+  //   std::cout << "mcp tkid=" << truthHandle->at(0).GetParticle(ip).TrackId() << " pdg=" << truthHandle->at(0).GetParticle(ip).PdgCode() 
+  // 		<< " mother=" << truthHandle->at(0).GetParticle(ip).Mother()
+  // 		<< " vtx=" << truthHandle->at(0).GetParticle(ip).Vx() << " " << truthHandle->at(0).GetParticle(ip).Vy() << " " << truthHandle->at(0).GetParticle(ip).Vz()
+  // 		<< std::endl;
+  // }
 
-    // for (int ip=0;ip<truthHandle->at(0).NParticles();ip++) {
-    //   std::cout << "mcp tkid=" << truthHandle->at(0).GetParticle(ip).TrackId() << " pdg=" << truthHandle->at(0).GetParticle(ip).PdgCode() 
-    // 		<< " mother=" << truthHandle->at(0).GetParticle(ip).Mother()
-    // 		<< " vtx=" << truthHandle->at(0).GetParticle(ip).Vx() << " " << truthHandle->at(0).GetParticle(ip).Vy() << " " << truthHandle->at(0).GetParticle(ip).Vz()
-    // 		<< std::endl;
-    // }
-
-    mf::LogDebug("ICARUSHDF5Maker") << "Filling event table"
-				    << "\nrun " << evtID[0] << ", subrun " << evtID[1]
-				    << ", event " << evtID[2]
-				    << "\nis cc? " << (nutruth.CCNC() == simb::kCC)
-				    << ", nu energy " << nutruth.Nu().E()
-				    << ", lepton energy " << nutruth.Lepton().E()
-				    << "\nnu momentum x " << nuMomentum[0] << ", y "
-				    << nuMomentum[1] << ", z " << nuMomentum[2];
-  } // if nu event info
+  mf::LogDebug("ICARUSHDF5Maker") << "Filling event table"
+				  << "\nrun " << evtID[0] << ", subrun " << evtID[1]
+				  << ", event " << evtID[2]
+				  << "\nis cc? " << (nutruth.CCNC() == simb::kCC)
+				  << ", nu energy " << nutruth.Nu().E()
+				  << ", lepton energy " << nutruth.Lepton().E()
+				  << "\nnu momentum x " << nuMomentum[0] << ", y "
+				  << nuMomentum[1] << ", z " << nuMomentum[2];
 
   // Get spacepoints from the event record
   auto spListHandle = e.getValidHandle<std::vector<recob::SpacePoint>>(fSPLabel);
@@ -628,7 +598,7 @@ void ICARUSHDF5Maker::analyze(art::Event const& e) {
 } // function ICARUSHDF5Maker::analyze
 
 void ICARUSHDF5Maker::beginSubRun(art::SubRun const& sr) {
-  fHDFData = std::make_unique<HDFDataFile>(fOutputName, fEventInfo, sr.id());
+  fHDFData = std::make_unique<HDFDataFile>(fOutputName, sr.id());
 }
 
 void ICARUSHDF5Maker::endSubRun(art::SubRun const& sr) {
