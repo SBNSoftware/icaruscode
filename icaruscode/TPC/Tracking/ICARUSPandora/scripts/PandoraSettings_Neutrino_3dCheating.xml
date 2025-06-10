@@ -1,0 +1,203 @@
+<pandora>
+  <!-- Output list management -->
+  <!-- GLOBAL SETTINGS -->
+  <IsMonitoringEnabled>false</IsMonitoringEnabled>
+  <ShouldDisplayAlgorithmInfo>true</ShouldDisplayAlgorithmInfo>
+  <SingleHitTypeClusteringMode>true</SingleHitTypeClusteringMode>
+
+  <!-- ALGORITHM SETTINGS -->
+  <algorithm type = "LArPreProcessing"> 
+    <OutputCaloHitListNameU>CaloHitListU</OutputCaloHitListNameU>
+    <OutputCaloHitListNameV>CaloHitListV</OutputCaloHitListNameV>
+    <OutputCaloHitListNameW>CaloHitListW</OutputCaloHitListNameW>
+    <FilteredCaloHitListName>CaloHitList2D</FilteredCaloHitListName>
+    <CurrentCaloHitListReplacement>CaloHitList2D</CurrentCaloHitListReplacement>
+  </algorithm>
+
+  <!-- TwoDReconstruction -->
+  <algorithm type = "LArClusteringParent">
+    <algorithm type = "LArTrackClusterCreation" description = "ClusterFormation"/>
+    <InputCaloHitListName>CaloHitListU</InputCaloHitListName>
+    <ClusterListName>ClustersU</ClusterListName>
+    <ReplaceCurrentCaloHitList>true</ReplaceCurrentCaloHitList>
+    <ReplaceCurrentClusterList>true</ReplaceCurrentClusterList>
+  </algorithm>
+  <algorithm type = "LArLayerSplitting"/>
+  <algorithm type = "LArLongitudinalAssociation"/>
+  <algorithm type = "LArTransverseAssociation"/>
+  <algorithm type = "LArLongitudinalExtension"/>
+  <algorithm type = "LArTransverseExtension"/>
+  <algorithm type = "LArCrossGapsAssociation"/>
+  <algorithm type = "LArCrossGapsExtension"/>
+  <algorithm type = "LArOvershootSplitting"/>
+  <algorithm type = "LArBranchSplitting"/>
+  <algorithm type = "LArKinkSplitting"/>
+  <algorithm type = "LArTrackConsolidation">
+    <algorithm type = "LArSimpleClusterCreation" description = "ClusterRebuilding"/>
+  </algorithm>
+
+  <algorithm type = "LArClusteringParent">
+    <algorithm type = "LArTrackClusterCreation" description = "ClusterFormation"/>
+    <InputCaloHitListName>CaloHitListV</InputCaloHitListName>
+    <ClusterListName>ClustersV</ClusterListName>
+    <ReplaceCurrentCaloHitList>true</ReplaceCurrentCaloHitList>
+    <ReplaceCurrentClusterList>true</ReplaceCurrentClusterList>
+  </algorithm>
+  <algorithm type = "LArLayerSplitting"/>
+  <algorithm type = "LArLongitudinalAssociation"/>
+  <algorithm type = "LArTransverseAssociation"/>
+  <algorithm type = "LArLongitudinalExtension"/>
+  <algorithm type = "LArTransverseExtension"/>
+  <algorithm type = "LArCrossGapsAssociation"/>
+  <algorithm type = "LArCrossGapsExtension"/>
+  <algorithm type = "LArOvershootSplitting"/>
+  <algorithm type = "LArBranchSplitting"/>
+  <algorithm type = "LArKinkSplitting"/>
+  <algorithm type = "LArTrackConsolidation">
+    <algorithm type = "LArSimpleClusterCreation" description = "ClusterRebuilding"/>
+  </algorithm>
+
+  <algorithm type = "LArClusteringParent">
+    <algorithm type = "LArTrackClusterCreation" description = "ClusterFormation"/>
+    <InputCaloHitListName>CaloHitListW</InputCaloHitListName>
+    <ClusterListName>ClustersW</ClusterListName>
+    <ReplaceCurrentCaloHitList>true</ReplaceCurrentCaloHitList>
+    <ReplaceCurrentClusterList>true</ReplaceCurrentClusterList>
+  </algorithm>
+  <algorithm type = "LArLayerSplitting"/>
+  <algorithm type = "LArLongitudinalAssociation"/>
+  <algorithm type = "LArTransverseAssociation"/>
+  <algorithm type = "LArLongitudinalExtension"/>
+  <algorithm type = "LArTransverseExtension"/>
+  <algorithm type = "LArCrossGapsAssociation"/>
+  <algorithm type = "LArCrossGapsExtension"/>
+  <algorithm type = "LArOvershootSplitting"/>
+  <algorithm type = "LArBranchSplitting"/>
+  <algorithm type = "LArKinkSplitting"/>
+  <algorithm type = "LArTrackConsolidation">
+    <algorithm type = "LArSimpleClusterCreation" description = "ClusterRebuilding"/>
+  </algorithm>
+
+  <!-- VertexAlgorithms -->
+  <algorithm type = "LArCutClusterCharacterisation">
+    <InputClusterListNames>ClustersU ClustersV ClustersW</InputClusterListNames>
+  </algorithm>
+  <algorithm type = "LArCandidateVertexCreation">
+    <InputClusterListNames>ClustersU ClustersV ClustersW</InputClusterListNames>
+    <OutputVertexListName>CandidateVertices3D</OutputVertexListName>
+    <ReplaceCurrentVertexList>true</ReplaceCurrentVertexList>
+    <EnableCrossingCandidates>false</EnableCrossingCandidates>
+  </algorithm>
+  <algorithm type = "LArBdtVertexSelection">
+    <InputCaloHitListNames>CaloHitListU CaloHitListV CaloHitListW</InputCaloHitListNames>
+    <InputClusterListNames>ClustersU ClustersV ClustersW</InputClusterListNames>
+    <OutputVertexListName>NeutrinoVertices3D</OutputVertexListName>
+    <ReplaceCurrentVertexList>true</ReplaceCurrentVertexList>
+    <MvaFileName>PandoraBdt_v09_14_00_ICARUS_vertex_bnb.xml</MvaFileName>
+    <RegionMvaName>VertexBDTRegion</RegionMvaName>
+    <VertexMvaName>VertexBDTVertex</VertexMvaName>
+    <FeatureTools>
+      <tool type = "LArEnergyKickFeature"/>
+      <tool type = "LArLocalAsymmetryFeature"/>
+      <tool type = "LArGlobalAsymmetryFeature"/>
+      <tool type = "LArShowerAsymmetryFeature"/>
+      <tool type = "LArRPhiFeature"/>
+    </FeatureTools>
+  </algorithm>
+  <algorithm type = "LArCutClusterCharacterisation">
+    <InputClusterListNames>ClustersU ClustersV ClustersW</InputClusterListNames>
+    <ZeroMode>true</ZeroMode>
+  </algorithm>
+  <algorithm type = "LArVertexSplitting">
+    <InputClusterListNames>ClustersU ClustersV ClustersW</InputClusterListNames>
+  </algorithm>
+
+  <algorithm type = "LArCheatingPfoCreation">
+    <InputClusterListNames>ClustersU ClustersV ClustersW</InputClusterListNames>
+    <OutputPfoListName>TrackParticles3D</OutputPfoListName>
+    <AddVertices>false</AddVertices>
+    <CollapseToPrimaryMCParticles>false</CollapseToPrimaryMCParticles>
+    <MCParticleListName>Input</MCParticleListName>
+  </algorithm>
+
+  <algorithm type = "LArThreeDHitCreation">
+    <InputPfoListName>TrackParticles3D</InputPfoListName>
+    <OutputCaloHitListName>TrackCaloHits3D</OutputCaloHitListName>
+    <OutputClusterListName>TrackClusters3D</OutputClusterListName>
+    <HitCreationTools>
+      <tool type = "LArClearTransverseTrackHits"><MinViews>3</MinViews></tool>
+      <tool type = "LArClearLongitudinalTrackHits"><MinViews>3</MinViews></tool>
+      <tool type = "LArMultiValuedLongitudinalTrackHits"><MinViews>3</MinViews></tool>
+      <tool type = "LArMultiValuedTransverseTrackHits"><MinViews>3</MinViews></tool>
+      <tool type = "LArClearTransverseTrackHits"><MinViews>2</MinViews></tool>
+      <tool type = "LArClearLongitudinalTrackHits"><MinViews>2</MinViews></tool>
+      <tool type = "LArMultiValuedLongitudinalTrackHits"><MinViews>2</MinViews></tool>
+    </HitCreationTools>
+  </algorithm>
+
+  <!-- NeutrinoAlgorithms -->
+  <algorithm type = "LArNeutrinoCreation">
+    <InputVertexListName>NeutrinoVertices3D</InputVertexListName>
+    <NeutrinoPfoListName>NeutrinoParticles3D</NeutrinoPfoListName>
+  </algorithm>
+  <algorithm type = "LArNeutrinoHierarchy">
+    <NeutrinoPfoListName>NeutrinoParticles3D</NeutrinoPfoListName>
+    <DaughterPfoListNames>TrackParticles3D ShowerParticles3D</DaughterPfoListNames>
+    <DisplayPfoInfoMap>false</DisplayPfoInfoMap>
+    <PfoRelationTools>
+      <tool type = "LArVertexAssociatedPfos"/>
+      <tool type = "LArEndAssociatedPfos"/>
+      <tool type = "LArBranchAssociatedPfos"/>
+    </PfoRelationTools>
+  </algorithm>
+  <algorithm type = "LArNeutrinoDaughterVertices">
+    <NeutrinoPfoListName>NeutrinoParticles3D</NeutrinoPfoListName>
+    <OutputVertexListName>DaughterVertices3D</OutputVertexListName>
+  </algorithm>
+  <algorithm type = "LArBdtPfoCharacterisation">
+    <TrainingSetMode>false</TrainingSetMode>
+    <CaloHitListName>CaloHitList2D</CaloHitListName>
+    <MCParticleListName>Input</MCParticleListName>
+    <TrainingOutputFileName>BNBPfoCharTraining</TrainingOutputFileName>
+    <TrackPfoListName>TrackParticles3D</TrackPfoListName>
+    <ShowerPfoListName>ShowerParticles3D</ShowerPfoListName>
+    <UseThreeDInformation>true</UseThreeDInformation>
+    <PersistFeatures>true</PersistFeatures>
+    <MvaFileName>PandoraBdt_v09_72_01_ICARUS_pfochar_bnb.xml</MvaFileName>
+    <MvaName>PfoCharBDT</MvaName>
+    <MvaFileNameNoChargeInfo>PandoraBdt_v09_72_01_ICARUS_pfochar_bnb.xml</MvaFileNameNoChargeInfo>
+    <MvaNameNoChargeInfo>PfoCharBDTNoChargeInfo</MvaNameNoChargeInfo>
+    <FeatureTools>
+      <tool type = "LArThreeDLinearFitFeatureTool"/>
+      <tool type = "LArThreeDVertexDistanceFeatureTool"/>
+      <tool type = "LArThreeDPCAFeatureTool"/>
+      <tool type = "LArThreeDOpeningAngleFeatureTool"/>
+      <tool type = "LArThreeDChargeFeatureTool"/>
+      <tool type = "LArConeChargeFeatureTool"/>
+    </FeatureTools>
+    <FeatureToolsNoChargeInfo>
+      <tool type = "LArThreeDLinearFitFeatureTool"/>
+      <tool type = "LArThreeDVertexDistanceFeatureTool"/>
+      <tool type = "LArThreeDPCAFeatureTool"/>
+      <tool type = "LArThreeDOpeningAngleFeatureTool"/>      
+    </FeatureToolsNoChargeInfo>
+  </algorithm>
+  <algorithm type = "LArNeutrinoProperties">
+    <NeutrinoPfoListName>NeutrinoParticles3D</NeutrinoPfoListName>
+  </algorithm>
+
+  <!-- Track and shower building -->
+  <algorithm type = "LArTrackParticleBuilding">
+    <PfoListName>TrackParticles3D</PfoListName>
+    <VertexListName>DaughterVertices3D</VertexListName>
+  </algorithm>
+
+  <!-- Output list management -->
+  <algorithm type = "LArPostProcessing">
+    <PfoListNames>NeutrinoParticles3D TrackParticles3D ShowerParticles3D</PfoListNames>
+    <VertexListNames>NeutrinoVertices3D DaughterVertices3D CandidateVertices3D</VertexListNames>
+    <ClusterListNames>ClustersU ClustersV ClustersW TrackClusters3D ShowerClusters3D</ClusterListNames>
+    <CaloHitListNames>CaloHitListU CaloHitListV CaloHitListW CaloHitList2D</CaloHitListNames>
+    <CurrentPfoListReplacement>NeutrinoParticles3D</CurrentPfoListReplacement>
+  </algorithm>
+</pandora>
