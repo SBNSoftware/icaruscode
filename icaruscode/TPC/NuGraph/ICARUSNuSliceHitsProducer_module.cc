@@ -18,6 +18,7 @@
 #include <algorithm> // std::find()
 #include <cmath> // std::abs()
 #include <memory>
+#include <unordered_map>
 #include <utility> // std::move()
 #include <vector>
 
@@ -135,12 +136,14 @@ void ICARUSNuSliceHitsProducer::produce(art::Event& e)
   if (triggeringSlice) {
     mf::LogTrace{ "ICARUSNuSliceHitsProducer" } << "slice hits=" << assocSliceHit.at(triggeringSlice.key()).size();
     auto const& hits = assocSliceHit.at(triggeringSlice.key());
-    for (auto h : hits) {
-      assocSliceHitKeys->push_back(h.key());
+    std::unordered_map<size_t,size_t> keyIdxMap;
+    for (size_t ih=0; ih<hits.size(); ih++) {
+      assocSliceHitKeys->push_back(hits[ih].key());
+      keyIdxMap.insert({hits[ih].key(), ih});
     }
     std::sort(begin(*assocSliceHitKeys), end(*assocSliceHitKeys));
     outputHits->reserve(assocSliceHitKeys->size());
-    for (auto const& hit: *assocSliceHitKeys) outputHits->push_back(*hits[hit]);
+    for (auto const& key: *assocSliceHitKeys) outputHits->push_back(*hits[keyIdxMap.at(key)]);
   }
 
   // Get spacepoints from the event record
