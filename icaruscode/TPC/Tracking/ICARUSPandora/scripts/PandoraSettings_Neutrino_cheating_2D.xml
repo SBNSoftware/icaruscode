@@ -17,7 +17,7 @@
   <!-- TwoDReconstruction -->
   <algorithm type = "LArClusteringParent">
     <algorithm type = "LArCheatingClusterCreation" description = "ClusterFormation">
-      <CollapseToPrimaryMCParticles>true</CollapseToPrimaryMCParticles>
+      <CollapseToPrimaryMCParticles>false</CollapseToPrimaryMCParticles>
       <MCParticleListName>Input</MCParticleListName>
     </algorithm>
     <InputCaloHitListName>CaloHitListU</InputCaloHitListName>
@@ -28,7 +28,7 @@
 
   <algorithm type = "LArClusteringParent">
     <algorithm type = "LArCheatingClusterCreation" description = "ClusterFormation">
-      <CollapseToPrimaryMCParticles>true</CollapseToPrimaryMCParticles>
+      <CollapseToPrimaryMCParticles>false</CollapseToPrimaryMCParticles>
       <MCParticleListName>Input</MCParticleListName>
     </algorithm>
     <InputCaloHitListName>CaloHitListV</InputCaloHitListName>
@@ -39,7 +39,7 @@
 
   <algorithm type = "LArClusteringParent">
     <algorithm type = "LArCheatingClusterCreation" description = "ClusterFormation">
-      <CollapseToPrimaryMCParticles>true</CollapseToPrimaryMCParticles>
+      <CollapseToPrimaryMCParticles>false</CollapseToPrimaryMCParticles>
       <MCParticleListName>Input</MCParticleListName>
     </algorithm>
     <InputCaloHitListName>CaloHitListW</InputCaloHitListName>

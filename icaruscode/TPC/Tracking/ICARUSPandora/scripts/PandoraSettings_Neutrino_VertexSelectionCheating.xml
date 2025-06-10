@@ -6,7 +6,7 @@
   <SingleHitTypeClusteringMode>true</SingleHitTypeClusteringMode>
 
   <!-- ALGORITHM SETTINGS -->
-  <algorithm type = "LArPreProcessing">
+  <algorithm type = "LArPreProcessing"> 
     <OutputCaloHitListNameU>CaloHitListU</OutputCaloHitListNameU>
     <OutputCaloHitListNameV>CaloHitListV</OutputCaloHitListNameV>
     <OutputCaloHitListNameW>CaloHitListW</OutputCaloHitListNameW>
@@ -16,44 +16,99 @@
 
   <!-- TwoDReconstruction -->
   <algorithm type = "LArClusteringParent">
-    <algorithm type = "LArCheatingClusterCreation" description = "ClusterFormation">
-      <CollapseToPrimaryMCParticles>false</CollapseToPrimaryMCParticles>
-      <MCParticleListName>Input</MCParticleListName>
-    </algorithm>
+    <algorithm type = "LArTrackClusterCreation" description = "ClusterFormation"/>
     <InputCaloHitListName>CaloHitListU</InputCaloHitListName>
     <ClusterListName>ClustersU</ClusterListName>
-    <ReplaceCurrentCaloHitList>false</ReplaceCurrentCaloHitList>
+    <ReplaceCurrentCaloHitList>true</ReplaceCurrentCaloHitList>
     <ReplaceCurrentClusterList>true</ReplaceCurrentClusterList>
+  </algorithm>
+  <algorithm type = "LArLayerSplitting"/>
+  <algorithm type = "LArLongitudinalAssociation"/>
+  <algorithm type = "LArTransverseAssociation"/>
+  <algorithm type = "LArLongitudinalExtension"/>
+  <algorithm type = "LArTransverseExtension"/>
+  <algorithm type = "LArCrossGapsAssociation"/>
+  <algorithm type = "LArCrossGapsExtension"/>
+  <algorithm type = "LArOvershootSplitting"/>
+  <algorithm type = "LArBranchSplitting"/>
+  <algorithm type = "LArKinkSplitting"/>
+  <algorithm type = "LArTrackConsolidation">
+    <algorithm type = "LArSimpleClusterCreation" description = "ClusterRebuilding"/>
   </algorithm>
 
   <algorithm type = "LArClusteringParent">
-    <algorithm type = "LArCheatingClusterCreation" description = "ClusterFormation">
-      <CollapseToPrimaryMCParticles>false</CollapseToPrimaryMCParticles>
-      <MCParticleListName>Input</MCParticleListName>
-    </algorithm>
+    <algorithm type = "LArTrackClusterCreation" description = "ClusterFormation"/>
     <InputCaloHitListName>CaloHitListV</InputCaloHitListName>
     <ClusterListName>ClustersV</ClusterListName>
-    <ReplaceCurrentCaloHitList>false</ReplaceCurrentCaloHitList>
+    <ReplaceCurrentCaloHitList>true</ReplaceCurrentCaloHitList>
     <ReplaceCurrentClusterList>true</ReplaceCurrentClusterList>
+  </algorithm>
+  <algorithm type = "LArLayerSplitting"/>
+  <algorithm type = "LArLongitudinalAssociation"/>
+  <algorithm type = "LArTransverseAssociation"/>
+  <algorithm type = "LArLongitudinalExtension"/>
+  <algorithm type = "LArTransverseExtension"/>
+  <algorithm type = "LArCrossGapsAssociation"/>
+  <algorithm type = "LArCrossGapsExtension"/>
+  <algorithm type = "LArOvershootSplitting"/>
+  <algorithm type = "LArBranchSplitting"/>
+  <algorithm type = "LArKinkSplitting"/>
+  <algorithm type = "LArTrackConsolidation">
+    <algorithm type = "LArSimpleClusterCreation" description = "ClusterRebuilding"/>
   </algorithm>
 
   <algorithm type = "LArClusteringParent">
-    <algorithm type = "LArCheatingClusterCreation" description = "ClusterFormation">
-      <CollapseToPrimaryMCParticles>false</CollapseToPrimaryMCParticles>
-      <MCParticleListName>Input</MCParticleListName>
-    </algorithm>
+    <algorithm type = "LArTrackClusterCreation" description = "ClusterFormation"/>
     <InputCaloHitListName>CaloHitListW</InputCaloHitListName>
     <ClusterListName>ClustersW</ClusterListName>
-    <ReplaceCurrentCaloHitList>false</ReplaceCurrentCaloHitList>
+    <ReplaceCurrentCaloHitList>true</ReplaceCurrentCaloHitList>
     <ReplaceCurrentClusterList>true</ReplaceCurrentClusterList>
+  </algorithm>
+  <algorithm type = "LArLayerSplitting"/>
+  <algorithm type = "LArLongitudinalAssociation"/>
+  <algorithm type = "LArTransverseAssociation"/>
+  <algorithm type = "LArLongitudinalExtension"/>
+  <algorithm type = "LArTransverseExtension"/>
+  <algorithm type = "LArCrossGapsAssociation"/>
+  <algorithm type = "LArCrossGapsExtension"/>
+  <algorithm type = "LArOvershootSplitting"/>
+  <algorithm type = "LArBranchSplitting"/>
+  <algorithm type = "LArKinkSplitting"/>
+  <algorithm type = "LArTrackConsolidation">
+    <algorithm type = "LArSimpleClusterCreation" description = "ClusterRebuilding"/>
   </algorithm>
 
   <!-- VertexAlgorithms -->
-  <algorithm type = "LArCheatingVertexCreation">
+  <algorithm type = "LArCutClusterCharacterisation">
+    <InputClusterListNames>ClustersU ClustersV ClustersW</InputClusterListNames>
+  </algorithm>
+  <algorithm type = "LArCandidateVertexCreation">
+    <InputClusterListNames>ClustersU ClustersV ClustersW</InputClusterListNames>
+    <OutputVertexListName>CandidateVertices3D</OutputVertexListName>
+    <ReplaceCurrentVertexList>true</ReplaceCurrentVertexList>
+    <EnableCrossingCandidates>false</EnableCrossingCandidates>
+  </algorithm>
+
+  <!-- VERTEX SELECTION -->
+  <algorithm type = "LArCheatingVertexSelection">
+    <InputCaloHitListNames>CaloHitListU CaloHitListV CaloHitListW</InputCaloHitListNames>
+    <InputClusterListNames>ClustersU ClustersV ClustersW</InputClusterListNames>
     <OutputVertexListName>NeutrinoVertices3D</OutputVertexListName>
     <ReplaceCurrentVertexList>true</ReplaceCurrentVertexList>
-    <VertexXCorrection>0</VertexXCorrection>
+    <CollapseToPrimaryMCParticles>true</CollapseToPrimaryMCParticles>
+    <MCParticleListName>Input</MCParticleListName>
   </algorithm>
+  <!-- VERTEX SELECTION -->
+
+  <!-- Algorithms designed to improve 2D clusters when the vertex is created... -->
+  <algorithm type = "LArCutClusterCharacterisation">
+    <InputClusterListNames>ClustersU ClustersV ClustersW</InputClusterListNames>
+    <ZeroMode>true</ZeroMode>
+  </algorithm>
+  <algorithm type = "LArVertexSplitting">
+    <InputClusterListNames>ClustersU ClustersV ClustersW</InputClusterListNames>
+  </algorithm>
+  <!-- END -->
 
   <!-- ThreeDTrackAlgorithms -->
   <algorithm type = "LArThreeDTransverseTracks">
@@ -306,7 +361,7 @@
   <!-- Output list management -->
   <algorithm type = "LArPostProcessing">
     <PfoListNames>NeutrinoParticles3D TrackParticles3D ShowerParticles3D</PfoListNames>
-    <VertexListNames>NeutrinoVertices3D DaughterVertices3D</VertexListNames>
+    <VertexListNames>NeutrinoVertices3D DaughterVertices3D CandidateVertices3D</VertexListNames>
     <ClusterListNames>ClustersU ClustersV ClustersW TrackClusters3D ShowerClusters3D</ClusterListNames>
     <CaloHitListNames>CaloHitListU CaloHitListV CaloHitListW CaloHitList2D</CaloHitListNames>
     <CurrentPfoListReplacement>NeutrinoParticles3D</CurrentPfoListReplacement>

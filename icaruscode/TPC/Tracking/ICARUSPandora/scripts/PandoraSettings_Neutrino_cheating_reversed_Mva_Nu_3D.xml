@@ -117,7 +117,7 @@
     <InputClusterListNames>ClustersU ClustersV ClustersW</InputClusterListNames>
     <OutputPfoListName>PfoParticles3D</OutputPfoListName>
     <AddVertices>false</AddVertices>
-    <CollapseToPrimaryMCParticles>true</CollapseToPrimaryMCParticles>
+    <CollapseToPrimaryMCParticles>false</CollapseToPrimaryMCParticles>
     <MCParticleListName>Input</MCParticleListName>
   </algorithm>
 
@@ -138,7 +138,7 @@
 
   <!-- NeutrinoAlgorithms -->
 <algorithm type = "LArCheatingNeutrinoCreation">
-    <CollapseToPrimaryMCParticles>true</CollapseToPrimaryMCParticles>
+    <CollapseToPrimaryMCParticles>false</CollapseToPrimaryMCParticles>
     <MCParticleListName>Input</MCParticleListName>
     <NeutrinoPfoListName>NeutrinoParticles3D</NeutrinoPfoListName>
     <VertexListName>NeutrinoVertices3D</VertexListName>
@@ -146,7 +146,7 @@
     <VertexTolerance>10</VertexTolerance>
   </algorithm>
   <algorithm type = "LArCheatingNeutrinoDaughterVertices">
-    <CollapseToPrimaryMCParticles>true</CollapseToPrimaryMCParticles>
+    <CollapseToPrimaryMCParticles>false</CollapseToPrimaryMCParticles>
     <MCParticleListName>Input</MCParticleListName>
     <NeutrinoPfoListName>NeutrinoParticles3D</NeutrinoPfoListName>
     <OutputVertexListName>DaughterVertices3D</OutputVertexListName>
