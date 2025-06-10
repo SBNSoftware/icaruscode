@@ -91,4 +91,4 @@ physics:
 }
 
 services.BackTrackerService.BackTracker.G4ModuleLabel: "largeant"
-services.BackTrackerService.BackTracker.SimChannelModuleLabel: "daq:simpleSC"
+services.BackTrackerService.BackTracker.SimChannelModuleLabel: "merge"

@@ -139,7 +139,7 @@ private:
 
     hep_hpc::hdf5::Ntuple<hep_hpc::hdf5::Column<int, 1>,    // event id (run, subrun, event)
     			  hep_hpc::hdf5::Column<int, 1>,    // flash id
-    			  hep_hpc::hdf5::Column<int, 1>,    // wire pos
+                          hep_hpc::hdf5::Column<int, 1>,    // wire pos
     			  hep_hpc::hdf5::Column<float, 1>,  // time
     			  hep_hpc::hdf5::Column<float, 1>,  // time width
     			  hep_hpc::hdf5::Column<float, 1>,  // Y center
@@ -153,6 +153,7 @@ private:
     			  hep_hpc::hdf5::Column<int, 1>,    // sumpe id
     			  hep_hpc::hdf5::Column<int, 1>,    // flash id
     			  hep_hpc::hdf5::Column<int, 1>,    // PMT channel
+                          hep_hpc::hdf5::Column<float, 1>,  // YZ pos
     			  hep_hpc::hdf5::Column<float, 1>   // pe
     > opFlashSumPENtuple; ///< Flash SumPE ntuple
 
@@ -258,6 +259,7 @@ private:
         hep_hpc::hdf5::make_scalar_column<int>("sumpe_id"),
         hep_hpc::hdf5::make_scalar_column<int>("flash_id"),
         hep_hpc::hdf5::make_scalar_column<int>("pmt_channel"),
+        hep_hpc::hdf5::make_column<float>("yz_pos", 2),
       	hep_hpc::hdf5::make_scalar_column<float>("sumpe"))
         }
       { }
@@ -349,7 +351,7 @@ void ICARUSHDF5Maker::analyze(art::Event const& e) {
   auto hitListHandle = e.getValidHandle<std::vector<recob::Hit>>(fHitLabel);
   std::vector<art::Ptr<recob::Hit>> hitlist;
   art::fill_ptr_vector(hitlist, hitListHandle);
-  
+
   // Get assocations from spacepoints to hits
   art::FindManyP<recob::Hit> fmp(spListHandle, e, fSPLabel);
 
@@ -464,8 +466,9 @@ void ICARUSHDF5Maker::analyze(art::Event const& e) {
     const simb::MCParticle* p = pi->TrackIdToParticle_P(abs(id));
     allIDs.emplace(abs(id), p);
     while (p && p->Mother() != 0 ) {
-      p = pi->TrackIdToParticle_P(abs(p->Mother()));
-      allIDs.emplace(abs(p->Mother()), p);
+      auto mid = abs(p->Mother());
+      p = pi->TrackIdToParticle_P(mid);
+      allIDs.emplace(mid, p);
     }
   }
   // Loop over true particles and fill table
@@ -540,7 +543,9 @@ void ICARUSHDF5Maker::analyze(art::Event const& e) {
     std::vector<int> sumpepmtmap(art::ServiceHandle<geo::Geometry>()->NOpDets(),0);
     for (size_t ipmt=0;ipmt<pes.size();ipmt++) {
       if (pes[ipmt]<=0.) continue;
-      fHDFData->opFlashSumPENtuple.insert(evtID.data(),count,flkey,ipmt,pes[ipmt]);
+      auto xyz = geom.OpDetGeoFromOpChannel(ipmt).GetCenter();
+      std::vector<float> yzpos = {float(xyz.Y()),float(xyz.Z())};
+      fHDFData->opFlashSumPENtuple.insert(evtID.data(),count,flkey,ipmt,yzpos.data(),pes[ipmt]);
       sumpepmtmap[ipmt] = count;
       count++;
     }
