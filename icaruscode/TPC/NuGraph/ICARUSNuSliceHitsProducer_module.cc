@@ -37,6 +37,7 @@ class ICARUSNuSliceHitsProducer : public art::EDProducer {
  * @brief Produce separate collections of hits and space point from the slice identified as most likely from the neutrino interaction.
  *
  * Produce separate collections of hits and space point from the slice identified as most likely from the neutrino interaction.
+ * The slice is the one idenfied as the one producing the trigger flash. Only space points made out of 3 hits are saved.
  * It also produces a vector of ints, that maps the new hit collection to the original one.
  * Optionally, it can store the association to the trigger flash used to pick the slice.
  *
@@ -60,7 +61,7 @@ private:
   art::InputTag const fBaryMatchLabel;
   art::InputTag const fSliceLabel;
   art::InputTag const fSpsLabel;
-  bool doFlashAssn;
+  bool const doFlashAssn;
 
   // Required functions.
   void produce(art::Event& e) override;

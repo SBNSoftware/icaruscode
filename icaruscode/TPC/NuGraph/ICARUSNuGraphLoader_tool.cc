@@ -21,6 +21,15 @@
 
 class ICARUSNuGraphLoader : public LoaderToolBase {
 
+/**
+ * @brief Tool to collect the inputs needed by NuGraph from ICARUS data products.
+ *
+ * Read hit and space points from the event record, and package them for usage in NuGraph. This tool is called from larrecodnn/NuGraph/NuGraphInference_module.cc.
+ * Hits are stitched so that the 4 ICARUS TPCs in a cryostat are viewed in a single time vs wire plane.
+ * Only space points with chi2<MinChiSq (currently set to 0.5) are considered.
+ *
+ */
+
 public:
   /**
    *  @brief  Constructor
@@ -43,6 +52,7 @@ private:
 
   art::InputTag const fHitInput;
   art::InputTag const fSpsInput;
+  static constexpr double MinChiSq = 0.5; ///< Threshold to consider a space point good.
 };
 
 ICARUSNuGraphLoader::ICARUSNuGraphLoader(const fhicl::ParameterSet& p)
@@ -102,7 +112,6 @@ void ICARUSNuGraphLoader::loadData(art::Event& e,
   if (!splist.empty()) {
     art::FindManyP<recob::Hit> fmp(spListHandle, e, fSpsInput);
     for (size_t spIdx = 0; spIdx < sp2Hit.size(); ++spIdx) {
-      static constexpr double MinChiSq = 0.5; ///< Threshold to consider a space point good.
       if (splist[spIdx]->Chisq()>MinChiSq) continue;
       // only space points with hits on all planes are enough for NuGraph
       if (fmp.at(spIdx).size()!=3) continue;

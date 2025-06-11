@@ -47,7 +47,6 @@
 class ICARUSHDF5Maker : public art::EDAnalyzer {
 public:
   explicit ICARUSHDF5Maker(fhicl::ParameterSet const& p);
-  ~ICARUSHDF5Maker() noexcept {}; // bare pointers are cleaned up by endSubRun
 
   ICARUSHDF5Maker(ICARUSHDF5Maker const&) = delete;
   ICARUSHDF5Maker(ICARUSHDF5Maker&&) = delete;
@@ -69,8 +68,6 @@ private:
 
   bool fUseMap;
   std::string fOutputName;
-
-  std::vector<double> tpc_ids_checked = {}; // add the TPC ids here so we only check them once
 
   struct HDFDataFile {
     hep_hpc::hdf5::File file;  ///< output HDF5 file
@@ -179,7 +176,7 @@ private:
         hep_hpc::hdf5::make_scalar_column<int>("nu_pdg"),    
         hep_hpc::hdf5::make_scalar_column<float>("nu_energy"),
         hep_hpc::hdf5::make_scalar_column<float>("lep_energy"),
-      	hep_hpc::hdf5::make_column<float>("nu_dir", 3))
+        hep_hpc::hdf5::make_column<float>("nu_dir", 3))
         }
       , spacePointNtuple{
         hep_hpc::hdf5::make_ntuple({file, "spacepoint_table", 1000},
@@ -358,7 +355,7 @@ void ICARUSHDF5Maker::analyze(art::Event const& e) {
   // Fill spacepoint table
   for (size_t i = 0; i < spListHandle->size(); ++i) {
 
-    std::vector<art::Ptr<recob::Hit>> const& associatedHits(fmp.at(i));
+    std::vector<art::Ptr<recob::Hit>> const& associatedHits = fmp.at(i);
     if (associatedHits.size() < 3) {
       throw art::Exception(art::errors::LogicError) << "I am certain this cannot happen... but here you go, space point with " << associatedHits.size() << " hits";
     }
@@ -450,7 +447,8 @@ void ICARUSHDF5Maker::analyze(art::Event const& e) {
       std::vector<sim::TrackIDE> const& h_ides = bt->ChannelToTrackIDEs(clockData, hit->Channel(), hit->StartTick(), hit->EndTick());
       for (auto const& tide : h_ides) {
       	int tid = tide.trackID;
-	// if negative id, make sure there is a corresponding particle to look for before taking the abs. This way negative means no asociated particle.
+	// if negative id, make sure there is a corresponding particle to look for before taking the abs.
+	// This way negative means no associated particle (a convention that can be used in the code that processes the ntuple).
       	if (pi->TrackIdToParticle_P(abs(tid))) tid = abs(tid);
         g4id.insert(tid);
         fHDFData->energyDepNtuple.insert(evtID.data(),hit.key(), tid, tide.energyFrac, -1., -1., -1.);
