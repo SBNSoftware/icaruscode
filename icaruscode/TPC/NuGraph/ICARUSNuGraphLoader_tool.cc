@@ -26,7 +26,7 @@ class ICARUSNuGraphLoader : public LoaderToolBase {
  *
  * Read hit and space points from the event record, and package them for usage in NuGraph. This tool is called from larrecodnn/NuGraph/NuGraphInference_module.cc.
  * Hits are stitched so that the 4 ICARUS TPCs in a cryostat are viewed in a single time vs wire plane.
- * Only space points with chi2<MinChiSq (currently set to 0.5) are considered.
+ * Only space points with chi2<MinChiSq (currently set to 0.5) and with 3 associated hits are considered.
  *
  */
 
