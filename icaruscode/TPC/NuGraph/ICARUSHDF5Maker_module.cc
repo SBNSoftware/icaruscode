@@ -369,9 +369,6 @@ void ICARUSHDF5Maker::analyze(art::Event const& e) {
       //          << " plane2=" << plane << " key=" <<  hit.key() << std::endl;
       hitID[plane] = hit.key();
     }
-    if (hitID[0]==0 && hitID[1]==-1 && hitID[2]==-1) {
-      throw art::Exception(art::errors::LogicError) << "THIS SHOULD NOT HAPPEN -- sp i=" << i << " hit ids=" << hitID[0] << " " << hitID[1] << " " << hitID[2];
-    }
     fHDFData->spacePointNtuple.insert(evtID.data(),splist[i].ID(), pos.data(), hitID.data(),splist[i].Chisq() );
 
     mf::LogDebug("ICARUSHDF5Maker") << "Filling spacepoint table"
