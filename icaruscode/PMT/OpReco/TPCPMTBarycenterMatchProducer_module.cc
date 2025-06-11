@@ -50,6 +50,7 @@
 #include "lardataobj/AnalysisBase/T0.h"
 #include "lardataobj/RawData/TriggerData.h"
 #include "sbnobj/Common/Reco/TPCPMTBarycenterMatch.h"
+#include "sbnobj/Common/Trigger/ExtraTriggerInfo.h"
 
 //ROOT includes
 #include "TTree.h"
@@ -250,10 +251,16 @@ private:
   std::string               fTriggerLabel;         ///< Label for trigger product
   bool                      fCollectionOnly;       ///< Only use TPC spacepoints from the collection plane
   bool                      fUseTimeRange;         ///< Reject impossible matches based on allowed time range of TPC hits relative to trigger 
+  bool                      fUseOnbeamFlashes;     ///< Use only flashes within the beam gate for the matching
   bool                      fVerbose;              ///< Print extra info
   bool                      fFillMatchTree;        ///< Fill an output TTree in the supplemental file
+  bool                      fMinimizeZDistance;    ///< Choose the matching flash by minimizing the distance along Z (instead of YZ)
   double                    fTriggerDelay;         ///< Typical time of triggering flash, EYEBALLED (us)
   double                    fTriggerTolerance;     ///< Spread of triggering flash times, EYEBALLED (us)
+  double                    fBNBBeamGateMin;       ///< Lower limit of the BNB beam gate (us)
+  double                    fBNBBeamGateMax;       ///< Upper limit of the BNB beam gate (us)
+  double                    fNuMIBeamGateMin;      ///< Lower limit of the NuMI beam gate (us)
+  double                    fNuMIBeamGateMax;      ///< Lower limit of the NuMI beam gate (us)
   microseconds              fTimeRangeMargin;      ///< Symmetric acceptable margin for allowed time range of TPC hits (us)
   
   // Event-level data members
@@ -308,10 +315,16 @@ TPCPMTBarycenterMatchProducer::TPCPMTBarycenterMatchProducer(fhicl::ParameterSet
   fTriggerLabel(p.get<std::string>("TriggerLabel")),
   fCollectionOnly(p.get<bool>("CollectionOnly", true)),
   fUseTimeRange(p.get<bool>("UseTimeRange", true)),
+  fUseOnbeamFlashes(p.get<bool>("UseOnbeamFlashes", true)),
   fVerbose(p.get<bool>("Verbose", false)),
   fFillMatchTree(p.get<bool>("FillMatchTree", false)),
+  fMinimizeZDistance(p.get<bool>("MinimizeZDistance", false)),
   fTriggerDelay(p.get<double>("TriggerDelay", 0.0)),
   fTriggerTolerance(p.get<double>("TriggerTolerance", 25.0)),
+  fBNBBeamGateMin(p.get<double>("BNBBeamGateMin", 0.0)),
+  fBNBBeamGateMax(p.get<double>("BNBBeamGateMax", 2.0)),
+  fNuMIBeamGateMin(p.get<double>("NuMIBeamGateMin", 0.0)),
+  fNuMIBeamGateMax(p.get<double>("NuMIBeamGateMax", 10.0)),
   fTimeRangeMargin(fUseTimeRange? microseconds{p.get<double>("TimeRangeMargin")}: microseconds{0.0}),
   fGeom(*lar::providerFrom<geo::Geometry>()),
   fDetClocks(*art::ServiceHandle<detinfo::DetectorClocksService>()),
@@ -543,15 +556,64 @@ void TPCPMTBarycenterMatchProducer::produce(art::Event& e)
           if ( !timeRange.contains(eTime, fTimeRangeMargin) ) continue;
         }
 
-        //TODO: if ( flash has entering CRT match ) continue? Or at least just store that as a bool?
+        //Skip over flashes that are not within the beam gate, optionally
+        if ( fUseOnbeamFlashes ) {
+          //Get beam gate type
+          sbn::ExtraTriggerInfo const* trigInfo = nullptr;
+          if ( auto const extraTriggerHandle = e.getHandle<sbn::ExtraTriggerInfo>(fTriggerLabel) ) {
+            trigInfo = extraTriggerHandle.product();
+          }
+          else {
+            if ( fVerbose ) std::cout << "No sbn::ExtraTriggerInfo found for this event. " << std::endl;
+          }
+          sbn::triggerSource const gateType = trigInfo ? trigInfo->sourceType : sbn::triggerSource::Unknown;
 
-        //Find index of flash that minimizes barycenter distance in YZ place
-        thisFlashCenterY = flash.YCenter();
-        thisFlashCenterZ = flash.ZCenter();
-        thisDistance = std::hypot( (thisFlashCenterY - fChargeCenterY), (thisFlashCenterZ - fChargeCenterZ) );
-        if ( thisDistance < minDistance ) {
-          minDistance = thisDistance;
-          matchIndex = m;
+          //Get beam gate times based on type
+          double beamGateMin = 0., beamGateMax = 0.;
+          switch (gateType) {
+            case sbn::triggerSource::BNB:
+            case sbn::triggerSource::OffbeamBNB:
+              beamGateMin = fBNBBeamGateMin;
+              beamGateMax = fBNBBeamGateMax;
+              break;
+            case sbn::triggerSource::NuMI:
+            case sbn::triggerSource::OffbeamNuMI:
+              beamGateMin = fNuMIBeamGateMin;
+              beamGateMax = fNuMIBeamGateMax;
+              break;
+            case sbn::triggerSource::Unknown:
+              std::cout << "Unknown beam gate type." << std::endl;
+              break;
+            default:
+              std::cout << "Unsupported beam gate type." << std::endl;
+              break;
+          }
+
+          bool isOnbeamFlash = (flash.Time() >= beamGateMin) && (flash.Time() <= beamGateMin);
+          if ( !isOnbeamFlash ) {
+            continue;
+          }
+        }
+
+        //TODO: get flashClassification from flash <-> CRTPMT association, and store in slice.
+
+        //Find index of flash that minimizes barycenter distance along Z, or in the YZ plane
+        if ( fMinimizeZDistance ) {
+          thisFlashCenterZ = flash.ZCenter();
+          thisDistance = std::abs(thisFlashCenterZ - fChargeCenterZ);
+          if ( thisDistance < minDistance ) {
+            minDistance = thisDistance;
+            matchIndex = m;     
+          }
+        }
+        else {
+          thisFlashCenterY = flash.YCenter();
+          thisFlashCenterZ = flash.ZCenter();
+          thisDistance = std::hypot( (thisFlashCenterY - fChargeCenterY), (thisFlashCenterZ - fChargeCenterZ) );
+          if ( thisDistance < minDistance ) {
+            minDistance = thisDistance;
+            matchIndex = m;
+          }
         }
       } //End for flash
 
