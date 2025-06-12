@@ -381,6 +381,27 @@ cet_build_plugin(CRTT0Tagging art::module
         ROOT::Tree
 )
 
+cet_build_plugin(TripleMatchingAna art::module
+     LIBRARIES
+        icaruscode::IcarusObj
+        icaruscode_CRTMatchingUtils
+        icaruscode_CRTUtils
+        sbnobj::Common_CRT
+        larcorealg::Geometry
+        lardataalg::DetectorInfo
+        larcore::Geometry_Geometry_service
+        larsim::Simulation lardataobj::Simulation
+        larsim::MCCheater_BackTrackerService_service
+        larsim::MCCheater_ParticleInventoryService_service
+        lardata::headers
+        lardataobj::RecoBase
+        lardataobj::AnalysisBase
+        nusimdata::SimulationBase
+        art_root_io::TFileService_service
+        art_root_io::tfile_support
+        ROOT::Tree
+)
+
 
 install_headers()
 install_fhicl()
