@@ -589,7 +589,7 @@ void TPCPMTBarycenterMatchProducer::produce(art::Event& e)
               break;
           }
 
-          bool isOnbeamFlash = (flash.Time() >= beamGateMin) && (flash.Time() <= beamGateMin);
+          bool isOnbeamFlash = (flash.Time() >= beamGateMin) && (flash.Time() <= beamGateMax);
           if ( !isOnbeamFlash ) {
             continue;
           }
