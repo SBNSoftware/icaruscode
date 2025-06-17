@@ -17,7 +17,7 @@ icarus_hitfinder:
   MaxMultiHit:          3                # maximum hits for multi fit
   Chi2NDF:              10.              # maximum Chisquared / NDF allowed for a hit to be saved (Set very high by default)
   LongPulseWidth:       [ 16, 16, 16]      # max widths for hits in long pulse trains
-  LongMaxHits:          [  10,  10,  10]      # max number hits in long pulse trains
+  LongMaxHits:          [ 1,  1,  1]      # max number hits in long pulse trains
   MinWidth:      1.
   MaxWidthMult:  3.
   FittingRange:  35
@@ -35,7 +35,7 @@ mixed_hitfinder:
   MaxMultiHit:          3                # maximum hits for multi fit
   Chi2NDF:              10.              # maximum Chisquared / NDF allowed for a hit to be saved (Set very high by default)
   LongPulseWidth:       [ 16, 16, 16]      # max widths for hits in long pulse trains
-  LongMaxHits:          [  10,  10,  10]      # max number hits in long pulse trains
+  LongMaxHits:          [ 1,  1,  1]      # max number hits in long pulse trains
   MinWidth:      1.
   MaxWidthMult:  3.
   FittingRange:  35
@@ -70,7 +70,7 @@ gaus_hitfinder_icarus.Chi2NDF:                                                  
 gaus_hitfinder_icarus.PeakFitter.MinWidth:                                         1
 gaus_hitfinder_icarus.PeakFitter.FloatBaseline:                                    false
 gaus_hitfinder_icarus.PeakFitter.tool_type:                                        "PeakFitterMrqdt"
-gaus_hitfinder_icarus.LongMaxHits:                                                 [25, 25, 25]
+gaus_hitfinder_icarus.LongMaxHits:                                                 [1, 1, 1]
 gaus_hitfinder_icarus.LongPulseWidth:                                              [10, 10, 10]
 
 # Keeping these here even though not used in case we want to know working values for testing
@@ -114,6 +114,7 @@ gausshit_sbn.HitFinderToolVec.CandidateHitsPlane1.RoiThreshold:                 
 gausshit_sbn.HitFinderToolVec.CandidateHitsPlane2:                                @local::candhitfinder_standard
 gausshit_sbn.HitFinderToolVec.CandidateHitsPlane2.Plane:                          2
 gausshit_sbn.HitFinderToolVec.CandidateHitsPlane2.RoiThreshold:                   9.
+gausshit_sbn.LongMaxHits:          [ 1,  1,  1]      # disable pulse trains
 
 icarus_hitconverter:
 {
