@@ -1,4 +1,4 @@
-#include "stage0_run2_wcdnn_icarus_mc.fcl"
+#include "stage0_run2_wcdnn_icarus.fcl"
 
 physics.producers.decon2droiEE.wcls_main.params.wc_device: "gpu"
 physics.producers.decon2droiEW.wcls_main.params.wc_device: "gpu"
