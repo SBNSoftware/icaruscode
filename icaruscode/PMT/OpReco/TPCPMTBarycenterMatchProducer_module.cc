@@ -25,6 +25,7 @@
 #include "art/Framework/Services/Registry/ServiceHandle.h"
 #include "art/Persistency/Common/PtrMaker.h"
 #include "canvas/Persistency/Common/FindOne.h"
+#include "canvas/Persistency/Common/FindOneP.h"
 #include "canvas/Persistency/Common/FindMany.h"
 #include "canvas/Persistency/Common/FindManyP.h"
 
@@ -51,6 +52,8 @@
 #include "lardataobj/RawData/TriggerData.h"
 #include "sbnobj/Common/Reco/TPCPMTBarycenterMatch.h"
 #include "sbnobj/Common/Trigger/ExtraTriggerInfo.h"
+#include "icaruscode/CRT/CRTUtils/CRTPMTMatchingUtils.h"
+#include "sbnobj/Common/CRT/CRTPMTMatching.hh"
 
 //ROOT includes
 #include "TTree.h"
@@ -241,7 +244,7 @@ private:
   double CentroidOverlap(double center1, double center2, double width1, double width2) const; ///< Return overlap between charge and light centroids OR distance apart if no overlap
   double CalculateAsymmetry(art::Ptr<recob::OpFlash> flash, int cryo);                        ///< Return the east-west asymmetry of PEs in a given OpFlash
   void updateChargeVars(double sumCharge, TVector3 const& sumPos, TVector3 const& sumPosSqr, std::array<double, 2> const& triggerFlashCenter); ///< Update slice-level data members with charge and trigger match info
-  void updateFlashVars(art::Ptr<recob::OpFlash> flash, double firstHit);                      ///< Update slice-level data members with best match info
+  void updateFlashVars(art::Ptr<recob::OpFlash> flash, double firstHit, int matchedFlashClassification); ///< Update slice-level data members with best match info
   void updateMatchInfo(sbn::TPCPMTBarycenterMatch& matchInfo);                                      ///< Update match product with slice-level data members
  
   // Input parameters
@@ -249,9 +252,10 @@ private:
   std::string               fOpFlashLabel;         ///< Label for PMT reconstruction products
   std::string               fPandoraLabel;         ///< Label for Pandora output products
   std::string               fTriggerLabel;         ///< Label for trigger product
+  std::string               fCRTPMTMatchingLabel;  ///< Label for CRT-PMT matching product
   bool                      fCollectionOnly;       ///< Only use TPC spacepoints from the collection plane
   bool                      fUseTimeRange;         ///< Reject impossible matches based on allowed time range of TPC hits relative to trigger 
-  bool                      fUseOnbeamFlashes;     ///< Use only flashes within the beam gate for the matching
+  bool                      fUseInGateFlashes;     ///< Use only flashes within the beam gate for the matching
   bool                      fVerbose;              ///< Print extra info
   bool                      fFillMatchTree;        ///< Fill an output TTree in the supplemental file
   bool                      fMinimizeZDistance;    ///< Choose the matching flash by minimizing the distance along Z (instead of YZ)
@@ -286,6 +290,7 @@ private:
   double                    fFlashCenterZ;         ///< Weighted mean Z postion of hit PMTs (cm)
   double                    fFlashWidthY;          ///< Weighted standard deviation of Y postion of hit PMTs (cm)
   double                    fFlashWidthZ;          ///< Weighted standard deviation of Z postion of hit PMTs (cm)
+  int                       fFlashClassification;  ///< Flash classification according to the CRT-PMT matching
   double                    fDeltaT;               ///< | Matched flash time - charge T0 | when available (us)
   double                    fDeltaY;               ///< | Matched flash Y center - charge Y center | (cm)
   double                    fDeltaZ;               ///< | Matched flash Z center - charge Z center | (cm)
@@ -313,9 +318,10 @@ TPCPMTBarycenterMatchProducer::TPCPMTBarycenterMatchProducer(fhicl::ParameterSet
   fOpFlashLabel(p.get<std::string>("OpFlashLabel")),
   fPandoraLabel(p.get<std::string>("PandoraLabel")),
   fTriggerLabel(p.get<std::string>("TriggerLabel")),
+  fCRTPMTMatchingLabel(p.get<std::string>("CRTPMTMatchingLabel")),
   fCollectionOnly(p.get<bool>("CollectionOnly", true)),
-  fUseTimeRange(p.get<bool>("UseTimeRange", true)),
-  fUseOnbeamFlashes(p.get<bool>("UseOnbeamFlashes", true)),
+  fUseTimeRange(p.get<bool>("UseTimeRange", false)),
+  fUseInGateFlashes(p.get<bool>("UseInGateFlashes", true)),
   fVerbose(p.get<bool>("Verbose", false)),
   fFillMatchTree(p.get<bool>("FillMatchTree", false)),
   fMinimizeZDistance(p.get<bool>("MinimizeZDistance", false)),
@@ -381,6 +387,7 @@ TPCPMTBarycenterMatchProducer::TPCPMTBarycenterMatchProducer(fhicl::ParameterSet
     fMatchTree->Branch("flashCenterZ",        &fFlashCenterZ,        "flashCenterZ/d"       );
     fMatchTree->Branch("flashWidthY",         &fFlashWidthY,         "flashWidthY/d"        );
     fMatchTree->Branch("flashWidthZ",         &fFlashWidthZ,         "flashWidthZ/d"        );
+    fMatchTree->Branch("flashClassification", &fFlashClassification, "flashWidthZ/d"        );
 
     //Match Quality Info
     fMatchTree->Branch("deltaT",              &fDeltaT,              "deltaT/d"             );
@@ -546,6 +553,9 @@ void TPCPMTBarycenterMatchProducer::produce(art::Event& e)
       double minDistance = 1e6;
       double thisFlashCenterY, thisFlashCenterZ, thisDistance;
 
+      // for debugging purposes
+      int thisTriggerGateDiff;
+
       //For flash...
       for ( int m = 0; m < nFlashes; m++ ) {
         const recob::OpFlash &flash = (*flashHandle).at(m);
@@ -557,7 +567,7 @@ void TPCPMTBarycenterMatchProducer::produce(art::Event& e)
         }
 
         //Skip over flashes that are not within the beam gate, optionally
-        if ( fUseOnbeamFlashes ) {
+        if ( fUseInGateFlashes ) {
           //Get beam gate type
           sbn::ExtraTriggerInfo const* trigInfo = nullptr;
           if ( auto const extraTriggerHandle = e.getHandle<sbn::ExtraTriggerInfo>(fTriggerLabel) ) {
@@ -567,6 +577,12 @@ void TPCPMTBarycenterMatchProducer::produce(art::Event& e)
             if ( fVerbose ) std::cout << "No sbn::ExtraTriggerInfo found for this event. " << std::endl;
           }
           sbn::triggerSource const gateType = trigInfo ? trigInfo->sourceType : sbn::triggerSource::Unknown;
+          int64_t const triggerGateDiff = trigInfo ? trigInfo->triggerFromBeamGate() : 0; ///< Beam gate opening time with respect to the trigger [ns]
+
+          // for debugging purposes
+          thisTriggerGateDiff = triggerGateDiff;
+          // std::cout << "Flash time: " << flash.Time() << std::endl;
+          // std::cout << "Trigger-gate difference: " << triggerGateDiff << std::endl;
 
           //Get beam gate times based on type
           double beamGateMin = 0., beamGateMax = 0.;
@@ -589,13 +605,13 @@ void TPCPMTBarycenterMatchProducer::produce(art::Event& e)
               break;
           }
 
-          bool isOnbeamFlash = (flash.Time() >= beamGateMin) && (flash.Time() <= beamGateMax);
+          double flashTimeRelGate = flash.Time() + triggerGateDiff / 1.e3;
+
+          bool isOnbeamFlash = (flashTimeRelGate >= beamGateMin) && (flashTimeRelGate <= beamGateMax);
           if ( !isOnbeamFlash ) {
             continue;
           }
         }
-
-        //TODO: get flashClassification from flash <-> CRTPMT association, and store in slice.
 
         //Find index of flash that minimizes barycenter distance along Z, or in the YZ plane
         if ( fMinimizeZDistance ) {
@@ -631,13 +647,24 @@ void TPCPMTBarycenterMatchProducer::produce(art::Event& e)
       unsigned unsignedMatchIndex = matchIndex;
       const art::Ptr<recob::OpFlash> flashPtr { flashHandle, unsignedMatchIndex };
 
+      //Get CRT-PMT matching classification for the matched flash
+      art::FindOneP<sbn::crt::CRTPMTMatching> matchPtr(flashHandle, e, fCRTPMTMatchingLabel);
+      auto const &match = matchPtr.at(matchIndex);
+      int matchedFlashClassification = -9999;
+      if ( match ) matchedFlashClassification = static_cast<int>(match->flashClassification);
+
+      std::cout << "Flash time: " << (*flashPtr).Time() << std::endl;
+      std::cout << "Trigger-gate difference: " << thisTriggerGateDiff << std::endl;
+      std::cout << "Flash time relative to beam gate " << (*flashPtr).Time() + thisTriggerGateDiff / 1.e3 << std::endl;
+      std::cout << "CRT-PMT matching classification: " << matchedFlashClassification << std::endl;
+
       //Find time of first OpHit in matched flash
       const std::vector<recob::OpHit const*> &opHitsVec = fmOpHits.at(matchIndex);
       double minTime = 1e6;
       for (const recob::OpHit *opHit : opHitsVec ) { if ( opHit->PeakTime() < minTime ) minTime = opHit->PeakTime(); }
 
       //Update match info
-      updateFlashVars(flashPtr, minTime);
+      updateFlashVars(flashPtr, minTime, matchedFlashClassification);
       updateMatchInfo(sliceMatchInfo);
       art::Ptr<sbn::TPCPMTBarycenterMatch> const infoPtr = makeInfoPtr(matchInfoVector->size());
       sliceAssns->addSingle(infoPtr, slicePtr);
@@ -673,6 +700,7 @@ void TPCPMTBarycenterMatchProducer::InitializeSlice() {
   fFlashCenterZ = -9999.;
   fFlashWidthY = -9999.;
   fFlashWidthZ = -9999.;
+  fFlashClassification = -9999;
   fDeltaT = -9999.;
   fDeltaY = -9999.;
   fDeltaZ = -9999.;
@@ -734,7 +762,7 @@ void TPCPMTBarycenterMatchProducer::updateChargeVars(double sumCharge, TVector3 
 } //End updateChargeVars()
 
 
-void TPCPMTBarycenterMatchProducer::updateFlashVars(art::Ptr<recob::OpFlash> flash, double firstHit) {
+void TPCPMTBarycenterMatchProducer::updateFlashVars(art::Ptr<recob::OpFlash> flash, double firstHit, int matchedFlashClassification) {
   double matchedTime = flash->Time();
   double matchedYCenter = flash->YCenter();
   double matchedZCenter = flash->ZCenter();
@@ -749,6 +777,7 @@ void TPCPMTBarycenterMatchProducer::updateFlashVars(art::Ptr<recob::OpFlash> fla
   fFlashCenterZ = matchedZCenter;
   fFlashWidthY = matchedYWidth;
   fFlashWidthZ = matchedZWidth;
+  fFlashClassification = matchedFlashClassification;
   if ( fChargeT0 != -9999 ) fDeltaT = abs(matchedTime - fChargeT0);
   fDeltaY = abs(matchedYCenter - fChargeCenterY);
   fDeltaZ = abs(matchedZCenter - fChargeCenterZ);
@@ -768,6 +797,7 @@ void TPCPMTBarycenterMatchProducer::updateMatchInfo(sbn::TPCPMTBarycenterMatch& 
   matchInfo.flashPEs = fFlashPEs;
   matchInfo.flashCenter = {-9999., fFlashCenterY, fFlashCenterZ};
   matchInfo.flashWidth = {-9999., fFlashWidthY, fFlashWidthZ};
+  matchInfo.flashClassification = fFlashClassification;
   matchInfo.deltaT = fDeltaT;
   matchInfo.deltaY = fDeltaY;
   matchInfo.deltaZ = fDeltaZ;

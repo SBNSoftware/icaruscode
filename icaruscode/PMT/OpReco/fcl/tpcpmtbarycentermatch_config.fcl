@@ -3,14 +3,16 @@ BEGIN_PROLOG
 #Common paramters for the barycenter matching
 tpcpmtbarycentermatch_common_params:
 {
-    OpFlashLabel:     "opflash"
-    PandoraLabel:     "pandoraGaus"
-    CollectionOnly:   true
-    UseTimeRange:     true
-    Verbose:          false
-    FillMatchTree:    false
-    TriggerTolerance: 0.15
-    TimeRangeMargin:  35.
+    OpFlashLabel:         "opflash"
+    PandoraLabel:         "pandoraGaus"
+    CRTPMTMatchingLabel:  "crtpmt"
+    CollectionOnly:       true
+    UseTimeRange:         true
+    UseInGateFlashes:     true
+    Verbose:              false
+    FillMatchTree:        false
+    TriggerTolerance:     0.15
+    TimeRangeMargin:      35.
 }
 
 
@@ -19,14 +21,22 @@ tpcpmtbarycentermatch_common_params:
 
 tpcpmtbarycentermatch_data_params:
 {   
-    TriggerLabel:  "daqTrigger"
-    TriggerDelay:  0.6
+    TriggerLabel:     "daqTrigger"
+    TriggerDelay:     0.6
+    BNBBeamGateMin:   -0.3
+    BNBBeamGateMax:   1.3
+    NuMIBeamGateMin:  -0.3
+    NuMIBeamGateMax:  9.3
 }
 
 tpcpmtbarycentermatch_mc_params:
 {
     TriggerLabel:  "emuTrigger"
     TriggerDelay:  0.02
+    BNBBeamGateMin:   0.
+    BNBBeamGateMax:   1.6
+    NuMIBeamGateMin:  0.
+    NuMIBeamGateMax:  9.6
 }
 
 ######
