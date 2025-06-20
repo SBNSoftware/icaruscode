@@ -13,7 +13,7 @@ icarus_beam_signal_extractor:
     ApplyConsensusFiltering: true
     ADCThreshold: 500
     BoardSetup: @local::icarus_V1730_setup
-    DebugTrees: false
+    DebugTree: false
     SaveWaveforms: false
 }
 

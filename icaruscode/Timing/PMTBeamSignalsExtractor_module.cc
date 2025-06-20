@@ -73,8 +73,8 @@ namespace icarus::timing
  *    noise if one signal is missing from its waveform.
  * *  `ApplyConsensusFiltering` (bool): if true, filter bad or missing times using 
  *    the consensus among other crates in the same cryostat.
- * *  `DebugTrees` (bool): flag to produce plain ROOT trees for debugging.
- * *  `SaveWaveforms` (bool): flag to save full waveforms in the debug trees.
+ * *  `DebugTree` (bool): flag to produce plain ROOT tree for debugging.
+ * *  `SaveWaveforms` (bool): flag to save full waveforms in the debug tree.
  *
  * Signal timing extraction
  * -------------------------
@@ -102,7 +102,7 @@ namespace icarus::timing
  * -------------------------
  *
  * This modules produces two `std::vector<icarus::timing::PMTBeamSignal>`
- * with 360 elements each, representing the relevent RWM or EW time for
+ * with 360 elements each, representing the relevant RWM or EW time for
  * the corresponding PMT channel. When the discrimination algorithm decides
  * the "peak" on a waveform to be noise, the corresponding entries are placed
  * into the vector with an invalid value (`isValid()` returns `false`,
@@ -114,23 +114,33 @@ namespace icarus::timing
  * Debugging tree
  * ---------------
  *
- * There are two debugging trees, enabled by `DebugTrees`, one for the Early Warning (EW) signals,
- * named after the instance name of `EWlabel`, and one for the Resistive Wall Monitor (RWM) signals,
- * named after the instance name of `RWMlabel`. Each entry in the tree represents a single signal
- * in an event (thus, typically for ICARUS there are 8 entries per event).
+ * The debugging tree, enabled by `DebugTree`, contains both Early Warning (EW) signals,
+ * named after the instance name of `EWlabel`, and Resistive Wall Monitor (RWM) signals,
+ * named after the instance name of `RWMlabel`. Each entry in the tree represents what a
+ * PMT crate sees in an event (thus, typically for ICARUS there are 8 entries per event).
  * The content of an entry includes:
- *   * `run`, `event`: identifier of the event.
+ *   * `run`, `event`: identifier of the run/event.
  *   * `timestamp`: timestamp of the event (in UTC), truncated at the second.
- *   * `n_channels`: the number of special signal channels in the event.
- *   * `channel`: the special channel nummber assigned to this signal.
- *   * `wfstart`: (uncorrected) waveform time start.
- *   * `sample`: the sample number in the waveform at which the signal was found.
- *   * `utime_abs`: uncorrected signal time [&micro;s]
- *   * `itime_abs`: intermediate (corrected) signal time [&micro;s]
- *   * `time_abs`:  corrected and adjusted signal time [&micro;s]
- *   * `time`: corrected and adjusted signal time (relative to the trigger time) [&micro;s]
- *   * `nsize` (only if `SaveWaveforms` is set): number of samples in waveform
- *   * `wf` (only if `SaveWaveforms` is set): full waveform.
+ *   * `n_crates`: number of crates with special signals in the event.
+ *   * `crate`: string identifier for the PMT crate (eg, EE-BOT).
+ *   * `rmw_channel`: special RWM channel number assigned to this signal.
+ *   * `rwm_wfstart`: (uncorrected) RWM waveform time start.
+ *   * `rwm_sample`: the sample number in the RWM waveform at which the signal was found.
+ *   * `rwm_utime_abs`: uncorrected RWM signal time [&micro;s].
+ *   * `rwm_itime_abs`: intermediate (corrected) RWM signal time [&micro;s].
+ *   * `rwm_time_abs`:  corrected and adjusted RWM signal time [&micro;s].
+ *   * `rwm_time`: corrected and adjusted RWM signal time (relative to the trigger time) [&micro;s].
+ *   * `rwm_nsize` (only if `SaveWaveforms` is set): number of samples in RWM waveform.
+ *   * `rwm_wf` (only if `SaveWaveforms` is set): full RWM waveform.
+ *   * `ew_channel`: special EW channel number assigned to this signal.
+ *   * `ew_wfstart`: (uncorrected) EW waveform time start.
+ *   * `ew_sample`: the sample number in the EW waveform at which the signal was found.
+ *   * `ew_utime_abs`: uncorrected EW signal time [&micro;s].
+ *   * `ew_itime_abs`: intermediate (corrected) EW signal time [&micro;s].
+ *   * `ew_time_abs`:  corrected and adjusted EW signal time [&micro;s].
+ *   * `ew_time`: corrected and adjusted EW signal time (relative to the trigger time) [&micro;s].
+ *   * `ew_nsize` (only if `SaveWaveforms` is set): number of samples in EW waveform.
+ *   * `ew_wf` (only if `SaveWaveforms` is set): full EW waveform.
  */
 
 class icarus::timing::PMTBeamSignalsExtractor : public art::EDProducer
@@ -159,7 +169,7 @@ public:
   static std::map<int, std::string> extractBoardBySpecialChannel(std::vector<fhicl::ParameterSet> const &setup);
 
   // fill debug trees
-  void fillDebugTrees();
+  void fillDebugTree();
 
   // Plugins should not be copied or assigned.
   PMTBeamSignalsExtractor(PMTBeamSignalsExtractor const &) = delete;
@@ -174,8 +184,8 @@ public:
 private:
   /// Channel mappping
   icarusDB::IICARUSChannelMap const &fChannelMap;
-  /// Save plain ROOT TTrees for debugging
-  bool const fDebugTrees;
+  /// Save plain ROOT TTree for debugging
+  bool const fDebugTree;
   /// Save raw waveforms in debug TTrees
   bool const fSaveWaveforms;
   /// Trigger instance label
@@ -203,22 +213,33 @@ private:
   double ftriggerTime;
 
   // output TTrees
-  std::map<std::string, TTree *> fOutTree;
+  TTree* fOutTree;
   // event info
   int m_run;
   int m_event;
   int m_timestamp;
-  // special signal info
-  int m_n_channels;
-  unsigned int m_channel;
-  double m_wfstart;
-  double m_sample;
-  double m_time;
-  double m_time_abs;
-  double m_utime_abs;
-  double m_itime_abs;
-  std::size_t m_nsize;
-  std::vector<short> m_wf;
+  int m_n_crates;
+  std::string m_crate;
+  // rwm signal info
+  unsigned int m_rwm_channel;
+  double m_rwm_wfstart;
+  double m_rwm_sample;
+  double m_rwm_time;
+  double m_rwm_time_abs;
+  double m_rwm_utime_abs;
+  double m_rwm_itime_abs;
+  std::size_t m_rwm_nsize;
+  std::vector<short> m_rwm_wf;
+  // ew signal info
+  unsigned int m_ew_channel;
+  double m_ew_wfstart;
+  double m_ew_sample;
+  double m_ew_time;
+  double m_ew_time_abs;
+  double m_ew_utime_abs;
+  double m_ew_itime_abs;
+  std::size_t m_ew_nsize;
+  std::vector<short> m_ew_wf;
 
   /// Struct for storing data
   struct SignalData {
@@ -247,7 +268,7 @@ private:
 icarus::timing::PMTBeamSignalsExtractor::PMTBeamSignalsExtractor(fhicl::ParameterSet const &pset)
     : EDProducer{pset},
       fChannelMap(*(art::ServiceHandle<icarusDB::IICARUSChannelMap const>{})),
-      fDebugTrees(pset.get<bool>("DebugTrees")),
+      fDebugTree(pset.get<bool>("DebugTree")),
       fSaveWaveforms(pset.get<bool>("SaveWaveforms")),
       fTriggerLabel(pset.get<art::InputTag>("TriggerLabel")),
       fRWMlabel(pset.get<art::InputTag>("RWMlabel")),
@@ -271,37 +292,42 @@ icarus::timing::PMTBeamSignalsExtractor::PMTBeamSignalsExtractor(fhicl::Paramete
 
 void icarus::timing::PMTBeamSignalsExtractor::beginJob()
 {
-  // prepare outupt TTrees if requested
-  if (!fDebugTrees)
+  // prepare outupt TTree if requested
+  if (!fDebugTree)
     return;
 
   art::ServiceHandle<art::TFileService> tfs;
-  std::array const labels{fRWMlabel.instance(), fEWlabel.instance()};
-  for (auto l : labels)
-  {
-    std::string name = l + "tree";
-    std::string desc = l + " info";
-    TTree *tree = tfs->make<TTree>(name.c_str(), desc.c_str());
-    tree->Branch("run", &m_run);
-    tree->Branch("event", &m_event);
-    tree->Branch("timestamp", &m_timestamp);
-    tree->Branch("n_channels", &m_n_channels);
-    tree->Branch("channel", &m_channel);
-    tree->Branch("wfstart", &m_wfstart);
-    tree->Branch("sample", &m_sample);
-    tree->Branch("utime_abs", &m_utime_abs);
-    tree->Branch("itime_abs", &m_itime_abs);
-    tree->Branch("time_abs", &m_time_abs);
-    tree->Branch("time", &m_time);
+  std::string name = fRWMlabel.instance() + "_" + fEWlabel.instance() + "_tree";
+  std::string desc = fRWMlabel.instance() + " " + fEWlabel.instance() + " info";
+  fOutTree = tfs->make<TTree>(name.c_str(), desc.c_str());
+  fOutTree->Branch("run", &m_run);
+  fOutTree->Branch("event", &m_event);
+  fOutTree->Branch("timestamp", &m_timestamp);
+  fOutTree->Branch("n_crates", &m_n_crates);
+  fOutTree->Branch("crate", &m_crate);
+  fOutTree->Branch("rwm_channel", &m_rwm_channel);
+  fOutTree->Branch("rwm_wfstart", &m_rwm_wfstart);
+  fOutTree->Branch("rwm_sample", &m_rwm_sample);
+  fOutTree->Branch("rwm_utime_abs", &m_rwm_utime_abs);
+  fOutTree->Branch("rwm_itime_abs", &m_rwm_itime_abs);
+  fOutTree->Branch("rwm_time_abs", &m_rwm_time_abs);
+  fOutTree->Branch("rwm_time", &m_rwm_time);
+  fOutTree->Branch("ew_channel", &m_ew_channel);
+  fOutTree->Branch("ew_wfstart", &m_ew_wfstart);
+  fOutTree->Branch("ew_sample", &m_ew_sample);
+  fOutTree->Branch("ew_utime_abs", &m_ew_utime_abs);
+  fOutTree->Branch("ew_itime_abs", &m_ew_itime_abs);
+  fOutTree->Branch("ew_time_abs", &m_ew_time_abs);
+  fOutTree->Branch("ew_time", &m_ew_time);
 
-    // add std::vector with full waveforms
-    // this can quickly make the TTrees quite heavy
-    if (fSaveWaveforms)
-    {
-      tree->Branch("nsize", &m_nsize);
-      tree->Branch("wf", &m_wf);
-    }
-    fOutTree[l] = tree;
+  // add std::vector with full waveforms
+  // this can quickly make the TTrees quite heavy
+  if (fSaveWaveforms)
+  {
+    fOutTree->Branch("rwm_nsize", &m_rwm_nsize);
+    fOutTree->Branch("rwm_wf", &m_rwm_wf);
+    fOutTree->Branch("ew_nsize", &m_ew_nsize);
+    fOutTree->Branch("ew_wf", &m_ew_wf);
   }
 }
 
@@ -383,7 +409,7 @@ void icarus::timing::PMTBeamSignalsExtractor::produce(art::Event &e)
   if (gateType == sbn::triggerSource::BNB && m_run > 9704 && m_run < 11443)
     std::swap(fBeamSignals[fRWMlabel.instance()], fBeamSignals[fEWlabel.instance()]);
 
-  if (fDebugTrees) fillDebugTrees();
+  if (fDebugTree) fillDebugTree();
 
   // associating the proper RWM and EW time to each PMT channel
   // collections are vectors of 360 elements (one value for each channel)
@@ -410,7 +436,8 @@ void icarus::timing::PMTBeamSignalsExtractor::extractBeamSignalTime(art::Event &
     mf::LogError("PMTBeamSignalsExtractor") << "Missing " << 8 - n_channels << " raw::OpDetWaveform with label '"
                                             << label.encode() << "'";
 
-  m_wf.clear();
+  m_rwm_wf.clear();
+  m_ew_wf.clear();
 
   // prepare to separe out east/west signals
   std::vector<double> east;
@@ -432,7 +459,7 @@ void icarus::timing::PMTBeamSignalsExtractor::extractBeamSignalTime(art::Event &
     double sample = fPulseStartExtractor.extractStart(wave.Waveform());
     if (sample < 1){
       sample = icarus::timing::NoSample;
-      mf::LogTrace("PMTBeamSignalsExtractor") << "No " << label.encode() << " signal found in channel " << m_channel
+      mf::LogTrace("PMTBeamSignalsExtractor") << "No " << label.encode() << " signal found in channel " << channel
                                               << " (crate " << crate << ")";
     }
 
@@ -612,29 +639,74 @@ void icarus::timing::PMTBeamSignalsExtractor::associateBeamSignalsToChannels(art
 
 // -----------------------------------------------------------------------------
 
-void icarus::timing::PMTBeamSignalsExtractor::fillDebugTrees()
+void icarus::timing::PMTBeamSignalsExtractor::fillDebugTree()
 {
-  for (const auto& [label, signals] : fBeamSignals) 
+  
+  auto RWMSignals = fBeamSignals[fRWMlabel.instance()];
+  auto EWSignals = fBeamSignals[fEWlabel.instance()];
+
+  std::unordered_set<std::string> crates;
+  for (const auto& [crate, _] : RWMSignals ) crates.insert(crate);
+  for (const auto& [crate, _] : EWSignals ) crates.insert(crate);
+
+  m_n_crates = crates.size();
+  
+  for (const auto& crate : crates)
   {
-    m_n_channels = signals.size(); 
-    for (const auto& [crate, signal] : signals)
+    auto itRWM = RWMSignals.find(crate);
+    auto itEW = EWSignals.find(crate);
+    m_crate = crate;
+
+    if (itRWM != RWMSignals.end()) 
     {
-      m_channel   = signal.channel;
-      m_wfstart   = signal.wfstart;
-      m_sample    = signal.sample;
-      m_utime_abs = signal.utime_abs; //uncorrected
-      m_itime_abs = signal.itime_abs; //pre-filtering
-      m_time_abs  = signal.time_abs;  //post-filtering
-      m_time      = signal.time;
-
-      if (fSaveWaveforms) {
-        m_nsize = signal.wf.size();
-        m_wf    = signal.wf;
+      m_rwm_channel   = itRWM->second.channel;
+      m_rwm_wfstart   = itRWM->second.wfstart;
+      m_rwm_sample    = itRWM->second.sample;
+      m_rwm_utime_abs = itRWM->second.utime_abs; //uncorrected
+      m_rwm_itime_abs = itRWM->second.itime_abs; //pre-filtering
+      m_rwm_time_abs  = itRWM->second.time_abs;  //post-filtering
+      m_rwm_time      = itRWM->second.time;
+      if (fSaveWaveforms)
+      {
+        m_rwm_nsize = itRWM->second.wf.size();
+        m_rwm_wf    = itRWM->second.wf;
       }
-
-      fOutTree[label]->Fill();
+    } else {
+      m_rwm_channel = 0;
+      m_rwm_wfstart   = icarus::timing::NoTime;
+      m_rwm_sample    = icarus::timing::NoTime;
+      m_rwm_utime_abs = icarus::timing::NoTime; 
+      m_rwm_itime_abs = icarus::timing::NoTime; 
+      m_rwm_time_abs  = icarus::timing::NoTime;
+      m_rwm_time      = icarus::timing::NoTime;
     }
-  } 
+
+    if (itEW != EWSignals.end()) 
+    {
+      m_ew_channel   = itEW->second.channel;
+      m_ew_wfstart   = itEW->second.wfstart;
+      m_ew_sample    = itEW->second.sample;
+      m_ew_utime_abs = itEW->second.utime_abs; //uncorrected
+      m_ew_itime_abs = itEW->second.itime_abs; //pre-filtering
+      m_ew_time_abs  = itEW->second.time_abs;  //post-filtering
+      m_ew_time      = itEW->second.time;
+      if (fSaveWaveforms)
+      {
+        m_ew_nsize = itEW->second.wf.size();
+        m_ew_wf    = itEW->second.wf;
+      }
+    } else {
+      m_ew_channel = 0;
+      m_ew_wfstart   = icarus::timing::NoTime;
+      m_ew_sample    = icarus::timing::NoTime;
+      m_ew_utime_abs = icarus::timing::NoTime; 
+      m_ew_itime_abs = icarus::timing::NoTime; 
+      m_ew_time_abs  = icarus::timing::NoTime;
+      m_ew_time      = icarus::timing::NoTime;
+    }
+    
+    fOutTree->Fill();
+  }
 }
 
 DEFINE_ART_MODULE(icarus::timing::PMTBeamSignalsExtractor)
