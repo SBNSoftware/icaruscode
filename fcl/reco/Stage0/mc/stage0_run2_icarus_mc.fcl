@@ -64,6 +64,3 @@ physics.producers.purityana1.RawModuleLabel:   ["MCDecodeTPCROI:PHYSCRATEDATATPC
 # restore legacy G4 labels
 physics.producers.mcophit.SimPhotonsProducer: "shifted"
 
-# avoid huge log files
-services.message.destinations.LogErrorFile.categories.SimDriftElectrons: { limit: 0 }
-services.message.destinations.LogStandardOut.categories.SimDriftElectrons: { limit: 0 }
