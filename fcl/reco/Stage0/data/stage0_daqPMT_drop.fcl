@@ -8,7 +8,7 @@ outputs: {
    out1: {
       compressionLevel: 1
       dataTier: "reconstructed"
-      fileName: "%ifb_%tc-%p.root"
+      fileName: "%ifb_%p.root"
       module_type: "RootOutput"
       outputCommands: [
          "keep *_*_*_*",
