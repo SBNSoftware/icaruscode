@@ -1,0 +1,24 @@
+###
+## This fhicl file is used to drop daqPMT from the stage0 file
+##
+
+process_name: daqPMTdrop
+
+outputs: {
+   out1: {
+      compressionLevel: 1
+      dataTier: "reconstructed"
+      fileName: "%ifb_%p.root"
+      module_type: "RootOutput"
+      outputCommands: [
+         "keep *_*_*_*",
+         "drop *_daqPMT_*_*"
+      ]
+      saveMemoryObjectThreshold: 0
+   }
+}
+
+physics: {
+   stream1: [ out1 ]
+   end_paths: [ stream1 ]
+}
