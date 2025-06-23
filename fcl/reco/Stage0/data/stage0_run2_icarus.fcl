@@ -26,7 +26,6 @@ outputs.rootOutput.outputCommands: [
     "drop artdaq::Fragments_*_*_ICARUSReprocessRaw",
     "drop *_*_*_DAQ*",
     "drop *_ophituncorrected_*_*",
-    "drop *_daqPMT_*_*",
     "drop *_daqPMTonbeam_*_*",
     "drop *_daqCRT_*_*",
     "drop *_daqTPCROI_*_*", 
