@@ -293,9 +293,9 @@ void icarus::OpMCWaveformAnalyzer::analyze(art::Event const& event)
 
         m_sim_time.push_back(t);
         m_sim_energy.push_back(ph.Energy);
-	m_sim_start_x.push_back(ph.InitialPosition.X());
-	m_sim_start_y.push_back(ph.InitialPosition.Y());
-	m_sim_start_z.push_back(ph.InitialPosition.Z());
+        m_sim_start_x.push_back(ph.InitialPosition.X());
+        m_sim_start_y.push_back(ph.InitialPosition.Y());
+        m_sim_start_z.push_back(ph.InitialPosition.Z());
 
         double diff = t - m_wfstart;
         m_sim_sample.push_back(static_cast<std::size_t>(std::round(diff/fOpticalTick)));
