@@ -1,6 +1,25 @@
 add_subdirectory(CRTUtils)
 add_subdirectory(CRTDecoder)
+add_subdirectory(CRTLegacyCode)
 
+art_make_library(
+     LIBRARY_NAME
+          icaruscode_CRTMatchingUtils
+     SOURCE
+          CRTUtils/CRTMatchingUtils.cxx
+     LIBRARIES
+          fhiclcpp::fhiclcpp
+          canvas::canvas
+          lardataobj::RecoBase
+          lardata::Utilities
+	     lardata::ArtDataHelper
+          larcorealg::Geometry
+          lardataalg::DetectorInfo
+          sbnobj::Common_CRT
+          cetlib::cetlib
+          messagefacility::MF_MessageLogger
+          ROOT::Matrix
+     )
 
 cet_build_plugin(CRTDetSim art::module
      LIBRARIES
@@ -53,22 +72,6 @@ cet_build_plugin( CRTTrueHitProducer art::module
         messagefacility::headers
         CLHEP::CLHEP
         cetlib::cetlib
-        )
-
-cet_build_plugin(CRTTzeroProducer art::module
-     LIBRARIES
-        larcorealg::Geometry
-        sbnobj::ICARUS_CRT
-        sbnobj::Common_CRT
-        art_root_io::TFileService_service
-        lardataalg::DetectorInfo
-        nurandom::RandomUtils_NuRandomService_service
-        art::Framework_Services_Registry
-        art::Framework_Services_Optional_RandomNumberGenerator_service
-        messagefacility::MF_MessageLogger
-        messagefacility::headers
-        CLHEP::CLHEP
-        lardata::Utilities
         )
 
 cet_build_plugin(CRTTrackProducer art::module
@@ -296,75 +299,6 @@ cet_build_plugin( PhotBackground art::module
         ROOT::Tree
         )
 
-cet_build_plugin(CRTT0Matching art::module
-     LIBRARIES
-              sbnobj::Common_CRT
-              icaruscode_CRTUtils
-              larcore::Geometry_Geometry_service
-              larsim::Simulation lardataobj::Simulation
-              larsim::MCCheater_BackTrackerService_service
-              larsim::MCCheater_ParticleInventoryService_service
-              lardata::Utilities
-              larevt::Filters
-              lardataobj::RawData
-              lardataobj::RecoBase
-              lardataobj::AnalysisBase
-              lardata::RecoObjects
-              larpandora::LArPandoraInterface
-              larcorealg::Geometry
-              nusimdata::SimulationBase
-              art::Framework_Core
-              art::Framework_Principal
-              art::Framework_Services_Registry
-              art_root_io::tfile_support
-              art_root_io::TFileService_service
-              art::Persistency_Common canvas::canvas
-              art::Persistency_Provenance
-              art::Utilities
-              messagefacility::MF_MessageLogger
-              ROOT::Core
-              ROOT::Geom
-              ROOT::XMLIO
-              ROOT::Gdml
-              ROOT::Tree
-              ROOT::Spectrum
-              ROOT::RooFit
-              ROOT::RooFitCore
-)
-
-
-cet_build_plugin(CRTT0MatchingAna art::module
-     LIBRARIES
-              sbnobj::ICARUS_CRT
-              sbnobj::Common_CRT
-              icaruscode_CRTUtils
-              larcorealg::Geometry
-              larcore::Geometry_Geometry_service
-              larsim::Simulation lardataobj::Simulation
-              larsim::MCCheater_BackTrackerService_service
-              larsim::MCCheater_ParticleInventoryService_service
-              lardata::Utilities
-              larevt::Filters
-              lardataobj::RawData
-              lardataobj::RecoBase
-              lardataobj::AnalysisBase
-              lardata::RecoObjects
-              larpandora::LArPandoraInterface
-              larcorealg::Geometry
-              nusimdata::SimulationBase
-              art::Persistency_Common canvas::canvas
-              art::Persistency_Provenance
-              art::Utilities
-              ROOT::Core
-              ROOT::Tree
-              ROOT::Geom
-              ROOT::XMLIO
-              ROOT::Gdml
-              ROOT::Spectrum
-              ROOT::RooFit
-              ROOT::RooFitCore
-)
-
 cet_build_plugin(CRTTPCMatchingAna art::module
      LIBRARIES
               sbnobj::ICARUS_CRT
@@ -424,6 +358,27 @@ simple_plugin(CRTTPCTruthEff module
               ROOT::RooFit
               ROOT::RooFitCore
 
+)
+
+cet_build_plugin(CRTT0Tagging art::module
+     LIBRARIES
+        icaruscode::IcarusObj
+        icaruscode_CRTMatchingUtils
+        icaruscode_CRTUtils
+        sbnobj::Common_CRT
+        larcorealg::Geometry
+        lardataalg::DetectorInfo
+        larcore::Geometry_Geometry_service
+        larsim::Simulation lardataobj::Simulation
+        larsim::MCCheater_BackTrackerService_service
+        larsim::MCCheater_ParticleInventoryService_service
+        lardata::headers
+        lardataobj::RecoBase
+        lardataobj::AnalysisBase
+        nusimdata::SimulationBase
+        art_root_io::TFileService_service
+        art_root_io::tfile_support
+        ROOT::Tree
 )
 
 

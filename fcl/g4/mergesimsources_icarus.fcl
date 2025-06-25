@@ -5,6 +5,7 @@ icarus_merge_sim_sources : {
   FillMCParticles:             false
   FillSimPhotons:              false
   FillSimChannels:             false
+  SkipTrackIDOffsets:          false
   FillAuxDetSimChannels:       false
   FillSimEnergyDeposits:       false
   FillAuxDetHits:              false
@@ -55,6 +56,746 @@ icarus_merge_intime_dropped_mcparts:
     FillMCParticles: true
     FillMCParticlesLite: false
     FillMCParticlesAssociated: false
+}
+
+icarus_merge_yz_wirecell_simchans : 
+{    
+    @table::icarus_merge_sim_sources
+    FillSimChannels: true
+    SkipTrackIDOffsets: true
+    FillMCParticles:             false
+    FillSimPhotons:              false
+    FillAuxDetSimChannels:       false
+    FillSimEnergyDeposits:       false
+    FillAuxDetHits:              false
+
+    InputSourcesLabels: [
+        "daq:simpleSC0"
+        ,"daq:simpleSC1"
+        ,"daq:simpleSC2"
+        ,"daq:simpleSC3"
+        ,"daq:simpleSC4"
+        ,"daq:simpleSC5"
+        ,"daq:simpleSC6"
+        ,"daq:simpleSC7"
+        ,"daq:simpleSC8"
+        ,"daq:simpleSC9"
+        ,"daq:simpleSC10"
+        ,"daq:simpleSC11"
+        ,"daq:simpleSC12"
+        ,"daq:simpleSC13"
+        ,"daq:simpleSC14"
+        ,"daq:simpleSC15"
+        ,"daq:simpleSC16"
+        ,"daq:simpleSC17"
+        ,"daq:simpleSC18"
+        ,"daq:simpleSC19"
+        ,"daq:simpleSC20"
+        ,"daq:simpleSC21"
+        ,"daq:simpleSC22"
+        ,"daq:simpleSC23"
+        ,"daq:simpleSC24"
+        ,"daq:simpleSC25"
+        ,"daq:simpleSC26"
+        ,"daq:simpleSC27"
+        ,"daq:simpleSC28"
+        ,"daq:simpleSC29"
+        ,"daq:simpleSC30"
+        ,"daq:simpleSC31"
+        ,"daq:simpleSC32"
+        ,"daq:simpleSC33"
+        ,"daq:simpleSC34"
+        ,"daq:simpleSC35"
+        ,"daq:simpleSC36"
+        ,"daq:simpleSC37"
+        ,"daq:simpleSC38"
+        ,"daq:simpleSC39"
+        ,"daq:simpleSC40"
+        ,"daq:simpleSC41"
+        ,"daq:simpleSC42"
+        ,"daq:simpleSC43"
+        ,"daq:simpleSC44"
+        ,"daq:simpleSC45"
+        ,"daq:simpleSC46"
+        ,"daq:simpleSC47"
+        ,"daq:simpleSC48"
+        ,"daq:simpleSC49"
+        ,"daq:simpleSC50"
+        ,"daq:simpleSC51"
+        ,"daq:simpleSC52"
+        ,"daq:simpleSC53"
+        ,"daq:simpleSC54"
+        ,"daq:simpleSC55"
+        ,"daq:simpleSC56"
+        ,"daq:simpleSC57"
+        ,"daq:simpleSC58"
+        ,"daq:simpleSC59"
+        ,"daq:simpleSC60"
+        ,"daq:simpleSC61"
+        ,"daq:simpleSC62"
+        ,"daq:simpleSC63"
+        ,"daq:simpleSC64"
+        ,"daq:simpleSC65"
+        ,"daq:simpleSC66"
+        ,"daq:simpleSC67"
+        ,"daq:simpleSC68"
+        ,"daq:simpleSC69"
+        ,"daq:simpleSC70"
+        ,"daq:simpleSC71"
+        ,"daq:simpleSC72"
+        ,"daq:simpleSC73"
+        ,"daq:simpleSC74"
+        ,"daq:simpleSC75"
+        ,"daq:simpleSC76"
+        ,"daq:simpleSC77"
+        ,"daq:simpleSC78"
+        ,"daq:simpleSC79"
+        ,"daq:simpleSC80"
+        ,"daq:simpleSC81"
+        ,"daq:simpleSC82"
+        ,"daq:simpleSC83"
+        ,"daq:simpleSC84"
+        ,"daq:simpleSC85"
+        ,"daq:simpleSC86"
+        ,"daq:simpleSC87"
+        ,"daq:simpleSC88"
+        ,"daq:simpleSC89"
+        ,"daq:simpleSC90"
+        ,"daq:simpleSC91"
+        ,"daq:simpleSC92"
+        ,"daq:simpleSC93"
+        ,"daq:simpleSC94"
+        ,"daq:simpleSC95"
+        ,"daq:simpleSC96"
+        ,"daq:simpleSC97"
+        ,"daq:simpleSC98"
+        ,"daq:simpleSC99"
+        ,"daq:simpleSC100"
+        ,"daq:simpleSC101"
+        ,"daq:simpleSC102"
+        ,"daq:simpleSC103"
+        ,"daq:simpleSC104"
+        ,"daq:simpleSC105"
+        ,"daq:simpleSC106"
+        ,"daq:simpleSC107"
+        ,"daq:simpleSC108"
+        ,"daq:simpleSC109"
+        ,"daq:simpleSC110"
+        ,"daq:simpleSC111"
+        ,"daq:simpleSC112"
+        ,"daq:simpleSC113"
+        ,"daq:simpleSC114"
+        ,"daq:simpleSC115"
+        ,"daq:simpleSC116"
+        ,"daq:simpleSC117"
+        ,"daq:simpleSC118"
+        ,"daq:simpleSC119"
+        ,"daq:simpleSC120"
+        ,"daq:simpleSC121"
+        ,"daq:simpleSC122"
+        ,"daq:simpleSC123"
+        ,"daq:simpleSC124"
+        ,"daq:simpleSC125"
+        ,"daq:simpleSC126"
+        ,"daq:simpleSC127"
+        ,"daq:simpleSC128"
+        ,"daq:simpleSC129"
+        ,"daq:simpleSC130"
+        ,"daq:simpleSC131"
+        ,"daq:simpleSC132"
+        ,"daq:simpleSC133"
+        ,"daq:simpleSC134"
+        ,"daq:simpleSC135"
+        ,"daq:simpleSC136"
+        ,"daq:simpleSC137"
+        ,"daq:simpleSC138"
+        ,"daq:simpleSC139"
+        ,"daq:simpleSC140"
+        ,"daq:simpleSC141"
+        ,"daq:simpleSC142"
+        ,"daq:simpleSC143"
+        ,"daq:simpleSC144"
+        ,"daq:simpleSC145"
+        ,"daq:simpleSC146"
+        ,"daq:simpleSC147"
+        ,"daq:simpleSC148"
+        ,"daq:simpleSC149"
+        ,"daq:simpleSC150"
+        ,"daq:simpleSC151"
+        ,"daq:simpleSC152"
+        ,"daq:simpleSC153"
+        ,"daq:simpleSC154"
+        ,"daq:simpleSC155"
+        ,"daq:simpleSC156"
+        ,"daq:simpleSC157"
+        ,"daq:simpleSC158"
+        ,"daq:simpleSC159"
+        ,"daq:simpleSC160"
+        ,"daq:simpleSC161"
+        ,"daq:simpleSC162"
+        ,"daq:simpleSC163"
+        ,"daq:simpleSC164"
+        ,"daq:simpleSC165"
+        ,"daq:simpleSC166"
+        ,"daq:simpleSC167"
+        ,"daq:simpleSC168"
+        ,"daq:simpleSC169"
+        ,"daq:simpleSC170"
+        ,"daq:simpleSC171"
+        ,"daq:simpleSC172"
+        ,"daq:simpleSC173"
+        ,"daq:simpleSC174"
+        ,"daq:simpleSC175"
+        ,"daq:simpleSC176"
+        ,"daq:simpleSC177"
+        ,"daq:simpleSC178"
+        ,"daq:simpleSC179"
+        ,"daq:simpleSC180"
+        ,"daq:simpleSC181"
+        ,"daq:simpleSC182"
+        ,"daq:simpleSC183"
+        ,"daq:simpleSC184"
+        ,"daq:simpleSC185"
+        ,"daq:simpleSC186"
+        ,"daq:simpleSC187"
+        ,"daq:simpleSC188"
+        ,"daq:simpleSC189"
+        ,"daq:simpleSC190"
+        ,"daq:simpleSC191"
+        ,"daq:simpleSC192"
+        ,"daq:simpleSC193"
+        ,"daq:simpleSC194"
+        ,"daq:simpleSC195"
+        ,"daq:simpleSC196"
+        ,"daq:simpleSC197"
+        ,"daq:simpleSC198"
+        ,"daq:simpleSC199"
+        ,"daq:simpleSC200"
+        ,"daq:simpleSC201"
+        ,"daq:simpleSC202"
+        ,"daq:simpleSC203"
+        ,"daq:simpleSC204"
+        ,"daq:simpleSC205"
+        ,"daq:simpleSC206"
+        ,"daq:simpleSC207"
+        ,"daq:simpleSC208"
+        ,"daq:simpleSC209"
+        ,"daq:simpleSC210"
+        ,"daq:simpleSC211"
+        ,"daq:simpleSC212"
+        ,"daq:simpleSC213"
+        ,"daq:simpleSC214"
+        ,"daq:simpleSC215"
+        ,"daq:simpleSC216"
+        ,"daq:simpleSC217"
+        ,"daq:simpleSC218"
+        ,"daq:simpleSC219"
+        ,"daq:simpleSC220"
+        ,"daq:simpleSC221"
+        ,"daq:simpleSC222"
+        ,"daq:simpleSC223"
+        ,"daq:simpleSC224"
+        ,"daq:simpleSC225"
+        ,"daq:simpleSC226"
+        ,"daq:simpleSC227"
+        ,"daq:simpleSC228"
+        ,"daq:simpleSC229"
+        ,"daq:simpleSC230"
+        ,"daq:simpleSC231"
+        ,"daq:simpleSC232"
+        ,"daq:simpleSC233"
+        ,"daq:simpleSC234"
+        ,"daq:simpleSC235"
+        ,"daq:simpleSC236"
+        ,"daq:simpleSC237"
+        ,"daq:simpleSC238"
+        ,"daq:simpleSC239"
+        ,"daq:simpleSC240"
+        ,"daq:simpleSC241"
+        ,"daq:simpleSC242"
+        ,"daq:simpleSC243"
+        ,"daq:simpleSC244"
+        ,"daq:simpleSC245"
+        ,"daq:simpleSC246"
+        ,"daq:simpleSC247"
+        ,"daq:simpleSC248"
+        ,"daq:simpleSC249"
+        ,"daq:simpleSC250"
+        ,"daq:simpleSC251"
+        ,"daq:simpleSC252"
+        ,"daq:simpleSC253"
+        ,"daq:simpleSC254"
+        ,"daq:simpleSC255"
+        ,"daq:simpleSC256"
+        ,"daq:simpleSC257"
+        ,"daq:simpleSC258"
+        ,"daq:simpleSC259"
+        ,"daq:simpleSC260"
+        ,"daq:simpleSC261"
+        ,"daq:simpleSC262"
+        ,"daq:simpleSC263"
+        ,"daq:simpleSC264"
+        ,"daq:simpleSC265"
+        ,"daq:simpleSC266"
+        ,"daq:simpleSC267"
+        ,"daq:simpleSC268"
+        ,"daq:simpleSC269"
+        ,"daq:simpleSC270"
+        ,"daq:simpleSC271"
+        ,"daq:simpleSC272"
+        ,"daq:simpleSC273"
+        ,"daq:simpleSC274"
+        ,"daq:simpleSC275"
+        ,"daq:simpleSC276"
+        ,"daq:simpleSC277"
+        ,"daq:simpleSC278"
+        ,"daq:simpleSC279"
+        ,"daq:simpleSC280"
+        ,"daq:simpleSC281"
+        ,"daq:simpleSC282"
+        ,"daq:simpleSC283"
+        ,"daq:simpleSC284"
+        ,"daq:simpleSC285"
+        ,"daq:simpleSC286"
+        ,"daq:simpleSC287"
+        ,"daq:simpleSC288"
+        ,"daq:simpleSC289"
+        ,"daq:simpleSC290"
+        ,"daq:simpleSC291"
+        ,"daq:simpleSC292"
+        ,"daq:simpleSC293"
+        ,"daq:simpleSC294"
+        ,"daq:simpleSC295"
+        ,"daq:simpleSC296"
+        ,"daq:simpleSC297"
+        ,"daq:simpleSC298"
+        ,"daq:simpleSC299"
+        ,"daq:simpleSC300"
+        ,"daq:simpleSC301"
+        ,"daq:simpleSC302"
+        ,"daq:simpleSC303"
+        ,"daq:simpleSC304"
+        ,"daq:simpleSC305"
+        ,"daq:simpleSC306"
+        ,"daq:simpleSC307"
+        ,"daq:simpleSC308"
+        ,"daq:simpleSC309"
+        ,"daq:simpleSC310"
+        ,"daq:simpleSC311"
+        ,"daq:simpleSC312"
+        ,"daq:simpleSC313"
+        ,"daq:simpleSC314"
+        ,"daq:simpleSC315"
+        ,"daq:simpleSC316"
+        ,"daq:simpleSC317"
+        ,"daq:simpleSC318"
+        ,"daq:simpleSC319"
+        ,"daq:simpleSC320"
+        ,"daq:simpleSC321"
+        ,"daq:simpleSC322"
+        ,"daq:simpleSC323"
+        ,"daq:simpleSC324"
+        ,"daq:simpleSC325"
+        ,"daq:simpleSC326"
+        ,"daq:simpleSC327"
+        ,"daq:simpleSC328"
+        ,"daq:simpleSC329"
+        ,"daq:simpleSC330"
+        ,"daq:simpleSC331"
+        ,"daq:simpleSC332"
+        ,"daq:simpleSC333"
+        ,"daq:simpleSC334"
+        ,"daq:simpleSC335"
+        ,"daq:simpleSC336"
+        ,"daq:simpleSC337"
+        ,"daq:simpleSC338"
+        ,"daq:simpleSC339"
+        ,"daq:simpleSC340"
+        ,"daq:simpleSC341"
+        ,"daq:simpleSC342"
+        ,"daq:simpleSC343"
+        ,"daq:simpleSC344"
+        ,"daq:simpleSC345"
+        ,"daq:simpleSC346"
+        ,"daq:simpleSC347"
+        ,"daq:simpleSC348"
+        ,"daq:simpleSC349"
+        ,"daq:simpleSC350"
+        ,"daq:simpleSC351"
+        ,"daq:simpleSC352"
+        ,"daq:simpleSC353"
+        ,"daq:simpleSC354"
+        ,"daq:simpleSC355"
+        ,"daq:simpleSC356"
+        ,"daq:simpleSC357"
+        ,"daq:simpleSC358"
+        ,"daq:simpleSC359"
+    ]
+
+    TrackIDOffsets:         [
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0
+    ]        
+
+
 }
 
 END_PROLOG

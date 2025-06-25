@@ -1,0 +1,14 @@
+# Ignore isRealData for overlays
+physics.producers.mcassociationsGausCryoE.OverrideRealData: true
+physics.producers.mcassociationsGausCryoW.OverrideRealData: true
+services.BackTrackerService.BackTracker.OverrideRealData: true
+services.ParticleInventoryService.ParticleInventory.OverrideRealData: true
+
+# overlay CRT hits
+physics.analyzers.CRTAnalysis.CrtHitModuleLabel: "overlayCRTHit"
+physics.analyzers.CRTDataAnalysis.CRTHitLabel: "overlayCRTHit"
+physics.producers.CRTT0Tagging.CrtHitModuleLabel: "overlayCRTHit"
+physics.producers.crttrack.DataLabelHits: "overlayCRTHit"
+
+# overlay PMT waveforms
+physics.analyzers.simpleLightAna.OpDetWaveformLabels: ["overlayOpWaveforms"]
