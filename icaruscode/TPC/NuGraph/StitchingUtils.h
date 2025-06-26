@@ -18,6 +18,8 @@
 namespace util {
 
   int stitchedPlane(const geo::WireID wid) {
+    // Swap Induction2 and Collection planes in TPC 2 and 3 because of the different wires orientation on the two sides of the cathode.
+    // As a result planes with the same wire orientation have the same id, allowing for seamless stitching.
     int plane = wid.Plane;
     if(wid.TPC==2 || wid.TPC==3) {
       if(wid.Plane==1) plane=2;
