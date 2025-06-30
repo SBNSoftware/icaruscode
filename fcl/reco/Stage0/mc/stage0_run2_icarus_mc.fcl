@@ -16,7 +16,6 @@ physics.producers: {  @table::icarus_stage0_producers
 physics.path: [   @sequence::icarus_stage0_mc_PMT, 
                   MCDecodeTPCROI, 
                   @sequence::icarus_stage0_multiTPC,
-                  simChannelROI,
                   @sequence::icarus_stage0_mc_crthit,
                   @sequence::icarus_stage0_mc_crtreco
               ]
@@ -64,3 +63,7 @@ physics.producers.purityana1.RawModuleLabel:   ["MCDecodeTPCROI:PHYSCRATEDATATPC
 
 # restore legacy G4 labels
 physics.producers.mcophit.SimPhotonsProducer: "shifted"
+
+# avoid huge log files
+services.message.destinations.LogErrorFile.categories.SimDriftElectrons: { limit: 0 }
+services.message.destinations.LogStandardOut.categories.SimDriftElectrons: { limit: 0 }
