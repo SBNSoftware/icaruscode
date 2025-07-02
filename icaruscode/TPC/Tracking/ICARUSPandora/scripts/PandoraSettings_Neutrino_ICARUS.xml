@@ -331,8 +331,9 @@
     <ShowerPfoListName>ShowerParticles3D</ShowerPfoListName>
     <UseThreeDInformation>true</UseThreeDInformation>
     <PersistFeatures>true</PersistFeatures>
-    <MvaFileName>PandoraBdt_v09_72_01_ICARUS_pfochar_bnb.xml</MvaFileName>
-    <MvaName>PfoCharBDT</MvaName>
+    <UseICARUSCollectionPlane>true</UseICARUSCollectionPlane>
+    <MvaFileName>PFOCharBDT_v09_84_00_03_20250508_ICARUSCollection.xml</MvaFileName>
+    <MvaName>PFOCharBDT_v09_84_00_03_20250508_ICARUSCollection</MvaName>
     <MvaFileNameNoChargeInfo>PandoraBdt_v09_72_01_ICARUS_pfochar_bnb.xml</MvaFileNameNoChargeInfo>
     <MvaNameNoChargeInfo>PfoCharBDTNoChargeInfo</MvaNameNoChargeInfo>
     <FeatureTools>
@@ -340,8 +341,12 @@
       <tool type = "LArThreeDVertexDistanceFeatureTool"/>
       <tool type = "LArThreeDPCAFeatureTool"/>
       <tool type = "LArThreeDOpeningAngleFeatureTool"/>
-      <tool type = "LArThreeDChargeFeatureTool"/>
-      <tool type = "LArConeChargeFeatureTool"/>
+      <tool type = "LArThreeDChargeFeatureTool">
+        <UseICARUSCollectionPlane>true</UseICARUSCollectionPlane>
+      </tool>
+      <tool type = "LArConeChargeFeatureTool">
+        <UseICARUSCollectionPlane>true</UseICARUSCollectionPlane>
+      </tool>
     </FeatureTools>
     <FeatureToolsNoChargeInfo>
       <tool type = "LArThreeDLinearFitFeatureTool"/>
