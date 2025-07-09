@@ -9,11 +9,13 @@ icarus_beam_signal_extractor:
     EWlabel: "daqPMT:EW"
     RWMlabel: "daqPMT:RWM"
     TriggerCorrectionLabel: "daqPMT:globtrg"
-    TimeExtractionMethod: "LogisticFit"
+    #TimeExtractionMethod: "InterpolatedCF"
+    #TimeExtractionMethod: "LogisticFit"
+    TimeExtractionMethod: "ConstantFraction"
     ApplyConsensusFiltering: true
     ADCThreshold: 500
     BoardSetup: @local::icarus_V1730_setup
-    DebugTree: false
+    DebugTree: true
     SaveWaveforms: false
 }
 
