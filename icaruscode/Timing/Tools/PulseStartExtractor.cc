@@ -78,6 +78,15 @@ namespace icarus::timing {
         std::cout << "Sigmoid fit did not converge; falling back to constant-fraction discrimation." << std::endl;
     }
 
+// ***** MODOFICATIONS ***** //
+
+if (fMethod == INTERPOLATED_CF) {
+      return extractStartInterpolated(wf, 0.2, 2.0); //above 20% fraction (threshold), 2 ns sampling (this is the t0 -t1, t2-t1...fixing it)
+
+	std::cout << "Using interpolated CF method..." << std::endl;
+
+    }
+
     // Defaulting to constant-fraction discrimation
     return static_cast<double>(cf_sample);
   }
@@ -190,6 +199,104 @@ namespace icarus::timing {
   }
 
 
+// ***** MODIFICATIONS ***** //
+
+template <typename T>
+double PulseStartExtractor::extractStartInterpolated(const std::vector<T>& wf, double fraction, double dt_ns) const {
+  if (wf.size() < 2) return 0.0;
+
+  double baseline = computeMedian(wf);
+  auto minIt = std::min_element(wf.begin(), wf.end());
+  std::size_t minIndex = std::distance(wf.begin(), minIt);
+  double peak = wf[minIndex];
+
+  double threshold = baseline + fraction * (peak - baseline);
+
+  std::size_t maxbin = (minIndex >= 20) ? (minIndex - 20) : 0;
+
+ for (std::size_t i = maxbin; i + 1 < minIndex; ++i) {
+    if (wf[i] > threshold && wf[i + 1] <= threshold) {
+      // Interpolate between sample i and i+1
+      double y1 = wf[i];
+      double y2 = wf[i + 1];
+      double frac = (y1 - threshold) / (y1 - y2);  // fractional distance
+      return static_cast<double>(i) + frac;        // sample index (float)
+    }
+  } 
+
+  return 0.0;
+}
+
+/*
+template <typename T>
+double PulseStartExtractor::extractStartInterpolated(const std::vector<T>& wf, double fraction, double dt_ns) const {
+  if (wf.size() < 2) return 0.0;
+
+  double baseline = computeMedian(wf);
+  auto minIt = std::min_element(wf.begin(), wf.end());
+  std::size_t minIndex = std::distance(wf.begin(), minIt);
+  double peak = wf[minIndex];
+  double threshold = baseline + fraction * (peak - baseline);
+
+  std::size_t prebin = 0, postbin = 0;
+  std::size_t start = (minIndex >= 20) ? (minIndex - 20) : 0;
+
+  for (std::size_t bin = start; bin < minIndex; ++bin) {
+    if (wf[bin] > threshold && wf[bin + 1] <= threshold) {
+      prebin = bin;
+      postbin = bin + 1;
+      break;
+    }
+  }
+
+  if (prebin == postbin) return 0.0; // no crossing found
+
+  // Linear interpolation
+     double y1 = wf[prebin];
+     double y2 = wf[postbin];
+     double m = (y2 - y1);  // ADC diff
+     double frac = (threshold - y1) / m;  // fractional position between prebin and postbin
+ 
+     double interpolated_sample = static_cast<double>(prebin) + frac;
+     return interpolated_sample * dt_ns;  // time in ns
+               }
+*/
+/*
+template <typename T>
+double PulseStartExtractor::extractStartInterpolated(const std::vector<T>& wf, double fraction) const {
+  if (wf.size() < 2) return 0.0;
+
+  double baseline = computeMedian(wf);
+  auto minIt = std::min_element(wf.begin(), wf.end());
+  std::size_t minIndex = std::distance(wf.begin(), minIt);
+  double peak = wf[minIndex];
+  double threshold = baseline + fraction * (peak - baseline);
+
+  std::size_t start = (minIndex >= 20) ? (minIndex - 20) : 0;
+  std::size_t prebin = 0, postbin = 0;
+  bool found = false;
+
+  for (std::size_t bin = start; bin < minIndex; ++bin) {
+    if (wf[bin] > threshold && wf[bin + 1] <= threshold) {
+      prebin = bin;
+      postbin = bin + 1;
+      found = true;
+      break;
+    }
+  }
+
+  if (!found) return 0.0;
+
+  double y1 = wf[prebin], y2 = wf[postbin];
+  double m = y2 - y1;
+  double x1 = static_cast<double>(prebin);
+  double inter = x1 + (threshold - y1) / m;
+
+  return inter;  // This is the sample index!
+}
+*/  
+
+//
   template double PulseStartExtractor::extractStart<short>(const std::vector<short>& wf) const;
   template double PulseStartExtractor::extractStart<int>(const std::vector<int>& wf) const;
   template double PulseStartExtractor::extractStart<float>(const std::vector<float>& wf) const;
@@ -214,5 +321,14 @@ namespace icarus::timing {
   template bool PulseStartExtractor::extractStartLogisticFit<int>(const std::vector<int>& wf, std::size_t guess, double par[4]) const;
   template bool PulseStartExtractor::extractStartLogisticFit<float>(const std::vector<float>& wf, std::size_t guess, double par[4]) const;
   template bool PulseStartExtractor::extractStartLogisticFit<double>(const std::vector<double>& wf, std::size_t guess, double par[4]) const;
+
+// ***** MODIFICATIONS ***** //
+
+template double PulseStartExtractor::extractStartInterpolated<short>(const std::vector<short>&, double, double) const;
+template double PulseStartExtractor::extractStartInterpolated<int>(const std::vector<int>&, double, double) const;
+template double PulseStartExtractor::extractStartInterpolated<float>(const std::vector<float>&, double, double) const;
+template double PulseStartExtractor::extractStartInterpolated<double>(const std::vector<double>&, double, double) const;
+
+
 
 } // icarus::timing namespace

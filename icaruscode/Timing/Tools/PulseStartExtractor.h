@@ -27,13 +27,15 @@ namespace icarus::timing {
   enum ExtractionMethod
   {
     CONSTANT_FRACTION,
-    LOGISTIC_FIT
+    LOGISTIC_FIT,
+    INTERPOLATED_CF
   };
 
   // map for string to enum conversion 
   std::map<std::string, ExtractionMethod> const stringToExtractionMethod = { 
     { "LogisticFit", LOGISTIC_FIT },
-    { "ConstantFraction", CONSTANT_FRACTION }
+    { "ConstantFraction", CONSTANT_FRACTION },
+{ "InterpolatedCF", INTERPOLATED_CF }
   };
 
 /**
@@ -142,7 +144,11 @@ namespace icarus::timing {
     // Returns true if the fit converged.
     template <typename T>
     bool extractStartLogisticFit(const std::vector<T> &wf, std::size_t guess, double par[4]) const;
-  };
+
+template <typename T>
+double extractStartInterpolated(const std::vector<T>& wf, double fraction, double dt_ns) const;
+ 
+ };
 
 } // icarus::timing namespace
 
