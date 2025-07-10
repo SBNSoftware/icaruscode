@@ -714,7 +714,7 @@ class icarus::DaqDecoderICARUSPMT: public art::EDProducer {
     fhicl::Atom<std::string> PulseStartExtractionMethod {
       Name("PulseStartExtractionMethod"),
       Comment("pulse start extraction method for the time corrections"),
-      "LogisticFit"
+      "InterpolatedCF"
     };
 
     fhicl::Atom<double> PulseStartExtractionThreshold {
