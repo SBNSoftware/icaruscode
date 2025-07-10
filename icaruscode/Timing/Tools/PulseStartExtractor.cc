@@ -226,77 +226,7 @@ double PulseStartExtractor::extractStartInterpolated(const std::vector<T>& wf, d
 
   return 0.0;
 }
-
-/*
-template <typename T>
-double PulseStartExtractor::extractStartInterpolated(const std::vector<T>& wf, double fraction, double dt_ns) const {
-  if (wf.size() < 2) return 0.0;
-
-  double baseline = computeMedian(wf);
-  auto minIt = std::min_element(wf.begin(), wf.end());
-  std::size_t minIndex = std::distance(wf.begin(), minIt);
-  double peak = wf[minIndex];
-  double threshold = baseline + fraction * (peak - baseline);
-
-  std::size_t prebin = 0, postbin = 0;
-  std::size_t start = (minIndex >= 20) ? (minIndex - 20) : 0;
-
-  for (std::size_t bin = start; bin < minIndex; ++bin) {
-    if (wf[bin] > threshold && wf[bin + 1] <= threshold) {
-      prebin = bin;
-      postbin = bin + 1;
-      break;
-    }
-  }
-
-  if (prebin == postbin) return 0.0; // no crossing found
-
-  // Linear interpolation
-     double y1 = wf[prebin];
-     double y2 = wf[postbin];
-     double m = (y2 - y1);  // ADC diff
-     double frac = (threshold - y1) / m;  // fractional position between prebin and postbin
  
-     double interpolated_sample = static_cast<double>(prebin) + frac;
-     return interpolated_sample * dt_ns;  // time in ns
-               }
-*/
-/*
-template <typename T>
-double PulseStartExtractor::extractStartInterpolated(const std::vector<T>& wf, double fraction) const {
-  if (wf.size() < 2) return 0.0;
-
-  double baseline = computeMedian(wf);
-  auto minIt = std::min_element(wf.begin(), wf.end());
-  std::size_t minIndex = std::distance(wf.begin(), minIt);
-  double peak = wf[minIndex];
-  double threshold = baseline + fraction * (peak - baseline);
-
-  std::size_t start = (minIndex >= 20) ? (minIndex - 20) : 0;
-  std::size_t prebin = 0, postbin = 0;
-  bool found = false;
-
-  for (std::size_t bin = start; bin < minIndex; ++bin) {
-    if (wf[bin] > threshold && wf[bin + 1] <= threshold) {
-      prebin = bin;
-      postbin = bin + 1;
-      found = true;
-      break;
-    }
-  }
-
-  if (!found) return 0.0;
-
-  double y1 = wf[prebin], y2 = wf[postbin];
-  double m = y2 - y1;
-  double x1 = static_cast<double>(prebin);
-  double inter = x1 + (threshold - y1) / m;
-
-  return inter;  // This is the sample index!
-}
-*/  
-
-//
   template double PulseStartExtractor::extractStart<short>(const std::vector<short>& wf) const;
   template double PulseStartExtractor::extractStart<int>(const std::vector<int>& wf) const;
   template double PulseStartExtractor::extractStart<float>(const std::vector<float>& wf) const;
