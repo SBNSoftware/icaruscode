@@ -73,10 +73,6 @@ physics.producers.largeantdropped.InputSourcesLabels: [ "larg4intime:droppedMCPa
 physics.producers.sedlite: @local::sbn_largeant_info_reducer 
 physics.producers.sedlite.SimEnergyDepositLabel: "largeant:LArG4DetectorServicevolTPCActive"
 
-# mcreco dropped label for intime
-physics.producers.mcreco.MCParticleDroppedLabel: "largeantdropped"
-physics.producers.mcreco.MCRecoPart.TrackIDOffsets: [0,10000000,20000000] #Account for track ID offsets in labeling primaries
-
 # simplemerge for intime
 # simplemerge for ML
 physics.producers.simplemerge.InputSourcesLabels: ["largeant", "largeantdropped"]
@@ -104,7 +100,6 @@ physics.simulate: [ rns
                   , genericcrt
                   ### Do truth-level reconstruction
 		  , sedlite
-                  , mcreco
 		  , simplemerge
                   ]
 

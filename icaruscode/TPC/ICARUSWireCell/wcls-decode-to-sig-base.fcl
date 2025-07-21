@@ -54,6 +54,10 @@ standard_wirecell_sigproc:
         signal_output_form: "sparse"
 
         file_rcresp: "icarus_fnal_rc_tail.json"
+
+        // ROI threshold, defined as factor times RMS noise. Per ind/col.
+        col_threshold_factor: 3.0
+        ind_threshold_factor: 3.0
      }
   }
 }

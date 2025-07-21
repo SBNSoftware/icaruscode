@@ -7,7 +7,6 @@
 #include "simdrift_icarus.fcl"
 #include "PDFastSim_icarus.fcl"
 #include "icarus_genericCRT.fcl"
-#include "mcreco.fcl"
 #include "g4inforeducer.fcl"
 #include "simplemerge_icarus.fcl"
 
@@ -46,9 +45,6 @@ physics:
     # Electron propogation
     simdrift: @local::icarus_simdrift
 
-    # Truth-level reconstruction
-    mcreco: @local::standard_mcreco
-
     # needs to run right after largeant
     sedlite:    @local::sbn_largeant_info_reducer 
 
@@ -69,7 +65,6 @@ physics:
             , pdfastsim
             , simdrift
             , sedlite
-            , mcreco
             , genericcrt
 	    , simplemerge
           ]
@@ -89,19 +84,15 @@ physics.producers.largeant.StoreDroppedMCParticles: false
 #services.ParticleListAction.KeepDroppedParticlesInVolumes: ["volDetEnclosure"] 
 
 # ------------------------------------------------------------------------------
-# Configure mcreco to read SEDLite instead of SED and MCParticleLite in addition to MCParticle
-physics.producers.mcreco.G4ModName: "simdrift"
-physics.producers.mcreco.SimChannelLabel: "sedlite"
-physics.producers.mcreco.MCParticleLabel: "largeant"
-physics.producers.mcreco.UseSimEnergyDepositLite: true
-physics.producers.mcreco.UseSimEnergyDeposit: false
-physics.producers.mcreco.IncludeDroppedParticles: true #this is now true with larsoft v09_89 and newer
-physics.producers.mcreco.MCParticleDroppedLabel: "largeant:droppedMCParticles"
-physics.producers.mcreco.MCRecoPart.SavePathPDGList: [13,-13,211,-211,111,311,310,130,321,-321,2212,2112,2224,2214,2114,1114,3122,1000010020,1000010030,1000020030,1000020040]
-physics.producers.mcreco.MCRecoPart.TrackIDOffsets: [0,10000000,20000000] #Account for track ID offsets in labeling primaries
+# Setup hack for 2D
+services.SpaceChargeService.is2DdriftSimHack: true
 
 #info reducer
 physics.producers.sedlite.SimEnergyDepositLabel: "largeant:LArG4DetectorServicevolTPCActive"
 physics.producers.sedlite.useOrigTrackID: true #needed since origTrackID not filled for sedlite in SBND
+
+# avoid huge log files
+services.message.destinations.LogErrorFile.categories.SimDriftElectrons: { limit: 0 }
+services.message.destinations.LogStandardOut.categories.SimDriftElectrons: { limit: 0 }
 
 outputs.rootoutput: @local::icarus_rootoutput

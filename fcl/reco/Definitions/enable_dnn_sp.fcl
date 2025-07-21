@@ -1,0 +1,17 @@
+physics.producers.decon2droiEE.wcls_main.configs: ["pgrapher/experiment/icarus/wcls-decode-to-sig-twofaced-dnnroi.jsonnet"]
+physics.producers.decon2droiEW.wcls_main.configs: ["pgrapher/experiment/icarus/wcls-decode-to-sig-twofaced-dnnroi.jsonnet"]
+physics.producers.decon2droiWE.wcls_main.configs: ["pgrapher/experiment/icarus/wcls-decode-to-sig-twofaced-dnnroi.jsonnet"]
+physics.producers.decon2droiWW.wcls_main.configs: ["pgrapher/experiment/icarus/wcls-decode-to-sig-twofaced-dnnroi.jsonnet"]
+
+physics.producers.decon2droiEE.wcls_main.params.wc_device: "cpu"
+physics.producers.decon2droiEW.wcls_main.params.wc_device: "cpu"
+physics.producers.decon2droiWE.wcls_main.params.wc_device: "cpu"
+physics.producers.decon2droiWW.wcls_main.params.wc_device: "cpu"
+
+physics.producers.wire2channelroi2d.WireModuleLabelVec: ["decon2droiEE:dnnsp", "decon2droiEW:dnnsp", "decon2droiWE:dnnsp", "decon2droiWW:dnnsp"]
+
+physics.analyzers.spanaE.HitProducers: ["gaushit2dTPCEE", "gaushit2dTPCEW"]
+physics.analyzers.spanaE.WireProducers: ["decon2droiEE:dnnsp", "decon2droiEW:dnnsp"]
+
+physics.analyzers.spanaW.HitProducers: ["gaushit2dTPCWE", "gaushit2dTPCWW"]
+physics.analyzers.spanaW.WireProducers: ["decon2droiWE:dnnsp", "decon2droiWW:dnnsp"]
