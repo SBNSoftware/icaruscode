@@ -332,19 +332,19 @@
     <UseThreeDInformation>true</UseThreeDInformation>
     <PersistFeatures>true</PersistFeatures>
     <UseICARUSCollectionPlane>true</UseICARUSCollectionPlane>
-    <MvaFileName>PFOCharBDT_v09_84_00_03_20250508_ICARUSCollection.xml</MvaFileName>
-    <MvaName>PFOCharBDT_v09_84_00_03_20250508_ICARUSCollection</MvaName>
-    <MvaFileNameNoChargeInfo>PandoraBdt_v09_72_01_ICARUS_pfochar_bnb.xml</MvaFileNameNoChargeInfo>
-    <MvaNameNoChargeInfo>PfoCharBDTNoChargeInfo</MvaNameNoChargeInfo>
+    <MvaFileName>PFOCharBDT_v09_84_00_03_20250718_ICARUSCollection.xml</MvaFileName>
+    <MvaName>PFOCharBDT_v09_84_00_03_20250718_ICARUSCollection</MvaName>
+    <MvaFileNameNoChargeInfo>PFOCharBDT_v09_84_00_03_20250718_NoCharge.xml</MvaFileNameNoChargeInfo>
+    <MvaNameNoChargeInfo>PFOCharBDT_v09_84_00_03_20250718_NoCharge</MvaNameNoChargeInfo>
     <FeatureTools>
       <tool type = "LArThreeDLinearFitFeatureTool"/>
       <tool type = "LArThreeDVertexDistanceFeatureTool"/>
       <tool type = "LArThreeDPCAFeatureTool"/>
       <tool type = "LArThreeDOpeningAngleFeatureTool"/>
-      <tool type = "LArThreeDChargeFeatureTool">
+      <tool type = "LArThreeDChargeFeatureTool_ICARUS">
         <UseICARUSCollectionPlane>true</UseICARUSCollectionPlane>
       </tool>
-      <tool type = "LArConeChargeFeatureTool">
+      <tool type = "LArConeChargeFeatureTool_ICARUS">
         <UseICARUSCollectionPlane>true</UseICARUSCollectionPlane>
       </tool>
     </FeatureTools>
