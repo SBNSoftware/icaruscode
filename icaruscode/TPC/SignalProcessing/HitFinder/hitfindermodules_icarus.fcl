@@ -123,5 +123,15 @@ icarus_hitconverter:
     DaignosticOutput:      false
 }
 
+icarus_hitmerger_cryoE: {
+  module_type:            HitMerger
+  HitProducerLabelVec:   ["gaushit2dTPCEW", "gaushit2dTPCEE"]
+}
+
+icarus_hitmerger_cryoW: {
+  module_type:            HitMerger
+  HitProducerLabelVec:   ["gaushit2dTPCWW", "gaushit2dTPCWE"]
+}
+
 
 END_PROLOG
