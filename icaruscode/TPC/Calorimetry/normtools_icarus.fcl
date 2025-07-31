@@ -24,9 +24,9 @@ yznorm: {
 }
 
 tpcgain: {
-  tool_type: NormalizeTPC
+  tool_type: NormalizeTPCPerPlane
   Timeout: 200
-  URL: "https://dbdata0vm.fnal.gov:9443/icarus_con_prod/app/data?f=tpc_dqdxcalibration_data&t="
+  URL: "https://dbdata0vm.fnal.gov:9443/icarus_con_prod/app/data?f=tpc_dqdxcalibration_allplanes_data&t="
   Verbose: false
 }
 
@@ -38,9 +38,9 @@ driftnorm_sql: {
 }
 
 tpcgain_sql: {
-  tool_type: NormalizeTPCSQL
-  DBFileName: tpc_dqdxcalibration_data
-  DBTag: @local::ICARUS_Calibration_GlobalTags.tpc_dqdxcalibration_data
+  tool_type: NormalizeTPCPerPlaneSQL
+  DBFileName: tpc_dqdxcalibration_allplanes_data
+  DBTag: @local::ICARUS_Calibration_GlobalTags.tpc_dqdxcalibration_allplanes_data
   Verbose: false
 }
 
@@ -59,7 +59,7 @@ yznorm_sql: {
 }
 
 #icarus_calonormtools: [@local::driftnorm, @local::yznorm, @local::tpcgain]
- icarus_calonormtools: [@local::driftnorm_sql, @local::yznorm_sql, @local::tpcgain_sql]
+icarus_calonormtools: [@local::driftnorm_sql, @local::yznorm_sql, @local::tpcgain_sql]
 
 # Gain with angular dep. recombination. Measurement from: https://arxiv.org/pdf/2407.12969
 # Assume equal on planes -- this is __wrong__ -- will need to be fixed when they are calibrated
