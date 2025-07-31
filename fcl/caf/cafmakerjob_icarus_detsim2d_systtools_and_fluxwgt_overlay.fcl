@@ -1,5 +1,10 @@
 #include "cafmakerjob_icarus_detsim2d_systtools_and_fluxwgt.fcl"
 
-services.BackTrackerService.BackTracker.OverrideRealData: true
-services.ParticleInventoryService.ParticleInventory.OverrideRealData: true
-physics.producers.cafmaker.OverrideRealData: true
+# overwrite the producers to use data versions
+physics.producers: @local::caf_preprocess_data_producers
+physics.runprod: [ @sequence::caf_preprocess_data_sequence, rns, systtools, fluxweight, cafmaker]
+
+physics.producers.cafmaker.SystWeightLabels: ["systtools", "fluxweight"]
+
+
+#include "cafmaker_add_overlay_icarus.fcl"
