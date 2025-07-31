@@ -1,6 +1,7 @@
 #include "stage0_run2_wc_icarus_mc.fcl"
 
 # restore non-shifted labels
+physics.producers.ophit.InputModule: "opdaq"
 physics.producers.emuTrigger.BeamGates: "beamgate"
 physics.producers.mcophit.SimPhotonsProducer: "pdfastsim"
 physics.producers.opdetonbeam.Waveforms: "opdaq"
