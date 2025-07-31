@@ -39,7 +39,10 @@ private:
   std::string fDBFileName;
   std::string fDBTag;
   bool fVerbose;
+<<<<<<< HEAD
   int fMC;
+=======
+>>>>>>> e0afaa22 (Update calibrations for 2D+DNN signal processing for Run 2.)
 
   lariov::DBFolder fDB;
 
@@ -66,15 +69,21 @@ icarus::calo::NormalizeTPCPerPlaneSQL::NormalizeTPCPerPlaneSQL(fhicl::ParameterS
   fDBFileName(pset.get<std::string>("DBFileName")),
   fDBTag(pset.get<std::string>("DBTag")),
   fVerbose(pset.get<bool>("Verbose", false)),
+<<<<<<< HEAD
   fMC(pset.get<int>("MC")),
+=======
+>>>>>>> e0afaa22 (Update calibrations for 2D+DNN signal processing for Run 2.)
   fDB(fDBFileName, "", "", fDBTag, true, false) {}
 
 void icarus::calo::NormalizeTPCPerPlaneSQL::configure(const fhicl::ParameterSet& pset) {}
 
 icarus::calo::NormalizeTPCPerPlaneSQL::ScaleInfo icarus::calo::NormalizeTPCPerPlaneSQL::GetScaleInfo(uint64_t run) {
+<<<<<<< HEAD
 
   //std::cout << "NormalizeTPCSQL Tool -- Getting scale info for run: " << run << std::endl;
 
+=======
+>>>>>>> e0afaa22 (Update calibrations for 2D+DNN signal processing for Run 2.)
   // check the cache
   if (fScaleInfos.count(run)) {
     return fScaleInfos.at(run);
@@ -103,8 +112,6 @@ icarus::calo::NormalizeTPCPerPlaneSQL::ScaleInfo icarus::calo::NormalizeTPCPerPl
 
 double icarus::calo::NormalizeTPCPerPlaneSQL::Normalize(double dQdx, const art::Event &e, 
     const recob::Hit &hit, const geo::Point_t &location, const geo::Vector_t &direction, double t0) {
- 
-  //std::cout << "NormalizeTPCSQL Tool -- MC Flag: " << fMC << " Run: " << e.id().runID().run() << ", Subrun: " << e.id().subRunID().run() << std::endl;
 
   // Get the info
   uint64_t runID = -1;
