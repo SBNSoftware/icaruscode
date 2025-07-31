@@ -37,6 +37,8 @@
 #include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
 #include "lardata/DetectorInfoServices/LArPropertiesService.h"
 
+#include "sbnobj/ICARUS/TPC/ChannelROI.h"
+
 class HitMerger : public art::EDProducer
 {
 public:
@@ -62,8 +64,13 @@ private:
     /**
      *  @brief Create raw::RawDigit to recob::Hit associations
      */
-    
     void makeRawDigitAssns(const art::Event&, art::Assns<raw::RawDigit, recob::Hit>&, RecobHitToPtrMap&) const;
+
+    /**
+     *  @brief Create recob::ChannelROI to recob::Hit associatins
+     */
+    void makeChanROIAssns(const art::Event&, art::Assns<recob::ChannelROI, recob::Hit>&, RecobHitToPtrMap&) const;
+
     // define vector for hits to make sure of uniform use
     using HitPtrVector = std::vector<art::Ptr<recob::Hit>>;
     
@@ -87,6 +94,7 @@ HitMerger::HitMerger(fhicl::ParameterSet const & pset) : EDProducer{pset}
     produces< std::vector<recob::Hit>>();
     produces< art::Assns<recob::Wire,   recob::Hit>>();
     produces< art::Assns<raw::RawDigit, recob::Hit>>();
+    produces< art::Assns<recob::ChannelROI, recob::Hit>>();
     
     // Report.
     mf::LogInfo("HitMerger") << "HitMerger configured\n";
@@ -139,6 +147,9 @@ void HitMerger::produce(art::Event & evt)
     /// Associations with raw digits.
     std::unique_ptr<art::Assns<raw::RawDigit, recob::Hit>> rawDigitAssns(new art::Assns<raw::RawDigit, recob::Hit>);
 
+    /// Associations with channel ROIs.
+     std::unique_ptr<art::Assns<recob::ChannelROI,recob::Hit>> chanROIAssns(new art::Assns<recob::ChannelROI,recob::Hit>);
+
     RecobHitToPtrMap recobHitToPtrMap;
     
     // Use this handy art utility to make art::Ptr objects to the new recob::Hits for use in the output phase
@@ -172,11 +183,14 @@ void HitMerger::produce(art::Event & evt)
     makeWireAssns(evt, *wireAssns, recobHitToPtrMap);
     
     makeRawDigitAssns(evt, *rawDigitAssns, recobHitToPtrMap);
+
+    makeChanROIAssns(evt, *chanROIAssns, recobHitToPtrMap);
     
     // Move everything into the event
     evt.put(std::move(outputHitPtrVec));
     evt.put(std::move(wireAssns));
     evt.put(std::move(rawDigitAssns));
+    evt.put(std::move(chanROIAssns));
     
     return;
 }
@@ -260,6 +274,48 @@ void HitMerger::makeRawDigitAssns(const art::Event& evt, art::Assns<raw::RawDigi
         if (!(chanRawDigitItr != channelToRawDigitMap.end())) continue;
         
         rawDigitAssns.addSingle(chanRawDigitItr->second, hitPtrPair.second);
+    }
+    
+    return;
+}
+
+void HitMerger::makeChanROIAssns(const art::Event& evt, art::Assns<recob::ChannelROI, recob::Hit> &chanROIAssns, RecobHitToPtrMap& recobHitPtrMap) const
+{
+    // Let's make sure the input associations container is empty
+    chanROIAssns = art::Assns<recob::ChannelROI, recob::Hit>();
+    
+    // First task is to recover all of the previous chanROI <--> hit associations and map them by channel number
+    // Create the temporary container
+    std::unordered_map<raw::ChannelID_t, art::Ptr<recob::ChannelROI>> channelToChanROIMap;
+    
+    // Go through the list of input sources and fill out the map
+    for(const auto& inputTag : HitMergerfHitProducerLabelVec)
+    {
+        art::ValidHandle<std::vector<recob::Hit>> hitHandle = evt.getValidHandle<std::vector<recob::Hit>>(inputTag);
+        
+        art::FindOneP<recob::ChannelROI> hitToChanROIAssns(hitHandle, evt, inputTag);
+        
+        if (hitToChanROIAssns.isValid())
+        {
+            for(size_t chanROIIdx = 0; chanROIIdx < hitToChanROIAssns.size(); chanROIIdx++)
+            {
+                art::Ptr<recob::ChannelROI> chanROI = hitToChanROIAssns.at(chanROIIdx);
+                
+                channelToChanROIMap[chanROI->Channel()] = chanROI;
+            }
+        }
+    }
+    
+    // Now fill the container
+    for(const auto& hitPtrPair : recobHitPtrMap)
+    {
+        raw::ChannelID_t channel = hitPtrPair.first->Channel();
+        
+        std::unordered_map<raw::ChannelID_t, art::Ptr<recob::ChannelROI>>::iterator chanChanROIItr = channelToChanROIMap.find(channel);
+        
+        if (!(chanChanROIItr != channelToChanROIMap.end())) continue;
+        
+        chanROIAssns.addSingle(chanChanROIItr->second, hitPtrPair.second);
     }
     
     return;
