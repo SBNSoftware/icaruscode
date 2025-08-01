@@ -16,7 +16,7 @@ BEGIN_PROLOG
 icarus_largeantparameters:                       @local::standard_largeantparameters # from simulationservices.fcl
 icarus_largeantparameters.UseCustomPhysics:      true
 icarus_largeantparameters.LongitudinalDiffusion: 4.0e-9  #in cm^2/ns
-icarus_largeantparameters.TransverseDiffusion:   7.5e-9  #in cm^2/ns
+icarus_largeantparameters.TransverseDiffusion:   8.8e-9  #in cm^2/ns
 icarus_largeantparameters.ElectronClusterSize:   20.0    #number of ionization electrons to drift in a unit
 icarus_largeantparameters.EnabledPhysics:        [ "Em", "SynchrotronAndGN", "Ion", "Hadron",
                                                    "Decay", "HadronElastic", "Stopping"
