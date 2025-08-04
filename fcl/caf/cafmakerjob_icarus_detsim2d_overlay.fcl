@@ -1,7 +1,8 @@
 #include "cafmakerjob_icarus.fcl"
+
+# overwrite the producers to use data versions
+physics.producers: @local::caf_preprocess_data_producers
+physics.runprod: [ @sequence::caf_preprocess_data_sequence, cafmaker]
+
 #include "cafmaker_add_detsim2d_icarus.fcl"
-
-services.BackTrackerService.BackTracker.OverrideRealData: true
-services.ParticleInventoryService.ParticleInventory.OverrideRealData: true
-
-physics.producers.cafmaker.OverrideRealData: true
+#include "cafmaker_add_overlay_icarus.fcl"

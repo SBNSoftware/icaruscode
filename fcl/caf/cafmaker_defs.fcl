@@ -14,7 +14,6 @@
 #include "eventweight_genie_sbn.fcl"
 #include "eventweight_genie_systtools.fcl"
 #include "eventweight_flux_sbn.fcl"
-#include "mcreco.fcl"
 #include "mcsproducer.fcl"
 #include "rangeproducer.fcl"
 #include "flashmatch_simple_icarus.fcl"
@@ -87,8 +86,6 @@ recoana_datacalo_producers.vertexStubCryoW.NormTools: @local::icarus_calonormtoo
 
 # Producers for making analysis level products
 recoana_caf_preprocess_producers: {
-  mcreco: @local::standard_mcreco
-
   pandoraTrackMCSCryoE: @local::mcs_sbn
   pandoraTrackMCSCryoW: @local::mcs_sbn
 
@@ -228,7 +225,7 @@ caf_preprocess_sce_producers: {
 }
 
 # Sequences
-caf_preprocess_sequence: [ mcreco,
+caf_preprocess_sequence: [ 
     # Calorimetry
     pandoraCaloGausCryoE, pandoraCaloGausCryoW,
     pandoraPidGausCryoE, pandoraPidGausCryoW,
@@ -258,7 +255,7 @@ caf_preprocess_data_sequence: [
 
 caf_preprocess_evtw_sequence: [@sequence::caf_preprocess_sequence, rns, genieweight, fluxweight]
 
-caf_preprocess_sce_sequence: [ mcreco,
+caf_preprocess_sce_sequence: [ 
   # Run the SCE correction
   pandoraGausSCECryoE, pandoraGausSCECryoW,
   # Then remake tracks

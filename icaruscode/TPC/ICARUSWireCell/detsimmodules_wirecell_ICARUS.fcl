@@ -54,19 +54,18 @@ icarus_simwire_wirecell:
 	    overlay_drifter: false # default drifter by default
 
             # Gain and shaping time
-            gain0: 17.05212   # mV/fC 
-            gain1: 12.6181926 # mV/fC 
-            gain2: 13.0261362 # mV/fC 
+            gain0: 17.9488  # mV/fC 
+            gain1: 12.4317 # mV/fC 
+            gain2: 14.0976 # mV/fC 
 
             shaping0: 1.3 # us
             shaping1: 1.45 # us
             shaping2: 1.3 # us
 
-            # Time offsets for truth matching
-            time_offset_u: 0.0 # us
-            time_offset_v: 0.0 # us
-            time_offset_y: 0.0 # us
-
+            # Time offsets for truth matching -- tuned to 2D deconvolution output
+            time_offset_u: 2.53 # us
+            time_offset_v: 2.41 # us
+            time_offset_y: 2.53 # us
         }
     }
 }
@@ -80,6 +79,14 @@ icarus_simwire_wirecell_SConly.wcls_main.outputers:[
 
 icarus_simwire_wirecell_shifted: @local::icarus_simwire_wirecell
 icarus_simwire_wirecell_shifted.wcls_main.params.SimEnergyDepositLabel: "shifted"
+
+icarus_simwire_wirecell_shifted_overlay: @local::icarus_simwire_wirecell_shifted
+icarus_simwire_wirecell_shifted_overlay.wcls_main.structs.coh_noise_scale: 0.0 # disable noise
+icarus_simwire_wirecell_shifted_overlay.wcls_main.structs.int_noise_scale: 0.0 # ditto
+icarus_simwire_wirecell_shifted_overlay.wcls_main.structs.overlay_drifter: true
+icarus_simwire_wirecell_shifted_overlay.wcls_main.plugins: [@sequence::icarus_simwire_wirecell_shifted_overlay.wcls_main.plugins, "WireCellICARUSDrifter"]
+icarus_simwire_wirecell_shifted_overlay.wcls_main.inputers: ["wclsSimDepoSetSource:electron", "wclsICARUSDrifter:drifter"]
+icarus_simwire_wirecell_shifted_overlay.wcls_main.params.cathode_input_format: "scalar"
 
 icarus_simwire_wirecell_filtersed: @local::icarus_simwire_wirecell
 icarus_simwire_wirecell_filtersed.wcls_main.params.SimEnergyDepositLabel: "filtersed"
