@@ -61,8 +61,8 @@ yznorm_sql: {
 #icarus_calonormtools: [@local::driftnorm, @local::yznorm, @local::tpcgain]
 icarus_calonormtools: [@local::driftnorm_sql, @local::yznorm_sql, @local::tpcgain_sql]
 
-# Gain with angular dep. recombination. Measurement from: https://arxiv.org/pdf/2407.12969
-# Assume equal on planes -- this is __wrong__ -- will need to be fixed when they are calibrated
-icarus_data_calconst: [0.0133333, 0.0133333, 0.0133333]
+# GP 8/4/25 -- Update gain to re-measurement with Run 2 stopping muons and 
+# fixed recombination.
+icarus_data_calconst: [0.016751, 0.012755, 0.012513]
 
 END_PROLOG
