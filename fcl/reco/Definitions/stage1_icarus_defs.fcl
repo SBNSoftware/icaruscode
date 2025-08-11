@@ -389,4 +389,7 @@ icarus_stage1_producers.SBNShowerGausCryoW.UseAllParticles:                     
 icarus_stage1_producers.SBNShowerGausCryoE.PFParticleLabel:                                      "pandoraGausCryoE"
 icarus_stage1_producers.SBNShowerGausCryoE.UseAllParticles:                                      true
 
+# Set supera input fcl files
+icarus_stage1_analyzers.superaMC.supera_params: "supera_icarus_MC_all_cryo_PMT_CRT_v10.fcl"
+
 END_PROLOG
