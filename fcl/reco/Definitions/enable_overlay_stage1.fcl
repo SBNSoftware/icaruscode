@@ -12,3 +12,6 @@ physics.producers.crttrack.DataLabelHits: "overlayCRTHit"
 
 # overlay PMT waveforms
 physics.analyzers.simpleLightAna.OpDetWaveformLabels: ["overlayOpWaveforms"]
+
+# Set Supera config
+icarus_stage1_analyzers.superaMC.supera_params: "supera_icarus_MC_all_cryo_PMT_CRT_overlay.fcl"
