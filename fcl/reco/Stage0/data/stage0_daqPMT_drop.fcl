@@ -2,6 +2,8 @@
 ## This fhicl file is used to drop daqPMT from the stage0 file
 ##
 
+#include "services_common_icarus.fcl"
+
 process_name: daqPMTdrop
 
 outputs: {

@@ -54,9 +54,9 @@ icarus_simwire_wirecell:
 	    overlay_drifter: false # default drifter by default
 
             # Gain and shaping time
-            gain0: 17.9488  # mV/fC 
-            gain1: 12.4317 # mV/fC 
-            gain2: 14.0976 # mV/fC 
+            gain0: 18.0839  # mV/fC 
+            gain1: 12.2379 # mV/fC 
+            gain2: 13.8819 # mV/fC 
 
             shaping0: 1.3 # us
             shaping1: 1.45 # us
