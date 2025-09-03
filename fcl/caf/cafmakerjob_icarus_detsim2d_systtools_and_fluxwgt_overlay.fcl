@@ -6,5 +6,5 @@ physics.runprod: [ @sequence::caf_preprocess_data_sequence, rns, systtools, flux
 
 physics.producers.cafmaker.SystWeightLabels: ["systtools", "fluxweight"]
 
-
+#include "cafmaker_add_detsim2d_icarus.fcl"
 #include "cafmaker_add_overlay_icarus.fcl"
