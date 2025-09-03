@@ -20,7 +20,7 @@ ProcessDriver: {
   ProcessList: {
     SuperaCRT: {
       CRTHitProducers: ["overlayCRTHit"]
-      CRTHitOutputs: ["overlayCRTHit"]
+      CRTHitOutputs: ["crthit"]
     }
 
 		SuperaOptical: {
