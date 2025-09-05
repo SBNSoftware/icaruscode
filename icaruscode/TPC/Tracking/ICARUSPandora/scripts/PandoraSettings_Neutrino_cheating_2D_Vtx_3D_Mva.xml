@@ -1,0 +1,144 @@
+<pandora>
+  <!-- Output list management -->
+  <!-- GLOBAL SETTINGS -->
+  <IsMonitoringEnabled>false</IsMonitoringEnabled>
+  <ShouldDisplayAlgorithmInfo>true</ShouldDisplayAlgorithmInfo>
+  <SingleHitTypeClusteringMode>true</SingleHitTypeClusteringMode>
+
+  <!-- ALGORITHM SETTINGS -->
+  <algorithm type = "LArPreProcessing">
+    <OutputCaloHitListNameU>CaloHitListU</OutputCaloHitListNameU>
+    <OutputCaloHitListNameV>CaloHitListV</OutputCaloHitListNameV>
+    <OutputCaloHitListNameW>CaloHitListW</OutputCaloHitListNameW>
+    <FilteredCaloHitListName>CaloHitList2D</FilteredCaloHitListName>
+    <CurrentCaloHitListReplacement>CaloHitList2D</CurrentCaloHitListReplacement>
+  </algorithm>
+
+  <!-- TwoDReconstruction -->
+  <algorithm type = "LArClusteringParent">
+    <algorithm type = "LArCheatingClusterCreation" description = "ClusterFormation">
+      <CollapseToPrimaryMCParticles>false</CollapseToPrimaryMCParticles>
+      <MCParticleListName>Input</MCParticleListName>
+    </algorithm>
+    <InputCaloHitListName>CaloHitListU</InputCaloHitListName>
+    <ClusterListName>ClustersU</ClusterListName>
+    <ReplaceCurrentCaloHitList>false</ReplaceCurrentCaloHitList>
+    <ReplaceCurrentClusterList>true</ReplaceCurrentClusterList>
+  </algorithm>
+
+  <algorithm type = "LArClusteringParent">
+    <algorithm type = "LArCheatingClusterCreation" description = "ClusterFormation">
+      <CollapseToPrimaryMCParticles>false</CollapseToPrimaryMCParticles>
+      <MCParticleListName>Input</MCParticleListName>
+    </algorithm>
+    <InputCaloHitListName>CaloHitListV</InputCaloHitListName>
+    <ClusterListName>ClustersV</ClusterListName>
+    <ReplaceCurrentCaloHitList>false</ReplaceCurrentCaloHitList>
+    <ReplaceCurrentClusterList>true</ReplaceCurrentClusterList>
+  </algorithm>
+
+  <algorithm type = "LArClusteringParent">
+    <algorithm type = "LArCheatingClusterCreation" description = "ClusterFormation">
+      <CollapseToPrimaryMCParticles>false</CollapseToPrimaryMCParticles>
+      <MCParticleListName>Input</MCParticleListName>
+    </algorithm>
+    <InputCaloHitListName>CaloHitListW</InputCaloHitListName>
+    <ClusterListName>ClustersW</ClusterListName>
+    <ReplaceCurrentCaloHitList>false</ReplaceCurrentCaloHitList>
+    <ReplaceCurrentClusterList>true</ReplaceCurrentClusterList>
+  </algorithm>
+
+  <!-- VertexAlgorithms -->
+  <algorithm type = "LArCheatingVertexCreation">
+    <OutputVertexListName>NeutrinoVertices3D</OutputVertexListName>
+    <ReplaceCurrentVertexList>true</ReplaceCurrentVertexList>
+    <VertexXCorrection>0</VertexXCorrection>
+  </algorithm>
+
+  <algorithm type = "LArCheatingPfoCreation">
+    <InputClusterListNames>ClustersU ClustersV ClustersW</InputClusterListNames>
+    <OutputPfoListName>PfoParticles3D</OutputPfoListName>
+    <AddVertices>false</AddVertices>
+    <CollapseToPrimaryMCParticles>false</CollapseToPrimaryMCParticles>
+    <MCParticleListName>Input</MCParticleListName>
+  </algorithm>
+
+  <algorithm type = "LArThreeDHitCreation">
+    <InputPfoListName>PfoParticles3D</InputPfoListName>
+    <OutputCaloHitListName>PfoCaloHits3D</OutputCaloHitListName>
+    <OutputClusterListName>PfoClusters3D</OutputClusterListName>
+    <HitCreationTools>
+      <tool type = "LArClearTransverseTrackHits"><MinViews>3</MinViews></tool>
+      <tool type = "LArClearLongitudinalTrackHits"><MinViews>3</MinViews></tool>
+      <tool type = "LArMultiValuedLongitudinalTrackHits"><MinViews>3</MinViews></tool>
+      <tool type = "LArMultiValuedTransverseTrackHits"><MinViews>3</MinViews></tool>
+      <tool type = "LArClearTransverseTrackHits"><MinViews>2</MinViews></tool>
+      <tool type = "LArClearLongitudinalTrackHits"><MinViews>2</MinViews></tool>
+      <tool type = "LArMultiValuedLongitudinalTrackHits"><MinViews>2</MinViews></tool>
+    </HitCreationTools>
+  </algorithm>
+
+  <!-- NeutrinoAlgorithms -->
+  <algorithm type = "LArNeutrinoCreation">
+    <InputVertexListName>NeutrinoVertices3D</InputVertexListName>
+    <NeutrinoPfoListName>NeutrinoParticles3D</NeutrinoPfoListName>
+  </algorithm>
+  <algorithm type = "LArNeutrinoHierarchy">
+    <NeutrinoPfoListName>NeutrinoParticles3D</NeutrinoPfoListName>
+    <DaughterPfoListNames>PfoParticles3D</DaughterPfoListNames>
+    <DisplayPfoInfoMap>false</DisplayPfoInfoMap>
+    <PfoRelationTools>
+      <tool type = "LArVertexAssociatedPfos"/>
+      <tool type = "LArEndAssociatedPfos"/>
+      <tool type = "LArBranchAssociatedPfos"/>
+    </PfoRelationTools>
+  </algorithm>
+  <algorithm type = "LArNeutrinoDaughterVertices">
+    <NeutrinoPfoListName>NeutrinoParticles3D</NeutrinoPfoListName>
+    <OutputVertexListName>DaughterVertices3D</OutputVertexListName>
+  </algorithm>
+
+  <algorithm type = "LArCheatingMvaPfoCharacterisation">
+    <CaloHitListName>CaloHitList2D</CaloHitListName>
+    <MCParticleListName>Input</MCParticleListName>
+    <UseCaloHitsMatching>false</UseCaloHitsMatching>
+    <TrackPfoListName>PfoParticles3D</TrackPfoListName>
+    <!-- ShowerParticles3D -->
+    <ShowerPfoListName>ShowerParticles3D</ShowerPfoListName>
+    <UseThreeDInformation>true</UseThreeDInformation>
+    <PersistFeatures>true</PersistFeatures>
+    <FeatureTools>
+      <tool type = "LArThreeDLinearFitFeatureTool"/>
+      <tool type = "LArThreeDVertexDistanceFeatureTool"/>
+      <tool type = "LArThreeDPCAFeatureTool"/>
+      <tool type = "LArThreeDOpeningAngleFeatureTool"/>
+      <tool type = "LArThreeDChargeFeatureTool"/>
+      <tool type = "LArConeChargeFeatureTool"/>
+    </FeatureTools>
+    <FeatureToolsNoChargeInfo>
+      <tool type = "LArThreeDLinearFitFeatureTool"/>
+      <tool type = "LArThreeDVertexDistanceFeatureTool"/>
+      <tool type = "LArThreeDPCAFeatureTool"/>
+      <tool type = "LArThreeDOpeningAngleFeatureTool"/>
+    </FeatureToolsNoChargeInfo>
+  </algorithm>
+
+  <algorithm type = "LArNeutrinoProperties">
+    <NeutrinoPfoListName>NeutrinoParticles3D</NeutrinoPfoListName>
+  </algorithm>
+
+  <!-- Track and shower building -->
+  <algorithm type = "LArTrackParticleBuilding">
+    <PfoListName>PfoParticles3D</PfoListName>
+    <VertexListName>DaughterVertices3D</VertexListName>
+  </algorithm>
+
+  <!-- Output list management -->
+  <algorithm type = "LArPostProcessing">
+    <PfoListNames>NeutrinoParticles3D PfoParticles3D ShowerParticles3D</PfoListNames>
+    <VertexListNames>NeutrinoVertices3D DaughterVertices3D</VertexListNames>
+    <ClusterListNames>ClustersU ClustersV ClustersW PfoClusters3D</ClusterListNames>
+    <CaloHitListNames>CaloHitListU CaloHitListV CaloHitListW CaloHitList2D</CaloHitListNames>
+    <CurrentPfoListReplacement>NeutrinoParticles3D</CurrentPfoListReplacement>
+  </algorithm>
+</pandora>
