@@ -35,26 +35,27 @@ namespace recob {
       float bestp, float errorp, float minp, float maxp,
       float alpha, float dalpha, float beta, float dbeta,
       std::vector<float> testp, std::vector<float> c2function,
-      float c2atrange,
+      std::vector<int> tailssize,
+      float c2atrange, int tailsatrange, 
       float sigma3p, 
       float L1D, float L2D, float L3D,
       std::vector<float> seglens, std::vector<float> cumseglens, 
       std::vector<int> seghits, std::vector<int> cumseghits,
       std::vector<float> dthetalinexp, std::vector<float> dthetalin,
       std::vector<float> dthetapolyexp, std::vector<float> dthetapoly,
-      bool stop, std::vector<int> isdelta) 
+      bool stop, std::vector<int> isdelta, std::vector<int> isdeltaindex) 
       : pid_(pid), 
         bestp_(bestp), errorp_(errorp), minp_(minp), maxp_(maxp), 
         alpha_(alpha), dalpha_(dalpha), beta_(beta), dbeta_(dbeta), 
-        testp_(testp), c2function_(c2function), 
-        c2atrange_(c2atrange),
+        testp_(testp), c2function_(c2function), tailssize_(tailssize),
+        c2atrange_(c2atrange), tailsatrange_(tailsatrange),
         sigma3p_(sigma3p),
         L1D_(L1D), L2D_(L2D), L3D_(L3D),
         seglens_(seglens), cumseglens_(cumseglens),
         seghits_(seghits), cumseghits_(cumseghits),
         dthetalinexp_(dthetalinexp), dthetalin_(dthetalin),
         dthetapolyexp_(dthetapolyexp), dthetapoly_(dthetapoly),
-        stop_(stop), isdelta_(isdelta)
+        stop_(stop), isdelta_(isdelta), isdeltaindex_(isdeltaindex)
     {}
 
     /// particle id hypothesis used in the fit
@@ -101,9 +102,17 @@ namespace recob {
     std::vector<float> C2Function() const { 
       return c2function_; }
 
+    /// vector of number of tails
+    std::vector<int> TailsSize() const { 
+      return tailssize_; }
+
     /// c2 function value at range momentum
     float C2AtRange() const { 
       return c2atrange_; }
+
+    /// number of tails at range momentum
+    int TailsAtRange() const { 
+      return tailsatrange_; }
 
     /// RMS of delta3p distribution [cm]
     float sigma3P() const { 
@@ -160,19 +169,22 @@ namespace recob {
     /// vector of check on delta rays
     std::vector<int> IsDelta() const {
       return isdelta_; }
+
+    std::vector<int> IsDeltaIndex() const {
+      return isdeltaindex_; }
   private:
     int pid_;
     float bestp_; float errorp_; float minp_; float maxp_;
     float alpha_; float dalpha_; float beta_; float dbeta_;
-    std::vector<float> testp_; std::vector<float> c2function_;
-    float c2atrange_;
+    std::vector<float> testp_; std::vector<float> c2function_; std::vector<int> tailssize_; 
+    float c2atrange_; int tailsatrange_;
     float sigma3p_;
     float L1D_; float L2D_; float L3D_;
     std::vector<float> seglens_; std::vector<float> cumseglens_;
     std::vector<int> seghits_; std::vector<int> cumseghits_;
     std::vector<float> dthetalinexp_; std::vector<float> dthetalin_; 
     std::vector<float> dthetapolyexp_; std::vector<float> dthetapoly_;
-    bool stop_; std::vector<int> isdelta_;
+    bool stop_; std::vector<int> isdelta_; std::vector<int> isdeltaindex_;
   };
 }
 

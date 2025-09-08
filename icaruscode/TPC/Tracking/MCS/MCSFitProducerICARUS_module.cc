@@ -158,83 +158,82 @@ void trkf::MCSFitProducerICARUS::produce(art::Event & e) {
     else cryo = 0;
     if (cryo == 0) std::cout << "starting gsasso algorithm, event " << e.event() << " track id = " << je << " in cryostat EAST" << std::endl;
     if (cryo == 1) std::cout << "starting gsasso algorithm, event " << e.event() << " track id = " << je << " in cryostat WEST" << std::endl;
-
-    std::cout << "selectCount = " << selectCount << " selectCryo = " << selectCryo << std::endl;
-    if ((count[cryo] == selectCount && cryo == selectCryo) || selectCount < 0) //0 EAST 1 WEST
-      std::cout << "Selected event with count: " << count[cryo] << " and cryostat: " << cryo << std::endl;
-    
-    auto const& start = element.Start(); 
-    auto const& end = element.End(); 
-    auto const& length = element.Length(); 
-    std::cout << "first point [cm] = "
-          << start.X() << ", "
-          << start.Y() << ", "
-          << start.Z() << std::endl;
-    std::cout << "last point [cm] = "
-          << end.X() << ", "
-          << end.Y() << ", "
-          << end.Z() << std::endl;
-    std::cout << "track length [cm] = " << length << std::endl;
-    
-    std::vector<recob::Hit> hits2dC; hits2dC.clear();
-    std::vector<recob::Hit> hits2dI2; hits2dI2.clear();
-    std::vector<recob::Hit> hits2dI1; hits2dI1.clear();
-    std::vector<proxy::TrackPointData> pdata; pdata.clear();
-    
-    bool geocheck = GeoStopCheck(element);
-    if (!geocheck) {
-      std::cout << "track not stopping, go to next track" << std::endl; 
-      recob::MCSFitResultGS result = recob::MCSFitResultGS();
-      output->emplace_back(std::move(result)); 
-      continue; }
-    if (length < minLen) {
-      std::cout << "track too short, go to next track" << std::endl; 
-      recob::MCSFitResultGS result = recob::MCSFitResultGS();
-      output->emplace_back(std::move(result)); 
-      continue; }
+    std::cout << " " << std::endl;
 
     count[cryo]++;
-    hits2dI1 = projectHitsOnPlane(e, element, count[cryo], 0, pdata);
-    hits2dI2 = projectHitsOnPlane(e, element, count[cryo], 1, pdata);
-    hits2dC = projectHitsOnPlane(e, element, count[cryo], 2, pdata);
-    std::vector<art::Ptr<recob::Hit>> emptyHitVector;
-    art::Ptr<recob::Track> trkPtr = allPtrs.at(je);
-    auto const clockData = art::ServiceHandle<detinfo::DetectorClocksService const>()->DataFor(e);
-    auto const detProp = art::ServiceHandle<detinfo::DetectorPropertiesService const>()->DataFor(e, clockData);
+    if ((count[cryo] == selectCount && cryo == selectCryo) || selectCount < 0) {//0 EAST 1 WEST
+      auto const& start = element.Start(); 
+      auto const& end = element.End(); 
+      auto const& length = element.Length(); 
+      std::cout << "first point [cm] = "
+            << start.X() << ", "
+            << start.Y() << ", "
+            << start.Z() << std::endl;
+      std::cout << "last point [cm] = "
+            << end.X() << ", "
+            << end.Y() << ", "
+            << end.Z() << std::endl;
+      
+      std::vector<recob::Hit> hits2dC; hits2dC.clear();
+      std::vector<recob::Hit> hits2dI2; hits2dI2.clear();
+      std::vector<recob::Hit> hits2dI1; hits2dI1.clear();
+      std::vector<proxy::TrackPointData> pdata; pdata.clear();
+      
+      bool geocheck = GeoStopCheck(element);
+      if (!geocheck) {
+        std::cout << "track not stopping, go to next track" << std::endl; 
+        recob::MCSFitResultGS result = recob::MCSFitResultGS();
+        output->emplace_back(std::move(result)); 
+        continue; }
+      if (length < minLen) {
+        std::cout << "track too short, go to next track" << std::endl; 
+        recob::MCSFitResultGS result = recob::MCSFitResultGS();
+        output->emplace_back(std::move(result)); 
+        continue; }
 
-    float CRTT0 = std::numeric_limits<float>::signaling_NaN();
-    if (fmCRTTaggedT0.isValid()) {
-      for (unsigned i_t0 = 0; i_t0 < fmCRTTaggedT0.size(); i_t0++) {
-	      if (fmCRTTaggedT0.at(trkPtr.key()).size()) {
-          if (fmCRTTaggedT0.at(trkPtr.key()).at(0)->TriggerBits() != 0) continue;
-          if (fmCRTTaggedT0.at(trkPtr.key()).at(0)->TriggerConfidence() > 100.) continue;
-          CRTT0 = fmCRTTaggedT0.at(trkPtr.key()).at(0)->Time();
+      hits2dI1 = projectHitsOnPlane(e, element, count[cryo], 0, pdata);
+      hits2dI2 = projectHitsOnPlane(e, element, count[cryo], 1, pdata);
+      hits2dC = projectHitsOnPlane(e, element, count[cryo], 2, pdata);
+      std::vector<art::Ptr<recob::Hit>> emptyHitVector;
+      art::Ptr<recob::Track> trkPtr = allPtrs.at(je);
+      auto const clockData = art::ServiceHandle<detinfo::DetectorClocksService const>()->DataFor(e);
+      auto const detProp = art::ServiceHandle<detinfo::DetectorPropertiesService const>()->DataFor(e, clockData);
+
+      float CRTT0 = std::numeric_limits<float>::signaling_NaN();
+      if (fmCRTTaggedT0.isValid()) {
+        for (unsigned i_t0 = 0; i_t0 < fmCRTTaggedT0.size(); i_t0++) {
+          if (fmCRTTaggedT0.at(trkPtr.key()).size()) {
+            if (fmCRTTaggedT0.at(trkPtr.key()).at(0)->TriggerBits() != 0) continue;
+            if (fmCRTTaggedT0.at(trkPtr.key()).at(0)->TriggerConfidence() > 100.) continue;
+            CRTT0 = fmCRTTaggedT0.at(trkPtr.key()).at(0)->Time();
+          }
         }
       }
+
+      art::Ptr<sbn::RangeP> rangeP = rangePs.at(trkPtr.key());
+      std::cout << "track length [cm] = " << length << std::endl;
+      std::cout << "range momentum [GeV/c] = " << rangeP->range_p << std::endl;
+
+      float CRTshift = 0;
+      double vDrift = detProp.DriftVelocity();
+      float fTickAtAnode = 850.;
+      float fTickPeriod = 0.4;
+      if (!std::isnan(CRTT0)) CRTshift = (CRTT0 / 1000. / fTickPeriod - fTickAtAnode) * fTickPeriod * vDrift;
+      std::cout << "CRTT0 = " << CRTT0 << std::endl; std::cout << " " << std::endl;
+
+      mcsfitter.set2DHitsI1(hits2dI1);
+      mcsfitter.set2DHitsI2(hits2dI2);
+      mcsfitter.set2DHitsC(hits2dC);
+      mcsfitter.setPointData(pdata);
+      mcsfitter.ComputeD3P(0);
+      mcsfitter.ComputeD3P(1);
+      mcsfitter.ComputeD3P(2);
+      mcsfitter.setCRTShift(CRTshift);
+      mcsfitter.setRangeP(rangeP->range_p);
+      
+      recob::MCSFitResultGS result = mcsfitter.fitMcs(element);
+      output->emplace_back(std::move(result)); 
     }
-
-    art::Ptr<sbn::RangeP> rangeP = rangePs.at(trkPtr.key());
-    std::cout << "range momentum [GeV/c] = " << rangeP->range_p << std::endl;
-
-    float CRTshift = 0;
-    double vDrift = detProp.DriftVelocity();
-    float fTickAtAnode = 850.;
-    float fTickPeriod = 0.4;
-    if (!std::isnan(CRTT0)) CRTshift = (CRTT0 / 1000. / fTickPeriod - fTickAtAnode) * fTickPeriod * vDrift;
-    std::cout << "CRTT0 = " << CRTT0 << std::endl;
-
-    mcsfitter.set2DHitsI1(hits2dI1);
-    mcsfitter.set2DHitsI2(hits2dI2);
-    mcsfitter.set2DHitsC(hits2dC);
-    mcsfitter.setPointData(pdata);
-    mcsfitter.ComputeD3P(0);
-    mcsfitter.ComputeD3P(1);
-    mcsfitter.ComputeD3P(2);
-    mcsfitter.setCRTShift(CRTshift);
-    mcsfitter.setRangeP(rangeP->range_p);
-    
-    recob::MCSFitResultGS result = mcsfitter.fitMcs(element);
-    output->emplace_back(std::move(result)); 
   }
   e.put(std::move(output));
 }
@@ -268,33 +267,33 @@ bool trkf::MCSFitProducerICARUS::GeoStopCheck(const recob::Track& traj) const {
   double last_x = lastPoint.X();
   if (last_x > 0) { low_x = 61.7; high_x = 358.73; }
   if (last_x < 0) { low_x = -358.73; high_x = -61.7; }
-  std::cout << "last point x = " << last_x << " low x = " << low_x << " high x = " << high_x << std::endl;
+  //std::cout << "last point x = " << last_x << " low x = " << low_x << " high x = " << high_x << std::endl;
   bool check_x = true; 
   if ((abs(last_x - low_x) < step) || (abs(last_x - high_x) < step)) {
     check_x = false;
-    std::cout << "too near to borders in x direction!" << std::endl; }
+    std::cout << "WARNING! too near to borders in x direction!" << std::endl; }
 
   double low_y = -181.86; double high_y = 134.36; 
   double last_y = lastPoint.Y();
-  std::cout << "last point y = " << last_y << " low y = " << low_y << " high y = " << high_y << std::endl;
+  //std::cout << "last point y = " << last_y << " low y = " << low_y << " high y = " << high_y << std::endl;
   bool check_y = true; 
   if ((abs(last_y - low_y) < step) || (abs(last_y - high_y) < step)) {
     check_y = false;
-    std::cout << "too near to borders in y direction!" << std::endl; }
+    std::cout << "WARNING! too near to borders in y direction!" << std::endl; }
   
   double low_z = -894.951; double high_z = 894.951; 
   double last_z = lastPoint.Z();
-  std::cout << "last point z = " << last_z << " low z = " << low_z << " high z = " << high_z << std::endl;
+  //std::cout << "last point z = " << last_z << " low z = " << low_z << " high z = " << high_z << std::endl;
   bool check_z = true; 
   if ((abs(last_z - low_z) < step) || (abs(last_z - high_z) < step)) {
     check_z = false;
-    std::cout << "too near to borders in z direction!" << std::endl; }
+    std::cout << "WARNING! too near to borders in z direction!" << std::endl; }
 
   if (check_x && check_y && check_z) {
-    std::cout << "stopping track found!" << std::endl;
+    std::cout << "stopping track found inside MCSFitProducer!" << std::endl; std::cout << " " << std::endl;
     return true; }
   else {
-    std::cout << "crossing track found!" << std::endl; 
+    std::cout << "crossing track found inside MCSFitProducer!" << std::endl; std::cout << " " << std::endl;
     return false; }
 }
 

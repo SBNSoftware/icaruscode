@@ -22,7 +22,8 @@ using Flags_t=std::vector<PointFlags_t>;
 
 recob::MCSFitResult TrajectoryMCSFitterUBoone::fitMcs(const recob::TrackTrajectory& traj, int pid, bool momDepConst) const {
   //print some fhicl parameters
-  cout << "cut mode = " << cutMode_ << endl;
+  cout << "0 for full track, 1 for cutting final XX angles, 2 for keeping initial XX angles" << endl; 
+  cout << "cutMode = " << cutMode_ << endl; 
   cout << " " << endl;
   
   //check if track length is less than a certain value, return null

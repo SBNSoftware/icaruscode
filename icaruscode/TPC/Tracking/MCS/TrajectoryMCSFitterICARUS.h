@@ -87,7 +87,7 @@ namespace trkf {
         0 };
       fhicl::Atom<unsigned int> cutAngles{
         Name("cutAngles"),
-        Comment("Number of angles to cut for MCS fitting."),
+        Comment("Number of angles to cut for MCS fit."),
         0 };
       fhicl::Atom<unsigned int> dimMode{
         Name("dimMode"),
@@ -100,6 +100,10 @@ namespace trkf {
       fhicl::Atom<unsigned int> fitMode{
         Name("fitMode"),
         Comment("0 for both linear and polygonal angles, 1 for only linear angles, 2 for only polygonal angles. Flag of fit mode for ICARUS fit."),
+        0 };
+      fhicl::Atom<bool> removeDeltas{
+        Name("removeDeltas"),
+        Comment("If true, remove identified deltas from MCS calculation."),
         0 }; };
 
     using Parameters = fhicl::Table<Config>;
@@ -120,7 +124,8 @@ namespace trkf {
       unsigned int cutAngles, 
       unsigned int dimMode, 
       unsigned int planeMode, 
-      unsigned int fitMode) {
+      unsigned int fitMode,
+      bool removeDeltas) {
         pIdHyp_ = pIdHyp;
         minNSegs_ = minNSegs;
         minNAngs_ = minNAngs;
@@ -136,7 +141,8 @@ namespace trkf {
         cutAngles_ = cutAngles;
         dimMode_ = dimMode;
         planeMode_ = planeMode;
-        fitMode_ = fitMode; }
+        fitMode_ = fitMode; 
+        removeDeltas_ = removeDeltas;}
 
     explicit TrajectoryMCSFitterICARUS(
       const Parameters & p) : TrajectoryMCSFitterICARUS(
@@ -155,7 +161,8 @@ namespace trkf {
         p().cutAngles(),
         p().dimMode(),
         p().planeMode(),
-        p().fitMode()) {}
+        p().fitMode(),
+        p().removeDeltas()) {}
     
     recob::MCSFitResultGS fitMcs(
       const recob::TrackTrajectory& traj, 
@@ -197,31 +204,36 @@ namespace trkf {
       std::vector<float>& seglens, 
       std::vector<float>& cumseglens, 
       std::vector<int>& seghits, 
-      std::vector<int>& cumseghits) const;
+      std::vector<int>& cumseghits,
+      std::vector<int>& isdi) const;
 
     void findSegmentBarycenter(
       const recob::TrackTrajectory& traj, 
       const size_t firstPoint, 
       const size_t lastPoint, 
-      recob::tracking::Vector_t& bary) const;
+      recob::tracking::Vector_t& bary,
+      std::vector<int>& isdi) const;
 
     void linearRegression(
       const recob::TrackTrajectory& traj, 
       const size_t firstPoint, 
       const size_t lastPoint, 
-      recob::tracking::Vector_t& pcdir) const;
+      recob::tracking::Vector_t& pcdir,
+      std::vector<int>& isdi) const;
 
     void find2DSegmentBarycenter(
       const recob::TrackTrajectory& traj, 
       const size_t firstPoint, 
       const size_t lastPoint, 
-      recob::tracking::Vector_t& bary2D) const;
+      recob::tracking::Vector_t& bary2D,
+      std::vector<int>& isdi) const;
 
     void linearRegression2D(
       const recob::TrackTrajectory& traj, 
       const size_t firstPoint, 
       const size_t lastPoint, 
-      recob::tracking::Vector_t& pcdir2D) const;
+      recob::tracking::Vector_t& pcdir2D,
+      std::vector<int>& isdi) const;
 
     double GetOptimalSegLen(
       const recob::TrackTrajectory& traj, 
@@ -251,14 +263,15 @@ namespace trkf {
         double bestp, errp, minp, maxp;
         double alpha, dalpha, beta, dbeta;
         std::vector<float> testp, c2function;
+        std::vector<int> tailssize;
         ScanResult() = default;
         ScanResult(
           double best, double err, double min, double max,
           double a, double da, double b, double db,
-          std::vector<float> test, std::vector<float> c2) :
+          std::vector<float> test, std::vector<float> c2, std::vector<int> ts) :
             bestp(best), errp(err), minp(min), maxp(max),
             alpha(a), dalpha(da), beta(b), dbeta(db),
-            testp(test), c2function(c2) {} };
+            testp(test), c2function(c2), tailssize(ts) {} };
 
     void set2DHitsC(
       std::vector<recob::Hit> h) { hits2dC = h; }
@@ -301,6 +314,9 @@ namespace trkf {
     unsigned int fitMode() const { 
       return fitMode_; }
 
+    bool removeDeltas() const { 
+      return removeDeltas_; }
+
     double energyLossLandau(
       const double mass2, 
       const double e2, 
@@ -325,7 +341,8 @@ namespace trkf {
       std::vector<float> dthetaLin, 
       std::vector<float> dthetaPoly, 
       int pid, 
-      double p0) const;
+      double p0,
+      int& tailssize) const;
     
     const void FillOffDiagMCSLin(
       TMatrixDSym& mat, 
@@ -458,6 +475,8 @@ namespace trkf {
 
     float C2PRange() { return c2prange; }
 
+    int TailsPRange() { return tailsprange; }
+
     float distance_point_line(
       const double a0, 
       const double a1, 
@@ -467,7 +486,8 @@ namespace trkf {
     void ProcessDeltaRays(
       const recob::TrackTrajectory& traj, 
       int viewType, 
-      std::vector<int>& isDelta) const;
+      std::vector<int>& isd, 
+      std::vector<int>& isdi) const;
     
     void Create_ZY_arrays();
     
@@ -477,20 +497,40 @@ namespace trkf {
       std::vector<double>& Z, 
       std::vector<double>& Y);
     
-    void TagOverlappingDeltaRays();
+    void TagOverlappingDeltaRays(
+      const recob::TrackTrajectory& traj,
+      int view_type, 
+      std::vector<int>& isDelta,
+      std::vector<int>& isdi, 
+      float threshold) const;
     
     void TagDeltaRaysLocal();
     
     void TagDeltaRays(
       const recob::TrackTrajectory& traj, 
       int viewType, 
-      std::vector<int>& isDelta) const;
+      std::vector<int>& isDelta,
+      std::vector<int>& isdi) const;
+    
+    void TagDeltaRaysCylinder(
+      const recob::TrackTrajectory& traj, 
+      int viewType, 
+      std::vector<int>& isDelta,
+      std::vector<int>& isdi) const;
     
     void TagCloseToDeltaRays();
     
     std::vector<int> HitsOnWire(
       std::vector<recob::Hit> hits,
       unsigned int iWire) const;
+
+    void runToyMS() const;
+
+    void linearRegressionToy(
+      std::vector<double> xx, 
+      std::vector<double> yy, 
+      std::vector<double> zz, 
+      Vector_t& pcdir) const ;
 
   private:
     int pIdHyp_;
@@ -509,6 +549,7 @@ namespace trkf {
     unsigned int dimMode_;
     unsigned int planeMode_;
     unsigned int fitMode_;
+    bool removeDeltas_;
     std::vector<recob::Hit> hits2dC;
     std::vector<recob::Hit> hits2dI2;
     std::vector<recob::Hit> hits2dI1;
@@ -516,6 +557,7 @@ namespace trkf {
     float d3pC; float d3pI1; float d3pI2; 
     float CRTshift;
     float rangeP;
-    float c2prange; }; }
+    float c2prange; 
+    int tailsprange; }; }
 
 #endif

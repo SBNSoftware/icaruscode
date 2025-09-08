@@ -84,6 +84,8 @@ physics.analyzers.caloskimE.RawDigitproducers: ["MCDecodeTPCROI:PHYSCRATEDATATPC
 physics.analyzers.caloskimW.G4producer: "largeant"
 physics.analyzers.caloskimW.SimChannelproducer: "daq:simpleSC"
 physics.analyzers.caloskimW.RawDigitproducers: ["MCDecodeTPCROI:PHYSCRATEDATATPCWW", "MCDecodeTPCROI:PHYSCRATEDATATPCWE"]
+physics.analyzers.caloskimW.G4Droppedproducer: "largeant:droppedMCParticles"
+physics.analyzers.caloskimE.G4Droppedproducer: "largeant:droppedMCParticles"
 
 physics.producers.mcassociationsGausCryoE.HitParticleAssociations.HitModuleLabelVec: ["cluster3DCryoE"]
 physics.producers.mcassociationsGausCryoW.HitParticleAssociations.HitModuleLabelVec: ["cluster3DCryoW"]
