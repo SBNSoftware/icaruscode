@@ -16,6 +16,13 @@ cet_build_plugin(ICARUSNuGraphLoader art::tool
   ${nugraph_tool_lib_list}
 )
 
+simple_plugin(ICARUSFilteredNuSliceHitsProducer "module"
+    LIBRARIES PRIVATE
+    art::Framework_Core
+    lardataobj::RecoBase
+    sbnobj::Common_Reco
+)
+
 simple_plugin(ICARUSNuSliceHitsProducer "module"
     LIBRARIES PRIVATE
     art::Framework_Core
