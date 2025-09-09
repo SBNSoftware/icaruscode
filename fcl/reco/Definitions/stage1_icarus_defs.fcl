@@ -95,17 +95,17 @@ icarus_stage1_producers:
   NGMultiSliceCryoE: @local::NGMultiSliceCryoE
   NGMultiSliceCryoW: @local::NGMultiSliceCryoW
 
-  ngfilteredhitsE: @local::ngfilteredhitsE
-  ngfilteredhitsW: @local::ngfilteredhitsW
+  ngfilteredhitsCryoE: @local::ngfilteredhitsCryoE
+  ngfilteredhitsCryoW: @local::ngfilteredhitsCryoW
 
   ## Pandora, when running after NuGraph
-  pandoraGausCryoENuGraphReco: {
+  pandoraGausNuGraphRecoCryoE: {
     @table::icarus_pandora
-    HitFinderModuleLabel: "ngfilteredhitsE"
+    HitFinderModuleLabel: "ngfilteredhitsCryoE"
   }
-  pandoraGausCryoWNuGraphReco: {
+  pandoraGausNuGraphRecoCryoW: {
     @table::icarus_pandora
-    HitFinderModuleLabel: "ngfilteredhitsW"
+    HitFinderModuleLabel: "ngfilteredhitsCryoW"
   }
 }
 
@@ -264,8 +264,8 @@ icarus_reco_postPandoraGausCryoW:  [ NCCSlicesCryoW,
 
 icarus_reco_postPandoraGausCryoW_NuGraphReco:   [ NCCSlicesCryoW,
                                                   NGMultiSliceCryoW,
-                                                  ngfilteredhitsW,
-                                                  pandoraGausCryoWNuGraphReco,
+                                                  ngfilteredhitsCryoW,
+                                                  pandoraGausNuGraphRecoCryoW,
                                                   pandoraTrackGausCryoW,
                                                   pandoraKalmanTrackGausCryoW,
                                                   SBNShowerGausCryoW
@@ -278,11 +278,10 @@ icarus_reco_postPandoraGausCryoE:  [ NCCSlicesCryoE,
                                      SBNShowerGausCryoE
                                    ]
 
-
 icarus_reco_postPandoraGausCryoE_NuGraphReco:   [ NCCSlicesCryoE,
                                                   NGMultiSliceCryoE,
-                                                  ngfilteredhitsE,
-                                                  pandoraGausCryoENuGraphReco,
+                                                  ngfilteredhitsCryoE,
+                                                  pandoraGausNuGraphRecoCryoE,
                                                   pandoraTrackGausCryoE,
                                                   pandoraKalmanTrackGausCryoE,
                                                   SBNShowerGausCryoE

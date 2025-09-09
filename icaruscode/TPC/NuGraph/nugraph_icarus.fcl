@@ -67,14 +67,14 @@ NGMultiSliceCryoW.LoaderTool.ClusterLabel: "cluster3DCryoW"
 NGMultiSliceCryoW.DecoderTools.FilterDecoderTool.hitInput: "cluster3DCryoW"
 NGMultiSliceCryoW.DecoderTools.SemanticDecoderTool.hitInput: "cluster3DCryoW"
 
-ngfilteredhitsE: {
+ngfilteredhitsCryoE: {
   module_type:    "ICARUSFilteredNuSliceHitsProducer"
   HitLabel:       "nuslhitsCryoE"
   HitScoreLabel:  "NuGraphCryoE:filter"
   ScoreCut:       0.25
 }
 
-ngfilteredhitsW: {
+ngfilteredhitsCryoW: {
   module_type:    "ICARUSFilteredNuSliceHitsProducer"
   HitLabel:       "nuslhitsCryoW"
   HitScoreLabel:  "NuGraphCryoW:filter"

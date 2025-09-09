@@ -41,20 +41,6 @@ private:
   art::InputTag const fHitScoreLabel;
   float fScoreCut;
   bool fWeightFilterByPFP;
-//   art::InputTag const fSliceLabel;
-//   art::InputTag const fSpsLabel;
-//   art::InputTag const fBaryMatchLabel; ///< Member from NuSliceHitsProducer
-//   art::InputTag const fSliceLabel;
-//   art::InputTag const fSpsLabel;
-//   bool const doFlashAssn;
-// art::InputTag fHitLabel;
-// art::InputTag fMatchHitLabel;
-// art::InputTag fHitScoreLabel;
-// art::InputTag fHitSemanticLabel;
-// art::InputTag fHitTruthLabel;
-// float fRMSCut;
-// float fScoreCut;
-// bool fIsMC;
 
   void produce(art::Event& e) override;
 
@@ -65,7 +51,6 @@ ICARUSFilteredNuSliceHitsProducer::ICARUSFilteredNuSliceHitsProducer(fhicl::Para
   fHitLabel(p.get<art::InputTag>("HitLabel", "nuslhitsCryoE")),
   fHitScoreLabel(p.get<art::InputTag>("HitScoreLabel", "NuGraphCryoE:filter")),
   fScoreCut(p.get<float>("ScoreCut", 0))
-  // fWeightFilterByPFP(p.get<bool>("WeightFilterByPFP", false))
 {
   // Call appropriate produces<>() functions here.
   produces<std::vector<recob::Hit>>();
