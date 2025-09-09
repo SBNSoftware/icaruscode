@@ -35,14 +35,14 @@ NuGraphCryoW.LoaderTool.hitInput: "nuslhitsCryoW"
 NuGraphCryoW.LoaderTool.spsInput: "nuslhitsCryoW"
 NuGraphCryoW.DecoderTools.SemanticDecoderTool.hitInput: "nuslhitsCryoW"
 
-ngfilteredhitsE: {
+ngfilteredhitsCryoE: {
   module_type:    "ICARUSFilteredNuSliceHitsProducer"
   HitLabel:       "nuslhitsCryoE"
   HitScoreLabel:  "NuGraphCryoE:filter"
   ScoreCut:       0.25
 }
 
-ngfilteredhitsW: {
+ngfilteredhitsCryoW: {
   module_type:    "ICARUSFilteredNuSliceHitsProducer"
   HitLabel:       "nuslhitsCryoW"
   HitScoreLabel:  "NuGraphCryoW:filter"
