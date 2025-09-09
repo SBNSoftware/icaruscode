@@ -37,6 +37,13 @@ simple_plugin(ICARUSNCCSlicesProducer "module"
     lardataobj::RecoBase
 )
 
+simple_plugin(ICARUSFilteredNuSliceHitsProducer "module"
+    LIBRARIES PRIVATE
+    art::Framework_Core
+    lardataobj::RecoBase
+    sbnobj::Common_Reco
+)
+
 simple_plugin(ICARUSNuSliceHitsProducer "module"
     LIBRARIES PRIVATE
     art::Framework_Core

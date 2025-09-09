@@ -22,6 +22,7 @@
 #include "supera_modules.fcl"
 #include "crtpmtmatching_parameters.fcl"
 #include "tpcpmtbarycentermatch_config.fcl"
+#include "pandoramodules_icarus.fcl"
 #include "nugraph_icarus.fcl"
 
 BEGIN_PROLOG
@@ -85,12 +86,27 @@ icarus_stage1_producers:
   ## NuGraph
   nuslhitsCryoE: @local::nuslhitsCryoE
   nuslhitsCryoW: @local::nuslhitsCryoW
+
   NuGraphCryoE: @local::NuGraphCryoE
   NuGraphCryoW: @local::NuGraphCryoW
+
   NCCSlicesCryoE: @local::NCCSlicesCryoE
   NCCSlicesCryoW: @local::NCCSlicesCryoW
   NGMultiSliceCryoE: @local::NGMultiSliceCryoE
   NGMultiSliceCryoW: @local::NGMultiSliceCryoW
+
+  ngfilteredhitsE: @local::ngfilteredhitsE
+  ngfilteredhitsW: @local::ngfilteredhitsW
+
+  ## Pandora, when running after NuGraph
+  pandoraGausCryoENuGraphReco: {
+    @table::icarus_pandora
+    HitFinderModuleLabel: "ngfilteredhitsE"
+  }
+  pandoraGausCryoWNuGraphReco: {
+    @table::icarus_pandora
+    HitFinderModuleLabel: "ngfilteredhitsW"
+  }
 }
 
 icarus_stage1_filters:
@@ -239,25 +255,40 @@ icarus_reco_pandoraGausCryoW:      [ pandoraGausCryoW ]
 
 icarus_reco_pandoraGausCryoE:      [ pandoraGausCryoE ]
 
-icarus_reco_postPandoraGausCryoW:  [ # nuslhitsCryoW,
-                                     # NuGraphCryoW,
+icarus_reco_postPandoraGausCryoW:  [ NCCSlicesCryoW,
+                                     NGMultiSliceCryoW,
                                      pandoraTrackGausCryoW,
                                      pandoraKalmanTrackGausCryoW,
-                                     SBNShowerGausCryoW,
-                                     NCCSlicesCryoW,
-                                     NGMultiSliceCryoW
+                                     SBNShowerGausCryoW
                                    ]
 
-icarus_reco_postPandoraGausCryoE:  [ # nuslhitsCryoE,
-                                     # NuGraphCryoE,
+icarus_reco_postPandoraGausCryoW_NuGraphReco:   [ NCCSlicesCryoW,
+                                                  NGMultiSliceCryoW,
+                                                  ngfilteredhitsW,
+                                                  pandoraGausCryoWNuGraphReco,
+                                                  pandoraTrackGausCryoW,
+                                                  pandoraKalmanTrackGausCryoW,
+                                                  SBNShowerGausCryoW
+                                                ]
+
+icarus_reco_postPandoraGausCryoE:  [ NCCSlicesCryoE,
+                                     NGMultiSliceCryoE,
                                      pandoraTrackGausCryoE,
                                      pandoraKalmanTrackGausCryoE,
-                                     SBNShowerGausCryoE,
-                                     NCCSlicesCryoE,
-                                     NGMultiSliceCryoE
+                                     SBNShowerGausCryoE
                                    ]
 
-icarus_reco_Gauss1D_CryoW:         [
+
+icarus_reco_postPandoraGausCryoE_NuGraphReco:   [ NCCSlicesCryoE,
+                                                  NGMultiSliceCryoE,
+                                                  ngfilteredhitsE,
+                                                  pandoraGausCryoENuGraphReco,
+                                                  pandoraTrackGausCryoE,
+                                                  pandoraKalmanTrackGausCryoE,
+                                                  SBNShowerGausCryoE
+                                                ]
+
+icarus_reco_Gauss1D_CryoW:         [ 
                                      @sequence::icarus_WestHits_TPC,
                                      @sequence::icarus_reco_cluster3DCryoW,
                                      @sequence::icarus_reco_pandoraGausCryoW
@@ -290,6 +321,11 @@ icarus_postPandora_Gauss:          [
                                      @sequence::icarus_reco_postPandoraGausCryoE,
                                      @sequence::icarus_reco_postPandoraGausCryoW
                                    ]
+
+icarus_postPandora_Gauss_NuGraphReco: [
+                                     @sequence::icarus_reco_postPandoraGausCryoE_NuGraphReco,
+                                     @sequence::icarus_reco_postPandoraGausCryoW_NuGraphReco
+                                      ]
 
 #Add flash matching
 icarus_reco_fm:                    [ fmatchCryoE,
