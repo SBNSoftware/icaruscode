@@ -1,5 +1,4 @@
-
-#include "stage1_run2_icarus_MC.fcl"
+#include "stage1_run2_icarus_NuGraphReco_MC.fcl"
 
 physics.reco: [ 
                 @sequence::icarus_reco_Gauss1D_CryoE ,
@@ -9,8 +8,10 @@ physics.reco: [
                 @sequence::icarus_postPandora_Gauss_NuGraphReco,
                 @sequence::icarus_crttrack,
                 @sequence::icarus_crtt0tagging,
-                caloskimCalorimetryCryoE, caloskimCalorimetryCryoW,
-                mcassociationsGausCryoE,  mcassociationsGausCryoW,
+                caloskimCalorimetryCryoE, 
+                caloskimCalorimetryCryoW,
+                mcassociationsGausCryoE, 
+                mcassociationsGausCryoW,
                 mcreco
               ]
 

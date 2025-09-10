@@ -60,10 +60,10 @@ icarus_stage1_producers:
   SBNShowerGausCryoE:             @local::icarus_pandorashower_3dTraj
 
   # pandora CALO and PID
-#  pandoraGausCaloCryoW:		      @local::icarus_calomc
-#  pandoraGausPidCryoW:		        @local::icarus_chi2pid
-#  pandoraGausCaloCryoE:		      @local::icarus_calomc
-#  pandoraGausPidCryoE:		        @local::icarus_chi2pid
+  #  pandoraGausCaloCryoW:		    @local::icarus_calomc
+  #  pandoraGausPidCryoW:		      @local::icarus_chi2pid
+  #  pandoraGausCaloCryoE:		    @local::icarus_calomc
+  #  pandoraGausPidCryoE:		      @local::icarus_chi2pid
 
   # Placeholder uncalibrated calorimetry
   caloskimCalorimetryCryoE:       @local::caloskim_calorimetry
@@ -76,18 +76,18 @@ icarus_stage1_producers:
   fmatchopCryoE:                  @local::icarus_simple_flashmatch_E_op
   fmatchopCryoW:                  @local::icarus_simple_flashmatch_W_op
 
- ## crt producer
-  crttrack:          @local::standard_crttrackproducer
-  CRTT0Tagging:         @local::icarus_crtt0tagging_data
+  ## crt producer
+  crttrack:     @local::standard_crttrackproducer
+  CRTT0Tagging: @local::icarus_crtt0tagging_data
 
   tpcpmtbarycentermatchCryoE: @local::data_tpcpmtbarycentermatchproducer_east
   tpcpmtbarycentermatchCryoW: @local::data_tpcpmtbarycentermatchproducer_west
 
   ## NuGraph
-  nuslhitsCryoE: @local::nuslhitsCryoE
-  nuslhitsCryoW: @local::nuslhitsCryoW
-  NuGraphCryoE: @local::NuGraphCryoE
-  NuGraphCryoW: @local::NuGraphCryoW
+  nuslhitsCryoE:       @local::nuslhitsCryoE
+  nuslhitsCryoW:       @local::nuslhitsCryoW
+  NuGraphCryoE:        @local::NuGraphCryoE
+  NuGraphCryoW:        @local::NuGraphCryoW
   ngfilteredhitsCryoE: @local::ngfilteredhitsCryoE
   ngfilteredhitsCryoW: @local::ngfilteredhitsCryoW
 
@@ -315,8 +315,8 @@ icarus_postPandora_Gauss:          [
                                    ]
 
 icarus_postPandora_Gauss_NuGraphReco: [
-                                     @sequence::icarus_reco_postPandoraGausCryoE_NuGraphReco,
-                                     @sequence::icarus_reco_postPandoraGausCryoW_NuGraphReco
+                                        @sequence::icarus_reco_postPandoraGausCryoE_NuGraphReco,
+                                        @sequence::icarus_reco_postPandoraGausCryoW_NuGraphReco
                                       ]
 
 #Add flash matching
@@ -392,30 +392,32 @@ icarus_stage1_producers.cluster3DCryoE.Hit3DBuilderAlg.MaxHitChiSquare:         
 icarus_stage1_producers.cluster3DCryoE.Hit3DBuilderAlg.MaxMythicalChiSquare:                     30.
 icarus_stage1_producers.cluster3DCryoE.Hit3DBuilderAlg.OutputHistograms:                         false
 
-### Definitions for a pandora by cryostat
+### Definitions for Pandora by cryostat
+icarus_stage1_producers.pandoraGausCryoE.HitFinderModuleLabel:                                   "cluster3DCryoE"
 icarus_stage1_producers.pandoraGausCryoW.HitFinderModuleLabel:                                   "cluster3DCryoW"
+
+### Definitions for Pandora tracks by cryostat
+icarus_stage1_producers.pandoraTrackGausCryoE.PFParticleLabel:                                   "pandoraGausCryoE"
+icarus_stage1_producers.pandoraTrackGausCryoE.UseAllParticles:                                   true
 icarus_stage1_producers.pandoraTrackGausCryoW.PFParticleLabel:                                   "pandoraGausCryoW"
 icarus_stage1_producers.pandoraTrackGausCryoW.UseAllParticles:                                   true
+
+icarus_stage1_producers.pandoraKalmanTrackGausCryoE.inputCollection:                             "pandoraGausCryoE"
+icarus_stage1_producers.pandoraKalmanTrackGausCryoE.trackInputTag:                               "pandoraTrackGausCryoE"
 icarus_stage1_producers.pandoraKalmanTrackGausCryoW.inputCollection:                             "pandoraGausCryoW"
 icarus_stage1_producers.pandoraKalmanTrackGausCryoW.trackInputTag:                               "pandoraTrackGausCryoW"
 
-icarus_stage1_producers.pandoraGausCryoE.HitFinderModuleLabel:                                   "cluster3DCryoE"
-icarus_stage1_producers.pandoraTrackGausCryoE.PFParticleLabel:                                   "pandoraGausCryoE"
-icarus_stage1_producers.pandoraTrackGausCryoE.UseAllParticles:                                   true
-icarus_stage1_producers.pandoraKalmanTrackGausCryoE.inputCollection:                             "pandoraGausCryoE"
-icarus_stage1_producers.pandoraKalmanTrackGausCryoE.trackInputTag:                               "pandoraTrackGausCryoE"
+### Definitions for Pandora showers by cryostat
+icarus_stage1_producers.SBNShowerGausCryoE.PFParticleLabel:                                      "pandoraGausCryoE"
+icarus_stage1_producers.SBNShowerGausCryoE.UseAllParticles:                                      true
+icarus_stage1_producers.SBNShowerGausCryoW.PFParticleLabel:                                      "pandoraGausCryoW"
+icarus_stage1_producers.SBNShowerGausCryoW.UseAllParticles:                                      true
 
 icarus_stage1_producers.caloskimCalorimetryCryoE.TrackModuleLabel:                               "pandoraTrackGausCryoE"
 icarus_stage1_producers.caloskimCalorimetryCryoW.TrackModuleLabel:                               "pandoraTrackGausCryoW"
 
 ## Switch pandora back to just gaushits?
-#icarus_stage1_producers.pandoraGausCryoW.ConfigFile:                                             "PandoraSettings_Master_ICARUS_RawICARUS.xml"
-#icarus_stage1_producers.pandoraGausCryoE.ConfigFile:                                             "PandoraSettings_Master_ICARUS_RawICARUS.xml"
-
-## Definitions for shower finding (both single and by cryostat)
-icarus_stage1_producers.SBNShowerGausCryoW.PFParticleLabel:                                      "pandoraGausCryoW"
-icarus_stage1_producers.SBNShowerGausCryoW.UseAllParticles:                                      true
-icarus_stage1_producers.SBNShowerGausCryoE.PFParticleLabel:                                      "pandoraGausCryoE"
-icarus_stage1_producers.SBNShowerGausCryoE.UseAllParticles:                                      true
+#icarus_stage1_producers.pandoraGausCryoW.ConfigFile:                                            "PandoraSettings_Master_ICARUS_RawICARUS.xml"
+#icarus_stage1_producers.pandoraGausCryoE.ConfigFile:                                            "PandoraSettings_Master_ICARUS_RawICARUS.xml"
 
 END_PROLOG
