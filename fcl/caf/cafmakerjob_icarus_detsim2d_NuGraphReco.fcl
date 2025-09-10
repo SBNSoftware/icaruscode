@@ -2,3 +2,4 @@
 #include "cafmaker_add_detsim2d_icarus.fcl"
 
 physics.producers.cafmaker.PFParticleLabel: "pandoraGausNuGraphReco"
+physics.producers.cafmaker.HitLabel: "ngfilteredhits"

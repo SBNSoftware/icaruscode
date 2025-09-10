@@ -9,43 +9,43 @@ process_name: MCstage1
 
 # Disabled Space-Charge service for calorimetry
 services.SpaceChargeService: {
-    EnableCalEfieldSCE: false
-    EnableCalSpatialSCE: false
-    EnableCorrSCE: false
-    EnableSimEfieldSCE: false
-    EnableSimSpatialSCE: false
-    InputFilename: "SCEoffsets/SCEoffsets_ICARUS_E500_voxelTH3.root"
-    RepresentationType: "Voxelized_TH3"
-    service_provider: "SpaceChargeServiceICARUS"
+  EnableCalEfieldSCE: false
+  EnableCalSpatialSCE: false
+  EnableCorrSCE: false
+  EnableSimEfieldSCE: false
+  EnableSimSpatialSCE: false
+  InputFilename: "SCEoffsets/SCEoffsets_ICARUS_E500_voxelTH3.root"
+  RepresentationType: "Voxelized_TH3"
+  service_provider: "SpaceChargeServiceICARUS"
 }
 
-services.BackTrackerService:        @local::standard_backtrackerservice
+services.BackTrackerService:  @local::standard_backtrackerservice
 # In the 2D-detsim, SimChannel objects are made by the WireCell
 # drift simulation (daq), not LArG4 (largeant). Thus, we need
 # to overwrite the truth matching labels in the calibration ntuple maker
-services.BackTrackerService.BackTracker.SimChannelModuleLabel: "merge"
+services.BackTrackerService.BackTracker.SimChannelModuleLabel:  "merge"
 services.ParticleInventoryService:  @local::standard_particleinventoryservice
 
-## Add the MC module to the list of producers
+# Add the MC module to the list of producers
 physics.producers: {
-            @table::icarus_stage1_producers
+  @table::icarus_stage1_producers
 
-            #mcophit:                        @local::ICARUSMCOpHit
-            mcopflashTPC0:                  @local::ICARUSMCOpFlashTPC0
-            mcopflashTPC1:                  @local::ICARUSMCOpFlashTPC1
-            mcopflashTPC2:                  @local::ICARUSMCOpFlashTPC2
-            mcopflashTPC3:                  @local::ICARUSMCOpFlashTPC3
-          
-            cheatopflashTPC0:               @local::ICARUSCheatOpFlashTPC0
-            cheatopflashTPC1:               @local::ICARUSCheatOpFlashTPC1
-            cheatopflashTPC2:               @local::ICARUSCheatOpFlashTPC2
-            cheatopflashTPC3:               @local::ICARUSCheatOpFlashTPC3
+  # mcophit:                        @local::ICARUSMCOpHit
+  mcopflashTPC0:                  @local::ICARUSMCOpFlashTPC0
+  mcopflashTPC1:                  @local::ICARUSMCOpFlashTPC1
+  mcopflashTPC2:                  @local::ICARUSMCOpFlashTPC2
+  mcopflashTPC3:                  @local::ICARUSMCOpFlashTPC3
 
-            ### mc producers
-            mcreco:                         @local::standard_mcreco
-            mchitfinder:                    @local::standard_mchitfinder
-            mcassociationsGausCryoE:        @local::standard_mcparticlehitmatching
-            mcassociationsGausCryoW:        @local::standard_mcparticlehitmatching
+  cheatopflashTPC0:               @local::ICARUSCheatOpFlashTPC0
+  cheatopflashTPC1:               @local::ICARUSCheatOpFlashTPC1
+  cheatopflashTPC2:               @local::ICARUSCheatOpFlashTPC2
+  cheatopflashTPC3:               @local::ICARUSCheatOpFlashTPC3
+
+  ### mc producers
+  mcreco:                         @local::standard_mcreco
+  mchitfinder:                    @local::standard_mchitfinder
+  mcassociationsGausCryoE:        @local::standard_mcparticlehitmatching
+  mcassociationsGausCryoW:        @local::standard_mcparticlehitmatching
 }
 
 physics.reco: [ 
@@ -56,8 +56,10 @@ physics.reco: [
                 @sequence::icarus_postPandora_Gauss_NuGraphReco,
                 @sequence::icarus_crttrack,
                 @sequence::icarus_crtt0tagging,
-                caloskimCalorimetryCryoE, caloskimCalorimetryCryoW,
-                mcassociationsGausCryoE,  mcassociationsGausCryoW,
+                caloskimCalorimetryCryoE, 
+                caloskimCalorimetryCryoW,
+                mcassociationsGausCryoE,  
+                mcassociationsGausCryoW,
                 mcreco
               ]
 
@@ -72,39 +74,58 @@ outputs.out1.outputCommands: [
   "drop *_caloskimCalorimetryCryoW_*_*"
 ]
 
-#Redefine TPCPMTBarycenterMatch producers with MC parameters
+# Redefine TPCPMTBarycenterMatch producers with MC parameters
 physics.producers.tpcpmtbarycentermatchCryoE: @local::mc_tpcpmtbarycentermatchproducer_east
 physics.producers.tpcpmtbarycentermatchCryoW: @local::mc_tpcpmtbarycentermatchproducer_west
 
 # Turn on truth-info for track skimmer 
-physics.analyzers.caloskimE.G4producer: "largeant"
+physics.analyzers.caloskimE.G4producer:         "largeant"
 physics.analyzers.caloskimE.SimChannelproducer: "merge"
-physics.analyzers.caloskimE.RawDigitproducers: ["MCDecodeTPCROI:PHYSCRATEDATATPCEW", "MCDecodeTPCROI:PHYSCRATEDATATPCEE"]
-physics.analyzers.caloskimE.SelectEvents: [reco]
+physics.analyzers.caloskimE.RawDigitproducers:  ["MCDecodeTPCROI:PHYSCRATEDATATPCEW", "MCDecodeTPCROI:PHYSCRATEDATATPCEE"]
+physics.analyzers.caloskimE.SelectEvents:       [reco]
 
-physics.analyzers.caloskimW.G4producer: "largeant"
+physics.analyzers.caloskimW.G4producer:         "largeant"
 physics.analyzers.caloskimW.SimChannelproducer: "merge"
-physics.analyzers.caloskimW.RawDigitproducers: ["MCDecodeTPCROI:PHYSCRATEDATATPCWW", "MCDecodeTPCROI:PHYSCRATEDATATPCWE"]
-physics.analyzers.caloskimW.SelectEvents: [reco]
+physics.analyzers.caloskimW.RawDigitproducers:  ["MCDecodeTPCROI:PHYSCRATEDATATPCWW", "MCDecodeTPCROI:PHYSCRATEDATATPCWE"]
+physics.analyzers.caloskimW.SelectEvents:       [reco]
 
-physics.producers.mcassociationsGausCryoE.HitParticleAssociations.HitModuleLabelVec: ["cluster3DCryoE"]
-physics.producers.mcassociationsGausCryoW.HitParticleAssociations.HitModuleLabelVec: ["cluster3DCryoW"]
+# truth information for hits
+# physics.producers.mcassociationsGausCryoE.HitParticleAssociations.HitModuleLabelVec:  ["cluster3DCryoE"]
+# physics.producers.mcassociationsGausCryoW.HitParticleAssociations.HitModuleLabelVec:  ["cluster3DCryoW"]
+physics.producers.mcassociationsGausCryoE.HitParticleAssociations.HitModuleLabelVec:    ["ngfilteredhitsCryoE"]
+physics.producers.mcassociationsGausCryoW.HitParticleAssociations.HitModuleLabelVec:    ["ngfilteredhitsCryoW"]
 
 # Remove missing products in MC
-physics.analyzers.simpleLightAna.TriggerLabel: ""
-physics.analyzers.simpleLightAna.RWMLabel: ""
+physics.analyzers.simpleLightAna.TriggerLabel:        ""
+physics.analyzers.simpleLightAna.RWMLabel:            ""
 physics.analyzers.simpleLightAna.OpDetWaveformLabels: ["opdaq"]
 
 # Configure mcreco to read SEDLite instead of SED and MCParticleLite in addition to MCParticle
 physics.producers.mcreco.G4ModName: @erase
-physics.producers.mcreco.SimChannelLabel: "filtersed"
-physics.producers.mcreco.MCParticleLabel: "largeant"
-physics.producers.mcreco.UseSimEnergyDepositLite: true
-physics.producers.mcreco.UseSimEnergyDeposit: false
-physics.producers.mcreco.IncludeDroppedParticles: true #this is now true with larsoft v09_89 and newer
-physics.producers.mcreco.MCParticleDroppedLabel: "largeant:droppedMCParticles"
-physics.producers.mcreco.MCRecoPart.SavePathPDGList: [13,-13,211,-211,111,311,310,130,321,-321,2212,2112,2224,2214,2114,1114,3122,1000010020,1000010030,1000020030,1000020040]
-physics.producers.mcreco.MCRecoPart.TrackIDOffsets: [0,10000000,20000000] #Account for track ID offsets in labeling primaries
+physics.producers.mcreco.SimChannelLabel:             "filtersed"
+physics.producers.mcreco.MCParticleLabel:             "largeant"
+physics.producers.mcreco.UseSimEnergyDepositLite:     true
+physics.producers.mcreco.UseSimEnergyDeposit:         false
+physics.producers.mcreco.IncludeDroppedParticles:     true #this is now true with larsoft v09_89 and newer
+physics.producers.mcreco.MCParticleDroppedLabel:      "largeant:droppedMCParticles"
+physics.producers.mcreco.MCRecoPart.SavePathPDGList:  [13,-13,211,-211,111,311,310,130,321,-321,2212,2112,2224,2214,2114,1114,3122,1000010020,1000010030,1000020030,1000020040]
+physics.producers.mcreco.MCRecoPart.TrackIDOffsets:   [0,10000000,20000000] #Account for track ID offsets in labeling primaries
+
+# Update Pandora tags after NuGraph for track and shower characterization
+physics.producers.pandoraTrackGausCryoE.PFParticleLabel:       "pandoraGausNuGraphRecoCryoE"
+physics.producers.pandoraTrackGausCryoE.UseAllParticles:       true
+physics.producers.pandoraTrackGausCryoW.PFParticleLabel:       "pandoraGausNuGraphRecoCryoW"
+physics.producers.pandoraTrackGausCryoW.UseAllParticles:       true
+
+physics.producers.pandoraKalmanTrackGausCryoE.inputCollection: "pandoraGausNuGraphRecoCryoE"
+physics.producers.pandoraKalmanTrackGausCryoE.trackInputTag:   "pandoraTrackGausCryoE"
+physics.producers.pandoraKalmanTrackGausCryoW.inputCollection: "pandoraGausNuGraphRecoCryoW"
+physics.producers.pandoraKalmanTrackGausCryoW.trackInputTag:   "pandoraTrackGausCryoW"
+
+physics.producers.SBNShowerGausCryoE.PFParticleLabel:          "pandoraGausNuGraphRecoCryoE"
+physics.producers.SBNShowerGausCryoE.UseAllParticles:          true
+physics.producers.SBNShowerGausCryoW.PFParticleLabel:          "pandoraGausNuGraphRecoCryoW"
+physics.producers.SBNShowerGausCryoW.UseAllParticles:          true
 
 services.message.destinations :
 {
@@ -122,4 +143,3 @@ services.message.destinations :
      }
   }
 }
-
