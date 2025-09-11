@@ -86,6 +86,7 @@ recob::MCSFitResultGS TrajectoryMCSFitterICARUS::fitMcs(const recob::TrackTrajec
     ProcessDeltaRays(traj, planeMode_, isDelta, isDeltaIndex); }
 
   //break track into segments and populate vectors defined above
+  cout << "before breaktrajinsegments, isDelta size = " << isDelta.size() << std::endl;
   breakTrajInSegments(traj, breakpoints, seglens, cumseglens, seghits, cumseghits, isDeltaIndex);
 
   //check if number of segments is less than a certain value
@@ -329,6 +330,7 @@ recob::MCSFitResultGS TrajectoryMCSFitterICARUS::fitMcs(const recob::TrackTrajec
   //check if there is minimum number of angles > 0
   unsigned int firstseg = 0; unsigned int lastseg = 0; 
   bool checkLin = false; bool checkPoly = false;
+  cout << "before thetacheck, isDelta.size() = " << isDelta.size() << endl;
   ThetaCheck(dthetaLin, dthetaPoly, checkLin, checkPoly, firstseg, lastseg);
   if (!checkLin) {
     cout << "WARNING! number of scattering angles from linear fit is not greater or equal " << minNAngs_ << endl;
@@ -459,6 +461,7 @@ void TrajectoryMCSFitterICARUS::findSegmentBarycenter(const recob::TrackTrajecto
 
 //find average direction of trajectory between firstPoint and lastPoint in 3D
 void TrajectoryMCSFitterICARUS::linearRegression(const recob::TrackTrajectory& traj, const size_t firstPoint, const size_t lastPoint, Vector_t& pcdir, vector<int>& isDeltaIndex) const {
+  cout << " linear regression 3d " << endl;
   //initalize number of points in segment
   int npoints = 0;
 
@@ -469,10 +472,14 @@ void TrajectoryMCSFitterICARUS::linearRegression(const recob::TrackTrajectory& t
   size_t index = firstPoint;
   while (index < lastPoint) {
     if (CathodeCheck(traj, index) && (!removeDeltas_ || !isDeltaIndex[index])) {
-      //add position of current valid point to vector middlePointCalc
-      middlePointCalc.add(traj.LocationAtPoint(index));
-      npoints++; }
-    index = traj.NextValidPoint(index + 1); }
+      cout << " index = " << index << " isDeltaIndex = " << isDeltaIndex[index] << " lastPoint = " << lastPoint << endl;
+      if (!removeDeltas_ || !isDeltaIndex[index]) {
+        //add position of current valid point to vector middlePointCalc
+        middlePointCalc.add(traj.LocationAtPoint(index));
+        cout << " adding " << endl;
+        npoints++; } }
+    index = traj.NextValidPoint(index + 1); 
+    cout << " updating index " << index << endl; }
 
   //check if number of points is greater than zero, otherwise return trivial vector
   if (npoints == 0) pcdir = Vector_t();
@@ -547,6 +554,7 @@ void TrajectoryMCSFitterICARUS::find2DSegmentBarycenter(const recob::TrackTrajec
 
 //find average direction of trajectory between firstPoint and lastPoint in 2D
 void TrajectoryMCSFitterICARUS::linearRegression2D(const recob::TrackTrajectory& traj, const size_t firstPoint, const size_t lastPoint, Vector_t& pcdir2D, vector<int>& isDeltaIndex) const {
+  cout << " linear regression 2d " << endl;
   //initalize number of points in segment
   int npoints = 0;
 
@@ -557,7 +565,7 @@ void TrajectoryMCSFitterICARUS::linearRegression2D(const recob::TrackTrajectory&
   size_t index = firstPoint;
   while (index < lastPoint) {
     //check if current valid point is in input plane and last tpc
-    if (isinplane(index, planeMode_) && isintpc(index, lasttpc(traj)) && CathodeCheck(traj, index) && (!removeDeltas_||(!isDeltaIndex[index]))) {
+    if (isinplane(index, planeMode_) && isintpc(index, lasttpc(traj)) && CathodeCheck(traj, index) && (!removeDeltas_ || !isDeltaIndex[index])) {
       //determine position of current valid point
       auto p = hit2d(traj, index, planeMode_, lasttpc(traj));
       //add position of current valid point to vector middlePointCalc
@@ -617,7 +625,7 @@ void TrajectoryMCSFitterICARUS::linearRegression2D(const recob::TrackTrajectory&
       auto p = hit2d(traj, index, planeMode_, lasttpc(traj));
 // const auto avgpos = middlePointCalc.middlePoint();
  std::cout << " computing residual: point " << p.X() << " " << p.Y() << " " <<p.Z() << std::endl;
-      //distance_point_line(p,avgpos,pcdir2D);
+      distance_point_line(p,avgpos,pcdir2D);
 
     index = traj.NextValidPoint(index + 1); }
 
@@ -2005,9 +2013,11 @@ std::cout << " before filling vectors " << viewType << std::endl;
 
 
 size_t index = traj.FirstValidPoint();
+std::cout << " first valid " << traj.FirstValidPoint() << " last valid " << traj.LastValidPoint() << std::endl;
  while (index <= traj.LastValidPoint()) {
     proxy::TrackPointData pd = pdata[index];
     art::Ptr<recob::Hit> hit = get<1>(pd);
+  std::cout << " index " << index << " plane " << hit->WireID().Plane << " tpc " << hit->WireID().TPC << std::endl;
     if (isinplane(index, viewType)) {
       isDelta.push_back(-1);
       cout << " adding isdelta index " << index << endl;
@@ -2022,9 +2032,14 @@ size_t index = traj.FirstValidPoint();
  
     
     int NHits=hits.size();
+
+    if(NHits==0) {
+    std::cout<<"AF::FindDeltaRays::TagDeltaRays Error: cluster cannot be fitted to a straigh line. Delta Rays cannot be found"<<std::endl;
+    return;
+  }
     // it is not a delta-ray hit (default)
 
-//std::cout << " after filling vectors isdelta size " << isDelta.size() << std::endl;
+    std::cout << " after filling vectors NHits " << NHits << std::endl;
   
   for (int i=0;i<NHits;i++) {
       auto hit=hits.at(i);
@@ -2047,6 +2062,7 @@ size_t index = traj.FirstValidPoint();
 	}
   
     }
+    std::cout << " after counting double hits NHits " << NHits << std::endl;
     //if more than a fraction of hits are multiple on the same wire, I reset everything to non-delta and quit
     float CDThreshold=0.5;
     int countDouble=0;
@@ -2057,7 +2073,9 @@ size_t index = traj.FirstValidPoint();
     if (float(countDouble)/float(NHits)>CDThreshold) {
       for (int i=0;i<NHits;i++) {
         isDelta.at(i)=0;
-        return; } }
+        std::cout << " over countdouble threshold i " << i << " isdelta " << isDelta.at(i) << std::endl;
+        } 
+      return; }
   //std::cout << " after filling how " << NHits << std::endl;
   for (int i=0;i<NHits;i++)
     {
@@ -2093,6 +2111,7 @@ if(yp.size()<2) return;
       if(isdRay[i]) std::cout << " distance candidate dr " << i << std::endl;
 
 	distance = distance_point_line(a0,a1,xdr,ydr);
+  std::cout << " tagdeltaray distance " << distance << std::endl;
 	mean+=distance;
 	DrDist[i] = distance;
       }
@@ -2644,9 +2663,11 @@ std::cout << " before filling cylinder vectors " << viewType << std::endl;
 float threshold=0.2;
 
 size_t index = traj.FirstValidPoint();
+std::cout << " first valid " << traj.FirstValidPoint() << " last valid " << traj.LastValidPoint() << std::endl;
  while (index <= traj.LastValidPoint()) {
     proxy::TrackPointData pd = pdata[index];
     art::Ptr<recob::Hit> hit = get<1>(pd);
+  std::cout << " index " << index << " plane " << hit->WireID().Plane << " tpc " << hit->WireID().TPC << std::endl;
     if (isinplane(index, viewType)) {
       isDelta.push_back(-1);
       //cout << " adding cylinder isdelta index " << index << endl;
@@ -2667,6 +2688,11 @@ size_t index = traj.FirstValidPoint();
     // it is not a delta-ray hit (default)
 
 //std::cout << " after filling vectors isdelta size " << isDelta.size() << std::endl;
+
+  if(XP.size()<2) {
+    std::cout<<"AF::FindDeltaRays::TagDeltaRays Error: cluster cannot be fitted to a straigh line. Delta Rays cannot be found"<<std::endl;
+    return;
+  }
 
   track = new TGraph(XP.size(), &(XP[0]), &(YP[0]));
   ifail = track->Fit("pol1","0");

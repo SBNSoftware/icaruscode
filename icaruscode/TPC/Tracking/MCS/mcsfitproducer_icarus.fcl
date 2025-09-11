@@ -21,7 +21,7 @@ mcsfitproducericarus_raw: {
 	dimMode: 2
 	planeMode: 3
 	fitMode: 0
-	removeDeltas: false } }
+	removeDeltas: true } }
 
 mcsfitproducerI: {
   module_type: MCSFitProducerICARUS
@@ -44,7 +44,7 @@ mcsfitproducerI: {
 	dimMode: 3
 	planeMode: 3
 	fitMode: 0
-	removeDeltas: false } }
+	removeDeltas: true } }
 
 mcsfitproducerIF3D: {
   module_type: MCSFitProducerICARUS
@@ -67,7 +67,7 @@ mcsfitproducerIF3D: {
 	dimMode: 3
 	planeMode: 3
 	fitMode: 0
-	removeDeltas: false } }
+	removeDeltas: true } }
 
 mcsfitproducerIF2DI1: {
   module_type: MCSFitProducerICARUS
@@ -90,7 +90,7 @@ mcsfitproducerIF2DI1: {
 	dimMode: 2
 	planeMode: 0
 	fitMode: 0
-	removeDeltas: false } }
+	removeDeltas: true } }
 
 mcsfitproducerIF2DI2: {
   module_type: MCSFitProducerICARUS
@@ -113,7 +113,7 @@ mcsfitproducerIF2DI2: {
 	dimMode: 2
 	planeMode: 1
 	fitMode: 0
-	removeDeltas: false } }
+	removeDeltas: true } }
 
 mcsfitproducerIF2DC: {
   module_type: MCSFitProducerICARUS
@@ -136,7 +136,7 @@ mcsfitproducerIF2DC: {
 	dimMode: 2
 	planeMode: 2
 	fitMode: 0
-	removeDeltas: false } }
+	removeDeltas: true } }
 
 mcsfitproducerII3D: {
   module_type: MCSFitProducerICARUS
@@ -159,7 +159,7 @@ mcsfitproducerII3D: {
 	dimMode: 3
 	planeMode: 3
 	fitMode: 0
-	removeDeltas: false } }
+	removeDeltas: true } }
 
 mcsfitproducerII2DI1: {
   module_type: MCSFitProducerICARUS
@@ -182,7 +182,7 @@ mcsfitproducerII2DI1: {
 	dimMode: 2
 	planeMode: 0
 	fitMode: 0
-	removeDeltas: false } }
+	removeDeltas: true } }
 
 mcsfitproducerII2DI2: {
   module_type: MCSFitProducerICARUS
@@ -205,7 +205,7 @@ mcsfitproducerII2DI2: {
 	dimMode: 2
 	planeMode: 1
 	fitMode: 0
-	removeDeltas: false } }
+	removeDeltas: true } }
 
 mcsfitproducerII2DC: {
   module_type: MCSFitProducerICARUS
@@ -228,6 +228,6 @@ mcsfitproducerII2DC: {
 	dimMode: 2
 	planeMode: 2
 	fitMode: 0
-	removeDeltas: false } }
+	removeDeltas: true } }
 
 END_PROLOG
