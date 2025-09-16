@@ -12,6 +12,7 @@ services: {
 
 physics: {
    analyzers: {
+
       NuGraphAnaCryoE: {
          module_type:   "ICARUSNuGraphAnalyzer"
          NuGraphLabel: "NGMultiSliceCryoE"
@@ -26,10 +27,19 @@ physics: {
          SliceLabel: "NCCSlicesCryoW"
          PandoraLabel: "pandoraGausCryoW"
       }
+      #NuGraphAnaCryoE: { 
+      #   module_type:   "NuGraphAnalyzer" 
+      #   NuGraphLabel: "NuGraphCryoE"
+      #}
+      #NuGraphAnaCryoW: { 
+      #   module_type:   "NuGraphAnalyzer" 
+      #   NuGraphLabel: "NuGraphCryoW"
+      #}
    }
 
    reco:       []
-   ana:        [ NuGraphAnaCryoE, NuGraphAnaCryoW]
+
+   ana:        [ NuGraphAnaCryoE, NuGraphAnaCryoW ]
 
    end_paths:  [ ana ]
 }
