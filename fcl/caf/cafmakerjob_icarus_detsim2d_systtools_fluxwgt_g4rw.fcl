@@ -1,0 +1,2 @@
+#include "cafmakerjob_icarus_systtools_fluxwgt_g4rw.fcl"
+#include "cafmaker_add_detsim2d_icarus.fcl"
