@@ -9,6 +9,7 @@
 
 #include "icaruscode/Decode/ChannelMapping/RunPeriods.h"
 
+#include "larcorealg/CoreUtils/get_elements.h" // util::get_const_elements()
 #include "art/Utilities/make_tool.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
 #include "fhiclcpp/ParameterSet.h"
@@ -18,6 +19,7 @@
 #include "icaruscode/Decode/ChannelMapping/IICARUSChannelMap.h"
 #include "icaruscode/Decode/ChannelMapping/IChannelMapping.h"
 
+#include <algorithm> // std::sort()
 #include <string>
 #include <iostream>
 #include <cassert>
@@ -111,11 +113,17 @@ void ICARUSChannelMapProvider::readFromDatabase() {
 
     // Do the channel mapping initialization
     fFragmentToDigitizerMap.clear();
+    fPMTfragmentIDs.clear();
     if (fChannelMappingTool->BuildPMTFragmentToDigitizerChannelMap(fFragmentToDigitizerMap))
       {
 	throw cet::exception("ICARUSChannelMapProvider") << "Cannot recover the Fragment ID channel map from the database \n";
       }
-    else if (fDiagnosticOutput)
+    
+    for(unsigned int const digitizerInfo: util::get_const_elements<0>(fFragmentToDigitizerMap))
+      fPMTfragmentIDs.push_back(digitizerInfo);
+    std::sort(fPMTfragmentIDs.begin(), fPMTfragmentIDs.end());
+    
+    if (fDiagnosticOutput)
       {
 	std::cout << "FragmentID to Readout ID map has " << fFragmentToDigitizerMap.size() << " Fragment IDs";
 	 for(const auto& pair : fFragmentToDigitizerMap) std::cout << "   Frag: " << std::hex << pair.first << ", # pairs: " 
@@ -260,6 +268,9 @@ unsigned int ICARUSChannelMapProvider::nPMTfragmentIDs() const {
   return fFragmentToDigitizerMap.size();
 }
 
+std::vector<unsigned int> const& ICARUSChannelMapProvider::PMTfragmentIDs() const {
+  return fPMTfragmentIDs;
+}
 
 /// Returns records on all the PMT channels covered by the fragment `ID`.
 const PMTdigitizerInfoVec& ICARUSChannelMapProvider::getPMTchannelInfo(unsigned int fragmentID) const

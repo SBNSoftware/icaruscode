@@ -208,6 +208,9 @@ class icarusDB::ICARUSChannelMapProviderBase
   /// Returns the number of PMT fragment IDs known to the mapping.
   virtual unsigned int nPMTfragmentIDs() const override;
   
+  /// Returns the fragment IDs known to the mapping, in increasing value order.
+  virtual std::vector<unsigned int> const& PMTfragmentIDs() const override;
+  
   /// Returns records on all the PMT channels covered by the fragment `ID`.
   virtual PMTdigitizerInfoVec const& getPMTchannelInfo (unsigned int ID) const
     override;
@@ -265,7 +268,8 @@ class icarusDB::ICARUSChannelMapProviderBase
   
   icarusDB::TPCReadoutBoardToChannelMap fTPCReadoutBoardToChannelMap;
 
-  icarusDB::PMTFragmentToDigitizerChannelMap fPMTFragmentToDigitizerMap; 
+  icarusDB::PMTFragmentToDigitizerChannelMap fPMTFragmentToDigitizerMap;
+  std::vector<unsigned int> fPMTFragmentIDs; ///< List of PMT fragment IDs.
 
   icarusDB::CRTChannelIDToHWtoSimMacAddressPairMap
     fCRTChannelIDToHWtoSimMacAddressPairMap;
@@ -291,6 +295,17 @@ class icarusDB::ICARUSChannelMapProviderBase
     { return cet::exception{ "ICARUSChannelMapProviderBase" }; }
   
 }; // icarusDB::ICARUSChannelMapProviderBase
+
+
+// -----------------------------------------------------------------------------
+// ---  inline implementation
+// -----------------------------------------------------------------------------
+
+template <typename ChMapAlg>
+inline std::vector<unsigned int> const&
+icarusDB::ICARUSChannelMapProviderBase<ChMapAlg>::PMTfragmentIDs() const {
+  return fPMTFragmentIDs;
+}
 
 
 // -----------------------------------------------------------------------------

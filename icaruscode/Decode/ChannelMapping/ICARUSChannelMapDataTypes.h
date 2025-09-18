@@ -23,8 +23,10 @@ namespace icarusDB {
   /// @{
 
   
+  ///
   /// @name Data structures for mapping between TPC fragment IDs and the related
   ///       crate and readout information.
+  ///
   /// @{
   
   /// Sequence of TPC readout board ID.
@@ -40,8 +42,10 @@ namespace icarusDB {
   /// @}
   
   
+  ///
   /// @name Data structures for mapping between TPC readout board IDs and the
   ///       related crate and readout information.
+  ///
   /// @{
   
   /// A TPC channel ID/TPC plane number pair.
@@ -65,6 +69,31 @@ namespace icarusDB {
   
   /// Collection of information pertaining a single PMT.
   struct PMTChannelInfo_t {
+    
+    struct DigitizerInfo_t {
+      
+      /// Magic value denoting invalid information.
+      static constexpr unsigned short int NoInfo
+        = std::numeric_limits<short int>::max();
+      
+      /// Cryostat the digitizer covers (`0` for east, `1` for west).
+      short int cryostat = NoInfo;
+      
+      /// The PMT wall within the cryostat the digitizer covers
+      /// (`0` for east, `1` for west).
+      short int PMTwall = NoInfo;
+      
+      /// The side within the wall the digitizer covers
+      /// (`0` for bottom/upstream, `1` for top/downstream).
+      short int endSide = NoInfo;
+      
+      /// The order of the digitizer within the VME crate
+      /// (`0` for C, `1` for B, `2` for A).
+      short int slot = NoInfo;
+      
+    }; // DigitizerInfo_t
+    
+    
     static constexpr int NoDigitizerChannel
       = std::numeric_limits<unsigned int>::max();
     static constexpr unsigned int NoChannelID
@@ -100,6 +129,9 @@ namespace icarusDB {
     /// Number of the connector bit carrying the adder signal including this
     /// channel.
     unsigned short int adderBit = NoConnectorBit;
+    
+    /// Unpacked information about the digitizer location.
+    DigitizerInfo_t digitizerInfo;
     
     /// Returns whether the LVDS connector bit information is available.
     constexpr bool hasLVDSinfo() const { return LVDSbit != NoConnectorBit; }

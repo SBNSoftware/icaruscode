@@ -17,6 +17,7 @@
 
 // C/C++ standard libraries
 #include <string>
+#include <vector>
 #include <memory> // std::unique_ptr<>
 
 
@@ -57,6 +58,8 @@ public:
 
     /// Returns the number of PMT fragment IDs known to the service.
     unsigned int                            nPMTfragmentIDs()                       const override;
+    /// Returns the fragment IDs known to the mapping, in increasing value order.
+    std::vector<unsigned int> const&        PMTfragmentIDs()                        const override;
     const PMTdigitizerInfoVec&              getPMTchannelInfo(unsigned int)         const override;
 
     // Section for CRT channel mapping    
@@ -88,6 +91,7 @@ private:
     TPCReadoutBoardToChannelMap   fReadoutBoardToChannelMap;
 
     PMTFragmentToDigitizerChannelMap fFragmentToDigitizerMap; 
+    std::vector<unsigned int> fPMTfragmentIDs; ///< List of PMT fragment IDs.
 
     CRTChannelIDToHWtoSimMacAddressPairMap fCRTChannelIDToHWtoSimMacAddressPairMap;
 

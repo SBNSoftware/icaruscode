@@ -320,12 +320,23 @@ void icarusDB::ICARUSChannelMapProviderBase<ChMapAlg>::readFromDatabase() {
   // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   // PMT channel mapping
   fPMTFragmentToDigitizerMap.clear();
+  fPMTFragmentIDs.clear();
   if (fChannelMappingAlg.BuildPMTFragmentToDigitizerChannelMap(fPMTFragmentToDigitizerMap))
   {
     throw myException() 
       << "Cannot recover the PMT fragment ID channel map from the database.\n";
   }
-  else if (fDiagnosticOutput) {
+  
+  // post-processing: unpack digitizer information, fill fragment ID list cache
+  for(auto& [ fragmentID, digitizers ]: fPMTFragmentToDigitizerMap) {
+    fPMTFragmentIDs.push_back(fragmentID);
+    for (icarusDB::PMTChannelInfo_t& chInfo: digitizers) {
+      chInfo.digitizerInfo = unpackDigitizerInfo(chInfo.digitizerLabel);
+    } // for channel in fragment
+  } // for PMT fragment lists
+  std::sort(fPMTFragmentIDs.begin(), fPMTFragmentIDs.end());
+  
+  if (fDiagnosticOutput) {
     auto log = mfLogVerbatim();
     log << "FragmentID to Readout ID map has " << fPMTFragmentToDigitizerMap.size()
       << " Fragment IDs";

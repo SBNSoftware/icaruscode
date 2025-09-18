@@ -135,6 +135,9 @@ class icarusDB::IICARUSChannelMapProvider: public util::CacheCounter {
   /// Returns the number of PMT fragment IDs known to the mapping.
   virtual unsigned int nPMTfragmentIDs() const = 0;
   
+  /// Returns the sorted sequence of PMT fragment IDs known to the mapping.
+  virtual std::vector<unsigned int> const& PMTfragmentIDs() const = 0;
+  
   /// Returns records on all the PMT channels covered by the fragment `ID`.
   virtual PMTdigitizerInfoVec const& getPMTchannelInfo(unsigned int ID) const
     = 0;
@@ -162,6 +165,30 @@ class icarusDB::IICARUSChannelMapProvider: public util::CacheCounter {
   
   /// @}
   /// --- END ----- CRT information --------------------------------------------
+  
+  
+  
+  /**
+   * @brief Utility function to extract information from a PMT digitizer label.
+   * @param label digitizer label (as in `PMTChannelInfo_t::digitizerLabel`)
+   * @param format (default: `0`) format identifier for the input label
+   * @return the information unpacked into a `PMTChannelInfo_t::DigitizerInfo_t`
+   * 
+   * The output assigns:
+   *  * `0` to east cryostat/PMT wall, `1` to their west counterpart;
+   *  * `0` to the south end side with the lowest PMT channel index, `1` to the
+   *    other one;
+   *  * `0` to the lowest PMT channel index, and so on (`2` to the highest one).
+   * 
+   * Supported formats:
+   *  * `0`: `CT-SID-S` (e.g. `EW-TOP-A`), with
+   *      * `C` the cryostat (`E` or `W`)
+   *      * `T` the PMT wall (`E` or `W`)
+   *      * `SID` the end side (`TOP` or `BOT`)
+   *      * `S` the slot order (`A`, `B` or `C`)
+   */
+  static PMTChannelInfo_t::DigitizerInfo_t unpackDigitizerInfo
+    (std::string const& label, int format = 0);
 
 }; // icarusDB::IICARUSChannelMapProvider
 
