@@ -1,0 +1,13 @@
+#include "opticalTools_icarus.fcl"
+
+BEGIN_PROLOG
+	
+icarus_opdetwaveform_saturation:	
+{
+  module_type:         "OpDetWaveformSaturation"
+  InputLabel:          "daqPMT"
+  TriggerLabel:        "daqTrigger"
+  SaturationLevel:     100
+}
+
+END_PROLOG
