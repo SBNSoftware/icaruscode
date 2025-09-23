@@ -1,6 +1,6 @@
 #include "cafmakerjob_icarus_sce.fcl"
 
-physics.runprod: [ @sequence::caf_preprocess_sce_sequence, rns, systtools, cafmaker ]
+physics.runprod: [ @sequence::caf_preprocess_sce_sequence, rns, systtools, geant4weight, cafmaker ]
 
-physics.producers.cafmaker.SystWeightLabels: ["systtools"]
+physics.producers.cafmaker.SystWeightLabels: ["systtools", "geant4weight"]
 
