@@ -4,8 +4,8 @@
 // Plugin Type: analyzer (Unknown Unknown)
 // File:        ICARUSNuGraphAnalyzer_module.cc
 //
-// Riccardo Triozzi, based on the corresponding
-// larrecodnn module by Giuseppe Cerati
+// Riccardo Triozzi and Leonardo Lena, based on the corresponding 
+// larrecodnn module by Giuseppe Cerati 
 ////////////////////////////////////////////////////////////////////////
 
 #include "art/Framework/Core/EDAnalyzer.h"
@@ -57,6 +57,7 @@ private:
   TTree *_treeHit, *_treeEvt;
   int _run, _subrun, _event, _id, _wire, _plane, _tpc, _cryo;
   float _x_filter, _MIP, _HIP, _shower, _michel, _diffuse, _time;
+<<<<<<< HEAD
   int _islc, _icluster, _ipfp;
   float _vtx_x, _vtx_y, _vtx_z;
   std::string fNGLabel, fSliceLabel, fPandoraLabel;
@@ -131,7 +132,8 @@ void ICARUSNuGraphAnalyzer::analyze(art::Event const& e)
 
   for (size_t hitIdx = 0; hitIdx < allHits.size(); hitIdx++) {
     art::Ptr<recob::Hit> hit = allHits[hitIdx];
-    std::cout << "Begin hit #" << hitIdx+1 << " with key #" << hit.key() << ' ';
+    //std::cout << "Begin hit #" << hitIdx+1 << " with key #" << hit.key() << ' ';
+
     // event information
     _event  = e.event();
     _subrun = e.subRun();
@@ -158,9 +160,20 @@ void ICARUSNuGraphAnalyzer::analyze(art::Event const& e)
     auto itSlice = hitToSliceID.find(hit.key());
     _islc = (itSlice != hitToSliceID.end()) ? itSlice->second : -1;
 
+    auto itCluster = hitToClusterID.find(hit.key());
+    _icluster = (itCluster != hitToClusterID.end()) ? itCluster->second : -1;
+
+    _ipfp = -1;
+    if (_icluster > -1) {
+      art::Ptr<recob::Cluster> cluster(clusterHandle, _icluster);
+      auto itPFP = clusterToPFPID.find(cluster.key());
+      if (itPFP != clusterToPFPID.end()) 
+        _ipfp = itPFP->second; 
+    }
+
     _treeHit->Fill();
-    std::cout << "end" << '\n';
   }
+
 }
 
 DEFINE_ART_MODULE(ICARUSNuGraphAnalyzer)
