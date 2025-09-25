@@ -13,16 +13,12 @@ services: {
 physics: {
    analyzers: {
       NuGraphAnaCryoE: { 
-         module_type:  "ICARUSNuGraphAnalyzer" 
-         HitLabel:     "nuslhitsCryoE"
+         module_type:   "NuGraphAnalyzer" 
          NuGraphLabel: "NuGraphCryoE"
-         PandoraLabel: "pandoraGausNuGraphRecoCryoE"
       }
       NuGraphAnaCryoW: { 
-         module_type:  "ICARUSNuGraphAnalyzer" 
-         HitLabel:     "nuslhitsCryoW"
+         module_type:   "NuGraphAnalyzer" 
          NuGraphLabel: "NuGraphCryoW"
-         PandoraLabel: "pandoraGausNuGraphRecoCryoW"
       }
    }
 

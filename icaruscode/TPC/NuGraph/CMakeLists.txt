@@ -57,6 +57,13 @@ simple_plugin(ICARUSHDF5Maker "module"
     ${HDF5_LIBRARIES}
 )
 
+cet_build_plugin(ICARUSNuGraphAnalyzer art::EDAnalyzer
+    LIBRARIES PRIVATE
+    art_root_io::TFileService_service
+    ROOT::Tree
+    lardata::RecoBaseProxy
+)
+
 add_subdirectory(scripts)
 
 install_headers()
