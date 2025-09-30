@@ -59,14 +59,13 @@ private:
   float _x_filter, _MIP, _HIP, _shower, _michel, _diffuse, _time;
   int _islc, _icluster, _ipfp; 
   float _vtx_x, _vtx_y, _vtx_z;
-  std::string fNGLabel, fHitLabel, fPandoraLabel;
+  std::string fNGLabel, fHitLabel;
 };
 
 ICARUSNuGraphAnalyzer::ICARUSNuGraphAnalyzer(fhicl::ParameterSet const& p)
   : EDAnalyzer{p}, 
   fNGLabel{p.get<std::string>("NuGraphLabel", "NuGraph")},
-  fHitLabel{p.get<std::string>("HitLabel", "nuslhitsCryoE")},
-  fPandoraLabel{p.get<std::string>("PandoraLabel", "pandoraGausNuGraphRecoCryoE")}
+  fHitLabel{p.get<std::string>("HitLabel", "nuslhitsCryoE")}
 {
   // Call appropriate consumes<>() for any products to be retrieved by this module.
   art::ServiceHandle<art::TFileService> tfs;
@@ -104,6 +103,7 @@ void ICARUSNuGraphAnalyzer::analyze(art::Event const& e)
   // get hits from the tagged slice
   art::Handle<std::vector<recob::Hit>> hitListHandle;
   e.getByLabel(fHitLabel, hitListHandle);
+  std::cout << hitListHandle->size() << std::endl;
 
   // get NuGraph predictions
   art::Handle<std::vector<anab::FeatureVector<1>>> filterHandle;
@@ -112,58 +112,6 @@ void ICARUSNuGraphAnalyzer::analyze(art::Event const& e)
   art::Handle<std::vector<anab::FeatureVector<5>>> semanticHandle;
   e.getByLabel(art::InputTag(fNGLabel, "semantic"), semanticHandle);
 
-  // get slices
-  art::Handle<std::vector<recob::Slice>> sliceHandle;
-  e.getByLabel(fPandoraLabel, sliceHandle);
-  art::FindManyP<recob::Hit> sliceAssoc(sliceHandle, e, fPandoraLabel);
-
-  // map hits to slices
-  std::map<unsigned int, int> hitToSliceID;
-  for (size_t islc = 0; islc < sliceHandle->size(); ++islc) {
-    art::Ptr<recob::Slice> slice(sliceHandle, islc);
-    auto const& hitsInSlice = sliceAssoc.at(islc);
-    for (auto const& h : hitsInSlice) 
-      hitToSliceID[h.key()] = slice->ID();
-  }
-
-  // get clusters
-  art::Handle<std::vector<recob::Cluster>> clusterHandle;
-  e.getByLabel(fPandoraLabel, clusterHandle);
-  art::FindManyP<recob::Hit> clusterAssoc(clusterHandle, e, fPandoraLabel);
-
-  // map hits to clusters
-  std::map<unsigned int, int> hitToClusterID;
-  for (size_t iclus = 0; iclus < clusterHandle->size(); ++iclus) {
-    art::Ptr<recob::Cluster> cluster(clusterHandle, iclus);
-    auto const& hitsInCluster = clusterAssoc.at(iclus);
-    for (auto const& h : hitsInCluster) 
-      hitToClusterID[h.key()] = cluster->ID();
-  }
-
-  // get PFPs
-  art::Handle<std::vector<recob::PFParticle>> pfpHandle;
-  e.getByLabel(fPandoraLabel, pfpHandle);
-  art::FindManyP<recob::PFParticle> pfpAssoc(clusterHandle, e, fPandoraLabel);
-
-  // get PFP IDs
-  std::map<unsigned int, int> pfpIDMap;
-  for (size_t ipfp = 0; ipfp < pfpHandle->size(); ++ipfp) {
-    art::Ptr<recob::PFParticle> pfp(pfpHandle, ipfp);
-    pfpIDMap[pfp.key()] = ipfp; 
-  }
-
-  // map clusters to PFPs
-  std::map<unsigned int, int> clusterToPFPID;
-  for (size_t iclus = 0; iclus < clusterHandle->size(); ++iclus) {
-    art::Ptr<recob::Cluster> cluster(clusterHandle, iclus);
-    auto const& pfps = pfpAssoc.at(iclus);
-    auto it = pfpIDMap.find(pfps.front().key());
-    if (it != pfpIDMap.end()) {
-      clusterToPFPID[cluster.key()] = it->second;
-    }
-  }
-
-  // std::cout << hitListHandle->size() << std::endl;
   for (size_t ihit = 0; ihit < hitListHandle->size(); ihit++) {
     art::Ptr<recob::Hit> hit(hitListHandle, ihit);
 
@@ -188,73 +136,8 @@ void ICARUSNuGraphAnalyzer::analyze(art::Event const& e)
     _cryo  = hit->WireID().Cryostat;
     _time  = hit->PeakTime();
 
-    auto itSlice = hitToSliceID.find(hit.key());
-    _islc = (itSlice != hitToSliceID.end()) ? itSlice->second : -1;
-
-    auto itCluster = hitToClusterID.find(hit.key());
-    _icluster = (itCluster != hitToClusterID.end()) ? itCluster->second : -1;
-
-    _ipfp = -1;
-    if (_icluster > -1) {
-      art::Ptr<recob::Cluster> cluster(clusterHandle, _icluster);
-      auto itPFP = clusterToPFPID.find(cluster.key());
-      if (itPFP != clusterToPFPID.end()) 
-        _ipfp = itPFP->second; 
-    }
-
     _treeHit->Fill();
   }
-
-/////// hit -> spacepoint -> PFP
-
-//Association between Showers and pfParticles
-//art::FindManyP<recob::PFParticle> fmpf(showerListHandle, evt, fShowerModuleLabel);
-//Association between spacepoints and pfParticles
-//art::FindManyP<recob::SpacePoint> fmsp(pfpartListHandle, evt, fPFpartModuleLabel);
-//First you need to make the handles for each - and then after the above code, you use the .key() of the shower/pfparticle to get the right pfparticle/spacepoint collection
-
-   // auto GNNDescription = e.getHandle<anab::MVADescription<5>>(art::InputTag(fNGLabel, "semantic"));
-
-   // auto const& hitsWithScores = proxy::getCollection<std::vector<recob::Hit>>(
-   //    e,
-   //    GNNDescription->dataTag(),
-   //    proxy::withParallelData<anab::FeatureVector<1>>(art::InputTag(fNGLabel, "filter")),
-   //    proxy::withParallelData<anab::FeatureVector<5>>(art::InputTag(fNGLabel, "semantic"))
-   // );
-
-   // // get the handle for the hits with scores
-   // art::Handle<std::vector<recob::Hit>> hitsHandle;
-   // e.getByLabel(fPandoraLabel, hitsHandle);
-
-   // // get the slice index
-   // art::FindOneP<recob::Slice> slicePtr(hitsHandle, e, fPandoraLabel);
-
-   // // get the cluster index
-   // art::FindOneP<recob::Cluster> clusterPtr(hitsHandle, e, fPandoraLabel);
-
-   // std::cout << hitsWithScores.size() << std::endl;
-   // for (auto& h : hitsWithScores) {
-   //    const auto& assocFilter = h.get<anab::FeatureVector<1>>();
-   //    const auto& assocSemantic = h.get<anab::FeatureVector<5>>();
-   //    _event = e.event();
-   //    _subrun = e.subRun();
-   //    _run = e.run();
-   //    _id = h.index();
-   //    _x_filter = assocFilter.at(0);
-   //    _MIP = assocSemantic.at(GNNDescription->getIndex("MIP"));
-   //    _HIP = assocSemantic.at(GNNDescription->getIndex("HIP"));
-   //    _shower = assocSemantic.at(GNNDescription->getIndex("shower"));
-   //    _michel = assocSemantic.at(GNNDescription->getIndex("michel"));
-   //    _diffuse = assocSemantic.at(GNNDescription->getIndex("diffuse"));
-   //    _wire = h->WireID().Wire;
-   //    _plane = h->WireID().Plane;
-   //    _tpc = h->WireID().TPC;
-   //    _cryo = h->WireID().Cryostat;
-   //    _time = h->PeakTime();
-   //    _islc = slicePtr.at(h.index())->ID();
-   //    _icluster = clusterPtr.at(h.index())->ID();
-   //    _treeHit->Fill();
-   // }
 
    auto PredVertexColl = e.getHandle<std::vector<recob::Vertex>>(art::InputTag(fNGLabel, "vertex"));
    if (PredVertexColl.isValid() && PredVertexColl->size() > 0) { //there should be only one
