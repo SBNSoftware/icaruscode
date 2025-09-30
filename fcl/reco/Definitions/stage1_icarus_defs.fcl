@@ -383,6 +383,13 @@ icarus_stage1_producers.caloskimCalorimetryCryoW.TrackModuleLabel:              
 #icarus_stage1_producers.pandoraGausCryoW.ConfigFile:                                             "PandoraSettings_Master_ICARUS_RawICARUS.xml"
 #icarus_stage1_producers.pandoraGausCryoE.ConfigFile:                                             "PandoraSettings_Master_ICARUS_RawICARUS.xml"
 
+# Also fix hit label for CRT-(pandora) TPC tagging
+icarus_stage1_producers.CRTT0Tagging.HitLabels:                                                  ["combineHitsCryoE", "combineHitsCryoW"]
+
+# Override labels for ntupler
+icarus_stage1_analyzers.caloskimE.HITproducer: "combineHitsCryoE"
+icarus_stage1_analyzers.caloskimW.HITproducer: "combineHitsCryoW"
+
 ## Definitions for shower finding (both single and by cryostat)
 icarus_stage1_producers.SBNShowerGausCryoW.PFParticleLabel:                                      "pandoraGausCryoW"
 icarus_stage1_producers.SBNShowerGausCryoW.UseAllParticles:                                      true
