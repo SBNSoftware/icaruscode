@@ -313,6 +313,7 @@ cafmaker.OpFlashLabel: "opflash"
 # cafmaker.TriggerLabel: "daqTrigger" # see also https://github.com/SBNSoftware/icaruscode/issues/556
 cafmaker.TriggerLabel: "emuTrigger"
 cafmaker.UnshiftedTriggerLabel: "emuTriggerUnshifted"
+cafmaker.CRTSimChanLabel: "shifted"
 cafmaker.FlashTrigLabel: "" # unavailable
 cafmaker.SimChannelLabel: "largeant"
 cafmaker.SystWeightLabels: ["genieweight", "fluxweight"]
