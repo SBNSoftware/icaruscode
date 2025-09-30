@@ -57,7 +57,6 @@ private:
   TTree *_treeHit, *_treeEvt;
   int _run, _subrun, _event, _id, _wire, _plane, _tpc, _cryo;
   float _x_filter, _MIP, _HIP, _shower, _michel, _diffuse, _time;
-<<<<<<< HEAD
   int _islc, _icluster, _ipfp;
   float _vtx_x, _vtx_y, _vtx_z;
   std::string fNGLabel, fSliceLabel, fPandoraLabel;
@@ -157,23 +156,8 @@ void ICARUSNuGraphAnalyzer::analyze(art::Event const& e)
     _cryo  = hit->WireID().Cryostat;
     _time  = hit->PeakTime();
 
-    auto itSlice = hitToSliceID.find(hit.key());
-    _islc = (itSlice != hitToSliceID.end()) ? itSlice->second : -1;
-
-    auto itCluster = hitToClusterID.find(hit.key());
-    _icluster = (itCluster != hitToClusterID.end()) ? itCluster->second : -1;
-
-    _ipfp = -1;
-    if (_icluster > -1) {
-      art::Ptr<recob::Cluster> cluster(clusterHandle, _icluster);
-      auto itPFP = clusterToPFPID.find(cluster.key());
-      if (itPFP != clusterToPFPID.end()) 
-        _ipfp = itPFP->second; 
-    }
-
     _treeHit->Fill();
   }
-
 }
 
 DEFINE_ART_MODULE(ICARUSNuGraphAnalyzer)

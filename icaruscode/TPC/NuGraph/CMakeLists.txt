@@ -85,6 +85,14 @@ cet_build_plugin(ICARUSNuGraphAnalyzer art::EDAnalyzer
     lardata::RecoBaseProxy
 )
 
+cet_build_plugin(ICARUSPandoraHitDumpAnalyzer art::EDAnalyzer
+    LIBRARIES PRIVATE
+    art_root_io::TFileService_service
+    ROOT::Tree
+    lardata::RecoBaseProxy
+    lardataobj::RecoBase
+)
+
 add_subdirectory(scripts)
 
 install_headers()

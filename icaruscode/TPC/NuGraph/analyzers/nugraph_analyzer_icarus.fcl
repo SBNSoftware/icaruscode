@@ -32,13 +32,11 @@ physics: {
          module_type:  "ICARUSNuGraphAnalyzer" 
          HitLabel:     "nuslhitsCryoE"
          NuGraphLabel: "NuGraphCryoE"
-         PandoraLabel: "pandoraGausNuGraphRecoCryoE"
       }
       NuGraphAnaTaggedSliceCryoW: { 
          module_type:  "ICARUSNuGraphAnalyzer" 
          HitLabel:     "nuslhitsCryoW"
          NuGraphLabel: "NuGraphCryoW"
-         PandoraLabel: "pandoraGausNuGraphRecoCryoW"
       }
    }
 
