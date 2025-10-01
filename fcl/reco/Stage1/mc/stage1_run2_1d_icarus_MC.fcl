@@ -1,7 +1,7 @@
 
 #include "stage1_run2_icarus_MC.fcl"
 
-physics.reco: [ 
+physics.reco: [
                 @sequence::icarus_reco_Gauss1D_CryoE ,
                 @sequence::icarus_reco_Gauss1D_CryoW ,
                 @sequence::icarus_reco_fm,
@@ -10,8 +10,8 @@ physics.reco: [
                 @sequence::icarus_crttrack,
                 @sequence::icarus_crtt0tagging,
                 caloskimCalorimetryCryoE, caloskimCalorimetryCryoW,
-                mcassociationsGausCryoE,  mcassociationsGausCryoW,
-                mcreco
+                mcassociationsGausCryoE,  mcassociationsGausCryoW
+                # mcreco
               ]
 
 physics.producers.cluster3DCryoW.Hit3DBuilderAlg.HitFinderTagVec: ["gaushit1dTPCWW", "gaushit1dTPCWE"]
