@@ -1,3 +1,5 @@
+physics.producers.cafmaker.CRTHitLabel: overlayCRTHit
+
 services.BackTrackerService.BackTracker.OverrideRealData: true
 services.ParticleInventoryService.ParticleInventory.OverrideRealData: true
 
