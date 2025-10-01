@@ -39,7 +39,7 @@ icarus_pandorashower_3dTraj.ShowerFinderTools[7].CalorimetryAlg:      @local::ic
 icarus_pandorashower_3dTraj.ShowerFinderTools[7].MinAngleToWire:      0.26
 icarus_pandorashower_3dTraj.ShowerFinderTools[7].ResultsOverrideMode: 1 # override results from showerunidirectiondedx plane-by-plane
 icarus_pandorashower_3dTraj.ShowerFinderTools[7].dEdxTrackLength:     5
-icarus_pandorashower_3dTraj.ShowerFinderTools[7].MinDistCutOff:       2
+icarus_pandorashower_3dTraj.ShowerFinderTools[7].MinDistCutOff:       2 # same as default, used only when CutStartPosition is true
 icarus_pandorashower_3dTraj.ShowerFinderTools[7].CutStartPosition:    true
 
 # An "experimental" configuration. Uses the incremental track hit 
