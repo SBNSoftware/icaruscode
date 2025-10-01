@@ -30,10 +30,17 @@ icarus_pandorashower_3dTraj.ShowerFinderTools: [
   @local::showertrajpointdedx
 ]
 
-icarus_pandorashower_3dTraj.ShowerFinderTools[3].CalorimetryAlg:    @local::icarus_calorimetryalgmc
-icarus_pandorashower_3dTraj.ShowerFinderTools[5].CalorimetryAlg:    @local::icarus_calorimetryalgmc
-icarus_pandorashower_3dTraj.ShowerFinderTools[7].CalorimetryAlg:    @local::icarus_calorimetryalgmc
-icarus_pandorashower_3dTraj.ShowerFinderTools[7].MinAngleToWire:    0.26
+icarus_pandorashower_3dTraj.ShowerFinderTools[3].CalorimetryAlg:      @local::icarus_calorimetryalgmc
+
+icarus_pandorashower_3dTraj.ShowerFinderTools[5].CalorimetryAlg:      @local::icarus_calorimetryalgmc
+icarus_pandorashower_3dTraj.ShowerFinderTools[5].dEdxTrackLength:     5
+
+icarus_pandorashower_3dTraj.ShowerFinderTools[7].CalorimetryAlg:      @local::icarus_calorimetryalgmc
+icarus_pandorashower_3dTraj.ShowerFinderTools[7].MinAngleToWire:      0.26
+icarus_pandorashower_3dTraj.ShowerFinderTools[7].ResultsOverrideMode: 1 # override results from showerunidirectiondedx plane-by-plane
+icarus_pandorashower_3dTraj.ShowerFinderTools[7].dEdxTrackLength:     5
+icarus_pandorashower_3dTraj.ShowerFinderTools[7].MinDistCutOff:       2
+icarus_pandorashower_3dTraj.ShowerFinderTools[7].CutStartPosition:    true
 
 # An "experimental" configuration. Uses the incremental track hit 
 # finder and values for some parameters from the study in SBN-doc-19390
