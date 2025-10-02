@@ -1,3 +1,10 @@
+/**
+ * @file icaruscode/TPC/NuGraph/ICARUSNuGraphInference_module.cc
+ * @brief Implementation of `ICARUSNuGraphInference` _art_ module.
+ * @author Leonardo Lena (https://github.com/leonardo-lena) based on previous work.
+ * @date October 1, 2025
+ */
+
 #include <torch/script.h> // this is to be loaded first else it conflicts with... something and does not compile.
 
 #include "art/Framework/Core/EDProducer.h"
@@ -26,6 +33,13 @@ using recob::Slice;
 using recob::Hit;
 using std::vector;
 
+/**
+ * @class ICARUSNuGraphInference
+ * Takes a std::vector<art::Ptr<recob::Slice>> from the Event on which to run NuGraph inference.
+ * The data is pre-processed using a separate LoaderTool and then Delauney graphs are constructed in this module.
+ * NuGraph is then run on every single slice one at the time and the outputs are then flattened together to keep backward compatibility.
+ * Two separate DecoderTool(s) - one for filter, one for semantic - are responsible for taking the NuGraph output and writing it to the Event.
+ */
 class ICARUSNuGraphInference : public art::EDProducer {
   public:
     explicit ICARUSNuGraphInference(const fhicl::ParameterSet& params);
@@ -60,7 +74,7 @@ ICARUSNuGraphInference::ICARUSNuGraphInference(const fhicl::ParameterSet& params
   fHitLabel(params.get<art::InputTag>("HitLabel", "pandoraGausCryoE")),
   planes(params.get<vector<std::string>>("planes")),
   minHits(params.get<size_t>("minHits")),
-  debug(params.get<bool>("debug")),
+  debug(params.get<bool>("debug", false)),
   pos_norm(params.get<vector<float>>("pos_norm")) {
     for (size_t ip = 0; ip < planes.size(); ++ip) {
       avgs.push_back(params.get<vector<float>>("avgs_" + planes[ip]));

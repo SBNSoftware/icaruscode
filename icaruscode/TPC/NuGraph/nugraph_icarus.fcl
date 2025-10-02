@@ -50,13 +50,13 @@ NGMultiSliceCryoE: @local::NuGraphCryoE
 NGMultiSliceCryoE.module_type: ICARUSNuGraphInference
 NGMultiSliceCryoE.SlicesLabel: "NCCSlicesCryoE"
 NGMultiSliceCryoE.HitLabel: "pandoraGausCryoE"
-NGMultiSliceCryoE.debug: true
+NGMultiSliceCryoE.debug: false
 NGMultiSliceCryoE.LoaderTool.tool_type: "ICARUSNuGraphMultiLoader"
 NGMultiSliceCryoE.LoaderTool.PandoraLabel: "pandoraGausCryoE"
 NGMultiSliceCryoE.LoaderTool.SlicesLabel: "NCCSlicesCryoE"
 NGMultiSliceCryoE.LoaderTool.ClusterLabel: "cluster3DCryoE"
-NGMultiSliceCryoE.DecoderTools.FilterDecoderTool.HitLabel: "cluster3DCryoE"
-NGMultiSliceCryoE.DecoderTools.SemanticDecoderTool.HitLabel: "cluster3DCryoE"
+NGMultiSliceCryoE.DecoderTools.FilterDecoderTool.hitInput: "cluster3DCryoE"
+NGMultiSliceCryoE.DecoderTools.SemanticDecoderTool.hitInput: "cluster3DCryoE"
 
 NGMultiSliceCryoW: @local::NGMultiSliceCryoE
 NGMultiSliceCryoW.SlicesLabel: "NCCSlicesCryoW"
@@ -64,7 +64,7 @@ NGMultiSliceCryoW.HitLabel: "pandoraGausCryoW"
 NGMultiSliceCryoW.LoaderTool.PandoraLabel: "pandoraGausCryoW"
 NGMultiSliceCryoW.LoaderTool.SlicesLabel: "NCCSlicesCryoW"
 NGMultiSliceCryoW.LoaderTool.ClusterLabel: "cluster3DCryoW"
-NGMultiSliceCryoW.DecoderTools.FilterDecoderTool.HitLabel: "cluster3DCryoW"
-NGMultiSliceCryoW.DecoderTools.SemanticDecoderTool.HitLabel: "cluster3DCryoW"
+NGMultiSliceCryoW.DecoderTools.FilterDecoderTool.hitInput: "cluster3DCryoW"
+NGMultiSliceCryoW.DecoderTools.SemanticDecoderTool.hitInput: "cluster3DCryoW"
 
 END_PROLOG

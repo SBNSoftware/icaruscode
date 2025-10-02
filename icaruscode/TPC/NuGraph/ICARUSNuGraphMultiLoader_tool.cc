@@ -1,6 +1,6 @@
 /**
- * @file   icaruscode/TPC/NuGraph/ICARUSNuGraphLoader_tool.cc
- * @author Giuseppe Cerati (cerati@fnal.gov)
+ * @file   icaruscode/TPC/NuGraph/ICARUSNuGraphMultiLoader_tool.cc
+ * @author Leonardo Lena (https://github.com/leonardo-lena) based on G. Cerati (cerati@fnal.gov) work.
  */
 
 #include "larrecodnn/NuGraph/Tools/LoaderToolBase.h"
@@ -27,10 +27,11 @@ class ICARUSNuGraphMultiLoader : public LoaderToolBase {
 /**
  * @brief Tool to collect the inputs needed by NuGraph from ICARUS data products.
  *
- * Read hit and space points from the event record, and package them for usage in NuGraph. This tool is called from larrecodnn/NuGraph/NuGraphInference_module.cc.
+ * Read hit and space points from the event record, and package them for usage in NuGraph.
+ * This tool is called from icaruscode/TPC/NuGraph/ICARUSNuGraphInference_module.cc.
  * Hits are stitched so that the 4 ICARUS TPCs in a cryostat are viewed in a single time vs wire plane.
  * Only space points with chi2<MinChiSq (currently set to 0.5) and with 3 associated hits are considered.
- *
+ * The module assumes the input hits to all be from the same slice.
  */
 
 public:
@@ -68,7 +69,6 @@ void ICARUSNuGraphMultiLoader::loadData(art::Event& event,
                               std::vector<NuGraphInput>& graphinputs,
                               std::vector<std::vector<size_t>>& singleIdsmap)
 {
-  std::cout << "ENTER LOADER" << '\n';
   std::vector<int32_t> hit_table_hit_id_data;
   std::vector<int32_t> hit_table_local_plane_data;
   std::vector<float> hit_table_local_time_data;
@@ -83,7 +83,7 @@ void ICARUSNuGraphMultiLoader::loadData(art::Event& event,
   art::ValidHandle<std::vector<recob::SpacePoint>> spacePointsHandle = event.getValidHandle<std::vector<recob::SpacePoint>>(fClusterLabel);
 
   art::FindOneP<recob::Slice> find1SliceFromHit(hitsInSlice, event, fPandoraLabel);
-  art::Ptr<recob::Slice> slice = find1SliceFromHit.at(0);
+  art::Ptr<recob::Slice> slice = find1SliceFromHit.at(0); // we assume the hits are all from the same slice.
 
   art::FindManyP<recob::SpacePoint> findMSpsFromSlice(std::vector<art::Ptr<recob::Slice>>{slice}, event, fSlicesLabel);
   std::vector<art::Ptr<recob::SpacePoint>> spacePointsInSlice = findMSpsFromSlice.at(0);
@@ -132,7 +132,6 @@ void ICARUSNuGraphMultiLoader::loadData(art::Event& event,
   graphinputs.emplace_back("spacepoint_table_hit_id_u", std::move(spacepoint_table_hit_id_u_data));
   graphinputs.emplace_back("spacepoint_table_hit_id_v", std::move(spacepoint_table_hit_id_v_data));
   graphinputs.emplace_back("spacepoint_table_hit_id_y", std::move(spacepoint_table_hit_id_y_data));
-  std::cout << "EXIT LOADER" << '\n';
 }
 
 DEFINE_ART_CLASS_TOOL(ICARUSNuGraphMultiLoader)

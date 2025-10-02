@@ -1,7 +1,7 @@
 /**
  * @file icaruscode/TPC/NuGraph/ICARUSNCCSlicesProducer_module.cc
  * @brief Implementation of `ICARUSNCCSlicesProducer` _art_ module.
- * @author Leonardo Lena (llena1@fnal.gov)
+ * @author Leonardo Lena (https://github.com/leonardo-lena)
  * @date September 9, 2025
  */
 
@@ -33,8 +33,8 @@
 /**
  * @class ICARUSNCCSlicesProducer
  *
- * Produces an std::vector<art::Ptr> of Slices which contain NO PFParticles tagged as IsClearCosmic by Pandora.
- * also produces an Association between all recob::Slices and all recob::SpacePoints associated with atleast 3 recob::Hits in the same recob::Slice.
+ * Produces an std::vector<art::Ptr<recob::Slice>> whose IsPrimary PFParticle is NOT tagged as IsClearCosmic by Pandora.
+ * Also produces an Association between all recob::Slices and all recob::SpacePoints associated with atleast 3 recob::Hits in the same recob::Slice.
  */
 class ICARUSNCCSlicesProducer : public art::EDProducer {
 

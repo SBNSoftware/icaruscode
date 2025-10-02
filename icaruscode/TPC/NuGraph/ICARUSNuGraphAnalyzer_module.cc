@@ -100,10 +100,6 @@ ICARUSNuGraphAnalyzer::ICARUSNuGraphAnalyzer(fhicl::ParameterSet const& p)
 
 void ICARUSNuGraphAnalyzer::analyze(art::Event const& e)
 {
-
-  // art::ValidHandle<std::vector<anab::FeatureVector<1>>> filterHandle = e.getValidHandle<std::vector<anab::FeatureVector<1>>>(fNGLabel);
-  // art::ValidHandle<std::vector<anab::FeatureVector<5>>> semanticHandle = e.getValidHandle<std::vector<anab::FeatureVector<5>>>(fNGLabel);
-
   // get slices
   const std::vector<art::Ptr<recob::Slice>> slices = e.getProduct<vector<art::Ptr<recob::Slice>>>(fSliceLabel);
   art::FindManyP<recob::Hit> findMHitsFromSlice(slices, e, fPandoraLabel);
