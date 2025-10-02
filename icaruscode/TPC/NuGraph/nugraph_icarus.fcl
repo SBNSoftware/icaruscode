@@ -68,17 +68,17 @@ NGMultiSliceCryoW.DecoderTools.FilterDecoderTool.hitInput: "cluster3DCryoW"
 NGMultiSliceCryoW.DecoderTools.SemanticDecoderTool.hitInput: "cluster3DCryoW"
 
 ngfilteredhitsCryoE: {
-  module_type:    "ICARUSFilteredNuSliceHitsProducer"
-  HitLabel:       "nuslhitsCryoE"
-  HitScoreLabel:  "NuGraphCryoE:filter"
-  ScoreCut:       0.25
+  module_type:  "ICARUSFilteredNuSliceHitsProducer"
+  SliceLabel:   "NCCSlicesCryoE"
+  NGLabel:      "NGMultiSliceCryoE"
+  ScoreCut:     0.25
 }
 
 ngfilteredhitsCryoW: {
-  module_type:    "ICARUSFilteredNuSliceHitsProducer"
-  HitLabel:       "nuslhitsCryoW"
-  HitScoreLabel:  "NuGraphCryoW:filter"
-  ScoreCut:       0.25
+  module_type:  "ICARUSFilteredNuSliceHitsProducer"
+  SliceLabel:   "NCCSlicesCryoW"
+  NGLabel:      "NGMultiSliceCryoW"
+  ScoreCut:     0.25
 }
 
 END_PROLOG

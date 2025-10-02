@@ -1,3 +1,10 @@
+/**
+ * @file icaruscode/TPC/NuGraph/ICARUSFilteredNuSliceHitsProducer_module.cc
+ * @brief Implementation of `ICARUSFilteredNuSliceHitsProducer` _art_ module.
+ * @author Riccardo Triozzi
+ * @date September 9, 2025
+ */
+
 #include "art/Framework/Core/EDProducer.h"
 #include "art/Framework/Core/ModuleMacros.h"
 #include "art/Framework/Principal/Event.h"
@@ -37,10 +44,13 @@ public:
 
 private:
 
-  art::InputTag const fHitLabel;
-  art::InputTag const fHitScoreLabel;
+  // input tags
+  art::InputTag const fSliceLabel;
+  art::InputTag const fPandoraLabel;
+  art::InputTag const fNGLabel;
+
+  // module parameters
   float fScoreCut;
-  bool fWeightFilterByPFP;
 
   void produce(art::Event& e) override;
 
@@ -48,8 +58,9 @@ private:
 
 ICARUSFilteredNuSliceHitsProducer::ICARUSFilteredNuSliceHitsProducer(fhicl::ParameterSet const& p)
   : EDProducer{p},
-  fHitLabel(p.get<art::InputTag>("HitLabel", "nuslhitsCryoE")),
-  fHitScoreLabel(p.get<art::InputTag>("HitScoreLabel", "NuGraphCryoE:filter")),
+  fSliceLabel(p.get<art::InputTag>("SliceLabel", "NCCSlicesCryoE")),
+  fPandoraLabel{p.get<std::string>("PandoraLabel", "pandoraGausCryoE")},
+  fNGLabel{p.get<std::string>("NuGraphLabel", "NGMultiSliceCryoE")},
   fScoreCut(p.get<float>("ScoreCut", 0))
 {
   // Call appropriate produces<>() functions here.
@@ -63,19 +74,42 @@ void ICARUSFilteredNuSliceHitsProducer::produce(art::Event& e)
 
   auto outputHits = std::make_unique<std::vector<recob::Hit>>();
 
-  // get hits from the tagged slice
-  art::Handle<std::vector<recob::Hit>> hitListHandle;
-  e.getByLabel(fHitLabel, hitListHandle);
+  // get slices
+  const std::vector<art::Ptr<recob::Slice>> slices = e.getProduct<std::vector<art::Ptr<recob::Slice>>>(fSliceLabel);
+  art::FindManyP<recob::Hit> sliceToHitsAssoc(slices, e, fPandoraLabel);
 
-  // get hit filter values
-  art::Handle<std::vector<anab::FeatureVector<1>>> filterOutputHandle;
-  e.getByLabel(fHitScoreLabel, filterOutputHandle);
+  // get input hits
+  std::vector<art::Ptr<recob::Hit>> inputHits;
+  for (size_t islc = 0; islc < slices.size(); ++islc) {
+    const std::vector<art::Ptr<recob::Hit>> hitsInSlice = sliceToHitsAssoc.at(islc);
+    for (auto const& h : hitsInSlice) 
+      inputHits.emplace_back(h);
+  }
+  std::cout << "Number of hits before ICARUSFilteredNuSliceHitsProducer: " << inputHits.size() << std::endl;
 
-  for (size_t ihit = 0; ihit < hitListHandle->size(); ihit++) {
-    art::Ptr<recob::Hit> hit(hitListHandle, ihit);
-    if (fScoreCut >= 0 && filterOutputHandle->at(ihit).at(0) >= fScoreCut) 
+  // get NuGraph filter predictions
+  art::FindOneP<anab::FeatureVector<1>> hitToNGFilterAssoc(inputHits, e, art::InputTag(fNGLabel.label(), "filter"));
+
+  // filter input hits 
+  for (size_t ihit = 0; ihit < inputHits.size(); ihit++) {
+    art::Ptr<recob::Hit> hit = inputHits[ihit];
+    if (fScoreCut >= 0 && hitToNGFilterAssoc.at(ihit)->at(0) >= fScoreCut) 
       outputHits->emplace_back(*hit);
   }
+
+  // // get hits from the tagged slice
+  // art::Handle<std::vector<recob::Hit>> hitListHandle;
+  // e.getByLabel(fHitLabel, hitListHandle);
+
+  // // get hit filter values
+  // art::Handle<std::vector<anab::FeatureVector<1>>> filterOutputHandle;
+  // e.getByLabel(fHitScoreLabel, filterOutputHandle);
+
+  // for (size_t ihit = 0; ihit < hitListHandle->size(); ihit++) {
+  //   art::Ptr<recob::Hit> hit(hitListHandle, ihit);
+  //   if (fScoreCut >= 0 && filterOutputHandle->at(ihit).at(0) >= fScoreCut) 
+  //     outputHits->emplace_back(*hit);
+  // }
 
   std::cout << "Number of hits after ICARUSFilteredNuSliceHitsProducer: " << outputHits->size() << std::endl;
   e.put(std::move(outputHits));
