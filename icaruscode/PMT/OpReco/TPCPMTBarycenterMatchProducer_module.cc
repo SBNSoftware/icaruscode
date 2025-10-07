@@ -245,7 +245,7 @@ private:
   double CalculateAsymmetry(art::Ptr<recob::OpFlash> flash, int cryo);                        ///< Return the east-west asymmetry of PEs in a given OpFlash
   void updateChargeVars(double sumCharge, TVector3 const& sumPos, TVector3 const& sumPosSqr, std::array<double, 2> const& triggerFlashCenter); ///< Update slice-level data members with charge and trigger match info
   void updateFlashVars(art::Ptr<recob::OpFlash> flash, double firstHit, int matchedFlashClassification); ///< Update slice-level data members with best match info
-  void updateMatchInfo(sbn::TPCPMTBarycenterMatch& matchInfo);                                      ///< Update match product with slice-level data members
+  void updateMatchInfo(sbn::TPCPMTBarycenterMatch& matchInfo);                                           ///< Update match product with slice-level data members
  
   // Input parameters
   std::vector<std::string>  fInputTags;            ///< Suffix added onto fOpFlashLabel and fPandoraLabel, used by ICARUS for separate cryostat labels but could be empty
@@ -387,7 +387,7 @@ TPCPMTBarycenterMatchProducer::TPCPMTBarycenterMatchProducer(fhicl::ParameterSet
     fMatchTree->Branch("flashCenterZ",        &fFlashCenterZ,        "flashCenterZ/d"       );
     fMatchTree->Branch("flashWidthY",         &fFlashWidthY,         "flashWidthY/d"        );
     fMatchTree->Branch("flashWidthZ",         &fFlashWidthZ,         "flashWidthZ/d"        );
-    fMatchTree->Branch("flashClassification", &fFlashClassification, "flashWidthZ/d"        );
+    fMatchTree->Branch("flashClassification", &fFlashClassification, "flashClassification/d");
 
     //Match Quality Info
     fMatchTree->Branch("deltaT",              &fDeltaT,              "deltaT/d"             );
@@ -554,7 +554,8 @@ void TPCPMTBarycenterMatchProducer::produce(art::Event& e)
       double thisFlashCenterY, thisFlashCenterZ, thisDistance;
 
       // for debugging purposes
-      int thisTriggerGateDiff;
+      // int thisTriggerGateDiff;
+      // std::cout << "*********\nLooping over flashes for this slice:" << std::endl;
 
       //For flash...
       for ( int m = 0; m < nFlashes; m++ ) {
@@ -580,9 +581,10 @@ void TPCPMTBarycenterMatchProducer::produce(art::Event& e)
           int64_t const triggerGateDiff = trigInfo ? trigInfo->triggerFromBeamGate() : 0; ///< Beam gate opening time with respect to the trigger [ns]
 
           // for debugging purposes
-          thisTriggerGateDiff = triggerGateDiff;
+          // thisTriggerGateDiff = triggerGateDiff;
           // std::cout << "Flash time: " << flash.Time() << std::endl;
           // std::cout << "Trigger-gate difference: " << triggerGateDiff << std::endl;
+          // std::cout << "Flash time relative to beam gate " << flash.Time() + thisTriggerGateDiff / 1.e3 << std::endl;
 
           //Get beam gate times based on type
           double beamGateMin = 0., beamGateMax = 0.;
@@ -647,16 +649,26 @@ void TPCPMTBarycenterMatchProducer::produce(art::Event& e)
       unsigned unsignedMatchIndex = matchIndex;
       const art::Ptr<recob::OpFlash> flashPtr { flashHandle, unsignedMatchIndex };
 
+      // for debugging purposes
+      // std::cout << "---> Best-matched flash for this slice:" << std::endl;
+      // std::cout << "Flash time: " << (*flashPtr).Time() << std::endl;
+      // std::cout << "Trigger-gate difference: " << thisTriggerGateDiff << std::endl;
+      // std::cout << "Flash time relative to beam gate " << (*flashPtr).Time() + thisTriggerGateDiff / 1.e3 << std::endl;
+
       //Get CRT-PMT matching classification for the matched flash
       art::FindOneP<sbn::crt::CRTPMTMatching> matchPtr(flashHandle, e, fCRTPMTMatchingLabel);
       auto const &match = matchPtr.at(matchIndex);
       int matchedFlashClassification = -9999;
-      if ( match ) matchedFlashClassification = static_cast<int>(match->flashClassification);
-
-      std::cout << "Flash time: " << (*flashPtr).Time() << std::endl;
-      std::cout << "Trigger-gate difference: " << thisTriggerGateDiff << std::endl;
-      std::cout << "Flash time relative to beam gate " << (*flashPtr).Time() + thisTriggerGateDiff / 1.e3 << std::endl;
-      std::cout << "CRT-PMT matching classification: " << matchedFlashClassification << std::endl;
+      if ( match ) {
+        matchedFlashClassification = static_cast<int>(match->flashClassification);
+        // std::cout << "CRT-PMT matching classification: " << matchedFlashClassification << std::endl;
+        // std::cout << "Flash time relative to trigger, from CRTPMT label: " << static_cast<double>(match->flashTime) << std::endl;
+        // std::cout << "Flash time relative to beam gate, from CRTPMT label: " << static_cast<double>(match->flashGateTime) << std::endl;
+        // std::cout << "Is the flash in the gate / beam, from CRTPMT label: " << static_cast<int>(match->flashInGate) << " / " << static_cast<int>(match->flashInBeam) << std::endl;
+      }
+      else {
+        std::cout << "No CRT-PMT matching information for this flash." << std::endl;
+      }
 
       //Find time of first OpHit in matched flash
       const std::vector<recob::OpHit const*> &opHitsVec = fmOpHits.at(matchIndex);
