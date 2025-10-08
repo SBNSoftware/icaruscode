@@ -71,14 +71,14 @@ ngfilteredhitsCryoE: {
   module_type:  "ICARUSFilteredNuSliceHitsProducer"
   SliceLabel:   "NCCSlicesCryoE"
   NGLabel:      "NGMultiSliceCryoE"
-  ScoreCut:     0.25
+  ScoreCut:     0.5
 }
 
 ngfilteredhitsCryoW: {
   module_type:  "ICARUSFilteredNuSliceHitsProducer"
   SliceLabel:   "NCCSlicesCryoW"
   NGLabel:      "NGMultiSliceCryoW"
-  ScoreCut:     0.25
+  ScoreCut:     0.5
 }
 
 END_PROLOG
