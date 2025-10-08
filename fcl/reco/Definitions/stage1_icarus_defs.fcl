@@ -101,11 +101,15 @@ icarus_stage1_producers:
   ## Pandora, when running after NuGraph
   pandoraGausNuGraphRecoCryoE: {
     @table::icarus_pandora
-    HitFinderModuleLabel: "ngfilteredhitsCryoE"
+    HitFinderModuleLabel:   "ngfilteredhitsCryoE"
+    CollectHitPredictions:  true
+    UseHitPredictions:      true
   }
   pandoraGausNuGraphRecoCryoW: {
     @table::icarus_pandora
-    HitFinderModuleLabel: "ngfilteredhitsCryoW"
+    HitFinderModuleLabel:   "ngfilteredhitsCryoW"
+    CollectHitPredictions:  true
+    UseHitPredictions:      true
   }
 }
 
