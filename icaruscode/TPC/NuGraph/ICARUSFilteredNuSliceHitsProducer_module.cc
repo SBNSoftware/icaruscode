@@ -65,6 +65,8 @@ ICARUSFilteredNuSliceHitsProducer::ICARUSFilteredNuSliceHitsProducer(fhicl::Para
 {
   // Call appropriate produces<>() functions here.
   produces<std::vector<recob::Hit>>();
+  produces<std::vector<anab::FeatureVector<1>>>();
+  produces<std::vector<anab::FeatureVector<5>>>();
 
   // Call appropriate consumes<>() for any products to be retrieved by this module.
 }
@@ -73,6 +75,8 @@ void ICARUSFilteredNuSliceHitsProducer::produce(art::Event& e)
 {
 
   auto outputHits = std::make_unique<std::vector<recob::Hit>>();
+  auto outputFilter = std::make_unique<std::vector<anab::FeatureVector<1>>>();
+  auto outputSemantic = std::make_unique<std::vector<anab::FeatureVector<5>>>();
 
   // get slices
   const std::vector<art::Ptr<recob::Slice>> slices = e.getProduct<std::vector<art::Ptr<recob::Slice>>>(fSliceLabel);
@@ -87,14 +91,19 @@ void ICARUSFilteredNuSliceHitsProducer::produce(art::Event& e)
   }
   std::cout << "Number of hits before ICARUSFilteredNuSliceHitsProducer: " << inputHits.size() << std::endl;
 
-  // get NuGraph filter predictions
+  // get NuGraph filter and semantic predictions
   art::FindOneP<anab::FeatureVector<1>> hitToNGFilterAssoc(inputHits, e, art::InputTag(fNGLabel.label(), "filter"));
+  art::FindOneP<anab::FeatureVector<5>> hitToNGSemanticAssoc(inputHits, e, art::InputTag(fNGLabel.label(), "semantic"));
 
-  // filter input hits 
   for (size_t ihit = 0; ihit < inputHits.size(); ihit++) {
     art::Ptr<recob::Hit> hit = inputHits[ihit];
-    if (fScoreCut >= 0 && hitToNGFilterAssoc.at(ihit)->at(0) >= fScoreCut) 
+
+    // filter input hits
+    if (fScoreCut >= 0 && hitToNGFilterAssoc.at(ihit)->at(0) >= fScoreCut) {
       outputHits->emplace_back(*hit);
+      outputFilter->emplace_back(*hitToNGFilterAssoc.at(ihit));
+      outputSemantic->emplace_back(*hitToNGSemanticAssoc.at(ihit));
+    }
   }
 
   // // get hits from the tagged slice
@@ -113,7 +122,8 @@ void ICARUSFilteredNuSliceHitsProducer::produce(art::Event& e)
 
   std::cout << "Number of hits after ICARUSFilteredNuSliceHitsProducer: " << outputHits->size() << std::endl;
   e.put(std::move(outputHits));
-
+  e.put(std::move(outputFilter));
+  e.put(std::move(outputSemantic));
 }
 
 DEFINE_ART_MODULE(ICARUSFilteredNuSliceHitsProducer)
