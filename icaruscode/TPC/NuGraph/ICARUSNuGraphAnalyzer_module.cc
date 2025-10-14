@@ -139,24 +139,41 @@ void ICARUSNuGraphAnalyzer::analyze(art::Event const& e)
     _run    = e.run();
     _id     = hit.key();
 
+
+<<<<<<< HEAD
+    _treeHit->Fill();
+=======
+    auto itSlice = hitToSliceID.find(hit.key());
+    _islc = (itSlice != hitToSliceID.end()) ? itSlice->second : -1;
+
     // NuGraph predictions
     const art::Ptr<anab::FeatureVector<1>> filter = find1FilterFromHit.at(hitIdx);
     const art::Ptr<anab::FeatureVector<5>> semantic = find1SemanticFromHit.at(hitIdx);
-    _x_filter = filter->at(0);
-    _MIP      = semantic->at(0);
-    _HIP      = semantic->at(1);
-    _shower   = semantic->at(2);
-    _michel   = semantic->at(3);
-    _diffuse  = semantic->at(4);
 
-    // hit description
-    _wire  = hit->WireID().Wire;
-    _plane = hit->WireID().Plane;
-    _tpc   = hit->WireID().TPC;
-    _cryo  = hit->WireID().Cryostat;
-    _time  = hit->PeakTime();
+    if (filter.isNull() || semantic.isNull()) {
+      std::cout << "Hit #" << hitIdx << " with key " << hit.key() << " had no valid NuGraphOutput. Skipping." << "\n";
+      _treeHit->Fill();
+      continue;
+    } else {
+      _x_filter = filter->at(0);
+      _MIP      = semantic->at(0);
+      _HIP      = semantic->at(1);
+      _shower   = semantic->at(2);
+      _michel   = semantic->at(3);
+      _diffuse  = semantic->at(4);
 
-    _treeHit->Fill();
+      // hit description
+      _wire  = hit->WireID().Wire;
+      _plane = hit->WireID().Plane;
+      _tpc   = hit->WireID().TPC;
+      _cryo  = hit->WireID().Cryostat;
+      _time  = hit->PeakTime();
+
+      _treeHit->Fill();
+    }
+
+    std::cout << "end" << '\n';
+>>>>>>> 19eb2dc2 (Merge pull request #1 from leonardo-lena/feature-nugraph-multislice)
   }
 }
 

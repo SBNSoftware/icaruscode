@@ -93,7 +93,7 @@ void ICARUSNuGraphMultiLoader::loadData(art::Event& event,
   for (const art::Ptr<recob::SpacePoint>&  spacePoint : spacePointsInSlice) {
     std::vector<art::Ptr<recob::Hit>> hitsOfSpacePoint = findMHitsFromSps.at(spacePoint.key());
 
-    if (spacePoint->Chisq() > minChiSq || hitsOfSpacePoint.size() < 3) continue;
+    if (spacePoint->Chisq() > minChiSq || hitsOfSpacePoint.size() != 3) continue;
     spacepoint_table_spacepoint_id_data.push_back(spacePoint.key());
 
     for (const art::Ptr<recob::Hit>& hit : hitsOfSpacePoint) {
@@ -105,20 +105,29 @@ void ICARUSNuGraphMultiLoader::loadData(art::Event& event,
     }
   }
 
+  std::set<std::tuple<size_t, size_t, double>> coordsSet;
+
   for (const art::Ptr<recob::Hit>& hit : hitsInSlice) {
     geo::WireID wireId = hit->WireID();
     size_t plane = util::stitchedPlane(wireId);
     double time = util::stitchedTime(wireId, hit->PeakTime());
     size_t wire = util::stitchedWire(wireId);
 
-    hit_table_hit_id_data.push_back(hit.key());
-    hit_table_local_plane_data.push_back(plane);
-    hit_table_local_time_data.push_back(time);
-    hit_table_local_wire_data.push_back(wire);
-    hit_table_integral_data.push_back(hit->Integral());
-    hit_table_rms_data.push_back(hit->RMS());
+    auto insertReturn = coordsSet.insert(std::make_tuple(plane, wire, time));
 
-    singleIdsmap[plane].push_back(hit.key());
+    if (insertReturn.second) {
+      hit_table_hit_id_data.push_back(hit.key());
+      hit_table_local_plane_data.push_back(plane);
+      hit_table_local_time_data.push_back(time);
+      hit_table_local_wire_data.push_back(wire);
+      hit_table_integral_data.push_back(hit->Integral());
+      hit_table_rms_data.push_back(hit->RMS());
+
+      singleIdsmap[plane].push_back(hit.key());
+    } else if (debug) {
+      std::cout << "Overlapping hit found at (plane, wire, time): (" << plane << ", " << wire << ", " << time << ").\n";
+    }
+    
   }
 
   graphinputs.emplace_back("hit_table_hit_id", std::move(hit_table_hit_id_data));

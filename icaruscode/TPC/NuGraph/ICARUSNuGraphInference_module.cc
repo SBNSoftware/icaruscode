@@ -117,8 +117,21 @@ void ICARUSNuGraphInference::produce(art::Event& event) {
 
     _loaderTool->loadData(event, hitsInSlice, graphinputs, singleIdsmap);
 
+    bool emptyPlane = false;
+
     for (size_t plane = 0; plane < singleIdsmap.size(); plane++) {
-      idsmap[plane].insert(idsmap[plane].end(), singleIdsmap[plane].begin(), singleIdsmap[plane].end());
+      if (singleIdsmap[plane].size() <= 0) {
+        emptyPlane = true;
+      }
+    }
+
+    if (emptyPlane) {
+      continue;
+      if (debug) std::cout << "Slice has atleast one empty plane. Skipping." << std::endl;
+    } else {
+      for (size_t plane = 0; plane < singleIdsmap.size(); plane++) {
+        idsmap[plane].insert(idsmap[plane].end(), singleIdsmap[plane].begin(), singleIdsmap[plane].end());
+      }
     }
 
     const vector<int32_t>* spids = nullptr;
@@ -183,6 +196,15 @@ void ICARUSNuGraphInference::produce(art::Event& event) {
         if (size_t(hit_plane->at(i)) != p) continue;
         coords.push_back(hit_time->at(i) * pos_norm.at(1));
         coords.push_back(hit_wire->at(i) * pos_norm.at(0));
+        if (debug) {
+          std::cout 
+          << "Plane: " << p
+          << " Hit: " << i 
+          << " HitIdxInEdge: " << (coords.size() / 2) - 1
+          << " time_g: " << hit_time->at(i)
+          << " wire_g: " << hit_wire->at(i)
+          << '\n';
+        }
       }
       if (debug) std::cout << "Plane " << p << " has N hits=" << coords.size() / 2 << std::endl;
       if (coords.size() / 2 < 3) { continue; }
@@ -243,21 +265,21 @@ void ICARUSNuGraphInference::produce(art::Event& event) {
     for (size_t i = 0; i < spids->size(); ++i) {
       if (hitids_u->at(i) >= 0) {
         Edge e;
-        e.n1 = idsmapRev.at(hitids_u->at(i));
+        e.n1 = idsmapRev[hitids_u->at(i)];
         e.n2 = i;
-        edge3d.at(0).push_back(e);
+        edge3d[0].push_back(e);
       }
       if (hitids_v->at(i) >= 0) {
         Edge e;
-        e.n1 = idsmapRev.at(hitids_v->at(i));
+        e.n1 = idsmapRev[hitids_v->at(i)];
         e.n2 = i;
-        edge3d.at(1).push_back(e);
+        edge3d[1].push_back(e);
       }
       if (hitids_y->at(i) >= 0) {
         Edge e;
-        e.n1 = idsmapRev.at(hitids_y->at(i));
+        e.n1 = idsmapRev[hitids_y->at(i)];
         e.n2 = i;
-        edge3d.at(2).push_back(e);
+        edge3d[2].push_back(e);
       }
     }
     if (debug) std::cout << "end 3d edges creation" << '\n';
@@ -412,18 +434,28 @@ void ICARUSNuGraphInference::produce(art::Event& event) {
     }
   }
 
-  if (debug) {
-    size_t idsmapEntries = 0;
-    for (std::vector<size_t> idsVec : idsmap) {
-      for (size_t idCounter = 0; idCounter < idsVec.size(); ++idCounter) {
-        idsmapEntries++;
-      }
+  size_t idsmapEntries = 0;
+  for (std::vector<size_t> idsVec : idsmap) {
+    for (size_t idCounter = 0; idCounter < idsVec.size(); ++idCounter) {
+      idsmapEntries++;
     }
-    std::cout << "idsmap size: " << idsmapEntries << " infer_output size: " << infer_output.size() << std::endl;
+  }
+  if (debug) {
+    std::cout << "idsmap size: " << idsmapEntries;
+    for (const NuGraphOutput& output : infer_output) {
+      std::cout << output.output_name << " size: " << output.output_vec.size() << ' ';
+    }
+    std::cout << std::endl;
   }
 
-  for (size_t i = 0; i < _decoderToolsVec.size(); i++) {
-    _decoderToolsVec[i]->writeToEvent(event, idsmap, infer_output);
+  if (idsmapEntries == 0) {
+    for (size_t i = 0; i < _decoderToolsVec.size(); i++) {
+      _decoderToolsVec[i]->writeEmptyToEvent(event, idsmap);
+    }
+  } else {
+    for (size_t i = 0; i < _decoderToolsVec.size(); i++) {
+      _decoderToolsVec[i]->writeToEvent(event, idsmap, infer_output);
+    }
   }
   if (debug) std::cout << "INFERENCE COMPLETE" << '\n';
 }
