@@ -140,9 +140,6 @@ void ICARUSNuGraphAnalyzer::analyze(art::Event const& e)
     _id     = hit.key();
 
 
-<<<<<<< HEAD
-    _treeHit->Fill();
-=======
     auto itSlice = hitToSliceID.find(hit.key());
     _islc = (itSlice != hitToSliceID.end()) ? itSlice->second : -1;
 
@@ -173,7 +170,6 @@ void ICARUSNuGraphAnalyzer::analyze(art::Event const& e)
     }
 
     std::cout << "end" << '\n';
->>>>>>> 19eb2dc2 (Merge pull request #1 from leonardo-lena/feature-nugraph-multislice)
   }
 }
 
