@@ -70,14 +70,16 @@ NGMultiSliceCryoW.DecoderTools.SemanticDecoderTool.hitInput: "cluster3DCryoW"
 ngfilteredhitsCryoE: {
   module_type:  "ICARUSFilteredNuSliceHitsProducer"
   SliceLabel:   "NCCSlicesCryoE"
-  NGLabel:      "NGMultiSliceCryoE"
+  PandoraLabel: "pandoraGausCryoE"
+  NuGraphLabel: "NGMultiSliceCryoE"
   ScoreCut:     0.5
 }
 
 ngfilteredhitsCryoW: {
   module_type:  "ICARUSFilteredNuSliceHitsProducer"
   SliceLabel:   "NCCSlicesCryoW"
-  NGLabel:      "NGMultiSliceCryoW"
+  PandoraLabel: "pandoraGausCryoW"
+  NuGraphLabel: "NGMultiSliceCryoW"
   ScoreCut:     0.5
 }
 

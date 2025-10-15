@@ -73,7 +73,6 @@ ICARUSFilteredNuSliceHitsProducer::ICARUSFilteredNuSliceHitsProducer(fhicl::Para
 
 void ICARUSFilteredNuSliceHitsProducer::produce(art::Event& e)
 {
-
   auto outputHits = std::make_unique<std::vector<recob::Hit>>();
   auto outputFilter = std::make_unique<std::vector<anab::FeatureVector<1>>>();
   auto outputSemantic = std::make_unique<std::vector<anab::FeatureVector<5>>>();
@@ -105,20 +104,6 @@ void ICARUSFilteredNuSliceHitsProducer::produce(art::Event& e)
       outputSemantic->emplace_back(*hitToNGSemanticAssoc.at(ihit));
     }
   }
-
-  // // get hits from the tagged slice
-  // art::Handle<std::vector<recob::Hit>> hitListHandle;
-  // e.getByLabel(fHitLabel, hitListHandle);
-
-  // // get hit filter values
-  // art::Handle<std::vector<anab::FeatureVector<1>>> filterOutputHandle;
-  // e.getByLabel(fHitScoreLabel, filterOutputHandle);
-
-  // for (size_t ihit = 0; ihit < hitListHandle->size(); ihit++) {
-  //   art::Ptr<recob::Hit> hit(hitListHandle, ihit);
-  //   if (fScoreCut >= 0 && filterOutputHandle->at(ihit).at(0) >= fScoreCut) 
-  //     outputHits->emplace_back(*hit);
-  // }
 
   std::cout << "Number of hits after ICARUSFilteredNuSliceHitsProducer: " << outputHits->size() << std::endl;
   e.put(std::move(outputHits));
