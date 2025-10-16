@@ -348,7 +348,11 @@ function CheckOutSources() {
   # all the same branch, just because of the simpler interface
   local RequestedRepoVersion
   for CodeRepoName in "${RepoNames[@]}" ; do
-    RequestedRepoVersion="$(UPSversion "$CodeRepoName")"
+    if [[ "$CodeRepoName" != "$ExperimentCodeName" ]]; then
+      RequestedRepoVersion="$(UPSversion "$CodeRepoName")"
+    else
+      false # trigger the next conditio
+    fi
     [[ $? == 0 ]] || RequestedRepoVersion="$RequestedCodeBranch"
     echo " === preparing repository '${CodeRepoName}' (${RequestedRepoVersion}) === "
     PrepareRepository "$CodeRepoName" "$RequestedRepoVersion"
