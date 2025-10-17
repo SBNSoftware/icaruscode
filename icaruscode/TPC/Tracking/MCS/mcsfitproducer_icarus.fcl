@@ -21,7 +21,7 @@ mcsfitproducericarus_raw: {
 	dimMode: 2
 	planeMode: 3
 	fitMode: 0
-	removeDeltas: true } }
+	removeDeltas: false } }
 
 mcsfitproducerI: {
   module_type: MCSFitProducerICARUS
@@ -44,7 +44,7 @@ mcsfitproducerI: {
 	dimMode: 3
 	planeMode: 3
 	fitMode: 0
-	removeDeltas: true } }
+	removeDeltas: false } }
 
 mcsfitproducerIF3D: {
   module_type: MCSFitProducerICARUS
@@ -67,7 +67,7 @@ mcsfitproducerIF3D: {
 	dimMode: 3
 	planeMode: 3
 	fitMode: 0
-	removeDeltas: true } }
+	removeDeltas: false } }
 
 mcsfitproducerIF2DI1: {
   module_type: MCSFitProducerICARUS
@@ -90,7 +90,7 @@ mcsfitproducerIF2DI1: {
 	dimMode: 2
 	planeMode: 0
 	fitMode: 0
-	removeDeltas: true } }
+	removeDeltas: false } }
 
 mcsfitproducerIF2DI2: {
   module_type: MCSFitProducerICARUS
@@ -113,7 +113,7 @@ mcsfitproducerIF2DI2: {
 	dimMode: 2
 	planeMode: 1
 	fitMode: 0
-	removeDeltas: true } }
+	removeDeltas: false } }
 
 mcsfitproducerIF2DC: {
   module_type: MCSFitProducerICARUS
@@ -136,7 +136,7 @@ mcsfitproducerIF2DC: {
 	dimMode: 2
 	planeMode: 2
 	fitMode: 0
-	removeDeltas: true } }
+	removeDeltas: false } }
 
 mcsfitproducerII3D: {
   module_type: MCSFitProducerICARUS
@@ -154,8 +154,8 @@ mcsfitproducerII3D: {
 	pMin: 100.
 	pMax: 1500.
 	pStep: 20.
-	cutMode: 2
-	cutAngles: 7
+	cutMode: 1
+	cutAngles: 3
 	dimMode: 3
 	planeMode: 3
 	fitMode: 0
@@ -177,8 +177,8 @@ mcsfitproducerII2DI1: {
 	pMin: 100.
 	pMax: 1500.
 	pStep: 20.
-	cutMode: 2
-	cutAngles: 7
+	cutMode: 1
+	cutAngles: 3
 	dimMode: 2
 	planeMode: 0
 	fitMode: 0
@@ -200,8 +200,8 @@ mcsfitproducerII2DI2: {
 	pMin: 100.
 	pMax: 1500.
 	pStep: 20.
-	cutMode: 2
-	cutAngles: 7
+	cutMode: 1
+	cutAngles: 3
 	dimMode: 2
 	planeMode: 1
 	fitMode: 0
@@ -223,8 +223,8 @@ mcsfitproducerII2DC: {
 	pMin: 100.
 	pMax: 1500.
 	pStep: 20.
-	cutMode: 2
-	cutAngles: 7
+	cutMode: 1
+	cutAngles: 3
 	dimMode: 2
 	planeMode: 2
 	fitMode: 0

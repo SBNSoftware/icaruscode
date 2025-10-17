@@ -1821,14 +1821,29 @@ void TrajectoryMCSFitterICARUS::ProcessDeltaRays(const recob::TrackTrajectory& t
   //Fill_ZY_arrays();
   cout << "before tagging delta rays " << endl;
   TagDeltaRays(traj, viewType, isd, isdi);
-  cout << "after tagging delta rays " << endl;
-  //cout << "mid process first isd = " << isd.at(0) << endl;
-  //cout << "mid process second isd = " << isd.at(1) << endl;
-  //cout << "mid process third isd = " << isd.at(2) << endl;
-  //TagCloseToDeltaRays();
 
-  TagDeltaRaysCylinder(traj, viewType, isd, isdi);
-  TagOverlappingDeltaRays(traj, viewType, isd, isdi, 2);
+  //TagCloseToDeltaRays();
+          for(unsigned int j=1;j<isd.size();j++) {
+              std::cout << " beforecyl i " << j << " isdelta " << isd.at(j) << " i-1 " << j-1 << " isdelta " << isd.at(j-1) <<std::endl;
+            }  
+
+ 
+     TagDeltaRaysCylinder(traj, viewType, isd, isdi);
+     for(unsigned int j=1;j<isd.size();j++) {
+       if(isd.at(j)==0&&isd.at(j-1)==-1)
+        std::cout << " aftercyl i " << j << " isdelta " << isd.at(j) << " i-1 " << j-1 << " isdelta " << isd.at(j-1) <<std::endl;
+      if(isd.at(j)==-1&&isd.at(j-1)==0)
+       std::cout << " aftercyl i " << j << " isdelta " << isd.at(j) << " i-1 " << j-1 << " isdelta " << isd.at(j-1) <<std::endl;
+            }
+ 
+  TagOverlappingDeltaRays(traj, viewType, isd, isdi, 3);
+    for(unsigned int j=1;j<isd.size();j++) {
+       if(isd.at(j)==0&&isd.at(j-1)==-1)
+        std::cout << " aftercalo i " << j << " isdelta " << isd.at(j) << " i-1 " << j-1 << " isdelta " << isd.at(j-1) <<std::endl;
+      if(isd.at(j)==-1&&isd.at(j-1)==0)
+       std::cout << " aftercalo i " << j << " isdelta " << isd.at(j) << " i-1 " << j-1 << " isdelta " << isd.at(j-1) <<std::endl;
+            }
+      //cout << "end process first isd = " << isd.at(0) << endl;
        
 //  Delete_ZY_arrays();
 
@@ -2439,7 +2454,7 @@ double step=1.; //mm
 double l_int=0.;
 double l_seg=0.;
 double X0=140.;
-double l_max=X0*100+1.;
+double l_max=X0+1.;
 std::vector<double> dthLin;
 std::vector<double> dthPoly;
 int count;
@@ -2504,10 +2519,14 @@ TVector3 rotatedstep=rotation*anglestep;
   state[0]+=rotatedstep[0];
   state[1]+=rotatedstep[1];
   state[2]+=rotatedstep[2];
-  //float mag=sqrt(state[0]*state[0]+state[1]*state[1]+state[2]*state[2]);
-  state[3]+=rotatedstep[0];
-  state[4]+=rotatedstep[1];
-  state[5]+=rotatedstep[2];
+  float mag=sqrt(state[0]*state[0]+state[1]*state[1]+state[2]*state[2]);
+  std::cout << " statemag " << mag << std::endl;
+  state[0]/=mag;
+  state[1]/=mag;
+  state[2]/=mag;
+  state[3]+=(state[0]*step);
+  state[4]+=(state[1]*step);
+  state[5]+=(state[2]*step);
   sumx+=state[3]; sumy+=state[4]; sumz+=state[5];
   xx.push_back(state[3]); yy.push_back(state[4]); zz.push_back(state[5]);
 std::cout << " thetaMCS " << thetaMCS << " sin(thetaMCS)" << sin(thetaMCS) << std::endl;
@@ -2669,7 +2688,7 @@ std::cout << " first valid " << traj.FirstValidPoint() << " last valid " << traj
     art::Ptr<recob::Hit> hit = get<1>(pd);
   std::cout << " index " << index << " plane " << hit->WireID().Plane << " tpc " << hit->WireID().TPC << std::endl;
     if (isinplane(index, viewType)) {
-      isDelta.push_back(-1);
+      //isDelta.push_back(-1);
       //cout << " adding cylinder isdelta index " << index << endl;
       if (isintpc(index, lasttpc(traj))) {
         //isDelta.push_back(0);
@@ -2743,17 +2762,23 @@ if(distance>diameter) std::cout << " cylinder delta " << i << std::endl;
   delete track;
 
   //exit(11);
+std::cout << " ndeltasnhits ratio " << float(ndeltas)/float(NHits) << std::endl; 
 
  index = traj.FirstValidPoint();
  int countPlane=0;
  int countTPC=0;
   while (index <= traj.LastValidPoint()) {
+    proxy::TrackPointData pd = pdata[index];
+    art::Ptr<recob::Hit> hit = get<1>(pd);
+std::cout << " index " << index << " plane " << hit->WireID().Plane << " tpc " << hit->WireID().TPC << std::endl;
     if (isinplane(index, viewType)) {
       if(isintpc(index, lasttpc(traj))) {
 
-      isDelta[countPlane]=isdRay[countTPC];
-      isdi[index]=isdRay[countTPC];
-
+      if(float(ndeltas)/float(NHits)<threshold) {
+       std::cout << " updating deltacyl " << countPlane << std::endl;
+        isDelta[countPlane]=isdRay[countTPC];
+        isdi[index]=isdRay[countTPC];
+      }
       countTPC++;
       }
       countPlane++;
@@ -2762,11 +2787,6 @@ if(distance>diameter) std::cout << " cylinder delta " << i << std::endl;
   }
   
   std::cout << " isdelta size " << isDelta.size() << " nHits " << NHits << " ndeltas " << ndeltas << std::endl;
-
-  if(float(ndeltas/NHits)>threshold)
-   for (int i=0;i<NHits;i++)
-    if(isDelta[i]==4)
-     isDelta[i]=0;
 
   return;
   
