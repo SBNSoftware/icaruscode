@@ -98,10 +98,12 @@ void ICARUSFilteredNuSliceHitsProducer::produce(art::Event& e)
     art::Ptr<recob::Hit> hit = inputHits[ihit];
 
     // filter input hits
-    if (fScoreCut >= 0 && hitToNGFilterAssoc.at(ihit)->at(0) >= fScoreCut) {
-      outputHits->emplace_back(*hit);
-      outputFilter->emplace_back(*hitToNGFilterAssoc.at(ihit));
-      outputSemantic->emplace_back(*hitToNGSemanticAssoc.at(ihit));
+    if (hitToNGFilterAssoc.at(ihit).isNonnull()) {
+      if (fScoreCut >= 0 && hitToNGFilterAssoc.at(ihit)->at(0) >= fScoreCut) {
+        outputHits->emplace_back(*hit);
+        outputFilter->emplace_back(*hitToNGFilterAssoc.at(ihit));
+        outputSemantic->emplace_back(*hitToNGSemanticAssoc.at(ihit));
+      }
     }
   }
 
