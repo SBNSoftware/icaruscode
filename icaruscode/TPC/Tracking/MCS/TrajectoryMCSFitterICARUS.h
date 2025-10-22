@@ -385,6 +385,18 @@ namespace trkf {
       int pid, 
       double sigma) const;
 
+    const ScanResult C2NaiveFit(
+      const recob::TrackTrajectory& traj, 
+      std::vector<size_t>& breakpoints, 
+      std::vector<float>& seglens, 
+      std::vector<float>& cumseglens, 
+      std::vector<int>& seghits, 
+      std::vector<int>& cumseghits, 
+      std::vector<float> dthetaLin, 
+      std::vector<float> dthetaPoly, 
+      int pid, 
+      double sigma) const;
+
     void AnodeDistance(
       int cryo, 
       int tpc, 
@@ -464,6 +476,10 @@ namespace trkf {
       unsigned int c) const;
     
     bool CathodeCheck(
+      const recob::TrackTrajectory& traj,
+      size_t index) const;
+
+    bool FieldFailureCheck(
       const recob::TrackTrajectory& traj,
       size_t index) const;
 
