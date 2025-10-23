@@ -67,6 +67,8 @@ ICARUSFilteredNuSliceHitsProducer::ICARUSFilteredNuSliceHitsProducer(fhicl::Para
   produces<std::vector<recob::Hit>>();
   produces<std::vector<anab::FeatureVector<1>>>();
   produces<std::vector<anab::FeatureVector<5>>>();
+  produces<art::Assns<recob::Hit, anab::FeatureVector<1>>>("filter");
+  produces<art::Assns<recob::Hit, anab::FeatureVector<5>>>("semantic");
 
   // Call appropriate consumes<>() for any products to be retrieved by this module.
 }
@@ -76,6 +78,8 @@ void ICARUSFilteredNuSliceHitsProducer::produce(art::Event& e)
   auto outputHits = std::make_unique<std::vector<recob::Hit>>();
   auto outputFilter = std::make_unique<std::vector<anab::FeatureVector<1>>>();
   auto outputSemantic = std::make_unique<std::vector<anab::FeatureVector<5>>>();
+  auto outputHitFilterAssns = std::make_unique<art::Assns<recob::Hit, anab::FeatureVector<1>>>();
+  auto outputHitSemanticAssns = std::make_unique<art::Assns<recob::Hit, anab::FeatureVector<5>>>();
 
   // get slices
   const std::vector<art::Ptr<recob::Slice>> slices = e.getProduct<std::vector<art::Ptr<recob::Slice>>>(fSliceLabel);
@@ -93,24 +97,28 @@ void ICARUSFilteredNuSliceHitsProducer::produce(art::Event& e)
   // get NuGraph filter and semantic predictions
   art::FindOneP<anab::FeatureVector<1>> hitToNGFilterAssoc(inputHits, e, art::InputTag(fNGLabel.label(), "filter"));
   art::FindOneP<anab::FeatureVector<5>> hitToNGSemanticAssoc(inputHits, e, art::InputTag(fNGLabel.label(), "semantic"));
+  art::PtrMaker<recob::Hit> hitPtrMaker{e};
 
+  // filter input hits, re-create filter and sematic objects (needed for Pandora) and associations (needed for CAFs)
   for (size_t ihit = 0; ihit < inputHits.size(); ihit++) {
     art::Ptr<recob::Hit> hit = inputHits[ihit];
-
-    // filter input hits
     if (hitToNGFilterAssoc.at(ihit).isNonnull()) {
       if (fScoreCut >= 0 && hitToNGFilterAssoc.at(ihit)->at(0) >= fScoreCut) {
         outputHits->emplace_back(*hit);
         outputFilter->emplace_back(*hitToNGFilterAssoc.at(ihit));
         outputSemantic->emplace_back(*hitToNGSemanticAssoc.at(ihit));
+        outputHitFilterAssns->addSingle(hitPtrMaker(outputHits->size() -1), hitToNGFilterAssoc.at(ihit));
+        outputHitSemanticAssns->addSingle(hitPtrMaker(outputHits->size() -1), hitToNGSemanticAssoc.at(ihit));
       }
     }
   }
-
   std::cout << "Number of hits after ICARUSFilteredNuSliceHitsProducer: " << outputHits->size() << std::endl;
+  
   e.put(std::move(outputHits));
   e.put(std::move(outputFilter));
   e.put(std::move(outputSemantic));
+  e.put(std::move(outputHitFilterAssns), "filter");
+  e.put(std::move(outputHitSemanticAssns), "semantic");
 }
 
 DEFINE_ART_MODULE(ICARUSFilteredNuSliceHitsProducer)
