@@ -116,22 +116,14 @@ void ICARUSNuGraphAnalyzer::analyze(art::Event const& e)
     }
   }
 
-  std::cout << "allHits size: " << allHits.size() << '\n';
-
   art::InputTag fNGFilterLabel{fNGLabel, "filter"};
   art::InputTag fNGSemanticLabel{fNGLabel, "semantic"};
 
   art::FindOneP<anab::FeatureVector<1>> find1FilterFromHit(allHits, e, fNGFilterLabel);
   art::FindOneP<anab::FeatureVector<5>> find1SemanticFromHit(allHits, e, fNGSemanticLabel);
 
-  std::cout << "allHit keys " << '\n';
-  for (auto hit : allHits) {
-    std::cout << ' ' << hit.key();
-  }
-
   for (size_t hitIdx = 0; hitIdx < allHits.size(); hitIdx++) {
     art::Ptr<recob::Hit> hit = allHits[hitIdx];
-    //std::cout << "Begin hit #" << hitIdx+1 << " with key #" << hit.key() << ' ';
 
     // event information
     _event  = e.event();
@@ -139,19 +131,28 @@ void ICARUSNuGraphAnalyzer::analyze(art::Event const& e)
     _run    = e.run();
     _id     = hit.key();
 
-
+    // slice ID
     auto itSlice = hitToSliceID.find(hit.key());
     _islc = (itSlice != hitToSliceID.end()) ? itSlice->second : -1;
 
-    // NuGraph predictions
     const art::Ptr<anab::FeatureVector<1>> filter = find1FilterFromHit.at(hitIdx);
     const art::Ptr<anab::FeatureVector<5>> semantic = find1SemanticFromHit.at(hitIdx);
 
     if (filter.isNull() || semantic.isNull()) {
       std::cout << "Hit #" << hitIdx << " with key " << hit.key() << " had no valid NuGraphOutput. Skipping." << "\n";
+
+      // hit description
+      _wire  = hit->WireID().Wire;
+      _plane = hit->WireID().Plane;
+      _tpc   = hit->WireID().TPC;
+      _cryo  = hit->WireID().Cryostat;
+      _time  = hit->PeakTime();
+
       _treeHit->Fill();
       continue;
-    } else {
+    } 
+    else {
+      // NuGraph predictions
       _x_filter = filter->at(0);
       _MIP      = semantic->at(0);
       _HIP      = semantic->at(1);
@@ -168,8 +169,6 @@ void ICARUSNuGraphAnalyzer::analyze(art::Event const& e)
 
       _treeHit->Fill();
     }
-
-    std::cout << "end" << '\n';
   }
 }
 

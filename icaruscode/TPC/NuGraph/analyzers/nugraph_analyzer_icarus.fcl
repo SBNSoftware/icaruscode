@@ -28,21 +28,21 @@ physics: {
          PandoraLabel: "pandoraGausCryoW"
       }
       
-      NuGraphAnaTaggedSliceCryoE: { 
-         module_type:  "ICARUSNuGraphAnalyzer" 
-         HitLabel:     "nuslhitsCryoE"
-         NuGraphLabel: "NuGraphCryoE"
-      }
-      NuGraphAnaTaggedSliceCryoW: { 
-         module_type:  "ICARUSNuGraphAnalyzer" 
-         HitLabel:     "nuslhitsCryoW"
-         NuGraphLabel: "NuGraphCryoW"
-      }
+      #NuGraphAnaTaggedSliceCryoE: { 
+      #   module_type:  "ICARUSNuGraphAnalyzer" 
+      #   HitLabel:     "nuslhitsCryoE"
+      #   NuGraphLabel: "NuGraphCryoE"
+      #}
+      #NuGraphAnaTaggedSliceCryoW: { 
+      #   module_type:  "ICARUSNuGraphAnalyzer" 
+      #   HitLabel:     "nuslhitsCryoW"
+      #   NuGraphLabel: "NuGraphCryoW"
+      #}
    }
 
    reco:       []
 
-   ana:        [ NuGraphAnaCryoE, NuGraphAnaCryoW, NuGraphAnaTaggedSliceCryoE, NuGraphAnaTaggedSliceCryoW ]
+   ana:        [ NuGraphAnaCryoE, NuGraphAnaCryoW ] #, NuGraphAnaTaggedSliceCryoE, NuGraphAnaTaggedSliceCryoW ]
 
    end_paths:  [ ana ]
 }
