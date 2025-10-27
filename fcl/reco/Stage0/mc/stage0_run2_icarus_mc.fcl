@@ -47,7 +47,7 @@ physics.producers.MCDecodeTPCROI.FragmentsLabelVec:   ["daq:TPCWW","daq:TPCWE","
 physics.producers.MCDecodeTPCROI.OutInstanceLabelVec: ["PHYSCRATEDATATPCWW", "PHYSCRATEDATATPCWE", "PHYSCRATEDATATPCEW", "PHYSCRATEDATATPCEE"]
 physics.producers.decon1droi.RawDigitLabelVec:        ["MCDecodeTPCROI:PHYSCRATEDATATPCWW","MCDecodeTPCROI:PHYSCRATEDATATPCWE","MCDecodeTPCROI:PHYSCRATEDATATPCEW","MCDecodeTPCROI:PHYSCRATEDATATPCEE"]
 
-physics.producers.simChannelROI.SimChannelLabelVec:  ["merge"]
+physics.producers.simChannelROI.SimChannelLabelVec:  ["daq:SimpleSC"]
 physics.producers.simChannelROI.OutInstanceLabelVec: ["All"]
 
 physics.producers.decon2droiEE.wcls_main.params.raw_input_label:  "MCDecodeTPCROI:PHYSCRATEDATATPCEE"
