@@ -82,48 +82,41 @@ namespace crt {
   public:
 
     struct Config {
-      
       // Save some typing:
       using Name = fhicl::Name;
       using Comment = fhicl::Comment;
-      
-
       fhicl::Atom<art::InputTag> CRTHitLabel {
         Name("CRTHitLabel"),
         Comment("tag of the input data product with reconstructed CRT hits")
         };
-
       fhicl::Atom<art::InputTag> CRTDAQLabel {
         Name("CRTDAQLabel"),
         Comment("tag of the input data product with calibrated CRT data")
         };
-   
       fhicl::Atom<art::InputTag> TriggerLabel {
         Name("TriggerLabel"),
-	  Comment("Label for the Trigger fragment label")
-	  };
+	      Comment("Label for the Trigger fragment label")
+	      };
       fhicl::Atom<art::InputTag> CRTPMTLabel {
-	Name("CRTPMTLabel"),
-	  Comment("Label for the CRTPMT Matched variables from the crtpmt data product")
-	  };
+	      Name("CRTPMTLabel"),
+	      Comment("Label for the CRTPMT Matched variables from the crtpmt data product")
+	      };
       fhicl::Atom<double> QPed {
-	Name("QPed"),
-	  Comment("Pedestal offset [ADC]")
-	  };
+	      Name("QPed"),
+	      Comment("Pedestal offset [ADC]")
+	      };
       fhicl::Atom<double> QSlope {
-	Name("QSlope"),
-	  Comment("Pedestal slope [ADC/photon]")
-	  };
-
+	      Name("QSlope"),
+	      Comment("Pedestal slope [ADC/photon]")
+	      };
       fhicl::Atom<double> PEThresh {
-	Name("PEThresh"),
-	  Comment("threshold in photoelectrons above which charge amplitudes used in hit reco")
-	  };
-
+	      Name("PEThresh"),
+	      Comment("threshold in photoelectrons above which charge amplitudes used in hit reco")
+	      };
       fhicl::Atom<uint64_t> CrtWindow {
-	Name("CrtWindow"),
-	  Comment("window for looking data [ns]")
-	  };
+	      Name("CrtWindow"),
+	      Comment("window for looking data [ns]")
+	      };
     }; // Config
     
     using Parameters = art::EDAnalyzer::Table<Config>;
@@ -356,7 +349,7 @@ namespace crt {
     fHitNtuple        = tfs->make<TTree>("HitTree",          "MyCRTHit");
     fCRTPMTNtuple     = tfs->make<TTree>("CRTPMTTree",       "MyCRTPMTMatch");
 
-    // Define the branches of our DetSim n-tuple 
+    // Define the branches of our CRTData (DAQTree) ntuples 
     fDAQNtuple->Branch("event",                 &fDetEvent,          "event/I");
     fDAQNtuple->Branch("run",                   &fDetRun,            "run/I");
     fDAQNtuple->Branch("subrun",                &fDetSubRun,         "subrun/I");
@@ -373,8 +366,10 @@ namespace crt {
     fDAQNtuple->Branch("subSys",                &fDetSubSys,         "subSys/I");
     fDAQNtuple->Branch("gate_type", &m_gate_type, "gate_type/b");
     fDAQNtuple->Branch("gate_start_timestamp", &m_gate_start_timestamp, "gate_start_timestamp/l");
+    fDAQNtuple->Branch("trigger_timestamp", &m_trigger_timestamp, "trigger_timestamp/l");
+    
 
-    // Define the branches of our SimHit n-tuple
+    // Define the branches of our CRTHits (HitTree) ntuples
     fHitNtuple->Branch("run",         &fHitRun,      "run/I");
     fHitNtuple->Branch("subrun",      &fHitSubRun,   "subrun/I");
     fHitNtuple->Branch("event",       &fHitEvent,    "event/I");
@@ -461,7 +456,7 @@ namespace crt {
       art::Handle<sbn::ExtraTriggerInfo> trigger_handle;
       event.getByLabel( fTriggerLabel, trigger_handle );
       if( trigger_handle.isValid() ) {
-	sbn::triggerSource bit = trigger_handle->sourceType;
+	      sbn::triggerSource bit = trigger_handle->sourceType;
         m_gate_type = value(bit);
         m_gate_name = bitName(bit);
         m_trigger_timestamp = trigger_handle->triggerTimestamp;
@@ -470,7 +465,7 @@ namespace crt {
 
       }
       else{
-	mf::LogError("CRTDataAnalysis") << "No raw::Trigger associated to label: " << fTriggerLabel.label() << "\n" ;
+	      mf::LogError("CRTDataAnalysis") << "No raw::Trigger associated to label: " << fTriggerLabel.label() << "\n" ;
       }
     }
     else {
@@ -500,39 +495,33 @@ namespace crt {
       /// Here t0 - trigger time -ve, only adding 1s makes the value +ve or -ve
       //    if (std::fabs(int64_t(crtList[febdat_i]->fTs0 - m_trigger_timestamp) + 1e9) > fCrtWindow) continue;
       if ( type == 'm'){
-	for(int chan=0; chan<32; chan++) {
-	  std::pair<double,double> const chg_cal = fChannelMap->getSideCRTCalibrationMap((int)crtList[febdat_i]->fMac5,chan);
-	  float pe = (crtList[febdat_i]->fAdc[chan]-chg_cal.second)/chg_cal.first;
-	  // In order to have Reset TS1 hits in CRTData from Side CRT, we have to explicitly include them
-	  // The current threshold cut (6.5 PE) was applied to filter out noise, but this also filters out
-	  // Reset events which are random trigger around the pedestal. These Reset hits are removed in 
-	  // CRT Hit reconstruction. Top CRT has in internal triggering logic and threshold  that screens
-	  // from the noise (hence presel = true for all the hits).
-	  // Please revise this in the future if also T0 Reset hits need to be kept in CRTData. 
-	  // To do so, include !0crtList[febdat_i]->IsReference_TS0()
-	  if(pe<=fPEThresh && !crtList[febdat_i]->IsReference_TS1()) continue;
-	  presel = true;
-	}
-      }else if ( type == 'c' ) {
-
-	  presel = true;
-
-      }else if ( type == 'd'){
-	for(int chan=0; chan<64; chan++) {
-	  float pe = (crtList[febdat_i]->fAdc[chan]-fQPed)/fQSlope;
-	  if(pe<=fPEThresh) continue;
-	  presel = true;
-	}
-      }
-      if (presel) crtData.push_back(crtList[febdat_i]);
+	      for(int chan=0; chan<32; chan++) {
+	        std::pair<double,double> const chg_cal = fChannelMap->getSideCRTCalibrationMap((int)crtList[febdat_i]->fMac5,chan);
+	        float pe = (crtList[febdat_i]->fAdc[chan]-chg_cal.second)/chg_cal.first;
+	        // In order to have Reset TS1 hits in CRTData from Side CRT, we have to explicitly include them
+	        // The current threshold cut (6.5 PE) was applied to filter out noise, but this also filters out
+	        // Reset events which are random trigger around the pedestal. These Reset hits are removed in 
+	        // CRT Hit reconstruction. Top CRT has in internal triggering logic and threshold  that screens
+	        // from the noise (hence presel = true for all the hits).
+	        // Please revise this in the future if also T0 Reset hits need to be kept in CRTData. 
+	        // To do so, include !0crtList[febdat_i]->IsReference_TS0()
+	        if(pe<=fPEThresh && !crtList[febdat_i]->IsReference_TS1()) continue;
+	        presel = true;
+	      }
+      } else if ( type == 'c' ) {
+  	    presel = true;
+      } else if ( type == 'd'){
+      	for(int chan=0; chan<64; chan++) {
+	      float pe = (crtList[febdat_i]->fAdc[chan]-fQPed)/fQSlope;
+	      if(pe<=fPEThresh) continue;
+	      presel = true;
+	    }
+    }
+    if (presel) crtData.push_back(crtList[febdat_i]);
       presel = false;
     } // end of crtList
-    
-        
     mf::LogError("CRTDataAnalysis") << "about to loop over " << crtData.size() <<" crtData entries \n";
     for (size_t febdat_i=0; febdat_i<crtData.size(); febdat_i++) {
-      
-      
       fDetEvent       = fEvent;
       fDetRun         = fRun;
       fDetSubRun      = fSubRun;
@@ -548,26 +537,21 @@ namespace crt {
       if(fDetSubSys!=2) maxchan=32;
       else maxchan = 64;
       fNMaxCh = maxchan;
-      for(int ch=0; ch<maxchan; ch++) {
-	fADC[ch] = crtData[febdat_i]->fAdc[ch]; 
-	std::pair<double,double> const chg_cal = fChannelMap->getSideCRTCalibrationMap((int)fMac5,ch);
-	if (fDetSubSys == 0 || fDetSubSys == 1){
-	  float pe = (fADC[ch]-chg_cal.second)/chg_cal.first;
-	  if (pe < 0) continue;
-	  fPE[ch] = pe;
-	}else{
-	  float pe = (fADC[ch]-fQPed)/fQSlope;
-	  if (pe < 0) continue;
+      for (int ch=0; ch<maxchan; ch++) {
+	      fADC[ch] = crtData[febdat_i]->fAdc[ch]; 
+	      std::pair<double,double> const chg_cal = fChannelMap->getSideCRTCalibrationMap((int)fMac5,ch);
+	      if (fDetSubSys == 0 || fDetSubSys == 1){
+	        float pe = (fADC[ch]-chg_cal.second)/chg_cal.first;
+	        if (pe < 0) continue;
+	        fPE[ch] = pe;
+	      } else {
+	        float pe = (fADC[ch]-fQPed)/fQSlope;
+	        if (pe < 0) continue;
           fPE[ch] = pe;
-	} 
-	
-      }
-            
+	      } 
+      }   
       fDAQNtuple->Fill();
-      
     } //for CRT FEB events
-    
-  
     // Fill CRT Hit Tree
     art::Handle<std::vector<sbn::crt::CRTHit>> crtHitHandle;
     
@@ -575,145 +559,136 @@ namespace crt {
     std::vector<int> ids;
     fNHit = 0;
     if (isCRTHit) {
-      
-       mf::LogError("CRTDataAnalysis") << "looping over reco hits..." << std::endl;
-      for ( auto const& hit : *crtHitHandle )
-        {
-	  fNHit++;
-    fHitRun = fRun;
-    fHitSubRun = fSubRun;
-	  fHitEvent = fEvent;
-	  fXHit    = hit.x_pos;
-	  fYHit    = hit.y_pos;
-	  fZHit    = hit.z_pos;
-	  fXErrHit = hit.x_err;
-	  fYErrHit = hit.y_err;
-	  fZErrHit = hit.z_err;
-	  fT0Hit   = hit.ts0_ns;
-	  fT1Hit   = hit.ts1_ns;
-	   
-	  fNHitFeb  = hit.feb_id.size();
-	  fHitTotPe = hit.peshit;
-	  int mactmp = hit.feb_id[0];
-	  fHitReg  = fCrtutils->AuxDetRegionNameToNum(fCrtutils->MacToRegion(mactmp));
-	  fHitSubSys =  fCrtutils->MacToTypeCode(mactmp);
-	  std::fill( std::begin( fHitPE ), std::end( fHitPE ), -1 );
-	  std::fill( std::begin( fHitMac ), std::end( fHitMac ), -1 );
-	  std::fill( std::begin( fHitMac ), std::end( fHitChan ), -1 );
-	  m_gate_crt_diff = m_gate_start_timestamp - hit.ts0_ns;
-	  m_crt_global_trigger = hit.ts0_ns - hit.ts1_ns;
-	  m_crtGT_trig_diff = m_crt_global_trigger - (m_trigger_timestamp%1'000'000'000);//'''						      
-	  auto ittmp = hit.pesmap.find(mactmp);
-	  if (ittmp==hit.pesmap.end()) {
-	     mf::LogError("CRTDataAnalysis") << "hitreg: " << fHitReg << std::endl;
-	     mf::LogError("CRTDataAnalysis") << "fHitSubSys: "<< fHitSubSys << std::endl;
-	     mf::LogError("CRTDataAnalysis") << "mactmp = " << mactmp << std::endl;
-	     mf::LogError("CRTDataAnalysis") << "could not find mac in pesmap!" << std::endl;
-	    continue;
-	  }
-	  fHitNChan=0;
-          if(fHitSubSys==0){
-	     std::map<uint8_t, std::vector<std::pair<int,float>>>::const_iterator it;
-	     for (it = hit.pesmap.begin(); it!=hit.pesmap.end();it++){
-		std::vector<std::pair<int,float>> thisHit = it->second;
-		int hitsize = (int) thisHit.size();
-	     	for(int k=0; k< hitsize; k++){
-		   fHitPE[thisHit[k].first]=thisHit[k].second;
-		   fHitChan[thisHit[k].first]=thisHit[k].first;
-		   fHitMac[thisHit[k].first]=(int)it->first;
-		   if(thisHit[k].second>1) fHitNChan++;
-		}	
-  	     }
-	  } else if (fHitSubSys==1) {
-	     int arrpos=-1;
-	     std::map<uint8_t, std::vector<std::pair<int,float>>>::const_iterator it;
-	     for (it = hit.pesmap.begin(); it!=hit.pesmap.end();it++){
-                std::vector<std::pair<int,float>> thisHit = it->second;
-                int hitsize = (int) thisHit.size();
-		fHitNChan+=hitsize;
-                for(int k=0; k< hitsize; k++){
-		   arrpos++;
-		   if(arrpos>=32) continue;
-                   fHitPE[arrpos]=thisHit[k].second;
-                   fHitMac[arrpos]=(int)it->first;
-		   fHitChan[arrpos]=thisHit[k].first;
-                }
-             }
-	  }
-	  int chantmp = (*ittmp).second[0].first;
-	  
-	  fHitMod  = fCrtutils->MacToAuxDetID(mactmp, chantmp);
-	  fHitStrip = fCrtutils->ChannelToAuxDetSensitiveID(mactmp, chantmp);
-	  
-	  fHitNtuple->Fill();
-       }//for CRT Hits
-    }//if CRT Hits
-    
-    else  mf::LogError("CRTDataAnalysis") << "CRTHit products not found! (expected if decoder step)" << std::endl;
+      mf::LogError("CRTDataAnalysis") << "looping over reco hits..." << std::endl;
+      for ( auto const& hit : *crtHitHandle ){
+  	    fNHit++;
+        fHitRun = fRun;
+        fHitSubRun = fSubRun;
+  	    fHitEvent = fEvent;
+  	    fXHit    = hit.x_pos;
+  	    fYHit    = hit.y_pos;
+  	    fZHit    = hit.z_pos;
+  	    fXErrHit = hit.x_err;
+  	    fYErrHit = hit.y_err;
+  	    fZErrHit = hit.z_err;
+  	    fT0Hit   = hit.ts0_ns;
+  	    fT1Hit   = hit.ts1_ns;
 
-       
+  	    fNHitFeb  = hit.feb_id.size();
+  	    fHitTotPe = hit.peshit;
+  	    int mactmp = hit.feb_id[0];
+  	    fHitReg  = fCrtutils->AuxDetRegionNameToNum(fCrtutils->MacToRegion(mactmp));
+  	    fHitSubSys =  fCrtutils->MacToTypeCode(mactmp);
+  	    std::fill( std::begin( fHitPE ), std::end( fHitPE ), -1 );
+  	    std::fill( std::begin( fHitMac ), std::end( fHitMac ), -1 );
+  	    std::fill( std::begin( fHitMac ), std::end( fHitChan ), -1 );
+  	    m_gate_crt_diff = m_gate_start_timestamp - hit.ts0_ns;
+  	    m_crt_global_trigger = hit.ts0_ns - hit.ts1_ns;
+  	    m_crtGT_trig_diff = m_crt_global_trigger - (m_trigger_timestamp%1'000'000'000);//'''						      
+  	    auto ittmp = hit.pesmap.find(mactmp);
+  	    if (ittmp==hit.pesmap.end()) {
+  	       mf::LogError("CRTDataAnalysis") << "hitreg: " << fHitReg << std::endl;
+  	       mf::LogError("CRTDataAnalysis") << "fHitSubSys: "<< fHitSubSys << std::endl;
+  	       mf::LogError("CRTDataAnalysis") << "mactmp = " << mactmp << std::endl;
+  	       mf::LogError("CRTDataAnalysis") << "could not find mac in pesmap!" << std::endl;
+  	      continue;
+  	    }
+  	    fHitNChan=0;
+        if(fHitSubSys==0){
+  	      std::map<uint8_t, std::vector<std::pair<int,float>>>::const_iterator it;
+  	      for (it = hit.pesmap.begin(); it!=hit.pesmap.end();it++){
+  		      std::vector<std::pair<int,float>> thisHit = it->second;
+  		      int hitsize = (int) thisHit.size();
+  	       	for(int k=0; k< hitsize; k++){
+  		        fHitPE[thisHit[k].first]=thisHit[k].second;
+  		        fHitChan[thisHit[k].first]=thisHit[k].first;
+  		        fHitMac[thisHit[k].first]=(int)it->first;
+  		        if(thisHit[k].second>1) fHitNChan++;
+  		      }	
+    	    }
+  	    } else if (fHitSubSys==1) {
+  	       int arrpos=-1;
+  	       std::map<uint8_t, std::vector<std::pair<int,float>>>::const_iterator it;
+  	       for (it = hit.pesmap.begin(); it!=hit.pesmap.end();it++){
+            std::vector<std::pair<int,float>> thisHit = it->second;
+            int hitsize = (int) thisHit.size();
+  		      fHitNChan+=hitsize;
+            for(int k=0; k< hitsize; k++){
+  		        arrpos++;
+  		        if(arrpos>=32) continue;
+              fHitPE[arrpos]=thisHit[k].second;
+              fHitMac[arrpos]=(int)it->first;
+  		        fHitChan[arrpos]=thisHit[k].first;
+            }
+          }
+  	    }
+  	    int chantmp = (*ittmp).second[0].first;
+  	    fHitMod  = fCrtutils->MacToAuxDetID(mactmp, chantmp);
+  	    fHitStrip = fCrtutils->ChannelToAuxDetSensitiveID(mactmp, chantmp);
+  	    fHitNtuple->Fill();
+      }//for CRT Hits
+    }//if CRT Hits
+
+    else  mf::LogError("CRTDataAnalysis") << "CRTHit products not found! (expected if decoder step)" << std::endl; 
     //Fill CRTPMT Match TTree
     art::Handle<vector<sbn::crt::CRTPMTMatching>> CRTPMTMatchingHandle;
     if ( event.getByLabel(fCRTPMTProducerLabel, CRTPMTMatchingHandle)){
-      
       for (auto const& match: *CRTPMTMatchingHandle){
-	int TopEn = 0, TopEx = 0, SideEn = 0, SideEx = 0;
-	fMatchEvent = fEvent;
-	fMatchRun = fRun;
-	fGateType = m_gate_type;
-	fFlashID = match.flashID;
-	fFlashTime_us = match.flashTime;
-	fFlashGateTime_ns = match.flashGateTime;
-	fFirstOpHitPeakTime = match.firstOpHitPeakTime;
-	fFirstOpHitStartTime = match.firstOpHitStartTime;
-	fFlashInGate = match.flashInGate;
-	fFlashInBeam = match.flashInBeam;
-	fFlashPE = match.flashPE;
-	fFlashPos_x = match.flashPosition.X();
-	fFlashPos_y = match.flashPosition.Y();
-	fFlashPos_z = match.flashPosition.Z();
-	fFlashYWidth = match.flashYWidth;
-	fFlashZWidth = match.flashZWidth;
-	fFlashClassification = match.flashClassification;
-	nMatchedCRTHits = match.matchedCRTHits.size();
-	for(auto const& crthit: match.matchedCRTHits){
-	  CRTHitPos_x.push_back(crthit.position.X());
-	  CRTHitPos_y.push_back(crthit.position.Y());
-	  CRTHitPos_z.push_back(crthit.position.Z());
-	  fCRTPMTTimeDiff_ns.push_back(1e3*crthit.PMTTimeDiff);
-	  fCRTTime_us.push_back(crthit.time);
-	  fCRTSys.push_back(crthit.sys);
-	  fCRTRegion.push_back(crthit.region);
-	  int fMatchType = static_cast<int>(fFlashClassification);
-	  if(fMatchType == 1 || fMatchType == 3 || fMatchType == 6 || fMatchType == 7 || fMatchType == 11) TopEn++;
-	  if(fMatchType == 4 || fMatchType == 13) TopEx++;
-	  if(fMatchType == 2 || fMatchType == 12) SideEn++;
-	  if(fMatchType == 3 || fMatchType == 5 || fMatchType == 7 || fMatchType == 14) SideEx++;
-	}
-	fNtopCRTBefore = TopEn;
-	fNtopCRTAfter = TopEx;
-	fNsideCRTBefore = SideEn;
-	fNsideCRTAfter = SideEx;
-	fCRTPMTNtuple->Fill();
-	ClearVecs();
+	      int TopEn = 0, TopEx = 0, SideEn = 0, SideEx = 0;
+	      fMatchEvent = fEvent;
+	      fMatchRun = fRun;
+	      fGateType = m_gate_type;
+	      fFlashID = match.flashID;
+	      fFlashTime_us = match.flashTime;
+	      fFlashGateTime_ns = match.flashGateTime;
+	      fFirstOpHitPeakTime = match.firstOpHitPeakTime;
+	      fFirstOpHitStartTime = match.firstOpHitStartTime;
+	      fFlashInGate = match.flashInGate;
+	      fFlashInBeam = match.flashInBeam;
+	      fFlashPE = match.flashPE;
+	      fFlashPos_x = match.flashPosition.X();
+	      fFlashPos_y = match.flashPosition.Y();
+	      fFlashPos_z = match.flashPosition.Z();
+	      fFlashYWidth = match.flashYWidth;
+	      fFlashZWidth = match.flashZWidth;
+	      fFlashClassification = match.flashClassification;
+	      nMatchedCRTHits = match.matchedCRTHits.size();
+	      for(auto const& crthit: match.matchedCRTHits){
+	        CRTHitPos_x.push_back(crthit.position.X());
+	        CRTHitPos_y.push_back(crthit.position.Y());
+	        CRTHitPos_z.push_back(crthit.position.Z());
+	        fCRTPMTTimeDiff_ns.push_back(1e3*crthit.PMTTimeDiff);
+	        fCRTTime_us.push_back(crthit.time);
+	        fCRTSys.push_back(crthit.sys);
+	        fCRTRegion.push_back(crthit.region);
+	        int fMatchType = static_cast<int>(fFlashClassification);
+	        if(fMatchType == 1 || fMatchType == 3 || fMatchType == 6 || fMatchType == 7 || fMatchType == 11) TopEn++;
+	        if(fMatchType == 4 || fMatchType == 13) TopEx++;
+	        if(fMatchType == 2 || fMatchType == 12) SideEn++;
+	        if(fMatchType == 3 || fMatchType == 5 || fMatchType == 7 || fMatchType == 14) SideEx++;
+	      }
+	      fNtopCRTBefore = TopEn;
+	      fNtopCRTAfter = TopEx;
+	      fNsideCRTBefore = SideEn;
+	      fNsideCRTAfter = SideEx;
+	      fCRTPMTNtuple->Fill();
+	      ClearVecs();
       } // for match in handle 
     } // if valid label 
     else{
       mf::LogError("CRTDataAnalysis") << "not Valid CRTPMTProducer label!\n";
     }
-    
+  } // CRTDataAnalysis::analyze()  
 
-  } // CRTDataAnalysis::analyze()
-  
-    void CRTDataAnalysis::ClearVecs(){
-      CRTHitPos_x.clear();
-      CRTHitPos_y.clear();
-      CRTHitPos_z.clear();
-      fCRTPMTTimeDiff_ns.clear();
-      fCRTTime_us.clear();
-      fCRTSys.clear();
-      fCRTRegion.clear();
-    }
+  void CRTDataAnalysis::ClearVecs(){
+    CRTHitPos_x.clear();
+    CRTHitPos_y.clear();
+    CRTHitPos_z.clear();
+    fCRTPMTTimeDiff_ns.clear();
+    fCRTTime_us.clear();
+    fCRTSys.clear();
+    fCRTRegion.clear();
+  }
   
   DEFINE_ART_MODULE(CRTDataAnalysis)
 
