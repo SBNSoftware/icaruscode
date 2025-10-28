@@ -12,5 +12,5 @@ physics.reco: [ @sequence::icarus_filter1D_cluster3D,
 physics.producers.cluster3DCryoW.Hit3DBuilderAlg.HitFinderTagVec: ["gaushit1dTPCWW", "gaushit1dTPCWE"]
 physics.producers.cluster3DCryoE.Hit3DBuilderAlg.HitFinderTagVec: ["gaushit1dTPCEW", "gaushit1dTPCEE"]
 
-physics.producers.caloskimE.HITproducer: "cluster3DCryoE"
-physics.producers.caloskimW.HITproducer: "cluster3DCryoW"
+physics.producers.caloskimCalorimetryCryoE.HITproducer: "cluster3DCryoE"
+physics.producers.caloskimCalorimetryCryoW.HITproducer: "cluster3DCryoW"
