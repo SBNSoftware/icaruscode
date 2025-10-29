@@ -1,3 +1,6 @@
 #include "detsim_2d_icarus_refactored_yzsim.fcl"
 
 physics.producers.daq: @local::icarus_simwire_wirecell_yz_overlay
+
+# turn off mc noise on pmt waveforms 
+physics.producers.opdaq: @local::icarus_simpmt_nonoise
