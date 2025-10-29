@@ -35,7 +35,8 @@
 #   introduced configuration for SPR 202202
 # 20240125 (petrillo@slac.stanford.edu)
 #   introduced experimental setting PMT gain to 7.5 x 10^6 (and q.e. elsewhere)
-#
+# 202510XX (mvicenzi@bnl.gov)
+#   introduced configuration for new Run2 SPR (SPRisolHitRun9271)
 
 #include "opticalproperties_icarus.fcl"
 
@@ -81,8 +82,23 @@ icarus_settings_opdet_202401patch: {
 
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# the following is based on `icarus_settings_opdet_2022` rescaling it to gain
+# 7.0x10^6; this is an empirical choice to reconciliate the single PE region in Run1/2
+# NoiseRMS is also reduced to 2.6 ADC; see e.g. SBN DocDB 41115
+icarus_settings_opdet_run2_2025: {
+  
+  @table::icarus_settings_opdet_2022
+  
+  nominalPMTgain: 7.0e6  # PMT multiplication gain factor
+
+  NoiseRMS: 2.6 # in ADC#
+  
+} # icarus_settings_opdet_run2_2025
+
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # settings used in the standard configurations:
-icarus_settings_opdet: @local::icarus_settings_opdet_202401patch
+icarus_settings_opdet: @local::icarus_settings_opdet_run2_2025
 
 
 
@@ -147,7 +163,8 @@ icarus_photoelectronresponse_exponentials: {
 
 
 #
-# Single photoelectron response from data.
+# Single photoelectron response from laser data.
+# This is valid for Run1/2 cables.
 # 
 icarus_photoelectronresponse_202202: {
   
@@ -158,6 +175,21 @@ icarus_photoelectronresponse_202202: {
   Gain:          @local::icarus_settings_opdet.nominalPMTgain
   
 } # icarus_photoelectronresponse_202202
+
+
+#
+# Single photoelectron response from single-PE data.
+# This is valid for Run1/2 cables.
+# 
+icarus_photoelectronresponse_run2_2025: {
+  
+  tool_type: SampledWaveformFunctionTool
+  
+  WaveformData: "Responses/SPRisolHitRun9271_MV.txt"
+  TransitTime:  "14.0 ns" # from peak to response start  
+  Gain:          @local::icarus_settings_opdet.nominalPMTgain
+  
+} # icarus_photoelectronresponse_run2_2025
 
 
 #
@@ -189,7 +221,7 @@ icarus_photoelectronresponse_customexample: {
 #
 # pick one
 #
-icarus_photoelectronresponse_standard: @local::icarus_photoelectronresponse_202202
+icarus_photoelectronresponse_standard: @local::icarus_photoelectronresponse_run2_2025
 
 
 ### - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -309,9 +341,10 @@ icarus_pmtsimulationalg_202202_noise: {
   ReadoutEnablePeriod:       "2.0 ms"       # PMT enable gate duration: time for which PMT readout is enabled
   CreateBeamGateTriggers:    true           #Option to create unbiased readout around beam spill
   BeamGateTriggerRepPeriod:  "2.0 us"       # Repetition period and number of repetitions for BeamGateTriggers:
-  BeamGateTriggerNReps:      10             # should cover -7/+21 us, instead just goes -1 to 21 us)
+  BeamGateTriggerNReps:      10             # should cover -7/+21 us, instead just goes -1 to 21 us
   QE:                        @local::icarus_opticalproperties.ScintPreScale # from opticalproperties_icarus.fcl
   FluctuateGain:             true           # apply per-photoelectron gain fluctuations
+  ApplyTimingDelays:         false          # legacy value
   
   PMTspecs: {
     DynodeK:                   0.75           # gain on a PMT multiplication stage
@@ -358,6 +391,36 @@ icarus_pmtsimulationalg_202401patch: {
 } # icarus_pmtsimulationalg_202401patch
 
 
+### - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+### Configuration Run2-2025:
+###  * explicitly based on the configuration "2022" above
+###  * gain adapted to reconciliate signal integral and amplitude in SPE region
+###    (SBN DocDB 41115)
+###  * gain updated to 7.0 x 10^6
+###  * threshold for digitization scaled down
+###
+
+icarus_pmtsimulationalg_run2_2025: {
+
+  @table::icarus_pmtsimulationalg_202202_noise
+  
+  # Apply timing delays (cables, transit time, ..) to the simulated photons
+  # These delays are extracted from the calibration database
+  ApplyTimingDelays:         true          
+
+  # Threshold in ADC counts for a PMT self-trigger
+  ThresholdADC:              15             # ADC counts
+  
+  # arranged ad hoc to get ~40% Poisson fluctuation on gain (effectively: 40.8%)
+  PMTspecs: {
+    DynodeK:                 0.75           # gain on a PMT multiplication stage
+    VoltageDistribution:    [ 3.0, 3.4, 5.0, 3.33, 1.67, 1.0, 1.2, 1.5, 2.2, 3.0 ]
+    Gain:                   @local::icarus_settings_opdet.nominalPMTgain  # total PMT gain
+  } 
+
+} # icarus_pmtsimulationalg_run2_2025
+
+
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 ###
 ### Legacy configuration, pre-2022
@@ -397,6 +460,7 @@ icarus_pmtsimulationalg_2018: {
   Saturation:                300            #in number of p.e. to see saturation effects in the signal
   QE:                        @local::icarus_opticalproperties.ScintPreScale # from opticalproperties_icarus.fcl
   FluctuateGain:             true           # apply per-photoelectron gain fluctuations
+  ApplyTimingDelays:         false          # legacy value
   
   PMTspecs: {
     DynodeK:                 0.75           # gain on a PMT multiplication stage
@@ -434,7 +498,7 @@ icarus_pmtsimulationalg_2018_nonoise: {
 #
 # Includes noise.
 #
-icarus_pmtsimulationalg_standard: @local::icarus_pmtsimulationalg_202401patch
+icarus_pmtsimulationalg_standard: @local::icarus_pmtsimulationalg_run2_2025
 
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
