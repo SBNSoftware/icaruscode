@@ -9,9 +9,6 @@
 // 
 ////////////////////////////////////////////////////////////////////////
 
-#include "larcore/Geometry/WireReadout.h"
-#include "larcore/CoreUtils/ServiceUtil.h" // lar::providerFrom()
-
 #include "art/Framework/Core/EDAnalyzer.h"
 #include "art/Framework/Core/ModuleMacros.h"
 #include "art/Framework/Core/FileBlock.h"

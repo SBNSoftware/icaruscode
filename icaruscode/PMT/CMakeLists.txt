@@ -200,6 +200,7 @@ cet_build_plugin(OpDetWaveformAnalyzer art::module
     lardataobj::RawData
     lardataobj::Simulation
     lardataobj::RecoBase
+    lardata::Utilities
     art::Framework_Core
     art::Framework_Principal
     art::Framework_Services_Registry
@@ -212,7 +213,9 @@ cet_build_plugin(OpDetWaveformAnalyzer art::module
     cetlib::cetlib
     cetlib_except::cetlib_except
     Boost::system
+    larana::OpticalDetector
     larana::OpticalDetector_OpHitFinder
+    ROOT::Tree
   )
 
 cet_build_plugin(RequireOnBeamWaveforms art::module
