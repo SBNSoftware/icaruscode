@@ -21,6 +21,7 @@
 #include "icaruscode/PMT/Algorithms/PedestalGeneratorAlg.h"
 #include "icaruscode/Utilities/quantities_utils.h" // util::value_t
 #include "icarusalg/Utilities/SampledFunction.h"
+#include "icaruscode/Timing/PMTTimingCorrections.h"
 
 // LArSoft libraries
 #include "lardataobj/RawData/OpDetWaveform.h"
@@ -182,6 +183,11 @@ class icarus::opdet::OpDetWaveformMakerClass {
  *
  * For each converting photon, a photoelectron is added to the channel by
  * placing a template waveform shape into the channel waveform.
+ *
+ * If enabled by `ApplyTimingDelays`, the timing correction service 
+ * `icarusDB::IPMTTimingCorrectionService` is used to simulate the chain of
+ * delays between the photon hitting the photocathode and the time its signal
+ * is digitized. The delay is dominated by the signal cable length (~200ns).
  *
  * The timestamp of each waveform is based on the same scale as the trigger
  * time, as defined by `detinfo::DetectorClocks::TriggerTime()`.
@@ -475,7 +481,8 @@ class icarus::opdet::PMTsimulationAlg {
     hertz darkNoiseRate;
     float saturation; //equivalent to the number of p.e. that saturates the electronic signal
     PMTspecs_t PMTspecs; ///< PMT specifications.
-    bool doGainFluctuations; ///< Whether to simulate fain fluctuations.
+    bool doGainFluctuations; ///< Whether to simulate gain fluctuations.
+    bool doTimingDelays; ///< Whether to simulate timing delays.
     /// @}
 
     /// @{
@@ -487,7 +494,10 @@ class icarus::opdet::PMTsimulationAlg {
     detinfo::LArProperties const* larProp = nullptr; ///< LarProperties service provider.
 
     detinfo::DetectorClocksData const* clockData = nullptr;
-    
+  
+    /// Timing delays service interfacing with database
+    icarusDB::PMTTimingCorrections const* timingDelays = nullptr;
+
     // detTimings is not really "optional" but it needs delayed construction.
     /// Detector clocks data wrapper.
     std::optional<detinfo::DetectorTimings> detTimings;
@@ -998,6 +1008,11 @@ class icarus::opdet::PMTsimulationAlgMaker {
       Comment("include gain fluctuation in the photoelectron response"),
       true
       };
+    fhicl::Atom<bool> ApplyTimingDelays {
+      Name("ApplyTimingDelays"),
+      Comment("add timing delays (cable, transit time) to photon times"),
+      true
+      };
 
     //
     // single photoelectron response
@@ -1068,6 +1083,7 @@ class icarus::opdet::PMTsimulationAlgMaker {
    * @param beamGateTimestamp the time of beam gate opening, in UTC [ns]
    * @param larProp instance of `detinfo::LArProperties` to be used
    * @param detClocks instance of `detinfo::DetectorClocks` to be used
+   * @param timingDelays instance of `icarusDB::PMTTimingCorrections` to be used
    * @param SPRfunction function to use for the single photon response
    * @param pedestalGenerator algorithm generating the pedestal plus noise
    * @param mainRandomEngine main random engine (quantum efficiency, etc.)
@@ -1083,6 +1099,7 @@ class icarus::opdet::PMTsimulationAlgMaker {
     std::uint64_t beamGateTimestamp,
     detinfo::LArProperties const& larProp,
     detinfo::DetectorClocksData const& detClocks,
+    icarusDB::PMTTimingCorrections const& timingDelays,
     SinglePhotonResponseFunc_t const& SPRfunction,
     PedestalGenerator_t& pedestalGenerator,
     CLHEP::HepRandomEngine& mainRandomEngine,
@@ -1096,6 +1113,7 @@ class icarus::opdet::PMTsimulationAlgMaker {
    * @param beamGateTimestamp the time of beam gate opening, in UTC [ns]
    * @param larProp instance of `detinfo::LArProperties` to be used
    * @param detClocks instance of `detinfo::DetectorClocks` to be used
+   * @param timingDelays instance of `icarusDB::PMTTimingCorrections` to be used
    * @param SPRfunction function to use for the single photon response
    * @param pedestalGenerator algorithm generating the pedestal plus noise
    * @param mainRandomEngine main random engine (quantum efficiency, etc.)
@@ -1113,6 +1131,7 @@ class icarus::opdet::PMTsimulationAlgMaker {
     std::uint64_t beamGateTimestamp,
     detinfo::LArProperties const& larProp,
     detinfo::DetectorClocksData const& clockData,
+    icarusDB::PMTTimingCorrections const& timingDelays,
     SinglePhotonResponseFunc_t const& SPRfunction,
     PedestalGenerator_t& pedestalGenerator,
     CLHEP::HepRandomEngine& mainRandomEngine,
@@ -1196,6 +1215,8 @@ void icarus::opdet::PMTsimulationAlg::printConfiguration
     << '\n' << indent << "Saturation:          " << fParams.saturation << " p.e."
     << '\n' << indent << "doGainFluctuations:  "
       << std::boolalpha << fParams.doGainFluctuations
+    << '\n' << indent << "doTimingDelays:  "
+      << std::boolalpha << fParams.doTimingDelays
     << '\n' << indent << "PulsePolarity:       " << ((fParams.pulsePolarity == 1)? "positive": "negative") << " (=" << fParams.pulsePolarity << ")"
     << '\n' << indent << "Sampling:            " << fSampling;
   if (fParams.pulseSubsamples > 1U)

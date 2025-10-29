@@ -146,11 +146,11 @@ icarus::opdet::PMTsimulationAlg::PMTsimulationAlg
   }
 
   // check that the sampled waveform has a sufficiently large range, so that
-  // tails are below 10^-3 ADC counts (absolute value);
+  // tails are below 5x10^-2 ADC counts (absolute value);
   // if this test fails, it's better to reduce the threshold in wsp constructor
   // (for analytical pulses converging to 0) or have a longer sampling that does
-  // converge to 0 (10^-3 ADC is quite low though).
-  wsp.checkRange(1.0e-3_ADCf, "PMTsimulationAlg");
+  // converge to 0 (5x10^-2 ADC is quite low though).
+  wsp.checkRange(5.0e-2_ADCf, "PMTsimulationAlg");
 
 } // icarus::opdet::PMTsimulationAlg::PMTsimulationAlg()
 
@@ -205,6 +205,19 @@ auto icarus::opdet::PMTsimulationAlg::CreateFullWaveform
     raw::Channel_t const channel = photons.OpChannel();
 
     //
+    // Preparing the total time delay for this optical channel.
+    // We get the delay from the timing corrections used in data.
+    // Corrections are additive, i.e. the service returns negative values.
+    // Need to flip the sign to use them as delays.
+    //
+    double totalDelay = 0;
+    if(fParams.doTimingDelays) {
+      totalDelay -= fParams.timingDelays->getLaserCorrections(channel);
+      totalDelay -= fParams.timingDelays->getCosmicsCorrections(channel);
+    }
+    microsecond const timeDelay { totalDelay };
+
+    //
     // collect the amount of photoelectrons arriving at each subtick;
     // the waveform is split in groups of photons at the same relative subtick
     // (i.e. first all the photons on the first subtick of a tick, then
@@ -234,18 +247,21 @@ auto icarus::opdet::PMTsimulationAlg::CreateFullWaveform
       trigger_time const mytime
         = timings.toTriggerTime(photonTime)
         - fParams.triggerOffsetPMT
+        + timeDelay
         ;
       if ((mytime < 0.0_us) || (mytime >= fParams.readoutEnablePeriod)) continue;
 
       auto const [ tick, subtick ]
         = toTickAndSubtick(mytime.quantity() * fSampling);
+      
       /*
       mf::LogTrace("PMTsimulationAlg")
         << "Photon at " << photonTime << ", optical time " << mytime
-        << " => tick " << tick_d
-        << " => sample " << tick << " subsample " << subtick
+        << " (time delay " << timeDelay << ") "
+        << " => tick " << tick << " subtick " << subtick
         ;
       */
+
       if (tick >= endSample) continue;
       ++peMaps[subtick][tick];
     } // for photons
@@ -272,7 +288,9 @@ auto icarus::opdet::PMTsimulationAlg::CreateFullWaveform
       simulation_time const photonTime { time_ns + 0.5 };
       trigger_time const mytime
         = timings.toTriggerTime(photonTime)
-        - fParams.triggerOffsetPMT;
+        - fParams.triggerOffsetPMT
+        + timeDelay
+        ;
       if ((mytime < 0.0_us) || (mytime >= fParams.readoutEnablePeriod)) continue;
 
       auto const [ tick, subtick ]
@@ -889,6 +907,7 @@ icarus::opdet::PMTsimulationAlgMaker::PMTsimulationAlgMaker
                                         (PMTspecs.VoltageDistribution());
   fBaseConfig.PMTspecs.gain            = PMTspecs.Gain();
   fBaseConfig.doGainFluctuations       = config.FluctuateGain();
+  fBaseConfig.doTimingDelays           = config.ApplyTimingDelays();
 
   //
   // single photoelectron response
@@ -943,6 +962,7 @@ icarus::opdet::PMTsimulationAlgMaker::operator()(
   std::uint64_t beamGateTimestamp,
   detinfo::LArProperties const& larProp,
   detinfo::DetectorClocksData const& clockData,
+  icarusDB::PMTTimingCorrections const& timingDelays,
   SinglePhotonResponseFunc_t const& SPRfunction,
   PedestalGenerator_t& pedestalGenerator,
   CLHEP::HepRandomEngine& mainRandomEngine,
@@ -953,7 +973,7 @@ icarus::opdet::PMTsimulationAlgMaker::operator()(
 {
   return std::make_unique<PMTsimulationAlg>(makeParams(
     beamGateTimestamp,
-    larProp, clockData,
+    larProp, clockData, timingDelays,
     SPRfunction, pedestalGenerator,
     mainRandomEngine, darkNoiseRandomEngine, elecNoiseRandomEngine,
     trackSelectedPhotons
@@ -967,6 +987,7 @@ auto icarus::opdet::PMTsimulationAlgMaker::makeParams(
   std::uint64_t beamGateTimestamp,
   detinfo::LArProperties const& larProp,
   detinfo::DetectorClocksData const& clockData,
+  icarusDB::PMTTimingCorrections const& timingDelays,  
   SinglePhotonResponseFunc_t const& SPRfunction,
   PedestalGenerator_t& pedestalGenerator,
   CLHEP::HepRandomEngine& mainRandomEngine,
@@ -989,6 +1010,7 @@ auto icarus::opdet::PMTsimulationAlgMaker::makeParams(
   params.larProp = &larProp;
   params.clockData = &clockData;
   params.detTimings = detinfo::makeDetectorTimings(params.clockData);
+  params.timingDelays = &timingDelays;
 
   params.pulseFunction = &SPRfunction;
   params.pedestalGen = &pedestalGenerator;
