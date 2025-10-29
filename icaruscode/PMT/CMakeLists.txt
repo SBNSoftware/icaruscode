@@ -173,19 +173,14 @@ art_make_library(
   EXCLUDE
     "SimPMTIcarus_module.cc"
     "SimPMTreadout_module.cc"
+    "OpDetWaveformAnalyzer_module.cc"
     "OpDetWaveformMetaMaker_module.cc"
     "CopyBeamTimePMTwaveforms_module.cc"
     "PMTWaveformBaselines_module.cc"
     "PMTWaveformBaselinesFromReadoutConfiguration_module.cc"
     "PMTWaveformBaselinesFromChannelData_module.cc"
-    "OpHitFinderICARUS_module.cc"
-    "PMTStartCalibTime_module.cc"
-    "PMTcoordinates_module.cc"
-    "PhotonPropogationICARUS_module.cc"
     "ReassociatePMTbaselines_module.cc"
     "RequireOnBeamWaveforms_module.cc"
-    "TrigInfo_module.cc"
-    "wvfAnaicarus_module.cc"
     "AsymGaussPulseFunctionTool_tool.cc"
     "AsymExpPulseFunctionTool_tool.cc"
     "SampledWaveformFunctionTool_tool.cc"
@@ -194,54 +189,31 @@ art_make_library(
     "PMTfastGausNoiseGeneratorTool_tool.cc"
     "PMTnoNoiseGeneratorTool_tool.cc"
     "CustomPulseFunctionTool_tool.cc"
-    "OpDetWaveformAnalyzer_module.cc"
           LIBRARIES
             lardataobj::RawData
             lardataobj::RecoBase
-            lardata::Utilities)
-set(      MODULE_LIBRARIES
-            larcorealg::Geometry
-            larana::OpticalDetector
-            larana::OpticalDetector_OpHitFinder
-            larcore::Geometry_Geometry_service
             lardata::Utilities
-            larevt::Filters
-            lardataobj::RawData
-            larevt::CalibrationDBI_IOVData
-            larevt::CalibrationDBI_Providers
-            lardataobj::RecoBase
-            lardata::ArtDataHelper
-            nusimdata::SimulationBase
-            nurandom::RandomUtils_NuRandomService_service
-            nug4::ParticleNavigation
-            art::Framework_Core
-            art::Framework_Principal
-            art::Framework_Services_Registry
-            art::Framework_Services_Optional_RandomNumberGenerator_service
-            art_root_io::TFileService_service
-            art_root_io::tfile_support
-            art::Persistency_Common
-            art::Persistency_Provenance
-            art::Utilities
-            canvas::canvas
-            messagefacility::MF_MessageLogger
-            fhiclcpp::fhiclcpp
-            cetlib::cetlib
-            cetlib_except::cetlib_except
-            ROOT::Geom
-            ROOT::XMLIO
-            ROOT::Gdml
-            ROOT::FFTW
-            ROOT::Tree
-            Boost::system
-        )
-cet_build_plugin(OpHitFinderICARUS art::module LIBRARIES ${MODULE_LIBRARIES})
-cet_build_plugin(PMTStartCalibTime art::module LIBRARIES ${MODULE_LIBRARIES})
-cet_build_plugin(PMTcoordinates art::module LIBRARIES ${MODULE_LIBRARIES})
-cet_build_plugin(PhotonPropogationICARUS art::module LIBRARIES ${MODULE_LIBRARIES})
-cet_build_plugin(TrigInfo art::module LIBRARIES ${MODULE_LIBRARIES})
-cet_build_plugin(wvfAnaicarus art::module LIBRARIES ${MODULE_LIBRARIES})
-cet_build_plugin(OpDetWaveformAnalyzer art::module LIBRARIES ${MODULE_LIBRARIES})
+  )
+
+cet_build_plugin(OpDetWaveformAnalyzer art::module 
+  LIBRARIES 
+    lardataobj::RawData
+    lardataobj::Simulation
+    lardataobj::RecoBase
+    art::Framework_Core
+    art::Framework_Principal
+    art::Framework_Services_Registry
+    art_root_io::TFileService_service
+    art_root_io::tfile_support
+    art::Persistency_Provenance
+    canvas::canvas
+    messagefacility::MF_MessageLogger
+    fhiclcpp::fhiclcpp
+    cetlib::cetlib
+    cetlib_except::cetlib_except
+    Boost::system
+    larana::OpticalDetector_OpHitFinder
+  )
 
 cet_build_plugin(RequireOnBeamWaveforms art::module
   LIBRARIES
@@ -271,8 +243,6 @@ cet_build_plugin(ReassociatePMTbaselines art::module
     lardataobj::RawData
     art::Framework_Services_Registry
   )
-
-
 
 install_headers()
 install_fhicl()
