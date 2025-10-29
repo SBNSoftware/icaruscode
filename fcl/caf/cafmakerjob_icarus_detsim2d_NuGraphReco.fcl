@@ -2,4 +2,6 @@
 #include "cafmaker_add_detsim2d_icarus.fcl"
 
 physics.producers.cafmaker.PFParticleLabel: "pandoraGausNuGraphReco"
+cafmaker.NuGraphFilterLabel: "ngfilteredhits:filter"
+cafmaker.NuGraphSemanticLabel: "ngfilteredhits:semantic"
 physics.producers.cafmaker.UsePandoraAfterNuGraph: true
