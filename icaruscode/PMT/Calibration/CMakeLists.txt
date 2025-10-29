@@ -44,7 +44,7 @@ cet_build_plugin(PMTBackgroundphotonsCalibration art::module
                 Boost::system
               )
 
-cet_build_plugin(PMTSPRCalibration art::module
+cet_build_plugin(PMTSPRExtraction art::module
                     LIBRARIES
                 icaruscode_PMT_Algorithms
                 icaruscode_PMT_Calibration_CaloTools

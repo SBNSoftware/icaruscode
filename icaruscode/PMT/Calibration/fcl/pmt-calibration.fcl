@@ -28,9 +28,9 @@ pmt_bkgphotons_calibration:
   IntegralBinning: [ 0., 8., 0.04 ] # in 10^7 electrons
 }
 
-pmt_spr_calibration:
+pmt_spr_extraction:
 {
-  module_type: 	PMTSPRCalibration
+  module_type: 	PMTSPRExtraction
   OpHitModule: "ophit"
   TriggerModule: "daqTrigger"
   WaveformModule: "daqPMT"

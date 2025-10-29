@@ -7,7 +7,7 @@
 
 #include "pmt-calibration.fcl"
 
-process_name: SPRCalibration
+process_name: SPRExtraction
 
 services:
 {
@@ -45,12 +45,12 @@ physics:
 
    analyzers: 
    {
-     sprcalibration: @local::pmt_spr_calibration 
+     sprextraction: @local::pmt_spr_extraction 
    }
 
    my_producer_modules: [ triggerconfig, pmtconfig, daqTrigger, daqPMT, ophituncorrected ]
 
-   ana: [ sprcalibration ]
+   ana: [ sprextraction ]
 
    end_paths: [ana]
 }
@@ -66,6 +66,6 @@ physics.producers.daqPMT.RequireBoardConfig: false
 physics.producers.daqPMT.RequireKnownBoards: false
 
 ## CALIBRATION CONFIGURATION
-physics.analyzers.sprcalibration.OpHitModule: "ophituncorrected" 
-physics.analyzers.sprcalibration.TriggerModule: "daqTrigger" 
-physics.analyzers.sprcalibration.ChannelMask: [  ]  
+physics.analyzers.sprextraction.OpHitModule: "ophituncorrected" 
+physics.analyzers.sprextraction.TriggerModule: "daqTrigger" 
+physics.analyzers.sprextraction.ChannelMask: [  ]  

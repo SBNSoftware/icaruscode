@@ -1,7 +1,7 @@
 ////////////////////////////////////////////////////////////////////////
-// Class:       PMTSPRCalibration
+// Class:       PMTSPRExtraction
 // Plugin Type: analyzer (art v3_05_00)
-// File:        PMTSPRCalibration_module.cc
+// File:        PMTSPRExtraction_module.cc
 //
 // Generated at Mon Mar 10 16:10:37 2025 by Matteo Vicenzi
 // 
@@ -42,21 +42,21 @@
 #include <algorithm>
 
 namespace pmtcalo {
-  class PMTSPRCalibration;
+  class PMTSPRExtraction;
 }
 
 
-class pmtcalo::PMTSPRCalibration : public art::EDAnalyzer {
+class pmtcalo::PMTSPRExtraction : public art::EDAnalyzer {
 
 
 public:
 
-  explicit PMTSPRCalibration(fhicl::ParameterSet const& pset);
+  explicit PMTSPRExtraction(fhicl::ParameterSet const& pset);
 
-  PMTSPRCalibration(PMTSPRCalibration const&) = delete;
-  PMTSPRCalibration(PMTSPRCalibration&&) = delete;
-  PMTSPRCalibration& operator=(PMTSPRCalibration const&) = delete;
-  PMTSPRCalibration& operator=(PMTSPRCalibration&&) = delete;
+  PMTSPRExtraction(PMTSPRExtraction const&) = delete;
+  PMTSPRExtraction(PMTSPRExtraction&&) = delete;
+  PMTSPRExtraction& operator=(PMTSPRExtraction const&) = delete;
+  PMTSPRExtraction& operator=(PMTSPRExtraction&&) = delete;
 
   virtual void beginJob() override;
   bool inGate(double const & time, std::vector<double> & bounds) const;
@@ -125,7 +125,7 @@ private:
 //------------------------------------------------------------------------------
 
 
-pmtcalo::PMTSPRCalibration::PMTSPRCalibration(fhicl::ParameterSet const& pset)
+pmtcalo::PMTSPRExtraction::PMTSPRExtraction(fhicl::ParameterSet const& pset)
   : art::EDAnalyzer(pset)  // ,
 {
 
@@ -149,7 +149,7 @@ pmtcalo::PMTSPRCalibration::PMTSPRCalibration(fhicl::ParameterSet const& pset)
 //------------------------------------------------------------------------------
 
 
-void pmtcalo::PMTSPRCalibration::beginJob()
+void pmtcalo::PMTSPRExtraction::beginJob()
 {
 
   // create full ophits tree for possible amplitude-cut selection
@@ -180,12 +180,12 @@ void pmtcalo::PMTSPRCalibration::beginJob()
 
 //-----------------------------------------------------------------------------
 
-bool pmtcalo::PMTSPRCalibration::inGate(double const & time, std::vector<double> & bounds ) const
+bool pmtcalo::PMTSPRExtraction::inGate(double const & time, std::vector<double> & bounds ) const
 {
   return (time >= bounds[0]) && ( time <= bounds[1] );
 }
 
-double pmtcalo::PMTSPRCalibration::getMedian(std::vector<short> v) const
+double pmtcalo::PMTSPRExtraction::getMedian(std::vector<short> v) const
 {
   std::nth_element(v.begin(), v.begin() + v.size() / 2, v.end());
   double vn = v[v.size() / 2];
@@ -202,7 +202,7 @@ double pmtcalo::PMTSPRCalibration::getMedian(std::vector<short> v) const
 
 //-----------------------------------------------------------------------------
 
-void pmtcalo::PMTSPRCalibration::analyze(art::Event const& event)
+void pmtcalo::PMTSPRExtraction::analyze(art::Event const& event)
 {
 
    // event info: this is mainly to save the timestamps
@@ -224,7 +224,7 @@ void pmtcalo::PMTSPRCalibration::analyze(art::Event const& event)
      if( !_is_minbias ) return;    
 
    } else{
-     mf::LogError("pmtcalo::PMTSPRCalibration") << "No raw::Trigger associated to label: " << m_trigger_label.label();
+     mf::LogError("pmtcalo::PMTSPRExtraction") << "No raw::Trigger associated to label: " << m_trigger_label.label();
    }
 
    // first thing we sort the ophit in their respective channels
@@ -363,4 +363,4 @@ void pmtcalo::PMTSPRCalibration::analyze(art::Event const& event)
 } // end analyze
 
 
-DEFINE_ART_MODULE(pmtcalo::PMTSPRCalibration)
+DEFINE_ART_MODULE(pmtcalo::PMTSPRExtraction)
