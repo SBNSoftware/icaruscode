@@ -194,7 +194,7 @@ art_make_library(
     "PMTfastGausNoiseGeneratorTool_tool.cc"
     "PMTnoNoiseGeneratorTool_tool.cc"
     "CustomPulseFunctionTool_tool.cc"
-    "OpMCWaveformAnalyzer_module.cc"
+    "OpDetWaveformAnalyzer_module.cc"
           LIBRARIES
             lardataobj::RawData
             lardataobj::RecoBase
@@ -241,7 +241,7 @@ cet_build_plugin(PMTcoordinates art::module LIBRARIES ${MODULE_LIBRARIES})
 cet_build_plugin(PhotonPropogationICARUS art::module LIBRARIES ${MODULE_LIBRARIES})
 cet_build_plugin(TrigInfo art::module LIBRARIES ${MODULE_LIBRARIES})
 cet_build_plugin(wvfAnaicarus art::module LIBRARIES ${MODULE_LIBRARIES})
-cet_build_plugin(OpMCWaveformAnalyzer art::module LIBRARIES ${MODULE_LIBRARIES})
+cet_build_plugin(OpDetWaveformAnalyzer art::module LIBRARIES ${MODULE_LIBRARIES})
 
 cet_build_plugin(RequireOnBeamWaveforms art::module
   LIBRARIES

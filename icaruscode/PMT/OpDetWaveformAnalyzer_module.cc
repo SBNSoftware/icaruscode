@@ -1,7 +1,7 @@
 ////////////////////////////////////////////////////////////////////////
-// Class:       OpMCWaveformAnalyzer
+// Class:       OpDetWaveformAnalyzer
 // Plugin Type: analyzer (art v3_05_00)
-// File:        OpMCWaveformAnalyzer_module.cc
+// File:        OpDetWaveformAnalyzer_module.cc
 //
 // Generated at Mon Mar 10 16:10:37 2025 by Matteo Vicenzi
 // 
@@ -42,21 +42,37 @@
 #include <algorithm>
 
 namespace icarus {
-  class OpMCWaveformAnalyzer;
+  class OpDetWaveformAnalyzer;
 }
 
+/// This module is a simple analyzer to dump OpDetWaveforms and Ophits in a ROOT tree.
+/// It can be used on both DATA and MC, assuming required products are available.
+/// It save all the waveforms in the event, alongside:
+///  * the "official" reconstructed baseline from the standard algorithm;
+///  * the list of optical hits found on the waveform;
+///  * (optional, MC only) the list of SimPhotons contributing to the waveform.
+///
+///  Note: if no ophits are found, the waveform is skipped.
+///
+///  Options:
+///  - `WaveformModule`: waveform product name/instance
+///  - `OpHitModule`: ophit product name/instance
+///  - `SimPhotonsModule`: simphotons product name/instance (MC only, leave empty for data)
+///  - `SimPhotonsOffset`: time offset between photon time and response peak (MC only)
+///  - `SaveOnlyWithSimPhotons`: save waveform only if it contains simphotons (MC only, set false for data)
+/// 
 
-class icarus::OpMCWaveformAnalyzer : public art::EDAnalyzer {
+class icarus::OpDetWaveformAnalyzer : public art::EDAnalyzer {
 
 
 public:
 
-  explicit OpMCWaveformAnalyzer(fhicl::ParameterSet const& pset);
+  explicit OpDetWaveformAnalyzer(fhicl::ParameterSet const& pset);
 
-  OpMCWaveformAnalyzer(OpMCWaveformAnalyzer const&) = delete;
-  OpMCWaveformAnalyzer(OpMCWaveformAnalyzer&&) = delete;
-  OpMCWaveformAnalyzer& operator=(OpMCWaveformAnalyzer const&) = delete;
-  OpMCWaveformAnalyzer& operator=(OpMCWaveformAnalyzer&&) = delete;
+  OpDetWaveformAnalyzer(OpDetWaveformAnalyzer const&) = delete;
+  OpDetWaveformAnalyzer(OpDetWaveformAnalyzer&&) = delete;
+  OpDetWaveformAnalyzer& operator=(OpDetWaveformAnalyzer const&) = delete;
+  OpDetWaveformAnalyzer& operator=(OpDetWaveformAnalyzer&&) = delete;
 
   virtual void beginJob() override;
   void analyze(art::Event const& event) override;
@@ -122,7 +138,7 @@ private:
 //------------------------------------------------------------------------------
 
 
-icarus::OpMCWaveformAnalyzer::OpMCWaveformAnalyzer(fhicl::ParameterSet const& pset)
+icarus::OpDetWaveformAnalyzer::OpDetWaveformAnalyzer(fhicl::ParameterSet const& pset)
   : art::EDAnalyzer(pset)  // ,
 {
 
@@ -139,7 +155,7 @@ icarus::OpMCWaveformAnalyzer::OpMCWaveformAnalyzer(fhicl::ParameterSet const& ps
 //------------------------------------------------------------------------------
 
 
-void icarus::OpMCWaveformAnalyzer::beginJob()
+void icarus::OpDetWaveformAnalyzer::beginJob()
 {
 
   // create full tree
@@ -177,7 +193,7 @@ void icarus::OpMCWaveformAnalyzer::beginJob()
 
 //-----------------------------------------------------------------------------
 
-void icarus::OpMCWaveformAnalyzer::analyze(art::Event const& event)
+void icarus::OpDetWaveformAnalyzer::analyze(art::Event const& event)
 {
 
   // event info: this is mainly to save the timestamps
@@ -239,7 +255,7 @@ void icarus::OpMCWaveformAnalyzer::analyze(art::Event const& event)
 
     // LOOP OVER ALL OPHITS: hits are saved only if:
     // 1) coming from the same channel
-    // 2)  start time is within wf boundaries
+    // 2) start time is within wf boundaries
     for (auto it = sortableOpHits.begin(); it != sortableOpHits.end(); ++it) {
     
       auto const &ophit = *it;  // current element
@@ -321,4 +337,4 @@ void icarus::OpMCWaveformAnalyzer::analyze(art::Event const& event)
 } // end analyze
 
 
-DEFINE_ART_MODULE(icarus::OpMCWaveformAnalyzer)
+DEFINE_ART_MODULE(icarus::OpDetWaveformAnalyzer)

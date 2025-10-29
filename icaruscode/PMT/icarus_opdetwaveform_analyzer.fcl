@@ -2,12 +2,12 @@
 
 BEGIN_PROLOG
 
-mc_waveform_ana:
+opdet_waveform_ana:
 {
   module_type: 	OpMCWaveformAnalyzer
-  OpHitModule: "ophit"
-  SimPhotonsModule: "shifted"
   WaveformModule: "opdaq"
+  OpHitModule: "ophit"
+  SimPhotonsModule: "shifted" # leave empty for data
   SimPhotonsOffset: 55.1
   SaveOnlyWithSimPhotons: false
   PedAlgoRollingMeanMaker: {
