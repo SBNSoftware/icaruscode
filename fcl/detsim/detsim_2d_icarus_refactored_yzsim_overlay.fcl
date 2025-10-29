@@ -4,3 +4,7 @@ physics.producers.daq0: @local::icarus_simwire_wirecell_yz_overlay_0
 physics.producers.daq1: @local::icarus_simwire_wirecell_yz_overlay_1
 physics.producers.daq2: @local::icarus_simwire_wirecell_yz_overlay_2
 physics.producers.daq3: @local::icarus_simwire_wirecell_yz_overlay_3
+
+# turn off mc noise on pmt waveforms 
+physics.producers.opdaq: @local::icarus_simpmt_nonoise
+
