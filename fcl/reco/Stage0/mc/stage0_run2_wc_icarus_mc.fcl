@@ -39,9 +39,6 @@ outputs.rootOutput.outputCommands: ["keep *_*_*_*",
                                     "keep *_daqPMT_*_*"
 ]
 
-# Set the expected input for ophit
-physics.producers.ophit.InputModule: "shifted"
-
 # Set up for the single module mutliple TPC mode...
 physics.producers.MCDecodeTPCROI.FragmentsLabelVec:               ["daq:TPCWW","daq:TPCWE","daq:TPCEW","daq:TPCEE"]
 physics.producers.MCDecodeTPCROI.OutInstanceLabelVec:             ["PHYSCRATEDATATPCWW", "PHYSCRATEDATATPCWE", "PHYSCRATEDATATPCEW", "PHYSCRATEDATATPCEE"]
