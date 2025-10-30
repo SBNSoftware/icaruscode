@@ -5,6 +5,7 @@
 #include "icarus_flashfinder.fcl"
 #include "icarus_opana_modules.fcl"
 #include "recowire_icarus.fcl"
+#include "timing_icarus.fcl"
 
 #include "crttruehitproducer.fcl"
 #include "crtsimhitproducer.fcl"
@@ -37,7 +38,8 @@ icarus_stage0_mc_producers:
 
     pmtbaselines:      @local::icarus_opreco_pedestal_fromchannel_MC  # from icarus_ophitfinder.fcl
     opdetonbeam:       @local::copyPMTonBeam  # from decoderdefs_icarus.fcl
-    ophit:             @local::icarus_ophit_data
+    ophituncorrected:  @local::icarus_ophit_data
+    ophit:             @local::icarus_ophit_timing_correction
     mcophit:           @local::ICARUSMCOpHit
 
     ## crt producer
@@ -55,6 +57,7 @@ icarus_stage0_mc_trigger: [
 icarus_stage0_mc_PMT:  [
                          @sequence::icarus_stage0_mc_trigger,
                          pmtbaselines,
+                         ophituncorrected,
                          ophit,
                          mcophit,
                          opflashCryoE,
@@ -68,7 +71,8 @@ icarus_stage0_mc_crtreco: [crttrack, crtpmt]
 icarus_stage0_mc_producers.emuTrigger.BeamGates:               shifted
 icarus_stage0_mc_producers.triggersimgates.module_type:        DummyProducer  # Don't rerun. We have already adjusted the BeamGate
 icarus_stage0_mc_producers.mcophit.SimPhotonsProducer:         shifted
-icarus_stage0_mc_producers.ophit.InputModule:                  shifted
+icarus_stage0_mc_producers.ophituncorrected.InputModule:       shifted
+icarus_stage0_mc_producers.ophit.InputLabels:                  ["ophituncorrected"]
 icarus_stage0_mc_producers.opdetonbeam.Waveforms:              shifted
 icarus_stage0_mc_producers.opdetonbeam.WaveformBaselineAssns:  pmtbaselines
 icarus_stage0_mc_producers.pmtbaselines.OpticalWaveforms:      shifted
