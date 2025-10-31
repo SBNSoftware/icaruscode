@@ -92,6 +92,7 @@ icarus_stage1_producers:
 
   NCCSlicesCryoE: @local::NCCSlicesCryoE
   NCCSlicesCryoW: @local::NCCSlicesCryoW
+
   NGMultiSliceCryoE: @local::NGMultiSliceCryoE
   NGMultiSliceCryoW: @local::NGMultiSliceCryoW
 
@@ -192,7 +193,7 @@ icarus_analysis_modules:           [  caloskimE
 				                             ,CRTAnalysis
                                    ]
 
-icarus_analysis_modules_nolight:      [  caloskimE
+icarus_analysis_modules_nolight:   [  caloskimE
                                      ,caloskimW
                                      ,CRTDataAnalysis
 				                             ,CRTAnalysis
@@ -209,8 +210,10 @@ icarus_analysis_superaNu:          [ superaNu
 
 icarus_analysis_superaMPVMPR:      [ superaMPVMPR
                                    ]
+
 icarus_analysis_superaCosmic:      [ superaCosmic
-				   ]
+				                           ]
+
 icarus_analysis_larcv_modules:     [  @sequence::icarus_analysis_modules
                                      ,@sequence::icarus_analysis_supera
                                    ]
@@ -222,6 +225,7 @@ icarus_EastHits_TPC:               [ gaushit1dTPCEW,
 icarus_WestHits_TPC:               [ gaushit1dTPCWW,
                                      gaushit1dTPCWE
                                    ]
+                                   
 icarus_EastHits2d_TPC:             [ gaushit2dTPCEW,
                                      gaushit2dTPCEE
                                    ]

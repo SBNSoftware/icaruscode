@@ -72,7 +72,7 @@ outputs.out1.outputCommands: [
   "drop *_caloskimCalorimetryCryoW_*_*"
 ]
 
-#Redefine TPCPMTBarycenterMatch producers with MC parameters
+# Redefine TPCPMTBarycenterMatch producers with MC parameters
 physics.producers.tpcpmtbarycentermatchCryoE: @local::mc_tpcpmtbarycentermatchproducer_east
 physics.producers.tpcpmtbarycentermatchCryoW: @local::mc_tpcpmtbarycentermatchproducer_west
 
@@ -87,6 +87,7 @@ physics.analyzers.caloskimW.SimChannelproducer: "merge"
 physics.analyzers.caloskimW.RawDigitproducers: ["MCDecodeTPCROI:PHYSCRATEDATATPCWW", "MCDecodeTPCROI:PHYSCRATEDATATPCWE"]
 physics.analyzers.caloskimW.SelectEvents: [reco]
 
+# Truth-matching for interactions
 physics.producers.mcassociationsGausCryoE.HitParticleAssociations.HitModuleLabelVec: ["cluster3DCryoE"]
 physics.producers.mcassociationsGausCryoW.HitParticleAssociations.HitModuleLabelVec: ["cluster3DCryoW"]
 

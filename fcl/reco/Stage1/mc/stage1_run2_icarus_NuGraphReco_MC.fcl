@@ -59,8 +59,8 @@ physics.reco: [
                 caloskimCalorimetryCryoE, 
                 caloskimCalorimetryCryoW,
                 mcassociationsGausCryoE,  
-                mcassociationsGausCryoW,
-                mcreco
+                mcassociationsGausCryoW
+                #mcreco
               ]
 
 physics.outana:            [ @sequence::icarus_analysis_modules ]
@@ -77,6 +77,7 @@ outputs.out1.outputCommands: [
 # Redefine TPCPMTBarycenterMatch producers with MC parameters and with the different Pandora label
 physics.producers.tpcpmtbarycentermatchCryoE: @local::mc_tpcpmtbarycentermatchproducer_east
 physics.producers.tpcpmtbarycentermatchCryoW: @local::mc_tpcpmtbarycentermatchproducer_west
+
 physics.producers.tpcpmtbarycentermatchCryoE.PandoraLabel: "pandoraGausNuGraphReco"
 physics.producers.tpcpmtbarycentermatchCryoW.PandoraLabel: "pandoraGausNuGraphReco"
 
@@ -91,11 +92,9 @@ physics.analyzers.caloskimW.SimChannelproducer: "merge"
 physics.analyzers.caloskimW.RawDigitproducers:  ["MCDecodeTPCROI:PHYSCRATEDATATPCWW", "MCDecodeTPCROI:PHYSCRATEDATATPCWE"]
 physics.analyzers.caloskimW.SelectEvents:       [reco]
 
-# truth information for hits
-# physics.producers.mcassociationsGausCryoE.HitParticleAssociations.HitModuleLabelVec:  ["cluster3DCryoE"]
-# physics.producers.mcassociationsGausCryoW.HitParticleAssociations.HitModuleLabelVec:  ["cluster3DCryoW"]
-physics.producers.mcassociationsGausCryoE.HitParticleAssociations.HitModuleLabelVec:    ["ngfilteredhitsCryoE"]
-physics.producers.mcassociationsGausCryoW.HitParticleAssociations.HitModuleLabelVec:    ["ngfilteredhitsCryoW"]
+# Truth-matching for interactions
+physics.producers.mcassociationsGausCryoE.HitParticleAssociations.HitModuleLabelVec:  ["cluster3DCryoE"]
+physics.producers.mcassociationsGausCryoW.HitParticleAssociations.HitModuleLabelVec:  ["cluster3DCryoW"]
 
 # Remove missing products in MC
 physics.analyzers.simpleLightAna.TriggerLabel:        ""
