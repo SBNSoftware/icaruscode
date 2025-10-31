@@ -382,7 +382,7 @@ icarus_stage1_producers.caloskimCalorimetryCryoW.TrackModuleLabel:              
 #icarus_stage1_producers.pandoraGausCryoE.ConfigFile:                                             "PandoraSettings_Master_ICARUS_RawICARUS.xml"
 
 # Also fix hit label for CRT-(pandora) TPC tagging
-icarus_stage1_producers.CRTT0Tagging.HitLabels:                                                  ["combineHitsCryoE", "combineHitsCryoW"]
+icarus_stage1_producers.CRTT0Tagging.HitLabel:                                                    ["combineHitsCryoE", "combineHitsCryoW"]
 
 # Override labels for ntupler
 icarus_stage1_analyzers.caloskimE.HITproducer: "combineHitsCryoE"
