@@ -256,7 +256,7 @@ auto icarus::opdet::PMTsimulationAlg::CreateFullWaveform
       
       /*
       mf::LogTrace("PMTsimulationAlg")
-        << "Photon at " << photonTime << ", optical time " << mytime
+        << "Channel " << channel << ": photon at " << photonTime << ", optical time " << mytime
         << " (time delay " << timeDelay << ") "
         << " => tick " << tick << " subtick " << subtick
         ;

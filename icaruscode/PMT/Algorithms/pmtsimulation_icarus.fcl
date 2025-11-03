@@ -186,7 +186,7 @@ icarus_photoelectronresponse_run2_2025: {
   tool_type: SampledWaveformFunctionTool
   
   WaveformData: "Responses/SPRisolHitRun9271_MV.txt"
-  TransitTime:  "14.0 ns" # from peak to response start  
+  TransitTime:  "55.1 ns" 
   Gain:          @local::icarus_settings_opdet.nominalPMTgain
   
 } # icarus_photoelectronresponse_run2_2025
