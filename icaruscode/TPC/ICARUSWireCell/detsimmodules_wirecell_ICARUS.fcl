@@ -2,6 +2,8 @@
 #include "services_basic_icarus.fcl"
 // We need this for diffusion
 #include "simulationservices_icarus.fcl"
+// lookup calibration tags
+#include "calibration_database_GlobalTags_icarus.fcl"
 
 BEGIN_PROLOG
 
@@ -35,6 +37,10 @@ icarus_simwire_wirecell:
 	    file_rcresp: "icarus_fnal_rc_tail.json" # use the RCResponse by default
 	    cathode_input_format: "array" # scalar (flat) or array (bent)
             SimEnergyDepositLabel: "ionization"
+            # yz map config -- default to Run 2
+            YZMapJson: "yzmap_icarus_v3_run2.json"
+            DBFileName: "tpc_elifetime_data"
+            DBTag: @local::ICARUS_Calibration_GlobalTags.tpc_elifetime_data
 	}
         structs: {
             # load values from simulationservices_icarus.fcl
