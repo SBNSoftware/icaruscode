@@ -111,8 +111,8 @@ function(params, tools) {
 		ar39activity: 0, // no simulated activity
 
 		// DB config
-		DBFileName: "tpc_elifetime_data",
-		DBTag: "v2r1",
+		DBFileName: std.extVar("DBFileName"),
+		DBTag: std.extVar("DBTag"),
 		ELifetimeCorrection: true,
 		Verbose: false,
 		TPC: 0,
