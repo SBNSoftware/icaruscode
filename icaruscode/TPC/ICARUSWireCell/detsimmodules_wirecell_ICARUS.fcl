@@ -38,6 +38,7 @@ icarus_simwire_wirecell:
 	    cathode_input_format: "array" # scalar (flat) or array (bent)
             SimEnergyDepositLabel: "ionization"
             # yz map config -- default to Run 2
+            YZScaleMapJson: "yzmap_gain_icarus_v4_run2.json"
             YZMapJson: "yzmap_icarus_v3_run2.json"
             DBFileName: "tpc_elifetime_data"
             DBTag: @local::ICARUS_Calibration_GlobalTags.tpc_elifetime_data
