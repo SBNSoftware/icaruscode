@@ -221,7 +221,7 @@ local scalers = [{
         type: "Scaler",
 	name: "scaler%d" %n, //%std.floor(n/45),
         data: params.lar {
-	        	 yzmap_scale_filename: 'yzmap_gain_icarus_v4_run2.json',
+	        	 yzmap_scale_filename: std.extVar('YZScaleMapJson'),
 			 bin_width:  10*wc.cm,
 			 tpc_width: 1500*wc.mm,
 			 bin_height: 10*wc.cm,
