@@ -23,17 +23,18 @@ SPE202401patch: {  # amplitude set to 3.23 mV, gain 7.5x10^6 with R = 50 ohm
 }
 
 SPE2025Run2: {
-  Area: 152.50      # ADC x (2 ns)
-  Amplitude: 28.50  # ADC
+  Area: 152.01      # ADC x (2 ns)
+  Amplitude: 28.08  # ADC
   Shift: 0.
 }
 
 SPE2025Run3: {
-  Area: 132.50      # ADC x (2 ns)
-  Amplitude: 31.50  # ADC
+  Area: 132.37      # ADC x (2 ns)
+  Amplitude: 31.36  # ADC
   Shift: 0.
 }
 
-SPE: @local::SPE2025Run2
+SPERun2: @local::SPE2025Run2
+SPERun3: @local::SPE2025Run3
 
 END_PROLOG
