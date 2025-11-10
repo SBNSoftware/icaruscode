@@ -5,7 +5,9 @@
 # Configurations offered:
 # 
 # * `PMTsimulationAlg` algorithm:
-#     * `icarus_pmtsimulationalg_standard`: main configuration, expected to be
+#     * `icarus_pmtsimulationalg_standard_run2`: main configuration for Run1/2, expected to be
+#       used in production and by the general user
+#     * `icarus_pmtsimulationalg_standard_run3`: main configuration for Run3/4/5+, expected to be
 #       used in production and by the general user
 #     * `icarus_pmtsimulationalg_202202`: a general use configuration,
 #       including dark and electronics noise; `noise` and `nonoise` variants
@@ -13,6 +15,10 @@
 #     * `icarus_pmtsimulationalg_2018`: legacy configuration (until June 2022),
 #       including dark and electronics noise; `noise` and `nonoise` variants
 #       (the latter with dark and electronics noise disabled)
+#     * `icarus_pmtsimulationalg_run2_2025`: run1/2 configuration (developed in 2025),
+#       including noise, new response function and gain tune.
+#     * `icarus_pmtsimulationalg_run3_2025`: run3/4/5+ configuration (developed in 2025),
+#       including noise, new response function and gain tune. 
 # 
 # Usage:
 # 
@@ -35,8 +41,9 @@
 #   introduced configuration for SPR 202202
 # 20240125 (petrillo@slac.stanford.edu)
 #   introduced experimental setting PMT gain to 7.5 x 10^6 (and q.e. elsewhere)
-# 202510XX (mvicenzi@bnl.gov)
+# 20251111 (mvicenzi@bnl.gov)
 #   introduced configuration for new Run2 SPR (SPRisolHitRun9271)
+#   introduced configuration for new Run3 SPR (SPRisolHitRun12715)
 
 #include "opticalproperties_icarus.fcl"
 
@@ -95,11 +102,28 @@ icarus_settings_opdet_run2_2025: {
   
 } # icarus_settings_opdet_run2_2025
 
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# the following is based on `icarus_settings_opdet_2022` rescaling it to gain
+# 7.0x10^6; this is an empirical choice to reconciliate the single PE region in Run3/4
+# NoiseRMS is also reduced to 2.6 ADC; see e.g. SBN DocDB 41115
+icarus_settings_opdet_run3_2025: {
+  
+  @table::icarus_settings_opdet_2022
+  
+  nominalPMTgain: 7.0e6  # PMT multiplication gain factor
+
+  NoiseRMS: 2.6 # in ADC#
+  
+} # icarus_settings_opdet_run3_2025
+
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # settings used in the standard configurations:
+
 icarus_settings_opdet: @local::icarus_settings_opdet_run2_2025
 
+icarus_settings_opdet_run2: @local::icarus_settings_opdet_run2_2025
+icarus_settings_opdet_run3: @local::icarus_settings_opdet_run3_2025
 
 
 ### - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -156,7 +180,7 @@ icarus_photoelectronresponse_exponentials: {
   TransitTime:               "55.1 ns"
   RaiseTimeConstant:         "1.8 ns"
   FallTimeConstant:          "4.2 ns"
-  Gain:                      @local::icarus_settings_opdet.nominalPMTgain  # Gain = 7.0e6 => PeakCurrent: -0.14144 mA
+  Gain:                      @local::icarus_settings_opdet_2022.nominalPMTgain  # Gain = 7.0e6 => PeakCurrent: -0.14144 mA
   ADC:                       409.6  # ADC / mA
   
 } # icarus_photoelectronresponse_exponentials
@@ -172,7 +196,7 @@ icarus_photoelectronresponse_202202: {
   
   WaveformData: "Responses/SPR202202.txt"
   TransitTime:  "55.1 ns"
-  Gain:          @local::icarus_settings_opdet.nominalPMTgain
+  Gain:          @local::icarus_settings_opdet_2022.nominalPMTgain
   
 } # icarus_photoelectronresponse_202202
 
@@ -187,9 +211,24 @@ icarus_photoelectronresponse_run2_2025: {
   
   WaveformData: "Responses/SPRisolHitRun9271_MV.txt"
   TransitTime:  "55.1 ns" 
-  Gain:          @local::icarus_settings_opdet.nominalPMTgain
+  Gain:          @local::icarus_settings_opdet_run2.nominalPMTgain
   
 } # icarus_photoelectronresponse_run2_2025
+
+
+#
+# Single photoelectron response from single-PE data.
+# This is valid for Run3/4/5+ cables.
+# 
+icarus_photoelectronresponse_run3_2025: {
+  
+  tool_type: SampledWaveformFunctionTool
+  
+  WaveformData: "Responses/SPRisolHitRun12715_MV.txt"
+  TransitTime:  "55.1 ns" 
+  Gain:          @local::icarus_settings_opdet_run3.nominalPMTgain
+  
+} # icarus_photoelectronresponse_run3_2025
 
 
 #
@@ -221,7 +260,9 @@ icarus_photoelectronresponse_customexample: {
 #
 # pick one
 #
-icarus_photoelectronresponse_standard: @local::icarus_photoelectronresponse_run2_2025
+
+icarus_photoelectronresponse_standard_run2: @local::icarus_photoelectronresponse_run2_2025
+icarus_photoelectronresponse_standard_run3: @local::icarus_photoelectronresponse_run3_2025
 
 
 ### - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -318,7 +359,7 @@ icarus_pmtsimulationalg_202202_noise: {
 
   Pedestal:                  @local::icarus_pmt_pedestal_standard
   
-  SinglePhotonResponse:      @local::icarus_photoelectronresponse_standard
+  SinglePhotonResponse:      @local::icarus_photoelectronresponse_202202
   
   DarkNoiseRate:             "1.6 kHz"      # per channel, from CERN test stand measurement
 
@@ -404,6 +445,8 @@ icarus_pmtsimulationalg_run2_2025: {
 
   @table::icarus_pmtsimulationalg_202202_noise
   
+  SinglePhotonResponse:      @local::icarus_photoelectronresponse_standard_run2
+
   # Apply timing delays (cables, transit time, ..) to the simulated photons
   # These delays are extracted from the calibration database
   ApplyTimingDelays:         true          
@@ -415,11 +458,41 @@ icarus_pmtsimulationalg_run2_2025: {
   PMTspecs: {
     DynodeK:                 0.75           # gain on a PMT multiplication stage
     VoltageDistribution:    [ 3.0, 3.4, 5.0, 3.33, 1.67, 1.0, 1.2, 1.5, 2.2, 3.0 ]
-    Gain:                   @local::icarus_settings_opdet.nominalPMTgain  # total PMT gain
+    Gain:                   @local::icarus_settings_opdet_run2.nominalPMTgain  # total PMT gain
   } 
 
 } # icarus_pmtsimulationalg_run2_2025
 
+
+### - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+### Configuration Run3-2025:
+###  * explicitly based on the configuration "2022" above
+###  * gain adapted to reconciliate signal integral and amplitude in SPE region
+###  * gain updated to 7.0 x 10^6
+###  * threshold for digitization scaled down
+###
+
+icarus_pmtsimulationalg_run3_2025: {
+
+  @table::icarus_pmtsimulationalg_202202_noise
+  
+  SinglePhotonResponse:      @local::icarus_photoelectronresponse_standard_run3
+
+  # Apply timing delays (cables, transit time, ..) to the simulated photons
+  # These delays are extracted from the calibration database
+  ApplyTimingDelays:         true          
+
+  # Threshold in ADC counts for a PMT self-trigger
+  ThresholdADC:              15             # ADC counts
+  
+  # arranged ad hoc to get ~40% Poisson fluctuation on gain (effectively: 40.8%)
+  PMTspecs: {
+    DynodeK:                 0.75           # gain on a PMT multiplication stage
+    VoltageDistribution:    [ 3.0, 3.4, 5.0, 3.33, 1.67, 1.0, 1.2, 1.5, 2.2, 3.0 ]
+    Gain:                   @local::icarus_settings_opdet_run3.nominalPMTgain  # total PMT gain
+  } 
+
+} # icarus_pmtsimulationalg_run3_2025
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 ###
@@ -435,7 +508,7 @@ icarus_pmtsimulationalg_2018: {
     }
   } # Pedestal
   
-  SinglePhotonResponse:      @local::icarus_photoelectronresponse_standard
+  SinglePhotonResponse:      @local::icarus_photoelectronresponse_202202
   
   DarkNoiseRate:             "1.6 kHz"      # from CERN test stand measurement
 
@@ -498,7 +571,8 @@ icarus_pmtsimulationalg_2018_nonoise: {
 #
 # Includes noise.
 #
-icarus_pmtsimulationalg_standard: @local::icarus_pmtsimulationalg_run2_2025
+icarus_pmtsimulationalg_standard_run2: @local::icarus_pmtsimulationalg_run2_2025
+icarus_pmtsimulationalg_standard_run3: @local::icarus_pmtsimulationalg_run3_2025
 
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
