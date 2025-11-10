@@ -13,7 +13,7 @@ BEGIN_PROLOG
 # in the hit reconstruction.
 #
 icarus_pmt_calibration.NoCalib: {
-  SPEAreaGain: @local::SPE.Area
+  SPEAreaGain: @local::SPERun2.Area
 }
 
 

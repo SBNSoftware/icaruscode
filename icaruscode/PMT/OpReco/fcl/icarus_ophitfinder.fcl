@@ -193,10 +193,10 @@ icarus_ophit: # some basic configuration
    ChannelMasks:   []
    HitThreshold:   0.2   # PE
    AreaToPE:       true  # Use area to calculate number of PEs
-   SPEArea:        @local::SPE.Area # If AreaToPE is true, this number is
-                         # used as single PE area (in ADC counts)
-   SPEShift:       @local::SPE.Shift # Used by PhotonCalibratorStandard to compute
-                         # PE = area / SPEArea + SPEShift
+   SPEArea:        @local::SPERun2.Area # If AreaToPE is true, this number is
+                                        # used as single PE area (in ADC counts)
+   SPEShift:       @local::SPERun2.Shift # Used by PhotonCalibratorStandard to compute
+                                         # PE = area / SPEArea + SPEShift
    UseStartTime:   false # start and peak times each in its own data member
    reco_man:       @local::standard_preco_manager
    HitAlgoPset:    @local::icarus_opreco_hit_slidingwindow_201910
