@@ -52,7 +52,7 @@ TPC_CalibrationTags_Jul2025: {
 # Include Run 4 in calibrations
 TPC_CalibrationTags_Oct2025: {
 
-  tpc_channelstatus_data: "v3r4"
+  tpc_channelstatus_data: "v4r0"
   tpc_elifetime_data: "v3r1"
   tpc_dqdxcalibration_allplanes_data: "v1r1"
   tpc_yz_correction_allplanes_data: "v2r1"
