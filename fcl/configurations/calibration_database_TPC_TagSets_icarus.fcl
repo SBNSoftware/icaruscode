@@ -37,7 +37,7 @@ TPC_CalibrationTags_Jan2025: {
 
 }
 
-## TPC_CalibrationTags_Jul2024 
+## TPC_CalibrationTags_Jul2025 
 # Update to 2D deconv tags. Change TPC equalization to be per-plane
 TPC_CalibrationTags_Jul2025: {
 
@@ -45,6 +45,17 @@ TPC_CalibrationTags_Jul2025: {
   tpc_elifetime_data: "v3r0"
   tpc_dqdxcalibration_allplanes_data: "v1r0"
   tpc_yz_correction_allplanes_data: "v2r0"
+
+}
+
+## TPC_CalibrationTags_Oct2025 
+# Include Run 4 in calibrations
+TPC_CalibrationTags_Oct2025: {
+
+  tpc_channelstatus_data: "v4r0"
+  tpc_elifetime_data: "v3r1"
+  tpc_dqdxcalibration_allplanes_data: "v1r1"
+  tpc_yz_correction_allplanes_data: "v2r1"
 
 }
 
