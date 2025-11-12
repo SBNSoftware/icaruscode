@@ -1,0 +1,3 @@
+#include "simulation_genie_icarus_bnb_overlays_volDetEnclosure.fcl"
+
+physics.producers.generator.FiducialCut: "mbox: -378.49,-191.86,-904.950652270838,378.49,144.96,904.950652270838"
