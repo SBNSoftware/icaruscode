@@ -28,16 +28,6 @@ physics: {
          PandoraLabel: "pandoraGausCryoW"
       }
       
-      #NuGraphAnaTaggedSliceCryoE: { 
-      #   module_type:  "ICARUSNuGraphAnalyzer" 
-      #   HitLabel:     "nuslhitsCryoE"
-      #   NuGraphLabel: "NuGraphCryoE"
-      #}
-      #NuGraphAnaTaggedSliceCryoW: { 
-      #   module_type:  "ICARUSNuGraphAnalyzer" 
-      #   HitLabel:     "nuslhitsCryoW"
-      #   NuGraphLabel: "NuGraphCryoW"
-      #}
    }
 
    reco:       []

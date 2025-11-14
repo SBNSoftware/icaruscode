@@ -11,8 +11,8 @@ physics.reco: [
                 caloskimCalorimetryCryoE, 
                 caloskimCalorimetryCryoW,
                 mcassociationsGausCryoE, 
-                mcassociationsGausCryoW
-                #mcreco
+                mcassociationsGausCryoW,
+                mcreco
               ]
 
 physics.producers.cluster3DCryoW.Hit3DBuilderAlg.HitFinderTagVec: ["gaushit1dTPCWW", "gaushit1dTPCWE"]

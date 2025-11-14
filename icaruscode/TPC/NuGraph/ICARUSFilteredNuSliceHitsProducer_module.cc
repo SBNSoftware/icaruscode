@@ -1,8 +1,8 @@
 /**
- * @file icaruscode/TPC/NuGraph/ICARUSFilteredNuSliceHitsProducer_module.cc
- * @brief Implementation of `ICARUSFilteredNuSliceHitsProducer` _art_ module.
- * @author Riccardo Triozzi
- * @date September 9, 2025
+ * @file    icaruscode/TPC/NuGraph/ICARUSFilteredNuSliceHitsProducer_module.cc
+ * @brief   Implementation of `ICARUSFilteredNuSliceHitsProducer` _art_ module.
+ * @author  Riccardo Triozzi
+ * @date    September 9, 2025
  */
 
 #include "art/Framework/Core/EDProducer.h"
