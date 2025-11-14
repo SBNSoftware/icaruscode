@@ -1,5 +1,5 @@
 #include "messages_icarus.fcl"
-#include "prodcorsika_proton_intime_icarus_bnb_sce_on.fcl"
+#include "prodcorsika_bnb_genie_protononly_icarus.fcl"
 
 # non-interactive output settings, but keep them verbose
 services.message: @local::icarus_message_services_prod_debug
@@ -19,7 +19,7 @@ physics.producers.generator.FluxSearchPaths: "/cvmfs/sbn.osgstorage.org/pnfs/fna
 
 # Override CORSIKA flux file path to be able to access them without a proxy
 physics.producers.generator.ShowerInputFiles:[
-	"/cvmfs/sbn.osgstorage.org/pnfs/fnal.gov/usr/sbn/persistent/stash/physics/cosmics/Fermilab/CORSIKA/standard/v01_00/p_*.db"
+    "/cvmfs/sbn.osgstorage.org/pnfs/fnal.gov/usr/sbn/persistent/stash/physics/cosmics/Fermilab/CORSIKA/standard/v01_00/p_*.db"
 ]
 #  "/cvmfs/sbn.osgstorage.org/pnfs/fnal.gov/usr/sbn/persistent/stash/physics/cosmics/Fermilab/CORSIKA/standard/p_*.db",
 #  "/cvmfs/sbn.osgstorage.org/pnfs/fnal.gov/usr/sbn/persistent/stash/physics/cosmics/Fermilab/CORSIKA/standard/He_showers_*.db",
