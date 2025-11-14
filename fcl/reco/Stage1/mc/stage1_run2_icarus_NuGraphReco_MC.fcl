@@ -75,11 +75,15 @@ outputs.out1.outputCommands: [
 ]
 
 # Redefine TPCPMTBarycenterMatch producers with MC parameters and with the different Pandora label
+# Also, relax a bit the allowed charge-to-light time overlap
 physics.producers.tpcpmtbarycentermatchCryoE: @local::mc_tpcpmtbarycentermatchproducer_east
 physics.producers.tpcpmtbarycentermatchCryoW: @local::mc_tpcpmtbarycentermatchproducer_west
 
 physics.producers.tpcpmtbarycentermatchCryoE.PandoraLabel: "pandoraGausNuGraphReco"
 physics.producers.tpcpmtbarycentermatchCryoW.PandoraLabel: "pandoraGausNuGraphReco"
+
+# physics.producers.tpcpmtbarycentermatchCryoE.TimeRangeMargin: 150.
+# physics.producers.tpcpmtbarycentermatchCryoW.TimeRangeMargin: 150.
 
 # Turn on truth-info for track skimmer 
 physics.analyzers.caloskimE.G4producer:         "largeant"

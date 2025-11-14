@@ -55,10 +55,15 @@ public:
 private:
   // Declare member data here.
   TTree *_treeHit, *_treeEvt;
+
+  // hit information
   int _run, _subrun, _event, _id, _wire, _plane, _tpc, _cryo;
+
+  // NuGraph2 information
   float _x_filter, _MIP, _HIP, _shower, _michel, _diffuse, _time;
-  int _islc, _icluster, _ipfp;
-  // float _pfptrackscore;
+
+  // Pandora information
+  int _islc, _icluster, _ipfp, _pdg_hit;
   float _ipfpslc, _vtx_x, _vtx_y, _vtx_z, _pdg;
   std::string fHitLabel, fPandoraLabel;
 };
@@ -89,7 +94,7 @@ ICARUSPandoraHitDumpAnalyzer::ICARUSPandoraHitDumpAnalyzer(fhicl::ParameterSet c
   _treeHit->Branch("islc", &_islc, "islc/I");
   _treeHit->Branch("icluster", &_icluster, "icluster/I");    
   _treeHit->Branch("ipfp", &_ipfp, "ipfp/I");    
-  // _treeHit->Branch("pfptrackscore", &_pfptrackscore, "pfptrackscore/F");   
+  _treeHit->Branch("pfppdg", &_pdg_hit, "pfppdg/I");    
   _treeEvt = tfs->make<TTree>("PandoraPFPOutput", "PandoraPFPOutput");
   _treeEvt->Branch("run", &_run, "run/I");
   _treeEvt->Branch("subrun", &_subrun, "subrun/I");
@@ -103,18 +108,15 @@ ICARUSPandoraHitDumpAnalyzer::ICARUSPandoraHitDumpAnalyzer(fhicl::ParameterSet c
 
 void ICARUSPandoraHitDumpAnalyzer::analyze(art::Event const& e)
 {
-
-  // get hits from the tagged slice
   art::Handle<std::vector<recob::Hit>> hitListHandle;
   e.getByLabel(fHitLabel, hitListHandle);
   std::cout << hitListHandle->size() << std::endl;
 
-  // get slices
+  // map hits to Pandora slices
   art::Handle<std::vector<recob::Slice>> sliceHandle;
   e.getByLabel(fPandoraLabel, sliceHandle);
   art::FindManyP<recob::Hit> sliceAssoc(sliceHandle, e, fPandoraLabel);
 
-  // map hits to slices
   std::map<unsigned int, int> hitToSliceID;
   for (size_t islc = 0; islc < sliceHandle->size(); ++islc) {
     art::Ptr<recob::Slice> slice(sliceHandle, islc);
@@ -123,12 +125,11 @@ void ICARUSPandoraHitDumpAnalyzer::analyze(art::Event const& e)
       hitToSliceID[h.key()] = slice->ID();
   }
 
-  // get clusters
+  // map hits to Pandora clusters
   art::Handle<std::vector<recob::Cluster>> clusterHandle;
   e.getByLabel(fPandoraLabel, clusterHandle);
   art::FindManyP<recob::Hit> clusterAssoc(clusterHandle, e, fPandoraLabel);
 
-  // map hits to clusters
   std::map<unsigned int, int> hitToClusterID;
   for (size_t iclus = 0; iclus < clusterHandle->size(); ++iclus) {
     art::Ptr<recob::Cluster> cluster(clusterHandle, iclus);
@@ -138,59 +139,29 @@ void ICARUSPandoraHitDumpAnalyzer::analyze(art::Event const& e)
       hitToClusterID[h.key()] = cluster.key();
   }
 
-  // get PFPs
+  // Pandora PFPs
   art::Handle<std::vector<recob::PFParticle>> pfpHandle;
   e.getByLabel(fPandoraLabel, pfpHandle);
   art::FindManyP<recob::PFParticle> pfpAssoc(clusterHandle, e, fPandoraLabel);
   art::FindManyP<larpandoraobj::PFParticleMetadata> pfpMetadataAssoc(pfpHandle, e, fPandoraLabel);
 
-  // get PFP IDs
   std::map<unsigned int, int> pfpIDMap;
   for (size_t ipfp = 0; ipfp < pfpHandle->size(); ++ipfp) {
     art::Ptr<recob::PFParticle> pfp(pfpHandle, ipfp);
     pfpIDMap[pfp.key()] = ipfp; 
   }
 
-  // map clusters to PFPs and their properties
+  // Pandora clusters
   std::map<unsigned int, int> clusterToPFPID;
-  // std::map<unsigned int, float>  clusterToPFPTrackScore;
+
   for (size_t iclus = 0; iclus < clusterHandle->size(); ++iclus) {
     art::Ptr<recob::Cluster> cluster(clusterHandle, iclus);
     auto const& pfps = pfpAssoc.at(iclus);
 
-    // map cluster ID to PFP ID
     auto it = pfpIDMap.find(pfps.front().key());
     if (it != pfpIDMap.end()) 
       clusterToPFPID[cluster.key()] = it->second;
-    
-    // // map cluster ID to PFP property
-    // auto const& metadata = pfpMetadataAssoc.at(pfps.front().key());
-    // float PFPTrackScore = -1.;
-    // for (size_t imd = 0; imd < metadata.size(); ++imd) {
-    //   auto const& properties = metadata.at(imd)->GetPropertiesMap();
-    //   auto itmd = properties.find("TrackScore");
-    //   if (itmd != properties.end()) {
-    //       PFPTrackScore = itmd->second;
-    //       break;
-    //   }
-    // }
-    // clusterToPFPTrackScore[cluster.key()] = PFPTrackScore;
-
   }
-
-  // print PFP metadata
-  // art::FindManyP<larpandoraobj::PFParticleMetadata> pfpMetdataAssoc(pfpHandle, e, fPandoraLabel);
-  // for (size_t ipfp = 0; ipfp < pfpHandle->size(); ++ipfp) {
-  //   art::Ptr<recob::PFParticle> pfp(pfpHandle, ipfp);
-  //   auto const& metadata = pfpMetdataAssoc.at(ipfp);
-  //   for (size_t imd = 0; imd < metadata.size(); ++imd) {
-  //     auto const& properties = metadata.at(imd)->GetPropertiesMap();
-  //     dump the available properties
-  //     for (auto const &prop : properties) {
-  //         std::cout << prop.first << "\t" << prop.second << std::endl;
-  //     }
-  //   }
-  // }
 
   // fill PFP-level tree
   for (size_t ihit = 0; ihit < hitListHandle->size(); ihit++) {
@@ -209,6 +180,7 @@ void ICARUSPandoraHitDumpAnalyzer::analyze(art::Event const& e)
     _cryo  = hit->WireID().Cryostat;
     _time  = hit->PeakTime();
 
+    // map to Pandora information
     auto itSlice = hitToSliceID.find(hit.key());
     _islc = (itSlice != hitToSliceID.end()) ? itSlice->second : -1;
 
@@ -216,21 +188,17 @@ void ICARUSPandoraHitDumpAnalyzer::analyze(art::Event const& e)
     _icluster = (itCluster != hitToClusterID.end()) ? itCluster->second : -1;
 
     _ipfp = -1;
-    // _pfptrackscore = -1;
+    _pdg_hit = -1;
+
     if (_icluster > -1) {
-      // art::Ptr<recob::Cluster> cluster(clusterHandle, _icluster);
-
-      // PFP ID
-      // auto itPFP = clusterToPFPID.find(cluster.key());
       auto itPFP = clusterToPFPID.find(_icluster);
-      if (itPFP != clusterToPFPID.end()) 
+      if (itPFP != clusterToPFPID.end()) {
         _ipfp = itPFP->second; 
-
-      // PFP track score
-      // auto itTS = clusterToPFPTrackScore.find(cluster.key());
-      // auto itTS = clusterToPFPTrackScore.find(_icluster);
-      // if (itTS != clusterToPFPTrackScore.end()) 
-      //   _pfptrackscore = itTS->second; 
+        if (_ipfp > -1 && _ipfp < (int)pfpHandle->size()) {
+          art::Ptr<recob::PFParticle> pfp(pfpHandle, _ipfp);
+          _pdg_hit = pfp->PdgCode();
+        }
+      }
     }
 
     _treeHit->Fill();
@@ -248,8 +216,6 @@ void ICARUSPandoraHitDumpAnalyzer::analyze(art::Event const& e)
       art::Ptr<recob::Slice> slc = slcList[0];
       _ipfpslc = slc->ID();
     }
-    // art::Ptr<recob::Slice> slc = slcToPFPAssoc.at(pfp.key());
-    // _ipfpslc = slc->ID();
     
     // vertex
     std::vector<art::Ptr<recob::Vertex>> vtxList = vtxToPFPAssoc.at(pfp.key());
