@@ -18,8 +18,8 @@ icarus_basicpandora:
     ShouldRunNeutrinoRecoOption:                 false
     ShouldRunCosmicRecoOption:                   false
     ShouldPerformSliceId:                        false
-    CollectHitPredictions:                       false
-    UseHitPredictions:                           false
+    # CollectHitPredictions:                       false
+    # UseHitPredictions:                           false
     PrintOverallRecoStatus:                      false
     HitCollectionTool:                           { tool_type: LArPandoraHitCollectionToolICARUS }
 }

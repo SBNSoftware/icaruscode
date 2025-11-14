@@ -103,14 +103,14 @@ icarus_stage1_producers:
   pandoraGausNuGraphRecoCryoE: {
     @table::icarus_pandora
     HitFinderModuleLabel:   "ngfilteredhitsCryoE"
-    CollectHitPredictions:  true
-    UseHitPredictions:      true
+    # CollectHitPredictions:  true
+    # UseHitPredictions:      true
   }
   pandoraGausNuGraphRecoCryoW: {
     @table::icarus_pandora
     HitFinderModuleLabel:   "ngfilteredhitsCryoW"
-    CollectHitPredictions:  true
-    UseHitPredictions:      true
+    # CollectHitPredictions:  true
+    # UseHitPredictions:      true
   }
 }
 
