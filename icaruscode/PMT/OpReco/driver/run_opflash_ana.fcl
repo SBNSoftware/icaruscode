@@ -1,0 +1,27 @@
+#include "services_common_icarus.fcl"
+#include "channelmapping_icarus.fcl"
+#include "icarus_opana_modules.fcl"
+
+process_name: flashana
+
+services:
+{
+  @table::icarus_art_services    # from services_common_icarus.fcl
+  @table::icarus_basic_services  # from services_basic_icarus.fcl
+  @table::icarus_geometry_services
+  DetectorClocksService:       @local::icarus_detectorclocks
+  IICARUSChannelMap:           @local::icarus_channelmappinggservice
+  TFileService: { fileName: "supplemental-%ifb-%p.root" }
+}
+
+physics:
+{
+    analyzers:
+    {
+      opflash:     @local::ICARUSOpFlashAna
+    }
+
+    my_analyzers: [ opflash ]
+    
+    end_paths: [ my_analyzers ]
+}
