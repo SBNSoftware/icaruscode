@@ -66,7 +66,6 @@ public:
     fhicl::Sequence<art::InputTag> FlashLabels{
         Name("FlashLabels"),
         Comment("Tags for the recob::Flash data products")};
-
   };
 
   using Parameters = art::EDAnalyzer::Table<Config>;
@@ -88,7 +87,7 @@ public:
   int getSideByChannel(const int channel);
 
   /// Return PMT position from channel_id
-  std::array<double,3> getChannelXYZ(const int channel);
+  std::array<double, 3> getChannelXYZ(const int channel);
 
   /// Process OpHits in the absence of flashes
   void processOpHits(art::Event const &e, unsigned int cryo);
@@ -105,11 +104,9 @@ public:
                           std::vector<float> &hit_peak_time,
                           std::vector<double> &hit_area,
                           std::vector<double> &hit_pe,
-                          std::vector<double> &hit_amplitude
-                         );
+                          std::vector<double> &hit_amplitude);
 
 private:
-
   //----------
   // Input parameters
   //
@@ -119,8 +116,8 @@ private:
   //----------
   // Output trees
 
-  std::vector<TTree*> fOpFlashTrees; // flash + matched hits
-  std::vector<TTree*> fOpHitTrees;   // unmatched hits
+  std::vector<TTree *> fOpFlashTrees; // flash + matched hits
+  std::vector<TTree *> fOpHitTrees;   // unmatched hits
 
   //----------------
   // Output variables
@@ -142,7 +139,7 @@ private:
   float m_flash_width_y;
   float m_flash_width_z;
   int m_flash_nhits;
-  std::vector<int>   m_channel_id;
+  std::vector<int> m_channel_id;
   std::vector<double> m_hit_x;
   std::vector<double> m_hit_y;
   std::vector<double> m_hit_z;
@@ -171,9 +168,8 @@ private:
   //----------
   // Support variables/products
 
-  geo::GeometryCore const* fGeom;
-  geo::WireReadoutGeom const* fChannelMapAlg;
-
+  geo::GeometryCore const *fGeom;
+  geo::WireReadoutGeom const *fChannelMapAlg;
 };
 
 // ----------------------------------------------------------------------------
@@ -182,16 +178,17 @@ opana::ICARUSOpFlashAna::ICARUSOpFlashAna(Parameters const &config)
     : EDAnalyzer(config),
       fOpHitLabels(config().OpHitLabels()),
       fFlashLabels(config().FlashLabels()),
-      fGeom(lar::providerFrom<geo::Geometry>()), 
+      fGeom(lar::providerFrom<geo::Geometry>()),
       fChannelMapAlg(&art::ServiceHandle<geo::WireReadout const>()->Get())
-{}
+{
+}
 
 // ----------------------------------------------------------------------------
 
-std::array<double,3> opana::ICARUSOpFlashAna::getChannelXYZ(const int channel)
+std::array<double, 3> opana::ICARUSOpFlashAna::getChannelXYZ(const int channel)
 {
   auto const PMTxyz = fChannelMapAlg->OpDetGeoFromOpChannel(channel).GetCenter();
-  return std::array<double,3>{ PMTxyz.X(), PMTxyz.Y(), PMTxyz.Z() };
+  return std::array<double, 3>{PMTxyz.X(), PMTxyz.Y(), PMTxyz.Z()};
 }
 
 // ----------------------------------------------------------------------------
@@ -205,24 +202,23 @@ void opana::ICARUSOpFlashAna::beginJob()
   for (auto const &label : fOpHitLabels)
   {
     std::string name = label.label() + "_ttree";
-    std::string info = "TTree for unmateched recob::OpHit objects with label " + label.label()
-;
+    std::string info = "TTree for unmatched recob::OpHit with label " + label.label();
     TTree *ttree = tfs->make<TTree>(name.c_str(), info.c_str());
     ttree->Branch("run", &m_run, "run/I");
     ttree->Branch("event", &m_event, "event/I");
     ttree->Branch("timestamp", &m_timestamp, "timestamp/I");
-    ttree->Branch("channel_id", &m_channel_id, "channel_id/I");
-    ttree->Branch("integral", &m_integral, "integral/F");
-    ttree->Branch("amplitude", &m_amplitude, "amplitude/F");
+    ttree->Branch("channel_id", &m_channel, "channel_id/I");
+    ttree->Branch("integral", &m_integral, "integral/D");
+    ttree->Branch("amplitude", &m_amplitude, "amplitude/D");
     ttree->Branch("start_time", &m_start_time, "start_time/F");
     ttree->Branch("peak_time", &m_peak_time, "peak_time/F");
     ttree->Branch("rise_time", &m_rise_time, "rise_time/F");
     ttree->Branch("abs_start_time", &m_abs_start_time, "abs_start_time/F");
-    ttree->Branch("pe", &m_pe, "pe/F");
+    ttree->Branch("pe", &m_pe, "pe/D");
     ttree->Branch("width", &m_width, "width/F");
-    ttree->Branch("x", &m_x, "x/F");
-    ttree->Branch("y", &m_y, "y/F");
-    ttree->Branch("z", &m_z, "z/F");
+    ttree->Branch("x", &m_x, "x/D");
+    ttree->Branch("y", &m_y, "y/D");
+    ttree->Branch("z", &m_z, "z/D");
     ttree->Branch("fast_to_total", &m_fast_to_total, "fast_to_total/F");
 
     fOpHitTrees.push_back(ttree);
@@ -252,7 +248,7 @@ void opana::ICARUSOpFlashAna::beginJob()
       ttree->Branch("flash_z", &m_flash_z, "flash_z/F");
       ttree->Branch("flash_width_y", &m_flash_width_y, "flash_width_y/F");
       ttree->Branch("flash_width_z", &m_flash_width_z, "flash_width_z/F");
-      ttree->Branch("flash_nhits",&m_flash_nhits, "flash_nhits/I");
+      ttree->Branch("flash_nhits", &m_flash_nhits, "flash_nhits/I");
       ttree->Branch("channel_id", &m_channel_id);
       ttree->Branch("hit_x", &m_hit_x);
       ttree->Branch("hit_y", &m_hit_y);
@@ -263,7 +259,7 @@ void opana::ICARUSOpFlashAna::beginJob()
       ttree->Branch("hit_area", &m_hit_area);
       ttree->Branch("hit_pe", &m_hit_pe);
       ttree->Branch("hit_amplitude", &m_hit_amplitude);
-  
+
       fOpFlashTrees.push_back(ttree);
     }
   }
@@ -300,76 +296,21 @@ int opana::ICARUSOpFlashAna::getSideByChannel(const int channel)
 }
 
 // ----------------------------------------------------------------------------
-/*
-void opana::ICARUSOpFlashAna::processOpHits(art::Event const &e, unsigned int cryo)
-{
-
-  // if no OpHits have been selected at all (and no flashes as well!)
-  if (fOpHitLabels.empty())
-  {
-    mf::LogError("ICARUSFlashAssAna") << "No recob::OpHit labels selected.";
-    return;
-  }
-
-  for (std::size_t iOpHitLabel = 0; iOpHitLabel < fOpHitLabels.size(); iOpHitLabel++)
-  {
-
-    auto const label = fOpHitLabels[iOpHitLabel];
-    auto const &ophits = e.getProduct<std::vector<recob::OpHit>>(label);
-
-    // we want our ophits to be valid and not empty
-    if (ophits.empty())
-    {
-      mf::LogError("ICARUSFlashAssAna") << "Invalid recob::OpHit with label '" << label.encode() << "'";
-      continue;
-    }
-
-    for (auto const &ophit : ophits)
-    {
-
-      const int channel_id = ophit.OpChannel();
-      if (getCryostatByChannel(channel_id) != cryo)
-      {
-        continue;
-      }
-
-      m_channel_id = channel_id;
-      m_integral = ophit.Area();       // in ADC x tick
-      m_amplitude = ophit.Amplitude(); // in ADC
-      m_width = ophit.Width();
-      m_pe = ophit.PE();
-      m_fast_to_total = ophit.FastToTotal();
-
-      // save times: start, peak, rise
-      // rise is relative to start
-      m_start_time = ophit.StartTime();
-      m_peak_time = ophit.PeakTime();
-      m_rise_time = ophit.RiseTime();
-      m_start_time_rwm = getRWMRelativeTime(channel_id, m_start_time);
-      m_peak_time_rwm = getRWMRelativeTime(channel_id, m_peak_time);
-      m_abs_start_time = ophit.PeakTimeAbs() + (m_start_time - m_peak_time);
-
-      fOpHitTrees[iOpHitLabel]->Fill();
-    }
-  }
-}
-*/
-// ----------------------------------------------------------------------------
 
 void opana::ICARUSOpFlashAna::processOpHitsFlash(std::vector<art::Ptr<recob::OpHit>> const &ophits,
-                                                  int &multiplicity_left, int &multiplicity_right,
-						  std::vector<int> &channel_id,
-                                                  std::vector<double> &hit_x,
-                                                  std::vector<double> &hit_y,
-                                                  std::vector<double> &hit_z,
-                                                  std::vector<float> &hit_start_time,
-                                                  std::vector<float> &hit_rise_time,
-                                                  std::vector<float> &hit_peak_time,
-                                                  std::vector<double> &hit_area,
-                                                  std::vector<double> &hit_pe,
-                                                  std::vector<double> &hit_amplitude)
+                                                 int &multiplicity_left, int &multiplicity_right,
+                                                 std::vector<int> &channel_id,
+                                                 std::vector<double> &hit_x,
+                                                 std::vector<double> &hit_y,
+                                                 std::vector<double> &hit_z,
+                                                 std::vector<float> &hit_start_time,
+                                                 std::vector<float> &hit_rise_time,
+                                                 std::vector<float> &hit_peak_time,
+                                                 std::vector<double> &hit_area,
+                                                 std::vector<double> &hit_pe,
+                                                 std::vector<double> &hit_amplitude)
 {
- 
+
   std::unordered_map<int, float> sumpe_map;
   for (auto const ophit : ophits)
   {
@@ -380,17 +321,17 @@ void opana::ICARUSOpFlashAna::processOpHitsFlash(std::vector<art::Ptr<recob::OpH
     hit_x.push_back(pos[0]);
     hit_y.push_back(pos[1]);
     hit_z.push_back(pos[2]);
-    
+
     // save times: start, peak, rise
     // rise is relative to start, make it absolute
     hit_start_time.push_back(ophit->StartTime());
     hit_peak_time.push_back(ophit->PeakTime());
     hit_rise_time.push_back(ophit->StartTime() + ophit->RiseTime());
-   
-    hit_area.push_back(ophit->Area());  // in ADC x tick
+
+    hit_area.push_back(ophit->Area());           // in ADC x tick
     hit_amplitude.push_back(ophit->Amplitude()); // in ADC
     hit_pe.push_back(ophit->PE());
-    
+
     sumpe_map[ch] += ophit->PE();
   }
 
@@ -412,6 +353,9 @@ void opana::ICARUSOpFlashAna::analyze(art::Event const &e)
   m_run = e.id().run();
   m_event = e.id().event();
   m_timestamp = e.time().timeHigh(); // precision to the second
+    
+  // hold the cryostat information
+  std::vector<unsigned int> cids;
 
   // -----
   // FLASHES/OPHITS INFO
@@ -419,8 +363,6 @@ void opana::ICARUSOpFlashAna::analyze(art::Event const &e)
 
   if (!fFlashLabels.empty())
   {
-    // hold the cryostat information
-    std::vector<unsigned int> cids;
 
     for (std::size_t iFlashLabel = 0; iFlashLabel < fFlashLabels.size(); iFlashLabel++)
     {
@@ -454,58 +396,116 @@ void opana::ICARUSOpFlashAna::analyze(art::Event const &e)
           m_flash_id = idx;
           m_flash_time = flash.Time();
           m_sum_pe = flash.TotalPE();
-          m_flash_z = flash.ZCenter();  
+          m_flash_z = flash.ZCenter();
           m_flash_y = flash.YCenter();
           m_flash_width_y = flash.YWidth();
           m_flash_width_z = flash.ZWidth();
 
           auto const &ophits = ophitsPtr.at(idx);
 
-          // we keep track of the cryistats where the flashes are found;
+          // we keep track of the cryostats where the flashes are found;
           geo::CryostatID::CryostatID_t cid = getCryostatByChannel(ophits.front()->OpChannel());
           auto const found = std::find(cids.begin(), cids.end(), cid);
-          if (found != cids.end()) cids.push_back(cid);
-          
+          if (found == cids.end()) //if seen for the first time
+            cids.push_back(cid); //save it!
+
           // also store the matched ophits in the flash
           processOpHitsFlash(ophits,
                              m_multiplicity_left, m_multiplicity_right,
                              m_channel_id, m_hit_x, m_hit_y, m_hit_z,
-                             m_hit_start_time, m_hit_rise_time, m_hit_peak_time, 
-                             m_hit_area, m_hit_pe, m_hit_amplitude
-                            );
+                             m_hit_start_time, m_hit_rise_time, m_hit_peak_time,
+                             m_hit_area, m_hit_pe, m_hit_amplitude);
 
           m_multiplicity = m_multiplicity_left + m_multiplicity_right;
-	  m_flash_nhits = m_channel_id.size();
+          m_flash_nhits = m_channel_id.size();
+
+          mf::LogInfo("ICARUSOpFlashAna") << "Cryo " << cid << ", flashID " << m_flash_id 
+					   << ", nophits " << m_flash_nhits;
 
           fOpFlashTrees[iFlashLabel]->Fill();
           idx++;
         } // flash loop
-      } // if flash present
-    } // flash products
+      }
+    } // both flash products
+    
+    // -----
+    // UNMATCHED OPHITS INFO
+    // Now we take care of the hits that didn't match with any flash.
+    // But only from cryostats that had a flash --> if no flashes at all, don't save anything
 
-/*
-    // If the flashes did not cover all three cryostats..
-    // ..well, we save the ophits on what is missing
-    for (unsigned int cid = 0; cid < fGeom->Ncryostats(); cid++)
+    if (fOpHitLabels.empty())
+    {
+      mf::LogError("ICARUSOpFlashAna") << "No recob::OpHit labels selected.";
+      return;
+    }
+
+    for (std::size_t iOpHitLabel = 0; iOpHitLabel < fOpHitLabels.size(); iOpHitLabel++)
     {
 
-      auto const found = std::find(cids.begin(), cids.end(), cid);
-      if (found == cids.end())
+      auto const label = fOpHitLabels[iOpHitLabel];
+      auto const &ophits_handle = e.getValidHandle<std::vector<recob::OpHit>>(label);
+      auto const &ophits = *ophits_handle;
+
+      // we want our ophits to be valid and not empty
+      if (ophits.empty())
       {
-        processOpHits(e, cid);
+        mf::LogError("ICARUSOpFlashAna") << "Invalid recob::OpHit with label '" << label.encode() << "'";
+        continue;
       }
-    }
- */
+
+      unsigned int matched = 0;
+      unsigned int unmatched = 0;
+
+      // for the cryos that saw flashes
+      for (auto cid : cids)
+      {
+        auto const assn_label = fFlashLabels[cid];
+        art::FindOneP<recob::OpFlash> flashPtr(ophits_handle, e, assn_label);
+
+        // loop over this hits --> if the single hit has an associated flash, skip it
+        for (std::size_t idx = 0; idx < ophits.size(); ++idx)
+        {
+          art::Ptr<recob::OpFlash> flash_ptr = flashPtr.at(idx);
+   
+          // Check if this OpHit has an associated OpFlash
+          if (flash_ptr.isNull()) // if unmatched, store it
+          {
+	    auto const &ophit = ophits[idx];
+  
+            m_channel = ophit.OpChannel();
+    	    
+            auto pos = getChannelXYZ(ophit.OpChannel());
+            m_x = pos[0];
+            m_y = pos[1];
+            m_z = pos[2];
+            m_integral = ophit.Area();
+            m_amplitude = ophit.Amplitude();
+            m_start_time = ophit.StartTime();
+            m_peak_time = ophit.PeakTime();
+            m_rise_time = ophit.StartTime() + ophit.RiseTime();
+            m_width = ophit.Width();
+            m_abs_start_time = ophit.PeakTimeAbs() + (m_start_time - m_peak_time);
+            m_pe = ophit.PE();
+            m_fast_to_total = ophit.FastToTotal();
+
+            fOpHitTrees[iOpHitLabel]->Fill();
+            unmatched++;
+          } 
+          else { //if matched, already stored with its flash
+	     matched++;
+          }
+        } // for each ophit
+      } // for each cryo/flashlabel
+          
+      mf::LogInfo("ICARUSOpFlashAna")
+              << "Total flash-matched ophits: " << matched << "\n"
+              << "Total unmatched ophits: " << unmatched;
+
+    } // for ophit product
   }
   else
   {
     mf::LogError("ICARUSFlashAssAna") << "No recob::OpFlash labels selected";
-
- /*   // we save the ophits anyways even in absence of flashes
-    for (unsigned int cid = 0; cid < fGeom->Ncryostats(); cid++)
-    {
-      processOpHits(e, cid);
-    }*/
   }
 }
 
