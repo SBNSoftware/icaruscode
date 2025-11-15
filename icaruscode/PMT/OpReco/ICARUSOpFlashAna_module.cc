@@ -66,6 +66,10 @@ public:
     fhicl::Sequence<art::InputTag> FlashLabels{
         Name("FlashLabels"),
         Comment("Tags for the recob::Flash data products")};
+
+    fhicl::Atom<float> OpHitThresholdADC{
+        Name("OpHitThresholdADC"),
+        Comment("Threshold in ADC for an OpHit to be considered")};
   };
 
   using Parameters = art::EDAnalyzer::Table<Config>;
@@ -170,6 +174,7 @@ private:
 
   geo::GeometryCore const *fGeom;
   geo::WireReadoutGeom const *fChannelMapAlg;
+  float const fOpHitThresholdADC;
 };
 
 // ----------------------------------------------------------------------------
@@ -179,7 +184,8 @@ opana::ICARUSOpFlashAna::ICARUSOpFlashAna(Parameters const &config)
       fOpHitLabels(config().OpHitLabels()),
       fFlashLabels(config().FlashLabels()),
       fGeom(lar::providerFrom<geo::Geometry>()),
-      fChannelMapAlg(&art::ServiceHandle<geo::WireReadout const>()->Get())
+      fChannelMapAlg(&art::ServiceHandle<geo::WireReadout const>()->Get()),
+      fOpHitThresholdADC(config().OpHitThresholdADC())
 {
 }
 
@@ -314,6 +320,10 @@ void opana::ICARUSOpFlashAna::processOpHitsFlash(std::vector<art::Ptr<recob::OpH
   std::unordered_map<int, float> sumpe_map;
   for (auto const ophit : ophits)
   {
+
+    //check if above threshold to be printed
+    if( ophit->Amplitude() < fOpHitThresholdADC ) continue;
+
     const int ch = ophit->OpChannel();
     channel_id.push_back(ch);
 
@@ -353,7 +363,7 @@ void opana::ICARUSOpFlashAna::analyze(art::Event const &e)
   m_run = e.id().run();
   m_event = e.id().event();
   m_timestamp = e.time().timeHigh(); // precision to the second
-    
+
   // hold the cryostat information
   std::vector<unsigned int> cids;
 
@@ -406,8 +416,8 @@ void opana::ICARUSOpFlashAna::analyze(art::Event const &e)
           // we keep track of the cryostats where the flashes are found;
           geo::CryostatID::CryostatID_t cid = getCryostatByChannel(ophits.front()->OpChannel());
           auto const found = std::find(cids.begin(), cids.end(), cid);
-          if (found == cids.end()) //if seen for the first time
-            cids.push_back(cid); //save it!
+          if (found == cids.end()) // if seen for the first time
+            cids.push_back(cid);   // save it!
 
           // also store the matched ophits in the flash
           processOpHitsFlash(ophits,
@@ -419,15 +429,15 @@ void opana::ICARUSOpFlashAna::analyze(art::Event const &e)
           m_multiplicity = m_multiplicity_left + m_multiplicity_right;
           m_flash_nhits = m_channel_id.size();
 
-          mf::LogInfo("ICARUSOpFlashAna") << "Cryo " << cid << ", flashID " << m_flash_id 
-					   << ", nophits " << m_flash_nhits;
+          mf::LogInfo("ICARUSOpFlashAna") << "Cryo " << cid << ", flashID " << m_flash_id
+                                          << ", nophits " << m_flash_nhits;
 
           fOpFlashTrees[iFlashLabel]->Fill();
           idx++;
         } // flash loop
       }
     } // both flash products
-    
+
     // -----
     // UNMATCHED OPHITS INFO
     // Now we take care of the hits that didn't match with any flash.
@@ -466,14 +476,17 @@ void opana::ICARUSOpFlashAna::analyze(art::Event const &e)
         for (std::size_t idx = 0; idx < ophits.size(); ++idx)
         {
           art::Ptr<recob::OpFlash> flash_ptr = flashPtr.at(idx);
-   
+
           // Check if this OpHit has an associated OpFlash
           if (flash_ptr.isNull()) // if unmatched, store it
           {
-	    auto const &ophit = ophits[idx];
-  
+            auto const &ophit = ophits[idx];
+
+            //check if above threshold to be printed
+            if( ophit.Amplitude() < fOpHitThresholdADC ) continue;
+
             m_channel = ophit.OpChannel();
-    	    
+
             auto pos = getChannelXYZ(ophit.OpChannel());
             m_x = pos[0];
             m_y = pos[1];
@@ -490,16 +503,17 @@ void opana::ICARUSOpFlashAna::analyze(art::Event const &e)
 
             fOpHitTrees[iOpHitLabel]->Fill();
             unmatched++;
-          } 
-          else { //if matched, already stored with its flash
-	     matched++;
+          }
+          else
+          { // if matched, already stored with its flash
+            matched++;
           }
         } // for each ophit
       } // for each cryo/flashlabel
-          
+
       mf::LogInfo("ICARUSOpFlashAna")
-              << "Total flash-matched ophits: " << matched << "\n"
-              << "Total unmatched ophits: " << unmatched;
+          << "Total flash-matched ophits: " << matched << "\n"
+          << "Total unmatched ophits: " << unmatched;
 
     } // for ophit product
   }
