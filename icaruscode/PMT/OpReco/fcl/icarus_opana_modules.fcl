@@ -86,6 +86,7 @@ ICARUSOpFlashAna: {
     module_type: "ICARUSOpFlashAna"
     OpHitLabels: ["ophit"]
     FlashLabels: ["opflashCryoE", "opflashCryoW"]
+    OpHitThresholdADC: 0 # ADC
 }
 
 ICARUSParticleAna: {
