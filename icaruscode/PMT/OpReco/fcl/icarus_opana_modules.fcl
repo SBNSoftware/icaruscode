@@ -1,4 +1,6 @@
 #include "icarus_spe.fcl"
+#include "icarus_ophitfinder.fcl"
+
 BEGIN_PROLOG
 FakePhotoS: {
     module_type: "FakePhotoS"
