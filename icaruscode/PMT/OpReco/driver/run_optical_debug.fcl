@@ -1,6 +1,7 @@
 #include "services_common_icarus.fcl"
 #include "channelmapping_icarus.fcl"
 #include "icarus_opana_modules.fcl"
+#include "timing_icarus.fcl"
 
 process_name: flashana
 
@@ -11,6 +12,7 @@ services:
   @table::icarus_geometry_services
   DetectorClocksService:       @local::icarus_detectorclocks
   IICARUSChannelMap:           @local::icarus_channelmappinggservice
+  IPMTTimingCorrectionService: @local::icarus_pmttimingservice 
   TFileService: { fileName: "supplemental-%ifb-%p.root" }
 }
 
