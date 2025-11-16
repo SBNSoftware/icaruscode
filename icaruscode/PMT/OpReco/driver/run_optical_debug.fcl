@@ -3,7 +3,7 @@
 #include "icarus_opana_modules.fcl"
 #include "timing_icarus.fcl"
 
-process_name: flashana
+process_name: opdebug
 
 services:
 {
@@ -20,10 +20,16 @@ physics:
 {
     analyzers:
     {
-      opflash:     @local::ICARUSOpFlashAna
+      opdebug:     @local::ICARUSOpticalDebug
     }
 
-    my_analyzers: [ opflash ]
+    my_analyzers: [ opdebug ]
     
     end_paths: [ my_analyzers ]
 }
+
+physics.analyzers.opdebug.OpHitLabels: ["ophit"]
+physics.analyzers.opdebug.FlashLabels: ["opflashCryoE", "opflashCryoW"]
+physics.analyzers.opdebug.SaveWaveforms: true
+physics.analyzers.opdebug.OpDetWaveformLabels: ["daqPMT"]
+physics.analyzers.opdebug.OpHitThresholdADC: 0 # ADC

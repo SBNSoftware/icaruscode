@@ -34,6 +34,8 @@
 #include "larcore/CoreUtils/ServiceUtil.h" // lar::providerFrom()
 #include "lardataobj/RecoBase/OpHit.h"
 #include "lardataobj/RecoBase/OpFlash.h"
+#include "lardataobj/RawData/OpDetWaveform.h"
+#include "larana/OpticalDetector/IPedAlgoMakerTool.h"
 
 #include "icaruscode/Timing/PMTTimingCorrections.h"
 #include "icaruscode/Timing/IPMTTimingCorrectionService.h"
@@ -70,6 +72,14 @@ public:
         Name("FlashLabels"),
         Comment("Tags for the recob::Flash data products")};
 
+    fhicl::Atom<bool> SaveWaveforms{
+        Name("SaveWaveforms"),
+        Comment("Set to save the full raw::OpDetWaveforms")};
+
+    fhicl::Sequence<art::InputTag> OpDetWaveformLabels{
+        Name("OpDetWaveformLabels"),
+        Comment("Tags for the raw::OpDetWaveform data products")};
+
     fhicl::Atom<float> OpHitThresholdADC{
         Name("OpHitThresholdADC"),
         Comment("Threshold in ADC for an OpHit to be considered")};
@@ -79,7 +89,6 @@ public:
         fhicl::Comment("category tag used for messages to message facility"),
         "OpHitTimingCorrection" // default
     };
-
   };
 
   using Parameters = art::EDAnalyzer::Table<Config>;
@@ -130,6 +139,7 @@ private:
   //
   std::vector<art::InputTag> fOpHitLabels;
   std::vector<art::InputTag> fFlashLabels;
+  std::vector<art::InputTag> fWaveformLabels;
 
   //----------
   // Output trees
@@ -185,13 +195,22 @@ private:
   double m_pe;
   float m_fast_to_total;
 
+  // Waveform trees
+  int m_wfchannel;
+  float m_wfstart;
+  unsigned int m_nticks;
+  std::vector<short> m_wf; // waveform
+  std::vector<short> m_bs; // baseline
+
   //----------
   // Support variables/products
 
+  bool const fSaveWaverforms;
   geo::GeometryCore const *fGeom;
   geo::WireReadoutGeom const *fChannelMapAlg;
   float const fOpHitThresholdADC;
   icarusDB::PMTTimingCorrections const &fPMTTimingCorrectionsService;
+  std::unique_ptr<pmtana::PMTPedestalBase> fPedAlgo;
 };
 
 // ----------------------------------------------------------------------------
@@ -200,11 +219,19 @@ opana::ICARUSOpticalDebug::ICARUSOpticalDebug(Parameters const &config)
     : EDAnalyzer(config),
       fOpHitLabels(config().OpHitLabels()),
       fFlashLabels(config().FlashLabels()),
+      fSaveWaveforms(config().SaveWaveforms()),
+      fWaveformLabels(config().OpDetWaveformLabels()),
       fGeom(lar::providerFrom<geo::Geometry>()),
       fChannelMapAlg(&art::ServiceHandle<geo::WireReadout const>()->Get()),
       fOpHitThresholdADC(config().OpHitThresholdADC()),
       fPMTTimingCorrectionsService(*(lar::providerFrom<icarusDB::IPMTTimingCorrectionService const>()))
 {
+
+  // if saving waveforms, select and build ped reco algorithm
+  if (fSaveWaveforms)
+  {
+    fPedAlgo = art::make_tool<opdet::IPedAlgoMakerTool>(pset.get<fhicl::ParameterSet>("PedAlgoRollingMeanMaker"))->makeAlgo();
+  }
 }
 
 // ----------------------------------------------------------------------------
@@ -226,37 +253,39 @@ double opana::ICARUSOpticalDebug::getTimingCorrection(const int channel)
 
 // ----------------------------------------------------------------------------
 
-
 void opana::ICARUSOpticalDebug::beginJob()
 {
   art::ServiceHandle<art::TFileService const> tfs;
 
-  // Setting up the OpHit trees (one per cryostat)
+  // Setting up the OpHit trees
   // This ttree will hold the unmatched ophit information
-  for (auto const &label : fOpHitLabels)
+  if (!fOpHitLabels.empty())
   {
-    std::string name = label.label() + "_ttree";
-    std::string info = "TTree for unmatched recob::OpHit with label " + label.label();
-    TTree *ttree = tfs->make<TTree>(name.c_str(), info.c_str());
-    ttree->Branch("run", &m_run, "run/I");
-    ttree->Branch("event", &m_event, "event/I");
-    ttree->Branch("timestamp", &m_timestamp, "timestamp/I");
-    ttree->Branch("channel_id", &m_channel, "channel_id/I");
-    ttree->Branch("integral", &m_integral, "integral/D");
-    ttree->Branch("amplitude", &m_amplitude, "amplitude/D");
-    ttree->Branch("start_time", &m_start_time, "start_time/F");
-    ttree->Branch("peak_time", &m_peak_time, "peak_time/F");
-    ttree->Branch("rise_time", &m_rise_time, "rise_time/F");
-    ttree->Branch("abs_start_time", &m_abs_start_time, "abs_start_time/F");
-    ttree->Branch("timing_corr", &m_timing_corr, "timing_corr/D");
-    ttree->Branch("pe", &m_pe, "pe/D");
-    ttree->Branch("width", &m_width, "width/F");
-    ttree->Branch("x", &m_x, "x/D");
-    ttree->Branch("y", &m_y, "y/D");
-    ttree->Branch("z", &m_z, "z/D");
-    ttree->Branch("fast_to_total", &m_fast_to_total, "fast_to_total/F");
+    for (auto const &label : fOpHitLabels)
+    {
+      std::string name = label.label() + "_ttree";
+      std::string info = "TTree for unmatched recob::OpHit with label " + label.label();
+      TTree *ttree = tfs->make<TTree>(name.c_str(), info.c_str());
+      ttree->Branch("run", &m_run, "run/I");
+      ttree->Branch("event", &m_event, "event/I");
+      ttree->Branch("timestamp", &m_timestamp, "timestamp/I");
+      ttree->Branch("channel_id", &m_channel, "channel_id/I");
+      ttree->Branch("integral", &m_integral, "integral/D");
+      ttree->Branch("amplitude", &m_amplitude, "amplitude/D");
+      ttree->Branch("start_time", &m_start_time, "start_time/F");
+      ttree->Branch("peak_time", &m_peak_time, "peak_time/F");
+      ttree->Branch("rise_time", &m_rise_time, "rise_time/F");
+      ttree->Branch("abs_start_time", &m_abs_start_time, "abs_start_time/F");
+      ttree->Branch("timing_corr", &m_timing_corr, "timing_corr/D");
+      ttree->Branch("pe", &m_pe, "pe/D");
+      ttree->Branch("width", &m_width, "width/F");
+      ttree->Branch("x", &m_x, "x/D");
+      ttree->Branch("y", &m_y, "y/D");
+      ttree->Branch("z", &m_z, "z/D");
+      ttree->Branch("fast_to_total", &m_fast_to_total, "fast_to_total/F");
 
-    fOpHitTrees.push_back(ttree);
+      fOpHitTrees.push_back(ttree);
+    }
   }
 
   // Setting up the OPFLASH/OPHITS trees (one per cryostat)
@@ -299,6 +328,28 @@ void opana::ICARUSOpticalDebug::beginJob()
       fOpFlashTrees.push_back(ttree);
     }
   }
+
+  // Setting up the WAVEFORM trees
+  // These ttrees hold the the raw waveforms
+  if (fSaveWaveforms && !fOpDetWaveformLabels.empty())
+  {
+    for (auto const &label : fOpDetWaveformLabels)
+    {
+      std::string name = label.label() + label.instance() + "_wfttree";
+      std::string info = "TTree with optical waveforms with label: " + label.label();
+
+      TTree *ttree = tfs->make<TTree>(name.c_str(), info.c_str());
+      ttree->Branch("run", &m_run, "run/I");
+      ttree->Branch("event", &m_event, "event/I");
+      ttree->Branch("timestamp", &m_timestamp, "timestamp/I");
+      ttree->Branch("channel_id", &m_wfchannel, "channel_id/I");
+      ttree->Branch("nticks", &m_nticks, "nticks/I");
+      ttree->Branch("wf_start", &m_wfstart, "wf_start/F");
+      ttree->Branch("bs", &m_bs);
+      ttree->Branch("wf", &m_wf);
+      fOpDetWaveformTrees.push_back(ttree);
+    }
+  }
 }
 
 // ----------------------------------------------------------------------------
@@ -334,18 +385,18 @@ int opana::ICARUSOpticalDebug::getSideByChannel(const int channel)
 // ----------------------------------------------------------------------------
 
 void opana::ICARUSOpticalDebug::processOpHitsFlash(std::vector<art::Ptr<recob::OpHit>> const &ophits,
-                                                 int &multiplicity_left, int &multiplicity_right,
-                                                 std::vector<int> &channel_id,
-                                                 std::vector<double> &hit_x,
-                                                 std::vector<double> &hit_y,
-                                                 std::vector<double> &hit_z,
-                                                 std::vector<float> &hit_start_time,
-                                                 std::vector<float> &hit_rise_time,
-                                                 std::vector<float> &hit_peak_time,
-                                                 std::vector<double> &hit_timing_corr,
-                                                 std::vector<double> &hit_area,
-                                                 std::vector<double> &hit_pe,
-                                                 std::vector<double> &hit_amplitude)
+                                                   int &multiplicity_left, int &multiplicity_right,
+                                                   std::vector<int> &channel_id,
+                                                   std::vector<double> &hit_x,
+                                                   std::vector<double> &hit_y,
+                                                   std::vector<double> &hit_z,
+                                                   std::vector<float> &hit_start_time,
+                                                   std::vector<float> &hit_rise_time,
+                                                   std::vector<float> &hit_peak_time,
+                                                   std::vector<double> &hit_timing_corr,
+                                                   std::vector<double> &hit_area,
+                                                   std::vector<double> &hit_pe,
+                                                   std::vector<double> &hit_amplitude)
 {
 
   std::unordered_map<int, float> sumpe_map;
@@ -369,7 +420,7 @@ void opana::ICARUSOpticalDebug::processOpHitsFlash(std::vector<art::Ptr<recob::O
     hit_start_time.push_back(ophit->StartTime());
     hit_peak_time.push_back(ophit->PeakTime());
     hit_rise_time.push_back(ophit->StartTime() + ophit->RiseTime());
-    hit_timing_corr.push_back( getTimingCorrection(ch) );
+    hit_timing_corr.push_back(getTimingCorrection(ch));
 
     hit_area.push_back(ophit->Area());           // in ADC x tick
     hit_amplitude.push_back(ophit->Amplitude()); // in ADC
@@ -465,7 +516,7 @@ void opana::ICARUSOpticalDebug::analyze(art::Event const &e)
           m_flash_nhits = m_channel_id.size();
 
           mf::LogInfo("ICARUSOpticalDebug") << "Cryo " << cid << ", flashID " << m_flash_id
-                                          << ", nophits " << m_flash_nhits;
+                                            << ", nophits " << m_flash_nhits;
 
           fOpFlashTrees[iFlashLabel]->Fill();
           idx++;
@@ -553,6 +604,52 @@ void opana::ICARUSOpticalDebug::analyze(art::Event const &e)
           << "Total unmatched ophits: " << unmatched;
 
     } // for ophit product
+
+    // -----
+    // OPDETWAVEFORMS (optional)
+    // Now we store also optical waveform if so configured
+    // But only from cryostats that had a flash --> if no flashes at all, don't save anything
+    if (!fOpDetWaveformLabels.empty() && fSaveWaveform)
+    {
+      for (std::size_t i = 0; i < fOpDetWaveformLabels.size(); i++)
+      {
+        auto const wflabel = fOpDetWaveformLabels[i];
+        auto const &waveforms = e.getProduct<std::vector<raw::OpDetWaveform>>(wflabel);
+
+        // check if collection is present and print warning otherwise
+        if (waveforms.empty())
+        {
+          mf::LogWarning("ICARUSOpticalDebug") << "Data product std::vector<raw::OpDetWaveform> for "
+                                               << wflabel.label() << " is empty!"
+        }
+        else
+        {
+          // for each waveform
+          for (auto const &wave : waveforms)
+          {
+
+            m_wfchannel = wave.ChannelNumber();
+
+            // is this channel from a cryo that saw a flash?
+            // if yes, store.. otherwise continue!
+            igeo::CryostatID::CryostatID_t cid = getCryostatByChannel(ophits.front()->OpChannel());
+            auto const found = std::find(cids.begin(), cids.end(), cid);
+            if (found == cids.end())
+              continue; // skip!!
+
+            m_nticks = wave.Waveform().size();
+            m_wfstart = wave.TimeStamp();
+            m_wf = wave.Waveform();
+
+            // compute baseline with chosen "official" algo
+            fPedAlgo->Evaluate(wave.Waveform());
+            m_bs = fPedAlgo->Mean();
+
+            fOpDetWaveformTrees[i]->Fill();
+          } // for each waveform
+        } // if product not emtpy
+      } // for each product
+    } // if save wf
   }
   else
   {
