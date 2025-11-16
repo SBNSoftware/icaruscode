@@ -18,7 +18,9 @@
 #include "fhiclcpp/ParameterSet.h"
 #include "fhiclcpp/types/Atom.h"
 #include "fhiclcpp/types/Sequence.h"
+#include "fhiclcpp/types/DelegatedParameter.h"
 
+#include "art/Utilities/make_tool.h"
 #include "art_root_io/TFileService.h"
 
 #include "messagefacility/MessageLogger/MessageLogger.h"
@@ -84,11 +86,10 @@ public:
         Name("OpHitThresholdADC"),
         Comment("Threshold in ADC for an OpHit to be considered")};
 
-    fhicl::Atom<std::string> LogCategory{
-        fhicl::Name("LogCategory"),
-        fhicl::Comment("category tag used for messages to message facility"),
-        "OpHitTimingCorrection" // default
-    };
+    fhicl::DelegatedParameter PedAlgoPset {
+        Name("PedAlgoRollingMeanMaker"),
+        Comment("parameters of the pedestal extraction algorithm.")};
+  
   };
 
   using Parameters = art::EDAnalyzer::Table<Config>;
@@ -139,13 +140,14 @@ private:
   //
   std::vector<art::InputTag> fOpHitLabels;
   std::vector<art::InputTag> fFlashLabels;
-  std::vector<art::InputTag> fWaveformLabels;
+  std::vector<art::InputTag> fOpDetWaveformLabels;
 
   //----------
   // Output trees
 
   std::vector<TTree *> fOpFlashTrees; // flash + matched hits
   std::vector<TTree *> fOpHitTrees;   // unmatched hits
+  std::vector<TTree *> fOpDetWaveformTrees; // waveform
 
   //----------------
   // Output variables
@@ -200,12 +202,12 @@ private:
   float m_wfstart;
   unsigned int m_nticks;
   std::vector<short> m_wf; // waveform
-  std::vector<short> m_bs; // baseline
+  std::vector<double> m_bs; // baseline
 
   //----------
   // Support variables/products
 
-  bool const fSaveWaverforms;
+  bool const fSaveWaveforms;
   geo::GeometryCore const *fGeom;
   geo::WireReadoutGeom const *fChannelMapAlg;
   float const fOpHitThresholdADC;
@@ -219,19 +221,14 @@ opana::ICARUSOpticalDebug::ICARUSOpticalDebug(Parameters const &config)
     : EDAnalyzer(config),
       fOpHitLabels(config().OpHitLabels()),
       fFlashLabels(config().FlashLabels()),
+      fOpDetWaveformLabels(config().OpDetWaveformLabels()),
       fSaveWaveforms(config().SaveWaveforms()),
-      fWaveformLabels(config().OpDetWaveformLabels()),
       fGeom(lar::providerFrom<geo::Geometry>()),
       fChannelMapAlg(&art::ServiceHandle<geo::WireReadout const>()->Get()),
       fOpHitThresholdADC(config().OpHitThresholdADC()),
-      fPMTTimingCorrectionsService(*(lar::providerFrom<icarusDB::IPMTTimingCorrectionService const>()))
+      fPMTTimingCorrectionsService(*(lar::providerFrom<icarusDB::IPMTTimingCorrectionService const>())),
+      fPedAlgo(art::make_tool<opdet::IPedAlgoMakerTool>(config().PedAlgoPset.get<fhicl::ParameterSet>())->makeAlgo())
 {
-
-  // if saving waveforms, select and build ped reco algorithm
-  if (fSaveWaveforms)
-  {
-    fPedAlgo = art::make_tool<opdet::IPedAlgoMakerTool>(pset.get<fhicl::ParameterSet>("PedAlgoRollingMeanMaker"))->makeAlgo();
-  }
 }
 
 // ----------------------------------------------------------------------------
@@ -609,7 +606,7 @@ void opana::ICARUSOpticalDebug::analyze(art::Event const &e)
     // OPDETWAVEFORMS (optional)
     // Now we store also optical waveform if so configured
     // But only from cryostats that had a flash --> if no flashes at all, don't save anything
-    if (!fOpDetWaveformLabels.empty() && fSaveWaveform)
+    if (!fOpDetWaveformLabels.empty() && fSaveWaveforms)
     {
       for (std::size_t i = 0; i < fOpDetWaveformLabels.size(); i++)
       {
@@ -620,7 +617,7 @@ void opana::ICARUSOpticalDebug::analyze(art::Event const &e)
         if (waveforms.empty())
         {
           mf::LogWarning("ICARUSOpticalDebug") << "Data product std::vector<raw::OpDetWaveform> for "
-                                               << wflabel.label() << " is empty!"
+                                               << wflabel.label() << " is empty!";
         }
         else
         {
@@ -632,7 +629,7 @@ void opana::ICARUSOpticalDebug::analyze(art::Event const &e)
 
             // is this channel from a cryo that saw a flash?
             // if yes, store.. otherwise continue!
-            igeo::CryostatID::CryostatID_t cid = getCryostatByChannel(ophits.front()->OpChannel());
+            geo::CryostatID::CryostatID_t cid = getCryostatByChannel(wave.ChannelNumber());
             auto const found = std::find(cids.begin(), cids.end(), cid);
             if (found == cids.end())
               continue; // skip!!
