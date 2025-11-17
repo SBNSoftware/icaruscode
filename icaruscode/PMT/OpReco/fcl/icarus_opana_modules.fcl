@@ -101,6 +101,7 @@ ICARUSOpticalDebug: {
     SaveWaveforms: false
     OpDetWaveformLabels: ["daqPMT"]
     OpHitThresholdADC: 0 # ADC
+    MCParticleTruthLabel: ""
 
     PedAlgoRollingMeanMaker: { ## from icarus_ophitfinder
     tool_type: "PedAlgoRollingMeanMaker"

@@ -38,6 +38,7 @@
 #include "lardataobj/RecoBase/OpFlash.h"
 #include "lardataobj/RawData/OpDetWaveform.h"
 #include "larana/OpticalDetector/IPedAlgoMakerTool.h"
+#include "nusimdata/SimulationBase/MCParticle.h"
 
 #include "icaruscode/Timing/PMTTimingCorrections.h"
 #include "icaruscode/Timing/IPMTTimingCorrectionService.h"
@@ -86,6 +87,10 @@ public:
         Name("OpHitThresholdADC"),
         Comment("Threshold in ADC for an OpHit to be considered")};
 
+        fhicl::Atom<art::InputTag> MCParticleTruthLabel{
+          Name("MCParticleTruthLabel"),
+          Comment("Tag for simb::MCParticle truth info")};
+    
     fhicl::DelegatedParameter PedAlgoPset {
         Name("PedAlgoRollingMeanMaker"),
         Comment("parameters of the pedestal extraction algorithm.")};
@@ -129,6 +134,7 @@ public:
                           std::vector<float> &hit_start_time,
                           std::vector<float> &hit_rise_time,
                           std::vector<float> &hit_peak_time,
+                          std::vector<float> &hit_width,
                           std::vector<double> &hit_timing_corr,
                           std::vector<double> &hit_area,
                           std::vector<double> &hit_pe,
@@ -141,6 +147,7 @@ private:
   std::vector<art::InputTag> fOpHitLabels;
   std::vector<art::InputTag> fFlashLabels;
   std::vector<art::InputTag> fOpDetWaveformLabels;
+  art::InputTag fMCParticleLabel;
 
   //----------
   // Output trees
@@ -148,6 +155,7 @@ private:
   std::vector<TTree *> fOpFlashTrees; // flash + matched hits
   std::vector<TTree *> fOpHitTrees;   // unmatched hits
   std::vector<TTree *> fOpDetWaveformTrees; // waveform
+  TTree * fMCParticleTree;
 
   //----------------
   // Output variables
@@ -159,6 +167,7 @@ private:
 
   // Flash + hits tree
   int m_flash_id;
+  int m_flash_cryo;
   int m_multiplicity;
   int m_multiplicity_left;
   int m_multiplicity_right;
@@ -176,6 +185,7 @@ private:
   std::vector<float> m_hit_start_time;
   std::vector<float> m_hit_rise_time;
   std::vector<float> m_hit_peak_time;
+  std::vector<float> m_hit_width;
   std::vector<double> m_hit_timing_corr;
   std::vector<double> m_hit_area;
   std::vector<double> m_hit_pe;
@@ -204,6 +214,16 @@ private:
   std::vector<short> m_wf; // waveform
   std::vector<double> m_bs; // baseline
 
+  // particle tree
+  int track_gen_pdg;  
+  float track_gen_time;
+  float track_gen_E;
+  float track_gen_x, track_gen_y, track_gen_z;
+  int michel_gen_pdg;
+  float michel_gen_time;
+  float michel_gen_E;
+  float michel_gen_x, michel_gen_y, michel_gen_z;
+
   //----------
   // Support variables/products
 
@@ -222,6 +242,7 @@ opana::ICARUSOpticalDebug::ICARUSOpticalDebug(Parameters const &config)
       fOpHitLabels(config().OpHitLabels()),
       fFlashLabels(config().FlashLabels()),
       fOpDetWaveformLabels(config().OpDetWaveformLabels()),
+      fMCParticleLabel(config().MCParticleTruthLabel()),
       fSaveWaveforms(config().SaveWaveforms()),
       fGeom(lar::providerFrom<geo::Geometry>()),
       fChannelMapAlg(&art::ServiceHandle<geo::WireReadout const>()->Get()),
@@ -300,6 +321,7 @@ void opana::ICARUSOpticalDebug::beginJob()
       ttree->Branch("event", &m_event, "event/I");
       ttree->Branch("timestamp", &m_timestamp, "timestamp/I");
       ttree->Branch("flash_id", &m_flash_id, "flash_id/I");
+      ttree->Branch("flash_cryo", &m_flash_cryo, "flash_cryo/I");
       ttree->Branch("multiplicity", &m_multiplicity, "multiplicity/I");
       ttree->Branch("multiplicity_right", &m_multiplicity_right, "multiplicity_right/I");
       ttree->Branch("multiplicity_left", &m_multiplicity_left, "multiplicity_left/I");
@@ -317,6 +339,7 @@ void opana::ICARUSOpticalDebug::beginJob()
       ttree->Branch("hit_start_time", &m_hit_start_time);
       ttree->Branch("hit_rise_time", &m_hit_rise_time);
       ttree->Branch("hit_peak_time", &m_hit_peak_time);
+      ttree->Branch("hit_width", &m_hit_width);
       ttree->Branch("hit_timing_corr", &m_hit_timing_corr);
       ttree->Branch("hit_area", &m_hit_area);
       ttree->Branch("hit_pe", &m_hit_pe);
@@ -346,7 +369,29 @@ void opana::ICARUSOpticalDebug::beginJob()
       ttree->Branch("wf", &m_wf);
       fOpDetWaveformTrees.push_back(ttree);
     }
+  } 
+
+  if (!fMCParticleLabel.empty())
+  {
+    std::string name = fMCParticleLabel.label() + fMCParticleLabel.instance() + "_MCParticle";
+    std::string info = "TTree with MCParticle truth: " + fMCParticleLabel.label();
+    fMCParticleTree = tfs->make<TTree>(name.c_str(), info.c_str());
+    fMCParticleTree->Branch("run", &m_run, "run/I");
+    fMCParticleTree->Branch("event", &m_event, "event/I"); 
+    fMCParticleTree->Branch("trach_gen_pdg", &track_gen_pdg);   
+    fMCParticleTree->Branch("track_gen_time",&track_gen_time);
+    fMCParticleTree->Branch("track_gen_E",&track_gen_E);
+    fMCParticleTree->Branch("track_gen_x",&track_gen_x);
+    fMCParticleTree->Branch("track_gen_y",&track_gen_y);
+    fMCParticleTree->Branch("track_gen_z",&track_gen_z);
+    fMCParticleTree->Branch("michel_gen_pdg",&michel_gen_pdg);
+    fMCParticleTree->Branch("michel_gen_time",&michel_gen_time);
+    fMCParticleTree->Branch("michel_gen_E",&michel_gen_E);
+    fMCParticleTree->Branch("michel_gen_x",&michel_gen_x);
+    fMCParticleTree->Branch("michel_gen_y",&michel_gen_y);
+    fMCParticleTree->Branch("michel_gen_z",&michel_gen_z);
   }
+
 }
 
 // ----------------------------------------------------------------------------
@@ -390,6 +435,7 @@ void opana::ICARUSOpticalDebug::processOpHitsFlash(std::vector<art::Ptr<recob::O
                                                    std::vector<float> &hit_start_time,
                                                    std::vector<float> &hit_rise_time,
                                                    std::vector<float> &hit_peak_time,
+                                                   std::vector<float> &hit_width,
                                                    std::vector<double> &hit_timing_corr,
                                                    std::vector<double> &hit_area,
                                                    std::vector<double> &hit_pe,
@@ -418,6 +464,7 @@ void opana::ICARUSOpticalDebug::processOpHitsFlash(std::vector<art::Ptr<recob::O
     hit_peak_time.push_back(ophit->PeakTime());
     hit_rise_time.push_back(ophit->StartTime() + ophit->RiseTime());
     hit_timing_corr.push_back(getTimingCorrection(ch));
+    hit_width.push_back(ophit->Width());
 
     hit_area.push_back(ophit->Area());           // in ADC x tick
     hit_amplitude.push_back(ophit->Amplitude()); // in ADC
@@ -481,6 +528,7 @@ void opana::ICARUSOpticalDebug::analyze(art::Event const &e)
           m_hit_rise_time.clear();
           m_hit_peak_time.clear();
           m_hit_timing_corr.clear();
+          m_hit_width.clear();
           m_hit_area.clear();
           m_hit_pe.clear();
           m_hit_amplitude.clear();
@@ -501,12 +549,14 @@ void opana::ICARUSOpticalDebug::analyze(art::Event const &e)
           if (found == cids.end()) // if seen for the first time
             cids.push_back(cid);   // save it!
 
+          m_flash_cryo = cid;
+
           // also store the matched ophits in the flash
           processOpHitsFlash(ophits,
                              m_multiplicity_left, m_multiplicity_right,
                              m_channel_id, m_hit_x, m_hit_y, m_hit_z,
                              m_hit_start_time, m_hit_rise_time, m_hit_peak_time,
-                             m_hit_timing_corr,
+                             m_hit_width, m_hit_timing_corr,
                              m_hit_area, m_hit_pe, m_hit_amplitude);
 
           m_multiplicity = m_multiplicity_left + m_multiplicity_right;
@@ -651,6 +701,66 @@ void opana::ICARUSOpticalDebug::analyze(art::Event const &e)
   else
   {
     mf::LogError("ICARUSOpticalDebug") << "No recob::OpFlash labels selected";
+  }
+
+
+  if (!fMCParticleLabel.empty())
+  {
+
+    // try to get the handle: notice it might be invalide if not MC file
+    auto const &particle_handle = e.getHandle<std::vector<simb::MCParticle>>(fMCParticleLabel);
+    auto const &particles = *particle_handle;
+
+    // want our flashes to be valid and not empty
+    if (!particle_handle.isValid() || particles.empty())
+    {
+      mf::LogWarning("ICARUSOpticalDebug")
+          << "No simb::MCParticle in collection with label '" << fMCParticleLabel.encode() << "'";
+    }
+    else
+    {
+      // loop through the particles
+      int primary_muon_id = -1;
+      michel_gen_pdg = -1;
+      michel_gen_time = -1;
+      michel_gen_E = -1;
+      michel_gen_x = -1, michel_gen_y = -1, michel_gen_z = -1;
+
+      for(auto par : particles )
+      {
+        int trackid = par.TrackId();
+        int pdg = par.PdgCode();
+        int parent = par.Mother();
+
+        if( std::abs(pdg) == 13 && parent == 0) //primary muon
+        {
+          // save the primary muon id
+          primary_muon_id = trackid;
+          // save info into tree
+          track_gen_pdg = pdg;
+          track_gen_time = par.T();
+          track_gen_E = par.E();
+          track_gen_x = par.Vx();
+          track_gen_y = par.Vy();
+          track_gen_z = par.Vz();
+        }
+
+        if ( (parent == primary_muon_id) && 
+             (par.Process() == "Decay" || par.Process() == "muMinusCaptureAtRest") &&
+             (abs(pdg) == 11)
+            )
+        {
+          michel_gen_pdg = pdg;
+          michel_gen_time = par.T(); // in ns
+          michel_gen_E = par.E(); // in GeV
+          michel_gen_x = par.Vx();
+          michel_gen_y = par.Vy();
+          michel_gen_z = par.Vz();
+        }
+      }
+      fMCParticleTree->Fill();
+    }
+
   }
 }
 
