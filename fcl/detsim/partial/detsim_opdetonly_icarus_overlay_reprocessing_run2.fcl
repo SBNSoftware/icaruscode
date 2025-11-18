@@ -30,13 +30,13 @@ source.inputCommands: [
   "drop *_pmtlvdsgates_*_*",           # drop MCstage0 trigger product
   "drop *_pmtbaselines_*_MCstage0",    # drop MCstage0 baselines, not stage0!
   "drop *_pmttriggerwindows_*_*",      # drop MCstage0 trigger product
-  drop "*_emuTrigger_*_*",             # drop MCstage0 trigger product
+  "drop *_emuTrigger_*_*",             # drop MCstage0 trigger product
 
   "drop *_crtdaq_*_*",        # drop CRT detsim product
   "drop *_mccrthit_*_*",      # drop CRT mc hits
   "drop *_overlayCRTHit_*_*", # drop CRT overlay hits
   "drop *_crttrack_*_*",      # drop CRT tracks (MCstage0)
-  "drop *_crtpmt_*_*",        # drop CRTPMT matches (MCstage0)
+  "drop *_crtpmt_*_*"         # drop CRTPMT matches (MCstage0)
 ]
 
 # Running only the optical/trigger/crt modules
