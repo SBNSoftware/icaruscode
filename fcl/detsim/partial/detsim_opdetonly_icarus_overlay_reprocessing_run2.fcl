@@ -1,0 +1,94 @@
+#include "detsim_2d_icarus_refactored.fcl"
+
+process_name: OpDetSim
+
+services.DetPedestalService:         @erase
+services.ChannelStatusService:       @erase
+services.SignalShapingICARUSService: @erase
+
+source.inputCommands: [
+  "keep *",
+
+  # `stage0` comes from decoding data: should be kept!
+  # `MCstage0` comes running stage0 on the overlay products:
+  #  so pmt/trigger/crt stuff should be thrown out!
+
+  "drop raw::OpDetWaveform*_opdaq_*_*",    # drop old MC waveforms (if any)
+  "drop raw::OpDetWaveform*_shifted_*_*",  # drop old MC (shifted) waveforms (if any)
+  "drop *_overlayOpWaveforms_*_*",         # drop old Overlay waveforms (if any)
+  "drop *_ophit*_*_*",                     # drop MCstage0 ophits
+  "drop *_mcophit_*_*",                    # drop MCstageo mcophit
+  "drop *_opflash*_*_*",                   # drop MCsstage0 east/west opflashes
+
+  "drop *_pmtfixedthrinit_*_*",        # drop triggersim product
+  "drop *_pmtlvdsgatesinit_*_*",       # drop triggersim product
+  "drop *_pmttriggerwindowsinit_*_*",  # drop triggersim product
+  "drop *_triggersimgatesinit_*_*",    # drop triggersim product
+  "drop *_emuTriggerUnshifted_*_*",    # drop triggersim product
+  "drop *_pmtfixedthr_*_*",            # drop MCstage0 trigger product
+  "drop *_pmtlvdsgates_*_*",           # drop MCstage0 trigger product
+  "drop *_pmtlvdsgates_*_*",           # drop MCstage0 trigger product
+  "drop *_pmtbaselines_*_MCstage0",    # drop MCstage0 baselines, not stage0!
+  "drop *_pmttriggerwindows_*_*",      # drop MCstage0 trigger product
+  drop "*_emuTrigger_*_*",             # drop MCstage0 trigger product
+
+  "drop *_crtdaq_*_*",        # drop CRT detsim product
+  "drop *_mccrthit_*_*",      # drop CRT mc hits
+  "drop *_overlayCRTHit_*_*", # drop CRT overlay hits
+  "drop *_crttrack_*_*",      # drop CRT tracks (MCstage0)
+  "drop *_crtpmt_*_*",        # drop CRTPMT matches (MCstage0)
+]
+
+# Running only the optical/trigger/crt modules
+# Simplify configuration removing all other producers (tpc)
+
+physics.producers: {
+
+  # opdaq Run-1/2 tune for overlays (no noise)
+  opdaq: @local::icarus_simpmt_run2_nonoise 
+
+  # triggersim producers 
+  @table::icarus_shifting_triggersim.producers
+
+  # crt hits
+  crtdaq: @local::icarus_crtsim
+
+}
+
+# build waveforms from simPhotons (already shifted)
+physics.producers.opdaq.InputModule: "shifted"
+
+# need to update the shifting module to pick up new labels
+# some were regenerated (tag still good), others were previously shifted
+# applying a second shift is okay: everything is consistent
+# (eg. waveforms made from `shifted` photons)
+# NOTE: still shifing energy deposits although tpc info not regenerated
+# however forced to use `filtersed` as `shifted` has been consumed
+
+physics.producers.shifted.InputTriggerLabel: "emuTriggerUnshifted"        # this was re-generated, so same tag
+physics.producers.shifted.InitAuxDetSimChannelLabel: "shifted"            # need to start from previously-shifted, not `genericcrt`
+physics.producers.shifted.InitBeamGateInfoLabel: "triggersimgatesinit"    # this was re-generated, so same tag
+physics.producers.shifted.InitSimEnergyDepositLabel: "filtersed"          # need to start from previously-shifted, but `shifted` no longer available
+physics.producers.shifted.InitSimEnergyDepositLiteLabel: "filtersed"      # need to start from previously-shifted, but `shifted` no longer available
+physics.producers.shifted.InitSimPhotonsLabel: "shifted"                  # need to start from previously-shifted, not `pdfastsim`
+physics.producers.shifted.InitWaveformLabel: "opdaq"                      # this was re-generated, so same tag
+
+# need to update shiting of priorSCE deposits:
+# this is important if future reprocessings will need to regenerate SimPhotons
+
+physics.producers.shiftedpriorSCE.InputTriggerLabel: "emuTriggerUnshifted"      # this was re-generated, so same tag
+physics.producers.shiftedpriorSCE.InitSimEnergyDepositLabel: "shiftedpriorSCE"  # need to start from previously-shifted, not `ionization:priorSCE`
+
+# The reprocessing flow is the following:
+# - build new pmt waveforms from photons
+# - simulate the trigger
+# - shift all products to the trigger:
+#   -- we are shifting photons, pmt waveforms, energy depositis, aux sim channels
+#   -- note: since tpc is not re-simulated, no longer fully coherent with trigger time
+# - build CRT data from aux sim channels
+
+physics.simulate: [ opdaq, @sequence::icarus_shifting_triggersim.path, crtdaq ]
+
+
+
+
