@@ -361,7 +361,7 @@ class icarus::trigger::MajorityTriggerSimulation
     
     fhicl::Atom<art::InputTag> TriggerGatesTag {
       Name("TriggerGatesTag"),
-      Comment("label of the input trigger gate data product (no instance name)")
+      Comment("tag of the input trigger gate data product")
       };
 
     fhicl::Sequence<raw::ADC_Count_t> Thresholds {
