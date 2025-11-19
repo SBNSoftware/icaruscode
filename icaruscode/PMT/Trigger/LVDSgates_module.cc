@@ -879,7 +879,7 @@ art::InputTag icarus::trigger::LVDSgates::makeTag
     ? art::InputTag{ thresholdStr }
     : defModule.label().empty()
       ? throw (art::Exception(art::errors::Configuration)
-        << "Default module label (`TriggerGatesTag`) specified"
+        << "No default module label (`TriggerGatesTag`) specified"
            ", and it's needed for threshold '" << thresholdStr << "'.\n")
       : art::InputTag{ defModule.label(), thresholdStr, defModule.process() }
     ;
