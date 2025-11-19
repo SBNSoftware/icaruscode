@@ -1,5 +1,5 @@
 #include "messages_icarus.fcl"
-#include "prodcorsika_bnb_genie_protononly_icarus.fcl"
+#include "prodcorsika_proton_intime_filter_bnb_sce.fcl"
 
 # non-interactive output settings, but keep them verbose
 services.message: @local::icarus_message_services_prod_debug
