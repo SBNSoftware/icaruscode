@@ -1,1 +1,5 @@
 #include "standard_mc_intime_g4_icarus.fcl"
+
+# disable this parameter, possibly it is discontinued
+# It is set through icaruscode/fcl/g4/mergesimsources_icarus.fcl
+physics.producers.largeantdropped.SkipTrackIDOffsets: @erase
