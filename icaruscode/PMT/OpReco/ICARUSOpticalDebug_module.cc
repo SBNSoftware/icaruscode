@@ -621,6 +621,12 @@ void opana::ICARUSOpticalDebug::analyze(art::Event const &e)
 
             m_channel = ophit.OpChannel();
 
+            // check if cryostat is the same of the association we are checking against
+            // skip if that's not the case, otherwise we "unmatch" them for no reason
+            geo::CryostatID::CryostatID_t current_cryo = getCryostatByChannel(ophit.OpChannel());
+            if(current_cryo != cid)
+              continue;
+
             auto pos = getChannelXYZ(ophit.OpChannel());
             m_x = pos[0];
             m_y = pos[1];
