@@ -1,4 +1,1 @@
-#include "standard_mc_all_stage1_icarus.fcl"
-
-# overriding this parameter, possibly we need a specific stage1 FHiCL for "intimecosmic" reco1
-physics.producers.mcreco.MCParticleDroppedLabel: "largeantdropped"
+#include "stage1_run2_icarus_MC_intime.fcl"
