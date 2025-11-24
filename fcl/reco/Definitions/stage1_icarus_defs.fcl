@@ -326,13 +326,13 @@ icarus_stage1_producers.gaushit2dTPCWW.HitFilterAlg.MinPulseHeight:             
 
 # Setup version of hit finder's with Pulse Trains ("PT"s) enabled
 icarus_stage1_producers.gaushitPT2dTPCEE: @local::icarus_stage1_producers.gaushit2dTPCEE
-icarus_stage1_producers.gaushitPT2dTPCEE.LongMaxHits: [25, 25, 25]
+icarus_stage1_producers.gaushitPT2dTPCEE.LongMaxHits: [10, 10, 10]
 icarus_stage1_producers.gaushitPT2dTPCEW: @local::icarus_stage1_producers.gaushit2dTPCEW
-icarus_stage1_producers.gaushitPT2dTPCEW.LongMaxHits: [25, 25, 25]
+icarus_stage1_producers.gaushitPT2dTPCEW.LongMaxHits: [10, 10, 10]
 icarus_stage1_producers.gaushitPT2dTPCWE: @local::icarus_stage1_producers.gaushit2dTPCWE
-icarus_stage1_producers.gaushitPT2dTPCWE.LongMaxHits: [25, 25, 25]
+icarus_stage1_producers.gaushitPT2dTPCWE.LongMaxHits: [10, 10, 10]
 icarus_stage1_producers.gaushitPT2dTPCWW: @local::icarus_stage1_producers.gaushit2dTPCWW
-icarus_stage1_producers.gaushitPT2dTPCWW.LongMaxHits: [25, 25, 25]
+icarus_stage1_producers.gaushitPT2dTPCWW.LongMaxHits: [10, 10, 10]
 
 ## Overrides for filtering of cluster3D hits
 icarus_stage1_filters.TPCHitFilterCryoW.HitDataLabelVec: ["cluster3DCryoW"]
