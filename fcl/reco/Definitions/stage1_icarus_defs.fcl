@@ -212,6 +212,8 @@ icarus_WestHits2d_TPC:             [ gaushit2dTPCWW,
 # Set up filtering of cluster3D hits by cryostat
 # Changed slightly to faciliate larcv processing
 icarus_filter1D_cluster3D:         [ 
+                                     @sequence::icarus_EastHits_TPC,
+                                     @sequence::icarus_WestHits_TPC,
                                      cluster3DCryoE,
                                      cluster3DCryoW,
                                      TPCHitFilterCryoE,
