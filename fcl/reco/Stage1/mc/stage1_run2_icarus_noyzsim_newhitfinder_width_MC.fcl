@@ -6,7 +6,7 @@
 ##
 
 
-#include "stage1_run2_icarus_MC.fcl"
+#include "stage1_run2_icarus_noyzsim_MC.fcl"
 
 
 # Disable pulse trains (setting them all to 1)

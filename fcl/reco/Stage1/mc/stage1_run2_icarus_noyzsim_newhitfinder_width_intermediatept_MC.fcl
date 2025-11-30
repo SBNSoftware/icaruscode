@@ -6,7 +6,7 @@
 ##
 
 
-#include "stage1_run2_icarus_newhitfinder_width_MC.fcl"
+#include "stage1_run2_icarus_noyzsim_newhitfinder_width_MC.fcl"
 
 
 # Intermediate pulse train settings

@@ -6,7 +6,7 @@
 ##
 
 
-#include "stage1_run2_icarus_newhitfinder_width_MC.fcl"
+#include "stage1_run2_icarus_noyzsim_newhitfinder_width_MC.fcl"
 
 # Pandora settings new
 physics.producers.pandoraGausCryoE.ConfigFile: "PandoraSettings_Master_ICARUS_NeutrinoHitWidth_SlicingHitWidth.xml"
