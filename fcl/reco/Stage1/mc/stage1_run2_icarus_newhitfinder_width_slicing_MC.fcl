@@ -1,0 +1,13 @@
+## File: stage1_run2_icarus_newhitfinder_width_slicing_MC.fcl 
+## Author: Mattia Sotgia (msotgia@ge.infn.it)
+## 
+## This FHiCL introduces the re-tuned hit-finder values and uses the hit widths in Pandora algorithms (also in slice creation)
+## Pulse trains are off.
+##
+
+
+#include "stage1_run2_icarus_newhitfinder_width_MC.fcl"
+
+# Pandora settings new
+physics.producers.pandoraGausCryoE.ConfigFile: "PandoraSettings_Master_ICARUS_NeutrinoHitWidth_SlicingHitWidth.xml"
+physics.producers.pandoraGausCryoW.ConfigFile: "PandoraSettings_Master_ICARUS_NeutrinoHitWidth_SlicingHitWidth.xml"

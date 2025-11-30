@@ -15,3 +15,10 @@ physics.reco: [
 
 physics.producers.cluster3DCryoW.Hit3DBuilderAlg.HitFinderTagVec: ["gaushit1dTPCWW", "gaushit1dTPCWE"]
 physics.producers.cluster3DCryoE.Hit3DBuilderAlg.HitFinderTagVec: ["gaushit1dTPCEW", "gaushit1dTPCEE"]
+
+# Tentative fix for mcreco
+physics.producers.mcreco.SimChannelLabel: "shifted"
+
+# Tentative fix for caloskim
+physics.analyzers.caloskimW.SimChannelproducer: "daq:simpleSC"
+physics.analyzers.caloskimE.SimChannelproducer: "daq:simpleSC"

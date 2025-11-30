@@ -77,12 +77,12 @@ physics.producers.tpcpmtbarycentermatchCryoW: @local::mc_tpcpmtbarycentermatchpr
 
 # Turn on truth-info for track skimmer 
 physics.analyzers.caloskimE.G4producer: "largeant"
-physics.analyzers.caloskimE.SimChannelproducer: "merge"
+physics.analyzers.caloskimE.SimChannelproducer: "daq:simpleSC"
 physics.analyzers.caloskimE.RawDigitproducers: ["MCDecodeTPCROI:PHYSCRATEDATATPCEW", "MCDecodeTPCROI:PHYSCRATEDATATPCEE"]
 physics.analyzers.caloskimE.SelectEvents: [reco]
 
 physics.analyzers.caloskimW.G4producer: "largeant"
-physics.analyzers.caloskimW.SimChannelproducer: "merge"
+physics.analyzers.caloskimW.SimChannelproducer: "daq:simpleSC"
 physics.analyzers.caloskimW.RawDigitproducers: ["MCDecodeTPCROI:PHYSCRATEDATATPCWW", "MCDecodeTPCROI:PHYSCRATEDATATPCWE"]
 physics.analyzers.caloskimW.SelectEvents: [reco]
 
@@ -96,7 +96,7 @@ physics.analyzers.simpleLightAna.OpDetWaveformLabels: ["opdaq"]
 
 # Configure mcreco to read SEDLite instead of SED and MCParticleLite in addition to MCParticle
 physics.producers.mcreco.G4ModName: @erase
-physics.producers.mcreco.SimChannelLabel: "filtersed"
+physics.producers.mcreco.SimChannelLabel: "shifted"
 physics.producers.mcreco.MCParticleLabel: "largeant"
 physics.producers.mcreco.UseSimEnergyDepositLite: true
 physics.producers.mcreco.UseSimEnergyDeposit: false
