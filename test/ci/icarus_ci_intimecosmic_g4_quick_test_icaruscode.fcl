@@ -1,1 +1,8 @@
-#include "larg4_icarus_intime_sce.fcl"
+#include "standard_mc_intime_g4_icarus.fcl"
+
+# disable this parameter, possibly it is discontinued
+# It is set through icaruscode/fcl/g4/mergesimsources_icarus.fcl
+physics.producers.largeantdropped.SkipTrackIDOffsets: @erase
+
+# override this parameter, this is causing issues with detsim standard_mc_all_detsim_icarus.fcl
+physics.producers.ionization.EnergyDepositInstanceLabels: [ "", "priorSCE" ]
