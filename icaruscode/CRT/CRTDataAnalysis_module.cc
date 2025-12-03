@@ -383,7 +383,7 @@ namespace crt {
     fHitNtuple->Branch("xErr",        &fXErrHit,     "xErr/F");
     fHitNtuple->Branch("yErr",        &fYErrHit,     "yErr/F");
     fHitNtuple->Branch("zErr",        &fZErrHit,     "zErr/F");
-    fHitNtuple->Branch("t0",          &fT0Hit,       "t0/l");
+    fHitNtuple->Branch("t0",          &fT0Hit,       "t0/L");
     fHitNtuple->Branch("t1",          &fT1Hit,       "t1/L");
     fHitNtuple->Branch("NChan",       &fHitNChan,       "nChan/I");
     fHitNtuple->Branch("PEs",         &fHitPE,       "PEs[64]/F");//changed from 32
@@ -585,7 +585,7 @@ namespace crt {
 	  fXErrHit = hit.x_err;
 	  fYErrHit = hit.y_err;
 	  fZErrHit = hit.z_err;
-	  fT0Hit   = hit.ts0_ns;
+	  fT0Hit   = hit.ts0();//hit.ts0_ns_corr;
 	  fT1Hit   = hit.ts1_ns;
 	   
 	  fNHitFeb  = hit.feb_id.size();

@@ -70,7 +70,7 @@ outputs:
  out1:
  {
    module_type: RootOutput
-   fileName:    "test.root"
+   fileName:    "Decoded.root"
    dataTier:    "generated"
    compressionLevel: 1
  }

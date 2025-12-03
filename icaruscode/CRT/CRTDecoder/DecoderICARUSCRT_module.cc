@@ -686,7 +686,7 @@ evt.put(std::move(crtdata));
   //std::cout<<"Hit counts for each subdetector. Total count: "<<totalCount<<'\n';
   //std::cout<<"Top count: "<<topCount<<'\n';
   //std::cout<<"Side count: "<<sideCount<<'\n';
-  //std::cout<<"Bottom count: "<<bottomCount<<'\n';
+  std::cout<<"Bottom count: "<<bottomCount<<'\n';
 }//End of produce
 
 DEFINE_ART_MODULE(crt::DecoderICARUSCRT)

@@ -36,7 +36,7 @@ outputs:
   out1:
   {
     module_type: RootOutput
-    fileName:    "%ifb_%tc_reco.root"
+    fileName:    "Reconstructed.root"
     dataTier: "reconstructed"
     saveMemoryObjectThreshold: 0
     compressionLevel: 1

@@ -15,7 +15,7 @@ CRTHitRecoAlg::CRTHitRecoAlg()
 
 //---------------------------------------------------------------------
 void CRTHitRecoAlg::reconfigure(const fhicl::ParameterSet& pset) {
-  fVerbose = true;//pset.get<bool>("Verbose", false);
+  fVerbose = pset.get<bool>("Verbose", false);
   fUseReadoutWindow = pset.get<bool>("UseReadoutWindow", false);
   fQPed = pset.get<double>("QPed", 0.);
   fQSlope = pset.get<double>("QSlope", 0.);
@@ -70,6 +70,17 @@ for (size_t febdat_i = 0; febdat_i < crtList.size(); febdat_i++) {
     int adid = fCrtutils.MacToAuxDetID(mac, 0);
     char type = fCrtutils.GetAuxDetType(adid);
 
+/*
+//std::cout << "DEBUG PreselectCRTData: trigger_timestamp=" << trigger_timestamp 
+          << ", CRT_fTs0=" << crtList[febdat_i]->fTs0 
+          << ", mac=" << (int)mac 
+          << ", type=" << type 
+          << ", time_diff=" << std::abs(int64_t(crtList[febdat_i]->fTs0 - trigger_timestamp))
+          << ", fCrtWindow=" << fCrtWindow 
+          << ", fData=" << fData 
+          << std::endl;
+*/
+
     /// Looking for data within +/- 3ms within trigger time stamp
     /// Here t0 - trigger time -ve
     if (fData && (std::fabs(int64_t(crtList[febdat_i]->fTs0 -
@@ -118,7 +129,8 @@ for (size_t febdat_i = 0; febdat_i < crtList.size(); febdat_i++) {
   }
   
   mf::LogInfo("CRTHitRecoAlg:")
-      << "Found " << crtdata.size() << " after preselection " << '\n';
+      << "Found " << crtdata.size() << " after preselection " << '\n'
+      << " TestHitReco "<< '\n';
   return crtdata;
 }
 
@@ -133,7 +145,7 @@ vector<pair<sbn::crt::CRTHit, vector<int>>> CRTHitRecoAlg::CreateCRTHits(
   if (fVerbose)
     mf::LogInfo("CRTHitRecoAlg: ")
         << "Found " << crtList.size() << " FEB events" << '\n';
-
+  std::cout<<"In the CRTHitRecoAlg function"<<'\n';
   map<string, int> regCounts;
   std::set<string> regs;
   map<string, vector<size_t>> sideRegionToIndices;
@@ -552,17 +564,6 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeBottomHit(art::Ptr<CRTData> data) {
     int adsid = fCrtutils.ChannelToAuxDetSensitiveID(mac, chan);
     petot += pe;
     pesmap[static_cast<int>(mac)].push_back(std::make_pair(chan, pe));
-    
-    //Debug print outs
-    if (fVerbose)
-    mf::LogInfo("CRTHitRecoAlg: ") << "Bottom hit: "
-              << "mac = " << static_cast<int>(mac) 
-              << ", chan = " << chan 
-              << ", adc value = " << data->fAdc[chan] 
-              << ", pe = " << pe 
-              << ", adsid = " << adsid 
-              << std::endl;
-    
     TVector3 postmp = fCrtutils.ChanToLocalCoords(mac, chan);
     TVector3 postmpW = fCrtutils.ChanToWorldCoords(mac, chan);
     hitpos.SetX(pe * postmp.X() + hitpos.X());
@@ -596,10 +597,25 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeBottomHit(art::Ptr<CRTData> data) {
   hitpointerr[0] = (xmax - xmin + 2 * adsGeo.HalfWidth1() * 2) / sqrt(12);
   hitpointerr[1] = adGeo.HalfHeight();
   hitpointerr[2] = adsGeo.Length() / sqrt(12);
-   
+
   CRTHit hit = FillCRTHit({mac}, pesmap, petot, thit, thit1, plane, hitpoint.X(),
                           hitpointerr[0], hitpoint.Y(), hitpointerr[1],
                           hitpoint.Z(), hitpointerr[2], region);
+
+   
+  mf::LogInfo("CRTHitRecoAlg: ") << "Bottom hit: "
+          << "DEBUG MakeBottomHit: mac=" << (int)mac 
+          << ", raw_fTs0=" << data->fTs0 
+          << ", thit=" << thit 
+          << ", thit1=" << thit1 
+          << ", GlobalT0Offset=" << fGlobalT0Offset
+          << ", final_t0=" << hit.ts0_ns_corr 
+          << ", final_t1=" << hit.ts1_ns
+          << ", x=" << hit.x_pos 
+          << ", y=" << hit.y_pos 
+          << ", z=" << hit.z_pos 
+          << ", petot=" << petot 
+          << std::endl;
 
 
   return hit;

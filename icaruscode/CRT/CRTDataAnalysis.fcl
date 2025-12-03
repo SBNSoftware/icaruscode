@@ -38,7 +38,7 @@ outputs:{
       compressionLevel: 1
       dataTier: "analysis"
       fastCloning: false
-      fileName: "%ifb_%tc_ana.root"
+      fileName: "Analyzed.root"
       module_type: "RootOutput"
       saveMemoryObjectThreshold: 0
    }
