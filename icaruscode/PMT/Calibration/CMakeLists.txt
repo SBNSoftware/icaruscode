@@ -44,6 +44,11 @@ cet_build_plugin(PMTBackgroundphotonsCalibration art::module
                 Boost::system
               )
 
+cet_build_plugin( OpHitRecalibrator art::module 
+                    LIBRARIES PUBLIC 
+		lardataobj::RecoBase
+                lardataobj::RawData
+              )
 
 art_make_exec(  NAME 
                     fitPulseDistribution 
