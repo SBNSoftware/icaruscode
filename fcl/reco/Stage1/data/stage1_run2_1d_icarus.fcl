@@ -11,3 +11,11 @@ physics.reco: [ @sequence::icarus_filter1D_cluster3D,
 
 physics.producers.cluster3DCryoW.Hit3DBuilderAlg.HitFinderTagVec: ["gaushit1dTPCWW", "gaushit1dTPCWE"]
 physics.producers.cluster3DCryoE.Hit3DBuilderAlg.HitFinderTagVec: ["gaushit1dTPCEW", "gaushit1dTPCEE"]
+
+physics.producers.pandoraGausCryoE.HitFinderModuleLabel:   "cluster3DCryoE"
+physics.producers.pandoraGausCryoW.HitFinderModuleLabel:   "cluster3DCryoW"
+
+physics.producers.CRTT0Tagging.HitLabel:    ["cluster3DCryoE", "cluster3DCryoW"]
+
+physics.analyzers.caloskimE.HITproducer: "cluster3DCryoE"
+physics.analyzers.caloskimW.HITproducer: "cluster3DCryoW"
