@@ -32,9 +32,8 @@
   
   <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
   <!-- icarus::timing::PMTWaveformTimeCorrection -->
-  <class name="icarus::timing::PMTWaveformTimeCorrection" ClassVersion="11" >
-   <version ClassVersion="11" checksum="849345931"/>
-   <version ClassVersion="10" checksum="1609503266"/>
+  <class name="icarus::timing::PMTWaveformTimeCorrection" ClassVersion="10" >
+   <version ClassVersion="10" checksum="849345931"/>
   </class>
 
   <class name="art::Ptr<icarus::timing::PMTWaveformTimeCorrection>"/>
@@ -68,6 +67,32 @@
   <class name="art::Assns<anab::T0, sim::BeamGateInfo>" />
   <class name="art::Wrapper<art::Assns<sim::BeamGateInfo, anab::T0>>" />
   <class name="art::Wrapper<art::Assns<anab::T0, sim::BeamGateInfo>>" />
+  
+  <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
+  <!-- icarus::ChannelToChannelMap<int> -->
+  
+  <!-- this is reported to be in libcanvas_root_io_Dictionaries_std_dict.so: -->
+  <!-- class name="std::pair<int, std::vector<int>>" -->
+  <class name="std::vector<std::pair<int, std::vector<int>>>" />
+  
+  <class name="icarus::ChannelToChannelMap<int, int>" ClassVersion="10" >
+   <version ClassVersion="10" checksum="1530378362"/>
+  </class>
+  
+  <class name="art::Wrapper<icarus::ChannelToChannelMap<int, int>>" />
+  
+  <!-- icarus::ChannelToChannelMap<raw::Channel_t> -->
+  
+  <!-- this one is reported to be in libcanvas_root_io_Dictionaries_std_dict.so
+       (raw::Channel_t is unsigned int)                                           -->
+  <!-- class name="std::pair<raw::Channel_t, std::vector<raw::Channel_t>>" / -->
+  <class name="std::vector<std::pair<raw::Channel_t, std::vector<raw::Channel_t>>>" />
+  
+  <class name="icarus::ChannelToChannelMap<raw::Channel_t>" ClassVersion="10" >
+   <version ClassVersion="10" checksum="3384721162"/>
+  </class>
+  
+  <class name="art::Wrapper<icarus::ChannelToChannelMap<raw::Channel_t>>" />
   
   <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
 

@@ -88,7 +88,7 @@ namespace icarusDB {
       short int endSide = NoInfo;
       
       /// The order of the digitizer within the VME crate
-      /// (`0` for C, `1` for B, `2` for A).
+      /// (`0` for A, `1` for B, `2` for C).
       short int slot = NoInfo;
       
     }; // DigitizerInfo_t

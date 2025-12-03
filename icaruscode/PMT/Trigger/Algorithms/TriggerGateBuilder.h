@@ -15,7 +15,7 @@
 #include "icaruscode/PMT/Trigger/Algorithms/TriggerTypes.h" // icarus::trigger::ADCCounts_t
 #include "icaruscode/PMT/Trigger/Utilities/TrackedOpticalTriggerGate.h"
 #include "icaruscode/PMT/Trigger/Utilities/TrackedTriggerGate.h" // gatesIn()
-#include "sbnobj/ICARUS/PMT/Data/WaveformBaseline.h"
+#include "icaruscode/PMT/Trigger/Algorithms/WaveformWithBaseline.h"
 
 // LArSoft libraries
 #include "lardataalg/DetectorInfo/DetectorTimings.h"
@@ -28,69 +28,14 @@
 
 // C/C++ standard libraries
 #include <vector>
-#include <tuple>
 #include <algorithm> // std::count_if()
 #include <functional> // std::mem_fn()
 #include <optional>
 #include <cstddef> // std::size_t
 
 
-namespace icarus::trigger {
-  
-  // ---------------------------------------------------------------------------
-  //
-  // declarations
-  //
-  
-  struct WaveformWithBaseline;
-  
-  class TriggerGateBuilder;
-  
-  // ---------------------------------------------------------------------------
-  
-} // namespace icarus::trigger
-
-
 //------------------------------------------------------------------------------
-/// Object to carry around waveform ant its baseline.
-struct icarus::trigger::WaveformWithBaseline
-  : std::tuple<raw::OpDetWaveform const*, icarus::WaveformBaseline const*>
-{
-  
-  using Waveform_t = raw::OpDetWaveform;
-  using Baseline_t = icarus::WaveformBaseline;
-  using Base_t = std::tuple<Waveform_t const*, Baseline_t const*>;
-  
-  using Base_t::Base_t; // inherit constructors
-  
-  /// Returns a reference to the waveform.
-  Waveform_t const& waveform() const { return *waveformPtr(); }
-  
-  /// Returns a reference to the waveform baseline.
-  Baseline_t const& baseline() const { return *baselinePtr(); }
-  
-  /// Returns a pointer to the waveform.
-  Waveform_t const* waveformPtr() const
-    { return std::get<Waveform_t const*>(*this); }
-  
-  /// Returns a pointer to the waveform baseline.
-  Baseline_t const* baselinePtr() const
-    { return std::get<Baseline_t const*>(*this); }
-  
-  /// Returns whether the baseline is available for this waveform.
-  bool hasBaseline() const { return baselinePtr() != nullptr; }
-  
-  
-  // questionable practices...
-  operator Waveform_t const& () const { return waveform(); }
-  operator Waveform_t const* () const { return waveformPtr(); }
-  operator Baseline_t const& () const { return baseline(); }
-  operator Baseline_t const* () const { return baselinePtr(); }
-  
-}; // struct icarus::trigger::WaveformWithBaseline
-
-
-//------------------------------------------------------------------------------
+namespace icarus::trigger { class TriggerGateBuilder; }
 /**
  * @brief Algorithm to produce trigger gates out of optical readout waveforms.
  * @see `icarus::trigger::DynamicTriggerGateBuilder`,

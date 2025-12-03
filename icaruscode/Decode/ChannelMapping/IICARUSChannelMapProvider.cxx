@@ -26,7 +26,7 @@ auto icarusDB::IICARUSChannelMapProvider::unpackDigitizerInfo
     = { { "BOT", 0 }, { "TOP", 1 } };
   
   static std::map<std::string, short int> const SlotMap
-    = { { "C", 0 }, { "B", 1 }, { "A", 1 } };
+    = { { "A", 0 }, { "B", 1 }, { "C", 2 } };
   
   
   std::smatch match;

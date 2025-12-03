@@ -9,6 +9,7 @@ add_subdirectory(Geometry)
 add_subdirectory(fcl)
 add_subdirectory(PMT)
 add_subdirectory(Decode)
+add_subdirectory(IcarusObj)
 
 # Continuous Integration tests
 add_subdirectory(ci)

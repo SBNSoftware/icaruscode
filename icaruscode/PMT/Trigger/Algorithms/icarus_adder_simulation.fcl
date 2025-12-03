@@ -1,0 +1,107 @@
+#
+# File:    icarus_adder_simulation.fcl
+# Purpose: Parameters of the adder boards and simulation algorithm configuration.
+# Author:  Gianluca Petrillo (petrillo@slac.stanford.edu)
+# Date:    October 24, 2025
+# 
+# The main study behind this simulation is described in SBN DocDB 42951.
+# 
+# 
+# Changes
+# --------
+# 
+# 20251024 (petrillo@slac.stanford.edu) [v1]
+#   original version
+#
+
+BEGIN_PROLOG
+
+# these parameters are from the documentation of the adder boards
+nominal_adder_board_parameters: {
+  
+  # Sallen-Key filter parameters:
+  R1:  "22 ohm"
+  R2: "220 ohm"
+  R3: "330 ohm"
+  R4: "330 ohm"
+  C1:  "56 pF"
+  C2:  "56 pF"
+  
+} # nominal_adder_board_parameters
+
+
+#
+# amplitude scale factor from reshaped PMT sum to actual adder signal
+# as extracted by Batu Orberk in SBN DocDB 42951.
+# The note does not report the time offset by channel, so the average is used
+# with their RMS as uncertainty.
+#
+# Channel IDs are the "new standard" defined in AdderChannelMapBuilder.
+# However the note used an old standard, with prefix 0x8000.
+# In appendix to the note, these two conventions are compared.
+# 
+pmtsum_to_adder_calibration_20250820: [
+  { channel: 0xA002  slope: 0.9308846397227009  offset: "0.258108818318112   mV"  slopeErr: 8.77434217e-07  offsetErr: "1.25661408e-02 mV"  slopeOffsetCov: "-7.11105715e-05 mV"  timeOffset: "14.7 ns"  timeOffsetErr: "0.3 ns" }, # was: 0x8001
+  { channel: 0xA001  slope: 0.9386453503602314  offset: "0.3105527281619443  mV"  slopeErr: 9.65080874e-07  offsetErr: "1.37756905e-02 mV"  slopeOffsetCov: "-7.57435526e-05 mV"  timeOffset: "14.7 ns"  timeOffsetErr: "0.3 ns" }, # was: 0x8002
+  { channel: 0xA000  slope: 0.9411316735914417  offset: "0.13962680726433324 mV"  slopeErr: 7.59740649e-07  offsetErr: "1.79673746e-02 mV"  slopeOffsetCov: "-7.61386416e-05 mV"  timeOffset: "14.7 ns"  timeOffsetErr: "0.3 ns" }, # was: 0x8003
+  { channel: 0xA005  slope: 0.949072913615971   offset: "0.47668084898036983 mV"  slopeErr: 1.49589135e-06  offsetErr: "3.32562922e-02 mV"  slopeOffsetCov: "-1.46539232e-04 mV"  timeOffset: "14.7 ns"  timeOffsetErr: "0.3 ns" }, # was: 0x8011
+  { channel: 0xA004  slope: 0.9237649506887121  offset: "0.537063102313327   mV"  slopeErr: 1.04149503e-06  offsetErr: "1.38277476e-02 mV"  slopeOffsetCov: "-8.21607906e-05 mV"  timeOffset: "14.7 ns"  timeOffsetErr: "0.3 ns" }, # was: 0x8012
+  { channel: 0xA003  slope: 0.9214057283406687  offset: "0.453701841558709   mV"  slopeErr: 8.02098123e-07  offsetErr: "1.74127453e-02 mV"  slopeOffsetCov: "-7.63425806e-05 mV"  timeOffset: "14.7 ns"  timeOffsetErr: "0.3 ns" }, # was: 0x8013
+  { channel: 0xA008  slope: 0.9229750944716208  offset: "0.3444673542930856  mV"  slopeErr: 9.97504454e-07  offsetErr: "1.71370100e-02 mV"  slopeOffsetCov: "-8.34659043e-05 mV"  timeOffset: "14.7 ns"  timeOffsetErr: "0.3 ns" }, # was: 0x8021
+  { channel: 0xA007  slope: 0.9278487346722343  offset: "0.4525228555931199  mV"  slopeErr: 1.26168292e-06  offsetErr: "1.41178584e-02 mV"  slopeOffsetCov: "-8.69552665e-05 mV"  timeOffset: "14.7 ns"  timeOffsetErr: "0.3 ns" }, # was: 0x8022
+  { channel: 0xA006  slope: 0.9346190614529807  offset: "0.15220860907239034 mV"  slopeErr: 1.38611576e-06  offsetErr: "2.58160848e-02 mV"  slopeOffsetCov: "-1.28687336e-04 mV"  timeOffset: "14.7 ns"  timeOffsetErr: "0.3 ns" }, # was: 0x8023
+  { channel: 0xA00B  slope: 0.9314695068865395  offset: "0.3407932453491532  mV"  slopeErr: 1.01646874e-06  offsetErr: "2.06766444e-02 mV"  slopeOffsetCov: "-8.99643030e-05 mV"  timeOffset: "14.7 ns"  timeOffsetErr: "0.3 ns" }, # was: 0x8031
+  { channel: 0xA00A  slope: 0.9409549293954733  offset: "0.29453930117371907 mV"  slopeErr: 8.22345864e-07  offsetErr: "1.35041438e-02 mV"  slopeOffsetCov: "-7.17705423e-05 mV"  timeOffset: "14.7 ns"  timeOffsetErr: "0.3 ns" }, # was: 0x8032
+  { channel: 0xA009  slope: 0.9428218492190034  offset: "0.39455901022447826 mV"  slopeErr: 4.82155592e-07  offsetErr: "1.00694818e-02 mV"  slopeOffsetCov: "-4.59445453e-05 mV"  timeOffset: "14.7 ns"  timeOffsetErr: "0.3 ns" }, # was: 0x8033
+  { channel: 0xA00E  slope: 0.9144573502251243  offset: "0.929774385092585   mV"  slopeErr: 1.11740697e-06  offsetErr: "2.03334292e-02 mV"  slopeOffsetCov: "-1.00566408e-04 mV"  timeOffset: "14.7 ns"  timeOffsetErr: "0.3 ns" }, # was: 0x8041
+  { channel: 0xA00D  slope: 0.9321282475548444  offset: "0.4431403877347786  mV"  slopeErr: 7.53883640e-07  offsetErr: "1.48212871e-02 mV"  slopeOffsetCov: "-7.01628802e-05 mV"  timeOffset: "14.7 ns"  timeOffsetErr: "0.3 ns" }, # was: 0x8042
+  { channel: 0xA00C  slope: 0.9353821730363916  offset: "0.07093198002331962 mV"  slopeErr: 5.90006904e-07  offsetErr: "2.07359278e-02 mV"  slopeOffsetCov: "-7.52583473e-05 mV"  timeOffset: "14.7 ns"  timeOffsetErr: "0.3 ns" }, # was: 0x8043
+  { channel: 0xA011  slope: 0.9462995053244904  offset: "0.259097080239575   mV"  slopeErr: 1.85274607e-06  offsetErr: "3.44633417e-02 mV"  slopeOffsetCov: "-1.75686639e-04 mV"  timeOffset: "14.7 ns"  timeOffsetErr: "0.3 ns" }, # was: 0x8051
+  { channel: 0xA010  slope: 0.933642272836982   offset: "0.20218514885514616 mV"  slopeErr: 8.53184605e-07  offsetErr: "1.55433103e-02 mV"  slopeOffsetCov: "-7.29244607e-05 mV"  timeOffset: "14.7 ns"  timeOffsetErr: "0.3 ns" }, # was: 0x8052
+  { channel: 0xA00F  slope: 0.9183230078017621  offset: "0.7604163564139559  mV"  slopeErr: 8.92843870e-07  offsetErr: "1.95810330e-02 mV"  slopeOffsetCov: "-8.51202621e-05 mV"  timeOffset: "14.7 ns"  timeOffsetErr: "0.3 ns" }, # was: 0x8053
+  { channel: 0xA014  slope: 0.9216999294428346  offset: "0.594517679477901   mV"  slopeErr: 1.16290705e-06  offsetErr: "1.94676141e-02 mV"  slopeOffsetCov: "-9.96362883e-05 mV"  timeOffset: "14.7 ns"  timeOffsetErr: "0.3 ns" }, # was: 0x8061
+  { channel: 0xA013  slope: 0.9285669198250743  offset: "1.0037495277795505  mV"  slopeErr: 1.30952683e-06  offsetErr: "2.72720538e-02 mV"  slopeOffsetCov: "-1.23374862e-04 mV"  timeOffset: "14.7 ns"  timeOffsetErr: "0.3 ns" }, # was: 0x8062
+  { channel: 0xA012  slope: 0.9297143551742016  offset: "1.1443914251521106  mV"  slopeErr: 1.28687313e-06  offsetErr: "3.66823855e-02 mV"  slopeOffsetCov: "-1.49355804e-04 mV"  timeOffset: "14.7 ns"  timeOffsetErr: "0.3 ns" }, # was: 0x8063
+  { channel: 0xA017  slope: 0.9326417415610048  offset: "0.1798178932130293  mV"  slopeErr: 9.01624694e-07  offsetErr: "1.83789699e-02 mV"  slopeOffsetCov: "-8.50713634e-05 mV"  timeOffset: "14.7 ns"  timeOffsetErr: "0.3 ns" }, # was: 0x8071
+  { channel: 0xA016  slope: 0.926076954667938   offset: "0.9582520549477253  mV"  slopeErr: 9.80351608e-07  offsetErr: "2.22140450e-02 mV"  slopeOffsetCov: "-9.44272777e-05 mV"  timeOffset: "14.7 ns"  timeOffsetErr: "0.3 ns" }, # was: 0x8072
+  { channel: 0xA015  slope: 0.9402110739474753  offset: "0.8290357505335925  mV"  slopeErr: 1.49536868e-06  offsetErr: "3.47453145e-02 mV"  slopeOffsetCov: "-1.46836153e-04 mV"  timeOffset: "14.7 ns"  timeOffsetErr: "0.3 ns" }  # was: 0x8073
+] # pmtsum_to_adder_calibration_20250820
+
+
+# this calibration is extracted presumably out of the same data as above (200 events from run 13273), this time by G. Petrillo;
+# reported with an exaggerated number of digits just because it's for a machine
+pmtsum_to_adder_calibration_20251114: [
+  { channel: 0XA000  slope: 0.9412901391555043  offset: "0.3148826196995231 mV"  slopeErr: 0.0004737375106948  offsetErr: "0.0635606596294195 mV"  slopeOffsetCov: "-0.00002081479472 mV"  timeOffset: "14.732265446239189544 ns"  timeOffsetErr: "0.115861386402722297 ns" },
+  { channel: 0XA001  slope: 0.9377887348274436  offset: "0.3597169645800677 mV"  slopeErr: 0.0004120148282063  offsetErr: "0.0481144290373853 mV"  slopeOffsetCov: "-0.00001244482942 mV"  timeOffset: "14.485714285716232652 ns"  timeOffsetErr: "0.102746636914524916 ns" },
+  { channel: 0XA002  slope: 0.9312792979907631  offset: "0.3226133505887250 mV"  slopeErr: 0.0003810891645850  offsetErr: "0.0468074010944392 mV"  slopeOffsetCov: "-0.00001172210917 mV"  timeOffset: "15.041297935108914885 ns"  timeOffsetErr: "0.101457589538064274 ns" },
+  { channel: 0XA003  slope: 0.9223520054148029  offset: "0.4528993310204330 mV"  slopeErr: 0.0003468511432812  offsetErr: "0.0440129305583177 mV"  slopeOffsetCov: "-0.00000977184073 mV"  timeOffset: "14.871572871578097264 ns"  timeOffsetErr: "0.093245089333401310 ns" },
+  { channel: 0XA004  slope: 0.9245626837447916  offset: "0.4887509193002450 mV"  slopeErr: 0.0003433809886105  offsetErr: "0.0460450865669241 mV"  slopeOffsetCov: "-0.00001010371250 mV"  timeOffset: "14.868035190619400154 ns"  timeOffsetErr: "0.104152247727184774 ns" },
+  { channel: 0XA005  slope: 0.9526731438563044  offset: "0.3276574130477349 mV"  slopeErr: 0.0003551566508169  offsetErr: "0.0542027826601667 mV"  slopeOffsetCov: "-0.00001227527965 mV"  timeOffset: "14.840336134458006256 ns"  timeOffsetErr: "0.113328194756520478 ns" },
+  { channel: 0XA006  slope: 0.9309118417880892  offset: "0.5313272304558569 mV"  slopeErr: 0.0004562162777473  offsetErr: "0.0666562358788735 mV"  slopeOffsetCov: "-0.00001970329424 mV"  timeOffset: "14.492027334845126063 ns"  timeOffsetErr: "0.139944172331235017 ns" },
+  { channel: 0XA007  slope: 0.9294274135948029  offset: "0.5538813592111231 mV"  slopeErr: 0.0004013031843990  offsetErr: "0.0514196239359302 mV"  slopeOffsetCov: "-0.00001294316895 mV"  timeOffset: "14.604229607259606283 ns"  timeOffsetErr: "0.109161280732919322 ns" },
+  { channel: 0XA008  slope: 0.9225676403577758  offset: "0.4761266289280909 mV"  slopeErr: 0.0003943652748222  offsetErr: "0.0505940790623748 mV"  slopeOffsetCov: "-0.00001269606907 mV"  timeOffset: "14.760522496365304335 ns"  timeOffsetErr: "0.107690711009089321 ns" },
+  { channel: 0XA009  slope: 0.9444716685610527  offset: "0.3139044338870254 mV"  slopeErr: 0.0003370434472321  offsetErr: "0.0468408947680716 mV"  slopeOffsetCov: "-0.00000977241189 mV"  timeOffset: "14.674285714293580085 ns"  timeOffsetErr: "0.110456174145384653 ns" },
+  { channel: 0XA00A  slope: 0.9418407083275022  offset: "0.3369607428072675 mV"  slopeErr: 0.0003667977039736  offsetErr: "0.0458914242101600 mV"  slopeOffsetCov: "-0.00001070614519 mV"  timeOffset: "14.498583569409916549 ns"  timeOffsetErr: "0.111901056069908911 ns" },
+  { channel: 0XA00B  slope: 0.9308856717212735  offset: "0.4069165588415301 mV"  slopeErr: 0.0003945964095969  offsetErr: "0.0591928981014222 mV"  slopeOffsetCov: "-0.00001525545631 mV"  timeOffset: "14.919282511205780750 ns"  timeOffsetErr: "0.110948815202695297 ns" },
+  { channel: 0XA00C  slope: 0.9339217250151285  offset: "0.3186658368348761 mV"  slopeErr: 0.0003802903966985  offsetErr: "0.0586577005745879 mV"  slopeOffsetCov: "-0.00001405906200 mV"  timeOffset: "15.054989816706852324 ns"  timeOffsetErr: "0.120708303414744089 ns" },
+  { channel: 0XA00D  slope: 0.9348089541747575  offset: "0.5668246658181698 mV"  slopeErr: 0.0003717133295702  offsetErr: "0.0492148985044518 mV"  slopeOffsetCov: "-0.00001143236148 mV"  timeOffset: "14.867036011076367075 ns"  timeOffsetErr: "0.108968610337939045 ns" },
+  { channel: 0XA00E  slope: 0.9183539784422329  offset: "0.9436904475275139 mV"  slopeErr: 0.0005895128806967  offsetErr: "0.0722733486026760 mV"  slopeOffsetCov: "-0.00002659646517 mV"  timeOffset: "14.660194174751516982 ns"  timeOffsetErr: "0.134204186028823669 ns" },
+  { channel: 0XA00F  slope: 0.9186959702119052  offset: "0.8002728187918023 mV"  slopeErr: 0.0004031513470179  offsetErr: "0.0550381108099557 mV"  slopeOffsetCov: "-0.00001407390580 mV"  timeOffset: "15.112285336848499284 ns"  timeOffsetErr: "0.110938951670338695 ns" },
+  { channel: 0XA010  slope: 0.9330718812706359  offset: "0.5407679515635168 mV"  slopeErr: 0.0004012678287334  offsetErr: "0.0509843832259601 mV"  slopeOffsetCov: "-0.00001289925158 mV"  timeOffset: "14.738060781477063443 ns"  timeOffsetErr: "0.117900111339348246 ns" },
+  { channel: 0XA011  slope: 0.9495928654155182  offset: "0.3018155559939467 mV"  slopeErr: 0.0004564794527783  offsetErr: "0.0675892843104417 mV"  slopeOffsetCov: "-0.00001967733708 mV"  timeOffset: "15.026052104211586880 ns"  timeOffsetErr: "0.129922242076802419 ns" },
+  { channel: 0XA012  slope: 0.9295634912708580  offset: "1.3367815850122424 mV"  slopeErr: 0.0006604051492870  offsetErr: "0.0980750819664166 mV"  slopeOffsetCov: "-0.00004109014595 mV"  timeOffset: "14.787401574798225923 ns"  timeOffsetErr: "0.147099169148750042 ns" },
+  { channel: 0XA013  slope: 0.9252764417419320  offset: "1.2495453472363329 mV"  slopeErr: 0.0005847155751598  offsetErr: "0.0725549666412439 mV"  slopeOffsetCov: "-0.00002631302704 mV"  timeOffset: "14.907073509020367652 ns"  timeOffsetErr: "0.134182842794313167 ns" },
+  { channel: 0XA014  slope: 0.9224893096773475  offset: "0.8212052756650869 mV"  slopeErr: 0.0004711310704514  offsetErr: "0.0559868673524021 mV"  slopeOffsetCov: "-0.00001703719251 mV"  timeOffset: "14.548913043481155327 ns"  timeOffsetErr: "0.108380013465951691 ns" },
+  { channel: 0XA015  slope: 0.9396290536793012  offset: "1.0991923777737664 mV"  slopeErr: 0.0005491828932636  offsetErr: "0.0721325372243907 mV"  slopeOffsetCov: "-0.00002491918644 mV"  timeOffset: "14.660759493653321428 ns"  timeOffsetErr: "0.123501322414550196 ns" },
+  { channel: 0XA016  slope: 0.9264025725942135  offset: "0.9142301864592911 mV"  slopeErr: 0.0004695716799076  offsetErr: "0.0654320869739687 mV"  slopeOffsetCov: "-0.00001903903519 mV"  timeOffset: "15.183175033933716591 ns"  timeOffsetErr: "0.122472916929011716 ns" },
+  { channel: 0XA017  slope: 0.9348542538828650  offset: "0.2930270004904945 mV"  slopeErr: 0.0003941937957307  offsetErr: "0.0633084152654089 mV"  slopeOffsetCov: "-0.00001623413514 mV"  timeOffset: "14.609808102346574898 ns"  timeOffsetErr: "0.127454933583512425 ns" }
+] # pmtsum_to_adder_calibration_20251114
+
+
+#
+# This is the standard set of values to use; it may change in the future.
+#
+pmtsum_to_adder_calibration: @local::pmtsum_to_adder_calibration_20251114
+
+
+END_PROLOG

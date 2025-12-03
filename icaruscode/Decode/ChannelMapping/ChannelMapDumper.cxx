@@ -174,9 +174,13 @@ void dumpPMTmapping(icarusDB::IICARUSChannelMapProvider const& mapping) {
       if (pager.nextHasNewLine()) log << "\n     ";
       log << " " << std::setw(3) << chInfo.channelID
         << " [" << chInfo.digitizerLabel << "@"
-        << std::setfill('0') << std::setw(2) << chInfo.digitizerChannelNo;
+        << std::setfill('0') << std::setw(2) << chInfo.digitizerChannelNo
+        << ", C:" << chInfo.digitizerInfo.cryostat
+        << ", wall:" << chInfo.digitizerInfo.PMTwall
+        << ", side:" << chInfo.digitizerInfo.endSide
+        << ", slot:" << chInfo.digitizerInfo.slot;
       if (chInfo.hasLVDSinfo()) {
-        log << ", LVDS:" << chInfo.LVDSconnector << "-"
+        log << "; LVDS:" << chInfo.LVDSconnector << "-"
           << std::setw(2) << chInfo.LVDSbit;
       }
       if (chInfo.hasAdderInfo()) {

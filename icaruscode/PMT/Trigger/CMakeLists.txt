@@ -7,6 +7,7 @@ art_make_library(
     "WriteBeamGateInfo_module.cc"
     "FixBeamGateInfo_module.cc"
     "DiscriminatePMTwaveformsByChannel_module.cc"
+    "SimulateAdderSignal_module.cc"
     "DiscriminatedAdderSignal_module.cc"
     "MajorityTriggerSimulation_module.cc"
     "SlidingWindowTrigger_module.cc"
@@ -20,6 +21,7 @@ art_make_library(
 	LIBRARIES
 		icaruscode::PMT_Trigger_Algorithms
 		icaruscode::PMT_Trigger_Utilities
+    sbnalg::Utilities
 		sbnobj::ICARUS_PMT_Trigger_Data
 		larcore::Geometry_Geometry_service
 		lardataalg::MCDumpers
@@ -117,12 +119,39 @@ cet_build_plugin(DiscriminatePMTwaveformsByChannel art::module
   ROOT::Core
   )
 
+cet_build_plugin(WriteAdderChannelMap art::module
+  LIBRARIES
+    icaruscode::PMT_Trigger_Algorithms
+    icaruscode::Decode_ChannelMapping
+    icaruscode::IcarusObj
+    larcorealg::CoreUtils
+  )
+
+cet_build_plugin(SimulateAdderSignal art::module
+  LIBRARIES
+    icaruscode::PMT_Trigger_Algorithms
+    icaruscode::PMT_Algorithms
+    icaruscode::Decode_ChannelMapping
+    icaruscode::IcarusObj
+    icarusalg::Utilities
+    sbnalg::Utilities
+    sbnobj::ICARUS_PMT_Data
+    lardata::headers
+    lardataalg::DetectorInfo
+    lardataalg::headers
+    larcorealg::CoreUtils
+    lardataobj::RawData
+    art_root_io::TFileService_service
+    ROOT::RIO
+  )
+
 cet_build_plugin(DiscriminatedAdderSignal art::module
   LIBRARIES
     icaruscode::PMT_Trigger_Algorithms
     icaruscode::PMT_Trigger_Utilities
     icaruscode::PMT_Algorithms
     icaruscode::IcarusObj
+    sbnalg::Utilities
     sbnobj::ICARUS_PMT_Trigger_Data
     sbnobj::ICARUS_PMT_Data
     lardata::headers
@@ -132,6 +161,7 @@ cet_build_plugin(DiscriminatedAdderSignal art::module
     larcorealg::Geometry
     larcorealg::CoreUtils
     lardataobj::RawData
+    art_root_io::TFileService_service
     art::Framework_Services_Registry
   )
 

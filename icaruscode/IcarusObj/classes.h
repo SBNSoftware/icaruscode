@@ -8,6 +8,7 @@
 #include "icaruscode/IcarusObj/PMTWaveformTimeCorrection.h"
 #include "icaruscode/IcarusObj/PMTBeamSignal.h"
 #include "icaruscode/IcarusObj/Hit.h"
+#include "icaruscode/IcarusObj/ChannelToChannelMap.h"
 //#include "icaruscode/IcarusObj/CRTPMTMatching.h"
 
 #include "sbnobj/ICARUS/PMT/Trigger/Data/OpticalTriggerGate.h"
@@ -24,4 +25,6 @@
 
 namespace {
   icarus::SimEnergyDepositSummary EDepSum;
+  icarus::ChannelToChannelMap<int> IntChMap;
+  icarus::ChannelToChannelMap<raw::Channel_t> ChMap;
 }
