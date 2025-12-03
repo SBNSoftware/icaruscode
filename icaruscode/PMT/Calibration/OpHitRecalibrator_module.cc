@@ -81,7 +81,7 @@ public:
             fhicl::Comment("list of the input labels to be used")};
 
         fhicl::Atom<bool> RecalibratePE{
-            fhicl::Name("Recalibrate"),
+            fhicl::Name("RecalibratePE"),
             fhicl::Comment("re-compute hit PE values")
         };
 
@@ -161,9 +161,9 @@ icarus::OpHitRecalibrator::OpHitRecalibrator(Parameters const &config, art::Proc
     {
         throw art::Exception{art::errors::Configuration}
             << "The gain database for PE recalibration has been disabled ('"
-            << config().fUseGainDatabase.name() << "'), but '" 
-            << config().fSPEArea.name() << ", has not been set correctly."
-            << " Fix the configuration!\n";
+            << config().UseGainDatabase.name() << "'), but '" 
+            << config().SPEArea.name() << "' (" << fSPEArea
+            << ") has not been set correctly. Fix the configuration!\n";
     }
 
     //FIXME: temporary since no db exists yet...
@@ -222,12 +222,12 @@ void icarus::OpHitRecalibrator::produce(art::Event &event, art::ProcessingFrame 
                 double PEcorrection = oldSPEArea/newSPEArea;
                 if(log)
                 {
-                    *log << "Channel: " opHit.OpChannel() 
-                         << ", Area: " << hitArea << " [ADC x tick]" 
+                    *log << "Channel: " << opHit.OpChannel() 
+                         << ", Area: " << opHit.Area() << " [ADC x tick]" 
                          << ", PE " << hitPE 
                          << "(old SPEArea: " << oldSPEArea
                          << ") --> new PE " << hitPE*PEcorrection 
-                         << " (new SPEArea: " << newSPEArea << ")";
+                         << " (new SPEArea: " << newSPEArea << ")\n";
                 }
                 
                 hitPE = hitPE*PEcorrection;
@@ -239,7 +239,7 @@ void icarus::OpHitRecalibrator::produce(art::Event &event, art::ProcessingFrame 
                 // soon...
             }
 
-            recalibratedHits.emplace_back(
+            recalibratedOpHits.emplace_back(
                 opHit.OpChannel(),  // channel
                 peakTime,           // recalibrated peaktime
                 peakTimeAbs,        // recalibrated peaktimeabs
