@@ -18,7 +18,7 @@
 #include "larcoreobj/SimpleTypesAndConstants/geo_vectors.h"
 
 // ROOT libraries
-#include "Rtypes.h"
+#include "RtypesCore.h"
 
 // C/C++ standard libraries
 #include <vector>

@@ -16,7 +16,7 @@
 #include "canvas/Persistency/Provenance/EventID.h"
 
 // ROOT libraries
-#include "Rtypes.h"
+#include "RtypesCore.h"
 
 
 //------------------------------------------------------------------------------
