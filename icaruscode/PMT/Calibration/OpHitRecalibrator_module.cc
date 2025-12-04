@@ -45,7 +45,25 @@ namespace icarus
  * gain and/or timing calibrations, and applies new ones.
  * A new collection of hits is produced containing a re-calibrated copy of all the
  * hits from the input collections.
- *
+ * 
+ * The PE recalibration is simple: for each optical hit, its `PE` value is recomputed 
+ * from its `Area` [ADC x tick] based on a newly determined single-PE area.
+ * If `UseGainDatabase` is set, the module calls retrieves the SPE area by channel and run number
+ * using the gain calibration service. If that option is disabled, a single SPE area value 
+ * is used for all channels and run numbers. This value is read from the `SPEArea` paramater
+ * set in the configuration.
+ * 
+ * The timing recalibration requires removing previously-applied timing corrections and 
+ * adding the new ones. Unfortunately, however, it's not possible to easily determine 
+ * which timing corrections were previsouly applied to the optical hits.
+ * The old corrections -- that need to be removed -- are therefore obtained by locally
+ * definining an instance of `icarusDB::PMTTimingCorrectionsProvider` and manually setting 
+ * in the configuration the database tags that were used originally (`OldTimingDBTags`).
+ * These need to be deduced by the `icaruscode` version that was used and the corresponding
+ * settings in `calibration_database_GlobalTags_icarus.fcl`
+ * On the other hand, the new corrections are obtained from the current timing correction
+ * service `icarusDB::PMTTimingCorrections` as defined in `timing_icarus.fcl`.
+ * 
  * Input
  * ------
  * * `std::vector<recob::OpHit>` data products (as for `InputLabels`)
@@ -58,14 +76,16 @@ namespace icarus
  * Configuration parameters
  * -------------------------
  *
- * * `InputLabels` (list of input tags, mandatory): the list of optical hit data
- *   products to recalibrated It must be non-empty.
+ * * `InputLabel` (art::InputTag, mandatory): optical hit data products to be recalibrated. It must be non-empty.
  * * `RecalibratePE`   (flag, mandatory): if set, recalibrate hit PE values.
  * * `UseGainDatabase` (flag, default: true): if set, use gain values from database
  *    to re-calibrate hit PEs from hit area.
  * * `SPEArea` (double, default: -1): if not using the gain database, single-photoelectron
  *    area in ADC x tick to be used in the PE calibration.
  * * `RecalibrateTime` (flag, mandatory): if set, recalibrate hit times.
+ * * `OldTimingDBTags` (fhicl::ParameterSet, mandatory): configuration for the previously-applied timing corrections 
+ *    that need to be removed/replace by the now ones. It should match what is tipically passed to
+ *    `icarusDB::PMTTimingCorrectionsProvider`, specifying the database tags that were used. 
  * * `Verbose` (flag, default: `false`): verbose printing
  *
  */
