@@ -117,6 +117,9 @@ double icarus::calo::NormalizeTPCPerPlaneSQL::Normalize(double dQdx, const art::
     case 4:
       runID = 12960;
       break;
+    case 5:
+      runID = 14079;
+      break;
     default:
       runID = e.id().runID().run();
       break;
