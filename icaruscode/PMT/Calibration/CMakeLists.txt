@@ -48,6 +48,7 @@ cet_build_plugin( OpHitRecalibrator art::module
                     LIBRARIES PUBLIC 
 		lardataobj::RecoBase
                 lardataobj::RawData
+                larcore::Geometry_Geometry_service
               )
 
 art_make_exec(  NAME 
