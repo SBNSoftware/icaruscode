@@ -6,8 +6,8 @@
  */
 
 // ICARUS libraries
-//#include "icaruscode/Timing/PMTTimingCorrections.h"
-//#include "icaruscode/Timing/IPMTTimingCorrectionService.h"
+#include "icaruscode/Timing/PMTTimingCorrections.h"
+#include "icaruscode/Timing/IPMTTimingCorrectionService.h"
 
 // framework libraries
 #include "canvas/Utilities/InputTag.h"
@@ -127,7 +127,7 @@ private:
     bool const fVerbose = false; ///< Whether to print the configuration we read.
 
     /// Pointer to the online pmt corrections service
-    //icarusDB::PMTTimingCorrections const &fPMTTimingCorrectionsService;
+    icarusDB::PMTTimingCorrections const &fPMTTimingCorrectionsService;
 };
 
 // -----------------------------------------------------------------------------
@@ -138,8 +138,8 @@ icarus::OpHitRecalibrator::OpHitRecalibrator(Parameters const &config, art::Proc
     fRecalibrateTime{config().RecalibrateTime()},
     fUseGainDatabase{config().UseGainDatabase()},
     fSPEArea{config().SPEArea()},
-    fVerbose{config().Verbose()}//,
-    //fPMTTimingCorrectionsService{*(lar::providerFrom<icarusDB::IPMTTimingCorrectionService const>())}
+    fVerbose{config().Verbose()},
+    fPMTTimingCorrectionsService{*(lar::providerFrom<icarusDB::IPMTTimingCorrectionService const>())}
 {
     async<art::InEvent>();
 
@@ -203,11 +203,10 @@ void icarus::OpHitRecalibrator::produce(art::Event &event, art::ProcessingFrame 
             // read current PE
             double hitPE = opHit.PE();
 
-            // First, recalibrated PE values (if enabled).
-            // - extract previously-used SPEArea from area/PE ratio
+            // First, recalibrate PE values (if enabled).
             // - if using gain database, fetch new SPEArea for this run/channel
             // - if not using gain database, use fSPEArea
-            // - rescale PE value with new SPE area 
+            // - re-compute PE value with new SPE area 
             if( fRecalibratePE )
             {
                 double oldSPEArea = opHit.Area()/hitPE;
@@ -219,24 +218,51 @@ void icarus::OpHitRecalibrator::produce(art::Event &event, art::ProcessingFrame 
                     // newSPEArea = get_from_db(opHit.OpChannel())
                 }
             
-                double PEcorrection = oldSPEArea/newSPEArea;
                 if(log)
                 {
                     *log << "Channel: " << opHit.OpChannel() 
                          << ", Area: " << opHit.Area() << " [ADC x tick]" 
                          << ", PE " << hitPE 
                          << "(old SPEArea: " << oldSPEArea
-                         << ") --> new PE " << hitPE*PEcorrection 
+                         << ") --> new PE " << opHit.Area()/newSPEArea 
                          << " (new SPEArea: " << newSPEArea << ")\n";
                 }
-                
-                hitPE = hitPE*PEcorrection;
+
+                hitPE = opHit.Area()/newSPEArea;
             }
             
-            // correct PE values
+            // Second, recalibrate PMT times (if enabled)
             if( fRecalibrateTime )
             {
-                // soon...
+                // get the old timing corrections: these will need to be subtracted!
+                double oldLaserTimeCorrection = 0;
+                double oldCosmicsCorrection = 0;
+                double const oldTotalCorrection = oldLaserTimeCorrection + oldCosmicsCorrection;
+
+                // get new/current timing: these will need to be added!
+                double const laserTimeCorrection = fPMTTimingCorrectionsService.getLaserCorrections(opHit.OpChannel());
+                double const cosmicsCorrection = fPMTTimingCorrectionsService.getCosmicsCorrections(opHit.OpChannel());
+                double const totalCorrection = laserTimeCorrection + cosmicsCorrection;
+
+                double timeCorr = totalCorrection - oldTotalCorrection;
+
+                if(log)
+                {
+                    *log << "Channel: " << opHit.OpChannel() 
+                         << ", startTime " << startTime << " us" 
+                         << ", peakTime " << peakTime << " us"
+                         << ", peakTimeAbs " << peakTimeAbs << " us"
+                         << "(old total correction: " << oldTotalCorrection
+                         << ") --> new startTime " << startTime + timeCorr
+                         << ", new peakTime " << peakTime + timeCorr
+                         << ", new peakTimeAbs " << peakTimeAbs + timeCorr
+                         << " (new total correction: " << totalCorrection << ")\n";
+                }
+
+                peakTime = peakTime + timeCorr;
+                peakTimeAbs = peakTimeAbs + timeCorr;
+                startTime = startTime + timeCorr;
+                // NOTE: riseTime is currently relative to the start time, so no correction needed
             }
 
             recalibratedOpHits.emplace_back(
