@@ -599,7 +599,9 @@ void OverlayProducts::produce(art::Event& e)
 
 	  // and fill in any remaining bins left
 	  while ( idxWvfmEntry < wvfm.size() ) {
-	    adcVec.push_back( overlayOpWave.baseline + (wvfm[idxWvfmEntry] - simBaseline) );
+      // FIXME FIXME: temporary override to chop off flat tails after data waveform ends
+      // timing shift between data/mc event should be tuned so that this never (?) happens!
+	    //adcVec.push_back( overlayOpWave.baseline + (wvfm[idxWvfmEntry] - simBaseline) );
 	    idxWvfmEntry+=1;
 	  }
 
