@@ -99,7 +99,29 @@ icarus::calo::NormalizeTPCPerPlaneSQL::ScaleInfo icarus::calo::NormalizeTPCPerPl
 double icarus::calo::NormalizeTPCPerPlaneSQL::Normalize(double dQdx, const art::Event &e, 
     const recob::Hit &hit, const geo::Point_t &location, const geo::Vector_t &direction, double t0) {
   // Get the info
-  ScaleInfo i = GetScaleInfo(e.id().runID().run());
+  uint64_t runID = -1;
+  switch (fMC) {
+    case 1:
+      runID = 8460;
+      break;
+    case 2:
+      runID = 9301;
+      break;
+    case 3:
+      runID = 11806;
+      break;
+    case 4:
+      runID = 12960;
+      break;
+    case 5:
+      runID = 14079;
+      break;
+    default:
+      runID = e.id().runID().run();
+      break;
+  }
+
+  ScaleInfo const& i = GetScaleInfo(runID);
 
   // Lookup the TPC, cryo
   unsigned tpc = hit.WireID().TPC;

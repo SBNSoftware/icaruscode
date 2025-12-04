@@ -161,6 +161,8 @@ void icarus::calo::NormalizeYZSQL::configure(const fhicl::ParameterSet& pset) {}
 
 const icarus::calo::NormalizeYZSQL::ScaleInfo& icarus::calo::NormalizeYZSQL::GetScaleInfo(uint64_t run) {
 
+  //std::cout << "NormalizeYZSQL Tool -- Getting scale info for run: " << run << std::endl;
+
   // check the cache
   if (fScaleInfos.count(run)) {
     return fScaleInfos.at(run);
@@ -230,8 +232,32 @@ const icarus::calo::NormalizeYZSQL::ScaleInfo& icarus::calo::NormalizeYZSQL::Get
 double icarus::calo::NormalizeYZSQL::Normalize(double dQdx, const art::Event &e, 
     const recob::Hit &hit, const geo::Point_t &location, const geo::Vector_t &direction, double t0) {
 
+  //std::cout << "NormalizeYZSQL Tool -- MC Flag: " << fMC << " Run: " << e.id().runID().run() << ", Subrun: " << e.id().subRunID().run() << std::endl;
+
   // Get the info
-  ScaleInfo const& i = GetScaleInfo(e.id().runID().run());
+  uint64_t runID = -1;
+  switch (fMC) {
+    case 1:
+      runID = 8460;
+      break;
+    case 2:
+      runID = 9301;
+      break;
+    case 3:
+      runID = 11806;
+      break;
+    case 4:
+      runID = 12960;
+      break;
+    case 5:
+      runID = 14079;
+      break;
+    default:
+      runID = e.id().runID().run();
+      break;
+  }
+
+  ScaleInfo const& i = GetScaleInfo(runID);
 
   // plane
   int plane = hit.WireID().Plane;
