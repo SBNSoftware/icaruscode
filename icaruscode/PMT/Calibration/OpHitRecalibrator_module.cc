@@ -77,9 +77,6 @@ public:
     struct Config
     {
 
-        fhicl::Sequence<art::InputTag> InputLabels{
-            fhicl::Name("InputLabels"),
-            fhicl::Comment("list of the input labels to be used")};
 
         fhicl::Atom<bool> RecalibratePE{
             fhicl::Name("RecalibratePE"),
@@ -117,19 +114,17 @@ public:
 
     }; // struct Config
 
-    using Parameters = art::SharedProducer::Table<Config>;
-
     /// Constructor: just reads the configuration.
-    explicit OpHitRecalibrator(Parameters const &config, art::ProcessingFrame const &);
+    explicit OpHitRecalibrator(fhicl::ParameterSet const &config, art::ProcessingFrame const &);
 
     /// process the event
     void produce(art::Event &event, art::ProcessingFrame const &) override;
 
     /// configuration at every run change
-    void beginRun(const art::Run& run) override;
+    void beginRun(art::Run& run, art::ProcessingFrame const&) override;
 
 private:
-    std::vector<art::InputTag> const fInputLabels;
+    art::InputTag const fInputLabel;
     bool const fRecalibratePE;
     bool const fRecalibrateTime;
     bool const fUseGainDatabase;
@@ -145,25 +140,24 @@ private:
 };
 
 // -----------------------------------------------------------------------------
-icarus::OpHitRecalibrator::OpHitRecalibrator(Parameters const &config, art::ProcessingFrame const &)
+icarus::OpHitRecalibrator::OpHitRecalibrator(fhicl::ParameterSet const &config, art::ProcessingFrame const &)
     : art::SharedProducer(config),
-    fInputLabels{config().InputLabels()},
-    fRecalibratePE{config().RecalibratePE()},
-    fRecalibrateTime{config().RecalibrateTime()},
-    fUseGainDatabase{config().UseGainDatabase()},
-    fSPEArea{config().SPEArea()},
-    fVerbose{config().Verbose()},
+    fInputLabel{config.get<art::InputTag>("InputLabel")},
+    fRecalibratePE{config.get<bool>("RecalibratePE")},
+    fRecalibrateTime{config.get<bool>("RecalibrateTime")},
+    fUseGainDatabase{config.get<bool>("UseGainDatabase", false)},
+    fSPEArea{config.get<double>("SPEArea", -1.)},
+    fVerbose{config.get<bool>("Verbose", false)},
     fPMTTimingCorrectionsService{*(lar::providerFrom<icarusDB::IPMTTimingCorrectionService const>())},
-    fOldTimingProvider{std::make_unique<icarusDB::PMTTimingCorrectionsProvider>(config().OldTimingTags())}
+    fOldTimingProvider{std::make_unique<icarusDB::PMTTimingCorrectionsProvider>(config.get<fhicl::ParameterSet>("OldTimingDBTags"))}
 {
     async<art::InEvent>();
 
     // configuration checks
-    if (fInputLabels.empty())
+    if (fInputLabel.empty())
     {
         throw art::Exception{art::errors::Configuration}
-            << "The list of input hit data products ('"
-            << config().InputLabels.name() << "') is empty.\n";
+            << "The list of input hit data products ('InputLabel') is empty.\n";
     }
 
     if (!fRecalibratePE && !fRecalibrateTime)
@@ -175,9 +169,8 @@ icarus::OpHitRecalibrator::OpHitRecalibrator(Parameters const &config, art::Proc
     if (fRecalibratePE && !fUseGainDatabase && (fSPEArea<0))
     {
         throw art::Exception{art::errors::Configuration}
-            << "The gain database for PE recalibration has been disabled ('"
-            << config().UseGainDatabase.name() << "'), but '" 
-            << config().SPEArea.name() << "' (" << fSPEArea
+            << "The gain database for PE recalibration has been disabled ('UseGainDatabase'),"
+            << " but 'SPEArea' (" << fSPEArea
             << ") has not been set correctly. Fix the configuration!\n";
     }
 
@@ -185,9 +178,9 @@ icarus::OpHitRecalibrator::OpHitRecalibrator(Parameters const &config, art::Proc
     {
         mf::LogInfo("OpHitRecalibrator") << "Re-calibration of timing corrections enabled:\n"
                                          << "LaserTag: old " << fOldTimingProvider->getLaserDatabaseTag()
-                                         << " -> new " << fPMTTimingCorrectionsService->getLaserDatabaseTag()
+                                         << " -> new " << fPMTTimingCorrectionsService.getLaserDatabaseTag()
                                          << "\nCosmicsTag: old " << fOldTimingProvider->getCosmicsDatabaseTag()
-                                         << " -> new " << fPMTTimingCorrectionsService->getCosmicsDatabaseTag();
+                                         << " -> new " << fPMTTimingCorrectionsService.getCosmicsDatabaseTag();
     }
 
     //FIXME: temporary since no gain db exists yet...
@@ -198,17 +191,17 @@ icarus::OpHitRecalibrator::OpHitRecalibrator(Parameters const &config, art::Proc
     }
 
     // Consumes
-    for (auto const &tag : fInputLabels)
-        consumes<std::vector<recob::OpHit>>(tag);
-
+    consumes<std::vector<recob::OpHit>>(fInputLabel);
+    // Produces
     produces<std::vector<recob::OpHit>>();
 }
 
 // -----------------------------------------------------------------------------
-void icarus::OpHitRecalibrator::beginRun(const art::Run& run)
+void icarus::OpHitRecalibrator::beginRun(art::Run& run, art::ProcessingFrame const&)
 {
     // make sure we are updating the locally-instantiated correction provider
     if (fOldTimingProvider) {
+	if(fVerbose) mf::LogInfo("OpHitRecalibrator") << "Updating old timing corrections for " << run.id().run();
         fOldTimingProvider->readTimeCorrectionDatabase(run);
       }
 }
@@ -221,11 +214,9 @@ void icarus::OpHitRecalibrator::produce(art::Event &event, art::ProcessingFrame 
     // Create a copy of the OpHits
     std::vector<recob::OpHit> recalibratedOpHits;
 
-    for (art::InputTag const &label : fInputLabels)
-    {
-        auto const &opHits = event.getProduct<std::vector<recob::OpHit>>(label);
+    auto const &opHits = event.getProduct<std::vector<recob::OpHit>>(fInputLabel);
 
-        for (auto const &opHit : opHits)
+    for (auto const &opHit : opHits)
         {
             // read current times
             double peakTime = opHit.PeakTime();
@@ -256,7 +247,7 @@ void icarus::OpHitRecalibrator::produce(art::Event &event, art::ProcessingFrame 
                     *log << "Channel: " << opHit.OpChannel() 
                          << ", Area: " << opHit.Area() << " [ADC x tick]" 
                          << ", PE " << hitPE 
-                         << "(old SPEArea: " << oldSPEArea
+                         << " (old SPEArea: " << oldSPEArea
                          << ") --> new PE " << opHit.Area()/newSPEArea 
                          << " (new SPEArea: " << newSPEArea << ")\n";
                 }
@@ -285,14 +276,14 @@ void icarus::OpHitRecalibrator::produce(art::Event &event, art::ProcessingFrame 
                 if(log)
                 {
                     *log << "Channel: " << opHit.OpChannel() 
-                         << ", startTime " << startTime << " us" 
-                         << ", peakTime " << peakTime << " us"
-                         << ", peakTimeAbs " << peakTimeAbs << " us"
-                         << "(old total correction: " << oldTotalCorrection
+                         << ", startTime " << startTime 
+                         << ", peakTime " << peakTime
+                         << ", peakTimeAbs " << peakTimeAbs
+                         << " (total correction: " << oldTotalCorrection
                          << ") --> new startTime " << startTime + timeCorr
-                         << ", new peakTime " << peakTime + timeCorr
-                         << ", new peakTimeAbs " << peakTimeAbs + timeCorr
-                         << " (new total correction: " << totalCorrection << ")\n";
+                         << ", peakTime " << peakTime + timeCorr
+                         << ", peakTimeAbs " << peakTimeAbs + timeCorr
+                         << " (total correction: " << totalCorrection << ")\n";
                 }
 
                 peakTime = peakTime + timeCorr;
@@ -315,8 +306,7 @@ void icarus::OpHitRecalibrator::produce(art::Event &event, art::ProcessingFrame 
                 opHit.FastToTotal() // fasttototal
             );
         }
-    }
-
+   
     // The new OpHits collection is also saved in the event stream
     event.put(
         std::make_unique<std::vector<recob::OpHit>>(std::move(recalibratedOpHits)));
