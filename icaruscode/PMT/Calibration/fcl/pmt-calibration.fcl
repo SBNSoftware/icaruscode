@@ -27,15 +27,4 @@ pmt_bkgphotons_calibration:
   IntegralBinning: [ 0., 8., 0.04 ] # in 10^7 electrons
 }
 
-ophit_recalibrator:
-{
-  module_type: OpHitRecalibrator
-  InputLabels: [ "ophit" ]
-  RecalibratePE: true
-  UseGainDatabase: true
-  SPEArea: -1.0
-  RecalibrateTime: true
-  Verbose: false
-}
-
 END_PROLOG
