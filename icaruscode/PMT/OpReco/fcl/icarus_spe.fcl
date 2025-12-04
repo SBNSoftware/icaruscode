@@ -44,4 +44,6 @@ SPERun2: @local::SPE2025Run2
 SPERun3: @local::SPE2025Run3
 SPERun4: @local::SPE2025Run4
 
+SPE: @local::SPE202401patch
+
 END_PROLOG
