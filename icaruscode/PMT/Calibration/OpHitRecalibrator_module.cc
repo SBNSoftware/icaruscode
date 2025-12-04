@@ -42,10 +42,10 @@ namespace icarus
  * @brief Creates a new collection of optical hits with re-calibrated PEs and times.
  *
  * This module reads reconstructed optical detector hits, removes previously-applied
- * gain and/or timing calibrations, and applies new ones. 
+ * gain and/or timing calibrations, and applies new ones.
  * A new collection of hits is produced containing a re-calibrated copy of all the
  * hits from the input collections.
- * 
+ *
  * Input
  * ------
  * * `std::vector<recob::OpHit>` data products (as for `InputLabels`)
@@ -60,9 +60,9 @@ namespace icarus
  *
  * * `InputLabels` (list of input tags, mandatory): the list of optical hit data
  *   products to recalibrated It must be non-empty.
- * * `RecalibratePE`   (flag, mandatory): if set, recalibrate hit PE values. 
+ * * `RecalibratePE`   (flag, mandatory): if set, recalibrate hit PE values.
  * * `UseGainDatabase` (flag, default: true): if set, use gain values from database
- *    to re-calibrate hit PEs from hit area. 
+ *    to re-calibrate hit PEs from hit area.
  * * `SPEArea` (double, default: -1): if not using the gain database, single-photoelectron
  *    area in ADC x tick to be used in the PE calibration.
  * * `RecalibrateTime` (flag, mandatory): if set, recalibrate hit times.
@@ -73,47 +73,6 @@ class icarus::OpHitRecalibrator : public art::SharedProducer
 {
 
 public:
-    /// Configuration of the module.
-    struct Config
-    {
-
-
-        fhicl::Atom<bool> RecalibratePE{
-            fhicl::Name("RecalibratePE"),
-            fhicl::Comment("re-compute hit PE values")
-        };
-
-        fhicl::Atom<bool> UseGainDatabase{
-            fhicl::Name("UseGainDatabase"),
-            fhicl::Comment("whether to use gain database to recalibrate"),
-            true
-        };
-
-        fhicl::Atom<double> SPEArea{
-            fhicl::Name("SPEArea"),
-            fhicl::Comment("single-photoelectron area for calibration for non-database calibration"),
-            -1.
-        };
-
-        fhicl::Atom<bool> RecalibrateTime{
-            fhicl::Name("RecalibrateTime"),
-            fhicl::Comment("re-apply timing corrections"),
-            false
-        };
-
-        fhicl::Table<fhicl::ParameterSet> OldTimingDBTags{
-            fhicl::Name("OldTimingDBTags"),
-            fhicl::Comment("configuration for old PMT timing correction tags")
-          };
-
-        fhicl::Atom<bool> Verbose{
-            fhicl::Name("Verbose"),
-            fhicl::Comment("print the times read and the associated channels"),
-            false // default
-        };
-
-    }; // struct Config
-
     /// Constructor: just reads the configuration.
     explicit OpHitRecalibrator(fhicl::ParameterSet const &config, art::ProcessingFrame const &);
 
@@ -121,7 +80,7 @@ public:
     void produce(art::Event &event, art::ProcessingFrame const &) override;
 
     /// configuration at every run change
-    void beginRun(art::Run& run, art::ProcessingFrame const&) override;
+    void beginRun(art::Run &run, art::ProcessingFrame const &) override;
 
 private:
     art::InputTag const fInputLabel;
@@ -134,22 +93,21 @@ private:
     /// Pointer to the online pmt corrections service
     icarusDB::PMTTimingCorrections const &fPMTTimingCorrectionsService;
 
-    /// Pointer to the provider for the old pmt corrections 
+    /// Pointer to the provider for the old pmt corrections
     std::unique_ptr<icarusDB::PMTTimingCorrectionsProvider> fOldTimingProvider;
-
 };
 
 // -----------------------------------------------------------------------------
 icarus::OpHitRecalibrator::OpHitRecalibrator(fhicl::ParameterSet const &config, art::ProcessingFrame const &)
     : art::SharedProducer(config),
-    fInputLabel{config.get<art::InputTag>("InputLabel")},
-    fRecalibratePE{config.get<bool>("RecalibratePE")},
-    fRecalibrateTime{config.get<bool>("RecalibrateTime")},
-    fUseGainDatabase{config.get<bool>("UseGainDatabase", false)},
-    fSPEArea{config.get<double>("SPEArea", -1.)},
-    fVerbose{config.get<bool>("Verbose", false)},
-    fPMTTimingCorrectionsService{*(lar::providerFrom<icarusDB::IPMTTimingCorrectionService const>())},
-    fOldTimingProvider{std::make_unique<icarusDB::PMTTimingCorrectionsProvider>(config.get<fhicl::ParameterSet>("OldTimingDBTags"))}
+      fInputLabel{config.get<art::InputTag>("InputLabel")},
+      fRecalibratePE{config.get<bool>("RecalibratePE")},
+      fRecalibrateTime{config.get<bool>("RecalibrateTime")},
+      fUseGainDatabase{config.get<bool>("UseGainDatabase", false)},
+      fSPEArea{config.get<double>("SPEArea", -1.)},
+      fVerbose{config.get<bool>("Verbose", false)},
+      fPMTTimingCorrectionsService{*(lar::providerFrom<icarusDB::IPMTTimingCorrectionService const>())},
+      fOldTimingProvider{std::make_unique<icarusDB::PMTTimingCorrectionsProvider>(config.get<fhicl::ParameterSet>("OldTimingDBTags"))}
 {
     async<art::InEvent>();
 
@@ -166,7 +124,7 @@ icarus::OpHitRecalibrator::OpHitRecalibrator(fhicl::ParameterSet const &config, 
             << "No re-calibration selected. Why are you running meeee!?!?! :/\n";
     }
 
-    if (fRecalibratePE && !fUseGainDatabase && (fSPEArea<0))
+    if (fRecalibratePE && !fUseGainDatabase && (fSPEArea < 0))
     {
         throw art::Exception{art::errors::Configuration}
             << "The gain database for PE recalibration has been disabled ('UseGainDatabase'),"
@@ -174,7 +132,7 @@ icarus::OpHitRecalibrator::OpHitRecalibrator(fhicl::ParameterSet const &config, 
             << ") has not been set correctly. Fix the configuration!\n";
     }
 
-    if( fRecalibrateTime )
+    if (fRecalibrateTime)
     {
         mf::LogInfo("OpHitRecalibrator") << "Re-calibration of timing corrections enabled:\n"
                                          << "LaserTag: old " << fOldTimingProvider->getLaserDatabaseTag()
@@ -183,7 +141,7 @@ icarus::OpHitRecalibrator::OpHitRecalibrator(fhicl::ParameterSet const &config, 
                                          << " -> new " << fPMTTimingCorrectionsService.getCosmicsDatabaseTag();
     }
 
-    //FIXME: temporary since no gain db exists yet...
+    // FIXME: temporary since no gain db exists yet...
     if (fUseGainDatabase)
     {
         throw art::Exception{art::errors::Configuration}
@@ -197,13 +155,15 @@ icarus::OpHitRecalibrator::OpHitRecalibrator(fhicl::ParameterSet const &config, 
 }
 
 // -----------------------------------------------------------------------------
-void icarus::OpHitRecalibrator::beginRun(art::Run& run, art::ProcessingFrame const&)
+void icarus::OpHitRecalibrator::beginRun(art::Run &run, art::ProcessingFrame const &)
 {
     // make sure we are updating the locally-instantiated correction provider
-    if (fOldTimingProvider) {
-	if(fVerbose) mf::LogInfo("OpHitRecalibrator") << "Updating old timing corrections for " << run.id().run();
+    if (fOldTimingProvider)
+    {
+        if (fVerbose)
+            mf::LogInfo("OpHitRecalibrator") << "Updating old timing corrections for " << run.id().run();
         fOldTimingProvider->readTimeCorrectionDatabase(run);
-      }
+    }
 }
 
 // -----------------------------------------------------------------------------
@@ -217,96 +177,96 @@ void icarus::OpHitRecalibrator::produce(art::Event &event, art::ProcessingFrame 
     auto const &opHits = event.getProduct<std::vector<recob::OpHit>>(fInputLabel);
 
     for (auto const &opHit : opHits)
+    {
+        // read current times
+        double peakTime = opHit.PeakTime();
+        double peakTimeAbs = opHit.PeakTimeAbs();
+        double startTime = opHit.StartTime();
+        double riseTime = opHit.RiseTime();
+
+        // read current PE
+        double hitPE = opHit.PE();
+
+        // First, recalibrate PE values (if enabled).
+        // - if using gain database, fetch new SPEArea for this run/channel
+        // - if not using gain database, use fSPEArea
+        // - re-compute PE value with new SPE area
+        if (fRecalibratePE)
         {
-            // read current times
-            double peakTime = opHit.PeakTime();
-            double peakTimeAbs = opHit.PeakTimeAbs();
-            double startTime = opHit.StartTime();
-            double riseTime = opHit.RiseTime();
+            double oldSPEArea = opHit.Area() / hitPE;
+            double newSPEArea = fSPEArea;
 
-            // read current PE
-            double hitPE = opHit.PE();
-
-            // First, recalibrate PE values (if enabled).
-            // - if using gain database, fetch new SPEArea for this run/channel
-            // - if not using gain database, use fSPEArea
-            // - re-compute PE value with new SPE area 
-            if( fRecalibratePE )
+            if (fUseGainDatabase)
             {
-                double oldSPEArea = opHit.Area()/hitPE;
-                double newSPEArea = fSPEArea;
-
-                if( fUseGainDatabase )
-                {
-                    // soon...
-                    // newSPEArea = get_from_db(opHit.OpChannel())
-                }
-            
-                if(log)
-                {
-                    *log << "Channel: " << opHit.OpChannel() 
-                         << ", Area: " << opHit.Area() << " [ADC x tick]" 
-                         << ", PE " << hitPE 
-                         << " (old SPEArea: " << oldSPEArea
-                         << ") --> new PE " << opHit.Area()/newSPEArea 
-                         << " (new SPEArea: " << newSPEArea << ")\n";
-                }
-
-                hitPE = opHit.Area()/newSPEArea;
-            }
-            
-            // Second, recalibrate PMT times (if enabled)
-            // Previous corrections need to be subtracted
-            // use locally instantiated provider class to fetch old corrections
-            // use online pmt corrections servicer to fetch current/new corrections
-            if( fRecalibrateTime )
-            {
-                // get the old timing corrections: these will need to be subtracted!
-                double const oldLaserTimeCorrection = fOldTimingProvider->getLaserCorrections(opHit.OpChannel());
-                double const oldCosmicsCorrection = fOldTimingProvider->getCosmicsCorrections(opHit.OpChannel());
-                double const oldTotalCorrection = oldLaserTimeCorrection + oldCosmicsCorrection;
-
-                // get new/current timing: these will need to be added!
-                double const laserTimeCorrection = fPMTTimingCorrectionsService.getLaserCorrections(opHit.OpChannel());
-                double const cosmicsCorrection = fPMTTimingCorrectionsService.getCosmicsCorrections(opHit.OpChannel());
-                double const totalCorrection = laserTimeCorrection + cosmicsCorrection;
-
-                double timeCorr = totalCorrection - oldTotalCorrection;
-
-                if(log)
-                {
-                    *log << "Channel: " << opHit.OpChannel() 
-                         << ", startTime " << startTime 
-                         << ", peakTime " << peakTime
-                         << ", peakTimeAbs " << peakTimeAbs
-                         << " (total correction: " << oldTotalCorrection
-                         << ") --> new startTime " << startTime + timeCorr
-                         << ", peakTime " << peakTime + timeCorr
-                         << ", peakTimeAbs " << peakTimeAbs + timeCorr
-                         << " (total correction: " << totalCorrection << ")\n";
-                }
-
-                peakTime = peakTime + timeCorr;
-                peakTimeAbs = peakTimeAbs + timeCorr;
-                startTime = startTime + timeCorr;
-                // NOTE: riseTime is currently relative to the start time, so no correction needed
+                // soon...
+                // newSPEArea = get_from_db(opHit.OpChannel())
             }
 
-            recalibratedOpHits.emplace_back(
-                opHit.OpChannel(),  // channel
-                peakTime,           // recalibrated peaktime
-                peakTimeAbs,        // recalibrated peaktimeabs
-                startTime,          // recalibrated starttime
-                riseTime,           // recalibrated risetime
-                opHit.Frame(),      // frame
-                opHit.Width(),      // width
-                opHit.Area(),       // area
-                opHit.Amplitude(),  // peakheight
-                hitPE,              // recalibrated pe
-                opHit.FastToTotal() // fasttototal
-            );
+            if (log)
+            {
+                *log << "Channel: " << opHit.OpChannel()
+                     << ", Area: " << opHit.Area() << " [ADC x tick]"
+                     << ", PE " << hitPE
+                     << " (old SPEArea: " << oldSPEArea
+                     << ") --> new PE " << opHit.Area() / newSPEArea
+                     << " (new SPEArea: " << newSPEArea << ")\n";
+            }
+
+            hitPE = opHit.Area() / newSPEArea;
         }
-   
+
+        // Second, recalibrate PMT times (if enabled)
+        // Previous corrections need to be subtracted
+        // use locally instantiated provider class to fetch old corrections
+        // use online pmt corrections servicer to fetch current/new corrections
+        if (fRecalibrateTime)
+        {
+            // get the old timing corrections: these will need to be subtracted!
+            double const oldLaserTimeCorrection = fOldTimingProvider->getLaserCorrections(opHit.OpChannel());
+            double const oldCosmicsCorrection = fOldTimingProvider->getCosmicsCorrections(opHit.OpChannel());
+            double const oldTotalCorrection = oldLaserTimeCorrection + oldCosmicsCorrection;
+
+            // get new/current timing: these will need to be added!
+            double const laserTimeCorrection = fPMTTimingCorrectionsService.getLaserCorrections(opHit.OpChannel());
+            double const cosmicsCorrection = fPMTTimingCorrectionsService.getCosmicsCorrections(opHit.OpChannel());
+            double const totalCorrection = laserTimeCorrection + cosmicsCorrection;
+
+            double timeCorr = totalCorrection - oldTotalCorrection;
+
+            if (log)
+            {
+                *log << "Channel: " << opHit.OpChannel()
+                     << ", startTime " << startTime
+                     << ", peakTime " << peakTime
+                     << ", peakTimeAbs " << peakTimeAbs
+                     << " (total correction: " << oldTotalCorrection
+                     << ") --> new startTime " << startTime + timeCorr
+                     << ", peakTime " << peakTime + timeCorr
+                     << ", peakTimeAbs " << peakTimeAbs + timeCorr
+                     << " (total correction: " << totalCorrection << ")\n";
+            }
+
+            peakTime = peakTime + timeCorr;
+            peakTimeAbs = peakTimeAbs + timeCorr;
+            startTime = startTime + timeCorr;
+            // NOTE: riseTime is currently relative to the start time, so no correction needed
+        }
+
+        recalibratedOpHits.emplace_back(
+            opHit.OpChannel(),  // channel
+            peakTime,           // recalibrated peaktime
+            peakTimeAbs,        // recalibrated peaktimeabs
+            startTime,          // recalibrated starttime
+            riseTime,           // recalibrated risetime
+            opHit.Frame(),      // frame
+            opHit.Width(),      // width
+            opHit.Area(),       // area
+            opHit.Amplitude(),  // peakheight
+            hitPE,              // recalibrated pe
+            opHit.FastToTotal() // fasttototal
+        );
+    }
+
     // The new OpHits collection is also saved in the event stream
     event.put(
         std::make_unique<std::vector<recob::OpHit>>(std::move(recalibratedOpHits)));
