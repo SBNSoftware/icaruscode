@@ -8,6 +8,7 @@
 // ICARUS libraries
 #include "icaruscode/Timing/PMTTimingCorrections.h"
 #include "icaruscode/Timing/IPMTTimingCorrectionService.h"
+#include "icaruscode/Timing/PMTTimingCorrectionsProvider.h"
 
 // framework libraries
 #include "canvas/Utilities/InputTag.h"
@@ -99,8 +100,14 @@ public:
 
         fhicl::Atom<bool> RecalibrateTime{
             fhicl::Name("RecalibrateTime"),
-            fhicl::Comment("re-apply timing corrections")
+            fhicl::Comment("re-apply timing corrections"),
+            false
         };
+
+        fhicl::Table<fhicl::ParameterSet> OldTimingDBTags{
+            fhicl::Name("OldTimingDBTags"),
+            fhicl::Comment("configuration for old PMT timing correction tags")
+          };
 
         fhicl::Atom<bool> Verbose{
             fhicl::Name("Verbose"),
@@ -118,6 +125,9 @@ public:
     /// process the event
     void produce(art::Event &event, art::ProcessingFrame const &) override;
 
+    /// configuration at every run change
+    void beginRun(const art::Run& run) override;
+
 private:
     std::vector<art::InputTag> const fInputLabels;
     bool const fRecalibratePE;
@@ -128,6 +138,10 @@ private:
 
     /// Pointer to the online pmt corrections service
     icarusDB::PMTTimingCorrections const &fPMTTimingCorrectionsService;
+
+    /// Pointer to the provider for the old pmt corrections 
+    std::unique_ptr<icarusDB::PMTTimingCorrectionsProvider> fOldTimingProvider;
+
 };
 
 // -----------------------------------------------------------------------------
@@ -139,7 +153,8 @@ icarus::OpHitRecalibrator::OpHitRecalibrator(Parameters const &config, art::Proc
     fUseGainDatabase{config().UseGainDatabase()},
     fSPEArea{config().SPEArea()},
     fVerbose{config().Verbose()},
-    fPMTTimingCorrectionsService{*(lar::providerFrom<icarusDB::IPMTTimingCorrectionService const>())}
+    fPMTTimingCorrectionsService{*(lar::providerFrom<icarusDB::IPMTTimingCorrectionService const>())},
+    fOldTimingProvider{std::make_unique<icarusDB::PMTTimingCorrectionsProvider>(config().OldTimingTags())}
 {
     async<art::InEvent>();
 
@@ -157,7 +172,7 @@ icarus::OpHitRecalibrator::OpHitRecalibrator(Parameters const &config, art::Proc
             << "No re-calibration selected. Why are you running meeee!?!?! :/\n";
     }
 
-    if (!fUseGainDatabase && (fSPEArea<0))
+    if (fRecalibratePE && !fUseGainDatabase && (fSPEArea<0))
     {
         throw art::Exception{art::errors::Configuration}
             << "The gain database for PE recalibration has been disabled ('"
@@ -166,7 +181,16 @@ icarus::OpHitRecalibrator::OpHitRecalibrator(Parameters const &config, art::Proc
             << ") has not been set correctly. Fix the configuration!\n";
     }
 
-    //FIXME: temporary since no db exists yet...
+    if( fRecalibrateTime )
+    {
+        mf::LogInfo("OpHitRecalibrator") << "Re-calibration of timing corrections enabled:\n"
+                                         << "LaserTag: old " << fOldTimingProvider->getLaserDatabaseTag()
+                                         << " -> new " << fPMTTimingCorrectionsService->getLaserDatabaseTag()
+                                         << "\nCosmicsTag: old " << fOldTimingProvider->getCosmicsDatabaseTag()
+                                         << " -> new " << fPMTTimingCorrectionsService->getCosmicsDatabaseTag();
+    }
+
+    //FIXME: temporary since no gain db exists yet...
     if (fUseGainDatabase)
     {
         throw art::Exception{art::errors::Configuration}
@@ -178,6 +202,15 @@ icarus::OpHitRecalibrator::OpHitRecalibrator(Parameters const &config, art::Proc
         consumes<std::vector<recob::OpHit>>(tag);
 
     produces<std::vector<recob::OpHit>>();
+}
+
+// -----------------------------------------------------------------------------
+void icarus::OpHitRecalibrator::beginRun(const art::Run& run)
+{
+    // make sure we are updating the locally-instantiated correction provider
+    if (fOldTimingProvider) {
+        fOldTimingProvider->readTimeCorrectionDatabase(run);
+      }
 }
 
 // -----------------------------------------------------------------------------
@@ -232,11 +265,14 @@ void icarus::OpHitRecalibrator::produce(art::Event &event, art::ProcessingFrame 
             }
             
             // Second, recalibrate PMT times (if enabled)
+            // Previous corrections need to be subtracted
+            // use locally instantiated provider class to fetch old corrections
+            // use online pmt corrections servicer to fetch current/new corrections
             if( fRecalibrateTime )
             {
                 // get the old timing corrections: these will need to be subtracted!
-                double oldLaserTimeCorrection = 0;
-                double oldCosmicsCorrection = 0;
+                double const oldLaserTimeCorrection = fOldTimingProvider->getLaserCorrections(opHit.OpChannel());
+                double const oldCosmicsCorrection = fOldTimingProvider->getCosmicsCorrections(opHit.OpChannel());
                 double const oldTotalCorrection = oldLaserTimeCorrection + oldCosmicsCorrection;
 
                 // get new/current timing: these will need to be added!
