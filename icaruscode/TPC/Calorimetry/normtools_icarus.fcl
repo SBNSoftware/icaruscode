@@ -34,7 +34,7 @@ driftnorm_sql: {
   tool_type: NormalizeDriftSQLite
   DBFileName: tpc_elifetime_data 
   DBTag: @local::ICARUS_Calibration_GlobalTags.tpc_elifetime_data
-  Verbose: false
+  Verbose: true
 }
 
 tpcgain_sql: {
@@ -42,6 +42,7 @@ tpcgain_sql: {
   DBFileName: tpc_dqdxcalibration_allplanes_data
   DBTag: @local::ICARUS_Calibration_GlobalTags.tpc_dqdxcalibration_allplanes_data
   Verbose: false
+  MC: -1
 }
 
 tpcgain_local: {
@@ -56,11 +57,14 @@ yznorm_sql: {
   DBFileName: tpc_yz_correction_allplanes_data
   DBTag: @local::ICARUS_Calibration_GlobalTags.tpc_yz_correction_allplanes_data
   Verbose: false
+  MC: -1
 }
 
 #icarus_calonormtools: [@local::driftnorm, @local::yznorm, @local::tpcgain]
 icarus_calonormtools: [@local::driftnorm_sql, @local::yznorm_sql, @local::tpcgain_sql]
+icarus_calonormtoolsMC: [@local::yznorm_sql, @local::tpcgain_sql]
 
+#
 # GP 8/4/25 -- Update gain to re-measurement with Run 2 stopping muons and 
 # fixed recombination.
 icarus_data_calconst: [0.016751, 0.012755, 0.012513]
