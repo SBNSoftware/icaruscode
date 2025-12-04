@@ -5,13 +5,13 @@ BEGIN_PROLOG
 ophit_recalibrator:
 {
   module_type: OpHitRecalibrator
-  InputLabels: [ "ophit" ]
+  InputLabel: "ophit"
   RecalibratePE: true
   UseGainDatabase: true
   SPEArea: -1.0
-  RecalibrateTime: false
+  RecalibrateTime: true
 
-  OldTimingTags: {
+  OldTimingDBTags: {
     CorrectionTags: {
       CablesTag: @local::ICARUS_Calibration_GlobalTags.pmt_cables_delays_data
       LaserTag: @local::ICARUS_Calibration_GlobalTags.pmt_laser_timing_data

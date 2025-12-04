@@ -46,9 +46,10 @@ cet_build_plugin(PMTBackgroundphotonsCalibration art::module
 
 cet_build_plugin( OpHitRecalibrator art::module 
                     LIBRARIES PUBLIC 
-		lardataobj::RecoBase
+                lardataobj::RecoBase
                 lardataobj::RawData
                 larcore::Geometry_Geometry_service
+                icaruscode_Timing
               )
 
 cet_make_exec(  NAME
