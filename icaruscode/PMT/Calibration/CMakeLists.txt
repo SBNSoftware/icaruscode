@@ -6,7 +6,7 @@ cet_build_plugin(PMTLaserCalibration art::module
                 icaruscode_PMT_Algorithms
                 icaruscode_PMT_Calibration_CaloTools
                 icaruscode_IcarusObj
-		lardataobj::RawData
+                lardataobj::RawData
                 lardataobj::Simulation
                 lardataobj::RecoBase
                 art::Framework_Core
@@ -46,9 +46,10 @@ cet_build_plugin(PMTBackgroundphotonsCalibration art::module
 
 cet_build_plugin( OpHitRecalibrator art::module 
                     LIBRARIES PUBLIC 
-		lardataobj::RecoBase
+                lardataobj::RecoBase
                 lardataobj::RawData
                 larcore::Geometry_Geometry_service
+                icaruscode_Timing
               )
 
 art_make_exec(  NAME 
