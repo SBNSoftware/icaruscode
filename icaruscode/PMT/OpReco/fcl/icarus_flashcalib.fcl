@@ -24,6 +24,10 @@ icarus_pmt_calibration.NoCalibRun4: {
   SPEAreaGain: @local::SPERun4.Area
 }
 
+icarus_pmt_calibration.NoCalib: {
+  SPEAreaGain: @local::SPE.Area
+}
+
 # ------------------------------------------------------------------------------
 # `icarus_pmt_calibration.Calib202203`: from March 2021
 #
@@ -34,9 +38,11 @@ icarus_pmt_calibration.Calib202203: {
 
 
 # ------------------------------------------------------------------------------
+
 icarus_pmt_calibration.CalibStandardRun2: @local::icarus_pmt_calibration.NoCalibRun2
 icarus_pmt_calibration.CalibStandardRun3: @local::icarus_pmt_calibration.NoCalibRun3
 icarus_pmt_calibration.CalibStandardRun4: @local::icarus_pmt_calibration.NoCalibRun4
 
+icarus_pmt_calibration.CalibStandard: @local::icarus_pmt_calibration.NoCalib
 
 END_PROLOG
