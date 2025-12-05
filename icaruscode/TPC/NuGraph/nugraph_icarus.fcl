@@ -39,7 +39,7 @@ NuGraphCryoE.devs_u: [ 82.80644 ,  67.60649 , 274.32666, 1.2912455]
 NuGraphCryoE.devs_v: [ 293.06314,  66.8194  , 322.11386, 1.4249923]
 NuGraphCryoE.devs_y: [ 307.1943 ,  67.063324, 312.461  , 1.4532351]
 NuGraphCryoE.modelFileName: "model_mpvmpr_bnb_numu_cos.pt"
-NuGraphCryoE.debug: true
+# NuGraphCryoE.debug: true
 
 NuGraphCryoW: @local::NuGraphCryoE
 NuGraphCryoW.LoaderTool.hitInput: "nuslhitsCryoW"

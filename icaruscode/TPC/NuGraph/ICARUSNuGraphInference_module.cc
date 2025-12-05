@@ -56,7 +56,6 @@ class ICARUSNuGraphInference : public art::EDProducer {
   private:
   art::InputTag fSlicesLabel;
   art::InputTag fHitLabel;
-  static constexpr double minChiSq = 0.5;
   vector<std::string> planes;
   size_t minHits;
   bool debug;
@@ -126,8 +125,8 @@ void ICARUSNuGraphInference::produce(art::Event& event) {
     }
 
     if (emptyPlane) {
-      continue;
       if (debug) std::cout << "Slice has atleast one empty plane. Skipping." << std::endl;
+      continue;
     } else {
       for (size_t plane = 0; plane < singleIdsmap.size(); plane++) {
         idsmap[plane].insert(idsmap[plane].end(), singleIdsmap[plane].begin(), singleIdsmap[plane].end());
