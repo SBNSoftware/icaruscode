@@ -1,4 +1,11 @@
 #include "cafmakerjob_icarus.fcl"
 #include "cafmaker_add_detsim2d_icarus.fcl"
 
+# Fix for CAFMaker simchannel -- using correct (?)
+physics.producers.cafmaker.SimChannelLabel: "daq:simpleSC"
+
+# Fix for BackTracker simchannel
+services.BackTrackerService.BackTracker.SimChannelModuleLabel: "daq:simpleSC"
+
+# Fix for MCReco simchannel
 physics.producers.mcreco.SimChannelLabel: "daq:simpleSC"
