@@ -1,0 +1,9 @@
+#include "stage0_run2_opdetonly_icarus_overlay_reprocessing.fcl"
+
+# update ophit procedurs to pick up Run-3 SPE tune
+icarus_stage0_mc_producers.ophituncorrected.SPEArea: @local::SPERun3.Area
+icarus_stage0_mc_producers.ophituncorrected.SPEShift: @local::SPERun3.Shift
+
+# update flash producers to pick up Run-3 SPE tune
+icarus_stage0_producers.opflashCryoE.PECalib: @local::icarus_pmt_calibration.CalibStandardRun3
+icarus_stage0_producers.opflashCryoW.PECalib: @local::icarus_pmt_calibration.CalibStandardRun3
