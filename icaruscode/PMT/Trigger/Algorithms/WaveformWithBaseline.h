@@ -37,6 +37,10 @@ struct icarus::trigger::WaveformWithBaseline
   /// Returns a reference to the waveform baseline.
   Baseline_t const& baseline() const { return *baselinePtr(); }
   
+  /// Returns the value of baseline, or `0` if not available.
+  Baseline_t::Baseline_t baselineValueOr0() const
+    { return hasBaseline()? baseline().baseline(): 0; }
+  
   /// Returns a pointer to the waveform.
   Waveform_t const* waveformPtr() const
     { return std::get<Waveform_t const*>(*this); }

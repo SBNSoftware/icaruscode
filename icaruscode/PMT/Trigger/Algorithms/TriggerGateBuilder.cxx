@@ -11,11 +11,11 @@
 // class header
 #include "icaruscode/PMT/Trigger/Algorithms/TriggerGateBuilder.h"
 #include "icaruscode/PMT/Trigger/Utilities/TrackedTriggerGate.h"
-#include "icaruscode/IcarusObj/OpDetWaveformMeta.h"
 #include "icarusalg/Utilities/WaveformOperations.h"
 #include "sbnobj/ICARUS/PMT/Trigger/Data/OpticalTriggerGate.h"
 
 // LArSoft libraries
+#include "lardataalg/Utilities/quantities/electromagnetism.h" // volt...
 #include "lardataobj/RawData/OpDetWaveform.h"
 
 // framework libraries
@@ -24,6 +24,7 @@
 
 // C/C++ standard libraries
 #include <algorithm> // std::lower_bound(), std::transform()
+#include <cctype> // std::isblank()
 #include <iterator> // std::back_inserter()
 
 
@@ -31,64 +32,13 @@
 namespace {
   
   //----------------------------------------------------------------------------
-  // comparison using the channel number (special comparison operator)
-  template <typename Comp = std::less<raw::Channel_t>>
-  struct ChannelComparison {
-    
-    using Comparer_t = Comp;
-    
-    Comparer_t comp;
-    
-    constexpr ChannelComparison(): comp() {}
-    constexpr ChannelComparison(Comparer_t comp): comp(comp) {}
-    
-    template <typename A, typename B>
-    constexpr bool operator() (A const& a, B const& b) const
-      { return comp(channelOf(a), channelOf(b)); }
-    
-    static constexpr raw::Channel_t channelOf(raw::Channel_t channel)
-      { return channel; }
-    static raw::Channel_t channelOf(raw::OpDetWaveform const& waveform)
-      { return waveform.ChannelNumber(); }
-    static raw::Channel_t channelOf(sbn::OpDetWaveformMeta const& waveformMeta)
-      { return waveformMeta.ChannelNumber(); }
-    static raw::Channel_t channelOf
-      (icarus::trigger::OpticalTriggerGateData_t const& gate)
-      { return gate.channel(); }
-    template <typename Gate, typename OpDetInfo>
-    static raw::Channel_t channelOf
-      (icarus::trigger::TrackedTriggerGate<Gate, OpDetInfo> const& gate)
-      { return channelOf(gate.gate()); }
-    
-  }; // struct ChannelComparison
-  
-  
-  //----------------------------------------------------------------------------
-  /*
-   * Currently util::Quantity objects have serious issues with FHiCL validation,
-   * so we are not reading them directly as such. This pulls in a number of
-   * workarounds for:
-   *  * every `Quantity` parameter: its FHiCL parameter must be declared as
-   *    the base type `Quantity::value_t`
-   *  * every optional parameter must be then read indirectly since a reference
-   *    to the exact type of the parameter is required in such reading
-   *  * for sequences, direct vector assignment
-   *    (`vector<Quantity> = vector<Quantity::value_t>`) won't work, and since
-   *    `Sequence::operator()` returns a temporary, this needs to be wraped too
-   */
-  template <typename SeqValueType>
-  struct FHiCLsequenceWrapper {
-    SeqValueType seqValue;
-    
-    FHiCLsequenceWrapper(SeqValueType seqValue): seqValue(seqValue) {}
-    
-    template <typename T>
-    operator std::vector<T>() const
-      { return { seqValue.cbegin(), seqValue.cend() }; }
-    
-  }; // FHiCLsequenceWrapper
-  
-  
+  template <typename Coll>
+  Coll sorted(Coll coll) {
+    using std::begin, std::end;
+    std::sort(begin(coll), end(coll));
+    return coll;
+  }
+
   //----------------------------------------------------------------------------
   
 } // local namespace
@@ -103,11 +53,8 @@ auto icarus::trigger::TriggerGateBuilder::TriggerGates::findGateFor
   // keeping the gates sorted by channel
   auto const gend = fGates.end();
   auto const iGate
-    = std::lower_bound(fGates.begin(), gend, channel, ::ChannelComparison<>());
-  return (
-      (iGate != gend)
-      && (::ChannelComparison<>::channelOf(*iGate) == channel)
-    )
+    = std::lower_bound(fGates.begin(), gend, channel, ChannelComparison<>());
+  return ((iGate != gend) && (ChannelExtractor::channelOf(*iGate) == channel))
     ? iGate: gend;
 } // icarus::trigger::TriggerGateBuilder::TriggerGates::findGateFor()
 
@@ -160,9 +107,8 @@ auto icarus::trigger::TriggerGateBuilder::TriggerGates::gateFor
 //--- icarus::trigger::TriggerGateBuilder
 //------------------------------------------------------------------------------
 icarus::trigger::TriggerGateBuilder::TriggerGateBuilder(Config const& config)
-  : fChannelThresholds(FHiCLsequenceWrapper(config.ChannelThresholds()))
+  : fChannelThresholds(sorted(parseThresholds(config.ChannelThresholds())))
 {
-  std::sort(fChannelThresholds.begin(), fChannelThresholds.end());
   
   if (!fChannelThresholds.empty()
     && (fChannelThresholds.front() < ADCCounts_t{0})

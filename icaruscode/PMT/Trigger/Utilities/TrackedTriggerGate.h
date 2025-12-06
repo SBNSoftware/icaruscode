@@ -70,32 +70,32 @@ namespace icarus::trigger {
 
 // -----------------------------------------------------------------------------
 /**
-  * @brief A wrapper to trigger gate objects tracking the input of operations.
-  * @tparam Gate type of trigger gate object being wrapped
-  * @tparam TrackedType type of the objects being tracked
-  * 
-  * This object includes its own `Gate` object, plus `tracking()`.
-  * 
-  * Functions taking as argument a generic sequence of `Gate` objects can be
-  * passed the result of `icarus::trigger::gatesIn()` (sold separately),
-  * which behaves like a sequence of `Gate`.
-  * 
-  * Supporting functions can add specific tracking operations when operating
-  * of a `TrackedTriggerGate` object. The trait
-  * `icarus::trigger::isTrackedTriggerGate_v` will return whether that is the
-  * case.
-  * 
-  * Tracking is performed by accessing `tracking()` and `add()`'ing objects
-  * to be tracked. Tracking is currently just a collection of objects of a
-  * specific type (`TrackedType`). That type is expected to support strict
-  * comparison. A copy of each tracking object is used and owned: if the object
-  * is complex and externally owned, a pointer or handle should be stored
-  * as tracking object instead of the object itself.
-  * If an object is already present, it is not added again into the tracking.
-  * 
-  * The `Gate` type is expected to be a trigger gate type, like
-  * `icarus::trigger::ReadoutTriggerGate`.
-  */
+ * @brief A wrapper to trigger gate objects tracking the input of operations.
+ * @tparam Gate type of trigger gate object being wrapped
+ * @tparam TrackedType type of the objects being tracked
+ * 
+ * This object includes its own `Gate` object, plus `tracking()`.
+ * 
+ * Functions taking as argument a generic sequence of `Gate` objects can be
+ * passed the result of `icarus::trigger::gatesIn()` (sold separately),
+ * which behaves like a sequence of `Gate`.
+ * 
+ * Supporting functions can add specific tracking operations when operating
+ * on a `TrackedTriggerGate` object. The trait
+ * `icarus::trigger::isTrackedTriggerGate_v` will return whether that is the
+ * case.
+ * 
+ * Tracking is performed by accessing `tracking()` and `add()`'ing objects
+ * to be tracked. Tracking is currently just a collection of objects of a
+ * specific type (`TrackedType`). That type is expected to support strict
+ * comparison. A copy of each tracking object is used and owned: if the object
+ * is complex and externally owned, a pointer or handle should be stored
+ * as tracking object instead of the object itself.
+ * If an object is already present, it is not added again into the tracking.
+ * 
+ * The `Gate` type is expected to be a trigger gate type, like
+ * `icarus::trigger::ReadoutTriggerGate`.
+ */
 template <typename Gate, typename TrackedType>
 class icarus::trigger::TrackedTriggerGate {
   

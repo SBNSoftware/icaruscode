@@ -16,6 +16,8 @@
 #include "icaruscode/PMT/Trigger/Utilities/TrackedOpticalTriggerGate.h"
 #include "icaruscode/PMT/Trigger/Utilities/TrackedTriggerGate.h" // gatesIn()
 #include "icaruscode/PMT/Trigger/Algorithms/WaveformWithBaseline.h"
+#include "icaruscode/PMT/Algorithms/ADCsettings.h"
+#include "icaruscode/IcarusObj/OpDetWaveformMeta.h"
 
 // LArSoft libraries
 #include "lardataalg/DetectorInfo/DetectorTimings.h"
@@ -132,9 +134,9 @@ class icarus::trigger::TriggerGateBuilder {
     using Comment = fhicl::Comment;
     
     
-    fhicl::Sequence<ADCCounts_t::value_t> ChannelThresholds {
+    fhicl::Sequence<std::string> ChannelThresholds {
       Name("ChannelThresholds"),
-      Comment("triggering thresholds [ADC counts]")
+      Comment("triggering thresholds [voltage or ADC counts]")
       // mandatory
       };
     
@@ -166,11 +168,20 @@ class icarus::trigger::TriggerGateBuilder {
     )
     { resetup(timings); doSetThresholds(thresholds); }
   
-  /// Returns a collection of `TriggerGates` objects sorted by threshold.
+  /**
+   * @brief Returns a collection of `TriggerGates` objects sorted by threshold.
+   * @param waveforms the digitized waveforms, together with their baseline
+   * @return a list of trigger gates
+   * 
+   * The waveforms are grouped by channel, and for each channel
+   * and threshold level a on/off trigger gate is produced.
+   * 
+   * The waveforms must be already sorted by channel and then by time.
+   */
   virtual std::vector<TriggerGates> build
     (std::vector<WaveformWithBaseline> const& waveforms) const = 0;
   
-  /// Returns all the configured thresholds.
+  /// Returns all the configured thresholds, sorted from smaller to higher.
   std::vector<ADCCounts_t> const& channelThresholds() const
     { return fChannelThresholds; }
   
@@ -189,10 +200,95 @@ class icarus::trigger::TriggerGateBuilder {
   static constexpr bool isValidChannel(Channel_t channel)
     { return channel != InvalidChannel; }
   
+  // --- BEGIN ---  Utilities  -------------------------------------------------
+  /**
+   * @name Utilities
+   * 
+   * These are generic utilities that are used here but turned out to be of use
+   * also in related contexts.
+   * 
+   * If they become useful in _unrelated_ contexts, they should win their own
+   * header.
+   */
+  /// @{
+  
+  /// Channel number extraction for several optical-related data objects.
+  struct ChannelExtractor {
+    
+    static constexpr raw::Channel_t channelOf(raw::Channel_t channel)
+      { return channel; }
+    
+    static raw::Channel_t channelOf(raw::OpDetWaveform const& waveform)
+      { return waveform.ChannelNumber(); }
+    
+    static raw::Channel_t channelOf(sbn::OpDetWaveformMeta const& waveformMeta)
+      { return waveformMeta.ChannelNumber(); }
+    
+    static raw::Channel_t channelOf
+      (icarus::trigger::OpticalTriggerGateData_t const& gate)
+      { return gate.channel(); }
+    
+    template <typename Gate, typename OpDetInfo>
+    static raw::Channel_t channelOf
+      (icarus::trigger::TrackedTriggerGate<Gate, OpDetInfo> const& gate)
+      { return channelOf(gate.gate()); }
+    
+    template <typename T>
+    raw::Channel_t operator() (T&& obj) const { return channelOf(obj); }
+    
+  }; // struct ChannelExtractor
+  
+  // comparison using the channel number (special comparison operator)
+  template <typename Comp = std::less<raw::Channel_t>>
+  struct ChannelComparison {
+    
+    using Comparer_t = Comp;
+    Comparer_t comp;
+    
+    constexpr ChannelComparison(Comparer_t comp = Comparer_t{})
+      : comp{ std::move(comp) } {}
+    
+    template <typename A, typename B>
+    bool operator() (A const& a, B const& b) const
+      { ChannelExtractor channelOf; return comp(channelOf(a), channelOf(b)); }
+    
+  }; // struct ChannelComparison
+  
+  
+  /**
+   * @brief Converts a voltage or number string into ADC counts.
+   * @tparam T type of the `ADCsettings` data
+   * @param s the string to be converted
+   * @param ADCsettings settings used to convert voltage to ADC
+   * @return the value in ADC counts
+   * 
+   * If the string ends with the volt symbol, it is interpreted as a voltage
+   * quantity specification. Otherwise, it is interpreted as a pure (real)
+   * number representing an ADC value.
+   * In the former case, `ADCsettings()` (default-constructed) is used to
+   * convert it into ADC counts. Then, in both cases it is converted to integer
+   * via `ADCsettings.roundADC()` (which may actually truncate it) and then
+   * into `ADCCounts_t` quantity type.
+   */
+  template <typename T>
+  static ADCCounts_t numberOrVoltageToADC
+    (std::string const& s, icarus::ADCsettings<T> const& settings);
+  
+  /// Converts all threshold specifications with `numberOrVoltageToADC()`.
+  template <typename T>
+  static std::vector<ADCCounts_t> parseThresholds
+    (std::vector<std::string> const& specs, icarus::ADCsettings<T> const& settings);
+  
+  /// @}
+  // ---- END ----  Utilities  -------------------------------------------------
+  
     protected:
   
   /// Returns a detector timings object.
   detinfo::DetectorTimings const& detTimings() const { return *fDetTimings; }
+  
+  /// Returns the settings of the ADC for threshold conversions.
+  icarus::ADCsettings<> const& ADCsettings() const { return fADCsettings; }
   
   /// Creates an empty TriggerGates object for each threshold;
   /// thresholds are kept relative.
@@ -205,6 +301,9 @@ class icarus::trigger::TriggerGateBuilder {
     private:
   
   // --- BEGIN Configuration parameters ----------------------------------------
+  
+  /// Settings of the ADC for threshold conversions (default values).
+  icarus::ADCsettings<> fADCsettings;
   
   /// All single channel thresholds, sorted in increasing order.
   std::vector<ADCCounts_t> fChannelThresholds;
@@ -219,6 +318,10 @@ class icarus::trigger::TriggerGateBuilder {
   
   // --- END Setup -------------------------------------------------------------
   
+  /// Converts all threshold specifications with `numberOrVoltageToADC()`.
+  std::vector<ADCCounts_t> parseThresholds
+    (std::vector<std::string> const& specs) const
+    { return parseThresholds(specs, fADCsettings); }
   
 }; // class icarus::trigger::TriggerGateBuilder
 
@@ -254,6 +357,49 @@ void icarus::trigger::TriggerGateBuilder::TriggerGates::dump(Stream& out) const
   }
   out << "\n";
 } // icarus::trigger::TriggerGateBuilder::TriggerGates::dump()
+
+
+//------------------------------------------------------------------------------
+template <typename T>
+auto icarus::trigger::TriggerGateBuilder::numberOrVoltageToADC
+  (std::string const& s, icarus::ADCsettings<T> const& settings) -> ADCCounts_t
+{
+  short int ADC;
+  
+  std::string_view sv = s;
+  while (!sv.empty()) {
+    if (!std::isblank(sv.back())) break;
+    sv.remove_suffix(1);
+  }
+  // C++20: sv.ends_with(unitStr)!!
+  std::string_view const& unitStr = util::quantities::units::Volt::symbol;
+  if (sv.substr(sv.length() - unitStr.length()) == unitStr) { // voltage unit
+    auto const V = util::quantities::makeQuantity<util::quantities::volt>(sv);
+    ADC = settings.to_ADC(V);
+  }
+  else { // ADC plain number
+    std::size_t lastChar;
+    ADC = settings.roundADC(stod(std::string{ sv }, &lastChar));
+    if (lastChar != sv.length()) {
+      throw std::invalid_argument
+        { "Failed to convert '" + std::string{ sv } + "' to an ADC value." };
+    }
+  }
+  return icarus::trigger::ADCCounts_t{ ADC };
+} // icarus::trigger::TriggerGateBuilder::numberOrVoltageToADC()
+
+
+//------------------------------------------------------------------------------
+template <typename T>
+auto icarus::trigger::TriggerGateBuilder::parseThresholds
+  (std::vector<std::string> const& specs, icarus::ADCsettings<T> const& settings)
+  -> std::vector<ADCCounts_t>
+{
+  std::vector<icarus::trigger::ADCCounts_t> thresholds;
+  for (std::string const& spec: specs)
+    thresholds.push_back(numberOrVoltageToADC(spec, settings));
+  return thresholds;
+}
 
 
 //------------------------------------------------------------------------------

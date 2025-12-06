@@ -50,6 +50,9 @@ auto icarus::trigger::ManagedTriggerGateBuilder::unifiedBuild
   using GateManager_t = GateMgr;
   using GateInfo_t = typename GateManager_t::GateInfo_t;
   
+  // select the build function according to the polarity;
+  // here is where we "transform" a dynamic parameter into a template static one
+  
   /*
    * This is the simple algorithm where each channel is treated independently,
    * and we have as many trigger gates as we have channels.
@@ -67,8 +70,24 @@ auto icarus::trigger::ManagedTriggerGateBuilder::unifiedBuild
     = [] (WaveformWithBaseline const& a, WaveformWithBaseline const& b)
       { return a.waveform().ChannelNumber() == b.waveform().ChannelNumber(); }
     ;
-  
+    
   auto byChannel = waveforms | ranges::views::chunk_by(sameChannel);
+  
+  // this mess is to pick `buildChannelGates()` with the appropriate polarity;
+  // it is complicate because that is a template (at least it's not overloaded!)
+  // and the type of the second argument ("WaveformType") is opaque
+  using namespace icarus::waveform_operations;
+  using WaveformsType = std::decay_t<decltype(*begin(byChannel))>;
+  using BuildGatesProc_t = void(ManagedTriggerGateBuilder::*)
+    (std::vector<GateInfo_t>&, WaveformsType const&) const;
+  
+  BuildGatesProc_t const buildGatesFunc = (fPolarity < 0)
+    ? &ManagedTriggerGateBuilder::buildChannelGates
+      <NegativePolarityOperations<float>, GateInfo_t, WaveformsType>
+    : &ManagedTriggerGateBuilder::buildChannelGates
+      <PositivePolarityOperations<float>, GateInfo_t, WaveformsType>
+    ;
+  
   for (auto const& channelWaveforms: byChannel) {
     
     auto const& firstWaveform = channelWaveforms.front().waveform();
@@ -95,7 +114,7 @@ auto icarus::trigger::ManagedTriggerGateBuilder::unifiedBuild
     
     // this method will update the channel gates referenced in `channelGates`,
     // which are owned by `allGates`
-    buildChannelGates(channelGates, channelWaveforms);
+    (this->*buildGatesFunc)(channelGates, channelWaveforms);
     
   } // for channels
   
@@ -104,13 +123,12 @@ auto icarus::trigger::ManagedTriggerGateBuilder::unifiedBuild
 
 
 //------------------------------------------------------------------------------
-template <typename GateInfo, typename Waveforms>
+template <typename Ops, typename GateInfo, typename Waveforms>
 void icarus::trigger::ManagedTriggerGateBuilder::buildChannelGates(
   std::vector<GateInfo>& channelGates,
   Waveforms const& channelWaveforms
 ) const
 {
-  using ops = icarus::waveform_operations::NegativePolarityOperations<float>;
   
   if (channelWaveforms.empty()) return;
   
@@ -138,7 +156,7 @@ void icarus::trigger::ManagedTriggerGateBuilder::buildChannelGates(
 
     raw::OpDetWaveform const& waveform = waveformData.waveform();
     
-    ops const waveOps { waveformData.baseline().baseline() };
+    Ops const waveOps { waveformData.baselineValueOr0() };
     
     // baseline subtraction is performed in floating point,
     // but then rounding is applied again

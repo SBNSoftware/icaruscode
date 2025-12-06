@@ -1,6 +1,6 @@
 /**
  * @file   TriggerSimulationOnGates_module.cc
- * @brief  Plots of efficiency for triggers based on PMT sliding windows.
+ * @brief  Plots of efficiency for triggers based on independent window gates.
  * @author Gianluca Petrillo (petrillo@slac.stanford.edu)
  * @date   March 27, 2021
  */
@@ -96,7 +96,7 @@ using namespace util::quantities::time_literals;
 //------------------------------------------------------------------------------
 namespace icarus::trigger { class TriggerSimulationOnGates; }
 /**
- * @brief Simulates a sliding window trigger at specified gate times.
+ * @brief Simulates a trigger at specified gate times.
  * 
  * This module produces `raw::Trigger` objects each representing the outcome of
  * some trigger logic applied to discriminated optical detector input
