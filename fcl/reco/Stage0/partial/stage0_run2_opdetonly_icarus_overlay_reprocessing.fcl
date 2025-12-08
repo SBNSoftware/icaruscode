@@ -1,4 +1,4 @@
-#include "stage0_run2_wcdnn_icarus_overlay"
+#include "stage0_run2_wcdnn_icarus_overlay.fcl"
 
 process_name: OpMCstage0
 
@@ -10,17 +10,20 @@ process_name: OpMCstage0
 
 # execute PMT/CRT only path
 physics.path: [   @sequence::icarus_stage0_mc_PMT, 
-                  @sequence::icarus_stage0_mc_crthit,
-                  @sequence::icarus_stage0_mc_crtreco
+                  @sequence::icarus_stage0_mc_crtreco # only reco, hits from overlay
               ]
 
 # update ophit procedurs to pick up Run-2 SPE tune
-icarus_stage0_mc_producers.ophituncorrected.SPEArea: @local::SPERun2.Area
-icarus_stage0_mc_producers.ophituncorrected.SPEShift: @local::SPERun2.Shift
+physics.producers.ophituncorrected.SPEArea: @local::SPERun2.Area
+physics.producers.ophituncorrected.SPEShift: @local::SPERun2.Shift
+physics.producers.ophitfulluncorrected.SPEArea: @local::SPERun2.Area
+physics.producers.ophitfulluncorrected.SPEShift: @local::SPERun2.Shift
+physics.producers.mcophit.SPEArea: @local::SPERun2.Area
+physics.producers.mcophit.SPEAmplitude: @local::SPERun2.Amplitude
 
 # update flash producers to pick up Run-2 SPE tune
-icarus_stage0_producers.opflashCryoE.PECalib: @local::icarus_pmt_calibration.CalibStandardRun2
-icarus_stage0_producers.opflashCryoW.PECalib: @local::icarus_pmt_calibration.CalibStandardRun2
+physics.producers.opflashCryoE.PECalib: @local::icarus_pmt_calibration.CalibStandardRun2
+physics.producers.opflashCryoW.PECalib: @local::icarus_pmt_calibration.CalibStandardRun2
 
 
 
