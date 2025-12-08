@@ -209,7 +209,7 @@ icarus_photoelectronresponse_run2_2025: {
   
   tool_type: SampledWaveformFunctionTool
   
-  WaveformData: "Responses/SPRisolHitRun9271_MV.txt"
+  WaveformData: "Responses/SPRisolHitRun9271.txt"
   TransitTime:  "55.1 ns" 
   Gain:          @local::icarus_settings_opdet_run2.nominalPMTgain
   
@@ -224,7 +224,7 @@ icarus_photoelectronresponse_run4_2025: {
   
   tool_type: SampledWaveformFunctionTool
   
-  WaveformData: "Responses/SPRisolHitRun12715_MV.txt"
+  WaveformData: "Responses/SPRisolHitRun12715.txt"
   TransitTime:  "55.1 ns" 
   Gain:          @local::icarus_settings_opdet_run4.nominalPMTgain
   
