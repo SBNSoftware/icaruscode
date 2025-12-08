@@ -108,7 +108,7 @@ private:
     bool const fRecalibrateTime;
     bool const fUseGainDatabase;
     double const fSPEArea;
-    bool const fVerbose = false; ///< Whether to print the configuration we read.
+    bool const fVerbose; 
 
     /// Pointer to the online pmt corrections service
     icarusDB::PMTTimingCorrections const &fPMTTimingCorrectionsService;
