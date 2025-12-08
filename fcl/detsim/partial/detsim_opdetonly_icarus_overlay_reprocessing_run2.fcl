@@ -128,7 +128,9 @@ outputs.rootoutput.outputCommands: [
  
   # drop old "shifted" products since we shifted things again
   "drop sim::SimEnergyDeposits_filtersed_*_DetSim",        # this has been regenerated into `shifted`
-  "drop sim::SimEnergyDepositLites_filtersed_*_DetSim",    # this has been regenerated into `shifted`
+  # mcreco looks for `filtersed` in stage1: potentially can be changed to look for `shifted`?
+  # however since tpc reco products are not shifted, better to keep old deposits for that matching
+  # "drop sim::SimEnergyDepositLites_filtersed_*_DetSim",    # this has been regenerated into `shifted`
   "drop sim::SimEnergyDeposits_shiftedpriorSCE_*_DetSim",  # this has been regenerated into the same tag
   "drop sim::AuxDetSimChannel_shifted_*_DetSim",           # this has been regenerated into the same tag
   "drop sim::SimPhotons_shifted_*_DetSim",                 # this has been regenerated into the same tag
