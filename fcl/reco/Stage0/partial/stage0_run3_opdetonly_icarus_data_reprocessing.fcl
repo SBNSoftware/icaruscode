@@ -1,0 +1,11 @@
+#include "stage0_run2_opdetonly_icarus_data_reprocessing.fcl"
+
+# recalibrate optical hits
+physics.producers.ophit.RecalibratePE: true           # recalibrate PE values
+physics.producers.ophit.UseGainDatabase: false        # not ready yet
+physics.producers.ophit.SPEArea: @local::SPERun3.Area # use fixed value for all channels
+physics.producers.ophit.RecalibrateTime: false        # not needed for Run3
+
+# make sure flashes are using the correct (non)calibration
+physics.producers.opflashCryoE.PECalib: @local::icarus_pmt_calibration.CalibStandardRun3
+physics.producers.opflashCryoW.PECalib: @local::icarus_pmt_calibration.CalibStandardRun3 
