@@ -16,6 +16,8 @@
 #include "icaruscode/PMT/Trigger/Algorithms/TriggerTypes.h" // ADCCounts_t
 #include "icaruscode/PMT/Trigger/Algorithms/details/TriggerInfo_t.h"
 #include "icaruscode/PMT/Trigger/Utilities/TriggerDataUtils.h" // FillTriggerGates()
+#include "icaruscode/PMT/Trigger/Utilities/DiscrThresholdParser.h"
+#include "icaruscode/PMT/Algorithms/ADCsettings.h"
 #include "icaruscode/Utilities/DetectorClocksHelpers.h" // makeDetTimings()...
 #include "icarusalg/Utilities/CommonChoiceSelectors.h" // util::TimeScale...
 #include "icarusalg/Utilities/PlotSandbox.h"
@@ -38,6 +40,7 @@
 #include "lardataalg/DetectorInfo/DetectorTimings.h"
 #include "lardataalg/DetectorInfo/DetectorClocksData.h"
 #include "lardataalg/DetectorInfo/DetectorTimingTypes.h" // optical_tick...
+#include "lardataalg/Utilities/quantities/electromagnetism.h" // millivolt
 #include "lardataalg/Utilities/quantities/spacetime.h" // microseconds, ...
 #include "lardataalg/Utilities/intervals_fhicl.h" // microseconds from FHiCL
 #include "larcorealg/Geometry/GeometryCore.h"
@@ -53,8 +56,10 @@
 #include "larcoreobj/SimpleTypesAndConstants/geo_types.h" // geo::CryostatID
 
 // framework libraries
-#include "art_root_io/TFileService.h"
-#include "art_root_io/TFileDirectory.h"
+#if 0
+#  include "art_root_io/TFileService.h"
+#endif // 0
+#  include "art_root_io/TFileDirectory.h"
 #include "art/Framework/Services/Registry/ServiceHandle.h"
 #include "art/Framework/Core/EDProducer.h"
 #include "art/Framework/Core/ModuleMacros.h"
@@ -76,6 +81,7 @@
 #include <ostream>
 #include <algorithm> // std::fill(), std::any_of()
 #include <map>
+#include <set>
 #include <vector>
 #include <iterator> // std::make_move_iterator()
 #include <memory> // std::make_unique()
@@ -125,6 +131,14 @@ namespace icarus::trigger { class TriggerSimulationOnGates; }
  * Conversely, testing a different pattern requires the instantiation of a new
  * module.
  * 
+ * The input of this module is one discretized waveform _per window_. In the
+ * typical ICARUS sliding window configuration, each window is a 6 metre area
+ * on one side of the TPC (16 LVDS pairs, 30 PMT). In the typical adder trigger
+ * configuration, each window is one adder signal (corresponding to 15 PMT).
+ * The input discretized waveforms must preserve some information of their
+ * physical locations, that is they need to remember the PMT channels they
+ * ultimately originate from.
+ * 
  * 
  * Configuration
  * ==============
@@ -140,14 +154,22 @@ namespace icarus::trigger { class TriggerSimulationOnGates; }
  *     The typical trigger primitives used as input are LVDS discriminated
  *     output combined into trigger windows (e.g. from
  *     `icarus::trigger::SlidingWindowTrigger` module).
- * * `Thresholds` (list of names, mandatory): list of the discrimination
- *     thresholds to consider. A data product containing a digital signal is
- *     read for each one of the thresholds, and the tag of the data product is
+ * * threshold specifications: `Thresholds` (list of names) and `VThresholds`
+ *     (list of voltages): list of the discrimination thresholds to include.
+ *     A data product containing a digital signal is read for each of the
+ *     thresholds in `Thresholds`, and the tag of the data product is
  *     expected to be the instance name in this configuration parameter for the
  *     module label set in `TriggerGatesTag` (e.g. for a threshold of
- *     `"60"`, supposedly 60 ADC counts, and with `TriggerGatesTag` set to
+ *     `"400"`, supposedly 400 ADC counts, and with `TriggerGatesTag` set to
  *     `"TrigSlidingWindows"`, the data product tag would be
- *     `TrigSlidingWindows:60`).
+ *     `TrigSlidingWindows:60`). The thresholds in `VThresholds` are specified
+ *     as voltage quantities (e.g. `"60 mV"`), and they are converted to ADC
+ *     counts (integral number) according to the CAEN V1730B board settings
+ *     (`icarus::ADCsettings`). The resulting number (e.g. `491` for `"60 mV"`)
+ *     is used as if it had been specified in `Thresholds` instead, that is
+ *     directly as tag for input data products.
+ *     At least one threshold must be specified, either with `Thresholds` or
+ *     with `VThresholds`. Duplicate entries will cause a configuration error.
  * * `KeepThresholdName` (flag, optional): by default, output data products have
  *     each an instance name according to their threshold (from the `Threshold`
  *     parameter), unless there is only one threshold specified. If this
@@ -204,10 +226,21 @@ namespace icarus::trigger { class TriggerSimulationOnGates; }
  * `simulate_sliding_window_trigger_icarus.fcl`.
  * 
  * 
+ * Service requirements
+ * =====================
+ * 
+ * * The usual message facility.
+ * * `Geometry` and `WireReadout` to build the trigger window topology.
+ * * `DetectorClocksService` for electronics time references.
+ * * `TFileService` if plots are requested (currently disabled).
+ * 
+ * 
  * Input data products
  * ====================
  * 
- * * `TriggerGatesTag` + `Thresholds`: input gate collections.
+ * * `TriggerGatesTag` + `Thresholds`: input discretized waveform ("gate")
+ *    collections. Each gate, of type `icraus::trigger::OpticalTriggerGateData_t`,
+ *    needs to remember or be associated to physical PMT.
  * * `BeamGates` (`std::vector<sim::BeamGateInfo>`): the beam gate intervals
  *     to run the simulation on; one trigger result is produced and saved for
  *     each of the gates in this data product. The gates are interpreted
@@ -413,7 +446,14 @@ class icarus::trigger::TriggerSimulationOnGates
 
     fhicl::Sequence<std::string> Thresholds {
       Name("Thresholds"),
-      Comment("tags of the thresholds to consider")
+      Comment("tags of the thresholds to consider"),
+      std::vector<std::string>{}
+      };
+
+    fhicl::Sequence<util::quantities::millivolt> VThresholds {
+      Name("VThresholds"),
+      Comment("thresholds to convert to ADC tags (exclusive with `Thresholds`)"),
+      std::vector<util::quantities::millivolt>{}
       };
 
     fhicl::OptionalAtom<bool> KeepThresholdName {
@@ -596,14 +636,6 @@ class icarus::trigger::TriggerSimulationOnGates
   // --- END Configuration variables -------------------------------------------
   
   
-  // --- BEGIN Service variables -----------------------------------------------
-
-  /// ROOT directory where all the plots are written.
-  art::TFileDirectory fOutputDir;
-
-  // --- END Service variables -------------------------------------------------
-
-  
   // --- BEGIN Internal variables ----------------------------------------------
   
   /// Output data product instance names (same order as `fADCthresholds`).
@@ -616,8 +648,10 @@ class icarus::trigger::TriggerSimulationOnGates
   /// Pattern algorithm.
   std::optional<icarus::trigger::SlidingWindowPatternAlg> fPatternAlg;
   
+#if 0
   /// All plots in one practical sandbox.
   PlotSandbox_t fPlots;
+#endif // 0
   
   /// Proto-histogram information in a convenient packet; event-wide.
   ThresholdPlotInfo_t fEventPlotInfo;
@@ -666,6 +700,10 @@ class icarus::trigger::TriggerSimulationOnGates
     );
   
   // --- END ----- Plot infrastructure -----------------------------------------
+  
+  /// Creates the window map manager.
+  icarus::trigger::WindowTopologyManager makeWindowMapManager() const;
+  
   
   /**
    * @brief Performs the simulation for the specified ADC threshold.
@@ -848,16 +886,14 @@ icarus::trigger::TriggerSimulationOnGates::TriggerSimulationOnGates
   , fTriggerTimeResolution(config().TriggerTimeResolution())
   , fEventTimeBinning     (config().EventTimeBinning())
   , fLogCategory          (config().LogCategory())
-  // services
-  , fOutputDir (*art::ServiceHandle<art::TFileService>())
   // internal and cached
-  , fWindowMapMan
-    { *lar::providerFrom<geo::Geometry>(),
-      art::ServiceHandle<geo::WireReadout const>()->Get(),
-      fLogCategory + "_WindowMapManager" }
-  , fPlots(
-     fOutputDir, "", "requirement: " + fPattern.description()
-    )
+  , fWindowMapMan{ makeWindowMapManager() }
+#if 0
+  , fPlots{
+    *art::ServiceHandle<art::TFileService>(),
+    "", "requirement: " + fPattern.description()
+    }
+#endif //0
   , fEventPlotInfo{
         BinnedContent_t{ fEventTimeBinning }  // eventTimes
       , BinnedContent_t{                      // HWtrigTimeVsBeam
@@ -879,7 +915,27 @@ icarus::trigger::TriggerSimulationOnGates::TriggerSimulationOnGates
   // more complex parameter parsing
   //
   std::string const& discrModuleLabel = config().TriggerGatesTag();
-  for (std::string const& threshold: config().Thresholds())
+  
+  constexpr icarus::ADCsettings<double> ADCsettings;
+  std::set<std::string> thresholds
+    { cbegin(config().Thresholds()), cend(config().Thresholds()) };
+  for (util::quantities::millivolt const& Vthr: config().VThresholds()) {
+    std::string const thr = std::to_string(ADCsettings.to_ADC(Vthr));
+    if (thresholds.count(thr) > 0) {
+      throw art::Exception{ art::errors::Configuration }
+        << "Threshold '" << Vthr << "' in " << config().VThresholds.name()
+        << " was already specified as '" << thr << "' in "
+        << config().Thresholds.name() << "!";
+    }
+    thresholds.insert(thr);
+  } // for
+  if (thresholds.empty()) {
+    throw art::Exception{ art::errors::Configuration }
+        << "No threshold tag configured in " << config().Thresholds.name()
+        << " nor " << config().VThresholds.name() << "!";
+  }
+  
+  for (std::string const& threshold: thresholds)
     fADCthresholds[threshold] = art::InputTag{ discrModuleLabel, threshold };
   
   // initialization of a vector of atomic is not as trivial as it sounds...
@@ -1315,6 +1371,17 @@ void icarus::trigger::TriggerSimulationOnGates::makeEventPlots() {
 #endif // 0
   
 } // icarus::trigger::TriggerSimulationOnGates::makeEventPlots()
+
+
+//------------------------------------------------------------------------------
+icarus::trigger::WindowTopologyManager
+icarus::trigger::TriggerSimulationOnGates::makeWindowMapManager() const {
+  return {
+    *lar::providerFrom<geo::Geometry>(),
+    art::ServiceHandle<geo::WireReadout const>()->Get(),
+    fLogCategory + "_WindowMapManager"
+    };
+} // icarus::trigger::TriggerSimulationOnGates::makeWindowMapManager()
 
 
 //------------------------------------------------------------------------------

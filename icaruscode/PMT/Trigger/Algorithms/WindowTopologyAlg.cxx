@@ -96,13 +96,16 @@ auto icarus::trigger::WindowTopologyAlg::createFromGates
   
   // split gates by cryostat
   TriggerGatesPerCryostat_t gatesByCryostat { fGeom->Ncryostats() };
+  
   for (InputTriggerGate_t const& gate: gates) {
     
     geo::CryostatID cid; // invalid
     assert(!cid.isValid);
     
     for (raw::Channel_t const channel: gate.channels()) {
-      geo::OpDetGeo const& opDet = fWireReadoutGeom->OpDetGeoFromOpChannel(channel);
+      if (isSpecialChannel(channel)) continue;
+      geo::OpDetGeo const& opDet
+        = fWireReadoutGeom->OpDetGeoFromOpChannel(channel);
       geo::OpDetID const oid = opDet.ID();
       if (!cid) cid = oid;
       else if (cid != oid) { // just in case
@@ -146,7 +149,7 @@ auto icarus::trigger::WindowTopologyAlg::emplaceAndDumpMap(Args&&... args) const
   -> WindowChannelMap
 {
   WindowChannelMap const map { std::forward<Args>(args)... };
-  mfLogTrace() << "Window map: << " << map;
+  mfLogTrace() << "Window map: " << map;
   return map;
 } // icarus::trigger::WindowTopologyAlg::emplaceAndDumpMap()
 
@@ -191,19 +194,27 @@ auto icarus::trigger::WindowTopologyAlg::createWindowsFromCryostat(
     wInfo.topology.index = iWindow++;
     wComp.channels = channels;
     std::sort(wComp.channels.begin(), wComp.channels.end());
-    wComp.cryoid = channels.empty()
-      ? geo::CryostatID{}
-      : wireReadoutAlg.OpDetGeoFromOpChannel(channels.front()).ID().asCryostatID()
-      ;
-    
-    geo::vect::MiddlePointAccumulator middlePoint;
-    for (raw::Channel_t const channel: channels) {
-      // documentation of OpDetGeoFromOpChannel() does not say what on error...
-      geo::OpDetGeo const& opDet = wireReadoutAlg.OpDetGeoFromOpChannel(channel);
-      middlePoint.add(opDet.GetCenter());
-      if (opDet.ID() != wComp.cryoid) wComp.cryoid = geo::CryostatID{};
-    } // for channel
-    wComp.center = middlePoint.middlePoint();
+    if (wComp.channels.empty() || isSpecialChannel(wComp.channels.front())) {
+      wComp.cryoid = geo::CryostatID{};
+      wComp.center = geo::Point_t{
+        std::numeric_limits<double>::signaling_NaN(),
+        std::numeric_limits<double>::signaling_NaN(),
+        std::numeric_limits<double>::signaling_NaN()
+        };
+    }
+    else {
+      wComp.cryoid = wireReadoutAlg.OpDetGeoFromOpChannel
+        (wComp.channels.front()).ID().asCryostatID();
+      geo::vect::MiddlePointAccumulator middlePoint;
+      for (raw::Channel_t const channel: wComp.channels) {
+        if (isSpecialChannel(channel)) continue;
+        // documentation of OpDetGeoFromOpChannel() does not say what on error
+        // (hint: it throws)
+        middlePoint.add
+          (wireReadoutAlg.OpDetGeoFromOpChannel(channel).GetCenter());
+      } // for channel
+      wComp.center = middlePoint.middlePoint();
+    }
     
     windows.push_back(std::move(wInfo));
     cryoWindowInfo.push_back(&windows.back());

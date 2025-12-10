@@ -15,9 +15,11 @@
 #include "icaruscode/PMT/Trigger/Algorithms/TriggerTypes.h" // icarus::trigger::ADCCounts_t
 #include "icaruscode/PMT/Trigger/Utilities/TrackedOpticalTriggerGate.h"
 #include "icaruscode/PMT/Trigger/Utilities/TrackedTriggerGate.h" // gatesIn()
+#include "icaruscode/PMT/Trigger/Utilities/DiscrThresholdParser.h"
 #include "icaruscode/PMT/Trigger/Algorithms/WaveformWithBaseline.h"
 #include "icaruscode/PMT/Algorithms/ADCsettings.h"
 #include "icaruscode/IcarusObj/OpDetWaveformMeta.h"
+
 
 // LArSoft libraries
 #include "lardataalg/DetectorInfo/DetectorTimings.h"
@@ -321,7 +323,7 @@ class icarus::trigger::TriggerGateBuilder {
   /// Converts all threshold specifications with `numberOrVoltageToADC()`.
   std::vector<ADCCounts_t> parseThresholds
     (std::vector<std::string> const& specs) const
-    { return parseThresholds(specs, fADCsettings); }
+    { return DiscrThresholdParser{ fADCsettings }.parse(specs); }
   
 }; // class icarus::trigger::TriggerGateBuilder
 

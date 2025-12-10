@@ -138,6 +138,10 @@ class icarus::trigger::WindowTopologyAlg
     (TriggerGates_t const& windowChannels, geo::CryostatID cryoID) const;
   
   
+  /// Returns whether `channel` is the ID of a special channel (not a PMT).
+  static bool isSpecialChannel(raw::Channel_t channel);
+  
+  
     private:
   /// All channels in a gate.
   using WindowChannels_t = std::vector<raw::Channel_t>;
@@ -351,7 +355,8 @@ class icarus::trigger::WindowTopologyManager
   
   /**
    * @brief Constructor.
-   * @param topology the window topology to be verified against
+   * @param geom geometry service provider
+   * @param wireReadoutAlg wire readout service provider
    * @param logCategory category tag for messages from this algorithm
    */
   WindowTopologyManager(
@@ -389,19 +394,27 @@ class icarus::trigger::WindowTopologyManager
   /// @throw std::bad_optional_access if no topology has been set
   WindowChannelMap const* operator-> () const;
   
-  
-  
     private:
   
   /// Helper: creates the topology from `gates`.
   template <typename Gates>
   void extractTopology(Gates const& gates);
   
+
+
 }; // icarus::trigger::WindowTopologyManager
 
 
 // -----------------------------------------------------------------------------
 // ---  inline implementation
+// -----------------------------------------------------------------------------
+// ---  icarus::trigger::WindowTopologyAlg
+// -----------------------------------------------------------------------------
+inline bool icarus::trigger::WindowTopologyAlg::isSpecialChannel
+  (raw::Channel_t channel)
+  { return channel & 0xF000; }
+
+
 // -----------------------------------------------------------------------------
 // --- icarus::trigger::WindowTopologyVerification
 // -----------------------------------------------------------------------------
