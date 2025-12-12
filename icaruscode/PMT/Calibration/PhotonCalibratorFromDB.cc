@@ -1,6 +1,6 @@
 #include "icaruscode/PMT/Calibration/PhotonCalibratorFromDB.h"
 
-namespace calib {
+namespace icarusDB {
 
   PhotonCalibratorFromDB::PhotonCalibratorFromDB(const fhicl::ParameterSet& pset)
     : fVerbose   ( pset.get<bool>("Verbose", false) )
@@ -23,4 +23,4 @@ namespace calib {
     return false;
   }
 
-} // namespace calib
+} // namespace icarusDB

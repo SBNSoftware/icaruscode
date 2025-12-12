@@ -15,43 +15,43 @@
 #include "fhiclcpp/ParameterSet.h"
 
 // -----------------------------------------------------------------------------
-namespace calib {
-  /**
-  * @brief Optical hit photoelectron calibration service with data from database.
-  * 
-  * More description here.
-  * 
-  */
-  class PhotonCalibratorFromDB: public calib::IPhotonCalibrator {
+namespace icarusDB { class PhotonCalibratorFromDB; }
+/**
+* @brief Optical hit photoelectron calibration service with data from database.
+* 
+* More description here.
+* 
+*/
+class icarusDB::PhotonCalibratorFromDB: public calib::IPhotonCalibrator {
+  
     
+  public:
+
+    struct Config {
+      using Name = fhicl::Name;
+      using Comment = fhicl::Comment;
+
+      // FHiCL configuration here
       
-    public:
+    };
+  
+    using Parameters = fhicl::Table<Config>;
+  
+    PhotonCalibratorFromDB(const fhicl::ParameterSet& pset);
 
-      struct Config {
-        using Name = fhicl::Name;
-        using Comment = fhicl::Comment;
+    /// Convert the specified value in ADC into photoelectrons.
+    double PE(double adcs, int channel) const override;
 
-        // FHiCL configuration here
-        
-      };
-    
-      using Parameters = fhicl::Table<Config>;
-    
-      PhotonCalibratorFromDB(const fhicl::ParameterSet& pset);
+    bool UseArea() const override;
 
-      /// Convert the specified value in ADC into photoelectrons.
-      double PE(double adcs, int channel) const override;
+    void readCalibrationFromDB(unsigned int run);
 
-      bool UseArea() const override;
+  private:
 
-      void readCalibrationFromDB(unsigned int run);
+    bool fVerbose;
+    std::string fLogCategory;
 
-    private:
+}; // class icarus::PhotonCalibratorStandard
 
-      bool fVerbose;
-      std::string fLogCategory;
 
-  }; // class icarus::PhotonCalibratorStandard
-
-}
 #endif // ICARUSCODE_PMT_CALIBRATION_PHOTONCALIBRATORFROMDB_H
