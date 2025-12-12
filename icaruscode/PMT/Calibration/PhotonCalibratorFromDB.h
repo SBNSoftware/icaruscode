@@ -10,9 +10,25 @@
 // LArSoft libraries
 #include "larreco/Calibrator/IPhotonCalibrator.h"
 
+#include "messagefacility/MessageLogger/MessageLogger.h"
+
 // ART includes
 #include "fhiclcpp/types/Table.h"
 #include "fhiclcpp/ParameterSet.h"
+
+namespace icarusDB::details {
+    
+  /// Structure for single channel corrections
+  struct PhotonCalibratorInfo { 
+
+    double speArea = 256.658;
+    double speAreaErr = -1.0;
+    double speFitWidth = -1.0;
+    double speFitWidthErr = -1.0;
+    
+  };
+  
+} // icarusDB::details
 
 // -----------------------------------------------------------------------------
 namespace icarusDB { class PhotonCalibratorFromDB; }
@@ -40,16 +56,30 @@ class icarusDB::PhotonCalibratorFromDB: public calib::IPhotonCalibrator {
     PhotonCalibratorFromDB(const fhicl::ParameterSet& pset);
 
     /// Convert the specified value in ADC into photoelectrons.
-    double PE(double adcs, int channel) const override;
+    double PE(double adcs, int channel) const override; 
 
     bool UseArea() const override;
 
     void readCalibrationFromDB(unsigned int run);
 
+    uint64_t RunToDatabaseTimestamp( uint32_t run ) const;
+
   private:
 
     bool fVerbose;
     std::string fLogCategory;
+
+    using PhotonCalibratorInfo = details::PhotonCalibratorInfo;
+    static constexpr PhotonCalibratorInfo CorrectionDefaults {}; ///< Default values
+
+    std::map<unsigned int, PhotonCalibratorInfo> fDatabaseSPECalibrations;
+
+    /// Internal access to the channel correction record; returns defaults if not present.
+    PhotonCalibratorInfo const& getChannelCorrOrDefault(unsigned int channelID) const{
+      auto const it = fDatabaseSPECalibrations.find(channelID);
+      return (it == fDatabaseSPECalibrations.end())? CorrectionDefaults: it->second;
+    }
+
 
 }; // class icarus::PhotonCalibratorStandard
 
