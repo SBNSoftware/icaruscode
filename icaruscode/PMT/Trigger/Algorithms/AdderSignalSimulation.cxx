@@ -76,6 +76,10 @@ icarus::trigger::AdderSignalSimulation::AdderSignalSimulation(
   , fMissingChannels { sorted(config.MissingChannels()) }
   , fSplitToAdders   { config.SplitToAdders() }
   , fAdderBaseline   { config.AdderBaseline() }
+  , fSimTimeInterval {
+      icarus::ns::fhicl::makeTimeInterval(config.TimeInterval())
+        .value_or(RelTimeInterval_t{})
+    }
   , fADCsettings     { std::move(ADCsettings) }
 {
   
@@ -109,6 +113,10 @@ std::string icarus::trigger::AdderSignalSimulation::configurationDump
     << nextLine << " * PMT signal fraction: " << (1-fSplitToAdders) << " to digitizer/"
       << fSplitToAdders << " to adders"
     ;
+  if (!fSimTimeInterval.empty()) {
+    log << nextLine << " * restrict simulation within " << fSimTimeInterval
+      << " from the beam gate opening time";
+  }
   if (fMissingChannels.empty())
     log << nextLine << " * no missing channels configured";
   else {
@@ -125,6 +133,7 @@ std::string icarus::trigger::AdderSignalSimulation::configurationDump
 std::vector<raw::OpDetWaveform>
 icarus::trigger::AdderSignalSimulation::simulate(
   std::vector<WaveformWithBaseline> const& waveformInfo,
+  detinfo::DetectorTimings const& detTimings,
   TDirectory* plotDir /* = nullptr */
 ) const {
   
@@ -151,6 +160,9 @@ icarus::trigger::AdderSignalSimulation::simulate(
       return plotDir->mkdir(dirName.c_str(), dirTitle.c_str());
     };
   
+  TimeInterval_t const simTimeInterval = fSimTimeInterval.empty()
+    ? TimeInterval_t{}: detTimings.BeamGateTime() + fSimTimeInterval;
+  
   for (auto const& [ adderChannel, PMTs ]: util::const_values(*fAdderChannels)) {
     
     TDirectory* const chPlotDir = makeChannelPlotDir(adderChannel);
@@ -164,8 +176,8 @@ icarus::trigger::AdderSignalSimulation::simulate(
     
     // std::vector<std::vector<WaveformWithBaseline const*>> inputWaveforms
     // std::set<raw::Channel_t> requiredChannels
-    auto const& [ inputWaveforms, requiredChannels ]
-      = collectAdderWindowWaveforms(waveformInfoByChannel, PMTs, adderChannel);
+    auto const& [ inputWaveforms, requiredChannels ] = collectAdderWindowWaveforms
+      (waveformInfoByChannel, PMTs, simTimeInterval, adderChannel);
     
     
     // identify all the time intervals where we can operate
@@ -222,6 +234,7 @@ auto icarus::trigger::AdderSignalSimulation::groupByChannel
 auto icarus::trigger::AdderSignalSimulation::collectAdderWindowWaveforms(
   WaveformsByChannel_t const& waveformInfoByChannel,
   icarus::trigger::AdderChannelInfo_t::PMTchannelList_t const& windowChannels,
+  TimeInterval_t const& simTimeInterval /* = {} */,
   AdderChannelID adderChannel /* = NoChannel */
 ) const 
   -> std::pair<std::vector<std::vector<WaveformWithBaseline const*>>, std::set<raw::Channel_t>>
@@ -229,7 +242,9 @@ auto icarus::trigger::AdderSignalSimulation::collectAdderWindowWaveforms(
   
   auto log = mfLogTrace();
   log << "Collecting waveforms for adder channel " << adderChannel << " from "
-    << windowChannels.size() << " channels:";
+    << windowChannels.size() << " channels";
+  if (!simTimeInterval.empty()) log << " within " << simTimeInterval;
+  log << ":";
   
   std::set<raw::Channel_t> requiredChannels;
   std::vector<std::vector<WaveformWithBaseline const*>> inputWaveforms;
@@ -248,10 +263,24 @@ auto icarus::trigger::AdderSignalSimulation::collectAdderWindowWaveforms(
       log << " " << ch;
       requiredChannels.insert(ch);
     }
-    if (auto nCh = waveformInfoByChannel[ch].size(); nCh != 1)
-      log << " [x" << nCh << "]";
+    // filter by time interval
+    std::vector<WaveformWithBaseline const*> waveforms;
+    if (fSimTimeInterval.empty()) waveforms = waveformInfoByChannel[ch];
+    else { // filter by time
+      waveforms.reserve(waveformInfoByChannel[ch].size());
+      for (WaveformWithBaseline const* waveform: waveformInfoByChannel[ch]) {
+        if (!simTimeInterval.overlaps(waveformInterval(*waveform))) continue;
+        waveforms.push_back(waveform);
+      }
+    }
     
-    inputWaveforms.push_back(waveformInfoByChannel[ch]);
+    if (auto nCh = waveformInfoByChannel[ch].size(); nCh != 1 || waveforms.size() != 1) {
+      log << " [x";;
+      if (waveforms.size() != nCh) log << waveforms.size() << "/";
+      log << nCh << "]";
+    }
+    
+    inputWaveforms.push_back(std::move(waveforms));
     
   } // for
   

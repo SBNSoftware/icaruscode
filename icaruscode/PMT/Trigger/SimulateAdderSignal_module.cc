@@ -607,8 +607,12 @@ void icarus::trigger::SimulateAdderSignal::produce
   //
   // run simulation
   //
-  std::vector<raw::OpDetWaveform> adderWaveforms
-    = fAdderSimulation.simulate(waveformInfo, makeEventPlotDir(event.id()));
+  detinfo::DetectorTimings const detTimings = detinfo::makeDetectorTimings
+    (art::ServiceHandle<detinfo::DetectorClocksService const>()->DataFor(event))
+    ;
+  
+  std::vector<raw::OpDetWaveform> adderWaveforms = fAdderSimulation.simulate
+    (waveformInfo, detTimings, makeEventPlotDir(event.id()));
   
   sortByChannelAndTime(adderWaveforms);
   
@@ -627,10 +631,6 @@ void icarus::trigger::SimulateAdderSignal::produce
   //
   // get the timing information for this event
   //
-  detinfo::DetectorTimings const detTimings = detinfo::makeDetectorTimings
-    (art::ServiceHandle<detinfo::DetectorClocksService const>()->DataFor(event))
-    ;
-  
   //
   // waveform metadata
   //

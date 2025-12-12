@@ -248,7 +248,7 @@ class icarus::trigger::DiscriminatedAdderSignal
     
     icarus::ns::fhicl::TimeIntervalOptionalTable<electronics_time> TimeInterval{
       Name{ "TimeInterval" },
-      Comment{ "limit the adder time to this interval, relative to beam gate" }
+      Comment{ "limit the adder time to this interval (electronics time)" }
       };
     
     fhicl::OptionalSequence<std::string> SelectThresholds{

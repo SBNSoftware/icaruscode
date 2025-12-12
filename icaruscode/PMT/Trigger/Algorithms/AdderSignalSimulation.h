@@ -18,9 +18,13 @@
 #include "icaruscode/PMT/Trigger/Algorithms/WaveformWithBaseline.h"
 #include "icarusalg/Utilities/mfLoggingClass.h"
 #include "icarusalg/Utilities/GroupByIndex.h"
+#include "icarusalg/Utilities/TimeIntervalConfig.h" // TimeInterval in FHiCL
 #include "icarusalg/Utilities/TimeInterval.h"
 
 // LArSoft/framework libraries
+#include "lardataalg/DetectorInfo/DetectorTimings.h"
+#include "lardataalg/DetectorInfo/DetectorTimingTypes.h" // electronics_time
+#include "lardataalg/Utilities/quantities/spacetime.h" // microseconds
 #include "lardataobj/RawData/OpDetWaveform.h"
 #include "fhiclcpp/types/Sequence.h"
 #include "fhiclcpp/types/Atom.h"
@@ -226,7 +230,9 @@ class icarus::trigger::AdderSignalSimulation
   
   // imported types
   using nanoseconds = util::quantities::intervals::nanoseconds;
+  using microseconds = util::quantities::intervals::microseconds;
   using electronics_time = detinfo::timescales::electronics_time;
+  using RelTimeInterval_t = icarus::ns::util::TimeInterval<microseconds>;
   using TimeInterval_t = icarus::ns::util::TimeInterval<electronics_time>;
   
   /// Map of waveform information records per channel.
@@ -244,6 +250,9 @@ class icarus::trigger::AdderSignalSimulation
   double const fSplitToAdders; ///< Fraction of PMT signal diverted to adders.
   
   float const fAdderBaseline; ///< Offset added to all samples in adder output.
+  
+  /// Simulation time restriction, with respect to beam gate time.
+  RelTimeInterval_t const fSimTimeInterval;
   
   adder::types::ADCsettings_t const fADCsettings; ///< Digitizer settings.
   
@@ -280,6 +289,7 @@ class icarus::trigger::AdderSignalSimulation
    * @brief Returns the waveforms contributing to a adder channel.
    * @param waveformInfoByChannel all available waveforms, grouped by channel
    * @param windowChannels list of PMT channels included in the adder channel
+   * @param simTimeInterval include only waveforms overlapping this interval
    * @param adderChannel (default: `NoChannel`) adder channel identifier
    * @return the list of contributing waveforms, and the non-missing channels
    * 
@@ -289,6 +299,10 @@ class icarus::trigger::AdderSignalSimulation
    * The input `waveformInfoByChannel` is a map type that takes a PMT channel
    * number as key and returns a list of waveforms for that channel.
    * Waveforms from channels not in `windowChannels` are ignored.
+   * 
+   * The waveforms that do not overlap `simTimeInterval` are ignored; if that
+   * interval is not specified (or it is specified empty), this restriction is
+   * lifted and waveforms will be processed regardless of their time.
    * 
    * The algorithm returns the list of waveforms associated to `windowChannels`,
    * still grouped by channel, but in a straight sequence (so the index of the
@@ -303,6 +317,7 @@ class icarus::trigger::AdderSignalSimulation
   collectAdderWindowWaveforms(
     WaveformsByChannel_t const& waveformInfoByChannel,
     icarus::trigger::AdderChannelInfo_t::PMTchannelList_t const& windowChannels,
+    TimeInterval_t const& simTimeInterval = {},
     AdderChannelID adderChannel = NoChannel
     ) const;
   
@@ -355,6 +370,7 @@ class icarus::trigger::AdderSignalSimulation
   
     public:
   
+  
   /// FHiCL configuration of the module.
   struct Config {
     
@@ -377,6 +393,12 @@ class icarus::trigger::AdderSignalSimulation
       Name{ "AdderBaseline" },
       Comment{ "baseline (offset) of the output adder signal [ADC#]" },
       0.0f
+      };
+    
+    icarus::ns::fhicl::TimeIntervalOptionalTable<microseconds> TimeInterval{
+      Name{ "TimeInterval" },
+      Comment
+        { "limit adder time simulation to this interval, relative to beam gate" }
       };
     
     fhicl::Atom<std::string> LogCategory{
@@ -465,6 +487,7 @@ class icarus::trigger::AdderSignalSimulation
   /**
    * @brief Simulates adder signals from the whole specified dataset.
    * @param waveformInfo collection of input PMT digitized waveforms
+   * @param detTimings timing information for the event
    * @param plotDir (default: `nullptr`) directory where to put debug plots
    * @return a list of simulated adder waveforms
    * @throw std::runtime_error in case of misconfiguration or incomplete setup
@@ -482,6 +505,10 @@ class icarus::trigger::AdderSignalSimulation
    * The order of the simulated waveforms in the output is not prescribed.
    *
    * The simulation is outlined in the class documentation.
+   * 
+   * The detector timing information is used when simulation is configured to be
+   * restricted within a time interval relative to the beam gate opening time.
+   * 
    *
    * Plots
    * ------
@@ -498,6 +525,7 @@ class icarus::trigger::AdderSignalSimulation
    */
   std::vector<raw::OpDetWaveform> simulate(
     std::vector<WaveformWithBaseline> const& waveformInfo,
+    detinfo::DetectorTimings const& detTimings,
     TDirectory* plotDir = nullptr
     ) const;
   

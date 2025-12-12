@@ -491,7 +491,7 @@ class icarus::trigger::TriggerSimulationOnGates
 
     fhicl::Atom<bool> ExtraInfo {
       Name("ExtraInfo"),
-      Comment("produce a snm::ExtraTriggerInfo object our of the first gate"),
+      Comment("produce a sbn::ExtraTriggerInfo object out of the first gate"),
       false
       };
 
