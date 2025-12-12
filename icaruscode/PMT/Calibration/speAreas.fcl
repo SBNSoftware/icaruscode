@@ -1,0 +1,25 @@
+#include "stage0_run2_wcdnn_icarus.fcl"
+
+process_name: stage0p1
+
+services.IPhotonCalibratorService.Verbose: true
+services.IPhotonCalibratorService.AreaTag: "v1r0"
+services.IPMTTimingCorrectionService.Verbose: true
+
+services.message: {
+  debugModules: ["*"]  # Enable debug messages for all modules, or specify module names
+  destinations: {
+    LogDebugFile: {
+      type: "file"
+      filename: "debug.log"
+      threshold: "DEBUG"
+      categories: {
+        default: { limit: -1 }
+      }
+    }
+    LogStandardOut: {
+      type: "cout"
+      threshold: "DEBUG"
+    }
+  }
+}
