@@ -191,6 +191,7 @@ icarus_ophit: # some basic configuration
    InputModule:    "opdaq"
    InputLabels:    []
    ChannelMasks:   []
+   UseCalibrator: true
    HitThreshold:   0.2   # PE
    AreaToPE:       true  # Use area to calculate number of PEs
    SPEArea:        @local::SPE.Area # If AreaToPE is true, this number is
