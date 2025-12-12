@@ -10,7 +10,9 @@ namespace calib {
     art::ActivityRegistry& reg
   )
     : fProvider{ pset.get_PSet() }
-  {}
+  {
+    reg.sPreBeginRun.watch(this, &PhotonCalibratorServiceFromDB::preBeginRun);
+  }
 
   void PhotonCalibratorServiceFromDB::preBeginRun(art::Run const& run)
   {

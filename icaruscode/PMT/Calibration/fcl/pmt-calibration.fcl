@@ -27,4 +27,13 @@ pmt_bkgphotons_calibration:
   IntegralBinning: [ 0., 8., 0.04 ] # in 10^7 electrons
 }
 
+icarus_photon_calibration:
+{
+    service_provider: PhotonCalibratorServiceFromDB
+    SPESize: -1.0
+    SPEShift: 0.0
+    UseArea: false
+    Verbose: true
+}
+
 END_PROLOG

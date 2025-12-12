@@ -13,6 +13,7 @@ services:
   IICARUSChannelMap:           @local::icarus_channelmappinggservice
   IPMTTimingCorrectionService: @local::icarus_pmttimingservice
                                @table::icarus_wirecalibration_minimum_services
+  IPhotonCalibratorService: @local::icarus_photon_calibration
 }
 
 #source is a root file

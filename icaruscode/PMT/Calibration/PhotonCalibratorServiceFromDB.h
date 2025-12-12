@@ -13,7 +13,7 @@
 // LArSoft Includes
 #include "larreco/Calibrator/IPhotonCalibratorService.h"
 #include "icaruscode/PMT/Calibration/PhotonCalibratorFromDB.h"
-
+#include "art/Framework/Services/Registry/ActivityRegistry.h"
 #include "art/Framework/Principal/Run.h"
 #include "art/Framework/Services/Registry/ServiceDeclarationMacros.h"
 #include "art/Framework/Services/Registry/ServiceTable.h"
@@ -29,7 +29,10 @@ namespace calib {
     struct ServiceConfiguration_t {
       fhicl::Atom<float> SPESize{fhicl::Name("SPESize")};
       fhicl::Atom<float> SPEShift{fhicl::Name("SPEShift")};
-      fhicl::Atom<float> UseArea{fhicl::Name("UseArea")};
+      fhicl::Atom<bool> UseArea{fhicl::Name("UseArea")};
+      fhicl::Atom<bool>  Verbose{fhicl::Name("Verbose"), false};
+      fhicl::Atom<std::string> LogCategory{fhicl::Name("LogCategory"), "PhotonCalibratorServiceFromDB"};
+      fhicl::Atom<std::string> AreaTag{fhicl::Name("AreaTag"), ""};
     };
 
     using Parameters = art::ServiceTable<ServiceConfiguration_t>;
