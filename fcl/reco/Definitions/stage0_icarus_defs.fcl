@@ -22,6 +22,7 @@
 #include "icarus_FilterCRTPMTMatching.fcl"
 #include "spana_icarus.fcl"
 #include "sp_filter_parameters.fcl"
+#include "pmt-calibration.fcl"
 
 BEGIN_PROLOG
 

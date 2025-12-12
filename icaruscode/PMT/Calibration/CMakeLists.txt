@@ -14,15 +14,14 @@ cet_make_library(
       fhiclcpp::fhiclcpp
       messagefacility::MF_MessageLogger
       cetlib_except::cetlib_except
-      # add DB libs here if needed:
-      # larevt::CalibrationDBI_Providers
-      # larevt::CalibrationDBI_IOVData
+      larevt::CalibrationDBI_Providers
+      larevt::CalibrationDBI_IOVData
 )
 
 cet_build_plugin(PhotonCalibratorServiceFromDB
   lar::PhotonCalibratorService           # plugin type from larreco
   SOURCE
-    PhotonCalibratorServiceFromDB_service.cc
+    PhotonCalibratorServiceFromDB.cc
   LIBRARIES
     PUBLIC
       PhotonCalibratorFromDB             # the library defined above
