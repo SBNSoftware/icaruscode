@@ -24,7 +24,7 @@ namespace calib {
 
   class PhotonCalibratorServiceFromDB : public IPhotonCalibratorService {
   public:
-    using provider_type = PhotonCalibratorFromDB;
+    using provider_type = icarusDB::PhotonCalibratorFromDB;
 
     struct ServiceConfiguration_t {
       fhicl::Atom<float> SPESize{fhicl::Name("SPESize")};
@@ -41,7 +41,7 @@ namespace calib {
 
     void preBeginRun(art::Run const& run);
 
-    PhotonCalibratorFromDB fProvider;
+    icarusDB::PhotonCalibratorFromDB fProvider;
 
     bool fVerbose = false; ///< Whether to print the configuration we read.
     std::string fLogCategory; ///< Category tag for messages.
