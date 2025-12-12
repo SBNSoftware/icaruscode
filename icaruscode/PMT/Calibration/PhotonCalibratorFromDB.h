@@ -10,6 +10,11 @@
 // LArSoft libraries
 #include "larreco/Calibrator/IPhotonCalibrator.h"
 
+// Database interface helpers
+#include "larevt/CalibrationDBI/Providers/DBFolder.h"
+#include "larevt/CalibrationDBI/IOVData/TimeStampDecoder.h"
+
+// Message facility
 #include "messagefacility/MessageLogger/MessageLogger.h"
 
 // ART includes
@@ -68,6 +73,7 @@ class icarusDB::PhotonCalibratorFromDB: public calib::IPhotonCalibrator {
 
     bool fVerbose;
     std::string fLogCategory;
+    std::string fAreaTag;
 
     using PhotonCalibratorInfo = details::PhotonCalibratorInfo;
     static constexpr PhotonCalibratorInfo CorrectionDefaults {}; ///< Default values

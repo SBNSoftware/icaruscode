@@ -5,12 +5,46 @@ namespace icarusDB {
   PhotonCalibratorFromDB::PhotonCalibratorFromDB(const fhicl::ParameterSet& pset)
     : fVerbose   ( pset.get<bool>("Verbose", false) )
     , fLogCategory( pset.get<std::string>("LogCategory", "PhotonCalibratorFromDB") )
-  {}
+  {
+    fAreaTag  = pset.get<std::string>("AreaTag", "");
+  }
 
   void PhotonCalibratorFromDB::readCalibrationFromDB(unsigned int run)
   {
 
-    return;
+    mf::LogInfo(fLogCategory) << "Reading SPE area calibrations from database for run " << run;
+
+    const std::string dbname("pmt_speareas_data");
+    lariov::DBFolder db(dbname, "", "", fAreaTag, true, false);
+
+    mf::LogDebug(fLogCategory) << "Connecting to " << dbname << " folder";
+
+    bool ret = db.UpdateData( RunToDatabaseTimestamp(run) ); // select table based on run number   
+    mf::LogDebug(fLogCategory) << dbname + " corrections" << (ret? "": " not") << " updated for run " << run;
+    mf::LogTrace(fLogCategory)
+           << "Fetched IoV [ " << db.CachedStart().DBStamp() << " ; " << db.CachedEnd().DBStamp()
+           << " ] to cover t=" << RunToDatabaseTimestamp(run)
+           << " [=" << lariov::TimeStampDecoder::DecodeTimeStamp(RunToDatabaseTimestamp(run)).DBStamp() << "]";
+
+    std::vector<unsigned int> channelList;
+    if (int res = db.GetChannelList(channelList); res != 0) {
+      throw cet::exception
+        ( "PhotonCalibratorFromDB" ) << "GetChannelList() returned " << res << " on run " << run << " query in " << dbname << "\n";
+    }
+    
+    if (channelList.empty()) {
+      throw cet::exception("PhotonCalibratorFromDB") << "got an empty channel list for run " << run << " in " << dbname << "\n";
+    }
+
+    for( auto channel : channelList ) {
+        
+        // Laser correction
+        double area = 0;
+        int error  = db.GetNamedChannelData( channel, "area", area );
+        if( error ) throw cet::exception( "PhotonCalibratorFromDB" ) << "Encountered error (code " << error << ") while trying to access 'area' on table " << dbname << "\n";
+
+        fDatabaseSPECalibrations[channel].speArea = area; 
+    }  
   }
 
   double PhotonCalibratorFromDB::PE(double adcs, int channel) const
