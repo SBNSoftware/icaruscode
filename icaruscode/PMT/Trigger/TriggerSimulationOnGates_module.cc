@@ -1864,18 +1864,20 @@ icarus::trigger::TriggerSimulationOnGates::triggerInfoToTriggerData(
   
   sbn::ExtraTriggerInfo extraInfo;
   assert(extraInfo.triggerID == sbn::ExtraTriggerInfo::NoID);
+  assert(extraInfo.triggerLocationBits == 0);
+  assert(extraInfo.triggerTimestamp == sbn::ExtraTriggerInfo::NoTimestamp);
   // these are fixed by the gate and set this way whether trigger fired or not:
-  extraInfo.triggerType = sbn::bits::triggerType::Majority;
-  extraInfo.sourceType  = beamTypeToTriggerSource(beamGate.BeamType());
-  extraInfo.gateID      = eventInfo.event;
-  extraInfo.gateCount   = eventInfo.event;
+  extraInfo.beamGateTimestamp = eventInfo.time;
+  extraInfo.triggerType       = sbn::bits::triggerType::Majority;
+  extraInfo.sourceType        = beamTypeToTriggerSource(beamGate.BeamType());
+  extraInfo.gateID            = eventInfo.event;
+  extraInfo.gateCount         = eventInfo.event;
   
-  TriggerBits_t retriggerMask { 0 };
-  bool fillExtraInfo = fExtraInfo;
   PreviousTriggerInfo_t prevTrigger;
   for (WindowTriggerInfo_t const& trInfo: info) {
     
     if (trInfo.info.fired()) { // trigger fired
+      
       detinfo::timescales::electronics_time const triggerTime
         = detTimings.toElectronicsTime(trInfo.info.atTick());
       
@@ -1889,12 +1891,14 @@ icarus::trigger::TriggerSimulationOnGates::triggerInfoToTriggerData(
       auto const beamToTrigger = static_cast<unsigned int>
         (std::ceil((triggerTime - beamTime) / fTriggerClock));
       
+      bool isFirstTrigger = triggers.empty(); // might still be merging tough
+      
       // if the previous trigger is from a different cryostat and close in time,
       if (prevTrigger && (prevTrigger.cryo != triggeringCryo)
         && (beamToTrigger - prevTrigger.beamToTrigger <= fOverlapTicks)
       ) { // ... merge
-        
         assert(!triggers.empty());
+        isFirstTrigger = (triggers.size() <= 1);
         
         prevTrigger = PreviousTriggerInfo_t{}; // overlap only one trigger
         
@@ -1906,23 +1910,21 @@ icarus::trigger::TriggerSimulationOnGates::triggerInfoToTriggerData(
           prevTrigger.TriggerBits() | sourceMask,  // bits
           };
         
-        if (fillExtraInfo) {
-          extraInfo.triggerLocationBits |= cryoIDtoTriggerLocation(triggeringCryo);
-        }
       } // if merging trigger
       else { // new trigger
         prevTrigger = { beamToTrigger, triggeringCryo };
         
+        TriggerBits_t bits = beamBits | sourceMask;
+        if (!isFirstTrigger) bits |= fRetriggeringMask;
+        
         triggers.emplace_back(
-          triggerNumber,                         // counter
-          double(triggerTime),                   // trigger time
-          double(beamTime),                      // beam gate
-          beamBits | retriggerMask | sourceMask  // bits
+          triggerNumber,        // counter
+          double(triggerTime),  // trigger time
+          double(beamTime),     // beam gate
+          bits                  // bits
           );
         
-        retriggerMask = fRetriggeringMask;
-        
-        if (fillExtraInfo) {
+        if (fExtraInfo && isFirstTrigger) {
           nanoseconds const relTrigTime = triggerTime - beamTime;
           
           extraInfo.triggerTimestamp  = eventInfo.time;
@@ -1935,8 +1937,8 @@ icarus::trigger::TriggerSimulationOnGates::triggerInfoToTriggerData(
         }
       } // if new trigger
       
-      // more extra information
-      if (fillExtraInfo) {
+      // more extra information (only if this is the first trigger)
+      if (fExtraInfo && isFirstTrigger) {
         extraInfo.triggerLocationBits |= cryoIDtoTriggerLocation(triggeringCryo);
         if (triggeringCryo.isValid) {
           sbn::ExtraTriggerInfo::CryostatInfo& cryoInfo = extraInfo.cryostats[
@@ -1944,9 +1946,10 @@ icarus::trigger::TriggerSimulationOnGates::triggerInfoToTriggerData(
             ? sbn::ExtraTriggerInfo::EastCryostat
             : sbn::ExtraTriggerInfo::WestCryostat
             ];
-          cryoInfo.triggerLogicBits = fTriggerLogicMask;
-          cryoInfo.beamToTrigger = beamToTrigger;
-          ++cryoInfo.triggerCount;
+          if (cryoInfo.triggerCount++ == 0) { // first trigger in the cryostat
+            cryoInfo.triggerLogicBits = fTriggerLogicMask;
+            cryoInfo.beamToTrigger = beamToTrigger;
+          }
         } // cryostat info
       } // if extra info
       
@@ -1955,12 +1958,6 @@ icarus::trigger::TriggerSimulationOnGates::triggerInfoToTriggerData(
       
       // nothing to do for raw::Trigger: we just don't produce any
       
-      if (fillExtraInfo) {
-        extraInfo.triggerTimestamp  = sbn::ExtraTriggerInfo::NoTimestamp;
-        extraInfo.beamGateTimestamp = eventInfo.time;
-        
-        extraInfo.triggerID    = sbn::ExtraTriggerInfo::NoID;
-      } // if extra info
     } // if fired... else
     
   } // for
