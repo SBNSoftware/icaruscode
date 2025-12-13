@@ -19,6 +19,7 @@
 #include "icaruscode/PMT/Trigger/Utilities/DiscrThresholdParser.h"
 #include "icaruscode/PMT/Algorithms/ADCsettings.h"
 #include "icaruscode/Utilities/DetectorClocksHelpers.h" // makeDetTimings()...
+#include "icarusalg/Utilities/BeamBitChoiceSelectors.h" // sbn::bits::triggerLogic
 #include "icarusalg/Utilities/CommonChoiceSelectors.h" // util::TimeScale...
 #include "icarusalg/Utilities/PlotSandbox.h"
 #include "icarusalg/Utilities/ROOTutils.h" // util::ROOT
@@ -214,6 +215,20 @@ namespace icarus::trigger { class TriggerSimulationOnGates; }
  *     represents the least significant bit; the default value is `17`, bit mask
  *     `0x20000`. Using a value larger than the size of the trigger bit field
  *     will disable this mark.
+ * * `TriggerLogicBit` (bit name from `sbn::bits::triggerLogic`, default:
+ *     disabled): the name of the bit to set in
+ *     `sbn::ExtraTriggerInfo::CryostatInfo::triggerLogicBits` when a trigger is
+ *     found. It describes the type of input to the trigger logic and the type
+ *     of its combination. If left empty, no bit is assigned.
+ * * `TriggerClock` (time, default: 25 ns): the period of the clock applying
+ *     the trigger logic. This value is used as unit for some of logic (e.g.,
+ *     `sbn::ExtraTriggerInfo::CryostatInfo::beamToTrigger` and the meaning of
+ *     `OverlapTicks`). This parameter replaces `TriggerTimeResolution`.
+ * * `OverlapTicks` (integer, default: 0): if the difference between the tick
+ *     of two triggers from different sources is this many trigger clock ticks
+ *     or less, the triggers are merged (the first trigger determines almost
+ *     everything, but `sbn::ExtraTriggerInfo::CryostatInfo` will have
+ *     information from both and the source bit mask will be set for both.
  * * `CryostatFirstBit` (positive integer, default: disabled): the bit to set
  *     for triggers from windows in cryostat 0; as many bits will be used as
  *     there are cryostats in the detector (thus, 2 for ICARUS). The value `0`
@@ -509,6 +524,12 @@ class icarus::trigger::TriggerSimulationOnGates
       17U
       };
     
+    fhicl::Atom<sbn::bits::triggerLogic> TriggerLogicBit {
+      Name("TriggerLogicBit"),
+      Comment("trigger logic bit to set for these triggers"),
+      sbn::bits::triggerLogic::NBits
+      };
+    
     fhicl::Atom<unsigned int> CryostatFirstBit {
       Name("CryostatFirstBit"),
       Comment(
@@ -517,10 +538,21 @@ class icarus::trigger::TriggerSimulationOnGates
       NTriggerBits
       };
     
-    fhicl::Atom<nanoseconds> TriggerTimeResolution {
+    fhicl::OptionalAtom<nanoseconds> TriggerTimeResolution {
       Name("TriggerTimeResolution"),
-      Comment("resolution of trigger in time"),
-      25_ns
+      Comment("deprecated: use `TriggerClock`")
+      };
+    
+    fhicl::OptionalAtom<nanoseconds> TriggerClock {
+      Name("TriggerClock"),
+      Comment("tick duration of the trigger logic hardware clock [25 ns]")
+      };
+    
+    fhicl::Atom<unsigned int> OverlapTicks {
+      Name("OverlapTicks"),
+      Comment
+        ("triggers from different cryostat closer than this ticks are merged"),
+      0
       };
     
     fhicl::Atom<double> EventTimeBinning {
@@ -624,9 +656,14 @@ class icarus::trigger::TriggerSimulationOnGates
   /// Bit mask set for triggers after the first one in a gate.
   TriggerBits_t const fRetriggeringMask;
   
+  /// Bit describing the logic of this trigger (for `sbn::ExtraTriggerInfo`).
+  sbn::bits::triggerLogicMask const fTriggerLogicMask;
+  
   TriggerBits_t const fCryostatZeroMask; ///< Bit mask for cryostat `0`.
   
-  nanoseconds const fTriggerTimeResolution; ///< Trigger resolution in time.
+  nanoseconds const fTriggerClock; ///< Trigger resolution in time.
+  
+  unsigned int const fOverlapTicks; ///< Merge triggers closer than this.
   
   double const fEventTimeBinning; ///< Trigger time plot binning [s]
   
@@ -863,6 +900,21 @@ namespace {
   
   
   // ---------------------------------------------------------------------------
+  template <typename Coll>
+  std::string join(Coll const& values, std::string const& sep = ", ") {
+    std::string res;
+    auto it = begin(values), vend = end(values);
+    if (it == vend) return {};
+    res = *it;
+    while (++it != vend) {
+      res += sep;
+      res += *it;
+    }
+    return res;
+  } // join()
+  
+  
+  // ---------------------------------------------------------------------------
   
 } // local namespace
 
@@ -882,8 +934,11 @@ icarus::trigger::TriggerSimulationOnGates::TriggerSimulationOnGates
   , fExtraInfo            (config().ExtraInfo())
   , fDeadTime             (config().DeadTime())
   , fRetriggeringMask     (bitMask<TriggerBits_t>(config().RetriggeringBit()))
+  , fTriggerLogicMask     (mask(config().TriggerLogicBit()))
   , fCryostatZeroMask     (bitMask<TriggerBits_t>(config().CryostatFirstBit()))
-  , fTriggerTimeResolution(config().TriggerTimeResolution())
+  , fTriggerClock         (config().TriggerClock().value_or
+                            (config().TriggerTimeResolution().value_or(25_ns)))
+  , fOverlapTicks         (config().OverlapTicks())
   , fEventTimeBinning     (config().EventTimeBinning())
   , fLogCategory          (config().LogCategory())
   // internal and cached
@@ -897,19 +952,38 @@ icarus::trigger::TriggerSimulationOnGates::TriggerSimulationOnGates
   , fEventPlotInfo{
         BinnedContent_t{ fEventTimeBinning }  // eventTimes
       , BinnedContent_t{                      // HWtrigTimeVsBeam
-          fTriggerTimeResolution.convertInto
+          fTriggerClock.convertInto
             <detinfo::timescales::trigger_time::interval_t>().value()
         }
       , BinnedContent_t{                      // triggerTimesVsHWtrig
-          fTriggerTimeResolution.convertInto
+          fTriggerClock.convertInto
             <detinfo::timescales::trigger_time::interval_t>().value()
         }
       , BinnedContent_t{                      // triggerTimesVsBeam
-          fTriggerTimeResolution.convertInto
+          fTriggerClock.convertInto
             <detinfo::timescales::trigger_time::interval_t>().value()
         }
     }
 {
+  //
+  // simple parameter validation
+  //
+  if (config().TriggerTimeResolution()) {
+    if (config().TriggerClock()
+      && config().TriggerTimeResolution().value() != fTriggerClock
+    ) {
+      throw art::Exception{ art::errors::Configuration }
+        << "Both `TriggerClock` and `TriggerTimeResolution` specified:"
+           " remove the latter (which is deprecated).";
+    }
+    else {
+      mf::LogWarning{ fLogCategory }
+        << "TriggerSimulationOnGates: "
+           " parameter 'TriggerTimeResolution' is deprecated:"
+           " use `TriggerClock` instead."
+        ;
+    }
+  } // if TriggerTimeResolution specified
   
   //
   // more complex parameter parsing
@@ -942,7 +1016,7 @@ icarus::trigger::TriggerSimulationOnGates::TriggerSimulationOnGates
   fTriggerCount = std::vector<std::atomic<unsigned int>>(fADCthresholds.size());
   std::fill(fTriggerCount.begin(), fTriggerCount.end(), 0U);
   
-  if ((fTriggerTimeResolution <= 0_ns) && (fDeadTime <= 0_ns)) {
+  if ((fTriggerClock <= 0_ns) && (fDeadTime <= 0_ns)) {
     throw art::Exception{ art::errors::Configuration }
       << "Either trigger resolution or dead time must be larger than 0.\n";
   }
@@ -985,19 +1059,12 @@ icarus::trigger::TriggerSimulationOnGates::TriggerSimulationOnGates
     log << "\nConfigured " << fADCthresholds.size() << " thresholds (ADC):";
     for (auto const& [ thresholdTag, dataTag ]: fADCthresholds)
       log << "\n * " << thresholdTag << " (from '" << dataTag.encode() << "')";
-#if 0 // TODO restore after adoption of https://github.com/LArSoft/lardataalg/pull/44
+
     log << "\nOther parameters:"
-      << "\n * trigger time resolution: " << fTriggerTimeResolution
+      << "\n * trigger time clock period: " << fTriggerClock
       << "\n * input beam gate reference time: "
         << util::StandardSelectorFor<util::TimeScale>{}
           .get(fBeamGateReference).name()
-#else
-    util::StandardSelectorFor<util::TimeScale> const timeScaleSelector;
-    log << "\nOther parameters:"
-      << "\n * trigger time resolution: " << fTriggerTimeResolution
-      << "\n * input beam gate reference time: "
-        << timeScaleSelector.get(fBeamGateReference).name()
-#endif
       ;
     if (fDeadTime == std::numeric_limits<nanoseconds>::max())
       log << "\n * only one trigger per beam gate (infinite dead time)";
@@ -1025,8 +1092,14 @@ icarus::trigger::TriggerSimulationOnGates::TriggerSimulationOnGates
         log << "-0x" << (fCryostatZeroMask << (NCryostats-1));
       log << std::dec << ")";
     }
-    if (fExtraInfo)
-      log << "\n * will produce a sbn::ExtraTriggerInfo from the first gate";
+    log << "\n * cryostat trigger overlap interval: <" << fOverlapTicks
+      << " ticks = " << (fOverlapTicks*fTriggerClock);
+    if (fExtraInfo) {
+      log
+        << "\n * will produce a sbn::ExtraTriggerInfo from the first gate"
+        << "\n * trigger logic bit: " << join(names(fTriggerLogicMask))
+        ;
+    }
     
   } // local block
   
@@ -1165,7 +1238,7 @@ void icarus::trigger::TriggerSimulationOnGates::initializePlots() {
     (const_cast<TH1*>(Eff->GetTotalHistogram())->GetXaxis(), thresholdLabels);
   
   detinfo::timescales::optical_time_ticks const triggerResolutionTicks{
-    icarus::ns::util::makeDetTimings().toOpticalTicks(fTriggerTimeResolution)
+    icarus::ns::util::makeDetTimings().toOpticalTicks(fTriggerClock)
     };
   
   auto const& beamGateTicks = beamGate.tickRange();
@@ -1199,7 +1272,7 @@ void icarus::trigger::TriggerSimulationOnGates::initializePlots() {
     icarus::ns::util::BinningSpecs{
       (- beamGate.length() - beamPlotPadding).value(),
       (beamGate.length() + beamPlotPadding).value(),
-      fTriggerTimeResolution.convertInto<trigger_time::interval_t>().value()
+      fTriggerClock.convertInto<trigger_time::interval_t>().value()
       },
       0.0
     );
@@ -1217,7 +1290,7 @@ void icarus::trigger::TriggerSimulationOnGates::initializePlots() {
     icarus::ns::util::BinningSpecs{
       (-beamPlotPadding).value(),
       (beamGate.length() + beamPlotPadding).value(),
-      fTriggerTimeResolution.convertInto<trigger_time::interval_t>().value()
+      fTriggerClock.convertInto<trigger_time::interval_t>().value()
       },
       0.0
     );
@@ -1450,7 +1523,7 @@ auto icarus::trigger::TriggerSimulationOnGates::produceForThreshold(
         << ") from window #" << triggerInfo.extra.windowIndex;
       
       // ... plus the dead time (or at least some time)
-      start = cappedSum(start, std::max(fDeadTime, fTriggerTimeResolution));
+      start = cappedSum(start, std::max(fDeadTime, fTriggerClock));
       
       triggerInfos.push_back(std::move(triggerInfo));
       
@@ -1676,6 +1749,14 @@ icarus::trigger::TriggerSimulationOnGates::triggerInfoToTriggerData(
   unsigned int triggerNumber, std::vector<WindowTriggerInfo_t> const& info
 ) const {
   
+  static constexpr auto NoTime = std::numeric_limits<unsigned int>::max();
+  struct PreviousTriggerInfo_t {
+    unsigned int beamToTrigger = NoTime;
+    geo::CryostatID cryo;
+    constexpr operator bool() const { return beamToTrigger != NoTime; }
+    constexpr bool operator!() const { return !bool(*this); }
+  };
+  
   detinfo::timescales::electronics_time const beamTime
     = detTimings.BeamGateTime() + nanoseconds{ beamGate.Start() };
   TriggerBits_t const beamBits
@@ -1692,6 +1773,7 @@ icarus::trigger::TriggerSimulationOnGates::triggerInfoToTriggerData(
   
   TriggerBits_t retriggerMask { 0 };
   bool fillExtraInfo = fExtraInfo;
+  PreviousTriggerInfo_t prevTrigger;
   for (WindowTriggerInfo_t const& trInfo: info) {
     
     if (trInfo.info.fired()) { // trigger fired
@@ -1704,27 +1786,69 @@ icarus::trigger::TriggerSimulationOnGates::triggerInfoToTriggerData(
       TriggerBits_t const sourceMask = triggeringCryo.isValid
         ? (fCryostatZeroMask << triggeringCryo.Cryostat): 0U;
       
-      triggers.emplace_back(
-        triggerNumber,                         // counter
-        double(triggerTime),                   // trigger time
-        double(beamTime),                      // beam gate
-        beamBits | retriggerMask | sourceMask  // bits
-        );
+      // round to the next tick (because that's what the hardware must do):
+      auto const beamToTrigger = static_cast<unsigned int>
+        (std::ceil((triggerTime - beamTime) / fTriggerClock));
       
-      retriggerMask = fRetriggeringMask;
+      // if the previous trigger is from a different cryostat and close in time,
+      if (prevTrigger && (prevTrigger.cryo != triggeringCryo)
+        && (beamToTrigger - prevTrigger.beamToTrigger <= fOverlapTicks)
+      ) { // ... merge
+        
+        assert(!triggers.empty());
+        
+        prevTrigger = PreviousTriggerInfo_t{}; // overlap only one trigger
+        
+        raw::Trigger prevTrigger = triggers.back();
+        triggers.back() = raw::Trigger{
+          prevTrigger.TriggerNumber(),             // counter
+          prevTrigger.TriggerTime(),               // trigger time
+          prevTrigger.BeamGateTime(),              // beam gate
+          prevTrigger.TriggerBits() | sourceMask,  // bits
+          };
+        
+        if (fillExtraInfo) {
+          extraInfo.triggerLocationBits |= cryoIDtoTriggerLocation(triggeringCryo);
+        }
+      } // if merging trigger
+      else { // new trigger
+        prevTrigger = { beamToTrigger, triggeringCryo };
+        
+        triggers.emplace_back(
+          triggerNumber,                         // counter
+          double(triggerTime),                   // trigger time
+          double(beamTime),                      // beam gate
+          beamBits | retriggerMask | sourceMask  // bits
+          );
+        
+        retriggerMask = fRetriggeringMask;
+        
+        if (fillExtraInfo) {
+          nanoseconds const relTrigTime = triggerTime - beamTime;
+          
+          extraInfo.triggerTimestamp  = eventInfo.time;
+          extraInfo.beamGateTimestamp = extraInfo.triggerTimestamp
+            - static_cast<std::int64_t>(std::round(relTrigTime.value()));
+          
+          extraInfo.triggerID    = triggerNumber;
+          extraInfo.triggerCount = triggerNumber;
+          
+        }
+      } // if new trigger
       
+      // more extra information
       if (fillExtraInfo) {
-        nanoseconds const relTrigTime = triggerTime - beamTime;
-        
-        extraInfo.triggerTimestamp  = eventInfo.time;
-        extraInfo.beamGateTimestamp = extraInfo.triggerTimestamp
-          - static_cast<std::int64_t>(std::round(relTrigTime.value()));
-        
-        extraInfo.triggerID    = triggerNumber;
-        extraInfo.triggerCount = triggerNumber;
-        
-        extraInfo.triggerLocationBits = cryoIDtoTriggerLocation(triggeringCryo);
-      }
+        extraInfo.triggerLocationBits |= cryoIDtoTriggerLocation(triggeringCryo);
+        if (triggeringCryo.isValid) {
+          sbn::ExtraTriggerInfo::CryostatInfo& cryoInfo = extraInfo.cryostats[
+            triggeringCryo.Cryostat == 0
+            ? sbn::ExtraTriggerInfo::EastCryostat
+            : sbn::ExtraTriggerInfo::WestCryostat
+            ];
+          cryoInfo.triggerLogicBits = fTriggerLogicMask;
+          cryoInfo.beamToTrigger = beamToTrigger;
+        } // cryostat info
+      } // if extra info
       
     }
     else { // trigger did not fire
