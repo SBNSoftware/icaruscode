@@ -13,31 +13,22 @@
 
 // ICARUS libraries
 #include "icaruscode/PMT/Trigger/Algorithms/TriggerGateBuilder.h"
+#include "icarusalg/Utilities/CommonChoiceSelectors.h" // util::SignalPolarity
 
 // LArSoft/framework libraries
 #include "lardataobj/RawData/OpDetWaveform.h"
 #include "fhiclcpp/types/TableFragment.h"
 
 
+// framework libraries
+#include "fhiclcpp/types/Atom.h"
+
 // C/C++ standard libraries
 #include <vector>
 
 
-namespace icarus::trigger {
-  
-  // ---------------------------------------------------------------------------
-  //
-  // declarations
-  //
-  
-  class ManagedTriggerGateBuilder;
-  
-  // ---------------------------------------------------------------------------
-  
-} // namespace icarus::trigger
-
-
-//------------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
+namespace icarus::trigger { class ManagedTriggerGateBuilder; }
 /**
  * @brief Base interface for gate builders.
  * @see `icarus::trigger::DynamicTriggerGateBuilder`,
@@ -67,18 +58,17 @@ class icarus::trigger::ManagedTriggerGateBuilder
     
     fhicl::TableFragment<Base_t::Config> baseConfig;
     
-    fhicl::Atom<int> Polarity {
-      Name("Polarity"),
-      Comment("waveform polarity (positive: +1, negative: -1)"),
-      -1
+    fhicl::Atom<util::SignalPolarity> Polarity {
+      Name{ "Polarity" },
+      Comment{ "waveform polarity" },
+      util::SignalPolarity::Negative
       };
     
   }; // Config
   
-  ManagedTriggerGateBuilder(Config const& config)
-    : Base_t{ config.baseConfig() }
-    , fPolarity{ (config.Polarity() < 0)? -1: +1 }
-    {}
+  
+  /// Constructor: configures from FHiCL.
+  ManagedTriggerGateBuilder(Config const& config);
   
   
     protected:
@@ -114,7 +104,11 @@ class icarus::trigger::ManagedTriggerGateBuilder
   }; // struct GateManager
   
   
-  int const fPolarity; ///< Polarity of the input waveforms.
+  // --- BEGIN Configuration ---------------------------------------------------
+  
+  util::SignalPolarity const fPolarity; ///< Polarity of the input waveforms.
+  
+  // --- END Configuration -----------------------------------------------------
   
   
   /// Returns a collection of `TriggerGates` objects sorted by threshold.
@@ -122,6 +116,10 @@ class icarus::trigger::ManagedTriggerGateBuilder
   std::vector<TriggerGates> unifiedBuild
     (GateMgr&& gateManager, std::vector<WaveformWithBaseline> const& waveforms)
     const;
+  
+  /// Returns the `buildChannelGates()` function with the appropriate polarity.
+  template <typename GateInfo, typename GatesByChannel>
+  auto selectChannelGateFunc(GatesByChannel const&) const;
   
   /// Computes the gates for all the waveforms in one optical channel.
   template <typename Ops, typename GateInfo, typename Waveforms>

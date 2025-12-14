@@ -37,6 +37,7 @@
 #include <iterator> // std::next(), std::prev()
 #include <cmath> // std::round()
 #include <cstddef> // std::ptrdiff_t
+#include <stdexcept> // std::logic_error
 
 
 //------------------------------------------------------------------------------
@@ -72,21 +73,7 @@ auto icarus::trigger::ManagedTriggerGateBuilder::unifiedBuild
     ;
     
   auto byChannel = waveforms | ranges::views::chunk_by(sameChannel);
-  
-  // this mess is to pick `buildChannelGates()` with the appropriate polarity;
-  // it is complicate because that is a template (at least it's not overloaded!)
-  // and the type of the second argument ("WaveformType") is opaque
-  using namespace icarus::waveform_operations;
-  using WaveformsType = std::decay_t<decltype(*begin(byChannel))>;
-  using BuildGatesProc_t = void(ManagedTriggerGateBuilder::*)
-    (std::vector<GateInfo_t>&, WaveformsType const&) const;
-  
-  BuildGatesProc_t const buildGatesFunc = (fPolarity < 0)
-    ? &ManagedTriggerGateBuilder::buildChannelGates
-      <NegativePolarityOperations<float>, GateInfo_t, WaveformsType>
-    : &ManagedTriggerGateBuilder::buildChannelGates
-      <PositivePolarityOperations<float>, GateInfo_t, WaveformsType>
-    ;
+  auto const buildGatesFunc = selectChannelGateFunc<GateInfo_t>(byChannel);
   
   for (auto const& channelWaveforms: byChannel) {
     
@@ -120,6 +107,39 @@ auto icarus::trigger::ManagedTriggerGateBuilder::unifiedBuild
   
   return allGates;
 } // icarus::trigger::ManagedTriggerGateBuilder::unifiedBuild()
+
+
+//------------------------------------------------------------------------------
+template <typename GateInfo, typename GatesByChannel>
+auto icarus::trigger::ManagedTriggerGateBuilder::selectChannelGateFunc
+  (GatesByChannel const& byChannel) const
+{
+  // this mess is to pick `buildChannelGates()` with the appropriate polarity;
+  // it is complicate because that is a template (at least it's not overloaded!)
+  // and the type of the second argument ("WaveformType") is opaque
+  
+  using GateInfo_t = GateInfo;
+  using namespace icarus::waveform_operations;
+  // this combination is the result of a lot of trial and, especially, error:
+  using WaveformsType
+    = std::decay_t<decltype(*begin(std::declval<GatesByChannel&>()))>;
+  
+  // The actual return type:
+  // using BuildGatesProc_t = void(ManagedTriggerGateBuilder::*)
+  //   (std::vector<GateInfo_t>&, WaveformsType const&) const;
+  
+  switch (fPolarity) {
+    case util::SignalPolarity::Negative:
+      return &ManagedTriggerGateBuilder::buildChannelGates
+        <NegativePolarityOperations<float>, GateInfo_t, WaveformsType>;
+    case util::SignalPolarity::Positive:
+      return &ManagedTriggerGateBuilder::buildChannelGates
+        <PositivePolarityOperations<float>, GateInfo_t, WaveformsType>;
+    default:
+      throw std::logic_error{ "Unexpected polarity" }; // should throw on ctor
+  } // switch
+  
+} // icarus::trigger::ManagedTriggerGateBuilder::selectChannelGateFunc()
 
 
 //------------------------------------------------------------------------------
