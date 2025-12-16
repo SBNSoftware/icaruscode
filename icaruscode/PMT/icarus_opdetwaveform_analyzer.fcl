@@ -4,16 +4,13 @@ BEGIN_PROLOG
 
 opdet_waveform_ana:
 {
-  module_type: 	OpMCWaveformAnalyzer
+  module_type: 	OpDetWaveformAnalyzer
   WaveformModule: "opdaq"
   OpHitModule: "ophit"
   SimPhotonsModule: "shifted" # leave empty for data
   SimPhotonsOffset: 55.1
   SaveOnlyWithSimPhotons: false
-  PedAlgoRollingMeanMaker: {
-    tool_type: "PedAlgoRollingMeanMaker"
-    PedAlgoPset:    @local::icarus_opreco_pedestal_DocDB24969
-  }
+  PedAlgoPset: @local::icarus_opreco_pedestal_DocDB24969
 }
 
 END_PROLOG

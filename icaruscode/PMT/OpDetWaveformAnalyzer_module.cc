@@ -29,7 +29,11 @@
 #include "lardataobj/RawData/OpDetWaveform.h"
 #include "lardataobj/Simulation/SimPhotons.h"
 
-#include "larana/OpticalDetector/IPedAlgoMakerTool.h"
+#include "icaruscode/PMT/OpReco/Algorithms/OpRecoFactoryStuff.h"
+#include "larana/OpticalDetector/OpHitFinder/PedAlgoEdges.h"
+#include "larana/OpticalDetector/OpHitFinder/PedAlgoRollingMean.h"
+#include "larana/OpticalDetector/OpHitFinder/PedAlgoUB.h"
+#include "larana/OpticalDetector/OpHitFinder/OpticalRecoTypes.h"
 
 #include "lardata/DetectorInfoServices/DetectorClocksService.h"
 #include "lardataalg/DetectorInfo/DetectorTimings.h"
@@ -40,12 +44,34 @@
 
 namespace icarus {
   class OpDetWaveformAnalyzer;
+
+  using opdet::factory::Decl;
+  
+  /// Types of _art_ interface.
+  using ArtTraits
+    = opdet::factory::FWInterfaceTraits<art::Event, art::ConsumesCollector>;
+  
+  // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  // pedestal algorithm factory
+  template <typename Algo>
+  using FWIFPedAlgo
+    = opdet::factory::FWInterfaced<Algo, pmtana::PMTPedestalBase, ArtTraits>;
+  
+  opdet::factory::AlgorithmFactory
+    <opdet::factory::FWInterfacedIF<pmtana::PMTPedestalBase, ArtTraits>> const
+  PedAlgoFactory {
+      "Name" // find the name of the algorithm under "Name" in its configuration
+    , Decl<FWIFPedAlgo<pmtana::PedAlgoEdges      >>{"Edges"      }
+    , Decl<FWIFPedAlgo<pmtana::PedAlgoRollingMean>>{"RollingMean"}
+    , Decl<FWIFPedAlgo<pmtana::PedAlgoUB         >>{"UB"         }
+    };
+
 }
 
 /// This module is a simple analyzer to dump OpDetWaveforms and Ophits in a ROOT tree.
 /// It can be used on both DATA and MC, assuming required products are available.
 /// It save all the waveforms in the event, alongside:
-///  * the "official" reconstructed baseline from the standard algorithm;
+///  * the reconstructed baseline from one of the standard algorithm;
 ///  * the list of optical hits found on the waveform;
 ///  * (optional, MC only) the list of SimPhotons contributing to the waveform.
 ///
@@ -54,6 +80,7 @@ namespace icarus {
 ///  Options:
 ///  - `WaveformModule`: waveform product name/instance
 ///  - `OpHitModule`: ophit product name/instance
+///  - `PedAlgoPset`: baseline algorithm configuration 
 ///  - `SimPhotonsModule`: simphotons product name/instance (MC only, leave empty for data)
 ///  - `SimPhotonsOffset`: time offset between photon time and response peak (MC only)
 ///  - `SaveOnlyWithSimPhotons`: save waveform only if it contains simphotons (MC only, set false for data)
@@ -116,7 +143,7 @@ private:
   std::vector<double> m_sim_start_y;
   std::vector<double> m_sim_start_z;
 
-  std::unique_ptr<pmtana::PMTPedestalBase> fPedAlgo;
+  std::unique_ptr<opdet::factory::FWInterfacedIF<pmtana::PMTPedestalBase, ArtTraits>> fPedAlgo;
 
   art::ServiceHandle<art::TFileService> tfs;
 
@@ -145,7 +172,9 @@ icarus::OpDetWaveformAnalyzer::OpDetWaveformAnalyzer(fhicl::ParameterSet const& 
    m_simphoffset_ns = pset.get<double>("SimPhotonsOffset", 55.1); //ns
    m_onlysimphotons = pset.get<bool>("SaveOnlyWithSimPhotons", false);
 
-   fPedAlgo = art::make_tool<opdet::IPedAlgoMakerTool>(pset.get<fhicl::ParameterSet>("PedAlgoRollingMeanMaker"))->makeAlgo();
+   auto pedPset = pset.get<fhicl::ParameterSet>("PedAlgoPset");
+   fPedAlgo = PedAlgoFactory.create(pedPset);
+   fPedAlgo->initialize(consumesCollector());
 }
 
 
@@ -192,6 +221,7 @@ void icarus::OpDetWaveformAnalyzer::beginJob()
 
 void icarus::OpDetWaveformAnalyzer::analyze(art::Event const& event)
 {
+  fPedAlgo->beginEvent(event);
 
   // event info: this is mainly to save the timestamps
   // the timestamp of the first event is used to sort files in the calibration db 
@@ -243,8 +273,8 @@ void icarus::OpDetWaveformAnalyzer::analyze(art::Event const& event)
     m_wfstart = jt->TimeStamp() - fTriggerTime;
     m_wf = jt->Waveform();
 
-    fPedAlgo->Evaluate(jt->Waveform());
-    m_baselines = fPedAlgo->Mean();
+    fPedAlgo->algo().Evaluate(jt->Waveform());
+    m_baselines = fPedAlgo->algo().Mean();
 
     double wfend = m_wfstart + m_nsize*fOpticalTick;
 
@@ -320,7 +350,7 @@ void icarus::OpDetWaveformAnalyzer::analyze(art::Event const& event)
     //std::cout << "nsimphotons " << m_n_simphotons << std::endl;
 
     if( m_n_ophits == 0 && m_n_simphotons == 0){
-      std::cout << "No Ophits or SimPhotons!" << std::endl;
+      //std::cout << "No Ophits or SimPhotons!" << std::endl;
       continue; //don't save!
     }
 
@@ -331,6 +361,7 @@ void icarus::OpDetWaveformAnalyzer::analyze(art::Event const& event)
 
    } 
    
+   fPedAlgo->endEvent(event);
 } // end analyze
 
 
