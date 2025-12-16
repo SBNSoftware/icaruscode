@@ -208,7 +208,7 @@ auto icarus::trigger::ManagedTriggerGateBuilder::selectChannelGateFunc
   // using BuildGatesProc_t = void(ManagedTriggerGateBuilder::*)
   //   (std::vector<GateInfo_t>&, WaveformsType const&) const;
   
-  switch (fPolarity) {
+  switch (polarity()) {
     case util::SignalPolarity::Negative:
       return &ManagedTriggerGateBuilder::buildChannelGates
         <NegativePolarityOperations<float>, GateInfo_t, WaveformsType>;

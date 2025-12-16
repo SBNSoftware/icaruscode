@@ -109,8 +109,12 @@ auto icarus::trigger::TriggerGateBuilder::TriggerGates::gateFor
 //------------------------------------------------------------------------------
 icarus::trigger::TriggerGateBuilder::TriggerGateBuilder(Config const& config)
   : fChannelThresholds(sorted(parseThresholds(config.ChannelThresholds())))
+  , fPolarity{ config.Polarity() }
 {
   
+  //
+  // configuration check
+  //
   if (!fChannelThresholds.empty()
     && (fChannelThresholds.front() < ADCCounts_t{0})
   ) {
@@ -184,6 +188,8 @@ void icarus::trigger::TriggerGateBuilder::dumpLocalConfiguration(
     << " discrimination thresholds:";
   for (ADCCounts_t const thr: fChannelThresholds)
     out << " " << thr;
+  out << indent << "\n * signal polarity: "
+    << util::StandardSelectorFor<util::SignalPolarity>{}.get(fPolarity).name();
   
 } // icarus::trigger::TriggerGateBuilder::dumpLocalConfiguration()
 

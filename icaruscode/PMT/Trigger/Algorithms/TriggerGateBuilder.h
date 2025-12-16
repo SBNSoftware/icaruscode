@@ -19,6 +19,7 @@
 #include "icaruscode/PMT/Trigger/Algorithms/WaveformWithBaseline.h"
 #include "icaruscode/PMT/Algorithms/ADCsettings.h"
 #include "icaruscode/IcarusObj/OpDetWaveformMeta.h"
+#include "icarusalg/Utilities/CommonChoiceSelectors.h" // util::SignalPolarity
 
 
 // LArSoft libraries
@@ -48,6 +49,19 @@ namespace icarus::trigger { class TriggerGateBuilder; }
  *
  * This is an abstract class.
  * Derived algorithms need to provide a way to actually `build()` the gates.
+ * 
+ * 
+ * Base configuration parameters
+ * ------------------------------
+ * 
+ * * `ChannelThresholds` (list of threshold values): a threshold value can be
+ *   specified as a plain number (interpreted as ADC counts; e.g. `390`) or as
+ *   a voltage (e.g. "60 mV"), in which case it will be immediately converted
+ *   into ADC counts via the default parameters from `icarus::ADCsettings`.
+ * * `Polarity` (`util::SignalPolarity` value): whether the signal develops
+ *   below the baseline (`"Negative"`) or above it (`"Positive"`).
+ * 
+ * 
  */
 class icarus::trigger::TriggerGateBuilder {
   
@@ -143,6 +157,12 @@ class icarus::trigger::TriggerGateBuilder {
       // mandatory
       };
     
+    fhicl::Atom<util::SignalPolarity> Polarity {
+      Name{ "Polarity" },
+      Comment{ "waveform polarity" },
+      util::SignalPolarity::Negative
+      };
+    
     
   }; // struct Config
   // --- END Configuration -----------------------------------------------------
@@ -190,6 +210,9 @@ class icarus::trigger::TriggerGateBuilder {
   
   /// Returns the number of configured thresholds.
   std::size_t nChannelThresholds() const { return channelThresholds().size(); }
+  
+  /// Returns the configured signal polarity.
+  util::SignalPolarity polarity() const { return fPolarity; }
   
   
   /// Converts a time [&micro;s] into optical ticks.
@@ -343,6 +366,8 @@ class icarus::trigger::TriggerGateBuilder {
   
   /// All single channel thresholds, sorted in increasing order.
   std::vector<ADCCounts_t> fChannelThresholds;
+  
+  util::SignalPolarity const fPolarity; ///< Polarity of the input waveforms.
   
   // --- END Configuration parameters ------------------------------------------
   

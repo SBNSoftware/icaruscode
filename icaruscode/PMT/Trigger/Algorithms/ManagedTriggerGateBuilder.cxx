@@ -78,7 +78,6 @@ bool icarus::trigger::details::ThresholdsBand::stepHigher() {
 icarus::trigger::ManagedTriggerGateBuilder::ManagedTriggerGateBuilder
   (Config const& config)
   : Base_t{ config.baseConfig() }
-  , fPolarity{ config.Polarity() }
   , fPatternIndices(patternToIndices(config.SamplingPattern()))
   , fBlockSize(config.SamplingPattern().size())
   , fBlockTimeReference(config.BlockTimeReference())
@@ -87,17 +86,19 @@ icarus::trigger::ManagedTriggerGateBuilder::ManagedTriggerGateBuilder
   //
   // configuration check
   //
-  switch (fPolarity) {
-    case util::SignalPolarity::Positive: case util::SignalPolarity::Negative:
+  switch (polarity()) {
+    case util::SignalPolarity::Positive:
+    case util::SignalPolarity::Negative:
       break;
     default:
       throw cet::exception{ "ManagedTriggerGateBuilder" }
-        << "Polarity '" << config.Polarity.valueName()
-        << "' not supported (only '"
-        << config.Polarity.optionName(util::SignalPolarity::Positive)
+        << "Discrimination algorithms based on ManagedTriggerGateBuilder"
+           " do not support signals with polarity '"
+        << config.baseConfig().Polarity.valueName() << "' (only '"
+        << config.baseConfig().Polarity.optionName(util::SignalPolarity::Positive)
         << "' and '"
-        << config.Polarity.optionName(util::SignalPolarity::Negative)
-        << "' are).\n"
+        << config.baseConfig().Polarity.optionName(util::SignalPolarity::Negative)
+        << "' are supported).\n"
         ;
   } // switch
   
@@ -134,10 +135,8 @@ void icarus::trigger::ManagedTriggerGateBuilder::dumpLocalConfiguration(
   std::string const& indent, std::string const& firstIndent
 ) const {
   
-  out << firstIndent << " * signal polarity: "
-    << util::StandardSelectorFor<util::SignalPolarity>{}.get(fPolarity).name()
-    << indent
-    << "\n * state is decided by blocks of " << fBlockSize << " samples";
+  out << firstIndent
+    << " * state is decided by blocks of " << fBlockSize << " samples";
 
   if (fBlockSize != fPatternIndices.size()) {
     out << indent

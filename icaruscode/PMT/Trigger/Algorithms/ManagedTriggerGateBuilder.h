@@ -14,7 +14,6 @@
 
 // ICARUS libraries
 #include "icaruscode/PMT/Trigger/Algorithms/TriggerGateBuilder.h"
-#include "icarusalg/Utilities/CommonChoiceSelectors.h" // util::SignalPolarity
 
 // LArSoft/framework libraries
 #include "lardataobj/RawData/OpDetWaveform.h"
@@ -85,6 +84,11 @@ namespace icarus::trigger { class ManagedTriggerGateBuilder; }
  * Specific configuration
  * -----------------------
  * 
+ * Algorithm configuration includes all the parameters from the base interface
+ * `icarus::trigger::TriggerGateBuilder`, with the following limitation:
+ *  * `Polarity`: this algorithm supports only `Positive` and `Negative`
+ *    polarity; any other setting will be rejected.
+ * 
  * All classes derived by this base algorithm should support the following
  * configuration parameters:
  *  * `SamplingPattern` (sequence of switches, default: `[ true ]`): the sample
@@ -130,12 +134,6 @@ class icarus::trigger::ManagedTriggerGateBuilder
     using Comment = fhicl::Comment;
     
     fhicl::TableFragment<Base_t::Config> baseConfig;
-    
-    fhicl::Atom<util::SignalPolarity> Polarity {
-      Name{ "Polarity" },
-      Comment{ "waveform polarity" },
-      util::SignalPolarity::Negative
-      };
     
     fhicl::Sequence<bool> SamplingPattern {
       Name("SamplingPattern"),
@@ -196,8 +194,6 @@ class icarus::trigger::ManagedTriggerGateBuilder
   
   
   // --- BEGIN Configuration ---------------------------------------------------
-  
-  util::SignalPolarity const fPolarity; ///< Polarity of the input waveforms.
   
   /// Offsets of the samples included in the pattern.
   std::vector<std::ptrdiff_t> fPatternIndices;
