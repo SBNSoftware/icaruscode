@@ -86,6 +86,8 @@
 # :   extracted from `triggeremulation_icarus_data.fcl` v1.2
 # 20241031 (petrillo@slac.stanford.edu) [v3.0]
 # :   introduced into icaruscode
+# 20260206 (petrillo@slac.stanford.edu) [v3.1]
+# :   updated TriggerSimulationOnGates configuration
 #
 
 # ------------------------------------------------------------------------------
@@ -133,7 +135,7 @@ trigSimTemplate: {
   module_type: TriggerSimulationOnGates
 
   TriggerGatesTag:        pmttriggerwindows
-  LVDSgatesTag:           pmtlvdsgates
+  StatusTags:           [ { LVDStag: "pmtlvdsgates:pmtthr" } ]
 
   Thresholds:            @local::CompleteThresholdList
   

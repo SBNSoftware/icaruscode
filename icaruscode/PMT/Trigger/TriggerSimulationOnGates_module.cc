@@ -72,6 +72,7 @@
 #include "canvas/Utilities/InputTag.h"
 #include "canvas/Utilities/Exception.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
+#include "fhiclcpp/types/OptionalSequence.h"
 #include "fhiclcpp/types/Sequence.h"
 #include "fhiclcpp/types/OptionalAtom.h"
 #include "fhiclcpp/types/Atom.h"
@@ -175,11 +176,22 @@ namespace icarus::trigger { class TriggerSimulationOnGates; }
  *     directly as tag for input data products.
  *     At least one threshold must be specified, either with `Thresholds` or
  *     with `VThresholds`. Duplicate entries will cause a configuration error.
- * * `LVDSgatesTag` (string, default: empty): if non-empty, input tags will be
- *     created in the same way as for `TriggerGatesTag`, and the resulting
- *     data products will be used to fill the
- *     `sbn::ExtraTriggerInfo::CryostatInfo::LVDSstatus` information
- *     (see @ref TriggerSimulationOnGates_Output "Output data products").
+ * * `StatusTags` (list of status tag specifications, default: empty):
+ *     if non-empty, gate data products will be used to fill the information in
+ *     `sbn::ExtraTriggerInfo::CryostatInfo` (see `LVDSstatus` and
+ *     `sectorStatus` in
+ *     @ref TriggerSimulationOnGates_Output "Output data products").
+ *     Input tags are specified in tables including:
+ *      * `LVDStag`: input tag for the LVDS bits;
+ *      * `SectorTag`: input tag for the adder bits;
+ *     
+ *     If a tag is empty, the corresponding bits will be left unset.
+ *     One configuration table in this list is assigned to each of the
+ *     thresholds, first the ones configured in `Thresholds`, then the ones
+ *     configured in `VThresholds`, in order. If there are fewer configuration
+ *     tables than thresholds, the last one will be used for all remaining
+ *     thresholds; that means that specifying a single table makes it assigned
+ *     to all thresholds.
  * * `KeepThresholdName` (flag, optional): by default, output data products have
  *     each an instance name according to their threshold (from the `Threshold`
  *     parameter), unless there is only one threshold specified. If this
@@ -297,8 +309,8 @@ namespace icarus::trigger { class TriggerSimulationOnGates; }
  *     times in nanoseconds and in
  *     @ref DetectorClocksSimulationTime "simulation time reference".
  *     The parameter `BeamGateReference` can change that interpretation.
- * * `LVDSgatesTag` + `Thresholds`: LVDS input gate collections (if LVDS status
- *     output is requested: see
+ * * `StatusTags.LVDStag`: LVDS input gate collections (see
+ *     `sbn::ExtraTriggerInfo::CryostatInfo::LVDSstatus` assignment in
  *     @ref TriggerSimulationOnGates_Output "Output data products" section).
  * * `TriggerTag` (`sbn::ExtraTriggerInfo`) currently used solely to get the
  *     UTC trigger time to be used as absolute time reference in the output
@@ -369,15 +381,15 @@ namespace icarus::trigger { class TriggerSimulationOnGates; }
  *         * `triggerCount`: number of triggers found in the gate. This is the
  *           actual number of triggers found, and there is no attempt to
  *           emulate the equivalent count in the hardware.
- *         * `LVDSstatus` (if `LVDSgatesTag` is set): state of each channel pair
- *           at trigger time. A data product tag derived from `LVDSgatesTag`
- *           configuration parameter is used to read the state of all PMT pairs.
+ *         * `LVDSstatus` (if `StatusTags.LVDStag` is not empty): state of each
+ *           channel pair at trigger time.
  *           The state of each pair is evaluated at the tick of the emulated
  *           trigger time (without the `TriggerDelay`) plus a specific freezing
  *           delay (from `LVDSstatusDelay` configuration parameter).
  *           This state is assigned to a "logic LVDS" bit according to the LVDS
  *           bit mapping read from `IICARUSChannelMap` service
  *           (see `icarus::trigger::LVDSbitMaps`).
+ *         * `sectorStatus`: not implemented yet, left to `0`.
  *   
  *     If the first gate did not emit a trigger, the object will be left
  *     default-constructed, noticeably with an invalid trigger timestamp
@@ -538,6 +550,21 @@ class icarus::trigger::TriggerSimulationOnGates
     using Name = fhicl::Name;
     using Comment = fhicl::Comment;
     
+    /// Configuration of data products for LVDS and adder its of a threshold.
+    struct StatusTagTable {
+      fhicl::Atom<art::InputTag> LVDStag {
+        Name{ "LVDStag" },
+        Comment{ "input tag for evaluation of LVDS bits in trigger output" },
+        art::InputTag{}
+        };
+      fhicl::Atom<art::InputTag> SectorTag {
+        Name{ "SectorTag" },
+        Comment{ "input tag for evaluation of adder bits in trigger output" },
+        art::InputTag{}
+        };
+    }; // StatusTagTable
+    
+    
     fhicl::Atom<std::string> TriggerGatesTag {
       Name("TriggerGatesTag"),
       Comment("label of the input trigger gate data product (no instance name)")
@@ -555,12 +582,9 @@ class icarus::trigger::TriggerSimulationOnGates
       std::vector<util::quantities::millivolt>{}
       };
 
-    fhicl::Atom<std::string> LVDSgatesTag {
-      Name("LVDSgatesTag"),
-      Comment(
-        "data product to read LVDS state from (same rules as `TriggerGatesTag`)"
-        ),
-      "" // default
+    fhicl::OptionalSequence<fhicl::Table<StatusTagTable>> StatusTags {
+      Name("StatusTags"),
+      Comment{ "data products with LVDS and adder state (one per threshold)" },
       };
 
     fhicl::OptionalAtom<bool> KeepThresholdName {
@@ -722,7 +746,8 @@ class icarus::trigger::TriggerSimulationOnGates
   /// Information about the input for a single threshold.
   struct InputInfo_t {
     art::InputTag triggerGatesTag; ///< Gates for trigger response evaluation.
-    art::InputTag LVDSgatesTag; ///< Original gates for LVDS state saving.
+    art::InputTag LVDSgatesTag; ///< Original gates for saving LVDS state.
+    art::InputTag AdderGatesTag; ///< Original gates for saving adder state.
   };
   
   using TriggerInfo_t = details::TriggerInfo_t; ///< Type alias.
@@ -770,7 +795,7 @@ class icarus::trigger::TriggerSimulationOnGates
   // --- BEGIN Configuration variables -----------------------------------------
   
   /// Name of ADC thresholds to read, and the input connected to their data.
-  std::map<std::string, InputInfo_t> fInputInfo;
+  std::map<std::string, InputInfo_t> const fInputInfo;
   
   /// Configured sliding window requirement pattern.
   WindowPattern const fPattern;
@@ -833,6 +858,7 @@ class icarus::trigger::TriggerSimulationOnGates
   // --- BEGIN Internal variables ----------------------------------------------
   
   bool const fSaveLVDSbits; ///< Whether we need to save LVDS state.
+  bool const fSaveAdderBits; ///< Whether we need to save adder state.
   
   /// Number of ticks that get ignored after each trigger.
   optical_time_ticks const fTicksSkippedAfterTrigger;
@@ -902,6 +928,17 @@ class icarus::trigger::TriggerSimulationOnGates
     );
   
   // --- END ----- Plot infrastructure -----------------------------------------
+  
+  
+  /// Parses the configuration for thresholds and input tags (to `fInputInfo`).
+  std::map<std::string, InputInfo_t> parseInputThresholds
+    (Config const& config) const;
+  
+  /// Returns whether according to the configuration we need LVDS bits saved.
+  bool requestedLVDSbits() const;
+  
+  /// Returns whether according to the configuration we need adder bits saved.
+  bool requestedSectorBits() const;
   
   /// Creates the window map manager.
   icarus::trigger::WindowTopologyManager makeWindowMapManager() const;
@@ -1111,6 +1148,12 @@ namespace {
   } // append()
   
   // ---------------------------------------------------------------------------
+  /// Copies the content of a collection of type `Coll` into a `std::vector<T>`.
+  template <typename T, typename Coll>
+  std::vector<T> copyToVector(Coll const& coll)
+    { using std::begin, std::end; return { begin(coll), end(coll) }; }
+  
+  // ---------------------------------------------------------------------------
   
   /// Adds the numbers avoiding overflow. Only really safe if `T` == `U`.
   template <typename T, typename U, typename... Others>
@@ -1154,6 +1197,12 @@ namespace {
   
   
   // ---------------------------------------------------------------------------
+  template <typename Coll, typename T>
+  bool contains(Coll const& coll, T const& value)
+    { return std::find(begin(coll), end(coll), value) != end(coll); }
+  
+  
+  // ---------------------------------------------------------------------------
   
 } // local namespace
 
@@ -1165,6 +1214,7 @@ icarus::trigger::TriggerSimulationOnGates::TriggerSimulationOnGates
   (Parameters const& config)
   : art::EDProducer       (config)
   // configuration
+  , fInputInfo            (parseInputThresholds(config()))
   , fPattern              (config().Pattern())
   , fBeamGateTag          (config().BeamGates())
   , fBeamGateReference    (config().BeamGateReference())
@@ -1187,7 +1237,8 @@ icarus::trigger::TriggerSimulationOnGates::TriggerSimulationOnGates
   // services
   , fChannelMapCacheGuard{ "PMT" } // track the PMT cache only
   // internal and cached
-  , fSaveLVDSbits         (fExtraInfo && !config().LVDSgatesTag().empty())
+  , fSaveLVDSbits         { requestedLVDSbits() }
+  , fSaveAdderBits        { requestedSectorBits() }
   , fTicksSkippedAfterTrigger{ skipTicksAfterTrigger() }
   , fWindowMapMan         { makeWindowMapManager() }
 #if 0
@@ -1232,38 +1283,14 @@ icarus::trigger::TriggerSimulationOnGates::TriggerSimulationOnGates
     }
   } // if TriggerTimeResolution specified
   
+  if (fSaveAdderBits) {
+    mf::LogWarning{ fLogCategory } // TODO mostly because of unpacking
+      << "Adder bit saving is not yet implemented.";
+  }
+  
   //
   // more complex parameter parsing
   //
-  std::string const& discrModuleLabel = config().TriggerGatesTag();
-  
-  constexpr icarus::ADCsettings<double> ADCsettings;
-  std::set<std::string> thresholds
-    { cbegin(config().Thresholds()), cend(config().Thresholds()) };
-  for (util::quantities::millivolt const& Vthr: config().VThresholds()) {
-    std::string const thr = std::to_string(ADCsettings.to_ADC(Vthr));
-    if (thresholds.count(thr) > 0) {
-      throw art::Exception{ art::errors::Configuration }
-        << "Threshold '" << Vthr << "' in " << config().VThresholds.name()
-        << " was already specified as '" << thr << "' in "
-        << config().Thresholds.name() << "!";
-    }
-    thresholds.insert(thr);
-  } // for
-  if (thresholds.empty()) {
-    throw art::Exception{ art::errors::Configuration }
-        << "No threshold tag configured in " << config().Thresholds.name()
-        << " nor " << config().VThresholds.name() << "!";
-  }
-  
-  std::string const& LVDSmoduleLabel = config().LVDSgatesTag();
-  for (std::string const& threshold: thresholds) {
-    InputInfo_t inputInfo;
-    inputInfo.triggerGatesTag = art::InputTag{ discrModuleLabel, threshold };
-    if (!LVDSmoduleLabel.empty())
-      inputInfo.LVDSgatesTag = art::InputTag{ LVDSmoduleLabel, threshold };
-    fInputInfo[threshold] = std::move(inputInfo);
-  }
   
   // initialization of a vector of atomic is not as trivial as it sounds...
   fTriggerCount = std::vector<std::atomic<unsigned int>>(fInputInfo.size());
@@ -1337,7 +1364,12 @@ icarus::trigger::TriggerSimulationOnGates::TriggerSimulationOnGates
     log << "\nConfigured " << fInputInfo.size() << " thresholds (ADC):";
     for (auto const& [ thresholdTag, inputInfo ]: fInputInfo) {
       log << "\n * " << thresholdTag << " (from '"
-        << inputInfo.triggerGatesTag.encode() << "')";
+        << inputInfo.triggerGatesTag.encode() << "'";
+      if (!inputInfo.LVDSgatesTag.empty())
+        log << ", LVDS bits: '" << inputInfo.LVDSgatesTag.encode() << "'";
+      if (!inputInfo.AdderGatesTag.empty())
+        log << ", adder bits: '" << inputInfo.AdderGatesTag.encode() << "'";
+      log << ")";
     }
     log << "\nOther parameters:"
       << "\n * window requirements for the trigger: " << fPattern.description()
@@ -1380,8 +1412,8 @@ icarus::trigger::TriggerSimulationOnGates::TriggerSimulationOnGates
         log << "-0x" << (fCryostatZeroMask << (NCryostats-1));
       log << std::dec << ")";
     }
-    log << "\n * cryostat trigger overlap interval: <" << fOverlapTicks
-      << " ticks = " << (fOverlapTicks*fTriggerClock);
+    log << "\n * cryostat trigger overlap interval: <" << (fOverlapTicks+1)
+      << " ticks = " << ((fOverlapTicks+1)*fTriggerClock);
     if (fExtraInfo) {
       log
         << "\n * will produce a sbn::ExtraTriggerInfo from the first gate"
@@ -1390,10 +1422,14 @@ icarus::trigger::TriggerSimulationOnGates::TriggerSimulationOnGates
     }
     if (fSaveLVDSbits) {
       assert(fExtraInfo);
-      log << "\n     * will save frozen LVDS states from '" << LVDSmoduleLabel
-        << "'";
+      log << "\n     * will save frozen LVDS states";
       if (fLVDSstatusDelay != 0_ns)
         log << " after a delay of " << fLVDSstatusDelay;
+      log << " (from tags above)";
+    }
+    if (fSaveAdderBits) {
+      assert(fExtraInfo);
+      log << "\n     * will NOT save frozen adder states (not implemented yet)";
     }
     log << "\n * absolute reference time from: ";
     if (!fTriggerTag.empty())
@@ -1762,6 +1798,86 @@ void icarus::trigger::TriggerSimulationOnGates::makeEventPlots() {
 #endif // 0
   
 } // icarus::trigger::TriggerSimulationOnGates::makeEventPlots()
+
+
+//------------------------------------------------------------------------------
+auto icarus::trigger::TriggerSimulationOnGates::parseInputThresholds
+  (Config const& config) const -> std::map<std::string, InputInfo_t>
+{
+  //
+  // first extract all the threshold values (in ADC counts if values)
+  //
+  constexpr icarus::ADCsettings<double> ADCsettings;
+  auto thresholds = copyToVector<std::string>(config.Thresholds());
+  for (util::quantities::millivolt const& Vthr: config.VThresholds()) {
+    std::string const thr = std::to_string(ADCsettings.to_ADC(Vthr));
+    if (contains(thresholds, thr)) {
+      throw art::Exception{ art::errors::Configuration }
+        << "Threshold '" << Vthr << "' in " << config.VThresholds.name()
+        << " was already specified as '" << thr << "' in "
+        << config.Thresholds.name() << "!";
+    }
+    thresholds.push_back(thr);
+  } // for
+  if (thresholds.empty()) {
+    throw art::Exception{ art::errors::Configuration }
+      << "No threshold tag configured in " << config.Thresholds.name()
+      << " nor " << config.VThresholds.name() << "!";
+  }
+  
+  //
+  // assign all input tags to each threshold
+  //
+  std::vector<Config::StatusTagTable> const& StatusTags
+    = config.StatusTags().value_or(std::vector<Config::StatusTagTable>{});
+  if (StatusTags.size() > thresholds.size()) {
+    throw art::Exception { art::errors::Configuration }
+      << "There are " << StatusTags.size() << " status tags in '"
+      << config.StatusTags.name() << "', more than the thresholds ("
+      << thresholds.size() << ")";
+  }
+  
+  std::string const& discrModuleLabel = config.TriggerGatesTag();
+  
+  std::map<std::string, InputInfo_t> allInputInfo;
+  for (auto const& [ iThr, threshold ]: util::enumerate(thresholds)) {
+    InputInfo_t inputInfo;
+    inputInfo.triggerGatesTag = art::InputTag{ discrModuleLabel, threshold };
+    
+    if (!StatusTags.empty()) {
+      Config::StatusTagTable const& tags
+        = (iThr < StatusTags.size())? StatusTags[iThr]: StatusTags.back();
+      inputInfo.LVDSgatesTag = tags.LVDStag();
+      inputInfo.AdderGatesTag = tags.SectorTag();
+    }
+    
+    allInputInfo[threshold] = std::move(inputInfo);
+  } // for
+  
+  return allInputInfo;
+} // icarus::trigger::TriggerSimulationOnGates::parseInputThresholds()
+
+
+//------------------------------------------------------------------------------
+bool icarus::trigger::TriggerSimulationOnGates::requestedLVDSbits() const {
+  if (!fExtraInfo) return false;
+  
+  for (InputInfo_t const& info: util::const_values(fInputInfo))
+    if (!info.LVDSgatesTag.empty()) return true;
+  
+  return false;
+} // icarus::trigger::TriggerSimulationOnGates::requestedLVDSbits()
+
+
+//------------------------------------------------------------------------------
+bool icarus::trigger::TriggerSimulationOnGates::requestedSectorBits() const {
+  if (!fExtraInfo) return false;
+  
+  for (InputInfo_t const& info: util::const_values(fInputInfo))
+    if (!info.AdderGatesTag.empty()) return true;
+  
+  return false;
+} // icarus::trigger::TriggerSimulationOnGates::requestedSectorBits()
 
 
 //------------------------------------------------------------------------------
