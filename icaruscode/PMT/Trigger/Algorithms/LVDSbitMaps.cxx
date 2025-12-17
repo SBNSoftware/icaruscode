@@ -328,6 +328,7 @@ auto icarus::trigger::LVDSbitMaps::buildAdderSourceMap
   std::vector<AdderBitID> HWtoLogicID{ LVDSHWbitID::NIndices() };
   
   unsigned int nBits = 0;
+  raw::Channel_t adderIndex = 0;
   for (LVDSchannel_t const& info: fPMTchannelInfo) { // in PMT channel order
     
     if (!info.adderSource) continue; // skip invalid
@@ -338,6 +339,7 @@ auto icarus::trigger::LVDSbitMaps::buildAdderSourceMap
     
     AdderInfo_t* mapInfo = logicBit? &(sourceMap[logicBit.index()]): nullptr;
     if (!mapInfo) { // new bit: set the source
+      
       // which logic bit to set:
       logicBit.cryostat = info.adderSource.cryostat;
       assert(logicBit.cryostat == info.channel / NChannelsPerCryostat);
@@ -351,6 +353,9 @@ auto icarus::trigger::LVDSbitMaps::buildAdderSourceMap
       mapInfo = &(sourceMap[logicBit.index()]);
       mapInfo->ID = logicBit;
       mapInfo->source = info.adderSource;
+      mapInfo->channelID
+        = AdderChannelID{ AdderChannelID::BaseAdderChannelID + (adderIndex++) };
+      
     }
     assert(mapInfo);
     assert(mapInfo->source == info.adderSource);
@@ -374,8 +379,8 @@ auto icarus::trigger::LVDSbitMaps::buildAdderSourceMap
       << AdderBitID::fromIndex(bit) << " => HW=";
     if (info.source) {
       debugLog << info.source << " (ix="
-        << std::setw(3) << info.source.index() << ") "
-        << info.channels.size() << " channels {";
+        << std::setw(3) << info.source.index() << ") adder channel "
+        << info.channelID << " with " << info.channels.size() << " channels {";
       for (raw::Channel_t const channel: info.channels)
         debugLog << " " << std::setw(3) << channel;
       debugLog << " }";

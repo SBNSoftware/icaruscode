@@ -10,6 +10,9 @@
 #ifndef ICARUSCODE_PMT_TRIGGER_ALGORITHMS_LVDSBITMAPS_H
 #define ICARUSCODE_PMT_TRIGGER_ALGORITHMS_LVDSBITMAPS_H
 
+// ICARUS libraries
+#include "icaruscode/PMT/Trigger/Algorithms/AdderChannelID.h"
+
 // LArSoft and framework libraries
 #include "lardataobj/RawData/OpDetWaveform.h" // raw::Channel_t
 #include "cetlib_except/coded_exception.h"
@@ -262,6 +265,8 @@ struct icarus::trigger::AdderInfo_t {
   
   LVDSHWbitID source; ///< Identifier of the hardware LVDS bit feeding this one.
   
+  AdderChannelID channelID; ///< Identifier of the adder channel.
+  
   std::vector<raw::Channel_t> channels; ///< PMT channels covered by this bit.
   
   /// Returns whether this information is fully valid (both channel and ID).
@@ -318,13 +323,13 @@ struct icarus::trigger::AdderInfo_t {
  * 
  * Adders:
  * * east cryostat, east wall: `0b00000000'00abcdef`, with `a` to `f` covering
- *   adders starting with channel `0`, `15`, 30`, `45`, 60` and `75`;
+ *   adders starting with channel `0`, `15`, `30`, `45`, `60` and `75`;
  * * east cryostat, west wall: `0b00000000'00abcdef`, with `a` to `f` covering
- *   adders starting with channel `90`, `105`, 120`, `135`, 150` and `165`;
+ *   adders starting with channel `90`, `105`, `120`, `135`, `150` and `165`;
  * * west cryostat, east wall: `0b00000000'00abcdef`, with `a` to `f` covering
- *   adders starting with channel `180`, `195`, 210`, `225`, 240` and `255`;
+ *   adders starting with channel `180`, `195`, `210`, `225`, `240` and `255`;
  * * west cryostat, west wall: `0b00000000'00abcdef`, with `a` to `f` covering
- *   adders starting with channel `270`, `285`, 300`, `315`, 330` and `345`.
+ *   adders starting with channel `270`, `285`, `300`, `315`, `330` and `345`.
  * 
  * 
  * Naming conventions

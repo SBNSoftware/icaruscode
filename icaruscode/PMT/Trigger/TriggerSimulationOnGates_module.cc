@@ -89,6 +89,7 @@
 #include <map>
 #include <set>
 #include <vector>
+#include <initializer_list>
 #include <iterator> // std::make_move_iterator()
 #include <memory> // std::make_unique()
 #include <string>
@@ -248,6 +249,12 @@ namespace icarus::trigger { class TriggerSimulationOnGates; }
  *     save in the bits the state of the gates from `LVDSgatesTag` at the time
  *     the trigger conditions are met plus the delay specified in this
  *     parameter.
+ * * `AdderStatusDelay` (nanoseconds, default: `0`): when extraction of adder
+ *     bits for `sectorStatus` is requested (see
+ *     @ref TriggerSimulationOnGates_Output "Output data products" section),
+ *     save in the bits the state of the gates from `AdderGatesTag` at the time
+ *     the trigger conditions are met plus the delay specified in this
+ *     parameter.
  * * `RetriggeringBit` (positive integer, default: `17`): the bit to set for all
  *     the triggers found after the first one within each gate. The value `0`
  *     represents the least significant bit; the default value is `17`, bit mask
@@ -291,7 +298,8 @@ namespace icarus::trigger { class TriggerSimulationOnGates; }
  *  * The usual message facility.
  *  * `geo::Geometry` and `geo::WireReadout` to build trigger window topology.
  *  * `detinfo::DetectorClocksService` for timing translations.
- *  * `icarusDB::IICARUSChannelMap` if output of LVDS status is requested.
+ *  * `icarusDB::IICARUSChannelMap` if output of LVDS or adder status is
+ *     requested.
  *  * `art::TFileService` in principle for plots, but currently there is none
  *     (the service is required nonetheless).
  * 
@@ -311,6 +319,9 @@ namespace icarus::trigger { class TriggerSimulationOnGates; }
  *     The parameter `BeamGateReference` can change that interpretation.
  * * `StatusTags.LVDStag`: LVDS input gate collections (see
  *     `sbn::ExtraTriggerInfo::CryostatInfo::LVDSstatus` assignment in
+ *     @ref TriggerSimulationOnGates_Output "Output data products" section).
+ * * `StatusTags.SectorTag`: adder input gate collections (see
+ *     `sbn::ExtraTriggerInfo::CryostatInfo::sectorStatus` assignment in
  *     @ref TriggerSimulationOnGates_Output "Output data products" section).
  * * `TriggerTag` (`sbn::ExtraTriggerInfo`) currently used solely to get the
  *     UTC trigger time to be used as absolute time reference in the output
@@ -650,6 +661,12 @@ class icarus::trigger::TriggerSimulationOnGates
       0_ns // default
       };
     
+    fhicl::Atom<nanoseconds> AdderStatusDelay {
+      Name("AdderStatusDelay"),
+      Comment("delay to freeze adder state bits, added to the trigger times"),
+      0_ns // default
+      };
+    
     fhicl::Atom<unsigned int> RetriggeringBit {
       Name("RetriggeringBit"),
       Comment(
@@ -782,6 +799,9 @@ class icarus::trigger::TriggerSimulationOnGates
   using CryoLVDSbitArray_t
     = std::array<std::uint64_t, sbn::ExtraTriggerInfo::MaxWalls>;
   
+  using CryoSectorBitArray_t
+    = std::array<std::uint16_t, sbn::ExtraTriggerInfo::MaxWalls>;
+  
   
   /// Utility to carry beam bits along with the beam gates.
   struct ApplyBeamGateClassWithBits: icarus::trigger::ApplyBeamGateClass {
@@ -820,6 +840,7 @@ class icarus::trigger::TriggerSimulationOnGates
   nanoseconds const fTriggerDelay; ///< Time to be added to the trigger time.
   
   nanoseconds const fLVDSstatusDelay; ///< Delay to freeze LVDS state bits.
+  nanoseconds const fAdderStatusDelay; ///< Delay to freeze adder state bits.
   
   /// Bit mask set for triggers after the first one in a gate.
   TriggerBits_t const fRetriggeringMask;
@@ -873,7 +894,7 @@ class icarus::trigger::TriggerSimulationOnGates
   /// Pattern algorithm.
   std::optional<icarus::trigger::SlidingWindowPatternAlg> fPatternAlg;
   
-  /// Cached LVDS bit mappings (`optional` because needs reinitialization).
+  /// Cached LVDS/adder bit mappings (`optional` because needs reinitialization).
   std::optional<icarus::trigger::LVDSbitMaps> fLVDSmaps;
   
 #if 0
@@ -1002,6 +1023,8 @@ class icarus::trigger::TriggerSimulationOnGates
    * @param eventInfo event-wide information to be transferred to trigger data
    * @param triggerNumber the "unique" number to assign to this trigger
    * @param info the information about the fired triggers
+   * @param PMTpairGates gates relating the state of all LVDS pairs
+   * @param adderGate gates relating the state of all adder channels
    * @return objects with all the trigger information encoded
    * 
    * The triggers described by `info` are encoded into `raw::Trigger` objects.
@@ -1018,7 +1041,8 @@ class icarus::trigger::TriggerSimulationOnGates
     sim::BeamGateInfo const& beamGate,
     EventAux_t const& eventInfo,
     unsigned int triggerNumber, std::vector<WindowTriggerInfo_t> const& info,
-    std::vector<OpticalTriggerGateData_t> const* PMTpairGates
+    std::vector<OpticalTriggerGateData_t> const* PMTpairGates,
+    std::vector<OpticalTriggerGateData_t> const* adderGates
     ) const;
   
   /// Converts trigger bits from `beamInfo` into a `sbn::triggerSourceMask`.
@@ -1038,15 +1062,19 @@ class icarus::trigger::TriggerSimulationOnGates
     std::vector<OpticalTriggerGateData_t> const& PMTgates
     ) const;
   
-  /// Returns whether the `gate` channel list completely matches `channels`.
+  /// Builds the sector words from the status of `adderGates` at `triggerTick`.
+  CryoSectorBitArray_t extractCryoAdderStatus(
+    std::size_t cryostat, optical_tick triggerTick,
+    std::vector<OpticalTriggerGateData_t> const& adderGates
+    ) const;
+  
+  /// Returns whether the `gate` channel list completely matches `channels`
+  /// (all `gate` channels must be in either `channels` or `extraChannels`).
   static bool matchChannelList(
     OpticalTriggerGateData_t const& gate,
-    std::vector<raw::Channel_t> const& channels
+    std::vector<raw::Channel_t> const& channels,
+    std::initializer_list<raw::Channel_t> extraChannels = {}
     );
-  
-  /// Returns a map from channel number to pointer to the gate covering it.
-  static std::vector<OpticalTriggerGateData_t const*> makeGateMap
-    (std::vector<OpticalTriggerGateData_t> const& gates);
   
   
   /// Prints the summary of fired triggers on screen.
@@ -1203,6 +1231,46 @@ namespace {
   
   
   // ---------------------------------------------------------------------------
+  /// Map channel-to-trigger gate; can be sparse.
+  class GateMap {
+    
+    using OpticalTriggerGateData_t = icarus::trigger::OpticalTriggerGateData_t;
+    
+    using Map_t = std::map<raw::Channel_t, OpticalTriggerGateData_t const*>;
+    
+    Map_t fMap; ///< The precomputed map.
+    
+    /// Builds the map based on the specified gates.
+    static Map_t build(std::vector<OpticalTriggerGateData_t> const& gates)
+      {
+        Map_t gateMap;
+        for (OpticalTriggerGateData_t const& gate: gates)
+          for (raw::Channel_t const channel: gate.channels())
+            gateMap[channel] = &gate;
+        return gateMap;
+      }
+    
+      public:
+        
+    /// Constructs the map from the presented `gates`.
+    GateMap(std::vector<OpticalTriggerGateData_t> const& gates)
+      : fMap{ build(gates) } {}
+    
+    /// Returns a pointer to the gate with `channel`, `nullptr` if none.
+    OpticalTriggerGateData_t const* gateFor(raw::Channel_t channel) const
+      {
+        auto const it = fMap.find(channel);
+        return it == end(fMap)? nullptr: it->second;
+      }
+    
+    /// Returns a pointer to the gate with `channel`, `nullptr` if none.
+    OpticalTriggerGateData_t const* operator[] (raw::Channel_t channel) const
+      { return gateFor(channel); }
+    
+  }; // GateMap
+  
+
+  // ---------------------------------------------------------------------------
   
 } // local namespace
 
@@ -1225,6 +1293,7 @@ icarus::trigger::TriggerSimulationOnGates::TriggerSimulationOnGates
   , fDeadTime             (config().DeadTime())
   , fTriggerDelay         (config().TriggerDelay())
   , fLVDSstatusDelay      (config().LVDSstatusDelay())
+  , fAdderStatusDelay     (config().AdderStatusDelay())
   , fRetriggeringMask     (bitMask<TriggerBits_t>(config().RetriggeringBit()))
   , fTriggerLogicMask     (mask(config().TriggerLogicBit()))
   , fCryostatZeroMask     (bitMask<TriggerBits_t>(config().CryostatFirstBit()))
@@ -1283,11 +1352,6 @@ icarus::trigger::TriggerSimulationOnGates::TriggerSimulationOnGates
     }
   } // if TriggerTimeResolution specified
   
-  if (fSaveAdderBits) {
-    mf::LogWarning{ fLogCategory } // TODO mostly because of unpacking
-      << "Adder bit saving is not yet implemented.";
-  }
-  
   //
   // more complex parameter parsing
   //
@@ -1311,6 +1375,10 @@ icarus::trigger::TriggerSimulationOnGates::TriggerSimulationOnGates
       .declareConsumes(consumesCollector());
     if (fSaveLVDSbits) {
       icarus::trigger::TriggerGateReader<>{ inputInfo.LVDSgatesTag }
+        .declareConsumes(consumesCollector());
+    }
+    if (fSaveAdderBits) {
+      icarus::trigger::TriggerGateReader<>{ inputInfo.AdderGatesTag }
         .declareConsumes(consumesCollector());
     }
   } // for
@@ -1429,7 +1497,10 @@ icarus::trigger::TriggerSimulationOnGates::TriggerSimulationOnGates
     }
     if (fSaveAdderBits) {
       assert(fExtraInfo);
-      log << "\n     * will NOT save frozen adder states (not implemented yet)";
+      log << "\n     * will save frozen adder states";
+      if (fAdderStatusDelay != 0_ns)
+        log << " after a delay of " << fAdderStatusDelay;
+      log << " (from tags above)";
     }
     log << "\n * absolute reference time from: ";
     if (!fTriggerTag.empty())
@@ -1463,6 +1534,11 @@ void icarus::trigger::TriggerSimulationOnGates::beginRun(art::Run&) {
       mf::LogWarning(fLogCategory)
         << "PMT pair mapping could not be extracted."
         << " LVDS bits will not be simulated.";
+    }
+    if (!fLVDSmaps->hasMap(icarus::trigger::LVDSbitMaps::Map::Adders)) {
+      mf::LogWarning(fLogCategory)
+        << "Adder board mapping could not be extracted."
+        << " sector bits will not be simulated.";
     }
   }
   
@@ -1908,10 +1984,17 @@ auto icarus::trigger::TriggerSimulationOnGates::produceForThreshold(
   art::InputTag const& dataTag = fInputInfo.at(thrTag).triggerGatesTag;
   auto const& gates = icarus::trigger::ReadTriggerGates(event, dataTag);
   
-  // attempt to read LVDSgatesTag only if needed
-  auto const* PMTpairGates = fSaveLVDSbits
+  // attempt to read LVDSgatesTag and AdderGatesTag only if needed
+  auto const* PMTpairGates
+    = (fSaveLVDSbits && !fInputInfo.at(thrTag).LVDSgatesTag.empty())
     ? &(event.getProduct<std::vector<OpticalTriggerGateData_t>>
       (fInputInfo.at(thrTag).LVDSgatesTag))
+    : nullptr
+    ;
+  auto const* adderGates
+    = (fSaveAdderBits && !fInputInfo.at(thrTag).AdderGatesTag.empty())
+    ? &(event.getProduct<std::vector<OpticalTriggerGateData_t>>
+      (fInputInfo.at(thrTag).AdderGatesTag))
     : nullptr
     ;
   
@@ -1947,7 +2030,7 @@ auto icarus::trigger::TriggerSimulationOnGates::produceForThreshold(
     //
     auto [ gateTriggers, extraInfo ] = triggerInfoToTriggerData(
       detTimings, beamGate, eventInfo, triggerNumber++,
-      triggerInfos, PMTpairGates
+      triggerInfos, PMTpairGates, adderGates
       );
     
     append(*triggers, std::move(gateTriggers));
@@ -2270,7 +2353,8 @@ icarus::trigger::TriggerSimulationOnGates::triggerInfoToTriggerData(
   sim::BeamGateInfo const& beamGate,
   EventAux_t const& eventInfo,
   unsigned int triggerNumber, std::vector<WindowTriggerInfo_t> const& info,
-  std::vector<OpticalTriggerGateData_t> const* PMTpairGates
+  std::vector<OpticalTriggerGateData_t> const* PMTpairGates,
+  std::vector<OpticalTriggerGateData_t> const* adderGates
 ) const {
   
   static constexpr auto NoTime = std::numeric_limits<unsigned int>::max();
@@ -2391,7 +2475,18 @@ icarus::trigger::TriggerSimulationOnGates::triggerInfoToTriggerData(
                 << " delay = " << (triggerTime + fLVDSstatusDelay) << ")";
               cryoInfo.LVDSstatus = extractCryoLVDSstatus
                 (cryoIndex, LVDSfreezeTick, *PMTpairGates);
-            }
+            } // if save LVDS bits
+            if (fSaveAdderBits) {
+              assert(adderGates);
+              optical_tick const adderFreezeTick
+                = detTimings.toOpticalTick(triggerTime + fAdderStatusDelay);
+              mf::LogTrace(fLogCategory) << "Freezing " << triggeringCryo
+                << " adder states at tick " << adderFreezeTick
+                << " (" << triggerTime << " trigger + " << fAdderStatusDelay
+                << " delay = " << (triggerTime + fAdderStatusDelay) << ")";
+              cryoInfo.sectorStatus = extractCryoAdderStatus
+                (cryoIndex, adderFreezeTick, *adderGates);
+            } // if save adder bits
           } // if first trigger in cryostat
         } // if we know the trigger cryostat
         
@@ -2483,8 +2578,7 @@ auto icarus::trigger::TriggerSimulationOnGates::extractCryoLVDSstatus(
     return cryoBits;
   
   // map channel -> gate containing it
-  std::vector<OpticalTriggerGateData_t const*> const gateMap
-    = makeGateMap(PMTgates);
+  GateMap const gateMap{ PMTgates };
   
   auto const mask
     = [](auto bitNo){ return 1ULL << static_cast<std::uint64_t>(bitNo); };
@@ -2505,8 +2599,10 @@ auto icarus::trigger::TriggerSimulationOnGates::extractCryoLVDSstatus(
       if (channels.empty()) continue; // bit not mapped to anything
       
       // find the relevant gate
-      raw::Channel_t const matchingChannel = channels.front();
-      OpticalTriggerGateData_t const* LVDSgate = gateMap.at(matchingChannel);
+      OpticalTriggerGateData_t const* LVDSgate = nullptr;
+      for (raw::Channel_t const matchingChannel: channels) {
+        if ((LVDSgate = gateMap[matchingChannel])) break;
+      }
       
       if (!LVDSgate) {
         mf::LogWarning log{ fLogCategory };
@@ -2526,7 +2622,7 @@ auto icarus::trigger::TriggerSimulationOnGates::extractCryoLVDSstatus(
         e << ") matched to a LVDS gate from a different list of channels (";
         for (raw::Channel_t const channel: LVDSgate->channels())
           e << " " << channel;
-        e << "); matching channel: " << matchingChannel << ".\n";
+        e << ").\n";
         throw e;
       } // if not matching channels
       
@@ -2541,40 +2637,108 @@ auto icarus::trigger::TriggerSimulationOnGates::extractCryoLVDSstatus(
   } // PMT wall
   
   return cryoBits;
-} // icarus::trigger::TriggerSimulationOnGates::extractLVDSstatus()
+} // icarus::trigger::TriggerSimulationOnGates::extractCryoLVDSstatus()
+
+
+//------------------------------------------------------------------------------
+auto icarus::trigger::TriggerSimulationOnGates::extractCryoAdderStatus(
+  std::size_t const cryostat,
+  optical_tick triggerTick,
+  std::vector<OpticalTriggerGateData_t> const& adderGates
+) const -> CryoSectorBitArray_t {
+  /*
+   * For each "logic" bit of each PMT wall,
+   * we ask the mapping which channel that bit is associated to,
+   * and find the corresponding gate.
+   * The state of that gate at `triggerTick` becomes the value of the bit.
+   */
+  
+  CryoSectorBitArray_t cryoBits;
+  cryoBits.fill(0);
+  
+  assert(fLVDSmaps);
+  if (!fLVDSmaps->hasMap(icarus::trigger::LVDSbitMaps::Map::Adders))
+    return cryoBits;
+  
+  // map channel -> gate containing it
+  GateMap const gateMap{ adderGates };
+  
+  auto const mask
+    = [](auto bitNo){ return 1ULL << static_cast<std::uint64_t>(bitNo); };
+  
+  using icarus::trigger::AdderBitID;
+  for (std::size_t const PMTwall:
+    { sbn::ExtraTriggerInfo::EastPMTwall, sbn::ExtraTriggerInfo::WestPMTwall }
+  ) {
+    
+    std::uint16_t bits = 0;
+    
+    for (auto const bit: util::counter<AdderBitID::StatusBit_t>(16)) {
+      
+      AdderBitID const bitID{ cryostat, PMTwall, bit };
+      AdderInfo_t const& adderInfo = fLVDSmaps->bitSource(bitID);
+      AdderChannelID const channelID = adderInfo.channelID;
+      
+      if (!channelID.isValid()) continue; // bit not mapped to anything
+      
+      // find the relevant gate
+      OpticalTriggerGateData_t const* adderGate = gateMap[channelID.channel()];
+      
+      if (!adderGate) {
+        mf::LogWarning log{ fLogCategory };
+        log << "Adder status " << bitID << " (" << channelID
+          << ") is not covered by any gate.";
+        continue;
+      }
+      
+      // check the full matching
+      if (!matchChannelList
+        (*adderGate, adderInfo.channels, { channelID.channel() })
+      ) {
+        art::Exception e{ art::errors::Unknown };
+        e << "Adder status " << bitID << " (" << adderInfo.channels.size()
+          << " channels: ";
+        for (raw::Channel_t const channel: adderInfo.channels)
+          e << " " << channel;
+        e << ") matched to a adder gate from a different list of channels (";
+        for (raw::Channel_t const channel: adderGate->channels())
+          e << " " << channel;
+        e << "); channel ID: " << channelID << ".\n";
+        throw e;
+      } // if not matching channels
+      
+      // extract the value
+      bool const bitValue = adderGate->isOpen(triggerTick.value());
+      if (bitValue) bits |= mask(bit);
+      
+    } // bit
+    
+    cryoBits[PMTwall] = bits;
+    
+  } // PMT wall
+  
+  return cryoBits;
+} // icarus::trigger::TriggerSimulationOnGates::extractCryoAdderStatus()
 
 
 //------------------------------------------------------------------------------
 bool icarus::trigger::TriggerSimulationOnGates::matchChannelList(
   OpticalTriggerGateData_t const& gate,
-  std::vector<raw::Channel_t> const& channels
+  std::vector<raw::Channel_t> const& channels,
+  std::initializer_list<raw::Channel_t> extraChannels /* = {} */
 ) {
   
   // brute force
-  auto const channelIsInList = [&chList=channels](raw::Channel_t ch)
-    { return std::find(chList.begin(), chList.end(), ch) != chList.end(); };
-  for (raw::Channel_t channel: gate.channels())
-    if (!channelIsInList(channel)) return false;
+  auto const channelIsInList = [](auto const& chList, raw::Channel_t ch)
+    { return std::find(begin(chList), end(chList), ch) != end(chList); };
+  for (raw::Channel_t channel: gate.channels()) {
+    if (channelIsInList(channels, channel)) continue;
+    if (channelIsInList(extraChannels, channel)) continue;
+    return false;
+  }
   return true;
   
 } // icarus::trigger::TriggerSimulationOnGates::matchChannelList()
-
-
-//------------------------------------------------------------------------------
-auto icarus::trigger::TriggerSimulationOnGates::makeGateMap
-  (std::vector<OpticalTriggerGateData_t> const& gates)
-  -> std::vector<OpticalTriggerGateData_t const*>
-{
-  // map channel -> gate containing it
-  std::vector<OpticalTriggerGateData_t const*> gateMap
-    (icarus::trigger::LVDSbitMaps::NChannels, nullptr);
-  for (OpticalTriggerGateData_t const& gate: gates) {
-    for (raw::Channel_t const channel: gate.channels()) {
-      gateMap.at(channel) = &gate;
-    }
-  }
-  return gateMap;
-} // icarus::trigger::TriggerSimulationOnGates::makeGateMap()
 
 
 //------------------------------------------------------------------------------
