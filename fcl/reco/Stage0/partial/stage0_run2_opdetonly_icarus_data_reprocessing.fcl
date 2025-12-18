@@ -35,9 +35,7 @@ physics.producers.ophit.RecalibrateTime: false        # not needed for Run2
 # make sure flashes are using the new ophits
 # as well as the correct (non)calibration
 physics.producers.opflashCryoE.OpHitProducer: "ophit::OpStage0"
-physics.producers.opflashCryoE.PECalib: @local::icarus_pmt_calibration.CalibStandardRun2
 physics.producers.opflashCryoW.OpHitProducer: "ophit::OpStage0"
-physics.producers.opflashCryoW.PECalib: @local::icarus_pmt_calibration.CalibStandardRun2 
 
 # now drop old ophits
 outputs.rootOutput.outputCommands: [
