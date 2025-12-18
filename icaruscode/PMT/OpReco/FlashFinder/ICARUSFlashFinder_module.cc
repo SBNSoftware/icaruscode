@@ -1,11 +1,9 @@
-////////////////////////////////////////////////////////////////////////
-// Class:       ICARUSFlashFinder
-// Module Type: producer
-// File:        ICARUSFlashFinder_module.cc
-//
-// Generated at Tue Sep 13 22:30:26 2016 by Kazuhiro Terao using artmod
-// from cetpkgsupport v1_10_02.
-////////////////////////////////////////////////////////////////////////
+/**
+ * @file   icaruscode/PMT/OpReco/FlashFinder/ICARUSFlashFinder_module.cc
+ * @brief  ICARUS customization of flash reconstruction in LArSoft
+ * @author modified from Kazuhiro Terao's original module
+ */
+
 
 #include "icaruscode/PMT/OpReco/Algorithms/OpHitTimeSelector.h"
 
