@@ -17,7 +17,8 @@
 #include "canvas/Persistency/Common/Assns.h"
 #include "canvas/Persistency/Common/Ptr.h"
 #include "canvas/Utilities/InputTag.h"
-#include "fhiclcpp/ParameterSet.h"
+#include "fhiclcpp/types/Atom.h"
+#include "fhiclcpp/types/DelegatedParameter.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
 
 #include "lardataobj/RecoBase/OpHit.h"
@@ -32,7 +33,45 @@
 
 class ICARUSFlashFinder : public art::SharedProducer {
 public:
-  explicit ICARUSFlashFinder(fhicl::ParameterSet const & p, art::ProcessingFrame const&);
+  
+  struct Config {
+    
+    using Name = fhicl::Name;
+    using Comment = fhicl::Comment;
+    
+    fhicl::Atom<art::InputTag> OpHitProducer {
+      Name{ "OpHitProducer" },
+      Comment{ "input tag for the optical hits to build the flashes from" }
+      };
+    
+    fhicl::Atom<std::string> FlashFinderAlgo {
+      Name{ "FlashFinderAlgo" },
+      Comment{ "name of the flash finding algorithm" }
+      };
+    
+    fhicl::Atom<std::string> TimeType {
+      Name{ "TimeType" },
+      Comment{ "Type of hit time to be used for flash building" },
+      "Start"
+      };
+    
+    fhicl::DelegatedParameter AlgoConfig {
+      Name{ "AlgoConfig" },
+      Comment{ "configuration of the flash finding algorithm" }
+      };
+    
+    
+
+    fhicl::DelegatedParameter PECalib {
+      Name{ "PECalib" },
+      Comment{ "Configuration of the optical hit recalibration" }
+      };
+    
+  }; // Config
+  
+  using Parameters = art::SharedProducer::Table<Config>;
+  
+  explicit ICARUSFlashFinder(Parameters const & p, art::ProcessingFrame const&);
 
   void produce(art::Event & e, art::ProcessingFrame const&) override;
 
@@ -42,7 +81,7 @@ private:
   // Declare member data here.
   ::pmtana::FlashFinderManager _mgr;
   ::pmtana::PECalib _pecalib;
-  std::string _hit_producer;
+  art::InputTag _hit_producer;
   
   /// Extracts a configured time from `recob::OpHit`.
   recob::OpHitTimeSelector const fHitTime;
@@ -54,20 +93,20 @@ private:
 
 ICARUSFlashFinder::ICARUSFlashFinder(Parameters const & p, art::ProcessingFrame const&)
   : art::SharedProducer{p}
-  , fHitTime{ recob::opHitTimeType(p.get<std::string>("TimeType", "Start")) }
+  , fHitTime{ recob::opHitTimeType(p().TimeType()) }
 // Initialize member data here.
 {
   async<art::InEvent>();
   
-  _hit_producer   = p.get<std::string>("OpHitProducer");
+  _hit_producer   = p().OpHitProducer();
   
-  auto const flash_algo  = p.get<std::string>("FlashFinderAlgo");
-  auto const flash_pset = p.get<pmtana::Config_t>("AlgoConfig");
+  auto const flash_algo  = p().FlashFinderAlgo();
+  auto const flash_pset = p().AlgoConfig.get<pmtana::Config_t>();
   auto algo_ptr = ::pmtana::FlashAlgoFactory::get().create(flash_algo,flash_algo);
   algo_ptr->Configure(flash_pset);
   _mgr.SetFlashAlgo(algo_ptr);
 
-  _pecalib.Configure(p.get<pmtana::Config_t>("PECalib"));
+  _pecalib.Configure(p().PECalib.get<pmtana::Config_t>());
 
   produces< std::vector<recob::OpFlash>   >();
   produces< art::Assns <recob::OpHit, recob::OpFlash> >();
