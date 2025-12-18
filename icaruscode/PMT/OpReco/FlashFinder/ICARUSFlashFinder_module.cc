@@ -133,7 +133,7 @@ void ICARUSFlashFinder::produce(art::Event & e, art::ProcessingFrame const&)
   
   auto const flash_v = _mgr.RecoFlash(ophits);
 
-  art::PtrMaker<recob::OpFlash> makeFlaskPtr{ e };
+  art::PtrMaker<recob::OpFlash> makeFlashPtr{ e };
   for(const auto& lflash :  flash_v) {
 
     double Ycenter, Zcenter, Ywidth, Zwidth;
@@ -147,7 +147,7 @@ void ICARUSFlashFinder::produce(art::Event & e, art::ProcessingFrame const&)
                          Ycenter, Ywidth, Zcenter, Zwidth);
     opflashes->emplace_back(std::move(flash));
 
-    art::Ptr<recob::OpFlash> const flashPtr = makeFlaskPtr(opflashes->size() - 1);
+    art::Ptr<recob::OpFlash> const flashPtr = makeFlashPtr(opflashes->size() - 1);
     for(auto const& hitidx : lflash.asshit_idx) {
       const art::Ptr<recob::OpHit> hit_ptr(ophit_h, hitidx);
       flash2hit_assn_v->addSingle(hit_ptr, flashPtr);
