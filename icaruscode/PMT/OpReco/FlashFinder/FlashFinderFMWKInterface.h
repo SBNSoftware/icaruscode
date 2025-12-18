@@ -4,7 +4,7 @@
 //#include "FhiclLite/ConfigManager.h"
 #include "fhiclcpp/ParameterSet.h"
 
-#include <cstdint> // std::size_t
+#include <cstddef> // std::size_t
 #include <vector>
 
 namespace pmtana {
