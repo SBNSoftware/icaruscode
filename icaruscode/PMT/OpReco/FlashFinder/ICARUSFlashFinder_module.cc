@@ -29,7 +29,6 @@
 #include <vector>
 #include "FlashFinderManager.h"
 #include "FlashFinderFMWKInterface.h" // ::pmtana::OpDetCenterFromOpChannel()
-#include "PECalib.h"
 
 
 class ICARUSFlashFinder : public art::SharedProducer {
@@ -61,13 +60,6 @@ public:
       Comment{ "configuration of the flash finding algorithm" }
       };
     
-    
-
-    fhicl::DelegatedParameter PECalib {
-      Name{ "PECalib" },
-      Comment{ "Configuration of the optical hit recalibration" }
-      };
-    
   }; // Config
   
   using Parameters = art::SharedProducer::Table<Config>;
@@ -81,7 +73,6 @@ private:
 
   // Declare member data here.
   ::pmtana::FlashFinderManager _mgr;
-  ::pmtana::PECalib _pecalib;
   art::InputTag _hit_producer;
   
   /// Extracts a configured time from `recob::OpHit`.
@@ -106,8 +97,6 @@ ICARUSFlashFinder::ICARUSFlashFinder(Parameters const & p, art::ProcessingFrame 
   auto algo_ptr = ::pmtana::FlashAlgoFactory::get().create(flash_algo,flash_algo);
   algo_ptr->Configure(flash_pset);
   _mgr.SetFlashAlgo(algo_ptr);
-
-  _pecalib.Configure(p().PECalib.get<pmtana::Config_t>());
 
   produces< std::vector<recob::OpFlash>   >();
   produces< art::Assns <recob::OpHit, recob::OpFlash> >();
@@ -137,8 +126,7 @@ void ICARUSFlashFinder::produce(art::Event & e, art::ProcessingFrame const&)
     if(trigger_time > 1.e20) trigger_time = oph.PeakTimeAbs() - oph.PeakTime();
     loph.peak_time = fHitTime(oph);
 
-    size_t opdet = ::pmtana::OpDetFromOpChannel(oph.OpChannel());
-    loph.pe = _pecalib.Calibrate(opdet,oph.Area());
+    loph.pe = oph.PE();
     loph.channel = oph.OpChannel();
     ophits.emplace_back(std::move(loph));
   }

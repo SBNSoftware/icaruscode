@@ -7,7 +7,3 @@ physics.producers.ophitfulluncorrected.SPEArea: @local::SPERun3.Area
 physics.producers.ophitfulluncorrected.SPEShift: @local::SPERun3.Shift
 physics.producers.mcophit.SPEArea: @local::SPERun3.Area
 physics.producers.mcophit.SPEAmplitude: @local::SPERun3.Amplitude
-
-# update flash producers to pick up Run-3 SPE tune
-physics.producers.opflashCryoE.PECalib: @local::icarus_pmt_calibration.CalibStandardRun3
-physics.producers.opflashCryoW.PECalib: @local::icarus_pmt_calibration.CalibStandardRun3
