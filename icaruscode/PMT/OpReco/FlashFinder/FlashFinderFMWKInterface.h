@@ -3,8 +3,10 @@
 
 //#include "FhiclLite/ConfigManager.h"
 #include "fhiclcpp/ParameterSet.h"
-#include "larcore/Geometry/Geometry.h"
-#include <stdlib.h>
+
+#include <cstdint> // std::size_t
+#include <vector>
+
 namespace pmtana {
 
   //typedef ::fcllite::PSet Config_t;
