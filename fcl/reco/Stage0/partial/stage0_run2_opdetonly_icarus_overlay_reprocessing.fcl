@@ -21,9 +21,5 @@ physics.producers.ophitfulluncorrected.SPEShift: @local::SPERun2.Shift
 physics.producers.mcophit.SPEArea: @local::SPERun2.Area
 physics.producers.mcophit.SPEAmplitude: @local::SPERun2.Amplitude
 
-# update flash producers to pick up Run-2 SPE tune
-physics.producers.opflashCryoE.PECalib: @local::icarus_pmt_calibration.CalibStandardRun2
-physics.producers.opflashCryoW.PECalib: @local::icarus_pmt_calibration.CalibStandardRun2
-
 
 
