@@ -11,23 +11,24 @@
 #include "art/Framework/Core/ModuleMacros.h"
 #include "art/Framework/Principal/Event.h"
 #include "art/Framework/Principal/Handle.h"
-#include "art/Framework/Principal/Run.h"
-#include "art/Framework/Principal/SubRun.h"
 #include "art/Persistency/Common/PtrMaker.h"
 #include "canvas/Persistency/Common/Assns.h"
 #include "canvas/Persistency/Common/Ptr.h"
 #include "canvas/Utilities/InputTag.h"
+#include "canvas/Utilities/Exception.h"
 #include "fhiclcpp/types/Atom.h"
 #include "fhiclcpp/types/DelegatedParameter.h"
-#include "messagefacility/MessageLogger/MessageLogger.h"
 
 #include "lardataobj/RecoBase/OpHit.h"
 #include "lardataobj/RecoBase/OpFlash.h"
 
+#include <iostream> // std::cerr
 #include <memory>
 #include <string>
+#include <utility> // std::move()
+#include <vector>
 #include "FlashFinderManager.h"
-#include "FlashFinderFMWKInterface.h"
+#include "FlashFinderFMWKInterface.h" // ::pmtana::OpDetCenterFromOpChannel()
 #include "PECalib.h"
 
 
@@ -116,8 +117,8 @@ void ICARUSFlashFinder::produce(art::Event & e, art::ProcessingFrame const&)
 {
 
   // produce OpFlash data-product to be filled within module
-  std::unique_ptr< std::vector<recob::OpFlash> > opflashes(new std::vector<recob::OpFlash>);
-  std::unique_ptr< art::Assns <recob::OpHit, recob::OpFlash> > flash2hit_assn_v  ( new art::Assns<recob::OpHit, recob::OpFlash> );
+  auto opflashes = std::make_unique<std::vector<recob::OpFlash>>();
+  auto flash2hit_assn_v = std::make_unique<art::Assns<recob::OpHit, recob::OpFlash>>();
   // load OpHits previously created
   art::Handle<std::vector<recob::OpHit> > ophit_h;
   e.getByLabel(_hit_producer,ophit_h);
@@ -125,7 +126,8 @@ void ICARUSFlashFinder::produce(art::Event & e, art::ProcessingFrame const&)
   // make sure hits look good
   if(!ophit_h.isValid()) {
     std::cerr<<"\033[93m[ERROR]\033[00m ... could not locate OpHit!"<<std::endl;
-    throw std::exception();
+    throw art::Exception{ art::errors::ProductNotFound }
+      << "Couldn't read OpHit data product from '" << _hit_producer.encode() << "'";
   }
 
   ::pmtana::LiteOpHitArray_t ophits;
