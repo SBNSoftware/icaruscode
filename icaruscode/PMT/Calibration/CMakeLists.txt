@@ -5,9 +5,8 @@ add_subdirectory(fcl)
 include(lar::PhotonCalibratorService)
 
 cet_make_library(
-  LIBRARY_NAME PhotonCalibratorFromDB
   SOURCE
-    PhotonCalibratorFromDB.cc
+    PhotonCalibratorFromDB.cxx
   LIBRARIES
     PUBLIC
       larreco::PhotonCalibrator   # IPhotonCalibrator interface
@@ -18,18 +17,17 @@ cet_make_library(
       larevt::CalibrationDBI_IOVData
 )
 
-cet_build_plugin(PhotonCalibratorServiceFromDB
+cet_build_plugin(ICARUSPhotonCalibratorServiceFromDB
   lar::PhotonCalibratorService           # plugin type from larreco
   SOURCE
-    PhotonCalibratorServiceFromDB.cc
+    ICARUSPhotonCalibratorServiceFromDB_service.cc
   LIBRARIES
     PUBLIC
-      PhotonCalibratorFromDB             # the library defined above
+      icaruscode::PMT_Calibration
       larreco::PhotonCalibrator
       art::Framework_Principal
       art::Framework_Services_Registry
       fhiclcpp::types
-      fhiclcpp::fhiclcpp
       messagefacility::MF_MessageLogger
 )
 
