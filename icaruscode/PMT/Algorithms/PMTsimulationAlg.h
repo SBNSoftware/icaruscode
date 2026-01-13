@@ -82,6 +82,9 @@ namespace icarus::opdet {
   class PMTsimulationAlgMaker;
 
   struct DebugPhoton {
+      float startX = 0.f;        // photon start X position [cm]
+      float startY = 0.f;        // photon start Y position [cm]
+      float startZ = 0.f;        // photon start Z position [cm]
       float simTime_ns = 0.f;     // input photon time (simulation)
       float trigTime_us = 0.f;    // timings.toTriggerTime(...) - offset + delay
       int32_t tick = -1;          // tick index (optical clock tick)
@@ -98,9 +101,6 @@ namespace icarus::opdet {
 
   struct DebugInfo {
       uint32_t opChannel = 0;
-      float QE = 0.f;
-      float sampling_MHz = 0.f;
-      float readoutEnablePeriod_us = 0.f;
       float timeDelay_us = 0.f;
       float triggerOffsetPMT_us = 0.f;
       uint32_t nSamples = 0;

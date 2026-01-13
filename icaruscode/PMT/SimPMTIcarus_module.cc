@@ -316,20 +316,19 @@ namespace icarus::opdet {
     TTree* fTree { nullptr }; ///< Debug tree pointer.
     // debug tree variables
     int run, event, channel;
-    float QE;
-    float sampling_MHz;
-    float readoutEnablePeriod_us;
     float timeDelay_us;
     float triggerOffsetPMT_us;
     int nSamples;
     int nSubsamples;
     // info per waveform
-    int nsize;
     std::vector<float> wf;      
     // info per photon
     int nPhotons;
     std::vector<float> photon_simTime_ns;
     std::vector<float> photon_trigTime_us;
+    std::vector<float> photon_start_x;
+    std::vector<float> photon_start_y;
+    std::vector<float> photon_start_z;  
     std::vector<int> photon_tick;
     std::vector<uint16_t> photon_subtick;
     // info per PE deposit
@@ -408,14 +407,13 @@ SimPMTIcarus::SimPMTIcarus(Parameters const& config)
       fTree->Branch("channel", &channel, "channel/I"); 
       fTree->Branch("nSamples", &nSamples, "nSamples/I");
       fTree->Branch("nSubsamples", &nSubsamples, "nSubsamples/I");
-      fTree->Branch("QE", &QE, "QE/F");
-      fTree->Branch("sampling_MHz", &sampling_MHz, "sampling_MHz/F");
-      fTree->Branch("readoutEnablePeriod_us", &readoutEnablePeriod_us, "readoutEnablePeriod_us/F");
       fTree->Branch("timeDelay_us", &timeDelay_us, "timeDelay_us/F");
       fTree->Branch("triggerOffsetPMT_us", &triggerOffsetPMT_us, "triggerOffsetPMT_us/F");
-      fTree->Branch("nsize", &nsize, "nsize/I");
       fTree->Branch("wf", &wf);
       fTree->Branch("nPhotons", &nPhotons, "nPhotons/I");
+      fTree->Branch("photon_start_x", &photon_start_x);
+      fTree->Branch("photon_start_y", &photon_start_y);
+      fTree->Branch("photon_start_z", &photon_start_z);
       fTree->Branch("photon_simTime_ns", &photon_simTime_ns);
       fTree->Branch("photon_trigTime_us", &photon_trigTime_us);
       fTree->Branch("photon_tick", &photon_tick);
@@ -501,9 +499,8 @@ SimPMTIcarus::SimPMTIcarus(Parameters const& config)
         if(fDebugTree && debug && debug->photons.size()>0) {
           // fill debug tree variables
           channel = debug->opChannel;
-          QE = debug->QE;
-          sampling_MHz = debug->sampling_MHz;
-          readoutEnablePeriod_us = debug->readoutEnablePeriod_us;
+          run = e.id().run();
+          event = e.id().event();
           timeDelay_us = debug->timeDelay_us;
           triggerOffsetPMT_us = debug->triggerOffsetPMT_us;
           nSamples = debug->nSamples;
@@ -517,7 +514,13 @@ SimPMTIcarus::SimPMTIcarus(Parameters const& config)
           photon_trigTime_us.clear();
           photon_tick.clear();
           photon_subtick.clear();
+          photon_start_x.clear();
+          photon_start_y.clear();
+          photon_start_z.clear();
           for(auto const& phot : debug->photons) {
+            photon_start_x.push_back(phot.startX);
+            photon_start_y.push_back(phot.startY);
+            photon_start_z.push_back(phot.startZ);
             photon_simTime_ns.push_back(phot.simTime_ns);
             photon_trigTime_us.push_back(phot.trigTime_us);
             photon_tick.push_back(phot.tick);

@@ -288,6 +288,9 @@ auto icarus::opdet::PMTsimulationAlg::CreateFullWaveform
 
       if (debug) {
         icarus::opdet::DebugPhoton dbgPh;
+        dbgPh.startX = ph.InitialPosition.X();
+        dbgPh.startY = ph.InitialPosition.Y();
+        dbgPh.startZ = ph.InitialPosition.Z();    
         dbgPh.simTime_ns = ph.Time;
         dbgPh.trigTime_us = mytime.value();
         dbgPh.tick = tick.value();
