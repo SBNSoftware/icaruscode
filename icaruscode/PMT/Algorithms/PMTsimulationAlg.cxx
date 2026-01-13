@@ -227,15 +227,13 @@ auto icarus::opdet::PMTsimulationAlg::CreateFullWaveform
 
     if (debug) {
       debug->opChannel = channel;
-      debug->QE = fQE;
-      debug->sampling_MHz = fSampling.value();
-      debug->readoutEnablePeriod_us = fParams.readoutEnablePeriod.value();
       debug->timeDelay_us = timeDelay.value();
       debug->triggerOffsetPMT_us = fParams.triggerOffsetPMT.value();
       debug->nSamples = fNsamples;
       debug->nSubsamples = wsp.nSubsamples();
       debug->photons.clear();
       debug->peDeposits.clear();
+      debug->waveform.clear();
     }
 
     //
