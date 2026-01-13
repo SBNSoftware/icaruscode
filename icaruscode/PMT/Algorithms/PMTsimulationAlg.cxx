@@ -156,17 +156,24 @@ icarus::opdet::PMTsimulationAlg::PMTsimulationAlg
 
 
 // -----------------------------------------------------------------------------
-std::tuple<std::vector<raw::OpDetWaveform>, std::optional<sim::SimPhotons>>
+std::tuple<std::vector<raw::OpDetWaveform>, std::optional<sim::SimPhotons>,
+           std::optional<icarus::opdet::DebugInfo>>
   icarus::opdet::PMTsimulationAlg::simulate(sim::SimPhotons const& photons,
-                                            sim::SimPhotonsLite const& lite_photons)
+                                            sim::SimPhotonsLite const& lite_photons,
+                                            bool enableDebug)
 {
   std::optional<sim::SimPhotons> photons_used;
+  std::optional<icarus::opdet::DebugInfo> debug;
+  
+  if (enableDebug) debug.emplace();
 
-  Waveform_t const waveform = CreateFullWaveform(photons, lite_photons, photons_used);
+  Waveform_t const waveform = CreateFullWaveform(photons, lite_photons, photons_used, 
+                                                 enableDebug ? &(*debug) : nullptr);
 
   return {
     CreateFixedSizeOpDetWaveforms(photons.OpChannel(), waveform),
-    std::move(photons_used)
+    std::move(photons_used),
+    std::move(debug)
     };
   
 } // icarus::opdet::PMTsimulationAlg::simulate()
@@ -191,7 +198,8 @@ auto icarus::opdet::PMTsimulationAlg::makeGainFluctuator() const {
 auto icarus::opdet::PMTsimulationAlg::CreateFullWaveform
   (sim::SimPhotons const& photons,
    sim::SimPhotonsLite const& lite_photons,
-   std::optional<sim::SimPhotons>& photons_used)
+   std::optional<sim::SimPhotons>& photons_used,
+   icarus::opdet::DebugInfo* debug)
   const -> Waveform_t
 {
 
@@ -216,6 +224,19 @@ auto icarus::opdet::PMTsimulationAlg::CreateFullWaveform
       totalDelay -= fParams.timingDelays->getCosmicsCorrections(channel);
     }
     microsecond const timeDelay { totalDelay };
+
+    if (debug) {
+      debug->opChannel = channel;
+      debug->QE = fQE;
+      debug->sampling_MHz = fSampling.value();
+      debug->readoutEnablePeriod_us = fParams.readoutEnablePeriod.value();
+      debug->timeDelay_us = timeDelay.value();
+      debug->triggerOffsetPMT_us = fParams.triggerOffsetPMT.value();
+      debug->nSamples = fNsamples;
+      debug->nSubsamples = wsp.nSubsamples();
+      debug->photons.clear();
+      debug->peDeposits.clear();
+    }
 
     //
     // collect the amount of photoelectrons arriving at each subtick;
@@ -264,6 +285,16 @@ auto icarus::opdet::PMTsimulationAlg::CreateFullWaveform
 
       if (tick >= endSample) continue;
       ++peMaps[subtick][tick];
+
+      if (debug) {
+        icarus::opdet::DebugPhoton dbgPh;
+        dbgPh.simTime_ns = ph.Time.value();
+        dbgPh.trigTime_us = mytime.value();
+        dbgPh.tick = tick.value();
+        dbgPh.subtick = subtick.value();
+        debug->photons.push_back(std::move(dbgPh));
+      }
+
     } // for photons
 
 //     auto end = std::chrono::high_resolution_clock::now();
@@ -327,8 +358,18 @@ auto icarus::opdet::PMTsimulationAlg::CreateFullWaveform
           );
         //        std::cout << "Channel=" << channel << ", subsample=" << iSubsample << ", tick=" << startTick << ", nPE=" << nPE << ", ePE=" << nEffectivePE << std::endl;
 
+        if (debug) {
+          DebugPEDeposit dep;
+          dep.tick = startTick.value();
+          dep.subtick = iSubsample;
+          dep.nPE = nPE;
+          dep.nEffectivePE = nEffectivePE;
+          debug->peDeposits.push_back(std::move(dep));
+        }
+
       } // for sample
     } // for subsamples
+
     MF_LOG_TRACE("PMTsimulationAlg")
       << nTotalPE << " photoelectrons at "
       << std::accumulate(
@@ -361,6 +402,9 @@ auto icarus::opdet::PMTsimulationAlg::CreateFullWaveform
 //       end=std::chrono::high_resolution_clock::now(); diff = end-start;
 //       std::cout << "\tadded saturation... " << channel << " " << diff.count() << std::endl;
     
+    if(debug)
+         debug.waveform = waveform;
+
     return waveform;
   } // CreateFullWaveform()
 

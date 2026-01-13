@@ -80,9 +80,36 @@ namespace icarus::opdet {
   class PMTsimulationAlg;
   
   class PMTsimulationAlgMaker;
-  
-} // namespace icarus::opdet
 
+  struct DebugPhoton {
+      float simTime_ns = 0.f;     // input photon time (simulation)
+      float trigTime_us = 0.f;    // timings.toTriggerTime(...) - offset + delay
+      int32_t tick = -1;          // tick index (optical clock tick)
+      uint16_t subtick = 0;       // subsample index
+  };
+
+  struct DebugPEDeposit {
+      int32_t tick = -1;       // where the PE got deposited
+      uint16_t subtick = 0;
+      uint16_t nPE = 0;           // integer PE count
+      float nEffectivePE = 0.f;   // after gain fluctuation (what you actually used)
+      float gainFactor() const { return (nPE > 0) ? (nEffectivePE / float(nPE)) : 0.f; }
+    };
+
+  struct DebugInfo {
+      uint32_t opChannel = 0;
+      float QE = 0.f;
+      float sampling_MHz = 0.f;
+      float readoutEnablePeriod_us = 0.f;
+      float timeDelay_us = 0.f;
+      float triggerOffsetPMT_us = 0.f;
+      uint32_t nSamples = 0;
+      uint16_t nSubsamples = 0;
+      std::vector<DebugPhoton> photons; // per-photon bookkeeping
+      std::vector<DebugPEDeposit> peDeposits; // aggregated PE deposits actually used to build waveform
+      OpDetWaveformMakerClass::WaveformData_t waveform; // waveform data (ADC counts)
+    };
+} // namespace icarus::opdet
 
 // -----------------------------------------------------------------------------
 /// Helper class to cut a `raw::OpDetWaveform` from a longer waveform data.
@@ -559,9 +586,11 @@ class icarus::opdet::PMTsimulationAlg {
    * In that case, the returned `sim::SimPhotons` contains a copy of each of
    * the `photons` contributing to any of the waveforms.
    */
-  std::tuple<std::vector<raw::OpDetWaveform>, std::optional<sim::SimPhotons>>
+  std::tuple<std::vector<raw::OpDetWaveform>, std::optional<sim::SimPhotons>,
+             std::optional<icarus::opdet::DebugInfo>>
     simulate(sim::SimPhotons const& photons,
-             sim::SimPhotonsLite const& lite_photons);
+             sim::SimPhotonsLite const& lite_photons,
+             bool enableDebug = false);
 
   /// Prints the configuration into the specified output stream.
   template <typename Stream>
@@ -673,8 +702,8 @@ class icarus::opdet::PMTsimulationAlg {
   Waveform_t CreateFullWaveform(
     sim::SimPhotons const& photons,
     sim::SimPhotonsLite const& lite_photons,
-    std::optional<sim::SimPhotons>& photons_used
-    ) const;
+    std::optional<sim::SimPhotons>& photons_used,
+    icarus::opdet::DebugInfo* debug) const;
   
   /**
    * @brief Creates `raw::OpDetWaveform` objects from a waveform data.
