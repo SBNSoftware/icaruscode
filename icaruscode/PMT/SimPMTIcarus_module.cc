@@ -30,6 +30,7 @@
 #include "nurandom/RandomUtils/NuRandomService.h"
 
 // framework libraries
+#include "art_root_io/TFileService.h"
 #include "art/Framework/Core/EDProducer.h"
 #include "art/Framework/Core/ModuleMacros.h"
 #include "art/Framework/Principal/Event.h"
@@ -240,6 +241,12 @@ namespace icarus::opdet {
           "HepJamesRandom"
       };
 
+      fhicl::Atom<bool> DebugTree {
+        Name("DebugTree"),
+        Comment("enable debug tree output"),
+        false
+      };
+
     }; // struct Config
       
     using Parameters = art::EDProducer::Table<Config>;
@@ -254,6 +261,7 @@ namespace icarus::opdet {
     SimPMTIcarus & operator = (SimPMTIcarus &&) = delete;
     
     // Required functions.
+    virtual void beginJob() override;
     void produce(art::Event & e) override;
     
   private:
@@ -271,7 +279,7 @@ namespace icarus::opdet {
     
     bool fMakeMetadata; ///< Whether to produce waveform metadata.
     bool fWritePhotons { false }; ///< Whether to save contributing photons.
-    
+
     CLHEP::HepRandomEngine&  fEfficiencyEngine;
     CLHEP::HepRandomEngine&  fDarkNoiseEngine;
     CLHEP::HepRandomEngine&  fElectronicsNoiseEngine;
@@ -285,7 +293,6 @@ namespace icarus::opdet {
     /// The actual simulation algorithm.
     icarus::opdet::PMTsimulationAlgMaker makePMTsimulator;
 
-    
     /// True if `firstTime()` has already been called.
     std::atomic_flag fNotFirstTime;
     
@@ -302,7 +309,35 @@ namespace icarus::opdet {
     
     /// Returns whether no other event has been processed yet.
     bool firstTime() { return !fNotFirstTime.test_and_set(); }
-    
+
+    bool fDebugTree { false }; ///< Whether to enable debug tree output.
+    TTree* fTree { nullptr }; ///< Debug tree pointer.
+    // debug tree variables
+    int run, event, channel;
+    float QE;
+    float sampling_MHz;
+    float readoutEnablePeriod_us;
+    float timeDelay_us;
+    float triggerOffsetPMT_us;
+    int nSamples;
+    int nSubsamples;
+    // info per waveform
+    int nsize;
+    std::vector<short> wf;      
+    // info per photon
+    int nPhotons;
+    std::vector<float> photon_simTime_ns;
+    std::vector<float> photon_trigTime_us;
+    std::vector<int> photon_tick;
+    std::vector<uint16_t> photon_subtick;
+    // info per PE deposit
+    int nPEDeposits;
+    std::vector<int> pedeposit_tick;
+    std::vector<uint16_t> pedeposit_subtick;
+    std::vector<uint16_t> pedeposit_nPE;
+    std::vector<float> pedeposit_nEffectivePE;
+    std::vector<float> pedeposit_gainFactor;
+
   }; // class SimPMTIcarus
   
   
@@ -346,6 +381,8 @@ SimPMTIcarus::SimPMTIcarus(Parameters const& config)
           ->makeGenerator(fElectronicsNoiseEngine)
       }
     , makePMTsimulator(config().algoConfig())
+    , fDebugTree(config().DebugTree())
+
   {
     // Call appropriate produces<>() functions here.
     produces<std::vector<raw::OpDetWaveform>>();
@@ -358,6 +395,38 @@ SimPMTIcarus::SimPMTIcarus(Parameters const& config)
     fNotFirstTime.clear(); // superfluous in C++20
   } // SimPMTIcarus::SimPMTIcarus()
   
+  // ---------------------------------------------------------------------------
+  void SimPMTIcarus::beginJob()
+  {
+    if (fDebugTree) {
+      art::ServiceHandle<art::TFileService> tfs;
+      fTree = tfs->make<TTree>("SimPMTDebug","Debug tree for SimPMTIcarus");
+      fTree->Branch("run", &run, "run/I");
+      fTree->Branch("event", &event, "event/I");
+      fTree->Branch("channel", &channel, "channel/I"); 
+      fTree->Branch("nSamples", &nSamples, "nSamples/I");
+      fTree->Branch("nSubsamples", &nSubsamples, "nSubsamples/I");
+      fTree->Branch("QE", &QE, "QE/F");
+      fTree->Branch("sampling_MHz", &sampling_MHz, "sampling_MHz/F");
+      fTree->Branch("readoutEnablePeriod_us", &readoutEnablePeriod_us, "readoutEnablePeriod_us/F");
+      fTree->Branch("timeDelay_us", &timeDelay_us, "timeDelay_us/F");
+      fTree->Branch("triggerOffsetPMT_us", &triggerOffsetPMT_us, "triggerOffsetPMT_us/F");
+      fTree->Branch("nsize", &nsize, "nsize/I");
+      fTree->Branch("wf", &wf);
+      fTree->Branch("nPhotons", &nPhotons, "nPhotons/I");
+      fTree->Branch("photon_simTime_ns", &photon_simTime_ns);
+      fTree->Branch("photon_trigTime_us", &photon_trigTime_us);
+      fTree->Branch("photon_tick", &photon_tick);
+      fTree->Branch("photon_subtick", &photon_subtick);
+      fTree->Branch("nPEDeposits", &nPEDeposits, "nPEDeposits/I");
+      fTree->Branch("pedeposit_tick", &pedeposit_tick);
+      fTree->Branch("pedeposit_subtick", &pedeposit_subtick);
+      fTree->Branch("pedeposit_nPE", &pedeposit_nPE);
+      fTree->Branch("pedeposit_nEffectivePE", &pedeposit_nEffectivePE);
+      fTree->Branch("pedeposit_gainFactor", &pedeposit_gainFactor);
+    }
+  } // SimPMTIcarus::beginJob()
+
   
   // ---------------------------------------------------------------------------
   void SimPMTIcarus::produce(art::Event & e)
@@ -437,13 +506,55 @@ SimPMTIcarus::SimPMTIcarus(Parameters const& config)
 
         sim::SimPhotons photons(lite_photons.OpChannel);
       
-        auto const& [ channelWaveforms, photons_used ]
-          = PMTsimulator->simulate(photons, lite_photons);
+        auto const& [ channelWaveforms, photons_used, debug]
+          = PMTsimulator->simulate(photons, lite_photons, fDebugTree);
         std::move(
           channelWaveforms.cbegin(), channelWaveforms.cend(),
           std::back_inserter(*pulseVecPtr)
           );
 
+        if(fDebugTree && debug) {
+          // fill debug tree variables
+          channel = debug->channel;
+          QE = debug->QE;
+          sampling_MHz = debug->sampling_MHz;
+          readoutEnablePeriod_us = debug->readoutEnablePeriod_us;
+          timeDelay_us = debug->timeDelay_us;
+          triggerOffsetPMT_us = debug->triggerOffsetPMT_us;
+          nSamples = debug->nSamples;
+          nSubsamples = debug->nSubsamples;
+          //fill per waveform info
+          nsize = debug->waveform.size();
+          wf = debug->waveform;
+          // fill per photon info
+          nPhotons = debug->photons.size();
+          photon_simTime_ns.clear();
+          photon_trigTime_us.clear();
+          photon_tick.clear();
+          photon_subtick.clear();
+          for(auto const& phot : debug->photons) {
+            photon_simTime_ns.push_back(phot.simTime_ns);
+            photon_trigTime_us.push_back(phot.trigTime_us);
+            photon_tick.push_back(phot.tick);
+            photon_subtick.push_back(phot.subtick);
+          }
+          // fill per PE deposit info
+          nPEDeposits = debug->PEdeposits.size();
+          pedeposit_tick.clear();
+          pedeposit_subtick.clear();
+          pedeposit_nPE.clear();
+          pedeposit_nEffectivePE.clear();
+          pedeposit_gainFactor.clear();
+          for(auto const& pedep : debug->PEdeposits) {
+            pedeposit_tick.push_back(pedep.tick);
+            pedeposit_subtick.push_back(pedep.subtick);
+            pedeposit_nPE.push_back(pedep.nPE);
+            pedeposit_nEffectivePE.push_back(pedep.nEffectivePE);
+            pedeposit_gainFactor.push_back(pedep.gainFactor);
+          }
+          
+          fTree->Fill();
+        } // if debug tree
       } // for
     }
 
