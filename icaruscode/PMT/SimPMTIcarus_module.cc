@@ -490,31 +490,14 @@ SimPMTIcarus::SimPMTIcarus(Parameters const& config)
         sim::SimPhotonsLite lite_photons(photons.OpChannel());
 
         auto const& [ channelWaveforms, photons_used, debug ]
-          = PMTsimulator->simulate(photons, lite_photons);
+          = PMTsimulator->simulate(photons, lite_photons, fDebugTree);
         std::move(
           channelWaveforms.cbegin(), channelWaveforms.cend(),
           std::back_inserter(*pulseVecPtr)
           );
         if (simphVecPtr && photons_used)
           simphVecPtr->emplace_back(std::move(photons_used.value()));
-
-      } // for
-    }
-    else if(pmtLiteVector.isValid()) {
-      nopch = pmtLiteVector->size();
-      for(auto const& lite_photons : *pmtLiteVector) {
-
-        // Make an empty SimPhotons with the same channel number.
-
-        sim::SimPhotons photons(lite_photons.OpChannel);
-      
-        auto const& [ channelWaveforms, photons_used, debug]
-          = PMTsimulator->simulate(photons, lite_photons, fDebugTree);
-        std::move(
-          channelWaveforms.cbegin(), channelWaveforms.cend(),
-          std::back_inserter(*pulseVecPtr)
-          );
-
+        
         if(fDebugTree && debug) {
           // fill debug tree variables
           channel = debug->opChannel;
@@ -557,6 +540,22 @@ SimPMTIcarus::SimPMTIcarus(Parameters const& config)
           
           fTree->Fill();
         } // if debug tree
+      } // for
+    }
+    else if(pmtLiteVector.isValid()) {
+      nopch = pmtLiteVector->size();
+      for(auto const& lite_photons : *pmtLiteVector) {
+
+        // Make an empty SimPhotons with the same channel number.
+
+        sim::SimPhotons photons(lite_photons.OpChannel);
+      
+        auto const& [ channelWaveforms, photons_used, debug]
+          = PMTsimulator->simulate(photons, lite_photons);
+        std::move(
+          channelWaveforms.cbegin(), channelWaveforms.cend(),
+          std::back_inserter(*pulseVecPtr)
+          );
       } // for
     }
 
