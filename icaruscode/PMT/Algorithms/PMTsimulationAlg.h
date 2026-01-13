@@ -107,7 +107,7 @@ namespace icarus::opdet {
       uint16_t nSubsamples = 0;
       std::vector<DebugPhoton> photons; // per-photon bookkeeping
       std::vector<DebugPEDeposit> peDeposits; // aggregated PE deposits actually used to build waveform
-      OpDetWaveformMakerClass::WaveformData_t waveform; // waveform data (ADC counts)
+      std::vector<util::value_t<DiscretePhotoelectronPulse::ADCcount>> waveform; // waveform data (ADC counts)
     };
 } // namespace icarus::opdet
 
