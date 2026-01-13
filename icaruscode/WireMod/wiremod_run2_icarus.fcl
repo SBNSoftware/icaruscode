@@ -1,0 +1,45 @@
+###
+## This fhicl file is used to run "stage0" processing specifically for the case where all
+## TPC data is included in an artdaq data product from a single instance
+##
+#include "WireModifier.fcl"
+#include "stage0_icarus_mc_defs.fcl"
+#include "stage0_icarus_driver_common.fcl"
+
+process_name: WireModifier
+
+## Add the MC module to the list of producers
+physics.producers: {  @table::icarus_stage0_producers
+                      @table::icarus_stage0_mc_producers
+                      @table::wiremod_Producers
+                   }
+
+## Use the following to run the full defined stage0 set of modules
+physics.path: [   @sequence::wiremod_allTPC,
+                  @sequence::icarus_stage0_EastHits_TPC,
+                  @sequence::icarus_stage0_WestHits_TPC
+              ]
+
+## boiler plate...
+physics.trigger_paths: [ path ]
+physics.end_paths:     [ streamROOT ]
+
+## Drop the unmodified hits/wires
+outputs.rootOutput.outputCommands: [
+                                     "keep *_*_*_*",
+                                     "drop *_*_PHYSCRATEDATATPC??_MCstage0",
+                                     "drop *_gaushit*TPC??_*_MCstage0"
+                                   ] 
+# Use the modified wires
+physics.producers.gaushitTPCEE.CalDataModuleLabel: "WireModEE"
+physics.producers.gaushitTPCEW.CalDataModuleLabel: "WireModEW"
+physics.producers.gaushitTPCWE.CalDataModuleLabel: "WireModWE"
+physics.producers.gaushitTPCWW.CalDataModuleLabel: "WireModWW"
+physics.producers.gaushit1dTPCEE.CalDataModuleLabel: "WireModEE"
+physics.producers.gaushit1dTPCEW.CalDataModuleLabel: "WireModEW"
+physics.producers.gaushit1dTPCWE.CalDataModuleLabel: "WireModWE"
+physics.producers.gaushit1dTPCWW.CalDataModuleLabel: "WireModWW"
+physics.producers.gaushit2dTPCEE.CalDataModuleLabel: "WireModEE"
+physics.producers.gaushit2dTPCEW.CalDataModuleLabel: "WireModEW"
+physics.producers.gaushit2dTPCWE.CalDataModuleLabel: "WireModWE"
+physics.producers.gaushit2dTPCWW.CalDataModuleLabel: "WireModWW"

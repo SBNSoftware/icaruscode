@@ -1,0 +1,86 @@
+#include "stage1_icarus_defs.fcl"
+#include "wirechannelroiconverters_sbn.fcl"
+
+BEGIN_PROLOG
+
+dummyGaushit2dTPCEE: { @table::icarus_stage1_producers.gaushit2dTPCEE }
+dummyGaushit2dTPCEW: { @table::icarus_stage1_producers.gaushit2dTPCEW }
+dummyGaushit2dTPCWE: { @table::icarus_stage1_producers.gaushit2dTPCWE }
+dummyGaushit2dTPCWW: { @table::icarus_stage1_producers.gaushit2dTPCWW }
+dummyGaushit2dSeq: [dummyGaushit2dTPCEE, dummyGaushit2dTPCEW, dummyGaushit2dTPCWE, dummyGaushit2dTPCWW]
+dummyGaushit2dTab: { dummyGaushit2dTPCEE: @local::dummyGaushit2dTPCEE
+                     dummyGaushit2dTPCEW: @local::dummyGaushit2dTPCEW
+                     dummyGaushit2dTPCWE: @local::dummyGaushit2dTPCWE
+                     dummyGaushit2dTPCWW: @local::dummyGaushit2dTPCWW }
+
+WMROI2Wire:
+{
+  module_type: "ChannelROIToWire"
+  WireModuleLabelVec: [ "wire2channelroi2d:PHYSCRATEDATATPCEE",
+                        "wire2channelroi2d:PHYSCRATEDATATPCEW",
+                        "wire2channelroi2d:PHYSCRATEDATATPCWE",
+                        "wire2channelroi2d:PHYSCRATEDATATPCWW" ]
+  OutInstanceLabelVec: [ "PHYSCRATEDATATPCEE",
+                         "PHYSCRATEDATATPCEW",
+                         "PHYSCRATEDATATPCWE",
+                         "PHYSCRATEDATATPCWW" ]
+  DiagnosticOutput: false
+}
+
+WireModXXW:
+{
+  module_type: "WireModifierXXW"
+  RatioFileName: "Ratio_ITM_XTheta_v5_cut.root"
+  InRadians: false
+}
+WireModXXWTPCEE: @local::WireModXXW
+WireModXXWTPCEE.XXWScaleHeight: [ "hit_integral_TPC0_plane0_XTheta_ratio",
+                                  "hit_integral_TPC0_plane1_XTheta_ratio",
+                                  "hit_integral_TPC0_plane2_XTheta_ratio" ]
+WireModXXWTPCEE.XXWScaleWidth: [ "width_TPC0_plane0_XTheta_ratio",
+                                 "width_TPC0_plane1_XTheta_ratio",
+                                 "width_TPC0_plane2_XTheta_ratio" ]
+WireModXXWTPCEE.WireLabel: "WMROI2Wire:PHYSCRATEDATATPCEE"
+WireModXXWTPCEE.HitLabel: "dummyGaushit2dTPCEE"
+WireModXXWTPCEW: @local::WireModXXW
+WireModXXWTPCEW.XXWScaleHeight: [ "hit_integral_TPC1_plane0_XTheta_ratio",
+                                  "hit_integral_TPC1_plane1_XTheta_ratio",
+                                  "hit_integral_TPC1_plane2_XTheta_ratio" ]
+WireModXXWTPCEW.XXWScaleWidth: [ "width_TPC1_plane0_XTheta_ratio",
+                                 "width_TPC1_plane1_XTheta_ratio",
+                                 "width_TPC1_plane2_XTheta_ratio" ]
+WireModXXWTPCEW.WireLabel: "WMROI2Wire:PHYSCRATEDATATPCEW"
+WireModXXWTPCEW.HitLabel: "dummyGaushit2dTPCEW"
+WireModXXWTPCWE: @local::WireModXXW
+WireModXXWTPCWE.XXWScaleHeight: [ "hit_integral_TPC2_plane0_XTheta_ratio",
+                                  "hit_integral_TPC2_plane1_XTheta_ratio",
+                                  "hit_integral_TPC2_plane2_XTheta_ratio" ]
+WireModXXWTPCWE.XXWScaleWidth: [ "width_TPC2_plane0_XTheta_ratio",
+                                 "width_TPC2_plane1_XTheta_ratio",
+                                 "width_TPC2_plane2_XTheta_ratio" ]
+WireModXXWTPCWE.WireLabel: "WMROI2Wire:PHYSCRATEDATATPCWE"
+WireModXXWTPCWE.HitLabel: "dummyGaushit2dTPCWE"
+WireModXXWTPCWW: @local::WireModXXW
+WireModXXWTPCWW.XXWScaleHeight: [ "hit_integral_TPC3_plane0_XTheta_ratio",
+                                  "hit_integral_TPC3_plane1_XTheta_ratio",
+                                  "hit_integral_TPC3_plane2_XTheta_ratio" ]
+WireModXXWTPCWW.XXWScaleWidth: [ "width_TPC3_plane0_XTheta_ratio",
+                                 "width_TPC3_plane1_XTheta_ratio",
+                                 "width_TPC3_plane2_XTheta_ratio" ]
+WireModXXWTPCWW.WireLabel: "WMROI2Wire:PHYSCRATEDATATPCWW"
+WireModXXWTPCWW.HitLabel: "dummyGaushit2dTPCWW"
+WireModXXWSeq: [ WireModXXWTPCEE, WireModXXWTPCEW, WireModXXWTPCWE, WireModXXWTPCWW ]
+WireModXXWTab: { WireModXXWTPCEE: @local::WireModXXWTPCEE
+                 WireModXXWTPCEW: @local::WireModXXWTPCEW
+                 WireModXXWTPCWE: @local::WireModXXWTPCWE
+                 WireModXXWTPCWW: @local::WireModXXWTPCWW }
+
+WireModSequence: [ @sequence::dummyGaushit2dSeq, WMROI2Wire, @sequence::WireModXXWSeq ]
+WireModTable:
+{
+  @table::dummyGaushit2dTab
+  WMROI2Wire: @local::WMROI2Wire
+  @table::WireModXXWTab
+}
+
+END_PROLOG

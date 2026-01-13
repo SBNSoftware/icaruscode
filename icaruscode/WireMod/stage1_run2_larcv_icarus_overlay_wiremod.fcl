@@ -1,0 +1,22 @@
+#include "WireModifierXXW.fcl"
+#include "stage1_run2_larcv_icarus_overlay.fcl"
+
+# add the WireMod sequence to the standard stage1 sequence
+physics.reco:
+[
+  @sequence::WireModSequence,
+  @sequence::physics.reco
+]
+
+# produce the WireMod products
+physics.producers:
+{
+  @table::WireModTable
+  @table::physics.producers
+}
+
+# tell gaushit2d to use the ROIs from WireMod
+physics.producers.gaushit2dTPCEE.CalDataModuleLabel: "WireModXXWTPCEE"
+physics.producers.gaushit2dTPCEW.CalDataModuleLabel: "WireModXXWTPCEW"
+physics.producers.gaushit2dTPCWE.CalDataModuleLabel: "WireModXXWTPCWE"
+physics.producers.gaushit2dTPCWW.CalDataModuleLabel: "WireModXXWTPCWW"
