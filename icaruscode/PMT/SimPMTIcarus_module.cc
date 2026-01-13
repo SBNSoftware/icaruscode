@@ -498,7 +498,7 @@ SimPMTIcarus::SimPMTIcarus(Parameters const& config)
         if (simphVecPtr && photons_used)
           simphVecPtr->emplace_back(std::move(photons_used.value()));
         
-        if(fDebugTree && debug) {
+        if(fDebugTree && debug && debug->photons.size()>0) {
           // fill debug tree variables
           channel = debug->opChannel;
           QE = debug->QE;
