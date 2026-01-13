@@ -506,7 +506,6 @@ SimPMTIcarus::SimPMTIcarus(Parameters const& config)
           nSamples = debug->nSamples;
           nSubsamples = debug->nSubsamples;
           //fill per waveform info
-          nsize = debug->waveform.size();
           wf = debug->waveform;
           // fill per photon info
           nPhotons = debug->photons.size();
