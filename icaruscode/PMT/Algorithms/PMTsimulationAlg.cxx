@@ -288,10 +288,10 @@ auto icarus::opdet::PMTsimulationAlg::CreateFullWaveform
 
       if (debug) {
         icarus::opdet::DebugPhoton dbgPh;
-        dbgPh.simTime_ns = ph.Time.value();
+        dbgPh.simTime_ns = ph.Time;
         dbgPh.trigTime_us = mytime.value();
         dbgPh.tick = tick.value();
-        dbgPh.subtick = subtick.value();
+        dbgPh.subtick = subtick;
         debug->photons.push_back(std::move(dbgPh));
       }
 
@@ -402,8 +402,11 @@ auto icarus::opdet::PMTsimulationAlg::CreateFullWaveform
 //       end=std::chrono::high_resolution_clock::now(); diff = end-start;
 //       std::cout << "\tadded saturation... " << channel << " " << diff.count() << std::endl;
     
-    if(debug)
-         debug.waveform = waveform;
+    if(debug){
+      for(std::size_t i=0; i<waveform.size(); i++){
+	 debug->waveform.push_back(waveform[i].value());
+      }
+    }
 
     return waveform;
   } // CreateFullWaveform()

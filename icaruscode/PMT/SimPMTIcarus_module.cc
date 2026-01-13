@@ -48,6 +48,9 @@
 #include "fhiclcpp/types/Atom.h"
 #include "fhiclcpp/ParameterSet.h"
 
+// ROOT libraries
+#include "TTree.h"
+
 // CLHEP libraries
 #include "CLHEP/Random/RandEngine.h" // CLHEP::HepRandomEngine
 
@@ -59,7 +62,6 @@
 #include <memory> // std::make_unique()
 #include <utility> // std::move()
 #include <optional>
-
 
 namespace icarus::opdet {
   
@@ -323,7 +325,7 @@ namespace icarus::opdet {
     int nSubsamples;
     // info per waveform
     int nsize;
-    std::vector<short> wf;      
+    std::vector<float> wf;      
     // info per photon
     int nPhotons;
     std::vector<float> photon_simTime_ns;
@@ -487,7 +489,7 @@ SimPMTIcarus::SimPMTIcarus(Parameters const& config)
 
         sim::SimPhotonsLite lite_photons(photons.OpChannel());
 
-        auto const& [ channelWaveforms, photons_used ]
+        auto const& [ channelWaveforms, photons_used, debug ]
           = PMTsimulator->simulate(photons, lite_photons);
         std::move(
           channelWaveforms.cbegin(), channelWaveforms.cend(),
@@ -515,7 +517,7 @@ SimPMTIcarus::SimPMTIcarus(Parameters const& config)
 
         if(fDebugTree && debug) {
           // fill debug tree variables
-          channel = debug->channel;
+          channel = debug->opChannel;
           QE = debug->QE;
           sampling_MHz = debug->sampling_MHz;
           readoutEnablePeriod_us = debug->readoutEnablePeriod_us;
@@ -539,18 +541,18 @@ SimPMTIcarus::SimPMTIcarus(Parameters const& config)
             photon_subtick.push_back(phot.subtick);
           }
           // fill per PE deposit info
-          nPEDeposits = debug->PEdeposits.size();
+          nPEDeposits = debug->peDeposits.size();
           pedeposit_tick.clear();
           pedeposit_subtick.clear();
           pedeposit_nPE.clear();
           pedeposit_nEffectivePE.clear();
           pedeposit_gainFactor.clear();
-          for(auto const& pedep : debug->PEdeposits) {
+          for(auto const& pedep : debug->peDeposits) {
             pedeposit_tick.push_back(pedep.tick);
             pedeposit_subtick.push_back(pedep.subtick);
             pedeposit_nPE.push_back(pedep.nPE);
             pedeposit_nEffectivePE.push_back(pedep.nEffectivePE);
-            pedeposit_gainFactor.push_back(pedep.gainFactor);
+            pedeposit_gainFactor.push_back(pedep.gainFactor());
           }
           
           fTree->Fill();
