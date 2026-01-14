@@ -39,6 +39,7 @@ private:
   std::string fDBFileName;
   std::string fDBTag;
   bool fVerbose;
+  int fMC;
 
   lariov::DBFolder fDB;
 
@@ -65,11 +66,15 @@ icarus::calo::NormalizeTPCSQL::NormalizeTPCSQL(fhicl::ParameterSet const &pset):
   fDBFileName(pset.get<std::string>("DBFileName")),
   fDBTag(pset.get<std::string>("DBTag")),
   fVerbose(pset.get<bool>("Verbose", false)),
+  fMC(pset.get<int>("MC")),
   fDB(fDBFileName, "", "", fDBTag, true, false) {}
 
 void icarus::calo::NormalizeTPCSQL::configure(const fhicl::ParameterSet& pset) {}
 
 icarus::calo::NormalizeTPCSQL::ScaleInfo icarus::calo::NormalizeTPCSQL::GetScaleInfo(uint64_t run) {
+
+  std::cout << "NormalizeTPCSQL Tool -- Getting scale info for run: " << run << std::endl;
+
   // check the cache
   if (fScaleInfos.count(run)) {
     return fScaleInfos.at(run);
@@ -98,6 +103,9 @@ icarus::calo::NormalizeTPCSQL::ScaleInfo icarus::calo::NormalizeTPCSQL::GetScale
 
 double icarus::calo::NormalizeTPCSQL::Normalize(double dQdx, const art::Event &e, 
     const recob::Hit &hit, const geo::Point_t &location, const geo::Vector_t &direction, double t0) {
+  
+  std::cout << "NormalizeTPCSQL Tool -- MC Flag: " << fMC << " Run: " << e.id().runID().run() << ", Subrun: " << e.id().subRunID().run() << std::endl;
+
   // Get the info
   uint64_t runID = -1;
   switch (fMC) {
