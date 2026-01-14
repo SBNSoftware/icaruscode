@@ -46,8 +46,8 @@ pmt_bkgphotons_calibration:
 # ===
 icarus_photon_calibration:
 {
-  service_provider: PhotonCalibratorServiceFromDB
-  
+  service_provider: ICARUSPhotonCalibratorServiceFromDB
+
   AreaTag:  "v1r0"
   Defaults: {
     SPEArea: 256.658  # ADC sum (2-ns sampling), Run2 default
