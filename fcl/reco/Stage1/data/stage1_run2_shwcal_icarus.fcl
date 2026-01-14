@@ -1,44 +1,28 @@
+# This includes running larcv as part of stage 1 processing
+
 #include "stage1_run2_icarus.fcl"
 
-message:              @local::icarus_message_services_prod
+physics.outana:    [ @sequence::icarus_analysis_larcv_modules ]
+physics.end_paths: [ outana, stream1 ]
+
+applyNorm: true
 
 physics.producers.SBNShowerGausCryoE.ShowerFinderTools[7].CalorimetryAlg:            @local::icarus_calorimetryalgdata
-physics.producers.SBNShowerGausCryoE.ShowerFinderTools[7].ApplyCorrectionsInNorm:    true
+physics.producers.SBNShowerGausCryoE.ShowerFinderTools[7].ApplyCorrectionsInNorm:    @local::applyNorm
 physics.producers.SBNShowerGausCryoE.ShowerFinderTools[7].NormTools:                 @local::icarus_calonormtools
-physics.producers.SBNShowerGausCryoW.ShowerFinderTools[7].CalorimetryAlg:               @local::icarus_calorimetryalgdata
-physics.producers.SBNShowerGausCryoW.ShowerFinderTools[7].ApplyCorrectionsInNorm:       true
-physics.producers.SBNShowerGausCryoW.ShowerFinderTools[7].NormTools:                    @local::icarus_calonormtools
+physics.producers.SBNShowerGausCryoW.ShowerFinderTools[7].CalorimetryAlg:            @local::icarus_calorimetryalgdata
+physics.producers.SBNShowerGausCryoW.ShowerFinderTools[7].ApplyCorrectionsInNorm:    @local::applyNorm
+physics.producers.SBNShowerGausCryoW.ShowerFinderTools[7].NormTools:                 @local::icarus_calonormtools
 
 physics.producers.SBNShowerGausCryoE.ShowerFinderTools[5].CalorimetryAlg:            @local::icarus_calorimetryalgdata
-physics.producers.SBNShowerGausCryoE.ShowerFinderTools[5].ApplyCorrectionsInNorm:    true
+physics.producers.SBNShowerGausCryoE.ShowerFinderTools[5].ApplyCorrectionsInNorm:    @local::applyNorm
 physics.producers.SBNShowerGausCryoE.ShowerFinderTools[5].NormTools:                 @local::icarus_calonormtools
-physics.producers.SBNShowerGausCryoW.ShowerFinderTools[5].CalorimetryAlg:               @local::icarus_calorimetryalgdata
-physics.producers.SBNShowerGausCryoW.ShowerFinderTools[5].ApplyCorrectionsInNorm:       true
-physics.producers.SBNShowerGausCryoW.ShowerFinderTools[5].NormTools:                    @local::icarus_calonormtools
+physics.producers.SBNShowerGausCryoW.ShowerFinderTools[5].CalorimetryAlg:            @local::icarus_calorimetryalgdata
+physics.producers.SBNShowerGausCryoW.ShowerFinderTools[5].ApplyCorrectionsInNorm:    @local::applyNorm
+physics.producers.SBNShowerGausCryoW.ShowerFinderTools[5].NormTools:                 @local::icarus_calonormtools
 
-physics.producers.SBNShowerGausCryoE.ShowerFinderTools[3].ApplyCorrectionsInNorm:    true
+physics.producers.SBNShowerGausCryoE.ShowerFinderTools[3].ApplyCorrectionsInNorm:    @local::applyNorm
 physics.producers.SBNShowerGausCryoE.ShowerFinderTools[3].NormTools:                 @local::icarus_calonormtools
-physics.producers.SBNShowerGausCryoW.ShowerFinderTools[3].ApplyCorrectionsInNorm:       true
-physics.producers.SBNShowerGausCryoW.ShowerFinderTools[3].NormTools:                    @local::icarus_calonormtools
-
-services.message.destinations :
-{
-  STDCOUT:
-  {
-     type:      "cout"      #tells the message service to output this destination to cout
-     threshold: "ERROR"   #tells the message service that this destination applies to WARNING and higher level messages
-     categories:
-     {
-       Cluster3DICARUS:
-       {
-         limit: -1
-         reportEvery: 1
-       }
-       SimDriftElectrons:
-       {
-         limit: 0
-       }
-     }
-  }
-}
+physics.producers.SBNShowerGausCryoW.ShowerFinderTools[3].ApplyCorrectionsInNorm:    @local::applyNorm
+physics.producers.SBNShowerGausCryoW.ShowerFinderTools[3].NormTools:                 @local::icarus_calonormtools
 
