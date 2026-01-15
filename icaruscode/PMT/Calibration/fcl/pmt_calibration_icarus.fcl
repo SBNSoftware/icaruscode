@@ -1,0 +1,60 @@
+# File:    pmt_calibration_icarus.fcl
+# Purpose: Configurations for ICARUS PMT calibration tools.
+# Contact: Matteo Vicenzi (mvicenzi@bnl.gov)
+#
+# Provides the following configuration tables:
+# 
+# * pmt_laser_calibration, pmt_calibration_icarus: hit timing calibrations
+# * icarus_photon_calibration: configuration of IPhotonCalibratorService
+#
+
+#include "calibrationtools.fcl"
+
+BEGIN_PROLOG
+
+# ==============================================================================
+# ===  Hit time calibration
+# ===
+pmt_laser_calibration:
+{
+  module_type: PMTLaserCalibration
+  OpDetWaveformLabel: "daqPMT"
+  PMTWaveformTimingCorrectionLabel:  ""  #or "daqPMT:globtrg" if the corrections are applied at decoder level already 
+  LaserChannel:       1
+  WaveformAnalysis :  @local::laser_pulse_configuration
+  DebugMessage:       false 
+}
+
+pmt_bkgphotons_calibration:
+{
+  module_type: 	PMTBackgroundphotonsCalibration
+  OpHitModule: "ophit"
+  TriggerModule: "daqTrigger"
+  ADCmV: 0.122      
+  ADCpC: 0.00488  
+  ChannelMask: [  ]  
+  FilterInGate: [ -3., 7. ] #in us
+  FilterInTime: true
+  TimeWindow: 1.0 # in us 
+  AmplitudeBinning: [ 0., 30., 0.15 ] # in mV 
+  IntegralBinning: [ 0., 8., 0.04 ] # in 10^7 electrons
+}
+
+
+# ==============================================================================
+# ===  Hit photoelectron conversion
+# ===
+icarus_photon_calibration:
+{
+  service_provider: ICARUSPhotonCalibratorServiceFromDB
+
+  AreaTag:  "v1r0"
+  Defaults: {
+    SPEArea: 256.658  # ADC sum (2-ns sampling), Run2 default
+  }
+} # icarus_photon_calibration
+
+
+# ==============================================================================
+
+END_PROLOG
