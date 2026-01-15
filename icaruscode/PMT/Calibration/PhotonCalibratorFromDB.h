@@ -132,7 +132,7 @@ class icarusDB::PhotonCalibratorFromDB: public calib::IPhotonCalibrator {
 
     /**
      * @brief Whether calibration parameter is area or peak amplitude.
-     * @return `false` (this calibration is amplitude-based)
+     * @return `true` (this calibration is area-based)
      */
     bool UseArea() const override;
 
@@ -169,7 +169,7 @@ class icarusDB::PhotonCalibratorFromDB: public calib::IPhotonCalibrator {
     }
 
 
-}; // class icarus::PhotonCalibratorStandard
+}; // class icarusDB::PhotonCalibratorFromDB
 
 
 #endif // ICARUSCODE_PMT_CALIBRATION_PHOTONCALIBRATORFROMDB_H

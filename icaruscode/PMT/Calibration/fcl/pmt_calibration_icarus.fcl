@@ -4,11 +4,12 @@
 #
 # Provides the following configuration tables:
 # 
-# * pmt_laser_calibration, pmt_calibration_icarus: hit timing calibrations
+# * pmt_laser_calibration, pmt_bkgphotons_calibration: hit timing calibrations
 # * icarus_photon_calibration: configuration of IPhotonCalibratorService
 #
 
 #include "calibrationtools.fcl"
+#include "icarus_spe.fcl"
 
 BEGIN_PROLOG
 
@@ -47,10 +48,9 @@ pmt_bkgphotons_calibration:
 icarus_photon_calibration:
 {
   service_provider: ICARUSPhotonCalibratorServiceFromDB
-
   AreaTag:  "v1r0"
   Defaults: {
-    SPEArea: 256.658  # ADC sum (2-ns sampling), Run2 default
+    SPEArea: @local::SPERun2.Area # ADC x tick, Run2 default
   }
 } # icarus_photon_calibration
 
