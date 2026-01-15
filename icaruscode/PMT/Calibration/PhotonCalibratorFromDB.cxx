@@ -71,12 +71,12 @@ void icarusDB::PhotonCalibratorFromDB::readCalibrationFromDB(unsigned int run)
   log << "Loading calibration for " << channelList.size() << " channels in run " << run;
   for( auto channel : channelList ) {
     
-    // Laser calibration
+    // SPE area from database
     double area = 0;
     int error  = fDB.GetNamedChannelData( channel, "area", area );
     if( error ) throw cet::exception( "PhotonCalibratorFromDB" ) << "Encountered error (code " << error << ") while trying to access 'area' from the table\n";
 
-    fDatabaseSPECalibrations[channel].speArea = area;
+    fDatabaseSPECalibrations[channel].speArea = area; // ADC x tick
     if (fVerbose)
       log << "\n  channel " << std::setw(3) << channel << "  SPE area " << area;
   }  
