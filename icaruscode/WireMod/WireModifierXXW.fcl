@@ -31,6 +31,8 @@ WireModXXW:
 {
   module_type: "WireModifierXXW"
   RatioFileName: "Ratio_ITM_XTheta_v5_cut.root"
+  EDepLabel: "filtersed"
+  EDepShiftedLabel: "shiftedpriorSCE"
   InRadians: false
 }
 WireModXXWTPCEE: @local::WireModXXW

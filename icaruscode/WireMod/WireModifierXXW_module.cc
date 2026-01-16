@@ -51,6 +51,7 @@ namespace wiremod
       art::InputTag fWireLabel; // which wires are we pulling in?
       art::InputTag fHitLabel;  // which hits are we pulling in?
       art::InputTag fEDepLabel; // which are the EDeps?
+      art::InputTag fEDepShiftedLabel; // which are the EDeps?
       bool fSaveHistsByChannel; // save modified signals by channel?
       bool fSaveHistsByWire;    // save modified signals by wire?
       bool fInRads;             // is the TGraph2D angle axis in radians?
@@ -87,6 +88,7 @@ namespace wiremod
     fWireLabel = pset.get<art::InputTag>("WireLabel");
     fHitLabel  = pset.get<art::InputTag>("HitLabel");
     fEDepLabel = pset.get<art::InputTag>("EDepLabel");
+    fEDepShiftedLabel = pset.get<art::InputTag>("EDepLabel");
 
     // what, if anything, are we putting in the histogram files
     fSaveHistsByChannel = pset.get<bool>("SaveByChannel", false);
@@ -182,6 +184,10 @@ namespace wiremod
     evt.getByLabel(fEDepLabel, edepHandle);
     auto const& edepVec(*edepHandle);
 
+    art::Handle< std::vector<sim::SimEnergyDeposit> > edepShiftedHandle;
+    evt.getByLabel(fEDepShiftedLabel, edepShiftedHandle);
+    auto const& edepShiftedVec(*edepShiftedHandle);
+
     art::Handle< std::vector<recob::Hit> > hitHandle;
     evt.getByLabel(fHitLabel, hitHandle);
     auto const& hitVec(*hitHandle);
@@ -219,7 +225,7 @@ namespace wiremod
     double offset_ADC = 0; // don't use an offset atm
     MF_LOG_VERBATIM("WireModifierXXW")
       << "Get Edep Map";
-    wmUtil.FillROIMatchedEdepMap(edepVec, wireVec, offset_ADC);
+    wmUtil.FillROIMatchedEdepMap(edepShiftedVec, wireVec, offset_ADC);
     MF_LOG_VERBATIM("WireModifierXXW")
       << "Got Edep Map." << '\n'
       << "Get Hit Map";
@@ -294,8 +300,12 @@ namespace wiremod
           continue;
         }
         std::vector<const sim::SimEnergyDeposit*> matchedEdepPtrVec;
+        std::vector<const sim::SimEnergyDeposit*> matchedEdepShiftedPtrVec;
         for(auto i_e : matchedEdepIdxVec)
+        {
           matchedEdepPtrVec.push_back(&edepVec[i_e]);
+          matchedEdepShiftedPtrVec.push_back(&edepShiftedVec[i_e]);
+        }
         MF_LOG_DEBUG("WireModifierXXW")
           << "  Found " << matchedEdepPtrVec.size() << " Edeps";
 
@@ -324,12 +334,27 @@ namespace wiremod
         auto subROIPropVec = wmUtil.CalcSubROIProperties(roi_properties, matchedHitPtrVec);
         
         MF_LOG_DEBUG("WireModifierXXW")
-          << "    have " << subROIPropVec.size() << " SubROT";
+          << "    have " << subROIPropVec.size() << " SubROI";
 
-        auto SubROIMatchedEdepMap =
-          wmUtil.MatchEdepsToSubROIs(subROIPropVec, matchedEdepPtrVec, offset_ADC);
-        MF_LOG_DEBUG("WireModifierXXW")
-          << "    size of SubROIMatchedEdepMap: " << SubROIMatchedEdepMap.size();
+        auto SubROIMatchedEdepShiftedMap =
+          wmUtil.MatchEdepsToSubROIs(subROIPropVec, matchedEdepShiftedPtrVec, offset_ADC);
+        std::map<sys::WireModUtility::SubROI_Key_t, std::vector<const sim::SimEnergyDeposit*>>
+          SubROIMatchedEdepMap;
+        for (auto const& key_edepPtrVec_pair : SubROIMatchedEdepShiftedMap)
+        {
+          auto key = key_edepPtrVec_pair.first;
+          for (auto const& shifted_edep_ptr : key_edepPtrVec_pair.second)
+          {
+            for (size_t i_e = 0; i_e < matchedEdepShiftedPtrVec.size(); ++i_e)
+            {
+              if (shifted_edep_ptr == matchedEdepShiftedPtrVec[i_e])
+              {
+                SubROIMatchedEdepMap[key].push_back(matchedEdepPtrVec[i_e]);
+                break;
+              }
+            }
+          }
+        }
 
         std::map<sys::WireModUtility::SubROI_Key_t,
                  sys::WireModUtility::ScaleValues_t> SubROIMatchedScalesMap;
