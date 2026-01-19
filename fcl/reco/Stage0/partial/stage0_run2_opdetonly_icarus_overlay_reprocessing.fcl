@@ -9,15 +9,12 @@ process_name: OpMCstage0
 ## - need to pick correct reconstruction tune for PMT flow
 
 # execute PMT/CRT only path
-physics.path: [   @sequence::icarus_stage0_mc_PMT, 
+physics.path: [   @sequence::icarus_stage0_overlay_PMT, 
                   @sequence::icarus_stage0_mc_crtreco # only reco, hits from overlay
               ]
 
-# update ophit procedurs to pick up Run-2 SPE tune
-physics.producers.ophituncorrected.SPEArea: @local::SPERun2.Area
-physics.producers.ophituncorrected.SPEShift: @local::SPERun2.Shift
-physics.producers.ophitfulluncorrected.SPEArea: @local::SPERun2.Area
-physics.producers.ophitfulluncorrected.SPEShift: @local::SPERun2.Shift
+# update mcophit producer to pick up Run-2 SPE tune
+# main ophit producer picks up from the SPEArea database
 physics.producers.mcophit.SPEArea: @local::SPERun2.Area
 physics.producers.mcophit.SPEAmplitude: @local::SPERun2.Amplitude
 
