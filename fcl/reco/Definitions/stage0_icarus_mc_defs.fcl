@@ -39,30 +39,39 @@ icarus_stage0_mc_producers:
     pmtbaselines:      @local::icarus_opreco_pedestal_fromchannel_MC  # from icarus_ophitfinder.fcl
     opdetonbeam:       @local::copyPMTonBeam  # from decoderdefs_icarus.fcl
     ophituncorrected:  @local::icarus_ophit_data
-    ophit:             @local::icarus_ophit_timing_correction
+    ophit:             @local::icarus_ophit_MC
     mcophit:           @local::ICARUSMCOpHit
 
     ## crt producer
     crthit:            @local::standard_crtsimhitproducer
     crttrack:          @local::standard_crttrackproducer
-    crtpmt: 	       @local::standard_crtpmtmatchingproducer
+    crtpmt: 	         @local::standard_crtpmtmatchingproducer
     }
 
 # make the following modifications to job flow for MC vs the data
 icarus_stage0_mc_trigger: [
-                         pmtfixedthr
-                         , @sequence::icarus_standard_triggersim.path  # from trigger_emulation_icarus.fcl
+                         pmtfixedthr,
+                         @sequence::icarus_standard_triggersim.path  # from trigger_emulation_icarus.fcl
                        ]
 
 icarus_stage0_mc_PMT:  [
                          @sequence::icarus_stage0_mc_trigger,
                          pmtbaselines,
-                         ophituncorrected,
-                         ophit,
+                         ophit,            # @local::icarus_ophit_MC
                          mcophit,
                          opflashCryoE,
                          opflashCryoW
                        ]
+
+icarus_stage0_overlay_PMT: [
+                         @sequence::icarus_stage0_mc_trigger,
+                         pmtbaselines,
+                         ophituncorrected, # @local::icarus_ophit_data
+                         ophit,            # ovveride to @local::icarus_ophit_timing_correction 
+                         mcophit,
+                         opflashCryoE,
+                         opflashCryoW
+]
 
 icarus_stage0_mc_crthit:  [crthit]
 icarus_stage0_mc_crtreco: [crttrack, crtpmt]
@@ -71,8 +80,7 @@ icarus_stage0_mc_crtreco: [crttrack, crtpmt]
 icarus_stage0_mc_producers.emuTrigger.BeamGates:               shifted
 icarus_stage0_mc_producers.triggersimgates.module_type:        DummyProducer  # Don't rerun. We have already adjusted the BeamGate
 icarus_stage0_mc_producers.mcophit.SimPhotonsProducer:         shifted
-icarus_stage0_mc_producers.ophituncorrected.InputModule:       shifted
-icarus_stage0_mc_producers.ophit.InputLabels:                  ["ophituncorrected"]
+icarus_stage0_mc_producers.ophit.InputModule:                  shifted
 icarus_stage0_mc_producers.opdetonbeam.Waveforms:              shifted
 icarus_stage0_mc_producers.opdetonbeam.WaveformBaselineAssns:  pmtbaselines
 icarus_stage0_mc_producers.pmtbaselines.OpticalWaveforms:      shifted
