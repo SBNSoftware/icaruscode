@@ -9,6 +9,7 @@
 #include "icaruscode/Timing/PMTTimingCorrections.h"
 #include "icaruscode/Timing/IPMTTimingCorrectionService.h"
 #include "icaruscode/Timing/PMTTimingCorrectionsProvider.h"
+#include "icaruscode/PMT/Calibration/ICARUSPhotonCalibratorServiceFromDB.h"
 
 // framework libraries
 #include "canvas/Utilities/InputTag.h"
@@ -45,25 +46,25 @@ namespace icarus
  * gain and/or timing calibrations, and applies new ones.
  * A new collection of hits is produced containing a re-calibrated copy of all the
  * hits from the input collections.
- * 
- * The PE recalibration is simple: for each optical hit, its `PE` value is recomputed 
+ *
+ * The PE recalibration is simple: for each optical hit, its `PE` value is recomputed
  * from its `Area` [ADC x tick] based on a newly determined single-PE area.
  * If `UseGainDatabase` is set, the module calls retrieves the SPE area by channel and run number
- * using the gain calibration service. If that option is disabled, a single SPE area value 
+ * using the gain calibration service. If that option is disabled, a single SPE area value
  * is used for all channels and run numbers. This value is read from the `SPEArea` paramater
  * set in the configuration.
- * 
- * The timing recalibration requires removing previously-applied timing corrections and 
- * adding the new ones. Unfortunately, however, it's not possible to easily determine 
+ *
+ * The timing recalibration requires removing previously-applied timing corrections and
+ * adding the new ones. Unfortunately, however, it's not possible to easily determine
  * which timing corrections were previsouly applied to the optical hits.
  * The old corrections -- that need to be removed -- are therefore obtained by locally
- * definining an instance of `icarusDB::PMTTimingCorrectionsProvider` and manually setting 
+ * definining an instance of `icarusDB::PMTTimingCorrectionsProvider` and manually setting
  * in the configuration the database tags that were used originally (`OldTimingDBTags`).
  * These need to be deduced by the `icaruscode` version that was used and the corresponding
  * settings in `calibration_database_GlobalTags_icarus.fcl`
  * On the other hand, the new corrections are obtained from the current timing correction
  * service `icarusDB::PMTTimingCorrections` as defined in `timing_icarus.fcl`.
- * 
+ *
  * Input
  * ------
  * * `std::vector<recob::OpHit>` data products (as for `InputLabels`)
@@ -83,9 +84,9 @@ namespace icarus
  * * `SPEArea` (double, default: -1): if not using the gain database, single-photoelectron
  *    area in ADC x tick to be used in the PE calibration.
  * * `RecalibrateTime` (flag, mandatory): if set, recalibrate hit times.
- * * `OldTimingDBTags` (fhicl::ParameterSet, mandatory): configuration for the previously-applied timing corrections 
+ * * `OldTimingDBTags` (fhicl::ParameterSet, mandatory): configuration for the previously-applied timing corrections
  *    that need to be removed/replace by the now ones. It should match what is tipically passed to
- *    `icarusDB::PMTTimingCorrectionsProvider`, specifying the database tags that were used. 
+ *    `icarusDB::PMTTimingCorrectionsProvider`, specifying the database tags that were used.
  * * `Verbose` (flag, default: `false`): verbose printing
  *
  */
@@ -108,10 +109,11 @@ private:
     bool const fRecalibrateTime;
     bool const fUseGainDatabase;
     double const fSPEArea;
-    bool const fVerbose; 
+    bool const fVerbose;
 
-    /// Pointer to the online pmt corrections service
+    /// Pointers to the online corrections services
     icarusDB::PMTTimingCorrections const &fPMTTimingCorrectionsService;
+    icarusDB::PhotonCalibratorFromDB const &fPhotonCalibratorService;
 
     /// Pointer to the provider for the old pmt corrections
     std::unique_ptr<icarusDB::PMTTimingCorrectionsProvider> fOldTimingProvider;
@@ -127,6 +129,7 @@ icarus::OpHitRecalibrator::OpHitRecalibrator(fhicl::ParameterSet const &config, 
       fSPEArea{config.get<double>("SPEArea", -1.)},
       fVerbose{config.get<bool>("Verbose", false)},
       fPMTTimingCorrectionsService{*(lar::providerFrom<icarusDB::IPMTTimingCorrectionService const>())},
+      fPhotonCalibratorService{*(lar::providerFrom<icarusDB::ICARUSPhotonCalibratorServiceFromDB const>())},
       fOldTimingProvider{std::make_unique<icarusDB::PMTTimingCorrectionsProvider>(config.get<fhicl::ParameterSet>("OldTimingDBTags"))}
 {
     async<art::InEvent>();
@@ -141,7 +144,7 @@ icarus::OpHitRecalibrator::OpHitRecalibrator(fhicl::ParameterSet const &config, 
     if (!fRecalibratePE && !fRecalibrateTime)
     {
         throw art::Exception{art::errors::Configuration}
-            << "No re-calibration selected. Why are you running meeee!?!?! :/\n";
+            << "No re-calibration selected. Why are you even running meeee,!?!?! :/\n";
     }
 
     if (fRecalibratePE && !fUseGainDatabase && (fSPEArea < 0))
@@ -161,11 +164,10 @@ icarus::OpHitRecalibrator::OpHitRecalibrator(fhicl::ParameterSet const &config, 
                                          << " -> new " << fPMTTimingCorrectionsService.getCosmicsDatabaseTag();
     }
 
-    // FIXME: temporary since no gain db exists yet...
-    if (fUseGainDatabase)
+    if (fRecalibratePE && fUseGainDatabase)
     {
-        throw art::Exception{art::errors::Configuration}
-            << "Gain database interface doesn't exist yet. Try again later.\n";
+        mf::LogInfo("OpHitRecalibrator") << "Re-calibration of PE (gain) enabled:\n"
+                                         << "AreaTag: " << fPhotonCalibratorService.getAreaDatabaseTag();
     }
 
     // Consumes
@@ -218,9 +220,16 @@ void icarus::OpHitRecalibrator::produce(art::Event &event, art::ProcessingFrame 
 
             if (fUseGainDatabase)
             {
-                // soon...
-                // newSPEArea = get_from_db(opHit.OpChannel())
+                // service directly returns PE from area and channel
+                // compute SPE area back for logging purposes
+                hitPE = fPhotonCalibratorService.PE(opHit.Area(), opHit.OpChannel());
+                newSPEArea = opHit.Area() / hitPE;
             }
+            else
+            {
+                // simple re-computation
+                hitPE = opHit.Area() / newSPEArea;
+            }   
 
             if (log)
             {
@@ -230,9 +239,7 @@ void icarus::OpHitRecalibrator::produce(art::Event &event, art::ProcessingFrame 
                      << " (old SPEArea: " << oldSPEArea
                      << ") --> new PE " << opHit.Area() / newSPEArea
                      << " (new SPEArea: " << newSPEArea << ")\n";
-            }
-
-            hitPE = opHit.Area() / newSPEArea;
+            }            
         }
 
         // Second, recalibrate PMT times (if enabled)
