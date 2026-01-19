@@ -55,3 +55,4 @@ outputs: {
 services.Geometry.GDML: "icarus_complete_20220518_overburden.gdml"
 services.Geometry.ROOT: "icarus_complete_20220518_overburden.gdml"
 physics.producers.crtdaq.G4ModuleLabel: "shifted"
+physics.producers.opdaq.ApplyTimingDelays: false  # keep false for non-overlay MC
