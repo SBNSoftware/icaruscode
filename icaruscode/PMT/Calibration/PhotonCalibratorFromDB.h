@@ -149,7 +149,7 @@ class icarusDB::PhotonCalibratorFromDB: public calib::IPhotonCalibrator {
     std::uint64_t RunToDatabaseTimestamp( unsigned int run ) const;
 
     /// Get current area database tag
-    std::string getAreaDatabaseTag() const override { return fAreaTag; }
+    std::string getAreaDatabaseTag() const { return fAreaTag; }
 
   private:
 
