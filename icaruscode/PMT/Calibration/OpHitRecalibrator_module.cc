@@ -113,7 +113,7 @@ private:
 
     /// Pointers to the online corrections services
     icarusDB::PMTTimingCorrections const &fPMTTimingCorrectionsService;
-    icarusDB::PhotonCalibratorFromDB const &fPhotonCalibratorService;
+    calib::IPhotonCalibrator const &fPhotonCalibratorService;
 
     /// Pointer to the provider for the old pmt corrections
     std::unique_ptr<icarusDB::PMTTimingCorrectionsProvider> fOldTimingProvider;
@@ -129,7 +129,7 @@ icarus::OpHitRecalibrator::OpHitRecalibrator(fhicl::ParameterSet const &config, 
       fSPEArea{config.get<double>("SPEArea", -1.)},
       fVerbose{config.get<bool>("Verbose", false)},
       fPMTTimingCorrectionsService{*(lar::providerFrom<icarusDB::IPMTTimingCorrectionService const>())},
-      fPhotonCalibratorService{*(lar::providerFrom<icarusDB::ICARUSPhotonCalibratorServiceFromDB const>())},
+      fPhotonCalibratorService{*(lar::providerFrom<calib::IPhotonCalibratorService const>())},
       fOldTimingProvider{std::make_unique<icarusDB::PMTTimingCorrectionsProvider>(config.get<fhicl::ParameterSet>("OldTimingDBTags"))}
 {
     async<art::InEvent>();
@@ -166,8 +166,9 @@ icarus::OpHitRecalibrator::OpHitRecalibrator(fhicl::ParameterSet const &config, 
 
     if (fRecalibratePE && fUseGainDatabase)
     {
-        mf::LogInfo("OpHitRecalibrator") << "Re-calibration of PE (gain) enabled:\n"
-                                         << "AreaTag: " << fPhotonCalibratorService.getAreaDatabaseTag();
+        art::ServiceHandle<calib::ICARUSPhotonCalibratorServiceFromDB const> serv; //really sorry about this
+        mf::LogInfo("OpHitRecalibrator") << "Re-calibration of PE (gain) from database enabled:\n"
+                                         << "AreaTag: " << serv->getAreaDatabaseTag();
     }
 
     // Consumes

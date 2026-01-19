@@ -79,6 +79,7 @@ cet_build_plugin( OpHitRecalibrator art::module
                 lardataobj::RecoBase
                 lardataobj::RawData
                 larcore::Geometry_Geometry_service
+                larreco::PhotonCalibrator   # IPhotonCalibrator interface
                 icaruscode_Timing
               )
 
