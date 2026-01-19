@@ -60,3 +60,5 @@ physics.producers.mcophit.SimPhotonsProducer: "shifted"
 # set RUN-2 tune for optical reconstruction
 physics.producers.ophit.SPEArea: @local::SPERun2.Area
 physics.producers.ophit.SPEShift: @local::SPERun2.Shift
+physics.producers.mcophit.SPEArea: @local::SPERun2.Area
+physics.producers.mcophit.SPEAmplitude: @local::SPERun2.Amplitude
