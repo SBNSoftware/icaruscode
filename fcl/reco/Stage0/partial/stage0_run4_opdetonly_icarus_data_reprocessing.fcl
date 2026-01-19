@@ -1,10 +1,5 @@
 #include "stage0_run2_opdetonly_icarus_data_reprocessing.fcl"
 
-# recalibrate optical hits
-physics.producers.ophit.RecalibratePE: true           # recalibrate PE values
-physics.producers.ophit.UseGainDatabase: false        # not ready yet
-physics.producers.ophit.SPEArea: @local::SPERun4.Area # use fixed value for all channels
-
 physics.producers.ophit.RecalibrateTime: true         # also needed for Run4
 # these were the tags used in the initial data processing (v10_06_00_01p05)
 physics.producers.ophit.OldTimingDBTags.CablesTag:  @local::PMT_CalibrationTags_Run3_Feb2025.pmt_cables_delays_data

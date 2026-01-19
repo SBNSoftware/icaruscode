@@ -37,6 +37,7 @@ icarusDB::PhotonCalibratorFromDB::PhotonCalibratorFromDB(const Config& config)
   : fCalibDefaults( config.Defaults() )
   , fVerbose      ( config.Verbose() )
   , fLogCategory  ( config.LogCategory() )
+  , fAreaTag      ( config.AreaTag() )
   , fDB           ( config.DBname(), "", "", config.AreaTag(), true, false)
 {
   mf::LogInfo(fLogCategory)
