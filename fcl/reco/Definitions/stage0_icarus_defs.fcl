@@ -12,7 +12,7 @@
 #include "timing_icarus.fcl"
 #include "timing_beam.fcl"
 #include "icarus_ophitfinder.fcl"
-#include "ophit-recalibrator.fcl"
+#include "ophit_recalibrator_icarus.fcl"
 #include "icarus_flashfinder.fcl"
 #include "trigger_emulation_icarus.fcl"
 #include "crt_decoderdefs_icarus.fcl"

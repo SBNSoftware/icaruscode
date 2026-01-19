@@ -30,7 +30,6 @@ namespace icarusDB::details {
 
     /// Area [positive, ADC count sum] of response to single photoelectron.
     double speArea = -1.0;
-    
     double speAreaErr = -1.0;  /// Uncertainty on `speArea` [ADC count sum]
     double speFitWidth = -1.0;
     double speFitWidthErr = -1.0;
@@ -149,6 +148,9 @@ class icarusDB::PhotonCalibratorFromDB: public calib::IPhotonCalibrator {
      */
     std::uint64_t RunToDatabaseTimestamp( unsigned int run ) const;
 
+    /// Get current area database tag
+    std::string getAreaDatabaseTag() const override { return fAreaTag; }
+
   private:
 
     using PhotonCalibratorInfo = details::PhotonCalibratorInfo;
@@ -156,6 +158,7 @@ class icarusDB::PhotonCalibratorFromDB: public calib::IPhotonCalibrator {
     PhotonCalibratorInfo const fCalibDefaults; ///< Default calibration values.
     bool const fVerbose;
     std::string const fLogCategory;
+    std::string const fAreaTag;
 
     lariov::DBFolder fDB; ///< Cached database interface.
     
@@ -167,7 +170,6 @@ class icarusDB::PhotonCalibratorFromDB: public calib::IPhotonCalibrator {
       auto const it = fDatabaseSPECalibrations.find(channelID);
       return (it == fDatabaseSPECalibrations.end())? fCalibDefaults: it->second;
     }
-
 
 }; // class icarusDB::PhotonCalibratorFromDB
 
