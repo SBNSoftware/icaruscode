@@ -4,3 +4,4 @@ physics.producers.daq.wcls_main.params.YZScaleMapJson: "yzmap_gain_icarus_v4_run
 
 # Run3/4 optical tune (with no noise)
 physics.producers.opdaq: @local::icarus_simpmt_run4_nonoise
+physics.producers.opdaq.ApplyTimingDelays: true
