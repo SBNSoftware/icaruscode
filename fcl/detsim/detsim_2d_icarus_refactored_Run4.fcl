@@ -2,4 +2,4 @@
 
 # Run3/4 optical tune
 physics.producers.opdaq: @local::icarus_simpmt_run4
-physics.producers.opdaq.ApplyTimingDelays: false  # keep off for non-overlay MC
+physics.producers.opdaq.ApplyTimingDelays: false  # keep false for non-overlay MC

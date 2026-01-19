@@ -62,7 +62,7 @@ outputs: {
 
 physics.producers.crtdaq.G4ModuleLabel: "shifted"
 physics.producers.opdaq.InputModule: "pdfastsim"
-physics.producers.opdaq.ApplyTimingDelays: false  # keep off for non-overlay MC
+physics.producers.opdaq.ApplyTimingDelays: false  # keep false for non-overlay MC
 physics.producers.shifted.InitAuxDetSimChannelLabel: "genericcrt"
 physics.producers.shifted.InitSimPhotonsLabel: "pdfastsim"
 physics.producers.filtersed.InitSimEnergyDepositLabel: "shifted"
