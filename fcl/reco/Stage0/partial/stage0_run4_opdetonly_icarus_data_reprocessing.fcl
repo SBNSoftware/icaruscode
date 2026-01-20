@@ -1,0 +1,7 @@
+#include "stage0_run2_opdetonly_icarus_data_reprocessing.fcl"
+
+physics.producers.ophit.RecalibrateTime: true         # also needed for Run4
+# these were the tags used in the initial data processing (v10_06_00_01p05)
+physics.producers.ophit.OldTimingDBTags.CablesTag:  @local::PMT_CalibrationTags_Run3_Feb2025.pmt_cables_delays_data
+physics.producers.ophit.OldTimingDBTags.LaserTag:   @local::PMT_CalibrationTags_Run3_Feb2025.pmt_laser_timing_data
+physics.producers.ophit.OldTimingDBTags.CosmicsTag: @local::PMT_CalibrationTags_Run3_Feb2025.pmt_cosmics_timing_data

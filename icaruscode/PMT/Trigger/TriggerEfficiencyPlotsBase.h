@@ -222,7 +222,7 @@ class icarus::trigger::details::TriggerPassCounters {
   
   /// Registers a new pattern in the index and returns its index (unchecked).
   std::size_t registerPattern(std::string const& name);
-  
+
 }; // icarus::trigger::details::TriggerPassCounters
 
 
@@ -1010,9 +1010,9 @@ class icarus::trigger::TriggerEfficiencyPlotsBase {
       Comment("label of energy deposition summary data product")
       };
 
-    fhicl::Atom<std::string> TriggerGatesTag {
+    fhicl::Atom<art::InputTag> TriggerGatesTag {
       Name("TriggerGatesTag"),
-      Comment("label of the input trigger gate data product (no instance name)")
+      Comment("tag of the input trigger gate data product (no instance name)")
       };
 
     fhicl::Sequence<std::string> Thresholds {
@@ -1564,6 +1564,10 @@ class icarus::trigger::TriggerEfficiencyPlotsBase {
     fhicl::Sequence<art::InputTag> const& EnergyDepositTags,
     fhicl::OptionalAtom<art::InputTag> const& EnergyDepositSummaryTag
     );
+  
+  /// Returns `defModule` with instance name replaced by `thresholdStr`.
+  static art::InputTag makeInputTag
+    (art::InputTag const& defModule, std::string const& thresholdStr);
   
 }; // icarus::trigger::TriggerEfficiencyPlotsBase
 

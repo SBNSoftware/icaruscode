@@ -1,0 +1,140 @@
+#include "detsim_2d_icarus_refactored.fcl"
+
+process_name: OpDetSim
+
+services.DetPedestalService:         @erase
+services.ChannelStatusService:       @erase
+services.SignalShapingICARUSService: @erase
+
+source.inputCommands: [
+  "keep *",
+
+  # `stage0` comes from decoding data: should be kept!
+  # `MCstage0` comes running stage0 on the overlay products:
+  #  so pmt/trigger/crt stuff should be thrown out!
+  # note: I would really like to drop these things as well:
+  # "drop raw::OpDetWaveform*_opdaq_*_*",    # drop old MC waveforms (if any)
+  # "drop *_pmtfixedthrinit_*_*",        # drop triggersim product
+  # "drop *_pmtlvdsgatesinit_*_*",       # drop triggersim product
+  # "drop *_pmttriggerwindowsinit_*_*",  # drop triggersim product
+  # "drop *_triggersimgatesinit_*_*",    # drop triggersim product
+  # "drop *_emuTriggerUnshifted_*_*",    # drop triggersim product
+  # but I can't: it triggers art genocidal insticts thus removing all
+  # downstream products in the dependency tree that we still need.
+ 
+  "drop raw::OpDetWaveform*_shifted_*_*",  # drop old MC (shifted) waveforms (if any)
+  "drop *_overlayOpWaveforms_*_*",         # drop old Overlay waveforms (if any)
+  "drop *_ophit*_*_*",                     # drop MCstage0 ophits
+  "drop *_mcophit_*_*",                    # drop MCstageo mcophit
+  "drop *_opflash*_*_*",                   # drop MCsstage0 east/west opflashes
+  
+  "drop *_pmtfixedthr_*_*",            # drop MCstage0 trigger product
+  "drop *_pmtlvdsgates_*_*",           # drop MCstage0 trigger product
+  "drop *_pmtlvdsgates_*_*",           # drop MCstage0 trigger product
+  "drop *_pmtbaselines_*_MCstage0",    # drop MCstage0 baselines, not stage0!
+  "drop *_pmttriggerwindows_*_*",      # drop MCstage0 trigger product
+  "drop *_emuTrigger_*_*",             # drop MCstage0 trigger product
+
+  "drop *_crtdaq_*_*",        # drop CRT detsim product
+  "drop *_mccrthit_*_*",      # drop CRT mc hits
+  "drop *_overlayCRTHit_*_*", # drop CRT overlay hits
+  "drop *_crttrack_*_*",      # drop CRT tracks (MCstage0)
+  "drop *_crtpmt_*_*"         # drop CRTPMT matches (MCstage0)
+]
+
+# Running only the optical/trigger/crt modules
+# Simplify configuration removing all other producers (tpc)
+
+physics.producers: {
+
+  # opdaq Run-1/2 tune for overlays (no noise)
+  opdaq: @local::icarus_simpmt_run2_nonoise 
+
+  # triggersim producers 
+  @table::icarus_shifting_triggersim.producers
+
+  # crt hits
+  crtdaq: @local::icarus_crtsim
+
+}
+
+# since some "old" products need to be kept in the tree
+# we have products with the same tag, and different process_name
+# make sure to select exactly what you need! 
+
+# build waveforms from simPhotons (already shifted)
+physics.producers.opdaq.InputModule: "shifted::DetSim"
+physics.producers.opdaq.ApplyTimingDelays: true
+
+# make sure the triggersim chain used the "new" products
+# instead of the "old" ones which I cannot drop on input
+physics.producers.pmtfixedthrinit.OpticalWaveforms: "opdaq::OpDetSim"                    # this was re-generated with same tag
+physics.producers.pmtlvdsgatesinit.TriggerGatesTag: "pmtfixedthrinit::OpDetSim"          # this was re-generated with same tag
+physics.producers.pmttriggerwindowsinit.TriggerGatesTag: "pmtlvdsgatesinit::OpDetSim"    # this was re-generated with same tag
+physics.producers.triggersimgatesinit.BeamGateTag: "beamgate"                            # keep using old Gen product
+physics.producers.emuTriggerUnshifted.BeamGates: "triggersimgatesinit::OpDetSim"         # this was re-generated with same tag
+physics.producers.emuTriggerUnshifted.TriggerGatesTag: "pmttriggerwindowsinit::OpDetSim" # this was re-generated with same tag
+
+# need to update the shifting module to pick up new labels
+# some were regenerated (tag still good), others were previously shifted
+# applying a second shift is okay: everything is consistent
+# (eg. waveforms made from `shifted` photons)
+# NOTE: still shifing energy deposits although tpc info not regenerated
+# however forced to use `filtersed` as `shifted` has been consumed
+
+physics.producers.shifted.InputTriggerLabel: "emuTriggerUnshifted::OpDetSim"       # this was re-generated with same tag
+physics.producers.shifted.InitAuxDetSimChannelLabel: "shifted::DetSim"             # need to start from previously-shifted, not `genericcrt`
+physics.producers.shifted.InitBeamGateInfoLabel: "triggersimgatesinit::OpDetSim"   # this was re-generated with same tag
+physics.producers.shifted.InitSimEnergyDepositLabel: "filtersed::DetSim"           # need to start from previously-shifted, but `shifted` no longer available
+physics.producers.shifted.InitSimEnergyDepositLiteLabel: "filtersed::DetSim"       # need to start from previously-shifted, but `shifted` no longer available
+physics.producers.shifted.InitSimPhotonsLabel: "shifted::DetSim"                   # need to start from previously-shifted, not `pdfastsim`
+physics.producers.shifted.InitWaveformLabel: "opdaq::OpDetSim"                     # this was re-generated with same tag
+
+# need to update shiting of priorSCE deposits:
+# this is important if future reprocessings will need to regenerate SimPhotons
+
+physics.producers.shiftedpriorSCE.InputTriggerLabel: "emuTriggerUnshifted::OpDetSim"      # this was re-generated with same tag
+physics.producers.shiftedpriorSCE.InitSimEnergyDepositLabel: "shiftedpriorSCE::DetSim"  # need to start from previously-shifted, not `ionization:priorSCE`
+
+# and finally make sure the crtsim also uses the newly shifted products
+physics.producers.crtsim.G4ModuleLabel: "shifted::OpDetSim"
+
+# The reprocessing flow is the following:
+# - build new pmt waveforms from photons
+# - simulate the trigger
+# - shift all products to the trigger:
+#   -- we are shifting photons, pmt waveforms, energy depositis, aux sim channels
+#   -- note: since tpc is not re-simulated, no longer fully coherent with trigger time
+# - build CRT data from aux sim channels
+
+physics.simulate: [ opdaq, @sequence::icarus_shifting_triggersim.path, crtdaq ]
+
+
+# drop duplicate produtcs in output
+# this doesn't trigger art genocidal instincts
+
+outputs.rootoutput.outputCommands: [
+  "keep *",
+         
+  # drop `opdaq`, but keep `shifted` for overlaying
+  "drop *_opdaq_*_*",
+
+  # drop old trigger products now that new ones exist
+  # specify the old process name "DetSim"
+  "drop *_pmtfixedthrinit_*_DetSim",        
+  "drop *_pmtlvdsgatesinit_*_DetSim",
+  "drop *_pmttriggerwindowsinit_*_DetSim",  
+  "drop *_triggersimgatesinit_*_DetSim",    
+  "drop *_emuTriggerUnshifted_*_DetSim", 
+ 
+  # drop old "shifted" products since we shifted things again
+  "drop sim::SimEnergyDeposits_filtersed_*_DetSim",        # this has been regenerated into `shifted`
+  # mcreco looks for `filtersed` in stage1: potentially can be changed to look for `shifted`?
+  # however since tpc reco products are not shifted, better to keep old deposits for that matching
+  # "drop sim::SimEnergyDepositLites_filtersed_*_DetSim",    # this has been regenerated into `shifted`
+  "drop sim::SimEnergyDeposits_shiftedpriorSCE_*_DetSim",  # this has been regenerated into the same tag
+  "drop sim::AuxDetSimChannel_shifted_*_DetSim",           # this has been regenerated into the same tag
+  "drop sim::SimPhotons_shifted_*_DetSim",                 # this has been regenerated into the same tag
+  "drop sim::BeamGateInfo_shifted_*_DetSim"                # this has been regenerated into the same tag
+
+]

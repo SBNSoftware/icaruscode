@@ -311,8 +311,8 @@ icarus_enablegate_sim: {
   
   BeamGates: [
     {
-      Duration: @local::icarus_pmtsimulationalg_standard.ReadoutEnablePeriod  # from pmtsimulation_icarus.fcl
-      Start:    @local::icarus_pmtsimulationalg_standard.TriggerOffsetPMT  # from pmtsimulation_icarus.fcl
+      Duration: @local::icarus_pmtsimulationalg_standard_run2.ReadoutEnablePeriod  # from pmtsimulation_icarus.fcl
+      Start:    @local::icarus_pmtsimulationalg_standard_run2.TriggerOffsetPMT  # from pmtsimulation_icarus.fcl
     }
   ]
   

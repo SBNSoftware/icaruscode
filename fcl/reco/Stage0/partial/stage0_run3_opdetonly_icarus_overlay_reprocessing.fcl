@@ -1,0 +1,6 @@
+#include "stage0_run2_opdetonly_icarus_overlay_reprocessing.fcl"
+
+# update mcophit producer to pick up Run-3 SPE tune
+# main ophit producer picks up from the SPEArea database
+physics.producers.mcophit.SPEArea: @local::SPERun3.Area
+physics.producers.mcophit.SPEAmplitude: @local::SPERun3.Amplitude

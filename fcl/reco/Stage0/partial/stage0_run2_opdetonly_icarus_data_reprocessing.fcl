@@ -1,0 +1,43 @@
+#include "stage0_run2_wcdnn_icarus.fcl"
+
+process_name: OpStage0
+
+source.inputCommands: [
+  "keep *",
+
+  # need to throw out anything that is based on optical hits;
+  # this means optical flashes and pmt/crt matching stuff!
+  # note: old hits will also be thrown out in output
+  "drop *_opflash*_*_*",      # drop stage0 east/west opflashes
+  "drop *_crtpmt_*_*"         # drop CRT/PMT matches (stage0)
+]
+
+# running simplified stage0 pmt/crt path:
+# recalibrate hits, then run flash matching + pmtcrt matching
+# simplify path removing all other producers
+
+physics.producers.ophit: @local::ophit_recalibrator # force "ophit" name
+
+physics.path: [ 
+            ophit,
+            opflashCryoE,
+            opflashCryoW,
+            crtpmt
+            ]
+
+# recalibrate optical hits
+physics.producers.ophit.InputLabel: "ophit::stage0"  # start from hits in previous stage0 execution
+physics.producers.ophit.RecalibratePE: true          # recalibrate PE values
+physics.producers.ophit.UseGainDatabase: true        # speArea db
+physics.producers.ophit.RecalibrateTime: false       # not needed for Run2
+
+# make sure flashes are using the new ophits
+# as well as the correct (non)calibration
+physics.producers.opflashCryoE.OpHitProducer: "ophit::OpStage0"
+physics.producers.opflashCryoW.OpHitProducer: "ophit::OpStage0"
+
+# now drop old ophits
+outputs.rootOutput.outputCommands: [
+  "keep *",
+  "drop *_ophit_*_stage0"
+ ]       

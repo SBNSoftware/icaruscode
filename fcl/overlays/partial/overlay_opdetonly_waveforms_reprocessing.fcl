@@ -1,0 +1,25 @@
+#include "overlay_waveforms.fcl"
+
+process_name: OpOverlay
+
+# only perform PMT and CRT overlays after their detsim reprocessing
+# previous reprocessing step should have cleaned-up duplicates already
+# so technically no need to update any tag names w.r.t the default file
+
+#physics.producers.mccrthit.CrtModuleLabel: "crtdaq"                     # from previous reprocessing
+#physics.producers.mccrthit.TriggerLabel: "daqTrigger"
+
+#physics.producers.overlayOpWaveforms.PMTWaveDataLabel: "daqPMT"         # from data decoding
+#phsyics.producers.overlayOpWaveforms.PMTWaveSimLabel: "shifted"         # from previous reprocessing
+#phsyics.producers.overlayOpWaveforms.PMTWaveBaseLabel: "pmtbaselines"   # from data decoding
+
+#physics.producers.overlayCRTHit.CRTHitInputLabels: ["crthit",          # from data decoding
+#                                                    "mccrthit"]        # from current process
+
+# process includes:
+# - make crt hits on mc 
+# - overlay pmt waveforms
+# - overlay crt hits
+
+physics.reco: [ mccrthit, overlayOpWaveforms, overlayCRTHit]
+
