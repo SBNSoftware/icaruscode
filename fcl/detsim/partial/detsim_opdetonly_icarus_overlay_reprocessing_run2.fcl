@@ -64,6 +64,7 @@ physics.producers: {
 
 # build waveforms from simPhotons (already shifted)
 physics.producers.opdaq.InputModule: "shifted::DetSim"
+physics.producers.opdaq.ApplyTimingDelays: true
 
 # make sure the triggersim chain used the "new" products
 # instead of the "old" ones which I cannot drop on input

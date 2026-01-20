@@ -3,3 +3,4 @@
 # switch to Run-4 tune
 physics.producers.opdaq: @local::icarus_simpmt_run4_nonoise
 physics.producers.opdaq.InputModule: "shifted::DetSim"
+physics.producers.opdaq.ApplyTimingDelays: true
