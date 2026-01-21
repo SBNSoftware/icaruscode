@@ -50,6 +50,17 @@ cet_build_plugin(SignalShapingICARUSService art::service LIBRARIES ${icarus_util
 cet_build_plugin(SIOVChannelStatusICARUSService art::service LIBRARIES ${icarus_util_lib_list})
 cet_build_plugin(TFileMetadataICARUS art::service LIBRARIES ${icarus_util_lib_list})
 
+cet_build_plugin(DumpTPCchannelStatusDB art::producer
+  LIBRARIES
+    icaruscode::TPC_Utilities
+    larevt::CalibrationDBI_Providers
+    larevt::CalibrationDBI_IOVData
+    larcore::headers
+    larcorealg::Geometry
+    larcorealg::headers
+    larcoreobj::headers
+  )
+
 
 install_headers()
 install_source()
