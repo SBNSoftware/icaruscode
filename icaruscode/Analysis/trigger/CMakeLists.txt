@@ -38,7 +38,7 @@ cet_build_plugin(BeamGateInfoFromTracks  art::module
   lardataobj::Simulation
   lardataobj::AnalysisBase
   lardataobj::RecoBase
-  lardata::DetectorInfoServices_DetectorClocksServiceStandard_service
+  lardata::DetectorClocksService
   )
 
 cet_build_plugin(BeamGateInfoFromTracksCRT  art::module
@@ -46,7 +46,7 @@ cet_build_plugin(BeamGateInfoFromTracksCRT  art::module
   lardataobj::Simulation
   lardataobj::AnalysisBase
   lardataobj::RecoBase
-  lardata::DetectorInfoServices_DetectorClocksServiceStandard_service
+  lardata::DetectorClocksService
   )
 
 cet_build_plugin(TimeTrackTreeStorage art::module
