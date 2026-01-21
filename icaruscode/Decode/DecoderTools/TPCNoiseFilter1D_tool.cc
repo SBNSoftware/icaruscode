@@ -379,7 +379,7 @@ void TPCNoiseFilter1DMC::process_fragment(detinfo::DetectorClocksData const&,
 
         std::copy(dataArray[idx].begin(),dataArray[idx].end(),rawDataVec.begin());
 
-        Eigen::Vector2f meanPos;
+        Eigen::Vector2f meanPos({0.,0.});
         Eigen::Matrix2f eigenVectors {{0.,0.},{0.,0.}};
         Eigen::Vector2f eigenValues {0.,0.};
 
@@ -394,6 +394,9 @@ void TPCNoiseFilter1DMC::process_fragment(detinfo::DetectorClocksData const&,
                                                    fTruncRMSVals[idx],
                                                    fNumTruncBins[idx],
                                                    fRangeBins[idx]);
+
+        // Make sure we correct for low frequency offset if it was run
+        fPedestalVals[idx] += meanPos[1];
 
         if (fRemoveBadRMS && (fFullRMSVals[idx] < 2.5 || fFullRMSVals[idx] > 40.)) std::fill(fSelectVals[idx].begin(),fSelectVals[idx].end(),true);
 
