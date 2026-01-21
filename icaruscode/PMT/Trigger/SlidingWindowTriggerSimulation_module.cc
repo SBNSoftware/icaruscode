@@ -285,9 +285,9 @@ class icarus::trigger::SlidingWindowTriggerSimulation
     using Name = fhicl::Name;
     using Comment = fhicl::Comment;
     
-    fhicl::Atom<std::string> TriggerGatesTag {
+    fhicl::Atom<art::InputTag> TriggerGatesTag {
       Name("TriggerGatesTag"),
-      Comment("label of the input trigger gate data product (no instance name)")
+      Comment("tag of the input trigger gate data product (no instance name)")
       };
 
     fhicl::Sequence<std::string> Thresholds {
@@ -573,7 +573,12 @@ class icarus::trigger::SlidingWindowTriggerSimulation
   static double eventTimestampInSeconds(art::Timestamp const& time);
   static double eventTimestampInSeconds(art::Event const& event);
   //@}
-
+  
+  
+  /// Returns `defModule` with instance name replaced by `thresholdStr`.
+  static art::InputTag makeTag
+    (art::InputTag const& defModule, std::string const& thresholdStr);
+  
 }; // icarus::trigger::SlidingWindowTriggerSimulation
 
 
@@ -622,9 +627,9 @@ icarus::trigger::SlidingWindowTriggerSimulation::SlidingWindowTriggerSimulation
   //
   // more complex parameter parsing
   //
-  std::string const& discrModuleLabel = config().TriggerGatesTag();
+  art::InputTag const& discrModuleTag = config().TriggerGatesTag();
   for (std::string const& threshold: config().Thresholds())
-    fADCthresholds[threshold] = art::InputTag{ discrModuleLabel, threshold };
+    fADCthresholds[threshold] = makeTag(discrModuleTag, threshold);
   
   // initialization of a vector of atomic is not as trivial as it sounds...
   fTriggerCount = std::vector<std::atomic<unsigned int>>(fADCthresholds.size());
@@ -1202,6 +1207,20 @@ double icarus::trigger::SlidingWindowTriggerSimulation::eventTimestampInSeconds
 double icarus::trigger::SlidingWindowTriggerSimulation::eventTimestampInSeconds
   (art::Event const& event)
   { return eventTimestampInSeconds(event.time()); }
+
+
+//------------------------------------------------------------------------------
+art::InputTag icarus::trigger::SlidingWindowTriggerSimulation::makeTag
+  (art::InputTag const& defModule, std::string const& thresholdStr)
+{
+  if (!thresholdStr.empty() && !defModule.instance().empty()) {
+    throw art::Exception(art::errors::Configuration)
+      << "Module tag instance name (`TriggerGatesTag`: '"
+      << defModule.encode() << "') and the threshold '" << thresholdStr
+      << "' are both set. One of them must be empty.\n";
+  }
+  return { defModule.label(), thresholdStr, defModule.process() };
+} // icarus::trigger::SlidingWindowTriggerSimulation::makeTag()
 
 
 //------------------------------------------------------------------------------
