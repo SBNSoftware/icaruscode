@@ -73,8 +73,6 @@ void icarus::calo::NormalizeTPCPerPlaneSQL::configure(const fhicl::ParameterSet&
 
 icarus::calo::NormalizeTPCPerPlaneSQL::ScaleInfo icarus::calo::NormalizeTPCPerPlaneSQL::GetScaleInfo(uint64_t run) {
 
-  //std::cout << "NormalizeTPCSQL Tool -- Getting scale info for run: " << run << std::endl;
-
   // check the cache
   if (fScaleInfos.count(run)) {
     return fScaleInfos.at(run);
@@ -104,8 +102,6 @@ icarus::calo::NormalizeTPCPerPlaneSQL::ScaleInfo icarus::calo::NormalizeTPCPerPl
 double icarus::calo::NormalizeTPCPerPlaneSQL::Normalize(double dQdx, const art::Event &e, 
     const recob::Hit &hit, const geo::Point_t &location, const geo::Vector_t &direction, double t0) {
  
-  //std::cout << "NormalizeTPCSQL Tool -- MC Flag: " << fMC << " Run: " << e.id().runID().run() << ", Subrun: " << e.id().subRunID().run() << std::endl;
-
   // Get the info
   uint64_t runID = -1;
   switch (fMC) {
@@ -120,9 +116,6 @@ double icarus::calo::NormalizeTPCPerPlaneSQL::Normalize(double dQdx, const art::
       break;
     case 4:
       runID = 12960;
-      break;
-    case 5:
-      runID = 5;
       break;
     default:
       runID = e.id().runID().run();

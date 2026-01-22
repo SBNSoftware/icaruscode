@@ -34,7 +34,7 @@ driftnorm_sql: {
   tool_type: NormalizeDriftSQLite
   DBFileName: tpc_elifetime_data 
   DBTag: @local::ICARUS_Calibration_GlobalTags.tpc_elifetime_data
-  Verbose: true
+  Verbose: false
 }
 
 tpcgain_sql: {
@@ -60,7 +60,6 @@ yznorm_sql: {
   MC: -1
 }
 
-#icarus_calonormtools: [@local::driftnorm, @local::yznorm, @local::tpcgain]
 icarus_calonormtools: [@local::driftnorm_sql, @local::yznorm_sql, @local::tpcgain_sql]
 icarus_calonormtoolsMC: [@local::yznorm_sql, @local::tpcgain_sql]
 
