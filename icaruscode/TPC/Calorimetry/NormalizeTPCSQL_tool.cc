@@ -110,19 +110,16 @@ double icarus::calo::NormalizeTPCSQL::Normalize(double dQdx, const art::Event &e
   uint64_t runID = -1;
   switch (fMC) {
     case 1:
-      runID = 1;
+      runID = 8460;
       break;
     case 2:
-      runID = 9400;
+      runID = 9301;
       break;
     case 3:
-      runID = 3;
+      runID = 11806;
       break;
     case 4:
-      runID = 4;
-      break;
-    case 5:
-      runID = 5;
+      runID = 12960;
       break;
     default:
       runID = e.id().runID().run();
