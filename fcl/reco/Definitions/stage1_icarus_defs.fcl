@@ -396,6 +396,27 @@ icarus_stage1_producers.SBNShowerGausCryoW.UseAllParticles:                     
 icarus_stage1_producers.SBNShowerGausCryoE.PFParticleLabel:                                      "pandoraGausCryoE"
 icarus_stage1_producers.SBNShowerGausCryoE.UseAllParticles:                                      true
 
+applyNorm: true
+
+icarus_stage1_producers.SBNShowerGausCryoE.ShowerFinderTools[7].CalorimetryAlg:            @local::icarus_calorimetryalgdata
+icarus_stage1_producers.SBNShowerGausCryoE.ShowerFinderTools[7].ApplyCorrectionsInNorm:    @local::applyNorm
+icarus_stage1_producers.SBNShowerGausCryoE.ShowerFinderTools[7].NormTools:                 @local::icarus_calonormtools
+icarus_stage1_producers.SBNShowerGausCryoW.ShowerFinderTools[7].CalorimetryAlg:            @local::icarus_calorimetryalgdata
+icarus_stage1_producers.SBNShowerGausCryoW.ShowerFinderTools[7].ApplyCorrectionsInNorm:    @local::applyNorm
+icarus_stage1_producers.SBNShowerGausCryoW.ShowerFinderTools[7].NormTools:                 @local::icarus_calonormtools
+
+icarus_stage1_producers.SBNShowerGausCryoE.ShowerFinderTools[5].CalorimetryAlg:            @local::icarus_calorimetryalgdata
+icarus_stage1_producers.SBNShowerGausCryoE.ShowerFinderTools[5].ApplyCorrectionsInNorm:    @local::applyNorm
+icarus_stage1_producers.SBNShowerGausCryoE.ShowerFinderTools[5].NormTools:                 @local::icarus_calonormtools
+icarus_stage1_producers.SBNShowerGausCryoW.ShowerFinderTools[5].CalorimetryAlg:            @local::icarus_calorimetryalgdata
+icarus_stage1_producers.SBNShowerGausCryoW.ShowerFinderTools[5].ApplyCorrectionsInNorm:    @local::applyNorm
+icarus_stage1_producers.SBNShowerGausCryoW.ShowerFinderTools[5].NormTools:                 @local::icarus_calonormtools
+
+icarus_stage1_producers.SBNShowerGausCryoE.ShowerFinderTools[3].ApplyCorrectionsInNorm:    @local::applyNorm
+icarus_stage1_producers.SBNShowerGausCryoE.ShowerFinderTools[3].NormTools:                 @local::icarus_calonormtools
+icarus_stage1_producers.SBNShowerGausCryoW.ShowerFinderTools[3].ApplyCorrectionsInNorm:    @local::applyNorm
+icarus_stage1_producers.SBNShowerGausCryoW.ShowerFinderTools[3].NormTools:                 @local::icarus_calonormtools
+
 # Set supera input fcl files
 icarus_stage1_analyzers.superaMC.supera_params: "supera_icarus_MC_all_cryo_PMT_CRT_v10.fcl"
 
