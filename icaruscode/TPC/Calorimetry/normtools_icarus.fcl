@@ -34,7 +34,7 @@ driftnorm_sql: {
   tool_type: NormalizeDriftSQLite
   DBFileName: tpc_elifetime_data 
   DBTag: @local::ICARUS_Calibration_GlobalTags.tpc_elifetime_data
-  Verbose: true
+  Verbose: false
 }
 
 tpcgain_sql: {
@@ -58,7 +58,6 @@ yznorm_sql: {
   Verbose: false
 }
 
-#icarus_calonormtools: [@local::driftnorm, @local::yznorm, @local::tpcgain]
 icarus_calonormtools: [@local::driftnorm_sql, @local::yznorm_sql, @local::tpcgain_sql]
 
 # GP 8/4/25 -- Update gain to re-measurement with Run 2 stopping muons and 
