@@ -1,0 +1,13 @@
+#include "cafmakerjob_icarus.fcl"
+#include "cafmaker_add_detsim2d_icarus.fcl"
+
+## Always refer to the original hit collection
+physics.producers.cafmaker.HitLabel: "cluster3D"
+
+## Grab the second-pass Pandora reconstruction, after NuGraph2's filter
+physics.producers.cafmaker.PFParticleLabel: "pandoraGausNuGraphReco"
+
+## Use NuGraph2's PID after NuGraph2's filter
+physics.producers.cafmaker.UsePandoraAfterNuGraph: true
+physics.producers.cafmaker.NuGraphFilterLabel: "ngfilteredhits:filter"
+physics.producers.cafmaker.NuGraphSemanticLabel: "ngfilteredhits:semantic"

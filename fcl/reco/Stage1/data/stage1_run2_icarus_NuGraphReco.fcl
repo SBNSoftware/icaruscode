@@ -5,8 +5,8 @@ process_name: stage1
 physics.reco: [ @sequence::icarus_filter2D_cluster3D,
                 @sequence::icarus_pandora_Gauss,
                 @sequence::icarus_reco_fm,
+                @sequence::icarus_postPandora_Gauss_NuGraphReco,
                 @sequence::icarus_tpcpmtbarycentermatch,
-                @sequence::icarus_postPandora_Gauss,
                 @sequence::icarus_crttrack,
                 @sequence::icarus_crtt0tagging,
                 caloskimCalorimetryCryoE, caloskimCalorimetryCryoW]
@@ -22,6 +22,26 @@ outputs.out1.outputCommands: [
   "drop *_caloskimCalorimetryCryoE_*_*",
   "drop *_caloskimCalorimetryCryoW_*_*"
 ]
+
+# Redefine TPCPMTBarycenterMatch producers with the different Pandora label
+physics.producers.tpcpmtbarycentermatchCryoE.PandoraLabel: "pandoraGausNuGraphReco"
+physics.producers.tpcpmtbarycentermatchCryoW.PandoraLabel: "pandoraGausNuGraphReco"
+
+# Update Pandora tags after NuGraph for track and shower characterization
+physics.producers.pandoraTrackGausCryoE.PFParticleLabel:       "pandoraGausNuGraphRecoCryoE"
+physics.producers.pandoraTrackGausCryoE.UseAllParticles:       true
+physics.producers.pandoraTrackGausCryoW.PFParticleLabel:       "pandoraGausNuGraphRecoCryoW"
+physics.producers.pandoraTrackGausCryoW.UseAllParticles:       true
+
+physics.producers.pandoraKalmanTrackGausCryoE.inputCollection: "pandoraGausNuGraphRecoCryoE"
+physics.producers.pandoraKalmanTrackGausCryoE.trackInputTag:   "pandoraTrackGausCryoE"
+physics.producers.pandoraKalmanTrackGausCryoW.inputCollection: "pandoraGausNuGraphRecoCryoW"
+physics.producers.pandoraKalmanTrackGausCryoW.trackInputTag:   "pandoraTrackGausCryoW"
+
+physics.producers.SBNShowerGausCryoE.PFParticleLabel:          "pandoraGausNuGraphRecoCryoE"
+physics.producers.SBNShowerGausCryoE.UseAllParticles:          true
+physics.producers.SBNShowerGausCryoW.PFParticleLabel:          "pandoraGausNuGraphRecoCryoW"
+physics.producers.SBNShowerGausCryoW.UseAllParticles:          true
 
 physics.analyzers.caloskimE.SelectEvents: [reco]
 physics.analyzers.caloskimW.SelectEvents: [reco]
@@ -59,4 +79,3 @@ services.message.destinations :
      }
   }
 }
-
