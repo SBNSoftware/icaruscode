@@ -1,0 +1,41 @@
+## File: stage1_run2_icarus_newhitfinder_width_MC.fcl 
+## Author: Mattia Sotgia (msotgia@ge.infn.it)
+## 
+## This FHiCL introduces the re-tuned hit-finder values and uses the hit widths in Pandora algorithms
+## Pulse trains are off.
+##
+
+
+#include "stage1_run2_icarus_MC.fcl"
+
+
+# Disable pulse trains (setting them all to 1)
+physics.producers.gaushit2dTPCEE.LongMaxHits: [1, 1, 1]
+physics.producers.gaushit2dTPCEW.LongMaxHits: [1, 1, 1]
+physics.producers.gaushit2dTPCWE.LongMaxHits: [1, 1, 1]
+physics.producers.gaushit2dTPCWW.LongMaxHits: [1, 1, 1]
+
+# Allow for more Gaussians
+physics.producers.gaushit2dTPCEE.MaxMultiHit: 30
+physics.producers.gaushit2dTPCEW.MaxMultiHit: 30
+physics.producers.gaushit2dTPCWE.MaxMultiHit: 30
+physics.producers.gaushit2dTPCWW.MaxMultiHit: 30
+
+# Way looser Chi2 requirement
+physics.producers.gaushit2dTPCEE.Chi2NDF: 2000
+physics.producers.gaushit2dTPCEW.Chi2NDF: 2000
+physics.producers.gaushit2dTPCWE.Chi2NDF: 2000
+physics.producers.gaushit2dTPCWW.Chi2NDF: 2000
+
+# Re-fitting strategy
+# Anecdotally, this did not help
+# physics.producers.gaushit2dTPCEE.TryNplus1Fits: true
+# physics.producers.gaushit2dTPCEW.TryNplus1Fits: true
+# physics.producers.gaushit2dTPCWE.TryNplus1Fits: true
+# physics.producers.gaushit2dTPCWW.TryNplus1Fits: true
+
+# Pandora settings new
+physics.producers.pandoraGausCryoE.ConfigFile: "PandoraSettings_Master_ICARUS_NeutrinoHitWidth.xml"
+physics.producers.pandoraGausCryoE.UseHitWidths: true
+physics.producers.pandoraGausCryoW.ConfigFile: "PandoraSettings_Master_ICARUS_NeutrinoHitWidth.xml"
+physics.producers.pandoraGausCryoW.UseHitWidths: true
