@@ -1,3 +1,0 @@
-#include "stage1_run2_icarus_MC.fcl"
-
-physics.producers.mcreco.MCParticleDroppedLabel: "largeantdropped"
