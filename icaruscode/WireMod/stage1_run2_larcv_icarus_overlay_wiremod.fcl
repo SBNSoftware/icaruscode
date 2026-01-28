@@ -16,7 +16,19 @@ physics.producers:
 }
 
 # tell gaushit2d to use the ROIs from WireMod
-physics.producers.gaushit2dTPCEE.CalDataModuleLabel: "WireModXXWTPCEE"
-physics.producers.gaushit2dTPCEW.CalDataModuleLabel: "WireModXXWTPCEW"
-physics.producers.gaushit2dTPCWE.CalDataModuleLabel: "WireModXXWTPCWE"
-physics.producers.gaushit2dTPCWW.CalDataModuleLabel: "WireModXXWTPCWW"
+physics.producers.gaushit2dTPCEE.CalDataModuleLabel: "WMWireToROI:PHYSCRATEDATATPCEE"
+physics.producers.gaushit2dTPCEW.CalDataModuleLabel: "WMWireToROI:PHYSCRATEDATATPCEW"
+physics.producers.gaushit2dTPCWE.CalDataModuleLabel: "WMWireToROI:PHYSCRATEDATATPCWE"
+physics.producers.gaushit2dTPCWW.CalDataModuleLabel: "WMWireToROI:PHYSCRATEDATATPCWW"
+
+# tell gaushitPT2d to use the ROIs from WireMod
+physics.producers.gaushitPT2dTPCEE.CalDataModuleLabel: "WMWireToROI:PHYSCRATEDATATPCEE"
+physics.producers.gaushitPT2dTPCEW.CalDataModuleLabel: "WMWireToROI:PHYSCRATEDATATPCEW"
+physics.producers.gaushitPT2dTPCWE.CalDataModuleLabel: "WMWireToROI:PHYSCRATEDATATPCWE"
+physics.producers.gaushitPT2dTPCWW.CalDataModuleLabel: "WMWireToROI:PHYSCRATEDATATPCWW"
+
+# tell the caloskimmer to use the ROIs from WireMod
+physics.analyzers.caloskimE.RawDigitproducers: [ "WMWireToROI:PHYSCRATEDATATPCEW",
+                                                 "WMWireToROI:PHYSCRATEDATATPCEE" ]
+physics.analyzers.caloskimW.RawDigitproducers: [ "WMWireToROI:PHYSCRATEDATATPCWW",
+                                                 "WMWireToROI:PHYSCRATEDATATPCWE" ]

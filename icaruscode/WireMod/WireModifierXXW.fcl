@@ -77,12 +77,27 @@ WireModXXWTab: { WireModXXWTPCEE: @local::WireModXXWTPCEE
                  WireModXXWTPCWE: @local::WireModXXWTPCWE
                  WireModXXWTPCWW: @local::WireModXXWTPCWW }
 
-WireModSequence: [ @sequence::dummyGaushit2dSeq, WMROI2Wire, @sequence::WireModXXWSeq ]
+WMWireToROI:
+{
+  module_type: "WireToChannelROI"
+  WireModuleLabelVec: [ "WireModXXWTPCEE",
+                        "WireModXXWTPCEW",
+                        "WireModXXWTPCWE",
+                        "WireModXXWTPCWW" ]
+  OutInstanceLabelVec: [ "PHYSCRATEDATATPCEE",
+                         "PHYSCRATEDATATPCEW",
+                         "PHYSCRATEDATATPCWE",
+                         "PHYSCRATEDATATPCWW" ]
+  DiagnosticOutput: false
+}
+
+WireModSequence: [ @sequence::dummyGaushit2dSeq, WMROI2Wire, @sequence::WireModXXWSeq, WMWireToROI ]
 WireModTable:
 {
   @table::dummyGaushit2dTab
   WMROI2Wire: @local::WMROI2Wire
   @table::WireModXXWTab
+  WMWireToROI: @local::WMWireToROI
 }
 
 END_PROLOG
