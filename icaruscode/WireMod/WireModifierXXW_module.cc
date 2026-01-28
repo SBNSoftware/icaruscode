@@ -158,9 +158,7 @@ namespace wiremod
     }
 
     // we make these things
-    produces<std::vector<recob::Wire      >>();
-    produces<std::vector<recob::ChannelROI>>();
-    //produces<art::Assns<raw::RawDigit, recob::Wire>>();
+    produces<std::vector<recob::Wire>>();
   }
 
   //------------------------------------------------
@@ -193,8 +191,7 @@ namespace wiremod
     auto const& hitVec(*hitHandle);
 
     // put the new stuff somewhere
-    std::unique_ptr<std::vector<recob::Wire      >> new_wires(new std::vector<recob::Wire      >());
-    std::unique_ptr<std::vector<recob::ChannelROI>> new_crois(new std::vector<recob::ChannelROI>());
+    std::unique_ptr<std::vector<recob::Wire>> new_wires(new std::vector<recob::Wire>());
 
     sys::WireModUtility wmUtil(fGeometry, fWireReadout, detProp); // detector geometry & properties
     wmUtil.applyChannelScale = false;
@@ -240,12 +237,11 @@ namespace wiremod
         << "Checking wire " << i_w;
 
       auto const& wire = wireVec.at(i_w);
-
+      if (wire.NSignal() == 0)
+        continue;
 
       recob::Wire::RegionsOfInterest_t new_rois;
-      recob::ChannelROI::RegionsOfInterest_t new_rois_ints;
-      new_rois     .resize(wire.SignalROI().size());
-      new_rois_ints.resize(wire.SignalROI().size());
+      new_rois.resize(wire.SignalROI().size());
 
       unsigned int my_plane = geo::kUnknown;
       if (wire.View() == fWireReadout->Plane(geo::PlaneID(0, 0, 0)).View())
@@ -284,8 +280,7 @@ namespace wiremod
 
         auto it_map = wmUtil.ROIMatchedEdepMap.find(roi_key);
         if(it_map==wmUtil.ROIMatchedEdepMap.end()){
-          new_rois     .add_range(range.begin_index(), modified_data);
-          new_rois_ints.add_range(range.begin_index(), modified_data);
+          new_rois.add_range(range.begin_index(), modified_data);
           MF_LOG_DEBUG("WireModifierXXW")
             << "    Could not find matching Edep. Skip";
           continue;
@@ -293,8 +288,7 @@ namespace wiremod
         std::vector<size_t> matchedEdepIdxVec = it_map->second;
         if(matchedEdepIdxVec.size() == 0)
         {
-          new_rois     .add_range(range.begin_index(), modified_data);
-          new_rois_ints.add_range(range.begin_index(), modified_data);
+          new_rois.add_range(range.begin_index(), modified_data);
           MF_LOG_DEBUG("WireModifierXXW")
             << "    No indices for Edep. Skip";
           continue;
@@ -390,14 +384,12 @@ namespace wiremod
         }
         
         wmUtil.ModifyROI(modified_data, roi_properties, subROIPropVec, SubROIMatchedScalesMap);
-        new_rois     .add_range(roi_properties.begin, modified_data);
-        new_rois_ints.add_range(roi_properties.begin, modified_data);
+        new_rois.add_range(roi_properties.begin, modified_data);
       }
 
         
 
-      new_wires->emplace_back(new_rois,      wire.Channel(), wire.View());
-      new_crois->emplace_back(new_rois_ints, wire.Channel()             );
+      new_wires->emplace_back(new_rois, wire.Channel(), wire.View());
 
       if (fSaveHistsByChannel && isModified)
       {
@@ -463,7 +455,6 @@ namespace wiremod
     } // end loop over wires
 
     evt.put(std::move(new_wires));
-    evt.put(std::move(new_crois));
   }
   DEFINE_ART_MODULE(WireModifierXXW)
 } // end namespace
