@@ -28,7 +28,16 @@ physics.producers.gaushitPT2dTPCWE.CalDataModuleLabel: "WMWireToROI:PHYSCRATEDAT
 physics.producers.gaushitPT2dTPCWW.CalDataModuleLabel: "WMWireToROI:PHYSCRATEDATATPCWW"
 
 # tell the caloskimmer to use the ROIs from WireMod
-physics.analyzers.caloskimE.RawDigitproducers: [ "WMWireToROI:PHYSCRATEDATATPCEW",
-                                                 "WMWireToROI:PHYSCRATEDATATPCEE" ]
-physics.analyzers.caloskimW.RawDigitproducers: [ "WMWireToROI:PHYSCRATEDATATPCWW",
-                                                 "WMWireToROI:PHYSCRATEDATATPCWE" ]
+physics.analyzers.caloskimE.RawDigitproducers: [ "WMWireToROI:PHYSCRATEDATATPCEE",
+                                                 "WMWireToROI:PHYSCRATEDATATPCEW" ]
+physics.analyzers.caloskimW.RawDigitproducers: [ "WMWireToROI:PHYSCRATEDATATPCWE",
+                                                 "WMWireToROI:PHYSCRATEDATATPCWW" ]
+
+# drop products that we don't need
+outputs.out1.outputCommands:
+[
+  @sequence::outputs.out1.outputCommands,
+  "drop *_dummyGaushit2dTPC*_*_*",
+  "drop *_WMROI2Wire_*_*",
+  "drop *_WireModXXWTPC*_*_*"
+]
