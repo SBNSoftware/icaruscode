@@ -141,6 +141,7 @@ public:
                           float &sum_pe_left, float &sum_pe_right,
                           std::vector<double> &pmt_start_time,
                           std::vector<double> &pmt_rise_time,
+                          std::vector<double> &pmt_peak_time,
                           std::vector<double> &pmt_start_rwm_time,
                           std::vector<double> &pmt_pe,
                           std::vector<double> &pmt_amplitude,
@@ -216,6 +217,7 @@ private:
   float m_flash_width_z;
   std::vector<double> m_pmt_start_time;
   std::vector<double> m_pmt_rise_time;
+  std::vector<double> m_pmt_peak_time;
   std::vector<double> m_pmt_start_time_rwm;
   std::vector<double> m_pmt_pe;
   std::vector<double> m_pmt_amplitude;
@@ -405,8 +407,10 @@ void opana::ICARUSFlashAssAna::beginJob()
       ttree->Branch("pmt_x", &m_pmt_x);
       ttree->Branch("pmt_y", &m_pmt_y);
       ttree->Branch("pmt_z", &m_pmt_z);
-      ttree->Branch("time_pmt", &m_pmt_start_time);
-      ttree->Branch("time_pmt_rwm", &m_pmt_start_time_rwm);
+      ttree->Branch("time_start_pmt", &m_pmt_start_time);
+      ttree->Branch("time_rise_pmt", &m_pmt_rise_time);
+      ttree->Branch("time_peak_pmt", &m_pmt_peak_time);
+      ttree->Branch("time_start_pmt_rwm", &m_pmt_start_time_rwm);
       ttree->Branch("pe_pmt", &m_pmt_pe);
       ttree->Branch("amplitude_pmt", &m_pmt_amplitude);
 
@@ -624,6 +628,7 @@ void opana::ICARUSFlashAssAna::processOpHitsFlash(std::vector<art::Ptr<recob::Op
                                                   float &sum_pe_left, float &sum_pe_right,
                                                   std::vector<double> &pmt_start_time,
                                                   std::vector<double> &pmt_rise_time,
+                                                  std::vector<double> &pmt_peak_time,
                                                   std::vector<double> &pmt_start_time_rwm,
                                                   std::vector<double> &pmt_pe,
                                                   std::vector<double> &pmt_amplitude,
@@ -669,6 +674,7 @@ void opana::ICARUSFlashAssAna::processOpHitsFlash(std::vector<art::Ptr<recob::Op
     {
       pmt_start_time[channel_id] = m_start_time;
       pmt_rise_time[channel_id] = m_rise_time;
+      pmt_peak_time[channel_id] = m_peak_time;
       pmt_start_time_rwm[channel_id] = m_start_time_rwm;
       pmt_amplitude[channel_id] = m_amplitude;
     }
@@ -867,6 +873,7 @@ void opana::ICARUSFlashAssAna::analyze(art::Event const &e)
           m_pmt_pe.resize(360);
           m_pmt_start_time.resize(360);
           m_pmt_rise_time.resize(360);
+          m_pmt_peak_time.resize(360);
           m_pmt_start_time_rwm.resize(360);
           m_pmt_amplitude.resize(360);
 
@@ -893,7 +900,8 @@ void opana::ICARUSFlashAssAna::analyze(art::Event const &e)
           processOpHitsFlash(ophits,
                              m_multiplicity_left, m_multiplicity_right,
                              m_sum_pe_left, m_sum_pe_right, m_pmt_start_time,
-                             m_pmt_rise_time, m_pmt_start_time_rwm, m_pmt_pe, m_pmt_amplitude,
+                             m_pmt_rise_time, m_pmt_peak_time,
+                             m_pmt_start_time_rwm, m_pmt_pe, m_pmt_amplitude,
                              fOpHitFlashTrees[iFlashLabel]);
 
           m_multiplicity = m_multiplicity_left + m_multiplicity_right;
@@ -907,6 +915,7 @@ void opana::ICARUSFlashAssAna::analyze(art::Event const &e)
           m_pmt_pe.clear();
           m_pmt_start_time.clear();
           m_pmt_rise_time.clear();
+          m_pmt_peak_time.clear();
           m_pmt_start_time_rwm.clear();
 
           idx++;
