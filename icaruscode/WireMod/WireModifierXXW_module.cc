@@ -200,6 +200,8 @@ namespace wiremod
     wmUtil.applyXZAngleScale = false;
     wmUtil.applyYZAngleScale = false;
     wmUtil.applydEdXScale    = false;
+    if (fRatioFileName == "NOFILE")
+      wmUtil.applyXXWScale = false;
     wmUtil.graph2Ds_Charge_XXW = fGraph_charge_XXW;
     wmUtil.graph2Ds_Sigma_XXW  = fGraph_sigma_XXW;
 
@@ -237,11 +239,13 @@ namespace wiremod
         << "Checking wire " << i_w;
 
       auto const& wire = wireVec.at(i_w);
+      recob::Wire::RegionsOfInterest_t new_rois;
+      bool isModified = false;
+
       if (wire.NSignal() == 0)
         continue;
 
-      recob::Wire::RegionsOfInterest_t new_rois;
-      new_rois.resize(wire.SignalROI().size());
+      new_rois.resize(wire.NSignal());
 
       unsigned int my_plane = geo::kUnknown;
       if (wire.View() == fWireReadout->Plane(geo::PlaneID(0, 0, 0)).View())
@@ -264,9 +268,6 @@ namespace wiremod
         MF_LOG_DEBUG("WireModifierXXW")
           << "Wire is on unsupported plane. Skip.";
       }
-
-      // keep track of if this wire is modified
-      bool isModified = false;
 
       for(size_t i_r = 0; i_r < wire.SignalROI().get_ranges().size(); ++i_r)
       {
@@ -386,8 +387,6 @@ namespace wiremod
         wmUtil.ModifyROI(modified_data, roi_properties, subROIPropVec, SubROIMatchedScalesMap);
         new_rois.add_range(roi_properties.begin, modified_data);
       }
-
-        
 
       new_wires->emplace_back(new_rois, wire.Channel(), wire.View());
 
