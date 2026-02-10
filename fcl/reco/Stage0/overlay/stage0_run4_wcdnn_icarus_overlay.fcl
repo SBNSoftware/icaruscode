@@ -1,0 +1,7 @@
+#include "stage0_run2_wcdnn_icarus_overlay.fcl"
+
+# set RUN-4 tune for optical reconstruction
+physics.producers.ophit.SPEArea: @local::SPERun4.Area
+physics.producers.ophit.SPEShift: @local::SPERun4.Shift
+physics.producers.mcophit.SPEArea: @local::SPERun4.Area
+physics.producers.mcophit.SPEAmplitude: @local::SPERun4.Amplitude
