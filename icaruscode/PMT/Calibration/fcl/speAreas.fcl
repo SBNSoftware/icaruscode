@@ -1,0 +1,10 @@
+#include "messages_icarus.fcl"
+#include "stage0_run2_wcdnn_icarus.fcl"
+
+process_name: stage0p1
+
+services.IPhotonCalibratorService.Verbose: true
+services.IPhotonCalibratorService.AreaTag: "v1r0"
+services.IPMTTimingCorrectionService.Verbose: true
+
+services.message: @local::icarus_message_services_interactive_debug

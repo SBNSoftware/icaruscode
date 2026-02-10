@@ -5,23 +5,33 @@
 
 BEGIN_PROLOG
 	
-icarus_simpmt: 
+icarus_simpmt_run2: 
 {
   module_type:               "SimPMTIcarus"
   InputModule:               "pdfastsim"
   
-  @table::icarus_pmtsimulationalg_standard
+  @table::icarus_pmtsimulationalg_standard_run2
 }
 
+icarus_simpmt_run4: 
+{
+  module_type:               "SimPMTIcarus"
+  InputModule:               "pdfastsim"
+  
+  @table::icarus_pmtsimulationalg_standard_run4
+}
 
-icarus_simpmt_nonoise: {
-  @table::icarus_simpmt
+icarus_simpmt_run2_nonoise: {
+  @table::icarus_simpmt_run2
   @table::icarus_pmtsimulation.disable_noise
 }
 
-icarus_simpmt_noise: {
-  @table::icarus_simpmt
+icarus_simpmt_run4_nonoise: {
+  @table::icarus_simpmt_run4
+  @table::icarus_pmtsimulation.disable_noise
 }
 
+icarus_simpmt: @local::icarus_simpmt_run2
+icarus_simpmt_nonoise: @local::icarus_simpmt_run2_nonoise
 
 END_PROLOG

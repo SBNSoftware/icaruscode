@@ -1,0 +1,22 @@
+#include "stage0_run2_wcdnn_icarus_overlay.fcl"
+
+process_name: OpMCstage0
+
+## only perform PMT/CRT MCstage0 on top of reprocessed MC overlay files
+## Notes:
+## - previous MCStage0 PMT/CRT products have already been removed
+## - new inputs have been re-baked, but with standard tag names
+## - need to pick correct reconstruction tune for PMT flow
+
+# execute PMT/CRT only path
+physics.path: [   @sequence::icarus_stage0_overlay_PMT, 
+                  @sequence::icarus_stage0_mc_crtreco # only reco, hits from overlay
+              ]
+
+# update mcophit producer to pick up Run-2 SPE tune
+# main ophit producer picks up from the SPEArea database
+physics.producers.mcophit.SPEArea: @local::SPERun2.Area
+physics.producers.mcophit.SPEAmplitude: @local::SPERun2.Amplitude
+
+
+

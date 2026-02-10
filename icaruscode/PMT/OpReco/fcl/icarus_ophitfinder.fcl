@@ -191,12 +191,14 @@ icarus_ophit: # some basic configuration
    InputModule:    "opdaq"
    InputLabels:    []
    ChannelMasks:   []
+   UseCalibrator: true   # use calibrator service (SPEArea database)
+                         # if true, overrides SPEArea / SPEShift below
    HitThreshold:   0.2   # PE
    AreaToPE:       true  # Use area to calculate number of PEs
-   SPEArea:        @local::SPE.Area # If AreaToPE is true, this number is
-                         # used as single PE area (in ADC counts)
+   SPEArea:        @local::SPE.Area  # If AreaToPE is true, this number is
+                                        # used as single PE area (in ADC counts)
    SPEShift:       @local::SPE.Shift # Used by PhotonCalibratorStandard to compute
-                         # PE = area / SPEArea + SPEShift
+                                         # PE = area / SPEArea + SPEShift
    UseStartTime:   false # start and peak times each in its own data member
    reco_man:       @local::standard_preco_manager
    HitAlgoPset:    @local::icarus_opreco_hit_slidingwindow_201910
@@ -215,7 +217,7 @@ icarus_ophitdebugger.OutputFile:  "ophit_debug.root"
 # this is the "standard" ICARUS configuration for MC optical hit reconstruction:
 icarus_ophit_MC: {
   @table::icarus_ophit
-  PedAlgoPset:    @local::icarus_opreco_pedestal_MC_DocDB24969
+  UseCalibrator: false
   InputModule: "opdaq"
 }
 
@@ -228,7 +230,6 @@ icarus_ophitdebugger_MC.OutputFile:  "ophit_debug.root"
 icarus_ophit_data: {
   @table::icarus_ophit
   InputModule: "daqPMT"
-#  PedAlgoPset: @local::icarus_opreco_pedestal_DocDB24969
 }
 
 icarus_ophitdebugger_data: @local::icarus_ophit_data

@@ -1,5 +1,8 @@
+# add timing corrections to optical path
+physics.producers.ophit: @local::icarus_ophit_timing_correction
+
 # Exclude crthit from path -- not needed since it's included at overlay stage
-physics.path: [   @sequence::icarus_stage0_mc_PMT, 
+physics.path: [   @sequence::icarus_stage0_overlay_PMT, 
                   MCDecodeTPCROI, 
                   @sequence::icarus_stage0_2d_multiTPC,
                   @sequence::icarus_stage0_mc_crtreco
@@ -10,6 +13,7 @@ physics.producers.MCDecodeTPCROI.FragmentsLabelVec: ["overlayTPCRawWW", "overlay
 physics.producers.pmtbaselines.OpticalWaveforms: "overlayOpWaveforms"
 physics.producers.pmtfixedthr.OpticalWaveforms: "overlayOpWaveforms"
 physics.producers.opdetonbeam.OpticalWaveforms: "overlayOpWaveforms"
-physics.producers.ophit.InputModule: "overlayOpWaveforms"
+physics.producers.ophituncorrected.InputModule: "overlayOpWaveforms"
+physics.producers.ophit.InputLabels: [ "ophituncorrected" ]
 physics.producers.crttrack.DataLabelHits: "overlayCRTHit"
 physics.producers.crtpmt.CrtHitModuleLabel: "overlayCRTHit"
