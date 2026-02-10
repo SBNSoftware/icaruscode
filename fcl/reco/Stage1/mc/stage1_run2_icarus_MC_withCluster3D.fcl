@@ -1,0 +1,9 @@
+#include "stage1_run2_icarus_MC.fcl"
+
+physics.analyzers.caloskimW.HITproducer: "cluster3DCryoW"
+physics.analyzers.caloskimE.HITproducer: "cluster3DCryoE"
+
+physics.producers.CRTT0Tagging.HitLabel: ["cluster3DCryoE", "cluster3DCryoW"]
+
+physics.producers.pandoraGausCryoW.HitFinderModuleLabel: "cluster3DCryoW"
+physics.producers.pandoraGausCryoE.HitFinderModuleLabel: "cluster3DCryoE"
