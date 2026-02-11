@@ -1,6 +1,6 @@
 /**
  * @file    icaruscode/TPC/NuGraph/ICARUSFilteredNuSliceHitsProducer_module.cc
- * @brief   Producer to filter the input hits according to a configurable NuGraph2 filter score
+ * @brief   Producer to filter the input hits according to a configurable NuGraph2 filter score.
  * @author  Riccardo Triozzi ( triozzi@pd.infn.it )
  * @date    September 9, 2025
  */
