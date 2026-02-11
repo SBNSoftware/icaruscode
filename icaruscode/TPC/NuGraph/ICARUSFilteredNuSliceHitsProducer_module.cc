@@ -1,7 +1,7 @@
 /**
  * @file    icaruscode/TPC/NuGraph/ICARUSFilteredNuSliceHitsProducer_module.cc
- * @brief   Implementation of `ICARUSFilteredNuSliceHitsProducer` _art_ module.
- * @author  Riccardo Triozzi
+ * @brief   Producer to filter the input hits according to a configurable NuGraph2 filter score
+ * @author  Riccardo Triozzi ( triozzi@pd.infn.it )
  * @date    September 9, 2025
  */
 
@@ -31,6 +31,41 @@
 #include "lardataobj/AnalysisBase/MVAOutput.h"
 
 #include "sbnobj/Common/Reco/TPCPMTBarycenterMatch.h"
+
+/**
+ * @brief Filters the input hits according to a configurable NuGraph2 filter score.
+ * 
+ * This module gets the slices from a `SliceLabel` (e.g., `NCCSlicesCryoE`, 
+ * corresponding to all the slices tagged as not-clear-cosmic by Pandora in 
+ * the east cryostat) and the associated hit via the corresponding `PandoraLabel`
+ * (e.g., `pandoraGausCryoE`).
+ * For each hit, it grabs the NuGraph2 filter and semantic predictions
+ * from the corresponding `NuGraphLabel` (e.g., `NGMultiSliceCryoE`). 
+ * In the current infrastructure, all the hits are guaranteed to
+ * have a corresponding NuGraph2 prediction.
+ * 
+ * The hits are filtered when their NuGraph2 filter score is above a configurable
+ * `ScoreCut`, by default set to zero. A zero `ScoreCut` means that every hit is
+ * propagated to the output, and no filtering happens.
+ * 
+ * Output
+ * -------
+ * 
+ * Collections of filtered hits, along with their filter and semantic predictions.
+ * Associations between the filtered hits and their filter and semantic predictions.
+ * Both are needed to fit into the current Pandora and CAF infrastructures.
+ * 
+ * Configuration parameters
+ * -------------------------
+ * * `SliceLabel` (string, mandatory): tag of input slices (with cryostat tag), and
+ *     their associations to hits, space points, particle flow objects etc.
+ * * `PandoraLabel` (string, mandatory): tag of Pandora objects (with cryostat tag).
+ * * `NuGraphLabel` (string, mandatory): tag of NuGraph2 predictions 
+ *     (with cryostat tag).
+ * * `ScoreCut` (real, default: 0): hits are filtered when their
+ *     NuGraph2 filter score is <= `ScoreCut`.
+ * 
+ */
 
 class ICARUSFilteredNuSliceHitsProducer : public art::EDProducer {
 
@@ -63,14 +98,11 @@ ICARUSFilteredNuSliceHitsProducer::ICARUSFilteredNuSliceHitsProducer(fhicl::Para
   fNGLabel{p.get<std::string>("NuGraphLabel", "NGMultiSliceCryoE")},
   fScoreCut(p.get<float>("ScoreCut", 0))
 {
-  // Call appropriate produces<>() functions here.
   produces<std::vector<recob::Hit>>();
   produces<std::vector<anab::FeatureVector<1>>>();
   produces<std::vector<anab::FeatureVector<5>>>();
   produces<art::Assns<recob::Hit, anab::FeatureVector<1>>>("filter");
   produces<art::Assns<recob::Hit, anab::FeatureVector<5>>>("semantic");
-
-  // Call appropriate consumes<>() for any products to be retrieved by this module.
 }
 
 void ICARUSFilteredNuSliceHitsProducer::produce(art::Event& e)
@@ -81,11 +113,11 @@ void ICARUSFilteredNuSliceHitsProducer::produce(art::Event& e)
   auto outputHitFilterAssns = std::make_unique<art::Assns<recob::Hit, anab::FeatureVector<1>>>();
   auto outputHitSemanticAssns = std::make_unique<art::Assns<recob::Hit, anab::FeatureVector<5>>>();
 
-  // get slices
+  // Get slices.
   const std::vector<art::Ptr<recob::Slice>> slices = e.getProduct<std::vector<art::Ptr<recob::Slice>>>(fSliceLabel);
   art::FindManyP<recob::Hit> sliceToHitsAssoc(slices, e, fPandoraLabel);
 
-  // get input hits
+  // Get input hits.
   std::vector<art::Ptr<recob::Hit>> inputHits;
   for (size_t islc = 0; islc < slices.size(); ++islc) {
     const std::vector<art::Ptr<recob::Hit>> hitsInSlice = sliceToHitsAssoc.at(islc);
@@ -94,12 +126,13 @@ void ICARUSFilteredNuSliceHitsProducer::produce(art::Event& e)
   }
   std::cout << "Number of hits before ICARUSFilteredNuSliceHitsProducer: " << inputHits.size() << std::endl;
 
-  // get NuGraph filter and semantic predictions
+  // Get NuGraph filter and semantic predictions.
   art::FindOneP<anab::FeatureVector<1>> hitToNGFilterAssoc(inputHits, e, art::InputTag(fNGLabel.label(), "filter"));
   art::FindOneP<anab::FeatureVector<5>> hitToNGSemanticAssoc(inputHits, e, art::InputTag(fNGLabel.label(), "semantic"));
   art::PtrMaker<recob::Hit> hitPtrMaker{e};
 
-  // filter input hits, re-create filter and sematic objects (needed for Pandora) and associations (needed for CAFs)
+  // Filter input hits, re-create filter and sematic objects (needed for Pandora) and associations (needed for CAFs).
+  // By setting `fScoreCut` to zero, not filtering happens and all the hits are propagated.
   for (size_t ihit = 0; ihit < inputHits.size(); ihit++) {
     art::Ptr<recob::Hit> hit = inputHits[ihit];
     if (hitToNGFilterAssoc.at(ihit).isNonnull()) {
