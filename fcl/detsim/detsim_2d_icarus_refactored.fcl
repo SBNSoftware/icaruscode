@@ -55,3 +55,5 @@ physics.producers.crtdaq.G4ModuleLabel: "shifted"
 physics.producers.opdaq.InputModule: "pdfastsim"
 physics.producers.shifted.InitAuxDetSimChannelLabel: "genericcrt"
 physics.producers.shifted.InitSimPhotonsLabel: "pdfastsim"
+
+physics.producers.daq.wcls_main.params.files_fields: "icarus_final_fit_dqdx6.json.bz2"
