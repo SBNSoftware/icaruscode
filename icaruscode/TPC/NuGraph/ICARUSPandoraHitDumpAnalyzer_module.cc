@@ -1,11 +1,9 @@
-
-////////////////////////////////////////////////////////////////////////
-// Class:       ICARUSPandoraHitDumpAnalyzer
-// Plugin Type: analyzer (Unknown Unknown)
-// File:        ICARUSPandoraHitDumpAnalyzer_module.cc
-//
-// Riccardo Triozzi
-////////////////////////////////////////////////////////////////////////
+/**
+ * @file    icaruscode/TPC/NuGraph/ICARUSPandoraHitDumpAnalyzer_module.cc
+ * @brief   Analyzer to check on TPC hits and their relationship with the Pandora reconstruction.
+ * @author  Riccardo Triozzi ( triozzi@pd.infn.it )
+ * @date    September 9, 2025
+ */
 
 #include "art/Framework/Core/EDAnalyzer.h"
 #include "art/Framework/Core/ModuleMacros.h"
@@ -20,7 +18,6 @@
 #include "fhiclcpp/ParameterSet.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
 
-// saving output
 #include "TTree.h"
 #include "art_root_io/TFileService.h"
 
@@ -40,32 +37,23 @@ using std::vector;
 class ICARUSPandoraHitDumpAnalyzer : public art::EDAnalyzer {
 public:
   explicit ICARUSPandoraHitDumpAnalyzer(fhicl::ParameterSet const& p);
-  // The compiler-generated destructor is fine for non-base
-  // classes without bare pointers or other resource use.
 
-  // Plugins should not be copied or assigned.
   ICARUSPandoraHitDumpAnalyzer(ICARUSPandoraHitDumpAnalyzer const&) = delete;
   ICARUSPandoraHitDumpAnalyzer(ICARUSPandoraHitDumpAnalyzer&&) = delete;
   ICARUSPandoraHitDumpAnalyzer& operator=(ICARUSPandoraHitDumpAnalyzer const&) = delete;
   ICARUSPandoraHitDumpAnalyzer& operator=(ICARUSPandoraHitDumpAnalyzer&&) = delete;
 
-  // Required functions.
   void analyze(art::Event const& e) override;
 
 private:
-  // Declare member data here.
   TTree *_treeHit, *_treeEvt;
 
-  // hit information
-  int _run, _subrun, _event, _id, _wire, _plane, _tpc, _cryo;
-
-  // NuGraph2 information
-  float _x_filter, _MIP, _HIP, _shower, _michel, _diffuse, _time;
-
-  // Pandora information
-  int _islc, _icluster, _ipfp, _pdg_hit;
-  float _ipfpslc, _vtx_x, _vtx_y, _vtx_z, _pdg;
   std::string fHitLabel, fPandoraLabel;
+
+  int _run, _subrun, _event, _id, _wire, _plane, _tpc, _cryo; ///< Hit information.
+  float _x_filter, _MIP, _HIP, _shower, _michel, _diffuse, _time; ///< NuGraph2 information.
+  int _islc, _icluster, _ipfp, _pdg_hit; ///< Pandora information.
+  float _ipfpslc, _vtx_x, _vtx_y, _vtx_z, _pdg; ///< More particle information.
 };
 
 ICARUSPandoraHitDumpAnalyzer::ICARUSPandoraHitDumpAnalyzer(fhicl::ParameterSet const& p)
@@ -73,7 +61,6 @@ ICARUSPandoraHitDumpAnalyzer::ICARUSPandoraHitDumpAnalyzer(fhicl::ParameterSet c
   fHitLabel{p.get<std::string>("HitLabel", "cluster3DCryoE")},
   fPandoraLabel{p.get<std::string>("PandoraLabel", "pandoraGausCryoE")}
 {
-  // Call appropriate consumes<>() for any products to be retrieved by this module.
   art::ServiceHandle<art::TFileService> tfs;
   _treeHit = tfs->make<TTree>("PandoraHitOutput", "PandoraHitOutput");
   _treeHit->Branch("run", &_run, "run/I");
@@ -112,7 +99,7 @@ void ICARUSPandoraHitDumpAnalyzer::analyze(art::Event const& e)
   e.getByLabel(fHitLabel, hitListHandle);
   std::cout << hitListHandle->size() << std::endl;
 
-  // map hits to Pandora slices
+  // Map hits to Pandora slices.
   art::Handle<std::vector<recob::Slice>> sliceHandle;
   e.getByLabel(fPandoraLabel, sliceHandle);
   art::FindManyP<recob::Hit> sliceAssoc(sliceHandle, e, fPandoraLabel);
@@ -125,7 +112,7 @@ void ICARUSPandoraHitDumpAnalyzer::analyze(art::Event const& e)
       hitToSliceID[h.key()] = slice->ID();
   }
 
-  // map hits to Pandora clusters
+  // Map hits to Pandora clusters.
   art::Handle<std::vector<recob::Cluster>> clusterHandle;
   e.getByLabel(fPandoraLabel, clusterHandle);
   art::FindManyP<recob::Hit> clusterAssoc(clusterHandle, e, fPandoraLabel);
@@ -139,7 +126,7 @@ void ICARUSPandoraHitDumpAnalyzer::analyze(art::Event const& e)
       hitToClusterID[h.key()] = cluster.key();
   }
 
-  // Pandora PFPs
+  // Get Pandora PFPs.
   art::Handle<std::vector<recob::PFParticle>> pfpHandle;
   e.getByLabel(fPandoraLabel, pfpHandle);
   art::FindManyP<recob::PFParticle> pfpAssoc(clusterHandle, e, fPandoraLabel);
@@ -151,7 +138,7 @@ void ICARUSPandoraHitDumpAnalyzer::analyze(art::Event const& e)
     pfpIDMap[pfp.key()] = ipfp; 
   }
 
-  // Pandora clusters
+  // Map clusters to Pandora PFPs.
   std::map<unsigned int, int> clusterToPFPID;
 
   for (size_t iclus = 0; iclus < clusterHandle->size(); ++iclus) {
@@ -163,30 +150,28 @@ void ICARUSPandoraHitDumpAnalyzer::analyze(art::Event const& e)
       clusterToPFPID[cluster.key()] = it->second;
   }
 
-  // fill PFP-level tree
+  // Fill hit tree.
   for (size_t ihit = 0; ihit < hitListHandle->size(); ihit++) {
     art::Ptr<recob::Hit> hit(hitListHandle, ihit);
 
-    // event information
+    // Fill event information.
     _event  = e.event();
     _subrun = e.subRun();
     _run    = e.run();
     _id     = hit.key();
 
-    // hit description
+    // Fill hit description.
     _wire  = hit->WireID().Wire;
     _plane = hit->WireID().Plane;
     _tpc   = hit->WireID().TPC;
     _cryo  = hit->WireID().Cryostat;
     _time  = hit->PeakTime();
 
-    // map to Pandora information
+    // Fill with the corresponding Pandora information.
     auto itSlice = hitToSliceID.find(hit.key());
     _islc = (itSlice != hitToSliceID.end()) ? itSlice->second : -1;
-
     auto itCluster = hitToClusterID.find(hit.key());
     _icluster = (itCluster != hitToClusterID.end()) ? itCluster->second : -1;
-
     _ipfp = -1;
     _pdg_hit = -1;
 
@@ -204,20 +189,21 @@ void ICARUSPandoraHitDumpAnalyzer::analyze(art::Event const& e)
     _treeHit->Fill();
   }
 
-  // fill PFP-level tree
   art::FindManyP<recob::Slice> slcToPFPAssoc(pfpHandle, e, fPandoraLabel);
   art::FindManyP<recob::Vertex> vtxToPFPAssoc(pfpHandle, e, fPandoraLabel);
+
+  // Fill PFP tree.
   for (size_t ipfp = 0; ipfp < pfpHandle->size(); ipfp++) {
     art::Ptr<recob::PFParticle> pfp(pfpHandle, ipfp);
 
-    // slice index
+    // Fill slice index.
     std::vector<art::Ptr<recob::Slice>> slcList = slcToPFPAssoc.at(pfp.key());
     if (slcList.size()) {
       art::Ptr<recob::Slice> slc = slcList[0];
       _ipfpslc = slc->ID();
     }
     
-    // vertex
+    // Fill vertex information.
     std::vector<art::Ptr<recob::Vertex>> vtxList = vtxToPFPAssoc.at(pfp.key());
     if (vtxList.size()) {
       art::Ptr<recob::Vertex> vtx = vtxList[0];
@@ -229,7 +215,7 @@ void ICARUSPandoraHitDumpAnalyzer::analyze(art::Event const& e)
       _vtx_x = _vtx_y = _vtx_z = -1.;
     }
 
-    // truth information
+    // Fill truth information.
     _pdg = pfp->PdgCode();
 
     _treeEvt->Fill();

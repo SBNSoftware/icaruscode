@@ -1,12 +1,9 @@
-
-////////////////////////////////////////////////////////////////////////
-// Class:       ICARUSNuGraphAnalyzer
-// Plugin Type: analyzer (Unknown Unknown)
-// File:        ICARUSNuGraphAnalyzer_module.cc
-//
-// Riccardo Triozzi and Leonardo Lena, based on the corresponding 
-// larrecodnn module by Giuseppe Cerati 
-////////////////////////////////////////////////////////////////////////
+/**
+ * @file    icaruscode/TPC/NuGraph/ICARUSNuGraphAnalyzer_module.cc
+ * @brief   Analyzer to check on TPC hits and their relationship with NuGraph2 predictions.
+ * @author  Riccardo Triozzi ( triozzi@pd.infn.it ), Giuseppe Cerati ( cerati@fnal.gov )
+ * @date    September 9, 2025
+ */
 
 #include "art/Framework/Core/EDAnalyzer.h"
 #include "art/Framework/Core/ModuleMacros.h"
@@ -21,7 +18,6 @@
 #include "fhiclcpp/ParameterSet.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
 
-// saving output
 #include "TTree.h"
 #include "art_root_io/TFileService.h"
 
@@ -40,20 +36,15 @@ using std::vector;
 class ICARUSNuGraphAnalyzer : public art::EDAnalyzer {
 public:
   explicit ICARUSNuGraphAnalyzer(fhicl::ParameterSet const& p);
-  // The compiler-generated destructor is fine for non-base
-  // classes without bare pointers or other resource use.
 
-  // Plugins should not be copied or assigned.
   ICARUSNuGraphAnalyzer(ICARUSNuGraphAnalyzer const&) = delete;
   ICARUSNuGraphAnalyzer(ICARUSNuGraphAnalyzer&&) = delete;
   ICARUSNuGraphAnalyzer& operator=(ICARUSNuGraphAnalyzer const&) = delete;
   ICARUSNuGraphAnalyzer& operator=(ICARUSNuGraphAnalyzer&&) = delete;
 
-  // Required functions.
   void analyze(art::Event const& e) override;
 
 private:
-  // Declare member data here.
   TTree *_treeHit, *_treeEvt;
   int _run, _subrun, _event, _id, _wire, _plane, _tpc, _cryo;
   float _x_filter, _MIP, _HIP, _shower, _michel, _diffuse, _time;
@@ -68,7 +59,6 @@ ICARUSNuGraphAnalyzer::ICARUSNuGraphAnalyzer(fhicl::ParameterSet const& p)
   fSliceLabel{p.get<std::string>("SliceLabel", "NCCSlicesCryoE")},
   fPandoraLabel{p.get<std::string>("PandoraLabel", "pandoraGausCryoE")}
 {
-  // Call appropriate consumes<>() for any products to be retrieved by this module.
   art::ServiceHandle<art::TFileService> tfs;
   _treeHit = tfs->make<TTree>("NuGraphHitOutput", "NuGraphHitOutput");
   _treeHit->Branch("run", &_run, "run/I");
@@ -100,11 +90,11 @@ ICARUSNuGraphAnalyzer::ICARUSNuGraphAnalyzer(fhicl::ParameterSet const& p)
 
 void ICARUSNuGraphAnalyzer::analyze(art::Event const& e)
 {
-  // get slices
+  // Get slices.
   const std::vector<art::Ptr<recob::Slice>> slices = e.getProduct<vector<art::Ptr<recob::Slice>>>(fSliceLabel);
   art::FindManyP<recob::Hit> findMHitsFromSlice(slices, e, fPandoraLabel);
 
-  // map hits to slices
+  // Map hits to slices.
   std::vector<art::Ptr<recob::Hit>> allHits;
   std::map<unsigned int, int> hitToSliceID;
   for (size_t islc = 0; islc < slices.size(); ++islc) {
@@ -125,13 +115,13 @@ void ICARUSNuGraphAnalyzer::analyze(art::Event const& e)
   for (size_t hitIdx = 0; hitIdx < allHits.size(); hitIdx++) {
     art::Ptr<recob::Hit> hit = allHits[hitIdx];
 
-    // event information
+    // Fill event information.
     _event  = e.event();
     _subrun = e.subRun();
     _run    = e.run();
     _id     = hit.key();
 
-    // slice ID
+    // Fill slice ID.
     auto itSlice = hitToSliceID.find(hit.key());
     _islc = (itSlice != hitToSliceID.end()) ? itSlice->second : -1;
 
@@ -141,7 +131,7 @@ void ICARUSNuGraphAnalyzer::analyze(art::Event const& e)
     if (filter.isNull() || semantic.isNull()) {
       std::cout << "Hit #" << hitIdx << " with key " << hit.key() << " had no valid NuGraphOutput. Skipping." << "\n";
 
-      // hit description
+      // Fill hit description.
       _wire  = hit->WireID().Wire;
       _plane = hit->WireID().Plane;
       _tpc   = hit->WireID().TPC;
@@ -152,7 +142,7 @@ void ICARUSNuGraphAnalyzer::analyze(art::Event const& e)
       continue;
     } 
     else {
-      // NuGraph predictions
+      // Fill NuGraph predictions.
       _x_filter = filter->at(0);
       _MIP      = semantic->at(0);
       _HIP      = semantic->at(1);
@@ -160,7 +150,7 @@ void ICARUSNuGraphAnalyzer::analyze(art::Event const& e)
       _michel   = semantic->at(3);
       _diffuse  = semantic->at(4);
 
-      // hit description
+      // Fill hit description.
       _wire  = hit->WireID().Wire;
       _plane = hit->WireID().Plane;
       _tpc   = hit->WireID().TPC;

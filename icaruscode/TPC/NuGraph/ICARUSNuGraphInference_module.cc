@@ -1,11 +1,11 @@
 /**
  * @file icaruscode/TPC/NuGraph/ICARUSNuGraphInference_module.cc
  * @brief Implementation of `ICARUSNuGraphInference` _art_ module.
- * @author Leonardo Lena (https://github.com/leonardo-lena) based on previous work.
+ * @author Leonardo Lena ( https://github.com/leonardo-lena ), Giuseppe Cerati ( cerati@fnal.gov )
  * @date October 1, 2025
  */
 
-#include <torch/script.h> // this is to be loaded first else it conflicts with... something and does not compile.
+#include <torch/script.h>
 
 #include "art/Framework/Core/EDProducer.h"
 #include "art/Framework/Core/ModuleMacros.h"
