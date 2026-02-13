@@ -1,6 +1,8 @@
 /**
- * @file   icaruscode/TPC/NuGraph/ICARUSNuGraphMultiLoader_tool.cc
- * @author Leonardo Lena (https://github.com/leonardo-lena) based on G. Cerati (cerati@fnal.gov) work.
+ * @file icaruscode/TPC/NuGraph/ICARUSNuGraphMultiLoader_tool.cc
+ * @brief Implementation of `ICARUSNuGraphMultiLoader` _art_ module.
+ * @author Leonardo Lena ( https://github.com/leonardo-lena ), Giuseppe Cerati ( cerati@fnal.gov )
+ * @date October 1, 2025
  */
 
 #include "larrecodnn/NuGraph/Tools/LoaderToolBase.h"
@@ -28,9 +30,10 @@ class ICARUSNuGraphMultiLoader : public LoaderToolBase {
  * @brief Tool to collect the inputs needed by NuGraph from ICARUS data products.
  *
  * Read hit and space points from the event record, and package them for usage in NuGraph.
- * This tool is called from icaruscode/TPC/NuGraph/ICARUSNuGraphInference_module.cc.
+ * This tool is called from `icaruscode/TPC/NuGraph/ICARUSNuGraphInference_module.cc`.
  * Hits are stitched so that the 4 ICARUS TPCs in a cryostat are viewed in a single time vs wire plane.
- * Only space points with chi2<MinChiSq (currently set to 0.5) and with 3 associated hits are considered.
+ * Only space points with `chi2 < MinChiSq` (currently set to 0.5) and with `nSPHits` (currently set to 3) 
+ * associated hits are considered.
  * The module assumes the input hits to all be from the same slice.
  */
 
@@ -54,6 +57,7 @@ public:
 
 private:
   static constexpr double minChiSq = 0.5; ///< Threshold to consider a space point good.
+  static constexpr int nSPHits = 3;       ///< Number of hits to filter `SpacePoint`s.
   art::InputTag fPandoraLabel;
   art::InputTag fSlicesLabel;
   art::InputTag fClusterLabel;
@@ -93,7 +97,7 @@ void ICARUSNuGraphMultiLoader::loadData(art::Event& event,
   for (const art::Ptr<recob::SpacePoint>&  spacePoint : spacePointsInSlice) {
     std::vector<art::Ptr<recob::Hit>> hitsOfSpacePoint = findMHitsFromSps.at(spacePoint.key());
 
-    if (spacePoint->Chisq() > minChiSq || hitsOfSpacePoint.size() != 3) continue;
+    if (spacePoint->Chisq() > minChiSq || hitsOfSpacePoint.size() != nSPHits) continue;
     spacepoint_table_spacepoint_id_data.push_back(spacePoint.key());
 
     for (const art::Ptr<recob::Hit>& hit : hitsOfSpacePoint) {
