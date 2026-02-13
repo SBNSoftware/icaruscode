@@ -35,37 +35,36 @@ using std::vector;
 
 /**
  * @class ICARUSNuGraphInference
- * Takes a std::vector<art::Ptr<recob::Slice>> from the Event on which to run NuGraph inference.
- * The data is pre-processed using a separate LoaderTool and then Delauney graphs are constructed in this module.
+ * Takes a `std::vector<art::Ptr<recob::Slice>>` from the Event on which to run NuGraph inference.
+ * The data is pre-processed using a separate `LoaderTool` and then Delauney graphs are constructed in this module.
  * NuGraph is then run on every single slice one at the time and the outputs are then flattened together to keep backward compatibility.
- * Two separate DecoderTool(s) - one for filter, one for semantic - are responsible for taking the NuGraph output and writing it to the Event.
+ * Two separate decoder tools, one for filter, one for semantic, are responsible for taking the NuGraph output and writing it to the Event.
  */
 class ICARUSNuGraphInference : public art::EDProducer {
   public:
     explicit ICARUSNuGraphInference(const fhicl::ParameterSet& params);
 
-    // Plugins should not be copied or assigned.
     ICARUSNuGraphInference(ICARUSNuGraphInference const&) = delete;
     ICARUSNuGraphInference(ICARUSNuGraphInference&&) = delete;
     ICARUSNuGraphInference& operator=(ICARUSNuGraphInference const&) = delete;
     ICARUSNuGraphInference& operator=(ICARUSNuGraphInference&&) = delete;
 
-    // Required functions.
     void produce(art::Event& event) override;
 
   private:
-  art::InputTag fSlicesLabel;
-  art::InputTag fHitLabel;
-  vector<std::string> planes;
-  size_t minHits;
-  bool debug;
-  vector<vector<float>> avgs;
-  vector<vector<float>> devs;
-  vector<float> pos_norm;
-  torch::jit::script::Module model;
-  std::unique_ptr<LoaderToolBase> _loaderTool;
-  // decoder tools
-  std::vector<std::unique_ptr<DecoderToolBase>> _decoderToolsVec;
+    art::InputTag fSlicesLabel;
+    art::InputTag fHitLabel;
+
+    vector<std::string> planes;
+    size_t minHits;
+    bool debug;
+    vector<vector<float>> avgs; ///< Averages of the input hit features, per plane.
+    vector<vector<float>> devs; ///< Standard deviations of the input hit features, per plane.
+    vector<float> pos_norm;     ///< Normalized 2d coordinates on the plane.
+    torch::jit::script::Module model;
+    std::unique_ptr<LoaderToolBase> _loaderTool;
+
+    std::vector<std::unique_ptr<DecoderToolBase>> _decoderToolsVec; ///< Decoder tools.
 };
 
 ICARUSNuGraphInference::ICARUSNuGraphInference(const fhicl::ParameterSet& params) : art::EDProducer{params},
@@ -83,7 +82,7 @@ ICARUSNuGraphInference::ICARUSNuGraphInference(const fhicl::ParameterSet& params
     _loaderTool = art::make_tool<LoaderToolBase>(params.get<fhicl::ParameterSet>("LoaderTool"));
     _loaderTool->setDebugAndPlanes(debug, planes);
 
-    // configure and construct Decoder Tools
+    // Configure and construct decoder tools.
     auto const tool_psets = params.get<fhicl::ParameterSet>("DecoderTools");
     for (auto const& tool_pset_labels : tool_psets.get_pset_names()) {
       std::cout << "decoder label: " << tool_pset_labels << std::endl;
@@ -125,7 +124,7 @@ void ICARUSNuGraphInference::produce(art::Event& event) {
     }
 
     if (emptyPlane) {
-      if (debug) std::cout << "Slice has atleast one empty plane. Skipping." << std::endl;
+      if (debug) std::cout << "Slice has at least one empty plane. Skipping." << std::endl;
       continue;
     } else {
       for (size_t plane = 0; plane < singleIdsmap.size(); plane++) {
@@ -164,7 +163,8 @@ void ICARUSNuGraphInference::produce(art::Event& event) {
     }
 
     if (debug) std::cout << "begin idsmapRev creation" << '\n';
-    // Reverse lookup from key to index in plane index
+
+    // Reverse lookup from key to index in plane index.
     std::map<size_t, size_t> idsmapRev;
     for (const auto& ipv : singleIdsmap) {
       for (size_t ih = 0; ih < ipv.size(); ih++) {
@@ -172,7 +172,6 @@ void ICARUSNuGraphInference::produce(art::Event& event) {
       }
     }
     if (debug) std::cout << "end idsmapRev creation" << '\n';
-
 
     struct Edge {
       size_t n1;
@@ -186,7 +185,7 @@ void ICARUSNuGraphInference::produce(art::Event& event) {
       };
     };
 
-    // Delauney graph construction
+    // Delauney graph construction.
     auto start_preprocess1 = std::chrono::high_resolution_clock::now();
     vector<vector<Edge>> edge2d(planes.size(), vector<Edge>());
     for (size_t p = 0; p < planes.size(); p++) {
@@ -210,7 +209,7 @@ void ICARUSNuGraphInference::produce(art::Event& event) {
       delaunator::Delaunator d(coords);
       if (debug) std::cout << "Found N triangles=" << d.triangles.size() / 3 << std::endl;
       for (std::size_t i = 0; i < d.triangles.size(); i += 3) {
-        //create edges in both directions
+        // Create edges in both directions.
         Edge e;
         e.n1 = d.triangles.at(i);
         e.n2 = d.triangles.at(i+1);
@@ -222,7 +221,7 @@ void ICARUSNuGraphInference::produce(art::Event& event) {
         e.n1 = d.triangles.at(i);
         e.n2 = d.triangles.at(i+2);
         edge2d[p].push_back(e);
-        e.n1 = d.triangles.at(i+1);
+        e.n1 = d.triangles.at(i+2);
         e.n2 = d.triangles.at(i);
         edge2d[p].push_back(e);
         //
@@ -234,7 +233,8 @@ void ICARUSNuGraphInference::produce(art::Event& event) {
         edge2d[p].push_back(e);
         //
       }
-      //sort and cleanup duplicate edges
+
+      // Sort and cleanup duplicate edges.
       std::sort(edge2d[p].begin(), edge2d[p].end(), [](const auto& i, const auto& j) {
         return (i.n1 != j.n1 ? i.n1 < j.n1 : i.n2 < j.n2);
       });
@@ -257,10 +257,10 @@ void ICARUSNuGraphInference::produce(art::Event& event) {
     if (debug) std::cout << "end preprocess1" << '\n';
     std::chrono::duration<double> elapsed_preprocess1 = end_preprocess1 - start_preprocess1;
 
-    // Nexus edges
+    // Nexus edges.
     auto start_preprocess2 = std::chrono::high_resolution_clock::now();
     vector<vector<Edge>> edge3d(planes.size(), vector<Edge>());
-    if (debug) std::cout << "start 3d edges creation" << '\n';
+    if (debug) std::cout << "Start 3d edges creation..." << '\n';
     for (size_t i = 0; i < spids->size(); ++i) {
       if (hitids_u->at(i) >= 0) {
         Edge e;
@@ -281,9 +281,9 @@ void ICARUSNuGraphInference::produce(art::Event& event) {
         edge3d[2].push_back(e);
       }
     }
-    if (debug) std::cout << "end 3d edges creation" << '\n';
+    if (debug) std::cout << "...end 3d edges creation." << '\n';
 
-    // Prepare inputs
+    // Prepare inputs: `nodeft` stores the node (hit) features.
     auto x = torch::Dict<std::string, torch::Tensor>();
     auto batch = torch::Dict<std::string, torch::Tensor>();
     for (size_t p = 0; p < planes.size(); p++) {
