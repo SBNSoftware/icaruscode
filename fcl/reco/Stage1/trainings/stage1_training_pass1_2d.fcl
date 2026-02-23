@@ -1,0 +1,53 @@
+############################################
+# Running pass1 DL vertex training
+# M Sotgia <msotgia@fnal.gov>
+# Nov. 6th 2025
+############################################
+
+
+
+BEGIN_PROLOG
+
+pandoraPassOneConfig: {
+    ConfigFile:             "PandoraSettings_Training_DlVertexPass1.xml" ##< Master file to run in reconstruction
+    EnableMCParticles:      true            ##< To be able to cheat is necessary to collapse to MC particles
+    SimChannelModuleLabel:  "daq:simpleSC"  ##< Correct sim channel to enable MC particles
+
+
+    # PrintOverallRecoStatus:     true
+}
+
+END_PROLOG
+
+#include "stage1_run2_icarus_MC.fcl"
+
+# physics.producers.pandoraGausCryoE.HitFinderModuleLabel: "cluster3DCryoE"
+# physics.producers.pandoraGausCryoW.HitFinderModuleLabel: "cluster3DCryoW"
+
+physics.producers.pandoraGausCryoE: {
+    @table::physics.producers.pandoraGausCryoE
+    @table::pandoraPassOneConfig
+}
+physics.producers.pandoraGausCryoW: {
+    @table::physics.producers.pandoraGausCryoW
+    @table::pandoraPassOneConfig
+}
+
+
+physics.reco: [ 
+                @sequence::icarus_reco_Gauss2D_CryoE ,
+                @sequence::icarus_reco_Gauss2D_CryoW 
+              ]
+
+physics.outana: []
+
+# physics.producers.cluster3DCryoW.Hit3DBuilderAlg.HitFinderTagVec: ["gaushit1dTPCWW", "gaushit1dTPCWE"]
+# physics.producers.cluster3DCryoE.Hit3DBuilderAlg.HitFinderTagVec: ["gaushit1dTPCEW", "gaushit1dTPCEE"]
+
+# physics.producers.cluster3DCryoW.combineHitsCryoW.HitFinderTagVec: ["gaushit1dTPCWW", "gaushit1dTPCWE"]
+# physics.producers.cluster3DCryoE.combineHitsCryoE.HitFinderTagVec: ["gaushit1dTPCEW", "gaushit1dTPCEE"]
+
+# services.BackTrackerService.BackTracker.SimChannelModuleLabel: "daq:simpleSC"
+# physics.analyzers.caloskimE.SimChannelproducer: "daq:simpleSC"
+# physics.analyzers.caloskimW.SimChannelproducer: "daq:simpleSC"
+# physics.producers.mcreco.SimChannelLabel: "shifted"

@@ -1,4 +1,4 @@
-art_make_library()
+
 set(  MODULE_LIBRARIES
     sbnobj::Common_Trigger
     icarusalg::Utilities
@@ -38,16 +38,8 @@ set(  MODULE_LIBRARIES
     ROOT::GenVector
     ROOT::Tree
   )
-cet_build_plugin(FilterNeutrinosActiveVolume art::module LIBRARIES ${MODULE_LIBRARIES})
-cet_build_plugin(FilterNumberTPCHits art::module LIBRARIES ${MODULE_LIBRARIES})
-cet_build_plugin(FilterDataIntegrity art::module LIBRARIES ${MODULE_LIBRARIES})
-cet_build_plugin(FilterOpFlash art::module LIBRARIES ${MODULE_LIBRARIES})
-cet_build_plugin(FilterParticlesActiveVolume art::module LIBRARIES ${MODULE_LIBRARIES})
-cet_build_plugin(TriggerTypeFilter art::module LIBRARIES ${MODULE_LIBRARIES})
-cet_build_plugin(FilterCRTPMTMatching art::module LIBRARIES ${MODULE_LIBRARIES})
-cet_build_plugin(FilterDirts art::module LIBRARIES ${MODULE_LIBRARIES})
 
-add_subdirectory(MultiVertexFilter)
+cet_build_plugin(FilterMultiVertex art::module LIBRARIES ${MODULE_LIBRARIES})
 
 # install_headers()
 install_fhicl()
