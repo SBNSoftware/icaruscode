@@ -1,0 +1,43 @@
+#include "services_common_icarus.fcl"
+#include "filter_multiple_vertices.fcl"
+#include "rootoutput_icarus.fcl"
+
+process_name: VertexFilter
+
+services: 
+{
+   # from `services_common_icarus.fcl`
+  @table::icarus_common_services
+  
+  # remove the services we do not need (i.e. most)
+  TFileService:              @erase
+  RandomNumberGenerator:     @erase
+  NuRandomService:           @erase
+  LArPropertiesService:      @erase
+  DetectorPropertiesService: @erase
+  DetectorClocksService:     @erase
+} # services
+
+
+physics: 
+{  
+  filters: 
+  {
+    # from `filter_multiple_vertices.fcl`
+    eventActive: @local::filter_multiple_vertices
+  } # filters
+  filter: [ eventActive ]
+  stream: [ rootoutput ]
+  trigger_paths: [ filter ]
+  end_paths:     [ stream ]
+} # physics
+
+outputs: 
+{
+  rootoutput: {    
+    @table::icarus_rootoutput
+    SelectEvents: [filter]
+  } # rootoutput
+} # outputs
+
+physics.filters.eventActive.keep_all = true

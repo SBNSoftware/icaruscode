@@ -1,0 +1,10 @@
+BEGIN_PROLOG
+
+filter_multiple_vertices: 
+{
+    keep_all: false
+    keep_first: false #> not implemented
+    module_type: "FilterMultiVertex"
+}
+
+END_PROLOG

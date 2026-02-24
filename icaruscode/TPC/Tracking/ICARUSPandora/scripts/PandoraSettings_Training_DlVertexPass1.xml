@@ -1,0 +1,28 @@
+<pandora>
+    <!-- GLOBAL SETTINGS -->
+    <IsMonitoringEnabled>true</IsMonitoringEnabled>
+    <ShouldDisplayAlgorithmInfo>true</ShouldDisplayAlgorithmInfo>
+    <SingleHitTypeClusteringMode>true</SingleHitTypeClusteringMode>
+    
+    <!-- Preprocessing: loading all CaloHitLists -->
+    <algorithm type = "LArPreProcessing">
+        <InputHitListName>Input</InputHitListName>
+        <OutputCaloHitListNameU>CaloHitListU</OutputCaloHitListNameU>
+        <OutputCaloHitListNameV>CaloHitListV</OutputCaloHitListNameV>
+        <OutputCaloHitListNameW>CaloHitListW</OutputCaloHitListNameW>
+        <FilteredCaloHitListName>CaloHitList2D</FilteredCaloHitListName>
+        <CurrentCaloHitListReplacement>CaloHitList2D</CurrentCaloHitListReplacement>
+    </algorithm>
+
+    <!-- <algorithm type = "LArVisualMonitoring"> -->
+        <!-- <CaloHitListNames>CaloHitListU CaloHitListV CaloHitListW</CaloHitListNames> -->
+    <!-- </algorithm> -->
+
+    <algorithm type = "LArDLVertexing">
+        <TrainingMode>true</TrainingMode>
+        <Visualise>true</Visualise>
+        <TrainingOutputFileName>ICARUS_DLVertexTrain_Pass1</TrainingOutputFileName>
+        <CaloHitListNames>CaloHitListW CaloHitListU CaloHitListV</CaloHitListNames>
+        <DistanceThresholds>0. 0.00275 0.00825 0.01925 0.03575 0.05775 0.08525 0.12375 0.15125 0.20625 0.26125 0.31625 0.37125 0.42625 0.50875 0.59125 0.67375 0.75625 0.85 1.0</DistanceThresholds>
+    </algorithm>
+</pandora>
