@@ -100,7 +100,7 @@
  *    fraction of each dimension the cathode is extended for the purpose of
  *    determining the crossing of the particle (see the documentation above).
  * * `LogCategory` (string, default: `SelectCathodeCrossingGenParticles`):
- *   message facility stream name where to write console messages to.
+ *    message facility stream name where to write console messages to.
  *
  * 
  * Input data products
