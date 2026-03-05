@@ -56,7 +56,7 @@ namespace calib {
 
     ICARUSPhotonCalibratorServiceFromDB(Parameters const& params, art::ActivityRegistry& reg);
 
-    std::string getAreaDatabaseTag() const { return fProvider.getAreaDatabaseTag(); }
+    std::string getAreaDatabaseTag() const& { return fProvider.getAreaDatabaseTag(); }
 
   private:
     provider_type const* provider() const override { return &fProvider; }

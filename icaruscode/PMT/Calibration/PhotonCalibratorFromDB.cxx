@@ -41,7 +41,7 @@ icarusDB::PhotonCalibratorFromDB::PhotonCalibratorFromDB(const Config& config)
   , fDB           ( config.DBname(), "", "", config.AreaTag(), true, false)
 {
   mf::LogInfo(fLogCategory)
-    << "PhotonCalibratorFromDB connected to " << config.DBname() << " DB tag '" << config.AreaTag() << "'";
+    << "PhotonCalibratorFromDB connected to " << config.DBname() << " DB, tag '" << config.AreaTag() << "'";
 }
 
 
