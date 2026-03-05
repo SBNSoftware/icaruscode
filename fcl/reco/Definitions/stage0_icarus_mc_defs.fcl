@@ -38,14 +38,21 @@ icarus_stage0_mc_producers:
 
     pmtbaselines:      @local::icarus_opreco_pedestal_fromchannel_MC  # from icarus_ophitfinder.fcl
     opdetonbeam:       @local::copyPMTonBeam  # from decoderdefs_icarus.fcl
-    ophituncorrected:  @local::icarus_ophit_data
-    ophit:             @local::icarus_ophit_MC
+    
+    # ophit will produce recob::OpHit with all needed time corrections:
+    # - in legacy MC, that is actually no correction at all (configuration below);
+    # - in MC overlay, time correction is needed so ophit must be
+    #     overridden later to become the time correction module
+    #     (run on top of uncorrected hits)
+    # ophituncorrected never includes time corrections
+    ophituncorrected:  @local::icarus_ophit_data # from icarus_ophitfinder.fcl
+    ophit:             @local::icarus_ophit_MC   # from icarus_ophitfinder.fcl
     mcophit:           @local::ICARUSMCOpHit
 
     ## crt producer
     crthit:            @local::standard_crtsimhitproducer
     crttrack:          @local::standard_crttrackproducer
-    crtpmt: 	         @local::standard_crtpmtmatchingproducer
+    crtpmt:            @local::standard_crtpmtmatchingproducer
     }
 
 # make the following modifications to job flow for MC vs the data
@@ -68,6 +75,7 @@ icarus_stage0_overlay_PMT: [
                          pmtbaselines,
                          ophituncorrected, # @local::icarus_ophit_data
                          ophit,            # ovveride to @local::icarus_ophit_timing_correction 
+                                           # this happens in enable_overlay.fcl 
                          mcophit,
                          opflashCryoE,
                          opflashCryoW

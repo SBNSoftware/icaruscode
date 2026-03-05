@@ -1,4 +1,4 @@
-# add timing corrections to optical path
+# add timing corrections to optical path by ovveriding ophit
 physics.producers.ophit: @local::icarus_ophit_timing_correction
 
 # Exclude crthit from path -- not needed since it's included at overlay stage

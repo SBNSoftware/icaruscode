@@ -12,8 +12,8 @@ services:
   TFileService:                { }
   IICARUSChannelMap:           @local::icarus_channelmappinggservice
   IPMTTimingCorrectionService: @local::icarus_pmttimingservice
+  IPhotonCalibratorService:    @local::icarus_photon_calibration
                                @table::icarus_wirecalibration_minimum_services
-  IPhotonCalibratorService: @local::icarus_photon_calibration
 }
 
 #source is a root file
