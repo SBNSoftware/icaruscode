@@ -598,12 +598,13 @@ void OverlayProducts::produce(art::Event& e)
 	  } // loop overlaps
 
 	  // and fill in any remaining bins left
-	  while ( idxWvfmEntry < wvfm.size() ) {
-      // FIXME FIXME: temporary override to chop off flat tails after data waveform ends
-      // timing shift between data/mc event should be tuned so that this never (?) happens!
-	    //adcVec.push_back( overlayOpWave.baseline + (wvfm[idxWvfmEntry] - simBaseline) );
+    /// @todo: Temporary override to chop off flat tails after data waveform ends
+    ///        timing shift between data/mc event should be tuned so that this never (?) happens!
+	  /*while ( idxWvfmEntry < wvfm.size() ) {
+	    adcVec.push_back( overlayOpWave.baseline + (wvfm[idxWvfmEntry] - simBaseline) );
 	    idxWvfmEntry+=1;
-	  }
+	  }*/
+    idxWvfmEntry = wvfm.size();
 
 	  // Now delete the overlapping waveforms
 	  for ( unsigned int iOverlap=0; iOverlap<overlaps.size(); ++iOverlap ) {
