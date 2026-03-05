@@ -378,6 +378,7 @@ class icarus::opdet::PMTsimulationAlg {
 
     public:
   using microsecond = util::quantities::microsecond;
+  using microseconds = util::quantities::intervals::microseconds;
   using nanosecond = util::quantities::nanosecond;
   using hertz = util::quantities::hertz;
   using megahertz = util::quantities::megahertz;
@@ -1099,7 +1100,7 @@ class icarus::opdet::PMTsimulationAlgMaker {
     std::uint64_t beamGateTimestamp,
     detinfo::LArProperties const& larProp,
     detinfo::DetectorClocksData const& detClocks,
-    icarusDB::PMTTimingCorrections const& timingDelays,
+    icarusDB::PMTTimingCorrections const* timingDelays,
     SinglePhotonResponseFunc_t const& SPRfunction,
     PedestalGenerator_t& pedestalGenerator,
     CLHEP::HepRandomEngine& mainRandomEngine,
@@ -1131,7 +1132,7 @@ class icarus::opdet::PMTsimulationAlgMaker {
     std::uint64_t beamGateTimestamp,
     detinfo::LArProperties const& larProp,
     detinfo::DetectorClocksData const& clockData,
-    icarusDB::PMTTimingCorrections const& timingDelays,
+    icarusDB::PMTTimingCorrections const* timingDelays,
     SinglePhotonResponseFunc_t const& SPRfunction,
     PedestalGenerator_t& pedestalGenerator,
     CLHEP::HepRandomEngine& mainRandomEngine,
