@@ -1,20 +1,38 @@
+## File:    stage0_run2_opdetonly_icarus_data_reprocessing.fcl
+## Purpose: Reprocessing of the optical products for the 2025 SBN "spring" DATA production
+
 #include "stage0_run2_wcdnn_icarus.fcl"
 
-process_name: OpStage0
+## This job selectively re-runs only the PMT reconstruction path without touching
+## the TPC reconstruction. It recalibrates existing optical hits (PE only,
+## see below), reruns optical flash finding in both cryostats, and redoes
+## CRT/PMT hit matching (stage0 crtpmt). Old Stage0 optical flashes and
+## CRT/PMT matches are dropped from the input and replaced by the new ones.
+## Old optical hits are replaced by the recalibrated ones in the output.
+
+## ---------------------------------------------------------------------
+## This is valid only for the post-processing of the RUN-2 2025 SBN DATA productions.
+## ---------------------------------------------------------------------
+## In assumes the following:
+## - No ophit time re-calibrations needed (they were already correct)
+## - Recalibrates ophit PEs with SPEArea database (they were generated with 
+##   the old icarus_spe.fcl defaults)
+
+process_name: opstage0
 
 source.inputCommands: [
   "keep *",
 
-  # need to throw out anything that is based on optical hits;
-  # this means optical flashes and pmt/crt matching stuff!
-  # note: old hits will also be thrown out in output
+  ## need to throw out anything that is based on optical hits;
+  ## this means optical flashes and pmt/crt matching stuff!
+  ## note: old hits will also be thrown out in output
   "drop *_opflash*_*_*",      # drop stage0 east/west opflashes
   "drop *_crtpmt_*_*"         # drop CRT/PMT matches (stage0)
 ]
 
-# running simplified stage0 pmt/crt path:
-# recalibrate hits, then run flash matching + pmtcrt matching
-# simplify path removing all other producers
+## running simplified stage0 pmt/crt path:
+## recalibrate hits, then run flash matching + pmtcrt matching
+## simplify path removing all other producers
 
 physics.producers.ophit: @local::ophit_recalibrator # force "ophit" name
 
@@ -25,17 +43,19 @@ physics.path: [
             crtpmt
             ]
 
-# recalibrate optical hits
+## recalibrate previously-produced optical hits using the `OpHitRecalibrator` module
+## given the specific target sample, not time recalibration is needed
+## PE recalibration uses SPEArea database (channel-by-channel + correct time period)
 physics.producers.ophit.InputLabel: "ophit::stage0"  # start from hits in previous stage0 execution
 physics.producers.ophit.RecalibratePE: true          # recalibrate PE values
 physics.producers.ophit.UseGainDatabase: true        # speArea db
 physics.producers.ophit.RecalibrateTime: false       # not needed for Run2
 
 # make sure flashes are using the new ophits
-physics.producers.opflashCryoE.OpHitProducer: "ophit::OpStage0"
-physics.producers.opflashCryoW.OpHitProducer: "ophit::OpStage0"
+physics.producers.opflashCryoE.OpHitProducer: "ophit::opstage0"
+physics.producers.opflashCryoW.OpHitProducer: "ophit::opstage0"
 
-# now drop old ophits
+# now drop old ophits to avoid confusion
 outputs.rootOutput.outputCommands: [
   "keep *",
   "drop *_ophit_*_stage0"
