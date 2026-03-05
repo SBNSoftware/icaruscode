@@ -51,7 +51,7 @@ namespace icarus
  * from its `Area` [ADC x tick] based on a newly determined single-PE area.
  * If `UseGainDatabase` is set, the module calls retrieves the SPE area by channel and run number
  * using the gain calibration service. If that option is disabled, a single SPE area value
- * is used for all channels and run numbers. This value is read from the `SPEArea` paramater
+ * is used for all channels and run numbers. This value is read from the `SPEArea` parameter
  * set in the configuration.
  *
  * The timing recalibration requires removing previously-applied timing corrections and
@@ -135,16 +135,10 @@ icarus::OpHitRecalibrator::OpHitRecalibrator(fhicl::ParameterSet const &config, 
     async<art::InEvent>();
 
     // configuration checks
-    if (fInputLabel.empty())
-    {
-        throw art::Exception{art::errors::Configuration}
-            << "The list of input hit data products ('InputLabel') is empty.\n";
-    }
-
     if (!fRecalibratePE && !fRecalibrateTime)
     {
         throw art::Exception{art::errors::Configuration}
-            << "No re-calibration selected. Why are you even running meeee,!?!?! :/\n";
+            << "No re-calibration selected. Why are you even running meeee!?!?! :/\n";
     }
 
     if (fRecalibratePE && !fUseGainDatabase && (fSPEArea < 0))
@@ -166,9 +160,8 @@ icarus::OpHitRecalibrator::OpHitRecalibrator(fhicl::ParameterSet const &config, 
 
     if (fRecalibratePE && fUseGainDatabase)
     {
-        art::ServiceHandle<calib::ICARUSPhotonCalibratorServiceFromDB const> serv; //really sorry about this
-        mf::LogInfo("OpHitRecalibrator") << "Re-calibration of PE (gain) from database enabled:\n"
-                                         << "AreaTag: " << serv->getAreaDatabaseTag();
+        mf::LogInfo("OpHitRecalibrator") 
+            << "Re-calibration of PE (gain) from database enabled with configured service tag.";
     }
 
     // Consumes
