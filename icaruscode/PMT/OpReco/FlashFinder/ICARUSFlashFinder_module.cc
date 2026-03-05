@@ -18,11 +18,11 @@
 #include "canvas/Utilities/Exception.h"
 #include "fhiclcpp/types/Atom.h"
 #include "fhiclcpp/types/DelegatedParameter.h"
+#include "messagefacility/MessageLogger/MessageLogger.h"
 
 #include "lardataobj/RecoBase/OpHit.h"
 #include "lardataobj/RecoBase/OpFlash.h"
 
-#include <iostream> // std::cerr
 #include <memory>
 #include <string>
 #include <utility> // std::move()
@@ -114,7 +114,7 @@ void ICARUSFlashFinder::produce(art::Event & e, art::ProcessingFrame const&)
 
   // make sure hits look good
   if(!ophit_h.isValid()) {
-    std::cerr<<"\033[93m[ERROR]\033[00m ... could not locate OpHit!"<<std::endl;
+    mf::LogError("ICARUSFlashFinder") << "could not locate OpHit!";
     throw art::Exception{ art::errors::ProductNotFound }
       << "Couldn't read OpHit data product from '" << _hit_producer.encode() << "'";
   }
