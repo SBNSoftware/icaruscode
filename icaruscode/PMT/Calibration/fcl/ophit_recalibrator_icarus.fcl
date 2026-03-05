@@ -1,16 +1,37 @@
+### File:    ophit_recalibrator_icarus.fcl
+### Purpose: Default configuration for OpHitRecalibrator module.
+
 #include "calibration_database_GlobalTags_icarus.fcl"
 
 BEGIN_PROLOG
+
+### This module reads a reconstructed optical hit collection, removes the
+### previously-applied gain and timing calibrations, and replaces them with
+### the current ones (as defined by the active calibration services).
+###
+### The PE recalibration uses the gain database (ICARUSPhotonCalibratorServiceFromDB)
+### to retrieve the SPE area by channel and run number.
+###
+### The timing recalibration requires knowing which corrections were originally
+### applied to the input hits, so that they can be undone before applying the
+### new ones. These "old" corrections are specified via OldTimingDBTags. 
 
 ophit_recalibrator:
 {
   module_type: OpHitRecalibrator
   InputLabel: "ophit"
-  RecalibratePE: true
-  UseGainDatabase: true
-  SPEArea: -1.0
-  RecalibrateTime: true
 
+  RecalibratePE: true    # whether to recalibrate ophit PEs
+  UseGainDatabase: true  # whether to use speArea database for recalibration
+  SPEArea: -1.0          # if UseGainDatabase is false, use this SPEArea for all channels
+
+  RecalibrateTime: true  # whether to recalibrate ophit times
+  ### if time recalibration is active, specify which previous timing calibration needs to be removed
+  ### from the available tags listed in `calibration_database_PMT_TagSets_icarus.fcl`.
+  ### Note: these default old tags are actually the current ones - this means no recalibration happens;
+  ### the module uses the current ones to correct, so you would be subtracting and adding the same
+  ### Q: how do I know which tags to use to recalibrate my existing samples?
+  ### A: if you are asking this question, you shouldn't be recalibrating the times.
   OldTimingDBTags: {
     CorrectionTags: {
       CablesTag: @local::ICARUS_Calibration_GlobalTags.pmt_cables_delays_data

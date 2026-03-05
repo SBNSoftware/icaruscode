@@ -32,7 +32,6 @@ physics.producers.ophit.UseGainDatabase: true        # speArea db
 physics.producers.ophit.RecalibrateTime: false       # not needed for Run2
 
 # make sure flashes are using the new ophits
-# as well as the correct (non)calibration
 physics.producers.opflashCryoE.OpHitProducer: "ophit::OpStage0"
 physics.producers.opflashCryoW.OpHitProducer: "ophit::OpStage0"
 
