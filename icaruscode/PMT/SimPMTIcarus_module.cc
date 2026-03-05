@@ -271,7 +271,8 @@ namespace icarus::opdet {
     
     bool fMakeMetadata; ///< Whether to produce waveform metadata.
     bool fWritePhotons { false }; ///< Whether to save contributing photons.
-    
+    bool fDoTimingDelays; ///< Whether timing delay corrections are applied.
+
     CLHEP::HepRandomEngine&  fEfficiencyEngine;
     CLHEP::HepRandomEngine&  fDarkNoiseEngine;
     CLHEP::HepRandomEngine&  fElectronicsNoiseEngine;
@@ -315,6 +316,7 @@ SimPMTIcarus::SimPMTIcarus(Parameters const& config)
     , fInputModuleName(config().inputModuleLabel())
     , fMakeMetadata(config().MakeMetadata())
     , fWritePhotons(config().writePhotons())
+    , fDoTimingDelays(config().algoConfig().ApplyTimingDelays())
     // random engines
     , fEfficiencyEngine(art::ServiceHandle<rndm::NuRandomService>()->registerAndSeedEngine(
           createEngine(0, "HepJamesRandom", "Efficiencies"),
@@ -391,7 +393,7 @@ SimPMTIcarus::SimPMTIcarus(Parameters const& config)
       e.time().value(), // using the event generation time as beam time stamp
       *(lar::providerFrom<detinfo::LArPropertiesService>()),
       clockData,
-      *(lar::providerFrom<icarusDB::IPMTTimingCorrectionService>()),
+      fDoTimingDelays ? lar::providerFrom<icarusDB::IPMTTimingCorrectionService>() : nullptr,
       *fSinglePhotonResponseFunc,
       *fPedestalGen,
       fEfficiencyEngine,

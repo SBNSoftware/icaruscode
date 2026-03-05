@@ -210,10 +210,10 @@ auto icarus::opdet::PMTsimulationAlg::CreateFullWaveform
     // Corrections are additive, i.e. the service returns negative values.
     // Need to flip the sign to use them as delays.
     //
-    microseconds totalDelay = 0_us;
+    microseconds timeDelay = 0_us;
     if(fParams.doTimingDelays) {
-      totalDelay -= microseconds{ fParams.timingDelays->getLaserCorrections(channel) };
-      totalDelay -= microseconds{ fParams.timingDelays->getCosmicsCorrections(channel) };
+      timeDelay -= microseconds{ fParams.timingDelays->getLaserCorrections(channel) };
+      timeDelay -= microseconds{ fParams.timingDelays->getCosmicsCorrections(channel) };
     }
 
     //
