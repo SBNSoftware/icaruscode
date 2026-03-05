@@ -218,12 +218,11 @@ auto icarus::opdet::PMTsimulationAlg::CreateFullWaveform
     // Corrections are additive, i.e. the service returns negative values.
     // Need to flip the sign to use them as delays.
     //
-    double totalDelay = 0;
+    microseconds totalDelay = 0_us;
     if(fParams.doTimingDelays) {
-      totalDelay -= fParams.timingDelays->getLaserCorrections(channel);
-      totalDelay -= fParams.timingDelays->getCosmicsCorrections(channel);
+      totalDelay -= microseconds{ fParams.timingDelays->getLaserCorrections(channel) };
+      totalDelay -= microseconds{ fParams.timingDelays->getCosmicsCorrections(channel) };
     }
-    microsecond const timeDelay { totalDelay };
 
     if (debug) {
       debug->opChannel = channel;
@@ -1010,7 +1009,7 @@ icarus::opdet::PMTsimulationAlgMaker::operator()(
   std::uint64_t beamGateTimestamp,
   detinfo::LArProperties const& larProp,
   detinfo::DetectorClocksData const& clockData,
-  icarusDB::PMTTimingCorrections const& timingDelays,
+  icarusDB::PMTTimingCorrections const* timingDelays,
   SinglePhotonResponseFunc_t const& SPRfunction,
   PedestalGenerator_t& pedestalGenerator,
   CLHEP::HepRandomEngine& mainRandomEngine,
@@ -1035,7 +1034,7 @@ auto icarus::opdet::PMTsimulationAlgMaker::makeParams(
   std::uint64_t beamGateTimestamp,
   detinfo::LArProperties const& larProp,
   detinfo::DetectorClocksData const& clockData,
-  icarusDB::PMTTimingCorrections const& timingDelays,  
+  icarusDB::PMTTimingCorrections const* timingDelays,  
   SinglePhotonResponseFunc_t const& SPRfunction,
   PedestalGenerator_t& pedestalGenerator,
   CLHEP::HepRandomEngine& mainRandomEngine,
@@ -1058,7 +1057,9 @@ auto icarus::opdet::PMTsimulationAlgMaker::makeParams(
   params.larProp = &larProp;
   params.clockData = &clockData;
   params.detTimings = detinfo::makeDetectorTimings(params.clockData);
-  params.timingDelays = &timingDelays;
+  params.timingDelays = timingDelays;
+  
+  assert(!params.doTimingDelays || params.timingDelays);
 
   params.pulseFunction = &SPRfunction;
   params.pedestalGen = &pedestalGenerator;
