@@ -1,0 +1,5 @@
+#include "detsim_2d_icarus_refactored.fcl"
+
+# Run3/4 optical tune
+physics.producers.opdaq: @local::icarus_simpmt_run4
+physics.producers.opdaq.ApplyTimingDelays: false  # keep false for non-overlay MC

@@ -1,0 +1,42 @@
+## File:    stage0_run2_opdetonly_icarus_overlay_reprocessing.fcl
+## Purpose: Reprocessing of the optical products for the 2025 SBN "spring" MC OVERLAY production
+
+#include "stage0_run2_wcdnn_icarus_overlay.fcl"
+
+## This job selectively re-runs only the PMT/CRT reconstruction path. 
+## This is valid only for the post-processing of the 2025 SBN.
+
+## Current MC OVERLAY productions come with a dilemma:
+## - MC ν/signal is simulated with a fixed tune (same gains for all channels and runs);
+## - Data instead has different gains per channel, and also time dependence.
+## However, the reconstruction needs to handle both; and so we need to make a choice.
+## Either we use a fixed SPEArea in the reco or we use the gain database from data.
+
+## The choice has been made here to use the SPEArea gain database.
+## This would make the data component consistent and the MC signal biased.
+## Such a choice makes the configuration independent of the run period...
+
+## ... excpet for the `mcophit` module (fake hit reconstruction)
+## This module requires a fixed SPE tune (no db interface) so it must be manually set
+## to the run-period SPE tune used in DetSim.
+
+process_name: OpMCstage0
+
+## only perform PMT/CRT MCstage0 on top of reprocessed MC overlay files
+## Notes:
+## - previous MCStage0 PMT/CRT products have already been removed
+## - new inputs have been re-baked, but with standard tag names
+## - need to pick correct reconstruction tune for PMT flow
+
+# execute PMT/CRT only path
+physics.path: [   @sequence::icarus_stage0_overlay_PMT, 
+                  @sequence::icarus_stage0_mc_crtreco # only reco, hits from overlay
+              ]
+
+## update mcophit producer to pick up Run-2 SPE tune
+## (ophit picks up SPEArea from the database automatically)
+physics.producers.mcophit.SPEArea: @local::SPERun2.Area
+physics.producers.mcophit.SPEAmplitude: @local::SPERun2.Amplitude
+
+
+

@@ -1,5 +1,6 @@
 # add underlying subfolders
 add_subdirectory(SBNNoise)
+add_subdirectory(partial)
 add_subdirectory(commissioning)
 add_subdirectory(archive)
 

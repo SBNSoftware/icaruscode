@@ -64,28 +64,34 @@ class icarusDB::PMTTimingCorrectionsProvider : public PMTTimingCorrections {
 
         PMTTimingCorrectionsProvider(const fhicl::ParameterSet& pset);
 
-	/// Read timing corrections from the database
+	    /// Read timing corrections from the database
         void readTimeCorrectionDatabase(const art::Run& run);
 
-	/// Get time delay on the trigger line
+	    /// Get time delay on the trigger line
         double getTriggerCableDelay( unsigned int channelID ) const override {
             return getChannelCorrOrDefault(channelID).triggerCableDelay;
         };
 
-	/// Get time delay on the PPS reset line 
+	    /// Get time delay on the PPS reset line 
         double getResetCableDelay( unsigned int channelID ) const override {
             return getChannelCorrOrDefault(channelID).resetCableDelay;
         };
 
-	/// Get timing corrections from laser data
+	    /// Get timing corrections from laser data
         double getLaserCorrections( unsigned int channelID ) const override {
             return getChannelCorrOrDefault(channelID).laserCableDelay;
         };
 
-	/// Get timing corrections from cosmics data
+	    /// Get timing corrections from cosmics data
         double getCosmicsCorrections( unsigned int channelID ) const override {
             return getChannelCorrOrDefault(channelID).cosmicsCorrections;
         };
+
+        /// Get current laser corrections database tag
+        std::string getLaserDatabaseTag() const override { return fLaserTag; }
+        
+        /// Get current cosmics corrections database tag
+        std::string getCosmicsDatabaseTag() const override { return fCosmicsTag; };
 
     private:
         
@@ -94,11 +100,11 @@ class icarusDB::PMTTimingCorrectionsProvider : public PMTTimingCorrections {
 
         bool fVerbose = false; ///< Whether to print the configuration we read.
         std::string fLogCategory; ///< Category tag for messages.
-	std::string fCablesTag;  ///< Tag for cable corrections database.	
-	std::string fLaserTag;   ///< Tag for laser corrections database.
-	std::string fCosmicsTag; ///< Tag for cosmics corrections database.	
+	    std::string fCablesTag;  ///< Tag for cable corrections database.	
+	    std::string fLaserTag;   ///< Tag for laser corrections database.
+	    std::string fCosmicsTag; ///< Tag for cosmics corrections database.	
 
-	/// Map of corrections by channel
+	    /// Map of corrections by channel
         std::map<unsigned int, PMTTimeCorrectionsDB> fDatabaseTimingCorrections;
         
         /// Internal access to the channel correction record; returns defaults if not present.
@@ -109,8 +115,8 @@ class icarusDB::PMTTimingCorrectionsProvider : public PMTTimingCorrections {
                 return (it == fDatabaseTimingCorrections.end())? CorrectionDefaults: it->second;
             }
 
-	/// Convert run number to internal database
-	uint64_t RunToDatabaseTimestamp(uint32_t run) const;
+	    /// Convert run number to internal database
+	    uint64_t RunToDatabaseTimestamp(uint32_t run) const;
 
         void ReadPMTCablesCorrections(uint32_t run);
 
