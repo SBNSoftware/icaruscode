@@ -3,20 +3,14 @@
 
 #include "stage0_run2_wcdnn_icarus.fcl"
 
-## This job selectively re-runs only the PMT reconstruction path without touching
-## the TPC reconstruction. It recalibrates existing optical hits (PE only,
-## see below), reruns optical flash finding in both cryostats, and redoes
-## CRT/PMT hit matching (stage0 crtpmt). Old Stage0 optical flashes and
-## CRT/PMT matches are dropped from the input and replaced by the new ones.
-## Old optical hits are replaced by the recalibrated ones in the output.
-
-## ---------------------------------------------------------------------
-## This is valid only for the post-processing of the RUN-2 2025 SBN DATA productions.
-## ---------------------------------------------------------------------
-## In assumes the following:
+## This job selectively re-runs only the PMT reconstruction path on DATA.
+## This was introduced for the post-processing of the 2025 SBN DATA productions.
+## It recalibrates existing optical hits according the specific needs of that sample.
+## In particular, it assumes the following:
 ## - No ophit time re-calibrations needed (they were already correct)
 ## - Recalibrates ophit PEs with SPEArea database (they were generated with 
 ##   the old icarus_spe.fcl defaults)
+## As a result, this is valid only for RUN-2 (or RUN-3) data reprocessing from that production.
 
 process_name: opstage0
 
