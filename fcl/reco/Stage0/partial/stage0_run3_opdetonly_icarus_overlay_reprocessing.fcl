@@ -1,6 +1,12 @@
+## File:    stage0_run3_opdetonly_icarus_overlay_reprocessing.fcl
+## Purpose: Reprocessing of the optical products for the 2025 SBN "spring" MC OVERLAY production
+
 #include "stage0_run2_opdetonly_icarus_overlay_reprocessing.fcl"
 
-# update mcophit producer to pick up Run-3 SPE tune
-# main ophit producer picks up from the SPEArea database
+## This job selectively re-runs only the PMT/CRT reconstruction path. 
+## This is valid only for the post-processing of the 2025 SBN MC OVERLAY productions.
+
+## update mcophit to pick up Run-3 SPE tune; see Run-2 base file for the rationale
+## (ophit picks up SPEArea from the database automatically)
 physics.producers.mcophit.SPEArea: @local::SPERun3.Area
 physics.producers.mcophit.SPEAmplitude: @local::SPERun3.Amplitude
