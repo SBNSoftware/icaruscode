@@ -38,7 +38,8 @@ namespace wiremod
   {
     public:
       explicit WireModifierXXW(fhicl::ParameterSet const& pset);
-      void shapeGraph(TGraph2D& graph);
+      void shapeGraphAngle(TGraph2D& graph);
+      void shapeGraphPos(TGraph2D& graph, const geo::TPCID& tpcid);
       void reconfigure(fhicl::ParameterSet const& pset);
       void produce(art::Event& evt) override;
 
@@ -52,10 +53,13 @@ namespace wiremod
       art::InputTag fHitLabel;  // which hits are we pulling in?
       art::InputTag fEDepLabel; // which are the EDeps?
       art::InputTag fEDepShiftedLabel; // which are the EDeps?
+      unsigned int fCryo; // which Cryo are we in?
+      unsigned int fTPC; // which TPC are we in?
       bool fLocalRatios;        // is the ratio file local?
       bool fSaveHistsByChannel; // save modified signals by channel?
       bool fSaveHistsByWire;    // save modified signals by wire?
       bool fInRads;             // is the TGraph2D angle axis in radians?
+      bool fXAbs;               // is the TGraph2D x an absolute value?
 
   }; // end WireModifierXXW class
 
@@ -67,7 +71,7 @@ namespace wiremod
   }
 
   //------------------------------------------------
-  void WireModifierXXW::shapeGraph(TGraph2D& graph)
+  void WireModifierXXW::shapeGraphAngle(TGraph2D& graph)
   {
     // The graphs can be passed in degrees, but we want radians
     // convert the y-axis to radians
@@ -84,12 +88,51 @@ namespace wiremod
   }
 
   //------------------------------------------------
+  void WireModifierXXW::shapeGraphPos(TGraph2D& graph, const geo::TPCID& tpcid)
+  {
+    // The graphs can be passed in abs(x), but we want global x
+    // convert the x-axis to detector x,y,z coordinates
+    mf::LogDebug("WireModifierXXW")
+      << "Starting graph x range: [" << graph.GetXmin() 
+      << ", " << graph.GetXmax() << "]";
+    
+    // get the cathode possition, the drift direction, and the drift distance from geom
+    const geo::TPCGeo* TPCGeom = fGeometry->TPCPtr(tpcid);
+    double cathode = TPCGeom->GetCathodeCenter().X();
+    //double drift_dir = TPCGeom->DriftDir().X();
+    //double drift_dist = TPCGeom->DriftDistance();
+
+    double* xPtr = graph.GetX();
+    double* yPtr = graph.GetY();
+    double* zPtr = graph.GetZ();
+    for (int idx = 0; idx < graph.GetN(); ++idx)
+    {
+      double x = *(xPtr+idx);
+      double y = *(yPtr+idx);
+      double z = *(zPtr+idx);
+      //graph.SetPoint(idx, cathode + drift_dir*(drift_dist - x), y, z);
+      if (cathode > 0)
+      {
+        graph.SetPoint(idx, x, y, z);
+      } else {
+        graph.SetPoint(idx, -x, y, z);
+      }
+    }
+
+    mf::LogDebug("WireModifierXXW")
+      << "Ending graph x range: [" << graph.GetXmin() 
+      << ", " << graph.GetXmax() << "]";
+  }
+
+  //------------------------------------------------
   void WireModifierXXW::reconfigure(fhicl::ParameterSet const& pset)
   {
     fWireLabel = pset.get<art::InputTag>("WireLabel");
     fHitLabel  = pset.get<art::InputTag>("HitLabel");
     fEDepLabel = pset.get<art::InputTag>("EDepLabel");
     fEDepShiftedLabel = pset.get<art::InputTag>("EDepLabel");
+    fCryo = pset.get<unsigned int>("Cryo");
+    fTPC = pset.get<unsigned int>("TPC");
 
     // what, if anything, are we putting in the histogram files
     fSaveHistsByChannel = pset.get<bool>("SaveByChannel", false);
@@ -97,6 +140,7 @@ namespace wiremod
 
     // do we need to reshape the TGraph2D?
     fInRads = pset.get<bool>("InRadians", true);
+    fXAbs = pset.get<bool>("XAbs", false);
 
     // try to read in the graphs/splines from a file
     // if that file does not exist then fake them
@@ -140,7 +184,9 @@ namespace wiremod
           mf::LogDebug("WireModifierXXW")
             << "WireModifierXXW::reconfigure -  ...found";
           if (not fInRads)
-            shapeGraph(*temp);
+            shapeGraphAngle(*temp);
+          if (fXAbs)
+            shapeGraphPos(*temp, geo::TPCID(fCryo, fTPC));
           fGraph_charge_XXW.push_back(temp);
         } else {
           mf::LogDebug("WireModifierXXW")
@@ -158,7 +204,9 @@ namespace wiremod
           mf::LogDebug("WireModifierXXW")
             << "WireModifierXXW::reconfigure -  ...found";
           if (not fInRads)
-            shapeGraph(*temp);
+            shapeGraphAngle(*temp);
+          if (fXAbs)
+            shapeGraphPos(*temp, geo::TPCID(fCryo, fTPC));
           fGraph_sigma_XXW.push_back(temp);
         } else {
           mf::LogDebug("WireModifierXXW")
@@ -380,10 +428,13 @@ namespace wiremod
             } else
             {
               scale_vals = wmUtil.GetScaleValues(truth_vals, roi_properties);
-              mf::LogDebug("WireModifierXXW")
-                << "Scaling! Q scale: " << scale_vals.r_Q
-                << "     sigma scale: " << scale_vals.r_sigma;
-              isModified = true;
+              if (scale_vals.r_Q != 1. || scale_vals.r_sigma != 1.)
+              {
+                mf::LogDebug("WireModifierXXW")
+                  << "Scaling! Q scale: " << scale_vals.r_Q
+                  << "     sigma scale: " << scale_vals.r_sigma;
+                isModified = true;
+              }
             }
           } else
           {
