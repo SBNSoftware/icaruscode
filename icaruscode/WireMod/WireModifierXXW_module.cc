@@ -52,6 +52,7 @@ namespace wiremod
       art::InputTag fHitLabel;  // which hits are we pulling in?
       art::InputTag fEDepLabel; // which are the EDeps?
       art::InputTag fEDepShiftedLabel; // which are the EDeps?
+      bool fLocalRatios;        // is the ratio file local?
       bool fSaveHistsByChannel; // save modified signals by channel?
       bool fSaveHistsByWire;    // save modified signals by wire?
       bool fInRads;             // is the TGraph2D angle axis in radians?
@@ -100,19 +101,28 @@ namespace wiremod
     // try to read in the graphs/splines from a file
     // if that file does not exist then fake them
     fRatioFileName = pset.get<std::string>("RatioFileName", "NOFILE");
+    fLocalRatios = pset.get<bool>("LocalRatios", false);
     if (fRatioFileName == "NOFILE")
     {
       mf::LogVerbatim("WireModifierXXW")
         << "WireModifierXXW::reconfigure - No ratio file given. No scaling is applied...";
     } else {
-      char* icaruscode_dir = std::getenv("ICARUSCODE_DIR");
-      assert(icaruscode_dir
-        && "WireModifierXXW::reconfigure - ICARUSCODE_DIR environment variable must be set!");
-      std::string dir_path = std::string(icaruscode_dir) + "/root/WireMod";
+      std::string dir_path;
+      if (not fLocalRatios)
+      {
+        char* icaruscode_dir = std::getenv("ICARUSCODE_DIR");
+        assert(icaruscode_dir
+          && "WireModifierXXW::reconfigure - ICARUSCODE_DIR environment variable must be set!");
+        dir_path = std::string(icaruscode_dir) + "/root/WireMod";
+      } else
+      {
+        dir_path = ".";
+      }
       mf::LogDebug("WireModifierXXW")
         << "WireModifierXXW::reconfigure - Get file " << fRatioFileName
         << " from directory " << dir_path;
       TFile* ratioFile = new TFile((dir_path + "/" + fRatioFileName).c_str(), "READ"); // read only
+      assert(ratioFile && "WireModifierXXW::reconfigure - Could not open ratio file");
       // the file exists! pull the ratios
       assert(ratioFile && "WireModifierXXW::reconfigure - WireMod Ratio File Must Exist!");
       assert(!ratioFile->IsZombie()
