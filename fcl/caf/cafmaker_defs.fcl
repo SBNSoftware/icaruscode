@@ -319,6 +319,9 @@ cafmaker.SystWeightLabels: ["genieweight", "fluxweight"]
 cafmaker.SaveGENIEEventRecord: true # save GENIE event record by default. Turn this off for data cafmaker fcl
 cafmaker.TPCPMTBarycenterMatchLabel: "tpcpmtbarycentermatch"
 cafmaker.TrackHitFillRREndCut: 30 # include entire PID region
+cafmaker.NuGraphSlicesLabel: "NCCSlices"
+cafmaker.NuGraphFilterLabel: "NGMultiSlice:filter"
+cafmaker.NuGraphSemanticLabel: "NGMultiSlice:semantic"
 
 # Add CAFMaker to the list of producers
 caf_preprocess_producers.cafmaker: @local::cafmaker
