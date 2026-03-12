@@ -29,11 +29,12 @@ namespace icarusDB::details {
   struct PhotonCalibratorInfo {
 
     /// Area [positive, ADC count sum] of response to single photoelectron.
-    double speArea = -1.0;
-    double speAreaErr = -1.0;  /// Uncertainty on `speArea` [ADC count sum]
-    double speFitWidth = -1.0;
-    double speFitWidthErr = -1.0;
-    
+    double speArea = -1.0;     /// `speArea` from fit [ADC x tick]
+    double speAreaErr = -1.0;  /// fit uncertainty on `speArea` [ADC x tick]
+    double speFitWidth = -1.0; /// width (sigma) from fit [ADC x tick]
+    double speFitWidthErr = -1.0; /// fit uncertainty on `speFitWidth` [ADC x tick]
+    double speFitQuality = -1.0;  /// Fit quality 
+
   };
   
 } // icarusDB::details
@@ -150,6 +151,14 @@ class icarusDB::PhotonCalibratorFromDB: public calib::IPhotonCalibrator {
 
     /// Get current area database tag
     std::string getAreaDatabaseTag() const& { return fAreaTag; }
+
+    /// Returns the SPE area [ADC x tick] for the given channel (default if not in DB).
+    double getSPEArea(int channel) const
+      { return getChannelCalibOrDefault(channel).speArea; }
+
+    /// Returns the SPE fit width (sigma) [ADC x tick] for the given channel (default if not in DB).
+    double getSPEFitWidth(int channel) const
+      { return getChannelCalibOrDefault(channel).speFitWidth; }
 
   private:
 

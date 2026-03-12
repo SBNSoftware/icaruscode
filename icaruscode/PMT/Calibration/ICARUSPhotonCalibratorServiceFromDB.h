@@ -58,6 +58,10 @@ namespace calib {
 
     std::string getAreaDatabaseTag() const& { return fProvider.getAreaDatabaseTag(); }
 
+    double getSPEArea(int channel) const { return fProvider.getSPEArea(channel); }
+
+    double getSPEFitWidth(int channel) const { return fProvider.getSPEFitWidth(channel); }
+
   private:
     provider_type const* provider() const override { return &fProvider; }
 
