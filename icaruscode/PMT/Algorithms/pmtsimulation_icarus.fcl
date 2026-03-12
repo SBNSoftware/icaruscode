@@ -386,7 +386,8 @@ icarus_pmtsimulationalg_202202_noise: {
   QE:                        @local::icarus_opticalproperties.ScintPreScale # from opticalproperties_icarus.fcl
   FluctuateGain:             true           # apply per-photoelectron gain fluctuations
   ApplyTimingDelays:         false          # legacy value
-  
+  UseGainDatabase:           false          # legacy value
+
   PMTspecs: {
     DynodeK:                   0.75           # gain on a PMT multiplication stage
                                               # is proportional to dV^k
@@ -534,7 +535,8 @@ icarus_pmtsimulationalg_2018: {
   QE:                        @local::icarus_opticalproperties.ScintPreScale # from opticalproperties_icarus.fcl
   FluctuateGain:             true           # apply per-photoelectron gain fluctuations
   ApplyTimingDelays:         false          # legacy value
-  
+  UseGainDatabase:           false          # legacy value
+
   PMTspecs: {
     DynodeK:                 0.75           # gain on a PMT multiplication stage
                                             # is proportional to dV^k
