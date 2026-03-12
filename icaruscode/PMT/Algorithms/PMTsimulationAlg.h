@@ -22,6 +22,7 @@
 #include "icaruscode/Utilities/quantities_utils.h" // util::value_t
 #include "icarusalg/Utilities/SampledFunction.h"
 #include "icaruscode/Timing/PMTTimingCorrections.h"
+#include "icaruscode/PMT/Calibration/ICARUSPhotonCalibratorServiceFromDB.h"
 
 // LArSoft libraries
 #include "lardataobj/RawData/OpDetWaveform.h"
@@ -224,6 +225,10 @@ class icarus::opdet::OpDetWaveformMakerClass {
  * to a nominal gain (`PMTspecs.gain` configuration parameter), which is
  * then fluctuated to obtain the effective gain. This feature can be
  * disabled by setting configuration parameter `FluctuateGain` to `false`.
+ *
+ * Two gain fluctuation models are available:
+ *
+ * **Legacy Poisson model** (default, `UseGainDatabase: false`):
  * The approximation used here is that the fluctuation is entirely due to
  * the first stage of multiplication. The gain on the first stage is
  * described as a random variable with Poisson distribution around the mean
@@ -243,6 +248,19 @@ class icarus::opdet::OpDetWaveformMakerClass {
  *
  * The first stage gain is computed by
  * `icarus::opdet::PMTsimulationAlg::ConfigurationParameters_t::PMTspecs_t::multiplicationStageGain()`.
+ *
+ * **Database gain model** (`UseGainDatabase: true`):
+ * When this mode is enabled the algorithm reads, for each PMT channel,
+ * the measured SPE area and SPE area width from the calibration database via
+ * the `calib::ICARUSPhotonCalibratorServiceFromDB` service.
+ * The number of effective photoelectrons added per true photoelectron is
+ * drawn from a Gaussian whose mean is the ratio of the channel SPE area
+ * to the nominal SPR template area @f$ q_0 @f$, and whose standard
+ * deviation is the ratio of the channel SPE width to @f$ q_0 @f$.
+ * This model preserves the mean deposited charge per photoelectron to
+ * match the measured per-channel gain, while the nominal gain set in
+ * `PMTspecs` and in `SinglePhotonResponse` cancels out and can be left
+ * at any convenient value across run periods.
  *
  *
  * Dark noise
@@ -483,6 +501,7 @@ class icarus::opdet::PMTsimulationAlg {
     float saturation; //equivalent to the number of p.e. that saturates the electronic signal
     PMTspecs_t PMTspecs; ///< PMT specifications.
     bool doGainFluctuations; ///< Whether to simulate gain fluctuations.
+    bool useGainCalibDB; ///< Whether to use per-channel DB gain for fluctuations.
     bool doTimingDelays; ///< Whether to simulate timing delays.
     /// @}
 
@@ -498,6 +517,9 @@ class icarus::opdet::PMTsimulationAlg {
   
     /// Timing delays service interfacing with database
     icarusDB::PMTTimingCorrections const* timingDelays = nullptr;
+
+    /// SPE calibration service for per-channel gain (nullptr = disabled).
+    calib::ICARUSPhotonCalibratorServiceFromDB const* gainCalibService = nullptr;
 
     // detTimings is not really "optional" but it needs delayed construction.
     /// Detector clocks data wrapper.
@@ -1014,6 +1036,11 @@ class icarus::opdet::PMTsimulationAlgMaker {
       Comment("add timing delays (cable, transit time) to photon times"),
       true
       };
+    fhicl::Atom<bool> UseGainDatabase {
+      Name("UseGainDatabase"),
+      Comment("use per-channel SPE area and width from calibration DB for gain fluctuations"),
+      true
+      };
 
     //
     // single photoelectron response
@@ -1101,6 +1128,7 @@ class icarus::opdet::PMTsimulationAlgMaker {
     detinfo::LArProperties const& larProp,
     detinfo::DetectorClocksData const& detClocks,
     icarusDB::PMTTimingCorrections const* timingDelays,
+    calib::ICARUSPhotonCalibratorServiceFromDB const* gainCalibService,
     SinglePhotonResponseFunc_t const& SPRfunction,
     PedestalGenerator_t& pedestalGenerator,
     CLHEP::HepRandomEngine& mainRandomEngine,
@@ -1133,6 +1161,7 @@ class icarus::opdet::PMTsimulationAlgMaker {
     detinfo::LArProperties const& larProp,
     detinfo::DetectorClocksData const& clockData,
     icarusDB::PMTTimingCorrections const* timingDelays,
+    calib::ICARUSPhotonCalibratorServiceFromDB const* gainCalibService,
     SinglePhotonResponseFunc_t const& SPRfunction,
     PedestalGenerator_t& pedestalGenerator,
     CLHEP::HepRandomEngine& mainRandomEngine,

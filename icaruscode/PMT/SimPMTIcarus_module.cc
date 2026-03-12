@@ -17,6 +17,7 @@
 #include "icaruscode/PMT/Algorithms/PhotoelectronPulseFunction.h"
 #include "icaruscode/IcarusObj/OpDetWaveformMeta.h"
 #include "icaruscode/Timing/IPMTTimingCorrectionService.h"
+#include "icaruscode/PMT/Calibration/ICARUSPhotonCalibratorServiceFromDB.h"
 
 // LArSoft libraries
 #include "larcore/CoreUtils/ServiceUtil.h"
@@ -272,6 +273,7 @@ namespace icarus::opdet {
     bool fMakeMetadata; ///< Whether to produce waveform metadata.
     bool fWritePhotons { false }; ///< Whether to save contributing photons.
     bool fDoTimingDelays; ///< Whether timing delay corrections are applied.
+    bool fUseGainCalibDB; ///< Whether per-channel gain calibration from DB is applied.
 
     CLHEP::HepRandomEngine&  fEfficiencyEngine;
     CLHEP::HepRandomEngine&  fDarkNoiseEngine;
@@ -317,6 +319,7 @@ SimPMTIcarus::SimPMTIcarus(Parameters const& config)
     , fMakeMetadata(config().MakeMetadata())
     , fWritePhotons(config().writePhotons())
     , fDoTimingDelays(config().algoConfig().ApplyTimingDelays())
+    , fUseGainCalibDB(config().algoConfig().UseGainDatabase())
     // random engines
     , fEfficiencyEngine(art::ServiceHandle<rndm::NuRandomService>()->registerAndSeedEngine(
           createEngine(0, "HepJamesRandom", "Efficiencies"),
@@ -394,6 +397,7 @@ SimPMTIcarus::SimPMTIcarus(Parameters const& config)
       *(lar::providerFrom<detinfo::LArPropertiesService>()),
       clockData,
       fDoTimingDelays ? lar::providerFrom<icarusDB::IPMTTimingCorrectionService>() : nullptr,
+      fUseGainCalibDB ? &(*art::ServiceHandle<calib::ICARUSPhotonCalibratorServiceFromDB>()) : nullptr,
       *fSinglePhotonResponseFunc,
       *fPedestalGen,
       fEfficiencyEngine,
