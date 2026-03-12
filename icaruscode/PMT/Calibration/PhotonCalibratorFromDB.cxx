@@ -71,16 +71,43 @@ void icarusDB::PhotonCalibratorFromDB::readCalibrationFromDB(unsigned int run)
   mf::LogDebug log(fLogCategory);
   log << "Loading calibration for " << channelList.size() << " channels in run " << run;
   for( auto channel : channelList ) {
-    
-    // SPE area from database
+
+    // SPE area [ADC x tick]
     double area = 0;
     int error  = fDB.GetNamedChannelData( channel, "area", area );
-    if( error ) throw cet::exception( "PhotonCalibratorFromDB" ) << "Encountered error (code " << error << ") while trying to access 'area' from the table\n";
-
+    if( error ) throw cet::exception( fLogCategory ) << "Error (code " << error << ") reading 'area' for channel " << channel << "\n";
     fDatabaseSPECalibrations[channel].speArea = area; // ADC x tick
+
+    // SPE area uncertainty from fit
+    double areaErr = 0;
+    error = fDB.GetNamedChannelData( channel, "area_err", areaErr );
+    if( error ) throw cet::exception( fLogCategory ) << "Error (code " << error << ") reading 'area_err' for channel " << channel << "\n";
+    fDatabaseSPECalibrations[channel].speAreaErr = areaErr; // ADC x tick
+
+    // SPE fit width (sigma) [ADC x tick]
+    double width = 0;
+    error = fDB.GetNamedChannelData( channel, "width", width );
+    if( error ) throw cet::exception( fLogCategory ) << "Error (code " << error << ") reading 'width' for channel " << channel << "\n";
+    fDatabaseSPECalibrations[channel].speFitWidth = width; // ADC x tick
+
+    // SPE fit width uncertainty
+    double widthErr = 0;
+    error = fDB.GetNamedChannelData( channel, "width_err", widthErr );
+    if( error ) throw cet::exception( fLogCategory ) << "Error (code " << error << ") reading 'width_err' for channel " << channel << "\n";
+    fDatabaseSPECalibrations[channel].speFitWidthErr = widthErr; // ADC x tick
+
+    // Fit quality
+    double fitQuality = 0;
+    error = fDB.GetNamedChannelData( channel, "fit_quality", fitQuality );
+    if( error ) throw cet::exception( fLogCategory ) << "Error (code " << error << ") reading 'fit_quality' for channel " << channel << "\n";
+    fDatabaseSPECalibrations[channel].speFitQuality = fitQuality; 
+
     if (fVerbose)
-      log << "\n  channel " << std::setw(3) << channel << "  SPE area " << area;
-  }  
+      log << "\n  channel " << std::setw(3) << channel
+          << "  SPE area " << area << " +/- " << areaErr
+          << "  sigma " << width << " +/- " << widthErr
+          << "  fit quality " << fitQuality;
+  }
 }
 
 
