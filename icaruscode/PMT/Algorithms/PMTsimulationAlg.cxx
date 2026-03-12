@@ -954,6 +954,7 @@ icarus::opdet::PMTsimulationAlgMaker::PMTsimulationAlgMaker
                                         (PMTspecs.VoltageDistribution());
   fBaseConfig.PMTspecs.gain            = PMTspecs.Gain();
   fBaseConfig.doGainFluctuations       = config.FluctuateGain();
+  fBaseConfig.useGainCalibDB           = config.UseGainDatabase();
   fBaseConfig.doTimingDelays           = config.ApplyTimingDelays();
 
   //
@@ -1010,6 +1011,7 @@ icarus::opdet::PMTsimulationAlgMaker::operator()(
   detinfo::LArProperties const& larProp,
   detinfo::DetectorClocksData const& clockData,
   icarusDB::PMTTimingCorrections const* timingDelays,
+  calib::ICARUSPhotonCalibratorServiceFromDB const* gainCalibService,
   SinglePhotonResponseFunc_t const& SPRfunction,
   PedestalGenerator_t& pedestalGenerator,
   CLHEP::HepRandomEngine& mainRandomEngine,
@@ -1020,7 +1022,7 @@ icarus::opdet::PMTsimulationAlgMaker::operator()(
 {
   return std::make_unique<PMTsimulationAlg>(makeParams(
     beamGateTimestamp,
-    larProp, clockData, timingDelays,
+    larProp, clockData, timingDelays, gainCalibService,
     SPRfunction, pedestalGenerator,
     mainRandomEngine, darkNoiseRandomEngine, elecNoiseRandomEngine,
     trackSelectedPhotons
@@ -1034,7 +1036,8 @@ auto icarus::opdet::PMTsimulationAlgMaker::makeParams(
   std::uint64_t beamGateTimestamp,
   detinfo::LArProperties const& larProp,
   detinfo::DetectorClocksData const& clockData,
-  icarusDB::PMTTimingCorrections const* timingDelays,  
+  icarusDB::PMTTimingCorrections const* timingDelays,
+  calib::ICARUSPhotonCalibratorServiceFromDB const* gainCalibService,
   SinglePhotonResponseFunc_t const& SPRfunction,
   PedestalGenerator_t& pedestalGenerator,
   CLHEP::HepRandomEngine& mainRandomEngine,
@@ -1058,8 +1061,10 @@ auto icarus::opdet::PMTsimulationAlgMaker::makeParams(
   params.clockData = &clockData;
   params.detTimings = detinfo::makeDetectorTimings(params.clockData);
   params.timingDelays = timingDelays;
-  
+  params.gainCalibService = gainCalibService;
+
   assert(!params.doTimingDelays || params.timingDelays);
+  assert(!params.useGainCalibDB || params.gainCalibService);
 
   params.pulseFunction = &SPRfunction;
   params.pedestalGen = &pedestalGenerator;
