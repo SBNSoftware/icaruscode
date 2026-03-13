@@ -253,10 +253,10 @@ product				version		qual	flags		<table_format=2>
 fftw				v3_3_10		-
 icarus_data			v09_93_06	-
 icarus_signal_processing	v10_06_00_01	-
-icarusalg			v10_15_00	-
+icarusalg			v10_20_03	-
 icarusutil			v09_88_00_02	-
 libwda				v2_30_0a	-
-sbncode				v10_15_00	-
+sbncode				v10_20_03	-
 cetmodules			v3_24_01	-	only_for_build
 end_product_list
 ####################################
