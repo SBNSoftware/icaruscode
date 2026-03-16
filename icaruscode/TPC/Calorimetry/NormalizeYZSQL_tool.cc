@@ -39,6 +39,7 @@ private:
   std::string fDBFileName;
   std::string fDBTag;
   bool fVerbose;
+  int fMC;
 
   lariov::DBFolder fDB;
 
@@ -155,6 +156,7 @@ icarus::calo::NormalizeYZSQL::NormalizeYZSQL(fhicl::ParameterSet const &pset):
   fDBFileName(pset.get<std::string>("DBFileName")),
   fDBTag(pset.get<std::string>("DBTag")),
   fVerbose(pset.get<bool>("Verbose", false)),
+  fMC(pset.get<int>("MC")),
   fDB(fDBFileName, "", "", fDBTag, true, false) {}
 
 void icarus::calo::NormalizeYZSQL::configure(const fhicl::ParameterSet& pset) {}
@@ -231,7 +233,29 @@ double icarus::calo::NormalizeYZSQL::Normalize(double dQdx, const art::Event &e,
     const recob::Hit &hit, const geo::Point_t &location, const geo::Vector_t &direction, double t0) {
 
   // Get the info
-  ScaleInfo const& i = GetScaleInfo(e.id().runID().run());
+  uint64_t runID = -1;
+  switch (fMC) {
+    case 1:
+      runID = 8460;
+      break;
+    case 2:
+      runID = 9301;
+      break;
+    case 3:
+      runID = 11806;
+      break;
+    case 4:
+      runID = 12960;
+      break;
+    case 5:
+      runID = 14079;
+      break;
+    default:
+      runID = e.id().runID().run();
+      break;
+  }
+
+  ScaleInfo const& i = GetScaleInfo(runID);
 
   // plane
   int plane = hit.WireID().Plane;
