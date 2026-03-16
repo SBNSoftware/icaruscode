@@ -22,8 +22,8 @@ namespace icarusDB {
 
   /// Possible status values for a PMT channel, matching the database integers.
   enum PMTChannelStatusValue : int {
-    kOFF = 0, ///< Channel is off (not powered).
-    kON  = 1, ///< Channel is on and good.
+    kOff = 0, ///< Channel is off (not powered).
+    kGood  = 1, ///< Channel is on and good.
     kBad = 2  ///< Channel is powered but flagged as bad.
   };
 
@@ -32,8 +32,8 @@ namespace icarusDB {
    * @brief Interface for PMT channel status information.
    *
    * Currently, the class provides interface for the following information:
-   * - channel status: kON, kOFF, or kBad
-   * - convenience predicates: isOn(), isOff(), isBad()
+   * - channel status: kGood, kOff, or kBad
+   * - convenience predicates: isGood(), isOff(), isBad()
    * - channel sets by status: getOnChannels(), getOffChannels(), getBadChannels()
    *
    */
@@ -48,22 +48,22 @@ namespace icarusDB {
     /// Returns the status of the specified channel.
     virtual PMTChannelStatusValue getChannelStatus(unsigned int channel) const = 0;
 
-    /// Returns whether the specified channel is on and good.
-    virtual bool isOn(unsigned int channel) const
-      { return getChannelStatus(channel) == kON; }
+    /// Returns whether the specified channel is on and good (status kGood).
+    virtual bool isGood(unsigned int channel) const
+      { return getChannelStatus(channel) == kGood; }
 
     /// Returns whether the specified channel is off (not powered).
     virtual bool isOff(unsigned int channel) const
-      { return getChannelStatus(channel) == kOFF; }
+      { return getChannelStatus(channel) == kOff; }
 
     /// Returns whether the specified channel is powered but bad.
     virtual bool isBad(unsigned int channel) const
       { return getChannelStatus(channel) == kBad; }
 
-    /// Returns the set of channels with status kON.
+    /// Returns the set of channels with status kGood.
     virtual ChannelSet_t getOnChannels()  const = 0;
 
-    /// Returns the set of channels with status kOFF.
+    /// Returns the set of channels with status kOff.
     virtual ChannelSet_t getOffChannels() const = 0;
 
     /// Returns the set of channels with status kBad.
