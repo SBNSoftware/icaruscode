@@ -1,0 +1,18 @@
+#
+# @file   pmt_channel_status_icarus.fcl
+# @brief  Standard configuration for the ICARUS PMT channel status service.
+#
+
+BEGIN_PROLOG
+
+icarus_pmt_channel_status: {
+  service_provider: PMTChannelStatusService
+  DBname:        "pmt_voltage_data"
+  StatusTag:     "v1r3"
+  DefaultStatus:  1       # kON
+  DefaultVoltage: 1500.0  # [V]
+  Verbose:       false
+  LogCategory:   "PMTChannelStatusProvider"
+}
+
+END_PROLOG
