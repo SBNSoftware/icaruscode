@@ -12,7 +12,8 @@ set( LIB_LIBRARIES
 
 set( SERVICE_LIBRARIES
         icaruscode_PMT_Status
-        larcore::CoreUtils
+        art::Framework_Principal
+        larcore::Geometry_Geometry_service
 )
 
 file(GLOB lib_srcs *.cxx)
