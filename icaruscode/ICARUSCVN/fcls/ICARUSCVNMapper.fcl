@@ -1,0 +1,188 @@
+BEGIN_PROLOG
+
+#   This file defines the configuration for the CVNMapper and CVNMapperProtoDUNE modules
+standard_pixelmapproducer:
+{
+  TdcWidth:      640 #400 # 1000 
+  WireLength:    6500 #3064 #2205 #6223  #8500 #or 9000 #collection plane : 2205, induction plane : 6223
+  TimeResolution: 1500 #1600 # 2560 # 3400
+  Threshold: 0
+  MultipleDrifts: true
+  verbose: false
+  ChangeWireNo: true
+  ReadoutSize: 4096. # in time ticks # 2560
+  ShiftT: 850 #850. # 420. #size of the back/front porch
+  InductionWires: 6500 #3064 #6223 #2205 #1984 #number of wires in the first induction plane
+  FlipInductionView: false
+  UseT: true #use time 0 of pfp
+}
+
+standard_cvnmapper_west:
+{
+  module_type:       ICARUSCVNMapper
+  HitsModuleLabel:   "cluster3DCryoW"
+  ClusterPMLabel: "cvnmap"
+  MinClusterHits: 100
+  verbose: true
+  UseSlice: true
+  SliceLabel: "pandoraGausCryoW"
+  PFParticleModuleLabel: "pandoraGausCryoW"
+  T0Label: "pandoraGausCryoW"
+  PixelMapProducer: @local::standard_pixelmapproducer
+  MapVecSize: 100000
+  
+}
+
+standard_cvnmapper_east:
+{
+  module_type:       ICARUSCVNMapper
+  HitsModuleLabel:   "cluster3DCryoE"
+  ClusterPMLabel: "cvnmap"
+  MinClusterHits: 100
+  verbose: true
+  UseSlice: true
+  SliceLabel: "pandoraGausCryoE"
+  PFParticleModuleLabel: "pandoraGausCryoE"
+  T0Label: "pandoraGausCryoE"
+  PixelMapProducer: @local::standard_pixelmapproducer
+  MapVecSize: 100000
+  
+}
+
+standard_cvnzlibmaker_east:
+{
+  module_type: ICARUSCVNZlibMaker
+  Module: "East"
+  ZLibFileName: "fwieler_pixel_maps"
+  InfoFileName: "fwieler_pixel_maps"
+  OutputDir: "./NewZlibMakerOutput"
+  Grid: "false"
+  PixelMapInput: "icaruspixelmapeast"
+  SetLog: false
+  ReverseViews: [false,false,false]	
+  PlaneLimit: 500
+  TDCLimit: 500
+  verbose: true
+  UseSlice: true
+  SliceLabel: "pandoraGausCryoE"
+  TopologyHitsCut: 0
+  GenieGenModuleLabel: "generator"
+  Verbose: true
+  UseBackTrackInfo: true
+  UseNuContainment: false
+  CosEfrac: 0.75
+  NuEfrac: 0.25
+  VolCut: 0.
+  SaveTree: false
+  PFParticleModuleLabel: "pandoraGausCryoE"
+  HitModuleLabel: "cluster3DCryoE"
+  T0Label: "pandoraGausCryoE"
+}
+
+standard_cvnzlibmaker_west:
+{
+  module_type: ICARUSCVNZlibMaker
+  Module: West
+  ZLibFileName: "fwieler_pixel_maps"
+  InfoFileName: "fwieler_pixel_maps"
+  OutputDir: "./NewZlibMakerOutput"
+  PixelMapInput: "icaruspixelmapwest"
+  SetLog: false
+  ReverseViews: [false,false,false]	
+  PlaneLimit: 500
+  TDCLimit: 500
+  verbose: true
+  UseSlice: true
+  SliceLabel: "pandoraGausCryoW"
+  TopologyHitsCut: 0
+  GenieGenModuleLabel: "generator"
+  Verbose: true
+  UseBackTrackInfo: true
+  UseNuContainment: false
+  CosEfrac: 0.75
+  NuEfrac: 0.25
+  VolCut: 0.
+  SaveTree: false
+  PFParticleModuleLabel: "pandoraGausCryoW"
+  HitModuleLabel: "cluster3DCryoW"
+  T0Label: "pandoraGausCryoW"
+}
+
+
+standard_icarustfnethandler:
+{
+  LibPath: ""
+  #For the grid
+  #TFProtoBuf: "${INPUT_TAR_DIR_LOCAL}/icarus_cvn/srcs/icaruscode/icaruscode/ICARUSCVN/fcls/model/new_training_output1_flavour_40pixels_101layers_new_new_data_balanced_2-13-0.48.46.pb"
+  #Running Local
+  TFProtoBuf: "CVN/icarus_cvn_flavor.pb"
+  ChargeLogScale: false
+  NImageWires: 500
+  NImageTDCs  : 500
+  ReverseViews: [false,false,false]
+  UseBundle: false
+  Inputs: ["view0", "view1", "view2"]
+  Outputs: ["flavour_1/Softmax"]
+  NInputs: 3
+  NOutputs: 1
+  verbose: true
+}
+
+#IF RUNNING ON THE PIXEL MAPS NOT ON THE ROOT FILE
+standard_icaruscvnevaluatorpm:
+{
+  module_type: ICARUSCVNEvaluator
+  Module: "West"
+  PixelMapModuleLabel: ""
+  PixelMapInput: "/pnfs/icarus/scratch/users/fwieler/pixelMaps_score2/W_set/"
+  SliceLabel: ""
+  PFParticleModuleLabel: "pandoraGausCryoW"
+  T0Label: "pandoraGausCryoW"
+  CVNType: "Tensorflow"
+  verbose: true
+  ICARUSTFHandler: {
+    tool_type: ICARUSTFNetHandler
+    @table::standard_icarustfnethandler
+  }
+  PixelMapProducer: @local::standard_pixelmapproducer
+}
+
+#RUNNING ON THE ROOT FILE
+standard_icaruscvnevaluatorslc_west:
+{
+  module_type: ICARUSCVNEvaluator
+  Module: "West"
+  PixelMapModuleLabel: ""
+  PixelMapInput: ""
+  SliceLabel: "pandoraGausCryoW"
+  PFParticleModuleLabel: "pandoraGausCryoW"
+  T0Label: "pandoraGausCryoW"
+  CVNType: "Tensorflow"
+  verbose: true
+  ICARUSTFHandler: {
+    tool_type: ICARUSTFNetHandler
+    @table::standard_icarustfnethandler
+  }
+  PixelMapProducer: @local::standard_pixelmapproducer
+}
+
+standard_icaruscvnevaluatorslc_east:
+{
+  module_type: ICARUSCVNEvaluator
+  Module: "East"
+  PixelMapModuleLabel: ""
+  PixelMapInput: ""
+  SliceLabel: "pandoraGausCryoE"
+  PFParticleModuleLabel: "pandoraGausCryoE"
+  T0Label: "pandoraGausCryoE"
+  CVNType: "Tensorflow"
+  verbose: true
+  ICARUSTFHandler: {
+    tool_type: ICARUSTFNetHandler
+    @table::standard_icarustfnethandler
+  }
+  PixelMapProducer: @local::standard_pixelmapproducer
+}
+
+
+END_PROLOG
