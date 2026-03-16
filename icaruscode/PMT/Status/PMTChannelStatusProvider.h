@@ -28,7 +28,7 @@ namespace icarusDB::details {
 
   /// Internal structure holding the status and voltage for a single channel.
   struct PMTChannelStatusDB {
-    PMTChannelStatusValue status  = kOFF;
+    PMTChannelStatusValue status  = kOff;
     double                voltage = 0.0;  ///< Nominal voltage [V].
   };
 
@@ -40,7 +40,7 @@ namespace icarusDB { class PMTChannelStatusProvider; }
 /**
  * @brief Provider for PMT channel status from the conditions database.
  *
- * Reads the channel status (kOFF=0, kON=1, kBad=2) from the
+ * Reads the channel status (kOff=0, kGood=1, kBad=2) from the
  * `pmt_voltage_data` database table, indexed by run number.
  *
  * The database interface is accessed only on `readStatusFromDB()` calls,
@@ -50,7 +50,7 @@ namespace icarusDB { class PMTChannelStatusProvider; }
  * -------------------------
  * * `DBname` (default: `"pmt_voltage_data"`): database table name.
  * * `StatusTag` (default: `""`): database tag to select.
- * * `DefaultStatus` (default: `0` = kOFF): status for channels absent from DB.
+ * * `DefaultStatus` (default: `0` = kOff): status for channels absent from DB.
  * * `Verbose` (default: `false`): print channel statuses when loading.
  * * `LogCategory` (default: `"PMTChannelStatusProvider"`).
  *
@@ -73,8 +73,8 @@ public:
   PMTChannelStatusValue getChannelStatus(unsigned int channel) const override
     { return getChannelStatusOrDefault(channel).status; }
 
-  ChannelSet_t getOnChannels()  const override { return getChannelsWithStatus(kON);  }
-  ChannelSet_t getOffChannels() const override { return getChannelsWithStatus(kOFF); }
+  ChannelSet_t getOnChannels()  const override { return getChannelsWithStatus(kGood);  }
+  ChannelSet_t getOffChannels() const override { return getChannelsWithStatus(kOff); }
   ChannelSet_t getBadChannels() const override { return getChannelsWithStatus(kBad); }
 
   double getChannelVoltage(unsigned int channel) const override

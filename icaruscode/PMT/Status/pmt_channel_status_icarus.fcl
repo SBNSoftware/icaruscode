@@ -9,7 +9,7 @@ icarus_pmt_channel_status: {
   service_provider: PMTChannelStatusService
   DBname:        "pmt_voltage_data"
   StatusTag:     "v1r3"
-  DefaultStatus:  1       # kON
+  DefaultStatus:  1       # kGood
   DefaultVoltage: 1500.0  # [V]
   Verbose:       false
   LogCategory:   "PMTChannelStatusProvider"
