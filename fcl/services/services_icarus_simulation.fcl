@@ -40,6 +40,7 @@
 #include "signalservices_icarus.fcl"
 #include "photpropservices_icarus.fcl"
 #include "timing_icarus.fcl"
+#include "pmt_channel_status_icarus.fcl"
 
 BEGIN_PROLOG
 
@@ -118,7 +119,7 @@ icarus_detsim_services: {
     
     @table::icarus_detsim_dark_services
     IPMTTimingCorrectionService:       @local::icarus_pmttimingservice
-    # PmtGainService:                 @local::icarus_pmtgain_service
+    IPMTChannelStatusService:          @local::icarus_pmt_channel_status
     
 } # icarus_detsim_services
 
