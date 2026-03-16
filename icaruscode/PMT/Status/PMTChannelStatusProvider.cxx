@@ -26,7 +26,7 @@ icarusDB::PMTChannelStatusProvider::PMTChannelStatusProvider
   , fDB         ( pset.get<std::string>("DBname", "pmt_voltage_data"),
                   "", "", fStatusTag, true, false )
 {
-  int const defaultStatusInt = pset.get<int>("DefaultStatus", static_cast<int>(kON));
+  int const defaultStatusInt = pset.get<int>("DefaultStatus", static_cast<int>(kGood));
   fDefault.status  = static_cast<PMTChannelStatusValue>(defaultStatusInt);
   fDefault.voltage = pset.get<double>("DefaultVoltage", 1500.0);
 
