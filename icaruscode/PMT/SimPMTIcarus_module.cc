@@ -18,6 +18,7 @@
 #include "icaruscode/IcarusObj/OpDetWaveformMeta.h"
 #include "icaruscode/Timing/IPMTTimingCorrectionService.h"
 #include "icaruscode/PMT/Calibration/ICARUSPhotonCalibratorServiceFromDB.h"
+#include "icaruscode/PMT/Status/IPMTChannelStatusService.h"
 
 // LArSoft libraries
 #include "larcore/CoreUtils/ServiceUtil.h"
@@ -204,6 +205,12 @@ namespace icarus::opdet {
 
       fhicl::TableFragment<icarus::opdet::PMTsimulationAlgMaker::Config> algoConfig;
       
+      fhicl::Atom<bool> UseChannelStatusDatabase {
+        Name("UseChannelStatusDatabase"),
+        Comment("skip simulation of channels flagged in the PMT channel status DB"),
+        false
+      };
+
       fhicl::Atom<bool> MakeMetadata {
         Name("MakeMetadata"),
         Comment("writes a metadata object for each waveform"),
@@ -284,6 +291,7 @@ namespace icarus::opdet {
     bool fWritePhotons { false }; ///< Whether to save contributing photons.
     bool fDoTimingDelays; ///< Whether timing delay corrections are applied.
     bool fUseGainCalibDB; ///< Whether per-channel gain calibration from DB is applied.
+    bool fUseChannelStatusDB; ///< Whether to skip non-ON channels using the status DB.
 
     CLHEP::HepRandomEngine&  fEfficiencyEngine;
     CLHEP::HepRandomEngine&  fDarkNoiseEngine;
@@ -356,6 +364,7 @@ SimPMTIcarus::SimPMTIcarus(Parameters const& config)
     , fWritePhotons(config().writePhotons())
     , fDoTimingDelays(config().algoConfig().ApplyTimingDelays())
     , fUseGainCalibDB(config().algoConfig().UseGainDatabase())
+    , fUseChannelStatusDB(config().UseChannelStatusDatabase())
     // random engines
     , fEfficiencyEngine(art::ServiceHandle<rndm::NuRandomService>()->registerAndSeedEngine(
           createEngine(0, "HepJamesRandom", "Efficiencies"),
@@ -488,7 +497,11 @@ SimPMTIcarus::SimPMTIcarus(Parameters const& config)
     if(pmtVector.isValid()) {
       nopch = pmtVector->size();
       for(auto const& photons : *pmtVector) {
-      
+
+        if (fUseChannelStatusDB
+          && !lar::providerFrom<icarusDB::IPMTChannelStatusService>()->isGood(photons.OpChannel()))
+          continue;
+
         // Make an empty SimPhotonsLite with the same channel number.
 
         sim::SimPhotonsLite lite_photons(photons.OpChannel());
@@ -553,6 +566,10 @@ SimPMTIcarus::SimPMTIcarus(Parameters const& config)
     else if(pmtLiteVector.isValid()) {
       nopch = pmtLiteVector->size();
       for(auto const& lite_photons : *pmtLiteVector) {
+
+        if (fUseChannelStatusDB
+          && !lar::providerFrom<icarusDB::IPMTChannelStatusService>()->isGood(lite_photons.OpChannel))
+          continue;
 
         // Make an empty SimPhotons with the same channel number.
 
