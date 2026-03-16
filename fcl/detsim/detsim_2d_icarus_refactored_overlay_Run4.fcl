@@ -2,4 +2,6 @@
 
 # Run3/4 optical tune (with no noise)
 physics.producers.opdaq: @local::icarus_simpmt_run4_nonoise
-physics.producers.opdaq.ApplyTimingDelays: true 
+physics.producers.opdaq.ApplyTimingDelays:        true
+physics.producers.opdaq.UseGainDatabase:          true
+physics.producers.opdaq.UseChannelStatusDatabase: true
