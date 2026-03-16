@@ -57,4 +57,6 @@ outputs: {
 }
 
 physics.producers.opdaq.InputModule: "pdfastsim"
-physics.producers.opdaq.ApplyTimingDelays: false  # keep false for non-overlay MC
+physics.producers.opdaq.ApplyTimingDelays:        false  # keep false for non-overlay MC
+physics.producers.opdaq.UseGainDatabase:          false  # keep false for non-overlay MC
+physics.producers.opdaq.UseChannelStatusDatabase: false  # keep false for non-overlay MC
