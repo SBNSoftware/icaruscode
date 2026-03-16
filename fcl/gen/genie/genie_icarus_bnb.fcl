@@ -30,8 +30,7 @@
 #
 #
 
-#include "genie.fcl"
-#include "beamspilltimings.fcl"
+#include "genie_beam_settings.fcl"
 
 BEGIN_PROLOG
 
@@ -45,30 +44,44 @@ BEGIN_PROLOG
 ###
 ### icarus_genie_BNB_base
 ###
+#
+# Based on SBN shared BNB configuration, it adds:
+#  * flux
+#  * simulation volume: detector enclosure (includes both cryostats)
+#  * event dump in the log
+#
+#
 icarus_genie_BNB_base: {
+
+  @table::sbn_genie_BNB_base  # from genie_beam_settings.fcl
   
-  @table::standard_genie # from genie.fcl
-  
+  #
+  # flux
+  #
   FluxType:             "simple_flux"
-  GenFlavors:           [12, 14, -12, -14]
-# TopVolume:            "volTPCActive"
-# TopVolume:            "volCryostat"
-  BeamName:             "booster"
-  EventGeneratorList:   "Default"
 # FluxCopyMethod:       "IFDH"
   FluxSearchPaths:      "/cvmfs/sbn.osgstorage.org/pnfs/fnal.gov/usr/sbn/persistent/stash/physics/beam/GENIE/BNB/standard/v01_00/"
   FluxFiles:            ["converted_beammc_icarus_*.root"]
-  GHepPrintLevel:       13
-  POTPerSpill:          5.0e12
-  EventsPerSpill:       @erase
+
   
-  GlobalTimeOffset:     0.0 # [ns]
-  RandomTimeOffset:     1600.0 # [ns]
+  #
+  # generation volume
+  #
+# TopVolume:            "volTPCActive"
+# TopVolume:            "volCryostat"
+  TopVolume:            "volDetEnclosure"
+
+  #
+  # GENIE event vdump verbosity
+  #
+  GHepPrintLevel:       13
   
 } # icarus_genie_BNB_base
 
 
+#
 # legacy alias
+#
 icarus_genie_simple: @local::icarus_genie_BNB_base
 
 
@@ -76,14 +89,11 @@ icarus_genie_simple: @local::icarus_genie_BNB_base
 ###  icarus_genie_BNB
 ###
 #
-# Adds BnB time structure.
+# Just as the default.
 #
 icarus_genie_BNB: {
   
   @table::icarus_genie_BNB_base
-  
-  SpillTimeConfig: @local::FNAL_BnB_default # from beamspilltimings.fcl
-  RandomTimeOffset: 0.0 # ns; it's ignored anyway when `SpillTimeConfig` is set
   
 } # icarus_genie_BNB
 
