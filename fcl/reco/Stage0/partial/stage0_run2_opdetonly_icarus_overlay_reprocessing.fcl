@@ -16,10 +16,6 @@
 ## This would make the data component consistent and the MC signal biased.
 ## Such a choice makes the configuration independent of the run period...
 
-## ... excpet for the `mcophit` module (fake hit reconstruction)
-## This module requires a fixed SPE tune (no db interface) so it must be manually set
-## to the run-period SPE tune used in DetSim.
-
 process_name: OpMCstage0
 
 ## only perform PMT/CRT MCstage0 on top of reprocessed MC overlay files
@@ -32,11 +28,6 @@ process_name: OpMCstage0
 physics.path: [   @sequence::icarus_stage0_overlay_PMT, 
                   @sequence::icarus_stage0_mc_crtreco # only reco, hits from overlay
               ]
-
-## update mcophit producer to pick up Run-2 SPE tune
-## (ophit picks up SPEArea from the database automatically)
-physics.producers.mcophit.SPEArea: @local::SPERun2.Area
-physics.producers.mcophit.SPEAmplitude: @local::SPERun2.Amplitude
 
 
 
