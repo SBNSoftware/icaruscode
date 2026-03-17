@@ -269,19 +269,16 @@ class opdet::ICARUSOpHitFinder: public art::ReplicatedProducer {
     fhicl::Atom<bool> AreaToPE {
       Name{ "AreaToPE" },
       Comment{ "Whether the `SPEArea` parameter refers to area or amplitude" },
-      [this](){ return !UseCalibrator(); }
       };
     
     fhicl::Atom<float> SPEArea {
       Name{ "SPEArea" },
       Comment{ "area or amplitude of PMT response to single photoelectron" },
-      [this](){ return !UseCalibrator(); }
       };
     
     fhicl::Atom<float> SPEShift {
       Name{ "SPEShift" },
       Comment{ "shift on the single photoelectron response" },
-      [this](){ return !UseCalibrator(); }
       };
 
     fhicl::Atom<bool> UseChannelStatus {
