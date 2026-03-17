@@ -76,7 +76,6 @@ icarus_stage0_overlay_PMT: [
                          ophituncorrected, # @local::icarus_ophit_data
                          ophit,            # ovveride to @local::icarus_ophit_timing_correction 
                                            # this happens in enable_overlay.fcl 
-                         mcophit,
                          opflashCryoE,
                          opflashCryoW
 ]
