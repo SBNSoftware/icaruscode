@@ -193,8 +193,9 @@ icarus_ophit: # some basic configuration
    GenModule:      "generator"
    InputModule:    "opdaq"
    # InputLabels: [] #not supported by ICARUSOpHitFinder 
-   ChannelMasks:   []
-   UseCalibrator: true   # use calibrator service (SPEArea database)
+   ChannelMasks:     []
+   UseChannelStatusDatabase: true  # skip channels flagged in the status database
+   UseCalibrator:  true  # use calibrator service (SPEArea database)
                          # if true, overrides SPEArea / SPEShift below
    HitThreshold:   0.2   # PE
    AreaToPE:       true  # Use area to calculate number of PEs
@@ -207,8 +208,9 @@ icarus_ophit: # some basic configuration
    HitAlgoPset:    @local::icarus_opreco_hit_slidingwindow_201910
    PedAlgoPset:    @local::icarus_opreco_pedestal_DocDB24969
    RiseTimeCalculator: {
-     tool_type:      RiseTimeThreshold
-     PeakRatio:      0.15  # at 15% of the peak amplitude -- not tuned
+     tool_type:          RiseTimeThreshold
+     PeakRatio:          0.15  # at 15% of the peak amplitude -- not tuned
+     InterpolateSamples: true  # sub-sample linear interpolation
    }
 }
 
@@ -221,6 +223,7 @@ icarus_ophitdebugger.OutputFile:  "ophit_debug.root"
 icarus_ophit_MC: {
   @table::icarus_ophit
   UseCalibrator: false
+  UseChannelStatusDatabase: false
   InputModule: "opdaq"
 }
 
