@@ -13,6 +13,7 @@
 #include "icaruscode/PMT/Data/WaveformRMS.h"
 #include "sbnobj/ICARUS/PMT/Data/WaveformBaseline.h"
 // LArSoft libraries
+#include "larana/OpticalDetector/OpHitFinder/RiseTimeTools/RiseTimeCalculatorBase.h"
 #include "larana/OpticalDetector/OpHitFinder/AlgoCFD.h"
 #include "larana/OpticalDetector/OpHitFinder/AlgoFixedWindow.h"
 #include "larana/OpticalDetector/OpHitFinder/AlgoSiPM.h"
@@ -45,9 +46,11 @@
 #include "messagefacility/MessageLogger/MessageLogger.h"
 #include "fhiclcpp/types/Sequence.h"
 #include "fhiclcpp/types/OptionalAtom.h"
+#include "fhiclcpp/types/OptionalDelegatedParameter.h"
 #include "fhiclcpp/types/Atom.h"
 #include "fhiclcpp/types/DelegatedParameter.h"
 #include "fhiclcpp/ParameterSet.h"
+#include "art/Utilities/make_tool.h"
 
 // C++ standard libraries
 #include <algorithm> // std::copy_if(), std::binary_search()
@@ -244,13 +247,21 @@ class opdet::ICARUSOpHitFinder: public art::ReplicatedProducer {
     
     fhicl::DelegatedParameter PedAlgoPset {
       Name{ "PedAlgoPset" },
-      Comment{ 
+      Comment{
         "parameters of the pedestal extraction algorithm."
         " The parameters must include the algorithm \"Name\", one of: "
         + PedAlgoFactory.names(", ") + "."
         }
       };
-    
+
+    fhicl::OptionalDelegatedParameter RiseTimeCalculator {
+      Name{ "RiseTimeCalculator" },
+      Comment{
+        "Configuration of the rise time calculator art tool (optional)."
+        " If omitted, rise time is not computed and the OpHit RiseTime field is left at zero."
+        }
+      };
+
     fhicl::Atom<bool> UseCalibrator {
       Name{ "UseCalibrator" },
       Comment{ "Use the photon calibration service configured in the job" },
@@ -324,6 +335,10 @@ class opdet::ICARUSOpHitFinder: public art::ReplicatedProducer {
   /// Returns a vector with copies of only the waveforms not in masked channels.
   std::vector<raw::OpDetWaveform> selectWaveforms
     (std::vector<raw::OpDetWaveform> const& waveforms) const;
+
+  /// Creates a rise time calculator tool from config, or returns nullptr if not configured.
+  static std::unique_ptr<pmtana::RiseTimeCalculatorBase>
+  makeRiseTimeCalculator(Config const& config);
 
 
 }; // opdet::ICARUSOpHitFinder
@@ -494,7 +509,8 @@ opdet::ICARUSOpHitFinder::ICARUSOpHitFinder
   // algorithms
   , fPulseRecoMgr{}
   , fThreshAlg
-    { HitAlgoFactory.create(params().HitAlgoPset.get<fhicl::ParameterSet>()) }
+    { HitAlgoFactory.create(params().HitAlgoPset.get<fhicl::ParameterSet>(),
+                            makeRiseTimeCalculator(params())) }
   , fPedAlg
     { PedAlgoFactory.create(params().PedAlgoPset.get<fhicl::ParameterSet>()) }
 {
@@ -664,6 +680,16 @@ std::vector<raw::OpDetWaveform> opdet::ICARUSOpHitFinder::selectWaveforms
   
   return selected;
 } // selectWaveforms()
+
+
+// -----------------------------------------------------------------------------
+std::unique_ptr<pmtana::RiseTimeCalculatorBase>
+opdet::ICARUSOpHitFinder::makeRiseTimeCalculator(Config const& config)
+{
+  fhicl::ParameterSet calcPset;
+  if (!config.RiseTimeCalculator.get_if_present(calcPset)) return nullptr;
+  return art::make_tool<pmtana::RiseTimeCalculatorBase>(calcPset);
+} // opdet::ICARUSOpHitFinder::makeRiseTimeCalculator()
 
 
 // -----------------------------------------------------------------------------

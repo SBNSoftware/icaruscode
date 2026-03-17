@@ -30,6 +30,7 @@
 // -----------------------------------------------------------------------------
 // forward declarations
 namespace art { class Event; }
+namespace pmtana { class RiseTimeCalculatorBase; }
 
 
 // -----------------------------------------------------------------------------
@@ -291,15 +292,21 @@ class opdet::factory::AlgorithmFactory {
    */
   std::unique_ptr<Algo_t> create
     (std::string const& name, fhicl::ParameterSet const& pset) const;
-  
+
+  /// As `create(name, pset)`, also injecting a rise time calculator into the algorithm.
+  std::unique_ptr<Algo_t> create(
+    std::string const& name,
+    fhicl::ParameterSet const& pset,
+    std::unique_ptr<pmtana::RiseTimeCalculatorBase> calc) const;
+
   /**
    * @brief Creates an instance of the algorithm constructed with `pset`.
    * @param pset the configuration of the algorithm
    * @return the newly created algorithm object
-   * 
+   *
    * The type of algorithm is discovered from `pset` itself with the mechanism
    * documented in `setAlgorithmConfigurationKey()`.
-   * 
+   *
    * For example:
    * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~{.cpp}
    * factory.setAlgorithmConfigurationKey("Name");
@@ -311,6 +318,11 @@ class opdet::factory::AlgorithmFactory {
    * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
    */
   std::unique_ptr<Algo_t> create(fhicl::ParameterSet const& pset) const;
+
+  /// As `create(pset)`, also injecting a rise time calculator into the algorithm.
+  std::unique_ptr<Algo_t> create(
+    fhicl::ParameterSet const& pset,
+    std::unique_ptr<pmtana::RiseTimeCalculatorBase> calc) const;
   
   /// Returns a list with the names of supported algorithms.
   std::vector<std::string> names() const;
@@ -449,7 +461,12 @@ struct opdet::factory::AlgorithmFactory<Base>::AlgoMaker {
    */
   virtual std::unique_ptr<Base> makeAlgo
     (fhicl::ParameterSet const& pset) const = 0;
-  
+
+  /// Creates an algorithm of the wrapped type, injecting a rise time calculator.
+  virtual std::unique_ptr<Base> makeAlgo(
+    fhicl::ParameterSet const& pset,
+    std::unique_ptr<pmtana::RiseTimeCalculatorBase> calc) const = 0;
+
   /// Comparison: sort by name in lexicographic order.
   bool operator< (AlgoMaker const& other) const
     { return name < other.name; }
@@ -468,7 +485,12 @@ struct opdet::factory::AlgorithmFactory<Base>::AlgoMakerFor
   std::unique_ptr<Base> makeAlgo
     (fhicl::ParameterSet const& pset) const override
     { return std::make_unique<Algo>(pset); }
-  
+
+  std::unique_ptr<Base> makeAlgo(
+    fhicl::ParameterSet const& pset,
+    std::unique_ptr<pmtana::RiseTimeCalculatorBase> calc) const override
+    { return std::make_unique<Algo>(pset, std::move(calc)); }
+
 }; // opdet::factory::AlgorithmFactory::AlgoMakerFor
 
 
@@ -532,6 +554,35 @@ auto opdet::factory::AlgorithmFactory<Base>::create
 {
   return create(pset.get<std::string>(fAlgoNameKey), pset);
 } // opdet::factory::AlgorithmFactory::create()
+
+
+// -----------------------------------------------------------------------------
+template <typename Base>
+auto opdet::factory::AlgorithmFactory<Base>::create(
+  std::string const& name,
+  fhicl::ParameterSet const& pset,
+  std::unique_ptr<pmtana::RiseTimeCalculatorBase> calc) const
+  -> std::unique_ptr<Algo_t>
+{
+  AlgoMaker const* maker = getMaker(name);
+  if (maker) return maker->makeAlgo(pset, std::move(calc));
+
+  throw cet::exception{ "AlgorithmFactory" }
+    << "Unknown algorithm: '" << name << "'.\nSupported algorithms:\n - '"
+    << names("'\n - '") << "'\n";
+
+} // opdet::factory::AlgorithmFactory::create(name, pset, calc)
+
+
+// -----------------------------------------------------------------------------
+template <typename Base>
+auto opdet::factory::AlgorithmFactory<Base>::create(
+  fhicl::ParameterSet const& pset,
+  std::unique_ptr<pmtana::RiseTimeCalculatorBase> calc) const
+  -> std::unique_ptr<Algo_t>
+{
+  return create(pset.get<std::string>(fAlgoNameKey), pset, std::move(calc));
+} // opdet::factory::AlgorithmFactory::create(pset, calc)
 
 
 // -----------------------------------------------------------------------------
