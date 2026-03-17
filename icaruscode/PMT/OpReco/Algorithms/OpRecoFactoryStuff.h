@@ -489,7 +489,14 @@ struct opdet::factory::AlgorithmFactory<Base>::AlgoMakerFor
   std::unique_ptr<Base> makeAlgo(
     fhicl::ParameterSet const& pset,
     std::unique_ptr<pmtana::RiseTimeCalculatorBase> calc) const override
-    { return std::make_unique<Algo>(pset, std::move(calc)); }
+  {
+    if constexpr (std::is_constructible_v<Algo,
+        fhicl::ParameterSet const&,
+        std::unique_ptr<pmtana::RiseTimeCalculatorBase>>)
+      return std::make_unique<Algo>(pset, std::move(calc));
+    else
+      return std::make_unique<Algo>(pset); // algorithm does not use a rise time calculator
+  }
 
 }; // opdet::factory::AlgorithmFactory::AlgoMakerFor
 
