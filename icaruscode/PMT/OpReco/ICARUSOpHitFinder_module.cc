@@ -8,6 +8,7 @@
  */
 
 // ICARUS libraries
+#include "icaruscode/PMT/Status/IPMTChannelStatusService.h"
 #include "icaruscode/PMT/OpReco/Algorithms/PedAlgoFixed.h"
 #include "icaruscode/PMT/OpReco/Algorithms/OpRecoFactoryStuff.h"
 #include "icaruscode/PMT/Data/WaveformRMS.h"
@@ -256,10 +257,7 @@ class opdet::ICARUSOpHitFinder: public art::ReplicatedProducer {
 
     fhicl::OptionalDelegatedParameter RiseTimeCalculator {
       Name{ "RiseTimeCalculator" },
-      Comment{
-        "Configuration of the rise time calculator art tool (optional)."
-        " If omitted, rise time is not computed and the OpHit RiseTime field is left at zero."
-        }
+      Comment{ "Configuration of the rise time calculator art tool (optional)."}
       };
 
     fhicl::Atom<bool> UseCalibrator {
@@ -285,7 +283,13 @@ class opdet::ICARUSOpHitFinder: public art::ReplicatedProducer {
       Comment{ "shift on the single photoelectron response" },
       [this](){ return !UseCalibrator(); }
       };
-    
+
+    fhicl::Atom<bool> UseChannelStatus {
+      Name{ "UseChannelStatusDatabase" },
+      Comment{"ignore waveforms on channels flagged in PMT channel status database."},
+      false
+      };
+
   }; // Config
   
   using Parameters = art::ReplicatedProducer::Table<Config>;
@@ -309,12 +313,15 @@ class opdet::ICARUSOpHitFinder: public art::ReplicatedProducer {
   // --- BEGIN -- Cached service values ----------------------------------------
   /// Storage for our own calibration algorithm, if any.
   std::unique_ptr<calib::IPhotonCalibrator> fMyCalib;
-  
+
   unsigned int const fMaxOpChannel; ///< Number of channels in the detector.
-  
+
   /// The calibration algorithm to be used (not owned).
   calib::IPhotonCalibrator const* fCalib = nullptr;
-  
+
+  /// Optional PMT channel status provider (not owned); null if not in use.
+  icarusDB::PMTChannelStatus const* fChannelStatus = nullptr;
+
   // --- END ---- Cached service values ----------------------------------------
   
   
@@ -527,14 +534,15 @@ opdet::ICARUSOpHitFinder::ICARUSOpHitFinder
   //
   if (params().UseCalibrator()) {
     fCalib = frame.serviceHandle<calib::IPhotonCalibratorService>()->provider();
+    mf::LogInfo{ "ICARUSOpHitFinder" } << "Using 'calib::IPhotonCalibratorService' for gain calibration.";
   }
   else {
-    fMyCalib = std::make_unique<calib::PhotonCalibratorStandard>(
-        params().AreaToPE()
-      , params().SPEArea()
-      , params().SPEShift()
-      );
+    fMyCalib = std::make_unique<calib::PhotonCalibratorStandard>(params().SPEArea(), params().SPEShift(), params().AreaToPE());
     fCalib = fMyCalib.get();
+    mf::LogInfo{ "ICARUSOpHitFinder" } << "Using 'AreaToPE' = " << params().AreaToPE()
+      << ", 'SPEArea' = " << params().SPEArea()
+      << ", 'SPEShift' = " << params().SPEShift()
+      << " for gain calibration.";
   } // if ... else
   
   //
@@ -543,8 +551,16 @@ opdet::ICARUSOpHitFinder::ICARUSOpHitFinder
   fPulseRecoMgr.AddRecoAlgo(fThreshAlg.get());
   fPulseRecoMgr.SetDefaultPedAlgo(&(fPedAlg->algo()));
   
+  //
+  // channel status service
+  //
+  if (params().UseChannelStatus()){
+    fChannelStatus = frame.serviceHandle<icarusDB::IPMTChannelStatusService const>()->provider();
+    mf::LogInfo{ "ICARUSOpHitFinder" } << "Using 'icarusDB::IPMTChannelStatusService' for channel status.";
+  }
+  
   // framework hooks to the algorithms
-  if (!fChannelMasks.empty() && (fPedAlg->algo().Name() == "Fixed")) {
+  if ((!fChannelMasks.empty() || fChannelStatus) && (fPedAlg->algo().Name() == "Fixed")) {
     /* TODO
      * The reason why this is not working is complicate.
      * The interface of ophit mini-framework is quite minimal and tight,
@@ -566,7 +582,7 @@ opdet::ICARUSOpHitFinder::ICARUSOpHitFinder
      */
     throw art::Exception{ art::errors::Configuration }
       << "Pedestal algorithm \"Fixed\" will not work"
-      " since a channel mask list is specified.\n";
+      " since a channel mask list or channel status database is specified.\n";
   }
   fPedAlg->initialize(consumesCollector());
   
@@ -593,17 +609,18 @@ void opdet::ICARUSOpHitFinder::produce
 //   MaybeOwnerPtr<std::vector<raw::OpDetWaveform> const> waveforms
 //     = fChannelMasks.empty()? &allWaveforms: selectWaveforms(allWaveforms);
   using WaveformsPtr_t = MaybeOwnerPtr<std::vector<raw::OpDetWaveform> const>;
-  WaveformsPtr_t waveforms = fChannelMasks.empty()
-    ? WaveformsPtr_t{ &allWaveforms }
-    : WaveformsPtr_t{ selectWaveforms(allWaveforms) }
+  bool const needsSelection = !fChannelMasks.empty() || fChannelStatus;
+  WaveformsPtr_t waveforms = needsSelection
+    ? WaveformsPtr_t{ selectWaveforms(allWaveforms) }
+    : WaveformsPtr_t{ &allWaveforms }
     ;
-  
-  if (fChannelMasks.empty() && (&allWaveforms != &*waveforms)) {
+
+  if (!needsSelection && (&allWaveforms != &*waveforms)) {
     // if this happens, contact the author
     throw art::Exception{ art::errors::LogicError }
       << "Bug in MaybeOwnerPtr!\n";
   }
-  assert(fChannelMasks.empty() || (&allWaveforms == &*waveforms));
+  assert(needsSelection || (&allWaveforms == &*waveforms));
   
   //
   // run the algorithm
@@ -668,16 +685,20 @@ std::vector<raw::OpDetWaveform> opdet::ICARUSOpHitFinder::selectWaveforms
   (std::vector<raw::OpDetWaveform> const& waveforms) const
 {
   std::vector<raw::OpDetWaveform> selected;
-  
-  auto const isNotMasked = [this](raw::OpDetWaveform const& waveform)
+
+  auto const isGood = [this](raw::OpDetWaveform const& waveform)
     {
-      return !std::binary_search
-        (fChannelMasks.begin(), fChannelMasks.end(), waveform.ChannelNumber());
+      unsigned int const ch = waveform.ChannelNumber();
+      if (std::binary_search(fChannelMasks.begin(), fChannelMasks.end(), ch))
+        return false;
+      if (fChannelStatus && !fChannelStatus->isGood(ch))
+        return false;
+      return true;
     };
-  
+
   std::copy_if
-    (waveforms.begin(), waveforms.end(), back_inserter(selected), isNotMasked);
-  
+    (waveforms.begin(), waveforms.end(), back_inserter(selected), isGood);
+
   return selected;
 } // selectWaveforms()
 
