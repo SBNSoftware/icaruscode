@@ -41,6 +41,7 @@
 #include "photpropservices_icarus.fcl"
 #include "timing_icarus.fcl"
 #include "pmt_channel_status_icarus.fcl"
+#include "pmt_calibration_icarus.fcl"
 
 BEGIN_PROLOG
 
@@ -116,11 +117,12 @@ icarus_g4_services: {
 
 # Define icarus_detsim_services ... (2*)
 icarus_detsim_services: {
-    
+
     @table::icarus_detsim_dark_services
     IPMTTimingCorrectionService:       @local::icarus_pmttimingservice
     IPMTChannelStatusService:          @local::icarus_pmt_channel_status
-    
+    IPhotonCalibratorService:          @local::icarus_photon_calibration
+
 } # icarus_detsim_services
 
 
