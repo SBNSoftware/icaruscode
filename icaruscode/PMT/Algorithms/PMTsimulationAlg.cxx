@@ -24,6 +24,7 @@
 
 // CLHEP libraries
 #include "CLHEP/Random/RandFlat.h"
+#include "CLHEP/Random/RandGaussQ.h"
 #include "CLHEP/Random/RandPoisson.h"
 #include "CLHEP/Random/RandExponential.h"
 
@@ -115,6 +116,8 @@ icarus::opdet::PMTsimulationAlg::PMTsimulationAlg
     1.0e-4_ADCf, // stop sampling when signal is closer to baseline than this...
     20_ns        // ... for at least this long
     )
+  , fNominalSPEArea(std::abs(fParams.pulseFunction->integral().value()))
+  , fBiasRatio(fParams.pulseFunction->biasConstant())
   , fPedestalGen(fParams.pedestalGen)
   , fDiscrAlgo(selectDiscriminationAlgo(fParams.discrimAlgo))
 {
@@ -173,16 +176,48 @@ std::tuple<std::vector<raw::OpDetWaveform>, std::optional<sim::SimPhotons>>
 
 
 //------------------------------------------------------------------------------
-auto icarus::opdet::PMTsimulationAlg::makeGainFluctuator() const {
+icarus::opdet::PMTsimulationAlg::GainFluctuator::GainFluctuator
+  (double const refGain, CLHEP::RandPoisson rng)
+{
+  fFluctuate = [refGain, rng = std::move(rng)](double n) mutable -> double {
+    return rng.fire(n * refGain) / refGain;
+  };
+} // GainFluctuator::GainFluctuator(Poisson)
 
-  using Fluctuator_t = GainFluctuator<CLHEP::RandPoisson>;
 
-  if (fParams.doGainFluctuations) {
-    double const refGain = fParams.PMTspecs.firstStageGain();
-    return Fluctuator_t
-      { refGain, CLHEP::RandPoisson{ *fParams.gainRandomEngine, refGain } };
+//------------------------------------------------------------------------------
+icarus::opdet::PMTsimulationAlg::GainFluctuator::GainFluctuator
+  (double const gainRatio, double const relSigma, CLHEP::RandGaussQ rng)
+{
+  fFluctuate = [gainRatio, relSigma, rng = std::move(rng)](double n) mutable -> double {
+    double const result = rng.fire(n * gainRatio, std::sqrt(n) * relSigma);
+    return (result > 0.0)? result: 0.0;
+  };
+} // GainFluctuator::GainFluctuator(Gaussian)
+
+
+//------------------------------------------------------------------------------
+auto icarus::opdet::PMTsimulationAlg::makeGainFluctuator(int channel) const
+  -> GainFluctuator
+{
+  if (!fParams.doGainFluctuations) return GainFluctuator{}; // identity
+
+  if (fParams.useGainCalibDB && fParams.gainCalibProvider) {
+    // DB Gaussian: per-channel SPE area and width from database
+    // fNominalSPEArea is the integral of the SPR template, i.e. the mean area per PE
+    double const speArea     = fParams.gainCalibProvider->getSPEArea(channel);
+    double const speFitWidth = fParams.gainCalibProvider->getSPEFitWidth(channel);
+    // gainRatio = speArea / fNominalSPEArea: mean effective PEs per true PE
+    // relSigma  = speFitWidth / fNominalSPEArea:  sigma per sqrt(PE)
+    double const gainRatio = (fNominalSPEArea > 0.0) ? (speArea / fNominalSPEArea): 1.0;
+    double const relSigma  = (fNominalSPEArea > 0.0) ? (speFitWidth / fNominalSPEArea): 0.0;
+
+    return GainFluctuator{gainRatio, relSigma, CLHEP::RandGaussQ{ *fParams.gainRandomEngine, gainRatio, relSigma }};
   }
-  else return Fluctuator_t{}; // default-constructed does not fluctuate anything
+
+  // Legacy Poisson mode: fluctuate around first-dynode gain
+  double const refGain = fParams.PMTspecs.firstStageGain();
+  return GainFluctuator{refGain, CLHEP::RandPoisson{ *fParams.gainRandomEngine, refGain }};
 
 } // icarus::opdet::PMTsimulationAlg::makeGainFluctuator()
 
@@ -306,7 +341,7 @@ auto icarus::opdet::PMTsimulationAlg::CreateFullWaveform
     unsigned int nTotalPE [[maybe_unused]] = 0U; // unused if not in `debug` mode
     double nTotalEffectivePE [[maybe_unused]] = 0U; // unused if not in `debug` mode
 
-    auto gainFluctuation = makeGainFluctuator();
+    auto gainFluctuation = makeGainFluctuator(channel);
 
     // go though all subsamples (starting each at a fraction of a tick)
     for (auto const& [ iSubsample, peMap ]: util::enumerate(peMaps)) {
@@ -342,7 +377,7 @@ auto icarus::opdet::PMTsimulationAlg::CreateFullWaveform
 //       start=std::chrono::high_resolution_clock::now();
 
       AddPedestal(channel, waveformStartTS, waveform);
-      if(fParams.darkNoiseRate > 0.0_Hz) AddDarkNoise(waveform);
+      if(fParams.darkNoiseRate > 0.0_Hz) AddDarkNoise(waveform, channel);
 
 //       end=std::chrono::high_resolution_clock::now(); diff = end-start;
 //       std::cout << "\tadded noise... " << channel << " " << diff.count() << std::endl;
@@ -670,7 +705,7 @@ void icarus::opdet::PMTsimulationAlg::AddPedestal
 
 
 // -----------------------------------------------------------------------------
-void icarus::opdet::PMTsimulationAlg::AddDarkNoise(Waveform_t& wave) const {
+void icarus::opdet::PMTsimulationAlg::AddDarkNoise(Waveform_t& wave, int channel) const {
   /*
    * We assume leakage current ("dark noise") is completely stochastic and
    * distributed uniformly in time with a fixed and known rate.
@@ -701,7 +736,7 @@ void icarus::opdet::PMTsimulationAlg::AddDarkNoise(Waveform_t& wave) const {
 
   TimeToTickAndSubtickConverter const toTickAndSubtick(wsp.nSubsamples());
 
-  auto gainFluctuation = makeGainFluctuator();
+  auto gainFluctuation = makeGainFluctuator(channel);
 
   MF_LOG_TRACE("PMTsimulationAlg")
     << "Adding dark noise (" << fParams.darkNoiseRate << ") up to " << maxTime;
@@ -843,16 +878,6 @@ auto icarus::opdet::PMTsimulationAlg::TimeToTickAndSubtickConverter::operator()
     static_cast<SubsampleIndex_t>(subtick)
     };
 } // icarus::opdet::PMTsimulationAlg::TimeToTickAndSubtickConverter::operator()
-
-
-// -----------------------------------------------------------------------------
-template <typename Rand>
-double icarus::opdet::PMTsimulationAlg::GainFluctuator<Rand>::operator()
-  (double const n)
-{
-  return fRandomGain
-    ? (fRandomGain->fire(n * fReferenceGain) / fReferenceGain): n; 
-}
 
 
 // -----------------------------------------------------------------------------

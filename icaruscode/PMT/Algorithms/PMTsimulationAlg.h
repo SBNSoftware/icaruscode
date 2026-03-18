@@ -47,8 +47,11 @@
 
 // CLHEP libraries
 #include "CLHEP/Random/RandEngine.h" // CLHEP::HepRandomEngine
+#include "CLHEP/Random/RandGaussQ.h"
+#include "CLHEP/Random/RandPoisson.h"
 
 // C++ standard library
+#include <functional> // std::function
 #include <vector>
 #include <string>
 #include <tuple>
@@ -255,8 +258,8 @@ class icarus::opdet::OpDetWaveformMakerClass {
  * the `calib::ICARUSPhotonCalibratorServiceFromDB` service.
  * The number of effective photoelectrons added per true photoelectron is
  * drawn from a Gaussian whose mean is the ratio of the channel SPE area
- * to the nominal SPR template area @f$ q_0 @f$, and whose standard
- * deviation is the ratio of the channel SPE width to @f$ q_0 @f$.
+ * to the nominal SPR template area, and whose standard
+ * deviation is the ratio of the channel SPE width to that nominal area.
  * This model preserves the mean deposited charge per photoelectron to
  * match the measured per-channel gain, while the nominal gain set in
  * `PMTspecs` and in `SinglePhotonResponse` cancels out and can be left
@@ -634,28 +637,39 @@ class icarus::opdet::PMTsimulationAlg {
   }; // TimeToTickAndSubtickConverter
 
 
-  /// Applies a random gain fluctuation to the specified number of
-  /// photoelectrons.
-  template <typename Rand>
+  /**
+   * @brief Applies a random gain fluctuation to a number of photoelectrons.
+   *
+   * Two modes are supported, selected at construction time:
+   *  - **Legacy Poisson** (doGainFluctuations = true, useGainCalibDB = false):
+   *    models first-dynode statistics via Poisson(n*refGain)/refGain..
+   *  - **DB Gaussian** (doGainFluctuations = true, useGainCalibDB = true): 
+   *    draws from Normal(n*gainRatio, sqrt(n)*relSigma) using per-channel DB values.
+   *  - **Identity** (default-constructed): returns n unchanged.
+   */
   class GainFluctuator {
 
-    std::optional<Rand> fRandomGain; ///< Random gain extractor (optional).
-    double const fReferenceGain = 0.0; ///< Reference (average) gain.
+    /// The fluctuation callable; empty means identity (no fluctuation).
+    std::function<double(double)> fFluctuate;
 
       public:
+    /// Identity fluctuator: returns `n` unchanged.
     GainFluctuator() = default;
-    GainFluctuator(double const refGain, Rand&& randomGain)
-      : fRandomGain(std::move(randomGain))
-      , fReferenceGain(refGain)
-      {}
 
-    /// Returns the new number of photoelectrons after fluctuation from `n`.
-    double operator() (double const n);
+    /// Legacy Poisson mode: Poisson(n*refGain) / refGain.
+    GainFluctuator(double refGain, CLHEP::RandPoisson rng);
+
+    /// DB Gaussian mode: Normal(n*gainRatio, sqrt(n)*relSigma), clamped positive.
+    GainFluctuator(double gainRatio, double relSigma, CLHEP::RandGaussQ rng);
+
+    /// Returns the fluctuated number of effective photoelectrons from n.
+    double operator()(double n) const
+      { return fFluctuate? fFluctuate(n): n; }
 
   }; // GainFluctuator
 
-  /// Returns a configured gain fluctuator object.
-  auto makeGainFluctuator() const;
+  /// Returns a gain fluctuator configured for the given optical channel.
+  GainFluctuator makeGainFluctuator(int channel) const;
 
   // --- END -- Helper functors ------------------------------------------------
 
@@ -666,7 +680,10 @@ class icarus::opdet::PMTsimulationAlg {
   megahertz fSampling;   ///< Wave sampling frequency [MHz].
   std::size_t fNsamples; ///< Samples per waveform.
   
-  DiscretePhotoelectronPulse wsp; /// Single photon pulse (sampled).
+  DiscretePhotoelectronPulse wsp; ///< Single photon pulse (sampled).
+
+  double fNominalSPEArea = 0.0; ///< Integral of the SPR template q₀ [ADC×tick].
+  double fBiasConstant  = 1.0;     ///< Bias constant from the FHiCL configuration.
 
   /// Pedestal and electronics noise generator algorithm.
   PedestalGenerator_t* fPedestalGen = nullptr;
@@ -804,7 +821,7 @@ class icarus::opdet::PMTsimulationAlg {
     (raw::Channel_t channel, std::uint64_t time, Waveform_t& wave) const;
 
   // Add "dark" noise to baseline.
-  void AddDarkNoise(Waveform_t& wave) const;
+  void AddDarkNoise(Waveform_t& wave, int channel) const;
   
   
   /**
