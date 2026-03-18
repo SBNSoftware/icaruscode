@@ -33,9 +33,7 @@ icarusDB::PMTChannelStatusProvider::PMTChannelStatusProvider
   mf::LogInfo(fLogCategory)
     << "PMTChannelStatusProvider connected to '"
     << pset.get<std::string>("DBname", "pmt_voltage_data")
-    << "' DB, tag '" << fStatusTag << "'"
-    << ", default status: " << defaultStatusInt
-    << ", default voltage: " << fDefault.voltage << " V";
+    << "' DB, tag '" << fStatusTag << "'.";
 }
 
 
