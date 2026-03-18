@@ -206,28 +206,30 @@ icarus_photoelectronresponse_202202: {
 # This is valid for Run1/2 cables.
 # 
 icarus_photoelectronresponse_run2_2025: {
-  
+
   tool_type: SampledWaveformFunctionTool
-  
-  WaveformData: "Responses/SPRisolHitRun9271.txt"
-  TransitTime:  "55.1 ns" 
-  Gain:          @local::icarus_settings_opdet_run2.nominalPMTgain
-  
+
+  WaveformData:  "Responses/SPRisolHitRun9271.txt"
+  TransitTime:   "55.1 ns"
+  Gain:           @local::icarus_settings_opdet_run2.nominalPMTgain
+  BiasRatio:     1.5332
+
 } # icarus_photoelectronresponse_run2_2025
 
 
 #
 # Single photoelectron response from single-PE data.
 # This is valid for Run3/4/5+ cables.
-# 
+#
 icarus_photoelectronresponse_run4_2025: {
-  
+
   tool_type: SampledWaveformFunctionTool
-  
-  WaveformData: "Responses/SPRisolHitRun12715.txt"
-  TransitTime:  "55.1 ns" 
-  Gain:          @local::icarus_settings_opdet_run4.nominalPMTgain
-  
+
+  WaveformData:  "Responses/SPRisolHitRun12715.txt"
+  TransitTime:   "55.1 ns"
+  Gain:           @local::icarus_settings_opdet_run4.nominalPMTgain
+  BiasRatio:     1.2196
+
 } # icarus_photoelectronresponse_run4_2025
 
 
