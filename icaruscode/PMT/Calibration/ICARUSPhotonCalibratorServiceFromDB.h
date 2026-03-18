@@ -62,8 +62,9 @@ namespace calib {
 
     double getSPEFitWidth(int channel) const { return fProvider.getSPEFitWidth(channel); }
 
-  private:
     provider_type const* provider() const override { return &fProvider; }
+
+  private:
 
     void preBeginRun(art::Run const& run);
 
