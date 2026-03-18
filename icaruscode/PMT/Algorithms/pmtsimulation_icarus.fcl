@@ -453,9 +453,11 @@ icarus_pmtsimulationalg_run2_2025: {
 
   # Apply timing delays (cables, transit time, ..) to the simulated photons
   # These delays are extracted from the calibration database
-  ApplyTimingDelays:         true
-  # Use channel status databaset to skip dead or bad channels
-  UseChannelStatusDatabase:  true
+  ApplyTimingDelays:         false
+  # Use channel status database to skip dead or bad channels
+  UseChannelStatusDatabase:  false
+  # Use per-channel gain from database
+  UseGainDatabase:           false
 
   # Threshold in ADC counts for a PMT self-trigger
   ThresholdADC:              15             # ADC counts
@@ -486,9 +488,11 @@ icarus_pmtsimulationalg_run4_2025: {
 
   # Apply timing delays (cables, transit time, ..) to the simulated photons
   # These delays are extracted from the calibration database
-  ApplyTimingDelays:         true
-  # Use channel status databaset to skip dead or bad channels
-  UseChannelStatusDatabase:  true
+  ApplyTimingDelays:         false
+  # Use channel status database to skip dead or bad channels
+  UseChannelStatusDatabase:  false
+  # Use per-channel gain from database
+  UseGainDatabase:           false
 
   # Threshold in ADC counts for a PMT self-trigger
   ThresholdADC:              15             # ADC counts
