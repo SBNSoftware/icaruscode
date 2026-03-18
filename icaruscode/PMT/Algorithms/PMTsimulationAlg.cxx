@@ -117,7 +117,7 @@ icarus::opdet::PMTsimulationAlg::PMTsimulationAlg
     20_ns        // ... for at least this long
     )
   , fNominalSPEArea(std::abs(fParams.pulseFunction->integral().value()))
-  , fBiasRatio(fParams.pulseFunction->biasConstant())
+  , fBiasConstant(fParams.pulseFunction->biasConstant())
   , fPedestalGen(fParams.pedestalGen)
   , fDiscrAlgo(selectDiscriminationAlgo(fParams.discrimAlgo))
 {
