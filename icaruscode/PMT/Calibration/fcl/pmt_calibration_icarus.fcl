@@ -48,7 +48,7 @@ pmt_bkgphotons_calibration:
 icarus_photon_calibration:
 {
   service_provider: ICARUSPhotonCalibratorServiceFromDB
-  AreaTag:  "v1r1"
+  AreaTag:  "v1r2"
   Defaults: {
     SPEArea: @local::SPERun2.Area # ADC x tick, Run2 default
   }
