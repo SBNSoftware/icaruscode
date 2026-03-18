@@ -963,7 +963,7 @@ icarus::opdet::PMTsimulationAlgMaker::operator()(
   detinfo::LArProperties const& larProp,
   detinfo::DetectorClocksData const& clockData,
   icarusDB::PMTTimingCorrections const* timingDelays,
-  calib::ICARUSPhotonCalibratorServiceFromDB const* gainCalibService,
+  icarusDB::PhotonCalibratorFromDB const* gainCalibProvider,
   SinglePhotonResponseFunc_t const& SPRfunction,
   PedestalGenerator_t& pedestalGenerator,
   CLHEP::HepRandomEngine& mainRandomEngine,
@@ -974,7 +974,7 @@ icarus::opdet::PMTsimulationAlgMaker::operator()(
 {
   return std::make_unique<PMTsimulationAlg>(makeParams(
     beamGateTimestamp,
-    larProp, clockData, timingDelays, gainCalibService,
+    larProp, clockData, timingDelays, gainCalibProvider,
     SPRfunction, pedestalGenerator,
     mainRandomEngine, darkNoiseRandomEngine, elecNoiseRandomEngine,
     trackSelectedPhotons
@@ -989,7 +989,7 @@ auto icarus::opdet::PMTsimulationAlgMaker::makeParams(
   detinfo::LArProperties const& larProp,
   detinfo::DetectorClocksData const& clockData,
   icarusDB::PMTTimingCorrections const* timingDelays,
-  calib::ICARUSPhotonCalibratorServiceFromDB const* gainCalibService,
+  icarusDB::PhotonCalibratorFromDB const* gainCalibProvider,
   SinglePhotonResponseFunc_t const& SPRfunction,
   PedestalGenerator_t& pedestalGenerator,
   CLHEP::HepRandomEngine& mainRandomEngine,
@@ -1013,10 +1013,10 @@ auto icarus::opdet::PMTsimulationAlgMaker::makeParams(
   params.clockData = &clockData;
   params.detTimings = detinfo::makeDetectorTimings(params.clockData);
   params.timingDelays = timingDelays;
-  params.gainCalibService = gainCalibService;
+  params.gainCalibProvider = gainCalibProvider;
 
   assert(!params.doTimingDelays || params.timingDelays);
-  assert(!params.useGainCalibDB || params.gainCalibService);
+  assert(!params.useGainCalibDB || params.gainCalibProvider);
 
   params.pulseFunction = &SPRfunction;
   params.pedestalGen = &pedestalGenerator;

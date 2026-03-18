@@ -22,7 +22,7 @@
 #include "icaruscode/Utilities/quantities_utils.h" // util::value_t
 #include "icarusalg/Utilities/SampledFunction.h"
 #include "icaruscode/Timing/PMTTimingCorrections.h"
-#include "icaruscode/PMT/Calibration/ICARUSPhotonCalibratorServiceFromDB.h"
+#include "icaruscode/PMT/Calibration/PhotonCalibratorFromDB.h"
 
 // LArSoft libraries
 #include "lardataobj/RawData/OpDetWaveform.h"
@@ -518,8 +518,8 @@ class icarus::opdet::PMTsimulationAlg {
     /// Timing delays service interfacing with database
     icarusDB::PMTTimingCorrections const* timingDelays = nullptr;
 
-    /// SPE calibration service for per-channel gain (nullptr = disabled).
-    calib::ICARUSPhotonCalibratorServiceFromDB const* gainCalibService = nullptr;
+    /// SPE calibration provider for per-channel gain (nullptr = disabled).
+    icarusDB::PhotonCalibratorFromDB const* gainCalibProvider = nullptr;
 
     // detTimings is not really "optional" but it needs delayed construction.
     /// Detector clocks data wrapper.
@@ -1128,7 +1128,7 @@ class icarus::opdet::PMTsimulationAlgMaker {
     detinfo::LArProperties const& larProp,
     detinfo::DetectorClocksData const& detClocks,
     icarusDB::PMTTimingCorrections const* timingDelays,
-    calib::ICARUSPhotonCalibratorServiceFromDB const* gainCalibService,
+    icarusDB::PhotonCalibratorFromDB const* gainCalibProvider,
     SinglePhotonResponseFunc_t const& SPRfunction,
     PedestalGenerator_t& pedestalGenerator,
     CLHEP::HepRandomEngine& mainRandomEngine,
@@ -1161,7 +1161,7 @@ class icarus::opdet::PMTsimulationAlgMaker {
     detinfo::LArProperties const& larProp,
     detinfo::DetectorClocksData const& clockData,
     icarusDB::PMTTimingCorrections const* timingDelays,
-    calib::ICARUSPhotonCalibratorServiceFromDB const* gainCalibService,
+    icarusDB::PhotonCalibratorFromDB const* gainCalibProvider,
     SinglePhotonResponseFunc_t const& SPRfunction,
     PedestalGenerator_t& pedestalGenerator,
     CLHEP::HepRandomEngine& mainRandomEngine,

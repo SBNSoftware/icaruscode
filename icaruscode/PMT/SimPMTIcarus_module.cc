@@ -406,7 +406,7 @@ SimPMTIcarus::SimPMTIcarus(Parameters const& config)
       *(lar::providerFrom<detinfo::LArPropertiesService>()),
       clockData,
       fDoTimingDelays ? lar::providerFrom<icarusDB::IPMTTimingCorrectionService>() : nullptr,
-      fUseGainCalibDB ? &(*art::ServiceHandle<calib::ICARUSPhotonCalibratorServiceFromDB>()) : nullptr,
+      fUseGainCalibDB ? art::ServiceHandle<calib::ICARUSPhotonCalibratorServiceFromDB>()->provider() : nullptr,
       *fSinglePhotonResponseFunc,
       *fPedestalGen,
       fEfficiencyEngine,
