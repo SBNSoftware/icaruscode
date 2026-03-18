@@ -419,6 +419,7 @@ SimPMTIcarus::SimPMTIcarus(Parameters const& config)
       mf::LogInfo log { "SimPMTIcarus" };
       log << "PMT simulation configuration (first event):\n";
       PMTsimulator->printConfiguration(log);
+      log << "\nuseChannelStatusDB:  " << std::boolalpha << fUseChannelStatusDB;
     } // if first time
     
     //

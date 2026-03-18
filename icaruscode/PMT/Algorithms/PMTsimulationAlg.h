@@ -1262,7 +1262,9 @@ void icarus::opdet::PMTsimulationAlg::printConfiguration
     << '\n' << indent << "Saturation:          " << fParams.saturation << " p.e."
     << '\n' << indent << "doGainFluctuations:  "
       << std::boolalpha << fParams.doGainFluctuations
-    << '\n' << indent << "doTimingDelays:  "
+    << '\n' << indent << "useGainCalibDB:      "
+      << std::boolalpha << fParams.useGainCalibDB
+    << '\n' << indent << "doTimingDelays:      "
       << std::boolalpha << fParams.doTimingDelays
     << '\n' << indent << "PulsePolarity:       " << ((fParams.pulsePolarity == 1)? "positive": "negative") << " (=" << fParams.pulsePolarity << ")"
     << '\n' << indent << "Sampling:            " << fSampling;
@@ -1271,6 +1273,8 @@ void icarus::opdet::PMTsimulationAlg::printConfiguration
   out
     << '\n' << indent << "Samples/waveform:    " << fNsamples << " ticks"
     << '\n' << indent << "Gain at first stage: " << fParams.PMTspecs.firstStageGain()
+    << '\n' << indent << "SPR nominal area:    " << fNominalSPEArea << " ADC x tick"
+    << '\n' << indent << "Bias ratio:          " << fBiasConstant
     ;
 
   out << '\n' << indent << "Pedestal:          " << fPedestalGen->toString(indent + "  ", "");
