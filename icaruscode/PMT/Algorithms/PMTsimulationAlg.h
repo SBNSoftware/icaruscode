@@ -1251,7 +1251,7 @@ void icarus::opdet::PMTsimulationAlg::printConfiguration
   using namespace util::quantities::electronics_literals;
 
   out
-            << indent << "ADC bits:            " << fParams.ADCbits
+    << indent << "ADC bits:            " << fParams.ADCbits
       << " (" << fParams.ADCrange().first << " -- " << fParams.ADCrange().second
       << ")"
     << '\n' << indent << "ReadoutWindowSize:   " << fParams.readoutWindowSize << " ticks"
@@ -1266,7 +1266,9 @@ void icarus::opdet::PMTsimulationAlg::printConfiguration
       << std::boolalpha << fParams.useGainCalibDB
     << '\n' << indent << "doTimingDelays:      "
       << std::boolalpha << fParams.doTimingDelays
-    << '\n' << indent << "PulsePolarity:       " << ((fParams.pulsePolarity == 1)? "positive": "negative") << " (=" << fParams.pulsePolarity << ")"
+    << '\n' << indent << "PulsePolarity:       " 
+      << ((fParams.pulsePolarity == 1)? "positive": "negative") 
+      << " (=" << fParams.pulsePolarity << ")"
     << '\n' << indent << "Sampling:            " << fSampling;
   if (fParams.pulseSubsamples > 1U)
     out << " (subsampling: x" << fParams.pulseSubsamples << ")";
@@ -1281,14 +1283,14 @@ void icarus::opdet::PMTsimulationAlg::printConfiguration
 
   if (fParams.createBeamGateTriggers) {
     out << '\n' << indent << "Create " << fParams.beamGateTriggerNReps
-      << " beam gate triggers, one every " << fParams.beamGateTriggerRepPeriod << ".";
+        << " beam gate triggers, one every " << fParams.beamGateTriggerRepPeriod << ".";
   }
   else out << '\n' << indent << "Do not create beam gate triggers.";
 
   out << '\n' << indent << "... and more.";
 
   out << '\n' << indent << "Template photoelectron waveform settings:"
-    << '\n';
+      << '\n';
   wsp.dump(std::forward<Stream>(out), indent + "  ");
   
   out << '\n' << indent << "Track used photons:  "
