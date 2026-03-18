@@ -205,13 +205,14 @@ auto icarus::opdet::PMTsimulationAlg::makeGainFluctuator(int channel) const
   if (fParams.useGainCalibDB && fParams.gainCalibProvider) {
     // DB Gaussian: per-channel SPE area and width from database
     // fNominalSPEArea is the integral of the SPR template, i.e. the mean area per PE
+    // fBiasConstant covers the bias in the integral definitions btw SPR template and official reco
     double const speArea     = fParams.gainCalibProvider->getSPEArea(channel);
     double const speFitWidth = fParams.gainCalibProvider->getSPEFitWidth(channel);
     // gainRatio = speArea / fNominalSPEArea: mean effective PEs per true PE
     // relSigma  = speFitWidth / fNominalSPEArea:  sigma per sqrt(PE)
-    double const gainRatio = (fNominalSPEArea > 0.0) ? (speArea / fNominalSPEArea): 1.0;
+    double const gainRatio = (fNominalSPEArea > 0.0) ? (speArea * fBiasConstant / fNominalSPEArea): 1.0;
     double const relSigma  = (fNominalSPEArea > 0.0) ? (speFitWidth / fNominalSPEArea): 0.0;
-
+    
     return GainFluctuator{gainRatio, relSigma, CLHEP::RandGaussQ{ *fParams.gainRandomEngine, gainRatio, relSigma }};
   }
 
