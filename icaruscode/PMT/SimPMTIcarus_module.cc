@@ -324,32 +324,41 @@ namespace icarus::opdet {
     bool firstTime() { return !fNotFirstTime.test_and_set(); }
 
     bool fDebugTree { false }; ///< Whether to enable debug tree output.
-    TTree* fTree { nullptr }; ///< Debug tree pointer.
+    TTree* fTree { nullptr }; ///< Debug tree pointer (owned by TFileService).
 
-    // debug tree variables
-    int run, event, channel;
-    float timeDelay_us;
-    float triggerOffsetPMT_us;
-    int nSamples;
-    int nSubsamples;
-    // info per waveform
-    std::vector<float> wf;      
-    // info per photon
-    int nPhotons;
-    std::vector<float> photon_simTime_ns;
-    std::vector<float> photon_trigTime_us;
-    std::vector<float> photon_start_x;
-    std::vector<float> photon_start_y;
-    std::vector<float> photon_start_z;  
-    std::vector<int> photon_tick;
-    std::vector<uint16_t> photon_subtick;
-    // info per PE deposit
-    int nPEDeposits;
-    std::vector<int> pedeposit_tick;
-    std::vector<uint16_t> pedeposit_subtick;
-    std::vector<uint16_t> pedeposit_nPE;
-    std::vector<float> pedeposit_nEffectivePE;
-    std::vector<float> pedeposit_gainFactor;
+    // debug tree branch variables (one entry per optical channel per event)
+    // event identification
+    int run;    ///< Run number.
+    int event;  ///< Event number.
+    int channel; ///< Optical channel number.
+    // per-channel timing parameters
+    float timeDelay_us;          ///< Per-channel timing delay applied [us]: laser+cosmics DB corrections.
+    float triggerOffsetPMT_us;   ///< Global PMT readout start offset relative to trigger [us]
+    // waveform geometry
+    int nSamples;    ///< number of ticks.
+    int nSubsamples; ///< number of subsamples (sub-tick interpolation steps)
+
+    // full-window waveform (before zero-suppression splitting)
+    std::vector<float> waveform_adc; ///< full waveform ADC values [ADC counts].
+
+    // per-photon info
+    int nDetectedPhotons; ///< Number of photons accepted after QE cut.
+    int nInputPhotons;    ///< Total number of photons in sim::SimPhotons.
+    std::vector<float> photon_simTime_ns;    ///< G4 simulation time of each detected photon [ns].
+    std::vector<float> photon_waveformTime_us; ///< Photon time in waveform coordinates [us]: toTriggerTime - triggerOffsetPMT + timeDelay.
+    std::vector<float> photon_start_x;      ///< X position of the photon emission point [cm].
+    std::vector<float> photon_start_y;      ///< Y position of the photon emission point [cm].
+    std::vector<float> photon_start_z;      ///< Z position of the photon emission point [cm].
+    std::vector<int>   photon_tick;         ///< Waveform tick index where the photon was placed.
+    std::vector<uint16_t> photon_subtick;   ///< Sub-tick index (subsample bin) where the photon was placed.
+
+    // per-PE-deposit info
+    int nPEDeposits;                          ///< Number of distinct PE deposit entries.
+    std::vector<int>      pedeposit_tick;     ///< Waveform tick of the PE deposit.
+    std::vector<uint16_t> pedeposit_subtick;  ///< Sub-tick index of the PE deposit.
+    std::vector<uint16_t> pedeposit_nPE;      ///< Integer number of photoelectrons at this deposit (after QE, before gain fluctuation).
+    std::vector<float>    pedeposit_nEffectivePE; ///< Effective PE count after gain fluctuation (what was actually added to the waveform).
+    std::vector<float>    pedeposit_gainFactor;   ///< Ratio nEffectivePE/nPE: encodes the per-deposit gain fluctuation (DB-calibrated or Poisson).
 
   }; // class SimPMTIcarus
   
@@ -419,18 +428,19 @@ SimPMTIcarus::SimPMTIcarus(Parameters const& config)
       fTree = tfs->make<TTree>("SimPMTDebug","Debug tree for SimPMTIcarus");
       fTree->Branch("run", &run, "run/I");
       fTree->Branch("event", &event, "event/I");
-      fTree->Branch("channel", &channel, "channel/I"); 
+      fTree->Branch("channel", &channel, "channel/I");
       fTree->Branch("nSamples", &nSamples, "nSamples/I");
       fTree->Branch("nSubsamples", &nSubsamples, "nSubsamples/I");
       fTree->Branch("timeDelay_us", &timeDelay_us, "timeDelay_us/F");
       fTree->Branch("triggerOffsetPMT_us", &triggerOffsetPMT_us, "triggerOffsetPMT_us/F");
-      fTree->Branch("wf", &wf);
-      fTree->Branch("nPhotons", &nPhotons, "nPhotons/I");
+      fTree->Branch("waveform_adc", &waveform_adc);
+      fTree->Branch("nInputPhotons", &nInputPhotons, "nInputPhotons/I");
+      fTree->Branch("nDetectedPhotons", &nDetectedPhotons, "nDetectedPhotons/I");
       fTree->Branch("photon_start_x", &photon_start_x);
       fTree->Branch("photon_start_y", &photon_start_y);
       fTree->Branch("photon_start_z", &photon_start_z);
       fTree->Branch("photon_simTime_ns", &photon_simTime_ns);
-      fTree->Branch("photon_trigTime_us", &photon_trigTime_us);
+      fTree->Branch("photon_waveformTime_us", &photon_waveformTime_us);
       fTree->Branch("photon_tick", &photon_tick);
       fTree->Branch("photon_subtick", &photon_subtick);
       fTree->Branch("nPEDeposits", &nPEDeposits, "nPEDeposits/I");
@@ -519,19 +529,20 @@ SimPMTIcarus::SimPMTIcarus(Parameters const& config)
         
         if(fDebugTree && debug && debug->photons.size()>0) {
           // fill debug tree variables
-          channel = debug->opChannel;
           run = e.id().run();
           event = e.id().event();
+          channel = debug->opChannel;
           timeDelay_us = debug->timeDelay_us;
           triggerOffsetPMT_us = debug->triggerOffsetPMT_us;
           nSamples = debug->nSamples;
           nSubsamples = debug->nSubsamples;
-          //fill per waveform info
-          wf = debug->waveform;
+          // fill full-window waveform
+          waveform_adc = debug->waveform;
           // fill per photon info
-          nPhotons = debug->photons.size();
+          nInputPhotons = photons.size();
+          nDetectedPhotons = debug->photons.size();
           photon_simTime_ns.clear();
-          photon_trigTime_us.clear();
+          photon_waveformTime_us.clear();
           photon_tick.clear();
           photon_subtick.clear();
           photon_start_x.clear();
@@ -542,7 +553,7 @@ SimPMTIcarus::SimPMTIcarus(Parameters const& config)
             photon_start_y.push_back(phot.startY);
             photon_start_z.push_back(phot.startZ);
             photon_simTime_ns.push_back(phot.simTime_ns);
-            photon_trigTime_us.push_back(phot.trigTime_us);
+            photon_waveformTime_us.push_back(phot.trigTime_us);
             photon_tick.push_back(phot.tick);
             photon_subtick.push_back(phot.subtick);
           }
@@ -560,7 +571,7 @@ SimPMTIcarus::SimPMTIcarus(Parameters const& config)
             pedeposit_nEffectivePE.push_back(pedep.nEffectivePE);
             pedeposit_gainFactor.push_back(pedep.gainFactor());
           }
-          
+
           fTree->Fill();
         } // if debug tree
       } // for

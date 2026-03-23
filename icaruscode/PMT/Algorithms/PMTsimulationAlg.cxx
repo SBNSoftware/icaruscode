@@ -392,7 +392,8 @@ auto icarus::opdet::PMTsimulationAlg::CreateFullWaveform
           subsample, waveform, startTick,
           static_cast<WaveformValue_t>(nEffectivePE)
           );
-        //        std::cout << "Channel=" << channel << ", subsample=" << iSubsample << ", tick=" << startTick << ", nPE=" << nPE << ", ePE=" << nEffectivePE << std::endl;
+        //std::cout << "Channel=" << channel << ", subsample=" << iSubsample << ", tick=" << startTick 
+        //          << ", nPE=" << nPE << ", ePE=" << nEffectivePE << std::endl;
 
         if (debug) {
           DebugPEDeposit dep;
@@ -440,7 +441,7 @@ auto icarus::opdet::PMTsimulationAlg::CreateFullWaveform
     
     if(debug){
       for(std::size_t i=0; i<waveform.size(); i++){
-	 debug->waveform.push_back(waveform[i].value());
+	      debug->waveform.push_back(waveform[i].value());
       }
     }
 
