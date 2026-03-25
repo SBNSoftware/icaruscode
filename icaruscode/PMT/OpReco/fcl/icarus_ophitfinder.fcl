@@ -146,7 +146,7 @@ icarus_opreco_hit_slidingwindow: {
   ADCThreshold:        5 # ADC threshold (absolute) above pedestal mean to fire a pulse
   NSigmaThreshold:     3 # ADC threshold (N*pedestal sigma) above pedestal mean to fire a pulse
   TailADCThreshold:    2 # ADC threshold (absolute) below which next pulse is allowed to fire
-  TailNSigmaThreshold: 2 # ADC threshold (N*pedestal sigma) below which next pulse is allowed to fire
+  TailNSigma:          2 # ADC threshold (N*pedestal sigma) below which next pulse is allowed to fire
   EndADCThreshold:     1 # ADC threshold (absolute) at which the pulse ends
   EndNSigmaThreshold:  1 # ADC threshold (N*pedetal sigma) at which the pulse ends
   MinPulseWidth:       2 # The width of a pulse needs to be equal or larger than this to be recorded
@@ -162,7 +162,7 @@ icarus_opreco_hit_slidingwindow_201910: { # based on icarus_opreco_hit_slidingwi
   ADCThreshold:       10 # ADC threshold (absolute) above pedestal mean to fire a pulse
   NSigmaThreshold:     3 # ADC threshold (N*pedestal sigma) above pedestal mean to fire a pulse
   TailADCThreshold:    6 # ADC threshold (absolute) below which next pulse is allowed to fire
-  TailNSigmaThreshold: 2 # ADC threshold (N*pedestal sigma) below which next pulse is allowed to fire
+  TailNSigma:          2 # ADC threshold (N*pedestal sigma) below which next pulse is allowed to fire
   EndADCThreshold:     2 # ADC threshold (absolute) at which the pulse ends
   EndNSigmaThreshold:  1 # ADC threshold (N*pedetal sigma) at which the pulse ends
   MinPulseWidth:       5 # The width of a pulse needs to be equal or larger than this to be recorded
