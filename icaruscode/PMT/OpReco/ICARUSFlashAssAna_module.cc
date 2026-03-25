@@ -144,6 +144,7 @@ public:
                           std::vector<double> &pmt_start_rwm_time,
                           std::vector<double> &pmt_pe,
                           std::vector<double> &pmt_amplitude,
+                          std::vector<double> &pmt_integral,
                           TTree *ophittree);
 
   /// Return RWM-relative time from a trigger-relative time
@@ -219,6 +220,7 @@ private:
   std::vector<double> m_pmt_start_time_rwm;
   std::vector<double> m_pmt_pe;
   std::vector<double> m_pmt_amplitude;
+  std::vector<double> m_pmt_integral;
 
   // Ophit trees
   int m_channel_id;
@@ -409,6 +411,7 @@ void opana::ICARUSFlashAssAna::beginJob()
       ttree->Branch("time_pmt_rwm", &m_pmt_start_time_rwm);
       ttree->Branch("pe_pmt", &m_pmt_pe);
       ttree->Branch("amplitude_pmt", &m_pmt_amplitude);
+      ttree->Branch("integral_pmt", &m_pmt_integral);
 
       fOpFlashTrees.push_back(ttree);
 
@@ -627,6 +630,7 @@ void opana::ICARUSFlashAssAna::processOpHitsFlash(std::vector<art::Ptr<recob::Op
                                                   std::vector<double> &pmt_start_time_rwm,
                                                   std::vector<double> &pmt_pe,
                                                   std::vector<double> &pmt_amplitude,
+                                                  std::vector<double> &pmt_integral,
                                                   TTree *ophittree)
 {
 
@@ -671,6 +675,7 @@ void opana::ICARUSFlashAssAna::processOpHitsFlash(std::vector<art::Ptr<recob::Op
       pmt_rise_time[channel_id] = m_rise_time;
       pmt_start_time_rwm[channel_id] = m_start_time_rwm;
       pmt_amplitude[channel_id] = m_amplitude;
+      pmt_integral[channel_id] = m_integral;
     }
 
     ophittree->Fill();
@@ -869,6 +874,7 @@ void opana::ICARUSFlashAssAna::analyze(art::Event const &e)
           m_pmt_rise_time.resize(360);
           m_pmt_start_time_rwm.resize(360);
           m_pmt_amplitude.resize(360);
+          m_pmt_integral.resize(360);
 
           m_flash_id = idx;
           m_flash_time = flash.Time();
@@ -894,7 +900,7 @@ void opana::ICARUSFlashAssAna::analyze(art::Event const &e)
                              m_multiplicity_left, m_multiplicity_right,
                              m_sum_pe_left, m_sum_pe_right, m_pmt_start_time,
                              m_pmt_rise_time, m_pmt_start_time_rwm, m_pmt_pe, m_pmt_amplitude,
-                             fOpHitFlashTrees[iFlashLabel]);
+                             m_pmt_integral, fOpHitFlashTrees[iFlashLabel]);
 
           m_multiplicity = m_multiplicity_left + m_multiplicity_right;
 
@@ -908,6 +914,8 @@ void opana::ICARUSFlashAssAna::analyze(art::Event const &e)
           m_pmt_start_time.clear();
           m_pmt_rise_time.clear();
           m_pmt_start_time_rwm.clear();
+          m_pmt_amplitude.clear();
+          m_pmt_integral.clear();
 
           idx++;
         }
