@@ -6,6 +6,7 @@
 #include "TF1.h"
 #include "TGraph.h"
 #include "TH1D.h"
+#include "TH2F.h"
 
 // art includes
 #include "art/Framework/Core/EDProducer.h"
@@ -21,6 +22,8 @@
 #include "larcorealg/Geometry/WireReadoutGeom.h"
 #include "larcore/CoreUtils/ServiceUtil.h" // lar::providerFrom()
 #include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
+#include "lardata/DetectorInfoServices/DetectorClocksService.h"
+#include "larsim/MCCheater/BackTrackerService.h"
 #include "lardata/Utilities/AssociationUtil.h"
 #include "lardataobj/RawData/RawDigit.h"
 #include "lardataobj/RecoBase/Wire.h"
@@ -39,13 +42,15 @@ namespace wiremod
     public:
       explicit WireModifierXXW(fhicl::ParameterSet const& pset);
       void shapeGraphAngle(TGraph2D& graph);
-      void shapeGraphPos(TGraph2D& graph, const geo::TPCID& tpcid);
+      void shapeGraphPos(TGraph2D& graph, const readout::TPCsetID& tpcsetid);
       void reconfigure(fhicl::ParameterSet const& pset);
       void produce(art::Event& evt) override;
 
     private:
       const geo::GeometryCore* fGeometry = lar::providerFrom<geo::Geometry>(); // get the geometry
       const geo::WireReadoutGeom* fWireReadout = &(art::ServiceHandle<geo::WireReadout const>()->Get());
+      const detinfo::DetectorClocksData fDetClocksData = art::ServiceHandle<detinfo::DetectorClocksService>()->DataForJob();
+      const art::ServiceHandle<cheat::BackTrackerService> fBT;
       std::string fRatioFileName; // there is where we try to grab the splines/graphs (if they exist)
       std::vector<TGraph2D*> fGraph_charge_XXW;
       std::vector<TGraph2D*> fGraph_sigma_XXW;
@@ -54,12 +59,22 @@ namespace wiremod
       art::InputTag fEDepLabel; // which are the EDeps?
       art::InputTag fEDepShiftedLabel; // which are the EDeps?
       unsigned int fCryo; // which Cryo are we in?
-      unsigned int fTPC; // which TPC are we in?
+      unsigned int fTPCset; // which TPC are we in?
       bool fLocalRatios;        // is the ratio file local?
       bool fSaveHistsByChannel; // save modified signals by channel?
       bool fSaveHistsByWire;    // save modified signals by wire?
       bool fInRads;             // is the TGraph2D angle axis in radians?
       bool fXAbs;               // is the TGraph2D x an absolute value?
+      double fOffset;           // ad hoc offset
+      TH2F* fEdepTickInd1;      // What tick are the Edeps projected to (Induction 1)?
+      TH2F* fEdepTickInd2;      // What tick are the Edeps projected to (Induction 2)?
+      TH2F* fEdepTickColl;      // What tick are the Edeps projected to (Collection)?
+      TH2F* fHitTickInd1;       // What tick are the hits at (Induction 1)?
+      TH2F* fHitTickInd2;       // What tick are the hits at (Induction 2)?
+      TH2F* fHitTickColl;       // What tick are the hits at (Collection)?
+      TH2F* fEdepXvsChan;
+      TH2F* fHitXvsChan;
+      TH2F* fHitBTvsDetProp;    // BackTracker vs DetProp check hist
 
   }; // end WireModifierXXW class
 
@@ -88,7 +103,7 @@ namespace wiremod
   }
 
   //------------------------------------------------
-  void WireModifierXXW::shapeGraphPos(TGraph2D& graph, const geo::TPCID& tpcid)
+  void WireModifierXXW::shapeGraphPos(TGraph2D& graph, const readout::TPCsetID& tpcsetid)
   {
     // The graphs can be passed in abs(x), but we want global x
     // convert the x-axis to detector x,y,z coordinates
@@ -97,10 +112,10 @@ namespace wiremod
       << ", " << graph.GetXmax() << "]";
     
     // get the cathode possition, the drift direction, and the drift distance from geom
-    const geo::TPCGeo* TPCGeom = fGeometry->TPCPtr(tpcid);
-    double cathode = TPCGeom->GetCathodeCenter().X();
-    //double drift_dir = TPCGeom->DriftDir().X();
-    //double drift_dist = TPCGeom->DriftDistance();
+    // get the first TPC Geom since the cathode should be the same in all of them
+    geo::TPCID tpcid = fWireReadout->TPCsetToTPCs(tpcsetid).front();
+    const geo::TPCGeo* tpcGeom =  fGeometry->TPCPtr(tpcid);
+    double cathode = tpcGeom->GetCathodeCenter().X();
 
     double* xPtr = graph.GetX();
     double* yPtr = graph.GetY();
@@ -110,7 +125,6 @@ namespace wiremod
       double x = *(xPtr+idx);
       double y = *(yPtr+idx);
       double z = *(zPtr+idx);
-      //graph.SetPoint(idx, cathode + drift_dir*(drift_dist - x), y, z);
       if (cathode > 0)
       {
         graph.SetPoint(idx, x, y, z);
@@ -130,9 +144,9 @@ namespace wiremod
     fWireLabel = pset.get<art::InputTag>("WireLabel");
     fHitLabel  = pset.get<art::InputTag>("HitLabel");
     fEDepLabel = pset.get<art::InputTag>("EDepLabel");
-    fEDepShiftedLabel = pset.get<art::InputTag>("EDepLabel");
+    fEDepShiftedLabel = pset.get<art::InputTag>("EDepShiftedLabel");
     fCryo = pset.get<unsigned int>("Cryo");
-    fTPC = pset.get<unsigned int>("TPC");
+    fTPCset = pset.get<unsigned int>("TPCset");
 
     // what, if anything, are we putting in the histogram files
     fSaveHistsByChannel = pset.get<bool>("SaveByChannel", false);
@@ -186,7 +200,7 @@ namespace wiremod
           if (not fInRads)
             shapeGraphAngle(*temp);
           if (fXAbs)
-            shapeGraphPos(*temp, geo::TPCID(fCryo, fTPC));
+            shapeGraphPos(*temp, readout::TPCsetID(fCryo, fTPCset));
           fGraph_charge_XXW.push_back(temp);
         } else {
           mf::LogDebug("WireModifierXXW")
@@ -206,7 +220,7 @@ namespace wiremod
           if (not fInRads)
             shapeGraphAngle(*temp);
           if (fXAbs)
-            shapeGraphPos(*temp, geo::TPCID(fCryo, fTPC));
+            shapeGraphPos(*temp, readout::TPCsetID(fCryo, fTPCset));
           fGraph_sigma_XXW.push_back(temp);
         } else {
           mf::LogDebug("WireModifierXXW")
@@ -217,6 +231,45 @@ namespace wiremod
 
     // we make these things
     produces<std::vector<recob::Wire>>();
+
+    // tick check
+    art::ServiceHandle<art::TFileService> tfs;
+    fEdepTickInd1 = tfs->make<TH2F>("EdepTickInd1", "1st Induction;Projected Tick;Projected Channel",
+                                     4096, -128,  4096,
+                                     4603,    0, 55296);
+    fEdepTickInd2 = tfs->make<TH2F>("EdepTickInd2", "2nd Induction;Projected Tick;Projected Channel",
+                                     4096, -128,  4096,
+                                     4603,    0, 55296);
+    fEdepTickColl = tfs->make<TH2F>("EdepTickColl", "Collection;Projected Tick;Projected Channel",
+                                     4096, -128,  4096,
+                                     4603,    0, 55296);
+    fHitTickInd1  = tfs->make<TH2F>("HitTickInd1",  "1st Induction;Tick;Channel",
+                                     4096, -128,  4096,
+                                     4603,    0, 55296);
+    fHitTickInd2  = tfs->make<TH2F>("HitTickInd2",  "2nd Induction;Tick;Channel",
+                                     4096, -128,  4096,
+                                     4603,    0, 55296);
+    fHitTickColl  = tfs->make<TH2F>("HitTickColl",  "Collection;Tick;Channel",
+                                     4096, -128,  4096,
+                                     4603,    0, 55296);
+    fEdepXvsChan  = tfs->make<TH2F>("EdepXvsChan", ";X (cm);Channel",
+                                      800, -400, 400,
+                                     4603,    0, 55296);
+    fHitXvsChan   = tfs->make<TH2F>("HitXvsChan", ";X (cm);Channel",
+                                      800, -400, 400,
+                                     4603,    0, 55296);
+    fHitBTvsDetProp = tfs->make<TH2F>("HitBTvsDetProp",
+                                      ";X (cm) From BackTracker;X (cm) From DetectorProperties",
+                                      800, -400, 400,
+                                      800, -400, 400);
+    fEdepTickInd1->SetMarkerColor(kRed);
+    fEdepTickInd2->SetMarkerColor(kRed);
+    fEdepTickColl->SetMarkerColor(kRed);
+    fEdepXvsChan->SetMarkerColor(kRed);
+    fHitTickInd1->SetMarkerColor(kBlack);
+    fHitTickInd2->SetMarkerColor(kBlack);
+    fHitTickColl->SetMarkerColor(kBlack);
+    fHitXvsChan->SetMarkerColor(kBlack);
   }
 
   //------------------------------------------------
@@ -251,20 +304,44 @@ namespace wiremod
     // put the new stuff somewhere
     std::unique_ptr<std::vector<recob::Wire>> new_wires(new std::vector<recob::Wire>());
 
-    sys::WireModUtility wmUtil(fGeometry, fWireReadout, detProp); // detector geometry & properties
-    wmUtil.applyChannelScale = false;
-    wmUtil.applyXScale       = false;
-    wmUtil.applyYZScale      = false;
-    wmUtil.applyXZAngleScale = false;
-    wmUtil.applyYZAngleScale = false;
-    wmUtil.applydEdXScale    = false;
-    if (fRatioFileName == "NOFILE")
-      wmUtil.applyXXWScale = false;
+    // Get the tick offset by comparting the hit ticks with the tick gotten by
+    // projecting the backtracked hit X to a tick. Yes this is silly thanks for asking
+    double BT_Offset = 0;
+    unsigned int BT_Hits = 0;
+    for (auto const& hit : hitVec)
+    {
+      double hitX = std::numeric_limits<double>::max();
+      try
+      {
+        hitX = fBT->HitToXYZ(fDetClocksData, hit).at(0);
+      }
+      catch (...)
+      {
+        // Overlay hit, ignore
+        continue;
+      }
+      double hitTick = hit.PeakTime();
+      double projTick =
+        detProp.ConvertXToTicks(hitX, hit.WireID().Plane, hit.WireID().TPC, hit.WireID().Cryostat);
+      BT_Offset += (hitTick - projTick);
+      ++BT_Hits;
+    }
+    BT_Offset /= BT_Hits;
+
+    sys::WireModUtility wmUtil(fGeometry, fWireReadout, detProp,
+                               false, // Channel Scale
+                               false, // X
+                               false, // YZ
+                               false, // XZ-Angle
+                               false, // YZ-Angle
+                               false, // dE/dx
+                               true,  // X-ThXW
+                               BT_Offset); // Tick Offset
     wmUtil.graph2Ds_Charge_XXW = fGraph_charge_XXW;
     wmUtil.graph2Ds_Sigma_XXW  = fGraph_sigma_XXW;
 
     // add some debugging here
-    MF_LOG_VERBATIM("WireModifierXXW")
+    mf::LogVerbatim("WireModifierXXW")
       << "DUMP CONFIG:" << '\n'
       << "---------------------------------------------------" << '\n'
       << "  applyChannelScale:  " << wmUtil.applyChannelScale  << '\n'
@@ -278,22 +355,71 @@ namespace wiremod
       << "  tickOffset:         " << wmUtil.tickOffset         << '\n'
       << "---------------------------------------------------";
 
+    // tick check
+    mf::LogDebug("WireModifierXXW")
+      << "edepVec.size() = " << edepVec.size() << '\n'
+      << "edepShiftedVec.size() = " << edepShiftedVec.size() << '\n'
+      << "hitVec.size() = " << hitVec.size();
+    for (auto const& edep : edepVec)
+    {
+      if (fWireReadout->FindTPCsetAtPosition(edep.MidPoint()) != readout::TPCsetID(fCryo, fTPCset))
+        continue;
+
+      geo::TPCGeo const* curTPCGeomPtr = fGeometry->PositionToTPCptr(edep.MidPoint());
+      for (auto const& plane : fWireReadout->Iterate<geo::PlaneGeo>(curTPCGeomPtr->ID()))
+      {
+        TH2F* targetHist = (plane.View() == geo::kY) ? fEdepTickInd1
+                         : (plane.View() == geo::kV) ? fEdepTickInd2
+                         : (plane.View() == geo::kU) ? fEdepTickColl
+                         :                             nullptr;
+        if (targetHist == nullptr) continue;
+
+        geo::WireID wireID = plane.NearestWireID(edep.MidPoint());
+        float projTick = detProp.ConvertXToTicks(edep.X(), wireID.Plane, wireID.TPC, wireID.Cryostat) + wmUtil.tickOffset;
+        float projChan = fWireReadout->PlaneWireToChannel(wireID);
+        targetHist->Fill(projTick, projChan);
+        fEdepXvsChan->Fill(edep.X(), projChan);
+      }
+    }
+    for (auto const& hit : hitVec)
+    {
+      TH2F* targetHist = (hit.View() == geo::kY) ? fHitTickInd1
+                       : (hit.View() == geo::kV) ? fHitTickInd2
+                       : (hit.View() == geo::kU) ? fHitTickColl
+                       :                           nullptr;
+      if (targetHist == nullptr) continue;
+      
+      float tick = hit.PeakTime();
+      float chan = hit.Channel();
+      targetHist->Fill(tick, chan);
+      float hitX = detProp.ConvertTicksToX(tick,
+                                           hit.WireID().Plane, hit.WireID().TPC, hit.WireID().Cryostat);
+      try
+      {
+        float hitXBT = fBT->HitToXYZ(fDetClocksData, hit).at(0);
+        fHitBTvsDetProp->Fill(hitXBT, hitX);
+        hitX = hitXBT;
+      }
+      catch (...) { }
+      fHitXvsChan->Fill(hitX, chan);
+    }
+
     // do the things
     double offset_ADC = 0; // don't use an offset atm
-    MF_LOG_VERBATIM("WireModifierXXW")
+    mf::LogVerbatim("WireModifierXXW")
       << "Get Edep Map";
     wmUtil.FillROIMatchedEdepMap(edepShiftedVec, wireVec, offset_ADC);
-    MF_LOG_VERBATIM("WireModifierXXW")
+    mf::LogVerbatim("WireModifierXXW")
       << "Got Edep Map." << '\n'
       << "Get Hit Map";
     wmUtil.FillROIMatchedHitMap(hitVec, wireVec);
-    MF_LOG_VERBATIM("WireModifierXXW")
+    mf::LogVerbatim("WireModifierXXW")
       << "Got Hit Map.";
 
     // loop-de-loop
     for(size_t i_w = 0; i_w < wireVec.size(); ++i_w)
     {
-      MF_LOG_DEBUG("WireModifierXXW")
+      mf::LogDebug("WireModifierXXW")
         << "Checking wire " << i_w;
 
       auto const& wire = wireVec.at(i_w);
@@ -308,28 +434,28 @@ namespace wiremod
       unsigned int my_plane = geo::kUnknown;
       if (wire.View() == fWireReadout->Plane(geo::PlaneID(0, 0, 0)).View())
       {
-        MF_LOG_DEBUG("WireModifierXXW")
+        mf::LogDebug("WireModifierXXW")
           << "Wire is on plane 0, view " << wire.View();
         my_plane = 0;
       } else if (wire.View() == fWireReadout->Plane(geo::PlaneID(0, 0, 1)).View()) {
-        MF_LOG_DEBUG("WireModifierXXW")
+        mf::LogDebug("WireModifierXXW")
           << "Wire is on plane 1, view " << wire.View();
         my_plane = 1;
       } else if (wire.View() == fWireReadout->Plane(geo::PlaneID(0, 0, 2)).View()) {
-        MF_LOG_DEBUG("WireModifierXXW")
+        mf::LogDebug("WireModifierXXW")
           << "Wire is on plane 2, view " << wire.View();
         my_plane = 2;
       }
 
       if (my_plane == geo::kUnknown)
       {
-        MF_LOG_DEBUG("WireModifierXXW")
+        mf::LogDebug("WireModifierXXW")
           << "Wire is on unsupported plane. Skip.";
       }
 
       for(size_t i_r = 0; i_r < wire.SignalROI().get_ranges().size(); ++i_r)
       {
-        MF_LOG_DEBUG("WireModifierXXW")
+        mf::LogDebug("WireModifierXXW")
           << "  Checking ROI " << i_r;
 
         auto const& range = wire.SignalROI().get_ranges()[i_r];
@@ -340,7 +466,7 @@ namespace wiremod
         auto it_map = wmUtil.ROIMatchedEdepMap.find(roi_key);
         if(it_map==wmUtil.ROIMatchedEdepMap.end()){
           new_rois.add_range(range.begin_index(), modified_data);
-          MF_LOG_DEBUG("WireModifierXXW")
+          mf::LogDebug("WireModifierXXW")
             << "    Could not find matching Edep. Skip";
           continue;
         }
@@ -348,7 +474,7 @@ namespace wiremod
         if(matchedEdepIdxVec.size() == 0)
         {
           new_rois.add_range(range.begin_index(), modified_data);
-          MF_LOG_DEBUG("WireModifierXXW")
+          mf::LogDebug("WireModifierXXW")
             << "    No indices for Edep. Skip";
           continue;
         }
@@ -359,7 +485,7 @@ namespace wiremod
           matchedEdepPtrVec.push_back(&edepVec[i_e]);
           matchedEdepShiftedPtrVec.push_back(&edepShiftedVec[i_e]);
         }
-        MF_LOG_DEBUG("WireModifierXXW")
+        mf::LogDebug("WireModifierXXW")
           << "  Found " << matchedEdepPtrVec.size() << " Edeps";
 
         std::vector<const recob::Hit*> matchedHitPtrVec;
@@ -369,11 +495,11 @@ namespace wiremod
             matchedHitPtrVec.push_back(&hitVec[i_h]);
         }
 
-        MF_LOG_DEBUG("WireModifierXXW")
+        mf::LogDebug("WireModifierXXW")
           << "    Found " << matchedHitPtrVec.size() << " matching hits";
 
         auto roi_properties = wmUtil.CalcROIProperties(wire, i_r);
-        MF_LOG_DEBUG("WireModifierXXW")
+        mf::LogDebug("WireModifierXXW")
           << "    ROI Properties:" << '\n'
           << "                    key:     (" << roi_properties.key.first
                                       << ", " << roi_properties.key.second << ")" << '\n'
@@ -386,7 +512,7 @@ namespace wiremod
 
         auto subROIPropVec = wmUtil.CalcSubROIProperties(roi_properties, matchedHitPtrVec);
         
-        MF_LOG_DEBUG("WireModifierXXW")
+        mf::LogDebug("WireModifierXXW")
           << "    have " << subROIPropVec.size() << " SubROI";
 
         auto SubROIMatchedEdepShiftedMap =
