@@ -164,6 +164,25 @@ namespace wiremod
     {
       mf::LogVerbatim("WireModifierXXW")
         << "WireModifierXXW::reconfigure - No ratio file given. No scaling is applied...";
+    } else if (fRatioFileName == "DUMMYSCALE")
+    {
+      mf::LogVerbatim("WireModifierXXW")
+        << "WireModifierXXW::reconfigure - Fake universal 2x scaling is applied...";
+
+      // make a graph spanning -400 to 400 in X and -4 to 4 in ThXW (for completeness)
+      // all point have a value of 2
+      TGraph2D* temp = new TGraph2D();
+      for (size_t idx = 0; idx < 4; ++idx)
+      {
+        double x = (static_cast<double>(idx & 2) - 1)*400;
+        double y = (static_cast<double>(2*(idx & 1)) - 1)*4;
+        temp->AddPoint(x, y, 2);
+      }
+      for (size_t idx = 0; idx < 3; ++idx)
+      {
+        fGraph_charge_XXW.push_back(temp);
+        fGraph_sigma_XXW.push_back(temp);
+      }
     } else {
       std::string dir_path;
       if (not fLocalRatios)
