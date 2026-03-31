@@ -30,47 +30,64 @@ WMROI2Wire:
 WireModXXW:
 {
   module_type: "WireModifierXXW"
-  RatioFileName: "Ratio_ITM_XTheta_v5_cut.root"
+  RatioFileName: "unBinnedRatios_TGraph2D.root"
+  LocalRatios: true
   EDepLabel: "filtersed"
   EDepShiftedLabel: "shiftedpriorSCE"
+  SaveByChannel: false
+  SaveByWire: false
   InRadians: false
+  XAbs: true
 }
+
 WireModXXWTPCEE: @local::WireModXXW
-WireModXXWTPCEE.XXWScaleHeight: [ "hit_integral_TPC0_plane0_XTheta_ratio",
-                                  "hit_integral_TPC0_plane1_XTheta_ratio",
-                                  "hit_integral_TPC0_plane2_XTheta_ratio" ]
-WireModXXWTPCEE.XXWScaleWidth: [ "width_TPC0_plane0_XTheta_ratio",
-                                 "width_TPC0_plane1_XTheta_ratio",
-                                 "width_TPC0_plane2_XTheta_ratio" ]
+WireModXXWTPCEE.Cryo: 0
+WireModXXWTPCEE.TPCset: 0
+WireModXXWTPCEE.XXWScaleHeight: [ "TPC0_plane0_ratio_integral",
+                                  "TPC0_plane1_ratio_integral",
+                                  "TPC0_plane2_ratio_integral" ]
+WireModXXWTPCEE.XXWScaleWidth: [ "TPC0_plane0_ratio_width",
+                                 "TPC0_plane1_ratio_width",
+                                 "TPC0_plane2_ratio_width" ]
 WireModXXWTPCEE.WireLabel: "WMROI2Wire:PHYSCRATEDATATPCEE"
 WireModXXWTPCEE.HitLabel: "dummyGaushit2dTPCEE"
+
 WireModXXWTPCEW: @local::WireModXXW
-WireModXXWTPCEW.XXWScaleHeight: [ "hit_integral_TPC1_plane0_XTheta_ratio",
-                                  "hit_integral_TPC1_plane1_XTheta_ratio",
-                                  "hit_integral_TPC1_plane2_XTheta_ratio" ]
-WireModXXWTPCEW.XXWScaleWidth: [ "width_TPC1_plane0_XTheta_ratio",
-                                 "width_TPC1_plane1_XTheta_ratio",
-                                 "width_TPC1_plane2_XTheta_ratio" ]
+WireModXXWTPCEW.Cryo: 0
+WireModXXWTPCEW.TPCset: 1
+WireModXXWTPCEW.XXWScaleHeight: [ "TPC1_plane0_ratio_integral",
+                                  "TPC1_plane1_ratio_integral",
+                                  "TPC1_plane2_ratio_integral" ]
+WireModXXWTPCEW.XXWScaleWidth: [ "TPC1_plane0_ratio_width",
+                                 "TPC1_plane1_ratio_width",
+                                 "TPC1_plane2_ratio_width" ]
 WireModXXWTPCEW.WireLabel: "WMROI2Wire:PHYSCRATEDATATPCEW"
 WireModXXWTPCEW.HitLabel: "dummyGaushit2dTPCEW"
+
 WireModXXWTPCWE: @local::WireModXXW
-WireModXXWTPCWE.XXWScaleHeight: [ "hit_integral_TPC2_plane0_XTheta_ratio",
-                                  "hit_integral_TPC2_plane1_XTheta_ratio",
-                                  "hit_integral_TPC2_plane2_XTheta_ratio" ]
-WireModXXWTPCWE.XXWScaleWidth: [ "width_TPC2_plane0_XTheta_ratio",
-                                 "width_TPC2_plane1_XTheta_ratio",
-                                 "width_TPC2_plane2_XTheta_ratio" ]
+WireModXXWTPCWE.Cryo: 1
+WireModXXWTPCWE.TPCset: 0
+WireModXXWTPCWE.XXWScaleHeight: [ "TPC2_plane0_ratio_integral",
+                                  "TPC2_plane1_ratio_integral",
+                                  "TPC2_plane2_ratio_integral" ]
+WireModXXWTPCWE.XXWScaleWidth: [ "TPC2_plane0_ratio_width",
+                                 "TPC2_plane1_ratio_width",
+                                 "TPC2_plane2_ratio_width" ]
 WireModXXWTPCWE.WireLabel: "WMROI2Wire:PHYSCRATEDATATPCWE"
 WireModXXWTPCWE.HitLabel: "dummyGaushit2dTPCWE"
+
 WireModXXWTPCWW: @local::WireModXXW
-WireModXXWTPCWW.XXWScaleHeight: [ "hit_integral_TPC3_plane0_XTheta_ratio",
-                                  "hit_integral_TPC3_plane1_XTheta_ratio",
-                                  "hit_integral_TPC3_plane2_XTheta_ratio" ]
-WireModXXWTPCWW.XXWScaleWidth: [ "width_TPC3_plane0_XTheta_ratio",
-                                 "width_TPC3_plane1_XTheta_ratio",
-                                 "width_TPC3_plane2_XTheta_ratio" ]
+WireModXXWTPCWW.Cryo: 1
+WireModXXWTPCWW.TPCset: 1
+WireModXXWTPCWW.XXWScaleHeight: [ "TPC3_plane0_ratio_integral",
+                                  "TPC3_plane1_ratio_integral",
+                                  "TPC3_plane2_ratio_integral" ]
+WireModXXWTPCWW.XXWScaleWidth: [ "TPC3_plane0_ratio_width",
+                                 "TPC3_plane1_ratio_width",
+                                 "TPC3_plane2_ratio_width" ]
 WireModXXWTPCWW.WireLabel: "WMROI2Wire:PHYSCRATEDATATPCWW"
 WireModXXWTPCWW.HitLabel: "dummyGaushit2dTPCWW"
+
 WireModXXWSeq: [ WireModXXWTPCEE, WireModXXWTPCEW, WireModXXWTPCWE, WireModXXWTPCWW ]
 WireModXXWTab: { WireModXXWTPCEE: @local::WireModXXWTPCEE
                  WireModXXWTPCEW: @local::WireModXXWTPCEW

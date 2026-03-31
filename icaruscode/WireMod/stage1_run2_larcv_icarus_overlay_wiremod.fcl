@@ -1,6 +1,9 @@
 #include "WireModifierXXW.fcl"
 #include "stage1_run2_larcv_icarus_overlay.fcl"
 
+# BackTracker needs the correct label
+services.BackTrackerService.BackTracker.SimChannelModuleLabel: "merge"
+
 # add the WireMod sequence to the standard stage1 sequence
 physics.reco:
 [
