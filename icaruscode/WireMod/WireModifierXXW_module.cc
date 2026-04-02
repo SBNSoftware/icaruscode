@@ -384,8 +384,14 @@ namespace wiremod
       if (fWireReadout->FindTPCsetAtPosition(edep.MidPoint()) != readout::TPCsetID(fCryo, fTPCset))
         continue;
 
-      geo::TPCGeo const* curTPCGeomPtr = fGeometry->PositionToTPCptr(edep.MidPoint());
-      for (auto const& plane : fWireReadout->Iterate<geo::PlaneGeo>(curTPCGeomPtr->ID()))
+      geo::TPCID curTPCGeomID;
+      try {
+        curTPCGeomID = fGeometry->PositionToTPC(edep.MidPoint()).ID();
+      }
+      catch(...) {
+        continue; // ignore depositions outside TPC
+      }
+      for (auto const& plane : fWireReadout->Iterate<geo::PlaneGeo>(curTPCGeomID))
       {
         TH2F* targetHist = (plane.View() == geo::kY) ? fEdepTickInd1
                          : (plane.View() == geo::kV) ? fEdepTickInd2
@@ -393,7 +399,13 @@ namespace wiremod
                          :                             nullptr;
         if (targetHist == nullptr) continue;
 
-        geo::WireID wireID = plane.NearestWireID(edep.MidPoint());
+        geo::WireID wireID;
+        try {
+          wireID = plane.NearestWireID(edep.MidPoint());
+        }
+        catch (...) {
+          continue; // don't fill non-active depositions
+        }
         float projTick = detProp.ConvertXToTicks(edep.X(), wireID.Plane, wireID.TPC, wireID.Cryostat) + wmUtil.tickOffset;
         float projChan = fWireReadout->PlaneWireToChannel(wireID);
         targetHist->Fill(projTick, projChan);
