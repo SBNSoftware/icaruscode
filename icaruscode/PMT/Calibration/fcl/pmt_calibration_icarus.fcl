@@ -52,6 +52,7 @@ icarus_photon_calibration:
   Defaults: {
     SPEArea: @local::SPERun2.Area # ADC x tick, Run2 default
   }
+  OverrideRunNumber: -1
 } # icarus_photon_calibration
 
 
