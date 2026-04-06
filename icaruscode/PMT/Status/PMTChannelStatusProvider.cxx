@@ -20,9 +20,10 @@
 // -----------------------------------------------------------------------------
 icarusDB::PMTChannelStatusProvider::PMTChannelStatusProvider
   (const fhicl::ParameterSet& pset)
-  : fVerbose    ( pset.get<bool>       ("Verbose",     false                    ) )
-  , fLogCategory( pset.get<std::string>("LogCategory", "PMTChannelStatusProvider") )
-  , fStatusTag  ( pset.get<std::string>("StatusTag",   ""                       ) )
+  : fVerbose          ( pset.get<bool>       ("Verbose", false ) )
+  , fLogCategory      ( pset.get<std::string>("LogCategory", "PMTChannelStatusProvider") )
+  , fStatusTag        ( pset.get<std::string>("StatusTag", "" ) )
+  , fOverrideRunNumber( pset.get<int>("OverrideRunNumber", -1) )
   , fDB         ( pset.get<std::string>("DBname", "pmt_voltage_data"),
                   "", "", fStatusTag, true, false )
 {
@@ -40,6 +41,14 @@ icarusDB::PMTChannelStatusProvider::PMTChannelStatusProvider
 // -----------------------------------------------------------------------------
 void icarusDB::PMTChannelStatusProvider::readStatusFromDB(unsigned int run)
 {
+
+  if (fOverrideRunNumber >= 0) {
+    mf::LogInfo(fLogCategory)
+      << "Overriding run number " << run << " with " << fOverrideRunNumber
+      << " for DB queries.";
+    run = static_cast<unsigned int>(fOverrideRunNumber);
+  }   
+
   mf::LogInfo(fLogCategory)
     << "Reading PMT channel statuses from database for run " << run;
 
