@@ -116,7 +116,13 @@ class icarusDB::PhotonCalibratorFromDB: public calib::IPhotonCalibrator {
         Name{ "Defaults" },
         Comment{ "values used for channels not present in the database" }
         };
-      
+
+      fhicl::Atom<int> OverrideRunNumber {
+        Name{ "OverrideRunNumber" },
+        Comment{ "if non-negative, use this run number instead of the actual one for DB queries" },
+        -1
+        };
+
     }; // Config
   
   
@@ -168,6 +174,7 @@ class icarusDB::PhotonCalibratorFromDB: public calib::IPhotonCalibrator {
     bool const fVerbose;
     std::string const fLogCategory;
     std::string const fAreaTag;
+    int const fOverrideRunNumber; ///< If non-negative, overrides the run number for DB queries.
 
     lariov::DBFolder fDB; ///< Cached database interface.
     

@@ -34,11 +34,12 @@ namespace icarusDB {
 
 // -----------------------------------------------------------------------------
 icarusDB::PhotonCalibratorFromDB::PhotonCalibratorFromDB(const Config& config)
-  : fCalibDefaults( config.Defaults() )
-  , fVerbose      ( config.Verbose() )
-  , fLogCategory  ( config.LogCategory() )
-  , fAreaTag      ( config.AreaTag() )
-  , fDB           ( config.DBname(), "", "", config.AreaTag(), true, false)
+  : fCalibDefaults     ( config.Defaults() )
+  , fVerbose           ( config.Verbose() )
+  , fLogCategory       ( config.LogCategory() )
+  , fAreaTag           ( config.AreaTag() )
+  , fOverrideRunNumber ( config.OverrideRunNumber() )
+  , fDB                ( config.DBname(), "", "", config.AreaTag(), true, false)
 {
   mf::LogInfo(fLogCategory)
     << "PhotonCalibratorFromDB connected to " << config.DBname() << " DB, tag '" << config.AreaTag() << "'";
@@ -48,6 +49,13 @@ icarusDB::PhotonCalibratorFromDB::PhotonCalibratorFromDB(const Config& config)
 // -----------------------------------------------------------------------------
 void icarusDB::PhotonCalibratorFromDB::readCalibrationFromDB(unsigned int run)
 {
+
+  if (fOverrideRunNumber >= 0) {
+    mf::LogInfo(fLogCategory)
+      << "Overriding run number " << run << " with " << fOverrideRunNumber
+      << " for DB queries.";
+    run = static_cast<unsigned int>(fOverrideRunNumber);
+  }
 
   mf::LogInfo(fLogCategory) << "Reading SPE area calibrations from database for run " << run;
 

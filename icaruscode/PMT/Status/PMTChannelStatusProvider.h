@@ -89,6 +89,7 @@ private:
   bool        fVerbose;
   std::string fLogCategory;
   std::string fStatusTag;
+  int fOverrideRunNumber; ///< If non-negative, overrides the run number for DB queries.
 
   PMTChannelStatusDB fDefault; ///< Status used for channels not present in DB.
 
