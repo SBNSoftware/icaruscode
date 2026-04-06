@@ -250,45 +250,6 @@ namespace wiremod
 
     // we make these things
     produces<std::vector<recob::Wire>>();
-
-    // tick check
-    art::ServiceHandle<art::TFileService> tfs;
-    fEdepTickInd1 = tfs->make<TH2F>("EdepTickInd1", "1st Induction;Projected Tick;Projected Channel",
-                                     4096, -128,  4096,
-                                     4603,    0, 55296);
-    fEdepTickInd2 = tfs->make<TH2F>("EdepTickInd2", "2nd Induction;Projected Tick;Projected Channel",
-                                     4096, -128,  4096,
-                                     4603,    0, 55296);
-    fEdepTickColl = tfs->make<TH2F>("EdepTickColl", "Collection;Projected Tick;Projected Channel",
-                                     4096, -128,  4096,
-                                     4603,    0, 55296);
-    fHitTickInd1  = tfs->make<TH2F>("HitTickInd1",  "1st Induction;Tick;Channel",
-                                     4096, -128,  4096,
-                                     4603,    0, 55296);
-    fHitTickInd2  = tfs->make<TH2F>("HitTickInd2",  "2nd Induction;Tick;Channel",
-                                     4096, -128,  4096,
-                                     4603,    0, 55296);
-    fHitTickColl  = tfs->make<TH2F>("HitTickColl",  "Collection;Tick;Channel",
-                                     4096, -128,  4096,
-                                     4603,    0, 55296);
-    fEdepXvsChan  = tfs->make<TH2F>("EdepXvsChan", ";X (cm);Channel",
-                                      800, -400, 400,
-                                     4603,    0, 55296);
-    fHitXvsChan   = tfs->make<TH2F>("HitXvsChan", ";X (cm);Channel",
-                                      800, -400, 400,
-                                     4603,    0, 55296);
-    fHitBTvsDetProp = tfs->make<TH2F>("HitBTvsDetProp",
-                                      ";X (cm) From BackTracker;X (cm) From DetectorProperties",
-                                      800, -400, 400,
-                                      800, -400, 400);
-    fEdepTickInd1->SetMarkerColor(kRed);
-    fEdepTickInd2->SetMarkerColor(kRed);
-    fEdepTickColl->SetMarkerColor(kRed);
-    fEdepXvsChan->SetMarkerColor(kRed);
-    fHitTickInd1->SetMarkerColor(kBlack);
-    fHitTickInd2->SetMarkerColor(kBlack);
-    fHitTickColl->SetMarkerColor(kBlack);
-    fHitXvsChan->SetMarkerColor(kBlack);
   }
 
   //------------------------------------------------
@@ -379,6 +340,55 @@ namespace wiremod
       << "edepVec.size() = " << edepVec.size() << '\n'
       << "edepShiftedVec.size() = " << edepShiftedVec.size() << '\n'
       << "hitVec.size() = " << hitVec.size();
+
+    std::string plot_suffix = "_R" + std::to_string(evt.run())
+                             + "S" + std::to_string(evt.subRun())
+                             + "E" + std::to_string(evt.event());
+    fEdepTickInd1 = tfs->make<TH2F>(("EdepTickInd1"+plot_suffix).c_str(),
+                                     "1st Induction;Projected Tick;Projected Channel",
+                                     4096, -128,  4096,
+                                     4603,    0, 55296);
+    fEdepTickInd2 = tfs->make<TH2F>(("EdepTickInd2"+plot_suffix).c_str(),
+                                    "2nd Induction;Projected Tick;Projected Channel",
+                                     4096, -128,  4096,
+                                     4603,    0, 55296);
+    fEdepTickColl = tfs->make<TH2F>(("EdepTickColl"+plot_suffix).c_str(),
+                                    "Collection;Projected Tick;Projected Channel",
+                                     4096, -128,  4096,
+                                     4603,    0, 55296);
+    fHitTickInd1  = tfs->make<TH2F>(("HitTickInd1"+plot_suffix).c_str(),
+                                     "1st Induction;Tick;Channel",
+                                     4096, -128,  4096,
+                                     4603,    0, 55296);
+    fHitTickInd2  = tfs->make<TH2F>(("HitTickInd2"+plot_suffix).c_str(),
+                                     "2nd Induction;Tick;Channel",
+                                     4096, -128,  4096,
+                                     4603,    0, 55296);
+    fHitTickColl  = tfs->make<TH2F>(("HitTickColl"+plot_suffix).c_str(),
+                                    "Collection;Tick;Channel",
+                                     4096, -128,  4096,
+                                     4603,    0, 55296);
+    fEdepXvsChan  = tfs->make<TH2F>(("EdepXvsChan"+plot_suffix).c_str(),
+                                    ";X (cm);Channel",
+                                      800, -400, 400,
+                                     4603,    0, 55296);
+    fHitXvsChan   = tfs->make<TH2F>(("HitXvsChan"+plot_suffix).c_str(),
+                                    ";X (cm);Channel",
+                                      800, -400, 400,
+                                     4603,    0, 55296);
+    fHitBTvsDetProp = tfs->make<TH2F>(("HitBTvsDetProp"+plot_suffix).c_str(),
+                                      ";X (cm) From BackTracker;X (cm) From DetectorProperties",
+                                      800, -400, 400,
+                                      800, -400, 400);
+    fEdepTickInd1->SetMarkerColor(kRed);
+    fEdepTickInd2->SetMarkerColor(kRed);
+    fEdepTickColl->SetMarkerColor(kRed);
+    fEdepXvsChan->SetMarkerColor(kRed);
+    fHitTickInd1->SetMarkerColor(kBlack);
+    fHitTickInd2->SetMarkerColor(kBlack);
+    fHitTickColl->SetMarkerColor(kBlack);
+    fHitXvsChan->SetMarkerColor(kBlack);
+
     for (auto const& edep : edepVec)
     {
       if (fWireReadout->FindTPCsetAtPosition(edep.MidPoint()) != readout::TPCsetID(fCryo, fTPCset))
@@ -614,7 +624,8 @@ namespace wiremod
         std::string titleStr =  "Cryo-"         + std::to_string(ropID.Cryostat)
                              + "_TPCset-"       + std::to_string(ropID.TPCset)
                              + "_ReadOutPlane-" + std::to_string(ropID.ROP)
-                             + "_Channel-"      + std::to_string(wire.Channel());
+                             + "_Channel-"      + std::to_string(wire.Channel())
+                             + plot_suffix;
         TH1F* oldChannelHist = new TH1F(("Old_" + titleStr).c_str(), ";Sample;Arbitrary Units",
                                         wmUtil.readoutWindowTicks, 0, wmUtil.readoutWindowTicks);
         TH1F* newChannelHist = new TH1F(("New_" + titleStr).c_str(), ";Sample;Arbitrary Units",
@@ -646,7 +657,8 @@ namespace wiremod
           std::string titleStr =  "Cryo-"  + std::to_string(wireID.Cryostat)
                                + "_TPC-"   + std::to_string(wireID.TPC)
                                + "_Plane-" + std::to_string(wireID.Plane)
-                               + "_Wire-"  + std::to_string(wireID.Wire);
+                               + "_Wire-"  + std::to_string(wireID.Wire)
+                               + plot_suffix;
           TH1F* oldWireHist = new TH1F(("Old_" + titleStr).c_str(), ";Sample;Arbitrary Units",
                                        wmUtil.readoutWindowTicks, 0, wmUtil.readoutWindowTicks);
           TH1F* newWireHist = new TH1F(("New_" + titleStr).c_str(), ";Sample;Arbitrary Units",
