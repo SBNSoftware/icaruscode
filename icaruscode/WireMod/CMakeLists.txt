@@ -1,4 +1,4 @@
-set(EXCLUDED_PLUGINS WireModMakeHists_plugin.cc ROICounter_module.cc HitComp_plugin.cc HitTTreeMaker_plugin.cc WireModifier_module.cc WireModifierXXW_module.cc)
+set(EXCLUDED_PLUGINS WireModMakeHists_plugin.cc ROICounter_module.cc HitComp_plugin.cc HitTTreeMaker_plugin.cc WireModifier_module.cc WireModifierXXW_module.cc WireModifierXXWYZ_module.cc)
 
 art_make( 
 	  LIB_LIBRARIES
@@ -204,6 +204,44 @@ simple_plugin(WireModifier "module"
 )
 
 simple_plugin(WireModifierXXW "module"
+              ${ART_FRAMEWORK_CORE}
+              ${MF_MESSAGELOGGER}
+              ${Boost_SYSTEM_LIBRARY}
+              ${ROOT_BASIC_LIB_LIST}
+              ${ROOT_HIST}
+              art_root_io::TFileService_service
+              lardataobj::AnalysisBase
+              lardataobj::RawData
+              lardataobj::RecoBase
+              lardata::RecoObjects
+              larreco::RecoAlg
+              ${LARRECO_LIB}
+              ${LARDATA_LIB}
+              ${ART_FRAMEWORK_CORE}
+              ${ART_FRAMEWORK_PRINCIPAL}
+              ${ART_FRAMEWORK_SERVICES_REGISTRY}
+              ${ART_FRAMEWORK_SERVICES_OPTIONAL}
+              ${ART_FRAMEWORK_SERVICES_OPTIONAL_RANDOMNUMBERGENERATOR_SERVICE}
+              ${ART_FRAMEWORK_SERVICES_OPTIONAL_TFILESERVICE_SERVICE}
+              ${MF_MESSAGELOGGER}
+              ${FHICLCPP}
+              ${CLHEP}
+              ${ROOT_GEOM}
+              ${ROOT_XMLIO}
+              ${ROOT_GDML}
+              ${ROOT_BASIC_LIB_LIST}
+              ${ROOT_HIST}
+              larcore::Geometry_Geometry_service
+              larcorealg::Geometry
+              lardataalg::DetectorInfo
+              lardata::Utilities
+              lardata::DetectorInfoServices_DetectorClocksServiceStandard_service
+              sbnobj::ICARUS_TPC
+              sbncode::WireMod_Utility
+              BASENAME_ONLY
+)
+
+simple_plugin(WireModifierXXWYZ "module"
               ${ART_FRAMEWORK_CORE}
               ${MF_MESSAGELOGGER}
               ${Boost_SYSTEM_LIBRARY}
