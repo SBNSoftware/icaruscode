@@ -1,0 +1,15 @@
+BEGIN_PROLOG
+
+icarus_simenergydepfaketriggerfilter:
+{
+  module_type:     "SimEnergyDepFakeTriggerFilterICARUS"
+
+  BeamTimeMin:    -0.2        # Minimum time of beam window [us]
+  BeamTimeMax:     1.9        # Maximum time of beam window [us]
+  EnergyDeposit:   5          # Minimum energy deposit in TPC for trigger [MeV]
+ 
+  # By default, take only the energy deposits within the TPC active volume
+  SimEnergyDepModuleName: "largeant:LArG4DetectorServicevolTPCActive" # Name of SimEnergyDeposit producer module
+}
+
+END_PROLOG
