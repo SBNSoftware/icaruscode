@@ -52,8 +52,38 @@ icarus_photon_calibration:
   Defaults: {
     SPEArea: @local::SPERun2.Area # ADC x tick, Run2 default
   }
-  OverrideRunNumber: -1
+  OverrideRunNumber: 9271
 } # icarus_photon_calibration
+
+
+# ==============================================================================
+# ===  Vertical-track flash / waveform ntupler (for calibration)
+# ===
+verticaltrack_flashwf_ana:
+{
+  module_type:        "VerticalTrackFlashWaveformAna"
+
+  # per-cryostat track + flash collections (order must match: E, W)
+  TrackLabels:        [ "pandoraTrackGausCryoE", "pandoraTrackGausCryoW" ]
+  OpFlashLabels:      [ "opflashCryoE",          "opflashCryoW"          ]
+  PandoraLabels:      [ "pandoraGausCryoE",      "pandoraGausCryoW"      ]
+
+  # single merged collections covering both cryostats
+  OpDetWaveformLabel: "daqPMT"
+  SimPhotonsLabel: ""
+
+  # vertical-track selection
+  MinAbsDirY:          0.98
+  MaxDeltaX:           30.0   # cm
+  MaxDeltaZ:           30.0   # cm
+  ZMin:              -700.0   # cm
+  ZMax:               700.0   # cm
+  MinTrackLength:     100.0   # cm
+  RequireDownwards:   true
+
+  # flash match
+  BarycenterMaxDist:  30.0    # cm (YZ distance)
+}
 
 
 # ==============================================================================
