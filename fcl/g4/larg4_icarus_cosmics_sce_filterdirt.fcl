@@ -1,0 +1,11 @@
+#include "simenergydep_faketrigger_icarus.fcl"
+#include "icarus_siminfomixer.fcl"
+#include "larg4_icarus_cosmics.fcl"
+
+physics.filters.dirtfilter: @local::icarus_simenergydepfaketriggerfilter
+physics.producers.potinevent: @local::icarus_subrunpotinevent # so the sim info mixer can grab it
+
+outputs.rootoutput.SelectEvents: [simulate]
+physics.simulate: [@sequence::physics.simulate, potinevent, dirtfilter]
+
+#include "enable_spacecharge_icarus.fcl"
