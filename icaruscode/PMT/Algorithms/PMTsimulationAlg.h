@@ -1272,12 +1272,12 @@ raw::OpDetWaveform icarus::opdet::OpDetWaveformMakerClass<SampleType>::create
   // create a new waveform preallocating enough room for the full buffer
   raw::OpDetWaveform outputWaveform(timeStamp, opChannel, end - start);
   
-  // copy the buffer (need to unwrap the ADCcount value)
+  // copy the buffer (need to unwrap the ADCcount value; +0.5+truncate => round)
   std::transform(
     fWaveform.begin() + start,
     fWaveform.begin() + end,
     std::back_inserter(outputWaveform),
-    [](auto sample){ return sample.value(); }
+    [](auto sample){ return (sample + Sample_t{ 0.5f }).value(); }
     );
   
   return outputWaveform;

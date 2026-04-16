@@ -70,7 +70,7 @@ icarus_settings_opdet_2022: {
   
   NoiseRMS:                 3.0   # in ADC#; "temporary" value, see SBN DocDB 19187
   
-  NominalPedestal:      14999.5   # in ADC#; try to balance rounding errors
+  NominalPedestal:      15000.0   # in ADC#
   
 } # icarus_settings_opdet_2022
 
