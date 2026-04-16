@@ -1585,21 +1585,11 @@ auto icarus::trigger::TriggerSimulationOnGates::toBeamGateTime(
         (detinfo::timescales::simulation_time{ time });
       break;
     default:
-#if 0 // TODO restore after adoption of https://github.com/LArSoft/lardataalg/pull/44
       throw art::Exception{ art::errors::Configuration }
         << "Conversion of times from reference '"
         << util::StandardSelectorFor<util::TimeScale>{}
           .get(fBeamGateReference).name()
         << "' not supported.\n";
-#else
-    {
-      util::StandardSelectorFor<util::TimeScale> const timeScaleSelector;
-      throw art::Exception{ art::errors::Configuration }
-        << "Conversion of times from reference '"
-        << timeScaleSelector.get(fBeamGateReference).name()
-        << "' not supported.\n";
-    }
-#endif
   } // switch
   
   return time_es - detTimings.BeamGateTime();
