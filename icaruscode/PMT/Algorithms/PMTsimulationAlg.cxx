@@ -441,7 +441,7 @@ auto icarus::opdet::PMTsimulationAlg::CreateFullWaveform
     
     if(debug){
       for(std::size_t i=0; i<waveform.size(); i++){
-	      debug->waveform.push_back(waveform[i].value());
+        debug->waveform.push_back(waveform[i].value());
       }
     }
 
