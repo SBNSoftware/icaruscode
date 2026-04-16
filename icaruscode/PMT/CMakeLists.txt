@@ -16,6 +16,7 @@ cet_build_plugin(SimPMTIcarus art::module
                     LIBRARIES
 			icaruscode::PMT_Status
 			icaruscode::PMT_Algorithms
+			sbnobj::ICARUS_PMT_Data
 			lardataobj::RawData
 			lardataobj::Simulation
 			larcore::Geometry_Geometry_service

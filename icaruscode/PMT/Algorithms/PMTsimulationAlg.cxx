@@ -159,25 +159,34 @@ icarus::opdet::PMTsimulationAlg::PMTsimulationAlg
 
 
 // -----------------------------------------------------------------------------
-std::tuple<std::vector<raw::OpDetWaveform>, std::optional<sim::SimPhotons>,
-           std::optional<icarus::opdet::DebugInfo>>
-  icarus::opdet::PMTsimulationAlg::simulate(sim::SimPhotons const& photons,
-                                            sim::SimPhotonsLite const& lite_photons,
-                                            bool enableDebug)
+std::tuple<
+  std::vector<raw::OpDetWaveform>, std::vector<icarus::WaveformBaseline>,
+  std::optional<sim::SimPhotons>,
+  std::optional<icarus::opdet::DebugInfo>
+>
+icarus::opdet::PMTsimulationAlg::simulate(sim::SimPhotons const& photons,
+                                          sim::SimPhotonsLite const& lite_photons,
+                                          bool enableDebug)
 {
   std::optional<sim::SimPhotons> photons_used;
   std::optional<icarus::opdet::DebugInfo> debug;
   
   if (enableDebug) debug.emplace();
 
-  Waveform_t const waveform = CreateFullWaveform(photons, lite_photons, photons_used, 
-                                                 enableDebug ? &(*debug) : nullptr);
-
+  // [Waveform_t, ADCcount] (baseline is single one for the whole channel)
+  auto const [ waveform, baseline ] = CreateFullWaveform
+    (photons, lite_photons, photons_used, enableDebug ? &(*debug) : nullptr);
+  
+  std::vector<raw::OpDetWaveform> waveforms
+    = CreateFixedSizeOpDetWaveforms(photons.OpChannel(), waveform);
+  
+  std::vector<icarus::WaveformBaseline> baselines
+    (waveforms.size(), icarus::WaveformBaseline{ baseline.value() });
+  
   return {
-    CreateFixedSizeOpDetWaveforms(photons.OpChannel(), waveform),
-    std::move(photons_used),
-    std::move(debug)
-    };
+    std::move(waveforms), std::move(baselines),
+    std::move(photons_used), std::move(debug)
+  };
   
 } // icarus::opdet::PMTsimulationAlg::simulate()
 
@@ -236,7 +245,7 @@ auto icarus::opdet::PMTsimulationAlg::CreateFullWaveform
    sim::SimPhotonsLite const& lite_photons,
    std::optional<sim::SimPhotons>& photons_used,
    icarus::opdet::DebugInfo* debug)
-  const -> Waveform_t
+  const -> std::tuple<Waveform_t, ADCcount>
 {
 
     using namespace detinfo::timescales;
@@ -445,7 +454,7 @@ auto icarus::opdet::PMTsimulationAlg::CreateFullWaveform
       }
     }
 
-    return waveform;
+    return { std::move(waveform), baseline };
   } // CreateFullWaveform()
 
   auto icarus::opdet::PMTsimulationAlg::CreateBeamGateTriggers() const
