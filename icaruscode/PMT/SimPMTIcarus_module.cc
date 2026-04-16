@@ -19,6 +19,7 @@
 #include "icaruscode/PMT/Algorithms/PhotoelectronPulseFunction.h"
 #include "icaruscode/IcarusObj/OpDetWaveformMeta.h"
 #include "icaruscode/Timing/IPMTTimingCorrectionService.h"
+#include "sbnobj/ICARUS/PMT/Data/WaveformBaseline.h"
 
 // LArSoft libraries
 #include "larcore/CoreUtils/ServiceUtil.h"
@@ -126,6 +127,10 @@ namespace icarus::opdet {
    * A collection of optical detector waveforms
    * (`std::vector<raw::OpDetWaveform>`) is produced.
    * See `icarus::opdet::PMTsimulationAlg` algorithm documentation for details.
+   * 
+   * A collection of baselines (`std::vector<icarus::WaveformBaseline>`) and
+   * associations to their waveform is also produced, using the configured
+   * baseline as value for all the waveforms.
    * 
    * If `MakeMetadata` configuration parameter is set `true`, a collection of
    * `std::vector<sbn::OpDetWaveformMeta>` is produced, one per waveform, in the
@@ -419,6 +424,8 @@ SimPMTIcarus::SimPMTIcarus(Parameters const& config)
   {
     // Call appropriate produces<>() functions here.
     produces<std::vector<raw::OpDetWaveform>>();
+    produces<std::vector<icarus::WaveformBaseline>>();
+    produces<art::Assns<raw::OpDetWaveform, icarus::WaveformBaseline>>();
     if (fMakeMetadata) {
       produces<std::vector<sbn::OpDetWaveformMeta>>();
       produces<art::Assns<raw::OpDetWaveform, sbn::OpDetWaveformMeta>>();
@@ -533,6 +540,7 @@ SimPMTIcarus::SimPMTIcarus(Parameters const& config)
     
     auto simphVecPtr = fWritePhotons? std::make_unique<std::vector<sim::SimPhotons>>(): nullptr;
     auto pulseVecPtr = std::make_unique<std::vector<raw::OpDetWaveform>>();
+    auto baselineVecPtr = std::make_unique<std::vector<icarus::WaveformBaseline>>();
     
     for(auto const& [ photons, litePhotons ]
       : util::zip(*pInputPhotons, *pInputLitePhotons)
@@ -545,12 +553,18 @@ SimPMTIcarus::SimPMTIcarus(Parameters const& config)
         && !lar::providerFrom<icarusDB::IPMTChannelStatusService>()->isGood(channel))
         continue;
 
-      auto const& [ channelWaveforms, photons_used, debug ]
+      auto const& [ channelWaveforms, channelPedestals, photons_used, debug ]
         = PMTsimulator->simulate(photons, litePhotons, fDoDebugTree);
+      assert(channelWaveforms.size() == channelPedestals.size());
       std::move(
         channelWaveforms.cbegin(), channelWaveforms.cend(),
         std::back_inserter(*pulseVecPtr)
         );
+      std::move(
+        channelPedestals.cbegin(), channelPedestals.cend(),
+        std::back_inserter(*baselineVecPtr)
+        );
+      assert(pulseVecPtr->size() == baselineVecPtr->size());
       
       if (!useLitePhotons && simphVecPtr && photons_used)
         simphVecPtr->emplace_back(std::move(photons_used.value()));
@@ -599,6 +613,16 @@ SimPMTIcarus::SimPMTIcarus(Parameters const& config)
     mf::LogInfo("SimPMTIcarus") << "Generated " << pulseVecPtr->size()
       << " waveforms out of " << pInputPhotons->size() << " optical channels.";
     
+    // waveform baselines
+    auto baselineAssns
+      = std::make_unique<art::Assns<raw::OpDetWaveform, icarus::WaveformBaseline>>();
+    art::PtrMaker<raw::OpDetWaveform> const makeWaveformPtr{ e };
+    art::PtrMaker<icarus::WaveformBaseline> const makeBaselinePtr{ e };
+    for (std::size_t const iWaveform: util::counter(pulseVecPtr->size())) {
+      baselineAssns->addSingle
+        (makeWaveformPtr(iWaveform), makeBaselinePtr(iWaveform));
+    } // for
+    
     // waveform metadata
     std::unique_ptr<std::vector<sbn::OpDetWaveformMeta>> metadataVec;
     std::unique_ptr<art::Assns<raw::OpDetWaveform, sbn::OpDetWaveformMeta>>
@@ -620,6 +644,8 @@ SimPMTIcarus::SimPMTIcarus(Parameters const& config)
     // save the result
     //
     e.put(std::move(pulseVecPtr));
+    e.put(std::move(baselineVecPtr));
+    e.put(std::move(baselineAssns));
     if (fMakeMetadata) {
       e.put(std::move(metadataVec));
       e.put(std::move(metadataAssns));
