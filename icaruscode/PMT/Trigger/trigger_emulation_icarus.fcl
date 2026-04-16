@@ -74,6 +74,9 @@
 # :   original version
 # 20221104 (petrillo@slac.stanford.edu) [v2.0]
 # :   added many configurations, and rationalized (?) their names
+# 20260403 (petrillo@slac.stanford.edu) [v3.0]
+# :   * discrimination baselines based on data product for simulation too
+# :     (breaking change: needs updated SimPMTIcarus writing baselines)
 #
 
 #include "trigger_icarus.fcl"
@@ -416,6 +419,7 @@ icarus_shifting_triggersim: {
        InitSimEnergyDepositLiteLabel: "sedlite"
        InitSimPhotonsLabel: "largeant"
        InitWaveformLabel: "opdaq"
+       BindWaveformBaselines: "opdaq"
        ShiftAuxDetIDEs: true
        ShiftBeamGateInfo: true
        ShiftSimEnergyDeposits: true
