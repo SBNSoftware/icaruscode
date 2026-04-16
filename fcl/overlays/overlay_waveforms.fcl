@@ -61,19 +61,21 @@ physics.producers: {
 
   overlayOpWaveforms:
   {
-    module_type: "OverlayProducts"
-    TPCOverlayRaw:     false
-    TPCOverlayHits:    false
-    TPCHitsWireAssn:   false
-    TPCOverlayROI:     false
-    PMTOverlayRaw:     true
-    PMTOverlayHits:    false
-    CRTOverlayHits:    false
-    PMTWaveDataLabel: "daqPMT"
-    PMTWaveSimLabel:  "shifted"
-    PMTWaveBaseLabel: "pmtbaselines"
+    module_type:        OverlayPMTwaveforms
+    
+    DataWaveformTag:   "daqPMT"
+    DataBaselineAssns: "pmtbaselines"
+    SimWaveformTag:    "shifted"       # also their baselines
+    
+    # produce a baseline collection
+    # (trigger modules use one directly rather than going through associations)
+    DuplicateBaselines: true
+    
+    # check that no noise is in PMT waveform simulation: we require that at least
+    # >50% of the PMT waveforms lie flat on the baseline for their first 500 ns
+    BaselineCheck:    { Length: "0.5 us"  ForgivenessFraction: 0.5 }
   }
-
+  
   overlayCRTHit:
   {
     module_type: "OverlayProducts"

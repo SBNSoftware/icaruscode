@@ -120,6 +120,16 @@ cet_build_plugin(OverlayProducts art::module LIBRARIES
 	lardata::ArtDataHelper
 	)
 
+cet_build_plugin(OverlayPMTwaveforms art::module LIBRARIES
+  sbncode::Utilities
+  icarusalg::Utilities
+  icarusalg::PMT_Algorithms
+  lardata::DetectorClocksService
+  lardataobj::RawData
+  sbnobj::ICARUS_PMT_Data
+  art::Framework_Services_Registry
+)
+
 install_headers()
 install_fhicl()
 install_source()
