@@ -49,7 +49,7 @@ bool SimEnergyDepFakeTriggerFilterICARUS::filter(art::Event& e)
 
   std::cout << "SAW E= " << energy << " inside window. Threshold is: " << fEnergyDeposit << std::endl;
   // If the energy deposit within the beam time is greater than some limit then trigger the event
-  return (energy > fEnergyDeposit) & (energy < fMaxEnergyDeposit);
+  return (energy > fEnergyDeposit) && (energy < fMaxEnergyDeposit);
 }
 
 DEFINE_ART_MODULE(SimEnergyDepFakeTriggerFilterICARUS)
