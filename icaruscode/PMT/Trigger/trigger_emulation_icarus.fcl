@@ -417,6 +417,7 @@ icarus_shifting_triggersim: {
     emuTriggerUnshifted: {
       @table::icarus_standard_triggersim.producers.emuTrigger
       BeamGates: triggersimgatesinit
+      BeamGateReference: Simulation
       TriggerGatesTag: pmttriggerwindowsinit
     }
 

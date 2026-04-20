@@ -19,3 +19,5 @@ physics.producers.ophituncorrected.InputModule: "overlayOpWaveforms"
 physics.producers.ophit.InputLabels: [ "ophituncorrected" ]
 physics.producers.crttrack.DataLabelHits: "overlayCRTHit"
 physics.producers.crtpmt.CrtHitModuleLabel: "overlayCRTHit"
+physics.producers.emuTrigger:
+  @local::icarus_shifting_triggersim.producers.emuTrigger  # from trigger_emulation_icarus.fcl
