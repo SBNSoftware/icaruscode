@@ -231,12 +231,13 @@ icarus_pmtdiscriminatethr_fixed: {
 #
 # This module applies discrimination based on fixed threshold specified in the
 # configuration.
-# The baseline is fixed and read from global settings.
+# The baseline is read from a data product.
 # It produces discriminated waveforms ("ReadoutTriggerGate" objects)
 # and complimentary waveform summary data (all the waveform information that
 # is not sample values: `sbn::OpDetWaveformMeta` objects).
 #
 # This module does requires `Geometry` and `DetectorClocksService` services.
+# It also requires input from an updated SimPMTIcarus producing baselines too.
 #
 # Usually this module is usually run only once; standard label: "pmtthr":
 #
@@ -250,9 +251,8 @@ icarus_pmtdiscriminatethr_fixed_MC: {
   # input optical waveform data product tag:
   OpticalWaveforms: "opdaq"
 
-  # PMT baseline (from standard simulation configuration)
-  Baselines: @erase
-  Baseline: @local::icarus_settings_opdet.NominalPedestal
+  # PMT baseline (written together with the waveforms themselves)
+  Baselines: opdaq
 
 } # icarus_pmtdiscriminatethr_fixed_MC
 
