@@ -35,8 +35,6 @@
 #
 # 
 
-#include "trigger_icarus.fcl"
-
 BEGIN_PROLOG
 
 #
