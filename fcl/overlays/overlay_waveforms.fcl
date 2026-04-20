@@ -7,6 +7,8 @@
 
 process_name: Overlay
 
+#include "override_services_for_simulation.fcl"
+
 ## Add the MC module to the list of producers
 physics.producers: {
   mccrthit: @local::standard_crtsimhitproducer

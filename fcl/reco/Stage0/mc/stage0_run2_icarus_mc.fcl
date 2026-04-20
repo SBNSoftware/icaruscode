@@ -7,6 +7,8 @@
 
 process_name: MCstage0
 
+#include "override_services_for_simulation.fcl"
+
 ## Add the MC module to the list of producers
 physics.producers: {  @table::icarus_stage0_producers
                       @table::icarus_stage0_mc_producers
