@@ -274,6 +274,14 @@ icarus_region_finder: {
 # this configuration takes the configured beam gate duration
 # and creates extended gates to be used for trigger evaluation;
 # [20221104] the amount of extension needs to be verified with Run2 data
+# [20260415] shifting for the cable delay, that is now simulated at waveform level:
+#            -200 (margin) + 265 (average delay for Run2 data);
+#            estimation from the reconstructed triggering flash times,
+#            from simulation enabling trigger emulation (with no trigger delay)
+#            and standard hit reconstruction (which includes time correction).
+#            Simulation adds the delay, then the shifting to trigger time eats it,
+#            and the hit correction effectively moves the hits away from the trigger.
+#            There are other ways to estimate it (e.g. average on DB coefficients!)
 #
 icarus_triggersimgates_Run1: {
 
@@ -284,12 +292,12 @@ icarus_triggersimgates_Run1: {
   Changes: [  # gates of type not included are left unchanged
     { # for BNB gates
       Select: { Types: [ "BNB" ] }
-      Start:  { SetTo: "-0.2 us" }
+      Start:  { SetTo: "+0.065 us" }
       Width:  { SetTo: @local::BNB_settings.spill_duration  Add: "0.5 us" }
     },
     { # for NuMI gates
       Select: { Types: [ "NuMI" ]}
-      Start:  { SetTo: "-0.2 us" }
+      Start:  { SetTo: "+0.065 us" }
       Width:  { SetTo: @local::NuMI_settings.spill_duration  Add: "0.6 us" }
     }
     ]

@@ -106,9 +106,10 @@ triggeremu_config_icarus.settings.missing_pmt_channels:
 
 # Run3 delay extracted comparing emulated and hardware trigger time
 # from run 11952 (majority only), not presented yet
+triggeremu_config_icarus.settings.TriggerDelay_Run2: "345 ns"
 triggeremu_config_icarus.settings.TriggerDelay_Run3: "350 ns"
 triggeremu_config_icarus.settings.TriggerDelay:
-  @local::triggeremu_config_icarus.settings.TriggerDelay_Run3
+  @local::triggeremu_config_icarus.settings.TriggerDelay_Run2
 
 
 # beam gate window for trigger emulation:
