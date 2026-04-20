@@ -370,6 +370,7 @@ icarus_standard_triggersim: {
       Pattern:               @local::icarus_triggergate_basic.SelectedPattern
       BeamGates:             triggersimgates
       TriggerTimeResolution: "8 ns" # this should probably be 12 or 24 ns
+      TriggerDelay:          @local::triggeremu_config_icarus.settings.TriggerDelay  # triggeremu_settings_icarus.fcl
       EmitEmpty:             true
       ExtraInfo:             true
     }
