@@ -17,6 +17,8 @@
 # 20221104 (petrillo@slac.stanford.edu)
 #   overhaul of the configuration to just host settings and parameters;
 #   module configurations are now in `trigger_emulation_icarus.fcl`
+# 20260403 (petrillo@slac.stanford.edu)
+#   changed discrimination threshold from 400 ADC# to 390 (only Run1 has 400)
 # 
 #
 
@@ -84,7 +86,7 @@ NuMI_settings: {
 icarus_triggergate_basic.Baseline: 15000
 
 # This is the primary PMT discrimination threshold, chosen for the hardware.
-icarus_triggergate_basic.SelectedThreshold: 400 # ADC
+icarus_triggergate_basic.SelectedThreshold: 390 # ADC
 
 # This is the primary PMT adder discrimination threshold (in ADC equivalent).
 icarus_triggergate_basic.SelectedAdderThreshold: 492  # 60 mV x (2^14 / 2 V) => 491.52 ADC#
@@ -295,7 +297,9 @@ icarus_triggersimgates_Run1: {
 } # icarus_triggersimgates_Run1
 
 
-icarus_triggersimgates: @local::icarus_triggersimgates_Run1
+icarus_triggersimgates_Run2: @local::icarus_triggersimgates_Run1
+
+icarus_triggersimgates: @local::icarus_triggersimgates_Run2
 
 
 ###
@@ -399,14 +403,29 @@ icarus_triggergate_basic.patterns.S5: {
   inMainWindow:         3  # relevant only to disambiguate the location
 }
 
+icarus_triggergate_basic.patterns.S7: {
+  sumOfOppositeWindows: 7
+  inMainWindow:         4  # relevant only to disambiguate the location
+}
+
 icarus_triggergate_basic.patterns.S8: {
   sumOfOppositeWindows: 8
   inMainWindow:         4  # irrelevant
 }
 
+icarus_triggergate_basic.patterns.S9: {
+  sumOfOppositeWindows: 9
+  inMainWindow:         5  # relevant only to disambiguate the location
+}
+
 icarus_triggergate_basic.patterns.S10: {
   sumOfOppositeWindows: 10
   inMainWindow:          5 # irrelevant
+}
+
+icarus_triggergate_basic.patterns.S15: {
+  sumOfOppositeWindows: 15
+  inMainWindow:          8  # relevant only to disambiguate the location
 }
 
 
