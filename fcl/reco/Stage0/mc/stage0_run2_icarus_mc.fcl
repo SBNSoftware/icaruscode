@@ -27,6 +27,9 @@ physics.outana:        [ purityinfoana0, purityinfoana1 ]
 physics.trigger_paths: [ path ]
 physics.end_paths:     [ outana, streamROOT ]
 
+# because `path` above has no filter, let's not select events and give fast cloning a chance
+outputs.rootOutput.SelectEvents: @erase
+
 # Drop data products that are no longer needed, but make sure to keep important items!
 # For example, we need to drop the RawDigits from the detector simulation stage but want to keep the SimChannel info from WireCell...
 outputs.rootOutput.outputCommands: ["keep *_*_*_*", 
