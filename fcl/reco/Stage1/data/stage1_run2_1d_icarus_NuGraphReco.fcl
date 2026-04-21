@@ -11,3 +11,13 @@ physics.reco: [ @sequence::icarus_filter1D_cluster3D,
 
 physics.producers.cluster3DCryoW.Hit3DBuilderAlg.HitFinderTagVec: ["gaushit1dTPCWW", "gaushit1dTPCWE"]
 physics.producers.cluster3DCryoE.Hit3DBuilderAlg.HitFinderTagVec: ["gaushit1dTPCEW", "gaushit1dTPCEE"]
+
+# update calorimetry tags for showers
+# CryoE
+physics.producers.SBNShowerGausCryoE.ShowerFinderTools[3].CalorimetryAlg: @local::icarus_calorimetryalgdata
+physics.producers.SBNShowerGausCryoE.ShowerFinderTools[5].CalorimetryAlg: @local::icarus_calorimetryalgdata
+physics.producers.SBNShowerGausCryoE.ShowerFinderTools[7].CalorimetryAlg: @local::icarus_calorimetryalgdata
+# CryoW
+physics.producers.SBNShowerGausCryoW.ShowerFinderTools[3].CalorimetryAlg: @local::icarus_calorimetryalgdata
+physics.producers.SBNShowerGausCryoW.ShowerFinderTools[5].CalorimetryAlg: @local::icarus_calorimetryalgdata
+physics.producers.SBNShowerGausCryoW.ShowerFinderTools[7].CalorimetryAlg: @local::icarus_calorimetryalgdata

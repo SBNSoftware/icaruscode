@@ -26,6 +26,8 @@ outputs.out1.outputCommands: [
 # Redefine TPCPMTBarycenterMatch producers with the different Pandora label
 physics.producers.tpcpmtbarycentermatchCryoE.PandoraLabel: "pandoraGausNuGraphReco"
 physics.producers.tpcpmtbarycentermatchCryoW.PandoraLabel: "pandoraGausNuGraphReco"
+physics.producers.tpcpmtbarycentermatchCryoE.UseTimeRange: false
+physics.producers.tpcpmtbarycentermatchCryoW.UseTimeRange: false
 
 # Update Pandora tags after NuGraph for track and shower characterization
 physics.producers.pandoraTrackGausCryoE.PFParticleLabel:       "pandoraGausNuGraphRecoCryoE"
@@ -42,6 +44,16 @@ physics.producers.SBNShowerGausCryoE.PFParticleLabel:          "pandoraGausNuGra
 physics.producers.SBNShowerGausCryoE.UseAllParticles:          true
 physics.producers.SBNShowerGausCryoW.PFParticleLabel:          "pandoraGausNuGraphRecoCryoW"
 physics.producers.SBNShowerGausCryoW.UseAllParticles:          true
+
+# update calorimetry tags for showers
+# CryoE
+physics.producers.SBNShowerGausCryoE.ShowerFinderTools[3].CalorimetryAlg: @local::icarus_calorimetryalgdata
+physics.producers.SBNShowerGausCryoE.ShowerFinderTools[5].CalorimetryAlg: @local::icarus_calorimetryalgdata
+physics.producers.SBNShowerGausCryoE.ShowerFinderTools[7].CalorimetryAlg: @local::icarus_calorimetryalgdata
+# CryoW
+physics.producers.SBNShowerGausCryoW.ShowerFinderTools[3].CalorimetryAlg: @local::icarus_calorimetryalgdata
+physics.producers.SBNShowerGausCryoW.ShowerFinderTools[5].CalorimetryAlg: @local::icarus_calorimetryalgdata
+physics.producers.SBNShowerGausCryoW.ShowerFinderTools[7].CalorimetryAlg: @local::icarus_calorimetryalgdata
 
 physics.analyzers.caloskimE.SelectEvents: [reco]
 physics.analyzers.caloskimW.SelectEvents: [reco]
