@@ -73,7 +73,9 @@ public:
 
     fhicl::Atom<art::InputTag> OpDetWaveformLabel{
         Name("OpDetWaveformLabel"),
-        Comment("Single raw::OpDetWaveform collection covering both cryostats")};
+        Comment("Single raw::OpDetWaveform collection covering both cryostats."
+                " Leave empty to skip collecting and saving raw waveforms."),
+        ""};
 
     fhicl::Atom<art::InputTag> SimPhotonsLabel{
         Name("SimPhotonsLabel"),
@@ -189,6 +191,7 @@ private:
   double fPMTOpHitPeakTime = 0.;
   double fPMTOpHitStartTime = 0.;
   double fPMTOpHitPE = 0.;
+  double fPMTTotalPE = 0.;
   std::vector<short> fPMTWaveform;
   double fPMTWaveformTimestamp = 0.;
   double fPMTPosX = 0., fPMTPosY = 0., fPMTPosZ = 0.;
@@ -290,8 +293,10 @@ void pmtcalib::VerticalTrackFlashWaveformAna::analyze(art::Event const& e)
   fOpticalTickUs = clocks.OpticalClock().TickPeriod();
 
   // Single collections spanning both cryostats.
-  auto const& wfs =
-      *e.getValidHandle<std::vector<raw::OpDetWaveform>>(fOpDetWaveformLabel);
+  static const std::vector<raw::OpDetWaveform> emptyWfs;
+  std::vector<raw::OpDetWaveform> const& wfs = (!fOpDetWaveformLabel.empty())
+      ? e.getProduct<std::vector<raw::OpDetWaveform>>(fOpDetWaveformLabel)
+      : emptyWfs;
 
   auto const timings = detinfo::makeDetectorTimings(clocks);
 
@@ -430,14 +435,20 @@ void pmtcalib::VerticalTrackFlashWaveformAna::setupTree()
   fTree->Branch("pmt_ophit_peak_time", &fPMTOpHitPeakTime, "pmt_ophit_peak_time/D");
   fTree->Branch("pmt_ophit_start_time", &fPMTOpHitStartTime, "pmt_ophit_start_time/D");
   fTree->Branch("pmt_ophit_pe", &fPMTOpHitPE, "pmt_ophit_pe/D");
-  fTree->Branch("pmt_waveform", &fPMTWaveform);
-  fTree->Branch("pmt_waveform_timestamp", &fPMTWaveformTimestamp, "pmt_waveform_timestamp/D");
+  fTree->Branch("pmt_total_pe", &fPMTTotalPE, "pmt_total_pe/D");
   fTree->Branch("pmt_pos_x", &fPMTPosX, "pmt_pos_x/D");
   fTree->Branch("pmt_pos_y", &fPMTPosY, "pmt_pos_y/D");
   fTree->Branch("pmt_pos_z", &fPMTPosZ, "pmt_pos_z/D");
   fTree->Branch("pmt_barycenter_dist", &fPMTBarycenterDist, "pmt_barycenter_dist/D");
 
-  if(!fSimPhotonsLabel.empty())
+  if (!fOpDetWaveformLabel.empty()) {
+    fTree->Branch("pmt_waveform", &fPMTWaveform);
+    fTree->Branch("pmt_waveform_timestamp", &fPMTWaveformTimestamp, "pmt_waveform_timestamp/D");
+  }
+
+  // SimPhotons are filtered against the raw waveform time window, so they
+  // are only meaningful when waveforms are being saved too.
+  if (!fSimPhotonsLabel.empty() && !fOpDetWaveformLabel.empty())
   {
     fTree->Branch("n_sim_photons", &fNSimPhotons, "n_sim_photons/I");
     fTree->Branch("sim_photon_times", &fSimPhotonTimes);
@@ -468,6 +479,7 @@ void pmtcalib::VerticalTrackFlashWaveformAna::resetEntry()
   fPMTOpHitPeakTime = 0.;
   fPMTOpHitStartTime = 0.;
   fPMTOpHitPE = 0.;
+  fPMTTotalPE = 0.;
   fPMTWaveform.clear();
   fPMTWaveformTimestamp = 0.;
   fPMTPosX = fPMTPosY = fPMTPosZ = 0.;
@@ -560,14 +572,20 @@ void pmtcalib::VerticalTrackFlashWaveformAna::fillFlashPMTs(
 {
   auto const& channelMap = art::ServiceHandle<geo::WireReadout const>()->Get();
 
+  bool const saveWaveforms = !fOpDetWaveformLabel.empty();
+
   // A flash can have more than one OpHit on the same channel. Following
   // ICARUSFlashAssAna, keep only the earliest-in-time ophit per channel and
-  // record its values for that single hit.
+  // record its values for that single hit. In parallel, accumulate the sum
+  // of PE over all hits on the channel for this flash (pmt_total_pe).
   std::map<raw::Channel_t, recob::OpHit const*> firstHit;
+  std::map<raw::Channel_t, double> totalPEperChannel;
   for (auto const& hit : ophits) {
-    auto [it, inserted] = firstHit.try_emplace(hit->OpChannel(), hit.get());
+    auto const ch = hit->OpChannel();
+    auto [it, inserted] = firstHit.try_emplace(ch, hit.get());
     if (!inserted && hit->StartTime() < it->second->StartTime())
       it->second = hit.get();
+    totalPEperChannel[ch] += hit->PE();
   }
 
   fFlashNPMTs = static_cast<int>(firstHit.size());
@@ -575,16 +593,18 @@ void pmtcalib::VerticalTrackFlashWaveformAna::fillFlashPMTs(
   for (auto const& [ch, hitPtr] : firstHit) {
     recob::OpHit const& hit = *hitPtr;
 
-    // Extract the per-channel correction once, then use it to shift the
-    // raw waveform timestamp into the same frame as the flash time.
-    double const correction = getTimingCorrection(ch);
-
-    raw::OpDetWaveform const* wf = findCoveringWaveform(wfs, ch, flash.AbsTime(), correction);
-    if (!wf) {
-      mf::LogWarning("VerticalTrackFlashWaveformAna")
-          << "No raw::OpDetWaveform covering flash AbsTime=" << flash.AbsTime()
-          << " us on channel " << ch;
-      continue;
+    raw::OpDetWaveform const* wf = nullptr;
+    if (saveWaveforms) {
+      // Extract the per-channel correction once, then use it to shift the
+      // raw waveform timestamp into the same frame as the flash time.
+      double const correction = getTimingCorrection(ch);
+      wf = findCoveringWaveform(wfs, ch, flash.AbsTime(), correction);
+      if (!wf) {
+        mf::LogWarning("VerticalTrackFlashWaveformAna")
+            << "No raw::OpDetWaveform covering flash AbsTime=" << flash.AbsTime()
+            << " us on channel " << ch;
+        continue;
+      }
     }
 
     auto const pmtPos = channelMap.OpDetGeoFromOpChannel(ch).GetCenter();
@@ -595,42 +615,48 @@ void pmtcalib::VerticalTrackFlashWaveformAna::fillFlashPMTs(
     fPMTOpHitPeakTime = hit.PeakTime();
     fPMTOpHitStartTime = hit.StartTime();
     fPMTOpHitPE = hit.PE();
-    fPMTWaveform = wf->Waveform();
-    fPMTWaveformTimestamp = wf->TimeStamp() + getTimingCorrection(fPMTChannel);
+    fPMTTotalPE = totalPEperChannel[ch];
     fPMTPosX = pmtPos.X();
     fPMTPosY = pmtPos.Y();
     fPMTPosZ = pmtPos.Z();
     fPMTBarycenterDist = std::hypot( fPMTPosX - fTrkBaryX, fPMTPosY - fTrkBaryY, fPMTPosZ - fTrkBaryZ );
 
-    // SimPhotons belonging to this channel and falling inside the current
-    // waveform window. Collection is empty when no SimPhotons product is
-    // available (data, or MC without photon propagation).
+    fPMTWaveform.clear();
+    fPMTWaveformTimestamp = 0.;
     fNSimPhotons = 0;
     fSimPhotonTimes.clear();
     fSimPhotonInitX.clear();
     fSimPhotonInitY.clear();
     fSimPhotonInitZ.clear();
 
-    double const wfstart = fPMTWaveformTimestamp;
-    double const wfend   = wfstart + wf->size() * fOpticalTickUs;
+    if (saveWaveforms) {
+      fPMTWaveform = wf->Waveform();
+      fPMTWaveformTimestamp = wf->TimeStamp() + getTimingCorrection(fPMTChannel);
 
-    for (auto const& simphotons : simphotonsCollection) {
+      // SimPhotons belonging to this channel and falling inside the current
+      // waveform window. Collection is empty when no SimPhotons product is
+      // available (data, or MC without photon propagation).
+      double const wfstart = fPMTWaveformTimestamp;
+      double const wfend   = wfstart + wf->size() * fOpticalTickUs;
 
-      if (simphotons.OpChannel() != fPMTChannel) continue;
+      for (auto const& simphotons : simphotonsCollection) {
 
-      for (auto const& ph : simphotons) {
-        detinfo::timescales::simulation_time const photonTime{ ph.Time };
-        double const t = timings.toElectronicsTime(photonTime).value();
+        if (simphotons.OpChannel() != fPMTChannel) continue;
 
-        if (t < wfstart || t > wfend) continue;
+        for (auto const& ph : simphotons) {
+          detinfo::timescales::simulation_time const photonTime{ ph.Time };
+          double const t = timings.toElectronicsTime(photonTime).value();
 
-        fSimPhotonTimes.push_back(t);
-        fSimPhotonInitX.push_back(ph.InitialPosition.X());
-        fSimPhotonInitY.push_back(ph.InitialPosition.Y());
-        fSimPhotonInitZ.push_back(ph.InitialPosition.Z());
+          if (t < wfstart || t > wfend) continue;
+
+          fSimPhotonTimes.push_back(t);
+          fSimPhotonInitX.push_back(ph.InitialPosition.X());
+          fSimPhotonInitY.push_back(ph.InitialPosition.Y());
+          fSimPhotonInitZ.push_back(ph.InitialPosition.Z());
+        }
       }
+      fNSimPhotons = static_cast<int>(fSimPhotonTimes.size());
     }
-    fNSimPhotons = static_cast<int>(fSimPhotonTimes.size());
 
     fTree->Fill();
   }
