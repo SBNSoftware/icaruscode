@@ -726,7 +726,7 @@ class icarus::trigger::TriggerSimulationOnGates
   /**
    * @brief Converts the trigger information into trigger objects.
    * @param detTimings detector clocks service provider proxy
-   * @param beamGates list of all beam gates to evaluate
+   * @param beamGate beam gate used for the evaluation (in beam gate time scale)
    * @param eventInfo event-wide information to be transferred to trigger data
    * @param triggerNumber the "unique" number to assign to this trigger
    * @param info the information about the fired triggers
@@ -1381,10 +1381,13 @@ auto icarus::trigger::TriggerSimulationOnGates::produceForThreshold(
   for (sim::BeamGateInfo const& beamGate: beamGates) {
     std::vector<WindowTriggerInfo_t> triggerInfos;
     
-    // relative to the beam gate time (also simulation time for MC);
+    // relative to the beam gate time (also simulation time for plain MC);
     nanoseconds start{ toBeamGateTime
       (util::quantities::nanosecond{ beamGate.Start() }, detTimings) };
     nanoseconds const stop{ start + nanoseconds{ beamGate.Width() } };
+    
+    sim::BeamGateInfo const beamGateInBGTime
+      { start.value(), beamGate.Width(), beamGate.BeamType() };
     
     while (start < stop) {
       
@@ -1427,7 +1430,7 @@ auto icarus::trigger::TriggerSimulationOnGates::produceForThreshold(
     // create and store the data product
     //
     auto [ gateTriggers, extraInfo ] = triggerInfoToTriggerData
-      (detTimings, beamGate, eventInfo, triggerNumber++, triggerInfos);
+      (detTimings, beamGateInBGTime, eventInfo, triggerNumber++, triggerInfos);
     
     append(*triggers, std::move(gateTriggers));
     
