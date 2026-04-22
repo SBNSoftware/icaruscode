@@ -1,5 +1,6 @@
 // std inlcudes
 #include <string>
+#include <utility>
 #include <vector>
 
 // ROOT includes
@@ -14,6 +15,10 @@
 #include "art/Framework/Principal/Event.h"
 #include "art/Framework/Services/Registry/ServiceHandle.h"
 #include "art_root_io/TFileService.h"
+#include "canvas/Persistency/Common/Assns.h"
+#include "canvas/Persistency/Common/Ptr.h"
+#include "art/Persistency/Common/PtrMaker.h"
+#include "canvas/Persistency/Common/PtrVector.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
 
 // larsoft includes
@@ -24,11 +29,9 @@
 #include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
 #include "lardata/DetectorInfoServices/DetectorClocksService.h"
 #include "larsim/MCCheater/BackTrackerService.h"
+#include "larsim/MCCheater/ParticleInventoryService.h"
 #include "lardata/Utilities/AssociationUtil.h"
-#include "lardataobj/RawData/RawDigit.h"
-#include "lardataobj/RecoBase/Wire.h"
-#include "sbnobj/ICARUS/TPC/ChannelROI.h"
-#include "icaruscode/TPC/Utilities/ChannelROICreator.h"
+#include "lardataobj/RecoBase/Hit.h"
 
 // wairemlod
 #include "sbncode/WireMod/AIML/WireModInfer.hh"
@@ -36,7 +39,6 @@
 //namespace
 namespace wairemlod
 {
-
   class WaireMLodifier : public art::EDProducer
   {
     public:
@@ -47,6 +49,7 @@ namespace wairemlod
     private:
       const geo::WireReadoutGeom* fWireReadout = &(art::ServiceHandle<geo::WireReadout const>()->Get());
       const art::ServiceHandle<cheat::BackTrackerService> fBT;
+      const art::ServiceHandle<cheat::ParticleInventoryService> fPI;
       std::string fWeightFileName; // there is where we try to grab the weights (full path)
       art::InputTag fHitLabel;  // which hits are we pulling in?
       TH2F* integrals; // store the new/old integrals for the modified hits
@@ -75,7 +78,7 @@ namespace wairemlod
     integrals = tfs->make<TH2F>("integrals", ";Original Integral;Modified Integral",
                                 1000, 0, 1000, 1000, 0, 1000);
     widths    = tfs->make<TH2F>("widths",    ";Original Width;Modified Width",
-                                1000, 0, 1000, 1000, 0, 1000);
+                                 500, 0,  500,  500, 0,  500);
   }
 
   //------------------------------------------------
@@ -86,7 +89,7 @@ namespace wairemlod
       art::ServiceHandle<detinfo::DetectorClocksService const>()->DataFor(evt);
 
     // get the old hits
-    art::Handle< std::vector<recob::Hit> > hitHandle;
+    art::Handle<std::vector<recob::Hit>> hitHandle;
     bool valid_handle = evt.getByLabel(fHitLabel, hitHandle);
     if (not valid_handle)
     {
@@ -94,10 +97,11 @@ namespace wairemlod
         << "WaireMLodifier --- Could not grab handle at " << fHitLabel << ", skip.";
       return;
     }
-    auto const& hitVec(*hitHandle);
+    std::vector<art::Ptr<recob::Hit>> hitPtrVec;
+    art::fill_ptr_vector(hitPtrVec, hitHandle); 
 
     // if there are no hits, just don't bother
-    if (hitVec.size() == 0)
+    if (hitPtrVec.size() == 0)
     {
       mf::LogVerbatim("WaireMLodifier")
         << "WaireMLodifier --- No hits found at " << fHitLabel << ", skip.";
@@ -107,23 +111,33 @@ namespace wairemlod
     // WaireMLodifier
     sys::WaireMLod WM(fWeightFileName);
     std::unique_ptr<std::vector<recob::Hit>> new_hits =
-      std::make_unique<std::vector<recob::Hit>>(WM.produceNew(hitVec, fBT.get(), &detClock, fWireReadout));
+      std::make_unique<std::vector<recob::Hit>>(
+        WM.produceNew(hitPtrVec, fBT.get(), fPI.get(), &detClock, fWireReadout)
+      );
 
-    if (hitVec.size() != new_hits->size())
+    if (hitPtrVec.size() != new_hits->size())
       throw std::runtime_error("WaireMLodifier --- Unequal number of input and output hits");
 
-    for (size_t hit_idx = 0; hit_idx < hitVec.size(); ++hit_idx)
+    for (size_t hit_idx = 0; hit_idx < hitPtrVec.size(); ++hit_idx)
     {
-      float old_integral = hitVec.at(hit_idx).Integral();
-      float old_width    = hitVec.at(hit_idx).RMS();
-      float new_integral = new_hits->at(hit_idx).Integral();
-      float new_width    = new_hits->at(hit_idx).RMS();
-      if (old_integral == new_integral && old_width == new_width)
+      recob::Hit*          newHitPtr = &(new_hits->at(hit_idx));
+      art::Ptr<recob::Hit> oldHitPtr =  hitPtrVec.at(hit_idx);
+
+      mf::LogVerbatim("WaireMLodifier")
+        << "View Check! View " << newHitPtr->View()
+        << " has ThetaZ = " << fWireReadout->Plane(newHitPtr->WireID(), newHitPtr->View()).ThetaZ()
+        << " and WireAngleToVertical = " << fWireReadout->WireAngleToVertical(newHitPtr->View(), newHitPtr->WireID());
+
+      float old_integral = oldHitPtr->Integral();
+      float old_width    = oldHitPtr->RMS();
+      float new_integral = newHitPtr->Integral();
+      float new_width    = newHitPtr->RMS();
+      bool ischanged = (old_integral != new_integral) || (old_width != new_width);
+      if (not ischanged)
         continue;
       integrals->Fill(old_integral, new_integral);
       widths->Fill(old_width, new_width);
     }
-
     evt.put(std::move(new_hits));
   }
   DEFINE_ART_MODULE(WaireMLodifier)
