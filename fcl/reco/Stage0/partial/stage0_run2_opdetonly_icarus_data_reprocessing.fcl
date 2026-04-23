@@ -1,0 +1,56 @@
+## File:    stage0_run2_opdetonly_icarus_data_reprocessing.fcl
+## Purpose: Reprocessing of the optical products for the 2025 SBN "spring" DATA production
+
+#include "stage0_run2_wcdnn_icarus.fcl"
+
+## This job selectively re-runs only the PMT reconstruction path on DATA.
+## This was introduced for the post-processing of the 2025 SBN DATA productions.
+## It recalibrates existing optical hits according the specific needs of that sample.
+## In particular, it assumes the following:
+## - No ophit time re-calibrations needed (they were already correct)
+## - Recalibrates ophit PEs with SPEArea database (they were generated with 
+##   the old icarus_spe.fcl defaults)
+## As a result, this is valid only for RUN-2 (or RUN-3) data reprocessing from that production.
+
+process_name: opstage0
+
+source.inputCommands: [
+  "keep *",
+
+  ## need to throw out anything that is based on optical hits;
+  ## this means optical flashes and pmt/crt matching stuff!
+  ## note: old hits will also be thrown out in output
+  "drop *_opflash*_*_*",      # drop stage0 east/west opflashes
+  "drop *_crtpmt_*_*"         # drop CRT/PMT matches (stage0)
+]
+
+## running simplified stage0 pmt/crt path:
+## recalibrate hits, then run flash matching + pmtcrt matching
+## simplify path removing all other producers
+
+physics.producers.ophit: @local::ophit_recalibrator # force "ophit" name
+
+physics.path: [ 
+            ophit,
+            opflashCryoE,
+            opflashCryoW,
+            crtpmt
+            ]
+
+## recalibrate previously-produced optical hits using the `OpHitRecalibrator` module
+## given the specific target sample, not time recalibration is needed
+## PE recalibration uses SPEArea database (channel-by-channel + correct time period)
+physics.producers.ophit.InputLabel: "ophit::stage0"  # start from hits in previous stage0 execution
+physics.producers.ophit.RecalibratePE: true          # recalibrate PE values
+physics.producers.ophit.UseGainDatabase: true        # speArea db
+physics.producers.ophit.RecalibrateTime: false       # not needed for Run2
+
+# make sure flashes are using the new ophits
+physics.producers.opflashCryoE.OpHitProducer: "ophit::opstage0"
+physics.producers.opflashCryoW.OpHitProducer: "ophit::opstage0"
+
+# now drop old ophits to avoid confusion
+outputs.rootOutput.outputCommands: [
+  "keep *",
+  "drop *_ophit_*_stage0"
+ ]       

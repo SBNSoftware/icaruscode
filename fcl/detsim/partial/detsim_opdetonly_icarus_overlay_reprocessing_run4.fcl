@@ -1,0 +1,14 @@
+## File:    stage0_run4_opdetonly_icarus_data_reprocessing.fcl
+## Purpose: Reprocessing of the optical products for the 2025 SBN "spring" OVERLAY MC production
+
+#include "detsim_opdetonly_icarus_overlay_reprocessing_run2.fcl"
+
+## This job selectively re-runs only the PMT/CRT DetSim path on top of an existing file.
+## This is has been put together only for the post-processing of the 2025 SBN MC OVERLAY
+## productions, and assumes to be starting with its mcstage1 files.
+## It is valid only for RUN-3/RUN-4 productions because it selects their common DetSim tune.
+
+# switch to Run3/Run-4 tune
+physics.producers.opdaq: @local::icarus_simpmt_run4_nonoise
+physics.producers.opdaq.InputModule: "shifted::DetSim"
+physics.producers.opdaq.ApplyTimingDelays: true

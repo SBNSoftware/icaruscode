@@ -34,7 +34,7 @@ icarusDB::PMTTimingCorrectionsProvider::PMTTimingCorrectionsProvider
         fLaserTag   = tags.get<std::string>("LaserTag");
         fCosmicsTag = tags.get<std::string>("CosmicsTag");
         if( fVerbose ) mf::LogInfo(fLogCategory) << "Database tags for timing corrections:\n"
-						 << "Cables corrections  " << fCablesTag << "\n"  
+						 << "Cable corrections   " << fCablesTag << "\n"  
 						 << "Laser corrections   " << fLaserTag  << "\n"
 						 << "Cosmics corrections " << fCosmicsTag;
     }
