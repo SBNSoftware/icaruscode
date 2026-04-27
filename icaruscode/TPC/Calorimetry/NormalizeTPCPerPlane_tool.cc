@@ -24,10 +24,10 @@
 namespace icarus {
   namespace calo {
 
-class NormalizeTPC : public INormalizeCharge
+class NormalizeTPCPerPlane : public INormalizeCharge
 {
 public:
-  NormalizeTPC(fhicl::ParameterSet const &pset);
+  NormalizeTPCPerPlane(fhicl::ParameterSet const &pset);
 
   void configure(const fhicl::ParameterSet& pset) override;
   double Normalize(double dQdx, const art::Event &e, const recob::Hit &h, const geo::Point_t &location, const geo::Vector_t &direction, double t0) override;
@@ -52,27 +52,27 @@ private:
   std::map<uint64_t, ScaleInfo> fScaleInfos;
 };
 
-DEFINE_ART_CLASS_TOOL(NormalizeTPC)
+DEFINE_ART_CLASS_TOOL(NormalizeTPCPerPlane)
 
   } // end namespace calo
 } // end namespace icarus
 
 
-icarus::calo::NormalizeTPC::NormalizeTPC(fhicl::ParameterSet const &pset) {
+icarus::calo::NormalizeTPCPerPlane::NormalizeTPCPerPlane(fhicl::ParameterSet const &pset) {
   this->configure(pset);
 }
 
-void icarus::calo::NormalizeTPC::configure(const fhicl::ParameterSet& pset) {
+void icarus::calo::NormalizeTPCPerPlane::configure(const fhicl::ParameterSet& pset) {
   fURL = pset.get<std::string>("URL");
   fTimeout = pset.get<unsigned>("Timeout");
   fVerbose = pset.get<bool>("Verbose", false);
 }
 
-std::string icarus::calo::NormalizeTPC::URL(uint64_t run) {
+std::string icarus::calo::NormalizeTPCPerPlane::URL(uint64_t run) {
   return fURL + std::to_string(run);
 }
 
-icarus::calo::NormalizeTPC::ScaleInfo icarus::calo::NormalizeTPC::GetScaleInfo(uint64_t run) {
+icarus::calo::NormalizeTPCPerPlane::ScaleInfo icarus::calo::NormalizeTPCPerPlane::GetScaleInfo(uint64_t run) {
   // check the cache
   if (fScaleInfos.count(run)) {
     return fScaleInfos.at(run);
@@ -82,17 +82,17 @@ icarus::calo::NormalizeTPC::ScaleInfo icarus::calo::NormalizeTPC::GetScaleInfo(u
   int error = 0;
   std::string url = URL(run);
 
-  if (fVerbose) std::cout << "NormalizeTPC Tool -- New Scale info, requesting data from url:\n" << url << std::endl;
+  if (fVerbose) std::cout << "NormalizeTPCPerPlane Tool -- New Scale info, requesting data from url:\n" << url << std::endl;
 
   Dataset d = getDataWithTimeout(url.c_str(), "", fTimeout, &error);
   if (error) {
-    throw cet::exception("NormalizeTPC") << "Calibration Database access failed. URL: (" << url << ") Error Code: " << error;
+    throw cet::exception("NormalizeTPCPerPlane") << "Calibration Database access failed. URL: (" << url << ") Error Code: " << error;
   }
 
-  if (fVerbose) std::cout << "NormalizeTPC Tool -- Received HTTP response:\n" << getHTTPmessage(d) << std::endl;
+  if (fVerbose) std::cout << "NormalizeTPCPerPlane Tool -- Received HTTP response:\n" << getHTTPmessage(d) << std::endl;
 
   if (getHTTPstatus(d) != 200) {
-    throw cet::exception("NormalizeTPC") 
+    throw cet::exception("NormalizeTPCPerPlane") 
       << "Calibration Database access failed. URL: (" << url
       << "). HTTP error status: " << getHTTPstatus(d) << ". HTTP error message: " << getHTTPmessage(d);
   }
@@ -103,7 +103,7 @@ icarus::calo::NormalizeTPC::ScaleInfo icarus::calo::NormalizeTPC::GetScaleInfo(u
   // Number of rows
   int n_tuple = getNtuples(d);
   if (n_tuple < 0) {
-    throw cet::exception("NormalizeTPC") << "Calibration Database access failed. URL: (" << url << ") Bad Tuple Number: " << n_tuple;
+    throw cet::exception("NormalizeTPCPerPlane") << "Calibration Database access failed. URL: (" << url << ") Bad Tuple Number: " << n_tuple;
   }
 
   // Iterate over the rows
@@ -115,13 +115,13 @@ icarus::calo::NormalizeTPC::ScaleInfo icarus::calo::NormalizeTPC::GetScaleInfo(u
     // Get the itpc number
     int ch = getLongValue(tup, 0, &err);
     if (error) {
-      throw cet::exception("NormalizeTPC") << "Calibration Database access failed. URL: (" << url << ") Failed on tuple access, row: " << row << ", col 0. Error Code: " << error;
+      throw cet::exception("NormalizeTPCPerPlane") << "Calibration Database access failed. URL: (" << url << ") Failed on tuple access, row: " << row << ", col 0. Error Code: " << error;
     }
 
     // and the scale
     double scale = getDoubleValue(tup, 3, &err);
     if (error) {
-      throw cet::exception("NormalizeTPC") << "Calibration Database access failed. URL: (" << url << ") Failed on tuple access, row: " << row << ", col 1. Error Code: " << error;
+      throw cet::exception("NormalizeTPCPerPlane") << "Calibration Database access failed. URL: (" << url << ") Failed on tuple access, row: " << row << ", col 1. Error Code: " << error;
     }
 
     thisscale.scale[ch] = scale;
@@ -133,7 +133,7 @@ icarus::calo::NormalizeTPC::ScaleInfo icarus::calo::NormalizeTPC::GetScaleInfo(u
   return thisscale;
 }
 
-double icarus::calo::NormalizeTPC::Normalize(double dQdx, const art::Event &e, 
+double icarus::calo::NormalizeTPCPerPlane::Normalize(double dQdx, const art::Event &e, 
     const recob::Hit &hit, const geo::Point_t &location, const geo::Vector_t &direction, double t0) {
   // Get the info
   ScaleInfo i = GetScaleInfo(e.id().runID().run());
@@ -151,7 +151,7 @@ double icarus::calo::NormalizeTPC::Normalize(double dQdx, const art::Event &e,
   // TODO: what to do if no scale is found? throw an exception??
   if (i.scale.count(itpc_plane)) scale = i.scale.at(itpc_plane);
 
-  if (fVerbose) std::cout << "NormalizeTPCPerPlaneSQL Tool -- Data at Cryo: " << cryo << " TPC: " << tpc << " Plane: " << plane << " itpc_plane: " << itpc_plane << " scale: " << scale << std::endl;
+  if (fVerbose) std::cout << "NormalizeTPCPerPlane Tool -- Data at Cryo: " << cryo << " TPC: " << tpc << " Plane: " << plane << " itpc_plane: " << itpc_plane << " scale: " << scale << std::endl;
 
   return dQdx * scale;
 }
