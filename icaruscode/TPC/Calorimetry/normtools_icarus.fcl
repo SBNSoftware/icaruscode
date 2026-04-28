@@ -62,7 +62,8 @@ yznorm_sql: {
 icarus_calonormtools: [@local::driftnorm_sql, @local::yznorm_sql, @local::tpcgain_sql]
 
 # GP 8/4/25 -- Update gain to re-measurement with Run 2 stopping muons and 
-# fixed recombination.
+# fixed recombination. Details about this change are located in the Run 2+4
+# Calibration Tech Note (SBN DocDB 44460).
 icarus_data_calconst: [0.016751, 0.012755, 0.012513]
 
 END_PROLOG
