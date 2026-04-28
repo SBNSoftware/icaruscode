@@ -118,6 +118,10 @@ services.message.destinations :
          limit: -1
          reportEvery: 1
        }
+       SimDriftElectrons:
+       {
+         limit: 0
+       }
      }
   }
 }

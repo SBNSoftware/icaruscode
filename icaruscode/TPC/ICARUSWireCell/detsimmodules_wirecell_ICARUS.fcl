@@ -2,6 +2,8 @@
 #include "services_basic_icarus.fcl"
 // We need this for diffusion
 #include "simulationservices_icarus.fcl"
+// lookup calibration tags
+#include "calibration_database_GlobalTags_icarus.fcl"
 
 BEGIN_PROLOG
 
@@ -35,6 +37,11 @@ icarus_simwire_wirecell:
 	    file_rcresp: "icarus_fnal_rc_tail.json" # use the RCResponse by default
 	    cathode_input_format: "array" # scalar (flat) or array (bent)
             SimEnergyDepositLabel: "ionization"
+            # yz map config -- default to Run 2
+            YZScaleMapJson: "yzmap_gain_icarus_v4_run2.json"
+            YZMapJson: "yzmap_icarus_v3_run2.json"
+            DBFileName: "tpc_elifetime_data"
+            DBTag: @local::ICARUS_Calibration_GlobalTags.tpc_elifetime_data
 	}
         structs: {
             # load values from simulationservices_icarus.fcl
@@ -54,19 +61,18 @@ icarus_simwire_wirecell:
 	    overlay_drifter: false # default drifter by default
 
             # Gain and shaping time
-            gain0: 17.05212   # mV/fC 
-            gain1: 12.6181926 # mV/fC 
-            gain2: 13.0261362 # mV/fC 
+            gain0: 18.0839  # mV/fC 
+            gain1: 12.2379 # mV/fC 
+            gain2: 13.8819 # mV/fC 
 
             shaping0: 1.3 # us
             shaping1: 1.45 # us
             shaping2: 1.3 # us
 
-            # Time offsets for truth matching
-            time_offset_u: 0.0 # us
-            time_offset_v: 0.0 # us
-            time_offset_y: 0.0 # us
-
+            # Time offsets for truth matching -- tuned to 2D deconvolution output
+            time_offset_u: 2.53 # us
+            time_offset_v: 2.41 # us
+            time_offset_y: 2.53 # us
         }
     }
 }
@@ -80,6 +86,14 @@ icarus_simwire_wirecell_SConly.wcls_main.outputers:[
 
 icarus_simwire_wirecell_shifted: @local::icarus_simwire_wirecell
 icarus_simwire_wirecell_shifted.wcls_main.params.SimEnergyDepositLabel: "shifted"
+
+icarus_simwire_wirecell_shifted_overlay: @local::icarus_simwire_wirecell_shifted
+icarus_simwire_wirecell_shifted_overlay.wcls_main.structs.coh_noise_scale: 0.0 # disable noise
+icarus_simwire_wirecell_shifted_overlay.wcls_main.structs.int_noise_scale: 0.0 # ditto
+icarus_simwire_wirecell_shifted_overlay.wcls_main.structs.overlay_drifter: true
+icarus_simwire_wirecell_shifted_overlay.wcls_main.plugins: [@sequence::icarus_simwire_wirecell_shifted_overlay.wcls_main.plugins, "WireCellICARUSDrifter"]
+icarus_simwire_wirecell_shifted_overlay.wcls_main.inputers: ["wclsSimDepoSetSource:electron", "wclsICARUSDrifter:drifter"]
+icarus_simwire_wirecell_shifted_overlay.wcls_main.params.cathode_input_format: "scalar"
 
 icarus_simwire_wirecell_filtersed: @local::icarus_simwire_wirecell
 icarus_simwire_wirecell_filtersed.wcls_main.params.SimEnergyDepositLabel: "filtersed"

@@ -33,7 +33,11 @@ outputs.rootOutput.outputCommands: ["keep *_*_*_*",
                                     "drop *_decon1droi_*_*", 
                                     "drop *_decon2droi*_*_*",
                                     "drop recob::Wire*_roifinder*_*_*", 
-                                    "keep *_daq_simpleSC*_*"]
+                                    "drop *_overlayOpWaveforms_*_*",
+                                    "drop raw::OpDetWaveform*_shifted_*_*",
+                                    "keep *_daq_simpleSC*_*",
+                                    "keep *_daqPMT_*_*"
+]
 
 # Set the expected input for ophit
 physics.producers.ophit.InputModule: "shifted"
