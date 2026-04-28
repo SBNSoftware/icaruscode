@@ -67,7 +67,7 @@ private:
     void makeRawDigitAssns(const art::Event&, art::Assns<raw::RawDigit, recob::Hit>&, RecobHitToPtrMap&) const;
 
     /**
-     *  @brief Create recob::ChannelROI to recob::Hit associatins
+     *  @brief Create recob::ChannelROI to recob::Hit associations
      */
     void makeChanROIAssns(const art::Event&, art::Assns<recob::ChannelROI, recob::Hit>&, RecobHitToPtrMap&) const;
 
