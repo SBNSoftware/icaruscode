@@ -54,6 +54,7 @@ namespace wairemlod
       art::InputTag fHitLabel;  // which hits are we pulling in?
       TH2F* integrals; // store the new/old integrals for the modified hits
       TH2F* widths; // store the new/old widths for the modified hits
+      TH2F* data; // store the data hit widths/integrals
 
   }; // end WaireMLodifier class
 
@@ -76,9 +77,11 @@ namespace wairemlod
     // setup output histograms
     art::ServiceHandle<art::TFileService> tfs;
     integrals = tfs->make<TH2F>("integrals", ";Original Integral;Modified Integral",
-                                1000, 0, 1000, 1000, 0, 1000);
+                                10000, 0, 10000, 10000, 0, 10000);
     widths    = tfs->make<TH2F>("widths",    ";Original Width;Modified Width",
-                                 500, 0,  500,  500, 0,  500);
+                                  500, 0,   500,   500, 0,   500);
+    data      = tfs->make<TH2F>("data",      ";Data Integral; Data Width",
+                                10000, 0, 10000,   500, 0,   500);
   }
 
   //------------------------------------------------
@@ -123,18 +126,30 @@ namespace wairemlod
       recob::Hit*          newHitPtr = &(new_hits->at(hit_idx));
       art::Ptr<recob::Hit> oldHitPtr =  hitPtrVec.at(hit_idx);
 
-      mf::LogVerbatim("WaireMLodifier")
-        << "View Check! View " << newHitPtr->View()
-        << " has ThetaZ = " << fWireReadout->Plane(newHitPtr->WireID(), newHitPtr->View()).ThetaZ()
-        << " and WireAngleToVertical = " << fWireReadout->WireAngleToVertical(newHitPtr->View(), newHitPtr->WireID());
-
       float old_integral = oldHitPtr->Integral();
       float old_width    = oldHitPtr->RMS();
       float new_integral = newHitPtr->Integral();
       float new_width    = newHitPtr->RMS();
       bool ischanged = (old_integral != new_integral) || (old_width != new_width);
+
+      // Try the backtracker to get the position
+      // If this fails it's a data or overlay hit
+      // Is this a silly way to check? Maybe, but it works
+      try
+      {
+        // we don't care about this output, just if it fails
+        std::vector<double> hitXYZ = fBT->HitToXYZ(detClock, *oldHitPtr);
+      }
+      catch (...)
+      {
+        // data hit
+        data->Fill(old_integral, old_width);
+        continue;
+      }
+      
       if (not ischanged)
         continue;
+
       integrals->Fill(old_integral, new_integral);
       widths->Fill(old_width, new_width);
     }
