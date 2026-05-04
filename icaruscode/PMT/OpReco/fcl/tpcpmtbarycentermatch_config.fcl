@@ -9,6 +9,7 @@ tpcpmtbarycentermatch_common_params:
     UseTimeRange:     true
     Verbose:          false
     FillMatchTree:    false
+    TriggerDelay:     0.6
     TriggerTolerance: 0.15
     TimeRangeMargin:  35.
 }
@@ -20,13 +21,11 @@ tpcpmtbarycentermatch_common_params:
 tpcpmtbarycentermatch_data_params:
 {   
     TriggerLabel:  "daqTrigger"
-    TriggerDelay:  0.6
 }
 
 tpcpmtbarycentermatch_mc_params:
 {
     TriggerLabel:  "emuTrigger"
-    TriggerDelay:  0.02
 }
 
 ######
