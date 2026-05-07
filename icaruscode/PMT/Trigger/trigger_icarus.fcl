@@ -282,8 +282,10 @@ icarus_region_finder: {
 #            Simulation adds the delay, then the shifting to trigger time eats it,
 #            and the hit correction effectively moves the hits away from the trigger.
 #            There are other ways to estimate it (e.g. average on DB coefficients!)
+# [20260507] tuning Run2 gates: spills 128 ns (BNB) and 200 ns (NuMI) after gate
+#            opening; values hard-coded because they're observed in Run2 data
 #
-icarus_triggersimgates_Run1: {
+icarus_triggersimgates_Run2: {
 
   module_type: FixBeamGateInfo
 
@@ -292,20 +294,20 @@ icarus_triggersimgates_Run1: {
   Changes: [  # gates of type not included are left unchanged
     { # for BNB gates
       Select: { Types: [ "BNB" ] }
-      Start:  { SetTo: "+0.065 us" }
-      Width:  { SetTo: @local::BNB_settings.spill_duration  Add: "0.5 us" }
+      Start:  { SetTo: "+0.137 us" }
+      Width:  { SetTo: "2.1 us" }
     },
     { # for NuMI gates
       Select: { Types: [ "NuMI" ]}
       Start:  { SetTo: "+0.065 us" }
-      Width:  { SetTo: @local::NuMI_settings.spill_duration  Add: "0.6 us" }
+      Width:  { SetTo: "10.0 us" }
     }
     ]
 
-} # icarus_triggersimgates_Run1
+} # icarus_triggersimgates_Run2
 
 
-icarus_triggersimgates_Run2: @local::icarus_triggersimgates_Run1
+icarus_triggersimgates_Run1: @local::icarus_triggersimgates_Run2
 
 icarus_triggersimgates: @local::icarus_triggersimgates_Run2
 
