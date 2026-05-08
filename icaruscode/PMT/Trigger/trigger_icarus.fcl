@@ -283,7 +283,10 @@ icarus_region_finder: {
 #            and the hit correction effectively moves the hits away from the trigger.
 #            There are other ways to estimate it (e.g. average on DB coefficients!)
 # [20260507] tuning Run2 gates: spills 128 ns (BNB) and 200 ns (NuMI) after gate
-#            opening; values hard-coded because they're observed in Run2 data
+#            opening; expecting neutrinos to appear at +30 ns (simulation time)
+#            because of simulated propagation time from the flux window (-20 m)
+#            to the face of the detector (~-10 m); values hard-coded because
+#            they're observed in Run2 data
 #
 icarus_triggersimgates_Run2: {
 
@@ -294,7 +297,7 @@ icarus_triggersimgates_Run2: {
   Changes: [  # gates of type not included are left unchanged
     { # for BNB gates
       Select: { Types: [ "BNB" ] }
-      Start:  { SetTo: "+0.137 us" }
+      Start:  { SetTo: "+0.100 us" }
       Width:  { SetTo: "2.1 us" }
     },
     { # for NuMI gates
