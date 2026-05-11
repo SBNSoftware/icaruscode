@@ -51,9 +51,12 @@ namespace wiremod
       const geo::WireReadoutGeom* fWireReadout = &(art::ServiceHandle<geo::WireReadout const>()->Get());
       const detinfo::DetectorClocksData fDetClocksData = art::ServiceHandle<detinfo::DetectorClocksService>()->DataForJob();
       const art::ServiceHandle<cheat::BackTrackerService> fBT;
-      std::string fRatioFileName; // there is where we try to grab the splines/graphs (if they exist)
+      std::string fRatioFileName_XXW; // there is where we try to grab the splines/graphs (if they exist)
       std::vector<TGraph2D*> fGraph_charge_XXW;
       std::vector<TGraph2D*> fGraph_sigma_XXW;
+      std::string fRatioFileName_YZ;
+      std::vector<TGraph2D*> fGraph_charge_YZ;
+      std::vector<TGraph2D*> fGraph_sigma_YZ;
       art::InputTag fWireLabel; // which wires are we pulling in?
       art::InputTag fHitLabel;  // which hits are we pulling in?
       art::InputTag fEDepLabel; // which are the EDeps?
@@ -158,13 +161,13 @@ namespace wiremod
 
     // try to read in the graphs/splines from a file
     // if that file does not exist then fake them
-    fRatioFileName = pset.get<std::string>("RatioFileName", "NOFILE");
+    fRatioFileName_XXW = pset.get<std::string>("RatioFileName_XXW", "NOFILE");
     fLocalRatios = pset.get<bool>("LocalRatios", false);
-    if (fRatioFileName == "NOFILE")
+    if (fRatioFileName_XXW == "NOFILE")
     {
       mf::LogVerbatim("WireModifierXXW")
         << "WireModifierXXW::reconfigure - No ratio file given. No scaling is applied...";
-    } else if (fRatioFileName == "DUMMYSCALE")
+    } else if (fRatioFileName_XXW == "DUMMYSCALE")
     {
       mf::LogVerbatim("WireModifierXXW")
         << "WireModifierXXW::reconfigure - Fake universal 2x scaling is applied...";
@@ -196,9 +199,9 @@ namespace wiremod
         dir_path = ".";
       }
       mf::LogDebug("WireModifierXXW")
-        << "WireModifierXXW::reconfigure - Get file " << fRatioFileName
+        << "WireModifierXXW::reconfigure - Get file " << fRatioFileName_XXW
         << " from directory " << dir_path;
-      TFile* ratioFile = new TFile((dir_path + "/" + fRatioFileName).c_str(), "READ"); // read only
+      TFile* ratioFile = new TFile((dir_path + "/" + fRatioFileName_XXW).c_str(), "READ"); // read only
       assert(ratioFile && "WireModifierXXW::reconfigure - Could not open ratio file");
       // the file exists! pull the ratios
       assert(ratioFile && "WireModifierXXW::reconfigure - WireMod Ratio File Must Exist!");
@@ -206,11 +209,11 @@ namespace wiremod
         && "WireModifierXXW::reconfigure - WireMod Ratio File Must Not be a Zombie!");
       mf::LogVerbatim("WireModifierXXW")
         << "WireModifierXXW::reconfigure - Getting XXW Scales...";
-      std::vector<std::string> nameVec_charge_XXW = pset.get<std::vector<std::string>>("XXWScaleHeight");
+      std::vector<std::string> nameVec_charge_XXW = pset.get<std::vector<std::string>>("XXWScaleIntegral");
       for (auto const& name : nameVec_charge_XXW)
       {
         mf::LogDebug("WireModifierXXW")
-          << "WireModifierXXW::reconfigure - Looking for " << name << " in TFile " << fRatioFileName << "...";
+          << "WireModifierXXW::reconfigure - Looking for " << name << " in TFile " << fRatioFileName_XXW << "...";
         TGraph2D* temp = static_cast<TGraph2D*>(ratioFile->Get<TGraph2D>(name.c_str())->Clone());
         if (temp != nullptr)
         {
@@ -230,7 +233,7 @@ namespace wiremod
       for (auto const& name : nameVec_sigma_XXW)
       {
         mf::LogDebug("WireModifierXXW")
-          << "WireModifierXXW::reconfigure - Looking for " << name << " in TFile " << fRatioFileName << "...";
+          << "WireModifierXXW::reconfigure - Looking for " << name << " in TFile " << fRatioFileName_XXW << "...";
         TGraph2D* temp = static_cast<TGraph2D*>(ratioFile->Get<TGraph2D>(name.c_str())->Clone());
         if (temp != nullptr)
         {
@@ -241,6 +244,68 @@ namespace wiremod
           if (fXAbs)
             shapeGraphPos(*temp, readout::TPCsetID(fCryo, fTPCset));
           fGraph_sigma_XXW.push_back(temp);
+        } else {
+          mf::LogDebug("WireModifierXXW")
+            << "WireModifierXXW::reconfigure -  ...not found";
+        }
+      }
+    }
+    fRatioFileName_YZ = pset.get<std::string>("RatioFileName_YZ", "NOFILE");
+    fLocalRatios = pset.get<bool>("LocalRatios", false);
+    if (fRatioFileName_YZ == "NOFILE")
+    {
+      mf::LogVerbatim("WireModifierXXW")
+        << "WireModifierXXW::reconfigure - No ratio file given. No scaling is applied...";
+    } else {
+      std::string dir_path;
+      if (not fLocalRatios)
+      {
+        char* icaruscode_dir = std::getenv("ICARUSCODE_DIR");
+        assert(icaruscode_dir
+          && "WireModifierXXW::reconfigure - ICARUSCODE_DIR environment variable must be set!");
+        dir_path = std::string(icaruscode_dir) + "/root/WireMod";
+      } else
+      {
+        dir_path = ".";
+      }
+      mf::LogDebug("WireModifierXXW")
+        << "WireModifierXXW::reconfigure - Get file " << fRatioFileName_YZ
+        << " from directory " << dir_path;
+      TFile* ratioFile = new TFile((dir_path + "/" + fRatioFileName_YZ).c_str(), "READ"); // read only
+      assert(ratioFile && "WireModifierXXW::reconfigure - Could not open ratio file");
+      // the file exists! pull the ratios
+      assert(ratioFile && "WireModifierXXW::reconfigure - WireMod Ratio File Must Exist!");
+      assert(!ratioFile->IsZombie()
+        && "WireModifierXXW::reconfigure - WireMod Ratio File Must Not be a Zombie!");
+      mf::LogVerbatim("WireModifierXXW")
+        << "WireModifierXXW::reconfigure - Getting XXW Scales...";
+      std::vector<std::string> nameVec_charge_YZ = pset.get<std::vector<std::string>>("YZScaleIntegral");
+      for (auto const& name : nameVec_charge_YZ)
+      {
+        mf::LogDebug("WireModifierXXW")
+          << "WireModifierXXW::reconfigure - Looking for " << name << " in TFile " << fRatioFileName_YZ << "...";
+        TGraph2D* temp = static_cast<TGraph2D*>(ratioFile->Get<TGraph2D>(name.c_str())->Clone());
+        if (temp != nullptr)
+        {
+          mf::LogDebug("WireModifierXXW")
+            << "WireModifierXXW::reconfigure -  ...found";
+          fGraph_charge_YZ.push_back(temp);
+        } else {
+          mf::LogDebug("WireModifierXXW")
+            << "WireModifierXXW::reconfigure -  ...not found";
+        }
+      }
+      std::vector<std::string> nameVec_sigma_YZ = pset.get<std::vector<std::string>>("YZScaleWidth");
+      for (auto const& name : nameVec_sigma_YZ)
+      {
+        mf::LogDebug("WireModifierXXW")
+          << "WireModifierXXW::reconfigure - Looking for " << name << " in TFile " << fRatioFileName_YZ << "...";
+        TGraph2D* temp = static_cast<TGraph2D*>(ratioFile->Get<TGraph2D>(name.c_str())->Clone());
+        if (temp != nullptr)
+        {
+          mf::LogDebug("WireModifierXXW")
+            << "WireModifierXXW::reconfigure -  ...found";
+          fGraph_sigma_YZ.push_back(temp);
         } else {
           mf::LogDebug("WireModifierXXW")
             << "WireModifierXXW::reconfigure -  ...not found";
@@ -350,14 +415,22 @@ namespace wiremod
     sys::WireModUtility wmUtil(fGeometry, fWireReadout, detProp,
                                false, // Channel Scale
                                false, // X
-                               false, // YZ
+                               (fRatioFileName_YZ != "NOFILE"), // YZ
                                false, // XZ-Angle
                                false, // YZ-Angle
                                false, // dE/dx
-                               true,  // X-ThXW
+                               (fRatioFileName_XXW != "NOFILE"),  // X-ThXW
                                BT_Offset); // Tick Offset
-    wmUtil.graph2Ds_Charge_XXW = fGraph_charge_XXW;
-    wmUtil.graph2Ds_Sigma_XXW  = fGraph_sigma_XXW;
+    if (fRatioFileName_YZ != "NOFILE")
+    {
+      wmUtil.graph2Ds_Charge_YZ = fGraph_charge_YZ;
+      wmUtil.graph2Ds_Sigma_YZ  = fGraph_sigma_YZ;
+    }
+    if (fRatioFileName_XXW != "NOFILE")
+    {
+      wmUtil.graph2Ds_Charge_XXW = fGraph_charge_XXW;
+      wmUtil.graph2Ds_Sigma_XXW  = fGraph_sigma_XXW;
+    }
 
     // add some debugging here
     mf::LogVerbatim("WireModifierXXW")
