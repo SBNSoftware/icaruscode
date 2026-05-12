@@ -114,14 +114,14 @@ icarus::calo::NormalizeTPCPerPlane::ScaleInfo icarus::calo::NormalizeTPCPerPlane
     int err = 0;
     // Get the itpc number
     int ch = getLongValue(tup, 0, &err);
-    if (error) {
-      throw cet::exception("NormalizeTPCPerPlane") << "Calibration Database access failed. URL: (" << url << ") Failed on tuple access, row: " << row << ", col 0. Error Code: " << error;
+    if (err) {
+      throw cet::exception("NormalizeTPCPerPlane") << "Calibration Database access failed. URL: (" << url << ") Failed on tuple access, row: " << row << ", col 0. Error Code: " << err;
     }
 
     // and the scale
     double scale = getDoubleValue(tup, 3, &err);
-    if (error) {
-      throw cet::exception("NormalizeTPCPerPlane") << "Calibration Database access failed. URL: (" << url << ") Failed on tuple access, row: " << row << ", col 1. Error Code: " << error;
+    if (err) {
+      throw cet::exception("NormalizeTPCPerPlane") << "Calibration Database access failed. URL: (" << url << ") Failed on tuple access, row: " << row << ", col 1. Error Code: " << err;
     }
 
     thisscale.scale[ch] = scale;
