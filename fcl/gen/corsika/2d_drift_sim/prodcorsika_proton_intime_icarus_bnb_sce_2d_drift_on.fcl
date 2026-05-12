@@ -1,4 +1,0 @@
-#include "prodcorsika_proton_intime_icarus_bnb.fcl"
-
-#include "enable_spacecharge_services_icarus_2D_DriftSimOnly.fcl"
-

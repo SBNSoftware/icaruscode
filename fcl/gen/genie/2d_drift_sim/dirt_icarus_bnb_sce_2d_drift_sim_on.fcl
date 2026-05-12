@@ -1,3 +1,0 @@
-#include "dirt_icarus_bnb.fcl"
-
-#include "enable_spacecharge_services_icarus_2D_DriftSimOnly.fcl"

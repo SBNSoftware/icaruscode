@@ -46,13 +46,14 @@ if [[ -n "$MRB_BUILDDIR" ]]; then
   fi
 fi
 
-if [[ -n "$MRB_SOURCE" ]]; then
-  SourceFHiCLdir="${MRB_SOURCE}/icaruscode/fcl"
-  if [[ -d "$SourceFHiCLdir" ]]; then
-    echo "Will test the job configuration directory in MRB source area ('${SourceFHiCLdir}')"
-    TestDirs+=( "$SourceFHiCLdir" )
-  fi
-fi
+# only test installed fcl files
+#if [[ -n "$MRB_SOURCE" ]]; then
+#  SourceFHiCLdir="${MRB_SOURCE}/icaruscode/fcl"
+#  if [[ -d "$SourceFHiCLdir" ]]; then
+#    echo "Will test the job configuration directory in MRB source area ('${SourceFHiCLdir}')"
+#    TestDirs+=( "$SourceFHiCLdir" )
+#  fi
+#fi
 
 if [[ "${#TestDirs[@]}]" == 0 ]]; then
   echo "FATAL: no suitable FHiCL directory found to be tested!" >&2

@@ -1,10 +1,11 @@
 add_subdirectory(single)
 add_subdirectory(corsika)
-add_subdirectory(cosmics)
+# LegacyLArG4 is not available when building with geant 4.11
+#add_subdirectory(cosmics)
+#add_subdirectory(overlay)
 add_subdirectory(genie)
 add_subdirectory(MultiVertex)
 add_subdirectory(numi)
-add_subdirectory(overlay)
 add_subdirectory(background)
 add_subdirectory(text)
 add_subdirectory(mevprtl)
