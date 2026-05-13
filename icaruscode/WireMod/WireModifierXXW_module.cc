@@ -226,7 +226,17 @@ namespace wiremod
           fGraph_charge_XXW.push_back(temp);
         } else {
           mf::LogDebug("WireModifierXXW")
-            << "WireModifierXXW::reconfigure -  ...not found";
+            << "WireModifierXXW::reconfigure -  ...not found. Don't scale for this plane.";
+          // make a graph spanning -400 to 400 in X and -4 to 4 in ThXW (for completeness)
+          // all point have a value of 1
+          temp = new TGraph2D();
+          for (size_t idx = 0; idx < 4; ++idx)
+          {
+            double x = (static_cast<double>(idx & 2) - 1)*400;
+            double y = (static_cast<double>(2*(idx & 1)) - 1)*4;
+            temp->AddPoint(x, y, 1);
+          }
+          fGraph_charge_XXW.push_back(temp);
         }
       }
       std::vector<std::string> nameVec_sigma_XXW = pset.get<std::vector<std::string>>("XXWScaleWidth");
@@ -246,7 +256,17 @@ namespace wiremod
           fGraph_sigma_XXW.push_back(temp);
         } else {
           mf::LogDebug("WireModifierXXW")
-            << "WireModifierXXW::reconfigure -  ...not found";
+            << "WireModifierXXW::reconfigure -  ...not found. Don't scale for this plane.";
+          // make a graph spanning -400 to 400 in X and -4 to 4 in ThXW (for completeness)
+          // all point have a value of 1
+          temp = new TGraph2D();
+          for (size_t idx = 0; idx < 4; ++idx)
+          {
+            double x = (static_cast<double>(idx & 2) - 1)*400;
+            double y = (static_cast<double>(2*(idx & 1)) - 1)*4;
+            temp->AddPoint(x, y, 1);
+          }
+          fGraph_sigma_XXW.push_back(temp);
         }
       }
     }
@@ -292,7 +312,17 @@ namespace wiremod
           fGraph_charge_YZ.push_back(temp);
         } else {
           mf::LogDebug("WireModifierXXW")
-            << "WireModifierXXW::reconfigure -  ...not found";
+            << "WireModifierXXW::reconfigure -  ...not found. Don't scale for this plane.";
+          // make a graph spanning -400 to 400 in X and -4 to 4 in ThXW (for completeness)
+          // all point have a value of 1
+          temp = new TGraph2D();
+          for (size_t idx = 0; idx < 4; ++idx)
+          {
+            double x = (static_cast<double>(idx & 2) - 1)*400;
+            double y = (static_cast<double>(2*(idx & 1)) - 1)*4;
+            temp->AddPoint(x, y, 1);
+          }
+          fGraph_charge_YZ.push_back(temp);
         }
       }
       std::vector<std::string> nameVec_sigma_YZ = pset.get<std::vector<std::string>>("YZScaleWidth");
@@ -308,7 +338,17 @@ namespace wiremod
           fGraph_sigma_YZ.push_back(temp);
         } else {
           mf::LogDebug("WireModifierXXW")
-            << "WireModifierXXW::reconfigure -  ...not found";
+            << "WireModifierXXW::reconfigure -  ...not found. Don't scale for this plane.";
+          // make a graph spanning -400 to 400 in X and -4 to 4 in ThXW (for completeness)
+          // all point have a value of 1
+          temp = new TGraph2D();
+          for (size_t idx = 0; idx < 4; ++idx)
+          {
+            double x = (static_cast<double>(idx & 2) - 1)*400;
+            double y = (static_cast<double>(2*(idx & 1)) - 1)*4;
+            temp->AddPoint(x, y, 1);
+          }
+          fGraph_sigma_YZ.push_back(temp);
         }
       }
     }
