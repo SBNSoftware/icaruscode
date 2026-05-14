@@ -101,9 +101,9 @@ class icarusDB::PMTTimingCorrectionsProvider : public PMTTimingCorrections {
         bool fVerbose = false; ///< Whether to print the configuration we read.
         std::string fLogCategory; ///< Category tag for messages.
         int fOverrideRunNumber = -1; ///< If non-negative, overrides the run number for DB queries.
-	    std::string fCablesTag;  ///< Tag for cable corrections database.
-	    std::string fLaserTag;   ///< Tag for laser corrections database.
-	    std::string fCosmicsTag; ///< Tag for cosmics corrections database.
+        std::string fCablesTag;  ///< Tag for cable corrections database.
+        std::string fLaserTag;   ///< Tag for laser corrections database.
+        std::string fCosmicsTag; ///< Tag for cosmics corrections database.
 
 	    /// Map of corrections by channel
         std::map<unsigned int, PMTTimeCorrectionsDB> fDatabaseTimingCorrections;
@@ -116,8 +116,8 @@ class icarusDB::PMTTimingCorrectionsProvider : public PMTTimingCorrections {
                 return (it == fDatabaseTimingCorrections.end())? CorrectionDefaults: it->second;
             }
 
-	    /// Convert run number to internal database
-	    uint64_t RunToDatabaseTimestamp(uint32_t run) const;
+        /// Convert run number to internal database
+        uint64_t RunToDatabaseTimestamp(uint32_t run) const;
 
         void ReadPMTCablesCorrections(uint32_t run);
 
