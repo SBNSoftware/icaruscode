@@ -210,7 +210,7 @@ icarus_photoelectronresponse_run2_2025: {
   tool_type: SampledWaveformFunctionTool
 
   WaveformData:  "Responses/SPRisolHitRun9271.txt"
-  TransitTime:   "55.1 ns"
+  TransitTime:   "14.0 ns"
   Gain:           @local::icarus_settings_opdet_run2.nominalPMTgain
   BiasRatio:     1.5332
 
@@ -226,7 +226,7 @@ icarus_photoelectronresponse_run4_2025: {
   tool_type: SampledWaveformFunctionTool
 
   WaveformData:  "Responses/SPRisolHitRun12715.txt"
-  TransitTime:   "55.1 ns"
+  TransitTime:   "14.0 ns"
   Gain:           @local::icarus_settings_opdet_run4.nominalPMTgain
   BiasRatio:     1.2196
 

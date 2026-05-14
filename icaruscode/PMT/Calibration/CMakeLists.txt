@@ -83,6 +83,28 @@ cet_build_plugin(OpHitRecalibrator art::module
       icaruscode_Timing
 )
 
+cet_build_plugin(VerticalTrackFlashWaveformAna art::module
+  LIBRARIES
+    icaruscode::Timing
+    larcore::Geometry_Geometry_service
+    larcorealg::Geometry
+    lardata::DetectorInfoServices_DetectorClocksServiceStandard_service
+    lardataalg::DetectorInfo
+    lardataobj::RawData
+    lardataobj::RecoBase
+    art::Framework_Core
+    art::Framework_Principal
+    art::Framework_Services_Registry
+    art_root_io::TFileService_service
+    art_root_io::tfile_support
+    canvas::canvas
+    messagefacility::MF_MessageLogger
+    fhiclcpp::fhiclcpp
+    cetlib::cetlib
+    cetlib_except::cetlib_except
+    ROOT::Tree
+  )
+
 art_make_exec(NAME fitPulseDistribution
   SOURCE
     fitPulseDistribution.cc

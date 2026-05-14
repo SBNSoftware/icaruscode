@@ -12,6 +12,7 @@ icarus_pmt_channel_status: {
   DefaultStatus:  1       # kGood
   DefaultVoltage: 1500.0  # [V]
   Verbose:       false
+  OverrideRunNumber: -1  
   LogCategory:   "PMTChannelStatusProvider"
 }
 
