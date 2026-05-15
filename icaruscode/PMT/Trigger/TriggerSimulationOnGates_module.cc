@@ -933,6 +933,8 @@ icarus::trigger::TriggerSimulationOnGates::TriggerSimulationOnGates
       .declareConsumes(consumesCollector());
   } // for
   
+  consumes<std::vector<sim::BeamGateInfo>>(fBeamGateTag);
+  
   //
   // output data declaration
   //
@@ -1615,8 +1617,14 @@ auto icarus::trigger::TriggerSimulationOnGates::extractEventInfo
 std::uint64_t icarus::trigger::TriggerSimulationOnGates::TimestampToUTC
   (art::Timestamp const& ts)
 {
-  return static_cast<std::uint64_t>(ts.timeHigh())
-    + static_cast<std::uint64_t>(ts.timeLow()) * 1'000'000'000ULL;
+  // for some inexplicable reason, some timestamps are saved with whole seconds
+  // in timeHigh() and nanoseconds in timeLow() (data?), others with the most
+  // significant bits in timeHigh() and the least significant bits in timeLow();
+  // this heuristic detects which is the case and unpacks it accordingly
+  return (ts.timeHigh() < 1'000'000'000UL)
+    ? static_cast<std::uint64_t>(ts.value())
+    : static_cast<std::uint64_t>(ts.timeHigh()) * 1'000'000'000ULL
+      + static_cast<std::uint64_t>(ts.timeLow());
 } // icarus::trigger::TriggerSimulationOnGates::TimestampToUTC()
 
 
