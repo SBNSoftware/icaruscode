@@ -189,6 +189,9 @@ namespace icarus::trigger { class TriggerSimulationOnGates; }
  *     `sbn::ExtraTriggerInfo` with reduced information from the _first_ of the
  *     triggers from the _first_ of the gates. If the first gate did not trigger
  *     the object will have fields marked invalid.
+ * * `TriggerTimestampFrom` (input tag, default: none): if set, the trigger
+ *     timestamp will be read from the `sbn::ExtraTriggerInfo` with the
+ *     specified tag instead than the event time.
  * * `RetriggeringBit` (positive integer, default: `17`): the bit to set for all
  *     the triggers found after the first one within each gate. The value `0`
  *     represents the least significant bit; the default value is `17`, bit mask
@@ -245,8 +248,11 @@ namespace icarus::trigger { class TriggerSimulationOnGates; }
  *     always present, and reflecting the triggers on the first beam gate: if a
  *     trigger fired in that beam gate, a _reduced_ version of
  *     `sbn::ExtraTriggerInfo` is provided; currently it is guaranteed to have:
- *     * `triggerTimestamp`: based on the _art_ event timestamp, or invalid
- *       timestamp if the trigger did not fire.
+ *     * `triggerTimestamp`: invalid timestamp if the trigger did not fire.
+ *       Otherwise, if `TriggerTimestampFrom` is not empty, thextimestamp is
+ *       taken from `sbn::ExtraTriggerInfo::triggerTimestamp` (if valid) or
+ *       `sbn::ExtraTriggerInfo::beamGateTimestamp`; if `TriggerTimestampFrom`
+ *       is empty, from the _art_ event timestamp.
  *     * `beamGateTimestamp`: set accordingly to the relative time of the
  *       trigger vs. simulated beam gate opening, if the trigger happened.
  *       Otherwise, it will be set at the event time.
@@ -473,6 +479,12 @@ class icarus::trigger::TriggerSimulationOnGates
       false
       };
 
+    fhicl::Atom<art::InputTag> TriggerTimestampFrom {
+      Name("TriggerTimestampFrom"),
+      Comment("data product to extract the trigger timestamp from (optional)"),
+      art::InputTag{}
+      };
+
     fhicl::Atom<nanoseconds> DeadTime {
       Name("DeadTime"),
       Comment("veto time after each trigger found"),
@@ -602,6 +614,8 @@ class icarus::trigger::TriggerSimulationOnGates
   bool const fEmitEmpty;
   
   bool const fExtraInfo; ///< Whether to produce a `sbn::ExtraTriggerInfo`.
+  
+  art::InputTag const fTriggerTimestampFrom; ///< Tag for trigger timestamp.
   
   nanoseconds const fDeadTime; ///< Veto time after a trigger in a gate.
   
@@ -792,7 +806,7 @@ class icarus::trigger::TriggerSimulationOnGates
   //@}
   
   /// Fills an `EventAux_t` from the information found in the argument.
-  static EventAux_t extractEventInfo(art::Event const& event);
+  EventAux_t extractEventInfo(art::Event const& event) const;
   
   /// Converts a standard _art_ timestamp into an UTC time [ns]
   static std::uint64_t TimestampToUTC(art::Timestamp const& ts);
@@ -872,6 +886,7 @@ icarus::trigger::TriggerSimulationOnGates::TriggerSimulationOnGates
   , fBeamBits             (config().BeamBits())
   , fEmitEmpty            (config().EmitEmpty())
   , fExtraInfo            (config().ExtraInfo())
+  , fTriggerTimestampFrom (config().TriggerTimestampFrom())
   , fDeadTime             (config().DeadTime())
   , fTriggerDelay         (config().TriggerDelay())
   , fRetriggeringMask     (bitMask<TriggerBits_t>(config().RetriggeringBit()))
@@ -934,6 +949,9 @@ icarus::trigger::TriggerSimulationOnGates::TriggerSimulationOnGates
   } // for
   
   consumes<std::vector<sim::BeamGateInfo>>(fBeamGateTag);
+  
+  if (!fTriggerTimestampFrom.empty())
+    consumes<sbn::ExtraTriggerInfo>(fTriggerTimestampFrom);
   
   //
   // output data declaration
@@ -998,8 +1016,15 @@ icarus::trigger::TriggerSimulationOnGates::TriggerSimulationOnGates
         log << "-0x" << (fCryostatZeroMask << (NCryostats-1));
       log << std::dec << ")";
     }
-    if (fExtraInfo)
+    if (fExtraInfo) {
       log << "\n * will produce a sbn::ExtraTriggerInfo from the first gate";
+      if (fTriggerTimestampFrom.empty())
+        log << " using art event time as trigger timestamp";
+      else {
+        log << " using the trigger timestamp from '"
+          << fTriggerTimestampFrom.encode() << "'";
+      }
+    }
     
   } // local block
   
@@ -1604,11 +1629,21 @@ auto icarus::trigger::TriggerSimulationOnGates::toBeamGateTime(
 
 //------------------------------------------------------------------------------
 auto icarus::trigger::TriggerSimulationOnGates::extractEventInfo
-  (art::Event const& event) -> EventAux_t
+  (art::Event const& event) const -> EventAux_t
 {
+  std::uint64_t timestamp;
+  if (fTriggerTimestampFrom.empty()) timestamp = TimestampToUTC(event.time());
+  else {
+    auto const& extraInfo
+      = event.getProduct<sbn::ExtraTriggerInfo>(fTriggerTimestampFrom);
+    timestamp
+      = sbn::ExtraTriggerInfo::isValidTimestamp(extraInfo.triggerTimestamp)
+      ? extraInfo.triggerTimestamp: extraInfo.beamGateTimestamp
+      ;
+  }
   return {
-      TimestampToUTC(event.time()) // time
-    , event.event()                // event
+      timestamp      // time
+    , event.event()  // event
     };
 } // icarus::trigger::TriggerSimulationOnGates::extractEventInfo()
 
