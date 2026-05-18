@@ -1,11 +1,16 @@
 #!/usr/bin/env python
+#
+# Version 1.1 (20260424, petrillo@slac.stanford.edu)
+#   * added `--suffix` and `--and` options
+#   * explicit support for compressed raw data, "raw" became uncompressed only
+#
 
 import logging
 import time
 
 __author__ = "Gianluca Petrillo (petrillo@slac.stanford.edu)"
-__date__ = time.strptime("July 7, 2021", "%B %d, %Y")
-__version__ = "1.0"
+__date__ = time.strptime("May 13, 2026", "%B %d, %Y")
+__version__ = "1.1"
 __doc__ = """
 Manages SAM definitions for ICARUS data run.
 
@@ -45,9 +50,10 @@ SAMExperimentName = ExperimentName.lower()
 DefaultStages = [ 'raw', 'stage0', 'stage1', ]
 
 StageDimensions = {
-  'raw':    "data_tier raw",
-  'stage0': "icarus_project.stage stage0",
-  'stage1': "icarus_project.stage in ( stage1, stage1_caf_larcv )",
+  'raw':           "data_tier raw and icarus_project.stage daq",
+  'compressedraw': "data_tier raw and icarus_project.stage compression",
+  'stage0':        "icarus_project.stage stage0",
+  'stage1':        "icarus_project.stage in ( stage1, stage1_caf_larcv )",
 } # StageDimensions
 
 # this is a modal flag that is dangerous enough to be not user-controlled:
@@ -59,13 +65,15 @@ AllowAllRuns = False
 class SampleInfo:
   def __init__(self,
     run=None, stage=None, stream=None, projectVersion=None,
-    minSize: "MiB" = None,
+    minSize: "MiB" = None, extraDims=[], suffix="",
     ):
     self.run = SampleInfo._copyList(run)
     self.stage = SampleInfo._copyList(stage)
     self.stream = SampleInfo._copyList(stream)
     self.projectVersion = SampleInfo._copyList(projectVersion)
     self.minSize = minSize if minSize else 0
+    self.extraDims = SampleInfo._copyList(extraDims)
+    self.suffix = suffix
   # __init__()
   
   def isRunDefined(self) -> "returns if run is collapsed to a value":
@@ -97,7 +105,7 @@ class SampleInfo:
       components.append(self.stream.replace("%", "")) # remove SAM wildcards
     if self.isProjectVersionComplete() and self.projectVersion is not None:
       components.append(self.projectVersion)
-    return "_".join(filter(None, components))
+    return "_".join(filter(None, components)) + self.suffix
   # defName()
   
   def copy(self, **kwargs):
@@ -105,7 +113,9 @@ class SampleInfo:
     kwargs.setdefault('stage', self.stage),
     kwargs.setdefault('stream', self.stream),
     kwargs.setdefault('projectVersion', self.projectVersion),
+    kwargs.setdefault('extraDims', self.extraDims),
     kwargs.setdefault('minSize', self.minSize),
+    kwargs.setdefault('suffix', self.suffix),
     return SampleInfo(**kwargs)
   # copy()
   
@@ -114,6 +124,8 @@ class SampleInfo:
     if self.stage: s += f", stage {self.stage}"
     if self.stream: s += f", stream {self.stream}"
     if self.projectVersion: s += f", project version {self.projectVersion}"
+    if self.extraDims:
+      s += f", extra constraints: {' AND '.join(self.extraDims)}"
     return s
   # __str__()
   
@@ -154,6 +166,7 @@ class DimensionQueryMaker:
       dims.append(
         DimensionQueryMaker.comparedItem('file_size', info.minSize << 20, ">=")
         )
+    dims.extend(info.extraDims)
     query = " and ".join(filter(None, dims))
     if len(dims) < minimum:
       raise RuntimeError(f"Query resulted in only {len(dims)} constraints: '{query}'")
@@ -217,7 +230,7 @@ class SampleBrowser:
     
     # expand the project versions: each version will be treated separately
     if info.projectVersion is None or forceSeparateVersions:
-      if info.stage != 'raw' or forceSeparateVersions:
+      if info.stage not in ( 'compressedraw', 'raw' ) or forceSeparateVersions:
         versionQuery = DimensionQueryMaker()(info, minimum=2)
         projectVersions = self._discoverProjectVersions(versionQuery)
       else: projectVersions = [ None ] # no version constraint is ok for raw files
@@ -310,13 +323,8 @@ class SampleProcessClass:
     self.samweb = samweb if samweb else SAMWebClient()
     self.buildQuery = DimensionQueryMaker()
     
-    try: self.SAMuser = samweb.get_user()
-    except samexcpt.Error as e:
-      if self.prependUser:
-        logging.error("Could not find out your name! %s", e)
-        raise
-      self.SAMuser = None
-    #
+    self.SAMuser = None
+    self._fetchSAMuser(required=self.prependUser)
     
   # __init__()
   
@@ -464,20 +472,16 @@ class SampleProcessClass:
     ForcedMsg = { True: "forced to delete it anyway", False: "won't delete unless forced to", }
     checksOk = True
     
-    if not self.SAMuser:
-      try: self.SAMuser = self.samweb.get_user()
-      except samexcpt.Error as e:
-        logging.error("Could not find out your name! %s", e)
-    # if not cached already
+    self._fetchSAMuser()
     try: SAMgroup = self.samweb.get_group()
     except samexcpt.Error as e:
       logging.error("Could not find out the name of your group! %s", e)
-    logging.debug(f"You appear to be {SAMuser!r} of group {SAMgroup!r}")
+    logging.debug(f"You appear to be {self.SAMuser!r} of group {SAMgroup!r}")
     
-    if defInfo['username'] != SAMuser:
+    if defInfo['username'] != self.SAMuser:
       logging.warning(
         f"Definition {defName!r} was created on {defInfo['create_time']}"
-        f" by {defInfo['username']}/{defInfo['group']}, not by you ({SAMuser})"
+        f" by {defInfo['username']}/{defInfo['group']}, not by you ({self.SAMuser})"
         f": won't delete."
         )
       checksOk = False
@@ -571,6 +575,16 @@ class SampleProcessClass:
   
   def describeSample(self, info): return "ICARUS data " + str(info)
   
+  def _fetchSAMuser(self, required=True):
+    if self.SAMuser: return
+    try: self.SAMuser = self.samweb.get_user()
+    except samexcpt.Error as e:
+      if required:
+        logging.error("Could not find out your name! %s", e)
+        raise
+    # try ... except
+  # _fetchSAMuser()
+  
 # class SampleProcessClass
 
 
@@ -591,19 +605,25 @@ if __name__ == "__main__":
     formatter_class=argparse.RawDescriptionHelpFormatter)
   
   SampleGroup = parser.add_argument_group(title="Sample selection")
-  SampleGroup.add_argument("runs", nargs="*" if AllowAllRuns else "+", type=int,
-                      help="runs to process")
+  SampleGroup.add_argument("runs", nargs="*", type=int, help="runs to process")
   SampleGroup.add_argument("--stage", "-s", action="append",
     help=f"stages to include {DefaultStages}")
   SampleGroup.add_argument("--prjversion", "-p", action="append",
     help="project versions to include [autodetect (resource-intensive!)]")
   SampleGroup.add_argument("--stream", "-f", action="append",
     help="data streams to include (use 'any' for... any) [any]")
+  SampleGroup.add_argument("--and", "--dim", "-a", dest='dims',
+    action="append", default=[],
+    help="additional constraint (not reflected in definition name)",
+    )
   SampleGroup.add_argument("--global", "-g", dest='globalDef',
     action="store_true", help="do not prepend SAM user name to definitions")
   SampleGroup.add_argument("--minsize", "-S", dest='minimumSize',
     action='store', nargs='?', default=None, const=8, type=int,
     help="include only files larger than this size (MiB) [8 MiB if no value]")
+  SampleGroup.add_argument("--knownstages", dest='printKnownStages',
+    action="store_true",
+    help="prints the stage names that have special configuration")
   
   ActionGroup = parser.add_argument_group(title="Actions")
   ActionGroup.add_argument("--check", action="store_true",
@@ -624,6 +644,8 @@ if __name__ == "__main__":
     help="sets the experiment name (for definitions) [%(default)s]")
   GeneralOptGroup.add_argument("--samexperiment", "-E",
     help="sets the experiment name (chooses SAM database) [same as --experiment]")
+  GeneralOptGroup.add_argument("--suffix", default='',
+    help="add this suffix (verbatim) to definition name (hint: start with '_')")
   GeneralOptGroup.add_argument("--force", "-F", action="store_true",
     help="skips safety checks of some operations")
   GeneralOptGroup.add_argument("--fake", "--dryrun", "-n", action="store_true",
@@ -636,6 +658,14 @@ if __name__ == "__main__":
   args = parser.parse_args()
   
   logging.getLogger().setLevel(logging.DEBUG if args.debug else logging.INFO)
+  if args.printKnownStages:
+    print(f"There are {len(StageDimensions)} known stages: {', '.join(StageDimensions)}.")
+    sys.exit(0)
+  if not args.runs and not AllowAllRuns:
+    raise RuntimeError("The run numbers to process are required.")
+  SampleGroup.add_argument("runs", nargs="*" if AllowAllRuns else "+", type=int,
+                      help="runs to process")
+    
   if args.stage is None: args.stage = DefaultStages
   if args.stream:
     args.stream = [ None if s == "any" else s for s in args.stream ]
@@ -657,7 +687,9 @@ if __name__ == "__main__":
     stage=collapseList(args.stage),
     stream=collapseList(args.stream), # None means any
     projectVersion=collapseList(args.prjversion), # None for autodetect
+    extraDims=args.dims,
     minSize=args.minimumSize,
+    suffix=args.suffix,
     )
   
   for sampleInfo in iterateSamples(baseSampleInfo):

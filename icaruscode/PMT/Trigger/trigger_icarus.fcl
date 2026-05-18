@@ -17,6 +17,8 @@
 # 20221104 (petrillo@slac.stanford.edu)
 #   overhaul of the configuration to just host settings and parameters;
 #   module configurations are now in `trigger_emulation_icarus.fcl`
+# 20260403 (petrillo@slac.stanford.edu)
+#   changed discrimination threshold from 400 ADC# to 390 (only Run1 has 400)
 # 
 #
 
@@ -84,7 +86,7 @@ NuMI_settings: {
 icarus_triggergate_basic.Baseline: 15000
 
 # This is the primary PMT discrimination threshold, chosen for the hardware.
-icarus_triggergate_basic.SelectedThreshold: 400 # ADC
+icarus_triggergate_basic.SelectedThreshold: 390 # ADC
 
 # This is the primary PMT adder discrimination threshold (in ADC equivalent).
 icarus_triggergate_basic.SelectedAdderThreshold: 492  # 60 mV x (2^14 / 2 V) => 491.52 ADC#
@@ -272,8 +274,21 @@ icarus_region_finder: {
 # this configuration takes the configured beam gate duration
 # and creates extended gates to be used for trigger evaluation;
 # [20221104] the amount of extension needs to be verified with Run2 data
+# [20260415] shifting for the cable delay, that is now simulated at waveform level:
+#            -200 (margin) + 265 (average delay for Run2 data);
+#            estimation from the reconstructed triggering flash times,
+#            from simulation enabling trigger emulation (with no trigger delay)
+#            and standard hit reconstruction (which includes time correction).
+#            Simulation adds the delay, then the shifting to trigger time eats it,
+#            and the hit correction effectively moves the hits away from the trigger.
+#            There are other ways to estimate it (e.g. average on DB coefficients!)
+# [20260507] tuning Run2 gates: spills 128 ns (BNB) and 200 ns (NuMI) after gate
+#            opening; expecting neutrinos to appear at +30 ns (simulation time)
+#            because of simulated propagation time from the flux window (-20 m)
+#            to the face of the detector (~-10 m); values hard-coded because
+#            they're observed in Run2 data
 #
-icarus_triggersimgates_Run1: {
+icarus_triggersimgates_Run2: {
 
   module_type: FixBeamGateInfo
 
@@ -282,20 +297,22 @@ icarus_triggersimgates_Run1: {
   Changes: [  # gates of type not included are left unchanged
     { # for BNB gates
       Select: { Types: [ "BNB" ] }
-      Start:  { SetTo: "-0.2 us" }
-      Width:  { SetTo: @local::BNB_settings.spill_duration  Add: "0.5 us" }
+      Start:  { SetTo: "+0.100 us" }
+      Width:  { SetTo: "2.1 us" }
     },
     { # for NuMI gates
       Select: { Types: [ "NuMI" ]}
-      Start:  { SetTo: "-0.2 us" }
-      Width:  { SetTo: @local::NuMI_settings.spill_duration  Add: "0.6 us" }
+      Start:  { SetTo: "+0.065 us" }
+      Width:  { SetTo: "10.0 us" }
     }
     ]
 
-} # icarus_triggersimgates_Run1
+} # icarus_triggersimgates_Run2
 
 
-icarus_triggersimgates: @local::icarus_triggersimgates_Run1
+icarus_triggersimgates_Run1: @local::icarus_triggersimgates_Run2
+
+icarus_triggersimgates: @local::icarus_triggersimgates_Run2
 
 
 ###
@@ -399,14 +416,29 @@ icarus_triggergate_basic.patterns.S5: {
   inMainWindow:         3  # relevant only to disambiguate the location
 }
 
+icarus_triggergate_basic.patterns.S7: {
+  sumOfOppositeWindows: 7
+  inMainWindow:         4  # relevant only to disambiguate the location
+}
+
 icarus_triggergate_basic.patterns.S8: {
   sumOfOppositeWindows: 8
   inMainWindow:         4  # irrelevant
 }
 
+icarus_triggergate_basic.patterns.S9: {
+  sumOfOppositeWindows: 9
+  inMainWindow:         5  # relevant only to disambiguate the location
+}
+
 icarus_triggergate_basic.patterns.S10: {
   sumOfOppositeWindows: 10
   inMainWindow:          5 # irrelevant
+}
+
+icarus_triggergate_basic.patterns.S15: {
+  sumOfOppositeWindows: 15
+  inMainWindow:          8  # relevant only to disambiguate the location
 }
 
 

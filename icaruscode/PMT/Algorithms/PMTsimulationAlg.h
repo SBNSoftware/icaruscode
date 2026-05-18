@@ -19,10 +19,11 @@
 #include "icaruscode/PMT/Algorithms/DiscretePhotoelectronPulse.h"
 #include "icaruscode/PMT/Algorithms/PhotoelectronPulseFunction.h"
 #include "icaruscode/PMT/Algorithms/PedestalGeneratorAlg.h"
+#include "icaruscode/PMT/Calibration/PhotonCalibratorFromDB.h"
+#include "icaruscode/Timing/PMTTimingCorrections.h"
 #include "icaruscode/Utilities/quantities_utils.h" // util::value_t
 #include "icarusalg/Utilities/SampledFunction.h"
-#include "icaruscode/Timing/PMTTimingCorrections.h"
-#include "icaruscode/PMT/Calibration/PhotonCalibratorFromDB.h"
+#include "sbnobj/ICARUS/PMT/Data/WaveformBaseline.h"
 
 // LArSoft libraries
 #include "lardataobj/RawData/OpDetWaveform.h"
@@ -601,19 +602,33 @@ class icarus::opdet::PMTsimulationAlg {
   /**
    * @brief Returns the waveforms originating from simulated photons.
    * @param photons all the photons simulated to land on the channel
+   * @param lite_photons all the photons simulated to land on the channel
+   *                     (compact version)
+   * @param enableDebug (default: `false`) also return debug information
    * @return a list of optical waveforms, response to those photons,
-   *         and which photons were used (if requested)
+   *         the baseline of each waveform,
+   *         and which photons were used (if requested),
+   *         and debug information (if requested)
    *
    * Due to threshold readout, a single channel may result in multiple
    * waveforms, which are all on the same channel but disjunct in time.
+   * For each of the waveforms, a baseline object is also returned, with the
+   * value from `icarus::opdet::PedestalGeneratorAlg::pedestalLevel()`.
    * 
-   * The second element of the return value is optional and filled only
+   * The function takes both `sim::SimPhotons` and `sim::SimPhotonsLite` as
+   * mandatory input, but the latter is used only if the former collection is
+   * empty; otherwise, lite photon input is ignored.
+   * 
+   * The third element of the return value is optional and filled only
    * if the `trackSelectedPhotons` configuration parameter is set to `true`.
    * In that case, the returned `sim::SimPhotons` contains a copy of each of
    * the `photons` contributing to any of the waveforms.
    */
-  std::tuple<std::vector<raw::OpDetWaveform>, std::optional<sim::SimPhotons>,
-             std::optional<icarus::opdet::DebugInfo>>
+  std::tuple<
+    std::vector<raw::OpDetWaveform>, std::vector<icarus::WaveformBaseline>,
+    std::optional<sim::SimPhotons>,
+    std::optional<icarus::opdet::DebugInfo>
+    >
     simulate(sim::SimPhotons const& photons,
              sim::SimPhotonsLite const& lite_photons,
              bool enableDebug = false);
@@ -722,10 +737,10 @@ class icarus::opdet::PMTsimulationAlg {
   
   
   /**
-   * @brief Creates `raw::OpDetWaveform` objects from simulated photoelectrons.
+   * @brief Creates a waveform (sample sequence) from simulated photoelectrons.
    * @param photons the simulated list of photoelectrons
-   * @param photons_used (_output_) list of used photoelectrons
-   * @return a collection of digitised `raw::OpDetWaveform` objects
+   * @param[out] photons_used list of used photoelectrons
+   * @return a waveform and its baseline
    * 
    * This function performs the digitization of a optical detector channel which
    * is collecting the photoelectrons in the `photons` list.
@@ -737,9 +752,8 @@ class icarus::opdet::PMTsimulationAlg {
    * The `photons_used` output argument is constructed and filled only if the
    * configuration of the algorithm requires the creation of a list of used
    * photons.
-   * 
    */
-  Waveform_t CreateFullWaveform(
+  std::tuple<Waveform_t, ADCcount> CreateFullWaveform(
     sim::SimPhotons const& photons,
     sim::SimPhotonsLite const& lite_photons,
     std::optional<sim::SimPhotons>& photons_used,
@@ -1258,12 +1272,12 @@ raw::OpDetWaveform icarus::opdet::OpDetWaveformMakerClass<SampleType>::create
   // create a new waveform preallocating enough room for the full buffer
   raw::OpDetWaveform outputWaveform(timeStamp, opChannel, end - start);
   
-  // copy the buffer (need to unwrap the ADCcount value)
+  // copy the buffer (need to unwrap the ADCcount value; +0.5+truncate => round)
   std::transform(
     fWaveform.begin() + start,
     fWaveform.begin() + end,
     std::back_inserter(outputWaveform),
-    [](auto sample){ return sample.value(); }
+    [](auto sample){ return (sample + Sample_t{ 0.5f }).value(); }
     );
   
   return outputWaveform;

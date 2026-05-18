@@ -18,7 +18,7 @@
 #include "detectorclocks_icarus.fcl"
 #include "dump_opdetwaveforms.fcl"
 
-services.DetectorClocksService: @local::icarus_detectorclocks # from `detectorclocks_icarus.fcl`
+services.DetectorClocksService: @local::icarus_detectorclocks_simulation # from `detectorclocks_icarus.fcl`
   
 physics.analyzers.dumpopdetwaveforms.OpDetWaveformsTag: "opdaq"
 physics.analyzers.dumpopdetwaveforms.Pedestal:          15000

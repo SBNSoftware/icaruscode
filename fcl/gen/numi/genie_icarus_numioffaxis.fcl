@@ -31,7 +31,7 @@
 #   updated NuMI POT to 6+6 batches configuration
 #
 
-#include "genie_icarus_bnb.fcl"
+#include "genie_beam_settings.fcl"
 #include "beamspilltimings.fcl"
 
 
@@ -49,7 +49,7 @@ BEGIN_PROLOG
 ###
 icarus_genie_NuMI_base: {
   
-  @table::icarus_genie_BNB_base # from genie_icarus_bnb.fcl
+  @table::sbn_genie_NuMI_base  # from genie_beam_settings.fcl
   
   #
   # flux
@@ -60,10 +60,18 @@ icarus_genie_NuMI_base: {
   FluxSearchPaths:      "/cvmfs/sbn.osgstorage.org/pnfs/fnal.gov/usr/sbn/persistent/stash/physics/beam/GENIE/NuMI/standard/v03_02/"
   FluxFiles:            ["g4numi*.root"]
   
-  POTPerSpill:          6.0e13 # same as BnB per batch, but 6 batches in spill
-  
-  RandomTimeOffset:     9600.0 # same batch as BnB, but 6 batches in spill [ns]
+  #
+  # generation volume
+  #
+# TopVolume:            "volTPCActive"
+# TopVolume:            "volCryostat"
+  TopVolume:            "volDetEnclosure"
 
+  #
+  # GENIE event vdump verbosity
+  #
+  GHepPrintLevel:       13
+  
 } # icarus_genie_NuMI_base
 
 
@@ -75,14 +83,11 @@ icarus_genienumi_simple: @local::icarus_genie_NuMI_base
 ### icarus_genie_NuMI
 ###
 #
-# Adds NuMI beam time structure.
+# Just as the default.
 #
 icarus_genie_NuMI: {
   
   @table::icarus_genie_NuMI_base
-  
-  SpillTimeConfig: @local::FNAL_NuMI_default # from beamspilltimings.fcl
-  RandomTimeOffset: 0.0 # ns; it's ignored anyway when `SpillTimeConfig` is set
   
 } # icarus_genie_NuMI
 

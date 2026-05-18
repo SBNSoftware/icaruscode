@@ -60,7 +60,7 @@
 #     (`icarus_pmtdiscriminatethr`).
 #     The default for MC is `pmtthr` and data products have instance names
 #     according to the discriminated thresholds (e.g. `pmtthr:400`).
-#     Data default (`pmtthrfixed`?) is a TODO here.
+#     Data default is also `pmtthr`.
 # * paired (LVDS) PMT signals (`icarus_lvdsgates`): `pmtlvdsgates`
 # * window combination of LVDS signals (`icarus_trigslidewindow`):
 #     `pmttriggerwindows`
@@ -74,9 +74,13 @@
 # :   original version
 # 20221104 (petrillo@slac.stanford.edu) [v2.0]
 # :   added many configurations, and rationalized (?) their names
+# 20260403 (petrillo@slac.stanford.edu) [v3.0]
+# :   * discrimination baselines based on data product for simulation too
+# :     (breaking change: needs updated SimPMTIcarus writing baselines)
+# :   * reduced the number of discriminated thresholds in shifting workflow
 #
 
-#include "trigger_icarus.fcl"
+#include "triggeremu_settings_icarus.fcl"
 #include "triggerwindowdefs_icarus.fcl"
 
 
@@ -227,12 +231,13 @@ icarus_pmtdiscriminatethr_fixed: {
 #
 # This module applies discrimination based on fixed threshold specified in the
 # configuration.
-# The baseline is fixed and read from global settings.
+# The baseline is read from a data product.
 # It produces discriminated waveforms ("ReadoutTriggerGate" objects)
 # and complimentary waveform summary data (all the waveform information that
 # is not sample values: `sbn::OpDetWaveformMeta` objects).
 #
 # This module does requires `Geometry` and `DetectorClocksService` services.
+# It also requires input from an updated SimPMTIcarus producing baselines too.
 #
 # Usually this module is usually run only once; standard label: "pmtthr":
 #
@@ -246,9 +251,8 @@ icarus_pmtdiscriminatethr_fixed_MC: {
   # input optical waveform data product tag:
   OpticalWaveforms: "opdaq"
 
-  # PMT baseline (from standard simulation configuration)
-  Baselines: @erase
-  Baseline: @local::icarus_settings_opdet.NominalPedestal
+  # PMT baseline (written together with the waveforms themselves)
+  Baselines: opdaq
 
 } # icarus_pmtdiscriminatethr_fixed_MC
 
@@ -333,6 +337,12 @@ icarus_trigslidewindow_cryoW: {
 # ------------------------------------------------------------------------------
 # ---  workflow helpers
 # ------------------------------------------------------------------------------
+# 
+# Configurations for trigger in simulation.
+# 
+# The thresholds are picked from `icarus_triggergate_basic.SelectedThreshold`
+# in `trigger_icarus.fcl`.
+# 
 icarus_standard_triggersim: {
 
   producers: {
@@ -360,6 +370,7 @@ icarus_standard_triggersim: {
       Pattern:               @local::icarus_triggergate_basic.SelectedPattern
       BeamGates:             triggersimgates
       TriggerTimeResolution: "8 ns" # this should probably be 12 or 24 ns
+      TriggerDelay:          @local::triggeremu_config_icarus.settings.TriggerDelay  # triggeremu_settings_icarus.fcl
       EmitEmpty:             true
       ExtraInfo:             true
     }
@@ -380,7 +391,10 @@ icarus_shifting_triggersim: {
 
   producers: {
 
-    pmtfixedthrinit: @local::icarus_pmtdiscriminatethr_fixed_MC
+    pmtfixedthrinit: {
+      @table::icarus_pmtdiscriminatethr_fixed_MC
+      SelectThresholds: [ @local::icarus_triggergate_basic.SelectedThreshold ]
+    }
 
     pmtlvdsgatesinit: {
       @table::icarus_standard_triggersim.producers.pmtlvdsgates
@@ -404,6 +418,7 @@ icarus_shifting_triggersim: {
     emuTriggerUnshifted: {
       @table::icarus_standard_triggersim.producers.emuTrigger
       BeamGates: triggersimgatesinit
+      BeamGateReference: Simulation
       TriggerGatesTag: pmttriggerwindowsinit
     }
 
@@ -416,6 +431,7 @@ icarus_shifting_triggersim: {
        InitSimEnergyDepositLiteLabel: "sedlite"
        InitSimPhotonsLabel: "largeant"
        InitWaveformLabel: "opdaq"
+       BindWaveformBaselines: "opdaq"
        ShiftAuxDetIDEs: true
        ShiftBeamGateInfo: true
        ShiftSimEnergyDeposits: true
@@ -439,6 +455,19 @@ icarus_shifting_triggersim: {
        ShiftSimPhotons: false
        ShiftWaveforms: false
        AdditionalOffset: 0.0 # [us] Additional offset to apply to the time shift
+    }
+
+    emuTrigger: {
+      @table::icarus_standard_triggersim.producers.emuTrigger
+      # biting our own tail: the `shifted` beam gate info object is the result
+      # of the "standard" shifting by `AdjustSimForTrigger` on the old beam gate
+      # info, whose reference was the simulation start time. At the time of its
+      # production, simulation start time was also the trigger time (by default)
+      # so that the same shift that moves the trigger time does apply also to
+      # numbers expressed in (old) simulation time.
+      # Not that we have a "new" simulation time (at the time of writing).
+      BeamGates:         shifted
+      BeamGateReference: Trigger
     }
 
   } # producers

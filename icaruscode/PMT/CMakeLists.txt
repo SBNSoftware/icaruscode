@@ -14,8 +14,9 @@ add_subdirectory(Status)
 
 cet_build_plugin(SimPMTIcarus art::module
                     LIBRARIES
-			icaruscode_PMT_Algorithms
-			icaruscode_PMT_Status
+			icaruscode::PMT_Status
+			icaruscode::PMT_Algorithms
+			sbnobj::ICARUS_PMT_Data
 			lardataobj::RawData
 			lardataobj::Simulation
 			larcore::Geometry_Geometry_service

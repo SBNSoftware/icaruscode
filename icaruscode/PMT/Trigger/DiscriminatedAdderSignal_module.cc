@@ -634,11 +634,7 @@ icarus::trigger::DiscriminatedAdderSignal::DiscriminatedAdderSignal
   , fBaselineTag       { config().BaselineTag()      }
   , fWaveformMetaTag   { config().WaveformMetaTag().value_or(fWaveformTag) }
   , fAmplitudeScale    { config().AmplitudeScale()   }
-  , fTimeInterval
-    {
-      icarus::ns::fhicl::makeTimeInterval(config().TimeInterval())
-        .value_or(RelTimeInterval_t{})
-    }
+  , fTimeInterval      { config().TimeInterval().value_or(RelTimeInterval_t{}) }
   , fMissingChannels   { sorted(config().MissingChannels()) }
   , fSaveWaveforms     { config().SaveWaveforms()    }
   , fSavePMTcoverage   { config().SavePMTcoverage()  }
@@ -665,7 +661,9 @@ icarus::trigger::DiscriminatedAdderSignal::DiscriminatedAdderSignal
   //
   if (fTimeInterval.empty()) {
     throw art::Exception{ art::errors::Configuration }
-      << "The '" << config().TimeInterval.name()
+      << "The '"
+      // this type cast was supposed to be implicit... is not
+      << config().TimeInterval.operator fhicl::detail::ParameterBase const&().name()
       << "' parameters configures an empty time interval [ "
       << fTimeInterval.start << " -- " << fTimeInterval.stop << " ]\n";
   }

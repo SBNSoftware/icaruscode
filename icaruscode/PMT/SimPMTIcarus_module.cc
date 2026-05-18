@@ -10,6 +10,8 @@
 #include "icaruscode/PMT/PMTpedestalGeneratorTool.h"
 #include "icaruscode/PMT/PMTnoiseGeneratorTool.h"
 #include "icaruscode/PMT/SinglePhotonPulseFunctionTool.h"
+#include "icaruscode/PMT/Calibration/ICARUSPhotonCalibratorServiceFromDB.h"
+#include "icaruscode/PMT/Status/IPMTChannelStatusService.h"
 #include "icaruscode/PMT/Algorithms/OpDetWaveformMetaUtils.h" // OpDetWaveformMetaMaker
 #include "icaruscode/PMT/Algorithms/PMTsimulationAlg.h"
 #include "icaruscode/PMT/Algorithms/PedestalGeneratorAlg.h"
@@ -17,8 +19,7 @@
 #include "icaruscode/PMT/Algorithms/PhotoelectronPulseFunction.h"
 #include "icaruscode/IcarusObj/OpDetWaveformMeta.h"
 #include "icaruscode/Timing/IPMTTimingCorrectionService.h"
-#include "icaruscode/PMT/Calibration/ICARUSPhotonCalibratorServiceFromDB.h"
-#include "icaruscode/PMT/Status/IPMTChannelStatusService.h"
+#include "sbnobj/ICARUS/PMT/Data/WaveformBaseline.h"
 
 // LArSoft libraries
 #include "larcore/CoreUtils/ServiceUtil.h"
@@ -116,6 +117,9 @@ namespace icarus::opdet {
    * The module utilizes as input a collection of `sim::SimPhotons`, each
    * containing the photons propagated to a single optical detector channel.
    * 
+   * If the `sim::SimPhotons` collection is not available, a collection of
+   * `sim::SimPhotonsLite` is used instead if found.
+   * 
    * 
    * Output
    * =======
@@ -123,6 +127,10 @@ namespace icarus::opdet {
    * A collection of optical detector waveforms
    * (`std::vector<raw::OpDetWaveform>`) is produced.
    * See `icarus::opdet::PMTsimulationAlg` algorithm documentation for details.
+   * 
+   * A collection of baselines (`std::vector<icarus::WaveformBaseline>`) and
+   * associations to their waveform is also produced, using the configured
+   * baseline as value for all the waveforms.
    * 
    * If `MakeMetadata` configuration parameter is set `true`, a collection of
    * `std::vector<sbn::OpDetWaveformMeta>` is produced, one per waveform, in the
@@ -284,6 +292,44 @@ namespace icarus::opdet {
     using PedestalGenerator_t
       = icarus::opdet::PMTpedestalGeneratorTool::Generator_t;
     
+    /// Debug tree data (one entry per optical channel per event)
+    struct DebugInfo_t {
+      // debug tree branch variables (one entry per optical channel per event)
+      // event identification
+      int run = -1;    ///< Run number.
+      int event = -1;  ///< Event number.
+      int channel = -1; ///< Optical channel number.
+      // per-channel timing parameters
+      float timeDelay_us = 0;          ///< Per-channel timing delay applied [us]: laser+cosmics DB corrections.
+      float triggerOffsetPMT_us = 0;   ///< Global PMT readout start offset relative to trigger [us]
+      // waveform geometry
+      int nSamples = 0;    ///< number of ticks.
+      int nSubsamples = 0; ///< number of subsamples (sub-tick interpolation steps)
+
+      // full-window waveform (before zero-suppression splitting)
+      std::vector<float> waveform_adc; ///< full waveform ADC values [ADC counts].
+
+      // per-photon info
+      int nDetectedPhotons = 0; ///< Number of photons accepted after QE cut.
+      int nInputPhotons = 0;    ///< Total number of photons in sim::SimPhotons.
+      std::vector<float> photon_simTime_ns;    ///< G4 simulation time of each detected photon [ns].
+      std::vector<float> photon_waveformTime_us; ///< Photon time in waveform coordinates [us]: toTriggerTime - triggerOffsetPMT + timeDelay.
+      std::vector<float> photon_start_x;      ///< X position of the photon emission point [cm].
+      std::vector<float> photon_start_y;      ///< Y position of the photon emission point [cm].
+      std::vector<float> photon_start_z;      ///< Z position of the photon emission point [cm].
+      std::vector<int>   photon_tick;         ///< Waveform tick index where the photon was placed.
+      std::vector<uint16_t> photon_subtick;   ///< Sub-tick index (subsample bin) where the photon was placed.
+
+      // per-PE-deposit info
+      int nPEDeposits = 0;                      ///< Number of distinct PE deposit entries.
+      std::vector<int>      pedeposit_tick;     ///< Waveform tick of the PE deposit.
+      std::vector<uint16_t> pedeposit_subtick;  ///< Sub-tick index of the PE deposit.
+      std::vector<uint16_t> pedeposit_nPE;      ///< Integer number of photoelectrons at this deposit (after QE, before gain fluctuation).
+      std::vector<float>    pedeposit_nEffectivePE; ///< Effective PE count after gain fluctuation (what was actually added to the waveform).
+      std::vector<float>    pedeposit_gainFactor;   ///< Ratio nEffectivePE/nPE: encodes the per-deposit gain fluctuation (DB-calibrated or Poisson).
+    }; // DebugInfo_t
+
+
     /// Input tag for simulated scintillation photons (or photoelectrons).
     art::InputTag fInputModuleName;
     
@@ -323,42 +369,9 @@ namespace icarus::opdet {
     /// Returns whether no other event has been processed yet.
     bool firstTime() { return !fNotFirstTime.test_and_set(); }
 
-    bool fDebugTree { false }; ///< Whether to enable debug tree output.
-    TTree* fTree { nullptr }; ///< Debug tree pointer (owned by TFileService).
-
-    // debug tree branch variables (one entry per optical channel per event)
-    // event identification
-    int run;    ///< Run number.
-    int event;  ///< Event number.
-    int channel; ///< Optical channel number.
-    // per-channel timing parameters
-    float timeDelay_us;          ///< Per-channel timing delay applied [us]: laser+cosmics DB corrections.
-    float triggerOffsetPMT_us;   ///< Global PMT readout start offset relative to trigger [us]
-    // waveform geometry
-    int nSamples;    ///< number of ticks.
-    int nSubsamples; ///< number of subsamples (sub-tick interpolation steps)
-
-    // full-window waveform (before zero-suppression splitting)
-    std::vector<float> waveform_adc; ///< full waveform ADC values [ADC counts].
-
-    // per-photon info
-    int nDetectedPhotons; ///< Number of photons accepted after QE cut.
-    int nInputPhotons;    ///< Total number of photons in sim::SimPhotons.
-    std::vector<float> photon_simTime_ns;    ///< G4 simulation time of each detected photon [ns].
-    std::vector<float> photon_waveformTime_us; ///< Photon time in waveform coordinates [us]: toTriggerTime - triggerOffsetPMT + timeDelay.
-    std::vector<float> photon_start_x;      ///< X position of the photon emission point [cm].
-    std::vector<float> photon_start_y;      ///< Y position of the photon emission point [cm].
-    std::vector<float> photon_start_z;      ///< Z position of the photon emission point [cm].
-    std::vector<int>   photon_tick;         ///< Waveform tick index where the photon was placed.
-    std::vector<uint16_t> photon_subtick;   ///< Sub-tick index (subsample bin) where the photon was placed.
-
-    // per-PE-deposit info
-    int nPEDeposits;                          ///< Number of distinct PE deposit entries.
-    std::vector<int>      pedeposit_tick;     ///< Waveform tick of the PE deposit.
-    std::vector<uint16_t> pedeposit_subtick;  ///< Sub-tick index of the PE deposit.
-    std::vector<uint16_t> pedeposit_nPE;      ///< Integer number of photoelectrons at this deposit (after QE, before gain fluctuation).
-    std::vector<float>    pedeposit_nEffectivePE; ///< Effective PE count after gain fluctuation (what was actually added to the waveform).
-    std::vector<float>    pedeposit_gainFactor;   ///< Ratio nEffectivePE/nPE: encodes the per-deposit gain fluctuation (DB-calibrated or Poisson).
+    bool fDoDebugTree { false }; ///< Whether to enable debug tree output.
+    TTree* fDebugTree { nullptr }; ///< Debug tree pointer (owned by TFileService).
+    DebugInfo_t fDebugInfo; ///< Collected debug information.
 
   }; // class SimPMTIcarus
   
@@ -406,11 +419,13 @@ SimPMTIcarus::SimPMTIcarus(Parameters const& config)
           ->makeGenerator(fElectronicsNoiseEngine)
       }
     , makePMTsimulator(config().algoConfig())
-    , fDebugTree(config().DebugTree())
+    , fDoDebugTree(config().DebugTree())
 
   {
     // Call appropriate produces<>() functions here.
     produces<std::vector<raw::OpDetWaveform>>();
+    produces<std::vector<icarus::WaveformBaseline>>();
+    produces<art::Assns<raw::OpDetWaveform, icarus::WaveformBaseline>>();
     if (fMakeMetadata) {
       produces<std::vector<sbn::OpDetWaveformMeta>>();
       produces<art::Assns<raw::OpDetWaveform, sbn::OpDetWaveformMeta>>();
@@ -423,32 +438,32 @@ SimPMTIcarus::SimPMTIcarus(Parameters const& config)
   // ---------------------------------------------------------------------------
   void SimPMTIcarus::beginJob()
   {
-    if (fDebugTree) {
+    if (fDoDebugTree) {
       art::ServiceHandle<art::TFileService> tfs;
-      fTree = tfs->make<TTree>("SimPMTDebug","Debug tree for SimPMTIcarus");
-      fTree->Branch("run", &run, "run/I");
-      fTree->Branch("event", &event, "event/I");
-      fTree->Branch("channel", &channel, "channel/I");
-      fTree->Branch("nSamples", &nSamples, "nSamples/I");
-      fTree->Branch("nSubsamples", &nSubsamples, "nSubsamples/I");
-      fTree->Branch("timeDelay_us", &timeDelay_us, "timeDelay_us/F");
-      fTree->Branch("triggerOffsetPMT_us", &triggerOffsetPMT_us, "triggerOffsetPMT_us/F");
-      fTree->Branch("waveform_adc", &waveform_adc);
-      fTree->Branch("nInputPhotons", &nInputPhotons, "nInputPhotons/I");
-      fTree->Branch("nDetectedPhotons", &nDetectedPhotons, "nDetectedPhotons/I");
-      fTree->Branch("photon_start_x", &photon_start_x);
-      fTree->Branch("photon_start_y", &photon_start_y);
-      fTree->Branch("photon_start_z", &photon_start_z);
-      fTree->Branch("photon_simTime_ns", &photon_simTime_ns);
-      fTree->Branch("photon_waveformTime_us", &photon_waveformTime_us);
-      fTree->Branch("photon_tick", &photon_tick);
-      fTree->Branch("photon_subtick", &photon_subtick);
-      fTree->Branch("nPEDeposits", &nPEDeposits, "nPEDeposits/I");
-      fTree->Branch("pedeposit_tick", &pedeposit_tick);
-      fTree->Branch("pedeposit_subtick", &pedeposit_subtick);
-      fTree->Branch("pedeposit_nPE", &pedeposit_nPE);
-      fTree->Branch("pedeposit_nEffectivePE", &pedeposit_nEffectivePE);
-      fTree->Branch("pedeposit_gainFactor", &pedeposit_gainFactor);
+      fDebugTree = tfs->make<TTree>("SimPMTDebug","Debug tree for SimPMTIcarus");
+      fDebugTree->Branch("run", &fDebugInfo.run, "run/I");
+      fDebugTree->Branch("event", &fDebugInfo.event, "event/I");
+      fDebugTree->Branch("channel", &fDebugInfo.channel, "channel/I");
+      fDebugTree->Branch("nSamples", &fDebugInfo.nSamples, "nSamples/I");
+      fDebugTree->Branch("nSubsamples", &fDebugInfo.nSubsamples, "nSubsamples/I");
+      fDebugTree->Branch("timeDelay_us", &fDebugInfo.timeDelay_us, "timeDelay_us/F");
+      fDebugTree->Branch("triggerOffsetPMT_us", &fDebugInfo.triggerOffsetPMT_us, "triggerOffsetPMT_us/F");
+      fDebugTree->Branch("waveform_adc", &fDebugInfo.waveform_adc);
+      fDebugTree->Branch("nInputPhotons", &fDebugInfo.nInputPhotons, "nInputPhotons/I");
+      fDebugTree->Branch("nDetectedPhotons", &fDebugInfo.nDetectedPhotons, "nDetectedPhotons/I");
+      fDebugTree->Branch("photon_start_x", &fDebugInfo.photon_start_x);
+      fDebugTree->Branch("photon_start_y", &fDebugInfo.photon_start_y);
+      fDebugTree->Branch("photon_start_z", &fDebugInfo.photon_start_z);
+      fDebugTree->Branch("photon_simTime_ns", &fDebugInfo.photon_simTime_ns);
+      fDebugTree->Branch("photon_waveformTime_us", &fDebugInfo.photon_waveformTime_us);
+      fDebugTree->Branch("photon_tick", &fDebugInfo.photon_tick);
+      fDebugTree->Branch("photon_subtick", &fDebugInfo.photon_subtick);
+      fDebugTree->Branch("nPEDeposits", &fDebugInfo.nPEDeposits, "nPEDeposits/I");
+      fDebugTree->Branch("pedeposit_tick", &fDebugInfo.pedeposit_tick);
+      fDebugTree->Branch("pedeposit_subtick", &fDebugInfo.pedeposit_subtick);
+      fDebugTree->Branch("pedeposit_nPE", &fDebugInfo.pedeposit_nPE);
+      fDebugTree->Branch("pedeposit_nEffectivePE", &fDebugInfo.pedeposit_nEffectivePE);
+      fDebugTree->Branch("pedeposit_gainFactor", &fDebugInfo.pedeposit_gainFactor);
     }
   } // SimPMTIcarus::beginJob()
 
@@ -460,15 +475,6 @@ SimPMTIcarus::SimPMTIcarus(Parameters const& config)
     
     //
     // fetch the input
-    //
-    auto pulseVecPtr = std::make_unique< std::vector< raw::OpDetWaveform > > ();
-    
-    std::unique_ptr<std::vector<sim::SimPhotons>> simphVecPtr;
-    if (fWritePhotons)
-      simphVecPtr = std::make_unique< std::vector< sim::SimPhotons > > ();
-    
-    //
-    // prepare the output
     //
     art::Handle<std::vector<sim::SimPhotons> > pmtVector;
     art::Handle<std::vector<sim::SimPhotonsLite> > pmtLiteVector;
@@ -505,100 +511,117 @@ SimPMTIcarus::SimPMTIcarus(Parameters const& config)
     //
     // run the algorithm
     //
-    unsigned int nopch = 0;
-    if(pmtVector.isValid()) {
-      nopch = pmtVector->size();
-      for(auto const& photons : *pmtVector) {
 
-        if (fUseChannelStatusDB
-          && !lar::providerFrom<icarusDB::IPMTChannelStatusService>()->isGood(photons.OpChannel()))
-          continue;
-
-        // Make an empty SimPhotonsLite with the same channel number.
-
-        sim::SimPhotonsLite lite_photons(photons.OpChannel());
-
-        auto const& [ channelWaveforms, photons_used, debug ]
-          = PMTsimulator->simulate(photons, lite_photons, fDebugTree);
-        std::move(
-          channelWaveforms.cbegin(), channelWaveforms.cend(),
-          std::back_inserter(*pulseVecPtr)
-          );
-        if (simphVecPtr && photons_used)
-          simphVecPtr->emplace_back(std::move(photons_used.value()));
-        
-        if(fDebugTree && debug && debug->photons.size()>0) {
-          // fill debug tree variables
-          run = e.id().run();
-          event = e.id().event();
-          channel = debug->opChannel;
-          timeDelay_us = debug->timeDelay_us;
-          triggerOffsetPMT_us = debug->triggerOffsetPMT_us;
-          nSamples = debug->nSamples;
-          nSubsamples = debug->nSubsamples;
-          // fill full-window waveform
-          waveform_adc = debug->waveform;
-          // fill per photon info
-          nInputPhotons = photons.size();
-          nDetectedPhotons = debug->photons.size();
-          photon_simTime_ns.clear();
-          photon_waveformTime_us.clear();
-          photon_tick.clear();
-          photon_subtick.clear();
-          photon_start_x.clear();
-          photon_start_y.clear();
-          photon_start_z.clear();
-          for(auto const& phot : debug->photons) {
-            photon_start_x.push_back(phot.startX);
-            photon_start_y.push_back(phot.startY);
-            photon_start_z.push_back(phot.startZ);
-            photon_simTime_ns.push_back(phot.simTime_ns);
-            photon_waveformTime_us.push_back(phot.trigTime_us);
-            photon_tick.push_back(phot.tick);
-            photon_subtick.push_back(phot.subtick);
-          }
-          // fill per PE deposit info
-          nPEDeposits = debug->peDeposits.size();
-          pedeposit_tick.clear();
-          pedeposit_subtick.clear();
-          pedeposit_nPE.clear();
-          pedeposit_nEffectivePE.clear();
-          pedeposit_gainFactor.clear();
-          for(auto const& pedep : debug->peDeposits) {
-            pedeposit_tick.push_back(pedep.tick);
-            pedeposit_subtick.push_back(pedep.subtick);
-            pedeposit_nPE.push_back(pedep.nPE);
-            pedeposit_nEffectivePE.push_back(pedep.nEffectivePE);
-            pedeposit_gainFactor.push_back(pedep.gainFactor());
-          }
-
-          fTree->Fill();
-        } // if debug tree
-      } // for
+    // Prefer SimPhotons if available.
+    // Make sure that there are parallel inputs for both formats;
+    bool const useLitePhotons = !pmtVector.isValid();
+    
+    // storage for the photons that are not used (but still required)
+    std::vector<sim::SimPhotons> fakePhotons;
+    std::vector<sim::SimPhotonsLite> fakeLitePhotons;
+    
+    // these are the data collections passed to the algorithm
+    std::vector<sim::SimPhotons> const* pInputPhotons = &fakePhotons;
+    std::vector<sim::SimPhotonsLite> const* pInputLitePhotons = &fakeLitePhotons;
+    
+    // fill the relevant fake input vectors, and prepare the pointers
+    if (useLitePhotons) {
+      for (sim::SimPhotonsLite const& ph: *pmtLiteVector)
+        fakePhotons.emplace_back(ph.OpChannel);
+      pInputLitePhotons = pmtLiteVector.product();
     }
-    else if(pmtLiteVector.isValid()) {
-      nopch = pmtLiteVector->size();
-      for(auto const& lite_photons : *pmtLiteVector) {
-
-        if (fUseChannelStatusDB
-          && !lar::providerFrom<icarusDB::IPMTChannelStatusService>()->isGood(lite_photons.OpChannel))
-          continue;
-
-        // Make an empty SimPhotons with the same channel number.
-
-        sim::SimPhotons photons(lite_photons.OpChannel);
+    else {
+      for (sim::SimPhotons const& ph: *pmtVector)
+        fakeLitePhotons.emplace_back(ph.OpChannel());
+      pInputPhotons = pmtVector.product();
+    }
+    
+    assert(pInputLitePhotons->size() == pInputPhotons->size());
+    
+    auto simphVecPtr = fWritePhotons? std::make_unique<std::vector<sim::SimPhotons>>(): nullptr;
+    auto pulseVecPtr = std::make_unique<std::vector<raw::OpDetWaveform>>();
+    auto baselineVecPtr = std::make_unique<std::vector<icarus::WaveformBaseline>>();
+    
+    for(auto const& [ photons, litePhotons ]
+      : util::zip(*pInputPhotons, *pInputLitePhotons)
+    ) {
       
-        auto const& [ channelWaveforms, photons_used, debug]
-          = PMTsimulator->simulate(photons, lite_photons);
-        std::move(
-          channelWaveforms.cbegin(), channelWaveforms.cend(),
-          std::back_inserter(*pulseVecPtr)
-          );
-      } // for
-    }
+      int const channel = photons.OpChannel();
+      assert(channel == litePhotons.OpChannel);
+      
+      if (fUseChannelStatusDB
+        && !lar::providerFrom<icarusDB::IPMTChannelStatusService>()->isGood(channel))
+        continue;
 
+      auto const& [ channelWaveforms, channelPedestals, photons_used, debug ]
+        = PMTsimulator->simulate(photons, litePhotons, fDoDebugTree);
+      assert(channelWaveforms.size() == channelPedestals.size());
+      std::move(
+        channelWaveforms.cbegin(), channelWaveforms.cend(),
+        std::back_inserter(*pulseVecPtr)
+        );
+      std::move(
+        channelPedestals.cbegin(), channelPedestals.cend(),
+        std::back_inserter(*baselineVecPtr)
+        );
+      assert(pulseVecPtr->size() == baselineVecPtr->size());
+      
+      if (!useLitePhotons && simphVecPtr && photons_used)
+        simphVecPtr->emplace_back(std::move(photons_used.value()));
+      
+      if(fDoDebugTree && debug && !debug->photons.empty()) {
+        
+        fDebugInfo = DebugInfo_t{}; // reset all information
+
+        // fill debug tree variables
+        fDebugInfo.run = e.id().run();
+        fDebugInfo.event = e.id().event();
+        fDebugInfo.channel = debug->opChannel;
+        fDebugInfo.timeDelay_us = debug->timeDelay_us;
+        fDebugInfo.triggerOffsetPMT_us = debug->triggerOffsetPMT_us;
+        fDebugInfo.nSamples = debug->nSamples;
+        fDebugInfo.nSubsamples = debug->nSubsamples;
+        // fill full-window waveform
+        fDebugInfo.waveform_adc = debug->waveform;
+        // fill per photon info
+        fDebugInfo.nInputPhotons = photons.size();
+        fDebugInfo.nDetectedPhotons = debug->photons.size();
+        for(auto const& phot : debug->photons) {
+          fDebugInfo.photon_start_x.push_back(phot.startX);
+          fDebugInfo.photon_start_y.push_back(phot.startY);
+          fDebugInfo.photon_start_z.push_back(phot.startZ);
+          fDebugInfo.photon_simTime_ns.push_back(phot.simTime_ns);
+          fDebugInfo.photon_waveformTime_us.push_back(phot.trigTime_us);
+          fDebugInfo.photon_tick.push_back(phot.tick);
+          fDebugInfo.photon_subtick.push_back(phot.subtick);
+        }
+        // fill per PE deposit info
+        fDebugInfo.nPEDeposits = debug->peDeposits.size();
+        for(auto const& pedep : debug->peDeposits) {
+          fDebugInfo.pedeposit_tick.push_back(pedep.tick);
+          fDebugInfo.pedeposit_subtick.push_back(pedep.subtick);
+          fDebugInfo.pedeposit_nPE.push_back(pedep.nPE);
+          fDebugInfo.pedeposit_nEffectivePE.push_back(pedep.nEffectivePE);
+          fDebugInfo.pedeposit_gainFactor.push_back(pedep.gainFactor());
+        }
+
+        fDebugTree->Fill();
+      } // if debug tree
+      
+    } // for scintillation photons
+    
     mf::LogInfo("SimPMTIcarus") << "Generated " << pulseVecPtr->size()
-      << " waveforms out of " << nopch << " optical channels.";
+      << " waveforms out of " << pInputPhotons->size() << " optical channels.";
+    
+    // waveform baselines
+    auto baselineAssns
+      = std::make_unique<art::Assns<raw::OpDetWaveform, icarus::WaveformBaseline>>();
+    art::PtrMaker<raw::OpDetWaveform> const makeWaveformPtr{ e };
+    art::PtrMaker<icarus::WaveformBaseline> const makeBaselinePtr{ e };
+    for (std::size_t const iWaveform: util::counter(pulseVecPtr->size())) {
+      baselineAssns->addSingle
+        (makeWaveformPtr(iWaveform), makeBaselinePtr(iWaveform));
+    } // for
     
     // waveform metadata
     std::unique_ptr<std::vector<sbn::OpDetWaveformMeta>> metadataVec;
@@ -621,6 +644,8 @@ SimPMTIcarus::SimPMTIcarus(Parameters const& config)
     // save the result
     //
     e.put(std::move(pulseVecPtr));
+    e.put(std::move(baselineVecPtr));
+    e.put(std::move(baselineAssns));
     if (fMakeMetadata) {
       e.put(std::move(metadataVec));
       e.put(std::move(metadataAssns));
