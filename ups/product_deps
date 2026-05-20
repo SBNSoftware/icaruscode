@@ -253,11 +253,7 @@ product				version		qual	flags		<table_format=2>
 fftw				v3_3_10		-
 icarus_data			v10_06_06	-
 icarus_signal_processing	v10_06_00_01	-
-<<<<<<< chore/smithja-ci-test
-icarusalg			v10_20_03	-
-=======
 icarusalg			v10_20_07	-
->>>>>>> develop
 icarusutil			v10_15_00	-
 libwda				v2_30_0a	-
 sbncode				v10_20_07	-
