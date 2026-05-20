@@ -67,7 +67,6 @@ physics.producers.pdfastsim.InputSourcesLabels: [ "pdfastsimintime", "pdfastsimo
 
 #Add a process that merges the dropped MCParticles
 physics.producers.largeantdropped: @local::icarus_merge_intime_dropped_mcparts
-physics.producers.largeantdropped.SkipTrackIDOffsets: @erase
 physics.producers.largeantdropped.InputSourcesLabels: [ "larg4intime:droppedMCParticles", "larg4outtime:droppedMCParticles"]
 
 #Add a process for sedlite generation
