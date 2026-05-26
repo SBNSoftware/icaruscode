@@ -1674,8 +1674,7 @@ icarus::trigger::TriggerSimulationOnGates::triggerInfoToTriggerData(
   
   detinfo::timescales::electronics_time const beamTime
     = detTimings.BeamGateTime() + nanoseconds{ beamGate.Start() };
-  TriggerBits_t const beamBits
-    = fBeamBits.value_or(makeTriggerBits(beamGate.BeamType()));
+  TriggerBits_t const beamBits = fBeamBits.value_or(makeTriggerBits(beamGate));
   
   std::vector<raw::Trigger> triggers;
   
@@ -1685,6 +1684,7 @@ icarus::trigger::TriggerSimulationOnGates::triggerInfoToTriggerData(
   extraInfo.sourceType  = beamTypeToTriggerSource(beamGate.BeamType());
   extraInfo.gateID      = eventInfo.event;
   extraInfo.gateCount   = eventInfo.event;
+  extraInfo.beamGateTimestamp = eventInfo.time;
   
   TriggerBits_t retriggerMask { 0 };
   bool fillExtraInfo = fExtraInfo;
@@ -1733,7 +1733,6 @@ icarus::trigger::TriggerSimulationOnGates::triggerInfoToTriggerData(
       
       if (fillExtraInfo) {
         extraInfo.triggerTimestamp  = sbn::ExtraTriggerInfo::NoTimestamp;
-        extraInfo.beamGateTimestamp = eventInfo.time;
         
         extraInfo.triggerID    = sbn::ExtraTriggerInfo::NoID;
       } // if extra info
@@ -1829,11 +1828,8 @@ icarus::trigger::TriggerSimulationOnGates::makeHistogramFromBinnedContent(
 double icarus::trigger::TriggerSimulationOnGates::eventTimestampInSeconds
   (art::Timestamp const& time)
 {
-  // high value: seconds from the Epoch (Jan 1, 1970 UTC?);
-  // low value: nanoseconds after that the start of that second
-  return static_cast<double>(time.timeHigh())
-    + static_cast<double>(time.timeHigh()) * 1e-9;
-} // icarus::trigger::TriggerSimulationOnGates::eventTimestampInSeconds()
+  return static_cast<double>(TimestampToUTC(time)) / 1e9;
+}
 
 
 //------------------------------------------------------------------------------
