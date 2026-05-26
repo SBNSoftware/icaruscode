@@ -33,3 +33,6 @@ physics.producers.cafmaker.SystWeightLabels: []
 physics.producers.cafmaker.SaveGENIEEventRecord: false
 
 physics.producers.cafmaker.TriggerLabel: "daqTrigger" # the general configuration, for MC, has a different one (see also https://github.com/SBNSoftware/icaruscode/issues/556)
+
+# Disble old blinding scheme-- switch to decimated datasets
+physics.producers.cafmaker.CreateBlindedCAF: false
