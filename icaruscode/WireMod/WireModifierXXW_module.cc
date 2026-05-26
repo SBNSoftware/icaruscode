@@ -1,4 +1,5 @@
 // std inlcudes
+#include <cstdlib>
 #include <string>
 #include <vector>
 
@@ -15,6 +16,7 @@
 #include "art/Framework/Services/Registry/ServiceHandle.h"
 #include "art_root_io/TFileService.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
+#include "cetlib_except/exception.h"
 
 // larsoft includes
 #include "larcore/Geometry/Geometry.h"
@@ -191,8 +193,11 @@ namespace wiremod
       if (not fLocalRatios)
       {
         char* icaruscode_dir = std::getenv("ICARUSCODE_DIR");
-        assert(icaruscode_dir
-          && "WireModifierXXW::reconfigure - ICARUSCODE_DIR environment variable must be set!");
+        if (not icaruscode_dir)
+        {
+          throw cet::exception("WireModifierXXW")
+            << "WireModifierXXW::reconfigure - ICARUSCODE_DIR environment variable must be set!";
+        }
         dir_path = std::string(icaruscode_dir) + "/root/WireMod";
       } else
       {
@@ -202,11 +207,22 @@ namespace wiremod
         << "WireModifierXXW::reconfigure - Get file " << fRatioFileName_XXW
         << " from directory " << dir_path;
       TFile* ratioFile = new TFile((dir_path + "/" + fRatioFileName_XXW).c_str(), "READ"); // read only
-      assert(ratioFile && "WireModifierXXW::reconfigure - Could not open ratio file");
+      if (not ratioFile)
+      {
+        throw cet::exception("WireModifierXXW")
+          << "WireModifierXXW::reconfigure - Could not open ratio file";
+      }
       // the file exists! pull the ratios
-      assert(ratioFile && "WireModifierXXW::reconfigure - WireMod Ratio File Must Exist!");
-      assert(!ratioFile->IsZombie()
-        && "WireModifierXXW::reconfigure - WireMod Ratio File Must Not be a Zombie!");
+      if (not ratioFile)
+      {
+        throw cet::exception("WireModifierXXW")
+          << "WireModifierXXW::reconfigure - WireMod Ratio File Must Exist!";
+      }
+      if (ratioFile->IsZombie())
+      {
+        throw cet::exception("WireModifierXXW")
+          << "WireModifierXXW::reconfigure - WireMod Ratio File Must Not be a Zombie!";
+      }
       mf::LogVerbatim("WireModifierXXW")
         << "WireModifierXXW::reconfigure - Getting XXW Scales...";
       std::vector<std::string> nameVec_charge_XXW = pset.get<std::vector<std::string>>("XXWScaleIntegral");
@@ -281,8 +297,11 @@ namespace wiremod
       if (not fLocalRatios)
       {
         char* icaruscode_dir = std::getenv("ICARUSCODE_DIR");
-        assert(icaruscode_dir
-          && "WireModifierXXW::reconfigure - ICARUSCODE_DIR environment variable must be set!");
+        if (not icaruscode_dir)
+        {
+          throw cet::exception("WireModifierXXW")
+            << "WireModifierXXW::reconfigure - ICARUSCODE_DIR environment variable must be set!";
+        }
         dir_path = std::string(icaruscode_dir) + "/root/WireMod";
       } else
       {
@@ -292,11 +311,22 @@ namespace wiremod
         << "WireModifierXXW::reconfigure - Get file " << fRatioFileName_YZ
         << " from directory " << dir_path;
       TFile* ratioFile = new TFile((dir_path + "/" + fRatioFileName_YZ).c_str(), "READ"); // read only
-      assert(ratioFile && "WireModifierXXW::reconfigure - Could not open ratio file");
+      if (not ratioFile)
+      {
+        throw cet::exception("WireModifierXXW")
+          << "WireModifierXXW::reconfigure - Could not open ratio file";
+      }
       // the file exists! pull the ratios
-      assert(ratioFile && "WireModifierXXW::reconfigure - WireMod Ratio File Must Exist!");
-      assert(!ratioFile->IsZombie()
-        && "WireModifierXXW::reconfigure - WireMod Ratio File Must Not be a Zombie!");
+      if (not ratioFile)
+      {
+        throw cet::exception("WireModifierXXW")
+          << "WireModifierXXW::reconfigure - WireMod Ratio File Must Exist!";
+      }
+      if (ratioFile->IsZombie())
+      {
+        throw cet::exception("WireModifierXXW")
+          << "WireModifierXXW::reconfigure - WireMod Ratio File Must Not be a Zombie!";
+      }
       mf::LogVerbatim("WireModifierXXW")
         << "WireModifierXXW::reconfigure - Getting XXW Scales...";
       std::vector<std::string> nameVec_charge_YZ = pset.get<std::vector<std::string>>("YZScaleIntegral");
