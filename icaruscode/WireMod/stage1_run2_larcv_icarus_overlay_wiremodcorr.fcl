@@ -1,5 +1,5 @@
 #include "WireModifierXXW.fcl"
-#include "stage1_run2_icarus_overlay.fcl"
+#include "stage1_run2_larcv_icarus_overlay.fcl"
 
 # add the WireMod sequence to the standard stage1 sequence
 physics.reco:
