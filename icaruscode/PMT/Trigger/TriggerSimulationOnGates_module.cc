@@ -1,6 +1,6 @@
 /**
  * @file   TriggerSimulationOnGates_module.cc
- * @brief  Plots of efficiency for triggers based on PMT sliding windows.
+ * @brief  Defines _art_ module `icarus::trigger::TriggerSimulationOnGates`.
  * @author Gianluca Petrillo (petrillo@slac.stanford.edu)
  * @date   March 27, 2021
  */
@@ -133,10 +133,10 @@ namespace icarus::trigger { class TriggerSimulationOnGates; }
  * example and terse explanations (it will also include the full list of
  * available options for multiple choice parameters like `BeamGateReference`).
  * 
- * * `TriggerGatesTag` (string, mandatory): name of the module instance which
- *     produced the trigger primitives to be used as input; it must not include
- *     any instance name, as the instance names will be automatically added from
- *     `Thresholds` parameter.
+ * * `TriggerGatesTag` (input tag, _mandatory_): name of the module instance
+ *     which produced the trigger primitives to be used as input; it must not
+ *     include any instance name, as the instance names will be automatically
+ *     added from `Thresholds` parameter.
  *     The typical trigger primitives used as input are LVDS discriminated
  *     output combined into trigger windows (e.g. from
  *     `icarus::trigger::SlidingWindowTrigger` module).
@@ -180,11 +180,11 @@ namespace icarus::trigger { class TriggerSimulationOnGates; }
  *     only one trigger will be found per input gate.
  * * `TriggerDelay` (time, default: `0 ns`): fixed time to add to the time of
  *     all the triggers.
- * * `EmitEmpty` (flag, default: `true`): if set, each gate gets at least a
+ * * `EmitEmpty` (flag, default: `true`): if set, each beam gate gets at least a
  *     trigger object, and if there is no trigger during a gate its trigger
  *     object will be marked by having no bit set. If unset, when there is no
  *     trigger in the gate, no trigger object will be produced, but the counts
- *     will still proceed.
+ *     will still increase.
  * * `ExtraInfo` (flag, default: `false`): also produces a data product
  *     `sbn::ExtraTriggerInfo` with reduced information from the _first_ of the
  *     triggers from the _first_ of the gates. If the first gate did not trigger
@@ -235,7 +235,9 @@ namespace icarus::trigger { class TriggerSimulationOnGates; }
  *     there is only one threshold (see `TriggerGatesTag`, `Thresholds` and
  *     `KeepThresholdName` configuration parameters);
  *     at least one trigger object is produced for each of the beam gates found
- *     in the input data product specified by the `BeamGates` parameter.
+ *     in the input data product specified by the `BeamGates` parameter, unless
+ *     `EmitEmpty` is set to `false`, in which case gates with no trigger will
+ *     not contribute to the trigger collection.
  *     Each trigger object has the time stamp matching the time when the trigger
  *     criteria were satisfied, plus the fixed delay in the `TriggerDelay`
  *     configuration parameter. All triggers feature the bits specified in
@@ -249,7 +251,7 @@ namespace icarus::trigger { class TriggerSimulationOnGates; }
  *     trigger fired in that beam gate, a _reduced_ version of
  *     `sbn::ExtraTriggerInfo` is provided; currently it is guaranteed to have:
  *     * `triggerTimestamp`: invalid timestamp if the trigger did not fire.
- *       Otherwise, if `TriggerTimestampFrom` is not empty, thextimestamp is
+ *       Otherwise, if `TriggerTimestampFrom` is not empty, the timestamp is
  *       taken from `sbn::ExtraTriggerInfo::triggerTimestamp` (if valid) or
  *       `sbn::ExtraTriggerInfo::beamGateTimestamp`; if `TriggerTimestampFrom`
  *       is empty, from the _art_ event timestamp.
@@ -379,11 +381,13 @@ namespace icarus::trigger { class TriggerSimulationOnGates; }
  * specified in `BeamGates`, event by event. The specified beam gate times are
  * on beam gate time scale, i.e. their reference time `0` is the time of the
  * beam gate as known by `detinfo::DetectorClocks::BeamGateTime()`.
- * In case the same beam gate is desired for all events, such data product can
- * be produced by `icarus::trigger::WriteBeamGateInfo` module.
- * The trigger data product collection produced by this module has the same
- * number of entries as the beam gates in the data product, and they match
- * one-to-one.
+ * In case the same beam gate is desired for all events, an appropriate beam
+ * gate data product can be produced by `icarus::trigger::WriteBeamGateInfo`
+ * module.
+ * With default settings, the trigger data product collection produced by this
+ * module has the same number of entries as the beam gates in the data product,
+ * and they match one-to-one. Configuration parameters `EmitEmpty` and
+ * `DeadTime` may cause that correspondence to be broken.
  * 
  * 
  * 
@@ -475,7 +479,7 @@ class icarus::trigger::TriggerSimulationOnGates
 
     fhicl::Atom<bool> ExtraInfo {
       Name("ExtraInfo"),
-      Comment("produce a snm::ExtraTriggerInfo object our of the first gate"),
+      Comment("produce a sbn::ExtraTriggerInfo object our of the first gate"),
       false
       };
 
@@ -1656,6 +1660,7 @@ std::uint64_t icarus::trigger::TriggerSimulationOnGates::TimestampToUTC
   // in timeHigh() and nanoseconds in timeLow() (data?), others with the most
   // significant bits in timeHigh() and the least significant bits in timeLow();
   // this heuristic detects which is the case and unpacks it accordingly
+  // (safe since our data is all well past September 2001, UTC 10^9).
   return (ts.timeHigh() < 1'000'000'000UL)
     ? static_cast<std::uint64_t>(ts.value())
     : static_cast<std::uint64_t>(ts.timeHigh()) * 1'000'000'000ULL
