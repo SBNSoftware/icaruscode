@@ -1,0 +1,6 @@
+#include "cafmakerjob_icarus_sce.fcl"
+#include "cafmaker_add_detsim2d_icarus.fcl"
+#include "cafmaker_add_overlay_icarus.fcl"
+
+
+services.SpaceChargeService.InputFilename: "SCEoffsets/SCEoffsets_ICARUS_E500_DoubleCharge_voxelTH3.root"
