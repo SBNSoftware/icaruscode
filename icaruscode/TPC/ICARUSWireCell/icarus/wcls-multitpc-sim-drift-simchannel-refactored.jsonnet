@@ -94,7 +94,7 @@ local wcls_input = {
         	data: {
             	model: "",
             	scale: -1, //scale is -1 to correct a sign error in the SimDepoSource converter.
-		art_tag: "ionization", //name of upstream art producer of depos "label:instance:processName"
+		art_tag: std.extVar('SimEnergyDepositLabel'), //name of upstream art producer of depos "label:instance:processName"
             	assn_art_tag: "",
               id_is_track: false,    // Use this for "id-is-index" in the output
         	},
@@ -166,12 +166,21 @@ local wcls_output = {
   sp_thresholds: wcls.output.thresholds(name='spthresholds', tags=['threshold']),
 };
 
-//local deposio = io.numpy.depos(output);
-local drifter = sim.drifter;
+local overlay_drifter = std.extVar("overlay_drifter");
+
+local drifter = if overlay_drifter then {
+        local xregions = wc.unique_list(std.flattenArrays([v.faces for v in params.det.volumes])),
+        type: "wclsICARUSDrifter",
+        data: params.lar + sim.overlay_drifter_data {
+            TPC: 0,
+	    charge_scale: 1 
+        },
+    } else sim.drifter; 
+
 local setdrifter = g.pnode({
             type: 'DepoSetDrifter',
             data: {
-                drifter: "Drifter"
+                drifter: if overlay_drifter then "wclsICARUSDrifter" else "Drifter"
             }
         }, nin=1, nout=1,
         uses=[drifter]);
@@ -257,7 +266,7 @@ local wcls_simchannel_sink =
       time_offsets: [std.extVar('time_offset_u') * wc.us, std.extVar('time_offset_v') * wc.us, std.extVar('time_offset_y') * wc.us],
 
       // input from art::Event
-      sed_label: 'ionization',
+      sed_label: std.extVar('SimEnergyDepositLabel'),
 
       // output to art::Event
       simchan_label: 'simpleSC',

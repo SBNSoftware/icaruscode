@@ -1,1 +1,1 @@
-#include "intime_g4_icarus_sce.fcl"
+#include "standard_mc_intime_g4_icarus.fcl"

@@ -46,12 +46,14 @@ private:
   class ScaleInfo {
   public:
     struct Point {
+      int iplane;
       int itpc;
       double y, z;
     };
 
     class ScaleBin {
       public:
+      int iplane;
       int itpc;
       double ylo;
       double yhi;
@@ -94,6 +96,7 @@ DEFINE_ART_CLASS_TOOL(NormalizeYZSQL)
 constexpr bool icarus::calo::NormalizeYZSQL::ScaleInfo::ScaleBin::operator<
   (const ScaleBin& other) const noexcept
 {
+  if (iplane != other.iplane) return iplane < other.iplane;
   if (itpc != other.itpc) return itpc < other.itpc;
   if (yhi != other.yhi) return yhi < other.yhi;
   return zhi < other.zhi;
@@ -103,6 +106,7 @@ bool icarus::calo::NormalizeYZSQL::ScaleInfo::BinComp::operator()
   (const ScaleBin& a, const Point& b) const noexcept
 {
   // the bin `a` must be strictly before the point `b`
+  if (a.iplane != b.iplane) return a.iplane < b.iplane;
   if (a.itpc != b.itpc) return a.itpc < b.itpc;
   if (a.yhi <= b.y) return true;
   if (a.ylo > b.y) return false;
@@ -113,6 +117,7 @@ bool icarus::calo::NormalizeYZSQL::ScaleInfo::BinComp::operator()
   (const Point& a, const ScaleBin& b) const noexcept
 {
   // the point `a` must be strictly before the bin `b`
+  if (a.iplane != b.iplane) return a.iplane < b.iplane;
   if (a.itpc != b.itpc) return a.itpc < b.itpc;
   if (a.y < b.ylo) return true;
   if (a.y >= b.yhi) return false;
@@ -122,6 +127,7 @@ bool icarus::calo::NormalizeYZSQL::ScaleInfo::BinComp::operator()
 bool icarus::calo::NormalizeYZSQL::ScaleInfo::ScaleBin::contains
   (const Point& point) const noexcept
 {
+  if (point.iplane != iplane) return false;
   if (point.itpc != itpc) return false;
   if ((point.y < ylo) || (point.y >= yhi)) return false;
   return ((point.z >= zlo) && (point.z < zhi));
@@ -154,6 +160,7 @@ icarus::calo::NormalizeYZSQL::NormalizeYZSQL(fhicl::ParameterSet const &pset):
 void icarus::calo::NormalizeYZSQL::configure(const fhicl::ParameterSet& pset) {}
 
 const icarus::calo::NormalizeYZSQL::ScaleInfo& icarus::calo::NormalizeYZSQL::GetScaleInfo(uint64_t run) {
+
   // check the cache
   if (fScaleInfos.count(run)) {
     return fScaleInfos.at(run);
@@ -173,7 +180,13 @@ const icarus::calo::NormalizeYZSQL::ScaleInfo& icarus::calo::NormalizeYZSQL::Get
 
   // Iterate over the channels
   thisscale.bins.reserve(channels.size());
+
   for (unsigned ch = 0; ch < channels.size(); ch++) {
+
+    long lplane;
+    fDB.GetNamedChannelData(ch, "plane", lplane);
+    int iplane(lplane);
+
     std::string tpcname;
     fDB.GetNamedChannelData(ch, "tpc", tpcname);
     int itpc = -1;
@@ -201,6 +214,7 @@ const icarus::calo::NormalizeYZSQL::ScaleInfo& icarus::calo::NormalizeYZSQL::Get
     bin.yhi = yhi;
     bin.zlo = zlo;
     bin.zhi = zhi;
+    bin.iplane = iplane;
     bin.itpc = itpc;
     bin.scale = scale;
 
@@ -215,8 +229,12 @@ const icarus::calo::NormalizeYZSQL::ScaleInfo& icarus::calo::NormalizeYZSQL::Get
 
 double icarus::calo::NormalizeYZSQL::Normalize(double dQdx, const art::Event &e, 
     const recob::Hit &hit, const geo::Point_t &location, const geo::Vector_t &direction, double t0) {
+
   // Get the info
   ScaleInfo const& i = GetScaleInfo(e.id().runID().run());
+
+  // plane
+  int plane = hit.WireID().Plane;
 
   // compute itpc
   int cryo = hit.WireID().Cryostat;
@@ -226,7 +244,7 @@ double icarus::calo::NormalizeYZSQL::Normalize(double dQdx, const art::Event &e,
   double y = location.y();
   double z = location.z();
 
-  ScaleInfo::Point const point { itpc, y, z };
+  ScaleInfo::Point const point { plane, itpc, y, z };
   ScaleInfo::ScaleBin const* b = i.findBin(point);
 
   double const scale = b? b->scale: 1;
@@ -234,7 +252,7 @@ double icarus::calo::NormalizeYZSQL::Normalize(double dQdx, const art::Event &e,
     // TODO: what to do if no lifetime is found? throw an exception??
   }
 
-  if (fVerbose) std::cout << "NormalizeYZSQL Tool -- Data Cryo: " << cryo << " TPC: " << tpc << " iTPC: " << itpc << " Y: " << y << " Z: " << z << " scale: " << scale << std::endl;
+  if (fVerbose) std::cout << "NormalizeYZSQL Tool -- Data Cryo: " << cryo << " Plane: " << plane << " TPC: " << tpc << " iTPC: " << itpc << " Y: " << y << " Z: " << z << " scale: " << scale << std::endl;
 
   return dQdx / scale;
 }

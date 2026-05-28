@@ -196,6 +196,11 @@ namespace daq
    *                and <C1P3> = `0000'0nnn`
    *            * west wall: `0000'0000'00ss'snnn` with <C2P3> = `0000'0sss`
    *                and <C3P3> = `0000'0nnn`
+   *        * `beamToTrigger`: nanoseconds from the beam gate opening to the
+   *            first trigger in the cryostat. The value is converted from ticks
+   *            (`FPGAtickLength`) and is set to
+   *            `sbn::ExtraTriggerInfo::NoTrigger` (a value larger than the beam
+   *            gate duration) if no trigger is available in the cryostat.
    *     
    *     Information may be missing. If a count is not available, its value is
    *     set to `0` (which is an invalid value because their valid range starts
@@ -234,6 +239,8 @@ namespace daq
    *     module) to be used. Specifying its tag is mandatory, but if it is
    *     explicitly specified empty, the decoder will try to work around its
    *     absence.
+   * * `FPGAtickLength` (integral number, default: `25`): the duration of a
+   *     clock tick of the cryostat FPGA, in nanoseconds.
    * * `AllowDefaultLVDSmap` (flag, default: `false`): if set, when PMT channel
    *     mapping service is not available a legacy encoding pattern will be used
    *     for the `LVDSstatus` bits, and a warning will be printed. If unset and
@@ -273,6 +280,7 @@ namespace daq
     ExtraInfoPtr fTriggerExtra;
     BeamGateInfoPtr fBeamGateInfo;
     art::InputTag fTriggerConfigTag; ///< Data product with hardware trigger configuration.
+    unsigned int fFPGAtickLength; ///< Tick duration of FPGA clock [ns]
     bool fAllowDefaultLVDSmap; ///< Allow LVDS mapping without mapping database.
     bool fDiagnosticOutput; ///< Produces large number of diagnostic messages, use with caution!
     bool fDebug; ///< Use this for debugging this tool
@@ -335,7 +343,7 @@ namespace daq
     sbn::ExtraTriggerInfo::CryostatInfo unpackPrimitiveBits(
       std::size_t cryostat, bool firstEvent, unsigned long int counts,
       std::uint64_t connectors01, std::uint64_t connectors23,
-      sbn::bits::triggerLogicMask triggerLogic
+      sbn::bits::triggerLogicMask triggerLogic, unsigned int beamToTriggerTicks
       ) const;
 
     /// Encodes all the LVDS bits for the specified `cryostat`.
@@ -417,6 +425,7 @@ namespace daq
   void TriggerDecoderV3::configure(fhicl::ParameterSet const &pset) 
   {
     fTriggerConfigTag = pset.get<std::string>("TrigConfigLabel");
+    fFPGAtickLength = pset.get<unsigned int>("FPGAtickLength", 25);
     fAllowDefaultLVDSmap = pset.get<bool>("AllowDefaultLVDSmap", false);
     fDiagnosticOutput = pset.get<bool>("DiagnosticOutput", false);
     fDebug = pset.get<bool>("Debug", false);
@@ -496,8 +505,8 @@ namespace daq
   {
     icarus::details::KeyedCSVparser parser;
     parser.addPatterns({
-        { "Cryo. (EAST|WEST) Connector . and .", 1U }
-        , { "Trigger Type", 1U }
+        { "Cryo. (EAST|WEST) Connector . and .", 1U } // hex value looks like key
+        , { "Trigger Type", 1U } // might have been a string (currently it's not)
       });
     std::string_view const dataLine = firstLine(data);
     try {
@@ -800,7 +809,7 @@ namespace daq
     auto setCryoInfo = [
       this,&extra=*fTriggerExtra,isFirstEvent=(triggerID <= 1),data=parsedData
       ]
-        (std::size_t cryo)
+        (std::size_t cryo, bool present)
       {
         std::string const Side
           = (cryo == sbn::ExtraTriggerInfo::EastCryostat) ? "EAST": "WEST";
@@ -808,6 +817,17 @@ namespace daq
           ? "Cryo1 EAST": "Cryo2 WEST";
         // trigger logic: 0x01=adders; 0x02=majority; 0x07=both
         std::string const triggerLogicKey = "MJ_Adder Source " + Side;
+        std::string const cryoTriggerFlagKey = "Flag_" + Side;
+        
+        // information about the cryostat is always assumed to be available if
+        // the global trigger is located in it; but it can also be available if
+        // the trigger tick is not invalid (even in cases like the minimum bias
+        // in version 3+ which do not have any trigger location set)
+        // `Flag_XXX` is new in trigger string Version 3
+        bool const hasBeamToTriggerInfo
+          = data.hasItem(cryoTriggerFlagKey) && data.getItem(cryoTriggerFlagKey).getNumber<int>(0);
+        bool const hasBitInfo = present || hasBeamToTriggerInfo;
+        
         int const triggerLogicCode = data.hasItem(triggerLogicKey)
           ? data.getItem(triggerLogicKey).getNumber<int>(0): 0;
         sbn::bits::triggerLogicMask triggerLogicMask;
@@ -818,17 +838,22 @@ namespace daq
         else if(triggerLogicCode >= 3) // should be 7
           triggerLogicMask = mask(sbn::triggerLogic::PMTAnalogSum, sbn::triggerLogic::PMTPairMajority);
         
+        // `Delay_XXX` is new in trigger string Version 3
+        unsigned int const beamToTriggerTicks = hasBeamToTriggerInfo
+          ? data.getItem("Delay_" + Side).getNumber<int>(0)
+          : std::numeric_limits<unsigned int>::max();
+        
         extra.cryostats[cryo] = unpackPrimitiveBits(
           cryo, isFirstEvent,
           data.getItem(CrSide + " counts").getNumber<unsigned long int>(0),
-          data.getItem(CrSide + " Connector 0 and 1").getNumber<std::uint64_t>(0, 16),
-          data.getItem(CrSide + " Connector 2 and 3").getNumber<std::uint64_t>(0, 16),
-          triggerLogicMask
+          hasBitInfo? data.getItem(CrSide + " Connector 0 and 1").getNumber<std::uint64_t>(0, 16): 0ULL,
+          hasBitInfo? data.getItem(CrSide + " Connector 2 and 3").getNumber<std::uint64_t>(0, 16): 0ULL,
+          triggerLogicMask, beamToTriggerTicks
           );
       };
     
-    if (triggerLocation & 1) setCryoInfo(sbn::ExtraTriggerInfo::EastCryostat);
-    if (triggerLocation & 2) setCryoInfo(sbn::ExtraTriggerInfo::WestCryostat);
+    setCryoInfo(sbn::ExtraTriggerInfo::EastCryostat, triggerLocation & 1);
+    setCryoInfo(sbn::ExtraTriggerInfo::WestCryostat, triggerLocation & 2);
     
     //
     // absolute time trigger (raw::ExternalTrigger)
@@ -913,7 +938,7 @@ namespace daq
   sbn::ExtraTriggerInfo::CryostatInfo TriggerDecoderV3::unpackPrimitiveBits(
     std::size_t cryostat, bool firstEvent, unsigned long int counts,
     std::uint64_t connectors01, std::uint64_t connectors23,
-    sbn::bits::triggerLogicMask triggerLogic
+    sbn::bits::triggerLogicMask triggerLogic, unsigned int beamToTriggerTicks
   ) const {
     sbn::ExtraTriggerInfo::CryostatInfo cryoInfo;
     
@@ -927,6 +952,12 @@ namespace daq
       = encodeSectorBits(cryostat, connectors01, connectors23);
     
     cryoInfo.triggerLogicBits = static_cast<unsigned int>(triggerLogic);
+    
+    cryoInfo.beamToTrigger
+      = (beamToTriggerTicks == std::numeric_limits<unsigned int>::max())
+      ? sbn::ExtraTriggerInfo::CryostatInfo::NoTrigger
+      : beamToTriggerTicks * fFPGAtickLength
+      ;
     
     return cryoInfo;
   } // TriggerDecoderV3::unpackPrimitiveBits()

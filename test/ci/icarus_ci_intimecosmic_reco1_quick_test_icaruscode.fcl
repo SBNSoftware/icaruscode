@@ -1,1 +1,6 @@
-#include "stage1_run2_icarus_MC.fcl"
+#include "standard_mc_all_stage1_icarus.fcl"
+
+physics.producers.mcreco.MCParticleDroppedLabel: "largeantdropped"
+
+# silence SimDriftElectrons warnings, for 1 event these crerate a 900MB log file.
+services.message.destinations.STDCOUT.categories.SimDriftElectrons: { limit: 0 }

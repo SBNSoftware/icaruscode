@@ -1,0 +1,3 @@
+#include "run_MPVMPR_supera.fcl"
+
+physics.analyzers.supera.supera_params: "supera_icarus_MC_MPVMPR_cryoE_PMT_CRT_yz.fcl"

@@ -24,13 +24,13 @@ function(params, tools, override = {}) {
       dft: wc.tn(tools.dft),
       field_response: wc.tn(tools.field),
       ftoffset: 0.0, // default 0.0
-      ctoffset: 0.5*wc.microsecond, //2.0*wc.microsecond, // default -8.0
+      ctoffset: 1.3*wc.microsecond, //2.0*wc.microsecond, // default -8.0
       per_chan_resp: pc.name,
       fft_flag: 0,  // 1 is faster but higher memory, 0 is slightly slower but lower memory
       elecresponse : wc.tn(tools.elec_resp[2]),
       postgain: 1,  // default 1.2
       ADC_mV: 4096 / (3300.0 * wc.mV),  // default 4096/2000
-      troi_col_th_factor: 5.0,  // default 5
+      troi_col_th_factor: 3.0,  // default 5
       troi_ind_th_factor: 3.0,  // default 3
       lroi_rebin: 6, // default 6
       lroi_th_factor: 3.5, // default 3.5

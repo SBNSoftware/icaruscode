@@ -1,0 +1,13 @@
+###
+## This fhicl file is used to run "stage0" processing specifically for the case where all
+## TPC data is included in an artdaq data product from a single instance
+##
+#include "stage0_run2_icarus_mc.fcl"
+
+# Modify the drop so that we keep RawDigits from the MCDecoder stage
+outputs.rootOutput.outputCommands: ["keep *_*_*_*", 
+                                    "drop *_daq*_*_*", 
+                                    "drop recob::Wire*_MCDecodeTPCROI_*_*", 
+                                    "drop recob::Wire*_roifinder_*_*", 
+                                    "keep *_daq_simpleSC_*"]
+

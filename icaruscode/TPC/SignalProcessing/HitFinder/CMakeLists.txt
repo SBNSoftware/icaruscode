@@ -46,12 +46,6 @@ cet_build_plugin(HitMerger art::module LIBRARIES ${MODULE_LIBRARIES})
 cet_build_plugin(HitSelector art::module LIBRARIES ${MODULE_LIBRARIES})
 cet_build_plugin(ICARUSHitFinder art::module LIBRARIES ${MODULE_LIBRARIES})
 cet_build_plugin(HitConverter art::module LIBRARIES ${MODULE_LIBRARIES})
-cet_build_plugin(GaussHitFinderICARUS art::module 
-				 LIBRARIES ${MODULE_LIBRARIES}
-				 larreco::HitFinder
-				 larreco::CandidateHitFinderTool
-				 larreco::PeakFitterTool
-				)
 
 
 install_headers()

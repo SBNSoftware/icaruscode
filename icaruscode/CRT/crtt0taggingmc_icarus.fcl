@@ -1,0 +1,36 @@
+#include "services_common_icarus.fcl"
+#include "services_icarus_simulation.fcl"
+#include "simulationservices.fcl"
+#include "backtrackerservice.fcl"
+#include "crtt0tagging.fcl"
+#include "rootoutput_icarus.fcl"
+
+process_name: CRTT0Tagging
+
+services:
+{
+  ParticleInventoryService:   @local::standard_particleinventoryservice
+  BackTrackerService:         @local::standard_backtrackerservice       # from `backtrackerservice.fcl` (`larsim`)
+  message:                @local::icarus_message_services_prod_debug
+                          @table::icarus_common_services
+                            # Load the service that manages root files for histograms.
+  TFileService:           { fileName: "crtt0tagging_hist.root" }
+
+} # services
+services.BackTrackerService.BackTracker.SimChannelModuleLabel: "daq:simpleSC"
+
+outputs.out1: @local::icarus_rootoutput
+
+# The 'physics' section defines and configures some modules to do work on each event.
+physics:
+{
+  producers:
+  {
+    CRTT0Tagging: @local::icarus_crtt0taggingmc
+  }
+
+  # Schedule job step(s) for execution by defining the analysis module for this job.
+  reco: [ CRTT0Tagging ]
+
+  stream1: [ out1 ]
+}

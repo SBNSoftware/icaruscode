@@ -67,15 +67,12 @@ physics.producers.pdfastsim.InputSourcesLabels: [ "pdfastsimintime", "pdfastsimo
 
 #Add a process that merges the dropped MCParticles
 physics.producers.largeantdropped: @local::icarus_merge_intime_dropped_mcparts
+physics.producers.largeantdropped.SkipTrackIDOffsets: @erase
 physics.producers.largeantdropped.InputSourcesLabels: [ "larg4intime:droppedMCParticles", "larg4outtime:droppedMCParticles"]
 
 #Add a process for sedlite generation
 physics.producers.sedlite: @local::sbn_largeant_info_reducer 
 physics.producers.sedlite.SimEnergyDepositLabel: "largeant:LArG4DetectorServicevolTPCActive"
-
-# mcreco dropped label for intime
-physics.producers.mcreco.MCParticleDroppedLabel: "largeantdropped"
-physics.producers.mcreco.MCRecoPart.TrackIDOffsets: [0,10000000,20000000] #Account for track ID offsets in labeling primaries
 
 # simplemerge for intime
 # simplemerge for ML
@@ -104,7 +101,6 @@ physics.simulate: [ rns
                   , genericcrt
                   ### Do truth-level reconstruction
 		  , sedlite
-                  , mcreco
 		  , simplemerge
                   ]
 

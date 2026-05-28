@@ -223,11 +223,11 @@ void icarusDB::PMTTimingCorrectionsProvider::readTimeCorrectionDatabase(const ar
         mf::LogVerbatim(fLogCategory) << "channel, trigger cable delay, reset cable delay, laser corrections, muons corrections" << std::endl;
         for( auto const & [key, value] : fDatabaseTimingCorrections ){
             mf::LogVerbatim(fLogCategory) 
-               << key << " " 
-               << value.triggerCableDelay << "," 
+               << key << ": " 
+               << value.triggerCableDelay << ", " 
                << value.resetCableDelay << ", " 
                << value.laserCableDelay << ", "
-               << value.cosmicsCorrections << ","
+               << value.cosmicsCorrections
                << std::endl; 
         }
     }
