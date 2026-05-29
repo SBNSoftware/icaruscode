@@ -489,6 +489,9 @@ namespace wiremod
                                false, // XZ-Angle
                                false, // YZ-Angle
                                false, // dE/dx
+                               false, // X-XZAngle
+                               false, // X-dQ/dX
+                               false, // XZAngledQdX
                                (fRatioFileName_XXW != "NOFILE"),  // X-ThXW
                                BT_Offset); // Tick Offset
     if (fRatioFileName_YZ != "NOFILE")
