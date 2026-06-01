@@ -3,7 +3,7 @@
 # Purpose: main configuration file for simulation of scintillation visibility
 # Author:  Gianluca Petrillo (petrillo@slac.stanford.edu)
 # Date:    July 16, 2020
-# Version: 1.0
+# Version: 2.0alpha
 #
 # This configuration is base for the simulation of a few voxels of the
 # photon visibility lookup table ("photon library") for ICARUS.
@@ -12,17 +12,19 @@
 # This is the merge and optimization of `icarus_prodsingle_buildopticallibrary.fcl`
 # from `icaruscode` `v08_57_00` plus `prova_source.fcl`.
 #
+# NOTE (petrillo@slac.stanford.edu, 20260529)
+#   This configuration has been updated to parse with LArSoft's "new" LArG4
+#   but it has not been tested at all. Especially important is to verify that
+#   the physics list is correctly acquired by GEANT4.
 #
 
 
 # services
 #include "services_icarus_simulation.fcl"
-
-# modules
-#include "opticaldetectormodules.fcl"
 #include "opticaldetectorservices.fcl"
-#include "emptyevent_icarus.fcl"
-#include "largeantmodules_icarus.fcl"
+
+# presets
+#include "larg4_icarus_defs.fcl"
 
 
 process_name: LibraryBuild
@@ -34,14 +36,12 @@ process_name: LibraryBuild
 
 services: {
   
-                      @table::icarus_g4_services
+                      @table::icarus_all_larg4_services   # from `larg4_icarus_defs.fcl`
   
   # events are generated anew each time: default per-event policy is ineffective
-  NuRandomService:    @local::random_NuRandomService
+  NuRandomService:    @local::random_NuRandomService  # via `services_icarus_simulation.fcl`
   
-  OpDetResponse:      @local::standard_opdetresponse
-  
-  SpaceChargeService: @erase
+  OpDetResponse:      @local::standard_opdetresponse  # from `opticaldetectorservices.fcl`
   
 } # services
 
@@ -52,7 +52,7 @@ services.Geometry.DisableWiresInG4: false # we need to account for wire shadow
 
 services.LArG4Parameters: { # customization
   
-  @table::services.LArG4Parameters
+  @table::services.LArG4Parameters  # from `services_icarus_simulation.fcl`
   
   # enable this custom LArG4 physics list
   # with optical physics instead of fast scintillation
@@ -163,7 +163,7 @@ physics: {
     } # generator
     # --------------------------------------------------------------------------
     
-    largeant:  @local::icarus_largeant
+    @table::icarus_larg4_standard_producers
     
     # --------------------------------------------------------------------------
     
@@ -182,7 +182,7 @@ physics: {
     }
   } # analyzers
 
-  simulate:  [ generator, largeant ]
+  simulate:  [ generator, @sequence::icarus_larg4_standard_path ]
   analyzeIt: [ pmtresponse ]
 
 } # physics
