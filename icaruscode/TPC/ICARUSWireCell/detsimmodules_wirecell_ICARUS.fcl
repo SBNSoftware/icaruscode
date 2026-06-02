@@ -22,7 +22,6 @@ icarus_simwire_wirecell:
         inputers: ["wclsSimDepoSetSource:electron"]
         outputers: 
         [
-            "wclsDepoSetSimChannelSink:postdriftold",
             "wclsDepoFluxWriter:postdrift",
             "wclsFrameSaver:simdigits0",
             "wclsFrameSaver:simdigits1",

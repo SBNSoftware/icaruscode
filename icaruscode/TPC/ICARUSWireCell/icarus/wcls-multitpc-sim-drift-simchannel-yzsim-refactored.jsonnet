@@ -291,39 +291,39 @@ local sp = sp_maker(params, tools);
 local sp_pipes = [sp.make_sigproc(a) for a in tools.anodes];
 
 local rng = tools.random;
-local wcls_simchannel_sink_old = 
-  g.pnode({
-    type: 'wclsDepoSetSimChannelSink',
-    name: 'postdriftold',
-    data: {
-      artlabel: 'simpleSCOld',  // where to save in art::Event
-      anodes_tn: [wc.tn(anode) for anode in tools.anodes],
-      rng: wc.tn(rng),
-      tick: params.daq.tick,
-      start_time: -0.34 * wc.ms, // TriggerOffsetTPC from detectorclocks_icarus.fcl
-      readout_time: params.daq.readout_time,
-      nsigma: 3.0,
-      drift_speed: params.lar.drift_speed,
-      u_to_rp: 100 * wc.mm,
-      v_to_rp: 100 * wc.mm,
-      y_to_rp: 100 * wc.mm,
-
-      // GP: The shaping time of the electronics response (1.3us) shifts the peak
-      //     of the field response time. Eyeballing simulation times, it does this
-      //     by a bit less than the 1.3us (1us).
-      //
-      //     N.B. for future: there is likely an additional offset on the two induction
-      //     planes due to where the deconvolution precisely defines where the "peak"
-      //     of the pulse is. One may want to refine these parameters to account for that.
-      //     This perturbation shouldn't be more than a tick or two.
-      u_time_offset: std.extVar('time_offset_u') * wc.us,
-      v_time_offset: std.extVar('time_offset_v') * wc.us,
-      y_time_offset: std.extVar('time_offset_y') * wc.us,
-
-      g4_ref_time: -1500 * wc.us, // G4RefTime from detectorclocks_icarus.fcl
-      use_energy: true,
-    },
-  },nin=1, nout=1, uses=tools.anodes);
+//local wcls_simchannel_sink_old = 
+//  g.pnode({
+//    type: 'wclsDepoSetSimChannelSink',
+//    name: 'postdriftold',
+//    data: {
+//      artlabel: 'simpleSCOld',  // where to save in art::Event
+//      anodes_tn: [wc.tn(anode) for anode in tools.anodes],
+//      rng: wc.tn(rng),
+//      tick: params.daq.tick,
+//      start_time: -0.34 * wc.ms, // TriggerOffsetTPC from detectorclocks_icarus.fcl
+//      readout_time: params.daq.readout_time,
+//      nsigma: 3.0,
+//      drift_speed: params.lar.drift_speed,
+//      u_to_rp: 100 * wc.mm,
+//      v_to_rp: 100 * wc.mm,
+//      y_to_rp: 100 * wc.mm,
+//
+//      // GP: The shaping time of the electronics response (1.3us) shifts the peak
+//      //     of the field response time. Eyeballing simulation times, it does this
+//      //     by a bit less than the 1.3us (1us).
+//      //
+//      //     N.B. for future: there is likely an additional offset on the two induction
+//      //     planes due to where the deconvolution precisely defines where the "peak"
+//      //     of the pulse is. One may want to refine these parameters to account for that.
+//      //     This perturbation shouldn't be more than a tick or two.
+//      u_time_offset: std.extVar('time_offset_u') * wc.us,
+//      v_time_offset: std.extVar('time_offset_v') * wc.us,
+//      y_time_offset: std.extVar('time_offset_y') * wc.us,
+//
+//      g4_ref_time: -1500 * wc.us, // G4RefTime from detectorclocks_icarus.fcl
+//      use_energy: true,
+//    },
+//  },nin=1, nout=1, uses=tools.anodes);
 
 local wcls_simchannel_sink =
   [ g.pnode({
