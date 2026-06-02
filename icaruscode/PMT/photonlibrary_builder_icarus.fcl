@@ -173,6 +173,7 @@ physics: {
     pmtresponse: {
       module_type:  SimPhotonCounter
       GeneratorModule:            "generator"
+      InputModule:                "pdfastsim"
       Verbosity:                   0 # quiet!
       MakeAllPhotonsTree:      false
       MakeDetectedPhotonsTree: false
