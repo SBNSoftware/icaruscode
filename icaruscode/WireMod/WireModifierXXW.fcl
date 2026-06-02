@@ -1,0 +1,145 @@
+#include "stage1_icarus_defs.fcl"
+#include "wirechannelroiconverters_sbn.fcl"
+
+BEGIN_PROLOG
+
+dummyGaushit2dTPCEE: { @table::icarus_stage1_producers.gaushit2dTPCEE }
+dummyGaushit2dTPCEW: { @table::icarus_stage1_producers.gaushit2dTPCEW }
+dummyGaushit2dTPCWE: { @table::icarus_stage1_producers.gaushit2dTPCWE }
+dummyGaushit2dTPCWW: { @table::icarus_stage1_producers.gaushit2dTPCWW }
+dummyGaushit2dSeq: [dummyGaushit2dTPCEE, dummyGaushit2dTPCEW, dummyGaushit2dTPCWE, dummyGaushit2dTPCWW]
+dummyGaushit2dTab: { dummyGaushit2dTPCEE: @local::dummyGaushit2dTPCEE
+                     dummyGaushit2dTPCEW: @local::dummyGaushit2dTPCEW
+                     dummyGaushit2dTPCWE: @local::dummyGaushit2dTPCWE
+                     dummyGaushit2dTPCWW: @local::dummyGaushit2dTPCWW }
+
+WMROI2Wire:
+{
+  module_type: "ChannelROIToWire"
+  WireModuleLabelVec: [ "wire2channelroi2d:PHYSCRATEDATATPCEE",
+                        "wire2channelroi2d:PHYSCRATEDATATPCEW",
+                        "wire2channelroi2d:PHYSCRATEDATATPCWE",
+                        "wire2channelroi2d:PHYSCRATEDATATPCWW" ]
+  OutInstanceLabelVec: [ "PHYSCRATEDATATPCEE",
+                         "PHYSCRATEDATATPCEW",
+                         "PHYSCRATEDATATPCWE",
+                         "PHYSCRATEDATATPCWW" ]
+  DiagnosticOutput: false
+}
+
+WireMod:
+{
+  module_type: "WireModifierXXW"
+  RatioFileName_YZ: "NOFILE"
+  RatioFileName_XXW: "allRatio_Coarse_XW.root"
+  LocalRatios: false
+  EDepLabel: "filtersed"
+  EDepShiftedLabel: "shiftedpriorSCE"
+  SaveByChannel: false
+  SaveByWire: false
+  InRadians: false
+  XAbs: true
+}
+
+WireModTPCEE: @local::WireMod
+WireModTPCEE.Cryo: 0
+WireModTPCEE.TPCset: 0
+WireModTPCEE.XXWScaleIntegral: [ "TPC0_plane0_ratio_integral",
+                                 "TPC0_plane1_ratio_integral",
+                                 "TPC0_plane2_ratio_integral"]
+WireModTPCEE.XXWScaleWidth: [ "TPC0_plane0_ratio_width",
+                              "TPC0_plane1_ratio_width",
+                              "TPC0_plane2_ratio_width"]
+WireModTPCEE.YZScaleIntegral: [ "TPC0_plane0_ratio_integral",
+                                "TPC0_plane1_ratio_integral",
+                                "TPC0_plane2_ratio_integral"]
+WireModTPCEE.YZScaleWidth: [ "TPC0_plane0_ratio_width",
+                             "TPC0_plane1_ratio_width",
+                             "TPC0_plane2_ratio_width"]
+WireModTPCEE.WireLabel: "WMROI2Wire:PHYSCRATEDATATPCEE"
+WireModTPCEE.HitLabel: "dummyGaushit2dTPCEE"
+
+WireModTPCEW: @local::WireMod
+WireModTPCEW.Cryo: 0
+WireModTPCEW.TPCset: 1
+WireModTPCEW.XXWScaleIntegral: [ "TPC1_plane0_ratio_integral",
+                                 "TPC1_plane1_ratio_integral",
+                                 "TPC1_plane2_ratio_integral"]
+WireModTPCEW.XXWScaleWidth: [ "TPC1_plane0_ratio_width",
+                              "TPC1_plane1_ratio_width",
+                              "TPC1_plane2_ratio_width"]
+WireModTPCEW.YZScaleIntegral: [ "TPC1_plane0_ratio_integral",
+                                "TPC1_plane1_ratio_integral",
+                                "TPC1_plane2_ratio_integral"]
+WireModTPCEW.YZScaleWidth: [ "TPC1_plane0_ratio_width",
+                             "TPC1_plane1_ratio_width",
+                             "TPC1_plane2_ratio_width"]
+WireModTPCEW.WireLabel: "WMROI2Wire:PHYSCRATEDATATPCEW"
+WireModTPCEW.HitLabel: "dummyGaushit2dTPCEW"
+
+WireModTPCWE: @local::WireMod
+WireModTPCWE.Cryo: 1
+WireModTPCWE.TPCset: 0
+WireModTPCWE.XXWScaleIntegral: [ "TPC2_plane0_ratio_integral",
+                                 "TPC2_plane1_ratio_integral",
+                                 "TPC2_plane2_ratio_integral"]
+WireModTPCWE.XXWScaleWidth: [ "TPC2_plane0_ratio_width",
+                              "TPC2_plane1_ratio_width",
+                              "TPC2_plane2_ratio_width"]
+WireModTPCWE.YZScaleIntegral: [ "TPC2_plane0_ratio_integral",
+                                "TPC2_plane1_ratio_integral",
+                                "TPC2_plane2_ratio_integral"]
+WireModTPCWE.YZScaleWidth: [ "TPC2_plane0_ratio_width",
+                             "TPC2_plane1_ratio_width",
+                             "TPC2_plane2_ratio_width"]
+WireModTPCWE.WireLabel: "WMROI2Wire:PHYSCRATEDATATPCWE"
+WireModTPCWE.HitLabel: "dummyGaushit2dTPCWE"
+
+WireModTPCWW: @local::WireMod
+WireModTPCWW.Cryo: 1
+WireModTPCWW.TPCset: 1
+WireModTPCWW.XXWScaleIntegral: [ "TPC3_plane0_ratio_integral",
+                                 "TPC3_plane1_ratio_integral",
+                                 "TPC3_plane2_ratio_integral"]
+WireModTPCWW.XXWScaleWidth: [ "TPC3_plane0_ratio_width",
+                              "TPC3_plane1_ratio_width",
+                              "TPC3_plane2_ratio_width"]
+WireModTPCWW.YZScaleIntegral: [ "TPC3_plane0_ratio_integral",
+                                "TPC3_plane1_ratio_integral",
+                                "TPC3_plane2_ratio_integral"]
+WireModTPCWW.YZScaleWidth: [ "TPC3_plane0_ratio_width",
+                             "TPC3_plane1_ratio_width",
+                             "TPC3_plane2_ratio_width"]
+WireModTPCWW.WireLabel: "WMROI2Wire:PHYSCRATEDATATPCWW"
+WireModTPCWW.HitLabel: "dummyGaushit2dTPCWW"
+
+WireModSeq: [ WireModTPCEE, WireModTPCEW, WireModTPCWE, WireModTPCWW ]
+WireModTab: { WireModTPCEE: @local::WireModTPCEE
+                 WireModTPCEW: @local::WireModTPCEW
+                 WireModTPCWE: @local::WireModTPCWE
+                 WireModTPCWW: @local::WireModTPCWW }
+
+WMWireToROI:
+{
+  module_type: "WireToChannelROI"
+  WireModuleLabelVec: [ "WireModTPCEE",
+                        "WireModTPCEW",
+                        "WireModTPCWE",
+                        "WireModTPCWW" ]
+  OutInstanceLabelVec: [ "PHYSCRATEDATATPCEE",
+                         "PHYSCRATEDATATPCEW",
+                         "PHYSCRATEDATATPCWE",
+                         "PHYSCRATEDATATPCWW" ]
+  DiagnosticOutput: false
+}
+
+WireModSequence: [ @sequence::dummyGaushit2dSeq, WMROI2Wire, @sequence::WireModSeq, WMWireToROI ]
+WireModTable:
+{
+  @table::dummyGaushit2dTab
+  WMROI2Wire: @local::WMROI2Wire
+  @table::WireModTab
+  WMWireToROI: @local::WMWireToROI
+}
+
+END_PROLOG
