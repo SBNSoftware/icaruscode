@@ -1,5 +1,5 @@
 #include "services_icarus_simulation.fcl"
-#include "detsimmodules_wirecell_ICARUS.fcl"
+#include "detsimmodules_wirecell_per_TPC_ICARUS.fcl"
 #include "opdetsim_pmt_icarus.fcl"
 #include "crtsimmodules_icarus.fcl"
 #include "trigger_emulation_icarus.fcl"
