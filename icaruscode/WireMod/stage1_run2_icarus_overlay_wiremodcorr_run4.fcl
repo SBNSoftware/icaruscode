@@ -1,4 +1,4 @@
-#include "stage1_run2_icarus_overlay_wiremodcorr_closure.fcl"
+#include "stage1_run2_icarus_overlay_wiremodcorr.fcl"
 
 physics.producers.WireModTPCEE.RatioFileName_XXW: "Run4_XTheta_coarse.root"
 physics.producers.WireModTPCEW.RatioFileName_XXW: "Run4_XTheta_coarse.root"
