@@ -93,5 +93,6 @@ icarus_stage0_mc_producers.opdetonbeam.Waveforms:              shifted
 icarus_stage0_mc_producers.opdetonbeam.WaveformBaselineAssns:  shifted
 icarus_stage0_mc_producers.pmtbaselines.OpticalWaveforms:      shifted
 icarus_stage0_mc_producers.pmtfixedthr.OpticalWaveforms:       shifted
+icarus_stage0_mc_producers.crtpmt.TriggerLabel:                shifted
 
 END_PROLOG
