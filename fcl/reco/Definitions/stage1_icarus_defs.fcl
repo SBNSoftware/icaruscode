@@ -303,6 +303,13 @@ icarus_stage1_producers.gaushit2dTPCWE.CalDataModuleLabel:                      
 icarus_stage1_producers.gaushit2dTPCEW.CalDataModuleLabel:                                     "wire2channelroi2d:PHYSCRATEDATATPCEW"
 icarus_stage1_producers.gaushit2dTPCEE.CalDataModuleLabel:                                     "wire2channelroi2d:PHYSCRATEDATATPCEE"
 
+# Exclude input ChannelROIs on channels flagged bad by the channel-status database
+# (ICARUS bad-channel DB, tag configured via TPC_CalibrationTags global tag).
+icarus_stage1_producers.gaushit2dTPCWW.ExcludeBadChannels:                                     true
+icarus_stage1_producers.gaushit2dTPCWE.ExcludeBadChannels:                                     true
+icarus_stage1_producers.gaushit2dTPCEW.ExcludeBadChannels:                                     true
+icarus_stage1_producers.gaushit2dTPCEE.ExcludeBadChannels:                                     true
+
 # Lower thresholds for tighter filter width
 icarus_stage1_producers.gaushit2dTPCEE.HitFinderToolVec.CandidateHitsPlane0.RoiThreshold:      5.
 icarus_stage1_producers.gaushit2dTPCEE.HitFinderToolVec.CandidateHitsPlane1.RoiThreshold:      5.
