@@ -199,7 +199,7 @@ simple_plugin(WireModifier "module"
               lardata::Utilities
               lardata::DetectorInfoServices_DetectorClocksServiceStandard_service
               sbnobj::ICARUS_TPC
-              sbncode::WireMod_Utility
+              sbncode::sbncode_WireMod_Utility
               BASENAME_ONLY
 )
 
@@ -237,7 +237,7 @@ simple_plugin(WireModifierXXW "module"
               lardata::Utilities
               lardata::DetectorInfoServices_DetectorClocksServiceStandard_service
               sbnobj::ICARUS_TPC
-              sbncode::WireMod_Utility
+              sbncode::sbncode_WireMod_Utility
               BASENAME_ONLY
 )
 
