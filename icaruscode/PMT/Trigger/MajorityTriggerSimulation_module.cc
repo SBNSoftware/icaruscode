@@ -359,9 +359,9 @@ class icarus::trigger::MajorityTriggerSimulation
     using Name = fhicl::Name;
     using Comment = fhicl::Comment;
     
-    fhicl::Atom<std::string> TriggerGatesTag {
+    fhicl::Atom<art::InputTag> TriggerGatesTag {
       Name("TriggerGatesTag"),
-      Comment("label of the input trigger gate data product (no instance name)")
+      Comment("tag of the input trigger gate data product")
       };
 
     fhicl::Sequence<raw::ADC_Count_t> Thresholds {
@@ -597,6 +597,11 @@ class icarus::trigger::MajorityTriggerSimulation
   //@}
   
   
+  /// Returns `defModule` with instance name replaced by `thresholdStr`.
+  static art::InputTag makeTag
+    (art::InputTag const& defModule, std::string const& thresholdStr);
+  
+  
 }; // icarus::trigger::MajorityTriggerSimulation
 
 
@@ -629,10 +634,10 @@ icarus::trigger::MajorityTriggerSimulation::MajorityTriggerSimulation
   //
   // more complex parameter parsing
   //
-  std::string const discrModuleLabel = config().TriggerGatesTag();
+  art::InputTag const& discrModuleTag = config().TriggerGatesTag();
   for (raw::ADC_Count_t threshold: config().Thresholds()) {
     fADCthresholds[icarus::trigger::ADCCounts_t{threshold}]
-      = art::InputTag{ discrModuleLabel, util::to_string(threshold) };
+      = makeTag(discrModuleTag, util::to_string(threshold));
   }
   
   // initialization of a vector of atomic is not as trivial as it sounds...
@@ -941,6 +946,20 @@ icarus::trigger::MajorityTriggerSimulation::triggerInfoToTriggerData
     };
   
 } // icarus::trigger::MajorityTriggerSimulation::triggerInfoToTriggerData()
+
+
+//------------------------------------------------------------------------------
+art::InputTag icarus::trigger::MajorityTriggerSimulation::makeTag
+  (art::InputTag const& defModule, std::string const& thresholdStr)
+{
+  if (!thresholdStr.empty() && !defModule.instance().empty()) {
+    throw art::Exception(art::errors::Configuration)
+      << "Module tag instance name (`TriggerGatesTag`: '"
+      << defModule.encode() << "') and the threshold '" << thresholdStr
+      << "' are both set. One of them must be empty.\n";
+  }
+  return { defModule.label(), thresholdStr, defModule.process() };
+} // icarus::trigger::MajorityTriggerSimulation::makeTag()
 
 
 //------------------------------------------------------------------------------

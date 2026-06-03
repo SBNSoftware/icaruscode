@@ -61,6 +61,7 @@
 #
 
 #include "trigger_icarus.fcl"
+#include "triggerwindowdefs_icarus.fcl"
 
 # ------------------------------------------------------------------------------
 BEGIN_PROLOG
@@ -98,6 +99,18 @@ BEGIN_PROLOG
 # bad PMT channels (off or too noisy)
 triggeremu_config_icarus.settings.missing_pmt_channels:
   @local::icarus_trigger_channel_ignore_202101  # from trigger_icarus.fcl
+
+#
+# trigger timings
+#
+
+# Run3 delay extracted comparing emulated and hardware trigger time
+# from run 11952 (majority only), not presented yet
+triggeremu_config_icarus.settings.TriggerDelay_Run2: "345 ns"
+triggeremu_config_icarus.settings.TriggerDelay_Run3: "350 ns"
+triggeremu_config_icarus.settings.TriggerDelay:
+  @local::triggeremu_config_icarus.settings.TriggerDelay_Run2
+
 
 # beam gate window for trigger emulation:
 #  - duration (BNB: 1.6 us; NuMI: 9.5 us; and some buffer)
@@ -153,7 +166,7 @@ triggeremu_config_icarus.settings.trigger_channel_pairings_nosingle: [
 # settings for plotting efficiency under patterns of sliding window triggers
 # firing during beam time
 triggeremu_config_icarus.settings.SlidingWindowTriggerPatternsSingleWindow: [
-  { inMainWindow: 1                       },
+  @local::icarus_triggergate_basic.patterns.M1,  # from trigger_icarus.fcl
   { inMainWindow: 2                       },
   { inMainWindow: 3                       },
   { inMainWindow: 4                       },
@@ -169,11 +182,11 @@ triggeremu_config_icarus.settings.SlidingWindowTriggerPatternsWindowPair: [
   { inMainWindow: 4   inOppositeWindow: 4 },       # [3]
   { inMainWindow: 5   inOppositeWindow: 5 },       # [4]
   { inMainWindow: 6   inOppositeWindow: 6 },       # [5]
-  { inMainWindow: 2   sumOfOppositeWindows:  3 },  # [6]
-  { inMainWindow: 3   sumOfOppositeWindows:  5 },  # [7]
-  { inMainWindow: 4   sumOfOppositeWindows:  8 },  # [8]
-  { inMainWindow: 5   sumOfOppositeWindows: 10 },  # [9]
-  { inMainWindow: 8   sumOfOppositeWindows: 15 }   # [10]
+  @local::icarus_triggergate_basic.patterns.S3,    # [6]
+  @local::icarus_triggergate_basic.patterns.S5,    # [7]
+  @local::icarus_triggergate_basic.patterns.S8,    # [8]
+  @local::icarus_triggergate_basic.patterns.S10,   # [9]
+  @local::icarus_triggergate_basic.patterns.S15    # [10]
 ] # SlidingWindowTriggerPatternsWindowPair
 
 

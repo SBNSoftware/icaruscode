@@ -75,6 +75,24 @@ class icarus::opdet::PhotoelectronPulseFunction {
   /// Returns the polarity of the pulse (`+1`: positive, or `-1`: negative).
   int polarity() const { return doPolarity(); }
 
+  /**
+   * @brief Returns the integral of the discretised pulse [ADC × tick].
+   *
+   * For sampled implementations this is the exact sum of all stored samples.
+   * The default implementation returns zero; concrete classes that support
+   * integration should override this method.
+   */
+  ADCcount integral() const { return doIntegral(); }
+
+  /**
+   * @brief Returns a bias constant associated with this pulse.
+   *
+   * The physical interpretation of this constant is defined by the concrete
+   * implementation and the FHiCL configuration.  Returns `1.0` if the
+   * implementation does not define one.
+   */
+  double biasConstant() const { return doBiasConstant(); }
+
 
   // @{
   /**
@@ -136,6 +154,12 @@ class icarus::opdet::PhotoelectronPulseFunction {
   /// Returns the polarity of the pulse (+1 or -1).
   virtual int doPolarity() const
     { return ((peakAmplitude() - baseline()) >= ADCcount{ 0 })? +1: -1; }
+
+  /// Returns the integral of the discretised pulse [ADC × tick].
+  virtual ADCcount doIntegral() const { return ADCcount{ 0 }; }
+
+  /// Returns the bias constant associated with this pulse (1.0 if not set).
+  virtual double doBiasConstant() const { return 1.0; }
 
 
   /**

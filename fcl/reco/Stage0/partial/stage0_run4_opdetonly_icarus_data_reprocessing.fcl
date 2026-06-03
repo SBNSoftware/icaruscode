@@ -1,0 +1,19 @@
+## File:    stage0_run4_opdetonly_icarus_data_reprocessing.fcl
+## Purpose: Reprocessing of the optical products for the 2025 SBN "spring" DATA production
+
+#include "stage0_run2_opdetonly_icarus_data_reprocessing.fcl"
+
+## This job selectively re-runs only the PMT reconstruction path on DATA.
+## This was introduced for the post-processing of the 2025 SBN DATA productions.
+## It recalibrates existing optical hits according the specific needs of that sample.
+## This is valid only for RUN-4 data reprocessing from that production.
+
+## on top of the PE recalibration, this RUN-4 sample also needed new time calibrations
+## it used older timing tags that did not have a complete sets of tables for RUN-4
+physics.producers.ophit.RecalibrateTime: true
+
+## these were the tags used in the initial data processing (v10_06_00_01p05)
+## be careful: this is valide only for the SBN2025A "spring" production
+physics.producers.ophit.OldTimingDBTags.CablesTag:  @local::PMT_CalibrationTags_Run3_Feb2025.pmt_cables_delays_data
+physics.producers.ophit.OldTimingDBTags.LaserTag:   @local::PMT_CalibrationTags_Run3_Feb2025.pmt_laser_timing_data
+physics.producers.ophit.OldTimingDBTags.CosmicsTag: @local::PMT_CalibrationTags_Run3_Feb2025.pmt_cosmics_timing_data

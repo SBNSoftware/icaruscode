@@ -93,6 +93,8 @@ namespace icarus::opdet { struct SampledWaveformFunctionTool; }
  *     gain of the response, and that response will be rescaled from its gain
  *     value to the one specified with this parameter. If not specified,
  *     the response is used as is.
+ * * `BiasRatio` (real, optional): a user-configurable ratio associated with
+ *     the waveform gain; it affects the bias of the response (default: 1.0).
  *
  */
 struct icarus::opdet::SampledWaveformFunctionTool
@@ -119,7 +121,12 @@ struct icarus::opdet::SampledWaveformFunctionTool
       Name("Gain"),
       Comment("PMT amplification gain factor")
       };
-    
+
+    fhicl::OptionalAtom<double> BiasRatio {
+      Name("BiasRatio"),
+      Comment("user-configurable bias of the response gain (default: 1.0)")
+      };
+
   }; // struct Config
 
   
@@ -351,10 +358,13 @@ auto icarus::opdet::SampledWaveformFunctionTool::makePulseFunction
   //
   // create the algorithm
   //
+  double const biasRatio = config.BiasRatio().value_or(1.0);
+
   return std::make_unique<MyFunction_t>(
       std::move(waveformSpecs)      // waveformSpecs
     , config.TransitTime()          // peakTime
     , reqGain                       // gain
+    , biasRatio                     // bias
     );
   
 } // icarus::opdet::SampledWaveformFunctionTool::makePulseFunction()

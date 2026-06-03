@@ -19,8 +19,11 @@
 #include "icaruscode/PMT/Algorithms/DiscretePhotoelectronPulse.h"
 #include "icaruscode/PMT/Algorithms/PhotoelectronPulseFunction.h"
 #include "icaruscode/PMT/Algorithms/PedestalGeneratorAlg.h"
+#include "icaruscode/PMT/Calibration/PhotonCalibratorFromDB.h"
+#include "icaruscode/Timing/PMTTimingCorrections.h"
 #include "icaruscode/Utilities/quantities_utils.h" // util::value_t
 #include "icarusalg/Utilities/SampledFunction.h"
+#include "sbnobj/ICARUS/PMT/Data/WaveformBaseline.h"
 
 // LArSoft libraries
 #include "lardataobj/RawData/OpDetWaveform.h"
@@ -45,8 +48,11 @@
 
 // CLHEP libraries
 #include "CLHEP/Random/RandEngine.h" // CLHEP::HepRandomEngine
+#include "CLHEP/Random/RandGaussQ.h"
+#include "CLHEP/Random/RandPoisson.h"
 
 // C++ standard library
+#include <functional> // std::function
 #include <vector>
 #include <string>
 #include <tuple>
@@ -79,9 +85,36 @@ namespace icarus::opdet {
   class PMTsimulationAlg;
   
   class PMTsimulationAlgMaker;
-  
-} // namespace icarus::opdet
 
+  struct DebugPhoton {
+      float startX = 0.f;        // photon start X position [cm]
+      float startY = 0.f;        // photon start Y position [cm]
+      float startZ = 0.f;        // photon start Z position [cm]
+      float simTime_ns = 0.f;     // input photon time (simulation)
+      float trigTime_us = 0.f;    // timings.toTriggerTime(...) - offset + delay
+      int32_t tick = -1;          // tick index (optical clock tick)
+      uint16_t subtick = 0;       // subsample index
+  };
+
+  struct DebugPEDeposit {
+      int32_t tick = -1;       // where the PE got deposited
+      uint16_t subtick = 0;
+      uint16_t nPE = 0;           // integer PE count
+      float nEffectivePE = 0.f;   // after gain fluctuation (what you actually used)
+      float gainFactor() const { return (nPE > 0) ? (nEffectivePE / float(nPE)) : 0.f; }
+    };
+
+  struct DebugInfo {
+      uint32_t opChannel = 0;
+      float timeDelay_us = 0.f;
+      float triggerOffsetPMT_us = 0.f;
+      uint32_t nSamples = 0;
+      uint16_t nSubsamples = 0;
+      std::vector<DebugPhoton> photons; // per-photon bookkeeping
+      std::vector<DebugPEDeposit> peDeposits; // aggregated PE deposits actually used to build waveform
+      std::vector<util::value_t<DiscretePhotoelectronPulse::ADCcount>> waveform; // waveform data (ADC counts)
+    };
+} // namespace icarus::opdet
 
 // -----------------------------------------------------------------------------
 /// Helper class to cut a `raw::OpDetWaveform` from a longer waveform data.
@@ -183,6 +216,11 @@ class icarus::opdet::OpDetWaveformMakerClass {
  * For each converting photon, a photoelectron is added to the channel by
  * placing a template waveform shape into the channel waveform.
  *
+ * If enabled by `ApplyTimingDelays`, the timing correction service 
+ * `icarusDB::IPMTTimingCorrectionService` is used to simulate the chain of
+ * delays between the photon hitting the photocathode and the time its signal
+ * is digitized. The delay is dominated by the signal cable length (~200ns).
+ *
  * The timestamp of each waveform is based on the same scale as the trigger
  * time, as defined by `detinfo::DetectorClocks::TriggerTime()`.
  * On that scale, the timestamp pins down the time of the first sample of
@@ -218,6 +256,10 @@ class icarus::opdet::OpDetWaveformMakerClass {
  * to a nominal gain (`PMTspecs.gain` configuration parameter), which is
  * then fluctuated to obtain the effective gain. This feature can be
  * disabled by setting configuration parameter `FluctuateGain` to `false`.
+ *
+ * Two gain fluctuation models are available:
+ *
+ * **Legacy Poisson model** (default, `UseGainDatabase: false`):
  * The approximation used here is that the fluctuation is entirely due to
  * the first stage of multiplication. The gain on the first stage is
  * described as a random variable with Poisson distribution around the mean
@@ -237,6 +279,19 @@ class icarus::opdet::OpDetWaveformMakerClass {
  *
  * The first stage gain is computed by
  * `icarus::opdet::PMTsimulationAlg::ConfigurationParameters_t::PMTspecs_t::multiplicationStageGain()`.
+ *
+ * **Database gain model** (`UseGainDatabase: true`):
+ * When this mode is enabled the algorithm reads, for each PMT channel,
+ * the measured SPE area and SPE area width from the calibration database via
+ * the `calib::ICARUSPhotonCalibratorServiceFromDB` service.
+ * The number of effective photoelectrons added per true photoelectron is
+ * drawn from a Gaussian whose mean is the ratio of the channel SPE area
+ * to the nominal SPR template area, and whose standard
+ * deviation is the ratio of the channel SPE width to that nominal area.
+ * This model preserves the mean deposited charge per photoelectron to
+ * match the measured per-channel gain, while the nominal gain set in
+ * `PMTspecs` and in `SinglePhotonResponse` cancels out and can be left
+ * at any convenient value across run periods.
  *
  *
  * Dark noise
@@ -372,6 +427,7 @@ class icarus::opdet::PMTsimulationAlg {
 
     public:
   using microsecond = util::quantities::microsecond;
+  using microseconds = util::quantities::intervals::microseconds;
   using nanosecond = util::quantities::nanosecond;
   using hertz = util::quantities::hertz;
   using megahertz = util::quantities::megahertz;
@@ -475,7 +531,9 @@ class icarus::opdet::PMTsimulationAlg {
     hertz darkNoiseRate;
     float saturation; //equivalent to the number of p.e. that saturates the electronic signal
     PMTspecs_t PMTspecs; ///< PMT specifications.
-    bool doGainFluctuations; ///< Whether to simulate fain fluctuations.
+    bool doGainFluctuations; ///< Whether to simulate gain fluctuations.
+    bool useGainCalibDB; ///< Whether to use per-channel DB gain for fluctuations.
+    bool doTimingDelays; ///< Whether to simulate timing delays.
     /// @}
 
     /// @{
@@ -487,7 +545,13 @@ class icarus::opdet::PMTsimulationAlg {
     detinfo::LArProperties const* larProp = nullptr; ///< LarProperties service provider.
 
     detinfo::DetectorClocksData const* clockData = nullptr;
-    
+  
+    /// Timing delays service interfacing with database
+    icarusDB::PMTTimingCorrections const* timingDelays = nullptr;
+
+    /// SPE calibration provider for per-channel gain (nullptr = disabled).
+    icarusDB::PhotonCalibratorFromDB const* gainCalibProvider = nullptr;
+
     // detTimings is not really "optional" but it needs delayed construction.
     /// Detector clocks data wrapper.
     std::optional<detinfo::DetectorTimings> detTimings;
@@ -538,20 +602,36 @@ class icarus::opdet::PMTsimulationAlg {
   /**
    * @brief Returns the waveforms originating from simulated photons.
    * @param photons all the photons simulated to land on the channel
+   * @param lite_photons all the photons simulated to land on the channel
+   *                     (compact version)
+   * @param enableDebug (default: `false`) also return debug information
    * @return a list of optical waveforms, response to those photons,
-   *         and which photons were used (if requested)
+   *         the baseline of each waveform,
+   *         and which photons were used (if requested),
+   *         and debug information (if requested)
    *
    * Due to threshold readout, a single channel may result in multiple
    * waveforms, which are all on the same channel but disjunct in time.
+   * For each of the waveforms, a baseline object is also returned, with the
+   * value from `icarus::opdet::PedestalGeneratorAlg::pedestalLevel()`.
    * 
-   * The second element of the return value is optional and filled only
+   * The function takes both `sim::SimPhotons` and `sim::SimPhotonsLite` as
+   * mandatory input, but the latter is used only if the former collection is
+   * empty; otherwise, lite photon input is ignored.
+   * 
+   * The third element of the return value is optional and filled only
    * if the `trackSelectedPhotons` configuration parameter is set to `true`.
    * In that case, the returned `sim::SimPhotons` contains a copy of each of
    * the `photons` contributing to any of the waveforms.
    */
-  std::tuple<std::vector<raw::OpDetWaveform>, std::optional<sim::SimPhotons>>
+  std::tuple<
+    std::vector<raw::OpDetWaveform>, std::vector<icarus::WaveformBaseline>,
+    std::optional<sim::SimPhotons>,
+    std::optional<icarus::opdet::DebugInfo>
+    >
     simulate(sim::SimPhotons const& photons,
-             sim::SimPhotonsLite const& lite_photons);
+             sim::SimPhotonsLite const& lite_photons,
+             bool enableDebug = false);
 
   /// Prints the configuration into the specified output stream.
   template <typename Stream>
@@ -601,28 +681,39 @@ class icarus::opdet::PMTsimulationAlg {
   }; // TimeToTickAndSubtickConverter
 
 
-  /// Applies a random gain fluctuation to the specified number of
-  /// photoelectrons.
-  template <typename Rand>
+  /**
+   * @brief Applies a random gain fluctuation to a number of photoelectrons.
+   *
+   * Two modes are supported, selected at construction time:
+   *  - **Legacy Poisson** (doGainFluctuations = true, useGainCalibDB = false):
+   *    models first-dynode statistics via Poisson(n*refGain)/refGain..
+   *  - **DB Gaussian** (doGainFluctuations = true, useGainCalibDB = true): 
+   *    draws from Normal(n*gainRatio, sqrt(n)*relSigma) using per-channel DB values.
+   *  - **Identity** (default-constructed): returns n unchanged.
+   */
   class GainFluctuator {
 
-    std::optional<Rand> fRandomGain; ///< Random gain extractor (optional).
-    double const fReferenceGain = 0.0; ///< Reference (average) gain.
+    /// The fluctuation callable; empty means identity (no fluctuation).
+    std::function<double(double)> fFluctuate;
 
       public:
+    /// Identity fluctuator: returns `n` unchanged.
     GainFluctuator() = default;
-    GainFluctuator(double const refGain, Rand&& randomGain)
-      : fRandomGain(std::move(randomGain))
-      , fReferenceGain(refGain)
-      {}
 
-    /// Returns the new number of photoelectrons after fluctuation from `n`.
-    double operator() (double const n);
+    /// Legacy Poisson mode: Poisson(n*refGain) / refGain.
+    GainFluctuator(double refGain, CLHEP::RandPoisson rng);
+
+    /// DB Gaussian mode: Normal(n*gainRatio, sqrt(n)*relSigma), clamped positive.
+    GainFluctuator(double gainRatio, double relSigma, CLHEP::RandGaussQ rng);
+
+    /// Returns the fluctuated number of effective photoelectrons from n.
+    double operator()(double n) const
+      { return fFluctuate? fFluctuate(n): n; }
 
   }; // GainFluctuator
 
-  /// Returns a configured gain fluctuator object.
-  auto makeGainFluctuator() const;
+  /// Returns a gain fluctuator configured for the given optical channel.
+  GainFluctuator makeGainFluctuator(int channel) const;
 
   // --- END -- Helper functors ------------------------------------------------
 
@@ -633,7 +724,10 @@ class icarus::opdet::PMTsimulationAlg {
   megahertz fSampling;   ///< Wave sampling frequency [MHz].
   std::size_t fNsamples; ///< Samples per waveform.
   
-  DiscretePhotoelectronPulse wsp; /// Single photon pulse (sampled).
+  DiscretePhotoelectronPulse wsp; ///< Single photon pulse (sampled).
+
+  double fNominalSPEArea = 0.0; ///< Integral of the SPR template q₀ [ADC×tick].
+  double fBiasConstant  = 1.0;     ///< Bias constant from the FHiCL configuration.
 
   /// Pedestal and electronics noise generator algorithm.
   PedestalGenerator_t* fPedestalGen = nullptr;
@@ -643,10 +737,10 @@ class icarus::opdet::PMTsimulationAlg {
   
   
   /**
-   * @brief Creates `raw::OpDetWaveform` objects from simulated photoelectrons.
+   * @brief Creates a waveform (sample sequence) from simulated photoelectrons.
    * @param photons the simulated list of photoelectrons
-   * @param photons_used (_output_) list of used photoelectrons
-   * @return a collection of digitised `raw::OpDetWaveform` objects
+   * @param[out] photons_used list of used photoelectrons
+   * @return a waveform and its baseline
    * 
    * This function performs the digitization of a optical detector channel which
    * is collecting the photoelectrons in the `photons` list.
@@ -658,13 +752,12 @@ class icarus::opdet::PMTsimulationAlg {
    * The `photons_used` output argument is constructed and filled only if the
    * configuration of the algorithm requires the creation of a list of used
    * photons.
-   * 
    */
-  Waveform_t CreateFullWaveform(
+  std::tuple<Waveform_t, ADCcount> CreateFullWaveform(
     sim::SimPhotons const& photons,
     sim::SimPhotonsLite const& lite_photons,
-    std::optional<sim::SimPhotons>& photons_used
-    ) const;
+    std::optional<sim::SimPhotons>& photons_used,
+    icarus::opdet::DebugInfo* debug) const;
   
   /**
    * @brief Creates `raw::OpDetWaveform` objects from a waveform data.
@@ -771,7 +864,7 @@ class icarus::opdet::PMTsimulationAlg {
     (raw::Channel_t channel, std::uint64_t time, Waveform_t& wave) const;
 
   // Add "dark" noise to baseline.
-  void AddDarkNoise(Waveform_t& wave) const;
+  void AddDarkNoise(Waveform_t& wave, int channel) const;
   
   
   /**
@@ -998,6 +1091,16 @@ class icarus::opdet::PMTsimulationAlgMaker {
       Comment("include gain fluctuation in the photoelectron response"),
       true
       };
+    fhicl::Atom<bool> ApplyTimingDelays {
+      Name("ApplyTimingDelays"),
+      Comment("add timing delays (cable, transit time) to photon times"),
+      true
+      };
+    fhicl::Atom<bool> UseGainDatabase {
+      Name("UseGainDatabase"),
+      Comment("use per-channel SPE area and width from calibration DB for gain fluctuations"),
+      true
+      };
 
     //
     // single photoelectron response
@@ -1068,6 +1171,7 @@ class icarus::opdet::PMTsimulationAlgMaker {
    * @param beamGateTimestamp the time of beam gate opening, in UTC [ns]
    * @param larProp instance of `detinfo::LArProperties` to be used
    * @param detClocks instance of `detinfo::DetectorClocks` to be used
+   * @param timingDelays instance of `icarusDB::PMTTimingCorrections` to be used
    * @param SPRfunction function to use for the single photon response
    * @param pedestalGenerator algorithm generating the pedestal plus noise
    * @param mainRandomEngine main random engine (quantum efficiency, etc.)
@@ -1083,6 +1187,8 @@ class icarus::opdet::PMTsimulationAlgMaker {
     std::uint64_t beamGateTimestamp,
     detinfo::LArProperties const& larProp,
     detinfo::DetectorClocksData const& detClocks,
+    icarusDB::PMTTimingCorrections const* timingDelays,
+    icarusDB::PhotonCalibratorFromDB const* gainCalibProvider,
     SinglePhotonResponseFunc_t const& SPRfunction,
     PedestalGenerator_t& pedestalGenerator,
     CLHEP::HepRandomEngine& mainRandomEngine,
@@ -1096,6 +1202,7 @@ class icarus::opdet::PMTsimulationAlgMaker {
    * @param beamGateTimestamp the time of beam gate opening, in UTC [ns]
    * @param larProp instance of `detinfo::LArProperties` to be used
    * @param detClocks instance of `detinfo::DetectorClocks` to be used
+   * @param timingDelays instance of `icarusDB::PMTTimingCorrections` to be used
    * @param SPRfunction function to use for the single photon response
    * @param pedestalGenerator algorithm generating the pedestal plus noise
    * @param mainRandomEngine main random engine (quantum efficiency, etc.)
@@ -1113,6 +1220,8 @@ class icarus::opdet::PMTsimulationAlgMaker {
     std::uint64_t beamGateTimestamp,
     detinfo::LArProperties const& larProp,
     detinfo::DetectorClocksData const& clockData,
+    icarusDB::PMTTimingCorrections const* timingDelays,
+    icarusDB::PhotonCalibratorFromDB const* gainCalibProvider,
     SinglePhotonResponseFunc_t const& SPRfunction,
     PedestalGenerator_t& pedestalGenerator,
     CLHEP::HepRandomEngine& mainRandomEngine,
@@ -1163,12 +1272,12 @@ raw::OpDetWaveform icarus::opdet::OpDetWaveformMakerClass<SampleType>::create
   // create a new waveform preallocating enough room for the full buffer
   raw::OpDetWaveform outputWaveform(timeStamp, opChannel, end - start);
   
-  // copy the buffer (need to unwrap the ADCcount value)
+  // copy the buffer (need to unwrap the ADCcount value; +0.5+truncate => round)
   std::transform(
     fWaveform.begin() + start,
     fWaveform.begin() + end,
     std::back_inserter(outputWaveform),
-    [](auto sample){ return sample.value(); }
+    [](auto sample){ return (sample + Sample_t{ 0.5f }).value(); }
     );
   
   return outputWaveform;
@@ -1185,7 +1294,7 @@ void icarus::opdet::PMTsimulationAlg::printConfiguration
   using namespace util::quantities::electronics_literals;
 
   out
-            << indent << "ADC bits:            " << fParams.ADCbits
+    << indent << "ADC bits:            " << fParams.ADCbits
       << " (" << fParams.ADCrange().first << " -- " << fParams.ADCrange().second
       << ")"
     << '\n' << indent << "ReadoutWindowSize:   " << fParams.readoutWindowSize << " ticks"
@@ -1196,27 +1305,35 @@ void icarus::opdet::PMTsimulationAlg::printConfiguration
     << '\n' << indent << "Saturation:          " << fParams.saturation << " p.e."
     << '\n' << indent << "doGainFluctuations:  "
       << std::boolalpha << fParams.doGainFluctuations
-    << '\n' << indent << "PulsePolarity:       " << ((fParams.pulsePolarity == 1)? "positive": "negative") << " (=" << fParams.pulsePolarity << ")"
+    << '\n' << indent << "useGainCalibDB:      "
+      << std::boolalpha << fParams.useGainCalibDB
+    << '\n' << indent << "doTimingDelays:      "
+      << std::boolalpha << fParams.doTimingDelays
+    << '\n' << indent << "PulsePolarity:       " 
+      << ((fParams.pulsePolarity == 1)? "positive": "negative") 
+      << " (=" << fParams.pulsePolarity << ")"
     << '\n' << indent << "Sampling:            " << fSampling;
   if (fParams.pulseSubsamples > 1U)
     out << " (subsampling: x" << fParams.pulseSubsamples << ")";
   out
     << '\n' << indent << "Samples/waveform:    " << fNsamples << " ticks"
     << '\n' << indent << "Gain at first stage: " << fParams.PMTspecs.firstStageGain()
+    << '\n' << indent << "SPR nominal area:    " << fNominalSPEArea << " ADC x tick"
+    << '\n' << indent << "Bias ratio:          " << fBiasConstant
     ;
 
   out << '\n' << indent << "Pedestal:          " << fPedestalGen->toString(indent + "  ", "");
 
   if (fParams.createBeamGateTriggers) {
     out << '\n' << indent << "Create " << fParams.beamGateTriggerNReps
-      << " beam gate triggers, one every " << fParams.beamGateTriggerRepPeriod << ".";
+        << " beam gate triggers, one every " << fParams.beamGateTriggerRepPeriod << ".";
   }
   else out << '\n' << indent << "Do not create beam gate triggers.";
 
   out << '\n' << indent << "... and more.";
 
   out << '\n' << indent << "Template photoelectron waveform settings:"
-    << '\n';
+      << '\n';
   wsp.dump(std::forward<Stream>(out), indent + "  ");
   
   out << '\n' << indent << "Track used photons:  "

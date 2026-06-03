@@ -6,6 +6,7 @@ art_make_library(
         SOURCE ${lib_srcs}
 	LIBRARIES
 		icaruscode::Decode_DecoderTools
+                icaruscode::PMT_Calibration
 		icarusalg::Utilities
 		larcorealg::Geometry
 		lardataobj::RawData

@@ -1,24 +1,12 @@
 cet_enable_asserts()
 
-art_make_library(
-          EXCLUDE
-                        TriggerConfigurationExtraction_module.cc
-                        PMTconfigurationExtraction_module.cc
-                        DumpTriggerConfiguration_module.cc
-                        DumpPMTconfiguration_module.cc
-                        DumpArtDAQfragments_module.cc
-                        DumpTrigger_module.cc
-                        DaqDecoderICARUSPMT_module.cc
-)
-
 set(          MODULE_LIBRARIES
                         icarus_signal_processing::Detection
                         icarus_signal_processing::Filters
-                        icaruscode_TPC_Utilities
+                        icaruscode::TPC_Utilities
                         sbndaq_artdaq_core::sbndaq-artdaq-core_Overlays_ICARUS
                         artdaq_core::artdaq-core_Utilities
                         larcorealg::Geometry
-                        lardataobj::RawData
                         larcore::Geometry_Geometry_service
                         lardata::Utilities
                         larevt::Filters
@@ -91,7 +79,7 @@ cet_build_plugin(DumpTriggerConfiguration art::module LIBRARIES
 
 cet_build_plugin(DumpArtDAQfragments art::module LIBRARIES
 	icaruscode::Decode_DecoderTools_Dumpers
-        larcorealg::headers
+	larcorealg::headers
 	artdaq_core::artdaq-core_Data
 	messagefacility::MF_MessageLogger
 	fhiclcpp::fhiclcpp
@@ -131,6 +119,16 @@ cet_build_plugin(OverlayProducts art::module LIBRARIES
 	lardataobj::RecoBase
 	lardata::ArtDataHelper
 	)
+
+cet_build_plugin(OverlayPMTwaveforms art::module LIBRARIES
+  sbncode::Utilities
+  icarusalg::Utilities
+  icarusalg::PMT_Algorithms
+  lardata::DetectorClocksService
+  lardataobj::RawData
+  sbnobj::ICARUS_PMT_Data
+  art::Framework_Services_Registry
+)
 
 install_headers()
 install_fhicl()

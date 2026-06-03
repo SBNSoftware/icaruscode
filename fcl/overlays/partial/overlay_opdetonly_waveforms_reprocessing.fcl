@@ -1,0 +1,34 @@
+## File:    overlay_opdetonly_waveforms_reprocessing.fcl
+## Purpose: Reprocessing of the optical products for the 2025 SBN "spring" OVERLAY MC production
+
+#include "overlay_waveforms.fcl"
+
+## This job selectively re-runs only the PMT/CRT overlays path on top of an existing file.
+## This is has been put together only for the post-processing of the 2025 SBN MC OVERLAY
+## productions, and assumes to be starting with an already re-processed OpDetSim files.
+## However, since products names are the same as standard files, it can work on those as well.
+## It is valid only for any run period.
+
+process_name: OpOverlay
+
+# only perform PMT and CRT overlays after their detsim reprocessing
+# previous reprocessing step should have cleaned-up duplicates already
+# so technically no need to update any tag names w.r.t the default file
+
+physics.producers.mccrthit.CrtModuleLabel: "crtdaq"                     # from previous reprocessing
+physics.producers.mccrthit.TriggerLabel: "daqTrigger"
+
+physics.producers.overlayOpWaveforms.PMTWaveDataLabel: "daqPMT"         # from data decoding
+phsyics.producers.overlayOpWaveforms.PMTWaveSimLabel: "shifted"         # from previous reprocessing
+phsyics.producers.overlayOpWaveforms.PMTWaveBaseLabel: "pmtbaselines"   # from data decoding
+
+physics.producers.overlayCRTHit.CRTHitInputLabels: ["crthit",          # from data decoding
+                                                    "mccrthit"]        # from current process
+
+# process includes:
+# - make crt hits on mc 
+# - overlay pmt waveforms
+# - overlay crt hits
+
+physics.reco: [ mccrthit, overlayOpWaveforms, overlayCRTHit]
+

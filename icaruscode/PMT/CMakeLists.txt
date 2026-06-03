@@ -5,6 +5,7 @@ add_subdirectory(Algorithms)
 add_subdirectory(LibraryMappingTools)
 add_subdirectory(Trigger)
 add_subdirectory(Calibration)
+add_subdirectory(Status)
 
 # Removing AVX instructions because assuming the grid nodes
 # being less than 6 year old proved to be pretentious.
@@ -13,7 +14,9 @@ add_subdirectory(Calibration)
 
 cet_build_plugin(SimPMTIcarus art::module
                     LIBRARIES
-			icaruscode_PMT_Algorithms
+			icaruscode::PMT_Status
+			icaruscode::PMT_Algorithms
+			sbnobj::ICARUS_PMT_Data
 			lardataobj::RawData
 			lardataobj::Simulation
 			larcore::Geometry_Geometry_service

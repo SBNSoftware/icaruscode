@@ -7,6 +7,8 @@
 
 process_name: MCstage1
 
+#include "override_services_for_simulation.fcl"
+
 # Disabled Space-Charge service for calorimetry
 services.SpaceChargeService: {
     EnableCalEfieldSCE: false
