@@ -39,7 +39,7 @@ art_make(
                         #WireMod_Utilities.cc
         )
 
-find_library( sbncode::sbncode_WireMod_Utility_LIBRARY NAMES sbncode::sbncode_WireMod_Utility )
+find_library( sbncode::WireMod_Utility_LIBRARY NAMES sbncode::WireMod_Utility )
 
 simple_plugin(WireModMakeHists "plugin"
               ${ART_FRAMEWORK_CORE}
@@ -199,7 +199,7 @@ simple_plugin(WireModifier "module"
               lardata::Utilities
               lardata::DetectorInfoServices_DetectorClocksServiceStandard_service
               sbnobj::ICARUS_TPC
-              sbncode::sbncode_WireMod_Utility
+              sbncode::WireMod_Utility
               BASENAME_ONLY
 )
 
@@ -237,7 +237,7 @@ simple_plugin(WireModifierXXW "module"
               lardata::Utilities
               lardata::DetectorInfoServices_DetectorClocksServiceStandard_service
               sbnobj::ICARUS_TPC
-              sbncode::sbncode_WireMod_Utility
+              sbncode::WireMod_Utility
               BASENAME_ONLY
 )
 
