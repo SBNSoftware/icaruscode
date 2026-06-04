@@ -27,6 +27,7 @@ TPC_CalibrationTags_Feb2024: {
 }
 
 ## TPC_CalibrationTags_Feb2024 but updating tpc_yz_correction_data to tpc_yz_correction_allplanes_data
+## this is the latest set of calibration tags to be used for a 1D-deconvolution workflow
 TPC_CalibrationTags_Jan2025: {
 
   tpc_channelstatus_data: "v3r2"

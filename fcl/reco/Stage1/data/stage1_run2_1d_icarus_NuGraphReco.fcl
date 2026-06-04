@@ -12,12 +12,36 @@ physics.reco: [ @sequence::icarus_filter1D_cluster3D,
 physics.producers.cluster3DCryoW.Hit3DBuilderAlg.HitFinderTagVec: ["gaushit1dTPCWW", "gaushit1dTPCWE"]
 physics.producers.cluster3DCryoE.Hit3DBuilderAlg.HitFinderTagVec: ["gaushit1dTPCEW", "gaushit1dTPCEE"]
 
-# update calorimetry tags for showers
+## updated calorimetry calibration for electromagnetic showers
+## ensuring that we use data calorimetric constants and 
+## normalize for the data-driven electron lifetime and YZ
+## non-uniformities. This is not needed for the legacy 1D MC,
+## where the lifetime is corrected for using the generated value,
+## and no YZ non-uniformity was simulated.
+applyNorm: true
+
 # CryoE
-physics.producers.SBNShowerGausCryoE.ShowerFinderTools[3].CalorimetryAlg: @local::icarus_calorimetryalgdata
-physics.producers.SBNShowerGausCryoE.ShowerFinderTools[5].CalorimetryAlg: @local::icarus_calorimetryalgdata
-physics.producers.SBNShowerGausCryoE.ShowerFinderTools[7].CalorimetryAlg: @local::icarus_calorimetryalgdata
+physics.producers.SBNShowerGausCryoE.ShowerFinderTools[3].CalorimetryAlg:         @local::icarus_calorimetryalgdata
+physics.producers.SBNShowerGausCryoE.ShowerFinderTools[3].ApplyCorrectionsInNorm: @local::applyNorm
+physics.producers.SBNShowerGausCryoE.ShowerFinderTools[3].NormTools:              @local::icarus_calonormtools
+
+physics.producers.SBNShowerGausCryoE.ShowerFinderTools[5].CalorimetryAlg:         @local::icarus_calorimetryalgdata
+physics.producers.SBNShowerGausCryoE.ShowerFinderTools[5].ApplyCorrectionsInNorm: @local::applyNorm
+physics.producers.SBNShowerGausCryoE.ShowerFinderTools[5].NormTools:              @local::icarus_calonormtools
+
+physics.producers.SBNShowerGausCryoE.ShowerFinderTools[7].CalorimetryAlg:         @local::icarus_calorimetryalgdata
+physics.producers.SBNShowerGausCryoE.ShowerFinderTools[7].ApplyCorrectionsInNorm: @local::applyNorm
+physics.producers.SBNShowerGausCryoE.ShowerFinderTools[7].NormTools:              @local::icarus_calonormtools
+
 # CryoW
-physics.producers.SBNShowerGausCryoW.ShowerFinderTools[3].CalorimetryAlg: @local::icarus_calorimetryalgdata
-physics.producers.SBNShowerGausCryoW.ShowerFinderTools[5].CalorimetryAlg: @local::icarus_calorimetryalgdata
-physics.producers.SBNShowerGausCryoW.ShowerFinderTools[7].CalorimetryAlg: @local::icarus_calorimetryalgdata
+physics.producers.SBNShowerGausCryoW.ShowerFinderTools[3].CalorimetryAlg:         @local::icarus_calorimetryalgdata
+physics.producers.SBNShowerGausCryoW.ShowerFinderTools[3].ApplyCorrectionsInNorm: @local::applyNorm
+physics.producers.SBNShowerGausCryoW.ShowerFinderTools[3].NormTools:              @local::icarus_calonormtools
+
+physics.producers.SBNShowerGausCryoW.ShowerFinderTools[5].CalorimetryAlg:         @local::icarus_calorimetryalgdata
+physics.producers.SBNShowerGausCryoW.ShowerFinderTools[5].ApplyCorrectionsInNorm: @local::applyNorm
+physics.producers.SBNShowerGausCryoW.ShowerFinderTools[5].NormTools:              @local::icarus_calonormtools
+
+physics.producers.SBNShowerGausCryoW.ShowerFinderTools[7].CalorimetryAlg:         @local::icarus_calorimetryalgdata
+physics.producers.SBNShowerGausCryoW.ShowerFinderTools[7].ApplyCorrectionsInNorm: @local::applyNorm
+physics.producers.SBNShowerGausCryoW.ShowerFinderTools[7].NormTools:              @local::icarus_calonormtools
