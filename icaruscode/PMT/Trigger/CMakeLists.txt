@@ -73,6 +73,7 @@ cet_build_plugin(WriteBeamGateInfo art::module LIBRARIES PRIVATE
   )
 
 cet_build_plugin(FixBeamGateInfo art::module LIBRARIES PRIVATE
+  icarusalg::Utilities
   lardataobj::Simulation
   larcorealg::headers
   larcorealg::CoreUtils
