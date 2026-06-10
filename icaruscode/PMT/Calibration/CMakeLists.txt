@@ -88,7 +88,7 @@ cet_build_plugin(VerticalTrackFlashWaveformAna art::module
     icaruscode::Timing
     larcore::Geometry_Geometry_service
     larcorealg::Geometry
-    lardata::DetectorInfoServices_DetectorClocksServiceStandard_service
+    lardata::DetectorClocksService
     lardataalg::DetectorInfo
     lardataobj::RawData
     lardataobj::RecoBase
