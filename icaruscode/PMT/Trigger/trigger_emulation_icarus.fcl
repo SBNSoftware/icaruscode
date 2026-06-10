@@ -455,6 +455,7 @@ icarus_shifting_triggersim: {
        ShiftSimPhotons: false
        ShiftWaveforms: false
        AdditionalOffset: 0.0 # [us] Additional offset to apply to the time shift
+       DropTriggerProduct: true  # we already have `shifted`
     }
 
     emuTrigger: {
