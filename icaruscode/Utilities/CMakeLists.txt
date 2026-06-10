@@ -43,7 +43,6 @@ cet_build_plugin(DumpCRTPMTMatching art::module LIBRARIES PRIVATE
 		icaruscode::IcarusObj
 		sbnobj::Common_CRT
 		lardataobj::RecoBase
-		canvas::canvas
 	)
 
 cet_build_plugin(DummyFilter art::module)
