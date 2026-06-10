@@ -73,6 +73,7 @@ cet_build_plugin(WriteBeamGateInfo art::module LIBRARIES
   )
 
 cet_build_plugin(FixBeamGateInfo art::module LIBRARIES
+  icarusalg::Utilities
   lardataobj::Simulation
   larcorealg::headers
   larcorealg::CoreUtils
