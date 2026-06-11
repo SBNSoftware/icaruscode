@@ -18,12 +18,14 @@ physics.producers.cluster3DCryoE.Hit3DBuilderAlg.HitFinderTagVec: ["gaushit1dTPC
 ## non-uniformities. This is not needed for the legacy 1D MC,
 ## where the lifetime is corrected for using the generated value,
 ## and no YZ non-uniformity was simulated.
-applyNorm: true
+applyMCLifetimeCorrection : false
+applyNorm                 : true
 
 # CryoE
 physics.producers.SBNShowerGausCryoE.ShowerFinderTools[3].CalorimetryAlg:         @local::icarus_calorimetryalgdata
 physics.producers.SBNShowerGausCryoE.ShowerFinderTools[3].ApplyCorrectionsInNorm: @local::applyNorm
 physics.producers.SBNShowerGausCryoE.ShowerFinderTools[3].NormTools:              @local::icarus_calonormtools
+physics.producers.SBNShowerGausCryoE.ShowerFinderTools[3].DoMCLifetimeCorrection: @local::applyMCLifetimeCorrection
 
 physics.producers.SBNShowerGausCryoE.ShowerFinderTools[5].CalorimetryAlg:         @local::icarus_calorimetryalgdata
 physics.producers.SBNShowerGausCryoE.ShowerFinderTools[5].ApplyCorrectionsInNorm: @local::applyNorm
@@ -37,6 +39,7 @@ physics.producers.SBNShowerGausCryoE.ShowerFinderTools[7].NormTools:            
 physics.producers.SBNShowerGausCryoW.ShowerFinderTools[3].CalorimetryAlg:         @local::icarus_calorimetryalgdata
 physics.producers.SBNShowerGausCryoW.ShowerFinderTools[3].ApplyCorrectionsInNorm: @local::applyNorm
 physics.producers.SBNShowerGausCryoW.ShowerFinderTools[3].NormTools:              @local::icarus_calonormtools
+physics.producers.SBNShowerGausCryoW.ShowerFinderTools[3].DoMCLifetimeCorrection: @local::applyMCLifetimeCorrection
 
 physics.producers.SBNShowerGausCryoW.ShowerFinderTools[5].CalorimetryAlg:         @local::icarus_calorimetryalgdata
 physics.producers.SBNShowerGausCryoW.ShowerFinderTools[5].ApplyCorrectionsInNorm: @local::applyNorm

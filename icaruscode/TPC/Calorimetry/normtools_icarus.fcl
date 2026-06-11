@@ -30,6 +30,13 @@ tpcgain: {
   Verbose: false
 }
 
+tpcgain_local: {
+  tool_type: NormalizeTPCLocal
+  # Relative normalization of the TPCs
+  CalConstants: [1.0118, 1.0000, 1.0333, 1.0230]
+  Verbose: false
+}
+
 driftnorm_sql: {
   tool_type: NormalizeDriftSQLite
   DBFileName: tpc_elifetime_data 
@@ -43,13 +50,6 @@ tpcgain_sql: {
   DBTag: @local::ICARUS_Calibration_GlobalTags.tpc_dqdxcalibration_data
   Verbose: false
   MC: -1
-}
-
-tpcgain_local: {
-  tool_type: NormalizeTPCLocal
-  # Relative normalization of the TPCs
-  CalConstants: [1.0118, 1.0000, 1.0333, 1.0230]
-  Verbose: false
 }
 
 yznorm_sql: {
