@@ -7,12 +7,32 @@
 ## This is has been put together only for the post-processing of the 2025 SBN MC OVERLAY
 ## productions, and assumes to be starting with its mcstage1 files.
 ## It is valid only for RUN-2 productions because it selects the Run2 DetSim tune.
+##
+## Some reprocessing assumptions:
+##  0. input was never reprocessed (multiple reprocessing is not tested)
+##  1. input was created with icaruscode v10_06_00_07p* or earlier
+##  2. generator did not have the beam propagation time delay enabled
+##
+## Notes
+## ======
+## 
+## The reprocessing enables PMT (and trigger) delay. This means that the signal
+## that was observed at a certain time with respect to the generated signal
+## (simulation time) after reprocessing will show later, by ~265 ns on average.
+## For this reason the "beam gate", i.e. the time interval the trigger is
+## evaluated on, is also delayed by 265 ns.
+##
+##
 
 process_name: OpDetSim
 
 services.DetPedestalService:         @erase
 services.ChannelStatusService:       @erase
 services.SignalShapingICARUSService: @erase
+
+# time reference is going to be default at the very start,
+# then `shiftedTimeRef` when it becomes available
+services.DetectorClocksService.TrigModuleName: shiftedTimeRef
 
 source.inputCommands: [
   "keep *",
@@ -54,13 +74,50 @@ source.inputCommands: [
 # Simplify configuration removing all other producers (tpc)
 
 physics.producers: {
+  
+  shiftedTimeRef: {
+    
+    #
+    # The correct time reference (would-be `shifted`) was not saved,
+    # so this custom module recreates it (assuming "environment" is the same);
+    # DetectorClocksService is configured above to immediately pick it up.
+    #
+    
+    module_type:       RebuildShiftedTrigger
+    
+    InputTriggerLabel:  emuTriggerUnshifted
+    # we are in the "environment" where the reference time data product
+    # configured in DetectorClocksService is not present
+    # (because that is in fact the data that this module is going to produce)
+    # and therefore the "default" settings kick in, just as it happened when
+    # `emuTriggerUnshifted` was first produced in the original DetSim.
+    # So the reference of the reference is already good, no need to change it.
+    # TimeReferenceLabel: @nil
+    
+  }
 
   # opdaq Run-1/2 tune for overlays (no noise)
   opdaq: @local::icarus_simpmt_run2_nonoise 
 
-  # triggersim producers 
+  # triggersim producers
   @table::icarus_shifting_triggersim.producers
 
+  # The purpose of beam gate modifications is to open the trigger gate always on
+  # the same PMT waveform activity. The gate in `shifted` is equivalent to the
+  # original beam gate, in the old shifted time reference.
+  # Now we have PMT delays, so we want to move the gate to compensate for them
+  # (we effectively did have 55 ns of transit time as PMT delays before, and we
+  #  did not compensate for them... too bad, but changes nothing because within
+  #  the 200 ns margin).
+  # We do not include the ~35 ns of beam propagation delay (the ~10 m space),
+  # per the assumption of it not having being included in the flux simulation.
+  # This entry overwrites the one in `icarus_shifting_triggersim.producers`.
+  triggersimgatesinit: {
+    module_type: FixBeamGateInfo
+    BeamGateTag: shifted
+    Changes: [ { Start: { Add: "+265 ns" } } ]
+  }
+  
   # crt hits
   crtdaq: @local::icarus_crtsim
 
@@ -81,7 +138,6 @@ physics.producers.opdaq.UseChannelStatusDatabase: true
 physics.producers.pmtfixedthrinit.OpticalWaveforms: "opdaq::OpDetSim"                    # this was re-generated with same tag
 physics.producers.pmtlvdsgatesinit.TriggerGatesTag: "pmtfixedthrinit::OpDetSim"          # this was re-generated with same tag
 physics.producers.pmttriggerwindowsinit.TriggerGatesTag: "pmtlvdsgatesinit::OpDetSim"    # this was re-generated with same tag
-physics.producers.triggersimgatesinit.BeamGateTag: "beamgate"                            # keep using old Gen product
 physics.producers.emuTriggerUnshifted.BeamGates: "triggersimgatesinit::OpDetSim"         # this was re-generated with same tag
 physics.producers.emuTriggerUnshifted.TriggerGatesTag: "pmttriggerwindowsinit::OpDetSim" # this was re-generated with same tag
 
@@ -117,7 +173,7 @@ physics.producers.crtsim.G4ModuleLabel: "shifted::OpDetSim"
 #   -- note: since tpc is not re-simulated, no longer fully coherent with trigger time
 # - build CRT data from aux sim channels
 
-physics.simulate: [ opdaq, @sequence::icarus_shifting_triggersim.path, crtdaq ]
+physics.simulate: [ shiftedTimeRef, opdaq, @sequence::icarus_shifting_triggersim.path, crtdaq ]
 
 
 # drop duplicate produtcs in output
@@ -125,22 +181,24 @@ physics.simulate: [ opdaq, @sequence::icarus_shifting_triggersim.path, crtdaq ]
 
 outputs.rootoutput.outputCommands: [
   "keep *",
-         
-  # drop `opdaq`, but keep `shifted` for overlaying
+
+  # drop `opdaq`, but keep `shifted` for overlaying;
+  # but keep the baselines, which are still associated to shifted waveforms
   "drop *_opdaq_*_*",
+  "keep icarus::WaveformBaselines_opdaq_*_*",
 
   # drop old trigger products now that new ones exist
   # specify the old process name "DetSim"
-  "drop *_pmtfixedthrinit_*_DetSim",        
+  "drop *_pmtfixedthrinit_*_DetSim",
   "drop *_pmtlvdsgatesinit_*_DetSim",
-  "drop *_pmttriggerwindowsinit_*_DetSim",  
-  "drop *_triggersimgatesinit_*_DetSim",    
-  "drop *_emuTriggerUnshifted_*_DetSim", 
+  "drop *_pmttriggerwindowsinit_*_DetSim",
+  "drop *_triggersimgatesinit_*_DetSim",
+  "drop *_emuTriggerUnshifted_*_DetSim",
  
   # drop old "shifted" products since we shifted things again
   "drop sim::SimEnergyDeposits_filtersed_*_DetSim",        # this has been regenerated into `shifted`
   # mcreco looks for `filtersed` in stage1: potentially can be changed to look for `shifted`?
-  # however since tpc reco products are not shifted, better to keep old deposits for that matching
+  # however since TPC reco products are not shifted, better to keep old deposits for that matching
   # "drop sim::SimEnergyDepositLites_filtersed_*_DetSim",    # this has been regenerated into `shifted`
   "drop sim::SimEnergyDeposits_shiftedpriorSCE_*_DetSim",  # this has been regenerated into the same tag
   "drop sim::AuxDetSimChannel_shifted_*_DetSim",           # this has been regenerated into the same tag
