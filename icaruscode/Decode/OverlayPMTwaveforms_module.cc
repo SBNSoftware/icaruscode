@@ -27,6 +27,7 @@
 #include "art/Framework/Principal/Event.h"
 #include "art/Framework/Principal/Handle.h"
 #include "art/Persistency/Common/PtrMaker.h"
+#include "canvas/Persistency/Provenance/BranchDescription.h"
 #include "canvas/Persistency/Common/FindOneP.h"
 #include "canvas/Persistency/Common/Assns.h"
 #include "canvas/Utilities/InputTag.h"
@@ -264,6 +265,8 @@ class sbn::OverlayPMTwaveforms: public art::SharedProducer {
   
   using BaselineAssns_t = art::Assns<raw::OpDetWaveform, icarus::WaveformBaseline>;
 
+  /// Exception thrown when a pointer was not valid.
+  struct PtrProductNotFoundError;
 
   // --- BEGIN ---  Configuration  ---------------------------------------------
   
@@ -301,6 +304,13 @@ class sbn::OverlayPMTwaveforms: public art::SharedProducer {
     art::FindOneP<icarus::WaveformBaseline> const& toBaseline
     ) const;
 
+  /// Makes the message of `notFound` more meaningful with info from `event`.
+  static art::Exception dressPtrNotFoundException(
+    std::string const& message,
+    PtrProductNotFoundError const& notFound,
+    art::Event const& event
+    );
+
 }; // class sbn::OverlayPMTwaveforms
 
 
@@ -317,6 +327,29 @@ namespace {
 
 //------------------------------------------------------------------------------
 //---  sbn::OverlayPMTwaveforms
+//------------------------------------------------------------------------------
+struct sbn::OverlayPMTwaveforms::PtrProductNotFoundError: public art::Exception
+{
+  
+  art::ProductID id;
+  std::size_t key = std::numeric_limits<std::size_t>::max();
+  
+  PtrProductNotFoundError(
+    art::ProductID const& id = art::ProductID{},
+    std::size_t key = std::numeric_limits<std::size_t>::max()
+    )
+    : art::Exception{ art::errors::ProductNotFound }
+    , id{ id }, key{ key }
+    {}
+  
+  template <typename T>
+  explicit PtrProductNotFoundError(art::Ptr<T> const& ptr)
+    : PtrProductNotFoundError{ ptr.id(), ptr.key() }
+    {}
+  
+}; // sbn::OverlayPMTwaveforms::PtrProductNotFoundError
+
+
 //------------------------------------------------------------------------------
 sbn::OverlayPMTwaveforms::OverlayPMTwaveforms
   (Parameters const& config, art::ProcessingFrame const&)
@@ -420,6 +453,12 @@ void sbn::OverlayPMTwaveforms::produce(art::Event& event, art::ProcessingFrame c
   try {
     dataIn = prepareWaveformInput(dataWaveforms, findDataBaseline);
   }
+  catch (PtrProductNotFoundError const& notFoundError) {
+    throw dressPtrNotFoundException(
+      "Error processing data input from '" + fDataWaveformsTag.encode() + "'.",
+      notFoundError, event
+      );
+  }
   catch (art::Exception const& e) {
     throw art::Exception{ e.categoryCode(), "", e }
       << "Error while processing data input from '"
@@ -430,9 +469,16 @@ void sbn::OverlayPMTwaveforms::produce(art::Event& event, art::ProcessingFrame c
   try {
     simIn = prepareWaveformInput(simWaveforms, findSimBaseline);
   }
+  catch (PtrProductNotFoundError const& notFoundError) {
+    throw dressPtrNotFoundException(
+      "Error processing simulation input from '"
+        + fSimWaveformsTag.encode() + "'.",
+      notFoundError, event
+      );
+  }
   catch (art::Exception const& e) {
     throw art::Exception{ e.categoryCode(), "", e }
-      << "Error while processing data input from '"
+      << "Error while processing simulation input from '"
       << fSimWaveformsTag.encode() << "'.\n";
   }
   
@@ -512,7 +558,7 @@ auto sbn::OverlayPMTwaveforms::prepareWaveformInput(
 
     art::Ptr<icarus::WaveformBaseline> const& baseline = toBaseline.at(iWaveform);
     if (!baseline) {
-      throw art::Exception{ art::errors::LogicError }
+      throw PtrProductNotFoundError{ baseline }
         << "OverlayPMTwaveforms: missing baseline associated to waveform #"
         << iWaveform << " (CH=" << waveform.ChannelNumber()
         << " TS=" << waveform.TimeStamp() << ").\n";
@@ -523,6 +569,26 @@ auto sbn::OverlayPMTwaveforms::prepareWaveformInput(
   } // for waveforms
   return input;
 } // sbn::OverlayPMTwaveforms::prepareWaveformInput()
+
+
+//------------------------------------------------------------------------------
+art::Exception sbn::OverlayPMTwaveforms::dressPtrNotFoundException(
+  std::string const& message,
+  PtrProductNotFoundError const& notFoundError,
+  art::Event const& event
+) {
+  art::Exception e{ notFoundError.categoryCode(), "", notFoundError };
+  art::BranchDescription const* descr = (notFoundError.id != art::ProductID{})
+    ? event.getProductDescription(notFoundError.id).get(): nullptr;
+  e << "Could not retrieve an art::Ptr";
+  if (descr) {
+    e << "<" << descr->friendlyClassName()
+      << "> pointing to entry #" << notFoundError.key << " of '"
+      << descr->inputTag().encode() << "'";
+  }
+  e << ".\n" << message << "\n";
+  return e;
+} // sbn::OverlayPMTwaveforms::dressPtrNotFoundException()
 
 
 //------------------------------------------------------------------------------
