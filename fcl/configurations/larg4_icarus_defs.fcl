@@ -1,0 +1,146 @@
+# File:    icarus_larg4_defs.fcl
+# Purpose: definitions for standard LArG4 jobs
+#
+# This collection of presets can be used as building blocks for a full LArG4
+# job configuration. Essential parts are:
+#     
+#     services: {
+#       @table::icarus_larg4_services
+#
+#       # ... additional services as needed
+#     }
+#     
+#     physics.producers: {
+#       @table::icarus_larg4_standard_producers
+#
+#       # ... additional services as needed
+#     }
+#
+#     physics.simulate: [
+#       @sequence::icarus_larg4_standard_path
+#       # , additional labels as needed
+#     ]
+#     
+# Note that `icarus_larg4_services` only provides service specific to LArG4;
+# for a full, and possibly overfull, set of services, use `icarus_all_larg4_services`.
+#
+# A complete example can be found in `larg4_icarus.fcl`.
+#
+
+#include "services_icarus_simulation.fcl"
+#include "larg4_services_icarus.fcl"
+
+#include "LArG4.fcl"
+#include "ionandscint_icarus.fcl"
+#include "PDFastSim_icarus.fcl"
+#include "simdrift_icarus.fcl"
+#include "g4inforeducer.fcl"
+#include "icarus_genericCRT.fcl"
+#include "simplemerge_icarus.fcl"
+
+BEGIN_PROLOG
+
+
+# ------------------------------------------------------------------------------
+# ---  ICARUS "standard" configuration
+# --- 
+#
+# (note overrides at the bottom)
+#
+# The service sets include:
+#  - `icarus_larg4_services`: only the services needed only by LArG4
+#  - `icarus_all_larg4_services`: all services needed for a job including LArG4
+#
+# Note that currently `icarus_g4_services` is directly taken from `larg4_services_icarus.fcl`.
+#
+
+# ---
+# --- services
+# ---
+icarus_g4_services: {
+
+  @table::icarus_g4_services  # from `larg4_services_icarus.fcl` (FHiCL will not recourse)
+
+  # icarus_g4_services.ParticleListAction.KeepDroppedParticlesInVolumes: ["volDetEnclosure"] 
+}
+
+icarus_all_larg4_services: {
+  @table::icarus_g4_services
+  @table::icarus_larg4_services
+}
+
+# avoid huge log files
+icarus_all_larg4_services.message.destinations.LogErrorFile.categories.SimDriftElectrons: { limit: 0 }
+icarus_all_larg4_services.message.destinations.LogStandardOut.categories.SimDriftElectrons: { limit: 0 }
+
+# Setup hack for 2D
+icarus_all_larg4_services.SpaceChargeService.is2DdriftSimHack: true
+
+
+# ---
+# --- modules
+# ---
+icarus_larg4_standard_producers: {
+
+  # A dummy module that forces the G4 physics list to be loaded
+  loader: { module_type: "PhysListLoader" }
+
+  # The geant4 step
+  largeant: {
+  
+    @table::standard_larg4  # from `LArG4.fcl` (in LArSoft/larg4)
+    
+    # Store MCParticleLite in G4 to store dropped particles from KeepEMShowerDaughters: false
+    StoreDroppedMCParticles: false
+  
+  }
+
+  # Creation of ionization electrons and scintillation photons (keep ionization name for compatibility)
+  ionization: @local::icarus_ionandscint
+
+  # Light propogation
+  pdfastsim: @local::icarus_pdfastsim_pvs
+
+  # Electron propogation
+  simdrift: @local::icarus_simdrift
+
+  # needs to run right after largeant
+  sedlite:    {
+    @table::sbn_largeant_info_reducer  # from `g4inforeducer.fcl` (in LArSoft/larg4!!)
+    
+    SimEnergyDepositLabel: "largeant:LArG4DetectorServicevolTPCActive"
+    useOrigTrackID: true # needed since origTrackID not filled for sedlite in SBND
+    
+  }
+
+  # Generic CRT
+  genericcrt: @local::icarus_genericCRT
+
+  # simplemerge for ML
+  simplemerge: @local::simplemerge
+
+}
+
+# Store MCParticleLite in G4 to store dropped particles from KeepEMShowerDaughters: false
+icarus_larg4_standard_producers.largeant.StoreDroppedMCParticles: false
+
+
+# ---
+# --- paths
+# ---
+icarus_larg4_standard_path: [
+    loader
+  , largeant
+  , ionization
+  , pdfastsim
+  , simdrift
+  , sedlite
+  , genericcrt
+  , simplemerge
+]
+
+
+# ------------------------------------------------------------------------------
+
+END_PROLOG
+

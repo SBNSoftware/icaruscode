@@ -1,7 +1,7 @@
 
 #include "services_icarus_simulation.fcl"
 #include "singles_icarus.fcl"
-#include "largeantmodules_icarus.fcl"
+#include "larg4_icarus_defs.fcl"
 #include "detsimmodules_ICARUS.fcl"
 #include "opdetsim_pmt_icarus.fcl"
 #include "icarus_ophitfinder.fcl"
@@ -29,10 +29,12 @@ physics:
  producers:
  {
    generator: @local::icarus_singlep
-   largeant: @local::icarus_largeant
-   opdaq:    @local::icarus_simpmt_nonoise
-   mcophit: @local::ICARUSMCOpHit
-   rns:      { module_type: "RandomNumberSaver" }
+   loader:    @local::icarus_larg4_standard_producers.loader
+   largeant:  @local::icarus_larg4_standard_producers.largeant
+   pdfastsim: @local::icarus_larg4_standard_producers.pdfastsim
+   opdaq:     @local::icarus_simpmt_nonoise
+   mcophit:   @local::ICARUSMCOpHit
+   rns:       { module_type: "RandomNumberSaver" }
    ophitpeak:   @local::icarus_ophit
    ophitstart:  @local::icarus_ophit
    mcflash:     @local::ICARUSMCOpFlash
@@ -42,7 +44,7 @@ physics:
      ophittuple: @local::ICARUSOpHitTuple
      opflashana: @local::ICARUSOpFlashAna
  }
- produce: [ rns, generator, largeant, opdaq, mcophit, ophitstart, ophitpeak, mcflash, opflash ]
+ produce: [ rns, generator, loader, largeant, pdfastsim, opdaq, mcophit, ophitstart, ophitpeak, mcflash, opflash ]
  analyze: [ ophittuple, opflashana ]
  store:   [ out1 ]
  trigger_paths: [ produce ]
@@ -68,7 +70,8 @@ physics.producers.generator.SigmaThetaXZ: [ 0. ]
 physics.producers.generator.SigmaThetaYZ: [ 0. ]
 physics.producers.generator.AngleDist: 1
 
-physics.producers.mcophit.SimPhotonsProducer: "largeant"
+# new LArG4 optical products are produced by `pdfastsim`, not `largeant`
+physics.producers.mcophit.SimPhotonsProducer: "pdfastsim"
 physics.producers.ophitstart.UseStartTime: true
 physics.producers.ophitpeak.UseStartTime: false
 #physics.analyzers.ophittuple.OpDetWaveformProducer: "opdaq"
