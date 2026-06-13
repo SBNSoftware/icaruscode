@@ -605,7 +605,8 @@ if __name__ == "__main__":
     formatter_class=argparse.RawDescriptionHelpFormatter)
   
   SampleGroup = parser.add_argument_group(title="Sample selection")
-  SampleGroup.add_argument("runs", nargs="*", type=int, help="runs to process")
+  SampleGroup.add_argument("runs", nargs="*" if AllowAllRuns else "+", type=int,
+    help="runs to process")
   SampleGroup.add_argument("--stage", "-s", action="append",
     help=f"stages to include {DefaultStages}")
   SampleGroup.add_argument("--prjversion", "-p", action="append",
@@ -663,8 +664,6 @@ if __name__ == "__main__":
     sys.exit(0)
   if not args.runs and not AllowAllRuns:
     raise RuntimeError("The run numbers to process are required.")
-  SampleGroup.add_argument("runs", nargs="*" if AllowAllRuns else "+", type=int,
-                      help="runs to process")
     
   if args.stage is None: args.stage = DefaultStages
   if args.stream:
