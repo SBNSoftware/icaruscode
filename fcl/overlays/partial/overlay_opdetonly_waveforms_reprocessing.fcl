@@ -19,8 +19,8 @@ physics.producers.mccrthit.CrtModuleLabel: "crtdaq"                     # from p
 physics.producers.mccrthit.TriggerLabel: "daqTrigger"
 
 physics.producers.overlayOpWaveforms.DataWaveformTag:   "daqPMT"         # from data decoding
-phsyics.producers.overlayOpWaveforms.DataBaselineAssns: "pmtbaselines"   # from data decoding
-phsyics.producers.overlayOpWaveforms.SimWaveformTag:    "shifted"        # from previous reprocessing
+physics.producers.overlayOpWaveforms.DataBaselineAssns: "pmtbaselines"   # from data decoding
+physics.producers.overlayOpWaveforms.SimWaveformTag:    "shifted"        # from previous reprocessing
 
 physics.producers.overlayCRTHit.CRTHitInputLabels: ["crthit",          # from data decoding
                                                     "mccrthit"]        # from current process
