@@ -14,6 +14,6 @@ physics.producers.ophit.RecalibrateTime: true
 
 ## these were the tags used in the initial data processing (v10_06_00_01p05)
 ## be careful: this is valide only for the SBN2025A "spring" production
-physics.producers.ophit.OldTimingDBTags.CablesTag:  @local::PMT_CalibrationTags_Run3_Feb2025.pmt_cables_delays_data
-physics.producers.ophit.OldTimingDBTags.LaserTag:   @local::PMT_CalibrationTags_Run3_Feb2025.pmt_laser_timing_data
-physics.producers.ophit.OldTimingDBTags.CosmicsTag: @local::PMT_CalibrationTags_Run3_Feb2025.pmt_cosmics_timing_data
+physics.producers.ophit.OldTimingDBTags.CorrectionTags.CablesTag:  @local::PMT_CalibrationTags_Run3_Feb2025.pmt_cables_delays_data
+physics.producers.ophit.OldTimingDBTags.CorrectionTags.LaserTag:   @local::PMT_CalibrationTags_Run3_Feb2025.pmt_laser_timing_data
+physics.producers.ophit.OldTimingDBTags.CorrectionTags.CosmicsTag: @local::PMT_CalibrationTags_Run3_Feb2025.pmt_cosmics_timing_data
