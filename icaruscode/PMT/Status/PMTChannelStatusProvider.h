@@ -51,6 +51,7 @@ namespace icarusDB { class PMTChannelStatusProvider; }
  * * `DBname` (default: `"pmt_voltage_data"`): database table name.
  * * `StatusTag` (default: `""`): database tag to select.
  * * `DefaultStatus` (default: `0` = kOff): status for channels absent from DB.
+ * * `DefaultVoltage` (default: `1500.0` V): voltage for channels absent from DB.
  * * `Verbose` (default: `false`): print channel statuses when loading.
  * * `LogCategory` (default: `"PMTChannelStatusProvider"`).
  *
