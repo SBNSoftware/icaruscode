@@ -275,7 +275,7 @@ class SelectCathodeCrossingGenParticles: public art::SharedFilter {
   std::vector<art::InputTag> const fGeneratorTags; ///< Input data products.
   
   /// Minimum number of requested cathode-crossing particles.
-  unsigned int const fMinimumCrossingPartcles;
+  unsigned int const fMinimumCrossingParticles;
   
   double const fCathodeLengthWiggle; ///< Fractional allowance on cathode length.
   double const fCathodeHeightWiggle; ///< Fractional allowance on cathode height.
@@ -333,11 +333,11 @@ SelectCathodeCrossingGenParticles::SelectCathodeCrossingGenParticles
   (Parameters const& params, art::ProcessingFrame const&)
   : art::SharedFilter{ params }
   // configuration
-  , fGeneratorTags          { params().GeneratorTags() }
-  , fMinimumCrossingPartcles{ params().MinimumCrossingParticles() }
-  , fCathodeLengthWiggle    { params().CathodeLengthWiggle() * 2.0 } // x2 for
-  , fCathodeHeightWiggle    { params().CathodeHeightWiggle() * 2.0 } // half lengths
-  , fLogCategory            { params().LogCategory() }
+  , fGeneratorTags           { params().GeneratorTags() }
+  , fMinimumCrossingParticles{ params().MinimumCrossingParticles() }
+  , fCathodeLengthWiggle     { params().CathodeLengthWiggle() * 2.0 } // x2 for
+  , fCathodeHeightWiggle     { params().CathodeHeightWiggle() * 2.0 } // half lengths
+  , fLogCategory             { params().LogCategory() }
   // caches
   , fCathodes{ buildCathodePlanes(*lar::providerFrom<geo::Geometry>()) }
 {
@@ -361,7 +361,7 @@ SelectCathodeCrossingGenParticles::SelectCathodeCrossingGenParticles
     log << " '" << tag.encode() << "'";
   
   log << "\n * minimum number of cathode-crossing particles: "
-    << fMinimumCrossingPartcles;
+    << fMinimumCrossingParticles;
   
   log << "\n * fractional allowance on cathode dimensions: width "
     << (fCathodeLengthWiggle / 2 * 100.0) << "%, height "
@@ -417,7 +417,7 @@ bool SelectCathodeCrossingGenParticles::filter
   // draw conclusions
   //
   unsigned int const nCathodeCrossing = counters.cathodeCrossing.passed();
-  bool const accepted = (nCathodeCrossing >= fMinimumCrossingPartcles);
+  bool const accepted = (nCathodeCrossing >= fMinimumCrossingParticles);
   
   mf::LogInfo{ fLogCategory }
     << event.id() << ": " << counters.cathodeCrossing.passed()
@@ -507,7 +507,7 @@ SelectCathodeCrossingGenParticles::findCrossingTPCcathode
     if (!crossing) continue;
     
     // is crossing point contained in the (expanded) cathode area?
-    if (std::abs(crossing.cathodeHeightUnits()) > 1. + fCathodeLengthWiggle) continue;
+    if (std::abs(crossing.cathodeLengthUnits()) > 1. + fCathodeLengthWiggle) continue;
     if (std::abs(crossing.cathodeHeightUnits()) > 1. + fCathodeHeightWiggle) continue;
     
     // is the point in the future of the particle?
