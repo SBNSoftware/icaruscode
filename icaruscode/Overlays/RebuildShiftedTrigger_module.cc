@@ -271,7 +271,7 @@ void RebuildShiftedTrigger::produce
       << "Shifted trigger rebuilt applying a shift of " << *timeShift << " us";
   }
   else {
-    mfLogInfo() << "Shifted trigger copied since new reference is invalid.";
+    mfLogInfo() << "Shifted trigger restored since new reference is invalid.";
   }
   
   //
