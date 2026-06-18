@@ -166,6 +166,7 @@ class icarus::opdet::OpDetWaveformMakerClass {
  *  * physical photons
  *  * dark noise
  *  * electronics noise
+ *  * tail suppression
  *
  * The algorithm processes an optical channel at a time, independently
  * and uncorrelated from the other channels.
@@ -320,6 +321,28 @@ class icarus::opdet::OpDetWaveformMakerClass {
  * Noise can be disabled by using the `PMTnoNoiseGeneratorTool`.
  *
  *
+ * Tail suppression
+ * -----------------
+ *
+ * Data waveforms exhibit a baseline droop in the tail of large pulses:
+ * after a bright flash, the waveform sits systematically below what
+ * predicted by linearly scaling the SPE template. This effect is consistent with
+ * dynode space-charge saturation proportional to the recent integrated charge.
+ *
+ * When enabled via `TailSuppression.Apply`, a low-pass filter is applied
+ * to the signal waveform (pre-pedestal) to accumulate the integrated charge.
+ * The filter is implemented as a recursive average:
+ * @f[
+ *   Q(n) = (1 - \beta)\,Q(n-1) + \beta\,\max(0,\,s(n))
+ * @f]
+ * where @\beta` is the inverse time constant of the filter (`TailSuppression.Tau`).
+ * The charge state is initialized to zero at the start of each
+ * channel's full waveform and does not persist across channels.
+ * 
+ * Based on the accumulated charge, a correction is applied to the signal
+ * through a tunable strenght parameter `TailSuppression.Epsilon`.
+ * The parameters of the corrections are the same across all channels.
+ *
  * Configuration
  * ==============
  *
@@ -347,6 +370,13 @@ class icarus::opdet::OpDetWaveformMakerClass {
  *     @f$ \mu_{i} \propto (\Delta V_{i})^{k} @f$ (with @f$ \mu_{i} @f$ the
  *     gain for stage @f$ i @f$, @f$ \Delta V_{i} @f$ the drop of potential
  *     of that stage and @f$ k @f$ the parameter set by `dynodeK`.
+ * * `TailSuppression` (table, optional): parameters for the tail suppression
+ *     correction (see "Tail suppression" section above). Sub-parameters:
+ *     * `Apply` (default: `false`): enable the correction.
+ *     * `Epsilon` (default: `0.0`): correction strength @f$ \varepsilon @f$
+ *       (dimensionless); typical values 0.25 (Run 1/2) or 0.30 (Run 3/4).
+ *     * `Tau` (default: `250.0`): charge-state decay time constant [ns].
+ *
  * * `DiscrimAlgo` (choice, default: `"CrossingThreshold"`): selects one of the
  *     hard-coded discrimination algorithms used for zero suppression.
  *     The suppression algorithm identifies some interesting time points and
@@ -505,6 +535,12 @@ class icarus::opdet::PMTsimulationAlg {
 
     }; // struct PMTspecs_t
   
+    struct TailSuppressionParams_t {
+      bool   apply   = false;
+      double epsilon = 0.0;   ///< correction strength [dimensionless]
+      double tau     = 250.0; ///< charge-state decay time constant [ns]
+    };
+
     /// @{
     /// @name High level configuration parameters.
 
@@ -531,6 +567,7 @@ class icarus::opdet::PMTsimulationAlg {
     hertz darkNoiseRate;
     float saturation; //equivalent to the number of p.e. that saturates the electronic signal
     PMTspecs_t PMTspecs; ///< PMT specifications.
+    TailSuppressionParams_t tailSuppression; ///< Causal subtractive droop correction parameters.
     bool doGainFluctuations; ///< Whether to simulate gain fluctuations.
     bool useGainCalibDB; ///< Whether to use per-channel DB gain for fluctuations.
     bool doTimingDelays; ///< Whether to simulate timing delays.
@@ -984,7 +1021,10 @@ class icarus::opdet::PMTsimulationAlg {
   
   /// Applies the configured photoelectron saturation on the `waveform`.
   void ApplySaturation(Waveform_t& waveform, ADCcount baseline) const;
-  
+
+  /// Applies the causal subtractive tail suppression correction to the signal waveform.
+  void ApplyTailSuppression(Waveform_t& waveform) const;
+
   /// Forces `waveform` ADC within the `min` to `max` range (`max` included).
   static void ClipWaveform(Waveform_t& waveform, ADCcount min, ADCcount max);
   
@@ -1034,7 +1074,29 @@ class icarus::opdet::PMTsimulationAlgMaker {
 
   }; // struct PMTspecConfig
 
-  
+  struct TailSuppressionConfig {
+    using Name = fhicl::Name;
+    using Comment = fhicl::Comment;
+
+    fhicl::Atom<bool>   Apply   {
+      Name("Apply"),
+      Comment("Enable causal subtractive tail suppression correction"),
+      false
+      };
+    fhicl::Atom<double> Epsilon {
+      Name("Epsilon"),
+      Comment("Correction strength [dimensionless]"),
+      0.0
+      };
+    fhicl::Atom<double> Tau     {
+      Name("Tau"),
+      Comment("Charge-state decay time constant [ns]"),
+      250.0
+      };
+
+  }; // struct TailSuppressionConfig
+
+
   /// Main algorithm FHiCL configuration.
   struct Config {
     using Name = fhicl::Name;
@@ -1111,6 +1173,14 @@ class icarus::opdet::PMTsimulationAlgMaker {
         ("split each tick by this many subsamples to increase PMT timing simulation"),
       1U
       };
+
+    //
+    // tail suppression
+    //
+    fhicl::Table<TailSuppressionConfig> TailSuppression {
+      Name("TailSuppression"),
+      Comment("PMT anode baseline-droop correction (causal subtractive model)")
+    };
 
     //
     // dark noise
@@ -1336,6 +1406,12 @@ void icarus::opdet::PMTsimulationAlg::printConfiguration
       << '\n';
   wsp.dump(std::forward<Stream>(out), indent + "  ");
   
+  out << '\n' << indent << "Tail suppression:    "
+    << std::boolalpha << fParams.tailSuppression.apply;
+  if (fParams.tailSuppression.apply) {
+    out << " (epsilon=" << fParams.tailSuppression.epsilon
+        << ", tau=" << fParams.tailSuppression.tau << " ns)";
+  }
   out << '\n' << indent << "Track used photons:  "
     << std::boolalpha << fParams.trackSelectedPhotons
     << '\n';
