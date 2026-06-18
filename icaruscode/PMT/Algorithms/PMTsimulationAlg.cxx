@@ -429,6 +429,7 @@ auto icarus::opdet::PMTsimulationAlg::CreateFullWaveform
 //       std::cout << "\tadded pes... " << channel << " " << diff.count() << std::endl;
 //       start=std::chrono::high_resolution_clock::now();
 
+      ApplyTailSuppression(waveform);
       AddPedestal(channel, waveformStartTS, waveform);
       if(fParams.darkNoiseRate > 0.0_Hz) AddDarkNoise(waveform, channel);
 
@@ -868,6 +869,27 @@ void icarus::opdet::PMTsimulationAlg::ApplySaturation(
 
 
 // -----------------------------------------------------------------------------
+void icarus::opdet::PMTsimulationAlg::ApplyTailSuppression(Waveform_t& waveform) const
+{
+  if (!fParams.tailSuppression.apply) return;
+
+  // tau [ns] * fSampling [MHz] / 1000 = tau_ticks
+  double const tau_ticks = fParams.tailSuppression.tau * fSampling.value() / 1000.0;
+  double const beta    = 1.0 / tau_ticks;
+  double const epsilon = fParams.tailSuppression.epsilon;
+
+  double Q = 0.0;
+  for (auto& sample : waveform) {
+    double const s = fParams.pulsePolarity * sample.value(); // original sample
+    Q = (1.0 - beta) * Q + beta * std::max(0.0, s);          // charge accumulation
+    // apply correction, clamp to avoid negative values
+    sample = ADCcount{ fParams.pulsePolarity * std::max(0.0, s - epsilon * Q) };
+  }
+
+} // icarus::opdet::PMTsimulationAlg::ApplyTailSuppression()
+
+
+// -----------------------------------------------------------------------------
 /// Forces `waveform` ADC within the `min` to `max` range (`max` included).
 void icarus::opdet::PMTsimulationAlg::ClipWaveform
   (Waveform_t& waveform, ADCcount min, ADCcount max)
@@ -1011,6 +1033,13 @@ icarus::opdet::PMTsimulationAlgMaker::PMTsimulationAlgMaker
   fBaseConfig.beamGateTriggerRepPeriod = microsecond(config.BeamGateTriggerRepPeriod());
   fBaseConfig.beamGateTriggerNReps     = config.BeamGateTriggerNReps();
   fBaseConfig.discrimAlgo              = config.getDiscriminationAlgo();
+
+  //
+  // tail suppression
+  //
+  fBaseConfig.tailSuppression.apply   = config.TailSuppression().Apply();
+  fBaseConfig.tailSuppression.epsilon = config.TailSuppression().Epsilon();
+  fBaseConfig.tailSuppression.tau     = config.TailSuppression().Tau();
 
   //
   // parameter checks

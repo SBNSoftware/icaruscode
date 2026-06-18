@@ -44,6 +44,8 @@
 # 20251111 (mvicenzi@bnl.gov)
 #   introduced configuration for new Run1/2 SPR (SPRisolHitRun9271)
 #   introduced configuration for new Run3/4 SPR (SPRisolHitRun12715)
+# 20260618 (mvicenzi@bnl.gov)
+#   introduced tail suppression tune 
 
 #include "opticalproperties_icarus.fcl"
 
@@ -402,6 +404,13 @@ icarus_pmtsimulationalg_202202_noise: {
     Gain:                   @local::icarus_settings_opdet.nominalPMTgain  # total typical PMT gain
   } # PMTspecs
 
+  # Subtractive tail suppression correction
+  TailSuppression: {
+    Apply:   false
+    Epsilon: 0.0
+    Tau:     250.0  # [ns]
+  }
+
 } # icarus_pmtsimulationalg_202202_noise
 
 
@@ -469,6 +478,12 @@ icarus_pmtsimulationalg_run2_2025: {
     Gain:                   @local::icarus_settings_opdet_run2.nominalPMTgain  # total PMT gain
   }
 
+  TailSuppression: {
+    Apply:   true
+    Epsilon: 0.25                           # fitted on Run1/2 data (run 9384)
+    Tau:     250.0                          # [ns]
+  }
+
 } # icarus_pmtsimulationalg_run2_2025
 
 
@@ -502,6 +517,12 @@ icarus_pmtsimulationalg_run4_2025: {
     DynodeK:                 0.75           # gain on a PMT multiplication stage
     VoltageDistribution:    [ 3.0, 3.4, 5.0, 3.33, 1.67, 1.0, 1.2, 1.5, 2.2, 3.0 ]
     Gain:                   @local::icarus_settings_opdet_run4.nominalPMTgain  # total PMT gain
+  }
+
+  TailSuppression: {
+    Apply:   true
+    Epsilon: 0.30                           # fitted on Run3/4 data (run 11816)
+    Tau:     250.0                          # [ns]
   }
 
 } # icarus_pmtsimulationalg_run4_2025
