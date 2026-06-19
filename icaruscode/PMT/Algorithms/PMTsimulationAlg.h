@@ -536,9 +536,9 @@ class icarus::opdet::PMTsimulationAlg {
     }; // struct PMTspecs_t
   
     struct TailSuppressionParams_t {
-      bool   apply   = false;
-      double epsilon = 0.0;   ///< correction strength [dimensionless]
-      double tau     = 250.0; ///< charge-state decay time constant [ns]
+      bool  apply   = false;
+      float epsilon = 0.0f;   ///< correction strength [dimensionless]
+      float tau     = 250.0f; ///< charge-state decay time constant [ns]
     };
 
     /// @{
@@ -1083,15 +1083,15 @@ class icarus::opdet::PMTsimulationAlgMaker {
       Comment("Enable causal subtractive tail suppression correction"),
       false
       };
-    fhicl::Atom<double> Epsilon {
+    fhicl::Atom<float> Epsilon {
       Name("Epsilon"),
       Comment("Correction strength [dimensionless]"),
-      0.0
+      0.0f
       };
-    fhicl::Atom<double> Tau     {
+    fhicl::Atom<float> Tau     {
       Name("Tau"),
       Comment("Charge-state decay time constant [ns]"),
-      250.0
+      250.0f
       };
 
   }; // struct TailSuppressionConfig
