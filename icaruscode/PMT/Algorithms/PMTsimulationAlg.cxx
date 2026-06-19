@@ -873,17 +873,16 @@ void icarus::opdet::PMTsimulationAlg::ApplyTailSuppression(Waveform_t& waveform)
 {
   if (!fParams.tailSuppression.apply) return;
 
-  // tau [ns] * fSampling [MHz] / 1000 = tau_ticks
-  double const tau_ticks = fParams.tailSuppression.tau * fSampling.value() / 1000.0;
-  double const beta    = 1.0 / tau_ticks;
-  double const epsilon = fParams.tailSuppression.epsilon;
+  // tau [ns] * fSampling [MHz] / 1000.0f = tau_ticks
+  float const beta    = 1.0f / (fParams.tailSuppression.tau * fSampling.value() / 1000.0f);
+  float const epsilon = fParams.tailSuppression.epsilon;
+  int   const pol     = fParams.pulsePolarity;
 
-  double Q = 0.0;
+  float Q = 0.0f;
   for (auto& sample : waveform) {
-    double const s = fParams.pulsePolarity * sample.value(); // original sample
-    Q = (1.0 - beta) * Q + beta * std::max(0.0, s);          // charge accumulation
-    // apply correction, clamp to avoid negative values
-    sample = ADCcount{ fParams.pulsePolarity * std::max(0.0, s - epsilon * Q) };
+    float const s = pol * sample.value();
+    Q = (1.0f - beta) * Q + beta * std::max(0.0f, s);
+    sample = ADCcount{ pol * std::max(0.0f, s - epsilon * Q) };
   }
 
 } // icarus::opdet::PMTsimulationAlg::ApplyTailSuppression()
