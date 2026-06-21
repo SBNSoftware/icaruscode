@@ -451,6 +451,27 @@ namespace wiremod
     evt.getByLabel(fEDepShiftedLabel, edepShiftedHandle);
     auto const& edepShiftedVec(*edepShiftedHandle);
 
+    // The ROI<->Edep matching below is built from the SHIFTED deposits, but the
+    // resulting indices are later reused to look up BOTH the shifted deposit
+    // (edepShiftedVec) and the unshifted deposit (edepVec) by the SAME index.
+    // That is only valid if the two collections are 1:1 and index-aligned. If
+    // they are not, the truth properties fed to the map lookup would come from
+    // the wrong deposit (or read out of bounds). Enforce the assumption loudly
+    // rather than silently producing wrong scales.
+    // NOTE: equal size is necessary but not strictly sufficient for alignment;
+    //       a more robust fix would match shifted<->unshifted by a stable key
+    //       (e.g. TrackID + position) instead of by index.
+    if (edepVec.size() != edepShiftedVec.size())
+    {
+      throw cet::exception("WireModifierXXW")
+        << "WireModifierXXW::produce - EDep collections are not index-aligned: '"
+        << fEDepLabel << "' has " << edepVec.size() << " deposits but '"
+        << fEDepShiftedLabel << "' has " << edepShiftedVec.size() << "."
+        << " The shifted-deposit indices cannot be reused on the unshifted"
+        << " collection; truth properties would be mismatched. Align the two"
+        << " SimEnergyDeposit collections (or match them by a stable key).";
+    }
+
     art::Handle< std::vector<recob::Hit> > hitHandle;
     evt.getByLabel(fHitLabel, hitHandle);
     auto const& hitVec(*hitHandle);
@@ -480,7 +501,25 @@ namespace wiremod
       BT_Offset += (hitTick - projTick);
       ++BT_Hits;
     }
-    BT_Offset /= BT_Hits;
+    // Guard against division by zero. If no hits for this label could be
+    // back-tracked (e.g. an overlay TPC with no MC activity in this event),
+    // BT_Hits == 0 and BT_Offset = 0.0/0 = NaN. A NaN tick offset makes every
+    // SimEnergyDeposit fail the readout-window test in GetTargetROIs, so
+    // ROIMatchedEdepMap comes back empty and the ENTIRE TPC is written out
+    // unmodified, silently. Fall back to a zero offset and warn instead.
+    if (BT_Hits > 0)
+    {
+      BT_Offset /= BT_Hits;
+    }
+    else
+    {
+      mf::LogWarning("WireModifierXXW")
+        << "WireModifierXXW::produce - No back-trackable hits for label " << fHitLabel
+        << " in Cryo " << fCryo << " TPCset " << fTPCset << "."
+        << " BT_Offset would be NaN; falling back to 0 so deposits are still"
+        << " projected (no tick offset applied).";
+      BT_Offset = 0.0;
+    }
 
     sys::WireModUtility wmUtil(fGeometry, fWireReadout, detProp,
                                false, // Channel Scale
@@ -659,8 +698,12 @@ namespace wiremod
         std::vector<const sim::SimEnergyDeposit*> matchedEdepShiftedPtrVec;
         for(auto i_e : matchedEdepIdxVec)
         {
-          matchedEdepPtrVec.push_back(&edepVec[i_e]);
-          matchedEdepShiftedPtrVec.push_back(&edepShiftedVec[i_e]);
+          // .at() instead of [] so a stray out-of-range index throws a
+          // catchable exception rather than reading out of bounds. The
+          // size-alignment check at the top of produce() guarantees i_e is
+          // valid for edepVec whenever it is valid for edepShiftedVec.
+          matchedEdepPtrVec.push_back(&edepVec.at(i_e));
+          matchedEdepShiftedPtrVec.push_back(&edepShiftedVec.at(i_e));
         }
         mf::LogDebug("WireModifierXXW")
           << "  Found " << matchedEdepPtrVec.size() << " Edeps";
