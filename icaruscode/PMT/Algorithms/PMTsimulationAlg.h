@@ -1392,6 +1392,13 @@ void icarus::opdet::PMTsimulationAlg::printConfiguration
     << '\n' << indent << "Bias ratio:          " << fBiasConstant
     ;
 
+  out << '\n' << indent << "Tail suppression:    "
+    << std::boolalpha << fParams.tailSuppression.apply;
+  if (fParams.tailSuppression.apply) {
+    out << " (epsilon=" << fParams.tailSuppression.epsilon
+        << ", tau=" << fParams.tailSuppression.tau << " ns)";
+  }
+
   out << '\n' << indent << "Pedestal:          " << fPedestalGen->toString(indent + "  ", "");
 
   if (fParams.createBeamGateTriggers) {
@@ -1405,13 +1412,6 @@ void icarus::opdet::PMTsimulationAlg::printConfiguration
   out << '\n' << indent << "Template photoelectron waveform settings:"
       << '\n';
   wsp.dump(std::forward<Stream>(out), indent + "  ");
-  
-  out << '\n' << indent << "Tail suppression:    "
-    << std::boolalpha << fParams.tailSuppression.apply;
-  if (fParams.tailSuppression.apply) {
-    out << " (epsilon=" << fParams.tailSuppression.epsilon
-        << ", tau=" << fParams.tailSuppression.tau << " ns)";
-  }
   out << '\n' << indent << "Track used photons:  "
     << std::boolalpha << fParams.trackSelectedPhotons
     << '\n';
