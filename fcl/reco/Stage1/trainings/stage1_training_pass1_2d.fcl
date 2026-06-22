@@ -11,7 +11,7 @@ BEGIN_PROLOG
 pandoraPassOneConfig: {
     ConfigFile:             "PandoraSettings_Training_DlVertexPass1.xml" ##< Master file to run in reconstruction
     EnableMCParticles:      true            ##< To be able to cheat is necessary to collapse to MC particles
-    SimChannelModuleLabel:  "daq:simpleSC"  ##< Correct sim channel to enable MC particles
+    SimChannelModuleLabel:  "merge"  ##< Correct sim channel to enable MC particles
 
 
     # PrintOverallRecoStatus:     true

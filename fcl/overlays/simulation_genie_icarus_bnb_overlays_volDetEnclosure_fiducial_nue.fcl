@@ -1,0 +1,3 @@
+#include "simulation_genie_icarus_bnb_overlays_volDetEnclosure_fiducial.fcl"
+
+physics.producers.generator.GenFlavors: [ 12, -12 ]

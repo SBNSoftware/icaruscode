@@ -39,5 +39,3 @@ outputs:
     SelectEvents: [filter]
   } # rootoutput
 } # outputs
-
-physics.filters.eventActive.keep_all = true

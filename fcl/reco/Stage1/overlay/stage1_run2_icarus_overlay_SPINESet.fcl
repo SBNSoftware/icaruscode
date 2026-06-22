@@ -1,0 +1,6 @@
+#include "stage1_run2_icarus_overlay.fcl"
+
+physics.producers.gaushit2dTPCEE.LongMaxHits: [10, 10, 10]
+physics.producers.gaushit2dTPCEW.LongMaxHits: [10, 10, 10]
+physics.producers.gaushit2dTPCWE.LongMaxHits: [10, 10, 10]
+physics.producers.gaushit2dTPCWW.LongMaxHits: [10, 10, 10]

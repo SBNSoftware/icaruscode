@@ -1,0 +1,72 @@
+
+BEGIN_PROLOG
+
+config: 
+{
+    LongMaxHits: [13, 10, 9]
+    LongPulseWidth: [8, 10, 11]
+    MaxMultiHit: [9, 9, 9]
+    Chi2NDF: [2418, 2088, 2480]
+}
+
+roiThreshold0: 4.96
+roiThreshold1: 3.71
+roiThreshold2: 3.74
+
+nextADCThreshold0: -0.28
+nextADCThreshold1: -0.22
+nextADCThreshold2: -0.27
+
+END_PROLOG
+
+#include "stage1_run2_icarus_overlay.fcl"
+#include "enable_pandora_hit_width.fcl"
+
+
+physics.producers.gaushit2dTPCEE: {
+    @table::physics.producers.gaushit2dTPCEE
+    @table::config
+}
+
+physics.producers.gaushit2dTPCEE.HitFinderToolVec.CandidateHitsPlane0.RoiThreshold: @local::roiThreshold0
+physics.producers.gaushit2dTPCEE.HitFinderToolVec.CandidateHitsPlane1.RoiThreshold: @local::roiThreshold1
+physics.producers.gaushit2dTPCEE.HitFinderToolVec.CandidateHitsPlane2.RoiThreshold: @local::roiThreshold2
+physics.producers.gaushit2dTPCEE.HitFinderToolVec.CandidateHitsPlane0.NextADCThreshold: @local::nextADCThreshold0
+physics.producers.gaushit2dTPCEE.HitFinderToolVec.CandidateHitsPlane1.NextADCThreshold: @local::nextADCThreshold1
+physics.producers.gaushit2dTPCEE.HitFinderToolVec.CandidateHitsPlane2.NextADCThreshold: @local::nextADCThreshold2
+
+physics.producers.gaushit2dTPCEW: {
+    @table::physics.producers.gaushit2dTPCEW
+    @table::config
+}
+
+physics.producers.gaushit2dTPCEW.HitFinderToolVec.CandidateHitsPlane0.RoiThreshold: @local::roiThreshold0
+physics.producers.gaushit2dTPCEW.HitFinderToolVec.CandidateHitsPlane1.RoiThreshold: @local::roiThreshold1
+physics.producers.gaushit2dTPCEW.HitFinderToolVec.CandidateHitsPlane2.RoiThreshold: @local::roiThreshold2
+physics.producers.gaushit2dTPCEW.HitFinderToolVec.CandidateHitsPlane0.NextADCThreshold: @local::nextADCThreshold0
+physics.producers.gaushit2dTPCEW.HitFinderToolVec.CandidateHitsPlane1.NextADCThreshold: @local::nextADCThreshold1
+physics.producers.gaushit2dTPCEW.HitFinderToolVec.CandidateHitsPlane2.NextADCThreshold: @local::nextADCThreshold2
+
+physics.producers.gaushit2dTPCWE: {
+    @table::physics.producers.gaushit2dTPCWE
+    @table::config
+}
+
+physics.producers.gaushit2dTPCWE.HitFinderToolVec.CandidateHitsPlane0.RoiThreshold: @local::roiThreshold0
+physics.producers.gaushit2dTPCWE.HitFinderToolVec.CandidateHitsPlane1.RoiThreshold: @local::roiThreshold1
+physics.producers.gaushit2dTPCWE.HitFinderToolVec.CandidateHitsPlane2.RoiThreshold: @local::roiThreshold2
+physics.producers.gaushit2dTPCWE.HitFinderToolVec.CandidateHitsPlane0.NextADCThreshold: @local::nextADCThreshold0
+physics.producers.gaushit2dTPCWE.HitFinderToolVec.CandidateHitsPlane1.NextADCThreshold: @local::nextADCThreshold1
+physics.producers.gaushit2dTPCWE.HitFinderToolVec.CandidateHitsPlane2.NextADCThreshold: @local::nextADCThreshold2
+
+physics.producers.gaushit2dTPCWW: {
+    @table::physics.producers.gaushit2dTPCWW
+    @table::config
+}
+
+physics.producers.gaushit2dTPCWW.HitFinderToolVec.CandidateHitsPlane0.RoiThreshold: @local::roiThreshold0
+physics.producers.gaushit2dTPCWW.HitFinderToolVec.CandidateHitsPlane1.RoiThreshold: @local::roiThreshold1
+physics.producers.gaushit2dTPCWW.HitFinderToolVec.CandidateHitsPlane2.RoiThreshold: @local::roiThreshold2
+physics.producers.gaushit2dTPCWW.HitFinderToolVec.CandidateHitsPlane0.NextADCThreshold: @local::nextADCThreshold0
+physics.producers.gaushit2dTPCWW.HitFinderToolVec.CandidateHitsPlane1.NextADCThreshold: @local::nextADCThreshold1
+physics.producers.gaushit2dTPCWW.HitFinderToolVec.CandidateHitsPlane2.NextADCThreshold: @local::nextADCThreshold2
