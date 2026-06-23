@@ -57,7 +57,7 @@ namespace wiremod
       std::string fRatioFileName_YZ;
       std::vector<TGraph2D*> fGraph_charge_YZ;
       std::vector<TGraph2D*> fGraph_sigma_YZ;
-      art::InputTag fWireLabel; // which wires are we pulling in?
+      art::InputTag fChannelLabel; // which channel ROIs are we pulling in?
       art::InputTag fHitLabel;  // which hits are we pulling in?
       art::InputTag fEDepLabel; // which are the EDeps?
       art::InputTag fEDepShiftedLabel; // which are the EDeps?
@@ -144,9 +144,9 @@ namespace wiremod
   //------------------------------------------------
   void WireModifierXXW::reconfigure(fhicl::ParameterSet const& pset)
   {
-    fWireLabel = pset.get<art::InputTag>("WireLabel");
-    fHitLabel  = pset.get<art::InputTag>("HitLabel");
-    fEDepLabel = pset.get<art::InputTag>("EDepLabel");
+    fChannelLabel = pset.get<art::InputTag>("ChannelLabel");
+    fHitLabel     = pset.get<art::InputTag>("HitLabel");
+    fEDepLabel    = pset.get<art::InputTag>("EDepLabel");
     fEDepShiftedLabel = pset.get<art::InputTag>("EDepShiftedLabel");
     fCryo = pset.get<unsigned int>("Cryo");
     fTPCset = pset.get<unsigned int>("TPCset");
@@ -354,7 +354,7 @@ namespace wiremod
     }
 
     // we make these things
-    produces<std::vector<recob::Wire>>();
+    produces<std::vector<recob::ChannelROI>>();
 
     // tick check
     art::ServiceHandle<art::TFileService> tfs;
@@ -407,11 +407,9 @@ namespace wiremod
       art::ServiceHandle<detinfo::DetectorPropertiesService const>()->DataFor(evt);
 
     // get the things to do the things on
-    art::Handle< std::vector<recob::Wire> > wireHandle;
-    evt.getByLabel(fWireLabel, wireHandle);
-    auto const& wireVec(*wireHandle);
-
-    art::FindManyP<raw::RawDigit> digit_assn(wireHandle, evt, fWireLabel);
+    art::Handle< std::vector<recob::ChannelROI> > chanROIHandle;
+    evt.getByLabel(fChannelLabel, chanROIHandle);
+    auto const& chanROIVec(*chanROIHandle);
 
     art::Handle< std::vector<sim::SimEnergyDeposit> > edepHandle;
     evt.getByLabel(fEDepLabel, edepHandle);
@@ -426,7 +424,7 @@ namespace wiremod
     auto const& hitVec(*hitHandle);
 
     // put the new stuff somewhere
-    std::unique_ptr<std::vector<recob::Wire>> new_wires(new std::vector<recob::Wire>());
+    std::unique_ptr<std::vector<recob::ChannelROI>> new_chanROIs(new std::vector<recob::ChannelROI>());
 
     // Get the tick offset by comparting the hit ticks with the tick gotten by
     // projecting the backtracked hit X to a tick. Yes this is silly thanks for asking
@@ -540,58 +538,39 @@ namespace wiremod
     double offset_ADC = 0; // don't use an offset atm
     mf::LogVerbatim("WireModifierXXW")
       << "Get Edep Map";
-    wmUtil.FillROIMatchedEdepMap(edepShiftedVec, wireVec, offset_ADC);
+    wmUtil.FillROIMatchedEdepMap(edepShiftedVec, chanROIVec, offset_ADC);
     mf::LogVerbatim("WireModifierXXW")
       << "Got Edep Map." << '\n'
       << "Get Hit Map";
-    wmUtil.FillROIMatchedHitMap(hitVec, wireVec);
+    wmUtil.FillROIMatchedHitMap(hitVec, chanROIVec);
     mf::LogVerbatim("WireModifierXXW")
       << "Got Hit Map.";
 
     // loop-de-loop
-    for(size_t i_w = 0; i_w < wireVec.size(); ++i_w)
+    for(size_t i_c = 0; i_c < chanROIVec.size(); ++i_c)
     {
       mf::LogDebug("WireModifierXXW")
-        << "Checking wire " << i_w;
+        << "Checking Channel ROI " << i_c;
 
-      auto const& wire = wireVec.at(i_w);
-      recob::Wire::RegionsOfInterest_t new_rois;
+      auto const& chanROI = chanROIVec.at(i_c);
+      recob::ChannelROI::RegionsOfInterest_t new_rois;
       bool isModified = false;
 
-      if (wire.NSignal() == 0)
+      if (chanROI.NSignal() == 0)
         continue;
 
-      new_rois.resize(wire.NSignal());
+      new_rois.resize(chanROI.NSignal());
 
-      unsigned int my_plane = geo::kUnknown;
-      if (wire.View() == fWireReadout->Plane(geo::PlaneID(0, 0, 0)).View())
-      {
-        mf::LogDebug("WireModifierXXW")
-          << "Wire is on plane 0, view " << wire.View();
-        my_plane = 0;
-      } else if (wire.View() == fWireReadout->Plane(geo::PlaneID(0, 0, 1)).View()) {
-        mf::LogDebug("WireModifierXXW")
-          << "Wire is on plane 1, view " << wire.View();
-        my_plane = 1;
-      } else if (wire.View() == fWireReadout->Plane(geo::PlaneID(0, 0, 2)).View()) {
-        mf::LogDebug("WireModifierXXW")
-          << "Wire is on plane 2, view " << wire.View();
-        my_plane = 2;
-      }
-
-      if (my_plane == geo::kUnknown)
-      {
-        mf::LogDebug("WireModifierXXW")
-          << "Wire is on unsupported plane. Skip.";
-      }
-
-      for(size_t i_r = 0; i_r < wire.SignalROI().get_ranges().size(); ++i_r)
+      for(size_t i_r = 0; i_r < chanROI.SignalROIF().get_ranges().size(); ++i_r)
       {
         mf::LogDebug("WireModifierXXW")
           << "  Checking ROI " << i_r;
 
-        auto const& range = wire.SignalROI().get_ranges()[i_r];
-        sys::WireModUtility::ROI_Key_t roi_key(wire.Channel(), i_r);
+        auto const& range = chanROI.SignalROIF().get_ranges()[i_r];
+        sys::WireModUtility::ROI_Key_t roi_key(chanROI.Channel(), i_r);
+
+        if (range.size() == 0)
+          continue;
 
         std::vector<float> modified_data(range.data());
 
@@ -630,7 +609,7 @@ namespace wiremod
         mf::LogDebug("WireModifierXXW")
           << "    Found " << matchedHitPtrVec.size() << " matching hits";
 
-        auto roi_properties = wmUtil.CalcROIProperties(wire, i_r);
+        auto roi_properties = wmUtil.CalcROIProperties(chanROI, i_r);
         mf::LogDebug("WireModifierXXW")
           << "    ROI Properties:" << '\n'
           << "                    key:     (" << roi_properties.key.first
@@ -707,15 +686,15 @@ namespace wiremod
         new_rois.add_range(roi_properties.begin, modified_data);
       }
 
-      new_wires->emplace_back(new_rois, wire.Channel(), wire.View());
+      new_chanROIs->emplace_back(new_rois, chanROI.Channel(), chanROI.ADCScaleFactor());
 
       if (fSaveHistsByChannel && isModified)
       {
-        readout::ROPID ropID = fWireReadout->ChannelToROP(wire.Channel());  
+        readout::ROPID ropID = fWireReadout->ChannelToROP(chanROI.Channel());
         std::string titleStr =  "Cryo-"         + std::to_string(ropID.Cryostat)
                              + "_TPCset-"       + std::to_string(ropID.TPCset)
                              + "_ReadOutPlane-" + std::to_string(ropID.ROP)
-                             + "_Channel-"      + std::to_string(wire.Channel());
+                             + "_Channel-"      + std::to_string(chanROI.Channel());
         TH1F* oldChannelHist = new TH1F(("Old_" + titleStr).c_str(), ";Sample;Arbitrary Units",
                                         wmUtil.readoutWindowTicks, 0, wmUtil.readoutWindowTicks);
         TH1F* newChannelHist = new TH1F(("New_" + titleStr).c_str(), ";Sample;Arbitrary Units",
@@ -723,9 +702,9 @@ namespace wiremod
         for (size_t tick = 0; tick < wmUtil.readoutWindowTicks; ++tick)
         {
           float oldSample =
-            (tick <     wire         .Signal().size() ) ?     wire         .Signal().at(tick) : 0;
+            (tick <     chanROI         .Signal().size() ) ?     chanROI         .Signal().at(tick) : 0;
           float newSample =
-            (tick < new_wires->back().Signal().size() ) ? new_wires->back().Signal().at(tick) : 0;
+            (tick < new_chanROIs->back().Signal().size() ) ? new_chanROIs->back().Signal().at(tick) : 0;
           oldChannelHist->SetBinContent(tick + 1, oldSample);
           newChannelHist->SetBinContent(tick + 1, newSample);
         }
@@ -739,9 +718,9 @@ namespace wiremod
 
       if (fSaveHistsByWire && isModified)
       {
-        std::vector<geo::WireID> wireIDs = fWireReadout->ChannelToWire(wire.Channel());
+        std::vector<geo::WireID> wireIDs = fWireReadout->ChannelToWire(chanROI.Channel());
         mf::LogDebug("WireModifierXXW")
-          << "Channel " << wire.Channel() << " has " << wireIDs.size() << " wire(s)";
+          << "Channel " << chanROI.Channel() << " has " << wireIDs.size() << " wire(s)";
         for (auto const& wireID : wireIDs)
         {
           std::string titleStr =  "Cryo-"  + std::to_string(wireID.Cryostat)
@@ -755,9 +734,9 @@ namespace wiremod
           for (size_t tick = 0; tick < wmUtil.readoutWindowTicks; ++tick)
           {
             float oldSample =
-              (tick <     wire         .Signal().size() ) ?     wire         .Signal().at(tick) : 0;
+              (tick <     chanROI         .Signal().size() ) ?     chanROI         .Signal().at(tick) : 0;
             float newSample =
-              (tick < new_wires->back().Signal().size() ) ? new_wires->back().Signal().at(tick) : 0;
+              (tick < new_chanROIs->back().Signal().size() ) ? new_chanROIs->back().Signal().at(tick) : 0;
             oldWireHist->SetBinContent(tick + 1, oldSample);
             newWireHist->SetBinContent(tick + 1, newSample);
           }
@@ -772,7 +751,7 @@ namespace wiremod
 
     } // end loop over wires
 
-    evt.put(std::move(new_wires));
+    evt.put(std::move(new_chanROIs));
   }
   DEFINE_ART_MODULE(WireModifierXXW)
 } // end namespace
