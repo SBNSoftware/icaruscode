@@ -481,7 +481,7 @@ icarus_pmtsimulationalg_run2_2025: {
   TailSuppression: {
     Apply:   true
     Epsilon: 0.25                           # fitted on Run1/2 data (run 9384)
-    Tau:     250.0                          # [ns]
+    Tau:     500.0                          # [ns]
   }
 
 } # icarus_pmtsimulationalg_run2_2025
@@ -522,7 +522,7 @@ icarus_pmtsimulationalg_run4_2025: {
   TailSuppression: {
     Apply:   true
     Epsilon: 0.30                           # fitted on Run3/4 data (run 11816)
-    Tau:     250.0                          # [ns]
+    Tau:     500.0                          # [ns]
   }
 
 } # icarus_pmtsimulationalg_run4_2025
