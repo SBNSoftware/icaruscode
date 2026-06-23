@@ -504,7 +504,15 @@ namespace wiremod
                          :                             nullptr;
         if (targetHist == nullptr) continue;
 
-        geo::WireID wireID = plane.NearestWireID(edep.MidPoint());
+        geo::WireID wireID;
+        try
+        {
+          wireID = plane.NearestWireID(edep.MidPoint());
+        }
+        catch (...)
+        {
+          continue;
+        }
         float projTick = detProp.ConvertXToTicks(edep.X(), wireID.Plane, wireID.TPC, wireID.Cryostat) + wmUtil.tickOffset;
         float projChan = fWireReadout->PlaneWireToChannel(wireID);
         targetHist->Fill(projTick, projChan);
