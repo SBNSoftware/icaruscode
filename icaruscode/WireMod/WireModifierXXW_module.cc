@@ -566,11 +566,8 @@ namespace wiremod
         mf::LogDebug("WireModifierXXW")
           << "  Checking ROI " << i_r;
 
-        auto const& range = chanROI.SignalROIF().get_ranges()[i_r];
+        auto const range = chanROI.SignalROIF().get_ranges()[i_r];
         sys::WireModUtility::ROI_Key_t roi_key(chanROI.Channel(), i_r);
-
-        if (range.size() == 0)
-          continue;
 
         std::vector<float> modified_data(range.data());
 
