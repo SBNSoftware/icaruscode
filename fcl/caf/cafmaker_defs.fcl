@@ -319,6 +319,11 @@ cafmaker.SystWeightLabels: ["genieweight", "fluxweight"]
 cafmaker.SaveGENIEEventRecord: true # save GENIE event record by default. Turn this off for data cafmaker fcl
 cafmaker.TPCPMTBarycenterMatchLabel: "tpcpmtbarycentermatch"
 cafmaker.TrackHitFillRREndCut: 30 # include entire PID region
+cafmaker.PFOCharLabels.EndFractionName: "LArThreeDChargeFeatureTool_ICARUS_EndFraction" # override with some ICARUS-specific tool names
+cafmaker.PFOCharLabels.FractionalSpreadName: "LArThreeDChargeFeatureTool_ICARUS_FractionalSpread"
+cafmaker.PFOCharLabels.HaloTotalRatioName: "LArConeChargeFeatureTool_ICARUS_HaloTotalRatio"
+cafmaker.PFOCharLabels.ConcentrationName: "LArConeChargeFeatureTool_ICARUS_Concentration"
+cafmaker.PFOCharLabels.ConicalnessName: "LArConeChargeFeatureTool_ICARUS_Conicalness"
 
 # Add CAFMaker to the list of producers
 caf_preprocess_producers.cafmaker: @local::cafmaker
