@@ -1,9 +1,0 @@
-BEGIN_PROLOG
-
-standard_roicounter: 
-{
-  module_type: "ROICounter"
-  Label: "roifinder"
-}
-
-END_PROLOG
