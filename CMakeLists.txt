@@ -55,6 +55,7 @@ find_package(ifdhc REQUIRED )
 find_package(ifdh_art REQUIRED )
 find_package(Range-v3 REQUIRED )
 find_package(sbnobj REQUIRED )
+find_package(sbncode REQUIRED )
 find_package(icarus_signal_processing REQUIRED )
 find_package(icarusalg REQUIRED )
 find_package(icarusutil REQUIRED )
@@ -94,10 +95,11 @@ find_package(FFTW3f REQUIRED )
 find_package(FFTW3q REQUIRED )
 find_package(FFTW3l REQUIRED )
 
-# macros for dictionary and simple_plugin
+# macros for dictionary and cet_build_plugin
 include(ArtDictionary)
 include(ArtMake)
 include(BuildPlugins)
+include(SBNutils)
 
 # ADD SOURCE CODE SUBDIRECTORIES HERE
 add_subdirectory(icaruscode)
