@@ -26,10 +26,10 @@
 namespace icarus {
   namespace calo {
 
-class NormalizeTPCSQL : public INormalizeCharge
+class NormalizeTPCPerPlaneSQL : public INormalizeCharge
 {
 public:
-  NormalizeTPCSQL(fhicl::ParameterSet const &pset);
+  NormalizeTPCPerPlaneSQL(fhicl::ParameterSet const &pset);
 
   void configure(const fhicl::ParameterSet& pset) override;
   double Normalize(double dQdx, const art::Event &e, const recob::Hit &h, const geo::Point_t &location, const geo::Vector_t &direction, double t0) override;
@@ -56,22 +56,22 @@ private:
   std::map<uint64_t, ScaleInfo> fScaleInfos;
 };
 
-DEFINE_ART_CLASS_TOOL(NormalizeTPCSQL)
+DEFINE_ART_CLASS_TOOL(NormalizeTPCPerPlaneSQL)
 
   } // end namespace calo
 } // end namespace icarus
 
 
-icarus::calo::NormalizeTPCSQL::NormalizeTPCSQL(fhicl::ParameterSet const &pset):
+icarus::calo::NormalizeTPCPerPlaneSQL::NormalizeTPCPerPlaneSQL(fhicl::ParameterSet const &pset):
   fDBFileName(pset.get<std::string>("DBFileName")),
   fDBTag(pset.get<std::string>("DBTag")),
   fVerbose(pset.get<bool>("Verbose", false)),
   fMC(pset.get<int>("MC")),
   fDB(fDBFileName, "", "", fDBTag, true, false) {}
 
-void icarus::calo::NormalizeTPCSQL::configure(const fhicl::ParameterSet& pset) {}
+void icarus::calo::NormalizeTPCPerPlaneSQL::configure(const fhicl::ParameterSet& pset) {}
 
-icarus::calo::NormalizeTPCSQL::ScaleInfo icarus::calo::NormalizeTPCSQL::GetScaleInfo(uint64_t run) {
+icarus::calo::NormalizeTPCPerPlaneSQL::ScaleInfo icarus::calo::NormalizeTPCPerPlaneSQL::GetScaleInfo(uint64_t run) {
 
   // check the cache
   if (fScaleInfos.count(run)) {
@@ -87,7 +87,7 @@ icarus::calo::NormalizeTPCSQL::ScaleInfo icarus::calo::NormalizeTPCSQL::GetScale
   ScaleInfo thisscale;
 
   // Iterate over the rows
-  for (unsigned ch = 0; ch < 4; ch++) {
+  for (unsigned ch = 0; ch < 12; ch++) {
     double scale;
     fDB.GetNamedChannelData(ch, "scale", scale);
 
@@ -99,9 +99,9 @@ icarus::calo::NormalizeTPCSQL::ScaleInfo icarus::calo::NormalizeTPCSQL::GetScale
   return thisscale;
 }
 
-double icarus::calo::NormalizeTPCSQL::Normalize(double dQdx, const art::Event &e, 
+double icarus::calo::NormalizeTPCPerPlaneSQL::Normalize(double dQdx, const art::Event &e, 
     const recob::Hit &hit, const geo::Point_t &location, const geo::Vector_t &direction, double t0) {
-  
+ 
   // Get the info
   uint64_t runID = -1;
   switch (fMC) {
@@ -117,6 +117,9 @@ double icarus::calo::NormalizeTPCSQL::Normalize(double dQdx, const art::Event &e
     case 4:
       runID = 12960;
       break;
+    case 5:
+      runID = 14079;
+      break;
     default:
       runID = e.id().runID().run();
       break;
@@ -127,15 +130,17 @@ double icarus::calo::NormalizeTPCSQL::Normalize(double dQdx, const art::Event &e
   // Lookup the TPC, cryo
   unsigned tpc = hit.WireID().TPC;
   unsigned cryo = hit.WireID().Cryostat;
-  // Get the TPC index
-  unsigned itpc = 2*cryo + tpc/2;
+  unsigned plane = hit.WireID().Plane;
+
+  // Get the TPC-Plane index
+  unsigned itpc_plane = 2*cryo + tpc/2 + plane*4;
 
   double scale = 1;
 
   // TODO: what to do if no scale is found? throw an exception??
-  if (i.scale.count(itpc)) scale = i.scale.at(itpc);
+  if (i.scale.count(itpc_plane)) scale = i.scale.at(itpc_plane);
 
-  if (fVerbose) std::cout << "NormalizeTPCSQL Tool -- Data at itpc: " << itpc << " scale: " << scale << std::endl;
+  if (fVerbose) std::cout << "NormalizeTPCPerPlaneSQL Tool -- Data at Cryo: " << cryo << " TPC: " << tpc << " Plane: " << plane << " itpc_plane: " << itpc_plane << " scale: " << scale << std::endl;
 
   return dQdx * scale;
 }
