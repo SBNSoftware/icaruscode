@@ -406,9 +406,9 @@ class icarus::trigger::TriggerSimulationOnGates
     using Name = fhicl::Name;
     using Comment = fhicl::Comment;
     
-    fhicl::Atom<std::string> TriggerGatesTag {
+    fhicl::Atom<art::InputTag> TriggerGatesTag {
       Name("TriggerGatesTag"),
-      Comment("label of the input trigger gate data product (no instance name)")
+      Comment("tag of the input trigger gate data product (no instance name)")
       };
 
     fhicl::Sequence<std::string> Thresholds {
@@ -776,6 +776,10 @@ class icarus::trigger::TriggerSimulationOnGates
     (icarus::trigger::WindowChannelMap::WindowInfo_t const& winfo)
     { return winfo.composition.cryoid; }
 
+  /// Returns `defModule` with instance name replaced by `thresholdStr`.
+  static art::InputTag makeTag
+    (art::InputTag const& defModule, std::string const& thresholdStr);
+  
 }; // icarus::trigger::TriggerSimulationOnGates
 
 
@@ -878,9 +882,9 @@ icarus::trigger::TriggerSimulationOnGates::TriggerSimulationOnGates
   //
   // more complex parameter parsing
   //
-  std::string const& discrModuleLabel = config().TriggerGatesTag();
+  art::InputTag const& discrModuleTag = config().TriggerGatesTag();
   for (std::string const& threshold: config().Thresholds())
-    fADCthresholds[threshold] = art::InputTag{ discrModuleLabel, threshold };
+    fADCthresholds[threshold] = makeTag(discrModuleTag, threshold);
   
   // initialization of a vector of atomic is not as trivial as it sounds...
   fTriggerCount = std::vector<std::atomic<unsigned int>>(fADCthresholds.size());
@@ -929,19 +933,12 @@ icarus::trigger::TriggerSimulationOnGates::TriggerSimulationOnGates
     log << "\nConfigured " << fADCthresholds.size() << " thresholds (ADC):";
     for (auto const& [ thresholdTag, dataTag ]: fADCthresholds)
       log << "\n * " << thresholdTag << " (from '" << dataTag.encode() << "')";
-#if 0 // TODO restore after adoption of https://github.com/LArSoft/lardataalg/pull/44
+
     log << "\nOther parameters:"
       << "\n * trigger time resolution: " << fTriggerTimeResolution
       << "\n * input beam gate reference time: "
         << util::StandardSelectorFor<util::TimeScale>{}
           .get(fBeamGateReference).name()
-#else
-    util::StandardSelectorFor<util::TimeScale> const timeScaleSelector;
-    log << "\nOther parameters:"
-      << "\n * trigger time resolution: " << fTriggerTimeResolution
-      << "\n * input beam gate reference time: "
-        << timeScaleSelector.get(fBeamGateReference).name()
-#endif
       ;
     if (fDeadTime == std::numeric_limits<nanoseconds>::max())
       log << "\n * only one trigger per beam gate (infinite dead time)";
@@ -1773,6 +1770,20 @@ double icarus::trigger::TriggerSimulationOnGates::eventTimestampInSeconds
 double icarus::trigger::TriggerSimulationOnGates::eventTimestampInSeconds
   (art::Event const& event)
   { return eventTimestampInSeconds(event.time()); }
+
+
+//------------------------------------------------------------------------------
+art::InputTag icarus::trigger::TriggerSimulationOnGates::makeTag
+  (art::InputTag const& defModule, std::string const& thresholdStr)
+{
+  if (!thresholdStr.empty() && !defModule.instance().empty()) {
+    throw art::Exception(art::errors::Configuration)
+      << "Module tag instance name (`TriggerGatesTag`: '"
+      << defModule.encode() << "') and the threshold '" << thresholdStr
+      << "' are both set. One of them must be empty.\n";
+  }
+  return { defModule.label(), thresholdStr, defModule.process() };
+} // icarus::trigger::TriggerSimulationOnGates::makeTag()
 
 
 //------------------------------------------------------------------------------
