@@ -688,7 +688,10 @@ namespace wiremod
         }
         
         wmUtil.ModifyROI(modified_data, roi_properties, subROIPropVec, SubROIMatchedScalesMap);
-        new_rois.add_range(roi_properties.begin, modified_data);
+        std::vector<short> modified_data_short(modified_data.size());
+        std::transform(modified_data.begin(), modified_data.end(), std::back_inserter(modified_data_short),
+          [chanROI](float data) {return static_cast<short>(data / chanROI.ADCScaleFactor());});
+        new_rois.add_range(roi_properties.begin, modified_data_short);
       }
 
       new_chanROIs->emplace_back(new_rois, chanROI.Channel(), chanROI.ADCScaleFactor());
