@@ -582,14 +582,14 @@ namespace sbn::crt {
           << ") cm [" << hits.size() << " op.hits] -> first time: "
           << firstOpHitPeakTime << " us, centroid: " << flash_pos << " cm";
       }
-      
+      /*
       if (nPMTsTriggering < fnOpHitToTrigger) {
         mf::LogTrace("CRTPMTMatchingProducer")
           << "  => skipped (only " << nPMTsTriggering << " < " << fnOpHitToTrigger
           << " hits above threshold)";
         continue;
       }
-      
+      */
       double const thisRelGateTime = triggerGateDiff + tflash * 1e3; // ns
       bool const thisInTime_gate
         = thisRelGateTime > BeamGateMin && thisRelGateTime < BeamGateMax;
