@@ -350,6 +350,66 @@
       <tool type = "LArThreeDOpeningAngleFeatureTool"/>      
     </FeatureToolsNoChargeInfo>
   </algorithm>
+  
+  <!-- Recursively Repeat MopUpAlgorithms -->
+  <algorithm type = "LArRecursivePfoMopUp">
+    <PfoListNames>TrackParticles3D ShowerParticles3D</PfoListNames>
+    <MaxIterations>10</MaxIterations>
+    <MopUpAlgorithms>
+      <algorithm type = "LArBoundedClusterMopUp">
+        <PfoListNames>ShowerParticles3D</PfoListNames>
+        <DaughterListNames>ClustersU ClustersV ClustersW</DaughterListNames>
+      </algorithm>
+      <algorithm type = "LArConeClusterMopUp">
+        <PfoListNames>ShowerParticles3D</PfoListNames>
+        <DaughterListNames>ClustersU ClustersV ClustersW</DaughterListNames>
+      </algorithm>
+      <algorithm type = "LArNearbyClusterMopUp">
+        <PfoListNames>ShowerParticles3D</PfoListNames>
+        <DaughterListNames>ClustersU ClustersV ClustersW</DaughterListNames>
+      </algorithm>
+      <algorithm type = "LArSlidingConePfoMopUp">
+        <InputPfoListNames>TrackParticles3D ShowerParticles3D</InputPfoListNames>
+        <DaughterListNames>ClustersU ClustersV ClustersW TrackClusters3D ShowerClusters3D</DaughterListNames>
+      </algorithm>
+      <algorithm type = "LArSlidingConeClusterMopUp">
+        <InputPfoListNames>TrackParticles3D ShowerParticles3D</InputPfoListNames>
+        <DaughterListNames>ClustersU ClustersV ClustersW</DaughterListNames>
+      </algorithm>
+      <algorithm type = "LArPfoHitCleaning">
+        <PfoListNames>TrackParticles3D ShowerParticles3D</PfoListNames>
+        <ClusterListNames>TrackClusters3D ShowerClusters3D</ClusterListNames>
+      </algorithm>
+      <algorithm type = "LArThreeDHitCreation">
+        <InputPfoListName>TrackParticles3D</InputPfoListName>
+        <OutputCaloHitListName>TrackCaloHits3D</OutputCaloHitListName>
+        <OutputClusterListName>TrackClusters3D</OutputClusterListName>
+        <HitCreationTools>
+          <tool type = "LArClearTransverseTrackHits"><MinViews>3</MinViews></tool>
+          <tool type = "LArClearLongitudinalTrackHits"><MinViews>3</MinViews></tool>
+          <tool type = "LArMultiValuedLongitudinalTrackHits"><MinViews>3</MinViews></tool>
+          <tool type = "LArMultiValuedTransverseTrackHits"><MinViews>3</MinViews></tool>
+          <tool type = "LArClearTransverseTrackHits"><MinViews>2</MinViews></tool>
+          <tool type = "LArClearLongitudinalTrackHits"><MinViews>2</MinViews></tool>
+          <tool type = "LArMultiValuedLongitudinalTrackHits"><MinViews>2</MinViews></tool>
+        </HitCreationTools>
+      </algorithm>
+      <algorithm type = "LArThreeDHitCreation">
+        <InputPfoListName>ShowerParticles3D</InputPfoListName>
+        <OutputCaloHitListName>ShowerCaloHits3D</OutputCaloHitListName>
+        <OutputClusterListName>ShowerClusters3D</OutputClusterListName>
+        <HitCreationTools>
+          <tool type = "LArThreeViewShowerHits"/>
+          <tool type = "LArTwoViewShowerHits"/>
+          <tool type = "LArDeltaRayShowerHits"/>
+        </HitCreationTools>
+      </algorithm>
+    </MopUpAlgorithms>
+  </algorithm>
+  <algorithm type = "LArShowerHierarchyMopUp">
+    <LeadingPfoListName>NeutrinoParticles3D</LeadingPfoListName>
+    <DaughterListNames>TrackParticles3D ShowerParticles3D DaughterVertices3D ClustersU ClustersV ClustersW TrackClusters3D ShowerClusters3D</DaughterListNames>
+  </algorithm>
   <algorithm type = "LArNeutrinoProperties">
     <NeutrinoPfoListName>NeutrinoParticles3D</NeutrinoPfoListName>
   </algorithm>
