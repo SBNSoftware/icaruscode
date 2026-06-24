@@ -210,25 +210,48 @@ local setdrifters = [g.pnode({
 		     name: 'setdrifters%d' %n, 
                      data: {
 		              drifter: wc.tn(drifters[n])
+			      #drifter: "Drifter"
            		   }
 	             }, nin=1, nout=1,
 	             uses=[drifters[n]])
                      #uses=[drifter])  
 		     for n in std.range(0,359)];
 
-local scalers = [{
+local yzmap_filter = {
+    type: "YZMap", name: "yzmap_filter",
+    data: {
+        filename: 'yzmap_icarus_v3_run1.json',
+        bin_width:  10*wc.cm,
+        bin_height: 10*wc.cm,
+        yoffset: 180*wc.cm,
+        zoffset: 900*wc.cm,
+        nbinsy: 31,
+        nbinsz: 180,
+    }
+};
 
+local yzmap_gain = {
+    type: "YZMap", name: "yzmap_gain",
+    data: {
+        filename: 'yzmap_gain_icarus_v3_run1.json',
+        bin_width:  10*wc.cm,
+        bin_height: 10*wc.cm,
+        yoffset: 180*wc.cm,
+        zoffset: 900*wc.cm,
+        nbinsy: 31,
+        nbinsz: 180,
+    }
+};
+
+local scalers = [{
         type: "Scaler",
-	name: "scaler%d" %n, //%std.floor(n/45),
-        data: params.lar {
-	        	 yzmap_scale_filename: 'yzmap_gain_icarus_v3_run2.json',
-			 bin_width:  10*wc.cm,
-			 tpc_width: 1500*wc.mm,
-			 bin_height: 10*wc.cm,
-                	 anode: wc.tn(tools.anodes[std.floor(n/45)]),
-		         plane: std.mod(std.floor(n/15),3)	
-        	       	 },
-		} 
+	name: "scaler%d" %n,
+        data: {
+                 yzmap: wc.tn(yzmap_gain),
+                 anode: wc.tn(tools.anodes[std.floor(n/45)]),
+		 plane: std.mod(std.floor(n/15),3)
+        },
+	}
          for n in std.range(0,359)];
 
 local setscaler = [g.pnode({
@@ -238,7 +261,7 @@ local setscaler = [g.pnode({
                 	      scaler: wc.tn(scalers[n])
            		       }
         	  }, nin=1, nout=1,
-        	  uses=[scalers[n]])
+        	  uses=[scalers[n], yzmap_gain])
 		  for n in std.range(0,359)];
 
 
@@ -268,39 +291,39 @@ local sp = sp_maker(params, tools);
 local sp_pipes = [sp.make_sigproc(a) for a in tools.anodes];
 
 local rng = tools.random;
-local wcls_simchannel_sink_old = 
-  g.pnode({
-    type: 'wclsDepoSetSimChannelSink',
-    name: 'postdriftold',
-    data: {
-      artlabel: 'simpleSCOld',  // where to save in art::Event
-      anodes_tn: [wc.tn(anode) for anode in tools.anodes],
-      rng: wc.tn(rng),
-      tick: params.daq.tick,
-      start_time: -0.34 * wc.ms, // TriggerOffsetTPC from detectorclocks_icarus.fcl
-      readout_time: params.daq.readout_time,
-      nsigma: 3.0,
-      drift_speed: params.lar.drift_speed,
-      u_to_rp: 100 * wc.mm,
-      v_to_rp: 100 * wc.mm,
-      y_to_rp: 100 * wc.mm,
-
-      // GP: The shaping time of the electronics response (1.3us) shifts the peak
-      //     of the field response time. Eyeballing simulation times, it does this
-      //     by a bit less than the 1.3us (1us).
-      //
-      //     N.B. for future: there is likely an additional offset on the two induction
-      //     planes due to where the deconvolution precisely defines where the "peak"
-      //     of the pulse is. One may want to refine these parameters to account for that.
-      //     This perturbation shouldn't be more than a tick or two.
-      u_time_offset: std.extVar('time_offset_u') * wc.us,
-      v_time_offset: std.extVar('time_offset_v') * wc.us,
-      y_time_offset: std.extVar('time_offset_y') * wc.us,
-
-      g4_ref_time: -1500 * wc.us, // G4RefTime from detectorclocks_icarus.fcl
-      use_energy: true,
-    },
-  },nin=1, nout=1, uses=tools.anodes);
+//local wcls_simchannel_sink_old = 
+//  g.pnode({
+//    type: 'wclsDepoSetSimChannelSink',
+//    name: 'postdriftold',
+//    data: {
+//      artlabel: 'simpleSCOld',  // where to save in art::Event
+//      anodes_tn: [wc.tn(anode) for anode in tools.anodes],
+//      rng: wc.tn(rng),
+//      tick: params.daq.tick,
+//      start_time: -0.34 * wc.ms, // TriggerOffsetTPC from detectorclocks_icarus.fcl
+//      readout_time: params.daq.readout_time,
+//      nsigma: 3.0,
+//      drift_speed: params.lar.drift_speed,
+//      u_to_rp: 100 * wc.mm,
+//      v_to_rp: 100 * wc.mm,
+//      y_to_rp: 100 * wc.mm,
+//
+//      // GP: The shaping time of the electronics response (1.3us) shifts the peak
+//      //     of the field response time. Eyeballing simulation times, it does this
+//      //     by a bit less than the 1.3us (1us).
+//      //
+//      //     N.B. for future: there is likely an additional offset on the two induction
+//      //     planes due to where the deconvolution precisely defines where the "peak"
+//      //     of the pulse is. One may want to refine these parameters to account for that.
+//      //     This perturbation shouldn't be more than a tick or two.
+//      u_time_offset: std.extVar('time_offset_u') * wc.us,
+//      v_time_offset: std.extVar('time_offset_v') * wc.us,
+//      y_time_offset: std.extVar('time_offset_y') * wc.us,
+//
+//      g4_ref_time: -1500 * wc.us, // G4RefTime from detectorclocks_icarus.fcl
+//      use_energy: true,
+//    },
+//  },nin=1, nout=1, uses=tools.anodes);
 
 local wcls_simchannel_sink =
   [ g.pnode({
@@ -416,20 +439,13 @@ local deposetfilteryz = [ g.pnode({
             type: 'DepoSetFilterYZ',
    	    name: 'deposetfilteryz_resp%d-'%std.mod(r,15)+'plane%d-'%std.mod(std.floor(r/15),3)+tools.anodes[std.floor(r/45)].name,
             data: {
-	    	  yzmap_filename: 'yzmap_icarus_v3_run2.json',
-		  bin_width:  10*wc.cm,
-		  tpc_width: 1500*wc.mm,
-		  bin_height: 10*wc.cm,
-		  yoffset: 180*wc.cm,
-		  zoffset: 900*wc.cm,
-		  nbinsy: 31,
-		  nbinsz: 180,
-		  resp: std.mod(r,15),	
+	    	  yzmap: wc.tn(yzmap_filter),
+		  resp: std.mod(r,15),
                   anode: wc.tn(tools.anodes[std.floor(r/45)]),
-		  plane: std.mod(std.floor(r/15),3)	
+		  plane: std.mod(std.floor(r/15),3)
             	  }
         }, nin=1, nout=1,
-        uses=tools.anodes)
+        uses=tools.anodes + [yzmap_filter])
 	for r in std.range(0,359)];
 
 local util = import 'pgrapher/experiment/icarus/funcs.jsonnet';
@@ -458,7 +474,10 @@ local pipe_reducer = util.fansummeryz('DepoSetFanout', analog_pipes, frame_summe
 // }, nin=1, nout=1);
 
 //local frameio = io.numpy.frames(output);
-local sink = sim.frame_sink;
+// sim.frame_sink is g.pnode({type:"DumpFrames"}, ...) — its inode has no
+// 'name' field, so the wrapper's lazy `name: prune_array([..., inode.name, ""])[0]`
+// throws "Field does not exist: name" the first time anything forces it.
+local sink = g.pnode({ type: 'DumpFrames', name: 'sinkdump' }, nin=1, nout=0);
 
 
 
@@ -478,4 +497,41 @@ local app = {
 
 // Finally, the configuration sequence which is emitted.
 
-g.uses(graph) + [app]
+// Replacement for g.uses(graph).  The library version (pgraph.popuses +
+// wc.unique_list) re-expands shared sub-DAGs every time they're encountered
+// and then dedups via O(N^2) deep-equality; with the 360-element fan-out
+// here that grows to many minutes.  This DFS post-order visits each unique
+// inode exactly once (memoized by "type:name") and emits children before
+// parents, matching popuses' ordering -- which downstream WCT relies on
+// (e.g. WireSchemaFile must configure before AnodePlanes that reference it).
+// Pnodes (g.pipeline/g.pnode/g.intern wrappers) are scaffolding whose names
+// can collide (fandrifter creates fanout/fanin/intern all named 'fandrifter'),
+// so we always traverse them and never dedup them.  The pgraph is acyclic
+// by design, so unconditional traversal terminates.
+local key_of(x) = if std.objectHas(x, 'name') && x.name != ''
+                  then x.type + ':' + x.name
+                  else x.type;
+local strip_uses(x) = { [k]: x[k] for k in std.objectFields(x) if k != 'uses' };
+
+local visit(node, state) =
+  if node.type == 'Pnode' then
+    if std.objectHas(node, 'uses')
+    then std.foldl(function(s, c) visit(c, s), node.uses, state)
+    else state
+  else
+    local k = key_of(node);
+    if std.objectHas(state.seen, k) then state
+    else
+      local after_children =
+        if std.objectHas(node, 'uses')
+        then std.foldl(function(s, c) visit(c, s), node.uses, state)
+        else state;
+      {
+        seen: after_children.seen { [k]: true },
+        result: after_children.result + [strip_uses(node)],
+      };
+
+local resolve_uses_unique(roots) =
+  std.foldl(function(s, n) visit(n, s), roots, { seen: {}, result: [] }).result;
+
+resolve_uses_unique(graph.uses) + [app]

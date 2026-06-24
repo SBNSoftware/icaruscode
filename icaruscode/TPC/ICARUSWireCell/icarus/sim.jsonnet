@@ -20,8 +20,14 @@ function(params, tools) {
                         for n in std.range(0, nanodes-1)],
 
 
+    // Build one DepoTransform per (anode, plane, response) — 45 entries per
+    // anode (3 planes x 15 response bins).  Derive the count from
+    // tools.anodes so that callers that narrow tools.anodes to a per-TPC
+    // subset (e.g. the per-module wcls-per-tpc...jsonnet) only build the
+    // relevant slice instead of indexing past the end.  With the full 8
+    // anodes this evaluates to std.range(0, 359), matching the legacy form.
     local transformsyz = [sim.make_depotransform_withplane("depotransform-%d-"%n+tools.anodes[std.floor(n/45)].name+"-plane%d"%std.mod(std.floor(n/15),3),tools.anodes[std.floor(n/45)], [std.mod(std.floor(n/15),3)],tools.pirs[std.mod(n,15)])
-	                  for n in std.range(0, 359)],
+	                  for n in std.range(0, nanodes*45 - 1)],
 //    local transformsyz = [sim.make_depotransform_withplane("depotransform-%d-"%n+tools.anodes[std.floor(n/45)].name+"-plane%d"%std.mod(std.floor(n/15),3),tools.anodes[std.floor(n/45)], [std.mod(std.floor(n/15),3)],tools.pirs[0])
 
 
@@ -60,8 +66,8 @@ function(params, tools) {
                 toffset: 0,
                 nticks: params.sim.reframer.nticks,
             },
-	    }, nin=1, nout=1) for n in std.range(0, 359)],
-    
+	    }, nin=1, nout=1) for n in std.range(0, nanodes*45 - 1)],
+
 
     // fixme: see https://github.com/WireCell/wire-cell-gen/issues/29
     local make_noise_model = function(anode, csdb=null) {
@@ -133,7 +139,7 @@ function(params, tools) {
         splusn: f.fanpipe('DepoSetFanout', self.splusn_pipelines, 'FrameFanin', "simsplusngraph", outtags),
 
         analog_pipelinesyz: [g.pipeline([depos2tracesyz[n]],
-                                        name="simanalogpipe-%d-"%n + tools.anodes[std.floor(n/45)].name) for n in std.range(0, 359)],
+                                        name="simanalogpipe-%d-"%n + tools.anodes[std.floor(n/45)].name) for n in std.range(0, nanodes*45 - 1)],
         signal_pipelinesyz: [g.pipeline([depos2tracesyz[n], reframersyz[n],  digitizers[n]],
                                       name="simsigpipe-" + tools.anodes[n].name) for n in std.range(0, nanodes-1)],
         splusn_pipelinesyz:  [g.pipeline([depos2tracesyz[n], reframersyz[n], noises[n], digitizers[n]],

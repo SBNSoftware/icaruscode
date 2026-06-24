@@ -1,4 +1,4 @@
-#include "stage0_run2_wc_icarus_mc.fcl"
+#include "stage0_run2_wc_yz_icarus_mc.fcl"
 
 # restore non-shifted labels
 physics.producers.emuTrigger.BeamGates: "beamgate"
