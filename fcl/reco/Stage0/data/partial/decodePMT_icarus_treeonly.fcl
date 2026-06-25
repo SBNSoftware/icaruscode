@@ -1,0 +1,68 @@
+#
+# File:    decodePMT_icarus_treeonly.fcl
+# Purpose: Runs PMT decoding to build a PMT diagnostic tree.
+# Author:  Gianluca Petrillo (petrillo@slac.stanford.edu)
+# Date:    September 25, 2022
+# 
+# It does not save any waveform.
+# 
+# Input
+# ------
+# 
+# * artDAQ fragments from all 24 PMT readout boards, named
+#   `daq:ContainerCAENV1730` (or any standard ICARUS name)
+# * trigger fragment (autodetected among ICARUS standard names)
+# * DAQ configuration as FHiCL in the art/ROOT input file
+# 
+# This configuration requires a data fragment for each PMT readout board
+# which is mentioned in `physics.producers.daqPMT.DecoderTool.BoardSetup`,
+# which by default is all 24.
+# 
+# 
+# Output
+# -------
+# 
+# In the plain ROOT output file (names `Tree-....root`) a diagnostic tree
+# is stored with one entry per PMT data fragment (see `decodePMT_icarus.fcl`
+# and the decoder module `DaqDecodeICARUSPMT`), as `daqPMT/PMTfragments`.
+#
+# All standard trigger and PMT decoding data products are produced with the
+# standard names (`daqTrigger` and `daqPMT` respectively).
+# The noticeable exception is PMT raw waveforms not the corrections:
+# neither are saved.
+#
+# The log file also dump the trigger information.
+# 
+#
+
+
+# ------------------------------------------------------------------------------
+#include "decodePMT_icarus.fcl"
+
+# add a trigger dumper to the output on console
+physics.analyzers.dumptrigger: {
+  module_type: DumpTrigger
+  TriggerTag: "daqTrigger"
+}
+
+physics.dumpers:  [ dumptrigger ]
+physics.end_paths: [ streams, dumpers ]
+
+outputs.rootoutput.fileProperties: @erase # don't go one output file per input file
+outputs.rootoutput.outputCommands: [
+  @sequence::outputs.rootoutput.outputCommands
+  , "drop raw::OpDetWaveforms_daqPMT_*_DecodePMT"
+]
+
+# disable abundant output on console and the optical waveforms
+physics.producers.daqPMT.SaveCorrectionsFrom: []
+physics.producers.daqPMT.DiagnosticOutput:    false
+physics.producers.daqTrigger.DecoderTool.Decoders[0].ToolConfig.DiagnosticOutput: false
+physics.producers.daqTrigger.DecoderTool.Decoders[1].ToolConfig.DiagnosticOutput: false
+physics.producers.daqTrigger.DecoderTool.Decoders[2].ToolConfig.DiagnosticOutput: false
+
+services.message.destinations.LogDebugFile: @erase
+services.message.destinations.LogSeeds: @erase
+services.TimeTracker: {} # no DB file
+services.MemoryTracker: @erase
+

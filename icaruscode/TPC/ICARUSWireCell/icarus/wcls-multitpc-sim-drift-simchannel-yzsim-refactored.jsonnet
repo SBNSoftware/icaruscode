@@ -44,22 +44,22 @@ local params = base {
    //  fields: [ std.extVar('files_fields'), ]
 
        	fields: [          
-			"icarus_fnal_fit_ks_P0nom_P1bin0.json.bz2",	
-			"icarus_fnal_fit_ks_P0nom_P1bin1.json.bz2",	
-			"icarus_fnal_fit_ks_P0nom_P1bin2.json.bz2",	
-			"icarus_fnal_fit_ks_P0nom_P1bin3.json.bz2",	
-			"icarus_fnal_fit_ks_P0nom_P1bin4.json.bz2",	
-			"icarus_fnal_fit_ks_P0nom_P1bin5.json.bz2",	
-			"icarus_fnal_fit_ks_P0nom_P1bin6.json.bz2",	
-			"icarus_fnal_fit_ks_P0nom_P1bin7.json.bz2",	
-			"icarus_fnal_fit_ks_P0nom_P1bin8.json.bz2",	
-			"icarus_fnal_fit_ks_P0nom_P1bin9.json.bz2",	
-			"icarus_fnal_fit_ks_P0nom_P1bin10.json.bz2",	
-			"icarus_fnal_fit_ks_P0nom_P1bin11.json.bz2",	
-			"icarus_fnal_fit_ks_P0nom_P1bin12.json.bz2",	
-			"icarus_fnal_fit_ks_P0nom_P1bin13.json.bz2",	
-			"icarus_fnal_fit_ks_P0nom_P1bin14.json.bz2",	
-			"icarus_fnal_fit_ks_P0nom_P1bin15.json.bz2"]
+			"icarus_fnal_fit_ks_P0nom_P1bin0_shifted.json.bz2",	
+			"icarus_fnal_fit_ks_P0nom_P1bin1_shifted.json.bz2",	
+			"icarus_fnal_fit_ks_P0nom_P1bin2_shifted.json.bz2",	
+			"icarus_fnal_fit_ks_P0nom_P1bin3_shifted.json.bz2",	
+			"icarus_fnal_fit_ks_P0nom_P1bin4_shifted.json.bz2",	
+			"icarus_fnal_fit_ks_P0nom_P1bin5_shifted.json.bz2",	
+			"icarus_fnal_fit_ks_P0nom_P1bin6_shifted.json.bz2",	
+			"icarus_fnal_fit_ks_P0nom_P1bin7_shifted.json.bz2",	
+			"icarus_fnal_fit_ks_P0nom_P1bin8_shifted.json.bz2",	
+			"icarus_fnal_fit_ks_P0nom_P1bin9_shifted.json.bz2",	
+			"icarus_fnal_fit_ks_P0nom_P1bin10_shifted.json.bz2",	
+			"icarus_fnal_fit_ks_P0nom_P1bin11_shifted.json.bz2",	
+			"icarus_fnal_fit_ks_P0nom_P1bin12_shifted.json.bz2",	
+			"icarus_fnal_fit_ks_P0nom_P1bin13_shifted.json.bz2",	
+			"icarus_fnal_fit_ks_P0nom_P1bin14_shifted.json.bz2",	
+			"icarus_fnal_fit_ks_P0nom_P1bin15_shifted.json.bz2"]
   },
 
   rc_resp: if std.extVar('file_rcresp') != "" then
@@ -221,7 +221,7 @@ local scalers = [{
         type: "Scaler",
 	name: "scaler%d" %n, //%std.floor(n/45),
         data: params.lar {
-	        	 yzmap_scale_filename: 'yzmap_gain_icarus_v3_run2.json',
+	        	 yzmap_scale_filename: std.extVar('YZScaleMapJson'),
 			 bin_width:  10*wc.cm,
 			 tpc_width: 1500*wc.mm,
 			 bin_height: 10*wc.cm,
@@ -416,7 +416,7 @@ local deposetfilteryz = [ g.pnode({
             type: 'DepoSetFilterYZ',
    	    name: 'deposetfilteryz_resp%d-'%std.mod(r,15)+'plane%d-'%std.mod(std.floor(r/15),3)+tools.anodes[std.floor(r/45)].name,
             data: {
-	    	  yzmap_filename: 'yzmap_icarus_v3_run2.json',
+	    	  yzmap_filename: std.extVar('YZMapJson'),
 		  bin_width:  10*wc.cm,
 		  tpc_width: 1500*wc.mm,
 		  bin_height: 10*wc.cm,
