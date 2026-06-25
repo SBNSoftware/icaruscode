@@ -10,7 +10,7 @@
 #include "icaruscode/PMT/Algorithms/OpDetWaveformMetaUtils.h" // OpDetWaveformMetaMaker
 #include "icaruscode/PMT/Data/WaveformRMS.h"
 #include "icaruscode/IcarusObj/OpDetWaveformMeta.h"
-#include "icarusalg/Utilities/AssnsCrosser.h"
+#include "sbnalg/Utilities/AssnsCrosser.h"
 #include "sbnobj/ICARUS/PMT/Data/WaveformBaseline.h"
 
 // LArSoft libraries
@@ -480,9 +480,9 @@ void icarus::trigger::ReassociatePMTbaselines::produce
   
   // associate original metadata with (original) baselines:
   auto const metaToBaseline = makeAssnsCrosser(event,
-      icarus::ns::util::startFrom<sbn::OpDetWaveformMeta>{}
-    , icarus::ns::util::hopTo    <raw::OpDetWaveform>{ fOriginalWaveformTag }
-    , icarus::ns::util::hopTo    <icarus::WaveformBaseline>{ fBaselineTag }
+      sbn::ns::util::startFrom<sbn::OpDetWaveformMeta>{}
+    , sbn::ns::util::hopTo    <raw::OpDetWaveform>{ fOriginalWaveformTag }
+    , sbn::ns::util::hopTo    <icarus::WaveformBaseline>{ fBaselineTag }
     );
   
   // find which original metadata we need
