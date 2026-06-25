@@ -209,39 +209,39 @@ local sp = sp_maker(params, tools);
 local sp_pipes = [sp.make_sigproc(a) for a in tools.anodes];
 
 local rng = tools.random;
-local wcls_simchannel_sink_old = 
-  g.pnode({
-    type: 'wclsDepoSetSimChannelSink',
-    name: 'postdriftold',
-    data: {
-      artlabel: 'simpleSCOld',  // where to save in art::Event
-      anodes_tn: [wc.tn(anode) for anode in tools.anodes],
-      rng: wc.tn(rng),
-      tick: params.daq.tick,
-      start_time: -0.34 * wc.ms, // TriggerOffsetTPC from detectorclocks_icarus.fcl
-      readout_time: params.daq.readout_time,
-      nsigma: 3.0,
-      drift_speed: params.lar.drift_speed,
-      u_to_rp: 100 * wc.mm,
-      v_to_rp: 100 * wc.mm,
-      y_to_rp: 100 * wc.mm,
-
-      // GP: The shaping time of the electronics response (1.3us) shifts the peak
-      //     of the field response time. Eyeballing simulation times, it does this
-      //     by a bit less than the 1.3us (1us).
-      //
-      //     N.B. for future: there is likely an additional offset on the two induction
-      //     planes due to where the deconvolution precisely defines where the "peak"
-      //     of the pulse is. One may want to refine these parameters to account for that.
-      //     This perturbation shouldn't be more than a tick or two.
-      u_time_offset: std.extVar('time_offset_u') * wc.us,
-      v_time_offset: std.extVar('time_offset_v') * wc.us,
-      y_time_offset: std.extVar('time_offset_y') * wc.us,
-
-      g4_ref_time: -1500 * wc.us, // G4RefTime from detectorclocks_icarus.fcl
-      use_energy: true,
-    },
-  },nin=1, nout=1, uses=tools.anodes);
+//local wcls_simchannel_sink_old = 
+//  g.pnode({
+//    type: 'wclsDepoSetSimChannelSink',
+//    name: 'postdriftold',
+//    data: {
+//      artlabel: 'simpleSCOld',  // where to save in art::Event
+//      anodes_tn: [wc.tn(anode) for anode in tools.anodes],
+//      rng: wc.tn(rng),
+//      tick: params.daq.tick,
+//      start_time: -0.34 * wc.ms, // TriggerOffsetTPC from detectorclocks_icarus.fcl
+//      readout_time: params.daq.readout_time,
+//      nsigma: 3.0,
+//      drift_speed: params.lar.drift_speed,
+//      u_to_rp: 100 * wc.mm,
+//      v_to_rp: 100 * wc.mm,
+//      y_to_rp: 100 * wc.mm,
+//
+//      // GP: The shaping time of the electronics response (1.3us) shifts the peak
+//      //     of the field response time. Eyeballing simulation times, it does this
+//      //     by a bit less than the 1.3us (1us).
+//      //
+//      //     N.B. for future: there is likely an additional offset on the two induction
+//      //     planes due to where the deconvolution precisely defines where the "peak"
+//      //     of the pulse is. One may want to refine these parameters to account for that.
+//      //     This perturbation shouldn't be more than a tick or two.
+//      u_time_offset: std.extVar('time_offset_u') * wc.us,
+//      v_time_offset: std.extVar('time_offset_v') * wc.us,
+//      y_time_offset: std.extVar('time_offset_y') * wc.us,
+//
+//      g4_ref_time: -1500 * wc.us, // G4RefTime from detectorclocks_icarus.fcl
+//      use_energy: true,
+//    },
+//  },nin=1, nout=1, uses=tools.anodes);
 
 local wcls_simchannel_sink =
   g.pnode({
@@ -364,7 +364,7 @@ local sink = sim.frame_sink;
 
 // local graph = g.pipeline([wcls_input.depos, drifter,  wcls_simchannel_sink.simchannels, bagger, pipe_reducer, retagger, wcls_output.sim_digits, sink]);
 //local graph = g.pipeline([wcls_input.depos, drifter,  wcls_simchannel_sink, bagger, pipe_reducer, sink]);
-local graph = g.pipeline([wcls_input.deposet, setdrifter, wcls_simchannel_sink_old, wcls_simchannel_sink, pipe_reducer, sink]);
+local graph = g.pipeline([wcls_input.deposet, setdrifter, wcls_simchannel_sink, pipe_reducer, sink]);
 
 local app = {
   type: 'Pgrapher',
@@ -375,5 +375,39 @@ local app = {
 
 
 // Finally, the configuration sequence which is emitted.
+//g.uses(graph) + [app]
 
-g.uses(graph) + [app]
+// Finally, the configuration sequence which is emitted.
+
+local key_of(x) = if std.objectHas(x, 'name') && x.name != ''
+                  then x.type + ':' + x.name
+                  else x.type;
+
+local strip_uses(x) = {
+  [k]: x[k]
+  for k in std.objectFields(x)
+  if k != 'uses'
+};
+
+local visit(node, state) =
+  if node.type == 'Pnode' then
+    if std.objectHas(node, 'uses')
+    then std.foldl(function(s, c) visit(c, s), node.uses, state)
+    else state
+  else
+    local k = key_of(node);
+    if std.objectHas(state.seen, k) then state
+    else
+      local after_children =
+        if std.objectHas(node, 'uses')
+        then std.foldl(function(s, c) visit(c, s), node.uses, state)
+        else state;
+      {
+        seen: after_children.seen { [k]: true },
+        result: after_children.result + [strip_uses(node)],
+      };
+
+local resolve_uses_unique(roots) =
+  std.foldl(function(s, n) visit(n, s), roots, { seen: {}, result: [] }).result;
+
+resolve_uses_unique(graph.uses) + [app]

@@ -1,0 +1,9 @@
+###
+## This fhicl file is used to run "stage0" processing specifically for the case where 
+## the detector simulation has included the YZ simulation
+##
+
+#include "stage0_run2_wc_icarus_mc.fcl"
+
+physics.producers.MCDecodeTPCROI.FragmentsLabelVec:   ["daq3:TPCWW","daq2:TPCWE","daq1:TPCEW","daq0:TPCEE"]
+
