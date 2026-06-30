@@ -679,28 +679,23 @@ namespace wiremod
         catch(...) {
           continue; // ignore depositions outside TPC
         }
-        for (auto const& plane : fWireReadout->Iterate<geo::PlaneGeo>(curTPCGeomID))
+
+        geo::TPCGeo const* curTPCGeomPtr = fGeometry->PositionToTPCptr(edep.MidPoint());
+        for (auto const& plane : fWireReadout->Iterate<geo::PlaneGeo>(curTPCGeomPtr->ID()))
         {
-          if (fWireReadout->FindTPCsetAtPosition(edep.MidPoint()) != readout::TPCsetID(fCryo, fTPCset))
-            continue;
+          TH2F* targetHist = (plane.View() == geo::kY) ? fEdepTickInd1
+                           : (plane.View() == geo::kV) ? fEdepTickInd2
+                           : (plane.View() == geo::kU) ? fEdepTickColl
+                           :                             nullptr;
+          if (targetHist == nullptr) continue;
 
-          geo::TPCGeo const* curTPCGeomPtr = fGeometry->PositionToTPCptr(edep.MidPoint());
-          for (auto const& plane : fWireReadout->Iterate<geo::PlaneGeo>(curTPCGeomPtr->ID()))
-          {
-            TH2F* targetHist = (plane.View() == geo::kY) ? fEdepTickInd1
-                             : (plane.View() == geo::kV) ? fEdepTickInd2
-                             : (plane.View() == geo::kU) ? fEdepTickColl
-                             :                             nullptr;
-            if (targetHist == nullptr) continue;
-
-            geo::WireID wireID;
-            try { wireID = plane.NearestWireID(edep.MidPoint()); }
-            catch (...) { continue; }
-            float projTick = detProp.ConvertXToTicks(edep.X(), wireID.Plane, wireID.TPC, wireID.Cryostat) + wmUtil.tickOffset;
-            float projChan = fWireReadout->PlaneWireToChannel(wireID);
-            targetHist->Fill(projTick, projChan);
-            fEdepXvsChan->Fill(edep.X(), projChan);
-          }
+          geo::WireID wireID;
+          try { wireID = plane.NearestWireID(edep.MidPoint()); }
+          catch (...) { continue; }
+          float projTick = detProp.ConvertXToTicks(edep.X(), wireID.Plane, wireID.TPC, wireID.Cryostat) + wmUtil.tickOffset;
+          float projChan = fWireReadout->PlaneWireToChannel(wireID);
+          targetHist->Fill(projTick, projChan);
+          fEdepXvsChan->Fill(edep.X(), projChan);
         }
       }
       for (auto const& hit : hitVec)
@@ -724,18 +719,6 @@ namespace wiremod
         }
         catch (...) { }
         fHitXvsChan->Fill(hitX, chan);
-
-        geo::WireID wireID;
-        try {
-          wireID = plane.NearestWireID(edep.MidPoint());
-        }
-        catch (...) {
-          continue; // don't fill non-active depositions
-        }
-        float projTick = detProp.ConvertXToTicks(edep.X(), wireID.Plane, wireID.TPC, wireID.Cryostat) + wmUtil.tickOffset;
-        float projChan = fWireReadout->PlaneWireToChannel(wireID);
-        targetHist->Fill(projTick, projChan);
-        fEdepXvsChan->Fill(edep.X(), projChan);
       }
     }
 
