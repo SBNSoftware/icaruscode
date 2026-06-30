@@ -1,5 +1,6 @@
 // std inlcudes
 #include <cstring>
+#include <cstdlib>
 #include <string>
 #include <vector>
 
@@ -17,6 +18,7 @@
 #include "art/Framework/Services/Registry/ServiceHandle.h"
 #include "art_root_io/TFileService.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
+#include "cetlib_except/exception.h"
 
 // larsoft includes
 #include "larcore/Geometry/Geometry.h"
@@ -255,8 +257,11 @@ namespace wiremod
       if (not fLocalRatios)
       {
         char* icaruscode_dir = std::getenv("ICARUSCODE_DIR");
-        assert(icaruscode_dir
-          && "WireModifierXXW::reconfigure - ICARUSCODE_DIR environment variable must be set!");
+        if (not icaruscode_dir)
+        {
+          throw cet::exception("WireModifierXXW")
+            << "WireModifierXXW::reconfigure - ICARUSCODE_DIR environment variable must be set!";
+        }
         dir_path = std::string(icaruscode_dir) + "/root/WireMod";
       } else
       {
@@ -266,11 +271,22 @@ namespace wiremod
         << "WireModifierXXW::reconfigure - Get file " << fRatioFileName_XXW
         << " from directory " << dir_path;
       TFile* ratioFile = new TFile((dir_path + "/" + fRatioFileName_XXW).c_str(), "READ"); // read only
-      assert(ratioFile && "WireModifierXXW::reconfigure - Could not open ratio file");
+      if (not ratioFile)
+      {
+        throw cet::exception("WireModifierXXW")
+          << "WireModifierXXW::reconfigure - Could not open ratio file";
+      }
       // the file exists! pull the ratios
-      assert(ratioFile && "WireModifierXXW::reconfigure - WireMod Ratio File Must Exist!");
-      assert(!ratioFile->IsZombie()
-        && "WireModifierXXW::reconfigure - WireMod Ratio File Must Not be a Zombie!");
+      if (not ratioFile)
+      {
+        throw cet::exception("WireModifierXXW")
+          << "WireModifierXXW::reconfigure - WireMod Ratio File Must Exist!";
+      }
+      if (ratioFile->IsZombie())
+      {
+        throw cet::exception("WireModifierXXW")
+          << "WireModifierXXW::reconfigure - WireMod Ratio File Must Not be a Zombie!";
+      }
       mf::LogVerbatim("WireModifierXXW")
         << "WireModifierXXW::reconfigure - Getting XXW Scales...";
       std::vector<std::string> nameVec_charge_XXW = pset.get<std::vector<std::string>>("XXWScaleIntegral");
@@ -346,8 +362,11 @@ namespace wiremod
       if (not fLocalRatios)
       {
         char* icaruscode_dir = std::getenv("ICARUSCODE_DIR");
-        assert(icaruscode_dir
-          && "WireModifierXXW::reconfigure - ICARUSCODE_DIR environment variable must be set!");
+        if (not icaruscode_dir)
+        {
+          throw cet::exception("WireModifierXXW")
+            << "WireModifierXXW::reconfigure - ICARUSCODE_DIR environment variable must be set!";
+        }
         dir_path = std::string(icaruscode_dir) + "/root/WireMod";
       } else
       {
@@ -357,11 +376,22 @@ namespace wiremod
         << "WireModifierXXW::reconfigure - Get file " << fRatioFileName_YZ
         << " from directory " << dir_path;
       TFile* ratioFile = new TFile((dir_path + "/" + fRatioFileName_YZ).c_str(), "READ"); // read only
-      assert(ratioFile && "WireModifierXXW::reconfigure - Could not open ratio file");
+      if (not ratioFile)
+      {
+        throw cet::exception("WireModifierXXW")
+          << "WireModifierXXW::reconfigure - Could not open ratio file";
+      }
       // the file exists! pull the ratios
-      assert(ratioFile && "WireModifierXXW::reconfigure - WireMod Ratio File Must Exist!");
-      assert(!ratioFile->IsZombie()
-        && "WireModifierXXW::reconfigure - WireMod Ratio File Must Not be a Zombie!");
+      if (not ratioFile)
+      {
+        throw cet::exception("WireModifierXXW")
+          << "WireModifierXXW::reconfigure - WireMod Ratio File Must Exist!";
+      }
+      if (ratioFile->IsZombie())
+      {
+        throw cet::exception("WireModifierXXW")
+          << "WireModifierXXW::reconfigure - WireMod Ratio File Must Not be a Zombie!";
+      }
       mf::LogVerbatim("WireModifierXXW")
         << "WireModifierXXW::reconfigure - Getting XXW Scales...";
       std::vector<std::string> nameVec_charge_YZ = pset.get<std::vector<std::string>>("YZScaleIntegral");
@@ -594,6 +624,9 @@ namespace wiremod
                                false, // XZ-Angle
                                false, // YZ-Angle
                                false, // dE/dx
+                               false, // X-XZAngle
+                               false, // X-dQ/dX
+                               false, // XZAngledQdX
                                (fRatioFileName_XXW != "NOFILE"),  // X-ThXW
                                BT_Offset); // Tick Offset
     if (fRatioFileName_YZ != "NOFILE")
@@ -639,22 +672,35 @@ namespace wiremod
         if (fWireReadout->FindTPCsetAtPosition(edep.MidPoint()) != readout::TPCsetID(fCryo, fTPCset))
           continue;
 
-        geo::TPCGeo const* curTPCGeomPtr = fGeometry->PositionToTPCptr(edep.MidPoint());
-        for (auto const& plane : fWireReadout->Iterate<geo::PlaneGeo>(curTPCGeomPtr->ID()))
+        geo::TPCID curTPCGeomID;
+        try {
+          curTPCGeomID = fGeometry->PositionToTPC(edep.MidPoint()).ID();
+        }
+        catch(...) {
+          continue; // ignore depositions outside TPC
+        }
+        for (auto const& plane : fWireReadout->Iterate<geo::PlaneGeo>(curTPCGeomID))
         {
-          TH2F* targetHist = (plane.View() == geo::kY) ? fEdepTickInd1
-                           : (plane.View() == geo::kV) ? fEdepTickInd2
-                           : (plane.View() == geo::kU) ? fEdepTickColl
-                           :                             nullptr;
-          if (targetHist == nullptr) continue;
+          if (fWireReadout->FindTPCsetAtPosition(edep.MidPoint()) != readout::TPCsetID(fCryo, fTPCset))
+            continue;
 
-          geo::WireID wireID;
-          try { wireID = plane.NearestWireID(edep.MidPoint()); }
-          catch (...) { continue; }
-          float projTick = detProp.ConvertXToTicks(edep.X(), wireID.Plane, wireID.TPC, wireID.Cryostat) + wmUtil.tickOffset;
-          float projChan = fWireReadout->PlaneWireToChannel(wireID);
-          targetHist->Fill(projTick, projChan);
-          fEdepXvsChan->Fill(edep.X(), projChan);
+          geo::TPCGeo const* curTPCGeomPtr = fGeometry->PositionToTPCptr(edep.MidPoint());
+          for (auto const& plane : fWireReadout->Iterate<geo::PlaneGeo>(curTPCGeomPtr->ID()))
+          {
+            TH2F* targetHist = (plane.View() == geo::kY) ? fEdepTickInd1
+                             : (plane.View() == geo::kV) ? fEdepTickInd2
+                             : (plane.View() == geo::kU) ? fEdepTickColl
+                             :                             nullptr;
+            if (targetHist == nullptr) continue;
+
+            geo::WireID wireID;
+            try { wireID = plane.NearestWireID(edep.MidPoint()); }
+            catch (...) { continue; }
+            float projTick = detProp.ConvertXToTicks(edep.X(), wireID.Plane, wireID.TPC, wireID.Cryostat) + wmUtil.tickOffset;
+            float projChan = fWireReadout->PlaneWireToChannel(wireID);
+            targetHist->Fill(projTick, projChan);
+            fEdepXvsChan->Fill(edep.X(), projChan);
+          }
         }
       }
       for (auto const& hit : hitVec)
@@ -678,6 +724,18 @@ namespace wiremod
         }
         catch (...) { }
         fHitXvsChan->Fill(hitX, chan);
+
+        geo::WireID wireID;
+        try {
+          wireID = plane.NearestWireID(edep.MidPoint());
+        }
+        catch (...) {
+          continue; // don't fill non-active depositions
+        }
+        float projTick = detProp.ConvertXToTicks(edep.X(), wireID.Plane, wireID.TPC, wireID.Cryostat) + wmUtil.tickOffset;
+        float projChan = fWireReadout->PlaneWireToChannel(wireID);
+        targetHist->Fill(projTick, projChan);
+        fEdepXvsChan->Fill(edep.X(), projChan);
       }
     }
 

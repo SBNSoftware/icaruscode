@@ -1,4 +1,4 @@
-#include "WireModifierXXW_v4.fcl"
+#include "WireModifierXXW.fcl"
 #include "stage1_run2_icarus_overlay.fcl"
 
 # add the WireMod sequence to the standard stage1 sequence
@@ -39,8 +39,6 @@ outputs.out1.outputCommands:
   @sequence::outputs.out1.outputCommands,
   "drop *_dummyGaushit2dTPC*_*_*",
   "drop *_WMROI2Wire_*_*",
-  "drop *_WireModXXWTPC*_*_*"
+  "drop *_WireModTPC*_*_*"
 ]
 services.BackTrackerService.BackTracker.SimChannelModuleLabel: "merge"
-
-services.message.destinations.STDCOUT.threshold: "DEBUG"

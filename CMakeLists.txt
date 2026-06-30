@@ -17,10 +17,10 @@ cmake_minimum_required(VERSION 3.20 FATAL_ERROR)
 # cmake_policy(VERSION 3.19)
 
 find_package(cetmodules 3.24.01 REQUIRED)
-#project(icaruscode VERSION 10.06.00.06 LANGUAGES CXX)
+project(icaruscode VERSION 10.06.00.12 LANGUAGES CXX)
 
-set(${PROJECT_NAME}_CMAKE_PROJECT_VERSION_STRING 10.06.00.06-p03)
-project(icaruscode LANGUAGES CXX)
+#set(${PROJECT_NAME}_CMAKE_PROJECT_VERSION_STRING 10.06.00.12)
+#project(icaruscode LANGUAGES CXX)
 
 message(STATUS
   "\n-- ============================================================================="
@@ -55,6 +55,8 @@ find_package(ifdhc REQUIRED )
 find_package(ifdh_art REQUIRED )
 find_package(Range-v3 REQUIRED )
 find_package(sbnobj REQUIRED )
+find_package(sbnanaobj REQUIRED )
+find_package(sbncode REQUIRED)
 find_package(icarus_signal_processing REQUIRED )
 find_package(icarusalg REQUIRED )
 find_package(icarusutil REQUIRED )

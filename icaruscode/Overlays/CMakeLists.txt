@@ -23,6 +23,13 @@ cet_build_plugin(
   gallery::gallery
 )
 
+cet_build_plugin(
+  SubRunPOTInEvent art::EDProducer
+  LIBRARIES
+  PRIVATE
+  larcoreobj::SummaryData
+)
+
 # This is what's needed for building the WireCellubsim WCT component
 art_make_library(
   LIBRARY_NAME WireCellICARUSDrifter
