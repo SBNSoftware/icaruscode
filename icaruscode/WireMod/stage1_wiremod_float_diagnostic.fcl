@@ -1,0 +1,73 @@
+#include "WireModifierXXW_closure.fcl"
+#include "WireModHitDiagnostic.fcl"
+#include "stage1_run2_icarus_overlay.fcl"
+
+# float (ChannelROI-direct) mode: no WMWireToROI, WireModTPCxx produces ChannelROI directly
+physics.reco:
+[
+  @sequence::dummyGaushit2dSeq,
+  WMROI2Wire,
+  @sequence::WireModSeq,
+  @sequence::physics.reco
+]
+
+physics.producers:
+{
+  @table::WireModTable
+  @table::physics.producers
+}
+
+physics.producers.WireModTPCEE.UseChannelROIMode: true
+physics.producers.WireModTPCEW.UseChannelROIMode: true
+physics.producers.WireModTPCWE.UseChannelROIMode: true
+physics.producers.WireModTPCWW.UseChannelROIMode: true
+
+physics.producers.WireModTPCEE: { @table::physics.producers.WireModTPCEE @table::WireModROITree }
+physics.producers.WireModTPCEW: { @table::physics.producers.WireModTPCEW @table::WireModROITree }
+physics.producers.WireModTPCWE: { @table::physics.producers.WireModTPCWE @table::WireModROITree }
+physics.producers.WireModTPCWW: { @table::physics.producers.WireModTPCWW @table::WireModROITree }
+
+physics.producers.WireModTPCEE.AdditiveModification: true
+physics.producers.WireModTPCEW.AdditiveModification: true
+physics.producers.WireModTPCWE.AdditiveModification: true
+physics.producers.WireModTPCWW.AdditiveModification: true
+
+physics.producers.WireModTPCEE.SetNullScaleIntegral: false
+physics.producers.WireModTPCEE.SetNullScaleWidth:    false
+physics.producers.WireModTPCEW.SetNullScaleIntegral: false
+physics.producers.WireModTPCEW.SetNullScaleWidth:    false
+physics.producers.WireModTPCWE.SetNullScaleIntegral: false
+physics.producers.WireModTPCWE.SetNullScaleWidth:    false
+physics.producers.WireModTPCWW.SetNullScaleIntegral: false
+physics.producers.WireModTPCWW.SetNullScaleWidth:    false
+
+# WireModTPCxx produces ChannelROI with empty instance label in float mode
+physics.producers.gaushit2dTPCEE.CalDataModuleLabel: "WireModTPCEE"
+physics.producers.gaushit2dTPCEW.CalDataModuleLabel: "WireModTPCEW"
+physics.producers.gaushit2dTPCWE.CalDataModuleLabel: "WireModTPCWE"
+physics.producers.gaushit2dTPCWW.CalDataModuleLabel: "WireModTPCWW"
+
+physics.producers.gaushitPT2dTPCEE.CalDataModuleLabel: "WireModTPCEE"
+physics.producers.gaushitPT2dTPCEW.CalDataModuleLabel: "WireModTPCEW"
+physics.producers.gaushitPT2dTPCWE.CalDataModuleLabel: "WireModTPCWE"
+physics.producers.gaushitPT2dTPCWW.CalDataModuleLabel: "WireModTPCWW"
+
+# WMWireToROI doesn't run in float mode, redirect to original ChannelROI
+physics.analyzers.caloskimE.RawDigitproducers: [ "wire2channelroi2d:PHYSCRATEDATATPCEW",
+                                                 "wire2channelroi2d:PHYSCRATEDATATPCEE" ]
+physics.analyzers.caloskimW.RawDigitproducers: [ "wire2channelroi2d:PHYSCRATEDATATPCWW",
+                                                 "wire2channelroi2d:PHYSCRATEDATATPCWE" ]
+
+physics.analyzers.WireModHitDiag: @local::WireModHitDiag
+physics.analysisPath: [ WireModHitDiag ]
+physics.end_paths: [ outana, stream1, analysisPath ]
+
+outputs.out1.outputCommands:
+[
+  @sequence::outputs.out1.outputCommands,
+  "drop *_dummyGaushit2dTPC*_*_*",
+  "drop *_WMROI2Wire_*_*"
+]
+
+services.BackTrackerService.BackTracker.SimChannelModuleLabel: "merge"
+services.message.destinations.STDCOUT.threshold: "DEBUG"

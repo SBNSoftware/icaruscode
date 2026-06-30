@@ -1,0 +1,91 @@
+#include "WireModifierXXW_closure.fcl"
+#include "WireModHitDiagnostic.fcl"
+#include "stage1_run2_icarus_overlay.fcl"
+
+physics.reco:
+[
+  dummyGaushitPT2dTPCEE, dummyGaushitPT2dTPCEW, dummyGaushitPT2dTPCWE, dummyGaushitPT2dTPCWW,
+  @sequence::WireModSequence,
+  @sequence::physics.reco
+]
+
+physics.producers:
+{
+  @table::WireModTable
+  @table::physics.producers
+}
+
+# "before" hits at the same LongMaxHits=10 setting as gaushitPT2dTPCXX, reading
+# the undisturbed wire (not redirected to WMWireToROI)
+physics.producers.dummyGaushitPT2dTPCEE: { @table::icarus_stage1_producers.gaushitPT2dTPCEE }
+physics.producers.dummyGaushitPT2dTPCEW: { @table::icarus_stage1_producers.gaushitPT2dTPCEW }
+physics.producers.dummyGaushitPT2dTPCWE: { @table::icarus_stage1_producers.gaushitPT2dTPCWE }
+physics.producers.dummyGaushitPT2dTPCWW: { @table::icarus_stage1_producers.gaushitPT2dTPCWW }
+
+physics.producers.gaushit2dTPCEE.CalDataModuleLabel: "WMWireToROI:PHYSCRATEDATATPCEE"
+physics.producers.gaushit2dTPCEW.CalDataModuleLabel: "WMWireToROI:PHYSCRATEDATATPCEW"
+physics.producers.gaushit2dTPCWE.CalDataModuleLabel: "WMWireToROI:PHYSCRATEDATATPCWE"
+physics.producers.gaushit2dTPCWW.CalDataModuleLabel: "WMWireToROI:PHYSCRATEDATATPCWW"
+
+physics.producers.gaushitPT2dTPCEE.CalDataModuleLabel: "WMWireToROI:PHYSCRATEDATATPCEE"
+physics.producers.gaushitPT2dTPCEW.CalDataModuleLabel: "WMWireToROI:PHYSCRATEDATATPCEW"
+physics.producers.gaushitPT2dTPCWE.CalDataModuleLabel: "WMWireToROI:PHYSCRATEDATATPCWE"
+physics.producers.gaushitPT2dTPCWW.CalDataModuleLabel: "WMWireToROI:PHYSCRATEDATATPCWW"
+
+physics.producers.WireModTPCEE.AdditiveModification: true
+physics.producers.WireModTPCEW.AdditiveModification: true
+physics.producers.WireModTPCWE.AdditiveModification: true
+physics.producers.WireModTPCWW.AdditiveModification: true
+
+physics.producers.WireModTPCEE.SetNullScaleIntegral: true
+physics.producers.WireModTPCEE.SetNullScaleWidth:    true
+physics.producers.WireModTPCEW.SetNullScaleIntegral: true
+physics.producers.WireModTPCEW.SetNullScaleWidth:    true
+physics.producers.WireModTPCWE.SetNullScaleIntegral: true
+physics.producers.WireModTPCWE.SetNullScaleWidth:    true
+physics.producers.WireModTPCWW.SetNullScaleIntegral: true
+physics.producers.WireModTPCWW.SetNullScaleWidth:    true
+
+physics.producers.WireModTPCEE.RatioFileName_YZ: "NOFILE"
+physics.producers.WireModTPCEW.RatioFileName_YZ: "NOFILE"
+physics.producers.WireModTPCWE.RatioFileName_YZ: "NOFILE"
+physics.producers.WireModTPCWW.RatioFileName_YZ: "NOFILE"
+
+physics.producers.WireModTPCEE.SavePerHitData: true
+physics.producers.WireModTPCEW.SavePerHitData: true
+physics.producers.WireModTPCWE.SavePerHitData: true
+physics.producers.WireModTPCWW.SavePerHitData: true
+
+physics.producers.WireModTPCEE.HitLabel: "dummyGaushitPT2dTPCEE"
+physics.producers.WireModTPCEW.HitLabel: "dummyGaushitPT2dTPCEW"
+physics.producers.WireModTPCWE.HitLabel: "dummyGaushitPT2dTPCWE"
+physics.producers.WireModTPCWW.HitLabel: "dummyGaushitPT2dTPCWW"
+
+physics.analyzers.WireModHitDiag: @local::WireModHitDiag
+
+physics.analyzers.WireModHitDiag.BeforeHitLabels: [ "dummyGaushitPT2dTPCEE", "dummyGaushitPT2dTPCEW", "dummyGaushitPT2dTPCWE", "dummyGaushitPT2dTPCWW" ]
+physics.analyzers.WireModHitDiag.AfterHitLabels:  [ "gaushitPT2dTPCEE", "gaushitPT2dTPCEW", "gaushitPT2dTPCWE", "gaushitPT2dTPCWW" ]
+physics.analyzers.WireModHitDiag.ScaleInfoLabels: [ "WireModTPCEE", "WireModTPCEW", "WireModTPCWE", "WireModTPCWW" ]
+
+physics.analysisPath: [ WireModHitDiag ]
+physics.end_paths: [ outana, stream1, analysisPath ]
+
+physics.analyzers.caloskimE.RawDigitproducers: [ "WMWireToROI:PHYSCRATEDATATPCEW",
+                                                 "WMWireToROI:PHYSCRATEDATATPCEE" ]
+physics.analyzers.caloskimW.RawDigitproducers: [ "WMWireToROI:PHYSCRATEDATATPCWW",
+                                                 "WMWireToROI:PHYSCRATEDATATPCWE" ]
+
+# Pandora/TrackCaloSkimmer already default to gaushitPT2dTPCXX, no override needed
+
+outputs.out1.outputCommands:
+[
+  @sequence::outputs.out1.outputCommands,
+  "drop *_dummyGaushit2dTPC*_*_*",
+  "drop *_dummyGaushitPT2dTPC*_*_*",
+  "drop *_WMROI2Wire_*_*",
+  "drop *_WireModXXWTPC*_*_*"
+]
+
+services.BackTrackerService.BackTracker.SimChannelModuleLabel: "merge"
+
+services.message.destinations.STDCOUT.threshold: "WARNING"

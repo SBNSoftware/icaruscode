@@ -1,0 +1,26 @@
+# EmptyEvent job: runs WireModScaleDebug once in beginJob(), no input file needed.
+# Run from the directory containing Run4_Coarse_XW.root (LocalRatios convention).
+
+#include "stage1_icarus_wiremod_pops_hitdiag.fcl"
+
+source: {
+  module_type: EmptyEvent
+  maxEvents:   1
+}
+
+physics: {
+  analyzers: {
+    scaledebug: {
+      module_type: "WireModScaleDebug"
+      RatioFileName_XXW: "Run4_Coarse_XW.root"
+      ThetaEdges: [0, 6, 12, 18, 24, 30, 38, 46, 56, 90]
+    }
+  }
+  ana:          [ scaledebug ]
+  trigger_paths: []
+  end_paths:    [ ana ]
+}
+
+outputs: {}
+
+services.message.destinations.STDCOUT.threshold: "ERROR"

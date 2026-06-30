@@ -34,8 +34,11 @@ WireModXXW:
   LocalRatios: true
   EDepLabel: "filtersed"
   EDepShiftedLabel: "shiftedpriorSCE"
-  SaveByChannel: true
-  SaveByWire: false
+  SaveByChannel:      false
+  SaveByWire:         false
+  SaveROITree:        false
+  SaveTickHistograms: false
+  SavePerHitData:     false
   InRadians: false
   XAbs: true
 }
