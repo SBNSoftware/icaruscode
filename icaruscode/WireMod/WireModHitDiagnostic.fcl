@@ -1,0 +1,46 @@
+BEGIN_PROLOG
+
+WireModHitDiag:
+{
+  module_type: "WireModHitDiagnostic"
+
+  BeforeHitLabels: [
+    "dummyGaushit2dTPCEE",
+    "dummyGaushit2dTPCEW",
+    "dummyGaushit2dTPCWE",
+    "dummyGaushit2dTPCWW"
+  ]
+
+  AfterHitLabels: [
+    "gaushit2dTPCEE",
+    "gaushit2dTPCEW",
+    "gaushit2dTPCWE",
+    "gaushit2dTPCWW"
+  ]
+
+  ScaleInfoLabels: [
+    "WireModTPCEE",
+    "WireModTPCEW",
+    "WireModTPCWE",
+    "WireModTPCWW"
+  ]
+
+  MatchWindowTicks: 10.0
+  OnlyMC: true
+}
+
+WireModROITree: {
+  SaveROITree:        true
+  SaveTickHistograms: true
+  SavePerHitData:     true
+  SaveByChannel:      true
+}
+
+WireModPerHitData: {
+  SaveROITree:        false
+  SaveTickHistograms: false
+  SavePerHitData:     true
+  SaveByChannel:      false
+}
+
+END_PROLOG
