@@ -15,12 +15,17 @@ physics.producers:
   @table::physics.producers
 }
 
-# "before" hits at the same LongMaxHits=10 setting as gaushitPT2dTPCXX, reading
-# the undisturbed wire (not redirected to WMWireToROI)
-physics.producers.dummyGaushitPT2dTPCEE: { @table::icarus_stage1_producers.gaushitPT2dTPCEE }
-physics.producers.dummyGaushitPT2dTPCEW: { @table::icarus_stage1_producers.gaushitPT2dTPCEW }
-physics.producers.dummyGaushitPT2dTPCWE: { @table::icarus_stage1_producers.gaushitPT2dTPCWE }
-physics.producers.dummyGaushitPT2dTPCWW: { @table::icarus_stage1_producers.gaushitPT2dTPCWW }
+# Keep the "before" hit finder (dummyGaushitPT2dTPC*) configuration identical to the "after"
+# finder (gaushitPT2dTPC*): clone the fully-configured gaushitPT2d and reset ONLY the input ROIs
+# to the un-modified wire2channelroi2d collection.
+physics.producers.dummyGaushitPT2dTPCEE: @local::physics.producers.gaushitPT2dTPCEE
+physics.producers.dummyGaushitPT2dTPCEW: @local::physics.producers.gaushitPT2dTPCEW
+physics.producers.dummyGaushitPT2dTPCWE: @local::physics.producers.gaushitPT2dTPCWE
+physics.producers.dummyGaushitPT2dTPCWW: @local::physics.producers.gaushitPT2dTPCWW
+physics.producers.dummyGaushitPT2dTPCEE.CalDataModuleLabel: "wire2channelroi2d:PHYSCRATEDATATPCEE"
+physics.producers.dummyGaushitPT2dTPCEW.CalDataModuleLabel: "wire2channelroi2d:PHYSCRATEDATATPCEW"
+physics.producers.dummyGaushitPT2dTPCWE.CalDataModuleLabel: "wire2channelroi2d:PHYSCRATEDATATPCWE"
+physics.producers.dummyGaushitPT2dTPCWW.CalDataModuleLabel: "wire2channelroi2d:PHYSCRATEDATATPCWW"
 
 physics.producers.gaushit2dTPCEE.CalDataModuleLabel: "WMWireToROI:PHYSCRATEDATATPCEE"
 physics.producers.gaushit2dTPCEW.CalDataModuleLabel: "WMWireToROI:PHYSCRATEDATATPCEW"
