@@ -1,0 +1,38 @@
+process_name: analyzeinference
+
+source: {
+   module_type: RootInput
+   maxEvents:   -1
+}
+
+services: {
+   TFileService: { fileName: "NuGraphTree.root" }
+}
+
+
+physics: {
+   analyzers: {
+
+      NuGraphAnaCryoE: {
+         module_type:   "ICARUSNuGraphAnalyzer"
+         NuGraphLabel: "NGMultiSliceCryoE"
+         # NuGraphLabel: "NuGraphCryoE"
+         SliceLabel: "NCCSlicesCryoE"
+         PandoraLabel: "pandoraGausCryoE"
+      }
+      NuGraphAnaCryoW: {
+         module_type:   "ICARUSNuGraphAnalyzer"
+         NuGraphLabel: "NGMultiSliceCryoW"
+         # NuGraphLabel: "NuGraphCryoW"
+         SliceLabel: "NCCSlicesCryoW"
+         PandoraLabel: "pandoraGausCryoW"
+      }
+      
+   }
+
+   reco:       []
+
+   ana:        [ NuGraphAnaCryoE, NuGraphAnaCryoW ] #, NuGraphAnaTaggedSliceCryoE, NuGraphAnaTaggedSliceCryoW ]
+
+   end_paths:  [ ana ]
+}
