@@ -6,24 +6,44 @@
 
 // ROOT includes
 #include "TTree.h"
+#include "TH1F.h"
+#include "TH2F.h"
+#include "TMath.h"
 
 // art includes
 #include "art/Framework/Core/EDAnalyzer.h"
 #include "art/Framework/Core/ModuleMacros.h"
 #include "art/Framework/Principal/Event.h"
+#include "art/Framework/Principal/Handle.h"
 #include "art/Framework/Services/Registry/ServiceHandle.h"
 #include "art_root_io/TFileService.h"
+#include "canvas/Persistency/Common/FindManyP.h"
+#include "canvas/Persistency/Common/Ptr.h"
 #include "canvas/Utilities/InputTag.h"
 #include "fhiclcpp/ParameterSet.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
 
 // larsoft includes
 #include "lardataobj/RecoBase/Hit.h"
+#include "lardataobj/RecoBase/Track.h"
+#include "lardataobj/RecoBase/TrackHitMeta.h"
 #include "larcore/Geometry/WireReadout.h"
 #include "larcorealg/Geometry/WireReadoutGeom.h"
 #include "larcore/CoreUtils/ServiceUtil.h"
+#include "larcoreobj/SimpleTypesAndConstants/PhysicalConstants.h" // util::pi
 
 namespace wiremod {
+
+// WireMod ThetaXW (angle of the track to the drift/X direction in the wire-projected
+// frame), replicated from sys::WireModUtility::ThetaXW so the reco-track angle is computed
+// with exactly the same convention as the truth angle stored by WireModifierXXW.
+inline double ThetaXW(double dxdr, double dydr, double dzdr, double planeAngle)
+{
+  const double s = std::sin(planeAngle - util::pi());
+  const double c = std::cos(planeAngle - util::pi());
+  const double cosG = std::abs(dydr * s + dzdr * c);
+  return (cosG > 1e-9) ? std::abs(std::atan(dxdr / cosG)) : 0.5 * util::pi();
+}
 
 class WireModHitDiagnostic : public art::EDAnalyzer
 {
@@ -35,11 +55,19 @@ private:
   std::vector<art::InputTag> fBeforeHitLabels;  // dummyGaushit2dTPC*
   std::vector<art::InputTag> fAfterHitLabels;   // gaushit2dTPC*
   std::vector<art::InputTag> fScaleInfoLabels;  // WireModTPC* (produce scale products)
+  std::vector<art::InputTag> fTrackLabels;      // reco tracks for reco ThetaXW (pandoraTrackGaus*)
   float fMatchWindowTicks;
   bool  fOnlyMC; // if true, skip overlay hits (is_mc==0) when filling HitMatchTree
 
   const geo::WireReadoutGeom* fWireReadout =
     &(art::ServiceHandle<geo::WireReadout const>()->Get());
+
+  // True (WireMod/MCParticle) vs reco (Pandora track) ThetaXW resolution histograms [deg].
+  // Filled for MC hits that are on a reconstructed track: the true angle is the WireModifierXXW
+  // per-hit thetaXW; the reco angle is ThetaXW of the track direction at that hit.
+  TH2F* fThxwTrueVsReco    = nullptr;  // all planes
+  TH2F* fThxwTrueVsReco_p[3] = {nullptr, nullptr, nullptr};
+  TH1F* fThxwResid         = nullptr;  // reco - true [deg]
 
   // HitMatchTree: one entry per before-hit
   TTree*  fHitMatchTree;
@@ -61,6 +89,10 @@ private:
   Float_t tm_truth_dirz;  // truth dzdr
   Float_t tm_pitch;       // wirePitch / cosG [cm]
   Float_t tm_dqdx_before; // integral_before / pitch [ADC/cm], no lifetime correction
+  // SimChannel/BackTracker truth from WireModifierXXW (TrackCaloSkimmer-identical recipe),
+  // -1 if the before-hit window has no SimChannel ionization (overlay/data hit)
+  Float_t tm_truth_e;     // total true energy under the before-hit [MeV]
+  Float_t tm_truth_nelec; // total ionization electrons under the before-hit
   // match result
   Int_t   tm_is_matched;
   Int_t   tm_n_after_matches;
@@ -94,8 +126,24 @@ WireModHitDiagnostic::WireModHitDiagnostic(fhicl::ParameterSet const& pset)
   for (auto const& s : pset.get<std::vector<std::string>>("ScaleInfoLabels",
                                                            std::vector<std::string>{}))
     fScaleInfoLabels.emplace_back(s);
+  for (auto const& s : pset.get<std::vector<std::string>>("TrackLabels",
+                                                          std::vector<std::string>{}))
+    fTrackLabels.emplace_back(s);
 
   art::ServiceHandle<art::TFileService> tfs;
+
+  // True-vs-reco ThetaXW resolution histograms (degrees)
+  const int    nb = 90;
+  const double lo = 0.0, hi = 90.0;
+  fThxwTrueVsReco = tfs->make<TH2F>("ThxwTrueVsReco",
+      "True vs reco #theta_{XW} (all planes);true #theta_{XW} [deg];reco #theta_{XW} [deg]",
+      nb, lo, hi, nb, lo, hi);
+  for (int p = 0; p < 3; ++p)
+    fThxwTrueVsReco_p[p] = tfs->make<TH2F>(Form("ThxwTrueVsReco_p%d", p),
+        Form("True vs reco #theta_{XW} (plane %d);true #theta_{XW} [deg];reco #theta_{XW} [deg]", p),
+        nb, lo, hi, nb, lo, hi);
+  fThxwResid = tfs->make<TH1F>("ThxwResid",
+      "reco - true #theta_{XW};#Delta#theta_{XW} [deg];hits", 200, -45.0, 45.0);
 
   fHitMatchTree = tfs->make<TTree>("HitMatchTree",
                                    "WireMod before-after hit comparison");
@@ -126,6 +174,8 @@ WireModHitDiagnostic::WireModHitDiagnostic(fhicl::ParameterSet const& pset)
   fHitMatchTree->Branch("truth_dirz",        &tm_truth_dirz,        "truth_dirz/F");
   fHitMatchTree->Branch("pitch",             &tm_pitch,             "pitch/F");
   fHitMatchTree->Branch("dqdx_before",       &tm_dqdx_before,       "dqdx_before/F");
+  fHitMatchTree->Branch("truth_e",           &tm_truth_e,           "truth_e/F");
+  fHitMatchTree->Branch("truth_nelec",       &tm_truth_nelec,       "truth_nelec/F");
   fHitMatchTree->Branch("is_matched",        &tm_is_matched,        "is_matched/I");
   fHitMatchTree->Branch("n_after_matches",   &tm_n_after_matches,   "n_after_matches/I");
   fHitMatchTree->Branch("after_peak_time",   &tm_after_peak_time,   "after_peak_time/F");
@@ -189,6 +239,9 @@ void WireModHitDiagnostic::analyze(art::Event const& evt)
       afterHits.push_back(&hit);
   }
 
+  // per-channel truth ThetaXW (from WireMod, on before-hits): channel -> (peaktime, plane, true_thxw_deg)
+  std::unordered_multimap<raw::ChannelID_t, std::tuple<float, int, float>> truthThxwByChannel;
+
   // Build channel -> [after-hit indices] index
   std::unordered_multimap<raw::ChannelID_t, size_t> afterByChannel;
   afterByChannel.reserve(afterHits.size() * 2);
@@ -221,6 +274,8 @@ void WireModHitDiagnostic::analyze(art::Event const& evt)
     std::vector<float> const* pDirZ       = nullptr;
     std::vector<float> const* pPitch      = nullptr;
     std::vector<float> const* pDQdX       = nullptr;
+    std::vector<float> const* pTruthE     = nullptr;
+    std::vector<float> const* pTruthNelec = nullptr;
 
     if (j < fScaleInfoLabels.size())
     {
@@ -235,6 +290,8 @@ void WireModHitDiagnostic::analyze(art::Event const& evt)
       auto dzH  = evt.getHandle<std::vector<float>>(art::InputTag(siLabel.label(), "dirZ"));
       auto ptH  = evt.getHandle<std::vector<float>>(art::InputTag(siLabel.label(), "pitch"));
       auto dqH  = evt.getHandle<std::vector<float>>(art::InputTag(siLabel.label(), "dQdX"));
+      auto teH  = evt.getHandle<std::vector<float>>(art::InputTag(siLabel.label(), "truthE"));
+      auto tnH  = evt.getHandle<std::vector<float>>(art::InputTag(siLabel.label(), "truthNelec"));
       if (sqH.isValid())  pScaleQ     = &(*sqH);
       if (ssH.isValid())  pScaleSigma = &(*ssH);
       if (txH.isValid())  pTruthX     = &(*txH);
@@ -245,6 +302,8 @@ void WireModHitDiagnostic::analyze(art::Event const& evt)
       if (dzH.isValid())  pDirZ       = &(*dzH);
       if (ptH.isValid())  pPitch      = &(*ptH);
       if (dqH.isValid())  pDQdX       = &(*dqH);
+      if (teH.isValid())  pTruthE     = &(*teH);
+      if (tnH.isValid())  pTruthNelec = &(*tnH);
     }
 
     for (size_t i = 0; i < localHits.size(); ++i)
@@ -278,6 +337,14 @@ void WireModHitDiagnostic::analyze(art::Event const& evt)
       tm_truth_dirz   = (pDirZ       && i < pDirZ->size())       ? (*pDirZ)[i]       : -999.f;
       tm_pitch        = (pPitch      && i < pPitch->size())      ? (*pPitch)[i]      : -999.f;
       tm_dqdx_before  = (pDQdX       && i < pDQdX->size())       ? (*pDQdX)[i]       : -999.f;
+      tm_truth_e      = (pTruthE     && i < pTruthE->size())     ? (*pTruthE)[i]     : -1.f;
+      tm_truth_nelec  = (pTruthNelec && i < pTruthNelec->size()) ? (*pTruthNelec)[i] : -1.f;
+
+      // Record the truth ThetaXW for this (MC) hit so the reco-track loop below can pair it
+      // with the reconstructed track angle on the same channel/tick.
+      if (tm_theta_xw > -900.f)
+        truthThxwByChannel.emplace(bh.Channel(),
+                                   std::make_tuple(tm_before_peak_time, tm_plane, tm_theta_xw));
 
       // if OnlyMC is set, skip overlay hits
       if (fOnlyMC && tm_is_mc != 1) continue;
@@ -364,6 +431,62 @@ void WireModHitDiagnostic::analyze(art::Event const& evt)
     tn_gof        = ah->GoodnessOfFit();
     tn_dof        = ah->DegreesOfFreedom();
     fNewHitTree->Fill();
+  }
+
+  // ---------------------------------------------------------------------------
+  // True-vs-reco ThetaXW: for every hit on a reconstructed track, compute the reco
+  // ThetaXW from the track direction at that hit, pair it with the WireMod truth
+  // ThetaXW on the same channel/tick, and fill the resolution histograms.
+  // ---------------------------------------------------------------------------
+  for (auto const& tag : fTrackLabels)
+  {
+    auto trackHandle = evt.getHandle<std::vector<recob::Track>>(tag);
+    if (!trackHandle.isValid())
+    {
+      mf::LogWarning("WireModHitDiagnostic") << "Track collection not found: " << tag;
+      continue;
+    }
+    art::FindManyP<recob::Hit, recob::TrackHitMeta> hitsFromTracks(trackHandle, evt, tag);
+    if (!hitsFromTracks.isValid()) continue;
+
+    for (size_t iTrk = 0; iTrk < trackHandle->size(); ++iTrk)
+    {
+      recob::Track const& trk = (*trackHandle)[iTrk];
+      auto const& hits  = hitsFromTracks.at(iTrk);
+      auto const& metas = hitsFromTracks.data(iTrk);
+      for (size_t iH = 0; iH < hits.size(); ++iH)
+      {
+        art::Ptr<recob::Hit> const& hit = hits[iH];
+        size_t pt = metas[iH]->Index();
+        if (pt == std::numeric_limits<unsigned int>::max() || !trk.HasValidPoint(pt))
+          continue;
+
+        auto const& wid = hit->WireID();
+        int   plane = static_cast<int>(wid.Plane);
+        double thetaZ = fWireReadout->Plane(wid.planeID()).ThetaZ();
+
+        auto dir = trk.DirectionAtPoint(pt);
+        if (std::abs(dir.X()) + std::abs(dir.Y()) + std::abs(dir.Z()) < 1e-6) continue;
+        double recoThxw = ThetaXW(dir.X(), dir.Y(), dir.Z(), thetaZ) * TMath::RadToDeg();
+
+        // find the truth ThetaXW on this channel within the tick window and same plane
+        float bestTrue = -1.f, bestDt = fMatchWindowTicks + 1.f;
+        auto range = truthThxwByChannel.equal_range(hit->Channel());
+        for (auto it = range.first; it != range.second; ++it)
+        {
+          float tpeak; int tplane; float tthxw;
+          std::tie(tpeak, tplane, tthxw) = it->second;
+          if (tplane != plane) continue;
+          float dt = std::abs(tpeak - static_cast<float>(hit->PeakTime()));
+          if (dt < bestDt) { bestDt = dt; bestTrue = tthxw; }
+        }
+        if (bestTrue < 0.f || bestDt > fMatchWindowTicks) continue;
+
+        fThxwTrueVsReco->Fill(bestTrue, recoThxw);
+        if (plane >= 0 && plane < 3) fThxwTrueVsReco_p[plane]->Fill(bestTrue, recoThxw);
+        fThxwResid->Fill(recoThxw - bestTrue);
+      }
+    }
   }
 }
 
