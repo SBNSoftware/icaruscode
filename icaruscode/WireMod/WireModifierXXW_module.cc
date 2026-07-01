@@ -28,6 +28,10 @@
 #include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
 #include "lardata/DetectorInfoServices/DetectorClocksService.h"
 #include "larsim/MCCheater/BackTrackerService.h"
+#include "larevt/SpaceCharge/SpaceCharge.h"
+#include "larevt/SpaceChargeServices/SpaceChargeService.h"
+#include "lardataobj/Simulation/SimChannel.h"
+#include "nusimdata/SimulationBase/MCParticle.h"
 #include "lardata/Utilities/AssociationUtil.h"
 #include "lardataobj/RawData/RawDigit.h"
 #include "lardataobj/RecoBase/Wire.h"
@@ -63,8 +67,10 @@ namespace wiremod
       std::vector<TGraph2D*> fGraph_sigma_YZ;
       art::InputTag fWireLabel; // which wires are we pulling in?
       art::InputTag fHitLabel;  // which hits are we pulling in?
-      art::InputTag fEDepLabel; // which are the EDeps?
-      art::InputTag fEDepShiftedLabel; // which are the EDeps?
+      art::InputTag fEDepLabel; // which are the EDeps? (legacy; now only the tick diagnostic)
+      art::InputTag fEDepShiftedLabel; // which are the EDeps? (legacy; now only the tick diagnostic)
+      art::InputTag fSimChannelLabel;  // SimChannels for IDE-based scale truth (default "merge")
+      art::InputTag fG4Label;          // MCParticles for trajectory direction (default "largeant")
       unsigned int fCryo; // which Cryo are we in?
       unsigned int fTPCset; // which TPC are we in?
       bool fLocalRatios;           // is the ratio file local?
@@ -201,6 +207,8 @@ namespace wiremod
     fHitLabel  = pset.get<art::InputTag>("HitLabel");
     fEDepLabel = pset.get<art::InputTag>("EDepLabel");
     fEDepShiftedLabel = pset.get<art::InputTag>("EDepShiftedLabel");
+    fSimChannelLabel = pset.get<art::InputTag>("SimChannelLabel", art::InputTag("merge"));
+    fG4Label = pset.get<art::InputTag>("G4Label", art::InputTag("largeant"));
     fCryo = pset.get<unsigned int>("Cryo");
     fTPCset = pset.get<unsigned int>("TPCset");
 
@@ -460,6 +468,11 @@ namespace wiremod
     produces<std::vector<float>>("thetaXW");
     // per-hit MC flag: 1 = MC hit (BackTracker matched), 0 = overlay data hit
     produces<std::vector<int>>("isMC");
+    // per-hit SimChannel/BackTracker truth, computed identically to TrackCaloSkimmer::MakeHit
+    // (ChannelToTrackIDEs over the hit [StartTick,EndTick] window): total true energy [MeV]
+    // and number of ionization electrons summed over all TrackIDEs under the hit.
+    produces<std::vector<float>>("truthE");
+    produces<std::vector<float>>("truthNelec");
     // per-hit truth direction and derived geometry (filled only when SavePerHitData: true)
     produces<std::vector<float>>("dirX");   // truth dxdr
     produces<std::vector<float>>("dirY");   // truth dydr
@@ -574,6 +587,15 @@ namespace wiremod
     evt.getByLabel(fEDepShiftedLabel, edepShiftedHandle);
     auto const& edepShiftedVec(*edepShiftedHandle);
 
+    // SimChannel + MCParticle inputs: the scale-value truth (position/direction/dE-dQ per
+    // sub-ROI) is derived from these, replacing the SimEnergyDeposit path. The SimChannel
+    // ionization gives the charge-weighted true position; the MCParticle trajectory gives
+    // the local track direction used by the ThetaXW/XXW scale lookup.
+    auto const& simchVec = *evt.getValidHandle<std::vector<sim::SimChannel>>(fSimChannelLabel);
+    auto const& mcpVec   = *evt.getValidHandle<std::vector<simb::MCParticle>>(fG4Label);
+    std::map<int, const simb::MCParticle*> particleMap;
+    for (auto const& p : mcpVec) particleMap[p.TrackId()] = &p;
+
     art::Handle< std::vector<recob::Hit> > hitHandle;
     evt.getByLabel(fHitLabel, hitHandle);
     auto const& hitVec(*hitHandle);
@@ -590,15 +612,55 @@ namespace wiremod
     auto vec_dirz        = std::make_unique<std::vector<float>>(perHitN, -999.f);
     auto vec_pitch       = std::make_unique<std::vector<float>>(perHitN, -999.f);
     auto vec_dqdx        = std::make_unique<std::vector<float>>(perHitN, -999.f);
+    // SimChannel/BackTracker truth per hit (TrackCaloSkimmer-identical), -1 when no truth.
+    auto vec_truth_e     = std::make_unique<std::vector<float>>(perHitN, -1.f);
+    auto vec_truth_nelec = std::make_unique<std::vector<float>>(perHitN, -1.f);
 
-    // Get the tick offset by comparing the hit ticks with the tick gotten by
-    // projecting the backtracked hit X to a tick. Yes this is silly thanks for asking.
-    // Also fills vec_is_mc: 1 if BackTracker finds a match (MC hit), 0 otherwise (overlay).
+    // Per-hit truth matching, computed IDENTICALLY to TrackCaloSkimmer::MakeHit:
+    //   ChannelToTrackIDEs(channel, StartTick, EndTick) summed over all TrackIDEs.
+    // isMC is now defined as "this window has any SimChannel ionization" (i.e. the hit is
+    // truth-matched), matching the TrackCaloSkimmer notion of a matched hit. A hit with no
+    // IDEs in its window is an overlay/data hit (isMC = 0, truthE/truthNelec = -1).
+    //
+    // The BackTracker HitToXYZ projection below is retained only to derive the legacy
+    // SimEnergyDeposit tick offset (BT_Offset) used by the edep scale path; it is removed
+    // once the scale path is migrated to SimChannel (see CalcPropertiesFromIDEs).
     double BT_Offset = 0;
     unsigned int BT_Hits = 0;
     for (size_t i_h = 0; i_h < hitVec.size(); ++i_h)
     {
       auto const& hit = hitVec[i_h];
+
+      // --- TrackCaloSkimmer-identical per-hit SimChannel truth ---
+      std::vector<sim::TrackIDE> ides;
+      try
+      {
+        ides = fBT->ChannelToTrackIDEs(fDetClocksData, hit.Channel(), hit.StartTick(), hit.EndTick());
+      }
+      catch (...)
+      {
+        ides.clear();
+      }
+      if (fSavePerHitData)
+      {
+        if (!ides.empty())
+        {
+          (*vec_is_mc)[i_h]       = 1;
+          (*vec_truth_e)[i_h]     = 0.f;
+          (*vec_truth_nelec)[i_h] = 0.f;
+          for (auto const& ide : ides)
+          {
+            (*vec_truth_e)[i_h]     += ide.energy;
+            (*vec_truth_nelec)[i_h] += ide.numElectrons;
+          }
+        }
+        else
+        {
+          (*vec_is_mc)[i_h] = 0; // overlay/data hit (no SimChannel ionization in window)
+        }
+      }
+
+      // --- legacy SimEnergyDeposit tick offset (BackTracker HitToXYZ) ---
       double hitX = std::numeric_limits<double>::max();
       try
       {
@@ -606,16 +668,16 @@ namespace wiremod
       }
       catch (...)
       {
-        // Overlay hit
+        // Overlay hit -- no contribution to the tick offset
         continue;
       }
-      if (fSavePerHitData) (*vec_is_mc)[i_h] = 1;
       double hitTick  = hit.PeakTime();
       double projTick = detProp.ConvertXToTicks(hitX, hit.WireID().Plane, hit.WireID().TPC, hit.WireID().Cryostat);
       BT_Offset += (hitTick - projTick);
       ++BT_Hits;
     }
     if (BT_Hits > 0) BT_Offset /= BT_Hits;
+    (void)BT_Offset; // legacy edep tick offset; unused by the SimChannel/IDE scale path
 
     sys::WireModUtility wmUtil(fGeometry, fWireReadout, detProp,
                                false, // Channel Scale
@@ -628,7 +690,10 @@ namespace wiremod
                                false, // X-dQ/dX
                                false, // XZAngledQdX
                                (fRatioFileName_XXW != "NOFILE"),  // X-ThXW
-                               BT_Offset); // Tick Offset
+                               0.0); // Tick Offset: IDEs carry their native readout tick (no offset)
+    // Space-charge provider for mapping IDE (at-the-wire) positions to the true trajectory
+    // frame inside CalcPropertiesFromIDEs. Null/disabled -> identity.
+    wmUtil.fSCE = lar::providerFrom<spacecharge::SpaceChargeService>();
     if (fRatioFileName_YZ != "NOFILE")
     {
       wmUtil.graph2Ds_Charge_YZ = fGraph_charge_YZ;
@@ -729,9 +794,9 @@ namespace wiremod
     auto const& wireVec(*wireHandle);
     std::unique_ptr<std::vector<recob::Wire>> new_wires(new std::vector<recob::Wire>());
 
-    mf::LogVerbatim("WireModifierXXW") << "Get Edep Map";
-    wmUtil.FillROIMatchedEdepMap(edepShiftedVec, wireVec, offset_ADC);
-    mf::LogVerbatim("WireModifierXXW") << "Got Edep Map." << '\n' << "Get Hit Map";
+    mf::LogVerbatim("WireModifierXXW") << "Get IDE Map";
+    wmUtil.FillROIMatchedIDEMap(simchVec, wireVec, fDetClocksData, offset_ADC);
+    mf::LogVerbatim("WireModifierXXW") << "Got IDE Map." << '\n' << "Get Hit Map";
     wmUtil.FillROIMatchedHitMap(hitVec, wireVec);
     mf::LogVerbatim("WireModifierXXW") << "Got Hit Map.";
 
@@ -787,30 +852,26 @@ namespace wiremod
 
         std::vector<float> modified_data(range.data());
 
-        auto it_map = wmUtil.ROIMatchedEdepMap.find(roi_key);
-        if(it_map==wmUtil.ROIMatchedEdepMap.end()){
+        auto it_map = wmUtil.ROIMatchedIDEMap.find(roi_key);
+        if(it_map==wmUtil.ROIMatchedIDEMap.end()){
           new_rois.add_range(range.begin_index(), modified_data);
           mf::LogDebug("WireModifierXXW")
-            << "    Could not find matching Edep. Skip";
+            << "    Could not find matching IDE. Skip";
           continue;
         }
-        std::vector<size_t> matchedEdepIdxVec = it_map->second;
-        if(matchedEdepIdxVec.size() == 0)
+        std::vector<size_t> matchedIDEIdxVec = it_map->second;
+        if(matchedIDEIdxVec.size() == 0)
         {
           new_rois.add_range(range.begin_index(), modified_data);
           mf::LogDebug("WireModifierXXW")
-            << "    No indices for Edep. Skip";
+            << "    No indices for IDE. Skip";
           continue;
         }
-        std::vector<const sim::SimEnergyDeposit*> matchedEdepPtrVec;
-        std::vector<const sim::SimEnergyDeposit*> matchedEdepShiftedPtrVec;
-        for(auto i_e : matchedEdepIdxVec)
-        {
-          matchedEdepPtrVec.push_back(&edepVec[i_e]);
-          matchedEdepShiftedPtrVec.push_back(&edepShiftedVec[i_e]);
-        }
+        std::vector<const sys::WireModUtility::MatchedIDE_t*> matchedIDEPtrVec;
+        for(auto i_e : matchedIDEIdxVec)
+          matchedIDEPtrVec.push_back(&wmUtil.fIDEVec[i_e]);
         mf::LogDebug("WireModifierXXW")
-          << "  Found " << matchedEdepPtrVec.size() << " Edeps";
+          << "  Found " << matchedIDEPtrVec.size() << " IDEs";
 
         std::vector<const recob::Hit*> matchedHitPtrVec;
         auto it_hit_map = wmUtil.ROIMatchedHitMap.find(roi_key);
@@ -839,25 +900,8 @@ namespace wiremod
         mf::LogDebug("WireModifierXXW")
           << "    have " << subROIPropVec.size() << " SubROI";
 
-        auto SubROIMatchedEdepShiftedMap =
-          wmUtil.MatchEdepsToSubROIs(subROIPropVec, matchedEdepShiftedPtrVec, offset_ADC);
-        std::map<sys::WireModUtility::SubROI_Key_t, std::vector<const sim::SimEnergyDeposit*>>
-          SubROIMatchedEdepMap;
-        for (auto const& key_edepPtrVec_pair : SubROIMatchedEdepShiftedMap)
-        {
-          auto key = key_edepPtrVec_pair.first;
-          for (auto const& shifted_edep_ptr : key_edepPtrVec_pair.second)
-          {
-            for (size_t i_e = 0; i_e < matchedEdepShiftedPtrVec.size(); ++i_e)
-            {
-              if (shifted_edep_ptr == matchedEdepShiftedPtrVec[i_e])
-              {
-                SubROIMatchedEdepMap[key].push_back(matchedEdepPtrVec[i_e]);
-                break;
-              }
-            }
-          }
-        }
+        auto SubROIMatchedIDEMap =
+          wmUtil.MatchIDEsToSubROIs(subROIPropVec, matchedIDEPtrVec);
 
         std::map<sys::WireModUtility::SubROI_Key_t,
                  sys::WireModUtility::ScaleValues_t> SubROIMatchedScalesMap;
@@ -868,12 +912,12 @@ namespace wiremod
         {
           sys::WireModUtility::ScaleValues_t scale_vals;
           auto key = subroi_prop.key;
-          auto key_it =  SubROIMatchedEdepMap.find(key);
+          auto key_it =  SubROIMatchedIDEMap.find(key);
           int scale_reason = 0;
 
-          if (key_it != SubROIMatchedEdepMap.end() && key_it->second.size() > 0)
+          if (key_it != SubROIMatchedIDEMap.end() && key_it->second.size() > 0)
           {
-            auto truth_vals = wmUtil.CalcPropertiesFromEdeps(key_it->second, offset_ADC);
+            auto truth_vals = wmUtil.CalcPropertiesFromIDEs(key_it->second, particleMap);
             SubROIMatchedTruthMap[key] = truth_vals;
 
             if (truth_vals.total_energy < 0.3 && subroi_prop.total_q > 80)
@@ -1002,12 +1046,12 @@ namespace wiremod
 
             // dominant track ID: pick the TrackID with highest summed energy
             int dominant_tid = -999;
-            auto edep_it = SubROIMatchedEdepMap.find(key);
-            if (edep_it != SubROIMatchedEdepMap.end() && !edep_it->second.empty())
+            auto edep_it = SubROIMatchedIDEMap.find(key);
+            if (edep_it != SubROIMatchedIDEMap.end() && !edep_it->second.empty())
             {
               std::map<int, double> tidEnergy;
               for (auto const& ep : edep_it->second)
-                tidEnergy[ep->TrackID()] += ep->E();
+                tidEnergy[std::abs(ep->ide->trackID)] += ep->ide->energy;
               double maxE = 0.;
               for (auto const& te : tidEnergy)
                 if (te.second > maxE) { maxE = te.second; dominant_tid = te.first; }
@@ -1162,9 +1206,9 @@ namespace wiremod
     auto const& chanROIVec(*chanROIHandle);
     std::unique_ptr<std::vector<recob::ChannelROI>> new_chanROIs(new std::vector<recob::ChannelROI>());
 
-    mf::LogVerbatim("WireModifierXXW") << "Get Edep Map";
-    wmUtil.FillROIMatchedEdepMap(edepShiftedVec, chanROIVec, offset_ADC);
-    mf::LogVerbatim("WireModifierXXW") << "Got Edep Map." << '\n' << "Get Hit Map";
+    mf::LogVerbatim("WireModifierXXW") << "Get IDE Map";
+    wmUtil.FillROIMatchedIDEMap(simchVec, chanROIVec, fDetClocksData, offset_ADC);
+    mf::LogVerbatim("WireModifierXXW") << "Got IDE Map." << '\n' << "Get Hit Map";
     wmUtil.FillROIMatchedHitMap(hitVec, chanROIVec);
     mf::LogVerbatim("WireModifierXXW") << "Got Hit Map.";
 
@@ -1216,31 +1260,27 @@ namespace wiremod
           return static_cast<short>(std::round(v * chanROI.ADCScaleFactor()));
         };
 
-        auto it_map = wmUtil.ROIMatchedEdepMap.find(roi_key);
-        if(it_map==wmUtil.ROIMatchedEdepMap.end()){
+        auto it_map = wmUtil.ROIMatchedIDEMap.find(roi_key);
+        if(it_map==wmUtil.ROIMatchedIDEMap.end()){
           std::vector<short> pass_short(modified_data.size());
           std::transform(modified_data.begin(), modified_data.end(), pass_short.begin(), toShort);
           new_rois.add_range(range_short.begin_index(), pass_short);
-          mf::LogDebug("WireModifierXXW") << "    Could not find matching Edep. Skip";
+          mf::LogDebug("WireModifierXXW") << "    Could not find matching IDE. Skip";
           continue;
         }
-        std::vector<size_t> matchedEdepIdxVec = it_map->second;
-        if(matchedEdepIdxVec.size() == 0)
+        std::vector<size_t> matchedIDEIdxVec = it_map->second;
+        if(matchedIDEIdxVec.size() == 0)
         {
           std::vector<short> pass_short(modified_data.size());
           std::transform(modified_data.begin(), modified_data.end(), pass_short.begin(), toShort);
           new_rois.add_range(range_short.begin_index(), pass_short);
-          mf::LogDebug("WireModifierXXW") << "    No indices for Edep. Skip";
+          mf::LogDebug("WireModifierXXW") << "    No indices for IDE. Skip";
           continue;
         }
-        std::vector<const sim::SimEnergyDeposit*> matchedEdepPtrVec;
-        std::vector<const sim::SimEnergyDeposit*> matchedEdepShiftedPtrVec;
-        for(auto i_e : matchedEdepIdxVec)
-        {
-          matchedEdepPtrVec.push_back(&edepVec[i_e]);
-          matchedEdepShiftedPtrVec.push_back(&edepShiftedVec[i_e]);
-        }
-        mf::LogDebug("WireModifierXXW") << "  Found " << matchedEdepPtrVec.size() << " Edeps";
+        std::vector<const sys::WireModUtility::MatchedIDE_t*> matchedIDEPtrVec;
+        for(auto i_e : matchedIDEIdxVec)
+          matchedIDEPtrVec.push_back(&wmUtil.fIDEVec[i_e]);
+        mf::LogDebug("WireModifierXXW") << "  Found " << matchedIDEPtrVec.size() << " IDEs";
 
         std::vector<const recob::Hit*> matchedHitPtrVec;
         auto it_hit_map = wmUtil.ROIMatchedHitMap.find(roi_key);
@@ -1265,25 +1305,8 @@ namespace wiremod
         auto subROIPropVec = wmUtil.CalcSubROIProperties(roi_properties, matchedHitPtrVec);
         mf::LogDebug("WireModifierXXW") << "    have " << subROIPropVec.size() << " SubROI";
 
-        auto SubROIMatchedEdepShiftedMap =
-          wmUtil.MatchEdepsToSubROIs(subROIPropVec, matchedEdepShiftedPtrVec, offset_ADC);
-        std::map<sys::WireModUtility::SubROI_Key_t, std::vector<const sim::SimEnergyDeposit*>>
-          SubROIMatchedEdepMap;
-        for (auto const& key_edepPtrVec_pair : SubROIMatchedEdepShiftedMap)
-        {
-          auto key = key_edepPtrVec_pair.first;
-          for (auto const& shifted_edep_ptr : key_edepPtrVec_pair.second)
-          {
-            for (size_t i_e = 0; i_e < matchedEdepShiftedPtrVec.size(); ++i_e)
-            {
-              if (shifted_edep_ptr == matchedEdepShiftedPtrVec[i_e])
-              {
-                SubROIMatchedEdepMap[key].push_back(matchedEdepPtrVec[i_e]);
-                break;
-              }
-            }
-          }
-        }
+        auto SubROIMatchedIDEMap =
+          wmUtil.MatchIDEsToSubROIs(subROIPropVec, matchedIDEPtrVec);
 
         std::map<sys::WireModUtility::SubROI_Key_t,
                  sys::WireModUtility::ScaleValues_t> SubROIMatchedScalesMap;
@@ -1294,12 +1317,12 @@ namespace wiremod
         {
           sys::WireModUtility::ScaleValues_t scale_vals;
           auto key = subroi_prop.key;
-          auto key_it = SubROIMatchedEdepMap.find(key);
+          auto key_it = SubROIMatchedIDEMap.find(key);
           int scale_reason = 0;
 
-          if (key_it != SubROIMatchedEdepMap.end() && key_it->second.size() > 0)
+          if (key_it != SubROIMatchedIDEMap.end() && key_it->second.size() > 0)
           {
-            auto truth_vals = wmUtil.CalcPropertiesFromEdeps(key_it->second, offset_ADC);
+            auto truth_vals = wmUtil.CalcPropertiesFromIDEs(key_it->second, particleMap);
             SubROIMatchedTruthMap[key] = truth_vals;
 
             if (truth_vals.total_energy < 0.3 && subroi_prop.total_q > 80)
@@ -1423,12 +1446,12 @@ namespace wiremod
             tb_scale_sigma.push_back(static_cast<float>(scale_vals.r_sigma));
 
             int dominant_tid = -999;
-            auto edep_it = SubROIMatchedEdepMap.find(key);
-            if (edep_it != SubROIMatchedEdepMap.end() && !edep_it->second.empty())
+            auto edep_it = SubROIMatchedIDEMap.find(key);
+            if (edep_it != SubROIMatchedIDEMap.end() && !edep_it->second.empty())
             {
               std::map<int, double> tidEnergy;
               for (auto const& ep : edep_it->second)
-                tidEnergy[ep->TrackID()] += ep->E();
+                tidEnergy[std::abs(ep->ide->trackID)] += ep->ide->energy;
               double maxE = 0.;
               for (auto const& te : tidEnergy)
                 if (te.second > maxE) { maxE = te.second; dominant_tid = te.first; }
@@ -1579,6 +1602,8 @@ namespace wiremod
     evt.put(std::move(vec_truth_x),     "truthX");
     evt.put(std::move(vec_theta_xw),    "thetaXW");
     evt.put(std::move(vec_is_mc),       "isMC");
+    evt.put(std::move(vec_truth_e),     "truthE");
+    evt.put(std::move(vec_truth_nelec), "truthNelec");
     evt.put(std::move(vec_dirx),        "dirX");
     evt.put(std::move(vec_diry),        "dirY");
     evt.put(std::move(vec_dirz),        "dirZ");
