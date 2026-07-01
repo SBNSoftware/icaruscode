@@ -52,6 +52,18 @@ physics.producers.gaushitPT2dTPCEW.CalDataModuleLabel: "WireModTPCEW"
 physics.producers.gaushitPT2dTPCWE.CalDataModuleLabel: "WireModTPCWE"
 physics.producers.gaushitPT2dTPCWW.CalDataModuleLabel: "WireModTPCWW"
 
+# Keep the "before" hit finder (dummyGaushit2dTPC*) configuration identical to the "after"
+# finder (gaushit2dTPC*): clone the fully-configured gaushit2d and reset ONLY the input ROIs
+# to the un-modified wire2channelroi2d collection.
+physics.producers.dummyGaushit2dTPCEE: @local::physics.producers.gaushit2dTPCEE
+physics.producers.dummyGaushit2dTPCEW: @local::physics.producers.gaushit2dTPCEW
+physics.producers.dummyGaushit2dTPCWE: @local::physics.producers.gaushit2dTPCWE
+physics.producers.dummyGaushit2dTPCWW: @local::physics.producers.gaushit2dTPCWW
+physics.producers.dummyGaushit2dTPCEE.CalDataModuleLabel: "wire2channelroi2d:PHYSCRATEDATATPCEE"
+physics.producers.dummyGaushit2dTPCEW.CalDataModuleLabel: "wire2channelroi2d:PHYSCRATEDATATPCEW"
+physics.producers.dummyGaushit2dTPCWE.CalDataModuleLabel: "wire2channelroi2d:PHYSCRATEDATATPCWE"
+physics.producers.dummyGaushit2dTPCWW.CalDataModuleLabel: "wire2channelroi2d:PHYSCRATEDATATPCWW"
+
 # WMWireToROI doesn't run in float mode, redirect to original ChannelROI
 physics.analyzers.caloskimE.RawDigitproducers: [ "wire2channelroi2d:PHYSCRATEDATATPCEW",
                                                  "wire2channelroi2d:PHYSCRATEDATATPCEE" ]
