@@ -1118,7 +1118,7 @@ namespace wiremod
                   (*vec_dirx)[hitVec_idx] = static_cast<float>(tv.dxdr);
                   (*vec_diry)[hitVec_idx] = static_cast<float>(tv.dydr);
                   (*vec_dirz)[hitVec_idx] = static_cast<float>(tv.dzdr);
-                  double cosG = std::abs(tv.dydr * std::sin(thetaZ) + tv.dzdr * std::cos(thetaZ));
+                  double cosG = std::abs(tv.dydr * std::cos(thetaZ) - tv.dzdr * std::sin(thetaZ)); // pitch: project onto wire-normal (thetaZ - pi/2)
                   float wp    = static_cast<float>(plane_obj.WirePitch());
                   float pval  = (cosG > 1e-6) ? wp / static_cast<float>(cosG) : -999.f;
                   (*vec_pitch)[hitVec_idx] = pval;
@@ -1516,7 +1516,7 @@ namespace wiremod
                   (*vec_dirx)[hitVec_idx] = static_cast<float>(tv.dxdr);
                   (*vec_diry)[hitVec_idx] = static_cast<float>(tv.dydr);
                   (*vec_dirz)[hitVec_idx] = static_cast<float>(tv.dzdr);
-                  double cosG = std::abs(tv.dydr * std::sin(thetaZ) + tv.dzdr * std::cos(thetaZ));
+                  double cosG = std::abs(tv.dydr * std::cos(thetaZ) - tv.dzdr * std::sin(thetaZ)); // pitch: project onto wire-normal (thetaZ - pi/2)
                   float wp    = static_cast<float>(plane_obj.WirePitch());
                   float pval  = (cosG > 1e-6) ? wp / static_cast<float>(cosG) : -999.f;
                   (*vec_pitch)[hitVec_idx] = pval;

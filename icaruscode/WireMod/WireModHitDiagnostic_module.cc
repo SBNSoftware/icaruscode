@@ -39,8 +39,8 @@ namespace wiremod {
 // with exactly the same convention as the truth angle stored by WireModifierXXW.
 inline double ThetaXW(double dxdr, double dydr, double dzdr, double planeAngle)
 {
-  const double s = std::sin(planeAngle - util::pi());
-  const double c = std::cos(planeAngle - util::pi());
+  const double s = std::sin(planeAngle - 0.5 * util::pi());
+  const double c = std::cos(planeAngle - 0.5 * util::pi());
   const double cosG = std::abs(dydr * s + dzdr * c);
   return (cosG > 1e-9) ? std::abs(std::atan(dxdr / cosG)) : 0.5 * util::pi();
 }
