@@ -2,7 +2,7 @@
 #include "services_icarus_simulation.fcl"
 #include "singles_icarus.fcl"
 #include "services_common_icarus.fcl"
-#include "largeantmodules_icarus.fcl"
+#include "larg4_icarus_defs.fcl"
 #include "detsimmodules_ICARUS.fcl"
 #include "opdetsim_pmt_icarus.fcl"
 #include "icarus_opana_modules.fcl"
@@ -36,13 +36,15 @@ physics:
  producers:
  {
    generator: @local::icarus_singlep
-   largeant: @local::icarus_largeant
-   opdaq:    @local::icarus_simpmt_nonoise
-   rns:      { module_type: "RandomNumberSaver" }
+   loader:    @local::icarus_larg4_standard_producers.loader
+   largeant:  @local::icarus_larg4_standard_producers.largeant
+   pdfastsim: @local::icarus_larg4_standard_producers.pdfastsim
+   opdaq:     @local::icarus_simpmt_nonoise
+   rns:       { module_type: "RandomNumberSaver" }
  }
  analyzers: {}
 
- produce: [ rns, generator, largeant, opdaq ]
+ produce: [ rns, generator, loader, largeant, pdfastsim, opdaq ]
  analyze: []
  store:   [ out1 ]
  trigger_paths: [produce]

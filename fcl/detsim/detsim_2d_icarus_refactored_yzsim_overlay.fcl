@@ -1,3 +1,6 @@
 #include "detsim_2d_icarus_refactored_yzsim.fcl"
 
-physics.producers.daq: @local::icarus_simwire_wirecell_yz_overlay
+physics.producers.daq0: @local::icarus_simwire_wirecell_yz_overlay_0
+physics.producers.daq1: @local::icarus_simwire_wirecell_yz_overlay_1
+physics.producers.daq2: @local::icarus_simwire_wirecell_yz_overlay_2
+physics.producers.daq3: @local::icarus_simwire_wirecell_yz_overlay_3

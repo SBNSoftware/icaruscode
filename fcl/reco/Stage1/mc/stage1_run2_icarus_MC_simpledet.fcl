@@ -1,0 +1,6 @@
+#include "stage1_run2_icarus_MC.fcl"
+
+physics.producers.mcreco.SimChannelLabel: "shifted"
+physics.analyzers.caloskimE.SimChannelproducer: "daq:simpleSC"
+physics.analyzers.caloskimW.SimChannelproducer: "daq:simpleSC"
+services.BackTrackerService.BackTracker.SimChannelModuleLabel: "daq:simpleSC"

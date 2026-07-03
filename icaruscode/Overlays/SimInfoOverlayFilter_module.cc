@@ -742,7 +742,7 @@ void mix::SimInfoOverlayFilter::MakePOTMap(){
    fSR_SpillsPerEvent.clear();
    fSR_GoodSpillsPerEvent.clear();
 
-   unsigned int current_sr = 0;
+   int current_sr = -1;
    unsigned int events_in_sr = 0;
 
    double current_sr_POT = 0;
@@ -752,16 +752,17 @@ void mix::SimInfoOverlayFilter::MakePOTMap(){
 
    // Iterate through all events in auxillary file, count how many are in each subrun
    while(!gEvent.atEnd()){
+      if (current_sr == -1) current_sr = gEvent.eventAuxiliary().subRun();
 
-      if(gEvent.eventAuxiliary().subRun() != current_sr){
-         if(current_sr != 0){
-            fSR_POTPerEvent[current_sr] = current_sr_POT/events_in_sr;
-            fSR_GoodPOTPerEvent[current_sr] = current_sr_GoodPOT/events_in_sr;
-            fSR_SpillsPerEvent[current_sr] = (double)current_sr_Spills/events_in_sr;
-            fSR_GoodSpillsPerEvent[current_sr] = (double)current_sr_GoodSpills/events_in_sr;
-         }
+      if((int)gEvent.eventAuxiliary().subRun() != current_sr){
+         fSR_POTPerEvent[current_sr] = current_sr_POT/events_in_sr;
+         fSR_GoodPOTPerEvent[current_sr] = current_sr_GoodPOT/events_in_sr;
+         fSR_SpillsPerEvent[current_sr] = (double)current_sr_Spills/events_in_sr;
+         fSR_GoodSpillsPerEvent[current_sr] = (double)current_sr_GoodSpills/events_in_sr;
          events_in_sr = 0;
          current_sr = gEvent.eventAuxiliary().subRun();
+
+         std::cout << "Label: " << fPOTSummaryTag << " with POT: " << current_sr_POT << " from NEvent: " << events_in_sr << " in SubRun: " << current_sr << std::endl;
       }
 
       gallery::Handle< sumdata::POTSummary > potsum_handle;
@@ -779,15 +780,17 @@ void mix::SimInfoOverlayFilter::MakePOTMap(){
    }
 
    // Add the last sr
-   if(current_sr != 0){
+   if(current_sr != -1){
       fSR_POTPerEvent[current_sr] = current_sr_POT/events_in_sr;
       fSR_GoodPOTPerEvent[current_sr] = current_sr_GoodPOT/events_in_sr;
       fSR_SpillsPerEvent[current_sr] = (double)current_sr_Spills/events_in_sr;
       fSR_GoodSpillsPerEvent[current_sr] = (double)current_sr_GoodSpills/events_in_sr;
+
+      std::cout << "Label: " << fPOTSummaryTag << " with POT: " << current_sr_POT << " from NEvent: " << events_in_sr << " in SubRun: " << current_sr << std::endl;
    }
 
-   // std::map<unsigned int,double>::iterator it;
-   // for (it = fSR_POTPerEvent.begin(); it != fSR_POTPerEvent.end(); it++) std::cout << "SR=" << it->first << " POT/Event=" << it->second << std::endl;
+   std::map<unsigned int,double>::iterator it;
+   for (it = fSR_POTPerEvent.begin(); it != fSR_POTPerEvent.end(); it++) std::cout << "SR=" << it->first << " POT/Event=" << it->second << std::endl;
 
    gEvent.first();
 }

@@ -77,7 +77,6 @@
 #include "opticaldetectormodules.fcl"
 #include "opticaldetectorservices.fcl"
 #include "emptyevent_icarus.fcl"
-#include "largeantmodules_icarus.fcl"
 
 # base configuration
 #include "photonlibrary_builder_icarus.fcl"
