@@ -3,16 +3,3 @@ physics.producers.cafmaker.SimChannelLabel: "merge" # 2D, YZ sim
 
 # SimChannel's get re-made by 2D drift simulation -- use these to backtrack
 services.BackTrackerService.BackTracker.SimChannelModuleLabel: "merge"
-
-# MCReco also needs correct SimChannels
-# need to use new config names to make MCParticle/SimChannel labels different
-physics.producers.mcreco.G4ModName: @erase 
-physics.producers.mcreco.MCParticleLabel: "largeant"
-physics.producers.mcreco.SimChannelLabel: "merge"
-
-# Mini production, pre signal shape tuning
-# this_cal_constants: [1.343e-2, 1.338e-2, 0.01227]
-# Post signal shape tuning, post gain fixing
-# See docdb 32139
-this_cal_constants: [1.343e-2, 1.338e-2, 0.0128041]
-#include "set_caf_calconst.fcl"

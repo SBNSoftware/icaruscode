@@ -1,0 +1,17 @@
+#include "stage1_run2_icarus_MC.fcl"
+
+# select all T0-tagged tracks
+physics.analyzers.caloskimE.SelectionTools: [
+  {
+    tool_type: TrackCaloSkimmerSelectClearCosmicMuon
+    RequireT0: true
+  }
+]
+
+physics.analyzers.caloskimW.SelectionTools: [
+  {
+    tool_type: TrackCaloSkimmerSelectClearCosmicMuon
+    RequireT0: true
+  }
+]
+

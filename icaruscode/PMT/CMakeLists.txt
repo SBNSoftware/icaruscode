@@ -260,7 +260,7 @@ cet_build_plugin(ReassociatePMTbaselines art::module
     icaruscode::IcarusObj
     icaruscode::PMT_Algorithms
     icaruscode::PMT_Data
-    icarusalg::Utilities
+    sbnalg::Utilities
     sbnobj::ICARUS_PMT_Data
     lardata::headers
     lardataalg::headers

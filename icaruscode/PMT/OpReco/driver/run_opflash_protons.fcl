@@ -5,7 +5,7 @@
 #include "icarus_ophitfinder.fcl"
 #include "icarus_flashfinder.fcl"
 #include "icarus_opana_modules.fcl"
-#include "largeantmodules_icarus.fcl"
+#include "larg4_icarus_defs.fcl"
 #include "detsimmodules_ICARUS.fcl"
 #include "opdetsim_pmt_icarus.fcl"
 
@@ -43,9 +43,11 @@ physics:
  producers:
  {
    #generator: @local::FakeFlash
-	 generator:     @local::icarus_singlep
-	 largeant:      @local::icarus_largeant
-   #opdaq:    @local::icarus_simpmt_nonoise
+   generator:     @local::icarus_singlep
+   loader:        @local::icarus_larg4_standard_producers.loader
+   largeant:      @local::icarus_larg4_standard_producers.largeant
+   pdfastsim:     @local::icarus_larg4_standard_producers.pdfastsim
+   #opdaq:        @local::icarus_simpmt_nonoise
    opdaq:         @local::icarus_simpmt
    rns:      { module_type: "RandomNumberSaver" }
    ophitdebugger: @local::icarus_ophitdebugger
@@ -53,15 +55,15 @@ physics:
    ophit:         @local::icarus_ophit
    mcflash:       @local::ICARUSMCOpFlash
    #cheatflash:    @local::ICARUSMCOpFlash
-	 cheatflash:    @local::ICARUSSimpleFlash
+   cheatflash:    @local::ICARUSSimpleFlash
    opflash:       @local::ICARUSSimpleFlash
  }
  analyzers: {
    ophitana: @local::ICARUSOpHitAna
    opflashana: @local::ICARUSOpFlashAna
-	 particleana: @local::ICARUSParticleAna
+   particleana: @local::ICARUSParticleAna
  }
- produce: [ rns, generator, largeant, opdaq, ophitdebugger, ophit, mcophit, mcflash, cheatflash, opflash ]
+ produce: [ rns, generator, loader, largeant, pdfastsim, opdaq, ophitdebugger, ophit, mcophit, mcflash, cheatflash, opflash ]
  analyze: [ ophitana, opflashana, particleana ]
  store:   [ out1 ]
  trigger_paths: [ produce ]
@@ -107,7 +109,7 @@ physics.producers.generator.AngleDist: 1
 #physics.producers.opdaq.QE: 1.0
 physics.producers.opdaq.DarkNoiseRate: 0.0
 physics.producers.opdaq.FluctuateGain: true
-physics.producers.opdaq.InputModule: "largeant" #"generator"
+physics.producers.opdaq.InputModule: "pdfastsim"
 physics.producers.opdaq.ThresholdADC: 5
 
 #physics.producers.mcophit.SimPhotonsProducer: "generator"
@@ -134,4 +136,4 @@ services.message.destinations :
 }
 
 # restore legacy G4 labels
-physics.producers.mcophit.SimPhotonsProducer: "largeant"
+physics.producers.mcophit.SimPhotonsProducer: "pdfastsim"

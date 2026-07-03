@@ -1,5 +1,5 @@
 #include "singles.fcl"
-#include "largeantmodules.fcl"
+#include "larg4_icarus_defs.fcl"
 #include "detsimmodules.fcl"
 #include "mccheatermodules.fcl"
 #include "photpropservices.fcl"
@@ -54,8 +54,10 @@ physics:
 
  producers:
  {
-   generator: @local::standard_lightsource	  
-   largeant:  @local::standard_largeant	  
+   generator: @local::standard_lightsource
+   loader:    @local::icarus_larg4_standard_producers.loader
+   largeant:  @local::icarus_larg4_standard_producers.largeant
+   pdfastsim: @local::icarus_larg4_standard_producers.pdfastsim
  }
 
  analyzers:
@@ -65,7 +67,7 @@ physics:
 
  #define the producer and filter modules for this path, order matters, 
  #filters reject all following items.  see lines starting physics.producers below
- simulate: [ generator, largeant ] 
+ simulate: [ generator, loader, largeant, pdfastsim ] 
  analyzeIt:  [ pmtresponse ]
  #analyzeIt:  []
  #define the output stream, there could be more than one if using filters 
@@ -140,3 +142,6 @@ physics.analyzers.pmtresponse.MakeAllPhotonsTree: true
 physics.analyzers.pmtresponse.MakeDetectedPhotonsTree: true
 physics.analyzers.pmtresponse.MakeSimPhotonssTree: true
 physics.analyzers.pmtresponse.MakeEventsTree: true
+
+# new LArG4 optical products are produced by `pdfastsim`, not `largeant`
+physics.analyzers.pmtresponse.InputModule: [ "pdfastsim" ]

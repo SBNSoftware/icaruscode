@@ -1,0 +1,8 @@
+#include "filter_wiremod_sbn.fcl"
+#include "larg4_icarus_cosmics_sce.fcl"
+
+
+# Insert the sim channel filter and only save events that pass it
+physics.filters.requiresimchan: @local::filter_primary_simchan
+physics.simulate: [@sequence::physics.simulate, "requiresimchan"]
+outputs.rootoutput.SelectEvents: ["simulate"]
