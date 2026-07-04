@@ -4,57 +4,43 @@
 # Nov. 6th 2025
 ############################################
 
-
-
 BEGIN_PROLOG
 
-pandoraPassOneConfig: {
-    ConfigFile:             "PandoraSettings_Training_DlVertexPass1.xml" ##< Master file to run in reconstruction
-    EnableMCParticles:      true            ##< To be able to cheat is necessary to collapse to MC particles
-    SimChannelModuleLabel:  "daq:simpleSC"  ##< Correct sim channel to enable MC particles
+enable_pandora_vertex_training_pass1: {
+    ConfigFile:             "PandoraSettings_Training_DlVertexPass1.xml"
+    EnableMCParticles:      true
+    DisableRealDataCheck:   true
+    UseHitWidths: true
+    SimChannelModuleLabel:  "merge"
+}
 
-
-    # PrintOverallRecoStatus:     true
+enable_pandora_vertex_training_pass2: {
+    ConfigFile:             "PandoraSettings_Training_DlVertexPass2.xml"
+    EnableMCParticles:      true
+    DisableRealDataCheck:   true
+    UseHitWidths: true
+    SimChannelModuleLabel:  "merge"
 }
 
 END_PROLOG
 
-#include "stage1_run2_1d_icarus_MC.fcl"
-
-physics.producers.pandoraGausCryoE.HitFinderModuleLabel: "cluster3DCryoE"
-physics.producers.pandoraGausCryoW.HitFinderModuleLabel: "cluster3DCryoW"
+#include "stage1_run2_icarus_MC.fcl"
 
 physics.producers.pandoraGausCryoE: {
     @table::physics.producers.pandoraGausCryoE
-    @table::pandoraPassOneConfig
+    @table::enable_pandora_vertex_training_pass1
 }
 physics.producers.pandoraGausCryoW: {
     @table::physics.producers.pandoraGausCryoW
-    @table::pandoraPassOneConfig
+    @table::enable_pandora_vertex_training_pass1
 }
 
 
 physics.reco: [ 
-                @sequence::icarus_reco_Gauss1D_CryoE ,
-                @sequence::icarus_reco_Gauss1D_CryoW 
-                # @sequence::icarus_reco_fm,
-                # @sequence::icarus_tpcpmtbarycentermatch,
-                # @sequence::icarus_crttrack,
-                # @sequence::icarus_crtt0tagging,
-                # caloskimCalorimetryCryoE, caloskimCalorimetryCryoW,
-                # mcassociationsGausCryoE,  mcassociationsGausCryoW,
-                # mcreco
+                @sequence::icarus_reco_Gauss2D_CryoE ,
+                @sequence::icarus_reco_Gauss2D_CryoW 
               ]
 
 physics.outana: []
 
-physics.producers.cluster3DCryoW.Hit3DBuilderAlg.HitFinderTagVec: ["gaushit1dTPCWW", "gaushit1dTPCWE"]
-physics.producers.cluster3DCryoE.Hit3DBuilderAlg.HitFinderTagVec: ["gaushit1dTPCEW", "gaushit1dTPCEE"]
-
-physics.producers.cluster3DCryoW.combineHitsCryoW.HitFinderTagVec: ["gaushit1dTPCWW", "gaushit1dTPCWE"]
-physics.producers.cluster3DCryoE.combineHitsCryoE.HitFinderTagVec: ["gaushit1dTPCEW", "gaushit1dTPCEE"]
-
-services.BackTrackerService.BackTracker.SimChannelModuleLabel: "daq:simpleSC"
-physics.analyzers.caloskimE.SimChannelproducer: "daq:simpleSC"
-physics.analyzers.caloskimW.SimChannelproducer: "daq:simpleSC"
-physics.producers.mcreco.SimChannelLabel: "shifted"
+services.message: @local::icarus_message_services_interactive_debug
