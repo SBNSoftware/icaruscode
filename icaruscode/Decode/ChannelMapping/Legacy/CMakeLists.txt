@@ -11,12 +11,12 @@ art_make_library(
 )
 
 cet_build_plugin(ChannelMapSQLite art::tool
-	LIBRARIES
+	LIBRARIES PRIVATE
 		icaruscode::Decode_ChannelMapping
 	)
 
 cet_build_plugin(ChannelMapPostGres art::tool
-	LIBRARIES
+	LIBRARIES PRIVATE
 		icaruscode::Decode_ChannelMapping
 	)
 

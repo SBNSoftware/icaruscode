@@ -18,7 +18,7 @@ SBNDataNoiseBoard
 SBNDataNoise
 SBNNoise
 )
-  cet_build_plugin( ${TOOL} art::tool LIBRARIES
+  cet_build_plugin( ${TOOL} art::tool LIBRARIES PRIVATE
   larcorealg::Geometry
   larevt::CalibrationDBI_IOVData larevt::CalibrationDBI_Providers
   larreco::HitFinder lardataobj::RecoBase larcore::Geometry_Geometry_service

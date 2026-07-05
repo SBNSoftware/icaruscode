@@ -103,7 +103,7 @@ install_headers()
 install_source()
 
 cet_build_plugin( BernCRTAna art::module
-  LIBRARIES
+  LIBRARIES PRIVATE
   art::Framework_Services_Registry
   art_root_io::tfile_support
   art_root_io::TFileService_service
@@ -115,7 +115,7 @@ cet_build_plugin( BernCRTAna art::module
 )
 
 cet_build_plugin( CrtNoiseMonTool art::module
-  LIBRARIES
+  LIBRARIES PRIVATE
   art::Framework_Services_Registry
   art_root_io::tfile_support
   art_root_io::TFileService_service
@@ -126,7 +126,7 @@ cet_build_plugin( CrtNoiseMonTool art::module
 )
 
 cet_build_plugin( CrtCalAnalysis art::module
-  LIBRARIES
+  LIBRARIES PRIVATE
   art::Framework_Services_Registry
   art_root_io::tfile_support
   art_root_io::TFileService_service
@@ -138,7 +138,7 @@ cet_build_plugin( CrtCalAnalysis art::module
 )
 
 cet_build_plugin( AnaProducer art::module
-  LIBRARIES
+  LIBRARIES PRIVATE
   art::Framework_Services_Registry
   art_root_io::tfile_support
   art_root_io::TFileService_service
@@ -153,7 +153,7 @@ cet_build_plugin( AnaProducer art::module
 )
 
 cet_build_plugin( CRTEventProducer art::module
-  LIBRARIES
+  LIBRARIES PRIVATE
   art::Framework_Services_Registry
   art_root_io::tfile_support
   art_root_io::TFileService_service
@@ -169,7 +169,7 @@ cet_build_plugin( CRTEventProducer art::module
 )
 
 cet_build_plugin( DecoderICARUSCRT art::module
-  LIBRARIES
+  LIBRARIES PRIVATE
   icaruscode_Utilities
   art::Framework_Services_Registry
   art_root_io::tfile_support

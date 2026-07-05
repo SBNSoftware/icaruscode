@@ -2,7 +2,7 @@ add_subdirectory(CaloTools)
 add_subdirectory(fcl)
 
 cet_build_plugin(PMTLaserCalibration art::module
-                    LIBRARIES
+                    LIBRARIES PRIVATE
                 icaruscode_PMT_Algorithms
                 icaruscode_PMT_Calibration_CaloTools
                 icaruscode_IcarusObj
@@ -24,7 +24,7 @@ cet_build_plugin(PMTLaserCalibration art::module
               )
 
 cet_build_plugin(PMTBackgroundphotonsCalibration art::module
-                    LIBRARIES
+                    LIBRARIES PRIVATE
                 icaruscode_PMT_Algorithms
                 icaruscode_PMT_Calibration_CaloTools
                 lardataobj::RawData

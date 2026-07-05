@@ -69,8 +69,8 @@ set(	TOOL_LIBRARIES
 		FFTW3::FFTW3
 
 )
-cet_build_plugin(MorphologicalFilter art::tool LIBRARIES ${TOOL_LIBRARIES})
-cet_build_plugin(RawDigitFilterAlg art::tool LIBRARIES ${TOOL_LIBRARIES})
+cet_build_plugin(MorphologicalFilter art::tool LIBRARIES PRIVATE ${TOOL_LIBRARIES})
+cet_build_plugin(RawDigitFilterAlg art::tool LIBRARIES PRIVATE ${TOOL_LIBRARIES})
 
 
 install_headers()

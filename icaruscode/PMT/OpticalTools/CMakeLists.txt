@@ -31,8 +31,8 @@ set(		TOOL_LIBRARIES
 			Boost::system
 			CLHEP::Random
 )
-cet_build_plugin(OpHitFinderStandard art::tool LIBRARIES ${TOOL_LIBRARIES})
-cet_build_plugin(OpHitFinder art::tool LIBRARIES ${TOOL_LIBRARIES})
+cet_build_plugin(OpHitFinderStandard art::tool LIBRARIES PRIVATE ${TOOL_LIBRARIES})
+cet_build_plugin(OpHitFinder art::tool LIBRARIES PRIVATE ${TOOL_LIBRARIES})
 
 install_headers()
 install_source()

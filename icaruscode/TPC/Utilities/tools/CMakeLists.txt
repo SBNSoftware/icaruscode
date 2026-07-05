@@ -32,11 +32,11 @@ set(	TOOL_LIBRARIES
 		CLHEP::Random
 	)
 
-cet_build_plugin(ElectronicsResponseBesselApprox art::tool LIBRARIES ${TOOL_LIBRARIES})
-cet_build_plugin(ElectronicsResponse art::tool LIBRARIES LIBRARIES ${TOOL_LIBRARIES})
-cet_build_plugin(FieldResponse art::tool LIBRARIES ${TOOL_LIBRARIES})
-cet_build_plugin(Filter art::tool LIBRARIES ${TOOL_LIBRARIES})
-cet_build_plugin(Response art::tool LIBRARIES ${TOOL_LIBRARIES})
+cet_build_plugin(ElectronicsResponseBesselApprox art::tool LIBRARIES PRIVATE ${TOOL_LIBRARIES})
+cet_build_plugin(ElectronicsResponse art::tool LIBRARIES PRIVATE LIBRARIES PRIVATE ${TOOL_LIBRARIES})
+cet_build_plugin(FieldResponse art::tool LIBRARIES PRIVATE ${TOOL_LIBRARIES})
+cet_build_plugin(Filter art::tool LIBRARIES PRIVATE ${TOOL_LIBRARIES})
+cet_build_plugin(Response art::tool LIBRARIES PRIVATE ${TOOL_LIBRARIES})
 
 
 install_headers()

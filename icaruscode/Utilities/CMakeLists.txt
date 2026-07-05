@@ -15,7 +15,7 @@ art_make_library(
                 sbnobj::Common_CRT
 	)
 
-cet_build_plugin(SaveConfigurationIntoTFile art::module LIBRARIES
+cet_build_plugin(SaveConfigurationIntoTFile art::module LIBRARIES PRIVATE
 		art_root_io::TFileService_service
 		art_root_io::tfile_support
 		art::Framework_Services_Registry
@@ -36,7 +36,7 @@ cet_build_plugin(DuplicateEventTracker art::service LIBRARIES
 		messagefacility::MF_MessageLogger
 	)
 
-cet_build_plugin(DumpCRTPMTMatching art::module LIBRARIES
+cet_build_plugin(DumpCRTPMTMatching art::module LIBRARIES PRIVATE
 		icaruscode::Utilities
 		icaruscode::IcarusObj
 		sbnobj::Common_CRT

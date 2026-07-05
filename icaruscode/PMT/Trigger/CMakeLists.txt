@@ -73,22 +73,22 @@ set(	TOOL_LIBRARIES
 		lardataobj::RawData
 	)
 
-cet_build_plugin(DiscriminatePMTwaveforms art::module LIBRARIES ${MODULE_LIBRARIES})
-cet_build_plugin(DumpTriggerGateData art::module LIBRARIES ${MODULE_LIBRARIES})
-cet_build_plugin(DynamicTriggerGateBuilderTool art::tool LIBRARIES ${TOOL_LIBRARIES})
-cet_build_plugin(ExtractEnergyDepositionSummary art::module LIBRARIES ${MODULE_LIBRARIES})
-cet_build_plugin(FixedTriggerGateBuilderTool art::tool LIBRARIES ${TOOL_LIBRARIES})
-cet_build_plugin(LVDSgates art::module LIBRARIES ${MODULE_LIBRARIES})
+cet_build_plugin(DiscriminatePMTwaveforms art::module LIBRARIES PRIVATE ${MODULE_LIBRARIES})
+cet_build_plugin(DumpTriggerGateData art::module LIBRARIES PRIVATE ${MODULE_LIBRARIES})
+cet_build_plugin(DynamicTriggerGateBuilderTool art::tool LIBRARIES PRIVATE ${TOOL_LIBRARIES})
+cet_build_plugin(ExtractEnergyDepositionSummary art::module LIBRARIES PRIVATE ${MODULE_LIBRARIES})
+cet_build_plugin(FixedTriggerGateBuilderTool art::tool LIBRARIES PRIVATE ${TOOL_LIBRARIES})
+cet_build_plugin(LVDSgates art::module LIBRARIES PRIVATE ${MODULE_LIBRARIES})
 
 
-cet_build_plugin(WriteBeamGateInfo art::module LIBRARIES
+cet_build_plugin(WriteBeamGateInfo art::module LIBRARIES PRIVATE
   lardataobj::Simulation
   lardata::Utilities
   larcorealg::headers
   lardataalg::headers
   )
 
-cet_build_plugin(FixBeamGateInfo art::module LIBRARIES
+cet_build_plugin(FixBeamGateInfo art::module LIBRARIES PRIVATE
   lardataobj::Simulation
   larcorealg::headers
   larcorealg::CoreUtils
@@ -96,7 +96,7 @@ cet_build_plugin(FixBeamGateInfo art::module LIBRARIES
   ) 
 
 cet_build_plugin(DiscriminatePMTwaveformsByChannel art::module
-                LIBRARIES
+                LIBRARIES PRIVATE
   icaruscode::PMT_Trigger_Algorithms
   sbnobj::ICARUS_PMT_Trigger_Data
   sbnobj::ICARUS_PMT_Data
@@ -118,7 +118,7 @@ cet_build_plugin(DiscriminatePMTwaveformsByChannel art::module
   )
 
 cet_build_plugin(DiscriminatedAdderSignal art::module
-  LIBRARIES
+  LIBRARIES PRIVATE
     icaruscode::PMT_Trigger_Algorithms
     icaruscode::PMT_Trigger_Utilities
     icaruscode::PMT_Algorithms
@@ -136,7 +136,7 @@ cet_build_plugin(DiscriminatedAdderSignal art::module
   )
 
 cet_build_plugin(SlidingWindowTrigger art::module
-                LIBRARIES
+                LIBRARIES PRIVATE
 		icaruscode::PMT_Trigger_Algorithms
 		sbnobj::ICARUS_PMT_Trigger_Data
 		icaruscode::PMT_Trigger_Utilities
@@ -158,7 +158,7 @@ cet_build_plugin(SlidingWindowTrigger art::module
 		) 
 
 cet_build_plugin(MajorityTriggerSimulation art::module
-                LIBRARIES
+                LIBRARIES PRIVATE
 		icaruscode::PMT_Trigger_Algorithms
 		sbnobj::ICARUS_PMT_Trigger_Data
 		icaruscode::PMT_Trigger_Utilities
@@ -175,7 +175,7 @@ cet_build_plugin(MajorityTriggerSimulation art::module
 		) 
 
 cet_build_plugin(SlidingWindowTriggerSimulation art::module
-                LIBRARIES
+                LIBRARIES PRIVATE
 		icaruscode::PMT_Trigger_Algorithms
 		sbnobj::ICARUS_PMT_Trigger_Data
 		icaruscode::PMT_Trigger_Utilities
@@ -197,7 +197,7 @@ cet_build_plugin(SlidingWindowTriggerSimulation art::module
 		ROOT::Core
 		) 
 
-cet_build_plugin(TriggerSimulationOnGates art::module LIBRARIES
+cet_build_plugin(TriggerSimulationOnGates art::module LIBRARIES PRIVATE
   icaruscode::PMT_Trigger_Algorithms
   icarusalg::Utilities
   sbnobj::ICARUS_PMT_Trigger_Data
@@ -220,7 +220,7 @@ cet_build_plugin(TriggerSimulationOnGates art::module LIBRARIES
   ) 
 
 cet_build_plugin(TriggerEfficiencyPlots art::module
-                LIBRARIES
+                LIBRARIES PRIVATE
 		icarusalg::Utilities
 		icaruscode::PMT_Trigger_Utilities
 		sbnobj::ICARUS_PMT_Trigger_Data
@@ -247,7 +247,7 @@ cet_build_plugin(TriggerEfficiencyPlots art::module
 		) 
 
 cet_build_plugin(MakeTriggerSimulationTree art::module
-                LIBRARIES
+                LIBRARIES PRIVATE
 		icaruscode::PMT_Trigger_Algorithms
 		icaruscode::PMT_Trigger_Utilities
 		sbnobj::ICARUS_PMT_Trigger_Data
@@ -271,7 +271,7 @@ cet_build_plugin(MakeTriggerSimulationTree art::module
 		ROOT::Core
 		) 
 
-cet_build_plugin(TriggerEmulationTree art::module LIBRARIES
+cet_build_plugin(TriggerEmulationTree art::module LIBRARIES PRIVATE
   icaruscode_PMT_Trigger_Algorithms
   icaruscode_PMT_Trigger_Utilities
   art_root_io::TFileService_service
@@ -294,7 +294,7 @@ foreach(TriggerEfficiencyPlotsModule
 	)
 
 	cet_build_plugin(${TriggerEfficiencyPlotsModule} art::module
-                LIBRARIES
+                LIBRARIES PRIVATE
 		icaruscode::PMT_Trigger_Algorithms
 		icaruscode::PMT_Trigger
 		icaruscode::PMT_Trigger_Utilities
