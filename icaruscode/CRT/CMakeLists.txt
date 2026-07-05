@@ -329,7 +329,7 @@ cet_build_plugin(CRTTPCMatchingAna art::module
               ROOT::RooFit
               ROOT::RooFitCore
 )
-simple_plugin(CRTTPCTruthEff module
+simple_plugin(CRTTPCTruthEff art::module
               sbnobj::ICARUS_CRT
               sbnobj::Common_CRT
               icaruscode_CRTUtils
