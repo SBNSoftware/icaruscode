@@ -1,7 +1,7 @@
 cet_enable_asserts()
 
 
-art_make_library()
+cet_make_library(INTERFACE HEADERS_TARGET_ONLY)
 set(	TOOL_LIBRARIES
 		larcorealg::Geometry
 		larevt::CalibrationDBI_IOVData
