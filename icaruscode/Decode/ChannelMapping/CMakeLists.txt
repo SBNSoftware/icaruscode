@@ -33,7 +33,7 @@ art_make_library(
 )
 
 cet_build_plugin(ICARUSChannelMapSQLite art::service
-  LIBRARIES
+  LIBRARIES PRIVATE
     icaruscode::Decode_ChannelMapping
     art::Framework_Principal
     messagefacility::MF_MessageLogger
@@ -41,7 +41,7 @@ cet_build_plugin(ICARUSChannelMapSQLite art::service
   )
 
 cet_build_plugin(ICARUSChannelMapPostGres art::service
-  LIBRARIES
+  LIBRARIES PRIVATE
     icaruscode::Decode_ChannelMapping
     art::Framework_Principal
     messagefacility::MF_MessageLogger

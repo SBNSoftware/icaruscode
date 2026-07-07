@@ -33,9 +33,9 @@ art_make_library( SOURCE ${lib_srcs} LIBRARIES PUBLIC ${LIB_LIBRARIES})
 
 cet_build_plugin( OpHitTimingCorrection art::module LIBRARIES PRIVATE ${MODULE_LIBRARIES})
 
-cet_build_plugin( PMTTimingCorrectionService art::service LIBRARIES PUBLIC ${SERVICE_LIBRARIES})
+cet_build_plugin( PMTTimingCorrectionService art::service LIBRARIES PRIVATE ${SERVICE_LIBRARIES})
 
-cet_build_plugin( PMTBeamSignalsExtractor art::producer LIBRARIES PRIVATE ${MODULE_LIBRARIES})
+cet_build_plugin( PMTBeamSignalsExtractor art::Producer LIBRARIES PRIVATE ${MODULE_LIBRARIES})
 
 install_headers()
 install_fhicl()

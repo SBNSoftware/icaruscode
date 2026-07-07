@@ -38,7 +38,7 @@ SBNNoise
   set_property(SOURCE "${TOOL}_tool.cc" APPEND PROPERTY COMPILE_DEFINITIONS EIGEN_FFTW_DEFAULT)
 endforeach()
 
-cet_build_plugin(CoherentNoiseFactor art::service LIBRARIES
+cet_build_plugin(CoherentNoiseFactor art::service LIBRARIES PRIVATE
   larcorealg::Geometry
   larevt::CalibrationDBI_IOVData larevt::CalibrationDBI_Providers
   larreco::HitFinder lardataobj::RecoBase larcore::Geometry_Geometry_service

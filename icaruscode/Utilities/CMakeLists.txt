@@ -30,7 +30,9 @@ cet_build_plugin(SaveConfigurationIntoTFile art::module LIBRARIES PRIVATE
 	)
 
 
-cet_build_plugin(DuplicateEventTracker art::service LIBRARIES
+# NOTE: DuplicateEventTracker exposes an interface,
+#       but PRIVATE linking makes that inaccessible to modules.
+cet_build_plugin(DuplicateEventTracker art::service LIBRARIES PRIVATE
 		icaruscode::Utilities
 		art::Framework_Principal
 		messagefacility::MF_MessageLogger
