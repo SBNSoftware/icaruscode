@@ -42,7 +42,7 @@ target_compile_definitions(icaruscode_TPC_SignalProcessing_RawDigitFilter_Algori
 
 set(	TOOL_LIBRARIES
 		icaruscode_TPC_SignalProcessing_RawDigitFilter_Algorithms
-		icaruscode_TPC_Utilities_SignalShapingICARUSService_service
+		icaruscode::TPC_Utilities_SignalShapingICARUSService_service
 		lardataobj::RawData
 		lardataobj::RecoBase
 		lardata::Utilities

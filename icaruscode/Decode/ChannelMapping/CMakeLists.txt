@@ -4,7 +4,7 @@ art_make_library(
   EXCLUDE "ChannelMapDumper.cxx"
   LIBRARIES
     icarusalg::Utilities
-    larcorealg::CoreUtils
+    larcorealg::headers
     art::Framework_Services_Registry
     fhiclcpp::fhiclcpp
     messagefacility::MF_MessageLogger

@@ -329,10 +329,11 @@ cet_build_plugin(CRTTPCMatchingAna art::module
               ROOT::RooFit
               ROOT::RooFitCore
 )
-simple_plugin(CRTTPCTruthEff art::module
+cet_build_plugin(CRTTPCTruthEff art::module
+     LIBRARIES PRIVATE
               sbnobj::ICARUS_CRT
               sbnobj::Common_CRT
-              icaruscode_CRTUtils
+              icaruscode::CRTUtils
               larcorealg::Geometry
               larcore::Geometry_Geometry_service
               larsim::Simulation lardataobj::Simulation

@@ -38,7 +38,8 @@ set(icarus_util_lib_list
 	Boost::filesystem
 	Boost::system
 	CLHEP::Random
-    larcoreobj::headers
+	ROOT::Hist
+	larcoreobj::headers
 )
 
 art_make_library(

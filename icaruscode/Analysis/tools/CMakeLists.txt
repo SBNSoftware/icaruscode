@@ -6,6 +6,8 @@ set(         TOOL_LIBRARIES
 		lardataobj::Simulation
 		lardataalg::DetectorInfo
 		icaruscode::TPC_SignalProcessing_RawDigitFilter_Algorithms
+		larreco::WaveformTool
+		sbnobj::ICARUS_TPC
 		larcorealg::Geometry
 		larcore::Geometry_Geometry_service
 		lardata::RecoObjects

@@ -3,6 +3,7 @@ cet_enable_asserts()
 art_make_library()
 set(		TOOL_LIBRARIES
 			icaruscode::TPC_Utilities_SignalShapingICARUSService_service
+			larreco::CandidateHitFinderTool
 			larcorealg::Geometry
 			larevt::CalibrationDBI_IOVData
 			larevt::CalibrationDBI_Providers
