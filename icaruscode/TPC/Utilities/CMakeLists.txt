@@ -46,7 +46,7 @@ art_make_library(
         LIBRARIES ${icarus_util_lib_list}
 )
 
-cet_build_plugin(FileCatalogMetadataICARUS art::service LIBRARIES ${icarus_util_lib_list})
+cet_build_plugin(FileCatalogMetadataICARUS art::service LIBRARIES PRIVATE ${icarus_util_lib_list})
 cet_build_plugin(SignalShapingICARUSService art::service
 	LIBRARIES PUBLIC icaruscode::TPC_Utilities # includes the service header
 	LIBRARIES PRIVATE ${icarus_util_lib_list}
