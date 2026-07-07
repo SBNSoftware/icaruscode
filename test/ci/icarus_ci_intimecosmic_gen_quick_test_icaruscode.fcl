@@ -10,15 +10,15 @@ services.NuRandomService: @local::per_event_NuRandomService
 source: @erase
 
 # Be as strict as possible with random seeds: GENIE is wild!
-physics.producers.generator.Seed: 63214
+physics.producers.corsika.Seed: 63214
 
 # Override GENIE flux file configuration
-physics.producers.generator.FluxCopyMethod: "DIRECT"
-physics.producers.generator.MaxFluxFileMB: 20
-physics.producers.generator.FluxSearchPaths: "/cvmfs/sbn.osgstorage.org/pnfs/fnal.gov/usr/sbn/persistent/stash/physics/beam/GENIE/BNB/standard/v01_00/"
+physics.producers.corsika.FluxCopyMethod: "DIRECT"
+physics.producers.corsika.MaxFluxFileMB: 20
+physics.producers.corsika.FluxSearchPaths: "/cvmfs/sbn.osgstorage.org/pnfs/fnal.gov/usr/sbn/persistent/stash/physics/beam/GENIE/BNB/standard/v01_00/"
 
 # Override CORSIKA flux file path to be able to access them without a proxy
-physics.producers.generator.ShowerInputFiles:[
+physics.producers.corsika.ShowerInputFiles:[
 	"/cvmfs/sbn.osgstorage.org/pnfs/fnal.gov/usr/sbn/persistent/stash/physics/cosmics/Fermilab/CORSIKA/standard/v01_00/p_*.db"
 ]
 #  "/cvmfs/sbn.osgstorage.org/pnfs/fnal.gov/usr/sbn/persistent/stash/physics/cosmics/Fermilab/CORSIKA/standard/p_*.db",
