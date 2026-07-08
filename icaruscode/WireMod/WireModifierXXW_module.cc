@@ -81,9 +81,10 @@ namespace wiremod
       bool fSavePerHitData;        // write per-hit scaleQ/scaleSigma/truthX/thetaXW/isMC art products?
       bool fInRads;                // is the TGraph2D angle axis in radians?
       bool fXAbs;                  // is the TGraph2D x an absolute value?
-      bool fAdditiveModification;  // additive (true) vs multiplicative (false) ROI modification
-      bool fSetNullScaleIntegral;  // if true, force r_Q=1 for all sub-ROIs (disable integral scaling)
-      bool fSetNullScaleWidth;     // if true, force r_sigma=1 for all sub-ROIs (disable width scaling)
+      bool fAdditiveModification;      // additive (true) vs multiplicative (false) ROI modification
+      bool fSetNullScaleIntegral;      // if true, force r_Q=1 for all sub-ROIs (disable integral scaling)
+      bool fSetNullScaleWidth;         // if true, force r_sigma=1 for all sub-ROIs (disable width scaling)
+      bool fUseGraph2DInterpolation;   // true = Delaunay interp (default), false = nearest bin center
       bool fUseChannelROIMode;     // true = read ChannelROI directly (float precision), false = Wire (nominal)
       art::InputTag fChannelLabel; // ChannelROI input label, used only when fUseChannelROIMode is true
       double fOffset;           // ad hoc offset
@@ -224,9 +225,10 @@ namespace wiremod
     fXAbs = pset.get<bool>("XAbs", false);
 
     // additive vs multiplicative ROI modification
-    fAdditiveModification  = pset.get<bool>("AdditiveModification",  false);
-    fSetNullScaleIntegral  = pset.get<bool>("SetNullScaleIntegral",  false);
-    fSetNullScaleWidth     = pset.get<bool>("SetNullScaleWidth",     false);
+    fAdditiveModification    = pset.get<bool>("AdditiveModification",    false);
+    fSetNullScaleIntegral    = pset.get<bool>("SetNullScaleIntegral",    false);
+    fSetNullScaleWidth       = pset.get<bool>("SetNullScaleWidth",       false);
+    fUseGraph2DInterpolation = pset.get<bool>("UseGraph2DInterpolation", true);
 
     // ChannelROI direct mode (float precision, bypasses Wire intermediate)
     fUseChannelROIMode = pset.get<bool>("UseChannelROIMode", false);
@@ -705,7 +707,8 @@ namespace wiremod
       wmUtil.graph2Ds_Sigma_XXW  = fGraph_sigma_XXW;
     }
 
-    wmUtil.additiveModification = fAdditiveModification;
+    wmUtil.additiveModification      = fAdditiveModification;
+    wmUtil.useGraph2DInterpolation   = fUseGraph2DInterpolation;
 
     // add some debugging here
     mf::LogVerbatim("WireModifierXXW")
@@ -718,7 +721,8 @@ namespace wiremod
       << "  applyXZAngleScale:     " << wmUtil.applyXZAngleScale     << '\n'
       << "  applyYZAngleScale:     " << wmUtil.applyYZAngleScale     << '\n'
       << "  applydEdXScale:        " << wmUtil.applydEdXScale        << '\n'
-      << "  additiveModification:  " << wmUtil.additiveModification  << '\n'
+      << "  additiveModification:        " << wmUtil.additiveModification      << '\n'
+      << "  useGraph2DInterpolation:     " << wmUtil.useGraph2DInterpolation   << '\n'
       << "  setNullScaleIntegral:  " << fSetNullScaleIntegral        << '\n'
       << "  setNullScaleWidth:     " << fSetNullScaleWidth           << '\n'
       << "  readoutWindowTicks:    " << wmUtil.readoutWindowTicks    << '\n'

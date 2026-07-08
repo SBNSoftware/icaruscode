@@ -25,6 +25,13 @@ WireModHitDiag:
     "WireModTPCWW"
   ]
 
+  TrackLabels: [
+    "pandoraTrackGausCryoE",
+    "pandoraTrackGausCryoW"
+  ]
+
+  DummyTrackLabels: []  # optional: Pandora on before-hits for PRE-WireMod reco theta
+
   MatchWindowTicks: 10.0
   OnlyMC: true
 }

@@ -48,6 +48,7 @@ WireMod:
 
   SetNullScaleIntegral: false # true = force r_Q=1
   SetNullScaleWidth:    false # true = force r_sigma=1
+  UseGraph2DInterpolation: true # false = nearest bin center instead of Delaunay interpolation
 }
 
 WireModTPCEE: @local::WireMod
