@@ -39,6 +39,25 @@ physics.producers.dummyGaushit2dTPCEW.CalDataModuleLabel: "wire2channelroi2d:PHY
 physics.producers.dummyGaushit2dTPCWE.CalDataModuleLabel: "wire2channelroi2d:PHYSCRATEDATATPCWE"
 physics.producers.dummyGaushit2dTPCWW.CalDataModuleLabel: "wire2channelroi2d:PHYSCRATEDATATPCWW"
 
+physics.producers.WireModTPCEE.AdditiveModification: true
+physics.producers.WireModTPCEW.AdditiveModification: true
+physics.producers.WireModTPCWE.AdditiveModification: true
+physics.producers.WireModTPCWW.AdditiveModification: true
+
+physics.producers.WireModTPCEE.SetNullScaleIntegral: false
+physics.producers.WireModTPCEE.SetNullScaleWidth:    false
+physics.producers.WireModTPCEW.SetNullScaleIntegral: false
+physics.producers.WireModTPCEW.SetNullScaleWidth:    false
+physics.producers.WireModTPCWE.SetNullScaleIntegral: false
+physics.producers.WireModTPCWE.SetNullScaleWidth:    false
+physics.producers.WireModTPCWW.SetNullScaleIntegral: false
+physics.producers.WireModTPCWW.SetNullScaleWidth:    false
+
+physics.producers.WireModTPCEE.UseGraph2DInterpolation: false
+physics.producers.WireModTPCEW.UseGraph2DInterpolation: false
+physics.producers.WireModTPCWE.UseGraph2DInterpolation: false
+physics.producers.WireModTPCWW.UseGraph2DInterpolation: false
+
 # tell the caloskimmer to use the ROIs from WireMod
 physics.analyzers.caloskimE.RawDigitproducers: [ "WMWireToROI:PHYSCRATEDATATPCEW",
                                                  "WMWireToROI:PHYSCRATEDATATPCEE" ]
