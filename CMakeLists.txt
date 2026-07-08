@@ -17,20 +17,25 @@ cmake_minimum_required(VERSION 3.20 FATAL_ERROR)
 # cmake_policy(VERSION 3.19)
 
 find_package(cetmodules 3.24.01 REQUIRED)
-#project(icaruscode VERSION 10.20.09 LANGUAGES CXX)
 
-set(${PROJECT_NAME}_CMAKE_PROJECT_VERSION_STRING 10.20.09p01)
-project(icaruscode LANGUAGES CXX)
+# Version tag will be always stored in ${PROJECT_NAME}_CMAKE_PROJECT_VERSION_STRING
+# (which is a special MRB provision to support free(r) version string forms which CMake does not)
+# and also propagated to CMake's version when the format is compatible
+set(ProjectName "icaruscode")
+set(${ProjectName}_CMAKE_PROJECT_VERSION_STRING "10.20.09p01") # this is our project version!
+
+if ( "${${ProjectName}_CMAKE_PROJECT_VERSION_STRING}" MATCHES "^[0-9]+(\\.[0-9]+(\\.[0-9]+(\\.[0-9]+)?)?)?$" )
+  set(OptionalVersionArg VERSION "${${ProjectName}_CMAKE_PROJECT_VERSION_STRING}")
+endif()
+project(${ProjectName} ${OptionalVersionArg} LANGUAGES CXX)
+unset(ProjectName)
+unset(OptionalVersionArg)
 
 message(STATUS
   "\n-- ============================================================================="
-  "\n-- === *** Start of configuration of ${PROJECT_NAME} ***"
-  "\n-- ===")
-
-# cetbuildtools contains our cmake modules
-#find_package(cetbuildtools REQUIRED)
-
-#list(APPEND CMAKE_MODULE_PATH $ENV{CANVAS_ROOT_IO_DIR}/Modules $ENV{ART_DIR}/Modules )
+  "\n-- === *** Start of configuration of ${PROJECT_NAME} ${${PROJECT_NAME}_CMAKE_PROJECT_VERSION_STRING} ***"
+  "\n-- ==="
+  )
 
 include(CetCMakeEnv)
 cet_cmake_env()
@@ -115,7 +120,6 @@ message(STATUS
   "\n-- ==="
   "\n-- === *** End of configuration of ${PROJECT_NAME} ***"
   "\n-- ============================================================================="
-  "\n-- SQLITE3: ${SQLITE3}"
   "\n-- "
   )
 

@@ -1,4 +1,4 @@
-cet_build_plugin(SpaceChargeServiceICARUS art::service LIBRARIES
+cet_build_plugin(SpaceChargeServiceICARUS art::service LIBRARIES PRIVATE
 	icaruscode::TPC_Simulation_SpaceCharge
 	lardataalg::DetectorInfo
 	art::Framework_Core

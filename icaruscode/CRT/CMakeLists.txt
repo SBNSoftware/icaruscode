@@ -22,7 +22,7 @@ art_make_library(
      )
 
 cet_build_plugin(CRTDetSim art::module
-     LIBRARIES
+     LIBRARIES PRIVATE
         larcorealg::Geometry
         sbnobj::ICARUS_CRT
         sbnobj::Common_CRT
@@ -38,7 +38,7 @@ cet_build_plugin(CRTDetSim art::module
         )
 
 cet_build_plugin(CRTSimHitProducer art::module
-     LIBRARIES
+     LIBRARIES PRIVATE
         larcorealg::Geometry
         sbnobj::ICARUS_CRT
         sbnobj::Common_CRT
@@ -54,7 +54,7 @@ cet_build_plugin(CRTSimHitProducer art::module
         )
 
 cet_build_plugin( CRTTrueHitProducer art::module
-     LIBRARIES
+     LIBRARIES PRIVATE
         larcorealg::Geometry
         sbnobj::ICARUS_CRT
         sbnobj::Common_CRT
@@ -75,7 +75,7 @@ cet_build_plugin( CRTTrueHitProducer art::module
         )
 
 cet_build_plugin(CRTTrackProducer art::module
-     LIBRARIES
+     LIBRARIES PRIVATE
         larcorealg::Geometry
         sbnobj::ICARUS_CRT
         sbnobj::Common_CRT
@@ -92,7 +92,7 @@ cet_build_plugin(CRTTrackProducer art::module
         )
 
 cet_build_plugin(CRTSimAnalysis art::module
-     LIBRARIES
+     LIBRARIES PRIVATE
         sbnobj::ICARUS_CRT
         sbnobj::Common_CRT
         icaruscode_CRTUtils
@@ -112,7 +112,7 @@ cet_build_plugin(CRTSimAnalysis art::module
         )
 
 cet_build_plugin(CRTDataAnalysis art::module
-     LIBRARIES
+     LIBRARIES PRIVATE
         artdaq_core::artdaq-core_Data
         sbnobj::ICARUS_CRT
         sbnobj::Common_CRT
@@ -133,7 +133,7 @@ cet_build_plugin(CRTDataAnalysis art::module
         )
 
 cet_build_plugin(CRTCalibrationAnalysis art::module
-     LIBRARIES
+     LIBRARIES PRIVATE
         sbnobj::Common_CRT
         icaruscode_CRTUtils
         larcore::Geometry_Geometry_service
@@ -153,7 +153,7 @@ cet_build_plugin(CRTCalibrationAnalysis art::module
 
 
 cet_build_plugin(CrtOpHitMatchAnalysis art::module
-     LIBRARIES
+     LIBRARIES PRIVATE
         sbnobj::ICARUS_CRT
         sbnobj::Common_CRT
         icaruscode_CRTUtils
@@ -172,7 +172,7 @@ cet_build_plugin(CrtOpHitMatchAnalysis art::module
         )
 
 cet_build_plugin(CRTPMTMatchingAna art::module
-     LIBRARIES
+     LIBRARIES PRIVATE
         sbnobj::ICARUS_CRT
         sbnobj::Common_CRT
         icaruscode_CRTUtils
@@ -193,7 +193,7 @@ cet_build_plugin(CRTPMTMatchingAna art::module
 )
 
 cet_build_plugin(CRTPMTMatchingProducer art::module
-     LIBRARIES
+     LIBRARIES PRIVATE
         sbnobj::Common_CRT
         icaruscode::CRTUtils
         larcore::Geometry_Geometry_service
@@ -205,7 +205,7 @@ cet_build_plugin(CRTPMTMatchingProducer art::module
 )
 
 cet_build_plugin(CRTTruthMatchAnalysis art::module
-     LIBRARIES
+     LIBRARIES PRIVATE
         sbnobj::ICARUS_CRT
         sbnobj::Common_CRT
         icaruscode_CRTUtils
@@ -225,7 +225,7 @@ cet_build_plugin(CRTTruthMatchAnalysis art::module
         )
 
 cet_build_plugin( CRTAutoVeto art::module
-     LIBRARIES
+     LIBRARIES PRIVATE
         sbnobj::ICARUS_CRT
         sbnobj::Common_CRT
         icaruscode_CRTUtils
@@ -252,7 +252,7 @@ cet_build_plugin( CRTAutoVeto art::module
         )
 
 cet_build_plugin( FlashResAna art::module
-     LIBRARIES
+     LIBRARIES PRIVATE
         larcore::Geometry_Geometry_service
         larcorealg::Geometry
         nusimdata::SimulationBase
@@ -277,7 +277,7 @@ cet_build_plugin( FlashResAna art::module
         )
 
 cet_build_plugin( PhotBackground art::module
-     LIBRARIES
+     LIBRARIES PRIVATE
         larcore::Geometry_Geometry_service
         larcorealg::Geometry
         nusimdata::SimulationBase
@@ -300,7 +300,7 @@ cet_build_plugin( PhotBackground art::module
         )
 
 cet_build_plugin(CRTTPCMatchingAna art::module
-     LIBRARIES
+     LIBRARIES PRIVATE
               sbnobj::ICARUS_CRT
               sbnobj::Common_CRT
               icaruscode_CRTUtils
@@ -329,10 +329,11 @@ cet_build_plugin(CRTTPCMatchingAna art::module
               ROOT::RooFit
               ROOT::RooFitCore
 )
-simple_plugin(CRTTPCTruthEff module
+cet_build_plugin(CRTTPCTruthEff art::module
+     LIBRARIES PRIVATE
               sbnobj::ICARUS_CRT
               sbnobj::Common_CRT
-              icaruscode_CRTUtils
+              icaruscode::CRTUtils
               larcorealg::Geometry
               larcore::Geometry_Geometry_service
               larsim::Simulation lardataobj::Simulation
@@ -361,7 +362,7 @@ simple_plugin(CRTTPCTruthEff module
 )
 
 cet_build_plugin(CRTT0Tagging art::module
-     LIBRARIES
+     LIBRARIES PRIVATE
         icaruscode::IcarusObj
         icaruscode_CRTMatchingUtils
         icaruscode_CRTUtils

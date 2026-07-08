@@ -35,10 +35,10 @@ set(
 		CLHEP::Random
 )
 
-cet_build_plugin(ROICannyEdgeDetection art::tool LIBRARIES ${TOOL_LIBRARIES})
-cet_build_plugin(ROIFromDecoder art::tool LIBRARIES ${TOOL_LIBRARIES})
-cet_build_plugin(ROIMorphological2D art::tool LIBRARIES ${TOOL_LIBRARIES})
-cet_build_plugin(ROIWavelets art::tool LIBRARIES ${TOOL_LIBRARIES})
+cet_build_plugin(ROICannyEdgeDetection art::tool LIBRARIES PRIVATE ${TOOL_LIBRARIES})
+cet_build_plugin(ROIFromDecoder art::tool LIBRARIES PRIVATE ${TOOL_LIBRARIES})
+cet_build_plugin(ROIMorphological2D art::tool LIBRARIES PRIVATE ${TOOL_LIBRARIES})
+cet_build_plugin(ROIWavelets art::tool LIBRARIES PRIVATE ${TOOL_LIBRARIES})
 
 install_headers()
 install_source()

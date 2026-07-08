@@ -48,7 +48,7 @@ set(	MODULE_LIBRARIES
 		ROOT::Gdml
 		ROOT::Core
 )
-cet_build_plugin(ICARUSFlashFinder art::module LIBRARIES ${MODULE_LIBRARIES})
+cet_build_plugin(ICARUSFlashFinder art::module LIBRARIES PRIVATE ${MODULE_LIBRARIES})
 
 
 install_headers()
