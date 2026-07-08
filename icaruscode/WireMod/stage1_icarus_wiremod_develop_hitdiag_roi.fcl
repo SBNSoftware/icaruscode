@@ -41,14 +41,19 @@ physics.producers.WireModTPCEW.AdditiveModification: true
 physics.producers.WireModTPCWE.AdditiveModification: true
 physics.producers.WireModTPCWW.AdditiveModification: true
 
-physics.producers.WireModTPCEE.SetNullScaleIntegral: true
-physics.producers.WireModTPCEE.SetNullScaleWidth:    true
-physics.producers.WireModTPCEW.SetNullScaleIntegral: true
-physics.producers.WireModTPCEW.SetNullScaleWidth:    true
-physics.producers.WireModTPCWE.SetNullScaleIntegral: true
-physics.producers.WireModTPCWE.SetNullScaleWidth:    true
-physics.producers.WireModTPCWW.SetNullScaleIntegral: true
-physics.producers.WireModTPCWW.SetNullScaleWidth:    true
+physics.producers.WireModTPCEE.SetNullScaleIntegral: false
+physics.producers.WireModTPCEE.SetNullScaleWidth:    false
+physics.producers.WireModTPCEW.SetNullScaleIntegral: false
+physics.producers.WireModTPCEW.SetNullScaleWidth:    false
+physics.producers.WireModTPCWE.SetNullScaleIntegral: false
+physics.producers.WireModTPCWE.SetNullScaleWidth:    false
+physics.producers.WireModTPCWW.SetNullScaleIntegral: false
+physics.producers.WireModTPCWW.SetNullScaleWidth:    false
+
+physics.producers.WireModTPCEE.UseGraph2DInterpolation: false
+physics.producers.WireModTPCEW.UseGraph2DInterpolation: false
+physics.producers.WireModTPCWE.UseGraph2DInterpolation: false
+physics.producers.WireModTPCWW.UseGraph2DInterpolation: false
 
 # allRatio_Coarse_XW.root has (X, theta) axes, not (Y, Z): disable YZ correction
 physics.producers.WireModTPCEE.RatioFileName_YZ: "NOFILE"
@@ -56,10 +61,28 @@ physics.producers.WireModTPCEW.RatioFileName_YZ: "NOFILE"
 physics.producers.WireModTPCWE.RatioFileName_YZ: "NOFILE"
 physics.producers.WireModTPCWW.RatioFileName_YZ: "NOFILE"
 
-physics.producers.WireModTPCEE.SavePerHitData: true
-physics.producers.WireModTPCEW.SavePerHitData: true
-physics.producers.WireModTPCWE.SavePerHitData: true
-physics.producers.WireModTPCWW.SavePerHitData: true
+# SavePerHitData: fills the per-hit WireModTPCxx/ROITree used by the notebook.
+# SaveROITree: saves the full ROI waveform (roi_before) alongside the hit parameters.
+# SaveTickHistograms / SaveByChannel: kept false to limit output file size.
+physics.producers.WireModTPCEE.SavePerHitData:     true
+physics.producers.WireModTPCEW.SavePerHitData:     true
+physics.producers.WireModTPCWE.SavePerHitData:     true
+physics.producers.WireModTPCWW.SavePerHitData:     true
+
+physics.producers.WireModTPCEE.SaveROITree:        true
+physics.producers.WireModTPCEW.SaveROITree:        true
+physics.producers.WireModTPCWE.SaveROITree:        true
+physics.producers.WireModTPCWW.SaveROITree:        true
+
+physics.producers.WireModTPCEE.SaveTickHistograms: false
+physics.producers.WireModTPCEW.SaveTickHistograms: false
+physics.producers.WireModTPCWE.SaveTickHistograms: false
+physics.producers.WireModTPCWW.SaveTickHistograms: false
+
+physics.producers.WireModTPCEE.SaveByChannel:      false
+physics.producers.WireModTPCEW.SaveByChannel:      false
+physics.producers.WireModTPCWE.SaveByChannel:      false
+physics.producers.WireModTPCWW.SaveByChannel:      false
 
 physics.analyzers.WireModHitDiag: @local::WireModHitDiag
 
