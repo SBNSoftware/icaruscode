@@ -24,7 +24,8 @@ WMROI2Wire:
                          "PHYSCRATEDATATPCEW",
                          "PHYSCRATEDATATPCWE",
                          "PHYSCRATEDATATPCWW" ]
-  DiagnosticOutput: false
+  DiagnosticOutput:    false
+  UseFloatPrecision:   true
 }
 
 WireMod:
