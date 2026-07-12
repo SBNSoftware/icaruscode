@@ -1,7 +1,6 @@
 // from larreco/RecoAlg:
 #include "hitalgorithms.fcl"
 #include "HitFinderTools_ICARUS.fcl"
-#include "hitfindermodules.fcl"
 #include "hitfindermodules_sbn.fcl"
 
 BEGIN_PROLOG
@@ -60,7 +59,7 @@ icarus_hitmerger:
 }
 
 # Define icarus version of gaushit finder
-gaus_hitfinder_icarus: @local::gaus_hitfinder
+gaus_hitfinder_icarus: @local::gausshit_sbn
 
 gaus_hitfinder_icarus.CalDataModuleLabel:                                          "decon1droi"
 gaus_hitfinder_icarus.AreaNorms:                                                   [  1.0,  1.0,  1.0 ]
