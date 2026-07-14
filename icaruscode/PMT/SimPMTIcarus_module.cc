@@ -23,6 +23,7 @@
 
 // LArSoft libraries
 #include "larcore/CoreUtils/ServiceUtil.h"
+#include "larcore/Geometry/WireReadout.h"
 #include "lardata/DetectorInfoServices/DetectorClocksService.h"
 #include "lardata/DetectorInfoServices/LArPropertiesService.h"
 #include "lardataalg/DetectorInfo/DetectorTimings.h"
@@ -490,6 +491,7 @@ SimPMTIcarus::SimPMTIcarus(Parameters const& config)
     auto PMTsimulator = makePMTsimulator(
       e.time().value(), // using the event generation time as beam time stamp
       *(lar::providerFrom<detinfo::LArPropertiesService>()),
+      art::ServiceHandle<geo::WireReadout const>()->Get(),
       clockData,
       fDoTimingDelays ? lar::providerFrom<icarusDB::IPMTTimingCorrectionService>() : nullptr,
       fUseGainCalibDB ? art::ServiceHandle<calib::ICARUSPhotonCalibratorServiceFromDB>()->provider() : nullptr,
@@ -515,6 +517,16 @@ SimPMTIcarus::SimPMTIcarus(Parameters const& config)
     // Prefer SimPhotons if available.
     // Make sure that there are parallel inputs for both formats;
     bool const useLitePhotons = !pmtVector.isValid();
+
+    // Distance-dependent survival needs photon positions: never silently
+    // skip the correction on the position-less SimPhotonsLite path.
+    if (useLitePhotons && PMTsimulator->appliesDistanceSurvival()) {
+      throw art::Exception(art::errors::Configuration)
+        << "DistanceSurvival is enabled but only sim::SimPhotonsLite input"
+           " is available ('" << fInputModuleName.encode() << "'):"
+           " photon positions are required. Run the photon propagation with"
+           " full sim::SimPhotons.\n";
+    }
     
     // storage for the photons that are not used (but still required)
     std::vector<sim::SimPhotons> fakePhotons;
