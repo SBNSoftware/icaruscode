@@ -480,8 +480,16 @@ icarus_pmtsimulationalg_run2_2025: {
 
   TailSuppression: {
     Apply:   true
-    Epsilon: 0.25                           # fitted on Run1/2 data (run 9384)
+    Epsilon: 0.27                           # refit on Run1/2 data with DistanceSurvival on (run 9384)
     Tau:     500.0                          # [ns]
+  }
+
+  # Distance-dependent scintillation photon survival S(d): each photon kept
+  # with probability QE x S(d), d = straight-line emission-point-to-PMT distance.
+  DistanceSurvival: {
+    Apply:    true
+    BinEdges: [ 250.0, 300.0, 350.0, 400.0, 450.0 ]  # [cm]
+    Factors:  [ 0.535, 0.562, 0.671, 0.838 ]         # S = 1 outside range
   }
 
 } # icarus_pmtsimulationalg_run2_2025
