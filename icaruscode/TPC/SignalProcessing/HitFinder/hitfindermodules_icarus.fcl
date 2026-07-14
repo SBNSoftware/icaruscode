@@ -29,7 +29,7 @@ mixed_hitfinder:
   CalDataModuleLabel: "decon1droi"
 
   ThetaAngle:         0
-  #PeakFitter:           @local::peakfitter_ICARUS
+  # PeakFitter:           @local::peakfitter_ICARUS
   CandidateHits:        @local::candhitfinder_ICARUS
   MaxMultiHit:          3                # maximum hits for multi fit
   Chi2NDF:              10.              # maximum Chisquared / NDF allowed for a hit to be saved (Set very high by default)
@@ -72,21 +72,21 @@ gaus_hitfinder_icarus.LongMaxHits:                                              
 gaus_hitfinder_icarus.LongPulseWidth:                                              [17, 13, 12]
 
 # Keeping these here even though not used in case we want to know working values for testing
-#gaus_hitfinder_icarus.HitFinderToolVec.CandidateHitsPlane0:                        @local::candhitfinder_morphological
-#gaus_hitfinder_icarus.HitFinderToolVec.CandidateHitsPlane0.Plane:                  0
-#gaus_hitfinder_icarus.HitFinderToolVec.CandidateHitsPlane0.MinDeltaTicks:          4
-#gaus_hitfinder_icarus.HitFinderToolVec.CandidateHitsPlane0.MinDeltaPeaks:          2.5
-#gaus_hitfinder_icarus.HitFinderToolVec.CandidateHitsPlane0.DilationThreshold:      8
-#gaus_hitfinder_icarus.HitFinderToolVec.CandidateHitsPlane1:                        @local::candhitfinder_morphological
-#gaus_hitfinder_icarus.HitFinderToolVec.CandidateHitsPlane1.Plane:                  1
-#gaus_hitfinder_icarus.HitFinderToolVec.CandidateHitsPlane1.MinDeltaTicks:          4
-#gaus_hitfinder_icarus.HitFinderToolVec.CandidateHitsPlane1.MinDeltaPeaks:          2.5
-#gaus_hitfinder_icarus.HitFinderToolVec.CandidateHitsPlane1.DilationThreshold:      8
-#gaus_hitfinder_icarus.HitFinderToolVec.CandidateHitsPlane2:                        @local::candhitfinder_morphological
-#gaus_hitfinder_icarus.HitFinderToolVec.CandidateHitsPlane2.Plane:                  2
-#gaus_hitfinder_icarus.HitFinderToolVec.CandidateHitsPlane2.MinDeltaTicks:          4
-#gaus_hitfinder_icarus.HitFinderToolVec.CandidateHitsPlane2.MinDeltaPeaks:          2.5
-#gaus_hitfinder_icarus.HitFinderToolVec.CandidateHitsPlane2.DilationThreshold:      8
+# gaus_hitfinder_icarus.HitFinderToolVec.CandidateHitsPlane0:                        @local::candhitfinder_morphological
+# gaus_hitfinder_icarus.HitFinderToolVec.CandidateHitsPlane0.Plane:                  0
+# gaus_hitfinder_icarus.HitFinderToolVec.CandidateHitsPlane0.MinDeltaTicks:          4
+# gaus_hitfinder_icarus.HitFinderToolVec.CandidateHitsPlane0.MinDeltaPeaks:          2.5
+# gaus_hitfinder_icarus.HitFinderToolVec.CandidateHitsPlane0.DilationThreshold:      8
+# gaus_hitfinder_icarus.HitFinderToolVec.CandidateHitsPlane1:                        @local::candhitfinder_morphological
+# gaus_hitfinder_icarus.HitFinderToolVec.CandidateHitsPlane1.Plane:                  1
+# gaus_hitfinder_icarus.HitFinderToolVec.CandidateHitsPlane1.MinDeltaTicks:          4
+# gaus_hitfinder_icarus.HitFinderToolVec.CandidateHitsPlane1.MinDeltaPeaks:          2.5
+# gaus_hitfinder_icarus.HitFinderToolVec.CandidateHitsPlane1.DilationThreshold:      8
+# gaus_hitfinder_icarus.HitFinderToolVec.CandidateHitsPlane2:                        @local::candhitfinder_morphological
+# gaus_hitfinder_icarus.HitFinderToolVec.CandidateHitsPlane2.Plane:                  2
+# gaus_hitfinder_icarus.HitFinderToolVec.CandidateHitsPlane2.MinDeltaTicks:          4
+# gaus_hitfinder_icarus.HitFinderToolVec.CandidateHitsPlane2.MinDeltaPeaks:          2.5
+# gaus_hitfinder_icarus.HitFinderToolVec.CandidateHitsPlane2.DilationThreshold:      8
 
 # These are default settings for production running
 gaus_hitfinder_icarus.HitFinderToolVec.CandidateHitsPlane0:                        @local::candhitfinder_standard      # Sets hit finding for plane 0
@@ -101,24 +101,6 @@ gaus_hitfinder_icarus.HitFinderToolVec.CandidateHitsPlane2:                     
 gaus_hitfinder_icarus.HitFinderToolVec.CandidateHitsPlane2.Plane:                  2
 gaus_hitfinder_icarus.HitFinderToolVec.CandidateHitsPlane2.RoiThreshold:           6.16
 gaus_hitfinder_icarus.HitFinderToolVec.CandidateHitsPlane2.NextADCThreshold:       -0.23
-
-# Now set parameters for the GaussHitFinderSBN
-# Note these are "default" for ICARUS and will move to a fcl file in icaruscode
-# We do not modify the SBN version here (happening upstream) 
-# Downstram FHiCL only use gaus_hitfinder_icarus for the correct ICARUS version
-
-# gausshit_sbn.PeakFitter.MinWidth:                                                 1
-# gausshit_sbn.PeakFitter.FloatBaseline:                                            false
-# gausshit_sbn.HitFinderToolVec.CandidateHitsPlane0:                                @local::candhitfinder_standard
-# gausshit_sbn.HitFinderToolVec.CandidateHitsPlane0.Plane:                          0
-# gausshit_sbn.HitFinderToolVec.CandidateHitsPlane0.RoiThreshold:                   9.
-# gausshit_sbn.HitFinderToolVec.CandidateHitsPlane1:                                @local::candhitfinder_standard
-# gausshit_sbn.HitFinderToolVec.CandidateHitsPlane1.Plane:                          1
-# gausshit_sbn.HitFinderToolVec.CandidateHitsPlane1.RoiThreshold:                   9.5
-# gausshit_sbn.HitFinderToolVec.CandidateHitsPlane2:                                @local::candhitfinder_standard
-# gausshit_sbn.HitFinderToolVec.CandidateHitsPlane2.Plane:                          2
-# gausshit_sbn.HitFinderToolVec.CandidateHitsPlane2.RoiThreshold:                   9.
-# gausshit_sbn.LongMaxHits:          [ 1,  1,  1]      # disable pulse trains
 
 icarus_hitconverter:
 {
