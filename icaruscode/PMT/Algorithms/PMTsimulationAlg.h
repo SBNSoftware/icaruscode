@@ -28,6 +28,7 @@
 // LArSoft libraries
 #include "lardataobj/RawData/OpDetWaveform.h"
 #include "lardataobj/Simulation/SimPhotons.h"
+#include "larcorealg/Geometry/fwd.h" // geo::WireReadoutGeom
 #include "lardataalg/DetectorInfo/LArProperties.h"
 #include "lardataalg/DetectorInfo/DetectorClocksData.h"
 #include "lardataalg/DetectorInfo/DetectorTimings.h"
@@ -541,6 +542,17 @@ class icarus::opdet::PMTsimulationAlg {
       float tau     = 250.0f; ///< charge-state decay time constant [ns]
     };
 
+    /// Distance-dependent photon survival: each scintillation
+    /// photon is kept with probability `QE x S(d)`, where `d` is the
+    /// straight-line distance from the photon emission point to the PMT
+    /// center. `factors[i]` applies to `d` in `[binEdges[i], binEdges[i+1])`
+    /// [cm]; survival is 1 outside the covered range.
+    struct DistanceSurvivalParams_t {
+      bool apply = false;
+      std::vector<double> binEdges; ///< bin edges [cm], size = factors + 1
+      std::vector<double> factors;  ///< survival probabilities, in [0, 1]
+    };
+
     /// @{
     /// @name High level configuration parameters.
 
@@ -568,6 +580,7 @@ class icarus::opdet::PMTsimulationAlg {
     float saturation; //equivalent to the number of p.e. that saturates the electronic signal
     PMTspecs_t PMTspecs; ///< PMT specifications.
     TailSuppressionParams_t tailSuppression; ///< Causal subtractive droop correction parameters.
+    DistanceSurvivalParams_t distanceSurvival; ///< Distance-dependent photon survival S(d).
     bool doGainFluctuations; ///< Whether to simulate gain fluctuations.
     bool useGainCalibDB; ///< Whether to use per-channel DB gain for fluctuations.
     bool doTimingDelays; ///< Whether to simulate timing delays.
@@ -580,6 +593,9 @@ class icarus::opdet::PMTsimulationAlg {
     std::uint64_t beamGateTimestamp = 0;
 
     detinfo::LArProperties const* larProp = nullptr; ///< LarProperties service provider.
+
+    /// OpDet geometry mapping (required if `distanceSurvival.apply`).
+    geo::WireReadoutGeom const* wireReadoutGeom = nullptr;
 
     detinfo::DetectorClocksData const* clockData = nullptr;
   
@@ -674,6 +690,10 @@ class icarus::opdet::PMTsimulationAlg {
   template <typename Stream>
   void printConfiguration(Stream&& out, std::string indent = "") const;
 
+  /// Whether the distance-dependent photon survival S(d) is enabled
+  /// (requires full `sim::SimPhotons` input: photon positions).
+  bool appliesDistanceSurvival() const
+    { return fParams.distanceSurvival.apply; }
 
   /// Manages the conversion between names and values of `DiscriminationAlgo`.
   static util::MultipleChoiceSelection<DiscriminationAlgo> const
@@ -1008,6 +1028,10 @@ class icarus::opdet::PMTsimulationAlg {
 
   /// Returns a random response whether a photon generates a photoelectron.
   bool KicksPhotoelectron() const;
+
+  /// Returns the distance survival probability S(d) for a photon travelling
+  /// a straight-line distance `d_cm` [cm] (1 outside the configured range).
+  double distanceSurvival(double d_cm) const;
   
   /// Returns the ADC range allowed for photoelectron saturation.
   std::pair<ADCcount, ADCcount> saturationRange(ADCcount baseline) const;
@@ -1096,6 +1120,28 @@ class icarus::opdet::PMTsimulationAlgMaker {
 
   }; // struct TailSuppressionConfig
 
+  struct DistanceSurvivalConfig {
+    using Name = fhicl::Name;
+    using Comment = fhicl::Comment;
+
+    fhicl::Atom<bool> Apply {
+      Name("Apply"),
+      Comment("Enable distance-dependent photon survival S(d)"),
+      false
+      };
+    fhicl::Sequence<double> BinEdges {
+      Name("BinEdges"),
+      Comment("Photon-to-PMT distance bin edges [cm]; one more than Factors"),
+      std::vector<double>{}
+      };
+    fhicl::Sequence<double> Factors {
+      Name("Factors"),
+      Comment("Survival probability per distance bin (S = 1 outside range)"),
+      std::vector<double>{}
+      };
+
+  }; // struct DistanceSurvivalConfig
+
 
   /// Main algorithm FHiCL configuration.
   struct Config {
@@ -1183,6 +1229,14 @@ class icarus::opdet::PMTsimulationAlgMaker {
     };
 
     //
+    // distance-dependent photon survival
+    //
+    fhicl::Table<DistanceSurvivalConfig> DistanceSurvival {
+      Name("DistanceSurvival"),
+      Comment("Distance-dependent scintillation photon survival S(d)")
+    };
+
+    //
     // dark noise
     //
     fhicl::Atom<hertz> DarkNoiseRate {
@@ -1256,6 +1310,7 @@ class icarus::opdet::PMTsimulationAlgMaker {
   std::unique_ptr<PMTsimulationAlg> operator()(
     std::uint64_t beamGateTimestamp,
     detinfo::LArProperties const& larProp,
+    geo::WireReadoutGeom const& wireReadoutGeom,
     detinfo::DetectorClocksData const& detClocks,
     icarusDB::PMTTimingCorrections const* timingDelays,
     icarusDB::PhotonCalibratorFromDB const* gainCalibProvider,
@@ -1289,6 +1344,7 @@ class icarus::opdet::PMTsimulationAlgMaker {
   PMTsimulationAlg::ConfigurationParameters_t makeParams(
     std::uint64_t beamGateTimestamp,
     detinfo::LArProperties const& larProp,
+    geo::WireReadoutGeom const& wireReadoutGeom,
     detinfo::DetectorClocksData const& clockData,
     icarusDB::PMTTimingCorrections const* timingDelays,
     icarusDB::PhotonCalibratorFromDB const* gainCalibProvider,
