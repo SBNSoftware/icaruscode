@@ -49,6 +49,7 @@ art_make_library(
 	WireCell::Aux
 	WireCell::Iface
 	WireCell::Pgraph
+        WireCell::Root
 	dl
 )
 
