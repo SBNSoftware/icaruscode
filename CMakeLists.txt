@@ -19,8 +19,8 @@ cmake_minimum_required(VERSION 3.20 FATAL_ERROR)
 find_package(cetmodules 3.24.01 REQUIRED)
 project(icaruscode VERSION 10.22.00 LANGUAGES CXX)
 
-#set(${PROJECT_NAME}_CMAKE_PROJECT_VERSION_STRING 10.20.09p03)
-#project(icaruscode LANGUAGES CXX)
+set(${PROJECT_NAME}_CMAKE_PROJECT_VERSION_STRING 10.20.09p03)
+project(icaruscode VERSION 10.20.09.03 LANGUAGES CXX)
 
 message(STATUS
   "\n-- ============================================================================="
@@ -46,7 +46,6 @@ cet_set_compiler_flags(DIAGS CAUTIOUS
 cet_report_compiler_flags(REPORT_THRESHOLD VERBOSE)
 
 #these are minimum required versions,not thea ctual product versions
-find_package(larsoft REQUIRED )
 find_package(libwda REQUIRED )
 find_package(PostgreSQL REQUIRED )
 find_package(Eigen3 REQUIRED )
