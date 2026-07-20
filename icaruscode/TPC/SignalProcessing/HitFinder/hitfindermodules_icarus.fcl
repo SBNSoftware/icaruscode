@@ -68,7 +68,7 @@ gaus_hitfinder_icarus.Chi2NDF:                                                  
 gaus_hitfinder_icarus.PeakFitter.MinWidth:                                         1
 gaus_hitfinder_icarus.PeakFitter.FloatBaseline:                                    false
 gaus_hitfinder_icarus.PeakFitter.tool_type:                                        "PeakFitterMrqdt"
-gaus_hitfinder_icarus.LongMaxHits:                                                 [5, 6, 5]
+gaus_hitfinder_icarus.LongMaxHits:                                                 [1, 1, 1]
 gaus_hitfinder_icarus.LongPulseWidth:                                              [17, 13, 12]
 
 # Keeping these here even though not used in case we want to know working values for testing
