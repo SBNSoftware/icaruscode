@@ -47,7 +47,7 @@ physics.producers.largeant.InputSourcesLabels: [ "larg4intime", "larg4outtime"]
 # Add a process that merges the SimEnergyDeposits
 physics.producers.ionization: @local::icarus_merge_sim_sources
 physics.producers.ionization.FillSimEnergyDeposits: true
-physics.producers.ionization.EnergyDepositInstanceLabels: [ "" ]
+physics.producers.ionization.EnergyDepositInstanceLabels: [ "", "priorSCE" ]
 physics.producers.ionization.InputSourcesLabels: [ "ionandscintintime", "ionandscintouttime"]
 
 # Add a process that merges the SimChannels
