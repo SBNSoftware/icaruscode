@@ -45,7 +45,9 @@
 #   introduced configuration for new Run1/2 SPR (SPRisolHitRun9271)
 #   introduced configuration for new Run3/4 SPR (SPRisolHitRun12715)
 # 20260618 (mvicenzi@bnl.gov)
-#   introduced tail suppression tune 
+#   introduced tail suppression tune
+# 20260722 (mvicenzi@bnl.gov)
+#   introduced distance-based survival probability 
 
 #include "opticalproperties_icarus.fcl"
 
@@ -480,16 +482,17 @@ icarus_pmtsimulationalg_run2_2025: {
 
   TailSuppression: {
     Apply:   true
-    Epsilon: 0.27                           # refit on Run1/2 data with DistanceSurvival on (run 9384)
-    Tau:     500.0                          # [ns]
+    Epsilon: 0.27   # best fit (SBN-docdb-48511)
+    Tau:     500.0  # [ns]
   }
 
   # Distance-dependent scintillation photon survival S(d): each photon kept
-  # with probability QE x S(d), d = straight-line emission-point-to-PMT distance.
+  # with probability QE x S(d), S = 1 outside range
+  # Run2 tune from SBN-doc-48511
   DistanceSurvival: {
     Apply:    true
-    BinEdges: [ 250.0, 300.0, 350.0, 400.0, 450.0 ]  # [cm]
-    Factors:  [ 0.535, 0.562, 0.671, 0.838 ]         # S = 1 outside range
+    BinEdges: [ 150, 200, 250, 300, 350, 400, 450 ]  # [cm]
+    Factors:  [ 0.97, 0.87, 0.82, 0.82, 0.82, 0.85 ]         
   }
 
 } # icarus_pmtsimulationalg_run2_2025
@@ -529,8 +532,8 @@ icarus_pmtsimulationalg_run4_2025: {
 
   TailSuppression: {
     Apply:   true
-    Epsilon: 0.30                           # fitted on Run3/4 data (run 11816)
-    Tau:     500.0                          # [ns]
+    Epsilon: 0.27    # fitted on Run3/4 data (run 11816)
+    Tau:     500.0   # [ns]
   }
 
 } # icarus_pmtsimulationalg_run4_2025
