@@ -139,6 +139,7 @@ physics.producers.pmtfixedthrinit.OpticalWaveforms: "opdaq::OpDetSim"           
 physics.producers.pmtlvdsgatesinit.TriggerGatesTag: "pmtfixedthrinit::OpDetSim"          # this was re-generated with same tag
 physics.producers.pmttriggerwindowsinit.TriggerGatesTag: "pmtlvdsgatesinit::OpDetSim"    # this was re-generated with same tag
 physics.producers.emuTriggerUnshifted.BeamGates: "triggersimgatesinit::OpDetSim"         # this was re-generated with same tag
+physics.producers.emuTriggerUnshifted.BeamGateReference: "Trigger"
 physics.producers.emuTriggerUnshifted.TriggerGatesTag: "pmttriggerwindowsinit::OpDetSim" # this was re-generated with same tag
 
 # need to update the shifting module to pick up new labels
