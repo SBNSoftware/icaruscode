@@ -283,6 +283,9 @@ caf_preprocess_sce_evtw_sequence: [@sequence::caf_preprocess_sce_sequence, rns, 
 # CAFMaker config
 cafmaker: @local::standard_cafmaker
 
+# time shift and calibration settings
+cafmaker.ShiftTimeFromTriggerToBeamGate: true
+
 # Set the labels to ICARUS
 cafmaker.PandoraTagSuffixes: ["CryoE", "CryoW"]
 cafmaker.FlashMatchOpDetSuffixes: ["", "op"]
@@ -312,7 +315,6 @@ cafmaker.CRTTrackLabel: "crttrack"
 cafmaker.OpFlashLabel: "opflash"
 # cafmaker.TriggerLabel: "daqTrigger" # see also https://github.com/SBNSoftware/icaruscode/issues/556
 cafmaker.TriggerLabel: "emuTrigger"
-cafmaker.UnshiftedTriggerLabel: "emuTriggerUnshifted"
 cafmaker.CRTSimChanLabel: "shifted"
 cafmaker.FlashTrigLabel: "" # unavailable
 cafmaker.SimChannelLabel: "largeant"
