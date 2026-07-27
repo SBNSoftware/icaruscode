@@ -122,7 +122,14 @@ void icarusDB::PhotonCalibratorFromDB::readCalibrationFromDB(unsigned int run)
 // -----------------------------------------------------------------------------
 double icarusDB::PhotonCalibratorFromDB::PE(double adcs, int channel) const
 {
-  return adcs / getChannelCalibOrDefault(channel).speArea;
+  double const speArea = getChannelCalibOrDefault(channel).speArea;
+  if (speArea <= 0.0) {
+    mf::LogWarning(fLogCategory)
+      << "Channel " << channel << " has no usable SPE area calibration"
+      << " (speArea=" << speArea << "); reporting PE=0.";
+    return 0.0;
+  }
+  return adcs / speArea;
 }
 
 
