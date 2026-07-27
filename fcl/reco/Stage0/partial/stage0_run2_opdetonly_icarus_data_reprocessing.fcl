@@ -43,6 +43,7 @@ physics.path: [
 physics.producers.ophit.InputLabel: "ophit::stage0"  # start from hits in previous stage0 execution
 physics.producers.ophit.RecalibratePE: true          # recalibrate PE values
 physics.producers.ophit.UseGainDatabase: true        # speArea db
+physics.producers.ophit.UseStatusDatabase: true      # pmt status db
 physics.producers.ophit.RecalibrateTime: false       # not needed for Run2
 
 # make sure flashes are using the new ophits
