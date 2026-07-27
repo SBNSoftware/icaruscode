@@ -10,6 +10,7 @@
 #include "icaruscode/Timing/IPMTTimingCorrectionService.h"
 #include "icaruscode/Timing/PMTTimingCorrectionsProvider.h"
 #include "icaruscode/PMT/Calibration/ICARUSPhotonCalibratorServiceFromDB.h"
+#include "icaruscode/PMT/Status/IPMTChannelStatusService.h"
 
 // framework libraries
 #include "canvas/Utilities/InputTag.h"
@@ -87,6 +88,8 @@ namespace icarus
  * * `OldTimingDBTags` (fhicl::ParameterSet, mandatory): configuration for the previously-applied timing corrections
  *    that need to be removed/replace by the now ones. It should match what is tipically passed to
  *    `icarusDB::PMTTimingCorrectionsProvider`, specifying the database tags that were used.
+ * * `UseStatusDatabase` (flag, default: `true`): if set, hits on channels flagged
+ *    off/bad by the PMT channel status database are dropped from the output collection.
  * * `Verbose` (flag, default: `false`): verbose printing
  *
  */
@@ -108,12 +111,14 @@ private:
     bool const fRecalibratePE;
     bool const fRecalibrateTime;
     bool const fUseGainDatabase;
+    bool const fUseStatusDatabase;
     double const fSPEArea;
     bool const fVerbose;
 
     /// Pointers to the online corrections services
     icarusDB::PMTTimingCorrections const &fPMTTimingCorrectionsService;
     calib::IPhotonCalibrator const &fPhotonCalibratorService;
+    icarusDB::PMTChannelStatus const &fChannelStatusService;
 
     /// Pointer to the provider for the old pmt corrections
     std::unique_ptr<icarusDB::PMTTimingCorrectionsProvider> fOldTimingProvider;
@@ -125,11 +130,13 @@ icarus::OpHitRecalibrator::OpHitRecalibrator(fhicl::ParameterSet const &config, 
       fInputLabel{config.get<art::InputTag>("InputLabel")},
       fRecalibratePE{config.get<bool>("RecalibratePE")},
       fRecalibrateTime{config.get<bool>("RecalibrateTime")},
-      fUseGainDatabase{config.get<bool>("UseGainDatabase", false)},
+      fUseGainDatabase{config.get<bool>("UseGainDatabase", true)},
+      fUseStatusDatabase{config.get<bool>("UseStatusDatabase", true)},
       fSPEArea{config.get<double>("SPEArea", -1.)},
       fVerbose{config.get<bool>("Verbose", false)},
       fPMTTimingCorrectionsService{*(lar::providerFrom<icarusDB::IPMTTimingCorrectionService const>())},
       fPhotonCalibratorService{*(lar::providerFrom<calib::IPhotonCalibratorService const>())},
+      fChannelStatusService{*(lar::providerFrom<icarusDB::IPMTChannelStatusService const>())},
       fOldTimingProvider{std::make_unique<icarusDB::PMTTimingCorrectionsProvider>(config.get<fhicl::ParameterSet>("OldTimingDBTags"))}
 {
     async<art::InEvent>();
@@ -141,7 +148,7 @@ icarus::OpHitRecalibrator::OpHitRecalibrator(fhicl::ParameterSet const &config, 
             << "No re-calibration selected. Why are you even running meeee!?!?! :/\n";
     }
 
-    if (fRecalibratePE && !fUseGainDatabase && (fSPEArea < 0))
+    if (fRecalibratePE && !fUseGainDatabase && (fSPEArea <= 0))
     {
         throw art::Exception{art::errors::Configuration}
             << "The gain database for PE recalibration has been disabled ('UseGainDatabase'),"
@@ -194,6 +201,13 @@ void icarus::OpHitRecalibrator::produce(art::Event &event, art::ProcessingFrame 
 
     for (auto const &opHit : opHits)
     {
+        // drop hits on channels flagged off/bad by the channel status database
+        if (fUseStatusDatabase && !fChannelStatusService.isGood(opHit.OpChannel()))
+        {
+            if (log) *log << "Channel: " << opHit.OpChannel() << " flagged off/bad in status database, dropping hit.\n";
+            continue;
+        }
+
         // read current times
         double peakTime = opHit.PeakTime();
         double peakTimeAbs = opHit.PeakTimeAbs();
@@ -209,31 +223,31 @@ void icarus::OpHitRecalibrator::produce(art::Event &event, art::ProcessingFrame 
         // - re-compute PE value with new SPE area
         if (fRecalibratePE)
         {
-            double oldSPEArea = opHit.Area() / hitPE;
+            double const oldPE = hitPE;
             double newSPEArea = fSPEArea;
 
             if (fUseGainDatabase)
             {
                 // service directly returns PE from area and channel
-                // compute SPE area back for logging purposes
                 hitPE = fPhotonCalibratorService.PE(opHit.Area(), opHit.OpChannel());
+                // recover the SPE area actually used, for logging purposes
                 newSPEArea = opHit.Area() / hitPE;
             }
             else
             {
                 // simple re-computation
                 hitPE = opHit.Area() / newSPEArea;
-            }   
+            }
 
             if (log)
             {
                 *log << "Channel: " << opHit.OpChannel()
                      << ", Area: " << opHit.Area() << " [ADC x tick]"
-                     << ", PE " << hitPE
-                     << " (old SPEArea: " << oldSPEArea
-                     << ") --> new PE " << opHit.Area() / newSPEArea
+                     << ", PE " << oldPE
+                     << " (old SPEArea: " << opHit.Area() / oldPE
+                     << ") --> new PE " << hitPE
                      << " (new SPEArea: " << newSPEArea << ")\n";
-            }            
+            }
         }
 
         // Second, recalibrate PMT times (if enabled)

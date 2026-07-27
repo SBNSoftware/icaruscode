@@ -23,6 +23,7 @@ ophit_recalibrator:
 
   RecalibratePE: true    # whether to recalibrate ophit PEs
   UseGainDatabase: true  # whether to use speArea database for recalibration
+  UseStatusDatabase: true  # whether to use the status database to drop bad channels
   SPEArea: -1.0          # if UseGainDatabase is false, use this SPEArea for all channels
 
   RecalibrateTime: true  # whether to recalibrate ophit times
