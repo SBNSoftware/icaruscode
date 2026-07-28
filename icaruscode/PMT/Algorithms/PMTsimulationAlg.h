@@ -164,10 +164,14 @@ class icarus::opdet::OpDetWaveformMakerClass {
  * The algorithm creates simulated PMT waveforms as read out by ICARUS,
  * including the generation of trigger primitives.
  * Contributions to the waveforms include:
- *  * physical photons
+ *  * physical photons (optionally gated by a distance-dependent survival
+ *    probability, see below)
  *  * dark noise
  *  * electronics noise
- *  * tail suppression
+ *
+ * In addition, an optional post-processing correction ("tail suppression",
+ * see below) may be applied to the signal waveform to reproduce the
+ * behaviour observed in data in the tail of large pulses.
  *
  * The algorithm processes an optical channel at a time, independently
  * and uncorrelated from the other channels.
@@ -215,10 +219,22 @@ class icarus::opdet::OpDetWaveformMakerClass {
  *       of the photon converting to a photoelectron, the quantum efficiency
  *       check here should be skipped by setting the efficiency to 1.
  *
+ * When enabled by `DistanceSurvival.Apply`, the photoelectron conversion is
+ * additionally gated by a distance-dependent survival probability @f$ S(d) @f$:
+ * each photon is kept with total probability @f$ QE \times S(d) @f$, where
+ * @f$ d @f$ is the straight-line distance from the photon emission point to
+ * the PMT center. This is drawn from the same random stream as the plain
+ * quantum-efficiency acceptance, so the two are mutually exclusive at
+ * configuration time (either `KicksPhotoelectron()` or the @f$ QE \times S(d) @f$
+ * gate is used, never both). @f$ S(d) @f$ is a piecewise-constant function of
+ * the distance (see the "Distance-dependent photon survival" section below).
+ * Since it requires the photon emission position, this feature needs the full
+ * `sim::SimPhotons` input (positions), not the position-less `sim::SimPhotonsLite`.
+ *
  * For each converting photon, a photoelectron is added to the channel by
  * placing a template waveform shape into the channel waveform.
  *
- * If enabled by `ApplyTimingDelays`, the timing correction service 
+ * If enabled by `ApplyTimingDelays`, the timing correction service
  * `icarusDB::IPMTTimingCorrectionService` is used to simulate the chain of
  * delays between the photon hitting the photocathode and the time its signal
  * is digitized. The delay is dominated by the signal cable length (~200ns).
@@ -322,27 +338,62 @@ class icarus::opdet::OpDetWaveformMakerClass {
  * Noise can be disabled by using the `PMTnoNoiseGeneratorTool`.
  *
  *
- * Tail suppression
- * -----------------
+ * Distance-dependent photon survival (SBN-docdb-48511)
+ * ----------------------------------------------------
  *
- * Data waveforms exhibit a baseline droop in the tail of large pulses:
- * after a bright flash, the waveform sits systematically below what
- * predicted by linearly scaling the SPE template. This effect is consistent with
- * dynode space-charge saturation proportional to the recent integrated charge.
+ * When enabled via `DistanceSurvival.Apply`, each scintillation photon is
+ * accepted as a photoelectron with probability @f$ QE \times S(d) @f$ instead
+ * of the plain quantum-efficiency acceptance, where @f$ d @f$ is the
+ * straight-line distance [cm] from the photon emission point to the PMT
+ * center and @f$ S(d) \in [0, 1] @f$ is a survival factor. This provides an
+ * effective, distance-dependent correction to the light yield on top of the
+ * upstream photon propagation.
  *
- * When enabled via `TailSuppression.Apply`, a low-pass filter is applied
- * to the signal waveform (pre-pedestal) to accumulate the integrated charge.
- * The filter is implemented as a recursive average:
+ * @f$ S(d) @f$ is piecewise constant: it is defined by a set of bin edges
+ * (`DistanceSurvival.BinEdges`, sorted, in cm) and one survival factor per
+ * bin (`DistanceSurvival.Factors`, so `BinEdges` has exactly one more entry
+ * than `Factors`). `Factors[i]` applies to @f$ d \in
+ * [ \mathrm{BinEdges}[i], \mathrm{BinEdges}[i+1] ) @f$; for distances outside
+ * the covered range the survival is 1 (photon subject to plain `QE` only).
+ * The acceptance is drawn from the same random stream as the quantum
+ * efficiency, and the correction is uniform across all channels.
+ *
+ * Because the emission position is required, this feature is only available
+ * on the full `sim::SimPhotons` input path; if only the position-less
+ * `sim::SimPhotonsLite` is available the module raises a configuration error
+ * rather than silently dropping the correction (see `SimPMTIcarus`).
+ *
+ *
+ * Tail suppression (SBN-docdb-48157, SBN-docdb-48511)
+ * ---------------------------------------------------
+ *
+ * In the tail of large pulses, data waveforms sit systematically below the
+ * level predicted by linearly scaling the SPE template. This correction is an
+ * empirical, tunable model to reproduce that behaviour in simulation.
+ *
+ * When enabled via `TailSuppression.Apply`, a low-pass filter is run over the
+ * signal waveform (pre-pedestal) to track the recent integrated charge. The
+ * filter is a recursive (exponential moving) average of the polarity-corrected
+ * samples:
  * @f[
  *   Q(n) = (1 - \beta)\,Q(n-1) + \beta\,\max(0,\,s(n))
  * @f]
- * where @\beta` is the inverse time constant of the filter (`TailSuppression.Tau`).
- * The charge state is initialized to zero at the start of each
- * channel's full waveform and does not persist across channels.
- * 
- * Based on the accumulated charge, a correction is applied to the signal
- * through a tunable strenght parameter `TailSuppression.Epsilon`.
- * The parameters of the corrections are the same across all channels.
+ * where @f$ s(n) @f$ is the polarity-corrected sample and @f$ \beta @f$ is the
+ * filter smoothing factor. It is the inverse of the decay time constant
+ * `TailSuppression.Tau` expressed in ticks, i.e.
+ * @f$ \beta = 1 / (\tau \cdot f_{\mathrm{sampling}}) @f$ with @f$ \tau @f$ the
+ * `Tau` value [ns] and @f$ f_{\mathrm{sampling}} @f$ the sampling frequency
+ * [GHz, ticks/ns]. The charge state @f$ Q @f$ is initialized to zero at the start of
+ * each channel's full waveform and does not persist across channels.
+ *
+ * The tracked charge is then subtracted from each sample, scaled by a tunable
+ * strength parameter `TailSuppression.Epsilon`, with the result clamped so it
+ * does not cross the baseline:
+ * @f[
+ *   s'(n) = \max(0,\, s(n) - \varepsilon\,Q(n))
+ * @f]
+ * (the polarity is restored before the sample is written back). The
+ * correction parameters are the same across all channels.
  *
  * Configuration
  * ==============
@@ -371,12 +422,6 @@ class icarus::opdet::OpDetWaveformMakerClass {
  *     @f$ \mu_{i} \propto (\Delta V_{i})^{k} @f$ (with @f$ \mu_{i} @f$ the
  *     gain for stage @f$ i @f$, @f$ \Delta V_{i} @f$ the drop of potential
  *     of that stage and @f$ k @f$ the parameter set by `dynodeK`.
- * * `TailSuppression` (table, optional): parameters for the tail suppression
- *     correction (see "Tail suppression" section above). Sub-parameters:
- *     * `Apply` (default: `false`): enable the correction.
- *     * `Epsilon` (default: `0.0`): correction strength @f$ \varepsilon @f$
- *       (dimensionless); typical values 0.25 (Run 1/2) or 0.30 (Run 3/4).
- *     * `Tau` (default: `250.0`): charge-state decay time constant [ns].
  *
  * * `DiscrimAlgo` (choice, default: `"CrossingThreshold"`): selects one of the
  *     hard-coded discrimination algorithms used for zero suppression.
@@ -395,6 +440,29 @@ class icarus::opdet::OpDetWaveformMakerClass {
  *       suppressed, and if the readout buffer is longer than the single
  *       photoelectron response (as it should) the tail of the buffer will
  *       always contain just noise.
+ *
+ *
+ * Signal corrections
+ * ------------------
+ *
+ * These optional top-level configuration tables control the corrections
+ * described in the "Distance-dependent photon survival" and "Tail suppression"
+ * sections above. Both are disabled by default.
+ *
+ * * `DistanceSurvival` (table, optional): distance-dependent photon survival
+ *     @f$ S(d) @f$. Sub-parameters:
+ *     * `Apply` (default: `false`): enable the correction. Requires full
+ *       `sim::SimPhotons` input (photon positions).
+ *     * `BinEdges` (default: empty): distance bin edges [cm], sorted; must have
+ *       exactly one more entry than `Factors`.
+ *     * `Factors` (default: empty): survival probability per bin, each in
+ *       `[0, 1]`; survival is 1 for distances outside the covered range.
+ * * `TailSuppression` (table, optional): empirical tail suppression correction.
+ *     Sub-parameters:
+ *     * `Apply` (default: `false`): enable the correction.
+ *     * `Epsilon` (default: `0.0`): correction strength @f$ \varepsilon @f$
+ *       (dimensionless); typical values 0.27 (Run 1/2).
+ *     * `Tau` (default: `250.0`): charge-state decay time constant [ns].
  *
  *
  * Random number generators
