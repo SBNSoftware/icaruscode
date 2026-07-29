@@ -1060,16 +1060,20 @@ icarus::opdet::PMTsimulationAlgMaker::PMTsimulationAlgMaker
   //
   // tail suppression
   //
-  fBaseConfig.tailSuppression.apply   = config.TailSuppression().Apply();
-  fBaseConfig.tailSuppression.epsilon = config.TailSuppression().Epsilon();
-  fBaseConfig.tailSuppression.tau     = config.TailSuppression().Tau();
+  if (config.TailSuppression()) {
+    fBaseConfig.tailSuppression.apply   = config.TailSuppression()->Apply();
+    fBaseConfig.tailSuppression.epsilon = config.TailSuppression()->Epsilon();
+    fBaseConfig.tailSuppression.tau     = config.TailSuppression()->Tau();
+  }
 
   //
   // distance-dependent photon survival
   //
-  fBaseConfig.distanceSurvival.apply    = config.DistanceSurvival().Apply();
-  fBaseConfig.distanceSurvival.binEdges = config.DistanceSurvival().BinEdges();
-  fBaseConfig.distanceSurvival.factors  = config.DistanceSurvival().Factors();
+  if (config.DistanceSurvival()) {
+    fBaseConfig.distanceSurvival.apply    = config.DistanceSurvival()->Apply();
+    fBaseConfig.distanceSurvival.binEdges = config.DistanceSurvival()->BinEdges();
+    fBaseConfig.distanceSurvival.factors  = config.DistanceSurvival()->Factors();
+  }
 
   //
   // parameter checks
