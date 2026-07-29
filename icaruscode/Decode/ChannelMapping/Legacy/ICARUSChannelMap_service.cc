@@ -1,5 +1,5 @@
 /**
- * @file   icaruscode/Decode/ChannelMapping/Legacy/ICARUSChannelMap.cc
+ * @file   icaruscode/Decode/ChannelMapping/Legacy/ICARUSChannelMap_service.cc
  * @brief  Service registration for `icarusDB::ICARUSChannelMap` service.
  * @author Gianluca Petrillo (petrillo@slac.stanford.edu)
  */
