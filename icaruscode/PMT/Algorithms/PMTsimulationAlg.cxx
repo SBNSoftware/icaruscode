@@ -305,9 +305,7 @@ auto icarus::opdet::PMTsimulationAlg::CreateFullWaveform
     }
     // distance-dependent survival S(d): PMT center cached per channel
     bool const applySd = fParams.distanceSurvival.apply;
-    geo::Point_t const PMTcenter = applySd
-      ? fParams.wireReadoutGeom->OpDetGeoFromOpChannel(channel).GetCenter()
-      : geo::Point_t{};
+    geo::Point_t const PMTcenter = fParams.wireReadoutGeom->OpDetGeoFromOpChannel(channel).GetCenter();
 
     for(auto const& ph : photons) {
       if (applySd) {
