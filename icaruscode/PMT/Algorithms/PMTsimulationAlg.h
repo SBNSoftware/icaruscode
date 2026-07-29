@@ -1514,10 +1514,9 @@ void icarus::opdet::PMTsimulationAlg::printConfiguration
     << '\n' << indent << "Gain at first stage: " << fParams.PMTspecs.firstStageGain()
     << '\n' << indent << "SPR nominal area:    " << fNominalSPEArea << " ADC x tick"
     << '\n' << indent << "Bias ratio:          " << fBiasConstant
+    << '\n' << indent << "Tail suppression:    "
+      << std::boolalpha << fParams.tailSuppression.apply
     ;
-
-  out << '\n' << indent << "Tail suppression:    "
-    << std::boolalpha << fParams.tailSuppression.apply;
   if (fParams.tailSuppression.apply) {
     out << " (epsilon=" << fParams.tailSuppression.epsilon
         << ", tau=" << fParams.tailSuppression.tau << " ns)";
