@@ -44,6 +44,7 @@
 #include "messagefacility/MessageLogger/MessageLogger.h"
 #include "fhiclcpp/types/Atom.h"
 #include "fhiclcpp/types/OptionalAtom.h"
+#include "fhiclcpp/types/OptionalTable.h"
 #include "fhiclcpp/types/Sequence.h"
 #include "fhiclcpp/types/Table.h"
 
@@ -1291,7 +1292,7 @@ class icarus::opdet::PMTsimulationAlgMaker {
     //
     // tail suppression
     //
-    fhicl::Table<TailSuppressionConfig> TailSuppression {
+    fhicl::OptionalTable<TailSuppressionConfig> TailSuppression {
       Name("TailSuppression"),
       Comment("PMT anode baseline-droop correction (causal subtractive model)")
     };
@@ -1299,7 +1300,7 @@ class icarus::opdet::PMTsimulationAlgMaker {
     //
     // distance-dependent photon survival
     //
-    fhicl::Table<DistanceSurvivalConfig> DistanceSurvival {
+    fhicl::OptionalTable<DistanceSurvivalConfig> DistanceSurvival {
       Name("DistanceSurvival"),
       Comment("Distance-dependent scintillation photon survival S(d)")
     };
@@ -1520,6 +1521,14 @@ void icarus::opdet::PMTsimulationAlg::printConfiguration
   if (fParams.tailSuppression.apply) {
     out << " (epsilon=" << fParams.tailSuppression.epsilon
         << ", tau=" << fParams.tailSuppression.tau << " ns)";
+  }
+  out
+    << '\n' << indent << "Distance survival:   "
+      << std::boolalpha << fParams.distanceSurvival.apply
+    ;
+  if (fParams.distanceSurvival.apply) {
+    out << " (" << fParams.distanceSurvival.factors.size() << " bins over "
+        << fParams.distanceSurvival.binEdges.size() << " edges)";
   }
 
   out << '\n' << indent << "Pedestal:          " << fPedestalGen->toString(indent + "  ", "");
