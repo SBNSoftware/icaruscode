@@ -250,7 +250,6 @@ wpdir	product_dir	wire-cell-cfg
 #
 ####################################
 product				version		qual	flags		<table_format=2>
-fftw				v3_3_10		-
 icarus_data			v10_06_06	-
 icarus_signal_processing	v10_06_00_01	-
 icarusalg			v10_20_10	-
@@ -311,15 +310,15 @@ end_product_list
 #   case it is optional.
 #
 ####################################
-qualifier	sbncode		icarusalg	icarusutil	icarus_signal_processing	icarus_data	fftw	notes
-c14:debug	c14:debug	c14:debug	c14:debug	c14:debug			-nq-		-nq-
-c14:prof	c14:prof	c14:prof	c14:prof	c14:prof			-nq-		-nq-
-c7:debug	c7:debug	c7:debug	c7:debug	c7:debug			-nq-		-nq-
-c7:prof		c7:prof		c7:prof		c7:prof		c7:prof				-nq-		-nq-
-e26:debug	e26:debug	e26:debug	e26:debug	e26:debug			-nq-		-nq-
-e26:prof	e26:prof	e26:prof	e26:prof	e26:prof			-nq-		-nq-
-e20:debug	e20:debug	e20:debug	e20:debug	e20:debug			-nq-		-nq-
-e20:prof	e20:prof	e20:prof	e20:prof	e20:prof			-nq-		-nq-
+qualifier	sbncode		icarusalg	icarusutil	icarus_signal_processing	icarus_data	notes
+c14:debug	c14:debug	c14:debug	c14:debug	c14:debug			-nq-		
+c14:prof	c14:prof	c14:prof	c14:prof	c14:prof			-nq-		
+c7:debug	c7:debug	c7:debug	c7:debug	c7:debug			-nq-		
+c7:prof		c7:prof		c7:prof		c7:prof		c7:prof				-nq-		
+e26:debug	e26:debug	e26:debug	e26:debug	e26:debug			-nq-		
+e26:prof	e26:prof	e26:prof	e26:prof	e26:prof			-nq-		
+e20:debug	e20:debug	e20:debug	e20:debug	e20:debug			-nq-		
+e20:prof	e20:prof	e20:prof	e20:prof	e20:prof			-nq-		
 end_qualifier_list
 ####################################
 
