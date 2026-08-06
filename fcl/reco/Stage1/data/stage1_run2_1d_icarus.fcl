@@ -1,21 +1,72 @@
-#
-#include "stage1_run2_icarus.fcl"
+#include "stage1_1d_icarus_driver_common.fcl"
 
-physics.reco: [ @sequence::icarus_filter1D_cluster3D,
-                @sequence::icarus_pandora_Gauss,
-                @sequence::icarus_reco_fm,
-                @sequence::icarus_tpcpmtbarycentermatch,
-                @sequence::icarus_crttrack,
-                @sequence::icarus_crtt0tagging,
-                caloskimCalorimetryCryoE, caloskimCalorimetryCryoW]
+process_name: stage1
+
+physics.reco: [
+    @sequence::icarus_filter_cluster3D,
+    @sequence::icarus_pandora_Gauss,
+    @sequence::icarus_reco_fm,
+    @sequence::icarus_tpcpmtbarycentermatch,
+    @sequence::icarus_crttrack,
+    @sequence::icarus_crtt0tagging,
+    @sequence::icarus_MCS_Gauss,
+    caloskimCalorimetryCryoE, 
+    caloskimCalorimetryCryoW
+]
+
+physics.outana:            [ @sequence::icarus_analysis_modules ]
+physics.trigger_paths:     [ reco ]
+physics.end_paths:         [ outana, stream1 ]
+outputs.out1.fileName:     "%ifb_%tc-%p.root"
+outputs.out1.dataTier:     "reconstructed"
+outputs.out1.SelectEvents: [ reco ]
+outputs.out1.outputCommands: [
+  "keep *_*_*_*",
+  "drop *_caloskimCalorimetryCryoE_*_*",
+  "drop *_caloskimCalorimetryCryoW_*_*",
+  "drop *CRTTPCMatchingInfo*_*_*_*"
+]
+
+physics.analyzers.caloskimE.SelectEvents: [reco]
+physics.analyzers.caloskimW.SelectEvents: [reco]
 
 physics.producers.cluster3DCryoW.Hit3DBuilderAlg.HitFinderTagVec: ["gaushit1dTPCWW", "gaushit1dTPCWE"]
 physics.producers.cluster3DCryoE.Hit3DBuilderAlg.HitFinderTagVec: ["gaushit1dTPCEW", "gaushit1dTPCEE"]
+physics.producers.gaushit1dTPCWW.CalDataModuleLabel: "roifinder1d:PHYSCRATEDATATPCWW"
+physics.producers.gaushit1dTPCWE.CalDataModuleLabel: "roifinder1d:PHYSCRATEDATATPCWE"
+physics.producers.gaushit1dTPCEW.CalDataModuleLabel: "roifinder1d:PHYSCRATEDATATPCEW"
+physics.producers.gaushit1dTPCEE.CalDataModuleLabel: "roifinder1d:PHYSCRATEDATATPCEE"
 
-physics.producers.pandoraGausCryoE.HitFinderModuleLabel:   "cluster3DCryoE"
-physics.producers.pandoraGausCryoW.HitFinderModuleLabel:   "cluster3DCryoW"
+# Disabled Space-Charge service for calorimetry
+services.SpaceChargeService: {
+    EnableCalEfieldSCE: false
+    EnableCalSpatialSCE: false
+    EnableCorrSCE: false
+    EnableSimEfieldSCE: false
+    EnableSimSpatialSCE: false
+    InputFilename: "SCEoffsets/SCEoffsets_ICARUS_E500_voxelTH3.root"
+    RepresentationType: "Voxelized_TH3"
+    service_provider: "SpaceChargeServiceICARUS"
+}
 
-physics.producers.CRTT0Tagging.HitLabel:    ["cluster3DCryoE", "cluster3DCryoW"]
-
-physics.analyzers.caloskimE.HITproducer: "cluster3DCryoE"
-physics.analyzers.caloskimW.HITproducer: "cluster3DCryoW"
+services.message.destinations :
+{
+  STDCOUT:
+  {
+     type:      "cout"      #tells the message service to output this destination to cout
+     threshold: "WARNING"   #tells the message service that this destination applies to WARNING and higher level messages
+     categories:
+     {
+       Cluster3DICARUS:
+       {
+         limit: 5
+         reportEvery: 1
+       }
+       SnippetHit3D:
+       {
+         limit: 5
+         reportEvery: 1
+       }
+     }
+  }
+}

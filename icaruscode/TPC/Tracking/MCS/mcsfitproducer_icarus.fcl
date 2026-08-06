@@ -1,39 +1,148 @@
 BEGIN_PROLOG
+
 mcsfitproducericarus_raw: {
-#mcsfitproducericarus: {
-  module_type:  MCSFitProducerICARUS
-  inputs: {
-        inputLabel: "pandoraTrackICARUS"
-  }
+  module_type: MCSFitProducerICARUS
+  inputs: { 
+	TRKLabel  : "pandoraTrackICARUS"
+	TRKHMLabel: "pandoraTrackICARUS"
+	PFPLabel  : "pandoraGausCryo0"
+	PFPT0Label: "pandoraGausCryo0"
+	CRTT0Label: "CRTT0Tagging"
+	rangeLabel: "rangeproducerCryo0:muon"
+	caloLabel : "caloskimCalorimetryCryo0" }
   fitter: {
   	pIdHypothesis: 13
-	minNumSegments: 6
+	minNumAngles: 5
+	minNumSegments: 7
 	segmentLength: 14.0
-	minHitsPerSegment: 2
-	nElossSteps: 10
-	eLossMode: 0
-	pMin: 0.01
-	pMax: 7.50
-	pStep: 0.01
-	angResol: 3.0
-  }
-}
-mcsfitproducericarus_gaus: {
-  module_type:  MCSFitProducerICARUS
-  inputs: {
-        inputLabel: "pandoraTrackGaus"
-  }
+	minHitsPerSegment: 3
+	minHits: 10
+	minLength: 100.0
+	eLossMode: 2
+	pMin: 100.
+	pMax: 1500.
+	pStep: 20.
+	cutMode: 0
+	cutAngles: 0
+	dimMode: 2
+	planeMode: 3
+	fitMode: 0
+	removeDeltas: false } }
+
+mcsfitproducer3D: {
+  module_type: MCSFitProducerICARUS
+  inputs: { 
+	TRKLabel  : "pandoraTrackICARUS"
+	TRKHMLabel: "pandoraTrackICARUS"
+	PFPLabel  : "pandoraGausCryo0"
+	PFPT0Label: "pandoraGausCryo0"
+	CRTT0Label: "CRTT0Tagging"
+	rangeLabel: "rangeproducerCryo0:muon" 
+	caloLabel : "caloskimCalorimetryCryo0" }
   fitter: {
   	pIdHypothesis: 13
-	minNumSegments: 6
-	segmentLength: 14.0
-	minHitsPerSegment: 2
-	nElossSteps: 10
-	eLossMode: 0
-	pMin: 0.01
-	pMax: 7.50
-	pStep: 0.01
-	angResol: 3.0
-  }
-}
+	minNumAngles: 5
+	minNumSegments: 5
+	segmentLength: 10
+	minHitsPerSegment: 3
+	minHits: 10
+	minLength: 100.0
+	eLossMode: 2
+	pMin: 100.
+	pMax: 1500.
+	pStep: 10.
+	cutMode: 1
+	cutAngles: 4
+	dimMode: 3
+	planeMode: 3
+	fitMode: 0
+	removeDeltas: false } }
+
+mcsfitproducer2DI1: {
+  module_type: MCSFitProducerICARUS
+  inputs: { 
+	TRKLabel  : "pandoraTrackICARUS"
+	TRKHMLabel: "pandoraTrackICARUS"
+	PFPLabel  : "pandoraGausCryo0"
+	PFPT0Label: "pandoraGausCryo0"
+	CRTT0Label: "CRTT0Tagging"
+	rangeLabel: "rangeproducerCryo0:muon"
+	caloLabel : "caloskimCalorimetryCryo0" }
+  fitter: {
+  	pIdHypothesis: 13
+	minNumAngles: 5
+	minNumSegments: 5
+	segmentLength: 10
+	minHitsPerSegment: 3
+	minHits: 10
+	minLength: 100.0
+	eLossMode: 2
+	pMin: 100.
+	pMax: 1500.
+	pStep: 10.
+	cutMode: 1
+	cutAngles: 4
+	dimMode: 2
+	planeMode: 0
+	fitMode: 0
+	removeDeltas: false } }
+
+mcsfitproducer2DI2: {
+  module_type: MCSFitProducerICARUS
+  inputs: { 
+	TRKLabel  : "pandoraTrackICARUS"
+	TRKHMLabel: "pandoraTrackICARUS"
+	PFPLabel  : "pandoraGausCryo0"
+	PFPT0Label: "pandoraGausCryo0"
+	CRTT0Label: "CRTT0Tagging"
+	rangeLabel: "rangeproducerCryo0:muon"
+	caloLabel : "caloskimCalorimetryCryo0" }
+  fitter: {
+  	pIdHypothesis: 13
+	minNumAngles: 5
+	minNumSegments: 5
+	segmentLength: 10
+	minHitsPerSegment: 3
+	minHits: 10
+	minLength: 100.0
+	eLossMode: 2
+	pMin: 100.
+	pMax: 1500.
+	pStep: 10.
+	cutMode: 1
+	cutAngles: 4
+	dimMode: 2
+	planeMode: 1
+	fitMode: 0
+	removeDeltas: false } }
+
+mcsfitproducer2DC: {
+  module_type: MCSFitProducerICARUS
+  inputs: { 
+	TRKLabel  : "pandoraTrackICARUS"
+	TRKHMLabel: "pandoraTrackICARUS"
+	PFPLabel  : "pandoraGausCryo0"
+	PFPT0Label: "pandoraGausCryo0"
+	CRTT0Label: "CRTT0Tagging"
+	rangeLabel: "rangeproducerCryo0:muon" 
+	caloLabel : "caloskimCalorimetryCryo0" }
+  fitter: {
+  	pIdHypothesis: 13
+	minNumAngles: 5
+	minNumSegments: 5
+	segmentLength: 10
+	minHitsPerSegment: 3
+	minHits: 10
+	minLength: 100.0
+	eLossMode: 2
+	pMin: 100.
+	pMax: 1500.
+	pStep: 10.
+	cutMode: 1
+	cutAngles: 4
+	dimMode: 2
+	planeMode: 2
+	fitMode: 0
+	removeDeltas: false } }
+
 END_PROLOG

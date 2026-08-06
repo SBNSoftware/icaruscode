@@ -5,7 +5,7 @@
 #include "particleinventoryservice.fcl"
 #include "stage1_icarus_driver_common.fcl"
 
-process_name: MCstage1
+process_name: stage1MC
 
 # Disabled Space-Charge service for calorimetry
 services.SpaceChargeService: {
@@ -57,6 +57,7 @@ physics.reco: [
                 @sequence::icarus_crtt0tagging,
                 caloskimCalorimetryCryoE, caloskimCalorimetryCryoW,
                 mcassociationsGausCryoE,  mcassociationsGausCryoW,
+                @sequence::icarus_MCS_Gauss,
                 mcreco
               ]
 

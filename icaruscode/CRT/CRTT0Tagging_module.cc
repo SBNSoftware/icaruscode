@@ -546,10 +546,7 @@ void icarus::crt::CRTT0Tagging::produce(art::Event& e)
         sbn::crt::CRTTaggingTrackFit trackFit = sbn::crt::CRTTaggingTrackFit::pca;
         sbn::crt::CRTTaggingMethod matchMethod = sbn::crt::CRTTaggingMethod::crtHits;
 
-        mf::LogInfo("CRTT0Tagging")
-	        <<"Matched CRT time = "<<bestCrtCand.CRThit.ts1_ns/1e3<<" [us] to track "<<track.ID()<<" with projection-hit distance = "<<bestCrtCand.distance<<" Track T0 "<<t0
-	        <<"\nMatched CRT hit plane: "<<bestCrtCand.CRThit.plane<<" xpos "<<bestCrtCand.CRThit.x_pos<<" ypos "<<bestCrtCand.CRThit.y_pos<<" zpos "<<bestCrtCand.CRThit.z_pos
-          <<"\nDelta: X "<<bestCrtCand.delta.X()<<" Y "<<bestCrtCand.delta.Y()<<" Z "<<bestCrtCand.delta.Z();
+        //mf::LogInfo("CRTT0Tagging") << "Matched CRT time = " << bestCrtCand.CRThit.ts1_ns/1e3 << " [us] to track " << track.ID() << " with projection-hit distance = " << bestCrtCand.distance << " Track T0 " << t0 << "\nMatched CRT hit plane: " << bestCrtCand.CRThit.plane << " xpos " << bestCrtCand.CRThit.x_pos << " ypos " << bestCrtCand.CRThit.y_pos << " zpos " << bestCrtCand.CRThit.z_pos << "\nDelta: X " << bestCrtCand.delta.X() << " Y "<<bestCrtCand.delta.Y() << " Z " << bestCrtCand.delta.Z();
 
         t0col->push_back(anab::T0(bestCrtCand.CRThit.ts1_ns, track.ID(), matchedSys, bestCrtCand.CRThit.plane,bestCrtCand.distance));
         art::Ptr<anab::T0> const newT0ptr = makeT0ptr(t0col->size()-1); // index of the last T0

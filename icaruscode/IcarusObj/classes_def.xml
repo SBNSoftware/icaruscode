@@ -76,6 +76,7 @@
    <version ClassVersion="10" checksum="3174835328"/>
   </class>
   <class name="std::vector<icarus::CRTTPCMatchingInfo>" />
+  <class name="art::Wrapper<vector<icarus::CRTTPCMatchingInfo>>" />
   
   <!-- recob::Track - anab::T0 associations with CRT matching metadata -->
 <!--  <class name="art::Assns<recob::Track, anab::T0, icarus::CRTTPCMatchingInfo>" />
