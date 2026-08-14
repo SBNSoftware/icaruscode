@@ -83,6 +83,10 @@ namespace trkf {
         Name("fitMode"),
         Comment("0 for both linear and polygonal angles, 1 for only linear angles, 2 for only polygonal angles. Flag of fit mode for ICARUS fit."),
         0 };
+      fhicl::Atom<unsigned int> wireSkip{
+        Name("wireSkip"),
+        Comment("Number of wires to be skipped in sigma3p computation."),
+        0 };
       fhicl::Atom<bool> removeDeltas{
         Name("removeDeltas"),
         Comment("If true, remove identified deltas from MCS calculation."),
@@ -107,6 +111,7 @@ namespace trkf {
       unsigned int dimMode, 
       unsigned int planeMode, 
       unsigned int fitMode,
+      unsigned int wireSkip,
       bool removeDeltas) {
         pIdHyp_ = pIdHyp;
         minNSegs_ = minNSegs;
@@ -124,6 +129,7 @@ namespace trkf {
         dimMode_ = dimMode;
         planeMode_ = planeMode;
         fitMode_ = fitMode; 
+        wireSkip_ = wireSkip; 
         removeDeltas_ = removeDeltas;}
 
     explicit TrajectoryMCSFitterICARUS(
@@ -144,6 +150,7 @@ namespace trkf {
         p().dimMode(),
         p().planeMode(),
         p().fitMode(),
+        p().wireSkip(),
         p().removeDeltas()) {}
     
     recob::MCSFitResultGS fitMcs(
@@ -305,6 +312,9 @@ namespace trkf {
 
     unsigned int fitMode() const { 
       return fitMode_; }
+
+    unsigned int wireSkip() const { 
+      return wireSkip_; }
 
     bool removeDeltas() const { 
       return removeDeltas_; }
@@ -569,6 +579,7 @@ namespace trkf {
     unsigned int dimMode_;
     unsigned int planeMode_;
     unsigned int fitMode_;
+    unsigned int wireSkip_;
     bool removeDeltas_;
     std::vector<recob::Hit> hits2dC;
     std::vector<recob::Hit> hits2dI2;

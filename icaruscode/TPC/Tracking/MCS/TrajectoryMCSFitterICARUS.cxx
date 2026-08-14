@@ -64,6 +64,16 @@ recob::MCSFitResultGS TrajectoryMCSFitterICARUS::fitMcs(const recob::TrackTrajec
   ComputeSigma3P(planeMode_, nhits_2skip, sigma3p_2skip, delta3p_2skip, 2);
   ComputeSigma3P(planeMode_, nhits_3skip, sigma3p_3skip, delta3p_3skip, 3);
   ComputeSigma3P(planeMode_, nhits_4skip, sigma3p_4skip, delta3p_4skip, 4);
+  cout << " sigma3p 0 skip = " << sigma3p
+       << " sigma3p 1 skip = " << sigma3p_1skip
+       << " sigma3p 2 skip = " << sigma3p_2skip
+       << " sigma3p 3 skip = " << sigma3p_3skip
+       << " sigma3p 4 skip = " << sigma3p_4skip
+       << endl;
+  
+  int nhits0; double sigma3p0; vector<double> delta3p0;
+  ComputeSigma3P(planeMode_, nhits0, sigma3p0, delta3p0, wireSkip_);
+  cout << " wireSkip = " << wireSkip_ << " sigma3p = " << sigma3p0 << endl;
 
   //geometrical check if track is stopping
   bool stop = GeoStopCheck(traj);
@@ -469,8 +479,6 @@ recob::MCSFitResultGS TrajectoryMCSFitterICARUS::fitMcs(const recob::TrackTrajec
     best_p, error_p,
     c2prange, tailsprange, 
     nhits, sigma3p, delta3p,
-    sigma3p_1skip, sigma3p_2skip, sigma3p_3skip, sigma3p_4skip, 
-    delta3p_1skip, delta3p_2skip, delta3p_3skip, delta3p_4skip, 
     L1D, L2D, L3D, 
     seglens, cumseglens,
     seghits, cumseghits, 
@@ -922,11 +930,11 @@ void TrajectoryMCSFitterICARUS::ComputeSigma3P(int plane, int& weight, double& s
 //new function to give correct sigma3p [mm] for fitter
 double TrajectoryMCSFitterICARUS::Sigma3P() const {
   int weight_I1; double sigma3p_I1; vector<double> delta3p_I1;
-  ComputeSigma3P(0, weight_I1, sigma3p_I1, delta3p_I1, 0);
+  ComputeSigma3P(0, weight_I1, sigma3p_I1, delta3p_I1, wireSkip_);
   int weight_I2; double sigma3p_I2; vector<double> delta3p_I2;
-  ComputeSigma3P(1, weight_I2, sigma3p_I2, delta3p_I2, 0);
+  ComputeSigma3P(1, weight_I2, sigma3p_I2, delta3p_I2, wireSkip_);
   int weight_C; double sigma3p_C; vector<double> delta3p_C;
-  ComputeSigma3P(2, weight_C, sigma3p_C, delta3p_C, 0);
+  ComputeSigma3P(2, weight_C,  sigma3p_C,  delta3p_C,  wireSkip_);
 
   vector<double> weights; 
   weights.push_back(double(weight_I1)); 
