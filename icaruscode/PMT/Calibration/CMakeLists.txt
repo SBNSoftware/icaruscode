@@ -1,4 +1,5 @@
 add_subdirectory(CaloTools)
+add_subdirectory(TrackTools)
 add_subdirectory(fcl)
 
 
