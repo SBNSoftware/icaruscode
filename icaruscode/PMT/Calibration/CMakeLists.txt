@@ -84,6 +84,36 @@ cet_build_plugin(OpHitRecalibrator art::module
       icaruscode_Timing
 )
 
+cet_build_plugin(ICARUSStoppingMuonOpticalAna art::module
+  LIBRARIES
+    icaruscode_PMT_Calibration_TrackTools   # StoppingTrackSelector
+    icaruscode::Timing                      # IPMTTimingCorrectionService
+    icarusalg::Utilities
+    larana::OpticalDetector_OpHitFinder     # IPedAlgoMakerTool, PMTPedestalBase
+    larcore::Geometry_Geometry_service
+    larcorealg::Geometry
+    lardata::DetectorClocksService
+    lardataalg::DetectorInfo
+    lardataobj::RecoBase
+    lardataobj::RawData
+    nusimdata::SimulationBase
+    art::Framework_Core
+    art::Framework_Principal
+    art::Framework_Services_Registry
+    art_root_io::TFileService_service
+    art_root_io::tfile_support
+    art::Persistency_Common
+    art::Persistency_Provenance
+    art::Utilities
+    canvas::canvas
+    messagefacility::MF_MessageLogger
+    fhiclcpp::fhiclcpp
+    cetlib::cetlib
+    cetlib_except::cetlib_except
+    ROOT::Core
+    ROOT::Tree
+  )
+
 cet_build_plugin(VerticalTrackFlashWaveformAna art::module
   LIBRARIES
     icaruscode::Timing
