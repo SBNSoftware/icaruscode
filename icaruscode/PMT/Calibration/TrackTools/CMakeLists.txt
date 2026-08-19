@@ -6,6 +6,7 @@ cet_make_library(
       sbnobj::Common_Calibration_dict   # sbn::TrackInfo
       sbnobj::Common_CRT                # sbn::crt::CRTHitT0TaggingInfo
       sbncode::Utilities
+      icarusalg::Utilities              # lar::util::TrackTimeInterval
       lardataobj::AnalysisBase          # anab::Calorimetry, anab::T0
       lardataobj::RecoBase
       larcore::Geometry_Geometry_service

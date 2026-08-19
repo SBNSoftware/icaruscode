@@ -9,6 +9,11 @@
  * This is configured with `@local::crthittagged_stopping_selection` from `icarus_trackcalo_skimmer.fcl`
  * so the cut values cannot drift from what is used in the calibration ntuples.
  *
+ * Flash matching follows `TPCPMTBarycenterMatchProducer` on both counts: candidates are
+ * ranked on the barycenter distance, and vetoed on the time interval the drift of the
+ * track's own hits allows (`lar::util::TrackTimeInterval`, `UseTimeRange`). Neither uses
+ * the track T0, so a mis-associated CRT hit cannot pull the match with it.
+ *
  *  Only the `sbn::TrackInfo` members the stopping tool actually reads are filled:
  * `dir.y`, `end`, `hit_{min,max}_time_p2_tpc{E,W}`, `hits2[].{oncalo,rr,dqdx}` and
  * `whicht0`. Everything else keeps its default.
@@ -23,6 +28,8 @@
 #include "fhiclcpp/ParameterSet.h"
 
 // LArSoft
+#include "icarusalg/Utilities/TrackTimeInterval.h"
+#include "lardataalg/Utilities/quantities/spacetime.h" // microseconds
 #include "larcorealg/Geometry/BoxBoundedGeo.h"
 #include "larcorealg/Geometry/GeometryCore.h"
 #include "lardataobj/RecoBase/Hit.h"
@@ -75,6 +82,12 @@ namespace icarus {
     float  flashZ    = NoPos; 
     float  radius    = NoPos;   ///< flashZY - centroidZY [cm]
 
+    // drift-allowed time interval of the track's hits, `UseTimeRange`. Converted to
+    // the trigger-relative scale so it is directly comparable with `flashTime`;
+    // the margin is *not* folded in. `NoTime` when the interval is not valid.
+    double trangeLow  = NoTime;  ///< [us]
+    double trangeHigh = NoTime;  ///< [us]
+
     /// Whether a flash was matched to this track.
     bool hasFlash() const { return flashID >= 0; }
 
@@ -123,7 +136,10 @@ namespace icarus {
                         sbn::TrackInfo& info, TrackExtras& extra) const;
 
     /// Picks the best flash by `MatchMetric`, or leaves `m.flashID` at -1.
+    /// `timeRange` is the drift-allowed interval of the track's hits; it vetoes
+    /// candidates when `UseTimeRange` is set.
     void matchFlash(std::vector<recob::OpFlash> const& flashes,
+                    lar::util::TrackTimeInterval::TimeRange const& timeRange,
                     TrackFlashMatch& m) const;
 
     /// Median dQ/dx over plane-2 hits with `oncalo && rr < MediandQdxRRMax`.
@@ -154,9 +170,12 @@ namespace icarus {
     std::vector<double> fSideCRTDistanceCutPassing;
 
     double fMediandQdxRRMax;      ///< [cm].
-    bool   fUseTimeWindow;        ///< whether the window rejects flashes, off by default
-    double fMatchWindowLow;       ///< [us]
-    double fMatchWindowHigh;      ///< [us]
+
+    /// Veto flashes outside the time interval the drift of the track's own hits
+    /// allows, as `TPCPMTBarycenterMatchProducer` does. Needs no track T0.
+    bool   fUseTimeRange;
+    util::quantities::intervals::microseconds fTimeRangeMargin; ///< Symmetric slack.
+
     double fMinFlashPE;
     double fMaxFlashTrackZ;       ///< [cm] max `|flash.ZCenter() - centroidZ|` allowed.
     std::string fMatchMetric;     ///< "MinRadius" or "MinDeltaT".
@@ -165,6 +184,9 @@ namespace icarus {
     std::string fLogCategory;
 
     // --- state ---------------------------------------------------------------
+    /// Builds the per-event drift/time converter; see `fUseTimeRange`.
+    lar::util::TrackTimeIntervalMaker const fTimeIntervalMaker;
+
     std::unique_ptr<sbn::ITCSSelectionTool> fSelTool; ///< Built once; holds state.
     std::vector<geo::BoxBoundedGeo> fActiveVolumes;   ///< One per cryostat.
 

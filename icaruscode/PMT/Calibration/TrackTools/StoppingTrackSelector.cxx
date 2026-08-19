@@ -23,7 +23,10 @@
 // LArSoft
 #include "larcore/CoreUtils/ServiceUtil.h"
 #include "larcore/Geometry/Geometry.h"
+#include "larcore/Geometry/WireReadout.h"
+#include "lardata/DetectorInfoServices/DetectorClocksService.h"
 #include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
+#include "lardataalg/DetectorInfo/DetectorTimings.h"
 #include "lardataobj/AnalysisBase/Calorimetry.h"
 #include "lardataobj/AnalysisBase/T0.h"
 #include "lardataobj/RecoBase/PFParticle.h"
@@ -97,14 +100,16 @@ icarus::StoppingTrackSelector::StoppingTrackSelector(fhicl::ParameterSet const& 
         std::vector<double>(fTrackLabels.size(), 100.)) }
   , fMediandQdxRRMax { pset.get<fhicl::ParameterSet>("SelectionTool")
                          .get<double>("MediandQdxRRMax", 5.) }
-  , fUseTimeWindow   { pset.get<bool>("UseTimeWindow", false) }
-  , fMatchWindowLow  { pset.get<double>("MatchWindowLow", -30.) }
-  , fMatchWindowHigh { pset.get<double>("MatchWindowHigh", 30.) }
+  , fUseTimeRange    { pset.get<bool>("UseTimeRange", true) }
+  , fTimeRangeMargin { util::quantities::intervals::microseconds{
+                         pset.get<double>("TimeRangeMargin", 35.) } }
   , fMinFlashPE      { pset.get<double>("MinFlashPE", 0.) }
   , fMaxFlashTrackZ  { pset.get<double>("MaxFlashTrackZ", 1e9) }
   , fMatchMetric     { pset.get<std::string>("MatchMetric", "MinRadius") }
   , fRequireFlashMatch { pset.get<bool>("RequireFlashMatch", true) }
   , fLogCategory     { pset.get<std::string>("LogCategory", "StoppingTrackSelector") }
+  , fTimeIntervalMaker{ *lar::providerFrom<geo::Geometry>(),
+                        art::ServiceHandle<geo::WireReadout>()->Get() }
 {
 
   // every per-cryostat sequence must have the same length
@@ -392,7 +397,9 @@ bool icarus::StoppingTrackSelector::buildTrackInfo(
 
 // -----------------------------------------------------------------------------
 void icarus::StoppingTrackSelector::matchFlash
-  (std::vector<recob::OpFlash> const& flashes, TrackFlashMatch& m) const
+  (std::vector<recob::OpFlash> const& flashes,
+   lar::util::TrackTimeInterval::TimeRange const& timeRange,
+   TrackFlashMatch& m) const
 {
 
   // Default ranking is "MinRadius": the barycenter distance between the flash and
@@ -413,8 +420,15 @@ void icarus::StoppingTrackSelector::matchFlash
 
     recob::OpFlash const& flash = flashes[i];
 
-    double const dt = flash.Time() - m.trackT0;    // both [us]
-    if (fUseTimeWindow && (dt < fMatchWindowLow || dt > fMatchWindowHigh)) continue;
+    // The drift veto, verbatim from TPCPMTBarycenterMatchProducer_module.cc:540-544.
+    // It asks whether the flash *could* have started this track's drift, so it
+    // needs no T0 and is immune to a mis-associated CRT hit. Absolute scale.
+    if (fUseTimeRange && timeRange.isValid()) {
+      detinfo::timescales::electronics_time const eTime { flash.AbsTime() };
+      if (!timeRange.contains(eTime, fTimeRangeMargin)) continue;
+    }
+
+    double const dt = flash.Time() - m.trackT0;    // both [us], recorded, never cut on
     if (flash.TotalPE() < fMinFlashPE) continue;
     if (hasCentroid
         && std::abs(flash.ZCenter() - m.centroidZ) > fMaxFlashTrackZ) continue;
@@ -481,6 +495,15 @@ std::vector<icarus::TrackFlashMatch> icarus::StoppingTrackSelector::select
   EventAssns const assns { e, pfpHandle, trackHandle, fTrackLabels[iCryo],
                            fCaloLabels[iCryo], fPFPT0Labels[iCryo], fCRTHitT0Label };
 
+  // drift-allowed time interval per track; also built once per call
+  detinfo::DetectorTimings const detTimings {
+    art::ServiceHandle<detinfo::DetectorClocksService const>()->DataFor(e) };
+  auto const detProp =
+    art::ServiceHandle<detinfo::DetectorPropertiesService const>()
+      ->DataFor(e, detTimings.clockData());
+  lar::util::TrackTimeInterval const timeIntervals =
+    fTimeIntervalMaker(detProp, detTimings);
+
   // an absent flash collection is not fatal: every track simply stays unmatched
   static std::vector<recob::OpFlash> const noFlashes;
   auto const flashHandle = e.getHandle<std::vector<recob::OpFlash>>(fFlashLabels[iCryo]);
@@ -525,7 +548,18 @@ std::vector<icarus::TrackFlashMatch> icarus::StoppingTrackSelector::select
     m.length        = info.length;
     m.medianEnddQdx = medianEnddQdx(info.hits2);
 
-    matchFlash(flashes, m);
+    // the interval the drift of this track's own hits allows, T0-free
+    lar::util::TrackTimeInterval::TimeRange const timeRange =
+      timeIntervals.timeRangeOfHits(assns.hits.at(track.key()));
+    if (timeRange.isValid()) {
+      // the interval is on the absolute electronics scale; convert it to the
+      // trigger-relative one so it can be compared with `flashTime` (`OpFlash::Time()`)
+      // on the same output row. The veto below still runs on the absolute scale.
+      m.trangeLow  = detTimings.toTriggerTime(timeRange.start).value();
+      m.trangeHigh = detTimings.toTriggerTime(timeRange.stop).value();
+    }
+
+    matchFlash(flashes, timeRange, m);
     if (fRequireFlashMatch && !m.hasFlash()) continue;
 
     matches.push_back(m);

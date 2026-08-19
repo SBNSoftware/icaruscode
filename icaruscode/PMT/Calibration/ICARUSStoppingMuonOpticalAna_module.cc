@@ -256,6 +256,7 @@ private:
   float t_flash_time, t_flash_pe, t_flash_y, t_flash_z;
   float t_dt;
   float t_radius;
+  float t_trange_low, t_trange_high;   ///< drift-allowed interval [us], no margin
 
 }; // class icarus::ICARUSStoppingMuonOpticalAna
 
@@ -453,6 +454,8 @@ void icarus::ICARUSStoppingMuonOpticalAna::beginJob()
   fTrackMatchTree->Branch("flash_z", &t_flash_z, "flash_z/F");
   fTrackMatchTree->Branch("dt", &t_dt, "dt/F");
   fTrackMatchTree->Branch("radius", &t_radius, "radius/F");
+  fTrackMatchTree->Branch("trange_low", &t_trange_low, "trange_low/F");
+  fTrackMatchTree->Branch("trange_high", &t_trange_high, "trange_high/F");
 
   // --- truth ----------------------------------------------------------------
   if (!fMCParticleLabel.empty()) {
@@ -510,6 +513,8 @@ void icarus::ICARUSStoppingMuonOpticalAna::fillTrackMatchTree
       t_flash_z         = m.flashZ;
       t_dt              = m.deltaT;
       t_radius          = m.radius;
+      t_trange_low      = m.trangeLow;
+      t_trange_high     = m.trangeHigh;
       fTrackMatchTree->Fill();
     }
   }

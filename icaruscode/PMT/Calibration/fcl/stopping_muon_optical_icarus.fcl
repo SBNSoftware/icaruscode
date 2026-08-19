@@ -34,13 +34,13 @@ stopping_track_selector:
   SideCRTDistanceCut_stopping:     [ 100., 100. ]
   SideCRTDistanceCut_throughgoing: [ 100., 100. ]
 
-  # flash matching, ranks on the barycenter distance 
+  # Flash matching: rank on the barycenter distance, veto on the time interval the
+  # drift of the track's own hits allows. Same as TPCPMTBarycenterMatchProducer.
   MatchMetric:     "MinRadius"   # or "MinDeltaT"
-  UseTimeWindow:   true
-  MatchWindowLow:  -30.          # us, flashTime - trackT0
-  MatchWindowHigh:  30.          # us
+  UseTimeRange:     true
+  TimeRangeMargin:  35.          # us, the production value (tpcpmtbarycentermatch_config.fcl:14)
   MinFlashPE:       0.
-  MaxFlashTrackZ:   300          # cm
+  MaxFlashTrackZ:   300          # cm; 
   RequireFlashMatch: true
 
   SelectionTool: @local::crthittagged_stopping_selection
