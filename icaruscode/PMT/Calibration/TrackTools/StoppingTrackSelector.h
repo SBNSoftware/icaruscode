@@ -153,13 +153,12 @@ namespace icarus {
     std::vector<double> fSideCRTDistanceCutStopping;
     std::vector<double> fSideCRTDistanceCutPassing;
 
-    double fMediandQdxRRMax;      ///< [cm]; mirrors the tool, diagnostic only.
-
-    bool   fUseTimeWindow;        /// // whether the window rejects flashes, off by default
-    double fMatchWindowLow;       ///< [us] minimum `flashTime - trackT0`.
-    double fMatchWindowHigh;      ///< [us] maximum `flashTime - trackT0`.
+    double fMediandQdxRRMax;      ///< [cm].
+    bool   fUseTimeWindow;        ///< whether the window rejects flashes, off by default
+    double fMatchWindowLow;       ///< [us]
+    double fMatchWindowHigh;      ///< [us]
     double fMinFlashPE;
-    double fMaxFlashTrackZ;       ///< [cm] `|flash.ZCenter() - centroidZ|`.
+    double fMaxFlashTrackZ;       ///< [cm] max `|flash.ZCenter() - centroidZ|` allowed.
     std::string fMatchMetric;     ///< "MinRadius" or "MinDeltaT".
     bool   fRequireFlashMatch;    ///< Drop selected tracks with no flash.
 

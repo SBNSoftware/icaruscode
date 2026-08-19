@@ -1,0 +1,74 @@
+# File:    stopping_muon_optical_icarus.fcl
+# Purpose: Configuration of ICARUSStoppingMuonOpticalAna and its track selector.
+# Contact: Matteo Vicenzi (mvicenzi@bnl.gov)
+#
+
+#include "icarus_trackcalo_skimmer.fcl"
+#include "icarus_ophitfinder.fcl"
+
+BEGIN_PROLOG
+
+# ==============================================================================
+# Stopping-track selection
+# ===
+#
+# Cut values are not retyped here: SelectionTool is the same @local:: block
+# stage1 uses (icarus_trackcalo_skimmer.fcl) for the calibration ntuples.
+
+stopping_track_selector:
+{
+  TrackLabels:   [ "pandoraTrackGausCryoE", "pandoraTrackGausCryoW" ]
+  PFPLabels:     [ "pandoraGausCryoE",      "pandoraGausCryoW"      ]
+  PFPT0Labels:   [ "pandoraGausCryoE",      "pandoraGausCryoW"      ]
+  CaloLabels:    [ "calorimetryCryoE",      "calorimetryCryoW"      ]
+  FlashLabels:   [ "opflashCryoE",          "opflashCryoW"          ]
+  CRTHitT0Label: "CRTT0Tagging"
+
+  AllowShowerLikePFPs:  false
+  IncludeCRTHitTagging: true
+  IncludeTopCRT:        true
+  IncludeSideCRT:       false
+
+  TopCRTDistanceCut_stopping:      [ 100.,  60. ]   # [East, West]
+  TopCRTDistanceCut_throughgoing:  [ 100.,  50. ]
+  SideCRTDistanceCut_stopping:     [ 100., 100. ]
+  SideCRTDistanceCut_throughgoing: [ 100., 100. ]
+
+  # flash matching, ranks on the barycenter distance 
+  MatchMetric:     "MinRadius"   # or "MinDeltaT"
+  UseTimeWindow:   true
+  MatchWindowLow:  -30.          # us, flashTime - trackT0
+  MatchWindowHigh:  30.          # us
+  MinFlashPE:       0.
+  MaxFlashTrackZ:   300          # cm
+  RequireFlashMatch: true
+
+  SelectionTool: @local::crthittagged_stopping_selection
+}
+
+# ==============================================================================
+# === Analyzer
+# ===
+
+icarus_stopping_muon_optical:
+{
+  module_type: ICARUSStoppingMuonOpticalAna
+
+  OpHitLabels:          [ "ophit" ]
+  FlashLabels:          [ "opflashCryoE", "opflashCryoW" ]
+  OpDetWaveformLabels:  [ "daqPMT" ]
+  SaveWaveforms:        true
+  OpHitThresholdADC:    0     # ADC
+  MCParticleTruthLabel: ""    # keep empty for data
+
+  SkipUnmatchedEvents: true
+
+  PedAlgoRollingMeanMaker: {   # as icarus_ophitfinder
+    tool_type:   "PedAlgoRollingMeanMaker"
+    PedAlgoPset: @local::icarus_opreco_pedestal_DocDB24969
+  }
+
+  Selector: @local::stopping_track_selector
+}
+
+END_PROLOG

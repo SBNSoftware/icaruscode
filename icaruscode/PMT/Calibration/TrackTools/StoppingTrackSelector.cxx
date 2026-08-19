@@ -95,10 +95,11 @@ icarus::StoppingTrackSelector::StoppingTrackSelector(fhicl::ParameterSet const& 
   , fSideCRTDistanceCutPassing {
       pset.get<std::vector<double>>("SideCRTDistanceCut_throughgoing",
         std::vector<double>(fTrackLabels.size(), 100.)) }
-  , fMediandQdxRRMax { pset.get<double>("MediandQdxRRMax", 5.) }
+  , fMediandQdxRRMax { pset.get<fhicl::ParameterSet>("SelectionTool")
+                         .get<double>("MediandQdxRRMax", 5.) }
   , fUseTimeWindow   { pset.get<bool>("UseTimeWindow", false) }
-  , fMatchWindowLow  { pset.get<double>("MatchWindowLow", -1.5) }
-  , fMatchWindowHigh { pset.get<double>("MatchWindowHigh", 1.5) }
+  , fMatchWindowLow  { pset.get<double>("MatchWindowLow", -30.) }
+  , fMatchWindowHigh { pset.get<double>("MatchWindowHigh", 30.) }
   , fMinFlashPE      { pset.get<double>("MinFlashPE", 0.) }
   , fMaxFlashTrackZ  { pset.get<double>("MaxFlashTrackZ", 1e9) }
   , fMatchMetric     { pset.get<std::string>("MatchMetric", "MinRadius") }
