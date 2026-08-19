@@ -29,8 +29,8 @@ stopping_track_selector:
   IncludeTopCRT:        true
   IncludeSideCRT:       false
 
-  TopCRTDistanceCut_stopping:      [ 100.,  60. ]   # [East, West]
-  TopCRTDistanceCut_throughgoing:  [ 100.,  50. ]
+  TopCRTDistanceCut_stopping:      [ 100., 100. ]
+  TopCRTDistanceCut_throughgoing:  [ 100., 100. ]
   SideCRTDistanceCut_stopping:     [ 100., 100. ]
   SideCRTDistanceCut_throughgoing: [ 100., 100. ]
 
