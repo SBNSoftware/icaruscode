@@ -38,7 +38,7 @@ stopping_track_selector:
   # drift of the track's own hits allows. Same as TPCPMTBarycenterMatchProducer.
   MatchMetric:     "MinRadius"   # or "MinDeltaT"
   UseTimeRange:     true
-  TimeRangeMargin:  35.          # us, the production value (tpcpmtbarycentermatch_config.fcl:14)
+  TimeRangeMargin:  35.          # us, the production value (tpcpmtbarycentermatch_config.fcl)
   MinFlashPE:       0.
   MaxFlashTrackZ:   300          # cm; 
   RequireFlashMatch: true

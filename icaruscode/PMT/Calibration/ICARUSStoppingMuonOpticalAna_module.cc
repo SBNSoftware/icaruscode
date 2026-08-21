@@ -235,7 +235,7 @@ private:
   float track_gen_time, track_gen_E;
   float track_gen_x, track_gen_y, track_gen_z;
   int michel_gen_pdg;
-  int michel_process;   ///< 0 Decay, 1 muMinusCaptureAtRest, -1 none
+  int michel_process;   ///< 0 free decay, 1 atomic cascade, 2 bound decay, -1 none
   float michel_gen_time, michel_gen_E;
   float michel_gen_x, michel_gen_y, michel_gen_z;
   bool michel_in_av;
@@ -853,12 +853,22 @@ void icarus::ICARUSStoppingMuonOpticalAna::fillMCTruth(art::Event const& e)
       if (par.Mother() != primaryMuonID) continue;
       if (std::abs(par.PdgCode()) != 11) continue;
 
-      // "Decay" is a Michel electron 
-      // "muMinusCaptureAtRest" is a nuclear de-excitation electron
+      // Geant4 runs mu- nuclear capture AND bound decay inside one process named
+      // "muMinusCaptureAtRest", so "Decay" is unreachable for mu- and a real Michel
+      // carries the capture label. Split on energy instead: the two populations are
+      // ~1 MeV prompt (atomic cascade) and 22-52 MeV delayed (bound decay), nothing
+      // in between. mu+ has no at-rest process and does report "Decay".
+      constexpr double kMichelEnergyThresholdGeV = 0.010;   // kinetic
+      constexpr double kElectronMassGeV          = 0.000511;
+
       int process = -1;
-      if (par.Process() == "Decay") process = 0;
-      else if (par.Process() == "muMinusCaptureAtRest") process = 1;
+      if (par.Process() == "Decay") process = 0;             // mu+, free decay
+      else if (par.Process() == "muMinusCaptureAtRest")
+        process = (par.E() - kElectronMassGeV > kMichelEnergyThresholdGeV) ? 2 : 1;
       else continue;
+
+      // bound decay also emits the cascade, which comes first: keep it as a fallback
+      if (process == 1 && michel_process != -1) continue;
 
       michel_process  = process;
       michel_gen_pdg  = par.PdgCode();
@@ -868,7 +878,8 @@ void icarus::ICARUSStoppingMuonOpticalAna::fillMCTruth(art::Event const& e)
       michel_gen_y    = par.Vy();
       michel_gen_z    = par.Vz();
       michel_in_av    = inActiveVolume(par.Vx(), par.Vy(), par.Vz());
-      break;   // first match wins, as in TrackCaloSkimmer_module.cc:1087
+
+      if (process != 1) break;     // a decay candidate is final; a cascade one is not
     }
   }
 
