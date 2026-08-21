@@ -1,13 +1,13 @@
 ## File:    stage0_run2_opdetonly_icarus_overlay_reprocessing.fcl
-## Purpose: Reprocessing of the optical products for the 2025 SBN "spring" MC OVERLAY production
+## Purpose: Reprocessing of the optical products for the SBN2025A "spring" MC OVERLAY production
 
 #include "stage0_run2_wcdnn_icarus_overlay.fcl"
 
 ## This job selectively re-runs only the PMT/CRT reconstruction path. 
-## This is valid only for the post-processing of the 2025 SBN.
+## This is valid only for the post-processing of the SBN2025A production.
 
 ## Despite the name of the included configuration, the simulation of the optical detector
-## in this configuration is independent of the run period because the reconstruction picks
+## in this configuration is INDEPENDENT OF THE RUN PERIOD because the reconstruction picks
 ## the SPEArea from the gain database, so it automatically adapts to the correct value.
 ## This is consistent with the behavior of the DetSim stage in the reprocessing workflow.
 ## However, trigger simulation settings are still hard-coded for Run2.
