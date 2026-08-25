@@ -16,6 +16,9 @@
 
 // LArSoft libraries
 #include "lardataalg/DetectorInfo/DetectorTimings.h"
+#include "larcorealg/Geometry/WireReadoutGeom.h"
+#include "larcorealg/Geometry/OpDetGeo.h"
+#include "larcorealg/Geometry/geo_vectors_utils.h" // geo::vect::toPoint()
 #include "larcorealg/CoreUtils/counter.h"
 #include "larcorealg/CoreUtils/StdUtils.h" // util::begin(), util::end()
 
@@ -221,7 +224,7 @@ auto icarus::opdet::PMTsimulationAlg::makeGainFluctuator(int channel) const
   if (fParams.useGainCalibDB && fParams.gainCalibProvider) {
     // DB Gaussian: per-channel SPE area and width from database
     // fNominalSPEArea is the integral of the SPR template, i.e. the mean area per PE
-    // fBiasConstant covers the bias in the integral definitions btw SPR template and official reco
+    // fBiasConstant covers the bias in the integral definitions btw SPR template and official reco (SBN-docdb-46261)
     double const speArea     = fParams.gainCalibProvider->getSPEArea(channel);
     double const speFitWidth = fParams.gainCalibProvider->getSPEFitWidth(channel);
     // gainRatio = speArea / fNominalSPEArea: mean effective PEs per true PE
@@ -300,8 +303,19 @@ auto icarus::opdet::PMTsimulationAlg::CreateFullWaveform
       photons_used->clear();
       photons_used->SetChannel(channel);
     }
+    // distance-dependent survival S(d): PMT center cached per channel
+    bool const applySd = fParams.distanceSurvival.apply;
+    geo::Point_t const PMTcenter = fParams.wireReadoutGeom->OpDetGeoFromOpChannel(channel).GetCenter();
+
     for(auto const& ph : photons) {
-      if (!KicksPhotoelectron()) continue;
+      if (applySd) {
+        // Bernoulli survival p = QE * S(d), same stream as KicksPhotoelectron
+        double const d_cm
+          = (PMTcenter - geo::vect::toPoint(ph.InitialPosition)).R();
+        if (CLHEP::RandFlat::shoot(fParams.randomEngine)
+              >= fQE * distanceSurvival(d_cm)) continue;
+      }
+      else if (!KicksPhotoelectron()) continue;
 
       if (photons_used) photons_used->push_back(ph); // copy
 
@@ -429,6 +443,7 @@ auto icarus::opdet::PMTsimulationAlg::CreateFullWaveform
 //       std::cout << "\tadded pes... " << channel << " " << diff.count() << std::endl;
 //       start=std::chrono::high_resolution_clock::now();
 
+      ApplyTailSuppression(waveform);
       AddPedestal(channel, waveformStartTS, waveform);
       if(fParams.darkNoiseRate > 0.0_Hz) AddDarkNoise(waveform, channel);
 
@@ -713,6 +728,16 @@ bool icarus::opdet::PMTsimulationAlg::KicksPhotoelectron() const
   { return CLHEP::RandFlat::shoot(fParams.randomEngine) < fQE; }
 
 
+//------------------------------------------------------------------------------
+double icarus::opdet::PMTsimulationAlg::distanceSurvival(double d_cm) const
+{
+  auto const& edges = fParams.distanceSurvival.binEdges;
+  auto const it = std::upper_bound(edges.begin(), edges.end(), d_cm);
+  if ((it == edges.begin()) || (it == edges.end())) return 1.0;
+  return fParams.distanceSurvival.factors[std::distance(edges.begin(), it) - 1];
+} // icarus::opdet::PMTsimulationAlg::distanceSurvival()
+
+
 // -----------------------------------------------------------------------------
 void icarus::opdet::PMTsimulationAlg::AddPhotoelectrons(
   PulseSampling_t const& pulse, Waveform_t& wave, tick const time_bin,
@@ -868,6 +893,26 @@ void icarus::opdet::PMTsimulationAlg::ApplySaturation(
 
 
 // -----------------------------------------------------------------------------
+void icarus::opdet::PMTsimulationAlg::ApplyTailSuppression(Waveform_t& waveform) const
+{
+  if (!fParams.tailSuppression.apply) return;
+
+  // tau [ns] * fSampling [MHz] / 1000.0f = tau_ticks
+  float const beta    = 1.0f / (fParams.tailSuppression.tau * fSampling.value() / 1000.0f);
+  float const epsilon = fParams.tailSuppression.epsilon;
+  int   const pol     = fParams.pulsePolarity;
+
+  float Q = 0.0f;
+  for (auto& sample : waveform) {
+    float const s = pol * sample.value();
+    Q = (1.0f - beta) * Q + beta * std::max(0.0f, s);
+    sample = ADCcount{ pol * std::max(0.0f, s - epsilon * Q) };
+  }
+
+} // icarus::opdet::PMTsimulationAlg::ApplyTailSuppression()
+
+
+// -----------------------------------------------------------------------------
 /// Forces `waveform` ADC within the `min` to `max` range (`max` included).
 void icarus::opdet::PMTsimulationAlg::ClipWaveform
   (Waveform_t& waveform, ADCcount min, ADCcount max)
@@ -1013,8 +1058,47 @@ icarus::opdet::PMTsimulationAlgMaker::PMTsimulationAlgMaker
   fBaseConfig.discrimAlgo              = config.getDiscriminationAlgo();
 
   //
+  // tail suppression
+  //
+  if (config.TailSuppression()) {
+    fBaseConfig.tailSuppression.apply   = config.TailSuppression()->Apply();
+    fBaseConfig.tailSuppression.epsilon = config.TailSuppression()->Epsilon();
+    fBaseConfig.tailSuppression.tau     = config.TailSuppression()->Tau();
+  }
+
+  //
+  // distance-dependent photon survival
+  //
+  if (config.DistanceSurvival()) {
+    fBaseConfig.distanceSurvival.apply    = config.DistanceSurvival()->Apply();
+    fBaseConfig.distanceSurvival.binEdges = config.DistanceSurvival()->BinEdges();
+    fBaseConfig.distanceSurvival.factors  = config.DistanceSurvival()->Factors();
+  }
+
+  //
   // parameter checks
   //
+  if (fBaseConfig.distanceSurvival.apply) {
+    auto const& ds = fBaseConfig.distanceSurvival;
+    if (ds.binEdges.size() != ds.factors.size() + 1) {
+      throw cet::exception("PMTsimulationAlg")
+        << "DistanceSurvival: BinEdges must have exactly one more entry than"
+           " Factors (got " << ds.binEdges.size() << " edges, "
+        << ds.factors.size() << " factors)\n";
+    }
+    if (!std::is_sorted(ds.binEdges.begin(), ds.binEdges.end())) {
+      throw cet::exception("PMTsimulationAlg")
+        << "DistanceSurvival: BinEdges must be sorted in increasing order\n";
+    }
+    for (double const f: ds.factors) {
+      if ((f < 0.0) || (f > 1.0)) {
+        throw cet::exception("PMTsimulationAlg")
+          << "DistanceSurvival: survival factors must be in [0, 1] (got "
+          << f << ")\n";
+      }
+    }
+  } // distance survival checks
+
   if (std::abs(fBaseConfig.pulsePolarity) != 1.0) {
     throw cet::exception("PMTsimulationAlg")
       << "Pulse polarity settings can be only +1.0 or -1.0 (got: "
@@ -1045,6 +1129,7 @@ std::unique_ptr<icarus::opdet::PMTsimulationAlg>
 icarus::opdet::PMTsimulationAlgMaker::operator()(
   std::uint64_t beamGateTimestamp,
   detinfo::LArProperties const& larProp,
+  geo::WireReadoutGeom const& wireReadoutGeom,
   detinfo::DetectorClocksData const& clockData,
   icarusDB::PMTTimingCorrections const* timingDelays,
   icarusDB::PhotonCalibratorFromDB const* gainCalibProvider,
@@ -1058,7 +1143,7 @@ icarus::opdet::PMTsimulationAlgMaker::operator()(
 {
   return std::make_unique<PMTsimulationAlg>(makeParams(
     beamGateTimestamp,
-    larProp, clockData, timingDelays, gainCalibProvider,
+    larProp, wireReadoutGeom, clockData, timingDelays, gainCalibProvider,
     SPRfunction, pedestalGenerator,
     mainRandomEngine, darkNoiseRandomEngine, elecNoiseRandomEngine,
     trackSelectedPhotons
@@ -1071,6 +1156,7 @@ icarus::opdet::PMTsimulationAlgMaker::operator()(
 auto icarus::opdet::PMTsimulationAlgMaker::makeParams(
   std::uint64_t beamGateTimestamp,
   detinfo::LArProperties const& larProp,
+  geo::WireReadoutGeom const& wireReadoutGeom,
   detinfo::DetectorClocksData const& clockData,
   icarusDB::PMTTimingCorrections const* timingDelays,
   icarusDB::PhotonCalibratorFromDB const* gainCalibProvider,
@@ -1094,6 +1180,7 @@ auto icarus::opdet::PMTsimulationAlgMaker::makeParams(
   params.beamGateTimestamp = beamGateTimestamp;
   
   params.larProp = &larProp;
+  params.wireReadoutGeom = &wireReadoutGeom;
   params.clockData = &clockData;
   params.detTimings = detinfo::makeDetectorTimings(params.clockData);
   params.timingDelays = timingDelays;

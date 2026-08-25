@@ -28,6 +28,7 @@
 // LArSoft libraries
 #include "lardataobj/RawData/OpDetWaveform.h"
 #include "lardataobj/Simulation/SimPhotons.h"
+#include "larcorealg/Geometry/fwd.h" // geo::WireReadoutGeom
 #include "lardataalg/DetectorInfo/LArProperties.h"
 #include "lardataalg/DetectorInfo/DetectorClocksData.h"
 #include "lardataalg/DetectorInfo/DetectorTimings.h"
@@ -43,6 +44,7 @@
 #include "messagefacility/MessageLogger/MessageLogger.h"
 #include "fhiclcpp/types/Atom.h"
 #include "fhiclcpp/types/OptionalAtom.h"
+#include "fhiclcpp/types/OptionalTable.h"
 #include "fhiclcpp/types/Sequence.h"
 #include "fhiclcpp/types/Table.h"
 
@@ -163,9 +165,14 @@ class icarus::opdet::OpDetWaveformMakerClass {
  * The algorithm creates simulated PMT waveforms as read out by ICARUS,
  * including the generation of trigger primitives.
  * Contributions to the waveforms include:
- *  * physical photons
+ *  * physical photons (optionally gated by a distance-dependent survival
+ *    probability, see below)
  *  * dark noise
  *  * electronics noise
+ *
+ * In addition, an optional post-processing correction ("tail suppression",
+ * see below) may be applied to the signal waveform to reproduce the
+ * behaviour observed in data in the tail of large pulses.
  *
  * The algorithm processes an optical channel at a time, independently
  * and uncorrelated from the other channels.
@@ -213,10 +220,22 @@ class icarus::opdet::OpDetWaveformMakerClass {
  *       of the photon converting to a photoelectron, the quantum efficiency
  *       check here should be skipped by setting the efficiency to 1.
  *
+ * When enabled by `DistanceSurvival.Apply`, the photoelectron conversion is
+ * additionally gated by a distance-dependent survival probability @f$ S(d) @f$:
+ * each photon is kept with total probability @f$ QE \times S(d) @f$, where
+ * @f$ d @f$ is the straight-line distance from the photon emission point to
+ * the PMT center. This is drawn from the same random stream as the plain
+ * quantum-efficiency acceptance, so the two are mutually exclusive at
+ * configuration time (either `KicksPhotoelectron()` or the @f$ QE \times S(d) @f$
+ * gate is used, never both). @f$ S(d) @f$ is a piecewise-constant function of
+ * the distance (see the "Distance-dependent photon survival" section below).
+ * Since it requires the photon emission position, this feature needs the full
+ * `sim::SimPhotons` input (positions), not the position-less `sim::SimPhotonsLite`.
+ *
  * For each converting photon, a photoelectron is added to the channel by
  * placing a template waveform shape into the channel waveform.
  *
- * If enabled by `ApplyTimingDelays`, the timing correction service 
+ * If enabled by `ApplyTimingDelays`, the timing correction service
  * `icarusDB::IPMTTimingCorrectionService` is used to simulate the chain of
  * delays between the photon hitting the photocathode and the time its signal
  * is digitized. The delay is dominated by the signal cable length (~200ns).
@@ -320,6 +339,63 @@ class icarus::opdet::OpDetWaveformMakerClass {
  * Noise can be disabled by using the `PMTnoNoiseGeneratorTool`.
  *
  *
+ * Distance-dependent photon survival (SBN-docdb-48511)
+ * ----------------------------------------------------
+ *
+ * When enabled via `DistanceSurvival.Apply`, each scintillation photon is
+ * accepted as a photoelectron with probability @f$ QE \times S(d) @f$ instead
+ * of the plain quantum-efficiency acceptance, where @f$ d @f$ is the
+ * straight-line distance [cm] from the photon emission point to the PMT
+ * center and @f$ S(d) \in [0, 1] @f$ is a survival factor. This provides an
+ * effective, distance-dependent correction to the light yield on top of the
+ * upstream photon propagation.
+ *
+ * @f$ S(d) @f$ is piecewise constant: it is defined by a set of bin edges
+ * (`DistanceSurvival.BinEdges`, sorted, in cm) and one survival factor per
+ * bin (`DistanceSurvival.Factors`, so `BinEdges` has exactly one more entry
+ * than `Factors`). `Factors[i]` applies to @f$ d \in
+ * [ \mathrm{BinEdges}[i], \mathrm{BinEdges}[i+1] ) @f$; for distances outside
+ * the covered range the survival is 1 (photon subject to plain `QE` only).
+ * The acceptance is drawn from the same random stream as the quantum
+ * efficiency, and the correction is uniform across all channels.
+ *
+ * Because the emission position is required, this feature is only available
+ * on the full `sim::SimPhotons` input path; if only the position-less
+ * `sim::SimPhotonsLite` is available the module raises a configuration error
+ * rather than silently dropping the correction (see `SimPMTIcarus`).
+ *
+ *
+ * Tail suppression (SBN-docdb-48157, SBN-docdb-48511)
+ * ---------------------------------------------------
+ *
+ * In the tail of large pulses, data waveforms sit systematically below the
+ * level predicted by linearly scaling the SPE template. This correction is an
+ * empirical, tunable model to reproduce that behaviour in simulation.
+ *
+ * When enabled via `TailSuppression.Apply`, a low-pass filter is run over the
+ * signal waveform (pre-pedestal) to track the recent integrated charge. The
+ * filter is a recursive (exponential moving) average of the polarity-corrected
+ * samples:
+ * @f[
+ *   Q(n) = (1 - \beta)\,Q(n-1) + \beta\,\max(0,\,s(n))
+ * @f]
+ * where @f$ s(n) @f$ is the polarity-corrected sample and @f$ \beta @f$ is the
+ * filter smoothing factor. It is the inverse of the decay time constant
+ * `TailSuppression.Tau` expressed in ticks, i.e.
+ * @f$ \beta = 1 / (\tau \cdot f_{\mathrm{sampling}}) @f$ with @f$ \tau @f$ the
+ * `Tau` value [ns] and @f$ f_{\mathrm{sampling}} @f$ the sampling frequency
+ * [GHz, ticks/ns]. The charge state @f$ Q @f$ is initialized to zero at the start of
+ * each channel's full waveform and does not persist across channels.
+ *
+ * The tracked charge is then subtracted from each sample, scaled by a tunable
+ * strength parameter `TailSuppression.Epsilon`, with the result clamped so it
+ * does not cross the baseline:
+ * @f[
+ *   s'(n) = \max(0,\, s(n) - \varepsilon\,Q(n))
+ * @f]
+ * (the polarity is restored before the sample is written back). The
+ * correction parameters are the same across all channels.
+ *
  * Configuration
  * ==============
  *
@@ -347,6 +423,7 @@ class icarus::opdet::OpDetWaveformMakerClass {
  *     @f$ \mu_{i} \propto (\Delta V_{i})^{k} @f$ (with @f$ \mu_{i} @f$ the
  *     gain for stage @f$ i @f$, @f$ \Delta V_{i} @f$ the drop of potential
  *     of that stage and @f$ k @f$ the parameter set by `dynodeK`.
+ *
  * * `DiscrimAlgo` (choice, default: `"CrossingThreshold"`): selects one of the
  *     hard-coded discrimination algorithms used for zero suppression.
  *     The suppression algorithm identifies some interesting time points and
@@ -364,6 +441,29 @@ class icarus::opdet::OpDetWaveformMakerClass {
  *       suppressed, and if the readout buffer is longer than the single
  *       photoelectron response (as it should) the tail of the buffer will
  *       always contain just noise.
+ *
+ *
+ * Signal corrections
+ * ------------------
+ *
+ * These optional top-level configuration tables control the corrections
+ * described in the "Distance-dependent photon survival" and "Tail suppression"
+ * sections above. Both are disabled by default.
+ *
+ * * `DistanceSurvival` (table, optional): distance-dependent photon survival
+ *     @f$ S(d) @f$. Sub-parameters:
+ *     * `Apply` (default: `false`): enable the correction. Requires full
+ *       `sim::SimPhotons` input (photon positions).
+ *     * `BinEdges` (default: empty): distance bin edges [cm], sorted; must have
+ *       exactly one more entry than `Factors`.
+ *     * `Factors` (default: empty): survival probability per bin, each in
+ *       `[0, 1]`; survival is 1 for distances outside the covered range.
+ * * `TailSuppression` (table, optional): empirical tail suppression correction.
+ *     Sub-parameters:
+ *     * `Apply` (default: `false`): enable the correction.
+ *     * `Epsilon` (default: `0.0`): correction strength @f$ \varepsilon @f$
+ *       (dimensionless); typical values 0.27 (Run 1/2).
+ *     * `Tau` (default: `250.0`): charge-state decay time constant [ns].
  *
  *
  * Random number generators
@@ -505,6 +605,23 @@ class icarus::opdet::PMTsimulationAlg {
 
     }; // struct PMTspecs_t
   
+    struct TailSuppressionParams_t {
+      bool  apply   = false;
+      float epsilon = 0.0f;   ///< correction strength [dimensionless]
+      float tau     = 250.0f; ///< charge-state decay time constant [ns]
+    };
+
+    /// Distance-dependent photon survival: each scintillation
+    /// photon is kept with probability `QE x S(d)`, where `d` is the
+    /// straight-line distance from the photon emission point to the PMT
+    /// center. `factors[i]` applies to `d` in `[binEdges[i], binEdges[i+1])`
+    /// [cm]; survival is 1 outside the covered range.
+    struct DistanceSurvivalParams_t {
+      bool apply = false;
+      std::vector<double> binEdges; ///< bin edges [cm], size = factors + 1
+      std::vector<double> factors;  ///< survival probabilities, in [0, 1]
+    };
+
     /// @{
     /// @name High level configuration parameters.
 
@@ -531,6 +648,8 @@ class icarus::opdet::PMTsimulationAlg {
     hertz darkNoiseRate;
     float saturation; //equivalent to the number of p.e. that saturates the electronic signal
     PMTspecs_t PMTspecs; ///< PMT specifications.
+    TailSuppressionParams_t tailSuppression; ///< Causal subtractive droop correction parameters.
+    DistanceSurvivalParams_t distanceSurvival; ///< Distance-dependent photon survival S(d).
     bool doGainFluctuations; ///< Whether to simulate gain fluctuations.
     bool useGainCalibDB; ///< Whether to use per-channel DB gain for fluctuations.
     bool doTimingDelays; ///< Whether to simulate timing delays.
@@ -543,6 +662,9 @@ class icarus::opdet::PMTsimulationAlg {
     std::uint64_t beamGateTimestamp = 0;
 
     detinfo::LArProperties const* larProp = nullptr; ///< LarProperties service provider.
+
+    /// OpDet geometry mapping (required if `distanceSurvival.apply`).
+    geo::WireReadoutGeom const* wireReadoutGeom = nullptr;
 
     detinfo::DetectorClocksData const* clockData = nullptr;
   
@@ -637,6 +759,10 @@ class icarus::opdet::PMTsimulationAlg {
   template <typename Stream>
   void printConfiguration(Stream&& out, std::string indent = "") const;
 
+  /// Whether the distance-dependent photon survival S(d) is enabled
+  /// (requires full `sim::SimPhotons` input: photon positions).
+  bool appliesDistanceSurvival() const
+    { return fParams.distanceSurvival.apply; }
 
   /// Manages the conversion between names and values of `DiscriminationAlgo`.
   static util::MultipleChoiceSelection<DiscriminationAlgo> const
@@ -971,6 +1097,10 @@ class icarus::opdet::PMTsimulationAlg {
 
   /// Returns a random response whether a photon generates a photoelectron.
   bool KicksPhotoelectron() const;
+
+  /// Returns the distance survival probability S(d) for a photon travelling
+  /// a straight-line distance `d_cm` [cm] (1 outside the configured range).
+  double distanceSurvival(double d_cm) const;
   
   /// Returns the ADC range allowed for photoelectron saturation.
   std::pair<ADCcount, ADCcount> saturationRange(ADCcount baseline) const;
@@ -984,7 +1114,10 @@ class icarus::opdet::PMTsimulationAlg {
   
   /// Applies the configured photoelectron saturation on the `waveform`.
   void ApplySaturation(Waveform_t& waveform, ADCcount baseline) const;
-  
+
+  /// Applies the causal subtractive tail suppression correction to the signal waveform.
+  void ApplyTailSuppression(Waveform_t& waveform) const;
+
   /// Forces `waveform` ADC within the `min` to `max` range (`max` included).
   static void ClipWaveform(Waveform_t& waveform, ADCcount min, ADCcount max);
   
@@ -1034,7 +1167,51 @@ class icarus::opdet::PMTsimulationAlgMaker {
 
   }; // struct PMTspecConfig
 
-  
+  struct TailSuppressionConfig {
+    using Name = fhicl::Name;
+    using Comment = fhicl::Comment;
+
+    fhicl::Atom<bool>   Apply   {
+      Name("Apply"),
+      Comment("Enable causal subtractive tail suppression correction"),
+      false
+      };
+    fhicl::Atom<float> Epsilon {
+      Name("Epsilon"),
+      Comment("Correction strength [dimensionless]"),
+      0.0f
+      };
+    fhicl::Atom<float> Tau     {
+      Name("Tau"),
+      Comment("Charge-state decay time constant [ns]"),
+      250.0f
+      };
+
+  }; // struct TailSuppressionConfig
+
+  struct DistanceSurvivalConfig {
+    using Name = fhicl::Name;
+    using Comment = fhicl::Comment;
+
+    fhicl::Atom<bool> Apply {
+      Name("Apply"),
+      Comment("Enable distance-dependent photon survival S(d)"),
+      false
+      };
+    fhicl::Sequence<double> BinEdges {
+      Name("BinEdges"),
+      Comment("Photon-to-PMT distance bin edges [cm]; one more than Factors"),
+      std::vector<double>{}
+      };
+    fhicl::Sequence<double> Factors {
+      Name("Factors"),
+      Comment("Survival probability per distance bin (S = 1 outside range)"),
+      std::vector<double>{}
+      };
+
+  }; // struct DistanceSurvivalConfig
+
+
   /// Main algorithm FHiCL configuration.
   struct Config {
     using Name = fhicl::Name;
@@ -1113,6 +1290,22 @@ class icarus::opdet::PMTsimulationAlgMaker {
       };
 
     //
+    // tail suppression
+    //
+    fhicl::OptionalTable<TailSuppressionConfig> TailSuppression {
+      Name("TailSuppression"),
+      Comment("PMT anode baseline-droop correction (causal subtractive model)")
+    };
+
+    //
+    // distance-dependent photon survival
+    //
+    fhicl::OptionalTable<DistanceSurvivalConfig> DistanceSurvival {
+      Name("DistanceSurvival"),
+      Comment("Distance-dependent scintillation photon survival S(d)")
+    };
+
+    //
     // dark noise
     //
     fhicl::Atom<hertz> DarkNoiseRate {
@@ -1186,6 +1379,7 @@ class icarus::opdet::PMTsimulationAlgMaker {
   std::unique_ptr<PMTsimulationAlg> operator()(
     std::uint64_t beamGateTimestamp,
     detinfo::LArProperties const& larProp,
+    geo::WireReadoutGeom const& wireReadoutGeom,
     detinfo::DetectorClocksData const& detClocks,
     icarusDB::PMTTimingCorrections const* timingDelays,
     icarusDB::PhotonCalibratorFromDB const* gainCalibProvider,
@@ -1219,6 +1413,7 @@ class icarus::opdet::PMTsimulationAlgMaker {
   PMTsimulationAlg::ConfigurationParameters_t makeParams(
     std::uint64_t beamGateTimestamp,
     detinfo::LArProperties const& larProp,
+    geo::WireReadoutGeom const& wireReadoutGeom,
     detinfo::DetectorClocksData const& clockData,
     icarusDB::PMTTimingCorrections const* timingDelays,
     icarusDB::PhotonCalibratorFromDB const* gainCalibProvider,
@@ -1320,7 +1515,21 @@ void icarus::opdet::PMTsimulationAlg::printConfiguration
     << '\n' << indent << "Gain at first stage: " << fParams.PMTspecs.firstStageGain()
     << '\n' << indent << "SPR nominal area:    " << fNominalSPEArea << " ADC x tick"
     << '\n' << indent << "Bias ratio:          " << fBiasConstant
+    << '\n' << indent << "Tail suppression:    "
+      << std::boolalpha << fParams.tailSuppression.apply
     ;
+  if (fParams.tailSuppression.apply) {
+    out << " (epsilon=" << fParams.tailSuppression.epsilon
+        << ", tau=" << fParams.tailSuppression.tau << " ns)";
+  }
+  out
+    << '\n' << indent << "Distance survival:   "
+      << std::boolalpha << fParams.distanceSurvival.apply
+    ;
+  if (fParams.distanceSurvival.apply) {
+    out << " (" << fParams.distanceSurvival.factors.size() << " bins over "
+        << fParams.distanceSurvival.binEdges.size() << " edges)";
+  }
 
   out << '\n' << indent << "Pedestal:          " << fPedestalGen->toString(indent + "  ", "");
 
@@ -1335,7 +1544,6 @@ void icarus::opdet::PMTsimulationAlg::printConfiguration
   out << '\n' << indent << "Template photoelectron waveform settings:"
       << '\n';
   wsp.dump(std::forward<Stream>(out), indent + "  ");
-  
   out << '\n' << indent << "Track used photons:  "
     << std::boolalpha << fParams.trackSelectedPhotons
     << '\n';

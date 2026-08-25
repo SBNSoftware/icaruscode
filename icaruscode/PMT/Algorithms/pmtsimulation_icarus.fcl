@@ -44,6 +44,10 @@
 # 20251111 (mvicenzi@bnl.gov)
 #   introduced configuration for new Run1/2 SPR (SPRisolHitRun9271)
 #   introduced configuration for new Run3/4 SPR (SPRisolHitRun12715)
+# 20260618 (mvicenzi@bnl.gov)
+#   introduced tail suppression tune for run2
+# 20260722 (mvicenzi@bnl.gov)
+#   introduced distance-based survival probability for run2
 
 #include "opticalproperties_icarus.fcl"
 
@@ -402,6 +406,13 @@ icarus_pmtsimulationalg_202202_noise: {
     Gain:                   @local::icarus_settings_opdet.nominalPMTgain  # total typical PMT gain
   } # PMTspecs
 
+  # Subtractive tail suppression correction
+  TailSuppression: {
+    Apply:   false
+    Epsilon: 0.0
+    Tau:     250.0  # [ns]
+  }
+
 } # icarus_pmtsimulationalg_202202_noise
 
 
@@ -469,6 +480,23 @@ icarus_pmtsimulationalg_run2_2025: {
     Gain:                   @local::icarus_settings_opdet_run2.nominalPMTgain  # total PMT gain
   }
 
+  # Tail suppression effective correction
+  # Run2 tune from SBN-doc-48511
+  TailSuppression: {
+    Apply:   true
+    Epsilon: 0.27   # correction strength
+    Tau:     500.0  # [ns]
+  }
+
+  # Distance-dependent scintillation photon survival S(d): each photon kept
+  # with probability QE x S(d), S = 1 outside range
+  # Run2 tune from SBN-doc-48511
+  DistanceSurvival: {
+    Apply:    true
+    BinEdges: [ 150, 200, 250, 300, 350, 400, 450 ]  # [cm]
+    Factors:  [ 0.97, 0.87, 0.82, 0.82, 0.82, 0.85 ]         
+  }
+
 } # icarus_pmtsimulationalg_run2_2025
 
 
@@ -502,6 +530,20 @@ icarus_pmtsimulationalg_run4_2025: {
     DynodeK:                 0.75           # gain on a PMT multiplication stage
     VoltageDistribution:    [ 3.0, 3.4, 5.0, 3.33, 1.67, 1.0, 1.2, 1.5, 2.2, 3.0 ]
     Gain:                   @local::icarus_settings_opdet_run4.nominalPMTgain  # total PMT gain
+  }
+
+  # TODO: requires tuning on Run-4 data
+  TailSuppression: {
+    Apply:   false
+    Epsilon: 0.27    
+    Tau:     500.0   # [ns]
+  }
+
+  # TODO: requires tuning on Run-4 data
+  DistanceSurvival: {
+    Apply:   false
+    BinEdges: [ 150, 200, 250, 300, 350, 400, 450 ]  # [cm]
+    Factors:  [ 0.97, 0.87, 0.82, 0.82, 0.82, 0.85 ] 
   }
 
 } # icarus_pmtsimulationalg_run4_2025
