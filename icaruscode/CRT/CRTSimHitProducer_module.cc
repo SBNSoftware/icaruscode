@@ -92,9 +92,10 @@ namespace crt {
     art::InputTag fCrtModuleLabel;      ///< name of crt producer
     art::InputTag fTriggerLabel;        ///< name of trigger producer
     CRTHitRecoAlg hitAlg;
-
-    uint64_t m_trigger_timestamp;
-
+    
+    /// Returns whether the hit reconstruction algorithm is processing data.
+    bool isData() const { return hitAlg.isData(); }
+    
   }; // class CRTSimHitProducer
 
   CRTSimHitProducer::CRTSimHitProducer(fhicl::ParameterSet const & p)
@@ -113,7 +114,16 @@ namespace crt {
   void CRTSimHitProducer::reconfigure(fhicl::ParameterSet const & p)
   {
     fCrtModuleLabel = (p.get<art::InputTag> ("CrtModuleLabel")); 
-    fTriggerLabel   = (p.get<art::InputTag> ("TriggerLabel")); 
+    fTriggerLabel   = (p.get<art::InputTag> ("TriggerLabel"));
+    
+    if (isData() && fTriggerLabel.empty() )
+      mf::LogWarning("CRTSimHitProducer") << "No trigger data product specified for data.";
+    if (!isData() && !fTriggerLabel.empty() ) {
+      mf::LogWarning("CRTSimHitProducer")
+        << "Trigger data product ('" << fTriggerLabel.encode() << "') ignored for simulation.";
+      fTriggerLabel = art::InputTag{}; // deleted
+    }
+    
   } // CRTSimHitProducer::reconfigure()
 
   void CRTSimHitProducer::beginJob()
@@ -138,28 +148,20 @@ namespace crt {
       art::fill_ptr_vector(crtList, crtListHandle);
 
     //add trigger info
+    uint64_t triggerTimestamp = 0;
     if( !fTriggerLabel.empty() ) {
-
-      art::Handle<sbn::ExtraTriggerInfo> trigger_handle;
-      event.getByLabel( fTriggerLabel, trigger_handle );
-      if( trigger_handle.isValid() )
-      	m_trigger_timestamp = trigger_handle->triggerTimestamp; 
+      if (auto trigger_handle = event.getHandle<sbn::ExtraTriggerInfo>(fTriggerLabel))
+        triggerTimestamp = trigger_handle->triggerTimestamp; 
       else
-      	mf::LogError("CRTSimHitProducer") << "No raw::Trigger associated to label: " << fTriggerLabel.label() << "\n" ;
-    } else{ 
-      std::cout  << "Trigger Data product " << fTriggerLabel.label() << " not found!\n" ;
+        mf::LogError("CRTSimHitProducer") << "No raw::Trigger associated to label: " << fTriggerLabel.encode() << "\n" ;
     }
 
     mf::LogInfo("CRTSimHitProducer")
       <<"Number of SiPM hits = "<<crtList.size();
-    //m_trigger_timestamp = event.getProduct<sbn::ExtraTriggerInfo>(fTriggerLabel).triggerTimestamp;
 
-    mf::LogInfo("CRTSimHitProducer")
-      <<"Number of SiPM hits = "<<crtList.size();
+    vector<art::Ptr<CRTData>> crtData = hitAlg.PreselectCRTData(crtList, triggerTimestamp);
 
-    vector<art::Ptr<CRTData>> crtData = hitAlg.PreselectCRTData(crtList, m_trigger_timestamp);
-
-    vector<std::pair<CRTHit, vector<int>>> crtHitPairs = hitAlg.CreateCRTHits(crtData, m_trigger_timestamp);
+    vector<std::pair<CRTHit, vector<int>>> crtHitPairs = hitAlg.CreateCRTHits(crtData, triggerTimestamp);
     //vector<std::pair<CRTHit, vector<int>>> crtHitPairs = hitAlg.CreateCRTHits(crtList);
 
     mf::LogInfo("CRTSimHitProducer")

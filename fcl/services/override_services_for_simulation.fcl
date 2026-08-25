@@ -1,0 +1,40 @@
+#
+# File:    override_services_for_simulation.fcl
+# Purpose: Change the configuration of services for use in simulation jobs
+# Author:  Gianluca Petrillo (petrillo@slac.stanford.edu)
+# Date:    April 17, 2026
+# 
+# Usage: drop this override after defining the services table or after including
+#        the driver configuration file:
+#        
+#        #include "override_services_for_simulation.fcl"
+#        
+#        Note that this is a configuration override, which requires a services
+#        configuration to have already been defined and must live outside of
+#        PROLOG blocks.
+#        
+# Description:
+# 
+# ICARUS reconstruction workflows are based on "driver" configurations that are
+# written for data processing, while simulation definitions are included
+# separately and then overriding of the driver configuration with the
+# simulation-specific definitions is done explicitly in each job configuration.
+# 
+# This override file simplifies the explicit override of service configurations,
+# by performing it with a single-line inclusion (see Usage above).
+# 
+# The current changes are:
+#  * DetectorClocksService: timing reference should be based on
+#      * `shifted` trigger time if `AdjustSimForTrigger` was used
+#      * default trigger time otherwise
+#      * never from data-based `daqTrigger`
+#    This holds true also, and especially, for overlay workflows, where
+#    `daqTrigger` should be used only in the independent overlay data decoding
+#    stage.
+# 
+#
+
+services: {
+  @table::services
+  DetectorClocksService: @local::icarus_detectorclocks_simulation
+}
