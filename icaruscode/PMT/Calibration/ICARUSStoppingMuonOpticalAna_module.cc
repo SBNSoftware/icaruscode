@@ -185,6 +185,7 @@ private:
   // --- branch buffers -------------------------------------------------------
   // common
   int m_run;
+  int m_subrun;
   int m_event;
   int m_timestamp;
 
@@ -351,6 +352,7 @@ void icarus::ICARUSStoppingMuonOpticalAna::beginJob()
     std::string const info = "Out-of-flash recob::OpHit with label " + label.label();
     TTree* ttree = tfs->make<TTree>(name.c_str(), info.c_str());
     ttree->Branch("run", &m_run, "run/I");
+    ttree->Branch("subrun", &m_subrun, "subrun/I");
     ttree->Branch("event", &m_event, "event/I");
     ttree->Branch("timestamp", &m_timestamp, "timestamp/I");
     ttree->Branch("channel_id", &m_channel, "channel_id/I");
@@ -377,6 +379,7 @@ void icarus::ICARUSStoppingMuonOpticalAna::beginJob()
     fOpFlashTree = tfs->make<TTree>("flash_tree", "recob::OpFlash and their OpHits");
     TTree* ttree = fOpFlashTree;
     ttree->Branch("run", &m_run, "run/I");
+    ttree->Branch("subrun", &m_subrun, "subrun/I");
     ttree->Branch("event", &m_event, "event/I");
     ttree->Branch("timestamp", &m_timestamp, "timestamp/I");
     ttree->Branch("flash_id", &m_flash_id, "flash_id/I");
@@ -413,6 +416,7 @@ void icarus::ICARUSStoppingMuonOpticalAna::beginJob()
       std::string const info = "raw::OpDetWaveform with label " + label.label();
       TTree* ttree = tfs->make<TTree>(name.c_str(), info.c_str());
       ttree->Branch("run", &m_run, "run/I");
+      ttree->Branch("subrun", &m_subrun, "subrun/I");
       ttree->Branch("event", &m_event, "event/I");
       ttree->Branch("timestamp", &m_timestamp, "timestamp/I");
       ttree->Branch("channel_id", &m_wfchannel, "channel_id/I");
@@ -430,6 +434,7 @@ void icarus::ICARUSStoppingMuonOpticalAna::beginJob()
   fTrackMatchTree = tfs->make<TTree>("trackmatch_tree",
     "stopping tracks flash-matched");
   fTrackMatchTree->Branch("run", &m_run, "run/I");
+  fTrackMatchTree->Branch("subrun", &m_subrun, "subrun/I");
   fTrackMatchTree->Branch("event", &m_event, "event/I");
   fTrackMatchTree->Branch("timestamp", &m_timestamp, "timestamp/I");
   fTrackMatchTree->Branch("track_id", &t_track_id, "track_id/I");
@@ -464,6 +469,7 @@ void icarus::ICARUSStoppingMuonOpticalAna::beginJob()
     fMCParticleTree = tfs->make<TTree>(name.c_str(),
       ("simb::MCParticle truth: " + fMCParticleLabel.label()).c_str());
     fMCParticleTree->Branch("run", &m_run, "run/I");
+    fMCParticleTree->Branch("subrun", &m_subrun, "subrun/I");
     fMCParticleTree->Branch("event", &m_event, "event/I");
     fMCParticleTree->Branch("track_gen_pdg", &track_gen_pdg, "track_gen_pdg/I");
     fMCParticleTree->Branch("track_gen_time", &track_gen_time, "track_gen_time/F");
@@ -892,6 +898,7 @@ void icarus::ICARUSStoppingMuonOpticalAna::analyze(art::Event const& e)
 {
 
   m_run       = e.id().run();
+  m_subrun    = e.id().subRun();
   m_event     = e.id().event();
   m_timestamp = e.time().timeHigh(); // precision to the second
 
@@ -909,7 +916,7 @@ void icarus::ICARUSStoppingMuonOpticalAna::analyze(art::Event const& e)
   // do not save anything from this event
   if (fSkipUnmatchedEvents && !anyMatched){
     mf::LogWarning("ICARUSStoppingMuonOpticalAna") 
-      << "Zero track matches in run " << m_run << " event " << m_event << "!";
+      << "Zero track matches in run " << m_run << " subrun " << m_subrun << " event " << m_event << "!";
     return;
   }
 
