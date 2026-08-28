@@ -55,6 +55,7 @@
 #include "TTree.h"
 
 #include <array>
+#include <cmath>         // std::abs(double)
 #include <cstddef>
 #include <cstdlib>       // std::abs(int)
 #include <memory>
@@ -852,40 +853,67 @@ void icarus::ICARUSStoppingMuonOpticalAna::fillMCTruth(art::Event const& e)
       inActiveVolume(primaryMuon->EndX(), primaryMuon->EndY(), primaryMuon->EndZ());
   }
 
-  // second pass: the electron daughter of that muon
-  if (primaryMuonID >= 0) {
-    for (simb::MCParticle const& par : *particleHandle) {
+  // second pass: which electron daughter, if any, is the Michel.
+  //
+  // Geant4 reports mu- bound decay and mu- nuclear capture under one process name,
+  // "muMinusCaptureAtRest", so Process() cannot tell them apart, while mu+ 
+  // univocally decays as "Decay".
 
+  // For mu-: only the decay emits an anti-nu_e (capture is mu- + p -> n + nu_mu). 
+  // The atomic cascade runs in both branches, so a bound-decay mu- has 
+  // several e- daughters; the Michel is the most energetic one, 
+  // tens of MeV against sub-MeV Auger electrons.
+  if (primaryMuonID >= 0) {
+
+    constexpr int    kPdgAntiNuE      = -12;
+    constexpr double kElectronMassGeV = 0.000510998946;
+    constexpr double kMichelMinKEGeV  = 0.002;   // 2 MeV: far above the Auger cascade,
+                                                 // far below the 30-53 MeV Michel
+
+    // the anti-nu_e must be a daughter of this muon
+    bool neutrinosStored = false;
+    bool hasAntiNuE      = false;
+    for (simb::MCParticle const& par : *particleHandle) {
+      int const absPdg = std::abs(par.PdgCode());
+      if (absPdg == 12 || absPdg == 14 || absPdg == 16) neutrinosStored = true;
+      if (par.PdgCode() == kPdgAntiNuE && par.Mother() == primaryMuonID) hasAntiNuE = true;
+    }
+
+    // the Michel candidate: the most energetic electron daughter of the muon
+    // coming from either decay or capture.
+    simb::MCParticle const* hardestElectron = nullptr;
+    for (simb::MCParticle const& par : *particleHandle) {
       if (par.Mother() != primaryMuonID) continue;
       if (std::abs(par.PdgCode()) != 11) continue;
+      if (par.Process() != "Decay" && par.Process() != "muMinusCaptureAtRest") continue;
+      if (!hardestElectron || par.E() > hardestElectron->E()) hardestElectron = &par;
+    }
 
-      // Geant4 runs mu- nuclear capture AND bound decay inside one process named
-      // "muMinusCaptureAtRest", so "Decay" is unreachable for mu- and a real Michel
-      // carries the capture label. Split on energy instead: the two populations are
-      // ~1 MeV prompt (atomic cascade) and 22-52 MeV delayed (bound decay), nothing
-      // in between. mu+ has no at-rest process and does report "Decay".
-      constexpr double kMichelEnergyThresholdGeV = 0.010;   // kinetic
-      constexpr double kElectronMassGeV          = 0.000511;
+    if (hardestElectron) {
 
       int process = -1;
-      if (par.Process() == "Decay") process = 0;             // mu+, free decay
-      else if (par.Process() == "muMinusCaptureAtRest")
-        process = (par.E() - kElectronMassGeV > kMichelEnergyThresholdGeV) ? 2 : 1;
-      else continue;
+      if (hardestElectron->Process() == "Decay") {
+        process = 0;                                  // mu+ (or a mu- decaying in flight)
+      }
+      else if (neutrinosStored) {                     // if neutrinos are not stored, use them!
+        process = hasAntiNuE ? 2 : 1;                 // bound decay vs nuclear capture
+      }
+      else {
+        double const ke = hardestElectron->E() - kElectronMassGeV;
+        process = (ke >= kMichelMinKEGeV) ? 2 : 1;    // fallback: energy on its own
+      }
 
-      // bound decay also emits the cascade, which comes first: keep it as a fallback
-      if (process == 1 && michel_process != -1) continue;
-
+      // on the capture branch this is the hardest Auger electron, not a Michel:
+      // michel_process == 1 flags that
       michel_process  = process;
-      michel_gen_pdg  = par.PdgCode();
-      michel_gen_time = par.T();   // ns
-      michel_gen_E    = par.E();   // GeV
-      michel_gen_x    = par.Vx();
-      michel_gen_y    = par.Vy();
-      michel_gen_z    = par.Vz();
-      michel_in_av    = inActiveVolume(par.Vx(), par.Vy(), par.Vz());
-
-      if (process != 1) break;     // a decay candidate is final; a cascade one is not
+      michel_gen_pdg  = hardestElectron->PdgCode();
+      michel_gen_time = hardestElectron->T();   // ns
+      michel_gen_E    = hardestElectron->E();   // GeV
+      michel_gen_x    = hardestElectron->Vx();
+      michel_gen_y    = hardestElectron->Vy();
+      michel_gen_z    = hardestElectron->Vz();
+      michel_in_av    = inActiveVolume(hardestElectron->Vx(), hardestElectron->Vy(),
+                                       hardestElectron->Vz());
     }
   }
 
