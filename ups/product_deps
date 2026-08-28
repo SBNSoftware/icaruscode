@@ -251,9 +251,9 @@ wpdir	product_dir	wire-cell-cfg
 ####################################
 product				version		qual	flags		<table_format=2>
 icarus_data			v10_06_06	-
-icarus_signal_processing	v10_06_00_01	-
+icarus_signal_processing	v10_24_00	-
 icarusalg			v10_24_00	-
-icarusutil			v10_15_00	-
+icarusutil			v10_24_00	-
 sbncode				v10_24_00	-
 cetmodules			v3_24_01	-	only_for_build
 end_product_list
@@ -315,6 +315,8 @@ c14:debug	c14:debug	c14:debug	c14:debug	c14:debug			-nq-
 c14:prof	c14:prof	c14:prof	c14:prof	c14:prof			-nq-		
 c7:debug	c7:debug	c7:debug	c7:debug	c7:debug			-nq-		
 c7:prof		c7:prof		c7:prof		c7:prof		c7:prof				-nq-		
+e28:debug       e28:debug       e28:debug       e28:debug       e28:debug                       -nq-
+e28:prof        e28:prof        e28:prof        e28:prof        e28:prof                        -nq-
 e26:debug	e26:debug	e26:debug	e26:debug	e26:debug			-nq-		
 e26:prof	e26:prof	e26:prof	e26:prof	e26:prof			-nq-	
 e20:debug	e20:debug	e20:debug	e20:debug	e20:debug			-nq-		
