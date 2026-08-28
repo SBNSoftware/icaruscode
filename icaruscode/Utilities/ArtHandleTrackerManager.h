@@ -1014,7 +1014,7 @@ util::LocalArtHandleTrackerManager<Event>::LocalArtHandleTrackerManager
 
 // -----------------------------------------------------------------------------
 template <typename Event>
-util::LocalArtHandleTrackerManager<Event>::~LocalArtHandleTrackerManager<Event>()
+util::LocalArtHandleTrackerManager<Event>::~LocalArtHandleTrackerManager()
   { doneWithEvent(); }
 
 
