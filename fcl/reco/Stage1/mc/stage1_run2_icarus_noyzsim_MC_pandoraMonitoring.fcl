@@ -1,0 +1,10 @@
+
+#include "stage1_run2_icarus_noyzsim_MC.fcl"
+
+physics.producers.pandoraGausCryoE.ConfigFile:             "PandoraSettings_Master_ICARUS_PandoraMonitoring.xml"
+physics.producers.pandoraGausCryoE.EnableMCParticles:      true
+physics.producers.pandoraGausCryoE.SimChannelModuleLabel:  "daq:simpleSC"
+
+physics.producers.pandoraGausCryoW.ConfigFile:             "PandoraSettings_Master_ICARUS_PandoraMonitoring.xml"
+physics.producers.pandoraGausCryoW.EnableMCParticles:      true
+physics.producers.pandoraGausCryoW.SimChannelModuleLabel:  "daq:simpleSC"

@@ -1,0 +1,15 @@
+#include "prod_muon_0-1GeV_isotropic_icarus.fcl"
+
+process_name: MuonGen
+
+outputs.out1.fileName: "prod_muon_1.5GeV_isotropic_icarus_active_%tc_gen.root"
+
+physics.producers.generator.X0:     [ -220.215 ]
+physics.producers.generator.Y0:     [ -23.5    ]
+physics.producers.generator.Z0:     [ 0        ]
+physics.producers.generator.SigmaX: [ 148.275  ]
+physics.producers.generator.SigmaY: [ 158.46   ]
+physics.producers.generator.SigmaZ: [ 894.951  ]
+
+physics.producers.generator.P0:     [ 1.5 ]
+physics.producers.generator.SigmaP: [ 0. ]

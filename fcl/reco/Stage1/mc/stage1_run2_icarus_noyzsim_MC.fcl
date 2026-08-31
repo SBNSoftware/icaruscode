@@ -1,0 +1,12 @@
+
+#include "stage1_run2_icarus_MC.fcl"
+
+# Tentative fix for mcreco
+physics.producers.mcreco.SimChannelLabel: "shifted"
+
+# Tentative fix for caloskim
+physics.analyzers.caloskimW.SimChannelproducer: "daq:simpleSC"
+physics.analyzers.caloskimE.SimChannelproducer: "daq:simpleSC"
+
+# Tentative fix for backtracker
+services.BackTrackerService.BackTracker.SimChannelModuleLabel: "daq:simpleSC"
