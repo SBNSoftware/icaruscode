@@ -6,7 +6,7 @@ tpcpmtbarycentermatch_common_params:
     OpFlashLabel:     "opflash"
     PandoraLabel:     "pandoraGaus"
     CollectionOnly:   true
-    UseTimeRange:     true
+    UseTimeRange:     false
     Verbose:          false
     FillMatchTree:    false
     TriggerTolerance: 0.15
