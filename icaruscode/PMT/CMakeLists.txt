@@ -5,6 +5,7 @@ add_subdirectory(Algorithms)
 add_subdirectory(LibraryMappingTools)
 add_subdirectory(Trigger)
 add_subdirectory(Calibration)
+add_subdirectory(Status)
 
 # Removing AVX instructions because assuming the grid nodes
 # being less than 6 year old proved to be pretentious.
@@ -13,7 +14,9 @@ add_subdirectory(Calibration)
 
 cet_build_plugin(SimPMTIcarus art::module
                     LIBRARIES
-			icaruscode_PMT_Algorithms
+			icaruscode::PMT_Status
+			icaruscode::PMT_Algorithms
+			sbnobj::ICARUS_PMT_Data
 			lardataobj::RawData
 			lardataobj::Simulation
 			larcore::Geometry_Geometry_service
@@ -117,7 +120,7 @@ cet_build_plugin(CustomPulseFunctionTool art::tool
 cet_build_plugin(PMTconstantPedestalGeneratorTool art::tool
   LIBRARIES
     icaruscode::PMT_Algorithms
-    lardata::DetectorInfoServices_DetectorClocksServiceStandard_service
+    lardata::DetectorClocksService
     lardataalg::DetectorInfo
     lardataobj::RawData
   )
@@ -125,7 +128,7 @@ cet_build_plugin(PMTconstantPedestalGeneratorTool art::tool
 cet_build_plugin(PMTgausNoiseGeneratorTool art::tool
   LIBRARIES
     icaruscode::PMT_Algorithms
-    lardata::DetectorInfoServices_DetectorClocksServiceStandard_service
+    lardata::DetectorClocksService
     lardataalg::DetectorInfo
     lardataobj::RawData
   )
@@ -133,7 +136,7 @@ cet_build_plugin(PMTgausNoiseGeneratorTool art::tool
 cet_build_plugin(PMTfastGausNoiseGeneratorTool art::tool
   LIBRARIES
     icaruscode::PMT_Algorithms
-    lardata::DetectorInfoServices_DetectorClocksServiceStandard_service
+    lardata::DetectorClocksService
     lardataalg::DetectorInfo
     lardataobj::RawData
   )
@@ -141,7 +144,7 @@ cet_build_plugin(PMTfastGausNoiseGeneratorTool art::tool
 cet_build_plugin(PMTnoNoiseGeneratorTool art::tool
   LIBRARIES
     icaruscode::PMT_Algorithms
-    lardata::DetectorInfoServices_DetectorClocksServiceStandard_service
+    lardata::DetectorClocksService
     lardataalg::DetectorInfo
     lardataobj::RawData
   )
@@ -151,7 +154,7 @@ cet_build_plugin(CopyBeamTimePMTwaveforms art::module
     icaruscode::PMT_Data
     icarusalg::Utilities
     sbnobj::ICARUS_PMT_Data
-    lardata::DetectorInfoServices_DetectorClocksServiceStandard_service
+    lardata::DetectorClocksService
     lardataalg::DetectorInfo
     lardataobj::RawData
   )
@@ -244,7 +247,7 @@ cet_build_plugin(RequireOnBeamWaveforms art::module
   LIBRARIES
     icaruscode::IcarusObj
     icarusalg::Utilities
-    lardata::DetectorInfoServices_DetectorClocksServiceStandard_service
+    lardata::DetectorClocksService
     larcore::Geometry_Geometry_service
     larcore::headers
     lardataalg::DetectorInfo

@@ -1,6 +1,11 @@
 
 BEGIN_PROLOG
 
+### The values below represent the average SPE amplitude/area across all PMT channels.
+### The default optical reconstruction now uses the `IPhotonCalibratorService` to
+### properly pick-up channel-by-channel SPEArea values for a given time (run number).
+### These values here are kept as defaults to support older workflows.
+
 SPEorig: {
   Area: 212.
   Amplitude: 49.18
@@ -21,6 +26,40 @@ SPE202401patch: {  # amplitude set to 3.23 mV, gain 7.5x10^6 with R = 50 ohm
   Amplitude: 26.4258 # ADC (= 3.23 mV / 2 V x 2^14 bit)
   Shift: 0.
 }
+
+# the following is based on the selection of single-PE ophits from RUN-2 data
+# this is a data-driven choice, already including the reconstruction biases
+# see SBN DocbDB 45565, slide 13-14
+# NB: this is much smaller than before due to the integral definition
+#     resulting from the official baseline reco when using ophits;
+#     since this value is used on ophits, it's good to natually include this bias.
+SPE2025Run2: {
+  Area: 152.01      # ADC x (2 ns)
+  Amplitude: 28.08  # ADC
+  Shift: 0.
+}
+
+# the following is based on the selection of single-PE ophits from RUN-3 data
+# this is a data-driven choice, already including the reconstruction biases
+# see SBN DocbDB 45565, slide 13-14
+SPE2025Run3: {
+  Area: 127.39      # ADC x (2 ns)
+  Amplitude: 29.91  # ADC
+  Shift: 0.
+}
+
+# the following is based on the selection of single-PE ophits from RUN-4 data
+# this is a data-driven choice, already including the reconstruction biases
+# see SBN DocbDB 45565, slide 13-14
+SPE2025Run4: {
+  Area: 131.83      # ADC x (2 ns)
+  Amplitude: 31.14  # ADC
+  Shift: 0.
+}
+
+SPERun2: @local::SPE2025Run2
+SPERun3: @local::SPE2025Run3
+SPERun4: @local::SPE2025Run4
 
 SPE: @local::SPE202401patch
 

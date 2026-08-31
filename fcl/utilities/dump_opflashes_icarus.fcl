@@ -1,0 +1,49 @@
+# File:    dump_opflashes_icarus.fcl
+# Purpose: Dump on screen of the standard optical flash data products.
+# Author:  Gianluca Petrillo (petrillo@slac.stanford.edu)
+# Date:    December 18, 2025
+#
+# This job expects flashes in `opflashCryoE` and `opflashCryoW`.
+# The output file `DumpOpFlashes.log` is produced.
+#
+
+process_name: "DumpOpFlashes"
+
+physics: {
+  analyzers: {
+    dumpopflashesE: {
+      module_type:            DumpOpFlashes
+      OpFlashModuleLabel:    "opflashCryoE"
+      PrintOpHitAssociations: true
+      OutputCategory:        "DumpOpFlashes"
+    }
+    dumpopflashesW: {
+      module_type:            DumpOpFlashes
+      OpFlashModuleLabel:    "opflashCryoW"
+      PrintOpHitAssociations: true
+      OutputCategory:        "DumpOpFlashes"
+    }
+  }
+  dumpers: [ "dumpopflashesE", "dumpopflashesW" ]
+}
+
+services.message.destinations: {
+  DumpOpFlashes: {
+    type:      "file"
+    filename:  "DumpOpFlashes.log"
+    threshold: "INFO"
+    append:     false
+    categories: {
+      DumpOpFlashes: { limit: -1 }
+      default:       { limit:  0 }
+    }
+  }
+  LogStandardOut: {
+    type:      "cout"
+    threshold: "WARNING"
+    categories: {
+      DumpOpFlashes: { limit:  0 }
+      default:       {}
+    }
+  }
+}

@@ -92,17 +92,30 @@ class icarus::opdet::DiscretePhotoelectronPulse {
     * @param nSubsamples (default: `1`) the number of samples within a tick
     * @param samplingThreshold (default: 10^-6^) pulse shape ends when its
     *        value is below this threshold
+    * @param minTimeBelowThreshold (default: one sample worth) how long the
+    *        waveform should be below threshold for the sampling to terminate
     *
     * Samples start from time 0, which is the time of the start of the first
     * tick. This time is expected to be the arrival time of the photoelectron.
     *
-    * The length of the sampling is determined by the sampling threshold:
-    * at the first tick after the peak time where the shape function is below
-    * threshold, the sampling ends (that tick under threshold itself is also
-    * discarded).
+    * The length of the sampling is determined by the sampling threshold.
+    * The sampling is over after the signal has been close to the baseline
+    * by at least `minTimeBelowThreshold` (excluding the last tick too).
+    * The closeness is defined on both sides of the baseline (for example a
+    * bipolar or undershooting signal will not necessarily terminate at the
+    * baseline crossing time).
     *
     * The ownership of `pulseShape` is acquired by this object.
     */
+  DiscretePhotoelectronPulse(
+    PulseFunction_t const& pulseShape,
+    gigahertz samplingFreq,
+    unsigned int nSubsamples,
+    ADCcount samplingThreshold,
+    nanoseconds minTimeBelowThreshold
+    );
+
+  // version with the default values
   DiscretePhotoelectronPulse(
     PulseFunction_t const& pulseShape,
     gigahertz samplingFreq,
@@ -219,7 +232,7 @@ class icarus::opdet::DiscretePhotoelectronPulse {
   static SampledFunction_t sampleShape(
     PulseFunction_t const& pulseShape,
     gigahertz samplingFreq, unsigned int nSubsamples,
-    ADCcount threshold
+    ADCcount threshold, unsigned int minSamplesBelowThreshold
     );
 
 }; // class DiscretePhotoelectronPulse<>
@@ -242,7 +255,7 @@ inline icarus::opdet::DiscretePhotoelectronPulse::DiscretePhotoelectronPulse(
   : fShape(pulseShape)
   , fSamplingFreq(samplingFreq)
   , fSampledShape
-    (sampleShape(shape(), fSamplingFreq, nSubsamples, samplingThreshold))
+      (sampleShape(shape(), fSamplingFreq, nSubsamples, samplingThreshold, 1))
   {}
 
 

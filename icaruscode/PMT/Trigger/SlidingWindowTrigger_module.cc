@@ -226,9 +226,9 @@ class icarus::trigger::SlidingWindowTrigger: public art::EDProducer {
     using Comment = fhicl::Comment;
 
 
-    fhicl::Atom<std::string> TriggerGatesTag {
+    fhicl::Atom<art::InputTag> TriggerGatesTag {
       Name("TriggerGatesTag"),
-      Comment("label of the input trigger gate data product (no instance name)")
+      Comment("tag of the input trigger gate data product (no instance name)")
       };
 
     fhicl::Sequence<std::string> Thresholds {
@@ -385,6 +385,9 @@ class icarus::trigger::SlidingWindowTrigger: public art::EDProducer {
     art::Assns<TriggerGateData_t, sbn::OpDetWaveformMeta> const& assns
     );
 
+  static art::InputTag makeTag
+    (art::InputTag const& defModule, std::string const& thresholdStr);
+  
 }; // class icarus::trigger::SlidingWindowTrigger
 
 
@@ -435,9 +438,9 @@ icarus::trigger::SlidingWindowTrigger::SlidingWindowTrigger
   //
   // more complex parameter parsing
   //
-  std::string const discrModuleLabel = config().TriggerGatesTag();
+  art::InputTag const& discrModuleTag = config().TriggerGatesTag();
   for (std::string const& threshold: config().Thresholds())
-    fADCthresholds[threshold] = art::InputTag{ discrModuleLabel, threshold };
+    fADCthresholds[threshold] = makeTag(discrModuleTag, threshold);
 
   //
   // configuration report (short)
@@ -667,6 +670,21 @@ auto icarus::trigger::SlidingWindowTrigger::ReadTriggerGates(
     (event.getProduct<std::vector<OpticalTriggerGateData_t>>(dataTag), assns);
   
 } // icarus::trigger::SlidingWindowTrigger::ReadTriggerGates()
+
+
+//------------------------------------------------------------------------------
+art::InputTag icarus::trigger::SlidingWindowTrigger::makeTag
+  (art::InputTag const& defModule, std::string const& thresholdStr)
+{
+  if (!thresholdStr.empty() && !defModule.instance().empty()) {
+    throw art::Exception(art::errors::Configuration)
+      << "Module tag instance name (`TriggerGatesTag`: '"
+      << defModule.encode() << "') and the threshold '" << thresholdStr
+      << "' are both set. One of them must be empty.\n";
+  }
+  return { defModule.label(), thresholdStr, defModule.process() };
+} // icarus::trigger::SlidingWindowTrigger::makeTag()
+
 
 //------------------------------------------------------------------------------
 DEFINE_ART_MODULE(icarus::trigger::SlidingWindowTrigger)
