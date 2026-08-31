@@ -6,6 +6,7 @@ physics.reco: [
                 @sequence::icarus_reco_Gauss1D_CryoW ,
                 @sequence::icarus_reco_fm,
                 @sequence::icarus_tpcpmtbarycentermatch,
+                @sequence::icarus_postPandora_Gauss,
                 @sequence::icarus_crttrack,
                 @sequence::icarus_crtt0tagging,
                 caloskimCalorimetryCryoE, caloskimCalorimetryCryoW,

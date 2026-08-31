@@ -1,0 +1,38 @@
+#include "nugraph.fcl"
+
+BEGIN_PROLOG
+
+nuslhitsCryoE: { 
+  module_type:    "ICARUSNuSliceHitsProducer"
+  BaryMatchLabel: "tpcpmtbarycentermatchCryoE"
+  SliceLabel:     "pandoraGausCryoE"
+  SpsLabel:       "cluster3DCryoE"
+}
+
+nuslhitsCryoW: { 
+  module_type:    "ICARUSNuSliceHitsProducer"
+  BaryMatchLabel: "tpcpmtbarycentermatchCryoW"
+  SliceLabel:     "pandoraGausCryoW"
+  SpsLabel:       "cluster3DCryoW"
+}
+
+NuGraphCryoE: @local::NuGraphLibTorch
+NuGraphCryoE.LoaderTool.tool_type: "ICARUSNuGraphLoader"
+NuGraphCryoE.LoaderTool.hitInput: "nuslhitsCryoE"
+NuGraphCryoE.LoaderTool.spsInput: "nuslhitsCryoE"
+NuGraphCryoE.DecoderTools.SemanticDecoderTool.hitInput: "nuslhitsCryoE"
+NuGraphCryoE.avgs_u: [168.04594 , 178.3245  , 266.6149 , 3.857218 ]
+NuGraphCryoE.avgs_v: [1245.3547 , 176.54117 , 323.52786, 4.3267984]
+NuGraphCryoE.avgs_y: [1225.5012 , 183.58075 , 310.83493, 4.3409133]
+NuGraphCryoE.devs_u: [ 82.80644 ,  67.60649 , 274.32666, 1.2912455]
+NuGraphCryoE.devs_v: [ 293.06314,  66.8194  , 322.11386, 1.4249923]
+NuGraphCryoE.devs_y: [ 307.1943 ,  67.063324, 312.461  , 1.4532351]
+NuGraphCryoE.modelFileName: "model_mpvmpr_bnb_numu_cos.pt"
+#NuGraphCryoE.debug: true
+
+NuGraphCryoW: @local::NuGraphCryoE
+NuGraphCryoW.LoaderTool.hitInput: "nuslhitsCryoW"
+NuGraphCryoW.LoaderTool.spsInput: "nuslhitsCryoW"
+NuGraphCryoW.DecoderTools.SemanticDecoderTool.hitInput: "nuslhitsCryoW"
+
+END_PROLOG
