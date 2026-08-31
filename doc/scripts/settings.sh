@@ -31,7 +31,7 @@ declare DefaultBranch='master'
 declare RepoDocSubdir='doc'
 
 # where the content is published
-declare PublishBaseDir='/web/sites/i/icarus-exp.fnal.gov/htdocs/at_work/software/doc'
+declare PublishBaseDir='/pubhosting/sites/i/icarus-exp.fnal.gov/htdocs/at_work/software/doc'
 
 # directory of Doxygen generation metadata, relative to Doxygen output directory
 declare MetadataFileRelPath='meta/doxygen'
