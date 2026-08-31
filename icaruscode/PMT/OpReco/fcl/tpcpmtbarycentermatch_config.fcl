@@ -3,14 +3,15 @@ BEGIN_PROLOG
 #Common paramters for the barycenter matching
 tpcpmtbarycentermatch_common_params:
 {
-    OpFlashLabel:     "opflash"
-    PandoraLabel:     "pandoraGaus"
-    CollectionOnly:   true
-    UseTimeRange:     true
-    Verbose:          false
-    FillMatchTree:    false
-    TriggerTolerance: 0.15
-    TimeRangeMargin:  35.
+    OpFlashLabel:         "opflash"
+    PandoraLabel:         "pandoraGaus"
+    CRTPMTMatchingLabel:  "crtpmt"
+    CollectionOnly:       true
+    UseTimeRange:         true
+    Verbose:              false
+    FillMatchTree:        false
+    TriggerTolerance:     0.15
+    TimeRangeMargin:      35.
 }
 
 
