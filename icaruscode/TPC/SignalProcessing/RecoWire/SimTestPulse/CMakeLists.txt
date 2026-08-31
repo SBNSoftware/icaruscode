@@ -11,7 +11,7 @@ set(		MODULE_LIBRARIES
 			icaruscode::TPC_SignalProcessing_RecoWire_SimTestPulse
 			icaruscode::TPC_Utilities_SignalShapingICARUSService_service
 			lardata::Utilities
-			lardata::DetectorInfoServices_DetectorClocksServiceStandard_service
+			lardata::DetectorClocksService
 			lardataobj::Simulation
 			larcoreobj::SummaryData
 			larcorealg::Geometry
