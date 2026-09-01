@@ -45,6 +45,7 @@
 #include "lardataobj/RecoBase/OpHit.h"
 #include "lardataobj/RecoBase/OpFlash.h"
 #include "lardataobj/RawData/OpDetWaveform.h"
+#include "lardataobj/RawData/TriggerData.h"
 #include "larana/OpticalDetector/IPedAlgoMakerTool.h"
 #include "nusimdata/SimulationBase/MCParticle.h"
 
@@ -102,6 +103,14 @@ public:
         Name("MCParticleTruthLabel"),
         Comment("Tag for simb::MCParticle truth info; empty on data"),
         art::InputTag{}};
+
+    fhicl::Atom<art::InputTag> TriggerLabel{
+        Name("TriggerLabel"),
+        Comment("raw::Trigger read by the 'shifted' producer (AdjustSimForTrigger)."
+                " That producer time-shifts the waveforms and the SimPhotons but not"
+                " the MCParticles, so this is what puts truth times on the waveform"
+                " clock. Printed only, for now; empty disables the print."),
+        art::InputTag{"emuTriggerUnshifted"}};
 
     fhicl::DelegatedParameter PedAlgoPset{
         Name("PedAlgoRollingMeanMaker"),
@@ -163,6 +172,7 @@ private:
   std::vector<art::InputTag> fFlashLabels;
   std::vector<art::InputTag> fOpDetWaveformLabels;
   art::InputTag fMCParticleLabel;
+  art::InputTag fTriggerLabel;
   bool const fSaveWaveforms;
   float const fOpHitThresholdADC;
 
@@ -235,6 +245,11 @@ private:
   // truth tree
   int track_gen_pdg;
   float track_gen_time, track_gen_E;
+  /// simb::MCParticle::EndT() of the primary muon [ns]. Beware: this is the
+  /// *stop* for mu- (it matches the atomic-cascade daughters) but the *decay*
+  /// for mu+ (it matches the decay daughters), so it is not one physical
+  /// quantity across charges. Stored raw; interpret it with track_gen_pdg.
+  float track_end_time;
   float track_gen_x, track_gen_y, track_gen_z;
   int michel_gen_pdg;
   int michel_process;   ///< 0 free decay, 1 atomic cascade, 2 bound decay, -1 none
@@ -271,6 +286,7 @@ icarus::ICARUSStoppingMuonOpticalAna::ICARUSStoppingMuonOpticalAna
   , fFlashLabels(config().FlashLabels())
   , fOpDetWaveformLabels(config().OpDetWaveformLabels())
   , fMCParticleLabel(config().MCParticleTruthLabel())
+  , fTriggerLabel(config().TriggerLabel())
   , fSaveWaveforms(config().SaveWaveforms())
   , fOpHitThresholdADC(config().OpHitThresholdADC())
   , fSkipUnmatchedEvents(config().SkipUnmatchedEvents())
@@ -478,6 +494,7 @@ void icarus::ICARUSStoppingMuonOpticalAna::beginJob()
     fMCParticleTree->Branch("track_gen_x", &track_gen_x, "track_gen_x/F");
     fMCParticleTree->Branch("track_gen_y", &track_gen_y, "track_gen_y/F");
     fMCParticleTree->Branch("track_gen_z", &track_gen_z, "track_gen_z/F");
+    fMCParticleTree->Branch("track_end_time", &track_end_time, "track_end_time/F");
     fMCParticleTree->Branch("track_end_in_av", &track_end_in_av, "track_end_in_av/O");
     fMCParticleTree->Branch("michel_gen_pdg", &michel_gen_pdg, "michel_gen_pdg/I");
     fMCParticleTree->Branch("michel_process", &michel_process, "michel_process/I");
@@ -801,11 +818,45 @@ void icarus::ICARUSStoppingMuonOpticalAna::fillMCTruth(art::Event const& e)
     return;
   }
 
+  // The 'shifted' producer (sbncode AdjustSimForTrigger) adds a per-event offset
+  // to the OpDetWaveforms and the SimPhotons, but NOT to these MCParticles, so the
+  // times printed below are not on the waveform clock. The offset is
+  //   shift = clockData.TriggerTime() - emulatedTrigger.TriggerTime()
+  // (AdjustSimForTrigger_module.cc:126) and it changes event to event, so it
+  // cannot be folded in as a constant. To put a truth time on the waveform clock:
+  //   t_rel = G4ToElecTime(T_mcparticle + shift_ns) - TriggerTime()
+  if (!fTriggerLabel.empty()) {
+
+    auto const triggerHandle = e.getHandle<std::vector<raw::Trigger>>(fTriggerLabel);
+
+    if (!triggerHandle) {
+      std::cout << "TimeShift: no raw::Trigger with label '"
+                << fTriggerLabel.encode() << "'" << std::endl;
+    }
+    else if (triggerHandle->size() != 1) {
+      std::cout << "TimeShift: " << triggerHandle->size()
+                << " raw::Trigger in this event, expected exactly 1" << std::endl;
+    }
+    else {
+      auto const clockData =
+        art::ServiceHandle<detinfo::DetectorClocksService const>()->DataFor(e);
+      double const emulated = triggerHandle->front().TriggerTime();   // us
+      double const nominal  = clockData.TriggerTime();                // us
+      double const shift    = nominal - emulated;                     // us
+      std::cout << "TimeShift: nominal=" << nominal
+                << " us  emulated=" << emulated
+                << " us  shift=" << shift << " us (" << shift * 1000. << " ns)"
+                << "  G4ToElecTime(0)=" << clockData.G4ToElecTime(0.) << " us"
+                << std::endl;
+    }
+  }
+
   // reset both blocks every event: otherwise an event with no primary muon
   // reports the previous event's muon
   track_gen_pdg = -1;
   track_gen_time = -1.f; track_gen_E = -1.f;
   track_gen_x = -1.f; track_gen_y = -1.f; track_gen_z = -1.f;
+  track_end_time = -1.f;
   track_end_in_av = false;
   michel_gen_pdg = -1;
   michel_process = -1;
@@ -849,6 +900,7 @@ void icarus::ICARUSStoppingMuonOpticalAna::fillMCTruth(art::Event const& e)
     track_gen_x    = primaryMuon->Vx();
     track_gen_y    = primaryMuon->Vy();
     track_gen_z    = primaryMuon->Vz();
+    track_end_time = primaryMuon->EndT();   // ns
     track_end_in_av =
       inActiveVolume(primaryMuon->EndX(), primaryMuon->EndY(), primaryMuon->EndZ());
   }
@@ -889,7 +941,7 @@ void icarus::ICARUSStoppingMuonOpticalAna::fillMCTruth(art::Event const& e)
       // atomic cascade at the stop and the decay-or-capture products at the
       // disappearance, and EndT tells us which of the two the muon's own track
       // ends on.
-      std::cout << "Particle: TrackID=" << par.TrackID() << " PDG=" << par.PdgCode() << " Mother=" << par.Mother()
+      std::cout << "Particle: TrackID=" << par.TrackId() << " PDG=" << par.PdgCode() << " Mother=" << par.Mother()
                 << " Process=" << par.Process() << " EndProcess=" << par.EndProcess()
                 << " E=" << par.E()
                 << " T=" << par.T() << " EndT=" << par.EndT()
