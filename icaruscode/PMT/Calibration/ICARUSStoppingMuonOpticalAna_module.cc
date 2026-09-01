@@ -46,6 +46,7 @@
 #include "lardataobj/RecoBase/OpFlash.h"
 #include "lardataobj/RawData/OpDetWaveform.h"
 #include "lardataobj/RawData/TriggerData.h"
+#include "lardataobj/Simulation/SimPhotons.h"
 #include "larana/OpticalDetector/IPedAlgoMakerTool.h"
 #include "nusimdata/SimulationBase/MCParticle.h"
 
@@ -55,10 +56,14 @@
 
 #include "TTree.h"
 
+#include <algorithm>
 #include <array>
 #include <cmath>         // std::abs(double)
 #include <cstddef>
 #include <cstdlib>       // std::abs(int)
+#include <iomanip>
+#include <limits>
+#include <map>
 #include <memory>
 #include <numeric>       // std::accumulate
 #include <set>
@@ -111,6 +116,15 @@ public:
                 " the MCParticles, so this is what puts truth times on the waveform"
                 " clock. Printed only, for now; empty disables the print."),
         art::InputTag{"emuTriggerUnshifted"}};
+
+    fhicl::Sequence<art::InputTag> SimPhotonsLabels{
+        Name("SimPhotonsLabels"),
+        Comment("sim::SimPhotons collections to explore. Detected photons are"
+                " attributed to the muon or to its delayed daughters through"
+                " sim::OnePhoton::MotherTrackID, which is the whole point of the"
+                " full SimPhotons over the Lite ones. Printed only, for now;"
+                " empty skips the exploration."),
+        std::vector<art::InputTag>{}};
 
     fhicl::DelegatedParameter PedAlgoPset{
         Name("PedAlgoRollingMeanMaker"),
@@ -173,6 +187,7 @@ private:
   std::vector<art::InputTag> fOpDetWaveformLabels;
   art::InputTag fMCParticleLabel;
   art::InputTag fTriggerLabel;
+  std::vector<art::InputTag> fSimPhotonsLabels;
   bool const fSaveWaveforms;
   float const fOpHitThresholdADC;
 
@@ -287,6 +302,7 @@ icarus::ICARUSStoppingMuonOpticalAna::ICARUSStoppingMuonOpticalAna
   , fOpDetWaveformLabels(config().OpDetWaveformLabels())
   , fMCParticleLabel(config().MCParticleTruthLabel())
   , fTriggerLabel(config().TriggerLabel())
+  , fSimPhotonsLabels(config().SimPhotonsLabels())
   , fSaveWaveforms(config().SaveWaveforms())
   , fOpHitThresholdADC(config().OpHitThresholdADC())
   , fSkipUnmatchedEvents(config().SkipUnmatchedEvents())
@@ -825,6 +841,8 @@ void icarus::ICARUSStoppingMuonOpticalAna::fillMCTruth(art::Event const& e)
   // (AdjustSimForTrigger_module.cc:126) and it changes event to event, so it
   // cannot be folded in as a constant. To put a truth time on the waveform clock:
   //   t_rel = G4ToElecTime(T_mcparticle + shift_ns) - TriggerTime()
+  double timeShift_ns = 0.;    // shift from G4 times onto the waveform clock
+
   if (!fTriggerLabel.empty()) {
 
     auto const triggerHandle = e.getHandle<std::vector<raw::Trigger>>(fTriggerLabel);
@@ -843,6 +861,7 @@ void icarus::ICARUSStoppingMuonOpticalAna::fillMCTruth(art::Event const& e)
       double const emulated = triggerHandle->front().TriggerTime();   // us
       double const nominal  = clockData.TriggerTime();                // us
       double const shift    = nominal - emulated;                     // us
+      timeShift_ns = shift * 1000.;
       std::cout << "TimeShift: nominal=" << nominal
                 << " us  emulated=" << emulated
                 << " us  shift=" << shift << " us (" << shift * 1000. << " ns)"
@@ -978,6 +997,128 @@ void icarus::ICARUSStoppingMuonOpticalAna::fillMCTruth(art::Event const& e)
       michel_gen_z    = hardestElectron->Vz();
       michel_in_av    = inActiveVolume(hardestElectron->Vx(), hardestElectron->Vy(),
                                        hardestElectron->Vz());
+    }
+  }
+
+  // --- SimPhotons exploration -------------------------------------------------
+  //
+  // The delayed-light peak finder works on light, so the truth label for "was
+  // there a findable secondary peak" has to be made of light too. What makes that
+  // possible is sim::OnePhoton::MotherTrackID, which stamps every detected photon
+  // with the G4 track that made it -- and which SimPhotonsLite drops. Attribution
+  // is required rather than a time cut, because the muon's own slow component
+  // (tau ~ 1.6 us) is still arriving underneath the delayed peak.
+  //
+  // Printed only. The numbers to read off are:
+  //   * zero / unresolved MotherTrackID. If either is large the split is biased
+  //     and the whole approach needs TrackIdToEveId (or dies).
+  //   * delayed vs muon photon counts: the signal and the tail it sits on.
+  //   * the delayed time profile: whether a secondary peak exists in truth at all.
+  if (!fSimPhotonsLabels.empty() && primaryMuon) {
+
+    // Delayed set: the muon's daughters at the disappearance, plus all their
+    // descendants. "max T over direct daughters" is the disappearance for both
+    // charges -- for mu- it picks the capture/decay products over the atomic
+    // cascade, and for mu+ every daughter sits at the decay anyway.
+    std::unordered_map<int, simb::MCParticle const*> byID;
+    std::unordered_map<int, std::vector<int>> children;
+    for (simb::MCParticle const& par : *particleHandle) {
+      byID[par.TrackId()] = &par;
+      children[par.Mother()].push_back(par.TrackId());
+    }
+
+    double tDisappear = std::numeric_limits<double>::lowest();
+    for (int const id : children[primaryMuonID]) {
+      tDisappear = std::max(tDisappear, byID[id]->T());
+    }
+
+    std::set<int> delayed;
+    std::vector<int> pending;
+    for (int const id : children[primaryMuonID]) {
+      if (byID[id]->T() < tDisappear - 1.0) continue;   // drops the atomic cascade
+      if (delayed.insert(id).second) pending.push_back(id);
+    }
+    while (!pending.empty()) {
+      int const id = pending.back();
+      pending.pop_back();
+      for (int const c : children[id]) {
+        if (delayed.insert(c).second) pending.push_back(c);
+      }
+    }
+
+    // photon times carry the shift, MCParticle times do not: move the truth
+    double const tDisappearShifted = tDisappear + timeShift_ns;
+
+    std::cout << "SimPhotons: muon pdg=" << primaryMuon->PdgCode()
+              << " stop(EndT)=" << primaryMuon->EndT()
+              << " disappearance=" << tDisappear
+              << " ns (on the waveform clock: " << tDisappearShifted
+              << " ns)  delayed set: " << delayed.size() << " particles"
+              << std::endl;
+
+    for (art::InputTag const& tag : fSimPhotonsLabels) {
+
+      auto const photonHandle = e.getHandle<std::vector<sim::SimPhotons>>(tag);
+      if (!photonHandle) {
+        std::cout << "  '" << tag.encode() << "': NOT PRESENT" << std::endl;
+        continue;
+      }
+
+      std::size_t nPhotons = 0, nZero = 0, nUnresolved = 0;
+      std::size_t nMuon = 0, nDelayed = 0, nOther = 0;
+      double tMin = std::numeric_limits<double>::max();
+      double tMax = std::numeric_limits<double>::lowest();
+
+      // coarse profile around the disappearance, 50 ns bins, -500..+1500 ns
+      constexpr int    kNBins   = 40;
+      constexpr double kBinNs   = 50.;
+      constexpr double kFirstNs = -500.;
+      std::array<std::size_t, kNBins> profDelayed{}, profMuon{};
+
+      for (sim::SimPhotons const& channel : *photonHandle) {
+        for (sim::OnePhoton const& photon : channel) {
+
+          ++nPhotons;
+          tMin = std::min(tMin, double(photon.Time));
+          tMax = std::max(tMax, double(photon.Time));
+
+          if (photon.MotherTrackID == 0) ++nZero;
+          int const mother = std::abs(photon.MotherTrackID);
+
+          int const bin = static_cast<int>(
+            (photon.Time - tDisappearShifted - kFirstNs) / kBinNs);
+          bool const inProfile = (bin >= 0) && (bin < kNBins);
+
+          if (delayed.count(mother) > 0) {
+            ++nDelayed;
+            if (inProfile) ++profDelayed[bin];
+          }
+          else if (mother == primaryMuonID) {
+            ++nMuon;
+            if (inProfile) ++profMuon[bin];
+          }
+          else if (byID.count(mother) > 0) ++nOther;
+          else ++nUnresolved;
+        }
+      }
+
+      std::cout << "  '" << tag.encode() << "': " << photonHandle->size()
+                << " channels, " << nPhotons << " photons, time ["
+                << tMin << ", " << tMax << "] ns\n"
+                << "    MotherTrackID zero=" << nZero
+                << "  unresolved=" << nUnresolved
+                << "   attribution: muon=" << nMuon
+                << " delayed=" << nDelayed << " other=" << nOther << "\n"
+                << "    profile, 50 ns bins relative to the disappearance"
+                   " (bin: delayed / muon):" << std::endl;
+
+      for (int b = 0; b < kNBins; ++b) {
+        if (profDelayed[b] == 0 && profMuon[b] == 0) continue;
+        std::cout << "      " << std::setw(6)
+                  << static_cast<int>(kFirstNs + b * kBinNs) << " ns: "
+                  << std::setw(8) << profDelayed[b] << " / "
+                  << std::setw(8) << profMuon[b] << std::endl;
+      }
     }
   }
 
