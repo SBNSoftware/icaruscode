@@ -60,6 +60,8 @@ icarus_stopping_muon_optical:
   SaveWaveforms:        true
   OpHitThresholdADC:    0     # ADC
   MCParticleTruthLabel: ""    # keep empty for data
+  TriggerLabel:         ""    # keep empty for data
+  SimPhotonsLabels:     ""    # keep empty for data
 
   SkipUnmatchedEvents: true
 
