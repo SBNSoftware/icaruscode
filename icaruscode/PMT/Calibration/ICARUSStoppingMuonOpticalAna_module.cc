@@ -883,6 +883,18 @@ void icarus::ICARUSStoppingMuonOpticalAna::fillMCTruth(art::Event const& e)
     // coming from either decay or capture.
     simb::MCParticle const* hardestElectron = nullptr;
     for (simb::MCParticle const& par : *particleHandle) {
+
+      // T/EndT/EndProcess/nTraj are here to show what the truth actually offers:
+      // for a stopping mu- the daughters should fall into two time groups, the
+      // atomic cascade at the stop and the decay-or-capture products at the
+      // disappearance, and EndT tells us which of the two the muon's own track
+      // ends on.
+      std::cout << "Particle: TrackID=" << par.TrackID() << " PDG=" << par.PdgCode() << " Mother=" << par.Mother()
+                << " Process=" << par.Process() << " EndProcess=" << par.EndProcess()
+                << " E=" << par.E()
+                << " T=" << par.T() << " EndT=" << par.EndT()
+                << " nTraj=" << par.NumberTrajectoryPoints() << std::endl;
+
       if (par.Mother() != primaryMuonID) continue;
       if (std::abs(par.PdgCode()) != 11) continue;
       if (par.Process() != "Decay" && par.Process() != "muMinusCaptureAtRest") continue;
