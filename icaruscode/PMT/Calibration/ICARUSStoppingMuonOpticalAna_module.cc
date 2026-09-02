@@ -1142,8 +1142,12 @@ void icarus::ICARUSStoppingMuonOpticalAna::fillMCTruth(art::Event const& e)
       // muon tail it sits on. A disappearance close to the stop lands under the
       // prompt peak, which inflates B and suppresses the significance by itself,
       // so no separate minimum-delay condition is needed.
-      if (track_last_daughter_time > 0.f && B > 0) {
-        second_peak_significance = static_cast<float>(S / std::sqrt(double(B)));
+      //
+      // B == 0 is not a failure, it is the cleanest case there is.
+      // max(1, B) to avoid division by zero and keep the significance well-defined.
+      if (track_last_daughter_time > 0.f) {
+        second_peak_significance =
+          static_cast<float>(S / std::sqrt(std::max(1.0, double(B))));
         second_peak_visible = (second_peak_significance >= kMinSignificance);
       }
 
