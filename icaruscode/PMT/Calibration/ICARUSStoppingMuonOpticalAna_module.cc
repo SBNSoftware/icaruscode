@@ -61,7 +61,6 @@
 #include <cmath>         // std::abs(double)
 #include <cstddef>
 #include <cstdlib>       // std::abs(int)
-#include <iomanip>
 #include <limits>
 #include <map>
 #include <memory>
@@ -197,6 +196,7 @@ private:
   std::vector<TTree*> fOpHitTrees;
   std::vector<TTree*> fOpDetWaveformTrees;
   TTree* fMCParticleTree = nullptr;
+  TTree* fSimPhotonTree = nullptr;
   TTree* fTrackMatchTree = nullptr;
 
   // --- branch buffers -------------------------------------------------------
@@ -254,11 +254,39 @@ private:
   /// simb::MCParticle::EndT() of the primary muon [ns]. Beware: this is the
   /// stop for mu- (it matches the atomic-cascade daughters) but the decay
   /// for mu+ (it matches the decay daughters).
-  float track_end_time;
-  float time_shift; //< Per-event offset applied to the waveforms and the SimPhotons [ns].
+  float track_g4_endT;
+  /// Time at which the track effectively disappears --> last daughter time [ns].
+  float track_last_daughter_time;
+  /// Truth tag: is the delayed light distinguishable?
+  bool  second_peak_visible;
+  float second_peak_significance;
+
+  // SimPhotons tree: one row per Geant4 track that made at least one detected
+  // photon. Individual photons are never written -- each track carries its
+  // arrival-time histogram as (bin left edge, count) pairs, non-empty bins only.
+  // This is the diagnostic layer: if second_peak_visible ever disagrees with the
+  // waveforms on a large sample, everything needed to work out why is here.
+  int   p_track_id;
+  int   p_pdg;
+  int   p_mother;
+  float p_gen_time;              ///< [ns, Geant4]
+  bool  p_is_muon;               ///< the primary muon itself
+  bool  p_is_delayed;            ///< descends from the muon disappearance
+  int   p_photons;               ///< detected photons from this track, all times
+  std::vector<float> p_bin_time;    ///< [ns, photon clock] bin left edge
+  std::vector<int>   p_bin_photons;
+  /// Per-event offset AdjustSimForTrigger applied to the waveforms and the
+  /// SimPhotons, but NOT to the MCParticles [ns]. To put a truth time on the
+  /// optical clock: t_us = (T_g4_ns + g4_time_shift) / 1000. It cancels in any
+  /// difference of two truth times, so lifetimes do not need it.
+  /// 0 when it could not be determined: arithmetically neutral, so a downstream
+  /// (T + shift) still yields the plain Geant4 time rather than a wild number.
+  /// A real shift is never exactly 0 (it runs around -400 ns), so an exact zero
+  /// is itself the flag that no trigger was available; the reason is logged.
+  float g4_time_shift;
   float track_gen_x, track_gen_y, track_gen_z;
   int michel_gen_pdg;
-  int michel_process;   ///< 0 free decay, 1 atomic cascade, 2 bound decay, -1 none
+  int track_end_process; // -1 invalid, 0 free decay, 2 bound decay, 1 nuclear capture
   float michel_gen_time, michel_gen_E;
   float michel_gen_x, michel_gen_y, michel_gen_z;
   bool michel_in_av;
@@ -495,23 +523,43 @@ void icarus::ICARUSStoppingMuonOpticalAna::beginJob()
     fMCParticleTree->Branch("run", &m_run, "run/I");
     fMCParticleTree->Branch("subrun", &m_subrun, "subrun/I");
     fMCParticleTree->Branch("event", &m_event, "event/I");
+    fMCParticleTree->Branch("g4_time_shift", &g4_time_shift, "g4_time_shift/F");
     fMCParticleTree->Branch("track_gen_pdg", &track_gen_pdg, "track_gen_pdg/I");
     fMCParticleTree->Branch("track_gen_time", &track_gen_time, "track_gen_time/F");
     fMCParticleTree->Branch("track_gen_E", &track_gen_E, "track_gen_E/F");
     fMCParticleTree->Branch("track_gen_x", &track_gen_x, "track_gen_x/F");
     fMCParticleTree->Branch("track_gen_y", &track_gen_y, "track_gen_y/F");
     fMCParticleTree->Branch("track_gen_z", &track_gen_z, "track_gen_z/F");
-    fMCParticleTree->Branch("track_end_time", &track_end_time, "track_end_time/F");
-    fMCParticleTree->Branch("time_shift", &time_shift, "time_shift/F");
+    fMCParticleTree->Branch("track_g4_endT", &track_g4_endT, "track_g4_endT/F");
+    fMCParticleTree->Branch("track_last_daughter_time", &track_last_daughter_time, "track_last_daughter_time/F");
+    fMCParticleTree->Branch("track_end_process", &track_end_process, "track_end_process/I");
     fMCParticleTree->Branch("track_end_in_av", &track_end_in_av, "track_end_in_av/O");
+    fMCParticleTree->Branch("second_peak_significance", &second_peak_significance, "second_peak_significance/F");
+    fMCParticleTree->Branch("second_peak_visible", &second_peak_visible, "second_peak_visible/O");
     fMCParticleTree->Branch("michel_gen_pdg", &michel_gen_pdg, "michel_gen_pdg/I");
-    fMCParticleTree->Branch("michel_process", &michel_process, "michel_process/I");
     fMCParticleTree->Branch("michel_gen_time", &michel_gen_time, "michel_gen_time/F");
     fMCParticleTree->Branch("michel_gen_E", &michel_gen_E, "michel_gen_E/F");
     fMCParticleTree->Branch("michel_gen_x", &michel_gen_x, "michel_gen_x/F");
     fMCParticleTree->Branch("michel_gen_y", &michel_gen_y, "michel_gen_y/F");
     fMCParticleTree->Branch("michel_gen_z", &michel_gen_z, "michel_gen_z/F");
     fMCParticleTree->Branch("michel_in_av", &michel_in_av, "michel_in_av/O");
+
+    if (!fSimPhotonsLabels.empty()) {
+      fSimPhotonTree = tfs->make<TTree>("simphoton_tree",
+        "detected photons per Geant4 track, binned in arrival time");
+      fSimPhotonTree->Branch("run", &m_run, "run/I");
+      fSimPhotonTree->Branch("subrun", &m_subrun, "subrun/I");
+      fSimPhotonTree->Branch("event", &m_event, "event/I");
+      fSimPhotonTree->Branch("track_id", &p_track_id, "track_id/I");
+      fSimPhotonTree->Branch("pdg", &p_pdg, "pdg/I");
+      fSimPhotonTree->Branch("mother", &p_mother, "mother/I");
+      fSimPhotonTree->Branch("gen_time", &p_gen_time, "gen_time/F");
+      fSimPhotonTree->Branch("is_muon", &p_is_muon, "is_muon/O");
+      fSimPhotonTree->Branch("is_delayed", &p_is_delayed, "is_delayed/O");
+      fSimPhotonTree->Branch("photons", &p_photons, "photons/I");
+      fSimPhotonTree->Branch("bin_time", &p_bin_time);
+      fSimPhotonTree->Branch("bin_photons", &p_bin_photons);
+    }
   }
 
 } // beginJob()
@@ -833,33 +881,45 @@ void icarus::ICARUSStoppingMuonOpticalAna::fillMCTruth(art::Event const& e)
   // and it changes event to event, so it cannot be folded in as a constant. 
   // To put a truth time on the waveform clock:
   //   t_rel = G4ToElecTime(T_mcparticle + shift_ns) - TriggerTime()
-  double timeShift_ns = 0.;    // G4 times -> the optical clock; 0 if unavailable
+  // 0 only as an arithmetic placeholder; the branch keeps the sentinel unless a
+  // shift is actually computed, so "unknown" never masquerades as "no shift".
+  double g4TimeShift_ns = 0.;
+  g4_time_shift = 0.f;   // overwritten below only if a shift is actually computed
 
   if (!fTriggerLabel.empty()) {
 
     auto const triggerHandle = e.getHandle<std::vector<raw::Trigger>>(fTriggerLabel);
 
     if (!triggerHandle) {
-      std::cout << "TimeShift: no raw::Trigger with label '"
-                << fTriggerLabel.encode() << "'" << std::endl;
-    }
-    else if (triggerHandle->size() != 1) {
-      std::cout << "TimeShift: " << triggerHandle->size()
-                << " raw::Trigger in this event, expected exactly 1" << std::endl;
+      mf::LogWarning("ICARUSStoppingMuonOpticalAna")
+        << "No raw::Trigger with label '" << fTriggerLabel.encode()
+        << "'; g4_time_shift left at 0";
     }
     else {
-      auto const clockData =
-        art::ServiceHandle<detinfo::DetectorClocksService const>()->DataFor(e);
+
       double const emulated = triggerHandle->front().TriggerTime();   // us
-      double const nominal  = clockData.TriggerTime();                // us
-      double const shift    = nominal - emulated;                     // us
-      timeShift_ns = shift * 1000.;
-      time_shift   = static_cast<float>(timeShift_ns);
-      std::cout << "TimeShift: nominal=" << nominal
-                << " us  emulated=" << emulated
-                << " us  shift=" << shift << " us (" << shift * 1000. << " ns)"
-                << "  G4ToElecTime(0)=" << clockData.G4ToElecTime(0.) << " us"
-                << std::endl;
+
+      // Same guard AdjustSimForTrigger uses (AdjustSimForTrigger_module.cc:120):
+      // an unset trigger time comes back as +/- numeric_limits, and subtracting
+      // it overflows to +/- inf rather than to anything recognisable.
+      bool const validTrigger =
+           emulated > (std::numeric_limits<double>::min()
+                       + std::numeric_limits<double>::epsilon())
+        && emulated < (std::numeric_limits<double>::max()
+                       - std::numeric_limits<double>::epsilon());
+
+      if (!validTrigger) {
+        mf::LogWarning("ICARUSStoppingMuonOpticalAna")
+          << "raw::Trigger '" << fTriggerLabel.encode()
+          << "' carries no valid time; g4_time_shift left at 0";
+      }
+      else {
+        auto const clockData =
+          art::ServiceHandle<detinfo::DetectorClocksService const>()->DataFor(e);
+        double const nominal = clockData.TriggerTime();               // us
+        g4TimeShift_ns = (nominal - emulated) * 1000.;
+        g4_time_shift  = static_cast<float>(g4TimeShift_ns);
+      }
     }
   }
 
@@ -868,10 +928,13 @@ void icarus::ICARUSStoppingMuonOpticalAna::fillMCTruth(art::Event const& e)
   track_gen_pdg = -1;
   track_gen_time = -1.f; track_gen_E = -1.f;
   track_gen_x = -1.f; track_gen_y = -1.f; track_gen_z = -1.f;
-  track_end_time = -1.f;
+  track_g4_endT = -1.f;
+  track_last_daughter_time = -1.f;
+  second_peak_significance = -1.f;
+  second_peak_visible = false;
   track_end_in_av = false;
   michel_gen_pdg = -1;
-  michel_process = -1;
+  track_end_process = -1;
   michel_gen_time = -1.f; michel_gen_E = -1.f;
   michel_gen_x = -1.f; michel_gen_y = -1.f; michel_gen_z = -1.f;
   michel_in_av = false;
@@ -912,9 +975,29 @@ void icarus::ICARUSStoppingMuonOpticalAna::fillMCTruth(art::Event const& e)
     track_gen_x    = primaryMuon->Vx();
     track_gen_y    = primaryMuon->Vy();
     track_gen_z    = primaryMuon->Vz();
-    track_end_time = primaryMuon->EndT();   // ns
+    track_g4_endT = primaryMuon->EndT();   // ns
     track_end_in_av =
       inActiveVolume(primaryMuon->EndX(), primaryMuon->EndY(), primaryMuon->EndZ());
+  }
+
+  // --- when the muon disappeared ----------------------------------------------
+  // The latest of the muon's direct daughters. Independent of the electron search
+  // below, so it stays valid on the capture branch where there is no electron.
+  if (primaryMuon) {
+
+    // Only the products of the muon's terminal interaction. Restricting on the
+    // process is what keeps the residual nucleus's radioactive decay out: those
+    // daughters carry T of order 1e15-1e22 ns (the nucleus decaying days to years
+    // later) and would otherwise win a plain max.
+    double latestDaughter = std::numeric_limits<double>::lowest();
+    for (simb::MCParticle const& par : *particleHandle) {
+      if (par.Mother() != primaryMuonID) continue;
+      if (par.Process() != "Decay" && par.Process() != "muMinusCaptureAtRest") continue;
+      latestDaughter = std::max(latestDaughter, par.T());
+    }
+    if (latestDaughter > std::numeric_limits<double>::lowest()) {
+      track_last_daughter_time = static_cast<float>(latestDaughter);
+    }
   }
 
   // second pass: which electron daughter, if any, is the Michel.
@@ -948,12 +1031,6 @@ void icarus::ICARUSStoppingMuonOpticalAna::fillMCTruth(art::Event const& e)
     simb::MCParticle const* hardestElectron = nullptr;
     for (simb::MCParticle const& par : *particleHandle) {
 
-      std::cout << "Particle: TrackID=" << par.TrackId() << " PDG=" << par.PdgCode() << " Mother=" << par.Mother()
-                << " Process=" << par.Process() << " EndProcess=" << par.EndProcess()
-                << " E=" << par.E()
-                << " T=" << par.T() << " EndT=" << par.EndT()
-                << " nTraj=" << par.NumberTrajectoryPoints() << std::endl;
-
       if (par.Mother() != primaryMuonID) continue;
       if (std::abs(par.PdgCode()) != 11) continue;
       if (par.Process() != "Decay" && par.Process() != "muMinusCaptureAtRest") continue;
@@ -975,8 +1052,8 @@ void icarus::ICARUSStoppingMuonOpticalAna::fillMCTruth(art::Event const& e)
       }
 
       // on the capture branch this is the hardest Auger electron, not a Michel:
-      // michel_process == 1 flags that
-      michel_process  = process;
+      // track_end_process == 1 flags that
+      track_end_process  = process;
       michel_gen_pdg  = hardestElectron->PdgCode();
       michel_gen_time = hardestElectron->T();   // ns
       michel_gen_E    = hardestElectron->E();   // GeV
@@ -986,20 +1063,16 @@ void icarus::ICARUSStoppingMuonOpticalAna::fillMCTruth(art::Event const& e)
       michel_in_av    = inActiveVolume(hardestElectron->Vx(), hardestElectron->Vy(),
                                        hardestElectron->Vz());
     }
+    else if (primaryMuon->EndProcess() == "muMinusCaptureAtRest") {
+      // A stopped mu- with no electron daughter at all: nuclear capture, the
+      // branch that emits only neutrons and gammas. Without this it stayed at -1
+      // and was indistinguishable from "no truth". -1 now means only that.
+      track_end_process = 1;
+    }
   }
 
-  // --- SimPhotons: per-track photon map, binned in time ------------------------
-  //
-  // sim::OnePhoton::MotherTrackID stamps every detected photon with the G4 track
-  // that made it, which is what SimPhotonsLite drops and what makes a light-based
-  // truth label possible. Attribution rather than a time cut is required: the
-  // muon's own slow component is still arriving underneath any delayed peak.
-  //
-  // Bins are 100 ns, indexed relative to the muon disappearance on the *photon*
-  // clock (the photons carry the AdjustSimForTrigger shift, the MCParticles do
-  // not). Bin 0 therefore holds the delayed peak, and is used as the window for
-  //   S = non-muon photons in bin 0   (at the disappearance, non-muon == delayed)
-  //   B = muon photons in bin 0       (the slow tail the peak has to stand on)
+  // --- SimPhotons: the second-peak tag ---------------
+  // after the muon's prompt maximum, does the summed photon rate turn back up?
   if (!fSimPhotonsLabels.empty() && primaryMuon) {
 
     std::unordered_map<int, simb::MCParticle const*> byID;
@@ -1009,90 +1082,97 @@ void icarus::ICARUSStoppingMuonOpticalAna::fillMCTruth(art::Event const& e)
       children[par.Mother()].push_back(par.TrackId());
     }
 
-    // disappearance = latest direct daughter. Correct for both charges: for mu-
-    // it takes the capture/decay products over the atomic cascade, and for mu+
-    // every daughter sits at the decay anyway.
-    double tDisappear = std::numeric_limits<double>::lowest();
-    for (int const id : children[primaryMuonID]) {
-      tDisappear = std::max(tDisappear, byID[id]->T());
+    // delayed set: the daughters at the disappearance, plus all their progeny
+    std::set<int> delayed;
+    if (track_last_daughter_time > 0.f) {
+      std::vector<int> pending;
+      for (int const id : children[primaryMuonID]) {
+        if (byID[id]->T() < track_last_daughter_time - 1.0) continue;  // drops the cascade
+        if (delayed.insert(id).second) pending.push_back(id);
+      }
+      while (!pending.empty()) {
+        int const id = pending.back();
+        pending.pop_back();
+        for (int const c : children[id]) {
+          if (delayed.insert(c).second) pending.push_back(c);
+        }
+      }
     }
-    double const tDisShifted = tDisappear + timeShift_ns;
 
-    constexpr double kBinNs    = 100.;
-    constexpr int    kBinFirst = -10;
-    constexpr int    kBinLast  =  30;
+    // 10 ns is finer than any plausible analysis binning: the stored histograms
+    // can be re-binned coarser offline, never finer.
+    constexpr double kBinNs        = 10.;
+    constexpr double kWindowNs     = 50.;   // window opening at the disappearance
+    constexpr double kMinSignificance = 4.;
+
+    // Photon times carry the AdjustSimForTrigger shift, the MCParticle times do
+    // not, so the truth is moved onto the photon clock rather than the reverse.
+    double const tDisShift = track_last_daughter_time + g4TimeShift_ns;
 
     for (art::InputTag const& tag : fSimPhotonsLabels) {
 
       auto const photonHandle = e.getHandle<std::vector<sim::SimPhotons>>(tag);
       if (!photonHandle) {
-        std::cout << "SimPhotons '" << tag.encode() << "': NOT PRESENT" << std::endl;
+        mf::LogWarning("ICARUSStoppingMuonOpticalAna")
+          << "No sim::SimPhotons with label '" << tag.encode() << "'";
         continue;
       }
 
-      std::map<int, std::size_t> total;                  // trackId -> photons
-      std::map<int, std::map<int, std::size_t>> binned;   // trackId -> bin -> photons
-      std::size_t nPhotons = 0, nZero = 0, nUnresolved = 0, nOutside = 0;
+      std::map<int, std::map<long, int>> perTrack;   // trackId -> bin -> photons
+
+      long const winFirst = static_cast<long>(std::floor(tDisShift / kBinNs));
+      long const winLast  =
+        winFirst + std::max<long>(1, std::lround(kWindowNs / kBinNs));
+      long S = 0, B = 0;
 
       for (sim::SimPhotons const& channel : *photonHandle) {
         for (sim::OnePhoton const& photon : channel) {
 
-          ++nPhotons;
-          if (photon.MotherTrackID == 0) ++nZero;
           int const mother = std::abs(photon.MotherTrackID);  // EM daughters are signed
-          if (byID.count(mother) == 0) ++nUnresolved;
-          ++total[mother];
+          long const bin =
+            static_cast<long>(std::floor(photon.Time / kBinNs));
+          ++perTrack[mother][bin];
 
-          int const bin = static_cast<int>(
-            std::floor((photon.Time - tDisShifted) / kBinNs));
-          if (bin >= kBinFirst && bin <= kBinLast) ++binned[mother][bin];
-          else ++nOutside;
+          if (bin < winFirst || bin >= winLast) continue;
+          if (mother == primaryMuonID) ++B; else ++S;
         }
       }
 
-      std::cout << "SimPhotons '" << tag.encode() << "': " << photonHandle->size()
-                << " channels, " << nPhotons << " photons"
-                << "  (MotherTrackID zero=" << nZero
-                << " unresolved=" << nUnresolved
-                << " distinct=" << total.size() << ")\n"
-                << "  disappearance " << tDisappear << " ns (G4) -> "
-                << tDisShifted << " ns (photon clock); bins are 100 ns from there,"
-                   " " << nOutside << " photons outside ["
-                << kBinFirst << "," << kBinLast << "]\n"
-                << "  trackId      pdg        T[ns]    total   bins (index:photons)"
-                << std::endl;
+      // S / sqrt(B): the delayed light against the Poisson fluctuation of the
+      // muon tail it sits on. A disappearance close to the stop lands under the
+      // prompt peak, which inflates B and suppresses the significance by itself,
+      // so no separate minimum-delay condition is needed.
+      if (track_last_daughter_time > 0.f && B > 0) {
+        second_peak_significance = static_cast<float>(S / std::sqrt(double(B)));
+        second_peak_visible = (second_peak_significance >= kMinSignificance);
+      }
 
-      std::vector<std::pair<std::size_t, int>> order;
-      order.reserve(total.size());
-      for (auto const& entry : total) order.emplace_back(entry.second, entry.first);
-      std::sort(order.rbegin(), order.rend());
+      if (!fSimPhotonTree) continue;
 
-      for (auto const& [count, trackId] : order) {
+      for (auto const& [trackId, bins] : perTrack) {
+
         auto const it = byID.find(trackId);
-        std::cout << std::setw(9) << trackId
-                  << std::setw(9) << (it == byID.end() ? 0 : it->second->PdgCode())
-                  << std::setw(13) << (it == byID.end() ? -1. : it->second->T())
-                  << std::setw(9) << count << "   ";
-        auto const bit = binned.find(trackId);
-        if (bit != binned.end()) {
-          for (auto const& [bin, n] : bit->second) std::cout << bin << ":" << n << " ";
-        }
-        std::cout << std::endl;
-      }
+        p_track_id = trackId;
+        p_pdg      = (it == byID.end()) ? 0 : it->second->PdgCode();
+        p_mother   = (it == byID.end()) ? -1 : it->second->Mother();
+        p_gen_time = (it == byID.end()) ? -1.f
+                                        : static_cast<float>(it->second->T());
+        p_is_muon    = (trackId == primaryMuonID);
+        p_is_delayed = (delayed.count(trackId) > 0);
 
-      // S/B in bin 0, the 100 ns window opening at the disappearance
-      std::size_t S = 0, B = 0;
-      for (auto const& [trackId, bins] : binned) {
-        auto const it = bins.find(0);
-        if (it == bins.end()) continue;
-        if (trackId == primaryMuonID) B += it->second;
-        else                          S += it->second;
+        p_photons = 0;
+        p_bin_time.clear();
+        p_bin_photons.clear();
+        p_bin_time.reserve(bins.size());
+        p_bin_photons.reserve(bins.size());
+        for (auto const& [bin, n] : bins) {
+          p_photons += n;
+          p_bin_time.push_back(static_cast<float>(bin * kBinNs));
+          p_bin_photons.push_back(n);
+        }
+
+        fSimPhotonTree->Fill();
       }
-      std::cout << "  bin 0 = [" << tDisShifted << ", " << tDisShifted + kBinNs
-                << ") ns:  S(non-muon)=" << S << "  B(muon)=" << B << "  S/B=";
-      if (B > 0) std::cout << (double(S) / B);
-      else       std::cout << "n/a (no muon light in the window)";
-      std::cout << std::endl;
     }
   }
 
