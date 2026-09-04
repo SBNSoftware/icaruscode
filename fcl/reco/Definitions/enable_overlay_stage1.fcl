@@ -12,3 +12,21 @@ physics.producers.crttrack.DataLabelHits: "overlayCRTHit"
 
 # overlay PMT waveforms
 physics.analyzers.simpleLightAna.OpDetWaveformLabels: ["overlayOpWaveforms"]
+
+# don't apply lifetime correction when calculating shower energy in data/overlay
+applyLifetime: false
+physics.producers.SBNShowerGausCryoE.ShowerFinderTools[7].ApplyMCLifetimeCorrection: @local::applyLifetime
+physics.producers.SBNShowerGausCryoW.ShowerFinderTools[7].ApplyMCLifetimeCorrection: @local::applyLifetime  
+physics.producers.SBNShowerGausCryoE.ShowerFinderTools[5].ApplyMCLifetimeCorrection: @local::applyLifetime
+physics.producers.SBNShowerGausCryoW.ShowerFinderTools[5].ApplyMCLifetimeCorrection: @local::applyLifetime
+physics.producers.SBNShowerGausCryoE.ShowerFinderTools[3].ApplyMCLifetimeCorrection: @local::applyLifetime
+physics.producers.SBNShowerGausCryoW.ShowerFinderTools[3].ApplyMCLifetimeCorrection: @local::applyLifetime
+
+# overlays need all the same norm tools as data
+physics.producers.SBNShowerGausCryoE.ShowerFinderTools[7].NormTools:                 @local::icarus_calonormtools
+physics.producers.SBNShowerGausCryoW.ShowerFinderTools[7].NormTools:                 @local::icarus_calonormtools
+physics.producers.SBNShowerGausCryoE.ShowerFinderTools[5].NormTools:                 @local::icarus_calonormtools
+physics.producers.SBNShowerGausCryoW.ShowerFinderTools[5].NormTools:                 @local::icarus_calonormtools
+physics.producers.SBNShowerGausCryoE.ShowerFinderTools[3].NormTools:                 @local::icarus_calonormtools
+physics.producers.SBNShowerGausCryoW.ShowerFinderTools[3].NormTools:                 @local::icarus_calonormtools
+
