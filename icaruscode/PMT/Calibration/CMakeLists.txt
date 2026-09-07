@@ -89,6 +89,9 @@ cet_build_plugin(ICARUSStoppingMuonOpticalAna art::module
     icaruscode_PMT_Calibration_TrackTools   # StoppingTrackSelector
     icaruscode::Timing                      # IPMTTimingCorrectionService
     icarusalg::Utilities
+    sbncode::caf_RecoUtils                  # CAFRecoUtils hit-level truth matching
+    larsim::MCCheater_BackTrackerService_service
+    lardataobj::Simulation                  # sim::SimChannel, sim::SimPhotons
     larana::OpticalDetector_OpHitFinder     # IPedAlgoMakerTool, PMTPedestalBase
     larcore::Geometry_Geometry_service
     larcorealg::Geometry

@@ -62,6 +62,20 @@ icarus_stopping_muon_optical:
   MCParticleTruthLabel: ""    # keep empty for data
   TriggerLabel:         ""    # keep empty for data
   SimPhotonsLabels:     [ ]   # sequence, not a string; keep empty for data
+  # Enables hit-level truth matching, i.e. one truth row per selected track.
+  # Left empty (or pointing at a collection that is not in the file) the truth
+  # tree falls back to one row per event describing the first primary muon,
+  # which is the right answer on a one-particle-per-event gun sample.
+  #
+  # MUST equal services.BackTrackerService.BackTracker.SimChannelModuleLabel.
+  # The matching itself goes through BackTrackerService, which reads its own
+  # label and never sees this one; this parameter is only the presence guard
+  # that decides whether to attempt matching at all. If the two disagree you get
+  # either matching silently switched off (this empty, service fine) or a
+  # BackTracker throw on the first hit (this present, service label absent).
+  # On the 2D simpledet chain both are "daq:simpleSC"
+  # (fcl/reco/Stage1/mc/stage1_run2_icarus_MC_simpledet.fcl:6).
+  SimChannelLabel:      ""    # keep empty for data
 
   SkipUnmatchedEvents: true
 

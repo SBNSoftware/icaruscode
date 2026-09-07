@@ -532,6 +532,8 @@ std::vector<icarus::TrackFlashMatch> icarus::StoppingTrackSelector::select
 
     TrackFlashMatch m;
     m.trackID       = info.id;
+    // The same association buildTrackInfo() just used; kept for truth matching.
+    if (assns.hits.isValid()) m.hits = assns.hits.at(track.key());
     m.cryostat      = static_cast<unsigned>(info.cryostat);
     m.whichT0       = info.whicht0;
     m.selected      = true;

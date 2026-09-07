@@ -88,6 +88,12 @@ namespace icarus {
     double trangeLow  = NoTime;  ///< [us]
     double trangeHigh = NoTime;  ///< [us]
 
+    /// The track's hits, in the order `FindManyP` returns them. Carried so that
+    /// a caller can truth-match the track without re-reading the association
+    /// (and without duplicating the per-cryostat track labels); empty on data,
+    /// where nothing reads it.
+    std::vector<art::Ptr<recob::Hit>> hits;
+
     /// Whether a flash was matched to this track.
     bool hasFlash() const { return flashID >= 0; }
 
