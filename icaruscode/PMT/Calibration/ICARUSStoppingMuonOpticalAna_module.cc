@@ -123,9 +123,8 @@ public:
 
     fhicl::Atom<art::InputTag> SimChannelLabel{
         Name("SimChannelLabel"),
-        Comment("sim::SimChannel tag, for hit-level truth matching. When the"
-                " collection is absent the truth tree falls back to one row per"
-                " event describing the first primary muon; empty on data"),
+        Comment("sim::SimChannel tag, for hit-level truth matching; when absent"
+                " the truth tree falls back to one row per event. Empty on data"),
         art::InputTag{}};
 
     fhicl::DelegatedParameter PedAlgoPset{
@@ -266,27 +265,17 @@ private:
   std::vector<float> m_bs;
 
   // truth tree
-  /// `recob::Track::ID()` of the selected track this row describes; joins
-  /// `fTrackMatchTree`'s `track_id`. -1 in the fallback, where the row belongs
-  /// to the event rather than to a track.
+  /// `recob::Track::ID()` of this row's track; joins `fTrackMatchTree`'s
+  /// `track_id`. -1 in the fallback, where the row belongs to the event.
   int track_reco_id;
-  /// Geant4 `TrackId()` of the particle matched to that track; joins
-  /// `simphoton_tree`'s `track_id`. NOT the same numbering as
-  /// `matched_track_id` -- crossing the two silently gives nonsense.
+  /// Geant4 `TrackId()` of the matched particle; joins `simphoton_tree`'s
+  /// `track_id`. A DIFFERENT numbering from `matched_track_id`.
   int track_g4_id;
-  /// Fraction of the track's true deposited energy that came from that
-  /// particle. -1 when no hit-level matching was done.
-  ///
-  /// Three states, and they are distinguishable:
-  ///   muon_g4_id == -1, truth_pur == -1 : nothing matched (or no matching run)
-  ///   muon_g4_id >= 0,  particle absent : matched an id largeant did not store,
-  ///                                       so every truth branch below is at its
-  ///                                       sentinel while truth_pur is real
-  ///   muon_g4_id >= 0,  particle found  : a full row
+  /// Fraction of the track's true energy from that particle, -1 if unmatched.
+  /// (-1, -1) means nothing matched; `muon_g4_id >= 0` with the truth branches
+  /// at their sentinels means largeant did not store the matched id.
   float truth_pur;
-  /// PDG of the matched particle. Not necessarily a muon: a mis-selected
-  /// through-goer or a delta-ray fragment lands here too, and telling those
-  /// apart is the point of writing the row anyway.
+  /// PDG of the matched particle; not necessarily a muon.
   int track_gen_pdg;
   float track_gen_time, track_gen_E;
   /// simb::MCParticle::EndT() of the primary muon [ns]. Beware: this is the
@@ -298,11 +287,8 @@ private:
   /// Truth tag: is the delayed light distinguishable?
   bool  second_peak_visible;
   float second_peak_significance;
-  /// The two counts behind it: S is the light from this muon's delayed
-  /// daughters, B everything else in the same window -- which now includes
-  /// other muons, so `kMinSignificance` is no longer a tuned number on a
-  /// multi-muon sample. Stored so the threshold can be re-derived offline
-  /// instead of by re-running.
+  /// The counts behind it, stored so the threshold can be re-derived offline:
+  /// `kMinSignificance` is not a tuned number on a multi-muon sample.
   int   second_peak_S;
   int   second_peak_B;
 
@@ -317,9 +303,7 @@ private:
   float p_gen_time;              ///< [ns, Geant4]
   bool  p_is_muon;               ///< this row's matched muon itself
   bool  p_is_delayed;            ///< descends from the muon disappearance
-  /// Which muon row these photons were written for; with several selected
-  /// muons in one event the same Geant4 track can be reported under more than
-  /// one of them, and this says which.
+  /// Which muon row these photons were written for.
   int   p_parent_muon_g4_id;
   int   p_photons;               ///< detected photons from this track, all times
   std::vector<float> p_bin_time;    ///< [ns, photon clock] bin left edge
@@ -328,10 +312,10 @@ private:
   /// SimPhotons, but NOT to the MCParticles [ns]. To put a truth time on the
   /// optical clock: t_us = (T_g4_ns + g4_time_shift) / 1000. It cancels in any
   /// difference of two truth times, so lifetimes do not need it.
-  /// 0 when it could not be determined: arithmetically neutral, so a downstream
-  /// (T + shift) still yields the plain Geant4 time rather than a wild number.
-  /// A real shift is never exactly 0 (it runs around -400 ns), so an exact zero
-  /// is itself the flag that no trigger was available; the reason is logged.
+  /// 0 is NOT a failure flag: it means the emulated trigger needed no
+  /// adjustment, the common case on cosmics. On the pilot the delayed light
+  /// peaks at t_last + 11..15 ns whether the shift is 0 or the -857 ns one event
+  /// carries. Whether a shift was computed is in the log, not in this branch.
   float g4_time_shift;
   float track_gen_x, track_gen_y, track_gen_z;
   int michel_gen_pdg;
@@ -934,10 +918,7 @@ void icarus::ICARUSStoppingMuonOpticalAna::fillMCTruth(
   auto const clockData =
     art::ServiceHandle<detinfo::DetectorClocksService const>()->DataFor(e);
 
-  // ===========================================================================
-  // Event-level quantities. Everything in this section is computed once and is
-  // NOT part of the per-row reset further down.
-  // ===========================================================================
+  // --- event level: computed once, NOT part of the per-row reset below --------
 
   // The 'shifted' producer (sbncode AdjustSimForTrigger) adds a per-event offset
   // to the OpDetWaveforms and the SimPhotons, but NOT to these MCParticles, so the
@@ -946,11 +927,8 @@ void icarus::ICARUSStoppingMuonOpticalAna::fillMCTruth(
   // and it changes event to event, so it cannot be folded in as a constant.
   // To put a truth time on the waveform clock:
   //   t_rel = G4ToElecTime(T_mcparticle + shift_ns) - TriggerTime()
-  // 0 only as an arithmetic placeholder; the branch keeps the sentinel unless a
-  // shift is actually computed, so "unknown" never masquerades as "no shift".
-  //
-  // This is per event, not per row: resetting it inside the row loop below would
-  // silently put every truth time back on the wrong clock.
+  // 0 when no shift was needed, which is the common case on cosmics; see the
+  // g4_time_shift branch comment. Per event, not per row.
   double g4TimeShift_ns = 0.;
   g4_time_shift = 0.f;   // overwritten below only if a shift is actually computed
 
@@ -958,7 +936,9 @@ void icarus::ICARUSStoppingMuonOpticalAna::fillMCTruth(
 
     auto const triggerHandle = e.getHandle<std::vector<raw::Trigger>>(fTriggerLabel);
 
-    if (!triggerHandle) {
+    // empty as well as invalid: on cosmics the emulation fires only in some
+    // events, and front() on an empty collection is undefined behaviour
+    if (!triggerHandle || triggerHandle->empty()) {
       mf::LogWarning("ICARUSStoppingMuonOpticalAna")
         << "No raw::Trigger with label '" << fTriggerLabel.encode()
         << "'; g4_time_shift left at 0";
@@ -1007,21 +987,15 @@ void icarus::ICARUSStoppingMuonOpticalAna::fillMCTruth(
     children[par.Mother()].push_back(par.TrackId());
   }
 
-  // ===========================================================================
-  // Pass 1: what each row is about.
+  // --- pass 1: one row per selected track, truth-matched through its hits -----
   //
-  // One row per SELECTED track, truth-matched through that track's own hits.
-  // The set iterated here must stay identical to the one `fillTrackMatchTree()`
-  // writes -- same nesting, no extra filter -- or the `matched_track_id` join
-  // silently loses rows.
+  // The iteration must stay identical to `fillTrackMatchTree()`'s -- same
+  // nesting, no extra filter -- or the `matched_track_id` join loses rows.
   //
-  // The muon is whatever the hit match returns. It is deliberately NOT required
-  // to be a stopping muon, or a muon at all: a mis-selected through-goer, a
-  // delta-ray fragment or an overlapping second muon each produce a row, and
-  // `track_gen_pdg` / `truth_pur` / `track_end_in_av` are what tell them apart.
-  // Filtering them out here would hide exactly the selection impurity that a
-  // multi-particle sample exists to measure.
-  // ===========================================================================
+  // The match is NOT required to be a stopping muon, or a muon: a mis-selected
+  // through-goer or an overlapping second muon each get a row, and track_gen_pdg
+  // / truth_pur / track_end_in_av tell them apart. That is the selection impurity
+  // a multi-particle sample exists to measure.
 
   struct MuonRow {
     int recoID = -1;                            ///< recob::Track::ID(), -1 in fallback
@@ -1047,10 +1021,8 @@ void icarus::ICARUSStoppingMuonOpticalAna::fillMCTruth(
 
         if (!m.hits.empty()) {
 
-          // rollup_unsaved_ids = false, unlike TrackCaloSkimmer. Rollup reassigns
-          // an unsaved daughter's charge to its mother, and the Michel electron
-          // sits at the very end of the track: rolling it up is precisely the
-          // merge this analysis needs kept apart.
+          // rollup = false, unlike TrackCaloSkimmer: it would fold the Michel's
+          // charge into the muon, which is the one merge this must not make.
           std::vector<std::pair<int, float>> const energies =
             CAFRecoUtils::AllTrueParticleIDEnergyMatches(clockData, m.hits, false);
 
@@ -1062,18 +1034,10 @@ void icarus::ICARUSStoppingMuonOpticalAna::fillMCTruth(
             float const totalE = CAFRecoUtils::TotalHitEnergy(clockData, m.hits);
             if (totalE > 0.f) row.purity = best.second / totalE;
 
-            // The key can be NEGATIVE. sim::TrackIDE uses a negative id to mean
-            // "energy from an unsaved electromagnetic daughter of |id|", and
-            // AllTrueParticleIDEnergyMatches only takes std::abs() of it when
-            // rollup_unsaved_ids is set -- which it deliberately is not here
-            // (RecoUtils.cc:9-12). GetShowerPrimary() then fails to find the
-            // negative id in the ParticleList and hands it straight back
-            // (RecoUtils.cc:95-96), so it survives into the result.
-            //
-            // std::abs() only for the LOOKUP: it names the saved ancestor that
-            // actually exists in the MCParticle collection. The energy map keys
-            // stay unrolled, so the Michel's charge is still counted apart from
-            // the muon's -- which is the whole reason for rollup = false.
+            // The key can be NEGATIVE: sim::TrackIDE signs unsaved EM daughters,
+            // and only rollup abs()es them (RecoUtils.cc:9-12, :95-96). abs() here
+            // for the LOOKUP only -- it names the saved ancestor; the energy keys
+            // stay unrolled.
             row.g4ID = std::abs(best.first);
 
             auto const it = byID.find(row.g4ID);
@@ -1087,11 +1051,9 @@ void icarus::ICARUSStoppingMuonOpticalAna::fillMCTruth(
   }
   else {
 
-    // FALLBACK: no SimChannels, so no hit-level matching is possible. Revert to
-    // the single-particle behaviour -- one row per event describing the first
-    // primary muon -- which is correct on a one-muon-per-event gun sample and
-    // needs nothing but the MCParticle collection. `matched_track_id` stays -1,
-    // which is how a reader tells the two regimes apart.
+    // FALLBACK: no SimChannels, so no hit-level match. One row per event for the
+    // first primary muon -- correct on a gun sample, and needs only MCParticles.
+    // `matched_track_id` stays -1, which is how a reader tells the two apart.
     if (!fSimChannelLabel.empty()) {
       mf::LogWarning("ICARUSStoppingMuonOpticalAna")
         << "No usable sim::SimChannel with label '" << fSimChannelLabel.encode()
@@ -1110,13 +1072,15 @@ void icarus::ICARUSStoppingMuonOpticalAna::fillMCTruth(
 
   if (rows.empty()) return;   // no selected track: nothing to say about this event
 
-  // ===========================================================================
-  // Pass 2: when each row's muon disappeared, and which tracks carry its
-  // delayed light. Pure MCParticle arithmetic, so it can run before any photon
-  // is touched -- which is what lets pass 3 bound the photon bookkeeping.
-  // ===========================================================================
+  // --- pass 2: each muon's disappearance time and delayed set ----------------
+  // Pure MCParticle arithmetic, so it runs before any photon is touched, which
+  // is what lets pass 3 bound the photon bookkeeping.
 
+  // Time and validity kept apart: a CORSIKA muon disappears anywhere in
+  // [-1.5, +1.4] ms, so a negative time is ordinary and `> 0` is not a validity
+  // test. Using one drops the tag for every muon before the trigger.
   std::vector<float> rowLastDaughter(rows.size(), -1.f);
+  std::vector<char>  rowHasDaughter(rows.size(), 0);
   std::vector<std::set<int>> rowDelayed(rows.size());
   std::set<int> keep;   // union over rows: muons and their delayed progeny
 
@@ -1141,17 +1105,29 @@ void icarus::ICARUSStoppingMuonOpticalAna::fillMCTruth(
     if (latestDaughter == std::numeric_limits<double>::lowest()) continue;
 
     rowLastDaughter[i] = static_cast<float>(latestDaughter);
+    rowHasDaughter[i]  = 1;
 
-    // delayed set: the daughters at the disappearance, plus all their progeny
+    // Delayed set: the disappearance daughters and their progeny, bounded at BOTH
+    // ends. The lower edge drops the atomic cascade. The upper edge drops the
+    // radioactive decay of the capture residue (Cl-38, Ar-41, ...), whose beta
+    // electrons arrive seconds to hours later; the pilot had one in every capture
+    // row, worth 25-212 photons. 1 ms is far past the LAr slow component (1.6 us)
+    // and neutron capture (a few hundred us), so nothing physical is lost.
+    constexpr double kMaxDelayNs = 1.0e6;
+    double const tHi = rowLastDaughter[i] + kMaxDelayNs;
+
     std::vector<int> pending;
     for (int const id : children[muID]) {
-      if (byID[id]->T() < rowLastDaughter[i] - 1.0) continue;  // drops the cascade
+      double const t = byID[id]->T();
+      if (t < rowLastDaughter[i] - 1.0) continue;   // drops the cascade
+      if (t > tHi) continue;                        // drops the radioactive decay
       if (rowDelayed[i].insert(id).second) pending.push_back(id);
     }
     while (!pending.empty()) {
       int const id = pending.back();
       pending.pop_back();
       for (int const c : children[id]) {
+        if (byID[c]->T() > tHi) continue;
         if (rowDelayed[i].insert(c).second) pending.push_back(c);
       }
     }
@@ -1159,19 +1135,11 @@ void icarus::ICARUSStoppingMuonOpticalAna::fillMCTruth(
     keep.insert(rowDelayed[i].begin(), rowDelayed[i].end());
   }
 
-  // ===========================================================================
-  // Pass 3: the photon histograms, built once per SimPhotons collection and
-  // reused by every row.
-  //
-  // `global` counts every detected photon regardless of origin, and supplies the
-  // background term exactly whatever `perTrack` holds.
-  //
-  // `perTrack` is restricted to `keep` ONLY in the matched regime. In the
-  // fallback there is a single row and the unrestricted tree is the diagnostic
-  // layer the gun sample relies on, so it is left exactly as it was; with many
-  // selected muons the same tree would otherwise carry one row per shower
-  // particle per muon, which is neither affordable nor informative.
-  // ===========================================================================
+  // --- pass 3: photon histograms, built once and reused by every row ----------
+  // `global` counts every photon and supplies the background term exactly.
+  // `perTrack` is restricted to `keep` only in the matched regime: the fallback's
+  // unrestricted tree is the gun sample's diagnostic layer, but with many muons
+  // it would carry one row per shower particle per muon.
 
   bool const restrictPhotonTracks = canMatch;
 
@@ -1215,9 +1183,7 @@ void icarus::ICARUSStoppingMuonOpticalAna::fillMCTruth(
     hists.push_back(std::move(hist));
   }
 
-  // ===========================================================================
-  // Pass 4: one Fill() per row.
-  // ===========================================================================
+  // --- pass 4: one Fill() per row --------------------------------------------
 
   for (std::size_t i = 0; i < rows.size(); ++i) {
 
@@ -1340,13 +1306,11 @@ void icarus::ICARUSStoppingMuonOpticalAna::fillMCTruth(
     // --- SimPhotons: the second-peak tag --------------------------------------
     // after the muon's prompt maximum, does the summed photon rate turn back up?
     //
-    // S is this muon's delayed light, B is everything else in the same window.
-    // On a multi-muon event B therefore also holds the prompt light of the OTHER
-    // muons, which is physically right -- it is background under the second peak
-    // -- but it means kMinSignificance is no longer the value it was tuned at on
-    // a one-muon-per-event sample. S and B are written out so the threshold can
-    // be re-derived offline rather than by re-running.
-    if (track_last_daughter_time > 0.f && !hists.empty()) {
+    // S is this muon's delayed light, B everything else in the window -- which on
+    // a multi-muon event includes the other muons' prompt light. Right physically,
+    // but kMinSignificance is then no longer the value it was tuned at, so S and B
+    // are written out and the threshold can be re-derived offline.
+    if (rowHasDaughter[i] && !hists.empty()) {
 
       // Photon times carry the AdjustSimForTrigger shift, the MCParticle times do
       // not, so the truth is moved onto the photon clock rather than the reverse.
