@@ -234,8 +234,6 @@ const icarus::calo::NormalizeYZSQL::ScaleInfo& icarus::calo::NormalizeYZSQL::Get
 double icarus::calo::NormalizeYZSQL::Normalize(double dQdx, const art::Event &e, 
     const recob::Hit &hit, const geo::Point_t &location, const geo::Vector_t &direction, double t0) {
 
-  std::cout << "NormalizeYZSQL Tool -- MC Flag: " << fMC << " Run: " << e.id().runID().run() << ", Subrun: " << e.id().subRunID().run() << std::endl;
-
   // Get the info
   uint64_t runID = -1;
   switch (fMC) {
@@ -279,8 +277,6 @@ double icarus::calo::NormalizeYZSQL::Normalize(double dQdx, const art::Event &e,
   if (!b) {
     // TODO: what to do if no lifetime is found? throw an exception??
   }
-
-  if (fVerbose) std::cout << "NormalizeYZSQL Tool -- Data Cryo: " << cryo << " Plane: " << plane << " TPC: " << tpc << " iTPC: " << itpc << " Y: " << y << " Z: " << z << " scale: " << scale << std::endl;
 
   return dQdx / scale;
 }
