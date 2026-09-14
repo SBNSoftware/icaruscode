@@ -24,13 +24,9 @@ project(icaruscode LANGUAGES CXX)
 
 message(STATUS
   "\n-- ============================================================================="
-  "\n-- === *** Start of configuration of ${PROJECT_NAME} ***"
-  "\n-- ===")
-
-# cetbuildtools contains our cmake modules
-#find_package(cetbuildtools REQUIRED)
-
-#list(APPEND CMAKE_MODULE_PATH $ENV{CANVAS_ROOT_IO_DIR}/Modules $ENV{ART_DIR}/Modules )
+  "\n-- === *** Start of configuration of ${PROJECT_NAME} ${${PROJECT_NAME}_CMAKE_PROJECT_VERSION_STRING} ***"
+  "\n-- ==="
+  )
 
 include(CetCMakeEnv)
 cet_cmake_env()
@@ -115,7 +111,6 @@ message(STATUS
   "\n-- ==="
   "\n-- === *** End of configuration of ${PROJECT_NAME} ***"
   "\n-- ============================================================================="
-  "\n-- SQLITE3: ${SQLITE3}"
   "\n-- "
   )
 
