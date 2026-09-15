@@ -25,7 +25,7 @@
 #
 
 #include "services_common_icarus.fcl"
-#include "opdetsim_pmt_icarus.fcl"
+#include "pmtsimulation_icarus.fcl"
 #include "rootoutput_icarus.fcl"
 
 process_name: DetSim4759
@@ -38,7 +38,7 @@ services: @local::icarus_common_services  # from services_common_icarus.fcl
 physics: {
   producers: {
     opdaq: {
-      @table::icarus_simpmt_noise  # from opdetsim_pmt_icarus.fcl
+      @table::icarus_pmtsimulationalg_202202_noise  # from pmtsimulation_icarus.fcl
       
       #
       # enabled readout window

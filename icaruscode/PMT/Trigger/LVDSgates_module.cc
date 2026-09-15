@@ -192,9 +192,9 @@ class icarus::trigger::LVDSgates: public art::EDProducer {
         { ComboMode::OR,      "OR" }
       };
     
-    fhicl::OptionalAtom<std::string> TriggerGatesTag {
+    fhicl::OptionalAtom<art::InputTag> TriggerGatesTag {
       Name("TriggerGatesTag"),
-      Comment("label of trigger gate extraction module (no instance name)")
+      Comment("tag of trigger gate extraction module (no instance name)")
       };
 
     fhicl::Sequence<std::string> Thresholds {
@@ -386,11 +386,11 @@ class icarus::trigger::LVDSgates: public art::EDProducer {
 
   /// Converts a threshold string into an input tag.
   static art::InputTag makeTag
-    (std::string const& thresholdStr, std::string const& defModule);
+    (std::string const& thresholdStr, art::InputTag const& defModule);
 
   /// Converts an input tag into an instance name for the corresponding output.
   static std::string makeOutputInstanceName
-    (art::InputTag const& inputTag, std::string const& defModule);
+    (art::InputTag const& inputTag, art::InputTag const& defModule);
   
 }; // class icarus::trigger::LVDSgates
 
@@ -412,11 +412,11 @@ icarus::trigger::LVDSgates::LVDSgates
   //
   // more complex parameter parsing
   //
-  std::string const discrModuleLabel = config().TriggerGatesTag().value_or("");
+  art::InputTag const discrModuleTag = config().TriggerGatesTag().value_or("");
   for (std::string const& thresholdStr: config().Thresholds()) {
-    art::InputTag const inputTag = makeTag(thresholdStr, discrModuleLabel);
+    art::InputTag const inputTag = makeTag(thresholdStr, discrModuleTag);
     fADCthresholds[thresholdStr]
-      = { inputTag, makeOutputInstanceName(inputTag, discrModuleLabel) };
+      = { inputTag, makeOutputInstanceName(inputTag, discrModuleTag) };
   } // for all thresholds
   
   //
@@ -863,34 +863,38 @@ auto icarus::trigger::LVDSgates::ReadTriggerGates(
 
 //------------------------------------------------------------------------------
 art::InputTag icarus::trigger::LVDSgates::makeTag
-  (std::string const& thresholdStr, std::string const& defModule)
+  (std::string const& thresholdStr, art::InputTag const& defModule)
 {
   auto const isNumber = [pattern=std::regex{ "[+-]?[0-9]+" }]
     (std::string const& s) -> bool
     { return std::regex_match(s, pattern); };
-  return 
+  if (!thresholdStr.empty() && !defModule.instance().empty()) {
+    throw art::Exception(art::errors::Configuration)
+      << "Both the input gate module tag instance name (`TriggerGatesTag`: '"
+      << defModule.encode() << "') and the threshold '" << thresholdStr
+      << "' are set. One of them must be empty.\n";
+  }
+  return
     ((thresholdStr.find(':') != std::string::npos) || !isNumber(thresholdStr))
     ? art::InputTag{ thresholdStr }
-    : defModule.empty()
+    : defModule.label().empty()
       ? throw (art::Exception(art::errors::Configuration)
         << "No default module label (`TriggerGatesTag`) specified"
-           ", and it's needed for threshold '"
-        << thresholdStr << "'.\n")
-      : art::InputTag{ defModule, thresholdStr }
+           ", and it's needed for threshold '" << thresholdStr << "'.\n")
+      : art::InputTag{ defModule.label(), thresholdStr, defModule.process() }
     ;
 } // icarus::trigger::LVDSgates::makeTag()
 
 
 //------------------------------------------------------------------------------
 std::string icarus::trigger::LVDSgates::makeOutputInstanceName
-  (art::InputTag const& inputTag, std::string const& defModule)
+  (art::InputTag const& inputTag, art::InputTag const& defModule)
 {
-  return (inputTag.label() == defModule)
+  return (inputTag.label() == defModule.label())
     ? inputTag.instance()
-    : inputTag.instance().empty()
-      ? inputTag.label(): inputTag.label() + inputTag.instance()
+    : inputTag.label() + inputTag.instance()
     ;
-} // icarus::trigger::LVDSgates::makeTag()
+} // icarus::trigger::LVDSgates::makeOutputInstanceName()
 
 
 //------------------------------------------------------------------------------

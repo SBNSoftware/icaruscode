@@ -108,6 +108,9 @@ namespace icarus::trigger { class DiscriminatePMTwaveforms; }
  *      expected to be from the
  *      @ref DetectorClocksElectronicsTime "electronics time scale"
  *      and therefore expressed in microseconds.
+ * * `std::vector<icarus::WaveformBaseline>` (if `Baselines` is specified):
+ *      @ref LArSoftProxyDefinitionParallelData "parallel data product" of the
+ *      baseline of each of the input waveforms.
  * 
  * 
  * Service requirements
@@ -369,6 +372,8 @@ icarus::trigger::DiscriminatePMTwaveforms::DiscriminatePMTwaveforms
   // declaration of input
   //
   consumes<std::vector<raw::OpDetWaveform>>(fOpDetWaveformTag);
+  if (fBaselineTag)
+    consumes<std::vector<icarus::WaveformBaseline>>(*fBaselineTag);
   
   //
   // declaration of output

@@ -335,8 +335,7 @@ icarus::CopyBeamTimePMTwaveforms::CopyBeamTimePMTwaveforms
   , fWaveMetaTag    { config().OpDetWaveformMetaAssns().value_or(fWaveformTag) }
   , fWaveBaselineTag{ config().WaveformBaselineAssns().value_or(fWaveformTag) }
   , fWaveRMStag     { config().WaveformRMSassns().value_or(fWaveBaselineTag) }
-  , fTargetInterval
-      { makeTimeInterval(config().SelectInterval()).value_or(DefaultInterval) }
+  , fTargetInterval { config().SelectInterval().value_or(DefaultInterval) }
   , fTimeReference  { config().getTimeReference() }
   , fLogCategory    { config().LogCategory() }
   // cached

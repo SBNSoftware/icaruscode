@@ -93,6 +93,9 @@ class icarus::crt::CRTHitRecoAlg {
                     float peshit, uint64_t time0, Long64_t time1, int plane,
                     double x, double ex, double y, double ey, double z,
                     double ez, string tagger);
+  
+  /// Returns whether the algorithm is configured to process data (vs. simulation).
+  bool isData() const { return fData; }
 
  private:
   geo::AuxDetGeometryCore const* fAuxDetGeom;

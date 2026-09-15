@@ -6,7 +6,7 @@
 #include "icarus_opana_modules.fcl"
 #include "rootoutput_icarus.fcl"
 #include "timing_icarus.fcl"
-#include "pmt-calibration.fcl"
+#include "pmt_calibration_icarus.fcl"
 
 process_name: laserAnalysis
 
