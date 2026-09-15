@@ -108,35 +108,31 @@ physics.producers.mcreco.MCRecoPart.TrackIDOffsets: [0,10000000,20000000] #Accou
 runPeriod: 2
 
 physics.producers.SBNShowerGausCryoE.ShowerFinderTools[7].CalorimetryAlg:            @local::icarus_calorimetryalgmc
-physics.producers.SBNShowerGausCryoE.ShowerFinderTools[7].ApplyCorrectionsInNorm:    true
 physics.producers.SBNShowerGausCryoE.ShowerFinderTools[7].NormTools:                 @local::icarus_calonormtoolsMC
 physics.producers.SBNShowerGausCryoE.ShowerFinderTools[7].NormTools[0].MC:           @local::runPeriod
 physics.producers.SBNShowerGausCryoE.ShowerFinderTools[7].NormTools[1].MC:           @local::runPeriod
 physics.producers.SBNShowerGausCryoW.ShowerFinderTools[7].CalorimetryAlg:            @local::icarus_calorimetryalgmc
-physics.producers.SBNShowerGausCryoW.ShowerFinderTools[7].ApplyCorrectionsInNorm:    true
 physics.producers.SBNShowerGausCryoW.ShowerFinderTools[7].NormTools:                 @local::icarus_calonormtoolsMC
 physics.producers.SBNShowerGausCryoW.ShowerFinderTools[7].NormTools[0].MC:           @local::runPeriod
 physics.producers.SBNShowerGausCryoW.ShowerFinderTools[7].NormTools[1].MC:           @local::runPeriod
 
 physics.producers.SBNShowerGausCryoE.ShowerFinderTools[5].CalorimetryAlg:            @local::icarus_calorimetryalgmc
-physics.producers.SBNShowerGausCryoE.ShowerFinderTools[5].ApplyCorrectionsInNorm:    true
 physics.producers.SBNShowerGausCryoE.ShowerFinderTools[5].NormTools:                 @local::icarus_calonormtoolsMC
 physics.producers.SBNShowerGausCryoE.ShowerFinderTools[5].NormTools[0].MC:           @local::runPeriod
 physics.producers.SBNShowerGausCryoE.ShowerFinderTools[5].NormTools[1].MC:           @local::runPeriod
 physics.producers.SBNShowerGausCryoW.ShowerFinderTools[5].CalorimetryAlg:            @local::icarus_calorimetryalgmc
-physics.producers.SBNShowerGausCryoW.ShowerFinderTools[5].ApplyCorrectionsInNorm:    true
 physics.producers.SBNShowerGausCryoW.ShowerFinderTools[5].NormTools:                 @local::icarus_calonormtoolsMC
 physics.producers.SBNShowerGausCryoW.ShowerFinderTools[5].NormTools[0].MC:           @local::runPeriod
 physics.producers.SBNShowerGausCryoW.ShowerFinderTools[5].NormTools[1].MC:           @local::runPeriod
 
-physics.producers.SBNShowerGausCryoE.ShowerFinderTools[3].ApplyCorrectionsInNorm:    true
 physics.producers.SBNShowerGausCryoE.ShowerFinderTools[3].NormTools:                 @local::icarus_calonormtoolsMC
 physics.producers.SBNShowerGausCryoE.ShowerFinderTools[3].NormTools[0].MC:           @local::runPeriod
 physics.producers.SBNShowerGausCryoE.ShowerFinderTools[3].NormTools[1].MC:           @local::runPeriod
-physics.producers.SBNShowerGausCryoW.ShowerFinderTools[3].ApplyCorrectionsInNorm:    true
+physics.producers.SBNShowerGausCryoE.ShowerFinderTools[3].ApplyMCLifetimeCorrection: true
 physics.producers.SBNShowerGausCryoW.ShowerFinderTools[3].NormTools:                 @local::icarus_calonormtoolsMC
 physics.producers.SBNShowerGausCryoW.ShowerFinderTools[3].NormTools[0].MC:           @local::runPeriod
 physics.producers.SBNShowerGausCryoW.ShowerFinderTools[3].NormTools[1].MC:           @local::runPeriod
+physics.producers.SBNShowerGausCryoW.ShowerFinderTools[3].ApplyMCLifetimeCorrection: true
 
 services.message.destinations :
 {

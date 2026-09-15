@@ -163,8 +163,6 @@ void icarus::calo::NormalizeYZSQL::configure(const fhicl::ParameterSet& pset) {}
 
 const icarus::calo::NormalizeYZSQL::ScaleInfo& icarus::calo::NormalizeYZSQL::GetScaleInfo(uint64_t run) {
 
-  //std::cout << "NormalizeYZSQL Tool -- Getting scale info for run: " << run << std::endl;
-
   // check the cache
   if (fScaleInfos.count(run)) {
     return fScaleInfos.at(run);
