@@ -44,13 +44,12 @@ art_make_library(
 	lardata::ArtDataHelper
         ${FHICLCPP}
         cetlib_except::cetlib_except
-	WireCellGen
-	WireCellUtil
-	WireCellAux
-	WireCellIface
-	WireCellPgraph
-	WireCellRoot
-	jsoncpp
+	WireCell::Gen
+	WireCell::Util
+	WireCell::Aux
+	WireCell::Iface
+	WireCell::Pgraph
+        WireCell::Root
 	dl
 )
 
