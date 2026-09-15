@@ -1,0 +1,10 @@
+BEGIN_PROLOG
+
+standard_hitcomp: 
+{
+  plugin_type: "HitComp"
+  Label: "gaushit1dTPCEE"
+  Process: "MCstage0Var"
+}
+
+END_PROLOG
