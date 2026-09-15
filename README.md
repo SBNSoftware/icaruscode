@@ -17,6 +17,7 @@ ICARUS software is spread across several repositories under [GitHub SBNSoftware]
 * `icarus_data` distributes large data files
 * [`icarusutil`](https://github.com/SBNSoftware/icarusutil) mostly contains experiment customization of [`larbatch`](https://github.com/LArSoft/larbatch) utilities
 * [`sbncode`](https://github.com/SBNSoftware/sbncode) is code shared with other SBN experiments
+* [`sbnalg`](https://github.com/SBNSoftware/sbnalg) is framework-independent code (algorithms, utilities) shared with other SBN experiments
 * [`sbnobj`](https://github.com/SBNSoftware/sbnobj) contains data object definitions shared with SBN
 * [`sbndaq_artdaq_core`](https://github.com/SBNSoftware/sbndaq_artdaq_core) interfaces with DAQ and holds data objects definitions for ICARUS "raw" data
 
