@@ -10,7 +10,7 @@ set( TOOL_LIBRARIES
 	cetlib::cetlib
 )
 
-cet_build_plugin(LArPandoraHitCollectionToolICARUS art::tool LIBRARIES ${TOOL_LIBRARIES})
+cet_build_plugin(LArPandoraHitCollectionToolICARUS art::tool LIBRARIES PRIVATE ${TOOL_LIBRARIES})
 
 install_fhicl()
 install_source()

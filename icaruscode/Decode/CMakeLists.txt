@@ -28,13 +28,13 @@ set(          MODULE_LIBRARIES
                         Eigen3::Eigen
 )
 
-cet_build_plugin(DaqDecoderICARUSTPC art::module LIBRARIES ${MODULE_LIBRARIES})
-cet_build_plugin(DaqDecoderICARUSTPCwROI art::module LIBRARIES ${MODULE_LIBRARIES})
-cet_build_plugin(DaqDecoderICARUSTrigger art::module LIBRARIES ${MODULE_LIBRARIES})
-cet_build_plugin(FilterNoiseICARUS art::module LIBRARIES ${MODULE_LIBRARIES})
-cet_build_plugin(MCDecoderICARUSTPCwROI art::module LIBRARIES ${MODULE_LIBRARIES})
+cet_build_plugin(DaqDecoderICARUSTPC art::module LIBRARIES PRIVATE ${MODULE_LIBRARIES})
+cet_build_plugin(DaqDecoderICARUSTPCwROI art::module LIBRARIES PRIVATE ${MODULE_LIBRARIES})
+cet_build_plugin(DaqDecoderICARUSTrigger art::module LIBRARIES PRIVATE ${MODULE_LIBRARIES})
+cet_build_plugin(FilterNoiseICARUS art::module LIBRARIES PRIVATE ${MODULE_LIBRARIES})
+cet_build_plugin(MCDecoderICARUSTPCwROI art::module LIBRARIES PRIVATE ${MODULE_LIBRARIES})
 
-cet_build_plugin(DaqDecoderICARUSPMT art::module LIBRARIES
+cet_build_plugin(DaqDecoderICARUSPMT art::module LIBRARIES PRIVATE
 	icaruscode::Timing
 	icaruscode::Decode_DecoderTools_Dumpers
 	icaruscode::Decode_DecoderTools
@@ -56,7 +56,7 @@ cet_build_plugin(DaqDecoderICARUSPMT art::module LIBRARIES
 	lardata::Utilities
 	)
 
-cet_build_plugin(PMTconfigurationExtraction art::module LIBRARIES
+cet_build_plugin(PMTconfigurationExtraction art::module LIBRARIES PRIVATE
 	icaruscode::Decode_DecoderTools
 	sbnobj::Common_PMT_Data
 	sbnobj::Common_Trigger
@@ -65,7 +65,7 @@ cet_build_plugin(PMTconfigurationExtraction art::module LIBRARIES
 	cetlib_except::cetlib_except
 	)
 
-cet_build_plugin(TriggerConfigurationExtraction art::module LIBRARIES
+cet_build_plugin(TriggerConfigurationExtraction art::module LIBRARIES PRIVATE
   icaruscode_Decode_DecoderTools
   icaruscode_Decode_DataProducts
   art::Framework_Services_Registry
@@ -73,7 +73,7 @@ cet_build_plugin(TriggerConfigurationExtraction art::module LIBRARIES
   cetlib_except::cetlib_except
   )
 
-cet_build_plugin(DumpPMTconfiguration art::module LIBRARIES
+cet_build_plugin(DumpPMTconfiguration art::module LIBRARIES PRIVATE
 	sbnobj::Common_PMT_Data
         lardataobj::RawData
 	messagefacility::MF_MessageLogger
@@ -82,14 +82,14 @@ cet_build_plugin(DumpPMTconfiguration art::module LIBRARIES
 	)
 
 
-cet_build_plugin(DumpTriggerConfiguration art::module LIBRARIES
+cet_build_plugin(DumpTriggerConfiguration art::module LIBRARIES PRIVATE
   icaruscode_Decode_DataProducts
   messagefacility::MF_MessageLogger
   fhiclcpp::fhiclcpp
   cetlib_except::cetlib_except
   )
 
-cet_build_plugin(DumpArtDAQfragments art::module LIBRARIES
+cet_build_plugin(DumpArtDAQfragments art::module LIBRARIES PRIVATE
 	icaruscode::Decode_DecoderTools_Dumpers
         larcorealg::headers
 	artdaq_core::artdaq-core_Data
@@ -98,7 +98,7 @@ cet_build_plugin(DumpArtDAQfragments art::module LIBRARIES
 	cetlib_except::cetlib_except
 	)
 
-cet_build_plugin(DumpTrigger art::module LIBRARIES
+cet_build_plugin(DumpTrigger art::module LIBRARIES PRIVATE
   sbnobj::Common_Trigger
   lardataobj::Simulation
   lardataobj::RawData
@@ -108,7 +108,7 @@ cet_build_plugin(DumpTrigger art::module LIBRARIES
   lardataalg::DetectorInfo
   )
 
-cet_build_plugin(CopyDaqICARUSTPC art::module LIBRARIES
+cet_build_plugin(CopyDaqICARUSTPC art::module LIBRARIES PRIVATE
   sbnobj::Common_Trigger
   artdaq_core::artdaq-core_Data
   messagefacility::MF_MessageLogger
@@ -116,7 +116,7 @@ cet_build_plugin(CopyDaqICARUSTPC art::module LIBRARIES
   cetlib_except::cetlib_except
   )
 
-cet_build_plugin(OverlayProducts art::module LIBRARIES
+cet_build_plugin(OverlayProducts art::module LIBRARIES PRIVATE
         icaruscode::Timing
         sbnobj::Common_PMT_Data
         larcore::Geometry_Geometry_service

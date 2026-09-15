@@ -15,8 +15,7 @@ link_directories( $ENV{LARWIRECELL_LIB} )
 
 cet_build_plugin(
   SimInfoOverlayFilter art::EDFilter
-  LIBRARIES
-  PRIVATE
+  LIBRARIES PRIVATE
   larcoreobj::SummaryData
   lardataobj::Simulation
   nusimdata::SimulationBase
@@ -25,8 +24,7 @@ cet_build_plugin(
 
 cet_build_plugin(
   SubRunPOTInEvent art::EDProducer
-  LIBRARIES
-  PRIVATE
+  LIBRARIES PRIVATE
   larcoreobj::SummaryData
 )
 

@@ -6,6 +6,8 @@ set(         TOOL_LIBRARIES
 		lardataobj::Simulation
 		lardataalg::DetectorInfo
 		icaruscode::TPC_SignalProcessing_RawDigitFilter_Algorithms
+		larreco::WaveformTool
+		sbnobj::ICARUS_TPC
 		larcorealg::Geometry
 		larcore::Geometry_Geometry_service
 		lardata::RecoObjects
@@ -34,18 +36,18 @@ set(         TOOL_LIBRARIES
 		FFTW3::FFTW3
 		)
 
-cet_build_plugin(BasicHitAnalysis art::tool LIBRARIES ${TOOL_LIBRARIES})
-cet_build_plugin(BasicRawDigitAnalysis art::tool LIBRARIES ${TOOL_LIBRARIES})
-cet_build_plugin(BasicTrackAnalysis art::tool LIBRARIES ${TOOL_LIBRARIES})
-cet_build_plugin(BasicWireAnalysis art::tool LIBRARIES ${TOOL_LIBRARIES})
-cet_build_plugin(HitEfficiencyAnalysis art::tool LIBRARIES ${TOOL_LIBRARIES})
-cet_build_plugin(HitFinderAnalysis art::tool LIBRARIES ${TOOL_LIBRARIES} SOURCE HitFinderAnalysis_tool.cc)
+cet_build_plugin(BasicHitAnalysis art::tool LIBRARIES PRIVATE ${TOOL_LIBRARIES})
+cet_build_plugin(BasicRawDigitAnalysis art::tool LIBRARIES PRIVATE ${TOOL_LIBRARIES})
+cet_build_plugin(BasicTrackAnalysis art::tool LIBRARIES PRIVATE ${TOOL_LIBRARIES})
+cet_build_plugin(BasicWireAnalysis art::tool LIBRARIES PRIVATE ${TOOL_LIBRARIES})
+cet_build_plugin(HitEfficiencyAnalysis art::tool LIBRARIES PRIVATE ${TOOL_LIBRARIES})
+cet_build_plugin(HitFinderAnalysis art::tool LIBRARIES PRIVATE ${TOOL_LIBRARIES})
 set_property(SOURCE HitFinderAnalysis_tool.cc APPEND PROPERTY COMPILE_DEFINITIONS EIGEN_FFTW_DEFAULT)
-cet_build_plugin(SpacePointAnalysisMC art::tool LIBRARIES ${TOOL_LIBRARIES} SOURCE SpacePointAnalysisMC_tool.cc)
+cet_build_plugin(SpacePointAnalysisMC art::tool LIBRARIES PRIVATE ${TOOL_LIBRARIES})
 set_property(SOURCE SpacePointAnalysisMC_tool.cc APPEND PROPERTY COMPILE_DEFINITIONS EIGEN_FFTW_DEFAULT)
-cet_build_plugin(SpacePointAnalysis art::tool LIBRARIES ${TOOL_LIBRARIES} SOURCE SpacePointAnalysis_tool.cc)
+cet_build_plugin(SpacePointAnalysis art::tool LIBRARIES PRIVATE ${TOOL_LIBRARIES})
 set_property(SOURCE SpacePointAnalysis_tool.cc APPEND PROPERTY COMPILE_DEFINITIONS EIGEN_FFTW_DEFAULT)
-cet_build_plugin(TrackHitEfficiencyAnalysis art::tool LIBRARIES ${TOOL_LIBRARIES} SOURCE TrackHitEfficiencyAnalysis_tool.cc)
+cet_build_plugin(TrackHitEfficiencyAnalysis art::tool LIBRARIES PRIVATE ${TOOL_LIBRARIES})
 set_property(SOURCE TrackHitEfficiencyAnalysis_tool.cc APPEND PROPERTY COMPILE_DEFINITIONS EIGEN_FFTW_DEFAULT)
 
 install_headers()

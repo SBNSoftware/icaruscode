@@ -49,14 +49,14 @@ set(		MODULE_LIBRARIES
 			ROOT::FFTW
 			FFTW3::FFTW3
 		)
-cet_build_plugin(Decon1DROI art::module LIBRARIES ${MODULE_LIBRARIES})
-cet_build_plugin(ROIFinder art::module LIBRARIES ${MODULE_LIBRARIES})
-cet_build_plugin(SimChannelROI art::module LIBRARIES ${MODULE_LIBRARIES})
-cet_build_plugin(RecoWireICARUSRaw art::module LIBRARIES ${MODULE_LIBRARIES})
-cet_build_plugin(RecoWireICARUS art::module LIBRARIES ${MODULE_LIBRARIES})
-cet_build_plugin(RecoWireROIICARUS art::module LIBRARIES ${MODULE_LIBRARIES})
-cet_build_plugin(RecoWireROI art::module LIBRARIES ${MODULE_LIBRARIES})
-cet_build_plugin(WaveformIntegrity art::module LIBRARIES ${MODULE_LIBRARIES})
+cet_build_plugin(Decon1DROI art::module LIBRARIES PRIVATE ${MODULE_LIBRARIES})
+cet_build_plugin(ROIFinder art::module LIBRARIES PRIVATE ${MODULE_LIBRARIES})
+cet_build_plugin(SimChannelROI art::module LIBRARIES PRIVATE ${MODULE_LIBRARIES})
+cet_build_plugin(RecoWireICARUSRaw art::module LIBRARIES PRIVATE ${MODULE_LIBRARIES})
+cet_build_plugin(RecoWireICARUS art::module LIBRARIES PRIVATE ${MODULE_LIBRARIES})
+cet_build_plugin(RecoWireROIICARUS art::module LIBRARIES PRIVATE ${MODULE_LIBRARIES})
+cet_build_plugin(RecoWireROI art::module LIBRARIES PRIVATE ${MODULE_LIBRARIES})
+cet_build_plugin(WaveformIntegrity art::module LIBRARIES PRIVATE ${MODULE_LIBRARIES})
 
 install_headers()
 install_fhicl()

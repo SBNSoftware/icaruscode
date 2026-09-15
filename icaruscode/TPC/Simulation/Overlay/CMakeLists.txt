@@ -13,7 +13,7 @@ set(	MODULE_LIBRARIES
 		lardataobj::RawData
 		lardataalg::DetectorInfo
 		icarus_signal_processing::icarus_signal_processing
-		icaruscode_TPC_Utilities_SignalShapingICARUSService_service
+		icaruscode::TPC_Utilities_SignalShapingICARUSService_service
 		larevt::CalibrationDBI_Providers
 		nurandom::RandomUtils_NuRandomService_service
 		art::Framework_Core
@@ -37,7 +37,7 @@ set(	MODULE_LIBRARIES
 		FFTW3::FFTW3
 	)
 
-cet_build_plugin(OverlayICARUS art::module LIBRARIES ${MODULE_LIBRARIES})
+cet_build_plugin(OverlayICARUS art::module LIBRARIES PRIVATE ${MODULE_LIBRARIES})
 
 #install_headers()
 install_fhicl()
