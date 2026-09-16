@@ -280,10 +280,23 @@ private:
   float track_gen_time, track_gen_E;
   /// simb::MCParticle::EndT() of the primary muon [ns]. Beware: this is the
   /// stop for mu- (it matches the atomic-cascade daughters) but the decay
-  /// for mu+ (it matches the decay daughters).
+  /// for mu+ (it matches the decay daughters). Use `track_stop_time` for the
+  /// stop on either sign.
   float track_g4_endT;
   /// Time at which the track effectively disappears --> last daughter time [ns].
   float track_last_daughter_time;
+  /// Time at which the muon comes to rest [ns], read off the trajectory: the
+  /// first point whose momentum has fallen to zero. This is what `track_g4_endT`
+  /// is NOT for mu+, and the only truth handle on the decay delay there.
+  /// -1 when the muon never stopped (or nothing matched).
+  float track_stop_time;
+  /// Last trajectory time with the muon still moving [ns]. Brackets the stop
+  /// from below: if trajectory sparsification ever collapsed the rest point onto
+  /// the decay point, `track_stop_time` would come back equal to
+  /// `track_g4_endT` and the true stop would be somewhere in between.
+  float track_last_moving_time;
+  /// Number of stored trajectory points; the sparsification diagnostic.
+  int   track_n_traj_points;
   /// Truth tag: is the delayed light distinguishable?
   bool  second_peak_visible;
   float second_peak_significance;
@@ -569,6 +582,9 @@ void icarus::ICARUSStoppingMuonOpticalAna::beginJob()
     fMCParticleTree->Branch("track_gen_z", &track_gen_z, "track_gen_z/F");
     fMCParticleTree->Branch("track_g4_endT", &track_g4_endT, "track_g4_endT/F");
     fMCParticleTree->Branch("track_last_daughter_time", &track_last_daughter_time, "track_last_daughter_time/F");
+    fMCParticleTree->Branch("track_stop_time", &track_stop_time, "track_stop_time/F");
+    fMCParticleTree->Branch("track_last_moving_time", &track_last_moving_time, "track_last_moving_time/F");
+    fMCParticleTree->Branch("track_n_traj_points", &track_n_traj_points, "track_n_traj_points/I");
     fMCParticleTree->Branch("track_end_process", &track_end_process, "track_end_process/I");
     fMCParticleTree->Branch("track_end_in_av", &track_end_in_av, "track_end_in_av/O");
     fMCParticleTree->Branch("second_peak_significance", &second_peak_significance, "second_peak_significance/F");
@@ -1197,6 +1213,9 @@ void icarus::ICARUSStoppingMuonOpticalAna::fillMCTruth(
     track_gen_x = -1.f; track_gen_y = -1.f; track_gen_z = -1.f;
     track_g4_endT = -1.f;
     track_last_daughter_time = rowLastDaughter[i];
+    track_stop_time = -1.f;
+    track_last_moving_time = -1.f;
+    track_n_traj_points = 0;
     second_peak_significance = -1.f;
     second_peak_visible = false;
     second_peak_S = -1;
@@ -1222,6 +1241,29 @@ void icarus::ICARUSStoppingMuonOpticalAna::fillMCTruth(
     track_gen_y     = matched->Vy();
     track_gen_z     = matched->Vz();
     track_g4_endT   = matched->EndT();  // ns
+
+    // The stop time, from the trajectory. Geant4 gives the at-rest decay its own
+    // zero-length step, so a stopping muon carries two points at the same
+    // position: the rest point at the stop, and the track end at stop + lifetime.
+    // For mu- the track is already ended at the stop by muMinusCaptureAtRest and
+    // the two coincide; for mu+ they do not, and this is the only way to recover
+    // the stop. 1 keV/c is far below any real muon step and far above the residue
+    // of a zeroed momentum.
+    {
+      constexpr double kStopMomGeV = 1.e-6;
+      bool stopped = false;   // not `track_stop_time < 0`: CORSIKA times go negative
+      track_n_traj_points = static_cast<int>(matched->NumberTrajectoryPoints());
+      for (int ip = 0; ip < track_n_traj_points; ++ip) {
+        if (matched->P(ip) > kStopMomGeV) {
+          track_last_moving_time = static_cast<float>(matched->T(ip));
+          continue;
+        }
+        if (stopped) continue;
+        track_stop_time = static_cast<float>(matched->T(ip));
+        stopped = true;
+      }
+    }
+
     track_end_in_av =
       inActiveVolume(matched->EndX(), matched->EndY(), matched->EndZ());
 
