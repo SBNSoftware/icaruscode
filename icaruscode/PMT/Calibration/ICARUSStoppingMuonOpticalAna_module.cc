@@ -290,13 +290,6 @@ private:
   /// is NOT for mu+, and the only truth handle on the decay delay there.
   /// -1 when the muon never stopped (or nothing matched).
   float track_stop_time;
-  /// Last trajectory time with the muon still moving [ns]. Brackets the stop
-  /// from below: if trajectory sparsification ever collapsed the rest point onto
-  /// the decay point, `track_stop_time` would come back equal to
-  /// `track_g4_endT` and the true stop would be somewhere in between.
-  float track_last_moving_time;
-  /// Number of stored trajectory points; the sparsification diagnostic.
-  int   track_n_traj_points;
   /// Truth tag: is the delayed light distinguishable?
   bool  second_peak_visible;
   float second_peak_significance;
@@ -313,6 +306,23 @@ private:
   int   p_track_id;
   int   p_pdg;
   int   p_mother;
+  /// PDG of the mother, resolved against the full particle list and not against
+  /// this tree. The mother frequently made no light of its own -- a neutron that
+  /// thermalises in the dark and then captures is the standard case -- so
+  /// matching `mother` back to another row leaves those gaps unfilled.
+  int   p_mother_pdg;
+  /// Geant4 creation process of this track, verbatim: "nCapture", "Decay",
+  /// "muMinusCaptureAtRest", "neutronInelastic", "compt", "eIoni", ... This is
+  /// the particle flow. A delayed gamma with process "nCapture" is an argon
+  /// capture line hundreds of microseconds after the muon; the same gamma with
+  /// "muMinusCaptureAtRest" was emitted at the disappearance itself.
+  std::string p_process;
+  /// Creation process of the mother, so one row carries a two-step chain:
+  /// (e-, "compt") <- (gamma, "nCapture") says Compton off a capture gamma
+  /// without joining anything.
+  std::string p_mother_process;
+  /// How this track ended: "nCapture" on a neutron, "Decay", "annihil", ...
+  std::string p_end_process;
   float p_gen_time;              ///< [ns, Geant4]
   bool  p_is_muon;               ///< this row's matched muon itself
   bool  p_is_delayed;            ///< descends from the muon disappearance
@@ -583,8 +593,6 @@ void icarus::ICARUSStoppingMuonOpticalAna::beginJob()
     fMCParticleTree->Branch("track_g4_endT", &track_g4_endT, "track_g4_endT/F");
     fMCParticleTree->Branch("track_last_daughter_time", &track_last_daughter_time, "track_last_daughter_time/F");
     fMCParticleTree->Branch("track_stop_time", &track_stop_time, "track_stop_time/F");
-    fMCParticleTree->Branch("track_last_moving_time", &track_last_moving_time, "track_last_moving_time/F");
-    fMCParticleTree->Branch("track_n_traj_points", &track_n_traj_points, "track_n_traj_points/I");
     fMCParticleTree->Branch("track_end_process", &track_end_process, "track_end_process/I");
     fMCParticleTree->Branch("track_end_in_av", &track_end_in_av, "track_end_in_av/O");
     fMCParticleTree->Branch("second_peak_significance", &second_peak_significance, "second_peak_significance/F");
@@ -608,6 +616,10 @@ void icarus::ICARUSStoppingMuonOpticalAna::beginJob()
       fSimPhotonTree->Branch("track_id", &p_track_id, "track_id/I");
       fSimPhotonTree->Branch("pdg", &p_pdg, "pdg/I");
       fSimPhotonTree->Branch("mother", &p_mother, "mother/I");
+      fSimPhotonTree->Branch("mother_pdg", &p_mother_pdg, "mother_pdg/I");
+      fSimPhotonTree->Branch("process", &p_process);
+      fSimPhotonTree->Branch("mother_process", &p_mother_process);
+      fSimPhotonTree->Branch("end_process", &p_end_process);
       fSimPhotonTree->Branch("gen_time", &p_gen_time, "gen_time/F");
       fSimPhotonTree->Branch("is_muon", &p_is_muon, "is_muon/O");
       fSimPhotonTree->Branch("is_delayed", &p_is_delayed, "is_delayed/O");
@@ -1214,8 +1226,6 @@ void icarus::ICARUSStoppingMuonOpticalAna::fillMCTruth(
     track_g4_endT = -1.f;
     track_last_daughter_time = rowLastDaughter[i];
     track_stop_time = -1.f;
-    track_last_moving_time = -1.f;
-    track_n_traj_points = 0;
     second_peak_significance = -1.f;
     second_peak_visible = false;
     second_peak_S = -1;
@@ -1251,16 +1261,11 @@ void icarus::ICARUSStoppingMuonOpticalAna::fillMCTruth(
     // of a zeroed momentum.
     {
       constexpr double kStopMomGeV = 1.e-6;
-      bool stopped = false;   // not `track_stop_time < 0`: CORSIKA times go negative
-      track_n_traj_points = static_cast<int>(matched->NumberTrajectoryPoints());
-      for (int ip = 0; ip < track_n_traj_points; ++ip) {
-        if (matched->P(ip) > kStopMomGeV) {
-          track_last_moving_time = static_cast<float>(matched->T(ip));
-          continue;
-        }
-        if (stopped) continue;
+      int const nPoints = static_cast<int>(matched->NumberTrajectoryPoints());
+      for (int ip = 0; ip < nPoints; ++ip) {
+        if (matched->P(ip) > kStopMomGeV) continue;
         track_stop_time = static_cast<float>(matched->T(ip));
-        stopped = true;
+        break;
       }
     }
 
@@ -1405,11 +1410,27 @@ void icarus::ICARUSStoppingMuonOpticalAna::fillMCTruth(
           if (restrictPhotonTracks && !isThisMuon && !isThisDelayed) continue;
 
           auto const it = byID.find(trackId);
+          simb::MCParticle const* const part =
+            (it == byID.end()) ? nullptr : it->second;
+
           p_track_id = trackId;
-          p_pdg      = (it == byID.end()) ? 0 : it->second->PdgCode();
-          p_mother   = (it == byID.end()) ? -1 : it->second->Mother();
-          p_gen_time = (it == byID.end()) ? -1.f
-                                          : static_cast<float>(it->second->T());
+          p_pdg      = part ? part->PdgCode() : 0;
+          p_mother   = part ? part->Mother() : -1;
+          p_gen_time = part ? static_cast<float>(part->T()) : -1.f;
+          p_process     = part ? part->Process() : "";
+          p_end_process = part ? part->EndProcess() : "";
+
+          // the mother, straight out of the particle list. Empty strings mean
+          // largeant did not store it, which is a real answer and not a gap.
+          p_mother_pdg     = 0;
+          p_mother_process.clear();
+          if (part) {
+            auto const mit = byID.find(part->Mother());
+            if (mit != byID.end()) {
+              p_mother_pdg     = mit->second->PdgCode();
+              p_mother_process = mit->second->Process();
+            }
+          }
           p_is_muon    = isThisMuon;
           p_is_delayed = isThisDelayed;
           p_parent_muon_g4_id = primaryMuonID;
