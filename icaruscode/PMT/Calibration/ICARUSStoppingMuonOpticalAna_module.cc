@@ -47,6 +47,10 @@
 #include "lardataobj/RawData/OpDetWaveform.h"
 #include "lardataobj/RawData/TriggerData.h"
 #include "lardataobj/RecoBase/Hit.h"
+#include "lardataobj/RecoBase/Cluster.h"
+#include "lardataobj/RecoBase/PFParticle.h"
+#include "lardataobj/RecoBase/Shower.h"
+#include "lardataobj/RecoBase/SpacePoint.h"
 #include "lardataobj/Simulation/SimPhotons.h"
 #include "lardataobj/Simulation/SimChannel.h"
 #include "larana/OpticalDetector/IPedAlgoMakerTool.h"
@@ -142,6 +146,33 @@ public:
         Comment("Write no optical tree for an event in which no stopping track was matched to a flash."),
         true};
 
+    // --- reco neighbourhood of the selected tracks ----------------------------
+
+    fhicl::Atom<double> NeighbourMaxDist{
+        Name("NeighbourMaxDist"),
+        Comment("Save every other PFParticle with a SpacePoint within this distance"
+                " of a selected track's end [cm]; <= 0 disables neighbour_tree."
+                " The PFParticles are read from Selector.PFPLabels."),
+        18.};
+
+    fhicl::Atom<bool> PrintNeighbours{
+        Name("PrintNeighbours"),
+        Comment("Also print each neighbour_tree row to the log, category NeighbourDump (INFO)."),
+        false};
+
+    fhicl::Atom<bool> SaveSpacePoints{
+        Name("SaveSpacePoints"),
+        Comment("Save every SpacePoint of the selected tracks' PFParticles (trackmatch_tree"
+                " mu_sp_*) and of their neighbours (neighbour_tree sp_*), for 3D displays."),
+        true};
+
+    fhicl::Sequence<art::InputTag> NeighbourShowerLabels{
+        Name("NeighbourShowerLabels"),
+        Comment("recob::Shower associated to the PFParticles, one per cryostat, for the"
+                " neighbours' shw_* branches (start dE/dx, ...). Stage1 runs SBNShower with"
+                " UseAllParticles, so track-like PFParticles have one too. Empty: skip."),
+        std::vector<art::InputTag>{ "SBNShowerGausCryoE", "SBNShowerGausCryoW" }};
+
   }; // struct Config
 
   using Parameters = art::EDAnalyzer::Table<Config>;
@@ -169,7 +200,8 @@ private:
   double getTimingCorrection(int channel) const;
 
   // --- per-event steps ------------------------------------------------------
-  void fillTrackMatchTree(std::vector<std::vector<TrackFlashMatch>> const& matches);
+  void fillTrackMatchTree(art::Event const& e,
+                          std::vector<std::vector<TrackFlashMatch>> const& matches);
   /// Writes every flash and returns the times of the matched ones.
   FlashTimes fillFlashes(art::Event const& e,
                          std::vector<std::vector<TrackFlashMatch>> const& matches);
@@ -182,6 +214,9 @@ private:
   /// sim::SimChannel collection is available to match against.
   void fillMCTruth(art::Event const& e,
                    std::vector<std::vector<TrackFlashMatch>> const& matches);
+  /// One row per (selected track, other PFParticle close to the track's end).
+  void fillNeighbours(art::Event const& e,
+                      std::vector<std::vector<TrackFlashMatch>> const& matches);
 
   /// Fills the in-flash OpHit vectors.
   void fillFlashOpHits(std::vector<art::Ptr<recob::OpHit>> const& ophits);
@@ -200,6 +235,12 @@ private:
   bool const fSkipUnmatchedEvents;
   double const fOpticalTickPeriod;
 
+  double const fNeighbourMaxDist;              ///< [cm]
+  bool const fPrintNeighbours;
+  bool const fSaveSpacePoints;
+  std::vector<art::InputTag> fPFPLabels;       ///< = Selector.PFPLabels, one per cryostat
+  std::vector<art::InputTag> fShowerLabels;    ///< NeighbourShowerLabels, one per cryostat
+
   // --- services and state ---------------------------------------------------
   geo::GeometryCore const* fGeom;
   geo::WireReadoutGeom const* fChannelMapAlg;
@@ -214,6 +255,7 @@ private:
   TTree* fMCParticleTree = nullptr;
   TTree* fSimPhotonTree = nullptr;
   TTree* fTrackMatchTree = nullptr;
+  TTree* fNeighbourTree = nullptr;
 
   // --- branch buffers -------------------------------------------------------
   // common
@@ -364,8 +406,117 @@ private:
   float t_dt;
   float t_radius;
   float t_trange_low, t_trange_high;   ///< drift-allowed interval [us], no margin
+  std::vector<float> t_prof_rr, t_prof_dqdx, t_prof_pitch; ///< collection dQ/dx profile, by rr
+  int t_nhits_p2, t_nhits_p2_oncalo;
+  /// SpacePoints of the track's PFParticle, same frame as neighbour_tree (no CRT shift) [cm]
+  std::vector<float> t_mu_sp_x, t_mu_sp_y, t_mu_sp_z;
+
+  /// `recob::Track::End()` with no CRT drift shift: the SpacePoint frame [cm].
+  /// Equal to end_x/y/z unless whicht0 == 2 (CRT T0), where x differs.
+  float t_end_raw_x, t_end_raw_y, t_end_raw_z;
+
+  // neighbour tree. Positions are in the Pandora frame, with no CRT drift shift,
+  // so they compare with trackmatch_tree's end_raw_* and mu_sp_*.
+  int n_track_id;                      ///< joins trackmatch_tree's `track_id`
+  int n_cryo;
+  int n_pdg;                           ///< Pandora: 11 shower-like, 13 track-like
+  bool n_is_daughter;                  ///< its parent is the muon's PFParticle
+  int n_nsp;                           ///< SpacePoints
+  int n_nhits, n_nhits_p2;             ///< hits through its clusters, all / collection
+  float n_charge_p2;                   ///< sum of collection-plane hit integrals [ADC]
+  float n_min_dist;                    ///< closest SpacePoint to the muon end [cm]
+  float n_close_x, n_close_y, n_close_z; ///< that closest SpacePoint
+  std::vector<float> n_sp_x, n_sp_y, n_sp_z; ///< all its SpacePoints (SaveSpacePoints)
+  // its recob::Shower (NeighbourShowerLabels); -999 when there is none
+  bool n_has_shower;
+  std::vector<float> n_shw_dedx;       ///< start dE/dx per plane [MeV/cm], median over the first 3 cm
+  float n_shw_dedx_best;               ///< n_shw_dedx[best plane] [MeV/cm]
+  float n_shw_energy_best;             ///< Energy()[best plane] [MeV]
+  // truth, matched through the neighbour's hits as fillMCTruth() does for the
+  // muon; -1 / "" on data or when nothing matched. Validation only: never cut on.
+  int n_true_pdg;
+  float n_true_ke;                     ///< kinetic energy at creation [MeV]
+  std::string n_true_process;          ///< Geant4 creation process ("Decay", "compt", ...)
+  bool n_true_from_muon;               ///< descends from the muon matched to the track
+  /// How the matched muon disappears: largeant_MCParticle's track_end_process
+  /// (-1 invalid, 0 free decay, 1 nuclear capture, 2 bound decay).
+  int n_mu_end_process;
 
 }; // class icarus::ICARUSStoppingMuonOpticalAna
+
+
+// -----------------------------------------------------------------------------
+namespace {
+
+  /// How a stopping muon disappears, and its Michel candidate.
+  struct MuonEnd {
+    int process = -1;   ///< -1 invalid, 0 free decay, 1 nuclear capture, 2 bound decay
+    /// Most energetic e+- daughter from decay or capture; on the capture branch
+    /// the hardest Auger electron, not a Michel (process == 1 flags that).
+    simb::MCParticle const* michel = nullptr;
+  };
+
+  /// Classifies the disappearance of `muon`: largeant_MCParticle's
+  /// track_end_process, shared with neighbour_tree's mu_end_process.
+  ///
+  /// Geant4 reports mu- bound decay and mu- nuclear capture under one process
+  /// name, "muMinusCaptureAtRest", so Process() cannot tell them apart, while
+  /// mu+ univocally decays as "Decay".
+  ///
+  /// For mu-: only the decay emits an anti-nu_e (capture is mu- + p -> n + nu_mu).
+  /// The atomic cascade runs in both branches, so a bound-decay mu- has
+  /// several e- daughters; the Michel is the most energetic one,
+  /// tens of MeV against sub-MeV Auger electrons.
+  MuonEnd classifyMuonEnd(std::vector<simb::MCParticle> const& particles,
+                          simb::MCParticle const& muon)
+  {
+    constexpr int    kPdgAntiNuE      = -12;
+    constexpr double kElectronMassGeV = 0.000510998946;
+    constexpr double kMichelMinKEGeV  = 0.002;   // 2 MeV: far above the Auger cascade,
+                                                 // far below the 30-53 MeV Michel
+    int const muonID = muon.TrackId();
+
+    // the anti-nu_e must be a daughter of this muon
+    bool neutrinosStored = false;
+    bool hasAntiNuE      = false;
+    for (simb::MCParticle const& par : particles) {
+      int const absPdg = std::abs(par.PdgCode());
+      if (absPdg == 12 || absPdg == 14 || absPdg == 16) neutrinosStored = true;
+      if (par.PdgCode() == kPdgAntiNuE && par.Mother() == muonID) hasAntiNuE = true;
+    }
+
+    // the Michel candidate: the most energetic electron daughter of the muon
+    // coming from either decay or capture.
+    MuonEnd result;
+    for (simb::MCParticle const& par : particles) {
+      if (par.Mother() != muonID) continue;
+      if (std::abs(par.PdgCode()) != 11) continue;
+      if (par.Process() != "Decay" && par.Process() != "muMinusCaptureAtRest") continue;
+      if (!result.michel || par.E() > result.michel->E()) result.michel = &par;
+    }
+
+    if (result.michel) {
+      if (result.michel->Process() == "Decay") {
+        result.process = 0;                             // mu+ (or a mu- decaying in flight)
+      }
+      else if (neutrinosStored) {                       // if neutrinos are not stored, use them!
+        result.process = hasAntiNuE ? 2 : 1;            // bound decay vs nuclear capture
+      }
+      else {
+        double const ke = result.michel->E() - kElectronMassGeV;
+        result.process = (ke >= kMichelMinKEGeV) ? 2 : 1;  // fallback: energy on its own
+      }
+    }
+    else if (muon.EndProcess() == "muMinusCaptureAtRest") {
+      // A stopped mu- with no electron daughter at all: nuclear capture, the
+      // branch that emits only neutrons and gammas. Without this it stayed at -1
+      // and was indistinguishable from "no truth". -1 now means only that.
+      result.process = 1;
+    }
+    return result;
+  }
+
+} // local namespace
 
 
 // -----------------------------------------------------------------------------
@@ -385,6 +536,14 @@ icarus::ICARUSStoppingMuonOpticalAna::ICARUSStoppingMuonOpticalAna
   , fOpticalTickPeriod(
       art::ServiceHandle<detinfo::DetectorClocksService const>()
         ->DataForJob().OpticalClock().TickPeriod())
+  , fNeighbourMaxDist(config().NeighbourMaxDist())
+  , fPrintNeighbours(config().PrintNeighbours())
+  , fSaveSpacePoints(config().SaveSpacePoints())
+  // the same collection the selector took the muon's PFParticle from, so that
+  // TrackFlashMatch::pfp can be recognised (and skipped) in it
+  , fPFPLabels(config().Selector.get<fhicl::ParameterSet>()
+                 .get<std::vector<art::InputTag>>("PFPLabels"))
+  , fShowerLabels(config().NeighbourShowerLabels())
   , fGeom(lar::providerFrom<geo::Geometry>())
   , fChannelMapAlg(&art::ServiceHandle<geo::WireReadout const>()->Get())
   , fPMTTimingCorrectionsService(
@@ -570,6 +729,56 @@ void icarus::ICARUSStoppingMuonOpticalAna::beginJob()
   fTrackMatchTree->Branch("radius", &t_radius, "radius/F");
   fTrackMatchTree->Branch("trange_low", &t_trange_low, "trange_low/F");
   fTrackMatchTree->Branch("trange_high", &t_trange_high, "trange_high/F");
+  fTrackMatchTree->Branch("end_raw_x", &t_end_raw_x, "end_raw_x/F");
+  fTrackMatchTree->Branch("end_raw_y", &t_end_raw_y, "end_raw_y/F");
+  fTrackMatchTree->Branch("end_raw_z", &t_end_raw_z, "end_raw_z/F");
+  fTrackMatchTree->Branch("nhits_p2", &t_nhits_p2, "nhits_p2/I");
+  fTrackMatchTree->Branch("nhits_p2_oncalo", &t_nhits_p2_oncalo, "nhits_p2_oncalo/I");
+  if (fSaveSpacePoints) {
+    fTrackMatchTree->Branch("mu_sp_x", &t_mu_sp_x);
+    fTrackMatchTree->Branch("mu_sp_y", &t_mu_sp_y);
+    fTrackMatchTree->Branch("mu_sp_z", &t_mu_sp_z);
+  }
+  fTrackMatchTree->Branch("prof_rr", &t_prof_rr);
+  fTrackMatchTree->Branch("prof_dqdx", &t_prof_dqdx);
+  fTrackMatchTree->Branch("prof_pitch", &t_prof_pitch);
+
+  // --- one row per (selected track, nearby PFParticle) ----------------------
+  if (fNeighbourMaxDist > 0.) {
+    fNeighbourTree = tfs->make<TTree>("neighbour_tree",
+      "PFParticles near the end of each selected track (reco only)");
+    fNeighbourTree->Branch("run", &m_run, "run/I");
+    fNeighbourTree->Branch("subrun", &m_subrun, "subrun/I");
+    fNeighbourTree->Branch("event", &m_event, "event/I");
+    fNeighbourTree->Branch("track_id", &n_track_id, "track_id/I");
+    fNeighbourTree->Branch("cryo", &n_cryo, "cryo/I");
+    fNeighbourTree->Branch("pdg", &n_pdg, "pdg/I");
+    fNeighbourTree->Branch("is_daughter", &n_is_daughter, "is_daughter/O");
+    fNeighbourTree->Branch("nsp", &n_nsp, "nsp/I");
+    fNeighbourTree->Branch("nhits", &n_nhits, "nhits/I");
+    fNeighbourTree->Branch("nhits_p2", &n_nhits_p2, "nhits_p2/I");
+    fNeighbourTree->Branch("charge_p2", &n_charge_p2, "charge_p2/F");
+    fNeighbourTree->Branch("min_dist", &n_min_dist, "min_dist/F");
+    fNeighbourTree->Branch("close_x", &n_close_x, "close_x/F");
+    fNeighbourTree->Branch("close_y", &n_close_y, "close_y/F");
+    fNeighbourTree->Branch("close_z", &n_close_z, "close_z/F");
+    if (fSaveSpacePoints) {
+      fNeighbourTree->Branch("sp_x", &n_sp_x);
+      fNeighbourTree->Branch("sp_y", &n_sp_y);
+      fNeighbourTree->Branch("sp_z", &n_sp_z);
+    }
+    fNeighbourTree->Branch("has_shower", &n_has_shower, "has_shower/O");
+    fNeighbourTree->Branch("shw_dedx", &n_shw_dedx);
+    fNeighbourTree->Branch("shw_dedx_best", &n_shw_dedx_best, "shw_dedx_best/F");
+    fNeighbourTree->Branch("shw_energy_best", &n_shw_energy_best, "shw_energy_best/F");
+    if (!fMCParticleLabel.empty()) {
+      fNeighbourTree->Branch("true_pdg", &n_true_pdg, "true_pdg/I");
+      fNeighbourTree->Branch("true_ke", &n_true_ke, "true_ke/F");
+      fNeighbourTree->Branch("true_process", &n_true_process);
+      fNeighbourTree->Branch("true_from_muon", &n_true_from_muon, "true_from_muon/O");
+      fNeighbourTree->Branch("mu_end_process", &n_mu_end_process, "mu_end_process/I");
+    }
+  }
 
   // --- truth ----------------------------------------------------------------
   if (!fMCParticleLabel.empty()) {
@@ -635,10 +844,35 @@ void icarus::ICARUSStoppingMuonOpticalAna::beginJob()
 
 // -----------------------------------------------------------------------------
 void icarus::ICARUSStoppingMuonOpticalAna::fillTrackMatchTree
-  (std::vector<std::vector<TrackFlashMatch>> const& matches)
+  (art::Event const& e, std::vector<std::vector<TrackFlashMatch>> const& matches)
 {
   for (std::size_t iCryo = 0; iCryo < matches.size(); ++iCryo) {
+
+    // the SpacePoints of the selected PFParticles only, not of the whole event
+    std::unique_ptr<art::FindManyP<recob::SpacePoint>> fmSpacePoints;
+    if (fSaveSpacePoints && !matches[iCryo].empty()) {
+      std::vector<art::Ptr<recob::PFParticle>> pfps;
+      for (TrackFlashMatch const& m : matches[iCryo])
+        if (m.pfp.isNonnull()) pfps.push_back(m.pfp);
+      if (!pfps.empty()) {
+        fmSpacePoints = std::make_unique<art::FindManyP<recob::SpacePoint>>
+          (pfps, e, fPFPLabels.at(iCryo));
+        if (!fmSpacePoints->isValid()) fmSpacePoints.reset();
+      }
+    }
+    std::size_t iPFP = 0;   // index into `pfps` above, which skips null Ptrs
+
     for (TrackFlashMatch const& m : matches[iCryo]) {
+      t_mu_sp_x.clear(); t_mu_sp_y.clear(); t_mu_sp_z.clear();
+      if (fmSpacePoints && m.pfp.isNonnull()) {
+        for (art::Ptr<recob::SpacePoint> const& sp : fmSpacePoints->at(iPFP)) {
+          t_mu_sp_x.push_back(sp->XYZ()[0]);
+          t_mu_sp_y.push_back(sp->XYZ()[1]);
+          t_mu_sp_z.push_back(sp->XYZ()[2]);
+        }
+      }
+      if (m.pfp.isNonnull()) ++iPFP;
+
       t_track_id        = m.trackID;
       t_cryo            = static_cast<int>(m.cryostat);
       t_whicht0         = m.whichT0;
@@ -650,6 +884,9 @@ void icarus::ICARUSStoppingMuonOpticalAna::fillTrackMatchTree
       t_end_x           = m.endX;
       t_end_y           = m.endY;
       t_end_z           = m.endZ;
+      t_end_raw_x       = m.rawEndX;
+      t_end_raw_y       = m.rawEndY;
+      t_end_raw_z       = m.rawEndZ;
       t_dir_y           = m.dirY;
       t_length          = m.length;
       t_median_end_dqdx = m.medianEnddQdx;
@@ -663,9 +900,217 @@ void icarus::ICARUSStoppingMuonOpticalAna::fillTrackMatchTree
       t_radius          = m.radius;
       t_trange_low      = m.trangeLow;
       t_trange_high     = m.trangeHigh;
+      t_nhits_p2        = m.nHitsP2;
+      t_nhits_p2_oncalo = m.nHitsP2OnCalo;
+      t_prof_rr         = m.profileRR;
+      t_prof_dqdx       = m.profiledQdx;
+      t_prof_pitch      = m.profilePitch;
       fTrackMatchTree->Fill();
     }
   }
+}
+
+
+// -----------------------------------------------------------------------------
+void icarus::ICARUSStoppingMuonOpticalAna::fillNeighbours
+  (art::Event const& e, std::vector<std::vector<TrackFlashMatch>> const& matches)
+{
+  if (fNeighbourTree == nullptr) return;
+
+  // --- truth, when available: same ingredients and matching as fillMCTruth() --
+  auto const clockData =
+    art::ServiceHandle<detinfo::DetectorClocksService const>()->DataFor(e);
+  std::unordered_map<int, simb::MCParticle const*> byID;
+  art::Handle<std::vector<simb::MCParticle>> particleHandle;
+  bool canMatch = false;
+  if (!fMCParticleLabel.empty() && !fSimChannelLabel.empty()) {
+    particleHandle = e.getHandle<std::vector<simb::MCParticle>>(fMCParticleLabel);
+    auto const simChannelHandle = e.getHandle<std::vector<sim::SimChannel>>(fSimChannelLabel);
+    canMatch = particleHandle.isValid() && !particleHandle->empty()
+      && simChannelHandle.isValid() && !simChannelHandle->empty();
+    if (canMatch)
+      for (simb::MCParticle const& par : *particleHandle) byID[par.TrackId()] = &par;
+  }
+
+  // Geant4 id carrying most of the hits' true energy, and that fraction.
+  // rollup = false and abs() for the id, exactly as in fillMCTruth() pass 1.
+  auto const matchHits = [&](std::vector<art::Ptr<recob::Hit>> const& hits) {
+    std::pair<int, float> result { -1, -1.f };
+    if (!canMatch || hits.empty()) return result;
+    std::vector<std::pair<int, float>> const energies =
+      CAFRecoUtils::AllTrueParticleIDEnergyMatches(clockData, hits, false);
+    if (energies.empty()) return result;
+    auto const best = *std::max_element(energies.begin(), energies.end(),
+      [](auto const& a, auto const& b) { return a.second < b.second; });
+    result.first = std::abs(best.first);
+    float const totalE = CAFRecoUtils::TotalHitEnergy(clockData, hits);
+    if (totalE > 0.f) result.second = best.second / totalE;
+    return result;
+  };
+
+  for (std::size_t iCryo = 0; iCryo < matches.size(); ++iCryo) {
+
+    if (matches[iCryo].empty()) continue;
+    art::InputTag const& label = fPFPLabels.at(iCryo);
+
+    auto const pfpHandle = e.getHandle<std::vector<recob::PFParticle>>(label);
+    if (!pfpHandle.isValid()) {
+      mf::LogWarning("ICARUSStoppingMuonOpticalAna")
+        << "No recob::PFParticle with label '" << label.encode() << "'";
+      continue;
+    }
+    std::vector<recob::PFParticle> const& pfps = *pfpHandle;
+
+    // Pandora writes PFParticle -> SpacePoint and PFParticle -> Cluster -> Hit
+    // with the same label as the PFParticles
+    art::FindManyP<recob::SpacePoint> const fmSpacePoints(pfpHandle, e, label);
+    if (!fmSpacePoints.isValid()) {
+      mf::LogWarning("ICARUSStoppingMuonOpticalAna")
+        << "No PFParticle -> SpacePoint association with label '" << label.encode() << "'";
+      continue;
+    }
+    art::FindManyP<recob::Cluster> const fmClusters(pfpHandle, e, label);
+    auto const clusterHandle = e.getHandle<std::vector<recob::Cluster>>(label);
+    std::unique_ptr<art::FindManyP<recob::Hit>> fmClusterHits;
+    if (clusterHandle.isValid())
+      fmClusterHits = std::make_unique<art::FindManyP<recob::Hit>>(clusterHandle, e, label);
+
+    // PFParticle -> Shower, written by the shower producer under its own label
+    std::unique_ptr<art::FindManyP<recob::Shower>> fmShowers;
+    if (iCryo < fShowerLabels.size() && !fShowerLabels[iCryo].empty()) {
+      fmShowers = std::make_unique<art::FindManyP<recob::Shower>>
+        (pfpHandle, e, fShowerLabels[iCryo]);
+      if (!fmShowers->isValid()) {
+        mf::LogWarning("ICARUSStoppingMuonOpticalAna")
+          << "No PFParticle -> Shower association with label '"
+          << fShowerLabels[iCryo].encode() << "'";
+        fmShowers.reset();
+      }
+    }
+
+    for (TrackFlashMatch const& m : matches[iCryo]) {
+
+      if (m.pfp.isNull()) continue;
+      std::size_t const muKey = m.pfp.key();
+      std::size_t const muSelf = m.pfp->Self();
+
+      n_track_id = m.trackID;
+      n_cryo     = static_cast<int>(iCryo);
+
+      // the muon behind the track, and how it disappears (-1 if not a muon,
+      // exactly as largeant_MCParticle's track_end_process)
+      int const muTrueID = matchHits(m.hits).first;
+      n_mu_end_process = -1;
+      if (auto const it = byID.find(muTrueID);
+          it != byID.end() && std::abs(it->second->PdgCode()) == 13) {
+        n_mu_end_process = classifyMuonEnd(*particleHandle, *it->second).process;
+      }
+
+      for (std::size_t k = 0; k < pfps.size(); ++k) {
+
+        if (k == muKey) continue;
+        auto const& sps = fmSpacePoints.at(k);
+        if (sps.empty()) continue;
+
+        double minDist = std::numeric_limits<double>::max();
+        Double32_t const* closest = nullptr;
+        for (art::Ptr<recob::SpacePoint> const& sp : sps) {
+          Double32_t const* xyz = sp->XYZ();
+          double const d = std::hypot(xyz[0] - m.rawEndX, xyz[1] - m.rawEndY, xyz[2] - m.rawEndZ);
+          if (d < minDist) { minDist = d; closest = xyz; }
+        }
+        if (minDist > fNeighbourMaxDist) continue;
+
+        recob::PFParticle const& pfp = pfps[k];
+        n_pdg         = pfp.PdgCode();
+        n_is_daughter = !pfp.IsPrimary() && (pfp.Parent() == muSelf);
+        n_nsp         = static_cast<int>(sps.size());
+        n_min_dist    = minDist;
+        n_close_x     = closest[0];
+        n_close_y     = closest[1];
+        n_close_z     = closest[2];
+
+        n_has_shower = false;
+        n_shw_dedx.clear();
+        n_shw_dedx_best = n_shw_energy_best = -999.f;
+        if (fmShowers && !fmShowers->at(k).empty()) {
+          recob::Shower const& shw = *fmShowers->at(k).front();
+          n_has_shower = true;
+          n_shw_dedx.assign(shw.dEdx().begin(), shw.dEdx().end());
+          int const bestPlane = shw.best_plane();
+          if (bestPlane >= 0) {
+            auto const bp = static_cast<std::size_t>(bestPlane);
+            if (bp < shw.dEdx().size())   n_shw_dedx_best   = shw.dEdx()[bp];
+            if (bp < shw.Energy().size()) n_shw_energy_best = shw.Energy()[bp];
+          }
+        }
+
+        n_sp_x.clear(); n_sp_y.clear(); n_sp_z.clear();
+        if (fSaveSpacePoints) {
+          for (art::Ptr<recob::SpacePoint> const& sp : sps) {
+            n_sp_x.push_back(sp->XYZ()[0]);
+            n_sp_y.push_back(sp->XYZ()[1]);
+            n_sp_z.push_back(sp->XYZ()[2]);
+          }
+        }
+
+        n_nhits = 0; n_nhits_p2 = 0; n_charge_p2 = 0.f;
+        std::vector<art::Ptr<recob::Hit>> pfpHits;
+        if (fmClusters.isValid() && fmClusterHits && fmClusterHits->isValid()) {
+          for (art::Ptr<recob::Cluster> const& cl : fmClusters.at(k)) {
+            for (art::Ptr<recob::Hit> const& hit : fmClusterHits->at(cl.key())) {
+              pfpHits.push_back(hit);
+              ++n_nhits;
+              if (hit->WireID().Plane != 2) continue;
+              ++n_nhits_p2;
+              n_charge_p2 += hit->Integral();
+            }
+          }
+        }
+
+        // truth of the neighbour
+        n_true_pdg = -1;
+        n_true_ke = -1.f;
+        n_true_process.clear();
+        n_true_from_muon = false;
+        if (auto const it = byID.find(matchHits(pfpHits).first); it != byID.end()) {
+          simb::MCParticle const& par = *it->second;
+          n_true_pdg     = par.PdgCode();
+          n_true_ke      = (par.E() - par.Mass()) * 1000.;  // GeV -> MeV
+          n_true_process = par.Process();
+          // walk up the mothers looking for the muon
+          int id = par.Mother();
+          for (int depth = 0; id > 0 && depth < 100; ++depth) {
+            if (id == muTrueID) { n_true_from_muon = true; break; }
+            auto const up = byID.find(id);
+            if (up == byID.end()) break;
+            id = up->second->Mother();
+          }
+        }
+
+        if (fPrintNeighbours) {
+          mf::LogInfo("NeighbourDump")
+            << "run " << m_run << " subrun " << m_subrun << " event " << m_event
+            << " cryo " << iCryo << " track " << m.trackID
+            << " (end " << m.rawEndX << ", " << m.rawEndY << ", " << m.rawEndZ << ")"
+            << " -> pdg " << n_pdg << (n_is_daughter ? " [daughter]" : "")
+            << " min_dist " << n_min_dist << " cm, "
+            << n_nsp << " SP, " << n_nhits << " hits (" << n_nhits_p2
+            << " on collection, charge " << n_charge_p2 << " ADC)"
+            << (n_has_shower ? " start dE/dx " + std::to_string(n_shw_dedx_best) + " MeV/cm" : "");
+          if (n_true_pdg != -1) {
+            mf::LogInfo("NeighbourDump")
+              << "    truth: pdg " << n_true_pdg << " from " << n_true_process
+              << " KE " << n_true_ke << " MeV"
+              << (n_true_from_muon ? ", from the muon" : "")
+              << "; muon end process " << n_mu_end_process;
+          }
+        }
+
+        fNeighbourTree->Fill();
+      } // for PFParticles
+    } // for matches
+  } // for cryostats
 }
 
 
@@ -1281,58 +1726,11 @@ void icarus::ICARUSStoppingMuonOpticalAna::fillMCTruth(
     int const primaryMuonID = matched->TrackId();
 
     // --- which electron daughter, if any, is the Michel -----------------------
-    //
-    // Geant4 reports mu- bound decay and mu- nuclear capture under one process
-    // name, "muMinusCaptureAtRest", so Process() cannot tell them apart, while
-    // mu+ univocally decays as "Decay".
-    //
-    // For mu-: only the decay emits an anti-nu_e (capture is mu- + p -> n + nu_mu).
-    // The atomic cascade runs in both branches, so a bound-decay mu- has
-    // several e- daughters; the Michel is the most energetic one,
-    // tens of MeV against sub-MeV Auger electrons.
+    // (see classifyMuonEnd(): the same classification feeds neighbour_tree)
     {
-      constexpr int    kPdgAntiNuE      = -12;
-      constexpr double kElectronMassGeV = 0.000510998946;
-      constexpr double kMichelMinKEGeV  = 0.002;   // 2 MeV: far above the Auger cascade,
-                                                   // far below the 30-53 MeV Michel
-
-      // the anti-nu_e must be a daughter of this muon
-      bool neutrinosStored = false;
-      bool hasAntiNuE      = false;
-      for (simb::MCParticle const& par : *particleHandle) {
-        int const absPdg = std::abs(par.PdgCode());
-        if (absPdg == 12 || absPdg == 14 || absPdg == 16) neutrinosStored = true;
-        if (par.PdgCode() == kPdgAntiNuE && par.Mother() == primaryMuonID) hasAntiNuE = true;
-      }
-
-      // the Michel candidate: the most energetic electron daughter of the muon
-      // coming from either decay or capture.
-      simb::MCParticle const* hardestElectron = nullptr;
-      for (simb::MCParticle const& par : *particleHandle) {
-
-        if (par.Mother() != primaryMuonID) continue;
-        if (std::abs(par.PdgCode()) != 11) continue;
-        if (par.Process() != "Decay" && par.Process() != "muMinusCaptureAtRest") continue;
-        if (!hardestElectron || par.E() > hardestElectron->E()) hardestElectron = &par;
-      }
-
-      if (hardestElectron) {
-
-        int process = -1;
-        if (hardestElectron->Process() == "Decay") {
-          process = 0;                                  // mu+ (or a mu- decaying in flight)
-        }
-        else if (neutrinosStored) {                     // if neutrinos are not stored, use them!
-          process = hasAntiNuE ? 2 : 1;                 // bound decay vs nuclear capture
-        }
-        else {
-          double const ke = hardestElectron->E() - kElectronMassGeV;
-          process = (ke >= kMichelMinKEGeV) ? 2 : 1;    // fallback: energy on its own
-        }
-
-        // on the capture branch this is the hardest Auger electron, not a Michel:
-        // track_end_process == 1 flags that
-        track_end_process = process;
+      MuonEnd const muEnd = classifyMuonEnd(*particleHandle, *matched);
+      track_end_process = muEnd.process;
+      if (simb::MCParticle const* const hardestElectron = muEnd.michel) {
         michel_gen_pdg  = hardestElectron->PdgCode();
         michel_gen_time = hardestElectron->T();   // ns
         michel_gen_E    = hardestElectron->E();   // GeV
@@ -1341,12 +1739,6 @@ void icarus::ICARUSStoppingMuonOpticalAna::fillMCTruth(
         michel_gen_z    = hardestElectron->Vz();
         michel_in_av    = inActiveVolume(hardestElectron->Vx(), hardestElectron->Vy(),
                                          hardestElectron->Vz());
-      }
-      else if (matched->EndProcess() == "muMinusCaptureAtRest") {
-        // A stopped mu- with no electron daughter at all: nuclear capture, the
-        // branch that emits only neutrons and gammas. Without this it stayed at -1
-        // and was indistinguishable from "no truth". -1 now means only that.
-        track_end_process = 1;
       }
     }
 
@@ -1484,7 +1876,8 @@ void icarus::ICARUSStoppingMuonOpticalAna::analyze(art::Event const& e)
   }
 
   // save the matches in the file
-  fillTrackMatchTree(matches);
+  fillTrackMatchTree(e, matches);
+  fillNeighbours(e, matches);
 
   // --- optical dump ---------------------------------------------------------
   // Flashes and OpHits are written in full: they are the cheap record of all the

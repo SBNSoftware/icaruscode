@@ -534,6 +534,10 @@ std::vector<icarus::TrackFlashMatch> icarus::StoppingTrackSelector::select
     m.trackID       = info.id;
     // The same association buildTrackInfo() just used; kept for truth matching.
     if (assns.hits.isValid()) m.hits = assns.hits.at(track.key());
+    m.pfp           = pfp;
+    m.rawEndX       = track->End().X();
+    m.rawEndY       = track->End().Y();
+    m.rawEndZ       = track->End().Z();
     m.cryostat      = static_cast<unsigned>(info.cryostat);
     m.whichT0       = info.whicht0;
     m.selected      = true;
@@ -549,6 +553,21 @@ std::vector<icarus::TrackFlashMatch> icarus::StoppingTrackSelector::select
     m.dirY          = info.dir.y;
     m.length        = info.length;
     m.medianEnddQdx = medianEnddQdx(info.hits2);
+
+    // full dQ/dx profile, sorted from the track end backwards
+    std::vector<sbn::TrackHitInfo const*> onCalo;
+    for (sbn::TrackHitInfo const& h : info.hits2) {
+      if (h.oncalo) onCalo.push_back(&h);
+    }
+    std::sort(onCalo.begin(), onCalo.end(),
+      [](auto const* a, auto const* b) { return a->rr < b->rr; });
+    for (sbn::TrackHitInfo const* h : onCalo) {
+      m.profileRR.push_back(h->rr);
+      m.profiledQdx.push_back(h->dqdx);
+      m.profilePitch.push_back(h->pitch);
+    }
+    m.nHitsP2       = static_cast<int>(info.hits2.size());
+    m.nHitsP2OnCalo = static_cast<int>(onCalo.size());
 
     // the interval the drift of this track's own hits allows, T0-free
     lar::util::TrackTimeInterval::TimeRange const timeRange =

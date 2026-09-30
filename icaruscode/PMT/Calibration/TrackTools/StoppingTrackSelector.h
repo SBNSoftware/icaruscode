@@ -92,6 +92,21 @@ namespace icarus {
     /// association or duplicating the track labels. Empty on data.
     std::vector<art::Ptr<recob::Hit>> hits;
 
+    /// The track's PFParticle, from `PFPLabels[cryostat]`.
+    art::Ptr<recob::PFParticle> pfp;
+
+    /// `recob::Track::End()` with NO CRT drift shift: the same frame as the
+    /// SpacePoints of the other PFParticles in the event [cm].
+    float rawEndX = NoPos, rawEndY = NoPos, rawEndZ = NoPos;
+
+    /// Collection-plane dQ/dx profile: the `oncalo` hits of `sbn::TrackInfo::hits2`,
+    /// sorted by increasing residual range. Parallel vectors.
+    std::vector<float> profileRR;     ///< residual range [cm]
+    std::vector<float> profiledQdx;   ///< dQ/dx, as the selection cut sees it
+    std::vector<float> profilePitch;  ///< [cm]
+    int nHitsP2       = 0;  ///< all collection-plane hits of the track
+    int nHitsP2OnCalo = 0;  ///< those with calorimetry (= profile size)
+
     /// Whether a flash was matched to this track.
     bool hasFlash() const { return flashID >= 0; }
 

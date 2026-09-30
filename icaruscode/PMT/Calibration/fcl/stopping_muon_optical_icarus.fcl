@@ -73,6 +73,14 @@ icarus_stopping_muon_optical:
 
   SkipUnmatchedEvents: true
 
+  # neighbour_tree: every other PFParticle (from Selector.PFPLabels) with a
+  # SpacePoint within NeighbourMaxDist of a selected track's end. Reco only.
+  NeighbourMaxDist: 18.     # cm; <= 0 disables the tree
+  PrintNeighbours:  false   # log category NeighbourDump, INFO level
+  SaveSpacePoints:  true    # mu_sp_* in trackmatch_tree, sp_* in neighbour_tree
+  # neighbour_tree shw_*: start dE/dx etc. from the SBNShower made for every PFParticle
+  NeighbourShowerLabels: [ "SBNShowerGausCryoE", "SBNShowerGausCryoW" ]
+
   PedAlgoRollingMeanMaker: {   # as icarus_ophitfinder
     tool_type:   "PedAlgoRollingMeanMaker"
     PedAlgoPset: @local::icarus_opreco_pedestal_DocDB24969
