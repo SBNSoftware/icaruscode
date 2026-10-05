@@ -63,7 +63,7 @@ class icarus::opdet::SampledWaveformFunction
   struct WaveformSpecs_t {
     std::string name { "<unknown>" }; ///< Name of this waveform (short).
     std::string description;          ///< Description of this waveform.
-    std::string date { "n/a" };  ///< An indication of the date of the waveform.
+    std::string date { "n/a" };       ///< An indication of the date of the waveform.
     unsigned int version { 1 };       ///< Version number.
     std::vector<float> samples;       ///< Samples [mV]
     Time sampleDuration;              ///< Time extension of one sample.
@@ -86,13 +86,21 @@ class icarus::opdet::SampledWaveformFunction
    * The polarity of the waveform is deduced by the value at peak.
    * 
    */
-  SampledWaveformFunction(WaveformSpecs_t specs, Time peakTime, float gain);
+  SampledWaveformFunction(
+    WaveformSpecs_t specs, Time peakTime, float gain,
+    double biasRatio = 1.0);
 
   /// @{
   /// @name Parameter accessors.
 
   /// Returns the gain the waveform is representing.
   float gain() const { return fGain; }
+
+  /// Returns the integral of the waveform [ADC × tick].
+  ADCcount doIntegral() const override;
+
+  /// Returns the bias constant as set in the FHiCL configuration.
+  double doBiasConstant() const override { return fBiasRatio; }
 
   /// @}
 
@@ -103,6 +111,8 @@ class icarus::opdet::SampledWaveformFunction
   std::vector<ADCcount> const fSamples; ///< All samples.
   
   float const fGain; ///< The gain this waveform represents.
+
+  double const fBiasRatio; ///< User-configurable bias ratio from FHiCL.
   
   std::size_t const fPeakSample; ///< The sample with the absolute peak.
   
@@ -146,11 +156,7 @@ class icarus::opdet::SampledWaveformFunction
   /// Returns whether a sample with the specified index is within the range.
   bool hasSample(std::ptrdiff_t index) const
     { return (index >= 0) && (std::size_t(index) < fSamples.size()); }
-  
-  
-  /// Returns the integral of the waveform.
-  ADCcount integral() const;
-  
+
   /**
    * @brief Transforms the input waveform.
    * @param waveform input waveform (in millivolt and for a known gain)
@@ -174,12 +180,13 @@ class icarus::opdet::SampledWaveformFunction
 // -----------------------------------------------------------------------------
 template <typename T>
 icarus::opdet::SampledWaveformFunction<T>::SampledWaveformFunction
-  (WaveformSpecs_t waveformSpecs, Time peakTime, float gain)
-  : fSource    { std::move(waveformSpecs) }
-  , fSamples   { buildSamples(gain) }
-  , fGain      { gain }
-  , fPeakSample{ findPeak(fSamples) }
-  , fRefTime   { peakTime - fPeakSample * sampleDuration() }
+  (WaveformSpecs_t waveformSpecs, Time peakTime, float gain, double biasRatio)
+  : fSource       { std::move(waveformSpecs) }
+  , fSamples      { buildSamples(gain) }
+  , fGain         { gain }
+  , fBiasRatio    { biasRatio }
+  , fPeakSample   { findPeak(fSamples) }
+  , fRefTime      { peakTime - fPeakSample * sampleDuration() }
   {}
 
 
@@ -212,7 +219,7 @@ void icarus::opdet::SampledWaveformFunction<T>::doDump(
       << " with amplitude " << Base_t::peakAmplitude()
     << "\n" << indent
       << "  start at " << fRefTime << ", gain " << fGain
-      << " (integral: " << integral() << ")"
+      << " (integral: " << doIntegral() << ")"
     << '\n'
     ;
   
@@ -221,7 +228,7 @@ void icarus::opdet::SampledWaveformFunction<T>::doDump(
 
 // -----------------------------------------------------------------------------
 template <typename T>
-auto icarus::opdet::SampledWaveformFunction<T>::integral() const -> ADCcount
+auto icarus::opdet::SampledWaveformFunction<T>::doIntegral() const -> ADCcount
   { return std::reduce(fSamples.begin(), fSamples.end()); }
 
 

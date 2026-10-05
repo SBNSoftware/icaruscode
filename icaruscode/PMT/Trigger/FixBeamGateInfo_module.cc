@@ -5,11 +5,11 @@
  * @date   March 9, 2022
  */
 
-// LArSoft libraries
+// ICARUS and LArSoft libraries
+#include "icarusalg/Utilities/CommonChoiceSelectors.h" // for sbn::BeamType
 #include "lardataalg/Utilities/intervals_fhicl.h" // microseconds from FHiCL
 #include "lardataalg/Utilities/quantities/spacetime.h" // microseconds
 #include "lardataalg/DetectorInfo/DetectorTimingTypes.h" // simulation_time
-#include "lardataalg/Utilities/MultipleChoiceSelection.h"
 #include "larcorealg/CoreUtils/enumerate.h"
 #include "lardataobj/Simulation/BeamGateInfo.h"
 
@@ -103,7 +103,7 @@ class icarus::trigger::FixBeamGateInfo: public art::SharedProducer {
     
     struct GateSelector_t {
       
-      std::vector<sim::BeamType_t> beamTypes; ///< Match these beam types.
+      std::vector<sbn::BeamType> beamTypes; ///< Match these beam types.
       
       bool empty() const { return beamTypes.empty(); }
       bool isValid() const { return true; }
@@ -148,17 +148,19 @@ class icarus::trigger::FixBeamGateInfo: public art::SharedProducer {
   // --- BEGIN Configuration ---------------------------------------------------
   struct Config {
     
-    enum class BeamType_t { // we need to translate enum into a strong type
-        kUnknown = sim::kUnknown
-      , kBNB     = sim::kBNB
-      , kNuMI    = sim::kNuMI
-    };
-    
     using Name = fhicl::Name;
     using Comment = fhicl::Comment;
     
     using microsecond = util::quantities::points::microsecond;
     using microseconds = util::quantities::intervals::microseconds;
+    
+    /// Returns the name associated to the specified beam type.
+    static std::string beamTypeName(sbn::BeamType beamType)
+      { return BeamTypeSelector.get(beamType).name(); }
+  
+    /// Returns the name associated to the specified beam type.
+    static std::string beamTypeName(sim::BeamType_t beamType)
+      { return beamTypeName(static_cast<sbn::BeamType>(beamType)); }
     
     /// Settings to change a gate.
     struct ChangeGate {
@@ -184,16 +186,15 @@ class icarus::trigger::FixBeamGateInfo: public art::SharedProducer {
             "gate type to apply the changes on: "
             + BeamTypeSelector.optionListString()
             ),
-          std::vector<std::string>
-            { BeamTypeSelector.get(BeamType_t::kUnknown).name() }
+          std::vector<std::string>{ beamTypeName(sbn::BeamType::kUnknown) }
           };
         
-        std::vector<sim::BeamType_t> getBeamTypes() const
+        std::vector<sbn::BeamType> getBeamTypes() const
           { return Config::getBeamTypes(Types); }
         
       }; // struct SelectGateConfig
       
-      fhicl::Table<SelectGateConfig> Select {
+      fhicl::OptionalTable<SelectGateConfig> Select {
         Name{ "Select" },
         Comment
           { "apply these settings only to gates satisfying these criteria" }
@@ -217,7 +218,7 @@ class icarus::trigger::FixBeamGateInfo: public art::SharedProducer {
       
       /// Converts a configuration table into a `GateSelector_t`.
       static BeamChangeRecipe::GateSelector_t convert
-        (SelectGateConfig const& config);
+        (std::optional<SelectGateConfig> const& config);
       
     }; // struct ChangeGate
     
@@ -255,13 +256,10 @@ class icarus::trigger::FixBeamGateInfo: public art::SharedProducer {
     
     
     /// Selector for `Type` parameter.
-    static util::MultipleChoiceSelection<BeamType_t> const BeamTypeSelector;
-    
-    /// Converts a FHiCL atom into a beam type.
-    static sim::BeamType_t getBeamType(fhicl::Atom<std::string> const& type);
+    static util::StandardSelectorFor<sbn::BeamType> const BeamTypeSelector;
     
     /// Converts a FHiCL sequence into a vector of beam types.
-    static std::vector<sim::BeamType_t> getBeamTypes
+    static std::vector<sbn::BeamType> getBeamTypes
       (fhicl::Sequence<std::string> const& type);
     
   }; // struct Config
@@ -309,17 +307,17 @@ class icarus::trigger::FixBeamGateInfo: public art::SharedProducer {
   
   
   /// Returns whether `gate` passes the specified `selection`.
-  static bool acceptGate(
+  bool acceptGate(
     sim::BeamGateInfo const& gate,
     BeamChangeRecipe::GateSelector_t const& selection
-    );
+    ) const;
   
   /// Applies the changes in `recipe` on the `target` value.
   template <typename T, typename P, typename I>
-  static T& applyRecipe(
+  T& applyRecipe(
     T& target,
     std::optional<BeamChangeRecipe::ChangeRecipe_t<P, I>> const& recipe
-    );
+    ) const;
   
 
   friend BeamChangeRecipe convert(Config::ChangeGate const& config);
@@ -389,16 +387,13 @@ namespace {
   } // contains()
   
 } // local namespace
+
+
 //------------------------------------------------------------------------------
 namespace icarus::trigger {
   
-  util::MultipleChoiceSelection<FixBeamGateInfo::Config::BeamType_t> const
-  FixBeamGateInfo::Config::BeamTypeSelector
-    {
-        { BeamType_t::kUnknown, "unknown" }
-      , { BeamType_t::kBNB,     "BNB" }
-      , { BeamType_t::kNuMI,    "NuMI" }
-    };
+  util::StandardSelectorFor<sbn::BeamType> const
+  FixBeamGateInfo::Config::BeamTypeSelector;
   
 } // namespace icarus::trigger
 
@@ -506,9 +501,14 @@ sim::BeamGateInfo icarus::trigger::FixBeamGateInfo::fixBeamGate
   simulation_time start { nanosecond{ beamGate.Start() }};
   simulation_time::interval_t width { nanoseconds{ beamGate.Width() }};
   
+  mf::LogTrace{ fLogCategory } << "Fixing gate "
+    "[ " << start << " ; " << (start+width) << " ] (" << width << ")";
+  
   for (BeamChangeRecipe const& change: fChanges) {
     if (!acceptGate(beamGate, change.selectGates)) continue;
+    mf::LogTrace{ fLogCategory } << "    fixing start (" << start << ")";
     applyRecipe(start, change.start);
+    mf::LogTrace{ fLogCategory } << "    fixing width (" << width << ")";
     applyRecipe(width, change.width);
   } // for all changes
   
@@ -522,12 +522,22 @@ sim::BeamGateInfo icarus::trigger::FixBeamGateInfo::fixBeamGate
 
 
 //------------------------------------------------------------------------------
-bool icarus::trigger::FixBeamGateInfo::acceptGate
-  (sim::BeamGateInfo const& gate, BeamChangeRecipe::GateSelector_t const& selection)
-{
+bool icarus::trigger::FixBeamGateInfo::acceptGate(
+  sim::BeamGateInfo const& gate, BeamChangeRecipe::GateSelector_t const& selection
+) const {
   if (!selection.beamTypes.empty()) {
-    if (!contains(selection.beamTypes, gate.BeamType())) return false;
+    if (!contains
+      (selection.beamTypes, static_cast<sbn::BeamType>(gate.BeamType()))
+    ) {
+      mf::LogTrace{ fLogCategory } << "  [change doesn't apply to beam type "
+        << Config::beamTypeName(gate.BeamType()) << "]";
+      return false;
+    }
+    mf::LogTrace{ fLogCategory } << "  change will be applied to all gates";
+    return true;
   }
+  mf::LogTrace{ fLogCategory } << "  change will be applied"
+    " (beam type: " << Config::beamTypeName(gate.BeamType()) << ")";
   return true;
 } // icarus::trigger::FixBeamGateInfo::acceptGate()
 
@@ -536,43 +546,33 @@ bool icarus::trigger::FixBeamGateInfo::acceptGate
 template <typename T, typename P, typename I>
 T& icarus::trigger::FixBeamGateInfo::applyRecipe(
   T& target, std::optional<BeamChangeRecipe::ChangeRecipe_t<P, I>> const& recipe
-) {
+) const {
   if (recipe) {
-    if (recipe->setValue) target = *recipe->setValue;
-    if (recipe->addValue) target += *recipe->addValue;
+    if (recipe->setValue) {
+      mf::LogTrace{ fLogCategory } << "     => " << *recipe->setValue
+        << " (overwritten from " << target << ")";
+      target = *recipe->setValue;
+    }
+    if (recipe->addValue) {
+      mf::LogTrace{ fLogCategory } << "     => " << (target + *recipe->addValue)
+        << " (added " << *recipe->addValue << " to " << target << ")";
+      target += *recipe->addValue;
+    }
   }
+  else mf::LogTrace{ fLogCategory } << "     (unchanged)";
   return target;
 } // icarus::trigger::FixBeamGateInfo::applyRecipe()
 
 
 //------------------------------------------------------------------------------
-sim::BeamType_t icarus::trigger::FixBeamGateInfo::Config::getBeamType
-  (fhicl::Atom<std::string> const& type)
-{
-  try {
-    return static_cast<sim::BeamType_t>
-      (BeamTypeSelector.parse(type()).value());
-  }
-  catch (util::MultipleChoiceSelectionBase::UnknownOptionError const& e)
-  {
-    throw art::Exception(art::errors::Configuration)
-      << "Invalid value for '" << type.name()
-      << "' parameter: '" << e.label() << "'; valid options: "
-      << BeamTypeSelector.optionListString() << ".\n";
-  }
-} // icarus::trigger::FixBeamGateInfo::Config::getBeamType()
-
-
-//------------------------------------------------------------------------------
 auto icarus::trigger::FixBeamGateInfo::Config::getBeamTypes
-  (fhicl::Sequence<std::string> const& types) -> std::vector<sim::BeamType_t>
+  (fhicl::Sequence<std::string> const& types) -> std::vector<sbn::BeamType>
 {
-  std::vector<sim::BeamType_t> beamTypes;
+  std::vector<sbn::BeamType> beamTypes;
   beamTypes.reserve(types.size());
   for (std::string const& type: types()) {
     try {
-      beamTypes.push_back
-        (static_cast<sim::BeamType_t>(BeamTypeSelector.parse(type).value()));
+      beamTypes.push_back(BeamTypeSelector.parse(type).value());
     }
     catch (util::MultipleChoiceSelectionBase::UnknownOptionError const& e)
     {
@@ -603,10 +603,11 @@ auto icarus::trigger::FixBeamGateInfo::Config::ChangeGate::convert
 
 //------------------------------------------------------------------------------
 auto icarus::trigger::FixBeamGateInfo::Config::ChangeGate::convert
-  (Config::ChangeGate::SelectGateConfig const& config)
+  (std::optional<Config::ChangeGate::SelectGateConfig> const& config)
   -> BeamChangeRecipe::GateSelector_t
 {
-  return BeamChangeRecipe::GateSelector_t { config.getBeamTypes() };
+  return config? BeamChangeRecipe::GateSelector_t { config->getBeamTypes() }
+    : BeamChangeRecipe::GateSelector_t {};
 } // icarus::trigger::FixBeamGateInfo::..::ChangeGate::convert(SelectGateConfig)
 
 
@@ -637,11 +638,8 @@ std::ostream& icarus::trigger::operator<<
     if (dr.recipe.selectGates.empty()) out << "(always)";
     else {
       out << "(only on gates of type:";
-      for (sim::BeamType_t const gate: dr.recipe.selectGates.beamTypes) {
-        // to query BeamTypeSelector we need its own strong index type as key...
-        out << " " << FixBeamGateInfo::Config::BeamTypeSelector
-          .get(static_cast<FixBeamGateInfo::Config::BeamType_t>(gate)).name();
-      }
+      for (sbn::BeamType const gate: dr.recipe.selectGates.beamTypes)
+        out << " " << FixBeamGateInfo::Config::beamTypeName(gate);
       out << ")";
     }
     

@@ -18,17 +18,83 @@
 #include "messagefacility/MessageLogger/MessageLogger.h"
 
 // C++ standard library
+#include <cmath> // std::abs()
 #include <functional> // std::function
 #include <utility> // std::cref()
 
 
 // -----------------------------------------------------------------------------
+namespace {
+  
+  /**
+   * Returns `true` after seeing a given number of samples closer to baseline
+   * than a specified threshold (either direction).
+   */
+  template <typename SampleType>
+  class CloseToBaselineForClass {
+    
+    // configuration
+    SampleType fMin, fMax;
+    unsigned int fCountGoal;
+    
+    // cache
+    unsigned int fCount = 0;
+    
+      public:
+    
+    /// Constructor: specifies `threshold` and `count` (baseline is in `ops`).
+    template <typename WaveformOperations>
+    CloseToBaselineForClass
+      (SampleType threshold, unsigned int count, WaveformOperations ops)
+      : fMin{ ops.shiftFromBaseline(-threshold) }
+      , fMax{ ops.shiftFromBaseline(+threshold) }
+      , fCountGoal{ count }
+      {
+        if (fMin > fMax) std::swap(fMin, fMax);
+      }
+    
+    /// Returns whether there have been `fCountGoal` calls with `sample`
+    /// close enough to the baseline (`closeEnough()`).
+    template <typename TimeType>
+    bool operator() (TimeType, SampleType sample)
+      {
+        if (closeEnough(sample)) ++fCount;
+        else fCount = 0;
+        return fCount >= fCountGoal;
+      }
+    
+    /// Returns whether `sample` is close enough to the stored baseline.
+    constexpr bool closeEnough(SampleType sample) const noexcept
+      { return (sample >= fMin) && (sample <= fMax); }
+    
+  }; // CloseToBaselineForClass
+  
+} // local namespace
+
+
+// -----------------------------------------------------------------------------
 // ---  icarus::opdet::DiscretePhotoelectronPulse
+// -----------------------------------------------------------------------------
+icarus::opdet::DiscretePhotoelectronPulse::DiscretePhotoelectronPulse(
+  PulseFunction_t const& pulseShape,
+  gigahertz samplingFreq, unsigned int nSubsamples,
+  ADCcount samplingThreshold, nanoseconds minTimeBelowThreshold
+  )
+  : fShape(pulseShape)
+  , fSamplingFreq(samplingFreq)
+  , fSampledShape(sampleShape(
+      shape(), fSamplingFreq, nSubsamples,
+      samplingThreshold,
+      static_cast<int>(std::ceil(minTimeBelowThreshold * samplingFreq))
+      ))
+  {}
+
+
 // -----------------------------------------------------------------------------
 auto icarus::opdet::DiscretePhotoelectronPulse::sampleShape(
   PulseFunction_t const& pulseShape,
   gigahertz samplingFreq, unsigned int nSubsamples,
-  ADCcount threshold
+  ADCcount threshold, unsigned int minSamplesBelowThreshold
 ) -> SampledFunction_t
 {
   using namespace util::quantities::time_literals;
@@ -38,43 +104,23 @@ auto icarus::opdet::DiscretePhotoelectronPulse::sampleShape(
   // the pulse polarity is included in the values,
   // the two functions (lambda) are of different type, so they are being wrapped
   // in the common `std::function` type
-
-  // FIXME Clang 7.0.0 can't figure out the parameters of std::function
-  // (GCC 8.2 can): specifying them explicitly...
-  auto const isBelowThreshold = (pulseShape.polarity() == +1)
-#if defined(__clang__) && (__clang_major__ < 8)
-    ? std::function<bool(nanoseconds, ADCcount)>(
-#else // not Clang <8
-    ? std::function(
-#endif // defined(__clang__) && (__clang_major__ < 8)
-      [baseline=pulseShape.baseline(), threshold](nanoseconds, ADCcount s)
-        {
-          return
-            PositivePolarityOperations<ADCcount>::subtractBaseline(s, baseline)
-              < threshold
-            ;
-        }
-      )
-#if defined(__clang__) && (__clang_major__ < 8)
-    : std::function<bool(nanoseconds, ADCcount)>(
-#else // not Clang <8
-    : std::function(
-#endif // defined(__clang__) && (__clang_major__ < 8)
-      [baseline=pulseShape.baseline(), threshold](nanoseconds, ADCcount s)
-        {
-          return
-            NegativePolarityOperations<ADCcount>::subtractBaseline(s, baseline)
-              < threshold
-            ;
-        }
-      )
+  
+  auto isCloseToBaseline = (pulseShape.polarity() == +1)
+    ? CloseToBaselineForClass{
+      threshold, minSamplesBelowThreshold,
+      PositivePolarityOperations<ADCcount>{ pulseShape.baseline() }
+    }
+    : CloseToBaselineForClass{
+      threshold, minSamplesBelowThreshold,
+      NegativePolarityOperations<ADCcount>{ pulseShape.baseline() }
+    }
     ;
 
   return SampledFunction_t{
     std::cref(pulseShape), // function to sample (by reference because abstract)
     0.0_ns,                // sampling start time
     1.0 / samplingFreq,    // tick duration
-    isBelowThreshold,      // when to stop the sampling
+    isCloseToBaseline,     // when to stop the sampling
     static_cast<gsl::index>(nSubsamples), // how many subsamples per tick
     pulseShape.peakTime() // sample at least until here
     };

@@ -18,6 +18,8 @@ services_compat_no_overburden_icarus_v3.fcl
 services_compat_overburden_icarus_v3.fcl
 set_caf_calconst.fcl
 
+override_services_for_simulation.fcl
+
 
 ################################################################################
 # broken, won't fix

@@ -1,8 +1,10 @@
 art_make_library(
   LIBRARIES
     larana::OpticalDetector_OpHitFinder
-    sbnobj::ICARUS_PMT_Data
+    lardataalg::UtilitiesHeaders
+    lardataalg::DetectorInfo
     lardataobj::RecoBase
+    sbnobj::ICARUS_PMT_Data
     lardataobj::RawData
     messagefacility::MF_MessageLogger
     fhiclcpp::fhiclcpp

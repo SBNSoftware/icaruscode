@@ -19,6 +19,8 @@
 #include "art/Framework/Services/Registry/ServiceDeclarationMacros.h"
 #include "art/Framework/Principal/Run.h"
 
+#include <string>
+
 namespace icarusDB {
 
 	class PMTTimingCorrections: lar::UncopiableClass
@@ -34,6 +36,10 @@ namespace icarusDB {
 			virtual double getLaserCorrections( unsigned int channelID ) const = 0;
 
 			virtual double getCosmicsCorrections( unsigned int channelID ) const = 0;
+
+			virtual std::string getLaserDatabaseTag() const = 0;
+
+			virtual std::string getCosmicsDatabaseTag() const = 0;
 
 	}; // end class
 
