@@ -16,7 +16,7 @@ art_make_library(
 			Boost::system
 		)
 
-cet_build_plugin(ICARUSPhotonMappingTransformations art::tool LIBRARIES
+cet_build_plugin(ICARUSPhotonMappingTransformations art::tool LIBRARIES PRIVATE
 		icaruscode::PMT_LibraryMappingTools
 		larsim::PhotonMappingTransformations
 		)

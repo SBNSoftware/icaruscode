@@ -1,5 +1,5 @@
 cet_build_plugin(ICARUSOpHitFinder art::module
-  LIBRARIES
+  LIBRARIES PRIVATE
   icaruscode_PMT_OpReco_Algorithms
   larana::OpticalDetector_OpHitFinder
   larcore::Geometry_Geometry_service
@@ -51,18 +51,18 @@ set(	MODULE_LIBRARIES
 			ROOT::Core
             ROOT::Tree
 )
-cet_build_plugin(FakeFlash art::module LIBRARIES ${MODULE_LIBRARIES})
-cet_build_plugin(FakePhotoS art::module LIBRARIES ${MODULE_LIBRARIES})
-cet_build_plugin(FullOpHitFinder art::module LIBRARIES ${MODULE_LIBRARIES})
-cet_build_plugin(ICARUSFlashAssAna art::module LIBRARIES ${MODULE_LIBRARIES})
-cet_build_plugin(ICARUSMCOpFlash art::module LIBRARIES ${MODULE_LIBRARIES})
-cet_build_plugin(ICARUSMCOpHit art::module LIBRARIES ${MODULE_LIBRARIES})
-cet_build_plugin(ICARUSOpFlashAna art::module LIBRARIES ${MODULE_LIBRARIES})
-cet_build_plugin(ICARUSOpHitAna art::module LIBRARIES ${MODULE_LIBRARIES})
-cet_build_plugin(ICARUSOpHitTuple art::module LIBRARIES ${MODULE_LIBRARIES})
-cet_build_plugin(ICARUSParticleAna art::module LIBRARIES ${MODULE_LIBRARIES})
-cet_build_plugin(TPCPMTBarycenterMatchProducer art::module LIBRARIES ${MODULE_LIBRARIES})
-cet_build_plugin(ICARUSBeamStructureAna art::module LIBRARIES ${MODULE_LIBRARIES})
+cet_build_plugin(FakeFlash art::module LIBRARIES PRIVATE ${MODULE_LIBRARIES})
+cet_build_plugin(FakePhotoS art::module LIBRARIES PRIVATE ${MODULE_LIBRARIES})
+cet_build_plugin(FullOpHitFinder art::module LIBRARIES PRIVATE ${MODULE_LIBRARIES})
+cet_build_plugin(ICARUSFlashAssAna art::module LIBRARIES PRIVATE ${MODULE_LIBRARIES})
+cet_build_plugin(ICARUSMCOpFlash art::module LIBRARIES PRIVATE ${MODULE_LIBRARIES})
+cet_build_plugin(ICARUSMCOpHit art::module LIBRARIES PRIVATE ${MODULE_LIBRARIES})
+cet_build_plugin(ICARUSOpFlashAna art::module LIBRARIES PRIVATE ${MODULE_LIBRARIES})
+cet_build_plugin(ICARUSOpHitAna art::module LIBRARIES PRIVATE ${MODULE_LIBRARIES})
+cet_build_plugin(ICARUSOpHitTuple art::module LIBRARIES PRIVATE ${MODULE_LIBRARIES})
+cet_build_plugin(ICARUSParticleAna art::module LIBRARIES PRIVATE ${MODULE_LIBRARIES})
+cet_build_plugin(TPCPMTBarycenterMatchProducer art::module LIBRARIES PRIVATE ${MODULE_LIBRARIES})
+cet_build_plugin(ICARUSBeamStructureAna art::module LIBRARIES PRIVATE ${MODULE_LIBRARIES})
 
 
 install_headers()

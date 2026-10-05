@@ -91,7 +91,7 @@ set(	MODULE_LIBRARIES
 		ROOT::Minuit
 		ROOT::Minuit2
 	)
-cet_build_plugin(MCSFitProducerICARUS art::module LIBRARIES ${MODULE_LIBRARIES})
+cet_build_plugin(MCSFitProducerICARUS art::module LIBRARIES PRIVATE ${MODULE_LIBRARIES})
 
 
 install_headers()

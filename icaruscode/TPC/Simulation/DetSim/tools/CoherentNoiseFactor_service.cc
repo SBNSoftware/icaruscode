@@ -1,7 +1,5 @@
 /**
- * @file   icaruscode/Decode/ChannelMapping/ICARUSChannelMap_service.cc
- * @brief  Wrapper service for `icarusDB::ICARUSChannelMapProvider`.
- * @author Gianluca Petrillo (petrillo@slac.stanford.edu)
+ * @file   icaruscode/TPC/Simulation/DetSim/tools/CoherentNoiseFactor_service.cc
  */
 
 #include "icaruscode/TPC/Simulation/DetSim/tools/CoherentNoiseFactorProvider.h"

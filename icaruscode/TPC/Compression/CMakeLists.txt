@@ -27,7 +27,7 @@ set(MODULE_LIBRARIES
                    ${FHICLCPP}
                    )
 
-cet_build_plugin(ICARUSProduceCompressed art::module LIBRARIES ${MODULE_LIBRARIES})
+cet_build_plugin(ICARUSProduceCompressed art::module LIBRARIES PRIVATE ${MODULE_LIBRARIES})
 
 ### These plugins and modules are to be used when producing or validating the reprocessing
 ### of TPC Fragments with compression and turning them into compressed fragments
@@ -69,7 +69,7 @@ cet_build_plugin(ICARUSProduceCompressed art::module LIBRARIES ${MODULE_LIBRARIE
 #                art::Framework_Services_Registry
 #             )
 
-#cet_build_plugin(ProduceCompressed art::module LIBRARIES ${MODULE_LIBRARIES})
+#cet_build_plugin(ProduceCompressed art::module LIBRARIES PRIVATE ${MODULE_LIBRARIES})
 
 #simple_plugin(CheckRawDigits "plugin"
 #                ${MODULE_LIBRARIES})

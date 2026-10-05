@@ -38,8 +38,8 @@ set(	MODULE_LIBRARIES
 		FFTW3::FFTW3
 		)
 
-cet_build_plugin(SimWireICARUS art::module LIBRARIES ${MODULE_LIBRARIES})
-cet_build_plugin(SimReadoutBoardICARUS art::module LIBRARIES ${MODULE_LIBRARIES})
+cet_build_plugin(SimWireICARUS art::module LIBRARIES PRIVATE ${MODULE_LIBRARIES})
+cet_build_plugin(SimReadoutBoardICARUS art::module LIBRARIES PRIVATE ${MODULE_LIBRARIES})
 
 #install_headers()
 install_fhicl()
