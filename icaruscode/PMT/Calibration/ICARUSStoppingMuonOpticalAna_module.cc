@@ -683,7 +683,8 @@ void icarus::ICARUSStoppingMuonOpticalAna::beginJob()
   art::ServiceHandle<art::TFileService const> tfs;
 
   // --- out-of-flash OpHits, one tree per label ------------------------------
-  if (fSaveOutOfFlashOpHits) 
+  if (fSaveOutOfFlashOpHits)
+  { 
     for (art::InputTag const& label : fOpHitLabels) {
       std::string const name = label.label() + "_ttree";
       std::string const info = "Out-of-flash recob::OpHit with label " + label.label();
