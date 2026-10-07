@@ -58,6 +58,7 @@ icarus_stopping_muon_optical:
   FlashLabels:          [ "opflashCryoE", "opflashCryoW" ]
   OpDetWaveformLabels:  [ "daqPMT" ]
   SaveWaveforms:        true
+  SaveOutOfFlashOpHits: false # <label>_ttree with the OpHits not in any flash
   OpHitThresholdADC:    0     # ADC
   MCParticleTruthLabel: ""    # keep empty for data
   TriggerLabel:         ""    # keep empty for data

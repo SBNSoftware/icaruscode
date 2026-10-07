@@ -109,6 +109,11 @@ public:
         Name("OpDetWaveformLabels"),
         Comment("Tags for the raw::OpDetWaveform data products")};
 
+    fhicl::Atom<bool> SaveOutOfFlashOpHits{
+        Name("SaveOutOfFlashOpHits"),
+        Comment("Save the OpHits not in any flash, one <label>_ttree per OpHitLabels entry"),
+        false};
+
     fhicl::Atom<float> OpHitThresholdADC{
         Name("OpHitThresholdADC"),
         Comment("Threshold in ADC for an OpHit to be considered")};
@@ -253,6 +258,7 @@ private:
   art::InputTag fSimEnergyDepositLabel;
   double fEdepMeVPerPhoton;   ///< Wph / ScintPreScale [MeV per stored photon]
   bool const fSaveWaveforms;
+  bool const fSaveOutOfFlashOpHits;
   float const fOpHitThresholdADC;
 
   bool const fSkipUnmatchedEvents;
@@ -592,6 +598,7 @@ icarus::ICARUSStoppingMuonOpticalAna::ICARUSStoppingMuonOpticalAna
   , fSimEnergyDepositLabel(config().SimEnergyDepositLabel())
   , fEdepMeVPerPhoton(config().EdepWph() * 1.e-6 / config().EdepScintPreScale())
   , fSaveWaveforms(config().SaveWaveforms())
+  , fSaveOutOfFlashOpHits(config().SaveOutOfFlashOpHits())
   , fOpHitThresholdADC(config().OpHitThresholdADC())
   , fSkipUnmatchedEvents(config().SkipUnmatchedEvents())
   , fOpticalTickPeriod(
@@ -676,29 +683,31 @@ void icarus::ICARUSStoppingMuonOpticalAna::beginJob()
   art::ServiceHandle<art::TFileService const> tfs;
 
   // --- out-of-flash OpHits, one tree per label ------------------------------
-  for (art::InputTag const& label : fOpHitLabels) {
-    std::string const name = label.label() + "_ttree";
-    std::string const info = "Out-of-flash recob::OpHit with label " + label.label();
-    TTree* ttree = tfs->make<TTree>(name.c_str(), info.c_str());
-    ttree->Branch("run", &m_run, "run/I");
-    ttree->Branch("subrun", &m_subrun, "subrun/I");
-    ttree->Branch("event", &m_event, "event/I");
-    ttree->Branch("timestamp", &m_timestamp, "timestamp/I");
-    ttree->Branch("channel_id", &m_channel, "channel_id/I");
-    ttree->Branch("integral", &m_integral, "integral/F");
-    ttree->Branch("amplitude", &m_amplitude, "amplitude/F");
-    ttree->Branch("start_time", &m_start_time, "start_time/F");
-    ttree->Branch("peak_time", &m_peak_time, "peak_time/F");
-    ttree->Branch("rise_time", &m_rise_time, "rise_time/F");
-    ttree->Branch("abs_start_time", &m_abs_start_time, "abs_start_time/F");
-    ttree->Branch("timing_corr", &m_timing_corr, "timing_corr/F");
-    ttree->Branch("pe", &m_pe, "pe/F");
-    ttree->Branch("width", &m_width, "width/F");
-    ttree->Branch("x", &m_x, "x/F");
-    ttree->Branch("y", &m_y, "y/F");
-    ttree->Branch("z", &m_z, "z/F");
-    ttree->Branch("fast_to_total", &m_fast_to_total, "fast_to_total/F");
-    fOpHitTrees.push_back(ttree);
+  if (fSaveOutOfFlashOpHits) 
+    for (art::InputTag const& label : fOpHitLabels) {
+      std::string const name = label.label() + "_ttree";
+      std::string const info = "Out-of-flash recob::OpHit with label " + label.label();
+      TTree* ttree = tfs->make<TTree>(name.c_str(), info.c_str());
+      ttree->Branch("run", &m_run, "run/I");
+      ttree->Branch("subrun", &m_subrun, "subrun/I");
+      ttree->Branch("event", &m_event, "event/I");
+      ttree->Branch("timestamp", &m_timestamp, "timestamp/I");
+      ttree->Branch("channel_id", &m_channel, "channel_id/I");
+      ttree->Branch("integral", &m_integral, "integral/F");
+      ttree->Branch("amplitude", &m_amplitude, "amplitude/F");
+      ttree->Branch("start_time", &m_start_time, "start_time/F");
+      ttree->Branch("peak_time", &m_peak_time, "peak_time/F");
+      ttree->Branch("rise_time", &m_rise_time, "rise_time/F");
+      ttree->Branch("abs_start_time", &m_abs_start_time, "abs_start_time/F");
+      ttree->Branch("timing_corr", &m_timing_corr, "timing_corr/F");
+      ttree->Branch("pe", &m_pe, "pe/F");
+      ttree->Branch("width", &m_width, "width/F");
+      ttree->Branch("x", &m_x, "x/F");
+      ttree->Branch("y", &m_y, "y/F");
+      ttree->Branch("z", &m_z, "z/F");
+      ttree->Branch("fast_to_total", &m_fast_to_total, "fast_to_total/F");
+      fOpHitTrees.push_back(ttree);
+    }
   }
 
   // --- flashes and their OpHits ---------------------------------------------
@@ -1337,6 +1346,8 @@ icarus::ICARUSStoppingMuonOpticalAna::fillFlashes
 void icarus::ICARUSStoppingMuonOpticalAna::fillUnmatchedOpHits
   (art::Event const& e)
 {
+  if (!fSaveOutOfFlashOpHits) return;
+
   for (std::size_t iLabel = 0; iLabel < fOpHitLabels.size(); ++iLabel) {
 
     art::InputTag const& label = fOpHitLabels[iLabel];
