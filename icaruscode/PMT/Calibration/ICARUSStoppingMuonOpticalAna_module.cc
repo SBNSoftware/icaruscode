@@ -53,6 +53,7 @@
 #include "lardataobj/RecoBase/SpacePoint.h"
 #include "lardataobj/Simulation/SimPhotons.h"
 #include "lardataobj/Simulation/SimChannel.h"
+#include "lardataobj/Simulation/SimEnergyDeposit.h"
 #include "larana/OpticalDetector/IPedAlgoMakerTool.h"
 #include "nusimdata/SimulationBase/MCParticle.h"
 
@@ -130,6 +131,26 @@ public:
         Comment("sim::SimChannel tag, for hit-level truth matching; when absent"
                 " the truth tree falls back to one row per event. Empty on data"),
         art::InputTag{}};
+
+    fhicl::Atom<art::InputTag> SimEnergyDepositLabel{
+        Name("SimEnergyDepositLabel"),
+        Comment("sim::SimEnergyDeposit tag, on the same (shifted) clock as the"
+                " SimPhotons, for the true deposited energy (edep_tree and the"
+                " *_edep branches). Empty disables it; empty on data"),
+        art::InputTag{}};
+
+    fhicl::Atom<double> EdepWph{
+        Name("EdepWph"),
+        Comment("LArG4Parameters.Wph of the production [eV], energy per quantum"
+                " (ion or exciton) of the Correlated model: converts the photons"
+                " of the deposits into the energy that went into light"),
+        19.5};
+
+    fhicl::Atom<double> EdepScintPreScale{
+        Name("EdepScintPreScale"),
+        Comment("LArProperties.ScintPreScale of the production: SimEnergyDeposit"
+                "::NumPhotons() is already multiplied by it"),
+        0.073};
 
     fhicl::DelegatedParameter PedAlgoPset{
         Name("PedAlgoRollingMeanMaker"),
@@ -229,6 +250,8 @@ private:
   art::InputTag fTriggerLabel;
   std::vector<art::InputTag> fSimPhotonsLabels;
   art::InputTag fSimChannelLabel;
+  art::InputTag fSimEnergyDepositLabel;
+  double fEdepMeVPerPhoton;   ///< Wph / ScintPreScale [MeV per stored photon]
   bool const fSaveWaveforms;
   float const fOpHitThresholdADC;
 
@@ -254,6 +277,7 @@ private:
   std::vector<TTree*> fOpDetWaveformTrees;
   TTree* fMCParticleTree = nullptr;
   TTree* fSimPhotonTree = nullptr;
+  TTree* fEdepTree = nullptr;
   TTree* fTrackMatchTree = nullptr;
   TTree* fNeighbourTree = nullptr;
 
@@ -389,6 +413,41 @@ private:
   float michel_gen_x, michel_gen_y, michel_gen_z;
   bool michel_in_av;
   bool track_end_in_av;
+  /// True energy deposited in the TPC active volume [MeV] (SimEnergyDeposit),
+  /// and the scintillation photons Geant4 generated for it, which
+  /// carry the quenching. -1 when not computed (no deposit product, no muon).
+  /// michel_*: the `michel_gen_*` electron and all its progeny; on a capture
+  /// (track_end_process == 1) that electron is the hardest Auger, not a Michel.
+  /// delayed_*: the whole delayed set of simphoton_tree (disappearance daughters
+  /// and progeny), deposits up to 1 ms after the disappearance: on a capture,
+  /// everything the capture produced, neutron captures included.
+  /// *_nel: ionization electrons that survive recombination (before drift);
+  /// *_light: energy that went into scintillation [MeV], nph * Wph / ScintPreScale
+  /// (Correlated model: edep = light + nel * Wph, exactly, deposit by deposit).
+  float michel_edep, michel_edep_nph, michel_edep_nel, michel_edep_light;
+  float delayed_edep, delayed_edep_nph, delayed_edep_nel, delayed_edep_light;
+
+  // Energy-deposit tree: one row per (muon row, origin). Origins are the muon
+  // itself, every track of its delayed set, and track_id == 0 = ALL deposits in
+  // the cryostat of the muon end within [-2, +20] us of the disappearance,
+  // whatever made them (other cosmics included). Times are the SimPhotons clock
+  // (shifted), deposit mid-step, 10 ns bins, non-empty bins only.
+  int   d_track_id;
+  int   d_pdg;
+  int   d_mother;
+  std::string d_process;
+  bool  d_is_muon;
+  bool  d_is_delayed;
+  bool  d_is_michel;          ///< the michel_gen_* electron or its progeny
+  int   d_parent_muon_g4_id;
+  float d_edep;               ///< [MeV] all bins (for track_id 0: in the window)
+  float d_nph;                ///< generated scintillation photons, all bins
+  float d_nel;                ///< ionization electrons after recombination, all bins
+  float d_elight;             ///< [MeV] energy into scintillation, all bins
+  std::vector<float> d_bin_time;    ///< [ns, photon clock] bin left edge
+  std::vector<float> d_bin_edep;    ///< [MeV]
+  std::vector<float> d_bin_nph;
+  std::vector<float> d_bin_nel;
 
   // track-match tree
   int t_track_id;
@@ -530,6 +589,8 @@ icarus::ICARUSStoppingMuonOpticalAna::ICARUSStoppingMuonOpticalAna
   , fTriggerLabel(config().TriggerLabel())
   , fSimPhotonsLabels(config().SimPhotonsLabels())
   , fSimChannelLabel(config().SimChannelLabel())
+  , fSimEnergyDepositLabel(config().SimEnergyDepositLabel())
+  , fEdepMeVPerPhoton(config().EdepWph() * 1.e-6 / config().EdepScintPreScale())
   , fSaveWaveforms(config().SaveWaveforms())
   , fOpHitThresholdADC(config().OpHitThresholdADC())
   , fSkipUnmatchedEvents(config().SkipUnmatchedEvents())
@@ -815,6 +876,38 @@ void icarus::ICARUSStoppingMuonOpticalAna::beginJob()
     fMCParticleTree->Branch("michel_gen_y", &michel_gen_y, "michel_gen_y/F");
     fMCParticleTree->Branch("michel_gen_z", &michel_gen_z, "michel_gen_z/F");
     fMCParticleTree->Branch("michel_in_av", &michel_in_av, "michel_in_av/O");
+    if (!fSimEnergyDepositLabel.empty()) {
+      fMCParticleTree->Branch("michel_edep", &michel_edep, "michel_edep/F");
+      fMCParticleTree->Branch("michel_edep_nph", &michel_edep_nph, "michel_edep_nph/F");
+      fMCParticleTree->Branch("delayed_edep", &delayed_edep, "delayed_edep/F");
+      fMCParticleTree->Branch("delayed_edep_nph", &delayed_edep_nph, "delayed_edep_nph/F");
+      fMCParticleTree->Branch("michel_edep_nel", &michel_edep_nel, "michel_edep_nel/F");
+      fMCParticleTree->Branch("michel_edep_light", &michel_edep_light, "michel_edep_light/F");
+      fMCParticleTree->Branch("delayed_edep_nel", &delayed_edep_nel, "delayed_edep_nel/F");
+      fMCParticleTree->Branch("delayed_edep_light", &delayed_edep_light, "delayed_edep_light/F");
+
+      fEdepTree = tfs->make<TTree>("edep_tree",
+        "true energy deposits per Geant4 track of each muon row, binned in time");
+      fEdepTree->Branch("run", &m_run, "run/I");
+      fEdepTree->Branch("subrun", &m_subrun, "subrun/I");
+      fEdepTree->Branch("event", &m_event, "event/I");
+      fEdepTree->Branch("parent_muon_g4_id", &d_parent_muon_g4_id, "parent_muon_g4_id/I");
+      fEdepTree->Branch("track_id", &d_track_id, "track_id/I");
+      fEdepTree->Branch("pdg", &d_pdg, "pdg/I");
+      fEdepTree->Branch("mother", &d_mother, "mother/I");
+      fEdepTree->Branch("process", &d_process);
+      fEdepTree->Branch("is_muon", &d_is_muon, "is_muon/O");
+      fEdepTree->Branch("is_delayed", &d_is_delayed, "is_delayed/O");
+      fEdepTree->Branch("is_michel", &d_is_michel, "is_michel/O");
+      fEdepTree->Branch("edep", &d_edep, "edep/F");
+      fEdepTree->Branch("nph", &d_nph, "nph/F");
+      fEdepTree->Branch("nel", &d_nel, "nel/F");
+      fEdepTree->Branch("elight", &d_elight, "elight/F");
+      fEdepTree->Branch("bin_time", &d_bin_time);
+      fEdepTree->Branch("bin_edep", &d_bin_edep);
+      fEdepTree->Branch("bin_nph", &d_bin_nph);
+      fEdepTree->Branch("bin_nel", &d_bin_nel);
+    }
 
     if (!fSimPhotonsLabels.empty()) {
       fSimPhotonTree = tfs->make<TTree>("simphoton_tree",
@@ -1475,6 +1568,7 @@ void icarus::ICARUSStoppingMuonOpticalAna::fillMCTruth(
     int g4ID = -1;                              ///< matched Geant4 TrackId
     simb::MCParticle const* particle = nullptr; ///< the particle with that id
     float purity = -1.f;
+    double flashTime_ns = std::numeric_limits<double>::quiet_NaN(); ///< matched flash, NaN if none
   };
   std::vector<MuonRow> rows;
 
@@ -1491,6 +1585,7 @@ void icarus::ICARUSStoppingMuonOpticalAna::fillMCTruth(
 
         MuonRow row;
         row.recoID = m.trackID;
+        if (m.hasFlash()) row.flashTime_ns = m.flashTime * 1000.;
 
         if (!m.hits.empty()) {
 
@@ -1656,6 +1751,49 @@ void icarus::ICARUSStoppingMuonOpticalAna::fillMCTruth(
     hists.push_back(std::move(hist));
   }
 
+  // --- pass 3b: energy-deposit histograms, the same scheme as the photons ------
+  // SimEnergyDeposit::TrackID() is rolled up like SimPhotons' MotherTrackID:
+  // unsaved EM daughters carry minus the saved ancestor, so abs() names a particle
+  // of the list (OrigTrackID() would be the true Geant4 id, often not saved).
+  // The "shifted" deposits are on the photon clock, so they share kBinNs and the
+  // g4TimeShift_ns conversion. `edepGlobal` is per cryostat (x < 0: cryostat 0,
+  // Geant4 frame, before space charge), every origin.
+  // Deposits beyond 10 ms are dropped: the capture residue's radioactive decay
+  // lands at 1e11-1e19 ns (rolled up onto the nucleus, which IS in the delayed
+  // set), far outside any readout and past what a long bin index can hold.
+  constexpr double kMaxEdepTimeNs = 1.0e7;
+  struct EdepBin { double e = 0.; double nph = 0.; double nel = 0.; };
+  using EdepHist = std::map<long, EdepBin>;
+  std::unordered_map<int, EdepHist> edepPerTrack;   ///< trackId in `keep`
+  std::array<EdepHist, 2> edepGlobal;
+  bool haveEdep = false;
+
+  if (fEdepTree && !keep.empty()) {
+    auto const sedHandle =
+      e.getHandle<std::vector<sim::SimEnergyDeposit>>(fSimEnergyDepositLabel);
+    if (!sedHandle) {
+      mf::LogWarning("ICARUSStoppingMuonOpticalAna")
+        << "No sim::SimEnergyDeposit with label '" << fSimEnergyDepositLabel.encode() << "'";
+    }
+    else {
+      haveEdep = true;
+      for (sim::SimEnergyDeposit const& sed : *sedHandle) {
+        if (!(std::abs(sed.Time()) < kMaxEdepTimeNs)) continue;
+        int const id = std::abs(sed.TrackID());
+        long const bin = static_cast<long>(std::floor(sed.Time() / kBinNs));
+        EdepBin& g = edepGlobal[sed.MidPointX() < 0. ? 0 : 1][bin];
+        g.e   += sed.Energy();
+        g.nph += sed.NumPhotons();
+        g.nel += sed.NumElectrons();
+        if (!keep.count(id)) continue;
+        EdepBin& t = edepPerTrack[id][bin];
+        t.e   += sed.Energy();
+        t.nph += sed.NumPhotons();
+        t.nel += sed.NumElectrons();
+      }
+    }
+  }
+
   // --- pass 4: one Fill() per row --------------------------------------------
 
   for (std::size_t i = 0; i < rows.size(); ++i) {
@@ -1681,6 +1819,10 @@ void icarus::ICARUSStoppingMuonOpticalAna::fillMCTruth(
     michel_gen_time = -1.f; michel_gen_E = -1.f;
     michel_gen_x = -1.f; michel_gen_y = -1.f; michel_gen_z = -1.f;
     michel_in_av = false;
+    michel_edep = -1.f; michel_edep_nph = -1.f;
+    michel_edep_nel = -1.f; michel_edep_light = -1.f;
+    delayed_edep = -1.f; delayed_edep_nph = -1.f;
+    delayed_edep_nel = -1.f; delayed_edep_light = -1.f;
 
     simb::MCParticle const* const matched = rows[i].particle;
 
@@ -1727,10 +1869,12 @@ void icarus::ICARUSStoppingMuonOpticalAna::fillMCTruth(
 
     // --- which electron daughter, if any, is the Michel -----------------------
     // (see classifyMuonEnd(): the same classification feeds neighbour_tree)
+    int michelID = -1;
     {
       MuonEnd const muEnd = classifyMuonEnd(*particleHandle, *matched);
       track_end_process = muEnd.process;
       if (simb::MCParticle const* const hardestElectron = muEnd.michel) {
+        michelID = hardestElectron->TrackId();
         michel_gen_pdg  = hardestElectron->PdgCode();
         michel_gen_time = hardestElectron->T();   // ns
         michel_gen_E    = hardestElectron->E();   // GeV
@@ -1740,6 +1884,121 @@ void icarus::ICARUSStoppingMuonOpticalAna::fillMCTruth(
         michel_in_av    = inActiveVolume(hardestElectron->Vx(), hardestElectron->Vy(),
                                          hardestElectron->Vz());
       }
+    }
+
+    // --- energy deposits: totals on this row, then the edep_tree rows ----------
+    if (haveEdep) {
+
+      // the Michel and its progeny, inside the delayed set (where the photons
+      // put it too); the Michel itself always, should the set have missed it
+      std::set<int> michelSet;
+      if (michelID >= 0) {
+        michelSet.insert(michelID);
+        std::vector<int> pending { michelID };
+        while (!pending.empty()) {
+          int const id = pending.back();
+          pending.pop_back();
+          for (int const c : children[id]) {
+            if (!rowDelayed[i].count(c)) continue;
+            if (michelSet.insert(c).second) pending.push_back(c);
+          }
+        }
+      }
+
+      // totals up to 1 ms after the disappearance, the bound of the delayed set:
+      // the residue's own decay, rolled up onto the nucleus, stays out
+      long const sumLastBin = static_cast<long>(std::floor(
+        (rowLastDaughter[i] + g4TimeShift_ns + 1.0e6) / kBinNs));
+      auto const sumOf = [&edepPerTrack, sumLastBin](auto const& ids) {
+        EdepBin tot;
+        for (int const id : ids) {
+          auto const it = edepPerTrack.find(id);
+          if (it == edepPerTrack.end()) continue;
+          for (auto const& [bin, b] : it->second) {
+            if (bin > sumLastBin) break;
+            tot.e += b.e; tot.nph += b.nph; tot.nel += b.nel;
+          }
+        }
+        return tot;
+      };
+      if (rowHasDaughter[i]) {
+        EdepBin const d = sumOf(rowDelayed[i]);
+        delayed_edep = static_cast<float>(d.e);
+        delayed_edep_nph = static_cast<float>(d.nph);
+        delayed_edep_nel = static_cast<float>(d.nel);
+        delayed_edep_light = static_cast<float>(d.nph * fEdepMeVPerPhoton);
+      }
+      if (michelID >= 0) {
+        EdepBin const m = sumOf(michelSet);
+        michel_edep = static_cast<float>(m.e);
+        michel_edep_nph = static_cast<float>(m.nph);
+        michel_edep_nel = static_cast<float>(m.nel);
+        michel_edep_light = static_cast<float>(m.nph * fEdepMeVPerPhoton);
+      }
+
+      d_parent_muon_g4_id = primaryMuonID;
+      // bins in [lo, hi) or, when given, in [lo2, hi2)
+      auto const fillRow = [&](EdepHist const& bins, long binLo, long binHi,
+                               long binLo2 = 0, long binHi2 = 0) {
+        d_edep = 0.f; d_nph = 0.f; d_nel = 0.f;
+        d_bin_time.clear(); d_bin_edep.clear(); d_bin_nph.clear(); d_bin_nel.clear();
+        bool const two = (binHi2 > binLo2);
+        long const first = two ? std::min(binLo, binLo2) : binLo;
+        long const last  = two ? std::max(binHi, binHi2) : binHi;
+        for (auto bit = bins.lower_bound(first);
+             bit != bins.end() && bit->first < last; ++bit) {
+          bool const in1 = (bit->first >= binLo && bit->first < binHi);
+          bool const in2 = two && (bit->first >= binLo2 && bit->first < binHi2);
+          if (!in1 && !in2) continue;
+          d_edep += bit->second.e;
+          d_nph  += bit->second.nph;
+          d_nel  += bit->second.nel;
+          d_bin_time.push_back(static_cast<float>(bit->first * kBinNs));
+          d_bin_edep.push_back(static_cast<float>(bit->second.e));
+          d_bin_nph.push_back(static_cast<float>(bit->second.nph));
+          d_bin_nel.push_back(static_cast<float>(bit->second.nel));
+        }
+        d_elight = static_cast<float>(d_nph * fEdepMeVPerPhoton);
+        if (!d_bin_time.empty()) fEdepTree->Fill();
+      };
+      constexpr long kAll = std::numeric_limits<long>::max();
+
+      // one row per track of this muon that deposited anything
+      std::vector<int> ids { primaryMuonID };
+      ids.insert(ids.end(), rowDelayed[i].begin(), rowDelayed[i].end());
+      for (int const id : ids) {
+        auto const it = edepPerTrack.find(id);
+        if (it == edepPerTrack.end()) continue;
+        auto const pit = byID.find(id);
+        simb::MCParticle const* const part = (pit == byID.end()) ? nullptr : pit->second;
+        d_track_id   = id;
+        d_pdg        = part ? part->PdgCode() : 0;
+        d_mother     = part ? part->Mother() : -1;
+        d_process    = part ? part->Process() : "";
+        d_is_muon    = (id == primaryMuonID);
+        d_is_delayed = (rowDelayed[i].count(id) > 0);
+        d_is_michel  = (michelSet.count(id) > 0);
+        fillRow(it->second, -kAll, kAll);
+      }
+
+      // track_id 0: everything in the muon's cryostat around the disappearance
+      // (the muon end when it has none) AND around the matched flash, which is
+      // where the reco peaks are: a mis-matched muon can disappear hundreds of
+      // us away from its flash. The flash time [us, trigger-relative] is on the
+      // waveform clock, which is the photon clock to within tens of ns.
+      constexpr double kGlobalLoNs = -2000.;
+      constexpr double kGlobalHiNs = 20000.;
+      double const tRef =
+        (rowHasDaughter[i] ? rowLastDaughter[i] : matched->EndT()) + g4TimeShift_ns;
+      auto const toBin = [](double t) { return static_cast<long>(std::floor(t / kBinNs)); };
+      double const tFlash = rows[i].flashTime_ns;
+      bool const haveFlash = std::isfinite(tFlash);
+      d_track_id = 0; d_pdg = 0; d_mother = -1; d_process = "all";
+      d_is_muon = false; d_is_delayed = false; d_is_michel = false;
+      fillRow(edepGlobal[matched->EndX() < 0. ? 0 : 1],
+              toBin(tRef + kGlobalLoNs), toBin(tRef + kGlobalHiNs),
+              haveFlash ? toBin(tFlash + kGlobalLoNs) : 0,
+              haveFlash ? toBin(tFlash + kGlobalHiNs) : 0);
     }
 
     // --- SimPhotons: the second-peak tag --------------------------------------

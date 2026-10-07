@@ -70,6 +70,12 @@ icarus_stopping_muon_optical:
   # the matching reads the service's label, this is only the presence guard.
   # "daq:simpleSC" on the 2D simpledet chain.
   SimChannelLabel:      ""    # keep empty for data
+  # True deposited energy (edep_tree, michel_edep/delayed_edep): the SHIFTED
+  # deposits, on the same clock as SimPhotonsLabels. "shiftedpriorSCE" on the
+  # 2D simpledet chain.
+  SimEnergyDepositLabel: ""   # keep empty for data
+  EdepWph:           19.5    # eV, LArG4Parameters.Wph of the production
+  EdepScintPreScale: 0.073   # LArProperties.ScintPreScale of the production
 
   SkipUnmatchedEvents: true
 
