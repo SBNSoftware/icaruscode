@@ -10,7 +10,7 @@ icarus_basicpandora:
     EnableLineGaps:                              true
     UseGlobalCoordinates:                        true
     UseActiveBoundingBox:                        true
-    UseHitWidths:                                false
+    UseHitWidths:                                true
     ShouldRunAllHitsCosmicReco:                  false
     ShouldRunStitching:                          false
     ShouldRunCosmicHitRemoval:                   false
