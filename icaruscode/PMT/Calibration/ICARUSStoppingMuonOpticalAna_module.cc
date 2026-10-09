@@ -70,6 +70,7 @@
 #include <cmath>         // std::abs(double)
 #include <cstddef>
 #include <cstdlib>       // std::abs(int)
+#include <fstream>
 #include <limits>
 #include <map>
 #include <memory>
@@ -172,6 +173,14 @@ public:
         Comment("Write no optical tree for an event in which no stopping track was matched to a flash."),
         true};
 
+    fhicl::Atom<std::string> MuonTruthLog{
+        Name("MuonTruthLog"),
+        Comment("MC only: file (in the job's working directory) with the largeant muons BEFORE the track"
+                " selection: one MUTRUTH line per muon, one MUCOUNT per event, MUTOTAL at the end of the file."
+                " One file per run/subrun, named <stem>_run<R>_subrun<S><ext> (e.g. MuonTruth_run1_subrun2.log)."
+                " Written by the module itself, whatever the fcl. Empty disables it."),
+        "MuonTruth.log"};
+
     // --- reco neighbourhood of the selected tracks ----------------------------
 
     fhicl::Atom<double> NeighbourMaxDist{
@@ -212,6 +221,7 @@ public:
 
   void beginJob() override;
   void analyze(art::Event const& e) override;
+  void endJob() override;
 
 private:
 
@@ -244,6 +254,14 @@ private:
   void fillNeighbours(art::Event const& e,
                       std::vector<std::vector<TrackFlashMatch>> const& matches);
 
+  /// Prints (log only, nothing written to the trees) the MC muons of the event
+  /// BEFORE the track selection: one MUTRUTH line per largeant muon and one
+  /// MUCOUNT line per event; the totals are printed at endJob.
+  void printMuonTruth(art::Event const& e);
+
+  /// Writes the MUTOTAL line of the current muon truth log and closes it.
+  void closeMuonTruthLog();
+
   /// Fills the in-flash OpHit vectors.
   void fillFlashOpHits(std::vector<art::Ptr<recob::OpHit>> const& ophits);
 
@@ -262,6 +280,7 @@ private:
   float const fOpHitThresholdADC;
 
   bool const fSkipUnmatchedEvents;
+  std::string const fMuonTruthLog;
   double const fOpticalTickPeriod;
 
   double const fNeighbourMaxDist;              ///< [cm]
@@ -276,6 +295,14 @@ private:
   icarusDB::PMTTimingCorrections const& fPMTTimingCorrectionsService;
   std::unique_ptr<pmtana::PMTPedestalBase> fPedAlgo;
   StoppingTrackSelector fSelector;
+
+  // --- printMuonTruth totals (log only) ----------------------------------------
+  /// keys: all, dropped, stop, stop_cryo, stop_av, then <class>_<where> with class
+  /// free/bound/capture/other and where all/av, for mu+ and mu- separately
+  std::map<std::string, long> fMuonCounts;   ///< totals of the current file
+  std::ofstream fMuonTruthStream;   ///< opened with the first MC event of each run/subrun
+  int fMuonTruthRun = -1;           ///< run of the open fMuonTruthStream
+  int fMuonTruthSubRun = -1;        ///< subrun of the open fMuonTruthStream
 
   // --- trees ----------------------------------------------------------------
   TTree* fOpFlashTree = nullptr;
@@ -601,6 +628,7 @@ icarus::ICARUSStoppingMuonOpticalAna::ICARUSStoppingMuonOpticalAna
   , fSaveOutOfFlashOpHits(config().SaveOutOfFlashOpHits())
   , fOpHitThresholdADC(config().OpHitThresholdADC())
   , fSkipUnmatchedEvents(config().SkipUnmatchedEvents())
+  , fMuonTruthLog(config().MuonTruthLog())
   , fOpticalTickPeriod(
       art::ServiceHandle<detinfo::DetectorClocksService const>()
         ->DataForJob().OpticalClock().TickPeriod())
@@ -2128,6 +2156,9 @@ void icarus::ICARUSStoppingMuonOpticalAna::analyze(art::Event const& e)
   m_event     = e.id().event();
   m_timestamp = e.time().timeHigh(); // precision to the second
 
+  // --- MC muons before the selection: printed only ----------------------------
+  printMuonTruth(e);
+
   // --- selection, before anything is written --------------------------------
   std::vector<std::vector<TrackFlashMatch>> matches(fSelector.nCryostats());
   bool anyMatched = false;
@@ -2160,6 +2191,115 @@ void icarus::ICARUSStoppingMuonOpticalAna::analyze(art::Event const& e)
   fillMCTruth(e, matches);
 
 } // analyze()
+
+
+// -----------------------------------------------------------------------------
+void icarus::ICARUSStoppingMuonOpticalAna::printMuonTruth(art::Event const& e)
+{
+  if (fMCParticleLabel.empty() || fMuonTruthLog.empty()) return;
+  auto const particleHandle = e.getHandle<std::vector<simb::MCParticle>>(fMCParticleLabel);
+  if (!particleHandle.isValid()) return;
+
+  // one file per run/subrun: <stem>_run<R>_subrun<S><ext>
+  if (fMuonTruthStream.is_open() && (m_run != fMuonTruthRun || m_subrun != fMuonTruthSubRun))
+    closeMuonTruthLog();
+  if (!fMuonTruthStream.is_open()) {
+    std::size_t const slash = fMuonTruthLog.rfind('/');
+    std::size_t dot = fMuonTruthLog.rfind('.');
+    if (dot == std::string::npos || (slash != std::string::npos && dot < slash))
+      dot = fMuonTruthLog.size();
+    std::string const fileName = fMuonTruthLog.substr(0, dot)
+      + "_run" + std::to_string(m_run) + "_subrun" + std::to_string(m_subrun)
+      + fMuonTruthLog.substr(dot);
+    fMuonTruthStream.open(fileName);
+    fMuonTruthRun = m_run;
+    fMuonTruthSubRun = m_subrun;
+  }
+
+  // muons Geant4 tracked but did not keep (outside the kept volumes): counted only
+  int nDropped = 0;
+  art::InputTag const droppedTag
+    { fMCParticleLabel.label(), "droppedMCParticles", fMCParticleLabel.process() };
+  if (auto const dropped = e.getHandle<std::vector<simb::MCParticle>>(droppedTag)) {
+    for (simb::MCParticle const& par : *dropped)
+      if (std::abs(par.PdgCode()) == 13) ++nDropped;
+  }
+
+  auto const contained = [this](double x, double y, double z, bool activeOnly) {
+    geo::Point_t const p { x, y, z };
+    for (auto const& cryo : fGeom->Iterate<geo::CryostatGeo>()) {
+      if (!activeOnly && cryo.ContainsPosition(p)) return true;
+      if (!activeOnly) continue;
+      for (auto const& tpc : fGeom->Iterate<geo::TPCGeo>(cryo.ID()))
+        if (tpc.ActiveBoundingBox().ContainsPosition(p)) return true;
+    }
+    return false;
+  };
+
+  constexpr double kStopMomGeV = 1.e-6;   // as for track_stop_time in fillMCTruth
+  static char const* const className[] = { "other", "free", "capture", "bound" };   // process + 1
+
+  std::map<std::string, int> n;
+  for (simb::MCParticle const& mu : *particleHandle) {
+    if (std::abs(mu.PdgCode()) != 13) continue;
+    std::string const q = (mu.PdgCode() < 0) ? "mu+" : "mu-";
+    ++n["all"]; ++n["all_" + q];
+
+    // stopped: a trajectory point at rest (mu+ decay at rest), or a capture at rest
+    // (for mu- the track ends at the stop under muMinusCaptureAtRest)
+    double stopT = -1.;
+    for (unsigned int ip = 0; ip < mu.NumberTrajectoryPoints(); ++ip)
+      if (mu.P(ip) < kStopMomGeV) { stopT = mu.T(ip); break; }
+    bool const stopped = (stopT >= 0.) || (mu.EndProcess() == "muMinusCaptureAtRest");
+    if (stopped && stopT < 0.) stopT = mu.EndT();
+    bool const inCryo = contained(mu.EndX(), mu.EndY(), mu.EndZ(), false);
+    bool const inAV   = contained(mu.EndX(), mu.EndY(), mu.EndZ(), true);
+
+    MuonEnd const muEnd = classifyMuonEnd(*particleHandle, mu);
+    std::string const cls = className[muEnd.process + 1];
+    double const decayT = muEnd.michel ? muEnd.michel->T() - stopT : -1.;
+
+    fMuonTruthStream << "MUTRUTH run " << m_run << " subrun " << m_subrun << " event " << m_event
+      << " g4_id " << mu.TrackId() << " pdg " << mu.PdgCode() << " mother " << mu.Mother()
+      << " process " << mu.Process() << " end_process " << mu.EndProcess()
+      << " stopped " << stopped << " end_in_cryo " << inCryo << " end_in_av " << inAV
+      << " class " << cls << " start_E_GeV " << mu.E()
+      << " end_x " << mu.EndX() << " end_y " << mu.EndY() << " end_z " << mu.EndZ()
+      << " stop_t_ns " << stopT << " decay_t_ns " << decayT << '\n';
+
+    if (!stopped) continue;
+    ++n["stop"]; ++n["stop_" + q];
+    if (inCryo) { ++n["stop_cryo"]; ++n["stop_cryo_" + q]; }
+    if (inAV)   { ++n["stop_av"];   ++n["stop_av_" + q]; }
+    ++n[cls + "_all_" + q];
+    if (inAV) ++n[cls + "_av_" + q];
+  }
+  n["dropped"] = nDropped;
+
+  fMuonTruthStream << "MUCOUNT run " << m_run << " subrun " << m_subrun << " event " << m_event;
+  for (auto const& [key, value] : n) fMuonTruthStream << " " << key << " " << value;
+  fMuonTruthStream << '\n';
+  for (auto const& [key, value] : n) fMuonCounts[key] += value;
+}
+
+
+// -----------------------------------------------------------------------------
+void icarus::ICARUSStoppingMuonOpticalAna::closeMuonTruthLog()
+{
+  if (!fMuonTruthStream.is_open()) return;
+  fMuonTruthStream << "MUTOTAL run " << fMuonTruthRun << " subrun " << fMuonTruthSubRun;
+  for (auto const& [key, value] : fMuonCounts) fMuonTruthStream << " " << key << " " << value;
+  fMuonTruthStream << '\n';
+  fMuonTruthStream.close();
+  fMuonCounts.clear();
+}
+
+
+// -----------------------------------------------------------------------------
+void icarus::ICARUSStoppingMuonOpticalAna::endJob()
+{
+  closeMuonTruthLog();
+}
 
 
 DEFINE_ART_MODULE(icarus::ICARUSStoppingMuonOpticalAna)

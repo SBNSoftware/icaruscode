@@ -79,6 +79,7 @@ icarus_stopping_muon_optical:
   EdepScintPreScale: 0.073   # LArProperties.ScintPreScale of the production
 
   SkipUnmatchedEvents: true
+  MuonTruthLog: "MuonTruth.log"   # MC: muons before the track selection, one MuonTruth_run<R>_subrun<S>.log per subrun; ignored on data (no MCParticleTruthLabel)
 
   # neighbour_tree: every other PFParticle (from Selector.PFPLabels) with a
   # SpacePoint within NeighbourMaxDist of a selected track's end. Reco only.
