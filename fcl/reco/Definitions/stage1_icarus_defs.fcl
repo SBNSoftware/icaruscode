@@ -303,27 +303,6 @@ icarus_stage1_producers.gaushit2dTPCWE.CalDataModuleLabel:                      
 icarus_stage1_producers.gaushit2dTPCEW.CalDataModuleLabel:                                     "wire2channelroi2d:PHYSCRATEDATATPCEW"
 icarus_stage1_producers.gaushit2dTPCEE.CalDataModuleLabel:                                     "wire2channelroi2d:PHYSCRATEDATATPCEE"
 
-# Lower thresholds for tighter filter width
-icarus_stage1_producers.gaushit2dTPCEE.HitFinderToolVec.CandidateHitsPlane0.RoiThreshold:      5.
-icarus_stage1_producers.gaushit2dTPCEE.HitFinderToolVec.CandidateHitsPlane1.RoiThreshold:      5.
-icarus_stage1_producers.gaushit2dTPCEE.HitFinderToolVec.CandidateHitsPlane2.RoiThreshold:      5.
-icarus_stage1_producers.gaushit2dTPCEE.HitFilterAlg.MinPulseHeight:                            [3., 3., 3.]
-
-icarus_stage1_producers.gaushit2dTPCEW.HitFinderToolVec.CandidateHitsPlane0.RoiThreshold:      5.
-icarus_stage1_producers.gaushit2dTPCEW.HitFinderToolVec.CandidateHitsPlane1.RoiThreshold:      5.
-icarus_stage1_producers.gaushit2dTPCEW.HitFinderToolVec.CandidateHitsPlane2.RoiThreshold:      5.
-icarus_stage1_producers.gaushit2dTPCEW.HitFilterAlg.MinPulseHeight:                            [3., 3., 3.]
-
-icarus_stage1_producers.gaushit2dTPCWE.HitFinderToolVec.CandidateHitsPlane0.RoiThreshold:      5.
-icarus_stage1_producers.gaushit2dTPCWE.HitFinderToolVec.CandidateHitsPlane1.RoiThreshold:      5.
-icarus_stage1_producers.gaushit2dTPCWE.HitFinderToolVec.CandidateHitsPlane2.RoiThreshold:      5.
-icarus_stage1_producers.gaushit2dTPCWE.HitFilterAlg.MinPulseHeight:                            [3., 3., 3.]
-
-icarus_stage1_producers.gaushit2dTPCWW.HitFinderToolVec.CandidateHitsPlane0.RoiThreshold:      5.
-icarus_stage1_producers.gaushit2dTPCWW.HitFinderToolVec.CandidateHitsPlane1.RoiThreshold:      5.
-icarus_stage1_producers.gaushit2dTPCWW.HitFinderToolVec.CandidateHitsPlane2.RoiThreshold:      5.
-icarus_stage1_producers.gaushit2dTPCWW.HitFilterAlg.MinPulseHeight:                            [3., 3., 3.]
-
 # Setup version of hit finder's with Pulse Trains ("PT"s) enabled
 icarus_stage1_producers.gaushitPT2dTPCEE: @local::icarus_stage1_producers.gaushit2dTPCEE
 icarus_stage1_producers.gaushitPT2dTPCEE.LongMaxHits: [10, 10, 10]
