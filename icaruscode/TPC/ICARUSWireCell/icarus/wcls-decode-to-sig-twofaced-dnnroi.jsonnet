@@ -19,6 +19,7 @@
 //         -V signal_output_form=sparse \\
 //         -J cfg cfg/pgrapher/experiment/uboone/wcls-nf-sp.jsonnet
 
+local wc_device = std.extVar('wc_device');
 
 local epoch = std.extVar('epoch');  // eg "dynamic", "after", "before", "perfect"
 local reality = std.extVar('reality');
@@ -87,7 +88,10 @@ local params = base {
 
 // local tools_maker = import 'pgrapher/common/tools.jsonnet';
 local tools_maker = import 'pgrapher/experiment/icarus/icarus_tools.jsonnet';
-local tools = tools_maker(params);
+// local tools = tools_maker(params);
+local default_tools = tools_maker(params);
+local tools = if wc_device == 'gpu' then std.mergePatch(default_tools,
+    {dft: {type: "TorchDFT", data: {device: wc_device}}}) else default_tools;
 
 
 local wcls_maker = import 'pgrapher/ui/wcls/nodes.jsonnet';
@@ -271,7 +275,7 @@ local ts_u = {
     name: "dnnroi_u",
     data: {
         model: "NNs/plane0.ts",
-        device: "cpu",
+        device: wc_device,
         concurrency: 1,
     },
 };
@@ -281,7 +285,7 @@ local ts_v = {
     name: "dnnroi_v",
     data: {
         model: "NNs/plane1.ts",
-        device: "cpu",
+        device: wc_device,
         concurrency: 1,
     },
 };
