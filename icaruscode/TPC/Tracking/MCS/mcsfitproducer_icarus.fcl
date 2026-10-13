@@ -27,7 +27,7 @@ mcsfitproducericarus_raw: {
 	dimMode: 2
 	planeMode: 3
 	fitMode: 0
-	wireSkip: 1
+	wireSkip: 3
 	removeDeltas: false } }
 
 mcsfitproducer3D: {
@@ -57,7 +57,7 @@ mcsfitproducer3D: {
 	dimMode: 3
 	planeMode: 3
 	fitMode: 0
-	wireSkip: 1
+	wireSkip: 3
 	removeDeltas: false } }
 
 mcsfitproducer2DI1: {
@@ -87,7 +87,7 @@ mcsfitproducer2DI1: {
 	dimMode: 2
 	planeMode: 0
 	fitMode: 0
-	wireSkip: 1
+	wireSkip: 3
 	removeDeltas: false } }
 
 mcsfitproducer2DI2: {
@@ -117,7 +117,7 @@ mcsfitproducer2DI2: {
 	dimMode: 2
 	planeMode: 1
 	fitMode: 0
-	wireSkip: 1
+	wireSkip: 3
 	removeDeltas: false } }
 
 mcsfitproducer2DC: {
@@ -147,7 +147,7 @@ mcsfitproducer2DC: {
 	dimMode: 2
 	planeMode: 2
 	fitMode: 0
-	wireSkip: 1
+	wireSkip: 3
 	removeDeltas: false } }
 
 END_PROLOG

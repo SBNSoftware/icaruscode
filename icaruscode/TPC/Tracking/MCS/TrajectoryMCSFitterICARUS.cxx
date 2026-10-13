@@ -9,6 +9,11 @@
 #include "larcorealg/Geometry/GeometryCore.h"
 #include "larcore/CoreUtils/ServiceUtil.h"
 
+#include "larcore/Geometry/WireReadout.h"
+#include "larcorealg/Geometry/WireReadoutGeom.h"
+#include "lardata/DetectorInfoServices/DetectorClocksService.h"
+#include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
+
 #include "TMatrixDSym.h"
 #include "TMatrixDSymEigen.h"
 #include "TVector.h"
@@ -54,26 +59,23 @@ recob::MCSFitResultGS TrajectoryMCSFitterICARUS::fitMcs(const recob::TrackTrajec
   else if (!removeDeltas_) cout << "removeDeltas_ = false" << endl;
   cout << " " << endl;
 
-  int nhits; double sigma3p; vector<double> delta3p;
-  ComputeSigma3P(planeMode_, nhits, sigma3p, delta3p, 0);
-
-  int nhits_1skip, nhits_2skip, nhits_3skip, nhits_4skip;
-  double sigma3p_1skip, sigma3p_2skip, sigma3p_3skip, sigma3p_4skip;
-  vector<double> delta3p_1skip, delta3p_2skip, delta3p_3skip, delta3p_4skip;
+  int nhits_0skip, nhits_1skip, nhits_2skip, nhits_3skip, nhits_4skip;
+  double sigma3p_0skip, sigma3p_1skip, sigma3p_2skip, sigma3p_3skip, sigma3p_4skip;
+  vector<double> delta3p_0skip, delta3p_1skip, delta3p_2skip, delta3p_3skip, delta3p_4skip;
+  ComputeSigma3P(planeMode_, nhits_0skip, sigma3p_0skip, delta3p_0skip, 0);
   ComputeSigma3P(planeMode_, nhits_1skip, sigma3p_1skip, delta3p_1skip, 1);
   ComputeSigma3P(planeMode_, nhits_2skip, sigma3p_2skip, delta3p_2skip, 2);
   ComputeSigma3P(planeMode_, nhits_3skip, sigma3p_3skip, delta3p_3skip, 3);
   ComputeSigma3P(planeMode_, nhits_4skip, sigma3p_4skip, delta3p_4skip, 4);
-  cout << " sigma3p 0 skip = " << sigma3p
+  cout << " sigma3p 0 skip = " << sigma3p_0skip
        << " sigma3p 1 skip = " << sigma3p_1skip
        << " sigma3p 2 skip = " << sigma3p_2skip
        << " sigma3p 3 skip = " << sigma3p_3skip
        << " sigma3p 4 skip = " << sigma3p_4skip
        << endl;
-  
-  int nhits0; double sigma3p0; vector<double> delta3p0;
-  ComputeSigma3P(planeMode_, nhits0, sigma3p0, delta3p0, wireSkip_);
-  cout << " wireSkip = " << wireSkip_ << " sigma3p = " << sigma3p0 << endl;
+
+  int nhits; double sigma3p; vector<double> delta3p;
+  ComputeSigma3P(planeMode_, nhits, sigma3p, delta3p, wireSkip_);
 
   //geometrical check if track is stopping
   bool stop = GeoStopCheck(traj);
@@ -86,25 +88,71 @@ recob::MCSFitResultGS TrajectoryMCSFitterICARUS::fitMcs(const recob::TrackTrajec
   if (length < minLength_) {
     std::cout << "track too short, go to next track" << std::endl; 
     return recob::MCSFitResultGS(check); }
-
-  //define vector breakpoints with segmentation index
-  vector<size_t> breakpoints; 
-  //define vector seglens and cumseglens with segment lenghts [cm] and cumulative segment lengths [cm]
-  vector<float> seglens; vector<float> cumseglens; 
-  vector<float> seglens2D;
-  //define vector seghits and cumseghits with segment number of hits and cumulative segment number of hits
-  vector<int> seghits; vector<int> cumseghits;
   
-  /* 
-  size_t index = traj.FirstValidPoint();
+  /*size_t index = traj.FirstValidPoint();
   while (index < traj.LastValidPoint()) {
     if (isinplane(index, planeMode_) && isintpc(index, lasttpc(traj))) {
       cout << "3d hit = " << traj.LocationAtPoint(index) << endl;
       cout << "2d hit = " << hit2d(traj, index, planeMode_, lasttpc(traj)) << endl; 
       cout << "integral = " << Integral(traj, index) << endl;
       cout << "index = " << index << endl; }
+    index = traj.NextValidPoint(index + 1); }*/
+
+  size_t index = traj.FirstValidPoint();
+  size_t nTotalPoints = 0;
+  std::array<size_t, 4> nPointsPerTPC = {0, 0, 0, 0};
+  while (index < traj.LastValidPoint()) {
+    if (isinplane(index, planeMode_)) {
+      proxy::TrackPointData pd = pdata[index];
+      art::Ptr<recob::Hit> hit = get<1>(pd);
+      double x = hit->PeakTime() * 0.0622; 
+      double y = hit->WireID().Wire * 0.3; 
+      unsigned int plane = hit->WireID().Plane;
+      unsigned int tpc = hit->WireID().TPC;
+      unsigned int cryo = hit->WireID().Cryostat;
+      ++nTotalPoints;
+      if (tpc < nPointsPerTPC.size()) ++nPointsPerTPC[tpc];
+      cout << "3d hit = " << traj.LocationAtPoint(index) << endl;
+      cout << "old 2d hit = " << Vector_t(x, y, 0) << endl; 
+      cout << "new 2d hit = " << newhit2d(index, planeMode_) << endl; 
+      cout << "plane = " << plane << endl;
+      cout << "tpc = " << tpc << endl;
+      cout << "cryo = " << cryo << endl;
+      cout << "integral = " << Integral(traj, index) << endl;
+      cout << "index = " << index << endl; }
     index = traj.NextValidPoint(index + 1); }
-  */
+    cout << "total hits = " << nTotalPoints << endl;
+    for (size_t t = 0; t < nPointsPerTPC.size(); ++t) {
+      cout << "hits in TPC " << t << " = " << nPointsPerTPC[t] << endl; }
+
+  /*
+  bool haveRef = false; double nref_y = 0., nref_z = 0.;
+  index = traj.FirstValidPoint();
+  while (index < traj.LastValidPoint()) {
+    art::Ptr<recob::Hit> hit = get<1>(pdata[index]);
+    geo::WireID const wid = hit->WireID();
+      //if (wid.Plane == viewPlane(wid.TPC, planeMode_)) {}
+      geo::Vector_t const n = wr.Plane(wid).GetIncreasingWireDirection();
+      geo::Point_t const c = wr.Wire(wid).GetCenter();
+      if (!haveRef) { nref_y = n.Y(); nref_z = n.Z(); haveRef = true; }
+      double const dot = n.Y()*nref_y + n.Z()*nref_z;
+      double const t0us = hasPFPT0_ ? PFPT0_ * 1e-3 : (hasCRTT0_ ? CRTT0_ * 1e-3 : 0.);
+      double const shift = geom.TPC(wid).DriftDir().X() * detProp.DriftVelocity() * t0us;
+      double const x = detProp.ConvertTicksToX(hit->PeakTime(), wid.Plane, wid.TPC, wid.Cryostat) + shift;
+      double const s = dot * (n.Y()*c.Y() + n.Z()*c.Z());
+      double const sn = n.Y()*c.Y() + n.Z()*c.Z();
+      double const dx = x - traj.LocationAtPoint(index).X();
+      cout << "index = " << index << " plane = " << wid.Plane << " tpc = " << wid.TPC << " wire = " << wid.Wire << endl;
+      cout << "PFPT0 = " << PFPT0_ << " CRTT0 = " << CRTT0_ << " drift direction = " << geom.TPC(wid).DriftDir().X() << " drift velocity = " << detProp.DriftVelocity() << " shift = " << shift << endl;
+      cout << "direction n(y,z) = " << n.Y() << ", " << n.Z() << " scalar product ny*ny + nz*nz = " << dot << endl;
+      cout << "wire center c(y,z) = " << c.Y() << ", " << c.Z() << " scalar product ny*cy + nz*cz = " << sn << endl;
+      cout << "3D = " << traj.LocationAtPoint(index).X() << ", " << traj.LocationAtPoint(index).Y() << endl;
+      cout << "old 2D = " << hit->PeakTime()*0.0622 << ", " << wid.Wire*0.3 << endl;
+      cout << "new 2D = " << x << ", " << s << endl;
+      cout << "x 2D - x 3D = " << dx << endl;
+      cout << (std::abs(std::abs(dot) - 1.) > 0.02 ? "^ vista incompatibile" : "^ vista compatibile") << endl; 
+    index = traj.NextValidPoint(index + 1); }
+    */
 
   //define vector isDelta with candidate delta ray flagging
   vector<int> isDelta; isDelta.clear();
@@ -114,8 +162,18 @@ recob::MCSFitResultGS TrajectoryMCSFitterICARUS::fitMcs(const recob::TrackTrajec
   //  cout << "before processing delta rays" << endl;
   //  ProcessDeltaRays(traj, planeMode_, isDelta, isDeltaIndex); }
 
+  //define vector breakpoints with segmentation index
+  vector<size_t> breakpoints; 
+  //define vector seglens and cumseglens with segment lenghts [cm] and cumulative segment lengths [cm]
+  vector<float> seglens; vector<float> cumseglens; 
+  vector<float> seglens2D;
+  //define vector seghits and cumseghits with segment number of hits and cumulative segment number of hits
+  vector<int> seghits; vector<int> cumseghits;
+  vector<int> segsides;
+
   //break track into segments and populate vectors defined above
-  breakTrajInSegments(traj, breakpoints, seglens, cumseglens, seghits, cumseghits, isDeltaIndex);
+  //breakTrajInSegments(traj, breakpoints, seglens, cumseglens, seghits, cumseghits, isDeltaIndex);
+  newbreakTrajInSegments(traj, breakpoints, seglens, cumseglens, seghits, cumseghits, isDeltaIndex, segsides);
 
   //check if number of segments is less than a certain value
   if (seglens.size() < minNSegs_) {
@@ -552,6 +610,73 @@ void TrajectoryMCSFitterICARUS::breakTrajInSegments(const recob::TrackTrajectory
   return;
 }
 
+//new break input trajectory into smaller pieces called segments 
+void TrajectoryMCSFitterICARUS::newbreakTrajInSegments(const recob::TrackTrajectory& traj, vector<size_t>& breakpoints, vector<float>& seglens, vector<float>& cumseglens, vector<int>& seghits, vector<int>& cumseghits, vector<int>& isDeltaIndex, vector<int>& segsides) const {
+  cumseglens.push_back(0.); cumseghits.push_back(0);
+  double seglen = 0.; int seghit = 0;
+
+  auto countsHit = [&](size_t i) { return isinplane(i, planeMode_) && CathodeCheck(traj, i); };
+
+  size_t index = traj.FirstValidPoint(); 
+  breakpoints.push_back(index);
+
+  auto pos0 = traj.LocationAtPoint(index);
+  int side0 = sideOfPoint(index);
+  index = traj.NextValidPoint(index + 1);
+
+  while (index != recob::TrackTrajectory::InvalidIndex) {
+    auto pos1 = traj.LocationAtPoint(index);
+    seglen += (pos1 - pos0).R();
+    pos0 = pos1;
+    int side1 = sideOfPoint(index);
+
+    if (side1 != side0) {
+      breakpoints.push_back(index);
+      seglens.push_back(seglen);
+      cumseglens.push_back(cumseglens.back() + seglen);
+      seghits.push_back(seghit);
+      cumseghits.push_back(cumseghits.back() + seghit);
+      segsides.push_back(side0);
+
+      seglen = 0.;
+      seghit = countsHit(index) ? 1 : 0;
+      side0 = side1;
+      index = traj.NextValidPoint(index + 1);
+      continue;
+    }
+
+    if (countsHit(index)) seghit++;
+    
+    if (seglen >= segLen_) {
+      breakpoints.push_back(index);
+
+      if (seghit >= minHitsPerSegment_) seglens.push_back(seglen);
+      else seglens.push_back(0.);
+      cumseglens.push_back(cumseglens.back() + seglen);
+      seglen = 0.;
+
+      seghits.push_back(seghit);
+      cumseghits.push_back(cumseghits.back() + seghit);
+      segsides.push_back(side0);
+      seghit = 0; 
+    }
+    index = traj.NextValidPoint(index + 1);
+  }
+
+  if (seglen > 0.) {
+    breakpoints.push_back(traj.LastValidPoint() + 1);
+
+    if (seghit >= minHitsPerSegment_) seglens.push_back(seglen);
+    else seglens.push_back(0.);
+    cumseglens.push_back(cumseglens.back() + seglen);
+
+    seghits.push_back(seghit);
+    cumseghits.push_back(cumseghits.back() + seghit);
+    segsides.push_back(side0);
+  }
+  return;
+}
+
 //find barycenter position of input segment (useful for poligonal fit) in 3D
 void TrajectoryMCSFitterICARUS::findSegmentBarycenter(const recob::TrackTrajectory& traj, const size_t firstPoint, const size_t lastPoint, Vector_t& bary, vector<int>& isDeltaIndex) const {
   //initalize number of points in segment
@@ -648,14 +773,12 @@ void TrajectoryMCSFitterICARUS::find2DSegmentBarycenter(const recob::TrackTrajec
   //define an accumulator with position of valid points in the segment
   geo::vect::MiddlePointAccumulator middlePointCalc;
   
-  //determine index of first valid point of the segment
   size_t index = firstPoint;
   while (index < lastPoint) {
-    //check if current valid point is in input plane and last tpc
-    if (isinplane(index, planeMode_) && isintpc(index, lasttpc(traj)) && CathodeCheck(traj, index) && (!removeDeltas_||(!isDeltaIndex[index]))) {
-      //determine position of current valid point
-      auto p = hit2d(traj, index, planeMode_, lasttpc(traj));
-      //add position of current valid point to vector middlePointCalc
+    //if (isinplane(index, planeMode_) && isintpc(index, lasttpc(traj)) && CathodeCheck(traj, index) && (!removeDeltas_||(!isDeltaIndex[index]))) {
+    //  auto p = hit2d(traj, index, planeMode_, lasttpc(traj));
+    if (isinplane(index, planeMode_) && CathodeCheck(traj, index) && (!removeDeltas_ || !isDeltaIndex[index])) {
+      auto p = newhit2d(index, planeMode_);
       middlePointCalc.add(p);
       npoints++; }
     index = traj.NextValidPoint(index + 1); }
@@ -678,10 +801,10 @@ void TrajectoryMCSFitterICARUS::linearRegression2D(const recob::TrackTrajectory&
   size_t index = firstPoint;
   geo::Point_t first2D; geo::Point_t last2D; bool found2D = false;
   while (index < lastPoint) {
-    //check if current valid point is in input plane and last tpc
-    if (isinplane(index, planeMode_) && isintpc(index, lasttpc(traj)) && CathodeCheck(traj, index) && (!removeDeltas_ || !isDeltaIndex[index])) {
-      //determine position of current valid point
-      auto p = hit2d(traj, index, planeMode_, lasttpc(traj));
+    //if (isinplane(index, planeMode_) && isintpc(index, lasttpc(traj)) && CathodeCheck(traj, index) && (!removeDeltas_||(!isDeltaIndex[index]))) {
+    //  auto p = hit2d(traj, index, planeMode_, lasttpc(traj));
+    if (isinplane(index, planeMode_) && CathodeCheck(traj, index) && (!removeDeltas_ || !isDeltaIndex[index])) {
+      auto p = newhit2d(index, planeMode_);
       if (!found2D) {
         first2D = p;
         found2D = true; }
@@ -708,10 +831,10 @@ void TrajectoryMCSFitterICARUS::linearRegression2D(const recob::TrackTrajectory&
 
     index = firstPoint;
     while (index < lastPoint) {
-      //check if current valid point is in input plane and last tpc
-      if (isinplane(index, planeMode_) && isintpc(index, lasttpc(traj)) && CathodeCheck(traj, index) && (!removeDeltas_||(!isDeltaIndex[index]))) {
-        //determine position of current valid point
-        auto p = hit2d(traj, index, planeMode_, lasttpc(traj));
+      //if (isinplane(index, planeMode_) && isintpc(index, lasttpc(traj)) && CathodeCheck(traj, index) && (!removeDeltas_||(!isDeltaIndex[index]))) {
+      //  auto p = hit2d(traj, index, planeMode_, lasttpc(traj));
+      if (isinplane(index, planeMode_) && CathodeCheck(traj, index) && (!removeDeltas_ || !isDeltaIndex[index])) {
+        auto p = newhit2d(index, planeMode_);
 
         //compute coordinate differences between current valid point and average point
         const double xxw0 = p.X() - avgpos.X();
@@ -1137,9 +1260,15 @@ const double TrajectoryMCSFitterICARUS::C2Function(const recob::TrackTrajectory&
   cout << "first = " << firstseg << " last = " << lastseg << endl;
   if (!check) return 0;
 
-  //compute number of segments as difference (+1) between first and last segment index
+  //compute number of valid segments 
   unsigned int nseg = lastseg - firstseg + 1;
-  if (nseg < minNSegs_) return 0;
+  //if (nseg < minNSegs_) return 0;
+  unsigned int nsegValid = 0;
+  for (unsigned int j = firstseg; j <= lastseg && j < seglens.size(); ++j) if (seglens[j] > 0.) nsegValid++;
+  cout << "nseg = " << nseg << " nsegValid = " << nsegValid << " minNSegs_ = " << minNSegs_ << endl;
+  if (nsegValid < minNSegs_) return 0;
+
+  vector<bool> keepLin(nseg-1, false), keepPoly(nseg-2, false);
 
   //define covariance matrices for both linear fit and poligonal
   TMatrixDSym mat(2*nseg-3);
@@ -1178,6 +1307,7 @@ const double TrajectoryMCSFitterICARUS::C2Function(const recob::TrackTrajectory&
   cout << "starting computation linear-fit angles for C2 function ..." << endl; cout << " " << endl;
 
   for (unsigned int jp = firstseg; jp < lastseg; jp++) {
+    if (dthetaLin[jp] <= 0.) continue; 
     //recall length [cm] of jp, jp+1 segment, return null if less or equal than zero
     double Ls0 = seglens[jp]; double Ls1 = seglens[jp+1];
     if (Ls0 <= 0. || Ls1 <= 0.) {
@@ -1242,6 +1372,7 @@ const double TrajectoryMCSFitterICARUS::C2Function(const recob::TrackTrajectory&
     //update ttall vector with measured scattering angle [mrad]
     theta_measured = 1000. * dthetaLin[jp];
     ttallLin.push_back(theta_measured);
+    keepLin[jp-firstseg] = true;
     cout << "measured angle [mrad] between " << jp << "-th and " << jp+1 << "-th segment = " << theta_measured << endl;
 
     //compute theta error [mrad] associated to delta3p
@@ -1262,6 +1393,7 @@ const double TrajectoryMCSFitterICARUS::C2Function(const recob::TrackTrajectory&
   cout << "starting computation polygonal angles for C2 function ..." << endl; cout << " " << endl;
 
   for (unsigned int jp = firstseg; jp < lastseg - 1; jp++) {
+    if (dthetaPoly[jp] <= 0.) continue;
     //recall length [cm] of jp, jp+1, jp+2 segment, return null if less or equal than zero
     double Ls0 = seglens[jp]; double Ls1 = seglens[jp+1]; double Ls2 = seglens[jp+2];
     if (Ls0 <= 0. || Ls1 <= 0. || Ls2 <= 0.) {
@@ -1342,6 +1474,7 @@ const double TrajectoryMCSFitterICARUS::C2Function(const recob::TrackTrajectory&
     //update ttall vector with measured scattering angle [mrad]
     theta_measured = 1000. * dthetaPoly[jp];
     ttallPoly.push_back(theta_measured);
+    keepPoly[jp-firstseg] = true;
     cout << "measured angle [mrad] between " << jp << "-th and " << jp+2 << "-th segment = " << theta_measured << endl;
 
     //compute theta error [mrad] associated to delta3p
@@ -1385,20 +1518,35 @@ const double TrajectoryMCSFitterICARUS::C2Function(const recob::TrackTrajectory&
       for (int jmm = 0; jmm < matPoly.GetNrows(); jmm++) {
         matFull(jm, jmm + matLin.GetNrows()) = matMCSMixed(jm, jmm); } } 
 
+  auto compress = [](const TMatrixDSym& m, const vector<bool>& keep) {
+    vector<int> idx;
+    for (int i = 0; i < (int)keep.size(); ++i) if (keep[i]) idx.push_back(i);
+    TMatrixDSym out(idx.size());
+    for (unsigned a = 0; a < idx.size(); ++a)
+      for (unsigned b = 0; b < idx.size(); ++b) out(a, b) = m(idx[a], idx[b]);
+    return out; };
+
+  vector<bool> keepFull = keepLin;
+  keepFull.insert(keepFull.end(), keepPoly.begin(), keepPoly.end());
+
   //in case of both linear and poligonal fit, take matFull
-  if (fitMode_ == 0) {
-    mat = matFull;
+  if (fitMode_ == 0) { 
+    TMatrixDSym matComp = compress(matFull, keepFull); 
+    mat.ResizeTo(matComp.GetNrows(), matComp.GetNrows()); 
+    mat = matComp;
     ttall.insert(ttall.end(), ttallLin.begin(), ttallLin.end());
     ttall.insert(ttall.end(), ttallPoly.begin(), ttallPoly.end()); }
   //in case of only linear fit, take matLin
-  if (fitMode_ == 1) {
-    mat.ResizeTo(matMCSLin.GetNrows(), matMCSLin.GetNrows());
-    mat = matLin; 
+  if (fitMode_ == 1) { 
+    TMatrixDSym matComp = compress(matLin, keepLin);
+    mat.ResizeTo(matComp.GetNrows(), matComp.GetNrows()); 
+    mat = matComp; 
     ttall = ttallLin; }
   //in case of only poligonal fit, take matPoly
-  if (fitMode_ == 2) {
-    mat.ResizeTo(matMCSPoly.GetNrows(), matMCSPoly.GetNrows());
-    mat = matPoly;
+  if (fitMode_ == 2) { 
+    TMatrixDSym matComp = compress(matPoly, keepPoly); 
+    mat.ResizeTo(matComp.GetNrows(), matComp.GetNrows()); 
+    mat = matComp; 
     ttall = ttallPoly; }
   
   //initialize matrix cov as a copy of matrix mat
@@ -1427,6 +1575,8 @@ const double TrajectoryMCSFitterICARUS::C2Function(const recob::TrackTrajectory&
   for (unsigned int jv = 0; jv < terms.size(); jv++) mterms(jv, 0) = terms[jv]; 
   cout << "column matrix mterms, with c2 function terms = " << endl; mterms.Print();
   //compute c2 function without trunc as average of mterms
+  cout << "mat.GetNrows() = " << mat.GetNrows() << " ttall.size() = " << ttall.size() << endl;
+  if (ttall.empty()) return 0;
   vtcovmed /= (ttall.size());
   cout << "c2 function without trunc = " << vtcovmed << endl; cout << " " << endl;
 
@@ -1511,12 +1661,16 @@ const double TrajectoryMCSFitterICARUS::LikelihoodFunction(const recob::TrackTra
   bool checkLin = false; bool checkPoly = false;
   ThetaCheck(dthetaLin, dthetaPoly, checkLin, checkPoly, firstseg, lastseg);
   bool check = checkLin && checkPoly;
-  if (verbose) {cout << "first = " << firstseg << " last = " << lastseg << endl; }
+  if (verbose) { cout << "first = " << firstseg << " last = " << lastseg << endl; }
   if (!check) return numeric_limits<double>::max();
 
-  //compute number of segments as difference (+1) between first and last segment index
+  //compute number of valid segments 
   unsigned int nseg = lastseg - firstseg + 1;
-  if (nseg < minNSegs_) return numeric_limits<double>::max();
+  //if (nseg < minNSegs_) return numeric_limits<double>::max();
+  unsigned int nsegValid = 0;
+  for (unsigned int j = firstseg; j <= lastseg && j < seglens.size(); ++j) if (seglens[j] > 0.) nsegValid++;
+  if (verbose) { cout << "nseg = " << nseg << " nsegValid = " << nsegValid << " minNSegs_ = " << minNSegs_ << endl; }
+  if (nsegValid < minNSegs_) return numeric_limits<double>::max();
 
   //recall measurement error from delta3p [cm]
   double sigma3p = Sigma3P();
@@ -1536,6 +1690,7 @@ const double TrajectoryMCSFitterICARUS::LikelihoodFunction(const recob::TrackTra
   if (verbose) {cout << "starting computation linear-fit angles for likelihood function ..." << endl; cout << " " << endl; }
 
   for (unsigned int jp = firstseg; jp < lastseg; jp++) {
+    if (dthetaLin[jp] <= 0.) continue;
     //recall length [cm] of jp, jp+1 segment, return null if less or equal than zero
     double Ls0 = seglens[jp]; double Ls1 = seglens[jp+1];
     if (Ls0 <= 0. || Ls1 <= 0.) {
@@ -2018,21 +2173,32 @@ Vector_t TrajectoryMCSFitterICARUS::hit2d(const recob::TrackTrajectory& traj, si
   unsigned int plane = hit->WireID().Plane;
   unsigned int tpc = hit->WireID().TPC;
   if (plane == p && tpc == t) {
-
-    /* Petrillo functions
-    auto const& geom = *(lar::providerFrom<geo::Geometry>());
-    geo::PlaneGeo const& geoplane = geom.Plane(hit->WireID());
-    geo::Point_t myPoint = traj.LocationAtPoint(index);
-    auto [wireCoord, driftDistance] = geoplane.DecomposePoint(myPoint);
-    double x = driftDistance; 
-    double y = wireCoord.Y(); 
-    double z = wireCoord.X(); 
-    */
-
     double x = hit->PeakTime() * 0.0622; 
     double y = hit->WireID().Wire * 0.3; 
     return Vector_t(x, y, 0); }
   else return Vector_t(); 
+}
+
+Vector_t TrajectoryMCSFitterICARUS::newhit2d(size_t index, unsigned p) const {
+  const recob::Hit& h = *get<1>(pdata[index]);
+  const geo::WireID wid = h.WireID();
+  if (wid.Plane != p) return Vector_t();
+
+  //drift coordinate, corrected with t0
+  const double shift = geom_->TPC(wid).DriftDir().X() * detProp_->DriftVelocity() * T0_;
+  const double x = detProp_->ConvertTicksToX(h.PeakTime(), wid.Plane, wid.TPC, wid.Cryostat) + shift;
+
+  //wire coordinate, with wire = n·c, n normal to wire, c wire center (absorbs offset 2536)
+  const auto& plane = wr_->Plane(wid);
+  const auto n = plane.GetIncreasingWireDirection();
+  const auto c = wr_->Wire(wid).GetCenter();
+  const double y = n.Y()*c.Y() + n.Z()*c.Z();
+  return Vector_t(x, y, 0);
+}
+
+//0 = TPC 0-1 (x < cathode), 1 = TPC 2-3 (x > cathode)
+int TrajectoryMCSFitterICARUS::sideOfPoint(size_t index) const {
+  return get<1>(pdata[index])->WireID().TPC / 2;
 }
 
 //return integral propto dedx
@@ -2206,21 +2372,18 @@ void TrajectoryMCSFitterICARUS::ThetaCheck(vector<float> dthetaLin, vector<float
   auto countLin = 0;
   for (unsigned int j = 0; j < dthetaLin.size(); ++j) {
     if (dthetaLin[j] > 0.) {
-      if (!first) {
-        firstseg = j; first = true; }
+      if (!first) { firstseg = j; first = true; }
       lastseg = j + 1;
       countLin++;
-      if (countLin >= minNAngs_) checkLin = true; } 
-    else {
-      first = false;
-      countLin = 0; } }
+      if (countLin >= minNAngs_) checkLin = true; } }
+    //else { first = false; countLin = 0; }
 
   auto countPoly = 0;
   for (unsigned int j = 0; j < dthetaPoly.size(); ++j) {
     if (dthetaPoly[j] > 0.) {
       countPoly++;
-      if (countPoly >= minNAngs_ - 1) checkPoly = true; } 
-    else countPoly = 0; } 
+      if (countPoly >= minNAngs_ - 1) checkPoly = true; } }
+    //else countPoly = 0; 
 }
 
 //geometrical check if track stops inside detector (used but info not added to ntuples)
@@ -2291,7 +2454,6 @@ bool TrajectoryMCSFitterICARUS::FieldFailureCheck(const recob::TrackTrajectory& 
   double ffYI = 115.; double ffYF = -161.86;
 
   //reject dangling cable in TPC WW
-
   double pointX = traj.LocationAtPoint(index).X();
   double pointY = traj.LocationAtPoint(index).Y();
   if (c != 0 || t < 2 || ((pointX < ffXI || pointX > ffXF) && (pointY > ffYI && pointY < ffYF))) return true;

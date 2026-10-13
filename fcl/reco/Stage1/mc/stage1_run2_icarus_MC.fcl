@@ -56,7 +56,7 @@ physics.reco: [
                 @sequence::icarus_crttrack,
                 @sequence::icarus_crtt0tagging,
                 caloskimCalorimetryCryoE, caloskimCalorimetryCryoW,
-                mcassociationsGausCryoE,  mcassociationsGausCryoW,
+#                mcassociationsGausCryoE,  mcassociationsGausCryoW,
                 @sequence::icarus_MCS_Gauss,
                 mcreco
               ]

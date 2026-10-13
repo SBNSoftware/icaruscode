@@ -6,11 +6,15 @@
 #include "art/Framework/Principal/Handle.h"
 #include "art/Framework/Principal/Run.h"
 #include "art/Framework/Principal/SubRun.h"
-#include "larcore/Geometry/Geometry.h"
-#include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
 
+#include "larcore/Geometry/Geometry.h"
 #include "larcorealg/Geometry/GeometryCore.h"
-#include "larcore/CoreUtils/ServiceUtil.h" // lar::providerFrom()
+#include "larcore/CoreUtils/ServiceUtil.h"
+
+#include "larcore/Geometry/WireReadout.h"
+#include "larcorealg/Geometry/WireReadoutGeom.h"
+#include "lardata/DetectorInfoServices/DetectorClocksService.h"
+#include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
 
 #include "messagefacility/MessageLogger/MessageLogger.h"
 
@@ -111,17 +115,21 @@ trkf::MCSFitProducerICARUS::MCSFitProducerICARUS(trkf::MCSFitProducerICARUS::Par
 trkf::MCSFitProducerICARUS::~MCSFitProducerICARUS() {}
 
 void trkf::MCSFitProducerICARUS::produce(art::Event & e) {
-  // stuff for CRT
-  auto const clock_data = art::ServiceHandle<detinfo::DetectorClocksService const>()->DataFor(e);
-  auto const dprop = art::ServiceHandle<detinfo::DetectorPropertiesService const>()->DataFor(e, clock_data);
+  auto const& wr = art::ServiceHandle<geo::WireReadout const>()->Get();
+  auto const clockData = art::ServiceHandle<detinfo::DetectorClocksService const>()->DataFor(e);
+  auto const detProp = art::ServiceHandle<detinfo::DetectorPropertiesService const>()->DataFor(e, clockData);
+  auto const* geom = lar::providerFrom<geo::Geometry>();
+
+  mcsfitter.setWR(wr);
+  mcsfitter.setDetProp(detProp);
+  mcsfitter.setGeom(geom);
 
   // build geometry, TPC and Active Volumes (AVs)
-  geo::GeometryCore const* geo = lar::providerFrom<geo::Geometry>();
   std::vector<std::vector<geo::BoxBoundedGeo>> TPCVols;
   std::vector<geo::BoxBoundedGeo> AVs;
-  for (auto const &cryo: geo->Iterate<geo::CryostatGeo>()) {
+  for (auto const &cryo: geom->Iterate<geo::CryostatGeo>()) {
     std::vector<geo::BoxBoundedGeo> this_tpc_volumes;
-    for (auto const& TPC : geo->Iterate<geo::TPCGeo>(cryo.ID())) {
+    for (auto const& TPC : geom->Iterate<geo::TPCGeo>(cryo.ID())) {
       this_tpc_volumes.push_back(TPC.ActiveBoundingBox()); }
     TPCVols.push_back(std::move(this_tpc_volumes)); }
   for (const std::vector<geo::BoxBoundedGeo> &tpcs: TPCVols) {
@@ -173,7 +181,7 @@ void trkf::MCSFitProducerICARUS::produce(art::Event & e) {
     // identify cryostat and print track information
     geo::Point_t const& pos = trkPtr->LocationAtPoint(0);
     geo::Point_t point{pos.X(), pos.Y(), pos.Z()};
-    std::size_t cryo = geo->PositionToCryostatID(point).Cryostat;
+    std::size_t cryo = geom->PositionToCryostatID(point).Cryostat;
     const char* cryoName = (cryo == 0) ? "EAST" : "WEST";
     std::cout << " producer MCS: event ID = " << e.event() 
               << " track ID = " << trkPtr->ID() 
@@ -187,22 +195,21 @@ void trkf::MCSFitProducerICARUS::produce(art::Event & e) {
               << " track length [cm] = " << trkPtr->Length() 
               << std::endl;
 
-    // start T0 computation
-    bool hasT0 = false, hasPFPT0 = false, hasCRTT0 = false;
-
     // T0 from PFP associated data
-    double t0PFP = std::numeric_limits<float>::signaling_NaN();
+    bool hasPFPT0 = false;
+    double PFPT0 = std::numeric_limits<float>::signaling_NaN();
     if (fPFPT0.isValid()) {
       auto const& PFPT0s = fPFPT0.at(pfp.key());
       if (!PFPT0s.empty()) {
-        t0PFP = PFPT0s.at(0)->Time();
+        PFPT0 = PFPT0s.at(0)->Time();
         hasPFPT0 = true;
-        std::cout << " track " << trkPtr->ID() << " has PFPT0 = " << t0PFP << std::endl; } }
+        std::cout << " track " << trkPtr->ID() << " has PFPT0 = " << PFPT0 << std::endl; } }
+    mcsfitter.sethasPFPT0(hasPFPT0);
+    mcsfitter.setPFPT0(PFPT0);
 
     // T0 from CRT Hit
-    double t0CRTHit = std::numeric_limits<float>::signaling_NaN();
-    double t0CRTHitScore = std::numeric_limits<float>::signaling_NaN();
-    double CRTshift = 0.;
+    bool hasCRTT0 = false;
+    double CRTT0 = std::numeric_limits<float>::signaling_NaN();
     if (fCRTT0.isValid()) {
       auto const& CRTT0s = fCRTT0.at(trkPtr.key());
       if (!CRTT0s.empty()) {
@@ -212,26 +219,30 @@ void trkf::MCSFitProducerICARUS::produce(art::Event & e) {
         bool fIncludeSideCRT = false;
         bool crtHitSysRejected = (tag.Sys == 0 && !fIncludeTopCRT) || (tag.Sys==1 && !fIncludeSideCRT); 
         geo::Point_t end {trkPtr->Start().X(), trkPtr->Start().Y(), trkPtr->Start().Z()};
-        if (trkHits.size()) {
-          int driftDir = geo->TPC(trkHits.at(0)->WireID()).DriftDir().X();
-          double driftv = dprop.DriftVelocity();
-          CRTshift = time * driftDir * driftv * 1e-3; }
         bool trackIsStopping = false;
         for (auto const &v: AVs) {
           if (v.ContainsPosition(end)) trackIsStopping = true; }
         bool crtHitDistanceRejected = trackIsStopping ? 
-            ((tag.Sys == 0) ? (tag.Distance > 100.) : (tag.Distance > 100.)) :
+            ((tag.Sys == 0) ? (tag.Distance > 100.) : (tag.Distance > 100.)):
             ((tag.Sys == 0) ? (tag.Distance > 100.) : (tag.Distance > 100.));
         if (!crtHitSysRejected && !crtHitDistanceRejected) {
-          t0CRTHit = time;
-          t0CRTHitScore = tag.Distance;
+          CRTT0 = time;
           hasCRTT0 = true;
-          std::cout << " track " << trkPtr->ID() << " has CRTT0 = " << t0CRTHit << std::endl; } } }
-    mcsfitter.setCRTShift(t0CRTHitScore);
+          std::cout << " track " << trkPtr->ID() << " has CRTT0 = " << CRTT0 << std::endl; } } }
+    mcsfitter.sethasCRTT0(hasCRTT0);
+    mcsfitter.setCRTT0(CRTT0);
+
+    // convert T0 from ns to µs
+    bool hasT0 = false;
+    double T0 = std::numeric_limits<float>::signaling_NaN();
+    if (hasPFPT0) T0 = PFPT0 * 1e-3; 
+    else if (hasCRTT0) T0 = CRTT0 * 1e-3;
+    hasT0 = hasPFPT0 || hasCRTT0;
+    mcsfitter.sethasT0(hasT0);
+    mcsfitter.setT0(T0);
 
     // "whicht0" should reflect the T0 used for the reconstruction of the drift coordinate
     int whicht0;
-    hasT0 = hasPFPT0 || hasCRTT0;
     if (!hasT0) whicht0 = -1;
     else if (hasPFPT0) whicht0 = 0;
     else if (hasCRTT0) whicht0 = 2;
@@ -240,9 +251,9 @@ void trkf::MCSFitProducerICARUS::produce(art::Event & e) {
     
     // build track object for selection tools
     sbn::TrackInfo SBNTrack;
-    //SBNTrack.end.x = hasPFPT0 ? trkPtr->End().X() : (hasCRTT0 ? trkPtr->End().X() + CRTshift : trkPtr->End().X());
-    if (hasPFPT0) SBNTrack.end.x = trkPtr->End().X();
-    else if (hasCRTT0) SBNTrack.end.x = trkPtr->End().X() + CRTshift;
+    if (hasT0 && !trkHits.empty()) {
+      const double shift = geom->TPC(trkHits.back()->WireID()).DriftDir().X() * detProp.DriftVelocity() * T0;
+      SBNTrack.end.x = trkPtr->End().X() + shift; }
     SBNTrack.end.y = trkPtr->End().Y();
     SBNTrack.end.z = trkPtr->End().Z();
     SBNTrack.dir.x = trkPtr->StartDirection().X();
@@ -353,12 +364,13 @@ void trkf::MCSFitProducerICARUS::produce(art::Event & e) {
     bool valid_med_dqdx = ((med_dqdx > 0.) && (med_dqdx > EndMediandQdxCut)) || (EndMediandQdxCut < 0.);
 
     // print selection information
-    std::cout << " downwards = " << downwards
+    std::cout << " hasT0 = " << hasT0
+              << " downwards = " << downwards
               << " end_is_fid = " << end_is_fid
               << " time_is_fid = " << time_is_fid
               << " valid_med_dqdx = " << valid_med_dqdx
               << std::endl;
-    if (downwards && end_is_fid && time_is_fid && valid_med_dqdx) {
+    if (hasT0 && downwards && end_is_fid && time_is_fid && valid_med_dqdx) {
       select = true;
       selected = 0; }
     std::cout << " select = " << select

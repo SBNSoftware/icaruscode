@@ -6,6 +6,16 @@
 #include "fhiclcpp/types/Table.h"
 #include "canvas/Persistency/Common/Ptr.h"
 #include "icaruscode/TPC/Tracking/MCS/MCSFitResultGS.h"
+
+#include "larcore/Geometry/Geometry.h"
+#include "larcorealg/Geometry/GeometryCore.h"
+#include "larcore/CoreUtils/ServiceUtil.h"
+
+#include "larcore/Geometry/WireReadout.h"
+#include "larcorealg/Geometry/WireReadoutGeom.h"
+#include "lardata/DetectorInfoServices/DetectorClocksService.h"
+#include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
+
 #include "lardataobj/RecoBase/Track.h"
 #include "lardataobj/RecoBase/Hit.h"
 #include "lardata/RecoObjects/TrackState.h"
@@ -196,6 +206,16 @@ namespace trkf {
       std::vector<int>& cumseghits,
       std::vector<int>& isdi) const;
 
+    void newbreakTrajInSegments(
+      const recob::TrackTrajectory& traj, 
+      std::vector<size_t>& breakpoints, 
+      std::vector<float>& seglens, 
+      std::vector<float>& cumseglens, 
+      std::vector<int>& seghits, 
+      std::vector<int>& cumseghits,
+      std::vector<int>& isdi,
+      std::vector<int>& segsides) const;
+
     void findSegmentBarycenter(
       const recob::TrackTrajectory& traj, 
       const size_t firstPoint, 
@@ -284,8 +304,32 @@ namespace trkf {
     void setPointData(
       std::vector<proxy::TrackPointData> h) { pdata = h; }
 
-    void setCRTShift(
-      float s) { CRTshift = s; }
+    void setWR(
+      geo::WireReadoutGeom const& wr) { wr_ = &wr; }
+      
+    void setDetProp(
+      detinfo::DetectorPropertiesData const& detProp) { detProp_ = &detProp; }
+
+    void setGeom(
+      geo::GeometryCore const* geom) { geom_ = geom; }
+
+    void setPFPT0(
+      float t0) { PFPT0_ = t0; }
+      
+    void setCRTT0(
+      float t0) { CRTT0_ = t0; }
+
+    void setT0(
+      float t0) { T0_ = t0; }
+
+    void sethasPFPT0(
+      bool has) { hasPFPT0_ = has; }
+      
+    void sethasCRTT0(
+      bool has) { hasCRTT0_ = has; }
+      
+    void sethasT0(
+      bool has) { hasT0_ = has; }
 
     void setRangeP(
       float r) { rangeP = r; }
@@ -442,6 +486,13 @@ namespace trkf {
       unsigned int p, 
       unsigned int t) const;
 
+    Vector_t newhit2d(
+      size_t index, 
+      unsigned int p) const;
+
+    int sideOfPoint(
+      size_t index) const;
+
     double Integral(
       const recob::TrackTrajectory& traj, 
       size_t index) const;
@@ -586,7 +637,11 @@ namespace trkf {
     std::vector<recob::Hit> hits2dI1;
     std::vector<proxy::TrackPointData> pdata;
     float d3pC; float d3pI1; float d3pI2; 
-    float CRTshift;
+    geo::WireReadoutGeom const* wr_;
+    geo::GeometryCore const* geom_;
+    detinfo::DetectorPropertiesData const* detProp_;
+    float PFPT0_; float CRTT0_; float T0_;
+    bool hasPFPT0_; bool hasCRTT0_; bool hasT0_;
     float rangeP;
     float c2prange; 
     int tailsprange; }; }
