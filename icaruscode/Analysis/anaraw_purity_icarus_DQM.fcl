@@ -2,7 +2,6 @@
 #include "singles.fcl"
 #include "larproperties.fcl"
 #include "magfield_larsoft.fcl"
-#include "largeantmodules.fcl"
 #include "mcreco.fcl"
 #include "services_common_icarus.fcl"
 #include "reco_icarus.fcl"

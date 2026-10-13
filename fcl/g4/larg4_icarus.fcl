@@ -1,21 +1,10 @@
-#include "LArG4.fcl"
+#include "larg4_icarus_defs.fcl"
 #include "services_icarus_simulation.fcl"
-#include "larg4_services_icarus.fcl"
 #include "rootoutput_icarus.fcl"
-
-#include "ionandscint_icarus.fcl"
-#include "simdrift_icarus.fcl"
-#include "PDFastSim_icarus.fcl"
-#include "icarus_genericCRT.fcl"
-#include "g4inforeducer.fcl"
-#include "simplemerge_icarus.fcl"
 
 process_name: G4
 
-services: {
-       @table::icarus_g4_services
-       @table::icarus_larg4_services
-}
+services: @local::icarus_all_larg4_services
 
 source:
 {
@@ -30,69 +19,28 @@ physics:
   {
     rns: { module_type: "RandomNumberSaver" }
 
-    # A dummy module that forces the G4 physics list to be loaded
-    loader: { module_type: "PhysListLoader" }
-
-    # The geant4 step
-    largeant: @local::standard_larg4
-
-    # Creation of ionization electrons and scintillation photons (keep ionization name for compatibility)
-    ionization: @local::icarus_ionandscint
-
-    # Light propogation
-    pdfastsim: @local::icarus_pdfastsim_pvs
-
-    # Electron propogation
-    simdrift: @local::icarus_simdrift
-
-    # needs to run right after largeant
-    sedlite:    @local::sbn_largeant_info_reducer 
-
-
-    # Generic CRT
-    genericcrt: @local::icarus_genericCRT
-
-    # simplemerge for ML
-    simplemerge: @local::simplemerge
+    @table::icarus_larg4_standard_producers  # from larg4_icarus_defs.fcl
 
   }
 
   # All producers and filters modules for this path, order matters
   simulate: [ rns
-            , loader
-            , largeant
-            , ionization
-            , pdfastsim
-            , simdrift
-            , sedlite
-            , genericcrt
-	    , simplemerge
+            , @sequence::icarus_larg4_standard_path  # from larg4_icarus_defs.fcl
           ]
 
   # The output stream, there could be more than one if using filters
   stream1: [ rootoutput ]
 
-  # Contains the paths that modify the art::event
+  # Contains the paths that modify the art::Event
   trigger_paths: [ simulate ]
 
   # Contains the paths that do not modify the art::Event
   end_paths: [ stream1 ]
 }
 
-# Store MCParticleLite in G4 to store dropped particles from KeepEMShowerDaughters: false
-physics.producers.largeant.StoreDroppedMCParticles: false
-#services.ParticleListAction.KeepDroppedParticlesInVolumes: ["volDetEnclosure"] 
 
 # ------------------------------------------------------------------------------
-# Setup hack for 2D
-services.SpaceChargeService.is2DdriftSimHack: true
 
-#info reducer
-physics.producers.sedlite.SimEnergyDepositLabel: "largeant:LArG4DetectorServicevolTPCActive"
-physics.producers.sedlite.useOrigTrackID: true #needed since origTrackID not filled for sedlite in SBND
 
-# avoid huge log files
-services.message.destinations.LogErrorFile.categories.SimDriftElectrons: { limit: 0 }
-services.message.destinations.LogStandardOut.categories.SimDriftElectrons: { limit: 0 }
+outputs.rootoutput: @local::icarus_rootoutput  # from rootoutput_icarus.fcl
 
-outputs.rootoutput: @local::icarus_rootoutput

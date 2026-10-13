@@ -31,19 +31,23 @@ BEGIN_PROLOG
 icarus_stage1_producers:
 {
   ### TPC hit-finder producers
-  gaushit1dTPCWW:                 @local::gausshit_sbn
-  gaushit1dTPCWE:                 @local::gausshit_sbn
-  gaushit1dTPCEW:                 @local::gausshit_sbn
-  gaushit1dTPCEE:                 @local::gausshit_sbn
+  gaushit1dTPCWW:                 @local::gaus_hitfinder_icarus
+  gaushit1dTPCWE:                 @local::gaus_hitfinder_icarus
+  gaushit1dTPCEW:                 @local::gaus_hitfinder_icarus
+  gaushit1dTPCEE:                 @local::gaus_hitfinder_icarus
 
-  gaushit2dTPCWW:                 @local::gausshit_sbn
-  gaushit2dTPCWE:                 @local::gausshit_sbn
-  gaushit2dTPCEW:                 @local::gausshit_sbn
-  gaushit2dTPCEE:                 @local::gausshit_sbn
+  gaushit2dTPCWW:                 @local::gaus_hitfinder_icarus
+  gaushit2dTPCWE:                 @local::gaus_hitfinder_icarus
+  gaushit2dTPCEW:                 @local::gaus_hitfinder_icarus
+  gaushit2dTPCEE:                 @local::gaus_hitfinder_icarus
 
   ### Cluster3D
   cluster3DCryoW:                 @local::icarus_cluster3d
   cluster3DCryoE:                 @local::icarus_cluster3d
+
+  ### Hit combiner
+  combineHitsCryoE:               @local::icarus_hitmerger_cryoE
+  combineHitsCryoW:               @local::icarus_hitmerger_cryoW
 
   ### pandora
   pandoraGausCryoW:               @local::icarus_pandora
@@ -227,11 +231,17 @@ icarus_WestHits_TPC:               [ gaushit1dTPCWW,
                                    ]
                                    
 icarus_EastHits2d_TPC:             [ gaushit2dTPCEW,
-                                     gaushit2dTPCEE
+                                     gaushit2dTPCEE,
+                                     combineHitsCryoE,
+                                     gaushitPT2dTPCEW,
+                                     gaushitPT2dTPCEE
                                    ]
 
 icarus_WestHits2d_TPC:             [ gaushit2dTPCWW,
-                                     gaushit2dTPCWE
+                                     gaushit2dTPCWE,
+                                     combineHitsCryoW,
+                                     gaushitPT2dTPCWW,
+                                     gaushitPT2dTPCWE
                                    ]
 
 # Set up filtering of cluster3D hits by cryostat
@@ -383,6 +393,16 @@ icarus_stage1_producers.gaushit2dTPCWW.HitFinderToolVec.CandidateHitsPlane1.RoiT
 icarus_stage1_producers.gaushit2dTPCWW.HitFinderToolVec.CandidateHitsPlane2.RoiThreshold:      5.
 icarus_stage1_producers.gaushit2dTPCWW.HitFilterAlg.MinPulseHeight:                            [3., 3., 3.]
 
+# Setup version of hit finder's with Pulse Trains ("PT"s) enabled
+icarus_stage1_producers.gaushitPT2dTPCEE: @local::icarus_stage1_producers.gaushit2dTPCEE
+icarus_stage1_producers.gaushitPT2dTPCEE.LongMaxHits: [10, 10, 10]
+icarus_stage1_producers.gaushitPT2dTPCEW: @local::icarus_stage1_producers.gaushit2dTPCEW
+icarus_stage1_producers.gaushitPT2dTPCEW.LongMaxHits: [10, 10, 10]
+icarus_stage1_producers.gaushitPT2dTPCWE: @local::icarus_stage1_producers.gaushit2dTPCWE
+icarus_stage1_producers.gaushitPT2dTPCWE.LongMaxHits: [10, 10, 10]
+icarus_stage1_producers.gaushitPT2dTPCWW: @local::icarus_stage1_producers.gaushit2dTPCWW
+icarus_stage1_producers.gaushitPT2dTPCWW.LongMaxHits: [10, 10, 10]
+
 ## Overrides for filtering of cluster3D hits
 icarus_stage1_filters.TPCHitFilterCryoW.HitDataLabelVec: ["cluster3DCryoW"]
 icarus_stage1_filters.TPCHitFilterCryoW.MaximumHits:     60000
@@ -392,7 +412,8 @@ icarus_stage1_filters.TPCHitFilterCryoE.MaximumHits:     60000
 
 ## Definitions for running the 3D clustering by Cryostat
 icarus_stage1_producers.cluster3DCryoW.MakeSpacePointsOnly:                                      true
-icarus_stage1_producers.cluster3DCryoW.Hit3DBuilderAlg.HitFinderTagVec:                          ["gaushit2dTPCWW", "gaushit2dTPCWE"]
+# use the "PT" (pulse train) hits as input to cluster3D
+icarus_stage1_producers.cluster3DCryoW.Hit3DBuilderAlg.HitFinderTagVec:                          ["gaushitPT2dTPCWW", "gaushitPT2dTPCWE"]
 icarus_stage1_producers.cluster3DCryoW.Hit3DBuilderAlg.PulseHeightFraction:                      0. #0.75 #0.25
 icarus_stage1_producers.cluster3DCryoW.Hit3DBuilderAlg.PHLowSelection:                           0. #4.0 # 20.
 icarus_stage1_producers.cluster3DCryoW.Hit3DBuilderAlg.MaxHitChiSquare:                          1000000.
@@ -400,7 +421,7 @@ icarus_stage1_producers.cluster3DCryoW.Hit3DBuilderAlg.MaxMythicalChiSquare:    
 icarus_stage1_producers.cluster3DCryoW.Hit3DBuilderAlg.OutputHistograms:                         false
 
 icarus_stage1_producers.cluster3DCryoE.MakeSpacePointsOnly:                                      true
-icarus_stage1_producers.cluster3DCryoE.Hit3DBuilderAlg.HitFinderTagVec:                          ["gaushit2dTPCEW", "gaushit2dTPCEE"]
+icarus_stage1_producers.cluster3DCryoE.Hit3DBuilderAlg.HitFinderTagVec:                          ["gaushitPT2dTPCEW", "gaushitPT2dTPCEE"]
 icarus_stage1_producers.cluster3DCryoE.Hit3DBuilderAlg.PulseHeightFraction:                      0. #0.75 #0.25
 icarus_stage1_producers.cluster3DCryoE.Hit3DBuilderAlg.PHLowSelection:                           0. #4.0 # 20.
 icarus_stage1_producers.cluster3DCryoE.Hit3DBuilderAlg.MaxHitChiSquare:                          1000000.
@@ -410,6 +431,8 @@ icarus_stage1_producers.cluster3DCryoE.Hit3DBuilderAlg.OutputHistograms:        
 ### Definitions for Pandora by cryostat
 icarus_stage1_producers.pandoraGausCryoE.HitFinderModuleLabel:                                   "cluster3DCryoE"
 icarus_stage1_producers.pandoraGausCryoW.HitFinderModuleLabel:                                   "cluster3DCryoW"
+# icarus_stage1_producers.pandoraGausCryoW.HitCollectionTool.OverrhideHitLabels:                   ["gaushit2dTPCWW", "gaushit2dTPCWE"]
+# icarus_stage1_producers.pandoraGausCryoE.HitCollectionTool.OverrhideHitLabels:                   ["gaushit2dTPCEW", "gaushit2dTPCEE"]
 
 ### Definitions for Pandora tracks by cryostat
 icarus_stage1_producers.pandoraTrackGausCryoE.PFParticleLabel:                                   "pandoraGausCryoE"
@@ -434,5 +457,15 @@ icarus_stage1_producers.caloskimCalorimetryCryoW.TrackModuleLabel:              
 ## Switch pandora back to just gaushits?
 #icarus_stage1_producers.pandoraGausCryoW.ConfigFile:                                            "PandoraSettings_Master_ICARUS_RawICARUS.xml"
 #icarus_stage1_producers.pandoraGausCryoE.ConfigFile:                                            "PandoraSettings_Master_ICARUS_RawICARUS.xml"
+
+# Also fix hit label for CRT-(pandora) TPC tagging
+icarus_stage1_producers.CRTT0Tagging.HitLabel:                                                    ["combineHitsCryoE", "combineHitsCryoW"]
+
+# Override labels for ntupler
+icarus_stage1_analyzers.caloskimE.HITproducer: "combineHitsCryoE"
+icarus_stage1_analyzers.caloskimW.HITproducer: "combineHitsCryoW"
+
+# Set supera input fcl files
+icarus_stage1_analyzers.superaMC.supera_params: "supera_icarus_MC_all_cryo_PMT_CRT_v10.fcl"
 
 END_PROLOG

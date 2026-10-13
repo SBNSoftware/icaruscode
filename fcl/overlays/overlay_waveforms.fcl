@@ -108,5 +108,4 @@ outputs.rootOutput.outputCommands: ["keep *_*_*_*",
     "drop *_gaushitTPC*_*_*",
     "drop *_ophit*_*_*",
     "drop *_opflash*_*_*",
-    "drop *_crthit*_*_*",
     "drop *_crttrack*_*_*"] #TODO: drop raw waveforms that arent from this module. Keep wf from this module to feed to later stages
