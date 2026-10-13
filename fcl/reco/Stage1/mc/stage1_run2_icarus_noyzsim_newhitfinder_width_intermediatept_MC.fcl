@@ -1,0 +1,16 @@
+## File: stage1_run2_icarus_newhitfinder_width_intermediatept_MC.fcl 
+## Author: Mattia Sotgia (msotgia@ge.infn.it)
+## 
+## This FHiCL introduces the re-tuned hit-finder values and uses the hit widths in Pandora algorithms
+## Pulse trains are intermediate = 10.
+##
+
+
+#include "stage1_run2_icarus_noyzsim_newhitfinder_width_MC.fcl"
+
+
+# Intermediate pulse train settings
+physics.producers.gaushit2dTPCEE.LongMaxHits: [10, 10, 10]
+physics.producers.gaushit2dTPCEW.LongMaxHits: [10, 10, 10]
+physics.producers.gaushit2dTPCWE.LongMaxHits: [10, 10, 10]
+physics.producers.gaushit2dTPCWW.LongMaxHits: [10, 10, 10]

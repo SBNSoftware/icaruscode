@@ -1,0 +1,13 @@
+# File:    simulation_genie_icarus_bnb_volDetEnclosure_nue.fcl
+# Purpose: generate neutrino interactions from BNB in the whole DetEnclosure volume -- only nue
+# Date:    November 26, 2025
+# Author:  Mattia Sotgia (msotgia@ge.infn.it)
+# 
+# This configuration is based on `simulation_genie_icarus_bnb_volDetEnclosure.fcl`,
+# the only difference being that the generator flavour are only nue.
+#
+
+#include "simulation_genie_icarus_bnb_volDetEnclosure.fcl"
+
+physics.producers.generator.GenFlavors: [ 12, -12 ]
+
