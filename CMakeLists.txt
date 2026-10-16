@@ -46,7 +46,6 @@ cet_set_compiler_flags(DIAGS CAUTIOUS
 cet_report_compiler_flags(REPORT_THRESHOLD VERBOSE)
 
 #these are minimum required versions,not thea ctual product versions
-find_package(larsoft REQUIRED )
 find_package(libwda REQUIRED )
 find_package(PostgreSQL REQUIRED )
 find_package(Eigen3 REQUIRED )
