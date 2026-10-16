@@ -531,9 +531,9 @@ icarus::trigger::TriggerEfficiencyPlotsBase::TriggerEfficiencyPlotsBase
     if (fLogEventDetails.empty()) fLogEventDetails = fLogCategory;
   } // if EventDetailsLogCategory is specified
 
-  std::string const discrModuleLabel = config.TriggerGatesTag();
+  art::InputTag const& discrModuleTag = config.TriggerGatesTag();
   for (std::string const& threshold: config.Thresholds())
-    fADCthresholds[threshold] = art::InputTag{ discrModuleLabel, threshold };
+    fADCthresholds[threshold] = makeInputTag(discrModuleTag, threshold);
   
 
   if (config.EventTreeName.hasValue()) {
@@ -1495,6 +1495,20 @@ icarus::trigger::TriggerEfficiencyPlotsBase::makeEdepTag(
   }
   
 } // icarus::trigger::MakeTriggerSimulationTree::makeEdepTag()
+
+
+//------------------------------------------------------------------------------
+art::InputTag icarus::trigger::TriggerEfficiencyPlotsBase::makeInputTag
+  (art::InputTag const& defModule, std::string const& thresholdStr)
+{
+  if (!thresholdStr.empty() && !defModule.instance().empty()) {
+    throw art::Exception(art::errors::Configuration)
+      << "Module tag instance name (`TriggerGatesTag`: '"
+      << defModule.encode() << "') and the threshold '" << thresholdStr
+      << "' are both set. One of them must be empty.\n";
+  }
+  return { defModule.label(), thresholdStr, defModule.process() };
+} // icarus::trigger::TriggerEfficiencyPlotsBase::makeInputTag()
 
 
 //------------------------------------------------------------------------------

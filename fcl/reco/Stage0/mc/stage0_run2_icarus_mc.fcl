@@ -7,6 +7,8 @@
 
 process_name: MCstage0
 
+#include "override_services_for_simulation.fcl"
+
 ## Add the MC module to the list of producers
 physics.producers: {  @table::icarus_stage0_producers
                       @table::icarus_stage0_mc_producers
@@ -25,6 +27,9 @@ physics.outana:        [ purityinfoana0, purityinfoana1 ]
 physics.trigger_paths: [ path ]
 physics.end_paths:     [ outana, streamROOT ]
 
+# because `path` above has no filter, let's not select events and give fast cloning a chance
+outputs.rootOutput.SelectEvents: @erase
+
 # Drop data products that are no longer needed, but make sure to keep important items!
 # For example, we need to drop the RawDigits from the detector simulation stage but want to keep the SimChannel info from WireCell...
 outputs.rootOutput.outputCommands: ["keep *_*_*_*", 
@@ -39,9 +44,6 @@ outputs.rootOutput.outputCommands: ["keep *_*_*_*",
                                     "keep *_daq_simpleSC*_*",
                                     "keep *_daqPMT_*_*"
 ]
-
-# Set the expected input for ophit
-physics.producers.ophit.InputModule: "shifted"
 
 # Note the default assumption is that our detector simulation input will come from the WireCell 2D drift simulation, a la 'daq'
 # If we are running the 1D drift simulation we need to switch to using:
@@ -67,3 +69,9 @@ physics.producers.purityana1.RawModuleLabel:   ["MCDecodeTPCROI:PHYSCRATEDATATPC
 
 # restore legacy G4 labels
 physics.producers.mcophit.SimPhotonsProducer: "shifted"
+
+# set RUN-2 tune for optical reconstruction
+physics.producers.ophit.SPEArea: @local::SPERun2.Area
+physics.producers.ophit.SPEShift: @local::SPERun2.Shift
+physics.producers.mcophit.SPEArea: @local::SPERun2.Area
+physics.producers.mcophit.SPEAmplitude: @local::SPERun2.Amplitude

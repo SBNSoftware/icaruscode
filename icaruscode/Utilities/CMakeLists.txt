@@ -41,7 +41,20 @@ cet_build_plugin(DumpCRTPMTMatching art::module LIBRARIES
 		icaruscode::IcarusObj
 		sbnobj::Common_CRT
 		lardataobj::RecoBase
-		canvas::canvas
+	)
+
+cet_build_plugin(DataProductReader art::module LIBRARIES
+		icaruscode::IcarusObj
+		icarusalg::Utilities
+		larcorealg::CoreUtils
+		sbnobj::Common_CRT
+		sbnobj::Common_Trigger
+		sbnobj::ICARUS_CRT
+		sbnobj::ICARUS_PMT_Data
+		sbnobj::ICARUS_PMT_Trigger_Data
+		lardataobj::RawData
+		lardataobj::RecoBase
+		lardataobj::Simulation
 	)
 
 cet_build_plugin(DummyFilter art::module)

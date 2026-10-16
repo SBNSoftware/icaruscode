@@ -25,16 +25,17 @@
 //--------------------------------------------------------------------------------
 
 icarusDB::PMTTimingCorrectionsProvider::PMTTimingCorrectionsProvider
-    (const fhicl::ParameterSet& pset) 
+    (const fhicl::ParameterSet& pset)
     : fVerbose{ pset.get<bool>("Verbose", false) }
     , fLogCategory{ pset.get<std::string>("LogCategory", "PMTTimingCorrection") }
-    { 
+    , fOverrideRunNumber{ pset.get<int>("OverrideRunNumber", -1) }
+    {
         fhicl::ParameterSet const tags{ pset.get<fhicl::ParameterSet>("CorrectionTags") };
         fCablesTag  = tags.get<std::string>("CablesTag");
         fLaserTag   = tags.get<std::string>("LaserTag");
         fCosmicsTag = tags.get<std::string>("CosmicsTag");
         if( fVerbose ) mf::LogInfo(fLogCategory) << "Database tags for timing corrections:\n"
-						 << "Cables corrections  " << fCablesTag << "\n"  
+						 << "Cable corrections   " << fCablesTag << "\n"  
 						 << "Laser corrections   " << fLaserTag  << "\n"
 						 << "Cosmics corrections " << fCosmicsTag;
     }
@@ -210,12 +211,21 @@ void icarusDB::PMTTimingCorrectionsProvider::ReadCosmicsCorrections( uint32_t ru
 /// is the PMT channel number
 void icarusDB::PMTTimingCorrectionsProvider::readTimeCorrectionDatabase(const art::Run& run){
 
+    uint32_t runNumber = run.id().run();
+
+    if (fOverrideRunNumber >= 0) {
+        mf::LogInfo(fLogCategory)
+            << "Overriding run number " << runNumber << " with " << fOverrideRunNumber
+            << " for DB queries.";
+        runNumber = static_cast<uint32_t>(fOverrideRunNumber);
+    }
+
     // Clear before the run
     fDatabaseTimingCorrections.clear();
 
-    ReadPMTCablesCorrections(run.id().run());
-    ReadLaserCorrections(run.id().run());
-    ReadCosmicsCorrections(run.id().run());
+    ReadPMTCablesCorrections(runNumber);
+    ReadLaserCorrections(runNumber);
+    ReadCosmicsCorrections(runNumber);
 
     if( fVerbose ) {
 

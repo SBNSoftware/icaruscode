@@ -1,5 +1,4 @@
 #include "icarus_flashalgo.fcl"
-#include "icarus_flashcalib.fcl"
 
 BEGIN_PROLOG
 
@@ -9,7 +8,6 @@ ICARUSSimpleFlash:
   FlashFinderAlgo : "SimpleFlashAlgo"
   AlgoConfig      : @local::SimpleFlashStandard
   OpHitProducer   : "ophit"
-  PECalib         : @local::icarus_pmt_calibration.CalibStandard
 }
 
 ICARUSSimpleFlashCryoE: @local::ICARUSSimpleFlash
