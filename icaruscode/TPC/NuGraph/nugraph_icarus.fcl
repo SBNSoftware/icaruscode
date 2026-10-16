@@ -31,6 +31,7 @@ NuGraphCryoE: @local::NuGraphLibTorch
 NuGraphCryoE.LoaderTool.tool_type: "ICARUSNuGraphLoader"
 NuGraphCryoE.LoaderTool.hitInput: "nuslhitsCryoE"
 NuGraphCryoE.LoaderTool.spsInput: "nuslhitsCryoE"
+NuGraphCryoE.DecoderTools.FilterDecoderTool.hitInput: "nuslhitsCryoE"
 NuGraphCryoE.DecoderTools.SemanticDecoderTool.hitInput: "nuslhitsCryoE"
 NuGraphCryoE.avgs_u: [168.04594 , 178.3245  , 266.6149 , 3.857218 ]
 NuGraphCryoE.avgs_v: [1245.3547 , 176.54117 , 323.52786, 4.3267984]
@@ -44,6 +45,7 @@ NuGraphCryoE.modelFileName: "model_mpvmpr_bnb_numu_cos.pt"
 NuGraphCryoW: @local::NuGraphCryoE
 NuGraphCryoW.LoaderTool.hitInput: "nuslhitsCryoW"
 NuGraphCryoW.LoaderTool.spsInput: "nuslhitsCryoW"
+NuGraphCryoW.DecoderTools.FilterDecoderTool.hitInput: "nuslhitsCryoW"
 NuGraphCryoW.DecoderTools.SemanticDecoderTool.hitInput: "nuslhitsCryoW"
 
 NGMultiSliceCryoE: @local::NuGraphCryoE
