@@ -581,7 +581,7 @@ namespace crt {
   	    fHitSubSys =  fCrtutils->MacToTypeCode(mactmp);
   	    std::fill( std::begin( fHitPE ), std::end( fHitPE ), -1 );
   	    std::fill( std::begin( fHitMac ), std::end( fHitMac ), -1 );
-  	    std::fill( std::begin( fHitMac ), std::end( fHitChan ), -1 );
+  	    std::fill( std::begin( fHitChan ), std::end( fHitChan ), -1 );
   	    m_gate_crt_diff = m_gate_start_timestamp - hit.ts0_ns;
   	    m_crt_global_trigger = hit.ts0_ns - hit.ts1_ns;
   	    m_crtGT_trig_diff = m_crt_global_trigger - (m_trigger_timestamp%1'000'000'000);//'''						      
