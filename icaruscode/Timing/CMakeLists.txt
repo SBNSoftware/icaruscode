@@ -37,6 +37,8 @@ cet_build_plugin( PMTTimingCorrectionService art::service LIBRARIES PUBLIC ${SER
 
 cet_build_plugin( PMTBeamSignalsExtractor art::producer LIBRARIES PUBLIC ${MODULE_LIBRARIES})
 
+cet_build_plugin( PMTBeamSignalNamespaceConverter art::producer LIBRARIES PUBLIC ${MODULE_LIBRARIES})
+
 install_headers()
 install_fhicl()
 install_source()
