@@ -1,0 +1,72 @@
+#include "ICARUSCVNMapper.fcl"
+#include "simulationservices_icarus.fcl"
+#include "services_common_icarus.fcl"
+#include "rootoutput_icarus.fcl"
+#include "services_icarus_simulation.fcl"
+#include "sam_icarus.fcl"
+#include "signalservices_icarus.fcl"
+
+process_name: ICARUSCVNMAPPER
+
+services:
+{
+  RandomNumberGenerator:     	 {}                                   # required by fuzzyCluster
+  message:                     @local::icarus_message_services_prod 
+  FileCatalogMetadata:       	 @local::art_file_catalog_mc          # from sam_icarus.fcl
+                               @table::icarus_basic_services
+                             	 @table::icarus_common_services      
+  SignalShapingICARUSService: @local::icarus_signalshapingservice
+  #SignalShapingICARUSService:  @local::icarus_wirecalibration_minimum_services  # from services_icarus_simulation.fcl
+  ParticleInventoryService:  	 @local::standard_particleinventoryservice
+}
+
+source:
+{
+  module_type: RootInput
+  maxEvents:  -1
+}
+
+physics:
+{
+ producers:{
+      icaruspixelmapeast: @local::standard_cvnmapper_east
+      icaruspixelmapwest: @local::standard_cvnmapper_west
+ }
+ 
+ filters:  {} 
+ 
+ analyzers:{}
+ 
+ reco: [ icaruspixelmapeast, icaruspixelmapwest ]
+ 
+ stream: [ out ]
+ 
+ trigger_paths: [ reco ] 
+ 
+ end_paths: [ stream ]
+}
+
+outputs:
+{
+ out:
+ {
+   module_type: RootOutput
+   dataTier: "reconstructed"
+   SelectEvents: [ reco ]
+   fileName: @local::icarus_rootoutput.fileName
+ } 
+}
+
+outputs.out.outputCommands: [
+      "keep *_*_*_*",
+      "drop recob::Showers_*_*_*",
+      "drop recob::Tracks_*_*_*",
+      "drop recob::OpHits_*_*_*",
+      "drop recob::Clusters_*_*_*",
+      "drop recob::SpacePoints_*_*_*",
+      "drop anab::Calorimetrys_*_*_*",
+      "drop anab::anab::ParticleIDs_*_*_*",
+      "drop recob::OpFlashs_*_*_*"
+]
+
+
