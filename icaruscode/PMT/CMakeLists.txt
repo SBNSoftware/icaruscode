@@ -117,7 +117,7 @@ cet_build_plugin(CustomPulseFunctionTool art::tool
 cet_build_plugin(PMTconstantPedestalGeneratorTool art::tool
   LIBRARIES
     icaruscode::PMT_Algorithms
-    lardata::DetectorInfoServices_DetectorClocksServiceStandard_service
+    lardata::DetectorClocksService
     lardataalg::DetectorInfo
     lardataobj::RawData
   )
@@ -125,7 +125,7 @@ cet_build_plugin(PMTconstantPedestalGeneratorTool art::tool
 cet_build_plugin(PMTgausNoiseGeneratorTool art::tool
   LIBRARIES
     icaruscode::PMT_Algorithms
-    lardata::DetectorInfoServices_DetectorClocksServiceStandard_service
+    lardata::DetectorClocksService
     lardataalg::DetectorInfo
     lardataobj::RawData
   )
@@ -133,7 +133,7 @@ cet_build_plugin(PMTgausNoiseGeneratorTool art::tool
 cet_build_plugin(PMTfastGausNoiseGeneratorTool art::tool
   LIBRARIES
     icaruscode::PMT_Algorithms
-    lardata::DetectorInfoServices_DetectorClocksServiceStandard_service
+    lardata::DetectorClocksService
     lardataalg::DetectorInfo
     lardataobj::RawData
   )
@@ -141,7 +141,7 @@ cet_build_plugin(PMTfastGausNoiseGeneratorTool art::tool
 cet_build_plugin(PMTnoNoiseGeneratorTool art::tool
   LIBRARIES
     icaruscode::PMT_Algorithms
-    lardata::DetectorInfoServices_DetectorClocksServiceStandard_service
+    lardata::DetectorClocksService
     lardataalg::DetectorInfo
     lardataobj::RawData
   )
@@ -151,7 +151,7 @@ cet_build_plugin(CopyBeamTimePMTwaveforms art::module
     icaruscode::PMT_Data
     icarusalg::Utilities
     sbnobj::ICARUS_PMT_Data
-    lardata::DetectorInfoServices_DetectorClocksServiceStandard_service
+    lardata::DetectorClocksService
     lardataalg::DetectorInfo
     lardataobj::RawData
   )
@@ -244,7 +244,7 @@ cet_build_plugin(RequireOnBeamWaveforms art::module
   LIBRARIES
     icaruscode::IcarusObj
     icarusalg::Utilities
-    lardata::DetectorInfoServices_DetectorClocksServiceStandard_service
+    lardata::DetectorClocksService
     larcore::Geometry_Geometry_service
     larcore::headers
     lardataalg::DetectorInfo
