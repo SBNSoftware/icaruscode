@@ -2,7 +2,6 @@
 #include "services_icarus_simulation.fcl"
 #include "backtracker.fcl"
 #include "singles_icarus.fcl"
-#include "largeantmodules_icarus.fcl"
 #include "detsimmodules_ICARUS.fcl"
 #include "mccheatermodules.fcl"
 #include "photpropservices.fcl"

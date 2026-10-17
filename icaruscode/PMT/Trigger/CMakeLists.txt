@@ -26,7 +26,7 @@ art_make_library(
 		larcorealg::Geometry
 		lardataobj::RawData
 		lardata::Utilities
-		lardata::DetectorInfoServices_DetectorClocksServiceStandard_service
+		lardata::DetectorClocksService
 		nusimdata::SimulationBase
 		art_root_io::TFileService_service
 		art_root_io::tfile_support
@@ -61,7 +61,7 @@ set(	MODULE_LIBRARIES
 		sbnobj::ICARUS_PMT_Trigger_Data
 		lardataalg::DetectorInfo
 		lardataobj::RawData
-		lardata::DetectorInfoServices_DetectorClocksServiceStandard_service
+		lardata::DetectorClocksService
 		messagefacility::MF_MessageLogger
 		fhiclcpp::fhiclcpp
 		larcore::Geometry_Geometry_service
@@ -105,7 +105,7 @@ cet_build_plugin(DiscriminatePMTwaveformsByChannel art::module
   icaruscode::PMT_Algorithms
   lardataobj::RawData
   lardata::Utilities
-  lardata::DetectorInfoServices_DetectorClocksServiceStandard_service
+  lardata::DetectorClocksService
   larcore::Geometry_Geometry_service
   art::Framework_Services_Registry
   art::Framework_Principal
@@ -145,7 +145,7 @@ cet_build_plugin(SlidingWindowTrigger art::module
 		larcore::Geometry_Geometry_service
 		larcorealg::Geometry
 		lardata::Utilities
-		lardata::DetectorInfoServices_DetectorClocksServiceStandard_service
+		lardata::DetectorClocksService
 		lardataobj::RawData
 		art::Framework_Services_Registry
 		art::Framework_Principal
@@ -166,7 +166,7 @@ cet_build_plugin(MajorityTriggerSimulation art::module
 		larcorealg::Geometry
 		lardata::Utilities
 		lardataobj::RawData
-		lardata::DetectorInfoServices_DetectorClocksServiceStandard_service
+		lardata::DetectorClocksService
 		art_root_io::TFileService_service
 		art_root_io::tfile_support
 		art::Framework_Services_Registry
@@ -183,7 +183,7 @@ cet_build_plugin(SlidingWindowTriggerSimulation art::module
 		larcorealg::Geometry
 		lardataobj::RawData
 		lardata::Utilities
-		lardata::DetectorInfoServices_DetectorClocksServiceStandard_service
+		lardata::DetectorClocksService
 		art_root_io::TFileService_service
 		art_root_io::tfile_support
 		art::Framework_Services_Registry
@@ -229,7 +229,7 @@ cet_build_plugin(TriggerEfficiencyPlots art::module
 		larcorealg::Geometry
 		lardataobj::RawData
 		lardata::Utilities
-		lardata::DetectorInfoServices_DetectorClocksServiceStandard_service
+		lardata::DetectorClocksService
 		nusimdata::SimulationBase
 		art_root_io::TFileService_service
 		art_root_io::tfile_support
@@ -254,7 +254,7 @@ cet_build_plugin(MakeTriggerSimulationTree art::module
 		larcore::Geometry_Geometry_service
 		lardataalg::MCDumpers
 		lardata::Utilities
-		lardata::DetectorInfoServices_DetectorClocksServiceStandard_service
+		lardata::DetectorClocksService
 		larcorealg::Geometry
 		nusimdata::SimulationBase
 		art_root_io::TFileService_service
@@ -302,7 +302,7 @@ foreach(TriggerEfficiencyPlotsModule
 		larcore::Geometry_Geometry_service
 		lardataalg::MCDumpers
 		lardata::Utilities
-		lardata::DetectorInfoServices_DetectorClocksServiceStandard_service
+		lardata::DetectorClocksService
 		larcorealg::Geometry
 		lardataobj::RawData
 		nusimdata::SimulationBase

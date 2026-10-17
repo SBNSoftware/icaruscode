@@ -10,16 +10,16 @@
 #  make test
 #  make install
 #  make package (builds distribution tarfile)
-# ======================================================================
+# ======================================================================  
 
 
 cmake_minimum_required(VERSION 3.20 FATAL_ERROR)
 # cmake_policy(VERSION 3.19)
 
 find_package(cetmodules 3.24.01 REQUIRED)
-#project(icaruscode VERSION 10.06.00.01 LANGUAGES CXX)
+#project(icaruscode VERSION 10.25.00 LANGUAGES CXX)
 
-set(${PROJECT_NAME}_CMAKE_PROJECT_VERSION_STRING 10.06.00.01-p03)
+set(${PROJECT_NAME}_CMAKE_PROJECT_VERSION_STRING 10.25.00)
 project(icaruscode LANGUAGES CXX)
 
 message(STATUS
@@ -46,7 +46,6 @@ cet_set_compiler_flags(DIAGS CAUTIOUS
 cet_report_compiler_flags(REPORT_THRESHOLD VERBOSE)
 
 #these are minimum required versions,not thea ctual product versions
-find_package(larsoft REQUIRED )
 find_package(libwda REQUIRED )
 find_package(PostgreSQL REQUIRED )
 find_package(Eigen3 REQUIRED )
@@ -54,6 +53,7 @@ find_package(ifbeam REQUIRED )
 find_package(ifdhc REQUIRED )
 find_package(ifdh_art REQUIRED )
 find_package(Range-v3 REQUIRED )
+find_package(sbnalg REQUIRED )
 find_package(sbnobj REQUIRED )
 find_package(icarus_signal_processing REQUIRED )
 find_package(icarusalg REQUIRED )
@@ -69,6 +69,7 @@ find_package(lardata REQUIRED )
 find_package(larsim REQUIRED )
 find_package(larevt REQUIRED )
 find_package(larreco REQUIRED )
+find_package(larrecodnn REQUIRED )
 find_package(larana REQUIRED )
 find_package(larpandora REQUIRED )
 find_package(larpandoracontent REQUIRED )
