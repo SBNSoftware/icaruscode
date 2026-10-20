@@ -19,7 +19,7 @@ cmake_minimum_required(VERSION 3.20 FATAL_ERROR)
 find_package(cetmodules 3.24.01 REQUIRED)
 #project(icaruscode VERSION 10.25.00 LANGUAGES CXX)
 
-set(${PROJECT_NAME}_CMAKE_PROJECT_VERSION_STRING 10.25.00)
+set(${PROJECT_NAME}_CMAKE_PROJECT_VERSION_STRING 10.27.00)
 project(icaruscode LANGUAGES CXX)
 
 message(STATUS
