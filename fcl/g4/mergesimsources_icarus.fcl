@@ -52,6 +52,7 @@ icarus_merge_intime_dropped_mcparts:
 {
     @table::icarus_merge_sim_sources
     module_type: "MergeSimSourcesSBN"
+    SkipTrackIDOffsets: @erase
     InputSourcesLabels: ["larg4intime:droppedMCParticles","larg4outtime:droppedMCParticles"]
     FillMCParticles: true
     FillMCParticlesLite: false
