@@ -85,7 +85,7 @@ class lariov::TPCchannelStatusDBdumper {
   /// Configures and sets up the algorithm.
   TPCchannelStatusDBdumper(
     Config const& config,
-    lariov::ChannelStatusProvider& channelStatus, unsigned int nChannels
+    lariov::ChannelStatusProvider const& channelStatus, unsigned int nChannels
     );
   
   /// Returns the configured number of channels.

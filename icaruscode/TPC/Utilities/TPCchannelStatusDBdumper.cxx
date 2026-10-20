@@ -29,7 +29,7 @@
 // -----------------------------------------------------------------------------
 lariov::TPCchannelStatusDBdumper::TPCchannelStatusDBdumper(
   Config const& config,
-  lariov::ChannelStatusProvider& channelStatus, unsigned int nChannels
+  lariov::ChannelStatusProvider const& channelStatus, unsigned int nChannels
 )
   : fPrintChannels{ config.PrintIndividualChannels() }
   , fPrintSummary { config.PrintSummary() }
@@ -79,7 +79,7 @@ void lariov::TPCchannelStatusDBdumper::dump(std::ostream& out) const {
       }
     }
     catch(lariov::IOVDataError const&) {
-      out << "\nCount of NOISY channels not available.";
+      out << "\nCount of BAD channels not available.";
     }
     
     try {
@@ -93,7 +93,7 @@ void lariov::TPCchannelStatusDBdumper::dump(std::ostream& out) const {
       }
     }
     catch(lariov::IOVDataError const&) {
-      out << "\nCount of BAD channels not available.";
+      out << "\nCount of NOISY channels not available.";
     }
     
     try {
@@ -111,7 +111,7 @@ void lariov::TPCchannelStatusDBdumper::dump(std::ostream& out) const {
     }
   } // if print summary
   
-} // TPCchannelStatusDBdumper::dumpCurrentTimestamp()
+} // TPCchannelStatusDBdumper::dump()
 
 
 // -----------------------------------------------------------------------------

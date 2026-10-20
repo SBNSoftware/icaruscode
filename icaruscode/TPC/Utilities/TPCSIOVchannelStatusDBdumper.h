@@ -62,11 +62,8 @@ namespace lariov { class TPCSIOVchannelStatusDBdumper; }
  * Configuration
  * --------------
  * 
- * 
- * * `PrintIndividualChannels` (flag, default: `false`): if set, one line will
- *    be printed for each channel, showing its status.
- * * `PrintSummary` (flag, default: `true`): if set, the list of noisy and of
- *    bad channels will be printed, together with a count of good channels.
+ * The configuration is passed directly to `lariov::TPCchannelStatusDBdumper`.
+ * See its documentation for the configuration parameters.
  * 
  */
 class lariov::TPCSIOVchannelStatusDBdumper {

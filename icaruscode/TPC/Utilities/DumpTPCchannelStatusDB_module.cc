@@ -96,11 +96,9 @@
  *    sequence of timestamps to query about. To dump the latest settings, a safe
  *    timestamp is a large one like `2'000'000'000'000'000'000` (2e18, which
  *    is also the only timestamp in the default value).
- * * `PrintIndividualChannels` (flag, default: `false`): if set, one line will
- *    be printed for each channel, showing its status.
- * * `PrintSummary` (flag, default: `true`): if set, the list of noisy and of
- *    bad channels will be printed, together with a count of good channels.
- * * `SIOVChannelStatusProviderConfig` (parameter table): configuration of the
+ * * `DumperSettings` (parameter table): configuration of the dumping
+ *    algorithm: see `lariov::TPCSIOVchannelStatusDBdumper` documentation.
+ * * `ProviderConfiguration` (parameter table): configuration of the
  *    service provider of type `lariov::SIOVChannelStatusProvider` used to
  *    access the database. It can be copied from the official experiment one
  *    if the experiment normally uses that provider.
