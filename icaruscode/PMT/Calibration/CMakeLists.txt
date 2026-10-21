@@ -2,11 +2,11 @@ add_subdirectory(CaloTools)
 add_subdirectory(fcl)
 
 cet_build_plugin(PMTLaserCalibration art::module
-                    LIBRARIES
-                icaruscode_PMT_Algorithms
-                icaruscode_PMT_Calibration_CaloTools
-                icaruscode_IcarusObj
-		lardataobj::RawData
+                    LIBRARIES PRIVATE
+                icaruscode::PMT_Algorithms
+                icaruscode::PMT_Calibration_CaloTools
+                icaruscode::IcarusObj
+                lardataobj::RawData
                 lardataobj::Simulation
                 lardataobj::RecoBase
                 art::Framework_Core
@@ -24,9 +24,9 @@ cet_build_plugin(PMTLaserCalibration art::module
               )
 
 cet_build_plugin(PMTBackgroundphotonsCalibration art::module
-                    LIBRARIES
-                icaruscode_PMT_Algorithms
-                icaruscode_PMT_Calibration_CaloTools
+                    LIBRARIES PRIVATE
+                icaruscode::PMT_Algorithms
+                icaruscode::PMT_Calibration_CaloTools
                 lardataobj::RawData
                 lardataobj::Simulation
                 lardataobj::RecoBase
@@ -45,13 +45,13 @@ cet_build_plugin(PMTBackgroundphotonsCalibration art::module
               )
 
 
-art_make_exec(  NAME 
+cet_make_exec(  NAME
                     fitPulseDistribution 
                 SOURCE 
                     fitPulseDistribution.cc
                 LIBRARIES
-                    icaruscode_PMT_Algorithms
-                    icaruscode_PMT_Calibration_CaloTools
+                    icaruscode::PMT_Algorithms
+                    icaruscode::PMT_Calibration_CaloTools
               )
 
 

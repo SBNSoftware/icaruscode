@@ -1,5 +1,5 @@
 cet_build_plugin(CRTTzeroProducer art::module
-     LIBRARIES
+     LIBRARIES PRIVATE
         larcorealg::Geometry
         sbnobj::ICARUS_CRT
         sbnobj::Common_CRT
@@ -15,7 +15,7 @@ cet_build_plugin(CRTTzeroProducer art::module
         )
 
 cet_build_plugin(CRTT0Matching art::module
-     LIBRARIES
+     LIBRARIES PRIVATE
           sbnobj::Common_CRT
           icaruscode_CRTUtils
           larcore::Geometry_Geometry_service
@@ -52,7 +52,7 @@ cet_build_plugin(CRTT0Matching art::module
    
    
 cet_build_plugin(CRTT0MatchingAna art::module
-     LIBRARIES
+     LIBRARIES PRIVATE
           sbnobj::ICARUS_CRT
           sbnobj::Common_CRT
           icaruscode_CRTUtils
