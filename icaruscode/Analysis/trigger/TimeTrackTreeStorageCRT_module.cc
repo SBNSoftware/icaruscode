@@ -17,7 +17,7 @@
 #include "icaruscode/Utilities/TrajectoryUtils.h"
 #include "icaruscode/Utilities/ArtAssociationCaches.h" // OneToOneAssociationCache
 #include "icarusalg/Utilities/TrackTimeInterval.h"
-#include "icarusalg/Utilities/AssnsCrosser.h"
+#include "sbnalg/Utilities/AssnsCrosser.h"
 #include "sbnobj/Common/CRT/CRTHit.hh"
 #include "sbnobj/Common/Trigger/ExtraTriggerInfo.h"
 
@@ -697,7 +697,7 @@ void sbn::TimeTrackTreeStorage::analyze(art::Event const& e)
   art::FindOneP<anab::T0> TrackT0s(tracks,e,fT0selProducer);
 
   // t0 from TPC (cathode crossing tracks)
-  icarus::ns::util::AssnsCrosser<recob::Track, recob::PFParticle, anab::T0> const
+  sbn::ns::util::AssnsCrosser<recob::Track, recob::PFParticle, anab::T0> const
   TrackTPCt0s{ e, fPFPproducer, fT0Producer };
 
   // optical flashes

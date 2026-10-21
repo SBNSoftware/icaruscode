@@ -61,11 +61,8 @@ icarus_stage0_mc_PMT:  [
                          opflashCryoW
                        ]
 
-icarus_stage0_mc_crt:  [ crthit,
-                         #crttzero
-                         crttrack,
-                       	 crtpmt
-		       ]
+icarus_stage0_mc_crthit:  [crthit]
+icarus_stage0_mc_crtreco: [crttrack, crtpmt]
 
 # adapt input labels
 icarus_stage0_mc_producers.emuTrigger.BeamGates:               shifted

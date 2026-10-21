@@ -89,10 +89,12 @@ TPCNoiseFilter1DTool: {
     NSigmaForTrucation: 3.5
     StructuringElement: 16
     FilterWindow:       10
-    Threshold:          [1.0,1.0,1.0]
+    Threshold:          [20.0,12.,12.]  #--> for PCA: [5.0,3.5,3.5] 
     FilterModeVec:      ["e","g","d"]
     LowFreqCorrection:  true
     UseFFTFilter:       false
+    RemoveBadChannels:  true
+    RemoveBadRMS:       false
     FFTSigmaVals:       [ [1.5,20.], [1.5,20.], [1.5,20.] ]
     FFTCutoffVals:      [ [8.,800.], [8.,800.], [4.0,800.] ]
     FragmentIDMap:      [ [0,0x140C], [1,0x140E], [2,0x1410], [6,0x1414], [8,0x150E], [9,0x1510] ]

@@ -1,0 +1,38 @@
+#include "crtmatchingalg_icarus.fcl"
+
+BEGIN_PROLOG
+
+icarus_crtt0tagging_data:
+{
+   @table::icarus_crtt0tagging_base
+   isData:                 true    # Data
+   skipTruth:              false   # skipTruth
+
+   module_type:         "CRTT0Tagging"
+   CrtHitModuleLabel:  "crthit"
+   TPCTrackLabel:       ["pandoraTrackGausCryoE", "pandoraTrackGausCryoW"]     # Track producer module label
+   PFParticleLabel: 	   ["pandoraGausCryoE", "pandoraGausCryoW"] # PFParticle producer module label
+   TRKHMLabel:  ["pandoraTrackGausCryoE", "pandoraTrackGausCryoW"]     # TrackHit Metadata producer module label
+   HitLabel:   ["cluster3DCryoE" , "cluster3DCryoW"]
+   MatchingAlg: @local::icarus_crtmatchingalg
+}
+
+icarus_crtt0taggingmc:
+{
+   @table::icarus_crtt0tagging_base
+   isData:                 false   # MC
+   skipTruth:              false   # skipTruth
+
+   module_type:         "CRTT0Tagging"
+   CrtHitModuleLabel:  "crthit"
+   TPCTrackLabel:       ["pandoraTrackGausCryoE", "pandoraTrackGausCryoW"]     # Track producer module label
+   PFParticleLabel: 	   ["pandoraGausCryoE", "pandoraGausCryoW"] # PFParticle producer module label
+   TRKHMLabel:  ["pandoraTrackGausCryoE", "pandoraTrackGausCryoW"]     # TrackHit Metadata producer module label
+   HitLabel:   ["cluster3DCryoE" , "cluster3DCryoW"]
+   MatchingAlg: @local::icarus_crtmatchingalg
+   SimulationLabel: "largeant"
+   AuxDetSimProducerLabel: "genericcrt"
+   SimChannelProducer:  "daq:simpleSC"
+}
+
+END_PROLOG

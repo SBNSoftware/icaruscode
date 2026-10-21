@@ -1,0 +1,43 @@
+#include "services_common_icarus.fcl"
+#include "channelmapping_icarus.fcl"
+
+#include "correctionservices_icarus.fcl"
+
+#include "cafmaker_defs.fcl"
+
+process_name: CAFmaker
+
+services:
+{
+  @table::icarus_wirecalibration_minimum_services
+  @table::icarus_random_services  # from services_common_icarus.fcl
+
+  SpaceChargeService: @local::icarus_spacecharge
+}
+
+physics:
+{
+ 
+  producers: {
+    @table::caf_preprocess_data_producers
+  }
+
+  runprod: [ @sequence::caf_preprocess_data_sequence, cafmaker]
+  trigger_paths: [ runprod ] 
+}
+
+physics.producers.cafmaker.G4Label: ""
+physics.producers.cafmaker.GenLabel: ""
+physics.producers.cafmaker.SimChannelLabel: ""
+physics.producers.cafmaker.SystWeightLabels: []
+physics.producers.cafmaker.SaveGENIEEventRecord: false
+
+physics.producers.cafmaker.TriggerLabel: "daqTrigger" # the general configuration, for MC, has a different one (see also https://github.com/SBNSoftware/icaruscode/issues/556)
+
+## Grab the second-pass Pandora reconstruction, after NuGraph2's filter
+physics.producers.cafmaker.PFParticleLabel: "pandoraGausNuGraphReco"
+
+## Use NuGraph2's PID after NuGraph2's filter
+physics.producers.cafmaker.UsePandoraAfterNuGraph: true
+physics.producers.cafmaker.NuGraphFilterLabel: "ngfilteredhits:filter"
+physics.producers.cafmaker.NuGraphSemanticLabel: "ngfilteredhits:semantic"

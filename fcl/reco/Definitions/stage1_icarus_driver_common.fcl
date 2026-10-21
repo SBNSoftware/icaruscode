@@ -86,3 +86,6 @@ services.message.destinations :
      }
   }
 }
+
+# set hit thresholds at DNN levels
+#include "enable_dnn_hitthresh.fcl"

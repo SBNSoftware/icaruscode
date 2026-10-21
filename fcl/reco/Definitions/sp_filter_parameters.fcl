@@ -1,0 +1,15 @@
+BEGIN_PROLOG
+Wiener_tight_U_sigma: 0.065
+Wiener_tight_U_power: 4.4
+Wiener_tight_V_sigma: 0.065
+Wiener_tight_V_power: 2.6
+Wiener_tight_W_sigma: 0.07
+Wiener_tight_W_power: 3.4
+
+Wire_ind_sigma: 0.4
+Wire_col_sigma: 2.2
+
+Gaus_wide_sigma: 0.06
+
+gain_ADC_per_e: 0.01214 # ADC / e-. For frame_scale
+END_PROLOG

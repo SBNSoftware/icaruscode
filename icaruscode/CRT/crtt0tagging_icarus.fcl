@@ -1,0 +1,28 @@
+#include "services_common_icarus.fcl"
+#include "crtt0tagging.fcl"
+#include "rootoutput_icarus.fcl"
+
+process_name: CRTT0Tagging
+
+services:
+{  
+  message:                @local::icarus_message_services_prod_debug
+                          @table::icarus_common_services
+  TFileService:           { fileName: "crtt0tagging_hist.root" }
+} # services
+
+outputs.out1: @local::icarus_rootoutput
+
+# The 'physics' section defines and configures some modules to do work on each event.
+physics:
+{
+  producers:
+  {
+    CRTT0Tagging: @local::icarus_crtt0tagging_data
+  }
+
+  # Schedule job step(s) for execution by defining the analysis module for this job.
+  reco: [ CRTT0Tagging ]
+
+  stream1: [ out1 ]
+}

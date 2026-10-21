@@ -5,6 +5,7 @@
 
 #include "services_common_icarus.fcl"
 
+#include "hitfindermodules_icarus.fcl"
 #include "cluster_icarus.fcl"
 #include "trackfindermodules_icarus.fcl"
 #include "showerfindermodules_icarus.fcl"
@@ -16,21 +17,37 @@
 #include "flashmatch_simple_icarus.fcl"
 #include "crttrackproducer_icarus.fcl"
 #include "crtbacktracker_icarus.fcl"
-#include "crtt0matchingalg_icarus.fcl"
-#include "crtt0producer_icarus.fcl"
+#include "crtt0tagging.fcl"
 ## The below can be found from the softlink to Supera in sbncode
 #include "supera_modules.fcl"
 #include "crtpmtmatching_parameters.fcl"
 #include "tpcpmtbarycentermatch_config.fcl"
+#include "pandoramodules_icarus.fcl"
+#include "nugraph_icarus.fcl"
 
 BEGIN_PROLOG
 
 ### This is the complete list of all producers! ###
 icarus_stage1_producers:
 {
+  ### TPC hit-finder producers
+  gaushit1dTPCWW:                 @local::gaus_hitfinder_icarus
+  gaushit1dTPCWE:                 @local::gaus_hitfinder_icarus
+  gaushit1dTPCEW:                 @local::gaus_hitfinder_icarus
+  gaushit1dTPCEE:                 @local::gaus_hitfinder_icarus
+
+  gaushit2dTPCWW:                 @local::gaus_hitfinder_icarus
+  gaushit2dTPCWE:                 @local::gaus_hitfinder_icarus
+  gaushit2dTPCEW:                 @local::gaus_hitfinder_icarus
+  gaushit2dTPCEE:                 @local::gaus_hitfinder_icarus
+
   ### Cluster3D
   cluster3DCryoW:                 @local::icarus_cluster3d
   cluster3DCryoE:                 @local::icarus_cluster3d
+
+  ### Hit combiner
+  combineHitsCryoE:               @local::icarus_hitmerger_cryoE
+  combineHitsCryoW:               @local::icarus_hitmerger_cryoW
 
   ### pandora
   pandoraGausCryoW:               @local::icarus_pandora
@@ -47,10 +64,10 @@ icarus_stage1_producers:
   SBNShowerGausCryoE:             @local::icarus_pandorashower_3dTraj
 
   # pandora CALO and PID
-#  pandoraGausCaloCryoW:		      @local::icarus_calomc
-#  pandoraGausPidCryoW:		        @local::icarus_chi2pid
-#  pandoraGausCaloCryoE:		      @local::icarus_calomc
-#  pandoraGausPidCryoE:		        @local::icarus_chi2pid
+  #  pandoraGausCaloCryoW:		    @local::icarus_calomc
+  #  pandoraGausPidCryoW:		      @local::icarus_chi2pid
+  #  pandoraGausCaloCryoE:		    @local::icarus_calomc
+  #  pandoraGausPidCryoE:		      @local::icarus_chi2pid
 
   # Placeholder uncalibrated calorimetry
   caloskimCalorimetryCryoE:       @local::caloskim_calorimetry
@@ -63,14 +80,42 @@ icarus_stage1_producers:
   fmatchopCryoE:                  @local::icarus_simple_flashmatch_E_op
   fmatchopCryoW:                  @local::icarus_simple_flashmatch_W_op
 
- ## crt producer
-  crttrack:          @local::standard_crttrackproducer
-  CRTT0Matching:     @local::standard_crtt0producer
-  CRTT0MatchingW:    @local::standard_crtt0producerW
-  CRTT0MatchingE:    @local::standard_crtt0producerE
+  ## crt producer
+  crttrack:     @local::standard_crttrackproducer
+  CRTT0Tagging: @local::icarus_crtt0tagging_data
 
   tpcpmtbarycentermatchCryoE: @local::data_tpcpmtbarycentermatchproducer_east
   tpcpmtbarycentermatchCryoW: @local::data_tpcpmtbarycentermatchproducer_west
+
+  ## NuGraph
+  nuslhitsCryoE: @local::nuslhitsCryoE
+  nuslhitsCryoW: @local::nuslhitsCryoW
+
+  NuGraphCryoE: @local::NuGraphCryoE
+  NuGraphCryoW: @local::NuGraphCryoW
+
+  NCCSlicesCryoE: @local::NCCSlicesCryoE
+  NCCSlicesCryoW: @local::NCCSlicesCryoW
+
+  NGMultiSliceCryoE: @local::NGMultiSliceCryoE
+  NGMultiSliceCryoW: @local::NGMultiSliceCryoW
+
+  ngfilteredhitsCryoE: @local::ngfilteredhitsCryoE
+  ngfilteredhitsCryoW: @local::ngfilteredhitsCryoW
+
+  ## Pandora, when running after NuGraph
+  pandoraGausNuGraphRecoCryoE: {
+    @table::icarus_pandora
+    HitFinderModuleLabel:   "ngfilteredhitsCryoE"
+    # CollectHitPredictions:  true
+    # UseHitPredictions:      true
+  }
+  pandoraGausNuGraphRecoCryoW: {
+    @table::icarus_pandora
+    HitFinderModuleLabel:   "ngfilteredhitsCryoW"
+    # CollectHitPredictions:  true
+    # UseHitPredictions:      true
+  }
 }
 
 icarus_stage1_filters:
@@ -81,15 +126,15 @@ icarus_stage1_filters:
 
 icarus_stage1_analyzers:
 {
-  caloskimE:       @local::caloskim_cryoe_goldentracks
-  caloskimW:       @local::caloskim_cryow_goldentracks
+  caloskimE:       @local::caloskim_cryoe_crthittagged_goldentracks
+  caloskimW:       @local::caloskim_cryow_crthittagged_goldentracks
   simpleLightAna:  @local::ICARUSFlashAssAna
   supera:          @local::icarus_supera_data
   superaMC:        @local::icarus_supera_MC_PMT_CRT
   superaNu:        @local::icarus_supera_generator_PMT_CRT
   superaMPVMPR:	   @local::icarus_supera_MC_MPVMPR_cryoE_PMT_CRT
   superaCosmic:    @local::icarus_supera_cosmgen_all_cryo_PMT_CRT
-  CRTDataAnalysis: 
+  CRTDataAnalysis:
    {
      module_type:   "CRTDataAnalysis"
      CRTHitLabel:   "crthit"
@@ -119,33 +164,41 @@ icarus_stage1_analyzers:
      #  Note1: in the plots a 500 ns offset was added to have start of the gate right at 0.
      #  Note2: the inBeam parameters were determined experimentally by selecting the beam
      #  excess time window. At the current state of the CRTPMT filter, the requirement to
-     #  have the optical flashes within the BeamExcess time window is not applied. 
+     #  have the optical flashes within the BeamExcess time window is not applied.
 
       # note 19/04/2023: parameters are set to run2,
-      # they can be set to run1, but currently values are the same 
-   
+      # they can be set to run1, but currently values are the same
+
       @table::CRTMatchBNBBeamGate_run2
       @table::CRTMatchNuMIBeamGate_run2
       @table::CRTPMTmatchingparams_standard
    }
  }
 
-icarus_stage1_analyzers.caloskimE.SelectEvents: [reco]
-icarus_stage1_analyzers.caloskimE.CALOproducer: caloskimCalorimetryCryoE 
-icarus_stage1_analyzers.caloskimE.SilenceMissingDataProducts: true
-
-icarus_stage1_analyzers.caloskimW.SelectEvents: [reco]
-icarus_stage1_analyzers.caloskimW.CALOproducer: caloskimCalorimetryCryoW 
-icarus_stage1_analyzers.caloskimW.SilenceMissingDataProducts: true
-
 icarus_stage1_analyzers.supera.unique_filename: true
+
+icarus_stage1_analyzers_crthittagged: @local::icarus_stage1_analyzers
+icarus_stage1_analyzers_crthittagged.caloskimE: @local::caloskim_cryoe_crthittagged_goldentracks
+icarus_stage1_analyzers_crthittagged.caloskimW: @local::caloskim_cryow_crthittagged_goldentracks
+icarus_stage1_analyzers_crthittagged.caloskimE.T0producers: ["pandoraGausCryoE", "CRTT0Tagging"]
+icarus_stage1_analyzers_crthittagged.caloskimW.T0producers: ["pandoraGausCryoW", "CRTT0Tagging"]
+icarus_stage1_analyzers_crthittagged.caloskimE.TopCRTDistanceCut_stopping: 100.
+icarus_stage1_analyzers_crthittagged.caloskimE.TopCRTDistanceCut_throughgoing: 100.
+icarus_stage1_analyzers_crthittagged.caloskimW.TopCRTDistanceCut_stopping: 100.
+icarus_stage1_analyzers_crthittagged.caloskimW.TopCRTDistanceCut_throughgoing: 100.
 
 ### Below are a list of convenient sequences that can be used for production/typical users. ###
 
 # Set up the standard analysis chain
-icarus_analysis_modules:           [  caloskimE 
-                                     ,caloskimW 
+icarus_analysis_modules:           [  caloskimE
+                                     ,caloskimW
                                      ,simpleLightAna
+                                     ,CRTDataAnalysis
+				                             ,CRTAnalysis
+                                   ]
+
+icarus_analysis_modules_nolight:   [  caloskimE
+                                     ,caloskimW
                                      ,CRTDataAnalysis
 				                             ,CRTAnalysis
                                    ]
@@ -161,42 +214,117 @@ icarus_analysis_superaNu:          [ superaNu
 
 icarus_analysis_superaMPVMPR:      [ superaMPVMPR
                                    ]
+
 icarus_analysis_superaCosmic:      [ superaCosmic
-				   ]
+				                           ]
+
 icarus_analysis_larcv_modules:     [  @sequence::icarus_analysis_modules
-                                     ,@sequence::icarus_analysis_supera 
+                                     ,@sequence::icarus_analysis_supera
+                                   ]
+
+icarus_EastHits_TPC:               [ gaushit1dTPCEW,
+                                     gaushit1dTPCEE
+                                   ]
+
+icarus_WestHits_TPC:               [ gaushit1dTPCWW,
+                                     gaushit1dTPCWE
+                                   ]
+                                   
+icarus_EastHits2d_TPC:             [ gaushit2dTPCEW,
+                                     gaushit2dTPCEE,
+                                     combineHitsCryoE,
+                                     gaushitPT2dTPCEW,
+                                     gaushitPT2dTPCEE
+                                   ]
+
+icarus_WestHits2d_TPC:             [ gaushit2dTPCWW,
+                                     gaushit2dTPCWE,
+                                     combineHitsCryoW,
+                                     gaushitPT2dTPCWW,
+                                     gaushitPT2dTPCWE
                                    ]
 
 # Set up filtering of cluster3D hits by cryostat
 # Changed slightly to faciliate larcv processing
-icarus_filter_cluster3D:           [ cluster3DCryoE,
+icarus_filter1D_cluster3D:         [
+                                     @sequence::icarus_EastHits_TPC,
+                                     @sequence::icarus_WestHits_TPC,
+                                     cluster3DCryoE,
                                      cluster3DCryoW,
                                      TPCHitFilterCryoE,
                                      TPCHitFilterCryoW
                                    ]
 
+icarus_filter2D_cluster3D:         [
+                                     @sequence::icarus_EastHits2d_TPC,
+                                     @sequence::icarus_WestHits2d_TPC,
+                                     cluster3DCryoE,
+                                     cluster3DCryoW,
+                                     TPCHitFilterCryoE,
+                                     TPCHitFilterCryoW
+                                   ]
+
+
 icarus_reco_cluster3DCryoW:        [ cluster3DCryoW ]
 
 icarus_reco_cluster3DCryoE:        [ cluster3DCryoE ]
 
-icarus_reco_pandoraGausCryoW:      [ pandoraGausCryoW,
+icarus_reco_pandoraGausCryoW:      [ pandoraGausCryoW ]
+
+icarus_reco_pandoraGausCryoE:      [ pandoraGausCryoE ]
+
+icarus_reco_postPandoraGausCryoW:  [ NCCSlicesCryoW,
+                                     NGMultiSliceCryoW,
                                      pandoraTrackGausCryoW,
                                      pandoraKalmanTrackGausCryoW,
                                      SBNShowerGausCryoW
                                    ]
 
-icarus_reco_pandoraGausCryoE:      [ pandoraGausCryoE,
+icarus_reco_postPandoraGausCryoW_NuGraphReco:   [ NCCSlicesCryoW,
+                                                  NGMultiSliceCryoW,
+                                                  ngfilteredhitsCryoW,
+                                                  pandoraGausNuGraphRecoCryoW,
+                                                  pandoraTrackGausCryoW,
+                                                  pandoraKalmanTrackGausCryoW,
+                                                  SBNShowerGausCryoW
+                                                ]
+
+icarus_reco_postPandoraGausCryoE:  [ NCCSlicesCryoE,
+                                     NGMultiSliceCryoE,
                                      pandoraTrackGausCryoE,
                                      pandoraKalmanTrackGausCryoE,
                                      SBNShowerGausCryoE
                                    ]
 
-icarus_reco_Gauss_CryoW:           [ 
+icarus_reco_postPandoraGausCryoE_NuGraphReco:   [ NCCSlicesCryoE,
+                                                  NGMultiSliceCryoE,
+                                                  ngfilteredhitsCryoE,
+                                                  pandoraGausNuGraphRecoCryoE,
+                                                  pandoraTrackGausCryoE,
+                                                  pandoraKalmanTrackGausCryoE,
+                                                  SBNShowerGausCryoE
+                                                ]
+
+icarus_reco_Gauss1D_CryoW:         [ 
+                                     @sequence::icarus_WestHits_TPC,
                                      @sequence::icarus_reco_cluster3DCryoW,
                                      @sequence::icarus_reco_pandoraGausCryoW
                                    ]
 
-icarus_reco_Gauss_CryoE:           [ 
+icarus_reco_Gauss1D_CryoE:         [
+                                     @sequence::icarus_EastHits_TPC,
+                                     @sequence::icarus_reco_cluster3DCryoE,
+                                     @sequence::icarus_reco_pandoraGausCryoE
+                                   ]
+
+icarus_reco_Gauss2D_CryoW:         [
+                                     @sequence::icarus_WestHits2d_TPC,
+                                     @sequence::icarus_reco_cluster3DCryoW,
+                                     @sequence::icarus_reco_pandoraGausCryoW
+                                   ]
+
+icarus_reco_Gauss2D_CryoE:           [
+                                     @sequence::icarus_EastHits2d_TPC,
                                      @sequence::icarus_reco_cluster3DCryoE,
                                      @sequence::icarus_reco_pandoraGausCryoE
                                    ]
@@ -206,6 +334,16 @@ icarus_pandora_Gauss:              [
                                      @sequence::icarus_reco_pandoraGausCryoW
                                    ]
 
+icarus_postPandora_Gauss:          [
+                                     @sequence::icarus_reco_postPandoraGausCryoE,
+                                     @sequence::icarus_reco_postPandoraGausCryoW
+                                   ]
+
+icarus_postPandora_Gauss_NuGraphReco: [
+                                        @sequence::icarus_reco_postPandoraGausCryoE_NuGraphReco,
+                                        @sequence::icarus_reco_postPandoraGausCryoW_NuGraphReco
+                                      ]
+
 #Add flash matching
 icarus_reco_fm:                    [ fmatchCryoE,
                                      fmatchCryoW,
@@ -213,28 +351,48 @@ icarus_reco_fm:                    [ fmatchCryoE,
                                      fmatchopCryoW ]
 
 icarus_tpcpmtbarycentermatch:      [
-                                     tpcpmtbarycentermatchCryoE, 
+                                     tpcpmtbarycentermatchCryoE,
                                      tpcpmtbarycentermatchCryoW
                                    ]
 
 icarus_crttrack:                   [crttrack]
 
-icarus_crtt0match:                 [CRTT0Matching]
-
-icarus_crtt0match_eff:             [CRTT0MatchingE, CRTT0MatchingW]
+icarus_crtt0tagging:               [CRTT0Tagging]
 
 ### Below we include overrides for the modules above
+#
+### Set up hit finding for multiple TPC readout
+icarus_stage1_producers.gaushit1dTPCWW.CalDataModuleLabel:                                     "wire2channelroi:PHYSCRATEDATATPCWW"
+icarus_stage1_producers.gaushit1dTPCWE.CalDataModuleLabel:                                     "wire2channelroi:PHYSCRATEDATATPCWE"
+icarus_stage1_producers.gaushit1dTPCEW.CalDataModuleLabel:                                     "wire2channelroi:PHYSCRATEDATATPCEW"
+icarus_stage1_producers.gaushit1dTPCEE.CalDataModuleLabel:                                     "wire2channelroi:PHYSCRATEDATATPCEE"
+
+icarus_stage1_producers.gaushit2dTPCWW.CalDataModuleLabel:                                     "wire2channelroi2d:PHYSCRATEDATATPCWW"
+icarus_stage1_producers.gaushit2dTPCWE.CalDataModuleLabel:                                     "wire2channelroi2d:PHYSCRATEDATATPCWE"
+icarus_stage1_producers.gaushit2dTPCEW.CalDataModuleLabel:                                     "wire2channelroi2d:PHYSCRATEDATATPCEW"
+icarus_stage1_producers.gaushit2dTPCEE.CalDataModuleLabel:                                     "wire2channelroi2d:PHYSCRATEDATATPCEE"
+
+# Setup version of hit finder's with Pulse Trains ("PT"s) enabled
+icarus_stage1_producers.gaushitPT2dTPCEE: @local::icarus_stage1_producers.gaushit2dTPCEE
+icarus_stage1_producers.gaushitPT2dTPCEE.LongMaxHits: [10, 10, 10]
+icarus_stage1_producers.gaushitPT2dTPCEW: @local::icarus_stage1_producers.gaushit2dTPCEW
+icarus_stage1_producers.gaushitPT2dTPCEW.LongMaxHits: [10, 10, 10]
+icarus_stage1_producers.gaushitPT2dTPCWE: @local::icarus_stage1_producers.gaushit2dTPCWE
+icarus_stage1_producers.gaushitPT2dTPCWE.LongMaxHits: [10, 10, 10]
+icarus_stage1_producers.gaushitPT2dTPCWW: @local::icarus_stage1_producers.gaushit2dTPCWW
+icarus_stage1_producers.gaushitPT2dTPCWW.LongMaxHits: [10, 10, 10]
 
 ## Overrides for filtering of cluster3D hits
 icarus_stage1_filters.TPCHitFilterCryoW.HitDataLabelVec: ["cluster3DCryoW"]
-icarus_stage1_filters.TPCHitFilterCryoW.MaximumHits:     60000 
+icarus_stage1_filters.TPCHitFilterCryoW.MaximumHits:     60000
 
 icarus_stage1_filters.TPCHitFilterCryoE.HitDataLabelVec: ["cluster3DCryoE"]
-icarus_stage1_filters.TPCHitFilterCryoE.MaximumHits:     60000 
+icarus_stage1_filters.TPCHitFilterCryoE.MaximumHits:     60000
 
 ## Definitions for running the 3D clustering by Cryostat
 icarus_stage1_producers.cluster3DCryoW.MakeSpacePointsOnly:                                      true
-icarus_stage1_producers.cluster3DCryoW.Hit3DBuilderAlg.HitFinderTagVec:                          ["gaushit2dTPCWW", "gaushit2dTPCWE"]
+# use the "PT" (pulse train) hits as input to cluster3D
+icarus_stage1_producers.cluster3DCryoW.Hit3DBuilderAlg.HitFinderTagVec:                          ["gaushitPT2dTPCWW", "gaushitPT2dTPCWE"]
 icarus_stage1_producers.cluster3DCryoW.Hit3DBuilderAlg.PulseHeightFraction:                      0. #0.75 #0.25
 icarus_stage1_producers.cluster3DCryoW.Hit3DBuilderAlg.PHLowSelection:                           0. #4.0 # 20.
 icarus_stage1_producers.cluster3DCryoW.Hit3DBuilderAlg.MaxHitChiSquare:                          1000000.
@@ -242,37 +400,51 @@ icarus_stage1_producers.cluster3DCryoW.Hit3DBuilderAlg.MaxMythicalChiSquare:    
 icarus_stage1_producers.cluster3DCryoW.Hit3DBuilderAlg.OutputHistograms:                         false
 
 icarus_stage1_producers.cluster3DCryoE.MakeSpacePointsOnly:                                      true
-icarus_stage1_producers.cluster3DCryoE.Hit3DBuilderAlg.HitFinderTagVec:                          ["gaushit2dTPCEW", "gaushit2dTPCEE"]
+icarus_stage1_producers.cluster3DCryoE.Hit3DBuilderAlg.HitFinderTagVec:                          ["gaushitPT2dTPCEW", "gaushitPT2dTPCEE"]
 icarus_stage1_producers.cluster3DCryoE.Hit3DBuilderAlg.PulseHeightFraction:                      0. #0.75 #0.25
 icarus_stage1_producers.cluster3DCryoE.Hit3DBuilderAlg.PHLowSelection:                           0. #4.0 # 20.
 icarus_stage1_producers.cluster3DCryoE.Hit3DBuilderAlg.MaxHitChiSquare:                          1000000.
 icarus_stage1_producers.cluster3DCryoE.Hit3DBuilderAlg.MaxMythicalChiSquare:                     30.
 icarus_stage1_producers.cluster3DCryoE.Hit3DBuilderAlg.OutputHistograms:                         false
 
-### Definitions for a pandora by cryostat
+### Definitions for Pandora by cryostat
+icarus_stage1_producers.pandoraGausCryoE.HitFinderModuleLabel:                                   "cluster3DCryoE"
 icarus_stage1_producers.pandoraGausCryoW.HitFinderModuleLabel:                                   "cluster3DCryoW"
+# icarus_stage1_producers.pandoraGausCryoW.HitCollectionTool.OverrhideHitLabels:                   ["gaushit2dTPCWW", "gaushit2dTPCWE"]
+# icarus_stage1_producers.pandoraGausCryoE.HitCollectionTool.OverrhideHitLabels:                   ["gaushit2dTPCEW", "gaushit2dTPCEE"]
+
+### Definitions for Pandora tracks by cryostat
+icarus_stage1_producers.pandoraTrackGausCryoE.PFParticleLabel:                                   "pandoraGausCryoE"
+icarus_stage1_producers.pandoraTrackGausCryoE.UseAllParticles:                                   true
 icarus_stage1_producers.pandoraTrackGausCryoW.PFParticleLabel:                                   "pandoraGausCryoW"
 icarus_stage1_producers.pandoraTrackGausCryoW.UseAllParticles:                                   true
+
+icarus_stage1_producers.pandoraKalmanTrackGausCryoE.inputCollection:                             "pandoraGausCryoE"
+icarus_stage1_producers.pandoraKalmanTrackGausCryoE.trackInputTag:                               "pandoraTrackGausCryoE"
 icarus_stage1_producers.pandoraKalmanTrackGausCryoW.inputCollection:                             "pandoraGausCryoW"
 icarus_stage1_producers.pandoraKalmanTrackGausCryoW.trackInputTag:                               "pandoraTrackGausCryoW"
 
-icarus_stage1_producers.pandoraGausCryoE.HitFinderModuleLabel:                                   "cluster3DCryoE"
-icarus_stage1_producers.pandoraTrackGausCryoE.PFParticleLabel:                                   "pandoraGausCryoE"
-icarus_stage1_producers.pandoraTrackGausCryoE.UseAllParticles:                                   true
-icarus_stage1_producers.pandoraKalmanTrackGausCryoE.inputCollection:                             "pandoraGausCryoE"
-icarus_stage1_producers.pandoraKalmanTrackGausCryoE.trackInputTag:                               "pandoraTrackGausCryoE"
+### Definitions for Pandora showers by cryostat
+icarus_stage1_producers.SBNShowerGausCryoE.PFParticleLabel:                                      "pandoraGausCryoE"
+icarus_stage1_producers.SBNShowerGausCryoE.UseAllParticles:                                      true
+icarus_stage1_producers.SBNShowerGausCryoW.PFParticleLabel:                                      "pandoraGausCryoW"
+icarus_stage1_producers.SBNShowerGausCryoW.UseAllParticles:                                      true
 
 icarus_stage1_producers.caloskimCalorimetryCryoE.TrackModuleLabel:                               "pandoraTrackGausCryoE"
 icarus_stage1_producers.caloskimCalorimetryCryoW.TrackModuleLabel:                               "pandoraTrackGausCryoW"
 
 ## Switch pandora back to just gaushits?
-#icarus_stage1_producers.pandoraGausCryoW.ConfigFile:                                             "PandoraSettings_Master_ICARUS_RawICARUS.xml"
-#icarus_stage1_producers.pandoraGausCryoE.ConfigFile:                                             "PandoraSettings_Master_ICARUS_RawICARUS.xml"
+#icarus_stage1_producers.pandoraGausCryoW.ConfigFile:                                            "PandoraSettings_Master_ICARUS_RawICARUS.xml"
+#icarus_stage1_producers.pandoraGausCryoE.ConfigFile:                                            "PandoraSettings_Master_ICARUS_RawICARUS.xml"
 
-## Definitions for shower finding (both single and by cryostat)
-icarus_stage1_producers.SBNShowerGausCryoW.PFParticleLabel:                                      "pandoraGausCryoW"
-icarus_stage1_producers.SBNShowerGausCryoW.UseAllParticles:                                      true
-icarus_stage1_producers.SBNShowerGausCryoE.PFParticleLabel:                                      "pandoraGausCryoE"
-icarus_stage1_producers.SBNShowerGausCryoE.UseAllParticles:                                      true
+# Also fix hit label for CRT-(pandora) TPC tagging
+icarus_stage1_producers.CRTT0Tagging.HitLabel:                                                    ["combineHitsCryoE", "combineHitsCryoW"]
+
+# Override labels for ntupler
+icarus_stage1_analyzers.caloskimE.HITproducer: "combineHitsCryoE"
+icarus_stage1_analyzers.caloskimW.HITproducer: "combineHitsCryoW"
+
+# Set supera input fcl files
+icarus_stage1_analyzers.superaMC.supera_params: "supera_icarus_MC_all_cryo_PMT_CRT_v10.fcl"
 
 END_PROLOG

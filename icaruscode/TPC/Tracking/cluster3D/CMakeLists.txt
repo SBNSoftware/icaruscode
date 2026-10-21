@@ -57,7 +57,7 @@ set(    MODULE_LIBRARIES
           messagefacility::MF_MessageLogger
        )
 cet_build_plugin(Cluster3DICARUS art::module LIBRARIES ${MODULE_LIBRARIES})
-cet_build_plugin(SnippetHit3DBuilderICARUS art::tool LIBRARIES ${TOOL_LIBRARIES} SOURCE SnippetHit3DBuilderICARUS_tool.cc)
+cet_build_plugin(SnippetHit3DBuilderICARUS art::tool LIBRARIES ${TOOL_LIBRARIES} REG_SOURCE SnippetHit3DBuilderICARUS_tool.cc)
 set_property(SOURCE SnippetHit3DBuilderICARUS_tool.cc APPEND PROPERTY COMPILE_DEFINITIONS EIGEN_FFTW_DEFAULT)
 
 install_headers()

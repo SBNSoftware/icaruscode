@@ -1,0 +1,9 @@
+#include "detsim_2d_icarus.fcl"
+
+physics.producers.tpcsim: @local::icarus_simwire_wirecell_SConly
+
+physics.simulate: ["rns", "tpcsim"]
+physics.stream: []
+outputs: {}
+
+process_name: TPCSim

@@ -1,3 +1,0 @@
-#include "detsim_2d_icarus_fitFR_refactored.fcl"
-
-process_name: DetSimVar

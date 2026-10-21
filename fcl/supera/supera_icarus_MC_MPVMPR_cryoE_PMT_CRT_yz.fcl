@@ -1,0 +1,178 @@
+ProcessDriver: {
+
+  Verbosity:    2
+  EnableFilter: true
+  RandomAccess: false
+  ProcessType:  ["SuperaMCTruth","SuperaBBoxInteraction","SuperaMCParticleCluster","SuperaSimEnergyDeposit","SuperaSpacePoint","Tensor3DFromCluster3D","ThresholdTensor3D","CombineTensor3D","ParticleCorrector","EmptyTensorFilter","RescaleChargeTensor3D","SuperaOptical","SuperaCRT"]
+  ProcessName:  ["MultiPartVrtx","SuperaBBoxInteraction","SuperaMCParticleCluster","SuperaSimEnergyDeposit","SuperaSpacePointCryoE","Tensor3DFromCluster3D","ThresholdTensor3D","CombineTensor3D","ParticleCorrector","EmptyTensorFilter","RescaleChargeTensor3DCryoE","SuperaOptical","SuperaCRT"]
+
+  IOManager: {
+    Verbosity:   2
+    Name:        "IOManager"
+    IOMode:      1
+    OutFileName: "out_test.root"
+    InputFiles:  []
+    InputDirs:   []
+    StoreOnlyType: []
+    StoreOnlyName: []
+  }
+
+  ProcessList: {
+    SuperaCRT: {
+      CRTHitProducers: ["crthit"]
+      CRTHitOutputs: ["crthit"]
+    }
+
+		SuperaOptical: {
+		  OpFlashProducers: ["opflashCryoE"]
+			OpFlashOutputs: ["cryoE"]
+		}
+
+    EmptyTensorFilter: {
+      Tensor3DProducerList: ["pcluster_semantics_ghost"]
+      MinVoxel3DCountList:  [1]
+    }
+
+    RescaleChargeTensor3DCryoE: {
+      HitKeyProducerList:    ["reco_cryoE_hit_key0","reco_cryoE_hit_key1","reco_cryoE_hit_key2"]
+      HitChargeProducerList: ["reco_cryoE_hit_charge0","reco_cryoE_hit_charge1","reco_cryoE_hit_charge2"]
+      OutputProducer:        "reco_cryoE_rescaled"
+      ReferenceProducer:     "pcluster"
+    }
+
+    ThresholdTensor3D: { # fill with ghost value (5)
+      TargetProducer: "reco_cryoE"
+      OutputProducer: "pcluster_semantics_ghost"
+      PaintValue: 5
+    }
+
+    CombineTensor3D: {
+      Tensor3DProducers: ["pcluster_semantics_ghost","pcluster_semantics"]
+      OutputProducer:    "pcluster_semantics_ghost"
+      PoolType: 0
+    }
+
+    SuperaMCParticleCluster: {
+      OutputLabel: "pcluster"
+      LArMCParticleProducer: "simplemerge" #"largeant"
+      LArMCShowerProducer: "mcreco"
+      LArMCTrackProducer:  "mcreco"
+      #LArMCMiniPartProducer: "largeant"
+      DeltaSize: 10
+      #LArSimEnergyDepositProducer: "largeant TPCActive"
+      LArSimEnergyDepositLiteProducer: "filtersed"
+      Meta3DFromCluster3D: "mcst"
+      Meta2DFromTensor2D:  ""
+      Verbosity: 2
+      UseSimEnergyDeposit: false #true
+      UseSimEnergyDepositLite: false #true
+      UseSimEnergyDepositPoints: false #true
+      UseOrigTrackID: true
+      CryostatList: [0,0,0,0,1,1,1,1]
+      TPCList: [0,1,2,3,0,1,2,3]
+      PlaneList: []
+      #SemanticPriority: [2,1,0,3,4] # 0-4 for shower track michel delta LE-scattering
+      SemanticPriority: [1,2,0,3,4] # 0-4 for shower track michel delta LE-scattering
+      CheckParticleValidity: false #set false, but this needs to be checked later
+
+      SuperaTrue2RecoVoxel3D: {
+        DebugMode: true
+        Verbosity: 2
+        Meta3DFromCluster3D: "pcluster"
+        #LArSimChProducer: "largeant"
+        LArSimChProducer: "merge"
+        LArSpacePointProducers: ["cluster3DCryoE"]
+        TwofoldMatching: true
+        UseTruePosition: true
+        HitThresholdNe: 100
+        HitWindowTicks: 15 #5
+        HitPeakFinding: false
+        PostAveraging: true
+        PostAveragingThreshold_cm: 0.425
+        DumpToCSV: false
+        #DumpToCSV: true
+        RecoChargeRange: [-1000,50000]
+	VoxelDistanceThreshold: 3.
+        UseOrigTrackID: true
+      }
+    }
+
+    MultiPartVrtx: {
+      Verbosity: 2
+      #LArMCTruthProducer: "generator"
+      MCTruthProducers: ["generator","rain","rain2"]
+      OutParticleLabel: "mpv"
+      Origin: 0
+    }
+
+    SuperaBBoxInteraction: {
+      Verbosity: 2
+      LArMCTruthProducer: "generator"
+      #LArSimEnergyDepositProducer: "largeant TPCActive"
+      LArSimEnergyDepositLiteProducer: "filtersed"
+			UseSEDLite: true #false
+      Origin: 0
+      Cluster3DLabels: ["mcst","pcluster","sed","masked_true2reco"]
+      Tensor3DLabels:  ["reco_cryoE","pcluster_index","masked_true"]
+      #BBoxSize: [230.4,230.4,230.4]
+      BBoxSize: [1843.2,1843.2,1843.2] # Covers the whole detector with the smallest possible cube -> yields 6144 = 1024*6 px
+      #BBoxBottom: [-460.8,-230.4,-921.6]
+      #BBoxSize: [1789.902,1789.902,1789.902]
+      #BBoxBottom: [-358.49,-181.86,-894.951] # geometry from icarus_complete_20210527_no_overburden.gdml
+      #BBoxBottom: [-412.788,-181.86,-894.951] # geometry from icarus_complete_20210527_no_overburden.gdml taking readout window into account
+			# 358.49+340*1.6/10 = 412.89
+      BBoxBottom: [-412.89,-181.86,-894.951] # geometry from icarus_complete_20210527_no_overburden.gdml taking readout window into account
+      #BBoxBottom: [-413.04,-182.01,-895.101]
+      UseFixedBBox: true
+      VoxelSize: [0.3,0.3,0.3]
+      CryostatList: [0,0,0,0,1,1,1,1]
+      TPCList: [0,1,2,3,0,1,2,3]
+    }
+
+    SuperaSimEnergyDeposit: {
+      Verbosity: 2
+      #LArSimEnergyDepositProducer: "largeant TPCActive"
+      LArSimEnergyDepositLiteProducer: "filtersed"
+      LArMCShowerProducer: "mcreco"
+			UseSEDLite: true #false
+      ParticleProducer: "pcluster"
+      OutCluster3DLabel: "sed"
+      StoreLength: false
+      StoreCharge: false
+      StorePhoton: false
+      StoreDiffTime: false
+      StoreAbsTime: true
+      StoreDEDX: false
+      TPCList: [0,1,2,3,0,1,2,3]
+      CryostatList: [0,0,0,0,1,1,1,1]
+    }
+
+    ParticleCorrector: {
+      Verbosity: 2
+      Cluster3DProducer: "pcluster_highE"
+      ParticleProducer:  "pcluster"
+      OutputProducer:    "corrected"
+      VoxelMinValue:     -1000
+   }
+
+
+    Tensor3DFromCluster3D: {
+      Verbosity: 2
+      Cluster3DProducerList: ["pcluster","sed"]
+      OutputProducerList:    ["pcluster","sed"]
+      PITypeList:  [1,1]
+      FixedPIList: [0.,0.]
+    }
+
+    SuperaSpacePointCryoE: {
+      Verbosity: 2
+      SpacePointProducers: ["cluster3DCryoE"]
+      OutputLabel:        "reco_cryoE"
+      DropOutput: ["hit_amp","hit_time","hit_rms","hit_mult","nhits","occupancy"]
+      StoreWireInfo: true
+      RecoChargeRange: [-1000, 50000]
+    }
+
+  }
+}
+
