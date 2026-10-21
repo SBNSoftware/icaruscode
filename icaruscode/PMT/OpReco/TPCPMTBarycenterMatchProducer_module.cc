@@ -594,7 +594,8 @@ void TPCPMTBarycenterMatchProducer::produce(art::Event& e)
         matchedFlashClassification = static_cast<int>(match->flashClassification);
       }
       else {
-        std::cout << "No CRT-PMT matching information for this flash." << std::endl;
+        if (fVerbose)
+          std::cout << "No CRT-PMT matching information for this flash." << std::endl;
       }    
 
       //Find time of first OpHit in matched flash
