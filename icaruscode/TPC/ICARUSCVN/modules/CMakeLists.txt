@@ -68,20 +68,6 @@ cet_build_plugin(ICARUSCVNZlibMaker art::EDAnalyzer
   icaruscode_icaruscvn_module_helpers
 )
 
-cet_build_plugin(ICARUSTFNetHandler art::tool
-  LIBRARIES PRIVATE
-  larrecodnn::CVN_func
-  larrecodnn::CVN_interfaces
-  larrecodnn::ImagePatternAlgs_Tensorflow_TF
-  icaruscode::ICARUSCVN_tf
-  messagefacility::MF_MessageLogger
-  fhiclcpp::types
-  fhiclcpp::fhiclcpp
-  ROOT::Hist
-  icaruscode_icaruscvn_module_helpers
-  icaruscode::ICARUSCVN_tf
-)
-
 cet_build_plugin(ICARUSCVNEvaluator art::EDProducer
   LIBRARIES PRIVATE
   larrecodnn::CVN_func

@@ -6,13 +6,10 @@
 ////////////////////////////////////////////////////////////////////////
 
 // C/C++ includes
-#include <filesystem>
-#include <fstream>
 #include <iostream>
 #include <sstream>
 #include <stdexcept>
 #include <vector>
-#include <zlib.h>
 
 // Framework includes
 #include "art/Framework/Core/EDProducer.h"
@@ -27,8 +24,8 @@
 #include "fhiclcpp/ParameterSet.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
 
-#include "icaruscode/ICARUSCVN/module_helpers/ICARUSITFNetHandler.h"
-#include "icaruscode/ICARUSCVN/module_helpers/ICARUSPixelMapProducer.h"
+#include "larrecodnn/CVN/interfaces/ITFNetHandler.h"
+#include "icaruscode/TPC/ICARUSCVN/module_helpers/ICARUSPixelMapProducer.h"
 #include "lardata/Utilities/AssociationUtil.h"
 #include "lardataobj/AnalysisBase/T0.h"
 #include "lardataobj/RecoBase/PFParticle.h"
@@ -45,12 +42,6 @@ public:
   explicit ICARUSCVNEvaluator(fhicl::ParameterSet const &pset);
 
   void produce(art::Event &evt);
-  std::vector<std::string> resolve_input_files(const std::string &pixelMapInpu);
-  std::vector<std::string> load_from_folder(const std::string &folder_path);
-  std::vector<unsigned char> decompress_pixelmap_gz(const std::string &filename);
-  void load_and_predict(const int event,
-                        std::unique_ptr<lcvn::ICARUSITFNetHandler> &handler,
-                        const std::string &pixelMapInput);
 
 private:
   // /// Module label for input pixel maps
@@ -62,39 +53,10 @@ private:
   art::InputTag fT0Label;
   std::string fCVNType;
   bool fVerbose;
-  std::unique_ptr<lcvn::ICARUSITFNetHandler> fTFHandler;
+  std::unique_ptr<lcvn::ITFNetHandler> fTFHandler;
   ICARUSPixelMapHitProducer fPMProducer;
-  // std::vector<EvalConfig> fEvaluators;
 };
 
-//.......................................................................
-// ICARUSCVNEvaluator::ICARUSCVNEvaluator(fhicl::ParameterSet const &pset)
-//     : EDProducer{pset} {
-//   std::vector<fhicl::ParameterSet> evalPsets =
-//       pset.get<std::vector<fhicl::ParameterSet>>("Evaluators");
-
-//   for (auto const &epset : evalPsets) {
-//     EvalConfig cfg{epset.get<std::string>("Module"),
-//                    epset.get<std::string>("PixelMapInput"),
-//                    epset.get<std::string>("PixelMapModuleLabel"),
-//                    epset.get<art::InputTag>("SliceLabel", ""),
-//                    epset.get<art::InputTag>("PFParticleModuleLabel", ""),
-//                    epset.get<art::InputTag>("T0Label", ""),
-//                    epset.get<std::string>("CVNType"),
-//                    epset.get<bool>("verbose", false),
-//                    art::make_tool<lcvn::ICARUSITFNetHandler>(
-//                        epset.get<fhicl::ParameterSet>("ICARUSTFHandler")),
-//                    ICARUSPixelMapHitProducer(
-//                        epset.get<fhicl::ParameterSet>("PixelMapProducer"))};
-//     fEvaluators.push_back(std::move(cfg));
-//   }
-//   produces<std::vector<lcvn::Result>>();
-//   if (fEvaluators[0].fSliceLabel != "") {
-//     produces<art::Assns<recob::Slice, lcvn::Result>>();
-//   } else {
-//     produces<art::Assns<lcvn::PixelMap, lcvn::Result>>();
-//   }
-// }
 ICARUSCVNEvaluator::ICARUSCVNEvaluator(fhicl::ParameterSet const &pset)
     : EDProducer{pset},
       fModule(pset.get<std::string>("Module")),
@@ -105,7 +67,7 @@ ICARUSCVNEvaluator::ICARUSCVNEvaluator(fhicl::ParameterSet const &pset)
       fT0Label(pset.get<art::InputTag>("T0Label", "")),
       fCVNType(pset.get<std::string>("CVNType")),
       fVerbose(pset.get<bool>("verbose", false)),
-      fTFHandler{art::make_tool<lcvn::ICARUSITFNetHandler>(pset.get<fhicl::ParameterSet>("ICARUSTFHandler"))},
+      fTFHandler{art::make_tool<lcvn::ITFNetHandler>(pset.get<fhicl::ParameterSet>("ICARUSTFHandler"))},
       fPMProducer(pset.get<fhicl::ParameterSet>("PixelMapProducer"))
   {
   produces<std::vector<lcvn::Result>>();
@@ -191,16 +153,20 @@ void ICARUSCVNEvaluator::produce(art::Event &evt) {
             pm.SetTotHits(nhits);
             // pm.fSliceID = slice->ID();
             std::string moduleSlcId = std::string(fModule) + " - slice id: " + std::to_string(slice.id()) + " - slice key: " + std::to_string(slice.key() + 1);
-            std::vector<std::vector<float>> output = fTFHandler->Predict(pm, evt.id().event(), moduleSlcId);
+            std::vector<std::vector<float>> output = fTFHandler->Predict(pm);
+	    for (auto &vec : output) {
+	      if (vec.size() >= 2) vec.insert(vec.begin() + 2, 0.0f);
+	    }
             resultCol->emplace_back(output);
             util::CreateAssn(*this, evt, *resultCol, slice, *assn1);
 	  } else {
             if (fVerbose) std::cout << "findManyHits: " << findManyHits.isValid() << std::endl;
           }
         }
-      } else { // Try to read pixel maps saved in the file
-        /// Load in the pixel maps
-        load_and_predict(evt.id().event(), fTFHandler, fPixelMapInput);
+      } else {
+	mf::LogError("ICARUSCVNEvaluator::produce")
+          << "No Slice Label. Exiting without processing events" << std::endl;
+	return;
       }
     } else {
       mf::LogError("ICARUSCVNEvaluator::produce")
@@ -210,127 +176,23 @@ void ICARUSCVNEvaluator::produce(art::Event &evt) {
       return;
     }
   // }
-  for (const auto &r : *resultCol) {
+    if (fVerbose) {
+      for (const auto &r : *resultCol) {
 	for (const auto &row : r.fOutput) {
-        	for (const auto &val : row) {
-                  std::cout << val << " ";
-                }
-                std::cout << std::endl;
+	  for (const auto &val : row) {
+	    std::cout << val << " ";
+	  }
+	  std::cout << std::endl;
         }
-  }
-
-  evt.put(std::move(resultCol));
-  if (isSlice) {
-    evt.put(std::move(assn1));
-  } else {
-    evt.put(std::move(assn2));
-  }
-}
-
-// --- Main prediction logic ---
-void ICARUSCVNEvaluator::load_and_predict(
-    const int event, std::unique_ptr<lcvn::ICARUSITFNetHandler> &handler,
-    const std::string &pixelMapInput) {
-  auto files = resolve_input_files(pixelMapInput);
-
-  int fileCount = 0;
-  for (const auto &f : files) {
-    ++fileCount;
-    std::cout << "Processing [" << fileCount << "/" << files.size() << "]"
-              << "\n";
-
-    try {
-      size_t lastSlash = f.find_last_of('/');
-      std::string fileName =
-          (lastSlash != std::string::npos) ? f.substr(lastSlash + 1) : f;
-
-      if (fileName.size() > 3 &&
-          fileName.substr(fileName.size() - 3) == ".gz") {
-        fileName = fileName.substr(0, fileName.size() - 3); // Remove ".gz"
       }
-      std::vector<unsigned char> pixel_array = decompress_pixelmap_gz(f);
-      std::vector<std::vector<float>> output =
-          handler->PredictFromArray(pixel_array, fileName);
-    } catch (const std::exception &e) {
-      std::cerr << "Failed on " << f << ": " << e.what() << "\n";
     }
-  }
-}
 
-std::vector<unsigned char>
-ICARUSCVNEvaluator::decompress_pixelmap_gz(const std::string &filename) {
-  constexpr size_t kPixelArraySize =
-      3 * 500 * 500; // Set this to your actual image shape
-  std::vector<unsigned char> pixel_array(kPixelArraySize);
-
-  std::ifstream file(filename, std::ios::binary | std::ios::ate);
-  if (!file)
-    throw std::runtime_error("Cannot open file: " + filename);
-  auto size = file.tellg();
-  file.seekg(0, std::ios::beg);
-
-  std::vector<char> compressed(size);
-  file.read(compressed.data(), size);
-  file.close();
-
-  uLongf dest_len = kPixelArraySize;
-  int res = uncompress(pixel_array.data(), &dest_len,
-                       reinterpret_cast<Bytef *>(compressed.data()), size);
-
-  if (res != Z_OK || dest_len != kPixelArraySize) {
-    throw std::runtime_error(
-        "Decompression failed or pixel array size mismatch in " + filename);
-  }
-
-  return pixel_array;
-}
-
-// --- Load all .gz files from a folder ---
-std::vector<std::string>
-ICARUSCVNEvaluator::load_from_folder(const std::string &folder_path) {
-  std::vector<std::string> files;
-  for (const auto &entry :
-       std::filesystem::recursive_directory_iterator(folder_path)) {
-    if (entry.is_regular_file() && entry.path().extension() == ".gz") {
-      files.push_back(entry.path().string());
-    }
-  }
-  if (files.empty())
-    throw std::runtime_error("No .gz files found in folder: " + folder_path);
-  return files;
-}
-
-// --- Load file list or single file ---
-std::vector<std::string>
-ICARUSCVNEvaluator::resolve_input_files(const std::string &pixelMapInput) {
-  std::filesystem::path input(pixelMapInput);
-
-  if (!std::filesystem::exists(input)) {
-    throw std::runtime_error("Input path does not exist: " + pixelMapInput);
-  }
-
-  if (std::filesystem::is_regular_file(input)) {
-    if (input.extension() == ".gz") {
-      std::cout << "Single File" << std::endl;
-      return {pixelMapInput}; // Single .gz file
+    evt.put(std::move(resultCol));
+    if (isSlice) {
+      evt.put(std::move(assn1));
     } else {
-      // Text file containing list of .gz files
-      std::ifstream listfile(pixelMapInput);
-      if (!listfile)
-        throw std::runtime_error("Cannot open list file: " + pixelMapInput);
-      std::vector<std::string> paths;
-      std::string line;
-      while (std::getline(listfile, line)) {
-        if (!line.empty())
-          paths.push_back(line);
-      }
-      return paths;
+      evt.put(std::move(assn2));
     }
-  } else if (std::filesystem::is_directory(input)) {
-    return load_from_folder(pixelMapInput); // Folder
-  }
-
-  throw std::runtime_error("Unsupported input type: " + pixelMapInput);
 }
 
 DEFINE_ART_MODULE(lcvn::ICARUSCVNEvaluator)

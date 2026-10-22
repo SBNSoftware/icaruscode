@@ -59,7 +59,7 @@
 #include "larrecodnn/CVN/func/PixelMap.h"
 #include "larrecodnn/CVN/func/CVNImageUtils.h"
 // #include "../module_helpers/ICARUSICVNZlibMaker.h"
-#include "icaruscode/ICARUSCVN/module_helpers/ICARUSICVNZlibMaker.h"
+#include "icaruscode/TPC/ICARUSCVN/module_helpers/ICARUSICVNZlibMaker.h"
 
 // Compression
 #include "zlib.h"

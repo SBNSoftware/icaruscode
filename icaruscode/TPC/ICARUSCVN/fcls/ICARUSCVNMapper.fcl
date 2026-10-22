@@ -53,8 +53,8 @@ standard_cvnzlibmaker_east:
 {
   module_type: ICARUSCVNZlibMaker
   Module: "East"
-  ZLibFileName: "fwieler_pixel_maps"
-  InfoFileName: "fwieler_pixel_maps"
+  ZLibFileName: "icarus_pixel_maps"
+  InfoFileName: "icarus_pixel_maps"
   OutputDir: "./NewZlibMakerOutput"
   Grid: "false"
   PixelMapInput: "icaruspixelmapeast"
@@ -83,8 +83,8 @@ standard_cvnzlibmaker_west:
 {
   module_type: ICARUSCVNZlibMaker
   Module: West
-  ZLibFileName: "fwieler_pixel_maps"
-  InfoFileName: "fwieler_pixel_maps"
+  ZLibFileName: "icarus_pixel_maps"
+  InfoFileName: "icarus_pixel_maps"
   OutputDir: "./NewZlibMakerOutput"
   PixelMapInput: "icaruspixelmapwest"
   SetLog: false
@@ -111,43 +111,21 @@ standard_cvnzlibmaker_west:
 
 standard_icarustfnethandler:
 {
-  LibPath: ""
+  LibPath: "ICARUS_DATA_DIR"
   #For the grid
-  #TFProtoBuf: "${INPUT_TAR_DIR_LOCAL}/icarus_cvn/srcs/icaruscode/icaruscode/ICARUSCVN/fcls/model/new_training_output1_flavour_40pixels_101layers_new_new_data_balanced_2-13-0.48.46.pb"
+  #TFProtoBuf: "${INPUT_TAR_DIR_LOCAL}/icarus_cvn/srcs/icaruscode/icaruscode/TPC/ICARUSCVN/fcls/model/new_training_output1_flavour_40pixels_101layers_new_new_data_balanced_2-13-0.48.46.pb"
   #Running Local
-  TFProtoBuf: "CVN/icarus_cvn_flavor.pb"
+  TFProtoBuf: "icarus_data/CVN/icarus_cvn_flavor.pb"
   ChargeLogScale: false
   NImageWires: 500
   NImageTDCs  : 500
   ReverseViews: [false,false,false]
   UseBundle: false
-  Inputs: ["view0", "view1", "view2"]
-  Outputs: ["flavour_1/Softmax"]
   NInputs: 3
   NOutputs: 1
   verbose: true
 }
 
-#IF RUNNING ON THE PIXEL MAPS NOT ON THE ROOT FILE
-standard_icaruscvnevaluatorpm:
-{
-  module_type: ICARUSCVNEvaluator
-  Module: "West"
-  PixelMapModuleLabel: ""
-  PixelMapInput: "/pnfs/icarus/scratch/users/fwieler/pixelMaps_score2/W_set/"
-  SliceLabel: ""
-  PFParticleModuleLabel: "pandoraGausCryoW"
-  T0Label: "pandoraGausCryoW"
-  CVNType: "Tensorflow"
-  verbose: true
-  ICARUSTFHandler: {
-    tool_type: ICARUSTFNetHandler
-    @table::standard_icarustfnethandler
-  }
-  PixelMapProducer: @local::standard_pixelmapproducer
-}
-
-#RUNNING ON THE ROOT FILE
 standard_icaruscvnevaluatorslc_west:
 {
   module_type: ICARUSCVNEvaluator
@@ -160,7 +138,7 @@ standard_icaruscvnevaluatorslc_west:
   CVNType: "Tensorflow"
   verbose: true
   ICARUSTFHandler: {
-    tool_type: ICARUSTFNetHandler
+    tool_type: TFNetHandler
     @table::standard_icarustfnethandler
   }
   PixelMapProducer: @local::standard_pixelmapproducer
@@ -178,7 +156,7 @@ standard_icaruscvnevaluatorslc_east:
   CVNType: "Tensorflow"
   verbose: true
   ICARUSTFHandler: {
-    tool_type: ICARUSTFNetHandler
+    tool_type: TFNetHandler
     @table::standard_icarustfnethandler
   }
   PixelMapProducer: @local::standard_pixelmapproducer

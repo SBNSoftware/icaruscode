@@ -4,7 +4,6 @@ cet_make_library(
   ICARUSPixelMapProducer.cxx
   ICARUSICVNMapper.cxx
   ICARUSICVNZlibMaker.cxx
-  ICARUSITFNetHandler.h
   LIBRARY_NAME
   icaruscode_icaruscvn_module_helpers
   LIBRARIES
@@ -30,7 +29,6 @@ cet_make_library(
   larcore::Geometry_Geometry_service
   larcorealg::Geometry
   
-  icaruscode::ICARUSCVN_tf
   ${ZLIB_LIBRARIES}
   PRIVATE
   larsim::MCCheater_BackTrackerService_service
