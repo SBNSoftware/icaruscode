@@ -1,0 +1,111 @@
+#include "services_common_icarus.fcl"
+#include "icarus_siminfomixer.fcl"
+
+services:
+{
+  @table::icarus_common_services
+
+  scheduler:    { defaultExceptions: false }    # Make all uncaught exceptions fatal.
+  # Load the service that manages root files for histograms.
+  TFileService: { fileName: "siminfomixer.root" }
+  
+  RandomNumberGenerator: {} #ART native random number generator
+}
+
+process_name : SimInfoMixer     #The process name must NOT contain any underscores
+
+source:
+{
+  module_type: RootInput
+  saveMemoryObjectThreshold: 0
+  maxEvents: -1
+}
+
+outputs: {
+  out: { module_type: RootOutput
+  	 fileName: "%ifb_%tc_mixed.root"
+	 compressionLevel: 1
+	 dataTier: "generated"
+         SelectEvents: ["mixer_path"]
+       }
+}
+
+physics: {
+
+  producers : {
+  }
+
+  analyzers: {
+  }
+
+  filters : {
+    generator: @local::icarus_siminfomixer
+    beamgate: @local::icarus_siminfomixer
+    largeant: @local::icarus_siminfomixer
+    ionization: @local::icarus_siminfomixer
+    simplemerge: @local::icarus_siminfomixer
+    genericcrt: @local::icarus_siminfomixer
+    sedlite: @local::icarus_siminfomixer
+    simdrift: @local::icarus_siminfomixer
+    pdfastsim: @local::icarus_siminfomixer
+  }
+
+  mixer_path : [ generator, beamgate, largeant, ionization, simplemerge, genericcrt, sedlite, simdrift, pdfastsim]
+  trigger_paths : [ mixer_path ]
+
+  output : [ out ]
+  end_paths: [ output ]
+
+}
+
+physics.filters.generator.MCTruthInputModuleLabels: ["generator::GenGenie"]
+physics.filters.generator.GTruthInputModuleLabels: ["generator::GenGenie"]
+physics.filters.generator.MCTruthGTruthAssnsInputModuleLabels: ["generator::GenGenie"]
+physics.filters.generator.MCFluxInputModuleLabels: ["generator::GenGenie"]
+physics.filters.generator.MCTruthMCFluxAssnsInputModuleLabels: ["generator::GenGenie"]
+physics.filters.generator.FillPOTInfo: true
+physics.filters.generator.POTSummaryTag: "potinevent:SubRunPOT:G4"
+
+physics.filters.beamgate.BeamGateInputModuleLabels: ["beamgate::GenGenie"]
+
+physics.filters.largeant.SimEnergyDepositInputModuleLabels: [
+  "largeant:LArG4DetectorServicevolTPCPlaneV:G4",
+  "largeant:LArG4DetectorServicevolTPC0:G4",
+  "largeant:LArG4DetectorServicevolTPCPlaneU:G4",
+  "largeant:LArG4DetectorServicevolTPCPlaneY:G4",
+  "largeant:LArG4DetectorServicevolTPCActive:G4"
+]
+physics.filters.largeant.AuxDetHitInputModuleLabels: [
+  "largeant:LArG4DetectorServicevolAuxDetSensitiveCERNbot:G4",
+  "largeant:LArG4DetectorServicevolAuxDetSensitiveMINOScut309:G4",
+  "largeant:LArG4DetectorServicevolAuxDetSensitiveMINOS:G4",
+  "largeant:LArG4DetectorServicevolAuxDetSensitiveMINOScut256:G4",
+  "largeant:LArG4DetectorServicevolAuxDetSensitiveDC:G4",
+  "largeant:LArG4DetectorServicevolAuxDetSensitiveMINOScut508:G4",
+  "largeant:LArG4DetectorServicevolAuxDetSensitiveMINOScut497:G4",
+  "largeant:LArG4DetectorServicevolAuxDetSensitiveMINOScut325:G4",
+  "largeant:LArG4DetectorServicevolAuxDetSensitiveMINOScut485:G4",
+  "largeant:LArG4DetectorServicevolAuxDetSensitiveCERNtop:G4",
+  "largeant:LArG4DetectorServicevolAuxDetSensitiveMINOScut400:G4"
+]
+physics.filters.largeant.MCParticleInputModuleLabels: [
+  "largeant::G4",
+  "largeant:droppedMCParticles:G4"
+]
+physics.filters.largeant.MCTruthInputModuleLabels: ["generator::GenGenie"]
+physics.filters.largeant.MCTruthMCParticleAssnsInputModuleLabels: ["largeant::G4"]
+
+physics.filters.ionization.SimEnergyDepositInputModuleLabels: [
+  "ionization::G4",
+  "ionization:priorSCE:G4"
+]
+
+physics.filters.simplemerge.MCParticleInputModuleLabels: ["simplemerge::G4"]
+
+physics.filters.genericcrt.AuxDetSimChannelInputModuleLabels: ["genericcrt::G4"]
+
+physics.filters.sedlite.SimEnergyDepositLiteInputModuleLabels: ["sedlite::G4"]
+
+physics.filters.simdrift.SimChannelInputModuleLabels: ["simdrift::G4"]
+
+physics.filters.pdfastsim.SimPhotonsInputModuleLabels: ["pdfastsim::G4"]

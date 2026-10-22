@@ -692,7 +692,7 @@ void DaqDecoderICARUSTPCwROI::processSingleFragment(size_t                      
 
             ConcurrentRawDigitCol::iterator newObjItr = concurrentRawDigitCol.emplace_back(channel,wvfm.size(),wvfm); 
 
-            newObjItr->SetPedestal(localPedestal,localFullRMS);
+            newObjItr->SetPedestal(decoderTool->getPedestalVals()[chanIdx]+localPedestal,localFullRMS);
 
             // And, finally, the ROIs 
             const icarus_signal_processing::VectorBool& chanROIs = decoderTool->getROIVals()[chanIdx];

@@ -12,7 +12,7 @@ add_subdirectory(Calibration)
 # cet_set_compiler_flags(EXTRA_CXX_FLAGS -mavx)
 
 cet_build_plugin(SimPMTIcarus art::module
-                    LIBRARIES
+                    LIBRARIES PRIVATE
 			icaruscode_PMT_Algorithms
 			lardataobj::RawData
 			lardataobj::Simulation
@@ -35,7 +35,7 @@ cet_build_plugin(SimPMTIcarus art::module
 			)
 
 cet_build_plugin(OpDetWaveformMetaMaker art::module
-                    LIBRARIES
+                    LIBRARIES PRIVATE
 			icaruscode::PMT_Algorithms
 			lardataalg::DetectorInfo
 			lardataobj::RawData
@@ -44,7 +44,7 @@ cet_build_plugin(OpDetWaveformMetaMaker art::module
 			)
 
 cet_build_plugin(PMTWaveformBaselines art::module
-                    LIBRARIES
+                    LIBRARIES PRIVATE
 			icaruscode_PMT_Algorithms
 			sbnobj::ICARUS_PMT_Data
 			larcore::Geometry_Geometry_service
@@ -60,7 +60,7 @@ cet_build_plugin(PMTWaveformBaselines art::module
 			)
 
 cet_build_plugin(PMTWaveformBaselinesFromReadoutConfiguration art::module
-                    LIBRARIES
+                    LIBRARIES PRIVATE
 			sbnobj::ICARUS_PMT_Data
 			sbnobj::Common_PMT_Data
 			larcore::Geometry_Geometry_service
@@ -76,7 +76,7 @@ cet_build_plugin(PMTWaveformBaselinesFromReadoutConfiguration art::module
 			)
 
 cet_build_plugin(PMTWaveformBaselinesFromChannelData art::module
-                    LIBRARIES
+                    LIBRARIES PRIVATE
 			icarusalg::PMT_Algorithms
 			sbnobj::ICARUS_PMT_Data
 			sbnobj::Common_PMT_Data
@@ -93,71 +93,71 @@ cet_build_plugin(PMTWaveformBaselinesFromChannelData art::module
 			)
 
 cet_build_plugin(AsymGaussPulseFunctionTool art::tool
-        LIBRARIES
+        LIBRARIES PRIVATE
 	icaruscode_PMT_Algorithms
 	)
 
 cet_build_plugin(AsymExpPulseFunctionTool art::tool
-        LIBRARIES
+        LIBRARIES PRIVATE
 	icaruscode_PMT_Algorithms
 	)
 
 cet_build_plugin(SampledWaveformFunctionTool art::tool
-        LIBRARIES
+        LIBRARIES PRIVATE
 	icaruscode_PMT_Algorithms
 	icaruscode_Decode_DecoderTools
   )
 
 cet_build_plugin(CustomPulseFunctionTool art::tool
-        LIBRARIES
+        LIBRARIES PRIVATE
 	icaruscode_PMT_Algorithms
 	ROOT::Hist
 	)
 
 cet_build_plugin(PMTconstantPedestalGeneratorTool art::tool
-  LIBRARIES
+  LIBRARIES PRIVATE
     icaruscode::PMT_Algorithms
-    lardata::DetectorInfoServices_DetectorClocksServiceStandard_service
+    lardata::DetectorClocksService
     lardataalg::DetectorInfo
     lardataobj::RawData
   )
 
 cet_build_plugin(PMTgausNoiseGeneratorTool art::tool
-  LIBRARIES
+  LIBRARIES PRIVATE
     icaruscode::PMT_Algorithms
-    lardata::DetectorInfoServices_DetectorClocksServiceStandard_service
+    lardata::DetectorClocksService
     lardataalg::DetectorInfo
     lardataobj::RawData
   )
 
 cet_build_plugin(PMTfastGausNoiseGeneratorTool art::tool
-  LIBRARIES
+  LIBRARIES PRIVATE
     icaruscode::PMT_Algorithms
-    lardata::DetectorInfoServices_DetectorClocksServiceStandard_service
+    lardata::DetectorClocksService
     lardataalg::DetectorInfo
     lardataobj::RawData
   )
 
 cet_build_plugin(PMTnoNoiseGeneratorTool art::tool
-  LIBRARIES
+  LIBRARIES PRIVATE
     icaruscode::PMT_Algorithms
-    lardata::DetectorInfoServices_DetectorClocksServiceStandard_service
+    lardata::DetectorClocksService
     lardataalg::DetectorInfo
     lardataobj::RawData
   )
 
 cet_build_plugin(CopyBeamTimePMTwaveforms art::module
-  LIBRARIES
+  LIBRARIES PRIVATE
     icaruscode::PMT_Data
     icarusalg::Utilities
     sbnobj::ICARUS_PMT_Data
-    lardata::DetectorInfoServices_DetectorClocksServiceStandard_service
+    lardata::DetectorClocksService
     lardataalg::DetectorInfo
     lardataobj::RawData
   )
 
 cet_build_plugin(SimPMTreadout art::module
-  LIBRARIES
+  LIBRARIES PRIVATE
     icaruscode::PMT_Algorithms
     lardataalg::DetectorInfo
     lardataobj::RawData
@@ -233,18 +233,18 @@ set(      MODULE_LIBRARIES
             ROOT::Tree
             Boost::system
         )
-cet_build_plugin(OpHitFinderICARUS art::module LIBRARIES ${MODULE_LIBRARIES})
-cet_build_plugin(PMTStartCalibTime art::module LIBRARIES ${MODULE_LIBRARIES})
-cet_build_plugin(PMTcoordinates art::module LIBRARIES ${MODULE_LIBRARIES})
-cet_build_plugin(PhotonPropogationICARUS art::module LIBRARIES ${MODULE_LIBRARIES})
-cet_build_plugin(TrigInfo art::module LIBRARIES ${MODULE_LIBRARIES})
-cet_build_plugin(wvfAnaicarus art::module LIBRARIES ${MODULE_LIBRARIES})
+cet_build_plugin(OpHitFinderICARUS art::module LIBRARIES PRIVATE ${MODULE_LIBRARIES})
+cet_build_plugin(PMTStartCalibTime art::module LIBRARIES PRIVATE ${MODULE_LIBRARIES})
+cet_build_plugin(PMTcoordinates art::module LIBRARIES PRIVATE ${MODULE_LIBRARIES})
+cet_build_plugin(PhotonPropogationICARUS art::module LIBRARIES PRIVATE ${MODULE_LIBRARIES})
+cet_build_plugin(TrigInfo art::module LIBRARIES PRIVATE ${MODULE_LIBRARIES})
+cet_build_plugin(wvfAnaicarus art::module LIBRARIES PRIVATE ${MODULE_LIBRARIES})
 
 cet_build_plugin(RequireOnBeamWaveforms art::module
-  LIBRARIES
+  LIBRARIES PRIVATE
     icaruscode::IcarusObj
     icarusalg::Utilities
-    lardata::DetectorInfoServices_DetectorClocksServiceStandard_service
+    lardata::DetectorClocksService
     larcore::Geometry_Geometry_service
     larcore::headers
     lardataalg::DetectorInfo
@@ -256,11 +256,11 @@ cet_build_plugin(RequireOnBeamWaveforms art::module
   )
 
 cet_build_plugin(ReassociatePMTbaselines art::module
-  LIBRARIES
+  LIBRARIES PRIVATE
     icaruscode::IcarusObj
     icaruscode::PMT_Algorithms
     icaruscode::PMT_Data
-    icarusalg::Utilities
+    sbnalg::Utilities
     sbnobj::ICARUS_PMT_Data
     lardata::headers
     lardataalg::headers

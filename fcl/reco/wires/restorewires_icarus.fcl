@@ -1,0 +1,60 @@
+# Configuration for running the Calibration NTupler
+# on a stage-1 reco file
+#
+#include "services_common_icarus.fcl"
+#include "wirechannelroiconverters_sbn.fcl"
+
+process_name: ntuple
+
+services:
+{
+  @table::icarus_wirecalibration_services
+}
+
+#source is a root file
+source:
+{
+  module_type: RootInput
+  maxEvents:  10        # Number of events to create
+  saveMemoryObjectThreshold: 0
+}
+
+# only do analysis
+physics:
+{
+
+ producers: {
+   channel2wire: @local::channelroitowire
+ }
+
+ filters: {}
+
+ analyzers:
+ {
+ }
+
+ out: [rootOutput]
+ reco: [channel2wire]
+ trigger_paths: [reco]
+ end_paths: [out]
+}
+
+physics.producers.channel2wire.WireModuleLabelVec: ["wire2channelroi2d:PHYSCRATEDATATPCEE", "wire2channelroi2d:PHYSCRATEDATATPCEW", "wire2channelroi2d:PHYSCRATEDATATPCWE", "wire2channelroi2d:PHYSCRATEDATATPCWW"]
+physics.producers.channel2wire.OutInstanceLabelVec: ["PHYSCRATEDATATPCWW","PHYSCRATEDATATPCWE","PHYSCRATEDATATPCEW","PHYSCRATEDATATPCEE"]
+
+physics.analyzers.caloskimE.SelectEvents:      [  ]
+physics.analyzers.caloskimW.SelectEvents:      [  ]
+physics.analyzers.simpleLightAna.SelectEvents: [  ]
+physics.analyzers.supera.SelectEvents:         [  ]
+
+outputs:
+{
+ rootOutput:
+ {
+   module_type: RootOutput
+   dataTier: "reconstructed"
+   compressionLevel: 1
+   saveMemoryObjectThreshold: 0
+   fileName: "%ifb_%tc-%p.root"
+ }
+}
