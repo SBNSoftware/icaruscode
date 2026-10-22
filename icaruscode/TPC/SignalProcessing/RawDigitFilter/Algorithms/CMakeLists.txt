@@ -42,7 +42,7 @@ target_compile_definitions(icaruscode_TPC_SignalProcessing_RawDigitFilter_Algori
 
 set(	TOOL_LIBRARIES
 		icaruscode_TPC_SignalProcessing_RawDigitFilter_Algorithms
-		icaruscode_TPC_Utilities_SignalShapingICARUSService_service
+		icaruscode::TPC_Utilities_SignalShapingICARUSService_service
 		lardataobj::RawData
 		lardataobj::RecoBase
 		lardata::Utilities
@@ -69,8 +69,8 @@ set(	TOOL_LIBRARIES
 		FFTW3::FFTW3
 
 )
-cet_build_plugin(MorphologicalFilter art::tool LIBRARIES ${TOOL_LIBRARIES})
-cet_build_plugin(RawDigitFilterAlg art::tool LIBRARIES ${TOOL_LIBRARIES})
+cet_build_plugin(MorphologicalFilter art::tool LIBRARIES PRIVATE ${TOOL_LIBRARIES})
+cet_build_plugin(RawDigitFilterAlg art::tool LIBRARIES PRIVATE ${TOOL_LIBRARIES})
 
 
 install_headers()

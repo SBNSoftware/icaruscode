@@ -42,10 +42,10 @@ set(		MODULE_LIBRARIES
 			ROOT::FFTW
 
 	)
-cet_build_plugin(HitMerger art::module LIBRARIES ${MODULE_LIBRARIES})
-cet_build_plugin(HitSelector art::module LIBRARIES ${MODULE_LIBRARIES})
-cet_build_plugin(ICARUSHitFinder art::module LIBRARIES ${MODULE_LIBRARIES})
-cet_build_plugin(HitConverter art::module LIBRARIES ${MODULE_LIBRARIES})
+cet_build_plugin(HitMerger art::module LIBRARIES PRIVATE ${MODULE_LIBRARIES})
+cet_build_plugin(HitSelector art::module LIBRARIES PRIVATE ${MODULE_LIBRARIES})
+cet_build_plugin(ICARUSHitFinder art::module LIBRARIES PRIVATE ${MODULE_LIBRARIES})
+cet_build_plugin(HitConverter art::module LIBRARIES PRIVATE ${MODULE_LIBRARIES})
 
 
 install_headers()

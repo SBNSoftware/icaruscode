@@ -1,6 +1,7 @@
 cet_enable_asserts()
 
 art_make_library(
+	EXCLUDE "ICARUSChannelMap.cc"
 	LIBRARIES
 		icaruscode::Decode_ChannelMapping
 		art::Utilities
@@ -11,18 +12,18 @@ art_make_library(
 )
 
 cet_build_plugin(ChannelMapSQLite art::tool
-	LIBRARIES
+	LIBRARIES PRIVATE
 		icaruscode::Decode_ChannelMapping
 	)
 
 cet_build_plugin(ChannelMapPostGres art::tool
-	LIBRARIES
+	LIBRARIES PRIVATE
 		icaruscode::Decode_ChannelMapping
 	)
 
 cet_build_plugin(ICARUSChannelMap art::service
-	LIBRARIES
-		icaruscode::Decode_ChannelMapping_Legacy
+	LIBRARIES PUBLIC icaruscode::Decode_ChannelMapping_Legacy # service interface
+	LIBRARIES PRIVATE
 		icaruscode::Decode_ChannelMapping
 		art::Framework_Principal
 		messagefacility::MF_MessageLogger

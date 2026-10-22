@@ -17,20 +17,16 @@ cmake_minimum_required(VERSION 3.20 FATAL_ERROR)
 # cmake_policy(VERSION 3.19)
 
 find_package(cetmodules 3.24.01 REQUIRED)
-project(icaruscode VERSION 10.22.00 LANGUAGES CXX)
+#project(icaruscode VERSION 10.25.00 LANGUAGES CXX)
 
-#set(${PROJECT_NAME}_CMAKE_PROJECT_VERSION_STRING 10.20.09p03)
-#project(icaruscode LANGUAGES CXX)
+set(${PROJECT_NAME}_CMAKE_PROJECT_VERSION_STRING 10.27.00)
+project(icaruscode LANGUAGES CXX)
 
 message(STATUS
   "\n-- ============================================================================="
-  "\n-- === *** Start of configuration of ${PROJECT_NAME} ***"
-  "\n-- ===")
-
-# cetbuildtools contains our cmake modules
-#find_package(cetbuildtools REQUIRED)
-
-#list(APPEND CMAKE_MODULE_PATH $ENV{CANVAS_ROOT_IO_DIR}/Modules $ENV{ART_DIR}/Modules )
+  "\n-- === *** Start of configuration of ${PROJECT_NAME} ${${PROJECT_NAME}_CMAKE_PROJECT_VERSION_STRING} ***"
+  "\n-- ==="
+  )
 
 include(CetCMakeEnv)
 cet_cmake_env()
@@ -46,7 +42,6 @@ cet_set_compiler_flags(DIAGS CAUTIOUS
 cet_report_compiler_flags(REPORT_THRESHOLD VERBOSE)
 
 #these are minimum required versions,not thea ctual product versions
-find_package(larsoft REQUIRED )
 find_package(libwda REQUIRED )
 find_package(PostgreSQL REQUIRED )
 find_package(Eigen3 REQUIRED )
@@ -70,6 +65,7 @@ find_package(lardata REQUIRED )
 find_package(larsim REQUIRED )
 find_package(larevt REQUIRED )
 find_package(larreco REQUIRED )
+find_package(larrecodnn REQUIRED )
 find_package(larana REQUIRED )
 find_package(larpandora REQUIRED )
 find_package(larpandoracontent REQUIRED )
@@ -115,7 +111,6 @@ message(STATUS
   "\n-- ==="
   "\n-- === *** End of configuration of ${PROJECT_NAME} ***"
   "\n-- ============================================================================="
-  "\n-- SQLITE3: ${SQLITE3}"
   "\n-- "
   )
 
