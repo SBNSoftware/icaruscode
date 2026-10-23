@@ -45,9 +45,9 @@ set(		MODULE_LIBRARIES
 			ROOT::FFTW
 			ROOT::Tree
 )
-cet_build_plugin(SimTestPulseAna art::module LIBRARIES ${MODULE_LIBRARIES})
-cet_build_plugin(SimTestPulseWire art::module LIBRARIES ${MODULE_LIBRARIES})
-cet_build_plugin(SimTestPulse art::module LIBRARIES ${MODULE_LIBRARIES})
+cet_build_plugin(SimTestPulseAna art::module LIBRARIES PRIVATE ${MODULE_LIBRARIES})
+cet_build_plugin(SimTestPulseWire art::module LIBRARIES PRIVATE ${MODULE_LIBRARIES})
+cet_build_plugin(SimTestPulse art::module LIBRARIES PRIVATE ${MODULE_LIBRARIES})
 
 install_fhicl()
 

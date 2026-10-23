@@ -1,5 +1,5 @@
 cet_build_plugin(HepMCFileGen art::module
-      LIBRARIES larcorealg::Geometry
+      LIBRARIES PRIVATE larcorealg::Geometry
                 larcore::Geometry_Geometry_service
                 lardataobj::RecoBase
                 lardataobj::AnalysisBase

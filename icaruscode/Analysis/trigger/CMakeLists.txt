@@ -16,7 +16,7 @@ art_make_library(
   )
 
 cet_build_plugin(TimedTrackSelector art::module
-  LIBRARIES
+  LIBRARIES PRIVATE
   icarusalg::Utilities
   lardataobj::AnalysisBase
   lardataobj::RecoBase
@@ -25,7 +25,7 @@ cet_build_plugin(TimedTrackSelector art::module
   )
 
 cet_build_plugin(TimedTrackSelectorCRT art::module
-  LIBRARIES
+  LIBRARIES PRIVATE
   icarusalg::Utilities
   lardataobj::AnalysisBase
   lardataobj::RecoBase
@@ -34,7 +34,7 @@ cet_build_plugin(TimedTrackSelectorCRT art::module
   )
 
 cet_build_plugin(BeamGateInfoFromTracks  art::module
-  LIBRARIES
+  LIBRARIES PRIVATE
   lardataobj::Simulation
   lardataobj::AnalysisBase
   lardataobj::RecoBase
@@ -42,7 +42,7 @@ cet_build_plugin(BeamGateInfoFromTracks  art::module
   )
 
 cet_build_plugin(BeamGateInfoFromTracksCRT  art::module
-  LIBRARIES
+  LIBRARIES PRIVATE
   lardataobj::Simulation
   lardataobj::AnalysisBase
   lardataobj::RecoBase
@@ -50,7 +50,7 @@ cet_build_plugin(BeamGateInfoFromTracksCRT  art::module
   )
 
 cet_build_plugin(TimeTrackTreeStorage art::module
-  LIBRARIES
+  LIBRARIES PRIVATE
   icaruscode_Analysis_trigger
   icaruscode_PMT_Algorithms
   icaruscode_Decode_DataProducts
@@ -72,7 +72,7 @@ cet_build_plugin(TimeTrackTreeStorage art::module
 )
 
 cet_build_plugin(TimeTrackTreeStorageCRT art::module
-  LIBRARIES
+  LIBRARIES PRIVATE
   icaruscode::Analysis_trigger
   icaruscode_CRTUtils
   icaruscode::PMT_Algorithms

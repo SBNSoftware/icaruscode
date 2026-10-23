@@ -24,13 +24,9 @@ project(icaruscode LANGUAGES CXX)
 
 message(STATUS
   "\n-- ============================================================================="
-  "\n-- === *** Start of configuration of ${PROJECT_NAME} ***"
-  "\n-- ===")
-
-# cetbuildtools contains our cmake modules
-#find_package(cetbuildtools REQUIRED)
-
-#list(APPEND CMAKE_MODULE_PATH $ENV{CANVAS_ROOT_IO_DIR}/Modules $ENV{ART_DIR}/Modules )
+  "\n-- === *** Start of configuration of ${PROJECT_NAME} ${${PROJECT_NAME}_CMAKE_PROJECT_VERSION_STRING} ***"
+  "\n-- ==="
+  )
 
 include(CetCMakeEnv)
 cet_cmake_env()
@@ -69,6 +65,7 @@ find_package(lardata REQUIRED )
 find_package(larsim REQUIRED )
 find_package(larevt REQUIRED )
 find_package(larreco REQUIRED )
+find_package(larrecodnn REQUIRED )
 find_package(larana REQUIRED )
 find_package(larpandora REQUIRED )
 find_package(larpandoracontent REQUIRED )
@@ -114,7 +111,6 @@ message(STATUS
   "\n-- ==="
   "\n-- === *** End of configuration of ${PROJECT_NAME} ***"
   "\n-- ============================================================================="
-  "\n-- SQLITE3: ${SQLITE3}"
   "\n-- "
   )
 
