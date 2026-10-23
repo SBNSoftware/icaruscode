@@ -1,0 +1,62 @@
+#include "ICARUSCVNMapper.fcl"
+#include "simulationservices_icarus.fcl"
+#include "services_common_icarus.fcl"
+#include "rootoutput_icarus.fcl"
+#include "sam_icarus.fcl"
+#include "services_icarus_simulation.fcl"
+#include "signalservices_icarus.fcl"
+#include "rootoutput_icarus.fcl"
+
+process_name: ICARUSCVNEVALUATOR
+
+services:
+{
+  TFileService: {}
+  RandomNumberGenerator:        {}                                              # required by fuzzyCluster
+  message:                      @local::icarus_message_services_prod            #from services_common_icarus.fcl
+  FileCatalogMetadata:          @local::art_file_catalog_mc                     #from sam_icarus.fcl
+                                @table::icarus_common_services                  # include all ICARUS basic services
+  SignalShapingICARUSService:   @local::icarus_signalshapingservice
+  ParticleInventoryService:     @local::standard_particleinventoryservice
+ 
+}
+
+source:
+{
+  module_type: RootInput
+  maxEvents:  -1
+}
+
+
+physics:
+{
+ producers:{
+  cvnCryoE: @local::standard_icaruscvnevaluatorslc_east
+  cvnCryoW: @local::standard_icaruscvnevaluatorslc_west
+ }
+ 
+ filters:  {} 
+ 
+ analyzers:{}
+ 
+ reco: [ cvnCryoE, cvnCryoW ]
+ 
+ stream: [ out ]
+ 
+ trigger_paths: [ reco ] 
+ 
+ end_paths: [ stream ]
+}
+
+outputs:
+{
+ out:
+ {
+   module_type: RootOutput
+   dataTier: "reconstructed"
+   SelectEvents: [ reco ]
+   fastCloning: true
+   fileName: @local::icarus_rootoutput.fileName
+ } 
+}
+
