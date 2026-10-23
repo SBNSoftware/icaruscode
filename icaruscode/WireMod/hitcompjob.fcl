@@ -1,0 +1,61 @@
+#include "services_common_icarus.fcl"
+#include "HitComp.fcl"
+
+process_name: HitComp
+
+services:
+{
+  @table::icarus_basic_services
+  TFileService: { fileName: "hitcomp_hist.root" closeFileFast: false }
+  message: @local::icarus_message_services_interactive_debug
+}
+
+outputs:
+{
+  hitcomp:
+  {
+    module_type: RootOutput
+    fileName: "hitcomp_out.root"
+    results:
+    {
+      producers:
+      {
+        originalEE: { @table::standard_hitcomp }
+        originalEW: { @table::standard_hitcomp }
+        originalWE: { @table::standard_hitcomp }
+        originalWW: { @table::standard_hitcomp }
+        modifiedEE: { @table::standard_hitcomp }
+        modifiedEW: { @table::standard_hitcomp }
+        modifiedWE: { @table::standard_hitcomp }
+        modifiedWW: { @table::standard_hitcomp }
+      }
+      rpPath: [originalEE, originalEW, originalWE, originalWW, modifiedEE, modifiedEW, modifiedWE, modifiedWW]
+    }
+  }
+}
+
+physics:
+{
+  stream1: [ hitcomp ]
+}
+
+outputs.hitcomp.results.producers.originalEE: { @table::standard_hitcomp }
+outputs.hitcomp.results.producers.originalEE.Label: "gaushitTPCEE"
+outputs.hitcomp.results.producers.originalEW: { @table::standard_hitcomp }
+outputs.hitcomp.results.producers.originalEW.Label: "gaushitTPCEW"
+outputs.hitcomp.results.producers.originalWE: { @table::standard_hitcomp }
+outputs.hitcomp.results.producers.originalWE.Label: "gaushitTPCWE"
+outputs.hitcomp.results.producers.originalWW: { @table::standard_hitcomp }
+outputs.hitcomp.results.producers.originalWW.Label: "gaushitTPCWW"
+outputs.hitcomp.results.producers.modifiedEE: { @table::standard_hitcomp }
+outputs.hitcomp.results.producers.modifiedEE.Label: "gaushit1dTPCEE"
+outputs.hitcomp.results.producers.modifiedEE.Process: "WireModifier"
+outputs.hitcomp.results.producers.modifiedEW: { @table::standard_hitcomp }
+outputs.hitcomp.results.producers.modifiedEW.Label: "gaushit1dTPCEW"
+outputs.hitcomp.results.producers.modifiedEW.Process: "WireModifier"
+outputs.hitcomp.results.producers.modifiedWE: { @table::standard_hitcomp }
+outputs.hitcomp.results.producers.modifiedWE.Label: "gaushit1dTPCWE"
+outputs.hitcomp.results.producers.modifiedWE.Process: "WireModifier"
+outputs.hitcomp.results.producers.modifiedWW: { @table::standard_hitcomp }
+outputs.hitcomp.results.producers.modifiedWW.Label: "gaushit1dTPCWW"
+outputs.hitcomp.results.producers.modifiedWW.Process: "WireModifier"
