@@ -5,7 +5,7 @@
 | Type:           | Technical documentation                              |
 | Author:         | Gianluca Petrillo (petrillo@slac.stanford.edu)       |
 | Created on:     | April 23, 2020                                       |
-| Version:        | 1.1                                                  |
+| Version:        | 1.2                                                  |
 
 
 This document describes a procedure to render the documentation embedded in the
@@ -73,17 +73,33 @@ The script, when running, will clone the repository anyway, so the recommended
 approach is to clone it first, e.g.:
     
     git clone https://github.com/SBNSoftware/icaruscode.git
-    icaruscode/doc/scripts/updateLocalDocumentation.sh
     
 Note that the script *must* be executed from outside the `icaruscode` GIT
 repository, like in the example above.
 
-Normally this will clone or _update_ the repository, and run Doxygen on it.
-Note the word "update": the script `updateLocalDocumentation.sh` **does** mess
-up with the GIT repository, and while there is some provision not to lose data,
-if that repository has anything valuable it should be backed up or pushed before
-running.
-
+The procedure to run the rendering, after the recommended cloning above,
+depends on which `icaruscode` version is desired:
+* For the version in the `master` branch, the cloning already lands in there,
+   but keep an eye in the log about which version is actually set up via UPS
+   since that is what will determine the versions used for the dependency
+   repositories. The command is simply:
+       
+       icaruscode/doc/scripts/updateLocalDocumentation.sh
+       
+   This will clone or _update_ the repository, and run Doxygen on it.
+   Note the word "update": the script `updateLocalDocumentation.sh` **does** mess
+   up with the GIT repository, and while there is some provision not to lose data,
+   if that repository has anything valuable it should be backed up or pushed before
+   running.
+* if a specific version is instead desired, the safest way is to check out
+   the relevant branch of `icaruscode` _and_ set it up via UPS. In addition,
+   the script must be informed not to change the current GIT branch.
+       
+       git clone https://github.com/SBNSoftware/icaruscode.git
+       git checkout v10_25_00
+       setup icaruscode v10_25_00 -q e26:prof
+       icaruscode/doc/scripts/updateLocalDocumentation.sh --currentbranch
+       
 The script will use a template Doxygen configuration file (by default it's
 in `icaruscode/doc`), replace some parameters dynamically and then produce HTML
 output into a directory that is configured in the Doxygen file (usually `html`).
@@ -96,12 +112,6 @@ If run again, it will attempt to update the GIT repository and then regenerate
 the documentation, overwriting the previous one. Note that there have been
 instances where part of the documentation would not be updated; in that case,
 the option `--clean` will remove the previous rendering.
-
-As a special mode, the script can be instructed to check out a specific branch
-for the documentation, or even to use whatever is already there (option
-`--currentbranch`), in which case the repository is not updated. These options
-have been tested much less than the standard running mode, so special care
-should be taken when running.
 
 At this point, opening the file `html/index.html` with a local browser will
 access the documentation. To publish it in the standard ICARUS web page, the two
@@ -196,6 +206,9 @@ Version 1.0 (April 23, 2020, petrillo@slac.stanford.edu)
 
 Version 1.1 (April 12, 2021, petrillo@slac.stanford.edu)
 :   updated GIT repository (GitHub) and general refresh.
+
+Version 1.2 (October 26, 2026, petrillo@slac.stanford.edu)
+:   added instructions for a specific release
 
 
 [Markdown]: https://daringfireball.net/projects/markdown
