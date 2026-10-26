@@ -52,6 +52,7 @@ namespace recob {
         L1D_(0), L2D_(0), L3D_(0),
         seglens_(), cumseglens_(),
         seghits_(), cumseghits_(),
+        segsides_(),
         nsegused_(), nsegtot_(),
         dthetalinexp_(), dthetalin_(),
         dthetapolyexp_(), dthetapoly_(),
@@ -79,6 +80,7 @@ namespace recob {
       float L1D, float L2D, float L3D,
       std::vector<float> seglens, std::vector<float> cumseglens, 
       std::vector<int> seghits, std::vector<int> cumseghits,
+      std::vector<int> segsides,
       int nsegused, int nsegtot,
       std::vector<float> dthetalinexp, std::vector<float> dthetalin,
       std::vector<float> dthetapolyexp, std::vector<float> dthetapoly,
@@ -97,6 +99,7 @@ namespace recob {
         L1D_(L1D), L2D_(L2D), L3D_(L3D),
         seglens_(seglens), cumseglens_(cumseglens),
         seghits_(seghits), cumseghits_(cumseghits),
+        segsides_(segsides),
         nsegused_(nsegused), nsegtot_(nsegtot),
         dthetalinexp_(dthetalinexp), dthetalin_(dthetalin),
         dthetapolyexp_(dthetapolyexp), dthetapoly_(dthetapoly),
@@ -205,6 +208,10 @@ namespace recob {
     std::vector<int> segmentCumHits() const { 
       return cumseghits_; }
 
+    /// vector of TPC side for the segments 
+    std::vector<int> segmentSides() const { 
+      return segsides_; }
+
     /// number of used segments 
     int nSegmentsUsed() const {
       return nsegused_; }
@@ -261,6 +268,7 @@ namespace recob {
     float L1D_; float L2D_; float L3D_;
     std::vector<float> seglens_; std::vector<float> cumseglens_;
     std::vector<int> seghits_; std::vector<int> cumseghits_;
+    std::vector<int> segsides_;
     int nsegused_; int nsegtot_;
     std::vector<float> dthetalinexp_; std::vector<float> dthetalin_; 
     std::vector<float> dthetapolyexp_; std::vector<float> dthetapoly_;

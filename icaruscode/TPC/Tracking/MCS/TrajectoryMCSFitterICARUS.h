@@ -93,6 +93,10 @@ namespace trkf {
         Name("fitMode"),
         Comment("0 for both linear and polygonal angles, 1 for only linear angles, 2 for only polygonal angles. Flag of fit mode for ICARUS fit."),
         0 };
+      fhicl::Atom<unsigned int> fullTrackMode{
+        Name("fullTrackMode"),
+        Comment("0 for track only in the last TPC, 1 for full track. Flag of full track mode for ICARUS fit."),
+        0 };
       fhicl::Atom<unsigned int> wireSkip{
         Name("wireSkip"),
         Comment("Number of wires to be skipped in sigma3p computation."),
@@ -121,6 +125,7 @@ namespace trkf {
       unsigned int dimMode, 
       unsigned int planeMode, 
       unsigned int fitMode,
+      unsigned int fullTrackMode,
       unsigned int wireSkip,
       bool removeDeltas) {
         pIdHyp_ = pIdHyp;
@@ -139,6 +144,7 @@ namespace trkf {
         dimMode_ = dimMode;
         planeMode_ = planeMode;
         fitMode_ = fitMode; 
+        fullTrackMode_ = fullTrackMode;
         wireSkip_ = wireSkip; 
         removeDeltas_ = removeDeltas;}
 
@@ -160,6 +166,7 @@ namespace trkf {
         p().dimMode(),
         p().planeMode(),
         p().fitMode(),
+        p().fullTrackMode(),
         p().wireSkip(),
         p().removeDeltas()) {}
     
@@ -357,6 +364,9 @@ namespace trkf {
     unsigned int fitMode() const { 
       return fitMode_; }
 
+    unsigned int fullTrackMode() const {
+      return fullTrackMode_; }
+
     unsigned int wireSkip() const { 
       return wireSkip_; }
 
@@ -395,7 +405,8 @@ namespace trkf {
       std::vector<float> dthetaLin, 
       std::vector<float> dthetaPoly, 
       int pid, 
-      double p0) const;
+      double p0,
+      bool verbose) const;
 
     void LikelihoodFit(
       const recob::TrackTrajectory& traj, 
@@ -630,6 +641,7 @@ namespace trkf {
     unsigned int dimMode_;
     unsigned int planeMode_;
     unsigned int fitMode_;
+    unsigned int fullTrackMode_;
     unsigned int wireSkip_;
     bool removeDeltas_;
     std::vector<recob::Hit> hits2dC;
