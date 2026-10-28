@@ -329,26 +329,22 @@ function CheckOutSources() {
   shift
   local RepoNames=( "$@" )
   
-  
-  local MasterDoxyfile
-  MasterDoxyfile="$(FindDoxyfile "$ExperimentName")"
-  LASTFATAL "Can't find a doxygen configuration file for '${ExperimentName}'"
-  
   [[ -z "${RepoNames[0]}" ]] && RepoNames[0]="$(ExperimentCodeProduct "$ExperimentName" )"
   local ExperimentCodeName="${RepoNames[0]}"
   
   # in the future this constraint can be relaxed:
   local ExperimentCodeRepoPath="$ExperimentCodeName"
   
-  local DateTag="$(date '+%Y%m%d')"
-  local DoxygenLog="${LogDir%/}/$(basename "${MasterDoxyfile%.doxy*}")-${DateTag}.log"
-  
   local -r RequestedCodeBranch="$RequestedExperimentCodeBranch"
   
   # all the same branch, just because of the simpler interface
   local RequestedRepoVersion
   for CodeRepoName in "${RepoNames[@]}" ; do
-    RequestedRepoVersion="$(UPSversion "$CodeRepoName")"
+    if [[ "$CodeRepoName" != "$ExperimentCodeName" ]]; then
+      RequestedRepoVersion="$(UPSversion "$CodeRepoName")"
+    else
+      false # trigger the next conditio
+    fi
     [[ $? == 0 ]] || RequestedRepoVersion="$RequestedCodeBranch"
     echo " === preparing repository '${CodeRepoName}' (${RequestedRepoVersion}) === "
     PrepareRepository "$CodeRepoName" "$RequestedRepoVersion"
@@ -385,19 +381,19 @@ function RunDoxygen() {
   shift
   local -a AdditionalRepositories=( "$@" )
   
+  local ExperimentCodeName="$(ExperimentCodeProduct "$ExperimentName" )"
+  CodeRepoNames=( "$ExperimentCodeName" "${AdditionalRepositories[@]}" )
+  
+  CheckOutSources "$ExperimentName" "${CodeRepoNames[@]}"
+
   local MasterDoxyfile
   # search for a Doxyfile in the current directory first
   MasterDoxyfile="$(FindDoxyfile "$ExperimentName" "$(pwd)" )"
   LASTFATAL "Can't find a doxygen configuration file for '${ExperimentName}'"
   
-  local ExperimentCodeName="$(ExperimentCodeProduct "$ExperimentName" )"
-  CodeRepoNames=( "$ExperimentCodeName" "${AdditionalRepositories[@]}" )
-  
   local DateTag="$(date '+%Y%m%d')"
   local DoxygenLog="${LogDir%/}/$(basename "${MasterDoxyfile%.doxy*}")-${DateTag}.log"
   
-  CheckOutSources "$ExperimentName" "${CodeRepoNames[@]}"
-
   # in the future this constraint can be relaxed:
   local ExperimentCodeRepoPath="${CodeRepoPaths[$ExperimentCodeName]}"
   
