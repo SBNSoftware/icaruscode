@@ -28,13 +28,6 @@ art_make_library(
 		lardata::Utilities
 		lardata::DetectorClocksService
 		nusimdata::SimulationBase
-		art_root_io::TFileService_service
-		art_root_io::tfile_support
-		art::Framework_Services_Registry
-		art::Framework_Principal
-		art::Framework_Core
-		art::Persistency_Provenance
-		art::Utilities
 		canvas::canvas
 		messagefacility::MF_MessageLogger
 		fhiclcpp::fhiclcpp
@@ -56,18 +49,9 @@ set(	MODULE_LIBRARIES
 		fhiclcpp::fhiclcpp
 		ROOT::Core
 		ROOT::Physics
-		TOOL_LIBRARIES
-		icaruscode::PMT_Trigger_Algorithms
-		sbnobj::ICARUS_PMT_Trigger_Data
-		lardataalg::DetectorInfo
-		lardataobj::RawData
-		lardata::DetectorClocksService
-		messagefacility::MF_MessageLogger
-		fhiclcpp::fhiclcpp
-		larcore::Geometry_Geometry_service
 )
 set(	TOOL_LIBRARIES
-		icaruscode_PMT_Trigger_Algorithms
+		icaruscode::PMT_Trigger_Algorithms
 		sbnobj::ICARUS_PMT_Trigger_Data
 		lardataalg::DetectorInfo
 		lardataobj::RawData
@@ -89,14 +73,14 @@ cet_build_plugin(WriteBeamGateInfo art::module LIBRARIES PRIVATE
   )
 
 cet_build_plugin(FixBeamGateInfo art::module LIBRARIES PRIVATE
+  icarusalg::Utilities
   lardataobj::Simulation
   larcorealg::headers
   larcorealg::CoreUtils
   lardataalg::headers
   ) 
 
-cet_build_plugin(DiscriminatePMTwaveformsByChannel art::module
-                LIBRARIES PRIVATE
+cet_build_plugin(DiscriminatePMTwaveformsByChannel art::module LIBRARIES PRIVATE
   icaruscode::PMT_Trigger_Algorithms
   sbnobj::ICARUS_PMT_Trigger_Data
   sbnobj::ICARUS_PMT_Data
@@ -108,12 +92,6 @@ cet_build_plugin(DiscriminatePMTwaveformsByChannel art::module
   lardata::DetectorClocksService
   larcore::Geometry_Geometry_service
   art::Framework_Services_Registry
-  art::Framework_Principal
-  art::Framework_Core
-  canvas::canvas
-  messagefacility::MF_MessageLogger
-  fhiclcpp::fhiclcpp
-  cetlib_except::cetlib_except
   ROOT::Core
   )
 
@@ -148,12 +126,6 @@ cet_build_plugin(SlidingWindowTrigger art::module
 		lardata::DetectorClocksService
 		lardataobj::RawData
 		art::Framework_Services_Registry
-		art::Framework_Principal
-		art::Framework_Core
-		canvas::canvas
-		messagefacility::MF_MessageLogger
-		fhiclcpp::fhiclcpp
-		cetlib_except::cetlib_except
 		ROOT::Core
 		) 
 
@@ -187,12 +159,6 @@ cet_build_plugin(SlidingWindowTriggerSimulation art::module
 		art_root_io::TFileService_service
 		art_root_io::tfile_support
 		art::Framework_Services_Registry
-		art::Framework_Principal
-		art::Framework_Core
-		canvas::canvas
-		messagefacility::MF_MessageLogger
-		fhiclcpp::fhiclcpp
-		cetlib_except::cetlib_except
 		ROOT::Hist
 		ROOT::Core
 		) 
@@ -209,12 +175,6 @@ cet_build_plugin(TriggerSimulationOnGates art::module LIBRARIES PRIVATE
   art_root_io::TFileService_service
   art_root_io::tfile_support
   art::Framework_Services_Registry
-  art::Framework_Principal
-  art::Framework_Core
-  canvas::canvas
-  messagefacility::MF_MessageLogger
-  fhiclcpp::fhiclcpp
-  cetlib_except::cetlib_except
   ROOT::Hist
   ROOT::Core
   ) 
@@ -234,12 +194,6 @@ cet_build_plugin(TriggerEfficiencyPlots art::module
 		art_root_io::TFileService_service
 		art_root_io::tfile_support
 		art::Framework_Services_Registry
-		art::Framework_Principal
-		art::Framework_Core
-		canvas::canvas
-		messagefacility::MF_MessageLogger
-		fhiclcpp::fhiclcpp
-		cetlib_except::cetlib_except
 		ROOT::GenVector
 		ROOT::Hist
 		ROOT::Tree
@@ -260,29 +214,17 @@ cet_build_plugin(MakeTriggerSimulationTree art::module
 		art_root_io::TFileService_service
 		art_root_io::tfile_support
 		art::Framework_Services_Registry
-		art::Framework_Principal
-		art::Framework_Core
-		canvas::canvas
-		messagefacility::MF_MessageLogger
-		fhiclcpp::fhiclcpp
-		cetlib_except::cetlib_except
 		ROOT::GenVector
 		ROOT::Tree
 		ROOT::Core
 		) 
 
 cet_build_plugin(TriggerEmulationTree art::module LIBRARIES PRIVATE
-  icaruscode_PMT_Trigger_Algorithms
-  icaruscode_PMT_Trigger_Utilities
+  icaruscode::PMT_Trigger_Algorithms
+  icaruscode::PMT_Trigger_Utilities
   art_root_io::TFileService_service
   art_root_io::tfile_support
   art::Framework_Services_Registry
-  art::Framework_Principal
-  art::Framework_Core
-  canvas::canvas
-  messagefacility::MF_MessageLogger
-  fhiclcpp::fhiclcpp
-  cetlib_except::cetlib_except
   ROOT::Tree
   ROOT::Core
   ) 
@@ -309,13 +251,6 @@ foreach(TriggerEfficiencyPlotsModule
 		art_root_io::TFileService_service
 		art_root_io::tfile_support
 		art::Framework_Services_Registry
-		art::Framework_Principal
-		art::Framework_Core
-		art::Framework_Principal
-		canvas::canvas
-		messagefacility::MF_MessageLogger
-		fhiclcpp::fhiclcpp
-		cetlib_except::cetlib_except
 		ROOT::GenVector
 		ROOT::Hist
 		ROOT::Tree

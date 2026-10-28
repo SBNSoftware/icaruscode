@@ -1246,9 +1246,9 @@ class icarus::trigger::TriggerEfficiencyPlots: public art::EDAnalyzer {
       std::vector<art::InputTag>{ "largeant:TPCActive" }
       };
 
-    fhicl::Atom<std::string> TriggerGatesTag {
+    fhicl::Atom<art::InputTag> TriggerGatesTag {
       Name("TriggerGatesTag"),
-      Comment("label of the input trigger gate data product (no instance name)")
+      Comment("tag of the input trigger gate data product (no instance name)")
       };
 
     fhicl::Sequence<raw::ADC_Count_t> Thresholds {
@@ -1496,6 +1496,11 @@ class icarus::trigger::TriggerEfficiencyPlots: public art::EDAnalyzer {
   /// Returns a gate that is `Max()` of all the specified `gates`.
   template <typename TrigGateColl>
   static auto computeMaxGate(TrigGateColl const& gates);
+  
+  
+  /// Returns `defModule` with instance name replaced by `thresholdStr`.
+  static art::InputTag makeTag
+    (art::InputTag const& defModule, std::string const& thresholdStr);
 
   
 }; // icarus::trigger::TriggerEfficiencyPlots
@@ -1533,10 +1538,10 @@ icarus::trigger::TriggerEfficiencyPlots::TriggerEfficiencyPlots
     if (fLogEventDetails.empty()) fLogEventDetails = fLogCategory;
   } // if EventDetailsLogCategory is specified
 
-  std::string const discrModuleLabel = config().TriggerGatesTag();
+  art::InputTag const& discrModuleTag = config().TriggerGatesTag();
   for (raw::ADC_Count_t threshold: config().Thresholds()) {
     fADCthresholds[icarus::trigger::ADCCounts_t{threshold}]
-      = art::InputTag{ discrModuleLabel, util::to_string(threshold) };
+      = makeTag(discrModuleTag, util::to_string(threshold));
   }
 
   if (config().EventTreeName.hasValue()) {
@@ -2465,6 +2470,20 @@ auto icarus::trigger::TriggerEfficiencyPlots::ReadTriggerGates
   return gatesPerCryostat;
 
 } // icarus::trigger::TriggerEfficiencyPlots::ReadTriggerGates()
+
+
+//------------------------------------------------------------------------------
+art::InputTag icarus::trigger::TriggerEfficiencyPlots::makeTag
+  (art::InputTag const& defModule, std::string const& thresholdStr)
+{
+  if (!thresholdStr.empty() && !defModule.instance().empty()) {
+    throw art::Exception(art::errors::Configuration)
+      << "Module tag instance name (`TriggerGatesTag`: '"
+      << defModule.encode() << "') and the threshold '" << thresholdStr
+      << "' are both set. One of them must be empty.\n";
+  }
+  return { defModule.label(), thresholdStr, defModule.process() };
+} // icarus::trigger::TriggerEfficiencyPlots::makeTag()
 
 
 //------------------------------------------------------------------------------

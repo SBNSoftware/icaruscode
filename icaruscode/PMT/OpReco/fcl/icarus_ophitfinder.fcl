@@ -146,7 +146,7 @@ icarus_opreco_hit_slidingwindow: {
   ADCThreshold:        5 # ADC threshold (absolute) above pedestal mean to fire a pulse
   NSigmaThreshold:     3 # ADC threshold (N*pedestal sigma) above pedestal mean to fire a pulse
   TailADCThreshold:    2 # ADC threshold (absolute) below which next pulse is allowed to fire
-  TailNSigmaThreshold: 2 # ADC threshold (N*pedestal sigma) below which next pulse is allowed to fire
+  TailNSigma:          2 # ADC threshold (N*pedestal sigma) below which next pulse is allowed to fire
   EndADCThreshold:     1 # ADC threshold (absolute) at which the pulse ends
   EndNSigmaThreshold:  1 # ADC threshold (N*pedetal sigma) at which the pulse ends
   MinPulseWidth:       2 # The width of a pulse needs to be equal or larger than this to be recorded
@@ -162,7 +162,7 @@ icarus_opreco_hit_slidingwindow_201910: { # based on icarus_opreco_hit_slidingwi
   ADCThreshold:       10 # ADC threshold (absolute) above pedestal mean to fire a pulse
   NSigmaThreshold:     3 # ADC threshold (N*pedestal sigma) above pedestal mean to fire a pulse
   TailADCThreshold:    6 # ADC threshold (absolute) below which next pulse is allowed to fire
-  TailNSigmaThreshold: 2 # ADC threshold (N*pedestal sigma) below which next pulse is allowed to fire
+  TailNSigma:          2 # ADC threshold (N*pedestal sigma) below which next pulse is allowed to fire
   EndADCThreshold:     2 # ADC threshold (absolute) at which the pulse ends
   EndNSigmaThreshold:  1 # ADC threshold (N*pedetal sigma) at which the pulse ends
   MinPulseWidth:       5 # The width of a pulse needs to be equal or larger than this to be recorded
@@ -186,24 +186,38 @@ icarus_opreco_hit_cfd: {
 
 icarus_ophit: # some basic configuration
 {
-   module_type:    "OpHitFinder"
+   ## in the past we were using directly module "OpHitFinder" from larana
+   ## we are now using our own entry point to the reconstruction "ICARUSOpHitFinder"
+   ## this allows interfacing with our PMT channel status service
+   module_type:    "ICARUSOpHitFinder"
    GenModule:      "generator"
    InputModule:    "opdaq"
-   InputLabels:    []
-   ChannelMasks:   []
-   HitThreshold:   0.2   # PE
+   #InputLabels: [] # not supported by ICARUSOpHitFinder 
+
+   ChannelMasks:     []
+   UseChannelStatusDatabase: true  # skip channels flagged in the status database
+
+   UseCalibrator:  true  # use calibrator service (SPEArea database)
+                         # if true, overrides SPEArea / SPEShift below
    AreaToPE:       true  # Use area to calculate number of PEs
-   SPEArea:        @local::SPE.Area # If AreaToPE is true, this number is
-                         # used as single PE area (in ADC counts)
-   SPEShift:       @local::SPE.Shift # Used by PhotonCalibratorStandard to compute
-                         # PE = area / SPEArea + SPEShift
+   SPEArea:        @local::SPERun2.Area  # If AreaToPE is true, this number is
+                                         # used as single PE area (in ADC counts)
+   SPEShift:       @local::SPERun2.Shift # Used by PhotonCalibratorStandard to compute
+                                         # PE = area / SPEArea + SPEShift
+
    UseStartTime:   false # start and peak times each in its own data member
-   reco_man:       @local::standard_preco_manager
+
+   #reco_man: @local::standard_preco_manager # now managed internally by ICARUSOpHitFinder
+
+   HitThreshold:   0.2   # PE
    HitAlgoPset:    @local::icarus_opreco_hit_slidingwindow_201910
+
    PedAlgoPset:    @local::icarus_opreco_pedestal_DocDB24969
+
    RiseTimeCalculator: {
-     tool_type:      RiseTimeThreshold
-     PeakRatio:      0.15  # at 15% of the peak amplitude -- not tuned
+     tool_type:          RiseTimeThreshold
+     PeakRatio:          0.15  # at 15% of the peak amplitude -- not tuned
+     #InterpolateSamples: true  # sub-sample linear interpolation
    }
 }
 
@@ -215,7 +229,8 @@ icarus_ophitdebugger.OutputFile:  "ophit_debug.root"
 # this is the "standard" ICARUS configuration for MC optical hit reconstruction:
 icarus_ophit_MC: {
   @table::icarus_ophit
-  PedAlgoPset:    @local::icarus_opreco_pedestal_MC_DocDB24969
+  UseCalibrator: false
+  UseChannelStatusDatabase: false
   InputModule: "opdaq"
 }
 
@@ -228,7 +243,6 @@ icarus_ophitdebugger_MC.OutputFile:  "ophit_debug.root"
 icarus_ophit_data: {
   @table::icarus_ophit
   InputModule: "daqPMT"
-#  PedAlgoPset: @local::icarus_opreco_pedestal_DocDB24969
 }
 
 icarus_ophitdebugger_data: @local::icarus_ophit_data

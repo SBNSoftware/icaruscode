@@ -18,6 +18,11 @@ services_compat_no_overburden_icarus_v3.fcl
 services_compat_overburden_icarus_v3.fcl
 set_caf_calconst.fcl
 
+override_services_for_simulation.fcl
+
+enable_overlay_sp.fcl
+enable_overlay_stage1.fcl
+
 
 ################################################################################
 # broken, won't fix
@@ -94,5 +99,3 @@ intime_gen_overlay_SimInfoMixer1.fcl
 prodcorsika_proton_intime_filter_bnb_siminfomixer.fcl
 prodcorsika_proton_intime_filter_bnb_siminfomixer2.fcl
 prodcorsika_proton_intime_filter_bnb_siminfomixer1.fcl
-# GRAY PUTNAM 5/8/25: "Enabler" fcl files that should not be dump'd on their own
-enable_overlay_sp.fcl
