@@ -373,14 +373,65 @@ icarus_stage1_producers.gaushit2dTPCEW.CalDataModuleLabel:                      
 icarus_stage1_producers.gaushit2dTPCEE.CalDataModuleLabel:                                     "wire2channelroi2d:PHYSCRATEDATATPCEE"
 
 # Setup version of hit finder's with Pulse Trains ("PT"s) enabled
-icarus_stage1_producers.gaushitPT2dTPCEE: @local::icarus_stage1_producers.gaushit2dTPCEE
-icarus_stage1_producers.gaushitPT2dTPCEE.LongMaxHits: [10, 10, 10]
-icarus_stage1_producers.gaushitPT2dTPCEW: @local::icarus_stage1_producers.gaushit2dTPCEW
-icarus_stage1_producers.gaushitPT2dTPCEW.LongMaxHits: [10, 10, 10]
-icarus_stage1_producers.gaushitPT2dTPCWE: @local::icarus_stage1_producers.gaushit2dTPCWE
-icarus_stage1_producers.gaushitPT2dTPCWE.LongMaxHits: [10, 10, 10]
-icarus_stage1_producers.gaushitPT2dTPCWW: @local::icarus_stage1_producers.gaushit2dTPCWW
-icarus_stage1_producers.gaushitPT2dTPCWW.LongMaxHits: [10, 10, 10]
+
+# Using default values
+spine_hit_candidate_tool_parameters:
+{
+	RoiThreshold: 5.
+	NextADCThreshold: 0. 
+}
+
+# Using default values
+spine_gaushit_parameters:
+{
+	LongMaxHits: [10, 10, 10]
+	MaxMultiHit: 5
+	Chi2NDF: 500.
+	LongPulseWidth: [10, 10, 10]
+	HitFinderToolVec:
+	{
+	CandidateHitsPlane0: 
+	{
+		@table::spine_hit_candidate_tool_parameters
+		Plane: 0
+	}
+	CandidateHitsPlane1: 
+	{
+		@table::spine_hit_candidate_tool_parameters
+		Plane: 1
+	}
+	CandidateHitsPlane2: 
+	{
+		@table::spine_hit_candidate_tool_parameters
+		Plane: 2
+	}
+	}
+}
+
+icarus_stage1_producers.gaushitPT2dTPCEE: 
+{
+	@table::icarus_stage1_producers.gaushit2dTPCEE
+	@table::spine_gaushit_parameters
+}
+
+icarus_stage1_producers.gaushitPT2dTPCEW:
+{
+	@table::icarus_stage1_producers.gaushit2dTPCEW
+	@table::spine_gaushit_parameters
+}
+
+icarus_stage1_producers.gaushitPT2dTPCWE:
+{
+	@table::icarus_stage1_producers.gaushit2dTPCWE
+	@table::spine_gaushit_parameters
+}
+
+icarus_stage1_producers.gaushitPT2dTPCWW: 
+{
+	@table::icarus_stage1_producers.gaushit2dTPCWW
+	@table::spine_gaushit_parameters
+}
+
 
 ## Overrides for filtering of cluster3D hits
 icarus_stage1_filters.TPCHitFilterCryoW.HitDataLabelVec: ["cluster3DCryoW"]
