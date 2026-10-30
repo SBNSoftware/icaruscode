@@ -68,6 +68,8 @@ NGMultiSliceCryoW.LoaderTool.SlicesLabel: "NCCSlicesCryoW"
 NGMultiSliceCryoW.LoaderTool.ClusterLabel: "cluster3DCryoW"
 NGMultiSliceCryoW.DecoderTools.FilterDecoderTool.hitInput: "cluster3DCryoW"
 NGMultiSliceCryoW.DecoderTools.SemanticDecoderTool.hitInput: "cluster3DCryoW"
+NGMultiSliceCryoW.LoaderTool.hitInput: "nuslhitsCryoW"
+NGMultiSliceCryoW.LoaderTool.spsInput: "nuslhitsCryoW"
 
 ngfilteredhitsCryoE: {
   module_type:  "ICARUSFilteredNuSliceHitsProducer"
