@@ -12,7 +12,7 @@ mcsfitproducericarus_raw: {
 	caloLabel : "caloskimCalorimetryCryo0" }
   fitter: {
   	pIdHypothesis: 13
-	minNumAngles: 5
+	minNumAngles: 4
 	minNumSegments: 7
 	segmentLength: 14.0
 	minHitsPerSegment: 3
@@ -28,7 +28,9 @@ mcsfitproducericarus_raw: {
 	planeMode: 3
 	fitMode: 0
 	fullTrackMode: 1
+	selectionMode: 0
 	wireSkip: 0
+	verbose: 1
 	removeDeltas: false } }
 
 mcsfitproducer3D: {
@@ -43,7 +45,7 @@ mcsfitproducer3D: {
 	caloLabel : "caloskimCalorimetryCryo0" }
   fitter: {
   	pIdHypothesis: 13
-	minNumAngles: 5
+	minNumAngles: 4
 	minNumSegments: 5
 	segmentLength: 10
 	minHitsPerSegment: 3
@@ -59,7 +61,9 @@ mcsfitproducer3D: {
 	planeMode: 3
 	fitMode: 0
 	fullTrackMode: 1
+	selectionMode: 0
 	wireSkip: 0
+	verbose: 1
 	removeDeltas: false } }
 
 mcsfitproducer2DI1: {
@@ -74,7 +78,7 @@ mcsfitproducer2DI1: {
 	caloLabel : "caloskimCalorimetryCryo0" }
   fitter: {
   	pIdHypothesis: 13
-	minNumAngles: 5
+	minNumAngles: 4
 	minNumSegments: 5
 	segmentLength: 10
 	minHitsPerSegment: 3
@@ -90,7 +94,9 @@ mcsfitproducer2DI1: {
 	planeMode: 0
 	fitMode: 0
 	fullTrackMode: 1
+	selectionMode: 0
 	wireSkip: 0
+	verbose: 1
 	removeDeltas: false } }
 
 mcsfitproducer2DI2: {
@@ -105,7 +111,7 @@ mcsfitproducer2DI2: {
 	caloLabel : "caloskimCalorimetryCryo0" }
   fitter: {
   	pIdHypothesis: 13
-	minNumAngles: 5
+	minNumAngles: 4
 	minNumSegments: 5
 	segmentLength: 10
 	minHitsPerSegment: 3
@@ -121,7 +127,9 @@ mcsfitproducer2DI2: {
 	planeMode: 1
 	fitMode: 0
 	fullTrackMode: 1
+	selectionMode: 0
 	wireSkip: 0
+	verbose: 1
 	removeDeltas: false } }
 
 mcsfitproducer2DC: {
@@ -136,7 +144,7 @@ mcsfitproducer2DC: {
 	caloLabel : "caloskimCalorimetryCryo0" }
   fitter: {
   	pIdHypothesis: 13
-	minNumAngles: 5
+	minNumAngles: 4
 	minNumSegments: 5
 	segmentLength: 10
 	minHitsPerSegment: 3
@@ -152,7 +160,9 @@ mcsfitproducer2DC: {
 	planeMode: 2
 	fitMode: 0
 	fullTrackMode: 1
+	selectionMode: 0
 	wireSkip: 0
+	verbose: 1
 	removeDeltas: false } }
 
 END_PROLOG

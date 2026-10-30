@@ -36,15 +36,15 @@ namespace trkf {
       fhicl::Atom<int> minNumSegments {
         Name("minNumSegments"),
 	      Comment("Minimum number of segments the track is split into."),
-	      7 };
+	      5 };
       fhicl::Atom<int> minNumAngles {
         Name("minNumAngles"),
 	      Comment("Minimum number of angles the track should have to perform fit correctly."),
-	      3 };
+	      4 };
       fhicl::Atom<double> segmentLength {
         Name("segmentLength"),
 	      Comment("Nominal length of track segments used in the fit."),
-	      14. };
+	      10. };
       fhicl::Atom<int> minHitsPerSegment {
         Name("minHitsPerSegment"),
 	      Comment("Exclude segments with less hits than this value."),
@@ -59,8 +59,8 @@ namespace trkf {
 	      100 };
       fhicl::Atom<int> eLossMode {
         Name("eLossMode"),
-	      Comment("0 (default) for MPV Landau, 1 for MIP, 2 for Bethe-Bloch."),
-	      0 };
+	      Comment("0 for MPV Landau, 1 for MIP, 2 for Bethe-Bloch. Default is Bethe-Bloch."),
+	      2 };
       fhicl::Atom<double> pMin {
         Name("pMin"),
 	      Comment("Minimum momentum value [MeV/c] in C2-function fit."),
@@ -91,15 +91,23 @@ namespace trkf {
         0 };
       fhicl::Atom<unsigned int> fitMode{
         Name("fitMode"),
-        Comment("0 for both linear and polygonal angles, 1 for only linear angles, 2 for only polygonal angles. Flag of fit mode for ICARUS fit."),
+        Comment("0 for both linear and polygonal angles, 1 for only linear angles, 2 for only polygonal angles. Flag of fit mode for ICARUS fit, only for C2 function computation."),
         0 };
       fhicl::Atom<unsigned int> fullTrackMode{
         Name("fullTrackMode"),
-        Comment("0 for track only in the last TPC, 1 for full track. Flag of full track mode for ICARUS fit."),
+        Comment("0 for track only in the first TPC, 1 for track only in the last TPC, 1 for full track. Flag of full track mode for ICARUS fit."),
+        0 };
+      fhicl::Atom<unsigned int> selectionMode {
+        Name("selectionMode"),
+        Comment("0 for cosmic stopping tracks. Flag of muon tracks not stopping and not cosmic is not available yet."),
         0 };
       fhicl::Atom<unsigned int> wireSkip{
         Name("wireSkip"),
         Comment("Number of wires to be skipped in sigma3p computation."),
+        0 };
+      fhicl::Atom<unsigned int> verbose{
+        Name("verbose"),
+        Comment("0 for not printing out anything, 1 for printing out something, 2 for printing out everything."),
         0 };
       fhicl::Atom<bool> removeDeltas{
         Name("removeDeltas"),
@@ -126,7 +134,9 @@ namespace trkf {
       unsigned int planeMode, 
       unsigned int fitMode,
       unsigned int fullTrackMode,
+      unsigned int selectionMode,
       unsigned int wireSkip,
+      unsigned int verbose,
       bool removeDeltas) {
         pIdHyp_ = pIdHyp;
         minNSegs_ = minNSegs;
@@ -145,7 +155,9 @@ namespace trkf {
         planeMode_ = planeMode;
         fitMode_ = fitMode; 
         fullTrackMode_ = fullTrackMode;
+        selectionMode_ = selectionMode; 
         wireSkip_ = wireSkip; 
+        verbose_ = verbose;
         removeDeltas_ = removeDeltas;}
 
     explicit TrajectoryMCSFitterICARUS(
@@ -167,7 +179,9 @@ namespace trkf {
         p().planeMode(),
         p().fitMode(),
         p().fullTrackMode(),
+        p().selectionMode(),
         p().wireSkip(),
+        p().verbose(),
         p().removeDeltas()) {}
     
     recob::MCSFitResultGS fitMcs(
@@ -367,8 +381,14 @@ namespace trkf {
     unsigned int fullTrackMode() const {
       return fullTrackMode_; }
 
+    unsigned int selectionMode() const { 
+      return selectionMode_; }
+
     unsigned int wireSkip() const { 
       return wireSkip_; }
+
+    unsigned int verbose() const { 
+      return verbose_; }
 
     bool removeDeltas() const { 
       return removeDeltas_; }
@@ -642,7 +662,9 @@ namespace trkf {
     unsigned int planeMode_;
     unsigned int fitMode_;
     unsigned int fullTrackMode_;
+    unsigned int selectionMode_;
     unsigned int wireSkip_;
+    unsigned int verbose_;
     bool removeDeltas_;
     std::vector<recob::Hit> hits2dC;
     std::vector<recob::Hit> hits2dI2;

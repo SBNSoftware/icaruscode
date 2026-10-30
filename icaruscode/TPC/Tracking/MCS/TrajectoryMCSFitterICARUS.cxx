@@ -1320,12 +1320,22 @@ const double TrajectoryMCSFitterICARUS::C2Function(const recob::TrackTrajectory&
   //compute number of valid segments 
   unsigned int nseg = lastseg - firstseg + 1;
   if (fullTrackMode_ == 0) {
+    cout << "nseg tot = " << seglens.size() << " nseg used = " << nseg << " minNSegs_ = " << minNSegs_ << endl;
     if (nseg < minNSegs_) return 0; }
   if (fullTrackMode_ == 1) {
     unsigned int nsegValid = 0;
     for (unsigned int j = firstseg; j <= lastseg && j < seglens.size(); ++j) if (seglens[j] > 0.) nsegValid++;
-    cout << "nseg = " << nseg << " nsegValid = " << nsegValid << " minNSegs_ = " << minNSegs_ << endl;
+    cout << "nseg tot = " << seglens.size() << " nseg = " << nseg << endl;
+    cout << "nseg tot = " << seglens.size() << " nseg used = " << nsegValid << " minNSegs_ = " << minNSegs_ << endl;
     if (nsegValid < minNSegs_) return 0; }
+
+  cout << "DEBUG segment lengths at computation C2" << endl;
+  cout << "segment lengths [cm] = "; for (auto i : seglens) cout << i << ' '; cout << endl;
+  cout << "cumulative segment lengths [cm] = "; for (auto i : cumseglens) cout << i << ' '; cout << endl;
+  cout << "length at first segment = " << seglens[firstseg] << endl;
+  cout << "cumulative length at first segment = " << cumseglens[firstseg] << endl;
+  cout << "length at last segment = " << seglens[lastseg] << endl;
+  cout << "cumulative length at last segment = " << cumseglens[lastseg] << endl;
 
   vector<bool> keepLin(nseg-1, false), keepPoly(nseg-2, false);
 
@@ -2223,20 +2233,17 @@ bool TrajectoryMCSFitterICARUS::isinplane(size_t index, unsigned int p) const {
 
 //check if some point is in tpc = t
 bool TrajectoryMCSFitterICARUS::isintpc(size_t index, unsigned int t) const {
-  proxy::TrackPointData pd = pdata[index];
-  art::Ptr<recob::Hit> hit = get<1>(pd);
-  unsigned int tpc = hit->WireID().TPC;
+  unsigned int tpc = get<1>(pdata[index])->WireID().TPC / 2;
   if (tpc == t) return true;
   else return false; 
 }
 
 //check tpc of last valid point
 unsigned int TrajectoryMCSFitterICARUS::lasttpc(const recob::TrackTrajectory& traj) const {
-  size_t index = traj.LastValidPoint();
-  proxy::TrackPointData pd = pdata[index];
-  art::Ptr<recob::Hit> hit = get<1>(pd);
-  unsigned int tpc = hit->WireID().TPC;
-  return tpc; 
+  //size_t index = traj.LastValidPoint();
+  size_t index = traj.FirstValidPoint();
+  //return get<1>(pdata[index])->WireID().TPC;
+  return get<1>(pdata[index])->WireID().TPC / 2;
 }
 
 //return 2d hit coordinates in plane = p and tpc = t
@@ -2290,16 +2297,15 @@ double TrajectoryMCSFitterICARUS::length1D(const recob::TrackTrajectory traj, un
 
   //in case of hits 2d, find drift length of track in chosen view and last tpc
   if (dimMode_ == 2) {
-    unsigned int tpc = lasttpc(traj);
     //find index of first and last valid point
     while (index < traj.LastValidPoint()) {
-      if (isinplane(index, plane) && isintpc(index, tpc)) {
+      if (isinplane(index, plane) && isintpc(index, lasttpc(traj))) {
         if (frstIndex == -1) frstIndex = index;
         lastIndex = index; }
       index = traj.NextValidPoint(index + 1); }
     //define first and last valid point
-    //Vector_t frstPoint = hit2d(traj, frstIndex, plane, tpc);
-    //Vector_t lastPoint = hit2d(traj, lastIndex, plane, tpc);
+    //Vector_t frstPoint = hit2d(traj, frstIndex, plane, lasttpc(traj););
+    //Vector_t lastPoint = hit2d(traj, lastIndex, plane, lasttpc(traj););
     Vector_t frstPoint = newhit2d(frstIndex, plane);
     Vector_t lastPoint = newhit2d(lastIndex, plane);
     //compute drift coordinate difference
@@ -2330,16 +2336,15 @@ double TrajectoryMCSFitterICARUS::length2D(const recob::TrackTrajectory traj, un
 
   //in case of hits 2d, find drift-wire length of track in chosen view and last tpc
   if (dimMode_ == 2) {
-    unsigned int tpc = lasttpc(traj);
     //find index of first and last valid point 
     while (index < traj.LastValidPoint()) {
-      if (isinplane(index, plane) && isintpc(index, tpc)) {
+      if (isinplane(index, plane) && isintpc(index, lasttpc(traj))) {
         if (frstIndex == -1) frstIndex = index;
         lastIndex = index; }
       index = traj.NextValidPoint(index + 1); }
     //define first and last valid point
-    //Vector_t frstPoint = hit2d(traj, frstIndex, plane, tpc);
-    //Vector_t lastPoint = hit2d(traj, lastIndex, plane, tpc);
+    //Vector_t frstPoint = hit2d(traj, frstIndex, plane, lasttpc(traj););
+    //Vector_t lastPoint = hit2d(traj, lastIndex, plane, lasttpc(traj););
     Vector_t frstPoint = newhit2d(frstIndex, plane);
     Vector_t lastPoint = newhit2d(lastIndex, plane);
     //compute drift and wire coordinate differences
@@ -2372,10 +2377,9 @@ double TrajectoryMCSFitterICARUS::length3D(const recob::TrackTrajectory traj, un
 
   //in case of hits 2d, find 3D length of track in chosen view and last tpc
   if (dimMode_ == 2) {
-    unsigned int tpc = lasttpc(traj);
     //find index of first and last valid point
     while (index < traj.LastValidPoint()) {
-      if (isinplane(index, plane) && isintpc(index, tpc)) {
+      if (isinplane(index, plane) && isintpc(index, lasttpc(traj))) {
         if (frstIndex == -1) frstIndex = index;
         lastIndex = index; }
       index = traj.NextValidPoint(index + 1); }
