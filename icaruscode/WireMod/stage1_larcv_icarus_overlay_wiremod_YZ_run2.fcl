@@ -1,0 +1,11 @@
+#include "stage1_run2_larcv_icarus_overlay_wiremodcorr.fcl"
+
+physics.producers.WireModTPCEE.RatioFileName_XXW: "NOFILE"
+physics.producers.WireModTPCEW.RatioFileName_XXW: "NOFILE"
+physics.producers.WireModTPCWE.RatioFileName_XXW: "NOFILE"
+physics.producers.WireModTPCWW.RatioFileName_XXW: "NOFILE"
+
+physics.producers.WireModTPCEE.RatioFileName_YZ: "YZ_Ratio_Run2_DataMC.root"
+physics.producers.WireModTPCEW.RatioFileName_YZ: "YZ_Ratio_Run2_DataMC.root"
+physics.producers.WireModTPCWE.RatioFileName_YZ: "YZ_Ratio_Run2_DataMC.root"
+physics.producers.WireModTPCWW.RatioFileName_YZ: "YZ_Ratio_Run2_DataMC.root"

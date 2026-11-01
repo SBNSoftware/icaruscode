@@ -1,0 +1,13 @@
+# Null-scale baseline: identical to stage1_icarus_wiremod_develop_hitdiag.fcl
+# but with r_Q = r_sigma = 1 forced everywhere (no WireMod correction applied).
+
+#include "stage1_icarus_wiremod_develop_hitdiag.fcl"
+
+physics.producers.WireModTPCEE.SetNullScaleIntegral: true
+physics.producers.WireModTPCEE.SetNullScaleWidth:    true
+physics.producers.WireModTPCEW.SetNullScaleIntegral: true
+physics.producers.WireModTPCEW.SetNullScaleWidth:    true
+physics.producers.WireModTPCWE.SetNullScaleIntegral: true
+physics.producers.WireModTPCWE.SetNullScaleWidth:    true
+physics.producers.WireModTPCWW.SetNullScaleIntegral: true
+physics.producers.WireModTPCWW.SetNullScaleWidth:    true
