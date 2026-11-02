@@ -225,53 +225,32 @@ namespace trkf {
       std::vector<float>& cumseglens, 
       std::vector<int>& seghits, 
       std::vector<int>& cumseghits,
-      std::vector<int>& isdi) const;
-
-    void newbreakTrajInSegments(
-      const recob::TrackTrajectory& traj, 
-      std::vector<size_t>& breakpoints, 
-      std::vector<float>& seglens, 
-      std::vector<float>& cumseglens, 
-      std::vector<int>& seghits, 
-      std::vector<int>& cumseghits,
-      std::vector<int>& isdi,
       std::vector<int>& segsides) const;
 
     void findSegmentBarycenter(
       const recob::TrackTrajectory& traj, 
       const size_t firstPoint, 
       const size_t lastPoint, 
-      recob::tracking::Vector_t& bary,
-      std::vector<int>& isdi) const;
+      recob::tracking::Vector_t& bary) const;
 
     void linearRegression(
       const recob::TrackTrajectory& traj, 
       const size_t firstPoint, 
       const size_t lastPoint, 
-      recob::tracking::Vector_t& pcdir,
-      std::vector<int>& isdi) const;
+      recob::tracking::Vector_t& pcdir) const;
 
     void find2DSegmentBarycenter(
       const recob::TrackTrajectory& traj, 
       const size_t firstPoint, 
       const size_t lastPoint, 
-      recob::tracking::Vector_t& bary2D,
-      std::vector<int>& isdi) const;
+      recob::tracking::Vector_t& bary2D) const;
 
     void linearRegression2D(
       const recob::TrackTrajectory& traj, 
       const size_t firstPoint, 
       const size_t lastPoint, 
       recob::tracking::Vector_t& pcdir2D,
-      double& seglen2D,
-      std::vector<int>& isdi) const;
-
-    double GetOptimalSegLen(
-      const recob::TrackTrajectory& traj, 
-      const double guess_p, 
-      const int n_points, 
-      const int plane, 
-      const double length_travelled) const;
+      double& seglen2D) const;
 
     void ComputeSigma3P(
       int plane, 
@@ -287,16 +266,8 @@ namespace trkf {
       double& alfa, 
       std::vector<recob::Hit> h) const;
 
-    double computeResidual3D(
-      recob::TrackTrajectory traj, 
-      int i, 
-      double& alfa) const;
-
     void ComputeD3P(
       int plane);
-
-    float ComputeD3P3D(
-      const recob::TrackTrajectory& tr) const;
 
     struct ScanResult {
       public:
@@ -362,6 +333,9 @@ namespace trkf {
         if (abs(pid) == 321) return kmass;
         if (abs(pid) == 2212) return pmass;
         return util::kBogusD; }
+
+    double minLength() const {
+      return minLength_; }
 
     unsigned int cutMode() const { 
       return cutMode_; }
@@ -488,14 +462,6 @@ namespace trkf {
       Double_t *x, 
       Double_t *par) { return 1. / (par[0] + par[1] / x[0] / x[0]); } 
 
-    void AnodeDistance(
-      int cryo, 
-      int tpc, 
-      double x0) const;
-
-    TMatrixD ReferenceFrame(
-      int plane) const;
-
     TMatrix CleanCovariance(
       TMatrix cov, 
       int jtail) const;
@@ -522,10 +488,6 @@ namespace trkf {
       unsigned int p) const;
 
     int sideOfPoint(
-      size_t index) const;
-
-    double Integral(
-      const recob::TrackTrajectory& traj, 
       size_t index) const;
 
     double length1D(
@@ -564,9 +526,6 @@ namespace trkf {
 
     bool GeoStopCheck(
       const recob::TrackTrajectory& traj) const;
-    
-    bool DeltaCheck(
-      size_t index) const;
 
     double CathodeDistance(
       unsigned int c) const;
@@ -575,74 +534,9 @@ namespace trkf {
       const recob::TrackTrajectory& traj,
       size_t index) const;
 
-    bool FieldFailureCheck(
-      const recob::TrackTrajectory& traj,
-      size_t index) const;
-
-    std::vector<float> CleanThetaLin(
-      std::vector<float> dthetaLin) const;
-
-    std::vector<float> CleanThetaPoly(
-      std::vector<float> dthetaPoly) const;
-
     float C2PRange() { return c2prange; }
 
     int TailsPRange() { return tailsprange; }
-
-    float distance_point_line(
-      const double a0, 
-      const double a1, 
-      const double xdr, 
-      const double ydr) const;
-    
-    void ProcessDeltaRays(
-      const recob::TrackTrajectory& traj, 
-      int viewType, 
-      std::vector<int>& isd, 
-      std::vector<int>& isdi) const;
-    
-    void Create_ZY_arrays();
-    
-    void Delete_ZY_arrays();
-    
-    void Fill_ZY_arrays(
-      std::vector<double>& Z, 
-      std::vector<double>& Y);
-    
-    void TagOverlappingDeltaRays(
-      const recob::TrackTrajectory& traj,
-      int view_type, 
-      std::vector<int>& isDelta,
-      std::vector<int>& isdi, 
-      float threshold) const;
-    
-    void TagDeltaRaysLocal();
-    
-    void TagDeltaRays(
-      const recob::TrackTrajectory& traj, 
-      int viewType, 
-      std::vector<int>& isDelta,
-      std::vector<int>& isdi) const;
-    
-    void TagDeltaRaysCylinder(
-      const recob::TrackTrajectory& traj, 
-      int viewType, 
-      std::vector<int>& isDelta,
-      std::vector<int>& isdi) const;
-    
-    void TagCloseToDeltaRays();
-    
-    std::vector<int> HitsOnWire(
-      std::vector<recob::Hit> hits,
-      unsigned int iWire) const;
-
-    void runToyMS() const;
-
-    void linearRegressionToy(
-      std::vector<double> xx, 
-      std::vector<double> yy, 
-      std::vector<double> zz, 
-      Vector_t& pcdir) const ;
 
   private:
     int pIdHyp_;

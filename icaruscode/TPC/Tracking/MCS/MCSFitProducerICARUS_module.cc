@@ -115,8 +115,9 @@ trkf::MCSFitProducerICARUS::MCSFitProducerICARUS(trkf::MCSFitProducerICARUS::Par
 trkf::MCSFitProducerICARUS::~MCSFitProducerICARUS() {}
 
 void trkf::MCSFitProducerICARUS::produce(art::Event & e) {
-  mcsfitter.selectionMode();
-  mcsfitter.verbose();
+  unsigned int selectionMode = mcsfitter.selectionMode();
+  unsigned int verbose = mcsfitter.verbose();
+  double minLength = mcsfitter.minLength();
 
   auto const& wr = art::ServiceHandle<geo::WireReadout const>()->Get();
   auto const clockData = art::ServiceHandle<detinfo::DetectorClocksService const>()->DataFor(e);
@@ -186,17 +187,21 @@ void trkf::MCSFitProducerICARUS::produce(art::Event & e) {
     geo::Point_t point{pos.X(), pos.Y(), pos.Z()};
     std::size_t cryo = geom->PositionToCryostatID(point).Cryostat;
     const char* cryoName = (cryo == 0) ? "EAST" : "WEST";
-    if (verbose_ > 0) std::cout << "producer MCS: event ID = " << e.event() 
-              << " track ID = " << trkPtr->ID() 
-              << " cryostat = " << cryoName
-              << std::endl;
+    if (verbose > 0) std::cout << "producer MCS: event ID = " << e.event() 
+                               << " track ID = " << trkPtr->ID() 
+                               << " cryostat = " << cryoName
+                               << std::endl;
 
     // recall range momentum and print it with track length
     art::Ptr<sbn::RangeP> rangeP = rangePs.at(trkPtr.key());
     mcsfitter.setRangeP(rangeP->range_p);
-    if (verbose_ > 0) std::cout << "range momentum [GeV/c] = " << rangeP->range_p 
-              << " track length [cm] = " << trkPtr->Length() 
-              << std::endl;
+    if (verbose > 0) std::cout << "range momentum [GeV/c] = " << rangeP->range_p 
+                               << " track length [cm] = " << trkPtr->Length() 
+                               << std::endl;
+
+    // check if track has minimum length
+    bool hasMinLength = false;
+    if (trkPtr->Length() > minLength) hasMinLength = true;
 
     // T0 from PFP associated data
     bool hasPFPT0 = false;
@@ -206,7 +211,7 @@ void trkf::MCSFitProducerICARUS::produce(art::Event & e) {
       if (!PFPT0s.empty()) {
         PFPT0 = PFPT0s.at(0)->Time();
         hasPFPT0 = true;
-        if (verbose_ > 0) std::cout << "track " << trkPtr->ID() << " has PFPT0 = " << PFPT0 << std::endl; } }
+        if (verbose > 0) std::cout << "track " << trkPtr->ID() << " has PFPT0 = " << PFPT0 << std::endl; } }
     mcsfitter.sethasPFPT0(hasPFPT0);
     mcsfitter.setPFPT0(PFPT0);
 
@@ -222,16 +227,16 @@ void trkf::MCSFitProducerICARUS::produce(art::Event & e) {
         bool fIncludeSideCRT = false;
         bool crtHitSysRejected = (tag.Sys == 0 && !fIncludeTopCRT) || (tag.Sys==1 && !fIncludeSideCRT); 
         geo::Point_t end {trkPtr->Start().X(), trkPtr->Start().Y(), trkPtr->Start().Z()};
-        bool trackIsStopping = false;
+        bool trackIsContained = false;
         for (auto const &v: AVs) {
-          if (v.ContainsPosition(end)) trackIsStopping = true; }
-        bool crtHitDistanceRejected = trackIsStopping ? 
+          if (v.ContainsPosition(end)) trackIsContained = true; }
+        bool crtHitDistanceRejected = trackIsContained ? 
             ((tag.Sys == 0) ? (tag.Distance > 100.) : (tag.Distance > 100.)):
             ((tag.Sys == 0) ? (tag.Distance > 100.) : (tag.Distance > 100.));
         if (!crtHitSysRejected && !crtHitDistanceRejected) {
           CRTT0 = time;
           hasCRTT0 = true;
-          if (verbose_ > 0) std::cout << "track " << trkPtr->ID() << " has CRTT0 = " << CRTT0 << std::endl; } } }
+          if (verbose > 0) std::cout << "track " << trkPtr->ID() << " has CRTT0 = " << CRTT0 << std::endl; } } }
     mcsfitter.sethasCRTT0(hasCRTT0);
     mcsfitter.setCRTT0(CRTT0);
 
@@ -248,7 +253,7 @@ void trkf::MCSFitProducerICARUS::produce(art::Event & e) {
     int whicht0 = -1;
     if (hasPFPT0) whicht0 = 0;
     else if (hasCRTT0) whicht0 = 2;
-    if (verbose_ > 0) std::cout << "whichT0 = " << whicht0 << std::endl;
+    if (verbose > 0) std::cout << "whichT0 = " << whicht0 << std::endl;
     
     // build track object for selection
     sbn::TrackInfo SBNTrack;
@@ -261,6 +266,9 @@ void trkf::MCSFitProducerICARUS::produce(art::Event & e) {
     SBNTrack.dir.y = trkPtr->StartDirection().Y();
     SBNTrack.dir.z = trkPtr->StartDirection().Z(); 
     SBNTrack.whicht0 = whicht0;
+
+    // check if track is downgoing
+    bool isDowngoing = (SBNTrack.dir.y < 0.);
 
     // fill hit information with calorimetry
     for (size_t i = 0; i < trkHits.size(); ++i) {
@@ -308,10 +316,6 @@ void trkf::MCSFitProducerICARUS::produce(art::Event & e) {
     SBNTrack.hit_min_time_p2_tpcW = minTPCW;
     SBNTrack.hit_max_time_p2_tpcW = maxTPCW;
 
-    // check if track is downgoing
-    bool RequireDownwards = true;
-    bool downwards = (SBNTrack.dir.y < 0.) || !RequireDownwards;
-
     // check if track is within fiducial volume
     std::vector<geo::BoxBoundedGeo> FVs;
     double FVInsetMinX = 15; double FVInsetMaxX = 15;
@@ -322,12 +326,12 @@ void trkf::MCSFitProducerICARUS::produce(art::Event & e) {
                       AV.MinY() + FVInsetMinY, AV.MaxY() - FVInsetMaxY, 
                       AV.MinZ() + FVInsetMinZ, AV.MaxZ() - FVInsetMaxZ); }
     bool CheckFiducialX = true;
-    bool end_is_fid = false;
+    bool inFiducialVolume = false;
     for (const geo::BoxBoundedGeo &g: FVs) {
       geo::Point_t end {SBNTrack.end.x, SBNTrack.end.y, SBNTrack.end.z};
-      bool is_contained = CheckFiducialX ? g.ContainsPosition(end) : g.ContainsYZ(end.Y(), end.Z());
-      if (is_contained) {
-        end_is_fid = true;
+      bool IsContained = CheckFiducialX ? g.ContainsPosition(end) : g.ContainsYZ(end.Y(), end.Z());
+      if (IsContained) {
+        inFiducialVolume = true;
         break; } }
 
     // check if collection plane times are fiducial
@@ -338,10 +342,10 @@ void trkf::MCSFitProducerICARUS::produce(art::Event & e) {
     double MaxTimeTickInset = 100; 
     double FidTickMin = TickMin + MinTimeTickInset;
     double FidTickMax = TickMax - MaxTimeTickInset;
-    bool time_is_fid = (SBNTrack.hit_min_time_p2_tpcE < 0. || SBNTrack.hit_min_time_p2_tpcE > FidTickMin) &&
-                      (SBNTrack.hit_max_time_p2_tpcE < 0. || SBNTrack.hit_max_time_p2_tpcE < FidTickMax) &&
-                      (SBNTrack.hit_min_time_p2_tpcW < 0. || SBNTrack.hit_min_time_p2_tpcW > FidTickMin) &&
-                      (SBNTrack.hit_max_time_p2_tpcW < 0. || SBNTrack.hit_max_time_p2_tpcW < FidTickMax);
+    bool inFiducialTime = (SBNTrack.hit_min_time_p2_tpcE < 0. || SBNTrack.hit_min_time_p2_tpcE > FidTickMin) &&
+                          (SBNTrack.hit_max_time_p2_tpcE < 0. || SBNTrack.hit_max_time_p2_tpcE < FidTickMax) &&
+                          (SBNTrack.hit_min_time_p2_tpcW < 0. || SBNTrack.hit_min_time_p2_tpcW > FidTickMin) &&
+                          (SBNTrack.hit_max_time_p2_tpcW < 0. || SBNTrack.hit_max_time_p2_tpcW < FidTickMax);
 
     // check if median dQdx of the last 5 cm is greater than 1000 ADC/cm
     double MediandQdxRRMax = 5;
@@ -358,19 +362,20 @@ void trkf::MCSFitProducerICARUS::produce(art::Event & e) {
         std::nth_element(endp_dqdx.begin(), endp_dqdx.begin() + other_middle, endp_dqdx.end());
         med_dqdx = (med_dqdx + endp_dqdx[other_middle]) / 2.; } }
     double EndMediandQdxCut = 1000;
-    bool valid_med_dqdx = ((med_dqdx > 0.) && (med_dqdx > EndMediandQdxCut)) || (EndMediandQdxCut < 0.);
+    bool hasValidDqdx = ((med_dqdx > 0.) && (med_dqdx > EndMediandQdxCut)) || (EndMediandQdxCut < 0.);
 
     // selection of cosmic stopping muons
-    if (verbose_ > 0) std::cout << "hasT0 = " << hasT0
-                  << " downwards = " << downwards
-                  << " end_is_fid = " << end_is_fid
-                  << " time_is_fid = " << time_is_fid
-                  << " valid_med_dqdx = " << valid_med_dqdx
-                  << std::endl;
-    if (selectionMode_ == 0) {
-      bool stopping = hasT0 && downwards && end_is_fid && time_is_fid && valid_med_dqdx;
+    if (verbose > 0) std::cout << "hasMinLength = "      << hasMinLength 
+                               << " hasT0 = "            << hasT0
+                               << " isDowngoing = "      << isDowngoing
+                               << " inFiducialVolume = " << inFiducialVolume
+                               << " inFiducialTime = "   << inFiducialTime
+                               << " hasValidDqdx = "     << hasValidDqdx
+                               << std::endl;
+    bool stopping = hasMinLength && hasT0 && isDowngoing && inFiducialVolume && inFiducialTime && hasValidDqdx;
+    if (selectionMode == 0) {
       if (stopping) {
-        if (verbose_ > 0) std::cout << "stopping track found!" << std::endl; }
+        if (verbose > 0) std::cout << "stopping track found!" << std::endl; }
       if (!stopping) continue; }
 
     // build proxy and 2D hits for MCS fitter

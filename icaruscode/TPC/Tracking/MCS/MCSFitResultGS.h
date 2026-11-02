@@ -28,8 +28,6 @@ namespace recob {
    * the vector of polygonal measured angles [rad]
    * the vector of polygonal expected angles [rad]
    * the vector of corresponding-angle momenta [GeV/c]
-   * the geometrical check if track is stopping
-   * the vector of delta rays flag
    * the validity check if fit is successful
    *
    * @author  G. Chiello (Pisa, ICARUS) and F. Varanini (Padova, ICARUS)
@@ -47,8 +45,6 @@ namespace recob {
         bestpL_(0), errorpL_(0),
         c2atrange_(0), tailsatrange_(0),
         nhits_(0), sigma3p_(0), delta3p_(0), 
-        //sigma3p_1skip_(0), sigma3p_2skip_(0), sigma3p_3skip_(0), sigma3p_4skip_(0), 
-        //delta3p_1skip_(), delta3p_2skip_(), delta3p_3skip_(), delta3p_4skip_(), 
         L1D_(0), L2D_(0), L3D_(0),
         seglens_(), cumseglens_(),
         seghits_(), cumseghits_(),
@@ -57,7 +53,6 @@ namespace recob {
         dthetalinexp_(), dthetalin_(),
         dthetapolyexp_(), dthetapoly_(),
         seglens2D_(), dthetamom_(),
-        stop_(false), isdelta_(), isdeltaindex_(),
         check_(false)
     {}
 
@@ -75,8 +70,6 @@ namespace recob {
       float bestpL, float errorpL,
       float c2atrange, int tailsatrange, 
       int nhits, double sigma3p, std::vector<double> delta3p, 
-      //double sigma3p_1skip, double sigma3p_2skip, double sigma3p_3skip, double sigma3p_4skip, 
-      //std::vector<double> delta3p_1skip, std::vector<double> delta3p_2skip, std::vector<double> delta3p_3skip, std::vector<double> delta3p_4skip, 
       float L1D, float L2D, float L3D,
       std::vector<float> seglens, std::vector<float> cumseglens, 
       std::vector<int> seghits, std::vector<int> cumseghits,
@@ -85,7 +78,6 @@ namespace recob {
       std::vector<float> dthetalinexp, std::vector<float> dthetalin,
       std::vector<float> dthetapolyexp, std::vector<float> dthetapoly,
       std::vector<float> seglens2D, std::vector<float> dthetamom,
-      bool stop, std::vector<int> isdelta, std::vector<int> isdeltaindex,
       bool check) 
       : pid_(pid), 
         bestp_(bestp), errorp_(errorp), minp_(minp), maxp_(maxp), 
@@ -94,8 +86,6 @@ namespace recob {
         bestpL_(bestpL), errorpL_(errorpL),
         c2atrange_(c2atrange), tailsatrange_(tailsatrange),
         nhits_(nhits), sigma3p_(sigma3p), delta3p_(delta3p), 
-        //sigma3p_1skip_(sigma3p_1skip), sigma3p_2skip_(sigma3p_2skip), sigma3p_3skip_(sigma3p_3skip), sigma3p_4skip_(sigma3p_4skip), 
-        //delta3p_1skip_(delta3p_1skip), delta3p_2skip_(delta3p_2skip), delta3p_3skip_(delta3p_3skip), delta3p_4skip_(delta3p_4skip), 
         L1D_(L1D), L2D_(L2D), L3D_(L3D),
         seglens_(seglens), cumseglens_(cumseglens),
         seghits_(seghits), cumseghits_(cumseghits),
@@ -104,7 +94,6 @@ namespace recob {
         dthetalinexp_(dthetalinexp), dthetalin_(dthetalin),
         dthetapolyexp_(dthetapolyexp), dthetapoly_(dthetapoly),
         seglens2D_(seglens2D), dthetamom_(dthetamom),
-        stop_(stop), isdelta_(isdelta), isdeltaindex_(isdeltaindex),
         check_(check)
     {}
 
@@ -192,10 +181,6 @@ namespace recob {
     std::vector<float> segmentLengths() const { 
       return seglens_; }
 
-    /// vector of 2D lengths of the segments [cm]
-    std::vector<float> segmentLengths2D() const { 
-      return seglens2D_; }
-
     /// vector of cumulative lengths of the segments [cm]
     std::vector<float> segmentCumLengths() const { 
       return cumseglens_; }
@@ -240,20 +225,9 @@ namespace recob {
     std::vector<float> measuredPolyAngles() const { 
       return dthetapoly_; }
 
-    /// geometrical check if track is stopping inside the detector
-    bool GeoStopCheck() const { 
-      return stop_; }
-
     /// validity check if fitter runned
     bool ValidityCheck() const { 
       return check_; }
-
-    /// vector of check on delta rays
-    std::vector<int> IsDelta() const {
-      return isdelta_; }
-
-    std::vector<int> IsDeltaIndex() const {
-      return isdeltaindex_; }
 
   private:
     int pid_;
@@ -263,8 +237,6 @@ namespace recob {
     float bestpL_; float errorpL_;
     float c2atrange_; int tailsatrange_;
     int nhits_; double sigma3p_; std::vector<double> delta3p_;
-    //double sigma3p_1skip_; double sigma3p_2skip_; double sigma3p_3skip_; double sigma3p_4skip_; 
-    //std::vector<double> delta3p_1skip_; std::vector<double> delta3p_2skip_; std::vector<double> delta3p_3skip_; std::vector<double> delta3p_4skip_; 
     float L1D_; float L2D_; float L3D_;
     std::vector<float> seglens_; std::vector<float> cumseglens_;
     std::vector<int> seghits_; std::vector<int> cumseghits_;
@@ -273,7 +245,6 @@ namespace recob {
     std::vector<float> dthetalinexp_; std::vector<float> dthetalin_; 
     std::vector<float> dthetapolyexp_; std::vector<float> dthetapoly_;
     std::vector<float> seglens2D_; std::vector<float> dthetamom_; 
-    bool stop_; std::vector<int> isdelta_; std::vector<int> isdeltaindex_; 
     bool check_; }; }
 
 #endif
