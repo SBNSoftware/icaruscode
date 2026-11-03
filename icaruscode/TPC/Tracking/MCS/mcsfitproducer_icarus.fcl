@@ -24,7 +24,6 @@ mcsfitproducericarus_raw: {
 	pStep: 20.
 	cutMode: 0
 	cutAngles: 0
-	dimMode: 2
 	planeMode: 3
 	fitMode: 0
 	fullTrackMode: 1
@@ -56,7 +55,6 @@ mcsfitproducer3D: {
 	pStep: 10.
 	cutMode: 1
 	cutAngles: 4
-	dimMode: 3
 	planeMode: 3
 	fitMode: 0
 	fullTrackMode: 1
@@ -88,7 +86,6 @@ mcsfitproducer2DI1: {
 	pStep: 10.
 	cutMode: 1
 	cutAngles: 4
-	dimMode: 2
 	planeMode: 0
 	fitMode: 0
 	fullTrackMode: 1
@@ -120,7 +117,6 @@ mcsfitproducer2DI2: {
 	pStep: 10.
 	cutMode: 1
 	cutAngles: 4
-	dimMode: 2
 	planeMode: 1
 	fitMode: 0
 	fullTrackMode: 1
@@ -152,7 +148,6 @@ mcsfitproducer2DC: {
 	pStep: 10.
 	cutMode: 1
 	cutAngles: 4
-	dimMode: 2
 	planeMode: 2
 	fitMode: 0
 	fullTrackMode: 1

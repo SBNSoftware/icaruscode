@@ -13,8 +13,6 @@ namespace recob {
    * the min and max C2-fit momenta hypothesis [GeV/c]
    * the best value and error C2-fit parameters 
    * the best value and error of likelihood-fit momentum [GeV/c]
-   * the C2 function value at range momentum 
-   * the number of tails at range momentum
    * the sigma3p [cm]
    * the track length on 1D drift direction [cm]
    * the track length on 2D wire plane [cm]
@@ -24,10 +22,7 @@ namespace recob {
    * the vector of segment lengths [cm]
    * the vector of cumulative segment lengths [cm]
    * the vector of linear-fit measured angles [rad]
-   * the vector of linear-fit expected angles [rad]
    * the vector of polygonal measured angles [rad]
-   * the vector of polygonal expected angles [rad]
-   * the vector of corresponding-angle momenta [GeV/c]
    * the validity check if fit is successful
    *
    * @author  G. Chiello (Pisa, ICARUS) and F. Varanini (Padova, ICARUS)
@@ -41,18 +36,14 @@ namespace recob {
       : pid_(0),
         bestp_(0), errorp_(0), minp_(0), maxp_(0),
         alpha_(0), dalpha_(0), beta_(0), dbeta_(0),
-        testp_(), c2function_(), tailssize_(),
         bestpL_(0), errorpL_(0),
-        c2atrange_(0), tailsatrange_(0),
         nhits_(0), sigma3p_(0), delta3p_(0), 
         L1D_(0), L2D_(0), L3D_(0),
         seglens_(), cumseglens_(),
         seghits_(), cumseghits_(),
         segsides_(),
         nsegused_(), nsegtot_(),
-        dthetalinexp_(), dthetalin_(),
-        dthetapolyexp_(), dthetapoly_(),
-        seglens2D_(), dthetamom_(),
+        dthetalin_(), dthetapoly_(),
         check_(false)
     {}
 
@@ -65,35 +56,26 @@ namespace recob {
       int pid,
       float bestp, float errorp, float minp, float maxp,
       float alpha, float dalpha, float beta, float dbeta,
-      std::vector<float> testp, std::vector<float> c2function,
-      std::vector<int> tailssize,
       float bestpL, float errorpL,
-      float c2atrange, int tailsatrange, 
       int nhits, double sigma3p, std::vector<double> delta3p, 
       float L1D, float L2D, float L3D,
       std::vector<float> seglens, std::vector<float> cumseglens, 
       std::vector<int> seghits, std::vector<int> cumseghits,
       std::vector<int> segsides,
       int nsegused, int nsegtot,
-      std::vector<float> dthetalinexp, std::vector<float> dthetalin,
-      std::vector<float> dthetapolyexp, std::vector<float> dthetapoly,
-      std::vector<float> seglens2D, std::vector<float> dthetamom,
+      std::vector<float> dthetalin, std::vector<float> dthetapoly,
       bool check) 
       : pid_(pid), 
         bestp_(bestp), errorp_(errorp), minp_(minp), maxp_(maxp), 
         alpha_(alpha), dalpha_(dalpha), beta_(beta), dbeta_(dbeta), 
-        testp_(testp), c2function_(c2function), tailssize_(tailssize),
         bestpL_(bestpL), errorpL_(errorpL),
-        c2atrange_(c2atrange), tailsatrange_(tailsatrange),
         nhits_(nhits), sigma3p_(sigma3p), delta3p_(delta3p), 
         L1D_(L1D), L2D_(L2D), L3D_(L3D),
         seglens_(seglens), cumseglens_(cumseglens),
         seghits_(seghits), cumseghits_(cumseghits),
         segsides_(segsides),
         nsegused_(nsegused), nsegtot_(nsegtot),
-        dthetalinexp_(dthetalinexp), dthetalin_(dthetalin),
-        dthetapolyexp_(dthetapolyexp), dthetapoly_(dthetapoly),
-        seglens2D_(seglens2D), dthetamom_(dthetamom),
+        dthetalin_(dthetalin), dthetapoly_(dthetapoly),
         check_(check)
     {}
 
@@ -141,26 +123,6 @@ namespace recob {
     float betaFitErr() const { 
       return dbeta_; }
 
-    /// vector of test momenta [GeV/c]
-    std::vector<float> testMomentum() const { 
-      return testp_; }
-
-    /// vector of c2 function values
-    std::vector<float> C2Function() const { 
-      return c2function_; }
-
-    /// vector of number of tails
-    std::vector<int> TailsSize() const { 
-      return tailssize_; }
-
-    /// c2 function value at range momentum
-    float C2AtRange() const { 
-      return c2atrange_; }
-
-    /// number of tails at range momentum
-    int TailsAtRange() const { 
-      return tailsatrange_; }
-
     /// RMS of delta3p distribution [cm]
     double sigma3P() const { 
       return sigma3p_; }
@@ -205,21 +167,9 @@ namespace recob {
     int nSegmentsTotal() const {
       return nsegtot_; }
 
-    /// vector of expected linear angles between the segments used in the fit
-    std::vector<float> expectedLinAngles() const { 
-      return dthetalinexp_; }
-
     /// vector of measured linear angles between the segments used in the fit
     std::vector<float> measuredLinAngles() const { 
       return dthetalin_; }
-
-    /// vector of measured linear angles between the segments used in the fit
-    std::vector<float> momentumLinAngles() const { 
-      return dthetamom_; }
-
-    /// vector of expected polygonal angles between the segments used in the fit
-    std::vector<float> expectedPolyAngles() const { 
-      return dthetapolyexp_; }
 
     /// vector of measured polygonal angles between the segments used in the fit
     std::vector<float> measuredPolyAngles() const { 
@@ -233,18 +183,14 @@ namespace recob {
     int pid_;
     float bestp_; float errorp_; float minp_; float maxp_;
     float alpha_; float dalpha_; float beta_; float dbeta_;
-    std::vector<float> testp_; std::vector<float> c2function_; std::vector<int> tailssize_; 
     float bestpL_; float errorpL_;
-    float c2atrange_; int tailsatrange_;
     int nhits_; double sigma3p_; std::vector<double> delta3p_;
     float L1D_; float L2D_; float L3D_;
     std::vector<float> seglens_; std::vector<float> cumseglens_;
     std::vector<int> seghits_; std::vector<int> cumseghits_;
     std::vector<int> segsides_;
     int nsegused_; int nsegtot_;
-    std::vector<float> dthetalinexp_; std::vector<float> dthetalin_; 
-    std::vector<float> dthetapolyexp_; std::vector<float> dthetapoly_;
-    std::vector<float> seglens2D_; std::vector<float> dthetamom_; 
+    std::vector<float> dthetalin_; std::vector<float> dthetapoly_;
     bool check_; }; }
 
 #endif

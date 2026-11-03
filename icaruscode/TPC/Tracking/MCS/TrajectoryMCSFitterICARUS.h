@@ -39,7 +39,7 @@ namespace trkf {
 	      5 };
       fhicl::Atom<int> minNumAngles {
         Name("minNumAngles"),
-	      Comment("Minimum number of angles the track should have to perform fit correctly."),
+	      Comment("Minimum number of angles the track must have to perform fit correctly."),
 	      4 };
       fhicl::Atom<double> segmentLength {
         Name("segmentLength"),
@@ -59,7 +59,7 @@ namespace trkf {
 	      100 };
       fhicl::Atom<int> eLossMode {
         Name("eLossMode"),
-	      Comment("0 for MPV Landau, 1 for MIP, 2 for Bethe-Bloch. Default is Bethe-Bloch."),
+	      Comment("0 for MPV Landau, 1 for MIP, 2 for Bethe-Bloch."),
 	      2 };
       fhicl::Atom<double> pMin {
         Name("pMin"),
@@ -81,25 +81,21 @@ namespace trkf {
         Name("cutAngles"),
         Comment("Number of angles to cut for MCS fit."),
         0 };
-      fhicl::Atom<unsigned int> dimMode{
-        Name("dimMode"),
-        Comment("2 for 2D, 3 for 3D. Flag of dimension mode for ICARUS fit."),
-        0 };
       fhicl::Atom<unsigned int> planeMode{
         Name("planeMode"),
-        Comment("0 for Induction-1, 1 for Induction-2, 2 for Collection view. Flag of plane mode for ICARUS 2D fit."),
+        Comment("0 for Induction-1, 1 for Induction-2, 2 for Collection view."),
         0 };
       fhicl::Atom<unsigned int> fitMode{
         Name("fitMode"),
-        Comment("0 for both linear and polygonal angles, 1 for only linear angles, 2 for only polygonal angles. Flag of fit mode for ICARUS fit, only for C2 function computation."),
+        Comment("0 for both linear and polygonal angles, 1 for only linear angles, 2 for only polygonal angles. Only for C2 function computation."),
         0 };
       fhicl::Atom<unsigned int> fullTrackMode{
         Name("fullTrackMode"),
-        Comment("0 for track only in the first TPC, 1 for track only in the last TPC, 1 for full track. Flag of full track mode for ICARUS fit."),
+        Comment("0 for portion of track only in the first TPC, 1 for portion of track only in the last TPC, 2 for full track."),
         0 };
       fhicl::Atom<unsigned int> selectionMode {
         Name("selectionMode"),
-        Comment("0 for cosmic stopping tracks. Flag of muon tracks not stopping and not cosmic is not available yet."),
+        Comment("0 for cosmic stopping tracks. Mode for tracks not stopping and not cosmic is not available yet."),
         0 };
       fhicl::Atom<unsigned int> wireSkip{
         Name("wireSkip"),
@@ -108,10 +104,6 @@ namespace trkf {
       fhicl::Atom<unsigned int> verbose{
         Name("verbose"),
         Comment("0 for not printing out anything, 1 for printing out something, 2 for printing out everything."),
-        0 };
-      fhicl::Atom<bool> removeDeltas{
-        Name("removeDeltas"),
-        Comment("If true, remove identified deltas from MCS calculation."),
         0 }; };
 
     using Parameters = fhicl::Table<Config>;
@@ -130,14 +122,12 @@ namespace trkf {
       double pStep, 
       unsigned int cutMode, 
       unsigned int cutAngles, 
-      unsigned int dimMode, 
       unsigned int planeMode, 
       unsigned int fitMode,
       unsigned int fullTrackMode,
       unsigned int selectionMode,
       unsigned int wireSkip,
-      unsigned int verbose,
-      bool removeDeltas) {
+      unsigned int verbose) {
         pIdHyp_ = pIdHyp;
         minNSegs_ = minNSegs;
         minNAngs_ = minNAngs;
@@ -151,14 +141,12 @@ namespace trkf {
         pStep_ = pStep;
         cutMode_ = cutMode;
         cutAngles_ = cutAngles;
-        dimMode_ = dimMode;
         planeMode_ = planeMode;
         fitMode_ = fitMode; 
         fullTrackMode_ = fullTrackMode;
         selectionMode_ = selectionMode; 
         wireSkip_ = wireSkip; 
-        verbose_ = verbose;
-        removeDeltas_ = removeDeltas;}
+        verbose_ = verbose; }
 
     explicit TrajectoryMCSFitterICARUS(
       const Parameters & p) : TrajectoryMCSFitterICARUS(
@@ -175,48 +163,54 @@ namespace trkf {
         p().pStep(),
         p().cutMode(),
         p().cutAngles(),
-        p().dimMode(),
         p().planeMode(),
         p().fitMode(),
         p().fullTrackMode(),
         p().selectionMode(),
         p().wireSkip(),
-        p().verbose(),
-        p().removeDeltas()) {}
+        p().verbose()) {}
     
     recob::MCSFitResultGS fitMcs(
-      const recob::TrackTrajectory& traj, 
-      bool momDepConst = true) const { 
-        return fitMcs(traj, pIdHyp_, momDepConst); }
+      const recob::TrackTrajectory& traj) const { 
+        return fitMcs(traj, pIdHyp_); }
 
     recob::MCSFitResultGS fitMcs(
-      const recob::Track& track, 
-      bool momDepConst = true) const { 
-        return fitMcs(track, pIdHyp_, momDepConst); }
+      const recob::Track& track) const { 
+        return fitMcs(track, pIdHyp_); }
 
     recob::MCSFitResultGS fitMcs(
-      const recob::Trajectory& traj, 
-      bool momDepConst = true) const { 
-        return fitMcs(traj, pIdHyp_, momDepConst); }
+      const recob::Trajectory& traj) const { 
+        return fitMcs(traj, pIdHyp_); }
 
     recob::MCSFitResultGS fitMcs(
       const recob::TrackTrajectory& traj, 
-      int pid, 
-      bool momDepConst = true) const;
+      int pid) const;
 
     recob::MCSFitResultGS fitMcs(
       const recob::Track& track, 
-      int pid, 
-      bool momDepConst = true) const { 
-        return fitMcs(track.Trajectory(), pid, momDepConst); }
+      int pid) const { 
+        return fitMcs(track.Trajectory(), pid); }
 
     recob::MCSFitResultGS fitMcs(
       const recob::Trajectory& traj, 
-      int pid, 
-      bool momDepConst = true) const {
+      int pid) const {
         recob::TrackTrajectory::Flags_t flags(traj.NPoints());
         const recob::TrackTrajectory tt(traj, std::move(flags));
-        return fitMcs(tt, pid, momDepConst); }
+        return fitMcs(tt, pid); }
+
+    struct ScanResult {
+      public:
+        double bestp, errp, minp, maxp;
+        double alpha, dalpha, beta, dbeta;
+        ScanResult() = default;
+        ScanResult(
+          double best, double err, double min, double max,
+          double a, double da, double b, double db,
+          std::vector<float> test, std::vector<float> c2) :
+            bestp(best), errp(err), minp(min), maxp(max),
+            alpha(a), dalpha(da), beta(b), dbeta(db) {} };
+
+    // functions in MCS fitter
 
     void breakTrajInSegments(
       const recob::TrackTrajectory& traj, 
@@ -239,50 +233,171 @@ namespace trkf {
       const size_t lastPoint, 
       recob::tracking::Vector_t& pcdir) const;
 
-    void find2DSegmentBarycenter(
-      const recob::TrackTrajectory& traj, 
-      const size_t firstPoint, 
-      const size_t lastPoint, 
-      recob::tracking::Vector_t& bary2D) const;
+    double energyLossLandau(
+      const double mass, 
+      const double energy) const;
 
-    void linearRegression2D(
-      const recob::TrackTrajectory& traj, 
-      const size_t firstPoint, 
-      const size_t lastPoint, 
-      recob::tracking::Vector_t& pcdir2D,
-      double& seglen2D) const;
+    double energyLossBetheBloch(
+      const double mass, 
+      const double energy) const;
+
+    double GetE(
+      const double initial_E, 
+      const double length_travelled, 
+      const double mass) const;
 
     void ComputeSigma3P(
-      int plane, 
-      int& weight,
+      int& nhits,
       double& sigma3p, 
       std::vector<double>& delta3p, 
       int wire_skip) const;
+    
+    static Double_t funzio(
+      Double_t *x, 
+      Double_t *par) { return 1. / (par[0] + par[1] / x[0] / x[0]); } 
 
-    double Sigma3P() const;
+    const double C2Function(
+      const recob::TrackTrajectory& traj, 
+      std::vector<float>& seglens, 
+      std::vector<float>& cumseglens, 
+      std::vector<int>& seghits, 
+      std::vector<float> dthetaLin, 
+      std::vector<float> dthetaPoly, 
+      double sigma3p, 
+      int pid, 
+      double p) const;
 
-    double computeResidual(
-      int i, 
-      double& alfa, 
-      std::vector<recob::Hit> h) const;
+    const ScanResult C2Fit(
+      const recob::TrackTrajectory& traj, 
+      std::vector<float>& seglens, 
+      std::vector<float>& cumseglens, 
+      std::vector<int>& seghits, 
+      std::vector<float> dthetaLin, 
+      std::vector<float> dthetaPoly, 
+      double sigma3p, 
+      int pid, 
+      double sigma) const;
 
-    void ComputeD3P(
-      int plane);
+    const ScanResult C2NaiveFit(
+      const recob::TrackTrajectory& traj, 
+      std::vector<float>& seglens, 
+      std::vector<float>& cumseglens, 
+      std::vector<int>& seghits, 
+      std::vector<float> dthetaLin, 
+      std::vector<float> dthetaPoly, 
+      double sigma3p, 
+      int pid, 
+      double sigma) const;
 
-    struct ScanResult {
-      public:
-        double bestp, errp, minp, maxp;
-        double alpha, dalpha, beta, dbeta;
-        std::vector<float> testp, c2function;
-        std::vector<int> tailssize;
-        ScanResult() = default;
-        ScanResult(
-          double best, double err, double min, double max,
-          double a, double da, double b, double db,
-          std::vector<float> test, std::vector<float> c2, std::vector<int> ts) :
-            bestp(best), errp(err), minp(min), maxp(max),
-            alpha(a), dalpha(da), beta(b), dbeta(db),
-            testp(test), c2function(c2), tailssize(ts) {} };
+    const double LikelihoodFunction(
+      const recob::TrackTrajectory& traj, 
+      std::vector<float>& seglens, 
+      std::vector<float>& cumseglens, 
+      std::vector<int>& seghits, 
+      std::vector<float> dthetaLin, 
+      std::vector<float> dthetaPoly, 
+      double sigma3p, 
+      int pid, 
+      double p0,
+      bool verbose) const;
+
+    void LikelihoodFit(
+      const recob::TrackTrajectory& traj, 
+      std::vector<float>& seglens, 
+      std::vector<float>& cumseglens, 
+      std::vector<int>& seghits, 
+      std::vector<float> dthetaLin, 
+      std::vector<float> dthetaPoly, 
+      double sigma3p, 
+      int pid, 
+      double& best_p,
+      double& error_p) const;
+    
+    const void FillOffDiagMCSLin(
+      TMatrixDSym& mat, 
+      TMatrixD matdiag, 
+      int jp) const;
+
+    const void FillOffDiagMCSPoly(
+      TMatrixDSym& mat, 
+      TMatrixD matdiag, 
+      int jp) const;
+
+    const void FillOffDiagErrLin(
+      TMatrixDSym& mat, 
+      TMatrixD matdiag, 
+      int jp) const;
+
+    const void FillOffDiagErrPoly(
+      TMatrixDSym& mat, 
+      TMatrixD matdiag, 
+      int jp) const;  
+
+    const void FillMCSMixedTerms(
+      TMatrixD& matMix, 
+      TMatrixD matLin, 
+      TMatrixD matPoly) const; 
+
+    TMatrix CleanCovariance(
+      TMatrix cov, 
+      int jtail) const;
+
+    unsigned int Plane(
+      size_t index) const;
+
+    bool IsInPlane(
+      size_t index) const;
+
+    unsigned int TPC(
+      size_t index) const;
+
+    bool IsInTPC(
+      size_t index, 
+      unsigned int t) const;
+
+    unsigned int FirstTPC(
+      const recob::TrackTrajectory& traj) const;
+
+    unsigned int LastTPC(
+      const recob::TrackTrajectory& traj) const;
+
+    Vector_t hit2D(
+      size_t index) const;
+
+    double length1D(
+      const recob::TrackTrajectory traj) const;
+
+    double length2D(
+      const recob::TrackTrajectory traj) const;
+
+    double length3D(
+      const recob::TrackTrajectory traj) const;
+
+    double ThetaMCSFactor(
+      const recob::TrackTrajectory& traj) const;
+
+    double ThetaErrFactor(
+      const recob::TrackTrajectory& traj) const;
+
+    double ThetaExpected(
+      const recob::TrackTrajectory& traj, 
+      double p,
+      double beta,
+      double L) const;
+
+    void ThetaCheck(
+      std::vector<float> dthetaLin, 
+      std::vector<float> dthetaPoly, 
+      bool& checkLin, 
+      bool& checkPoly, 
+      unsigned int& firstseg, 
+      unsigned int& lastseg) const;
+    
+    bool CathodeCheck(
+      const recob::TrackTrajectory& traj,
+      size_t index) const;
+
+    // functions in MCS producer
 
     void set2DHitsC(
       std::vector<recob::Hit> h) { hits2dC = h; }
@@ -343,9 +458,6 @@ namespace trkf {
     unsigned int cutAngles() const { 
       return cutAngles_; }
 
-    unsigned int dimMode() const { 
-      return dimMode_; }
-
     unsigned int planeMode() const { 
       return planeMode_; }
 
@@ -364,180 +476,6 @@ namespace trkf {
     unsigned int verbose() const { 
       return verbose_; }
 
-    bool removeDeltas() const { 
-      return removeDeltas_; }
-
-    double energyLossLandau(
-      const double mass, 
-      const double energy) const;
-
-    double energyLossBetheBloch(
-      const double mass, 
-      const double energy) const;
-
-    double GetE(
-      const double initial_E, 
-      const double length_travelled, 
-      const double mass) const;
-
-    const double C2Function(
-      const recob::TrackTrajectory& traj, 
-      std::vector<float>& seglens, 
-      std::vector<float>& cumseglens, 
-      std::vector<int>& seghits, 
-      std::vector<float> dthetaLin, 
-      std::vector<float> dthetaPoly, 
-      int pid, 
-      double p0,
-      int& tailssize) const;
-
-    const double LikelihoodFunction(
-      const recob::TrackTrajectory& traj, 
-      std::vector<float>& seglens, 
-      std::vector<float>& cumseglens, 
-      std::vector<int>& seghits, 
-      std::vector<float> dthetaLin, 
-      std::vector<float> dthetaPoly, 
-      int pid, 
-      double p0,
-      bool verbose) const;
-
-    void LikelihoodFit(
-      const recob::TrackTrajectory& traj, 
-      std::vector<float>& seglens, 
-      std::vector<float>& cumseglens, 
-      std::vector<int>& seghits, 
-      std::vector<float> dthetaLin, 
-      std::vector<float> dthetaPoly, 
-      int pid, 
-      double& best_p,
-      double& error_p) const;
-
-    const ScanResult C2Fit(
-      const recob::TrackTrajectory& traj, 
-      std::vector<float>& seglens, 
-      std::vector<float>& cumseglens, 
-      std::vector<int>& seghits, 
-      std::vector<float> dthetaLin, 
-      std::vector<float> dthetaPoly, 
-      int pid, 
-      double sigma) const;
-
-    const ScanResult C2NaiveFit(
-      const recob::TrackTrajectory& traj, 
-      std::vector<float>& seglens, 
-      std::vector<float>& cumseglens, 
-      std::vector<int>& seghits, 
-      std::vector<float> dthetaLin, 
-      std::vector<float> dthetaPoly, 
-      int pid, 
-      double sigma) const;
-    
-    const void FillOffDiagMCSLin(
-      TMatrixDSym& mat, 
-      TMatrixD matdiag, 
-      int jp) const;
-
-    const void FillOffDiagMCSPoly(
-      TMatrixDSym& mat, 
-      TMatrixD matdiag, 
-      int jp) const;
-
-    const void FillOffDiagErrLin(
-      TMatrixDSym& mat, 
-      TMatrixD matdiag, 
-      int jp) const;
-
-    const void FillOffDiagErrPoly(
-      TMatrixDSym& mat, 
-      TMatrixD matdiag, 
-      int jp) const;  
-
-    const void FillMCSMixedTerms(
-      TMatrixD& matMix, 
-      TMatrixD matLin, 
-      TMatrixD matPoly) const; 
-    
-    static Double_t funzio(
-      Double_t *x, 
-      Double_t *par) { return 1. / (par[0] + par[1] / x[0] / x[0]); } 
-
-    TMatrix CleanCovariance(
-      TMatrix cov, 
-      int jtail) const;
-
-    bool isinplane(
-      size_t index, 
-      unsigned int p) const;
-
-    bool isintpc(
-      size_t index, 
-      unsigned int t) const;
-
-    unsigned int lasttpc(
-      const recob::TrackTrajectory& traj) const;
-
-    Vector_t hit2d(
-      const recob::TrackTrajectory& traj, 
-      size_t index, 
-      unsigned int p, 
-      unsigned int t) const;
-
-    Vector_t newhit2d(
-      size_t index, 
-      unsigned int p) const;
-
-    int sideOfPoint(
-      size_t index) const;
-
-    double length1D(
-      const recob::TrackTrajectory traj, 
-      unsigned int plane) const;
-
-    double length2D(
-      const recob::TrackTrajectory traj, 
-      unsigned int plane) const;
-
-    double length3D(
-      const recob::TrackTrajectory traj, 
-      unsigned int plane) const;
-
-    double ThetaMCSFactor(
-      const recob::TrackTrajectory& traj, 
-      unsigned int plane) const;
-
-    double ThetaErrFactor(
-      const recob::TrackTrajectory& traj, 
-      unsigned int plane) const;
-
-    double ThetaExpected(
-      const recob::TrackTrajectory& traj, 
-      double p,
-      double beta,
-      double L) const;
-
-    void ThetaCheck(
-      std::vector<float> dthetaLin, 
-      std::vector<float> dthetaPoly, 
-      bool& checkLin, 
-      bool& checkPoly, 
-      unsigned int& firstseg, 
-      unsigned int& lastseg) const;
-
-    bool GeoStopCheck(
-      const recob::TrackTrajectory& traj) const;
-
-    double CathodeDistance(
-      unsigned int c) const;
-    
-    bool CathodeCheck(
-      const recob::TrackTrajectory& traj,
-      size_t index) const;
-
-    float C2PRange() { return c2prange; }
-
-    int TailsPRange() { return tailsprange; }
-
   private:
     int pIdHyp_;
     unsigned int minNSegs_;
@@ -552,26 +490,21 @@ namespace trkf {
     double pStep_;
     unsigned int cutMode_;
     unsigned int cutAngles_;
-    unsigned int dimMode_;
     unsigned int planeMode_;
     unsigned int fitMode_;
     unsigned int fullTrackMode_;
     unsigned int selectionMode_;
     unsigned int wireSkip_;
     unsigned int verbose_;
-    bool removeDeltas_;
     std::vector<recob::Hit> hits2dC;
     std::vector<recob::Hit> hits2dI2;
     std::vector<recob::Hit> hits2dI1;
     std::vector<proxy::TrackPointData> pdata;
-    float d3pC; float d3pI1; float d3pI2; 
     geo::WireReadoutGeom const* wr_;
     geo::GeometryCore const* geom_;
     detinfo::DetectorPropertiesData const* detProp_;
     float PFPT0_; float CRTT0_; float T0_;
     bool hasPFPT0_; bool hasCRTT0_; bool hasT0_;
-    float rangeP;
-    float c2prange; 
-    int tailsprange; }; }
+    float rangeP; }; }
 
 #endif

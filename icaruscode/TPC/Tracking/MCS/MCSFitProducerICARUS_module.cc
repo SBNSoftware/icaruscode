@@ -394,11 +394,6 @@ void trkf::MCSFitProducerICARUS::produce(art::Event & e) {
     mcsfitter.set2DHitsI1(hits2dI1);
     mcsfitter.set2DHitsI2(hits2dI2);
     mcsfitter.set2DHitsC(hits2dC);
-
-    // compute D3P
-    mcsfitter.ComputeD3P(0);
-    mcsfitter.ComputeD3P(1);
-    mcsfitter.ComputeD3P(2);
     
     // return MCS fit result for each track
     recob::MCSFitResultGS result = mcsfitter.fitMcs(*trkPtr);
