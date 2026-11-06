@@ -254,7 +254,7 @@ icarus_data			v10_21_00	-
 icarus_signal_processing	v10_25_00	-
 icarusalg			v10_30_00	-
 icarusutil			v10_24_00	-
-sbncode				v10_31_00	-
+sbncode				v10_31_00_01	-
 cetmodules			v3_24_01	-	only_for_build
 end_product_list
 ####################################
