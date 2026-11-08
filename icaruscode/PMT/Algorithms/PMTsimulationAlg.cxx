@@ -48,23 +48,6 @@ using namespace util::quantities::electronics_literals;
 
 
 // -----------------------------------------------------------------------------
-#if __cplusplus < 202002L // C++20?
-namespace util {
-  
-  /// Substitute for C++20 `std::identity`.
-  struct identity {
-    template <typename T>
-    constexpr T&& operator() (T&& v) const noexcept
-      { return std::forward<T>(v); }
-  }; // struct identity
-  
-} // namespace util
-#else
-# error("Replace util::identity with std::identity (#include <functional>)")
-#endif
-
-
-// -----------------------------------------------------------------------------
 // ---  icarus::opdet::PMTsimulationAlg
 // -----------------------------------------------------------------------------
 util::MultipleChoiceSelection<icarus::opdet::PMTsimulationAlg::DiscriminationAlgo>
