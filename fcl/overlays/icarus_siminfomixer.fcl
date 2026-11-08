@@ -22,7 +22,7 @@ icarus_siminfomixer:
 
   Verbosity: 4
   FillPOTInfo: false
-  POTSummaryTag: "generator:GenGenie"
+  POTSummaryTag: "generator::GenGenie"
   detail : {}
 }
 
