@@ -502,7 +502,7 @@ double opana::ICARUSBeamStructureAna::getFlashBunchTime(std::vector<int> channel
     // if any RWM copy is missing (therefore missing for an entire PMT crate),
     // it might not be possible to use the first hits (they might not have a RMW time)
     // so return sbn::timing::NoTime as in other bad cases
-    if (!fRWMTimes[i].isValid())
+    if (!fRWMTimes.at(ch).isValid())
       return sbn::timing::NoTime;
 
     // count hits separetely on the two walls
