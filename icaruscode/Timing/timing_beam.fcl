@@ -10,7 +10,7 @@ icarus_beam_signal_extractor:
     RWMlabel: "daqPMT:RWM"
     TriggerCorrectionLabel: "daqPMT:globtrg"
     TimeExtractionMethod: "InterpolatedCF"  # or "ConstantFraction", "LogisticFit"
-    ApplyConsensusFiltering: true
+    ApplyConsensusFiltering: false # consensus logic still under validation
     ADCThreshold: 500
     BoardSetup: @local::icarus_V1730_setup
     DebugTree: true
