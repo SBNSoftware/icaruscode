@@ -217,7 +217,7 @@ icarus_ophit: # some basic configuration
    RiseTimeCalculator: {
      tool_type:          RiseTimeThreshold
      PeakRatio:          0.15  # at 15% of the peak amplitude -- not tuned
-     #InterpolateSamples: true  # sub-sample linear interpolation
+     InterpolateSamples: true  # sub-sample linear interpolation
    }
 }
 
