@@ -53,7 +53,7 @@ namespace icarus::timing {
  * The extraction method is configured via the constructor by specifying one of the available
  * methods (defined by the `icarus::timing::ExtractionMethod` enum) and a threshold value.
  * * `method` (`icarus::timing::ExtractionMethod`): specifies the selected method for the
- *    pulse start extraction. The default is `icarus::timing::CONSTANT_FRACTION`.
+ *    pulse start extraction. The default is `icarus::timing::INTERPOLATED_CF`.
  * * `threshold` (`double`): detection threshold in ADC counts to avoid selecting noise if
  *    the reference pulse is missing from its waveform. Default is `500` ADC.
  *
@@ -122,7 +122,7 @@ namespace icarus::timing {
     static constexpr std::array<double, 4> kFitSlopeSeeds { 0.3, 0.1, 0.5, 1.0 };
 
     // Constructor: select extraction method and threshold in ADC.
-    PulseStartExtractor(ExtractionMethod method = CONSTANT_FRACTION, double threshold= 500);
+    PulseStartExtractor(ExtractionMethod method = INTERPOLATED_CF, double threshold= 500);
 
     // Templated public function to extract the start sample from a waveform.
     // Returns the start sample (can be fractional), or `0` if no pulse is found.

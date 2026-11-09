@@ -51,8 +51,9 @@ namespace icarus::timing { class PMTWaveformTimeCorrectionExtractor; }
  * The reference signal is expected to be a sharp square wave in negative
  * polarity. The time of the correction is based on the front side of that wave.
  * The extraction is perfomed by `icarus::timing::PulseStartExtractor` by
- * specifying one of the available extraction methods (constant-fraction discrimation,
- * logitstic function fit) and an ADC threshold for the signal identification.
+ * specifying one of the available extraction methods (constant-fraction discrimination,
+ * interpolated constant-fraction discrimination, logistic function fit) and an ADC
+ * threshold for the signal identification.
  * 
  * @see `icarus::timing::PulseStartExtractor` for details.
  * 

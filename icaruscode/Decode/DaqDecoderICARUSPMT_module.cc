@@ -193,7 +193,7 @@ namespace icarus { class DaqDecoderICARUSPMT; }
  *     waveform-based timing correction is used.
  * * `ApplyCableDelayCorrection` (flag, default: `true`): if set, applies the
  *     cable delay corrections from a database.
- * * `PulseStartExtractionMethod` (string, default: `LogisticFit`): pulse start
+ * * `PulseStartExtractionMethod` (string, default: `InterpolatedCF`): pulse start
  *     extraction method for the time corrections. 
  *     @see icarus::timing::PulseStartExtractor for details and options.
  * * `PulseStartExtractionThreshold` (double, default: `500.`): detection threshold
