@@ -6,7 +6,12 @@ file(GLOB tool_srcs *.cc)
 # Build a library target from these sources.
 # This will create a target whose name is based on the directory (or you can force it with a variable).
 art_make_library(
-  LIBRARIES PUBLIC ROOT::Core ROOT::Gpad ROOT::Geom
+  LIBRARIES
+    PRIVATE
+      messagefacility::MF_MessageLogger
+      ROOT::Hist
+      ROOT::MathCore
+      ROOT::Core
   SOURCE ${tool_srcs}
 )
 

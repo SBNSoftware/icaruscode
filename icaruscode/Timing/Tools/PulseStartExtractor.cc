@@ -5,260 +5,176 @@
  * @date  Sun Feb 11 11:37:14 2024
  * Description: Source file for the PulseStartExtractor class implementation. It provides
  *              templated functions to extract the start (rising edge) time of reference
- *              signals (square pulses) using either constant fraction discrimination or
- *              a refined logistic function fit.
+ *              signals (square pulses) using either constant fraction discrimination,
+ *              an interpolated constant fraction or a refined logistic function fit.
  **/
 
 #include "PulseStartExtractor.h"
-#include <algorithm>
-#include <iostream>
-#include <vector>
-#include <cstddef>
-#include <limits>
-#include <string>
-#include <map>
+
+#include "messagefacility/MessageLogger/MessageLogger.h"
+
 #include "TF1.h"
 #include "TGraph.h"
 #include "TFitResultPtr.h"
-#include "TRandom.h"
+
+#include <algorithm>
+#include <cmath>
+#include <iterator>
+#include <numeric>
+#include <vector>
+
+namespace {
+
+  // median of the [begin, end) range (the range is copied)
+  double median(std::vector<double>::const_iterator begin, std::vector<double>::const_iterator end)
+  {
+    std::vector<double> copy(begin, end);
+    auto const mid = copy.begin() + copy.size() / 2;
+    std::nth_element(copy.begin(), mid, copy.end());
+    return *mid;
+  }
+
+} // local namespace
 
 namespace icarus::timing {
-  
+
   // Constructor
   PulseStartExtractor::PulseStartExtractor(ExtractionMethod method, double threshold)
       : fMethod(method), fThreshold(threshold) {}
 
   // --------------------------------------------------------------------------------
   template <typename T>
-  std::size_t PulseStartExtractor::findMinBin(const std::vector<T> &wf, std::size_t start, std::size_t end) const
-  {
-    auto minel = std::min_element(wf.begin() + start, wf.begin() + end);
-    size_t minsample = std::distance(wf.begin() + start, minel);
-    return minsample;
-  }
-
-  template <typename T>
-  std::size_t PulseStartExtractor::findMaxBin(const std::vector<T> &wf, std::size_t start, std::size_t end) const
-  {
-    auto maxel = std::max_element(wf.begin() + start, wf.begin() + end);
-    size_t maxsample = std::distance(wf.begin() + start, maxel);
-    return maxsample;
-  }
-
-  // --------------------------------------------------------------------------------
-  template <typename T>
-  T PulseStartExtractor::computeMedian(const std::vector<T> &data) const
-  {
-    std::vector<T> copy = data;
-    std::nth_element(copy.begin(), copy.begin() + copy.size() / 2, copy.end());
-    return copy[copy.size() / 2];
-  }
-
-  // --------------------------------------------------------------------------------
-  template <typename T>
   double PulseStartExtractor::extractStart(const std::vector<T> &wf) const
   {
-
-    // Try constant-fraction discrimination (default method)
-    // if fit method is selected, the result is used as initial guess for the fit
-    std::size_t cf_sample = extractStartSampleCF(wf, fThreshold);
+    std::vector<double> const y(wf.begin(), wf.end());
 
     // if no signal is found above threshold, first sample (0) is returned
-    // no need to attempt a fit if no signal is there
-    if (cf_sample == 0)
+    Pulse pulse;
+    if (!findPulse(y, pulse))
       return 0.;
 
-    if (fMethod == LOGISTIC_FIT)
+    switch (fMethod)
     {
-      double par[4] = {0};
-      bool ok = extractStartLogisticFit(wf, cf_sample, par);
-      if (ok)
-        return par[0]; // Rising edge time from the logistic fit (can be non-integer).
-      else
-        std::cout << "Sigmoid fit did not converge; falling back to constant-fraction discrimation." << std::endl;
+      case INTERPOLATED_CF:
+        return crossingTime(y, pulse, kCFFraction, true);
+
+      case LOGISTIC_FIT:
+      {
+        double start = 0.;
+        double const guess = crossingTime(y, pulse, kCFFraction, false);
+        if (fitLogistic(y, pulse, guess, start))
+          return start; // Rising edge time from the logistic fit (can be non-integer).
+
+        mf::LogDebug("PulseStartExtractor") << "Logistic fit did not converge;"
+                                            << " falling back to the interpolated 50% crossing.";
+        return crossingTime(y, pulse, 0.5, true);
+      }
+
+      case CONSTANT_FRACTION:
+      default:
+        return crossingTime(y, pulse, kCFFraction, false);
     }
-
-// ***** MODOFICATIONS ***** //
-
-if (fMethod == INTERPOLATED_CF) {
-      return extractStartInterpolated(wf, 0.2, 2.0); //above 20% fraction (threshold), 2 ns sampling (this is the t0 -t1, t2-t1...fixing it)
-
-	std::cout << "Using interpolated CF method..." << std::endl;
-
-    }
-
-    // Defaulting to constant-fraction discrimation
-    return static_cast<double>(cf_sample);
   }
 
   // --------------------------------------------------------------------------------
-
-  template <typename T>
-  std::size_t PulseStartExtractor::extractStartSampleCF(const std::vector<T> &wf, double thres) const
+  bool PulseStartExtractor::findPulse(std::vector<double> const &wf, Pulse &pulse) const
   {
-    // Find the position of the minimum along the waveform
-    std::size_t minbin = findMinBin(wf, 0, wf.size());
+    if (wf.empty())
+      return false;
 
-    // Search only a cropped region of the waveform backward from the min (20 samples)
-    std::size_t maxbin = (minbin >= 20) ? (minbin - 20) : 0;
-    std::size_t startbin = maxbin;
+    // Find the position of the minimum along the waveform
+    pulse.minBin = std::distance(wf.begin(), std::min_element(wf.begin(), wf.end()));
+
+    // Search only a cropped region of the waveform backward from the min
+    pulse.searchStart = (pulse.minBin >= kLookBackSamples) ? (pulse.minBin - kLookBackSamples) : 0;
+
+    // baseline from everything before the search region (at least the first sample)
+    std::size_t const baselineEnd = std::max<std::size_t>(pulse.searchStart, 1);
+    pulse.baseline = median(wf.begin(), wf.begin() + baselineEnd);
+    pulse.amplitude = pulse.baseline - wf[pulse.minBin];
 
     // check if peak is high enough (remove noise)
-    auto delta = wf[maxbin] - wf[minbin];
-    if (delta < thres)
-      return 0; // return first sample
-
-    // Now we crawl betweem maxbin and minbin and we stop when:
-    // maxbin value - bin value > (maxbin value - minbin value )*0.2
-    for (std::size_t bin = maxbin; bin < minbin; ++bin)
-    {
-      auto val = wf[maxbin] - wf[bin];
-      if (val >= 0.2 * delta) // 20%
-      {
-        startbin = bin - 1;
-        break;
-      }
-    }
-    if (startbin < maxbin)
-      startbin = maxbin;
-
-    return startbin;
+    return pulse.amplitude >= fThreshold;
   }
 
   // --------------------------------------------------------------------------------
-
-  template <typename T>
-  bool PulseStartExtractor::extractStartLogisticFit(const std::vector<T> &wf, std::size_t guess, double par[4]) const
+  double PulseStartExtractor::crossingTime(std::vector<double> const &wf, Pulse const &pulse,
+                                           double fraction, bool interpolate) const
   {
-    std::size_t nsize = wf.size();
-    std::vector<double> x(nsize);
-    std::vector<double> y(nsize);
+    double const level = pulse.baseline - fraction * pulse.amplitude;
 
-    for (std::size_t i = 0; i < nsize; i++)
-    {
-      x[i] = static_cast<double>(i);
-      y[i] = static_cast<double>(wf[i]);
-    }
+    // first sample at or below the level; the minimum always is
+    std::size_t bin = pulse.searchStart;
+    while (bin < pulse.minBin && wf[bin] > level)
+      ++bin;
 
-    TGraph *g = new TGraph(nsize, &x[0], &y[0]);
+    // already below the level at the start of the search window: nothing before to use
+    if (bin == pulse.searchStart)
+      return static_cast<double>(bin);
 
-    // prepare initial parameter guesses for the fit
-    // baseline: level before signal
-    auto baseline = computeMedian(y);
+    if (!interpolate)
+      return static_cast<double>(bin - 1);
 
-    // amplitude: level after the signal (avg over 50 samples)
-    auto amplitude = 0.0;
-    std::size_t endIndex = (guess + 50 < nsize) ? guess + 50 : nsize;
-    for (std::size_t i = guess; i < endIndex; i++)
-      amplitude += y[i];
-    amplitude /= (endIndex - guess);
-    amplitude -= baseline;
-
-    // crop a window around the initial guess: +/- 25 samples
-    std::size_t llim = (guess >= 25) ? guess - 25 : 0;
-    std::size_t ulim = (guess + 25 < nsize) ? guess + 25 : nsize - 1;
-
-    std::string logisticModel = "1/(1+exp(([0]-x)/[1]))*[2]+[3]";
-    TF1 *fitFunc = new TF1("logistic", logisticModel.c_str(), x[llim], x[ulim]);
-
-    fitFunc->SetParameter(0, x[guess]); // initial guess for rising edge time.
-    fitFunc->SetParameter(1, 0.3);      // initial slope.
-    fitFunc->SetParameter(2, amplitude);
-    fitFunc->SetParameter(3, baseline);
-
-    TFitResultPtr fp = g->Fit(fitFunc, "SRQ", "", x[llim], x[ulim]);
-    bool converged = !(bool)(int(fp));
-
-    // if fit did not converge, try again a few times
-    // tweak some parameters until it works...
-    int maxtries = 100;
-    int trial = 0;
-    while (!converged && trial < maxtries)
-    {
-      double newGuess = x[guess] + gRandom->Uniform(-1.5, 1.5);
-      double newSlope = 0.3 + gRandom->Uniform(-0.2, 0.2);
-      fitFunc->SetParameter(0, newGuess);
-      fitFunc->SetParameter(1, newSlope);
-      fitFunc->SetParameter(2, amplitude);
-      fitFunc->SetParameter(3, baseline);
-      fp = g->Fit(fitFunc, "SRQ", "", x[llim], x[ulim]);
-      converged = !(bool)(int(fp));
-      trial++;
-    }
-
-    // return the fit results in the parameters vector.
-    // p0 : rising edge as the inflection point (50% of amplitude)
-    par[0] = fitFunc->GetParameter(0);
-    par[1] = fitFunc->GetParameter(1);
-    par[2] = fitFunc->GetParameter(2);
-    par[3] = fitFunc->GetParameter(3);
-
-    delete fitFunc;
-    delete g;
-    return converged;
+    // interpolate between the samples across the level
+    double const before = wf[bin - 1];
+    double const after = wf[bin];
+    return static_cast<double>(bin - 1) + (before - level) / (before - after);
   }
 
+  // --------------------------------------------------------------------------------
+  bool PulseStartExtractor::fitLogistic(std::vector<double> const &wf, Pulse const &pulse,
+                                        double guess, double &start) const
+  {
+    std::size_t const nsize = wf.size();
+    std::size_t const guessBin = static_cast<std::size_t>(guess);
 
-// ***** MODIFICATIONS ***** //
+    // amplitude: level after the signal (avg over kFitAmplitudeSamples samples)
+    std::size_t const ampEnd = std::min(guessBin + kFitAmplitudeSamples, nsize);
+    double const amplitude = std::accumulate(wf.begin() + guessBin, wf.begin() + ampEnd, 0.)
+                             / (ampEnd - guessBin) - pulse.baseline;
 
-template <typename T>
-double PulseStartExtractor::extractStartInterpolated(const std::vector<T>& wf, double fraction, double dt_ns) const {
-  if (wf.size() < 2) return 0.0;
+    // crop a window around the initial guess
+    std::size_t const llim = (guessBin >= kFitHalfWindow) ? guessBin - kFitHalfWindow : 0;
+    std::size_t const ulim = std::min(guessBin + kFitHalfWindow, nsize - 1);
 
-  double baseline = computeMedian(wf);
-  auto minIt = std::min_element(wf.begin(), wf.end());
-  std::size_t minIndex = std::distance(wf.begin(), minIt);
-  double peak = wf[minIndex];
+    std::vector<double> x(ulim - llim + 1);
+    std::iota(x.begin(), x.end(), static_cast<double>(llim));
+    TGraph graph(x.size(), x.data(), wf.data() + llim);
 
-  double threshold = baseline + fraction * (peak - baseline);
+    // local function, not registered in the ROOT global list
+    auto const logistic = [](double const *xx, double const *p)
+      { return p[2] / (1. + std::exp((p[0] - xx[0]) / p[1])) + p[3]; };
+    TF1 fitFunc("logistic", logistic, x.front(), x.back(), 4, 1, TF1::EAddToList::kNo);
 
-  std::size_t maxbin = (minIndex >= 20) ? (minIndex - 20) : 0;
+    // try a fixed set of initial values until the fit is acceptable
+    for (double const offset : kFitStartOffsets)
+    {
+      for (double const slope : kFitSlopeSeeds)
+      {
+        fitFunc.SetParameters(guess + offset, slope, amplitude, pulse.baseline);
+        TFitResultPtr const fp = graph.Fit(&fitFunc, "SRQN");
+        if (int(fp) != 0)
+          continue;
 
- for (std::size_t i = maxbin; i + 1 < minIndex; ++i) {
-    if (wf[i] > threshold && wf[i + 1] <= threshold) {
-      // Interpolate between sample i and i+1
-      double y1 = wf[i];
-      double y2 = wf[i + 1];
-      double frac = (y1 - threshold) / (y1 - y2);  // fractional distance
-      return static_cast<double>(i) + frac;        // sample index (float)
+        // p0 : rising edge as the inflection point (50% of amplitude)
+        double const p0 = fitFunc.GetParameter(0);
+        bool const inWindow = (p0 >= x.front()) && (p0 <= x.back());
+        bool const negativePulse = (fitFunc.GetParameter(2) < 0.);
+        if (inWindow && negativePulse)
+        {
+          start = p0;
+          return true;
+        }
+      }
     }
-  } 
 
-  return 0.0;
-}
- 
+    return false;
+  }
+
+  // --------------------------------------------------------------------------------
   template double PulseStartExtractor::extractStart<short>(const std::vector<short>& wf) const;
   template double PulseStartExtractor::extractStart<int>(const std::vector<int>& wf) const;
   template double PulseStartExtractor::extractStart<float>(const std::vector<float>& wf) const;
   template double PulseStartExtractor::extractStart<double>(const std::vector<double>& wf) const;
-
-  template std::size_t PulseStartExtractor::extractStartSampleCF<short>(const std::vector<short>& wf, double thres) const;
-  template std::size_t PulseStartExtractor::extractStartSampleCF<int>(const std::vector<int>& wf, double thres) const;
-  template std::size_t PulseStartExtractor::extractStartSampleCF<float>(const std::vector<float>& wf, double thres) const;
-  template std::size_t PulseStartExtractor::extractStartSampleCF<double>(const std::vector<double>& wf, double thres) const;
-
-  template std::size_t PulseStartExtractor::findMinBin<short>(const std::vector<short>& wf, std::size_t start, std::size_t end) const;
-  template std::size_t PulseStartExtractor::findMinBin<int>(const std::vector<int>& wf, std::size_t start, std::size_t end) const;
-  template std::size_t PulseStartExtractor::findMinBin<float>(const std::vector<float>& wf, std::size_t start, std::size_t end) const;
-  template std::size_t PulseStartExtractor::findMinBin<double>(const std::vector<double>& wf, std::size_t start, std::size_t end) const;
-
-  template short PulseStartExtractor::computeMedian<short>(const std::vector<short>& data) const;
-  template int PulseStartExtractor::computeMedian<int>(const std::vector<int>& data) const;
-  template float PulseStartExtractor::computeMedian<float>(const std::vector<float>& data) const;
-  template double PulseStartExtractor::computeMedian<double>(const std::vector<double>& data) const;
-
-  template bool PulseStartExtractor::extractStartLogisticFit<short>(const std::vector<short>& wf, std::size_t guess, double par[4]) const;
-  template bool PulseStartExtractor::extractStartLogisticFit<int>(const std::vector<int>& wf, std::size_t guess, double par[4]) const;
-  template bool PulseStartExtractor::extractStartLogisticFit<float>(const std::vector<float>& wf, std::size_t guess, double par[4]) const;
-  template bool PulseStartExtractor::extractStartLogisticFit<double>(const std::vector<double>& wf, std::size_t guess, double par[4]) const;
-
-// ***** MODIFICATIONS ***** //
-
-template double PulseStartExtractor::extractStartInterpolated<short>(const std::vector<short>&, double, double) const;
-template double PulseStartExtractor::extractStartInterpolated<int>(const std::vector<int>&, double, double) const;
-template double PulseStartExtractor::extractStartInterpolated<float>(const std::vector<float>&, double, double) const;
-template double PulseStartExtractor::extractStartInterpolated<double>(const std::vector<double>&, double, double) const;
-
-
 
 } // icarus::timing namespace
