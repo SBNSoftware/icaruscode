@@ -6,10 +6,11 @@ BEGIN_PROLOG
 icarus_calorimetryalgdata:	@local::standard_calorimetryalgdata
 icarus_calorimetryalgmc:	  @local::standard_calorimetryalgmc
 
-# Calorimetry constants from G. Putnam (Nov 2022)
-# Informed by MC calibration -- docdb 28639.
-# NOTE: needs to be revisted if/when the data processing is updated
-icarus_calorimetryalgmc.CalAreaConstants: [0.01343, 0.01338, 0.01219]
+# GP 8/4/25: with re-calibration and application of EMB recombination,
+# MC and data gains match. Note that we should not being making any
+# updates to the MC that would cause the MC gain to differ from that of
+# data.
+icarus_calorimetryalgmc.CalAreaConstants: @local::icarus_data_calconst
 icarus_calorimetryalgmc.ModBoxA: 0.904
 icarus_calorimetryalgmc.ModBoxBTF1: "[0]/TMath::Sqrt(TMath::Sin(x*TMath::Pi()/180)**2 + TMath::Cos(x*TMath::Pi()/180)**2/[1]**2)"
 icarus_calorimetryalgmc.ModBoxBParam: [0.204, 1.25]

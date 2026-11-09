@@ -22,6 +22,8 @@ services:
   SpaceChargeService: @local::icarus_spacecharge
 }
 
+#include "override_services_for_simulation.fcl"
+
 outputs:
 {
   outpid:

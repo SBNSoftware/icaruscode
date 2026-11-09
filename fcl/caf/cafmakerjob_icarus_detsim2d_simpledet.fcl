@@ -1,0 +1,4 @@
+#include "cafmakerjob_icarus_detsim2d.fcl"
+
+physics.producers.cafmaker.SimChannelLabel: "daq:simpleSC"
+services.BackTrackerService.BackTracker.SimChannelModuleLabel: "daq:simpleSC"

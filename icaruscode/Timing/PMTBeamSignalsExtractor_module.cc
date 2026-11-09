@@ -18,7 +18,7 @@
 #include "sbnobj/Common/Trigger/ExtraTriggerInfo.h"
 #include "icaruscode/Decode/ChannelMapping/IICARUSChannelMap.h"
 #include "icaruscode/IcarusObj/PMTWaveformTimeCorrection.h"
-#include "icaruscode/IcarusObj/PMTBeamSignal.h"
+#include "sbnobj/Common/PMT/Data/PMTBeamSignal.hh"
 #include "icaruscode/Timing/Tools/PulseStartExtractor.h"
 #include "lardataalg/DetectorInfo/DetectorTimingTypes.h" // electronics_time
 #include "lardataalg/Utilities/quantities/spacetime.h"
@@ -101,7 +101,7 @@ namespace icarus::timing
  * Output products
  * -------------------------
  *
- * This modules produces two `std::vector<icarus::timing::PMTBeamSignal>`
+ * This modules produces two `std::vector<sbn::timing::PMTBeamSignal>`
  * with 360 elements each, representing the relevant RWM or EW time for
  * the corresponding PMT channel. When the discrimination algorithm decides
  * the "peak" on a waveform to be noise, the corresponding entries are placed
@@ -256,7 +256,7 @@ private:
   };
 
   // prepare pointers for data products
-  using BeamSignalCollection = std::vector<icarus::timing::PMTBeamSignal>;
+  using BeamSignalCollection = std::vector<sbn::timing::PMTBeamSignal>;
   using BeamSignalCollectionPtr = std::unique_ptr<BeamSignalCollection>;
 
   std::map<std::string, std::map<std::string, SignalData>> fBeamSignals;
@@ -284,8 +284,8 @@ icarus::timing::PMTBeamSignalsExtractor::PMTBeamSignalsExtractor(fhicl::Paramete
   consumes<std::vector<raw::OpDetWaveform>>(fRWMlabel);
 
   // Call appropriate produces<>() functions here.
-  produces<std::vector<PMTBeamSignal>>("RWM");
-  produces<std::vector<PMTBeamSignal>>("EW");
+  produces<std::vector<sbn::timing::PMTBeamSignal>>("RWM");
+  produces<std::vector<sbn::timing::PMTBeamSignal>>("EW");
 }
 
 // -----------------------------------------------------------------------------
@@ -445,7 +445,7 @@ void icarus::timing::PMTBeamSignalsExtractor::extractBeamSignalTime(art::Event &
 
   // get the start sample of the signals, one instance per PMT crate
   // threshold is used to skip spikes from electric crosstalk see SBN-doc-34928, slides 4-5.
-  // if no signal is found, set time to icarus::timing::NoTime
+  // if no signal is found, set time to sbn::timing::NoTime
   for (auto const &wave : waveforms)
   {
 
@@ -458,14 +458,14 @@ void icarus::timing::PMTBeamSignalsExtractor::extractBeamSignalTime(art::Event &
     // if nothing is found, first sample is returned (0)
     double sample = fPulseStartExtractor.extractStart(wave.Waveform());
     if (sample < 1){
-      sample = icarus::timing::NoSample;
+      sample = sbn::timing::NoSample;
       mf::LogTrace("PMTBeamSignalsExtractor") << "No " << label.encode() << " signal found in channel " << channel
                                               << " (crate " << crate << ")";
     }
 
-    double utime_abs = (sample != icarus::timing::NoSample) ? tstart.value() + fPMTsamplingTick * sample : icarus::timing::NoTime;
-    double itime_abs = (sample != icarus::timing::NoSample) ? utime_abs + getTriggerCorrection(channel) : icarus::timing::NoTime;
-    double itime = (sample != icarus::timing::NoSample) ? itime_abs - ftriggerTime : icarus::timing::NoTime;
+    double utime_abs = (sample != sbn::timing::NoSample) ? tstart.value() + fPMTsamplingTick * sample : sbn::timing::NoTime;
+    double itime_abs = (sample != sbn::timing::NoSample) ? utime_abs + getTriggerCorrection(channel) : sbn::timing::NoTime;
+    double itime = (sample != sbn::timing::NoSample) ? itime_abs - ftriggerTime : sbn::timing::NoTime;
 
     // store signal information, final time might be updated later
     SignalData beamTime{channel, getDigitizerLabel(channel), crate, wfstart, sample, utime_abs, itime_abs, itime_abs, itime,
@@ -473,7 +473,7 @@ void icarus::timing::PMTBeamSignalsExtractor::extractBeamSignalTime(art::Event &
     fBeamSignals[l].emplace(crate, std::move(beamTime));
 
     // skip invalid times (signal completely missing)
-    if( sample == icarus::timing::NoSample ) continue; 
+    if( sample == sbn::timing::NoSample ) continue; 
 
     // save valid times in east/west separately to estimate consensus
     // this will be used to computed median and RMS
@@ -519,7 +519,7 @@ void icarus::timing::PMTBeamSignalsExtractor::filterBeamSignalsByCryostat(
     double t = signal.itime_abs;
     
     // if the current signal is more than 2 standard deviations away, substitute it with the median
-    // this affects both missing signals (whose value is currently icarus::timing::NoTime)
+    // this affects both missing signals (whose value is currently sbn::timing::NoTime)
     // and distorted signal for which the time extraction is skewed
     if ( std::fabs(t-median) > 2*stddev )
     { 
@@ -608,8 +608,8 @@ void icarus::timing::PMTBeamSignalsExtractor::associateBeamSignalsToChannels(art
   for (auto const &signal : fBeamSignals[l])
   {
 
-    // convert SignalData into icarus::timing::PMTBeamSignal
-    icarus::timing::PMTBeamSignal beamTime{ signal.second.channel, signal.second.diglabel, signal.first,
+    // convert SignalData into sbn::timing::PMTBeamSignal
+    sbn::timing::PMTBeamSignal beamTime{ signal.second.channel, signal.second.diglabel, signal.first,
                                             signal.second.sample, signal.second.time_abs, signal.second.time};
 
     // build the PMT digitizer labels that live in this crate
@@ -673,12 +673,12 @@ void icarus::timing::PMTBeamSignalsExtractor::fillDebugTree()
       }
     } else {
       m_rwm_channel = 0;
-      m_rwm_wfstart   = icarus::timing::NoTime;
-      m_rwm_sample    = icarus::timing::NoTime;
-      m_rwm_utime_abs = icarus::timing::NoTime; 
-      m_rwm_itime_abs = icarus::timing::NoTime; 
-      m_rwm_time_abs  = icarus::timing::NoTime;
-      m_rwm_time      = icarus::timing::NoTime;
+      m_rwm_wfstart   = sbn::timing::NoTime;
+      m_rwm_sample    = sbn::timing::NoTime;
+      m_rwm_utime_abs = sbn::timing::NoTime; 
+      m_rwm_itime_abs = sbn::timing::NoTime; 
+      m_rwm_time_abs  = sbn::timing::NoTime;
+      m_rwm_time      = sbn::timing::NoTime;
     }
 
     if (itEW != EWSignals.end()) 
@@ -697,12 +697,12 @@ void icarus::timing::PMTBeamSignalsExtractor::fillDebugTree()
       }
     } else {
       m_ew_channel = 0;
-      m_ew_wfstart   = icarus::timing::NoTime;
-      m_ew_sample    = icarus::timing::NoTime;
-      m_ew_utime_abs = icarus::timing::NoTime; 
-      m_ew_itime_abs = icarus::timing::NoTime; 
-      m_ew_time_abs  = icarus::timing::NoTime;
-      m_ew_time      = icarus::timing::NoTime;
+      m_ew_wfstart   = sbn::timing::NoTime;
+      m_ew_sample    = sbn::timing::NoTime;
+      m_ew_utime_abs = sbn::timing::NoTime; 
+      m_ew_itime_abs = sbn::timing::NoTime; 
+      m_ew_time_abs  = sbn::timing::NoTime;
+      m_ew_time      = sbn::timing::NoTime;
     }
     
     fOutTree->Fill();

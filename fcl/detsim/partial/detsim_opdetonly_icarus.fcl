@@ -1,0 +1,40 @@
+#
+# File:    detsim_opdetonly_icarus.fcl
+# Purpose: Simulation of the optical detector response.
+# Date:    January 27, 2025
+# Author:  Gianluca Petrillo (petrillo@slac.stanford.edu)
+#
+# This job configuration runs the standard detector simulation, like
+# `detsim_1d_icarus.fcl` does, but only for the optical detector.
+#
+#
+# Output
+# -------
+#
+# * `std::vector<raw::OpDetWaveform>` (`opdaq`): raw PMT waveforms
+#
+#
+#
+#
+# Changes
+# --------
+#
+# 20250127 (petrillo@slac.stanford.edu) [v1.0]
+#   original version (from `detsim_1d_icarus.fcl`)
+#
+
+#include "detsim_1d_icarus.fcl"
+
+process_name: OpDetSim
+
+services.DetPedestalService:         @erase
+services.ChannelStatusService:       @erase
+services.IICARUSChannelMap:          @erase
+services.SignalShapingICARUSService: @erase
+
+# run only the `opdaq` module:
+physics.producers: {
+  opdaq: @local::physics.producers.opdaq  # simplify configuration removing all other producers
+}
+physics.simulate: [ opdaq ]
+

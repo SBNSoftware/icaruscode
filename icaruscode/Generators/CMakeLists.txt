@@ -1,13 +1,5 @@
-#find_ups_product(ifdhc)
-#include_directories( $ENV{IFDHC_FQ_DIR}/inc )
-#set( IFDH_AS_SERVICE_LIB_LIST
-#     art_Framework_Services_Registry
-#     ${Boost_SYSTEM_LIBRARY}
-#     ${IFDH_SERVICE} )
-#include_directories ( . )
-
 cet_build_plugin(HepMCFileGen art::module
-      LIBRARIES larcorealg::Geometry
+      LIBRARIES PRIVATE larcorealg::Geometry
                 larcore::Geometry_Geometry_service
                 lardataobj::RecoBase
                 lardataobj::AnalysisBase
@@ -29,6 +21,16 @@ cet_build_plugin(HepMCFileGen art::module
                 cetlib_except::cetlib_except
                 ROOT::Core
                 ROOT::Physics
+)
+
+cet_build_plugin(SelectCathodeCrossingGenParticles art::module
+      LIBRARIES sbnalg::Utilities
+                larcore::Geometry_Geometry_service
+                larcore::headers
+                lardataalg::MCDumpers
+                larcorealg::Geometry
+                larcorealg::headers
+                nusimdata::SimulationBase
 )
 
 install_headers()

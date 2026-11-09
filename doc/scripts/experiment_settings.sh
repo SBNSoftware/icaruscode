@@ -8,7 +8,7 @@
 declare -r DefaultExperimentName='ICARUS'
 
 # other repositories to check out for a complete documentation
-declare -ra AdditionalRepoNames=( 'sbnobj' 'sbncode' 'icarusalg' 'icarus_signal_processing' 'sbnanaobj' 'sbnana' )
+declare -ra AdditionalRepoNames=( 'sbnobj' 'sbnalg' 'sbncode' 'icarusalg' 'icarus_signal_processing' 'sbnanaobj' 'sbnana' )
 
 # special release branches (the others get `$DefaultBranch`)
 declare -rA ReleaseBranches=( ['sbnobj']='main' ['sbncode']='main' ['sbnanaobj']='main' ['sbnana']='main' )

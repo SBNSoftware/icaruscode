@@ -1,8 +1,8 @@
 ////////////////////////////////////////////////
-//   
+//
 //    File: TriggerDecoderV2_tool.cc
-//       
-//    Description: Extracting ICARUS trigger fragment information from new fragment necessary after trigger information  
+//
+//    Description: Extracting ICARUS trigger fragment information from new fragment necessary after trigger information
 //
 //    Author: Jacob Zettlemoyer, FNAL
 //
@@ -49,12 +49,12 @@
 
 using namespace std::string_literals;
 
-namespace daq 
+namespace daq
 {
-  
+
   /**
    * @brief Tool decoding the trigger information from DAQ.
-   * 
+   *
    * Produces:
    * * `std::vector<raw::ExternalTrigger>` containing the absolute trigger time
    *     stamp from the White Rabbit system, and a trigger count;
@@ -71,7 +71,7 @@ namespace daq
    *     * `TriggerBits()`: includes the beam(s) with an open gate when the
    *         trigger happened (currently only one beam gate per trigger);
    *         definitions are in `sbn::bits::triggerSource` enumerator.
-   * 
+   *
    *     It always includes a single entry (zero _might_ be supported).
    * * `std::vector<sim::BeamGateInfo>` containing information on the "main"
    *     beam gate associated to each trigger (a way to say that if by any
@@ -163,10 +163,10 @@ namespace daq
    *            implemented in terms of hardware connectors as follows:
    *            * east wall:  `00<C3P2><C3P1><C3P0>00<C2P2><C2P1><C2P0>`
    *            * west wall:  `00<C1P2><C1P1><C1P0>00<C0P2><C0P1><C0P0>`
-   *            
+   *
    *            For the expected matching with PMT, see the documentation of
    *            `sbn::ExtraTriggerInfo::CryostatInfo::LVDSstatus`.
-   *     
+   *
    *     Information may be missing. If a count is not available, its value is
    *     set to `0` (which is an invalid value because their valid range starts
    *     with `1` since they include the current event), and if a timestamp is
@@ -174,31 +174,31 @@ namespace daq
    *     two conditions can be checked with static methods
    *     `sbn::ExtraTriggerInfo::isValidTimestamp()`
    *     and `sbn::ExtraTriggerInfo::isValidCount()` respectively.
-   * 
+   *
    * Besides the main data product (empty instance name) an additional
    * `std::vector<raw::ExternalTrigger>` data product with instance name
    * `"previous"` is also produced, which relays the same kind of information
    * but for the _previous_ trigger. This information also comes from the
    * trigger DAQ. If no previous trigger is available, this collection will be
    * empty.
-   * 
-   * 
+   *
+   *
    * Timestamps and corrections
    * ---------------------------
-   * 
+   *
    * The reference trigger time is driven by the trigger fragment time, which
    * is expected to have been derived from the actual trigger time from the
    * White Rabbit system properly corrected to UTC by the board reader.
-   * 
+   *
    * All absolute timestamps are corrected to be on that same scale.
    * The absolute timestamps related to the White Rabbit time are added an
    * offset to achieve this correction; this offset is stored in the data
    * product (`sbn::ExtraTriggerInfo::WRtimeToTriggerTime`).
-   * 
-   * 
+   *
+   *
    * Configuration
    * --------------
-   * 
+   *
    * * `TrigConfigLabel` (input tag, mandatory): tag of the trigger
    *     configuration data product (see `icarus::TriggerConfigurationExtractor`
    *     module) to be used. Specifying its tag is mandatory, but if it is
@@ -208,7 +208,7 @@ namespace daq
    *     data diagnostics (including a full dump of the parsed content).
    * * `Debug` (flag, default: `false`): prints on console decoding debug
    *     information, including a dump of the trigger data fragment.
-   * 
+   *
    */
   class TriggerDecoderV2 : public IDecoder
   {
@@ -216,7 +216,7 @@ namespace daq
     using nanoseconds = util::quantities::nanosecond;
   public:
     explicit TriggerDecoderV2(fhicl::ParameterSet const &pset);
-    
+
     virtual void consumes(art::ConsumesCollector& collector) override;
     virtual void produces(art::ProducesCollector&) override;
     virtual void configure(const fhicl::ParameterSet&) override;
@@ -224,8 +224,8 @@ namespace daq
     virtual void setupRun(art::Run const& run) override;
     virtual void process_fragment(const artdaq::Fragment &fragment) override;
     virtual void outputDataProducts(art::Event &event) override;
-   
-  private: 
+
+  private:
     using TriggerCollection = std::vector<raw::ExternalTrigger>;
     using TriggerPtr = std::unique_ptr<TriggerCollection>;
     using RelativeTriggerCollection = std::vector<raw::Trigger>;
@@ -236,38 +236,38 @@ namespace daq
     TriggerPtr fPrevTrigger;
     std::unique_ptr<RelativeTriggerCollection> fRelTrigger;
     ExtraInfoPtr fTriggerExtra;
-    BeamGateInfoPtr fBeamGateInfo; 
+    BeamGateInfoPtr fBeamGateInfo;
     art::InputTag fTriggerConfigTag; ///< Data product with hardware trigger configuration.
     bool fDiagnosticOutput; ///< Produces large number of diagnostic messages, use with caution!
     bool fDebug; ///< Use this for debugging this tool
-    
+
     long fLastEvent = 0;
-    
+
     detinfo::DetectorTimings const fDetTimings; ///< Detector clocks and timings.
-    
+
     /// Cached pointer to the trigger configuration of the current run, if any.
     icarus::TriggerConfiguration const* fTriggerConfiguration = nullptr;
-    
-    
+
+
     /// Creates a `ICARUSTriggerInfo` from a generic fragment.
     icarus::ICARUSTriggerV2Fragment makeTriggerFragment
       (artdaq::Fragment const& fragment) const;
-    
+
     /// Parses the trigger data packet with the "standard" parser.
     icarus::ICARUSTriggerInfo parseTriggerString(std::string_view data) const;
-    
+
     /// Parses the trigger data packet with a CSV parser.
     icarus::KeyValuesData parseTriggerStringAsCSV
       (std::string const& data) const;
-    
+
     /// Name of the data product instance for the current trigger.
     static std::string const CurrentTriggerInstanceName;
-    
+
     /// Name of the data product instance for the previous trigger.
     static std::string const PreviousTriggerInstanceName;
-    
+
     static constexpr double UnknownBeamTime = std::numeric_limits<double>::max();
-    
+
     /// Codes of gate types from the trigger hardware.
     struct TriggerGateTypes {
       static constexpr int BNB { 1 };
@@ -275,11 +275,11 @@ namespace daq
       static constexpr int OffbeamBNB { 3 };
       static constexpr int OffbeamNuMI { 4 };
       static constexpr int Calib { 5 };
-    }; 
-    
+    };
+
     static std::string_view firstLine
       (std::string const& s, std::string const& endl = "\0\n\r"s);
-    
+
     /// Combines second and nanosecond counts into a 64-bit timestamp.
     static std::uint64_t makeTimestamp(unsigned int s, unsigned int ns)
       { return s * 1000000000ULL + ns; }
@@ -291,16 +291,16 @@ namespace daq
     /// and `connector` into the format required by `sbn::ExtraTriggerInfo`.
     static std::uint64_t encodeLVDSbits
       (short int cryostat, short int connector, std::uint64_t connectorWord);
-    
+
     /// Returns the beam type corresponding to the specified trigger `source`.
     static sim::BeamType_t simGateType(sbn::triggerSource source);
-    
+
   };
 
 
   std::string const TriggerDecoderV2::CurrentTriggerInstanceName {};
   std::string const TriggerDecoderV2::PreviousTriggerInstanceName { "previous" };
-  
+
 
   TriggerDecoderV2::TriggerDecoderV2(fhicl::ParameterSet const &pset)
     : fDetTimings
@@ -309,13 +309,13 @@ namespace daq
     this->configure(pset);
   }
 
-  
+
   void TriggerDecoderV2::consumes(art::ConsumesCollector& collector) {
     collector.consumes<icarus::TriggerConfiguration, art::InRun>
       (fTriggerConfigTag);
   }
-  
-  void TriggerDecoderV2::produces(art::ProducesCollector& collector) 
+
+  void TriggerDecoderV2::produces(art::ProducesCollector& collector)
   {
     collector.produces<TriggerCollection>(CurrentTriggerInstanceName);
     collector.produces<TriggerCollection>(PreviousTriggerInstanceName);
@@ -323,9 +323,9 @@ namespace daq
     collector.produces<BeamGateInfoCollection>(CurrentTriggerInstanceName);
     collector.produces<sbn::ExtraTriggerInfo>(CurrentTriggerInstanceName);
   }
-    
 
-  void TriggerDecoderV2::configure(fhicl::ParameterSet const &pset) 
+
+  void TriggerDecoderV2::configure(fhicl::ParameterSet const &pset)
   {
     fTriggerConfigTag = pset.get<std::string>("TrigConfigLabel");
     fDiagnosticOutput = pset.get<bool>("DiagnosticOutput", false);
@@ -343,10 +343,10 @@ namespace daq
     }
     return;
   }
-  
+
   void TriggerDecoderV2::initializeDataProducts()
   {
-    //use until different object chosen 
+    //use until different object chosen
     //fTrigger = new raw::Trigger();
     fTrigger = std::make_unique<TriggerCollection>();
     fPrevTrigger = std::make_unique<TriggerCollection>();
@@ -355,8 +355,8 @@ namespace daq
     fTriggerExtra = std::make_unique<sbn::ExtraTriggerInfo>();
     return;
   }
-  
-  
+
+
   icarus::ICARUSTriggerV2Fragment TriggerDecoderV2::makeTriggerFragment
     (artdaq::Fragment const& fragment) const
   {
@@ -378,7 +378,7 @@ namespace daq
     }
   } // TriggerDecoderV2::makeTriggerFragment()
 
-  
+
   icarus::ICARUSTriggerInfo TriggerDecoderV2::parseTriggerString
     (std::string_view data) const
   {
@@ -406,8 +406,8 @@ namespace daq
   {
     icarus::details::KeyedCSVparser parser;
     parser.addPatterns({
-        { "Cryo. (EAST|WEST) Connector . and .", 1U }
-        , { "Trigger Type", 1U }
+          { std::regex{"Cryo. (EAST|WEST) Connector . and ."}, 1U }
+        , { std::regex{"Trigger Type"}, 1U }
       });
     std::string_view const dataLine = firstLine(data);
     try {
@@ -421,18 +421,18 @@ namespace daq
       throw;
     }
   } // TriggerDecoderV2::parseTriggerStringAsCSV()
-  
+
 
   void TriggerDecoderV2::setupRun(art::Run const& run) {
-    
+
     fTriggerConfiguration = fTriggerConfigTag.empty()
       ? nullptr
       : &(run.getProduct<icarus::TriggerConfiguration>(fTriggerConfigTag))
       ;
-    
+
   } // TriggerDecoderV2::setupRun()
-  
-  
+
+
   void TriggerDecoderV2::process_fragment(const artdaq::Fragment &fragment)
   {
     // artdaq_ts is reworked by the trigger board reader to match the corrected
@@ -446,20 +446,20 @@ namespace daq
     icarus::ICARUSTriggerInfo datastream_info = parseTriggerString(buffer);
     uint64_t const raw_wr_ts // this is raw, unadultered, uncorrected
       = makeTimestamp(frag.getWRSeconds(), frag.getWRNanoSeconds());
-    
+
     // correction (explicitly converted to signed)
     int64_t const WRtimeToTriggerTime
       = static_cast<int64_t>(artdaq_ts) - raw_wr_ts;
     auto const correctWRtime = [WRtimeToTriggerTime](uint64_t time)
       { return time + WRtimeToTriggerTime; };
     assert(correctWRtime(raw_wr_ts) == artdaq_ts);
-    
+
     //
     // we parse again the trigger string for information that was not saved
     // by the board reader in the trigger fragment nor in `datastream_info`
     //
-    auto const parsedData = parseTriggerStringAsCSV(data); 
-    
+    auto const parsedData = parseTriggerStringAsCSV(data);
+
     unsigned int beamgate_count { std::numeric_limits<unsigned int>::max() };
     std::uint64_t beamgate_ts { artdaq_ts }; // we cheat
     /* [20210717, petrillo@slac.stanford.edu] `(pBeamGateInfo->nValues() == 3)`:
@@ -471,7 +471,7 @@ namespace daq
     if (auto pBeamGateInfo = parsedData.findItem("Beam_TS")) {
       /*
        * The Veto Business:
-       * 
+       *
        * to better cover the pre-spill time, a trigger primitive is issued
        * in advance of the actual beam gate, but during the additional time
        * the global trigger is vetoed.
@@ -488,22 +488,22 @@ namespace daq
        */
       int64_t const triggerVetoDurationNS
         = fTriggerConfiguration? fTriggerConfiguration->vetoDelay: 0LL;
-      
-      
+
+
       // if gate information is found, it must be complete
       beamgate_count = pBeamGateInfo->getNumber<unsigned int>(0U);
-      
+
       uint64_t const raw_bg_ts = makeTimestamp( // raw and uncorrected too...
         pBeamGateInfo->getNumber<unsigned int>(1U),
         pBeamGateInfo->getNumber<unsigned int>(2U)
         )
         + triggerVetoDurationNS // ... but remove the veto time
         ;
-      
+
       // assuming the raw times from the fragment are on the same time scale
       // (same offset corrections)
       beamgate_ts += raw_bg_ts - raw_wr_ts;
-      
+
     } // if has gate information
     std::uint64_t enablegate_ts { artdaq_ts };
     if (auto pEnableGateInfo = parsedData.findItem("Enable_TS"))
@@ -516,14 +516,14 @@ namespace daq
                                                pEnableGateInfo->getNumber<unsigned int>(2U)
                                                 );
 
-      // assuming the raw times from the fragment are on the same time scale 
+      // assuming the raw times from the fragment are on the same time scale
       // (same offset corrections)
 
       enablegate_ts += raw_en_ts - raw_wr_ts;
     } // if has gate information
 
     // --- END ---- TEMPORARY --------------------------------------------------
-    
+
     if(fDiagnosticOutput || fDebug)
     {
       std::cout << "Full Timestamp = " << artdaq_ts
@@ -534,7 +534,7 @@ namespace daq
         << " ns relative to trigger)"
         << "\nParsed data (from " << data.size() << " characters): "
         << parsedData << std::endl;
-      
+
       if (fDebug) { // this grows tiresome quickly when processing many events
         std::cout << "Trigger packet content:\n" << data
           << "\nFull trigger fragment dump:"
@@ -593,7 +593,7 @@ namespace daq
       }
       default:                            beamGateBit = sbn::triggerSource::Unknown;
     } // switch gate type
-    
+
     fTriggerExtra->sourceType = beamGateBit;
     fTriggerExtra->triggerType = static_cast<sbn::triggerType>(datastream_info.trigger_type);
     fTriggerExtra->triggerTimestamp = artdaq_ts;
@@ -676,13 +676,13 @@ namespace daq
     for (auto const& cryoInfo [[maybe_unused]]: fTriggerExtra->cryostats)
       for (auto LVDS [[maybe_unused]]: cryoInfo.LVDSstatus)
         assert((LVDS & 0xFF000000FF000000) == 0);
-    
+
     //
     // absolute time trigger (raw::ExternalTrigger)
     //
     fTrigger->emplace_back
       (fTriggerExtra->triggerID, artdaq_ts);//fTriggerExtra->triggerTimestamp);
-    
+
     //
     // previous absolute time trigger (raw::ExternalTrigger)
     //
@@ -691,17 +691,17 @@ namespace daq
     {
       fLastEvent = 0;
     }
-    else 
+    else
     {
       fLastEvent = fTriggerExtra->triggerID - 1;
       lastTrigger = fTriggerExtra->anyPreviousTriggerTimestamp;
       fPrevTrigger->emplace_back(fLastEvent, lastTrigger);
     }
-    
+
     //
     // beam gate
     //
-    
+
     // beam gate width (read in microseconds, but we use it in nanoseconds);
     // we need to protect from some defective configurations where the (unused)
     // beam gate duration is smaller than the veto time
@@ -714,11 +714,11 @@ namespace daq
       ? fTriggerConfiguration->getGateWidth(value(beamGateBit))
       : 0.0
       };
-    
+
     // beam gate, defined in simulation time, which should match beam gate time
     // ... trivial:
     fBeamGateInfo->emplace_back(0, gateWidth.value(), simGateType(beamGateBit));
-    
+
     //
     // relative time trigger (raw::Trigger)
     //
@@ -734,14 +734,14 @@ namespace daq
       elecGateStart.value(),                                  // beamgate_time
       mask(beamGateBit)                                       // bits
       );
-    
+
     //Once we have full trigger data object, set up and place information into there
     return;
   }
 
   void TriggerDecoderV2::outputDataProducts(art::Event &event)
   {
-    //Place trigger data object into raw data store 
+    //Place trigger data object into raw data store
     event.put(std::move(fTrigger), CurrentTriggerInstanceName);
     event.put(std::move(fRelTrigger), CurrentTriggerInstanceName);
     event.put(std::move(fPrevTrigger), PreviousTriggerInstanceName);
@@ -755,7 +755,7 @@ namespace daq
   {
     return { s.data(), std::min(s.find_first_of(endl), s.size()) };
   }
-  
+
 
   std::uint64_t TriggerDecoderV2::encodeLVDSbits
     (short int cryostat, short int connector, std::uint64_t connectorWord)
@@ -768,7 +768,7 @@ namespace daq
      * * east wall:  `00<C3P2><C3P1><C3P0>00<C2P2><C2P1><C2P0>`
      * * west wall:  `00<C1P2><C1P1><C1P0>00<C0P2><C0P1><C0P0>`
      * Therefore, the two 32-bit half-words need to be swapped
-     * This holds for both cryostats, and both walls.  
+     * This holds for both cryostats, and both walls.
      */
 
     std::uint64_t lsw = connectorWord & 0xFFFFFFFFULL;
@@ -777,8 +777,8 @@ namespace daq
     std::swap(lsw, msw);
     return (msw << 32ULL) | lsw;
   } // TriggerDecoderV2::encodeLVDSbits()
-  
-  
+
+
   sim::BeamType_t TriggerDecoderV2::simGateType(sbn::triggerSource source)
   {
     switch (source) {
@@ -795,8 +795,8 @@ namespace daq
         return sim::kUnknown;
     } // switch source
   } // TriggerDecoderV2::simGateType()
-  
-  
+
+
   DEFINE_ART_CLASS_TOOL(TriggerDecoderV2)
 
 }

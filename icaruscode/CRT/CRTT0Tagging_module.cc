@@ -30,6 +30,7 @@
 #include <vector>
 #include <map>
 #include <algorithm>
+#include <set>
 #include <cmath> // std::abs(), std::hypot()
 // LArSoft
 #include "larcorealg/Geometry/GeometryCore.h"
@@ -109,6 +110,7 @@ private:
   
   double fMinimalTrackLength;
   int fMinimumGoodHits;
+  int fMinimumGoodPlanes;      ///< tracks need good hits on at least this many wire planes (3D information)
   double fMaximalCRTDistance;
   double fGoodCandidateDistance;
   double fMaximumDeltaT;
@@ -157,6 +159,7 @@ icarus::crt::CRTT0Tagging::CRTT0Tagging(fhicl::ParameterSet const& p)
       fGeometryService(lar::providerFrom<geo::Geometry>()),
       fMinimalTrackLength(p.get<double>("MinimalTrackLength", 40.0)),
       fMinimumGoodHits(p.get<double>("MinimumGoodHits", 5)),
+      fMinimumGoodPlanes(p.get<int>("MinimumGoodPlanes", 2)),
       fMaximalCRTDistance(p.get<double>("MaximalCRTDistance", 300.)),
       fGoodCandidateDistance(p.get<double>("GoodCandidateDistance", 100.)),
       fMaximumDeltaT(p.get<double>("MaximumDeltaT", 10000.)),
@@ -411,6 +414,7 @@ void icarus::crt::CRTT0Tagging::produce(art::Event& e)
       // depending on the track type, the Top CRT uses the appropriate position corrections
       std::vector<double> ht;
       std::vector<geo::Point_t> positionVector;
+      std::set<unsigned int> goodPlanes; // wire planes contributing good hits
       for(auto const& [trkHit, trkHitMeta]: util::zip(trkHits, trkHitMetas)){
         bool badhit = (trkHitMeta->Index() == std::numeric_limits<unsigned int>::max()) ||
                     (!track.HasValidPoint(trkHitMeta->Index()));
@@ -419,11 +423,19 @@ void icarus::crt::CRTT0Tagging::produce(art::Event& e)
         positionVector.push_back(loc);
         ht.push_back(trkHit->PeakTime());
         goodHits++;
+        goodPlanes.insert(trkHit->WireID().Plane);
         if(trkHit->WireID().TPC==0 || trkHit->WireID().TPC==1) countE++;
         else countW++;
       }
       if(goodHits<fMinimumGoodHits) {
         mf::LogDebug("CRTT0Tagging:")<<"Track does not have the minimal requirements of good hits: "<<goodHits;
+        continue;
+      }
+      // A track built from a single wire view has no real 3D position (e.g. Induction-1 only:
+      // Pandora places it at a fixed z). Its PCA is degenerate and any CRT projection is meaningless.
+      if(static_cast<int>(goodPlanes.size()) < fMinimumGoodPlanes) {
+        mf::LogDebug("CRTT0Tagging:") << "Track " << trkPtr.key() << " has good hits on only "
+          << goodPlanes.size() << " wire plane(s), skipping";
         continue;
       }
       int trackType=-1;

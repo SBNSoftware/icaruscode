@@ -42,7 +42,7 @@
 #include "lardataobj/Simulation/BeamGateInfo.h"
 #include "lardataobj/RawData/TriggerData.h"
 #include "sbnobj/Common/Trigger/ExtraTriggerInfo.h"
-#include "icaruscode/IcarusObj/PMTBeamSignal.h"
+#include "sbnobj/Common/PMT/Data/PMTBeamSignal.hh"
 #include "sbnobj/ICARUS/PMT/Data/WaveformBaseline.h"
 
 #include "TTree.h"
@@ -102,7 +102,7 @@ public:
 
     fhicl::Atom<art::InputTag> RWMLabel{
         Name("RWMLabel"),
-        Comment("Tag for the RWM std::vector<icarus::timing::PMTBeamSignal> data product")};
+        Comment("Tag for the RWM std::vector<sbn::timing::PMTBeamSignal> data product")};
 
     fhicl::Atom<float> PEOpHitThreshold{
         Name("PEOpHitThreshold"),
@@ -145,6 +145,7 @@ public:
                           std::vector<double> &pmt_start_rwm_time,
                           std::vector<double> &pmt_pe,
                           std::vector<double> &pmt_amplitude,
+                          std::vector<double> &pmt_integral,
                           TTree *ophittree);
 
   /// Return RWM-relative time from a trigger-relative time
@@ -221,6 +222,7 @@ private:
   std::vector<double> m_pmt_start_time_rwm;
   std::vector<double> m_pmt_pe;
   std::vector<double> m_pmt_amplitude;
+  std::vector<double> m_pmt_integral;
 
   // Ophit trees
   int m_channel_id;
@@ -253,7 +255,7 @@ private:
 
   geo::GeometryCore const* fGeom;
   geo::WireReadoutGeom const* fChannelMapAlg;
-  std::vector<icarus::timing::PMTBeamSignal> fRWMTimes;
+  std::vector<sbn::timing::PMTBeamSignal> fRWMTimes;
 };
 
 // ----------------------------------------------------------------------------
@@ -413,6 +415,7 @@ void opana::ICARUSFlashAssAna::beginJob()
       ttree->Branch("time_start_pmt_rwm", &m_pmt_start_time_rwm);
       ttree->Branch("pe_pmt", &m_pmt_pe);
       ttree->Branch("amplitude_pmt", &m_pmt_amplitude);
+      ttree->Branch("integral_pmt", &m_pmt_integral);
 
       fOpFlashTrees.push_back(ttree);
 
@@ -489,7 +492,7 @@ float opana::ICARUSFlashAssAna::getRWMRelativeTime(int channel, float t)
 {
 
   if (fRWMTimes.empty())
-    return icarus::timing::NoTime;
+    return sbn::timing::NoTime;
 
   auto rwm = fRWMTimes.at(channel);
   if (!rwm.isValid())
@@ -498,7 +501,7 @@ float opana::ICARUSFlashAssAna::getRWMRelativeTime(int channel, float t)
                                       << "(Crate " << rwm.crate << ", Board " << rwm.digitizerLabel
                                       << ", SpecialChannel " << rwm.specialChannel << ")"
                                       << " in event " << m_event << " gate " << m_gate_name;
-    return icarus::timing::NoTime;
+    return sbn::timing::NoTime;
   }
 
   float rwm_trigger = rwm.startTime; // rwm time w.r.t. trigger time [us]
@@ -515,9 +518,9 @@ float opana::ICARUSFlashAssAna::getFlashBunchTime(std::vector<double> pmt_start_
   float tfirst_right = std::numeric_limits<float>::max();
 
   // if no RWM info available, all pmt_start_time_rwm are invalid
-  // return icarus::timing::NoTime as well for the flash
+  // return sbn::timing::NoTime as well for the flash
   if (fRWMTimes.empty())
-    return icarus::timing::NoTime;
+    return sbn::timing::NoTime;
 
   int nleft = 0;
   int nright = 0;
@@ -534,9 +537,9 @@ float opana::ICARUSFlashAssAna::getFlashBunchTime(std::vector<double> pmt_start_
 
     // if any RWM copy is missing (therefore missing for an entire PMT crate),
     // it might not be possible to use the first hits (they might not have a RMW time)
-    // so return icarus::timing::NoTime as in other bad cases
+    // so return sbn::timing::NoTime as in other bad cases
     if (!fRWMTimes[i].isValid())
-      return icarus::timing::NoTime;
+      return sbn::timing::NoTime;
 
     // count hits separetely on the two walls
     if (side == 0)
@@ -632,6 +635,7 @@ void opana::ICARUSFlashAssAna::processOpHitsFlash(std::vector<art::Ptr<recob::Op
                                                   std::vector<double> &pmt_start_time_rwm,
                                                   std::vector<double> &pmt_pe,
                                                   std::vector<double> &pmt_amplitude,
+                                                  std::vector<double> &pmt_integral,
                                                   TTree *ophittree)
 {
 
@@ -677,6 +681,7 @@ void opana::ICARUSFlashAssAna::processOpHitsFlash(std::vector<art::Ptr<recob::Op
       pmt_peak_time[channel_id] = m_peak_time;
       pmt_start_time_rwm[channel_id] = m_start_time_rwm;
       pmt_amplitude[channel_id] = m_amplitude;
+      pmt_integral[channel_id] = m_integral;
     }
 
     ophittree->Fill();
@@ -774,9 +779,9 @@ void opana::ICARUSFlashAssAna::analyze(art::Event const &e)
   if (!fRWMLabel.empty())
   {
 
-    fRWMTimes = e.getProduct<std::vector<icarus::timing::PMTBeamSignal>>(fRWMLabel);
+    fRWMTimes = e.getProduct<std::vector<sbn::timing::PMTBeamSignal>>(fRWMLabel);
     if (fRWMTimes.empty())
-      mf::LogTrace("ICARUSFlashAssAna") << "Data product std::vector<icarus::timing::PMTBeamSignal> for '"
+      mf::LogTrace("ICARUSFlashAssAna") << "Data product std::vector<sbn::timing::PMTBeamSignal> for '"
                                         << fRWMLabel.label() << "' is empty in " << m_gate_name << " event!";
   }
 
@@ -876,6 +881,7 @@ void opana::ICARUSFlashAssAna::analyze(art::Event const &e)
           m_pmt_peak_time.resize(360);
           m_pmt_start_time_rwm.resize(360);
           m_pmt_amplitude.resize(360);
+          m_pmt_integral.resize(360);
 
           m_flash_id = idx;
           m_flash_time = flash.Time();
@@ -902,7 +908,7 @@ void opana::ICARUSFlashAssAna::analyze(art::Event const &e)
                              m_sum_pe_left, m_sum_pe_right, m_pmt_start_time,
                              m_pmt_rise_time, m_pmt_peak_time,
                              m_pmt_start_time_rwm, m_pmt_pe, m_pmt_amplitude,
-                             fOpHitFlashTrees[iFlashLabel]);
+                             m_pmt_integral, fOpHitFlashTrees[iFlashLabel]);
 
           m_multiplicity = m_multiplicity_left + m_multiplicity_right;
 
@@ -917,6 +923,8 @@ void opana::ICARUSFlashAssAna::analyze(art::Event const &e)
           m_pmt_rise_time.clear();
           m_pmt_peak_time.clear();
           m_pmt_start_time_rwm.clear();
+          m_pmt_amplitude.clear();
+          m_pmt_integral.clear();
 
           idx++;
         }

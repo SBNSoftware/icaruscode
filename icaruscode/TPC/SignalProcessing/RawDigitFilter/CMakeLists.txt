@@ -42,11 +42,11 @@ set(		MODULE_LIBRARIES
 			ROOT::Tree
 			FFTW3::FFTW3
 	)
-cet_build_plugin(RawDigitFilterICARUS art::module LIBRARIES ${MODULE_LIBRARIES})
-cet_build_plugin(RawDigitSmoother art::module LIBRARIES ${MODULE_LIBRARIES})
-cet_build_plugin(TPCNoiseMC art::module LIBRARIES ${MODULE_LIBRARIES})
-cet_build_plugin(TPCNoise art::module LIBRARIES ${MODULE_LIBRARIES})
-cet_build_plugin(mtRawDigitFilterICARUS art::module LIBRARIES ${MODULE_LIBRARIES})
+cet_build_plugin(RawDigitFilterICARUS art::module LIBRARIES PRIVATE ${MODULE_LIBRARIES})
+cet_build_plugin(RawDigitSmoother art::module LIBRARIES PRIVATE ${MODULE_LIBRARIES})
+cet_build_plugin(TPCNoiseMC art::module LIBRARIES PRIVATE ${MODULE_LIBRARIES})
+cet_build_plugin(TPCNoise art::module LIBRARIES PRIVATE ${MODULE_LIBRARIES})
+cet_build_plugin(mtRawDigitFilterICARUS art::module LIBRARIES PRIVATE ${MODULE_LIBRARIES})
 
 
 install_headers()

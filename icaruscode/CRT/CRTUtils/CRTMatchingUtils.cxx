@@ -66,7 +66,14 @@ namespace icarus::crt{
         TVectorD this_eval = thiscov.GetEigenValues();
         TMatrixD this_evec = thiscov.GetEigenVectors();
 
-        if(this_eval.NonZeros()!=3) throw std::logic_error("CRTMatchingAlg::PCAfit: evals/evects wrong size!");
+        // eigenvalues are sorted in descending order; only the principal axis is required to be defined
+        if(!(this_eval[0] > 0.)) {
+            std::ostringstream msg;
+            msg << "CRTMatchingAlg::PCAfit: degenerate point set (" << sp.size()
+                << " points), no principal direction: eigenvalues = ("
+                << this_eval[0] << ", " << this_eval[1] << ", " << this_eval[2] << ")";
+            throw std::logic_error(msg.str());
+        }
         geo::Point_t mean = {xavg, yavg, zavg};        
         geo::Vector_t first = {this_evec[0][0], this_evec[1][0], this_evec[2][0]};
         geo::Vector_t second = {this_evec[0][1], this_evec[1][1], this_evec[2][1]};

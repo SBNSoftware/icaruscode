@@ -152,10 +152,10 @@ vector<pair<sbn::crt::CRTHit, vector<int>>> CRTHitRecoAlg::CreateCRTHits(
   ULong64_t GlobalTrigger = trigger_timestamp;
   if (!CRTReset.empty()) GlobalTrigger = GetMode(CRTReset);
   // Add average difference between trigger_timestamp and Global trigger
-  else
-    GlobalTrigger =
-        GlobalTrigger - trigger_offset;  // In this event, the T1 Reset was
-                                         // probably "vetoed" by the T0 Reset
+  else if (fData) {
+    GlobalTrigger -= trigger_offset;  // In this event, the T1 Reset was
+                                      // probably "vetoed" by the T0 Reset
+  }
   for (int i = 0; i < 305; i++) {
     if (TriggerArray[i] == 0) TriggerArray[i] = GlobalTrigger;
   }

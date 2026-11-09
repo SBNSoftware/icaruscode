@@ -26,6 +26,6 @@ set(	TOOL_LIBRARIES
 
 	)
 
-cet_build_plugin(AuxDetGeoObjectSorterICARUS art::tool LIBRARIES ${TOOL_LIBRARIES})
-cet_build_plugin(GeoObjectSorterPMTasTPC art::tool LIBRARIES ${TOOL_LIBRARIES})
-cet_build_plugin(WireReadoutICARUS art::service LIBRARIES ${SERVICE_LIBRARIES})
+cet_build_plugin(AuxDetGeoObjectSorterICARUS art::tool LIBRARIES PRIVATE ${TOOL_LIBRARIES})
+cet_build_plugin(GeoObjectSorterPMTasTPC art::tool LIBRARIES PRIVATE ${TOOL_LIBRARIES})
+cet_build_plugin(WireReadoutICARUS art::service LIBRARIES PRIVATE ${SERVICE_LIBRARIES})

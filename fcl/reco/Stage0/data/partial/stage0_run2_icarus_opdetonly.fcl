@@ -1,0 +1,19 @@
+#
+# File:    stage0_run2_icarus_opdetonly.fcl
+# Purpose: Runs the optical detector and trigger reconstruction parts of Stage0
+# Author:  Gianluca Petrillo (petrillo@slac.stanford.edu)
+# Date:    August 29, 2023
+# 
+# Written for icaruscode v09_72_00_05p1.
+#
+
+#include "stage0_run2_icarus.fcl"
+
+source.maxEvents: @erase
+
+physics.path:      [ @sequence::icarus_stage0_PMT ]
+
+physics.end_paths: [ streamROOT ]
+
+# be unstoppable
+physics.producers.daqPMT.SurviveExceptions: true

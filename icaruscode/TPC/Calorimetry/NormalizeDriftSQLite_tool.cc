@@ -142,8 +142,6 @@ double icarus::calo::NormalizeDriftSQLite::Normalize(double dQdx, const art::Eve
   // Get the hit time
   double thit = fClockData->TPCTick2TrigTime(hit.PeakTime()) - t0;
 
-  if (fVerbose) std::cout << "NormalizeDriftSQLite Tool -- Norm factor: " << exp(thit / thiselifetime) << " at TPC: " << tpc << " Cryo: " << cryo << " Time: " << thit << " Track T0: " << t0 << std::endl;
-
   // Scale
   if (thiselifetime > 0) {
     dQdx = dQdx*exp(thit / thiselifetime);

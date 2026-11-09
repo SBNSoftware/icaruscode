@@ -146,7 +146,7 @@ auto icarus::trigger::WindowTopologyAlg::emplaceAndDumpMap(Args&&... args) const
   -> WindowChannelMap
 {
   WindowChannelMap const map { std::forward<Args>(args)... };
-  mfLogTrace() << "Window map: << " << map;
+  mfLogTrace() << "Window map: " << map;
   return map;
 } // icarus::trigger::WindowTopologyAlg::emplaceAndDumpMap()
 

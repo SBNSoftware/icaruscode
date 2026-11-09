@@ -26,15 +26,8 @@ art_make_library(
 		larcorealg::Geometry
 		lardataobj::RawData
 		lardata::Utilities
-		lardata::DetectorInfoServices_DetectorClocksServiceStandard_service
+		lardata::DetectorClocksService
 		nusimdata::SimulationBase
-		art_root_io::TFileService_service
-		art_root_io::tfile_support
-		art::Framework_Services_Registry
-		art::Framework_Principal
-		art::Framework_Core
-		art::Persistency_Provenance
-		art::Utilities
 		canvas::canvas
 		messagefacility::MF_MessageLogger
 		fhiclcpp::fhiclcpp
@@ -56,47 +49,38 @@ set(	MODULE_LIBRARIES
 		fhiclcpp::fhiclcpp
 		ROOT::Core
 		ROOT::Physics
-		TOOL_LIBRARIES
-		icaruscode::PMT_Trigger_Algorithms
-		sbnobj::ICARUS_PMT_Trigger_Data
-		lardataalg::DetectorInfo
-		lardataobj::RawData
-		lardata::DetectorInfoServices_DetectorClocksServiceStandard_service
-		messagefacility::MF_MessageLogger
-		fhiclcpp::fhiclcpp
-		larcore::Geometry_Geometry_service
 )
 set(	TOOL_LIBRARIES
-		icaruscode_PMT_Trigger_Algorithms
+		icaruscode::PMT_Trigger_Algorithms
 		sbnobj::ICARUS_PMT_Trigger_Data
 		lardataalg::DetectorInfo
 		lardataobj::RawData
 	)
 
-cet_build_plugin(DiscriminatePMTwaveforms art::module LIBRARIES ${MODULE_LIBRARIES})
-cet_build_plugin(DumpTriggerGateData art::module LIBRARIES ${MODULE_LIBRARIES})
-cet_build_plugin(DynamicTriggerGateBuilderTool art::tool LIBRARIES ${TOOL_LIBRARIES})
-cet_build_plugin(ExtractEnergyDepositionSummary art::module LIBRARIES ${MODULE_LIBRARIES})
-cet_build_plugin(FixedTriggerGateBuilderTool art::tool LIBRARIES ${TOOL_LIBRARIES})
-cet_build_plugin(LVDSgates art::module LIBRARIES ${MODULE_LIBRARIES})
+cet_build_plugin(DiscriminatePMTwaveforms art::module LIBRARIES PRIVATE ${MODULE_LIBRARIES})
+cet_build_plugin(DumpTriggerGateData art::module LIBRARIES PRIVATE ${MODULE_LIBRARIES})
+cet_build_plugin(DynamicTriggerGateBuilderTool art::tool LIBRARIES PRIVATE ${TOOL_LIBRARIES})
+cet_build_plugin(ExtractEnergyDepositionSummary art::module LIBRARIES PRIVATE ${MODULE_LIBRARIES})
+cet_build_plugin(FixedTriggerGateBuilderTool art::tool LIBRARIES PRIVATE ${TOOL_LIBRARIES})
+cet_build_plugin(LVDSgates art::module LIBRARIES PRIVATE ${MODULE_LIBRARIES})
 
 
-cet_build_plugin(WriteBeamGateInfo art::module LIBRARIES
+cet_build_plugin(WriteBeamGateInfo art::module LIBRARIES PRIVATE
   lardataobj::Simulation
   lardata::Utilities
   larcorealg::headers
   lardataalg::headers
   )
 
-cet_build_plugin(FixBeamGateInfo art::module LIBRARIES
+cet_build_plugin(FixBeamGateInfo art::module LIBRARIES PRIVATE
+  icarusalg::Utilities
   lardataobj::Simulation
   larcorealg::headers
   larcorealg::CoreUtils
   lardataalg::headers
   ) 
 
-cet_build_plugin(DiscriminatePMTwaveformsByChannel art::module
-                LIBRARIES
+cet_build_plugin(DiscriminatePMTwaveformsByChannel art::module LIBRARIES PRIVATE
   icaruscode::PMT_Trigger_Algorithms
   sbnobj::ICARUS_PMT_Trigger_Data
   sbnobj::ICARUS_PMT_Data
@@ -105,20 +89,14 @@ cet_build_plugin(DiscriminatePMTwaveformsByChannel art::module
   icaruscode::PMT_Algorithms
   lardataobj::RawData
   lardata::Utilities
-  lardata::DetectorInfoServices_DetectorClocksServiceStandard_service
+  lardata::DetectorClocksService
   larcore::Geometry_Geometry_service
   art::Framework_Services_Registry
-  art::Framework_Principal
-  art::Framework_Core
-  canvas::canvas
-  messagefacility::MF_MessageLogger
-  fhiclcpp::fhiclcpp
-  cetlib_except::cetlib_except
   ROOT::Core
   )
 
 cet_build_plugin(DiscriminatedAdderSignal art::module
-  LIBRARIES
+  LIBRARIES PRIVATE
     icaruscode::PMT_Trigger_Algorithms
     icaruscode::PMT_Trigger_Utilities
     icaruscode::PMT_Algorithms
@@ -136,7 +114,7 @@ cet_build_plugin(DiscriminatedAdderSignal art::module
   )
 
 cet_build_plugin(SlidingWindowTrigger art::module
-                LIBRARIES
+                LIBRARIES PRIVATE
 		icaruscode::PMT_Trigger_Algorithms
 		sbnobj::ICARUS_PMT_Trigger_Data
 		icaruscode::PMT_Trigger_Utilities
@@ -145,20 +123,14 @@ cet_build_plugin(SlidingWindowTrigger art::module
 		larcore::Geometry_Geometry_service
 		larcorealg::Geometry
 		lardata::Utilities
-		lardata::DetectorInfoServices_DetectorClocksServiceStandard_service
+		lardata::DetectorClocksService
 		lardataobj::RawData
 		art::Framework_Services_Registry
-		art::Framework_Principal
-		art::Framework_Core
-		canvas::canvas
-		messagefacility::MF_MessageLogger
-		fhiclcpp::fhiclcpp
-		cetlib_except::cetlib_except
 		ROOT::Core
 		) 
 
 cet_build_plugin(MajorityTriggerSimulation art::module
-                LIBRARIES
+                LIBRARIES PRIVATE
 		icaruscode::PMT_Trigger_Algorithms
 		sbnobj::ICARUS_PMT_Trigger_Data
 		icaruscode::PMT_Trigger_Utilities
@@ -166,7 +138,7 @@ cet_build_plugin(MajorityTriggerSimulation art::module
 		larcorealg::Geometry
 		lardata::Utilities
 		lardataobj::RawData
-		lardata::DetectorInfoServices_DetectorClocksServiceStandard_service
+		lardata::DetectorClocksService
 		art_root_io::TFileService_service
 		art_root_io::tfile_support
 		art::Framework_Services_Registry
@@ -175,7 +147,7 @@ cet_build_plugin(MajorityTriggerSimulation art::module
 		) 
 
 cet_build_plugin(SlidingWindowTriggerSimulation art::module
-                LIBRARIES
+                LIBRARIES PRIVATE
 		icaruscode::PMT_Trigger_Algorithms
 		sbnobj::ICARUS_PMT_Trigger_Data
 		icaruscode::PMT_Trigger_Utilities
@@ -183,21 +155,15 @@ cet_build_plugin(SlidingWindowTriggerSimulation art::module
 		larcorealg::Geometry
 		lardataobj::RawData
 		lardata::Utilities
-		lardata::DetectorInfoServices_DetectorClocksServiceStandard_service
+		lardata::DetectorClocksService
 		art_root_io::TFileService_service
 		art_root_io::tfile_support
 		art::Framework_Services_Registry
-		art::Framework_Principal
-		art::Framework_Core
-		canvas::canvas
-		messagefacility::MF_MessageLogger
-		fhiclcpp::fhiclcpp
-		cetlib_except::cetlib_except
 		ROOT::Hist
 		ROOT::Core
 		) 
 
-cet_build_plugin(TriggerSimulationOnGates art::module LIBRARIES
+cet_build_plugin(TriggerSimulationOnGates art::module LIBRARIES PRIVATE
   icaruscode::PMT_Trigger_Algorithms
   icarusalg::Utilities
   sbnobj::ICARUS_PMT_Trigger_Data
@@ -209,18 +175,12 @@ cet_build_plugin(TriggerSimulationOnGates art::module LIBRARIES
   art_root_io::TFileService_service
   art_root_io::tfile_support
   art::Framework_Services_Registry
-  art::Framework_Principal
-  art::Framework_Core
-  canvas::canvas
-  messagefacility::MF_MessageLogger
-  fhiclcpp::fhiclcpp
-  cetlib_except::cetlib_except
   ROOT::Hist
   ROOT::Core
   ) 
 
 cet_build_plugin(TriggerEfficiencyPlots art::module
-                LIBRARIES
+                LIBRARIES PRIVATE
 		icarusalg::Utilities
 		icaruscode::PMT_Trigger_Utilities
 		sbnobj::ICARUS_PMT_Trigger_Data
@@ -229,17 +189,11 @@ cet_build_plugin(TriggerEfficiencyPlots art::module
 		larcorealg::Geometry
 		lardataobj::RawData
 		lardata::Utilities
-		lardata::DetectorInfoServices_DetectorClocksServiceStandard_service
+		lardata::DetectorClocksService
 		nusimdata::SimulationBase
 		art_root_io::TFileService_service
 		art_root_io::tfile_support
 		art::Framework_Services_Registry
-		art::Framework_Principal
-		art::Framework_Core
-		canvas::canvas
-		messagefacility::MF_MessageLogger
-		fhiclcpp::fhiclcpp
-		cetlib_except::cetlib_except
 		ROOT::GenVector
 		ROOT::Hist
 		ROOT::Tree
@@ -247,42 +201,30 @@ cet_build_plugin(TriggerEfficiencyPlots art::module
 		) 
 
 cet_build_plugin(MakeTriggerSimulationTree art::module
-                LIBRARIES
+                LIBRARIES PRIVATE
 		icaruscode::PMT_Trigger_Algorithms
 		icaruscode::PMT_Trigger_Utilities
 		sbnobj::ICARUS_PMT_Trigger_Data
 		larcore::Geometry_Geometry_service
 		lardataalg::MCDumpers
 		lardata::Utilities
-		lardata::DetectorInfoServices_DetectorClocksServiceStandard_service
+		lardata::DetectorClocksService
 		larcorealg::Geometry
 		nusimdata::SimulationBase
 		art_root_io::TFileService_service
 		art_root_io::tfile_support
 		art::Framework_Services_Registry
-		art::Framework_Principal
-		art::Framework_Core
-		canvas::canvas
-		messagefacility::MF_MessageLogger
-		fhiclcpp::fhiclcpp
-		cetlib_except::cetlib_except
 		ROOT::GenVector
 		ROOT::Tree
 		ROOT::Core
 		) 
 
-cet_build_plugin(TriggerEmulationTree art::module LIBRARIES
-  icaruscode_PMT_Trigger_Algorithms
-  icaruscode_PMT_Trigger_Utilities
+cet_build_plugin(TriggerEmulationTree art::module LIBRARIES PRIVATE
+  icaruscode::PMT_Trigger_Algorithms
+  icaruscode::PMT_Trigger_Utilities
   art_root_io::TFileService_service
   art_root_io::tfile_support
   art::Framework_Services_Registry
-  art::Framework_Principal
-  art::Framework_Core
-  canvas::canvas
-  messagefacility::MF_MessageLogger
-  fhiclcpp::fhiclcpp
-  cetlib_except::cetlib_except
   ROOT::Tree
   ROOT::Core
   ) 
@@ -294,7 +236,7 @@ foreach(TriggerEfficiencyPlotsModule
 	)
 
 	cet_build_plugin(${TriggerEfficiencyPlotsModule} art::module
-                LIBRARIES
+                LIBRARIES PRIVATE
 		icaruscode::PMT_Trigger_Algorithms
 		icaruscode::PMT_Trigger
 		icaruscode::PMT_Trigger_Utilities
@@ -302,20 +244,13 @@ foreach(TriggerEfficiencyPlotsModule
 		larcore::Geometry_Geometry_service
 		lardataalg::MCDumpers
 		lardata::Utilities
-		lardata::DetectorInfoServices_DetectorClocksServiceStandard_service
+		lardata::DetectorClocksService
 		larcorealg::Geometry
 		lardataobj::RawData
 		nusimdata::SimulationBase
 		art_root_io::TFileService_service
 		art_root_io::tfile_support
 		art::Framework_Services_Registry
-		art::Framework_Principal
-		art::Framework_Core
-		art::Framework_Principal
-		canvas::canvas
-		messagefacility::MF_MessageLogger
-		fhiclcpp::fhiclcpp
-		cetlib_except::cetlib_except
 		ROOT::GenVector
 		ROOT::Hist
 		ROOT::Tree

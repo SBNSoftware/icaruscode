@@ -1,0 +1,114 @@
+###
+### Test fcl file for NuGraph inference. For each cryostat it runs two producers (ICARUSNuSliceHitsProducer and NuGraphInference) plus one analyzer (NuGraphAnalyzer).
+### Author: G. Cerati (FNAL)
+###
+
+#include "nugraph_icarus.fcl"
+#include "services_common_icarus.fcl"
+#include "services_icarus_simulation.fcl"
+
+process_name: testinference
+
+services:
+{
+  TFileService:          { fileName: "reco_hist.root" }
+  TimeTracker:           {}
+  MemoryTracker:         {}
+  RandomNumberGenerator: {}
+  @table::icarus_common_services
+  @table::icarus_backtracking_services 
+  message:               @local::icarus_message_services_prod_debug
+  ParticleInventoryService: { 
+        ParticleInventory: {
+        EveIdCalculator: "EmEveIdCalculator"
+        G4ModuleLabel: "largeant"
+	OverrideRealData: true
+     }
+  }
+}
+
+source:
+{
+  module_type: RootInput
+  maxEvents:   -1
+}
+
+outputs:
+{
+ rootOutput:
+ {
+   module_type: RootOutput
+   dataTier: "reconstructed"
+   compressionLevel: 1
+   saveMemoryObjectThreshold: 0
+   fileName: "%ifb_%tc-%p.root"
+   fileProperties: {maxInputFiles: 1}
+   checkFileName: false
+   SelectEvents: []
+   outputCommands: [
+         "keep *_*_*_*"
+         #"drop *_*_*_*",
+         #"keep *_*_*_testinference"
+     ]
+ }
+}
+
+physics:
+{
+
+  producers:
+  {
+    nuslhitsCryoE: @local::nuslhitsCryoE
+    nuslhitsCryoW: @local::nuslhitsCryoW
+    #nuslhits: {
+    #  module_type:             "HitMerger"
+    #  HitProducerLabelVec:     ["nuslhitsCryoE","nuslhitsCryoW"]
+    #}
+    NuGraphCryoE: @local::NuGraphCryoE
+    NuGraphCryoW: @local::NuGraphCryoW
+  }
+  analyzers:
+  {
+    NuGraphAnaCryoE: { 
+      module_type: "NuGraphAnalyzer"
+      NuGraphLabel: "NuGraphCryoE"
+    }
+    NuGraphAnaCryoW: { 
+      module_type: "NuGraphAnalyzer"
+      NuGraphLabel: "NuGraphCryoW"
+    }
+  }
+
+  reco: [nuslhitsCryoE, nuslhitsCryoW, NuGraphCryoE, NuGraphCryoW]
+  #reco: [ nuslhitsCryoE, NuGraphCryoE]
+  trigger_paths:       [ reco ]
+
+  ana: [NuGraphAnaCryoE,NuGraphAnaCryoW]
+  #ana: [NuGraphAnaCryoE]
+  streamROOT:         [ rootOutput ]
+  end_paths:          [ ana, streamROOT ]
+}
+
+#physics.producers.nuslhitsCryoE.module_type: "ICARUSTrueNuSliceHitsProducer"
+#physics.producers.nuslhitsCryoW.module_type: "ICARUSTrueNuSliceHitsProducer"
+
+#physics.producers.NuGraphCryoE.debug: true
+#physics.producers.NuGraphCryoW.debug: true
+
+services.BackTrackerService.BackTracker.G4ModuleLabel: "largeant"
+services.BackTrackerService.BackTracker.SimChannelModuleLabel: "daq:simpleSC"
+
+
+### Parameters and instructions to test the NuSonic inference model (still under development)
+# in order to setup the triton server locally, please do:
+# > mrbslp
+# > setup_tritonservier-nugraph-v0.sh
+# then after the job you can kill the server process with:
+# > killall -9 /cvmfs/oasis.opensciencegrid.org/mis/apptainer/1.3.2/x86_64/libexec/apptainer/libexec/starter
+#NuGraphCryoE: @local::ApptainerNuGraphNuSonicTriton
+#NuGraphCryoE.LoaderTool.tool_type: "ICARUSNuGraphLoader"
+#NuGraphCryoE.LoaderTool.hitInput: "nuslhitsCryoE"
+#NuGraphCryoE.LoaderTool.spsInput: "nuslhitsCryoE"
+#NuGraphCryoE.DecoderTools.SemanticDecoderTool.hitInput: "nuslhitsCryoE"
+#NuGraphCryoE.TritonConfig.modelName: "nugraph2_icarus_mpvmprbnb"
+

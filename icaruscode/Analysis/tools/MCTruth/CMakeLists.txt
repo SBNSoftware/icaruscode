@@ -58,9 +58,9 @@ set(TOOL_LIBRARIES lardataobj::RecoBase
 		CLHEP::Random
 	)
 
-cet_build_plugin(AssociationsTruth art::tool LIBRARIES ${TOOL_LIBRARIES})
-cet_build_plugin(BackTrackerTruth art::tool LIBRARIES ${TOOL_LIBRARIES})
-cet_build_plugin(MCTruthTestAna art::module LIBRARIES ${MODULE_LIBRARIES})
+cet_build_plugin(AssociationsTruth art::tool LIBRARIES PRIVATE ${TOOL_LIBRARIES})
+cet_build_plugin(BackTrackerTruth art::tool LIBRARIES PRIVATE ${TOOL_LIBRARIES})
+cet_build_plugin(MCTruthTestAna art::module LIBRARIES PRIVATE ${MODULE_LIBRARIES})
 
 install_headers()
 install_source()

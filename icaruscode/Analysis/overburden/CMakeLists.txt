@@ -1,4 +1,4 @@
-cet_build_plugin(OBAnaICARUS art::module LIBRARIES
+cet_build_plugin(OBAnaICARUS art::module LIBRARIES PRIVATE
         larcorealg::Geometry
 	larcore::Geometry_Geometry_service
 	larsim::Simulation

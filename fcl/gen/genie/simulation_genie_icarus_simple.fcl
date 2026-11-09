@@ -3,7 +3,6 @@
 #include "larproperties.fcl"
 #include "magfield_larsoft.fcl"
 
-#include "largeantmodules.fcl"
 #include "genie_icarus_bnb.fcl"
 #include "beamgates_icarus.fcl"
 #include "mcreco.fcl"

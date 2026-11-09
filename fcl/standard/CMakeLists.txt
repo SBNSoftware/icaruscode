@@ -1,8 +1,5 @@
-# Install fcl files
+cet_enable_asserts()
 
-install_fhicl()
-
-# Also put a copy in the source tree.
-
-FILE(GLOB fcl_files *.fcl)
-install_source( EXTRAS ${fcl_files} )
+add_subdirectory(mc)
+add_subdirectory(data)
+add_subdirectory(overlay)

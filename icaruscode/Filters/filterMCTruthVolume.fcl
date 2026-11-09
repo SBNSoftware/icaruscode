@@ -1,0 +1,11 @@
+BEGIN_PROLOG
+
+filtermctruthvolume: {
+  module_type: FilterMCTruthVolume
+  MCTruthLabel: "mcgen"
+  POTLabel: "mcgen"
+  VolumeLow:  [-571.55, -352.067, -1187.04]
+  VolumeHigh: [+571.55, +619.033, +1566.2]
+}
+
+END_PROLOG
