@@ -132,11 +132,11 @@ physics.producers.SBNShowerGausCryoW.ShowerFinderTools[5].NormTools[1].MC:      
 physics.producers.SBNShowerGausCryoE.ShowerFinderTools[3].NormTools:                 @local::icarus_calonormtoolsMC
 physics.producers.SBNShowerGausCryoE.ShowerFinderTools[3].NormTools[0].MC:           @local::runPeriod
 physics.producers.SBNShowerGausCryoE.ShowerFinderTools[3].NormTools[1].MC:           @local::runPeriod
-physics.producers.SBNShowerGausCryoE.ShowerFinderTools[3].ApplyMCLifetimeCorrection: true
+physics.producers.SBNShowerGausCryoE.ShowerFinderTools[3].ApplyLifetimeCorrection: true
 physics.producers.SBNShowerGausCryoW.ShowerFinderTools[3].NormTools:                 @local::icarus_calonormtoolsMC
 physics.producers.SBNShowerGausCryoW.ShowerFinderTools[3].NormTools[0].MC:           @local::runPeriod
 physics.producers.SBNShowerGausCryoW.ShowerFinderTools[3].NormTools[1].MC:           @local::runPeriod
-physics.producers.SBNShowerGausCryoW.ShowerFinderTools[3].ApplyMCLifetimeCorrection: true
+physics.producers.SBNShowerGausCryoW.ShowerFinderTools[3].ApplyLifetimeCorrection: true
 
 services.message.destinations :
 {
