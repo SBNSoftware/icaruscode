@@ -109,7 +109,7 @@ namespace trkf {
     using Parameters = fhicl::Table<Config>;
 
     TrajectoryMCSFitterICARUS(
-      int pIdHyp, 
+      int pID, 
       int minNSegs, 
       int minNAngs,
       double segLen, 
@@ -128,7 +128,7 @@ namespace trkf {
       unsigned int selectionMode,
       unsigned int wireSkip,
       unsigned int verbose) {
-        pIdHyp_ = pIdHyp;
+        pID_ = pID;
         minNSegs_ = minNSegs;
         minNAngs_ = minNAngs;
         segLen_ = segLen;
@@ -169,34 +169,19 @@ namespace trkf {
         p().selectionMode(),
         p().wireSkip(),
         p().verbose()) {}
-    
+
     recob::MCSFitResultGS fitMcs(
-      const recob::TrackTrajectory& traj) const { 
-        return fitMcs(traj, pIdHyp_); }
+      const recob::TrackTrajectory& traj) const;
 
     recob::MCSFitResultGS fitMcs(
       const recob::Track& track) const { 
-        return fitMcs(track, pIdHyp_); }
+        return fitMcs(track.Trajectory()); }
 
     recob::MCSFitResultGS fitMcs(
-      const recob::Trajectory& traj) const { 
-        return fitMcs(traj, pIdHyp_); }
-
-    recob::MCSFitResultGS fitMcs(
-      const recob::TrackTrajectory& traj, 
-      int pid) const;
-
-    recob::MCSFitResultGS fitMcs(
-      const recob::Track& track, 
-      int pid) const { 
-        return fitMcs(track.Trajectory(), pid); }
-
-    recob::MCSFitResultGS fitMcs(
-      const recob::Trajectory& traj, 
-      int pid) const {
+      const recob::Trajectory& traj) const {
         recob::TrackTrajectory::Flags_t flags(traj.NPoints());
         const recob::TrackTrajectory tt(traj, std::move(flags));
-        return fitMcs(tt, pid); }
+        return fitMcs(tt); }
 
     struct ScanResult {
       public:
@@ -209,6 +194,14 @@ namespace trkf {
           std::vector<float> test, std::vector<float> c2) :
             bestp(best), errp(err), minp(min), maxp(max),
             alpha(a), dalpha(da), beta(b), dbeta(db) {} };
+
+    struct SegmentWindow {
+      unsigned int first = 0; 
+      unsigned int last = 0; 
+      unsigned int nused = 0; 
+      int nAngLin = 0; 
+      int nAngPoly = 0; 
+      bool ok = false; };
 
     // functions in MCS fitter
 
@@ -264,7 +257,6 @@ namespace trkf {
       std::vector<float> dthetaLin, 
       std::vector<float> dthetaPoly, 
       double sigma3p, 
-      int pid, 
       double p) const;
 
     const ScanResult C2Fit(
@@ -275,7 +267,6 @@ namespace trkf {
       std::vector<float> dthetaLin, 
       std::vector<float> dthetaPoly, 
       double sigma3p, 
-      int pid, 
       double sigma) const;
 
     const ScanResult C2NaiveFit(
@@ -286,7 +277,6 @@ namespace trkf {
       std::vector<float> dthetaLin, 
       std::vector<float> dthetaPoly, 
       double sigma3p, 
-      int pid, 
       double sigma) const;
 
     const double LikelihoodFunction(
@@ -297,9 +287,7 @@ namespace trkf {
       std::vector<float> dthetaLin, 
       std::vector<float> dthetaPoly, 
       double sigma3p, 
-      int pid, 
-      double p0,
-      bool verbose) const;
+      double p) const;
 
     void LikelihoodFit(
       const recob::TrackTrajectory& traj, 
@@ -309,7 +297,6 @@ namespace trkf {
       std::vector<float> dthetaLin, 
       std::vector<float> dthetaPoly, 
       double sigma3p, 
-      int pid, 
       double& best_p,
       double& error_p) const;
     
@@ -342,6 +329,9 @@ namespace trkf {
       TMatrix cov, 
       int jtail) const;
 
+    Vector_t hit2D(
+      size_t index) const;
+
     unsigned int Plane(
       size_t index) const;
 
@@ -361,17 +351,23 @@ namespace trkf {
     unsigned int LastTPC(
       const recob::TrackTrajectory& traj) const;
 
-    Vector_t hit2D(
-      size_t index) const;
+    bool FirstLastInTPC(
+      const recob::TrackTrajectory& traj,
+      unsigned int t,
+      size_t& frst,
+      size_t& last) const;
+
+    std::vector<unsigned int> TPCToUse(
+      const recob::TrackTrajectory& traj) const;
 
     double length1D(
-      const recob::TrackTrajectory traj) const;
+      const recob::TrackTrajectory& traj) const;
 
     double length2D(
-      const recob::TrackTrajectory traj) const;
+      const recob::TrackTrajectory& traj) const;
 
     double length3D(
-      const recob::TrackTrajectory traj) const;
+      const recob::TrackTrajectory& traj) const;
 
     double ThetaMCSFactor(
       const recob::TrackTrajectory& traj) const;
@@ -384,18 +380,18 @@ namespace trkf {
       double p,
       double beta,
       double L) const;
-
-    void ThetaCheck(
-      std::vector<float> dthetaLin, 
-      std::vector<float> dthetaPoly, 
-      bool& checkLin, 
-      bool& checkPoly, 
-      unsigned int& firstseg, 
-      unsigned int& lastseg) const;
     
     bool CathodeCheck(
       const recob::TrackTrajectory& traj,
       size_t index) const;
+
+    bool UsePoint(
+      const recob::TrackTrajectory& traj,
+      size_t index) const;
+
+    SegmentWindow ThetaCheck(
+      const std::vector<float>& dthetaLin, 
+      const std::vector<float>& dthetaPoly) const;
 
     // functions in MCS producer
 
@@ -441,13 +437,12 @@ namespace trkf {
     void setRangeP(
       float r) { rangeP = r; }
 
-    double mass (
-      int pid) const {
-        if (abs(pid) == 13) return mumass;
-        if (abs(pid) == 211) return pimass;
-        if (abs(pid) == 321) return kmass;
-        if (abs(pid) == 2212) return pmass;
-        return util::kBogusD; }
+    double mass() const {
+      if (abs(pID_) == 13) return mumass;
+      if (abs(pID_) == 211) return pimass;
+      if (abs(pID_) == 321) return kmass;
+      if (abs(pID_) == 2212) return pmass;
+      return util::kBogusD; }
 
     double minLength() const {
       return minLength_; }
@@ -477,7 +472,7 @@ namespace trkf {
       return verbose_; }
 
   private:
-    int pIdHyp_;
+    int pID_;
     unsigned int minNSegs_;
     int minNAngs_;
     double segLen_;

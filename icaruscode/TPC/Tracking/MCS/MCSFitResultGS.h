@@ -33,11 +33,10 @@ namespace recob {
   public:
     /// default empty class
     MCSFitResultGS()
-      : pid_(0),
-        bestp_(0), errorp_(0), minp_(0), maxp_(0),
+      : bestp_(0), errorp_(0), minp_(0), maxp_(0),
         alpha_(0), dalpha_(0), beta_(0), dbeta_(0),
         bestpL_(0), errorpL_(0),
-        nhits_(0), sigma3p_(0), delta3p_(0), 
+        nhits_(0), sigma3p_(0), delta3p_(), 
         L1D_(0), L2D_(0), L3D_(0),
         seglens_(), cumseglens_(),
         seghits_(), cumseghits_(),
@@ -53,7 +52,6 @@ namespace recob {
 
     /// default general class
     MCSFitResultGS(
-      int pid,
       float bestp, float errorp, float minp, float maxp,
       float alpha, float dalpha, float beta, float dbeta,
       float bestpL, float errorpL,
@@ -65,8 +63,7 @@ namespace recob {
       int nsegused, int nsegtot,
       std::vector<float> dthetalin, std::vector<float> dthetapoly,
       bool check) 
-      : pid_(pid), 
-        bestp_(bestp), errorp_(errorp), minp_(minp), maxp_(maxp), 
+      : bestp_(bestp), errorp_(errorp), minp_(minp), maxp_(maxp), 
         alpha_(alpha), dalpha_(dalpha), beta_(beta), dbeta_(dbeta), 
         bestpL_(bestpL), errorpL_(errorpL),
         nhits_(nhits), sigma3p_(sigma3p), delta3p_(delta3p), 
@@ -78,10 +75,6 @@ namespace recob {
         dthetalin_(dthetalin), dthetapoly_(dthetapoly),
         check_(check)
     {}
-
-    /// particle id hypothesis used in the fit
-    int particleIdHyp() const { 
-      return pid_; }
 
     /// momentum best value from the likelihood fit [GeV/c]
     float bestMomentum_Likelihood() const { 
@@ -180,7 +173,6 @@ namespace recob {
       return check_; }
 
   private:
-    int pid_;
     float bestp_; float errorp_; float minp_; float maxp_;
     float alpha_; float dalpha_; float beta_; float dbeta_;
     float bestpL_; float errorpL_;

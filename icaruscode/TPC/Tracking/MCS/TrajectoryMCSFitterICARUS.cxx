@@ -40,8 +40,7 @@ using namespace recob::tracking;
 
 //main function, return MCS momentum
 recob::MCSFitResultGS TrajectoryMCSFitterICARUS::fitMcs(
-  const recob::TrackTrajectory& traj, 
-  int pid) const {
+  const recob::TrackTrajectory& traj) const {
   //validity check
   bool check = false;
 
@@ -222,42 +221,36 @@ recob::MCSFitResultGS TrajectoryMCSFitterICARUS::fitMcs(
     cout << "measured scattering angles, linear fit [rad] = "; for (auto i : dthetaLin) cout << i << ' '; cout << endl;
     cout << "measured scattering angles, poligonal fit [rad] = "; for (auto i : dthetaPoly) cout << i << ' '; cout << endl; }
   
-  //check if there is minimum number of angles > 0
-  unsigned int firstseg = 0; unsigned int lastseg = 0; 
-  bool checkLin = false; bool checkPoly = false;
-  ThetaCheck(dthetaLin, dthetaPoly, checkLin, checkPoly, firstseg, lastseg);
-  if (!checkLin) {
+  //select segments used in the fit
+  const SegmentWindow win = ThetaCheck(dthetaLin, dthetaPoly);
+  if (!win.ok) {
     if (verbose_ > 0) {
-      cout << "WARNING! number of scattering angles from linear fit is not greater or equal " << minNAngs_ << endl;
-      cout << "fit stops here, return null" << endl; }
-    return recob::MCSFitResultGS(check); }
-  if (!checkPoly) {
-    if (verbose_ > 0) {
-      cout << "WARNING! number of scattering angles from poligonal fit is not greater or equal " << minNAngs_-1 << endl;
+      cout << "WARNING! not enough valid angles or segments: linear angles " << win.nAngLin << " (min " << minNAngs_ 
+           << "), polygonal angles " << win.nAngPoly << " (min " << minNAngs_-1 
+           << "), used segments " << win.nused << " (min " << minNSegs_ << ")" << endl;
       cout << "fit stops here, return null" << endl; }
     return recob::MCSFitResultGS(check); }
 
-  int nseg_used = lastseg - firstseg + 1;
+  int nseg_used = win.nused;
   int nseg_tot = seglens.size();
   if (verbose_ > 0) cout << "nseg used = " << nseg_used << " nseg tot = " << nseg_tot << endl;
 
   //perform a c2 fit scan over all the computed angles
   float c2sigma = 0.05; 
-  const ScanResult fitResult = C2Fit(traj, seglens, cumseglens, seghits, dthetaLin, dthetaPoly, sigma3p, pid, c2sigma);
+  const ScanResult fitResult = C2Fit(traj, seglens, cumseglens, seghits, dthetaLin, dthetaPoly, sigma3p, c2sigma);
 
   //perform a likelihood fit scan over all the computed angles
   double best_p = 0.0; double error_p = 0.0;
-  LikelihoodFit(traj, seglens, cumseglens, seghits, dthetaLin, dthetaPoly, sigma3p, pid, best_p, error_p);
+  LikelihoodFit(traj, seglens, cumseglens, seghits, dthetaLin, dthetaPoly, sigma3p, best_p, error_p);
 
   //recall L1D, L2D, L3D functions
   double L1D = length1D(traj); 
   double L2D = length2D(traj);
   double L3D = length3D(traj); 
 
-  //return pid, bestp and errp, sigma3p, length 1D 2D 3D, segment lens and number of hits, scattering linear-fit and poligonal angles
+  //return bestp and errp, sigma3p, length 1D 2D 3D, segment lens and number of hits, scattering linear-fit and poligonal angles
   check = true;
   return recob::MCSFitResultGS(
-    pid, 
     fitResult.bestp, fitResult.errp, fitResult.minp, fitResult.maxp,
     fitResult.alpha, fitResult.dalpha, fitResult.beta, fitResult.dbeta,
     best_p, error_p,
@@ -284,8 +277,7 @@ void TrajectoryMCSFitterICARUS::breakTrajInSegments(
   cumseglens.push_back(0.); cumseghits.push_back(0);
   double seglen = 0.; int seghit = 0;
 
-  //auto countsHit = [&](size_t i) { return IsInPlane(i) && IsInTPC(i, LastTPC(traj)) && CathodeCheck(traj, i); };
-  auto countsHit = [&](size_t i) { return IsInPlane(i) && CathodeCheck(traj, i); };
+  auto countsHit = [&](size_t i) { return UsePoint(traj, i); };
 
   //determine index of first valid point of track, add it to vector breakpoints
   size_t index = traj.FirstValidPoint(); 
@@ -382,19 +374,10 @@ void TrajectoryMCSFitterICARUS::findSegmentBarycenter(
   //define an accumulator with position of valid points in the segment
   geo::vect::MiddlePointAccumulator middlePointCalc;
   
-  size_t index = firstPoint;
-  while (index < lastPoint) {
-    if (IsInPlane(index) && CathodeCheck(traj, index)) {
-      if ((fullTrackMode_ == 0) && IsInTPC(index, FirstTPC(traj))) {
-        middlePointCalc.add(hit2D(index));
-        npoints++; }
-      else if ((fullTrackMode_ == 1) && IsInTPC(index, LastTPC(traj))) {
-        middlePointCalc.add(hit2D(index));
-        npoints++; }
-      else if (fullTrackMode_ == 2) {
-        middlePointCalc.add(hit2D(index));
-        npoints++; } }
-    index = traj.NextValidPoint(index + 1); }
+  for (size_t index = firstPoint; index < lastPoint; index = traj.NextValidPoint(index + 1)) {
+    if (!UsePoint(traj, index)) continue;
+    middlePointCalc.add(hit2D(index));
+    npoints++; }
 
   //check if number of points is greater than zero, otherwise return trivial vector
   if (npoints == 0) bary = Vector_t();
@@ -409,77 +392,46 @@ void TrajectoryMCSFitterICARUS::linearRegression(
   const size_t lastPoint, 
   Vector_t& pcdir) const {
   //initalize number of points in segment
-  int npoints = 0;
-
-  //define an accumulator with position of valid points in the segment
+  std::vector<Vector_t> points;
   geo::vect::MiddlePointAccumulator middlePointCalc;
 
-  size_t index = firstPoint;
-  while (index < lastPoint) {
-    if (IsInPlane(index) && CathodeCheck(traj, index)) {
-      if ((fullTrackMode_ == 0) && IsInTPC(index, FirstTPC(traj))) {
-        middlePointCalc.add(hit2D(index));
-        npoints++; }
-      else if ((fullTrackMode_ == 1) && IsInTPC(index, LastTPC(traj))) {
-        middlePointCalc.add(hit2D(index));
-        npoints++; }
-      else if (fullTrackMode_ == 2) {
-        middlePointCalc.add(hit2D(index));
-        npoints++; } } 
-    index = traj.NextValidPoint(index + 1); }
+  for (size_t index = firstPoint; index < lastPoint; index = traj.NextValidPoint(index + 1)) {
+    if (!UsePoint(traj, index)) continue;
+    const Vector_t p = hit2D(index);
+    middlePointCalc.add(p);
+    points.push_back(p); }
 
   //check if number of points is greater than zero, otherwise return trivial vector
-  if (npoints == 0) pcdir = Vector_t();
-  else {
-    //determine position of segment barycenter from position of valid points in the segment
-    const auto avgpos = middlePointCalc.middlePoint();
-    //define normalization factor as inverse of number of valid points
-    const double norm = 1./double(npoints);
-    //define covariance matrix m as symmetric matrix 3x3
-    TMatrixDSym m(3);
+  if (points.empty()) { 
+    pcdir = Vector_t(); 
+    return; }
 
-    index = firstPoint;
-    while (index < lastPoint) {
-      if (IsInPlane(index) && CathodeCheck(traj, index)) {
-        if ((fullTrackMode_ == 0) && IsInTPC(index, FirstTPC(traj))) {
-          auto p = hit2D(index);
-          const double xxw0 = p.X() - avgpos.X();
-          const double yyw0 = p.Y() - avgpos.Y();
-          const double zzw0 = p.Z() - avgpos.Z();
-          m(0, 0) += xxw0 * xxw0 * norm; m(0, 1) += xxw0 * yyw0 * norm; m(0, 2) += xxw0 * zzw0 * norm;
-          m(1, 0) += yyw0 * xxw0 * norm; m(1, 1) += yyw0 * yyw0 * norm; m(1, 2) += yyw0 * zzw0 * norm;
-          m(2, 0) += zzw0 * xxw0 * norm; m(2, 1) += zzw0 * yyw0 * norm; m(2, 2) += zzw0 * zzw0 * norm; } 
-        else if ((fullTrackMode_ == 1) && IsInTPC(index, LastTPC(traj))) {
-          auto p = hit2D(index);
-          const double xxw0 = p.X() - avgpos.X();
-          const double yyw0 = p.Y() - avgpos.Y();
-          const double zzw0 = p.Z() - avgpos.Z();
-          m(0, 0) += xxw0 * xxw0 * norm; m(0, 1) += xxw0 * yyw0 * norm; m(0, 2) += xxw0 * zzw0 * norm;
-          m(1, 0) += yyw0 * xxw0 * norm; m(1, 1) += yyw0 * yyw0 * norm; m(1, 2) += yyw0 * zzw0 * norm;
-          m(2, 0) += zzw0 * xxw0 * norm; m(2, 1) += zzw0 * yyw0 * norm; m(2, 2) += zzw0 * zzw0 * norm; } 
-        else if (fullTrackMode_ == 2) {
-          auto p = hit2D(index);
-          const double xxw0 = p.X() - avgpos.X();
-          const double yyw0 = p.Y() - avgpos.Y();
-          const double zzw0 = p.Z() - avgpos.Z();
-          m(0, 0) += xxw0 * xxw0 * norm; m(0, 1) += xxw0 * yyw0 * norm; m(0, 2) += xxw0 * zzw0 * norm;
-          m(1, 0) += yyw0 * xxw0 * norm; m(1, 1) += yyw0 * yyw0 * norm; m(1, 2) += yyw0 * zzw0 * norm;
-          m(2, 0) += zzw0 * xxw0 * norm; m(2, 1) += zzw0 * yyw0 * norm; m(2, 2) += zzw0 * zzw0 * norm; } }
+  //determine position of segment barycenter from position of valid points in the segment
+  const auto avgpos = middlePointCalc.middlePoint();
+  //define normalization factor as inverse of number of valid points
+  const double norm = 1./double(points.size());
+  //define covariance matrix m as symmetric matrix 3x3
+  TMatrixDSym m(3);
 
-      index = traj.NextValidPoint(index + 1); }
+  for (const Vector_t& p : points) {
+    const double xxw0 = p.X() - avgpos.X();
+    const double yyw0 = p.Y() - avgpos.Y();
+    const double zzw0 = p.Z() - avgpos.Z();
+    m(0, 0) += xxw0 * xxw0 * norm; m(0, 1) += xxw0 * yyw0 * norm; m(0, 2) += xxw0 * zzw0 * norm;
+    m(1, 0) += yyw0 * xxw0 * norm; m(1, 1) += yyw0 * yyw0 * norm; m(1, 2) += yyw0 * zzw0 * norm;
+    m(2, 0) += zzw0 * xxw0 * norm; m(2, 1) += zzw0 * yyw0 * norm; m(2, 2) += zzw0 * zzw0 * norm; }
 
-    //compute eigenvalues and eigenvectors of covariance matrix m
-    const TMatrixDSymEigen me(m);
-    const auto& eigenval = me.GetEigenValues(); const auto& eigenvec = me.GetEigenVectors();
-    int maxevalidx = 0; double maxeval = eigenval(0);
-    for (int i = 1; i < 3; ++i) {
-      if (eigenval(i) > maxeval) {
-        maxevalidx = i;
-        maxeval = eigenval(i); } } 
-    
-    //update segment direction with eigenvector associated to maximum eigenvalue
-    pcdir = Vector_t(eigenvec(0, maxevalidx), eigenvec(1, maxevalidx), eigenvec(2, maxevalidx));
-  }
+  //compute eigenvalues and eigenvectors of covariance matrix m
+  const TMatrixDSymEigen me(m);
+  const auto& eigenval = me.GetEigenValues(); const auto& eigenvec = me.GetEigenVectors();
+  int maxevalidx = 0; double maxeval = eigenval(0);
+  for (int i = 1; i < 3; ++i) {
+    if (eigenval(i) > maxeval) {
+      maxevalidx = i;
+      maxeval = eigenval(i); } } 
+  
+  //update segment direction with eigenvector associated to maximum eigenvalue
+  pcdir = Vector_t(eigenvec(0, maxevalidx), eigenvec(1, maxevalidx), eigenvec(2, maxevalidx));
 }
 
 //find most probable value of energy loss according to Landau distribution
@@ -588,6 +540,7 @@ void TrajectoryMCSFitterICARUS::ComputeSigma3P(
   vector<double>& delta3p, 
   int wire_skip) const {
   double eps = 1e-6;
+  int nmin = 30;
 
   vector<recob::Hit> hits;
   if (planeMode_ == 0) hits = hits2dI1;
@@ -595,7 +548,7 @@ void TrajectoryMCSFitterICARUS::ComputeSigma3P(
   else if (planeMode_ == 2) hits = hits2dC;
 
   nhits = hits.size(); sigma3p = 0.; delta3p.clear();
-  if (nhits < 30) return; 
+  if (nhits < nmin) return; 
 
   double square_mean = 0.; double mean_square = 0.; int n = 0;
   double range = 0.3;
@@ -619,6 +572,7 @@ void TrajectoryMCSFitterICARUS::ComputeSigma3P(
       mean_square += d3p*d3p; square_mean += d3p; ++n; 
       delta3p.push_back(d3p); } }
 
+  if (n < nmin) return; 
   mean_square /= n; square_mean /= n; square_mean *= square_mean;
   sigma3p = sqrt(max(0.0, mean_square - square_mean));
   return; }
@@ -632,7 +586,6 @@ const double TrajectoryMCSFitterICARUS::C2Function(
   std::vector<float> dthetaLin, 
   std::vector<float> dthetaPoly, 
   double sigma3p, 
-  int pid, 
   double input_p) const {
   //define theta_measured, theta_expected, theta_err that represent expected, measured and error angle
   double theta_measured, theta_expected, theta_err;
@@ -642,24 +595,12 @@ const double TrajectoryMCSFitterICARUS::C2Function(
   ttall.clear(); ttallLin.clear(); ttallPoly.clear();
 
   //check if there is minimum number of angles > 0
-  unsigned int firstseg = 0; unsigned int lastseg = 0; 
-  bool checkLin = false; bool checkPoly = false;
-  ThetaCheck(dthetaLin, dthetaPoly, checkLin, checkPoly, firstseg, lastseg);
-  bool check = checkLin && checkPoly;
-  if (verbose_ > 1) cout << "first = " << firstseg << " last = " << lastseg << endl;
-  if (!check) return 0;
-
-  //compute number of valid segments 
-  unsigned int nseg = lastseg - firstseg + 1;
-  if (fullTrackMode_ == 0) {
-    if (verbose_ > 1) cout << "nseg tot = " << seglens.size() << " nseg used = " << nseg << " minNSegs_ = " << minNSegs_ << endl;
-    if (nseg < minNSegs_) return 0; }
-  if (fullTrackMode_ == 1) {
-    unsigned int nsegValid = 0;
-    for (unsigned int j = firstseg; j <= lastseg && j < seglens.size(); ++j) if (seglens[j] > 0.) nsegValid++;
-    if (verbose_ > 1) cout << "nseg tot = " << seglens.size() << " nseg = " << nseg << endl;
-    if (verbose_ > 1) cout << "nseg tot = " << seglens.size() << " nseg used = " << nsegValid << " minNSegs_ = " << minNSegs_ << endl;
-    if (nsegValid < minNSegs_) return 0; }
+  const SegmentWindow win = ThetaCheck(dthetaLin, dthetaPoly);
+  if (verbose_ > 1) cout << "first = " << win.first << " last = " << win.last << " nused = " << win.nused << endl;
+  if (!win.ok) return 0;
+  const unsigned int firstseg = win.first; const unsigned int lastseg = win.last;
+  //size of the window, used for matrix dimensions
+  const unsigned int nseg = lastseg - firstseg + 1;
 
   vector<bool> keepLin(nseg-1, false), keepPoly(nseg-2, false);
 
@@ -689,7 +630,7 @@ const double TrajectoryMCSFitterICARUS::C2Function(
   const double P = 0.001 * input_p;
   //compute total energy [GeV] from input momentum [GeV/c]
   const double PS = pow(P, 2);
-  const double MS = pow(mass(pid), 2);
+  const double MS = pow(mass(), 2);
   const double E = sqrt(PS + MS);
 
   //notify computation of linear-fit angles for C2 function has started
@@ -719,8 +660,8 @@ const double TrajectoryMCSFitterICARUS::C2Function(
       return 0; }
 
     //compute energy [GeV] at jp, jp+1 segment, return null if less or equal than energy at rest
-    const double E0 = GetE(E, cumseglens[jp], mass(pid));
-    const double E1 = GetE(E, cumseglens[jp+1], mass(pid));
+    const double E0 = GetE(E, cumseglens[jp], mass());
+    const double E1 = GetE(E, cumseglens[jp+1], mass());
     const double E0S = E0 * E0; const double E1S = E1 * E1;
     if (E0S <= MS || E1S <= MS) {
       if (verbose_ > 1) {
@@ -812,9 +753,9 @@ const double TrajectoryMCSFitterICARUS::C2Function(
       return 0; }
 
     //compute energy [GeV] at jp, jp+1, jp+2 segment, return null if less or equal than energy at rest
-    const double E0 = GetE(E, cumseglens[jp], mass(pid));
-    const double E1 = GetE(E, cumseglens[jp+1], mass(pid));
-    const double E2 = GetE(E, cumseglens[jp+2], mass(pid));
+    const double E0 = GetE(E, cumseglens[jp], mass());
+    const double E1 = GetE(E, cumseglens[jp+1], mass());
+    const double E2 = GetE(E, cumseglens[jp+2], mass());
     const double E0S = E0 * E0; const double E1S = E1 * E1; const double E2S = E2 * E2;
     if (E0S <= MS || E1S <= MS || E2S <= MS) {
       if (verbose_ > 1) {
@@ -1060,29 +1001,15 @@ const double TrajectoryMCSFitterICARUS::LikelihoodFunction(
   std::vector<float> dthetaLin, 
   std::vector<float> dthetaPoly, 
   double sigma3p, 
-  int pid, 
-  double input_p, 
-  bool verbose) const {
+  double input_p) const {
   //initalize log likelihood value
   double loglikelihood = 0.0;
 
   //check if there is minimum number of angles > 0
-  unsigned int firstseg = 0; unsigned int lastseg = 0; 
-  bool checkLin = false; bool checkPoly = false;
-  ThetaCheck(dthetaLin, dthetaPoly, checkLin, checkPoly, firstseg, lastseg);
-  bool check = checkLin && checkPoly;
-  if (verbose_ > 1) cout << "first = " << firstseg << " last = " << lastseg << endl;
-  if (!check) return numeric_limits<double>::max();
-
-  //compute number of valid segments 
-  unsigned int nseg = lastseg - firstseg + 1;
-  if (fullTrackMode_ == 0) {
-    if (nseg < minNSegs_) return numeric_limits<double>::max(); }
-  if (fullTrackMode_ == 1) {
-    unsigned int nsegValid = 0;
-    for (unsigned int j = firstseg; j <= lastseg && j < seglens.size(); ++j) if (seglens[j] > 0.) nsegValid++;
-    if (verbose_ > 1) cout << "nseg = " << nseg << " nsegValid = " << nsegValid << " minNSegs_ = " << minNSegs_ << endl;
-    if (nsegValid < minNSegs_) return numeric_limits<double>::max(); }
+  const SegmentWindow win = ThetaCheck(dthetaLin, dthetaPoly);
+  if (verbose_ > 1) cout << "first = " << win.first << " last = " << win.last << " nused = " << win.nused << endl;
+  if (!win.ok) return numeric_limits<double>::max();
+  const unsigned int firstseg = win.first; const unsigned int lastseg = win.last;
 
   //define propagation constant for measurement error associated to delta3p
   double kLin = sqrt(24.); 
@@ -1091,7 +1018,7 @@ const double TrajectoryMCSFitterICARUS::LikelihoodFunction(
   const double P = 0.001 * input_p;
   //compute total energy [GeV] from input momentum [GeV/c]
   const double PS = pow(P, 2);
-  const double MS = pow(mass(pid), 2);
+  const double MS = pow(mass(), 2);
   const double E = sqrt(PS + MS);
 
   //notify computation of linear-fit angles for likelihood function has started
@@ -1121,8 +1048,8 @@ const double TrajectoryMCSFitterICARUS::LikelihoodFunction(
       return numeric_limits<double>::max(); }
 
     //compute energy [GeV] at jp, jp+1 segment, return null if less or equal than energy at rest
-    const double E0 = GetE(E, cumseglens[jp], mass(pid));
-    const double E1 = GetE(E, cumseglens[jp+1], mass(pid));
+    const double E0 = GetE(E, cumseglens[jp], mass());
+    const double E1 = GetE(E, cumseglens[jp+1], mass());
     const double E0S = E0 * E0; const double E1S = E1 * E1;
     if (E0S <= MS || E1S <= MS) {
       if (verbose_ > 1) {
@@ -1198,7 +1125,6 @@ const TrajectoryMCSFitterICARUS::ScanResult TrajectoryMCSFitterICARUS::C2Fit(
   std::vector<float> dthetaLin, 
   std::vector<float> dthetaPoly, 
   double sigma3p, 
-  int pid, 
   double sigma) const {
   if (verbose_ > 1) cout << "starting c2 function fit to find MCS momentum..." << endl; 
   //define number of steps
@@ -1213,7 +1139,7 @@ const TrajectoryMCSFitterICARUS::ScanResult TrajectoryMCSFitterICARUS::C2Fit(
   int jMom = 0; int firstValid = 0; bool allZero = true;
   for (double p_test = pMin_; p_test <= pMax_; p_test += pStep_) {
     if (verbose_ > 1) cout << "test momentum [MeV/c] = " << p_test << endl; 
-    double c2 = C2Function(traj, seglens, cumseglens, seghits, dthetaLin, dthetaPoly, sigma3p, pid, p_test);
+    double c2 = C2Function(traj, seglens, cumseglens, seghits, dthetaLin, dthetaPoly, sigma3p, p_test);
     if (verbose_ > 1) cout << "c2 function = " << c2 << endl; 
     wmom[jMom] = p_test / 1000.; 
     wc2[jMom] = c2; 
@@ -1293,17 +1219,17 @@ const TrajectoryMCSFitterICARUS::ScanResult TrajectoryMCSFitterICARUS::C2Fit(
     if (verbose_ > 1) {
       cout << "best momentum " << p_best << " but fit parameters at limit" << endl;
       cout << "computing C2NaiveFit" << endl; }
-    return C2NaiveFit(traj, seglens, cumseglens, seghits, dthetaLin, dthetaPoly, sigma3p, pid, sigma); }
+    return C2NaiveFit(traj, seglens, cumseglens, seghits, dthetaLin, dthetaPoly, sigma3p, sigma); }
   else if (p_best < p_min) {
     if (verbose_ > 1) {
       cout << "best momentum " << p_best << " less than p_min " << p_min << endl;
       cout << "computing C2NaiveFit" << endl; }
-    return C2NaiveFit(traj, seglens, cumseglens, seghits, dthetaLin, dthetaPoly, sigma3p, pid, sigma); }
+    return C2NaiveFit(traj, seglens, cumseglens, seghits, dthetaLin, dthetaPoly, sigma3p, sigma); }
   else if (p_best > p_max) {
     if (verbose_ > 1) {
       cout << "best momentum " << p_best << " greater than p_max " << p_max << endl;
       cout << "computing C2NaiveFit" << endl; }
-    return C2NaiveFit(traj, seglens, cumseglens, seghits, dthetaLin, dthetaPoly, sigma3p, pid, sigma); }
+    return C2NaiveFit(traj, seglens, cumseglens, seghits, dthetaLin, dthetaPoly, sigma3p, sigma); }
 
   return ScanResult(
     p_best, p_error, p_min, p_max,
@@ -1319,7 +1245,6 @@ void TrajectoryMCSFitterICARUS::LikelihoodFit(
   std::vector<float> dthetaLin, 
   std::vector<float> dthetaPoly, 
   double sigma3p, 
-  int pid, 
   double& best_p, 
   double& error_p) const {
   if (verbose_ > 1) cout << "starting likelihood function fit to find MCS momentum..." << endl;
@@ -1332,7 +1257,7 @@ void TrajectoryMCSFitterICARUS::LikelihoodFit(
 
   //iterate over p_test, compute log likelihood values
   for (double p_test = pMin_; p_test <= pMax_; p_test += step) {
-    double logL = LikelihoodFunction(traj, seglens, cumseglens, seghits, dthetaLin, dthetaPoly, sigma3p, pid, p_test, false);
+    double logL = LikelihoodFunction(traj, seglens, cumseglens, seghits, dthetaLin, dthetaPoly, sigma3p, p_test);
     if (verbose_ > 1) cout << "test momentum for log likelihood [MeV/c] = " << p_test << " log likelihood = " << logL << endl; 
     if (logL < best_logL) {
       best_p = p_test;
@@ -1379,7 +1304,6 @@ const TrajectoryMCSFitterICARUS::ScanResult TrajectoryMCSFitterICARUS::C2NaiveFi
   std::vector<float> dthetaLin, 
   std::vector<float> dthetaPoly, 
   double sigma3p, 
-  int pid, 
   double sigma) const {
   if (verbose_ > 1) cout << "starting c2 function fit to find MCS momentum..." << endl; 
   //define number of steps
@@ -1394,7 +1318,7 @@ const TrajectoryMCSFitterICARUS::ScanResult TrajectoryMCSFitterICARUS::C2NaiveFi
   int jMom = 0; int firstValid = 0; bool allZero = true;
   for (double p_test = pMin_; p_test <= pMax_; p_test += pStep_) {
     if (verbose_ > 1) cout << "test momentum [MeV/c] = " << p_test << endl; 
-    double c2 = C2Function(traj, seglens, cumseglens, seghits, dthetaLin, dthetaPoly, sigma3p, pid, p_test);
+    double c2 = C2Function(traj, seglens, cumseglens, seghits, dthetaLin, dthetaPoly, sigma3p, p_test);
     if (verbose_ > 1) cout << "c2 function = " << c2 << endl;
     wmom[jMom] = p_test / 1000.; 
     wc2[jMom] = c2; 
@@ -1549,6 +1473,25 @@ TMatrix TrajectoryMCSFitterICARUS::CleanCovariance(
   return covmod; 
 }
 
+//gives 2D coordinate of index point: x = drift, y = wire
+Vector_t TrajectoryMCSFitterICARUS::hit2D(
+  size_t index) const {
+  const recob::Hit& h = *get<1>(pdata[index]);
+  const geo::WireID wid = h.WireID();
+  if (wid.Plane != planeMode_) return Vector_t();
+
+  //drift coordinate, corrected with t0
+  const double shift = geom_->TPC(wid).DriftDir().X() * detProp_->DriftVelocity() * T0_;
+  const double x = detProp_->ConvertTicksToX(h.PeakTime(), wid.Plane, wid.TPC, wid.Cryostat) + shift;
+
+  //wire coordinate, with wire = n·c, n normal to wire, c wire center (absorbs offset 2536)
+  const auto& plane = wr_->Plane(wid);
+  const auto n = plane.GetIncreasingWireDirection();
+  const auto c = wr_->Wire(wid).GetCenter();
+  const double y = n.Y()*c.Y() + n.Z()*c.Z();
+  return Vector_t(x, y, 0);
+}
+
 //gives the plane of index point: 0 for Induction-1, 1 for Induction-2, 2 for Collection
 unsigned int TrajectoryMCSFitterICARUS::Plane(
   size_t index) const {
@@ -1556,7 +1499,7 @@ unsigned int TrajectoryMCSFitterICARUS::Plane(
 }
 
 
-//check if index point is in plane = p
+//check if index point is in plane
 bool TrajectoryMCSFitterICARUS::IsInPlane(
   size_t index) const {
   if (Plane(index) == planeMode_) return true;
@@ -1589,103 +1532,70 @@ bool TrajectoryMCSFitterICARUS::IsInTPC(
   else return false; 
 }
 
-//gives 2D coordinate of index point: x = drift, y = wire
-Vector_t TrajectoryMCSFitterICARUS::hit2D(
-  size_t index) const {
-  const recob::Hit& h = *get<1>(pdata[index]);
-  const geo::WireID wid = h.WireID();
-  if (wid.Plane != planeMode_) return Vector_t();
+//find first and last point of the track in plane and tpc t
+bool TrajectoryMCSFitterICARUS::FirstLastInTPC(
+  const recob::TrackTrajectory& traj,
+  unsigned int t,
+  size_t& frst,
+  size_t& last) const {
+  const size_t invalid = recob::TrackTrajectory::InvalidIndex;
+  frst = invalid; last = invalid;
+  for (size_t index = traj.FirstValidPoint(); index != invalid; index = traj.NextValidPoint(index + 1)) {
+    if (!IsInPlane(index) || !IsInTPC(index, t)) continue;
+    if (frst == invalid) frst = index;
+    last = index; }
+  return frst != invalid && last != frst; }
 
-  //drift coordinate, corrected with t0
-  const double shift = geom_->TPC(wid).DriftDir().X() * detProp_->DriftVelocity() * T0_;
-  const double x = detProp_->ConvertTicksToX(h.PeakTime(), wid.Plane, wid.TPC, wid.Cryostat) + shift;
-
-  //wire coordinate, with wire = n·c, n normal to wire, c wire center (absorbs offset 2536)
-  const auto& plane = wr_->Plane(wid);
-  const auto n = plane.GetIncreasingWireDirection();
-  const auto c = wr_->Wire(wid).GetCenter();
-  const double y = n.Y()*c.Y() + n.Z()*c.Z();
-  return Vector_t(x, y, 0);
-}
+//tpc used to compute lengths
+std::vector<unsigned int> TrajectoryMCSFitterICARUS::TPCToUse(
+  const recob::TrackTrajectory& traj) const {
+  const unsigned int tFirst = FirstTPC(traj); 
+  const unsigned int tLast = LastTPC(traj);
+  if (fullTrackMode_ == 0) return {tFirst};
+  if (fullTrackMode_ == 1) return {tLast};
+  if (fullTrackMode_ == 2) { 
+    if (tFirst == tLast) return {tFirst};
+    return {tFirst, tLast}; }
+  return {}; }
 
 //find 1D (drift) length of track [cm]
 double TrajectoryMCSFitterICARUS::length1D(
-  const recob::TrackTrajectory traj) const {
-  //define index of first and last valid point
-  size_t index = traj.FirstValidPoint();
-  auto frstIndex = -1; 
-  auto lastIndex = -1; 
-
-  //find drift length of track in chosen view
-  while (index < traj.LastValidPoint()) {
-    if (IsInPlane(index) && IsInTPC(index, LastTPC(traj))) {
-      if (frstIndex == -1) frstIndex = index;
-      lastIndex = index; }
-    index = traj.NextValidPoint(index + 1); }
-  //define first and last valid point
-  Vector_t frstPoint = hit2D(frstIndex);
-  Vector_t lastPoint = hit2D(lastIndex);
-  //compute drift coordinate difference
-  double dx = abs(frstPoint.X() - lastPoint.X());
-  //return drift length 
-  return dx;
+  const recob::TrackTrajectory& traj) const {
+  double length = 0.;
+  for (unsigned int t : TPCToUse(traj)) {
+    size_t frst, last;
+    if (!FirstLastInTPC(traj, t, frst, last)) continue;
+    length += abs(hit2D(frst).X() - hit2D(last).X()); }
+  return length; 
 }
   
 //find 2D (drift-wire) length of track [cm]
 double TrajectoryMCSFitterICARUS::length2D(
-  const recob::TrackTrajectory traj) const {
-  //define index of first and last valid point
-  size_t index = traj.FirstValidPoint();
-  auto frstIndex = -1; 
-  auto lastIndex = -1; 
-
-  //compute drift-wire length of track in chosen view 
-  while (index < traj.LastValidPoint()) {
-    if (IsInPlane(index) && IsInTPC(index, LastTPC(traj))) {
-      if (frstIndex == -1) frstIndex = index;
-      lastIndex = index; }
-    index = traj.NextValidPoint(index + 1); }
-  //define first and last valid point
-  Vector_t frstPoint = hit2D(frstIndex);
-  Vector_t lastPoint = hit2D(lastIndex);
-  //compute drift and wire coordinate differences
-  double dx = abs(frstPoint.X() - lastPoint.X());
-  double dy = abs(frstPoint.Y() - lastPoint.Y());
-  //return drift-wire length 
-  return sqrt(pow(dx, 2) + pow(dy, 2)); 
+  const recob::TrackTrajectory& traj) const {
+  double length = 0.;
+  for (unsigned int t : TPCToUse(traj)) {
+    size_t frst, last;
+    if (!FirstLastInTPC(traj, t, frst, last)) continue;
+    const Vector_t a = hit2D(frst); const Vector_t b = hit2D(last);
+    length += sqrt(pow(a.X() - b.X(), 2) + pow(a.Y() - b.Y(), 2)); }
+  return length; 
 }
   
 //find 3D length of track [cm]
 double TrajectoryMCSFitterICARUS::length3D(
-  const recob::TrackTrajectory traj) const {
-  //define index of first and last valid point
-  size_t index = traj.FirstValidPoint();
-  auto frstIndex = -1; 
-  auto lastIndex = -1; 
-
-  //find 3D length of track in chosen view 
-  while (index < traj.LastValidPoint()) {
-    if (IsInPlane(index) && IsInTPC(index, LastTPC(traj))) {
-      if (frstIndex == -1) frstIndex = index;
-      lastIndex = index; }
-    index = traj.NextValidPoint(index + 1); }
-  //define first and last valid point 
-  geo::Point_t frstPoint = traj.LocationAtPoint(frstIndex);
-  geo::Point_t lastPoint = traj.LocationAtPoint(lastIndex);
-  //compute x, y, z coordinate differences
-  double dx = abs(frstPoint.X() - lastPoint.X());
-  double dy = abs(frstPoint.Y() - lastPoint.Y());
-  double dz = abs(frstPoint.Z() - lastPoint.Z());
-  //return 3D length 
-  return sqrt(pow(dx, 2) + pow(dy, 2) + pow(dz, 2)); 
+  const recob::TrackTrajectory& traj) const {
+  double length = 0.;
+  for (unsigned int t : TPCToUse(traj)) {
+    size_t frst, last;
+    if (!FirstLastInTPC(traj, t, frst, last)) continue;
+    length += (traj.LocationAtPoint(last) - traj.LocationAtPoint(frst)).R(); }
+  return length; 
 }
 
 //compute directional factor for thetamcs in c2 function computation
 double TrajectoryMCSFitterICARUS::ThetaMCSFactor(
   const recob::TrackTrajectory& traj) const {
-  //recall length2D as length of track on chosen view (Ind1, Ind2, Coll)
   double L2D = length2D(traj);
-  //recall length3D as length of track in three dimensions
   double L3D = length3D(traj);
   //return directional factor 1/cos(alpha) as ratio between L3D and L2D
   return L3D / L2D;
@@ -1717,34 +1627,6 @@ double TrajectoryMCSFitterICARUS::ThetaErrFactor(
   return sqrt(1 - pow(L1D, 2)/pow(L2D, 2));
 }
 
-//check if angles vector contains a minimum number of angles > 0 to avoid crash
-void TrajectoryMCSFitterICARUS::ThetaCheck(
-  vector<float> dthetaLin, 
-  vector<float> dthetaPoly, 
-  bool& checkLin, 
-  bool& checkPoly, 
-  unsigned int& firstseg, 
-  unsigned int& lastseg) const {
-  bool first = false;
-  auto countLin = 0;
-  for (unsigned int j = 0; j < dthetaLin.size(); ++j) {
-    if (dthetaLin[j] > 0.) {
-      if (!first) { firstseg = j; first = true; }
-      lastseg = j + 1;
-      countLin++;
-      if (countLin >= minNAngs_) checkLin = true; }
-    else { 
-      if (fullTrackMode_ == 0 || fullTrackMode_ == 1) { first = false; countLin = 0; } } }
-
-  auto countPoly = 0;
-  for (unsigned int j = 0; j < dthetaPoly.size(); ++j) {
-    if (dthetaPoly[j] > 0.) {
-      countPoly++;
-      if (countPoly >= minNAngs_ - 1) checkPoly = true; }
-    else { 
-      if (fullTrackMode_ == 0 || fullTrackMode_ == 1) { countPoly = 0; } } }
-}
-
 //check to exclude hit near cathode
 bool TrajectoryMCSFitterICARUS::CathodeCheck(
   const recob::TrackTrajectory& traj, 
@@ -1757,3 +1639,52 @@ bool TrajectoryMCSFitterICARUS::CathodeCheck(
   if (point < cathode - tolerance || point > cathode + tolerance) return true;
   else return false;
 }
+
+//check if index point must be used in the fit: plane, cathode and tpc
+bool TrajectoryMCSFitterICARUS::UsePoint(
+  const recob::TrackTrajectory& traj,
+  size_t index) const {
+  if (!IsInPlane(index) || !CathodeCheck(traj, index)) return false;
+  if (fullTrackMode_ == 0) return IsInTPC(index, FirstTPC(traj));
+  if (fullTrackMode_ == 1) return IsInTPC(index, LastTPC(traj));
+  return fullTrackMode_ == 2; }
+
+//select the segments used in the fit and check that there are enough of them
+TrajectoryMCSFitterICARUS::SegmentWindow TrajectoryMCSFitterICARUS::ThetaCheck(
+  const vector<float>& dthetaLin, 
+  const vector<float>& dthetaPoly) const {
+  SegmentWindow w;
+  const int nLin = dthetaLin.size();
+
+  //find window of linear angles [a, b], b included
+  int a = -1; int b = -1;
+  if (fullTrackMode_ == 2) {
+    //full track: from first to last valid angle, holes (e.g. cathode crossing) are skipped later
+    for (int j = 0; j < nLin; ++j) {
+      if (dthetaLin[j] > 0.) { if (a < 0) a = j; b = j; } } }
+  else {
+    //single tpc: longest run of consecutive valid angles (use ">=" instead of ">" below to prefer the last one)
+    int start = -1; int best = 0;
+    for (int j = 0; j <= nLin; ++j) {
+      const bool valid = (j < nLin) && (dthetaLin[j] > 0.);
+      if (valid && start < 0) start = j;
+      if (!valid && start >= 0) {
+        if (j - start > best) { best = j - start; a = start; b = j - 1; }
+        start = -1; } } }
+  if (a < 0) return w;
+
+  //count valid linear angles and segments used in the window
+  vector<bool> used(nLin + 1, false);
+  for (int j = a; j <= b; ++j) {
+    if (dthetaLin[j] > 0.) { w.nAngLin++; used[j] = true; used[j+1] = true; } }
+  for (bool u : used) if (u) w.nused++;
+
+  //count valid polygonal angles inside the window (angle j uses segments j, j+1, j+2)
+  for (int j = a; j < b && j < (int)dthetaPoly.size(); ++j) {
+    if (dthetaPoly[j] > 0.) w.nAngPoly++; }
+
+  w.first = a; w.last = b + 1;
+  //at least 2 angles, so that the matrices have at least 3 segments
+  const int minLin = std::max(minNAngs_, 2);
+  w.ok = (w.nAngLin >= minLin) && (w.nAngPoly >= minLin - 1) && (w.nused >= minNSegs_);
+  return w; }

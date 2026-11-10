@@ -13,20 +13,20 @@ mcsfitproducericarus_raw: {
   fitter: {
   	pIdHypothesis: 13
 	minNumAngles: 4
-	minNumSegments: 7
-	segmentLength: 14.0
+	minNumSegments: 5
+	segmentLength: 10.0
 	minHitsPerSegment: 3
 	minHits: 10
 	minLength: 100.0
 	eLossMode: 2
 	pMin: 100.
 	pMax: 1500.
-	pStep: 20.
-	cutMode: 0
-	cutAngles: 0
+	pStep: 10.
+	cutMode: 1
+	cutAngles: 4
 	planeMode: 3
 	fitMode: 0
-	fullTrackMode: 1
+	fullTrackMode: 0
 	selectionMode: 0
 	wireSkip: 0
 	verbose: 1 } }
@@ -57,7 +57,7 @@ mcsfitproducer3D: {
 	cutAngles: 4
 	planeMode: 3
 	fitMode: 0
-	fullTrackMode: 1
+	fullTrackMode: 0
 	selectionMode: 0
 	wireSkip: 0
 	verbose: 1 } }
@@ -88,7 +88,7 @@ mcsfitproducer2DI1: {
 	cutAngles: 4
 	planeMode: 0
 	fitMode: 0
-	fullTrackMode: 1
+	fullTrackMode: 0
 	selectionMode: 0
 	wireSkip: 0
 	verbose: 1 } }
@@ -119,7 +119,7 @@ mcsfitproducer2DI2: {
 	cutAngles: 4
 	planeMode: 1
 	fitMode: 0
-	fullTrackMode: 1
+	fullTrackMode: 0
 	selectionMode: 0
 	wireSkip: 0
 	verbose: 1 } }
@@ -150,7 +150,7 @@ mcsfitproducer2DC: {
 	cutAngles: 4
 	planeMode: 2
 	fitMode: 0
-	fullTrackMode: 1
+	fullTrackMode: 0
 	selectionMode: 0
 	wireSkip: 0
 	verbose: 1 } }
