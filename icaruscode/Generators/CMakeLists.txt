@@ -24,7 +24,8 @@ cet_build_plugin(HepMCFileGen art::module
 )
 
 cet_build_plugin(SelectCathodeCrossingGenParticles art::module
-      LIBRARIES sbnalg::Utilities
+      LIBRARIES icarusalg::Utilities
+                sbnalg::Utilities
                 larcore::Geometry_Geometry_service
                 larcore::headers
                 lardataalg::MCDumpers
