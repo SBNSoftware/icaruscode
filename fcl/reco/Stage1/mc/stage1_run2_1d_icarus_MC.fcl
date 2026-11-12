@@ -16,3 +16,12 @@ physics.reco: [
 
 physics.producers.cluster3DCryoW.Hit3DBuilderAlg.HitFinderTagVec: ["gaushit1dTPCWW", "gaushit1dTPCWE"]
 physics.producers.cluster3DCryoE.Hit3DBuilderAlg.HitFinderTagVec: ["gaushit1dTPCEW", "gaushit1dTPCEE"]
+
+# Also 1D hits for pandoraCluster3D*
+physics.producers.pandoraCluster3DCryoW.Hit3DBuilderAlg.HitFinderTagVec: ["gaushit1dTPCWW", "gaushit1dTPCWE"]
+physics.producers.pandoraCluster3DCryoE.Hit3DBuilderAlg.HitFinderTagVec: ["gaushit1dTPCEW", "gaushit1dTPCEE"]
+
+# Pandora w/ 1D signal processing is using cluster3D* modules 
+#   (using updatold, not updated, cluster3D instance) 
+physics.producers.pandoraGausCryoE.HitFinderModuleLabel:   "pandoraCluster3DCryoE"
+physics.producers.pandoraGausCryoW.HitFinderModuleLabel:   "pandoraCluster3DCryoW"
