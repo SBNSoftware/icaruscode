@@ -74,6 +74,10 @@ outputs.out1.outputCommands: [
   "drop *_caloskimCalorimetryCryoW_*_*"
 ]
 
+# Pandora only chain should be still using the combineHits* modules
+physics.producers.pandoraGausCryoE.HitFinderModuleLabel: "combineHitsCryoE"
+physics.producers.pandoraGausCryoW.HitFinderModuleLabel: "combineHitsCryoW"
+
 # Redefine TPCPMTBarycenterMatch producers with MC parameters
 physics.producers.tpcpmtbarycentermatchCryoE: @local::mc_tpcpmtbarycentermatchproducer_east
 physics.producers.tpcpmtbarycentermatchCryoW: @local::mc_tpcpmtbarycentermatchproducer_west
