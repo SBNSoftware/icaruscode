@@ -45,49 +45,66 @@ icarus_stage1_producers:
   cluster3DCryoW:
   {
     @table::icarus_cluster3d
-    MakeSpacePointsOnly:                  true
-    Hit3DBuilderAlg.HitFinderTagVec:      ["gaushitPT2dTPCWW", "gaushitPT2dTPCWE"]
-    Hit3DBuilderAlg.PulseHeightFraction:  0. #0.75 #0.25
-    Hit3DBuilderAlg.PHLowSelection:       0. #4.0 # 20.
-    Hit3DBuilderAlg.MaxHitChiSquare:      1000000.
-    Hit3DBuilderAlg.MaxMythicalChiSquare: 30.
-    Hit3DBuilderAlg.OutputHistograms:     false
+    MakeSpacePointsOnly: true
+    Hit3DBuilderAlg:
+    {
+      @table::icarus_cluster3d.Hit3DBuilderAlg
+      HitFinderTagVec:      ["gaushitPT2dTPCWW", "gaushitPT2dTPCWE"]
+      PulseHeightFraction:  0. #0.75 #0.25
+      PHLowSelection:       0. #4.0 # 20.
+      MaxHitChiSquare:      1000000.
+      MaxMythicalChiSquare: 30.
+      OutputHistograms:     false
+    }
   }
 
   cluster3DCryoE:
   {
-    @local::icarus_cluster3d
-    MakeSpacePointsOnly:                  true
-    Hit3DBuilderAlg.HitFinderTagVec:      ["gaushitPT2dTPCEW", "gaushitPT2dTPCEE"]
-    Hit3DBuilderAlg.PulseHeightFraction:  0. #0.75 #0.25
-    Hit3DBuilderAlg.PHLowSelection:       0. #4.0 # 20.
-    Hit3DBuilderAlg.MaxHitChiSquare:      1000000.
-    Hit3DBuilderAlg.MaxMythicalChiSquare: 30.
-    Hit3DBuilderAlg.OutputHistograms:     false
+    @table::icarus_cluster3d
+    MakeSpacePointsOnly: true
+    Hit3DBuilderAlg:
+    {
+      @table::icarus_cluster3d.Hit3DBuilderAlg
+      HitFinderTagVec:      ["gaushitPT2dTPCEW", "gaushitPT2dTPCEE"]
+      PulseHeightFraction:  0. #0.75 #0.25
+      PHLowSelection:       0. #4.0 # 20.
+      MaxHitChiSquare:      1000000.
+      MaxMythicalChiSquare: 30.
+      OutputHistograms:     false
+    }
   }
 
   ### Cluster3D / Pandora + NG2 + Pandora version (using gaushit2dTPC* input tags for the hits)
   pandoraCluster3DCryoW:
   {
     @table::icarus_cluster3d
-    MakeSpacePointsOnly:                  true
-    Hit3DBuilderAlg.HitFinderTagVec:      ["gaushit2dTPCWW", "gaushit2dTPCWE"]
-    Hit3DBuilderAlg.PulseHeightFraction:  0. #0.75 #0.25
-    Hit3DBuilderAlg.PHLowSelection:       0. #4.0 # 20.
-    Hit3DBuilderAlg.MaxHitChiSquare:      1000000.
-    Hit3DBuilderAlg.MaxMythicalChiSquare: 30.
-    Hit3DBuilderAlg.OutputHistograms:     false
+    MakeSpacePointsOnly: true
+    Hit3DBuilderAlg:
+    {
+      @table::icarus_cluster3d.Hit3DBuilderAlg
+      HitFinderTagVec:      ["gaushit2dTPCWW", "gaushit2dTPCWE"]
+      PulseHeightFraction:  0. #0.75 #0.25
+      PHLowSelection:       0. #4.0 # 20.
+      MaxHitChiSquare:      1000000.
+      MaxMythicalChiSquare: 30.
+      OutputHistograms:     false
+    }
   }
+  
   pandoraCluster3DCryoE:
   {
     @table::icarus_cluster3d
-    MakeSpacePointsOnly:                  true
-    Hit3DBuilderAlg.HitFinderTagVec:      ["gaushit2dTPCEW", "gaushit2dTPCEE"]
-    Hit3DBuilderAlg.PulseHeightFraction:  0. #0.75 #0.25
-    Hit3DBuilderAlg.PHLowSelection:       0. #4.0 # 20.
-    Hit3DBuilderAlg.MaxHitChiSquare:      1000000.
-    Hit3DBuilderAlg.MaxMythicalChiSquare: 30.
-    Hit3DBuilderAlg.OutputHistograms:     false
+    MakeSpacePointsOnly: true
+    Hit3DBuilderAlg:
+    {
+      @table::icarus_cluster3d.Hit3DBuilderAlg
+      HitFinderTagVec:      ["gaushit2dTPCEW", "gaushit2dTPCEE"]
+      PulseHeightFraction:  0. #0.75 #0.25
+      PHLowSelection:       0. #4.0 # 20.
+      MaxHitChiSquare:      1000000.
+      MaxMythicalChiSquare: 30.
+      OutputHistograms:     false
+    }
   }
 
   ### Hit combiner
