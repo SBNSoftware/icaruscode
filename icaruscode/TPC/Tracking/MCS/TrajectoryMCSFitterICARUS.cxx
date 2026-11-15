@@ -51,7 +51,7 @@ recob::MCSFitResultGS TrajectoryMCSFitterICARUS::fitMcs(
   //define vector breakpoints with segmentation index
   vector<size_t> breakpoints; 
   //define vector seglens and cumseglens with segment lenghts [cm] and cumulative segment lengths [cm]
-  vector<float> seglens; vector<float> cumseglens; 
+  vector<double> seglens; vector<double> cumseglens; 
   //define vector seghits and cumseghits with segment number of hits and cumulative segment number of hits
   vector<int> seghits; vector<int> cumseghits;
   vector<int> segsides;
@@ -72,7 +72,7 @@ recob::MCSFitResultGS TrajectoryMCSFitterICARUS::fitMcs(
   auto trivial = Vector_t(0, 0, 0);
 
   //define vector dthetaLin with measured angles for linear fit
-  vector<float> dthetaLin; dthetaLin.clear();
+  vector<double> dthetaLin; dthetaLin.clear();
   //define vector psi0, psi1 with directions of adjacent segments
   Vector_t psi0; Vector_t psi1; 
 
@@ -137,7 +137,7 @@ recob::MCSFitResultGS TrajectoryMCSFitterICARUS::fitMcs(
     psi0 = psi1; }
 
   //define vector dthetaPoly with measured angles for poligonal fit
-  vector<float> dthetaPoly; dthetaPoly.clear(); 
+  vector<double> dthetaPoly; dthetaPoly.clear(); 
   //define vector barycenters, bary with barycenter positions
   vector<Vector_t> barycenters; Vector_t bary; 
 
@@ -196,7 +196,7 @@ recob::MCSFitResultGS TrajectoryMCSFitterICARUS::fitMcs(
         double dt = acos(cosval);
         if (cosval == -1.0 || cosval == 1.0) dt = 0.001;
 
-        //in case of 2D angle return signed scattering angle
+        //compute signed scattering angle
         //auto cross = bcdir0.Cross(bcdir1);
         //double sign = (cross.Dot(ref) >= 0) ? 1.0 : -1.0;
         //dt = dt * sign;
@@ -225,9 +225,9 @@ recob::MCSFitResultGS TrajectoryMCSFitterICARUS::fitMcs(
   const SegmentWindow win = ThetaCheck(dthetaLin, dthetaPoly);
   if (!win.ok) {
     if (verbose_ > 0) {
-      cout << "WARNING! not enough valid angles or segments: linear angles " << win.nAngLin << " (min " << minNAngs_ 
-           << "), polygonal angles " << win.nAngPoly << " (min " << minNAngs_-1 
-           << "), used segments " << win.nused << " (min " << minNSegs_ << ")" << endl;
+      cout << "WARNING! not enough valid angles or segments: linear angles = " << win.nAngLin << " (min = " << minNAngs_ 
+           << "), polygonal angles - " << win.nAngPoly << " (min = " << minNAngs_-1 
+           << "), used segments = " << win.nused << " (min = " << minNSegs_ << ")" << endl;
       cout << "fit stops here, return null" << endl; }
     return recob::MCSFitResultGS(check); }
 
@@ -236,12 +236,11 @@ recob::MCSFitResultGS TrajectoryMCSFitterICARUS::fitMcs(
   if (verbose_ > 0) cout << "nseg used = " << nseg_used << " nseg tot = " << nseg_tot << endl;
 
   //perform a c2 fit scan over all the computed angles
-  float c2sigma = 0.05; 
-  const ScanResult fitResult = C2Fit(traj, seglens, cumseglens, seghits, dthetaLin, dthetaPoly, sigma3p, c2sigma);
+  double c2sigma = 0.05; 
+  const ScanResultC2 fitC2 = C2Fit(traj, seglens, cumseglens, seghits, dthetaLin, dthetaPoly, sigma3p, c2sigma);
 
   //perform a likelihood fit scan over all the computed angles
-  double best_p = 0.0; double error_p = 0.0;
-  LikelihoodFit(traj, seglens, cumseglens, seghits, dthetaLin, dthetaPoly, sigma3p, best_p, error_p);
+  const ScanResultLL fitLL = LikelihoodFit(traj, seglens, cumseglens, seghits, dthetaLin, dthetaPoly, sigma3p);
 
   //recall L1D, L2D, L3D functions
   double L1D = length1D(traj); 
@@ -251,9 +250,8 @@ recob::MCSFitResultGS TrajectoryMCSFitterICARUS::fitMcs(
   //return bestp and errp, sigma3p, length 1D 2D 3D, segment lens and number of hits, scattering linear-fit and poligonal angles
   check = true;
   return recob::MCSFitResultGS(
-    fitResult.bestp, fitResult.errp, fitResult.minp, fitResult.maxp,
-    fitResult.alpha, fitResult.dalpha, fitResult.beta, fitResult.dbeta,
-    best_p, error_p,
+    fitC2.bestp, fitC2.errp, fitC2.testp, fitC2.c2,
+    fitLL.bestp, fitLL.errp, fitLL.testp, fitLL.logL,
     nhits, sigma3p, delta3p,
     L1D, L2D, L3D, 
     seglens, cumseglens,
@@ -268,8 +266,8 @@ recob::MCSFitResultGS TrajectoryMCSFitterICARUS::fitMcs(
 void TrajectoryMCSFitterICARUS::breakTrajInSegments(
   const recob::TrackTrajectory& traj, 
   vector<size_t>& breakpoints, 
-  vector<float>& seglens, 
-  vector<float>& cumseglens, 
+  vector<double>& seglens, 
+  vector<double>& cumseglens, 
   vector<int>& seghits, 
   vector<int>& cumseghits, 
   vector<int>& segsides) const {
@@ -580,18 +578,18 @@ void TrajectoryMCSFitterICARUS::ComputeSigma3P(
 //build c2 function used in MCS fit
 const double TrajectoryMCSFitterICARUS::C2Function(
   const recob::TrackTrajectory& traj, 
-  std::vector<float>& seglens, 
-  std::vector<float>& cumseglens, 
+  std::vector<double>& seglens, 
+  std::vector<double>& cumseglens, 
   std::vector<int>& seghits, 
-  std::vector<float> dthetaLin, 
-  std::vector<float> dthetaPoly, 
+  std::vector<double> dthetaLin, 
+  std::vector<double> dthetaPoly, 
   double sigma3p, 
   double input_p) const {
   //define theta_measured, theta_expected, theta_err that represent expected, measured and error angle
   double theta_measured, theta_expected, theta_err;
 
   //define ttallLin, ttallPoly 
-  vector<float> ttall; vector<float> ttallLin; vector<float> ttallPoly;
+  vector<double> ttall; vector<double> ttallLin; vector<double> ttallPoly;
   ttall.clear(); ttallLin.clear(); ttallPoly.clear();
 
   //check if there is minimum number of angles > 0
@@ -713,7 +711,7 @@ const double TrajectoryMCSFitterICARUS::C2Function(
     if (verbose_ > 1) cout << "measured angle [mrad] between " << jp << "-th and " << jp+1 << "-th segment = " << theta_measured << endl;
 
     //compute theta error [mrad] associated to delta3p
-    theta_err = 1000 * (kLin * sigma3p)/(Ls0 * sqrt(float(nhit0))) * ThetaErrFactor(traj);
+    theta_err = 1000 * (kLin * sigma3p)/(Ls0 * sqrt(double(nhit0))) * ThetaErrFactor(traj);
     if (verbose_ > 1) cout << "   error angle [mrad] between " << jp << "-th and " << jp+1 << "-th segment = " << theta_err << endl;
 
     //update matrix matMCSLin, matErrLin with on-diag MCS and error terms
@@ -821,7 +819,7 @@ const double TrajectoryMCSFitterICARUS::C2Function(
     if (verbose_ > 1) cout << "measured angle [mrad] between " << jp << "-th and " << jp+2 << "-th segment = " << theta_measured << endl;
 
     //compute theta error [mrad] associated to delta3p
-    theta_err = 1000 * (kPoly * sigma3p)/(Ls0 * sqrt(float(nhit0))) * ThetaErrFactor(traj);
+    theta_err = 1000 * (kPoly * sigma3p)/(Ls0 * sqrt(double(nhit0))) * ThetaErrFactor(traj);
     if (verbose_ > 1) cout << "   error angle [mrad] between " << jp << "-th and " << jp+1 << "-th segment = " << theta_err << endl;
 
     //update matrix matMCSPoly, matErrPoly with on-diag MCS and error terms
@@ -995,11 +993,11 @@ const double TrajectoryMCSFitterICARUS::C2Function(
 //build likelihood function used in MCS fit
 const double TrajectoryMCSFitterICARUS::LikelihoodFunction(
   const recob::TrackTrajectory& traj, 
-  std::vector<float>& seglens, 
-  std::vector<float>& cumseglens, 
+  std::vector<double>& seglens, 
+  std::vector<double>& cumseglens, 
   std::vector<int>& seghits, 
-  std::vector<float> dthetaLin, 
-  std::vector<float> dthetaPoly, 
+  std::vector<double> dthetaLin, 
+  std::vector<double> dthetaPoly, 
   double sigma3p, 
   double input_p) const {
   //initalize log likelihood value
@@ -1098,7 +1096,7 @@ const double TrajectoryMCSFitterICARUS::LikelihoodFunction(
     if (verbose_ > 1) cout << "measured angle [mrad] between " << jp << "-th and " << jp+1 << "-th segment = " << theta_measured << endl;
 
     //compute theta error [mrad] associated to delta3p
-    double theta_error = 1000 * (kLin * sigma3p)/(Ls0 * sqrt(float(nhit0))) * ThetaErrFactor(traj);
+    double theta_error = 1000 * (kLin * sigma3p)/(Ls0 * sqrt(double(nhit0))) * ThetaErrFactor(traj);
     if (verbose_ > 1) cout << "   error angle [mrad] between " << jp << "-th and " << jp+1 << "-th segment = " << theta_error << endl;
 
     //compute negative log likelihood
@@ -1117,276 +1115,187 @@ const double TrajectoryMCSFitterICARUS::LikelihoodFunction(
   return loglikelihood; }
 
 //perform fit of c2 function to determine MCS momentum
-const TrajectoryMCSFitterICARUS::ScanResult TrajectoryMCSFitterICARUS::C2Fit(
+const TrajectoryMCSFitterICARUS::ScanResultC2 TrajectoryMCSFitterICARUS::C2Fit(
   const recob::TrackTrajectory& traj, 
-  std::vector<float>& seglens, 
-  std::vector<float>& cumseglens, 
+  std::vector<double>& seglens, 
+  std::vector<double>& cumseglens, 
   std::vector<int>& seghits, 
-  std::vector<float> dthetaLin, 
-  std::vector<float> dthetaPoly, 
+  std::vector<double> dthetaLin, 
+  std::vector<double> dthetaPoly, 
   double sigma3p, 
   double sigma) const {
-  if (verbose_ > 1) cout << "starting c2 function fit to find MCS momentum..." << endl; 
-  //define number of steps
-  int nMom = ceil((pMax_ - pMin_) / pStep_) + 1;
-  //define vector momentum, c2 function, error on momentum, error on c2 function 
-  vector<float> wmom(nMom);
-  vector<float> wc2(nMom);
-  vector<float> wsmom(nMom);
-  vector<float> wsigma(nMom);
+  if (verbose_ > 0) cout << "starting c2 function fit to find MCS momentum..." << endl; 
+  //define vectors of momentum [GeV/c], c2 function, error on momentum, error on c2 function 
+  vector<double> vectorMomentum; 
+  vector<double> vectorC2; 
+  vector<double> vectorMomentumError; 
+  vector<double> vectorC2Error;
 
-  //iterate over p_test, compute c2 function and populate vectors wmom, wc2, wsmom, wsigma
-  int jMom = 0; int firstValid = 0; bool allZero = true;
-  for (double p_test = pMin_; p_test <= pMax_; p_test += pStep_) {
-    if (verbose_ > 1) cout << "test momentum [MeV/c] = " << p_test << endl; 
-    double c2 = C2Function(traj, seglens, cumseglens, seghits, dthetaLin, dthetaPoly, sigma3p, p_test);
+  //iterate over pTest, compute c2 function and populate vectors
+  int firstValid = -1; bool allZero = true;
+  for (double pTest = pMin_; pTest <= pMax_; pTest += pStep_) {
+    if (verbose_ > 1) cout << "test momentum [MeV/c] = " << pTest << endl; 
+    double c2 = C2Function(traj, seglens, cumseglens, seghits, dthetaLin, dthetaPoly, sigma3p, pTest);
     if (verbose_ > 1) cout << "c2 function = " << c2 << endl; 
-    wmom[jMom] = p_test / 1000.; 
-    wc2[jMom] = c2; 
-    wsmom[jMom] = 1;
-    wsigma[jMom] = sigma * c2; 
-    if (firstValid < 0.01 && c2 > 0.01) firstValid = jMom;
+    if (firstValid < 0 && c2 > 0.01) firstValid = vectorMomentum.size();
     if (c2 > 0.) allZero = false;
-    jMom++; }
+    vectorMomentum.push_back(pTest / 1000.); 
+    vectorC2.push_back(c2); 
+    vectorMomentumError.push_back(1.);
+    vectorC2Error.push_back(sigma * c2); }
 
-  //return null is c2 function is null for all values of p test
+  //return null if c2 function is null for all values of p test
   if (allZero) {
-    if (verbose_ > 1) cout << "c2 function is zero everywhere! end fit" << endl;
-    return ScanResult(); }
+    if (verbose_ > 0) cout << "c2 function is zero everywhere! end fit" << endl;
+    return ScanResultC2(); }
+  if (firstValid < 0) firstValid = 0;
+  const int nMom = vectorMomentum.size();
 
-  //define new vectors for momentum, c2 function, error on momentum, error on c2 function only for c2!=0
-  vector<float> rmom(nMom - firstValid);
-  vector<float> rc2(nMom - firstValid);
-  vector<float> rsmom(nMom - firstValid);
-  vector<float> rsigma(nMom - firstValid);
-  for (int jp = firstValid; jp < jMom; jp++) {
-    rmom[jp - firstValid] = wmom[jp];
-    rc2[jp - firstValid] = wc2[jp];
-    rsmom[jp - firstValid] = wsmom[jp];
-    rsigma[jp - firstValid] = wsigma[jp];  }
-  if (verbose_ > 1) {
-    cout << "momentum [MeV/c] = "; for (auto i : rmom) cout << i << ' '; cout << endl;
-    cout << "c2 function = "; for (auto i : rc2) cout << i << ' '; cout << endl;
-    cout << "momentum error [MeV/c] = "; for (auto i : rsmom) cout << i << ' '; cout << endl;
-    cout << "c2 function error = "; for (auto i : rsigma) cout << i << ' '; cout << endl; }
-  
+  //define new vectors for momentum, c2 function, error on momentum, error on c2 function starting from first valid
+  vector<double> newMomentum(vectorMomentum.begin() + firstValid, vectorMomentum.end());
+  vector<double> newC2(vectorC2.begin() + firstValid, vectorC2.end());
+  vector<double> newMomentumError(vectorMomentumError.begin() + firstValid, vectorMomentumError.end());
+  vector<double> newC2Error(vectorC2Error.begin() + firstValid, vectorC2Error.end());
+  if (verbose_ > 0) {
+    cout << "momentum [GeV/c] = "; for (auto i : newMomentum) cout << i << ' '; cout << endl;
+    cout << "c2 function = "; for (auto i : newC2) cout << i << ' '; cout << endl;
+    cout << "momentum error [GeV/c] = "; for (auto i : newMomentumError) cout << i << ' '; cout << endl;
+    cout << "c2 function error = "; for (auto i : newC2Error) cout << i << ' '; cout << endl; }
+
+  //define minimum and maximum momentum of fit [GeV/c]
+  const double pMin = vectorMomentum[firstValid]; const double pMax = pMax_ / 1000.;
+
+  //define limits of fit parameters a and b
+  const double aMin = -0.5; const double aMax = 1.;
+  const double bMin = 0.; const double bMax = 5.;
+
+  //interpolation: linear interpolation between the momenta where c2 function crosses 1, used if the fit fails
+  auto interpolationFit = [&]() {
+    //search for first momentum whose c2 is greater than 1
+    int over = -1;
+    for (int j = 0; j < nMom; j++) { if (vectorC2[j] > 1) { over = j; break; } }
+    //search for last momentum whose c2 is less than 1
+    int under = -1;
+    for (int j = nMom - 1; j >= 0; j--) { if (vectorC2[j] < 1) { under = j; break; } }
+
+    double pInterpolation = 0.; double errInterpolation = 0.;
+    if (over >= 0 && under >= 0) {
+      const double p1 = vectorMomentum[over]; const double c2p1 = vectorC2[over];
+      const double p2 = vectorMomentum[under]; const double c2p2 = vectorC2[under];
+      pInterpolation = p2 + (p1 - p2) * (1 - c2p2) / (c2p1 - c2p2);
+      errInterpolation = 0.5 * (p1 - p2); }
+    //c2 never greater than 1: true momentum above pMax
+    else if (over < 0) { 
+      pInterpolation = pMax; 
+      errInterpolation = pMax - pMin; }
+    //c2 never less than 1: true momentum below pMin
+    else { 
+      pInterpolation = pMin; 
+      errInterpolation = pMax - pMin; }
+
+    if (verbose_ > 0) {
+      cout << "over = " << over << " under = " << under << endl;
+      cout << "interpolated best momentum [GeV/c] = " << pInterpolation << " and error on momentum = " << errInterpolation << endl; }
+    //return parameters a, b with associated errors as null
+    return ScanResultC2(pInterpolation, errInterpolation, newMomentum, newC2); };
+
   //define TVectorD for momentum, c2 function, error on momentum, error on c2 function 
-  TVectorD cmom(rmom.size());
-  for (size_t i = 0; i < rmom.size(); ++i) cmom[i] = rmom[i];
-  TVectorD cc2(rc2.size());
-  for (size_t i = 0; i < rc2.size(); ++i) cc2[i] = rc2[i];
-  TVectorD csmom(rsmom.size());
-  for (size_t i = 0; i < rsmom.size(); ++i) csmom[i] = rsmom[i];
-  TVectorD csigma(rsigma.size());
-  for (size_t i = 0; i < rsigma.size(); ++i) csigma[i] = rsigma[i];
+  TVectorD finalMomentum(newMomentum.size(), newMomentum.data());
+  TVectorD finalC2(newC2.size(), newC2.data());
+  TVectorD finalMomentumError(newMomentumError.size(), newMomentumError.data());
+  TVectorD finalC2Error(newC2Error.size(), newC2Error.data());
 
-  //root class for graph with x = cmom, y = cc2, dx = csmom, dy = csigma
-  TGraphErrors *gr3 = new TGraphErrors(cmom, cc2, csmom, csigma);
-  //define minimum momentum, maximum momentum, number of parameters of fit function
-  double p_min = wmom[firstValid]; double p_max = pMax_ / 1000.; int npar = 2;
-  if (verbose_ > 1) cout << "p_min [GeV/c] = " << p_min << " p_max [GeV/c] = " << p_max << endl;
-  //root class for fit to function 1 / (par[0] + par[1] / (x[0] * x[0]))
-  TF1* fitfunc = new TF1("fitfunc", funzio, p_min, p_max, npar);
-  //set limits to parameters alpha (0) in -0.5,1 and beta (1) in 0,5
-  fitfunc->SetParLimits(0, -0.5, 1.);
-  fitfunc->SetParLimits(1, -0., 5.);
+  //root class for graph with x = momentum, y = c2, dx = momentum error, dy = c2 error
+  TGraphErrors *gr3 = new TGraphErrors(finalMomentum, finalC2, finalMomentumError, finalC2Error);
+  if (verbose_ > 0) cout << "pMin [GeV/c] = " << pMin << " pMax [GeV/c] = " << pMax << endl;
+  //root class for fit to function 1 / (a + b / (p * p))
+  int nParameters = 2;
+  TF1* fitC2 = new TF1("fitC2", fitFunction, pMin, pMax, nParameters);
+  //set limits to parameters a (0) and b (1)
+  fitC2->SetParLimits(0, aMin, aMax);
+  fitC2->SetParLimits(1, bMin, bMax);
   //execute fit using root class defined above
-  gr3->Fit("fitfunc"); 
+  gr3->Fit("fitC2"); 
 
-  //find optimal values of function parameters alpha, beta with associated errors
-  double alpha, dalpha, beta, dbeta;
-  alpha = fitfunc->GetParameter(0); dalpha = fitfunc->GetParError(0);
-  beta = fitfunc->GetParameter(1); dbeta = fitfunc->GetParError(1); 
+  //find optimal values of function parameters a, b with associated errors
+  double a = fitC2->GetParameter(0); double da = fitC2->GetParError(0);
+  double b = fitC2->GetParameter(1); double db = fitC2->GetParError(1); 
 
   //remove root objects used above for saving memory
-  gr3->Delete(); fitfunc->Delete();
+  gr3->Delete(); fitC2->Delete();
   //compute best p and error p 
-  double p_best = sqrt(beta / (1 - alpha));
-  double p_error = sqrt(pow(dbeta, 2.) / (4 * beta * (1 - alpha)) + beta * pow(dalpha, 2.) / (4 * pow((1 - alpha), 3.)));
+  double pBest = sqrt(b / (1 - a));
+  double pError = sqrt(pow(db, 2.) / (4 * b * (1 - a)) + b * pow(da, 2.) / (4 * pow((1 - a), 3.)));
 
-  //return best p, error p 
-  if (verbose_ > 1) {
-    cout << "alpha = " << alpha << " and error on alpha = " << dalpha << endl;
-    cout << "beta = " << beta << " and error on beta = " << dbeta << endl;
-    cout << "best momentum [GeV/c] = " << p_best << " and error on momentum = " << p_error << endl; }
-  auto dalpham = fabs(alpha + 0.5);
-  auto dalphap = fabs(alpha - 1.);
-  auto dbetam = fabs(beta - 0.);
-  auto dbetap = fabs(beta - 5.);
-  float lim = 0.001;
+  if (verbose_ > 0) {
+    cout << "a = " << a << " and error on a = " << da << endl;
+    cout << "b = " << b << " and error on b = " << db << endl;
+    cout << "best momentum [GeV/c] = " << pBest << " and error on momentum = " << pError << endl; }
 
-  if (dalpham < lim || dalphap < lim || dbetam < lim || dbetap < lim) {
-    if (verbose_ > 1) {
-      cout << "best momentum " << p_best << " but fit parameters at limit" << endl;
-      cout << "computing C2NaiveFit" << endl; }
-    return C2NaiveFit(traj, seglens, cumseglens, seghits, dthetaLin, dthetaPoly, sigma3p, sigma); }
-  else if (p_best < p_min) {
-    if (verbose_ > 1) {
-      cout << "best momentum " << p_best << " less than p_min " << p_min << endl;
-      cout << "computing C2NaiveFit" << endl; }
-    return C2NaiveFit(traj, seglens, cumseglens, seghits, dthetaLin, dthetaPoly, sigma3p, sigma); }
-  else if (p_best > p_max) {
-    if (verbose_ > 1) {
-      cout << "best momentum " << p_best << " greater than p_max " << p_max << endl;
-      cout << "computing C2NaiveFit" << endl; }
-    return C2NaiveFit(traj, seglens, cumseglens, seghits, dthetaLin, dthetaPoly, sigma3p, sigma); }
+  //check if fit parameters are at limits or best momentum is out of range, in that case use interpolation
+  const double lim = 0.001;
+  if (fabs(a - aMin) < lim || fabs(a - aMax) < lim || fabs(b - bMin) < lim || fabs(b - bMax) < lim) {
+    if (verbose_ > 0) cout << "best momentum " << pBest << " but fit parameters at limit, computing interpolation" << endl;
+    return interpolationFit(); }
+  if (pBest < pMin) {
+    if (verbose_ > 0) cout << "best momentum " << pBest << " less than pMin " << pMin << ", computing interpolation" << endl;
+    return interpolationFit(); }
+  if (pBest > pMax) {
+    if (verbose_ > 0) cout << "best momentum " << pBest << " greater than pMax " << pMax << ", computing interpolation" << endl;
+    return interpolationFit(); }
 
-  return ScanResult(
-    p_best, p_error, p_min, p_max,
-    alpha, dalpha, beta, dbeta,
-    rmom, rc2); }
+  return ScanResultC2(
+    pBest, pError, newMomentum, newC2); }
 
 //perform fit of likelihood function to determine MCS momentum
-void TrajectoryMCSFitterICARUS::LikelihoodFit(
+const TrajectoryMCSFitterICARUS::ScanResultLL TrajectoryMCSFitterICARUS::LikelihoodFit(
   const recob::TrackTrajectory& traj, 
-  std::vector<float>& seglens, 
-  std::vector<float>& cumseglens, 
+  std::vector<double>& seglens, 
+  std::vector<double>& cumseglens, 
   std::vector<int>& seghits, 
-  std::vector<float> dthetaLin, 
-  std::vector<float> dthetaPoly, 
-  double sigma3p, 
-  double& best_p, 
-  double& error_p) const {
-  if (verbose_ > 1) cout << "starting likelihood function fit to find MCS momentum..." << endl;
+  std::vector<double> dthetaLin, 
+  std::vector<double> dthetaPoly, 
+  double sigma3p) const {
+  if (verbose_ > 0) cout << "starting likelihood function fit to find MCS momentum..." << endl;
+  //define vectors of test momenta [GeV/c] and log likelihood values
+  vector<double> vectorMomentum; 
+  vector<double> vectorLikelihood;
   //initalize best value index, best log likelihood
-  int best_idx = -1;
-  double best_logL = std::numeric_limits<double>::max();
-  double step = 10;
-  //define vector vlogL, that will be filled with log likelihood values
-  std::vector<float> vlogL;
+  int bestIndex = -1;
+  double bestLikelihood = numeric_limits<double>::max();
 
-  //iterate over p_test, compute log likelihood values
-  for (double p_test = pMin_; p_test <= pMax_; p_test += step) {
-    double logL = LikelihoodFunction(traj, seglens, cumseglens, seghits, dthetaLin, dthetaPoly, sigma3p, p_test);
-    if (verbose_ > 1) cout << "test momentum for log likelihood [MeV/c] = " << p_test << " log likelihood = " << logL << endl; 
-    if (logL < best_logL) {
-      best_p = p_test;
-      best_logL = logL;
-      best_idx = vlogL.size(); }
-    //add current loglikelihood to vector vlogL
-    vlogL.push_back(logL); }
+  //iterate over pTest, compute log likelihood values
+  for (double pTest = pMin_; pTest <= pMax_; pTest += pStep_) {
+    double logL = LikelihoodFunction(traj, seglens, cumseglens, seghits, dthetaLin, dthetaPoly, sigma3p, pTest);
+    if (verbose_ > 1) cout << "test momentum for log likelihood [MeV/c] = " << pTest << " log likelihood = " << logL << endl; 
+    if (logL < bestLikelihood) {
+      bestLikelihood = logL;
+      bestIndex = vectorLikelihood.size(); }
+    vectorMomentum.push_back(pTest / 1000.);
+    vectorLikelihood.push_back(logL); }
 
-  //compute uncertainty from left side scan
-  double lunc = -1.0;
-  //check if best value index is not the first
-  if (best_idx > 0) {
-    //iterate for every index on the left of best value index
-    for (int j = best_idx - 1; j >= 0; j--) {
-      //define difference between best value loglikelood and some loglikelihood on the left
-      double dLL = vlogL[j] - vlogL[best_idx];
-      //define left uncertainty if this difference is less than 0.5
-      if (dLL < 0.5) lunc = (best_idx - j) * step; 
-      else break; } }
-
-  //compute uncertainty from right side scan
-  double runc = -1.0;
-  //check if best value index is not the last
-  if (best_idx < int(vlogL.size() - 1)) {  
-    //iterate for every index on the right of best value index
-    for (unsigned int j = best_idx + 1; j < vlogL.size(); j++) {
-      //define difference between best value loglikelood and some loglikelihood on the right
-      double dLL = vlogL[j] - vlogL[best_idx];
-      //define right uncertainty if this difference is less than 0.5
-      if (dLL < 0.5) runc = (j - best_idx) * step;
-      else break; } }
-
-  //print best value of momentum and uncertainty
-  best_p = best_p/1000.; error_p = max(lunc,runc)/1000.;
-  if (verbose_ > 1) cout << "best_p from likelihood [GeV/c] = " << best_p << "; uncertainty [GeV/c] = " << error_p << endl; 
-
-  return; }
-
-const TrajectoryMCSFitterICARUS::ScanResult TrajectoryMCSFitterICARUS::C2NaiveFit(
-  const recob::TrackTrajectory& traj, 
-  std::vector<float>& seglens, 
-  std::vector<float>& cumseglens, 
-  std::vector<int>& seghits, 
-  std::vector<float> dthetaLin, 
-  std::vector<float> dthetaPoly, 
-  double sigma3p, 
-  double sigma) const {
-  if (verbose_ > 1) cout << "starting c2 function fit to find MCS momentum..." << endl; 
-  //define number of steps
-  int nMom = ceil((pMax_ - pMin_) / pStep_) + 1;
-  //define vector momentum, c2 function, error on momentum, error on c2 function 
-  vector<float> wmom(nMom);
-  vector<float> wc2(nMom);
-  vector<float> wsmom(nMom);
-  vector<float> wsigma(nMom);
-
-  //iterate over p_test, compute c2 function and populate vectors wmom, wc2, wsmom, wsigma
-  int jMom = 0; int firstValid = 0; bool allZero = true;
-  for (double p_test = pMin_; p_test <= pMax_; p_test += pStep_) {
-    if (verbose_ > 1) cout << "test momentum [MeV/c] = " << p_test << endl; 
-    double c2 = C2Function(traj, seglens, cumseglens, seghits, dthetaLin, dthetaPoly, sigma3p, p_test);
-    if (verbose_ > 1) cout << "c2 function = " << c2 << endl;
-    wmom[jMom] = p_test / 1000.; 
-    wc2[jMom] = c2; 
-    if (wc2[jMom] > 0.) {
-      if (verbose_ > 1) cout << "index = " << jMom << " p_test [GeV/c] = " << wmom[jMom] << " C2(p_test) = " << wc2[jMom] << endl; }
-    wsmom[jMom] = 1;
-    wsigma[jMom] = sigma * c2; 
-    if (firstValid < 0.01 && c2 > 0.01) firstValid = jMom;
-    if (c2 > 0.) allZero = false;
-    jMom++; }
-
-  //define minimum momentum and maximum momentum of fit 
-  double p_min = wmom[firstValid]; double p_max = pMax_ / 1000.; 
-
-  //return null is c2 function is null for all values of p test
-  if (allZero) {
-    if (verbose_ > 1) cout << "c2 function is zero everywhere! end fit" << endl;
-    return ScanResult(); }
-
- //define new vectors for momentum, c2 function, error on momentum, error on c2 function only for c2!=0
-  vector<float> rmom(nMom - firstValid);
-  vector<float> rc2(nMom - firstValid);
-  vector<float> rsmom(nMom - firstValid);
-  vector<float> rsigma(nMom - firstValid);
-  for (int jp = firstValid; jp < jMom; jp++) {
-    rmom[jp - firstValid] = wmom[jp];
-    rc2[jp - firstValid] = wc2[jp];
-    rsmom[jp - firstValid] = wsmom[jp];
-    rsigma[jp - firstValid] = wsigma[jp]; }
-
-  //search for first momentum whose c2 is greater than 1
-  int over = -1;
-  for (unsigned int jp = 0; jp < wmom.size(); jp++) {
-    if (wc2[jp] > 1) {over = jp; break; } }
-  auto p1 = wmom[over]; auto c2p1 = wc2[over];
-  if (verbose_ > 1) cout << "over = " << over << " p1 [GeV/c] = " << p1 << " C2(p1) = " << c2p1 << endl;
-
-  //search for first momentum whose c2 is less than 1
-  int under = -1;
-  for (unsigned int jp = wmom.size() - 1; jp >= 0; jp--) {
-    if(wc2[jp] < 1) {under = jp; break; } }
-  auto p2 = wmom[under]; auto c2p2 = wc2[under];
-  if (verbose_ > 1) cout << "under = " << under << " p2 [GeV/c] = " << p2 << " C2(p2) = " << c2p2 << endl;
+  //return null if log likelihood is not valid for any value of p test
+  if (bestIndex < 0) {
+    if (verbose_ > 0) cout << "log likelihood is not valid for any momentum! end fit" << endl;
+    return ScanResultLL(); }
   
-  //compute best p and error p with a naive fit
-  double p_best; double p_error;
-  if (under == -1) { 
-    p_best = wmom[wmom.size()-1]; p_error = 0; }
-  if (over == -1) { 
-    p_best = wmom[0]; p_error = 0; }
-  if (under >= 0 && over >= 0) {
-    p_best = p2 + (p1-p2) * (1-c2p2) / (c2p1-c2p2);
-    p_error = 0.5 * (p1-p2); }
+  //compute error [MeV/c] from left side scan, -1 if log likelihood already rises by 0.5 at the first iteration
+  double pErrorLeft = -1.0;
+  for (int j = bestIndex - 1; j >= 0; j--) {
+    if (vectorLikelihood[j] - bestLikelihood < 0.5) pErrorLeft = (bestIndex - j) * pStep_ / 1000; 
+    else break; }
 
-  //return parameters alpha, beta with associated errors as null
-  double alpha = 0.; double beta = 0.; 
-  double dalpha = 0.; double dbeta = 0.; 
+  //compute error [MeV/c] from right side scan
+  double pErrorRight = -1.0;
+  for (int j = bestIndex + 1; j < (int)vectorLikelihood.size(); j++) {
+    if (vectorLikelihood[j] - bestLikelihood < 0.5) pErrorRight = (j - bestIndex) * pStep_;
+    else break; }
 
-  //return best p, error p 
-  if (verbose_ > 1) cout << "naive best momentum [GeV/c] = " << p_best << " and error on momentum = " << p_error << endl;
-  if (p_best < p_min) {
-    if (verbose_ > 1) cout << "naive best momentum " << p_best << " less than p_min " << p_min << endl; }
-  else if (p_best > p_max) {
-    if (verbose_ > 1) cout << "naive best momentum " << p_best << " greater than p_max " << p_max << endl; }
-  return ScanResult(
-    p_best, p_error, p_min, p_max,
-    alpha, dalpha, beta, dbeta,
-    rmom, rc2); }
+  //momentum and uncertainties in [GeV/c]
+  if (verbose_ > 0) cout << "best_p from likelihood [GeV/c] = " << vectorMomentum[bestIndex] << "; uncertainty [GeV/c] = " << max(pErrorLeft, pErrorRight) << endl; 
+
+  return ScanResultLL(vectorMomentum[bestIndex], max(pErrorLeft, pErrorRight), vectorMomentum, vectorLikelihood); 
+}
 
 //fill linear matrix with off-diag MCS terms
 const void TrajectoryMCSFitterICARUS::FillOffDiagMCSLin(
@@ -1497,7 +1406,6 @@ unsigned int TrajectoryMCSFitterICARUS::Plane(
   size_t index) const {
   return get<1>(pdata[index])->WireID().Plane;
 }
-
 
 //check if index point is in plane
 bool TrajectoryMCSFitterICARUS::IsInPlane(
@@ -1627,7 +1535,7 @@ double TrajectoryMCSFitterICARUS::ThetaErrFactor(
   return sqrt(1 - pow(L1D, 2)/pow(L2D, 2));
 }
 
-//check to exclude hit near cathode
+//check to exclude hit less than 15 cm from the cathode
 bool TrajectoryMCSFitterICARUS::CathodeCheck(
   const recob::TrackTrajectory& traj, 
   size_t index) const {
@@ -1651,8 +1559,8 @@ bool TrajectoryMCSFitterICARUS::UsePoint(
 
 //select the segments used in the fit and check that there are enough of them
 TrajectoryMCSFitterICARUS::SegmentWindow TrajectoryMCSFitterICARUS::ThetaCheck(
-  const vector<float>& dthetaLin, 
-  const vector<float>& dthetaPoly) const {
+  const vector<double>& dthetaLin, 
+  const vector<double>& dthetaPoly) const {
   SegmentWindow w;
   const int nLin = dthetaLin.size();
 

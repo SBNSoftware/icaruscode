@@ -182,18 +182,28 @@ namespace trkf {
         recob::TrackTrajectory::Flags_t flags(traj.NPoints());
         const recob::TrackTrajectory tt(traj, std::move(flags));
         return fitMcs(tt); }
+    
+    struct ScanResultC2 {
+      double bestp = 0., errp = 0.;
+      std::vector<double> testp;
+      std::vector<double> c2;
+      bool valid = false;
+      ScanResultC2() = default;
+      ScanResultC2(
+        double best, double err, 
+        std::vector<double> test, std::vector<double> c2values) :
+          bestp(best), errp(err), testp(std::move(test)), c2(std::move(c2values)), valid(true) {} };
 
-    struct ScanResult {
-      public:
-        double bestp, errp, minp, maxp;
-        double alpha, dalpha, beta, dbeta;
-        ScanResult() = default;
-        ScanResult(
-          double best, double err, double min, double max,
-          double a, double da, double b, double db,
-          std::vector<float> test, std::vector<float> c2) :
-            bestp(best), errp(err), minp(min), maxp(max),
-            alpha(a), dalpha(da), beta(b), dbeta(db) {} };
+    struct ScanResultLL {
+      double bestp = 0., errp = 0.;
+      std::vector<double> testp;
+      std::vector<double> logL;
+      bool valid = false;
+      ScanResultLL() = default;
+      ScanResultLL(
+        double best, double err,
+        std::vector<double> test, std::vector<double> logLvalues) :
+          bestp(best), errp(err), testp(std::move(test)), logL(std::move(logLvalues)), valid(true) {} };
 
     struct SegmentWindow {
       unsigned int first = 0; 
@@ -208,8 +218,8 @@ namespace trkf {
     void breakTrajInSegments(
       const recob::TrackTrajectory& traj, 
       std::vector<size_t>& breakpoints, 
-      std::vector<float>& seglens, 
-      std::vector<float>& cumseglens, 
+      std::vector<double>& seglens, 
+      std::vector<double>& cumseglens, 
       std::vector<int>& seghits, 
       std::vector<int>& cumseghits,
       std::vector<int>& segsides) const;
@@ -245,60 +255,48 @@ namespace trkf {
       std::vector<double>& delta3p, 
       int wire_skip) const;
     
-    static Double_t funzio(
+    static Double_t fitFunction(
       Double_t *x, 
       Double_t *par) { return 1. / (par[0] + par[1] / x[0] / x[0]); } 
 
     const double C2Function(
       const recob::TrackTrajectory& traj, 
-      std::vector<float>& seglens, 
-      std::vector<float>& cumseglens, 
+      std::vector<double>& seglens, 
+      std::vector<double>& cumseglens, 
       std::vector<int>& seghits, 
-      std::vector<float> dthetaLin, 
-      std::vector<float> dthetaPoly, 
+      std::vector<double> dthetaLin, 
+      std::vector<double> dthetaPoly, 
       double sigma3p, 
       double p) const;
 
-    const ScanResult C2Fit(
+    const ScanResultC2 C2Fit(
       const recob::TrackTrajectory& traj, 
-      std::vector<float>& seglens, 
-      std::vector<float>& cumseglens, 
+      std::vector<double>& seglens, 
+      std::vector<double>& cumseglens, 
       std::vector<int>& seghits, 
-      std::vector<float> dthetaLin, 
-      std::vector<float> dthetaPoly, 
-      double sigma3p, 
-      double sigma) const;
-
-    const ScanResult C2NaiveFit(
-      const recob::TrackTrajectory& traj, 
-      std::vector<float>& seglens, 
-      std::vector<float>& cumseglens, 
-      std::vector<int>& seghits, 
-      std::vector<float> dthetaLin, 
-      std::vector<float> dthetaPoly, 
+      std::vector<double> dthetaLin, 
+      std::vector<double> dthetaPoly, 
       double sigma3p, 
       double sigma) const;
 
     const double LikelihoodFunction(
       const recob::TrackTrajectory& traj, 
-      std::vector<float>& seglens, 
-      std::vector<float>& cumseglens, 
+      std::vector<double>& seglens, 
+      std::vector<double>& cumseglens, 
       std::vector<int>& seghits, 
-      std::vector<float> dthetaLin, 
-      std::vector<float> dthetaPoly, 
+      std::vector<double> dthetaLin, 
+      std::vector<double> dthetaPoly, 
       double sigma3p, 
       double p) const;
 
-    void LikelihoodFit(
+    const ScanResultLL LikelihoodFit(
       const recob::TrackTrajectory& traj, 
-      std::vector<float>& seglens, 
-      std::vector<float>& cumseglens, 
+      std::vector<double>& seglens, 
+      std::vector<double>& cumseglens, 
       std::vector<int>& seghits, 
-      std::vector<float> dthetaLin, 
-      std::vector<float> dthetaPoly, 
-      double sigma3p, 
-      double& best_p,
-      double& error_p) const;
+      std::vector<double> dthetaLin, 
+      std::vector<double> dthetaPoly, 
+      double sigma3p) const;
     
     const void FillOffDiagMCSLin(
       TMatrixDSym& mat, 
@@ -390,8 +388,8 @@ namespace trkf {
       size_t index) const;
 
     SegmentWindow ThetaCheck(
-      const std::vector<float>& dthetaLin, 
-      const std::vector<float>& dthetaPoly) const;
+      const std::vector<double>& dthetaLin, 
+      const std::vector<double>& dthetaPoly) const;
 
     // functions in MCS producer
 
@@ -417,13 +415,13 @@ namespace trkf {
       geo::GeometryCore const* geom) { geom_ = geom; }
 
     void setPFPT0(
-      float t0) { PFPT0_ = t0; }
+      double t0) { PFPT0_ = t0; }
       
     void setCRTT0(
-      float t0) { CRTT0_ = t0; }
+      double t0) { CRTT0_ = t0; }
 
     void setT0(
-      float t0) { T0_ = t0; }
+      double t0) { T0_ = t0; }
 
     void sethasPFPT0(
       bool has) { hasPFPT0_ = has; }
@@ -435,7 +433,7 @@ namespace trkf {
       bool has) { hasT0_ = has; }
 
     void setRangeP(
-      float r) { rangeP = r; }
+      double r) { rangeP = r; }
 
     double mass() const {
       if (abs(pID_) == 13) return mumass;
@@ -498,8 +496,8 @@ namespace trkf {
     geo::WireReadoutGeom const* wr_;
     geo::GeometryCore const* geom_;
     detinfo::DetectorPropertiesData const* detProp_;
-    float PFPT0_; float CRTT0_; float T0_;
+    double PFPT0_; double CRTT0_; double T0_;
     bool hasPFPT0_; bool hasCRTT0_; bool hasT0_;
-    float rangeP; }; }
+    double rangeP; }; }
 
 #endif

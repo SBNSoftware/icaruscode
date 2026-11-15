@@ -205,7 +205,7 @@ void trkf::MCSFitProducerICARUS::produce(art::Event & e) {
 
     // T0 from PFP associated data
     bool hasPFPT0 = false;
-    double PFPT0 = std::numeric_limits<float>::signaling_NaN();
+    double PFPT0 = std::numeric_limits<double>::signaling_NaN();
     if (fPFPT0.isValid()) {
       auto const& PFPT0s = fPFPT0.at(pfp.key());
       if (!PFPT0s.empty()) {
@@ -217,7 +217,7 @@ void trkf::MCSFitProducerICARUS::produce(art::Event & e) {
 
     // T0 from CRT Hit
     bool hasCRTT0 = false;
-    double CRTT0 = std::numeric_limits<float>::signaling_NaN();
+    double CRTT0 = std::numeric_limits<double>::signaling_NaN();
     if (fCRTT0.isValid()) {
       auto const& CRTT0s = fCRTT0.at(trkPtr.key());
       if (!CRTT0s.empty()) {
@@ -242,7 +242,7 @@ void trkf::MCSFitProducerICARUS::produce(art::Event & e) {
 
     // convert T0 from ns to µs
     bool hasT0 = false;
-    double T0 = std::numeric_limits<float>::signaling_NaN();
+    double T0 = std::numeric_limits<double>::signaling_NaN();
     if (hasPFPT0) T0 = PFPT0 * 1e-3; 
     else if (hasCRTT0) T0 = CRTT0 * 1e-3;
     hasT0 = hasPFPT0 || hasCRTT0;
