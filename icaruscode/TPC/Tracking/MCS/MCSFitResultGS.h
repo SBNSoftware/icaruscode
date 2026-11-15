@@ -5,10 +5,9 @@
 
 namespace recob {
   /**
-   * @file  icaruscode/TPC/Tracking/MCS/MCSFitResultGS.h
-   * @class recob::MCSFitResultGS
-   * @brief Class storing the result of fit of Multiple Coulomb Scattering angles between segments within a Track or Trajectory. It stores: 
-   * the PID 
+   * @file    icaruscode/TPC/Tracking/MCS/MCSFitResultGS.h
+   * @class   recob::MCSFitResultGS
+   * @brief   Class storing the result of Multiple Coulomb Scattering fit. It stores: 
    * the best value and error of C2-fit momentum [GeV/c]
    * the test momentum and the C2 function values
    * the best value and error of likelihood-fit momentum [GeV/c]
@@ -21,10 +20,10 @@ namespace recob {
    * the vector of cumulative segment number of hits
    * the vector of segment lengths [cm]
    * the vector of cumulative segment lengths [cm]
+   * the vector of segment sides
    * the vector of linear-fit measured angles [rad]
    * the vector of polygonal measured angles [rad]
-   * the validity check if fit is successful
-   *
+   * the validity check if MCS fit is successful
    * @author  G. Chiello (Pisa, ICARUS) and F. Varanini (Padova, ICARUS)
    * @date    2026
    * @version 1.0

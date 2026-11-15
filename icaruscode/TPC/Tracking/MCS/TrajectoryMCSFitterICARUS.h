@@ -24,6 +24,14 @@
 #include "lardata/RecoBaseProxy/Track.h" //needed only if you do use the proxies
 
 namespace trkf {
+  /**
+   * @file    larreco/RecoAlg/TrajectoryMCSFitterICARUS.h
+   * @class   trkf::TrajectoryMCSFitterICARUS
+   * @brief   Header for the Multiple Coulomb Scattering fit.
+   * @author  G. Chiello (Pisa, ICARUS) and F. Varanini (Padova, ICARUS)
+   * @date    2026
+   * @version 1.0
+   */
   class TrajectoryMCSFitterICARUS {
   public:
     struct Config {

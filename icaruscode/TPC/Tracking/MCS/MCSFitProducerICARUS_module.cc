@@ -56,6 +56,14 @@
 #include <memory>
 
 namespace trkf {
+  /**
+   * @file    icaruscode/TPC/Tracking/MCS/MCSFitProducerICARUS_module.cc
+   * @class   trkf::MCSFitProducerICARUS
+   * @brief   Producer for the Multiple Coulomb Scattering fit.
+   * @author  G. Chiello (Pisa, ICARUS) and F. Varanini (Padova, ICARUS)
+   * @date    2026
+   * @version 1.0
+   */
   class MCSFitProducerICARUS : public art::EDProducer {
   public:
     struct Inputs {
