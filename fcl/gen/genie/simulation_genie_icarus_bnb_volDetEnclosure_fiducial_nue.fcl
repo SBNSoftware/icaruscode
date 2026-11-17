@@ -1,7 +1,7 @@
 # Author: Nupur Oza
 # fcl to generate BNB neutrinos and keep only events with a CC nue/nuebar
 
-#include "simulation_genie_icarus_bnb_volDetEnclosure.fcl"
+#include "simulation_genie_icarus_bnb_volDetEnclosure_fiducial.fcl"
 #include "FilterNeutrinoActive.fcl"
 
 physics.filters.nueActive: @local::icarus_FilterNueActive
