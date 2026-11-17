@@ -172,7 +172,7 @@ local setdrifters = [g.pnode({
 local yzmap_filter = {
   type: "YZMap", name: "yzmap_filter",
   data: {
-    filename: 'yzmap_icarus_v3_run1.json',
+    filename: std.extVar('YZMapJson'),
     bin_width: 10*wc.cm, bin_height: 10*wc.cm,
     yoffset: 180*wc.cm, zoffset: 900*wc.cm,
     nbinsy: 31, nbinsz: 180,
@@ -182,7 +182,7 @@ local yzmap_filter = {
 local yzmap_gain = {
   type: "YZMap", name: "yzmap_gain",
   data: {
-    filename: 'yzmap_gain_icarus_v3_run1.json',
+    filename: std.extVar('YZScaleMapJson'),
     bin_width: 10*wc.cm, bin_height: 10*wc.cm,
     yoffset: 180*wc.cm, zoffset: 900*wc.cm,
     nbinsy: 31, nbinsz: 180,
