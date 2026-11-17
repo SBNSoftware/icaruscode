@@ -1,0 +1,10 @@
+# Author: Nupur Oza
+# fcl to generate BNB neutrinos and keep only events with a CC nue/nuebar
+
+#include "simulation_genie_icarus_bnb_volDetEnclosure.fcl"
+#include "FilterNeutrinoActive.fcl"
+
+physics.filters.nueActive: @local::icarus_FilterNueActive
+physics.filters.nueActive.weakCurrent: "CC"
+physics.simulate: [ @sequence::physics.simulate, nueActive ]
+outputs.rootoutput.SelectEvents: [ simulate ]

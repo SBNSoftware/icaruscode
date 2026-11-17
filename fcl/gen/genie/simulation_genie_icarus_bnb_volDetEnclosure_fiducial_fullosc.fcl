@@ -1,0 +1,7 @@
+# Author: Nupur Oza
+# fcl to generate BNB neutrinos with full flavor swap (numu <-> nue), 
+# and keep only events with a CC nue/nuebar
+
+#include "simulation_genie_icarus_bnb_volDetEnclosure_fiducial_nue.fcl"
+
+physics.producers.generator.MixerConfig: "map 14:12 -14:-12 12:14 -12:-14"
