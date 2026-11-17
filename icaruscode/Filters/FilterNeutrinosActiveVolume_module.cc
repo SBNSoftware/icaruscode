@@ -313,7 +313,7 @@ class icarus::simfilter::FilterNeutrinosActiveVolume: public art::EDFilter {
     bool qualifyingWeakCurrent(int const CCNC) const;
     
     /// Returns whether the incoming neutrino flavor is qualifying.
-    bool qualifyingNeutrinoPDG(int const pdg) const;
+    bool neutrinoPDG(int const pdg) const;
     
     /// Returns whether the location is among the accepted ones.
     bool qualifyingLocation(geo::Point_t const& location) const;
@@ -637,7 +637,7 @@ bool icarus::simfilter::FilterNeutrinosActiveVolume::qualifying
   //
   // neutrino flavor
   //
-  if (!fNeutrinoPDG.empty() && !qualifyingNeutrinoPDG(nu.PdgCode()))
+  if (!fNeutrinoPDG.empty() && !neutrinoPDG(nu.PdgCode()))
     return false;
   
   //
@@ -694,7 +694,7 @@ bool icarus::simfilter::FilterNeutrinosActiveVolume::qualifyingWeakCurrent
 
 
 // -----------------------------------------------------------------------------
-bool icarus::simfilter::FilterNeutrinosActiveVolume::qualifyingNeutrinoPDG
+bool icarus::simfilter::FilterNeutrinosActiveVolume::neutrinoPDG
   (int const pdg) const
 {
   mf::LogTrace log(fLogCategory);
@@ -705,7 +705,7 @@ bool icarus::simfilter::FilterNeutrinosActiveVolume::qualifyingNeutrinoPDG
   log << " => :-" << (pass? ')': '(');
   return pass;
   
-} // icarus::simfilter::FilterNeutrinosActiveVolume::qualifyingNeutrinoPDG()
+} // icarus::simfilter::FilterNeutrinosActiveVolume::neutrinoPDG()
 
 
 // -----------------------------------------------------------------------------
