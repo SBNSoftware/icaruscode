@@ -8,4 +8,10 @@ icarus_FilterNeutrinoActive: {
   
 } # icarus_FilterNeutrinoActive
 
+# keep only electron (anti)neutrino interactions in the active volume
+icarus_FilterNueActive: {
+  @table::icarus_FilterNeutrinoActive
+  neutrinoPDG: [ 12, -12 ]
+} # icarus_FilterNueActive
+
 END_PROLOG
