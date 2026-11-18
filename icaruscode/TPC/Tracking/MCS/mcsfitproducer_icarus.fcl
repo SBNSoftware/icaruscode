@@ -28,8 +28,8 @@ mcsfitproducericarus_raw: {
 	fitMode: 0
 	fullTrackMode: 0
 	selectionMode: 0
-	wireSkip: 0
-	verbose: 1 } }
+	wireSkip: 3
+	verbose: 0 } }
 
 mcsfitproducer3D: {
   module_type:  MCSFitProducerICARUS
@@ -59,8 +59,8 @@ mcsfitproducer3D: {
 	fitMode: 0
 	fullTrackMode: 0
 	selectionMode: 0
-	wireSkip: 0
-	verbose: 1 } }
+	wireSkip: 3
+	verbose: 0 } }
 
 mcsfitproducer2DI1: {
   module_type: MCSFitProducerICARUS
@@ -90,8 +90,8 @@ mcsfitproducer2DI1: {
 	fitMode: 0
 	fullTrackMode: 0
 	selectionMode: 0
-	wireSkip: 0
-	verbose: 1 } }
+	wireSkip: 3
+	verbose: 0 } }
 
 mcsfitproducer2DI2: {
   module_type: MCSFitProducerICARUS
@@ -121,8 +121,8 @@ mcsfitproducer2DI2: {
 	fitMode: 0
 	fullTrackMode: 0
 	selectionMode: 0
-	wireSkip: 0
-	verbose: 1 } }
+	wireSkip: 3
+	verbose: 0 } }
 
 mcsfitproducer2DC: {
   module_type: MCSFitProducerICARUS
@@ -152,7 +152,7 @@ mcsfitproducer2DC: {
 	fitMode: 0
 	fullTrackMode: 0
 	selectionMode: 0
-	wireSkip: 0
-	verbose: 1 } }
+	wireSkip: 3
+	verbose: 0 } }
 
 END_PROLOG
