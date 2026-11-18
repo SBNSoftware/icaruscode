@@ -17,8 +17,10 @@
 #include "art/Framework/Services/Registry/ServiceHandle.h"
 #include "art/Persistency/Common/PtrMaker.h"
 #include "art/Utilities/ToolMacros.h"
+#include "art/Utilities/ToolConfigTable.h"
 #include "cetlib/cpu_timer.h"
-#include "fhiclcpp/ParameterSet.h"
+#include "fhiclcpp/types/OptionalAtom.h"
+#include "fhiclcpp/types/Atom.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
 
 #include "lardata/DetectorInfoServices/DetectorClocksService.h"
@@ -257,11 +259,54 @@ namespace daq
     using microseconds = util::quantities::microsecond;
     using nanoseconds = util::quantities::nanosecond;
   public:
-    explicit TriggerDecoderV3(fhicl::ParameterSet const &pset);
+    /// FHiCL configuration object.
+    struct Config {
+      using Name = fhicl::Name;
+      using Comment = fhicl::Comment;
+      
+      fhicl::Atom<art::InputTag> TrigConfigLabel {
+        Name{ "TrigConfigLabel" },
+        Comment{ "tag of the trigger DAQ fragment data product" }
+      };
+      
+      fhicl::Atom<unsigned int> FPGAtickLength {
+        Name{ "FPGAtickLength" },
+        Comment{ "duration of the trigger FPGA tick [nanoseconds]" },
+        25
+      };
+      
+      fhicl::Atom<bool> AllowDefaultLVDSmap {
+        Name{ "AllowDefaultLVDSmap" },
+        Comment{ "use a default LVDS map if DB not available (may be wrong)" },
+        false
+      };
+      
+      fhicl::Atom<bool> DiagnosticOutput {
+        Name{ "DiagnosticOutput" },
+        Comment{ "enable additional output on console" },
+        false
+      };
+      
+      fhicl::Atom<bool> Debug {
+        Name{ "Debug" },
+        Comment{ "enable debugging output (including packet dump) on console" },
+        false
+      };
+      
+      fhicl::OptionalAtom<long long int> TimeOffset {
+        Name{ "TimeOffset" },
+        Comment{ "disabled: do not use" }
+      };
+      
+    }; // Config
+    
+    using Parameters = art::ToolConfigTable<Config>;
+    
+    explicit TriggerDecoderV3(Parameters const& params);
 
     virtual void consumes(art::ConsumesCollector& collector) override;
     virtual void produces(art::ProducesCollector&) override;
-    virtual void configure(const fhicl::ParameterSet&) override;
+    virtual void configure(const fhicl::ParameterSet&) override {}
     virtual void initializeDataProducts() override;
     virtual void setupRun(art::Run const& run) override;
     virtual void process_fragment(const artdaq::Fragment &fragment) override;
@@ -279,11 +324,22 @@ namespace daq
     std::unique_ptr<RelativeTriggerCollection> fRelTrigger;
     ExtraInfoPtr fTriggerExtra;
     BeamGateInfoPtr fBeamGateInfo;
-    art::InputTag fTriggerConfigTag; ///< Data product with hardware trigger configuration.
-    unsigned int fFPGAtickLength; ///< Tick duration of FPGA clock [ns]
-    bool fAllowDefaultLVDSmap; ///< Allow LVDS mapping without mapping database.
-    bool fDiagnosticOutput; ///< Produces large number of diagnostic messages, use with caution!
-    bool fDebug; ///< Use this for debugging this tool
+    
+    // --- BEGIN --- Configuration parameters ----------------------------------
+    /// Data product with hardware trigger configuration.
+    art::InputTag const fTriggerConfigTag;
+    
+    unsigned int const fFPGAtickLength; ///< Tick duration of FPGA clock [ns]
+    
+    /// Allow LVDS mapping without mapping database.
+    bool const fAllowDefaultLVDSmap;
+    
+    /// Produces large number of diagnostic messages, use with caution!
+    bool const fDiagnosticOutput;
+    
+    bool const fDebug; ///< Use this for debugging this tool
+    
+    // ---  END  --- Configuration parameters ----------------------------------
 
     long fLastEvent = 0;
 
@@ -382,13 +438,29 @@ namespace daq
   std::string const TriggerDecoderV3::CurrentTriggerInstanceName {};
   std::string const TriggerDecoderV3::PreviousTriggerInstanceName { "previous" };
 
-
-  TriggerDecoderV3::TriggerDecoderV3(fhicl::ParameterSet const &pset)
-    : fDetTimings
+  TriggerDecoderV3::TriggerDecoderV3(Parameters const& params)
+    // configuration
+    : fTriggerConfigTag   { params().TrigConfigLabel() }
+    , fFPGAtickLength     { params().FPGAtickLength() }
+    , fAllowDefaultLVDSmap{ params().AllowDefaultLVDSmap() }
+    , fDiagnosticOutput   { params().DiagnosticOutput() }
+    , fDebug              { params().Debug() }
+    // cache
+    , fDetTimings
       { art::ServiceHandle<detinfo::DetectorClocksService>()->DataForJob() }
     , fChannelMapCacheGuard{ "PMT" } // track the PMT cache only
   {
-    this->configure(pset);
+    if (params().TimeOffset()) {
+      if (auto offset = params().TimeOffset().value(); offset == 0) {
+        mf::LogWarning("TriggerDecoder")
+          << "Configuration parameter 'TimeOffset' has been dropped.\n";
+      }
+      else { // unforgiving: dropping non-zero offset changes output
+        throw art::Exception(art::errors::Configuration)
+          << "Adding offset (configuration parameter 'TimeOffset', here set to "
+          << offset << " seconds) is not supported any more.\n";
+      }
+    }
     try {
       fChannelMap
         = art::ServiceHandle<icarusDB::IICARUSChannelMap>()->provider();
@@ -419,28 +491,6 @@ namespace daq
     collector.produces<RelativeTriggerCollection>(CurrentTriggerInstanceName);
     collector.produces<BeamGateInfoCollection>(CurrentTriggerInstanceName);
     collector.produces<sbn::ExtraTriggerInfo>(CurrentTriggerInstanceName);
-  }
-
-
-  void TriggerDecoderV3::configure(fhicl::ParameterSet const &pset)
-  {
-    fTriggerConfigTag = pset.get<std::string>("TrigConfigLabel");
-    fFPGAtickLength = pset.get<unsigned int>("FPGAtickLength", 25);
-    fAllowDefaultLVDSmap = pset.get<bool>("AllowDefaultLVDSmap", false);
-    fDiagnosticOutput = pset.get<bool>("DiagnosticOutput", false);
-    fDebug = pset.get<bool>("Debug", false);
-    if (pset.has_key("TimeOffset")) {
-      if (auto offset = pset.get<long long int>("TimeOffset"); offset == 0) {
-        mf::LogWarning("TriggerDecoder")
-          << "Configuration parameter 'TimeOffset' has been dropped.\n";
-      }
-      else { // unforgiving: dropping non-zero offset changes output
-        throw art::Exception(art::errors::Configuration)
-          << "Adding offset (configuration parameter 'TimeOffset', here set to "
-          << offset << " seconds) is not supported any more.\n";
-      }
-    }
-    return;
   }
 
   void TriggerDecoderV3::initializeDataProducts()
