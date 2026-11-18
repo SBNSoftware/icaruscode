@@ -1,0 +1,59 @@
+#
+# File:    remove_events_without_enablegate_icarus.fcl
+# Purpose: Remove events without the enable gate.
+# Author:  Gianluca Petrillo (petrillo@slac.stanford.edu)
+# Date:    November 17, 2026
+#
+# Input:   ICARUS raw data files (or files with trigger DAQ fragments)
+# Output:  art/ROOT file (selection of input)
+#
+# This configuration file excludes the events that have an invalid enable gate.
+# 
+# The output is a copy of each input file, with the same data products.
+# 
+# In practice, this is a test/example job, since for the real deal this filter
+# is needed integrated into the decoder job (or on an analysis job if too late
+# for the decoding).
+#
+
+#include "services_common_icarus.fcl"
+#include "channelmapping_icarus.fcl"
+#include "decoderdefs_icarus.fcl"
+#include "rootoutput_icarus.fcl"
+
+process_name: EnableGate
+
+services: {
+  
+                         @table::icarus_art_services
+  message:               @local::icarus_message_services_interactive
+  
+                         @table::icarus_geometry_services
+  DetectorClocksService: @local::icarus_detectorclocks
+  IICARUSChannelMap:     @local::icarus_channelmappinggservice  # from channelmapping_icarus.fcl
+}
+
+physics: {
+
+  producers: {
+    triggerconfig: @local::extractTriggerConfig  # from decoderdefs_icarus.fcl
+    daqTrigger: @local::decodeTriggerAutodetect  # from decoderdefs_icarus.fcl
+  }
+
+  filters: {
+    requireenablegate: {
+      module_type:             RequireEnableGate
+      TriggerTag:              daqTrigger
+      MaximumEnableGateDelay: "10 ms"
+    }
+  }
+  
+  select: [ triggerconfig, daqTrigger, requireenablegate ]
+  
+  write: [ rootoutput ]
+  
+} # physics
+
+# write one output file per input file and skip the events failing the selection
+outputs.rootoutput: @local::icarus_rootoutput_one_output_per_input  # from rootoutput_icarus.fcl
+outputs.rootoutput.SelectEvents: [ select ]
