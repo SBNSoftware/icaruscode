@@ -5,7 +5,7 @@
 #include "fhiclcpp/types/Atom.h"
 #include "fhiclcpp/types/Table.h"
 #include "canvas/Persistency/Common/Ptr.h"
-#include "icaruscode/TPC/Tracking/MCS/MCSFitResultGS.h"
+#include "sbnobj/Common/Reco/MCSFitResultGS.h"
 
 #include "larcore/Geometry/Geometry.h"
 #include "larcorealg/Geometry/GeometryCore.h"

@@ -1,5 +1,6 @@
 art_make_library(
 	LIBRARIES
+		sbnobj::Common_Reco
 		larsim::MCCheater_BackTrackerService_service
 		larsim::MCCheater_ParticleInventoryService_service
 		lardataobj::RecoBase
@@ -44,19 +45,9 @@ art_make_library(
 		ROOT::Minuit
 		ROOT::Minuit2)
 
-		art_make_library(
-			LIBRARY_NAME MCSFitResultGSDict
-			SOURCE MCSFitResultGS.cxx
-			LIBRARIES
-				canvas::canvas
-				cetlib::cetlib
-				cetlib_except::cetlib_except
-				art::Persistency_Common
-    			art::Utilities)
-
 set(
 	MODULE_LIBRARIES
-		MCSFitResultGSDict
+		sbnobj::Common_Reco
 		icaruscode::TPC_Tracking_MCS
 		larsim::MCCheater_BackTrackerService_service
 		larsim::MCCheater_ParticleInventoryService_service
@@ -103,21 +94,8 @@ set(
 		ROOT::Minuit
 		ROOT::Minuit2)
 
-include_directories(
-	${ART_INC}
-	${LARDATAOBJ_INC}
-)
-
-build_dictionary(
-  MCSFitResultGSDict
-  DICTIONARY_LIBRARIES
-    art::Persistency_Common
-    art::Utilities
-)
-
 cet_build_plugin(MCSFitProducerICARUS art::module 
 	LIBRARIES
-		MCSFitResultGSDict
 		art::Persistency_Common
 		canvas::canvas
 		cetlib::cetlib

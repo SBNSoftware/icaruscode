@@ -27,7 +27,7 @@
 #include "canvas/Persistency/Common/FindManyP.h"
 #include "canvas/Persistency/Common/FindOneP.h"
 
-#include "icaruscode/TPC/Tracking/MCS/MCSFitResultGS.h"
+#include "sbnobj/Common/Reco/MCSFitResultGS.h"
 
 #include "lardataobj/RecoBase/PFParticle.h"
 #include "lardataobj/RecoBase/Track.h"
