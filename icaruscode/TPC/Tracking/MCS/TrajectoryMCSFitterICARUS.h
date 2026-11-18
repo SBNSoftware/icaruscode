@@ -25,8 +25,8 @@
 
 namespace trkf {
   /**
-   * @file    larreco/RecoAlg/TrajectoryMCSFitterICARUS.h
-   * @class   trkf::TrajectoryMCSFitterICARUS
+   * @file  larreco/RecoAlg/TrajectoryMCSFitterICARUS.h
+   * @class trkf::TrajectoryMCSFitterICARUS
    * @brief   Header for the Multiple Coulomb Scattering fit.
    * @author  G. Chiello (Pisa, ICARUS) and F. Varanini (Padova, ICARUS)
    * @date    2026
@@ -43,7 +43,7 @@ namespace trkf {
 	      13 };
       fhicl::Atom<int> minNumSegments {
         Name("minNumSegments"),
-	      Comment("Minimum number of segments the track is split into."),
+	Comment("Minimum number of segments the track is split into."),
 	      5 };
       fhicl::Atom<int> minNumAngles {
         Name("minNumAngles"),
@@ -51,11 +51,11 @@ namespace trkf {
 	      4 };
       fhicl::Atom<double> segmentLength {
         Name("segmentLength"),
-	      Comment("Nominal length of track segments used in the fit."),
+	Comment("Nominal length of track segments used in the fit."),
 	      10. };
       fhicl::Atom<int> minHitsPerSegment {
         Name("minHitsPerSegment"),
-	      Comment("Exclude segments with less hits than this value."),
+	Comment("Exclude segments with less hits than this value."),
 	      3 };
       fhicl::Atom<int> minHits {
         Name("minHits"),
@@ -117,43 +117,43 @@ namespace trkf {
     using Parameters = fhicl::Table<Config>;
 
     TrajectoryMCSFitterICARUS(
-      int pID, 
-      int minNSegs, 
+      int pID,
+      int minNSegs,
       int minNAngs,
-      double segLen, 
-      int minHitsPerSegment, 
-      int minHits, 
+      double segLen,
+      int minHitsPerSegment,
+      int minHits,
       double minLength,
-      int eLossMode, 
-      double pMin, 
-      double pMax, 
-      double pStep, 
-      unsigned int cutMode, 
-      unsigned int cutAngles, 
-      unsigned int planeMode, 
+      int eLossMode,
+      double pMin,
+      double pMax,
+      double pStep,
+      unsigned int cutMode,
+      unsigned int cutAngles,
+      unsigned int planeMode,
       unsigned int fitMode,
       unsigned int fullTrackMode,
       unsigned int selectionMode,
       unsigned int wireSkip,
       unsigned int verbose) {
         pID_ = pID;
-        minNSegs_ = minNSegs;
+      minNSegs_ = minNSegs;
         minNAngs_ = minNAngs;
-        segLen_ = segLen;
-        minHitsPerSegment_ = minHitsPerSegment;
+      segLen_ = segLen;
+      minHitsPerSegment_ = minHitsPerSegment;
         minHits_ = minHits;
         minLength_ = minLength;
-        eLossMode_ = eLossMode;
-        pMin_ = pMin;
-        pMax_ = pMax;
-        pStep_ = pStep;
+      eLossMode_ = eLossMode;
+      pMin_ = pMin;
+      pMax_ = pMax;
+      pStep_ = pStep;
         cutMode_ = cutMode;
         cutAngles_ = cutAngles;
         planeMode_ = planeMode;
-        fitMode_ = fitMode; 
+        fitMode_ = fitMode;
         fullTrackMode_ = fullTrackMode;
-        selectionMode_ = selectionMode; 
-        wireSkip_ = wireSkip; 
+        selectionMode_ = selectionMode;
+        wireSkip_ = wireSkip;
         verbose_ = verbose; }
 
     explicit TrajectoryMCSFitterICARUS(
@@ -182,15 +182,15 @@ namespace trkf {
       const recob::TrackTrajectory& traj) const;
 
     recob::MCSFitResultGS fitMcs(
-      const recob::Track& track) const { 
+      const recob::Track& track) const {
         return fitMcs(track.Trajectory()); }
 
     recob::MCSFitResultGS fitMcs(
       const recob::Trajectory& traj) const {
-        recob::TrackTrajectory::Flags_t flags(traj.NPoints());
-        const recob::TrackTrajectory tt(traj, std::move(flags));
+      recob::TrackTrajectory::Flags_t flags(traj.NPoints());
+      const recob::TrackTrajectory tt(traj,std::move(flags));
         return fitMcs(tt); }
-    
+
     struct ScanResultC2 {
       double bestp = 0., errp = 0.;
       std::vector<double> testp;
@@ -198,7 +198,7 @@ namespace trkf {
       bool valid = false;
       ScanResultC2() = default;
       ScanResultC2(
-        double best, double err, 
+        double best, double err,
         std::vector<double> test, std::vector<double> c2values) :
           bestp(best), errp(err), testp(std::move(test)), c2(std::move(c2values)), valid(true) {} };
 
@@ -214,125 +214,125 @@ namespace trkf {
           bestp(best), errp(err), testp(std::move(test)), logL(std::move(logLvalues)), valid(true) {} };
 
     struct SegmentWindow {
-      unsigned int first = 0; 
-      unsigned int last = 0; 
-      unsigned int nused = 0; 
-      int nAngLin = 0; 
-      int nAngPoly = 0; 
+      unsigned int first = 0;
+      unsigned int last = 0;
+      unsigned int nused = 0;
+      int nAngLin = 0;
+      int nAngPoly = 0;
       bool ok = false; };
 
     // functions in MCS fitter
 
     void breakTrajInSegments(
-      const recob::TrackTrajectory& traj, 
-      std::vector<size_t>& breakpoints, 
-      std::vector<double>& seglens, 
-      std::vector<double>& cumseglens, 
-      std::vector<int>& seghits, 
+      const recob::TrackTrajectory& traj,
+      std::vector<size_t>& breakpoints,
+      std::vector<double>& seglens,
+      std::vector<double>& cumseglens,
+      std::vector<int>& seghits,
       std::vector<int>& cumseghits,
       std::vector<int>& segsides) const;
 
     void findSegmentBarycenter(
-      const recob::TrackTrajectory& traj, 
-      const size_t firstPoint, 
-      const size_t lastPoint, 
+      const recob::TrackTrajectory& traj,
+      const size_t firstPoint,
+      const size_t lastPoint,
       recob::tracking::Vector_t& bary) const;
 
     void linearRegression(
-      const recob::TrackTrajectory& traj, 
-      const size_t firstPoint, 
-      const size_t lastPoint, 
+      const recob::TrackTrajectory& traj,
+      const size_t firstPoint,
+      const size_t lastPoint,
       recob::tracking::Vector_t& pcdir) const;
 
     double energyLossLandau(
-      const double mass, 
+      const double mass,
       const double energy) const;
 
     double energyLossBetheBloch(
-      const double mass, 
+      const double mass,
       const double energy) const;
 
     double GetE(
-      const double initial_E, 
-      const double length_travelled, 
+      const double initial_E,
+      const double length_travelled,
       const double mass) const;
 
     void ComputeSigma3P(
       int& nhits,
-      double& sigma3p, 
-      std::vector<double>& delta3p, 
+      double& sigma3p,
+      std::vector<double>& delta3p,
       int wire_skip) const;
-    
+
     static Double_t fitFunction(
-      Double_t *x, 
-      Double_t *par) { return 1. / (par[0] + par[1] / x[0] / x[0]); } 
+      Double_t *x,
+      Double_t *par) { return 1. / (par[0] + par[1] / x[0] / x[0]); }
 
     const double C2Function(
-      const recob::TrackTrajectory& traj, 
-      std::vector<double>& seglens, 
-      std::vector<double>& cumseglens, 
-      std::vector<int>& seghits, 
-      std::vector<double> dthetaLin, 
-      std::vector<double> dthetaPoly, 
-      double sigma3p, 
+      const recob::TrackTrajectory& traj,
+      std::vector<double>& seglens,
+      std::vector<double>& cumseglens,
+      std::vector<int>& seghits,
+      std::vector<double> dthetaLin,
+      std::vector<double> dthetaPoly,
+      double sigma3p,
       double p) const;
 
     const ScanResultC2 C2Fit(
-      const recob::TrackTrajectory& traj, 
-      std::vector<double>& seglens, 
-      std::vector<double>& cumseglens, 
-      std::vector<int>& seghits, 
-      std::vector<double> dthetaLin, 
-      std::vector<double> dthetaPoly, 
-      double sigma3p, 
+      const recob::TrackTrajectory& traj,
+      std::vector<double>& seglens,
+      std::vector<double>& cumseglens,
+      std::vector<int>& seghits,
+      std::vector<double> dthetaLin,
+      std::vector<double> dthetaPoly,
+      double sigma3p,
       double sigma) const;
 
     const double LikelihoodFunction(
-      const recob::TrackTrajectory& traj, 
-      std::vector<double>& seglens, 
-      std::vector<double>& cumseglens, 
-      std::vector<int>& seghits, 
-      std::vector<double> dthetaLin, 
-      std::vector<double> dthetaPoly, 
-      double sigma3p, 
+      const recob::TrackTrajectory& traj,
+      std::vector<double>& seglens,
+      std::vector<double>& cumseglens,
+      std::vector<int>& seghits,
+      std::vector<double> dthetaLin,
+      std::vector<double> dthetaPoly,
+      double sigma3p,
       double p) const;
 
     const ScanResultLL LikelihoodFit(
-      const recob::TrackTrajectory& traj, 
-      std::vector<double>& seglens, 
-      std::vector<double>& cumseglens, 
-      std::vector<int>& seghits, 
-      std::vector<double> dthetaLin, 
-      std::vector<double> dthetaPoly, 
+      const recob::TrackTrajectory& traj,
+      std::vector<double>& seglens,
+      std::vector<double>& cumseglens,
+      std::vector<int>& seghits,
+      std::vector<double> dthetaLin,
+      std::vector<double> dthetaPoly,
       double sigma3p) const;
-    
+
     const void FillOffDiagMCSLin(
-      TMatrixDSym& mat, 
-      TMatrixD matdiag, 
+      TMatrixDSym& mat,
+      TMatrixD matdiag,
       int jp) const;
 
     const void FillOffDiagMCSPoly(
-      TMatrixDSym& mat, 
-      TMatrixD matdiag, 
+      TMatrixDSym& mat,
+      TMatrixD matdiag,
       int jp) const;
 
     const void FillOffDiagErrLin(
-      TMatrixDSym& mat, 
-      TMatrixD matdiag, 
+      TMatrixDSym& mat,
+      TMatrixD matdiag,
       int jp) const;
 
     const void FillOffDiagErrPoly(
-      TMatrixDSym& mat, 
-      TMatrixD matdiag, 
-      int jp) const;  
+      TMatrixDSym& mat,
+      TMatrixD matdiag,
+      int jp) const;
 
     const void FillMCSMixedTerms(
-      TMatrixD& matMix, 
-      TMatrixD matLin, 
-      TMatrixD matPoly) const; 
+      TMatrixD& matMix,
+      TMatrixD matLin,
+      TMatrixD matPoly) const;
 
     TMatrix CleanCovariance(
-      TMatrix cov, 
+      TMatrix cov,
       int jtail) const;
 
     Vector_t hit2D(
@@ -348,7 +348,7 @@ namespace trkf {
       size_t index) const;
 
     bool IsInTPC(
-      size_t index, 
+      size_t index,
       unsigned int t) const;
 
     unsigned int FirstTPC(
@@ -382,11 +382,11 @@ namespace trkf {
       const recob::TrackTrajectory& traj) const;
 
     double ThetaExpected(
-      const recob::TrackTrajectory& traj, 
+      const recob::TrackTrajectory& traj,
       double p,
       double beta,
       double L) const;
-    
+
     bool CathodeCheck(
       const recob::TrackTrajectory& traj,
       size_t index) const;
@@ -396,7 +396,7 @@ namespace trkf {
       size_t index) const;
 
     SegmentWindow ThetaCheck(
-      const std::vector<double>& dthetaLin, 
+      const std::vector<double>& dthetaLin,
       const std::vector<double>& dthetaPoly) const;
 
     // functions in MCS producer
@@ -415,7 +415,7 @@ namespace trkf {
 
     void setWR(
       geo::WireReadoutGeom const& wr) { wr_ = &wr; }
-      
+
     void setDetProp(
       detinfo::DetectorPropertiesData const& detProp) { detProp_ = &detProp; }
 
@@ -424,7 +424,7 @@ namespace trkf {
 
     void setPFPT0(
       double t0) { PFPT0_ = t0; }
-      
+
     void setCRTT0(
       double t0) { CRTT0_ = t0; }
 
@@ -433,10 +433,10 @@ namespace trkf {
 
     void sethasPFPT0(
       bool has) { hasPFPT0_ = has; }
-      
+
     void sethasCRTT0(
       bool has) { hasCRTT0_ = has; }
-      
+
     void sethasT0(
       bool has) { hasT0_ = has; }
 
@@ -453,28 +453,28 @@ namespace trkf {
     double minLength() const {
       return minLength_; }
 
-    unsigned int cutMode() const { 
+    unsigned int cutMode() const {
       return cutMode_; }
 
-    unsigned int cutAngles() const { 
+    unsigned int cutAngles() const {
       return cutAngles_; }
 
-    unsigned int planeMode() const { 
+    unsigned int planeMode() const {
       return planeMode_; }
 
-    unsigned int fitMode() const { 
+    unsigned int fitMode() const {
       return fitMode_; }
 
     unsigned int fullTrackMode() const {
       return fullTrackMode_; }
 
-    unsigned int selectionMode() const { 
+    unsigned int selectionMode() const {
       return selectionMode_; }
 
-    unsigned int wireSkip() const { 
+    unsigned int wireSkip() const {
       return wireSkip_; }
 
-    unsigned int verbose() const { 
+    unsigned int verbose() const {
       return verbose_; }
 
   private:
@@ -482,10 +482,10 @@ namespace trkf {
     unsigned int minNSegs_;
     int minNAngs_;
     double segLen_;
-    int minHitsPerSegment_;
+    int    minHitsPerSegment_;
     int minHits_;
     double minLength_;
-    int eLossMode_;
+    int    eLossMode_;
     double pMin_;
     double pMax_;
     double pStep_;

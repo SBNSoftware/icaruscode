@@ -52,13 +52,13 @@
 #include "larsim/MCCheater/ParticleInventoryService.h"
 
 #include "icaruscode/TPC/Tracking/MCS/TrajectoryMCSFitterICARUS.h"
-#include "lardata/RecoBaseProxy/Track.h" 
+#include "lardata/RecoBaseProxy/Track.h"
 #include <memory>
 
 namespace trkf {
   /**
    * @file    icaruscode/TPC/Tracking/MCS/MCSFitProducerICARUS_module.cc
-   * @class   trkf::MCSFitProducerICARUS
+   * @class trkf::MCSFitProducerICARUS
    * @brief   Producer for the Multiple Coulomb Scattering fit.
    * @author  G. Chiello (Pisa, ICARUS) and F. Varanini (Padova, ICARUS)
    * @date    2026
@@ -66,6 +66,7 @@ namespace trkf {
    */
   class MCSFitProducerICARUS : public art::EDProducer {
   public:
+
     struct Inputs {
       using Name = fhicl::Name;
       using Comment = fhicl::Comment;
@@ -106,9 +107,9 @@ namespace trkf {
     art::InputTag caloTag;
     TrajectoryMCSFitterICARUS mcsfitter; }; }
 
-trkf::MCSFitProducerICARUS::MCSFitProducerICARUS(trkf::MCSFitProducerICARUS::Parameters const & p) 
-  : EDProducer{p}, 
-    p_(p), 
+trkf::MCSFitProducerICARUS::MCSFitProducerICARUS(trkf::MCSFitProducerICARUS::Parameters const & p)
+  : EDProducer{p},
+    p_(p),
     mcsfitter(p_().fitter) {
       TRKTag   = art::InputTag(p_().inputs().TRKLabel());
       TRKHMTag = art::InputTag(p_().inputs().TRKHMLabel());
@@ -154,9 +155,9 @@ void trkf::MCSFitProducerICARUS::produce(art::Event & e) {
     AVs.emplace_back(XMin, XMax, YMin, YMax, ZMin, ZMax); }
 
   // define tracks and MCS results vector
-  art::ValidHandle<std::vector<recob::Track>> tracks = e.getValidHandle<std::vector<recob::Track>>(TRKTag); 
+  art::ValidHandle<std::vector<recob::Track>> tracks = e.getValidHandle<std::vector<recob::Track>>(TRKTag);
   std::vector<recob::MCSFitResultGS> results(tracks->size());
-
+ 
   // range momentum module
   auto const& range_handle = e.getValidHandle<std::vector<sbn::RangeP>>(rangeTag);
   std::vector<art::Ptr<sbn::RangeP>> rangePs;
@@ -195,16 +196,16 @@ void trkf::MCSFitProducerICARUS::produce(art::Event & e) {
     geo::Point_t point{pos.X(), pos.Y(), pos.Z()};
     std::size_t cryo = geom->PositionToCryostatID(point).Cryostat;
     const char* cryoName = (cryo == 0) ? "EAST" : "WEST";
-    if (verbose > 0) std::cout << "producer MCS: event ID = " << e.event() 
-                               << " track ID = " << trkPtr->ID() 
+    if (verbose > 0) std::cout << "producer MCS: event ID = " << e.event()
+                               << " track ID = " << trkPtr->ID()
                                << " cryostat = " << cryoName
                                << std::endl;
 
     // recall range momentum and print it with track length
     art::Ptr<sbn::RangeP> rangeP = rangePs.at(trkPtr.key());
     mcsfitter.setRangeP(rangeP->range_p);
-    if (verbose > 0) std::cout << "range momentum [GeV/c] = " << rangeP->range_p 
-                               << " track length [cm] = " << trkPtr->Length() 
+    if (verbose > 0) std::cout << "range momentum [GeV/c] = " << rangeP->range_p
+                               << " track length [cm] = " << trkPtr->Length()
                                << std::endl;
 
     // check if track has minimum length
@@ -233,12 +234,12 @@ void trkf::MCSFitProducerICARUS::produce(art::Event & e) {
         double time = CRTT0s.at(0)->Time();
         bool fIncludeTopCRT = true;
         bool fIncludeSideCRT = false;
-        bool crtHitSysRejected = (tag.Sys == 0 && !fIncludeTopCRT) || (tag.Sys==1 && !fIncludeSideCRT); 
+        bool crtHitSysRejected = (tag.Sys == 0 && !fIncludeTopCRT) || (tag.Sys==1 && !fIncludeSideCRT);
         geo::Point_t end {trkPtr->Start().X(), trkPtr->Start().Y(), trkPtr->Start().Z()};
         bool trackIsContained = false;
         for (auto const &v: AVs) {
           if (v.ContainsPosition(end)) trackIsContained = true; }
-        bool crtHitDistanceRejected = trackIsContained ? 
+        bool crtHitDistanceRejected = trackIsContained ?
             ((tag.Sys == 0) ? (tag.Distance > 100.) : (tag.Distance > 100.)):
             ((tag.Sys == 0) ? (tag.Distance > 100.) : (tag.Distance > 100.));
         if (!crtHitSysRejected && !crtHitDistanceRejected) {
@@ -251,7 +252,7 @@ void trkf::MCSFitProducerICARUS::produce(art::Event & e) {
     // convert T0 from ns to µs
     bool hasT0 = false;
     double T0 = std::numeric_limits<double>::signaling_NaN();
-    if (hasPFPT0) T0 = PFPT0 * 1e-3; 
+    if (hasPFPT0) T0 = PFPT0 * 1e-3;
     else if (hasCRTT0) T0 = CRTT0 * 1e-3;
     hasT0 = hasPFPT0 || hasCRTT0;
     mcsfitter.sethasT0(hasT0);
@@ -262,7 +263,7 @@ void trkf::MCSFitProducerICARUS::produce(art::Event & e) {
     if (hasPFPT0) whicht0 = 0;
     else if (hasCRTT0) whicht0 = 2;
     if (verbose > 0) std::cout << "whichT0 = " << whicht0 << std::endl;
-    
+
     // build track object for selection
     sbn::TrackInfo SBNTrack;
     if (hasT0 && !trkHits.empty()) {
@@ -272,7 +273,7 @@ void trkf::MCSFitProducerICARUS::produce(art::Event & e) {
     SBNTrack.end.z = trkPtr->End().Z();
     SBNTrack.dir.x = trkPtr->StartDirection().X();
     SBNTrack.dir.y = trkPtr->StartDirection().Y();
-    SBNTrack.dir.z = trkPtr->StartDirection().Z(); 
+    SBNTrack.dir.z = trkPtr->StartDirection().Z();
     SBNTrack.whicht0 = whicht0;
 
     // check if track is downgoing
@@ -284,7 +285,7 @@ void trkf::MCSFitProducerICARUS::produce(art::Event & e) {
       const recob::TrackHitMeta* meta = trkHitMetas[i];
       if (!hit || !meta) continue;
       unsigned hindex = hit.key();
-      sbn::TrackHitInfo hinfo; 
+      sbn::TrackHitInfo hinfo;
       hinfo.h.time  = hit->PeakTime();
       hinfo.h.tpc   = hit->WireID().TPC;
       hinfo.h.plane = hit->WireID().Plane;
@@ -295,7 +296,7 @@ void trkf::MCSFitProducerICARUS::produce(art::Event & e) {
         for (const art::Ptr<anab::Calorimetry> &c: calo) {
           if (c->PlaneID().Plane != hinfo.h.plane) continue;
           for (unsigned i_calo = 0; i_calo < c->dQdx().size(); i_calo++) {
-            if (c->TpIndices()[i_calo] == hindex) { 
+            if (c->TpIndices()[i_calo] == hindex) {
               hinfo.oncalo = true;
               hinfo.pitch = c->TrkPitchVec()[i_calo];
               hinfo.dqdx = c->dQdx()[i_calo];
@@ -315,7 +316,7 @@ void trkf::MCSFitProducerICARUS::produce(art::Event & e) {
       inTPCE = (h.h.tpc <= 1);
       if (h.oncalo && inTPCE == true) {
         if (minTPCE < 0. || h.h.time < minTPCE) minTPCE = h.h.time;
-        if (maxTPCE < 0. || h.h.time > maxTPCE) maxTPCE = h.h.time; } 
+        if (maxTPCE < 0. || h.h.time > maxTPCE) maxTPCE = h.h.time; }
       if (h.oncalo && inTPCE == false) {
         if (minTPCW < 0. || h.h.time < minTPCW) minTPCW = h.h.time;
         if (maxTPCW < 0. || h.h.time > maxTPCW) maxTPCW = h.h.time; } }
@@ -330,8 +331,8 @@ void trkf::MCSFitProducerICARUS::produce(art::Event & e) {
     double FVInsetMinY = 25; double FVInsetMaxY = 15;
     double FVInsetMinZ = 15; double FVInsetMaxZ = 15;
     for (const geo::BoxBoundedGeo &AV: AVs) {
-      FVs.emplace_back(AV.MinX() + FVInsetMinX, AV.MaxX() - FVInsetMaxX, 
-                      AV.MinY() + FVInsetMinY, AV.MaxY() - FVInsetMaxY, 
+      FVs.emplace_back(AV.MinX() + FVInsetMinX, AV.MaxX() - FVInsetMaxX,
+                      AV.MinY() + FVInsetMinY, AV.MaxY() - FVInsetMaxY,
                       AV.MinZ() + FVInsetMinZ, AV.MaxZ() - FVInsetMaxZ); }
     bool CheckFiducialX = true;
     bool inFiducialVolume = false;
@@ -347,7 +348,7 @@ void trkf::MCSFitProducerICARUS::produce(art::Event & e) {
     double TickMin = 0;
     double TickMax = TickMin + NumberTimeSamples;
     double MinTimeTickInset = 100;
-    double MaxTimeTickInset = 100; 
+    double MaxTimeTickInset = 100;
     double FidTickMin = TickMin + MinTimeTickInset;
     double FidTickMax = TickMax - MaxTimeTickInset;
     bool inFiducialTime = (SBNTrack.hit_min_time_p2_tpcE < 0. || SBNTrack.hit_min_time_p2_tpcE > FidTickMin) &&
@@ -373,7 +374,7 @@ void trkf::MCSFitProducerICARUS::produce(art::Event & e) {
     bool hasValidDqdx = ((med_dqdx > 0.) && (med_dqdx > EndMediandQdxCut)) || (EndMediandQdxCut < 0.);
 
     // selection of cosmic stopping muons
-    if (verbose > 0) std::cout << "hasMinLength = "      << hasMinLength 
+    if (verbose > 0) std::cout << "hasMinLength = "      << hasMinLength
                                << " hasT0 = "            << hasT0
                                << " isDowngoing = "      << isDowngoing
                                << " inFiducialVolume = " << inFiducialVolume
@@ -387,7 +388,7 @@ void trkf::MCSFitProducerICARUS::produce(art::Event & e) {
       if (!stopping) continue; }
 
     // build proxy and 2D hits for MCS fitter
-    std::vector<proxy::TrackPointData> pdata; 
+    std::vector<proxy::TrackPointData> pdata;
     std::vector<recob::Hit> hits2dI1, hits2dI2, hits2dC;
     for (const art::Ptr<recob::Hit>& h : trkHits) {
       const auto& wid = h->WireID();
@@ -402,7 +403,7 @@ void trkf::MCSFitProducerICARUS::produce(art::Event & e) {
     mcsfitter.set2DHitsI1(hits2dI1);
     mcsfitter.set2DHitsI2(hits2dI2);
     mcsfitter.set2DHitsC(hits2dC);
-    
+
     // return MCS fit result for each track
     recob::MCSFitResultGS result = mcsfitter.fitMcs(*trkPtr);
     results[trkPtr.key()] = std::move(result); }

@@ -1,8 +1,8 @@
 BEGIN_PROLOG
-
 mcsfitproducericarus_raw: {
-  module_type: MCSFitProducerICARUS
-  inputs: { 
+#mcsfitproducericarus: {
+  module_type:  MCSFitProducerICARUS
+  inputs: {
 	TRKLabel  : "pandoraTrackICARUS"
 	TRKHMLabel: "pandoraTrackICARUS"
 	PFPLabel  : "pandoraGausCryo0"
@@ -32,14 +32,14 @@ mcsfitproducericarus_raw: {
 	verbose: 1 } }
 
 mcsfitproducer3D: {
-  module_type: MCSFitProducerICARUS
-  inputs: { 
+  module_type:  MCSFitProducerICARUS
+  inputs: {
 	TRKLabel  : "pandoraTrackICARUS"
 	TRKHMLabel: "pandoraTrackICARUS"
 	PFPLabel  : "pandoraGausCryo0"
 	PFPT0Label: "pandoraGausCryo0"
 	CRTT0Label: "CRTT0Tagging"
-	rangeLabel: "rangeproducerCryo0:muon" 
+	rangeLabel: "rangeproducerCryo0:muon"
 	caloLabel : "caloskimCalorimetryCryo0" }
   fitter: {
   	pIdHypothesis: 13
@@ -64,7 +64,7 @@ mcsfitproducer3D: {
 
 mcsfitproducer2DI1: {
   module_type: MCSFitProducerICARUS
-  inputs: { 
+  inputs: {
 	TRKLabel  : "pandoraTrackICARUS"
 	TRKHMLabel: "pandoraTrackICARUS"
 	PFPLabel  : "pandoraGausCryo0"
@@ -95,7 +95,7 @@ mcsfitproducer2DI1: {
 
 mcsfitproducer2DI2: {
   module_type: MCSFitProducerICARUS
-  inputs: { 
+  inputs: {
 	TRKLabel  : "pandoraTrackICARUS"
 	TRKHMLabel: "pandoraTrackICARUS"
 	PFPLabel  : "pandoraGausCryo0"
@@ -126,13 +126,13 @@ mcsfitproducer2DI2: {
 
 mcsfitproducer2DC: {
   module_type: MCSFitProducerICARUS
-  inputs: { 
+  inputs: {
 	TRKLabel  : "pandoraTrackICARUS"
 	TRKHMLabel: "pandoraTrackICARUS"
 	PFPLabel  : "pandoraGausCryo0"
 	PFPT0Label: "pandoraGausCryo0"
 	CRTT0Label: "CRTT0Tagging"
-	rangeLabel: "rangeproducerCryo0:muon" 
+	rangeLabel: "rangeproducerCryo0:muon"
 	caloLabel : "caloskimCalorimetryCryo0" }
   fitter: {
   	pIdHypothesis: 13

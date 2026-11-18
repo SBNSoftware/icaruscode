@@ -1,18 +1,15 @@
 #include "stage1_1d_icarus_driver_common.fcl"
-
+#
 process_name: stage1
 
-physics.reco: [
-    @sequence::icarus_filter_cluster3D,
-    @sequence::icarus_pandora_Gauss,
-    @sequence::icarus_reco_fm,
-    @sequence::icarus_tpcpmtbarycentermatch,
-    @sequence::icarus_crttrack,
-    @sequence::icarus_crtt0tagging,
-    @sequence::icarus_MCS_Gauss,
-    caloskimCalorimetryCryoE, 
-    caloskimCalorimetryCryoW
-]
+physics.reco: [ @sequence::icarus_filter_cluster3D,
+                @sequence::icarus_pandora_Gauss,
+                @sequence::icarus_reco_fm,
+                @sequence::icarus_tpcpmtbarycentermatch,
+                @sequence::icarus_crttrack,
+                @sequence::icarus_crtt0tagging,
+                @sequence::icarus_MCS_Gauss,
+                caloskimCalorimetryCryoE, caloskimCalorimetryCryoW]
 
 physics.outana:            [ @sequence::icarus_analysis_modules ]
 physics.trigger_paths:     [ reco ]
@@ -37,7 +34,7 @@ physics.producers.gaushit1dTPCWE.CalDataModuleLabel: "roifinder1d:PHYSCRATEDATAT
 physics.producers.gaushit1dTPCEW.CalDataModuleLabel: "roifinder1d:PHYSCRATEDATATPCEW"
 physics.producers.gaushit1dTPCEE.CalDataModuleLabel: "roifinder1d:PHYSCRATEDATATPCEE"
 
-# Disabled Space-Charge service for calorimetry
+
 services.SpaceChargeService: {
     EnableCalEfieldSCE: false
     EnableCalSpatialSCE: false
