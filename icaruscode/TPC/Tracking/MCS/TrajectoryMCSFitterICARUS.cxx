@@ -1286,7 +1286,7 @@ const TrajectoryMCSFitterICARUS::ScanResultLL TrajectoryMCSFitterICARUS::Likelih
   //compute error [MeV/c] from right side scan
   double pErrorRight = -1.0;
   for (int j = bestIndex + 1; j < (int)vectorLikelihood.size(); j++) {
-    if (vectorLikelihood[j] - bestLikelihood < 0.5) pErrorRight = (j - bestIndex) * pStep_;
+    if (vectorLikelihood[j] - bestLikelihood < 0.5) pErrorRight = (j - bestIndex) * pStep_ / 1000;
     else break; }
 
   //momentum and uncertainties in [GeV/c]
