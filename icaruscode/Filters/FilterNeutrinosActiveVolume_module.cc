@@ -72,7 +72,6 @@ namespace icarus::simfilter { class FilterNeutrinosActiveVolume; }
  *  * optionally, has a specific interaction type
  *    (like in `simb::MCNeutrino::InteractionType()`)
  *  * optionally, has a specific current type (see `simb::MCNeutrino::CCNC()`)
- *  * optionally, is initiated by a neutrino of a specific flavor (PDG code)
  * 
  * The event is kept if there is _at least_ one qualifying interaction.
  * In that case, the whole event is passed (including any other interaction).
@@ -121,15 +120,11 @@ namespace icarus::simfilter { class FilterNeutrinosActiveVolume; }
  * * `weakCurrent` (`CC` or `NC`, optional): if specified, interactions
  *   qualify only if they are tagged as charged or neutral currents;
  *   see `icarus::WeakCurrentTypes::parse()`;
- * * `neutrinoPDG` (list of integers, optional): if specified, interactions
- *   qualify only if the incoming neutrino has one of these PDG codes
- *   (e.g. `[ 12, -12 ]` for electron neutrinos and antineutrinos);
  * * `logCategory` (string, default: `FilterNeutrinosActiveVolume`): name of the
  *   category this module uses to send messages to the message facility.
  * 
  * It is required that at least one among `inActive`, `volumeNames`,
- * `volumeBoxes`, `weakCurrent`, `interactionTypes` and `neutrinoPDG` are
- * specified.
+ * `volumeBoxes`, `weakCurrent` and `interactionTypes` are specified.
  * 
  * 
  * Filtering
@@ -238,14 +233,6 @@ class icarus::simfilter::FilterNeutrinosActiveVolume: public art::EDFilter {
         "any" // default
         };
       
-      fhicl::Sequence<int> neutrinoPDG {
-        Name("neutrinoPDG"),
-        Comment(
-          "require the incoming neutrino to have one of these PDG codes (empty: any)"
-          ),
-        std::vector<int>{}
-        };
-      
       fhicl::Atom<std::string> logCategory {
         Name("logCategory"),
         Comment("category name for message facility message stream"),
@@ -277,8 +264,6 @@ class icarus::simfilter::FilterNeutrinosActiveVolume: public art::EDFilter {
     std::vector<int> const fInteractions;
     
     icarus::WeakCurrentType const fWeakCurrentType; ///< Selected weak current.
-    
-    std::vector<int> const fNeutrinoPDG; ///< Qualifying neutrino PDG codes.
     
     std::string const fLogCategory; ///< Category name for the output stream.
     
@@ -312,9 +297,6 @@ class icarus::simfilter::FilterNeutrinosActiveVolume: public art::EDFilter {
     /// Returns whether the weak current type is qualifying.
     bool qualifyingWeakCurrent(int const CCNC) const;
     
-    /// Returns whether the incoming neutrino flavor is qualifying.
-    bool neutrinoPDG(int const pdg) const;
-    
     /// Returns whether the location is among the accepted ones.
     bool qualifyingLocation(geo::Point_t const& location) const;
     
@@ -336,7 +318,6 @@ icarus::simfilter::FilterNeutrinosActiveVolume::FilterNeutrinosActiveVolume
   : art::EDFilter(config)
   , fInteractions(sorted(config().interactionTypes()))
   , fWeakCurrentType(config().weakCurrent())
-  , fNeutrinoPDG(sorted(config().neutrinoPDG()))
   , fLogCategory(config().logCategory())
 {
   
@@ -353,12 +334,6 @@ icarus::simfilter::FilterNeutrinosActiveVolume::FilterNeutrinosActiveVolume
     } // if
     
     log << "\n * weak current type: " << std::string(fWeakCurrentType);
-    
-    if (!fNeutrinoPDG.empty()) {
-      log << "\n * required one of these " << size(fNeutrinoPDG)
-        << " neutrino PDG codes:";
-      for (int pdg: fNeutrinoPDG) log << " " << pdg;
-    } // if
     
     log << "\nConfiguration of qualifying volumes:";
     
@@ -380,11 +355,10 @@ icarus::simfilter::FilterNeutrinosActiveVolume::FilterNeutrinosActiveVolume
   if (fVolumes.empty()
     && fInteractions.empty()
     && (fWeakCurrentType == icarus::AnyWeakCurrentType)
-    && fNeutrinoPDG.empty()
   ) {
     
     throw art::Exception(art::errors::Configuration)
-      << "No filtering action specified (volume, current, interaction type nor neutrino flavor).\n"
+      << "No filtering action specified (volume, current nor interaction type).\n"
       ;
     
   } // if no filter
@@ -635,12 +609,6 @@ bool icarus::simfilter::FilterNeutrinosActiveVolume::qualifying
     return false;
   
   //
-  // neutrino flavor
-  //
-  if (!fNeutrinoPDG.empty() && !neutrinoPDG(nu.PdgCode()))
-    return false;
-  
-  //
   // location
   //
   if (!fVolumes.empty() && !qualifyingLocation({ nu.Vx(), nu.Vy(), nu.Vz() }))
@@ -691,21 +659,6 @@ bool icarus::simfilter::FilterNeutrinosActiveVolume::qualifyingWeakCurrent
   return pass;
   
 } // icarus::simfilter::FilterNeutrinosActiveVolume::qualifyingWeakCurrent()
-
-
-// -----------------------------------------------------------------------------
-bool icarus::simfilter::FilterNeutrinosActiveVolume::neutrinoPDG
-  (int const pdg) const
-{
-  mf::LogTrace log(fLogCategory);
-  log << "Incoming neutrino PDG code: " << pdg;
-  
-  bool const pass
-    = std::binary_search(begin(fNeutrinoPDG), end(fNeutrinoPDG), pdg);
-  log << " => :-" << (pass? ')': '(');
-  return pass;
-  
-} // icarus::simfilter::FilterNeutrinosActiveVolume::neutrinoPDG()
 
 
 // -----------------------------------------------------------------------------
