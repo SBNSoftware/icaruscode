@@ -1,7 +1,17 @@
 # Author: Nupur Oza
-# fcl to generate BNB neutrinos with full flavor swap (numu <-> nue), 
-# and keep only events with a CC nue/nuebar
+# fcl to generate BNB neutrinos with flavor swap (numu --> nue),
+# and keep only events with a CC interaction
 
-#include "simulation_genie_icarus_bnb_volDetEnclosure_fiducial_nue.fcl"
+#include "FilterNeutrinoActive.fcl"
+#include "simulation_genie_icarus_bnb_volDetEnclosure_fiducial.fcl"
 
-physics.producers.generator.MixerConfig: "map 14:12 -14:-12 12:14 -12:-14"
+# GenFlavors selects flavors from the flux *before* the mixer swaps them,
+# so take only (anti)numu from the flux; the mixer turns them into (anti)nue.
+physics.producers.generator.GenFlavors: [ 14, -14 ]
+physics.producers.generator.MixerConfig: "map 14:12 -14:-12"
+
+# keep only events with a CC interaction in the active volume
+physics.filters.ccActive: @local::icarus_FilterNeutrinoActive
+physics.filters.ccActive.weakCurrent: "CC"
+physics.simulate: [ @sequence::physics.simulate, ccActive ]
+outputs.rootoutput.SelectEvents: [ simulate ]
