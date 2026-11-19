@@ -1,0 +1,15 @@
+# Author: Nupur Oza
+# fcl to generate only BNB nue/nuebar interactions
+# and keep only events with a CC interaction in the active volume
+
+#include "FilterNeutrinoActive.fcl"
+#include "simulation_genie_icarus_bnb_volDetEnclosure_fiducial.fcl"
+
+# generate only electron (anti)neutrinos from the BNB flux
+physics.producers.generator.GenFlavors: [ 12, -12 ]
+
+# keep only events with a CC interaction in the active volume
+physics.filters.ccActive: @local::icarus_FilterNeutrinoActive
+physics.filters.ccActive.weakCurrent: "CC"
+physics.simulate: [ @sequence::physics.simulate, ccActive ]
+outputs.rootoutput.SelectEvents: [ simulate ]
