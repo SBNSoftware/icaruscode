@@ -44,6 +44,7 @@
 #include "icaruscode/Decode/ChannelMapping/IICARUSChannelMapProvider.h"
 #include "icaruscode/PMT/Trigger/Algorithms/LVDSbitMaps.h"
 #include "icaruscode/Utilities/CacheCounter.h" // util::CacheGuard
+#include "icaruscode/Utilities/ChangeTable.h" // util::fhicl::ChangeBitTable
 #include "icarusalg/Utilities/BinaryDumpUtils.h" // hexdump() DEBUG
 
 #include <cstdlib>
@@ -233,6 +234,32 @@ namespace daq
    * product (`sbn::ExtraTriggerInfo::WRtimeToTriggerTime`).
    *
    *
+   * Trigger gate type change
+   * -------------------------
+   * 
+   * @anchor TriggerDecoderV3_TriggerGateTypeChange
+   * 
+   * The change of gate type is an experimental feature/hack.
+   * The use case has been minimum bias events used as overlay for simulated
+   * events: the simulation may take the trigger gate duration from the
+   * configuration of the trigger for the type of gate registered in each
+   * trigger. Minimum bias triggers can in principle be used as overlay for
+   * events and gates of any type, but during data collection they are assigned
+   * one specific gate. This hack allows to override the gate type assigned
+   * by the hardware to each event.
+   * 
+   * The type of trigger is not touched: minimum bias triggers stay minimum bias
+   * and light-based triggers stay so.
+   * The gate type affects also trigger and gate counts. This feature does not
+   * deal with them, so they should be treated as unreliable. For example,
+   * a minimum bias trigger gate count may show gate numbers that according to
+   * the minimum bias prescale factor would be light-based and not minimum bias.
+   * 
+   * Multiple gate types can be changed in a single pass, explicitly specifying
+   * each change rule. Each trigger and event will undergo a single change.
+   * Gate types that are not specified in the change list are untouched.
+   * 
+   *
    * Configuration
    * --------------
    *
@@ -248,6 +275,13 @@ namespace daq
    *     for the `LVDSstatus` bits, and a warning will be printed. If unset and
    *     the PMT channel mapping database is not available, an exception will be
    *     thrown.
+   * * `ChangeGateType` (list of changes, optional): list of gate type changes;
+   *     each change is a table with two entries:
+   *      * `From`: name of the type of gate to change
+   *      * `To`: name of the gate to change into
+   *     
+   *     Both gate types may be specified by name. Read the
+   *     @ref TriggerDecoderV3_TriggerGateTypeChange "documentation above"!
    * * `DiagnosticOutput` (flag, default: `false`): prints on console trigger
    *     data diagnostics (including a full dump of the parsed content).
    * * `Debug` (flag, default: `false`): prints on console decoding debug
@@ -258,8 +292,12 @@ namespace daq
   {
     using microseconds = util::quantities::microsecond;
     using nanoseconds = util::quantities::nanosecond;
+
+    using ChangeGateSequence_t = ::util::fhicl::ChangeSequence<int, int>;
+
   public:
     /// FHiCL configuration object.
+
     struct Config {
       using Name = fhicl::Name;
       using Comment = fhicl::Comment;
@@ -281,6 +319,11 @@ namespace daq
         false
       };
       
+      ChangeGateSequence_t ChangeGateType{
+        fhicl::Name{ "ChangeGateType" },
+        fhicl::Comment{ "replace gate type values" }
+        };
+
       fhicl::Atom<bool> DiagnosticOutput {
         Name{ "DiagnosticOutput" },
         Comment{ "enable additional output on console" },
@@ -334,6 +377,9 @@ namespace daq
     /// Allow LVDS mapping without mapping database.
     bool const fAllowDefaultLVDSmap;
     
+    /// Map of changes to gate types.
+    ChangeGateSequence_t::ChangeMap_t const fChangeGateTypes;
+
     /// Produces large number of diagnostic messages, use with caution!
     bool const fDiagnosticOutput;
     
@@ -443,6 +489,7 @@ namespace daq
     : fTriggerConfigTag   { params().TrigConfigLabel() }
     , fFPGAtickLength     { params().FPGAtickLength() }
     , fAllowDefaultLVDSmap{ params().AllowDefaultLVDSmap() }
+    , fChangeGateTypes    { params().ChangeGateType.map() }
     , fDiagnosticOutput   { params().DiagnosticOutput() }
     , fDebug              { params().Debug() }
     // cache
@@ -461,6 +508,17 @@ namespace daq
           << offset << " seconds) is not supported any more.\n";
       }
     }
+
+    // --- BEGIN ---  Configuration dump  --------------------------------------
+    if (!fChangeGateTypes.empty()) {
+      mf::LogInfo log{ "TriggerDecoderV3" };
+      log << "There are " << fChangeGateTypes.size()
+        << " gate changes requested:";
+      for (auto const& [ from, to ]: fChangeGateTypes)
+        log << "\n - " << from << " => " << to;
+    }
+    // ---  END  ---  Configuration dump  --------------------------------------
+
     try {
       fChannelMap
         = art::ServiceHandle<icarusDB::IICARUSChannelMap>()->provider();
@@ -711,9 +769,17 @@ namespace daq
     //
     // extra trigger info
     //
+    int gateType = datastream_info.gate_type;
+    if (auto it = fChangeGateTypes.find(gateType); it != fChangeGateTypes.end())
+    {
+      mf::LogTrace{ "TriggerDecoderV3" }
+        << "Changing the gate type from " << gateType << " to " << it->second;
+      gateType = it->second;
+    }
+
     unsigned int const triggerID = datastream_info.wr_event_no;
     sbn::triggerSource beamGateBit;
-    switch (datastream_info.gate_type) {
+    switch (gateType) {
       case TriggerGateTypes::BNB:{
         beamGateBit = sbn::triggerSource::BNB;
       if(datastream_info.trigger_type == 0)
