@@ -39,9 +39,10 @@ namespace icarus::opdet {
  * Generating for any type `ADCT` other that the CLHEP-native `double` requires
  * a conversion and slows down the generation.
  * 
- * Compared to GaussianNoiseGeneratorAlg(), we use a somehow faster random
- * generator; to squeeze the CPU cycles, we avoid the CLHEP interface as much as
- * possible; the random number from the engine is immediately converted
+ * Compared to `icarus::opdet::GaussianNoiseGeneratorAlg`, we use a somehow
+ * faster Gaussian adaptor, implemented in `util::FastAndPoorGauss`, for random
+ * number generation; to squeeze the CPU cycles, we avoid the CLHEP interface as
+ * much as possible; the random number from the engine is immediately converted
  * to single precision, and the rest of the math happens in there as well.
  * No virtual interfaces nor indirection is involved within this function
  * (except for CLHEP random engine and the call to `add()`/`fill()`). We
@@ -51,6 +52,12 @@ namespace icarus::opdet {
  * 
  * Note that unless the random engine is multi-thread safe, this function
  * won't gain anything from multi-threading.
+ * 
+ * @note The cost of the fast adaptor is a resolution worsening on the tails
+ *       of the distribution. With `131072` sampling points (value at the time
+ *       of writing), only 8 values are above 4 standard deviations, with a
+ *       maximum value of `4.62`. With `262144` points there would be 17 values
+ *       above 4 s.d. and a maximum of about `4.76`.
  * 
  * @note Despite the name, the generator limits to generate one sample per call.
  *       It may be possible, if this proved to be a limitation, to extend
@@ -117,7 +124,7 @@ class icarus::opdet::FastGaussianNoiseGeneratorAlg
   
     private:
   
-  using GaussAdapter_t = util::FastAndPoorGauss<32768U, ADCvalue_t>;
+  using GaussAdapter_t = util::FastAndPoorGauss<131072U, ADCvalue_t>;
   
   // --- BEGIN -- Configuration parameters -------------------------------------
   

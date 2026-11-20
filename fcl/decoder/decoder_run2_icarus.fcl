@@ -9,11 +9,11 @@ process_name: stage0
 ## Define the path we'll execute
 physics.path:     [ "filterdataintegrity",
       "triggerconfig",
-      "daqTrigger",                # Note sure if we actually need some of these trigger and PMT stuff other than daqPMT... Gianluca?
+      "daqTrigger",
       "pmtconfig",
       "daqPMT",
       "pmtconfigbaselines",
-      "pmtthr",                    # ???
+      "pmtthr",                    # discrimination for trigger emulation (cheaper than carrying waveforms around)
       "pmtbaselines",
       "daqCRT",
       "crthit",

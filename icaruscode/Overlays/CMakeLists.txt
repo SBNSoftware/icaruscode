@@ -15,8 +15,7 @@ link_directories( $ENV{LARWIRECELL_LIB} )
 
 cet_build_plugin(
   SimInfoOverlayFilter art::EDFilter
-  LIBRARIES
-  PRIVATE
+  LIBRARIES PRIVATE
   larcoreobj::SummaryData
   lardataobj::Simulation
   nusimdata::SimulationBase
@@ -25,9 +24,15 @@ cet_build_plugin(
 
 cet_build_plugin(
   SubRunPOTInEvent art::EDProducer
-  LIBRARIES
-  PRIVATE
+  LIBRARIES PRIVATE
   larcoreobj::SummaryData
+)
+
+cet_build_plugin(RebuildShiftedTrigger art::module LIBRARIES
+  lardata::DetectorClocksService
+  icarusalg::Utilities
+  sbnobj::Common_Trigger
+  lardataobj::RawData
 )
 
 # This is what's needed for building the WireCellubsim WCT component
@@ -44,13 +49,12 @@ art_make_library(
 	lardata::ArtDataHelper
         ${FHICLCPP}
         cetlib_except::cetlib_except
-	WireCellGen
-	WireCellUtil
-	WireCellAux
-	WireCellIface
-	WireCellPgraph
-	WireCellRoot
-	jsoncpp
+	WireCell::Gen
+	WireCell::Util
+	WireCell::Aux
+	WireCell::Iface
+	WireCell::Pgraph
+        WireCell::Root
 	dl
 )
 

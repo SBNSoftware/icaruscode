@@ -1,0 +1,31 @@
+process_name: analyzeinference
+
+source: {
+   module_type: RootInput
+   maxEvents:   -1
+}
+
+services: {
+   TFileService: { fileName: "PandoraHitTree.root" }
+}
+
+
+physics: {
+   analyzers: {
+      PandoraHitDumpAnaCryoE: { 
+         module_type:  "ICARUSPandoraHitDumpAnalyzer" 
+         HitLabel:     "cluster3DCryoE"
+         PandoraLabel: "pandoraGausCryoE"
+      }
+      PandoraHitDumpAnaCryoW: { 
+         module_type:  "ICARUSPandoraHitDumpAnalyzer" 
+         HitLabel:     "cluster3DCryoW"
+         PandoraLabel: "pandoraGausCryoW"
+      }
+   }
+
+   reco:       []
+   ana:        [ PandoraHitDumpAnaCryoE, PandoraHitDumpAnaCryoW ]
+
+   end_paths:  [ ana ]
+}

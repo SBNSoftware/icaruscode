@@ -14,7 +14,7 @@
 #include "larevt/CalibrationDBI/Interface/DetPedestalProvider.h"
 #include "larreco/HitFinder/HitFinderTools/IWaveformTool.h"
 
-#include "icaruscode/TPC/Utilities/SignalShapingICARUSService_service.h"
+#include "icaruscode/TPC/Utilities/SignalShapingICARUSService.h"
 
 #include "TH1.h"
 #include "TH2.h"

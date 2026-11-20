@@ -12,6 +12,7 @@ icarus_pmttimingservice:
       CosmicsTag: @local::ICARUS_Calibration_GlobalTags.pmt_cosmics_timing_data
     }
     Verbose:          false
+    OverrideRunNumber: -1
 }
 
 icarus_ophit_timing_correction:

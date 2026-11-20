@@ -1,5 +1,8 @@
+# add timing corrections to optical path by overriding ophit
+physics.producers.ophit: @local::icarus_ophit_timing_correction
+
 # Exclude crthit from path -- not needed since it's included at overlay stage
-physics.path: [   @sequence::icarus_stage0_mc_PMT, 
+physics.path: [   @sequence::icarus_stage0_overlay_PMT, 
                   MCDecodeTPCROI, 
                   @sequence::icarus_stage0_2d_multiTPC,
                   @sequence::icarus_stage0_mc_crtreco
@@ -9,7 +12,12 @@ physics.path: [   @sequence::icarus_stage0_mc_PMT,
 physics.producers.MCDecodeTPCROI.FragmentsLabelVec: ["overlayTPCRawWW", "overlayTPCRawWE", "overlayTPCRawEW", "overlayTPCRawEE"]
 physics.producers.pmtbaselines.OpticalWaveforms: "overlayOpWaveforms"
 physics.producers.pmtfixedthr.OpticalWaveforms: "overlayOpWaveforms"
-physics.producers.opdetonbeam.OpticalWaveforms: "overlayOpWaveforms"
-physics.producers.ophit.InputModule: "overlayOpWaveforms"
+physics.producers.pmtfixedthr.Baselines: "overlayOpWaveforms"
+physics.producers.opdetonbeam.Waveforms: "overlayOpWaveforms"
+physics.producers.opdetonbeam.WaveformBaselineAssns: "overlayOpWaveforms"
+physics.producers.ophituncorrected.InputModule: "overlayOpWaveforms"
+physics.producers.ophit.InputLabels: [ "ophituncorrected" ]
 physics.producers.crttrack.DataLabelHits: "overlayCRTHit"
 physics.producers.crtpmt.CrtHitModuleLabel: "overlayCRTHit"
+physics.producers.emuTrigger:
+  @local::icarus_shifting_triggersim.producers.emuTrigger  # from trigger_emulation_icarus.fcl

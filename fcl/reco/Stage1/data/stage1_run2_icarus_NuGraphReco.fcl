@@ -1,0 +1,81 @@
+#include "stage1_icarus_driver_common.fcl"
+
+process_name: stage1
+
+physics.reco: [ @sequence::icarus_filter2D_cluster3D,
+                @sequence::icarus_pandora_Gauss,
+                @sequence::icarus_reco_fm,
+                @sequence::icarus_postPandora_Gauss_NuGraphReco,
+                @sequence::icarus_tpcpmtbarycentermatch,
+                @sequence::icarus_crttrack,
+                @sequence::icarus_crtt0tagging,
+                caloskimCalorimetryCryoE, caloskimCalorimetryCryoW]
+
+physics.outana:            [ @sequence::icarus_analysis_modules ]
+physics.trigger_paths:     [ reco ]
+physics.end_paths:         [ outana, stream1 ]
+outputs.out1.fileName:     "%ifb_%tc-%p.root"
+outputs.out1.dataTier:     "reconstructed"
+outputs.out1.SelectEvents: [ reco ]
+outputs.out1.outputCommands: [
+  "keep *_*_*_*",
+  "drop *_caloskimCalorimetryCryoE_*_*",
+  "drop *_caloskimCalorimetryCryoW_*_*"
+]
+
+# Redefine TPCPMTBarycenterMatch producers with the different Pandora label
+physics.producers.tpcpmtbarycentermatchCryoE.PandoraLabel: "pandoraGausNuGraphReco"
+physics.producers.tpcpmtbarycentermatchCryoW.PandoraLabel: "pandoraGausNuGraphReco"
+
+# Update Pandora tags after NuGraph for track and shower characterization
+physics.producers.pandoraTrackGausCryoE.PFParticleLabel:       "pandoraGausNuGraphRecoCryoE"
+physics.producers.pandoraTrackGausCryoE.UseAllParticles:       true
+physics.producers.pandoraTrackGausCryoW.PFParticleLabel:       "pandoraGausNuGraphRecoCryoW"
+physics.producers.pandoraTrackGausCryoW.UseAllParticles:       true
+
+physics.producers.pandoraKalmanTrackGausCryoE.inputCollection: "pandoraGausNuGraphRecoCryoE"
+physics.producers.pandoraKalmanTrackGausCryoE.trackInputTag:   "pandoraTrackGausCryoE"
+physics.producers.pandoraKalmanTrackGausCryoW.inputCollection: "pandoraGausNuGraphRecoCryoW"
+physics.producers.pandoraKalmanTrackGausCryoW.trackInputTag:   "pandoraTrackGausCryoW"
+
+physics.producers.SBNShowerGausCryoE.PFParticleLabel:          "pandoraGausNuGraphRecoCryoE"
+physics.producers.SBNShowerGausCryoE.UseAllParticles:          true
+physics.producers.SBNShowerGausCryoW.PFParticleLabel:          "pandoraGausNuGraphRecoCryoW"
+physics.producers.SBNShowerGausCryoW.UseAllParticles:          true
+
+physics.analyzers.caloskimE.SelectEvents: [reco]
+physics.analyzers.caloskimW.SelectEvents: [reco]
+
+# Disabled Space-Charge service for calorimetry
+services.SpaceChargeService: {
+    EnableCalEfieldSCE: false
+    EnableCalSpatialSCE: false
+    EnableCorrSCE: false
+    EnableSimEfieldSCE: false
+    EnableSimSpatialSCE: false
+    InputFilename: "SCEoffsets/SCEoffsets_ICARUS_E500_voxelTH3.root"
+    RepresentationType: "Voxelized_TH3"
+    service_provider: "SpaceChargeServiceICARUS"
+}
+
+services.message.destinations :
+{
+  STDCOUT:
+  {
+     type:      "cout"      #tells the message service to output this destination to cout
+     threshold: "WARNING"   #tells the message service that this destination applies to WARNING and higher level messages
+     categories:
+     {
+       Cluster3DICARUS:
+       {
+         limit: 5
+         reportEvery: 1
+       }
+       SnippetHit3D:
+       {
+         limit: 5
+         reportEvery: 1
+       }
+     }
+  }
+}

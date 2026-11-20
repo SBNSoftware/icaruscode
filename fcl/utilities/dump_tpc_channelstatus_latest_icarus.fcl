@@ -1,0 +1,57 @@
+#
+# File:    dump_tpc_channelstatus_latest_icarus.fcl
+# Purpose: Dumps the channel status database for the most recent events.
+# Author:  Gianluca Petrillo (petrillo@slac.stanford.edu)
+# Date:    March 11, 2025
+#
+# This job prints into a file `TPCchannelStatus-ICARUS.log` the status of
+# all TPC channels in the detector.
+# It uses the default timestamp "far into the future" to print the latest
+# states available.
+#
+
+#include "geometry_icarus.fcl"
+#include "database_icarus.fcl"
+#include "messages_icarus.fcl"
+
+
+process_name: TPCchState
+
+services: {
+                        @table::icarus_geometry_services
+  message:              @local::icarus_message_services_interactive
+} # services
+services.AuxDetGeometry: @erase
+
+source: {
+  module_type: EmptyEvent
+  maxEvents:   0
+}
+
+physics: {
+  analyzers: {
+    dumpTPCstatus: {
+      module_type:            DumpTPCchannelStatusDB
+      ProviderConfiguration: @local::icarus_siov_channelstatus_service.ChannelStatusProvider  # from database_icarus.fcl
+      LogCategory:            DumpTPCchannelStatusDB
+    }
+  }
+  
+  dumpers: [ dumpTPCstatus ]
+}
+
+
+#
+# divert the message category "DumpTPCchannelStatusDB" from standard output
+#   into "TPCchannelStatus-ICARUS.log" file:
+#
+services.message.destinations.LogStandardOut.categories.DumpTPCchannelStatusDB: { limit: 0 }
+services.message.destinations.DumpLog: {
+             @table::message_infofile_icarus
+  filename:  "TPCchannelStatus-ICARUS.log"
+  categories: {
+    DumpTPCchannelStatusDB: { limit: -1 }
+    default:                { limit: 0 }
+  }
+} # services.message.destinations.DumpLog
+

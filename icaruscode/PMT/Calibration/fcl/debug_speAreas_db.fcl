@@ -1,0 +1,19 @@
+### File: debug_speAreas_db
+### Author: M. Carrigan
+
+### This test FHiCL runs the official `stage0` flow exposing 
+### the configuration of the `IPhotonCalibratorService` service 
+### to debug/verify the use of the speAreas database.
+
+#include "messages_icarus.fcl"
+#include "stage0_run2_wcdnn_icarus.fcl"
+
+process_name: stage0p1
+
+### expose speAreas DB service configuration:
+services.IPhotonCalibratorService.Verbose: true
+services.IPhotonCalibratorService.AreaTag: "v1r0"
+services.IPMTTimingCorrectionService.Verbose: true
+
+### enable interactive deugging messages
+services.message: @local::icarus_message_services_interactive_debug

@@ -25,9 +25,9 @@ SimpleFlashCryo1.OpChannelRange: [180,359]
 
 
 SimpleFlashDataCryo0: @local::SimpleFlashCryo0
-SimpleFlashDataCryo0.PEThreshold:    100
+SimpleFlashDataCryo0.PEThreshold:    200
 SimpleFlashDataCryo0.PEThresholdHit: 1.0
-SimpleFlashDataCryo0.MinPECoinc:     100
+SimpleFlashDataCryo0.MinPECoinc:     200
 SimpleFlashDataCryo0.MinMultCoinc:   5
 SimpleFlashDataCryo0.IntegralTime:   1.
 SimpleFlashDataCryo0.PreSample:      0.02
@@ -35,9 +35,9 @@ SimpleFlashDataCryo0.VetoSize:       1.
 SimpleFlashDataCryo0.TimeResolution: 0.01
 
 SimpleFlashDataCryo1: @local::SimpleFlashCryo1
-SimpleFlashDataCryo1.PEThreshold:    100
+SimpleFlashDataCryo1.PEThreshold:    200
 SimpleFlashDataCryo1.PEThresholdHit: 1.0
-SimpleFlashDataCryo1.MinPECoinc:     100
+SimpleFlashDataCryo1.MinPECoinc:     200
 SimpleFlashDataCryo1.MinMultCoinc:   5
 SimpleFlashDataCryo1.IntegralTime:   1.
 SimpleFlashDataCryo1.PreSample:      0.02

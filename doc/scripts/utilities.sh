@@ -242,7 +242,7 @@ function ExperimentSetup() {
   [[ -r "$SetupScript" ]] || FATAL 1 "Can't find setup script for experiment '${Experiment}'."
   
   echo "Setting up the UPS area for ${Experiment}..."
-  source "$SetupScript"
+  source "$SetupScript" || LASTFATAL "Failed to set up the UPS area."
   
   local -r LatestVersion=$(FindLatestUPS "$ExperimentCodeName")
   

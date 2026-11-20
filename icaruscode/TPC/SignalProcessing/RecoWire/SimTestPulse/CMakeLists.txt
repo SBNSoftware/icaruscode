@@ -11,7 +11,7 @@ set(		MODULE_LIBRARIES
 			icaruscode::TPC_SignalProcessing_RecoWire_SimTestPulse
 			icaruscode::TPC_Utilities_SignalShapingICARUSService_service
 			lardata::Utilities
-			lardata::DetectorInfoServices_DetectorClocksServiceStandard_service
+			lardata::DetectorClocksService
 			lardataobj::Simulation
 			larcoreobj::SummaryData
 			larcorealg::Geometry
@@ -45,9 +45,9 @@ set(		MODULE_LIBRARIES
 			ROOT::FFTW
 			ROOT::Tree
 )
-cet_build_plugin(SimTestPulseAna art::module LIBRARIES ${MODULE_LIBRARIES})
-cet_build_plugin(SimTestPulseWire art::module LIBRARIES ${MODULE_LIBRARIES})
-cet_build_plugin(SimTestPulse art::module LIBRARIES ${MODULE_LIBRARIES})
+cet_build_plugin(SimTestPulseAna art::module LIBRARIES PRIVATE ${MODULE_LIBRARIES})
+cet_build_plugin(SimTestPulseWire art::module LIBRARIES PRIVATE ${MODULE_LIBRARIES})
+cet_build_plugin(SimTestPulse art::module LIBRARIES PRIVATE ${MODULE_LIBRARIES})
 
 install_fhicl()
 

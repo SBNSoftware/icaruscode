@@ -5,7 +5,7 @@
 #include "timing_icarus.fcl"
 #include "icarus_ophitfinder.fcl"
 
-#include "pmt-calibration.fcl"
+#include "pmt_calibration_icarus.fcl"
 
 process_name: BkgphotonsCalibration
 

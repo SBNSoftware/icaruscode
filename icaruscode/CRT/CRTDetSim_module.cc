@@ -9,7 +9,7 @@
 ///
 /// Author: Chris.Hilgenberg@colostate.edu
 ///
-/// Extracts position, time, and energy deposited, aint with
+/// Extracts position, time, and energy deposited, a int with
 ///   trackID associated with deposit from AuxDetSimChannel objects
 ///   produced by G4 stage. The trackID is used for truth matching.
 /// Simulated CRT data products are intended to match the known
@@ -20,31 +20,31 @@
 //      3) ADC from hit
 ///   Effects included are
 ///     * time 
-///         - light propegation delay in scintillator and WLS fiber
+///         - light propagation delay in scintillator and WLS fiber
 ///         - smearing in the arrival time at the SiPM due to scattering
 ///         - amplitude dependant smearing due to the discriminator
 ///     * position
 ///         - AuxDetSimChannel provides true entry and exit point in scintillator strip
 ///         - take arithmetic mean as true "hit" position
 ///         - "hit" position defines transverse distance (hit to fiber) and
-///           intitudinal distance (length of WLS fiber between fiber entry and SiPM)
+///           longitudinal distance (length of WLS fiber between fiber entry and SiPM)
 ///     * energy deposited
 ///         - take true energy deposited in scintillator strip
 ///         - convert true energy to photons yielded (taken from measurements on
 ///               normally incident MIP muons
-///         - using known attenuation lengths for bulk scinillator and WLS fiber,
-///               apply attenuation correction using transverse and intitudinal
-///               propegation distances respectively and a simple exponential model
+///         - using known attenuation lengths for bulk scintillator and WLS fiber,
+///               apply attenuation correction using transverse and longitudinal
+///               propagation distances respectively and a simple exponential model
 ///         - for the attenuated light arriving at the SiPM, correct for counting
 ///               statistics sampling from Poisson
 ///         - convert N photons seen by SiPM into ADCs using known pedestal and 
 ///               gain values for each channel (assumed all the same for now) 
 ///               ADC_i = gain_i * nphotons + ped_i
-///         - smear ADC using guasian with ADC_i as mean and 
+///         - smear ADC using Gaussian with ADC_i as mean and 
 ///               width = width_pedestal+sqrt(nphotons)
-///     * front-end electonics deadtime
+///     * front-end electronics dead time
 ///         - sort vector of data products by time (T0)
-///         - for C and D type modules, intermodule coincidence is applied
+///         - for C and D type modules, inter-module coincidence is applied
 ///            - one strip from each of 2 layers must be above threshold
 ///         - for M modules, only one channel is required to be above threshold
 ///         - the earliest channel that was part of the trigger provides the T0
@@ -53,7 +53,7 @@
 ///            the data (charge and time) is added the "track and hold list"
 ///         - channels in track and hold do not accept new data during the readout window
 ///         - after the readout window has passed, no channels can receive data until the 
-///           (FHiCL congifurable) deadtime has passed. Channels are then reset and
+///           (FHiCL configurable) dead time has passed. Channels are then reset and
 ///           the front-end board is again able to trigger
 ///
 /////////////////////////////////////////////////////////////////////////////////////////

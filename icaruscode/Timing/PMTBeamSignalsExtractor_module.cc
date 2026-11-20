@@ -18,7 +18,7 @@
 #include "sbnobj/Common/Trigger/ExtraTriggerInfo.h"
 #include "icaruscode/Decode/ChannelMapping/IICARUSChannelMap.h"
 #include "icaruscode/IcarusObj/PMTWaveformTimeCorrection.h"
-#include "icaruscode/IcarusObj/PMTBeamSignal.h"
+#include "sbnobj/Common/PMT/Data/PMTBeamSignal.hh"
 #include "lardataalg/DetectorInfo/DetectorTimingTypes.h" // electronics_time
 #include "lardataalg/Utilities/quantities/spacetime.h"
 #include "lardataobj/RawData/OpDetWaveform.h"
@@ -91,7 +91,7 @@ namespace icarus::timing
  * Output products
  * -------------------------
  *
- * This modules produces two `std::vector<icarus::timing::PMTBeamSignal>`
+ * This modules produces two `std::vector<sbn::timing::PMTBeamSignal>`
  * with 360 elements each, representing the relevent RWM or EW time for
  * the corresponding PMT channel. When the discrimination algorithm decides
  * the "peak" on a waveform to be noise, the corresponding entries are placed
@@ -208,10 +208,10 @@ private:
   std::vector<short> m_wf;
 
   // prepare pointers for data products
-  using BeamSignalCollection = std::vector<icarus::timing::PMTBeamSignal>;
+  using BeamSignalCollection = std::vector<sbn::timing::PMTBeamSignal>;
   using BeamSignalCollectionPtr = std::unique_ptr<BeamSignalCollection>;
 
-  std::map<std::string, std::map<std::string, icarus::timing::PMTBeamSignal>> fBeamSignals;
+  std::map<std::string, std::map<std::string, sbn::timing::PMTBeamSignal>> fBeamSignals;
   std::map<std::string, BeamSignalCollectionPtr> fSignalCollection;
 };
 
@@ -234,8 +234,8 @@ icarus::timing::PMTBeamSignalsExtractor::PMTBeamSignalsExtractor(fhicl::Paramete
   consumes<std::vector<raw::OpDetWaveform>>(fRWMlabel);
 
   // Call appropriate produces<>() functions here.
-  produces<std::vector<PMTBeamSignal>>("RWM");
-  produces<std::vector<PMTBeamSignal>>("EW");
+  produces<std::vector<sbn::timing::PMTBeamSignal>>("RWM");
+  produces<std::vector<sbn::timing::PMTBeamSignal>>("EW");
 }
 
 // -----------------------------------------------------------------------------
@@ -382,7 +382,7 @@ void icarus::timing::PMTBeamSignalsExtractor::extractBeamSignalTime(art::Event &
 
   // get the start sample of the signals, one instance per PMT crate
   // use threshold to skip spikes from electric crosstalk see SBN-doc-34928, slides 4-5.
-  // if no signal is found, set both times to icarus::timing::NoTime
+  // if no signal is found, set both times to sbn::timing::NoTime
   // so that `isValid()` in PMTBeamSignal will complain if someone checks it
   for (auto const &wave : waveforms)
   {
@@ -394,12 +394,12 @@ void icarus::timing::PMTBeamSignalsExtractor::extractBeamSignalTime(art::Event &
 
     m_channel = wave.ChannelNumber();
     m_wfstart = tstart.value();
-    m_utime_abs = (m_sample != icarus::timing::NoSample) ? tstart.value() + fPMTsamplingTick * m_sample : icarus::timing::NoTime;
-    m_time_abs = (m_sample != icarus::timing::NoSample) ? m_utime_abs + getTriggerCorrection(m_channel) : icarus::timing::NoTime;
-    m_time = (m_sample != icarus::timing::NoSample) ? m_time_abs - ftriggerTime : icarus::timing::NoTime;
+    m_utime_abs = (m_sample != sbn::timing::NoSample) ? tstart.value() + fPMTsamplingTick * m_sample : sbn::timing::NoTime;
+    m_time_abs = (m_sample != sbn::timing::NoSample) ? m_utime_abs + getTriggerCorrection(m_channel) : sbn::timing::NoTime;
+    m_time = (m_sample != sbn::timing::NoSample) ? m_time_abs - ftriggerTime : sbn::timing::NoTime;
 
     std::string crate = getCrate(m_channel);
-    icarus::timing::PMTBeamSignal beamTime{m_channel, getDigitizerLabel(m_channel), crate, m_sample, m_time_abs, m_time};
+    sbn::timing::PMTBeamSignal beamTime{m_channel, getDigitizerLabel(m_channel), crate, m_sample, m_time_abs, m_time};
     fBeamSignals[l].emplace(crate, std::move(beamTime));
 
     if (fDebugTrees)
@@ -471,7 +471,7 @@ std::size_t icarus::timing::PMTBeamSignalsExtractor::getStartSample(std::vector<
   auto delta = vv[maxbin] - vv[minbin];
 
   if (delta < thres)                 // just noise
-    return icarus::timing::NoSample; // return no sample
+    return sbn::timing::NoSample; // return no sample
 
   for (std::size_t bin = maxbin; bin < minbin; bin++)
   {

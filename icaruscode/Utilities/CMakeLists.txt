@@ -15,7 +15,7 @@ art_make_library(
                 sbnobj::Common_CRT
 	)
 
-cet_build_plugin(SaveConfigurationIntoTFile art::module LIBRARIES
+cet_build_plugin(SaveConfigurationIntoTFile art::module LIBRARIES PRIVATE
 		art_root_io::TFileService_service
 		art_root_io::tfile_support
 		art::Framework_Services_Registry
@@ -30,18 +30,33 @@ cet_build_plugin(SaveConfigurationIntoTFile art::module LIBRARIES
 	)
 
 
-cet_build_plugin(DuplicateEventTracker art::service LIBRARIES
+# NOTE: DuplicateEventTracker exposes an interface,
+#       but PRIVATE linking makes that inaccessible to modules.
+cet_build_plugin(DuplicateEventTracker art::service LIBRARIES PRIVATE
 		icaruscode::Utilities
 		art::Framework_Principal
 		messagefacility::MF_MessageLogger
 	)
 
-cet_build_plugin(DumpCRTPMTMatching art::module LIBRARIES
+cet_build_plugin(DumpCRTPMTMatching art::module LIBRARIES PRIVATE
 		icaruscode::Utilities
 		icaruscode::IcarusObj
 		sbnobj::Common_CRT
 		lardataobj::RecoBase
-		canvas::canvas
+	)
+
+cet_build_plugin(DataProductReader art::module LIBRARIES
+		icaruscode::IcarusObj
+		icarusalg::Utilities
+		larcorealg::CoreUtils
+		sbnobj::Common_CRT
+		sbnobj::Common_Trigger
+		sbnobj::ICARUS_CRT
+		sbnobj::ICARUS_PMT_Data
+		sbnobj::ICARUS_PMT_Trigger_Data
+		lardataobj::RawData
+		lardataobj::RecoBase
+		lardataobj::Simulation
 	)
 
 cet_build_plugin(DummyFilter art::module)

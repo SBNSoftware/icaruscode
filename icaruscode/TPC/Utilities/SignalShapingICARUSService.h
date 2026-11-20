@@ -1,6 +1,6 @@
 ///////////////////////////////////////////////////////////////////////
 ///
-/// \file   SignalShapingICARUSService.h
+/// \file   icaruscode/TPC/Utilities/SignalShapingICARUSService.h
 ///
 /// \brief  Service to provide ICARUS-specific signal shaping for
 ///         simulation (convolution) and reconstruction (deconvolution)./Users/Lsrea/newSim/SignalShapingICARUSService.h

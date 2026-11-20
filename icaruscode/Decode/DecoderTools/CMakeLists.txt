@@ -58,16 +58,16 @@ set(        TOOL_LIBRARIES
                 Boost::program_options
         )
 
-cet_build_plugin(FakeParticle art::tool LIBRARIES ${TOOL_LIBRARIES})
-cet_build_plugin(TPCDecoderFilter1D art::tool LIBRARIES ${TOOL_LIBRARIES})
-cet_build_plugin(TPCDecoderFilter2D art::tool LIBRARIES ${TOOL_LIBRARIES})
-cet_build_plugin(TPCDecoder art::tool LIBRARIES ${TOOL_LIBRARIES})
-cet_build_plugin(TPCNoiseFilter1D art::tool LIBRARIES ${TOOL_LIBRARIES})
-cet_build_plugin(TPCNoiseFilterCanny art::tool LIBRARIES ${TOOL_LIBRARIES})
-cet_build_plugin(TriggerDecoder art::tool LIBRARIES ${TOOL_LIBRARIES})
-cet_build_plugin(TriggerDecoderV2 art::tool LIBRARIES ${TOOL_LIBRARIES})
-cet_build_plugin(TriggerDecoderV3 art::tool LIBRARIES ${TOOL_LIBRARIES})
-cet_build_plugin(TriggerDecoderDispatcher art::tool LIBRARIES ${TOOL_LIBRARIES})
+cet_build_plugin(FakeParticle art::tool LIBRARIES PRIVATE ${TOOL_LIBRARIES})
+cet_build_plugin(TPCDecoderFilter1D art::tool LIBRARIES PRIVATE ${TOOL_LIBRARIES})
+cet_build_plugin(TPCDecoderFilter2D art::tool LIBRARIES PRIVATE ${TOOL_LIBRARIES})
+cet_build_plugin(TPCDecoder art::tool LIBRARIES PRIVATE ${TOOL_LIBRARIES})
+cet_build_plugin(TPCNoiseFilter1D art::tool LIBRARIES PRIVATE ${TOOL_LIBRARIES})
+cet_build_plugin(TPCNoiseFilterCanny art::tool LIBRARIES PRIVATE ${TOOL_LIBRARIES})
+cet_build_plugin(TriggerDecoder art::tool LIBRARIES PRIVATE ${TOOL_LIBRARIES})
+cet_build_plugin(TriggerDecoderV2 art::tool LIBRARIES PRIVATE ${TOOL_LIBRARIES})
+cet_build_plugin(TriggerDecoderV3 art::tool LIBRARIES PRIVATE ${TOOL_LIBRARIES})
+cet_build_plugin(TriggerDecoderDispatcher art::tool LIBRARIES PRIVATE ${TOOL_LIBRARIES})
 
 
 
