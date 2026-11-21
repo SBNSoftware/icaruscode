@@ -74,6 +74,11 @@ outputs.out1.outputCommands: [
   "drop *_caloskimCalorimetryCryoW_*_*"
 ]
 
+# Pandora + NG2 + Pandora is required to have cluster3D* modules 
+#   (using updated, pandora-specific, cluster3D instance) 
+physics.producers.pandoraGausCryoE.HitFinderModuleLabel: "pandoraCluster3DCryoE"
+physics.producers.pandoraGausCryoW.HitFinderModuleLabel: "pandoraCluster3DCryoW"
+
 # Redefine TPCPMTBarycenterMatch producers with MC parameters and with the different Pandora label
 # Also, relax a bit the allowed charge-to-light time overlap
 physics.producers.tpcpmtbarycentermatchCryoE: @local::mc_tpcpmtbarycentermatchproducer_east

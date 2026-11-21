@@ -43,5 +43,10 @@ icarus_cluster3d.ClusterPathAlg.ClusterAlg.MinPairPts:                      1
 icarus_cluster3d.ClusterPathAlg.ClusterAlg.kdTree.PairSigmaPeakTime:        3.0
 icarus_cluster3d.ClusterPathAlg.ClusterAlg.kdTree.RefLeafBestDist:          0.75
 
-
+icarus_cluster3d.MakeSpacePointsOnly: true
+icarus_cluster3d.Hit3DBuilderAlg.PulseHeightFraction:  0. #0.75 #0.25
+icarus_cluster3d.Hit3DBuilderAlg.PHLowSelection:       0. #4.0 # 20.
+icarus_cluster3d.Hit3DBuilderAlg.MaxHitChiSquare:      1000000.
+icarus_cluster3d.Hit3DBuilderAlg.MaxMythicalChiSquare: 30.
+icarus_cluster3d.Hit3DBuilderAlg.OutputHistograms:     false
 END_PROLOG
