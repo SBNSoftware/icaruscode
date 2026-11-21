@@ -8,6 +8,30 @@
 //
 ///////////////////////////////////////////////
 
+#include "icaruscode/Decode/DataProducts/TriggerConfiguration.h"
+#include "icaruscode/Decode/DecoderTools/IDecoder.h"
+#include "icaruscode/Decode/DecoderTools/Dumpers/FragmentDumper.h" // dumpFragment()
+#include "icaruscode/Decode/DecoderTools/details/KeyedCSVparser.h"
+#include "icaruscode/Decode/DecoderTools/details/KeyValuesData.h"
+#include "icaruscode/Decode/ChannelMapping/IICARUSChannelMap.h"
+#include "icaruscode/Decode/ChannelMapping/IICARUSChannelMapProvider.h"
+#include "icaruscode/PMT/Trigger/Algorithms/LVDSbitMaps.h"
+#include "icaruscode/Utilities/CacheCounter.h" // util::CacheGuard
+#include "icaruscode/Utilities/ChangeTable.h" // util::fhicl::ChangeSequence
+#include "icarusalg/Utilities/BinaryDumpUtils.h" // icarus::ns::util::bin()
+#include "sbnobj/Common/Trigger/ExtraTriggerInfo.h"
+#include "sbnobj/Common/Trigger/BeamBits.h"
+#include "sbndaq-artdaq-core/Overlays/ICARUS/ICARUSTriggerV3Fragment.hh"
+
+#include "lardata/DetectorInfoServices/DetectorClocksService.h"
+#include "lardataalg/DetectorInfo/DetectorTimings.h"
+#include "lardataalg/Utilities/quantities/spacetime.h" // util::quantities::nanosecond
+#include "larcorealg/CoreUtils/enumerate.h"
+#include "larcorealg/CoreUtils/counter.h"
+#include "lardataobj/RawData/ExternalTrigger.h"
+#include "lardataobj/RawData/TriggerData.h" // raw::Trigger
+#include "lardataobj/Simulation/BeamGateInfo.h"
+
 #include "art/Framework/Core/EDProducer.h"
 #include "art/Framework/Core/ConsumesCollector.h"
 #include "art/Framework/Core/ProducesCollector.h"
@@ -18,34 +42,11 @@
 #include "art/Persistency/Common/PtrMaker.h"
 #include "art/Utilities/ToolMacros.h"
 #include "art/Utilities/ToolConfigTable.h"
+#include "canvas/Utilities/Exception.h"
 #include "cetlib/cpu_timer.h"
 #include "fhiclcpp/types/OptionalAtom.h"
 #include "fhiclcpp/types/Atom.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
-
-#include "lardata/DetectorInfoServices/DetectorClocksService.h"
-#include "lardataalg/DetectorInfo/DetectorTimings.h"
-#include "lardataalg/Utilities/quantities/spacetime.h" // util::quantities::nanosecond
-#include "larcorealg/CoreUtils/enumerate.h"
-#include "larcorealg/CoreUtils/counter.h"
-#include "lardataobj/RawData/ExternalTrigger.h"
-#include "lardataobj/RawData/TriggerData.h" // raw::Trigger
-#include "lardataobj/Simulation/BeamGateInfo.h"
-#include "sbndaq-artdaq-core/Overlays/ICARUS/ICARUSTriggerV3Fragment.hh"
-
-#include "sbnobj/Common/Trigger/ExtraTriggerInfo.h"
-#include "icaruscode/Decode/DataProducts/TriggerConfiguration.h"
-#include "icaruscode/Decode/DecoderTools/IDecoder.h"
-#include "sbnobj/Common/Trigger/BeamBits.h"
-#include "icaruscode/Decode/DecoderTools/Dumpers/FragmentDumper.h" // dumpFragment()
-#include "icaruscode/Decode/DecoderTools/details/KeyedCSVparser.h"
-#include "icaruscode/Decode/DecoderTools/details/KeyValuesData.h"
-#include "icaruscode/Decode/ChannelMapping/IICARUSChannelMap.h"
-#include "icaruscode/Decode/ChannelMapping/IICARUSChannelMapProvider.h"
-#include "icaruscode/PMT/Trigger/Algorithms/LVDSbitMaps.h"
-#include "icaruscode/Utilities/CacheCounter.h" // util::CacheGuard
-#include "icaruscode/Utilities/ChangeTable.h" // util::fhicl::ChangeBitTable
-#include "icarusalg/Utilities/BinaryDumpUtils.h" // hexdump() DEBUG
 
 #include <cstdlib>
 #include <iostream>
@@ -746,8 +747,6 @@ namespace daq
 
       enablegate_ts += raw_en_ts - raw_wr_ts;
     } // if has gate information
-
-    // --- END ---- TEMPORARY --------------------------------------------------
 
     if(fDiagnosticOutput || fDebug)
     {
