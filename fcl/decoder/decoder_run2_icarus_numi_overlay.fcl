@@ -1,0 +1,28 @@
+#
+# File:    decoder_run2_icarus_numi_overlay.fcl
+# Purpose: Decoder of the data overlay for NuMI simulation.
+# Author:  Gianluca Petrillo (petrillo@slac.stanford.edu)
+# Date:    November 18, 2026
+#
+# This configuration is designed to be run for decoding the data events
+# constituting the overlay for simulations on NuMI beam.
+# It is pretty identical to the standard one, with the exception that the data
+# belonging to a BNB or calibration stream is hacked to look like it belonged
+# to a NuMI stream. Then, assuming that the NuMI trigger gate configuration
+# from the hardware is correct, these events will propagate the faked stream
+# to the rest of the simulation and reconstruction chain.
+#
+#
+
+#include "decoder_run2_icarus.fcl"
+
+# ... put some sanity back in this configuration
+services.message: @local::icarus_message_services_interactive_debug
+source.maxEvents: @erase
+
+
+physics.producers.daqTrigger.DecoderTool.Decoders[2].ToolConfig.ChangeGateType: [
+    { From: BNB         To: NuMI        },
+    { From: OffbeamBNB  To: OffbeamNuMI },
+    { From: calib       To: OffbeamNuMI }
+]

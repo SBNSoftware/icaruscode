@@ -21,6 +21,7 @@ art_make_library(SUBDIRS details
 )
 
 set(        TOOL_LIBRARIES
+                sbnalg::Utilities
                 sbndaq_artdaq_core::sbndaq-artdaq-core_Overlays_ICARUS
                 artdaq_core::artdaq-core_Utilities
                 icarus_signal_processing::icarus_signal_processing

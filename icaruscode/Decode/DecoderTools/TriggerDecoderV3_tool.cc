@@ -8,18 +8,21 @@
 //
 ///////////////////////////////////////////////
 
-#include "art/Framework/Core/EDProducer.h"
-#include "art/Framework/Core/ConsumesCollector.h"
-#include "art/Framework/Core/ProducesCollector.h"
-#include "art/Framework/Principal/Run.h"
-#include "art/Framework/Principal/Event.h"
-#include "art/Framework/Principal/Handle.h"
-#include "art/Framework/Services/Registry/ServiceHandle.h"
-#include "art/Persistency/Common/PtrMaker.h"
-#include "art/Utilities/ToolMacros.h"
-#include "cetlib/cpu_timer.h"
-#include "fhiclcpp/ParameterSet.h"
-#include "messagefacility/MessageLogger/MessageLogger.h"
+#include "icaruscode/Decode/DataProducts/TriggerConfiguration.h"
+#include "icaruscode/Decode/DecoderTools/IDecoder.h"
+#include "icaruscode/Decode/DecoderTools/Dumpers/FragmentDumper.h" // dumpFragment()
+#include "icaruscode/Decode/DecoderTools/details/KeyedCSVparser.h"
+#include "icaruscode/Decode/DecoderTools/details/KeyValuesData.h"
+#include "icaruscode/Decode/ChannelMapping/IICARUSChannelMap.h"
+#include "icaruscode/Decode/ChannelMapping/IICARUSChannelMapProvider.h"
+#include "icaruscode/PMT/Trigger/Algorithms/LVDSbitMaps.h"
+#include "icaruscode/Utilities/CacheCounter.h" // util::CacheGuard
+#include "icaruscode/Utilities/ChangeTable.h" // util::fhicl::ChangeSequence
+#include "icarusalg/Utilities/BinaryDumpUtils.h" // icarus::ns::util::bin()
+#include "sbnalg/Utilities/BeamBitsFHiCL.h"
+#include "sbnobj/Common/Trigger/ExtraTriggerInfo.h"
+#include "sbnobj/Common/Trigger/BeamBits.h"
+#include "sbndaq-artdaq-core/Overlays/ICARUS/ICARUSTriggerV3Fragment.hh"
 
 #include "lardata/DetectorInfoServices/DetectorClocksService.h"
 #include "lardataalg/DetectorInfo/DetectorTimings.h"
@@ -29,20 +32,22 @@
 #include "lardataobj/RawData/ExternalTrigger.h"
 #include "lardataobj/RawData/TriggerData.h" // raw::Trigger
 #include "lardataobj/Simulation/BeamGateInfo.h"
-#include "sbndaq-artdaq-core/Overlays/ICARUS/ICARUSTriggerV3Fragment.hh"
 
-#include "sbnobj/Common/Trigger/ExtraTriggerInfo.h"
-#include "icaruscode/Decode/DataProducts/TriggerConfiguration.h"
-#include "icaruscode/Decode/DecoderTools/IDecoder.h"
-#include "sbnobj/Common/Trigger/BeamBits.h"
-#include "icaruscode/Decode/DecoderTools/Dumpers/FragmentDumper.h" // dumpFragment()
-#include "icaruscode/Decode/DecoderTools/details/KeyedCSVparser.h"
-#include "icaruscode/Decode/DecoderTools/details/KeyValuesData.h"
-#include "icaruscode/Decode/ChannelMapping/IICARUSChannelMap.h"
-#include "icaruscode/Decode/ChannelMapping/IICARUSChannelMapProvider.h"
-#include "icaruscode/PMT/Trigger/Algorithms/LVDSbitMaps.h"
-#include "icaruscode/Utilities/CacheCounter.h" // util::CacheGuard
-#include "icarusalg/Utilities/BinaryDumpUtils.h" // hexdump() DEBUG
+#include "art/Framework/Core/EDProducer.h"
+#include "art/Framework/Core/ConsumesCollector.h"
+#include "art/Framework/Core/ProducesCollector.h"
+#include "art/Framework/Principal/Run.h"
+#include "art/Framework/Principal/Event.h"
+#include "art/Framework/Principal/Handle.h"
+#include "art/Framework/Services/Registry/ServiceHandle.h"
+#include "art/Persistency/Common/PtrMaker.h"
+#include "art/Utilities/ToolMacros.h"
+#include "art/Utilities/ToolConfigTable.h"
+#include "canvas/Utilities/Exception.h"
+#include "cetlib/cpu_timer.h"
+#include "fhiclcpp/types/OptionalAtom.h"
+#include "fhiclcpp/types/Atom.h"
+#include "messagefacility/MessageLogger/MessageLogger.h"
 
 #include <cstdlib>
 #include <iostream>
@@ -51,6 +56,7 @@
 #include <optional>
 #include <memory>
 #include <array>
+#include <any>
 
 
 using namespace std::string_literals;
@@ -231,6 +237,32 @@ namespace daq
    * product (`sbn::ExtraTriggerInfo::WRtimeToTriggerTime`).
    *
    *
+   * Trigger gate type change
+   * -------------------------
+   * 
+   * @anchor TriggerDecoderV3_TriggerGateTypeChange
+   * 
+   * The change of gate type is an experimental feature/hack.
+   * The use case has been minimum bias events used as overlay for simulated
+   * events: the simulation may take the trigger gate duration from the
+   * configuration of the trigger for the type of gate registered in each
+   * trigger. Minimum bias triggers can in principle be used as overlay for
+   * events and gates of any type, but during data collection they are assigned
+   * one specific gate. This hack allows to override the gate type assigned
+   * by the hardware to each event.
+   * 
+   * The type of trigger is not touched: minimum bias triggers stay minimum bias
+   * and light-based triggers stay so.
+   * The gate type affects also trigger and gate counts. This feature does not
+   * deal with them, so they should be treated as unreliable. For example,
+   * a minimum bias trigger gate count may show gate numbers that according to
+   * the minimum bias prescale factor would be light-based and not minimum bias.
+   * 
+   * Multiple gate types can be changed in a single pass, explicitly specifying
+   * each change rule. Each trigger and event will undergo a single change.
+   * Gate types that are not specified in the change list are untouched.
+   * 
+   *
    * Configuration
    * --------------
    *
@@ -246,6 +278,13 @@ namespace daq
    *     for the `LVDSstatus` bits, and a warning will be printed. If unset and
    *     the PMT channel mapping database is not available, an exception will be
    *     thrown.
+   * * `ChangeGateType` (list of changes, optional): list of gate type changes;
+   *     each change is a table with two entries:
+   *      * `From`: name of the type of gate to change
+   *      * `To`: name of the gate to change into
+   *     
+   *     Both gate types may be specified by name. Read the
+   *     @ref TriggerDecoderV3_TriggerGateTypeChange "documentation above"!
    * * `DiagnosticOutput` (flag, default: `false`): prints on console trigger
    *     data diagnostics (including a full dump of the parsed content).
    * * `Debug` (flag, default: `false`): prints on console decoding debug
@@ -256,12 +295,65 @@ namespace daq
   {
     using microseconds = util::quantities::microsecond;
     using nanoseconds = util::quantities::nanosecond;
+
+    using ChangeGateSequence_t
+      = ::util::fhicl::ChangeSequence<sbn::triggerSource>;
+
   public:
-    explicit TriggerDecoderV3(fhicl::ParameterSet const &pset);
+    /// FHiCL configuration object.
+
+    struct Config {
+      using Name = fhicl::Name;
+      using Comment = fhicl::Comment;
+      
+      fhicl::Atom<art::InputTag> TrigConfigLabel {
+        Name{ "TrigConfigLabel" },
+        Comment{ "tag of the trigger DAQ fragment data product" }
+      };
+      
+      fhicl::Atom<unsigned int> FPGAtickLength {
+        Name{ "FPGAtickLength" },
+        Comment{ "duration of the trigger FPGA tick [nanoseconds]" },
+        25
+      };
+      
+      fhicl::Atom<bool> AllowDefaultLVDSmap {
+        Name{ "AllowDefaultLVDSmap" },
+        Comment{ "use a default LVDS map if DB not available (may be wrong)" },
+        false
+      };
+      
+      ChangeGateSequence_t ChangeGateType{
+        fhicl::Name{ "ChangeGateType" },
+        fhicl::Comment{ "replace gate type values" }
+        };
+
+      fhicl::Atom<bool> DiagnosticOutput {
+        Name{ "DiagnosticOutput" },
+        Comment{ "enable additional output on console" },
+        false
+      };
+      
+      fhicl::Atom<bool> Debug {
+        Name{ "Debug" },
+        Comment{ "enable debugging output (including packet dump) on console" },
+        false
+      };
+      
+      fhicl::OptionalAtom<long long int> TimeOffset {
+        Name{ "TimeOffset" },
+        Comment{ "disabled: do not use" }
+      };
+      
+    }; // Config
+    
+    using Parameters = art::ToolConfigTable<Config>;
+    
+    explicit TriggerDecoderV3(Parameters const& params);
 
     virtual void consumes(art::ConsumesCollector& collector) override;
     virtual void produces(art::ProducesCollector&) override;
-    virtual void configure(const fhicl::ParameterSet&) override;
+    virtual void configure(const fhicl::ParameterSet&) override {}
     virtual void initializeDataProducts() override;
     virtual void setupRun(art::Run const& run) override;
     virtual void process_fragment(const artdaq::Fragment &fragment) override;
@@ -279,11 +371,25 @@ namespace daq
     std::unique_ptr<RelativeTriggerCollection> fRelTrigger;
     ExtraInfoPtr fTriggerExtra;
     BeamGateInfoPtr fBeamGateInfo;
-    art::InputTag fTriggerConfigTag; ///< Data product with hardware trigger configuration.
-    unsigned int fFPGAtickLength; ///< Tick duration of FPGA clock [ns]
-    bool fAllowDefaultLVDSmap; ///< Allow LVDS mapping without mapping database.
-    bool fDiagnosticOutput; ///< Produces large number of diagnostic messages, use with caution!
-    bool fDebug; ///< Use this for debugging this tool
+    
+    // --- BEGIN --- Configuration parameters ----------------------------------
+    /// Data product with hardware trigger configuration.
+    art::InputTag const fTriggerConfigTag;
+    
+    unsigned int const fFPGAtickLength; ///< Tick duration of FPGA clock [ns]
+    
+    /// Allow LVDS mapping without mapping database.
+    bool const fAllowDefaultLVDSmap;
+    
+    /// Map of changes to gate types.
+    ChangeGateSequence_t::ChangeMap_t const fChangeGateTypes;
+
+    /// Produces large number of diagnostic messages, use with caution!
+    bool const fDiagnosticOutput;
+    
+    bool const fDebug; ///< Use this for debugging this tool
+    
+    // ---  END  --- Configuration parameters ----------------------------------
 
     long fLastEvent = 0;
 
@@ -370,8 +476,14 @@ namespace daq
     template <unsigned int startBit, unsigned int nBits, typename T>
     static constexpr T bits(T value);
 
+    /// Returns the gate type of the trigger source code from the hardware.
+    static sbn::triggerSource toGateType(int gateType);
+    
     /// Returns the beam type corresponding to the specified trigger `source`.
     static sim::BeamType_t simGateType(sbn::triggerSource source);
+
+    /// Translates the hardware gate type code into the final trigger source.
+    sbn::triggerSource setTriggerSource(int hardwareGateType) const;
 
     /// Returns `s` with non-printable characters replaced.
     static std::string sanitize(std::string const& s);
@@ -382,13 +494,41 @@ namespace daq
   std::string const TriggerDecoderV3::CurrentTriggerInstanceName {};
   std::string const TriggerDecoderV3::PreviousTriggerInstanceName { "previous" };
 
-
-  TriggerDecoderV3::TriggerDecoderV3(fhicl::ParameterSet const &pset)
-    : fDetTimings
+  TriggerDecoderV3::TriggerDecoderV3(Parameters const& params)
+    // configuration
+    : fTriggerConfigTag   { params().TrigConfigLabel() }
+    , fFPGAtickLength     { params().FPGAtickLength() }
+    , fAllowDefaultLVDSmap{ params().AllowDefaultLVDSmap() }
+    , fChangeGateTypes    { params().ChangeGateType.map() }
+    , fDiagnosticOutput   { params().DiagnosticOutput() }
+    , fDebug              { params().Debug() }
+    // cache
+    , fDetTimings
       { art::ServiceHandle<detinfo::DetectorClocksService>()->DataForJob() }
     , fChannelMapCacheGuard{ "PMT" } // track the PMT cache only
   {
-    this->configure(pset);
+    if (params().TimeOffset()) {
+      if (auto offset = params().TimeOffset().value(); offset == 0) {
+        mf::LogWarning("TriggerDecoder")
+          << "Configuration parameter 'TimeOffset' has been dropped.\n";
+      }
+      else { // unforgiving: dropping non-zero offset changes output
+        throw art::Exception(art::errors::Configuration)
+          << "Adding offset (configuration parameter 'TimeOffset', here set to "
+          << offset << " seconds) is not supported any more.\n";
+      }
+    }
+
+    // --- BEGIN ---  Configuration dump  --------------------------------------
+    if (!fChangeGateTypes.empty()) {
+      mf::LogInfo log{ "TriggerDecoderV3" };
+      log << "There are " << fChangeGateTypes.size()
+        << " gate changes requested:";
+      for (auto const& [ from, to ]: fChangeGateTypes)
+        log << "\n - " << from << " => " << to;
+    }
+    // ---  END  ---  Configuration dump  --------------------------------------
+
     try {
       fChannelMap
         = art::ServiceHandle<icarusDB::IICARUSChannelMap>()->provider();
@@ -419,28 +559,6 @@ namespace daq
     collector.produces<RelativeTriggerCollection>(CurrentTriggerInstanceName);
     collector.produces<BeamGateInfoCollection>(CurrentTriggerInstanceName);
     collector.produces<sbn::ExtraTriggerInfo>(CurrentTriggerInstanceName);
-  }
-
-
-  void TriggerDecoderV3::configure(fhicl::ParameterSet const &pset)
-  {
-    fTriggerConfigTag = pset.get<std::string>("TrigConfigLabel");
-    fFPGAtickLength = pset.get<unsigned int>("FPGAtickLength", 25);
-    fAllowDefaultLVDSmap = pset.get<bool>("AllowDefaultLVDSmap", false);
-    fDiagnosticOutput = pset.get<bool>("DiagnosticOutput", false);
-    fDebug = pset.get<bool>("Debug", false);
-    if (pset.has_key("TimeOffset")) {
-      if (auto offset = pset.get<long long int>("TimeOffset"); offset == 0) {
-        mf::LogWarning("TriggerDecoder")
-          << "Configuration parameter 'TimeOffset' has been dropped.\n";
-      }
-      else { // unforgiving: dropping non-zero offset changes output
-        throw art::Exception(art::errors::Configuration)
-          << "Adding offset (configuration parameter 'TimeOffset', here set to "
-          << offset << " seconds) is not supported any more.\n";
-      }
-    }
-    return;
   }
 
   void TriggerDecoderV3::initializeDataProducts()
@@ -639,8 +757,6 @@ namespace daq
       enablegate_ts += raw_en_ts - raw_wr_ts;
     } // if has gate information
 
-    // --- END ---- TEMPORARY --------------------------------------------------
-
     if(fDiagnosticOutput || fDebug)
     {
       std::cout << "Full Timestamp = " << artdaq_ts
@@ -661,11 +777,12 @@ namespace daq
     //
     // extra trigger info
     //
+    sbn::triggerSource const beamGateBit
+      = setTriggerSource(datastream_info.gate_type);
+
     unsigned int const triggerID = datastream_info.wr_event_no;
-    sbn::triggerSource beamGateBit;
-    switch (datastream_info.gate_type) {
-      case TriggerGateTypes::BNB:{
-        beamGateBit = sbn::triggerSource::BNB;
+    switch (beamGateBit) {
+      case sbn::triggerSource::BNB:{
       if(datastream_info.trigger_type == 0)
       {
         fTriggerExtra->gateCountFromPreviousTrigger = frag.getDeltaGatesBNBMaj();
@@ -684,8 +801,7 @@ namespace daq
       }
         break;
       }
-      case TriggerGateTypes::NuMI:{
-        beamGateBit = sbn::triggerSource::NuMI;
+      case sbn::triggerSource::NuMI:{
       if(datastream_info.trigger_type == 0)
       {
         fTriggerExtra->gateCountFromPreviousTrigger = frag.getDeltaGatesNuMIMaj();
@@ -704,8 +820,7 @@ namespace daq
       }
         break;
       }
-      case TriggerGateTypes::OffbeamBNB:{
-        beamGateBit = sbn::triggerSource::OffbeamBNB;
+      case sbn::triggerSource::OffbeamBNB:{
       if(datastream_info.trigger_type == 0)
       {
         fTriggerExtra->gateCountFromPreviousTrigger = frag.getDeltaGatesBNBOffMaj();
@@ -724,8 +839,7 @@ namespace daq
       }
         break;
       }
-      case TriggerGateTypes::OffbeamNuMI:{
-        beamGateBit = sbn::triggerSource::OffbeamNuMI;
+      case sbn::triggerSource::OffbeamNuMI:{
       if(datastream_info.trigger_type == 0)
       {
         fTriggerExtra->gateCountFromPreviousTrigger = frag.getDeltaGatesNuMIOffMaj();
@@ -744,8 +858,7 @@ namespace daq
       }
         break;
       }
-      case TriggerGateTypes::Calib:{
-        beamGateBit = sbn::triggerSource::Calib;
+      case sbn::triggerSource::Calib:{
       if(datastream_info.trigger_type == 0)
       {
         fTriggerExtra->gateCountFromPreviousTrigger = frag.getDeltaGatesCalibMaj();
@@ -764,7 +877,7 @@ namespace daq
       }
       break;
       }
-      default:                            beamGateBit = sbn::triggerSource::Unknown;
+      default: break;// nothing to be done here
     } // switch gate type
 
     fTriggerExtra->sourceType = beamGateBit;
@@ -1191,6 +1304,19 @@ namespace daq
   } // TriggerDecoderV3::encodeSectorBitsLegacy()
 
 
+  sbn::triggerSource TriggerDecoderV3::toGateType(int gateType)
+  {
+    switch (gateType) {
+      case TriggerGateTypes::BNB: return sbn::triggerSource::BNB;
+      case TriggerGateTypes::NuMI: return sbn::triggerSource::NuMI;
+      case TriggerGateTypes::OffbeamBNB: return sbn::triggerSource::OffbeamBNB;
+      case TriggerGateTypes::OffbeamNuMI: return sbn::triggerSource::OffbeamNuMI;
+      case TriggerGateTypes::Calib: return sbn::triggerSource::Calib;
+      default: return sbn::triggerSource::Unknown;
+    } // switch gate type
+  } // 
+
+
   sim::BeamType_t TriggerDecoderV3::simGateType(sbn::triggerSource source)
   {
     switch (source) {
@@ -1203,11 +1329,24 @@ namespace daq
       case sbn::triggerSource::Calib:
         return sim::kUnknown;
       default:
-        mf::LogWarning("TriggerDecoder") << "Unsupported trigger source " << name(source);
+        mf::LogWarning("TriggerDecoder") << "Unsupported trigger source " << source;
         return sim::kUnknown;
     } // switch source
   } // TriggerDecoderV3::simGateType()
+  
+  
+  sbn::triggerSource TriggerDecoderV3::setTriggerSource
+    (int hardwareGateType) const
+  {
+    sbn::triggerSource const beamGateBit = toGateType(hardwareGateType);
+    auto it = fChangeGateTypes.find(beamGateBit);
+    if (it == fChangeGateTypes.end()) return beamGateBit; // no change for this
 
+    mf::LogTrace{ "TriggerDecoderV3" }
+      << "Changing the gate type from " << beamGateBit << " to " << it->second;
+    return it->second;
+  } // TriggerDecoderV3::setTriggerSource()
+  
 
   std::string TriggerDecoderV3::sanitize(std::string const& s) {
 

@@ -321,7 +321,7 @@ namespace icarus {
     auto const& triggerInfo = event.getProduct<sbn::ExtraTriggerInfo>(fTriggerLabel);
     sbn::triggerSource bit = triggerInfo.sourceType;
     m_gate_type            = value(bit);
-    m_gate_name            = bitName(bit);
+    m_gate_name            = name(bit);
     m_trigger_timestamp    = triggerInfo.triggerTimestamp;
     m_gate_start_timestamp = triggerInfo.beamGateTimestamp;
     m_trigger_gate_diff    = triggerInfo.triggerTimestamp - triggerInfo.beamGateTimestamp;

@@ -130,6 +130,13 @@ cet_build_plugin(OverlayPMTwaveforms art::module LIBRARIES
   art::Framework_Services_Registry
 )
 
+cet_build_plugin(RequireEnableGate art::module LIBRARIES
+  icarusalg::Utilities
+  sbnobj::Common_Trigger
+  lardataalg::headers
+  )
+
+
 install_headers()
 install_fhicl()
 install_source()
