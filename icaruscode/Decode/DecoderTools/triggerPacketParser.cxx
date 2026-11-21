@@ -17,8 +17,8 @@
 #include <vector>
 #include <optional>
 #include <cstdlib> // std::exit()
-#include <cstdint> // libstdc++ tightened transitive-include hygiene
-                   // and cstdint is explicitly required for std::uint64_t
+#include <cstdint> // std::uint64_t 
+                   
 
 /*
  * Notable changes here:
