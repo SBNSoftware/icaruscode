@@ -100,10 +100,8 @@ unsigned long icarus::TriggerConfigurationExtractor::parsePrescaleString
 
 // -----------------------------------------------------------------------------
 unsigned int icarus::TriggerConfigurationExtractor::parseWindowMode(std::string bitStr) const {
-  for (unsigned int bitValue = 0; bitValue < value(sbn::bits::triggerWindowMode::NBits); ++bitValue) {
-    auto const bit = static_cast<sbn::bits::triggerWindowMode>(bitValue);
-    if (bitStr == bitName(bit)) return bitValue;
-  }
+  if (auto const bit = sbn::bits::parse<sbn::bits::triggerWindowMode>(bitStr))
+    return value(*bit);
   throw cet::exception{ "TriggerConfigurationExtractor" }
     << "Trigger window mode '" << bitStr << "' is not known.\n";
 }

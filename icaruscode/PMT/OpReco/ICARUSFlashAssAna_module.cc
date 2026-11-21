@@ -740,7 +740,7 @@ void opana::ICARUSFlashAssAna::analyze(art::Event const &e)
 
       sbn::triggerSource bit = extraInfo.sourceType;
       m_gate_type = (unsigned int)bit;
-      m_gate_name = bitName(bit);
+      m_gate_name = name(bit);
 
       m_trigger_type = value(extraInfo.triggerType);
       m_trigger_timestamp = extraInfo.triggerTimestamp;

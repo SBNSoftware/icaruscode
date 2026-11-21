@@ -248,7 +248,7 @@ namespace icarus {
       if( trigger_handle.isValid() ) {
 	sbn::triggerSource bit = trigger_handle->sourceType;
 	m_gate_type            = (unsigned int)bit;
-	m_gate_name            = bitName(bit);
+	m_gate_name            = name(bit);
 	m_trigger_timestamp    = trigger_handle->triggerTimestamp;
 	m_gate_start_timestamp = trigger_handle->beamGateTimestamp;
 	m_trigger_gate_diff    = trigger_handle->triggerTimestamp - trigger_handle->beamGateTimestamp;

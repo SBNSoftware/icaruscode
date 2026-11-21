@@ -264,7 +264,7 @@ void opana::ICARUSBeamStructureAna::analyze(art::Event const &e)
 
       sbn::triggerSource bit = extraInfo.sourceType;
       m_gate_type = (unsigned int)bit; // 1 BNB 2 NumI 3 offbeamBNB 4 offbeamNuMi
-      m_gate_name = bitName(bit);
+      m_gate_name = name(bit);
       m_trigger_type = value(extraInfo.triggerType); // 1 majority, 2 minbias
 
       // absolute timestamp
