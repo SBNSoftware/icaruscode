@@ -19,6 +19,7 @@
 #include "icaruscode/Utilities/CacheCounter.h" // util::CacheGuard
 #include "icaruscode/Utilities/ChangeTable.h" // util::fhicl::ChangeSequence
 #include "icarusalg/Utilities/BinaryDumpUtils.h" // icarus::ns::util::bin()
+#include "sbnalg/Utilities/BeamBitsFHiCL.h"
 #include "sbnobj/Common/Trigger/ExtraTriggerInfo.h"
 #include "sbnobj/Common/Trigger/BeamBits.h"
 #include "sbndaq-artdaq-core/Overlays/ICARUS/ICARUSTriggerV3Fragment.hh"
@@ -55,6 +56,7 @@
 #include <optional>
 #include <memory>
 #include <array>
+#include <any>
 
 
 using namespace std::string_literals;
@@ -294,7 +296,8 @@ namespace daq
     using microseconds = util::quantities::microsecond;
     using nanoseconds = util::quantities::nanosecond;
 
-    using ChangeGateSequence_t = ::util::fhicl::ChangeSequence<int, int>;
+    using ChangeGateSequence_t
+      = ::util::fhicl::ChangeSequence<sbn::triggerSource>;
 
   public:
     /// FHiCL configuration object.
@@ -473,8 +476,14 @@ namespace daq
     template <unsigned int startBit, unsigned int nBits, typename T>
     static constexpr T bits(T value);
 
+    /// Returns the gate type of the trigger source code from the hardware.
+    static sbn::triggerSource toGateType(int gateType);
+    
     /// Returns the beam type corresponding to the specified trigger `source`.
     static sim::BeamType_t simGateType(sbn::triggerSource source);
+
+    /// Translates the hardware gate type code into the final trigger source.
+    sbn::triggerSource setTriggerSource(int hardwareGateType) const;
 
     /// Returns `s` with non-printable characters replaced.
     static std::string sanitize(std::string const& s);
@@ -768,19 +777,12 @@ namespace daq
     //
     // extra trigger info
     //
-    int gateType = datastream_info.gate_type;
-    if (auto it = fChangeGateTypes.find(gateType); it != fChangeGateTypes.end())
-    {
-      mf::LogTrace{ "TriggerDecoderV3" }
-        << "Changing the gate type from " << gateType << " to " << it->second;
-      gateType = it->second;
-    }
+    sbn::triggerSource const beamGateBit
+      = setTriggerSource(datastream_info.gate_type);
 
     unsigned int const triggerID = datastream_info.wr_event_no;
-    sbn::triggerSource beamGateBit;
-    switch (gateType) {
-      case TriggerGateTypes::BNB:{
-        beamGateBit = sbn::triggerSource::BNB;
+    switch (beamGateBit) {
+      case sbn::triggerSource::BNB:{
       if(datastream_info.trigger_type == 0)
       {
         fTriggerExtra->gateCountFromPreviousTrigger = frag.getDeltaGatesBNBMaj();
@@ -799,8 +801,7 @@ namespace daq
       }
         break;
       }
-      case TriggerGateTypes::NuMI:{
-        beamGateBit = sbn::triggerSource::NuMI;
+      case sbn::triggerSource::NuMI:{
       if(datastream_info.trigger_type == 0)
       {
         fTriggerExtra->gateCountFromPreviousTrigger = frag.getDeltaGatesNuMIMaj();
@@ -819,8 +820,7 @@ namespace daq
       }
         break;
       }
-      case TriggerGateTypes::OffbeamBNB:{
-        beamGateBit = sbn::triggerSource::OffbeamBNB;
+      case sbn::triggerSource::OffbeamBNB:{
       if(datastream_info.trigger_type == 0)
       {
         fTriggerExtra->gateCountFromPreviousTrigger = frag.getDeltaGatesBNBOffMaj();
@@ -839,8 +839,7 @@ namespace daq
       }
         break;
       }
-      case TriggerGateTypes::OffbeamNuMI:{
-        beamGateBit = sbn::triggerSource::OffbeamNuMI;
+      case sbn::triggerSource::OffbeamNuMI:{
       if(datastream_info.trigger_type == 0)
       {
         fTriggerExtra->gateCountFromPreviousTrigger = frag.getDeltaGatesNuMIOffMaj();
@@ -859,8 +858,7 @@ namespace daq
       }
         break;
       }
-      case TriggerGateTypes::Calib:{
-        beamGateBit = sbn::triggerSource::Calib;
+      case sbn::triggerSource::Calib:{
       if(datastream_info.trigger_type == 0)
       {
         fTriggerExtra->gateCountFromPreviousTrigger = frag.getDeltaGatesCalibMaj();
@@ -879,7 +877,7 @@ namespace daq
       }
       break;
       }
-      default:                            beamGateBit = sbn::triggerSource::Unknown;
+      default: break;// nothing to be done here
     } // switch gate type
 
     fTriggerExtra->sourceType = beamGateBit;
@@ -1306,6 +1304,19 @@ namespace daq
   } // TriggerDecoderV3::encodeSectorBitsLegacy()
 
 
+  sbn::triggerSource TriggerDecoderV3::toGateType(int gateType)
+  {
+    switch (gateType) {
+      case TriggerGateTypes::BNB: return sbn::triggerSource::BNB;
+      case TriggerGateTypes::NuMI: return sbn::triggerSource::NuMI;
+      case TriggerGateTypes::OffbeamBNB: return sbn::triggerSource::OffbeamBNB;
+      case TriggerGateTypes::OffbeamNuMI: return sbn::triggerSource::OffbeamNuMI;
+      case TriggerGateTypes::Calib: return sbn::triggerSource::Calib;
+      default: return sbn::triggerSource::Unknown;
+    } // switch gate type
+  } // 
+
+
   sim::BeamType_t TriggerDecoderV3::simGateType(sbn::triggerSource source)
   {
     switch (source) {
@@ -1318,11 +1329,24 @@ namespace daq
       case sbn::triggerSource::Calib:
         return sim::kUnknown;
       default:
-        mf::LogWarning("TriggerDecoder") << "Unsupported trigger source " << name(source);
+        mf::LogWarning("TriggerDecoder") << "Unsupported trigger source " << source;
         return sim::kUnknown;
     } // switch source
   } // TriggerDecoderV3::simGateType()
+  
+  
+  sbn::triggerSource TriggerDecoderV3::setTriggerSource
+    (int hardwareGateType) const
+  {
+    sbn::triggerSource const beamGateBit = toGateType(hardwareGateType);
+    auto it = fChangeGateTypes.find(beamGateBit);
+    if (it == fChangeGateTypes.end()) return beamGateBit; // no change for this
 
+    mf::LogTrace{ "TriggerDecoderV3" }
+      << "Changing the gate type from " << beamGateBit << " to " << it->second;
+    return it->second;
+  } // TriggerDecoderV3::setTriggerSource()
+  
 
   std::string TriggerDecoderV3::sanitize(std::string const& s) {
 

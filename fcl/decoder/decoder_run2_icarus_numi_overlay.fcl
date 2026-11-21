@@ -16,9 +16,13 @@
 
 #include "decoder_run2_icarus.fcl"
 
-# ... and change the message configuration to a sane one
-services.message: @local::icarus_message_services_interactive
+# ... put some sanity back in this configuration
+services.message: @local::icarus_message_services_interactive_debug
+source.maxEvents: @erase
+
 
 physics.producers.daqTrigger.DecoderTool.Decoders[2].ToolConfig.ChangeGateType: [
-    { From: 1  To: 2 }, { From: 3  To: 4 }, { From: 5  To: 4 }
+    { From: BNB         To: NuMI        },
+    { From: OffbeamBNB  To: OffbeamNuMI },
+    { From: calib       To: OffbeamNuMI }
 ]
