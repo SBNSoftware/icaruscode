@@ -320,12 +320,14 @@ icarus_reco_postPandoraGausCryoE_NuGraphReco:   [ NCCSlicesCryoE,
 icarus_reco_Gauss1D_CryoW:         [ 
                                      @sequence::icarus_WestHits_TPC,
                                      @sequence::icarus_reco_cluster3DCryoW,
+                                     @sequence::icarus_reco_pandoraCluster3DCryoW,
                                      @sequence::icarus_reco_pandoraGausCryoW
                                    ]
 
 icarus_reco_Gauss1D_CryoE:         [
                                      @sequence::icarus_EastHits_TPC,
                                      @sequence::icarus_reco_cluster3DCryoE,
+                                     @sequence::icarus_reco_pandoraCluster3DCryoE,
                                      @sequence::icarus_reco_pandoraGausCryoE
                                    ]
 
