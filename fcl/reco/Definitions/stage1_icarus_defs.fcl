@@ -31,15 +31,20 @@ BEGIN_PROLOG
 icarus_stage1_producers:
 {
   ### TPC hit-finder producers
-  gaushit1dTPCWW:                 @local::gaus_hitfinder_icarus
-  gaushit1dTPCWE:                 @local::gaus_hitfinder_icarus
-  gaushit1dTPCEW:                 @local::gaus_hitfinder_icarus
-  gaushit1dTPCEE:                 @local::gaus_hitfinder_icarus
+  gaushit1dTPCWW:                 @local::gaus_hitfinder_icarus_1d
+  gaushit1dTPCWE:                 @local::gaus_hitfinder_icarus_1d
+  gaushit1dTPCEW:                 @local::gaus_hitfinder_icarus_1d
+  gaushit1dTPCEE:                 @local::gaus_hitfinder_icarus_1d
 
   gaushit2dTPCWW:                 @local::gaus_hitfinder_icarus
   gaushit2dTPCWE:                 @local::gaus_hitfinder_icarus
   gaushit2dTPCEW:                 @local::gaus_hitfinder_icarus
   gaushit2dTPCEE:                 @local::gaus_hitfinder_icarus
+
+  gaushitPT2dTPCEE:               @local::gaus_hitfinder_icarus_spine
+  gaushitPT2dTPCEW:               @local::gaus_hitfinder_icarus_spine
+  gaushitPT2dTPCWE:               @local::gaus_hitfinder_icarus_spine
+  gaushitPT2dTPCWW:               @local::gaus_hitfinder_icarus_spine
 
   ### Cluster3D / SPINE version (using gaushitPT2dTPC* input tags for the hits)
   cluster3DCryoW:                 @local::icarus_cluster3d
@@ -378,76 +383,21 @@ icarus_crtt0tagging:               [CRTT0Tagging]
 ### Below we include overrides for the modules above
 #
 ### Set up hit finding for multiple TPC readout
-icarus_stage1_producers.gaushit1dTPCWW.CalDataModuleLabel:                                     "wire2channelroi:PHYSCRATEDATATPCWW"
-icarus_stage1_producers.gaushit1dTPCWE.CalDataModuleLabel:                                     "wire2channelroi:PHYSCRATEDATATPCWE"
-icarus_stage1_producers.gaushit1dTPCEW.CalDataModuleLabel:                                     "wire2channelroi:PHYSCRATEDATATPCEW"
-icarus_stage1_producers.gaushit1dTPCEE.CalDataModuleLabel:                                     "wire2channelroi:PHYSCRATEDATATPCEE"
+icarus_stage1_producers.gaushit1dTPCWW.CalDataModuleLabel: "wire2channelroi:PHYSCRATEDATATPCWW"
+icarus_stage1_producers.gaushit1dTPCWE.CalDataModuleLabel: "wire2channelroi:PHYSCRATEDATATPCWE"
+icarus_stage1_producers.gaushit1dTPCEW.CalDataModuleLabel: "wire2channelroi:PHYSCRATEDATATPCEW"
+icarus_stage1_producers.gaushit1dTPCEE.CalDataModuleLabel: "wire2channelroi:PHYSCRATEDATATPCEE"
 
-icarus_stage1_producers.gaushit2dTPCWW.CalDataModuleLabel:                                     "wire2channelroi2d:PHYSCRATEDATATPCWW"
-icarus_stage1_producers.gaushit2dTPCWE.CalDataModuleLabel:                                     "wire2channelroi2d:PHYSCRATEDATATPCWE"
-icarus_stage1_producers.gaushit2dTPCEW.CalDataModuleLabel:                                     "wire2channelroi2d:PHYSCRATEDATATPCEW"
-icarus_stage1_producers.gaushit2dTPCEE.CalDataModuleLabel:                                     "wire2channelroi2d:PHYSCRATEDATATPCEE"
+icarus_stage1_producers.gaushit2dTPCWW.CalDataModuleLabel: "wire2channelroi2d:PHYSCRATEDATATPCWW"
+icarus_stage1_producers.gaushit2dTPCWE.CalDataModuleLabel: "wire2channelroi2d:PHYSCRATEDATATPCWE"
+icarus_stage1_producers.gaushit2dTPCEW.CalDataModuleLabel: "wire2channelroi2d:PHYSCRATEDATATPCEW"
+icarus_stage1_producers.gaushit2dTPCEE.CalDataModuleLabel: "wire2channelroi2d:PHYSCRATEDATATPCEE"
 
 # Setup version of hit finder's with Pulse Trains ("PT"s) enabled
-
-# Using default values
-spine_hit_candidate_tool_parameters:
-{
-	RoiThreshold: 5.
-	NextADCThreshold: 0. 
-}
-
-# Using default values
-spine_gaushit_parameters:
-{
-	LongMaxHits: [10, 10, 10]
-	MaxMultiHit: 5
-	Chi2NDF: 500.
-	LongPulseWidth: [10, 10, 10]
-	HitFinderToolVec:
-	{
-	CandidateHitsPlane0: 
-	{
-		@table::spine_hit_candidate_tool_parameters
-		Plane: 0
-	}
-	CandidateHitsPlane1: 
-	{
-		@table::spine_hit_candidate_tool_parameters
-		Plane: 1
-	}
-	CandidateHitsPlane2: 
-	{
-		@table::spine_hit_candidate_tool_parameters
-		Plane: 2
-	}
-	}
-}
-
-icarus_stage1_producers.gaushitPT2dTPCEE: 
-{
-	@table::icarus_stage1_producers.gaushit2dTPCEE
-	@table::spine_gaushit_parameters
-}
-
-icarus_stage1_producers.gaushitPT2dTPCEW:
-{
-	@table::icarus_stage1_producers.gaushit2dTPCEW
-	@table::spine_gaushit_parameters
-}
-
-icarus_stage1_producers.gaushitPT2dTPCWE:
-{
-	@table::icarus_stage1_producers.gaushit2dTPCWE
-	@table::spine_gaushit_parameters
-}
-
-icarus_stage1_producers.gaushitPT2dTPCWW: 
-{
-	@table::icarus_stage1_producers.gaushit2dTPCWW
-	@table::spine_gaushit_parameters
-}
-
+icarus_stage1_producers.gaushitPT2dTPCWW.CalDataModuleLabel: "wire2channelroi2d:PHYSCRATEDATATPCWW"
+icarus_stage1_producers.gaushitPT2dTPCWE.CalDataModuleLabel: "wire2channelroi2d:PHYSCRATEDATATPCWE"
+icarus_stage1_producers.gaushitPT2dTPCEW.CalDataModuleLabel: "wire2channelroi2d:PHYSCRATEDATATPCEW"
+icarus_stage1_producers.gaushitPT2dTPCEE.CalDataModuleLabel: "wire2channelroi2d:PHYSCRATEDATATPCEE"
 
 ## Overrides for filtering of cluster3D hits
 icarus_stage1_filters.TPCHitFilterCryoW.HitDataLabelVec: ["cluster3DCryoW"]
