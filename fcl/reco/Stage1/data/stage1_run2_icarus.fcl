@@ -26,6 +26,10 @@ outputs.out1.outputCommands: [
 physics.analyzers.caloskimE.SelectEvents: [reco]
 physics.analyzers.caloskimW.SelectEvents: [reco]
 
+# Pandora only chain should be still using the combineHits* modules
+physics.producers.pandoraGausCryoE.HitFinderModuleLabel: "combineHitsCryoE"
+physics.producers.pandoraGausCryoW.HitFinderModuleLabel: "combineHitsCryoW"
+
 # Disabled Space-Charge service for calorimetry
 services.SpaceChargeService: {
     EnableCalEfieldSCE: false

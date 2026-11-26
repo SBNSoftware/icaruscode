@@ -58,18 +58,20 @@ icarus_hitmerger:
   HitProducerLabelVec:     ["gaushit"]
 }
 
-# Define icarus version of gaushit finder
-gaus_hitfinder_icarus: @local::gausshit_sbn
+# oooOOOooooOOOooooOOOooooOOOooo Define icarus version of gaushit finder
 
-gaus_hitfinder_icarus.CalDataModuleLabel:                                          "decon1droi"
-gaus_hitfinder_icarus.AreaNorms:                                                   [  1.0,  1.0,  1.0 ]
-gaus_hitfinder_icarus.MaxMultiHit:                                                 [10, 10, 6]
-gaus_hitfinder_icarus.Chi2NDF:                                                     [1967, 1200, 1350]
-gaus_hitfinder_icarus.PeakFitter.MinWidth:                                         1
-gaus_hitfinder_icarus.PeakFitter.FloatBaseline:                                    false
-gaus_hitfinder_icarus.PeakFitter.tool_type:                                        "PeakFitterMrqdt"
-gaus_hitfinder_icarus.LongMaxHits:                                                 [1, 1, 1]
-gaus_hitfinder_icarus.LongPulseWidth:                                              [17, 13, 12]
+gaus_hitfinder_icarus: @local::gausshit_sbn
+gaus_hitfinder_icarus.CalDataModuleLabel:         "decon1droi"
+gaus_hitfinder_icarus.AreaNorms:                  [ 1.0,  1.0,  1.0 ]
+gaus_hitfinder_icarus.MaxMultiHit:                [ 10, 10, 6 ]
+gaus_hitfinder_icarus.Chi2NDF:                    [ 1967, 1200, 1350 ]
+gaus_hitfinder_icarus.LongMaxHits:                [ 1, 1, 1 ]
+gaus_hitfinder_icarus.LongPulseWidth:             [ 17, 13, 12 ]
+gaus_hitfinder_icarus.TryNplus1Fits:              @erase
+
+gaus_hitfinder_icarus.PeakFitter.MinWidth:        1
+gaus_hitfinder_icarus.PeakFitter.FloatBaseline:   false
+gaus_hitfinder_icarus.PeakFitter.tool_type:       "PeakFitterMrqdt"
 
 # Keeping these here even though not used in case we want to know working values for testing
 # gaus_hitfinder_icarus.HitFinderToolVec.CandidateHitsPlane0:                        @local::candhitfinder_morphological
@@ -89,18 +91,50 @@ gaus_hitfinder_icarus.LongPulseWidth:                                           
 # gaus_hitfinder_icarus.HitFinderToolVec.CandidateHitsPlane2.DilationThreshold:      8
 
 # These are default settings for production running
-gaus_hitfinder_icarus.HitFinderToolVec.CandidateHitsPlane0:                        @local::candhitfinder_standard      # Sets hit finding for plane 0
 gaus_hitfinder_icarus.HitFinderToolVec.CandidateHitsPlane0.Plane:                  0
 gaus_hitfinder_icarus.HitFinderToolVec.CandidateHitsPlane0.RoiThreshold:           6.63
 gaus_hitfinder_icarus.HitFinderToolVec.CandidateHitsPlane0.NextADCThreshold:       -0.03
-gaus_hitfinder_icarus.HitFinderToolVec.CandidateHitsPlane1:                        @local::candhitfinder_standard      # Sets hit finding for plane 1
+
 gaus_hitfinder_icarus.HitFinderToolVec.CandidateHitsPlane1.Plane:                  1
 gaus_hitfinder_icarus.HitFinderToolVec.CandidateHitsPlane1.RoiThreshold:           5.74
 gaus_hitfinder_icarus.HitFinderToolVec.CandidateHitsPlane1.NextADCThreshold:       -0.05
-gaus_hitfinder_icarus.HitFinderToolVec.CandidateHitsPlane2:                        @local::candhitfinder_standard      # Sets hit finding for plane 2
+
 gaus_hitfinder_icarus.HitFinderToolVec.CandidateHitsPlane2.Plane:                  2
 gaus_hitfinder_icarus.HitFinderToolVec.CandidateHitsPlane2.RoiThreshold:           6.16
 gaus_hitfinder_icarus.HitFinderToolVec.CandidateHitsPlane2.NextADCThreshold:       -0.23
+
+# oooOOOooooOOOooooOOOooooOOOooo Provide the "old stadard" for 1D signal processing here...
+
+gaus_hitfinder_icarus_1d: @local::gausshit_sbn
+gaus_hitfinder_icarus_1d.CalDataModuleLabel:          "decon1droi"
+gaus_hitfinder_icarus_1d.AreaNorms:                   [ 1.0,  1.0,  1.0 ]
+gaus_hitfinder_icarus_1d.LongMaxHits:                 [ 25, 25, 25 ]
+gaus_hitfinder_icarus_1d.LongPulseWidth:              [ 10, 10, 10 ]
+gaus_hitfinder_icarus_1d.TryNplus1Fits:               @erase
+
+gaus_hitfinder_icarus_1d.PeakFitter.MinWidth:         1
+gaus_hitfinder_icarus_1d.PeakFitter.FloatBaseline:    false
+gaus_hitfinder_icarus_1d.PeakFitter.tool_type:        "PeakFitterMrqdt"
+
+gaus_hitfinder_icarus_1d.HitFinderToolVec.CandidateHitsPlane0.Plane:                  0
+gaus_hitfinder_icarus_1d.HitFinderToolVec.CandidateHitsPlane0.RoiThreshold:           9.
+gaus_hitfinder_icarus_1d.HitFinderToolVec.CandidateHitsPlane0.NextADCThreshold:       @erase
+
+gaus_hitfinder_icarus_1d.HitFinderToolVec.CandidateHitsPlane1.Plane:                  1
+gaus_hitfinder_icarus_1d.HitFinderToolVec.CandidateHitsPlane1.RoiThreshold:           9.5
+gaus_hitfinder_icarus_1d.HitFinderToolVec.CandidateHitsPlane1.NextADCThreshold:       @erase
+
+gaus_hitfinder_icarus_1d.HitFinderToolVec.CandidateHitsPlane2.Plane:                  2
+gaus_hitfinder_icarus_1d.HitFinderToolVec.CandidateHitsPlane2.RoiThreshold:           9.
+gaus_hitfinder_icarus_1d.HitFinderToolVec.CandidateHitsPlane2.NextADCThreshold:       @erase
+# oooOOOooooOOOooooOOOooooOOOooo ...
+
+# oooOOOooooOOOooooOOOooooOOOooo Copy here for the SPINE settings, inheriting from 1D 
+# processing, with some changes
+gaus_hitfinder_icarus_spine: @local::gaus_hitfinder_icarus_1d
+gaus_hitfinder_icarus_spine.LongMaxHits:              [10, 10, 10]
+gaus_hitfinder_icarus_spine.LongPulseWidth:           [10, 10, 10]
+
 
 icarus_hitconverter:
 {
