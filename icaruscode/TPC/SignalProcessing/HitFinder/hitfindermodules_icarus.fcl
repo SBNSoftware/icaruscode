@@ -108,7 +108,7 @@ gaus_hitfinder_icarus.HitFinderToolVec.CandidateHitsPlane2.NextADCThreshold:    
 gaus_hitfinder_icarus_1d: @local::gausshit_sbn
 gaus_hitfinder_icarus_1d.CalDataModuleLabel:          "decon1droi"
 gaus_hitfinder_icarus_1d.AreaNorms:                   [ 1.0,  1.0,  1.0 ]
-gaus_hitfinder_icarus_1d.LongMaxHits:                 [ 1, 1, 1 ]
+gaus_hitfinder_icarus_1d.LongMaxHits:                 [ 25, 25, 25 ]
 gaus_hitfinder_icarus_1d.LongPulseWidth:              [ 10, 10, 10 ]
 gaus_hitfinder_icarus_1d.TryNplus1Fits:               @erase
 
@@ -117,15 +117,15 @@ gaus_hitfinder_icarus_1d.PeakFitter.FloatBaseline:    false
 gaus_hitfinder_icarus_1d.PeakFitter.tool_type:        "PeakFitterMrqdt"
 
 gaus_hitfinder_icarus_1d.HitFinderToolVec.CandidateHitsPlane0.Plane:                  0
-gaus_hitfinder_icarus_1d.HitFinderToolVec.CandidateHitsPlane0.RoiThreshold:           5.
+gaus_hitfinder_icarus_1d.HitFinderToolVec.CandidateHitsPlane0.RoiThreshold:           9.
 gaus_hitfinder_icarus_1d.HitFinderToolVec.CandidateHitsPlane0.NextADCThreshold:       @erase
 
 gaus_hitfinder_icarus_1d.HitFinderToolVec.CandidateHitsPlane1.Plane:                  1
-gaus_hitfinder_icarus_1d.HitFinderToolVec.CandidateHitsPlane1.RoiThreshold:           5.
+gaus_hitfinder_icarus_1d.HitFinderToolVec.CandidateHitsPlane1.RoiThreshold:           9.5
 gaus_hitfinder_icarus_1d.HitFinderToolVec.CandidateHitsPlane1.NextADCThreshold:       @erase
 
 gaus_hitfinder_icarus_1d.HitFinderToolVec.CandidateHitsPlane2.Plane:                  2
-gaus_hitfinder_icarus_1d.HitFinderToolVec.CandidateHitsPlane2.RoiThreshold:           5.
+gaus_hitfinder_icarus_1d.HitFinderToolVec.CandidateHitsPlane2.RoiThreshold:           9.
 gaus_hitfinder_icarus_1d.HitFinderToolVec.CandidateHitsPlane2.NextADCThreshold:       @erase
 # oooOOOooooOOOooooOOOooooOOOooo ...
 
